@@ -1,0 +1,34 @@
+NVCC of CUDA 12 (and seemingly also CUDA 11.7 in some configureations)
+fail to parse the expression and fail with
+> pybind11/detail/../cast.h: In function ‘typename pybind11::detail::type_caster<typename pybind11::detail::intrinsic_type<T>::type
+> ::cast_op_type<T> pybind11::detail::cast_op(make_caster<T>&)’:
+> pybind11/detail/../cast.h:45:120: error: expected template-name before ‘<’ token
+>   45 |     return caster.operator typename make_caster<T>::template cast_op_type<T>();
+
+See https://github.com/pybind/pybind11/issues/4606
+Disambiguate the expression to workaround this.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/include/pybind11/cast.h b/include/pybind11/cast.h
+index 3a404602..1eefd0f1 100644
+--- a/include/pybind11/cast.h
++++ b/include/pybind11/cast.h
+@@ -42,13 +42,14 @@ using make_caster = type_caster<intrinsic_t<type>>;
+ // Shortcut for calling a caster's `cast_op_type` cast operator for casting a type_caster to a T
+ template <typename T>
+ typename make_caster<T>::template cast_op_type<T> cast_op(make_caster<T> &caster) {
+-    return caster.operator typename make_caster<T>::template cast_op_type<T>();
++    using result_t = typename make_caster<T>::template cast_op_type<T>;
++    return caster.operator result_t();
+ }
+ template <typename T>
+ typename make_caster<T>::template cast_op_type<typename std::add_rvalue_reference<T>::type>
+ cast_op(make_caster<T> &&caster) {
+-    return std::move(caster).operator typename make_caster<T>::
+-        template cast_op_type<typename std::add_rvalue_reference<T>::type>();
++    using result_t = typename make_caster<T>::template cast_op_type<typename std::add_rvalue_reference<T>::type>;
++    return std::move(caster).operator result_t();
+ }
+ 
+ template <typename type>

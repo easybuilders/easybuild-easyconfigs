@@ -1,0 +1,50 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2022/01
+easyblock = 'MakeCp'
+name = 'novaSTA'
+version = '1.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/turonova/novaSTA'
+description = """ C++ version of subtomogram averaging (SA) scripts from TOM/AV3 package          
+https://doi.org/10.1073/pnas.0409178102. Both CPU and GPU parallelization is    
+supported although the latter performs significantly worse in terms of          
+processing time (the code is not well optimized) and is thus not recommended for
+larger datasets.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {
+    'cstd': 'c++14',
+    'opt': 'True',
+    'usempi': 'True'
+}
+
+github_account = 'turonova'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['db0765eade1b0399929dcd61f2dbeeffd762885902f6ef2811d1fb4f9634a2ac']
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('UCX-CUDA', '1.12.1', versionsuffix),
+]
+
+files_to_copy = [
+    (['novaSTA'], 'bin'),
+    'parameter_file_example.txt'
+]
+
+# let easybuild set compiler options rather than static statements in makefile
+prebuildopts = 'sed -i "s/^CXX/#&/g" ?akefile && '
+# set -s and NDEBUG
+prebuildopts += 'export CXXFLAGS="$CXXFLAGS -s -DNDEBUG " && '
+
+postinstallcmds = ['strip %(installdir)s/bin/*']
+examples = '%(installdir)s/parameter_file_example.txt'
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'parameter_file_example.txt'],
+    'dirs': []
+}
+
+moduleclass = 'bio'

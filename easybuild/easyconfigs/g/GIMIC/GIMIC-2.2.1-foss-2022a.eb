@@ -1,0 +1,68 @@
+easyblock = "CMakeMake"
+
+name = 'GIMIC'
+version = '2.2.1'
+
+homepage = 'https://gimic.readthedocs.io'
+description = """The GIMIC program calculates magnetically induced currents in molecules.
+ You need to provide this program with a density matrix in atomic-orbital (AO) basis
+ and three (effective) magnetically perturbed AO density matrices in the proper format.
+Currently ACES2, Turbomole, G09, QChem, FERMION++, and LSDalton can produce these matrices."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+github_account = 'qmcurrents'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['GIMIC-%(version)s_fix-install-prefix.patch']
+checksums = [
+    {'v2.2.1.tar.gz': '57672db21f4038b13743e9cca7861a877f8221e5929d931210fa7114284e0731'},
+    {'GIMIC-2.2.1_fix-install-prefix.patch': '6e09bcebc2756a00a75ff6b16cde52124a339bdeb9781b1da004618837ee68b8'},
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('PyYAML', '6.0'),
+]
+
+# allow mismatches (old GCC behaviour up to version 9)
+preconfigopts = 'FCFLAGS="$FCFLAGS -fallow-argument-mismatch" '
+# enable OpenMP and disable MPI (see qmcurrents/gimic#169)
+configopts = '-DENABLE_OPENMP=ON -DENABLE_MPI=OFF '
+# enable numerical libraries in this toolchain
+configopts += '-DENABLE_MKL_FLAG=OFF -DENABLE_BLAS=ON -DENABLE_LAPACK=ON '
+configopts += '-DPYTHON_VERSION=%(pyshortver)s '
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'download_dep_fail': True,
+    'sanity_pip_check': True,
+}
+exts_list = [
+    ('pyparsing', '2.4.7', {
+        'checksums': ['c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1'],
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['bin/QCTools', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_paths = {
+    'files': ['bin/gimic', 'lib/libgimic2.a'],
+    'dirs': ['include', 'bin/QCTools', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['gimic --help']
+
+# Sometimes building in parallel leads to error
+maxparallel = 1
+
+moduleclass = 'chem'

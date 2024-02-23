@@ -1,0 +1,119 @@
+# What: 
+#       Fixes support for AVX512 on AMD CPUs.
+# Error Msg.: 
+#       "error: cannot convert a value of type 'int' to vector type '__vector(8) double' which has different size".
+# Description:
+#       According to 'configure.ac' one of the 'HAVE_AVX512_XEON' or 'HAVE_AVX512_XEON_PHI' macro should automatically
+#       be defined if CPU has an AVX512 support. This works on Intel CPUs, however, on AMD CPUs the configure script
+#       ill-defines `HAVE_AVX512_XEON_PHI` and leaves `HAVE_AVX512_XEON` undefined. This leads to execution of the 
+#       code path guarded by the `#ifdef HAVE_AVX512_XEON_PHI` directive, which calls for an undefined macro `_XOR_EPI`.
+#       I'm sure that the same error will also appear on Xeon-Phi, so this patch actually fixes a fundamental issue
+#       in the code.
+# Upstream issue:
+#       https://github.com/marekandreas/elpa/issues/39
+# Author: maxim-masterov (SURF)
+diff -Nru elpa-new_release_2023.05.001.orig/src/elpa2/kernels/complex_128bit_256bit_512bit_BLOCK_template.c elpa-new_release_2023.05.001/src/elpa2/kernels/complex_128bit_256bit_512bit_BLOCK_template.c
+--- elpa-new_release_2023.05.001.orig/src/elpa2/kernels/complex_128bit_256bit_512bit_BLOCK_template.c	2023-08-01 16:22:09.499243000 +0200
++++ elpa-new_release_2023.05.001/src/elpa2/kernels/complex_128bit_256bit_512bit_BLOCK_template.c	2023-08-07 12:38:56.128823725 +0200
+@@ -2571,12 +2571,12 @@
+ #if VEC_SET == AVX_512
+ #ifdef HAVE_AVX512_XEON_PHI
+ #ifdef DOUBLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #ifdef SINGLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #endif
+ #ifdef HAVE_AVX512_XEON
+@@ -4306,12 +4306,12 @@
+ #if VEC_SET == AVX_512
+ #ifdef HAVE_AVX512_XEON_PHI
+ #ifdef DOUBLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #ifdef SINGLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #endif
+ #ifdef HAVE_AVX512_XEON
+@@ -5847,12 +5847,12 @@
+ #if VEC_SET == AVX_512
+ #ifdef HAVE_AVX512_XEON_PHI
+ #ifdef DOUBLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #ifdef SINGLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #endif
+ #ifdef HAVE_AVX512_XEON
+@@ -7218,12 +7218,12 @@
+ #if VEC_SET == AVX_512
+ #ifdef HAVE_AVX512_XEON_PHI
+ #ifdef DOUBLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #ifdef SINGLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #endif
+ #ifdef HAVE_AVX512_XEON
+@@ -8408,12 +8408,12 @@
+ #if VEC_SET == AVX_512
+ #ifdef HAVE_AVX512_XEON_PHI
+ #ifdef DOUBLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #ifdef SINGLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #endif
+ #ifdef HAVE_AVX512_XEON
+@@ -9423,12 +9423,12 @@
+ #if VEC_SET == AVX_512
+ #ifdef HAVE_AVX512_XEON_PHI
+ #ifdef DOUBLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #ifdef SINGLE_PRECISION_COMPLEX
+-        h1_real = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_real, (__m512i) sign);
+-        h1_imag = (__SIMD_DATATYPE) _XOR_EPI((__m512i) h1_imag, (__m512i) sign);
++        h1_real = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_real, (__m512i) sign);
++        h1_imag = (__SIMD_DATATYPE) _SIMD_XOR_EPI((__m512i) h1_imag, (__m512i) sign);
+ #endif
+ #endif
+ #ifdef HAVE_AVX512_XEON

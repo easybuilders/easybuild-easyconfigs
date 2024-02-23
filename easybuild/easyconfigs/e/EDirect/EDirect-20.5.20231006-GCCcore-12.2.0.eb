@@ -1,0 +1,57 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+##
+easyblock = 'Binary'
+
+name = 'EDirect'
+version = '20.5.20231006'
+
+homepage = 'https://www.ncbi.nlm.nih.gov/books/NBK25501/'
+# See also https://dataguide.nlm.nih.gov/edirect/install.html
+description = """Entrez Direct (EDirect) provides access to the NCBI's suite of
+interconnected databases from a Unix terminal window. Search terms are entered
+as command-line arguments. Individual operations are connected with Unix pipes
+to construct multi-step queries. Selected records can then be retrieved in a
+variety of formats."""
+# software_license = 'Public Domain'
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+
+source_urls = ['https://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/versions/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['abb7a7c2d7dd4bf80b5f951211d20bf432fe9b787f6ad093feba2f5cb46d62dd']
+
+builddependencies = [
+    ('Go', '1.21.2', '', SYSTEM),
+]
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('Perl', '5.36.0'),
+]
+
+extract_sources = True
+
+postinstallcmds = [
+    "cd cmd/ && "
+    "sed -i 's@target=\"\\$HOME/Misc/scripts/\"@target=\"%(installdir)s/\"@' build.sh && "
+    "./build.sh install && cd %(installdir)s/ && rm -rf cmd/ eutils/"
+]
+
+sanity_check_paths = {
+    'files': ['einfo', 'README'],
+    'dirs': ['help'],
+}
+
+sanity_check_commands = [
+    "esearch -version && "
+    "xtract -version && "
+    "esearch -db pubmed -query 'Babalobi OO[au] AND 2008[pdat]' | efetch -format xml | "
+    "xtract -pattern Author -if Affiliation -contains Medicine -element Initials"
+]
+
+moduleclass = 'bio'

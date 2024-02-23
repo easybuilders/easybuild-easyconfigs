@@ -1,0 +1,63 @@
+easyblock = 'CMakeMake'
+
+name = 'pFUnit'
+version = '4.7.3'
+local_fargparse_major_minor_version = '1.5'
+local_gftl_major_minor_version = '1.10'
+local_gftl_shared_major_minor_version = '1.6'
+
+homepage = 'https://github.com/Goddard-Fortran-Ecosystem/pFUnit'
+description = """pFUnit is a unit testing framework enabling JUnit-like testing of serial
+ and MPI-parallel software written in Fortran."""
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+
+source_urls = ['https://github.com/Goddard-Fortran-Ecosystem/pFUnit/releases/download/v%(version)s']
+sources = ['%(name)s-v%(version)s.tar']
+checksums = ['247239298b55e847417b7830183d7fc62cca93dc92c8ec7c0067784b7ce34544']
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('M4', '1.4.19'),
+]
+dependencies = [('Python', '3.10.4')]
+
+sanity_check_paths = {
+    'files': [
+        'PFUNIT-%(version_major_minor)s/bin/funitproc',
+        'PFUNIT-%(version_major_minor)s/lib/libpfunit.a'
+    ],
+    'dirs': [
+        'FARGPARSE-%s' % local_fargparse_major_minor_version,
+        'GFTL-%s' % local_gftl_major_minor_version,
+        'GFTL_SHARED-%s' % local_gftl_shared_major_minor_version,
+    ],
+}
+
+sanity_check_commands = ["funitproc --help"]
+
+modextrapaths = {
+    'PATH': ['PFUNIT-%(version_major_minor)s/bin'],
+    'CPATH': [
+        'FARGPARSE-%s/include' % local_fargparse_major_minor_version,
+        'GFTL-%s/include' % local_gftl_major_minor_version,
+        'GFTL_SHARED-%s/include' % local_gftl_shared_major_minor_version,
+        'PFUNIT-%(version_major_minor)s/include',
+    ],
+    'LD_LIBRARY_PATH': [
+        'FARGPARSE-%s/lib' % local_fargparse_major_minor_version,
+        'GFTL-%s/lib' % local_gftl_major_minor_version,
+        'GFTL_SHARED-%s/lib' % local_gftl_shared_major_minor_version,
+        'PFUNIT-%(version_major_minor)s/lib',
+    ],
+    'CMAKE_PREFIX_PATH': [
+        'FARGPARSE-%s/cmake' % local_fargparse_major_minor_version,
+        'GFTL-%s/cmake' % local_gftl_major_minor_version,
+        'GFTL_SHARED-%s/cmake' % local_gftl_shared_major_minor_version,
+        'PFUNIT-%(version_major_minor)s/cmake',
+    ],
+}
+
+modextravars = {'PFUNIT': '%(installdir)s'}
+
+moduleclass = 'tools'

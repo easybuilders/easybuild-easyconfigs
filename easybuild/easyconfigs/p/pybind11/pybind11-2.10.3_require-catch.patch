@@ -1,0 +1,21 @@
+Error out if Catch2 is not found instead of silently skipping.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tools/FindCatch.cmake b/tools/FindCatch.cmake
+index 57bba58b..41f82e5c 100644
+--- a/tools/FindCatch.cmake
++++ b/tools/FindCatch.cmake
+@@ -60,9 +60,10 @@ if(NOT CATCH_VERSION OR CATCH_VERSION VERSION_LESS ${Catch_FIND_VERSION})
+   if(DOWNLOAD_CATCH)
+     _download_catch(${Catch_FIND_VERSION} "${PROJECT_BINARY_DIR}/catch/")
+     _get_catch_version()
++  elseif(CATCH_INCLUDE_DIR)
++    message(FATAL_ERROR "Catch (${CATCH_INCLUDE_DIR}) version to low: ${CATCH_VERSION} < ${Catch_FIND_VERSION}")
+   else()
+-    set(CATCH_FOUND FALSE)
+-    return()
++    message(FATAL_ERROR "Catch not found")
+   endif()
+ endif()
+ 

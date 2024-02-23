@@ -1,0 +1,32 @@
+test_module_partitioner_functional_conv_relu_conv in test_fx.py fails with an IndexError
+on e.g. POWER systems.
+
+Last part of the stacktrace:
+  File "/sympy/printing/printer.py", line 331, in _print
+    return printmethod(expr, **kwargs)
+  File "/torch/fx/experimental/symbolic_shapes.py", line 1575, in _print_Symbol
+    return self.print_source(self.symbol_to_source[expr][0])
+IndexError: list index out of range
+
+One cause is the missing MKLDNN and NNPACK (unavailable on PPC) making it skip some checks.
+A workaround here is adding a check that has side effects but doesn't change the result.
+That makes at least the test pass.
+Another change in PyTorch 2.2.x also avoids that issue but is to large to backport.
+
+See https://github.com/pytorch/pytorch/issues/117033
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/native/Convolution.cpp b/aten/src/ATen/native/Convolution.cpp
+index 7af281a7cd9..3709d27b2bb 100644
+--- a/aten/src/ATen/native/Convolution.cpp
++++ b/aten/src/ATen/native/Convolution.cpp
+@@ -543,7 +543,7 @@ struct ConvParams {
+ #endif
+        ;
+ #endif
+-    return false;
++    return (at::symint::size<T>(weight, 2) < 17) && (at::symint::size<T>(weight, 3) < 17) && false;
+   }
+   bool use_xnnpack(const at::Tensor& input, const at::Tensor& weight,
+                    const at::OptionalArrayRef<T> bias_sizes_opt) const {

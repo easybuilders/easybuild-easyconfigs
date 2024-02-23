@@ -1,0 +1,22 @@
+Fix include paths for unifrac
+Author: Samuel Moors (Vrije Universiteit Brussel)
+diff -ur unifrac-1.1.1.orig/setup.py unifrac-1.1.1/setup.py
+--- unifrac-1.1.1.orig/setup.py	2022-04-13 20:14:51.000000000 +0200
++++ unifrac-1.1.1/setup.py	2023-07-26 17:12:07.365976000 +0200
+@@ -75,12 +75,15 @@
+ 
+ USE_CYTHON = os.environ.get('USE_CYTHON', True)
+ ext = '.pyx' if USE_CYTHON else '.cpp'
++unifrac_includes = [os.path.join(os.environ['EBROOTUNIFRAC'], 'include', 'unifrac')]
+ extensions = [Extension("unifrac._api",
+                         sources=["unifrac/_api" + ext],
+                         extra_link_args=LINK_ARGS,
+                         extra_compile_args=COMPILE_ARGS,
+                         include_dirs=([np.get_include()] +
+-                                      CONDA_INCLUDES),
++                                      CONDA_INCLUDES +
++                                      os.environ['CPATH'].split(':') +
++                                      unifrac_includes),
+                         libraries=['ssu'])]
+ 
+ if USE_CYTHON:

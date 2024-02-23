@@ -1,0 +1,36 @@
+easyblock = 'CMakeMake'
+
+name = 'CWIPI'
+version = '0.12.0'
+
+homepage = 'https://w3.onera.fr/cwipi/'
+description = """CWIPI (Coupling With Interpolation Parallel Interface) library helps in
+chaining and coupling codes. Provides exchanges of interpolated fields through
+a non-compliant geometric interface and allows control of the coupling
+algorithm using control parameters. CWIPI takes advantage of the distribution
+of the definition of the coupling algorithm in the different codes.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+
+source_urls = ['https://w3.onera.fr/cwipi/sites/default/files/2023-10']
+sources = [SOURCELOWER_TGZ]
+checksums = ['775dedd6afd5e148f008fc19b98ad0879a0091880af682cbed89c4978bef5575']
+
+builddependencies = [('CMake', '3.24.3')]
+
+configopts = "-DCWP_ENABLE_Fortran=ON"
+
+_cwipi_bin = ['c_linear_coupling', 'c_surf_coupling_P1P0_P0P1', 'c_surf_coupling_P1P1',
+              'c_surf_coupling_simple_location', 'c_surf_coupling_vector_exchange', 'c_surf_location_triaP2',
+              'c_surf_sequential_coupling', 'c_vol_coupling_P1P1', 'c_vol_coupling_polyhedra_P1P1',
+              'fortran_plane_PiQj', 'fortran_surf_P1P1', 'fortran_surf_PiQj']
+
+# Only sanity check installation files as the tools of CWIPI need at least 2 MPI processes to run
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _cwipi_bin] +
+             ['lib/libcwp.a', 'lib/libcwp.%s' % SHLIB_EXT, 'lib/libcwpf.a', 'lib/libcwpf.%s' % SHLIB_EXT],
+    'dirs': ['include']
+}
+
+moduleclass = 'devel'

@@ -1,0 +1,322 @@
+Disable experimental support for AMD GPUs
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- lib/driver/llvm.cc.orig	2023-12-07 16:06:32.873087318 +0100
++++ lib/driver/llvm.cc	2023-12-07 16:07:18.097049981 +0100
+@@ -47,15 +47,6 @@
+ #include "llvm/ExecutionEngine/SectionMemoryManager.h"
+ #include "llvm/Transforms/Utils/Cloning.h"
+ 
+-// begin AMD stuff
+-#include "llvm/Support/FileSystem.h"
+-#include "llvm/Support/FormattedStream.h"
+-#include "llvm/Support/Program.h"
+-#include "llvm/Support/ToolOutputFile.h"
+-#include "llvm/ADT/StringRef.h"
+-#include "llvm/Analysis/TargetLibraryInfo.h"
+-// end AMD stuff
+-
+ namespace triton{
+ namespace driver{
+ 
+@@ -66,10 +57,6 @@
+     LLVMInitializeNVPTXTarget();
+     LLVMInitializeNVPTXTargetMC();
+     LLVMInitializeNVPTXAsmPrinter();
+-    LLVMInitializeAMDGPUTargetInfo();
+-    LLVMInitializeAMDGPUTarget();
+-    LLVMInitializeAMDGPUTargetMC();
+-    LLVMInitializeAMDGPUAsmPrinter();
+     init = true;
+   }
+ }
+@@ -248,116 +235,6 @@
+   }
+ }
+ 
+-/* ------------------------ */
+-//         HIP              //
+-/* ------------------------ */
+-
+-std::string llir_to_amdgpu(llvm::Module* module, const std::string& _proc) {
+-  init_llvm();
+-
+-//  proc = std::get<0>(GetFeatureStrFromGCNArchName(rocminfo));
+-//  features = std::get<1>(GetFeatureStrFromGCNArchName(rocminfo));
+-
+-  // create
+-  llvm::SmallVector<char, 0> buffer;
+-  std::string triple = "amdgcn-amd-amdhsa";
+-  std::string layout = "";
+-  std::string features;
+-  std::string proc = "gfx908";
+-  // verify and store llvm
+-  llvm::legacy::PassManager pm;
+-  pm.add(llvm::createVerifierPass());
+-  pm.run(*module);
+-  // create machine
+-  module->setTargetTriple(triple);
+-  std::string error;
+-  auto target = llvm::TargetRegistry::lookupTarget(module->getTargetTriple(), error);
+-  llvm::TargetOptions opt;
+-  opt.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+-  opt.UnsafeFPMath = false;
+-  opt.NoInfsFPMath = false;
+-  opt.NoNaNsFPMath = true;
+-  llvm::TargetMachine *machine = target->createTargetMachine(module->getTargetTriple(), proc, features, opt,
+-                                                             llvm::Reloc::PIC_, llvm::None,
+-                                                             llvm::CodeGenOpt::Aggressive);
+-  // set data layout
+-  if(layout.empty())
+-    module->setDataLayout(machine->createDataLayout());
+-  else
+-    module->setDataLayout(layout);
+-  // emit machine code
+-  for (llvm::Function &f : module->functions())
+-    f.addFnAttr(llvm::Attribute::AlwaysInline);
+-  llvm::legacy::PassManager pass;
+-  llvm::raw_svector_ostream stream(buffer);
+-
+-  // create dump files
+-  std::string module_name = module->getModuleIdentifier();
+-  std::error_code ec;
+-
+-  // Save GCN ISA binary.
+-  std::string isabin_path = std::string("/tmp/") + module_name + std::string(".o");
+-  std::unique_ptr<llvm::raw_fd_ostream> isabin_fs(
+-      new llvm::raw_fd_ostream(isabin_path, ec, llvm::sys::fs::OF_Text));
+-  if (ec)
+-  {
+-    std::cout << isabin_path << " was not created. error code: " << ec << std::endl;
+-  }
+-
+-  // emit
+-  machine->addPassesToEmitFile(pass, *isabin_fs, nullptr, llvm::CGFT_ObjectFile);
+-  pass.run(*module);
+-  // Save GCN ISA.
+-  std::string amdgcn_path = std::string("/tmp/") + module_name + std::string(".gcn");
+-  std::string result(buffer.begin(), buffer.end());
+-  std::ofstream amdgcn(amdgcn_path);
+-  amdgcn << result;
+-  amdgcn.close();
+-
+-  // generate HASCO file
+-  std::string hsaco_path = std::string("/tmp/") + module_name + std::string(".hsaco");
+-  std::string error_message;
+-  int lld_result =
+-      llvm::sys::ExecuteAndWait("/opt/rocm/llvm/bin/ld.lld",
+-                                {"/opt/rocm/llvm/bin/ld.lld", "-flavor", "gnu", "-shared", "-o", hsaco_path, isabin_path},
+-                                llvm::None, {}, 0, 0, &error_message);
+-  if (lld_result)
+-  {
+-    std::cout << "ld.lld execute fail: " << std::endl;
+-    std::cout << error_message << std::endl;
+-    std::cout << lld_result << std::endl;
+-  }
+-
+-  return hsaco_path;
+-}
+-
+-
+-hipModule_t amdgpu_to_hipmodule(const std::string& path) {
+-  // Read HSACO.
+-  std::ifstream hsaco_file(path, std::ios::binary | std::ios::ate);
+-  std::ifstream::pos_type hsaco_file_size = hsaco_file.tellg();
+-
+-  std::vector<unsigned char> hsaco(hsaco_file_size);
+-  hsaco_file.seekg(0, std::ios::beg);
+-  hsaco_file.read(reinterpret_cast<char*>(&hsaco[0]), hsaco_file_size);
+-  hsaco_file.close();
+-  hipJitOption opt[] = {hipJitOptionErrorLogBufferSizeBytes, hipJitOptionErrorLogBuffer,
+-                            hipJitOptionInfoLogBufferSizeBytes, hipJitOptionInfoLogBuffer,
+-                            hipJitOptionLogVerbose};
+-  unsigned int errbufsize = 8192;
+-  unsigned int logbufsize = 8192;
+-  char _err[errbufsize];
+-  char _log[logbufsize];
+-  void* optval[] = {(void*)(uintptr_t)errbufsize,
+-                    (void*)_err, (void*)(uintptr_t)logbufsize,
+-                    (void*)_log, (void*)1};
+-  hipModule_t ret;
+-  dispatch::hipModuleLoadDataEx(&ret, hsaco.data(), 5, opt, optval);
+-  return ret;
+-}
+-
+-
+-
+ }
+ }
+ 
+--- CMakeLists.txt.orig	2023-12-07 16:13:23.403991690 +0100
++++ CMakeLists.txt	2023-12-07 16:13:41.637662517 +0100
+@@ -43,9 +43,7 @@
+ libLLVMNVPTXCodeGen.a
+ libLLVMNVPTXDesc.a
+ libLLVMNVPTXInfo.a
+-libLLVMAMDGPUDisassembler.a
+ libLLVMMCDisassembler.a
+-libLLVMAMDGPUCodeGen.a
+ libLLVMMIRParser.a
+ libLLVMGlobalISel.a
+ libLLVMSelectionDAG.a
+@@ -70,10 +68,7 @@
+ libLLVMObject.a
+ libLLVMTextAPI.a
+ libLLVMBitReader.a
+-libLLVMAMDGPUAsmParser.a
+ libLLVMMCParser.a
+-libLLVMAMDGPUDesc.a
+-libLLVMAMDGPUUtils.a
+ libLLVMMC.a
+ libLLVMDebugInfoCodeView.a
+ libLLVMDebugInfoMSF.a
+@@ -81,7 +76,6 @@
+ libLLVMRemarks.a
+ libLLVMBitstreamReader.a
+ libLLVMBinaryFormat.a
+-libLLVMAMDGPUInfo.a
+ libLLVMSupport.a
+ libLLVMDemangle.a
+ )
+--- python/src/triton.cc.orig	2023-12-08 09:35:13.584838000 +0100
++++ python/src/triton.cc	2023-12-08 09:39:02.993866293 +0100
+@@ -34,17 +34,9 @@
+   return res;
+ }
+ 
+-template<hipDeviceAttribute_t attr>
+-int hipGetInfo(hipDevice_t device) {
+-  int res;
+-  drv::dispatch::hipDeviceGetAttribute(&res, attr, device);
+-  return res;
+-}
+-
+ enum backend_t {
+   HOST,
+   CUDA,
+-  ROCM,
+ };
+ 
+ void cu_enable_peer_access(uint64_t peer_ptr){
+@@ -84,28 +76,12 @@
+                                 shared_mem, (CUstream)stream, nullptr, config);
+ }
+ 
+-void hip_enqueue(uint64_t stream, uint64_t kernel,
+-                uint64_t grid_0, uint64_t grid_1, uint64_t grid_2,
+-                uint64_t block_0, uint64_t block_1, uint64_t block_2,
+-                void* args_ptr, size_t args_size, int64_t shared_mem) {
+-  void *config[] = {
+-      HIP_LAUNCH_PARAM_BUFFER_POINTER, (void*)args_ptr,
+-      HIP_LAUNCH_PARAM_BUFFER_SIZE,    &args_size,
+-      HIP_LAUNCH_PARAM_END
+-  };
+-  drv::dispatch::hipModuleLaunchKernel((hipFunction_t)kernel, grid_0, grid_1, grid_2, 
+-                                block_0, block_1, block_2, 
+-                                shared_mem, (hipStream_t)stream, nullptr, config);
+-
+-}
+-
+ void init_triton_runtime(py::module &&m) {
+ 
+   // wrap backend_t
+   py::enum_<backend_t>(m, "backend")
+     .value("HOST", HOST)
+     .value("CUDA", CUDA)
+-    .value("ROCM", ROCM)
+     .export_values();
+ 
+   // enable peer-to-peer
+@@ -122,8 +98,6 @@
+         return 0;
+       if(backend == CUDA) 
+         return cuGetInfo<CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN>(device);
+-      if(backend == ROCM)
+-        return hipGetInfo<hipDeviceAttributeMaxSharedMemoryPerBlock>(device);
+       return -1;
+   });
+ 
+@@ -138,8 +112,6 @@
+       host_enqueue(stream, kernel, grid_0, grid_1, grid_2, block_0, block_1, block_2, args_ptr, args_size, shared_mem);
+     if(backend == CUDA)
+       cu_enqueue(stream, kernel, grid_0, grid_1, grid_2, block_0, block_1, block_2, args_ptr, args_size, shared_mem);
+-    if(backend == ROCM)
+-      hip_enqueue(stream, kernel, grid_0, grid_1, grid_2, block_0, block_1, block_2, args_ptr, args_size, shared_mem);
+   });
+ 
+   
+@@ -183,19 +155,6 @@
+   return std::make_tuple((uint64_t)mod, (uint64_t)fun);
+ }
+ 
+-// ROCM
+-std::tuple<uint64_t, uint64_t> hip_load_binary(const std::string& name, asm_map_t &asm_map, size_t n_shared_bytes, uint64_t dev){
+-  py::bytes _assembly = asm_map["hsaco"];
+-  std::string assembly = py::cast<std::string>(_assembly);
+-  // HSA-CO -> hipModule
+-  hipModule_t mod = drv::amdgpu_to_hipmodule(assembly);
+-  // Handle to the kernel
+-  hipFunction_t fun;
+-  drv::dispatch::hipModuleGetFunction(&fun, mod, name.c_str());
+-  // record asm
+-  return std::make_tuple((uint64_t)mod, (uint64_t)fun);
+-}
+-
+ // --------------------------------------- 
+ // Compile Triton-IR to assembly
+ // --------------------------------------- 
+@@ -233,26 +192,6 @@
+   return std::make_tuple(name, asm_map, n_shared_bytes);
+ }
+ 
+-// HIP
+-std::tuple<std::string, asm_map_t, int> hip_compile_ttir(const std::string& name, ir::module &ir, 
+-                                                                uint64_t device, int num_warps, int num_stages, 
+-                                                                bool force_nc_cache, asm_map_t &asm_map){
+-  llvm::LLVMContext ctx;
+-  // Triton-IR -> NVPTX LLVM-IR
+-  triton::codegen::amd_cl_target target;
+-  int n_shared_bytes;
+-  auto llvm = triton::codegen::add_passes_to_emit_bin(ir, ctx, &target, 70, num_warps, num_stages, force_nc_cache, n_shared_bytes);
+-  std::string tmp;
+-  llvm::raw_string_ostream llir(tmp);
+-  llir << *llvm;
+-  llir.flush();
+-  asm_map["llir"] = py::cast(tmp);
+-  // LLVM-IR -> HSA-CO
+-  std::string path = drv::llir_to_amdgpu(llvm.get(), "gfx908");
+-  asm_map["hsaco"] = py::cast(path);
+-  return std::make_tuple(name, asm_map, n_shared_bytes);
+-}
+-
+ void init_triton_codegen(py::module &&m) {
+   m.def(
+       "compile_ttir", [](backend_t backend, ir::module &ir, uint64_t device, int num_warps, int num_stages, bool force_nc_cache) {
+@@ -265,14 +204,10 @@
+         llvm::LLVMContext ctx;
+         if(backend == CUDA)
+           return cu_compile_ttir(name, ir, device, num_warps, num_stages, force_nc_cache, asm_map);
+-        if(backend == ROCM)
+-          return hip_compile_ttir(name, ir, device, num_warps, num_stages, force_nc_cache, asm_map);
+       }, py::return_value_policy::take_ownership);
+   m.def("load_binary", [](backend_t backend, const std::string& name, asm_map_t &asm_map, size_t n_shared_bytes, uint64_t dev){
+         if(backend == CUDA)
+           return cu_load_binary(name, asm_map, n_shared_bytes, dev);
+-        if(backend == ROCM)
+-          return hip_load_binary(name, asm_map, n_shared_bytes, dev);
+       }, py::return_value_policy::take_ownership);
+ }
+ 
+--- python/triton/code_gen.py.orig	2023-12-08 09:40:05.554478000 +0100
++++ python/triton/code_gen.py	2023-12-08 09:40:18.283600932 +0100
+@@ -556,10 +556,7 @@
+                 raise e
+             raise CompilationError(self.fn.src, node, e)
+         # Compile to machine code
+-        if torch.version.hip is None:
+-            backend = _triton.runtime.backend.CUDA
+-        else:
+-            backend = _triton.runtime.backend.ROCM
++        backend = _triton.runtime.backend.CUDA
+         name, asm, shared_mem = _triton.code_gen.compile_ttir(backend, generator.module, device, num_warps, num_stages, force_nc_cache)
+         max_shared_memory = _triton.runtime.max_shared_memory(backend, device)
+         if shared_mem > max_shared_memory:

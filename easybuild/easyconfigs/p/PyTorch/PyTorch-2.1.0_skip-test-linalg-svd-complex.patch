@@ -1,0 +1,19 @@
+Skip test_python_ref_meta__refs_linalg_svd_cpu_complex
+Result varies depending on underlying device
+see https://github.com/pytorch/pytorch/issues/105068
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- test/test_ops.py.orig	2024-01-16 15:37:02.596411122 +0100
++++ test/test_ops.py	2024-01-16 15:39:02.824489395 +0100
+@@ -311,6 +311,12 @@
+                 return out
+             return x
+ 
++        # Skip test_python_ref_meta__refs_linalg_svd_cpu_complex
++        # Result varies depending on underlying device
++        # see https://github.com/pytorch/pytorch/issues/105068
++        if op.name == '_refs.linalg.svd' and dtype in (torch.complex64, torch.complex128):
++            self.skipTest("Unreliable on certain devices, see issue #105068")
++
+         # TODO: iterate over requires_grad true/false
+         for sample in op.reference_inputs(device, dtype, requires_grad=False):
+             result = op(sample.input, *sample.args, **sample.kwargs)

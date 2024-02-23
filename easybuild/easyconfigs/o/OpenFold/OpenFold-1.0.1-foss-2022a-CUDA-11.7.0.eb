@@ -1,0 +1,123 @@
+easyblock = 'PythonBundle'
+
+name = 'OpenFold'
+version = '1.0.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/aqlaboratory/openfold'
+description = "A faithful PyTorch reproduction of DeepMind's AlphaFold 2"
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('CMake', '3.23.1'),  # required for ninja Python package
+    ('Ninja', '1.10.2'),
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('PyTorch-Lightning', '1.7.7', versionsuffix),
+    ('OpenMM', '7.7.0', versionsuffix),
+    ('Triton', '1.1.1', versionsuffix),
+    ('Biopython', '1.79'),
+    ('dm-tree', '0.1.8'),
+    ('HH-suite', '3.3.0'),
+    ('HMMER', '3.3.2'),
+    ('Kalign', '3.3.5'),
+    ('PyYAML', '6.0'),
+    ('scikit-build', '0.15.0'),
+    ('tqdm', '4.64.0'),
+    ('wandb', '0.13.4'),
+    ('einops', '0.4.1'),  # required by flash_attn
+]
+
+use_pip = True
+
+# flash_attn (FlashAttention) is optional, speeds up MSA attention for sequences with < 1000 residues
+exts_list = [
+    ('flash_attn', '0.2.8', {
+        'checksums': ['b54fee86463cdb9933e8d47e500c52f3eaf283f1c8a9d96099e62acc7dc0be1f'],
+    }),
+    ('PDBFixer', '1.8.1', {
+        'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['d50551abfe9dbaefc066f4d9d400cdebe57f1fefd9de9d01e12beb87efd99595'],
+    }),
+    ('ninja', '1.10.2.3', {
+        'checksums': ['e1b86ad50d4e681a7dbdff05fc23bb52cb773edb90bc428efba33fa027738408'],
+    }),
+    ('hjson', '3.0.2', {
+        'checksums': ['2838fd7200e5839ea4516ece953f3a19892c41089f0d933ba3f68e596aacfcd5'],
+    }),
+    ('py-cpuinfo', '8.0.0', {
+        'modulename': 'cpuinfo',
+        'checksums': ['5f269be0e08e33fd959de96b34cd4aeeeacac014dd8305f70eb28d06de2345c5'],
+    }),
+    ('deepspeed', '0.5.10', {
+        'checksums': ['871623ee95b2655595195b99a59f1eb3cf2eeb395fb3418d824eb62a350f7b83'],
+        'preinstallopts': "sed -i 's/^triton=.*$/triton/' requirements/requirements-sparse_attn.txt && ",
+    }),
+    ('contextlib2', '21.6.0', {
+        'checksums': ['ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869'],
+    }),
+    ('ml_collections', '0.1.0', {
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+        'checksums': ['59a17fcd1c140153009788517f304caaddd7a94f06690f9f0ed09987beebcf3c'],
+    }),
+    ('dllogger', '1.0.0', {
+        'source_urls': ['https://github.com/NVIDIA/dllogger/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['abae2b2ac73b9e176fa87144bf6c2048ddd3dae8e7002d6d5a270bc7e4da6b4d'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/aqlaboratory/openfold/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['79eee0b90280eea5ec110511d95b42c62ea6e0098e4a78678738eb21b332bd99'],
+    }),
+]
+
+local_resources_dir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/openfold/resources/'
+# local_resources_target_dir = '/databases/bio/%(namelower)s-%(version)s'
+
+local_scp_url = 'https://git.scicore.unibas.ch/schwede/openstructure/-/raw/'
+local_scp_url += '7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt'
+
+postinstallcmds = [
+    'cp -a run_pretrained_openfold.py thread_sequence.py train_openfold.py %(installdir)s/bin',
+    'cp -a scripts %(installdir)s/bin',
+    'chmod -R a+x %(installdir)s/bin',
+    # download stereo_chemical_props.txt + copy it to openfold/resources directory,
+    # see also install_third_party_dependencies.sh script;
+    # we currently can't let EasyBuild download (and cache + checksum) this,
+    # because an extension can only have a single source file, and (Python)Bundle doesn't allow any "parent" downloads
+    "cd %%(builddir)s && curl -OL %s && cp -a stereo_chemical_props.txt %s" % (local_scp_url, local_resources_dir),
+    # manually download openfold parameters and alphafold parameters
+    # see scripts download_alphafold_params.sh + download_openfold_params.sh
+    # download to local_resources_target_dir and add symlinks in local_resources_dir
+    # or download directly into local_resources_dir
+    # 'ln -s %s/openfold_params %s' % (local_resources_target_dir, local_resources_dir),
+    # 'ln -s %s/params %s' % (local_resources_target_dir, local_resources_dir),
+]
+
+fix_python_shebang_for = ['bin/*.py', '/bin/scripts/*.py']
+
+modextrapaths = {
+    'PATH': 'bin/scripts',
+}
+
+sanity_check_paths = {
+    'files': ['bin/pdbfixer', 'bin/run_pretrained_openfold.py',
+              'lib/python%(pyshortver)s/site-packages/openfold/resources/stereo_chemical_props.txt'],
+    'dirs': ['bin/scripts', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "pdbfixer --help",
+    "run_pretrained_openfold.py --help",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

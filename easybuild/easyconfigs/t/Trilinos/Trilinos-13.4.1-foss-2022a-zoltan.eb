@@ -1,0 +1,52 @@
+# easyblock = 'CMakeMake'
+
+name = 'Trilinos'
+version = '13.4.1'
+versionsuffix = '-zoltan'
+
+homepage = 'https://trilinos.org'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = ['https://github.com/trilinos/Trilinos/archive/refs/tags/']
+sources = ['trilinos-release-%s.tar.gz' % '-'.join(version.split('.'))]
+patches = ['Trilinos-13.4.1_fix-seacas-NC-constants.patch']
+checksums = [
+    {'trilinos-release-13-4-1.tar.gz': '5465cbff3de7ef4ac7d40eeff9d99342c00d9d20eee0a5f64f0a523093f5f1b3'},
+    {'Trilinos-13.4.1_fix-seacas-NC-constants.patch':
+     'df6215589abf582197a963c49ba853c1eca788261a1b1834099e7679794e9eed'},
+]
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('SWIG', '4.0.2'),
+    ('Doxygen', '1.9.4'),
+    ('Perl', '5.34.1', '-minimal'),
+]
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('Boost.Python', '1.79.0'),
+    ('Boost', '1.79.0'),
+    ('SCOTCH', '7.0.1'),
+    ('SuiteSparse', '5.13.0', '-METIS-5.1.0'),
+    ('HDF5', '1.12.2'),
+    ('netCDF', '4.9.0'),
+    ('MATIO', '1.5.23'),
+    ('GLM', '0.9.9.8'),
+    ('ParMETIS', '4.0.3'),
+    ('X11', '20220504'),
+]
+
+forward_deps = False
+build_tests = False
+configopts = '-DTrilinos_ENABLE_EXPLICIT_INSTANTIATION=ON '
+configopts += '-DKokkos_ENABLE_AGGRESSIVE_VECTORIZATION=ON '
+# We might need that for Fluidity Zoltan interface
+configopts += '-DZoltan_ENABLE_F90INTERFACE=ON -DZoltan_ENABLE_ParMETIS=ON -DZoltan_ENABLE_Scotch=ON '
+
+moduleclass = 'numlib'

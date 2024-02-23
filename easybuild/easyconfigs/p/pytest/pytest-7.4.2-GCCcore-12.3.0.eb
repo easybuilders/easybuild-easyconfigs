@@ -1,0 +1,71 @@
+easyblock = 'PythonBundle'
+
+name = 'pytest'
+version = '7.4.2'
+
+homepage = 'https://docs.pytest.org/en/latest/'
+description = """The pytest framework makes it easy to write small,
+readable tests, and can scale to support complex functional testing for
+applications and libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('hatchling', '1.18.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+]
+
+use_pip = True
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+# Note! Some of the file system related tests may fail on shared file systems.
+# Notably TestPOSIXLocalPath.test_copy_stat_file, TestPOSIXLocalPath.test_copy_stat_dir
+# and test_source_mtime_long_long are known to fail on GPFS
+# Build with buildpath and tmpdir set to a local file system to avoid this
+# or use --ignore-test-failures
+_skip_tests = [
+    'testing/io/test_terminalwriter.py',
+    'testing/test_terminal.py',
+    'testing/test_debugging.py',
+    'testing/test_config.py',
+    'testing/test_helpconfig.py',
+]
+_ignore_tests = ' --ignore='.join(_skip_tests)
+
+exts_list = [
+    ('setuptools-scm', '8.0.4', {
+        'checksums': ['b5f43ff6800669595193fd09891564ee9d1d7dcb196cab4b2506d53a2e1c95c7'],
+    }),
+    ('flit-core', '3.9.0', {
+        'source_tmpl': 'flit_core-%(version)s.tar.gz',
+        'checksums': ['72ad266176c4a3fcfab5f2930d76896059851240570ce9a98733b658cb786eba'],
+    }),
+    ('hypothesis', '6.88.1', {
+        'checksums': ['f4c2c004b9ec3e0e25332ad2cb6b91eba477a855557a7b5c6e79068809ff8b51'],
+    }),
+    ('elementpath', '4.1.5', {
+        'checksums': ['c2d6dc524b29ef751ecfc416b0627668119d8812441c555d7471da41d4bacb8d'],
+    }),
+    ('xmlschema', '2.5.0', {
+        'checksums': ['276a03e0fd3c94c148d528bff4d9482f9b99bf8c7b4056a2e8e703d28149d454'],
+    }),
+    (name, version, {
+        'checksums': ['a766259cfab564a2ad52cb1aae1b881a75c3eb7e34ca3779697c23ed47c47069'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import pytest'",
+    'cd %%(builddir)s/%%(name)s/%%(name)s-%%(version)s && %%(installdir)s/bin/pytest --ignore=%s testing'
+    % _ignore_tests,
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'

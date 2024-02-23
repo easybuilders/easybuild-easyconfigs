@@ -1,0 +1,31 @@
+easyblock = 'CMakeMake'
+
+name = 'RapidJSON'
+# no new release since Aug'16 so using latest commit;
+# see also https://github.com/Tencent/rapidjson/issues/2202
+version = '1.1.0-20230928'
+local_commit = 'f9d5341'
+
+homepage = 'https://rapidjson.org'
+description = "A fast JSON parser/generator for C++ with both SAX/DOM style API"
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/Tencent/%(namelower)s/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': 'v%(version)s.tar.gz'}]
+checksums = ['2b521dba5c22eaae6e6e7d4d304cb317e2cf8c687c70046b02792c02f78c127e']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+]
+
+# strip out hardcoded use of -march=native, EasyBuild should be in control of this
+preconfigopts = "sed -i 's/-march=native//g' ../rapidjson-*/CMakeLists.txt && "
+
+sanity_check_paths = {
+    'files': ['lib/pkgconfig/%(name)s.pc'],
+    'dirs': ['include/%(namelower)s', 'lib/cmake', 'share'],
+}
+
+moduleclass = 'lib'

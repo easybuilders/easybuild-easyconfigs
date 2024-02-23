@@ -1,0 +1,42 @@
+name = 'VEP'
+version = '111'
+
+homepage = 'https://www.ensembl.org/info/docs/tools/vep'
+description = """Variant Effect Predictor (VEP) determines the effect of your
+ variants (SNPs, insertions, deletions, CNVs or structural variants) on genes,
+ transcripts, and protein sequence, as well as regulatory regions.
+ Includes EnsEMBL-XS, which provides pre-compiled replacements for frequently
+ used routines in VEP."""
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+
+source_urls = ['https://github.com/Ensembl/ensembl-vep/archive/release/']
+sources = ['%(version)s.tar.gz']
+checksums = ['4e46a81640e8527e2717d6684fca13e6766fe7970c0410589195d77e19bd2971']
+
+dependencies = [
+    ('Perl', '5.36.0'),
+    ('Archive-Zip', '1.68'),
+    ('DBD-mysql', '4.050'),
+    ('BioPerl', '1.7.8'),
+    ('Bio-DB-HTS', '3.01'),
+    # VEP requires Compress::Raw::Zlib >= 2.103
+    ('Compress-Raw-Zlib', '2.202'),
+]
+
+# To select all species use 'all' (but this was broken as of 2024.02.01 and species need to explicitly listed
+# with comma separation, see https://github.com/Ensembl/ensembl-vep/issues/1364#issuecomment-1753080504)
+species = 'cyprinus_carpio_carpio'
+
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perl -e 'require %(ext_name)s'", "")
+
+exts_list = [
+    ('Bio::EnsEMBL::XS', '2.3.2', {
+        'source_urls': ['https://github.com/Ensembl/ensembl-xs/archive'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['aafc59568cd1042259196575e99cdfeef9c0fb7966e5f915cfaf38c70885ffa5'],
+    }),
+]
+
+moduleclass = 'bio'

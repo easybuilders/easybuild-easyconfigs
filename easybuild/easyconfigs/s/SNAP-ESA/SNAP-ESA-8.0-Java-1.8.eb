@@ -1,0 +1,71 @@
+easyblock = 'Binary'
+
+name = 'SNAP-ESA'
+version = '8.0'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://step.esa.int/main/toolboxes/snap/'
+description = """
+The Sentinel Application Platform (SNAP) is a common architecture for all
+Sentinel Toolboxes being jointly developed by Brockmann Consult, SkyWatch and
+C-S.
+The SNAP architecture is ideal for Earth Observation processing and analysis
+due to the following technological innovations: Extensibility, Portability,
+Modular Rich Client Platform, Generic EO Data Abstraction, Tiled Memory
+Management, and a Graph Processing Framework."""
+
+toolchain = SYSTEM
+
+local_installer = 'esa-snap_all_unix_%s.sh' % version.replace('.', '_')
+local_varfile = '%(name)s-%(version)s-response.varfile'
+
+source_urls = [
+    'https://download.esa.int/step/snap/%(version)s/installers',
+    'https://step.esa.int/downloads/%(version)s/installers',
+]
+sources = [local_installer]
+patches = [(local_varfile, '.')]
+checksums = [
+    'b49d6795f55bbe9ecb46f9c289ac245626243d3fcd32211b47a54b26b508798e',  # esa-snap_all_unix_8_0.sh
+    '5ea98e3376bb3df52b9c4c99ab4986015296b815021e16486b58e4aad58e21a4',  # SNAP-ESA-8.0-response.varfile
+]
+
+# The installation is executed with the bundled JRE 1.8.0_242 (Zulu)
+# At runtime we switch to an external JDK (SNAP developers recommend any OpenJDK distribution)
+dependencies = [
+    ('Java', '1.8'),
+]
+
+install_cmd = "INSTALL4J_TEMP='%(builddir)s' "
+install_cmd += "bash %s -dir '%%(installdir)s'" % local_installer
+install_cmd += " -q -varfile '%s'" % local_varfile
+
+postinstallcmds = [
+    # set paths
+    'sed -i "s|jdkhome.*|jdkhome=$JAVA_HOME|" %(installdir)s/etc/snap.conf',
+    'sed -i "s|#snap.home.*|snap.home=%(installdir)s|" %(installdir)s/etc/snap.properties',
+    # remove default maximum memory allocation pool
+    'sed -i "s|-J-Xmx[0-9G]* ||" %(installdir)s/etc/snap.conf',
+    # disable update checks
+    "echo 'snap.versionCheck.interval=NEVER' >> %(installdir)s/etc/snap.properties",
+    "sed -i 's|dpiaware=false|& -J-Dplugin.manager.check.interval=NEVER|' %(installdir)s/etc/snap.conf",
+    # (optional) update all modules to latest version
+    # the update command is buggy and it hangs after doing the update, kill it whenever it prints "updates=0"
+    # see issue https://senbox.atlassian.net/browse/SNAP-927
+    # ('LOG="$(mktemp -d)/snap-update.log"; mkfifo $LOG; trap "rm -f $LOG" EXIT;'
+    #  'SNAPCMD="%(installdir)s/bin/snap --nosplash --nogui --userdir "%(builddir)s/snap" --modules --update-all";'
+    #  '$SNAPCMD 2>&1 > $LOG & SNAPPID=$!;'
+    #  'while read line; do echo "$line"; [ "$line" = "updates=0" ] && kill $SNAPPID; done < $LOG;'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/snap', 'bin/gpt'],
+    'dirs': ['probavbox', 'rstb', 's1tbx', 's2tbx', 's3tbx', 'smos', 'snap'],
+}
+
+sanity_check_commands = [
+    "snap --nosplash --nogui --modules --list",
+    "gpt -h",
+]
+
+moduleclass = 'geo'

@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'E-ANTIC'
+version = '1.3.0'
+
+homepage = 'https://github.com/flatsurf/e-antic'
+description = """E-ANTIC is a C/C++ library to deal with real embedded number fields built on
+top of ANTIC (https://github.com/wbhart/antic). Its aim is to have as fast as
+possible exact arithmetic operations and comparisons."""
+
+toolchain = {'name': 'gfbf', 'version': '2022a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/flatsurf/e-antic/releases/download/%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['ae12cb87f09478f49c4acdf0f3ff888dc556267614c0a5a3bc8bfaa41b22deef']
+
+dependencies = [
+    ('ANTIC', '0.2.5'),
+    ('FLINT', '2.9.0'),
+    ('Arb', '2.23.0'),
+    ('Boost', '1.79.0'),
+    ('Python', '3.10.4'),
+    ('cppyy', '3.0.0'),
+]
+
+configopts = '--without-benchmark --without-byexample --without-pytest --without-doc'
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s' % (lib, ext) for lib in ['eantic', 'eanticxx'] for ext in ['a', SHLIB_EXT]] +
+             ['include/e-antic/%s.h' % h for h in ['e-antic', 'fmpq_poly_extra', 'renf',
+                                                   'renf_elem', 'renfxx']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -c 'import pyeantic'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'math'

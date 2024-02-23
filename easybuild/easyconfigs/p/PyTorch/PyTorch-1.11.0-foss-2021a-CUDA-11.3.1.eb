@@ -24,6 +24,7 @@ patches = [
     'PyTorch-1.10.0_skip-nnapi-test-without-qnnpack.patch',
     'PyTorch-1.11.0_disable_failing_jit_cuda_fuser_tests.patch',
     'PyTorch-1.11.0_fix-attention_cpp-compilation.patch',
+    'PyTorch-1.11.0_fix-fp16-quantization-without-fbgemm.patch',
     'PyTorch-1.11.0_fix-fsdp-fp16-test.patch',
     'PyTorch-1.11.0_fix_sharded_imports.patch',
     'PyTorch-1.11.0_fix_skip_jit_cuda_fuser.patch',
@@ -59,6 +60,8 @@ checksums = [
     'e7bfe120a8b3fe2b40dac6839852a5fbab3cb3429fbe44a0fc3a1800adaaee51',
     # PyTorch-1.11.0_fix-attention_cpp-compilation.patch
     '84214fcc7e30cf70659a7c3bd70bf11e73d58fd4f7fff2c233e3225619b0e42c',
+    {'PyTorch-1.11.0_fix-fp16-quantization-without-fbgemm.patch':
+     'cc526130b6446bbbf5f0f7372d3aeee3e7d4c4d6e471524dff028b430b152934'},
     'bb1c4e6d6fd4b0cf57ff8b824c797331b533bb1ffc63f5db0bae3aee10c3dc13',  # PyTorch-1.11.0_fix-fsdp-fp16-test.patch
     '9a04f4285b800dad8a00c3014af0a9713d40d5dd35d10931c7c0da4e89c558e9',  # PyTorch-1.11.0_fix_sharded_imports.patch
     '21fc678febcdfbb9dabd72235be23cd392044e9a954f6580d15b530e1f69dcc1',  # PyTorch-1.11.0_fix_skip_jit_cuda_fuser.patch
@@ -117,6 +120,9 @@ excluded_tests = {
         # Bad tests: https://github.com/pytorch/pytorch/issues/60260
         'distributed/elastic/utils/distributed_test',
         'distributed/elastic/multiprocessing/api_test',
+        # This test fails on A10s at the very least, times out forever no matter how long the timeout is.
+        # Possibly related to NCCL 2.8.3: https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-8-3.html
+        'distributed/test_distributed_spawn',
         # Fails on A10s: https://github.com/pytorch/pytorch/issues/63079
         'test_optim',
         # These tests appear flaky, possibly related to number of GPUs that are used

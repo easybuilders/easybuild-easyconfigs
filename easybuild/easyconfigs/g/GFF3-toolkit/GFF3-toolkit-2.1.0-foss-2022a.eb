@@ -1,0 +1,35 @@
+easyblock = 'PythonPackage'
+
+name = 'GFF3-toolkit'
+version = '2.1.0'
+
+homepage = 'https://gff3toolkit.readthedocs.io'
+description = "Python programs for processing GFF3 files"
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://pypi.python.org/packages/source/g/gff3tool']
+sources = ['gff3tool-%(version)s.tar.gz']
+patches = ['GFF3-toolkit-2.1.0-remove-hardcode.patch']
+checksums = [
+    {'gff3tool-2.1.0.tar.gz': 'e842ef4afdb66926a2b63bf2619c7ef30bd9b76a5f1084a5c57bf8b39cc4f15d'},
+    {'GFF3-toolkit-2.1.0-remove-hardcode.patch': '03696635af25ab1e3d650b46c7aeaaaadb31e7eac766039c758150f3f3162cb7'},
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('BLAST+', '2.13.0'),
+]
+
+# GFF3-toolkit has hardcoded path to BLAST+ libraries, so we have to add a symlink to the required path for this to work
+local_blast_path = '%(installdir)s/lib/python%(pyshortver)s/site-packages/gff3tool/lib/ncbi-blast+'
+preinstallopts = "mkdir -p %s && " % local_blast_path
+preinstallopts += "ln -s $EBROOTBLASTPLUS/bin %s && " % local_blast_path
+
+use_pip = True
+sanity_pip_check = True
+download_dep_fail = True
+
+options = {'modulename': 'gff3tool'}
+
+moduleclass = 'bio'

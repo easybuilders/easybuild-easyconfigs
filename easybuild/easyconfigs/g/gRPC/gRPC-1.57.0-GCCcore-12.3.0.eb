@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'gRPC'
+version = '1.57.0'
+
+homepage = 'https://grpc.io/'
+description = """gRPC is a modern, open source, high-performance remote procedure call (RPC)
+framework that can run anywhere. gRPC enables client and server applications to
+communicate transparently, and simplifies the building of connected systems."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'grpc'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['8393767af531b2d0549a4c26cf8ba1f665b16c16fb6c9238a7755e45444881dd']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('Abseil', '20230125.3'),
+    ('c-ares', '1.19.1'),
+    ('protobuf', '24.0'),
+    ('zlib', '1.2.13'),
+    ('RE2', '2023-08-01'),
+]
+
+configopts = '-DBUILD_SHARED_LIBS=ON '
+configopts += "-DgRPC_ABSL_PROVIDER=package "
+configopts += "-DgRPC_CARES_PROVIDER=package "
+configopts += "-DgRPC_PROTOBUF_PROVIDER=package "
+configopts += "-DgRPC_RE2_PROVIDER=package "
+configopts += "-DgRPC_SSL_PROVIDER=package "
+configopts += "-DgRPC_ZLIB_PROVIDER=package "
+
+_grpc_plugins = ['cpp', 'csharp', 'node', 'objective_c', 'php', 'python', 'ruby']
+
+sanity_check_paths = {
+    'files': ['bin/grpc_%s_plugin' % x for x in _grpc_plugins] +
+             ['lib/libgrpc.%s' % SHLIB_EXT, 'lib/libgrpc++.%s' % SHLIB_EXT],
+    'dirs': ['include/grpc', 'include/grpc++', 'include/grpcpp'],
+}
+
+moduleclass = 'lib'

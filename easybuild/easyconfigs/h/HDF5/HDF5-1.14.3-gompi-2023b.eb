@@ -1,0 +1,26 @@
+name = 'HDF5'
+# Note: Odd minor releases are only RCs and should not be used.
+version = '1.14.3'
+
+homepage = 'https://portal.hdfgroup.org/display/support'
+description = """HDF5 is a data model, library, and file format for storing and managing data.
+ It supports an unlimited variety of datatypes, and is designed for flexible
+ and efficient I/O and for high volume and complex data."""
+
+toolchain = {'name': 'gompi', 'version': '2023b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%(version_major_minor)s/hdf5-%(version)s/src']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['09cdb287aa7a89148c1638dd20891fdbae08102cf433ef128fd345338aa237c7']
+
+# replace src include path with installation dir for $H5BLD_CPPFLAGS
+_regex = 's, -I[^[:space:]]+H5FDsubfiling , -I%(installdir)s/include ,g'
+postinstallcmds = ['sed -i -r "%s" %%(installdir)s/bin/%s' % (_regex, x) for x in ['h5c++', 'h5pcc']]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('Szip', '2.1.1'),
+]
+
+moduleclass = 'data'

@@ -1,0 +1,21 @@
+The test fails on a node with more than 5 V100 GPUs or more than 4 A100 GPUs.
+Hence limit the world_size to 4
+See https://github.com/pytorch/pytorch/pull/86280
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/fsdp/test_fsdp_pure_fp16.py b/test/distributed/fsdp/test_fsdp_pure_fp16.py
+index 1c663f8263354..e0033ef3d4b72 100644
+--- a/test/distributed/fsdp/test_fsdp_pure_fp16.py
++++ b/test/distributed/fsdp/test_fsdp_pure_fp16.py
+@@ -34,8 +34,8 @@
+ class TestPureFP16(FSDPTest):
+     @property
+     def world_size(self):
+-        # Test fails due to inaccuracies when using more than 5 GPUs
+-        return min(5, super().world_size)
++        # Test fails due to inaccuracies when using more than 4 GPUs
++        return min(4, super().world_size)
+ 
+     @skip_if_lt_x_gpu(2)
+     @parametrize(

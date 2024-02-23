@@ -1,0 +1,83 @@
+From 5d0481342a877c7297df4726a06cd4f45ea7af25 Mon Sep 17 00:00:00 2001
+From: Sujin Philip <sujin.philip@kitware.com>
+Date: Mon, 9 Jan 2023 12:58:33 -0500
+Subject: [PATCH] Fix compile issues when using cuda 12
+
+CUDA 12 adds a `cub::Swap` function that creates ambiguity with `vtkm::Swap`.
+This happens when a function from the `cub` namespace is called with an object
+of a class defined in the `vtkm` namespace as an argument. If that function
+has an unqualified call to `Swap`, it results in ADL being used, causing the
+templated functions `cub::Swap` and `vtkm::Swap` to conflict.
+---
+ vtkm/Swap.h                               | 24 ++++++++++++++++-------
+ vtkm/exec/cuda/internal/ExecutionPolicy.h |  1 +
+ 2 files changed, 18 insertions(+), 7 deletions(-)
+
+diff --git a/vtkm/Swap.h b/vtkm/Swap.h
+index f833a495c5..342c5a20c9 100644
+--- a/vtkm/Swap.h
++++ b/vtkm/Swap.h
+@@ -24,21 +24,31 @@ namespace vtkm
+
+ /// Performs a swap operation. Safe to call from cuda code.
+ #if defined(VTKM_CUDA)
++// CUDA 12 adds a `cub::Swap` function that creates ambiguity with `vtkm::Swap`.
++// This happens when a function from the `cub` namespace is called with an object of a class
++// defined in the `vtkm` namespace as an argument. If that function has an unqualified call to
++// `Swap`, it results in ADL being used, causing the templated functions `cub::Swap` and
++// `vtkm::Swap` to conflict.
++#if defined(VTKM_CUDA_VERSION_MAJOR) && (VTKM_CUDA_VERSION_MAJOR >= 12) && \
++  defined(VTKM_CUDA_DEVICE_PASS)
++using cub::Swap;
++#else
+ template <typename T>
+-VTKM_EXEC_CONT void Swap(T& a, T& b)
++VTKM_EXEC_CONT inline void Swap(T& a, T& b)
+ {
+-  using namespace thrust;
++  using thrust::swap;
+   swap(a, b);
+ }
++#endif
+ #elif defined(VTKM_HIP)
+ template <typename T>
+-__host__ void Swap(T& a, T& b)
++__host__ inline void Swap(T& a, T& b)
+ {
+-  using namespace std;
++  using std::swap;
+   swap(a, b);
+ }
+ template <typename T>
+-__device__ void Swap(T& a, T& b)
++__device__ inline void Swap(T& a, T& b)
+ {
+   T temp = a;
+   a = b;
+@@ -46,9 +56,9 @@ __device__ void Swap(T& a, T& b)
+ }
+ #else
+ template <typename T>
+-VTKM_EXEC_CONT void Swap(T& a, T& b)
++VTKM_EXEC_CONT inline void Swap(T& a, T& b)
+ {
+-  using namespace std;
++  using std::swap;
+   swap(a, b);
+ }
+ #endif
+diff --git a/vtkm/exec/cuda/internal/ExecutionPolicy.h b/vtkm/exec/cuda/internal/ExecutionPolicy.h
+index 4db1edc6f9..02cad4ab6d 100644
+--- a/vtkm/exec/cuda/internal/ExecutionPolicy.h
++++ b/vtkm/exec/cuda/internal/ExecutionPolicy.h
+@@ -17,6 +17,7 @@
+ #include <vtkm/exec/cuda/internal/ThrustPatches.h>
+ VTKM_THIRDPARTY_PRE_INCLUDE
+ #include <thrust/execution_policy.h>
++#include <thrust/sort.h>
+ #include <thrust/system/cuda/execution_policy.h>
+ #include <thrust/system/cuda/memory.h>
+ VTKM_THIRDPARTY_POST_INCLUDE
+-- 
+GitLab
+

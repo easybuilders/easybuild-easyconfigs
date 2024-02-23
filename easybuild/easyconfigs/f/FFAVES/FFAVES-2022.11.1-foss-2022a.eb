@@ -1,0 +1,47 @@
+easyblock = 'PythonBundle'
+
+name = 'FFAVES'
+version = '2022.11.1'
+local_commit = '2c1fa89'
+
+homepage = 'https://github.com/aradley/FFAVES'
+description = """Functional Feature Amplification Via Entropy Sorting (FFAVES).
+Use FFAVES to amplify the signal of groups of co-regulating genes in an unsupervised, multivariate manner.
+By amplifying the signal of genes with correlated expression, while filtering out genes that are randomly expressed,
+we can identify a subset of genes more predictive of different cell types.
+The output of FFAVES can then be used in our second algorithm, entropy sort feature weighting (ESFW),
+to create a ranked list of genes that are most likely to pertain to distinct 
+sub-populations of cells in an scRNA-seq dataset.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('dill', '0.3.8', {
+        'checksums': ['3ebe3c479ad625c4553aca177444d89b486b1d84982eeacded644afc0cf797ca'],
+    }),
+    ('multiprocess', '0.70.16', {
+        'checksums': ['161af703d4652a0e1410be6abccecde4a7ddffd19341be0a7011b94aeb171ac1'],
+    }),
+    (name, version, {
+        'preinstallopts': "sed -i 's/==/>=/' requirements.txt && ",
+        'source_urls': ['https://github.com/aradley/FFAVES/archive/'],
+        'sources': [{'download_filename': '2c1fa89.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['b833cc26cc60ad44c48d1b5712ce32b0ceb7f8d7876c06466514f79d357e4f83'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['ffaves.py', 'get_gprof', 'get_objgraph', 'undill']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+}
+
+moduleclass = 'bio'

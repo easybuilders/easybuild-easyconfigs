@@ -1,0 +1,160 @@
+Some code isn't compatible with Python 3.11+
+Backport https://github.com/pytorch/pytorch/pull/92895 to fix this.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_fx.py b/test/test_fx.py
+index c8da9d3d2cf..6aefb4b9b2c 100644
+--- a/test/test_fx.py
++++ b/test/test_fx.py
+@@ -3295,6 +3295,7 @@ class TestFX(JitTestCase):
+         finally:
+             del sys.modules["__future__"]
+ 
++    @unittest.skipIf(sys.version_info > (3, 11), "Does not work in 3.11")
+     def test_annotations_empty_tuple(self):
+         class Foo(torch.nn.Module):
+             def forward(self, x: Tuple[()], y: Tuple[str, Tuple[()]]):
+@@ -4030,7 +4031,7 @@ class TestFunctionalTracing(JitTestCase):
+         "max_pool2d": PROXY_ITERATED,
+         "max_pool3d": PROXY_ITERATED,
+ 
+-        "group_norm": LEN_ERROR
++        "group_norm": PROXY_ITERATED
+     }
+ 
+     @classmethod
+@@ -4069,7 +4070,7 @@ class TestFunctionalTracing(JitTestCase):
+ 
+         def functional_test(self):
+             if func_name in self.UNTRACEABLE_FUNCTIONALS_PY38 and \
+-                    sys.version_info >= (3, 8) and sys.version_info < (3, 11):
++                    sys.version_info >= (3, 8) and sys.version_info < (3, 12):
+                 exc, err = self.UNTRACEABLE_FUNCTIONALS_PY38[func_name]
+                 with self.assertRaisesRegex(exc, err):
+                     symbolic_trace(fn)
+diff --git a/torch/fx/_symbolic_trace.py b/torch/fx/_symbolic_trace.py
+index ff9df1161a7..521bb02c846 100644
+--- a/torch/fx/_symbolic_trace.py
++++ b/torch/fx/_symbolic_trace.py
+@@ -119,7 +119,29 @@ def _patch_function(fn: FunctionType, nargs: int) -> FunctionType:
+     co = fn.__code__
+     co_flags = co.co_flags & ~HAS_VARSTUFF
+     co_args: tuple
+-    if hasattr(co, "co_posonlyargcount"):
++    if hasattr(co, "co_qualname"):
++        # Python-3.11+ code signature
++        co_args = (
++            nargs,
++            0,
++            0,
++            co.co_nlocals,
++            co.co_stacksize,
++            co_flags,
++            co.co_code,
++            co.co_consts,
++            co.co_names,
++            co.co_varnames,
++            co.co_filename,
++            co.co_name,
++            co.co_qualname,  # type: ignore[attr-defined]
++            co.co_firstlineno,
++            co.co_lnotab,
++            co.co_exceptiontable,  # type: ignore[attr-defined]
++            co.co_freevars,
++            co.co_cellvars,
++        )
++    elif hasattr(co, "co_posonlyargcount"):
+         co_args = (
+             nargs,
+             0,
+diff --git a/torch/fx/operator_schemas.py b/torch/fx/operator_schemas.py
+index 7ec3bc9a673..7c8971fb3ec 100644
+--- a/torch/fx/operator_schemas.py
++++ b/torch/fx/operator_schemas.py
+@@ -61,18 +61,29 @@ def _torchscript_type_to_python_type(ts_type : 'torch._C.JitType') -> Any:
+     return eval(ts_type.annotation_str, _type_eval_globals)
+ 
+ def _torchscript_schema_to_signature(ts_schema : torch._C.FunctionSchema) -> inspect.Signature:
+-    parameters : List[inspect.Parameter] = []
++    from inspect import Parameter
++    parameters : List[Parameter] = []
+     for arg in ts_schema.arguments:
+         arg_type = _torchscript_type_to_python_type(arg.type)
+-        default = arg.default_value if arg.has_default_value() else inspect.Parameter.empty
++        default = arg.default_value if arg.has_default_value() else Parameter.empty
+         # TODO: Figure out if this is safe. It seems like when generating the type signatures for
+         # PythonArgParser, we emit signatures with `input` instead of `self` as the first tensor
+         # argument name. Downstream, if someone converts that positional argument to a keyword
+         # argument, the name mismatch will break things, so here we're going to normalize the
+         # name to "input"
+         name = arg.name if arg.name != 'self' else 'input'
+-        kind = inspect.Parameter.KEYWORD_ONLY if arg.kwarg_only else inspect.Parameter.POSITIONAL_OR_KEYWORD
+-        parameters.append(inspect.Parameter(name=name, kind=kind, default=default, annotation=arg_type))
++        kind = Parameter.KEYWORD_ONLY if arg.kwarg_only else Parameter.POSITIONAL_OR_KEYWORD
++        # "from" is a keyword therefore it must be a POSITIONAL_ONLY argument
++        if name == "from":
++            assert kind == Parameter.POSITIONAL_OR_KEYWORD
++            # ParameterKind type is internal implementation detail to inspec package
++            # which makes it hard to do type annoation
++            kind = Parameter.POSITIONAL_ONLY  # type: ignore[assignment]
++            # This renders all previous arguments to positional only
++            for idx, p in enumerate(parameters):
++                assert p.kind == Parameter.POSITIONAL_OR_KEYWORD
++                parameters[idx] = Parameter(name=p.name, kind=Parameter.POSITIONAL_ONLY, default=p.default, annotation=p.annotation)
++        parameters.append(Parameter(name=name, kind=kind, default=default, annotation=arg_type))
+     return_types = [_torchscript_type_to_python_type(ret.type) for ret in ts_schema.returns]
+     if len(return_types) == 0:
+         return_type = None
+@@ -392,7 +403,12 @@ def _args_kwargs_to_normalized_args_kwargs(sig : inspect.Signature, args : Tuple
+     supported_parameter_types = {
+         inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY}
+     if any(p.kind not in supported_parameter_types for p in sig.parameters.values()):
+-        return None
++        # Add an exception for one signature, which is common for random/uniform, i.e.:
++        # Tensor(a!) self, float from=0, float to=1, *, Generator? generator=None
++        # `from` is Python keyword and as such functions with that signature should have
++        # positional-only args, but at the same time they could be dispatched as kwargs
++        if list(sig.parameters.keys()) != ['input', 'from', 'to', 'generator']:
++            return None
+ 
+     bound_args = sig.bind(*args, **kwargs)
+     bound_args.apply_defaults()
+diff --git a/torch/fx/proxy.py b/torch/fx/proxy.py
+index 5d65f03e29b..120452dfd71 100644
+--- a/torch/fx/proxy.py
++++ b/torch/fx/proxy.py
+@@ -1,4 +1,5 @@
+ import dis
++import sys
+ import torch
+ import inspect
+ import operator
+@@ -267,7 +268,13 @@ class Proxy:
+         assert frame is not None
+         calling_frame = frame.f_back
+         assert calling_frame is not None
+-        inst = list(dis.get_instructions(calling_frame.f_code))[calling_frame.f_lasti // 2]
++        inst_list = list(dis.get_instructions(calling_frame.f_code))
++        if sys.version_info >= (3, 11):
++            from bisect import bisect_left
++            inst_idx = bisect_left(inst_list, calling_frame.f_lasti, key=lambda x: x.offset)
++        else:
++            inst_idx = calling_frame.f_lasti // 2
++        inst = inst_list[inst_idx]
+         if inst.opname == 'UNPACK_SEQUENCE':
+             return (self[i] for i in range(inst.argval))  # type: ignore[index]
+ 
+@@ -282,7 +289,11 @@ class Proxy:
+             calling_frame = frame.f_back
+             assert calling_frame is not None
+             insts = list(dis.get_instructions(calling_frame.f_code))
+-            cur = calling_frame.f_lasti // 2
++            if sys.version_info >= (3, 11):
++                from bisect import bisect_left
++                cur = bisect_left(insts, calling_frame.f_lasti, key=lambda x: x.offset)
++            else:
++                cur = calling_frame.f_lasti // 2
+             inst = insts[cur]
+ 
+             if inst.opname == 'POP_JUMP_IF_TRUE':

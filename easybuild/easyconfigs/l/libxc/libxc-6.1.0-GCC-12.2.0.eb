@@ -18,15 +18,18 @@ builddependencies = [
     ('Perl', '5.36.0'),
 ]
 
-local_common_configopts = "-DENABLE_FORTRAN=ON -DENABLE_FORTRAN03=ON -DENABLE_XHOST=OFF"
+local_common_configopts = "-DENABLE_FORTRAN=ON -DENABLE_XHOST=OFF "
+
+# don't disable building of third and fourth derivates, since it's required by some software that depends on libxc
+# (like ABINIT, which requires "3rd derivatives of energy")
+# see also https://github.com/pyscf/pyscf/issues/1103
+local_common_configopts += "-DDISABLE_KXC=OFF -DDISABLE_LXC=OFF"
 
 # perform iterative build to get both static and shared libraries
 configopts = [
     local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
     local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
 ]
-
-parallel = 1
 
 # make sure that built libraries (libxc*.so*) in build directory are picked when running tests
 # this is required when RPATH linking is used

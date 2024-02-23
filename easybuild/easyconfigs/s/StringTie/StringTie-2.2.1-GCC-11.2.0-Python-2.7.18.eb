@@ -1,0 +1,50 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = 'MakeCp'
+
+name = 'StringTie'
+version = '2.2.1'
+versionsuffix = "-Python-%(pyver)s"
+
+homepage = 'https://ccb.jhu.edu/software/stringtie/'
+description = 'StringTie is a fast and highly efficient assembler of RNA-Seq alignments into potential transcripts'
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+source_urls = ['https://github.com/gpertea/%(namelower)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['ce4eec532bbbe39af462be844afa6395ab38fa3418ef5fc2431e2d6194129527']
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('libdeflate', '1.8'),
+    ('XZ', '5.2.5'),
+    ('zlib', '1.2.11'),
+    ('HTSlib', '1.14'),
+    ('Python', '2.7.18'),
+]
+
+local_libs = 'HTSLIB="$EBROOTHTSLIB/lib" LIBS="-lhts -lbz2 -llzma -ldeflate -lz $LIBS"'
+buildopts = 'release ' + local_libs
+
+# the test script downloads some test data from the internet
+runtest = 'test'
+testopts = local_libs
+
+files_to_copy = [
+    (['%(namelower)s', 'prepDE.py3'], 'bin'),
+    'README.md',
+    'LICENSE'
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['%(namelower)s --help', 'prepDE.py3 --help']
+
+moduleclass = 'bio'

@@ -1,0 +1,67 @@
+easyblock = 'PythonPackage'
+
+name = 'BiG-SCAPE'
+version = '1.1.5'
+
+homepage = 'https://bigscape-corason.secondarymetabolites.org/index.html'
+description = """BiG-SCAPE and CORASON provide a set of tools to explore the diversity of biosynthetic gene clusters 
+(BGCs) across large numbers of genomes, by constructing BGC sequence similarity networks, grouping BGCs into gene 
+cluster families, and exploring gene cluster diversity linked to enzyme phylogenies."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+github_account = 'medema-group'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_use_env_var_to_find-MIBiG-files.patch',
+    '%(name)s-%(version)s_use_env_var_for_domain_files.patch',
+    '%(name)s-%(version)s_use_env_var_for_html.patch',
+    '%(name)s-%(version)s_use_correct_name_for_FastTree.patch',
+]
+checksums = [
+    {'v1.1.5.tar.gz': 'ec7cebbec8f83f4187c80e02ecbb37411a1898a2b83bb80088810f1600528ec7'},
+    {'BiG-SCAPE-1.1.5_use_env_var_to_find-MIBiG-files.patch':
+     'f0602208765a2686a324a27ff6073aac01c230b6a81a00656269fd89c97cf370'},
+    {'BiG-SCAPE-1.1.5_use_env_var_for_domain_files.patch':
+     '51337f22b2619ed38969f4ead5f7ce2f2df884f272793b47fb46d77e9c5e2aa2'},
+    {'BiG-SCAPE-1.1.5_use_env_var_for_html.patch': '540be22396ab982c2aeaaed4ce5acdb8ccb8ce2b31d36bc69d37be7a29c7c42a'},
+    {'BiG-SCAPE-1.1.5_use_correct_name_for_FastTree.patch':
+     'e1572e4134c6163a3927ac32bd2a39b7f87cf01109f7913b3c55126e2381a771'},
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('Biopython', '1.79'),
+    ('scikit-learn', '1.1.2'),
+    ('networkx', '2.8.4'),
+    ('HMMER', '3.3.2'),
+    ('FastTree', '2.1.11'),
+]
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+options = {'modulename': False}
+
+sanity_check_commands = [
+    'bigscape.py --help',
+]
+
+modextravars = {
+    'BIG_SCAPE_HTML_PATH': '%(installdir)s/lib/python%(pyshortver)s/site-packages/BiG-SCAPE',
+}
+
+modloadmsg = "%(name)s needs processed Pfam database to work properly.\n"
+modloadmsg += "For this, download the latest 'Pfam-A.hmm.gz' file from the Pfam website "
+modloadmsg += "(http://ftp.ebi.ac.uk/pub/databases/Pfam/releases/), "
+modloadmsg += "uncompress it and process it using the `hmmpress` command.\n"
+modloadmsg += "For data files, like the domains_color_file.tsv and domain_includelist.txt, "
+modloadmsg += "one can set the environment variable BIG_SCAPE_DATA_PATH, if that is not set "
+modloadmsg += "it will use the directory where the bigscape command is started from.\n"
+modloadmsg += "One can copy the domains_color_file.tsv from "
+modloadmsg += "%(installdir)s/lib/python%(pyshortver)s/site-packages/BiG-SCAPE/domains_color_file.tsv\n"
+
+moduleclass = 'bio'

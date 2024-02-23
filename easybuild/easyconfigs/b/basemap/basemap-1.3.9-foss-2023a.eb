@@ -1,0 +1,50 @@
+# The newer version require also the installation of basemap-data.
+# Conveniently, the tarball contains that too, so that is the one
+# being used here. 
+# Based on basemap-1.2.2-foss-2020a-Python-3.8.2.eb
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'PythonBundle'
+
+name = 'basemap'
+version = '1.3.9'
+
+homepage = 'https://matplotlib.org/basemap/'
+description = """The matplotlib basemap toolkit is a library for plotting 
+2D data on maps in Python"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('matplotlib', '3.7.2'),
+    ('GEOS', '3.12.0'),
+    ('Pillow', '10.0.0'),
+    ('pyproj', '3.6.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('pyshp', '2.3.1', {
+        'modulename': 'shapefile',
+        'checksums': ['4caec82fd8dd096feba8217858068bacb2a3b5950f43c048c6dc32a3489d5af1'],
+    }),
+    ('basemap_data', version, {
+        'modulename': 'mpl_toolkits.basemap_data',
+        'preinstallopts': "cd packages/%(name)s && GEOS_DIR=$EBROOTGEOS",
+        'source_urls': ['https://github.com/matplotlib/basemap/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['44ae3764595778077d4bc40b0756c90f483b816927e82206e9f376e31a2dc533'],
+    }),
+    (name, version, {
+        'modulename': 'mpl_toolkits.basemap',
+        'preinstallopts': "cd packages/%(name)s && GEOS_DIR=$EBROOTGEOS",
+        'source_urls': ['https://github.com/matplotlib/basemap/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['44ae3764595778077d4bc40b0756c90f483b816927e82206e9f376e31a2dc533'],
+    }),
+]
+
+moduleclass = 'vis'

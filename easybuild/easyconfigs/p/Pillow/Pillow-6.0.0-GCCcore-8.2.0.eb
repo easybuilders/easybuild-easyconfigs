@@ -25,7 +25,18 @@ dependencies = [
 ]
 
 download_dep_fail = True
+
+# patch setup.py to prefix hardcoded /usr/* and /lib paths with value of %(sysroot) template
+# (which will be empty if EasyBuild is not configured to use an alternate sysroot);
+# see also https://gitlab.com/eessi/support/-/issues/9
+preinstallopts = """sed -i 's@"/usr/@"%(sysroot)s/usr/@g' setup.py && """
+preinstallopts += """sed -i 's@"/lib@"%(sysroot)s/lib@g' setup.py && """
+
+# avoid that hardcoded paths like /usr/include are used in build commands
+installopts = "--global-option=build_ext --global-option='--disable-platform-guessing' "
+
 use_pip = True
+sanity_pip_check = True
 
 options = {'modulename': 'PIL'}
 

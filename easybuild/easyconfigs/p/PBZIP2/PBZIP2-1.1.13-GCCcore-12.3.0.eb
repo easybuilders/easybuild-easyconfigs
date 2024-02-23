@@ -1,0 +1,41 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'ConfigureMake'
+
+name = 'PBZIP2'
+version = '1.1.13'
+
+homepage = 'http://compression.great-site.net/pbzip2'
+description = """PBZIP2 is a parallel implementation of the bzip2 block-sorting
+ file compressor that uses pthreads and achieves near-linear speedup on SMP
+ machines. The output of this version is fully compatible with bzip2 v1.0.2 or
+ newer (ie: anything compressed with pbzip2 can be decompressed with bzip2).
+ PBZIP2 should work on any system that has a pthreads compatible C++ compiler 
+ (such as gcc). It has been tested on: Linux, Windows (cygwin & MinGW), Solaris,
+ Tru64/OSF1, HP-UX, OS/2, OSX, and Irix.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://launchpad.net/pbzip2/1.1/1.1.13/+download']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-%(version)s_makefile-hardening.patch']
+checksums = [
+    {'pbzip2-1.1.13.tar.gz': '8fd13eaaa266f7ee91f85c1ea97c86d9c9cc985969db9059cdebcb1e1b7bdbe6'},
+    {'PBZIP2-1.1.13_makefile-hardening.patch': 'd493c0757c445f91960c62f735b90f83951b2e26f0b7359aa5898a95024dbcef'},
+]
+
+builddependencies = [('binutils', '2.40')]
+
+dependencies = [('bzip2', '1.0.8')]
+
+skipsteps = ['configure']
+
+installopts = 'PREFIX=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/pbzip2', 'share/man/man1/pbzip2.1'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['pbzip2 -h 2>&1 | grep "Parallel BZIP2 v%(version)s"']
+moduleclass = 'tools'

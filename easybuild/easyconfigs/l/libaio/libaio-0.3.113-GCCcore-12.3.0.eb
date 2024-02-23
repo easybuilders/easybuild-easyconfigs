@@ -1,0 +1,39 @@
+easyblock = 'MakeCp'
+
+name = 'libaio'
+version = '0.3.113'
+_libversion = '1.0.2'
+
+homepage = 'https://pagure.io/libaio'
+description = "Asynchronous input/output library that uses the kernels native interface."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://pagure.io/%(name)s/archive/%(name)s-%(version)s/']
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['1c561c20670c5c09cc8437a622008c0693c6a7816c1f30332da3796953b2f454']
+
+builddependencies = [('binutils', '2.40')]
+
+_soname = "libaio.%s.%s" % (SHLIB_EXT, _libversion)
+
+files_to_copy = [
+    (["src/libaio.a", "src/%s" % _soname], "lib"),
+    (["src/libaio.h"], "include"),
+]
+
+# links to the shared library with generic names
+_solinks = [
+    "libaio.%s" % SHLIB_EXT,
+    "libaio.%s.1" % SHLIB_EXT,
+]
+
+postinstallcmds = ["cd %%(installdir)s/lib && ln -s %s %s" % (_soname, l) for l in _solinks]
+
+sanity_check_paths = {
+    'files': ['lib/%s' % l for l in ['libaio.a', _soname] + _solinks] + ['include/libaio.h'],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

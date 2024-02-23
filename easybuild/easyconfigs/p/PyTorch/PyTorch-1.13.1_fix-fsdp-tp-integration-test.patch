@@ -1,0 +1,32 @@
+Similar to the FP16 test this test seems to expect at most 4 GPUs
+as indicated by `skip_if_lt_x_gpu(4)` decorators.
+
+Otherwise:
+- test_fsdp_tp_checkpoint_integration fails with 
+      File "/tmp/eb-tmp-2022a-cuda/lib/python3.10/site-packages/torch/distributed/_shard/sharded_tensor/_ops/tensor_ops.py", line 46, in tensor_device
+        return self_st.local_shards()[0].tensor.device
+    IndexError: list index out of range
+- test_fsdp_tp_integration fails with
+    AssertionError: Tensor-likes are not close!
+
+    Mismatched elements: 72 / 72 (100.0%)
+    Greatest absolute difference: 0.958100214600563 at index (0, 2, 7) (up to 1e-05 allowed)
+    Greatest relative difference: 52.01691657271702 at index (1, 2, 4) (up to 1.3e-06 allowed)
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/fsdp/test_fsdp_tp_integration.py b/test/distributed/fsdp/test_fsdp_tp_integration.py
+index e813966ec2f..ec2308c705b 100644
+--- a/test/distributed/fsdp/test_fsdp_tp_integration.py
++++ b/test/distributed/fsdp/test_fsdp_tp_integration.py
+@@ -202,6 +202,10 @@ class SimpleModel(torch.nn.Module):
+ 
+ 
+ class TestTPFSDPIntegration(FSDPTest):
++    @property
++    def world_size(self):
++        return min(4, super().world_size)
++
+     def _get_params_and_sharding_info(
+         self,
+         model: SimpleModel,

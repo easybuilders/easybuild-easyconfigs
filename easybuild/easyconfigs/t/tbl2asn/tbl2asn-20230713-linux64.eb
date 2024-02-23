@@ -1,0 +1,56 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+# revised by Ariel Lozano
+
+easyblock = 'Bundle'
+
+name = 'tbl2asn'
+version = '20230713'
+versionsuffix = '-linux64'
+
+homepage = 'https://www.ncbi.nlm.nih.gov/genbank/tbl2asn2/'
+description = """Tbl2asn is a command-line program that automates the creation of
+ sequence records for submission to GenBank"""
+
+toolchain = SYSTEM
+builddependencies = [
+    ('binutils', '2.35'),
+]
+
+default_easyblock = 'CmdCp'
+
+# It is not entirely clean how long NCBI keeps "older" versions. At April 29, 2022, we had six timestamps/versions,
+# reporiting the same verion (tbl2asn --help -> 25.8) but 5 out of 6 (gunzipped) executables have different sha256
+# checksums.
+
+components = [
+    ('libidn', '1.34', {
+        'easyblock': 'ConfigureMake',
+        'source_urls': [GNU_SOURCE],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'start_dir': '%(namelower)s-%(version)s',
+        'checksums': ['3719e2975f2fb28605df3479c380af2cf4ab4e919e1506527e4c7670afff6e3c'],
+    }),
+    (name, version, {
+        'source_urls': ['https://ftp.ncbi.nih.gov/toolbox/ncbi_tools/converters/versions/%s/all/' %
+                        (version[:4] + '-' + version[4:6] + '-' + version[6:])],
+        'sources': [{'download_filename': 'tbl2asn.%s.gz' % versionsuffix[1:],
+                    'filename': '%(name)s-%(version)s%(versionsuffix)s.gz'}],
+        'checksums': ['544c4a2a53f2121fd21c44778fc61980a701ce852ea0142979241c0465c38a0c'],
+        'cmds_map': [('.*', "cp %(name)s-%(version)s%(versionsuffix)s tbl2asn")],
+        'files_to_copy': [(['tbl2asn'], 'bin')],
+    }),
+]
+
+postinstallcmds = ["chmod +x %(installdir)s/bin/tbl2asn"]
+
+sanity_check_paths = {
+    'files': ['bin/tbl2asn', 'bin/idn', 'lib/libidn.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ['tbl2asn --help']
+
+moduleclass = 'bio'
