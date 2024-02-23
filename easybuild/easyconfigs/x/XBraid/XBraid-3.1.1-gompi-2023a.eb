@@ -1,0 +1,31 @@
+easyblock = "MakeCp"
+
+name = 'XBraid'
+version = '3.1.0'
+
+homepage = 'https://github.com/XBraid/xbraid'
+description = "XBraid is a parallel-in-time software package. It implements an optimal-scaling multigrid solver for the (non)linear systems that arise from the discretization of problems with evolutionary behavior."
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/XBraid/xbraid/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['3419b22918c65555e8c552b70a0837a251a74c471dac8e4a7b2272bf7d955c88']
+
+# Only build libbraid, and not examples nor the drivers
+build_cmd = "make braid"
+# rules depends on each other, so build order is important when building multiple components
+#parallel = 1
+
+files_to_copy = [
+    (['braid/libbraid.a'], '%(installdir)s/lib'),
+    (['braid/*.h'], '%(installdir)s/include'),
+]
+
+sanity_check_paths = {
+    'files': ['include/braid.h', 'lib/libbraid.a'],
+    'dirs': ['include', 'lib'],
+}
+
+moduleclass = 'numlib'

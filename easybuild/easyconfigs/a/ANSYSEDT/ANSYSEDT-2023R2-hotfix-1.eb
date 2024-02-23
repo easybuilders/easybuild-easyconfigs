@@ -1,5 +1,7 @@
 easyblock = 'Binary'
 
+# valid for both StdEnv/2020 and StdEnv/2023
+
 name = 'ANSYSEDT'
 version = '2023R2'
 local_hotfix = '1'
@@ -26,11 +28,11 @@ checksums = [
  #'6bbaeb4540f6efccb16c68ace226b029193217ab527e36d41086d9a58d821bf4'   # ELECTRONICS_LOCAL_HELP_2023R21.zip
 ]
 
-# builddir=/tmp/roberpj/avx2/ANSYSEDT/2023R2/system-system-hotfix-1
-# [roberpj@build-node:~/.local/easybuild/software/2020/Core/ansysedt/2023R2]
-# [roberpj@build-node:~/.local/easybuild/software/2023/x86-64-v3/Core/ansysedt/2023R2
-# [roberpj@build-node:/cvmfs/restricted.computecanada.ca/easybuild/software/2020/Core/ansysedt/2023R2] 
-# [roberpj@build-node2:/cvmfs/restricted.computecanada.ca/easybuild/software/2023/x86-64-v3/Core/ansysedt/2023R2]
+# %(builddir)s=/tmp/roberpj/avx2/ANSYSEDT/2023R2/system-system-hotfix-1
+# %(installdir)s=~/.local/easybuild/software/2020/Core/ansysedt/2023R2,
+#      ~/.local/easybuild/software/2023/x86-64-v3/Core/ansysedt/2023R2,
+# /cvmfs/restricted.computecanada.ca/easybuild/software/2020/Core/ansysedt/2023R2,
+# /cvmfs/restricted.computecanada.ca/easybuild/software/2023/x86-64-v3/Core/ansysedt/2023R2.
 
 extract_sources = True
 install_cmd = "\
@@ -41,26 +43,74 @@ tmpdiry=TempDirectory; sed -i \"s/\/scratch/$tmpdiry/g\" $issfile;\
 rm -rf /tmp/AnsysEM; ./setup.exe -f \"$PWD/$issfile\" -i console;\
 cd %(builddir)s/Electronics_23.2.1_linx64;\
 ./install_patch.bash --force_overwrite  --install_dir /tmp/AnsysEM;\
-echo \"find /tmp/AnsysEM -ls\";\
-find /tmp/AnsysEM -ls;\
+find /tmp/AnsysEM -type d -exec chmod 755 {} \;;\
+find /tmp/AnsysEM -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 755 {} \;;\
+/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path /tmp/AnsysEM;\
+echo \"find /tmp/AnsysEM -ls\"; find /tmp/AnsysEM -ls;\
 echo \"cp -av /tmp/AnsysEM/* %(installdir)s\";\
-cp -av /tmp/AnsysEM/* %(installdir)s;\
-"
+cp -av /tmp/AnsysEM/* %(installdir)s;"
+
+#extract_sources = False
+#install_cmd = "cp -av /tmp/AnsysEM/* %(installdir)s;"
 
 postinstallcmds = [
-  "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYSEDT/2023R2/Linux64-cust;\
-    for b in $(cd $a; find . -type f ! -name 'lib*.so*' -printf '%P\n'); do \
-      mv -v %(installdir)s/v232/Linux64/$b{,-orig};\
-      cp -v $a/$b %(installdir)s/v232/Linux64/$b;\
-      chmod -v 755 %(installdir)s/v232/Linux64/$b; done;\
-    for b in $(cd $a; find . -name 'lib*.so*' -printf '%P\n'); do \
-      cp -Pv $a/$b %(installdir)s/v232/Linux64/$b; done",
-  "find %(installdir)s -type d -exec chmod -v 755 {} \;",
-  "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod -v 755 {} \;",
-  "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s --exclude=*-orig); do echo Modifying file $f;\
-    sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
-  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
-  "find %(installdir)s/v232/Linux64/defer/libX11* -exec mv -v '{}' '{}'-avoid \;",
+  #"find %(installdir)s -type d -exec chmod 755 {} \;",
+  #"find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 755 {} \;",
+  #"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+  "grep -rlI '/bin' %(installdir)s | while read a; do echo \"Considering binfile = \"$a\"\"; \
+    sed -i \"s|#![[:space:]]*/bin/|#!$EPREFIX/bin/|g\" \"$a\"; \
+    sed -i \"s|#![[:space:]]*/usr/bin/|#!$EPREFIX/usr/bin/|g\" \"$a\"; \
+    sed -i \"s|#[[:space:]]!/usr/bin/|#!$EPREFIX/usr/bin/|g\" \"$a\"; \
+    sed -i \"s|/bin:/usr/bin|$EPREFIX/bin:$EPREFIX/usr/bin|g\" \"$a\"; \
+    sed -i \"s|/usr/bin:/bin|$EPREFIX/usr/bin:$EPREFIX/bin|g\" \"$a\"; \
+    sed -i \"s|/sbin:/usr/sbin|$EPREFIX/sbin:$EPREFIX/usr/sbin|g\" \"$a\"; \
+    sed -i \"s|/usr/sbin:/sbin|$EPREFIX/usr/sbin:$EPREFIX/sbin|g\" \"$a\"; \
+    sed -i \"s|[[:space:]]/bin/| $EPREFIX/bin/|g\" \"$a\"; \
+    sed -i \"s|'/bin/|'$EPREFIX/bin/|g\" \"$a\"; \
+    sed -i \"s|\`/bin/|\`$EPREFIX/bin/|g\" \"$a\"; \
+    sed -i \"s|\\\"/bin/|\\\"$EPREFIX/bin/|g\" \"$a\"; \
+    sed -i \"s|\=/bin/|\=$EPREFIX/bin/|g\" \"$a\"; \
+    sed -i \"s|^/bin/|$EPREFIX/bin/|g\" \"$a\"; \
+    sed -i \"s|\:/bin/|\:$EPREFIX/bin/|g\" \"$a\"; \
+    sed -i \"s|[[:space:]]/sbin/| $EPREFIX/sbin/|g\" \"$a\"; \
+    sed -i \"s|'/sbin/|'$EPREFIX/sbin/|g\" \"$a\"; \
+    sed -i \"s|\`/sbin/|\`$EPREFIX/sbin/|g\" \"$a\"; \
+    sed -i \"s|\\\"/sbin/|\\\"$EPREFIX/sbin/|g\" \"$a\"; \
+    sed -i \"s|\=/sbin/|\=$EPREFIX/sbin/|g\" \"$a\"; \
+    sed -i \"s|^/sbin/|$EPREFIX/sbin/|g\" \"$a\"; \
+    sed -i \"s|\:/sbin/|\:$EPREFIX/sbin/|g\" \"$a\"; \
+    sed -i \"s|[[:space:]]/usr/bin| $EPREFIX/usr/bin|g\" \"$a\"; \
+    sed -i \"s|'/usr/bin|'$EPREFIX/usr/bin|g\" \"$a\"; \
+    sed -i \"s|\`/usr/bin|\`$EPREFIX/usr/bin|g\" \"$a\"; \
+    sed -i \"s|\\\"/usr/bin|\\\"$EPREFIX/usr/bin|g\" \"$a\"; \
+    sed -i \"s|=/usr/bin|=$EPREFIX/usr/bin|g\" \"$a\"; \
+    sed -i \"s|^/usr/bin/|$EPREFIX/usr/bin/|g\" \"$a\"; \
+    sed -i \"s|\:/usr/bin|\:$EPREFIX/usr/bin|g\" \"$a\"; \
+    sed -i \"s|\(/usr/bin|\($EPREFIX/usr/bin|g\" \"$a\"; \
+    sed -i \"s|\-/usr/bin|\-$EPREFIX/usr/bin|g\" \"$a\"; \
+    sed -i \"s|\#/usr/bin|\#$EPREFIX/usr/bin|g\" \"$a\"; \
+    sed -i \"s|\*/usr/bin|\*$EPREFIX/usr/bin|g\" \"$a\"; \
+    sed -i \"s|[[:space:]]/usr/sbin| $EPREFIX/usr/sbin|g\" \"$a\"; \
+    sed -i \"s|'/usr/sbin|'$EPREFIX/usr/sbin|g\" \"$a\"; \
+    sed -i \"s|\`/usr/sbin|\`$EPREFIX/usr/sbin|g\" \"$a\"; \
+    sed -i \"s|\\\"/usr/sbin|\\\"$EPREFIX/usr/sbin|g\" \"$a\"; \
+    sed -i \"s|\=/usr/sbin|\=$EPREFIX/usr/sbin|g\" \"$a\"; \
+    sed -i \"s|^/usr/sbin/|$EPREFIX/usr/sbin/|g\" \"$a\"; \
+    sed -i \"s|\:/usr/sbin|\:$EPREFIX/usr/sbin|g\" \"$a\"; \
+    sed -i \"s|\$(/usr/bin|\$($EPREFIX/usr/bin|g\" \"$a\"; done",
+  "grep -rlI '/lib' %(installdir)s | while read a; do echo \"Considering libfile = \"$a\"\"; \
+    sed -i \"s|[[:space:]]/lib[[:space:]]| |g\" \"$a\"; \
+    sed -i \"s|[[:space:]]/usr/lib[[:space:]]| |g\" \"$a\"; \
+    sed -i \"s|[[:space:]]/usr/lib64[[:space:]]| |g\" \"$a\"; \
+    sed -i \"s|\`glxinfo|\`LD_LIBRARY_PATH=/usr/lib64/nvidia glxinfo|g\" \"$a\"; \
+    sed -i \"s|X11_LIB_DIR=/usr.*|X11_LIB_DIR=/usr/X11R6/bin|g\" \"$a\"; \
+    sed -i \"s|X11_LIB_DIR=\`echo.*|X11_LIB_DIR=/usr/X11R6/bin|g\" \"$a\"; \
+    sed -i \"s|OGL_LIB_DIR=\\\"\$d\\\"|OGL_LIB_DIR=/usr/X11R6/bin|g\" \"$a\"; \
+    sed -i \"s|LD_PRELOAD=\\\"\${SysLibStdCpp|# LD_PRELOAD=\\\"\${SysLibStdCpp|g\" \"$a\"; done",
+  "mkdir %(installdir)s/v232/Linux64/defer/avoid; \
+    cd %(installdir)s/v232/Linux64/defer; mv libX* avoid;",
+  "cd %(installdir)s/v232/Linux64; mv rpm rpm-avoid; \
+    ln -s /cvmfs/soft.computecanada.ca/custom/bin/rpm rpm",
 ]
 
 sanity_check_paths = {
