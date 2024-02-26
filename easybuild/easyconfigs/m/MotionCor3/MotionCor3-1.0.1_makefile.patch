@@ -1,0 +1,54 @@
+# Thomas Hoffmann, EBML Heidelberg, structures-it@embl.de, 2023/10
+# allow to inject cuda compute capabilities and cfalgs
+diff -ru MotionCor3-1.0.1/makefile11 MotionCor3-1.0.1_makefile/makefile11
+--- MotionCor3-1.0.1/makefile11	2023-10-25 23:59:50.000000000 +0200
++++ MotionCor3-1.0.1_makefile/makefile11	2023-10-31 14:24:25.377992618 +0100
+@@ -1,6 +1,6 @@
+ PRJHOME = $(shell pwd)
+ CONDA = $(HOME)/miniconda3
+-CUDAHOME = $(HOME)/nvidia/cuda-12.1
++#CUDAHOME = $(HOME)/nvidia/cuda-12.1
+ CUDAINC = $(CUDAHOME)/include
+ CUDALIB = $(CUDAHOME)/lib64
+ PRJINC = $(PRJHOME)/Include
+@@ -139,18 +139,21 @@
+ 	$(CUCPPS)
+ OBJS = $(patsubst %.cpp, %.o, $(SRCS))
+ #-------------------------------------
+-CC = g++ -std=c++11
+-CFLAG = -c -g -pthread -m64
++#CC = g++ -std=c++11
++CFLAG = -c -g -pthread -m64 $(CFLAGS)
+ NVCC = $(CUDAHOME)/bin/nvcc -std=c++11
+-CUFLAG = -Xptxas -dlcm=ca -O2 \
+-	-gencode arch=compute_86,code=sm_86 \
+-	-gencode arch=compute_80,code=sm_80 \
+-	-gencode arch=compute_75,code=sm_75 \
+-	-gencode arch=compute_70,code=sm_70 \
+-	-gencode arch=compute_52,code=sm_52 \
+-        -gencode arch=compute_53,code=sm_53 \
+-        -gencode arch=compute_60,code=sm_60 \
+-        -gencode arch=compute_61,code=sm_61 
++SPACE= ' '
++SEMI= ;
++GENCODES = $(foreach x,$(subst $(SEMI),$(SPACE),$(CUDACC)),-gencode arch=compute_$x,code=sm_$x)
++CUFLAG = -Xptxas -dlcm=ca -O2 $(GENCODES)
++#	-gencode arch=compute_86,code=sm_86 \
++#	-gencode arch=compute_80,code=sm_80 \
++#	-gencode arch=compute_75,code=sm_75 \
++#	-gencode arch=compute_70,code=sm_70 \
++#	-gencode arch=compute_52,code=sm_52 \
++#        -gencode arch=compute_53,code=sm_53 \
++#        -gencode arch=compute_60,code=sm_60 \
++#        -gencode arch=compute_61,code=sm_61 
+ #------------------------------------------
+ cuda: $(CUCPPS)
+ 
+@@ -165,6 +168,7 @@
+ 	-lcufft -lcudart -lcuda -lnvToolsExt -ltiff -lc -lm -lpthread \
+ 	-o MotionCor3
+ 	@echo MotionCor3 has been generated.
++	@echo used cuda gencodes: $(GENCODES)
+ 
+ %.cpp: %.cu
+ 	@echo "-----------------------------------------------"
