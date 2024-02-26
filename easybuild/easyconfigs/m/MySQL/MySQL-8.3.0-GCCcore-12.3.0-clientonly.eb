@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = 'MySQL'
+version = '8.3.0'
+versionsuffix = '-clientonly'
+
+homepage = 'http://www.mysql.com/'
+description = """MySQL is one of the world's most widely used open-source
+ relational database management system (RDBMS)."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+#https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-boost-8.3.0.tar.gz
+
+source_urls = ['https://dev.mysql.com/get/Downloads/MySQL-%(version_major_minor)s/']
+sources = ['mysql-boost-%(version)s.tar.gz']
+checksums = ['f0a73556b8a417bc4dc6d2d78909080512beb891930cd93d0740d22207be285b']
+
+builddependencies = [
+    ('binutils', '2.28'),
+    ('CMake', '3.27.7'),
+]
+
+dependencies = [
+    ('libevent', '2.1.8'),
+    ('ncurses', '6.0'),
+    ('libedit', '20180525'),
+    ('zlib', '1.2.11'),
+]
+
+osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
+
+configopts = "-DWITHOUT_SERVER=ON -DWITH_EDITLINE=system -DWITH_ZLIB=system "
+
+# Boost headers are included in the source package and are only needed at build time (no runtime dependencies)
+# see http://mysqlserverteam.com/building-mysql-with-boost
+
+configopts += "-DWITH_BOOST=%(builddir)s/mysql-%(version)s/boost"
+
+sanity_check_paths = {
+    'files': ['bin/mysql'],
+    'dirs': [],
+}
+
+moduleclass = 'devel'
