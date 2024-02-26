@@ -1,0 +1,42 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Alexander Puck Neuwirth <alexander@neuwirth-informatik.de>
+
+easyblock = 'ConfigureMake'
+
+name = 'YODA'
+version = '1.9.7'
+
+homepage = 'https://yoda.hepforge.org/'
+description = """
+Yet more Objects for (High Energy Physics) Data Analysis
+"""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+source_urls = ['https://yoda.hepforge.org/downloads?f=']
+sources = ['%(name)s-%(version)s.tar.bz2']
+checksums = ['8d07bb04dcb79364858718a18203452d8d9fa00029fa94239eafa8529032b8ff']
+
+builddependencies = [
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('zlib', '1.2.12')
+]
+
+configopts = "--disable-root --enable-pyext --disable-static "
+configopts += "--with-zlib=${EBROOTZLIB:-%(sysroot)s/usr}"
+buildopts = "YODA_PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages"
+installopts = buildopts
+
+sanity_check_paths = {
+    'files': ['bin/yoda-config', 'lib/libYODA.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+sanity_check_commands = ["python -c 'import yoda'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+moduleclass = 'phys'

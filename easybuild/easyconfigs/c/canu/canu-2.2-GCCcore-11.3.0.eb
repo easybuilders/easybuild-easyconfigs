@@ -1,0 +1,40 @@
+easyblock = 'MakeCp'
+
+name = 'canu'
+version = '2.2'
+
+homepage = 'https://canu.readthedocs.io'
+description = "Canu is a fork of the Celera Assembler designed for high-noise single-molecule sequencing"
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/marbl/canu/releases/download/v%(version)s/']
+sources = ['canu-%(version)s.tar.xz']
+checksums = ['e4d0c7b82149114f442ccd39e18f7fe2061c63b28d53700ad896e022b73b7404']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    # Makefile checks git version, before making (futile) attempt to update git submodules
+    ('git', '2.36.0', '-nodocs'),
+]
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('Perl', '5.34.1'),
+    ('gnuplot', '5.4.4'),
+]
+
+start_dir = 'src'
+
+files_to_copy = ['build/bin', 'build/lib', 'build/share', 'README*']
+
+sanity_check_paths = {
+    'files': ['bin/bogart', 'bin/canu', 'bin/meryl', 'bin/overlapPair', 'lib/libcanu.a'],
+    'dirs': ['lib/site_perl', 'share'],
+}
+sanity_check_commands = [
+    "canu -version",
+    "canu -options",
+]
+
+moduleclass = 'bio'

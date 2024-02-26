@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'DBCSR'
+version = '2.5.0'
+
+homepage = 'https://cp2k.github.io/dbcsr/develop/'
+description = """DBCSR stands for Distributed Blocked Compressed Sparse Row. DBCSR is a library designed to
+ efficiently perform sparse matrix-matrix multiplication, among other operations."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/cp2k/dbcsr/releases/download/v%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-%(version)s_fix-cmake.patch']
+checksums = [
+    {'dbcsr-2.5.0.tar.gz': '91fda9b2502e5d0a2a6cdd5a73ef096253cc7e75bd01ba5189a4726ad86aef08'},
+    {'DBCSR-2.5.0_fix-cmake.patch': 'ccb9ba93dd5bd3107a3d1c190ec8b0d8af4e2df553b31dd7b224507220823dc9'},
+]
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('libxsmm', '1.17'),
+    ('Python', '3.9.6'),
+]
+
+preconfigopts = 'export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:${EBROOTLIBXSMM}/lib" && '
+configopts = '-DUSE_SMM=libxsmm-shared -DBLA_VENDOR=FlexiBLAS'
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['include/dbcsr_tensor_api.mod', 'include/dbcsr.h', 'lib/libdbcsr.a'],
+    'dirs': ['lib/cmake/dbcsr'],
+}
+
+moduleclass = 'chem'

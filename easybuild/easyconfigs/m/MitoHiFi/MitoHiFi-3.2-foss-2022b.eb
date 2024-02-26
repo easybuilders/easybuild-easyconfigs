@@ -1,0 +1,72 @@
+easyblock = 'PythonBundle'
+
+name = 'MitoHiFi'
+version = '3.2'
+
+homepage = 'https://github.com/marcelauliano/MitoHiFi'
+description = "MitoHiFi is a Python workflow that assembles mitogenomes from Pacbio HiFi reads"
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('SciPy-bundle', '2023.02'),  # for pandas
+    ('SAMtools', '1.17'),
+    ('CD-HIT', '4.8.1'),
+    ('minimap2', '2.26'),
+    ('hifiasm', '0.19.7'),
+    ('MAFFT', '7.505', '-with-extensions'),
+    ('Biopython', '1.81'),
+    ('matplotlib', '3.7.0'),
+    ('BEDTools', '2.30.0'),
+    ('Pillow', '9.4.0'),
+    ('bcbio-gff', '0.7.0'),
+    ('BLAST+', '2.14.0'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('dna-features-viewer', '3.1.2', {
+        'sources': ['dna_features_viewer-%(version)s.tar.gz'],
+        'checksums': ['b8b2b7657e2a9f165edd6f68fb679abfa0c2fdeb887cbd04c22b514997f52d12'],
+    }),
+    ('mitos', '2.1.3', {
+        'checksums': ['0a5bee0882a957457426baaa36655d968fbd36523e3fb06d96e2401f9f9bd285'],
+        'preinstallopts': """sed -i 's|biopython==1.73|biopython|' setup.py && """,
+    }),
+    (name, version, {
+        'easyblock': 'Tarball',
+        'modulename': False,
+        'source_urls': ['https://github.com/marcelauliano/MitoHiFi/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['68f1eb69a54288d58ac920885aac82d4beae744e54023f409623125c084d5430'],
+    }),
+]
+
+# using Mitos rather than MitoFinder (which is only available on Python-2)
+postinstallcmds = [
+    'sed -i "s|# Set log message format|args.mitos = True|" %(installdir)s/MitoHiFi-%(version)s/src/mitohifi.py',
+    "mkdir -p %(installdir)s/bin",
+    "cp %(installdir)s/MitoHiFi-%(version)s/src/* %(installdir)s/bin/ ",
+    "chmod a+x  %(installdir)s/bin/* ",
+]
+
+fix_python_shebang_for = ['bin/*']
+
+sanity_check_paths = {
+    'files': ['bin/mitohifi.py'],
+    'dirs': [],
+}
+
+local_test_cmd = 'findMitoReference.py --species "Deilephila porcellus" '
+local_test_cmd += '--outfolder %(installdir)s/MitoHiFi-%(version)s/out --min_length 14000'
+
+sanity_check_commands = [
+    "mitohifi.py -h",
+    local_test_cmd
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

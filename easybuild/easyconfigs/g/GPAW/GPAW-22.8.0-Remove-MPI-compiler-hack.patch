@@ -1,0 +1,35 @@
+Author: Jakob Schiøtz <schiotz@fysik.dtu.dk>
+Date: Thu Jan 27 11:55:07 CET 2022
+
+This patch removes the part of setup.py responsible for replacing the
+normal compiler with an MPI aware compiler, as that is already done
+correctly by the EasyBuild system.
+
+--- setup.old	2022-01-26 14:37:48.522572258 +0100
++++ setup.py	2022-01-26 14:39:55.973416534 +0100
+@@ -104,25 +104,6 @@
+ if platform_id:
+     os.environ['_PYTHON_HOST_PLATFORM'] = get_platform() + '-' + platform_id
+ 
+-if compiler is not None:
+-    # A hack to change the used compiler and linker:
+-    try:
+-        # distutils is deprecated and will be removed in 3.12
+-        from distutils.sysconfig import get_config_vars
+-    except ImportError:
+-        from sysconfig import get_config_vars
+-
+-    # If CC is set then the following hack will not work
+-    assert not os.environ.get('CC'), 'Please unset CC'
+-
+-    vars = get_config_vars()
+-    for key in ['CC', 'LDSHARED']:
+-        if key in vars:
+-            value = vars[key].split()
+-            # first argument is the compiler/linker.  Replace with mpicompiler:
+-            value[0] = compiler
+-            vars[key] = ' '.join(value)
+-
+ for flag, name in [(noblas, 'GPAW_WITHOUT_BLAS'),
+                    (nolibxc, 'GPAW_WITHOUT_LIBXC'),
+                    (fftw, 'GPAW_WITH_FFTW'),

@@ -1,0 +1,50 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+#
+# Author: Jonas Demeulemeester
+# The Francis Crick Insitute, London, UK
+##
+
+easyblock = 'CmdCp'
+
+name = 'Pindel'
+# no official release provided for version 0.2.5b9 (20160729),
+# therefore, pull last commit (20170508) to this version from master repo
+version = '0.2.5b9-20170508'
+_commit = 'b706fba61'
+
+homepage = 'http://gmt.genome.wustl.edu/packages/pindel/'
+description = """ Pindel can detect breakpoints of large deletions, medium sized
+ insertions, inversions, tandem duplications and other structural variants at single-based
+ resolution from next-gen sequence data. It uses a pattern growth approach to identify the
+ breakpoints of these variants from paired-end short reads. """
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'openmp': True}
+
+github_account = 'genome'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % _commit, 'filename': SOURCE_TAR_GZ}]
+patches = ['%(name)s-%(version)s_fix-ambig-abs-compil-err.patch']
+checksums = [
+    {'Pindel-0.2.5b9-20170508.tar.gz': 'd626260986270efce5a947d03785781c8fddfc922f41279cf9d4bd504c4e3690'},
+    {'Pindel-0.2.5b9-20170508_fix-ambig-abs-compil-err.patch':
+     '216ae1145fd1568ac2187a89bf4b95c45d5c02272047a3dd5f9dfbede26c8fec'},
+]
+
+dependencies = [
+    ('HTSlib', '1.15.1'),
+    ('zlib', '1.2.12')
+]
+
+cmds_map = [('.*', "./INSTALL ${EBROOTHTSLIB}")]
+
+_exes = ['pindel', 'sam2pindel', 'pindel2vcf', 'bam2pindel.pl', 'Adaptor.pm']
+files_to_copy = [(_exes, 'bin'), "demo", "test", "README.md"]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _exes],
+    'dirs': ['demo', 'test'],
+}
+
+moduleclass = 'bio'

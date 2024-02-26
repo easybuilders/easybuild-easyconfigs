@@ -1,0 +1,78 @@
+# Contributors:
+# Fenglai Liu (fenglai@accre.vanderbilt.edu) - Vanderbilt University
+# Alex Domingo (alex.domingo.toro@vub.be) - Vrije Universiteit Brussel (VUB)
+# Denis Kristak (INUITS)
+#
+easyblock = 'CMakeMake'
+
+name = 'ITK'
+version = '5.3.0'
+
+homepage = 'https://itk.org'
+description = """Insight Segmentation and Registration Toolkit (ITK) provides
+ an extensive suite of software tools for registering and segmenting
+ multidimensional imaging data."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+github_account = 'InsightSoftwareConsortium'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'ITK-5.3.0_add-vtk-include-dir.patch',
+    'ITK-5.3.0_fix-compatibility-swig-4-1.patch',
+]
+checksums = [
+    {'v5.3.0.tar.gz': '64e7e8094a5023c8f68ee042459d6319581fadb35e2fe90a4ae230ce36369db1'},
+    {'ITK-5.3.0_add-vtk-include-dir.patch': 'df7e834a024db5d1a1459d898bd43a044351e29759ab0bf69ce03d64da95b3f7'},
+    {'ITK-5.3.0_fix-compatibility-swig-4-1.patch': '0138878d96e90d6bfdc81fd4f2b5ec413d61c1de666a16842b417c2686ebf506'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Bison', '3.8.2'),
+    ('Eigen', '3.4.0'),
+    ('SWIG', '4.1.1'),
+    ('Perl', '5.36.1'),
+]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('double-conversion', '3.3.0'),
+    ('expat', '2.5.0'),
+    ('HDF5', '1.14.0'),
+    ('libjpeg-turbo', '2.1.5.1'),
+    ('libpng', '1.6.39'),
+    ('LibTIFF', '4.5.0'),
+    ('VTK', '9.3.0'),
+    ('zlib', '1.2.13'),
+]
+
+# Features
+configopts = '-DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF '
+configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON -DModule_SimpleITKFilters=ON '
+# Enable Python bindings
+configopts += '-DITK_WRAP_PYTHON:BOOL=ON -DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python '
+configopts += '-DSWIG_EXECUTABLE=$EBROOTSWIG/bin/swig -DSWIG_DIR=$EBROOTSWIG '
+configopts += '-DPY_SITE_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages '
+# Dependencies from EB
+local_sys_deps = ['DOUBLECONVERSION', 'EIGEN', 'EXPAT', 'FFTW', 'HDF5', 'JPEG', 'PNG', 'SWIG', 'TIFF', 'ZLIB']
+local_sys_cmake = ['-DITK_USE_SYSTEM_%s=ON' % d for d in local_sys_deps]
+configopts += ' '.join(local_sys_cmake)
+
+prebuildopts = "LC_ALL=C "
+
+local_lib_names = ['ITKCommon', 'ITKIOHDF5', 'ITKIOJPEG', 'ITKIOPNG', 'ITKIOTIFF',
+                   'ITKReview', 'ITKVTK', 'ITKVtkGlue', 'itkSimpleITKFilters']
+
+sanity_check_paths = {
+    'files': ['bin/itkTestDriver'] +
+             ['lib/lib%s-%%(version_major)s.%%(version_minor)s.%s' % (l, SHLIB_EXT) for l in local_lib_names],
+    'dirs': ['include/ITK-%(version_major)s.%(version_minor)s', 'lib/python%(pyshortver)s/site-packages', 'share'],
+}
+
+sanity_check_commands = ["python -c 'import itk'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'data'

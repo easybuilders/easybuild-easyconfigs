@@ -1,0 +1,72 @@
+easyblock = 'PythonBundle'
+
+name = 'genomepy'
+version = '0.15.0'
+
+homepage = 'https://github.com/vanheeringen-lab/genomepy'
+description = "genomepy is designed to provide a simple and straightforward way to download and use genomic data"
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('tqdm', '4.64.0'),
+    ('Biopython', '1.79'),
+    ('mygene', '3.2.2'),
+    ('pyfaidx', '0.7.1'),
+    ('PyYAML', '6.0'),
+    ('protobuf-python', '3.19.4'),
+]
+
+use_pip = True
+
+# avoid hatchling requirement to install genomepy
+# (since installing it introduces conflicting version requirements with poetry included with Python)
+local_preinstallopts = """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """
+local_preinstallopts += """-e 's/^requires = .*/requires = ["setuptools"]/g' """
+local_preinstallopts += r"""-e 's/dynamic = \["version"\]/version = "%(version)s"/g' pyproject.toml && """
+local_preinstallopts += "rm -r paper && "
+
+local_postinstallcmds = [
+    # copy default configuration file (only needed because we're not using hatchling for the installation)
+    "cp -a genomepy/config/default.yaml %(installdir)s/lib/python%(pyshortver)s/site-packages/genomepy/config/",
+]
+
+exts_list = [
+    ('diskcache', '5.4.0', {
+        'checksums': ['8879eb8c9b4a2509a5e633d2008634fb2b0b35c2b36192d89655dbde02419644'],
+    }),
+    ('loguru', '0.6.0', {
+        'checksums': ['066bd06758d0a513e9836fd9c6b5a75bfb3fd36841f4b996bc60b547a309d41c'],
+    }),
+    ('mysql-connector-python', '8.0.32', {
+        'sources': ['mysql_connector_python-%(version)s-py2.py3-none-any.whl'],
+        'checksums': ['e0299236297b63bf6cbb61d81a9d400bc01cad4743d1abe5296ef349de15ee53'],
+        'modulename': 'mysqlx',
+    }),
+    ('norns', '0.1.6', {
+        'checksums': ['1f3c6ccbe79b2cb3076f66a352cd76462593adbabe9ebb262f879a9d0a6634e4'],
+        # remove 'nose' requirement (not compatible with Python 3.10, and not really needed)
+        'preinstallopts': "sed -i '/nose/d' setup.py && ",
+    }),
+    ('pyfaidx', '0.7.2.1', {
+        'checksums': ['30f0d20a9e3d53353fb20eb69b7e22e6f01a53ed4f21b3e17dd408f0be5051a0'],
+    }),
+    (name, version, {
+        'checksums': ['9656f94d2e47e8b1cd11abc3f8e519c39011fcd5d211d8ab940d7063b5ddbe4a'],
+        'preinstallopts': local_preinstallopts,
+        'postinstallcmds': local_postinstallcmds,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/genomepy'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["genomepy --help"]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

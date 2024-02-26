@@ -1,0 +1,53 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+# update: Thomas Hoffmann (EMBL) 
+easyblock = 'CMakeMake'
+
+name = 'Brunsli'
+version = '0.1'
+
+homepage = 'https://github.com/google/brunsli/'
+description = """Brunsli is a lossless JPEG repacking library."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/google/brunsli/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['62762dc740f9fcc9706449c078f12c2a366416486d2882be50a9f201f99ac0bc']
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('binutils', '2.36.1'),
+]
+
+dependencies = [
+    ('Brotli', '1.0.9'),
+    ('Highway', '0.12.2'),
+]
+
+# skip use of third_party directory, since we provide Brotli via a proper dependency
+preconfigopts = "sed -i 's/add_subdirectory(third_party)//g' ../brunsli-%(version)s/CMakeLists.txt && "
+
+configopts = '-DCMAKE_CXX_FLAGS="$CXXFLAGS -lbrotlienc -lbrotlidec -lbrotlicommon" '
+
+# make sure that libraries end up in <prefix>/lib (not lib64)
+configopts += "-DCMAKE_INSTALL_LIBDIR=lib "
+
+buildopts = "BROTLI_DIR=$EBROOTBROTLI BROTLI_INCLUDE=$EBROOTBROTLI/include"
+
+# also install dbrunsli binary and missing libraries
+postinstallcmds = [
+    "mkdir %(installdir)s/bin",
+    "cp dbrunsli %(installdir)s/bin/",
+    "cp libbrunsli*.a %(installdir)s/lib/",
+    "cp libbrunsli*.%s %%(installdir)s/lib/" % SHLIB_EXT,
+]
+
+sanity_check_paths = {
+    'files': ['bin/dbrunsli'],
+    'dirs': ['include/brunsli', 'lib'],
+}
+
+sanity_check_commands = ['dbrunsli 2>&1 | grep Usage']
+
+moduleclass = 'lib'
