@@ -7,6 +7,7 @@ easyblock = 'ConfigureMake'
 
 name = 'ICON'
 version = '2024.01'
+versionsuffix = '-test'
 
 local_tag = 'icon-%(version)s-public'
 
@@ -19,28 +20,23 @@ that provides actionable information for society and advances our understanding 
 toolchain = {'name': 'foss', 'version': '2023a'}
 toolchainopts = {'pic': True, 'usempi': True}
 
-sources = [{
-    'git_config': {
-        'url': 'https://gitlab.dkrz.de/icon',
-        'repo_name': 'icon-model',
-        'tag': '%s' % local_tag,
-        'recursive': True,
-        'keep_git_dir': True,
-    },
-    'filename': 'v%s.tar.gz' % version,
-}]
+source_urls = [('https://gitlab.dkrz.de/icon/icon-model/-/archive/release-%(version)s-public/')]
+sources = [('icon-model-release-%(version)s-public.tar.gz')]
+
 patches = [
+    'ICON-2024.01_yac4nvhcp24.patch',
     'ICON-2024.01_lzacc-undefined.patch',
 ]
 checksums = [
-    None,
+    '53f0c6fb2622725b184b220ace307665d7965ae3609ebe4a51e5e36539a495b0',
+    '98e595f67c0227a8599c383e207c235541221ea4f00befd1c5f515b072152068',
     '5612f304dc0241016e3126134737549d7bb719cb879451ef3a9623a29a218414',
 ]
 
 builddependencies = [
     ('CMake', '3.26.3'),
     ('Python', '3.11.3'),
-    ('SciPy-bundle', '2023.07', '', ('gfbf', '2023a')),
+    ('SciPy-bundle', '2023.07', '', ('gcccoreflexiblas', '12.3.0-3.3.1')),
     ('Perl', '5.36.1'),
     ('pkgconf', '1.9.5'),
 ]
@@ -52,16 +48,8 @@ dependencies = [
     ('ecCodes', '2.31.0'),
     ('netCDF', '4.9.2'),
     ('netCDF-Fortran', '4.6.1'),
-    ('HDF5', '1.14.0'),
+    ('HDF5', '1.14.2'),
 ]
-
-preconfigopts = (
-    # Overwrite externals YAC with newer version 
-    'pushd %(builddir)s/icon-model/externals && '
-    'rm -rf yac && '
-    'git clone --branch release-3.0.3_p8 https://gitlab.dkrz.de/dkrz-sw/yac.git && '
-    'popd && '
-)
 
 # Details on configuration settings and order can be found here:
 # https://gitlab.dkrz.de/icon/icon-model/-/blob/icon-2024.01-public/doc/Quick_Start.md#icon-deptable
@@ -73,13 +61,7 @@ configopts = (
     '" '
     'ICON_CFLAGS="-O3" '
     'ICON_BUNDLED_CFLAGS="-O2" '
-    'CPPFLAGS="'
-    '    -I${EBROOTHDF5}/include '
-    '    -I${EBROOTNETCDF}/include '
-    '    -I${EBROOTECCODES}/include '
-    '    -I${EBROOTLIBFYAML}/include/libfyaml '
-    '    -I${EBROOTLIBXML2}/include/libxml2 '
-    '" '
+    # 'CPPFLAGS="''"  # $CPATH set by easybuild
     # Fortran
     'FCFLAGS="'
     '    -mpc64 -march=native '
@@ -107,14 +89,7 @@ configopts = (
     '    -fallow-invalid-boz '  # Degrades a specific error to a warning
     '" '
     # Linker
-    'LDFLAGS="'
-    '    -L${EBROOTZLIB}/lib '
-    '    -L${EBROOTHDF5}/lib '
-    '    -L${EBROOTNETCDF}/lib -L${EBROOTNETCDFMINFORTRAN}/lib '
-    '    -L${EBROOTECCODES}/lib '
-    '    -L${EBROOTLIBFYAML}/lib '
-    '    -L${EBROOTLIBXML2}/lib '
-    '" '
+    # 'LDFLAGS="''"  # $LIBRARY_PATH set by easybuild
     'LIBS="'
     '    -Wl,--disable-new-dtags -Wl,--as-needed '
     '    -lxml2 '
@@ -228,7 +203,7 @@ configopts += (
 
 postinstallcmds = [
     # Transfer required data
-    '%(builddir)s/icon-model/utils/move_to_prefix.sh ',
+    '%(builddir)s/icon-model-release-%(version)s-public/utils/move_to_prefix.sh ',
     # Generate the runscripts
     (
         'cd %(installdir)s && '
@@ -242,3 +217,4 @@ sanity_check_paths = {
 }
 
 moduleclass = 'tools'
+
