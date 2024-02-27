@@ -1,0 +1,113 @@
+# update 5.15.10, sip6: THEMBL
+easyblock = 'PythonBundle'
+
+name = 'PyQt5'
+version = '5.15.10'
+
+homepage = 'https://www.riverbankcomputing.com/software/pyqt'
+description = """PyQt5 is a set of Python bindings for v5 of the Qt application framework from The Qt Company.
+This bundle includes PyQtWebEngine, a set of Python bindings for The Qt Company’s Qt WebEngine framework."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'cstd': 'c++11'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('PyQt-builder', '1.15.4'),
+]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Qt5', '5.15.10'),
+]
+local_sipdir = '%(installdir)s/share/sip'
+
+local_pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+
+local_setup_env = "export PATH=%(installdir)s/bin:$PATH && "
+local_setup_env += "export PYTHONPATH=%s:$PYTHONPATH && " % local_pylibdir
+
+
+local_sip_configopts_common = [
+    "--no-make",
+    "--jobs %(parallel)s",
+    "--qmake-setting 'QMAKE_CXXFLAGS+=$$(CFLAGS)'",
+    "--qmake-setting 'QMAKE_CFLAGS+=$$(CFLAGS)'",
+    "--qmake-setting 'QMAKE_LFLAGS+=$$(LDFLAGS)'",
+    "--api-dir %(installdir)s/qsci",
+    "--scripts-dir %(installdir)s/bin",
+    "--target-dir %s" % local_pylibdir,
+]
+
+local_pyqt5_configopts = [
+    "--confirm-license",
+    "--no-designer-plugin",
+    "--no-qml-plugin",
+] + local_sip_configopts_common
+
+local_pyqtwebengine_configopts = local_sip_configopts_common
+default_easyblock = 'PythonPackage'
+
+components = [
+    ('%s_sip' % name, '12.13.0', {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'start_dir': '%(name)s-%(version)s',
+        'use_pip': True,
+        'checksums': ['7f321daf84b9c9dbca61b80e1ef37bdaffc0e93312edae2cd7da25b953971d91'],
+    }),
+    (name, version, {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'easyblock': 'ConfigureMake',
+        'configure_cmd': 'sip-build',
+        'start_dir': '%(name)s-%(version)s',
+        'configure_without_installdir': True,
+        'preconfigopts': local_setup_env,
+        'configopts': ' '.join(local_pyqt5_configopts),
+        'prebuildopts': local_setup_env + "cd build && ",
+        'preinstallopts': "cd build && ",
+        'checksums': ['d46b7804b1b10a4ff91753f8113e5b5580d2b4462f3226288e2d84497334898a'],
+    }),
+    ('PyQtWebEngine', '5.15.6', {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'easyblock': 'ConfigureMake',
+        'configure_cmd': 'sip-build',
+        'start_dir': '%(name)s-%(version)s',
+        'configure_without_installdir': True,
+        'preconfigopts': local_setup_env,
+        'configopts': ' '.join(local_pyqtwebengine_configopts),
+        'prebuildopts': local_setup_env + "cd build && ",
+        'preinstallopts': "cd build && ",
+        'checksums': ['ae241ef2a61c782939c58b52c2aea53ad99b30f3934c8358d5e0a6ebb3fd0721'],
+    })
+]
+
+postinstallcmds = [
+    'mkdir %(installdir)s/share',
+    'ln -s --relative %s/%%(name)s/bindings %s' % (local_pylibdir, local_sipdir)
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in [
+        'pyrcc5', 'pyuic5', 'pylupdate5']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'qsci'],
+}
+
+use_pip = True
+
+sanity_pip_check = True
+
+sanity_check_commands = [
+    "python -c 'import %(name)s.QtCore'",
+    "python -c 'import %(name)s.QtWebEngineWidgets'",
+    "pyuic5 --help",
+    "pylupdate5 -version 2>&1 | grep 'pylupdate5 v%(version)s'",
+    "pyrcc5 -version 2>&1 | grep 'pyrcc5 v%(version)s'",
+]
+
+modextrapaths = {
+    'QT_INSTALL_DATA': 'qsci',
+}
+
+moduleclass = 'vis'

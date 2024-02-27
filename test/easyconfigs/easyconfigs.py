@@ -394,6 +394,18 @@ class EasyConfigTest(TestCase):
                     if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs) and len(dep_vars) > 1:
                         dep_vars.pop(key)
 
+        # multiple variants of Meson is OK as long as they are deps for meson-python, since meson-python should only be
+        # a build dependency elsewhere
+        if dep == 'Meson' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out Meson variants that are only used as a dependency for meson-python
+                if all(ec.startswith('meson-python-') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
+
         # multiple versions of Boost is OK as long as they are deps for a matching Boost.Python
         if dep == 'Boost' and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -456,7 +468,7 @@ class EasyConfigTest(TestCase):
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
         versionsuffix_deps = ['ASE', 'Boost', 'CUDA', 'CUDAcore', 'Java', 'Lua',
-                              'PLUMED', 'PyTorch', 'R', 'TensorFlow']
+                              'PLUMED', 'PyTorch', 'R', 'Rust', 'TensorFlow']
         if dep in versionsuffix_deps and len(dep_vars) > 1:
 
             # check for '-CUDA-*' versionsuffix for CUDAcore dependency
@@ -481,6 +493,21 @@ class EasyConfigTest(TestCase):
                     if '; versionsuffix: -Python-2' in key:
                         dep_vars.pop(key)
                     # always retain at least one variant
+                    if len(dep_vars) == 1:
+                        break
+
+        # for some dependencies, we allow exceptions for software with the same version
+        # but with a -int64 versionsuffix in both the dependency and all its dependents
+        int64_deps = ['SCOTCH', 'METIS']
+        if dep in int64_deps and len(dep_vars) > 1:
+            unique_dep_vers = {version_regex.search(x).group('version') for x in list(dep_vars)}
+            if len(unique_dep_vers) == 1:
+                for key in list(dep_vars):
+                    if all(re.search('-int64', v) for v in dep_vars[key]) and re.search(
+                        '; versionsuffix: .*-int64', key
+                    ):
+                        dep_vars.pop(key)
+                    # always retain at least one dep variant
                     if len(dep_vars) == 1:
                         break
 
@@ -571,6 +598,10 @@ class EasyConfigTest(TestCase):
             'ParaView': [
                 # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
+            ],
+            'pydantic': [
+                # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
+                ('1.10.13;', ['GTDB-Tk-2.3.2-']),
             ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
@@ -822,6 +853,30 @@ class EasyConfigTest(TestCase):
         self.assertFalse(self.check_dep_vars('2020a', 'SciPy-bundle', {
             'version: 2020.03; versionsuffix: -Python-2.7.18': ['matplotlib-3.2.1-foss-2020a-Python-2.7.18.eb'],
             'version: 2020.03; versionsuffix:': ['matplotlib-3.2.1-foss-2020a.eb'],
+        }))
+
+        # multiple dependency variants of specific software is OK, but only if indicated via versionsuffix
+        self.assertTrue(self.check_dep_vars('2019b', 'TensorFlow', {
+            'version: 1.15.2; versionsuffix: -TensorFlow-1.15.2':
+                ['Horovod-0.18.2-fosscuda-2019b-TensorFlow-1.15.2.eb'],
+            'version: 2.2.0; versionsuffix: -TensorFlow-2.2.0-Python-3.7.4':
+                ['Horovod-0.19.5-fosscuda-2019b-TensorFlow-2.2.0-Python-3.7.4.eb'],
+            'version: 2.1.0; versionsuffix: -Python-3.7.4': ['Keras-2.3.1-foss-2019b-Python-3.7.4.eb'],
+        }))
+
+        self.assertFalse(self.check_dep_vars('2019b', 'TensorFlow', {
+            'version: 1.15.2; versionsuffix: ': ['Horovod-0.18.2-fosscuda-2019b.eb'],
+            'version: 2.1.0; versionsuffix: -Python-3.7.4': ['Keras-2.3.1-foss-2019b-Python-3.7.4.eb'],
+        }))
+
+        self.assertTrue(self.check_dep_vars('2022b', 'Rust', {
+            'version: 1.65.0; versionsuffix: ': ['maturin-1.1.0-GCCcore-12.2.0.eb'],
+            'version: 1.75.0; versionsuffix: -Rust-1.75.0': ['maturin-1.4.0-GCCcore-12.2.0-Rust-1.75.0.eb'],
+        }))
+
+        self.assertFalse(self.check_dep_vars('2022b', 'Rust', {
+            'version: 1.65.0; versionsuffix: ': ['maturin-1.1.0-GCCcore-12.2.0.eb'],
+            'version: 1.75.0; versionsuffix: ': ['maturin-1.4.0-GCCcore-12.2.0.eb'],
         }))
 
     def test_dep_versions_per_toolchain_generation(self):
