@@ -1,0 +1,62 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'PythonBundle'
+
+name = 'CellBender'
+version = '0.2.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+local_pytorch_version = '1.10.0'
+
+homepage = 'https://github.com/broadinstitute/CellBender'
+description = """CellBender is a software package for eliminating technical 
+artifacts from high-throughput single-cell RNA sequencing (scRNA-seq) data"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('scikit-learn', '0.24.2'),
+    ('matplotlib', '3.4.2'),
+    ('PyTables', '3.6.1'),
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('PyTorch', local_pytorch_version, '-CUDA-%(cudaver)s'),
+    ('torchvision', '0.11.3', '-CUDA-%(cudaver)s'),
+    ('pyro-ppl', '1.8.0', '-CUDA-%(cudaver)s'),
+    ('h5py', '3.2.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('natsort', '7.1.1', {
+        'checksums': ['00c603a42365830c4722a2eb7663a25919551217ec09a243d3399fa8dd4ac403'],
+    }),
+    ('anndata', '0.8.0', {
+        'checksums': ['94d2cc6f76c0317c0ac28564e3092b313b7ad19c737d66701961f3e620b9066e'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/broadinstitute/CellBender/archive'],
+        'sources': ['v%(version)s.tar.gz'],
+        'patches': ['CellBender-0.2.1-sphinxremoval.patch'],
+        'checksums': [
+            {'v%(version)s.tar.gz':
+             '309f6245585d9741ba7099690a10a8f496756c4827d100100130be589b797ba4'},
+            {'CellBender-0.2.1-sphinxremoval.patch':
+             '0f6a342bac16f4ee80cd05d43923b4cc60d71999ea1bb5c80a75edb7290bbdec'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cellbender', 'bin/natsort'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "natsort --help",
+    "cellbender -h",
+]
+
+moduleclass = 'bio'

@@ -10,21 +10,29 @@ description = " Pilon is an automated genome assembly improvement and variant de
 toolchain = SYSTEM
 
 source_urls = ['https://github.com/broadinstitute/pilon/releases/download/v%(version)s/']
-sources = ['%(namelower)s-%(version)s.jar']
+sources = ['pilon-%(version)s.jar']
 checksums = ['bde1d3c8da5537abbc80627f0b2a4165c2b68551690e5733a6adf62413b87185']
 
 dependencies = [('Java', '11')]
 
-sanity_check_paths = {
-    'files': ['pilon-%(version)s.jar'],
-    'dirs': [],
-}
-
-postinstallcmds = ['cd %(installdir)s && ln -s %(namelower)s-%(version)s.jar pilon.jar']
+postinstallcmds = [
+    "cd %(installdir)s && ln -s pilon-%(version)s.jar pilon.jar",
+    "mkdir -p %(installdir)s/bin",
+    "echo '#!/bin/sh' > %(installdir)s/bin/pilon",
+    "echo 'java -jar -Xmx8G %(installdir)s/pilon-%(version)s.jar $@' >> %(installdir)s/bin/pilon",
+    "chmod a+rx %(installdir)s/bin/pilon"
+]
 
 modloadmsg = """
 To execute Pilon run: java -Xmx8G -jar $EBROOTPILON/pilon.jar
 Adjust the memory value according to the size of your input files
 """
+
+sanity_check_paths = {
+    'files': ['bin/pilon', 'pilon.jar'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["pilon --help"]
 
 moduleclass = 'bio'

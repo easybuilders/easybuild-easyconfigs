@@ -1,0 +1,83 @@
+easyblock = 'PythonBundle'
+
+name = 'CellBender'
+local_commit = 'e2fb597'
+version = '0.3.1'
+
+homepage = 'http://github.com/broadinstitute/CellBender'
+description = """
+CellBender is a software package for eliminating technical artifacts from
+high-throughput single-cell RNA sequencing (scRNA-seq) data.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('matplotlib', '3.5.2'),
+    ('PyTorch', '1.12.0'),
+    ('IPython', '8.5.0'),
+    ('anndata', '0.8.0'),
+    ('jupyter-contrib-nbextensions', '0.7.0'),
+    ('pyro-ppl', '1.8.4'),
+    ('loompy', '3.0.7'),
+    ('PyTables', '3.8.0'),
+    ('Qtconsole', '5.4.0'),
+]
+
+use_pip = True
+
+local_comm_preinstallopts = """sed -i -e 's/^requires.*hatchling.*/requires = ["setuptools"]/g' """
+local_comm_preinstallopts += """-e 's/^build-backend.*/build-backend = "setuptools.build_meta"/g' """
+local_comm_preinstallopts += """-e 's/^dynamic = .*version.*/version = "%(version)s"/g' pyproject.toml && """
+
+exts_list = [
+    ('setuptools', '69.0.3', {
+        'checksums': ['be1af57fc409f93647f2e8e4573a142ed38724b8cdd389706a867bb4efcf1e78'],
+    }),
+    ('comm', '0.2.1', {
+        'checksums': ['0bc91edae1344d39d3661dcbc36937181fdaddb304790458f8b044dbc064b89a'],
+        'preinstallopts': local_comm_preinstallopts,
+    }),
+    # jupyter-console 6.6.3 requires ipykernel>=6.14
+    ('ipykernel', '6.20.2', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['5d0675d5f48bf6a95fd517d7b70bcb3b2c5631b2069949b5c2d6e1d7477fb5a0'],
+    }),
+    # jupyter-console 6.6.3 requires jupyter-core!=5.0.*,>=4.12
+    ('jupyter_core', '4.12.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['a54672c539333258495579f6964144924e0aa7b07f7069947bef76d7ea5cb4c1'],
+    }),
+    # jupyter-console 6.6.3 requires traitlets>=5.4
+    ('traitlets', '5.14.1', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['2e5a030e6eff91737c643231bfcf04a65b0132078dad75e4936700b213652e74'],
+    }),
+    ('jupyter_console', '6.6.3', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['309d33409fcc92ffdad25f0bcdf9a4a9daa61b6f341177570fdac03de5352485'],
+    }),
+    ('jupyter', '1.0.0', {
+        'checksums': ['d9dc4b3318f310e34c82951ea5d6683f67bed7def4b259fafbfe4f1beb1d8e5f'],
+    }),
+    ('cellbender', version, {
+        'source_urls': ['https://github.com/broadinstitute/CellBender/archive'],
+        'sources': [{'download_filename': '%s.tar.gz' % local_commit, 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['7eb67837d28495adb82147e80a2ab58eeb406c5d91aa69dd0cc120d9cb3d6396'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cellbender'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "cellbender --help",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
