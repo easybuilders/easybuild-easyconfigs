@@ -1,0 +1,41 @@
+Add option in install.py to install lammps python packages in a configurable location
+diff -ru lammps-stable_2Aug2023_update2.orig/python/install.py lammps-stable_2Aug2023_update2/python/install.py
+--- lammps-stable_2Aug2023_update2.orig/python/install.py	2023-12-15 03:09:30.000000000 +0100
++++ lammps-stable_2Aug2023_update2/python/install.py	2024-02-07 11:07:35.404221000 +0100
+@@ -27,6 +27,8 @@
+                     help="path to a directory where the created wheel will be stored")
+ parser.add_argument("-v", "--versionfile", required=True,
+                     help="path to the LAMMPS version.h source file")
++parser.add_argument("-i", "--installdir", required=True,
++                    help= "path to site-packages in lammps module")
+ 
+ args = parser.parse_args()
+ 
+@@ -70,6 +72,14 @@
+   else:
+     args.versionfile = os.path.abspath(args.versionfile)
+ 
++if args.installdir:
++  if not os.path.exists(args.installdir):
++    print("\nERROR: LAMMPS site-packages file at %s does not exist\n" % args.installdir)
++    parser.print_help()
++    sys.exit(1)
++  else:
++    args.installdir = os.path.abspath(args.installdir)
++
+ olddir = os.path.abspath('.')
+ pythondir = os.path.abspath(os.path.join(args.package,'..'))
+ os.putenv('LAMMPS_VERSION_FILE',os.path.abspath(args.versionfile))
+@@ -145,6 +155,12 @@
+   py_exe = sys.executable
+ 
+ try:
++  txt = subprocess.check_output([py_exe, '-m', 'pip', 'install', '--force-reinstall', wheel, '--target', args.installdir], stderr=subprocess.STDOUT, shell=False)
++  print(txt)
++  sys.exit(0)
++except subprocess.CalledProcessError as err:
++  sys.exit(0)
++try:
+   txt = subprocess.check_output([py_exe, '-m', 'pip', 'install', '--force-reinstall', wheel], stderr=subprocess.STDOUT, shell=False)
+   print(txt.decode('UTF-8'))
+   sys.exit(0)
