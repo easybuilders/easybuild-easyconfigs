@@ -948,6 +948,58 @@ class EasyConfigTest(TestCase):
         if multi_dep_vars_msg:
             self.fail('Should not have multiple variants of dependencies.\n' + multi_dep_vars_msg)
 
+    def test_downloadable_or_instructions(self):
+        """Make sure the sources are downloadable or there are instructions for how to download them."""
+        problem_ecs = []
+        for easyconfig in self.parsed_easyconfigs:
+            ec = easyconfig['ec']
+            # easyblocks where there'll be no sources
+            if ec['easyblock'] in ['BuildEnv', 'Bundle', 'CrayToolchain', 'ModuleRC', 'SystemCompiler', 'SystemMPI',
+                                   'Toolchain']:
+                continue
+
+            # easyconfigs where a dep provides the source
+            if ec['name'] in [
+                'imkl-FFTW',  # imkl
+                'minizip',  # zlib
+            ]:
+                continue
+
+            if (('download_instructions' in ec and ec['download_instructions']) or ('crates' in ec and ec['crates']) or
+                    ('channels' in ec and ec['channels']) or ('source_urls' in ec and ec['source_urls'])):
+                continue
+
+            ok = False
+            for source in ec['sources']:
+                if isinstance(source, dict):
+                    if 'git_config' in source:
+                        ok = True
+                        break
+                    if 'source_urls' in source:
+                        ok = True
+                        break
+
+            for ext in ec['exts_list']:
+                if isinstance(ext, tuple) and len(ext) >= 3:
+                    if 'source_urls' in ext[2]:
+                        ok = True
+                        break
+
+            if 'components' in ec and ec['components']:
+                for component in ec['components']:
+                    if len(component) > 2 and not isinstance(component[2], str):
+                        if 'source_urls' in component[2]:
+                            ok = True
+                            break
+
+            if ok:
+                continue
+
+            problem_ecs.append(easyconfig['spec'])
+
+        error_msg = "%d easyconfigs found without defined sources or download_instructions: %s"
+        self.assertEqual(problem_ecs, [], error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
+
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
 
