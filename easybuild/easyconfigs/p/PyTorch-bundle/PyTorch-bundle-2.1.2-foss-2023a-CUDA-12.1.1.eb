@@ -1,0 +1,88 @@
+easyblock = 'PythonBundle'
+
+name = 'PyTorch-bundle'
+version = '2.1.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pytorch.org/'
+description = """PyTorch with compatible versions of official Torch extensions."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('RE2', '2023-08-01'),  # for torchtext
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('PyTorch', version, versionsuffix),
+    ('Pillow-SIMD', '9.5.0'),  # for torchvision
+    ('SentencePiece', '0.2.0'),  # for torchtext
+    ('tqdm', '4.66.1'),  # for torchtext
+    ('double-conversion', '3.3.0'),  # for torchtext
+    ('utf8proc', '2.8.0'),  # for torchtext
+    ('tensorboard', '2.15.1'),  # for torch-tb-profiler
+    ('FFmpeg', '6.0'),  # for torchvision and torchaudio
+    ('SoX', '14.4.2'),  # for torchaudio
+]
+
+use_pip = True
+
+exts_list = [
+    ('portalocker', '2.8.2', {
+        'checksums': ['2b035aa7828e46c58e9b31390ee1f169b98e1066ab10b9a6a861fe7e25ee4f33'],
+    }),
+    ('torchdata', '0.7.1', {
+        'preinstallopts': "USE_SYSTEM_LIBS=1 ",
+        'source_urls': ['https://github.com/pytorch/data/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['ef9bbdcee759b53c3c9d99e76eb0a66da33d36bfb7f859a25a9b5e737a51fa23'],
+
+    }),
+    ('torchtext', '0.16.2', {
+        'patches': [
+            'torchtext-0.14.1_use-system-libs.patch',
+        ],
+        'source_urls': ['https://github.com/pytorch/text/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': [
+            {'torchtext-0.16.2.tar.gz': '6574b012804f65220329a2ad34a95c18e4df0d4cff2f862fb7862d57b374b013'},
+            {'torchtext-0.14.1_use-system-libs.patch':
+             '1366d10c4755b6003194f7313ca11d165a80a13d325bee9d669ea2b333d82536'},
+        ],
+    }),
+    ('torchvision', '0.16.2', {
+        'patches': ['torchvision-0.16.2_ffmpeg-6.0-fix.patch'],
+        'source_urls': ['https://github.com/pytorch/vision/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': [
+            {'torchvision-0.16.2.tar.gz': '8c1f2951e98d8ada6e5a468f179af4be9f56d2ebc3ab057af873da61669806d7'},
+            {'torchvision-0.16.2_ffmpeg-6.0-fix.patch':
+             'a49336e7bfa1c950e886852bff37a3ea2146ac7bda87241e3ffb31c5cb869cce'},
+        ],
+    }),
+    ('torchaudio', '2.2.1', {
+        'source_urls': ['https://github.com/pytorch/audio/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['5f2a9cda9369ff348d1d7ca2c0a1f01afc9ebff1a13df9775c22aa5c43f5b0f1'],
+        'preinstallopts': 'USE_FFMPEG=1',
+        'installopts': '--no-use-pep517',
+    }),
+    ('pytorch-ignite', '0.4.13', {
+        'modulename': 'ignite',
+        'source_urls': ['https://github.com/pytorch/ignite/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['bfe4b6f1cd96e78c021a65a0c51350cdb89d6ef5a8b9609638666ca95bae51d7'],
+    }),
+    ('torch-tb-profiler', '0.4.3', {
+        'modulename': 'torch.profiler',
+        'sources': ['torch_tb_profiler-%(version)s.tar.gz'],
+        'checksums': ['8b8d29b2de960b3c4423087b23cec29beaf9ac3a8c7b046c18fd25b218f726b1'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'ai'
