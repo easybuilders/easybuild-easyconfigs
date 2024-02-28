@@ -1,0 +1,114 @@
+This patch fixes an issue where the tree-vectorization fails due to an internal compiler error in                                                                                    [60/11858]
+compute_live_loop_exits on SVE capable AARCH64 architectures
+First encountered on a neoverse_v1 build at https://github.com/EESSI/software-layer/pull/479#issuecomment-1957091774
+Upstream issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=111478
+Upstream fix from https://gcc.gnu.org/git/gitweb.cgi?p=gcc.git;h=e5f1956498251a4973d52c8aad3faf34d0443169
+Known to work are 13.2.1, 14.0, so the fix probably already made it in there
+
+The second patch is a dependency to make the first one work, as it implements the *-operator used in last_stmt = *si
+
+From: Richard Biener <rguenther@suse.de>
+Date: Fri, 10 Nov 2023 11:39:11 +0000 (+0100)
+Subject: tree-optimization/110221 - SLP and loop mask/len
+X-Git-Url: https://gcc.gnu.org/git/?p=gcc.git;a=commitdiff_plain;h=e5f1956498251a4973d52c8aad3faf34d0443169;hp=a5922427c29fad177251d89cc946d1c5bfc135eb
+
+tree-optimization/110221 - SLP and loop mask/len
+
+The following fixes the issue that when SLP stmts are internal defs
+but appear invariant because they end up only using invariant defs
+then they get scheduled outside of the loop.  This nice optimization
+breaks down when loop masks or lens are applied since those are not
+explicitly tracked as dependences.  The following makes sure to never
+schedule internal defs outside of the vectorized loop when the
+loop uses masks/lens.
+
+        PR tree-optimization/110221
+        * tree-vect-slp.cc (vect_schedule_slp_node): When loop
+        masking / len is applied make sure to not schedule
+        intenal defs outside of the loop.
+
+        * gfortran.dg/pr110221.f: New testcase.
+---
+
+diff --git a/gcc/testsuite/gfortran.dg/pr110221.f b/gcc/testsuite/gfortran.dg/pr110221.f
+new file mode 100644
+index 000000000000..8b57384313a7
+--- /dev/null
++++ b/gcc/testsuite/gfortran.dg/pr110221.f
+@@ -0,0 +1,17 @@
++C PR middle-end/68146
++C { dg-do compile }
++C { dg-options "-O2 -w" }
++C { dg-additional-options "-mavx512f --param vect-partial-vector-usage=2" { target avx512f } }
++      SUBROUTINE CJYVB(V,Z,V0,CBJ,CDJ,CBY,CYY)
++      IMPLICIT DOUBLE PRECISION (A,B,G,O-Y)
++      IMPLICIT COMPLEX*16 (C,Z)
++      DIMENSION CBJ(0:*),CDJ(0:*),CBY(0:*)
++      N=INT(V)
++      CALL GAMMA2(VG,GA)
++      DO 65 K=1,N
++        CBY(K)=CYY
++65    CONTINUE
++      CDJ(0)=V0/Z*CBJ(0)-CBJ(1)
++      DO 70 K=1,N
++70      CDJ(K)=-(K+V0)/Z*CBJ(K)+CBJ(K-1)
++      END
+diff --git a/gcc/tree-vect-slp.cc b/gcc/tree-vect-slp.cc
+index 3e5814c3a319..80e279d8f506 100644
+--- a/gcc/tree-vect-slp.cc
++++ b/gcc/tree-vect-slp.cc
+@@ -9081,6 +9081,16 @@ vect_schedule_slp_node (vec_info *vinfo,
+       /* Emit other stmts after the children vectorized defs which is
+         earliest possible.  */
+       gimple *last_stmt = NULL;
++      if (auto loop_vinfo = dyn_cast <loop_vec_info> (vinfo))
++       if (LOOP_VINFO_FULLY_MASKED_P (loop_vinfo)
++           || LOOP_VINFO_FULLY_WITH_LENGTH_P (loop_vinfo))
++         {
++           /* But avoid scheduling internal defs outside of the loop when
++              we might have only implicitly tracked loop mask/len defs.  */
++           gimple_stmt_iterator si
++             = gsi_after_labels (LOOP_VINFO_LOOP (loop_vinfo)->header);
++           last_stmt = *si;
++         }
+       bool seen_vector_def = false;
+       FOR_EACH_VEC_ELT (SLP_TREE_CHILDREN (node), i, child)
+        if (SLP_TREE_DEF_TYPE (child) == vect_internal_def)
+
+
+From c39cdd9e654540f74cd2478019c40f1611554a44 Mon Sep 17 00:00:00 2001
+From: Richard Biener <rguenther@suse.de>
+Date: Tue, 18 Apr 2023 16:58:26 +0200
+Subject: [PATCH] Add operator* to gimple_stmt_iterator and gphi_iterator
+
+This allows STL style iterator dereference.  It's the same
+as gsi_stmt () or .phi ().
+
+        * gimple-iterator.h (gimple_stmt_iterator::operator*): Add.
+        (gphi_iterator::operator*): Likewise.
+---
+ gcc/gimple-iterator.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/gcc/gimple-iterator.h b/gcc/gimple-iterator.h
+index 38352aa95af62..b709923f00dfa 100644
+--- a/gcc/gimple-iterator.h
++++ b/gcc/gimple-iterator.h
+@@ -24,6 +24,8 @@ along with GCC; see the file COPYING3.  If not see
+
+ struct gimple_stmt_iterator
+ {
++  gimple *operator * () const { return ptr; }
++
+   /* Sequence node holding the current statement.  */
+   gimple_seq_node ptr;
+
+@@ -38,6 +40,8 @@ struct gimple_stmt_iterator
+ /* Iterator over GIMPLE_PHI statements.  */
+ struct gphi_iterator : public gimple_stmt_iterator
+ {
++  gphi *operator * () const { return as_a <gphi *> (ptr); }
++
+   gphi *phi () const
+   {
+     return as_a <gphi *> (ptr);
