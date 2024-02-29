@@ -1,0 +1,70 @@
+###
+# Author: Ali Kerrache, University of Manitoba.
+# Date: Oct 11, 2023.
+###
+
+easyblock = 'CMakeMake'
+
+name = 'Siesta'
+version = '5.0'
+
+homepage = 'https://gitlab.com/siesta-project'
+description = """SIESTA is both a method and its computer program implementation, to perform efficient electronic
+ structure calculations and ab initio molecular dynamics simulations of molecules and solids."""
+
+toolchain = {'name': 'iofbf', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'precise': True}
+
+#https://gitlab.com/siesta-project/siesta/-/archive/rel-5.0/siesta-rel-5.0.tar.gz
+
+source_urls = ['https://gitlab.com/siesta-project/%(namelower)s/-/archive/rel-%(version)s/']
+sources = ['%(namelower)s-rel-%(version)s.tar.gz']
+checksums = ['74272a5f570d6d7378865bc36023b11e685767ca6bccfb6891b40ff169c1e070']
+
+builddependencies = [('CMake', '3.27.7')]
+
+dependencies = [
+    ('netCDF-Fortran', '4.5.2'),
+    ('HDF5', '1.10.6'),
+    ('libfdf', '0.2.2'),
+    ('libPSML', '1.1.12'),
+    ('libxc', '6.2.2'),
+    #('LibGridXC', '1.1.0', '-mpi'),
+    ('ELPA', '2023.05.001'),
+]
+
+preconfigopts  = 'export libfdf_DIR=${EBROOTLIBFDF} && '
+preconfigopts += 'export libpsml_DIR=${EBROOTLIBPSML} && '
+
+#preconfigopts += 'export libgridxc_DIR=${EBROOTLIBGRIDXC}/lib && '
+
+configopts  = ' -DCMAKE_BUILD_TYPE=Release '
+configopts += ' -DSCALAPACK_LIBRARY="$LIBSCALAPACK -lm" '
+configopts += ' -DBLAS_LIBRARY=$LIBBLAS '
+configopts += ' -DNetCDF_INCLUDE_DIRS=${EBROOTNETCDFMINFORTRAN}/include '
+configopts += ' -DNetCDF_LIBRARIES=${EBROOTNETCDFMINFORTRAN}/lib/libnetcdff.a '
+
+parallel = 1
+
+local_siesta_binaries = [
+   "countJobs", "denchar", "dmbs2dm", "dm_creator", "dmfilter", 
+   "dm_noncol_sign_flip4", "dmUnblock", "eig2bxsf", "Eig2DOS", 
+   "eigfat2plot", "f2fmaster", "f2fslave", "fat", "fcbuild", 
+   "fdf2grimme", "fmixmd-driver", "fmpdos", "fractional", "g2c_ng", 
+   "gen-basis", "get_chem_labels", "getResults", "gnubands", "grid1d", 
+   "grid2cube", "grid2d", "grid2val", "grid_rotate", "grid_supercell", 
+   "horizontal", "hs2hsx", "hsx2hs", "macroave", "mctc-convert", 
+   "md2axsf", "mixps", "mprop", "optical", "optical_input", "orbmol_proj", 
+   "pdosxml", "phtrans", "pipes_serial", "plstm", "plsts", "psml2psf", 
+   "psop", "pvtsp", "readwf", "readwfx", "rho2xsf", "runJobs", "s-dftd3", 
+   "sies2arc", "siesta", "simplex", "sockets_serial", "spin_texture", "swarm", 
+   "tbtrans", "ts2ts", "tscontour", "tshs2tshs", "unfold", "vib2xsf", "vibra", 
+   "v_info", "wfs2wfsx", "wfsx2wfs", "xv2xsf",
+] 
+
+sanity_check_paths = {
+    'files': [['bin/%s' % x for x in local_siesta_binaries], 'include/s-dftd3.h'],
+    'dirs': ['bin', 'include', 'lib64', 'share'],
+}
+
+moduleclass = 'phys'
