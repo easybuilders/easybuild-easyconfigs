@@ -1,0 +1,54 @@
+easyblock = 'Bundle'
+
+name = 'Vulkan'
+version = '1.3.279'
+
+homepage = 'https://github.com/KhronosGroup'
+description = "Vulkan headers, ICDs, and tools"
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.27.6'),
+    ('pkgconf', '2.0.3'),
+    ('git', '2.42.0'),
+]
+
+dependencies = [
+    ('X11', '20231019'),
+    ('Wayland', '1.22.0'),
+]
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'source_urls': ['https://github.com/KhronosGroup/%(name)s/archive/refs/tags/'],
+    'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ}],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('Vulkan-Headers', version, {
+        'checksums': ['7844631d7765bcaebb8db5cce9837a4561285640a4d3e9ea144c6d27fdd50d61'],
+    }),
+    ('Vulkan-Loader', version, {
+        'checksums': ['38a21ee83c6fd8938cac1c4a2473651fbd57940fd656bb49735b5d0b2726bdd1'],
+    }),
+    ('volk', '1.3.270', {
+        'configopts': '-DVOLK_INSTALL=ON',
+        'source_urls': ['https://github.com/zeux/%(name)s/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ}],
+        'checksums': ['95530bc7850b0358e4bad899eb653f882ee8a08088257d90c5042cec02208f52'],
+    }),
+    ('Vulkan-Tools', version, {
+        'checksums': ['9dac517444631e46c2d88bfb0bd5fc08201fa7235bb0f2bd1db6518874416151'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['include/vulkan/vulkan.h', 'lib/libvulkan.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'vis'
