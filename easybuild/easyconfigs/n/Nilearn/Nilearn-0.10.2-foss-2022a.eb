@@ -1,0 +1,44 @@
+easyblock = 'PythonPackage'
+
+name = 'Nilearn'
+version = '0.10.2'
+
+homepage = 'https://nilearn.github.io/'
+description = """Nilearn is a Python module for fast and easy statistical learning on NeuroImaging data."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['03ef4da72d1ae87b2e3f28b771dc7e05464aa179626e57c300595625a8654273']
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('NiBabel', '4.0.2'),
+    ('scikit-learn', '1.1.2'),
+    ('lxml', '4.9.1'),
+    ('matplotlib', '3.5.2'),
+]
+
+# avoid hatchling requirement 
+# (since installing it introduces conflicting version requirements with poetry included with Python)
+# the setuptools part is to ensure that all components are built, including nilearn.plotting
+preinstallopts = """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """
+preinstallopts += """-e 's/^requires = .*/requires = ["setuptools"]/g' """
+preinstallopts += """-e '$a[tool.setuptools.packages.find]' """
+preinstallopts += """-e '$awhere = ["."]' """
+preinstallopts += """-e '$ainclude = ["nilearn*"]' """
+preinstallopts += """-e '$aexclude = []' """
+preinstallopts += """-e '$anamespaces = false' """
+preinstallopts += r"""-e 's/dynamic = \["version"\]/version = "%(version)s"/g' pyproject.toml && """
+
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'vis'
