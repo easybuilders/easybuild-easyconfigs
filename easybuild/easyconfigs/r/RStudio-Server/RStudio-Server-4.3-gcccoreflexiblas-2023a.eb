@@ -1,0 +1,99 @@
+easyblock = 'CMakeNinja'
+
+name = 'RStudio-Server'
+version = '4.3'
+
+homepage = 'https://www.rstudio.com/'
+description = """RStudio Server enables you to provide a browser
+based interface to a version of R running on a remote Linux
+server, bringing the power and productivity of the
+RStudio IDE to server-based deployments of R."""
+
+toolchain = {'name': 'gcccoreflexiblas', 'version': '2023a'}
+
+source_urls = ['https://github.com/rstudio/rstudio/archive/']
+sources = ['2023.12.1+402.tar.gz']
+checksums = [
+    '196d31094d580a74737fbf689d2d0b302da5fec13694aa1d63f8875d3e45e4dd',
+    'ce2cf5d344a5d254aacfff628ce1eeae6968730a81d01319a823ad828a1a3be6',
+]
+
+patches = ['rstudio-1.2.1335.patch']
+
+builddependencies = [
+    ('Boost', '1.82.0', '-core'),
+    ('ant', '1.10.14'),
+    ('SOCI', '4.0.3'),
+    ('CMake', '3.27.7'),
+    ('nodejs', '18.17.1'),
+    ('yaml-cpp', '0.7.0'),
+    ('Java', '11.0.22'),
+]
+
+dependencies = [
+    ('R', '%(version)s.1'),
+]
+
+separate_build_dir = False
+
+preconfigopts = " && ".join([
+    "sed -i 's/^add_subdirectory(pam)$/# add_subdirectory(pam)/' src/cpp/server/CMakeLists.txt",
+    "unset JAVA_TOOLS_OPTIONS",
+    "export RSTUDIO_TOOLS_ROOT='%(builddir)s'", # otherwise sudo
+    "cd %(builddir)s/rstudio-*/dependencies/common",
+    "./install-cef",
+    "./install-dictionaries",
+    "./install-npm-dependencies",
+    "./install-mathjax",
+    "./install-pandoc",
+    "./install-panmirror",
+    "./install-packages",
+    "cd %(builddir)s/rstudio-*/",
+    "", # To append &&
+])
+
+configopts = " ".join([
+    "-DRSTUDIO_TOOLS_ROOT='%(builddir)s'",
+    "-DRSTUDIO_TARGET=Server",
+    "-DRSTUDIO_BOOST_SIGNALS_VERSION=2",
+    "-DSOCI_CORE_LIB=$EBROOTSOCI/lib/libsoci_core.so",
+    "-DSOCI_POSTGRESQL_LIB=$EBROOTSOCI/lib/libsoci_postgresql.so",
+    "-DSOCI_SQLITE_LIB=$EBROOTSOCI/lib/libsoci_sqlite3.so",
+    "-DRSTUDIO_BOOST_REQUESTED_VERSION=$EBVERSIONBOOST",
+    "-DRSTUDIO_USE_SYSTEM_BOOST=ON",
+    "-DRSTUDIO_USE_SYSTEM_SOCI=ON",
+    "-DQUARTO_ENABLED=OFF",
+    "-DRSTUDIO_USE_SYSTEM_YAML_CPP=ON",
+    "-DRSTUDIO_USE_PAM=OFF",
+])
+
+# R has a dep on Java 17 which is incompatible at build time, so explicitly use 11 here...
+prebuildopts = "module load java/11.0.22 && "
+
+sanity_check_paths = {
+    'files': ["bin/rstudio-server", "bin/rsession", "bin/rserver", "bin/rpostback"],
+    'dirs': ["R", "resources", "www", "www-symbolmaps"],
+}
+
+sanity_check_commands = [
+    # This command requires environment variables R_HOME and R_DOC_DIR
+    "R_HOME=$EBROOTR/lib64/R R_DOC_DIR=$R_HOME/doc rsession --verify-installation=1",
+
+    # This command requires a db conf (this may also be needed for live use)
+    # and need the current user, otherwise defaults to root
+    ' && '.join([
+        'MYTMP=$(mktemp -d)',
+        'echo -e "provider=sqlite\ndirectory=$MYTMP/db" >> $MYTMP/db.conf',
+        'rserver --verify-installation=1 --database-config-file=$MYTMP/db.conf --server-data-dir=$MYTMP/sdd --server-user=$USER',
+    ])
+]
+
+# do not store user state in home directories, but keep backward compat
+# for users starting an interactive job with rstudio
+modluafooter = """
+if os.getenv('SLURM_TMPDIR') then
+    setenv('RSTUDIO_DATA_HOME', pathJoin(os.getenv('SLURM_TMPDIR'), '.rstudio/{version}'))
+else
+    setenv('RSTUDIO_DATA_HOME', pathJoin(os.getenv('HOME'), '.rstudio/{version}'))
+end
+""".format(version=version)
