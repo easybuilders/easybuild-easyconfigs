@@ -1,0 +1,30 @@
+Fix a buffer overflow in oneDNN resulting in memory corruption.
+Visible in e.g test_scaled_dot_product_fused_attention_vs_math_cpu in test_transformers.py
+
+See https://github.com/pytorch/pytorch/issues/115253
+Fixed in oneDNN 3.3 with https://github.com/oneapi-src/oneDNN/commit/6518e55b025b75ea83c677c601cfb8b1f7df0a68
+Use this commit to patch the submodule.
+
+Author: Alexander Grund (TU Dresden)
+
+diff -ur pytorch/third_party/ideep/mkl-dnn/src/cpu/matmul/gemm_based_common.hpp pytorch-orig/third_party/ideep/mkl-dnn/src/cpu/matmul/gemm_based_common.hpp
+--- pytorch/third_party/ideep/mkl-dnn/src/cpu/matmul/gemm_based_common.hpp	2023-12-08 11:02:21.817449743 +0100
++++ pytorch-orig/third_party/ideep/mkl-dnn/src/cpu/matmul/gemm_based_common.hpp	2023-12-08 11:02:17.796537323 +0100
+@@ -139,9 +139,15 @@
+         const int nthr) {
+     const int num_scratchpad_blocks
+             = use_single_gemm_call_optimization ? 1 : nthr;
+-    return get_scratchpad_block_elements(
+-                   batch, M, N, use_single_gemm_call_optimization, nthr)
++    size_t buf_sz = get_scratchpad_block_elements(batch, M, N,
++                            use_single_gemm_call_optimization, nthr)
+             * num_scratchpad_blocks;
++
++    // Buffer needs to be large enough to accommodate one thread buffer
++    // size requirement in case only one thread is used during execution.
++    size_t buf_sz_1thr = get_scratchpad_block_elements(
++            batch, M, N, use_single_gemm_call_optimization, 1);
++    return nstl::max(buf_sz_1thr, buf_sz);
+ }
+ 
+ inline void book_acc_scratchpad(matmul_pd_t &pd, const params_t &params,

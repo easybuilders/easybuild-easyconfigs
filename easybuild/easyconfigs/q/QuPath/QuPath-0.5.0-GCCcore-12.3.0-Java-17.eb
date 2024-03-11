@@ -1,0 +1,45 @@
+easyblock = 'CmdCp'
+
+name = 'QuPath'
+version = '0.5.0'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://qupath.github.io'
+description = """QuPath is open source software for bioimage analysis.
+QuPath is often used for digital pathology applications because it offers
+ a powerful set of tools for working with whole slide images - but it can
+ be applied to lots of other kinds of image as well."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/qupath/qupath/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['d244234ea2fd042488ca4a879f22103764dd3ed27cf9367a8293e50794023524']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Gradle', '8.6', versionsuffix, SYSTEM),
+]
+
+dependencies = [
+    ('OpenSlide-Java', '0.12.4', versionsuffix),
+    ('Java', '17', '', SYSTEM),
+]
+
+cmds_map = [('.*', "gradle clean jpackage -P openslide=$EBROOTOPENSLIDEMINJAVA/lib/openslide-java/openslide.jar")]
+
+files_to_copy = [
+    'build/dist/%(name)s/bin',
+    'build/dist/%(name)s/lib',
+]
+
+modextrapaths = {'PATH': ['']}
+
+sanity_check_paths = {
+    'files': ['bin/QuPath', 'lib/libapplauncher.%s' % SHLIB_EXT],
+    'dirs': ['lib/app', 'lib/runtime'],
+}
+
+sanity_check_commands = ["QuPath --help"]
+
+moduleclass = 'bio'

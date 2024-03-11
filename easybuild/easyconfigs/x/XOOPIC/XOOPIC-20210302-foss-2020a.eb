@@ -1,0 +1,54 @@
+# Contribution from Imperial College London, UK
+# uploaded by J. Sassmannshausen
+
+easyblock = 'ConfigureMake'
+
+name = 'XOOPIC'
+version = '20210302'
+local_commit = '3fa6670'
+
+homepage = 'https://github.com/rinku-mishra/xoopic'
+description = """XOOPIC is a two-dimensional 3-velocity particle-in-cell simulator. 
+It can handle electrostatic and electromagnetic models, has a large variety of 
+boundary conditions, supports multiple gasses and gas chemistry, and is easily 
+reconfigurable via an input file."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+source_urls = ['https://github.com/rinku-mishra/xoopic/archive/%s' % local_commit]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['e81a2b7a527b905fd58afd080f45690963079b0a0493a55929d2a0ef1246d4e3']
+
+builddependencies = [
+    ('M4', '1.4.18'),
+    ('Bison', '3.5.3'),
+]
+
+dependencies = [
+    ('X11', '20200222'),
+    ('Tcl', '8.6.10'),
+    ('Tk', '8.6.10'),
+    ('ImageMagick', '7.0.10-1'),
+    ('XGrafix', '2.41'),
+    ('HDF5', '1.10.6'),
+    ('FFTW', '3.3.8'),
+]
+
+# We need to specify where things are, unfortunately.
+configopts = '--enable-MPI --enable-fulloptimize --with-xpm=$EBROOTX11/lib '
+configopts += '--with-tclconfig=$EBROOTTCL/lib --with-tkconfig=$EBROOTTK/lib '
+configopts += '--with-XGRAFIX-lib=$EBROOTXGRAFIX/lib --with-XGRAFIX-include=$EBROOTXGRAFIX/include '
+configopts += '--with-X11-include=$EBROOTX11/include --with-X11_LIBDIR=$EBROOTX11/lib '
+configopts += '--with-hdf5-incdir=$EBROOTHDF5/include '
+# This does not seem to be used, so for now we leave it out:
+# configopts += '--with-dfftw-incdir=$EBROOTFFTW/include --with-dfftw-libdir=$EBROOTFFTW/lib '
+
+sanity_check_paths = {
+    'files': ['bin/xoopic'] +
+             ['lib/libadvisor.a', 'lib/libotools.a', 'lib/libphysics.a', 'lib/libxg.a'],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ["xoopic -h"]
+
+moduleclass = 'phys'

@@ -1,0 +1,36 @@
+test_dtensor_op_db_nn_functional_pad_circular_cpu_float32 may unexpectatly succeed, just skip it.
+Failure is expected until https://github.com/pytorch/pytorch/commit/9378a2ceda8
+test_dtensor_op_db_nn_functional_multi_head_attention_forward_cpu_float32 fails with
+> NotImplementedError: Operator aten.constant_pad_nd.default does not have a sharding strategy registered.
+Marked xfail in https://github.com/pytorch/pytorch/commit/49d826bcd3de952eb84a33c89ed399a1a2821c15
+test_dtensor_op_db_empty_strided_cpu_float32 doesn't make sense to run in the first place,
+see https://github.com/pytorch/pytorch/issues/118094
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/_tensor/test_dtensor_ops.py b/test/distributed/_tensor/test_dtensor_ops.py
+index b7d453e56be..5a27c7f84da 100644
+--- a/test/distributed/_tensor/test_dtensor_ops.py
++++ b/test/distributed/_tensor/test_dtensor_ops.py
+@@ -147,6 +147,7 @@ dtensor_fails = {
+     xfail("dot"),
+     xfail("einsum"),
+     xfail("empty"),
++    skip("empty_strided"),
+     xfail("empty_like"),
+     xfail("empty_permuted"),
+     xfail("exponential"),
+@@ -359,11 +360,12 @@ dtensor_fails = {
+     xfail("nn.functional.mish"),
+     xfail("nn.functional.mse_loss"),
+     xfail("nn.functional.multi_margin_loss"),
++    skip("nn.functional.multi_head_attention_forward"),
+     xfail("nn.functional.multilabel_margin_loss"),
+     xfail("nn.functional.multilabel_soft_margin_loss"),
+     xfail("nn.functional.nll_loss"),
+     xfail("nn.functional.normalize"),
+-    xfail("nn.functional.pad", "circular"),
++    skip("nn.functional.pad", "circular"),
+     xfail("nn.functional.pad", "constant"),
+     xfail("nn.functional.pad", "reflect"),
+     xfail("nn.functional.pad", "replicate"),

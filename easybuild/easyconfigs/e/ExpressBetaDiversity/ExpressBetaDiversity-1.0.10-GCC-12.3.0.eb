@@ -1,0 +1,45 @@
+easyblock = 'MakeCp'
+
+name = 'ExpressBetaDiversity'
+version = '1.0.10'
+
+homepage = 'https://github.com/donovan-h-parks/ExpressBetaDiversity'
+description = """Taxon- and phylogenetic-based beta diversity measures."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+github_account = 'donovan-h-parks'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['c3ee0894ed0beea42f7668e531e53d01f4c19374d0dfd287cb400a68241c6c03']
+
+dependencies = [
+    ('Python', '3.11.3'),
+]
+
+prebuildopts = "cd source && "
+# fix wrong regex pattern which makes: FutureWarning: split() requires a non-empty pattern match.
+prebuildopts += "sed -i '36 s/*/+/' dep.py && "
+# force use python from dependencies not the one on a node
+buildopts = "DEP='python dep.py'"
+
+files_to_copy = [
+    'bin',
+    'unit-tests',
+    (['scripts/*'], 'bin')
+]
+
+sanity_check_paths = {
+    'files': ['bin/ExpressBetaDiversity'],
+    'dirs': ['unit-tests'],
+}
+
+sanity_check_commands = [
+    'ExpressBetaDiversity --help',
+    'convertToEBD.py --help',
+    # Unit tests need to be executed from the bin directory.
+    # See source/UnitTests.cpp:112: std::string seqCountFile = "../unit-tests/SimpleDataMatrix.env";
+    'cd bin && ExpressBetaDiversity -u',
+]
+
+moduleclass = 'bio'

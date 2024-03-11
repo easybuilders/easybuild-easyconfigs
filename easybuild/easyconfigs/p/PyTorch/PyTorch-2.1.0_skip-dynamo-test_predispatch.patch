@@ -1,0 +1,23 @@
+test_predispatch_with_for_out_dtype_nested_dynamic_shapes fails when run after test_predispatch_with_for_out_dtype_nested
+with: torch._subclasses.fake_tensor.DataDependentOutputException: aten.allclose.default
+This is a known issue so just disable it, see
+https://github.com/pytorch/pytorch/issues/107980
+https://github.com/pytorch/pytorch/issues/112678
+Might be fixed after https://github.com/pytorch/pytorch/pull/108715
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/dynamo/test_export.py b/test/dynamo/test_export.py
+index 1b6deb7e524..ca3792e55c9 100644
+--- a/test/dynamo/test_export.py
++++ b/test/dynamo/test_export.py
+@@ -3743,6 +3743,9 @@ def forward(self, l_x_, ones_3_true_branch, ones_1_true_branch, ones_true_branch
+         self.assertTrue(torch.allclose(m(x), gm(x)))
+ 
+     def test_predispatch_with_for_out_dtype_nested(self):
++        if self.__class__.__name__.startswith('DynamicShapes'):
++            self.skipTest("Doesn't work running twice, see issue #112678")
++
+         class M(torch.nn.Module):
+             def __init__(self, weight):
+                 super().__init__()

@@ -35,7 +35,6 @@ import stat
 import sys
 import tempfile
 from collections import defaultdict
-from distutils.version import LooseVersion
 from unittest import TestCase, TestLoader, main, skip
 
 import easybuild.main as eb_main
@@ -51,7 +50,7 @@ from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, lette
 from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
-from easybuild.tools import config
+from easybuild.tools import config, LooseVersion
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_file, remove_file
@@ -380,12 +379,6 @@ class EasyConfigTest(TestCase):
 
         version_regex = re.compile('^version: (?P<version>[^;]+);')
 
-        # filter out binutils with empty versionsuffix which is used to build toolchain compiler
-        if dep == 'binutils' and len(dep_vars) > 1:
-            empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
-            if len(empty_vsuff_vars) == 1:
-                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
-
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
         # same goes for WRF and WPS; Gurobi and Rgurobi; ncbi-vdb and SRA-Toolkit
         multiple_allowed_variants = [('HTSlib', 'BCFtools'),
@@ -401,6 +394,18 @@ class EasyConfigTest(TestCase):
                     if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs) and len(dep_vars) > 1:
                         dep_vars.pop(key)
 
+        # multiple variants of Meson is OK as long as they are deps for meson-python, since meson-python should only be
+        # a build dependency elsewhere
+        if dep == 'Meson' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out Meson variants that are only used as a dependency for meson-python
+                if all(ec.startswith('meson-python-') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
+
         # multiple versions of Boost is OK as long as they are deps for a matching Boost.Python
         if dep == 'Boost' and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -410,51 +415,60 @@ class EasyConfigTest(TestCase):
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
 
-        # filter out Perl with -minimal versionsuffix which are only used in makeinfo-minimal
-        if dep == 'Perl':
-            minimal_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -minimal')]
-            if len(minimal_vsuff_vars) == 1:
-                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != minimal_vsuff_vars[0])
-
-        # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
-        if dep in ['FFTW', 'imkl']:
-            serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
-            if len(serial_vsuff_vars) == 1:
-                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
-
-        # filter out BLIS and libFLAME with -amd versionsuffix
-        # (AMD forks, used in gobff/*-amd toolchains)
-        if dep in ['BLIS', 'libFLAME']:
-            amd_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -amd')]
-            if len(amd_vsuff_vars) == 1:
-                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != amd_vsuff_vars[0])
-
-        # filter out ScaLAPACK with -BLIS-* versionsuffix, used in goblf toolchain
-        if dep == 'ScaLAPACK':
-            blis_vsuff_vars = [v for v in dep_vars.keys() if '; versionsuffix: -BLIS-' in v]
-            if len(blis_vsuff_vars) == 1:
-                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != blis_vsuff_vars[0])
-
-        if dep == 'ScaLAPACK':
+        # Pairs of name, versionsuffix that should be removed from dep_vars if exactly one matching key is found.
+        # The name is checked against 'dep' and can be a list to allow multiple
+        # If the versionsuffix is a 2-element tuple, the second element should be set to True
+        # to interpret the first element as the start of the suffix (e.g. to include trailing version numbers)
+        # Otherwise the whole versionsuffix must match for the filter to apply.
+        filter_variants = [
+            # filter out binutils with empty versionsuffix which is used to build toolchain compiler
+            ('binutils', ''),
+            # filter out Perl with -minimal versionsuffix which are only used in makeinfo-minimal
+            ('Perl', '-minimal'),
+            # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
+            # Same for HDF5 with -serial versionsuffix which is used in HDF5 for Python (h5py)
+            (['FFTW', 'imkl', 'HDF5'], '-serial'),
+            # filter out BLIS and libFLAME with -amd versionsuffix
+            # (AMD forks, used in gobff/*-amd toolchains)
+            (['BLIS', 'libFLAME'], '-amd'),
+            # filter out ScaLAPACK with -BLIS-* versionsuffix, used in goblf toolchain
+            ('ScaLAPACK', ('-BLIS-', True)),
             # filter out ScaLAPACK with -bf versionsuffix, used in gobff toolchain
-            bf_vsuff_vars = [v for v in dep_vars.keys() if '; versionsuffix: -bf' in v]
-            if len(bf_vsuff_vars) == 1:
-                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != bf_vsuff_vars[0])
+            ('ScaLAPACK', '-bf'),
             # filter out ScaLAPACK with -bl versionsuffix, used in goblf toolchain
-            bl_vsuff_vars = [v for v in dep_vars.keys() if '; versionsuffix: -bl' in v]
-            if len(bl_vsuff_vars) == 1:
-                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != bl_vsuff_vars[0])
-
-        # filter out HDF5 with -serial versionsuffix which is used in HDF5 for Python (h5py)
-        if dep in ['HDF5']:
-            serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
-            if len(serial_vsuff_vars) == 1:
-                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
+            ('ScaLAPACK', '-bl'),
+            # filter out ELSI variants with -PEXSI suffix
+            ('ELSI', '-PEXSI'),
+            # For Z3 the EC including Python bindings has a matching versionsuffix
+            # filter out one per Python version
+            ('Z3', ('-Python-2', True)),
+            ('Z3', ('-Python-3', True)),
+        ]
+        for dep_name, version_suffix in filter_variants:
+            # always retain at least one dep variant
+            if len(dep_vars) == 1:
+                break
+            if isinstance(dep_name, string_type):
+                if dep != dep_name:
+                    continue
+            elif dep not in dep_name:
+                continue
+            if isinstance(version_suffix, string_type):
+                match_prefix = False
+            else:
+                version_suffix, match_prefix = version_suffix
+            search = 'versionsuffix: ' + version_suffix
+            if match_prefix:
+                matches = [v for v in dep_vars if search in v]
+            else:
+                matches = [v for v in dep_vars if v.endswith(search)]
+            if len(matches) == 1:
+                del dep_vars[matches[0]]
 
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
         versionsuffix_deps = ['ASE', 'Boost', 'CUDA', 'CUDAcore', 'Java', 'Lua',
-                              'PLUMED', 'PyTorch', 'R', 'TensorFlow']
+                              'PLUMED', 'PyTorch', 'R', 'Rust', 'TensorFlow']
         if dep in versionsuffix_deps and len(dep_vars) > 1:
 
             # check for '-CUDA-*' versionsuffix for CUDAcore dependency
@@ -482,6 +496,21 @@ class EasyConfigTest(TestCase):
                     if len(dep_vars) == 1:
                         break
 
+        # for some dependencies, we allow exceptions for software with the same version
+        # but with a -int64 versionsuffix in both the dependency and all its dependents
+        int64_deps = ['SCOTCH', 'METIS']
+        if dep in int64_deps and len(dep_vars) > 1:
+            unique_dep_vers = {version_regex.search(x).group('version') for x in list(dep_vars)}
+            if len(unique_dep_vers) == 1:
+                for key in list(dep_vars):
+                    if all(re.search('-int64', v) for v in dep_vars[key]) and re.search(
+                        '; versionsuffix: .*-int64', key
+                    ):
+                        dep_vars.pop(key)
+                    # always retain at least one dep variant
+                    if len(dep_vars) == 1:
+                        break
+
         # filter out variants that are specific to a particular version of CUDA
         cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
         if len(dep_vars) >= len(cuda_dep_vars) and len(dep_vars) > 1:
@@ -503,6 +532,9 @@ class EasyConfigTest(TestCase):
             'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'CLHEP': [('2.4.5.1;', [r'GATE-9\.2-foss-2021b'])],
+            # Score-P 8.3+ requires Cube 4.8.2+ but we have 4.8.1 already
+            'CubeLib': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
+            'CubeWriter': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
@@ -567,6 +599,10 @@ class EasyConfigTest(TestCase):
                 # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
             ],
+            'pydantic': [
+                # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
+                ('1.10.13;', ['GTDB-Tk-2.3.2-']),
+            ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
@@ -624,12 +660,6 @@ class EasyConfigTest(TestCase):
                         # only filter if the easyconfig using this dep variants is known
                         if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
                             dep_vars.pop(key)
-
-        # filter out ELSI variants with -PEXSI suffix
-        if dep == 'ELSI' and len(dep_vars) > 1:
-            pexsi_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -PEXSI')]
-            if len(pexsi_vsuff_vars) == 1:
-                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != pexsi_vsuff_vars[0])
 
         # only single variant is always OK
         if len(dep_vars) == 1:
@@ -825,6 +855,30 @@ class EasyConfigTest(TestCase):
             'version: 2020.03; versionsuffix:': ['matplotlib-3.2.1-foss-2020a.eb'],
         }))
 
+        # multiple dependency variants of specific software is OK, but only if indicated via versionsuffix
+        self.assertTrue(self.check_dep_vars('2019b', 'TensorFlow', {
+            'version: 1.15.2; versionsuffix: -TensorFlow-1.15.2':
+                ['Horovod-0.18.2-fosscuda-2019b-TensorFlow-1.15.2.eb'],
+            'version: 2.2.0; versionsuffix: -TensorFlow-2.2.0-Python-3.7.4':
+                ['Horovod-0.19.5-fosscuda-2019b-TensorFlow-2.2.0-Python-3.7.4.eb'],
+            'version: 2.1.0; versionsuffix: -Python-3.7.4': ['Keras-2.3.1-foss-2019b-Python-3.7.4.eb'],
+        }))
+
+        self.assertFalse(self.check_dep_vars('2019b', 'TensorFlow', {
+            'version: 1.15.2; versionsuffix: ': ['Horovod-0.18.2-fosscuda-2019b.eb'],
+            'version: 2.1.0; versionsuffix: -Python-3.7.4': ['Keras-2.3.1-foss-2019b-Python-3.7.4.eb'],
+        }))
+
+        self.assertTrue(self.check_dep_vars('2022b', 'Rust', {
+            'version: 1.65.0; versionsuffix: ': ['maturin-1.1.0-GCCcore-12.2.0.eb'],
+            'version: 1.75.0; versionsuffix: -Rust-1.75.0': ['maturin-1.4.0-GCCcore-12.2.0-Rust-1.75.0.eb'],
+        }))
+
+        self.assertFalse(self.check_dep_vars('2022b', 'Rust', {
+            'version: 1.65.0; versionsuffix: ': ['maturin-1.1.0-GCCcore-12.2.0.eb'],
+            'version: 1.75.0; versionsuffix: ': ['maturin-1.4.0-GCCcore-12.2.0.eb'],
+        }))
+
     def test_dep_versions_per_toolchain_generation(self):
         """
         Check whether there's only one dependency version per toolchain generation actively used.
@@ -858,6 +912,7 @@ class EasyConfigTest(TestCase):
         # which throws off the pattern matching done below for toolchain versions
         false_positives_regex = re.compile('^MATLAB-Engine-20[0-9][0-9][ab]')
 
+        multi_dep_vars_msg = ''
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
         # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
         for pattern in ['20(1[89]|[2-9][0-9])[ab]', r'GCCcore-([7-9]|[1-9][0-9])\.[0-9]']:
@@ -883,19 +938,15 @@ class EasyConfigTest(TestCase):
                         dep_variants.setdefault(variant, set()).add(ec_file)
 
             # check which dependencies have more than 1 variant
-            multi_dep_vars, multi_dep_vars_msg = [], ''
-            for tc_gen in sorted(all_deps.keys()):
-                for dep in sorted(all_deps[tc_gen].keys()):
-                    dep_vars = all_deps[tc_gen][dep]
+            for tc_gen, deps in sorted(all_deps.items()):
+                for dep, dep_vars in sorted(deps.items()):
                     if not self.check_dep_vars(tc_gen, dep, dep_vars):
-                        multi_dep_vars.append(dep)
-                        multi_dep_vars_msg += "\nfound %s variants of '%s' dependency " % (len(dep_vars), dep)
+                        multi_dep_vars_msg += "Found %s variants of '%s' dependency " % (len(dep_vars), dep)
                         multi_dep_vars_msg += "in easyconfigs using '%s' toolchain generation\n* " % tc_gen
-                        multi_dep_vars_msg += '\n* '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
+                        multi_dep_vars_msg += '\n  * '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
                         multi_dep_vars_msg += '\n'
-
-            error_msg = "No multi-variant deps found for '%s' easyconfigs:\n%s" % (regex.pattern, multi_dep_vars_msg)
-            self.assertFalse(multi_dep_vars, error_msg)
+        if multi_dep_vars_msg:
+            self.fail('Should not have multiple variants of dependencies.\n' + multi_dep_vars_msg)
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
@@ -983,8 +1034,9 @@ class EasyConfigTest(TestCase):
         # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__;
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
+        bundle_easyblocks = ['Bundle', 'CargoPythonBundle', 'PythonBundle', 'EB_OpenSSL_wrapper']
         for ec in self.changed_ecs:
-            if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper'] or ec['name'] in ['Clang-AOMP']:
+            if ec['easyblock'] in bundle_easyblocks or ec['name'] in ['Clang-AOMP']:
                 ec['sources'] = []
                 ec['patches'] = []
                 ec['checksums'] = []
@@ -1049,13 +1101,14 @@ class EasyConfigTest(TestCase):
                     failing_checks.append("'source_urls' should not be defined when using the default value "
                                           "in %s" % ec_fn)
 
-            # use_pip should be set when using PythonPackage or PythonBundle (except for whitelisted easyconfigs)
-            if easyblock in ['PythonBundle', 'PythonPackage']:
+            # use_pip should be set when using PythonPackage or PythonBundle,
+            # or an easyblock that derives from it (except for whitelisted easyconfigs)
+            if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
                 if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("'use_pip' should be set in %s" % ec_fn)
 
             # download_dep_fail is enabled automatically in PythonBundle easyblock, so shouldn't be set
-            if easyblock == 'PythonBundle':
+            if easyblock in ['CargoPythonBundle', 'PythonBundle']:
                 if download_dep_fail or exts_download_dep_fail:
                     fail = "'*download_dep_fail' should not be set in %s since PythonBundle easyblock is used" % ec_fn
                     failing_checks.append(fail)
@@ -1107,7 +1160,7 @@ class EasyConfigTest(TestCase):
                 failing_checks.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
-            if easyblock in ['PythonBundle', 'PythonPackage']:
+            if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
                     failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
@@ -1144,8 +1197,8 @@ class EasyConfigTest(TestCase):
         # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PerlBundle,
         #           PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CargoPythonPackage', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage',
-                     'JuliaBundle', 'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
+        whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage', 'CrayToolchain',
+                     'GoPackage', 'JuliaBundle', 'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,

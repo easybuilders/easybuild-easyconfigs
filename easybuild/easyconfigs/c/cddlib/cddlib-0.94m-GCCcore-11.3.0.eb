@@ -1,0 +1,38 @@
+easyblock = 'ConfigureMake'
+
+name = 'cddlib'
+version = '0.94m'
+
+homepage = 'https://github.com/cddlib/cddlib'
+description = "An efficient implementation of the Double Description Method"
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'cddlib'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['766d8ec2135989830748e5e2fe57f307ed0706431c135541c3c081cbec0bc34f']
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('binutils', '2.38'),
+]
+
+dependencies = [('GMP', '6.2.1')]
+
+preconfigopts = "autoreconf -f -i && "
+
+buildopts = "SUBDIRS='lib-src src'"  # build sources but spare the documentation in latex
+installopts = buildopts
+
+local_exes = ['adjacency', 'allfaces', 'cddexec', 'fourier', 'lcdd', 'projection', 'redcheck', 'scdd', 'testcdd1',
+              'testcdd2', 'testlp1', 'testlp2', 'testlp3', 'testshoot']
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_exes] + ['bin/%s_gmp' % x for x in local_exes] +
+             ['lib/%s.%s' % (l, e) for l in ['libcdd', 'libcddgmp'] for e in ['a', SHLIB_EXT]] +
+             ['include/cddlib/%s.h' % h for h in ['cdd', 'cddmp', 'cddtypes', 'setoper', 'splitmix64']],
+    'dirs': ['share/doc']
+}
+
+moduleclass = 'math'

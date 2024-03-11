@@ -1,0 +1,41 @@
+From b03ef1d96909da213771c7590e36bbe1d258df53 Mon Sep 17 00:00:00 2001
+From: Oguz Ulgen <oulgen@meta.com>
+Date: Sat, 16 Sep 2023 07:37:04 +0000
+Subject: [PATCH] [Dynamo] Fix numpy error in test_numpy_torch_operators
+ (#109087)
+
+When you inplace matmul two one dimensional numpy arrays, numpy=="1.24.3" gives
+```
+TypeError: In-place matrix multiplication is not (yet) supported. Use 'a = a @ b' instead of 'a @= b'.
+```
+but numpy=="1.25.2" gives
+```
+ValueError: inplace matrix multiplication requires the first operand to have at least one and the second at least two dimensions.
+```
+
+This diff makes it so that newer versions of numpy does not fail on this test because we do not catch ValueError.
+
+An alternative solution would be to update the test cases to be 2 dimensional, but that would have impact on other operators being tested.
+
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/109087
+Approved by: https://github.com/jansel
+---
+ test/dynamo/test_misc.py | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/test/dynamo/test_misc.py b/test/dynamo/test_misc.py
+index 311bffc3e5fba9..a0486278599dcf 100644
+--- a/test/dynamo/test_misc.py
++++ b/test/dynamo/test_misc.py
+@@ -1339,6 +1339,11 @@ def fn(op, t1, t2):
+                 # skip
+                 # Did you know that tensor[ndarray_of_floats] works?
+                 continue
++            if op is operator.imatmul and (t1_np or t2_np):
++                # skip
++                # in numpy, in place matmul does not work single
++                # dimensional arrays
++                continue
+             t1 = torch.rand(5)
+             if t1_np:
+                 t1 = t1.numpy()

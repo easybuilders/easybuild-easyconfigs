@@ -77,7 +77,9 @@ exts_list = [
     }),
     ('grpcio', '1.56.2', {
         'modulename': 'grpc',
-        'preinstallopts': "GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s " +
+        # patch hardcoded /usr paths to prefix them with alternate sysroot path (if defined)
+        'preinstallopts': "sed -i 's@/usr@%(sysroot)s/usr@g' setup.py && " +
+                          "GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s " +
                           " ".join(["GRPC_PYTHON_BUILD_SYSTEM_%s=True" % i for i in
                                     (
                                         'OPENSSL',

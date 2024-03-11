@@ -1,0 +1,82 @@
+easyblock = 'CMakeMake'
+
+name = 'GDAL'
+version = '3.7.1'
+
+homepage = 'https://www.gdal.org'
+description = """GDAL is a translator library for raster geospatial data formats that is released under an X/MIT style
+ Open Source license by the Open Source Geospatial Foundation. As a library, it presents a single abstract data model
+ to the calling application for all supported formats. It also comes with a variety of useful commandline utilities for
+ data translation and processing."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://download.osgeo.org/%(namelower)s/%(version)s/']
+sources = [SOURCELOWER_TAR_XZ]
+patches = ['%(name)s-3.6.2_fix-python-CC-CXX.patch']
+
+checksums = [
+    {'gdal-3.7.1.tar.xz': '9297948f0a8ba9e6369cd50e87c7e2442eda95336b94d2b92ef1829d260b9a06'},
+    {'GDAL-3.6.2_fix-python-CC-CXX.patch': '859b874b0c8ff7626a76d51f008bf05b7f89a35b325bdd1d126d2364154acc63'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('pkgconf', '1.9.5'),
+    ('Bison', '3.8.2'),
+]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('netCDF', '4.9.2'),
+    ('expat', '2.5.0'),
+    ('GEOS', '3.12.0'),
+    ('SQLite', '3.42.0'),
+    ('libarchive', '3.6.2'),
+    ('libxml2', '2.11.4'),
+    ('libpng', '1.6.39'),
+    ('libjpeg-turbo', '2.1.5.1'),
+    ('LibTIFF', '4.5.0'),
+    ('zlib', '1.2.13'),
+    ('cURL', '8.0.1'),
+    ('PCRE', '8.45'),
+    ('PROJ', '9.2.0'),
+    ('libgeotiff', '1.7.1'),
+    ('SciPy-bundle', '2023.07'),
+    ('HDF5', '1.14.0'),
+    ('HDF', '4.2.16-2'),
+    ('Armadillo', '12.6.2'),
+    ('CFITSIO', '4.3.0'),
+    ('zstd', '1.5.5'),
+    ('giflib', '5.2.1'),
+    ('json-c', '0.16'),
+    ('Xerces-C++', '3.2.4'),
+    ('PCRE2', '10.42'),
+    ('OpenEXR', '3.1.7'),
+    ('Brunsli', '0.1'),
+    ('Qhull', '2020.2'),
+    ('LERC', '4.0.0'),
+    ('OpenJPEG', '2.5.0'),
+    ('SWIG', '4.1.1'),
+]
+
+# iterative build for both static and shared libraries
+local_configopts_common = "-DGDAL_USE_INTERNAL_LIBS=OFF -DArrow_DIR=$EBROOTARROW "
+local_configopts_common += "-DGEOTIFF_INCLUDE_DIR=$EBROOTLIBGEOTIFF/include -DPython_ROOT=$EBROOTPYTHON "
+
+configopts = [
+    local_configopts_common + "-DBUILD_SHARED_LIBS=OFF",
+    local_configopts_common
+]
+
+
+sanity_check_paths = {
+    'files': ['lib/libgdal.a', 'lib/libgdal.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'include', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -c 'import osgeo.%(namelower)s'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'data'

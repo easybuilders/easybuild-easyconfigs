@@ -1,0 +1,26 @@
+The test causes an overflow before it gets to the point it wants to test.
+Simply remove that part.
+See https://github.com/pytorch/pytorch/pull/114940
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_sparse_csr.py b/test/test_sparse_csr.py
+index 5d344953526..f0bf8535214 100644
+--- a/test/test_sparse_csr.py
++++ b/test/test_sparse_csr.py
+@@ -864,15 +864,6 @@ class TestSparseCompressed(TestCase):
+                                 torch.tensor([0], dtype=torch.int64),
+                                 torch.tensor([1]), (1, cols))
+ 
+-        nnz = 2 ** 31
+-        with self.assertRaisesRegex(RuntimeError, '32-bit integer overflow in nnz'):
+-            torch.sparse_csr_tensor(torch.tensor([0, nnz // 2, nnz], dtype=torch.int32),
+-                                    torch.arange(nnz // 2, dtype=torch.int32).repeat(2),
+-                                    torch.ones(nnz, dtype=torch.int8), (2, nnz // 2))
+-        torch.sparse_csr_tensor(torch.tensor([0, nnz // 2, nnz], dtype=torch.int64),
+-                                torch.arange(nnz // 2, dtype=torch.int64).repeat(2),
+-                                torch.ones(nnz, dtype=torch.int8), (2, nnz // 2))
+-
+     @skipMeta
+     @onlyCPU
+     @all_sparse_compressed_layouts()

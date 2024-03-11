@@ -1,0 +1,49 @@
+name = 'Ferret'
+version = '7.6.0'
+homepage = 'https://ferret.pmel.noaa.gov/Ferret/'
+description = """Ferret is an interactive computer visualization and analysis environment
+designed to meet the needs of oceanographers and meteorologists analyzing large and complex gridded data sets."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'usempi': True, 'pic': True, 'extra_fflags': '-fallow-argument-mismatch -fallow-invalid-boz'}
+
+source_urls = ['https://github.com/NOAA-PMEL/Ferret/archive/']
+sources = ['v%s.tar.gz' % version]
+checksums = ['69832d740bd44c9eadd198a5de4d96c4c01ae90ae28c2c3414c1bb9f43e475d1']
+
+builddependencies = [
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('X11', '20220504'),
+    ('netCDF-Fortran', '4.6.0'),
+    ('zlib', '1.2.12'),
+    ('Szip', '2.1.1'),
+    ('cURL', '7.83.0'),
+    ('ncurses', '6.3'),
+    ('libreadline', '8.1.2'),
+    ('tcsh', '6.24.01'),
+    ('Java', '11', '', SYSTEM),
+]
+
+parallel = 1
+
+prebuildopts = 'export CPP_X11="-I${EBROOTX11}/include" && '
+buildopts = 'CDFLIB="-lnetcdff -lnetcdf -lhdf5_hl -lhdf5 -lsz"'
+
+modextravars = {
+    'FER_DIR': '%(installdir)s',
+    'FER_DSETS': '%(installdir)s/fer_dsets',
+    'FER_DATA': '. %(installdir)s/fer_dsets/data %(installdir)s/contrib',
+    'FER_DESCR': '. %(installdir)s/fer_dsets/descr',
+    'FER_GRIDS': '. %(installdir)s/fer_dsets/grids',
+    'FER_GO': '. %(installdir)s/go %(installdir)s/examples %(installdir)s/contrib',
+    'FER_EXTERNAL_FUNCTIONS': '%(installdir)s/ext_func/libs',
+    'FER_PALETTE': '. %(installdir)s/ppl',
+    'SPECTRA': '%(installdir)s/ppl',
+    'FER_FONTS': '%(installdir)s/ppl/fonts',
+    'PLOTFONTS': '%(installdir)s/ppl/fonts',
+}
+
+moduleclass = 'vis'
