@@ -1,0 +1,68 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'CMakePythonPackage'
+
+name = 'Faiss'
+version = '1.7.4'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/facebookresearch/faiss'
+description = """
+Faiss is a library for efficient similarity search and clustering of dense
+ vectors. It contains algorithms that search in sets of vectors of any size, up
+ to ones that possibly do not fit in RAM. It also contains supporting code for
+ evaluation and parameter tuning. Faiss is written in C++ with complete
+ wrappers for Python/numpy. Some of the most useful algorithms are implemented
+ on the GPU. It is developed primarily at Meta's Fundamental AI Research group.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+github_account = 'facebookresearch'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['d9a7b31bf7fd6eb32c10b7ea7ff918160eed5be04fe63bb7b4b4b5f2bbde01ad']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('SWIG', '4.1.1'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('SciPy-bundle', '2023.07'),
+]
+
+_copts = [
+    '-DFAISS_ENABLE_GPU=ON',
+    '-DFAISS_ENABLE_PYTHON=ON',
+    '-DFAISS_ENABLE_C_API=ON',
+    '-DBUILD_TESTING=ON',
+    '-DBUILD_SHARED_LIBS=ON',
+    '-DPython_EXECUTABLE="${EBROOTPYTHON}/bin/python"',
+    '-DCUDAToolkit_ROOT="${CUDA_ROOT}"',
+    '-DCMAKE_CUDA_ARCHITECTURES="%(cuda_cc_cmake)s"',
+    '-DCMAKE_INSTALL_LIBDIR=%(installdir)s/lib',
+]
+
+configopts = ' '.join(_copts)
+
+buildopts = 'faiss swigfaiss'
+
+postinstallcmds = [
+    ' && '.join([
+        # run a pip install in the 'faiss/python' subdir
+        'cd ../easybuild_obj/%(namelower)s/python',
+        'python -m pip install --prefix=%(installdir)s --no-build-isolation .',
+        # for some reason, 'libfaiss_python_callbacks.so' doesn't get installed, so copy this manually
+        'cp libfaiss_python_callbacks.%s %%(installdir)s/lib/python%%(pyshortver)s/site-packages/faiss' % SHLIB_EXT
+    ])
+]
+
+sanity_check_paths = {
+    'files': ['lib/lib%%(namelower)s.%s' % SHLIB_EXT],
+    'dirs': ['include/%(namelower)s', 'lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+moduleclass = 'tools'
