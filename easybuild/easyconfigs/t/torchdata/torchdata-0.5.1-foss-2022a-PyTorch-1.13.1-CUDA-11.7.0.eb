@@ -1,0 +1,46 @@
+easyblock = 'PythonBundle'
+
+name = 'torchdata'
+version = '0.5.1'
+local_pytorch_version = '1.13.1'
+versionsuffix = '-PyTorch-' + local_pytorch_version + '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/pytorch/data'
+description = """
+TorchData is a prototype library of common modular data loading primitives for
+easily constructing flexible and performant data pipelines."
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('pybind11', '2.9.2'),
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('PyTorch', local_pytorch_version, '-CUDA-%(cudaver)s'),
+]
+
+sanity_pip_check = True
+use_pip = True
+
+
+exts_list = [
+    ('portalocker', '2.7.0', {
+        'checksums': ['032e81d534a88ec1736d03f780ba073f047a06c478b06e2937486f334e955c51'],
+    }),
+    (name, version, {
+        'patches': ['%(name)s-%(version)s-remove-submodule.patch'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/pytorch/data/archive'],
+        'checksums': [
+            {'v0.5.1.tar.gz': '69d80bd33ce8f08e7cfeeb71cefddfc29cede25a85881e33dbae47576b96ed29'},
+            {'torchdata-0.5.1-remove-submodule.patch':
+             'ad556373f88b29289d09afb67aa1dcc3616420339ee0ac5aa31cd6301933aa86'},
+        ],
+    }),
+]
+
+moduleclass = 'lib'
