@@ -1,0 +1,66 @@
+easyblock = "CMakeMake"
+
+name = "SCIPOptSuite"
+version = "9.0.0"
+
+homepage = "https://scipopt.org/"
+description = """SCIP is currently one of the fastest non-commercial solvers for mixed integer programming (MIP)
+and mixed integer nonlinear programming (MINLP). It is also a framework for constraint integer programming and
+branch-cut-and-price. It allows for total control of the solution process and the access of detailed
+information down to the guts of the solver."""
+
+toolchain = {"name": "gccflexiblas", "version": "2023a"}
+
+# A user-license agreement is required prior to download.
+# The source should be place in: $HOME/.local/easybuild/sources/s/SCIP/
+# or execute: eb --sourcepath=SOURCEPATH
+
+# Since November 4, SCIP is licensed under the Apache 2.0 License.
+# Releases up to and including Version 8.0.2 remain under the ZIB Academic License as indicated by the files contained in the releases. The new license applies from Version 8.0.3 onwards.
+sources = ['%(namelower)s-%(version)s.tgz'] # pre-downloaded scipoptsuite-9.0.0.tgz
+checksums = ['c49a0575003322fcbfe2d3765de7e3e60ff7c08d1e8b17d35409be40476cb98a']
+
+builddependencies = [
+    ("CMake", "3.27.7"),
+    ("Boost", "1.82.0"),
+    ("tbb", "2021.10.0"),
+    ("GSL", "2.7"),
+    ("AMPL-MP", "3.1.0"),
+    ("Ipopt", "3.14.14"),
+    ("METIS", "5.1.0"),
+    ('Cython', '0.29.36'),
+]
+
+multi_deps = {'Python': ['3.10', '3.11'] }
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('PySCIPOpt', '5.0.0', {
+        'sources' : [SOURCE_TAR_GZ],
+        'source_urls': [PYPI_SOURCE],
+        'checksums': ['f9c36c941e1373406b00c030f2511578c3fb02a95a2cf5559772deb846a0af47'],
+        'prebuildopts': " export SCIPOPTDIR=$EBROOTSCIPOPTSUITE && ",
+        'use_pip': True,
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+modextrapaths = { 'EBPYTHONPREFIXES' : '' }
+
+sanity_check_paths = {
+    "files": [
+        "bin/scip",
+        "lib/libscip.so",
+    ],
+    "dirs": [
+        "bin",
+        "lib",
+        "include",
+        "include/scip",
+    ],
+}
+
+sanity_check_commands = ['scip --version']
+
+moduleclass = "math"
