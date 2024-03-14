@@ -1,0 +1,60 @@
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'plotutils'
+version = '2.6'
+
+homepage = 'https://www.gnu.org/software/plotutils/'
+description = """The GNU plotutils package contains software for both programmers and 
+technical users. Its centerpiece is libplot, a powerful C/C++ function library for 
+exporting 2-D vector graphics in many file formats, both vector and bitmap. On the 
+X Window System, it can also do 2-D vector graphics animations.
+
+libplot is device-independent, in the sense that its API (application programming interface) 
+does not depend on the type of graphics file to be exported. A Postscript-like API 
+is used both for file export and for graphics animations. A libplot programmer needs 
+to learn only one API: not the details of many graphics file formats."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+source_urls = ['https://ftp.gnu.org/gnu/plotutils']
+sources = ['%(name)s-%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-png.patch']
+
+checksums = [
+    '4f4222820f97ca08c7ea707e4c53e5a3556af4d8f1ab51e0da6ff1627ff433ab',  # plotutils-2.6.tar.gz
+    'd60997b0608db37d494f60394a468cd5491e200862d8d9af32ba1dbc3c178aaa',  # plotutils-2.6-png.patch
+]
+
+builddependencies = [
+    ('gawk', '5.1.1'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+]
+
+dependencies = [
+    ('X11', '20220504'),
+]
+
+configopts = '--enable-libxmi --enable-ps-fonts-in-pcl --enable-libplotter '
+configopts += '--enable-lj-fonts-in-ps '
+
+runtest = 'check'
+
+local_bin = [
+    'double', 'graph', 'hersheydemo', 'ode', 'pic2plot', 'plot',
+    'plotfont', 'spline', 'tek2plot'
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bin] +
+             ['lib/libplot.a', 'lib/libplot.%s' % SHLIB_EXT] +
+             ['lib/libplotter.a', 'lib/libplotter.%s' % SHLIB_EXT] +
+             ['lib/libxmi.a', 'lib/libxmi.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share'],
+}
+
+sanity_check_commands = ["%s --help" % x for x in local_bin]
+
+moduleclass = 'tools'

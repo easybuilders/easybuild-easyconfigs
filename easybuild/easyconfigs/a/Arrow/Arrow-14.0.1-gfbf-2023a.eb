@@ -1,0 +1,86 @@
+easyblock = 'CMakeMake'
+
+name = 'Arrow'
+version = '14.0.1'
+
+homepage = 'https://arrow.apache.org'
+description = """Apache Arrow (incl. PyArrow Python bindings), a cross-language development platform
+ for in-memory data."""
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+
+source_urls = ['https://archive.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s']
+sources = ['apache-arrow-%(version)s.tar.gz']
+checksums = ['5c70eafb1011f9d124bafb328afe54f62cc5b9280b7080e1e3d668f78c0e407e']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Autotools', '20220317'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('pkgconf', '1.9.5'),
+]
+
+# Arrow strongly prefers included jemalloc, so not including it as a dependency
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),  # for numpy
+    ('Boost', '1.82.0'),
+    ('lz4', '1.9.4'),
+    ('zlib', '1.2.13'),
+    ('bzip2', '1.0.8'),
+    ('zstd', '1.5.5'),
+    ('snappy', '1.1.10'),
+    ('RapidJSON', '1.1.0-20230928'),
+    ('RE2', '2023-08-01'),
+    ('utf8proc', '2.8.0'),
+]
+
+start_dir = 'cpp'
+
+# see https://arrow.apache.org/docs/developers/python.html
+configopts = "-DARROW_DATASET=on -DARROW_PYTHON=on -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON "
+configopts += "-DCMAKE_INSTALL_LIBDIR=lib -DPython3_ROOT_DIR=$EBROOTPYTHON "
+configopts += "-DARROW_WITH_ZLIB=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_ZSTD=ON -DARROW_WITH_LZ4=ON "
+configopts += "-DZSTD_ROOT=$EBROOTZSTD "
+
+# install Python bindings
+_pyarrow_preinstall_opts = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
+_pyarrow_preinstall_opts += "export Arrow_DIR=%(installdir)s && export ArrowDataset_DIR=%(installdir)s && "
+_pyarrow_preinstall_opts += "export ArrowAcero_DIR=%(installdir)s && export Parquet_DIR=%(installdir)s && "
+_pyarrow_preinstall_opts += "export XDG_CACHE_HOME=$TMPDIR && "
+_pyarrow_preinstall_opts += "sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml && "
+_pyarrow_preinstall_opts += "Python3_ROOT_DIR=$EBROOTPYTHON "
+_pyarrow_preinstall_opts += "PYARROW_CMAKE_OPTIONS='-DZSTD_LIB=$EBROOTZSTD/lib/libzstd.%s ' " % SHLIB_EXT
+_pyarrow_preinstall_opts += "PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 "
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+}
+exts_list = [
+    ('pyarrow', version, {
+        'sources': ['apache-arrow-%(version)s.tar.gz'],
+        'checksums': ['5c70eafb1011f9d124bafb328afe54f62cc5b9280b7080e1e3d668f78c0e407e'],
+        'start_dir': '%(builddir)s/apache-arrow-%(version)s/python',
+        'preinstallopts': _pyarrow_preinstall_opts,
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['lib/libarrow.a', 'lib/libarrow.%s' % SHLIB_EXT,
+              'lib/python%%(pyshortver)s/site-packages/pyarrow/libarrow_python.%s' % SHLIB_EXT],
+    'dirs': ['include/arrow', 'lib/cmake/Arrow', 'lib/pkgconfig', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import pyarrow'",
+    "python -c 'import pyarrow.dataset'",
+    "python -c 'import pyarrow.parquet'",
+]
+
+moduleclass = 'data'
