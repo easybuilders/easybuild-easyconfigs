@@ -1,0 +1,113 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+# Updated by: Alex Domingo (Vrije Universiteit Brussel)
+# Updated by: Thomas Hoffmann (EMBL Heidelberg)
+easyblock = 'PythonBundle'
+
+name = 'jax'
+version = '0.4.25'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pypi.python.org/pypi/jax'
+description = """Composable transformations of Python+NumPy programs:
+differentiate, vectorize, JIT to GPU/TPU, and more"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+cuda_compute_capabilities = ["5.0", "6.0", "6.1", "7.0", "7.5", "8.0", "8.6", "9.0"]
+
+builddependencies = [
+    ('Bazel', '6.3.1'),
+    ('pytest-xdist', '3.3.1'),
+    # git 2.x required to fetch repository 'io_bazel_rules_docker'
+    ('git', '2.41.0', '-nodocs'),
+    ('matplotlib', '3.7.2'),  # required for tests/lobpcg_test.py
+    ('poetry', '1.5.1'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('cuDNN', '8.9.2.26', versionsuffix, SYSTEM),
+    ('NCCL', '2.18.3', versionsuffix),
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('flatbuffers-python', '23.5.26'),
+    ('zlib', '1.2.13'),
+    ('ml_dtypes', '0.3.2'),
+]
+
+# downloading xla and other tarballs to avoid that Bazel downloads it during the build
+# note: this *must* be the exact same commit as used in third_party/{xla,"other"}/workspace.bzl
+local_xla_commit =  '4ccfe33c71665ddcbca5b127fefe8baa3ed632d4'
+local_tfrt_commit = '0aeefb1660d7e37964b2bb71b1f518096bda9a25'
+local_repo_opt = '--bazel_options="--override_repository=xla=%%(builddir)s/xla-%s" ' % local_xla_commit
+local_repo_opt += '--bazel_options="--override_repository=runtime=%%(builddir)s/tf_runtime-%s" ' % local_xla_commit
+
+# deliberately not testing in parallel, as that results in (additional) failing tests;
+# use XLA_PYTHON_CLIENT_ALLOCATOR=platform to allocate and deallocate GPU memory during testing,
+# see https://github.com/google/jax/issues/7323 and
+# https://github.com/google/jax/blob/main/docs/gpu_memory_allocation.rst;
+# use CUDA_VISIBLE_DEVICES=0 to avoid failing tests on systems with multiple GPUs;
+# use NVIDIA_TF32_OVERRIDE=0 to avoid lossing numerical precision by disabling TF32 Tensor Cores;
+local_test = "NVIDIA_TF32_OVERRIDE=0 CUDA_VISIBLE_DEVICES=0 "
+local_test += "XLA_PYTHON_CLIENT_ALLOCATOR=platform "
+local_test += "JAX_ENABLE_X64=true pytest -vv tests "
+
+use_pip = True
+
+default_easyblock = 'PythonPackage'
+default_component_specs = {
+    'sources': [SOURCE_TAR_GZ],
+    'source_urls': [PYPI_SOURCE],
+    'start_dir': '%(name)s-%(version)s',
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'download_dep_fail': True,
+}
+
+components = [
+    ('absl-py', '2.1.0', {
+        'options': {'modulename': 'absl'},
+        'checksums': ['7820790efbb316739cde8b4e19357243fc3608a152024288513dd968d7d959ff'],
+    }),
+    ('jaxlib', version, {
+        'sources': [
+            '%(name)s-v%(version)s.tar.gz',
+            {
+                'download_filename': '%s.tar.gz' % local_xla_commit,
+                'filename': 'xla-%s.tar.gz' % local_xla_commit,
+            },
+            {
+                'download_filename': '%s.tar.gz' % local_tfrt_commit,
+                'filename': 'tf_runtime-%s.tar.gz' % local_tfrt_commit,
+            },
+        ],
+        'source_urls': [
+            'https://github.com/google/jax/archive/',
+            'https://github.com/tensorflow/runtime/archive',
+            'https://github.com/openxla/xla/archive'
+        ],
+        'checksums': [
+            {'jaxlib-v0.4.25.tar.gz':
+             'fc1197c401924942eb14185a61688d0c476e3e81ff71f9dc95e620b57c06eec8'},
+            {'xla-4ccfe33c71665ddcbca5b127fefe8baa3ed632d4.tar.gz':
+             '8a59b9af7d0850059d7043f7043c780066d61538f3af536e8a10d3d717f35089'},
+            {'tf_runtime-0aeefb1660d7e37964b2bb71b1f518096bda9a25.tar.gz':
+             'a3df827d7896774cb1d80bf4e1c79ab05c268f29bd4d3db1fb5a4b9c2079d8e3'},
+        ],
+        'start_dir': 'jax-jaxlib-v%(version)s',
+        'buildopts': local_repo_opt
+    }),
+]
+
+exts_list = [
+    (name, version, {
+        'runtest': "NVIDIA_TF32_OVERRIDE=0 CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_ALLOCATOR=platform JAX_ENABLE_X64=true pytest -vv tests ",
+        'source_tmpl': '%(name)s-v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/google/jax/archive/'],
+        'checksums': ['8b30af49688c0c13b82c6f5ce992727c00b5fc6d04a4c6962012f4246fa664eb'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'tools'
