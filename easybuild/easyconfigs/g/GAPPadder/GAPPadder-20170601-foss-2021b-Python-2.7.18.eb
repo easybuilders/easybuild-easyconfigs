@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'GAPPadder'
+version = '20170601'
+local_commit = 'a359750'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/simoncchu/GAPPadder'
+description = "GAPPadder is tool for closing gaps on draft genomes with short sequencing data"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/simoncchu/GAPPadder/archive']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['d255e863cc2627116d7cb1d112283a7cf794d349de28f673daf32ce68d8bba90']
+
+dependencies = [
+    ('Python', '2.7.18'),
+    ('Biopython', '1.76', versionsuffix),
+    ('KMC', '3.2.1', versionsuffix),
+    ('Velvet', '1.2.10', '-mt-kmer_191'),
+    ('BWA', '0.7.17'),
+    ('SAMtools', '1.14'),
+    ('BamTools', '2.5.2'),
+]
+
+# remove prebuilt binaries
+prebuildopts = "rm TERefiner_1 TERefiner/TERefiner_1 ContigsMerger ContigsCompactor-*/ContigsMerger/ContigsMerger && "
+prebuildopts += "cd TERefiner && "
+prebuildopts += "make BAMTOOLS=$EBROOTBAMTOOLS/include/bamtools BAMTOOLS_LD=$EBROOTNBAMTOOLS/lib && cd .. && "
+prebuildopts += "cd ContigsCompactor-v0.2.0/ContigsMerger && "
+
+files_to_copy = [
+    (['TERefiner/TERefiner_1', 'ContigsCompactor-v0.2.0/ContigsMerger/ContigsMerger'], 'bin'),
+    '*.py',
+    'configuration.json',
+]
+
+sanity_check_paths = {
+    'files': ['bin/TERefiner_1', 'bin/ContigsMerger', 'configuration.json', 'main.py', 'pick_contigs.py'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

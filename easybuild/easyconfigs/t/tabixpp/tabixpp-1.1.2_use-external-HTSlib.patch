@@ -1,0 +1,110 @@
+# Patch to use an existing HTSlib rather than the one shipped with tabixpp, and
+#  build static and dynamic libaries. Based on the PR by outpaddling:
+#  https://github.com/ekg/tabixpp/pull/10
+# Updated: Petr Král (INUITS)
+
+diff -u tabixpp-1.1.2/Makefile.orig tabixpp-1.1.2/Makefile
+--- tabixpp-1.1.2/Makefile.orig 2023-01-19 09:01:25.000000000 +0100
++++ tabixpp-1.1.2/Makefile      2023-07-12 11:55:07.513635497 +0200
+@@ -10,74 +10,57 @@
+ CC ?=		cc
+ CXX ?= 		c++
+ CXXFLAGS ?=	-g -Wall -O2 #-m64 #-arch ppc
+-CXXFLAGS +=	-fPIC
+-INCLUDES ?=	-Ihtslib
+-HTS_HEADERS ?=	htslib/htslib/bgzf.h htslib/htslib/tbx.h
+-HTS_LIB ?=	htslib/libhts.a
+-LIBPATH ?=	-L. -Lhtslib
++CPPFLAGS ?=	-Ihtslib
++LDLIBS ?=		-lhts -llzma -lbz2 -lz -lpthread -lm
+ 
+-DESTDIR ?=	stage
+ PREFIX ?=	/usr/local
+ STRIP ?=	strip
+ INSTALL ?=	install -c
+ MKDIR ?=	mkdir -p
+ AR ?=		ar
++ARFLAGS ?=	rs
+ 
+ DFLAGS =	-D_FILE_OFFSET_BITS=64 -D_USE_KNETFILE
+ BIN =		tabix++
+-LIB =		libtabix.a
++LIB =		libtabixpp.a
+ SOVERSION =	1
+-SLIB =		libtabix.so.$(SOVERSION)
++SLIB =		libtabixpp.so
+ OBJS =		tabix.o
+-SUBDIRS =	.
+ 
+-.SUFFIXES:.c .o
++LIBDIR = $(DESTDIR)$(PREFIX)/lib
++BINDIR = $(DESTDIR)$(PREFIX)/bin
++INCDIR = $(DESTDIR)$(PREFIX)/include/tabixpp
+ 
+-.c.o:
+-	$(CC) -c $(CXXFLAGS) $(DFLAGS) $(INCLUDES) $< -o $@
++.SUFFIXES:.cpp .o .pico .so
+ 
+-all-recur lib-recur clean-recur cleanlocal-recur install-recur:
+-	@target=`echo $@ | sed s/-recur//`; \
+-	wdir=`pwd`; \
+-	list='$(SUBDIRS)'; for subdir in $$list; do \
+-		cd $$subdir; \
+-		$(MAKE) CC="$(CC)" DFLAGS="$(DFLAGS)" CXXFLAGS="$(CXXFLAGS)" \
+-			INCLUDES="$(INCLUDES)" LIBPATH="$(LIBPATH)" $$target \
+-			|| exit 1; \
+-		cd $$wdir; \
+-	done;
++.cpp.o:
++	$(CXX) $(CXXFLAGS) $(DFLAGS) -I. $(CPPFLAGS) -c -o $@ $<
+ 
+-all:	$(BIN) $(LIB) $(SLIB)
++.cpp.pico:
++	$(CXX) $(CXXFLAGS) $(DFLAGS) -I. $(CPPFLAGS) -fPIC -c -o $@ $<
+ 
+-tabix.o: $(HTS_HEADERS) tabix.cpp tabix.hpp
+-	$(CXX) $(CXXFLAGS) -c tabix.cpp $(INCLUDES)
+-
+-htslib/libhts.a:
+-	cd htslib && $(MAKE) lib-static
++all:	$(BIN) $(SLIB) $(LIB)
+ 
+ $(LIB): $(OBJS)
+-	$(AR) rs $(LIB) $(OBJS)
+-
+-$(SLIB): $(OBJS)
+-	$(CXX) -shared -Wl,-soname,$(SLIB) -o $(SLIB) $(OBJS)
++	$(AR) $(ARFLAGS) $@ $^
+ 
+-tabix++: $(OBJS) main.cpp $(HTS_LIB)
+-	$(CXX) $(CXXFLAGS) -o $@ main.cpp $(OBJS) $(INCLUDES) $(LIBPATH) \
+-		-lhts -lpthread -lm -lz -lcurl -llzma -lbz2
++$(SLIB): $(OBJS:.o=.pico)
++	$(CXX) -shared -Wl,-soname,$(SLIB).$(SOVERSION) $(LDFLAGS) -o $@ $^ $(LDLIBS)
++	ln -sf $@ $(SLIB).$(SOVERSION)
+ 
+-test: all
+-	./tabix++ test/vcf_file.vcf.gz
++$(BIN): $(OBJS) main.cpp
++	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ main.cpp $(OBJS) $(LDLIBS)
+ 
+ install: all
+-	$(MKDIR) $(DESTDIR)$(PREFIX)/bin
+-	$(MKDIR) $(DESTDIR)$(PREFIX)/include
+-	$(MKDIR) $(DESTDIR)$(PREFIX)/lib
+-	$(INSTALL) $(BIN) $(DESTDIR)$(PREFIX)/bin
+-	$(INSTALL) *.hpp $(DESTDIR)$(PREFIX)/include
+-	$(INSTALL) $(LIB) $(SLIB) $(DESTDIR)$(PREFIX)/lib
++	$(MKDIR) $(BINDIR)
++	$(MKDIR) $(LIBDIR)
++	$(MKDIR) $(INCDIR)
++	$(INSTALL) $(BIN) $(BINDIR)
++	$(INSTALL) *.hpp $(INCDIR)
++	$(INSTALL) $(LIB) $(SLIB) $(SLIB).$(SOVERSION) $(LIBDIR)
+ 
+ install-strip: install
+-	$(STRIP) $(DESTDIR)$(PREFIX)/bin/$(BIN) $(DESTDIR)$(PREFIX)/lib/$(SLIB)
++	$(STRIP) $(BINDIR)/$(BIN) $(LIBDIR)/$(LIB)
+ 
+ cleanlocal:
+ 	rm -rf $(BIN) $(LIB) $(SLIB) $(OBJS) $(DESTDIR)

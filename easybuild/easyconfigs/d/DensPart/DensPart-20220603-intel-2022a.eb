@@ -1,0 +1,45 @@
+easyblock = 'PythonPackage'
+
+name = 'DensPart'
+version = '20220603'
+local_commit = '9bfd1e2'
+
+homepage = 'https://github.com/theochem/denspart'
+description = "Atoms-in-molecules density partitioning schemes based on stockholder recipe"
+
+toolchain = {'name': 'intel', 'version': '2022a'}
+
+source_urls = ['https://github.com/theochem/denspart/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['e2014368da19503aead56c176da0d6ec00ce13ea62d0cefde69cdfd06e1fcccd']
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('iodata', '1.0.0a2'),
+    ('gbasis', '20210904'),
+    ('grid', '20220610'),
+    ('ASE', '3.22.1'),  # required by denspart-from-gpaw
+    ('GPAW', '22.8.0'),  # required by denspart-from-gpaw
+    ('PLAMS', '1.5.1'),  # provides scm.plams, required by denspart-from-adf
+]
+
+download_dep_fail = True
+use_pip = True
+
+sanity_check_paths = {
+    'files': ['bin/denspart%s' % x for x in ['', '-from-adf', '-from-gpaw', '-from-horton3', '-write-extxyz']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "denspart -h",
+    "denspart-from-adf -h",
+    "denspart-from-gpaw -h",
+    "denspart-from-horton3 -h",
+    "denspart-write-extxyz -h",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'chem'

@@ -1,0 +1,84 @@
+easyblock = 'MakeCp'
+
+name = 'CUDA-Samples'
+version = '12.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/NVIDIA/cuda-samples'
+description = "Samples for CUDA Developers which demonstrates features in CUDA Toolkit"
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/NVIDIA/cuda-samples/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['f758160645b366d79c2638d8dfd389f01029b8d179ab0c11726b9ef58aecebd9']
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+]
+
+# Get rid of pre-built Windows DLLs.
+prebuildopts = "rm -r bin/win64 && "
+
+# Filter out samples that require extensive dependencies
+local_filters = "Samples/2_Concepts_and_Techniques/EGLStream_CUDA_Interop/Makefile "
+local_filters += "Samples/2_Concepts_and_Techniques/streamOrderedAllocationIPC/Makefile "
+local_filters += "Samples/3_CUDA_Features/tf32TensorCoreGemm/Makefile "
+local_filters += "Samples/3_CUDA_Features/warpAggregatedAtomicsCG/Makefile "
+local_filters += "Samples/4_CUDA_Libraries/boxFilterNPP/Makefile "
+local_filters += "Samples/4_CUDA_Libraries/cannyEdgeDetectorNPP/Makefile "
+local_filters += "Samples/4_CUDA_Libraries/cudaNvSci/Makefile "
+local_filters += "Samples/4_CUDA_Libraries/cudaNvSciNvMedia/Makefile "
+local_filters += "Samples/4_CUDA_Libraries/freeImageInteropNPP/Makefile "
+local_filters += "Samples/4_CUDA_Libraries/histEqualizationNPP/Makefile "
+local_filters += "Samples/4_CUDA_Libraries/FilterBorderControlNPP/Makefile "
+local_filters += "Samples/5_Domain_Specific/simpleGL/Makefile "
+local_filters += "Samples/5_Domain_Specific/simpleVulkan/Makefile "
+local_filters += "Samples/5_Domain_Specific/simpleVulkanMMAP/Makefile "
+local_filters += "Samples/5_Domain_Specific/vulkanImageCUDA/Makefile "
+
+# Sample does not compile with GCC>11
+local_filters += "Samples/0_Introduction/simpleAWBarrier/Makefile "
+local_filters += "Samples/3_CUDA_Features/bf16TensorCoreGemm/Makefile "
+local_filters += "Samples/3_CUDA_Features/dmmaTensorCoreGemm/Makefile "
+local_filters += "Samples/3_CUDA_Features/globalToShmemAsyncCopy/Makefile "
+
+# This give a link error under EESSI (ignoring for now)
+local_filters += "Samples/4_CUDA_Libraries/simpleCUFFT_callback/Makefile "
+
+# Builds a shared lib that it sticks in `bin`!
+local_filters += "Samples/2_Concepts_and_Techniques/cuHook/Makefile "
+
+# some CUDA samples fail to build on aarch64;
+# see also https://github.com/NVIDIA/cuda-samples/issues/223
+if ARCH == 'aarch64':
+    local_filters += "Samples/3_CUDA_Features/cdpBezierTessellation/Makefile "
+    local_filters += "Samples/3_CUDA_Features/cdpSimplePrint/Makefile "
+    local_filters += "Samples/3_CUDA_Features/cdpSimpleQuicksort/Makefile "
+    local_filters += "Samples/3_CUDA_Features/cdpQuadtree/Makefile "
+    local_filters += "Samples/3_CUDA_Features/cdpAdvancedQuicksort/Makefile "
+
+buildopts = "HOST_COMPILER=g++ FILTER_OUT='%s'" % local_filters
+
+# Remove libraries in the bin dir after a successful 'make'
+buildopts += " && rm bin/*/linux/release/lib*.so.*"
+
+local_binsubdir = 'sbsa' if ARCH == 'aarch64' else ARCH
+
+files_to_copy = [
+    (['bin/%s/linux/release/*' % local_binsubdir], 'bin'),
+    'LICENSE',
+]
+
+local_binaries = ['deviceQuery', 'matrixMul', 'bandwidthTest', 'cudaOpenMP']
+
+# Only paths are used for sanity checks.
+# Commands may fail due to missing compatibility libraries that might be needed
+# to be able to use this specific CUDA version in combination with the available
+# NVIDIA drivers.
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': [],
+}
+
+moduleclass = 'lang'
