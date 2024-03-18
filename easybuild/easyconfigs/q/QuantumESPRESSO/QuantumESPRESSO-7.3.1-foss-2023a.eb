@@ -1,5 +1,7 @@
+easyblock = 'EB_QuantumESPRESSOcmake'
+
 name = 'QuantumESPRESSO'
-version = '7.3'
+version = '7.3.1'
 
 homepage = 'https://www.quantum-espresso.org'
 description = """Quantum ESPRESSO  is an integrated suite of computer codes
@@ -8,10 +10,10 @@ It is based on density-functional theory, plane waves, and pseudopotentials
 (both norm-conserving and ultrasoft).
 """
 
-toolchain = {'name': 'foss', 'version': '2023a'}
+toolchain = {'name': 'intel', 'version': '2023a'}
 toolchainopts = {
     'usempi': True,
-    'openmp': True,
+    'openmp': False # QE not linking FFTW and ELPA correctly with OpenMP + cmake
     }
 
 sources = [
@@ -20,23 +22,14 @@ sources = [
         'extract_cmd': 'mkdir -p %(builddir)s/qe-%(version)s && tar xzvf %s --strip-components=1 -C $_',
         'source_urls': ['https://gitlab.com/QEF/q-e/-/archive/qe-%(version)s']
     },
-    {
-        'filename': 'qe-gipaw-%(version)s.tar.gz',
-        'source_urls': ['https://github.com/dceresoli/qe-gipaw/releases/download/%(version)s/']},
-    {
-        'filename': 'wannier90-3.1.0.tar.gz',
-        'download_filename': 'v3.1.0.tar.gz',
-        'source_urls': ['https://github.com/wannier-developers/wannier90/archive/']
-    },
 ]
 checksums = [
-    {'q-e-qe-%(version)s.tar.gz': 'edc2a0f3315c69966df4f82ec86ab9f682187bc9430ef6d2bacad5f27f08972c'},
-    {'qe-gipaw-%(version)s.tar.gz': 'a24d328ec068043d36fdf69fe4f8d1904d7befeba7962cb85be059ea0fe6f026'},
-    {'wannier90-3.1.0.tar.gz': '40651a9832eb93dec20a8360dd535262c261c34e13c41b6755fa6915c936b254'},
+    {'q-e-qe-%(version)s.tar.gz': '2c58b8fadfe4177de5a8b69eba447db5e623420b070dea6fd26c1533b081d844'},
 ]
 
 builddependencies = [
     ('M4', '1.4.19'),
+    ('CMake', '3.26.3'),
 ]
 dependencies = [
     ('HDF5', '1.14.0'),
@@ -44,14 +37,22 @@ dependencies = [
     ('libxc', '6.2.2'),
 ]
 
-# The third party packages should be installed separately and added as
-# dependencies.  The exception is w90, which is force built, and gipaw
-# which depends on qe source
-buildopts = "all gwl xspectra couple epw gipaw w90"
-with_fox = True # Needed from QE7.2 to build GIPAW
-
-# parallel build tends to fail
-parallel = 1
-
+# Disabled because of https://gitlab.com/QEF/q-e/-/issues/667
+# Trouble in linking with shared libraries and intel toolchain
+build_shared_libs = False 
+with_scalapack = True
+with_gipaw = False # https://github.com/dceresoli/qe-gipaw/issues/19
+with_d3q = False # https://gitlab.com/QEF/q-e/-/issues/666
+with_qmcpack = True
 
 moduleclass = 'chem'
+
+test_suite_threshold = 0.4 # Low threshold because of https://gitlab.com/QEF/q-e/-/issues/665
+test_suite_max_failed = 5 # Allow for some flaky tests (failed due to strict thresholds)
+test_suite_allow_failures = [
+    'test_qe_xclib_',  # 7.3.1:  https://gitlab.com/QEF/q-e/-/issues/640
+    '--hp_',  # 7.3.1:  Broken testsuite (https://gitlab.com/QEF/q-e/-/issues/665)
+    '--ph_',  # 7.3.1:  Broken testsuite (https://gitlab.com/QEF/q-e/-/issues/665)
+    '--epw_',  # 7.3.1:  Broken testsuite (https://gitlab.com/QEF/q-e/-/issues/665)
+    '--tddfpt_',  # 7.3.1:  Broken testsuite (https://gitlab.com/QEF/q-e/-/issues/665)
+]
