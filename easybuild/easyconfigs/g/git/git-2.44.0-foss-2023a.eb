@@ -1,0 +1,46 @@
+##
+# Authors::   Guillermo Piccoli <guillermo.piccoli@hpcnow.com>
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'git'
+version = '2.44.0'
+
+homepage = 'https://git-scm.com'
+description = """Git is a free and open source distributed version control system designed
+to handle everything from small to very large projects with speed and efficiency."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/git/git/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['318b9234cb188628c773e021bdfc5cf23e9963e29eb940b05cefd71bfc8d9a1a']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('cURL', '8.3.0'),
+    ('expat', '2.5.0'),
+    ('gettext', '0.22'),
+    ('Perl', '5.38.2'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+preconfigopts = 'make configure && '
+
+# Work around git build system bug.  If LIBS contains -lpthread, then configure
+# will not append -lpthread to LDFLAGS, but Makefile ignores LIBS.
+configopts = "--with-perl=${EBROOTPERL}/bin/perl --enable-pthreads='-lpthread'"
+
+postinstallcmds = ['cd contrib/subtree; make install']
+
+sanity_check_paths = {
+    'files': ['bin/git'],
+    'dirs': ['libexec/git-core', 'share'],
+}
+
+moduleclass = 'tools'
