@@ -1,0 +1,60 @@
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'PythonBundle'
+
+name = 'PyTables'
+version = '3.8.0'
+
+homepage = 'https://github.com/PyTables/PyTables'
+description = """PyTables is a package for managing hierarchical datasets and designed to efficiently and easily cope
+ with extremely large amounts of data. PyTables is built on top of the HDF5 library, using the Python language and the
+ NumPy package. It features an object-oriented interface that, combined with C extensions for the performance-critical
+ parts of the code (generated using Cython), makes it a fast, yet extremely easy to use tool for interactively browsing,
+ processing and searching very large amounts of data. One important feature of PyTables is that it optimizes memory and 
+ disk resources so that data takes much less space (specially if on-flight compression is used) than other solutions 
+ such as relational or object oriented databases."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('Ninja', '1.10.2'),
+    ('pkgconf', '1.8.0'),
+    ('scikit-build', '0.11.1'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('HDF5', '1.12.1'),
+    ('LZO', '2.10'),
+    ('Blosc', '1.21.1'),
+    ('Blosc2', '2.4.3'),
+    ('py-cpuinfo', '9.0.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('blosc2', '2.0.0', {
+        'patches': ['py-%(name)s-%(version)s-numpylib.patch'],
+        'checksums': [
+            {'blosc2-2.0.0.tar.gz': 'f19b0b3674f6c825b490f00d8264b0c540c2cdc11ec7e81178d38b83c57790a1'},
+            {'py-blosc2-2.0.0-numpylib.patch': '13b90b7eb72fea74f6eb660b52c48177b4db39d10b5090d7086c5cdef30b057e'},
+        ],
+    }),
+    (name, version, {
+        'modulename': 'tables',
+        'patches': ['%(name)s-%(version)s-fix-libs.patch'],
+        'source_urls': ['https://github.com/PyTables/PyTables/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': [
+            {'v3.8.0.tar.gz': '652b56b3d355797af4337a4493acfa4c4de4a60e7c6663cc6ce44d8ee477e920'},
+            {'PyTables-3.8.0-fix-libs.patch': '022c26960b8401f3693974f57be49832b72ee1f3a0a92f8e0dd9281c7c0e2c8c'},
+        ],
+    }),
+]
+
+moduleclass = 'data'
