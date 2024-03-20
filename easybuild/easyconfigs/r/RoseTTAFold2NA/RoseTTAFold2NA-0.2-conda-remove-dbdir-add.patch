@@ -1,0 +1,37 @@
+Remove Conda from script and set path for DB as defined in module file
+Modify the script to remove the hard-coded number of CPUs and MEM according to your 
+job-scheduler!
+Author: J. Sassmannshausen (Imperial College London/UK)
+diff --git a/RoseTTAFold2NA-0.2.orig/run_RF2NA.sh b/RoseTTAFold2NA-0.2/run_RF2NA.sh
+index add3c8d..1815bdd 100755
+--- a/RoseTTAFold2NA-0.2.orig/run_RF2NA.sh
++++ b/RoseTTAFold2NA-0.2/run_RF2NA.sh
+@@ -3,18 +3,9 @@
+ # make the script stop when error (non-true exit code) occurs
+ set -e
+ 
+-############################################################
+-# >>> conda initialize >>>
+-# !! Contents within this block are managed by 'conda init' !!
+-__conda_setup="$('conda' 'shell.bash' 'hook' 2> /dev/null)"
+-eval "$__conda_setup"
+-unset __conda_setup
+-# <<< conda initialize <<<
+-############################################################
+-
+ SCRIPT=`realpath -s $0`
+ export PIPEDIR=`dirname $SCRIPT`
+-HHDB="$PIPEDIR/pdb100_2021Mar03/pdb100_2021Mar03"
++HHDB="${DB_DIR}/pdb100_2021Mar03/pdb100_2021Mar03"
+ 
+ CPU="8"  # number of CPUs to use
+ MEM="64" # max memory (in GB)
+@@ -22,8 +13,6 @@ MEM="64" # max memory (in GB)
+ WDIR=`realpath -s $1`  # working folder
+ mkdir -p $WDIR/log
+ 
+-conda activate RF2NA
+-
+ # process protein (MSA + homology search)
+ function proteinMSA {
+     seqfile=$1
