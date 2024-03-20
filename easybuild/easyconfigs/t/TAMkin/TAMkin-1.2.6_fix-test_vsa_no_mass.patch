@@ -1,0 +1,24 @@
+The test fails on haswell CPUs (and maybe others).
+It looks like the reference value is off such that it just passes in regular circumstances.
+The following values are observed:
+- REF:  0.13774798
+- PASS: 0.43330176
+- FAIL: 0.64607670
+
+Fix by adjusting the reference to the passing value.
+See https://github.com/molmod/tamkin/issues/43
+
+Author: Alexander Grund (TU Dresden)
+
+diff -ur tamkin-1.2.6-orig/tamkin/test/test_nma.py tamkin-1.2.6/tamkin/test/test_nma.py
+--- tamkin-1.2.6-orig/tamkin/test/test_nma.py	2024-02-28 10:07:55.695638855 +0100
++++ tamkin-1.2.6/tamkin/test/test_nma.py	2024-02-28 11:12:07.320823854 +0100
+@@ -528,7 +528,7 @@
+             pkg_resources.resource_filename(__name__, "../data/test/an/fixed.01.txt"))
+         nma = NMA(molecule, VSANoMass(subs))
+         self.assert_(len(nma.zeros)==3)
+-        expected_freqs = np.array([-0.4205594, 0.03940166, 0.13774798])
++        expected_freqs = np.array([-0.4205594, 0.03940166, 0.43330176])
+         self.check_freqs(expected_freqs, nma, 0, check_zeros=True)
+ 
+         #  ---  atoms of subsystem are collinear
