@@ -1,0 +1,30 @@
+easyblock = 'CmdCp'
+
+name = 'AMICA'
+version = '2024.1.19'
+local_commit = 'e0db55f07c8c410641cd5b0df5498a5a53129ce6'
+
+homepage = 'https://github.com/sccn/amica'
+description = """Code for AMICA: Adaptive Mixture ICA with shared components"""
+
+toolchain = {'name': 'intel', 'version': '2023a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/sccn/amica/archive/']
+sources = [{'download_filename': '%s.zip' % local_commit, 'filename': '%(name)s-%(version)s.zip'}]
+checksums = ['d856ef1bf4bd09b2aacf5da6832b9af5d7fb70976786f43585c72acd1a52443b']
+
+# original command: 
+# $ mpif90 -static-intel -fpp -O3 -march=core-avx2 -heap-arrays -qopenmp -mkl -DMKL -o amica17 funmod2.f90 amica17.f90
+cmds_map = [('.*', "$MPIF90 $F90FLAGS -static-intel -fpp  -heap-arrays -mkl -DMKL -o amica17 funmod2.f90 amica17.f90")]
+
+test_cmd = "./amica17 ./amicadefs.param"
+
+files_to_copy = [(['amica17', 'amicadefs.param'], 'bin')]
+
+sanity_check_paths = {
+    'files': ["bin/amica17", "bin/amicadefs.param"],
+    'dirs': [],
+}
+
+moduleclass = 'math'
