@@ -115,10 +115,10 @@ exts_list = [
              '381be068dc1c7dda3ea19220e423356ac93621aa48133a0fe54464069c8799c7'},
         ],
         'runtest': (
-            'pytest'
-            ' -k "not TestProcessPoolExecutor"'  # hang maybe related https://github.com/pytorch/audio/issues/1021
+            'pytest test/torchaudio_unittest/'
+            '-k "not TestProcessPoolExecutor"'  # hang maybe related https://github.com/pytorch/audio/issues/1021
+            '" and not FilterGraphWithCudaAccel"'  # requires FFmpeg with CUDA support
             '" and not kaldi_io_test"'  # requires kaldi_io
-            ' test/torchaudio_unittest/'
         ),
         'testinstall': True,
     }),
@@ -131,11 +131,9 @@ exts_list = [
             'pytest'
             ' --ignore=tests/ignite/contrib/handlers/test_clearml_logger.py'  # requires clearml
             ' --ignore=tests/ignite/metrics/gan/test_fid.py'  # requires pytorch_fid
-            '-k ' + ' and '.join([  # these tests hang
-                "not test__native_dist_model_create_no_dist_nccl",
-                "not test__native_dist_model_create_dist_gloo_2",
-                "not test__native_dist_model_create_dist_nccl_2",
-            ]),
+            '-k "not test__native_dist_model_create_no_dist_nccl"'  # hangs
+            '" and not test__native_dist_model_create_dist_gloo_2"'  # hangs
+            '" and not test__native_dist_model_create_dist_nccl_2"'  # hangs
         ),
         'testinstall': True,
     }),
@@ -143,7 +141,15 @@ exts_list = [
         'modulename': 'torch.profiler',
         'sources': ['torch_tb_profiler-%(version)s.tar.gz'],
         'checksums': ['8b8d29b2de960b3c4423087b23cec29beaf9ac3a8c7b046c18fd25b218f726b1'],
-        'runtest': 'pytest',
+        'runtest': (
+            'pytest'
+            ' --ignore=test/test_tensorboard_end2end.py'  # timeouts
+            '-k "not test_dump_gpu_metrics"'  # missing file
+            '" and not test_profiler_api_with_record_shapes_memory_stack"'  # fails
+            '" and not test_profiler_api_without_record_shapes_memory_stack"'  # fails
+            '" and not test_profiler_api_without_step"'  # fails
+            '" and test_autograd_api"'  # fails
+        ),
         'testinstall': True,
     }),
 ]
