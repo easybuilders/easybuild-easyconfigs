@@ -12,7 +12,6 @@ toolchainopts = {'pic': True}
 use_pip = True
 sanity_pip_check = True
 
-
 builddependencies = [
     ('Bazel', '6.1.0'),
     ('git', '2.41.0', '-nodocs'),
@@ -42,6 +41,10 @@ dependencies = [
     ('libpng', '1.6.39'),
     ('snappy', '1.1.10'),
     ('zlib', '1.2.13'),
+    # for grpcio only (Abseil excluded for tensorflow)
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('RE2', '2023-08-01'),
+    ('Abseil', '20230125.3'),
 ]
 
 exts_list = [
@@ -97,12 +100,6 @@ exts_list = [
     ('cachetools', '5.3.3', {
         'checksums': ['ba29e2dfa0b8b556606f097407ed1aa62080ee108ab0dc5ec9d6a723a007d105'],
     }),
-    ('packaging', '23.2', {
-        'checksums': ['048fb0e9405036518eaaf48a55953c750c11e1a1b68e0dd1a9d62ed0c092cfc5'],
-    }),
-    ('h5py', '3.10.0', {
-        'checksums': ['d93adc48ceeb33347eb24a634fb787efc7ae4644e6ea4ba733d099605045c049'],
-    }),
     ('gast', '0.5.4', {
         'checksums': ['9c270fe5f4b130969b54174de7db4e764b09b4f7f67ccfc32480e29f78348d97'],
     }),
@@ -156,11 +153,25 @@ exts_list = [
         'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
         'checksums': ['2dcc6d2e30cf9c951064b63c1f4c404b966c59caf09e01f3549138ec8ee0dd1f'],
     }),
-    # taken from TensorFlow-2.13.0-foss-2023a.eb
-    ('grpcio', '1.62.1', {
+    ('grpcio', '1.60.0', {
         'modulename': 'grpc',
-        'preinstallopts': ("export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && "),
-        'checksums': ['6c455e008fa86d9e9a9d85bb76da4277c0d7d9668a3bfa70dbe86e9f3c759947'],
+        'preinstallopts': (
+            "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && "
+            # Required to avoid building with non-default C++ standard but keep other flags,
+            # see https://github.com/grpc/grpc/issues/34256
+            'export GRPC_PYTHON_CFLAGS="-fvisibility=hidden -fno-wrapv -fno-exceptions" &&'
+            "GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=True "
+            "GRPC_PYTHON_BUILD_SYSTEM_ZLIB=True "
+            "GRPC_PYTHON_BUILD_SYSTEM_RE2=True "
+            "GRPC_PYTHON_BUILD_SYSTEM_ABSL=True "
+        ),
+        'patches': ['grpcio-1.16.0_use-ebroot.patch'],
+        'checksums': [
+            {'grpcio-1.60.0.tar.gz':
+             '2199165a1affb666aa24adf0c97436686d0a61bc5fc113c037701fb7c7fceb96'},
+            {'grpcio-1.16.0_use-ebroot.patch':
+             '5faf822cd817b723ae9361e43656d0ecc7b3333a166bbab2df80b43ae588e510'},
+        ],
     }),
     ('opt-einsum', '3.3.0', {
         'source_tmpl': 'opt_einsum-%(version)s-py3-none-any.whl',
@@ -177,14 +188,16 @@ exts_list = [
         ],
         'prebuildopts': (
             'export TF_PYTHON_VERSION=3.11 && '
-            'export TF_NEED_CLANG=no && '
             'export TF_SYSTEM_LIBS=$(python -c "'
-            "print(','.join([l for l in '$TF_SYSTEM_LIBS'.split(',') if l!='opt_einsum_archive']))"
+            "print(','.join([l for l in '$TF_SYSTEM_LIBS'.split(',') "
+            "      if l not in ['opt_einsum_archive', 'com_google_absl']]))"
             '") && '
         ),
         'preconfigopts': (
+            'export TF_NEED_CLANG=no && '
             'export TF_SYSTEM_LIBS=$(python -c "'
-            "print(','.join([l for l in '$TF_SYSTEM_LIBS'.split(',') if l!='opt_einsum_archive']))"
+            "print(','.join([l for l in '$TF_SYSTEM_LIBS'.split(',') "
+            "      if l not in ['opt_einsum_archive', 'com_google_absl']]))"
             '") && '
         ),
         'source_tmpl': 'v%(version)s.tar.gz',
