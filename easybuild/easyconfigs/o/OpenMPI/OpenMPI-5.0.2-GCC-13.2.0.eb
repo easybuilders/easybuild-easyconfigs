@@ -1,0 +1,47 @@
+name = 'OpenMPI'
+version = '5.0.2'
+
+homepage = 'https://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-3 implementation."""
+
+toolchain = {'name': 'GCC', 'version': '13.2.0'}
+
+source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+sources = [SOURCELOWER_TAR_BZ2]
+patches = [
+    ('OpenMPI-5.0.2_build-with-internal-cuda-header.patch', 1),
+    'OpenMPI-5.0.x_add_atomic_wmb.patch'
+]
+checksums = [
+    {'openmpi-5.0.2.tar.bz2': 'ee46ad8eeee2c3ff70772160bff877cbf38c330a0bc3b3ddc811648b3396698f'},
+    {'OpenMPI-5.0.2_build-with-internal-cuda-header.patch':
+     'f52dc470543f35efef10d651dd159c771ae25f8f76a420d20d87abf4dc769ed7'},
+    {'OpenMPI-5.0.x_add_atomic_wmb.patch': '23989c1998bd89c64b23e4fc101aa68748543c90f3c79bdedda38a5933a5ef44'},
+]
+
+builddependencies = [
+    ('pkgconf', '2.0.3'),
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('hwloc', '2.9.2'),
+    ('libevent', '2.1.12'),
+    ('UCX', '1.15.0'),
+    ('libfabric', '1.19.0'),
+    ('PMIx', '5.0.1'),
+    ('UCC', '1.2.0'),
+]
+
+# CUDA related patches and custom configure option can be removed if CUDA support isn't wanted.
+preconfigopts = 'gcc -Iopal/mca/cuda/include -shared opal/mca/cuda/lib/cuda.c -o opal/mca/cuda/lib/libcuda.so && '
+configopts = '--with-cuda=%(start_dir)s/opal/mca/cuda '
+
+# disable MPI1 compatibility for now, see what breaks...
+# configopts += '--enable-mpi1-compatibility '
+
+# to enable SLURM integration (site-specific)
+# configopts += '--with-slurm --with-pmi=/usr/include/slurm --with-pmi-libdir=/usr'
+
+moduleclass = 'mpi'
