@@ -1,0 +1,48 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: © Copyright 2011-2023, Massachusetts Institute of Technology, 
+# 		UChicago Argonne LLC, and OpenMC contributors
+#             HPCNow!
+# Authors::   Guillermo Piccoli <guillermo.piccoli@hpcnow.com>
+# License::   MIT
+# $Id$
+#
+# Version = 0.14.0
+# Author: Paul K. Romano, Nicholas E. Horelik, Bryan R. Herman, Adam G. Nelson, Benoit Forget, and Kord Smith
+# Cite: Paul K. Romano, Nicholas E. Horelik, Bryan R. Herman, Adam G. Nelson, Benoit Forget, and Kord Smith, 
+# 	“OpenMC: A State-of-the-Art Monte Carlo Code for Research and Development,”
+# 	Ann. Nucl. Energy, 82, 90–97 (2015)
+##
+
+easyblock = 'CMakeMake'
+
+name = 'OpenMC'
+version = '0.14.0'
+local_commit = 'fa23301'
+
+homepage = 'https://github.com/openmc-dev/openmc'
+description = """OpenMC is an open-source Monte Carlo particle transport simulation code."""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+
+dependencies = [
+    ('HDF5', '1.14.0'),
+    ('CMake', '3.26.3')
+]
+
+source_urls = ['git@github.com:openmc-dev/%(namelower)s.git']
+
+preconfigopts = "git clone --recursive " + source_urls[0] + " . && git checkout " + local_commit + " && "
+
+srcdir = "easybuild_obj"
+
+configopts = "-DHDF5_PREFER_PARALLEL=on " \
+             "-DOPENMC_USE_MPI=on "
+
+moduleclass = 'tools'
+
+sanity_check_paths = {
+    'files': ['%(installdir)s/bin/openmc'],
+    'dirs': ['bin', 'include', 'lib', 'lib64', 'share']
+}
