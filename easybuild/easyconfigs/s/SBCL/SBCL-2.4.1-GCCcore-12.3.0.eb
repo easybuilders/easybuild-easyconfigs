@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+name = 'SBCL'
+version = '2.4.1'
+
+homepage = 'http://sbcl.sourceforge.net/'
+description = """
+Steel Bank Common Lisp (SBCL) is a high performance Common Lisp compiler. It is
+open source / free software, with a permissive license. In addition to the
+compiler and runtime system for ANSI Common Lisp, it provides an interactive
+environment including a debugger, a statistical profiler, a code coverage tool,
+and many other extensions."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%(namelower)s-%(version)s-source.tar.bz2']
+checksums = ['da4f9486fad413d3af7abb1b09269325fdb4bff7e7b88f2195ddee743263cf7e']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CCL', '1.12.2'),
+]
+
+parallel = False
+skipsteps = ['configure']
+local_prefixarg = '--prefix=%(installdir)s'
+
+# Build SBCL with Clozure CL
+# Using the binary distribution of SBCL to build SBCL is not trivial because
+# it needs GLIBC v2.28
+build_cmd = "sh make.sh"
+buildopts = "%s --xc-host=ccl" % local_prefixarg
+
+install_cmd = "sh install.sh"
+installopts = local_prefixarg
+
+sanity_check_paths = {
+    'files': ['bin/sbcl'],
+    'dirs': ['lib/sbcl'],
+}
+
+sanity_check_commands = ["sbcl --help"]
+
+modextrapaths = {'SBCL_HOME': 'lib/sbcl'}
+
+moduleclass = 'lang'
