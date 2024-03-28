@@ -1,0 +1,81 @@
+name = 'GROMACS'
+version = '2023.3'
+local_rocmver = '5.6.0'
+versionsuffix = '-ROCm-%s' % local_rocmver
+
+homepage = 'https://www.gromacs.org'
+description = """
+GROMACS is a versatile package to perform molecular dynamics, i.e. simulate the
+Newtonian equations of motion for systems with hundreds to millions of
+particles.
+
+This is a GPU enabled build, containing both MPI and threadMPI binaries.
+
+It also contains the gmxapi extension for the single precision MPI build.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = [
+    'https://ftp.gromacs.org/pub/gromacs/',
+    'ftp://ftp.gromacs.org/pub/gromacs/',
+]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'GROMACS-2023.1_set_omp_num_threads_env_for_ntomp_tests.patch',
+    'GROMACS-2023.1_fix_tests_for_gmx_thread_mpi.patch',
+]
+checksums = [
+    {'gromacs-2023.3.tar.gz': '4ec8f8d0c7af76b13f8fd16db8e2c120e749de439ae9554d9f653f812d78d1cb'},
+    {'GROMACS-2023.1_set_omp_num_threads_env_for_ntomp_tests.patch':
+     '7f41bda16c9c2837624265dda4be252f655d1288ddc4486b1a2422af30d5d199'},
+    {'GROMACS-2023.1_fix_tests_for_gmx_thread_mpi.patch':
+     '6df844bb3bbc51180446a3595c61a4ef195e5f975533a04cef76841aa763aec1'},
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('scikit-build', '0.15.0'),
+    ('AdaptiveCpp', '23.10.0', versionsuffix, ('GCC', '11.3.0')),
+]
+
+dependencies = [
+    ('ROCm', local_rocmver, '', ('GCCcore', '11.3.0')),
+    ('UCX-ROCm', '1.14.1', versionsuffix, ('GCCcore', '11.3.0')),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('networkx', '2.8.4'),
+    # The GROMACS build finds and uses the Boost module required by AdaptiveCpp
+    # and as a result we also need Boost as a GROMACS runtime dependency
+    ('Boost', '1.79.0'),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'download_dep_fail': True,
+    'sanity_pip_check': True,
+}
+
+exts_list = [
+    ('gmxapi', '0.4.2', {
+        'preinstallopts': 'export CMAKE_ARGS="-Dgmxapi_ROOT=%(installdir)s ' +
+                          '-C %(installdir)s/share/cmake/gromacs_mpi/gromacs-hints_mpi.cmake" && ',
+        'source_tmpl': 'gromacs-2023.3.tar.gz',
+        'start_dir': 'python_packaging/gmxapi',
+        'checksums': ['4ec8f8d0c7af76b13f8fd16db8e2c120e749de439ae9554d9f653f812d78d1cb'],
+    }),
+]
+
+# Use the same C and C++ compilers for which the AdaptiveCpp module has been configured
+configopts = '-DCMAKE_C_COMPILER="${EBROOTCLANGMINAOMP}/bin/clang" '
+configopts += '-DCMAKE_CXX_COMPILER="${EBROOTCLANGMINAOMP}/bin/clang++" '
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+}
+
+moduleclass = 'bio'
