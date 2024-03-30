@@ -19,6 +19,7 @@ builddependencies = [
     ('matplotlib', '3.7.2'),  # for pytorch-ignite tests
     ('librosa', '0.10.1'),  # for torchaudio tests
     ('NLTK', '3.8.1'),  # for torchtext tests
+    ('Scalene', '1.5.26'),  # for pynvml in ignite tests
 ]
 
 dependencies = [
@@ -129,12 +130,25 @@ exts_list = [
         'checksums': ['bfe4b6f1cd96e78c021a65a0c51350cdb89d6ef5a8b9609638666ca95bae51d7'],
         'runtest': (
             'pytest'
+            ' -m "not multinode_distributed"'
             ' --ignore=tests/ignite/contrib/handlers/test_clearml_logger.py'  # requires clearml
+            ' --ignore=tests/ignite/contrib/handlers/test_mlflow_logger.py'  # requires mlflow
+            ' --ignore=tests/ignite/contrib/handlers/test_neptune_logger.py'  # requires neptune
+            ' --ignore=tests/ignite/contrib/handlers/test_polyaxon_logger.py'  # requires polyaxon
+            ' --ignore=tests/ignite/contrib/handlers/test_tensorboard_logger.py'  # requires tensorboardX
+            ' --ignore=tests/ignite/contrib/handlers/test_visdom_logger.py'  # requires visdom
+            ' --ignore=tests/ignite/contrib/handlers/test_wandb_logger.py'  # requires wandb
             ' --ignore=tests/ignite/metrics/gan/test_fid.py'  # requires pytorch_fid
             ' --ignore=tests/ignite/metrics/nlp/test_rouge.py'  # requires rouge
-            ' -k "not test__native_dist_model_create_no_dist_nccl"'  # hangs
-            '" and not test__native_dist_model_create_dist_gloo_2"'  # hangs
-            '" and not test__native_dist_model_create_dist_nccl_2"'  # hangs
+            ' --ignore=tests/ignite/distributed/test_launcher.py'  # no module named torch in torchrun subprocess
+            ' --ignore=tests/ignite/handlers/test_checkpoint.py'  # fails by comparing tensors on different devices
+            ' -k "not test_setup_visdom_logging"'  # requires visdom
+            '" and not test_setup_plx_logging"'  # requires polyaxon
+            '" and not test_setup_mlflow_logging"'  # requires mlflow
+            '" and not test_setup_clearml_logging"'  # requires clearml
+            '" and not test_setup_neptune_logging"'  # requires neptune
+            '" and not test__setup_ddp_vars_from_slurm_env_bad_configs"'  # fails sometimes
+            '" and not test__native_dist_model_create_from_backend_bad_config"'  # fails sometimes
         ),
         'testinstall': True,
     }),
@@ -149,7 +163,7 @@ exts_list = [
             '" and not test_profiler_api_with_record_shapes_memory_stack"'  # fails
             '" and not test_profiler_api_without_record_shapes_memory_stack"'  # fails
             '" and not test_profiler_api_without_step"'  # fails
-            '" and test_autograd_api"'  # fails
+            '" and not test_autograd_api"'  # fails
         ),
         'testinstall': True,
     }),
