@@ -32,7 +32,6 @@ import os
 import re
 import shutil
 import stat
-import sys
 import tempfile
 from collections import defaultdict
 from unittest import TestCase, TestLoader, main, skip
@@ -308,17 +307,18 @@ class EasyConfigTest(TestCase):
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
-        # pygraph dependencies required for constructing dependency graph are not available prior to Python 2.6
-        if LooseVersion(sys.version) >= LooseVersion('2.6') and single_tests_ok:
-            # temporary file for dep graph
-            (hn, fn) = tempfile.mkstemp(suffix='.dot')
-            os.close(hn)
 
-            dep_graph(fn, self.ordered_specs)
-
-            remove_file(fn)
-        else:
+        if not single_tests_ok:
             print("(skipped dep graph test)")
+            return
+
+        # temporary file for dep graph
+        (hn, fn) = tempfile.mkstemp(suffix='.dot')
+        os.close(hn)
+
+        dep_graph(fn, self.ordered_specs)
+
+        remove_file(fn)
 
     def test_conflicts(self):
         """Check whether any conflicts occur in software dependency graphs."""
