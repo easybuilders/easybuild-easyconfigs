@@ -1,0 +1,24 @@
+Python interface to the Open Babel chemistry library version 3.1.1.1
+was released to fix a packaging issue with 3.1.1.
+However StrictVersion('3.1.1.1') will fail with "invalid version".
+
+This hack just truncates the version '3.1.1.1' to '3.1.1' to work around the problem.
+
+author: Oliver Stueker (ACENET)
+date: 2024-04-01
+references: https://github.com/openbabel/openbabel/issues/2408
+diff -u -r openbabel-3.1.1.1.orig/setup.py openbabel-3.1.1.1/setup.py
+--- openbabel-3.1.1.1.orig/setup.py	2020-05-23 06:54:26.000000000 -0230
++++ openbabel-3.1.1.1/setup.py	2024-04-01 12:34:04.590770399 -0230
+@@ -43,7 +43,10 @@
+     """Try use pkgconfig to locate Open Babel, otherwise guess default location."""
+     try:
+         # Warn if the (major, minor) version of the installed OB doesn't match these python bindings
+-        py_ver = StrictVersion(find_version())
++        py_ver = find_version()
++        if py_ver == '3.1.1.1':
++            py_ver = '3.1.1'
++        py_ver = StrictVersion(py_ver)
+         py_major_ver, py_minor_ver = py_ver.version[:2]
+         pcfile = 'openbabel-{}'.format(py_major_ver)
+         ob_ver = StrictVersion(pkgconfig(pcfile, '--modversion'))
