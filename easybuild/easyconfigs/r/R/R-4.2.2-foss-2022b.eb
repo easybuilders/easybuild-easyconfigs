@@ -51,6 +51,8 @@ dependencies = [
     ('MPFR', '4.2.0'),  # for Rmpfr
     ('libgit2', '1.5.0'),
     ('OpenSSL', '1.1', '', SYSTEM),
+    ('protobuf', '23.0'),
+    ('jq', '1.6'),
 ]
 
 # Some R extensions (mclust, quantreg, waveslim for example) require the math library (-lm) to avoid undefined symbols.
@@ -74,6 +76,14 @@ exts_default_options = {
     ],
     'source_tmpl': '%(name)s_%(version)s.tar.gz',
 }
+
+# the dbarts extension needs an additional compiler flag on Arm systems to prevent "incompatible types" errors
+# cfr. https://github.com/vdorie/dbarts/issues/66
+if ARCH == 'aarch64':
+    local_dbarts_preinstallopts = 'sed -i "s|-c partition_neon.c|-flax-vector-conversions -c partition_neon.c|"'
+    local_dbarts_preinstallopts += ' src/misc/Makefile && '
+else:
+    local_dbarts_preinstallopts = ''
 
 # !! order of packages is important !!
 # packages updated on 17th March 2023
@@ -2854,6 +2864,7 @@ exts_list = [
     }),
     ('dbarts', '0.9-23', {
         'checksums': ['e1ac65fd89c321895d4f0e77d9cd8dcda5f1103485008afd4e19e6c9137557a3'],
+        'preinstallopts': local_dbarts_preinstallopts,
     }),
     ('proftools', '0.99-3', {
         'checksums': ['e034eb1531af54013143da3e15229e1d4c2260f8eb79c93846014db3bdefb724'],
@@ -3668,6 +3679,28 @@ exts_list = [
     }),
     ('ridge', '3.3', {
         'checksums': ['5c2daecf6f97aa099ef5fa54f8448518c4f2ed6e44dd29fc60621a70721c60f5'],
+    }),
+    ('gdalUtilities', '1.2.5', {
+        'checksums': ['2a72e990080ad626205c78edc6614959b564413b7fc23132008b7259723571a7'],
+    }),
+    ('protolite', '2.3.0', {
+        'patches': ['protolite-2.3.0_use-c++17.patch'],
+        'checksums': [
+            {'protolite_2.3.0.tar.gz': '53ef24d51a8348f97bec39d254df3b97bd8b3d9bbffb81d6b06aad849cf78ce9'},
+            {'protolite-2.3.0_use-c++17.patch': 'fb5084c55dfbabc6f3e778accf4553f5c84f2bb0ab0ae84b3538c866a829afa4'},
+        ],
+    }),
+    ('jqr', '1.3.1', {
+        'checksums': ['e22461e75ff7e57fe502dc7d16c5e5fe9f8e4cbe042b5eadad06fc37394f9f36'],
+    }),
+    ('geojson', '0.3.5', {
+        'checksums': ['e425c8579dc9cf5e3c1f71db3b0eed8225e5ed7ea88b6c861f800f60fc07402a'],
+    }),
+    ('geojsonio', '0.11.3', {
+        'checksums': ['7168eb3571440479f0cbdd005ff9db3233d3c91fc10d37fb0eb200793da3402b'],
+    }),
+    ('MODIStsp', '2.1.0', {
+        'checksums': ['9416bf2a32faf4ae7159f50ba56ac7924852af59f932223b2268aedfa1769fda'],
     }),
 ]
 

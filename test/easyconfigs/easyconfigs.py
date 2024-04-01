@@ -394,6 +394,18 @@ class EasyConfigTest(TestCase):
                     if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs) and len(dep_vars) > 1:
                         dep_vars.pop(key)
 
+        # multiple variants of Meson is OK as long as they are deps for meson-python, since meson-python should only be
+        # a build dependency elsewhere
+        if dep == 'Meson' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out Meson variants that are only used as a dependency for meson-python
+                if all(ec.startswith('meson-python-') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
+
         # multiple versions of Boost is OK as long as they are deps for a matching Boost.Python
         if dep == 'Boost' and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -484,6 +496,21 @@ class EasyConfigTest(TestCase):
                     if len(dep_vars) == 1:
                         break
 
+        # for some dependencies, we allow exceptions for software with the same version
+        # but with a -int64 versionsuffix in both the dependency and all its dependents
+        int64_deps = ['SCOTCH', 'METIS']
+        if dep in int64_deps and len(dep_vars) > 1:
+            unique_dep_vers = {version_regex.search(x).group('version') for x in list(dep_vars)}
+            if len(unique_dep_vers) == 1:
+                for key in list(dep_vars):
+                    if all(re.search('-int64', v) for v in dep_vars[key]) and re.search(
+                        '; versionsuffix: .*-int64', key
+                    ):
+                        dep_vars.pop(key)
+                    # always retain at least one dep variant
+                    if len(dep_vars) == 1:
+                        break
+
         # filter out variants that are specific to a particular version of CUDA
         cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
         if len(dep_vars) >= len(cuda_dep_vars) and len(dep_vars) > 1:
@@ -571,6 +598,10 @@ class EasyConfigTest(TestCase):
             'ParaView': [
                 # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
+            ],
+            'pydantic': [
+                # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
+                ('1.10.13;', ['GTDB-Tk-2.3.2-']),
             ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;

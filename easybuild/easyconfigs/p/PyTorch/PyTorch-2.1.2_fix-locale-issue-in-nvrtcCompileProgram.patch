@@ -1,0 +1,106 @@
+There is a bug in CUDA 11.7 through at least CUDA 12.4 which changes the current thread locale
+when calling nvrtcCompileProgram.
+See e.g. https://stackoverflow.com/questions/74044994
+This also includes the encoding used by Python by default for e.g. subsequent invocations of `subprocess` calls.
+When the user environment is now set to e.g. UTF-8 and changed by CUDA (to ASCII/ANSI_X3.4-1968) Python will fail
+to decode UTF-8 output from programs invoked.
+This happens e.g. in `test_torch` which calls `from scipy import stats` which runs `lscpu` and errors
+with something like
+> /software/SciPy-bundle/2023.07-gfbf-2023a/lib/python3.11/site-packages/numpy/testing/_private/utils.py", line 1253, in <module>
+>    _SUPPORTS_SVE = check_support_sve()
+> /software/SciPy-bundle/2023.07-gfbf-2023a/lib/python3.11/site-packages/numpy/testing/_private/utils.py", line 1247, in check_support_sve
+>    output = subprocess.run(cmd, capture_output=True, text=True)
+> /software/Python/3.11.3-GCCcore-12.3.0/lib/python3.11/subprocess.py", line 2113, in _communicate
+>    stdout = self._translate_newlines(stdout,
+> UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 96: ordinal not in range(128)
+
+Fix by wrapping the nvrtcCompileProgram saving and restoring the thread locale.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/cuda/detail/LazyNVRTC.cpp b/aten/src/ATen/cuda/detail/LazyNVRTC.cpp
+index 1b85e7776e2..1c13a3b1168 100644
+--- a/aten/src/ATen/cuda/detail/LazyNVRTC.cpp
++++ b/aten/src/ATen/cuda/detail/LazyNVRTC.cpp
+@@ -2,6 +2,7 @@
+ 
+ #include <ATen/cuda/nvrtc_stub/ATenNVRTC.h>
+ #include <ATen/DynamicLibrary.h>
++#include <locale.h>
+ #include <stdexcept>
+ 
+ namespace at {
+@@ -143,6 +144,29 @@ nvrtcResult nvrtcCreateProgram(nvrtcProgram *prog,
+   return fn(prog, src, name, numHeaders, headers, includeNames);
+ }
+ 
++nvrtcResult nvrtcCompileProgram_wrapped(nvrtcProgram prog,
++                                        int numOptions,
++                                        const char * const *options) {
++  // Save & restore current thread locale which can get modified by nvrtcCompileProgram
++  locale_t oldLocale = uselocale((locale_t) 0);
++  auto result = lazyNVRTC.nvrtcCompileProgram_real(prog, numOptions, options);
++  if (oldLocale != (locale_t) 0)
++    uselocale(oldLocale);
++  return result;
++}
++
++nvrtcResult nvrtcCompileProgram(nvrtcProgram prog,
++                                int numOptions,
++                                const char * const *options) {
++  auto fn = reinterpret_cast<decltype(&nvrtcCompileProgram)>(getNVRTCLibrary().sym(__func__));
++  if (!fn)
++    throw std::runtime_error("Can't get nvrtcCompileProgram");
++  lazyNVRTC.nvrtcCompileProgram_real = fn;
++  fn = &nvrtcCompileProgram_wrapped;
++  lazyNVRTC.nvrtcCompileProgram = fn;
++  return fn(prog, numOptions, options);
++}
++
+ NVRTC_STUB1(nvrtcDestroyProgram, nvrtcProgram *);
+ NVRTC_STUB2(nvrtcGetPTXSize, nvrtcProgram, size_t *);
+ NVRTC_STUB2(nvrtcGetPTX, nvrtcProgram, char *);
+@@ -150,7 +174,6 @@ NVRTC_STUB2(nvrtcGetPTX, nvrtcProgram, char *);
+ NVRTC_STUB2(nvrtcGetCUBINSize, nvrtcProgram, size_t *);
+ NVRTC_STUB2(nvrtcGetCUBIN, nvrtcProgram, char *);
+ #endif
+-NVRTC_STUB3(nvrtcCompileProgram, nvrtcProgram, int, const char * const *);
+ _STUB_1(NVRTC, nvrtcGetErrorString, const char *, nvrtcResult);
+ NVRTC_STUB2(nvrtcGetProgramLogSize,nvrtcProgram, size_t*);
+ NVRTC_STUB2(nvrtcGetProgramLog, nvrtcProgram, char *);
+diff --git a/aten/src/ATen/cuda/nvrtc_stub/ATenNVRTC.h b/aten/src/ATen/cuda/nvrtc_stub/ATenNVRTC.h
+index 574b2c41c26..4ddc5316dad 100644
+--- a/aten/src/ATen/cuda/nvrtc_stub/ATenNVRTC.h
++++ b/aten/src/ATen/cuda/nvrtc_stub/ATenNVRTC.h
+@@ -120,6 +120,8 @@ extern "C" typedef struct NVRTC {
+ #define CREATE_MEMBER(name) decltype(&name) name;
+   AT_FORALL_NVRTC(CREATE_MEMBER)
+ #undef CREATE_MEMBER
++  // Must be at end!
++  decltype(nvrtcCompileProgram) nvrtcCompileProgram_real;
+ } NVRTC;
+ 
+ extern "C" TORCH_CUDA_CPP_API NVRTC* load_nvrtc();
+diff --git a/caffe2/cuda_rtc/common_rtc.h b/caffe2/cuda_rtc/common_rtc.h
+index 9d9582d34b6..562a653a67a 100644
+--- a/caffe2/cuda_rtc/common_rtc.h
++++ b/caffe2/cuda_rtc/common_rtc.h
+@@ -1,6 +1,7 @@
+ #ifndef CAFFE2_CUDA_RTC_COMMON_RTC_H_
+ #define CAFFE2_CUDA_RTC_COMMON_RTC_H_
+ 
++#include <locale.h>
+ #include <sstream>
+ #include <string>
+ 
+@@ -46,7 +47,10 @@ class CudaRTCFunction {
+     // coding it?
+     const char* nvrtc_opts[] = {
+         "--gpu-architecture=compute_35", "--use_fast_math"};
++    locale_t oldLocale = uselocale((locale_t) 0);
+     nvrtcResult compile_result = nvrtcCompileProgram(prog, 2, nvrtc_opts);
++    if (oldLocale != (locale_t) 0)
++      uselocale(oldLocale);
+     if (compile_result != NVRTC_SUCCESS) {
+       size_t log_size;
+       NVRTC_CHECK(nvrtcGetProgramLogSize(prog, &log_size));

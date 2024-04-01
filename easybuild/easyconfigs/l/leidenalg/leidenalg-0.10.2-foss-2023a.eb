@@ -1,0 +1,50 @@
+easyblock = 'PythonBundle'
+
+name = 'leidenalg'
+version = '0.10.2'
+
+homepage = 'https://github.com/vtraag/leidenalg'
+description = """Implementation of the Leiden algorithm for various quality
+functions to be used with igraph in Python."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('pkgconf', '1.9.5'),
+    ('PyYAML', '6.0'),
+    ('Bison', '3.8.2'),
+    ('libtool', '2.4.7'),
+    ('flex', '2.6.4'),
+    ('CMake', '3.26.3'),
+    ('poetry', '1.7.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('igraph', '0.10.10'),
+    ('python-igraph', '0.11.4'),
+    ('libleidenalg', '0.11.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('ddt', '1.7.2', {
+        'checksums': ['d215d6b083963013c4a19b1e4dcd6a96e80e43ab77519597a6acfcf2e9a3e04b'],
+    }),
+    (name, version, {
+        'checksums': ['0f4147a92b59834a719bfce30d563ea107e570130a7be60adbc8b95757192e4c'],
+    }),
+]
+
+sanity_check_commands = [
+    # tests require that 'leidenalg' Python module is available,
+    # so needs to be run after installation
+    "cd %(builddir)s/leidenalg/leidenalg-%(version)s && python setup.py test",
+    "python -c 'import leidenalg; import igraph as ig; "
+    "leidenalg.find_partition(ig.Graph.Erdos_Renyi(100, 0.1), "
+    "leidenalg.ModularityVertexPartition)'",
+]
+
+moduleclass = 'lib'

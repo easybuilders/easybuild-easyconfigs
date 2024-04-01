@@ -64,6 +64,14 @@ local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver !
 local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
 exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
 
+# the dbarts extension needs an additional compiler flag on Arm systems to prevent "incompatible types" errors
+# cfr. https://github.com/vdorie/dbarts/issues/66
+if ARCH == 'aarch64':
+    local_dbarts_preinstallopts = 'sed -i "s|-c partition_neon.c|-flax-vector-conversions -c partition_neon.c|"'
+    local_dbarts_preinstallopts += ' src/misc/Makefile && '
+else:
+    local_dbarts_preinstallopts = ''
+
 # !! order of packages is important !!
 # packages updated on 10th December 2023
 exts_list = [
@@ -2577,6 +2585,7 @@ exts_list = [
     }),
     ('dbarts', '0.9-25', {
         'checksums': ['39a78228ead17c92bd88fe5f959c888412a22a7cbbc0edfa9c09072b4182d870'],
+        'preinstallopts': local_dbarts_preinstallopts,
     }),
     ('proftools', '0.99-3', {
         'checksums': ['e034eb1531af54013143da3e15229e1d4c2260f8eb79c93846014db3bdefb724'],
@@ -3382,6 +3391,30 @@ exts_list = [
     }),
     ('ridge', '3.3', {
         'checksums': ['5c2daecf6f97aa099ef5fa54f8448518c4f2ed6e44dd29fc60621a70721c60f5'],
+    }),
+    ('ggdist', '3.3.1', {
+        'checksums': ['6705e8a252701bc162bbbe26f7cbb3e95e93a11af6288456ab711f5d0c0df929'],
+    }),
+    ('svUnit', '1.0.6', {
+        'checksums': ['263e6c03d6c2717dfd25b96d25f8019c9c98120de280a17224e0d79adba2d522'],
+    }),
+    ('arrayhelpers', '1.1-0', {
+        'checksums': ['5fddd5dd4fb8237bcb24465ef823bc8715ba53e6e5fd7a716c31c48ec128340b'],
+    }),
+    ('tidybayes', '3.0.6', {
+        'checksums': ['706044e17855a684a5ad1aeb582963dd3c7192a4a8ad0584358d0ea7c7aadb90'],
+    }),
+    ('spdep', '1.3-1', {
+        'checksums': ['36062ccd094f9110a43cd51902c794242311fd23b861dde22c450446dce85396'],
+    }),
+    ('stringmagic', '1.0.0', {
+        'checksums': ['8152c72a2ed70577fae1e569986d1d488ce2e6b21b8f0e080c0265806c08551a'],
+    }),
+    ('dreamerr', '1.4.0', {
+        'checksums': ['3e5e4afd10623b6dac6bb9b8bf0480d41c7422884cfec2d9d9786414f9026a87'],
+    }),
+    ('fixest', '0.11.2', {
+        'checksums': ['2dee113a0689e5c4dd842c451d35c9a94a5b37536f9484611a877c1ea10e2b65'],
     }),
 ]
 
