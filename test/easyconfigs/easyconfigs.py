@@ -336,6 +336,14 @@ class EasyConfigTest(TestCase):
         fails = []
 
         for ec in self.parsed_easyconfigs:
+            # make sure we don't add backdoored XZ versions (5.6.0, 5.6.1)
+            # see https://access.redhat.com/security/cve/CVE-2024-3094
+            if ec['ec']['name'] == 'XZ' and ec['ec']['version'] in ('5.6.0', '5.6.1'):
+                fail = ("XZ versions 5.6.0 and 5.6.1 contain malicious code, and should not be introduced into"
+                        " EasyBuild. Please use another version instead. For more details, see"
+                        " https://access.redhat.com/security/cve/CVE-2024-3094")
+                fails.append(fail)
+
             # make sure that no odd versions (like 1.13) of HDF5 are used as a dependency,
             # since those are released candidates - only even versions (like 1.12) are stable releases;
             # see https://docs.hdfgroup.org/archive/support/HDF5/doc/TechNotes/Version.html
