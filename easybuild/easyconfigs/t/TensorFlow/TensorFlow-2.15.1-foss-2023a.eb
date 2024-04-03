@@ -18,6 +18,11 @@ builddependencies = [
     ('pybind11', '2.11.1'),
     ('UnZip', '6.0'),
     ('poetry', '1.5.1'),
+    # Compiling with system protobuf don't seem to work, see:
+    # https://github.com/tensorflow/tensorflow/issues/61593
+    # In addition there are more rules in third_python that
+    # do not have corresponding ones in systemlib/protobuf.BUILD
+    # ('protobuf', '24.0'),
 ]
 
 dependencies = [
@@ -37,7 +42,7 @@ dependencies = [
     ('nsync', '1.26.0'),
     ('SQLite', '3.42.0'),
     ('patchelf', '0.18.0'),
-    ('protobuf-python', '4.23.4'),
+    ('protobuf-python', '4.24.0'),
     ('libpng', '1.6.39'),
     ('snappy', '1.1.10'),
     ('zlib', '1.2.13'),
@@ -251,6 +256,16 @@ exts_list = [
              '3bb350ac92ab99c63c951c96b3b0160699f5f16822b64f72111ebfd2275cafce'},
         ],
     }),
+]
+
+
+#  Taken from tensorboard-2.15.1-gfbf-2023a.eb:
+#   Relax restriction on protobuf dependency as issue was fixed
+#   in https://github.com/protocolbuffers/upb/pull/1514
+#   see also: https://github.com/easybuilders/easybuild-easyconfigs/pull/19671
+postinstallcmds = [
+    'sed -i "s/Requires-Dist: protobuf.*/Requires-Dist: protobuf >=3.19.6/g" ' +
+    '%(installdir)s/lib/python%(pyshortver)s/site-packages/tensorboard-2.15.2.dist-info/METADATA',
 ]
 
 moduleclass = 'lib'
