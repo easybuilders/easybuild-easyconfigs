@@ -28,6 +28,13 @@ if [[ -z "$APPTAINER_TMPDIR" ]]; then
                 export APPTAINER_TMPDIR="/localscratch"
         fi
 fi
+if [[ "$CC_CLUSTER" == "narval" || "$CC_CLUSTER" == "beluga" ]]; then
+	if [[ "$(cat /proc/sys/user/max_user_namespaces)" == "0" ]]; then
+		echo "Temporarily running privileged Apptainer 1.1" > /dev/stderr
+		echo "because user namespaces have been disabled" > /dev/stderr
+		exec /opt/software/apptainer-1.1/bin/apptainer ${1+"$@"}
+	fi
+fi
 exec %(installdir)s/bin/apptainer.bin ${1+"$@"}"""
 
 components = [
