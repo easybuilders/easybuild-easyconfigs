@@ -1,0 +1,253 @@
+From d64fb24ee4a71d8cfe175cafc73c5f90fb26c9ac Mon Sep 17 00:00:00 2001
+From: BJ Hargrave <hargrave@us.ibm.com>
+Date: Tue, 14 Mar 2023 15:30:41 -0400
+Subject: [PATCH 1/2] Fix operator>> for int64 vector in vec256
+
+There is no vector instruction for shift right arithmetic for int64.
+The operator>> implementation emulates this through other vector
+instructions. It has been fixed to properly handle out-of-limit
+shift values so that shift values <0 and >64 are set to 64 which
+results in a value of -1 for negative inputs and 0 for non-negative
+inputs (sign preserving).
+
+Fixes https://github.com/pytorch/pytorch/issues/70904
+
+Signed-off-by: BJ Hargrave <hargrave@us.ibm.com>
+---
+ aten/src/ATen/cpu/vec/vec256/vec256_int.h | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/aten/src/ATen/cpu/vec/vec256/vec256_int.h b/aten/src/ATen/cpu/vec/vec256/vec256_int.h
+index 81e9d687d10a7b..784514f49e1d48 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vec256_int.h
++++ b/aten/src/ATen/cpu/vec/vec256/vec256_int.h
+@@ -1481,16 +1481,22 @@ Vectorized<uint8_t> inline operator<<(const Vectorized<uint8_t>& a, const Vector
+ 
+ template <>
+ Vectorized<int64_t> inline operator>>(const Vectorized<int64_t>& a, const Vectorized<int64_t>& b) {
+-  // No vector instruction for right shifting int64_t, so emulating it
++  // No vector instruction for right arithmetic shifting int64_t, so emulating it
+   // instead.
+ 
++  // Clamp the shift values such that shift values < 0 and > 64 are changed to 64
++  // which results in -1 for negative input and 0 for non-negative input.
++  __m256i zero = _mm256_set1_epi64x(0);
++  __m256i max_shift = _mm256_set1_epi64x(64);
++  __m256i mask = _mm256_or_si256(_mm256_cmpgt_epi64(zero, b), _mm256_cmpgt_epi64(b, max_shift));
++  __m256i shift = _mm256_blendv_epi8(b, max_shift, mask);
+   // Shift the number logically to the right, thus filling the most
+   // significant bits with 0s.  Then, replace these bits with the sign
+   // bit.
+-  __m256i sign_bits = _mm256_cmpgt_epi64(_mm256_set1_epi64x(0), a);
+-  __m256i b_inv_mod_64 = _mm256_sub_epi64(_mm256_set1_epi64x(64), b);
+-  __m256i sign_ext = _mm256_sllv_epi64(sign_bits, b_inv_mod_64);
+-  __m256i c = _mm256_srlv_epi64(a, b);
++  __m256i sign_bits = _mm256_cmpgt_epi64(zero, a);
++  __m256i sign_shift = _mm256_sub_epi64(max_shift, shift);
++  __m256i sign_ext = _mm256_sllv_epi64(sign_bits, sign_shift);
++  __m256i c = _mm256_srlv_epi64(a, shift);
+   c = _mm256_or_si256(c, sign_ext);
+ 
+   return c;
+
+From 734e2cea43ee782d756f04bc21c625b8fdd36d31 Mon Sep 17 00:00:00 2001
+From: BJ Hargrave <hargrave@us.ibm.com>
+Date: Mon, 13 Mar 2023 10:56:00 -0400
+Subject: [PATCH 2/2] Fix CPU bitwise shifts for out-of-limit shift values
+
+Negative shift values and positive shift values greater than the
+bit size of the dtype (limit 0..bits) now yield expected results
+which are consistent with numpy.
+
+Left shift with an out-of-limit shift value result in a value of 0.
+Right shift with an out-of-limit shift value results in a value of -1
+for negative inputs and 0 for non-negative inputs (sign preserving).
+
+Fixes https://github.com/pytorch/pytorch/issues/70904
+
+Signed-off-by: BJ Hargrave <hargrave@us.ibm.com>
+---
+ aten/src/ATen/cpu/vec/vec_base.h             | 18 ++++++++--
+ aten/src/ATen/native/cpu/BinaryOpsKernel.cpp |  9 +++++
+ test/functorch/test_vmap.py                  | 12 -------
+ test/test_binary_ufuncs.py                   | 37 ++++++++++++++++++++
+ 4 files changed, 62 insertions(+), 14 deletions(-)
+
+diff --git a/aten/src/ATen/cpu/vec/vec_base.h b/aten/src/ATen/cpu/vec/vec_base.h
+index cb0e37054b4d32..8f006ae0f6634f 100644
+--- a/aten/src/ATen/cpu/vec/vec_base.h
++++ b/aten/src/ATen/cpu/vec/vec_base.h
+@@ -20,6 +20,7 @@
+ #include <cmath>
+ #include <type_traits>
+ #include <bitset>
++#include <climits>
+ 
+ #include <ATen/cpu/vec/intrinsics.h>
+ #include <ATen/native/Math.h>
+@@ -803,17 +804,30 @@ inline Vectorized<T> operator~(const Vectorized<T>& a) {
+ }
+ 
+ template <class T> Vectorized<T> inline operator<<(const Vectorized<T> &a, const Vectorized<T> &b) {
++  constexpr T max_shift = sizeof(T) * CHAR_BIT;
+   Vectorized<T> c;
+   for (int i = 0; i != Vectorized<T>::size(); i++) {
+-    c[i] = a[i] << b[i];
++    T shift = b[i];
++    if ((static_cast<std::make_signed_t<T>>(shift) < 0) || (shift >= max_shift)) {
++      c[i] = 0;
++    } else {
++      c[i] = static_cast<std::make_unsigned_t<T>>(a[i]) << shift;
++    }
+   }
+   return c;
+ }
+ 
+ template <class T> Vectorized<T> inline operator>>(const Vectorized<T> &a, const Vectorized<T> &b) {
++  // right shift value to retain sign bit for signed and no bits for unsigned
++  constexpr T max_shift = sizeof(T) * CHAR_BIT - std::is_signed_v<T>;
+   Vectorized<T> c;
+   for (int i = 0; i != Vectorized<T>::size(); i++) {
+-    c[i] = a[i] >> b[i];
++    T shift = b[i];
++    if ((static_cast<std::make_signed_t<T>>(shift) < 0) || (shift >= max_shift)) {
++      c[i] = a[i] >> max_shift;
++    } else {
++      c[i] = a[i] >> shift;
++    }
+   }
+   return c;
+ }
+diff --git a/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp b/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp
+index d0393aaf18bf8b..d2d0892d8ea956 100644
+--- a/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp
++++ b/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp
+@@ -316,6 +316,10 @@ void lshift_kernel(TensorIteratorBase& iter) {
+   AT_DISPATCH_INTEGRAL_TYPES(iter.dtype(), "lshift_cpu", [&]() {
+     cpu_kernel_vec(iter,
+         [](scalar_t a, scalar_t b) -> scalar_t {
++          constexpr scalar_t max_shift = sizeof(scalar_t) * CHAR_BIT;
++          if ((static_cast<std::make_signed_t<scalar_t>>(b) < 0) || (b >= max_shift)) {
++            return 0;
++          }
+           return static_cast<std::make_unsigned_t<scalar_t>>(a) << b;
+         },
+         [](Vectorized<scalar_t> a, Vectorized<scalar_t> b) {
+@@ -385,6 +389,11 @@ void rshift_kernel(TensorIteratorBase& iter) {
+   AT_DISPATCH_INTEGRAL_TYPES(iter.dtype(), "rshift_cpu", [&]() {
+     cpu_kernel_vec(iter,
+         [](scalar_t a, scalar_t b) -> scalar_t {
++          // right shift value to retain sign bit for signed and no bits for unsigned
++          constexpr scalar_t max_shift = sizeof(scalar_t) * CHAR_BIT - std::is_signed_v<scalar_t>;
++          if ((static_cast<std::make_signed_t<scalar_t>>(b) < 0) || (b >= max_shift)) {
++            return a >> max_shift;
++          }
+           return a >> b;
+         },
+         [](Vectorized<scalar_t> a, Vectorized<scalar_t> b) {
+diff --git a/test/functorch/test_vmap.py b/test/functorch/test_vmap.py
+index a5fb144f881880..5c352cf8fdf6f0 100644
+--- a/test/functorch/test_vmap.py
++++ b/test/functorch/test_vmap.py
+@@ -27,8 +27,6 @@
+     instantiate_parametrized_tests,
+     subtest,
+     TEST_WITH_UBSAN,
+-    IS_MACOS,
+-    IS_X86
+ )
+ from torch.testing._internal.common_device_type import \
+     toleranceOverride, tol
+@@ -46,7 +44,6 @@
+     compute_quantities_for_vmap_test,
+     is_valid_inplace_sample_input,
+     decorate,
+-    expectedFailureIf
+ )
+ import types
+ from collections import namedtuple
+@@ -3572,10 +3569,6 @@ def test():
+         xfail('addcdiv'),
+         xfail('addcmul'),
+         xfail('clamp'),
+-        # AssertionError: Tensor-likes are not equal!
+-        xfail('bitwise_left_shift', device_type='cpu'),
+-        decorate('bitwise_right_shift', device_type='cpu',
+-                 decorator=expectedFailureIf(not (IS_MACOS and IS_X86))),
+ 
+         # UBSAN: runtime error: shift exponent -1 is negative
+         decorate('bitwise_left_shift', decorator=unittest.skipIf(TEST_WITH_UBSAN, "Fails with above error")),
+@@ -3734,11 +3727,6 @@ def test_vmap_exhaustive(self, device, dtype, op):
+         xfail('linalg.lu', ''),
+         skip('linalg.ldl_solve', ''),
+         skip('_softmax_backward_data'),
+-        # AssertionError: Tensor-likes are not equal!
+-        # Issue: https://github.com/pytorch/pytorch/issues/70904
+-        xfail('bitwise_left_shift', device_type='cpu'),
+-        decorate('bitwise_right_shift', device_type='cpu',
+-                 decorator=expectedFailureIf(not (IS_MACOS and IS_X86))),
+         # UBSAN: runtime error: shift exponent -1 is negative
+         decorate('bitwise_left_shift', decorator=unittest.skipIf(TEST_WITH_UBSAN, "Fails with above error")),
+         decorate('bitwise_right_shift', decorator=unittest.skipIf(TEST_WITH_UBSAN, "Fails with above error")),
+diff --git a/test/test_binary_ufuncs.py b/test/test_binary_ufuncs.py
+index 52d7c7a4ffcb00..bf3e4d43494932 100644
+--- a/test/test_binary_ufuncs.py
++++ b/test/test_binary_ufuncs.py
+@@ -4,6 +4,7 @@
+ import numpy as np
+ 
+ import itertools
++from itertools import chain
+ from itertools import product
+ import math
+ import random
+@@ -53,6 +54,7 @@
+     floating_types_and,
+     floating_and_complex_types,
+     get_all_math_dtypes,
++    get_all_int_dtypes,
+ )
+ from torch.testing._internal.common_methods_invocations import (
+     binary_ufuncs,
+@@ -3139,6 +3141,41 @@ def test_signed_shift(self, device, dtype):
+         self.assertEqual(a >> 1, expected_r)
+         self.compare_with_numpy(lambda x: x >> 1, lambda x: np.right_shift(x, 1), a)
+ 
++    @onlyCPU
++    @dtypes(*get_all_int_dtypes())
++    def test_shift_limits(self, device, dtype):
++        "Ensure that CPU integer bit shifting works as expected with out-of-limits shift values."
++        # Issue #70904
++        iinfo = torch.iinfo(dtype)
++        bits = iinfo.bits
++        low = iinfo.min
++        high = iinfo.max
++        exact_dtype = dtype != torch.uint8  # numpy changes dtype from uint8 to int16 for some out-of-limits shift values
++        for input in (
++            torch.tensor([-1, 0, 1], device=device, dtype=dtype),  # small for non-vectorized operation
++            torch.tensor([low, high], device=device, dtype=dtype),  # small for non-vectorized operation
++            make_tensor((64, 64, 64), low=low, high=high, device=device, dtype=dtype),  # large for vectorized operation
++        ):
++            shift_left_expected = torch.zeros_like(input)
++            shift_right_expected = torch.clamp(input, -1, 0)
++            for shift in chain(range(-100, -1), range(bits, 100)):
++                shift_left = input << shift
++                self.assertEqual(shift_left, shift_left_expected, msg=f"<< {shift}")
++                self.compare_with_numpy(
++                    lambda x: x << shift,
++                    lambda x: np.left_shift(x, shift),
++                    input,
++                    exact_dtype=exact_dtype, msg=f"<< {shift}"
++                )
++                shift_right = input >> shift
++                self.assertEqual(shift_right, shift_right_expected, msg=f">> {shift}")
++                self.compare_with_numpy(
++                    lambda x: x >> shift,
++                    lambda x: np.right_shift(x, shift),
++                    input,
++                    exact_dtype=exact_dtype, msg=f">> {shift}"
++                )
++
+     @onlyNativeDeviceTypes
+     @dtypes(
+         *list(
