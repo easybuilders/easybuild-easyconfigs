@@ -1,0 +1,95 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Jordi Blasco <jordi.blasco@hpcnow.com>; Guillermo Piccoli <guillermo.piccoli@hpcnow.com>
+# License::     GPL-v3.0
+# #
+
+easyblock = 'ConfigureMake'
+
+name = 'CRIU'
+version = '3.19'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/checkpoint-restore/criu'
+description = """Checkpoint/Restore In Userspace (CRIU) is a Linux software which can freeze a running container
+(or an individual application) and checkpoint its state to disk. The data saved can be used to restore the 
+application and run it exactly as it was during the time of the freeze. Using this functionality, application 
+or container live migration, snapshots, remote debugging, and many other things are now possible."""
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('protobuf-c', '1.5.0'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Python', '3.10.8'),
+]
+
+osdependencies = [
+    ('asciidoc'),
+    ('libbsd-devel', 'libbsd-dev'),
+    ('libcap-devel', 'libcap-dev'),
+    ('libnet-devel', 'libnet1-dev', 'libnet-dev'),
+    ('libnl3-devel', 'libnl-3-dev'),
+    ('libaio-devel', 'libaio-dev'),
+    ('gnutls-devel', 'libgnutls28-dev'),
+    ('libdrm-devel', 'libdrm-dev'),
+]
+
+github_account = 'checkpoint-restore'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['990cdd147cb670a5d5d14216c2b5c2fc2b9a53ef19396569a6413807ba2a6aa2']
+
+# No configure
+skipsteps = ['configure']
+
+# Adding symlink to protobuf for compilation and setting PKG_CONFIG_PATH to system pkgconfig
+prebuildopts = 'ln -sf $EBROOTPROTOBUF/include/google/protobuf/descriptor.proto ' \
+               '%(builddir)s/%(namelower)s-%(version)s/images/google/protobuf/ && ' \
+               'PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH && '
+
+# Modifying PREFIX during make because there is no configuration step
+installopts = 'PREFIX=%(installdir)s '
+
+# Adding crit path to PYTHONPATH
+modextrapaths = {'PYTHONPATH': ['lib64/python%(pyshortver)s/site-packages']}
+
+exts_defaultclass = 'PythonPackage'
+
+# setting prebuildopts and installopts to blank so main packages settings are not applied to exts
+exts_default_options = {
+    'download_dep_fail': True,
+    'sanity_pip_check': True,
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'prebuildopts': '',
+    'installopts': ''
+}
+
+exts_list = [
+    ('google', '3.0.0', {
+        'checksums': ['143530122ee5130509ad5e989f0512f7cb218b2d4eddbafbad40fd10e8d8ccbe'],
+    }),
+    ('google-api-core', '2.18.0', {
+        'modulename': 'google',
+        'checksums': ['62d97417bfc674d6cef251e5c4d639a9655e00c45528c4364fbfebb478ce72a9'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['sbin/criu', 'bin/crit', 'bin/compel', 'sbin/criu-ns'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "criu --help",
+    "crit --help",
+]
+
+moduleclass = 'system'
