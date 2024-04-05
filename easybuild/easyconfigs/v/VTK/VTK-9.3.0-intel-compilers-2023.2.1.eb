@@ -18,11 +18,9 @@ sources = [
     SOURCE_TAR_GZ,
     '%(name)sData-%(version)s.tar.gz',
 ]
-patches = [('vtk-version.egg-info', '.')]
 checksums = [
     {'VTK-9.3.0.tar.gz': 'fdc7b9295225b34e4fdddc49cd06e66e94260cb00efee456e0f66568c9681be9'},
     {'VTKData-9.3.0.tar.gz': 'f82142dd327e995c9536c1003e1370bb4092c96f23edb8119d16d2411ef35dc3'},
-    {'vtk-version.egg-info': '787b82415ae7a4a1f815b4db0e25f7abc809a05fc85d7d219627f3a7e5d3867b'},
 ]
 
 multi_deps = { 'Python': ['3.11', '3.10'] }
@@ -58,12 +56,11 @@ configopts = ' '.join([
 
 preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
 
-local_egg_info_src = '%(builddir)s/VTK-%(version)s/vtk-version.egg-info'
-
 postinstallcmds = [
     '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --add_path %(installdir)s/lib --any_interpreter',
 ] + [
-    'sed "s/#VTK_VERSION#/%(version)s/" %(builddir)s/VTK-%(version)s/vtk-version.egg-info > %(installdir)s/lib/python{}/site-packages/vtk-%(version)s.egg-info'.format(x) for x in multi_deps['Python'] 
+    "mkdir -p %(installdir)s/lib/python{py}/site-packages/{dist}-%(version)s.dist-info && echo -e 'Metadata-Version: 2.3\nName: {dist}\nVersion: %(version)s' > %(installdir)s/lib/python{py}/site-packages/{dist}-%(version)s.dist-info/METADATA".format(py=py, dist=name.lower())
+    for py in multi_deps['Python']
 ]
 
 sanity_check_paths = {
