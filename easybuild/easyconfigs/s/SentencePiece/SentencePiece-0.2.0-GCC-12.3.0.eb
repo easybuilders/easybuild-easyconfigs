@@ -17,6 +17,8 @@ builddependencies = [
 dependencies = [
     ('Python', '3.11.3'),
     ('gperftools', '2.12'),
+    ('protobuf', '24.0'),
+    ('Abseil', '20230125.3'),
 ]
 
 default_component_specs = {
@@ -25,20 +27,21 @@ default_component_specs = {
     'checksums': ['9970f0a0afee1648890293321665e5b2efa04eaec9f1671fcf8048f456f5bb86'],
 }
 
+local_external_absl = 'sed -i %(builddir)s/'
+
 components = [
     (name, version, {
         'easyblock': 'CMakeMake',
         'separate_build_dir': True,
         'start_dir': '%(namelower)s-%(version)s',
+        'configopts': '-DSPM_PROTOBUF_PROVIDER=package -DSPM_ABSL_PROVIDER=package',
     }),
     ('sentencepiece', version, {
         'easyblock': 'PythonPackage',
         'start_dir': '%(namelower)s-%(version)s/python',
         # Unpredicable where pc files end up; including both lib and lib64
-        'prebuildopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib64/pkgconfig:'
-                        '%(installdir)s/lib/pkgconfig:PKG_CONFIG_PATH && ',
-        'preinstallopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib64/pkgconfig:'
-                          '%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && ',
+        'prebuildopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib64/pkgconfig:$PKG_CONFIG_PATH && ',
+        'preinstallopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib64/pkgconfig:$PKG_CONFIG_PATH && ',
         'use_pip': True,
         'download_dep_fail': True,
         'sanity_pip_check': True,
@@ -55,7 +58,7 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = [
-    'spm_train --help',
+    'spm_train --help | grep accept_language',  # --help has exit code 1, so we check for output text
     "python -c 'import sentencepiece'",
 ]
 
