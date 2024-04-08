@@ -41,6 +41,10 @@ local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver !
 local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
 exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
 
+local_rhdf5lib_preinstallopts = """
+sed -i 's@cd hdf5; \\\\@cd hdf5; \\\\\\n\\tsed -i "s|/bin/mv|mv|" ./configure; \\\\@' %(start_dir)s/src/Makevars.in &&
+"""
+
 # CRAN packages on which these Bioconductor packages depend are available in R module on which this depends
 # !! order of packages is important !!
 # packages updated on 18th March 2023
@@ -323,6 +327,7 @@ exts_list = [
     }),
     ('Rhdf5lib', '1.20.0', {
         'checksums': ['a73b462be309c9df11afc9b941282dcefb36b4a38d15c050fd98bb3c05bbaf7f'],
+        'preinstallopts': local_rhdf5lib_preinstallopts,
     }),
     ('rhdf5filters', '1.10.0', {
         'checksums': ['e1bf2ada5070b4b8d48b90db13ea750c812eaa2a82536571faa35621c250a29f'],
