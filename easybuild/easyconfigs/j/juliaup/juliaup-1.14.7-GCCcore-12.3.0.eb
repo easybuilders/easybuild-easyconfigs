@@ -1,0 +1,37 @@
+# Paul Melis, SURF (paul.melis@surf.nl)
+easyblock = 'Binary'
+
+name = 'juliaup'
+version = '1.14.7'
+
+homepage = 'https://github.com/JuliaLang/juliaup'
+description = """A cross-platform installer for the Julia programming language."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/JuliaLang/juliaup/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['8fda7c7af09543f67279e5ccbb7939ca61e0d1a9846cb366c3a435e03abb8b1b']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Rust', '1.75.0'),
+]
+
+extract_sources = True
+
+install_cmd = "cargo build --release && cargo install --root %(installdir)s --path ."
+
+sanity_check_paths = {
+    # Contains a shim for bin/julia, which will download the necessary julia binary on demand
+    # and make sure the 'julia' command actually points to the active version
+    'files': ['bin/juliaup', 'bin/julia'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["juliaup --help"]
+
+moduleclass = 'lang'
+
+# Workaround for https://github.com/JuliaLang/julia/issues/53339
+modextravars = {'JULIA_SSL_CA_ROOTS_PATH': '/etc/ssl/certs/ca-bundle.crt'}
