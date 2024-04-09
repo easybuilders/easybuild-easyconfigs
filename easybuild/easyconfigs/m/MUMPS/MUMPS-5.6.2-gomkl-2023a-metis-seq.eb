@@ -1,0 +1,35 @@
+name = 'MUMPS'
+version = '5.6.2'
+versionsuffix = '-metis-seq'
+
+homepage = 'https://graal.ens-lyon.fr/MUMPS/'
+description = "A parallel sparse direct solver. This module is for its sequential variant."
+
+toolchain = {'name': 'gomkl', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': False}
+
+source_urls = ['https://graal.ens-lyon.fr/MUMPS/']
+sources = ['%(name)s_%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_shared-pord.patch',    # builds the shared libs of PORD
+    '%(name)s-5.6.1_shared-mumps.patch',   # builds shared libs of MUMPS
+]
+checksums = [
+    {'MUMPS_5.6.2.tar.gz': '13a2c1aff2bd1aa92fe84b7b35d88f43434019963ca09ef7e8c90821a8f1d59a'},
+    {'MUMPS-5.6.2_shared-pord.patch': '5f1c41a39a83ee4993e88416f0821e437afad9e63d5d1df077b4d7d12c2bc2b8'},
+    {'MUMPS-5.6.1_shared-mumps.patch': '27f788a5f85e8c9a6a7ec1651097b87c1de0ede0be943df7a10fa7c1ff5f494f'},
+]
+
+dependencies = [
+    ('SCOTCH', '7.0.3'),
+    ('METIS', '5.1.0'),
+]
+
+parallel = 1
+
+# fix 'Type mismatch between actual argument' errors with GCC 10.x
+prebuildopts = 'export FFLAGS="$FFLAGS -fallow-argument-mismatch" && '
+
+buildopts = 'all SONAME_VERSION="%(version)s"'
+
+moduleclass = 'math'
