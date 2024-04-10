@@ -14,14 +14,15 @@ sanity_pip_check = True
 
 builddependencies = [
     ('Bazel', '6.1.0'),
+    # git 2.x required, see also https://github.com/tensorflow/tensorflow/issues/29053
     ('git', '2.41.0', '-nodocs'),
     ('pybind11', '2.11.1'),
     ('UnZip', '6.0'),
+    # Required to build some of the extensions
     ('poetry', '1.5.1'),
+    # Protobuf disabled since 2.13.0 easyconfigs:
     # Compiling with system protobuf don't seem to work, see:
     # https://github.com/tensorflow/tensorflow/issues/61593
-    # In addition there are more rules in third_python that
-    # do not have corresponding ones in systemlib/protobuf.BUILD
     # ('protobuf', '24.0'),
 ]
 
@@ -38,6 +39,7 @@ dependencies = [
     ('ICU', '73.2'),
     ('JsonCpp', '1.9.5'),
     ('libjpeg-turbo', '2.1.5.1'),
+    ('ml_dtypes', '0.3.2'),
     ('NASM', '2.16.01'),
     ('nsync', '1.26.0'),
     ('SQLite', '3.42.0'),
@@ -46,113 +48,42 @@ dependencies = [
     ('libpng', '1.6.39'),
     ('snappy', '1.1.10'),
     ('zlib', '1.2.13'),
-    ('ml_dtypes', '0.3.2'),
     # for grpcio only (Abseil excluded for tensorflow)
     ('OpenSSL', '1.1', '', SYSTEM),
     ('RE2', '2023-08-01'),
     ('Abseil', '20230125.3'),
 ]
 
+# Dependencies created and updated using findPythonDeps, see:
+# https://docs.easybuild.io/api/easybuild/scripts/findPythonDeps
+# Notable changes since 2.13.0-foss-2023a
+# - tensoboard-wit deprecated as of tensorboard 2.13.0 (tensorboard@33abcb54d7)
+# - portpicker for tests no longer needed (TF@e85860e838)
+# - opt_einsum now comes from ml_dtypes
 exts_list = [
+
     ('wrapt', '1.14.1', {
         'checksums': ['380a85cf89e0e69b7cfbe2ea9f765f004ff419f34194018a6827ac0e3edfed4d'],
     }),
-    ('typing_extensions', '4.10.0', {
-        'checksums': ['b0abd7c89e8fb96f98db18d86106ff1d90ab692004eb746cf6eda2682f91b3cb'],
-    }),
     ('termcolor', '2.3.0', {
         'checksums': ['b5b08f68937f138fe92f6c089b99f1e2da0ae56c52b78bf7075fd95420fd9a5a'],
-    }),
-    ('MarkupSafe', '2.1.5', {
-        'checksums': ['d283d37a890ba4c1ae73ffadf8046435c76e7bc2247bbb63c00bd1a709c6544b'],
-    }),
-    ('Werkzeug', '2.2.2', {
-        'checksums': ['7ea2d48322cc7c0f8b3a215ed73eabd7b5d75d0b50e31ab006286ccff9e00b8f'],
-    }),
-    ('six', '1.16.0', {
-        'checksums': ['1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926'],
-    }),
-    ('urllib3', '2.2.1', {
-        'checksums': ['d0570876c61ab9e520d776c38acbbb5b05a776d3f9ff98a5c8fd5162a444cf19'],
-    }),
-    ('idna', '3.6', {
-        'checksums': ['9ecdbbd083b06798ae1e86adcbfe8ab1479cf864e4ee30fe4e46a003d12491ca'],
-    }),
-    ('charset-normalizer', '3.3.2', {
-        'checksums': ['f30c3cb33b24454a82faecaf01b19c18562b1e89558fb6c56de4d9118a032fd5'],
-    }),
-    ('certifi', '2024.2.2', {
-        'checksums': ['0569859f95fc761b18b45ef421b1290a0f65f147e92a1e5eb3e635f9a5e4e66f'],
-    }),
-    ('requests', '2.31.0', {
-        'checksums': ['942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1'],
-    }),
-    ('Markdown', '3.5.2', {
-        'checksums': ['e1ac7b3dc550ee80e602e71c1d168002f062e49f1b11e26a36264dafd4df2ef8'],
-    }),
-    ('oauthlib', '3.2.2', {
-        'checksums': ['9859c40929662bec5d64f34d01c99e093149682a3f38915dc0655d5a633dd918'],
-    }),
-    ('requests-oauthlib', '1.3.1', {
-        'checksums': ['75beac4a47881eeb94d5ea5d6ad31ef88856affe2332b9aafb52c6452ccf0d7a'],
-    }),
-    ('pyasn1-modules', '0.3.0', {
-        'source_tmpl': 'pyasn1_modules-%(version)s.tar.gz',
-        'checksums': ['5bd01446b736eb9d31512a30d46c1ac3395d676c6f3cafa4c03eb54b9925631c'],
-    }),
-    ('rsa', '4.9', {
-        'checksums': ['e38464a49c6c85d7f1351b0126661487a7e0a14a50f1675ec50eb34d4f20ef21'],
-    }),
-    ('cachetools', '5.3.3', {
-        'checksums': ['ba29e2dfa0b8b556606f097407ed1aa62080ee108ab0dc5ec9d6a723a007d105'],
-    }),
-    ('gast', '0.5.4', {
-        'checksums': ['9c270fe5f4b130969b54174de7db4e764b09b4f7f67ccfc32480e29f78348d97'],
-    }),
-    ('flatbuffers', '23.5.26', {
-        'checksums': ['9ea1144cac05ce5d86e2859f431c6cd5e66cd9c78c558317c7955fb8d4c78d89'],
-    }),
-    ('astunparse', '1.6.3', {
-        'checksums': ['5ad93a8456f0d084c3456d059fd9a92cce667963232cbf763eac3bc5b7940872'],
-    }),
-    ('tblib', '3.0.0', {
-        'checksums': ['93622790a0a29e04f0346458face1e144dc4d32f493714c6c3dff82a4adb77e6'],
-    }),
-    ('astor', '0.8.1', {
-        'checksums': ['6a6effda93f4e1ce9f618779b2dd1d9d84f1e32812c23a29b3fff6fd7f63fa5e'],
-    }),
-    ('google-auth-oauthlib', '1.2.0', {
-        'checksums': ['292d2d3783349f2b0734a0a0207b1e1e322ac193c2c09d8f7c613fb7cc501ea8'],
-    }),
-    ('google-pasta', '0.2.0', {
-        'modulename': 'pasta',
-        'checksums': ['c9f2c8dfc8f96d0d5808299920721be30c9eec37f2389f28904f454565c8a16e'],
-    }),
-    ('absl-py', '1.4.0', {
-        'modulename': 'absl',
-        'checksums': ['d2c244d01048ba476e7c080bd2c6df5e141d211de80223460d5b3b8a2a58433d'],
-    }),
-    ('google-auth', '2.28.1', {
-        'modulename': 'google.auth',
-        'checksums': ['34fc3046c257cedcf1622fc4b31fc2be7923d9b4d44973d481125ecc50d83885'],
-    }),
-    ('tensorboard-data-server', '0.7.2', {
-        'source_tmpl': 'tensorboard_data_server-%(version)s-py3-none-any.whl',
-        'checksums': ['7e0610d205889588983836ec05dc098e80f97b7e7bbff7e994ebb78f578d0ddb'],
     }),
     ('tensorflow-estimator', '2.15.0', {
         'source_tmpl': 'tensorflow_estimator-%(version)s-py2.py3-none-any.whl',
         'checksums': ['aedf21eec7fb2dc91150fc91a1ce12bc44dbb72278a08b58e79ff87c9e28f153'],
     }),
-    ('tensorboard', '2.15.2', {
-        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
-        'checksums': ['a6f6443728064d962caea6d34653e220e34ef8df764cb06a8212c17e1a8f0622'],
+    ('Werkzeug', '3.0.2', {
+        'source_tmpl': SOURCELOWER_TAR_GZ,
+        'checksums': ['e39b645a6ac92822588e7b39a692e7828724ceae0b0d702ef96701f90e70128d'],
     }),
-    ('keras', '2.15.0', {
-        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
-        'checksums': ['2dcc6d2e30cf9c951064b63c1f4c404b966c59caf09e01f3549138ec8ee0dd1f'],
+    ('tensorboard-data-server', '0.7.2', {
+        'source_tmpl': 'tensorboard_data_server-%(version)s-py3-none-any.whl',
+        'checksums': ['7e0610d205889588983836ec05dc098e80f97b7e7bbff7e994ebb78f578d0ddb'],
     }),
-    ('grpcio', '1.60.0', {
+    ('Markdown', '3.6', {
+        'checksums': ['ed4f41f6daecbeeb96e576ce414c41d2d876daa9a16cb35fa8ed8c2ddfad0224'],
+    }),
+    ('grpcio', '1.57.0', {
         'modulename': 'grpc',
         'preinstallopts': (
             "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && "
@@ -164,17 +95,71 @@ exts_list = [
             "GRPC_PYTHON_BUILD_SYSTEM_RE2=True "
             "GRPC_PYTHON_BUILD_SYSTEM_ABSL=True "
         ),
-        'patches': ['grpcio-1.16.0_use-ebroot.patch'],
+        'patches': ['grpcio-1.57.0_use-ebroot.patch'],
         'checksums': [
-            {'grpcio-1.60.0.tar.gz':
-             '2199165a1affb666aa24adf0c97436686d0a61bc5fc113c037701fb7c7fceb96'},
-            {'grpcio-1.16.0_use-ebroot.patch':
+            {'grpcio-1.57.0.tar.gz':
+             '4b089f7ad1eb00a104078bab8015b0ed0ebcb3b589e527ab009c53893fd4e613'},
+            {'grpcio-1.57.0_use-ebroot.patch':
              '5faf822cd817b723ae9361e43656d0ecc7b3333a166bbab2df80b43ae588e510'},
         ],
     }),
-    ('opt-einsum', '3.3.0', {
-        'source_tmpl': 'opt_einsum-%(version)s-py3-none-any.whl',
-        'checksums': ['2455e59e3947d3c275477df7f5205b30635e266fe6dc300e3d9f9646bfcea147'],
+    ('oauthlib', '3.2.2', {
+        'checksums': ['9859c40929662bec5d64f34d01c99e093149682a3f38915dc0655d5a633dd918'],
+    }),
+    ('requests-oauthlib', '2.0.0', {
+        'checksums': ['b3dffaebd884d8cd778494369603a9e7b58d29111bf6b41bdc2dcd87203af4e9'],
+    }),
+    ('rsa', '4.9', {
+        'checksums': ['e38464a49c6c85d7f1351b0126661487a7e0a14a50f1675ec50eb34d4f20ef21'],
+    }),
+    ('pyasn1-modules', '0.4.0', {
+        'source_tmpl': 'pyasn1_modules-%(version)s.tar.gz',
+        'checksums': ['831dbcea1b177b28c9baddf4c6d1013c24c3accd14a1873fffaa6a2e905f17b6'],
+    }),
+    ('cachetools', '5.3.3', {
+        'checksums': ['ba29e2dfa0b8b556606f097407ed1aa62080ee108ab0dc5ec9d6a723a007d105'],
+    }),
+    ('google-auth', '2.29.0', {
+        'modulename': 'google.auth',
+        'checksums': ['672dff332d073227550ffc7457868ac4218d6c500b155fe6cc17d2b13602c360'],
+    }),
+    ('google-auth-oauthlib', '1.2.0', {
+        'checksums': ['292d2d3783349f2b0734a0a0207b1e1e322ac193c2c09d8f7c613fb7cc501ea8'],
+    }),
+    ('absl-py', '2.1.0', {
+        'modulename': 'absl',
+        'checksums': ['7820790efbb316739cde8b4e19357243fc3608a152024288513dd968d7d959ff'],
+    }),
+    ('tensorboard', '2.15.2', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['a6f6443728064d962caea6d34653e220e34ef8df764cb06a8212c17e1a8f0622'],
+    }),
+    ('keras', '2.15.0', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['2dcc6d2e30cf9c951064b63c1f4c404b966c59caf09e01f3549138ec8ee0dd1f'],
+    }),
+    ('google-pasta', '0.2.0', {
+        'modulename': 'pasta',
+        'checksums': ['c9f2c8dfc8f96d0d5808299920721be30c9eec37f2389f28904f454565c8a16e'],
+    }),
+    ('astunparse', '1.6.3', {
+        'checksums': ['5ad93a8456f0d084c3456d059fd9a92cce667963232cbf763eac3bc5b7940872'],
+    }),
+    # Required by tests
+    ('tblib', '3.0.0', {
+        'checksums': ['93622790a0a29e04f0346458face1e144dc4d32f493714c6c3dff82a4adb77e6'],
+    }),
+    ('astor', '0.8.1', {
+        'checksums': ['6a6effda93f4e1ce9f618779b2dd1d9d84f1e32812c23a29b3fff6fd7f63fa5e'],
+    }),
+    # Optional profile plugin + dependency
+    ('gviz-api', '1.10.0', {
+        'source_tmpl': 'gviz_api-%(version)s.tar.gz',
+        'checksums': ['846692dd8cc73224fc31b18e41589bd934e1cc05090c6576af4b4b26c2e71b90'],
+    }),
+    ('tensorboard-plugin-profile', '2.15.1', {
+        'source_tmpl': 'tensorboard_plugin_profile-%(version)s.tar.gz',
+        'checksums': ['84bb33e446eb4a9c0616f669fc6a42cdd40eadd9ae1d74bf756f4f0479993273'],
     }),
     (name, version, {
         'patches': [
@@ -252,11 +237,10 @@ exts_list = [
     }),
 ]
 
-
 #  Taken from tensorboard-2.15.1-gfbf-2023a.eb:
-#   Relax restriction on protobuf dependency as issue was fixed
-#   in https://github.com/protocolbuffers/upb/pull/1514
-#   see also: https://github.com/easybuilders/easybuild-easyconfigs/pull/19671
+#  Relax restriction on protobuf dependency as issue was fixed
+#  in https://github.com/protocolbuffers/upb/pull/1514
+#  see also: https://github.com/easybuilders/easybuild-easyconfigs/pull/19671
 postinstallcmds = [
     'sed -i "s/Requires-Dist: protobuf.*/Requires-Dist: protobuf >=3.19.6/g" ' +
     '%(installdir)s/lib/python%(pyshortver)s/site-packages/tensorboard-2.15.2.dist-info/METADATA',
