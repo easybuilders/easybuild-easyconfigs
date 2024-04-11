@@ -1,0 +1,73 @@
+easyblock = 'PythonBundle'
+
+name = 'tinygrad'
+version = '0.8.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://tinygrad.org/'
+description = """
+This may not be the best deep learning framework, but it is a deep learning framework.
+
+Due to its extreme simplicity, it aims to be the easiest framework to add new
+accelerators to, with support for both inference and training. If XLA is CISC,
+tinygrad is RISC."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [  # for testing
+    ('hypothesis', '6.82.0'),
+    ('Pillow-SIMD', '9.5.0'),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('librosa', '0.10.1'),
+    ('pytest-xdist', '3.3.1'),
+    ('OpenCV', '4.8.1', '-contrib'),
+    ('Python-bundle-PyPI', '2023.06'),  # for tabulate
+    ('networkx', '3.1'),
+    ('SentencePiece', '0.2.0'),
+    ('Transformers', '4.39.3'),
+    ('tiktoken', '0.6.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('tqdm', '4.66.1'),
+    ('SciPy-bundle', '2023.07'),
+]
+
+
+use_pip = True
+
+exts_list = [
+    ('gpuctypes', '0.3.0', {
+        'github_account': 'tinygrad',
+        'source_urls': [GITHUB_SOURCE + '/refs/tags/'],  # test/helpers.py is missing on pypi
+        'sources': [{
+            'download_filename': "%(version)s.tar.gz",
+            'filename': SOURCE_TAR_GZ,
+        }],
+        'checksums': ['c3529cd840c91d600e326cb3be04c548384023e8a4a5862fb0eca20500442195'],
+        'runtest': 'cd test/ && pytest test_cuda.py',
+        'testinstall': True,
+    }),
+    (name, version, {
+        'source_urls': [GITHUB_SOURCE],  # test/__init__.py and possible others missing on pypi
+        'sources': ["v%(version)s.tar.gz"],
+        'patches': ['tinygrad-0.8.0_fix_cuda_include_path.patch'],
+        'checksums': [
+            {'v0.8.0.tar.gz': '5f4335fe9168ab2fd00eb056cf44f7d4a66d5c654124ab6b5262fe3e7267fea6'},
+            {'tinygrad-0.8.0_fix_cuda_include_path.patch':
+             '05c4a22f9083e19d0d120e902db6a021d8386a8958711accbe77bdcfa61ed4ee'},
+        ],
+        'runtest': (
+            'pytest'
+            ' --ignore=extra/'
+            ' --ignore=test/models/test_onnx.py'  # requires ONNX
+            ' --deselect=test/test_multitensor.py::TestMultiTensor'  # requires 5 GPUs or more
+        ),
+        'testinstall': True,
+    }),
+]
+sanity_pip_check = True
+
+moduleclass = 'ai'
