@@ -44,14 +44,10 @@ dependencies = [
     ('nsync', '1.26.0'),
     ('SQLite', '3.42.0'),
     ('patchelf', '0.18.0'),
-    ('protobuf-python', '4.24.0'),
     ('libpng', '1.6.39'),
     ('snappy', '1.1.10'),
     ('zlib', '1.2.13'),
-    # for grpcio only (Abseil excluded for tensorflow)
-    ('OpenSSL', '1.1', '', SYSTEM),
-    ('RE2', '2023-08-01'),
-    ('Abseil', '20230125.3'),
+    ('grpcio', '1.57.0'),
 ]
 
 # Dependencies created and updated using findPythonDeps, see:
@@ -82,26 +78,6 @@ exts_list = [
     }),
     ('Markdown', '3.6', {
         'checksums': ['ed4f41f6daecbeeb96e576ce414c41d2d876daa9a16cb35fa8ed8c2ddfad0224'],
-    }),
-    ('grpcio', '1.57.0', {
-        'modulename': 'grpc',
-        'preinstallopts': (
-            "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && "
-            # Required to avoid building with non-default C++ standard but keep other flags,
-            # see https://github.com/grpc/grpc/issues/34256
-            'export GRPC_PYTHON_CFLAGS="-fvisibility=hidden -fno-wrapv -fno-exceptions" &&'
-            "GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=True "
-            "GRPC_PYTHON_BUILD_SYSTEM_ZLIB=True "
-            "GRPC_PYTHON_BUILD_SYSTEM_RE2=True "
-            "GRPC_PYTHON_BUILD_SYSTEM_ABSL=True "
-        ),
-        'patches': ['grpcio-1.57.0_use-ebroot.patch'],
-        'checksums': [
-            {'grpcio-1.57.0.tar.gz':
-             '4b089f7ad1eb00a104078bab8015b0ed0ebcb3b589e527ab009c53893fd4e613'},
-            {'grpcio-1.57.0_use-ebroot.patch':
-             '5faf822cd817b723ae9361e43656d0ecc7b3333a166bbab2df80b43ae588e510'},
-        ],
     }),
     ('oauthlib', '3.2.2', {
         'checksums': ['9859c40929662bec5d64f34d01c99e093149682a3f38915dc0655d5a633dd918'],
@@ -174,14 +150,14 @@ exts_list = [
             'export TF_PYTHON_VERSION=3.11 && '
             'export TF_SYSTEM_LIBS=$(python -c "'
             "print(','.join([l for l in '$TF_SYSTEM_LIBS'.split(',') "
-            "      if l not in ['opt_einsum_archive', 'com_google_absl']]))"
+            "      if l not in ['opt_einsum_archive']]))"
             '") && '
         ),
         'preconfigopts': (
             'export TF_NEED_CLANG=no && '
             'export TF_SYSTEM_LIBS=$(python -c "'
             "print(','.join([l for l in '$TF_SYSTEM_LIBS'.split(',') "
-            "      if l not in ['opt_einsum_archive', 'com_google_absl']]))"
+            "      if l not in ['opt_einsum_archive']]))"
             '") && '
         ),
         'source_tmpl': 'v%(version)s.tar.gz',
