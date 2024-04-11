@@ -41,8 +41,8 @@ local_xla_commit = '4ccfe33c71665ddcbca5b127fefe8baa3ed632d4'
 local_tfrt_commit = '0aeefb1660d7e37964b2bb71b1f518096bda9a25'
 local_repo_opt = '--bazel_options="--override_repository=xla=%%(builddir)s/xla-%s" ' % local_xla_commit
 local_repo_opt += '--bazel_options="--override_repository=runtime=%%(builddir)s/tf_runtime-%s" ' % local_xla_commit
-local_repo_opt += '-bazel_options="--action_env=TF_SYSTEM_LIBS=pybind11" '
-local_repo_opt += '--bazel_options="--action_env=CPATH=$EBROOTPYBIND11/include"'
+local_repo_opt += '--bazel_options="--action_env=TF_SYSTEM_LIBS=pybind11" '
+local_repo_opt += '--bazel_options="--action_env=CPATH=$EBROOTPYBIND11/include" '
 
 
 # Some tests require an isolated run:
@@ -51,7 +51,6 @@ local_isolated_tests = [
     'tests/host_callback_test.py::HostCallbackTapTest::test_tap_transforms_doc',
     'tests/lax_scipy_special_functions_test.py::LaxScipySpcialFunctionsTest' +
     '::testScipySpecialFun_gammainc_s_2x1x4_float32_float32',
-    'tests/lax_numpy_test.py::NumpyUfuncTests::testUfuncInputTypes763'
 ]
 # deliberately not testing in parallel, as that results in (additional) failing tests;
 # use XLA_PYTHON_CLIENT_ALLOCATOR=platform to allocate and deallocate GPU memory during testing,
@@ -105,6 +104,7 @@ components = [
             'https://github.com/tensorflow/runtime/archive',
             'https://github.com/openxla/xla/archive'
         ],
+        'patches': [('jax-0.4.25_fix-pybind11-systemlib.patch', '../xla-' + local_xla_commit)],
         'checksums': [
             {'jaxlib-v0.4.25.tar.gz':
              'fc1197c401924942eb14185a61688d0c476e3e81ff71f9dc95e620b57c06eec8'},
@@ -112,6 +112,7 @@ components = [
              '8a59b9af7d0850059d7043f7043c780066d61538f3af536e8a10d3d717f35089'},
             {'tf_runtime-0aeefb1660d7e37964b2bb71b1f518096bda9a25.tar.gz':
              'a3df827d7896774cb1d80bf4e1c79ab05c268f29bd4d3db1fb5a4b9c2079d8e3'},
+            {'jax-0.4.25_fix-pybind11-systemlib.patch': '4cdc97ce05b708b16e161082428e5413c89c2852edb4262cd19d16618ddad9b6'},
         ],
         'start_dir': 'jax-jaxlib-v%(version)s',
         # Avoid warning (treated as error) in upb/table.c
