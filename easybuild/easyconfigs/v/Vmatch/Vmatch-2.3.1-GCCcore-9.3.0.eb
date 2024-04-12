@@ -1,0 +1,58 @@
+easyblock = "CmdCp"
+
+name = 'Vmatch'
+version = '2.3.1'
+
+homepage = 'http://www.vmatch.de/'
+description = """Vmatch, a versatile software tool for efficiently solving large scale sequence matching tasks. Vmatch subsumes the software tool REPuter, but is much more general,
+with a very flexible user interface, and improved space and time requirements."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://www.vmatch.de/distributions/']
+sources = ['%(namelower)s-%(version)s-Linux_x86_64-64bit.tar.gz']
+checksums = ['2b28f1f5f6ca3780d75889c63f2b5c9ac4b63c9807d98035668c9beddbd9241a']
+
+local_binaries = [
+    'chain2dim',
+    'matchcluster',
+    'mkdna6idx',
+    'mkvtree',
+    'vendian',
+    'vmatch',
+    'vmatchselect',
+    'vseqinfo',
+    'vseqselect',
+    'vstree2tex',
+    'vsubseqselect',
+]
+
+local_perl = [
+    'repfind.pl',
+    'upgradeprj.pl',
+    'Vmatchtrans.pl',
+]
+
+cmds_map = [('.*', "$CC $CFLAGS -shared SELECT/sel392.c -o sel392.so")]
+
+fix_perl_shebang_for = ['bin/*.pl']
+
+files_to_copy = [
+    (['vmigrate.sh'] + local_perl + local_binaries, 'bin'),
+    (['sel392.so'], 'lib'),
+    (['TRANS'], 'TRANS'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/vmatch'],
+    'dirs': ['bin', 'lib', 'TRANS']
+}
+
+sanity_check_commands = ['vmatch -version']
+
+modextravars = {
+    "MKVTREESMAPDIR": "%(installdir)/TRANS"
+}
+
+moduleclass = 'bio'
