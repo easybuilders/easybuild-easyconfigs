@@ -1,6 +1,3 @@
-##
-# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
-##
 easyblock = 'Bundle'
 
 name = 'SentencePiece'
@@ -14,6 +11,7 @@ toolchain = {'name': 'GCC', 'version': '12.3.0'}
 
 builddependencies = [
     ('CMake', '3.26.3'),
+    ('pkgconf', '1.9.5'),
 ]
 
 dependencies = [
@@ -27,17 +25,25 @@ default_component_specs = {
     'checksums': ['9970f0a0afee1648890293321665e5b2efa04eaec9f1671fcf8048f456f5bb86'],
 }
 
+local_external_absl = 'sed -i %(builddir)s/'
+
 components = [
     (name, version, {
         'easyblock': 'CMakeMake',
         'separate_build_dir': True,
         'start_dir': '%(namelower)s-%(version)s',
+        # using internal protobuf there is no matching pc file so requirement is removed:
+        'preconfigopts': 'sed -i s/Requires.private.*// ../sentencepiece-%(version)s/sentencepiece.pc.in &&',
     }),
     ('sentencepiece', version, {
         'easyblock': 'PythonPackage',
         'start_dir': '%(namelower)s-%(version)s/python',
-        'prebuildopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && ',
-        'preinstallopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && ',
+        # Unpredicable where pc files end up; including both lib and lib64
+        'prebuildopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib64/pkgconfig:%(installdir)s/lib/pkgconfig/:'
+                        '$PKG_CONFIG_PATH && ',
+        'preinstallopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib64/pkgconfig:%(installdir)s/lib/pkgconfig/:'
+                          '$PKG_CONFIG_PATH && ',
+
         'use_pip': True,
         'download_dep_fail': True,
         'sanity_pip_check': True,
@@ -54,7 +60,7 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = [
-    'spm_train --help',
+    'spm_train --help | grep accept_language',  # --help has exit code 1, so we check for output text
     "python -c 'import sentencepiece'",
 ]
 
