@@ -46,18 +46,20 @@ exts_list = [
     }),
     ('torchdata', '0.7.1', {
         'preinstallopts': "USE_SYSTEM_LIBS=1 ",
+        'runtest': False,
         'source_urls': ['https://github.com/pytorch/data/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': ['ef9bbdcee759b53c3c9d99e76eb0a66da33d36bfb7f859a25a9b5e737a51fa23'],
-        'runtest': False,  # circular test requirements
     }),
     ('torchtext', '0.16.2', {
         'patches': [
             'torchtext-0.14.1_use-system-libs.patch',
             'torchtext-0.16.2_download-to-project-root.patch',
         ],
+        'runtest': 'pytest test/torchtext_unittest -k "not test_vocab_from_raw_text_file"" and not test_get_tokenizer_moses"" and not test_get_tokenizer_spacy"" and not test_download_charngram_vectors"',
         'source_urls': ['https://github.com/pytorch/text/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
         'checksums': [
             {'torchtext-0.16.2.tar.gz': '6574b012804f65220329a2ad34a95c18e4df0d4cff2f862fb7862d57b374b013'},
             {'torchtext-0.14.1_use-system-libs.patch':
@@ -65,26 +67,21 @@ exts_list = [
             {'torchtext-0.16.2_download-to-project-root.patch':
              '9d5599a9983729cf1fc7ab2a2f65d1887f223f528e15662ba1b4a5e359c9686d'},
         ],
-        'runtest': (
-            'pytest test/torchtext_unittest'
-            ' -k "not test_vocab_from_raw_text_file"'  # segfaults
-            '" and not test_get_tokenizer_moses"'  # requires sacremoses
-            '" and not test_get_tokenizer_spacy"'  # requires spaCy
-        ),
-        'testinstall': True,
     }),
-    ('pytest-mock', '3.11.1', {  # for torchvision tests
+    ('pytest-mock', '3.11.1', {
         'checksums': ['7f6b125602ac6d743e523ae0bfa71e1a697a2f5534064528c6ff84c2f7c2fc7f'],
     }),
     ('torchvision', '0.16.2', {
-        'preinstallopts': 'WITH_CUDA=1 TORCHVISION_INCLUDE="$EBROOTLIBJPEGMINTURBO/include:$TORCHVISION_INCLUDE"',
         'installopts': '-v',
         'patches': [
             'torchvision-0.16.2_ffmpeg-6.0-fix.patch',
             'torchvision-0.16.2_quantized_tol.patch',
         ],
+        'preinstallopts': 'WITH_CUDA=1 TORCHVISION_INCLUDE="$EBROOTLIBJPEGMINTURBO/include:$TORCHVISION_INCLUDE"',
+        'runtest': 'pytest -m "not xfail" -k "not test_frame_reading_mem_vs_file"',
         'source_urls': ['https://github.com/pytorch/vision/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
         'checksums': [
             {'torchvision-0.16.2.tar.gz': '8c1f2951e98d8ada6e5a468f179af4be9f56d2ebc3ab057af873da61669806d7'},
             {'torchvision-0.16.2_ffmpeg-6.0-fix.patch':
@@ -92,23 +89,18 @@ exts_list = [
             {'torchvision-0.16.2_quantized_tol.patch':
              '457cdf8ad6653838c552890bce95dbe30b7573b1643334284f5f4a58f74f6e40'},
         ],
-        'runtest': (
-            'pytest'
-            ' -m "not xfail"'  # don't run tests that are expected that they might fail
-            ' -k "not test_frame_reading_mem_vs_file"'  # this one hangs
-        ),
-        'testinstall': True,
     }),
-    ('torchaudio', '2.1.2', {
-        'installopts': '--no-use-pep517 -v',
+    ('torchaudio', version, {
+        'installopts': "--no-use-pep517 -v",
         'patches': [
             'torchaudio-2.1.2_use-external-sox.patch',
             'torchaudio-2.1.2_transform_test_tol.patch',
         ],
-        'preinstallopts': ('rm -r third_party/{sox,ffmpeg/multi};'  # runs twice when testinstall
-                           ' USE_CUDA=1 USE_OPENMP=1 USE_FFMPEG=1 FFMPEG_ROOT="$EBROOTFFMPEG"'),
+        'preinstallopts': 'rm -r third_party/{sox,ffmpeg/multi}; USE_CUDA=1 USE_OPENMP=1 USE_FFMPEG=1 FFMPEG_ROOT="$EBROOTFFMPEG"',
+        'runtest': 'pytest test/torchaudio_unittest/ -k "not TestProcessPoolExecutor"" and not FilterGraphWithCudaAccel"" and not kaldi_io_test"" and not test_dup_hw_acel"" and not test_h264_cuvid"" and not test_hevc_cuvid"',
         'source_urls': ['https://github.com/pytorch/audio/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
         'checksums': [
             {'torchaudio-2.1.2.tar.gz': '82c2745a73172b495327ec36c6970ad5ad9d5d2ac44feeaea2617152f9393bf7'},
             {'torchaudio-2.1.2_use-external-sox.patch':
@@ -116,61 +108,26 @@ exts_list = [
             {'torchaudio-2.1.2_transform_test_tol.patch':
              '57f315c60db70ed2bd9711bcf6f7c7c24dac8c2f04e00488996eb2dc507bdfd2'},
         ],
-        'runtest': (
-            'pytest test/torchaudio_unittest/'
-            ' -k "not TestProcessPoolExecutor"'  # hang maybe related https://github.com/pytorch/audio/issues/1021
-            '" and not FilterGraphWithCudaAccel"'  # requires FFmpeg with CUDA support
-            '" and not kaldi_io_test"'  # requires kaldi_io
-            '" and not test_dup_hw_acel"'  # requires special render device permissions
-            '" and not test_h264_cuvid"'  # requires special render device permissions
-            '" and not test_hevc_cuvid"'  # requires special render device permissions
-        ),
-        'testinstall': True,
     }),
     ('pytorch-ignite', '0.4.13', {
         'modulename': 'ignite',
+        'patches': ['torch-ignite-0.4.13_dont_destroy_python_path_in_test_launcher.patch'],
+        'runtest': 'pytest -m "not distributed" --ignore=tests/ignite/contrib/handlers/test_clearml_logger.py --ignore=tests/ignite/contrib/handlers/test_mlflow_logger.py --ignore=tests/ignite/contrib/handlers/test_neptune_logger.py --ignore=tests/ignite/contrib/handlers/test_polyaxon_logger.py --ignore=tests/ignite/contrib/handlers/test_tensorboard_logger.py --ignore=tests/ignite/contrib/handlers/test_visdom_logger.py --ignore=tests/ignite/contrib/handlers/test_wandb_logger.py --ignore=tests/ignite/metrics/gan/test_fid.py --ignore=tests/ignite/metrics/nlp/test_rouge.py --ignore=tests/ignite/handlers/test_checkpoint.py --ignore=tests/ignite/contrib/handlers/test_tqdm_logger.py -k "not test_setup_visdom_logging"" and not test_setup_plx_logging"" and not test_setup_mlflow_logging"" and not test_setup_clearml_logging"" and not test_setup_neptune_logging"" and not test__setup_ddp_vars_from_slurm_env_bad_configs"" and not test__native_dist_model_create_from_backend_bad_config"" and not test_inception_score"',
         'source_urls': ['https://github.com/pytorch/ignite/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
-        'checksums': ['bfe4b6f1cd96e78c021a65a0c51350cdb89d6ef5a8b9609638666ca95bae51d7'],
-        'runtest': (
-            'pytest'
-            ' -m "not distributed"'
-            ' --ignore=tests/ignite/contrib/handlers/test_clearml_logger.py'  # requires clearml
-            ' --ignore=tests/ignite/contrib/handlers/test_mlflow_logger.py'  # requires mlflow
-            ' --ignore=tests/ignite/contrib/handlers/test_neptune_logger.py'  # requires neptune
-            ' --ignore=tests/ignite/contrib/handlers/test_polyaxon_logger.py'  # requires polyaxon
-            ' --ignore=tests/ignite/contrib/handlers/test_tensorboard_logger.py'  # requires tensorboardX
-            ' --ignore=tests/ignite/contrib/handlers/test_visdom_logger.py'  # requires visdom
-            ' --ignore=tests/ignite/contrib/handlers/test_wandb_logger.py'  # requires wandb
-            ' --ignore=tests/ignite/metrics/gan/test_fid.py'  # requires pytorch_fid
-            ' --ignore=tests/ignite/metrics/nlp/test_rouge.py'  # requires rouge
-            ' --ignore=tests/ignite/distributed/test_launcher.py'  # no module named torch in torchrun subprocess
-            ' --ignore=tests/ignite/handlers/test_checkpoint.py'  # fails by comparing tensors on different devices
-            ' --ignore=tests/ignite/contrib/handlers/test_tqdm_logger.py'  # fragile tests on some platforms
-            ' -k "not test_setup_visdom_logging"'  # requires visdom
-            '" and not test_setup_plx_logging"'  # requires polyaxon
-            '" and not test_setup_mlflow_logging"'  # requires mlflow
-            '" and not test_setup_clearml_logging"'  # requires clearml
-            '" and not test_setup_neptune_logging"'  # requires neptune
-            '" and not test__setup_ddp_vars_from_slurm_env_bad_configs"'  # fails sometimes
-            '" and not test__native_dist_model_create_from_backend_bad_config"'  # fails sometimes
-        ),
         'testinstall': True,
+        'checksums': [
+            {'pytorch-ignite-0.4.13.tar.gz': 'bfe4b6f1cd96e78c021a65a0c51350cdb89d6ef5a8b9609638666ca95bae51d7'},
+            {'torch-ignite-0.4.13_dont_destroy_python_path_in_test_launcher.patch':
+             'fd5dfe99f4c8804d6c57e4d9140d9e556e0724b379f9eaae8aeaf1b7bd058686'},
+        ],
     }),
     ('torch-tb-profiler', '0.4.3', {
         'modulename': 'torch.profiler',
+        'runtest': 'pytest --ignore=test/test_tensorboard_end2end.py -k "not test_dump_gpu_metrics"" and not test_profiler_api_with_record_shapes_memory_stack"" and not test_profiler_api_without_record_shapes_memory_stack"" and not test_profiler_api_without_step"" and not test_autograd_api"',
         'sources': ['torch_tb_profiler-%(version)s.tar.gz'],
-        'checksums': ['8b8d29b2de960b3c4423087b23cec29beaf9ac3a8c7b046c18fd25b218f726b1'],
-        'runtest': (
-            'pytest'
-            ' --ignore=test/test_tensorboard_end2end.py'  # timeouts
-            ' -k "not test_dump_gpu_metrics"'  # missing file
-            '" and not test_profiler_api_with_record_shapes_memory_stack"'  # fails
-            '" and not test_profiler_api_without_record_shapes_memory_stack"'  # fails
-            '" and not test_profiler_api_without_step"'  # fails
-            '" and not test_autograd_api"'  # fails
-        ),
         'testinstall': True,
+        'checksums': ['8b8d29b2de960b3c4423087b23cec29beaf9ac3a8c7b046c18fd25b218f726b1'],
     }),
 ]
 
