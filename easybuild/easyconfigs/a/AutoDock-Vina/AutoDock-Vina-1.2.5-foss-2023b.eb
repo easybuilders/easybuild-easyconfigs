@@ -1,0 +1,79 @@
+# Author: Lucas Andersen
+# University of Saarland - Computational Biophysics Group
+easyblock = 'MakeCp'
+
+name = 'AutoDock-Vina'
+version = '1.2.5'
+
+homepage = 'https://vina.scripps.edu/'
+description = "AutoDock Vina is an open-source program for doing molecular docking."
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+github_account = 'ccsb-scripps'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'main_version_nr_patch.patch',
+    'split_version_nr_patch.patch',
+    'suppress_deprecation_error_patch.patch',
+]
+checksums = [
+    {'v1.2.5.tar.gz': '38aec306bff0e47522ca8f581095ace9303ae98f6a64031495a9ff1e4b2ff712'},
+    {'main_version_nr_patch.patch': '91f6df245ca223e1174309e5edcb5be36a89f8119007527fa7d4fbd181c9ac05'},
+    {'split_version_nr_patch.patch': '3e81e1b865d1ac5534480e99505438b5477f315e79c333cbf1960fcbd90dcf08'},
+    {'suppress_deprecation_error_patch.patch': 'dfdfd8991fb4dc685a403bf94fa6184fba9f102fe0c11409fa7786aaa94b09ec'},
+]
+
+
+builddependencies = [
+    ('SWIG', '4.1.1'),
+]
+
+dependencies = [
+    ('Boost', '1.83.0'),
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+]
+
+start_dir = 'build/linux/release'
+
+buildopts = 'GPP="$CXX" BOOST_INCLUDE="$EBROOTBOOST/include" C_PLATFORM="-pthread" C_OPTIONS=" -O3 -DNDEBUG -std=c++11 -DBOOST_TIMER_ENABLE_DEPRECATED"'
+
+files_to_copy = [
+    (['vina', 'vina_split'], 'bin'),
+    (['docs', 'example', 'LICENSE', 'README.md'], 'share'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+}
+
+# fix hardcoded paths in setup.py
+_ext_boost_paths = ('$EBROOTBOOST/include', '$EBROOTBOOST/lib')
+_ext_fix_paths = r'sed -i "s|= locate_boost()|= \"%s\", \"%s\"|" setup.py && ' % _ext_boost_paths
+_ext_fix_paths += r"sed -i 's|\.\./\.\./src|%%(builddir)s/%%(name)s/%s-%%(version)s/src|g' setup.py && " % name
+
+exts_list = [
+    ('vina', version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'checksums': checksums,
+        'start_dir': 'build/python',
+        'preinstallopts': _ext_fix_paths,
+        'patches': patches,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/vina', 'bin/vina_split'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = [('vina', '--help')]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'bio'
