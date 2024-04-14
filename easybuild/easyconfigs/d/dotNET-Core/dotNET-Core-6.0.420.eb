@@ -1,0 +1,56 @@
+easyblock = "Tarball"
+
+name = "dotNET-Core"
+version = "6.0.420"  # uses the SDK version string, runtime is 6.0.28
+
+homepage = "https://www.microsoft.com/net/"
+description = """.NET is a free, cross-platform, open source developer platform for building many different types of
+applications. With .NET, you can use multiple languages, editors, and libraries to build for web, mobile, desktop,
+gaming, and IoT.
+
+Contains the SDK and the Runtime.
+"""
+
+toolchain = SYSTEM
+
+local_variant = {'aarch64': 'linux-x64', 'x86_64': 'linux-x64', 'arm64': 'osx-x86'}.get(ARCH)
+source_urls = [
+    'https://download.visualstudio.microsoft.com/download/pr/'
+    'b521d7d2-108b-43d9-861a-58b2505a125a/0023553690a68328b33bc30a38f151db',  # x86_64
+    'https://download.visualstudio.microsoft.com/download/pr/'
+    'd4704678-77d5-433e-97d3-a72b5a1f3316/b73d2c0c05f3df0c119b68418404a618',  # arm64
+    'https://download.visualstudio.microsoft.com/download/pr/'
+    '4a4728b7-96e6-48f1-a072-6906205e6a58/de54331936784caded5ecd5d10b0ee81',  # osx arm64
+]
+sources = ["dotnet-sdk-%%(version)s-%s.tar.gz" % local_variant]
+checksums = [{
+    'dotnet-sdk-6.0.420-linux-x64.tar.gz': 'd6ed3530d0d01a5b2210c5ee7eb9ffb8510b6cdb94fe41704eb72e2543a5bbc7',
+    'dotnet-sdk-6.0.420-linux-arm64.tar.gz': 'bdb39576bde027736200a636fecd116ddbef02b3249b96c6e129dda040198654',
+    'dotnet-sdk-6.0.420-osx-arm64.tar.gz': 'f2e57cb199a00d9d4cabd04dde23445dda78bca30cc6fa758a0ef1fb7a9d1a21',
+}]
+
+sanity_check_paths = {
+    "files": ["dotnet", "LICENSE.txt"],
+    "dirs": [
+        "shared/Microsoft.NETCore.App/",
+        "shared/Microsoft.AspNetCore.App/",
+        "sdk",
+    ],
+}
+
+sanity_check_commands = ['dotnet --help']
+
+modextrapaths = {"PATH": ""}
+
+# We are not sending usage stats to Microsoft...hopefully.
+# The .NET Core tools collect usage data in order to help us improve your experience. The data is anonymous.
+# It is collected by Microsoft and shared with the community.
+# You can opt-out of telemetry by setting the DOTNET_CLI_TELEMETRY_OPTOUT environment variable to '1' or 'true' using
+# your favorite shell.
+# Read more about .NET Core CLI Tools telemetry: https://aka.ms/dotnet-cli-telemetry
+modextravars = {
+    "DOTNET_ROOT": "%(installdir)s",
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+}
+
+moduleclass = 'lang'

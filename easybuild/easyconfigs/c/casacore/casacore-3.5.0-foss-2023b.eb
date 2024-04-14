@@ -1,0 +1,62 @@
+easyblock = 'CMakeMake'
+
+name = 'casacore'
+version = '3.5.0'
+
+homepage = 'https://github.com/casacore/casacore'
+description = """A suite of C++ libraries for radio astronomy data processing.
+The ephemerides data needs to be in DATA_DIR and the location must be specified at runtime.
+Thus user's can update them.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://github.com/%(name)s/%(name)s/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['casacore-3.5.0-add-C-style-header-for-GCC-13.1.patch']
+checksums = [
+    '63f1c8eff932b0fcbd38c598a5811e6e5397b72835b637d6f426105a183b3f91',  # casacore-3.5.0.tar.gz
+    '7b35d21cd654a7a215d604310f5372319ad21b6261f4a7ae038912b97ef22983',  # add-C-style-header-for-GCC-13.1.patch
+]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('wget', '1.21.4'),
+]
+dependencies = [
+    ('CFITSIO', '4.3.1'),
+    ('WCSLIB', '7.11'),
+    ('HDF5', '1.14.3'),
+    ('GSL', '2.7'),
+    ('Boost.Python', '1.83.0'),
+    ('SciPy-bundle', '2023.11'),
+    ('ncurses', '6.4'),
+]
+
+configopts = '-DBUILD_PYTHON=NO -DBUILD_PYTHON3=YES -Wno-dev -DCXX11="ON" '
+configopts += '-DDATA_DIR=%(installdir)s/data -DUSE_OPENMP=ON -DUSE_HDF5=ON '
+configopts += '-DUSE_MPI=ON '
+
+local_download_cmd = 'wget --retry-connrefused ftp://anonymous@ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar '
+local_download_cmd += '-O /tmp/WSRT_Measures.ztar '
+
+# Install casacore data
+postinstallcmds = [
+    local_download_cmd,
+    "tar xfvz /tmp/WSRT_Measures.ztar --one-top-level=%(installdir)s/data",
+]
+
+sanity_check_paths = {
+    'files': [
+        'lib/libcasa_casa.%s' % SHLIB_EXT,
+        'lib/libcasa_mirlib.%s' % SHLIB_EXT,
+        'lib/libcasa_ms.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['bin', 'include/%(name)s'],
+}
+
+sanity_check_commands = [('measuresdata', '')]
+
+moduleclass = 'lib'
