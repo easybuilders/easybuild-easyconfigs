@@ -1,0 +1,35 @@
+TorchtextTestCase sets project root to test dir instead of project root. This
+patch makes sure the download ends up in the right place.
+
+Author: Viktor Rehnberg, vikren@chalmers.se (Chalmers University of Technology)
+
+
+--- text-0.16.2.old/test/torchtext_unittest/prototype/test_with_asset.py	2024-03-19 13:26:46.094164142 +0000
++++ text-0.16.2/test/torchtext_unittest/prototype/test_with_asset.py	2024-03-19 13:22:25.481657690 +0000
+@@ -201,7 +201,7 @@
+         self.assertEqual(dict(v2.get_stoi()), expected_stoi)
+ 
+     def test_builtin_pretrained_sentencepiece_processor(self) -> None:
+-        sp_model_path = download_from_url(PRETRAINED_SP_MODEL["text_unigram_25000"])
++        sp_model_path = download_from_url(PRETRAINED_SP_MODEL["text_unigram_25000"], root=os.path.join(self.project_root, ".data"))
+         spm_tokenizer = sentencepiece_tokenizer(sp_model_path)
+         _path = os.path.join(self.project_root, ".data", "text_unigram_25000.model")
+         os.remove(_path)
+@@ -209,7 +209,7 @@
+         ref_results = ["\u2581the", "\u2581pre", "trained", "\u2581sp", "m", "\u2581model", "\u2581names"]
+         self.assertEqual(spm_tokenizer(test_sample), ref_results)
+ 
+-        sp_model_path = download_from_url(PRETRAINED_SP_MODEL["text_bpe_25000"])
++        sp_model_path = download_from_url(PRETRAINED_SP_MODEL["text_bpe_25000"], root=os.path.join(self.project_root, ".data"))
+         spm_transform = sentencepiece_processor(sp_model_path)
+         _path = os.path.join(self.project_root, ".data", "text_bpe_25000.model")
+         os.remove(_path)
+@@ -223,7 +223,7 @@
+         example_strings = ["the pretrained spm model names"] * 64
+         ref_results = torch.tensor([[13, 1465, 12824, 304, 24935, 5771, 3776]] * 16, dtype=torch.long)
+ 
+-        sp_model_path = download_from_url(PRETRAINED_SP_MODEL["text_bpe_25000"])
++        sp_model_path = download_from_url(PRETRAINED_SP_MODEL["text_bpe_25000"], root=os.path.join(self.project_root, ".data"))
+         spm_processor = sentencepiece_processor(sp_model_path)
+         batch_fn = partial(_batch_func, spm_processor)
+ 

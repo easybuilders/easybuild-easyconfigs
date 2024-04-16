@@ -1,0 +1,59 @@
+easyblock = 'PythonBundle'
+
+name = 'DeepLoc'
+version = '2.0'
+
+homepage = 'https://services.healthtech.dtu.dk/services/DeepLoc-2.0'
+description = "DeepLoc 2.0 predicts the subcellular localization(s) of eukaryotic proteins"
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('SciPy-bundle', '2023.02'),
+    ('matplotlib', '3.7.0'),
+    ('Biopython', '1.81'),
+    ('ONNX-Runtime', '1.16.3'),
+    ('ESM-2', '2.0.0'),  # for fair-esm
+    ('PyTorch', '1.13.1'),
+    ('PyTorch-Lightning', '2.1.2'),
+    ('Transformers', '4.30.2'),
+    ('SentencePiece', '0.1.99'),
+    ('mygene', '3.2.2'),  # required by bio
+]
+
+use_pip = True
+
+local_deeploc_download_url = 'https://services.healthtech.dtu.dk/cgi-bin/sw_request?'
+local_deeploc_download_url += 'software=deeploc&version=2.0&packageversion=2.0&platform=All'
+
+exts_list = [
+    ('gprofiler-official', '1.0.0', {
+        'checksums': ['5015b47f10fbdcb59c57e342e815c9c07afbe57cd3984154f75b845ddef2445d'],
+        'modulename': 'gprofiler',
+    }),
+    ('bio', '1.6.2', {
+        'sources': ['bio-%(version)s-py%(pymajver)s-none-any.whl'],
+        'checksums': ['dcec8207f3993a7f41bd8205cde235218da3dc008175ae7bb7468276d8dacf71'],
+        'modulename': 'biorun',
+    }),
+    (name, version, {
+        'download_instructions': "Download via %s" % local_deeploc_download_url,
+        'sources': ['deeploc-%(version)s.All.tar.gz'],
+        'checksums': ['1741cf61cc38bba6307f1838c08ff9dd01386da09b8939610d15c27f98173651'],
+        'modulename': 'DeepLoc2',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/deeploc2'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "deeploc2 --help",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
