@@ -1,0 +1,67 @@
+# Updated to version 24.0.02 
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'AFNI'
+version = '24.0.02'
+
+homepage = 'http://afni.nimh.nih.gov/'
+description = """AFNI is a set of C programs for processing, analyzing, and displaying functional MRI (FMRI) data -
+ a technique for mapping human brain activity."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/afni/afni/archive/']
+sources = ['AFNI_%(version)s.tar.gz']
+checksums = ['2915ed5bf98712abe3373bfc285f946fdee6cf1367e23ba80575dd6eedb3529a']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('tcsh', '6.24.10'),
+    ('Python', '3.11.3'),
+    ('X11', '20230603'),
+    ('motif', '2.3.8'),
+    ('R', '4.3.2'),
+    ('PyQt5', '5.15.10'),
+    ('expat', '2.5.0'),
+    ('libpng', '1.6.39'),
+    ('libjpeg-turbo', '2.1.5.1'),
+    ('GSL', '2.7'),
+    ('GLib', '2.77.1'),
+    ('zlib', '1.2.13'),
+    ('freeglut', '3.4.0'),
+    ('Pillow', '10.0.0'),
+    ('matplotlib', '3.7.2'),
+    ('SciPy-bundle', '2023.07'),
+    ('Xvfb', '21.1.8'),
+    ('FFmpeg', '6.0'),  # required for running the program
+]
+
+# Make sure stuff does not get installed in .local
+configopts = '-DSTANDARD_PYTHON_INSTALL=OFF '
+
+# Changing permissions of some files
+postinstallcmds = ['chmod a+x %(installdir)s/bin/afni_system_check.py ;']
+postinstallcmds += ['chmod a+x %(installdir)s/bin/uber_subject.py ; ']
+postinstallcmds += ['chmod a+x %(installdir)s/bin/init_user_dotfiles.py ; ']
+# Copying apparently missing files over
+postinstallcmds += ['cp -f %(start_dir)s/src/discoraj/ClusterExplorer/ClustExp_HistTable.py %(installdir)s/bin ; ']
+postinstallcmds += ['cp -f %(start_dir)s/src/discoraj/ClusterExplorer/ClustExp_StatParse.py %(installdir)s/bin ; ']
+postinstallcmds += ['cp -rf %(start_dir)s/src/scripts_for_r %(installdir)s/bin ; ']
+postinstallcmds += ['cp -rf %(start_dir)s/src/R_scripts %(installdir)s/bin/scripts_for_r ; ']
+
+sanity_check_commands = ["afni -help"]
+
+sanity_check_paths = {
+    'files': ['bin/afni', 'lib/libgts.%s' % SHLIB_EXT, 'lib/libnifti2.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share'],
+}
+
+modextrapaths = {'PATH': ['bin/scripts_for_r']}
+
+moduleclass = 'bio'

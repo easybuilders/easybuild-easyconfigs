@@ -1,0 +1,43 @@
+Source: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=113241
+
+From 4c66513656775d551db36b53c253cf236f0eeba8 Mon Sep 17 00:00:00 2001
+From: Jonathan Wakely <jwakely@redhat.com>
+Date: Fri, 5 Jan 2024 12:03:22 +0000
+Subject: [PATCH] libstdc++: Do not use __is_convertible unconditionally
+ [PR113241]
+
+The new __is_convertible built-in should only be used after checking
+that it's supported.
+
+libstdc++-v3/ChangeLog:
+
+	PR libstdc++/113241
+	* include/std/type_traits (is_convertible_v): Guard use of
+	built-in with preprocessor check.
+
+(cherry picked from commit 57fa5b60bbbf8038b8a699d2bcebd2a9b2e29aa4)
+---
+ libstdc++-v3/include/std/type_traits | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/libstdc++-v3/include/std/type_traits b/libstdc++-v3/include/std/type_traits
+index 2bd607a8b8f..2b05e371953 100644
+--- a/libstdc++-v3/include/std/type_traits
++++ b/libstdc++-v3/include/std/type_traits
+@@ -3359,8 +3359,13 @@ template <typename _Tp>
+ #endif
+ template <typename _Base, typename _Derived>
+   inline constexpr bool is_base_of_v = __is_base_of(_Base, _Derived);
++#if __has_builtin(__is_convertible)
+ template <typename _From, typename _To>
+   inline constexpr bool is_convertible_v = __is_convertible(_From, _To);
++#else
++template <typename _From, typename _To>
++  inline constexpr bool is_convertible_v = is_convertible<_From, _To>::value;
++#endif
+ template<typename _Fn, typename... _Args>
+   inline constexpr bool is_invocable_v = is_invocable<_Fn, _Args...>::value;
+ template<typename _Fn, typename... _Args>
+-- 
+2.39.3
+
