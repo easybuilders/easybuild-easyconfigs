@@ -1,0 +1,57 @@
+easyblock = 'CMakeMake'
+
+name = 'DP3'
+version = '6.0'
+
+homepage = 'https://dp3.readthedocs.io/'
+description = "DP3: streaming processing pipeline for radio interferometric data."
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+sources = [
+    {
+        'filename': '%(name)s-v%(version)s.tar.gz',
+        # Repo uses git submodules, which are not included in the release tarballs.
+        # Thus, we let EasyBuild download directly from the git repository.
+        'git_config': {
+            'url': 'https://git.astron.nl/RD',
+            'repo_name': '%(name)s',
+            'tag': 'v%(version)s',
+            'clone_into': '%(name)s',
+            'recursive': True
+        }
+    },
+]
+patches = ['DP3-6.0_fix-for-xsimd-error-on-neoverse-v1.patch']
+checksums = [
+    None,  # checksum for git clone source is non-deterministic
+    # DP3-6.0_fix-for-xsimd-error-on-neoverse-v1.patch
+    '7f5069388846c9c715013d5a3a267a6d8e266520445a6427e63e9d52d3046c9d',
+]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+]
+dependencies = [
+    ('casacore', '3.5.0'),
+    ('Boost', '1.83.0'),
+    ('CFITSIO', '4.3.1'),
+    ('WCSLIB', '7.11'),
+    ('GSL', '2.7'),
+    ('HDF5', '1.14.3'),
+    ('Python', '3.11.5'),
+    ('EveryBeam', '0.5.2'),
+    ('Armadillo', '12.8.0'),
+    ('AOFlagger', '3.4.0'),
+    ('IDG', '1.2.0'),
+]
+
+
+sanity_check_paths = {
+    'files': ['include/include/%(namelower)s/base/%(name)s.h', 'bin/%(name)s'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = [('%(name)s', '--version')]
+
+moduleclass = 'astro'

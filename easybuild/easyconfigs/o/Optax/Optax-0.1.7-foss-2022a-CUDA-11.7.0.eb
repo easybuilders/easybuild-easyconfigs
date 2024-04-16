@@ -1,0 +1,44 @@
+easyblock = 'PythonBundle'
+
+name = 'Optax'
+version = '0.1.7'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/deepmind/optax'
+description = """Optax is a gradient processing and optimization library for JAX."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('dm-haiku', '0.0.9', versionsuffix),
+    ('dm-tree', '0.1.8'),
+    ('typing-extensions', '4.3.0'),
+]
+
+builddependencies = [
+    ('pytest-xdist', '2.5.0'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('toolz', '0.12.0', {
+        'checksums': ['88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194'],
+    }),
+    ('chex', '0.1.6', {
+        'checksums': ['adb5d2352b5f0d248ccf594be1b1bf9ee7a2bee2a57f0eac78547538d479b0e7'],
+    }),
+    ('optax', version, {
+        'checksums': ['6a5a848bc5e55e619b187c749fdddc4a5443ea14be85cc769f995779865c110d'],
+        # ignore equivalence_test.py which imports flax, which depends on optax
+        'runtest': 'python -m pytest -n %(parallel)s --pyargs --ignore-glob="**/equivalence_test.py" optax',
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_commands = ["python -c 'from optax import GradientTransformation'"]
+
+moduleclass = 'lib'
