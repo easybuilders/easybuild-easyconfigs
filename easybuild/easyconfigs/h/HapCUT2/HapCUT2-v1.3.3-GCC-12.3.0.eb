@@ -1,0 +1,78 @@
+easyblock = 'MakeCp'
+name = 'HapCUT2'
+version = 'v1.3.3'
+
+homepage = 'https://github.com/vibansal/HapCUT2/'
+description = """
+HapCUT2 is a maximum-likelihood-based tool for assembling haplotypes from DNA sequence reads,
+designed to "just work" with excellent speed and accuracy.
+We found that previously described haplotype assembly methods are specialized for specific read technologies or
+protocols,
+with slow or inaccurate performance on others.
+With this in mind, HapCUT2 is designed for speed and accuracy across diverse sequencing technologies,
+including but not limited to:
+
+    - NGS short reads (Illumina HiSeq)
+    - single-molecule long reads (PacBio and Oxford Nanopore)
+    - Linked-Reads (e.g. 10X Genomics, stLFR or TELL-seq)
+    - proximity-ligation (Hi-C) reads
+    - high-coverage sequencing (>40x coverage-per-SNP) using above technologies
+    - combinations of the above technologies (e.g. scaffold long reads with Hi-C reads)
+"""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+builddependencies = [
+    ('HTSlib', '1.18'),
+]
+
+# source_urls = ['https://github.com/vibansal/HapCUT2/archive/refs/tags/']
+# sources = ['%(version)s.tar.gz']
+
+download_instructions = """
+  The last version tag v1.3.3 does not include last modification that make it work.
+  So we download source from master branch at the commit where I tested.
+"""
+sources = [{
+    'filename': '%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/vibansal/',
+        'repo_name': 'HapCUT2',
+        'commit': '0eb7075',
+        'recursive': True,
+        'keep_git_dir': True,
+    },
+}]
+patches = [
+    'HAPcut-v1.3.3-Fix-Makefile.patch',
+]
+checksums = [
+    {'v1.3.3.tar.gz': '4ff42519d7f9ed8159d41adc94bff7c600145424f5b501b1ece7930cfdd74e9f'},
+    {'HAPcut-v1.3.3-Fix-Makefile.patch': 'a02432d254cc050f4c6d105ccda6edc3097e6bdbbbc68c0d50a9548bfdb6273c'},
+]
+
+configure_cmd = ""
+skipsteps = ['configure']
+
+dependencies = [
+    ('HTSlib', '1.18'),
+]
+
+files_to_copy = [
+    (['build/HAPCUT2', 'build/extractHAIRS'], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/HAPCUT2',
+        'bin/extractHAIRS',
+    ],
+    'dirs': [
+        'bin',
+    ]
+}
+
+sanity_check_commands = [
+    'cd %(installdir)s/bin/ && HAPCUT2',
+]
+
+moduleclass = 'bio'
