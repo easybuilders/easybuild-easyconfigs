@@ -1,0 +1,46 @@
+easyblock = 'PythonPackage'
+
+name = 'TAMkin'
+version = '1.2.6'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://molmod.github.io/tamkin/'
+description = """TAMkin is a post-processing toolkit for normal mode analysis,
+ thermochemistry and reaction kinetics. It uses a Hessian computation from a
+ standard computational chemistry program as its input."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+source_urls = ['https://github.com/molmod/tamkin/releases/download/%(version)s']
+sources = [SOURCE_TAR_GZ]
+patches = [
+    'TAMkin-1.2.6_fix-python38.patch',
+    'TAMkin-1.2.6_fix-test_vsa_no_mass.patch',
+]
+checksums = [
+    {'TAMkin-1.2.6.tar.gz': '1bde275a09be91e5241616aaa9fedc60cb359a263f5c5909bb14431c3a4ed5fd'},
+    {'TAMkin-1.2.6_fix-python38.patch': '1633d5b24b012f8c4b6731491e4072c819ebbba65574966b7185ecca52eeac9b'},
+    {'TAMkin-1.2.6_fix-test_vsa_no_mass.patch': '67d8b8671d7c71123e8ee9a7b9ebea6562e9711edb41555d1926b1b51d549066'},
+]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('matplotlib', '3.2.1', versionsuffix),
+    ('molmod', '1.4.5', versionsuffix),
+]
+
+download_dep_fail = True
+use_pip = True
+
+# disable tests that require X11 by specifying "backend: agg" in matplotlibrc
+runtest = 'export MATPLOTLIBRC=$PWD; echo "backend: agg" > $MATPLOTLIBRC/matplotlibrc; '
+runtest += 'export OMP_NUM_THREADS=1; nosetests -v tamkin'
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_pip_check = True
+
+moduleclass = 'chem'
