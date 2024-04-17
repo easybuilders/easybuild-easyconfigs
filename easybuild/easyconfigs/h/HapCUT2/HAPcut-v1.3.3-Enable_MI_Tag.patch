@@ -1,0 +1,167 @@
+From 0a1706ee3a4ca170e51d426595002b7994e96751 Mon Sep 17 00:00:00 2001
+From: Pontus Hojer <pontushojer@gmail.com>
+Date: Tue, 8 Jun 2021 10:47:48 +0200
+Subject: [PATCH] Enable the use of the MI tag to detect molecules
+
+---
+ utilities/LinkFragments.py | 105 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 99 insertions(+), 6 deletions(-)
+
+diff --git a/utilities/LinkFragments.py b/utilities/LinkFragments.py
+index e425d8f..ad8279b 100644
+--- a/utilities/LinkFragments.py
++++ b/utilities/LinkFragments.py
+@@ -13,10 +13,10 @@
+ import pysam
+ import argparse
+ import os
++from math import inf
+ 
+ barcode_tag = 'BX'
+ 
+-
+ ###############################################################################
+ ###############################################################################
+ # these functions pulled from "getMolecules" script:
+@@ -121,7 +121,93 @@ def get_gemcode_regions(ibam, dist):
+                        max([end for chr, pos, end in gemcodes[barcode]]),
+                        barcode, len(gemcodes[barcode]))
+ 
+-def get_molecules(bam,ref=None,dist=20000):
++
++def get_gemcode_regions_from_tag(ibam):
++    """
++    Get molecule coordinates from reads that share BX and MI tags.
++
++    Parameters
++    ----------
++    ibam : pysam.AlignmentFile
++        Input 10X bam with set MI and BX tags
++
++    Yields
++    ------
++    region : namedtuple
++        chr, start, end, barcode, readcount
++    """
++    # Create defaultdict for storing molecules
++    # Key is gemcodes + molecule id, value is Molecules instance
++    molecules = defaultdict(Molecule)
++
++    # Set current_chr as reference contig of first read
++    current_chr = None
++
++    # Iterate over reads in bamfile
++    for read in ibam:
++
++        if (read.mapq < min_mapq or read.is_unmapped or read.is_duplicate or read.is_secondary or
++           read.is_qcfail):
++            continue
++
++        assert(read.reference_name is not None)
++        assert(read.reference_start is not None)
++        assert(read.reference_end is not None)
++
++        if not read.has_tag('BX') or not read.has_tag('MI'):
++            continue
++
++        gem = read.get_tag('BX')
++        molecule_id = read.get_tag('MI')
++
++        # Combined gem/barcode and molcule id for storing molecules
++        gem_molecule = (gem, molecule_id)
++
++        # If the read is from a new contig/chromosome, write out all molecules
++        # in memory
++        if read.reference_name != current_chr and current_chr is not None:
++            for _, molecule in molecules.items():
++                yield molecule
++
++            molecules.clear()
++
++        # Add read to molecules
++        molecules[gem_molecule].add(chr=read.reference_name,
++                                    start=read.reference_start,
++                                    end=read.reference_end,
++                                    barcode=gem)
++
++        # Save read contig as current_chr
++        current_chr = read.reference_name
++
++    # Write out all remaining molecules at end of bam
++    for _, molecule in molecules.items():
++        yield molecule
++
++
++class Molecule:
++    def __init__(self):
++        self.chr = None
++        self.start = inf
++        self.end = 0
++        self.barcode = None
++        self.readcount = 0
++
++    def add(self, chr, start, end, barcode):
++        self.set_if_none("chr", chr)
++        self.start = min(self.start, start)
++        self.end = max(self.end, end)
++        self.set_if_none("barcode", barcode)
++        self.readcount += 1
++
++    def set_if_none(self, attr, value):
++        if getattr(self, attr) is None:
++            setattr(self, attr, value)
++        else:
++            assert getattr(self, attr) == value
++
++
++def get_molecules(bam,ref=None,dist=20000, use_tag=False):
+ 
+     #Open outfile
+     bamf = pysam.AlignmentFile(bam,"rb");
+@@ -131,7 +217,12 @@ def get_molecules(bam,ref=None,dist=20000):
+         ibam = bamf.fetch(reference=ref)
+ 
+     #Get gemcode regions
+-    for bed in get_gemcode_regions(ibam, dist):
++    if use_tag:
++        regions = get_gemcode_regions_from_tag(ibam)
++    else:
++        regions = get_gemcode_regions(ibam, dist)
++
++    for bed in regions:
+         #Turn molecule object into string
+         yield (bed.chr, bed.start, bed.end, bed.barcode)
+ 
+@@ -290,7 +381,7 @@ def parse_bedfile(input_file):
+             barcode = el[3]
+             yield (chrom, start, stop, barcode)
+ 
+-def link_fragments(hairs_file, vcf_file, bam_file, outfile, dist, single_SNP_frags,maxbq):
++def link_fragments(hairs_file, vcf_file, bam_file, outfile, dist, single_SNP_frags,maxbq=40, use_tag=False):
+ 
+     lines = []
+ 
+@@ -338,7 +429,7 @@ def link_fragments(hairs_file, vcf_file, bam_file, outfile, dist, single_SNP_fra
+         dup_snp_cover = 0
+ 
+         # start is 0-indexed start point and stop is 1 past the last residue, 0-indexed
+-        for chrom,start,stop,barcode in get_molecules(bam_file, curr_chrom, dist=dist):
++        for chrom,start,stop,barcode in get_molecules(bam_file, curr_chrom, dist=dist, use_tag=use_tag):
+             #print("molecule: {} {} {} {}".format(chrom,start,stop,barcode))
+             if chrom != curr_chrom:
+                 continue
+@@ -469,6 +560,7 @@ def parseargs():
+     parser.add_argument('-o', '--outfile', nargs='?', type = str, help='output file with linked fragments')
+     parser.add_argument('-d', '--distance', nargs='?', type = int, help='distance in base pairs that delineates separate 10X molecules, default=20kb',default=20000)
+     parser.add_argument('-m', '--maxbq', nargs='?', type = int, help='maximum base quality for an allele call, default=40',default=40)
++    parser.add_argument('--use-tag', action="store_true", default=False, help=f'use molecule tag (MI) to separate between molecules')
+ 
+     parser.add_argument('-s', '--single_SNP_frags', action='store_true', help='whether to keep fragments overlapping only one SNP', default=False)
+ 
+@@ -484,4 +576,5 @@ def parseargs():
+ # parse input and run function to call alleles
+ if __name__ == '__main__':
+     args = parseargs()
+-    link_fragments(args.fragments,args.VCF,args.bam_file, args.outfile, args.distance, args.single_SNP_frags,args.maxbq)
++    link_fragments(args.fragments,args.VCF,args.bam_file, args.outfile, args.distance, args.single_SNP_frags,args.maxbq, 
++                   args.use_tag)
