@@ -585,6 +585,8 @@ class EasyConfigTest(TestCase):
                 # SimpleITK 2.1.0 requires Lua 5.3.x, MedPy and nnU-Net depend on SimpleITK
                 (r'5\.3\.5', [r'nnU-Net-1\.7\.0-', r'MedPy-0\.4\.0-', r'SimpleITK-2\.1\.0-']),
             ],
+            # FDMNES requires sequential variant of MUMPS
+            'MUMPS': [(r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES'])],
             # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0, Finder requires SRA-Toolkit 3.0.0
             'ncbi-vdb': [(r'3\.0\.0', [r'SRA-Toolkit-3\.0\.0', r'finder-1\.1\.0'])],
             # TensorFlow 2.5+ requires a more recent NCCL than version 2.4.8 used in 2019b generation;
@@ -628,7 +630,8 @@ class EasyConfigTest(TestCase):
             # Shasta requires spoa 3.x
             'spoa': [(r'3\.4\.0', [r'Shasta-0\.8\.0-'])],
             # UShER requires tbb-2020.3 as newer versions will not build
-            'tbb': [('2020.3', ['UShER-0.5.0-'])],
+            # orthagogue requires tbb-2020.3 as 2021 versions are not backward compatible with the previous releases
+            'tbb': [('2020.3', ['UShER-0.5.0-', 'orthAgogue-20141105-'])],
             'TensorFlow': [
                 # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
                 # artic-ncov2019 requires medaka
