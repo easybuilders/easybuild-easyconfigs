@@ -1,0 +1,76 @@
+easyblock = 'CMakeMake'
+
+name = 'Polyscope'
+version = '2.2.1'
+
+homepage = 'https://polyscope.run/'
+description = """Polyscope is a C++/Python viewer and user interface for
+3D data such as meshes and point clouds. It allows you to register your
+data and quickly generate informative and beautiful visualizations,
+either programmatically or via a dynamic GUI. Polyscope is designed to
+be lightweight—it does not “take ownership” over your entire program,
+and it is easy to integrate with existing codebases and popular
+libraries. The lofty objective of Polyscope is to offer a useful visual
+interface to your data via a single line of code."""
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+
+github_account = 'nmwsharp'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'source_urls': ['https://github.com/ocornut/imgui/archive'],
+        'download_filename': 'v1.90.5.tar.gz',
+        'filename': 'imgui-1.90.5.tar.gz',
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/deps/imgui/imgui --strip-components=1 -xf %s",
+    },
+    {
+        'filename': 'happly-20240207-master.tar.gz',
+        'git_config': {
+            'url': 'https://github.com/nmwsharp',
+            'repo_name': 'happly',
+            'commit': '8a606309daaa680eee495c8279feb0b704148f4a',
+        },
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/deps/happly --strip-components=1 -xf %s",
+    },
+]
+patches = [
+    '%(name)s-%(version)s_use_external_GLFW+GLM.patch',
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('libglvnd', '1.6.0'),
+    ('GLFW', '3.4'),
+    ('GLM', '1.0.1'),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'download_dep_fail': True,
+    'sanity_pip_check': True,
+}
+
+exts_list = [
+    ('%(namelower)s', version),
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib']
+}
+
+moduleclass = 'vis'
