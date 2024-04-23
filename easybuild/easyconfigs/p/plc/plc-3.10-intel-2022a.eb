@@ -1,0 +1,64 @@
+easyblock = 'Waf'
+
+name = 'plc'
+version = '3.10'
+
+homepage = 'https://pla.esac.esa.int/pla/#home'
+
+description = """
+ plc is the public Planck Likelihood Code.
+ It provides C and Fortran libraries that allow 
+ users to compute the log likelihoods of the temperature, 
+ polarization, and lensing maps.  Optionally, it also provides a python version of this library, 
+ as well as tools to modify the predetermined options for some likelihoods 
+ (e.g. changing the high-ell and low-ell lmin and lmax values of the temperature).
+"""
+
+toolchain = {'name': 'intel', 'version': '2022a'}
+
+source_urls = ['https://pla.esac.esa.int/pla/aio']
+sources = ['product-action?COSMOLOGY.FILE_ID=COM_Likelihood_Code-v3.0_R3.10.tar.gz']
+checksums = ['0538eaae1a04528ee355264b77dc6c18c0c1904c28fa18cab8e34baddf581696']
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('CFITSIO', '4.2.0'),
+    ('cURL', '7.83.0'),
+    ('astropy', '5.1.1'),
+]
+
+configopts = "--icc "                                   # Do not test for gcc and only use icc
+configopts += "--ifort "                                # Do not test for gfortran and only use ifort
+configopts += "--lapack_mkl=${MKLROOT} "                # location of the EB mkl install
+configopts += "--cfitsio_prefix=${EBROOTCFITSIO} "      # location of the EB cfitsio install
+configopts += "--extra_lib=curl "                       # not having curl in extra lib will fail to build the examples
+configopts += "--extra_lib=m "                          # not having -lm will fail the build..
+configopts += "--extra_libpath=${EBROOTCURL}/lib "      # -''-
+
+unpack_options = '--strip 3'
+buildininstalldir = 'true'
+
+modextravars = {
+    'CLIK_PATH': '%(installdir)s',
+    'CLIK_DATA': 'share/clik',
+    'CLIK_PLUGIN': 'rel2015',
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python/site-packages'
+}
+
+sanity_check_paths = {
+    'files': [
+        'lib/libclik_f90.%s' % SHLIB_EXT,
+        'lib/libclik.%s' % SHLIB_EXT,
+        'lib/python/site-packages/clik/__init__.py',
+        'include/clik.h',
+    ],
+    'dirs': [
+        'bin',
+        'share',
+    ],
+}
+
+moduleclass = 'astro'
