@@ -1,0 +1,88 @@
+diff -Naur mrcc.2023-08-28.orig/drpa.f mrcc.2023-08-28/drpa.f
+--- mrcc.2023-08-28.orig/drpa.f	2024-04-18 17:20:39.045952915 +0000
++++ mrcc.2023-08-28/drpa.f	2024-04-18 17:14:29.728276014 +0000
+@@ -1074,13 +1074,13 @@
+         end if
+ C Close fort.55
+        if(do55) then
+-         if(trim(eps_no_ch).ne.'0.d0') then
++         if(natorb) then
+             nbasis=nbasis+ncore
+             nbe=nbe+ncore
+             nal=nbe
+-         end if
+-         if(natorb) call write56(nbasis,'none    ',ccalc,.true.,nal,nal) ! only works with RHF reference
+-         if(trim(eps_no_ch).ne.'0.d0') then
++            write(*,*) nbasis, ncore
++            call write56(nbasis,'none    ',ccalc,.true.,
++     $         nal,nal) ! only works with RHF reference
+             nbasis=nbasis-ncore
+             nbe=nbe-ncore
+             nal=nbe
+@@ -1274,48 +1274,15 @@
+             write(800) dcore(iqfactx:iqfactx+nocc-1) ! q same spin
+           else
+             open(799, file='QFACTS',form='unformatted')
+-c            write(*,*) dcore(iqfactx:iqfactx+nocc-1) ! q same spin
+-c            write(*,*) dcore(iqfactxb:iqfactxb+nocc-1) ! q same spin
+-c            write(*,*) dcore(iqfactc:iqfactc+nocc-1) ! q opposite spin
+-c            write(*,*) dcore(iqfactcb:iqfactcb+nocc-1) ! q opposite spin
+-            write(799) dcore(iqfactx:iqfactx+nocc-1) ! q same spin
+-            write(799) dcore(iqfactxb:iqfactxb+nocc-1) ! q same spin
+-            write(799) dcore(iqfactc:iqfactc+nocc-1) ! q opposite spin
+-            write(799) dcore(iqfactcb:iqfactcb+nocc-1) ! q opposite spin
++            write(799) dcore(iqfactx:iqfactx+nal-1) ! q same spin
++            write(799) dcore(iqfactxb:iqfactxb+nbe-1) ! q same spin
++            write(799) dcore(iqfactc:iqfactc+nal-1) ! q opposite spin
++            write(799) dcore(iqfactcb:iqfactcb+nbe-1) ! q opposite spin
+             close(799)
+-c            write(*,'(3f20.12)') 
+-c     $((dcore(iqijaa0+(j-1)*nal+i-1),
+-c     $j=1,i-1),i=1,nal),
+-c     $((dcore(iqijbb0+(j-1)*nbe+i-1),
+-c     $j=1,i-1),i=1,nbe),
+-c     $((dcore(iqijab0+(i-1)*nbe+j-1),
+-c     $j=1,nal),i=1,nbe)
+-c            write(*,*) 
+-c            write(*,'(3f20.12)') 
+-c     $((dcore(iqijaa+(j-1)*nal+i-1),
+-c     $j=1,i-1),i=1,nal),
+-c     $((dcore(iqijbb+(j-1)*nbe+i-1),
+-c     $j=1,i-1),i=1,nbe),
+-c     $((dcore(iqijab+(i-1)*nbe+j-1),
+-c     $j=1,nal),i=1,nbe)
+-c            write(*,*) 
+-c            write(*,'(3f20.12)') 
+-c     $((dcore(iqijaa0+(j-1)*nal+i-1)/dcore(iqijaa+(j-1)*nal+i-1),
+-c     $j=1,i-1),i=1,nal),
+-c     $((dcore(iqijbb0+(j-1)*nbe+i-1)/dcore(iqijbb+(j-1)*nbe+i-1),
+-c     $j=1,i-1),i=1,nbe),
+-c     $((dcore(iqijab0+(i-1)*nbe+j-1)/dcore(iqijab+(i-1)*nbe+j-1),
+-c     $j=1,nal),i=1,nbe)
+             write(800) 0.d0, 0.d0, 0.d0
+             write(800) 0.d0, dcore(iqfactc0:iqfactc0+nal-1), 
+      $            dcore(iqfactc0b:iqfactc0b+nbe-1),
+      $            (1.d0,j=1,nal*(nal+1)/2+nbe*(nbe+1)/2+nal*nbe)
+-c     $((dcore(iqijaa0+(j-1)*nal+i-1)/dcore(iqijaa+(j-1)*nal+i-1),
+-c     $j=1,i-1),i=1,nal),
+-c     $((dcore(iqijbb0+(j-1)*nbe+i-1)/dcore(iqijbb+(j-1)*nbe+i-1),
+-c     $j=1,i-1),i=1,nbe),
+-c     $((dcore(iqijab0+(i-1)*nbe+j-1)/dcore(iqijab+(i-1)*nbe+j-1),
+-c     $j=1,nal),i=1,nbe)
+             if(nal.gt.1.and.nvirtal.gt.1)
+      $         write(800) (0.d0,j=1,(nvirtal-1)*nvirtal/2*(nal-1)*nal/2)
+             if(nbe.gt.1.and.nvirtbe.gt.1)
+@@ -1364,13 +1331,6 @@
+           end if
+           close(800)
+ 
+-c          write(iout,*) 'qi'
+-c          write(iout,'(f18.12)') dcore(iqfactc0:iqfactc0+nocc-1) ! *-like and q_overall
+-c          write(iout,'(f18.12)') dcore(iqfactc0b:iqfactc0b+nbe-1) ! *-like and q_overall
+-c          write(iout,*) 'qi same spin'
+-c          write(iout,'(f18.12)') dcore(iqfactx:iqfactx+nocc-1) ! q same spin
+-c          write(iout,*) 'qi opposite spin'
+-c          write(iout,'(f18.12)') dcore(iqfactc:iqfactc+nocc-1) ! q opposite spin
+        end if ! }}}
+ 
+ ! Calculate MP3 energy

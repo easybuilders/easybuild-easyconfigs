@@ -1,0 +1,230 @@
+diff -Naur mrcc.2023-08-28.orig/uccsd.f mrcc.2023-08-28/uccsd.f
+--- mrcc.2023-08-28.orig/uccsd.f	2024-04-18 17:22:01.005102873 +0000
++++ mrcc.2023-08-28/uccsd.f	2024-04-18 17:15:52.503428621 +0000
+@@ -17,6 +17,7 @@
+       integer dfnbasis,locno,ncore,ifcfile,iout,errfile,diisfile,iibufln
+       integer ccmem(8),t_minmem,mem_used,mem_used_t
+       integer itscalea,itscaleb,iepba,nbsetmax,nbf(nbsetmax)
++      integer iqscalesa,iqscalesb,iqscaleoa,iqscaleob
+       integer iepaa,iepbb,iepab,read_ied_from_localccrestart
+       real*8 eccs,eccp,ecabs,tfact,ets,emp2,rcor
+       real*8 et,dlog10,ltol,dminmem,tprtol,itol,dcore(*),ecc,eref,tol
+@@ -208,6 +209,10 @@
+ 
+       itscalea=imem
+       itscaleb=imem
++      iqscalesa=imem
++      iqscalesb=imem
++      iqscaleoa=imem
++      iqscaleob=imem
+       iepaa=imem
+       iepbb=imem
+       iepab=imem
+@@ -282,6 +287,10 @@
+ 
+        itscalea=imem
+        itscaleb=imem
++       iqscalesa=imem
++       iqscaleob=imem
++       iqscalesa=imem
++       iqscaleob=imem
+        iepaa=imem
+        iepbb=imem
+        iepab=imem
+@@ -289,6 +298,10 @@
+        if(qscale_ccsd.or.qscale_pt) then
+         itscalea=dblalloc(nal)
+         itscaleb=dblalloc(nbe)
++        iqscalesa=dblalloc(nal)
++        iqscalesb=dblalloc(nbe)
++        iqscaleoa=dblalloc(nal)
++        iqscaleob=dblalloc(nbe)
+         iepaa=dblalloc(nal*nal)
+         iepbb=dblalloc(nbe*nbe)
+         iepab=dblalloc(nal*nbe)
+@@ -684,8 +697,9 @@
+      &scftype,rohftype,ccsdalg,restart,calctype,talg,naobasis,ltpr,
+      &tprtol,verb,irecln,ibufln,nal,nbe,tol,diisfile,errfile,imem,
+      &maxcor,dfnbasis,ecc,eref,iout,iibufln,dcore,qro,lno,lnaf,emp2full,
+-     &lf12,qscale_pt,tfact,dcore(itscalea),
+-     $dcore(itscaleb),dcore(iepaa),dcore(iepbb),dcore(iepab),
++     &lf12,qscale_pt,tfact,dcore(itscalea),dcore(itscaleb),
++     &dcore(iqscalesa),dcore(iqscalesb),dcore(iqscaleoa),
++     $dcore(iqscaleob),dcore(iepaa),dcore(iepbb),dcore(iepab),
+      $dcore(iepba),qscale_ccsd,eccs,eccp,ecabs,eppl_correction,lmp3,
+      $ovirtrun,emp2,cmp2ss,cmp2os,cmp3,dhyb,ied)
+ 
+@@ -1003,7 +1017,7 @@
+      &calctype,talg,naobasis,ltpr,tprtol,verb,irecln,ibufln,nal,nbe,tol,
+      &diisfile,errfile,imem,maxcor,dfnbasis,ecc,eref,iout,iibufln,dcore,
+      &qro,lno,lnaf,emp2full,lf12,qscale_pt,tfact,
+-     $tscalea,tscaleb,
++     $tscalea,tscaleb,qscalesa,qscalesb,qscaleoa,qscaleob,
+      &epaa,epbb,epab,epba,qscale,eccs,eccp,ecabs,eppl_correction,lmp3,
+      $ovirtrun,emp2,cmp2ss,cmp2os,cmp3,dhyb,ied)
+ ************************************************************************
+@@ -1033,6 +1047,7 @@
+       real*8 newtm2(nval*nvbe,nal*nbe),fa(nal+nval,nal+nval)
+       real*8 fbmi(nbe,nbe),fame(nval,nal),fbme(nvbe,nbe)
+       real*8 tscalea(nal),tscaleb(nbe),eccs,eccp,et1s
++      real*8 qscalesa(nal),qscalesb(nbe),qscaleoa(nal),qscaleob(nbe)
+       real*8 epaa(nal,nal),epbb(nbe,nbe),epab(nal,nbe),epba(nbe,nal)
+       real*8 emp2full,eppl,eppl_os,eppl_ss,eppls_os,eppls_ss,epplij
+       real*8,pointer::jaab(:,:),jbab(:,:,:),jbabtri(:,:)
+@@ -1792,6 +1807,14 @@
+        tb1=0.d0
+       endif
+ 
++       if(qscale) then
++        open(799,file='QFACTS',form='unformatted')
++        read(799) qscalesa
++        read(799) qscalesb
++        read(799) qscaleoa
++        read(799) qscaleob
++        close(799)
++       end if
+        if(lf12.or.qscale.or.qscale_pt) then
+         open(800,file='F12INTE',form='unformatted')
+         open(801,file='F12INT1',form='unformatted')
+@@ -1967,13 +1990,12 @@
+        eppl=0.d0
+ c W(abef)
+ c a,a,a,a
+-      open(799, file='QFACTS', form='unformatted')
+       if (nal.gt.0.and.nval.gt.1) then
+       call wabefbld(nal,nval,nfa,faadr,recaadr,ta1,newta1,ta2,
+      &newta2,faae,scr,'iabcaa','abcda',irecln,ccsdalg,dfnbasis,
+      &'DFINT_AB ',.false.,tscalea,epaa,eccs,eccp,'abijaa',fa,eppl,
+ c     &'DFINT_AB ',qscale,tscalea,epaa,eccs,eccp,'abijaa',fa,eppl,
+-     $eppl_ss,eppls_ss,epplij,lmp3)
++     &eppl_ss,eppls_ss,epplij,lmp3,qscalesa)
+       endif
+ 
+ c b,b,b,b
+@@ -1982,9 +2004,8 @@
+      &newtb2,fbae,scr,'iabcbb','abcdb',irecln,ccsdalg,dfnbasis,
+      &'DFINT_ABb',.false.,tscaleb,epbb,eccs,eccp,'abijbb',fb,eppl,
+ c     &'DFINT_ABb',qscale,tscaleb,epbb,eccs,eccp,'abijbb',fb,eppl,
+-     $eppl_ss,eppls_ss,epplij,lmp3)
++     &eppl_ss,eppls_ss,epplij,lmp3,qscalesb)
+       endif
+-      close(799)
+ 
+ c {{{ a,b,a,b
+       maba=nbe*nval
+@@ -3443,12 +3464,11 @@
+ 
+ c W(abef)
+ c a,a,a,a
+-      open(799, file='QFACTS', form='unformatted')
+       if (nal.gt.0.and.nval.gt.1) then
+       call wabefbld(nal,nval,nfa,faadr,recaadr,ta1,newta1,ta2,
+      &newta2,faae,scr,'iabcaa','abcda',irecln,ccsdalg,dfnbasis,
+      &'DFINT_AB ',qscale,tscalea,epaa,eccs,eccp,'abijaa',fa,eppl,
+-     $eppl_ss,eppls_ss,epplij,.true.)
++     &eppl_ss,eppls_ss,epplij,.true.,qscalesa)
+       endif
+ 
+ c b,b,b,b
+@@ -3456,9 +3476,8 @@
+       call wabefbld(nbe,nvbe,nfb,fbadr,recbadr,tb1,newtb1,tb2,
+      &newtb2,fbae,scr,'iabcbb','abcdb',irecln,ccsdalg,dfnbasis,
+      &'DFINT_ABb',qscale,tscaleb,epbb,eccs,eccp,'abijbb',fb,eppl,
+-     $eppl_ss,eppls_ss,epplij,.true.)
++     &eppl_ss,eppls_ss,epplij,.true.,qscalesb)
+       endif
+-      close(799)
+ 
+ c {{{ a,b,a,b
+       maba=nbe*nval
+@@ -3583,7 +3602,7 @@
+      &scr(ma*nblc+1),ab,scr((ma+ab)*nblc+1),nblc,0.d0,newtm2,ab)
+         call scaleppl_ab(nal,nbe,nval,nvbe,fa,fb,newtm2,
+      $scr((ma+ab)*nblc+1),tscalea,tscaleb,epab,eccs,eccp,eppl,epplc,
+-     $eccsc,epplij)
++     $eccsc,epplij,qscaleoa,qscaleob)
+         eppl_os=eppl_os+epplc
+         eppls_os=eppls_os+eccsc
+         rewind(543)
+@@ -7963,7 +7982,7 @@
+       subroutine wabefbld(nal,nval,nfa,faadr,recaadr,ta1,newta1,ta2,
+      &newta2,faae,scr,iabc,abcd,irecln,ccsdalg,dfnbasis,dfint_ab,qscale,
+      &tscalea,epaa,eccs,eccp,abijaa,fa,eppl,eppl_ss,eppls_ss,epplij,
+-     $lmp3)
++     $lmp3,qscalesa)
+ ************************************************************************
+ 
+ c Builds and contracts the Wabef intermediate, contracts some iabc terms
+@@ -7977,7 +7996,7 @@
+       real*8 newta2(nval*(nval-1)/2,nal*(nal-1)/2),tscalea(nal),fa,eppl
+       real*8 faae(nval,nval),ta1(nval,nal),newta1(nval,nal),eccs,eccp
+       real*8 ta2(nval*(nval-1)/2,nal*(nal-1)/2),scr(*),epaa(nal,nal)
+-      real*8 eppl_ss,eppls_ss,epplc,eccsc,epplij
++      real*8 eppl_ss,eppls_ss,epplc,eccsc,epplij,qscalesa(nal)
+       real*8,pointer::jaab(:,:),block(:,:),pabef(:,:),jaabb(:,:)
+       character*6 iabc,abijaa
+       character*5 abcd
+@@ -8106,7 +8125,7 @@
+      &scr(jaabsize+nblc*ma+blocksize+1),nblc,0.d0,newta2,ab)
+          call scaleppl_aa(nal,nval,fa,newta2,
+      $scr(jaabsize+nblc*ma+blocksize+1),tscalea,epaa,eccs,eccp,abijaa,
+-     $eppl,epplc,eccsc,epaa,epplij)
++     $eppl,epplc,eccsc,epplij,qscalesa)
+          eppl_ss=eppl_ss+epplc
+          eppls_ss=eppls_ss+eccsc
+          rewind(543)
+@@ -8887,7 +8906,8 @@
+ C
+ ************************************************************************
+       subroutine scaleppl_ab(nal,nbe,nval,nvbe,fa,fb,newtm2,intm2,
+-     $tscalea,tscaleb,epab,eccs,eccp,eppl,epplc,eccsc,epplij)
++     $tscalea,tscaleb,epab,eccs,eccp,eppl,epplc,eccsc,epplij,qscaleoa,
++     $qscaleob)
+ ************************************************************************
+       implicit none
+       integer nal,nbe,nvbe,nval,ii,a,b,i,j,ab,ij
+@@ -8896,13 +8916,7 @@
+       real*8 eccp,eccs,fa(nal+nval,nal+nval),fb(nbe+nvbe,nbe+nvbe)
+       real*8 epplij
+ 
+-      real*8 qscalea(nal), qscaleb(nbe) !!! torolni
+-      open(799, file='QFACTS', form='unformatted')
+-      read(799) qscalea
+-      read(799) qscalea
+-      read(799) qscalea
+-      read(799) qscaleb
+-      close(799)
++      real*8 qscaleoa(nal), qscaleob(nbe)
+ 
+ c      write(*,*) 'scaleppl_ab'
+ C
+@@ -8924,7 +8938,7 @@
+           eccp=eccp+(epab(i,j)-1.d0)*tmp
+           eppl=eppl+tmp
+           epplc=epplc+tmp
+-          eccsc=eccsc+((qscalea(i)+qscaleb(j))/2.d0)*tmp
++          eccsc=eccsc+((qscaleoa(i)+qscaleob(j))/2.d0)*tmp
+           epplij=epplij+epab(i,j)*tmp
+          enddo
+        enddo
+@@ -8934,7 +8948,7 @@
+ C
+ ************************************************************************
+       subroutine scaleppl_aa(nal,nval,fa,newta2,inta2,tscalea,epaa,eccs,
+-     $eccp,abijaa,eppl,epplc,eccsc,epplij)
++     $eccp,abijaa,eppl,epplc,eccsc,epplij,qscalea)
+ ************************************************************************
+       implicit none
+       integer nal,nval,ii,a,b,i,j,ab,ij
+@@ -8944,8 +8958,9 @@
+       real*8 epplij
+       character(len=6) abijaa
+ 
+-      real*8 qscalea(nal) !!! torolni
+-      read(799) qscalea
++      real*8 qscalea(nal)
++c      write(*,*) 'read qscalea in scaleppl_aa',nal
++c      read(799) qscalea
+ c      write(*,*) qscalea
+ C
+ c      write(*,*) 'scaleppl_aa'

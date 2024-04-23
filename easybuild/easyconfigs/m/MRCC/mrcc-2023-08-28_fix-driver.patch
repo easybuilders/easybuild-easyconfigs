@@ -1,0 +1,32 @@
+diff -Naur mrcc.2023-08-28.orig/driver.f mrcc.2023-08-28/driver.f
+--- mrcc.2023-08-28.orig/driver.f	2024-04-18 17:20:25.705928507 +0000
++++ mrcc.2023-08-28/driver.f	2024-04-18 17:14:09.702228021 +0000
+@@ -660,11 +660,12 @@
+ C
+       flush(iout)
+ 
++      inquire(file='KEYWD',exist=lll)
+       lf12=.false.   ! TODO resest mpi in scf in the case of F12
+-      if(trim(string).ne.'minp') then
+-         call getkey('calc',4,calctype,16)
+-         lf12=dof12(calctype)
+-      end if
++       if(lll.and.trim(string).ne.'minp') then
++        call getkey('calc',4,calctype,16)
++        lf12=dof12(calctype)
++       endif
+ 
+ #if defined(MPI)
+       call MPI_Comm_rank(MPI_COMM_WORLD, mpi_rank, mpi_err)
+@@ -697,10 +698,7 @@
+       if (string.eq.'drpa') call getkey('localcc',7,localcc,4) ! cannot call getkey for string=minp
+ 
+       scfalg='        '
+-       if(string.ne.'minp') then
+-        inquire(file='KEYWD',exist=lll)
+-         if(lll) call getkey('scfalg',6,scfalg,8)
+-       endif
++       if(lll.and.string.ne.'minp') call getkey('scfalg',6,scfalg,8)
+ 
+       if(string .eq. 'ccsd' .or. 
+      $   string .eq. 'mrcc' .or.

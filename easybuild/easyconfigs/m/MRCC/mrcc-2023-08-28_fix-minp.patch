@@ -1,0 +1,35 @@
+diff -Naur mrcc.2023-08-28.orig/minp.f mrcc.2023-08-28/minp.f
+--- mrcc.2023-08-28.orig/minp.f	2024-04-18 17:21:19.164026318 +0000
++++ mrcc.2023-08-28/minp.f	2024-04-18 17:15:13.314356913 +0000
+@@ -1641,6 +1641,7 @@
+ c    $scftype.ne.'uhf  '.and.scftype.ne.'rohf '.and.
+          if(dens.eq.'0   '.and.scftype.ne.'mcscf'.and.!scftype.ne.'rohf '.and. !Bernat
+      $((trim(calc).eq.'mp2'.and.trim(dfbasis_cor).eq.'none').or.
++     $trim(calc).eq.'mp2-f12'.or.
+      $trim(calc).eq.'mp3'.or.trim(calc).eq.'ccsd'.or.
+      $trim(calc).eq.'ccsd(t)'.or.trim(calc).eq.'ccsd-f12'.or.
+      $trim(calc).eq.'ccsd(t)-f12').and.
+@@ -1698,9 +1699,11 @@
+      $call unknown('ovirt',5)
+        if(ovirt.eq.'    ') then
+           if(lfno) then
+-             if(trim(ccprog).eq.'ccsd'.and..not.lf12) then
++             if(trim(ccprog).eq.'ccsd'.and..not.lf12.and.
++     $trim(calc).ne.'mp3') then
+                 ovirt='ppl '
+-             elseif(trim(ccprog).eq.'mrcc'.or.lf12) then
++             elseif(trim(ccprog).eq.'mrcc'.or.lf12.or.
++     $trim(calc).eq.'mp3') then
+                 ovirt='mp2 '
+              end if
+           else
+@@ -3079,7 +3082,8 @@
+       if(mpitasks .eq. '    ') mpitasks = '1   '
+       if(mpitasks .ne. '1   ') then
+          if (calc(1:2).ne.'cc' .and. calc(1:2).ne.'ci' .and.
+-     $       calc(1:3).ne.'scf' .or. ccprog.eq.'cis ') then
++     $       calc(1:3).ne.'scf' .and. calc(1:3) .ne. 'mp3' .or.
++     $       ccprog.eq.'cis ') then
+             write(iout, *) 'Warning: only programs scf, mrcc, and ' //
+      $'ccsd can be run with more MPI tasks!'
+             call mrccend(1)

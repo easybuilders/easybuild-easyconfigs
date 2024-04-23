@@ -1,0 +1,85 @@
+diff -Naur mrcc.2023-08-28.orig/build.mrcc.config mrcc.2023-08-28/build.mrcc.config
+--- mrcc.2023-08-28.orig/build.mrcc.config	2024-04-07 23:17:59.976232017 +0000
++++ mrcc.2023-08-28/build.mrcc.config	2024-04-07 23:23:50.802747032 +0000
+@@ -83,7 +83,7 @@
+ #which gfortran44 > /dev/null 2>&1 && compileropts="$compileropts -DMOLPRO_BACKSPACE"
+ preprocopt="-x f95-cpp-input -ffree-line-length-none -Wno-argument-mismatch"
+ #preprocopt="-x f95-cpp-input -ffree-line-length-none -fallow-argument-mismatch"
+-linpacklib="-llapack -lblas"
++linpacklib="-lflexiblas"
+ }
+ ###############################################################
+ # options for the Intel compiler
+@@ -104,7 +104,7 @@
+ fi
+ 
+ fortran="ifc"
+-compileropts="$compileropts $intopt -assume byterecl -Wl,--wrap=mkl_serv_intel_cpu_true"
++compileropts="$compileropts $intopt -assume byterecl -lflexiblas"
+ if [ x$devel == "xon" ]; then
+ # -check uninit  no MKL: -lblas -llapack, no -DMKL !!!  -traceback
+     compileropts="$compileropts -O0"
+@@ -124,7 +124,7 @@
+ if [ "x$oldversion" == "x7" ];
+ then
+     echo " Version $oldversion"
+-    linpacklib="-lmkl_lapack -lmkl_p4"
++    linpacklib="-lflexiblas"
+     extralibs="$extralibs -lIEPCF90 -lpthread -lPEPCF90 -lguide"
+ else
+     fortran="ifort"
+@@ -140,17 +140,17 @@
+     then
+        if [ x$version == "x9" ]; then
+           ldlib="`echo $LD_LIBRARY_PATH | sed 's/:/ -L/g'`"
+-          linpacklib="-L$ldlib -lmkl_lapack -lmkl -lguide" # works with 9.1 and MKL version 9.0
++          linpacklib="-L$ldlib -lflexiblas -lguide" # works with 9.1 and MKL version 9.0
+        elif [ x$version == "x10" ]; then
+-          linpacklib="-L$MKLROOT/lib/em64t    -lmkl_lapack -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lguide" # works with 10.1 and MKL version 10.1
++          linpacklib="-lflexiblas -lguide" # works with 10.1 and MKL version 10.1
+        elif [ x$version == "x11" ]; then
+-          linpacklib="-L$MKLROOT/lib/em64t    -lmkl_blas95_ilp64 -lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lguide" # works with 11.1 and MKL version 10.2
++          linpacklib="-lflexiblas  -lguide" # works with 11.1 and MKL version 10.2
+        elif [ $version -le 19 ]; then
+-          linpacklib="-mkl=parallel"
++          linpacklib="-lflexiblasl"
+        elif [ $version -eq 2021 -a $minorversion -lt 4 ]; then
+-          linpacklib="-mkl=parallel"
++          linpacklib="-lflexiblas"
+        else
+-          linpacklib="-qmkl=parallel"
++          linpacklib="-lflexiblas"
+        fi
+        if [ $version -gt 2021 ]; then
+           echo "This Intel version has not been tested!"
+@@ -175,24 +175,24 @@
+ #                    echo "This Intel version has not been tested!" ;;
+ #        esac
+     elif [ x$machine == "xia64" ];
+-        then linpacklib="-lmkl_lapack -lmkl -lmkl_ipf"
+-        else linpacklib="-lmkl_lapack -lmkl"
++        then linpacklib="-lflexiblas"
++        else linpacklib="-lflexiblas"
+     fi
+ 
+     if [ x$kernel == "xDarwin" ];
+     then
+         ldlib="`echo $LD_LIBRARY_PATH | sed 's/:/ -L/g'`"
+-        linpacklib="-L$ldlib -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core"
++        linpacklib="-lflexiblas"
+     fi
+ fi
+ 
+ echo $linpacklib
+ if [ "x$usemkl" == "xoff" ];
+ then
+-   linpacklib=""
++   linpacklib="-lflexiblas"
+ else
+-   compileropts="$compileropts -DMKL"
+-   compileroptsmpi="$compileroptsmpi -DMKL"
++   compileropts="$compileropts"
++   compileroptsmpi="$compileroptsmpi"
+ fi
+ 
+ if [ x$debug != "x" ];
