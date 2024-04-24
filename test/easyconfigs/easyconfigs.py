@@ -363,9 +363,9 @@ class EasyConfigTest(TestCase):
         # 'guilty' until proven 'innocent'
         res = False
 
-        # filter out wrapped Java versions
+        # filter out wrapped Java or dotNET-Core versions
         # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
-        if dep == 'Java':
+        if dep in ['Java', 'dotNET-Core']:
             dep_vars_to_check = sorted(dep_vars.keys())
 
             retained_dep_vars = []
