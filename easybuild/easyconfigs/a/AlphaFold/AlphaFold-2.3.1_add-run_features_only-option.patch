@@ -1,0 +1,70 @@
+Adds a flat `--run_feature_only` and some logic that means that if
+`features.pkl` already exists, this step will be skipped.
+
+To a large degree taken from https://github.com/Zuricho/ParallelFold/
+
+diff --git a/run_alphafold.py b/run_alphafold.py
+index 0d89bfb..04016c5 100644
+--- a/run_alphafold.py
++++ b/run_alphafold.py
+@@ -141,6 +141,8 @@ flags.DEFINE_boolean('use_gpu_relax', None, 'Whether to relax on GPU. '
+                      'Relax on GPU can be much faster than CPU, so it is '
+                      'recommended to enable if possible. GPUs must be available'
+                      ' if this setting is enabled.')
++flags.DEFINE_boolean('run_feature_only', False, 'Calculate MSA and template to generate '
++                     'feature and then stop.')
+ 
+ FLAGS = flags.FLAGS
+ 
+@@ -180,7 +182,8 @@ def predict_structure(
+     amber_relaxer: relax.AmberRelaxation,
+     benchmark: bool,
+     random_seed: int,
+-    models_to_relax: ModelsToRelax):
++    models_to_relax: ModelsToRelax,
++    run_feature_only: bool):
+   """Predicts structure using AlphaFold for the given sequence."""
+   logging.info('Predicting %s', fasta_name)
+   timings = {}
+@@ -193,16 +196,27 @@ def predict_structure(
+ 
+   # Get features.
+   t_0 = time.time()
+-  feature_dict = data_pipeline.process(
+-      input_fasta_path=fasta_path,
+-      msa_output_dir=msa_output_dir)
+-  timings['features'] = time.time() - t_0
++  features_output_path = os.path.join(output_dir, 'features.pkl')
++
++  # If we already have feature.pkl file, skip the MSA and template finding step
++  if os.path.exists(features_output_path):
++    feature_dict = pickle.load(open(features_output_path, 'rb'))
++
++  else:
++    feature_dict = data_pipeline.process(
++        input_fasta_path=fasta_path,
++        msa_output_dir=msa_output_dir)
+ 
+   # Write out features as a pickled dictionary.
+   features_output_path = os.path.join(output_dir, 'features.pkl')
+   with open(features_output_path, 'wb') as f:
+     pickle.dump(feature_dict, f, protocol=4)
+ 
++  timings['features'] = time.time() - t_0
++
++  if run_feature_only:    # if not run_feature, skip the rest of the function
++    return 0
++
+   unrelaxed_pdbs = {}
+   unrelaxed_proteins = {}
+   relaxed_pdbs = {}
+@@ -449,7 +463,8 @@ def main(argv):
+         amber_relaxer=amber_relaxer,
+         benchmark=FLAGS.benchmark,
+         random_seed=random_seed,
+-        models_to_relax=FLAGS.models_to_relax)
++        models_to_relax=FLAGS.models_to_relax,
++        run_feature_only=FLAGS.run_feature_only)
+ 
+ 
+ if __name__ == '__main__':
