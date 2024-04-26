@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2023 Ghent University
+# Copyright 2013-2024 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -32,10 +32,10 @@ import os
 import re
 import shutil
 import stat
-import sys
 import tempfile
 from collections import defaultdict
 from unittest import TestCase, TestLoader, main, skip
+from urllib.request import urlopen
 
 import easybuild.main as eb_main
 import easybuild.tools.options as eboptions
@@ -57,9 +57,8 @@ from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_fil
 from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
-from easybuild.tools.py2vs3 import string_type, urlopen
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
-from easybuild.tools.run import run_cmd
+from easybuild.tools.run import run_shell_cmd
 from easybuild.tools.options import set_tmpdir
 from easybuild.tools.utilities import nub
 
@@ -111,20 +110,20 @@ def get_files_from_diff(diff_filter, ext):
     # first determine the 'merge base' between target branch and PR branch
     # cfr. https://git-scm.com/docs/git-merge-base
     cmd = "git merge-base %s HEAD" % target_branch
-    out, ec = run_cmd(cmd, simple=False, log_ok=False)
-    if ec == 0:
-        merge_base = out.strip()
+    res = run_shell_cmd(cmd, fail_on_error=False, hidden=True)
+    if res.exit_code == 0:
+        merge_base = res.output.strip()
         print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
     else:
-        msg = "Failed to determine merge base (ec: %s, output: '%s'), "
+        msg = "Failed to determine merge base (exit_code: %s, output: '%s'), "
         msg += "falling back to specifying target branch %s"
-        print(msg % (ec, out, target_branch))
+        print(msg % (res.exit_code, res.output, target_branch))
         merge_base = target_branch
 
     # determine list of changed files using 'git diff' and merge base determined above
     cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
-    out, _ = run_cmd(cmd, simple=False)
-    files = [os.path.join(top_dir, f) for f in out.strip().split('\n') if f.endswith(ext)]
+    res = run_shell_cmd(cmd, hidden=True)
+    files = [os.path.join(top_dir, f) for f in res.output.strip().split('\n') if f.endswith(ext)]
 
     change_dir(cwd)
     return files
@@ -308,17 +307,18 @@ class EasyConfigTest(TestCase):
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
-        # pygraph dependencies required for constructing dependency graph are not available prior to Python 2.6
-        if LooseVersion(sys.version) >= LooseVersion('2.6') and single_tests_ok:
-            # temporary file for dep graph
-            (hn, fn) = tempfile.mkstemp(suffix='.dot')
-            os.close(hn)
 
-            dep_graph(fn, self.ordered_specs)
-
-            remove_file(fn)
-        else:
+        if not single_tests_ok:
             print("(skipped dep graph test)")
+            return
+
+        # temporary file for dep graph
+        (hn, fn) = tempfile.mkstemp(suffix='.dot')
+        os.close(hn)
+
+        dep_graph(fn, self.ordered_specs)
+
+        remove_file(fn)
 
     def test_conflicts(self):
         """Check whether any conflicts occur in software dependency graphs."""
@@ -336,6 +336,14 @@ class EasyConfigTest(TestCase):
         fails = []
 
         for ec in self.parsed_easyconfigs:
+            # make sure we don't add backdoored XZ versions (5.6.0, 5.6.1)
+            # see https://access.redhat.com/security/cve/CVE-2024-3094
+            if ec['ec']['name'] == 'XZ' and ec['ec']['version'] in ('5.6.0', '5.6.1'):
+                fail = ("XZ versions 5.6.0 and 5.6.1 contain malicious code, and should not be introduced into"
+                        " EasyBuild. Please use another version instead. For more details, see"
+                        " https://access.redhat.com/security/cve/CVE-2024-3094")
+                fails.append(fail)
+
             # make sure that no odd versions (like 1.13) of HDF5 are used as a dependency,
             # since those are released candidates - only even versions (like 1.12) are stable releases;
             # see https://docs.hdfgroup.org/archive/support/HDF5/doc/TechNotes/Version.html
@@ -448,12 +456,12 @@ class EasyConfigTest(TestCase):
             # always retain at least one dep variant
             if len(dep_vars) == 1:
                 break
-            if isinstance(dep_name, string_type):
+            if isinstance(dep_name, str):
                 if dep != dep_name:
                     continue
             elif dep not in dep_name:
                 continue
-            if isinstance(version_suffix, string_type):
+            if isinstance(version_suffix, str):
                 match_prefix = False
             else:
                 version_suffix, match_prefix = version_suffix
@@ -948,6 +956,58 @@ class EasyConfigTest(TestCase):
         if multi_dep_vars_msg:
             self.fail('Should not have multiple variants of dependencies.\n' + multi_dep_vars_msg)
 
+    def test_downloadable_or_instructions(self):
+        """Make sure the sources are downloadable or there are instructions for how to download them."""
+        problem_ecs = []
+        for easyconfig in self.parsed_easyconfigs:
+            ec = easyconfig['ec']
+            # easyblocks where there'll be no sources
+            if ec['easyblock'] in ['BuildEnv', 'Bundle', 'CrayToolchain', 'ModuleRC', 'SystemCompiler', 'SystemMPI',
+                                   'Toolchain']:
+                continue
+
+            # easyconfigs where a dep provides the source
+            if ec['name'] in [
+                'imkl-FFTW',  # imkl
+                'minizip',  # zlib
+            ]:
+                continue
+
+            if (('download_instructions' in ec and ec['download_instructions']) or ('crates' in ec and ec['crates']) or
+                    ('channels' in ec and ec['channels']) or ('source_urls' in ec and ec['source_urls'])):
+                continue
+
+            ok = False
+            for source in ec['sources']:
+                if isinstance(source, dict):
+                    if 'git_config' in source:
+                        ok = True
+                        break
+                    if 'source_urls' in source:
+                        ok = True
+                        break
+
+            for ext in ec['exts_list']:
+                if isinstance(ext, tuple) and len(ext) >= 3:
+                    if 'source_urls' in ext[2]:
+                        ok = True
+                        break
+
+            if 'components' in ec and ec['components']:
+                for component in ec['components']:
+                    if len(component) > 2 and not isinstance(component[2], str):
+                        if 'source_urls' in component[2]:
+                            ok = True
+                            break
+
+            if ok:
+                continue
+
+            problem_ecs.append(easyconfig['spec'])
+
+        error_msg = "%d easyconfigs found without defined sources or download_instructions: %s"
+        self.assertEqual(problem_ecs, [], error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
+
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
 
@@ -1083,7 +1143,6 @@ class EasyConfigTest(TestCase):
                 exts_default_options = ec.get('exts_default_options', {})
 
                 download_dep_fail = ec.get('download_dep_fail')
-                exts_download_dep_fail = ec.get('exts_download_dep_fail')
                 use_pip = ec.get('use_pip')
                 if use_pip is None:
                     use_pip = exts_default_options.get('use_pip')
@@ -1107,26 +1166,11 @@ class EasyConfigTest(TestCase):
                 if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("'use_pip' should be set in %s" % ec_fn)
 
-            # download_dep_fail is enabled automatically in PythonBundle easyblock, so shouldn't be set
-            if easyblock in ['CargoPythonBundle', 'PythonBundle']:
-                if download_dep_fail or exts_download_dep_fail:
-                    fail = "'*download_dep_fail' should not be set in %s since PythonBundle easyblock is used" % ec_fn
-                    failing_checks.append(fail)
-                if pure_ec.get('exts_default_options', {}).get('source_urls') == python_default_urls:
-                    failing_checks.append("'source_urls' should not be defined in exts_default_options when using "
-                                          "the default value in %s" % ec_fn)
-
-            elif exts_defaultclass == 'PythonPackage':
+            if exts_defaultclass == 'PythonPackage':
                 # bundle of Python packages should use PythonBundle
                 if easyblock == 'Bundle':
                     fail = "'PythonBundle' easyblock should be used for bundle of Python packages in %s" % ec_fn
                     failing_checks.append(fail)
-                else:
-                    # both download_dep_fail and use_pip should be set via exts_default_options
-                    # when installing Python packages as extensions
-                    for key in ['download_dep_fail', 'use_pip']:
-                        if exts_default_options.get(key) is None:
-                            failing_checks.append("'%s' should be set in exts_default_options in %s" % (key, ec_fn))
 
             # if Python is a dependency, that should be reflected in the versionsuffix since v3.8.6
             has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
@@ -1362,7 +1406,7 @@ def template_easyconfig_test(self, spec):
         # cache the parsed easyconfig, to avoid that it is parsed again
         EasyConfigTest._parsed_easyconfigs.append(ecs[0])
     else:
-        self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
+        self.fail("easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
 
     # check easyconfig file name
     expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))
@@ -1406,18 +1450,20 @@ def template_easyconfig_test(self, spec):
     app = app_class(ec)
 
     # more sanity checks
-    self.assertTrue(name, app.name)
-    self.assertTrue(ec['version'], app.version)
+    self.assertEqual(name, app.name)
+    self.assertEqual(ec['version'], app.version)
+
+    failing_checks = []
 
     # make sure that deprecated 'dummy' toolchain is no longer used, should use 'system' toolchain instead
-    ec_fn = os.path.basename(spec)
-    error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
-    self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
+    if ec['toolchain']['name'] == 'dummy':
+        failing_checks.append("%s should use 'system' toolchain rather than deprecated 'dummy' toolchain")
 
     # make sure that $root is not used, since it is not compatible with module files in Lua syntax
     res = re.findall(r'.*\$root.*', ec.rawtxt, re.M)
-    error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
-    self.assertFalse(res, error_msg % res)
+    if res:
+        failing_checks.append("Found use of '$root', not compatible with modules in Lua syntax, "
+                              "use '%%(installdir)s' instead: %s" % res)
 
     # check for redefined easyconfig parameters, there should be none...
     param_def_regex = re.compile(r'^(?P<key>\w+)\s*=', re.M)
@@ -1428,10 +1474,30 @@ def template_easyconfig_test(self, spec):
         if cnt > 1:
             redefined_keys.append((key, cnt))
 
-    redefined_keys_error_msg = "There should be no redefined easyconfig parameters, found %d: " % len(redefined_keys)
-    redefined_keys_error_msg += ', '.join('%s (%d)' % x for x in redefined_keys)
+    if redefined_keys:
+        failing_checks.append("There should be no redefined easyconfig parameters, found %d: " % len(redefined_keys) +
+                              ', '.join('%s (%d)' % x for x in redefined_keys))
 
-    self.assertFalse(redefined_keys, redefined_keys_error_msg)
+    # make sure that download_dep_fail, use_pip, sanity_pip_check are not explicitly enabled,
+    # since they are enabled by default now in PythonPackage easyblock
+    patterns = [
+        # top-level easyconfig parameters
+        """^download_dep_fail = True""",
+        """^sanity_pip_check = True""",
+        """^use_pip = True""",
+        # for specific extensions, or in exts_default_options
+        """["']download_dep_fail["']: True""",
+        """["']sanity_pip_check["']: True""",
+        """["']use_pip["']: True""",
+    ]
+    hits = []
+    for pattern in patterns:
+        regex = re.compile(pattern, re.M)
+        hits += regex.findall(ec.rawtxt)
+
+    error_msg = "download_dep_fail, sanity_pip_check, use_pip should not be set to True "
+    error_msg += "(already enabled by default in PythonPackage easyblock)"
+    self.assertFalse(hits, error_msg)
 
     # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
     old_urls = [
@@ -1439,8 +1505,7 @@ def template_easyconfig_test(self, spec):
         'hpcugent.github.com/easybuild',
         'hpcugent.github.io/easybuild',
     ]
-    for old_url in old_urls:
-        self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' not found in %s" % (old_url, spec))
+    failing_checks.extend("Old URL '%s' found" % old_url for old_url in old_urls if old_url in ec.rawtxt)
 
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
@@ -1465,8 +1530,8 @@ def template_easyconfig_test(self, spec):
             # in some cases, binutils can also be a runtime dep (e.g. for Clang)
             # Also using GCC directly as a build dep is also allowed (it includes the correct binutils)
             dep_names = [d['name'] for d in ec.dependencies()]
-            self.assertTrue('binutils' in dep_names or 'GCC' in dep_names,
-                            "binutils or GCC is a build dep in %s: %s" % (spec, dep_names))
+            if 'binutils' not in dep_names and 'GCC' not in dep_names:
+                failing_checks.append("binutils or GCC is a build dep: " + str(dep_names))
 
     # make sure that OpenSSL wrapper is used rather than OS dependency,
     # for easyconfigs using a 2021a (sub)toolchain or more recent common toolchain version
@@ -1475,7 +1540,7 @@ def template_easyconfig_test(self, spec):
         # check whether any entry in osdependencies related to OpenSSL
         openssl_osdep = False
         for osdep in osdeps:
-            if isinstance(osdep, string_type):
+            if isinstance(osdep, str):
                 osdep = [osdep]
             if any('libssl' in x for x in osdep) or any('openssl' in x for x in osdep):
                 openssl_osdep = True
@@ -1486,7 +1551,8 @@ def template_easyconfig_test(self, spec):
 
             gcc_subtc_2021a = tcname in ('GCCcore', 'GCC') and tcver > LooseVersion('10.3')
             if gcc_subtc_2021a or (tcname in ('foss', 'gompi', 'iimpi', 'intel') and tcver >= LooseVersion('2021')):
-                self.assertFalse(openssl_osdep, "OpenSSL should not be listed as OS dependency in %s" % spec)
+                if openssl_osdep:
+                    failing_checks.append("OpenSSL should not be listed as OS dependency")
 
     src_cnt = len(ec['sources'])
     patch_checksums = ec['checksums'][src_cnt:]
@@ -1494,7 +1560,6 @@ def template_easyconfig_test(self, spec):
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
     basedir = os.path.dirname(os.path.dirname(specdir))
-    specfn = os.path.basename(spec)
     for idx, patch in enumerate(ec['patches']):
         patch_dir = specdir
         if isinstance(patch, str):
@@ -1508,29 +1573,29 @@ def template_easyconfig_test(self, spec):
 
         # only check actual patch files, not other files being copied via the patch functionality
         patch_full = os.path.join(patch_dir, patch_name)
-        if patch_name.endswith('.patch'):
-            msg = "Patch file %s is available for %s" % (patch_full, specfn)
-            self.assertTrue(os.path.isfile(patch_full), msg)
-
+        if patch_name.endswith('.patch') and not os.path.isfile(patch_full):
+            failing_checks.append("Patch file %s is missing" % patch_full)
         # verify checksum for each patch file
-        if idx < len(patch_checksums) and (os.path.exists(patch_full) or patch_name.endswith('.patch')):
+        elif idx < len(patch_checksums) and (os.path.exists(patch_full) or patch_name.endswith('.patch')):
             checksum = patch_checksums[idx]
-            error_msg = "Invalid checksum for patch file %s in %s: %s" % (patch_name, ec_fn, checksum)
-            res = verify_checksum(patch_full, checksum)
-            self.assertTrue(res, error_msg)
+            if not verify_checksum(patch_full, checksum):
+                failing_checks.append("Invalid checksum for patch file %s: %s" % (patch_name, checksum))
 
     # make sure 'source' step is not being skipped,
     # since that implies not verifying the checksum
-    error_msg = "'source' step should not be skipped in %s, since that implies not verifying checksums" % ec_fn
-    self.assertFalse(ec['checksums'] and ('source' in ec['skipsteps']), error_msg)
+    if ec['checksums'] and ('source' in ec['skipsteps']):
+        failing_checks.append("'source' step should not be skipped, since that implies not verifying checksums")
 
     for ext in ec.get_ref('exts_list'):
         if isinstance(ext, (tuple, list)) and len(ext) == 3:
             ext_name = ext[0]
-            self.assertTrue(isinstance(ext[2], dict),
-                            "3rd element of extension spec for %s must be a dictionary" % ext_name)
+            if not isinstance(ext[2], dict):
+                failing_checks.append("3rd element of extension spec for %s must be a dictionary" % ext_name)
 
-    ext_patch_issues = []
+    # Need to check now as collect_exts_file_info relies on correct exts_list
+    if failing_checks:
+        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(failing_checks))
+
     # After the sanity check above, use collect_exts_file_info to resolve templates etc. correctly
     for ext in app.collect_exts_file_info(fetch_files=False, verify_checksums=False):
         try:
@@ -1550,22 +1615,21 @@ def template_easyconfig_test(self, spec):
             # only check actual patch files, not other files being copied via the patch functionality
             ext_patch_full = os.path.join(specdir, ext_patch['name'])
             if ext_patch_full.endswith('.patch') and not os.path.isfile(ext_patch_full):
-                ext_patch_issues.append("Patch file %s for extension %s is missing." % (ext_patch['name'], ext_name))
+                failing_checks.append("Patch file %s for extension %s is missing." % (ext_patch['name'], ext_name))
                 continue
 
             # verify checksum for each patch file
             if idx < len(patch_checksums) and os.path.exists(ext_patch_full):
                 checksum = patch_checksums[idx]
                 if not verify_checksum(ext_patch_full, checksum):
-                    ext_patch_issues.append("Invalid checksum for patch %s for extension %s: %s."
-                                            % (ext_patch['name'], ext_name, checksum))
-    if ext_patch_issues:
-        self.fail("Verification of patches for %s failed:\n%s" % (ec_fn, '\n'.join(ext_patch_issues)))
+                    failing_checks.append("Invalid checksum for patch %s for extension %s: %s."
+                                          % (ext_patch['name'], ext_name, checksum))
 
     # check whether all extra_options defined for used easyblock are defined
     extra_opts = app.extra_options()
     for key in extra_opts:
-        self.assertTrue(key in app.cfg)
+        if key not in app.cfg:
+            failing_checks.append("Missing extra_option '%s'" % key)
 
     app.close_log()
     os.remove(app.logfile)
@@ -1603,24 +1667,32 @@ def template_easyconfig_test(self, spec):
         # if may get resolved using a subtoolchain, which is then hardcoded in the dumped easyconfig
         if key in DEPENDENCY_PARAMETERS:
             # number of dependencies should remain the same
-            self.assertEqual(len(orig_val), len(dumped_val))
+            if len(orig_val) != len(dumped_val):
+                failing_checks.append("Length difference for %s: %s vs %s" % (key, orig_val, dumped_val))
+                continue
             for orig_dep, dumped_dep in zip(orig_val, dumped_val):
                 # name should always match
-                self.assertEqual(orig_dep[0], dumped_dep[0])
+                if orig_dep[0] != dumped_dep[0]:
+                    failing_checks.append("Different name in %s: %s vs %s" % (key, orig_dep[0], dumped_dep[0]))
 
+                desc = '%s of %s' % (orig_dep[0], key)
                 # version should always match, or be a possibility from the version dict
                 if isinstance(orig_dep[1], dict):
-                    self.assertTrue(dumped_dep[1] in orig_dep[1].values())
-                else:
-                    self.assertEqual(orig_dep[1], dumped_dep[1])
+                    if dumped_dep[1] not in orig_dep[1].values():
+                        failing_checks.append("Wrong version in %s: %s vs %s"
+                                              % (desc, dumped_dep[1], orig_dep[1].values()))
+                elif orig_dep[1] != dumped_dep[1]:
+                    failing_checks.append("Different version in %s: %s vs %s" % (desc, orig_dep[1], dumped_dep[1]))
 
                 # 3rd value is versionsuffix;
                 if len(dumped_dep) >= 3:
                     # if no versionsuffix was specified in original dep spec, then dumped value should be empty string
                     if len(orig_dep) >= 3:
-                        self.assertEqual(dumped_dep[2], orig_dep[2])
-                    else:
-                        self.assertEqual(dumped_dep[2], '')
+                        if orig_dep[2] != dumped_dep[2]:
+                            failing_checks.append("Different versionsuffix in %s: %s vs %s"
+                                                  % (desc, orig_dep[2], dumped_dep[2]))
+                    elif dumped_dep[2] != '':
+                        failing_checks.append("Unexpected versionsuffix in %s: %s" % (desc, dumped_dep[2]))
 
                 # 4th value is toolchain spec
                 if len(dumped_dep) >= 4:
@@ -1628,31 +1700,40 @@ def template_easyconfig_test(self, spec):
                         # use of `True` is deprecated in favour of the more intuitive `SYSTEM` template
                         if orig_dep[3] is True:
                             if skip_system_template_check:
-                                self.assertEqual(dumped_dep[3], EASYCONFIG_CONSTANTS['SYSTEM'][0])
+                                if dumped_dep[3] != EASYCONFIG_CONSTANTS['SYSTEM'][0]:
+                                    failing_checks.append("Should use SYSTEM in %s, found %s"
+                                                          % (desc, dumped_dep[3]))
                             else:
-                                error_msg = (
-                                    "use of `True` to indicate the system toolchain for dependency "
-                                    "%s is deprecated, use the `SYSTEM` template constant instead" % dumped_dep[0]
+                                failing_checks.append(
+                                    "use of `True` to indicate the system toolchain for "
+                                    "%s is deprecated, use the `SYSTEM` template constant instead" % desc
                                 )
-                                self.fail(error_msg)
-                        else:
-                            self.assertEqual(dumped_dep[3], orig_dep[3])
+                        elif orig_dep[3] != dumped_dep[3]:
+                            failing_checks.append("Different toolchain in %s: %s vs %s"
+                                                  % (desc, orig_dep[3], dumped_dep[3]))
                     else:
                         # if a subtoolchain is specifed (only) in the dumped easyconfig,
                         # it should *not* be the same as the parent toolchain
-                        self.assertNotEqual(dumped_dep[3], (orig_toolchain['name'], orig_toolchain['version']))
+                        parent_tc = (orig_toolchain['name'], orig_toolchain['version'])
+                        if dumped_dep[3] == parent_tc:
+                            failing_checks.append("Explicit toolchain in %s should not be the parent toolchain (%s)"
+                                                  % (desc, parent_tc))
 
         # take into account that for some string-valued easyconfig parameters (configopts & co),
         # the easyblock may have injected additional values, which affects the dumped easyconfig file
-        elif isinstance(orig_val, string_type):
-            error_msg = "%s value '%s' should start with '%s'" % (key, dumped_val, orig_val)
-            self.assertTrue(dumped_val.startswith(orig_val), error_msg)
-        else:
-            error_msg = "%s value should be equal in original and dumped easyconfig: '%s' vs '%s'"
-            self.assertEqual(orig_val, dumped_val, error_msg % (key, orig_val, dumped_val))
+        elif isinstance(orig_val, str):
+            if not dumped_val.startswith(orig_val):
+                failing_checks.append(f"{key} value '{dumped_val}' should start with '{orig_val}'")
+        elif orig_val != dumped_val:
+            fail_msg = f"{key} value should be equal in original and dumped easyconfig: "
+            fail_msg += f"'{orig_val}' vs '{dumped_val}'"
+            failing_checks.append(fail_msg)
 
-    # test passed, so set back to True
-    single_tests_ok = True and prev_single_tests_ok
+    if failing_checks:
+        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(failing_checks))
+
+    # test passed, so set back
+    single_tests_ok = prev_single_tests_ok
 
 
 def suite(loader=None):

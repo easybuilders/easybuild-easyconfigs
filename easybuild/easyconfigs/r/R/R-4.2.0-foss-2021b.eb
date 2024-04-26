@@ -65,10 +65,6 @@ configopts = "--with-pic --enable-threads --enable-R-shlib"
 # we're installing them anyway below
 configopts += " --with-recommended-packages=no"
 
-# specify that at least EasyBuild v3.5.0 is required,
-# since we rely on the updated easyblock for R to configure correctly w.r.t. BLAS/LAPACK
-easybuild_version = '3.5.0'
-
 exts_default_options = {
     'source_urls': [
         'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
@@ -77,6 +73,14 @@ exts_default_options = {
     ],
     'source_tmpl': '%(name)s_%(version)s.tar.gz',
 }
+
+# the dbarts extension needs an additional compiler flag on Arm systems to prevent "incompatible types" errors
+# cfr. https://github.com/vdorie/dbarts/issues/66
+if ARCH == 'aarch64':
+    local_dbarts_preinstallopts = 'sed -i "s|-c partition_neon.c|-flax-vector-conversions -c partition_neon.c|"'
+    local_dbarts_preinstallopts += ' src/misc/Makefile && '
+else:
+    local_dbarts_preinstallopts = ''
 
 # !! order of packages is important !!
 # packages updated on 27th April 2022
@@ -2796,6 +2800,7 @@ exts_list = [
     }),
     ('dbarts', '0.9-22', {
         'checksums': ['68fa2bfe274811c91ea7b67da46c4ffe527eb662d75edbec26ffe934ddc7150a'],
+        'preinstallopts': local_dbarts_preinstallopts,
     }),
     ('proftools', '0.99-3', {
         'checksums': ['e034eb1531af54013143da3e15229e1d4c2260f8eb79c93846014db3bdefb724'],
