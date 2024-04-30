@@ -1,0 +1,44 @@
+# #
+# Authors:: Ali Kerrache, University of Manitoba, Compoute Canada.
+# #
+
+easyblock = 'ConfigureMake'
+
+name = 'LINKS'
+version = '2.0.1'
+
+homepage = 'http://www.bcgsc.ca/platform/bioinfo/software/links'
+description = "LINKS is a scalable genomics application for scaffolding or re-scaffolding genome assembly drafts with long reads, such as those produced by Oxford Nanopore Technologies Ltd and Pacific Biosciences. It provides a generic alignment-free framework for scaffolding and can work on any sequences. It is versatile and supports not only long sequences as a source of long-range information, but also MPET pairs and linked-reads, such as those from the 10X Genomics GemCode and Chromium platform, via ARCS (http://www.bcgsc.ca/platform/bioinfo/software/arcs). Fill gaps in LINKS-derived scaffolds using Sealer (http://www.bcgsc.ca/platform/bioinfo/software/sealer)."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+#source_urls = ['https://github.com/bcgsc/LINKS/archive/refs/tags/']
+#sources = ['v%(version)s.tar.gz']
+#checksums = ['38ae78a22804cec7f51f5faa33a14f3bef9601b1239cb7e68e71bfefd364a77f']
+
+source_urls = ['https://github.com/bcgsc/%(name)s/releases/download/v%(version)s/']
+sources = ['%(namelower)s-v%(version)s.tar.gz']
+checksums = ['f6f664b854b9dcc51a399af8d5ce2634f788ccdbc35e7d2732c927ca50bc7f70']
+
+builddependencies = [
+    ('SWIG', '4.1.1'),
+]
+
+dependencies = [
+    ('Perl', '5.36.1'),
+]
+
+preconfigopts = 'autoreconf -fvi && '
+
+postinstallcmds = [
+    "cp -r tests %(installdir)s/ && mkdir -p %(installdir)s/lib && cd %(installdir)s/lib && git clone https://github.com/bcgsc/btl_bloomfilter.git && cd btl_bloomfilter/swig && swig -Wall -c++ -perl5 BloomFilter.i && g++ -c BloomFilter_wrap.cxx -I$EBROOTPERL/lib/perl5/$EBVERSIONPERL/%(arch)s-linux-thread-multi/CORE -fPIC -O3 && g++ -Wall -shared BloomFilter_wrap.o -o BloomFilter.so",
+    ]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['bin', 'tests', 'lib'],
+}
+
+modextrapaths = {'PERL5LIB': 'lib/btl_bloomfilter/swig'}
+
+moduleclass = 'bio'
