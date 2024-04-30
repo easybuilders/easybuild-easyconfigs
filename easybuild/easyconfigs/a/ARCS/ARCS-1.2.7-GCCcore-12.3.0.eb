@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'ARCS'
+version = '1.2.7'
+
+homepage = 'https://github.com/bcgsc/arcs'
+description = "Scaffolding genome sequence assemblies using 10X Genomics GemCode/Chromium data."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/bcgsc/%(namelower)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['6ddb0afe2df3f34bed14c4d51bdb3d504ea34a76a10b6d82848823648e58ae3f']
+
+builddependencies = [
+    ('Boost', '1.82.0', '-core'),
+]
+
+dependencies = [
+    ('LINKS', '2.0.1'),
+    ('sparsehash', '2.0.4'),
+    ('btllib', '1.6.2'),
+]
+
+preconfigopts = 'source autogen.sh && '
+
+configopts = " --with-boost=$EBROOTBOOST/include"
+
+# add missing files and fix hardcoded path
+postinstallcmds = [
+    "cp bin/* %(installdir)s/bin",
+    "sed -i -e 's#$(bin)/../src/long-to-linked-pe#long-to-linked-pe#' -e 's#../Examples##' %(installdir)s/bin/arcs-make",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'bin/%(namelower)s-make', 'bin/makeTSVfile.py'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
