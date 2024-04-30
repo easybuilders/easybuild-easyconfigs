@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'RabbitMQ'
+version = '3.13.1'
+
+homepage = 'https://www.rabbitmq.com/'
+description = """RabbitMQ is a reliable and mature messaging and streaming broker, which is easy to deploy on cloud
+environments, on-premises, and on your local machine. It is currently used by millions worldwide."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/rabbitmq/rabbitmq-server/archive/refs/tags/']
+
+checksums = [None]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('libxslt', '1.1.38'),
+    ('xmlto', '0.0.28'),
+
+]
+dependencies = [
+    ('ErlangOTP', '26.2.4'),
+    ('Elixir', '1.16.2'),
+]
+
+configure_without_installdir = True
+configure_cmd = "sed -i 's|^PREFIX *?=.*$|PREFIX ?= %(installdir)s|' Makefile"
+installopts = 'install install-bin'
+test_cmd = "make tests"
+postinstallcmds = ['cd %(installdir)s && ln -s lib/erlang/bin bin']
+
+sanity_check_paths = {
+    'files': [
+        'bin/rabbitmqctl', 'bin/rabbitmq-diagnostics', 'bin/rabbitmq-plugins', 'bin/rabbitmq-server',
+        'bin/rabbitmq-upgrade', 'bin/rabbitmq-defaults', 'bin/rabbitmq-env', 'bin/rabbitmq-queues',
+        'bin/rabbitmq-streams', 'bin/vmware-rabbitmq'
+    ],
+    'dirs': [
+        'lib/erlang/bin', 'lib/erlang/lib',
+    ]
+}
+
+
+moduleclass = 'tools'
+
+parallel = 1
