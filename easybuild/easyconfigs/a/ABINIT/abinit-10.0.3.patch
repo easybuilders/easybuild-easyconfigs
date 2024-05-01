@@ -1,0 +1,60 @@
+--- fallbacks/build-abinit-fallbacks.sh.in.orig	2024-04-26 21:27:56.078501642 +0000
++++ fallbacks/build-abinit-fallbacks.sh.in	2024-04-30 22:37:48.231879108 +0000
+@@ -3,9 +3,9 @@
+ # Init
+ Fallbacks="bigdft atompaw wannier90 libpsml xmlf90 libxc hdf5 netcdf4 netcdf4_fortran"
+ 
+-Disabled="--disable-bigdft --disable-atompaw --disable-wannier90 --disable-libpsml --disable-xmlf90 --disable-libxc --disable-hdf5 --disable-netcdf4 --disable-netcdf4_fortran"
++Disabled=""
+ 
+-Optional_fbks="--disable-bigdft --disable-atompaw --disable-wannier90 --disable-libpsml --disable-xmlf90"
++Optional_fbks=""
+ 
+ if [[ -z $1 ]]; then
+    Disabled=$Optional_fbks
+@@ -21,29 +21,33 @@
+ done
+ 
+ # Init
+-fallbacks_prefix="@abinit_builddir@/fallbacks/install_fb/@abi_fc_vendor@/@abi_fc_version@"
++fallbacks_prefix="$(pwd)/install"
+ 
+ # Find and Unpack tarball
+-tarfile=`basename $(ls @abinit_srcdir@/fallbacks/*.tar.gz)`
++tarfile=`basename $(ls $(pwd)/*.tar.gz)`
+ source=${tarfile%.tar.gz}
+ 
+-mkdir -p $source && tar -xzf @abinit_srcdir@/fallbacks/$tarfile -C $source --strip-components=1
++#mkdir -p $source && tar -xzf $(pwd)/$tarfile -C $source --strip-components=1
+ cd $source
+ 
+ # Configure
+ ./configure \
+   --prefix="${fallbacks_prefix}" \
+   --with-tardir="${HOME}/.abinit/tarballs" \
+-  --with-linalg-incs="@sd_linalg_fcflags@" \
+-  --with-linalg-libs="@sd_linalg_libs@" \
+-  --with-fc-vendor="@abi_fc_vendor@" \
+-  --with-fc-version="@abi_fc_version@" \
++  --with-linalg-libs="-lflexiblas_intel -lscalapack" \
++  --with-linalg-incs="-I$EBROOTFLEXIBLAS/include/flexiblas" \
++  --with-fc-vendor="intel" \
++  --with-fc-version="20" \
++  --with-hdf5=$EBROOTHDF5 \
++  --with-netcdf4=$EBROOTNETCDF \
++  --with-wannier90="$EBROOTWANNIER90" \
++  --with-libxc="$EBROOTLIBXC" \
+   `echo $Disabled` \
+-  LIBS_NETCDF4_FORTRAN="-ldl -lm -lz" \
+-  CC="@CC@" \
+-  CXX="@CXX@" \
+-  FC="@FC@"
+-
++  LIBS_NETCDF4_FORTRAN="-ldl -lm -lz -lzip" \
++  CC="mpicc" \
++  CXX="mpicxx" \
++  FC="mpif90" \
++  CFLAGS_BIGDFT="--std=c89 -Wno-incompatible-pointer-types -Wno-int-conversion" 
+ make -j 4 install
+ rc=`echo $?`
+ 
