@@ -16,7 +16,6 @@ PG_CONF=$PGDATA/postgresql.conf
 PG_PORT=25432
 
 function database_set_port {
-    # Set the PG_port number
     while [ $PG_PORT -le 65535 ]; do
         ss -tln | grep -q ":$PG_PORT " || break
         PG_PORT=$((PG_PORT + 1))
@@ -29,14 +28,9 @@ function database_set_port {
     sed -i "s/.*port = .*/port = ${PG_PORT}/" ${PG_CONF}
 }
 
-function database_get_set_port {
-    # Get the PG_port number
-    if [ "x`grep -e '# *port *= *' ${PG_CONF}`" != "x" ]; then
-        echo "${PG_LOGHEADER} PORT not set"
-        database_set_port
-    else
-        PG_PORT=$(grep '^port = ' ${PG_CONF} | awk '{print $3}')
-        echo "${PG_LOGHEADER} Running on PORT $PG_PORT"
+function database_get_port {
+    if [ -f ${EB_CONFIG_DIR}/psql_port ]; then
+        PG_PORT=$(cat ${EB_CONFIG_DIR}/psql_port)
     fi
 }
 
@@ -77,23 +71,6 @@ function database_init {
     initdb -D ${PGDATA} -A scram-sha-256 --pwfile=<(echo ${PG_PASSWORD})
 }
 
-function database_start {
-   # Check if postgresql is already running
-    pg_ctl status -D $PGDATA 2>&1 > /dev/null
-    if [ $? -ne 0 ]; then
-        echo "${PG_LOGHEADER} starting server..."
-        pg_ctl start -D ${PGDATA} -l ${PGDATA}/logfile
-    else
-        echo "${PG_LOGHEADER} server already running"
-    fi
-}
-
-function database_cleanup_vars {
-    unset PGDATA
-    unset PG_PORT
-    unset PG_PASSWORD
-}
-
 function database_bootstrap {
     echo "${PG_LOGHEADER} Bootstrapping..."
     if [ ! -d ${EB_CONFIG_DIR} ]; then
@@ -104,8 +81,17 @@ function database_bootstrap {
     if [ ! -d ${PGDATA} ]; then
         database_init
     fi
-    database_get_set_port
-    database_start
+
+    pg_ctl status -D $PGDATA 2>&1 > /dev/null
+    if [ $? -ne 0 ]; then
+        database_get_port
+        database_set_port
+        echo "${PG_LOGHEADER} starting server..."
+        pg_ctl start -D ${PGDATA} -l ${PGDATA}/logfile
+    else
+        database_get_port
+        echo "${PG_LOGHEADER} server already running"
+    fi
 }
 
 
@@ -152,6 +138,9 @@ function rabbitmq_get_port {
 function rabbitmq_set_dist_port {
     if [ ! -z ${RABBITMQ_DIST_PORT} ]; then
         _RMQ_PORT=${RABBITMQ_DIST_PORT}
+        if [ $_RMQ_PORT -eq ${RABBITMQ_NODE_PORT} ]; then
+            _RMQ_PORT=$((RABBITMQ_NODE_PORT + 1))
+        fi
     else
         if [ ! -z ${RABBITMQ_NODE_PORT} ]; then
             _RMQ_PORT=$((RABBITMQ_NODE_PORT + 1))
@@ -371,7 +360,6 @@ if [ $? -ne 0 ]; then
     echo "${PG_LOGHEADER} failed to start server"
     exit 1
 fi
-echo "PASSWORD: $PG_PASSWORD"
 echo ""
 
 rabbitmq_bootstrap
@@ -379,7 +367,6 @@ if [ $? -ne 0 ]; then
     echo "${RMQ_LOGHEADER} failed to start server"
     exit 1
 fi
-echo "PASSWORD: $RABBITMQ_DEFAULT_PASS"
 echo ""
 
 aiida_bootstrap
