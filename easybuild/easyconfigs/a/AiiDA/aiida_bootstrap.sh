@@ -342,6 +342,15 @@ function aiida_verify_rabbitmq {
     fi
 }
 
+function aiida_start_daemon {
+    if [ "`verdi daemon status 2>&1 | grep 'not running'`" != "" ]; then
+        echo "${AIIDA_LOGHEADER} Starting AiiDA Daemon..."
+        verdi daemon start
+    else
+        echo "${AIIDA_LOGHEADER} AiiDA Daemon already running"
+    fi
+}
+
 function aiida_bootstrap {
     echo "${AIIDA_LOGHEADER} Bootstrapping..."
 
@@ -353,6 +362,8 @@ function aiida_bootstrap {
 
     aiida_verify_db_port
     aiida_verify_rmq_port
+
+    aiida_start_daemon
 }
 
 database_bootstrap
