@@ -173,7 +173,7 @@ function rabbitmq_check_running {
         echo "${RMQ_LOGHEADER} server not running"
         return 1
     fi
-    echo "${RMQ_LOGHEADER} server running"
+    echo "${RMQ_LOGHEADER} server already running"
     DATA=`rabbitmqctl status 2>&1`
     echo "$DATA" | grep -q "Node data directory: ${RABBITMQ_MNESIA_BASE}/${RABBITMQ_NODENAME}@${HOSTNAME}"
     if [ $? -ne 0 ]; then
