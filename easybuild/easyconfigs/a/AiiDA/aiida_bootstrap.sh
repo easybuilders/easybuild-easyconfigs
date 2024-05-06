@@ -26,6 +26,7 @@ function database_set_port {
     fi
     echo "${PG_LOGHEADER} setting PORT to $PG_PORT"
     sed -i "s/.*port = .*/port = ${PG_PORT}/" ${PG_CONF}
+    echo ${PG_PORT} > ${EB_CONFIG_DIR}/psql_port
 }
 
 function database_get_port {
@@ -221,7 +222,7 @@ function rabbitmq_get_set_password {
 }
 
 function rabbitmq_aiida_config {
-    if [ `grep 'consumer_timeout, undefined' $RABBITMQ_ADVANCED_CONFIG_FILE | wc -l` -eq 0 ]; then
+    if [ "`grep -c 'consumer_timeout, undefined' $RABBITMQ_ADVANCED_CONFIG_FILE 2>/dev/null`" == "" ]; then
         echo "Adding consumer_timeout to $RABBITMQ_ADVANCED_CONFIG_FILE"
         echo "[{rabbit, [{consumer_timeout, undefined}]}]." >> $RABBITMQ_ADVANCED_CONFIG_FILE
     fi
@@ -287,6 +288,7 @@ function aiida_create_profile {
     read -r -p "${AIIDA_LOGHEADER} Enter data repository directory (default to ${EB_CONFIG_DIR}/aiida): " AIIDA_DIR
     if [ -z ${AIIDA_DIR} ]; then
         AIIDA_DIR=${EB_CONFIG_DIR}/aiida
+        echo "${AIIDA_DIR}" > ${EB_CONFIG_DIR}/aiida_dir
     fi
 
     database_get_password
