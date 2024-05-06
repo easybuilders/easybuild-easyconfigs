@@ -73,6 +73,10 @@ function database_bootstrap {
     if [ $? -ne 0 ]; then
         echo "${PG_LOGHEADER} starting server..."
         pg_ctl start -D ${PGDATA} -l ${PGDATA}/logfile
+        if [ $? -ne 0 ]; then
+            echo "${PG_LOGHEADER} failed to start server"
+            exit 1
+fi
     else
         echo "${PG_LOGHEADER} server already running"
     fi
@@ -250,7 +254,9 @@ function rabbitmq_bootstrap {
 #######################################################################
 AIIDA_LOGHEADER="${LOGHEADER}AiiDA:"
 
-export AIIDA_PATH=${HOME}
+if [ -z ${AIIDA_PATH} ]; then
+    export AIIDA_PATH=${HOME}
+fi
 AIIDA_CONFIG_FILE=${AIIDA_PATH}/.aiida/config.json
 
 function aiida_create_profile {
@@ -342,23 +348,13 @@ function aiida_bootstrap {
 }
 
 database_bootstrap
-if [ $? -ne 0 ]; then
-    echo "${PG_LOGHEADER} failed to start server"
-    exit 1
-fi
+echo "PostgreSQL is ready to use"
 echo ""
 
 rabbitmq_bootstrap
-if [ $? -ne 0 ]; then
-    echo "${RMQ_LOGHEADER} failed to start server"
-    exit 1
-fi
+echo "RabbitMQ is ready to use"
 echo ""
 
 # exit 0
 aiida_bootstrap
-if [ $? -ne 0 ]; then
-    echo "${AIIDA_LOGHEADER} failed to start server"
-    exit 1
-fi
 echo "AiiDA is ready to use"
