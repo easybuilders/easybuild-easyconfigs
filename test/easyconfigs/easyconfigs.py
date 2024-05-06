@@ -1380,6 +1380,24 @@ class EasyConfigTest(TestCase):
             self.fail('\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
+    def test_pr_CMAKE_INSTALL_LIBDIR(self):
+        """Make sure -DCMAKE_INSTALL_LIBDIR is no longer used (replaced by install_libdir)"""
+        failing_checks = []
+        for ec in self.changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            configopts = ec.get('configopts')
+            install_libdir = ec.get('install_libdir')
+
+            cmake_install_opt_pattern = re.compile(r"-DCMAKE_INSTALL_LIBDIR(:PATH)?=[^\s]")
+            if cmake_install_opt_pattern.search(configopts):
+                failing_checks.append("Found -DCMAKE_INSTALL_LIBDIR in configopts. Use install_libdir instead: %s" % ec_fn)
+            if install_libdir == 'lib':
+                failing_checks.append("install_libdir was set to the default of 'lib': %s" % ec_fn)
+
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
     def test_pr_patch_descr(self):
         """
         Check whether all patch files touched in PR have a description on top.
