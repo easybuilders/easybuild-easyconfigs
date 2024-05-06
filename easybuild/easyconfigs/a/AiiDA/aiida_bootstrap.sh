@@ -11,22 +11,23 @@ EB_CONFIG_DIR=$HOME/.eb_aiida
 # PostgreSQL
 #######################################################################
 PG_LOGHEADER="${LOGHEADER}PostgreSQL:"
-export PGDATA=${EB_CONFIG_DIR}/TEST
-PG_CONF=$PGDATA/postgresql.conf
-PG_SOCKET_DIR=${EB_CONFIG_DIR}
-PG_PORT=5432
+export PGDATA=${EB_CONFIG_DIR}/postgres
+PG_CONF="${PGDATA}/postgresql.conf"
+export PGHOST="${EB_CONFIG_DIR}"
+export PGPORT=5432
 
 function database_get_set_pgdata {
     if [ -f ${EB_CONFIG_DIR}/psql_datadir ]; then
         PGDATA=$(cat ${EB_CONFIG_DIR}/psql_datadir)
     else
         echo "${PG_LOGHEADER} PGDATA not set"
-        read -r -p "${PG_LOGHEADER} Enter PGDATA directory (default: $PGDATA): " _PGDATA
-        if [ ! -z $_PGDATA ]; then
-            PGDATA=$_PGDATA
+        read -r -p "${PG_LOGHEADER} Enter PGDATA directory (default: ${PGDATA}): " _PGDATA
+        if [ ! -z ${_PGDATA} ]; then
+            export PGDATA=${_PGDATA}
+            PG_CONF="${PGDATA}/postgresql.conf"
         fi
         echo "${PG_LOGHEADER} Setting PGDATA to $PGDATA"
-        echo $PGDATA > ${EB_CONFIG_DIR}/psql_datadir
+        echo "${PGDATA}" > ${EB_CONFIG_DIR}/psql_datadir
     fi
 }
 
@@ -40,7 +41,7 @@ function database_get_set_password {
     if [ -f ${EB_CONFIG_DIR}/psql_password ]; then
         PG_PASSWORD=$(cat ${EB_CONFIG_DIR}/psql_password)
     else
-        PG_PASSWORD=$(uuidgen)
+        PG_PASSWORD="$(uuidgen)"
         echo $PG_PASSWORD > ${EB_CONFIG_DIR}/psql_password
         chmod 600 ${EB_CONFIG_DIR}/psql_password
     fi
@@ -50,32 +51,29 @@ function database_get_set_password {
 function database_init {
     echo "${PG_LOGHEADER} Initializing database..."
     database_get_set_password
-    initdb -D ${PGDATA} -A scram-sha-256 --pwfile=<(echo ${PG_PASSWORD})
+    initdb -D ${PGDATA} -A scram-sha-256 --pwfile=<(echo ${PG_PASSWORD}) 2>&1 > /dev/null
     # Configure PostgreSQL to use unix socket only
-    sed -i "s/.*listen_addresses = .*/listen_addresses = ''/" ${PG_CONF}
-    sed -i "s/.*unix_socket_directories = .*/unix_socket_directories = '${PG_SOCKET_DIR}'/" ${PG_CONF}
-    sed -i "s/.*unix_socket_permissions = .*/unix_socket_permissions = '0700'/" ${PG_CONF}
+    sed -i "s/.*listen_addresses *= .*/listen_addresses = ''/" ${PG_CONF}
+    sed -i "s:.*unix_socket_directories *= .*:unix_socket_directories = '${PGHOST}':" ${PG_CONF}
+    sed -i "s/.*unix_socket_permissions *= .*/unix_socket_permissions = '0700'/" ${PG_CONF}
 }
 
 function database_bootstrap {
     echo "${PG_LOGHEADER} Bootstrapping..."
-    if [ ! -d ${EB_CONFIG_DIR} ]; then
-        mkdir -p ${EB_CONFIG_DIR}
+    if [ ! -d "${EB_CONFIG_DIR}" ]; then
+        mkdir -p "${EB_CONFIG_DIR}"
     fi
 
     database_get_set_pgdata
-    if [ ! -d ${PGDATA} ]; then
+    if [ ! -d "${PGDATA}" ]; then
         database_init
     fi
 
     pg_ctl status -D $PGDATA 2>&1 > /dev/null
     if [ $? -ne 0 ]; then
-        # database_get_port
-        # database_set_port
         echo "${PG_LOGHEADER} starting server..."
         pg_ctl start -D ${PGDATA} -l ${PGDATA}/logfile
     else
-        # database_get_port
         echo "${PG_LOGHEADER} server already running"
     fi
 }
@@ -93,7 +91,6 @@ export RABBITMQ_MNESIA_BASE=${RMQ_BASEDIR}/mnesia
 export RABBITMQ_LOG_BASE=${RMQ_BASEDIR}/logs
 export RABBITMQ_CONFIG_FILES=${RMQ_BASEDIR}/config
 export RABBITMQ_ADVANCED_CONFIG_FILE=${RMQ_BASEDIR}/advanced.config
-# export RABBITMQ_NODE_IP_ADDRESS="localhost"
 export RABBITMQ_DEFAULT_USER=aiida
 
 function rabbitmq_set_port {
@@ -154,23 +151,25 @@ function rabbitmq_get_dist_port {
 }
 
 function rabbitmq_check_running {
-    rabbitmqctl status 2>&1 | grep -q "Node data directory: "
+    DATA=`rabbitmqctl status 2>&1`
+    echo ${DATA} | grep -q "Node data directory: "
     if [ $? -ne 0 ]; then
         echo "${RMQ_LOGHEADER} server not running"
         return 1
     fi
     echo "${RMQ_LOGHEADER} server already running"
-    DATA=`rabbitmqctl status 2>&1`
-    echo "$DATA" | grep -q "Node data directory: ${RABBITMQ_MNESIA_BASE}/${RABBITMQ_NODENAME}@${HOSTNAME}"
+    echo "${DATA}" | grep -q "Node data directory: ${RABBITMQ_MNESIA_BASE}/${RABBITMQ_NODENAME}@${HOSTNAME}"
     if [ $? -ne 0 ]; then
-        echo "${RMQ_LOGHEADER} server not running on correct data directory"
-        exit 1
+        echo "${RMQ_LOGHEADER} server not running on correct data directory. Stopping..."
+        rabbitmqctl stop 2> /dev/null
+        return 1
     fi
 
-    _PORT=`echo "$DATA" | grep "amqp" | cut -d, -f2 | awk '{print $2}' | head -n 1`
+    _PORT=`echo "${DATA}" | grep "amqp" | cut -d, -f2 | awk '{print $2}' | head -n 1`
     if [ ! -z ${RABBITMQ_NODE_PORT} ] && [ ${_PORT} -ne ${RABBITMQ_NODE_PORT} ]; then
-        echo "${RMQ_LOGHEADER} server not running on correct PORT"
-        exit 1
+        echo "${RMQ_LOGHEADER} server not running on correct PORT. Stopping..."
+        rabbitmqctl stop 2> /dev/null
+        return 1
     else
         export RABBITMQ_NODE_PORT=${_PORT}
         echo "${RMQ_LOGHEADER} server running on PORT ${RABBITMQ_NODE_PORT}"
@@ -178,8 +177,9 @@ function rabbitmq_check_running {
     fi
     _DIST_PORT=`echo "$DATA" | grep "clustering" | cut -d, -f2 | awk '{print $2}' | head -n 1`
     if [ ! -z ${RABBITMQ_DIST_PORT} ] && [ ${_DIST_PORT} -ne ${RABBITMQ_DIST_PORT} ]; then
-        echo "${RMQ_LOGHEADER} server not running on correct DIST_PORT"
-        exit 1
+        echo "${RMQ_LOGHEADER} server not running on correct DIST_PORT. Stopping..."
+        rabbitmqctl stop 2> /dev/null
+        return 1
     else
         export RABBITMQ_DIST_PORT=${_DIST_PORT}
         echo "${RMQ_LOGHEADER} server running on DIST_PORT ${RABBITMQ_DIST_PORT}"
@@ -287,8 +287,6 @@ function aiida_create_profile {
         --first-name ${AIIDA_FIRSTNAME} \
         --last-name ${AIIDA_LASTNAME} \
         --institution ${AIIDA_INSTITUTION} \
-        --db-host localhost \
-        --db-port ${PG_PORT} \
         --su-db-name postgres \
         --su-db-username ${USER} \
         --su-db-password ${PG_PASSWORD} \
@@ -299,17 +297,6 @@ function aiida_create_profile {
     if [ $? -ne 0 ]; then
         echo "${AIIDA_LOGHEADER} failed to create profile"
         exit 1
-    fi
-
-    sed -i "s/\"database_hostname\": .*/\"database_hostname\": \"${PG_SOCKET_DIR}\",/" ${AIIDA_CONFIG_FILE}
-    cat ${AIIDA_CONFIG_FILE}
-}
-
-function aiida_verify_db_port {
-    _AIIDA_PORT=$(verdi profile show ${USER} | grep "database_port" | awk '{print $2}')
-    if [ $_AIIDA_PORT -ne $PG_PORT ]; then
-        echo "${AIIDA_LOGHEADER} AiiDA database PORT mismatch, updating the profile..."
-        sed -i "s/: *${_AIIDA_PORT}/: ${PG_PORT}/" ${AIIDA_CONFIG_FILE}
     fi
 }
 
@@ -349,8 +336,6 @@ function aiida_bootstrap {
     fi
 
     aiida_verify_rabbitmq
-
-    aiida_verify_db_port
     aiida_verify_rmq_port
 
     aiida_start_daemon
