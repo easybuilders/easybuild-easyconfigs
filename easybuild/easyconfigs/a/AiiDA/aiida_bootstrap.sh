@@ -13,27 +13,8 @@ EB_CONFIG_DIR=$HOME/.eb_aiida
 PG_LOGHEADER="${LOGHEADER}PostgreSQL:"
 export PGDATA=${EB_CONFIG_DIR}/TEST
 PG_CONF=$PGDATA/postgresql.conf
-PG_PORT=25432
-
-function database_set_port {
-    while [ $PG_PORT -le 65535 ]; do
-        ss -tln | grep -q ":$PG_PORT " || break
-        PG_PORT=$((PG_PORT + 1))
-    done
-    if [ $PG_PORT -gt 65535 ]; then
-        echo "${PG_LOGHEADER} no free PORT available"
-        exit 1
-    fi
-    echo "${PG_LOGHEADER} setting PORT to $PG_PORT"
-    sed -i "s/.*port = .*/port = ${PG_PORT}/" ${PG_CONF}
-    echo ${PG_PORT} > ${EB_CONFIG_DIR}/psql_port
-}
-
-function database_get_port {
-    if [ -f ${EB_CONFIG_DIR}/psql_port ]; then
-        PG_PORT=$(cat ${EB_CONFIG_DIR}/psql_port)
-    fi
-}
+PG_SOCKET_DIR=${EB_CONFIG_DIR}
+PG_PORT=5432
 
 function database_get_set_pgdata {
     if [ -f ${EB_CONFIG_DIR}/psql_datadir ]; then
@@ -70,6 +51,10 @@ function database_init {
     echo "${PG_LOGHEADER} Initializing database..."
     database_get_set_password
     initdb -D ${PGDATA} -A scram-sha-256 --pwfile=<(echo ${PG_PASSWORD})
+    # Configure PostgreSQL to use unix socket only
+    sed -i "s/.*listen_addresses = .*/listen_addresses = ''/" ${PG_CONF}
+    sed -i "s/.*unix_socket_directories = .*/unix_socket_directories = '${PG_SOCKET_DIR}'/" ${PG_CONF}
+    sed -i "s/.*unix_socket_permissions = .*/unix_socket_permissions = '0700'/" ${PG_CONF}
 }
 
 function database_bootstrap {
@@ -85,12 +70,12 @@ function database_bootstrap {
 
     pg_ctl status -D $PGDATA 2>&1 > /dev/null
     if [ $? -ne 0 ]; then
-        database_get_port
-        database_set_port
+        # database_get_port
+        # database_set_port
         echo "${PG_LOGHEADER} starting server..."
         pg_ctl start -D ${PGDATA} -l ${PGDATA}/logfile
     else
-        database_get_port
+        # database_get_port
         echo "${PG_LOGHEADER} server already running"
     fi
 }
@@ -315,6 +300,9 @@ function aiida_create_profile {
         echo "${AIIDA_LOGHEADER} failed to create profile"
         exit 1
     fi
+
+    sed -i "s/\"database_hostname\": .*/\"database_hostname\": \"${PG_SOCKET_DIR}\",/" ${AIIDA_CONFIG_FILE}
+    cat ${AIIDA_CONFIG_FILE}
 }
 
 function aiida_verify_db_port {
@@ -382,6 +370,7 @@ if [ $? -ne 0 ]; then
 fi
 echo ""
 
+# exit 0
 aiida_bootstrap
 if [ $? -ne 0 ]; then
     echo "${AIIDA_LOGHEADER} failed to start server"
