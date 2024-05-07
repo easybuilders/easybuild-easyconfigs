@@ -1,0 +1,92 @@
+easyblock = 'CMakeMake'
+
+name = 'MariaDB'
+version = '11.5.0'
+
+homepage = 'https://mariadb.org/'
+description = """MariaDB An enhanced, drop-in replacement for MySQL For more information please take a look at https://docs.computecanada.ca/wiki/Database_servers."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+source_urls = ['http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-%(version)s/source']
+sources = [SOURCELOWER_TAR_GZ]
+#patches = ['mariadb-10.4.11.patch']
+checksums = ['977fcaac855cd432bcabe2775e24bca9d80732c34db8757657521eda95a74bd0']
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('Boost', '1.82.0', '-core'),    # needed by OQGraph
+    ('Judy', '1.0.5'),      # needed by OQGraph
+#    ('snappy', '1.1.8'),    # needed by RocksDB; optional for InnoDB
+]
+
+dependencies = [
+	('Perl','5.36.1'),
+]
+
+multi_deps = {'Python': ['3.11.5', '3.10.13']}
+multi_deps_extensions_only = True
+
+parallel = 12
+
+configopts = "-DCMAKE_BUILD_TYPE=Release "
+configopts += "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "  # Linking fails with default gold linker
+configopts += "-DMYSQL_MAINTAINER_MODE=OFF "  # disabled to not treat warnings as errors (-Werror)
+configopts += "-DWITH_PCRE=auto "  # External download sometimes fails so we build PCRE2 directly.
+configopts += "-DWITH_ZLIB=system "
+configopts += "-DWITH_EMBEDDED_SERVER=ON "  # for libmysqld.so & co
+
+modextrapaths = {'PERL5LIB': 'lib/perl5/site_perl/5.36.1/:%(installdir)s/lib/perl5/site_perl/5.36.1/x86_64-linux-thread-multi', 'EBPYTHONPREFIXES': ''}
+exts_defaultclass = 'PerlModule'
+exts_classmap = {
+	'mysql-connector-python': 'PythonPackage',
+	'PyMySQL': 'PythonPackage',
+}
+exts_filter = ("perldoc -lm %(ext_name)s || python -c 'import %(ext_name)s'", "")
+exts_list = [
+	('mysql-connector-python', '8.2.0', {
+		'modulename': 'mysql.connector',
+		'source_urls': ['https://dev.mysql.com/get/Downloads/Connector-Python/'],
+		'source_tmpl': '%(name)s-%(version)s-src.tar.gz',
+		'checksums': ['ec417cbc777d46c0ba3c1243665a998397e869ed6cde5d051e279bf3624c3d33'],
+                'use_pip': True,
+		}
+	),
+	('PyMySQL', '1.1.0', {
+	        'source_urls': [PYPI_SOURCE],
+		'checksums': ['4f13a7df8bf36a51e81dd9f3605fede45a4878fe02f9236349fd82a3f0612f96'],
+		'use_pip': True,
+	}),
+#        ('Capture::Tiny', '0.48', {
+#                'source_tmpl': 'Capture-Tiny-0.48.tar.gz',
+#                'source_urls': ['https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN'],
+#                'runtest' : 'test',
+#                'configopts' : '',
+#        }),
+        ('IO::CaptureOutput', '1.1105', {
+                'source_tmpl': 'IO-CaptureOutput-1.1104.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN'],
+                'runtest' : 'test',
+                'configopts' : '',
+        }),
+        ('Devel::CheckLib', '1.16', {
+                'source_tmpl': 'Devel-CheckLib-1.16.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MATTN'],
+                'runtest' : 'test',
+                'configopts' : '',
+        }),
+        ('DBD::mysql', '5.004', {
+                'source_tmpl': 'DBD-mysql-4.050.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/D/DV/DVEEDEN'],
+                'runtest' : 'test',
+                'configopts' : '',
+		'checksums' : ['4f48541ff15a0a7405f76adc10f81627c33996fbf56c95c26c094444c0928d78'],
+        }),]
+
+sanity_check_paths = {
+    'files': ['bin/mysql', 'bin/mysqld_safe', 'lib/libmysqlclient.%s' % SHLIB_EXT, 'lib/libmariadb.%s' % SHLIB_EXT,
+              'lib/plugin/ha_connect.%s' % SHLIB_EXT, 'lib/plugin/ha_rocksdb.%s' % SHLIB_EXT,
+              'lib/plugin/ha_oqgraph.%s' % SHLIB_EXT,
+	      'scripts/mysql_install_db'],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'data'

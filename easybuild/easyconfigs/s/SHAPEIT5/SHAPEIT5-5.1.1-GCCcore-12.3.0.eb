@@ -1,0 +1,52 @@
+easyblock = "MakeCp"
+
+name = 'SHAPEIT5'
+version = '5.1.1'
+
+homepage = 'https://odelaneau.github.io/shapeit5/'
+description = """
+SHAPEIT5 estimates haplotypes in large datasets, with a special focus on rare variants.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'opt': True, 'cstd': 'c++17'}
+
+github_account = 'odelaneau'
+source_urls = [
+    GITHUB_SOURCE,
+    'https://github.com/odelaneau/xcftools/archive/refs/tags'
+]
+sources = [
+    'v%(version)s.tar.gz',
+    'v0.1.1.tar.gz', # for xcftools
+]
+checksums = [
+    {'v5.1.1.tar.gz': 'ccd250c5ddcab002f7551b6d4bf4135fc7375fea2c9646dd91e51afd97039555'},
+    {'v0.1.1.tar.gz': '31db35f845ba3f9f998d610259b01cc426ed3d16076703d78521eee456ff3fb4'},
+]
+
+#patches = ['SHAPEIT4_%(version)s_use_EB_settings.patch']
+
+dependencies = [
+    ('Boost', '1.82.0', '-core'),
+    ('HTSlib', '1.19'),
+]
+
+prebuildopts = 'mv ../xcftools*/* xcftools && '
+prebuildopts += 'sed -i "s/isinf/std::isinf/g" phase_common/src/models/haplotype_segment_{single,double}.h && '
+prebuildopts += 'sed -i "s/isnan/std::isnan/g" phase_common/src/models/haplotype_segment_{single,double}.h && '
+buildopts = 'HTSLIB_INC="$EBROOTHTSLIB/include" HTSLIB_LIB=-lhts '
+buildopts += 'BOOST_INC="$EBROOTBOOST/include" BOOST_LIB_IO=-lboost_iostreams BOOST_LIB_PO=-lboost_program_options '
+buildopts += 'CXX="$CXX" CXXFLAG="$CXXFLAGS -D__COMMIT_ID__= -D__COMMIT_DATE__= " LDFLAG="$CXXFLAGS" '
+
+local_binaries = ['ligate', 'phase_common', 'phase_rare', 'simulate', 'switch', 'xcftools']
+files_to_copy = [(['%s/bin/%s'%(x,x) for x in local_binaries], 'bin'), 'docs', 'resources', 'tasks', 'test']
+
+sanity_check_paths = {
+    'files': ['bin/%s'%x for x in local_binaries],
+    'dirs': ['docs', 'resources', 'tasks', 'test']
+}
+
+sanity_check_commands = ['phase_common --help']
+
+moduleclass = 'bio'

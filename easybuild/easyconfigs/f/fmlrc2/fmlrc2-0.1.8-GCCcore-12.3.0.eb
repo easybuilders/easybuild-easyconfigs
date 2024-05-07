@@ -1,0 +1,40 @@
+##
+# @author :: Ali Kerrache, Prairies DRI/Digital Research Alliance of Canada, University of Manitoba.
+# @date :: Feb 14, 2024
+##
+
+easyblock = 'CmdCp'
+
+name = 'fmlrc2'
+version = '0.1.8'
+
+homepage = 'https://github.com/HudsonAlpha/fmlrc2'
+
+description = """
+FMLRC v2, based on the same methodology used by the original FMLRC. In benchmarks, the results between FMLRC v1 and v2 are nearly identical, but tests have shown that v2 uses approximately 50% of the run and CPU time compared to v1.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/HudsonAlpha/%(name)s/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['bb587b3fd48f6812a5055d71303e1e2991f66c77c0e8c6d76ae603790f5cdfb3']
+
+builddependencies = [
+    ('Rust', '1.73.0'),
+]
+
+local_comp_cmd = 'cargo build --release'
+cmds_map = [('.*', local_comp_cmd)]
+
+files_to_copy = [(['target/release/fmlrc2', 'target/release/fmlrc2-convert'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['fmlrc2', 'fmlrc2-convert']],
+    'dirs': [],
+}
+
+sanity_check_commands = ['%(namelower)s --help && %(namelower)s-convert --help']
+
+moduleclass = 'bio'

@@ -20,6 +20,22 @@ default_component_specs = {
 
 builddependencies = [('Go', '1.18.3')]
 
+local_wrapper_script = """#!/usr/bin/env bash
+
+if [[ -z "$APPTAINER_TMPDIR" ]]; then
+        export APPTAINER_TMPDIR="/var/tmp"
+        if [[ -d "/localscratch" && -w "/localscratch" ]]; then
+                export APPTAINER_TMPDIR="/localscratch"
+        fi
+fi
+if [[ "$CC_CLUSTER" == "narval" || "$CC_CLUSTER" == "beluga" ]]; then
+	if [[ "$(cat /proc/sys/user/max_user_namespaces)" == "0" ]]; then
+		echo "Temporarily running privileged Apptainer because user namespaces have been disabled" > /dev/stderr
+		exec /opt/software/apptainer-1.1/bin/apptainer ${1+"$@"}
+	fi
+fi
+exec %(installdir)s/bin/apptainer.bin ${1+"$@"}"""
+
 components = [
     ('apptainer', version, {
         'source_urls': ['https://github.com/%(name)s/%(name)s/releases/download/v%(version)s'],
@@ -37,6 +53,9 @@ components = [
         'configure_cmd': './mconfig',
         'prebuildopts': 'cd builddir &&',
         'preinstallopts': 'cd builddir &&',
+        'installopts': (' && mv %(installdir)s/bin/apptainer{,.bin}'
+                        ' && echo \'' + local_wrapper_script + '\' > %(installdir)s/bin/apptainer'
+                        ' && chmod 755 %(installdir)s/bin/apptainer'),
     }),
     ('squashfuse', '0.1.105', {
         'source_urls': ['https://github.com/vasi/%(name)s/archive/%(version)s'],

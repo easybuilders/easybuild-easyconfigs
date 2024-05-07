@@ -1,0 +1,42 @@
+easyblock = 'CMakeMake'
+
+name = 'qcint'
+version = '6.1.2'
+
+homepage = 'http://wiki.sunqm.net/libcint'
+description = """libcint is an open source library for analytical Gaussian integrals.
+qcint is an optimized libcint branch for the x86-64 platform."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/sunqm/qcint/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    '5732f524e664bb20f8efa5d3ec97a3066d4737040cdd05b1d7b0856f45f642fd',
+    '3d4d912c30e852f6b65693ad6fa7f9bc5cb562e89d18cc7e0200ce297b8c8d92'
+]
+patches = ["qcint-4.4.6_remove_sse3.patch"]
+
+builddependencies = [
+    ('CMake', '3.27.7')
+]
+
+separate_build_dir = True
+
+# Configuration from https://github.com/pyscf/pyscf/blob/1007524cd4c61c15a0767b70004d93fcf3bc25a5/pyscf/lib/CMakeLists.txt#L165
+configopts = " ".join([
+    "-DWITH_F12:STRING=ON",
+    "-DWITH_RANGE_COULOMB:STRING=1",
+    "-DWITH_FORTRAN:STRING=0",
+    "-DWITH_CINT2_INTERFACE:STRING=0",
+    "-DMIN_EXPCUTOFF:STRING=20",
+    "-DKEEP_GOING:STRING=1",
+    "-DBUILD_MARCH_NATIVE=OFF",
+])
+
+sanity_check_paths = {
+    'files': ['include/cint.h', 'lib/libcint.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'chem'

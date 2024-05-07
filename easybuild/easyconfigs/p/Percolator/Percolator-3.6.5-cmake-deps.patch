@@ -1,0 +1,152 @@
+diff -ruN a/cmake/FindTIRPC.cmake b/cmake/FindTIRPC.cmake
+--- a/cmake/FindTIRPC.cmake	1969-12-31 18:00:00.000000000 -0600
++++ b/cmake/FindTIRPC.cmake	2024-02-08 15:36:52.233555000 -0600
+@@ -0,0 +1,44 @@
++# FindTIRPC
++# ---------
++#
++# Find the native TIRPC includes and library.
++#
++# Result Variables
++# ^^^^^^^^^^^^^^^^
++#
++# This module will set the following variables in your project:
++#
++# ``TIRPC_INCLUDE_DIRS``
++#   where to find rpc.h, etc.
++# ``TIRPC_LIBRARIES``
++#   the libraries to link against to use TIRPC.
++# ``TIRPC_VERSION``
++#   the version of TIRPC found.
++# ``TIRPC_FOUND``
++#   true if the TIRPC headers and libraries were found.
++#
++
++find_package(PkgConfig QUIET)
++pkg_check_modules(PC_TIRPC libtirpc)
++
++find_path(TIRPC_INCLUDE_DIRS
++    NAMES netconfig.h
++    PATH_SUFFIXES tirpc
++    HINTS ${PC_TIRPC_INCLUDE_DIRS}
++)
++
++find_library(TIRPC_LIBRARIES
++    NAMES tirpc
++    HINTS ${PC_TIRPC_LIBRARY_DIRS}
++)
++
++set(TIRPC_VERSION ${PC_TIRPC_VERSION})
++
++include(FindPackageHandleStandardArgs)
++
++find_package_handle_standard_args(TIRPC
++    REQUIRED_VARS TIRPC_LIBRARIES TIRPC_INCLUDE_DIRS
++    VERSION_VAR TIRPC_VERSION
++)
++
++mark_as_advanced(TIRPC_INCLUDE_DIRS TIRPC_LIBRARIES)
+diff -ruN a/src/CMakeLists.txt b/src/CMakeLists.txt
+--- a/src/CMakeLists.txt	2024-02-08 03:52:15.000000000 -0600
++++ b/src/CMakeLists.txt	2024-02-08 16:49:42.893125000 -0600
+@@ -22,9 +22,9 @@
+ 
+   find_package(Threads REQUIRED) # XERCESC depends on pthread
+ 
+-  if(APPLE OR MINGW)
+-    find_package(CURL REQUIRED) # XERCESC depends on curl
+-  endif()
++  find_package(CURL REQUIRED) # XERCESC depends on curl
++
++  find_package(ICU REQUIRED COMPONENTS uc)
+ 
+   message(STATUS "Locating CodeSynthesis library with XSDDIR set to $ENV{XSDDIR}")
+   find_package(Xsd REQUIRED) # CODESYNTHESIS
+@@ -36,21 +36,15 @@
+   include_directories(${XSD_INCLUDE_DIR})
+ 
+   if(UNIX)
+-      set(CMAKE_PREFIX_PATH ${RPCDIR})
+-      find_package(RPC QUIET)
+-      set(HAVE_RPC ${RPC_FOUND})
+-      if(RPC_FOUND)
+-          message(STATUS "RPC found, will include headers from: ${RPC_INCLUDE_DIR}")
+-          message(STATUS "and libraries from                  : ${RPC_LIBRARIES}")
+-          set(LIBRARIES ${LIBRARIES} ${RPC_LIBRARIES})
+-          include_directories(${RPC_INCLUDE_DIR})
+-      else(RPC_FOUND)
+-          message(FATAL_ERROR "RPC support is mandatory.\n"
+-          "Note that SunRPC has been removed in glibc-2.26 and later, "
+-          "while being optional in earlier versions. Consider using the "
+-          "recommended and more modern libtirpc instead.\n"
+-          "Use -DRPCDIR=DIR to specify the rpc directory tree.\n")
+-      endif(RPC_FOUND)
++	  find_package(TIRPC REQUIRED)
++	  if(TIRPC_FOUND)
++		  message(STATUS "TIRPC found, will include headers from: ${TIRPC_INCLUDE_DIRS}")
++		  message(STATUS "and libraries from                    : ${TIRPC_LIBRARIES}")
++		  set(LIBRARIES ${LIBRARIES} ${TIRPC_LIBRARIES})
++		  include_directories(${TIRPC_INCLUDE_DIRS})
++	  else(TIRPC_FOUND)
++		  message(FATAL_ERROR "TIRPC support is mandatory.\n")
++	  endif(TIRPC_FOUND)
+   endif()
+ endif(XML_SUPPORT)
+ 
+@@ -172,7 +166,7 @@
+   endif()
+ 
+   # SET LIBRARIES FOR PERCOLATOR
+-  set(COMMON_LIBRARIES perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} ${RPC_LIBRARIES})
++  set(COMMON_LIBRARIES perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} ${TIRPC_LIBRARIES} ${ICU_UC_LIBRARIES})
+   if(NOT MSVC)
+     if(APPLE)
+       set(COMMON_LIBRARIES ${COMMON_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
+diff -ruN a/src/converters/CMakeLists.txt b/src/converters/CMakeLists.txt
+--- a/src/converters/CMakeLists.txt	2024-02-08 03:52:15.000000000 -0600
++++ b/src/converters/CMakeLists.txt	2024-02-08 17:05:42.558901000 -0600
+@@ -209,23 +209,20 @@
+ endif()
+ 
+ if(UNIX)
+-    set(CMAKE_PREFIX_PATH ${RPCDIR})
+-    find_package(RPC QUIET)
+-    set(HAVE_RPC ${RPC_FOUND})
+-    if(RPC_FOUND)
+-        message(STATUS "RPC found, will include headers from: ${RPC_INCLUDE_DIR}")
+-        message(STATUS "and libraries from                  : ${RPC_LIBRARIES}")
+-        set(LIBRARIES ${LIBRARIES} ${RPC_LIBRARIES})
+-        include_directories(${RPC_INCLUDE_DIR})
+-    else(RPC_FOUND)
+-        message(FATAL_ERROR "RPC support is mandatory.\n"
+-        "Note that SunRPC has been removed in glibc-2.26 and later, "
+-        "while being optional in earlier versions. Consider using the "
+-        "recommended and more modern libtirpc instead.\n"
+-        "Use -DRPCDIR=DIR to specify the rpc directory tree.\n")
+-    endif(RPC_FOUND)
++	find_package(TIRPC REQUIRED)
++	if(TIRPC_FOUND)
++		message(STATUS "TIRPC found, will include headers from: ${TIRPC_INCLUDE_DIRS}")
++		message(STATUS "and libraries from                    : ${TIRPC_LIBRARIES}")
++		set(LIBRARIES ${LIBRARIES} ${TIRPC_LIBRARIES})
++		include_directories(${TIRPC_INCLUDE_DIRS})
++	else(TIRPC_FOUND)
++        message(FATAL_ERROR "RPC support is mandatory.\n")
++	endif(TIRPC_FOUND)
+ endif()
+ 
++find_package(CURL REQUIRED)
++
++find_package(ICU REQUIRED COMPONENTS uc)
+ 
+ if(WIN32 AND BOOSTDB)
+   find_package( ZLIB REQUIRED )
+@@ -357,7 +354,7 @@
+ 
+ #target_link_libraries(converters ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+ 
+-target_link_libraries(converters ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${RPC_LIBRARIES})
++target_link_libraries(converters ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${TIRPC_LIBRARIES} ${CURL_LIBRARIES} ${ICU_UC_LIBRARIES})
+ 
+ if(APPLE)
+   target_link_libraries(converters ${OpenMP_CXX_LIBRARIES})

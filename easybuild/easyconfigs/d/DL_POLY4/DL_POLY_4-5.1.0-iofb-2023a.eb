@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'DL_POLY_4'
+version = '5.1.0'
+
+modaltsoftname="dl_poly4"
+
+homepage = 'http://www.scd.stfc.ac.uk/SCD/44516.aspx'
+description = "DL_POLY is a general purpose classical molecular dynamics (MD) simulation software developed at Daresbury Laboratory by I.T. Todorov and W. Smith."
+
+toolchain = {'name': 'iofb', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'openmp': True, 'pic': True}
+
+source_urls = ['https://gitlab.com/ccp5/dl-poly/-/archive/%(version)s/']
+sources= ['dl-poly-%(version)s.tar.gz']
+checksums = ['6a916dfb854a859b1efa415d2f216a723748fdf0c5af4ecb0c14121fbd34cb16']
+
+builddependencies = [('CMake', '3.27.7')]
+
+dependencies = [
+    ('netCDF', '4.9.2'),
+    ('netCDF-Fortran', '4.6.1'),
+    ('PLUMED', '2.9.0'),
+]
+
+local_configopts_single  = ' -DCMAKE_BUILD_TYPE=Release '
+local_configopts_single += ' -DWITH_MPI=ON '
+local_configopts_single += ' -DWITH_OPENMP=ON '
+local_configopts_single += ' -DWITH_NETCDF=ON '
+local_configopts_single += ' -DBUILD_TESTING=OFF '
+local_configopts_single += ' -DINTERNAL_KIM=OFF '
+local_configopts_single += ' -DINTERNAL_PLUMED=OFF '
+local_configopts_single += ' -DWITH_HALF_HALO=ON '
+local_configopts_single += ' -DWITH_ASSERT=OFF '
+local_configopts_single += ' -DWITH_COVERAGE=OFF '
+local_configopts_single += ' -DWITH_DFTBP=OFF '
+local_configopts_single += ' -DWITH_EVB=ON '
+local_configopts_single += ' -DWITH_EXP=ON '
+local_configopts_single += ' -DWITH_EXTRATIME=ON '
+
+configopts = [
+    local_configopts_single + '-DBUILD_SHARED_LIBS=ON',
+    local_configopts_single + '-DBUILD_SHARED_LIBS=OFF',
+]
+
+local_dlpoly_libraries= [
+   "libdlpoly.a", "libdlpolycore.a", "libdlpolykim.a", "libdlpolylfv.a", 
+   "libdlpolyplumed.a", "libdlpolythermo.a", "libdlpolyvv.a", 
+]
+
+sanity_check_paths = {
+    'files': ['bin/DLPOLY.Z', ['lib64/%s' % x for x in local_dlpoly_libraries]],
+    'dirs': [],
+}
+
+moduleclass = 'chem'

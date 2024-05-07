@@ -1,0 +1,58 @@
+##
+# @author :: Ali Kerrache, Prairies DRI/Digital Research Alliance of Canada, University of Manitoba.
+# @date :: Apr 09, 2024
+##
+
+easyblock = 'MakeCp'
+
+name = 'TauDEM'
+version = '5.3.8'
+
+homepage = 'https://github.com/dtarb/TauDEM/wiki'
+description = """
+TauDEM (Terrain Analysis Using Digital Elevation Models) is a suite of Digital Elevation Model (DEM) tools for the extraction and analysis of hydrologic information from topography as represented by a DEM.
+"""
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/dtarb/TauDEM/archive/refs/tags/v5.3.8.tar.gz ']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix-utilities-header.patch']
+checksums = [
+    {'v5.3.8.tar.gz': 'b230a26d18f9709f8eaf5d906f6a0ef3e5b6f28903afd0ea8e99fab13a626857'},
+    {'TauDEM-5.3.8_fix-utilities-header.patch': 'b5bc8cf9b319810d09e56b5392cfe36fa4b56130870643022f9793d389f585b7'},
+]
+
+dependencies = [
+    ('GDAL', '3.7.2'),
+    ('Python', '3.11'),
+    ('SciPy-Stack', '2023b')
+]
+
+parallel = 1
+
+start_dir = 'src'
+
+buildopts = ' && pushd ../Utilities/DEMVerifier/ && make && popd '
+
+local_taudem_binaries = [
+    "areadinf", "aread8", "moveoutletstostrm", "dropanalysis", 
+    "streamnet", "gridnet", "dinfflowdir", "d8flowdir", "d8flowpathextremeup", 
+    "d8hdisttostrm", "dinfavalanche", "dinfconclimaccum", "dinfdecayaccum", 
+    "dinfdistdown", "dinfdistup", "dinfrevaccum", "dinftranslimaccum", 
+    "dinfupdependence", "lengtharea", "peukerdouglas", "pitremove", "slopearea", 
+    "slopearearatio", "slopeavedown", "threshold", "twi", "gagewatershed", "connectdown",
+]
+
+files_to_copy = [
+    (['../%s' % x for x in local_taudem_binaries], 'bin'),
+    (['../Utilities/DEMVerifier/demverifier'], 'bin'),
+    "pyfiles", "Taudem5PCVS2015", "../GPLv3license.txt", "../README.txt",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_taudem_binaries],
+    'dirs': ['Taudem5PCVS2015', 'pyfiles']
+}
+
+moduleclass = 'geo'

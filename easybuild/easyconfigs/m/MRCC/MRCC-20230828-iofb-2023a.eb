@@ -1,0 +1,83 @@
+##
+# @Author: Ali Kerrache, University of Manitoba, Prairies DRI group, Digital Research Alliance of Canada.
+# @Date: April 19, 2024.
+##
+
+easyblock = 'CmdCp'
+
+name = 'MRCC'
+version = '20230828'
+
+local_version = '2023-08-28'
+
+homepage = 'https://www.mrcc.hu/index.php'
+description = """MRCC is a suite of ab initio and density functional quantum chemistry programs for high-accuracy electronic structure calculations developed and maintained by the quantum chemistry research group at the Department of Physical Chemistry and Materials Science, TU Budapest. Its special feature, the use of automated programming tools enabled the development of tensor manipulation routines which are independent of the number of indices of the corresponding tensors, thus significantly simplifying the general implementation of quantum chemical methods."""
+
+toolchain = {'name': 'iofb', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'pic': True}
+#toolchainopts = {'usempi': True, 'precise': True, 'extra_cflags': '-march=x86-64-v3 -axCore-AVX512 ', 'extra_cxxflags': '-march=x86-64-v3 -axCore-AVX512 ', 'extra_fflags': '-march=core-avx2 -axCore-AVX512 ', 'extra_fcflags': '-march=core-avx2 -axCore-AVX512 ', 'extra_f90flags': '-march=core-avx2 -axCore-AVX512 '}
+
+# It requires registration:
+# For more details: https://www.mrcc.hu/index.php/getting-started/download
+# sources = ['%(namelower)s.%(version)s.tar.gz']
+
+sources = ['%s.%s.tar.gz' % (name.lower(), local_version)]
+
+patches = [
+    #'%s-%s_fix-config.patch' % (name.lower(), local_version),
+    '%s-%s_fix-dmrcc.patch' % (name.lower(), local_version),
+    '%s-%s_fix-driver.patch' % (name.lower(), local_version),
+    '%s-%s_fix-drpa.patch' % (name.lower(), local_version),
+    '%s-%s_fix-fock.patch' % (name.lower(), local_version),
+    '%s-%s_fix-integ.patch' % (name.lower(), local_version),
+    '%s-%s_fix-minp.patch' % (name.lower(), local_version),
+    '%s-%s_fix-scf.patch' % (name.lower(), local_version),
+    '%s-%s_fix-teint.patch' % (name.lower(), local_version),
+    '%s-%s_fix-uccsd.patch'% (name.lower(), local_version),
+]
+checksums = [
+    {'mrcc.2023-08-28.tar.gz': 'fbeaed93c1e4a1137d3940ef6eb1cd3a12e42ea50db6c9a746d5a96d0c2ec854'},
+    #{'mrcc-2023-08-28_fix-config.patch': 'db7c0eac99037c98a6071c9436cf7eafdaf37dbb3af5138303663efccfb84552'},
+    {'mrcc-2023-08-28_fix-dmrcc.patch': '4eb2917ebb186d53887e363e1c412169ef182b8f841a72ad28f8dea21063ab55'},
+    {'mrcc-2023-08-28_fix-driver.patch': 'bb248b2dbf0113fbef5a72acd20b8738e513cca15af5a188ca74e02c05b08625'},
+    {'mrcc-2023-08-28_fix-drpa.patch': '9b99b6474442b7f51d57fb5fcc4b855b112e23d2ca84f74e6f80f3f267149937'},
+    {'mrcc-2023-08-28_fix-fock.patch': '7e8b57ab37cc1aa9a26f1f9479a8fefa24343c0068932969a054a0cea059dbfd'},
+    {'mrcc-2023-08-28_fix-integ.patch': '03475f8c10cf31d3431efaffe5760518b1d5a83e5c60565ae3ecdbf7e3f9bf39'},
+    {'mrcc-2023-08-28_fix-minp.patch': 'a47943dc9660a9a508ddb70e181eb647117c5fe13b5d99731f504fbc59eb5410'},
+    {'mrcc-2023-08-28_fix-scf.patch': '543e5421a71fad521209ffd2c162b20258f1d74b2adafa25a155ac37e1309eef'},
+    {'mrcc-2023-08-28_fix-teint.patch': 'afb701f9239f1527c6d552be80f8dd392704e3485036293842ede668834556e9'},
+    {'mrcc-2023-08-28_fix-uccsd.patch': '2e0e7b5500a4306ff5d0f4e0d9e6c36a5686e204088547a087ca6a42e69b175a'},
+]
+
+dependencies = [
+    ('libxc', '6.2.2'),
+]
+
+prebuildopts = 'export mpi=on && '
+
+cmds_map = [('.*', """
+   LIBS_LIBXC=$EBROOTLIBXC ./build.mrcc Intel -i64 -pOMP -pMPI=OpenMPI -nomkl -lflexiblas -lflexiblas
+"""),
+]
+
+local_executables = [
+    "goldstone", "mrcc", "integ", "scf", "ovirt", "orbloc", "mulli", 
+    "prop", "ccsd", "uccsd", "xmrcc", "drpa", "cis", "mp2f12", "minp", 
+    "qmmod", "dirac_mointegral_export", "dmrcc",
+    "drpa_mpi", "xmrcc_mpi", "ccsd_mpi", "dmrcc_mpi", "mrcc_mpi", "scf_mpi",
+]
+
+files_to_copy = [
+    (['%s' % x for x in local_executables], 'bin'), 
+    (['manual.pdf', "build.info", "build.mrcc", "build.mrcc.config"], 'doc'),
+      'BASIS', 'MTEST',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_executables],
+    'dirs': ['BASIS', 'MTEST'], 
+}
+
+group = "soft_mrcc"
+
+moduleclass = 'chem'
