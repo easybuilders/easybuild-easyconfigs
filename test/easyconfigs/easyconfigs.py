@@ -1368,8 +1368,10 @@ class EasyConfigTest(TestCase):
         failing_checks = []
         for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
-            configopts = ec.get('configopts')
             build_type = ec.get('build_type')
+            configopts = ec.get('configopts')
+            if isinstance(configopts, list):
+                configopts = ' '.join(configopts)
 
             if configopts and '-DCMAKE_BUILD_TYPE' in configopts:
                 failing_checks.append("Found -DCMAKE_BUILD_TYPE in configopts. Use build_type instead: %s" % ec_fn)
@@ -1385,8 +1387,10 @@ class EasyConfigTest(TestCase):
         failing_checks = []
         for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
-            configopts = ec.get('configopts')
             install_libdir = ec.get('install_libdir')
+            configopts = ec.get('configopts')
+            if isinstance(configopts, list):
+                configopts = ' '.join(configopts)
 
             cmake_install_opt_pattern = re.compile(r"-DCMAKE_INSTALL_LIBDIR(:PATH)?=[^\s]")
             if cmake_install_opt_pattern.search(configopts):
