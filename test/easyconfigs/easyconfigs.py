@@ -1390,7 +1390,9 @@ class EasyConfigTest(TestCase):
 
             cmake_install_opt_pattern = re.compile(r"-DCMAKE_INSTALL_LIBDIR(:PATH)?=[^\s]")
             if cmake_install_opt_pattern.search(configopts):
-                failing_checks.append("Found -DCMAKE_INSTALL_LIBDIR in configopts. Use install_libdir instead: %s" % ec_fn)
+                failing_checks.append(
+                    "Found -DCMAKE_INSTALL_LIBDIR in configopts. Use install_libdir instead: %s" % ec_fn
+                )
             if install_libdir == 'lib':
                 failing_checks.append("install_libdir was set to the default of 'lib': %s" % ec_fn)
 
