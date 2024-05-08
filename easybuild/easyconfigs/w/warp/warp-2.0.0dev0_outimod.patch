@@ -1,0 +1,17 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/05
+# change AreTomo arg --outImod to value of environment variable WARPWORKER_ARETOMO_OUTIMOD or default to 1
+# if unset
+diff -ru warp-fc22b43f5cd826a0760a1d95dc174ab67804d93b/WarpWorker/WarpWorker.cs warp-fc22b43f5cd826a0760a1d95dc174ab67804d93b_outimod/WarpWorker/WarpWorker.cs
+--- warp-fc22b43f5cd826a0760a1d95dc174ab67804d93b/WarpWorker/WarpWorker.cs	2024-05-01 06:29:12.000000000 +0200
++++ warp-fc22b43f5cd826a0760a1d95dc174ab67804d93b_outimod/WarpWorker/WarpWorker.cs	2024-05-03 11:31:50.290439034 +0200
+@@ -348,8 +348,8 @@
+                     string OutStack = T.RootName + "_aligned.mrc";
+                     string Axis = Options.AxisAngle.ToString() + (Options.DoAxisSearch ? " 0" : " -1");
+                     string AlignZ = Options.AlignZ.ToString();
+-
+-                    string Arguments = $"-InMrc {StackPath} -AngFile {AnglePath} -VolZ 0 -OutBin 0 -TiltAxis {Axis} -AlignZ {AlignZ} -TiltCor 1 -OutImod 1 -DarkTol 0 -OutMrc {OutStack} -Gpu {DeviceID}";
++                    string OutImod = (Environment.GetEnvironmentVariable("WARPWORKER_ARETOMO_OUTIMOD")!=null ) ? Environment.GetEnvironmentVariable("WARPWORKER_ARETOMO_OUTIMOD") : "1";
++                    string Arguments = $"-InMrc {StackPath} -AngFile {AnglePath} -VolZ 0 -OutBin 0 -TiltAxis {Axis} -AlignZ {AlignZ} -TiltCor 1 -OutImod {OutImod} -DarkTol 0 -OutMrc {OutStack} -Gpu {DeviceID}";
+ 
+                     Console.WriteLine($"Executing {Options.Executable} in {StackDir} with arguments: {Arguments}");
+ 
