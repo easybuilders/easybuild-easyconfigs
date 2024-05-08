@@ -40,8 +40,9 @@ dependencies = [
 # note: this *must* be the exact same commit as used in third_party/{xla,"other"}/workspace.bzl
 local_xla_commit = '4ccfe33c71665ddcbca5b127fefe8baa3ed632d4'
 local_tfrt_commit = '0aeefb1660d7e37964b2bb71b1f518096bda9a25'
-local_repo_opt = '--bazel_options="--override_repository=xla=%%(builddir)s/xla-%s" ' % local_xla_commit
-local_repo_opt += '--bazel_options="--override_repository=tf_runtime=%%(builddir)s/runtime-%s" ' % local_tfrt_commit
+
+local_extract_cmd = 'cp %s %(builddir)s/archives'
+local_repo_opt = '--bazel_options="--distdir=%(builddir)s/archives" '
 local_repo_opt += '--bazel_options="--action_env=TF_SYSTEM_LIBS=pybind11" '
 local_repo_opt += '--bazel_options="--action_env=CPATH=$EBROOTPYBIND11/include" '
 
@@ -94,10 +95,12 @@ components = [
             {
                 'download_filename': '%s.tar.gz' % local_xla_commit,
                 'filename': 'xla-%s.tar.gz' % local_xla_commit,
+                'extract_cmd': local_extract_cmd,
             },
             {
                 'download_filename': '%s.tar.gz' % local_tfrt_commit,
                 'filename': 'tf_runtime-%s.tar.gz' % local_tfrt_commit,
+                'extract_cmd': local_extract_cmd,
             },
         ],
         'source_urls': [
@@ -105,7 +108,7 @@ components = [
             'https://github.com/tensorflow/runtime/archive',
             'https://github.com/openxla/xla/archive'
         ],
-        'patches': [('jax-0.4.25_fix-pybind11-systemlib.patch', '../xla-' + local_xla_commit)],
+        'patches': ['jax-0.4.25_fix-pybind11-systemlib.patch'],
         'checksums': [
             {'jaxlib-v0.4.25.tar.gz':
              'fc1197c401924942eb14185a61688d0c476e3e81ff71f9dc95e620b57c06eec8'},
@@ -114,7 +117,7 @@ components = [
             {'tf_runtime-0aeefb1660d7e37964b2bb71b1f518096bda9a25.tar.gz':
              'a3df827d7896774cb1d80bf4e1c79ab05c268f29bd4d3db1fb5a4b9c2079d8e3'},
             {'jax-0.4.25_fix-pybind11-systemlib.patch':
-             'ec93de5628e4d40d3378b92784f7d1e5b0b43bd207a86badeffd44a42e0b1d47'},
+             'daad5b726d1a138431b05eb60ecf4c89c7b5148eb939721800bdf43d804ca033'},
         ],
         'start_dir': 'jax-jaxlib-v%(version)s',
         # Avoid warning (treated as error) in upb/table.c
