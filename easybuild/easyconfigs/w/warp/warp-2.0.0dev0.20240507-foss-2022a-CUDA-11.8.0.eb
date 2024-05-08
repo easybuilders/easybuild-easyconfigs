@@ -1,0 +1,102 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/04
+easyblock = 'CMakeMake'
+
+name = 'warp'
+local_ver = '2.0.0dev0'
+local_commit = '13cda8e29528bdd1e83960d25b3f109848225731'
+local_commit_date = '20240507'
+version = '%s.%s' % (local_ver, local_commit_date)
+
+local_dotnet_arch = 'x64'
+
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/warpem/warp'
+description = """Warp is a set of tools for cryo-EM and cryo-ET data processing including, among 
+other tools: Warp, M, WarpTools, MTools, MCore, and Noise2Map."""
+
+# stick to CUDA 11.x and therefore GCC < 12 due to use of cudaBindTexture2D in 
+# NativeAcceleration/gtom/src/Masking/IrregularSphereMask.cu
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'pic': True, 'cstd': 'c++17', 'usempi': True}
+
+# github_account = 'warpem'
+# sources = [{
+#     'filename': '%(name)s-%(version)s.tar.gz',
+#     'download_filename': '%s.tar.gz' % local_commit
+# ]
+
+
+source_urls = ['https://github.com/warpem/warp/archive/']
+sources = [{
+    'filename': '%s.%s.tar.gz' % (name, version),
+    'download_filename': '%s.tar.gz' % local_commit
+}]
+patches = [
+    ('warp-2.0.0dev0_cmake.patch', 1),
+    'warp-2.0.0dev0_inject_cudacc.patch',
+    'warp-2.0.0dev0_aretomo_exe_env.patch',
+    'warp-2.0.0dev0_outimod.patch',
+]
+checksums = [
+    {'warp.2.0.0dev0.20240507.tar.gz': 'e92c76fa06749aff72e6d3da3e5a74249955f76eea16a47001dc1a7e4b9db919'},
+    {'warp-2.0.0dev0_cmake.patch': 'd40152f787bde4f527c299d3af026ed5b7ad77f3431fa97446fa22a02b0d2971'},
+    {'warp-2.0.0dev0_inject_cudacc.patch': '6a1ab6b3b6760dccb327c2e98f3188b16abc5aa31f2d6484838a39a3452eb86c'},
+    {'warp-2.0.0dev0_aretomo_exe_env.patch': '0073993eb033c3a4ae3a71daeec75203dfa13420e8e11fa9e4fc80f9e0b1318a'},
+    {'warp-2.0.0dev0_outimod.patch': 'ee29b8e7e1d1fcef5ea14c16b14bc29bf2e26e7713f2b9d38014d987facc714c'},
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('dotNET-SDK', '8.0.204', '-linux-%s' % (local_dotnet_arch), SYSTEM)  # replace by mono?
+]
+
+dependencies = [
+    # stick to CUDA 11.x and therefore GCC < 12 due to use of cudaBindTexture2D in 
+    # NativeAcceleration/gtom/src/Masking/IrregularSphereMask.cu
+    # Use CUDA 11.8 due to https://github.com/pytorch/pytorch/issues/88038
+    ('CUDA', '11.8.0', '', SYSTEM),
+    ('cuDNN', '8.7.0.84', versionsuffix, SYSTEM),
+    ('Python', '3.10.4'),
+    ('PyTorch', '2.0.1', versionsuffix),
+    ('LibTIFF', '4.3.0'),
+    ('AreTomo2', '1.0.0', versionsuffix),
+    ('AreTomo', '1.3.4', versionsuffix, SYSTEM),
+    ('torchvision', '0.15.2', versionsuffix),
+]
+
+local_binaries = [
+    'Frankenmap', 'MCore', 'MrcConverter', 'MTools', 'Noise2Half',
+    'Noise2Map', 'Noise2Mic', 'Noise2Tomo', 'WarpTools', 'WarpWorker'
+]
+
+local_configopts = [
+    "-DCMAKE_CUDA_ARCHITECTURES='%(cuda_cc_cmake)s'",
+    "-DCUDA_ARCHS='%(cuda_cc_cmake)s'",
+    '-DDOTNET_RT=linux-%s' % local_dotnet_arch,
+    '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
+    '-DCUDA_VERBOSE_BUILD=ON',
+    '-DCAFFE2_USE_CUDNN=1'
+    '-DDOTNET_BINARIES="%s"' % " ".join(local_binaries),
+]
+configopts = ' '.join(local_configopts)
+
+build_type = ''
+
+sanity_check_paths = {
+    'files': ['lib/libSkiaSharp.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'lib'],
+}
+
+sanity_check_commands = [
+    # '%s --help' % x for x in local_binaries  
+    'WarpTools --help'
+]
+
+modextravars = {
+    'RELION_EXTERNAL_RECONSTRUCT_EXECUTABLE': '$(which Noise2Half)',
+    'WARPTOOLS_ARETOMO_EXE': 'AreTomo2',
+    'WARPWORKER_ARETOMO_OUTIMOD': '2',
+}
+
+moduleclass = 'bio'
