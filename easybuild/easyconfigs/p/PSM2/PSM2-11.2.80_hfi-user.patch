@@ -1,0 +1,981 @@
+diff -urN libpsm2-11.2.80.orig/include/rdma/hfi/hfi1_ioctl.h libpsm2-11.2.80/include/rdma/hfi/hfi1_ioctl.h
+--- libpsm2-11.2.80.orig/include/rdma/hfi/hfi1_ioctl.h	1970-01-01 00:00:00.000000000 +0000
++++ libpsm2-11.2.80/include/rdma/hfi/hfi1_ioctl.h	2019-02-27 21:28:05.000000000 +0000
+@@ -0,0 +1,283 @@
++/*
++ *
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
++ *
++ * GPL LICENSE SUMMARY
++ *
++ * Copyright(c) 2015 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of version 2 of the GNU General Public License as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * BSD LICENSE
++ *
++ * Copyright(c) 2015 Intel Corporation.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ *  - Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ *  - Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ *  - Neither the name of Intel Corporation nor the names of its
++ *    contributors may be used to endorse or promote products derived
++ *    from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ *
++ */
++
++#ifndef _LINUX__HFI1_IOCTL_H
++#define _LINUX__HFI1_IOCTL_H
++#include <linux/types.h>
++
++/*
++ * This structure is passed to the driver to tell it where
++ * user code buffers are, sizes, etc.   The offsets and sizes of the
++ * fields must remain unchanged, for binary compatibility.  It can
++ * be extended, if userversion is changed so user code can tell, if needed
++ */
++struct hfi1_user_info {
++	/*
++	 * version of user software, to detect compatibility issues.
++	 * Should be set to HFI1_USER_SWVERSION.
++	 */
++	__u32 userversion;
++	__u32 pad;
++	/*
++	 * If two or more processes wish to share a context, each process
++	 * must set the subcontext_cnt and subcontext_id to the same
++	 * values.  The only restriction on the subcontext_id is that
++	 * it be unique for a given node.
++	 */
++	__u16 subctxt_cnt;
++	__u16 subctxt_id;
++	/* 128bit UUID passed in by PSM. */
++	__u8 uuid[16];
++};
++
++struct hfi1_ctxt_info {
++	__u64 runtime_flags;    /* chip/drv runtime flags (HFI1_CAP_*) */
++	__u32 rcvegr_size;      /* size of each eager buffer */
++	__u16 num_active;       /* number of active units */
++	__u16 unit;             /* unit (chip) assigned to caller */
++	__u16 ctxt;             /* ctxt on unit assigned to caller */
++	__u16 subctxt;          /* subctxt on unit assigned to caller */
++	__u16 rcvtids;          /* number of Rcv TIDs for this context */
++	__u16 credits;          /* number of PIO credits for this context */
++	__u16 numa_node;        /* NUMA node of the assigned device */
++	__u16 rec_cpu;          /* cpu # for affinity (0xffff if none) */
++	__u16 send_ctxt;        /* send context in use by this user context */
++	__u16 egrtids;          /* number of RcvArray entries for Eager Rcvs */
++	__u16 rcvhdrq_cnt;      /* number of RcvHdrQ entries */
++	__u16 rcvhdrq_entsize;  /* size (in bytes) for each RcvHdrQ entry */
++	__u16 sdma_ring_size;   /* number of entries in SDMA request ring */
++};
++
++struct hfi1_tid_info {
++	/* virtual address of first page in transfer */
++	__u64 vaddr;
++	/* pointer to tid array. this array is big enough */
++	__u64 tidlist;
++	/* number of tids programmed by this request */
++	__u32 tidcnt;
++	/* length of transfer buffer programmed by this request */
++	__u32 length;
++};
++
++#ifdef NVIDIA_GPU_DIRECT
++/*
++ * struct hfi1_tid_info_v2 is a copy of struct hfi1_tid_info plus a flags field
++ * added at the end of the structure. A new structure is defined instead of
++ * adding the flags field to struct hfi1_tid_info to prevent changing the IOCTL
++ * command number and maintain backwards compatibility with older PSM versions.
++ */
++struct hfi1_tid_info_v2 {
++	/* virtual address of first page in transfer */
++	__u64 vaddr;
++	/* pointer to tid array. this array is big enough */
++	__u64 tidlist;
++	/* number of tids programmed by this request */
++	__u32 tidcnt;
++	/* length of transfer buffer programmed by this request */
++	__u32 length;
++	/*  Buffer flags. See HFI1_BUF_* */
++	__u16 flags;
++};
++#endif
++
++/*
++ * This structure is returned by the driver immediately after
++ * open to get implementation-specific info, and info specific to this
++ * instance.
++ *
++ * This struct must have explicit pad fields where type sizes
++ * may result in different alignments between 32 and 64 bit
++ * programs, since the 64 bit * bit kernel requires the user code
++ * to have matching offsets
++ */
++struct hfi1_base_info {
++	/* version of hardware, for feature checking. */
++	__u32 hw_version;
++	/* version of software, for feature checking. */
++	__u32 sw_version;
++	/* Job key */
++	__u16 jkey;
++	__u16 padding1;
++	/*
++	 * The special QP (queue pair) value that identifies PSM
++	 * protocol packet from standard IB packets.
++	 */
++	__u32 bthqp;
++	/* PIO credit return address, */
++	__u64 sc_credits_addr;
++	/*
++	 * Base address of write-only pio buffers for this process.
++	 * Each buffer has sendpio_credits*64 bytes.
++	 */
++	__u64 pio_bufbase_sop;
++	/*
++	 * Base address of write-only pio buffers for this process.
++	 * Each buffer has sendpio_credits*64 bytes.
++	 */
++	__u64 pio_bufbase;
++	/* address where receive buffer queue is mapped into */
++	__u64 rcvhdr_bufbase;
++	/* base address of Eager receive buffers. */
++	__u64 rcvegr_bufbase;
++	/* base address of SDMA completion ring */
++	__u64 sdma_comp_bufbase;
++	/*
++	 * User register base for init code, not to be used directly by
++	 * protocol or applications.  Always maps real chip register space.
++	 * the register addresses are:
++	 * ur_rcvhdrhead, ur_rcvhdrtail, ur_rcvegrhead, ur_rcvegrtail,
++	 * ur_rcvtidflow
++	 */
++	__u64 user_regbase;
++	/* notification events */
++	__u64 events_bufbase;
++	/* status page */
++	__u64 status_bufbase;
++	/* rcvhdrtail update */
++	__u64 rcvhdrtail_base;
++	/*
++	 * shared memory pages for subctxts if ctxt is shared; these cover
++	 * all the processes in the group sharing a single context.
++	 * all have enough space for the num_subcontexts value on this job.
++	 */
++	__u64 subctxt_uregbase;
++	__u64 subctxt_rcvegrbuf;
++	__u64 subctxt_rcvhdrbuf;
++};
++
++#ifdef NVIDIA_GPU_DIRECT
++
++/*
++ * Use this for the version field in all the GDR related ioctl parameter
++ * structures.  We are starting with version 1.
++ */
++#define HFI1_GDR_VERSION 0x1UL
++
++/**
++ * struct hfi1_sdma_gpu_cache_evict_params - arguments for sdma cache evict
++ * @evict_params_in: Values passed into the ioctl
++ * @version: The version number for this ioctl.
++ * @pages_to_evict: The number of GPU pages we want evicted from this cache.
++ * @evict_params_out: Values returned from the ioctl
++ * @pages_evicted: The number of GPU pages that were actually evicted.
++ * @pages_in_cache: The number of GPU pages resident in this cache.
++ */
++struct hfi1_sdma_gpu_cache_evict_params {
++	union {
++		struct {
++			__u32 version;
++			__u32 pages_to_evict;
++		} evict_params_in;
++		struct {
++			__u32 pages_evicted;
++			__u32 pages_in_cache;
++		} evict_params_out;
++	};
++};
++
++/**
++ * struct hfi1_gdr_query_parms - argument for gdr driver ioctl command
++ * @query_parms_in: Union member containing values passed into the ioctl()
++ * @version: A way to pass in a version number for this interface.
++ * @gpu_buf_addr: The starting address of a gpu buffer to be operated upon
++ * @gpu_buf_size: The size of a gpu buffer to be operated upon
++ * @query_params_out: Union member containig values pass back from ioctl()
++ * @host_buf_addr: the host address of a pinned and mmaped gpu buffer.
++ *
++ * This structure is associated with the gdr_ops driver's ioctl commands;
++ *
++ *	HFI1_IOCTL_GDR_GPU_PIN_MMAP
++ *	HFI1_IOCTL_GDR_GPU_MUNMAP_UNPIN
++ *
++ * It is used to pass in GPU buffer descriptors into the hfi_ops
++ * driver.
++ *
++ * The driver will reject any gpu buffer address or gpu buffer size that
++ * is NOT rounded to GPU buffer boundaries.  GPU buffer addresses must
++ * start on a NV_GPU_PAGE_SIZE boundary, and a multiple of NV_GPU_PAGE_SIZE
++ * in length.
++ *
++ */
++struct hfi1_gdr_query_params {
++	union {
++		struct {
++			__u32 version;
++			__u32 gpu_buf_size;
++			__u64 gpu_buf_addr;
++		} query_params_in;
++		struct {
++			__u64 host_buf_addr;
++		} query_params_out;
++	};
++};
++
++/**
++ * struct hfi1_gdr_cache_evict_params - arguments for GDR cache evict ioctl
++ * @version: The version number for this ioctl.
++ * @evict_params_in: Values passed into the ioctl
++ * @pages_to_evict: The number of GPU pages we want evicted from this cache.
++ * @evict_params_out: Values returned from the ioctl
++ * @pages_evicted: The number of GPU pages that were actually evicted.
++ * @pages_in_cache: The number of GPU pages resident in this cache.
++ */
++struct hfi1_gdr_cache_evict_params {
++	union {
++		struct {
++			__u32 version;
++			__u32 pages_to_evict;
++		} evict_params_in;
++		struct {
++			__u32 pages_evicted;
++			__u32 pages_in_cache;
++		} evict_params_out;
++	};
++};
++#endif
++#endif /* _LINIUX__HFI1_IOCTL_H */
+diff -urN libpsm2-11.2.80.orig/include/rdma/hfi/hfi1_user.h libpsm2-11.2.80/include/rdma/hfi/hfi1_user.h
+--- libpsm2-11.2.80.orig/include/rdma/hfi/hfi1_user.h	1970-01-01 00:00:00.000000000 +0000
++++ libpsm2-11.2.80/include/rdma/hfi/hfi1_user.h	2019-02-27 21:28:05.000000000 +0000
+@@ -0,0 +1,287 @@
++/*
++ *
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
++ *
++ * GPL LICENSE SUMMARY
++ *
++ * Copyright(c) 2015 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of version 2 of the GNU General Public License as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * BSD LICENSE
++ *
++ * Copyright(c) 2015 Intel Corporation.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ *  - Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ *  - Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ *  - Neither the name of Intel Corporation nor the names of its
++ *    contributors may be used to endorse or promote products derived
++ *    from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ *
++ */
++
++/*
++ * This file contains defines, structures, etc. that are used
++ * to communicate between kernel and user code.
++ */
++
++#ifndef _LINUX__HFI1_USER_H
++#define _LINUX__HFI1_USER_H
++
++#include <linux/types.h>
++#include <rdma/rdma_user_ioctl.h>
++
++/*
++ * This version number is given to the driver by the user code during
++ * initialization in the spu_userversion field of hfi1_user_info, so
++ * the driver can check for compatibility with user code.
++ *
++ * The major version changes when data structures change in an incompatible
++ * way. The driver must be the same for initialization to succeed.
++ */
++#define HFI1_USER_SWMAJOR 6
++
++/*
++ * Minor version differences are always compatible
++ * a within a major version, however if user software is larger
++ * than driver software, some new features and/or structure fields
++ * may not be implemented; the user code must deal with this if it
++ * cares, or it must abort after initialization reports the difference.
++ */
++#define HFI1_USER_SWMINOR 3
++
++/*
++ * We will encode the major/minor inside a single 32bit version number.
++ */
++#define HFI1_SWMAJOR_SHIFT 16
++
++/*
++ * Set of HW and driver capability/feature bits.
++ * These bit values are used to configure enabled/disabled HW and
++ * driver features. The same set of bits are communicated to user
++ * space.
++ */
++#define HFI1_CAP_DMA_RTAIL        (1UL <<  0) /* Use DMA'ed RTail value */
++#define HFI1_CAP_SDMA             (1UL <<  1) /* Enable SDMA support */
++#define HFI1_CAP_SDMA_AHG         (1UL <<  2) /* Enable SDMA AHG support */
++#define HFI1_CAP_EXTENDED_PSN     (1UL <<  3) /* Enable Extended PSN support */
++#define HFI1_CAP_HDRSUPP          (1UL <<  4) /* Enable Header Suppression */
++#define HFI1_CAP_TID_RDMA         (1UL <<  5) /* Enable TID RDMA operations */
++#define HFI1_CAP_USE_SDMA_HEAD    (1UL <<  6) /* DMA Hdr Q tail vs. use CSR */
++#define HFI1_CAP_MULTI_PKT_EGR    (1UL <<  7) /* Enable multi-packet Egr buffs*/
++#define HFI1_CAP_NODROP_RHQ_FULL  (1UL <<  8) /* Don't drop on Hdr Q full */
++#define HFI1_CAP_NODROP_EGR_FULL  (1UL <<  9) /* Don't drop on EGR buffs full */
++#define HFI1_CAP_TID_UNMAP        (1UL << 10) /* Disable Expected TID caching */
++#define HFI1_CAP_PRINT_UNIMPL     (1UL << 11) /* Show for unimplemented feats */
++#define HFI1_CAP_ALLOW_PERM_JKEY  (1UL << 12) /* Allow use of permissive JKEY */
++#define HFI1_CAP_NO_INTEGRITY     (1UL << 13) /* Enable ctxt integrity checks */
++#define HFI1_CAP_PKEY_CHECK       (1UL << 14) /* Enable ctxt PKey checking */
++#define HFI1_CAP_STATIC_RATE_CTRL (1UL << 15) /* Allow PBC.StaticRateControl */
++#define HFI1_CAP_OPFN             (1UL << 16) /* Enable the OPFN protocol */
++#define HFI1_CAP_SDMA_HEAD_CHECK  (1UL << 17) /* SDMA head checking */
++#define HFI1_CAP_EARLY_CREDIT_RETURN (1UL << 18) /* early credit return */
++
++#ifdef NVIDIA_GPU_DIRECT
++/*
++ * Bit-63 is being used instead of the LSB that is available since
++ * HFI1_CAP_GPUDIRECT_OT will only be used in an out of tree driver.
++ */
++#define HFI1_CAP_GPUDIRECT_OT     (1UL << 63) /* GPU Direct RDMA support */
++#endif
++
++#define HFI1_RCVHDR_ENTSIZE_2    (1UL << 0)
++#define HFI1_RCVHDR_ENTSIZE_16   (1UL << 1)
++#define HFI1_RCVDHR_ENTSIZE_32   (1UL << 2)
++
++#define _HFI1_EVENT_FROZEN_BIT         0
++#define _HFI1_EVENT_LINKDOWN_BIT       1
++#define _HFI1_EVENT_LID_CHANGE_BIT     2
++#define _HFI1_EVENT_LMC_CHANGE_BIT     3
++#define _HFI1_EVENT_SL2VL_CHANGE_BIT   4
++#define _HFI1_EVENT_TID_MMU_NOTIFY_BIT 5
++#define _HFI1_MAX_EVENT_BIT _HFI1_EVENT_TID_MMU_NOTIFY_BIT
++
++#define HFI1_EVENT_FROZEN            (1UL << _HFI1_EVENT_FROZEN_BIT)
++#define HFI1_EVENT_LINKDOWN          (1UL << _HFI1_EVENT_LINKDOWN_BIT)
++#define HFI1_EVENT_LID_CHANGE        (1UL << _HFI1_EVENT_LID_CHANGE_BIT)
++#define HFI1_EVENT_LMC_CHANGE        (1UL << _HFI1_EVENT_LMC_CHANGE_BIT)
++#define HFI1_EVENT_SL2VL_CHANGE      (1UL << _HFI1_EVENT_SL2VL_CHANGE_BIT)
++#define HFI1_EVENT_TID_MMU_NOTIFY    (1UL << _HFI1_EVENT_TID_MMU_NOTIFY_BIT)
++
++#ifdef NVIDIA_GPU_DIRECT
++#define HFI1_BUF_GPU_MEM_BIT 0
++#define HFI1_BUF_GPU_MEM     (1UL << HFI1_BUF_GPU_MEM_BIT)
++#endif
++
++/*
++ * These are the status bits readable (in ASCII form, 64bit value)
++ * from the "status" sysfs file.  For binary compatibility, values
++ * must remain as is; removed states can be reused for different
++ * purposes.
++ */
++#define HFI1_STATUS_INITTED       0x1    /* basic initialization done */
++/* Chip has been found and initialized */
++#define HFI1_STATUS_CHIP_PRESENT 0x20
++/* IB link is at ACTIVE, usable for data traffic */
++#define HFI1_STATUS_IB_READY     0x40
++/* link is configured, LID, MTU, etc. have been set */
++#define HFI1_STATUS_IB_CONF      0x80
++/* A Fatal hardware error has occurred. */
++#define HFI1_STATUS_HWERROR     0x200
++
++/*
++ * Number of supported shared contexts.
++ * This is the maximum number of software contexts that can share
++ * a hardware send/receive context.
++ */
++#define HFI1_MAX_SHARED_CTXTS 8
++
++/*
++ * Poll types
++ */
++#define HFI1_POLL_TYPE_ANYRCV     0x0
++#define HFI1_POLL_TYPE_URGENT     0x1
++
++enum hfi1_sdma_comp_state {
++	FREE = 0,
++	QUEUED,
++	COMPLETE,
++	ERROR
++};
++
++/*
++ * SDMA completion ring entry
++ */
++struct hfi1_sdma_comp_entry {
++	__u32 status;
++	__u32 errcode;
++};
++
++/*
++ * Device status and notifications from driver to user-space.
++ */
++struct hfi1_status {
++	__u64 dev;      /* device/hw status bits */
++	__u64 port;     /* port state and status bits */
++	char freezemsg[0];
++};
++
++enum sdma_req_opcode {
++	EXPECTED = 0,
++	EAGER
++};
++
++#define HFI1_SDMA_REQ_VERSION_MASK 0xF
++#define HFI1_SDMA_REQ_VERSION_SHIFT 0x0
++#define HFI1_SDMA_REQ_OPCODE_MASK 0xF
++#define HFI1_SDMA_REQ_OPCODE_SHIFT 0x4
++#define HFI1_SDMA_REQ_IOVCNT_MASK 0xFF
++#define HFI1_SDMA_REQ_IOVCNT_SHIFT 0x8
++
++struct sdma_req_info {
++	/*
++	 * bits 0-3 - version (currently used only for GPU direct)
++	 *               1 - user space is NOT using flags field
++	 *               2 - user space is using flags field
++	 * bits 4-7 - opcode (enum sdma_req_opcode)
++	 * bits 8-15 - io vector count
++	 */
++	__u16 ctrl;
++	/*
++	 * Number of fragments contained in this request.
++	 * User-space has already computed how many
++	 * fragment-sized packet the user buffer will be
++	 * split into.
++	 */
++	__u16 npkts;
++	/*
++	 * Size of each fragment the user buffer will be
++	 * split into.
++	 */
++	__u16 fragsize;
++	/*
++	 * Index of the slot in the SDMA completion ring
++	 * this request should be using. User-space is
++	 * in charge of managing its own ring.
++	 */
++	__u16 comp_idx;
++#ifdef NVIDIA_GPU_DIRECT
++	/*
++	 * Buffer flags for this request. See HFI1_BUF_*
++	 */
++	__u16 flags;
++#endif
++} __attribute__((packed));
++
++/*
++ * SW KDETH header.
++ * swdata is SW defined portion.
++ */
++struct hfi1_kdeth_header {
++	__le32 ver_tid_offset;
++	__le16 jkey;
++	__le16 hcrc;
++	__le32 swdata[7];
++} __attribute__((packed));
++
++/*
++ * Structure describing the headers that User space uses. The
++ * structure above is a subset of this one.
++ */
++struct hfi1_pkt_header {
++	__le16 pbc[4];
++	__be16 lrh[4];
++	__be32 bth[3];
++	struct hfi1_kdeth_header kdeth;
++} __attribute__((packed));
++
++
++/*
++ * The list of usermode accessible registers.
++ */
++enum hfi1_ureg {
++	/* (RO)  DMA RcvHdr to be used next. */
++	ur_rcvhdrtail = 0,
++	/* (RW)  RcvHdr entry to be processed next by host. */
++	ur_rcvhdrhead = 1,
++	/* (RO)  Index of next Eager index to use. */
++	ur_rcvegrindextail = 2,
++	/* (RW)  Eager TID to be processed next */
++	ur_rcvegrindexhead = 3,
++	/* (RO)  Receive Eager Offset Tail */
++	ur_rcvegroffsettail = 4,
++	/* For internal use only; max register number. */
++	ur_maxreg,
++	/* (RW)  Receive TID flow table */
++	ur_rcvtidflowtable = 256
++};
++
++#endif /* _LINIUX__HFI1_USER_H */
+diff -urN libpsm2-11.2.80.orig/include/rdma/ib_user_mad.h libpsm2-11.2.80/include/rdma/ib_user_mad.h
+--- libpsm2-11.2.80.orig/include/rdma/ib_user_mad.h	1970-01-01 00:00:00.000000000 +0000
++++ libpsm2-11.2.80/include/rdma/ib_user_mad.h	2019-02-01 15:04:28.000000000 +0000
+@@ -0,0 +1,233 @@
++/*
++ * Copyright (c) 2004 Topspin Communications.  All rights reserved.
++ * Copyright (c) 2005 Voltaire, Inc. All rights reserved.
++ *
++ * This software is available to you under a choice of one of two
++ * licenses.  You may choose to be licensed under the terms of the GNU
++ * General Public License (GPL) Version 2, available from the file
++ * COPYING in the main directory of this source tree, or the
++ * OpenIB.org BSD license below:
++ *
++ *     Redistribution and use in source and binary forms, with or
++ *     without modification, are permitted provided that the following
++ *     conditions are met:
++ *
++ *      - Redistributions of source code must retain the above
++ *        copyright notice, this list of conditions and the following
++ *        disclaimer.
++ *
++ *      - Redistributions in binary form must reproduce the above
++ *        copyright notice, this list of conditions and the following
++ *        disclaimer in the documentation and/or other materials
++ *        provided with the distribution.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
++ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++#ifndef IB_USER_MAD_H
++#define IB_USER_MAD_H
++
++#include <linux/types.h>
++#include <rdma/rdma_user_ioctl.h>
++
++/*
++ * Increment this value if any changes that break userspace ABI
++ * compatibility are made.
++ */
++#define IB_USER_MAD_ABI_VERSION	5
++
++/*
++ * Make sure that all structs defined in this file remain laid out so
++ * that they pack the same way on 32-bit and 64-bit architectures (to
++ * avoid incompatibility between 32-bit userspace and 64-bit kernels).
++ */
++
++/**
++ * ib_user_mad_hdr_old - Old version of MAD packet header without pkey_index
++ * @id - ID of agent MAD received with/to be sent with
++ * @status - 0 on successful receive, ETIMEDOUT if no response
++ *   received (transaction ID in data[] will be set to TID of original
++ *   request) (ignored on send)
++ * @timeout_ms - Milliseconds to wait for response (unset on receive)
++ * @retries - Number of automatic retries to attempt
++ * @qpn - Remote QP number received from/to be sent to
++ * @qkey - Remote Q_Key to be sent with (unset on receive)
++ * @lid - Remote lid received from/to be sent to
++ * @sl - Service level received with/to be sent with
++ * @path_bits - Local path bits received with/to be sent with
++ * @grh_present - If set, GRH was received/should be sent
++ * @gid_index - Local GID index to send with (unset on receive)
++ * @hop_limit - Hop limit in GRH
++ * @traffic_class - Traffic class in GRH
++ * @gid - Remote GID in GRH
++ * @flow_label - Flow label in GRH
++ */
++struct ib_user_mad_hdr_old {
++	__u32	id;
++	__u32	status;
++	__u32	timeout_ms;
++	__u32	retries;
++	__u32	length;
++	__be32	qpn;
++	__be32  qkey;
++	__be16	lid;
++	__u8	sl;
++	__u8	path_bits;
++	__u8	grh_present;
++	__u8	gid_index;
++	__u8	hop_limit;
++	__u8	traffic_class;
++	__u8	gid[16];
++	__be32	flow_label;
++};
++
++/**
++ * ib_user_mad_hdr - MAD packet header
++ *   This layout allows specifying/receiving the P_Key index.  To use
++ *   this capability, an application must call the
++ *   IB_USER_MAD_ENABLE_PKEY ioctl on the user MAD file handle before
++ *   any other actions with the file handle.
++ * @id - ID of agent MAD received with/to be sent with
++ * @status - 0 on successful receive, ETIMEDOUT if no response
++ *   received (transaction ID in data[] will be set to TID of original
++ *   request) (ignored on send)
++ * @timeout_ms - Milliseconds to wait for response (unset on receive)
++ * @retries - Number of automatic retries to attempt
++ * @qpn - Remote QP number received from/to be sent to
++ * @qkey - Remote Q_Key to be sent with (unset on receive)
++ * @lid - Remote lid received from/to be sent to
++ * @sl - Service level received with/to be sent with
++ * @path_bits - Local path bits received with/to be sent with
++ * @grh_present - If set, GRH was received/should be sent
++ * @gid_index - Local GID index to send with (unset on receive)
++ * @hop_limit - Hop limit in GRH
++ * @traffic_class - Traffic class in GRH
++ * @gid - Remote GID in GRH
++ * @flow_label - Flow label in GRH
++ * @pkey_index - P_Key index
++ */
++struct ib_user_mad_hdr {
++	__u32	id;
++	__u32	status;
++	__u32	timeout_ms;
++	__u32	retries;
++	__u32	length;
++	__be32	qpn;
++	__be32  qkey;
++	__be16	lid;
++	__u8	sl;
++	__u8	path_bits;
++	__u8	grh_present;
++	__u8	gid_index;
++	__u8	hop_limit;
++	__u8	traffic_class;
++	__u8	gid[16];
++	__be32	flow_label;
++	__u16	pkey_index;
++	__u8	reserved[6];
++};
++
++/**
++ * ib_user_mad - MAD packet
++ * @hdr - MAD packet header
++ * @data - Contents of MAD
++ *
++ */
++struct ib_user_mad {
++	struct ib_user_mad_hdr hdr;
++	__aligned_u64	data[0];
++};
++
++/*
++ * Earlier versions of this interface definition declared the
++ * method_mask[] member as an array of __u32 but treated it as a
++ * bitmap made up of longs in the kernel.  This ambiguity meant that
++ * 32-bit big-endian applications that can run on both 32-bit and
++ * 64-bit kernels had no consistent ABI to rely on, and 64-bit
++ * big-endian applications that treated method_mask as being made up
++ * of 32-bit words would have their bitmap misinterpreted.
++ *
++ * To clear up this confusion, we change the declaration of
++ * method_mask[] to use unsigned long and handle the conversion from
++ * 32-bit userspace to 64-bit kernel for big-endian systems in the
++ * compat_ioctl method.  Unfortunately, to keep the structure layout
++ * the same, we need the method_mask[] array to be aligned only to 4
++ * bytes even when long is 64 bits, which forces us into this ugly
++ * typedef.
++ */
++typedef unsigned long __attribute__((aligned(4))) packed_ulong;
++#define IB_USER_MAD_LONGS_PER_METHOD_MASK (128 / (8 * sizeof (long)))
++
++/**
++ * ib_user_mad_reg_req - MAD registration request
++ * @id - Set by the kernel; used to identify agent in future requests.
++ * @qpn - Queue pair number; must be 0 or 1.
++ * @method_mask - The caller will receive unsolicited MADs for any method
++ *   where @method_mask = 1.
++ * @mgmt_class - Indicates which management class of MADs should be receive
++ *   by the caller.  This field is only required if the user wishes to
++ *   receive unsolicited MADs, otherwise it should be 0.
++ * @mgmt_class_version - Indicates which version of MADs for the given
++ *   management class to receive.
++ * @oui: Indicates IEEE OUI when mgmt_class is a vendor class
++ *   in the range from 0x30 to 0x4f. Otherwise not used.
++ * @rmpp_version: If set, indicates the RMPP version used.
++ *
++ */
++struct ib_user_mad_reg_req {
++	__u32	id;
++	packed_ulong method_mask[IB_USER_MAD_LONGS_PER_METHOD_MASK];
++	__u8	qpn;
++	__u8	mgmt_class;
++	__u8	mgmt_class_version;
++	__u8    oui[3];
++	__u8	rmpp_version;
++};
++
++/**
++ * ib_user_mad_reg_req2 - MAD registration request
++ *
++ * @id                 - Set by the _kernel_; used by userspace to identify the
++ *                       registered agent in future requests.
++ * @qpn                - Queue pair number; must be 0 or 1.
++ * @mgmt_class         - Indicates which management class of MADs should be
++ *                       receive by the caller.  This field is only required if
++ *                       the user wishes to receive unsolicited MADs, otherwise
++ *                       it should be 0.
++ * @mgmt_class_version - Indicates which version of MADs for the given
++ *                       management class to receive.
++ * @res                - Ignored.
++ * @flags              - additional registration flags; Must be in the set of
++ *                       flags defined in IB_USER_MAD_REG_FLAGS_CAP
++ * @method_mask        - The caller wishes to receive unsolicited MADs for the
++ *                       methods whose bit(s) is(are) set.
++ * @oui                - Indicates IEEE OUI to use when mgmt_class is a vendor
++ *                       class in the range from 0x30 to 0x4f. Otherwise not
++ *                       used.
++ * @rmpp_version       - If set, indicates the RMPP version to use.
++ */
++enum {
++	IB_USER_MAD_USER_RMPP = (1 << 0),
++};
++#define IB_USER_MAD_REG_FLAGS_CAP (IB_USER_MAD_USER_RMPP)
++struct ib_user_mad_reg_req2 {
++	__u32	id;
++	__u32	qpn;
++	__u8	mgmt_class;
++	__u8	mgmt_class_version;
++	__u16   res;
++	__u32   flags;
++	__aligned_u64 method_mask[2];
++	__u32   oui;
++	__u8	rmpp_version;
++	__u8	reserved[3];
++};
++
++#endif /* IB_USER_MAD_H */
+diff -urN libpsm2-11.2.80.orig/include/rdma/rdma_user_ioctl.h libpsm2-11.2.80/include/rdma/rdma_user_ioctl.h
+--- libpsm2-11.2.80.orig/include/rdma/rdma_user_ioctl.h	1970-01-01 00:00:00.000000000 +0000
++++ libpsm2-11.2.80/include/rdma/rdma_user_ioctl.h	2018-08-23 03:06:42.000000000 +0000
+@@ -0,0 +1,162 @@
++/*
++ * Copyright (c) 2016 Mellanox Technologies, LTD. All rights reserved.
++ *
++ * This software is available to you under a choice of one of two
++ * licenses.  You may choose to be licensed under the terms of the GNU
++ * General Public License (GPL) Version 2, available from the file
++ * COPYING in the main directory of this source tree, or the
++ * OpenIB.org BSD license below:
++ *
++ *     Redistribution and use in source and binary forms, with or
++ *     without modification, are permitted provided that the following
++ *     conditions are met:
++ *
++ *      - Redistributions of source code must retain the above
++ *        copyright notice, this list of conditions and the following
++ *        disclaimer.
++ *
++ *      - Redistributions in binary form must reproduce the above
++ *        copyright notice, this list of conditions and the following
++ *        disclaimer in the documentation and/or other materials
++ *        provided with the distribution.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
++ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++#ifndef RDMA_USER_IOCTL_H
++#define RDMA_USER_IOCTL_H
++
++#include <linux/types.h>
++#include <linux/ioctl.h>
++#include <rdma/ib_user_mad.h>
++#include <rdma/hfi/hfi1_ioctl.h>
++
++/* Documentation/ioctl/ioctl-number.txt */
++#define RDMA_IOCTL_MAGIC	0x1b
++/* Legacy name, for user space application which already use it */
++#ifndef IB_IOCTL_MAGIC
++#define IB_IOCTL_MAGIC		RDMA_IOCTL_MAGIC
++#endif
++
++#define RDMA_VERBS_IOCTL \
++	_IOWR(RDMA_IOCTL_MAGIC, 1, struct ib_uverbs_ioctl_hdr)
++
++#define UVERBS_ID_NS_MASK 0xF000
++#define UVERBS_ID_NS_SHIFT 12
++
++enum {
++	/* User input */
++	UVERBS_ATTR_F_MANDATORY = 1U << 0,
++	/*
++	 * Valid output bit should be ignored and considered set in
++	 * mandatory fields. This bit is kernel output.
++	 */
++	UVERBS_ATTR_F_VALID_OUTPUT = 1U << 1,
++};
++
++struct ib_uverbs_attr {
++	__u16 attr_id;		/* command specific type attribute */
++	__u16 len;		/* only for pointers */
++	__u16 flags;		/* combination of UVERBS_ATTR_F_XXXX */
++	__u16 reserved;
++	__u64 data;		/* ptr to command, inline data or idr/fd */
++};
++
++struct ib_uverbs_ioctl_hdr {
++	__u16 length;
++	__u16 object_id;
++	__u16 method_id;
++	__u16 num_attrs;
++	__u64 reserved;
++	struct ib_uverbs_attr  attrs[0];
++};
++
++/*
++ * General blocks assignments
++ * It is closed on purpose do not expose it it user space
++ * #define MAD_CMD_BASE		0x00
++ * #define HFI1_CMD_BAS		0xE0
++ */
++
++/* MAD specific section */
++#ifndef IB_USER_MAD_REGISTER_AGENT
++#define IB_USER_MAD_REGISTER_AGENT	_IOWR(RDMA_IOCTL_MAGIC, 0x01, struct ib_user_mad_reg_req)
++#endif
++#ifndef IB_USER_MAD_UNREGISTER_AGENT
++#define IB_USER_MAD_UNREGISTER_AGENT	_IOW(RDMA_IOCTL_MAGIC,  0x02, __u32)
++#endif
++#ifndef IB_USER_MAD_ENABLE_PKEY
++#define IB_USER_MAD_ENABLE_PKEY		_IO(RDMA_IOCTL_MAGIC,   0x03)
++#endif
++#ifndef IB_USER_MAD_REGISTER_AGENT2
++#define IB_USER_MAD_REGISTER_AGENT2	_IOWR(RDMA_IOCTL_MAGIC, 0x04, struct ib_user_mad_reg_req2)
++#endif
++
++/* HFI specific section */
++/* allocate HFI and context */
++#define HFI1_IOCTL_ASSIGN_CTXT		_IOWR(RDMA_IOCTL_MAGIC, 0xE1, struct hfi1_user_info)
++/* find out what resources we got */
++#define HFI1_IOCTL_CTXT_INFO		_IOW(RDMA_IOCTL_MAGIC,  0xE2, struct hfi1_ctxt_info)
++/* set up userspace */
++#define HFI1_IOCTL_USER_INFO		_IOW(RDMA_IOCTL_MAGIC,  0xE3, struct hfi1_base_info)
++/* update expected TID entries */
++#define HFI1_IOCTL_TID_UPDATE		_IOWR(RDMA_IOCTL_MAGIC, 0xE4, struct hfi1_tid_info)
++/* free expected TID entries */
++#define HFI1_IOCTL_TID_FREE		_IOWR(RDMA_IOCTL_MAGIC, 0xE5, struct hfi1_tid_info)
++/* force an update of PIO credit */
++#define HFI1_IOCTL_CREDIT_UPD		_IO(RDMA_IOCTL_MAGIC,   0xE6)
++/* control receipt of packets */
++#define HFI1_IOCTL_RECV_CTRL		_IOW(RDMA_IOCTL_MAGIC,  0xE8, int)
++/* set the kind of polling we want */
++#define HFI1_IOCTL_POLL_TYPE		_IOW(RDMA_IOCTL_MAGIC,  0xE9, int)
++/* ack & clear user status bits */
++#define HFI1_IOCTL_ACK_EVENT		_IOW(RDMA_IOCTL_MAGIC,  0xEA, unsigned long)
++/* set context's pkey */
++#define HFI1_IOCTL_SET_PKEY		_IOW(RDMA_IOCTL_MAGIC,  0xEB, __u16)
++/* reset context's HW send context */
++#define HFI1_IOCTL_CTXT_RESET		_IO(RDMA_IOCTL_MAGIC,   0xEC)
++/* read TID cache invalidations */
++#define HFI1_IOCTL_TID_INVAL_READ	_IOWR(RDMA_IOCTL_MAGIC, 0xED, struct hfi1_tid_info)
++/* get the version of the user cdev */
++#define HFI1_IOCTL_GET_VERS		_IOR(RDMA_IOCTL_MAGIC,  0xEE, int)
++
++#ifdef NVIDIA_GPU_DIRECT
++#define HFI1_IOCTL_SDMA_CACHE_EVICT     _IOWR(RDMA_IOCTL_MAGIC, 0xFD, struct hfi1_sdma_gpu_cache_evict_params)
++
++#define HFI1_IOCTL_TID_UPDATE_V2        _IOWR(RDMA_IOCTL_MAGIC, 0xFE, struct hfi1_tid_info_v2)
++
++/*
++ * gdr_ops driver ioctl related declarations
++ *	HFI1_IOCTL_GDR_GPU_PIN_MMAP
++ *		return the host address of a gpu buffer that has been pinned
++ *		and mmaped.
++ *
++ *	HFI1_IOCTL_GDR_GPU_MUNMAP_UNPIN
++ *		unpin a gpu buffer and unmap it from the user address space.
++ *
++ *	HFI1_IOCTL_GDR_GPU_CACHE_EVICT
++ *		Try to evict a number of pages from the GDR cache.
++ *		Return the number of pages evicted, and the
++ *		number of pages in that cache.
++ */
++#define GDR_IOCTL_MAGIC 0xDA /* See Documentation/ioctl/ioctl-number.txt */
++
++#define HFI1_IOCTL_GDR_GPU_PIN_MMAP \
++	_IOWR(GDR_IOCTL_MAGIC, 1, struct hfi1_gdr_query_params)
++
++#define HFI1_IOCTL_GDR_GPU_MUNMAP_UNPIN \
++	_IOWR(GDR_IOCTL_MAGIC, 2, struct hfi1_gdr_query_params)
++
++#define HFI1_IOCTL_GDR_GPU_CACHE_EVICT \
++	_IOWR(GDR_IOCTL_MAGIC, 3, struct hfi1_gdr_cache_evict_params)
++
++#endif /* NVIDIA_GPU_DIRECT */
++
++#endif /* RDMA_USER_IOCTL_H */
