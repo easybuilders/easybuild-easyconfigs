@@ -34,7 +34,7 @@ exts_list = [
         'checksums': [
             {'1.0.2.tar.gz': '9d3129e4d0b53acc38519a259cc1e20a215dff0cbce51cef874545ca2fff005a'},
             {'CheckM2-1.0.2_fileManager.py-database-fix.patch':
-             '67a58b4169a013eac6587af1cc12cdc8297ea2685046af780096cec5b88b7001'},
+             '5f0124ed41a25587b4f98abaacc8005b61c13778616fe7ecf0c9b12f3d034cfa'},
         ],
     }),
 ]
@@ -43,11 +43,8 @@ postinstallcmds = [
     # np.float is depreciated in newer numpy
     'sed -i "s/np.float/float/g" %(installdir)s/lib/python%(pyshortver)s/site-packages/checkm2/predictQuality.py',
     # update DB_LOCATION_DEFINITION in defaultValues.py to env CHECKM2DB
-    'sed -i "31d" %(installdir)s/lib/python%(pyshortver)s/site-packages/checkm2/defaultValues.py',
-    "sed -i '30 a\    DB_LOCATION_DEFINITION = os.environ.get(\"CHECKM2DB\", \"Not Set\")' " +
-    "%(installdir)s/lib/python%(pyshortver)s/site-packages/checkm2/defaultValues.py",
-    # convert defaultsValues.py to dos style
-    "unix2dos %(installdir)s/lib/python%(pyshortver)s/site-packages/checkm2/defaultValues.py",
+    "cd %(installdir)s/lib/python%(pyshortver)s/site-packages/checkm2 && "
+    r"sed -i 's/\(DB_LOCATION_DEFINITION\) = .*/\1 = os.environ.get(\"CHECKM2DB\", \"Not Set\")/' defaultValues.py",
 ]
 
 modloadmsg = """You need download a diamond database now and setup a path to this db:
