@@ -1,0 +1,57 @@
+easyblock = 'ConfigureMake'
+
+name = 'FMM3D'
+version = '1.0.4'
+
+homepage = 'https://fmm3d.readthedocs.io'
+description = """Flatiron Institute Fast Multipole Libraries: a set of libraries to compute N-body
+interactions governed by the Laplace and Helmholtz equations, to a specified precision, in three dimensions, on a
+multi-core shared-memory machine."""
+
+toolchain = {'name': 'gcccoreflexiblas', 'version': '2023a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/flatironinstitute/FMM3D/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['26b16ce6f963bf33011cbd690a27d4cba2c3a3eb9ab8505febe1ca39abcfc40a']
+
+builddependencies = [
+    ('pytest', '7.4.0'),
+]
+
+dependencies = [
+    ('SciPy-Stack', '2023b'),
+]
+
+skipsteps = ['configure']
+
+multi_deps = {'Python': ["3.11", "3.10"]}
+
+installopts = 'FAST_KER=ON PREFIX="%(installdir)s/lib" && '
+installopts += 'export FMM_FLIBS="%(installdir)s/lib/libfmm3d.a $FFLAGS" && '
+# also install Python bindings
+installopts += "make python-dist && pip install --no-deps --ignore-installed --prefix %(installdir)s python/dist/*.whl"
+
+sanity_check_paths = {
+    'files': ['lib/libfmm3d.a', 'lib/libfmm3d.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import fmm3dpy'",
+    "python -c 'from fmm3dpy import hfmm3d'",
+    "python -c 'from fmm3dpy import hfmm3d_fortran'",
+    "python -c 'from fmm3dpy import emfmm3d'",
+    "python -c 'from fmm3dpy import emfmm3d_fortran'",
+    "python -c 'from fmm3dpy import lfmm3d'",
+    "python -c 'from fmm3dpy import lfmm3d_fortran'",
+    "python -c 'from fmm3dpy import stfmm3d'",
+    "python -c 'from fmm3dpy import stfmm3d_fortran'",
+    "cd %(builddir)s/FMM3D-* && make test",
+    "cd %(builddir)s/FMM3D-* && python python/test/test_hfmm.py",
+    "cd %(builddir)s/FMM3D-* && python python/test/test_lfmm.py",
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'lib'
