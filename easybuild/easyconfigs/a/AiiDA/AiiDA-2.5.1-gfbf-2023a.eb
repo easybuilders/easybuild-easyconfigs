@@ -1,0 +1,47 @@
+import os
+
+easyblock = 'Binary'
+
+name = 'AiiDA'
+version = '2.5.1'
+
+homepage = ''
+description = """"""
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+
+sources = [
+    'aiida_bootstrap.sh',
+    'aiida_cleanup.sh',
+]
+checksums = []
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+dependencies = [
+    ('aiida-core', '2.5.1'),
+    ('RabbitMQ', '3.13.1'),
+    ('PostgreSQL', '16.1'),
+]
+
+extract_sources = True
+
+install_cmd = "chmod +x *.sh && mkdir -p %(installdir)s/bin && cp *.sh %(installdir)s/bin"
+
+sanity_check_paths = {
+    'files': ['bin/aiida_bootstrap.sh', 'bin/aiida_cleanup.sh'],
+    'dirs': [],
+}
+
+moduleclass = 'tools'
+
+modluafooter = """
+local home = os.getenv("HOME")
+local eb_config_dir = pathJoin(home, ".eb_aiida")
+
+setenv("EB_CONFIG_DIR", eb_config_dir)
+setenv("PGHOST", eb_config_dir)
+setenv("RABBITMQ_NODENAME", "rabbit-" .. os.getenv("USER"))
+setenv("AIIDA_PATH", eb_config_dir)
+"""

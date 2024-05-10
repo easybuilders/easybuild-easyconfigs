@@ -7,13 +7,12 @@ module load aiida-core
 echo "WARNING: this script will completely remove all data from the AiiDA database, repository and configuration."
 read -p "Are you sure you want to continue? [y/N] " -n 1 -r REPLY
 
-if [[ $REPLY =~ ^[nN]$ ]]; then
+if [[ ! "$REPLY" == "y" ]]; then
     echo "Aborting."
     exit 1
 fi
 
 LOGHEADER="== "
-EB_CONFIG_DIR=$HOME/.eb_aiida
 
 AIIDA_LOGHEADER="${LOGHEADER}AiiDA:"
 RMQ_LOGHEADER="${LOGHEADER}RabbitMQ:"
@@ -21,9 +20,6 @@ PG_LOGHEADER="${LOGHEADER}PostgreSQL:"
 
 PGDATA="`cat $EB_CONFIG_DIR/psql_datadir`"
 AIIDA_DIR="`cat ${EB_CONFIG_DIR}/aiida_dir`"
-
-export RABBITMQ_NODENAME=rabbit-$USER
-
 
 echo "${AIIDA_LOGHEADER} Stopping AiiDA daemon"
 verdi daemon stop
