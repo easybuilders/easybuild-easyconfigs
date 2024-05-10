@@ -1,0 +1,42 @@
+easyblock = 'CMakeMake'
+
+name = 'rocm-smi'
+version = '5.6.0'
+
+homepage = 'https://github.com/RadeonOpenCompute/rocm_smi_lib'
+description = """The ROCm System Management Interface Library, or ROCm SMI
+library, is part of the Radeon Open Compute ROCm software stack. It is a C
+library for Linux that provides a user space interface for applications to
+monitor and control GPU applications."""
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ["https://github.com/RadeonOpenCompute/rocm_smi_lib/archive/"]
+sources = ["rocm-%(version)s.tar.gz"]
+patches = [
+    '%(name)s-%(version)s_add_option_for_docs_building.patch',
+]
+checksums = [
+    {'rocm-5.6.0.tar.gz': '88be875948a29454b8aacced8bb8ad967502a7a074ecbc579ed673c1650a2f7e'},
+    {'rocm-smi-5.6.0_add_option_for_docs_building.patch':
+     '372c1d4aea43164f204533dede710812c72b0c65cfe5f6bfb020d3925321c87d'},
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.23.1'),
+]
+
+# This package hardcodes 'noexecheap' as a linker flag which is not supported
+# by 'ld.gold', to get around we explicitly force 'ld.bfd' here
+configopts = "-DCMAKE_CXX_FLAGS='-fuse-ld=bfd' -DENABLE_DOCS=OFF"
+
+sanity_check_paths = {
+    'files': ['bin/rocm-smi', 'libexec/rocm_smi/rocm_smi.py', 'lib/librocm_smi64.%s' % SHLIB_EXT,
+              'libexec/rocm_smi/rsmiBindings.py'],
+    'dirs': ['rocm_smi/include'],
+}
+sanity_check_commands = ['rocm-smi --help']
+
+moduleclass = 'tools'

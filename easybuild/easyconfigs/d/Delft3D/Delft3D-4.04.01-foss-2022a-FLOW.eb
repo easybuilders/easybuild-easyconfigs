@@ -1,0 +1,88 @@
+easyblock = 'ConfigureMake'
+
+name = 'Delft3D'
+_revision = '142633'
+version = '4.04.01'
+versionsuffix = '-FLOW'
+
+homepage = 'https://oss.deltares.nl/web/delft3d'
+description = """
+Simulation of multi-dimensional hydrodynamic flows and transport phenomena, including
+sediments. Delft3D-FLOW is part of Delft3D 4.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'usempi': True}
+
+download_instructions = """
+There is no tarball provided; it needs to be created through an svn checkout:
+  1. svn checkout https://svn.oss.deltares.nl/repos/delft3d/trunk@%s
+  2. tar -czvf %%(name)s-%%(version)s.tgz trunk
+""" % _revision
+
+sources = [SOURCE_TGZ]
+patches = ['Delft3D-4.04.01_use-external-esmf.patch']
+checksums = [
+    # Delft3D-4.04.01.tgz
+    None,
+    # Delft3D-4.04.01_use-external-esmf.patch'
+    '225d76fb3eea22e203f1a9f371b4fd07d75a8478de35a7428c1a1f85b344323c',
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('libtool', '2.4.7'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('Ruby', '3.0.5'),
+    ('Autotools', '20220317'),
+    ('M4', '1.4.19'),
+]
+
+dependencies = [
+    ('netCDF-Fortran', '4.6.0'),
+    ('METIS', '5.1.0'),
+    ('PETSc', '3.17.4'),
+    ('expat', '2.4.8'),
+    ('ESMF', '8.3.0'),
+]
+
+parallel = 1
+
+start_dir = 'src'
+
+preconfigopts = 'export FCFLAGS="$FCFLAGS -fallow-argument-mismatch -I${CPATH//:/ -I}" && '
+preconfigopts += 'export FFLAGS="$FFLAGS -fallow-argument-mismatch -I${CPATH//:/ -I}" && '
+# syntax was made invalid in c++11
+preconfigopts += "sed -i 's/if (spec < 0)/if (spec == nullptr)/g' utils_lgpl/delftonline/src/delftonline/server.cpp && "
+# avoid comparing logical with integer
+preconfigopts += r"sed -i 's/if (has_umean \/= 0)/if (has_umean .neqv. .false.)/g' "
+preconfigopts += "engines_gpl/flow2d3d/packages/flow2d3d_io/src/input/restart_trim_flow.f90 && "
+preconfigopts += "sed -i -e 's/-recursive/-frecursive/g' -e 's/-traceback/-fbacktrace/g' configure.ac && "
+# copy ESMF_RegridWeightGen_in_Delft3D-WAVE.sh script
+preconfigopts += "cp third_party_open/esmf/lnx64/scripts/ESMF_RegridWeightGen_in_Delft3D-WAVE.sh . && "
+# remove esmf precompiled binaries
+preconfigopts += "rm -r third_party_open/esmf && libtoolize && "
+preconfigopts += './autogen.sh && '
+preconfigopts += 'cd third_party_open/kdtree2 && ./autogen.sh && cd - && '
+
+configopts = ' --with-netcdf'
+configopts += ' --with-mpi --with-metis --with-petsc'
+
+# remove spurious double -l flags causing build failure
+prebuildopts = "sed -i.backup 's/-l -l//g' libtool config.lt config.status && "
+
+install_cmd = 'make ds-install'
+
+postinstallcmds = ["cp %(start_dir)s/ESMF_RegridWeightGen_in_Delft3D-WAVE.sh %(installdir)s/bin/"]
+
+sanity_check_paths = {
+    'files': ['bin/d_hydro', 'bin/ESMF_RegridWeightGen_in_Delft3D-WAVE.sh'],
+    'dirs': ['lib', 'share']
+}
+
+sanity_check_commands = [
+    'd_hydro -? |grep Usage:',
+]
+
+moduleclass = 'phys'
