@@ -5,7 +5,6 @@ module load PostgreSQL
 module load aiida-core
 
 LOGHEADER="== "
-EB_CONFIG_DIR=$HOME/.eb_aiida
 
 #######################################################################
 # PostgreSQL
@@ -89,8 +88,6 @@ fi
 RMQ_LOGHEADER="${LOGHEADER}RabbitMQ:"
 RMQ_BASEDIR=${EB_CONFIG_DIR}/rabbitmq
 
-
-export RABBITMQ_NODENAME=rabbit-${USER}
 export RABBITMQ_MNESIA_BASE=${RMQ_BASEDIR}/mnesia
 export RABBITMQ_LOG_BASE=${RMQ_BASEDIR}/logs
 export RABBITMQ_CONFIG_FILES=${RMQ_BASEDIR}/config
