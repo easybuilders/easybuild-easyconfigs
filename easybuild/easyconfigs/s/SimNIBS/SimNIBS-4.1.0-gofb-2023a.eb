@@ -1,0 +1,74 @@
+easyblock = 'PythonBundle'
+
+name = 'SimNIBS'
+version = '4.1.0'
+
+homepage = 'https://simnibs.github.io/simnibs'
+description = "SimNIBS is a free and open source software package for the Simulation of Non-invasive Brain Stimulation"
+
+toolchain = {'name': 'gofb', 'version': '2023a'}
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('Eigen', '3.4.0'),
+    ('Boost', '1.82.0'),
+    ('CGAL', '5.5.2'),
+    ('tbb', '2021.10.0'),
+]
+dependencies = [
+    ('SciPy-Stack', '2023b'),
+    ('mpi4py', '3.1.4'),
+    ('HDF5', '1.14.2'),
+    ('freeglut', '3.4.0'),
+    ('libwebp', '1.3.1'),
+    ('NiBabel', '5.2.0', '', ('GCCcore', '12.3.0')),
+    ('Qt5', '5.15.11'),
+    ('pytest', '7.4.0'),
+    ('FMM3D', '1.0.4'),
+    ('charm-gems', '1.3.3'),
+]
+multi_deps = {'Python': ['3.11', '3.10']}
+
+exts_list = [
+    ('msgpack', '1.0.7', {
+        'checksums': ['572efc93db7a4d27e404501975ca6d2d9775705c2d922390d878fcf768d92c87'],
+    }),
+    ('PyOpenGL', '3.1.7', {
+        'modulename': 'OpenGL',
+        'checksums': ['eef31a3888e6984fd4d8e6c9961b184c9813ca82604d37fe3da80eb000a76c86'],
+    }),
+    ('PyOpenGL-accelerate', '3.1.7', {
+        'modulename': 'OpenGL_accelerate',
+        'checksums': ['2b123621273a939f7fd2ec227541e399f9b5d4e815d69ae0bdb1b6c70a293680'],
+    }),
+    (name, version, {
+        'patches': ['%(name)s-%(version)s_setup.py-fix.patch'],
+        'source_urls': ['https://github.com/simnibs/simnibs/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': [
+            {'v4.1.0.tar.gz': '7de88b8bd6d2ec0bab74ba78fc42f65843888e9fad2dc520abe72e928037c393'},
+            {'SimNIBS-4.1.0_setup.py-fix.patch': '786cb3f75e1b68d8686145da732f81e25e33b8e6684be4b39e89e2c0f310417e'},
+        ],
+	'preinstallopts': r'echo "__version__ = \"%(version)s\"" > simnibs/_version.py && '
+    }),
+]
+
+postinstallcmds = [
+    'cd %(installdir)s/bin && '
+    'ln -s %(installdir)s/lib/python%(pyshortver)s/site-packages/simnibs/external/bin/linux/gmsh gmsh && '
+    'ln -s %(installdir)s/lib/python%(pyshortver)s/site-packages/simnibs/external/bin/linux/meshfix meshfix && '
+    'ln -s %(installdir)s/lib/python%(pyshortver)s/site-packages/simnibs/external/dwi2cond dwi2cond',
+]
+
+use_pip = True
+sanity_pip_check = True
+
+local_bin_list = ['dwi2cond', 'gmsh', 'meshfix', 'simnibs', 'simnibs_gui', 'charm']
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_bin_list],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["simnibs --help"]
+
+moduleclass = 'bio'
