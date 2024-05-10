@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'Elmer'
+version = '9.0'
+
+homepage = 'https://www.csc.fi/web/elmer/elmer'
+description = """Elmer is an open source multiphysical simulation software mainly developed by 
+CSC - IT Center for Science (CSC). Elmer includes physical models of fluid dynamics, structural 
+mechanics, electromagnetics, heat transfer and acoustics, for example. These are described by 
+partial differential equations which Elmer solves by the Finite Element Method (FEM)."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+toolchainopts = {'opt': True, 'optarch': True}
+
+source_urls = ['https://github.com/ElmerCSC/elmerfem/archive/']
+sources = ['release-%(version)s.tar.gz']
+patches = ['Elmer-9.0-DCRComplexSolve.patch', 'Elmer-9.0-Qwt-6.2-Fix.patch', 'Elmer-9.0-renderarea-Qt5.patch']
+checksums = [
+    {'release-9.0.tar.gz': '08c5bf261e87ff37456c1aa0372db3c83efabe4473ea3ea0b8ec66f5944d1aa0'},
+    {'Elmer-9.0-DCRComplexSolve.patch': '456e9b255c4cebffd04c1243001a284fcdbda27cb586640f3f852c67511881eb'},
+    {'Elmer-9.0-Qwt-6.2-Fix.patch': 'c21b83364e08d2cd8bf3f2d62dfd16ed4f9bc478b8808cf36ecffa5174247b32'},
+    {'Elmer-9.0-renderarea-Qt5.patch': '66c185f4e15ce738b85887b138258e70d94d7ae786e52b863624a4b538761639'},
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('Hypre', '2.27.0'),
+    ('MUMPS', '5.6.1', '-metis'),
+    ('Qt5', '5.15.7'),
+    ('Qwt', '6.2.0'),
+]
+
+configopts = '-DWITH_ELMERGUI:BOOL=TRUE -DWITH_QT5:BOOL=TRUE '
+configopts += '-DWITH_MPI:BOOL=TRUE '
+configopts += '-DBLAS_LIBRARIES="-L$EBVARBLAS_LAPACK_INC_DIR $EBVARLIBBLAS" '
+configopts += '-DLAPACK_LIBRARIES="-L$EBVARBLAS_LAPACK_INC_DIR $EBVARLIBLAPACK" '
+configopts += '-DSCALAPACK_LIBRARIES="-L$EBVARSCALAPACK_LIB_DIR $EBVARLIBSCALAPACK" '
+
+sanity_check_paths = {
+    'files': ['lib/elmersolver/libelmersolver.so'] +
+             ['bin/%s' % x for x in ['elmerf90', 'ElmerGrid', 'elmerld', 'ElmerSolver',
+              'ElmerSolver_mpi', 'GebhardtFactors', 'matc', 'Mesh2D', 'ViewFactors']],
+    'dirs': ['share/elmersolver/include']
+}
+
+sanity_check_commands = ["ElmerSolver -v"]
+
+moduleclass = 'cae'
