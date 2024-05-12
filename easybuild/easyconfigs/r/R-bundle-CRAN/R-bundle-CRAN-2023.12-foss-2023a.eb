@@ -64,6 +64,14 @@ local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver !
 local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
 exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
 
+# the dbarts extension needs an additional compiler flag on Arm systems to prevent "incompatible types" errors
+# cfr. https://github.com/vdorie/dbarts/issues/66
+if ARCH == 'aarch64':
+    local_dbarts_preinstallopts = 'sed -i "s|-c partition_neon.c|-flax-vector-conversions -c partition_neon.c|"'
+    local_dbarts_preinstallopts += ' src/misc/Makefile && '
+else:
+    local_dbarts_preinstallopts = ''
+
 # !! order of packages is important !!
 # packages updated on 10th December 2023
 exts_list = [
@@ -2577,6 +2585,7 @@ exts_list = [
     }),
     ('dbarts', '0.9-25', {
         'checksums': ['39a78228ead17c92bd88fe5f959c888412a22a7cbbc0edfa9c09072b4182d870'],
+        'preinstallopts': local_dbarts_preinstallopts,
     }),
     ('proftools', '0.99-3', {
         'checksums': ['e034eb1531af54013143da3e15229e1d4c2260f8eb79c93846014db3bdefb724'],
@@ -3406,6 +3415,9 @@ exts_list = [
     }),
     ('fixest', '0.11.2', {
         'checksums': ['2dee113a0689e5c4dd842c451d35c9a94a5b37536f9484611a877c1ea10e2b65'],
+    }),
+    ('cmna', '1.0.5', {
+        'checksums': ['7cf99880cb70e8fd0b022184167888b1ad32dca503e0250c1d552a84f0613898'],
     }),
 ]
 
