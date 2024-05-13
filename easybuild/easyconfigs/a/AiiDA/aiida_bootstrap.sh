@@ -4,11 +4,11 @@ if [ -z ${EB_CONFIG_DIR} ]; then
     echo "ERROR: EB_CONFIG_DIR is not set"
     exit 1
 fi
-if [ -z ${EBRABBITMQ} ]; then
+if [ -z ${EBROOTRABBITMQ} ]; then
     echo "ERROR: Module RabbitMQ is not loaded"
     exit 1
 fi
-if [ -z ${EBPOSTGRESQL} ]; then
+if [ -z ${EBROOTPOSTGRESQL} ]; then
     echo "ERROR: Module PostgreSQL is not loaded"
     exit 1
 fi
