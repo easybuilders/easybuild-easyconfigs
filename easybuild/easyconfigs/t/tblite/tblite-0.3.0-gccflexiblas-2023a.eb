@@ -1,0 +1,61 @@
+easyblock = 'CMakeNinja'
+
+name = 'tblite'
+version = '0.3.0'
+
+homepage = 'https://github.com/tblite/tblite'
+description = "Light-weight tight-binding framework"
+
+toolchain = {'name': 'gccflexiblas', 'version': '2023a'}
+toolchainopts = {'openmp': True}
+
+github_account = 'tblite'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['44b6ecff94b29c109f7d1afa3f49eebd3979a2b115fc7bab0c9fc1d7e61bdc27']
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('python-build-bundle', '2023b'),
+    ('oldest-supported-numpy', '2023b'),
+]
+
+dependencies = [
+    ('mctc-lib', '0.3.1'),
+    ('mstore', '0.2.0'),
+    ('simple-dftd3', '1.0.0'),
+    ('dftd4', '3.6.0')
+]
+
+multi_deps = {'Python': ['3.10', '3.11']}
+
+# run suite of tests with ctest
+test_cmd = 'ctest --parallel 1'
+runtest = ''
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('tblite', version, {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'source_urls': [PYPI_SOURCE],
+        'patches': ['tblite-0.3.0_fix-meson-pure.patch']
+        'checksums': [
+            '48654770b2681a354d9f6a849c5bc903b94a18c39c25c61754807d8add1ad7a9',
+            'be04116d444c3bd526bb3521981d773fa5af5c2b82fb5c9f31ba528d6fec4e40',
+        ],
+        'prebuildopts': ' export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && ',
+        'use_pip': True,
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+modextrapaths = {'EBPYTHONPREFIXES': '' }
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'include/%(name)s.h', 'lib/lib%(name)s.a'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = ['tblite --help']
+
+moduleclass = 'chem'
