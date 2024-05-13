@@ -1,0 +1,60 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/05
+# conda reference module
+easyblock = 'Conda'
+
+name = 'warp'
+local_ver = '2.0.0dev5'
+local_commit = 'c2835b5f0603bdce7add4459091b25ae0c0aa2d7'
+local_commit_date = '20240512'
+version = '%s.%s' % (local_ver, local_commit_date)
+versionsuffix = '-conda'
+
+homepage = 'https://github.com/warpem/warp'
+description = """Warp is a set of tools for cryo-EM and cryo-ET data processing including, among 
+other tools: Warp, M, WarpTools, MTools, MCore, and Noise2Map."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/warpem/warp/archive/']
+sources = [{
+    'filename': '%s.%s-%s.tar.gz' % (name, version, local_commit),
+    'download_filename': '%s.tar.gz' % local_commit,
+}]
+checksums = ['0487349fe10b6d78b19eee9f03fa96ac1bda2817e7760fc1d39f500b4af17a4b']
+
+extract_sources = True
+
+local_src = '%s-%s' % (name, local_commit)
+start_dir = '%s' % local_src
+
+environment_file = 'warp_build.yml'
+
+dependencies = [
+    ('Miniconda3', '22.11.1-1', '', SYSTEM)
+]
+
+local_activate = 'eval "$(conda shell.bash hook) && conda activate %(installdir)s"'
+postinstallcmds = [
+    '%s && cd %%(builddir)s/%s && ./build-native-unix.sh' % (local_activate, local_src),
+    '%s && cd %%(builddir)s/%s && ./publish-unix.sh' % (local_activate, local_src),
+    'cp %%(builddir)s/%s/Release %%(installdir)s -rpP' % local_src
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = [
+    'WarpTools --help'
+]
+
+modextrapaths = {
+    'PATH': 'Release/linux-x64/publish',
+    'LD_LIBRARY_PATH': 'lib',
+}
+
+modextravars = {
+    'RELION_EXTERNAL_RECONSTRUCT_EXECUTABLE': '$(which Noise2Half)',
+}
+moduleclass = 'bio'
