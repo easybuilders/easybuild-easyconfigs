@@ -17,10 +17,10 @@ if [ -z ${EBROOTAIIDAMINCORE} ]; then
     exit 1
 fi
 
-echo "WARNING: this script will completely remove all data from the AiiDA database, repository and configuration."
-read -p "Are you sure you want to continue? [y/N] " -n 1 -r REPLY
+echo "WARNING: this script will COMPLETELY and PERMANENTLYremove ALL data from the AiiDA database, repository and configuration."
+read -p "Are you sure you want to continue? (Type \"Yes I am!\" to continue) " -r REPLY
 
-if [[ ! "$REPLY" == "y" ]]; then
+if [[ "$REPLY" != "Yes I am!" ]]; then
     echo "Aborting."
     exit 1
 fi
