@@ -1,8 +1,21 @@
 #!/usr/bin/env bash
 
-module load RabbitMQ
-module load PostgreSQL
-module load aiida-core
+if [ -z ${EB_CONFIG_DIR} ]; then
+    echo "ERROR: EB_CONFIG_DIR is not set"
+    exit 1
+fi
+if [ -z ${EBRABBITMQ} ]; then
+    echo "ERROR: Module RabbitMQ is not loaded"
+    exit 1
+fi
+if [ -z ${EBPOSTGRESQL} ]; then
+    echo "ERROR: Module PostgreSQL is not loaded"
+    exit 1
+fi
+if [ -z ${EBROOTAIIDAMINCORE} ]; then
+    echo "ERROR: Module aiida-core is not loaded"
+    exit 1
+fi
 
 echo "WARNING: this script will completely remove all data from the AiiDA database, repository and configuration."
 read -p "Are you sure you want to continue? [y/N] " -n 1 -r REPLY
