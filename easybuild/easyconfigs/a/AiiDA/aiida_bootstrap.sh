@@ -11,13 +11,13 @@ LOGHEADER="== "
 #######################################################################
 PG_LOGHEADER="${LOGHEADER}PostgreSQL:"
 export PGDATA=${EB_CONFIG_DIR}/postgres
-PG_CONF="${PGDATA}/postgresql.conf"
-export PGHOST="${EB_CONFIG_DIR}"
 export PGPORT=5432
+PG_CONF="${PGDATA}/postgresql.conf"
 
 function database_get_set_pgdata {
     if [ -f ${EB_CONFIG_DIR}/psql_datadir ]; then
-        PGDATA=$(cat ${EB_CONFIG_DIR}/psql_datadir)
+        export PGDATA=$(cat ${EB_CONFIG_DIR}/psql_datadir)
+        echo "${PG_LOGHEADER} Re-using PGDATA from config: $PGDATA"
     else
         echo "${PG_LOGHEADER} PGDATA not set"
         read -r -p "${PG_LOGHEADER} Enter PGDATA directory (default: ${PGDATA}): " _PGDATA
@@ -75,7 +75,7 @@ function database_bootstrap {
         if [ $? -ne 0 ]; then
             echo "${PG_LOGHEADER} failed to start server"
             exit 1
-fi
+        fi
     else
         echo "${PG_LOGHEADER} server already running"
     fi
