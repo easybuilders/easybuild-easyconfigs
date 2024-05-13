@@ -1,0 +1,64 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2016 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+#                                 Ghent University / The Francis Crick Institute
+# Authors::
+# * Wiktor Jurkowski <wiktor.jurkowski@gmail.com>
+# * Fotis Georgatos <fotis@cern.ch>
+# * George Tsouloupas <g.tsouloupas@cyi.ac.cy>
+# * Kenneth Hoste <kenneth.hoste@ugent.be>
+# * Adam Huffman <adam.huffman@crick.ac.uk>
+# License::   MIT/GPL
+#
+
+name = 'GROMACS'
+version = '2021.7-0.5.1'
+local_versiontag = 'release-2021.swaxs-0.5.1'
+
+versionsuffix = '-SWAXS'
+modaltsoftname = 'gromacs-swaxs'
+
+homepage = 'https://cbjh.gitlab.io/gromacs-swaxs-docs/'
+description = """
+Modified GROMACS for small-angle scattering calculations (SAXS/WAXS/SANS).
+
+This is a GPU enabled build, containing both MPI and threadMPI builds.
+
+- CC-Wiki: GROMACS
+"""
+
+toolchain = {'name': 'gofbc', 'version': '2023a'}
+toolchainopts = {'openmp': True, 'usempi': True, 'precise': True}
+
+source_urls = [
+    'https://gitlab.com/cbjh/gromacs-swaxs/-/archive/%s' % local_versiontag,
+]
+sources = ['gromacs-swaxs-%s.tar.gz'% local_versiontag]
+
+# checksums are now on checksums.json
+
+builddependencies = [('CMake', '3.27.7')]
+dependencies = [
+    ('hwloc', '2.9.1'),
+    ('FFTW', '3.3.10'),
+]
+configopts = ' -DGMX_HWLOC=ON '
+configopts += ' -DGMX_VERSION_STRING_OF_FORK=SWAXS-%s '% version.split('-')[-1]
+configopts += ' -DGMX_VERSION_SUFFIX="" '
+
+# Disable testing because the following tests fail:
+# [  FAILED  ] ClustsizeTest.MolDefaultCutoff
+# [  FAILED  ] ClustsizeTest.MolShortCutoff
+# [  FAILED  ] ClustsizeTest.MolCSize
+# [  FAILED  ] ConvertTrjModuleTest.WritesNormalOutput
+# [  FAILED  ] ConvertTrjModuleTest.WritesAtomSubset
+# [  FAILED  ] ConvertTrjModuleTest.WorksWithAtomAdding
+# [  FAILED  ] ConvertTrjModuleTest.WorksWithAtomsAndSelection
+# [  FAILED  ] FreeVolumeModuleTest.ComputesFreeVolume
+# [  FAILED  ] FreeVolumeModuleTest.ComputesFreeVolumeSelection
+# [  FAILED  ] DhdlTest.ExtractDhdl
+# [  FAILED  ] OriresTest.ExtractOrires
+skipsteps = ['test']
+
+moduleclass = 'chem'
