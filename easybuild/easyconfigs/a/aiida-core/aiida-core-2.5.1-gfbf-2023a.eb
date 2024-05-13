@@ -77,3 +77,20 @@ exts_list = [
 sanity_pip_check = False
 
 moduleclass = 'tools'
+
+modluafooter = """
+local shell = myShellName()
+
+if (shell == "bash") or (shell == "sh") then
+    execute{cmd="eval \\"$(_VERDI_COMPLETE=bash_source verdi)\\"", modeA={"load"}}
+    execute{cmd="complete -r verdi && unset _verdi_completion_setup && unset", modeA={"unload"}}
+elseif (shell == "zsh") then
+    execute{cmd="eval \\"$(_VERDI_COMPLETE=zsh_source verdi)\\"", modeA={"load"}}
+    execute{cmd="unset '_comps[verdi]'", modeA={"unload"}}
+elseif (shell == "fish") then
+    execute{cmd="eval (env _VERDI_COMPLETE=fish_source verdi)", modeA={"load"}}
+    execute{cmd="complete -e verdi && functions --erase _verdi_completion", modeA={"unload"}}
+else
+    LmodMessage("Autocompletion cannot be setup automatically for shell: " .. shell)
+end
+"""
