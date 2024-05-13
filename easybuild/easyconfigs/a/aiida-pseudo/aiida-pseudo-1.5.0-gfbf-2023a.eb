@@ -35,3 +35,23 @@ exts_list = [
 sanity_pip_check = False
 
 moduleclass = 'tools'
+
+modluafooter = """
+local shell = myShellName()
+
+if (shell == "bash") or (shell == "sh") then
+    execute{cmd="eval \\"$(_AIIDA_PSEUDO_COMPLETE=bash_source aiida-pseudo)\\"", modeA={"load"}}
+    execute{
+        cmd="complete -r aiida-pseudo && unset _aiida_pseudo_completion_setup && unset _aiida_pseudo_completion",
+        modeA={"unload"}
+        }
+elseif (shell == "zsh") then
+    execute{cmd="eval \\"$(_AIIDA_PSEUDO_COMPLETE=zsh_source aiida-pseudo)\\"", modeA={"load"}}
+    execute{cmd="unset '_comps[aiida-pseudo]' && unset -f _aiida_pseudo_completion", modeA={"unload"}}
+elseif (shell == "fish") then
+    execute{cmd="eval (env _AIIDA_PSEUDO_COMPLETE=fish_source aiida-pseudo)", modeA={"load"}}
+    execute{cmd="complete -e aiida-pseudo && functions --erase _aiida_pseudo_completion", modeA={"unload"}}
+else
+    LmodMessage("Autocompletion of `aiida-pseudo` cannot be setup automatically for shell: " .. shell)
+end
+"""
