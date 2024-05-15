@@ -39,22 +39,24 @@ local_src = '%%(name)s-%s' % local_commit
 
 # usd the same compiler for cisTEM and wxWidgets in order to guarantee ABI compatibility.
 #   cisTEM requires icc and icpc rather than 
-local_env_compiler = 'export CXX=icpc && export CC=icc&&'  #TODO: patch configure.ac for ispx/icx 
-local_cistem_env = 'export CFLAGS="$CFLAGS -Wno-error=c++11-narrowing -diag-disable=10441 " && export CXXFLAGS=$CFLAGS && %s' % local_env_compiler
+local_env_compiler = 'export CXX=icpc && export CC=icc&&'  # TODO: patch configure.ac for ispx/icx
+local_cistem_env = 'export CFLAGS="$CFLAGS -Wno-error=c++11-narrowing -diag-disable=10441 " '
+local_cistem_env += '&& export CXXFLAGS=$CFLAGS && %s' % local_env_compiler
 
-
-# configure options adpted from https://github.com/timothygrant80/cisTEM/blob/b7cf5feaaf7ce081d8dec438e4c2060a1ecadb03/.cicontainer/gcc/Dockerfile and 
+# configure options adpted from 
+# https://github.com/timothygrant80/cisTEM/blob/b7cf5feaaf7ce081d8dec438e4c2060a1ecadb03/.cicontainer/gcc/Dockerfile and 
 # https://github.com/timothygrant80/cisTEM/blob/b7cf5feaaf7ce081d8dec438e4c2060a1ecadb03/.github/workflows/ci.yml
-local_configureopts = [ 
+local_configureopts = [
     # '--enable-latest-instruction-set',  # managed by CFLAGS
     '--disable-silent-rules',
-    '--enable-staticmode',  
+    '--enable-staticmode',
     '--enable-openmp',
     '--enable-experimental',
     '--enable-samples',
     '--with-wx-config=%(builddir)s/wx/bin/wx-config',
-    '--with-cuda', 
-    """--with-target-gpu-archs="%(cuda_cc_cmake)s" """, # from patch inject_cudacc; with-target-gpu-archS!=with-target-gpu-arch
+    '--with-cuda',
+    # from patch inject_cudacc; with-target-gpu-archS!=with-target-gpu-arch:
+    """--with-target-gpu-archs="%(cuda_cc_cmake)s" """,
     # '--enable-FastFFT' ?
 ]
 
@@ -81,12 +83,12 @@ local_wx_cpath_ext = '$EBROOTGLIB/include/glib-2.0:$EBROOTGLIB/lib/glib-2.0/incl
 local_wx_env = 'export CPATH=$CPATH:%s &&' % local_wx_cpath_ext
 local_wx_env += local_env_compiler
 
-components =  [
+components = [
     # wxWidgets 3.2 available for GCCcore 12.3.0 does not work. Since cisTEM is preferred to be linked statically,
     # we build the required wxWidgets v3.0.5 as a bundle component.
     ('wxWidgets', '3.0.5', {
         'easyblock': 'ConfigureMake',
-        'configure_without_installdir': True,	
+        'configure_without_installdir': True,
         'source_urls': ['https://github.com/wxWidgets/wxWidgets/archive'],
         'sources': [{
             'filename': '%(name)s-%(version)s.tar.gz',
@@ -121,7 +123,7 @@ builddependencies = [
 ]
 
 dependencies = [
-    ('CUDA', '12.3.2', '', SYSTEM),  # > 12.1.1 due to CUDART_ZERO_{FP,BF}16 in 
+    ('CUDA', '12.3.2', '', SYSTEM),  # > 12.1.1 due to CUDART_ZERO_{FP,BF}16 in
     #                                  src/gpu/template_matching_empirical_distribution.cu
     ('GTK2', '2.24.33'),  # loads jbigkit and therfore wxWidgets' libtiff is linked againste libjbig
 ]
