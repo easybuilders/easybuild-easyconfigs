@@ -1,5 +1,6 @@
 name = 'ANSYS'
 version = '2023R2'
+# version = '2023R2.01'
 local_sfx = 'v232'
 
 homepage = 'http://www.ansys.com'
@@ -9,18 +10,27 @@ description = """ANSYS simulation software enables organizations to confidently 
 
 toolchain = SYSTEM
 
-# create tar ball from the installation iso files
-sources = ['ANSYS-%(version)s.tar','ANSYS_2023R2.01_LINX64.tgz']
+# tars created from isos unpack under build dir
+sources = ['ANSYS-%(version)s.tar', # /tmp/ANSYS/2023R2/system-system/alldisks/INSTALL
+            'ANSYS_2023R2.01_LINX64.tgz']    # /tmp/ANSYS/2023R2/system-system/INSTALL
 checksums = ['7c5aaca5fa0113ccb32d1b7b6cb1b97b5562623e71d8a529f833ab904741a5a7',
              '440702124fe86125de3bf5f4ff8ad72f41915a5f2295533c2c08fceaafd0541e']
-
 extract_sources = True
 
+# $ cat /cvmfs/local/var/log/easybuild-ANSYS-2023R2-20240402.011509.MhyYt.log | grep "dir set to"
+#   Build dir set to /tmp/ANSYS/2023R2/system-system
+#   Software install dir set to /home/roberpj/.local/easybuild/software/2023/x86-64-v3/Core/ansys/2023R2
+#   Module install dir set to /home/roberpj/.local/easybuild/modules/2023/
+# Installation prefix /home/roberpj/.local/easybuild/software/2023/x86-64-v3/Core/ansys/2023R2
+# AWPROOTDIR = /home/roberpj/.local/easybuild/software/2023/x86-64-v3/Core/ansys/2023R2/v232
+
 postinstallcmds = [
-  # Dont apply SP2 causes workbench mechanical crash with msgs:
-  # Error! Unable to create model. Tcp transport error.
-  # Warning! Unable to clean addins in Mechanical.  Connection refused
-  "cd %(builddir)s;./INSTALL -install_dir %(installdir)s -silent",
+  # Main install done by default in [working dir: /tmp/ANSYS/2023R2/system-system/alldisks]
+  # ie) ./INSTALL -silent -install_dir -licserverinfo 2325:1055:license.example.com
+  # Skip installing SP2 (ansysR2.01) as it causes workbench mechanical to crash with msgs:
+  #  Error! Unable to create model. Tcp transport error.
+  #  Warning! Unable to clean addins in Mechanical.  Connection refused
+  #"cd %(builddir)s;./INSTALL -silent -install_dir %(installdir)s -licserverinfo 2325:1055:license.example.com",
   # Replace setmwruntime with one that works (create patchfile for this later)
   "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/2023R2;\
    mv %(installdir)s/v232/commonfiles/MainWin/linx64/mw/setmwruntime{,-orig};\
@@ -90,6 +100,12 @@ postinstallcmds = [
   "cd %(installdir)s/shared_files/licensing;\
    echo 'SERVER=1055@license3.sharcnet.ca' > ansyslmd.ini;\
    echo 'ANSYSLI_SERVERS=2325@license3.sharcnet.ca' >> ansyslmd.ini;"
+  # Replace "$1" with ${1} to Avoid newer grep: warning: stray \ before -
+  "cp -a %(installdir)s/v232/ansys/bin/anssh.ini{,-orig};\
+   sed -i 's|grep \"$1\"|grep \${1}|g' \"%(installdir)s/v232/ansys/bin/anssh.ini\";",
+  # Replace '^\/' with '^/' to Avoid newer grep: warning: stray \ before "y
+  "find %(installdir)s -type f \( -name 'mpi*fl' -o -name 'mpi*en' \) -exec cp -a {}{,-orig} \;;\
+   find %(installdir)s -type f \( -name 'mpi*fl' -o -name 'mpi*en' \) -exec sed -i \"s|'^\\\\\/'|'^/'|g\" \"{}\" \;"
 ]
 
 modextravars = {
