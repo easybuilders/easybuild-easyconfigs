@@ -1,13 +1,23 @@
+From d2daf93b77048acb98cd470e4f6670660b394c8d Mon Sep 17 00:00:00 2001
+From: Viktor Rehnberg <viktor.rehnberg@gmail.com>
+Date: Wed, 15 May 2024 13:09:14 +0000
+Subject: [PATCH 1/1] Run features only option
+
 Adds a flat `--run_feature_only` and some logic that means that if
 `features.pkl` already exists, this step will be skipped.
 
 To a large degree taken from https://github.com/Zuricho/ParallelFold/
 
+---
+ run_alphafold.py      | 27 +++++++++++++++++++++------
+ run_alphafold_test.py |  3 ++-
+ 2 files changed, 23 insertions(+), 7 deletions(-)
+
 diff --git a/run_alphafold.py b/run_alphafold.py
-index 0d89bfb..04016c5 100644
+index 72416e0..7ca81d0 100644
 --- a/run_alphafold.py
 +++ b/run_alphafold.py
-@@ -141,6 +141,8 @@ flags.DEFINE_boolean('use_gpu_relax', None, 'Whether to relax on GPU. '
+@@ -168,6 +168,8 @@ flags.DEFINE_boolean('use_gpu_relax', use_gpu_relax, 'Whether to relax on GPU. '
                       'Relax on GPU can be much faster than CPU, so it is '
                       'recommended to enable if possible. GPUs must be available'
                       ' if this setting is enabled.')
@@ -16,17 +26,17 @@ index 0d89bfb..04016c5 100644
  
  FLAGS = flags.FLAGS
  
-@@ -180,7 +182,8 @@ def predict_structure(
+@@ -196,7 +198,8 @@ def predict_structure(
+     model_runners: Dict[str, model.RunModel],
      amber_relaxer: relax.AmberRelaxation,
      benchmark: bool,
-     random_seed: int,
--    models_to_relax: ModelsToRelax):
-+    models_to_relax: ModelsToRelax,
+-    random_seed: int):
++    random_seed: int,
 +    run_feature_only: bool):
    """Predicts structure using AlphaFold for the given sequence."""
    logging.info('Predicting %s', fasta_name)
    timings = {}
-@@ -193,16 +196,27 @@ def predict_structure(
+@@ -209,16 +212,27 @@ def predict_structure(
  
    # Get features.
    t_0 = time.time()
@@ -56,15 +66,32 @@ index 0d89bfb..04016c5 100644
 +    return 0
 +
    unrelaxed_pdbs = {}
-   unrelaxed_proteins = {}
    relaxed_pdbs = {}
-@@ -449,7 +463,8 @@ def main(argv):
+   relax_metrics = {}
+@@ -457,7 +471,8 @@ def main(argv):
+         model_runners=model_runners,
          amber_relaxer=amber_relaxer,
          benchmark=FLAGS.benchmark,
-         random_seed=random_seed,
--        models_to_relax=FLAGS.models_to_relax)
-+        models_to_relax=FLAGS.models_to_relax,
+-        random_seed=random_seed)
++        random_seed=random_seed,
 +        run_feature_only=FLAGS.run_feature_only)
  
  
  if __name__ == '__main__':
+diff --git a/run_alphafold_test.py b/run_alphafold_test.py
+index b91189c..efe4dd6 100644
+--- a/run_alphafold_test.py
++++ b/run_alphafold_test.py
+@@ -74,7 +74,8 @@ class RunAlphafoldTest(parameterized.TestCase):
+         model_runners={'model1': model_runner_mock},
+         amber_relaxer=amber_relaxer_mock if do_relax else None,
+         benchmark=False,
+-        random_seed=0)
++        random_seed=0,
++        run_feature_only=False)
+ 
+     base_output_files = os.listdir(out_dir)
+     self.assertIn('target.fasta', base_output_files)
+-- 
+2.39.3
+
