@@ -1,0 +1,74 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/05
+#
+easyblock = 'PythonBundle'
+
+name = 'pyTME'
+version = '0.2.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/KosinskiLab/pyTME'
+description = """Python Template Matching Engine (PyTME)
+A software for template matching on electron microscopy data.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('pybind11', '2.11.1'),
+    ('Python-bundle-PyPI', '2023.06'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('SciPy-bundle', '2023.07'),
+    ('pyFFTW', '0.13.1'),
+    ('mrcfile', '1.4.3'),
+    ('PyYAML', '6.0'),
+    ('PyWavelets', '1.5.0'),
+    ('scikit-image', '0.22.0'),
+    ('scikit-learn', '1.3.1'),
+    ('napari', '0.4.19.post1'),
+    ('CuPy', '13.0.0', versionsuffix),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('h5py', '3.9.0'),
+]
+
+github_account = 'maurerv'
+
+_scripts_san = [
+    'estimate_ram_usage',
+    'estimate_ram_usage.py',
+    'match_template',
+    'match_template.py',
+    'postprocess',
+    'postprocess.py',
+    'preprocess',
+    'preprocess.py',
+    'preprocessor_gui.py'
+]
+_scripts_shebang = _scripts_san + ['preprocessor_gui']
+fix_python_shebang_for = ['bin/%s' % x for x in _scripts_shebang]
+exts_list = [
+    ('pytme', version, {
+        'modulename': 'tme',
+        'checksums': ['24f582a023471617543210b6f908fea47700da4bd6b5629a309fcf01de3c40b3'],
+    }),
+    ('napari-density-io', '1.0.0', {
+        'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['4f8e88045ecce37b49f019a2ff8b13c4cf82e24c10ea6d4a1ecf40e77c126c76'],
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+sanity_check_commands = [
+    '%s --help' % x for x in _scripts_san
+] + [
+    'napari --plugin-info|grep napari-density-io'
+]
+
+moduleclass = 'bio'
+
+
