@@ -29,16 +29,11 @@ toolchain = {'name': 'intel', 'version': '2023.03'}
 toolchainopts = {'pic': True}
 
 source_urls = ['https://github.com/timothygrant80/cisTEM/archive/']
-checksums = [
-    {'wxWidgets-3.0.5.tar.gz': '107c29f93d84e7b7731e96a6ce9344226ae4fb4ea3c3ad33aa71da58ac64a116'},
-    {'cisTEM-2.0.0a.20240401.tar.gz': '090e28bd9312f2ed99cafbd38975d677da0e5f15b7aa4768d659016ec64a1f5b'},
-    {'cisTEM-2.0.0.b7cf5fe_inject_cudacc.patch': '970845e02d75801d54cc7d3d73745b916a6310e964d62ec1fd275c4e24057109'},
-]
 
 local_src = '%%(name)s-%s' % local_commit
 
 # usd the same compiler for cisTEM and wxWidgets in order to guarantee ABI compatibility.
-#   cisTEM requires icc and icpc rather than 
+#   cisTEM requires icc and icpc rather than icx and icpx 
 local_env_compiler = 'export CXX=icpc && export CC=icc&&'  # TODO: patch configure.ac for ispx/icx
 local_cistem_env = 'export CFLAGS="$CFLAGS -Wno-error=c++11-narrowing -diag-disable=10441 " '
 local_cistem_env += '&& export CXXFLAGS=$CFLAGS && %s' % local_env_compiler
@@ -98,6 +93,7 @@ components = [
         'prebuildopts': local_wx_env,
         'start_dir': '%(name)s-%(version)s',
         'configopts': ' '.join(local_wx_configopts),
+        'checksums': [{'wxWidgets-3.0.5.tar.gz': '107c29f93d84e7b7731e96a6ce9344226ae4fb4ea3c3ad33aa71da58ac64a116'}],
     }),
     (name, version, {
         'easyblock': 'ConfigureMake',
@@ -114,7 +110,12 @@ components = [
         'configopts': ' '.join(local_configureopts),
         'configure_cmd_prefix': local_cistem_env + './regenerate_project.b &&',
         'prebuildopts': local_cistem_env,
-        'start_dir': local_src
+        'start_dir': local_src,
+        'checksums': [
+            {'cisTEM-2.0.0a.20240401.tar.gz': '090e28bd9312f2ed99cafbd38975d677da0e5f15b7aa4768d659016ec64a1f5b'},
+            {'cisTEM-2.0.0.b7cf5fe_inject_cudacc.patch':
+             '970845e02d75801d54cc7d3d73745b916a6310e964d62ec1fd275c4e24057109'},
+        ]
     })
 ]
 
@@ -128,7 +129,10 @@ dependencies = [
     ('GTK2', '2.24.33'),  # loads jbigkit and therfore wxWidgets' libtiff is linked againste libjbig
 ]
 
-# sanity_check_commands = ['%(name)s -h']  # does not work, due to gui.
+sanity_check_commands = [
+    # '%(name)s -h',  # does not work, due to gui.
+    # 'unit_test_runner',
+]
 
 sanity_check_paths = {
     'files': [],
