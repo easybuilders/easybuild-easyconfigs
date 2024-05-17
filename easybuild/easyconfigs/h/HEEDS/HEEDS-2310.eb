@@ -8,18 +8,35 @@ discovery of optimized solutions to complex engineering problems."""
 
 toolchain = SYSTEM
 
-download_instructions = 'Manually obtain from Siemens'
 sources = ['install_%(name)s-MDO_%(version)s_Linux64.bin']
 checksums = ['1951a1f86e90287aaa84ebe385befa67cb5e7fd6f2e9751b69de15bd11a55843']
+download_instructions = f'Manually obtain {sources[0]} from Siemens'
 
 install_cmd = 'export IATEMPDIR=%(builddir)s && '
 install_cmd += './install_%(name)s-MDO_%(version)s_Linux64.bin -i silent '
 install_cmd += '-DUSER_INSTALL_DIR=%(installdir)s '
-install_cmd += '-DCHOSEN_INSTALL_BUNDLE_NUM=1 '  # just the application no license server
+install_cmd += '-DCHOSEN_INSTALL_BUNDLE_NUM=1 '  # 1 == just the application no license server
 # install_cmd += '-DLIC_SERVER_SETTING=27027@your.lic.server '  # optional
 
+# Remove executable permissions from libraries
+postinstallcmds = ['chmod a-x MDO/Ver%(version)s/LX64/*.so*']
+
+# Optional
+# modextravars = {
+#     'RCTECH_LICENSE_FILE': '/license/file.dat',
+# }
+
+# Note: Symlinking binaries did not work, binaries must be executed from the same directory
+# as all the libraries.
+modextrapaths = {
+    'LD_LIBRARY_PATH': 'MDO/Ver%(version)s/LX64',
+    'PATH': 'MDO/Ver%(version)s/LX64',
+}
+
+local_scripts = ['HEEDSEvalServer', 'HEEDSMDO', 'HEEDS_NN_Trainer', 'HEEDSPost', 'HEEDSWorkflow']
+
 sanity_check_paths = {
-    'files': ['heeds'],
+    'files': [f'MDO/Ver%(version)s/LX64/{x}' for x in local_scripts],
     'dirs': [],
 }
 
