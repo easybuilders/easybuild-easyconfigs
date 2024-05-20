@@ -1,0 +1,55 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/1
+easyblock = 'MakeCp'
+
+name = 'AreTomo2'
+version = '1.0.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/czimaginginstitute/AreTomo2'
+
+description = """AreTomo2, a multi-GPU accelerated software package that fully automates motion- 
+corrected marker-free tomographic alignment and reconstruction, now includes    
+robust GPU-accelerated CTF (Contrast Transfer Function) estimation in a single  
+package. AreTomo2 is part of our endeavor to build a fully-automated high-      
+throughput processing pipeline that enables real-time reconstruction of         
+tomograms in parallel with tomographic data collection. It strives to be fast   
+and accurate, as well as provides for easy integration into subtomogram         
+processing workflows by generating IMod compatible files containing alignment   
+and CTF parameters needed to bootstrap subtomogram averaging. AreTomo2 can also 
+be used for on-the-fly reconstruction of tomograms and CTF estimation in        
+parallel with tilt series collection, enabling real-time assessment of sample   
+quality and adjustment of collection parameters"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_makefile.patch']
+checksums = [
+    {'v1.0.0.tar.gz': '5518cd5d7bc13a6dbb6d9310b22c301e73a0c91dc059da403445d79ca0ff8892'},
+    {'AreTomo2-1.0.0_makefile.patch': '8595b2fc55e0b5e1bf7c077c93c09503b4e8f95123c6aaf0a5fbe44dda871c73'},
+]
+
+github_account = 'czimaginginstitute'
+
+build_cmd = 'make exe -f makefile11 CUDAHOME=$CUDA_HOME CUDACC="%(cuda_cc_cmake)s"'
+
+builddependencies = [
+    ('binutils', '2.40')
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+]
+
+files_to_copy = [(['%(name)s'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = ['%(name)s -h']
+
+moduleclass = 'bio'

@@ -1,0 +1,44 @@
+easyblock = 'ConfigureMake'
+
+name = 'PSM2'
+version = '12.0.1'
+
+homepage = 'https://github.com/cornelisnetworks/opa-psm2/'
+description = """
+Low-level user-space communications interface for the Intel(R) OPA family of products.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/cornelisnetworks/opa-psm2/archive/refs/tags']
+sources = ['%(name)s_%(version)s.tar.gz']
+patches = [
+    ('PSM2-11.2.80_hfi-user.patch', 1),
+]
+checksums = [
+    {'PSM2_12.0.1.tar.gz': 'e41af2d7d36a6ab67639ecbd5c1012aa20b2b464bf5cfbdac60e7eb37bfe58de'},
+    {'PSM2-11.2.80_hfi-user.patch': 'e43138859387213506050af9b76e193c3cd0a162d148998c39e551f220392abb'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CUDA', '12.4.0', '', SYSTEM),
+]
+
+dependencies = [
+    ('numactl', '2.0.16'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = "sed -i 's|fprintf(stderr,|_HFI_DBG(|' psm_context.c && sed -i 's|/usr|/|' Makefile && "
+buildopts = "arch=%s USE_PSM_UUID=1 PSM_CUDA=1 WERROR=" % ARCH
+installopts = "arch=%s UDEVDIR=/lib/udev DESTDIR=%%(installdir)s" % ARCH
+
+sanity_check_paths = {
+    'files': ['lib/lib%%(namelower)s.%s' % SHLIB_EXT, 'include/%(namelower)s.h'],
+    'dirs': []
+}
+
+moduleclass = 'lib'
