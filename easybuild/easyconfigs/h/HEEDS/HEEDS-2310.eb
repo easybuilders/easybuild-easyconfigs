@@ -18,26 +18,29 @@ install_cmd += '-DUSER_INSTALL_DIR=%(installdir)s '
 install_cmd += '-DCHOSEN_INSTALL_BUNDLE_NUM=1 '  # 1 == just the application no license server
 # install_cmd += '-DLIC_SERVER_SETTING=27027@your.lic.server '  # optional
 
-# Remove executable permissions from libraries
-postinstallcmds = ['chmod a-x %(installdir)s/MDO/Ver%(version)s/LX64/*.so*']
+# Wrapper scripts are not included in silent install
+local_scripts = ['HEEDSEvalServer', 'HEEDSMDO', 'HEEDS_NN_Trainer', 'HEEDSPost', 'HEEDSWorkflow']
+
+local_launcher = """#!/bin/bash
+BINARY=BIN_PLACEHOLDER
+APPDIR="%(installdir)s/MDO/Ver%(version)s/LX64/"
+export LD_LIBRARY_PATH="$APPDIR":$LD_LIBRARY_PATH
+unset QT_PLUGIN_PATH
+"$APPDIR/{0}" "$@"
+"""
+
+postinstallcmds = ['mkdir %(installdir)s/bin']
+postinstallcmds += ["echo '{0}' > %(installdir)s/bin/{1}".format(local_launcher.format(x), x) for x in local_scripts]
+postinstallcmds += ['chmod a+x %(installdir)s/bin/*']
 
 # Optional
 # modextravars = {
 #     'RCTECH_LICENSE_FILE': '/license/file.dat',
 # }
 
-# Note: Symlinking binaries did not work, binaries must be executed from the same directory
-# as all the libraries.
-modextrapaths = {
-    'LD_LIBRARY_PATH': 'MDO/Ver%(version)s/LX64',
-    'PATH': 'MDO/Ver%(version)s/LX64',
-}
-
-local_scripts = ['HEEDSEvalServer', 'HEEDSMDO', 'HEEDS_NN_Trainer', 'HEEDSPost', 'HEEDSWorkflow']
-
 sanity_check_paths = {
     'files': [f'MDO/Ver%(version)s/LX64/{x}' for x in local_scripts],
-    'dirs': [],
+    'dirs': ['MDO'],
 }
 
 moduleclass = 'cae'
