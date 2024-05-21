@@ -1,0 +1,593 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/04
+# Modification of run_alphafold.py (relax/{relax.py,amber_minimize.py}:
+# 1. stop pipeline after writing features.pkl in order to allow running this 
+#    part on CPU nodes.
+# 1.1. reject to run creation of features.pkl, if CUDA_VISABLE_DEVICES is set.
+# (1.2. This behavior can be switched off with setting 
+#      ALPHAFOLD_ALLOW_FULL_PIPELINE; disabled) 
+# 2. make pipeline resumable. Restore features.pkl or result*pkl model*.pdb
+# 3. new parameter only_model_pred allowing to only predict specified model/pred
+#    -> enable running as job array or with workflow manager.
+# 4. Parallelization of relaxation, if ALPHAFOLD_RELAX_PARALLEL is set number of
+#    processes (experimental)
+# Update 2024/02: discard result.pkl after loading, but only keep prediction_result value for
+# ranking in order to reduce memory consumption
+diff -ru --new-file alphafold-2.3.2_patched/alphafold/relax/amber_minimize.py alphafold-2.3.2_patched_EMBLpipeline/alphafold/relax/amber_minimize.py
+--- alphafold-2.3.2_patched/alphafold/relax/amber_minimize.py	2023-04-20 15:07:39.688905806 +0200
++++ alphafold-2.3.2_patched_EMBLpipeline/alphafold/relax/amber_minimize.py	2023-04-20 18:26:42.961877574 +0200
+@@ -51,7 +51,8 @@
+     reference_pdb: openmm_app.PDBFile,
+     stiffness: unit.Unit,
+     rset: str,
+-    exclude_residues: Sequence[int]):
++    exclude_residues: Sequence[int],
++    model_info: str=""):
+   """Adds a harmonic potential that restrains the system to a structure."""
+   assert rset in ["non_hydrogen", "c_alpha"]
+ 
+@@ -66,8 +67,8 @@
+       continue
+     if will_restrain(atom, rset):
+       force.addParticle(i, reference_pdb.positions[i])
+-  logging.info("Restraining %d / %d particles.",
+-               force.getNumParticles(), system.getNumParticles())
++  logging.info("Restraining %d / %d particles.%s",
++               force.getNumParticles(), system.getNumParticles(), model_info)
+   system.addForce(force)
+ 
+ 
+@@ -78,7 +79,8 @@
+     stiffness: unit.Unit,
+     restraint_set: str,
+     exclude_residues: Sequence[int],
+-    use_gpu: bool):
++    use_gpu: bool,
++    model_info: str=""):
+   """Minimize energy via openmm."""
+ 
+   pdb_file = io.StringIO(pdb_str)
+@@ -89,7 +91,7 @@
+   system = force_field.createSystem(
+       pdb.topology, constraints=constraints)
+   if stiffness > 0 * ENERGY / (LENGTH**2):
+-    _add_restraints(system, pdb, stiffness, restraint_set, exclude_residues)
++    _add_restraints(system, pdb, stiffness, restraint_set, exclude_residues, model_info)
+ 
+   integrator = openmm.LangevinIntegrator(0, 0.01, 0.0)
+   platform = openmm.Platform.getPlatformByName("CUDA" if use_gpu else "CPU")
+@@ -153,7 +155,8 @@
+ 
+ def clean_protein(
+     prot: protein.Protein,
+-    checks: bool = True):
++    checks: bool = True,
++    model_info: str=""):
+   """Adds missing atoms to Protein instance.
+ 
+   Args:
+@@ -175,7 +178,7 @@
+   pdb_structure = PdbStructure(fixed_pdb_file)
+   cleanup.clean_structure(pdb_structure, alterations_info)
+ 
+-  logging.info("alterations info: %s", alterations_info)
++  logging.info("alterations info: %s%s", alterations_info, model_info)
+ 
+   # Write pdb file of cleaned structure.
+   as_file = openmm_app.PDBFile(pdb_structure)
+@@ -374,7 +377,8 @@
+     restraint_set: str,
+     max_attempts: int,
+     use_gpu: bool,
+-    exclude_residues: Optional[Collection[int]] = None):
++    exclude_residues: Optional[Collection[int]] = None,
++    model_info: str="" ):
+   """Runs the minimization pipeline.
+ 
+   Args:
+@@ -405,19 +409,20 @@
+   while not minimized and attempts < max_attempts:
+     attempts += 1
+     try:
+-      logging.info("Minimizing protein, attempt %d of %d.",
+-                   attempts, max_attempts)
++      logging.info("Minimizing protein, attempt %d of %d.%s",
++                   attempts, max_attempts, model_info)
+       ret = _openmm_minimize(
+           pdb_string, max_iterations=max_iterations,
+           tolerance=tolerance, stiffness=stiffness,
+           restraint_set=restraint_set,
+           exclude_residues=exclude_residues,
+-          use_gpu=use_gpu)
++          use_gpu=use_gpu,
++          model_info=model_info)
+       minimized = True
+     except Exception as e:  # pylint: disable=broad-except
+       logging.info(e)
+   if not minimized:
+-    raise ValueError(f"Minimization failed after {max_attempts} attempts.")
++    raise ValueError(f"Minimization failed after {max_attempts} attempts.%s"%model_info)
+   ret["opt_time"] = time.time() - start
+   ret["min_attempts"] = attempts
+   return ret
+@@ -434,7 +439,8 @@
+     restraint_set: str = "non_hydrogen",
+     max_attempts: int = 100,
+     checks: bool = True,
+-    exclude_residues: Optional[Sequence[int]] = None):
++    exclude_residues: Optional[Sequence[int]] = None,
++    model_info: str=""):
+   """Run iterative amber relax.
+ 
+   Successive relax iterations are performed until all violations have been
+@@ -465,7 +471,7 @@
+   # `protein.to_pdb` will strip any poorly-defined residues so we need to
+   # perform this check before `clean_protein`.
+   _check_residues_are_well_defined(prot)
+-  pdb_string = clean_protein(prot, checks=checks)
++  pdb_string = clean_protein(prot, checks=checks, model_info=model_info)
+ 
+   exclude_residues = exclude_residues or []
+   exclude_residues = set(exclude_residues)
+@@ -481,10 +487,11 @@
+         stiffness=stiffness,
+         restraint_set=restraint_set,
+         max_attempts=max_attempts,
+-        use_gpu=use_gpu)
++        use_gpu=use_gpu,
++        model_info=model_info)
+     prot = protein.from_pdb_string(ret["min_pdb"])
+     if place_hydrogens_every_iteration:
+-      pdb_string = clean_protein(prot, checks=True)
++      pdb_string = clean_protein(prot, checks=True, model_info=model_info)
+     else:
+       pdb_string = ret["min_pdb"]
+     # Calculation of violations can cause CUDA errors for some JAX versions.
+@@ -498,8 +505,8 @@
+     exclude_residues = exclude_residues.union(ret["residue_violations"])
+ 
+     logging.info("Iteration completed: Einit %.2f Efinal %.2f Time %.2f s "
+-                 "num residue violations %d num residue exclusions %d ",
++                 "num residue violations %d num residue exclusions %d %s",
+                  ret["einit"], ret["efinal"], ret["opt_time"],
+-                 ret["num_residue_violations"], ret["num_exclusions"])
++                 ret["num_residue_violations"], ret["num_exclusions"], model_info)
+     iteration += 1
+   return ret
+diff -ru --new-file alphafold-2.3.2_patched/alphafold/relax/relax.py alphafold-2.3.2_patched_EMBLpipeline/alphafold/relax/relax.py
+--- alphafold-2.3.2_patched/alphafold/relax/relax.py	2023-03-27 13:50:49.000000000 +0200
++++ alphafold-2.3.2_patched_EMBLpipeline/alphafold/relax/relax.py	2023-04-20 18:26:49.650033082 +0200
+@@ -30,7 +30,8 @@
+                stiffness: float,
+                exclude_residues: Sequence[int],
+                max_outer_iterations: int,
+-               use_gpu: bool):
++               use_gpu: bool,
++               model_info: str=""):
+     """Initialize Amber Relaxer.
+ 
+     Args:
+@@ -54,6 +55,7 @@
+     self._exclude_residues = exclude_residues
+     self._max_outer_iterations = max_outer_iterations
+     self._use_gpu = use_gpu
++    self._model_info = model_info  # required for logging in parallel mode
+ 
+   def process(self, *,
+               prot: protein.Protein
+@@ -64,7 +66,8 @@
+         tolerance=self._tolerance, stiffness=self._stiffness,
+         exclude_residues=self._exclude_residues,
+         max_outer_iterations=self._max_outer_iterations,
+-        use_gpu=self._use_gpu)
++        use_gpu=self._use_gpu,
++        model_info=self._model_info)
+     min_pos = out['pos']
+     start_pos = out['posinit']
+     rmsd = np.sqrt(np.sum((start_pos - min_pos)**2) / start_pos.shape[0])
+
+diff -ru A/run_alphafold.py B/run_alphafold.py
+--- A/run_alphafold.py	2024-02-19 17:52:15.658146563 +0100
++++ B/run_alphafold.py	2024-02-19 17:52:23.290336143 +0100
+@@ -23,7 +23,7 @@
+ import shutil
+ import sys
+ import time
+-from typing import Any, Dict, Mapping, Union
++from typing import Any, Dict, Mapping, Union, List, Optional
+ 
+ from absl import app
+ from absl import flags
+@@ -41,14 +41,19 @@
+ from alphafold.relax import relax
+ import jax.numpy as jnp
+ import numpy as np
++#import multiprocessing as mp
++from multiprocessing import Process, Manager, Queue, get_start_method, set_start_method 
++from multiprocessing.managers import DictProxy as managedDict
+ 
++full_pipeline = False # os.getenv("ALPHAFOLD_ALLOW_FULL_PIPELINE")
++gpu_avail = os.getenv("CUDA_VISIBLE_DEVICES")!=None
+ # Internal import (7716).
+ use_reduced_dbs = any("--db_preset=reduced_dbs" in s for s in sys.argv[1:])
+ use_monomer_preset = not any("--model_preset=multimer" in s for s in sys.argv[1:])
+ 
+ data_dir = os.getenv('ALPHAFOLD_DATA_DIR')
+ use_gpu_relax = os.getenv('OPENMM_RELAX')=='CUDA'
+-
++only_model_pred = None
+ if data_dir:
+     mgnify_database_path = os.path.join(data_dir, 'mgnify', 'mgy_clusters_2022_05.fa')
+     uniref90_database_path = os.path.join(data_dir, 'uniref90', 'uniref90.fasta')
+@@ -169,7 +174,7 @@
+                      'runs that are to reuse the MSAs. WARNING: This will not '
+                      'check if the sequence, database or configuration have '
+                      'changed.')
+-flags.DEFINE_enum_class('models_to_relax', ModelsToRelax.BEST, ModelsToRelax,
++flags.DEFINE_enum_class('models_to_relax', ModelsToRelax.NONE, ModelsToRelax,
+                         'The models to run the final relaxation step on. '
+                         'If `all`, all models are relaxed, which may be time '
+                         'consuming. If `best`, only the most confident model '
+@@ -182,7 +187,10 @@
+                      'Relax on GPU can be much faster than CPU, so it is '
+                      'recommended to enable if possible. GPUs must be available'
+                      ' if this setting is enabled.')
+-
++flags.DEFINE_list('only_model_pred', None, 'Only run selected model/prediction.'
++                     'Only run the prediction for model# and prediction#. This is intended '
++                     'to be used to orchestrate multiple predictions to separate jobs on a'
++                     'cluster. (Additional EMBL feature)') #EMBL
+ FLAGS = flags.FLAGS
+ 
+ MAX_TEMPLATE_HITS = 20
+@@ -211,7 +219,35 @@
+       output[k] = np.array(v)
+   return output
+ 
+-
++def spawn_relax(
++  fasta_name: str=None,
++  Q: Queue()=None,
++  amber_relaxer: relax.AmberRelaxation=None,
++  unrelaxed_proteins: list=None,
++  output_dir: str=None,
++  timings: managedDict=None,
++  relaxed_pdbs: managedDict=None,
++  relax_metrics: managedDict=None,
++  ):
++  while not Q.empty():
++    model_name=Q.get()
++    logging.info("Relaxing %s on %s" %(model_name, fasta_name))
++    t_0 = time.time()
++    amber_relaxer._model_info=" [%s on %s]" %(model_name,fasta_name)
++    relaxed_pdb_str, _, violations = amber_relaxer.process(
++          prot=unrelaxed_proteins[model_name])
++    relax_metrics[model_name] = {
++          'remaining_violations': violations,
++          'remaining_violations_count': sum(violations)
++    }
++    timings[model_name]=time.time() - t_0
++    relaxed_pdbs[model_name] = relaxed_pdb_str
++    # Save the relaxed PDB.
++    relaxed_output_path = os.path.join(
++        output_dir, f'relaxed_{model_name}.pdb')
++    with open(relaxed_output_path, 'w') as f:
++      f.write(relaxed_pdb_str)
++    
+ def predict_structure(
+     fasta_path: str,
+     fasta_name: str,
+@@ -232,17 +268,31 @@
+   if not os.path.exists(msa_output_dir):
+     os.makedirs(msa_output_dir)
+ 
++   
+   # Get features.
+-  t_0 = time.time()
+-  feature_dict = data_pipeline.process(
+-      input_fasta_path=fasta_path,
+-      msa_output_dir=msa_output_dir)
+-  timings['features'] = time.time() - t_0
+-
+-  # Write out features as a pickled dictionary.
+   features_output_path = os.path.join(output_dir, 'features.pkl')
+-  with open(features_output_path, 'wb') as f:
+-    pickle.dump(feature_dict, f, protocol=4)
++  run_create_features = not os.path.exists(features_output_path) or full_pipeline
++  t_0 = time.time()
++  timings['features'] = 0
++  if run_create_features:
++    # reject to run on a gpu node 
++    if gpu_avail and not full_pipeline:
++      logging.info('Please do not reserve GPUs for features creation. Terminating.')
++      sys.exit(1)
++    feature_dict = data_pipeline.process(
++        input_fasta_path=fasta_path,
++        msa_output_dir=msa_output_dir)
++    timings['features'] = time.time() - t_0
++    with open(features_output_path, 'wb') as f:
++      pickle.dump(feature_dict, f, protocol=4)
++    if not full_pipeline:
++      logging.info('Features created and written to %s. Please restart on a GPU machine. Terminating.', features_output_path)
++      sys.exit(0)
++  else:
++    logging.info('Reading precomputed features from file %s.', features_output_path)   
++    feature_dict = pickle.load(open(features_output_path, 'rb'))   
++      
++    
+ 
+   unrelaxed_pdbs = {}
+   unrelaxed_proteins = {}
+@@ -251,67 +301,86 @@
+   ranking_confidences = {}
+ 
+   # Run the models.
++  ranking_output_path = os.path.join(output_dir, 'ranking_debug.json')
+   num_models = len(model_runners)
+   for model_index, (model_name, model_runner) in enumerate(
+       model_runners.items()):
+-    logging.info('Running model %s on %s', model_name, fasta_name)
+-    t_0 = time.time()
+-    model_random_seed = model_index + random_seed * num_models
+-    processed_feature_dict = model_runner.process_features(
+-        feature_dict, random_seed=model_random_seed)
+-    timings[f'process_features_{model_name}'] = time.time() - t_0
+-
+-    t_0 = time.time()
+-    prediction_result = model_runner.predict(processed_feature_dict,
+-                                             random_seed=model_random_seed)
+-    t_diff = time.time() - t_0
+-    timings[f'predict_and_compile_{model_name}'] = t_diff
+-    logging.info(
+-        'Total JAX model %s on %s predict time (includes compilation time, see --benchmark): %.1fs',
+-        model_name, fasta_name, t_diff)
+-
+-    if benchmark:
++    result_output_path = os.path.join(output_dir, f'result_{model_name}.pkl')
++    unrelaxed_pdb_path = os.path.join(output_dir, f'unrelaxed_{model_name}.pdb')
++    # Predict model if result.pkl or pdb does not exist, or if the full pipeline is used
++    if full_pipeline or not ( os.path.exists(result_output_path) and os.path.exists(unrelaxed_pdb_path) ):
++      logging.info('Running model %s on %s', model_name, fasta_name)
+       t_0 = time.time()
+-      model_runner.predict(processed_feature_dict,
+-                           random_seed=model_random_seed)
++      model_random_seed = model_index + random_seed * num_models
++      processed_feature_dict = model_runner.process_features(
++          feature_dict, random_seed=model_random_seed)
++      timings[f'process_features_{model_name}'] = time.time() - t_0
++  
++      t_0 = time.time()
++      prediction_result = model_runner.predict(processed_feature_dict,
++                                               random_seed=model_random_seed)
+       t_diff = time.time() - t_0
+-      timings[f'predict_benchmark_{model_name}'] = t_diff
++      timings[f'predict_and_compile_{model_name}'] = t_diff
+       logging.info(
+-          'Total JAX model %s on %s predict time (excludes compilation time): %.1fs',
++          'Total JAX model %s on %s predict time (includes compilation time, see --benchmark): %.1fs',
+           model_name, fasta_name, t_diff)
+-
+-    plddt = prediction_result['plddt']
+-    ranking_confidences[model_name] = prediction_result['ranking_confidence']
+-
+-    # Remove jax dependency from results.
+-    np_prediction_result = _jnp_to_np(dict(prediction_result))
+-
+-    # Save the model outputs.
+-    result_output_path = os.path.join(output_dir, f'result_{model_name}.pkl')
+-    with open(result_output_path, 'wb') as f:
+-      pickle.dump(np_prediction_result, f, protocol=4)
+-
+-    # Add the predicted LDDT in the b-factor column.
+-    # Note that higher predicted LDDT value means higher model confidence.
+-    plddt_b_factors = np.repeat(
+-        plddt[:, None], residue_constants.atom_type_num, axis=-1)
+-    unrelaxed_protein = protein.from_prediction(
+-        features=processed_feature_dict,
+-        result=prediction_result,
+-        b_factors=plddt_b_factors,
+-        remove_leading_feature_dimension=not model_runner.multimer_mode)
+-
+-    unrelaxed_proteins[model_name] = unrelaxed_protein
+-    unrelaxed_pdbs[model_name] = protein.to_pdb(unrelaxed_protein)
+-    unrelaxed_pdb_path = os.path.join(output_dir, f'unrelaxed_{model_name}.pdb')
+-    with open(unrelaxed_pdb_path, 'w') as f:
+-      f.write(unrelaxed_pdbs[model_name])
+-
++  
++      if benchmark:
++        t_0 = time.time()
++        model_runner.predict(processed_feature_dict,
++                             random_seed=model_random_seed)
++        t_diff = time.time() - t_0
++        timings[f'predict_benchmark_{model_name}'] = t_diff
++        logging.info(
++            'Total JAX model %s on %s predict time (excludes compilation time): %.1fs',
++            model_name, fasta_name, t_diff)
++  
++      plddt = prediction_result['plddt']
++      ranking_confidences[model_name] = prediction_result['ranking_confidence']
++  
++      # Remove jax dependency from results.
++      np_prediction_result = _jnp_to_np(dict(prediction_result))
++  
++      # Save the model outputs.
++      # result_output_path = os.path.join(output_dir, f'result_{model_name}.pkl')
++      with open(result_output_path, 'wb') as f:
++        pickle.dump(np_prediction_result, f, protocol=4)
++  
++      # Add the predicted LDDT in the b-factor column.
++      # Note that higher predicted LDDT value means higher model confidence.
++      plddt_b_factors = np.repeat(
++          plddt[:, None], residue_constants.atom_type_num, axis=-1)
++      unrelaxed_protein = protein.from_prediction(
++          features=processed_feature_dict,
++          result=prediction_result,
++          b_factors=plddt_b_factors,
++          remove_leading_feature_dimension=not model_runner.multimer_mode)
++  
++      unrelaxed_proteins[model_name] = unrelaxed_protein
++      unrelaxed_pdbs[model_name] = protein.to_pdb(unrelaxed_protein)
++      with open(unrelaxed_pdb_path, 'w') as f:
++        f.write(unrelaxed_pdbs[model_name])
++      if os.getenv("ALPHAFOLD_REQUEUE")!=None and not full_pipeline:
++        logging.info('ALPHAFOLD_REQUEUE is set. Terminating with exit code 2. (0 if nothing left to do)')
++        sys.exit(2)
++    else: # restore result.pkl and pdb, if both files exist and the full pipeline is not used.
++      logging.info('Found existing model %s on %s. Restoring.', model_name, fasta_name)
++      with open(unrelaxed_pdb_path, 'r') as f:
++        unrelaxed_pdb_str = f.read()
++      unrelaxed_proteins[model_name]= protein.from_pdb_string(unrelaxed_pdb_str)
++      unrelaxed_pdbs[model_name] =  unrelaxed_pdb_str
++      prediction_result = None
++      prediction_result = pickle.load(open(result_output_path, "rb"))
++      ranking_confidences[model_name] = prediction_result['ranking_confidence']
++    # Termiate with exit code 2, if only_model_pred is set (single model prediction). i.e. num_models==1
++    if num_models==1:
++      logging.info('Processing single prediction of %s on %s finished. Please rerun on all models for ranking and relaxation', model_name, fasta_name)
++      sys.exit(0)              
+   # Rank by model confidence.
+   ranked_order = [
+-      model_name for model_name, confidence in
+-      sorted(ranking_confidences.items(), key=lambda x: x[1], reverse=True)]
+-
++    model_name for model_name, confidence in
++    sorted(ranking_confidences.items(), key=lambda x: x[1], reverse=True)]
++ 
+   # Relax predictions.
+   if models_to_relax == ModelsToRelax.BEST:
+     to_relax = [ranked_order[0]]
+@@ -320,23 +389,55 @@
+   elif models_to_relax == ModelsToRelax.NONE:
+     to_relax = []
+ 
+-  for model_name in to_relax:
+-    t_0 = time.time()
+-    relaxed_pdb_str, _, violations = amber_relaxer.process(
+-        prot=unrelaxed_proteins[model_name])
+-    relax_metrics[model_name] = {
+-        'remaining_violations': violations,
+-        'remaining_violations_count': sum(violations)
+-    }
+-    timings[f'relax_{model_name}'] = time.time() - t_0
+-
+-    relaxed_pdbs[model_name] = relaxed_pdb_str
+-
+-    # Save the relaxed PDB.
+-    relaxed_output_path = os.path.join(
+-        output_dir, f'relaxed_{model_name}.pdb')
+-    with open(relaxed_output_path, 'w') as f:
+-      f.write(relaxed_pdb_str)
++  if  os.getenv("ALPHAFOLD_RELAX_PARALLEL"):
++    num_processes=int(os.getenv("ALPHAFOLD_RELAX_PARALLEL"))
++    with Manager() as manager:
++      Q=Queue(len(to_relax))
++      m_timings=manager.dict()
++      m_relaxed_pdbs=manager.dict()
++      m_relax_metrics=manager.dict()
++      for mname in to_relax: Q.put(mname)
++      process_list=[]
++      for i in range(num_processes):
++        process_list.append(Process(
++          target=spawn_relax,  
++          kwargs={ "Q": Q,
++            "fasta_name": fasta_name, 
++            "amber_relaxer": amber_relaxer, 
++            "unrelaxed_proteins": unrelaxed_proteins,
++            "output_dir": output_dir,
++            "timings": m_timings,
++            "relaxed_pdbs": m_relaxed_pdbs,
++            "relax_metrics": m_relax_metrics,
++          }))
++      for p in process_list: p.start()
++      for p in process_list: p.join()
++      #write back results
++      for model_name in m_relax_metrics:
++        relax_metrics[model_name]=m_relax_metrics[model_name]
++      for model_name in m_timings:
++        timings[model_name]=m_timings[model_name]
++      for model_name in m_relaxed_pdbs:
++        relaxed_pdbs[model_name]=m_relaxed_pdbs[model_name]
++  # default pipeline, not parallel:  
++  else:
++    for model_name in to_relax:
++      t_0 = time.time()
++      relaxed_pdb_str, _, violations = amber_relaxer.process(
++          prot=unrelaxed_proteins[model_name])
++      relax_metrics[model_name] = {
++          'remaining_violations': violations,
++          'remaining_violations_count': sum(violations)
++      }
++      timings[f'relax_{model_name}'] = time.time() - t_0
++  
++      relaxed_pdbs[model_name] = relaxed_pdb_str
++  
++      # Save the relaxed PDB.
++      relaxed_output_path = os.path.join(
++          output_dir, f'relaxed_{model_name}.pdb')
++      with open(relaxed_output_path, 'w') as f:
++        f.write(relaxed_pdb_str)
+ 
+   # Write out relaxed PDBs in rank order.
+   for idx, model_name in enumerate(ranked_order):
+@@ -347,7 +448,6 @@
+       else:
+         f.write(unrelaxed_pdbs[model_name])
+ 
+-  ranking_output_path = os.path.join(output_dir, 'ranking_debug.json')
+   with open(ranking_output_path, 'w') as f:
+     label = 'iptm+ptm' if 'iptm' in prediction_result else 'plddts'
+     f.write(json.dumps(
+@@ -365,6 +465,14 @@
+ 
+ 
+ def main(argv):
++  if os.getenv("ALPHAFOLD_RELAX_PARALLEL") and get_start_method() != 'spawn': 
++    try:
++        set_start_method('spawn')
++    except RuntimeError:
++      if get_start_method() != 'spawn':
++          logging.info("Multiprocessing start_method not spawn. Forcing.");
++          set_start_method('spawn', force=True)
++          
+   if len(argv) > 1:
+     raise app.UsageError('Too many command-line arguments.')
+ 
+@@ -403,7 +511,7 @@
+   fasta_names = [pathlib.Path(p).stem for p in FLAGS.fasta_paths]
+   if len(fasta_names) != len(set(fasta_names)):
+     raise ValueError('All FASTA paths must have a unique basename.')
+-
++  
+   if run_multimer_system:
+     template_searcher = hmmsearch.Hmmsearch(
+         binary_path=FLAGS.hmmsearch_binary_path,
+@@ -454,6 +562,13 @@
+ 
+   model_runners = {}
+   model_names = config.MODEL_PRESETS[FLAGS.model_preset]
++  
++  only_model_pred=FLAGS["only_model_pred"].value # EMBL
++  if only_model_pred: #remove all but the required model names from list.
++    model_names=[model_names[int(only_model_pred[0])-1]]
++    if (run_multimer_system and (len(only_model_pred)!=2 or int(only_model_pred[1])>=num_predictions_per_model)) or (not run_multimer_system and len(only_model_pred)!=1):
++      logging.info("only_model_pred requires a comma separated list of two parameters for multimer predictions (model,prediction<num_multimer_predictions_per_model) and one parameter (model) else."); sys.exit(1)
++
+   for model_name in model_names:
+     model_config = config.model_config(model_name)
+     if run_multimer_system:
+@@ -463,7 +578,8 @@
+     model_params = data.get_model_haiku_params(
+         model_name=model_name, data_dir=FLAGS.data_dir)
+     model_runner = model.RunModel(model_config, model_params)
+-    for i in range(num_predictions_per_model):
++    # For multimer only use prediction pred from only_model_pred[1], if set:
++    for i in only_model_pred[1] if only_model_pred and len(only_model_pred)>1 else range(num_predictions_per_model):
+       model_runners[f'{model_name}_pred_{i}'] = model_runner
+ 
+   logging.info('Have %d models: %s', len(model_runners),
+@@ -503,5 +619,4 @@
+       'output_dir',
+       'max_template_date',
+   ])
+-
+   app.run(main)
