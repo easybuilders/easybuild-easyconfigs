@@ -1,0 +1,122 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/06
+easyblock = 'PythonBundle'
+
+name = 'Uni-Core'  # dptech-corp; (!= pypi unicore, Unified Perception Core LIbraries):
+version = '0.0.2'  # uni-core 0.0.3 requires torch>=2.0.0
+# TODO: update to 0.0.3 with PyTorch 2.x.x
+
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/dptech-corp/Uni-Core'
+description = """
+Uni-Core is built for rapidly creating PyTorch models with high performance,    
+especially for Transfromer-based models. It supports the following features:
+
+ - Distributed training over multi-GPUs and multi-nodes
+ - Mixed-precision training with fp16 and bf16
+ - High-performance fused CUDA kernels
+ - model checkpoint management
+ - Friendly logging
+ - Buffered (GPU-CPU overlapping) data loader
+ - Gradient accumulation
+ - Commonly used optimizers and LR schedulers
+ - Easy to create new models
+ - A faithful PyTorch reproduction of DeepMind's AlphaFold 2"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('Rust', '1.60.0'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('PyTorch', '1.12.0', versionsuffix),  # uni-core 0.0.3 requires torch>=2.0.0
+    ('SciPy-bundle', '2022.05'),
+    ('UCX-CUDA', '1.12.1', versionsuffix),
+    ('tensorboardX', '2.5.1'),
+    ('tqdm', '4.64.0'),
+    ('GitPython', '3.1.27')
+    # TODO: add some from exts below, e.g. wandb
+]
+
+use_pip = True
+
+exts_list = [
+    ('absl-py', '1.4.0', {
+        'modulename': 'absl',
+        'checksums': ['d2c244d01048ba476e7c080bd2c6df5e141d211de80223460d5b3b8a2a58433d'],
+    }),
+    ('contextlib2', '21.6.0', {
+        'checksums': ['ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869'],
+    }),
+    ('ml_collections', '0.1.1', {
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+        'checksums': ['3fefcc72ec433aa1e5d32307a3e474bbb67f405be814ea52a2166bfc9dbe68cc'],
+    }),
+    ('portalocker', '2.7.0', {
+        'checksums': ['032e81d534a88ec1736d03f780ba073f047a06c478b06e2937486f334e955c51'],
+    }),
+    ('ihm', '0.38', {
+        'checksums': ['571fe11fc7cd7eca9011e9c3bed9f5f9aceb11db155d07678fb678a204fb88ad'],
+    }),
+    ('docker-pycreds', '0.4.0', {
+        'modulename': 'dockerpycreds',
+        'checksums': ['6ce3270bcaf404cc4c3e27e4b6c70d3521deae82fb508767870fdbf772d584d4'],
+    }),
+    ('gitdb', '4.0.10', {
+        'checksums': ['6eb990b69df4e15bad899ea868dc46572c3f75339735663b81de79b06f17eb9a'],
+    }),
+    ('modelcif', '0.7', {
+        'checksums': ['d6acedb2c0afb7a6964b15aa275926dd8b55c88217ae82279a1667f33f6316de'],
+    }),
+    ('pathtools', '0.1.2', {
+        'checksums': ['7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0'],
+    }),
+    ('sentry-sdk', '1.26.0', {
+        'checksums': ['760e4fb6d01c994110507133e08ecd4bdf4d75ee4be77f296a3579796cf73134'],
+    }),
+    ('setproctitle', '1.3.2', {
+        'checksums': ['b9fb97907c830d260fa0658ed58afd48a86b2b88aac521135c352ff7fd3477fd'],
+    }),
+    # ('smmap', '5.0.0', {
+    #     'checksums': ['c840e62059cd3be204b0c9c9f74be2c09d5648eddd4580d9314c3ecde0b30936'],
+    # }),
+    ('urllib3', '1.26.16', {
+        'checksums': ['8f135f6502756bde6b2a9b28989df5fbe87c9970cecaa69041edcce7f0589b14'],
+    }),
+    # ('GitPython', '3.1.31', {
+    #     'modulename': 'git',
+    #     'checksums': ['8ce3bcf69adfdf7c7d503e78fd3b1c492af782d58893b650adb2ac8912ddd573'],
+    # }),
+    ('wandb', '0.15.4', {
+        'checksums': ['472daaaa1a4e29a46407a85fd77aadb724c91d87dfe2c37cd82ef77be2257011'],
+    }),
+    ('tokenizers', '0.13.2', {
+        'checksums': ['f9525375582fd1912ac3caa2f727d36c86ff8c0c6de45ae1aaff90f87f33b907'],
+    }),
+    ('lmdb', '1.4.1', {
+        'checksums': ['1f4c76af24e907593487c904ef5eba1993beb38ed385af82adb25a858f2d658d'],
+    }),
+    ('iopath', '0.1.10', {
+        'checksums': ['3311c16a4d9137223e20f141655759933e1eda24f8bff166af834af3c645ef01'],
+    }),
+    (name, version, {
+        'modulename': 'unicore',
+        'source_urls': ['https://github.com/dptech-corp/Uni-Core/archive/refs/tags/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['8b79bb1a8c4c76666836f5aed274445a2f29b7cce5f3db71c151bb7ac090bbe6'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/unicore'],
+}
+
+
+sanity_pip_check = True
+
+moduleclass = 'lib'
