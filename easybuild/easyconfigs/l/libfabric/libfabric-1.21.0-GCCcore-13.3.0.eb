@@ -1,7 +1,7 @@
 easyblock = 'ConfigureMake'
 
 name = 'libfabric'
-version = '1.13.2'
+version = '1.21.0'
 
 homepage = 'https://ofiwg.github.io/libfabric/'
 description = """
@@ -12,39 +12,31 @@ often integrated directly into libfabric.
 """
 
 # The psm3 provider (enabled by default) requires an AVX capable system to run
-toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
 toolchainopts = {'pic': True}
 
-github_account = 'ofiwg'
-source_urls = ['https://github.com/ofiwg/%(name)s/releases/download/v%(version)s']
+source_urls = ['https://github.com/ofiwg/libfabric/releases/download/v%(version)s']
 sources = [SOURCE_TAR_BZ2]
-patches = [
-    ('%(name)s-1.13.0_psm3-version.patch', 0),
-    '%(name)s-1.12.1_disable-psm3-avx-config.patch',
-]
 checksums = [
-    '25d783b0722a8df8fe61c1de75fafca684c5fe520303180f26f0ad6409cfc0b9',  # libfabric-1.13.2.tar.bz2
-    'f357a60f9cfd054469fef46f560531aa53ded3b7708c313b73d9bfdcb89bf24d',  # libfabric-1.13.0_psm3-version.patch
-    # libfabric-1.12.1_disable-psm3-avx-config.patch
-    '129be05a824b41eeb7bddac3c23aa421a13f7dde622948df942a265ccc96125a',
+    {'libfabric-1.21.0.tar.bz2': '0c1b7b830d9147f661e5d7f359250b85b5a9885c330464cd3b5e5d35b86551c7'},
 ]
 
 builddependencies = [
-    ('binutils', '2.37'),
-    ('pkg-config', '0.29.2'),
-    ('Autotools', '20210726'),
+    ('binutils', '2.42'),
+    ('pkgconf', '2.2.0'),
+    ('Autotools', '20231222'),
 ]
 
 dependencies = [
-    ('numactl', '2.0.14'),
+    ('numactl', '2.0.18'),
     # PSM2 only compiles on x86_64
     ('PSM2', {'arch=x86_64': '12.0.1', 'arch=*': False}),
 ]
 
 osdependencies = [OS_PKG_IBVERBS_DEV]
 
-# Regenerate build files
-preconfigopts = "autoreconf -f -i &&"
+# Regenerate build files to pick up psm3-axv-config patch
+preconfigopts = "./autogen.sh &&"
 
 # Disable deprecated "sockets" provider
 configopts = "--disable-sockets "
