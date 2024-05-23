@@ -1,0 +1,73 @@
+easyblock = 'EB_GCC'
+
+name = 'GCCcore'
+version = '13.1.0'
+
+homepage = 'https://gcc.gnu.org/'
+description = """The GNU Compiler Collection includes front ends for C, C++, Objective-C, Fortran, Java, and Ada,
+ as well as libraries for these languages (libstdc++, libgcj,...)."""
+
+toolchain = SYSTEM
+
+source_urls = [
+    'https://ftpmirror.gnu.org/gnu/gcc/gcc-%(version)s',  # GCC auto-resolving HTTP mirror
+    'https://sourceware.org/pub/gcc/releases/gcc-%(version)s',  # fallback URL for GCC
+    'https://ftpmirror.gnu.org/gnu/gmp',  # idem for GMP
+    'https://ftpmirror.gnu.org/gnu/mpfr',  # idem for MPFR
+    'https://ftpmirror.gnu.org/gnu/mpc',  # idem for MPC
+    'ftp://gcc.gnu.org/pub/gcc/infrastructure/',  # GCC dependencies
+    'https://gcc.gnu.org/pub/gcc/infrastructure/',  # HTTPS mirror for GCC dependencies
+    'https://libisl.sourceforge.io/',  # fallback URL for isl
+    'https://sourceware.org/pub/newlib/',  # for newlib
+    'https://github.com/MentorEmbedded/nvptx-tools/archive',  # for nvptx-tools
+]
+sources = [
+    'gcc-%(version)s.tar.gz',
+    'gmp-6.2.1.tar.bz2',
+    'mpfr-4.2.0.tar.bz2',
+    'mpc-1.3.1.tar.gz',
+    'isl-0.26.tar.bz2',
+    'newlib-4.3.0.20230120.tar.gz',
+    {'download_filename': '93e0090.tar.gz', 'filename': 'nvptx-tools-20230122.tar.gz'},
+]
+patches = [
+    'GCCcore-6.2.0-fix-find-isl.patch',
+    'GCCcore-9.3.0_gmp-c99.patch',
+    'GCCcore-12.1.0_fix-double-destruct.patch',
+    'GCCcore-12.2.0_fix-avx512-misoptimization.patch',
+    'GCCcore-12.x_riscv_multiarch_support.patch',
+    'GCCcore-13.2.0_fix_slp_and_loop_mask_len.patch',
+]
+checksums = [
+    {'gcc-13.1.0.tar.gz': 'bacd4c614d8bd5983404585e53478d467a254249e0f1bb747c8bc6d787bd4fa2'},
+    {'gmp-6.2.1.tar.bz2': 'eae9326beb4158c386e39a356818031bd28f3124cf915f8c5b1dc4c7a36b4d7c'},
+    {'mpfr-4.2.0.tar.bz2': '691db39178e36fc460c046591e4b0f2a52c8f2b3ee6d750cc2eab25f1eaa999d'},
+    {'mpc-1.3.1.tar.gz': 'ab642492f5cf882b74aa0cb730cd410a81edcdbec895183ce930e706c1c759b8'},
+    {'isl-0.26.tar.bz2': '5eac8664e9d67be6bd0bee5085d6840b8baf738c06814df47eaf4166d9776436'},
+    {'newlib-4.3.0.20230120.tar.gz': '83a62a99af59e38eb9b0c58ed092ee24d700fff43a22c03e433955113ef35150'},
+    {'nvptx-tools-20230122.tar.gz': 'af05fac26e9a83d337758a5495dc35f7a7bbfd90cd09f4a5d3242d059f235e08'},
+    {'GCCcore-6.2.0-fix-find-isl.patch': '5ad909606d17d851c6ad629b4fddb6c1621844218b8d139fed18c502a7696c68'},
+    {'GCCcore-9.3.0_gmp-c99.patch': '0e135e1cc7cec701beea9d7d17a61bab34cfd496b4b555930016b98db99f922e'},
+    {'GCCcore-12.1.0_fix-double-destruct.patch': '2e09c125318b6c15ec60f1807d77fb7d1f32b64a4e5d1c9a3da89ba2ca738d35'},
+    {'GCCcore-12.2.0_fix-avx512-misoptimization.patch':
+     'bb3db707727b9975b0005346ef04230a96b3ad896f004a34262a82a244b5d436'},
+    {'GCCcore-12.x_riscv_multiarch_support.patch': '92fc2b17b6943611a657904500fbf3db8160eddbcea320828d4a50a885e2778f'},
+    {'GCCcore-13.2.0_fix_slp_and_loop_mask_len.patch':
+     'e1d63e04bf494a2f79346ac7454372f117b63288cc18c68876a5b8bdc453cf88'},
+]
+
+builddependencies = [
+    ('M4', '1.4.19'),
+    ('binutils', '2.40'),
+]
+
+languages = ['c', 'c++', 'fortran']
+
+withisl = True
+withnvptx = True
+
+# Perl is only required when building with NVPTX support
+if withnvptx:
+    osdependencies = ['perl']
+
+moduleclass = 'compiler'

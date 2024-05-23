@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'UCC'
+version = '1.2.0'
+
+homepage = 'https://www.openucx.org/'
+description = """UCC (Unified Collective Communication) is a collective
+communication operations API and library that is flexible, complete, and 
+feature-rich for current and emerging programming models and runtimes.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openucx/ucc/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+patches = ['UCC-1.1.0-multiple_component_paths.patch']
+checksums = [
+    {'v1.2.0.tar.gz': 'c1552797600835c0cf401b82dc89c4d27d5717f4fb805d41daca8e19f65e509d'},
+    {'UCC-1.1.0-multiple_component_paths.patch': '3081d0f694331daa4a88a0fa3fb54b9a918015248ae5eb7b3157b924abd31bee'},
+]
+
+if ARCH == "riscv64":
+    patches += ['UCC-1.2.0_add-riscv-support.patch']
+    checksums += [{'UCC-1.2.0_add-riscv-support.patch':
+                   'e9e2a4c206dad2367af97d92c12b796b454992cfce23984b132e9e78a07ff55b'}]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('UCX', '1.15.0'),
+]
+
+preconfigopts = "./autogen.sh && "
+
+sanity_check_paths = {
+    'files': ['bin/ucc_info'],
+    'dirs': ['include', 'lib']
+}
+
+sanity_check_commands = ["ucc_info -c"]
+
+moduleclass = 'lib'
