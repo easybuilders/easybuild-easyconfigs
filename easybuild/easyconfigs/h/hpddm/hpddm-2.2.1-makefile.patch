@@ -1,0 +1,50 @@
+Patches Makefile to do only 4 parallel runs, creates Makefile.inc from the original Makefile.Linux
+Author: J. Sassmannshausen (ICL/UK)
+diff --git a/hpddm-2.2.1.orig/Makefile b/hpddm-2.2.1/Makefile
+index 3a72783..0e3c46d 100644
+--- a/hpddm-2.2.1.orig/Makefile
++++ b/hpddm-2.2.1/Makefile
+@@ -323,10 +323,10 @@ ifdef EIGENSOLVER
+ 		echo "$${CMD}"; \
+ 		$${CMD} || exit; \
+ 		if [ "${SOLVER}" != "HYPRE" ]; then \
+-			CMD="${MPIRUN} 5 $(subst test_,${SEP} ${TOP_DIR}/,$@) -hpddm_myPrefix_schwarz_coarse_correction deflated -hpddm_myPrefix_geneo_nu=10 -hpddm_myPrefix_verbosity=2 -nonuniform -Nx 50 -Ny 50 -symmetric_csr -hpddm_myPrefix_level_2_p 2 -hpddm_myPrefix_gmres_restart=25 -hpddm_verbosity=2 -prefix=myPrefix_ -hpddm_myPrefix_geneo_threshold 0.2 -hpddm_myPrefix_geneo_force_uniformity min"; \
++			CMD="${MPIRUN} 4 $(subst test_,${SEP} ${TOP_DIR}/,$@) -hpddm_myPrefix_schwarz_coarse_correction deflated -hpddm_myPrefix_geneo_nu=10 -hpddm_myPrefix_verbosity=2 -nonuniform -Nx 50 -Ny 50 -symmetric_csr -hpddm_myPrefix_level_2_p 2 -hpddm_myPrefix_gmres_restart=25 -hpddm_verbosity=2 -prefix=myPrefix_ -hpddm_myPrefix_geneo_threshold 0.2 -hpddm_myPrefix_geneo_force_uniformity min"; \
+ 			echo "$${CMD}"; \
+ 			$${CMD} || exit; \
+-			CMD="${MPIRUN} 5 $(subst test_,${SEP} ${TOP_DIR}/,$@) -hpddm_myPrefix_schwarz_coarse_correction deflated -hpddm_myPrefix_geneo_nu=10 -hpddm_myPrefix_verbosity=2 -nonuniform -Nx 50 -Ny 50 -symmetric_csr -hpddm_myPrefix_level_2_p 2 -hpddm_myPrefix_gmres_restart=25 -hpddm_verbosity=2 -prefix=myPrefix_ -hpddm_myPrefix_geneo_threshold 0.2 -hpddm_myPrefix_geneo_force_uniformity max"; \
++			CMD="${MPIRUN} 4 $(subst test_,${SEP} ${TOP_DIR}/,$@) -hpddm_myPrefix_schwarz_coarse_correction deflated -hpddm_myPrefix_geneo_nu=10 -hpddm_myPrefix_verbosity=2 -nonuniform -Nx 50 -Ny 50 -symmetric_csr -hpddm_myPrefix_level_2_p 2 -hpddm_myPrefix_gmres_restart=25 -hpddm_verbosity=2 -prefix=myPrefix_ -hpddm_myPrefix_geneo_threshold 0.2 -hpddm_myPrefix_geneo_force_uniformity max"; \
+ 			echo "$${CMD}"; \
+ 			$${CMD} || exit; \
+ 		fi \
+diff --git a/hpddm-2.2.1/Makefile.inc b/hpddm-2.2.1/Makefile.inc
+new file mode 100644
+index 0000000..b7878d5
+--- /dev/null
++++ b/hpddm-2.2.1/Makefile.inc
+@@ -0,0 +1,25 @@
++SOLVER ?= MUMPS
++SUBSOLVER ?= MUMPS
++EIGENSOLVER ?= ARPACK
++MPICXX ?= mpic++
++MPICC ?= mpicc
++MPIF90 ?= mpif90
++MPIRUN ?= mpirun -np
++
++override CXXFLAGS += -std=c++11 -O3 -fPIC
++override CFLAGS += -std=c99 -O3
++
++HPDDMFLAGS ?= -DHPDDM_NUMBERING=\'C\'
++
++INCS =
++LIBS =
++
++MUMPS_INCS = -I${EBROOTMUMPS}/include
++PYTHON_INCS = -I${EBROOTPYTHON}/include/python3.9
++
++BLAS_LIBS = -L${EBROOTARPACKMINNG}/lib -lflexiblas
++ARPACK_LIBS = -L${EBROOTARPACKMINNG}/lib -larpack
++SCALAPACK_LIBS = -L${EBROOTSCALAPACK}/lib -lscalapack
++MUMPS_LIBS = -L${EBROOTMUMPS}/lib -lsmumps -ldmumps -lcmumps -lzmumps -lmumps_common -lpord -lmpi
++HYPRE_LIBS = -L${EBROOTHYPRE}/lib -lHYPRE
++PYTHON_LIBS = -L${EBROOTPYTHON}/lib -lpython3.9
