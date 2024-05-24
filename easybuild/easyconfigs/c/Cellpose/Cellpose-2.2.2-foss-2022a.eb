@@ -25,9 +25,16 @@ dependencies = [
     ('tqdm', '4.64.0'),
     ('imagecodecs', '2022.9.26'),
     ('scikit-build', '0.15.0'),
+    ('QtPy', '2.3.0'),
 ]
 
 use_pip = True
+
+# avoid hatchling requirement to install
+# (since installing it introduces conflicting version requirements with poetry included with Python)
+_preinstallopts_no_hatchling = """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """
+_preinstallopts_no_hatchling += """-e 's/^requires = .*/requires = ["setuptools"]/g' """
+_preinstallopts_no_hatchling += r"""-e 's/dynamic = \["version"\]/version = "%(version)s"/g' pyproject.toml && """
 
 exts_list = [
     ('tifffile', '2023.4.12', {
@@ -44,6 +51,10 @@ exts_list = [
     }),
     ('roifile', '2023.5.12', {
         'checksums': ['32eeba0d9ad52cc249d6a234b737c1808a6c5d7d9baae6453709eb74222b3433'],
+    }),
+    ('superqt', '0.6.6', {
+        'preinstallopts': _preinstallopts_no_hatchling,
+        'checksums': ['792e09165c8a788ee245bdb784e018f9077fb309253354d86793cdf1d092f99f'],
     }),
     (name, version, {
         # OpenCV dependency provides opencv-contrib-python (equivalent to opencv-python-headless)
