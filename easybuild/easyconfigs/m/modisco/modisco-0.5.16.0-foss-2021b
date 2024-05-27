@@ -1,0 +1,57 @@
+easyblock = 'PythonBundle'
+
+name = 'modisco'
+version = '0.5.16.0'
+
+homepage = 'https://github.com/kundajelab/tfmodisco'
+description = """TF-MoDISco: Transcription-Factor Motif Discovery from Importance Scores."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+dependencies = [
+    ('h5py', '3.6.0'),
+    ('igraph', '0.9.5'),
+    ('leidenalg', '0.8.8'), 
+    ('matplotlib', '3.4.3'),
+    ('numba', '0.54.1'), # for pynndescent
+    ('psutil', '5.9.4'),
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'), # for numpy 1.21 and pandas 1.3.4  
+    ('scikit-learn', '1.0.2'),
+    ('tqdm', '4.62.3'),
+    ('TensorFlow', '2.8.4'),
+]
+
+use_pip = True 
+
+exts_list = [
+    ('joblib', '1.0.1', {
+        'checksums': ['9c17567692206d2f3fb9ecf5e991084254fe631665c450b443761c4186a613f7'],
+    }),
+    ('pynndescent', '0.5.8', {
+        'checksums': ['a7c552569bf604a101fd54bba1d27c12389e065945dee3a6777a518c63a46f2b'],
+    }),
+    (name, version, {
+        'checksums': ['24d1eef8f7e3617a8da7e595252fe9f5a20803b79453a8d11132769f04f49085'],
+        # Loosen unnecessarily strict version dependency for numpy
+        'preinstallopts': "sed -i 's|numpy>=1.9|numpy>=1.2|g' setup.py &&",
+        'postinstallcmds': ["cp -a test %(installdir)s"],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/run_leiden'],
+    'dirs': ['test', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_pip_check = True
+
+sanity_check_commands = [
+    "python -c 'from modisco import core' "
+    # copy test to build directory, after making sure it exists, so --sanity-check-only works;
+    # enable write permissions, since installation directory may be read-only
+    "mkdir -p %(builddir)s && cp -a %(installdir)s/test %(builddir)s/ && chmod -R u+wx %(builddir)s/test",
+    "cd %(builddir)s/test && python test_core.py && python test_tfmodisco_workflow.py",
+] 
+
+moduleclass = 'bio'
