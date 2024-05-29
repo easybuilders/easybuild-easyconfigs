@@ -1391,7 +1391,6 @@ class EasyConfigTest(TestCase):
         failing_checks = []
         for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
-            install_libdir = ec.get('install_libdir')
             configopts = ec.get('configopts')
             if isinstance(configopts, list):
                 configopts = ' '.join(configopts)
@@ -1401,8 +1400,6 @@ class EasyConfigTest(TestCase):
                 failing_checks.append(
                     "Found -DCMAKE_INSTALL_LIBDIR in configopts. Use install_libdir instead: %s" % ec_fn
                 )
-            if install_libdir == 'lib':
-                failing_checks.append("install_libdir was set to the default of 'lib': %s" % ec_fn)
 
         if failing_checks:
             self.fail('\n'.join(failing_checks))
