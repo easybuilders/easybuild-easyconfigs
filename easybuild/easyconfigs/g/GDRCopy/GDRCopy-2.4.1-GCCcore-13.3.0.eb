@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'GDRCopy'
+version = '2.4.1'
+
+homepage = 'https://github.com/NVIDIA/gdrcopy'
+description = "A low-latency GPU memory copy library based on NVIDIA GPUDirect RDMA technology."
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'NVIDIA'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['faa7e816e9bad3301e53d6721457f7ef5ab42b7aa3b01ffda51f8e5620bb20ed']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Autotools', '20231222'),
+    ('pkgconf', '2.2.0'),
+]
+
+build_info_msg = """This easyconfig only installs the library of GDRCopy. Please keep in mind
+that GDRCopy also needs the following kernel modules at runtime:
+
+1. Kernel module for GDRCopy: improves Host to GPU communication
+   https://github.com/NVIDIA/gdrcopy
+   RPM: 'gdrcopy-kmod', DEB: 'gdrdrv-dkms'
+   Requirements: version of GDRCopy kernel module (gdrdrv.ko) >= 2.0
+
+2. (optional) Kernel module for GPUDirect RDMA: improves GPU to GPU communication
+   https://github.com/Mellanox/nv_peer_memory
+   RPM: 'nvidia_peer_memory'
+   Requirements: Mellanox HCA with MLNX_OFED 2.1
+
+These kernel modules are not listed as system dependencies to lower the system
+requirements to build this easyconfig, as they are not needed for the build."""
+
+skipsteps = ['configure']
+
+local_envopts = "prefix=%(installdir)s"
+prebuildopts = "PATH=$PATH:/sbin "  # ensures that ldconfig is found
+buildopts = "config lib %s" % local_envopts
+install_cmd = "make lib_install"
+installopts = local_envopts
+
+sanity_check_paths = {
+    'files': ['lib/libgdrapi.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'
