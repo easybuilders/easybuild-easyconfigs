@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'libarchive'
+version = '3.6.2'
+
+homepage = 'https://www.libarchive.org/'
+
+description = """
+ Multi-format archive and compression library
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://www.libarchive.org/downloads/']
+sources = [SOURCE_TAR_GZ]
+patches = ['libarchive-3.6.0_fix-tar-error-reporting.patch']
+checksums = [
+    {'libarchive-3.6.2.tar.gz': 'ba6d02f15ba04aba9c23fd5f236bb234eab9d5209e95d1c4df85c44d5f19b9b3'},
+    {'libarchive-3.6.0_fix-tar-error-reporting.patch':
+     'cf11f2d6e403cbb700f8ad1f67141f2a54884fa25e07d6a7919b0b6865d2cba2'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('XZ', '5.4.2'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+postinstallcmds = ["sed -i 's/iconv//g' %(installdir)s/lib/pkgconfig/libarchive.pc"]
+
+sanity_check_paths = {
+    'files': ['include/archive.h', 'lib/libarchive.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'share/man/man3'],
+}
+
+moduleclass = 'tools'

@@ -1,0 +1,37 @@
+Don't use domains_color_file.tsv and domain_includelist.txt from the install tree.
+Use env var or current dir.
+
+Åke Sandgren, 2023-11-02
+diff -ru BiG-SCAPE-1.1.5.orig/ArrowerSVG.py BiG-SCAPE-1.1.5/ArrowerSVG.py
+--- BiG-SCAPE-1.1.5.orig/ArrowerSVG.py	2022-11-14 17:04:47.000000000 +0100
++++ BiG-SCAPE-1.1.5/ArrowerSVG.py	2023-11-02 15:48:51.313247855 +0100
+@@ -27,7 +27,7 @@
+ gene_contour_thickness = 2 # thickness grows outwards
+ stripe_thickness = 3
+ 
+-domains_color_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "domains_color_file.tsv")
++domains_color_file = os.path.join(os.getenv('BIG_SCAPE_DATA_PATH', os.getcwd()), "domains_color_file.tsv")
+ 
+ 
+ def read_color_domains_file():
+diff -ru BiG-SCAPE-1.1.5.orig/bigscape.py BiG-SCAPE-1.1.5/bigscape.py
+--- BiG-SCAPE-1.1.5.orig/bigscape.py	2022-11-14 17:04:47.000000000 +0100
++++ BiG-SCAPE-1.1.5/bigscape.py	2023-11-02 15:48:02.929621562 +0100
+@@ -2235,7 +2235,7 @@
+     # Get domain_includelist
+     has_includelist = False
+     if options.domain_includelist:
+-        bigscape_path = os.path.dirname(os.path.realpath(__file__))
++        bigscape_path = os.getenv('BIG_SCAPE_DATA_PATH', os.getcwd())
+         if os.path.isfile(os.path.join(bigscape_path,"domain_includelist.txt")):
+             domain_includelist = set()
+             for line in open(os.path.join(bigscape_path,"domain_includelist.txt"), "r"):
+@@ -2850,7 +2852,7 @@
+     if not os.path.isfile(pfams_js_file):
+         with open(pfams_js_file, "w") as pfams_js:
+             pfam_json = {}
+-            pfam_colors = generatePfamColorsMatrix(os.path.join(os.path.dirname(os.path.realpath(__file__)), "domains_color_file.tsv"))
++            pfam_colors = generatePfamColorsMatrix(os.path.join(os.getenv('BIG_SCAPE_DATA_PATH', os.getcwd()), "domains_color_file.tsv"))
+             for pfam_code in pfam_info:
+                 pfam_obj = {}
+                 if pfam_code in pfam_colors:

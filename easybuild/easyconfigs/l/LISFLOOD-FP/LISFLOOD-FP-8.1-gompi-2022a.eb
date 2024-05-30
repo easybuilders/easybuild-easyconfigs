@@ -1,0 +1,51 @@
+easyblock = 'CMakeMakeCp'
+
+name = 'LISFLOOD-FP'
+version = '8.1'
+
+homepage = 'https://www.seamlesswave.com/LISFLOOD8.0.html'
+description = """The LISFLOOD-FP is a raster-based hydrodynamic model originally developed by
+the University of Bristol. It has undergone extensive development since
+conception and includes a collection of numerical schemes implemented to solve
+a variety of mathematical approximations of the 2D shallow water equations of
+different complexity.
+The local inertia solver, known as the ACC solver, is widely used to simulate
+floods with gradually-varying, subcritical flow over sufficiently rough
+surfaces with Manning’s coefficient of at least 0.03. It has a version with
+CPU-specific optimisations and enhanced with a subgrid channel model.
+LISFLOOD-FP also includes second-order discontinuous Galerkin (DG2) and
+first-order finite volume (FV1) solvers of the full shallow water equations for
+modelling a wide range of flows, including rapidly-propagating, supercritical
+flows, shock waves, or flows over very smooth surfaces. The DG2/FV1 solvers are
+parallelised for the multi-core CPU architecture, but do not integrate with the
+subgrid channel model nor with the CPU-specific optimisations.
+"""
+
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+
+source_urls = ['https://zenodo.org/record/6912932/files/']
+sources = [{'download_filename': '%(name)s%20v%(version)s.zip', 'filename': SOURCE_ZIP}]
+checksums = ['57df4ff38f8a47e6907bc4a98466bca6eecb540862a89b9db7e1c4fbe9259d95']
+
+builddependencies = [
+    ('CMake', '3.24.3')
+]
+
+dependencies = [
+    ('netCDF', '4.9.0')
+]
+
+_lisflood_bins = ['DG2downscale', 'generateDG2DEM', 'generateDG2start', 'lisflood']
+
+files_to_copy = [(_lisflood_bins, 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _lisflood_bins],
+    'dirs': [],
+}
+
+sanity_check_commands = ["lisflood -version"]
+
+moduleclass = 'phys'

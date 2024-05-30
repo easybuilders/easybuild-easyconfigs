@@ -1,0 +1,48 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'CMakeMake'
+
+name = 'kallisto'
+version = '0.50.1'
+
+homepage = 'https://pachterlab.github.io/kallisto/'
+description = """kallisto is a program for quantifying abundances of transcripts from RNA-Seq data, or more generally
+ of target sequences using high-throughput sequencing reads."""
+
+toolchain = {'name': 'gompi', 'version': '2022b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+github_account = 'pachterlab'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    {'v0.50.1.tar.gz': '030752bab3b0e33cd3f23f6d8feddd74194e5513532ffbf23519e84db2a86d34'},
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('CMake', '3.24.3'),
+    ('zlib', '1.2.12'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.0'),
+    ('HTSlib', '1.17'),
+]
+
+parallel = 1
+
+configopts = '-DUSE_HDF5=ON'
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "kallisto version",
+    "cd %(builddir)s/%(name)s-%(version)s/test && kallisto index -i ts.idx transcripts.fasta.gz",
+    "cd %(builddir)s/%(name)s-%(version)s/test && kallisto quant -i ts.idx -o out -b 100 reads_{1,2}.fastq.gz",
+]
+
+moduleclass = 'bio'

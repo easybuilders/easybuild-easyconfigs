@@ -1,0 +1,46 @@
+easyblock = 'MakeCp'
+
+name = 'git-annex'
+version = '10.20230802'
+
+homepage = 'https://git-annex.branchable.com'
+description = """git-annex allows managing large files with git, without storing the file contents in git. It can sync,
+backup, and archive your data, offline and online. Checksums and encryption keep your data safe and secure. Bring the
+power and distributed nature of git to bear on your large files with git-annex."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+
+builddependencies = [('binutils', '2.39')]
+
+dependencies = [
+    ('GHC', '9.2.2', '-x86_64', SYSTEM),
+    ('Stack', '2.11.1', '-x86_64', SYSTEM),
+    ('git', '2.38.1', '-nodocs'),
+]
+
+sources = [{
+    'git_config': {'url': 'git://git-annex.branchable.com',
+                   'repo_name': '%(name)s',
+                   'tag': '%(version)s',
+                   'clone_into': '%(name)s-%(version)s',
+                   },
+    'filename': '%(name)s-%(version)s.tar.gz',
+}]
+
+checksums = [None]
+
+prebuildopts = "stack setup && stack build && "
+buildopts = "install-bins BUILDER=stack PREFIX=%(builddir)s"
+
+files_to_copy = [
+    (['git-annex', 'git-annex-shell'], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/git-annex', 'bin/git-annex-shell'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['git-annex version']
+
+moduleclass = 'tools'

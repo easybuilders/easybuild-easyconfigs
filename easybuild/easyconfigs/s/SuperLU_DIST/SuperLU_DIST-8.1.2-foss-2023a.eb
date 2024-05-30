@@ -1,0 +1,44 @@
+easyblock = "EB_SuperLU"
+
+name = 'SuperLU_DIST'
+version = '8.1.2'
+
+homepage = 'https://crd-legacy.lbl.gov/~xiaoye/SuperLU/'
+description = """SuperLU is a general purpose library for the direct solution of large, sparse, nonsymmetric systems
+ of linear equations on high performance machines."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+github_account = 'xiaoyeli'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ["v%(version)s.tar.gz"]
+checksums = ['7b16c442bb01ea8b298c0aab9a2584aa4615d09786aac968cb2f3118c058206b']
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('ParMETIS', '4.0.3'),
+]
+
+configopts = '-DTPL_PARMETIS_INCLUDE_DIRS="${EBROOTPARMETIS}/include" '
+configopts += '-DTPL_PARMETIS_LIBRARIES="${EBROOTPARMETIS}/lib/libparmetis.a;${EBROOTPARMETIS}/lib/libmetis.a" '
+
+# Some tests run longer than default 1500s timeout on fairly big machine (36 cores).
+# Include only first four tests, which should be fairly small to run
+pretestopts = 'export ARGS="$ARGS --tests-regex pdtest_[21]x1_[13]_2_8_20_SP" && '
+
+# remove broken symlink to libsuperlu.a
+postinstallcmds = [
+    "if [ -f %(installdir)s/lib64/libsuperlu.a ]; then rm %(installdir)s/lib64/libsuperlu.a; fi",
+    # This second one can be removed when https://github.com/easybuilders/easybuild-framework/pull/4435 is merged
+    # (i.e. in EasyBuild 5.0)
+    "if [ -f %(installdir)s/lib/libsuperlu.a ]; then rm %(installdir)s/lib/libsuperlu.a; fi"
+]
+
+sanity_check_paths = {
+    'files': ['lib64/libsuperlu_dist.a'],
+    'dirs': ['include']
+}
+
+moduleclass = 'numlib'

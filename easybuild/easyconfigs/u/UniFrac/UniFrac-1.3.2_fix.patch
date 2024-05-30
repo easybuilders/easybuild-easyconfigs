@@ -1,0 +1,42 @@
+Fix BLAS and LAPACK headers and libraries
+Make sure libccu is found for capi_test
+Author: Samuel Moors (Vrije Universiteit Brussel)
+diff -ur unifrac-binaries-1.3.2.orig/src/Makefile unifrac-binaries-1.3.2/src/Makefile
+--- unifrac-binaries-1.3.2.orig/src/Makefile	2023-05-09 18:46:16.000000000 +0200
++++ unifrac-binaries-1.3.2/src/Makefile	2023-07-26 14:28:56.027032000 +0200
+@@ -36,7 +36,7 @@
+ 	PREFIX := $(CONDA_PREFIX)
+ endif
+ 
+-BLASLIB=-llapacke -lcblas
++BLASLIB=-llapacke -lflexiblas
+ 
+ ifeq ($(PLATFORM),Darwin)
+ 	AVX2 := $(shell sysctl -a | grep -c AVX2)
+diff -ur unifrac-binaries-1.3.2.orig/src/skbio_alt.cpp unifrac-binaries-1.3.2/src/skbio_alt.cpp
+--- unifrac-binaries-1.3.2.orig/src/skbio_alt.cpp	2023-05-09 18:46:16.000000000 +0200
++++ unifrac-binaries-1.3.2/src/skbio_alt.cpp	2023-07-26 14:07:45.521123760 +0200
+@@ -10,8 +10,9 @@
+ #include <algorithm>
+ 
+ // Not using anything mkl specific, but this is what we get from Conda
+-#include <mkl_cblas.h>
+-#include <mkl_lapacke.h>
++#include "cblas.h"
++#include "lapacke.h"
++
+ 
+ static std::mt19937 myRandomGenerator;
+ 
+diff -ur unifrac-binaries-1.3.2.orig/test/Makefile unifrac-binaries-1.3.2/test/Makefile
+--- unifrac-binaries-1.3.2.orig/test/Makefile	2023-05-09 18:46:16.000000000 +0200
++++ unifrac-binaries-1.3.2/test/Makefile	2023-07-26 15:58:32.421333000 +0200
+@@ -13,7 +13,7 @@
+ test_binaries: capi_test
+ 
+ capi_test: capi_test.c
+-	$(CC) -std=c99 -O0 -g capi_test.c -I../src -lssu -L${PREFIX}/lib -Wl,-rpath,${PREFIX}/lib -o capi_test
++	$(CC) -std=c99 -O0 -g capi_test.c -I../src -lssu -L../src -Wl,-rpath,../src -o capi_test
+ 
+ clean:
+ 	-rm -f *.o capi_test

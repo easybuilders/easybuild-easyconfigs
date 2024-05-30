@@ -1,0 +1,138 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@emblde, 2023/08
+easyblock = 'PythonBundle'
+
+name = 'napari'
+version = '0.4.18'
+
+homepage = 'https://napari.org/'
+description = """napari is a fast, interactive, multi-dimensional image viewer for Python. It's  
+designed for browsing, annotating, and analyzing large multi-dimensional images.
+It's built on top of Qt (for the GUI), vispy (for performant GPU-based          
+rendering), and the scientific Python stack (numpy, scipy)."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('PyQt5', '5.15.5'),
+    ('SciPy-bundle', '2022.05'),
+    ('PyYAML', '6.0'),
+    ('pydantic', '1.10.4'),
+    ('dask', '2022.10.0'),
+    ('PyOpenGL', '3.1.6'),
+    ('imageio', '2.22.2'),
+    ('tqdm', '4.64.0'),
+    ('IPython', '8.5.0'),
+    ('VisPy', '0.12.2'),  # vispy<0.13,>=0.12.1
+    ('scikit-image', '0.19.3'),
+    ('matplotlib', '3.5.2'),
+    ('Qtconsole', '5.4.0'),
+    ('Pint', '0.22'),
+    ('wrapt', '1.15.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+
+# avoid hatchling requirement to install (compare genomepy-0.15.0-foss-2022a.eb) 
+# (since installing it introduces conflicting version requirements with poetry included with Python)
+_preinstallopts_no_hatchling = """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """
+_preinstallopts_no_hatchling += """-e 's/^requires = .*/requires = ["setuptools"]/g' """
+_preinstallopts_no_hatchling += r"""-e 's/dynamic = \["version"\]/version = "%(version)s"/g' pyproject.toml && """
+
+
+exts_list = [
+    # distributed 2022.10.0 (dask) req. tornado <6.2,>=6.0.3; Ipython provides 6.2. 
+    ('tornado', '6.1', {
+        'checksums': ['33c6e81d7bd55b468d2e793517c909b139960b6c790a60b7991b9b6b76fb9791'],
+    }),
+    ('in_n_out', '0.1.8', {
+        'preinstallopts': _preinstallopts_no_hatchling,
+        'checksums': ['8162af8787e682eb4b36d047f914199d80f1124e3a41420cd53de680e7d0a254'],
+    }),
+    # stick with app_model=0.1.1, because this version does not require hatchling
+    ('app-model', '0.1.1', {
+        'checksums': ['40830455cb66441001ae25978698842eacf16e6ce1be7d737a0eaaad063de562'],
+    }),
+    ('cachey', '0.2.1', {
+        'checksums': ['0310ba8afe52729fa7626325c8d8356a8421c434bf887ac851e58dcf7cf056a6'],
+    }),
+    ('lazy_loader', '0.3', {
+        'checksums': ['3b68898e34f5b2a29daaaac172c6555512d0f32074f147e2254e4a6d9d838f37'],
+    }),
+    ('docstring_parser', '0.15', {
+        'checksums': ['48ddc093e8b1865899956fcc03b03e66bb7240c310fac5af81814580c55bf682'],
+    }),
+    # stick with magicgui=0.6.1,because this version does not require hatchlingdue to hatchling
+    ('magicgui', '0.6.1', {
+        'preinstallopts': _preinstallopts_no_hatchling,
+        'checksums': ['319bb789c9d6f047009cf1199b59d9a304017d0447b755b9892d59a0361e5a22'],
+    }),
+    ('numpydoc', '1.5.0', {
+        'checksums': ['b0db7b75a32367a0e25c23b397842c65e344a1206524d16c8069f0a1c91b5f4c'],
+    }),
+    ('psygnal', '0.9.2', {
+        'preinstallopts': _preinstallopts_no_hatchling,
+        'checksums': ['33010606b4a18ba09e42f622990fb3402baf0683497c3b316660edbd8d5aa2df'],
+    }),
+    ('superqt', '0.5.0', {
+        'preinstallopts': _preinstallopts_no_hatchling,
+        'checksums': ['a88a8671b886e8aa78b6f9978ae65bfc540dceb04f76d045079b753b2d3791b9'],
+    }),
+    ('napari-console', '0.0.8', {
+        'modulename': 'napari_console',
+        'checksums': ['9fa3f665ec0f5f351c364b212e73cdc4004615461dca6cbfaacf028525ec740a'],
+    }),
+    ('napari-plugin-engine', '0.2.0', {
+        'checksums': ['fa926f869d70e0d652c005661948cd0c7fee5508ae17d437937f34f5287590b3'],
+    }),
+    ('napari-svg', '0.1.10', {
+        'checksums': ['18e642c888a71e09c9d1097f25bced1e7ef5dde1771469647bcd77975800f77d'],
+    }),
+    ('typer', '0.7.0', {
+        'checksums': ['ff797846578a9f2a201b53442aedeb543319466870fbe1c701eab66dd7681165'],
+    }),
+    ('pyproject_hooks', '1.0.0', {
+        'checksums': ['f271b298b97f5955d53fb12b72c1fb1948c22c1a6b70b315c54cedaca0264ef5'],
+    }),
+    ('build', '0.10.0', {
+        'checksums': ['d5b71264afdb5951d6704482aac78de887c80691c52b88a9ad195983ca2c9269'],
+    }),
+    ('mdurl', '0.1.2', {
+        'checksums': ['bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba'],
+    }),
+    ('markdown-it-py', '2.1.0', {
+        'modulename': 'markdown_it',
+        'checksums': ['cf7e59fed14b5ae17c0006eff14a2d9a00ed5f3a846148153899a0224e2c07da'],
+    }),
+    # rich >=13.3 req pygments >=2.13, but we have 2.12
+    # (MultiQC-1.14-foss-2022a: rich 13.3.1)
+    ('rich', '13.2.0', {
+        'checksums': ['f1a00cdd3eebf999a15d85ec498bfe0b1a77efe9b34f645768a54132ef444ac5'],
+    }),
+    ('npe2', '0.7.2', {
+        'preinstallopts': _preinstallopts_no_hatchling,
+        'checksums': ['33a520f75c22ada5b77ef2fa75ebdee7ff3fed4000f56b3939930a8286b067a1'],
+    }),
+    ('mypy_extensions', '1.0.0', {
+        'checksums': ['75dbf8955dc00442a438fc4d0666508a9a97b6bd41aa2f0ffe9d2f2725af0782'],
+    }),
+    (name, version, {
+        'checksums': ['daea9ab94124140fc0f715e945dd1dd6dc3056a1cb2f2cc31fc29b80162943e4'],
+    }),
+]
+
+fix_python_shebang_for = ['bin/napari']
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(name)s'],
+}
+
+sanity_check_commands = [
+    '%(name)s --help',
+    'pyrcc5 -version 2>&1 |grep pyrcc5'  # make sure PyQt5 module was not built with --no-tools
+]
+
+moduleclass = 'vis'

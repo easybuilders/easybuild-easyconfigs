@@ -28,8 +28,12 @@ configopts += '-DTPL_PARMETIS_LIBRARIES="${EBROOTPARMETIS}/lib/libparmetis.a;${E
 # Include only first four tests, which should be fairly small to run
 pretestopts = 'export ARGS="$ARGS --tests-regex pdtest_[21]x1_[13]_2_8_20_SP" && '
 
+# remove broken symlink to libsuperlu.a
 postinstallcmds = [
-    "rm %(installdir)s/lib64/libsuperlu.a",  # remove broken symlink to libsuperlu.a
+    "if [ -f %(installdir)s/lib64/libsuperlu.a ]; then rm %(installdir)s/lib64/libsuperlu.a; fi",
+    # This second one can be removed when https://github.com/easybuilders/easybuild-framework/pull/4435 is merged
+    # (i.e. in EasyBuild 5.0)
+    "if [ -f %(installdir)s/lib/libsuperlu.a ]; then rm %(installdir)s/lib/libsuperlu.a; fi"
 ]
 
 sanity_check_paths = {
