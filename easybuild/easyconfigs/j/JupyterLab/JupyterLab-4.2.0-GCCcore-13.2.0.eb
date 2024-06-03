@@ -1,0 +1,78 @@
+easyblock = 'PythonBundle'
+
+name = 'JupyterLab'
+version = '4.2.0'
+
+homepage = 'https://jupyter.org/'
+description = """JupyterLab is the next-generation user interface for Project Jupyter offering all the familiar
+ building blocks of the classic Jupyter Notebook (notebook, terminal, text editor, file browser, rich outputs,
+ etc.) in a flexible and powerful user interface. JupyterLab will eventually replace the classic Jupyter
+ Notebook."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('hatch-jupyter-builder', '0.9.1'),
+]
+dependencies = [
+    ('Python', '3.11.5'),
+    ('IPython', '8.17.2'),
+    ('jupyter-server', '2.14.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('json5', '0.9.25', {
+        'checksums': ['548e41b9be043f9426776f05df8635a00fe06104ea51ed24b67f908856e151ae'],
+    }),
+    ('jupyterlab_server', '2.27.1', {
+        'checksums': ['097b5ac709b676c7284ac9c5e373f11930a561f52cd5a86e4fc7e5a9c8a8631d'],
+    }),
+    ('jupyter-lsp', '2.2.5', {
+        'checksums': ['793147a05ad446f809fd53ef1cd19a9f5256fd0a2d6b7ce943a982cb4f545001'],
+    }),
+    ('async-lru', '2.0.4', {
+        'checksums': ['b8a59a5df60805ff63220b2a0c5b5393da5521b113cd5465a44eb037d81a5627'],
+    }),
+    ('h11', '0.14.0', {
+        'checksums': ['8f19fbbe99e72420ff35c00b27a34cb9937e902a8b810e2c88300c6f0a3b699d'],
+    }),
+    ('httpcore', '1.0.5', {
+        'checksums': ['34a38e2f9291467ee3b44e89dd52615370e152954ba21721378a87b2960f7a61'],
+    }),
+    ('httpx', '0.27.0', {
+        'checksums': ['a0cb88a46f32dc874e04ee956e4c2764aba2aa228f650b06788ba6bda2962ab5'],
+    }),
+    ('jupyterlab', version, {
+        'checksums': ['356e9205a6a2ab689c47c8fe4919dba6c076e376d03f26baadc05748c2435dd5'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/jupyter-lab', 'bin/jupyter-labextension', 'bin/jupyter-labhub'],
+    'dirs': ['etc/jupyter', 'share/jupyter'],
+}
+
+sanity_check_commands = ['jupyter lab --help']
+
+modextrapaths = {'EB_ENV_JUPYTER_ROOT': ''}
+modextravars = {
+    # only one path allowed as JUPYTERLAB_DIR
+    'JUPYTERLAB_DIR': '%(installdir)s/share/jupyter/lab',
+}
+
+# keep user's configuration in their home directory
+# note: '~' is not expanded by JupyterLab
+modluafooter = """
+setenv("JUPYTERLAB_SETTINGS_DIR", pathJoin(os.getenv("HOME"), ".jupyter", "lab", "user-settings"))
+setenv("JUPYTERLAB_WORKSPACES_DIR", pathJoin(os.getenv("HOME"), ".jupyter", "lab", "workspaces"))
+"""
+modtclfooter = """
+setenv JUPYTERLAB_SETTINGS_DIR "$::env(HOME)/.jupyter/lab/user-settings"
+setenv JUPYTERLAB_WORKSPACES_DIR "$::env(HOME)/.jupyter/lab/workspaces"
+"""
+
+moduleclass = 'tools'

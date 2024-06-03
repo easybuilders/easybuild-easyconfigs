@@ -1,0 +1,59 @@
+distributed/test_inductor_collectives & distributed/test_dynamo_distributed fail when run without GPUs
+with "RuntimeError: ProcessGroupNCCL is only supported with GPUs, no GPUs found!"
+Skip those in that case.
+See https://github.com/pytorch/pytorch/pull/117741
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/test_dynamo_distributed.py b/test/distributed/test_dynamo_distributed.py
+index c8fae62bd62..6220b62a9a9 100644
+--- a/test/distributed/test_dynamo_distributed.py
++++ b/test/distributed/test_dynamo_distributed.py
+@@ -30,6 +30,7 @@ from torch.testing._internal.common_distributed import (
+     requires_nccl,
+     _dynamo_dist_per_rank_init,
+ )
++from torch.testing._internal.common_utils import requires_cuda
+ import torch._dynamo.logging
+ from torch._dynamo.comptime import comptime
+ 
+@@ -452,6 +453,7 @@ class TestMultiProc(DynamoDistributedMultiProcTestCase):
+ 
+ 
+ @requires_nccl()
++@requires_cuda
+ class TestSingleProc(DynamoDistributedSingleProcTestCase):
+     """
+     Test harness initializes dist process group.
+diff --git a/test/distributed/test_inductor_collectives.py b/test/distributed/test_inductor_collectives.py
+index 9183e2e9ce4..37149865fd9 100644
+--- a/test/distributed/test_inductor_collectives.py
++++ b/test/distributed/test_inductor_collectives.py
+@@ -19,6 +19,7 @@ from torch.testing._internal.common_distributed import (
+     requires_nccl,
+     skip_if_lt_x_gpu,
+ )
++from torch.testing._internal.common_utils import requires_cuda
+ from torch._inductor.compile_fx import compile_fx as inductor_compile_fx
+ from torch._inductor.utils import has_triton, run_and_get_triton_code
+ import torch._dynamo.logging
+@@ -216,6 +217,7 @@ class TestCollectivesMultiProc(DynamoDistributedMultiProcTestCase):
+ 
+ 
+ @requires_nccl()
++@requires_cuda
+ class TestCollectivesInductor(DynamoDistributedSingleProcTestCase):
+     """
+     Prefer single-proc test runner for basic tests as it is easier to work with.
+diff --git a/torch/testing/_internal/common_utils.py b/torch/testing/_internal/common_utils.py
+index 1e18ca2afec..bad5af5212f 100644
+--- a/torch/testing/_internal/common_utils.py
++++ b/torch/testing/_internal/common_utils.py
+@@ -1111,6 +1111,7 @@ if TEST_CUDA and 'NUM_PARALLEL_PROCS' in os.environ:
+     # other libraries take up about 11% of space per process
+     torch.cuda.set_per_process_memory_fraction(round(1 / num_procs - .11, 2))
+ 
++requires_cuda = unittest.skipUnless(torch.cuda.is_available(), "Requires CUDA")
+ 
+ def skipIfCrossRef(fn):
+     @wraps(fn)

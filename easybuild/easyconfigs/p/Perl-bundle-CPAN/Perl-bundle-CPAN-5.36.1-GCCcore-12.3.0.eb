@@ -673,10 +673,14 @@ exts_list = [
         'checksums': ['aa12d1a4c0ac260b94d448fa01feba242a8a85cb6cbfdc66432e3b5b468add96'],
     }),
     ('Net::SSLeay', '1.92', {
+        'patches': ['Net-SSLeay-1.92_fix.patch'],
         'preconfigopts': "export OPENSSL_PREFIX=$EBROOTOPENSSL && ",
         'source_tmpl': 'Net-SSLeay-%(version)s.tar.gz',
         'source_urls': ['https://cpan.metacpan.org/authors/id/C/CH/CHRISN'],
-        'checksums': ['47c2f2b300f2e7162d71d699f633dd6a35b0625a00cbda8c50ac01144a9396a9'],
+        'checksums': [
+            {'Net-SSLeay-1.92.tar.gz': '47c2f2b300f2e7162d71d699f633dd6a35b0625a00cbda8c50ac01144a9396a9'},
+            {'Net-SSLeay-1.92_fix.patch': '37790b10c5551bce92bc4bd7c98a92b0058fc16604272c7459a63096b52a8d1c'},
+        ],
     }),
     ('IO::Socket::SSL', '2.083', {
         'source_tmpl': 'IO-Socket-SSL-%(version)s.tar.gz',
@@ -1764,6 +1768,7 @@ exts_list = [
         'checksums': ['9dfd6ca2822724347e0eb6759d00709425814703ad5c66bdb6214579868bcac4'],
     }),
     ('Time::HiRes', '1.9764', {
+        'runtest': False,  # https://github.com/easybuilders/easybuild-easyconfigs/issues/20145 unreliable atime tests
         'source_tmpl': 'Time-HiRes-%(version)s.tar.gz',
         'source_urls': ['https://cpan.metacpan.org/authors/id/A/AT/ATOOMIC'],
         'checksums': ['9841be5587bfb7cd1f2fe267b5e5ac04ce25e79d5cc77e5ef9a9c5abd101d7b1'],
@@ -1918,7 +1923,12 @@ exts_list = [
     ('Cwd', '3.75', {
         'source_tmpl': 'PathTools-%(version)s.tar.gz',
         'source_urls': ['https://cpan.metacpan.org/authors/id/X/XS/XSAWYERX'],
-        'checksums': ['a558503aa6b1f8c727c0073339081a77888606aa701ada1ad62dd9d8c3f945a2'],
+        'patches': ['PathTools-3.75_fix-cwd_enoent-test.patch'],
+        'checksums': [
+            'a558503aa6b1f8c727c0073339081a77888606aa701ada1ad62dd9d8c3f945a2',
+            {'PathTools-3.75_fix-cwd_enoent-test.patch':
+             '7a456a99d9b04a36359f3623f0deef8fe7f472c742f99cdcf0215c50afbbe7b1'},
+        ],
     }),
     ('MIME::Base64', '3.16', {
         'source_tmpl': 'MIME-Base64-%(version)s.tar.gz',
@@ -2029,6 +2039,8 @@ exts_list = [
         'checksums': ['510a7de2d011b0db80b0874e8c0f7390010991000ae135cff7474df1e6d51e3a'],
     }),
     ('Test::Sys::Info', '0.23', {
+        # test fails on systems without /etc/fstab - so comment it out
+        'preconfigopts': "sed -i 's/ok( my %fs/# ok( my %fs/' lib/Test/Sys/Info/Driver.pm && ",
         'source_tmpl': 'Test-Sys-Info-%(version)s.tar.gz',
         'source_urls': ['https://cpan.metacpan.org/authors/id/B/BU/BURAK'],
         'checksums': ['30c5f2c4cfee8e1ae6d9fb6291f79addbff5739ba4efa5b1e034520f18fbc95a'],
@@ -2051,7 +2063,18 @@ exts_list = [
     ('Sys::Info::Driver::Linux::Device::CPU', '0.7905', {
         'source_tmpl': 'Sys-Info-Driver-Linux-%(version)s.tar.gz',
         'source_urls': ['https://cpan.metacpan.org/authors/id/B/BU/BURAK'],
-        'checksums': ['899c329bd3508ec5849ad0e5dadfa7c3679bbacaea9dda12404a7893032e8b7b'],
+        'patches': [
+            ('Perl-bundle-5.36.1-debian-release.patch'),
+            ('Perl-bundle-5.36.1-pod.patch'),
+        ],
+        'checksums': [
+            {'Sys-Info-Driver-Linux-%(version)s.tar.gz':
+             '899c329bd3508ec5849ad0e5dadfa7c3679bbacaea9dda12404a7893032e8b7b'},
+            {'Perl-bundle-5.36.1-debian-release.patch':
+             '18b8d876db5b3abe7e5a1bb8c6abf8b5fef481b56294472fcf9f96f974c56c48'},
+            {'Perl-bundle-5.36.1-pod.patch':
+             '7c70bd91a06c256a8d85845e011e53a1a9d4f8a250d9f06bd06f5004596f271a'},
+        ],
     }),
     ('Sys::Info', '0.7811', {
         'source_tmpl': 'Sys-Info-%(version)s.tar.gz',
@@ -2101,7 +2124,18 @@ exts_list = [
     ('Sys::Info::Driver::Linux', '0.7905', {
         'source_tmpl': 'Sys-Info-Driver-Linux-%(version)s.tar.gz',
         'source_urls': ['https://cpan.metacpan.org/authors/id/B/BU/BURAK'],
-        'checksums': ['899c329bd3508ec5849ad0e5dadfa7c3679bbacaea9dda12404a7893032e8b7b'],
+        'patches': [
+            ('Perl-bundle-5.36.1-debian-release.patch'),
+            ('Perl-bundle-5.36.1-pod.patch'),
+        ],
+        'checksums': [
+            {'Sys-Info-Driver-Linux-%(version)s.tar.gz':
+             '899c329bd3508ec5849ad0e5dadfa7c3679bbacaea9dda12404a7893032e8b7b'},
+            {'Perl-bundle-5.36.1-debian-release.patch':
+             '18b8d876db5b3abe7e5a1bb8c6abf8b5fef481b56294472fcf9f96f974c56c48'},
+            {'Perl-bundle-5.36.1-pod.patch':
+             '7c70bd91a06c256a8d85845e011e53a1a9d4f8a250d9f06bd06f5004596f271a'},
+        ],
     }),
     ('Unix::Processors', '2.046', {
         'source_tmpl': 'Unix-Processors-%(version)s.tar.gz',
