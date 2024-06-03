@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'PortAudio'
+version = "19.7.0"
+
+homepage = 'https://www.portaudio.com/'
+description = """PortAudio is a free, cross-platform, open-source, audio I/O library.
+ It lets you write simple audio programs in 'C' or C++ that will compile and run on many platforms including Windows,
+ Macintosh OS X, and Unix (OSS/ALSA). It is intended to promote the exchange of audio software between
+ developers on different platforms. Many applications use PortAudio for Audio I/O."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ["https://github.com/PortAudio/portaudio/archive"]
+sources = ["v%(version)s.tar.gz"]
+checksums = ['5af29ba58bbdbb7bbcefaaecc77ec8fc413f0db6f4c4e286c40c3e1b83174fa0']
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('alsa-lib', '1.2.8'),
+    ('jax', '0.3.25'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'installopts': '',
+}
+
+exts_list = [
+    ('PyAudio', '0.2.14', {
+        'checksums': ['78dfff3879b4994d1f4fc6485646a57755c6ee3c19647a491f790a0895bd2f87'],
+    }),
+]
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ["include/portaudio.h", "lib/libportaudio.a", "lib/libportaudio.so"],
+    'dirs': ['include', 'lib', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'python -c "import pyaudio; pyaudio.get_portaudio_version_text(); pyaudio.__version__"'
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'math'
