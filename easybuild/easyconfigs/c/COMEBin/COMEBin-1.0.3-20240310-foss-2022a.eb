@@ -11,7 +11,11 @@ toolchain = {'name': 'foss', 'version': '2022a'}
 
 source_urls = ['https://github.com/ziyewang/COMEBin/archive/']
 sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
-checksums = ['aa9c9e98d0cd121b2be60cae85d735527f510ad07df1a84ed6405cbc66eea684']
+patches = ['COMEBin-1.0.3_fix-run-script.patch']
+checksums = [
+    {'COMEBin-1.0.3-20240310.tar.gz': 'aa9c9e98d0cd121b2be60cae85d735527f510ad07df1a84ed6405cbc66eea684'},
+    {'COMEBin-1.0.3_fix-run-script.patch': '27c0a2ae0b99d4ee2ed411f954fcbfcb70db549dd749bd618c5b0b324734669d'},
+]
 
 dependencies = [
     ('Python', '3.10.4'),
@@ -56,6 +60,8 @@ exts_list = [
     }),
 ]
 
+postinstallcmds = ["chmod a+x %(installdir)s/bin/run_comebin.sh"]
+
 modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 sanity_check_paths = {
@@ -63,6 +69,9 @@ sanity_check_paths = {
     'dirs': ['COMEBin/models', 'COMEBin/scripts'],
 }
 
-sanity_check_commands = ["python %(installdir)s/COMEBin/main.py --help"]
+sanity_check_commands = [
+    "run_comebin.sh | grep '^Usage: bash run_comebin.sh'"
+    "python %(installdir)s/COMEBin/main.py --help",
+]
 
 moduleclass = 'bio'
