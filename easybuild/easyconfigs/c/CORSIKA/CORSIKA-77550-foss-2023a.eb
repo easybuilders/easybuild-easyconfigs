@@ -1,4 +1,4 @@
-easyblock = "MakeCp"
+easyblock = "ConfigureMake"
 
 name = 'CORSIKA'
 version = '77550'
@@ -10,7 +10,7 @@ particles. Protons, light nuclei up to iron, photons, and many other particles
 may be treated as primaries."""
 
 toolchain = {'name': 'foss', 'version': '2023a'}
-toolchainopts = {'pic': True, 'usempi': True}
+toolchainopts = {'usempi': True}
 
 download_instructions = "Sources have to be requested to the developers"
 sources = [SOURCELOWER_TAR_GZ]
@@ -20,21 +20,23 @@ dependencies = [
     ("ROOT", "6.30.06"),
 ]
 
-# run in non-interactive mode
-build_cmd = "./coconut --batch"
-# coconut script does not accept "-j"
+# custom coconut script does not recognize -j
 parallel = False
 
-files_to_copy = [
-    (['run/corsika77550Linux_EPOS_urqmd'], 'bin'),
-]
+# execute ./coconut manually with your own options and extract configure command from top of config.log
+configopts = "CORDETECTOR=HORIZONTAL CORTIMELIB=TIMEAUTO CORHEMODEL=QGSJETII CORLEMODEL=URQMD "
+configopts += "--enable-UPWARD --enable-SLANT --enable-THIN --enable-COREAS "
+configopts += "--enable-PARALLEL --with-mpirunner-lib --enable-PARALLELIB "
 
-postinstallcmds = [
-    "cd %(installdir)s/bin && ln -s corsika77550Linux_EPOS_urqmd corsika",
-]
+build_cmd = "./coconut"
+buildopts = "--batch"
+
+preinstallopts = "mkdir -p %(installdir)s/bin && "
+install_cmd = "cp"
+installopts = "%(builddir)s/%(namelower)s-%(version)s/run/%(namelower)s%(version)s* %(installdir)s/bin/"
 
 sanity_check_paths = {
-    'files': ['bin/corsika', 'bin/corsika77550Linux_EPOS_urqmd'],
+    'files': ['bin/corsika77550Linux_QGSII_urqmd_thin_coreas_parallel'],
     'dirs': []
 }
 
