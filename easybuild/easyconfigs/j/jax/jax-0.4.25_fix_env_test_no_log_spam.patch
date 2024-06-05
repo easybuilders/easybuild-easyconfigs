@@ -1,0 +1,18 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/03
+# avoid overriding LD_LIBRARY_PATH, which would lead to test error: error while loading shared libraries: libpython3.11.so.1.0: cannot open shared object file: No such file or directory'
+diff -ru jax-jax-v0.4.25/tests/logging_test.py jax-jax-v0.4.25_fix_env_test_no_log_spam/tests/logging_test.py
+--- jax-jax-v0.4.25/tests/logging_test.py	2024-02-24 19:25:17.000000000 +0100
++++ jax-jax-v0.4.25_fix_env_test_no_log_spam/tests/logging_test.py	2024-03-15 12:00:34.133022613 +0100
+@@ -72,8 +72,11 @@
+     python = sys.executable
+     assert "python" in python
+     # Make sure C++ logging is at default level for the test process.
++    import os
++    tmp_env=os.environ.copy()
++    tmp_env['TF_CPP_MIN_LOG_LEVEL']='1'
+     proc = subprocess.run([python, "-c", program], capture_output=True,
+-                          env={"TF_CPP_MIN_LOG_LEVEL": "1"})
++                          env=tmp_env)
+ 
+     lines = proc.stdout.split(b"\n")
+     lines.extend(proc.stderr.split(b"\n"))
