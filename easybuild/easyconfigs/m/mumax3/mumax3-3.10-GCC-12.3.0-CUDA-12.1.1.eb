@@ -22,14 +22,13 @@ dependencies = [
     ('gnuplot', '5.4.8'),
 ]
 
-prebuildopts = "mkdir -p %(builddir)s/src/github.com/mumax && cd %(builddir)s && "
-#prebuildopts += "mv %(start_dir)s %(builddir)s/src/github.com/mumax/3 && "
-#prebuildopts += "cd %(builddir)s/src/github.com/mumax/3 && pwd && ln -s $PWD %(start_dir)s && "
-prebuildopts += "cp -a %(start_dir)s %(builddir)s/src/github.com/mumax/3 && "
-prebuildopts += "cd %(builddir)s/src/github.com/mumax/3 && pwd && "
+# Go is picky w.r.t. name of build directory, we must build in src/gitub.com/mumax/3
+prebuildopts = "mkdir -p %(builddir)s/src/github.com/mumax && "
+prebuildopts += "mv %(start_dir)s %(builddir)s/src/github.com/mumax/3 && "
+prebuildopts += "cd %(builddir)s/src/github.com/mumax/3 && ln -s $PWD %(start_dir)s && "
+# rebuild CUDA kernels using CUDA compute capabilities specified in EasyBuild configuration + build mumax3 command
 prebuildopts += "make realclean && export CUDA_CC='%(cuda_cc_cmake)s' && "
 prebuildopts += "export GOPATH=%(builddir)s && go mod init && make cudakernels && cd cmd/mumax3 && "
-#prebuildopts += "export GOPATH=%(builddir)s && go mod init && "
 
 files_to_copy = [(['%(builddir)s/bin/mumax3'], 'bin')]
 
