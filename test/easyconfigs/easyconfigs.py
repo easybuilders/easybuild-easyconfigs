@@ -439,6 +439,8 @@ class EasyConfigTest(TestCase):
             # filter out BLIS and libFLAME with -amd versionsuffix
             # (AMD forks, used in gobff/*-amd toolchains)
             (['BLIS', 'libFLAME'], '-amd'),
+            # filter out OpenBLAS with -int8 versionsuffix, used by GAMESS-US
+            ('OpenBLAS', '-int8'),
             # filter out ScaLAPACK with -BLIS-* versionsuffix, used in goblf toolchain
             ('ScaLAPACK', ('-BLIS-', True)),
             # filter out ScaLAPACK with -bf versionsuffix, used in gobff toolchain
@@ -611,7 +613,7 @@ class EasyConfigTest(TestCase):
             ],
             'pydantic': [
                 # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
-                ('1.10.13;', ['GTDB-Tk-2.3.2-']),
+                ('1.10.13;', ['GTDB-Tk-2.3.2-', 'GTDB-Tk-2.4.0-']),
             ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
@@ -658,6 +660,8 @@ class EasyConfigTest(TestCase):
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
+            # Napari 0.4.19post1 requires VisPy >=0.14.1 <0.15
+            'VisPy': [('0.14.1;', ['napari-0.4.19.post1-'])],
             # WPS 3.9.1 requires WRF 3.9.1.1
             'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
