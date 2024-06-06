@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'BerkeleyGW'
+version = "4.0"
+
+homepage = 'http://www.berkeleygw.org'
+description = """The BerkeleyGW Package is a set of computer codes that calculates the quasiparticle
+ properties and the optical responses of a large variety of materials from bulk periodic crystals to
+ nanostructures such as slabs, wires and molecules.
+ We ask that you please cite the following papers when using results obtained from the BerkeleyGW package:
+ - Mark S. Hybertsen and Steven G. Louie, Electron correlation in semiconductors and insulators: Band gaps and quasiparticle energies, Phys. Rev. B 34, 5390 (1986).
+ - Michael Rohlfing and Steven G. Louie, Electron-hole excitations and optical spectra from first principles, Phys. Rev. B 62, 4927 (2000).
+ - Jack Deslippe, Georgy Samsonidze, David A. Strubbe, Manish Jain, Marvin L. Cohen, and Steven G. Louie, BerkeleyGW: A Massively Parallel Computer Package for the Calculation of the Quasiparticle and Optical Properties of Materials and Nanostructures, Comput. Phys. Commun. 183, 1269 (2012) (https://arxiv.org/abs/1111.4429)."""
+
+toolchain = {'name': 'iofbf', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+#source_urls = ['http://www.berkeleygw.org/releases/']  # requires registration
+#sources = ['BerkeleyGW-%(version_major_minor)s.tar.gz']
+
+source_urls = ['http://www.berkeleygw.org/releases/']  # requires registration
+sources = ['BerkeleyGW-%(version)s.tar.gz']
+checksums = ['1a85b03b83b339056f65124bfa96832ca61152236d9bb1cb372e3040fc686a49']
+
+#patches = ['bgw-%(version)s-fix_install.patch']
+
+dependencies = [('HDF5', '1.14.2', '-mpi')]
+
+skipsteps = ['configure']
+
+prebuildopts = 'cp config/generic.mpi.linux.mk arch.mk && '
+
+# "all-flavors" cleans and compiles everything again:
+
+buildopts  = ' all-flavors '
+buildopts += ' MATHFLAG="-DUSEFFTW3 -DUSESCALAPACK -DHDF5" PARAFLAG="-DMPI -DOMP" COMPFLAG="-DINTEL" '
+buildopts += ' DEBUGFLAG="" F90free="$MPIF90 -free" LINK="$MPIF90" '
+buildopts += ' FOPTS="$FFLAGS" MOD_OPT="-module " C_PARAFLAG="$PARAFLAG" CC_COMP="$MPICXX" C_COMP="$MPICC" '
+buildopts += ' FCPP="cpp -C -P -nostdinc -nostdinc++" C_LINK="$MPICXX" C_OPTS="$CFLAGS" '
+buildopts += ' LAPACKLIB="$LIBLAPACK" BLACSDIR="$BLACS_LIB_DIR" BLACS="$LIBBLACS" SCALAPACKLIB="$LIBSCALAPACK" '
+buildopts += ' FFTWINCLUDE="$EBROOTFFTW/include" FFTWLIB="-L$EBROOTFFTW/lib -lfftw3_mpi -lfftw3_omp -lfftw3 -lm" '
+buildopts += ' HDF5LIB="-L$EBROOTHDF5/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5 -lz" '
+buildopts += ' HDF5INCLUDE=$EBROOTHDF5/include '
+buildopts += ' TESTSCRIPT="make check-parallel" '
+
+preinstallopts = 'sed -i "s/install: all-flavors/install: all/" Makefile && '
+
+installopts = 'INSTDIR=%(installdir)s'
+
+runtest = True
+
+sanity_check_paths = {
+    'files': ['bin/' + prog + '.' + flavor + '.x'
+              for prog in ['epsilon', 'sigma', 'kernel', 'absorption', 'nonlinearoptics']
+              for flavor in ['real', 'cplx']],
+    'dirs': ['bin', 'include', 'lib', 'share']
+}
+
+postinstallcmds = ["chmod -R go+X %(installdir)s"]
+
+moduleclass = 'phys'

@@ -1,0 +1,60 @@
+easyblock = "ConfigureMake"
+
+name = 'Ferret'
+version = '7.6.0'
+
+homepage = 'http://ferret.pmel.noaa.gov/'
+description = """Ferret is an interactive computer visualization and analysis environment
+designed to meet the needs of oceanographers and meteorologists analyzing large and complex gridded data sets.
+
+Ferret 7.6.0 is the final available version of Classic Ferret. 
+The developers recommend using PyFerret instead.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/NOAA-PMEL/Ferret/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_easybuild.patch',
+    '%(name)s-%(version)s_computecanada.patch',
+]
+checksums = [
+    {'v7.6.0.tar.gz': '69832d740bd44c9eadd198a5de4d96c4c01ae90ae28c2c3414c1bb9f43e475d1'},
+    {'Ferret-7.6.0_easybuild.patch': '811b128996937a5040d38032669200e60729fe131f37dcc7117e019a001ed66d'},
+    {'Ferret-7.6.0_computecanada.patch': '7ecaa7434f9790a1464d2ee5aeb2dcb13f84c51611f13967bfb7bdc5e96331d5'},
+]
+
+dependencies = [
+    ('netCDF', '4.9.2', None, ('GCC', '12.3.0')),
+    ('netCDF-Fortran', '4.6.1', None, ('GCC', '12.3.0')),
+    ('NCO', '5.1.7'),
+    #('zlib', '1.2.7'),
+    #('Szip', '2.1'),
+    #('cURL', '7.27.0'),
+    #('ncurses', '5.9'),
+    #('libreadline', '6.2'),
+    ('Java', '21', ''),
+]
+
+parallel = 1
+
+skipsteps = ['configure']
+
+prebuildopts = "cp site_specific.mk.in site_specific.mk && cp site_specific.mk external_functions/ef_utility && sed -i 's^BUILDDIR^%(builddir)s\/Ferret-7.6.0^' site_specific.mk && sed -i 's^INSTALLDIR^%(installdir)s^' site_specific.mk && "
+
+buildopts = 'CPP_X11="${EBROOTGENTOO-$NIXUSER_PROFILE}/include" LD="$CC"'
+
+sanity_check_paths = {
+    'files': ['bin/ferret'],
+    'dirs': ['bin'],
+}
+
+postinstallcmds =  [" cd %(builddir)s && wget https://github.com/NOAA-PMEL/FerretDatasets/archive/v7.6.tar.gz && cd %(installdir)s && tar -xf %(builddir)s/v7.6.tar.gz && printf '%s\n%s\n%s\n%s\n%s\n%s\n' '2' '%(installdir)s' '%(installdir)s/FerretDatasets-7.6' '%(installdir)s/bin' 'n' '3'|%(installdir)s/bin/Finstall "]
+
+modluafooter = """
+source_sh("bash", pathJoin("%(installdir)s", "bin/ferret_paths.sh"))
+"""
+
+moduleclass = 'geo'

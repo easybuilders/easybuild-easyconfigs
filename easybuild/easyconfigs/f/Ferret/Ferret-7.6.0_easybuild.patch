@@ -1,0 +1,128 @@
+Patches to site_specific.mk.in and platform_specific.mk.x86_64-linux
+to set build- and install-directories as well as pointing
+it to the locations of HDF4, NetCDF4 and NetCDF-Fortran libraries.
+
+Date:   2024-05-23
+Author: Oliver Stueker <oliver.stueker@ace-net.ca>
+
+diff -ru Ferret-7.6.0.orig/site_specific.mk.in Ferret-7.6.0/site_specific.mk.in
+--- Ferret-7.6.0.orig/site_specific.mk.in	2020-06-24 19:56:01.000000000 -0230
++++ Ferret-7.6.0/site_specific.mk.in	2024-05-23 18:42:56.041375751 -0230
+@@ -7,7 +7,7 @@
+ ## Do not use $(shell pwd) since this is included in Makefiles in other directories.
+ ## =========================
+ # DIR_PREFIX = $(HOME)/build/trunk/FERRET
+-DIR_PREFIX = $(HOME)/git/Ferret
++DIR_PREFIX = BUILDDIR
+ # DIR_PREFIX = $(HOME)/svn/ferret
+ 
+ ## =========================
+@@ -25,7 +25,7 @@
+ ## just for creating a Ferret installation.
+ ## =========================
+ # INSTALL_FER_DIR = $(HOME)/ferret_distributions/rhel6_64
+-INSTALL_FER_DIR = $(HOME)/Ferret
++INSTALL_FER_DIR = INSTALLDIR
+ # INSTALL_FER_DIR = $(FER_DIR)
+ 
+ ## =========================
+@@ -45,7 +45,7 @@
+ ## If empty or not given, NetCDF shared-object libraries (which specify the
+ ## HDF5, SZ, and Z compression libraries required) will be used.
+ ## =========================
+-HDF5_LIBDIR = /usr/local/hdf5/lib
++HDF5_LIBDIR = $(EBROOTHDF5)/lib
+ # HDF5_LIBDIR = $(HOME)/.local/lib
+ # HDF5_LIBDIR = /usr/local/lib
+ # HDF5_LIBDIR = /usr/lib64
+@@ -77,7 +77,7 @@
+ ## If HDF5_LIBDIR is given and not empty, the static libraries will be used.
+ ## If HDF5_LIBDIR is empty or not given, NetCDF shared-object libraries will be used.
+ ## =========================
+-NETCDF_LIBDIR = /usr/local/netcdf/lib
++NETCDF_LIBDIR = $(EBROOTNETCDF)/lib64
+ # NETCDF_LIBDIR = $(HOME)/.local/lib
+ # NETCDF_LIBDIR = /usr/local/lib
+ # NETCDF_LIBDIR = /usr/lib64
+diff -ru Ferret-7.6.0.orig/platform_specific.mk.x86_64-linux Ferret-7.6.0/platform_specific.mk.x86_64-linux
+--- Ferret-7.6.0.orig/platform_specific.mk.x86_64-linux	2020-06-24 19:56:01.000000000 -0230
++++ Ferret-7.6.0/platform_specific.mk.x86_64-linux	2024-05-23 18:42:09.991242792 -0230
+@@ -14,6 +14,7 @@
+ 	MYINCLUDES	= -I. \
+ 			  -I$(READLINE_LIBDIR)/../include \
+ 			  -I$(NETCDF_LIBDIR)/../include \
++			  -I$(EBROOTNETCDFMINFORTRAN)/include \
+ 			  -I$(DIR_PREFIX)/fer/common \
+ 			  -I$(DIR_PREFIX)/fmt/cmn \
+ 			  -I$(DIR_PREFIX)/ppl/tmap_inc \
+@@ -23,6 +24,7 @@
+ else
+ 	MYINCLUDES	= -I. \
+ 			  -I$(NETCDF_LIBDIR)/../include \
++			  -I$(EBROOTNETCDFMINFORTRAN)/include \
+ 			  -I$(DIR_PREFIX)/fer/common \
+ 			  -I$(DIR_PREFIX)/fmt/cmn \
+ 			  -I$(DIR_PREFIX)/ppl/tmap_inc \
+@@ -68,6 +70,8 @@
+ 			  -fno-second-underscore \
+ 			  -fdollar-ok \
+ 			  -ffixed-line-length-132 \
++			  -fallow-argument-mismatch \
++			  -fallow-invalid-boz \
+ 			  $(MYDEFINES) $(MYINCLUDES)
+ 
+ # Flags for compiling non-PlotPlus FORTRAN code
+@@ -80,6 +84,8 @@
+ 			  -fimplicit-none \
+ 			  -fdefault-real-8 \
+ 			  -fdefault-double-8 \
++			  -fallow-argument-mismatch \
++			  -fallow-invalid-boz \
+ 			  $(MYDEFINES) $(MYINCLUDES)
+ 
+ 	OPT_FLAGS	= -O -DNDEBUG
+@@ -102,7 +108,8 @@
+ 			  -lcurl \
+ 			  -ldl \
+ 			  -lz \
+-			  -lm
++			  -lm \
++			  -lquadmath
+ else
+ 	SYSLIB		= -lX11 \
+ 			  -lreadline \
+@@ -110,7 +117,11 @@
+ 			  -lcurl \
+ 			  -ldl \
+ 			  -lz \
+-			  -lm
++			  -lm \
++			  -lquadmath \
++			  -lsz \
++			  -lgfortran \
++			  -lxml2
+ endif
+ 
+ # NetCDF4: either shared-object libraries (HDF5 and compression library
+@@ -118,15 +129,16 @@
+ # and compression library requirements need to be specified).
+ ifeq ($(strip $(HDF5_LIBDIR)),)
+ 	CDFLIB		= -L$(NETCDF_LIBDIR) \
++			  -L$(EBROOTNETCDFMINFORTRAN)/lib \
+ 			  -lnetcdff \
+ 			  -lnetcdf
+ else ifeq ($(strip $(SZ_LIBDIR)),)
+-	CDFLIB		= $(NETCDF_LIBDIR)/libnetcdff.a \
+-			  $(NETCDF_LIBDIR)/libnetcdf.a \
+-			  $(HDF5_LIBDIR)/libhdf5_hl.a \
+-			  $(HDF5_LIBDIR)/libhdf5.a
++	CDFLIB		= -lnetcdff \
++			  -lnetcdf  \
++			  -lhdf5_hl \
++			  -lhdf5
+ else
+-	CDFLIB		= $(NETCDF_LIBDIR)/libnetcdff.a \
++	CDFLIB		= $(EBROOTNETCDFMINFORTRAN)/lib/libnetcdff.a \
+ 			  $(NETCDF_LIBDIR)/libnetcdf.a \
+ 			  $(HDF5_LIBDIR)/libhdf5_hl.a \
+ 			  $(HDF5_LIBDIR)/libhdf5.a \
