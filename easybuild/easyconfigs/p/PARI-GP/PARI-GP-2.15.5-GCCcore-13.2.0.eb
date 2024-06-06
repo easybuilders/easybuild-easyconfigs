@@ -1,0 +1,38 @@
+easyblock = 'ConfigureMake'
+
+name = 'PARI-GP'
+version = '2.15.5'
+
+homepage = 'https://pari.math.u-bordeaux.fr'
+description = """PARI/GP is a widely used computer algebra system designed for fast computations in number theory
+ (factorizations, algebraic  number theory, elliptic curves...), but also contains a large number of other useful
+ functions to compute with mathematical entities such as matrices, polynomials, power series, algebraic numbers etc.,
+ and a lot of transcendental functions. PARI is  also available as a C library to allow for faster computations.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ['https://pari.math.u-bordeaux.fr/pub/pari/unix/']
+sources = ['pari-%(version)s.tar.gz']
+checksums = ['0efdda7515d9d954f63324c34b34c560e60f73a81c3924a71260a2cc91d5f981']
+
+builddependencies = [('binutils', '2.40')]
+
+dependencies = [
+    ('libreadline', '8.2'),
+    ('ncurses', '6.4'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = './Configure --prefix=%(installdir)s &&'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['gp', 'gp-2.15', 'gphelp', 'tex2mail']] +
+             ['include/pari/%s' % x for x in ['pari.h', 'genpari.h']],
+    'dirs': ['bin', 'include']
+}
+
+sanity_check_commands = ["gp --help"]
+
+moduleclass = 'math'

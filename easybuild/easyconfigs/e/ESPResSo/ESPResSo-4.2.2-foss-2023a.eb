@@ -1,0 +1,55 @@
+easyblock = 'CMakeMake'
+
+name = 'ESPResSo'
+version = '4.2.2'
+
+homepage = 'https://espressomd.org/wordpress'
+description = """A software package for performing and analyzing scientific Molecular Dynamics simulations."""
+
+source_urls = ['https://github.com/espressomd/espresso/releases/download/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['2bc02f91632b0030f1203759768bd718bd8a0005f72696980b12331b4bfa0d76']
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('Boost.MPI', '1.82.0'),
+    ('HDF5', '1.14.0'),
+    ('Mesa', '23.1.4'),
+    ('GSL', '2.7'),
+    ('IPython', '8.14.0'),
+    ('Pint', '0.23'),
+]
+
+configopts = ' -DCMAKE_SKIP_RPATH=OFF -DWITH_TESTS=ON -DWITH_CUDA=OFF'
+# make sure the right Python is used (note: -DPython3_EXECUTABLE or -DPython_EXECUTABLE does not work!)
+configopts += ' -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python '
+
+runtest = 'check_unit_tests && make check_python'
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+_binaries = ['ipypresso',  'pypresso']
+_libs = [
+    'Espresso_config', 'Espresso_core', 'Espresso_script_interface', 'Espresso_shapes',
+    '_init', 'analyze', 'code_info', 'electrokinetics', 'galilei',
+    'integrate', 'interactions', 'lb', 'particle_data', 'polymer', 'profiler',
+    'script_interface', 'system', 'thermostat', 'utils', 'version',
+]
+
+_lib_path = 'lib/python%(pyshortver)s/site-packages/espressomd'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _binaries] +
+             [_lib_path + '/%s.' % x + SHLIB_EXT for x in _libs],
+    'dirs': ['bin', 'lib']
+}
+
+sanity_check_commands = ['pypresso -h', 'ipypresso -h']
+
+moduleclass = 'chem'
