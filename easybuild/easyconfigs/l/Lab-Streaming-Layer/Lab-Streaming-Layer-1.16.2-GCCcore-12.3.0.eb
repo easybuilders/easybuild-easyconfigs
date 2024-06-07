@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'Lab-Streaming-Layer'
+version = '1.16.2'
+
+homepage = 'https://labstreaminglayer.readthedocs.io'
+description = """The lab streaming layer (LSL) is a system for the unified collection of
+measurement time series in research experiments that handles both the
+networking, time-synchronization, (near-) real-time access as well as
+optionally the centralized collection, viewing and disk recording of the data."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/sccn/liblsl/archive/refs/tags']
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': 'liblsl-%(version)s.tar.gz'}]
+checksums = ['923aa4c81c0fef651c325e3c27aa5b96771540ca2a0933d1b327db27c6dac839']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+    ('git', '2.41.0', '-nodocs'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+]
+
+configopts = "-DCMAKE_INSTALL_LIBDIR=lib"
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+}
+exts_list = [
+    ('pylsl', version, {
+        'source_urls': ['https://github.com/labstreaminglayer/pylsl/archive/refs/tags'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['1cef9c6c4876027ce18a4022ba4fdf023d037f6e76e7422ef24536d19d912c08'],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/lslver', 'lib/liblsl.%s' % SHLIB_EXT, 'include/lsl_c.h', 'include/lsl_cpp.h'],
+    'dirs': ['include/lsl', 'lib/cmake', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "lslver",
+    "python -c 'import pylsl'",
+]
+
+moduleclass = 'data'
