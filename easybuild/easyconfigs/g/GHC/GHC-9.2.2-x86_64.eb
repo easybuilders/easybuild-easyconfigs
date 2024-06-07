@@ -1,0 +1,82 @@
+# This is a binary install that requires a './configure' and 'make install' steps for GHC.
+# We pull the centos7 binary tarball as is the one built against oldest system libs,
+# making it upwards compatible with newer distros.
+#
+# To get a functional 'ghc' binary on the SYSTEM toolchain we need
+# gmp headers and ncurses libtinfo.so.5, to avoid requiring extra OS deps for them
+# we include them in this bundle.
+# Binaries obtained with ghc do not require them, so it should be possible to use this bundle
+# just as builddep among different toolchains.
+#
+# For details, see the PR discussion:
+# https://github.com/easybuilders/easybuild-easyconfigs/pull/11310
+
+easyblock = 'Bundle'
+
+name = 'GHC'
+version = '9.2.2'
+versionsuffix = '-x86_64'
+
+homepage = 'https://haskell.org/ghc/'
+description = """The Glorious/Glasgow Haskell Compiler"""
+
+toolchain = SYSTEM
+
+builddependencies = [
+    ('binutils', '2.32'),
+    ('M4', '1.4.19'),
+]
+
+default_easyblock = 'ConfigureMake'
+
+local_distro_tarball = 'centos7'
+
+default_component_specs = {
+    'start_dir': '%(namelower)s-%(version)s',
+}
+components = [
+    ('GMP', '6.2.0', {
+        'source_urls': [GNU_SOURCE],
+        'sources': [SOURCELOWER_TAR_BZ2],
+        'checksums': ['f51c99cb114deb21a60075ffb494c1a210eb9d7cb729ed042ddb7de9534451ea'],
+        'configopts': ' --enable-cxx',
+    }),
+    ('ncurses', '5.9', {
+        'source_urls': [GNU_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'patches': [
+            'ncurses-%(version)s_configure_darwin.patch',
+            'ncurses-%(version)s_fix-missing-const.patch',
+        ],
+        'checksums': [
+            '9046298fb440324c9d4135ecea7879ffed8546dd1b58e59430ea07a4633f563b',
+            '8c471fc2b1961a6e6e5981b7f7b3512e7fe58fcb04461aa4520157d4c1159998',
+            '027f7bd5876b761b48db624ddbdd106fa1c535dfb2752ef5a0eddeb2a8896cfd',
+        ],
+        'preconfigopts': 'export CPPFLAGS="-P" CXXFLAGS="$CXXFLAGS -std=c++14" && ',
+        'configopts': ' --with-shared --enable-overwrite --with-termlib=tinfo',
+    }),
+    (name, version, {
+        'source_urls': ['https://downloads.haskell.org/~ghc/%(version)s/'],
+        'sources': ['%%(namelower)s-%%(version)s-x86_64-%s-linux.tar.xz' % local_distro_tarball],
+        'checksums': ['5100aa7dea87aaf2ed596be83c93165d7199492f6db431d874fcfa07e8ac76ab'],
+        # ghc-8.6.5-x86_64-centos7-linux.tar.xz
+        'skipsteps': ['build'],
+        'preinstallopts': 'LD_LIBRARY_PATH="%(installdir)s/lib:$LD_LIBRARY_PATH" ',
+    }),
+]
+
+local_ncurses_libs = ["form", "menu", "ncurses", "panel", "tinfo"]
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s' % (x, y) for x in ['gmp', 'gmpxx'] for y in [SHLIB_EXT, 'a']] +
+             ['include/gmp.h', 'include/gmpxx.h'] +
+             ['lib/lib%s%s.a' % (x, y) for x in local_ncurses_libs for y in ['', '_g']] +
+             ['lib/lib%s.%s' % (x, y) for x in local_ncurses_libs for y in [SHLIB_EXT]] +
+             ['bin/ghc', 'bin/ghci', 'bin/ghc-pkg', 'bin/runghc', 'bin/runhaskell'],
+    'dirs': ['bin', 'lib', 'share', 'include'],
+}
+
+sanity_check_commands = ['ghc --version']
+
+moduleclass = 'compiler'

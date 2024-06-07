@@ -1,0 +1,55 @@
+# Thomas Hoffman, EMBL Heidelberg, structures-it@embl.de, 2023/11 
+easyblock = 'PythonPackage'
+
+name = 'topaz'
+_mainversion = '0.2.5'
+_commitdate = '20230926'
+_commit = 'dadfe725efa9181e55864054f492a41b4abe8c1c'
+version = '%s.%s' % (_mainversion, _commitdate)
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'http://cb.csail.mit.edu/cb/topaz/'
+
+description = """Particle picking software for single particle cryo-electron microscopy using    
+convolutional neural networks and positive-unlabeled learning. Includes methods
+for micrograph denoising."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+use_pip = True
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('scikit-learn', '1.1.2'),
+    ('torchvision', '0.13.1', versionsuffix),
+]
+
+source_urls = [
+    'https://github.com/tbepler/topaz/archive',
+]
+sources = [{
+    'download_filename': '%s.tar.gz' % _commit,
+    'filename': '%(name)s-%(version)s.tar.gz'
+}]
+patches = [
+    'topaz-0.2.5_install_relion3_wrappers.patch',
+]
+checksums = [
+    {'topaz-0.2.5.20230926.tar.gz': 'd0d6a36c106b565f9623fb2fada7494cc3e5bbde0925dad39794e8791dfad14f'},
+    {'topaz-0.2.5_install_relion3_wrappers.patch': '0fe23a0ecaf887aaa89641a7e7cf37fafd3134384b0a8f46acb4e17537d1a151'},
+]
+
+download_dep_fail = True
+sanity_pip_check = True
+options = {'modulename': 'topaz'}
+_relion3_wrappers = ['denoise', 'pick', 'train', 'train_denoise']
+sanity_check_commands = ['run_topaz_%s.py --help' % x for x in _relion3_wrappers] + ['topaz --help']
+sanity_check_paths = {
+    'files': ["bin/run_topaz_%s.py" % x for x in _relion3_wrappers],
+    'dirs': [],
+}
+
+moduleclass = 'chem'

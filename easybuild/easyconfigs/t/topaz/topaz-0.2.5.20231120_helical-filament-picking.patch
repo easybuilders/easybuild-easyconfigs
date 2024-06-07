@@ -1,0 +1,289 @@
+From 4ea1710c88648ff4c5f7232e20ad5d9aa9535241 Mon Sep 17 00:00:00 2001
+From: scheres <scheres@mrc-lmb.cam.ac.uk>
+Date: Wed, 5 Jan 2022 12:13:10 +0000
+Subject: [PATCH] implemented helical filament picking in extract.py
+
+---
+ topaz/commands/extract.py | 225 ++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 215 insertions(+), 10 deletions(-)
+
+diff --git a/topaz/commands/extract.py b/topaz/commands/extract.py
+index 3c3f032..6676618 100644
+--- a/topaz/commands/extract.py
++++ b/topaz/commands/extract.py
+@@ -52,6 +52,11 @@ def add_arguments(parser):
+     parser.add_argument('--targets', help='path to file specifying particle coordinates. used to find extraction radius that maximizes the AUPRC') 
+     parser.add_argument('--only-validate', action='store_true', help='flag indicating to only calculate validation metrics. does not report full prediction list')
+ 
++    # Filament picking SHWS 30032021
++    parser.add_argument('-f', '--filaments', action='store_true', help='flag for filament start-end picking.')
++    parser.add_argument('-fp', '--filaments_plot', action='store_true', help='flag for filament start-end picking plus plotting of its intermediate stages (useful for tuning parameters).')
++    parser.add_argument('-fl', '--filaments_length', default=-1, type=int, help='minimum length of straight filament segments to be picked (in Angstrom) (default: twice --radius)')
++
+     parser.add_argument('-d', '--device', default=0, type=int, help='which device to use, <0 corresponds to CPU')
+ 
+     parser.add_argument('-o', '--output', help='file path to write')
+@@ -63,24 +68,219 @@ def add_arguments(parser):
+ 
+     return parser
+ 
++
++def is_in_between(point, line):
++    dx = line[1][0] - line[0][0]
++    dy = line[1][1] - line[0][1]
++    dotp = (point[0] - line[0][0])*dx + (point[1] - line[0][1])*dy
++    return 0 <= dotp and dotp <= dx*dx + dy*dy
++
++def distance_point_line(point, line):
++    x1=line[0][0]
++    x2=line[1][0]
++    y1=line[0][1]
++    y2=line[1][1]
++    x0=point[0]
++    y0=point[1]
++    dd = abs( (x2-x1)*(y1-y0) - (x1-x0)*(y2-y1) ) / np.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) )
++    if not is_in_between(point,line):
++        closest = min(distance_point_point(point,line[0]), distance_point_point(point,line[1]))
++        return max(closest, dd)
++    else:
++        return dd
++
++def distance_point_point(point1, point2):
++    x1=point1[0]
++    y1=point1[1]
++    x2=point2[0]
++    y2=point2[1]
++    return np.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2))
++
++def angle_line_line(line1, line2):
++    a1 = np.arctan2(line1[1][1]-line1[0][1], line1[1][0]-line1[0][0])
++    a2 = np.arctan2(line2[1][1]-line2[0][1], line2[1][0]-line2[0][0])
++    return abs(a2-a1)
++
++def prune_lines(inlines, mind, min_ang, max_merge):
++    import math
++    lengths = []
++    merged = []
++    lines = np.asarray(inlines)
++    for line in lines:
++        lengths = np.append(lengths, np.linalg.norm(line[0]-line[1]))
++        merged = np.append(merged, 1)
++    sortidx = np.argsort(lengths);
++
++    min_ang_rad = math.radians(min_ang)
++    NN = len(sortidx)
++    idx = NN - 1
++    while idx >= 0:
++        i1 = sortidx[idx]
++
++        for i2 in range(NN):
++            if (i1 != i2 and lengths[i2] > 0. and lengths[i1] > 0.):
++                
++                d11 = distance_point_line(lines[i1][0],lines[i2])
++                d12 = distance_point_line(lines[i1][1],lines[i2])
++                d21 = distance_point_line(lines[i2][0],lines[i1])
++                d22 = distance_point_line(lines[i2][1],lines[i1])
++                ang = angle_line_line(lines[i1], lines[i2])
++                sum = 0
++                if (d11 < mind):
++                    sum = sum + 1
++                if (d12 < mind):
++                    sum = sum + 1
++                if (d21 < mind):
++                    sum = sum + 1
++                if (d22 < mind):
++                    sum = sum + 1
++
++                # merge lines if they haven't been merged too often already, they overlap two or more points and are parallel
++                if ( (merged[i1] + merged[i2] < max_merge) and (sum >= 2) and (ang < min_ang_rad or abs(ang-math.pi) < min_ang_rad) ):
++
++                    # select the two points with the furthest distance
++                    maxd=0
++                    for i in range(2):
++                        for j in range(2):
++                            d = distance_point_point(lines[i1][i], lines[i2][j])
++                            if (d > maxd):
++                                maxd = d
++                                mymax0 = lines[i1][i]
++                                mymax1 = lines[i2][j]
++                    # perhaps original one was longer?
++                    if maxd > lengths[i1]:
++                        lines[i1][0] = mymax0
++                        lines[i1][1] = mymax1
++                        lengths[i1] = np.linalg.norm(lines[i1][0]-lines[i1][1])
++                        merged[i1] = merged[i1] + merged[i2]
++                    
++                    lines[i2][0][0] = -9999
++                    lines[i2][0][1] = -9999
++                    lines[i2][1][0] = -9999
++                    lines[i2][1][1] = -9999
++                    lengths[i2] = 0
++                    merged[i2] = 0
++                    idx = idx + 1
++                    break
++
++                # remove smaller lines with both points close to longer one
++                elif (d21 < mind and d22 < mind):
++                    lines[i2][0][0] = -9999
++                    lines[i2][0][1] = -9999
++                    lines[i2][1][0] = -9999
++                    lines[i2][1][1] = -9999
++                    lengths[i2] = 0
++
++        idx = idx - 1
++
++    return lines
++
++
++def pick_filaments(score, radius, threshold, filaments_length, filaments_plot):
++    from topaz import mrc
++    from skimage.filters import gaussian
++    from skimage.transform import probabilistic_hough_line
++    from skimage.morphology import skeletonize
++    import math
++
++    #Parameters
++    thr = round(0.1*filaments_length)
++    line_length = filaments_length
++    gap = radius
++    mind= radius
++    min_angle = 10
++    max_merge = 5
++
++    bin_score = (gaussian(score, 3) > threshold)        
++    edges = skeletonize(bin_score) 
++    houghs = probabilistic_hough_line(edges, threshold=thr, line_length=line_length, line_gap=gap)
++    lines = prune_lines(houghs, mind=mind, min_ang=min_angle, max_merge=max_merge)
++
++    if filaments_plot:
++        import matplotlib.pyplot as plt
++        from matplotlib import cm
++        fig, axes = plt.subplots(1, 4, figsize=(15, 5), sharex=True, sharey=True)
++        ax = axes.ravel()
++
++        ax[0].imshow(score, cmap=cm.binary, vmin=-20, vmax=5)
++        ax[0].imshow(bin_score, alpha=0.5, cmap=cm.Reds)
++        ax[0].set_title('FOM [-20,5] thr= ' + str(threshold))
++
++        ax[1].imshow(edges, cmap=cm.gray)
++        ax[1].set_title('Skeletonize')
++
++        ax[2].imshow(edges * 0)
++        for hough in houghs:
++            p0, p1 = hough
++            ax[2].plot((p0[0], p1[0]), (p0[1], p1[1]))
++        ax[2].set_xlim((0, score.shape[1]))
++        ax[2].set_ylim((score.shape[0], 0))
++        ax[2].set_title('Hough transform; len= ' + str(line_length) + ' gap= ' + str(gap))
++
++        ax[3].imshow(edges * 0)
++        for line in lines:
++            p0, p1 = line
++            ax[3].plot((p0[0], p1[0]), (p0[1], p1[1]))
++        ax[3].set_xlim((0, score.shape[1]))
++        ax[3].set_ylim((score.shape[0], 0))
++        ax[3].set_title('Prune: mind= ' + str(mind))
++
++        for a in ax:
++            a.set_axis_off()
++
++        plt.tight_layout()
++        plt.show()
++
++    oldlines=lines
++    # Flatten lines into 2D array, as rest of topaz
++    NN=len(lines)
++    if NN>0:
++        lines = lines.reshape(2*NN, 2)
++        # Remove -9999 coordinates
++        newlines = []
++        for i in range(2*NN):
++            if (lines[i,0] != -9999 and lines[i,1] != -9999):
++                newlines = np.append(newlines, lines[i])
++
++        NN=round(len(newlines)/2)
++        if (NN>0):
++            lines = newlines.reshape(NN, 2)
++        else:
++            lines = []
++
++    # Just set scores to zero, a they are meaningless now
++    scores = np.zeros(NN, dtype=np.float32)
++
++    return scores, lines
++
++
+ class NonMaximumSuppression:
+-    def __init__(self, radius, threshold):
++    def __init__(self, radius, threshold, do_filaments=False, filaments_length=150, filaments_plot=False):
+         self.radius = radius
+         self.threshold = threshold
++        self.do_filaments = do_filaments
++        self.filaments_length = filaments_length
++        self.filaments_plot = filaments_plot
+ 
+     def __call__(self, args):
+         name,score = args
+-        score,coords = non_maximum_suppression(score, self.radius, threshold=self.threshold)
+-        return name, score, coords
++        if self.do_filaments:
++            score,coords = pick_filaments(score, self.radius, threshold=self.threshold, length=self.filaments_length, filaments_plot = self.filaments_plot )
++        else:
++            score,coords = non_maximum_suppression(score, self.radius, threshold=self.threshold, length=self.filaments_length)
++        return name, core, coords
+ 
+-def nms_iterator(scores, radius, threshold, pool=None):
+-    process = NonMaximumSuppression(radius, threshold)
++def nms_iterator(scores, radius, threshold, pool=None, do_filaments=False, filaments_length=150, filaments_plot=False):
++    process = NonMaximumSuppression(radius, threshold, do_filaments, filaments_length, filaments_plot)
+     if pool is not None:
+         for name,score,coords in pool.imap_unordered(process, scores):
+             yield name,score,coords
+     else:
+         for name,score in scores:
+-            score,coords = non_maximum_suppression(score, radius, threshold=threshold)
++            if do_filaments:
++                score,coords = pick_filaments(score, radius, threshold=threshold, filaments_length=filaments_length, filaments_plot=filaments_plot)
++            else:
++                score,coords = non_maximum_suppression(score, radius, threshold=threshold)
+             yield name,score,coords
+ 
+ def iterate_score_target_pairs(scores, targets):
+@@ -231,6 +431,12 @@ def main(args):
+     if radius is None:
+         radius = -1
+ 
++    do_filaments = args.filaments or args.filaments_plot
++    filaments_length = args.filaments_length
++    if (filaments_length < 0):
++        filaments_length = 2 * radius
++    filaments_plot = args.filaments_plot
++
+     num_workers = args.num_workers
+     pool = None
+     if num_workers < 0:
+@@ -284,12 +490,13 @@ def main(args):
+ 
+         if not per_micrograph:
+             print('image_name\tx_coord\ty_coord\tscore', file=f)
++
+         ## extract coordinates using radius 
+-        for path,score,coords in nms_iterator(stream, radius, threshold, pool=pool):
++        for path,score,coords in nms_iterator(stream, radius, threshold, pool=pool, do_filaments=do_filaments, filaments_length=filaments_length, filaments_plot=filaments_plot):
+             basename = os.path.basename(path)
+             name = os.path.splitext(basename)[0]
+             ## scale the coordinates
+-            if scale != 1:
++            if scale != 1 and len(coords)>0:
+                 coords = np.round(coords*scale).astype(int)
+ 
+             if per_micrograph:
+@@ -303,8 +510,6 @@ def main(args):
+                     print(name + '\t' + str(coords[i,0]) + '\t' + str(coords[i,1]) + '\t' + str(score[i]), file=f)
+ 
+ 
+-
+-
+ if __name__ == '__main__':
+     import argparse
+     parser = argparse.ArgumentParser('Script for extracting particles from segmented images or images processed with a trained model. Uses a non maximum suppression algorithm.')

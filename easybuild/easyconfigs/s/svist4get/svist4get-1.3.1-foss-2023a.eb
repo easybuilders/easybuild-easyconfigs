@@ -1,0 +1,61 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+# Update: Pavel Tománek (Inuits)
+
+easyblock = 'PythonBundle'
+
+name = 'svist4get'
+version = '1.3.1'
+
+homepage = 'https://github.com/art-egorov/svist4get'
+description = """Svist4get is a simple bioinformatics tool for visualization of 
+genomic signal tracks in user-defined genomic windows, either arbitrary selected 
+by genomic coordinates or anchored to particular transcripts or genes."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('pybedtools', '0.9.1'),
+    ('Biopython', '1.83'),
+    ('Pillow', '10.0.0'),
+    ('ImageMagick', '7.1.1-15'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('reportlab', '3.6.9', {
+        'patches': ['reportlab-3.6.12-fontconfig.patch'],
+        'checksums': ['5d0cc3682456ad213150f6dbffe7d47eab737d809e517c316103376be548fb84',
+                      # reportlab-3.6.12-fontconfig.patch:
+                      '2cc9b40e09650b7404ee9c4d72b134739acc89bacac3da58131cef2308726297'],
+    }),
+    ('configs', '3.0.3', {
+        'sources': ['%(name)s-%(version)s.zip'],
+        'checksums': ['a5ab09e04e441dac6aa856a71fbf5ffc62954352630f79d311b8f8a31d9ce19c'],
+    }),
+    ('argparse', '1.4.0', {
+        'checksums': ['62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4'],
+    }),
+    ('Wand', '0.6.10', {
+        'checksums': ['373f4a7f2866c868c31ce910e1f9b36a92d132640a20068ec17cea3284fedc57'],
+    }),
+    (name, version, {
+        # unpin statistics dependency - it is old package and interfering with python lib statistics
+        'preinstallopts': "sed -i 's/statistics//' setup.py && ",
+        'checksums': ['22311fdc956cca531dac7ba924744e8f870a57bc6f27cbe4e8ba9854117e720c'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/svist4get', 'bin/svist4get_copier'],
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = [
+    "svist4get --help",
+    "svist4get -v",
+]
+
+moduleclass = 'bio'
