@@ -1,0 +1,21 @@
+# Fix ungrib/src/ngl/g2/dec_jpeg2000.c linking error with JasPer >= 3.x.x
+# Based on this issue: https://github.com/NOAA-EMC/NCEPLIBS-g2c/issues/245
+# Need to switch from jpc_decode() to jas_image_decode()
+# And I'm using fmt=-1 to force auto image format detection.
+# By Thang Ha
+
+diff -Nru WPS-4.5.orig/ungrib/src/ngl/g2/dec_jpeg2000.c WPS-4.5/ungrib/src/ngl/g2/dec_jpeg2000.c
+--- WPS-4.5.orig/ungrib/src/ngl/g2/dec_jpeg2000.c	2024-06-08 22:15:30.549254734 -0500
++++ WPS-4.5/ungrib/src/ngl/g2/dec_jpeg2000.c	2024-06-08 22:16:15.696826965 -0500
+@@ -80,9 +80,9 @@
+ /*   
+  *     Decode JPEG200 codestream into jas_image_t structure.
+  */      
+-    image=jpc_decode(jpcstream,opts);
++    image=jas_image_decode(jpcstream,-1,opts);
+     if ( image == 0 ) {
+-       printf(" jpc_decode return = %d \n",ier);
++       printf(" jas_image_decode return = %d \n",ier);
+        return -3;
+     }
+     
