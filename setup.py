@@ -110,7 +110,7 @@ versions, etc.).""",
         "easybuild_easyblocks(>=%s)" % MAJMIN_VER,
     ],
     extras_require={
-        "archive": ["easybuild-easyconfigs-archive==%s" % VERSION],
+        "archive": ["easybuild-easyconfigs-archive>=%s" % MAJ_VER],
     },
     # not known by distutils, but required to avoid that easy_install installs easyconfigs package as a zipped egg
     zip_safe=False,
