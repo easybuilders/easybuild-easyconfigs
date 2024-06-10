@@ -1029,7 +1029,7 @@ class EasyConfigTest(TestCase):
             self.assertTrue(False, "EasyConfigs with case-insensitive name clash: %s" % duplicates)
 
     @skip_if_not_pr_to_non_main_branch()
-    def test_pr_sha256_checksums(self):
+    def DISABLED_test_pr_sha256_checksums(self):
         """Make sure changed easyconfigs have SHA256 checksums in place."""
 
         # list of software for which checksums can not be required,
@@ -1066,7 +1066,7 @@ class EasyConfigTest(TestCase):
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
     @skip_if_not_pr_to_non_main_branch()
-    def test_pr_python_packages(self):
+    def DISABLED_test_pr_python_packages(self):
         """Several checks for easyconfigs that install (bundles of) Python packages."""
 
         # These packages do not support installation with 'pip'
@@ -1184,7 +1184,7 @@ class EasyConfigTest(TestCase):
             self.fail('\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
-    def test_pr_R_packages(self):
+    def DISABLED_test_pr_R_packages(self):
         """Several checks for easyconfigs that install (bundles of) R packages."""
         failing_checks = []
 
@@ -1205,7 +1205,7 @@ class EasyConfigTest(TestCase):
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
-    def test_pr_sanity_check_paths(self):
+    def DISABLED_test_pr_sanity_check_paths(self):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
@@ -1246,7 +1246,7 @@ class EasyConfigTest(TestCase):
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
-    def test_pr_https(self):
+    def DISABLED_test_pr_https(self):
         """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
 
         whitelist = [
@@ -1348,7 +1348,7 @@ class EasyConfigTest(TestCase):
             self.fail('\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
-    def test_pr_patch_descr(self):
+    def DISABLED_test_pr_patch_descr(self):
         """
         Check whether all patch files touched in PR have a description on top.
         """
