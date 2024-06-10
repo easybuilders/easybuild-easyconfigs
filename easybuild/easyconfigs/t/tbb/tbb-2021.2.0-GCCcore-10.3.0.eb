@@ -1,0 +1,40 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'CMakeMake'
+
+name = 'tbb'
+version = '2021.2.0'
+
+homepage = 'https://github.com/oneapi-src/oneTBB'
+description = """Intel(R) Threading Building Blocks (Intel(R) TBB) lets you easily write parallel C++ programs that
+ take full advantage of multicore performance, that are portable, composable and have future-proof scalability."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/oneapi-src/oneTBB/archive/']
+sources = ['v%(version)s.tar.gz']
+# Fixes https://github.com/oneapi-src/oneTBB/issues/386
+patches = ['tbb-%(version)s_relaxed.patch']
+checksums = [
+    'cee20b0a71d977416f3e3b4ec643ee4f38cedeb2a9ff015303431dd9d8d79854',  # v2021.2.0.tar.gz
+    # tbb-2021.2.0_relaxed.patch
+    'b145cf83d71b7184567ee477c233ba2393977f5c4cc5db6c2afaed6ab9d0f5ef',
+]
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('CMake', '3.20.1'),
+]
+
+configopts = '-DTBB_EXAMPLES=ON'
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['include/%(name)s/%(name)s.h'] +
+             ['lib/lib%%(name)s.%s' % SHLIB_EXT],
+    'dirs': ['lib', 'include']
+}
+
+moduleclass = 'lib'
