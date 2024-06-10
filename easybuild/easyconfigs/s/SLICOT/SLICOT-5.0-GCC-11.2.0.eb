@@ -1,0 +1,50 @@
+# We are only building the slicot.a lib and link that to the required 
+# libs for both Matlab and Octave
+# Configure options taken from here:
+# https://forum.dynare.org/t/compiling-and-running-dynare-on-a-linux-cluster-running-centos-or-rhel/18039
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'MakeCp'
+
+name = 'SLICOT'
+version = '5.0'
+
+homepage = 'http://slicot.org/'
+description = """The subroutine library SLICOT provides Fortran 77 
+implementations of numerical algorithms for computations in systems 
+and control theory. Based on numerical linear algebra routines from 
+BLAS and LAPACK libraries, SLICOT provides methods for the design 
+and analysis of control systems."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://deb.debian.org/debian/pool/main/s/slicot']
+sources = ['%(namelower)s_%(version)s+20101122.orig.tar.gz']
+patches = ['%(namelower)s-%(version)s-makefile-flexiblas.patch']
+checksums = [
+    {'slicot_5.0+20101122.orig.tar.gz': 'fa80f7c75dab6bfaca93c3b374c774fd87876f34fba969af9133eeaea5f39a3d'},
+    {'slicot-5.0-makefile-flexiblas.patch': '2647326285ecb82e5c996e098e32b0a3060b7442785633c6269507a89a4f6de0'},
+]
+
+# The library build does not need that. That is only needed for the full build with the references!
+# Left in as reference. For the full build the current configure options are not working. 
+# dependencies = [
+#     ('OpenBLAS', '0.3.18'),
+#     ('FlexiBLAS', '3.0.4'),
+# ]
+
+buildopts = ' lib'
+
+files_to_copy = [(['slicot.a', 'lpkaux.a'], 'lib')]
+
+sanity_check_paths = {
+    'files': ['lib/slicot.a'],
+    'dirs': []
+}
+
+postinstallcmds = [
+    ("ln -s %(installdir)s/lib/slicot.a  %(installdir)s/lib/libslicot64_pic.a "),  # for MatLab
+]
+
+moduleclass = 'lib'
