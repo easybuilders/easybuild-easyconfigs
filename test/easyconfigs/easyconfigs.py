@@ -1090,6 +1090,7 @@ class EasyConfigTest(TestCase):
         python_default_urls = PythonPackage.extra_options()['source_urls'][0]
 
         for ec in self.changed_ecs:
+            failing_checks_ec = []
 
             with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
@@ -1110,38 +1111,37 @@ class EasyConfigTest(TestCase):
             # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
                 if download_dep_fail is None:
-                    failing_checks.append("'download_dep_fail' should be set in %s" % ec_fn)
+                    failing_checks_ec.append("'download_dep_fail' should be set")
 
                 if pure_ec.get('source_urls') == python_default_urls:
-                    failing_checks.append("'source_urls' should not be defined when using the default value "
-                                          "in %s" % ec_fn)
+                    failing_checks_ec.append("'source_urls' should not be defined when using the default value")
 
             # use_pip should be set when using PythonPackage or PythonBundle,
             # or an easyblock that derives from it (except for whitelisted easyconfigs)
             if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
                 if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
-                    failing_checks.append("'use_pip' should be set in %s" % ec_fn)
+                    failing_checks_ec.append("'use_pip' should be set")
 
             # download_dep_fail is enabled automatically in PythonBundle easyblock, so shouldn't be set
             if easyblock in ['CargoPythonBundle', 'PythonBundle']:
                 if download_dep_fail or exts_download_dep_fail:
-                    fail = "'*download_dep_fail' should not be set in %s since PythonBundle easyblock is used" % ec_fn
-                    failing_checks.append(fail)
+                    fail = "'*download_dep_fail' should not be set since PythonBundle easyblock is used"
+                    failing_checks_ec.append(fail)
                 if pure_ec.get('exts_default_options', {}).get('source_urls') == python_default_urls:
-                    failing_checks.append("'source_urls' should not be defined in exts_default_options when using "
-                                          "the default value in %s" % ec_fn)
+                    failing_checks_ec.append("'source_urls' should not be defined in exts_default_options when using "
+                                             "the default value")
 
             elif exts_defaultclass == 'PythonPackage':
                 # bundle of Python packages should use PythonBundle
                 if easyblock == 'Bundle':
-                    fail = "'PythonBundle' easyblock should be used for bundle of Python packages in %s" % ec_fn
-                    failing_checks.append(fail)
+                    fail = "'PythonBundle' easyblock should be used for bundle of Python packages"
+                    failing_checks_ec.append(fail)
                 else:
                     # both download_dep_fail and use_pip should be set via exts_default_options
                     # when installing Python packages as extensions
                     for key in ['download_dep_fail', 'use_pip']:
                         if exts_default_options.get(key) is None:
-                            failing_checks.append("'%s' should be set in exts_default_options in %s" % (key, ec_fn))
+                            failing_checks_ec.append("'%s' should be set in exts_default_options" % key)
 
             # if Python is a dependency, that should be reflected in the versionsuffix since v3.8.6
             has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
@@ -1161,24 +1161,42 @@ class EasyConfigTest(TestCase):
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
 
             if ec.name in exception_python_suffix or whitelisted:
-                continue
+                pass
             elif has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
+                msg = "'-Python-%(pyver)s' should be included in versionsuffix"
                 # This is only a failure for newly added ECs, not for existing ECS
                 # As that would probably break many ECs
                 if ec_fn in self.added_ecs_filenames:
-                    failing_checks.append(msg)
+                    failing_checks_ec.append(msg)
                 else:
-                    print('\nNote: Failed non-critical check: ' + msg)
+                    print('\nNote: Failed non-critical check for %s: %s' % (ec_fn, msg))
             elif has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
-                failing_checks.append(msg)
+                msg = "'-Python-%(pyver)s' should no longer be included in versionsuffix"
+                failing_checks_ec.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
             if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
-                    failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
+                    failing_checks_ec.append("sanity_pip_check should be enabled")
+
+            # Avoid duplicated PYTHONPATH entries and checks (set by the easyblock)
+            if easyblock == 'PythonBundle' or easyblock.endswith('PythonPackage'):
+                extra_python_path = ec.get('modextrapaths', dict()).get('PYTHONPATH')
+                regex = r'lib/python(%\(pyshortver\)s|\d\.\d+)/site-packages'
+                if re.match(regex, extra_python_path):
+                    failing_checks_ec.append("modextrapaths contains superflous '%s' "
+                                             "(automatically added by easyblock)" % extra_python_path)
+                sanity_check_dirs = ec.get('sanity_check_paths', dict()).get('dirs') or []
+                default_dirs = (
+                    r'lib(64)?/python(%\(pyshortver\)s|\d\.\d+)/site-packages',
+                    r'lib(64)?/python(%\(pyshortver\)s|\d\.\d+)/site-packages/%\(name\)s',
+                )
+                entries = [d for d in sanity_check_dirs if any(re.match(dir_regex, d) for dir_regex in default_dirs)]
+                if entries:
+                    failing_checks_ec.append("sanity_check_paths['dirs'] contains superflous %s "
+                                             "(automatically added by easyblock)" % entries)
+            failing_checks.extend(ec_fn + ': ' + fail for fail in failing_checks_ec)
 
         if failing_checks:
             self.fail('\n'.join(failing_checks))
