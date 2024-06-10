@@ -1,0 +1,52 @@
+easyblock = 'MakeCp'
+
+name = 'PyPy'
+version = '7.3.12'
+local_pyver = '3.10'
+versionsuffix = '-%s' % local_pyver
+
+homepage = 'https://www.pypy.org'
+description = "A fast, compliant alternative implementation of Python"
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ['https://downloads.python.org/pypy/']
+sources = ['pypy%s-v%%(version)s-src.tar.bz2' % local_pyver]
+checksums = ['86e4e4eacc36046c6182f43018796537fe33a60e1d2a2cc6b8e7f91a5dcb3e42']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('pkgconf', '1.8.0'),
+    # PyPy 2.7 is required to build PyPy from source (unless Python 2.7 is used, but then build is a lot slower)
+    ('PyPy', '7.3.12', '-2.7', SYSTEM),
+]
+
+dependencies = [
+    ('libffi', '3.4.2'),
+    ('zlib', '1.2.12'),
+    ('bzip2', '1.0.8'),
+    ('expat', '2.4.8'),
+    ('libunwind', '1.6.2'),
+    ('SQLite', '3.38.3'),
+    ('ncurses', '6.3'),
+    ('gdbm', '1.23'),
+    ('Tk', '8.6.12'),
+    ('XZ', '5.2.5'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+buildopts = " && cd pypy/goal && ln -s $PWD/pypy%s-c pypy3-c && cd - && " % local_pyver
+buildopts += "python pypy/tool/release/package.py"
+
+files_to_copy = []
+
+sanity_check_paths = {
+    'files': ['bin/pypy', 'bin/pypy3'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "pypy --help",
+]
+
+moduleclass = 'lang'
