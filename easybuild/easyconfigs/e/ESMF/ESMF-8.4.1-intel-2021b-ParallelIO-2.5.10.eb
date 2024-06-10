@@ -1,0 +1,41 @@
+name = 'ESMF'
+version = '8.4.1'
+versionsuffix='-ParallelIO-2.5.10'
+
+homepage = 'https://www.earthsystemcog.org/projects/esmf/'
+description = """The Earth System Modeling Framework (ESMF) is a suite of software tools for developing
+ high-performance, multi-component Earth science modeling applications."""
+
+toolchain = {'name': 'intel', 'version': '2021b'}
+toolchainopts = {'usempi': True, 'openmp': True, 'cstd': 'c++11', 'pic': True}
+
+source_urls = ['https://github.com/esmf-org/esmf/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['ESMF-6.1.1_libopts.patch']
+checksums = [
+    '1b54cee91aacaa9df400bd284614cbb0257e175f6f3ec9977a2d991ed8aa1af6',  # v8.4.1.tar.gz
+    '3851627f07c32a7da55d99072d619942bd3a1d9dd002e1557716158e7aacdaf4',  # ESMF-6.1.1_libopts.patch
+]
+
+builddependencies = [('CMake', '3.21.1')]
+
+dependencies = [
+    ('netCDF', '4.8.1'),
+    ('netCDF-Fortran', '4.5.3'),
+    ('netCDF-C++4', '4.3.1'),
+    ('PnetCDF', '1.12.3'),
+    ('ParallelIO', '2.5.10'),
+]
+# disable errors from GCC 10 on mismatches between actual and dummy argument lists (GCC 9 behaviour)
+prebuildopts = 'ESMF_F90COMPILEOPTS="${ESMF_F90COMPILEOPTS} -fallow-argument-mismatch"'
+
+buildopts = 'ESMF_NETCDF_INCLUDE=$EBROOTNETCDFMINFORTRAN/include '
+buildopts += 'ESMF_NETCDF_LIBS="`nc-config --libs` `nf-config --flibs` `ncxx4-config --libs`"'
+
+# options  for external PIO
+external_pio = True
+buildopts += ' ESMF_PIO="external" ESMF_PIO_INCLUDE="$EBROOTPARALLELIO/include" ESMF_PIO_LIBPATH="$EBROOTPARALLELIO/lib" '
+# too parallel causes the build to become really slow
+maxparallel = 8
+
+moduleclass = 'geo'
