@@ -1,0 +1,293 @@
+Collection of commits from upstream to make PyTorch compatible with CUDA 12
+
+Author: Alexander Grund (TU Dresden)
+
+From 0d5c849d48b9c421b6b98c42a6375a4a0b2dbba4 Mon Sep 17 00:00:00 2001
+From: Ivan Yashchuk <ivan.yashchuk@aalto.fi>
+Date: Tue, 13 Dec 2022 15:55:56 +0000
+Subject: [PATCH] Update cuSPARSE usage for CUDA 12.0 (#90765)
+
+cuSPARSE v12.0 has started to use const pointers for the descriptors, from `cusparse.h` (documentation is incorrect):
+```cpp
+typedef struct cusparseSpVecDescr const* cusparseConstSpVecDescr_t;
+typedef struct cusparseDnVecDescr const* cusparseConstDnVecDescr_t;
+typedef struct cusparseSpMatDescr const* cusparseConstSpMatDescr_t;
+typedef struct cusparseDnMatDescr const* cusparseConstDnMatDescr_t;
+```
+Changing also the function signature for the corresponding destructors to accept a const pointer. This PR adds `ConstCuSparseDescriptorDeleter` working with `cusparseStatus_t (*destructor)(const T*)`.
+
+Some algorithm enums were deprecated during CUDA 11 and removed in CUDA 12, I replaced the following occurences
+```
+CUSPARSE_CSRMM_ALG1 -> CUSPARSE_SPMM_CSR_ALG1
+CUSPARSE_COOMM_ALG1 -> CUSPARSE_SPMM_COO_ALG1
+CUSPARSE_COOMM_ALG2 -> CUSPARSE_SPMM_COO_ALG2
+```
+
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/90765
+Approved by: https://github.com/cpuhrsch
+---
+ aten/src/ATen/cuda/CUDASparse.h               | 15 ++++++
+ aten/src/ATen/cuda/CUDASparseDescriptors.h    | 53 ++++++++++++++++++-
+ .../native/sparse/cuda/SparseCUDABlas.cpp     |  4 +-
+ .../sparse/cuda/SparseCUDATensorMath.cu       |  2 +-
+ torch/utils/hipify/cuda_to_hip_mappings.py    |  7 ++-
+ 5 files changed, 73 insertions(+), 8 deletions(-)
+
+diff --git a/aten/src/ATen/cuda/CUDASparse.h b/aten/src/ATen/cuda/CUDASparse.h
+index d309cd5d8e3112..c8fea7fe440060 100644
+--- a/aten/src/ATen/cuda/CUDASparse.h
++++ b/aten/src/ATen/cuda/CUDASparse.h
+@@ -10,6 +10,21 @@
+ #define AT_USE_CUSPARSE_GENERIC_API() 0
+ #endif
+ 
++// cuSparse Generic API descriptor pointers were changed to const in CUDA 12.0
++#if defined(CUDART_VERSION) && defined(CUSPARSE_VERSION) && \
++    (CUSPARSE_VERSION < 12000)
++#define AT_USE_CUSPARSE_NON_CONST_DESCRIPTORS() 1
++#else
++#define AT_USE_CUSPARSE_NON_CONST_DESCRIPTORS() 0
++#endif
++
++#if defined(CUDART_VERSION) && defined(CUSPARSE_VERSION) && \
++    (CUSPARSE_VERSION >= 12000)
++#define AT_USE_CUSPARSE_CONST_DESCRIPTORS() 1
++#else
++#define AT_USE_CUSPARSE_CONST_DESCRIPTORS() 0
++#endif
++
+ // hipSparse Generic API ROCm 5.2
+ #if defined(USE_ROCM) && ROCM_VERSION >= 50200
+ #define AT_USE_HIPSPARSE_GENERIC_52_API() 1
+diff --git a/aten/src/ATen/cuda/CUDASparseDescriptors.h b/aten/src/ATen/cuda/CUDASparseDescriptors.h
+index 60c9ff0ffa88a2..0f741c06390305 100644
+--- a/aten/src/ATen/cuda/CUDASparseDescriptors.h
++++ b/aten/src/ATen/cuda/CUDASparseDescriptors.h
+@@ -37,6 +37,31 @@ class CuSparseDescriptor {
+   std::unique_ptr<T, CuSparseDescriptorDeleter<T, destructor>> descriptor_;
+ };
+ 
++#if AT_USE_CUSPARSE_CONST_DESCRIPTORS()
++template <typename T, cusparseStatus_t (*destructor)(const T*)>
++struct ConstCuSparseDescriptorDeleter {
++  void operator()(T* x) {
++    if (x != nullptr) {
++      TORCH_CUDASPARSE_CHECK(destructor(x));
++    }
++  }
++};
++
++template <typename T, cusparseStatus_t (*destructor)(const T*)>
++class ConstCuSparseDescriptor {
++ public:
++  T* descriptor() const {
++    return descriptor_.get();
++  }
++  T* descriptor() {
++    return descriptor_.get();
++  }
++
++ protected:
++  std::unique_ptr<T, ConstCuSparseDescriptorDeleter<T, destructor>> descriptor_;
++};
++#endif // AT_USE_CUSPARSE_CONST_DESCRIPTORS
++
+ #if defined(USE_ROCM)
+ // hipSPARSE doesn't define this
+ using cusparseMatDescr = std::remove_pointer<cusparseMatDescr_t>::type;
+@@ -101,7 +126,8 @@ class TORCH_CUDA_CPP_API CuSparseBsrsm2Info
+ 
+ cusparseIndexType_t getCuSparseIndexType(const c10::ScalarType& scalar_type);
+ 
+-#if AT_USE_HIPSPARSE_GENERIC_52_API() || AT_USE_CUSPARSE_GENERIC_API()
++#if AT_USE_HIPSPARSE_GENERIC_52_API() || \
++    (AT_USE_CUSPARSE_GENERIC_API() && AT_USE_CUSPARSE_NON_CONST_DESCRIPTORS())
+ class TORCH_CUDA_CPP_API CuSparseDnMatDescriptor
+     : public CuSparseDescriptor<cusparseDnMatDescr, &cusparseDestroyDnMat> {
+  public:
+@@ -123,6 +149,31 @@ class TORCH_CUDA_CPP_API CuSparseSpMatCsrDescriptor
+  public:
+   explicit CuSparseSpMatCsrDescriptor(const Tensor& input, int64_t batch_offset = -1);
+ 
++#if AT_USE_CUSPARSE_CONST_DESCRIPTORS()
++  class TORCH_CUDA_CPP_API CuSparseDnMatDescriptor
++      : public ConstCuSparseDescriptor<
++            cusparseDnMatDescr,
++            &cusparseDestroyDnMat> {
++   public:
++    explicit CuSparseDnMatDescriptor(
++        const Tensor& input,
++        int64_t batch_offset = -1);
++  };
++
++  class TORCH_CUDA_CPP_API CuSparseDnVecDescriptor
++      : public ConstCuSparseDescriptor<
++            cusparseDnVecDescr,
++            &cusparseDestroyDnVec> {
++   public:
++    explicit CuSparseDnVecDescriptor(const Tensor& input);
++  };
++
++  class TORCH_CUDA_CPP_API CuSparseSpMatDescriptor
++      : public ConstCuSparseDescriptor<
++            cusparseSpMatDescr,
++            &cusparseDestroySpMat> {};
++#endif // AT_USE_CUSPARSE_CONST_DESCRIPTORS()
++
+ #if defined(USE_ROCM) || (defined(CUDA_VERSION) && CUDA_VERSION >= 11000)
+   std::tuple<int64_t, int64_t, int64_t> get_size() {
+     int64_t rows, cols, nnz;
+diff --git a/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cpp b/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cpp
+index bd89e6fc1701af..f21e40a5257f8b 100644
+--- a/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cpp
++++ b/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cpp
+@@ -164,7 +164,7 @@ void _csrmm2(
+     beta,
+     descC,
+     cusparse_value_type,  /* data type in which the computation is executed */
+-    CUSPARSE_CSRMM_ALG1,  /* default computing algorithm for CSR sparse matrix format */
++    CUSPARSE_SPMM_CSR_ALG1,  /* default computing algorithm for CSR sparse matrix format */
+     &bufferSize           /* output */
+   ));
+ 
+@@ -178,7 +178,7 @@ void _csrmm2(
+     beta,
+     descC,
+     cusparse_value_type,  /* data type in which the computation is executed */
+-    CUSPARSE_CSRMM_ALG1,  /* default computing algorithm for CSR sparse matrix format */
++    CUSPARSE_SPMM_CSR_ALG1,  /* default computing algorithm for CSR sparse matrix format */
+     dataPtr.get()         /* external buffer */
+   ));
+ 
+diff --git a/aten/src/ATen/native/sparse/cuda/SparseCUDATensorMath.cu b/aten/src/ATen/native/sparse/cuda/SparseCUDATensorMath.cu
+index d388864f0b0ca6..91466770a923c1 100644
+--- a/aten/src/ATen/native/sparse/cuda/SparseCUDATensorMath.cu
++++ b/aten/src/ATen/native/sparse/cuda/SparseCUDATensorMath.cu
+@@ -832,7 +832,7 @@ Tensor& bmm_out_sparse_cuda(const SparseTensor& self, const Tensor& mat2, Tensor
+ 
+   // See Note [Enabling Deterministic Operations]
+   bool deterministic =  globalContext().deterministicAlgorithms();
+-  cusparseSpMMAlg_t mm_alg = deterministic ? CUSPARSE_COOMM_ALG2 : CUSPARSE_COOMM_ALG1;
++  cusparseSpMMAlg_t mm_alg = deterministic ? CUSPARSE_SPMM_COO_ALG2 : CUSPARSE_SPMM_COO_ALG1;
+ 
+   // Iterate through each set of 2D matrices within the 3D
+   // tensor inputs, performing a matrix multiply with each
+diff --git a/torch/utils/hipify/cuda_to_hip_mappings.py b/torch/utils/hipify/cuda_to_hip_mappings.py
+index 1afb7c37fc6b70..1272a2fe3d00d7 100644
+--- a/torch/utils/hipify/cuda_to_hip_mappings.py
++++ b/torch/utils/hipify/cuda_to_hip_mappings.py
+@@ -7945,11 +7945,10 @@
+         ("CUSPARSE_ORDER_COL", ("HIPSPARSE_ORDER_COLUMN", CONV_NUMERIC_LITERAL, API_SPARSE)),
+         ("CUSPARSE_MV_ALG_DEFAULT", ("HIPSPARSE_MV_ALG_DEFAULT", CONV_NUMERIC_LITERAL, API_SPARSE)),
+         ("CUSPARSE_MM_ALG_DEFAULT", ("HIPSPARSE_MM_ALG_DEFAULT", CONV_NUMERIC_LITERAL, API_SPARSE)),
+-        ("CUSPARSE_COOMM_ALG1", ("HIPSPARSE_COOMM_ALG1", CONV_NUMERIC_LITERAL, API_SPARSE)),
+-        ("CUSPARSE_COOMM_ALG2", ("HIPSPARSE_COOMM_ALG2", CONV_NUMERIC_LITERAL, API_SPARSE)),
+-        ("CUSPARSE_COOMM_ALG3", ("HIPSPARSE_COOMM_ALG3", CONV_NUMERIC_LITERAL, API_SPARSE)),
++        ("CUSPARSE_SPMM_COO_ALG1", ("HIPSPARSE_SPMM_COO_ALG1", CONV_NUMERIC_LITERAL, API_SPARSE)),
++        ("CUSPARSE_SPMM_COO_ALG2", ("HIPSPARSE_SPMM_COO_ALG2", CONV_NUMERIC_LITERAL, API_SPARSE)),
+         ("CUSPARSE_COOMV_ALG", ("HIPSPARSE_COOMV_ALG", CONV_NUMERIC_LITERAL, API_SPARSE)),
+-        ("CUSPARSE_CSRMM_ALG1", ("HIPSPARSE_CSRMM_ALG1", CONV_NUMERIC_LITERAL, API_SPARSE)),
++        ("CUSPARSE_SPMM_CSR_ALG1", ("HIPSPARSE_CSRMM_ALG1", CONV_NUMERIC_LITERAL, API_SPARSE)),
+         ("CUSPARSE_SPGEMM_DEFAULT", ("HIPSPARSE_SPGEMM_DEFAULT", CONV_NUMERIC_LITERAL, API_SPARSE)),
+         ("CUSPARSE_SDDMM_ALG_DEFAULT", ("HIPSPARSE_SDDMM_ALG_DEFAULT", CONV_NUMERIC_LITERAL, API_SPARSE)),
+         (
+
+From cf07aa18fc08974acdb12e6beca7ae234c68c499 Mon Sep 17 00:00:00 2001
+From: Xiao Wang <24860335+xwang233@users.noreply.github.com>
+Date: Wed, 14 Dec 2022 20:18:37 -0800
+Subject: [PATCH] fix endif guard position
+
+---
+ aten/src/ATen/cuda/CUDASparseDescriptors.h | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/aten/src/ATen/cuda/CUDASparseDescriptors.h b/aten/src/ATen/cuda/CUDASparseDescriptors.h
+index 0f741c06390305..fb24495f955633 100644
+--- a/aten/src/ATen/cuda/CUDASparseDescriptors.h
++++ b/aten/src/ATen/cuda/CUDASparseDescriptors.h
+@@ -133,7 +133,6 @@ class TORCH_CUDA_CPP_API CuSparseDnMatDescriptor
+  public:
+   explicit CuSparseDnMatDescriptor(const Tensor& input, int64_t batch_offset = -1);
+ };
+-#endif //AT_USE_HIPSPARSE_GENERIC_52_API() || AT_USE_CUSPARSE_GENERIC_API()
+ 
+ class TORCH_CUDA_CPP_API CuSparseDnVecDescriptor
+     : public CuSparseDescriptor<cusparseDnVecDescr, &cusparseDestroyDnVec> {
+@@ -144,10 +143,7 @@ class TORCH_CUDA_CPP_API CuSparseDnVecDescriptor
+ class TORCH_CUDA_CPP_API CuSparseSpMatDescriptor
+     : public CuSparseDescriptor<cusparseSpMatDescr, &cusparseDestroySpMat> {};
+ 
+-class TORCH_CUDA_CPP_API CuSparseSpMatCsrDescriptor
+-    : public CuSparseSpMatDescriptor {
+- public:
+-  explicit CuSparseSpMatCsrDescriptor(const Tensor& input, int64_t batch_offset = -1);
++#endif //AT_USE_HIPSPARSE_GENERIC_52_API() || (AT_USE_CUSPARSE_GENERIC_API() || AT_USE_CUSPARSE_NON_CONST_DESCRIPTORS())
+ 
+ #if AT_USE_CUSPARSE_CONST_DESCRIPTORS()
+   class TORCH_CUDA_CPP_API CuSparseDnMatDescriptor
+@@ -174,6 +170,11 @@ class TORCH_CUDA_CPP_API CuSparseSpMatCsrDescriptor
+             &cusparseDestroySpMat> {};
+ #endif // AT_USE_CUSPARSE_CONST_DESCRIPTORS()
+ 
++class TORCH_CUDA_CPP_API CuSparseSpMatCsrDescriptor
++    : public CuSparseSpMatDescriptor {
++ public:
++  explicit CuSparseSpMatCsrDescriptor(const Tensor& input, int64_t batch_offset = -1);
++
+ #if defined(USE_ROCM) || (defined(CUDA_VERSION) && CUDA_VERSION >= 11000)
+   std::tuple<int64_t, int64_t, int64_t> get_size() {
+     int64_t rows, cols, nnz;
+
+From 35f726510a279272009a0302130e9b4a82c07870 Mon Sep 17 00:00:00 2001
+From: Jianyu Huang <jianyuhuang@fb.com>
+Date: Mon, 19 Dec 2022 13:12:22 -0800
+Subject: [PATCH] Make PyTorch compatible with CUDA 12
+
+---
+ aten/src/ATen/cuda/CUDAGraph.cpp  | 4 ++++
+ torch/csrc/cuda/shared/cudart.cpp | 8 ++++++--
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/aten/src/ATen/cuda/CUDAGraph.cpp b/aten/src/ATen/cuda/CUDAGraph.cpp
+index 92eddeb4b755c8..3be00881d784a7 100644
+--- a/aten/src/ATen/cuda/CUDAGraph.cpp
++++ b/aten/src/ATen/cuda/CUDAGraph.cpp
+@@ -142,7 +142,11 @@ void CUDAGraph::capture_end() {
+   // Trailing NULL, NULL, 0 arguments were recommended by Cuda driver people,
+   // who prefer not to report error message through these arguments moving forward
+   // (they prefer return value, or errors on api calls internal to the capture)
+-  AT_CUDA_CHECK(cudaGraphInstantiate(&graph_exec_, graph_, NULL, NULL, 0));
++#if CUDA_VERSION >= 12000
++    AT_CUDA_CHECK(cudaGraphInstantiate(&graph_exec_, graph_, 0));
++#else
++    AT_CUDA_CHECK(cudaGraphInstantiate(&graph_exec_, graph_, NULL, NULL, 0));
++#endif
+   has_graph_exec_ = true;
+ 
+   auto* gen = get_generator_or_default<CUDAGeneratorImpl>(
+diff --git a/torch/csrc/cuda/shared/cudart.cpp b/torch/csrc/cuda/shared/cudart.cpp
+index f18c883a2a06a7..a35e9a3d5a5a1c 100644
+--- a/torch/csrc/cuda/shared/cudart.cpp
++++ b/torch/csrc/cuda/shared/cudart.cpp
+@@ -30,7 +30,9 @@ void initCudartBindings(PyObject* module) {
+   // By splitting the names of these objects into two literals we prevent the
+   // HIP rewrite rules from changing these names when building with HIP.
+ 
+-#if !defined(USE_ROCM)
++#if !defined(USE_ROCM) && defined(CUDA_VERSION) && CUDA_VERSION < 12000
++  // cudaOutputMode_t is used in cudaProfilerInitialize only. The latter is gone
++  // in CUDA 12.
+   py::enum_<cudaOutputMode_t>(
+       cudart,
+       "cuda"
+@@ -92,7 +94,9 @@ void initCudartBindings(PyObject* module) {
+       [](uintptr_t ptr) -> cudaError_t {
+         return C10_CUDA_ERROR_HANDLED(cudaStreamDestroy((cudaStream_t)ptr));
+       });
+-#if !defined(USE_ROCM)
++#if !defined(USE_ROCM) && defined(CUDA_VERSION) && CUDA_VERSION < 12000
++  // cudaProfilerInitialize is no longer needed after CUDA 12:
++  // https://forums.developer.nvidia.com/t/cudaprofilerinitialize-is-deprecated-alternative/200776/3
+   cudart.def(
+       "cuda"
+       "ProfilerInitialize",
