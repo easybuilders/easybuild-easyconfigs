@@ -1,0 +1,82 @@
+use $EBROOTALPHAFOLD set by AlphaFold dependency provided by EasyBuild to determine path to run_alphafold.py script,
+patch setup.cfg to not install alphafold/colafold packages + not install stereo_chemical_props.txt as data file (since it's provided by AlphaFold dependency)
+author: Kenneth Hoste (HPC-UGent)
+diff -ru alphapulldown-0.30.7.orig/alphapulldown/create_individual_features.py alphapulldown-0.30.7/alphapulldown/create_individual_features.py
+--- alphapulldown-0.30.7.orig/alphapulldown/create_individual_features.py	2023-04-19 13:33:53
++++ alphapulldown-0.30.7/alphapulldown/create_individual_features.py	2023-08-08 20:59:37
+@@ -42,19 +42,7 @@
+     return module
+ 
+ 
+-PATH_TO_RUN_ALPHAFOLD = os.path.join(
+-    os.path.dirname(alphafold.__file__), "run_alphafold.py"
+-)
+-
+-try:
+-    run_af = load_module(PATH_TO_RUN_ALPHAFOLD, "run_alphafold")
+-except FileNotFoundError:
+-    PATH_TO_RUN_ALPHAFOLD = os.path.join(
+-        os.path.dirname(os.path.dirname(alphafold.__file__)), "run_alphafold.py"
+-    )
+-
+-    run_af = load_module(PATH_TO_RUN_ALPHAFOLD, "run_alphafold")
+-
++run_af = get_run_alphafold()
+ 
+ flags = run_af.flags
+ flags.DEFINE_bool("save_msa_files", False, "save msa output or not")
+diff -ru alphapulldown-0.30.7.orig/alphapulldown/utils.py alphapulldown-0.30.7/alphapulldown/utils.py
+--- alphapulldown-0.30.7.orig/alphapulldown/utils.py	2023-05-24 16:31:29
++++ alphapulldown-0.30.7/alphapulldown/utils.py	2023-08-08 20:59:52
+@@ -310,9 +310,13 @@
+     return module
+ 
+ def get_run_alphafold():
+-    PATH_TO_RUN_ALPHAFOLD = os.path.join(
+-        os.path.dirname(alphafold.__file__), "run_alphafold.py"
+-    )
++    ebrootalphafold = os.getenv('EBROOTALPHAFOLD')
++    if ebrootalphafold:
++        PATH_TO_RUN_ALPHAFOLD = os.path.join(ebrootalphafold, 'bin', 'run_alphafold.py')
++    else:
++        PATH_TO_RUN_ALPHAFOLD = os.path.join(
++            os.path.dirname(alphafold.__file__), "run_alphafold.py"
++        )
+ 
+     try:
+         run_af = load_module(PATH_TO_RUN_ALPHAFOLD, "run_alphafold")
+@@ -323,4 +327,4 @@
+ 
+         run_af = load_module(PATH_TO_RUN_ALPHAFOLD, "run_alphafold")
+ 
+-    return run_af
+\ No newline at end of file
++    return run_af
+diff -ru alphapulldown-0.30.7.orig/setup.cfg alphapulldown-0.30.7/setup.cfg
+--- alphapulldown-0.30.7.orig/setup.cfg	2023-06-21 14:14:42
++++ alphapulldown-0.30.7/setup.cfg	2023-08-08 21:01:04
+@@ -13,14 +13,10 @@
+ [options]
+ packages = 
+ 	alphapulldown
+-	alphafold
+-	colabfold
+ 	analysis_pipeline
+ 	af2plots
+ package_dir = 
+ 	alphapulldown = ./alphapulldown
+-	alphafold = ./alphafold/alphafold
+-	colabfold = ./alphapulldown/ColabFold/colabfold
+ 	analysis_pipeline = ./alphapulldown/analysis_pipeline
+ 	af2plots = ./alphapulldown/analysis_pipeline/af2_plots/af2plots
+ include_package_data = True
+@@ -49,9 +45,6 @@
+ [options.packages.find]
+ where = ./
+ exclude = test*
+-
+-[options.data_files]
+-lib/python3.8/site-packages/alphafold/common/ = stereo_chemical_props.txt
+ 
+ [egg_info]
+ tag_build = 
