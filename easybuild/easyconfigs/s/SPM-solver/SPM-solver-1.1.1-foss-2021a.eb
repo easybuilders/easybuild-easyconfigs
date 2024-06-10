@@ -1,0 +1,55 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'CMakeMake'
+
+name = 'SPM-solver'
+version = '1.1.1'
+
+homepage = 'https://gitlab.inria.fr/solverstack/spm'
+description = """SPM (SParse Matrix package) is a scientific library that provides
+ basic operation coverage to manipulate sparse matrices in CSC, CSR, and IJV
+ format.
+"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = ['https://gitlab.inria.fr/solverstack/spm/-/archive/v%(version)s']
+sources = ['spm-v%(version)s.tar.gz']
+patches = ['%(name)s-1.1.1_submodule.patch']
+checksums = [
+    '7f3a3761b07808a9aba0203732ae5c3c63c0e5d5ecf5037d81052bc12b4324d7',  # spm-v1.1.1.tar.gz
+    'c9a4249a08457d21892595ea08f9623f6bd40ef850bdb65a1600ba8b11a49ca2',  # SPM-solver-1.1.1_submodule.patch
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('morse_cmake', '20220520', '', SYSTEM),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('SCOTCH', '6.1.0'),
+]
+
+_baseopts = " ".join([
+    '-DCMAKE_MODULE_PATH="$MORSE_MODULE_PATH;$CMAKE_MODULE_PATH"',   # morse_cmake
+    '-DSPM_INT64=OFF',                  # 64-bit integer support
+    '-DSPM_WITH_FORTRAN=ON',
+    '-DSPM_WITH_SCOTCH=ON',
+    '-DCBLAS_DIR=$EBROOTFLEXIBLAS',     # avoid linking openblas directly
+    '-DLAPACKE_DIR=$EBROOTFLEXIBLAS',   # avoid linking openblas directly
+])
+
+# iterative build for static + shared libs
+configopts = ['%s -DBUILD_SHARED_LIBS=%s' % (_baseopts, x) for x in ['OFF', 'ON']]
+
+_bins = ['bin/spm_env.sh']
+_libs = ['lib/%s.%s' % (x, y) for x in ['libspm', 'libspmf'] for y in ['a', SHLIB_EXT]]
+_incs = ['include/spm.h'] + ['include/spm/%s.h' % x for x in ['config', 'const', 'c_spm', 'datatypes', 'd_spm', 'mpi',
+                                                              'p_spm', 's_spm', 'z_spm']]
+
+sanity_check_paths = {
+    'files': _bins + _libs + _incs,
+    'dirs': ['lib/cmake', 'lib/pkgconfig', 'lib/python', 'lib/julia'],
+}
+
+moduleclass = 'math'
