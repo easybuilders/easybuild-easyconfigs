@@ -1,0 +1,103 @@
+easyblock = 'Binary'
+
+name = 'PALM'
+version = '23.10'
+
+homepage = 'https://palm.muk.uni-hannover.de'
+description = """PALM is an advanced and state-of-the-art meteorological
+modeling system for atmospheric and oceanic boundary layer flows."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://gitlab.palm-model.org/releases/palm_model_system/-/archive/v%(version)s/']
+sources = ['palm_model_system-v%(version)s.tar.gz']
+checksums = ['2b13bcff9cc95ba3c80e037f239a4a96525138143598a3f52ce04ff40bfadb80']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('hatchling', '1.18.0'),
+]
+
+# required Python package: see various requirements.txt files in source directory
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),  # for numpy, scipy
+    ('netCDF-Fortran', '4.6.1'),
+    ('netcdf4-python', '1.6.4'),  # for netCDF4
+    ('PyQt5', '5.15.10'),
+    ('PyYAML', '6.0'),
+]
+
+buildininstalldir = True
+
+extract_sources = True
+
+install_cmd = "bash install -p %(installdir)s"
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('argcomplete', '3.2.3', {
+        'checksums': ['bf7900329262e481be5a15f56f19736b376df6f82ed27576fa893652c5de6c23'],
+    }),
+    ('mike', '2.0.0', {
+        'checksums': ['566f1cab1a58cc50b106fb79ea2f1f56e7bfc8b25a051e95e6eaee9fba0922de'],
+    }),
+    ('Markdown', '3.6', {
+        'checksums': ['ed4f41f6daecbeeb96e576ce414c41d2d876daa9a16cb35fa8ed8c2ddfad0224'],
+    }),
+    ('ghp-import', '2.1.0', {
+        'checksums': ['9c535c4c61193c2df8871222567d7fd7e5014d835f97dc7b7439069e2413d343'],
+    }),
+    ('mergedeep', '1.3.4', {
+        'checksums': ['0096d52e9dad9939c3d975a774666af186eda617e6ca84df4c94dec30004f2a8'],
+    }),
+    ('pyyaml_env_tag', '0.1', {
+        'checksums': ['70092675bda14fdec33b31ba77e7543de9ddc88f2e5b99160396572d11525bdb'],
+        'modulename': 'yaml_env_tag',
+    }),
+    ('watchdog', '4.0.1', {
+        'checksums': ['eebaacf674fa25511e8867028d281e602ee6500045b57f43b08778082f7f8b44'],
+    }),
+    ('mkdocs', '1.5.3', {
+        'checksums': ['eb7c99214dcb945313ba30426c2451b735992c73c2e10838f76d09e39ff4d0e2'],
+    }),
+    ('mkdocs-macros-plugin', '1.0.5', {
+        'checksums': ['fe348d75f01c911f362b6d998c57b3d85b505876dde69db924f2c512c395c328'],
+        'modulename': 'mkdocs_macros',
+    }),
+    ('pymdown_extensions', '10.7.1', {
+        'checksums': ['c70e146bdd83c744ffc766b4671999796aba18842b268510a329f7f64700d584'],
+        'modulename': 'pymdownx.magiclink',
+    }),
+    ('termcolor', '2.4.0', {
+        'checksums': ['aab9e56047c8ac41ed798fa36d892a37aca6b3e9159f3e0c24bc64a9b3ac7b7a'],
+        # fix for: "Unknown classifier in field project.classifiers: Programming Language :: Python :: 3.13"
+        'preinstallopts': "sed -i '/Python.*3.13/d' pyproject.toml && ",
+    }),
+    ('verspec', '0.1.0', {
+        'checksums': ['c4504ca697b2056cdb4bfa7121461f5a0e81809255b41c03dda4ba823637c01e'],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/palmrun'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'rrtmg'],
+}
+
+sanity_check_commands = [
+    "export PYTHONNOUSERSITE=1 && python%(pyshortver)s -m pip check",
+    "palmrun ?",
+]
+
+moduleclass = 'geo'
