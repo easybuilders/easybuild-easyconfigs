@@ -2,7 +2,8 @@
 # This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
 #
 # Authors::   Dugan Witherick (University of Warwick)
-# Updated to 240507 
+# Updated to 240507
+# Help from the FHI-aims developers and Alexander Grund to move to oneAPI is greatly appreciated
 # J. Sassmannshausen (Imperial College London/UK)
 ##
 
@@ -22,7 +23,7 @@ calculations handle up to several thousand atoms and can efficiently use (ten)th
 """
 
 toolchain = {'name': 'intel', 'version': '2023a'}
-toolchainopts = {'opt': True, 'precise': True}
+toolchainopts = {'opt': True, 'precise': True, 'usempi': True, 'oneapi': True}
 
 download_instructions = """
 The source code must be downloaded manually from the FHI-aims club
@@ -37,11 +38,12 @@ checksums = ['dea6483834d80ef5d8826171bd710ebcb035c4b971c4c958c82fdb9f03af6a6b']
 
 builddependencies = [('CMake', '3.26.3')]
 
-configopts = ' -DCMAKE_Fortran_COMPILER="$MPIF90" -DCMAKE_CXX_COMPILER="icpc"  -DCMAKE_C_COMPILER="icc" '
+configopts = ' -DCMAKE_Fortran_COMPILER="$MPIF90" -DCMAKE_CXX_COMPILER="$MPICXX"  -DCMAKE_C_COMPILER="$MPICC" '
 configopts += ' -DLIBS="mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64 mkl_intel_lp64 mkl_sequential mkl_core" '
 configopts += ' -DLIB_PATHS="$EBROOTIMKL/mkl/latest/lib/intel64" '
-configopts += ' -DCMAKE_C_FLAGS="$CFLAGS -ip -std=gnu99" '
-configopts += ' -DCMAKE_Fortran_FLAGS="$FFLAGS -ip" '
+configopts += ' -DCMAKE_Fortran_FLAGS="$FFLAGS -fc=ifx -finline-functions" '
+configopts += ' -DCMAKE_CXX_FLAGS="$CXXFLAGS -cxx=icpx -finline-functions -std=c++11" '
+configopts += ' -DCMAKE_C_FLAGS="$CFLAGS -cc=icx -finline-functions -std=gnu99" '
 configopts += ' -DFortran_MIN_FLAGS="-O0 -fp-model precise" '
 configopts += ' -DTARGET_NAME="aims.x" '
 
@@ -53,5 +55,9 @@ sanity_check_paths = {
     'files': ['bin/aims.x'],
     'dirs': [],
 }
+
+sanity_check_commands = [
+    'aims.x --version &> /dev/null'
+]
 
 moduleclass = 'chem'
