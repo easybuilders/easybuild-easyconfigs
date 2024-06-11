@@ -1,0 +1,43 @@
+##
+# This file is an EasyBuild recipe; see https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright (c) 2016 Riccardo Murri <riccardo.murri@gmail.com>
+# Authors::   Riccardo Murri <riccardo.murri@gmail.com>
+# License::   GPL
+#
+# Update: Petr Král (INUITS)
+#
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'FFLAS-FFPACK'
+version = '2.5.0'
+
+homepage = 'https://linbox-team.github.io/fflas-ffpack/'
+description = "Finite Field Linear Algebra Subroutines / Package"
+
+toolchain = {'name': 'gfbf', 'version': '2023b'}
+
+source_urls = ['https://github.com/linbox-team/fflas-ffpack/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['dafb4c0835824d28e4f823748579be6e4c8889c9570c6ce9cce1e186c3ebbb23']
+
+dependencies = [
+    ('GMP', '6.3.0'),
+    ('Givaro', '4.2.0'),
+]
+
+configopts = '--with-blas-libs="$LIBBLAS_MT" --with-blas-cflags="-I$BLAS_INC_DIR" '
+configopts += '--with-gmp=$EBROOTGMP --with-givaro=$EBROOTGIVARO --enable-openmp'
+
+buildopts = " && make autotune "
+
+sanity_check_paths = {
+    'files': ['bin/fflas-ffpack-config', 'include/fflas-ffpack/fflas-ffpack.h'],
+    'dirs': ['bin', 'include', 'lib'],
+}
+
+sanity_check_commands = ["fflas-ffpack-config --help"]
+
+moduleclass = 'math'

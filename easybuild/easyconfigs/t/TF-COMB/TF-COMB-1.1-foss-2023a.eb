@@ -1,0 +1,54 @@
+easyblock = 'PythonBundle'
+
+name = 'TF-COMB'
+version = '1.1'
+
+homepage = 'https://github.com/loosolab/TF-COMB'
+description = """Transcription Factor Co-Occurrence using Market Basket analysis."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('tqdm', '4.66.1'),
+    ('Pysam', '0.22.0'),
+    ('matplotlib', '3.7.2'),
+    ('networkx', '3.1'),
+    ('Graphviz', '8.1.0'),
+    ('statsmodels', '0.14.1'),
+    ('dill', '0.3.7'),
+    ('Seaborn', '0.13.2'),
+    ('IPython', '8.14.0'),
+    ('TOBIAS', '0.16.1'),
+    ('python-louvain', '0.16'),
+    ('GOATOOLS', '1.4.5'),
+    ('qnorm', '0.8.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+# remove graphviz from deps - the pip check failing, should be "import gv"
+local_tfcomb_preinstallopts = "sed -i '70d' setup.py && "
+# fix "import graphviz" to "import gv"
+local_tfcomb_preinstallopts += "sed -i 's/import graphviz/import gv as graphviz/' tfcomb/plotting.py && "
+# unpin python version to works with python 3.11.3
+local_tfcomb_preinstallopts += "sed -i '59d' setup.py && "
+# regenerate counting.c to works with python 3.11
+local_tfcomb_preinstallopts += "cd  tfcomb && rm counting.c && cythonize -i counting.pyx && cd .. && "
+
+
+exts_list = [
+    ('uropa', '4.0.3', {
+        'checksums': ['e0b648881b95f301e3f3ecc924314995312f10b0cbabf96d5a5ce2fb18c53a59'],
+    }),
+    (name, version, {
+        'preinstallopts': local_tfcomb_preinstallopts,
+        'modulename': 'tfcomb',
+        'checksums': ['5b718061660e0f9f94d86459eb742ca81de5851b0defd8b08c8a7a7e3370c253'],
+    }),
+]
+
+moduleclass = 'bio'
