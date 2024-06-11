@@ -1,0 +1,95 @@
+easyblock = 'PythonBundle'
+
+name = 'deepfold'
+version = '20240308'
+_commit = 'c91701d1d92db341e85fba687644046d416b1f19'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/newtonjoo/deepfold'
+description = """
+This package provides an implementation of DeepFold, a trainable, Transformer-based deep
+protein folding model. We modified the open-source code of DeepMind AlphaFold v2.0 and
+Uni-Fold-jax.
+Pretrained models can be found in environment variable $DEEPFOLD_PARAMETERS
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('Biopython', '1.79'),
+    ('dm-haiku', '0.0.9', versionsuffix),
+    ('dm-tree', '0.1.8'),
+    ('TensorFlow', '2.11.0', versionsuffix),
+    ('tensorboardX', '2.5.1'),
+    ('HMMER', '3.3.2'),
+    ('Kalign', '3.3.5'),
+    ('ml-collections', '0.1.1'),
+    ('OpenMM', '8.0.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('toolz', '0.12.1', {
+        'checksums': ['ecca342664893f177a13dac0e6b41cbd8ac25a358e5f215316d43e2100224f4d'],
+    }),
+    ('chex', '0.1.6', {
+        'checksums': ['adb5d2352b5f0d248ccf594be1b1bf9ee7a2bee2a57f0eac78547538d479b0e7'],
+    }),
+    ('immutabledict', '2.0.0', {
+        'checksums': ['1b3ab650dc9db0df80fc198b9d31bee45062c4774b3dfbf3d2f3e1f6d4929258'],
+    }),
+    ('tzdata', '2024.1', {
+        'checksums': ['2674120f8d891909751c38abcdfd386ac0a5a1127954fbc332af6b5ceae07efd'],
+    }),
+    ('PDBFixer', '1.8.1', {
+        'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['d50551abfe9dbaefc066f4d9d400cdebe57f1fefd9de9d01e12beb87efd99595'],
+    }),
+]
+
+local_install_cmd = "mkdir -p %(installdir)s/bin && "
+local_install_cmd += "cp %(name)s-*/*.py %(installdir)s/bin/ && "
+local_install_cmd += "cp -r %(name)s-*/example_data %(installdir)s/ && "
+local_install_cmd += "mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages/ && "
+local_install_cmd += "cp -r %(name)s-*/%(name)s %(installdir)s/lib/python%(pyshortver)s/site-packages/ && "
+local_install_cmd += "chmod a+x %(installdir)s/bin/*.py"
+
+components = [
+    (name, version, {
+        'easyblock': 'PackedBinary',
+        'sources': [{
+            'source_urls': ['https://github.com/newtonjoo/deepfold/archive'],
+            'download_filename': '%s.tar.gz' % _commit,
+            'filename': '%(name)s-%(version)s.tar.gz',
+        }],
+        'patches': ['%(name)s-%(version)s_fix-simtk-deprecation.patch'],
+        'install_cmd': local_install_cmd,
+        'checksums': [
+            # deepfold-20240308.tar.gz
+            'f75140ed5e5b3e64591d73593b8cefdee5b63a8adedc93da6fa62a564ae77803',
+            # deepfold-20240308_fix-simtk-deprecation.patch
+            '8a551dd8dc1d141aad391f287a65477bed6d204fbedbd5bd45c74bc6d5efcdf4',
+        ],
+    }),
+]
+
+modextravars = {
+    'DEEPFOLD_PARAMETERS': '/databases/bio/deepfold/params',
+}
+
+fix_python_shebang_for = ['bin/*.py']
+
+sanity_check_paths = {
+    'files': ['bin/run_from_pkl.py', 'bin/generate_pkl_features.py', 'bin/train.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['train.py --help']
+
+moduleclass = 'bio'
