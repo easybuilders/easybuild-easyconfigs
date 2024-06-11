@@ -1,0 +1,181 @@
+easyblock = 'PythonBundle'
+
+name = 'python-build-bundle'
+version = '2024a'
+
+homepage = 'http://python.org/'
+
+description = """Bundle which contains Python packages useful for building"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'} 
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+builddependencies = [
+    ('Rust', '1.76.0'),  # required for setuptools-rust, which is needed for cryptography
+    ('pytest', '8.2.2'), # required for running tests with installed pybind11
+]
+
+
+multi_deps = {
+    'Python': ['3.12', '3.11', '3.10'] 
+}
+
+multi_deps_load_default = False
+
+exts_default_options = {
+    'download_dep_fail': True,
+    'sanity_pip_check': False,
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'fix_python_shebang_for': ['bin/%(name)s'],
+    'preinstallopts': "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
+}
+
+# order is important!
+exts_list = [
+    ('flit-core', '3.9.0', {
+        'source_tmpl': 'flit_core-%(version)s.tar.gz',
+    }),
+    ('wheel', '0.43.0', {
+        'fix_python_shebang_for': ['bin/wheel'],
+    }),
+    ('setuptools', '70.0.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+    ('packaging', '24.1'),
+    ('pbr', '6.0.0', {
+        'fix_python_shebang_for': ['bin/pbr'],
+    }),
+    ('toml', '0.10.2'),
+    ('tomli', '2.0.1'),
+    ('setuptools_scm', '8.1.0'),
+    ('flit-scm', '1.7.0', {
+        'source_tmpl': 'flit_scm-%(version)s.tar.gz',
+    }),
+    ('pyparsing', '3.1.2'),
+    ('pycparser', '2.22'),
+    ('typing_extensions', '4.12.2'),
+    ('cffi', '1.16.0'),
+    ('setuptools-rust', '1.9.0'),
+    ('semantic_version', '2.10.0'),
+    ('cryptography', '42.0.8', {
+        # avoid that cargo uses $HOME/.cargo, which can lead to build failures if home directory is NFS mounted,
+        # see https://github.com/rust-lang/cargo/issues/6652
+        'preinstallopts': "export CARGO_HOME=%(builddir)s/cargo && ",
+        'modulename': "cryptography.hazmat.bindings.openssl.binding",
+    }),
+#    ('appdirs', '1.4.4'),
+    ('pathspec', '0.12.1'),
+    ('trove_classifiers', '2024.5.22'),
+    ('hatchling', '1.24.2'),
+    ('hatch_vcs', '0.4.0'),
+    ('hatch_fancy_pypi_readme', '24.1.0', {
+        'fix_python_shebang_for': ['bin/hatch-fancy-pypi-readme'],
+    }),
+    ('platformdirs', '4.2.2'),
+    ('filelock', '3.14.0'),
+    ('distlib', '0.3.8'),
+    ('importlib_metadata', '7.1.0'),
+    ('editables', '0.5'),
+    ('exceptiongroup', '1.2.1'),
+    ('importlib_resources', '6.4.0'),
+    ('virtualenv', '20.26.2', {
+        'fix_python_shebang_for': ['bin/virtualenv'],
+    'patches': ['virtualenv-importlib_metadata.patch'],
+    }),
+    ('charset-normalizer', '3.3.2', {
+        'fix_python_shebang_for': ['bin/normalizer'],
+    }),
+    ('idna', '3.7'),
+    ('certifi', '2024.6.2'),
+    ('urllib3', '2.2.1'),
+    ('requests', '2.32.3'),
+    ('shellingham', '1.5.4'),
+    ('requests-toolbelt', '1.0.0'),
+#    ('scandir', '1.10.0'),
+#    ('pathlib2', '2.3.7.post1'),
+    ('zipp', '3.19.2'),
+#    ('more-itertools', '8.12.0'),
+#    ('attrs', '21.4.0', {
+#        'modulename': 'attr',
+#    }),
+    ('pytoml', '0.1.21'),
+    ('jeepney', '0.8.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+    ('SecretStorage', '3.3.3'),
+    ('keyring', '25.2.1', {
+        'fix_python_shebang_for': ['bin/keyring'],
+        'modulename': False,  # Doesn't work properly if HOME directory contains keys
+    }),
+    ('keyrings.alt', '5.0.1', {
+        'modulename': False,
+    }),
+    ('tomlkit', '0.12.5', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+    ('pkginfo', '1.11.1', {
+        'fix_python_shebang_for': ['bin/pkginfo'],
+    }),
+    ('pexpect', '4.9.0'),
+#    ('lockfile', '0.12.2'),
+    ('pylev', '1.4.0'),
+    ('pastel', '0.2.1', {
+        'source_tmpl': SOURCE_WHL,
+    }),
+    ('clikit', '0.6.2', {
+        'source_tmpl': SOURCE_WHL,
+    }),
+    ('msgpack', '1.0.8'),
+    ('cachecontrol', '0.14.0', {
+        'fix_python_shebang_for': ['bin/doesitcache'],
+    }),
+    ('ptyprocess', '0.7.0', {
+        'source_tmpl': SOURCE_WHL,
+    }),
+    ('webencodings', '0.5.1'),
+    ('cleo', '2.1.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+    ('cachy', '0.3.0'),
+    ('poetry_core', '1.9.0', {
+        'modulename': 'poetry.core',
+    }),
+    ('crashtest', '0.4.1', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+    ('poetry', '1.8.3', {
+        'fix_python_shebang_for': ['bin/poetry'],
+    }),
+    ('pybind11', '2.12.0', {
+        'source_urls': ['https://github.com/pybind/pybind11/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'fix_python_shebang_for': ['bin/pybind11-config'],
+    }),
+    ('distro', '1.9.0'),
+    ('scikit_build', '0.17.6', {
+        'modulename': 'skbuild',
+    }),
+    ('scikit_build_core', '0.9.5'),
+    ('archspec', '0.2.4'),
+    ('pyproject_metadata', '0.8.0'),
+    ('meson', '1.4.1',  {
+        'modulename': 'mesonbuild',
+    }),
+    ('ninja', '1.11.1.1', {
+        # distributed with python, but not actually python
+        'modulename': False
+    }),
+    ('meson_python', '0.16.0', {
+        'modulename': 'mesonpy',
+    }),
+    ('pyproject_hooks', '1.1.0'),
+    ('build', '1.2.1'),
+]
+
+
+moduleclass = 'lang'
+sanity_check_paths = {'files': [], 'dirs': ['lib/python%(pyshortver)s/site-packages']}
+sanity_pip_check = False
