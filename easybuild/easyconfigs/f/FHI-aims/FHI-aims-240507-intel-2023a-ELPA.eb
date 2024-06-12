@@ -4,13 +4,15 @@
 # Authors::   Dugan Witherick (University of Warwick)
 # Updated to 240507
 # Help from the FHI-aims developers and Alexander Grund to move to oneAPI is greatly appreciated
+# This version makes use of an external ELPA installation. 
+# Note: You need to know which ELPA kernel was used (see below for details)!
 # J. Sassmannshausen (Imperial College London/UK)
 ##
-
 easyblock = 'CMakeMake'
 
 name = 'FHI-aims'
 version = '240507'
+versionsuffix = '-ELPA'
 
 homepage = 'https://fhi-aims.org/'
 description = """FHI-aims is an efficient, accurate all-electron,
@@ -20,6 +22,8 @@ DFT (semilocal and hybrid) and many-body perturbation theory. FHI-aims is
 particularly efficient for molecular systems and nanostructures, while        
 maintaining high numerical accuracy for all production tasks. Production      
 calculations handle up to several thousand atoms and can efficiently use (ten)thousands of cores.
+
+This build utilises an external ELPA installation!
 """
 
 toolchain = {'name': 'intel', 'version': '2023a'}
@@ -38,10 +42,17 @@ checksums = ['dea6483834d80ef5d8826171bd710ebcb035c4b971c4c958c82fdb9f03af6a6b']
 
 builddependencies = [('CMake', '3.26.3')]
 
+dependencies = [
+    ('ELPA', '2023.05.001'),
+]
+
 configopts = ' -DCMAKE_Fortran_COMPILER="$MPIF90" -DCMAKE_CXX_COMPILER="$MPICXX"  -DCMAKE_C_COMPILER="$MPICC" '
-configopts += ' -DLIBS="mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64 mkl_intel_lp64 mkl_sequential mkl_core" '
+configopts += ' -DLIBS="mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64 mkl_intel_lp64 mkl_sequential mkl_core elpa" '
 configopts += ' -DLIB_PATHS="$EBROOTIMKL/mkl/latest/lib/intel64" '
 configopts += ' -DFortran_MIN_FLAGS="-O0 -fp-model precise" '
+# This is for ELPA. Build ELAP first to see which kernel is selected and then adjust the kernel settings here!
+# Possible values are: AVX, AVX2 and AVX512 
+configopts += ' -DUSE_EXTERNAL_ELPA=ON -DELPA2_KERNEL="AVX2" -DINC_PATHS=$EBROOTELPA/include/elpa-2023.05.001/modules/ '
 configopts += ' -DTARGET_NAME="aims.x" '
 
 postinstallcmds = ["cp -ar %(builddir)s/%(namelower)s.%(version)s/{CHANGELOG.md,doc} %(installdir)s/",
