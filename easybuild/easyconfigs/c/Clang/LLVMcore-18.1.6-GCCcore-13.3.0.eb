@@ -1,0 +1,85 @@
+name = 'LLVMcore'
+easyblock = 'EB_LLVMcore'
+version = '18.1.6'
+
+local_gcc_version = '13.3.0'
+
+homepage = "https://llvm.org/"
+description = """The LLVM Core libraries provide a modern source- and target-independent
+ optimizer, along with code generation support for many popular CPUs
+ (as well as some less common ones!) These libraries are built around a well
+ specified code representation known as the LLVM intermediate representation
+ ("LLVM IR"). The LLVM Core libraries are well documented, and it is
+ particularly easy to invent your own language (or port an existing compiler)
+ to use LLVM as an optimizer and code generator."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+toolchainopts = {
+    # 'cstd': 'gnu++11',
+    'pic': True,
+}
+
+source_urls = ['https://github.com/llvm/llvm-project/releases/download/llvmorg-%(version)s/']
+sources = [
+    'llvm-project-%(version)s.src.tar.xz',
+    # 'cmake-%(version)s.src.tar.xz',
+    # 'third-party-%(version)s.src.tar.xz',
+]
+checksums = [
+    # {'llvm-%(version)s.src.tar.xz': 'e91db44d1b3bb1c33fcea9a7d1f2423b883eaa9163d3d56ca2aa6d2f0711bc29'},
+    # {'cmake-%(version)s.src.tar.xz': '39d342a4161095d2f28fb1253e4585978ac50521117da666e2b1f6f28b62f514'},
+    # {'third-party-%(version)s.src.tar.xz': '15f5b9aeeba938530af977d5f9205612737a091a7f0f6c8075df8723b7713f70'},
+]
+
+local_gcc_compiler = ('GCCcore', local_gcc_version)
+
+builddependencies = [
+    # ('GCCcore', local_gcc_version, '', SYSTEM),
+    ('binutils', '2.42', '', local_gcc_compiler),
+    ('CMake', '3.29.3', '', local_gcc_compiler),
+    ('Python', '3.12.3', '', local_gcc_compiler),
+]
+
+dependencies = [
+    ('GCCcore', local_gcc_version, '', SYSTEM),
+    ('ncurses', '6.5', '', local_gcc_compiler),
+    ('zlib', '1.3.1', '', local_gcc_compiler),
+]
+
+build_shared_libs = True
+
+sanity_check_paths = {
+    'files': [
+        'bin/clang',
+        'bin/clang++',
+        'bin/FileCheck',
+        'bin/flang-new',
+        'bin/llc',
+        'bin/lld',
+        'bin/lli',
+        'bin/lldb',
+        'bin/llvm-ar',
+        'bin/llvm-config',
+        'bin/llvm-tblgen',
+        'bin/mlir-tblgen',
+    ],
+    'dirs': [
+        'include/c++',
+        'include/clang',
+        'include/lld',
+        'include/lldb',
+        'include/llvm',
+        'include/llvm-c',
+        'include/mlir',
+        'include/polly',
+    ],
+}
+
+sanity_check_commands = [
+    "llvm-ar --help",
+]
+
+skip_all_tests = True
+test_suite_max_failed = 100
+
+moduleclass = 'compiler'
