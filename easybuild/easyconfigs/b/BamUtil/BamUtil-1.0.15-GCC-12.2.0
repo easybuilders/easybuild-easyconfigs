@@ -1,0 +1,52 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author: Adam Huffman
+# adam.huffman@crick.ac.uk
+# The Francis Crick Institute
+#
+# Recipe Author: Johannes Nguyen
+# johannes.nguyen@dkfz-heidelberg.de
+# DKFZ Heidelberg
+#
+# This is the version with the bundled libStatGen library
+
+easyblock = 'MakeCp'
+
+name = 'BamUtil'
+version = '1.0.15'
+
+homepage = 'http://genome.sph.umich.edu/wiki/BamUtil'
+description = """BamUtil is a repository that contains several programs
+  that perform operations on SAM/BAM files. All of these programs
+  are built into a single executable, bam."""
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/statgen/BamUtil/archive/'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': 'BamUtil-%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/statgen/libStatGen/archive/'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': 'libStatGen-%(version)s.tar.gz',
+    },
+]
+checksums = [
+    {'BamUtil-1.0.15.tar.gz': '24ac4bdb81eded6e33f60dba85ec3d32ebdb06d42f75df775c2632bbfbd8cce9'},
+    {'libStatGen-1.0.15.tar.gz': '075dcd891409c48d76c0c66186c0cc479bc3cd50bba093e7f318e1d1d19961ff'},
+]
+
+# Ensure the right compilers are used
+buildopts = 'CC="$CC" CXX="$CXX" USER_WARNINGS="" LIB_PATH_BAM_UTIL=%(builddir)s/libStatGen-*/'
+
+files_to_copy = ['bin']
+
+sanity_check_paths = {
+    'files': ['bin/bam'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
