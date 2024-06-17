@@ -1,0 +1,47 @@
+name = 'OpenFOAM'
+version = 'v2306'
+
+homepage = 'https://www.openfoam.com/'
+description = """OpenFOAM is a free, open source CFD software package.
+ OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+ involving chemical reactions, turbulence and heat transfer,
+ to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+# Users have found that vectorizion caused OpenFOAM to produce some very incorrect results.
+# Disabling vectorize was confirmed to fix the the known issues.
+# With no test suite, sticking to known working toolchain options until proven otherwise.
+toolchainopts = {'usempi': True, 'cstd': 'c++14', 'vectorize': False}
+
+source_urls = ['https://sourceforge.net/projects/openfoam/files/%(version)s/']
+sources = [SOURCE_TGZ]
+patches = [
+    ('OpenFOAM-v2206-cleanup.patch', 1),
+    ('OpenFOAM-v2212-wmake-OpenMPI.patch', 1),
+]
+checksums = [
+    {'OpenFOAM-v2306.tgz': 'd7fba773658c0f06ad17f90199565f32e9bf502b7bb03077503642064e1f5344'},
+    {'OpenFOAM-v2206-cleanup.patch': '25333124581acae57c173587de4ebd6e143b894b1a26e4f0326db8b7e0cb1972'},
+    {'OpenFOAM-v2212-wmake-OpenMPI.patch': '241dc4898c22aab0cbd10c1ea931a07a786508ee03462d45dbc1c202fee3ebe8'},
+]
+
+builddependencies = [
+    ('Bison', '3.8.2'),
+    ('CMake', '3.24.3'),
+    ('flex', '2.6.4'),
+    ('CGAL', '5.5.2'),  # header only
+]
+
+dependencies = [
+    ('libreadline', '8.2'),
+    ('ncurses', '6.3'),
+    # OpenFOAM requires 64 bit METIS using 32 bit indexes (array indexes)
+    ('METIS', '5.1.0'),
+    ('SCOTCH', '7.0.3'),
+    ('KaHIP', '3.14'),
+    ('Boost', '1.81.0'),
+    ('ParaView', '5.11.1'),
+    ('gnuplot', '5.4.6'),
+]
+
+moduleclass = 'cae'
