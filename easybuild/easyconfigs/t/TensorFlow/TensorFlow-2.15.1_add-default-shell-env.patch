@@ -1,0 +1,51 @@
+Make TensorFlow use the environment as set by EasyBuild
+
+See https://github.com/tensorflow/tensorflow/pull/61591
+
+Author: Alexander Grund (TU Dresden)
+
+Edit in 2.15.1: include also python api generator / Yunqi Shao (C3SE)
+
+diff --git a/tensorflow/python/tools/api/generator2/generate_api.bzl b/tensorflow/python/tools/api/generator2/generate_api.bzl index 64e9b96276e..afadd07bc3d 100644
+--- a/tensorflow/python/tools/api/generator2/generate_api.bzl
++++ b/tensorflow/python/tools/api/generator2/generate_api.bzl
+@@ -95,6 +95,7 @@ def _api_extractor_impl(target, ctx):
+             outputs = [output],
+             arguments = [args],
+             progress_message = "Extracting " + api + " APIs for %{label} to %{output}.",
++            use_default_shell_env = True,
+         )
+ 
+         direct_api.append(output)
+@@ -218,6 +219,7 @@ def _generate_api_impl(ctx):
+         outputs = ctx.outputs.output_files,
+         arguments = [args],
+         progress_message = "Generating APIs for %{label} to %{output}.",
++        use_default_shell_env = True,
+     )
+ 
+     # Convert output_paths to the list of corresponding modules for the further testing
+diff --git a/tensorflow/lite/build_def.bzl b/tensorflow/lite/build_def.bzl
+index cdc02ac2b26..6b4c8b9045f 100644
+--- a/tensorflow/lite/build_def.bzl
++++ b/tensorflow/lite/build_def.bzl
+@@ -368,6 +368,7 @@ def _gen_selected_ops_impl(ctx):
+         executable = ctx.executable._generate_op_registrations,
+         mnemonic = "OpRegistration",
+         progress_message = "gen_selected_ops",
++        use_default_shell_env = True,
+     )
+ 
+ gen_selected_ops_rule = rule(
+diff --git a/tensorflow/tensorflow.bzl b/tensorflow/tensorflow.bzl
+index 6762ccd8f9b..de7c27a1275 100644
+--- a/tensorflow/tensorflow.bzl
++++ b/tensorflow/tensorflow.bzl
+@@ -1325,6 +1325,7 @@ def _generate_op_reg_offsets_impl(ctx):
+         tools = [ctx.executable._offset_counter],
+         executable = ctx.executable._offset_counter,
+         arguments = [args],
++        use_default_shell_env = True,
+     )
+ 
+ generate_op_reg_offsets = rule(
