@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'OpenMPI'
+version = '2.1.1'
+
+homepage = 'http://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-2 implementation."""
+
+toolchain = {'name': 'GCC', 'version': '4.8.5'}
+
+source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+sources = [SOURCELOWER_TAR_GZ]
+
+patches = ['OpenMPI-2.1_fix-ib-query.patch', 'ddt_fix.patch']
+
+checksums = [
+    'afe4bef3c4378bc76eea96c623d5aa4c1c98b9e057d281c646e68869292a77dc',  # openmpi-2.1.1.tar.gz
+    '662d7ef1d0cd0890d2dc4ecb5243012be29bf6b4003da0f006e7cd2125d40e4c',  # OpenMPI-2.1_fix-ib-query.patch
+    '35541cb0ccd7c8471c8a1845fddf2e1b4335071c8e4117411fc0218d6ded12c6',  # ddt_fix.patch
+]
+
+preconfigopts = 'sed -i "s!check_pmi_install_dir=/usr!check_pmi_install_dir=$NIXUSER_PROFILE!g" configure && '
+preconfigopts += 'sed -i \'s!-L$ompi_check_ucx_libdir!!g\' configure && '
+preconfigopts += 'LDFLAGS="-L$NIXUSER_PROFILE/lib $LDFLAGS" ' # for libtool to find .la files
+configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-verbs '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+configopts += '--with-hwloc=external '  # hwloc support
+configopts += '--without-usnic ' # No usnic-via-libfabric
+configopts += '--with-ucx '
+configopts += '--disable-wrapper-runpath --disable-wrapper-rpath ' # rpath is already done by Nix ld wrapper
+configopts += '--with-munge ' #enable Munge in PMIx
+#configopts += '--enable-pmix-backward-compatibility --disable-pmix-dstore '
+configopts += '--with-pmi '
+configopts += '--enable-mpi-cxx '
+
+# enumerate all mca's that should be compiled as plugins (only those that link to system-specific
+# libraries (lustre, fabric, and scheduler)
+configopts += '--enable-mca-dso=common-libfabric,common-verbs,atomic-mxm,btl-openib,btl-scif,'
+configopts += 'coll-fca,coll-hcoll,ess-tm,fs-lustre,mtl-mxm,mtl-ofi,mtl-psm,mtl-psm2,'
+configopts += 'oob-ud,plm-tm,pmix-pmix112,pml-ucx,pml-yalla,ras-tm,scoll-mca,sec-munge,spml-ikrit,'
+configopts += 'pmix-s1,pmix-s2 '
+
+
+postinstallcmds = ['rm %(installdir)s/lib/*.la %(installdir)s/lib/*/*.la']
+
+local_libs = ["mpi_mpifh", "mpi", "ompitrace", "open-pal", "open-rte"]
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (x, SHLIB_EXT) for x in local_libs] +
+             ["include/%s.h" % x for x in ["mpi-ext", "mpif-config", "mpif", "mpi", "mpi_portable_platform"]],
+    'dirs': [],
+}
+
+moduleclass = 'mpi'
+
+modluafooter = """
+assert(loadfile("/cvmfs/soft.computecanada.ca/config/lmod/openmpi_custom.lua"))("%(version_major_minor)s")
+
+add_property("type_","mpi")
+family("mpi")
+"""
