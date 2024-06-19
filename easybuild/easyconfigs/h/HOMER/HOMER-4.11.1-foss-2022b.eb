@@ -1,23 +1,29 @@
-# This installs the entire suite, to install only base Homer package run :
-# cd %(installdir)s; perl ./configureHomer.pl -install homer
-
-easyblock = 'CmdCp'
+easyblock = 'Binary'
 
 name = 'HOMER'
 version = '4.11.1'
 
 homepage = 'http://homer.ucsd.edu/homer/'
-description = """HOMER (Hypergeometric Optimization of Motif EnRichment) is a suite of tools for Motif
-Discovery and ChIP-Seq analysis. It is a collection of command line programs for unix-style operating
-systems written in mostly perl and c++. Homer was primarily written as a de novo motif discovery
-algorithm that is well suited for finding 8-12 bp motifs in large scale genomics data."""
+description = """HOMER (Hypergeometric Optimization of Motif EnRichment) is a suite of tools for Motif Discovery and
+next-gen sequencing analysis.  It is a collection of command line programs for unix-style operating systems written
+in Perl and C++. HOMER was primarily written as a de novo motif discovery algorithm and is well suited for finding
+8-20 bp motifs in large scale genomics data.  HOMER contains many useful tools for analyzing ChIP-Seq, GRO-Seq,
+RNA-Seq, DNase-Seq, Hi-C and numerous other types of functional genomics sequencing data sets."""
 
 toolchain = {'name': 'foss', 'version': '2022b'}
 
+source_urls = ['https://homer.ucsd.edu/homer/data/software']
+sources = ['homer.v%(version)s.zip']
+checksums = ['80d1cd00616729894017b24a36a2ef81f9cde8bd364e875aead1e0cfb500c82b']
+
+builddependencies = [
+    ('wget', '1.21.4'),
+    ('Zip', '3.0'),
+    ('UnZip', '6.0'),
+]
+
 dependencies = [
     ('Perl', '5.36.0'),
-    ('zlib', '1.2.12'),
-    ('Zip', '3.0'),
     ('weblogo', '2.8.2'),
     ('SAMtools', '1.17'),
     ('Kent_tools', '461'),
@@ -25,29 +31,25 @@ dependencies = [
     ('R-bundle-Bioconductor', '3.16', '-R-4.2.2')
 ]
 
-source_urls = ['http://homer.ucsd.edu/homer/data/software']
-sources = ['homer.v%(version)s.zip']
-checksums = ['80d1cd00616729894017b24a36a2ef81f9cde8bd364e875aead1e0cfb500c82b']
-
-unpack_options = " && cp %(builddir)s/configureHomer.pl %(installdir)s "
-start_dir = "%(installdir)s"
-cmds_map = [('', 'perl ./configureHomer.pl -install -all')]
+buildininstalldir = True
 skipsteps = ['install']
 
-files_to_copy = [
-    'bin', 'config.txt', 'data',
-    'DoughnutDocumentation.pdf',
-    'motifs',
-    'update',
-]
+# This installs the entire suite, to install only base Homer package run :
+# cd %(installdir)s; perl ./configureHomer.pl -install homer
+postinstallcmds = ['perl ./configureHomer.pl -install -all -keepScript']
 
 sanity_check_paths = {
     'dirs': ['bin', 'data', 'motifs', 'update'],
     'files': [
+        'bin/homer',
+        'bin/getGenomeTilingPeaks',
         'config.txt',
         'DoughnutDocumentation.pdf',
-        'bin/homer',
+        'data/accession/homologene.data',
+        'motifs/hnf1b.motif',
     ],
 }
+
+sanity_check_commands = ["%(namelower)s --help"]
 
 moduleclass = 'bio'
