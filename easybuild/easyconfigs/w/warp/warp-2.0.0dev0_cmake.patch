@@ -1,0 +1,46 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/04
+# Allow to cmake build from sources root.
+# Inject targets for dotnet publish calls (based on publish-unix.sh)
+diff -ruN warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1/CMakeLists.txt warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1_cmake/CMakeLists.txt
+--- warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1/CMakeLists.txt	1970-01-01 01:00:00.000000000 +0100
++++ warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1_cmake/CMakeLists.txt	2024-04-25 11:20:05.624866326 +0200
+@@ -0,0 +1,37 @@
++CMAKE_MINIMUM_REQUIRED(VERSION 3.20)
++PROJECT(Warp LANGUAGES CUDA CXX)
++
++add_subdirectory(NativeAcceleration)
++add_subdirectory(LibTorchSharp)
++
++if(NOT DEFINED DOTNET_BINARIES)
++set(DOTNET_BINARIES EstimateWeights Frankenmap MCore MrcConverter MTools Noise2Half Noise2Map Noise2Mic Noise2Tomo WarpTools WarpWorker CACHE STRING "Warp binaries to be built")
++endif(NOT DEFINED DOTNET_BINARIES)
++
++set(DOTNET_OPTS "-nowarn:CS0219,CS0162,CS0168,CS0649,CS0067,CS0414,CS0661,CS0659,CS0169,CS0618,CS1998,MSB3270,SYSLIB0011" CACHE STRING "Options to dotnet")
++set(DOTNET_POPTS -p:PublishSingleFile=true  -p:DebugType=None -p:DebugSymbols=false CACHE STRING "Options to dotnet publish")
++set(DOTNET_CONF "Release" CACHE STRING "Dotnet publish configuration")
++set(DOTNET_VER "8.0" CACHE STRING "Dotnet framework version")
++set(DOTNET_RT "linux-x64" CACHE STRING "Dotnet runtime")
++set(SHLIBEXT .so)
++
++# create target and install rule for each binary.
++set(TMP_PREVIOUS )  # depend on previous in order to avoid parallel build (ovoid parallel access to WarpLib.dll)
++foreach(tool ${DOTNET_BINARIES})
++   add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/bin/${tool}" "${CMAKE_CURRENT_BINARY_DIR}/bin/libSkiaSharp${CMAKE_SHARED_LIBRARY_SUFFIX}" COMMAND dotnet publish ${DOTNET_OPTS} --configuration=${DOTNET_CONF} --framework net${DOTNET_VER} --runtime ${DOTNET_RT} --self-contained true  ${CMAKE_CURRENT_SOURCE_DIR}/${tool}/${tool}.csproj ${DOTNET_POPTS} -o ${CMAKE_CURRENT_BINARY_DIR}/bin VERBATIM)
++   add_custom_target(
++      ${tool}
++      DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/bin/${tool}" ${TMP_PREVIOUS}
++   )
++   set(TMP_PREVIOUS ${tool})
++   install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/bin/${tool} TYPE BIN)
++   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/libSkiaSharp${CMAKE_SHARED_LIBRARY_SUFFIX} TYPE LIB)
++   
++endforeach()
++
++add_custom_target(binaries ALL DEPENDS ${DOTNET_BINARIES}) 
++install(TARGETS NativeAcceleration)
++install(TARGETS LibTorchSharp)
++
++add_custom_target(warp_all)
++add_dependencies(warp_all NativeAcceleration LibTorchSharp binaries)
+Binary files warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1/.CMakeLists.txt.swn and warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1_cmake/.CMakeLists.txt.swn differ
+Binary files warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1/.CMakeLists.txt.swp and warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1_cmake/.CMakeLists.txt.swp differ

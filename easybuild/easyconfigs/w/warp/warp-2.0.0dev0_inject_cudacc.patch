@@ -1,0 +1,21 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/04
+# inject cuda computer capabilities other than 52;61;75;86
+# set by -DCUDA_ARCHS=
+diff -ru warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1/NativeAcceleration/CMakeLists.txt warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1_inject_cudacc/NativeAcceleration/CMakeLists.txt
+--- warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1/NativeAcceleration/CMakeLists.txt	2024-04-17 23:06:04.000000000 +0200
++++ warp-47f9355ae57504d0814c76b0af1e3b1ee76f39a1_inject_cudacc/NativeAcceleration/CMakeLists.txt	2024-04-19 17:18:56.190044148 +0200
+@@ -36,7 +36,13 @@
+ #SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--ptxas-options=-v")
+ 
+ ADD_LIBRARY(NativeAcceleration SHARED ${SOURCES})
++if(NOT DEFINED CUDA_ARCHS)
++    message(STATUS "Setting fallback CUDA_ARCHS=52;61;75;86")
++    set_target_properties(NativeAcceleration PROPERTIES CUDA_ARCHITECTURES "52;61;75;86")
++else(NOT DEFINED CUDA_ARCHS)
++    message(STATUS "Using provided CUDA_ARCH=${CUDA_ARCHS}")
++    set_target_properties(NativeAcceleration PROPERTIES CUDA_ARCHITECTURES "${CUDA_ARCHS}")
++endif(NOT DEFINED CUDA_ARCHS)
+ 
+-set_target_properties(NativeAcceleration PROPERTIES CUDA_ARCHITECTURES "52;61;75;86")
+ 
+ TARGET_LINK_LIBRARIES(NativeAcceleration ${FFTW_LIBRARIES} libtiff.so libcudart.so libcufft.so libcublas.so libcurand.so ${CMAKE_THREAD_LIBS_INIT})
