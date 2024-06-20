@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'ega-quickview'
+version = '20240620'
+local_commit = 'fe2034d'
+
+homepage = 'https://github.com/EGA-archive/ega-quickview'
+description = """EGA-QuickView is a FUSE file system to access EGA files remotely."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+github_account = 'EGA-archive'
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    "download_filename": "%s.tar.gz" % local_commit,
+    "filename": "%(name)s-%(version)s.tar.gz",
+}]
+checksums = ['90836e42009736a8e20a2569918638f3cb2b53574265ca4f4bed7abd81a5e887']
+
+builddependencies = [
+    ('make', '4.4.1'),
+    ('Autoconf', '2.71'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('libsodium', '1.0.18'),
+    ('FUSE', '3.16.2'),
+    ('GLib', '2.77.1'),
+]
+
+preconfigopts = "autoreconf -i && "
+# fix Makefile to create /bin in installdir
+preinstallopts = "sed -i 's/install: $(TARGET)/install: $(TARGET) $(bindir)/' Makefile && "
+
+sanity_check_paths = {
+    'files': ['bin/ega-qv'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['ega-qv -h']
+
+moduleclass = 'tools'
+
+#ERROR1: OK
+    # Creating target ega-qv
+    # /apps/gent/RHEL8/cascadelake-ib/software/binutils/2.40-GCCcore-12.3.0/bin/ld: skipping incompatible /usr/lib/libpthread.so when searching for -lpthread
+    # /apps/gent/RHEL8/cascadelake-ib/software/binutils/2.40-GCCcore-12.3.0/bin/ld: skipping incompatible /usr/lib/libm.so when searching for -lm
+    # /apps/gent/RHEL8/cascadelake-ib/software/binutils/2.40-GCCcore-12.3.0/bin/ld: skipping incompatible /usr/lib/libpthread.so when searching for -lpthread
+    # /apps/gent/RHEL8/cascadelake-ib/software/binutils/2.40-GCCcore-12.3.0/bin/ld: skipping incompatible /usr/lib/libc.so when searching for -lc
+    # /usr/bin/install -c -m 0755 ega-qv /scratch/gent/vo/001/gvo00117/easybuild/RHEL8/cascadelake-ampere-ib/software/ega-quickview/20240620-GCC-12.3.0/bin/ega-qv
+    # /usr/bin/install: cannot create regular file 
+    # '/scratch/gent/vo/001/gvo00117/easybuild/RHEL8/cascadelake-ampere-ib/software/ega-quickview/20240620-GCC-12.3.0/bin/ega-qv': 
+    #     No such file or directory
