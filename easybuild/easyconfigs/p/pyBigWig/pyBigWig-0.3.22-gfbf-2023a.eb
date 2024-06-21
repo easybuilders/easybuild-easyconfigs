@@ -8,11 +8,15 @@ homepage = 'https://github.com/%(github_account)s/%(name)s'
 description = """A python extension, written in C, for quick access to bigBed
  files and access to and creation of bigWig files."""
 
-toolchain = {'name': 'foss', 'version': '2023a'}
+toolchain = {'name': 'gfbf', 'version': '2023a'}
 
 source_urls = [GITHUB_SOURCE]
 sources = ['%(version)s.tar.gz']
-checksums = ['3b8d62b2bedcee0545a586884466c97a64b64283a309b211300b670f41dd2046']
+patches = [('pybigwig-version.egg-info', '.')]
+checksums = [
+    {'0.3.22.tar.gz': '3b8d62b2bedcee0545a586884466c97a64b64283a309b211300b670f41dd2046'},
+    {'pybigwig-version.egg-info': '736a4302019c54e667d147bc40c74f5f61930169ab0f306f074eb1b2dd5d85c8'},
+]
 
 dependencies = [
     ('Python', '3.11.3'),
@@ -25,6 +29,13 @@ dependencies = [
 preinstallopts = """sed -i 's/setup(/setup(version="%(version)s",/g' setup.py && """
 # do not use setuptools-scm to detect version
 preinstallopts += """sed -i 's/[tool.setuptools_scm]//' pyproject.toml && """
+
+# Install a egg-info file to avoid pip_check failing when pyBigWig is a dependency
+local_egg_info_src = '%(builddir)s/pyBigWig-%(version)s/pybigwig-version.egg-info'
+local_egg_info_dest = '%(installdir)s/lib/python%(pyshortver)s/site-packages/pybigwig-%(version)s.egg-info'
+postinstallcmds = [
+    'sed "s/#PYBIGWIG_VERSION#/%%(version)s/" %s > %s' % (local_egg_info_src, local_egg_info_dest),
+]
 
 use_pip = True
 download_dep_fail = True
