@@ -1,6 +1,5 @@
 name = 'LLVMcore'
-easyblock = 'EB_LLVMcore'
-version = '18.1.6'
+version = '18.1.7'
 
 local_gcc_version = '13.3.0'
 
@@ -13,9 +12,10 @@ description = """The LLVM Core libraries provide a modern source- and target-ind
  particularly easy to invent your own language (or port an existing compiler)
  to use LLVM as an optimizer and code generator."""
 
-toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+# toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+toolchain = SYSTEM
 toolchainopts = {
-    # 'cstd': 'gnu++11',
+    # 'cstd': 'c++20',
     'pic': True,
 }
 
@@ -34,16 +34,19 @@ checksums = [
 local_gcc_compiler = ('GCCcore', local_gcc_version)
 
 builddependencies = [
-    # ('GCCcore', local_gcc_version, '', SYSTEM),
-    ('binutils', '2.42', '', local_gcc_compiler),
+    ('GCCcore', local_gcc_version, '', SYSTEM),
+    ('binutils', '2.42', '', SYSTEM),
     ('CMake', '3.29.3', '', local_gcc_compiler),
     ('Python', '3.12.3', '', local_gcc_compiler),
+    ('lit', '18.1.7', '', local_gcc_compiler),
+    ('git', '2.45.1', '', local_gcc_compiler),
 ]
 
 dependencies = [
-    ('GCCcore', local_gcc_version, '', SYSTEM),
-    ('ncurses', '6.5', '', local_gcc_compiler),
-    ('zlib', '1.3.1', '', local_gcc_compiler),
+    # ('GCCcore', local_gcc_version, '', SYSTEM),
+    # ('hwloc', '2.10.0', '', local_gcc_compiler),
+    ('ncurses', '6.5', '', SYSTEM),
+    ('zlib', '1.3.1', '', SYSTEM),
 ]
 
 build_shared_libs = True
@@ -54,24 +57,24 @@ sanity_check_paths = {
         'bin/clang++',
         'bin/FileCheck',
         'bin/flang-new',
-        'bin/llc',
-        'bin/lld',
-        'bin/lli',
-        'bin/lldb',
+        # 'bin/llc',
+        # 'bin/lld',
+        # 'bin/lli',
+        # 'bin/lldb',
         'bin/llvm-ar',
         'bin/llvm-config',
         'bin/llvm-tblgen',
         'bin/mlir-tblgen',
     ],
     'dirs': [
-        'include/c++',
+        # 'include/c++',
         'include/clang',
-        'include/lld',
-        'include/lldb',
-        'include/llvm',
-        'include/llvm-c',
-        'include/mlir',
-        'include/polly',
+        # 'include/lld',
+        # 'include/lldb',
+        # 'include/llvm',
+        # 'include/llvm-c',
+        # 'include/mlir',
+        # 'include/polly',
     ],
 }
 
@@ -79,7 +82,20 @@ sanity_check_commands = [
     "llvm-ar --help",
 ]
 
-skip_all_tests = True
+bootstrap = True
+full_llvm = True
+build_clang_extras = True  # To test
+build_runtimes = True
+build_lld = True
+build_lldb = True
+build_bolt = True
+build_openmp = True
+usepolly = True
+
+# disable_werror = True
+
+# skip_all_tests = False
+skip_all_tests = False
 test_suite_max_failed = 100
 
 moduleclass = 'compiler'
