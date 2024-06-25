@@ -1,0 +1,54 @@
+easyblock = 'CMakeMakeCp'
+
+name = 'nifty'
+version = '1.2.1'
+
+homepage = 'https://github.com/DerThorsten/nifty/'
+description = """A nifty library for 2D and 3D image segmentation, graph based segmentation an opt. 
+This library provided building blocks for segmentation algorithms and complex segmentation pipelines."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/DerThorsten/nifty/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['a5fd611463336ba18be828da3154da8828b6486603e2a04f14a4520cb357661a']
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('Boost', '1.82.0'),
+    ('h5py', '3.9.0'),
+    ('nlohmann_json', '3.11.2'),
+    ('scikit-image', '0.22.0'),
+    ('vigra', '1.11.2'),
+    ('xtensor', '0.24.7'),
+    ('zlib', '1.2.13'),
+    ('HDF5', '1.14.0'),
+]
+
+# Add flags (nifty/.github/workflows/build_unix.sh)
+configopts = '-DWITH_QPBO=OFF -DWITH_HDF5=ON -DWITH_Z5=OFF -DWITH_ZLIB=ON -DWITH_CPLEX=OFF -DWITH_GUROBI=OFF '
+# Fix path to python executable - it finds v3.6.8 from /usr/bin/ without this fix
+configopts += '-DPYTHON_EXECUTABLE="$EBROOTPYTHON/bin/python" -DBUILD_NIFTY_PYTHON=ON '
+
+# export PYTHON_MODULE_INSTALL_DIR to fix make install
+preinstallopts = 'export PYTHON_MODULE_INSTALL_DIR="%(builddir)s/easybuild_obj/python/" && '
+
+files_to_copy = [(['python/nifty'], 'lib/python%(pyshortver)s/site-packages')]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/nifty'],
+}
+
+sanity_check_commands = [
+    "python -c 'import nifty'",
+    "python -c 'from nifty.graph import UndirectedGraph'",
+    "python -c 'import nifty.tools'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'vis'
