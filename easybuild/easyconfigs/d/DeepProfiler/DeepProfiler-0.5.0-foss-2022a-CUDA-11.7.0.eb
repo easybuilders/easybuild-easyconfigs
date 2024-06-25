@@ -1,0 +1,86 @@
+easyblock = 'PythonBundle'
+
+name = 'DeepProfiler'
+version = '0.5.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/cytomining/DeepProfiler'
+description = """
+DeepProfiler is a set of tools to use deep learning for analyzing imaging data in high-throug
+put biological experiments.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('pytest-xdist', '2.5.0'),
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('BeautifulSoup', '4.10.0'),
+    ('imagecodecs', '2022.9.26'),
+    ('lxml', '4.9.1'),
+    ('scikit-image', '0.19.3'),
+    ('scikit-learn', '1.1.2'),
+    ('TensorFlow', '2.11.0', versionsuffix),
+    ('tqdm', '4.64.0'),
+    ('comet-ml', '3.32.6'),
+]
+
+use_pip = True
+
+# DeepProfiler has been tested only for TF 2.5.* but the version restriction seems too strict
+local_preinstallopts = r"sed -i 's/tensorflow==2.5.\*/tensorflow<=2.11.0/' setup.py && "
+local_preinstallopts += "sed -i 's/tensorflow_addons==0.13.0/tensorflow_addons<=0.21.0/' setup.py && "
+
+# The installation fails to copy these directories 
+local_postinstallcmds = "cp -a %(builddir)s/DeepProfiler/DeepProfiler-0.5.0/deepprofiler/dataset "
+local_postinstallcmds += "%(builddir)s/DeepProfiler/DeepProfiler-0.5.0/deepprofiler/imaging "
+local_postinstallcmds += "%(builddir)s/DeepProfiler/DeepProfiler-0.5.0/deepprofiler/learning "
+local_postinstallcmds += "%(installdir)s/lib/python%(pyshortver)s/site-packages/%(namelower)s/"
+
+exts_list = [
+    ('Keras-Applications', '1.0.8', {
+        'modulename': 'keras_applications',
+        'source_tmpl': 'Keras_Applications-%(version)s.tar.gz',
+        'checksums': ['5579f9a12bcde9748f4a12233925a59b93b73ae6947409ff34aa2ba258189fe5'],
+    }),
+    ('efficientnet', '1.1.1', {
+        'checksums': ['a92e7715453f6043942d9c8d995464e8d319494f08d1d458600abbd5c43544bb'],
+    }),
+    ('paramz', '0.9.6', {
+        'source_tmpl': 'paramz-%(version)s-py3-none-any.whl',
+        'checksums': ['4916be6f77f457316bcac8460be9c226026aed81fe7be302b32c0ba74e2ac6dd'],
+    }),
+    ('GPy', '1.13.1', {
+        'modulename': 'GPy',
+        'checksums': ['64d2edd6533b9ddcfe0585a4f401234c2e7181360d8f5bb3ce1adc2b89cfa115'],
+    }),
+    ('GPyOpt', '1.2.6', {
+        'modulename': 'GPyOpt',
+        'checksums': ['e714daa035bb529a6db23c53665a762a4ab3456b9329c19ad3b03983f94c9b2a'],
+    }),
+    ('typeguard', '2.13.3', {
+        'checksums': ['00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4'],
+    }),
+    ('tensorflow-addons', '0.21.0', {
+        'source_tmpl': 'tensorflow_addons-0.21.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['2bb834fb330fd76076dc98477447c869bab4fc4bd5aa53f8a2675079e2905caf'],
+    }),
+    (name, version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/cytomining/%(name)s/archive/refs/tags/'],
+        'checksums': ['2c677ee01c41c373d7a1558d2b2cb83bfc6005ca3e0b22e1a48efe33cb3ada7b'],
+        'preinstallopts': local_preinstallopts,
+        'postinstallcmds': [local_postinstallcmds],
+    }),
+]
+
+sanity_check_commands = ['python -m deepprofiler']
+
+sanity_pip_check = True
+
+moduleclass = 'ai'
