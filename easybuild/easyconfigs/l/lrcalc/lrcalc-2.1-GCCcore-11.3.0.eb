@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'lrcalc'
+version = '2.1'
+
+homepage = 'https://sites.math.rutgers.edu/~asbuch/lrcalc'
+description = "lrcalc is a program designed to compute Littlewood-Richardson coefficients."
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = [homepage]
+sources = [SOURCE_TAR_GZ]
+checksums = ['996ac00e6ea8321ef09b34478f5379f613933c3254aeba624b6419b8afa5df57']
+
+builddependencies = [('binutils', '2.38')]
+
+dependencies = [('Python', '3.10.4')]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    (name, version, {
+        'sources': [{'download_filename': SOURCE_TAR_GZ, 'filename': '%(name)s-%(version)s-python.tar.gz'}],
+        'checksums': ['e3a0509aeda487b412b391a52e817ca36b5c063a8305e09fd54d53259dd6aaa9'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/lrcalc', 'bin/schubmult', 'include/lrcalc/lrcoef.h'] +
+             ['lib/liblrcalc.%s' % e for e in ['a', SHLIB_EXT]],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "lrcalc 2>&1 | grep Usage",
+    "python -c 'import lrcalc'",
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'math'
