@@ -1,0 +1,29 @@
+From f9026c16aae050b859a55e4ab3738d098394ec9a Mon Sep 17 00:00:00 2001
+From: Yimei Sun <yimei.sun@intel.com>
+Date: Thu, 5 May 2022 12:30:59 -0700
+Subject: [PATCH] Fix conv3d_backprop_filter_v2_grad_test_cpu test failure when
+ oneDNN is enabled
+
+---
+ tensorflow/core/kernels/mkl/mkl_conv_grad_filter_ops.cc | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/tensorflow/core/kernels/mkl/mkl_conv_grad_filter_ops.cc b/tensorflow/core/kernels/mkl/mkl_conv_grad_filter_ops.cc
+index 4065143bff04e9..836b53e30d8ca4 100644
+--- a/tensorflow/core/kernels/mkl/mkl_conv_grad_filter_ops.cc
++++ b/tensorflow/core/kernels/mkl/mkl_conv_grad_filter_ops.cc
+@@ -370,6 +370,14 @@ class MklConvCustomBackpropFilterOp
+       // a correct way to get filter shape. These operator-specific calls
+       // allow this class to handle this case.
+       TensorShape src_tf_shape = MakeInputTfShape(context, src_tensor);
++      const string& op_type = this->type_string();
++      if ((op_type.find("3D") != std::string::npos) &&
++          (op_type.find("V2") != std::string::npos)) {
++        OP_REQUIRES(context, TensorShapeUtils::IsVector(filter_tensor.shape()),
++                    errors::InvalidArgument(
++                        "filter_sizes shape must be rank 1 but is rank ",
++                        filter_tensor.shape().dims()));
++      }
+       TensorShape filter_tf_shape = MakeFilterTfShape(context, filter_tensor);
+       TensorShape diff_dst_tf_shape =
+           GetTfShape(context, kDiffDstIdx, native_format);
