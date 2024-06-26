@@ -957,9 +957,8 @@ class EasyConfigTest(TestCase):
                 for dep, dep_vars in sorted(deps.items()):
                     if not self.check_dep_vars(tc_gen, dep, dep_vars):
                         multi_dep_vars_msg += "Found %s variants of '%s' dependency " % (len(dep_vars), dep)
-                        multi_dep_vars_msg += "in easyconfigs using '%s' toolchain generation\n* " % tc_gen
-                        multi_dep_vars_msg += '\n  * '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
-                        multi_dep_vars_msg += '\n'
+                        multi_dep_vars_msg += "in easyconfigs using '%s' toolchain generation\n" % tc_gen
+                        multi_dep_vars_msg += '\n'.join("  * %s as dep for %s" % v for v in sorted(dep_vars.items()))
         if multi_dep_vars_msg:
             self.fail('Should not have multiple variants of dependencies.\n' + multi_dep_vars_msg)
 
