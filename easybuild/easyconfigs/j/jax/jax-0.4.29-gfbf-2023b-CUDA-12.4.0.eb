@@ -39,7 +39,6 @@ dependencies = [
 # downloading xla and other tarballs to avoid that Bazel downloads it during the build
 # note: this *must* be the exact same commit as used in third_party/{xla,"other"}/workspace.bzl
 local_xla_commit = '32ba408c0e2b7ef5f5821c0781601ba17d467076'
-#local_tfrt_commit = '0aeefb1660d7e37964b2bb71b1f518096bda9a25'
 
 local_extract_cmd = 'mkdir -p %(builddir)s/archives && cp %s %(builddir)s/archives'
 local_repo_opt = '--bazel_options="--distdir=%(builddir)s/archives" '
@@ -86,6 +85,9 @@ default_component_specs = {
 
 components = [
     ('absl-py', '2.1.0', {
+        'checksums': [
+            {'absl-py-2.1.0.tar.gz': '7820790efbb316739cde8b4e19357243fc3608a152024288513dd968d7d959ff'},
+        ],
         'options': {'modulename': 'absl'},
     }),
     ('jaxlib', version, {
@@ -96,18 +98,18 @@ components = [
                 'filename': 'xla-%s.tar.gz' % local_xla_commit,
                 'extract_cmd': local_extract_cmd,
             },
-#            {
-#                'download_filename': '%s.tar.gz' % local_tfrt_commit,
-#                'filename': 'tf_runtime-%s.tar.gz' % local_tfrt_commit,
-#                'extract_cmd': local_extract_cmd,
-#            },
         ],
         'source_urls': [
             'https://github.com/google/jax/archive/',
-#            'https://github.com/tensorflow/runtime/archive',
             'https://github.com/openxla/xla/archive'
         ],
         'patches': ['jax-0.4.25_fix-pybind11-systemlib.patch'],
+        'checksums': [
+            {'jaxlib-v0.4.29.tar.gz': '3a8005f4f62d35a5aad7e3dbd596890b47c81cc6e34fcfe3dcb93b3ca7cb1246'},
+            {'xla-%s.tar.gz' % local_xla_commit: '899f9fa0801f607decd0fedcb1e4c1f56010f884c271dc618448898b022715b1'},
+            {'jax-0.4.25_fix-pybind11-systemlib.patch':
+             'daad5b726d1a138431b05eb60ecf4c89c7b5148eb939721800bdf43d804ca033'}
+        ],
         'start_dir': 'jax-jaxlib-v%(version)s',
         # Avoid warning (treated as error) in upb/table.c
         'buildopts': local_repo_opt + ' --bazel_options="--copt=-Wno-maybe-uninitialized"'
