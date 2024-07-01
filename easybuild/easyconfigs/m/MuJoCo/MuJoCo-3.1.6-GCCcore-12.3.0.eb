@@ -1,0 +1,66 @@
+easyblock = 'CMakeMake'
+
+name = 'MuJoCo'
+version = '3.1.6'
+
+homepage = 'https://mujoco.org/'
+description = """MuJoCo stands for Multi-Joint dynamics with Contact. It is a general purpose
+physics engine that aims to facilitate research and development in robotics,
+biomechanics, graphics and animation, machine learning, and other areas which
+demand fast and accurate simulation of articulated structures interacting with
+their environment."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/deepmind/mujoco/archive/refs/tags']
+sources = ['%(version)s.tar.gz']
+checksums = ['009a251371c444ebf9150ccfe547a14d24eadb4cd81533736abda7d3d398da50']
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('oldest-supported-numpy', '2023b'),
+    ('python-build-bundle', '2023b'),
+]
+
+dependencies = [
+    ('GLFW', '3.3.8'),
+]
+
+multi_deps = {'Python': ['3.10', '3.11']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE], 'use_pip': True}
+exts_list = [
+    ('mujoco', version, {
+        'preinstallopts': " export MUJOCO_PATH=%(installdir)s && "
+                          " export MUJOCO_PLUGIN_PATH=%(installdir)s/share/mujoco/model/plugin && ",
+        'sources': ['mujoco-%(version)s.tar.gz'],
+        'checksums': ['7cf8887526f071e7411dc02ce1cd665e39b4b6083fdff49fe1348a82d2314651'],
+    }),
+]
+
+exts_filter = ("module load scipy-stack && python -c 'import %(ext_name)s'", "")
+
+sanity_check_paths = {
+    'files': ['bin/basic', 'bin/compile', 'bin/record', 'bin/simulate',
+              'lib64/libmujoco.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share/mujoco/model'],
+}
+
+sanity_check_commands = [
+    'basic'
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+    'MUJOCO_PATH': '',
+    'MUJOCO_PLUGIN_PATH': 'share/mujoco/model/plugin',
+}
+
+# Depends on any numpy at runtime.
+modluafooter = """
+depends_on("scipy-stack")
+"""
+
+moduleclass = 'phys'

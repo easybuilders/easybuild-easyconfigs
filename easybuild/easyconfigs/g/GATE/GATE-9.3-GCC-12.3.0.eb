@@ -1,0 +1,46 @@
+name = 'GATE'
+version = '9.3'
+
+homepage = 'http://www.opengatecollaboration.org/'
+description = """GATE is an advanced opensource software developed by the international OpenGATE collaboration and
+ dedicated to the numerical simulations in medical imaging. It currently supports simulations of Emission Tomography
+ (Positron Emission Tomography - PET and Single Photon Emission Computed Tomography - SPECT), and Computed Tomography"""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/OpenGATE/Gate/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_Makefile-prefix.patch']
+checksums = [
+    {'v9.3.tar.gz': '5faa4bede5d249eb627e20321373947374886614aea4a43ae8985c2ca6a486c7'},
+    {'GATE-9.3_Makefile-prefix.patch': '824f59451dc7c4d4f74da5e91d1089eef8f66ed633db4906d3a754b162ac004f'},
+]
+
+dependencies = [
+    ('Geant4', '11.1.2'),
+    ('expat', '2.2.9'),
+    ('CLHEP', '2.4.6.2'),
+    ('ROOT', '6.28.06', '-Python-3.11'),
+    ('Qt5', '5.15.11'),
+]
+
+builddependencies = [('CMake', '3.27.7')]
+
+preconfigopts  = " export Geant4_DIR=$EBROOTGEANT4 && "
+preconfigopts += " export ROOTCINT_EXECUTABLE=$EBROOTROOT/bin/rootcint && "
+preconfigopts += " export ROOT_CONFIG_EXECUTABLE=$EBROOTROOT/bin/root-config && "
+preconfigopts += " export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$EBROOTROOT/lib && "
+preconfigopts += " export CPATH=$CPATH:$EBROOTROOT/include && "
+
+configopts  = '-DBUILD_TESTING=ON '
+configopts += '-DCMAKE_GATE_DOWNLOAD_BENCHMARKS_DATA=ON '
+configopts += '-DCMAKE_GATE_USE_ECAT7=ON '
+configopts += '-DCMAKE_GATE_USE_GPU=OFF '
+configopts += '-DCMAKE_GATE_USE_ITK=ON '
+configopts += '-DCMAKE_GATE_USE_RTK=ON '
+configopts += '-DCMAKE_GATE_USE_STDC11=ON '
+configopts += '-DCMAKE_GATE_USE_DAVIS=ON '
+configopts += '-DCMAKE_GEANT4_USE_SYSTEM_CLHEP=OFF '
+
+moduleclass = 'cae'
