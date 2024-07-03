@@ -1372,14 +1372,35 @@ class EasyConfigTest(TestCase):
         failing_checks = []
         for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
-            configopts = ec.get('configopts')
             build_type = ec.get('build_type')
+            configopts = ec.get('configopts')
+            if isinstance(configopts, list):
+                configopts = ' '.join(configopts)
 
             if configopts and '-DCMAKE_BUILD_TYPE' in configopts:
                 failing_checks.append("Found -DCMAKE_BUILD_TYPE in configopts. Use build_type instead: %s" % ec_fn)
             if build_type == 'Release':
                 failing_checks.append("build_type was set to the default of 'Release'. "
                                       "Omit this to base it on toolchain_opts.debug: %s" % ec_fn)
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_CMAKE_INSTALL_LIBDIR(self):
+        """Make sure -DCMAKE_INSTALL_LIBDIR is no longer used (replaced by install_libdir)"""
+        failing_checks = []
+        for ec in self.changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            configopts = ec.get('configopts')
+            if isinstance(configopts, list):
+                configopts = ' '.join(configopts)
+
+            cmake_install_opt_pattern = re.compile(r"-DCMAKE_INSTALL_LIBDIR(:PATH)?=[^\s]")
+            if cmake_install_opt_pattern.search(configopts):
+                failing_checks.append(
+                    "Found -DCMAKE_INSTALL_LIBDIR in configopts. Use install_libdir instead: %s" % ec_fn
+                )
+
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
