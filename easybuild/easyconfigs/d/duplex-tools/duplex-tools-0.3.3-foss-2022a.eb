@@ -1,0 +1,74 @@
+# Author: Jasper Grimm (UoY)
+# Updated: Petr Král (INUITS)
+easyblock = 'PythonBundle'
+
+name = 'duplex-tools'
+version = '0.3.3'
+
+homepage = 'https://github.com/nanoporetech/duplex-tools'
+description = """
+Duplex Tools contains a set of utilities for dealing with Duplex sequencing data. Tools are provided
+ to identify and prepare duplex pairs for basecalling by Dorado (recommended) and Guppy, and for
+ recovering simplex basecalls from incorrectly concatenated pairs.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+_minimap2_ver = '2.24'
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('matplotlib', '3.5.2'),
+    ('edlib', '1.3.9'),
+    ('minimap2', _minimap2_ver),
+    ('python-parasail', '1.3.3'),
+    ('Pysam', '0.19.1'),
+    ('tqdm', '4.64.0'),
+    ('Arrow', '8.0.0'),
+    ('h5py', '3.7.0'),
+    ('pod5-file-format', '0.1.8'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('mappy', _minimap2_ver, {
+        'checksums': ['35a2fb73ef14173283d5abb31e7a318429e0330c3be95851df38dd83d4ff9af9'],
+    }),
+    ('natsort', '8.4.0', {
+        'checksums': ['45312c4a0e5507593da193dedd04abb1469253b601ecaf63445ad80f0a1ea581'],
+    }),
+    ('iso8601', '1.1.0', {
+        'checksums': ['32811e7b81deee2063ea6d2e94f8819a86d1f3811e49d23623a41fa832bef03f'],
+    }),
+    ('vbz-h5py-plugin', '1.0.1', {
+        'source_tmpl': 'vbz_h5py_plugin-%(version)s.tar.gz',
+        'checksums': ['c784458bb0aad6303474cb2f10956179116b35555803fd1154eb4ef362519341'],
+    }),
+    ('pyfastx', '1.1.0', {
+        # PYPI source tarball is incomplete, causes ImportErrors
+        # see https://github.com/lmdu/pyfastx/issues/60
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/lmdu/%(name)s/archive'],
+        'checksums': ['b9974b21d21067350694ea37d33f99647255546b90eee8addeb74c8d18d824e8'],
+    }),
+    (name, version, {
+        'source_tmpl': 'duplex_tools-%(version)s.tar.gz',
+        'checksums': ['883e0a6610d14328a640b6a31eaef90592d2967cda68db0547a4d99924281300'],
+    }),
+]
+
+_bins = ['dorado_stereo.sh', 'duplex_tools', 'minimap2.py', 'natsort', 'pyfastx']
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _bins],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'dorado_stereo.sh -h',
+    'duplex_tools --help',
+    'pyfastx --help',
+]
+
+moduleclass = 'bio'

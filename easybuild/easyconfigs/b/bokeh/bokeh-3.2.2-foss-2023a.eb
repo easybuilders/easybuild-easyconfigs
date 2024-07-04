@@ -1,0 +1,51 @@
+easyblock = 'PythonBundle'
+
+name = 'bokeh'
+version = '3.2.2'
+
+homepage = 'https://github.com/bokeh/bokeh'
+description = "Statistical and novel interactive HTML plots for Python"
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('meson-python', '0.13.2'),
+    ('hatchling', '1.18.0'),  # fixes error "xyzservices>=2021.09.1, but you have 0.0.0"
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('matplotlib', '3.7.2'),
+    ('PyYAML', '6.0'),
+    ('Pillow-SIMD', '9.5.0'),
+    ('SciPy-bundle', '2023.07'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('tornado', '6.3.2'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('contourpy', '1.0.7', {
+        'checksums': ['d8165a088d31798b59e91117d1f5fc3df8168d8b48c4acc10fc0df0d0bdbcc5e'],
+    }),
+    ('xyzservices', '2023.7.0', {
+        'checksums': ['0ec928742227d6f5d4367ea7b457fcfed943429f4de2949b5b02a82cdf5569d6'],
+    }),
+    (name, version, {
+        # bokeh uses git tags to get version, so we'll instead inject the version into setup.py
+        'preinstallopts': """sed -i 's/setup(/setup(version="%(version)s",/g' setup.py && """,
+        'checksums': ['b2959b8524d69ec4e7886bc36407445f0a92e1f19530d3bfc4045236a1b7a6ff'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/bokeh'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["bokeh --help"]
+
+sanity_pip_check = True
+
+moduleclass = 'tools'

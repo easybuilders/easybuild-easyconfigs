@@ -1,0 +1,56 @@
+easyblock = 'PythonBundle'
+
+name = 'python-igraph'
+version = '0.10.6'
+
+homepage = 'https://igraph.org/python'
+description = """Python interface to the igraph high performance graph library, primarily aimed at complex network
+ research and analysis."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+builddependencies = [
+    ('pkgconf', '1.9.3'),
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('igraph', '0.10.6'),
+    ('Clang', '16.0.4'),
+    ('libxml2', '2.10.3'),
+    ('zlib', '1.2.12'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('texttable', '1.6.4', {
+        'checksums': ['42ee7b9e15f7b225747c3fa08f43c5d6c83bc899f80ff9bae9319334824076e9'],
+    }),
+    ('cairocffi', '1.6.1', {
+        'checksums': ['78e6bbe47357640c453d0be929fa49cd05cce2e1286f3d2a1ca9cbda7efdb8b7'],
+    }),
+    # The pypi project 'python-igraph' is depreicated, use pypi package igraph instead. To avoid
+    # collision with the C/C++ build of igraph, continue to use the package name 'python-igraph'
+    ('igraph', version, {
+        'installopts': '--install-option="--use-pkg-config"',
+        'modulename': 'igraph',
+        'checksums': ['76f7aad294514412f835366a7d9a9c1e7a34c3e6ef0a6c3a1a835234323228e8'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/igraph'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+# cairo must be available for proper plotting support
+sanity_check_commands = [
+    "python -c 'from igraph.drawing.cairo.utils import find_cairo; "
+    "cairo = find_cairo(); cairo.Context'",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'

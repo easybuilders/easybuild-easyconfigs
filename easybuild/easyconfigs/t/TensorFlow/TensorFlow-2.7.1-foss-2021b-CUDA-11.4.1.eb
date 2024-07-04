@@ -157,6 +157,8 @@ exts_list = [
         'checksums': ['6953272383486044699fd0e9f00aad167a27e08ce19aae66c6c4b10e7e767793'],
     }),
     (name, version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
         'patches': [
             'TensorFlow-2.1.0_fix-cuda-build.patch',
             'TensorFlow-2.4.0_add-ldl.patch',
@@ -171,9 +173,40 @@ exts_list = [
             'TensorFlow-2.7.1_remove-io-gcs-dependency.patch',
             'TensorFlow-2.7.1_remove-libclang-dependency.patch',
             'TensorFlow-2.7.1_fix_cpu_count.patch',
+            'TensorFlow-2.7.1_fix-PPC-Eigen-GEMM.patch',
+            'TensorFlow-2.7.1_fix-PPC-JIT.patch',
         ],
-        'source_tmpl': 'v%(version)s.tar.gz',
-        'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
+        'checksums': [
+            'abebe2cf5ca379e18071693ca5f45b88ade941b16258a21cc1f12d77d5387a21',  # v2.7.1.tar.gz
+            '78c20aeaa7784b8ceb46238a81e8c2461137d28e0b576deeba8357d23fbe1f5a',  # TensorFlow-2.1.0_fix-cuda-build.patch
+            '917ee7282e782e48673596d8917c3207e60e0851bb9acf230a2a439b067af2e3',  # TensorFlow-2.4.0_add-ldl.patch
+            # TensorFlow-2.4.0_dont-use-var-lock.patch
+            'b14f2493fd2edf79abd1c4f2dde6c98a3e7d5cb9c25ab9386df874d5f072d6b5',
+            # TensorFlow-2.5.0_add-support-for-large-core-systems.patch
+            '915f3477d6407fafd48269fe1e684a05ce361d9b9b85e58686682df87760f636',
+            # TensorFlow-2.5.0_disable-avx512-extensions.patch
+            '3655ce24c97569ac9738c07cac85347ba6f5c815ada95b19b606ffa46d4dda03',
+            # TensorFlow-2.5.0-fix-alias-violation-in-absl.patch
+            '12454fda3330fb45cd380377e283f04488b40e0b8ae7378e786ddf731a581f75',
+            # TensorFlow-2.5.0_fix-arm-vector-intrinsics.patch
+            '5edea55ce87d5adb14f6ed6996f308879e268b8cec760cf11288e3a56179a029',
+            # TensorFlow-2.5.0_fix-crash-on-shutdown.patch
+            '578c7493221ebd3dc25ca43d63a72cbb28fdf4112b1e2baa7390f25781bd78fd',
+            # TensorFlow-2.7.1_fix_protobuf_error_message.patch
+            '301ce21845987dc7868624880c0d85e60aa5491c5a0bae0f6ebc8db5727960a5',
+            # TensorFlow-2.7.1_remove-duplicate-gpu-tests.patch
+            'f78526a34d85f4dda59b160b576aa3a3126db7073a58c4e3b1424923f6a21483',
+            # TensorFlow-2.7.1_remove-io-gcs-dependency.patch
+            '01c439749938f9fc23fe8de17592460aa46e201575a3f9465bfb6b39ca50ef20',
+            # TensorFlow-2.7.1_remove-libclang-dependency.patc
+            'd202058c0e8a7cdef3157fe12327e23c7291ce2724a15653df0aae3b40c4dadc',
+            # TensorFlow-2.7.1_fix_cpu_count.patch
+            '5427a4cff0afc2fe5b24776ae9ca3616c56a79c1fde0025b37bec24837bb0698',
+            # TensorFlow-2.7.1_fix-PPC-Eigen-GEMM.patch
+            'ab647e80af52950c733d084ef9ec4b49780ab20a413476374cf41e25bd20af83',
+            # TensorFlow-2.7.1_fix-PPC-JIT.patch
+            'f0652557e760fdc2b39313a24d6236e7c3984cabc3353e0d867e275ff90a13fe',
+        ],
         'test_script': 'TensorFlow-2.x_mnist-test.py',
         'test_tag_filters_cpu': '-gpu,-tpu,-no_cuda_on_cpu_tap,-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
         'test_tag_filters_gpu': ('gpu,-no_gpu,-nogpu,-gpu_cupti,-no_cuda11,-no_pip,-no_oss,-oss_serial,'
@@ -209,33 +242,6 @@ exts_list = [
         'testopts_gpu': "--test_timeout=3600 --test_size_filters=small " +
                         "--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute",
         'with_xla': True,
-        'checksums': [
-            'abebe2cf5ca379e18071693ca5f45b88ade941b16258a21cc1f12d77d5387a21',  # v2.7.1.tar.gz
-            '78c20aeaa7784b8ceb46238a81e8c2461137d28e0b576deeba8357d23fbe1f5a',  # TensorFlow-2.1.0_fix-cuda-build.patch
-            '917ee7282e782e48673596d8917c3207e60e0851bb9acf230a2a439b067af2e3',  # TensorFlow-2.4.0_add-ldl.patch
-            # TensorFlow-2.4.0_dont-use-var-lock.patch
-            'b14f2493fd2edf79abd1c4f2dde6c98a3e7d5cb9c25ab9386df874d5f072d6b5',
-            # TensorFlow-2.5.0_add-support-for-large-core-systems.patch
-            '915f3477d6407fafd48269fe1e684a05ce361d9b9b85e58686682df87760f636',
-            # TensorFlow-2.5.0_disable-avx512-extensions.patch
-            '3655ce24c97569ac9738c07cac85347ba6f5c815ada95b19b606ffa46d4dda03',
-            # TensorFlow-2.5.0-fix-alias-violation-in-absl.patch
-            '12454fda3330fb45cd380377e283f04488b40e0b8ae7378e786ddf731a581f75',
-            # TensorFlow-2.5.0_fix-arm-vector-intrinsics.patch
-            '5edea55ce87d5adb14f6ed6996f308879e268b8cec760cf11288e3a56179a029',
-            # TensorFlow-2.5.0_fix-crash-on-shutdown.patch
-            '578c7493221ebd3dc25ca43d63a72cbb28fdf4112b1e2baa7390f25781bd78fd',
-            # TensorFlow-2.7.1_fix_protobuf_error_message.patch
-            '301ce21845987dc7868624880c0d85e60aa5491c5a0bae0f6ebc8db5727960a5',
-            # TensorFlow-2.7.1_remove-duplicate-gpu-tests.patch
-            'f78526a34d85f4dda59b160b576aa3a3126db7073a58c4e3b1424923f6a21483',
-            # TensorFlow-2.7.1_remove-io-gcs-dependency.patch
-            '01c439749938f9fc23fe8de17592460aa46e201575a3f9465bfb6b39ca50ef20',
-            # TensorFlow-2.7.1_remove-libclang-dependency.patc
-            'd202058c0e8a7cdef3157fe12327e23c7291ce2724a15653df0aae3b40c4dadc',
-            # TensorFlow-2.7.1_fix_cpu_count.patch
-            '5427a4cff0afc2fe5b24776ae9ca3616c56a79c1fde0025b37bec24837bb0698',
-        ],
     }),
 ]
 

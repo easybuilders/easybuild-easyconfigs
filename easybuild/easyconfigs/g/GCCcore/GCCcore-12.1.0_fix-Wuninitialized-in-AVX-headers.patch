@@ -1,0 +1,218 @@
+From 72af61b122127b112215d496d65c64cfdc56fce8 Mon Sep 17 00:00:00 2001
+From: Jakub Jelinek <jakub@redhat.com>
+Date: Mon, 16 Jan 2023 09:41:38 +0100
+Subject: [PATCH] x86: Avoid -Wuninitialized warnings on _mm*_undefined_* in
+ C++ [PR105593]
+
+In https://gcc.gnu.org/pipermail/gcc-patches/2023-January/609844.html
+I've posted a patch to allow ignoring -Winit-self using GCC diagnostic
+pragmas, such that one can mark self-initialization as intentional
+disabling of -Wuninitialized warnings.
+
+The following incremental patch uses that in the x86 intrinsic
+headers.
+
+2023-01-16  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/105593
+gcc/
+	* config/i386/xmmintrin.h (_mm_undefined_ps): Temporarily
+	disable -Winit-self using pragma GCC diagnostic ignored.
+	* config/i386/emmintrin.h (_mm_undefined_pd, _mm_undefined_si128):
+	Likewise.
+	* config/i386/avxintrin.h (_mm256_undefined_pd, _mm256_undefined_ps,
+	_mm256_undefined_si256): Likewise.
+	* config/i386/avx512fintrin.h (_mm512_undefined_pd,
+	_mm512_undefined_ps, _mm512_undefined_epi32): Likewise.
+	* config/i386/avx512fp16intrin.h (_mm_undefined_ph,
+	_mm256_undefined_ph, _mm512_undefined_ph): Likewise.
+gcc/testsuite/
+	* g++.target/i386/pr105593.C: New test.
+
+(cherry picked from commit 6b0907b4fc455377e5f8109f427d97da02b6aec9)
+---
+ gcc/config/i386/avx512fintrin.h          |  9 +++++++++
+ gcc/config/i386/avx512fp16intrin.h       |  9 +++++++++
+ gcc/config/i386/avxintrin.h              |  9 +++++++++
+ gcc/config/i386/emmintrin.h              |  6 ++++++
+ gcc/config/i386/xmmintrin.h              |  3 +++
+ gcc/testsuite/g++.target/i386/pr105593.C | 20 ++++++++++++++++++++
+ 6 files changed, 56 insertions(+)
+ create mode 100644 gcc/testsuite/g++.target/i386/pr105593.C
+
+diff --git a/gcc/config/i386/avx512fintrin.h b/gcc/config/i386/avx512fintrin.h
+index 77d6249c2bc50..24316c5a49572 100644
+--- a/gcc/config/i386/avx512fintrin.h
++++ b/gcc/config/i386/avx512fintrin.h
+@@ -185,7 +185,10 @@ extern __inline __m512
+ __attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+ _mm512_undefined_ps (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m512 __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+@@ -195,7 +198,10 @@ extern __inline __m512d
+ __attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+ _mm512_undefined_pd (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m512d __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+@@ -203,7 +209,10 @@ extern __inline __m512i
+ __attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+ _mm512_undefined_epi32 (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m512i __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+diff --git a/gcc/config/i386/avx512fp16intrin.h b/gcc/config/i386/avx512fp16intrin.h
+index e43acaab12a11..b16ccfcb7f17c 100644
+--- a/gcc/config/i386/avx512fp16intrin.h
++++ b/gcc/config/i386/avx512fp16intrin.h
+@@ -204,7 +204,10 @@ extern __inline __m128h
+ __attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+ _mm_undefined_ph (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m128h __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+@@ -212,7 +215,10 @@ extern __inline __m256h
+ __attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+ _mm256_undefined_ph (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m256h __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+@@ -220,7 +226,10 @@ extern __inline __m512h
+ __attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+ _mm512_undefined_ph (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m512h __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+diff --git a/gcc/config/i386/avxintrin.h b/gcc/config/i386/avxintrin.h
+index c76d600ee5ce9..d5aff7ddcfa59 100644
+--- a/gcc/config/i386/avxintrin.h
++++ b/gcc/config/i386/avxintrin.h
+@@ -1207,21 +1207,30 @@ _mm256_movemask_ps (__m256 __A)
+ extern __inline __m256d __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+ _mm256_undefined_pd (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m256d __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+ extern __inline __m256 __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+ _mm256_undefined_ps (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m256 __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+ extern __inline __m256i __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+ _mm256_undefined_si256 (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m256i __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+diff --git a/gcc/config/i386/emmintrin.h b/gcc/config/i386/emmintrin.h
+index 654a8e8c9adba..069b1a193a20d 100644
+--- a/gcc/config/i386/emmintrin.h
++++ b/gcc/config/i386/emmintrin.h
+@@ -99,7 +99,10 @@ _mm_setr_pd (double __W, double __X)
+ extern __inline __m128d __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+ _mm_undefined_pd (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m128d __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+@@ -785,7 +788,10 @@ _mm_move_epi64 (__m128i __A)
+ extern __inline __m128i __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+ _mm_undefined_si128 (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m128i __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+diff --git a/gcc/config/i386/xmmintrin.h b/gcc/config/i386/xmmintrin.h
+index 626590806010e..f1c704a2d4325 100644
+--- a/gcc/config/i386/xmmintrin.h
++++ b/gcc/config/i386/xmmintrin.h
+@@ -109,7 +109,10 @@ typedef float __v4sf __attribute__ ((__vector_size__ (16)));
+ extern __inline __m128 __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+ _mm_undefined_ps (void)
+ {
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
+   __m128 __Y = __Y;
++#pragma GCC diagnostic pop
+   return __Y;
+ }
+ 
+diff --git a/gcc/testsuite/g++.target/i386/pr105593.C b/gcc/testsuite/g++.target/i386/pr105593.C
+new file mode 100644
+index 0000000000000..3897f706bb11c
+--- /dev/null
++++ b/gcc/testsuite/g++.target/i386/pr105593.C
+@@ -0,0 +1,20 @@
++// PR c++/105593
++// { dg-do compile { target c++14 } }
++// { dg-options "-mavx512fp16 -W -Wall -O2" }
++
++#include <x86intrin.h>
++
++auto f1 () { return _mm_undefined_pd (); }
++auto f2 () { return _mm_undefined_ps (); }
++auto f3 () { return _mm_undefined_si128 (); }
++auto f4 () { return _mm_undefined_ph (); }
++auto f5 () { return _mm256_undefined_pd (); }
++auto f6 () { return _mm256_undefined_ps (); }
++auto f7 () { return _mm256_undefined_si256 (); }
++auto f8 () { return _mm256_undefined_ph (); }
++auto f9 () { return _mm512_undefined_pd (); }
++auto f10 () { return _mm512_undefined_ps (); }
++auto f11 () { return _mm512_undefined_epi32 (); }
++auto f12 () { return _mm512_undefined_ph (); }
++
++// { dg-bogus "is used uninitialized" "" { target *-*-* } 0 }

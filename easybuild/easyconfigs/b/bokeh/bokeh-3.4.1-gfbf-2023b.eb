@@ -1,0 +1,50 @@
+easyblock = 'PythonBundle'
+
+name = 'bokeh'
+version = '3.4.1'
+
+homepage = 'https://github.com/bokeh/bokeh'
+description = "Statistical and novel interactive HTML plots for Python"
+
+toolchain = {'name': 'gfbf', 'version': '2023b'}
+
+builddependencies = [
+    ('meson-python', '0.15.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Python-bundle-PyPI', '2023.10'),
+    ('SciPy-bundle', '2023.11'),
+    ('matplotlib', '3.8.2'),
+    ('PyYAML', '6.0.1'),
+    ('Pillow', '10.2.0'),
+    ('tornado', '6.4'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('contourpy', '1.2.1', {
+        'checksums': ['4d8908b3bee1c889e547867ca4cdc54e5ab6be6d3e078556814a22457f49423c'],
+    }),
+    ('xyzservices', '2024.4.0', {
+        'checksums': ['6a04f11487a6fb77d92a98984cd107fbd9157fd5e65f929add9c3d6e604ee88c'],
+    }),
+    (name, version, {
+        # bokeh uses git tags to get version, so we'll instead inject the version into setup.py
+        'preinstallopts': """sed -i 's/setup(/setup(version="%(version)s",/g' setup.py && """,
+        'checksums': ['d824961e4265367b0750ce58b07e564ad0b83ca64b335521cd3421e9b9f10d89'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/bokeh'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["bokeh --help"]
+
+sanity_pip_check = True
+
+moduleclass = 'tools'
