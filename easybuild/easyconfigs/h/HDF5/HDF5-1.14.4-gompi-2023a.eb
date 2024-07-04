@@ -1,0 +1,82 @@
+name = 'HDF5'
+version = '1.14.4'
+
+homepage = 'https://portal.hdfgroup.org/display/support'
+description = """HDF5 is a data model, library, and file format for storing and managing data.
+ It supports an unlimited variety of datatypes, and is designed for flexible
+ and efficient I/O and for high volume and complex data."""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%(version_major_minor)s/hdf5-%(version)s/src']
+sources = [SOURCELOWER_TAR_GZ.replace('%(version)s', version+'-3')]
+checksums = ['019ac451d9e1cf89c0482ba2a06f07a46166caf23f60fea5ef3c37724a318e03']
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('Szip', '2.1.1'),
+]
+
+# For the extensions
+builddependencies = [
+    ('mpi4py', '3.1.6'),
+    ('Cython', '3.0.10'),
+    ('oldest-supported-numpy', '2024a'),
+    ('python-build-bundle', '2024a'),
+]
+
+multi_deps = {'Python': ['3.10', '3.11', '3.12']}
+multi_deps_extensions_only = True
+
+# otherwise blosc2 libs end up in lib64 but HDF5 in lib
+preinstallopts = 'ln -s lib %(installdir)s/lib64 && '
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+    'preinstallopts': "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH"
+}
+exts_list = [
+    ('cached-property', '1.5.2', {
+        'checksums': ['9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130'],
+    }),
+    ('ndindex', '1.8', {
+        'checksums': ['5fc87ebc784605f01dd5367374cb40e8da8f2c30988968990066c5098a7eebe8'],
+    }),
+    ('py-cpuinfo', '9.0.0', {
+        'modulename': 'cpuinfo',
+        'checksums': ['3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690'],
+    }),
+    ('h5py', '3.11.0', {
+        'preinstallopts': 'sed -i -e "/cmdclass = CMDCLASS,/a zip_safe = False," setup.py && HDF5_MPI="ON" H5PY_SETUP_REQUIRES=0 ',
+        'checksums': ['7b7e8f78072a2edec87c9836f25f34203fd492a4475709a18b417a33cfb21fa9'],
+    }),
+    ('numexpr', '2.10.1', {
+        'checksums': ['9bba99d354a65f1a008ab8b87f07d84404c668e66bab624df5b6b5373403cf81'],
+    }),
+    ('blosc2', '2.7.0', {
+        'checksums': ['9b982c1d40560eefb4a01d67c57e786d39a5ee9696f3deadd32ebf5f8885eb2a'],
+    }),
+    ('tables', '3.9.2', {
+        'preinstallopts': 'unset LIBS && rm -r c-blosc/{blosc,internal-complibs} && sed -i "s@/usr/local@$EBROOTGENTOO@" setup.py && BLOSC2_DIR=%(installdir)s ',
+        'checksums': ['d470263c2e50c4b7c8635a0d99ac1ff2f9e704c24d71e5fa33c4529e7d0ad9c3'],
+    }),
+]
+
+exts_filter = ("""module load python-build-bundle/2024a mpi4py/3.1.6 oldest-supported-numpy/.2024a;  python -c 'import %(ext_name)s'""", '')
+
+sanity_check_paths = {
+    'files': [
+        'lib/libhdf5.so'
+    ],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'data'
