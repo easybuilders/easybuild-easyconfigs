@@ -1,0 +1,35 @@
+name = 'DAGMC'
+version = '3.2.2'
+
+homepage = 'https://svalinn.github.io/DAGMC/index.html'
+description = "Direct Accelerated Geometry Monte Carlo (DAGMC) is a software package that allows users to perform Monte Carlo radiation transport directly on CAD models."
+software_license_urls = ['https://github.com/svalinn/DAGMC/blob/develop/LICENSE.txt']
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+sources = [{
+    'filename': f'DAGMC-{version}.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/svalinn/',
+        'repo_name': 'DAGMC',
+        'recursive':True,
+        'tag': f'v{version}'
+    },
+}]
+
+# patch needed for correct path handling to find MOAB
+patches = ['DAGMC-3.2.2_find-MOAB.patch']
+
+builddependencies = [('CMake', '3.23.1'),('make','4.3')]
+
+dependencies = [
+    ('HDF5', '1.12.2'),
+    ('Eigen','3.4.0'),
+    ('MOAB','5.5.0'),
+    ('double-down','1.1.0')
+]
+
+easyblock = 'CMakeMake'
+
+_moab_dir = '$EBROOTMOAB'
+_double_down_dir = '$EBROOTDOUBLEMINDOWN' + '/lib/cmake/dd'
+configopts = f"-DMOAB_DIR={_moab_dir} -DBUILDTALLY=ON -DDOUBLE_DOWN=ON -DBUILD_STATIC_EXE=OFF -DBUILD_STATIC_LIBS=OFF -DDOUBLE_DOWN_DIR={_double_down_dir} -DBUILD_UWUW=OFF"
