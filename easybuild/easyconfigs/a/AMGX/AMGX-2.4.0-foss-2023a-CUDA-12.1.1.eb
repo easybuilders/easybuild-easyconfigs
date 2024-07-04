@@ -1,0 +1,114 @@
+easyblock = 'CMakeMake'
+
+name = 'AMGX'
+version = '2.4.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/NVIDIA/AMGX'
+
+description = """Distributed multigrid linear solver library on GPU"""
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'openmp': True}
+
+github_account = 'NVIDIA'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'AMGX-%(version)s_external-thrust.patch',
+    'AMGX-%(version)s_fix-openmp-linking.patch',
+]
+checksums = [
+    {'v2.4.0.tar.gz': 'b030b8c2e58c4c9987444e5d28fd61e1c5dcd65d484a290d6a18ae0bc5c0e9db'},
+    {'AMGX-2.4.0_external-thrust.patch': '90e4be09615a26bd7ebce68ced63d9d3b52141f7b480e8cedb17b05003656e16'},
+    {'AMGX-2.4.0_fix-openmp-linking.patch': '10046d5d9fff48cb4902797525d43963855c4834f262bdc3c341bbc2cb1f6f76'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('UCX-CUDA', '1.14.1', versionsuffix),
+    ('magma', '2.7.2', versionsuffix),
+    ('CCCL', '2.3.0', versionsuffix),
+]
+
+cuda_compute_capabilities = ['7.0', '8.0', '9.0']  # AMGX defaults for CUDA 12
+
+configopts = '-DCUDA_ARCH="%(cuda_cc_cmake)s" '
+
+# Can't run all tests (55 failing); many fail due to mixed precision not being supported
+# some fail due to missing external data files, many unknown issues
+# All tests can be attempted with "amgx_tests_launcher --all"
+local_tests = [
+    'AggregatesCoarseGeneratorTest',
+    'AggregatesCoarseningFactor',
+    'AggregatesDeterminism',
+    'AggregatesDiagonalOutside',
+    'AmgLevelsReuse',
+    'CAPIFailure',
+    'CAPIVersionCheck',
+    'ClassicalStrengthAffinityTest',
+    'ClassicalStrengthTest',
+    'ConfigStringParsing',
+    'CsrMultiplyTests_Poisson27_100_100',
+    'CsrMultiplyTests_Poisson27_10_10',
+    'CsrMultiplyTests_Poisson5_100_100',
+    'CsrMultiplyTests_Poisson5_10_1',
+    'CsrMultiplyTests_Poisson7_100_100',
+    'CsrMultiplyTests_Poisson7_10_10',
+    'CsrMultiplyTests_Poisson9_100_100',
+    'CsrMultiplyTests_Poisson9_10_10',
+    'CsrSparsityILU1Tests_Poisson27_100_100',
+    'CsrSparsityILU1Tests_Poisson27_10_10',
+    'CsrSparsityILU1Tests_Poisson5_100_100',
+    'CsrSparsityILU1Tests_Poisson5_10_10',
+    'CsrSparsityILU1Tests_Poisson7_100_100',
+    'CsrSparsityILU1Tests_Poisson7_10_10',
+    'CsrSparsityILU1Tests_Poisson9_100_100',
+    'CsrSparsityILU1Tests_Poisson9_10_10',
+    'CsrSparsityTests_Poisson27_100_100',
+    'CsrSparsityTests_Poisson27_10_10',
+    'CsrSparsityTests_Poisson5_100_100',
+    'CsrSparsityTests_Poisson5_10_10',
+    'CsrSparsityTests_Poisson7_100_100',
+    'CsrSparsityTests_Poisson7_10_10',
+    'CsrSparsityTests_Poisson9_100_100',
+    'CsrSparsityTests_Poisson9_10_10',
+    'DenseLUSolverTest_Factorization_Id_256',
+    'DenseLUSolverTest_Factorization_Id_32',
+    'DenseLUSolverTest_Solve_Id_256',
+    'DenseLUSolverTest_Solve_Id_32',
+    'DenseLUSolverTest_Solve_Poisson3D',
+    'FactoriesTest',
+    'FGMRESConvergencePoisson',
+    'GenericSpMVTest',
+    'IDRConvergencePoisson',
+    'IDRmsyncConvergencePoisson',
+    'LargeMatricesSupport',
+    'LowDegDeterminism',
+    'MatrixTests',
+    'MatrixVectorMultiplyTests',
+    'MinMaxColoringTest',
+    'Nested_AMG_equivalence',
+    'NestedSolvers',
+    'NormTests',
+    'ObjectDestructionSequence',
+    'PermuteTests',
+    'RandomMatrix',
+    'SmootherBlockPoissonTest',
+    'TemplateConfigTest',
+    'TemplateTest',
+    'truncateCountTest',
+    'VectorTests',
+]
+
+runtest = "amgx_tests_launcher && src/amgx_tests_launcher " + ' '.join(local_tests)
+
+sanity_check_paths = {
+    'files': ['include/amgx_c.h', 'lib/libamgx.a', 'lib/libamgxsh.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

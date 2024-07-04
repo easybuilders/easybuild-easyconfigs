@@ -1,0 +1,85 @@
+easyblock = 'PythonBundle'
+
+name = 'CuPy'
+version = '13.0.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://cupy.dev'
+description = "CuPy is an open-source array library accelerated with NVIDIA CUDA."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('hypothesis', '6.82.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('cuDNN', '8.9.2.26', versionsuffix, SYSTEM),
+    ('NCCL', '2.18.3', versionsuffix),
+    ('cuTENSOR', '2.0.1.2', versionsuffix, SYSTEM),
+    ('cuSPARSELt', '0.6.0.6', versionsuffix, SYSTEM),
+]
+
+use_pip = True
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+_skip_tests = [
+    '--ignore tests/example_tests',  # examples are not included
+    '--ignore tests/cupy_tests/fft_tests/test_fft.py',  # CUFFT_INTERNAL_ERROR
+    # Sorting broken on at least T4 (this is troubling):
+    '--deselect tests/cupy_tests/'
+    'sorting_tests/test_sort.py::TestArgsort_param_0_{external=False}::test_argsort_one_dim',
+    '--deselect tests/cupy_tests/'
+    'sorting_tests/test_sort.py::TestArgsort_param_1_{external=True}::test_argsort_one_dim',
+    # https://github.com/cupy/cupy/issues/8255:
+    '--deselect tests/cupyx_tests/'
+    'scipy_tests/signal_tests/test_filter_design.py::TestSOSFreqz::test_sos_freqz_against_mp',
+    # Floating point precision issues:
+    '--deselect tests/cupy_tests/core_tests/fusion_tests/test_reduction.py::TestFusion',
+    '--deselect tests/cupyx_tests/'
+    'scipy_tests/signal_tests/test_filter_design.py::TestSOSFreqz::test_sosfrez_design_cheb2_2',
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_fir_filter_design.py::TestFirls::test_firls',
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_iir_filter_design.py::TestButtord::test_ellip_butter',
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_iir_filter_design.py::TestEllipord::test_bandstop',
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_iir_filter_design.py::TestEllipord::test_fs_param',
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_iir_filter_design.py::TestEllipord::test_ellip_butter',
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_ltisys.py::Test_bode::test_from_state_space',
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_ltisys.py::TestPlacePoles::test_real_2',
+    '--deselect tests/cupyx_tests/'
+    'scipy_tests/signal_tests/test_polyutils.py::TestPartialFractionExpansion::test_residuez_general',
+]
+
+_parallel_tests = 4  # tests can require a lot of VRAM
+
+exts_list = [
+    ('fastrlock', '0.8.2', {
+        'checksums': ['644ec9215cf9c4df8028d8511379a15d9c1af3e16d80e47f1b6fdc6ba118356a'],
+    }),
+    ('cupy', version, {
+        'preinstallopts': 'CUPY_NUM_BUILD_JOBS=%(parallel)s EB_CCC="%(cuda_cc_cmake)s" ',
+        'patches': [
+            'cupy-%(version)s_cusparselt_0.6.0.patch',
+            'cupy-%(version)s_eb_ccc.patch',
+        ],
+        'runtest': 'export CUPY_TEST_GPU_LIMIT=1 CUPY_CACHE_DIR="%%(builddir)s" && '
+                   'pytest -n %s tests -k "not slow" ' % _parallel_tests + ' '.join(_skip_tests),
+        'testinstall': True,
+        'checksums': [
+            {'cupy-13.0.0.tar.gz': '2f04e7857f692a713360dc9c3b06709806ab8404fca39b5af9721c04a2979aae'},
+            {'cupy-13.0.0_cusparselt_0.6.0.patch': '09cb12d26e78079c50b06f17002bf54c66e5e4743b917c5a218d3fe90124d499'},
+            {'cupy-13.0.0_eb_ccc.patch': 'bfe8b46344759f58491f55418bd9c856d6f72d681ee5fef12820009f808d2db1'},
+        ],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import cupy'",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'

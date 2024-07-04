@@ -1,0 +1,82 @@
+easyblock = 'PythonBundle'
+
+name = 'matplotlib'
+version = '3.7.2'
+
+homepage = 'https://matplotlib.org'
+description = """matplotlib is a python 2D plotting library which produces publication quality figures in a variety of
+ hardcopy formats and interactive environments across platforms. matplotlib can be used in python scripts, the python
+ and ipython shell, web application servers, and six graphical user interface toolkits."""
+
+toolchain = {'name': 'iimkl', 'version': '2023a'}
+
+builddependencies = [
+    ('pkgconf', '1.9.5'),
+    ('cppy', '1.2.1'),
+    ('meson-python', '0.13.2'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('libpng', '1.6.39'),
+    ('freetype', '2.13.0'),
+    ('Tkinter', '%(pyver)s'),
+    ('Pillow', '10.0.0'),
+    ('Qhull', '2020.2'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+# avoid that matplotlib downloads and builds its own copies of freetype and qhull
+_fix_setup = "sed -e 's/#system_freetype = False/system_freetype = True/g' "
+_fix_setup += "-e 's/#system_qhull = False/system_qhull = True/g' mplsetup.cfg.template >mplsetup.cfg && "
+
+_include_path = "export CPLUS_INCLUDE_PATH=$EBROOTFREETYPE/include/freetype2:${CPLUS_INCLUDE_PATH} && "
+
+local_preinstallopts = "sed -e 's/#system_freetype = False/system_freetype = True/g' -e "
+local_preinstallopts += "'s/#system_qhull = False/system_qhull = True/g' mplsetup.cfg.template >mplsetup.cfg"
+local_preinstallopts += "&& export CPLUS_INCLUDE_PATH=$EBROOTFREETYPE/include/freetype2:${CPLUS_INCLUDE_PATH} && "
+
+exts_list = [
+    ('fonttools', '4.42.0', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'checksums': ['614b1283dca88effd20ee48160518e6de275ce9b5456a3134d5f235523fc5065'],
+        'modulename': 'fontTools',
+    }),
+    ('Cycler', '0.11.0', {
+        'source_tmpl': 'cycler-%(version)s.tar.gz',
+        'checksums': ['9c87405839a19696e837b3b818fed3f5f69f16f1eec1a1ad77e043dcea9c772f'],
+        'modulename': 'cycler',
+    }),
+    ('kiwisolver', '1.4.4', {
+        'patches': ['kiwisolver-1.4.4-fix_version.patch'],
+        'checksums': [
+            {'kiwisolver-1.4.4.tar.gz': 'd41997519fcba4a1e46eb4a2fe31bc12f0ff957b2b81bac28db24744f333e955'},
+            {'kiwisolver-1.4.4-fix_version.patch': '6753afbb3a88856493fcfa0b33989f35742f57bfd41ff3b7f71a98797e1bfbd0'},
+        ],
+    }),
+    ('contourpy', '1.1.0', {
+        'checksums': ['e53046c3863828d21d531cc3b53786e6580eb1ba02477e8681009b6aa0870b21'],
+    }),
+    (name, version, {
+        'patches': ['matplotlib-3.7.2-fix_setup.patch'],
+        'checksums': [
+            {'matplotlib-3.7.2.tar.gz': 'a8cdb91dddb04436bd2f098b8fdf4b81352e68cf4d2c6756fcc414791076569b'},
+            {'matplotlib-3.7.2-fix_setup.patch': '70b38f9fc9f26c67adc38440f5420d7c50d9438353ad08740cbb42a79358fb4f'},
+        ],
+        'preinstallopts': local_preinstallopts,
+    }),
+]
+
+sanity_check_commands = [
+    """python -c 'import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot' """,
+    "python -c 'from mpl_toolkits.mplot3d import Axes3D'",
+]
+
+# use non-interactive plotting backend as default
+# see https://matplotlib.org/tutorials/introductory/usage.html#what-is-a-backend
+modextravars = {'MPLBACKEND': 'Agg'}
+
+moduleclass = 'vis'

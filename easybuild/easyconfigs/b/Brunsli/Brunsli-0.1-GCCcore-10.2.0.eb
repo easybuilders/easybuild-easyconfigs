@@ -27,7 +27,10 @@ dependencies = [
 # skip use of third_party directory, since we provide Brotli via a proper dependency
 preconfigopts = "sed -i 's/add_subdirectory(third_party)//g' ../brunsli-%(version)s/CMakeLists.txt && "
 
-configopts = '-DCMAKE_CXX_FLAGS="$CXXFLAGS -lbrotlienc -lbrotlidec -lbrotlicommon"'
+configopts = '-DCMAKE_CXX_FLAGS="$CXXFLAGS -lbrotlienc -lbrotlidec -lbrotlicommon" '
+
+# make sure that libraries end up in <prefix>/lib (not lib64)
+configopts += "-DCMAKE_INSTALL_LIBDIR=lib "
 
 buildopts = "BROTLI_DIR=$EBROOTBROTLI BROTLI_INCLUDE=$EBROOTBROTLI/include"
 
@@ -35,8 +38,8 @@ buildopts = "BROTLI_DIR=$EBROOTBROTLI BROTLI_INCLUDE=$EBROOTBROTLI/include"
 postinstallcmds = [
     "mkdir %(installdir)s/bin",
     "cp dbrunsli %(installdir)s/bin/",
-    "cp libbrunsli*.a %(installdir)s/lib*/",
-    "cp libbrunsli*.%s %%(installdir)s/lib*/" % SHLIB_EXT,
+    "cp libbrunsli*.a %(installdir)s/lib/",
+    "cp libbrunsli*.%s %%(installdir)s/lib/" % SHLIB_EXT,
 ]
 
 sanity_check_paths = {

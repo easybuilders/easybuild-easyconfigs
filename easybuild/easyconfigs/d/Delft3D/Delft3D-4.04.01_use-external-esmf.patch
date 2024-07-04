@@ -1,0 +1,110 @@
+Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+Avoid installing the bundled ESMF, since this is compiled for CentOS 7 (and also fails
+rpath sanity checks)
+diff -Nru trunk.orig/src/configure.ac trunk/src/configure.ac
+--- trunk.orig/src/configure.ac	2024-02-20 14:35:26.821778739 +0000
++++ trunk/src/configure.ac	2024-02-20 14:43:47.108090829 +0000
+@@ -607,10 +607,6 @@
+ plugins_lgpl/plugin_delftflow_traform/src/Makefile
+ scripts_lgpl/linux/Makefile
+ scripts_lgpl/Makefile
+-third_party_open/esmf/lnx64/bin/Makefile
+-third_party_open/esmf/lnx64/Makefile
+-third_party_open/esmf/lnx64/scripts/Makefile
+-third_party_open/esmf/Makefile
+ third_party_open/Makefile
+ third_party_open/md5/Makefile
+ third_party_open/md5/md5digest/Makefile
+diff -Nru trunk.orig/src/third_party_open/esmf/lnx64/scripts/ESMF_RegridWeightGen_in_Delft3D-WAVE.sh trunk/src/third_party_open/esmf/lnx64/scripts/ESMF_RegridWeightGen_in_Delft3D-WAVE.sh
+--- trunk.orig/src/third_party_open/esmf/lnx64/scripts/ESMF_RegridWeightGen_in_Delft3D-WAVE.sh	2024-02-20 14:35:27.449776542 +0000
++++ trunk/src/third_party_open/esmf/lnx64/scripts/ESMF_RegridWeightGen_in_Delft3D-WAVE.sh	2024-02-21 11:53:47.816278292 +0000
+@@ -52,24 +52,24 @@
+ scriptdirname=`readlink \-f \$0`
+ scriptdir=`dirname $scriptdirname`
+ D3D_HOME=$scriptdir/..
+-regridexec=$D3D_HOME/bin/ESMF_RegridWeightGen
++regridexec=$(which ESMF_RegridWeightGen)
+ # ESMF_regrid is build with old compilers etc.
+ # share/esmf optionally contains some library-versions especially for running this version of ESMF_regrid,
+ # both for RedHat 6.* and 7.*
+ 
+-if [ -f "/etc/redhat-release" ]; then
+-  grepOS=`cat /etc/redhat-release | grep -i "release 6"`
+-  if [ "$grepOS" != "" ]; then
+-    echo "RH 6: Using RH 6 libraries" >>esmf_sh.log
+-    export LD_LIBRARY_PATH=$D3D_HOME/share/delft3d/esmf/lnx64/bin:$D3D_HOME/lib:$LD_LIBRARY_PATH 
+-  else
+-    echo "using RH 7 libraries" >>esmf_sh.log
+-    export LD_LIBRARY_PATH=$D3D_HOME/share/delft3d/esmf/lnx64/bin_COS7:$D3D_HOME/lib:$LD_LIBRARY_PATH 
+-  fi
+-else
+-  echo "ERROR: ESMF_RegridWeightGen_in_Delft3D-WAVE.sh only implemented for CentOS 6 and 7."
+-  exit
+-fi
++# if [ -f "/etc/redhat-release" ]; then
++#   grepOS=`cat /etc/redhat-release | grep -i "release 6"`
++#   if [ "$grepOS" != "" ]; then
++#     echo "RH 6: Using RH 6 libraries" >>esmf_sh.log
++#     export LD_LIBRARY_PATH=$D3D_HOME/share/delft3d/esmf/lnx64/bin:$D3D_HOME/lib:$LD_LIBRARY_PATH 
++#   else
++#     echo "using RH 7 libraries" >>esmf_sh.log
++#     export LD_LIBRARY_PATH=$D3D_HOME/share/delft3d/esmf/lnx64/bin_COS7:$D3D_HOME/lib:$LD_LIBRARY_PATH 
++#   fi
++# else
++#   echo "ERROR: ESMF_RegridWeightGen_in_Delft3D-WAVE.sh only implemented for CentOS 6 and 7."
++#   exit
++# fi
+ 
+ 
+ echo Executing batchscript "ESMF_RegridWeightGen_in_Delft3D-WAVE.sh" for Delft3D-WAVE >>esmf_sh.log
+diff -Nru trunk.orig/src/third_party_open/Makefile.am trunk/src/third_party_open/Makefile.am
+--- trunk.orig/src/third_party_open/Makefile.am	2024-02-20 14:35:27.045777956 +0000
++++ trunk/src/third_party_open/Makefile.am	2024-02-20 14:43:31.552143270 +0000
+@@ -19,7 +19,6 @@
+ endif
+ 
+ SUBDIRS = \
+-    esmf \
+     triangle \
+     version_number \
+     libsigwatch \
+@@ -28,39 +27,3 @@
+     kdtree2 \
+     md5 \
+     $(MAYBE_FORTRANGIS)
+-nobase_dist_pkgdata_DATA = \
+-    esmf/lnx64/bin/libcilkrts.so.5 \
+-    esmf/lnx64/bin/libdl.so.2 \
+-    esmf/lnx64/bin/libesmf.so \
+-    esmf/lnx64/bin/libgcc_s.so.1 \
+-    esmf/lnx64/bin/libhdf5.so.8 \
+-    esmf/lnx64/bin/libhdf5_hl.so.8 \
+-    esmf/lnx64/bin/libifcore.so.5 \
+-    esmf/lnx64/bin/libifport.so.5 \
+-    esmf/lnx64/bin/libimf.so \
+-    esmf/lnx64/bin/libintlc.so.5 \
+-    esmf/lnx64/bin/libiomp5.so \
+-    esmf/lnx64/bin/libirc.so \
+-    esmf/lnx64/bin/libirng.so \
+-    esmf/lnx64/bin/libm.so.6 \
+-    esmf/lnx64/bin/libnetcdf.so.7 \
+-    esmf/lnx64/bin/libnetcdff.so.6 \
+-    esmf/lnx64/bin/librt.so.1 \
+-    esmf/lnx64/bin/libsvml.so \
+-    esmf/lnx64/bin/libz.so.1 \
+-    esmf/lnx64/bin_COS7/libcilkrts.so.5 \
+-    esmf/lnx64/bin_COS7/libesmf.so \
+-    esmf/lnx64/bin_COS7/libhdf5.so.200 \
+-    esmf/lnx64/bin_COS7/libhdf5_hl.so.200 \
+-    esmf/lnx64/bin_COS7/libifcoremt.so.5 \
+-    esmf/lnx64/bin_COS7/libifport.so.5 \
+-    esmf/lnx64/bin_COS7/libimf.so \
+-    esmf/lnx64/bin_COS7/libintlc.so.5 \
+-    esmf/lnx64/bin_COS7/libiomp5.so \
+-    esmf/lnx64/bin_COS7/libirc.so \
+-    esmf/lnx64/bin_COS7/libirng.so \
+-    esmf/lnx64/bin_COS7/libnetcdf.so.7 \
+-    esmf/lnx64/bin_COS7/libnetcdf.so.18 \
+-    esmf/lnx64/bin_COS7/libnetcdff.so.6 \
+-    esmf/lnx64/bin_COS7/libsvml.so
+-

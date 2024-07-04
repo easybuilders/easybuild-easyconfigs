@@ -1,0 +1,42 @@
+easyblock = 'MakeCp'
+
+name = 'cliquer'
+version = '1.21'
+
+homepage = 'https://users.aalto.fi/~pat/cliquer.html'
+description = """Cliquer is a set of C routines for finding cliques in an arbitrary weighted graph.
+ It uses an exact branch-and-bound algorithm developed by Patric Ostergard. It is designed with
+ the aim of being efficient while still being flexible and easy to use."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://users.aalto.fi/~pat/cliquer/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['ff306d27eda82383c0257065e3ffab028415ac9af73bccfdd9c2405b797ed1f1']
+
+builddependencies = [('binutils', '2.38')]
+
+local_sharedlib = 'libcliquer.%s' % SHLIB_EXT
+
+prebuildopts = 'sed -i "s/^CFLAGS=/CFLAGS=$CFLAGS /" Makefile && '
+
+buildopts = ' && $CC -shared $CFLAGS $LDFLAGS -o %s *.o' % local_sharedlib
+
+local_headers = ['cliquer', 'set', 'graph', 'misc', 'reorder', 'cliquerconf']
+
+files_to_copy = [
+    (['cl'], 'bin'),
+    ([local_sharedlib], 'lib'),
+    (['%s.h' % h for h in local_headers], 'include/cliquer'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cl', 'lib/%s' % local_sharedlib] +
+             ['include/cliquer/%s.h' % h for h in local_headers],
+    'dirs': [],
+}
+
+sanity_check_commands = ["cl --help"]
+
+moduleclass = 'math'

@@ -1,0 +1,52 @@
+easyblock = 'PythonPackage'
+
+name = 'libxml2-python'
+version = '2.11.4'
+
+homepage = 'http://xmlsoft.org/'
+description = """
+ Libxml2 is the XML C parser and toolchain developed for the Gnome project
+ (but usable outside of the Gnome platform). This is the Python binding."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://download.gnome.org/sources/libxml2/%(version_major_minor)s/']
+sources = ['libxml2-%(version)s.tar.xz']
+patches = ['%(name)s-2.11.4_fix-hardcoded-paths.patch']
+checksums = [
+    {'libxml2-2.11.4.tar.xz': '737e1d7f8ab3f139729ca13a2494fd17bf30ddb4b7a427cf336252cab57f57f7'},
+    {'libxml2-python-2.11.4_fix-hardcoded-paths.patch':
+     'b8069b149ab7e0e3a96ca1462c07d0bf1d7c7434eb434eb1b0ec824074b70f6a'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('XZ', '5.4.2'),
+    ('Python', '3.11.3'),
+    ('libxml2', version),
+    ('libiconv', '1.17'),
+    ('ICU', '73.2'),
+]
+
+start_dir = 'python'
+
+# need to run a configure first, since there is only a setup.py.in
+preinstallopts = 'cd .. && ./configure --prefix=%(installdir)s && cd python && '
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+options = {'modulename': 'libxml2'}
+
+moduleclass = 'lib'

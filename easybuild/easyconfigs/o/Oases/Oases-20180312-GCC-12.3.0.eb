@@ -1,0 +1,42 @@
+easyblock = 'MakeCp'
+
+name = 'Oases'
+version = '20180312'
+local_commit = '1b4c14c'
+
+homepage = 'http://www.ebi.ac.uk/~zerbino/oases/'
+description = """Oases is a de novo transcriptome assembler designed to produce transcripts from
+ short read sequencing technologies, such as Illumina, SOLiD, or 454 in the absence of any genomic assembly."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+# This is taken from the Oases repo to avoid setting git_config in sources
+local_velvet_commit = '9adf09f7ded7fedaf6b0e5e4edf9f46602e263d3'
+
+source_urls = [
+    'https://github.com/dzerbino/%(namelower)s/archive/',
+    'https://github.com/dzerbino/velvet/archive/',
+]
+sources = [
+    {'download_filename': '%s.tar.gz' % local_commit, 'filename': '%(namelower)s-%(version)s.tar.gz'},
+    {'download_filename': '%s.tar.gz' % local_velvet_commit, 'filename': 'velvet-20140815.tar.gz'}
+]
+checksums = [
+    {'oases-20180312.tar.gz': 'f526b84e9fa3e5f89b728f4a71b8bd23b336b8a6cd83a2d88414710592ec5e4e'},
+    {'velvet-20140815.tar.gz': '8e952e3a4bf2ffae586a64e5e97029c9fdd53b5e1991106ef832d73e499b163b'},
+]
+
+# listed make targets exclude 'doc' on purpose
+buildopts = "VELVET_DIR=../velvet-%s cleanobj velvet oases" % local_velvet_commit
+parallel = 1
+
+files_to_copy = [(['oases'], 'bin'), 'data', 'scripts', 'src', 'doc', 'LICENSE.txt', 'README.md']
+
+sanity_check_paths = {
+    'files': ['bin/oases', 'LICENSE.txt', 'README.md'],
+    'dirs': ['data', 'scripts', 'src', 'doc']
+}
+
+sanity_check_commands = ["oases --version"]
+
+moduleclass = 'bio'
