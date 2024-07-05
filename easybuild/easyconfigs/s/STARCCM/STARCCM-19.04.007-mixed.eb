@@ -17,8 +17,12 @@ sources = ['STAR-CCM+%(version)s_01_linux-x86_64.tar.gz']
 checksums = ['073ddba3c2fe8cdb2c8941ab4afeb4a245eea3289b6ba8032caa993a82c72e08']
 
 postinstallcmds = [
-  # Run setrpaths.sh in all directories 
-  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+  # Run setrpaths.sh in all directories
+ "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+  # Redirect hard coded /lib64/libc.so.6 to GENTOO
+ "cp -a %(installdir)s/STAR-CCM+19.04.007/star/bin/compare_glibc{,-orig};\
+  sed -i \"s|'\/lib64\/libc.so.6'|'\$EBVERSIONGENTOO\/lib64\/libc.so.6'|g\" %(installdir)s/STAR-CCM+19.04.007/star/bin/compare_glibc;\
+  sed -i \"s|(\/lib64\/libc.so.6)|(\$EBVERSIONGENTOO\/lib64\/libc.so.6)|g\" %(installdir)s/STAR-CCM+19.04.007/star/bin/compare_glibc;"
 ]
 
 moduleclass = 'tools'
