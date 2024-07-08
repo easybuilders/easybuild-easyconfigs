@@ -1079,8 +1079,8 @@ class EasyConfigTest(TestCase):
 
         whitelist_pip_check = [
             r'Mako-1.0.4.*Python-2.7.12.*',
-            # no pip 9.x or newer for configparser easyconfigs using a 2016a or 2016b toolchain
-            r'configparser-3.5.0.*-2016[ab].*',
+            # no pip 9.x or newer for easyconfigs using a 2016a or 2016b toolchain
+            r'.*-2016[ab]-Python-.*',
             # mympirun is installed with system Python, pip may not be installed for system Python
             r'vsc-mympirun.*',
         ]
@@ -1212,8 +1212,9 @@ class EasyConfigTest(TestCase):
         # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PerlBundle,
         #           PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage', 'CrayToolchain',
-                     'GoPackage', 'JuliaBundle', 'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
+        whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage',
+                     'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'ModuleRC',
+                     'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
