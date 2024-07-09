@@ -1,0 +1,56 @@
+easyblock = 'ConfigureMake'
+
+name = 'CAMPARI'
+version = '5.0'
+_date = '04192024'
+
+homepage = 'http://campari.sourceforge.net/V5/index.html'
+description = """
+CAMPARI is a joint package for performing and analyzing molecular simulations, in particular of systems of biological
+relevance. It focuses on a wide availability of algorithms for (advanced) sampling and is capable of combining Monte
+Carlo and molecular dynamics in seamless fashion."""
+
+toolchain = {'name': 'iofbf', 'version': '2023a'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['campari_v%s_%s.zip' % (version.split('.')[0], _date)]
+checksums = ['d1244f5e89b0134162470ef5a9a04d671bebc677981372b780f9c4e6c7365fe3']
+
+dependencies = [
+    ('netCDF-Fortran', '4.6.1', '-mpi'),
+]
+
+start_dir = 'source'
+
+# remove hardcoded paths in configure script
+preconfigopts = 'sed -i "s|/usr/share|$EBROOTGENTOO/share|" configure &&'
+
+# ignore default compiler settings and use EB build environment
+configopts = ' '.join([
+    "--enable-compiler=ignore",
+    '--with-trailing-user-fcflags="$FCFLAGS"' ,
+    "--enable-mpi=auto",
+    "--with-python3=no",
+    '--with-blas=$EBROOTFLEXIBLAS/lib',
+    '--with-lapack=$EBROOTFLEXIBLAS/lib',
+    'XDRCFLAGS="$XDRCFLAGS -I$EBROOTGENTOO/include/tirpc/"',
+    'LIBS="$LIBS $LIBFFT $LIBBLAS $LIBLAPACK -ltirpc"',
+])
+
+buildopts = 'all'
+
+maxparallel = 10
+
+postinstallcmds = ['cp -a %(builddir)s/campari/{data,doc,examples,params,tools,LICENSE} %(installdir)s/']
+
+_binaries = ['campari', 'campari_mpi', 'campari_mpi_threads', 'campari_threads', 'camp_ncminer', 'camp_ncminer_threads']
+_libraries = ['lcampari.a', 'lcampari_mpi.a', 'lcampari_mpi_threads.a', 'lcampari_threads.a', 'libxdrf.a']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _binaries] + ['lib/%s' % x for x in _libraries],
+    'dirs': [],
+}
+
+sanity_check_commands = ['campari | grep "USAGE: CAMPARI"']
+
+moduleclass = 'bio'
