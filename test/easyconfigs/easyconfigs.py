@@ -664,7 +664,7 @@ class EasyConfigTest(TestCase):
             'VisPy': [('0.14.1;', ['napari-0.4.19.post1-'])],
             'VTK': [
                 # Visit-3.4.1 requires VTK 9.2.x
-                (r'3\.2\.0-20180606', [r'Visit-3\.4\.1']),
+                (r'9\.2\.0-20180606', [r'Visit-3\.4\.1']),
             ],
             # WPS 3.9.1 requires WRF 3.9.1.1
             'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
