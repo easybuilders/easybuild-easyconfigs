@@ -1,0 +1,76 @@
+easyblock = 'Tarball'
+
+name = 'cuQuantum'
+version = '24.03.0.4'
+
+homepage = 'https://developer.nvidia.com/cuquantum-sdk'
+description = """NVIDIA cuQuantum SDK is a high-performance library for
+quantum information science and beyond"""
+
+toolchain = {'name': 'gcccorecuda', 'version': '2023a'}
+toolchainopts = {'optarch': 'False'}
+local_cuda_major = '12'
+
+# By downloading, you accept the cuQuantum Software License Agreement
+# (https://developer.nvidia.com/cuquantum-license-agreement)
+# accept_eula = True
+source_urls = ['https://developer.download.nvidia.com/compute/cuquantum/redist/cuquantum/linux-x86_64/']
+sources = ['cuquantum-linux-x86_64-%%(version)s_cuda%s-archive.tar.xz' % local_cuda_major]
+checksums = ['5926c71d6f816936b29d9220ebd8ba800abfeecf7b58b0ad06c33608acf511cc']
+
+builddependencies = {
+    ('cuTENSOR', '2.0.1.2', '', ('CUDAcore', '12.2.2')),
+    ('Cython', '0.29.36'),
+    ('python-build-bundle', '2024a'),
+    ('pytest', '8.2.2'),
+}
+
+multi_deps = {'Python': ['3.10', '3.11']}
+multi_deps_extensions_only = True
+
+# Does not support P100s
+cuda_compute_capabilities = ['7.0', '7.5', '8.0', '8.6', '9.0']
+
+installopts = ' && '.join([
+    '.',
+    '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --any_interpreter --add_path $EBROOTCUDACORE/lib',
+    '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --any_interpreter --add_path $EBROOTCUTENSOR/lib',
+    #cupy is required for cuquantum python extension
+    'pip install cupy==12.2.0 --no-index --prefix=%(installdir)s',
+])
+
+local_extoptions = ' && '.join([
+    'export CUQUANTUM_ROOT=$EBROOTCUQUANTUM',
+    'export CUTENSOR_ROOT=$EBROOTCUTENSOR',
+    'cd python',
+    '',  #for trailing character
+])
+
+exts_defaultclass = "PythonPackage"
+
+exts_list = [
+    ('cuquantum', '24.03.0', {
+        'prebuildopts': local_extoptions,
+        'preinstallopts': local_extoptions,
+        'source_urls': ['https://github.com/NVIDIA/cuQuantum/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['77350d0d6e3249df1c67bfdc7df8802061ab1061177ae30a26655c2ef1d895de'],
+        'use_pip': True,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['include/custatevec.h', 'lib/libcutensornet.so'],
+    'dirs': ['include', 'lib'],
+}
+
+sanity_check_commands = [
+    'python -c "from cuquantum import custatevec"',
+    'python -c "from cuquantum import cutensornet"',
+    'python -c "from cuquantum import contract"',
+    'python -c "from cuquantum import Network"',
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'numlib'
