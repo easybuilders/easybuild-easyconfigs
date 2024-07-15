@@ -1,0 +1,108 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '4.6.1'
+
+homepage = 'https://github.com/reframe-hpc/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('libxslt', '1.1.38'),
+    ('libxml2', '2.11.4'),
+]
+
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+req_py_majver = 3
+req_py_minver = 6
+
+use_pip = True
+
+exts_list = [
+    ('pip', '21.3.1', {
+        'use_pip': False,
+        'checksums': ['fd11ba3d0fdb4c07fbc5ecbba0b1b719809420f25038f8ee3cd913d3faa3033a'],
+    }),
+    ('wheel', '0.37.1', {
+        'source_tmpl': 'wheel-%(version)s-py2.py3-none-any.whl',
+        'checksums': ['4bdcd7d840138086126cd09254dc6195fb4fc6f01c050a1d7236f2630db1d22a'],
+    }),
+    ('setuptools', '59.6.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/setuptools/'],
+        'checksums': ['22c7348c6d2976a52632c67f7ab0cdf40147db7789f9aed18734643fe9cf3373'],
+    }),
+    ('argcomplete', '3.0.0', {
+        'source_tmpl': 'argcomplete-%(version)s-py3-none-any.whl',
+        'checksums': ['306d687ca620ba2f505e2e5a3d12448b5735560d76e8b1ff11571168296c96be'],
+    }),
+    ('archspec', '0.2.2', {
+        'source_tmpl': 'archspec-%(version)s-py3-none-any.whl',
+        'checksums': ['1054b599abb66f4d141c7a278dd34beb5766b1c84c7595aab3907a5bf55ee258'],
+    }),
+    ('semver', '2.9.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/semver/'],
+        'checksums': ['ed1edeaa0c27f68feb74f09f715077fd07b728446dc2bb7fc470fc0f737873a0'],
+    }),
+    ('lxml', '5.0.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/l/lxml/'],
+        'checksums': ['4432a1d89a9b340bc6bd1201aef3ba03112f151d3f340d9218247dc0c85028ab'],
+    }),
+    ('PyNaCl', '1.5.0', {
+        'modulename': 'nacl',
+        'source_urls': ['https://pypi.python.org/packages/source/p/PyNaCl/'],
+        'checksums': ['8ac7448f09ab85811607bdd21ec2464495ac8b7c66d146bf545b0f08fb9220ba'],
+    }),
+    ('PyYAML', '6.0.1', {
+        'modulename': 'yaml',
+        'source_urls': ['https://pypi.python.org/packages/source/p/PyYAML/'],
+        'checksums': ['bfdf460b1736c775f2ba9f6a92bca30bc2095067b8a9d77876d1fad6cc3b4a43'],
+    }),
+    ('reframe', version, {
+        'download_dep_fail': False,
+        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && "
+        "sed -i 's@PyYAML==6.0@PyYAML==6.0.1@' requirements.txt && "
+        "./bootstrap.sh +docs +pygelf && "
+        "cp -r external %(installdir)s && "
+        "export PYTHONPATH=%(builddir)s/reframe/reframe-%(version)s/external/x86_64:$PYTHONPATH && ",
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/reframe-hpc/reframe/archive/'],
+        'checksums': ['058b05c430af26d2958851af0da32bac0f4bff1af7d78ce6a132c32bbe40ec5c'],
+    }),
+]
+
+postinstallcmds = [
+    "cp -a tools %(installdir)s",
+    # Adding hpctestlib separately to the external directory so that it can be
+    # imported and is in the PYTHONPATH
+    "cp -a hpctestlib %(installdir)s/external/x86_64",
+    "mkdir -p %(installdir)s/share && cp -a share/completions %(installdir)s/share/completions",
+    r"sed -i 's@/\(python[0-9.]*\)$@/\1 -S@g' %(installdir)s/bin/reframe",
+]
+
+sanity_check_paths = {
+    'files': ['bin/reframe',
+              'share/completions/reframe.bash',
+              'share/completions/reframe.fish',
+              'share/completions/reframe.tcsh'],
+    'dirs': ['external', 'lib', 'tools']
+}
+
+sanity_check_commands = ['reframe -V']
+
+sanity_pip_check = True
+
+modextrapaths = {
+    # bootstrap script installs required dependencies to 'external' subdirectory
+    'PYTHONPATH': 'external',
+}
+
+moduleclass = 'devel'
