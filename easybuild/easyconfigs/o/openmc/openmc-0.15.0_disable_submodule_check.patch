@@ -1,47 +1,19 @@
+This patch disables the submodule check that occurs during the configuration 
+step. This is necessary when building from a source tarball, as opposed to a 
+git clone, and as required to include a checksums for easybuild.  
+author: Luke Labrie-Cleary
 diff --unified --recursive --text openmc-0.15.0.orig/CMakeLists.txt openmc-0.15.0.new/CMakeLists.txt
 --- openmc-0.15.0.orig/CMakeLists.txt	2024-06-22 03:28:56.000000000 +0200
-+++ openmc-0.15.0.new/CMakeLists.txt	2024-07-10 11:28:56.781174726 +0200
-@@ -25,16 +25,17 @@
- # Command line options
- #===============================================================================
- 
--option(OPENMC_USE_OPENMP      "Enable shared-memory parallelism with OpenMP"         ON)
--option(OPENMC_BUILD_TESTS     "Build tests"                                          ON)
--option(OPENMC_ENABLE_PROFILE  "Compile with profiling flags"                         OFF)
--option(OPENMC_ENABLE_COVERAGE "Compile with coverage analysis flags"                 OFF)
--option(OPENMC_USE_DAGMC       "Enable support for DAGMC (CAD) geometry"              OFF)
--option(OPENMC_USE_LIBMESH     "Enable support for libMesh unstructured mesh tallies" OFF)
--option(OPENMC_USE_MPI         "Enable MPI"                                           OFF)
--option(OPENMC_USE_MCPL        "Enable MCPL"                                          OFF)
--option(OPENMC_USE_NCRYSTAL    "Enable support for NCrystal scattering"               OFF)
--option(OPENMC_USE_UWUW        "Enable UWUW"                                          OFF)
-+option(OPENMC_USE_OPENMP       "Enable shared-memory parallelism with OpenMP"         ON)
-+option(OPENMC_BUILD_TESTS      "Build tests"                                          ON)
-+option(OPENMC_ENABLE_PROFILE   "Compile with profiling flags"                         OFF)
-+option(OPENMC_ENABLE_COVERAGE  "Compile with coverage analysis flags"                 OFF)
-+option(OPENMC_USE_DAGMC        "Enable support for DAGMC (CAD) geometry"              OFF)
-+option(OPENMC_USE_LIBMESH      "Enable support for libMesh unstructured mesh tallies" OFF)
-+option(OPENMC_USE_MPI          "Enable MPI"                                           OFF)
-+option(OPENMC_USE_MCPL         "Enable MCPL"                                          OFF)
-+option(OPENMC_USE_NCRYSTAL     "Enable support for NCrystal scattering"               OFF)
-+option(OPENMC_USE_UWUW         "Enable UWUW"                                          OFF)
-+option(OPENMC_CHECK_SUBMODULES "Check that submodules are available"                  ON)
- 
- # Warnings for deprecated options
- foreach(OLD_OPT IN ITEMS "openmp" "profile" "coverage" "dagmc" "libmesh")
-@@ -238,11 +239,12 @@
++++ openmc-0.15.0.new/CMakeLists.txt	2024-07-16 13:50:18.535439839 +0200
+@@ -237,12 +237,6 @@
+   endif()
  endif()
  
- # Check to see if submodules exist (by checking one)
+-# Check to see if submodules exist (by checking one)
 -if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vendor/pugixml/CMakeLists.txt")
 -  message(FATAL_ERROR "The git submodules were not downloaded! GIT_SUBMODULE was \
 -    turned off or failed. Please update submodules and try again.")
-+if (OPENMC_CHECK_SUBMODULES)
-+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vendor/pugixml/CMakeLists.txt")
-+    message(FATAL_ERROR "The git submodules were not downloaded! GIT_SUBMODULE was \
-+      turned off or failed. Please update submodules and try again.")
-+  endif()
- endif()
+-endif()
 -
  #===============================================================================
  # pugixml library
