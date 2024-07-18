@@ -1,5 +1,6 @@
 name = 'LLVMcore'
 version = '18.1.7'
+versionsuffix = '-minimal'
 
 local_gcc_version = '13.3.0'
 
@@ -12,7 +13,7 @@ description = """The LLVM Core libraries provide a modern source- and target-ind
  particularly easy to invent your own language (or port an existing compiler)
  to use LLVM as an optimizer and code generator."""
 
-toolchain = SYSTEM
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
 toolchainopts = {
     'pic': True,
 }
@@ -23,37 +24,36 @@ sources = [
 ]
 checksums = ['74446ab6943f686391954cbda0d77ae92e8a60c432eff437b8666e121d748ec4']
 
-local_gcc_compiler = ('GCCcore', local_gcc_version)
-
 builddependencies = [
-    ('GCCcore', local_gcc_version, '', SYSTEM),
-    ('binutils', '2.42', '', SYSTEM),
-    ('CMake', '3.29.3', '', local_gcc_compiler),
-    ('Python', '3.12.3', '', local_gcc_compiler),
-    ('lit', '18.1.7', '', local_gcc_compiler),
-    ('git', '2.45.1', '', local_gcc_compiler),
+    ('binutils', '2.42'),
+    ('Python', '3.12.3'),
+    ('CMake', '3.29.3'),
+    ('lit', '18.1.7'),
+    ('git', '2.45.1'),
 ]
 
 dependencies = [
-    ('ncurses', '6.5', '', SYSTEM),
-    ('zlib', '1.3.1', '', SYSTEM),
+    ('libxml2', '2.12.7'),
+    ('ncurses', '6.5'),
+    ('zlib', '1.3.1'),
+    ('Z3', '4.13.0'),
 ]
 
 build_shared_libs = True
 
-bootstrap = True
-full_llvm = True
-build_clang_extras = True
-build_runtimes = True
-build_lld = True
-build_lldb = True
-build_bolt = True
-build_openmp = True
-build_openmp_tools = True
-usepolly = True
+minimal = True
 
-# Need to reconcile full_llvm and python_bindings as loading python will cause a conflict between system
-# ncurses/zlib and the GCC ones
+bootstrap = False
+full_llvm = False
+build_clang_extras = False
+build_runtimes = False
+build_lld = False
+build_lldb = False
+build_bolt = False
+build_openmp = False
+build_openmp_tools = False
+usepolly = False
+
 python_bindings = False
 
 # build_targets = ['all']
@@ -61,6 +61,6 @@ python_bindings = False
 
 skip_all_tests = False
 skip_sanitizer_tests = False
-test_suite_max_failed = 350
+test_suite_max_failed = 60  # Could increase depending on build targets
 
 moduleclass = 'compiler'
