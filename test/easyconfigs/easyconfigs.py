@@ -439,6 +439,8 @@ class EasyConfigTest(TestCase):
             # filter out BLIS and libFLAME with -amd versionsuffix
             # (AMD forks, used in gobff/*-amd toolchains)
             (['BLIS', 'libFLAME'], '-amd'),
+            # filter out libcint with -pypzpx versionsuffix, used by MOLGW
+            ('libcint', '-pypzpx'),
             # filter out OpenBLAS with -int8 versionsuffix, used by GAMESS-US
             ('OpenBLAS', '-int8'),
             # filter out ScaLAPACK with -BLIS-* versionsuffix, used in goblf toolchain
