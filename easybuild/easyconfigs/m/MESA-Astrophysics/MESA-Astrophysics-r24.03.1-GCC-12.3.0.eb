@@ -1,0 +1,64 @@
+easyblock = 'Bundle'
+
+name = 'MESA-Astrophysics'
+version = 'r24.03.1'
+
+homepage = 'https://docs.mesastar.org'
+description = "MESA Modules for Experiments in Stellar Astrophysics"
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+dependencies = [
+    ('HDF5', '1.14.2'),
+    ('PGPLOT', '5.2.2'),
+]
+
+default_easyblock = 'ConfigureMake'
+default_component_specs = {'start_dir': '%(name)s-%(version)s'}
+local_namever = 'mesa-%s' % version
+local_tarball = {
+    'source_urls': ['https://zenodo.org/records/10783349/files'],
+    'sources': [{'filename': '%s.zip' % local_namever,
+                 'extract_cmd': ('unzip -qq %s && tar xf ' + local_namever + '/utils/%(name)s-%(version)s.tar.gz && '
+                                 'rm -rf ' + local_namever),
+                 }],
+    'install_cmd': 'install -D %(name)s ../bin/%(name)s',
+}
+
+components = [
+    ('crlibm', 'master', {
+        'sources': ['%(version)s.tar.gz'],
+        'preconfigopts': 'autoreconf -i && ',
+        'skipsteps': ['install'],
+    }),
+    ('crmath', '1.1', {
+        'source_urls': ['https://github.com/rhdtownsend/crmath/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'skipsteps': ['configure', 'install'],
+    }),
+    ('makedepf90', '2.8.8', local_tarball),
+    ('ndiff', '2.00', local_tarball),
+    (name, version, {
+        'start_dir': local_namever,
+        'sources': ['%s.zip' % local_namever],
+        'configure_cmd': ("mv utils/makefile_header{_non_mesasdk,} && "
+                          "sed -i '"
+                          "s@FC = ifort$@FC = gfortran@;"
+                          "s@^LOAD_CRMATH =@LOAD_CRMATH = -L${MESA_DIR}/../crmath-1.1 -L${MESA_DIR}/../crlibm-master@;"
+                          "s@^INCLUDE_CRMATH = .*@INCLUDE_CRMATH = -I${MESA_DIR}/../crmath-1.1@;"
+                          "s@^LOAD_HDF5 = .*@LOAD_HDF5 = -lhdf5 -lhdf5_fortran@;"
+                          "s@^INCLUDE_HDF5 = .*@INCLUDE_HDF5 = -I${EBROOTHDF5}/include@' utils/makefile_header"),
+        'configure_without_installdir': True,
+        'build_cmd': 'PATH=$PWD/../bin:$PATH MESA_DIR=$PWD ./install',
+        'parallel': '0',
+        'install_cmd' : 'find * -maxdepth 0 -type d -exec cp -r {} %(installdir)s \\;',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libbinary.a', 'lib/libadipls.a', 'lib/libgyre.a', 'lib/libstar.a'],
+    'dirs': []
+}
+moduleclass = 'phys'
+modextravars = {
+      'MESA_DIR': '%(installdir)s',
+}
