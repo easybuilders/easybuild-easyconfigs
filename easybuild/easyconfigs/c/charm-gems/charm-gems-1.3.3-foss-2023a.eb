@@ -1,0 +1,55 @@
+easyblock = 'PythonBundle'
+
+name = 'charm-gems'
+version = '1.3.3'
+
+homepage = 'https://github.com/simnibs/charm-gems'
+description = """This repository contains the gems C++ code and python bindings used in 
+Freesurfer's Sequence-Adaptive Multimodal SEGmentation (SAMSEG) and in 
+SimNIBS 4.0 Complete Head Anatomy Reconstruction Method (CHARM) to 
+create individualized head models for electric field simulations."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('make', '4.4.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+# update GCC version in vcl_compiler.h and  install ITK from submodule
+local_preinstallopts = "sed -i 's/error \"Dunno about this gcc\"/define VCL_GCC_123/' \\"
+local_preinstallopts += "ITK/Modules/ThirdParty/VNL/src/vxl/vcl/vcl_compiler.h && "
+local_preinstallopts += "mkdir ITK-build && cd ITK-build && "
+local_preinstallopts += "cmake -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF \\"
+local_preinstallopts += "-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%(installdir)s/ITK-install ../ITK && "
+local_preinstallopts += "make install && cd .. && "
+local_preinstallopts += "export ITK_DIR=%(installdir)s/ITK-install && "
+
+exts_list = [
+    (name, version, {
+        'preinstallopts': local_preinstallopts,
+        'sources': [{
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'git_config': {
+                'url': 'https://github.com/simnibs',
+                'repo_name': 'charm-gems',
+                'tag': 'v%(version)s',
+                'recursive': True,
+                'keep_git_dir': True,
+            }
+        }],
+        'checksums': [None],
+    }),
+]
+
+moduleclass = 'lib'

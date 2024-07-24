@@ -1,0 +1,43 @@
+easyblock = 'MakeCp'
+
+name = 'sonic'
+local_commit = '134074f'
+version = '20180202'
+
+homepage = 'https://github.com/espeak-ng/sonic'
+description = """
+Sonic is a simple algorithm for speeding up or slowing down speech.  However,
+it's optimized for speed ups of over 2X, unlike previous algorithms for changing
+speech rate.  The Sonic library is a very simple ANSI C library that is designed
+to easily be integrated into streaming voice applications, like TTS back ends.
+"""
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/espeak-ng/sonic/archive']
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = ['%(name)s-%(version)s.patch']
+checksums = [
+    'ace1ef03ab095cb73066e57b2467faddef0356579099ba64e917bf9dab072709',  # sonic-20180202.tar.gz
+    '1e767c98286e13231d01ec7ae2ec2ea9b9c0ce074d4f8034b9d92ee2854d1be9',  # sonic-20180202.patch
+]
+
+keepsymlinks = True
+
+files_to_copy = [
+    (['sonic'], 'bin'),
+    (['sonic.h'], 'include'),
+    (['libsonic*'], 'lib'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/sonic', 'include/sonic.h'] +
+             ['lib/libsonic.%s' % x for x in ['a'] + [SHLIB_EXT + '%s' % y for y in ['', '.0', '.0.3.0']]],
+    'dirs': []
+}
+
+moduleclass = 'tools'
