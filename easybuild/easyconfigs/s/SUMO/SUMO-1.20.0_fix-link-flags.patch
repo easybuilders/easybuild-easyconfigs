@@ -1,0 +1,18 @@
+Remove duplicate linker flags from fox-config
+Patch based on SUMO-1.0.0_fix-link-flags.patch author: Alex Domingo (Vrije Universiteit Brussel)
+author: Dugan Witherick (Imperial College London)
+
+diff -Nru sumo-1.20.0.orig/build_config/cmake_modules/FindFOX.cmake sumo-1.20.0/build_config/cmake_modules/FindFOX.cmake
+--- sumo-1.20.0.orig/build_config/cmake_modules/FindFOX.cmake	2024-07-17 09:53:20.021150000 +0100
++++ sumo-1.20.0/build_config/cmake_modules/FindFOX.cmake	2024-07-17 09:55:22.669340000 +0100
+@@ -20,6 +20,10 @@
+ 
+ # if fox-config was executed successfully, fox was found
+ if(FOX_LIBRARY AND FOX_CXX_FLAGS)
++    # remove duplicate link flags
++    separate_arguments(FOX_LIBRARY)
++    list(REMOVE_DUPLICATES FOX_LIBRARY)
++    string(REPLACE ";" " " FOX_LIBRARY "${FOX_LIBRARY}")
+     SET(FOX_FOUND TRUE)
+ else()
+     # In Windows system, find the fox directory using as hint the environment variable "FOX_INCLUDE_DIR"
