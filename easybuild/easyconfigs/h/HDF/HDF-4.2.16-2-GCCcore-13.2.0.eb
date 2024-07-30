@@ -1,0 +1,60 @@
+easyblock = 'ConfigureMake'
+
+name = 'HDF'
+version = '4.2.16-2'
+
+homepage = 'https://www.hdfgroup.org/products/hdf4/'
+description = """
+ HDF (also known as HDF4) is a library and multi-object file format for
+ storing and managing data between machines.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://www.hdfgroup.org/ftp/%(name)s/releases/%(name)s%(version)s/src/']
+sources = [SOURCELOWER_TAR_GZ]
+
+checksums = [
+    'a24b18312d421686031c2d66635f7d5abb2fe879f8a182b7e02797b0da8d1f6c',  # %(namelower)s-%(version)s.tar.gz
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+]
+dependencies = [
+    ('libjpeg-turbo', '3.0.1'),
+    ('Szip', '2.1.1'),
+    ('zlib', '1.2.13'),
+    ('libtirpc', '1.3.4'),
+]
+
+preconfigopts = "LIBS='-ltirpc' "
+
+local_common_configopts = '--with-szlib=$EBROOTSZIP CFLAGS="$CFLAGS -I$EBROOTLIBTIRPC/include/tirpc" '
+local_common_configopts += '--includedir=%(installdir)s/include/%(namelower)s '
+
+configopts = [
+    local_common_configopts,
+    # Cannot build shared libraries and Fortran...
+    # https://trac.osgeo.org/gdal/wiki/HDF#IncompatibilitywithNetCDFLibraries
+    # netcdf must be disabled to allow HDF to be used by GDAL
+    local_common_configopts + "--enable-shared --disable-fortran --disable-netcdf",
+]
+
+
+sanity_check_paths = {
+    'files': ['bin/h4cc', 'bin/ncdump', 'lib/libdf.a', 'lib/libhdf4.settings', 'lib/libmfhdf.a', 'lib/libmfhdf.so'],
+    'dirs': ['include/%(namelower)s'],
+}
+
+sanity_check_commands = [
+    "h4cc --help",
+    "ncdump -V",
+]
+
+modextrapaths = {'CPATH': 'include/%(namelower)s'}
+
+moduleclass = 'data'

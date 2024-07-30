@@ -52,30 +52,38 @@ dependencies = [
     ('GSL', '2.7'),
     ('Qwt', '6.2.0'),
     ('h5py', '3.2.1'),
+    ('NiBabel', '3.2.1'),
 ]
 
-modextrapaths = {'PYTHONPATH': ['fsl/lib/python%(pyshortver)s/site-packages']}
-
-# The executable files 'imglob' and 'imcp' come from fslpy
 exts_defaultclass = 'PythonPackage'
 exts_default_options = {
+    'buildininstalldir': False,
+    'source_urls': [PYPI_LOWER_SOURCE],
     'download_dep_fail': True,
     'use_pip': True,
 }
 
 exts_list = [
+    ('dataclasses', '0.8', {
+        'checksums': ['8479067f342acf957dc82ec415d355ab5edb7e7646b90dc6e2fd1d96ad084c97'],
+        'preinstallopts': "sed -i '/python_requires/d' setup.py && ",
+    }),
+    # The executable files 'imglob' and 'imcp' come from fslpy
     ('fslpy', '3.5.3', {
-        'installopts': '--prefix=%(installdir)s/fsl',
-        'source_urls': ['https://pypi.python.org/packages/source/f/fslpy/'],
         'checksums': ['f80ef8b7b49f475bfb71946619d33c118a7cbbe106c72f7777aaf14d9e261530'],
+        'installopts': '--prefix=%(installdir)s/fsl',
     }),
 ]
+
+modextrapaths = {
+    'PYTHONPATH': ['fsl/lib/python%(pyshortver)s/site-packages', 'lib/python%(pyshortver)s/site-packages'],
+}
 
 modextravars = {
     'FSLOUTPUTTYPE': 'NIFTI_GZ',
     'FSLMULTIFILEQUIT': 'TRUE',
     'FSLTCLSH': 'tclsh',
-    'FSLWISH': 'wish8.6'
+    'FSLWISH': 'wish8.6',
 }
 
 moduleclass = 'bio'

@@ -1,0 +1,65 @@
+easyblock = 'PythonBundle'
+
+name = 'SimNIBS'
+version = '4.0.1'
+
+homepage = 'https://simnibs.github.io/simnibs'
+description = "SimNIBS is a free and open source software package for the Simulation of Non-invasive Brain Stimulation"
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Eigen', '3.4.0'),
+    # SimNIBS 4.0.1 requires old versions of Boost, CGAL, tbb
+    ('Boost', '1.74.0'),
+    ('CGAL', '5.4'),
+    ('tbb', '2020.1'),
+]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('matplotlib', '3.7.2'),
+    ('Pillow', '10.0.0'),
+    ('h5py', '3.9.0'),
+    ('PyOpenGL', '3.1.7'),
+    ('freeglut', '3.4.0'),
+    ('libwebp', '1.3.1'),
+    ('NiBabel', '5.2.0'),
+    ('PyQt5', '5.15.10'),
+    ('FMM3D', '1.0.4'),
+    ('charm-gems', '1.3.3'),
+]
+
+exts_list = [
+    (name, version, {
+        'patches': ['%(name)s-%(version)s_setup.py-fix.patch'],
+        'source_urls': ['https://github.com/simnibs/simnibs/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': [
+            {'v4.0.1.tar.gz': 'c5455cd0e0240b3638fbc64125bdfaeae289a63ee94a3ecc3b4d10981890c8ff'},
+            {'SimNIBS-4.0.1_setup.py-fix.patch': '9e0a28233e2830cc90dca67e3e945094591f46ed646eba20a7ecf2396d126fe2'},
+        ],
+    }),
+]
+
+postinstallcmds = [
+    'cd %(installdir)s/bin && '
+    'ln -s %(installdir)s/lib/python%(pyshortver)s/site-packages/simnibs/external/bin/linux/gmsh gmsh && '
+    'ln -s %(installdir)s/lib/python%(pyshortver)s/site-packages/simnibs/external/bin/linux/meshfix meshfix && '
+    'ln -s %(installdir)s/lib/python%(pyshortver)s/site-packages/simnibs/external/dwi2cond dwi2cond',
+]
+
+use_pip = True
+sanity_pip_check = True
+
+local_bin_list = ['dwi2cond', 'gmsh', 'meshfix', 'simnibs', 'simnibs_gui', 'charm']
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_bin_list],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["simnibs --help"]
+
+moduleclass = 'bio'

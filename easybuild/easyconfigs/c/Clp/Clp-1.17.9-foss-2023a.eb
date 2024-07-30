@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'Clp'
+version = '1.17.9'
+
+homepage = "https://github.com/coin-or/Clp"
+description = """Clp (Coin-or linear programming) is an open-source linear programming solver.
+It is primarily meant to be used as a callable library, but a basic,
+stand-alone executable version is also available."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/coin-or/Clp/archive/refs/tags/releases/']
+sources = ['%(version)s.tar.gz']
+checksums = ['b02109be54e2c9c6babc9480c242b2c3c7499368cfca8c0430f74782a694a49f']
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('Doxygen', '1.9.7'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('METIS', '5.1.0'),
+    ('MUMPS', '5.6.1', '-metis'),
+    ('CoinUtils', '2.11.10'),
+    ('Osi', '0.108.9'),
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.2.13'),
+]
+
+# Use BLAS/LAPACK from toolchain
+configopts = '--with-blas="$LIBBLAS" --with-lapack="$LIBLAPACK" '
+
+# Use METIS AND MUMPS from EB
+# --with-metis-lib is ignored
+configopts += '--with-metis-lib="-lmetis" '
+configopts += '--with-mumps-lib="-lesmumps -lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord -lmpi_mpifh '
+configopts += '-lmetis  -lscotch -lptscotch -lptscotcherr -lscotcherrexit -lscotcherr $LIBSCALAPACK" '
+
+# Disable GLPK because Clp requires headers from its sources
+configopts += '--without-glpk '
+
+# Use CoinUtils from EB
+configopts += '--with-coinutils-lib="-lCoinUtils" '
+configopts += '--with-coinutils-datadir=$EBROOTCOINUTILS/share/coin/Data '
+
+# Use Osi from EB
+configopts += '--with-osi-lib="-lOsi" '
+configopts += '--with-osi-datadir=$EBROOTOSI/share/coin/Data '
+
+sanity_check_paths = {
+    'files': ['bin/clp'] + ['lib/lib%s.%s' % (x, SHLIB_EXT) for x in ['Clp', 'ClpSolver', 'OsiClp']],
+    'dirs': ['include/coin', 'lib/pkgconfig', 'share/coin']
+}
+
+# other coin-or projects expect <header.hpp> instead of <coin/header.hpp>
+modextrapaths = {'CPATH': 'include/coin'}
+
+moduleclass = "math"

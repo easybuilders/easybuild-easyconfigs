@@ -1,0 +1,73 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView'
+version = '5.12.0'
+
+homepage = 'https://www.paraview.org'
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+local_download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['https://www.paraview.org/paraview-downloads/%s' % local_download_suffix]
+sources = ["%(name)s-v%(version)s.tar.gz"]
+patches = ['ParaView-5.11.1-remove_glew_init_warning.patch']
+checksums = [
+    {'ParaView-v5.12.0.tar.gz': '2cc5733608fd508e2da8fc5d4ee693523d350dc1e1f89f9a89a78dc63107f70e'},
+    {'ParaView-5.11.1-remove_glew_init_warning.patch':
+     'dd86134f3a5b2c1b834224c69665dd31f99ef7d367688fe77dbaada212758710'},
+]
+
+builddependencies = [('CMake', '3.27.6')]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('Boost', '1.83.0'),
+    ('XZ', '5.4.4'),
+    ('HDF5', '1.14.3'),
+    ('netCDF', '4.9.2'),
+    ('libdrm', '2.4.117'),
+    ('Mesa', '23.1.9'),
+    ('Qt6', '6.6.3'),
+    ('zlib', '1.2.13'),
+    ('FFmpeg', '6.0'),
+    ('Szip', '2.1.1'),
+]
+
+_copts = [
+    # Basic configuration
+    # Embedded docs not supported with Qt6 https://gitlab.kitware.com/paraview/paraview/-/issues/19742
+    '-DPARAVIEW_ENABLE_EMBEDDED_DOCUMENTATION=OFF',
+    '-DCMAKE_AUTOMOC=OFF',  # err Qt6?
+    '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON',
+    '-DPARAVIEW_BUILD_SHARED_LIBS=ON',
+    '-DPARAVIEW_USE_MPI=ON',
+    '-DPARAVIEW_ENABLE_FFMPEG=ON',
+    '-DPARAVIEW_USE_PYTHON=ON',
+    '-DPython3_ROOT_DIR=$EBROOTPYTHON',
+    # Useful input formats
+    '-DPARAVIEW_ENABLE_XDMF2=ON',
+    '-DPARAVIEW_ENABLE_XDMF3=ON',
+    # EGL, X and Mesa
+    '-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s' % SHLIB_EXT,
+    '-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include',
+    '-DEGL_INCLUDE_DIR=$EBROOTLIBGLVND/include',
+    '-DEGL_LIBRARY=$EBROOTLIBGLVND/lib/libEGL.%s' % SHLIB_EXT,
+    '-DEGL_opengl_LIBRARY=$EBROOTLIBGLVND/libOpenGL.%s' % SHLIB_EXT,
+    '-DVTK_OPENGL_HAS_EGL=ON',
+    '-DVTK_USE_X=ON',
+    '-DVTK_OPENGL_HAS_OSMESA=OFF']
+configopts = ' '.join(_copts)
+
+sanity_check_paths = {
+    'files': ['bin/paraview', 'bin/pvserver', 'bin/pvpython'],
+    'dirs': ['include/paraview-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['python -c "import paraview"']
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'vis'
