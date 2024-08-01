@@ -22,9 +22,17 @@ srcdir = 'cmake'
 # copy executables into bin directory
 test_cmd = 'find -maxdepth 1 -mindepth 1 -type f -executable |xargs -I % cp % ../tinker/bin/ && '
 test_cmd += 'cd ../tinker/test/ && '
-# run all .run scripts in the /tinker/test directory
-test_cmd += 'EC=0; for x in *.run; do echo "START TEST: $x"; ./$x || (EC=$? echo "FAILED TEST: $x"); done; exit $EC'
+# run all .run scripts in the test directory
+# (ifabp succeeds but exits with a memory error)
+test_cmd += 'for x in *.run; do echo "START TEST: $x" && ./$x; done'
 
-# sanity_check_commands is not possible since all the programs require multiple other inputs
+postinstallcmds = ['cd %(start_dir)s && cp -a params perl python %(installdir)s']
+
+sanity_check_paths = {
+    'files': ['lib/libtinker.a'],
+    'dirs': ['bin', 'params', 'perl', 'python'],
+}
+
+# (no sanity_check_commands since all programs require multiple other inputs)
 
 moduleclass = 'chem'
