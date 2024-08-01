@@ -1,0 +1,69 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2016 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+#                                 Ghent University / The Francis Crick Institute
+# Authors::
+# * Wiktor Jurkowski <wiktor.jurkowski@gmail.com>
+# * Fotis Georgatos <fotis@cern.ch>
+# * George Tsouloupas <g.tsouloupas@cyi.ac.cy>
+# * Kenneth Hoste <kenneth.hoste@ugent.be>
+# * Adam Huffman <adam.huffman@crick.ac.uk>
+# License::   MIT/GPL
+# 2019.3 version
+# Contribution from the Crick HPC team
+# uploaded by J. Sassmannshausen
+#
+easyblock = 'CMakeMake'
+
+name = 'GROMACS-LS'
+version = '2016.3'
+
+versionsuffix = '-LS'
+modaltsoftname = 'gromacs-ls'
+
+homepage = 'https://vanegaslab.org/software'
+description = """
+GROMACS-LS is a modified version of GROMACS that has been modified to enable the calculation of local stress fields from molecular dynamics simulations.
+
+This is a CPU only build.
+
+Note that GROMACS-LS does not support MPI, GPUs(CUDA) or Hardware accelleration (SIMD)
+and is therefore much slower than unmodified versions of GROMACS.
+
+CC-Wiki: GROMACS
+"""
+
+toolchain = {'name': 'gccflexiblas', 'version': '2023a'}
+
+source_urls = [
+    'https://vanegaslab.org/files', 
+]
+sources = ['gromacs-ls-2016.3-12282019.tar.gz']
+patches = [
+    'GROMACS-LS-2016.3_mdstress_flexiblas.patch',
+    'GROMACS-2016_limits.patch',
+]
+checksums = [
+    {'gromacs-ls-2016.3-12282019.tar.gz': '20f4d4f255800432be188abe41b7fec923cacc5fc895914b3beac0808ddf1919'},
+    {'GROMACS-LS-2016.3_mdstress_flexiblas.patch':
+     '4177a5b32f7054f82ab74c94a655e169786a03c63972742bddc450c9444e9341'},
+    {'GROMACS-2016_limits.patch': 'a045ede4c3bb40a1da6b9832d15595a22bb0b55b8044e71de676db0a06163ff0'},
+]
+
+builddependencies = [('CMake', '3.27.7')]
+dependencies = [
+    ('FFTW', '3.3.10'),
+    ('Python', '3.11'),
+    ('SciPy-Stack', '2024a'),
+]
+configopts = ' -DGMX_HWLOC=OFF -DGMX_SIMD=None '
+
+sanity_check_paths = {
+    'files': ['bin/gmx_LS', 'lib/libmdstress.so', 'lib64/libgromacs_LS.so'],
+    'dirs': ['bin', 'lib', 'lib64', 'share/gromacs/top' ],
+}
+
+modextrapaths_append = {'PYTHONPATH': 'bin'}
+
+moduleclass = 'chem'
