@@ -1,0 +1,63 @@
+easyblock = 'PythonBundle'
+
+name = 'TorchIO'
+version = '0.19.6'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://torchio.readthedocs.io/'
+description = """
+TorchIO is an open-source Python library for efficient loading, preprocessing,
+augmentation and patch-based sampling of 3D medical images in deep learning,
+following the design of PyTorch.
+
+It includes multiple intensity and spatial transforms for data augmentation and
+preprocessing. These transforms include typical computer vision operations such
+as random affine transformations and also domain-specific ones such as
+simulation of intensity artifacts due to MRI magnetic field inhomogeneity
+(bias) or k-space motion artifacts."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('tqdm', '4.64.0'),
+    ('Deprecated', '1.2.13'),
+    ('SimpleITK', '2.1.1.2'),
+    ('NiBabel', '4.0.2'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('commonmark', '0.9.1', {
+        'checksums': ['452f9dc859be7f06631ddcb328b6919c67984aca654e5fefb3914d54691aed60'],
+    }),
+    ('rich', '12.5.1', {
+        'checksums': ['63a5c5ce3673d3d5fbbf23cd87e11ab84b6b451436f1b7f19ec54b6bc36ed7ca'],
+    }),
+    ('humanize', '4.8.0', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['8bc9e2bb9315e61ec06bf690151ae35aeb65651ab091266941edf97c90836404'],
+    }),
+    ('typer', '0.9.0', {
+        'checksums': ['50922fd79aea2f4751a8e0408ff10d2662bd0c8bbfa84755a699f3bada2978b2'],
+    }),
+    ('torchio', version, {
+        'checksums': ['c3afe16c3d822b6cb4aa103ffd6ec28816c95faa03cbeb22f33ff4cf81ec05df'],
+    }),
+]
+
+_bins = ['tiohd', 'tiotr', 'torchio-transform']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _bins],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+}
+
+sanity_check_commands = ['%s --help' % x for x in _bins]
+
+sanity_pip_check = True
+
+moduleclass = 'vis'
