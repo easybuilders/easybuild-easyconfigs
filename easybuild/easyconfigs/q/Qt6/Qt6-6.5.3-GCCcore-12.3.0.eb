@@ -1,0 +1,134 @@
+easyblock = 'CMakeNinja'
+modaltsoftname = 'qt'
+
+name = 'Qt6'
+version = '6.5.3'
+
+homepage = 'https://qt.io/'
+description = "Qt is a comprehensive cross-platform C++ application framework."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+# disabling use of -ftree-vectorize is required to avoid compilation failures on some systems (e.g. Intel Skylake X)
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    'https://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/new_archive/qt/%(version_major_minor)s/%(version)s/single/',
+]
+sources = ['qt-everywhere-src-%(version)s.tar.xz']
+patches = [
+    'Qt6-6.5.2_fix_OF-Gentoo.patch',
+]
+checksums = [
+    {'qt-everywhere-src-6.5.3.tar.xz': '7cda4d119aad27a3887329cfc285f2aba5da85601212bcb0aea27bd6b7b544cb'},
+    {'Qt6-6.5.2_fix_OF-Gentoo.patch': '62c4b1abdeac69f40fd48f5e46f470f9f9c328fdb02ab8aceb9aa1885ad8c601'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('pkgconf', '1.9.5'),
+    ('CMake', '3.26.3'),
+    ('Ninja', '1.11.1'),
+    # deps for QtWebEngine
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.1'),
+    ('re2c', '3.1'),
+    ('python-build-bundle', '2024a'), # WebEngine
+]
+
+dependencies = [
+    ('double-conversion', '3.3.0'),
+    ('GLib', '2.77.1'),
+    ('PCRE2', '10.42'),
+    ('libpng', '1.6.39'),
+    ('LibTIFF', '4.5.0'),
+    ('libwebp', '1.3.1'),
+    ('JasPer', '4.0.0'),
+    ('HarfBuzz', '5.3.1'),
+    ('SQLite', '3.42.0'),
+    ('graphite2', '1.3.14'),
+    ('assimp', '5.2.5'),  # for Qt 3D
+    ('FFmpeg', '6.0'),
+    ('X11', '20230603'),
+    ('fontconfig', '2.14.2'),
+    ('zlib', '1.2.13'),
+    ('freetype', '2.13.0'),  # WebEngine
+    ('DBus', '1.15.4'),
+    ('libevent', '2.1.12'),  # WebEngine
+    ('libGLU', '9.0.3'),
+    ('libjpeg-turbo', '2.1.5.1'),  # WebEngine
+    ('NSS', '3.89.1'),  # WebEngine, required
+    ('snappy', '1.1.10'),  # WebEngine
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('ICU', '73.2'),  # WebEngine, optional
+    ('nodejs', '18.17.1'),  # WebEngine, required
+    # ('gRPC', '1.52.2'),  # WebEngine needs older Abseil/gRPC/protobuf
+]
+multi_deps = {'Python': ['3.12', '3.11', '3.10']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'  
+
+exts_default_options = {
+    'source_urls': ['https://www.riverbankcomputing.com/static/Downloads/%(name)s/%(version)s/', PYPI_SOURCE],
+    'use_pip': True,
+}
+
+local_sipdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/PyQt6/bindings'
+
+local_sipver = '6.8.6'
+exts_list = [
+    ('SIP', local_sipver, {
+        'sources': [SOURCELOWER_PY3_WHL], #SOURCELOWER_TAR_GZ],
+        'modulename': 'PyQt6.sip',
+    }),
+    ('PyQt_builder', '1.16.4', {
+	'modulename': 'pyqtbuild',
+	'sources': [SOURCELOWER_TAR_GZ],
+    }),
+    ('PyQt6_sip', '13.8.0', {
+        'modulename': 'PyQt6.sip',
+    }),
+    ('PyQt6', '6.5.3', {
+        'preinstallopts': 'sed -i "s/not self.confirm_license:/False:/" project.py && ',
+        'modulename': 'PyQt6.QtCore',
+    }),
+    ('PyQt6_WebEngine', '6.5.0', {
+        'preinstallopts': ('sed -i "s@\\(^\\[tool.sip.project\\]\\)@\\1\\nsip-include-dirs = [\\\"%s\\\"]@"'
+            ' pyproject.toml && ' % local_sipdir),
+        'modulename': 'PyQt6.QtWebEngineCore',
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+}
+
+preconfigopts = 'pip install --prefix=%(installdir)s html5lib --no-index && '
+preconfigopts += 'export EBPYTHONPREFIXES=%(installdir)s:$EBPYTHONPREFIXES && '
+preconfigopts += 'sed -i "s/MultiMedia/Multimedia/g" ../qt-everywhere-src-%(version)s/qtcharts/CMakeLists.txt &&'  # Typo
+preconfigopts += 'sed -i "23i set(Python3_ROOT_DIR \\$ENV{EBROOTPYTHON})" ' \
+                 '../qt-everywhere-src-%(version)s/qtwebengine/src/gn/CMakeLists.txt &&'
+
+configopts = '-Wno-dev '
+configopts += '-DFEATURE_qtpdf_build=OFF '  # Requires CUPS
+configopts += '-DQT_AVOID_CMAKE_ARCHIVING_API=ON '
+configopts += '-DPython3_ROOT_DIR=$EBROOTPYTHON '
+configopts += '-DBUILD_qtwayland=ON ' 
+configopts += '-DFEATURE_webengine_system_ffmpeg=ON '
+# Removed from Qt6.0.0 but may be added back in the future
+# configopts += '-DBUILD_qtgamepad=ON '
+
+prebuildopts = 'export EBPYTHONPREFIXES=%(installdir)s:$EBPYTHONPREFIXES && '
+
+sanity_check_paths = {
+    'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT, 'lib/libQt6WebEngineCore.%s' % SHLIB_EXT],
+    'dirs': ['include/QtCore', 'include/QtWebEngineCore'],
+}
+
+sanity_check_commands = ['qmake6 --help']
+
+moduleclass = 'devel'
