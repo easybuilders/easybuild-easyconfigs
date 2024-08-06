@@ -22,17 +22,9 @@ visualizing data from over 120 different scientific data formats.
 
 toolchain = {'name': 'foss', 'version': '2023a'}
 
-sources = [{
-    'filename': 'v%(version)s.tar.gz',
-    'git_config': {
-        'url': 'https://github.com/visit-dav',
-        'repo_name': 'visit',
-        'tag': 'v%(version)s',
-        'recursive': True,
-        'keep_git_dir': True,
-    }
-}]
-checksums = [None]
+source_urls = ['https://github.com/visit-dav/visit/releases/download/v%(version)s/']
+sources = ['%(namelower)s%(version)s.tar.gz']
+checksums = ['942108cb294f4c9584a1628225b0be39c114c7e9e01805fb335d9c0b507689f5']
 
 builddependencies = [('CMake', '3.26.3')]
 dependencies = [
@@ -49,8 +41,6 @@ dependencies = [
     ('FFmpeg', '6.0'),
 ]
 
-srcdir = "src"
-
 configopts = "-DVISIT_ZLIB_DIR=$EBROOTZLIB "
 configopts += "-DVISIT_VTK_DIR=$EBROOTVTK -DVISIT_VTK_VERSION=$EBVERSIONVTK "
 configopts += "-DVISIT_QWT_DIR=$EBROOTQWT "
@@ -63,9 +53,7 @@ configopts += "-DVISIT_PARALLEL=ON -DVISIT_MPI_COMPILER=$MPICC -DVISIT_MPI_COMPI
 configopts += "-DOpenGL_GL_PREFERENCE=GLVND "
 
 # add missing include to fix make step
-prebuildopts = "sed -i '23 a #include <cmath>' %(builddir)s/visit/src/gui/QvisStripChart.C && "
-
-test_cmd = 'cd %(builddir)s/easybuild_obj/test && ./run_visit_test_suite.sh -n %(parallel)s'
+prebuildopts = "sed -i '23 a #include <cmath>' %(builddir)s/%(namelower)s%(version)s/src/gui/QvisStripChart.C && "
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ['frontendlauncher', 'frontendlauncher.py', 'visit']],
