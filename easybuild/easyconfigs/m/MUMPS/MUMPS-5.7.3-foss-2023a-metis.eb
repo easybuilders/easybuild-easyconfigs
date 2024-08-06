@@ -1,0 +1,51 @@
+name = 'MUMPS'
+version = '5.7.3'
+versionsuffix = '-metis'
+
+homepage = 'https://mumps-solver.org/'
+description = """A parallel sparse direct solver"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+# https://mumps-solver.org/MUMPS_X.Y.Z.tar.gz
+sources = ['/cvmfs/soft.computecanada.ca/easybuild/sources/m/MUMPS/%(name)s_%(version)s.tar.gz']
+# https://sources.debian.org/patches/mumps/
+patches = [
+    '%(name)s-%(version)s-makefile_version.patch',   # set VERSION and SOVERSION
+    '%(name)s-%(version)s-shared_pord.patch',        # build shared libs of PORD
+    '%(name)s-%(version)s-shared_mumps.patch',       # build shared libs of MUMPS
+    '%(name)s-%(version)s-shared_libseq.patch',      # create shared version of libseq
+    '%(name)s-%(version)s-examples_mpilibs.patch',   # link with fortran or c MPI libs
+]
+checksums = [
+    {'MUMPS_5.7.3.tar.gz': '84a47f7c4231b9efdf4d4f631a2cae2bdd9adeaabc088261d15af040143ed112'},
+    {'MUMPS-5.7.3-makefile_version.patch': '24b58f49c65aed1b0f3f543e4660d04bfcb125eff4a0d58552164628e7280e64'},
+    {'MUMPS-5.7.3-shared_pord.patch': '029b874fbcb409b6e482b89ee4b74df8d8a8c3df949458f4fb341f9aec748e74'},
+    {'MUMPS-5.7.3-shared_mumps.patch': '9b81c5c5088689ff20345e5e16a5d949da86ceb9ce82de1900f51e49853ecc50'},
+    {'MUMPS-5.7.3-shared_libseq.patch': 'a3a190342ffd9bf4b2afe28d3ae4e3efb8e1af5485813800c8b602049b4824fa'},
+    {'MUMPS-5.7.3-examples_mpilibs.patch': '385945ccf7ad3caf62b7b83e18cd50f4f53ccab1a072f1fc02860d29e411b4f7'},
+]
+
+dependencies = [
+    ('SCOTCH', '7.0.3'),
+    ('METIS', '5.1.0'),
+]
+
+parallel = 1
+
+#preinstallcmds = ['cp Make.inc/Makefile.INTEL.PAR Makefile.inc']
+
+prebuildopts = 'export FFLAGS="$FFLAGS -fallow-argument-mismatch" && '
+
+# buildir /tmp/roberpj/avx2/MUMPS/5.7.3/foss-2023a-metis/MUMPS_5.7.3
+build_cmd_targets = "all"
+
+sanity_check_paths = {
+    'files': ['lib/libcmumps.so', 'lib/libdmumps.so', 'lib/libsmumps.so', 'lib/libzmumps.so'],
+    'dirs':  ['include', 'lib'],
+}
+
+modaltsoftname = '%(namelower)s-metis'
+
+moduleclass = 'math'
