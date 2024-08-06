@@ -1,0 +1,32 @@
+--- mumps.orig/libseq/Makefile	2024-05-03 18:18:13.628702451 +0200
++++ mumps/libseq/Makefile	2024-05-03 18:19:19.861297130 +0200
+@@ -19,7 +19,9 @@
+ 	$(MAKE) FPIC="$(FPIC_OPT)" libmpiseq$(PLAT)$(LIBEXT_SHARED)
+ 
+ libmpiseq$(PLAT)$(LIBEXT_SHARED): mpi.o mpic.o elapse.o
+-	$(FC) $(SHARED_OPT) mpi.o mpic.o elapse.o -o libmpiseq$(PLAT)$(LIBEXT_SHARED)
++	$(FC) $(SHARED_OPT) -Wl,-soname,libmpiseq$(PLAT)-$(SOVERSION).so mpi.o mpic.o elapse.o -o libmpiseq$(PLAT)-$(VERSION)$(LIBEXT_SHARED)
++	ln -s libmpiseq$(PLAT)-$(VERSION)$(LIBEXT_SHARED) libmpiseq$(PLAT)-$(SOVERSION)$(LIBEXT_SHARED)
++	ln -s libmpiseq$(PLAT)-$(VERSION)$(LIBEXT_SHARED) $@
+ 
+ .f.o:
+ 	$(FC) $(OPTF) $(FPIC)              -c $*.f $(OUTF)$*.o
+@@ -27,4 +29,4 @@
+ 	$(CC) $(OPTC) $(FPIC) $(CDEFS) -I. -c $*.c $(OUTC)$*.o
+ 
+ clean:
+-	$(RM) *.o *$(LIBEXT)
++	$(RM) *.o *$(LIBEXT) *$(LIBEXT_SHARED)
+Index: mumps/Makefile
+===================================================================
+--- mumps.orig/Makefile	2024-05-03 18:18:13.628702451 +0200
++++ mumps/Makefile	2024-05-03 18:18:13.624702415 +0200
+@@ -80,7 +80,7 @@
+ sharedlibseq:
+ 
+ libseqneeded:
+-	(cd libseq; $(MAKE))
++	(cd libseq; $(MAKE) FPIC="$(FPIC_OPT)" )
+ 	(cp libseq/lib* $(libdir))
+ 
+ libseqneededsharedlibseq:

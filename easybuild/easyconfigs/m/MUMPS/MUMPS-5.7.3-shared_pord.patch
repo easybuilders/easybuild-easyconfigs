@@ -1,0 +1,52 @@
+Create static and shared versions of the PORD library.
+
+Index: mumps/PORD/lib/Makefile
+===================================================================
+--- mumps.orig/PORD/lib/Makefile	2024-05-03 18:20:07.845727993 +0200
++++ mumps/PORD/lib/Makefile	2024-05-03 18:20:07.841727957 +0200
+@@ -1,7 +1,7 @@
+ 
+ # To compile directly, uncomment the line below.
+ # include ../Make.in
+-# # include $(BUILDDIR)/Makefile.inc
++include ../../Makefile.inc
+ #
+ # Otherwise, adequate variables for CC, CFLAGS, AR and
+ # RANLIB must be passed to make.
+@@ -31,10 +31,12 @@
+ 	$(RANLIB) $@
+ 
+ libpord$(PLAT)$(LIBEXT_SHARED):$(OBJS)
+-	$(CC) -shared $(OBJS) -o libpord$(PLAT)$(LIBEXT_SHARED)
++	$(CC) -shared $(OBJS) -Wl,$(SONAME),libpord$(PLAT)-$(SOVERSION)$(LIBEXT_SHARED) -o libpord$(PLAT)-$(VERSION)$(LIBEXT_SHARED) -Wl,-z,defs
++	ln -s libpord$(PLAT)-$(VERSION)$(LIBEXT_SHARED) libpord$(PLAT)-$(SOVERSION)$(LIBEXT_SHARED)
++	ln -s libpord$(PLAT)-$(VERSION)$(LIBEXT_SHARED) $@
+ 
+ clean:
+ 	rm -f *.o
+ 
+ realclean:
+-	rm -f *.o libpord$(PLAT)$(LIBEXT) libpord$(PLAT)$(LIBEXT_SHARED)
++	rm -f *.o libpord$(PLAT)$(LIBEXT) libpord$(PLAT)*$(LIBEXT_SHARED)
+Index: mumps/Makefile
+===================================================================
+--- mumps.orig/Makefile	2024-05-03 18:20:07.845727993 +0200
++++ mumps/Makefile	2024-05-03 18:20:07.841727957 +0200
+@@ -91,7 +91,7 @@
+ $(libdir)/libpord$(PLAT)$(LIBEXT):
+ 	if [ "$(LPORDDIR)" != "" ] ; then \
+ 	  cd $(LPORDDIR); \
+-	  $(MAKE) CC="$(CC)" PLAT="$(PLAT)" CFLAGS="$(OPTC)" AR="$(AR)" RANLIB="$(RANLIB)" OUTC="$(OUTC)" LIBEXT="$(LIBEXT)" LIBEXT_SHARED="$(LIBEXT_SHARED)" libpord$(PLAT)$(LIBEXT); \
++	  $(MAKE) CC="$(CC)" PLAT="$(PLAT)" CFLAGS="$(OPTC)" AR="$(AR)" RANLIB="$(RANLIB)" OUTC="$(OUTC)" LIBEXT="$(LIBEXT)" LIBEXT_SHARED="$(LIBEXT_SHARED)" FPIC="$(FPIC_OPT)" libpord$(PLAT)$(LIBEXT) ; \
+ 	fi;
+ 	if [ "$(LPORDDIR)" != "" ] ; then \
+ 	  cp $(LPORDDIR)/libpord$(PLAT)$(LIBEXT) $@; \
+@@ -103,7 +103,7 @@
+ 	  $(MAKE) PLAT="$(PLAT)" FPIC="$(FPIC_OPT)" CC="$(CC)" CFLAGS="$(OPTC)" AR="$(AR)" RANLIB="$(RANLIB)" OUTC="$(OUTC)" LIBEXT="$(LIBEXT)" LIBEXT_SHARED="$(LIBEXT_SHARED)" libpord$(PLAT)$(LIBEXT_SHARED); \
+ 	fi;
+ 	if [ "$(LPORDDIR)" != "" ] ; then \
+-	  cp $(LPORDDIR)/libpord$(PLAT)$(LIBEXT_SHARED) $@; \
++	  cp -P $(LPORDDIR)/libpord$(PLAT)*$(LIBEXT_SHARED) $(libdir); \
+ 	fi;
+ 
+ 
