@@ -27,6 +27,8 @@ builddependencies = [
 multi_deps = {'Python': ['3.10', '3.11']}
 multi_deps_extensions_only = True
 
+configopts = "--with-default-plugindir=%(installdir)s/lib/plugin"
+
 # otherwise blosc2 libs end up in lib64 but HDF5 in lib
 preinstallopts = 'ln -s lib %(installdir)s/lib64 && '
 
@@ -54,6 +56,19 @@ exts_list = [
         'preinstallopts': ('unset LIBS && rm -r c-blosc/{blosc,internal-complibs} && ' +
                          'sed -i "s@/usr/local@$EBROOTGENTOO@" setup.py && BLOSC2_DIR=%(installdir)s '),
 #       'runtest': "python setup.py test",
+    }),
+    ('hdf5-blosc', '1.0.1', {
+        'easyblock': 'CMakePythonPackage',
+        'source_urls': ['https://github.com/Blosc/hdf5-blosc/archive/refs/tags'],
+        'sources': ['v%(version)s.tar.gz'],
+        'configure_cmd': 'cmake',
+        'configopts': '-DPLUGIN_INSTALL_PATH=%(installdir)s/lib/plugin ../hdf5blosc/hdf5-blosc-%(version)s',
+        'use_pip': False,
+        'sanity_check_paths': {
+            'files': ['lib/plugin/libH5Zblosc.%s' % SHLIB_EXT, 'include/blosc_filter.h'],
+            'dirs': [],
+        },
+        'modulename': False, # skips Python-specific sanity check
     }),
 ]
 

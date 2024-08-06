@@ -1,0 +1,75 @@
+name = 'QuantumESPRESSO'
+
+version = '7.3.1'
+
+homepage = 'https://www.quantum-espresso.org'
+description = """Quantum ESPRESSO  is an integrated suite of computer codes
+for electronic-structure calculations and materials modeling at the nanoscale.
+It is based on density-functional theory, plane waves, and pseudopotentials
+(both norm-conserving and ultrasoft).
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {
+    'usempi': True,
+    'openmp': True,
+}
+
+sources = [
+    {
+        'filename': 'q-e-qe-%(version)s.tar.gz',
+        'extract_cmd': 'mkdir -p %(builddir)s/qe-%(version)s && tar xzvf %s --strip-components=1 -C $_',
+        'source_urls': ['https://gitlab.com/QEF/q-e/-/archive/qe-%(version)s']
+    },
+    {
+        'filename': 'qe-gipaw-%(version)s.tar.gz',
+        'source_urls': ['https://github.com/dceresoli/qe-gipaw/releases/download/%(version)s/']
+    },
+    {
+        'filename': 'wannier90-3.1.0.tar.gz',
+        'download_filename': 'v3.1.0.tar.gz',
+        'source_urls': ['https://github.com/wannier-developers/wannier90/archive/']
+    },
+    #{
+    #    'filename': 'thermo_pw.1.9.1.tar.gz', 
+    #    'extract_cmd': 'tar xzf %s && mv thermo_pw qe-%(version)s/',
+    #    'source_urls': ['https://github.com/dalcorso/thermo_pw/releases/download/1.9.1/']
+    #},
+]
+
+checksums = [
+    {'q-e-qe-7.3.1.tar.gz': '2c58b8fadfe4177de5a8b69eba447db5e623420b070dea6fd26c1533b081d844'},
+    {'qe-gipaw-7.3.1.tar.gz': 'b57f0cd7861de223d53f0f5dbafbbdb75c307f4264f73720f4d8691625e951e9'},
+    {'wannier90-3.1.0.tar.gz': '40651a9832eb93dec20a8360dd535262c261c34e13c41b6755fa6915c936b254'},
+    #{'thermo_pw.1.9.1.tar.gz': '01fa14296a886176cda02b789300207ffbfbaf49d37a77488839b9c1ea23381e'},
+]
+
+builddependencies = [
+    ('M4', '1.4.19'),
+    ('CMake', '3.27.7'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.2'),
+    ('ELPA', '2023.05.001'),
+    ('libxc', '6.2.2'),
+]
+
+# The third party packages should be installed separately and added as
+# dependencies.  The exception is w90, which is force built, and gipaw
+# which depends on qe source
+
+#preconfigopts  = 'cd %(builddir)s/qe-%(version)s/thermo_pw && make join_qe && cd - &&'
+#buildopts = 'all gwl xspectra couple epw w90 gui all_currents gipaw kcw thermo_pw'
+
+buildopts = 'all gwl xspectra couple epw w90 gui all_currents gipaw kcw'
+
+# parallel build tends to fail
+
+parallel = 1
+
+# allow some test failures
+
+test_suite_max_failed = 4
+
+moduleclass = 'chem'
