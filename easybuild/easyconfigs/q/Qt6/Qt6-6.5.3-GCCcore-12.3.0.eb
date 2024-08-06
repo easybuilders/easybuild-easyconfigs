@@ -15,6 +15,7 @@ source_urls = [
     'https://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
     'https://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/',
     'https://download.qt.io/new_archive/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-%(version)s-src/',
 ]
 sources = ['qt-everywhere-src-%(version)s.tar.xz']
 patches = [
@@ -36,6 +37,7 @@ builddependencies = [
     ('gperf', '3.1'),
     ('re2c', '3.1'),
     ('python-build-bundle', '2024a'), # WebEngine
+    ('Clang', '17.0.6'), # PySide6
 ]
 
 dependencies = [
@@ -66,7 +68,7 @@ dependencies = [
     ('nodejs', '18.17.1'),  # WebEngine, required
     # ('gRPC', '1.52.2'),  # WebEngine needs older Abseil/gRPC/protobuf
 ]
-multi_deps = {'Python': ['3.11', '3.10', '3.12']}
+multi_deps = {'Python': ['3.11', '3.10']}  # 3.12 is not supported in this version of Qt
 multi_deps_extensions_only = True
 
 exts_defaultclass = 'PythonPackage'  
@@ -99,6 +101,23 @@ exts_list = [
         'preinstallopts': ('sed -i "s@\\(^\\[tool.sip.project\\]\\)@\\1\\nsip-include-dirs = [\\\"%s\\\"]@"'
             ' pyproject.toml && ' % local_sipdir),
         'modulename': 'PyQt6.QtWebEngineCore',
+    }),
+    ('shiboken6', '6.5.3', {
+    	'sources': ['pyside-setup-everywhere-src-%(version)s.tar.xz'],
+    	'modulename': 'shiboken6.Shiboken',
+	'preinstallopts': 'python setup.py bdist_wheel --build-type=shiboken6 && ',
+	'install_src': 'dist/shiboken6-%(version)s-*.whl'
+    }),
+    ('shiboken6_generator', '6.5.3', {
+    	'sources': ['pyside-setup-everywhere-src-%(version)s.tar.xz'],
+	'preinstallopts': 'python setup.py bdist_wheel --build-type=shiboken6-generator && ',
+	'install_src': 'dist/shiboken6_generator-%(version)s-*.whl && setrpaths.sh --path %(installdir)s/lib/python%(pyshortver)s/site-packages/shiboken6_generator/shiboken6 --add_path=$EBROOTCLANG/lib --any_interpreter',
+    }),
+    ('PySide6', '6.5.3', {
+    	'sources': ['pyside-setup-everywhere-src-%(version)s.tar.xz'],
+    	'modulename': 'PySide6.QtCore',
+	'preinstallopts': 'python setup.py bdist_wheel && ',
+	'install_src': 'dist/PySide6-%(version)s-*.whl && setrpaths.sh --path %(installdir)s/lib/python%(pyshortver)s/site-packages/PySide6 --add_path=%(installdir)s/lib/python%(pyshortver)s/site-packages/shiboken6 --any_interpreter'
     }),
 ]
 exts_filter = ("python -c 'import %(ext_name)s'", '')
