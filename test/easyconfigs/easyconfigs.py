@@ -1045,25 +1045,19 @@ class EasyConfigTest(TestCase):
             'R-bundle-Bioconductor-3.[2-5]',
         ]
 
-        # the check_sha256_checksums function (again) creates an EasyBlock instance
-        # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
-        # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__;
-        # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
-        # likewise for 'patches' and 'checksums'
-        bundle_easyblocks = ['Bundle', 'CargoPythonBundle', 'PythonBundle', 'EB_OpenSSL_wrapper']
-        for ec in self.changed_ecs:
-            if ec['easyblock'] in bundle_easyblocks or ec['name'] in ['Clang-AOMP']:
-                ec['sources'] = []
-                ec['patches'] = []
-                ec['checksums'] = []
-
         # filter out deprecated easyconfigs
-        retained_changed_ecs = []
-        for ec in self.changed_ecs:
-            if not ec['deprecated']:
-                retained_changed_ecs.append(ec)
+        retained_changed_ecs = [ec for ec in self.changed_ecs if not ec['deprecated']]
 
-        checksum_issues = check_sha256_checksums(retained_changed_ecs, whitelist=whitelist)
+        # The check_sha256_checksums function creates an EasyBlock instance.
+        # For easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
+        # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__.
+        # Therefore, we need to a operate on a copy of those easyconfigs.
+        bundle_easyblocks = {'Bundle', 'CargoPythonBundle', 'PythonBundle', 'EB_OpenSSL_wrapper'}
+
+        def is_bundle(ec):
+            return ec['easyblock'] in bundle_easyblocks or ec['name'] == 'Clang-AOMP'
+        ecs = [ec.copy() if is_bundle(ec) else ec for ec in retained_changed_ecs]
+        checksum_issues = check_sha256_checksums(ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
     @skip_if_not_pr_to_non_main_branch()
