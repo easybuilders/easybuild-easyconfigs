@@ -14,16 +14,39 @@ sources = ['%(version)s.tar.gz']
 checksums = ['90409e940b24045987506a6b239424a4222e2daf648c86dd146cbcb692ebdcbc']
 
 builddependencies = [
-	('CMake', '3.27.7')
+	('CMake', '3.27.7'),
+	('Eigen', '3.4.0'),
+	('Cython', '0.29.36'),
+	('oldest-supported-numpy', '2024a'),
 ]
 dependencies = [
 	('OctoMap', '1.10.0'),
-	('Eigen', '3.4.0'),
 	('libccd', '2.1'),
 ]
+
+multi_deps = {'Python': ['3.11', '3.10', '3.12']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage' 
+exts_list = [
+    ('python-fcl', '0.7.0.7', {
+        'source_urls': ['https://github.com/BerkeleyAutomation/python-fcl/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'use_pip': True,
+        'checksums': ['154cd3ee18b3707b3fea6a74247a31b614311fef99f6380c799e92f9ddaef7f8'],
+	'modulename': False,
+    }),
+]
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+}
+
 sanity_check_paths = {
     'files': ['lib64/libfcl.so'],
     'dirs': ['include/fcl'],
 }
+sanity_check_commands = [
+	f'module load oldest-supported-numpy/.2024a python/{x}; python -c "import fcl"' for x in multi_deps['Python']
+]
 
 moduleclass = 'lib'
