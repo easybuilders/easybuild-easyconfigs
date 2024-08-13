@@ -1006,7 +1006,7 @@ class EasyConfigTest(TestCase):
                 if not easyconfig_dirs_regex.search(dirpath):
                     # only exception: TEMPLATE.eb
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
-                        self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
+                        self.fail("List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1027,7 +1027,7 @@ class EasyConfigTest(TestCase):
                 duplicates[name] = names[name]
 
         if duplicates:
-            self.assertTrue(False, "EasyConfigs with case-insensitive name clash: %s" % duplicates)
+            self.fail("EasyConfigs with case-insensitive name clash: %s" % duplicates)
 
     @skip_if_not_pr_to_non_main_branch()
     def test_pr_sha256_checksums(self):
