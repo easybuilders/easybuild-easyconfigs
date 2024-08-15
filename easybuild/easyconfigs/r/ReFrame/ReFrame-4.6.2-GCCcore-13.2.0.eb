@@ -1,0 +1,61 @@
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '4.6.2'
+
+homepage = 'https://github.com/reframe-hpc/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+dependencies = [
+    ('Python', '3.11.5'),
+]
+
+req_py_majver = 3
+req_py_minver = 11
+
+use_pip = True
+
+exts_list = [
+    ('reframe', version, {
+        'download_dep_fail': False,
+        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && "
+                          "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && "
+                          "export PYTHONPATH=%(builddir)s/reframe/reframe-%(version)s/external/%(arch)s:$PYTHONPATH && ",
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/reframe-hpc/reframe/archive/'],
+        'checksums': ['d3343815ee3d2c330b91a1cdb924ba184119ed7d9fc88a4a754b939a4259df82'],
+    }),
+]
+
+postinstallcmds = [
+    "cp -a tools examples %(installdir)s",
+    # Adding hpctestlib separately to the external directory so that it can be
+    # imported and is in the PYTHONPATH
+    "cp -a hpctestlib %(installdir)s/external",
+    "mkdir -p %(installdir)s/share && cp -a share/completions %(installdir)s/share/completions",
+    r"sed -i 's@/\(python[0-9.]*\)$@/\1 -S@g' %(installdir)s/bin/reframe",
+]
+
+sanity_check_paths = {
+    'files': ['bin/reframe',
+              'share/completions/reframe.bash',
+              'share/completions/reframe.fish',
+              'share/completions/reframe.tcsh'],
+    'dirs': ['external', 'lib', 'tools', 'examples']
+}
+
+sanity_check_commands = ['reframe -V']
+
+sanity_pip_check = True
+
+modextrapaths = {
+    # bootstrap script installs required dependencies to 'external' subdirectory
+    'PYTHONPATH': 'external/%(arch)s',
+    # add bash autocompletion using the BASH_COMPLETION_USER_DIR environment variable
+    # source: https://github.com/scop/bash-completion#faq
+    'BASH_COMPLETION_USER_DIR': 'share',
+}
+
+moduleclass = 'devel'
