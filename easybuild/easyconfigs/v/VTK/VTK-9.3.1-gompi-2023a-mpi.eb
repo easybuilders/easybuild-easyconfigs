@@ -1,0 +1,65 @@
+easyblock = 'CMakeMake'
+
+name = 'VTK'
+version = '9.3.1'
+versionsuffix = '-mpi'
+
+homepage = 'http://www.vtk.org'
+description = """The Visualization Toolkit (VTK) is an open-source, freely available software system for
+ 3D computer graphics, image processing and visualization. VTK consists of a C++ class library and several
+ interpreted interface layers including Tcl/Tk, Java, and Python. VTK supports a wide variety of visualization
+ algorithms including: scalar, vector, tensor, texture, and volumetric methods; and advanced modeling techniques
+ such as: implicit modeling, polygon reduction, mesh smoothing, cutting, contouring, and Delaunay triangulation."""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://www.%(namelower)s.org/files/release/%(version_major_minor)s']
+sources = [
+    SOURCE_TAR_GZ,
+    '%(name)sData-%(version)s.tar.gz',
+]
+checksums = [
+    {'VTK-9.3.1.tar.gz': '8354ec084ea0d2dc3d23dbe4243823c4bfc270382d0ce8d658939fd50061cab8'},
+    {'VTKData-9.3.1.tar.gz': '299569eba74413ee90cc5073511e82a957d7d685deb0a9f16362e2714e4e7f6f'},
+]
+
+builddependencies = [
+    ('CMake', '3.27.7', '', SYSTEM),
+]
+dependencies = [
+    ('SciPy-Stack', '2023b', '', SYSTEM),
+    ('HDF5', '1.14.2'),
+    ('netCDF', '4.9.2'),
+]
+multi_deps = {'Python': ['3.11', '3.10']}
+
+configopts = "-DVTK_USE_SYSTEM_LZMA=ON -DVTK_USE_SYSTEM_HDF5=ON -DVTK_USE_SYSTEM_NETCDF=ON -DVTK_WRAP_PYTHON=ON -DVTK_PYTHON_VERSION=3 -DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s -DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%(pyshortver)s.so -DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python -DCMAKE_INSTALL_LIBDIR=lib -DVTK_Group_MPI:BOOL=ON"
+
+
+preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --add_path %(installdir)s/lib --any_interpreter",
+    """mkdir -p %(installdir)s/lib/python3.11/site-packages/%(namelower)s-%(version)s.dist-info && echo -e 'Metadata-Version: 2.3
+Name: %(namelower)s
+Version: %(version)s' > %(installdir)s/lib/python3.11/site-packages/%(namelower)s-%(version)s.dist-info/METADATA""",
+    """mkdir -p %(installdir)s/lib/python3.10/site-packages/%(namelower)s-%(version)s.dist-info && echo -e 'Metadata-Version: 2.3
+Name: %(namelower)s
+Version: %(version)s' > %(installdir)s/lib/python3.10/site-packages/%(namelower)s-%(version)s.dist-info/METADATA""",
+]
+multi_deps_load_default = False
+
+sanity_check_paths = {
+    'files': ['bin/vtkWrapJava-%(version_major_minor)s', 'bin/vtkParseJava-%(version_major_minor)s', 'bin/vtkWrapPythonInit-%(version_major_minor)s', 'bin/vtkWrapPython-%(version_major_minor)s', 'bin/vtkWrapHierarchy-%(version_major_minor)s', 'bin/vtkpython'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/', 'include/%(namelower)s-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    ('python', "-c 'import %(namelower)s'"),
+    """if [ -n "$(find %(installdir)s/lib*/python*/site-packages -name '*.egg*')" ] ; then echo 'Found .egg file, please use pip. See https://github.com/ComputeCanada/software-stack/issues/137' ; exit 1; else  exit 0; fi""",
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+
+moduleclass = 'vis'
