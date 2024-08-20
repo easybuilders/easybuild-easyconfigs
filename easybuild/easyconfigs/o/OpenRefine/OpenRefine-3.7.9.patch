@@ -1,0 +1,29 @@
+Only in OpenRefine-3.7.9: .gitattributes
+Only in OpenRefine-3.7.9: .github
+Only in OpenRefine-3.7.9: .gitignore
+diff -ru OpenRefine-3.7.9.orig/refine.ini OpenRefine-3.7.9/refine.ini
+--- OpenRefine-3.7.9.orig/refine.ini	2024-02-10 17:32:12.000000000 +0000
++++ OpenRefine-3.7.9/refine.ini	2024-08-15 18:54:05.475964934 +0000
+@@ -12,15 +12,20 @@
+ 
+ # Maximum JVM heap (memory) and max form size allocations
+ #REFINE_MAX_FORM_CONTENT_SIZE=1048576
+-REFINE_MEMORY=1400M
++if [[ -n "$SLURM_MEM_PER_NODE" ]]; then
++  REFINE_MEMORY=${SLURM_MEM_PER_NODE}M
++else
++  REFINE_MEMORY=$(free -m | grep -oP '\d+' | head -n 1)M
++fi
+ 
+ # Initial (and minimum) size of Java heap
+-REFINE_MIN_MEMORY=1400M
++#REFINE_MIN_MEMORY=1400M
+ 
+ # Some sample configurations. These have no defaults.
+ #JAVA_HOME=C:\Program Files\Java\jdk1.8.0_151
+ # Use a single JAVA_OPTIONS that includes any JVM options you need upon OpenRefine startup
+ #JAVA_OPTIONS=-XX:+UseParallelGC -verbose:gc -Drefine.headless=true -Drefine.data_dir=C:\Users\user\AppData\Roaming\OpenRefine -Drefine.display.new.version.notice=true
++JAVA_OPTIONS="-Djava.security.egd=file:///dev/urandom"
+ 
+ # Uncomment to increase autosave period to 60 mins (default: 5 minutes)
+ # for better performance of long-lasting transformations (but increased risk of data loss)
