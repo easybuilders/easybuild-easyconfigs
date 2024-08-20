@@ -9,11 +9,12 @@ description = """ANSYS simulation software enables organizations to confidently 
 
 toolchain = SYSTEM
 
+# tars created from isos unpack under build dir
 # create tar ball from the installation iso files
 sources = ['ANSYS-%(version)s.tar']
-
 # sha256sum ANSYS-2022R2.tar
 checksums = ['2a6074cdffe6f4694e9d488168908e0c55e763e73012a1c3f62ae5170cd3cc68']
+extract_sources = True
 
 postinstallcmds = [
   # Directly replace files (create patches and apply later)
@@ -26,7 +27,7 @@ postinstallcmds = [
    chmod 755 %(installdir)s/v222/commonfiles/MainWin/linx64/mw/setmwruntime;",
   # Set same perms on all directories
   "find %(installdir)s -type d -exec chmod 755 {} \;",
-  # Set same perms on all shared libraries to avoid warning in log file
+  # Set same perms on all shared libraries to avoid log file warnings
   "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 755 {} \;",
   # Rename some libs as these maybe older than system equivalents and missing new symbols
   "find %(installdir)s \( -type f -o -type l \) -name 'libstdc++.so*' -exec mv {} {}.bak \;",
@@ -36,33 +37,70 @@ postinstallcmds = [
   "find %(installdir)s \( -type f -o -type l \) -name 'libgfortran.so.3*bak' -print0 | while IFS= \
    read -r -d $'\\0' file; do echo \"Removing bak from $file\"; mv \"$file\" \"${file%.bak}\"; done;",
   # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
-  "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
-   sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+#  "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
+#   sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
   # Run setrpaths.sh in all directories
-  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
-  # Run setrpaths.sh for any_interpreter
-  "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
-   /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
-  # Create domainname -> /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname
-  "cd %(installdir)s/v222/Tools/mono/Linux64/bin;\
-   ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname domainname",
-  # Replace '/bin/sh' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh'
-  "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -print0 | xargs -0 \
-   grep -riIlZ '/bin/sh' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
-   sed -i 's|\/bin\/sh|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh|g' \"$file\"; done;",
-  # Replace '/bin/bash' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/bash'
-  "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -print0 | xargs -0 \
-   grep -riIlZ '/bin/bash' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
-   sed -i 's|\/bin\/bash|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/bash|g' \"$file\"; done;",
-  # Remove /sbin/ from both /sbin/lspci entries in libApipWrapper.so
+#  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+  # Find and patch lmutil to use lsb-loader
+  "for a in $(find %(installdir)s -type f -name lmutil); do echo Considering $a; \
+   if [ $(patchelf --print-interpreter $a) == '/lib64/ld-lsb-x86-64.so.3' ]; then \
+   patchelf --set-interpreter $EPREFIX/usr/lib64/ld-lsb-x86-64.so.3 $a; fi; done;",
+  # Find and patch lmgrd to use lsb-loader
+  "for a in $(find %(installdir)s -type f -name lmgrd); do echo Considering $a; \
+   if [ $(patchelf --print-interpreter $a) == '/lib64/ld-lsb-x86-64.so.3' ]; then \
+   patchelf --set-interpreter $EPREFIX/usr/lib64/ld-lsb-x86-64.so.3 $a; fi; done;",
+  # Avoid warning when starting workbench mechanical: sh: domainname: command not found
+  #"whichhostname=/cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname;\
+  #"whichhostname=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/bin/hostname;\
+  "whichhostname=$(which hostname);\
+   echo \"whichhostname = $whichhostname\";\
+   cd %(installdir)s/v222/Tools/mono/Linux64/bin;\
+   ln -s $whichhostname domainname;",
+  # Replace '/bin/sh' instances
+  #"whichsh=/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh;\
+  #"whichsh=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/bin/sh;\
+  "whichsh=$(which sh);\
+   echo \"whichsh = $whichsh\";\
+   whichshesc=\"$(echo \"$whichsh\" | sed -e 's/[\/&]/\\\&/g')\";\
+   echo \"whichshesc = $whichshesc\";\
+   find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
+   xargs -0 grep -riIlZ '/bin/sh' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   sed -i \"s|\/bin\/sh|$whichshesc|g\" \"$file\"; done;",
+  # Replace '/bin/bash' instances
+  #"whichbash=/cvmfs/soft.computecanada.ca/gentoo/2020/bin/bash;\
+  #"whichbash=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/bin/bash;\
+  "whichbash=$(which bash);\
+   echo \"my whichbash = \$whichbash\";\
+   whichbashesc=\"$(echo \"$whichbash\" | sed -e 's/[\/&]/\\\&/g')\";\
+   echo \"my whichbashesc = $whichbashesc\";\
+   find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
+   xargs -0 grep -riIlZ '/bin/bash' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   sed -i \"s|\/bin\/bash|$whichbashesc|g\" \"$file\"; done;",
+  # Remove /sbin/ from both of the /sbin/lspci entries inside libApipWrapper.so
   "find %(installdir)s -type f ! -size 0 -name 'libApipWrapper.so' -print0 | xargs -0 \
    grep -rilZ '/sbin/lspci' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
    perl -0777 -pe 's/\/sbin\//substr q{}.\"\\0\"x length$&,0,length$&/e or die \"pattern not found\"' -i \"$file\"; \
    perl -0777 -pe 's/\/sbin\//substr q{}.\"\\0\"x length$&,0,length$&/e or die \"pattern not found\"' -i \"$file\"; done;",
+  # Avoid warning when starting workbench: Unit[s] is not valid for quantity Time
   # Redirect library to avoid unit system configuration error
   "cd %(installdir)s/v222/tp/CUEUnits/linx64/lib;\
    mv libCUEUnits.so libCUEUnits.so.bak;\
    ln -s ../../../../aisol/lib/linx64/libCUEUnits.so libCUEUnits.so;"
+  # Avoid cfx-pre warning: libjpeg.so.62: no version information available
+  "cd %(installdir)s/v222/tp/qt/5.9.6/linx64/lib;\
+   mv libjpeg.so.62.0.0 libjpeg.so.62.0.0-orig;\
+   mv libjpeg.so.62 libjpeg.so.62-orig;\
+   ln -s $EPREFIX/usr/lib64/libjpeg.so.62 libjpeg.so.62;",
+  # Make sharcnet license the default for coupled solvers
+  "cd %(installdir)s/shared_files/licensing;\
+   echo 'SERVER=1055@license3.sharcnet.ca' > ansyslmd.ini;\
+   echo 'ANSYSLI_SERVERS=2325@license3.sharcnet.ca' >> ansyslmd.ini;"
+  # Replace "$1" with ${1} to Avoid newer grep: warning: stray \ before -
+  "cp -a %(installdir)s/v222/ansys/bin/anssh.ini{,-orig};\
+   sed -i 's|grep \"$1\"|grep \${1}|g' \"%(installdir)s/v222/ansys/bin/anssh.ini\";",
+  # Replace '^\/' with '^/' to Avoid newer grep: warning: stray \ before "y
+  "find %(installdir)s -type f \( -name 'mpi*fl' -o -name 'mpi*en' \) -exec cp -a {}{,-orig} \;;\
+   find %(installdir)s -type f \( -name 'mpi*fl' -o -name 'mpi*en' \) -exec sed -i \"s|'^\\\\\/'|'^/'|g\" \"{}\" \;"
 ]
 
 modextravars = {
