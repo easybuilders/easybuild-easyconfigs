@@ -1,0 +1,119 @@
+easyblock = 'CMakeNinja'
+
+name = 'FreeCAD'
+version = '1.0.0pre'
+
+# FreeCAD main can be built against Qt6, no official release yet
+# https://github.com/FreeCAD/FreeCAD/issues/13303#issuecomment-2039708088
+
+homepage = 'https://github.com/FreeCAD/FreeCAD'
+description = '''Your own 3D parametric modeler'''
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/FreeCAD/FreeCAD/archive'],
+        'download_filename': 'b05dc2da7373c4483a3b476a0e190c02b175e80a.tar.gz',  # release/FreeCAD-1-0 branch
+        'filename': '%(name)s-%(version)s.tar.gz',
+        'extract_cmd': 'tar -xzf %s -C %(builddir)s --strip-components=1',
+    },
+    {
+        'source_urls': ['https://github.com/microsoft/GSL/archive'],
+        'download_filename': 'b39e7e4b0987859f5b19ff7686b149c916588658.tar.gz',
+        'filename': '%(name)s-%(version)s-GSL.tar.gz',
+        'extract_cmd': 'tar -xzf %s -C %(builddir)s/src/3rdParty/GSL --strip-components=1',
+    },
+    {
+        'source_urls': ['https://github.com/Ondsel-Development/OndselSolver/archive'],
+        'download_filename': '64e546fe807043d4cdc33be023e521ac0f6449e9.tar.gz',
+        'filename': '%(name)s-%(version)s-OndselSolver.tar.gz',
+        'extract_cmd': 'tar -xzf %s -C %(builddir)s/src/3rdParty/OndselSolver --strip-components=1',
+    },
+    {
+        'source_urls': ['https://github.com/google/googletest/archive'],
+        'download_filename': 'f8d7d77c06936315286eb55f8de22cd23c188571.tar.gz',
+        'filename': '%(name)s-%(version)s-googletest.tar.gz',
+        'extract_cmd': 'tar -xzf %s -C %(builddir)s/tests/lib --strip-components=1',
+    },
+]
+
+checksums = [
+    {'FreeCAD-0.22.0pre.tar.gz': 'ef119bf4b0c9b760dccae69a6d74890a2392c0b728c5780de01741bed1cef2b4'},
+    {'FreeCAD-0.22.0pre-GSL.tar.gz': 'dcd20c4eafbd5b9cfa9078a638546724390f661834dd3816622ca9875659907e'},
+    {'FreeCAD-0.22.0pre-OndselSolver.tar.gz': '66c60f09f017d107cd50e92a9e54bd235655cfbc38dd109e91bbbeb8a31634ad'},
+    {'FreeCAD-0.22.0pre-googletest.tar.gz': '7ff5db23de232a39cbb5c9f5143c355885e30ac596161a6b9fc50c4538bfbf01'},
+]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('Doxygen', '1.9.8'),
+    ('Eigen', '3.4.0'),
+    ('Ninja', '1.11.1'),
+]
+
+dependencies = [
+    ('fmt', '10.2.0'),
+    ('yaml-cpp', '0.8.0'),
+    ('Xerces-C++', '3.2.5'),
+    ('Boost', '1.83.0'),
+    ('Python', '3.11.5'),
+    ('Boost.Python', '1.83.0'),
+    ('Qt6', '6.6.3'),
+    ('PySide6', '6.6.2'),
+    ('Shiboken6', '6.6.2'),
+    ('X11', '20231019'),
+    ('VTK', '9.3.0'),
+    ('matplotlib', '3.8.2'),
+    ('med', '5.0.0'),
+    ('pivy', '0.6.9.a0'),
+    ('Mesa', '23.1.9'),
+    ('libGLU', '9.0.3'),
+    ('Coin', '4.0.2'),
+    ('Quarter', '1.2.1'),
+    ('occt', '7.8.1'),
+]
+
+build_type = 'RelWithDebInfo'
+
+configopts = ''
+configopts += ' -DENABLE_DEVELOPER_TESTS=NO'
+configopts += ' -DBUILD_TEST=NO'
+configopts += ' -DBUILD_FLAT_MESH=YES'
+configopts += ' -DBUILD_DESIGNER_PLUGIN=YES'
+configopts += ' -DBUILD_DRAWING=YES'
+configopts += ' -DFREECAD_QT_MAJOR_VERSION=6'
+configopts += ' -DFREECAD_USE_QT_FILEDIALOG=YES'
+configopts += ' -DFREECAD_USE_PYBIND11=YES'
+configopts += ' -DFREECAD_USE_EXTERNAL_PIVY=YES'
+configopts += ' -DFREECAD_USE_OCC_VARIANT="Official Version"'
+configopts += ' -DINSTALL_TO_SITEPACKAGES=NO'
+configopts += ' -DDESIGNER_PLUGIN_LOCATION=%(installdir)s/plugins'
+configopts += ' -Wno-dev'
+configopts += ' -Wdeprecated-declarations'
+
+sanity_check_paths = {
+    'files': [
+        'bin/FreeCADCmd',
+        'bin/FreeCAD',
+        'lib64/Points.so',
+        'lib64/libSMESH.so',
+        'lib64/FreeCAD.so',
+    ],
+    'dirs': ['bin', 'share/pkgconfig', 'lib64'],
+}
+
+postinstallcmds = [
+    'ln -s FreeCAD %(installdir)s/bin/freecad',
+    'ln -s FreeCADCmd %(installdir)s/bin/freecadcmd',
+]
+
+modextrapaths = {
+    'QT_PLUGIN_PATH': 'plugins',
+}
+
+sanity_check_commands = [
+    'FreeCAD -c "print(2+2)"',
+]
+
+moduleclass = 'vis'

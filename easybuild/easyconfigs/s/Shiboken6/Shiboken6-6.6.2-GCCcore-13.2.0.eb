@@ -1,0 +1,80 @@
+easyblock = 'PythonBundle'
+
+name = 'Shiboken6'
+version = '6.6.2'
+
+homepage = 'https://download.qt.io/official_releases/QtForPython'
+description = 'Shiboken6 is the official Python module from the Qt for Python project.'
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+# source_urls = ['https://download.qt.io/official_releases/QtForPython/%(namelower)s/%(name)s-%(version)s-src/']
+# sources = ['pyside-setup-everywhere-src-%(version)s.tar.xz']
+# checksums = ['14620b694d7af4c978443016292d3d2108ba5dc105f4170e3b71eadcaf04c9f0']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.27.6'),
+    ('Clang', '17.0.6'),
+    ('Ninja', '1.11.1'),
+    ('build', '1.0.3'),
+    ('patchelf', '0.18.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Qt6', '6.6.3'),
+    ('PySide6', '6.6.2'),
+]
+
+# pip install \
+#     --index-url=https://download.qt.io/official_releases/QtForPython/ \
+#     --trusted-host download.qt.io \
+#     shiboken6 pyside6 shiboken6_generator
+# The whl package cannot automatically discover in your system the location for:
+
+# Clang installation,
+
+# Qt location (indicated by the path of the qtpaths tool) with the same version/build as the one described in the wheel,
+
+# Qt libraries with the same package version.
+
+# So using this process requires you to manually modify the variables:
+
+# CLANG_INSTALL_DIR must be set to where the libraries are,
+
+# PATH must include the location for the qtpaths tool with the same Qt
+# version as the package,
+
+# LD_LIBRARY_PATH including the Qt libraries and Clang libraries paths.
+
+use_pip = True
+sanity_pip_check = True
+
+preconfigopts = 'export CLANG_INSTALL_DIR=$EBROOTCLANG && '
+
+prebuildopts = 'export CLANG_INSTALL_DIR=$EBROOTCLANG && '
+# buildcmd = 'build --parallel=%(parallel)s'
+
+preinstallopts = 'export CLANG_INSTALL_DIR=$EBROOTCLANG && '
+# install_target = 'install --parallel=%(parallel)s'
+
+exts_list = [
+    ('shiboken6', version, {
+        'source_tmpl': '%%(name)s-%%(version)s-cp38-abi3-manylinux_2_28_%s.whl' % ARCH,
+        'source_urls': ['https://download.qt.io/official_releases/QtForPython/shiboken6/'],
+        'checksums': ['9da86622cee5e7201bafe9c5beee3c06d9168c6b8f3e2fac52c1b7df00956bff'],
+    }),
+    ('shiboken6_generator', version, {
+        'source_tmpl': '%%(name)s-%%(version)s-cp38-abi3-manylinux_2_28_%s.whl' % ARCH,
+        'source_urls': ['https://download.qt.io/official_releases/QtForPython/shiboken6-generator/'],
+        'checksums': ['bb989483e54a4ed36c296d3fe29660e96407d97718941a50b41ee7d70c490bb2'],
+    }),
+]
+
+postinstallcmds = [
+    'ln -s python%(pyshortver)s/site-packages/%(name)s/libshiboken6.abi3.so.6.6 %(installdir)s/lib/',
+    'ln -s python%(pyshortver)s/site-packages/%(name)s/Shiboken.abi3.so %(installdir)s/lib/',
+]
+
+moduleclass = 'devel'
