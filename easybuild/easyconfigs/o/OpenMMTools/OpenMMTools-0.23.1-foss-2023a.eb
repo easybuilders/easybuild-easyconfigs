@@ -1,0 +1,78 @@
+easyblock = 'PythonBundle'
+
+name = 'OpenMMTools'
+version = '0.23.1'
+
+homepage = 'https://github.com/choderalab/openmmtools'
+description = """A batteries-included toolkit for the GPU-accelerated OpenMM molecular simulation engine.
+openmmtools is a Python library layer that sits on top of OpenMM to provide access to a variety of useful tools 
+for building full-featured molecular simulation packages.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+builddependencies = [
+    ('hatchling', '1.18.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('OpenMM', '8.0.0'),
+    ('netcdf4-python', '1.6.4'),
+    ('MDTraj', '1.9.9'),
+    ('PyYAML', '6.0'),
+    ('numba', '0.58.1'),
+]
+
+use_pip = True
+exts_list = [
+    ('ipython_genutils', '0.2.0', {
+        'checksums': ['eb2e116e75ecef9d4d228fdc66af54269afa26ab4463042e33785b887c628ba8'],
+    }),
+    ('pyrsistent', '0.20.0', {
+        'checksums': ['4c48f78f62ab596c679086084d0dd13254ae4f3d6c72a83ffdf5ebdef8f265a4'],
+    }),
+    ('jupyter_core', '5.7.2', {
+        'checksums': ['aa5f8d32bbf6b431ac830496da7392035d6f61b4f54872f15c4bd2a9c3f536d9'],
+    }),
+    ('traitlets', '5.14.3', {
+        'checksums': ['9ed0579d3502c94b4b3732ac120375cda96f923114522847de4b3bb98b96b6b7'],
+    }),
+    ('pymbar', '3.1', {
+        # pymbar 3.1 is not available via PyPI, see https://github.com/choderalab/pymbar/issues/475
+        'source_urls': ['https://github.com/choderalab/pymbar/archive/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['7a996e5d3fd8143378f9e18662483446a4a2fe7e57917511e96beb6b07fd6232'],
+    }),
+    ('mpiplus', '0.0.2', {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/choderalab/mpiplus/archive/'],
+        'checksums': ['5f051210b8cd321fdcbfa97a6e1606b63e6d6c7214c393bc04f93a8545b6d3a8'],
+    }),
+    ('sortedcontainers', '2.4.0', {
+        'checksums': ['25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88'],
+    }),
+    ('hypothesis', '6.111.0', {
+        'checksums': ['04d0703621d9fdd61c079a4dda07babbe7ebf6d34eee6ad9484a2af0ee721801'],
+    }),
+    (name, version, {
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/choderalab/openmmtools/archive/'],
+        'checksums': ['9281f50896a91f3f9e1ea16f0636f2aff494287a51a4ec03ae8e26f1b8edaccc'],
+        # import check requires use of mpirun, handled via sanity_check_commands
+        'modulename': False,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/test-openmm-platforms'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["%(mpi_cmd_prefix)s python -c 'import %(namelower)s'"]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
