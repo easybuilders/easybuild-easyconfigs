@@ -33,6 +33,7 @@ dependencies = [
 ]
 
 use_pip = True
+sanity_pip_check = True
 
 exts_list = [
     ('mappy', '2.24', {
@@ -47,11 +48,16 @@ exts_list = [
     (name, version, {
         'modulename': 'flair',
         'source_urls': ['https://github.com/BrooksLabUCSC/flair/archive/'],
-        'sources': [{'download_filename': '1f45ac4.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'sources': [{'download_filename': "%s.tar.gz" % local_commit, 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': ['25804d558c77315d5d6c4e9549cf1749c75213fc4bf53680113fa4c2389043ec'],
     }),
 ]
 
+local_python_scripts = ['count_sam_transcripts']
+postinstallcmds = [
+    'ln -s %%(installdir)s/lib/python%%(pyshortver)s/site-packages/%%(namelower)s/%s.py  %%(installdir)s/bin/%s' % ('count_sam_transcripts', 'count_sam_transcripts'),
+    'chmod +x %%(installdir)s/bin/%s' % 'count_sam_transcripts',
+]
 modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages/%(namelower)s']}
 
 sanity_check_paths = {
@@ -60,6 +66,6 @@ sanity_check_paths = {
 }
 
 local_subcommands = ['align', 'correct', 'collapse', 'quantify']
-sanity_check_commands = ["%%(namelower)s %s --help" % c for c in local_subcommands] + ["%%(namelower)s --version"]
+sanity_check_commands = ["%%(namelower)s %s --help" % c for c in local_subcommands] + ["%(namelower)s --version"]
 
 moduleclass = 'bio'
