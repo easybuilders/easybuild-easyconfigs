@@ -1,0 +1,52 @@
+easyblock = 'MakeCp'
+
+name = 'NextDenovo'
+version = '2.5.2'
+
+homepage = 'https://github.com/Nextomics/NextDenovo'
+description = 'NextDenovo is a string graph-based de novo assembler for long reads.'
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/Nextomics/NextDenovo/archive/']
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['f1d07c9c362d850fd737c41e5b5be9d137b1ef3f1aec369dc73c637790611190']
+
+builddependencies = [('binutils', '2.40')]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'preinstallopts': '',
+    'installopts': '',
+}
+
+exts_list = [
+    ('Paralleltask', '0.2.3', {
+        'modulename': 'paralleltask',
+        'checksums': ['8015a8311d5021bc44edbfbf45ff2557a529999e235d25190bac62993fdf7b66'],
+    }),
+]
+
+files_to_copy = ['bin', 'lib', 'test_data', 'LICENSE', 'nextDenovo']
+
+sanity_check_paths = {
+    'files': ['nextDenovo', 'bin/minimap2-nd', 'bin/paralleltask', 'bin/nextgraph'],
+    'dirs': ['bin', 'test_data', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['nextDenovo --help']
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'PATH': '',
+}
+
+moduleclass = 'bio'
