@@ -663,6 +663,8 @@ class EasyConfigTest(TestCase):
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
             # Napari 0.4.19post1 requires VisPy >=0.14.1 <0.15
             'VisPy': [('0.14.1;', ['napari-0.4.19.post1-'])],
+            # Visit-3.4.1 requires VTK 9.2.x
+            'VTK': [('9.2.6;', ['Visit-3.4.1-'])],
             # WPS 3.9.1 requires WRF 3.9.1.1
             'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
