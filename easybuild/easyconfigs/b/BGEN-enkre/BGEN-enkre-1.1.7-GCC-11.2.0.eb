@@ -1,0 +1,74 @@
+# Contribution from the NIHR Biomedical Research Centre
+# Guy's and St Thomas' NHS Foundation Trust and King's College London
+# uploaded by J. Sassmannshausen
+# we recommend to use --download-timeout=1000 when fetching the files
+
+easyblock = 'CmdCp'
+
+name = 'BGEN-enkre'
+version = '1.1.7'
+
+homepage = 'https://enkre.net/cgi-bin/code/bgen/dir?ci=trunk'
+description = """This repository contains a reference implementation 
+of the BGEN format, written in C++. The library can be used as the 
+basis for BGEN support in other software, or as a reference for 
+developers writing their own implementations of the BGEN format.
+Please cite:
+Band, G. and Marchini, J., "BGEN: a binary file format for imputed genotype and haplotype data", 
+bioArxiv 308296; doi: https://doi.org/10.1101/308296
+"""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+source_urls = ['https://code.enkre.net/bgen/tarball/v%(version)s/']
+sources = ['v%(version)s.tgz']
+patches = [
+    '3rd-party-removal.patch',
+    'BGEN-enkre_streampos.patch',
+]
+
+checksums = [
+    ('6476b077af6c8e98e85fd7e09f58cb3fdf143ff91850c984248fd4dc2d74a8c3',  # v1.1.7.tgz
+     'b922ac22c1c0e365d0de6054f6ce2ad911bc81db5bcd8ca915bae750f57bd0a7'),
+    '0269b91d21976f38a9cf9bf7811375d16bf35be587d903ab1d846b2001b7d767',  # 3rd-party-removal.patch
+    '61c05ae5f7363d5b7b6015f0a015b93f149dbda4b23b9f48f9517a6ce93d5869',  # BGEN-enkre_streampos.patch
+]
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('Python', '3.9.6'),
+]
+
+dependencies = [
+    ('SQLite', '3.36'),
+    ('zstd', '1.5.0'),
+    ('Boost', '1.55.0'),
+]
+
+cmds_map = [
+    ('.*', "./waf configure && echo LIB_zstd = [\\'zstd\\'] >> build/c4che/_cache.py &&"
+     " echo LIB_sqlite3 = [\\'sqlite3\\'] >> build/c4che/_cache.py &&"
+     "echo LIB_boost = [\\'boost_system\\', \\'boost_filesystem\\', \\'boost_thread\\', \\'boost_timer\\'] "
+     " >> build/c4che/_cache.py && ./waf"),
+]
+
+files_to_copy = [
+    (['build/apps/edit-bgen', 'build/apps/bgenix', 'build/apps/cat-bgen'], 'bin'),
+    (['build/db/libdb.a', 'build/libbgen.a'], 'lib'),
+    (['genfile/include/*', 'db/include/*'], 'include'),
+]
+
+postinstallcmds = ['./build/test/unit/test_bgen']
+
+sanity_check_paths = {
+    'files': ['bin/edit-bgen', 'bin/bgenix', 'bin/cat-bgen'],
+    'dirs': ['bin', 'lib', 'include'],
+}
+
+sanity_check_commands = [
+    'bgenix -help',
+    'cat-bgen -help',
+    'edit-bgen -help',
+]
+
+moduleclass = 'bio'
