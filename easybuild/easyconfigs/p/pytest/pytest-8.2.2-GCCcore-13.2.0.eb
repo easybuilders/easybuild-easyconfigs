@@ -1,0 +1,76 @@
+easyblock = 'PythonBundle'
+
+name = 'pytest'
+version = '8.2.2'
+
+homepage = 'https://docs.pytest.org/en/latest/'
+description = """The pytest framework makes it easy to write small,
+readable tests, and can scale to support complex functional testing for
+applications and libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('hatchling', '1.18.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Python-bundle-PyPI', '2023.10'),
+]
+
+use_pip = True
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+# Note! Some of the file system related tests may fail on shared file systems.
+# Notably TestPOSIXLocalPath.test_copy_stat_file, TestPOSIXLocalPath.test_copy_stat_dir
+# and test_source_mtime_long_long are known to fail on GPFS
+# Build with buildpath and tmpdir set to a local file system to avoid this
+# or use --ignore-test-failures
+_skip_tests = [
+    'testing/io/test_terminalwriter.py',
+    'testing/test_terminal.py',
+    'testing/test_debugging.py',
+    'testing/test_config.py',
+    'testing/test_helpconfig.py',
+    'testing/_py/test_local.py',
+    'testing/test_assertrewrite.py',
+]
+_ignore_tests = ' --ignore='.join(_skip_tests)
+
+exts_list = [
+    ('setuptools-scm', '8.1.0', {
+        'checksums': ['42dea1b65771cba93b7a515d65a65d8246e560768a66b9106a592c8e7f26c8a7'],
+    }),
+    ('pluggy', '1.5.0', {
+        'checksums': ['2cffa88e94fdc978c4c574f15f9e59b7f4201d439195c3715ca9e2486f1d0cf1'],
+    }),
+    ('flit-core', '3.9.0', {
+        'source_tmpl': 'flit_core-%(version)s.tar.gz',
+        'checksums': ['72ad266176c4a3fcfab5f2930d76896059851240570ce9a98733b658cb786eba'],
+    }),
+    ('hypothesis', '6.105.1', {
+        'checksums': ['d4eedb42193da9507623f4fe27fd38f715ec19ad30ad7c30e3b25594c0b491dc'],
+    }),
+    ('elementpath', '4.4.0', {
+        'checksums': ['dfc4b8ca3d87966dcb0df40b5b6d04a98f053683271930fad9e7fa000924dfb2'],
+    }),
+    ('xmlschema', '3.3.1', {
+        'checksums': ['2066ecbc9728112073f6f44d17c5c16723aff1c7d22a7c4c6421e2d68ec5f0ea'],
+    }),
+    (name, version, {
+        'checksums': ['de4bb8104e201939ccdc688b27a89a7be2079b22e2bd2b07f806b6ba71117977'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import pytest'",
+    'cd %%(builddir)s/%%(name)s/%%(name)s-%%(version)s && %%(installdir)s/bin/pytest --ignore=%s testing'
+    % _ignore_tests,
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'
