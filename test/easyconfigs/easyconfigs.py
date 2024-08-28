@@ -1086,6 +1086,11 @@ class EasyConfigTest(TestCase):
             r'.*-2016[ab]-Python-.*',
             # mympirun is installed with system Python, pip may not be installed for system Python
             r'vsc-mympirun.*',
+            # ReFrame intentionally installs its deps in a %(installdir)s/external subdir, which is added
+            # to sys.path by the ReFrame command, and is intentionally NOT on the PYTHONPATH.
+            # Thus, a pip check fails, but this is expected and ok, it is still a working ReFrame installation
+            # See https://github.com/easybuilders/easybuild-easyconfigs/pull/21269 for more info
+            r'ReFrame.*',
         ]
 
         failing_checks = []
