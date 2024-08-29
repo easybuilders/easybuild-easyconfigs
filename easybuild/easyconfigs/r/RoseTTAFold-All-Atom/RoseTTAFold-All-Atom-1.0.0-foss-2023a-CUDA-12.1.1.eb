@@ -1,0 +1,444 @@
+easyblock = "Tarball"
+
+name = 'RoseTTAFold-All-Atom'
+version = "1.0.0"
+local_commit = "c1fd924"
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/baker-laboratory/RoseTTAFold-All-Atom'
+description = """RoseTTAFold All-Atom is a biomolecular structure prediction neural network 
+that can predict a broad range of biomolecular assemblies including 
+proteins, nucleic acids, small molecules, covalent modifications and metals.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/baker-laboratory/RoseTTAFold-All-Atom/archive']
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': '%%(name)s-%%(version)s-%s.tar.gz' % local_commit,
+}]
+checksums = ['cb3f49727de951183a350644b796458857811cf46c339998501ffc8d7b936c68']
+
+builddependencies = [
+    ('poetry', '1.5.1'),
+]
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    #   * [x] libgcc_mutex=0.1=conda_forge => part of GCC(core)
+    #   * [x] openmp_mutex=4.5=2_kmp_llvm => part of GCC(core)
+    #   * [x] absl-py=2.1.0 -> in TensorFlow-CUDA (PR)
+    ('aiohttp', '3.8.5'), #   * [x] aiohttp=3.9.3 for 2023a v3.8.5, not for 2023b
+    #   * [x] aiosignal=1.3.1, on pypi -> in aiohttp
+    ('alsa-lib', '1.2.9'), #   * [x] alsa-lib=1.2.8
+    #   * [x] asttokens=2.4.1, pypi -> exts_list
+    #   * [x] astunparse=1.6.3, pypi -> in TensorFlow-CUDA (PR)
+    #   * [x] async-timeout=4.0.3, pypi -> in aiohttp
+    ('attr', '2.5.1'), #   * [x] attr=2.5.1, yes for 2023a, not for 2023b
+    #   * [x] attrs=23.2.0, pypi -> exts_list -> v23.1.0 in pypi-bundle
+    #   * [x] blas=2.121=mkl => part of OpenBLAS (foss toolchain)
+    #   * [x] blas-devel=3.9.0=21_linux64_mkl => part of OpenBLAS (foss toolchain)
+    ('BLAST', '2.2.26', '-Linux_x86_64', SYSTEM), #   * [x] blast-legacy=2.2.26=2 => see BLAST+ or BLAST-2.2.26-Linux_x86_64.eb
+    #   * [x] blinker=1.7.0, pypi -> exts_list
+    ('Brotli', '1.0.9'), #   * [x] brotli=1.1.0, v1.0.9 for 2023a, v1.1.0 for 2023b
+    #   * [x] brotli-bin=1.1.0, part of brotli? => OK: Brotli-1.0.9-GCCcore-12.3.0.eb
+    ('Brotli-python', '1.0.9'), #   * [x] brotli-python=1.1.0, not for 2023a, v1.1.0 for 2023b -> created
+    ('bzip2', '1.0.8'), #   * [x] bzip2=1.0.8, yes for 2023a/b
+    ('c-ares', '1.19.1'), #   * [x] c-ares=1.27.0, v1.19.1 for 2023a, v1.27.0 for 2023b
+    #   * [?] ca-certificates, not in EB neither pypi => try to ignore, see what happens
+    #   * [x] cached-property=1.5.2, pypi -> exts_list
+    #   * [x] cached_property=1.5.2=pyha770c72_1
+    #   * [x] cachetools=5.3.3, pypi -> exts_list ->  in TensorFlow-CUDA (PR)
+    ('cairo', '1.17.8'), #   * [x] cairo=1.16.0, v1.17.8 for 2023a, v1.18.0 for 2023b
+    #   * [x] certifi=2024.2.2, pypi -> exts_list -> v2023.5.7 in pypi-bundle
+    ('cffi', '1.15.1'), #   * [x] cffi=1.16.0, v1.15.1 for 2023a/b
+    #   * [x] charset-normalizer=3.3.2, pypi -> exts_list -> v3.1.0 in pypi-bundle
+    #   * [x] click=8.1.7, pypi -> exts_list -> v8.1.3 in pypi-bundle
+    #   * [x] colorama=0.4.6, pypi -> pypy-bundle
+    #('contourpy', '1.2.0'),  #   * [x] contourpy=1.2.0, pypi -> exts_list -> not woking -> CREATED - v1.1.0 in part of matplotlib
+    ('cryptography', '41.0.1'), #   * [x] cryptography=42.0.2, v41.0.1 for 2023a, v41.0.5 for 2023b
+    #   * [x] cuda-cudart=11.8.89=0
+    #   * [x] cuda-cupti=11.8.87=0
+    #   * [x] cuda-libraries=11.8.0=0
+    #   * [x] cuda-nvrtc=11.8.89=0
+    #   * [x] cuda-nvtx=11.8.86=0
+    #   * [x] cuda-runtime=11.8.0=0
+    #   * [x] cuda-version=11.8=h70ddcb2_3
+    #   * [x] cudatoolkit=11.8.0,  => just use CUDA for all of these
+    ('cuDNN', '8.9.2.26', versionsuffix, SYSTEM),  #   * [x] cudnn=8.8.0.121, cuDNN-8.9.7.29-CUDA-12.3.0.eb in EB
+    #   * [x] cycler=0.12.1, pypi -> exts_list -> v0.11.0 in matplotlib
+    ('DBus', '1.15.4'), #   * [x] dbus=1.13.6, 2023a: v1.15.4, 2023b: v1.15.8
+    ('deepdiff', '6.7.1'), #   * [x] deepdiff=6.7.1, 2023a: yes, 2023b: no
+    ('DGL', '1.1.3', versionsuffix), #   * [x] dgl=1.1.2, -> create for 2023a and CUDA => wait for merge of https://github.com/easybuilders/easybuild-easyconfigs/pull/20092
+    #   * [x] executing=2.0.1, pypi -> exts_list
+    ('expat', '2.5.0'), #   * [x] expat=2.6.1, 2023a: v2.5.0, 2023b: v2.5.0
+    ('FFmpeg', '6.0'), #   * [x] ffmpeg=4.3, 2023a: v6.0, 2023b: v6.0
+    ('FFTW', '3.3.10'), #   * [x] fftw=3.3.10, yes for both
+    #   * [x] filelock=3.13.1, pypi -> exts_list -> v3.12.2 in pypi-bundle
+    ('flatbuffers', '23.5.26'), #   * [x] flatbuffers=22.12.06, v23.5.26 for 2023a/b
+    #   * [ ] font-ttf-dejavu-sans-mono=2.37=hab24e00_0  => ignore these font-* ones, see what happens
+    #   * [ ] font-ttf-inconsolata=3.000=h77eed37_0
+    #   * [ ] font-ttf-source-code-pro=2.038=h77eed37_0
+    #   * [ ] font-ttf-ubuntu=0.83=h77eed37_1
+    ('fontconfig', '2.14.2'), #   * [x] fontconfig=2.14.2, yes for both
+    #   * [ ] fonts-conda-ecosystem=1=0
+    #   * [ ] fonts-conda-forge=1=0
+    #   * [x] fonttools=4.49.0, pypi -> exts_list -> v4.42.0 in matplotlib
+    ('freetype', '2.13.0'), #   * [x] freetype=2.12.1, 2023a: v2.13.0, 2023b: v2.13.2
+    #   * [x] frozenlist=1.4.1, pypi -> exts_list -> v1.4.0 in aiohttp
+    #   * [x] fsspec=2024.2.0, pypi -> exts_list -> v2023.6.0 in pypi-bundle
+    #   * [x] gast=0.4.0, pypi -> exts_list -> # v0.5.4 in scipy-bundle
+    ('gettext', '0.21.1'), #   * [x] gettext=0.21.1, 2023a: v0.21.1, 2023b: v0.22
+    ('giflib', '5.2.1'), #   * [x] giflib=5.2.1, yes for both
+    ('GLib', '2.77.1'), #   * [x] glib=2.78.4, 2023a: v2.77.1, 2023b: v2.78.1
+    #   * [x] glib-tools=2.78.4=hfc55251_4 => use GLib-2.77.1-GCCcore-12.3.0.eb ?
+    ('GMP', '6.2.1'), #   * [x] gmp=6.3.0, 2023a: v6.2.1, 2023b: 6.3.0
+    ('gmpy2', '2.1.5'), #   * [x] gmpy2=2.1.2, v2.1.5 for both
+    ('GnuTLS', '3.7.8'), #   * [x] gnutls=3.6.13, no - v3.7.8 for 11.3.0 -> created
+    #   * [x] google-auth=2.28.2, pypi -> exts_list -. v2.29.0 in TensorFlow-CUDA (PR)
+    #   * [x] google-auth-oauthlib=0.4.6, pypi -> exts_list -> in TensorFlow-CUDA (PR)
+    #   * [x] google-pasta=0.2.0, pypi -> exts_list -> # in TensorFlow-CUDA (PR)
+    ('graphite2', '1.3.14'), #   * [x] graphite2=1.3.13, v1.3.14 for both
+    #   * [x] grpcio=1.51.1, pypi -> exts_list -> v1.57.0 in TensorFlow-CUDA (PR)
+    ('GST-plugins-base', '1.22.5'), #   * [x] gst-plugins-base=1.22.0, 2023a: v1.22.5, 2023b: no
+    ('GStreamer', '1.22.5'), #   * [x] gstreamer=1.22.0, 2023a: v1.22.5, 2023b: no
+    #   * [x] gstreamer-orc=0.4.38=hd590300_0  => maybe via GStreamer-1.22.5-GCC-12.3.0.eb ?
+    ('gzip', '1.12'), #   * [x] gzip=1.13, 2023a: v1.12, 2023b: v1.13
+    ('h5py', '3.9.0'), #   * [x] h5py=3.9.0, 2023a: v3.9.0, 2023b: no
+    ('HarfBuzz', '5.3.1'), #   * [x] harfbuzz=6.0.0, 2023a: v5.3.1, 2023b: v8.2.2
+    ('HDF5', '1.14.0'), #   * [x] hdf5=1.14.1, 2023a: v1.14.0, 2023b: v1.14.3
+    ('HH-suite', '3.3.0'), #   * [x] hhsuite=3.3.0, 2023a: v3.3.0, not for 2023b
+    #   * [x] icecream=2.1.3, on pypi, never used in ec yet -> exts_list
+    ('ICU', '73.2'), #   * [x] icu=70.1, 2023a: v73.2, 2023b: v74.1
+    #   * [x] idna=3.6, pypi -> exts_list -> v3.4 in pypi-bundle
+    #   * [x] importlib-metadata=7.0.2, pypi -> exts_list
+    #   * [ ] jack=1.9.22, NO, not on pypi, https://jackaudio.org/downloads/ ? => yes, based on version match
+    ('Python-bundle-PyPI', '2023.06'), #   * [x] jinja2=3.1.3, in bundle-pypi, 2023a: v3.1.2, 2023b: v3.1.2
+    #   * [x] joblib=1.3.2, in bundle-pypi, 2023a: v1.2.0, 2023b: v1.3.2  => probably fine via Python-bundle-PyPI
+    ('libjpeg-turbo', '2.1.5.1'), #   * [x] jpeg=9e=h0b41bf4_3, ? https://github.com/intelxai/EXT_libjpeg-9e => maybe via libjpeg-turbo?
+    #   * [x] keras=2.11.0, NO, in EB only for 2020b, TensorFlow-2.13.0-foss-2023a has it in exts_list with patches => OK via TensorFlow dep
+    #   * [x] keras-preprocessing=1.1.2, pypi -> exts_list
+    #   * [?] keyutils=1.6.1, NO, linux-keyutils in maturin?  => unclear, ignore
+    ('matplotlib', '3.7.2'), #   * [x] kiwisolver=1.4.5, in matplotlib with patch, 2023a: v1.4.4, 2023b: v1.4.5
+    #   * [?] krb5=1.20.1, NO, ? Kerberos-v5 ?  => ignore, should be fine
+    ('LAME', '3.100'), #   * [x] lame=3.100, YES
+    ('LittleCMS', '2.15'), #   * [x] lcms2=2.15, YES
+    #   * [x] ld_impl_linux-64=2.40 ???    => ignore, comes with OS
+    ('LERC', '4.0.0'), #   * [x] lerc=4.0.0, YES
+    ('Abseil', '20230125.3'), #   * [x] libabseil=20220623.0, 2023a: v20230125.3, 2023b: v20240116.1
+    ('libaec', '1.0.6'), #   * [x] libaec=1.1.2, v1.0.6 for both
+    #   * [x] libblas=3.9.0, ???   => OpenBLAS/foss OK
+    #   * [x] libbrotlicommon=1.1.0, ??? in Brotli  => yes, Brotli
+    #   * [x] libbrotlidec=1.1.0, ??? in Brotli  => yes, Brotli
+    #   * [x] libbrotlienc=1.1.0, ??? in Brotli  => yes, Brotli
+    #   * [x] libcap=2.67, NO  => OK via OS
+    #   * [x] libcblas=3.9.0, NO  => OK via OpenBLAS/foss?
+    ('Clang', '16.0.6', versionsuffix), #   * [x] libclang=15.0.7, 2023a: v16.0.6, 2023b: no
+    #   * [ ] libclang13=15.0.7=default_ha2b6cf4_4  => ignore, see what happens
+    #   * [ ] libcublas=11.11.3.6, in CUDA? => probably OK 
+    #   * [ ] libcufft=10.9.0.58, in CUDA? => probably OK
+    #   * [ ] libcufile=1.9.0.20, in CUDA? ==> probably OK
+    #   * [ ] libcups=2.3.3, NO -> https://www.cups.org/ - printing system for Apple -> ignore
+    #   * [ ] libcurand=10.3.5.119, in CUDA? https://developer.download.nvidia.com/compute/cuda/redist/libcurand/linux-x86_64/
+    ('cURL', '8.0.1'), #   * [x] libcurl=8.1.2, cURL, 2023a: v8.0.1, 2023b: v8.3.0
+    #   * [ ] libcusolver=11.4.1.48, in CUDA?
+    #   * [ ] libcusparse=11.7.5.86, in CUDA?
+    ('DB', '18.1.40'), #   * [x] libdb=6.2.32, ??? DB?
+    ('libdeflate', '1.18'), #   * [x] libdeflate=1.17, 2023a: v1.18, 2023b: v1.19
+    ('libedit', '20191231'), #   * [x] libedit=3.1.20191231, NO only for 11.2.0 -> created
+    ('libev', '4.33'), #   * [x] libev=4.33, NO, in EB v4.33 for  11.3.0 -> created
+    ('libevent', '2.1.12'), #   * [x] libevent=2.1.10, v2.1.12 for both
+    #   * [x] libexpat=2.6.1, expat v2.5.0 for both -> already in deps as expat
+    ('libffi', '3.4.4'), #   * [x] libffi=3.4.2, v3.4.4 for both
+    ('FLAC', '1.4.2'), #   * [x] libflac=1.4.3, FLAC, 2023a: v1.4.2, 2023b: no
+    #   * [ ] libgcc-ng=13.2.0, ???
+    ('libgcrypt', '1.10.3'), #   * [x] libgcrypt=1.10.3, NO, v1.10.1 for 11.3.0 -> created
+    #   * [ ] libgfortran-ng=13.2.0, ???
+    #   * [ ] libgfortran5=13.2.0, ???
+    #   * [x] libglib=2.78.4, GLib, 2023a: v2.77.1, 2023b: v2.78.1 -> already as GLib
+    #   * [ ] libgomp=13.2.0, ???
+    ('libgpg-error', '1.48'), #   * [x] libgpg-error=1.48, NO, in EB v1.46 for 11.3.0 -> created
+    ('gRPC', '1.57.0'), #   * [x] libgrpc=1.51.1, gRPC, 2023a: v1.57.0, 2023b: v1.62.1
+    ('hwloc', '2.9.1'), #   * [x] libhwloc=2.9.1, hwloc, 2023a: v2.9.1, 2023b: v2.9.2
+    ('libiconv', '1.17'), #   * [x] libiconv=1.17, YES
+    ('LAPACK', '3.12.0'), #   * [x] liblapack=3.9.0, not for 2023a, for 2023b: v3.12.0 -> created
+    #   * [?] liblapacke=3.9.0=21_linux64_mkl
+    ('LLVM', '16.0.6'), #   * [x] libllvm15=15.0.7, LLVM v16.0.6 for both
+    ('nghttp2', '1.58.0'), #   * [x] libnghttp2=1.58.0, NO, v1.48.0 for 11.3.0 -> created
+    #   * [ ] libnpp=11.8.0.86, NO - in CUDA?
+    ('libnsl', '2.0.1'), #   * [x] libnsl=2.0.1, NO, v2.0.0 for 12.2.0 -> created
+    #   * [ ] libnvjpeg=11.9.0.86, in CUDA?
+    ('libogg', '1.3.5'), #   * [x] libogg=1.3.4, V1.3.5 for both
+    ('libopus', '1.4'), #   * [x] libopus=1.3.1, v1.4 for 2023a, v1.3.1 for 12.2.0
+    ('libpng', '1.6.39'), #   * [x] libpng=1.6.43, 2023a: v1.6.39, 2023b: v1.6.40
+    #   * [ ] libpq=15.3, NO
+    ('protobuf-python', '4.24.0'), #   * [x] libprotobuf=3.21.12, protobuf-python? -> 2023a: v4.24.0, 2023b: v4.25.3
+    ('libsndfile', '1.2.2'), #   * [x] libsndfile=1.2.2, 2023a: v1.2.2, 2023b: no
+    ('SQLite', '3.42.0'), #   * [x] libsqlite=3.45.1, SQLite?, 2023a: v3.42.0, 2023b: v3.43.1
+    #   * [ ] libssh2=1.11.0 ???
+    #   * [ ] libstdcxx-ng=13.2.0, ???
+    #   * [ ] libsystemd0=253, ???
+    ('LibTIFF', '4.5.0'), #   * [x] libtiff=4.5.0, 2023a: v4.5.0, 2023b: v4.6.0
+    ('libtool', '2.4.7'), #   * [x] libtool=2.4.7, yes both
+    #   * [ ] libudev1=253, ???
+    ('util-linux', '2.39'), #   * [x] libuuid=2.38.1, no - v1.0.3 for GCC 8.3.0 -> create? -> no -> util-linux
+    ('libuv', '1.48.0'), #   * [x] libuv=1.48.0, no - v 1.37.0 for GCC 8.3.0 -> created
+    ('libvorbis', '1.3.7'), #   * [x] libvorbis=1.3.7, 2023a: v1.3.7, 2023b: no
+    ('libwebp', '1.3.1'), #   * [x] libwebp-base=1.3.2, 2023a: v1.3.1, 2023b: v1.3.2
+    #   * [?] libxcb=1.13, no - v1.13 for GCC 6.4.0 -> in X11?
+    #   * [ ] libxcrypt=4.4.36, no - not in EB not on pypi
+    #   * [?] libxkbcommon=1.5.0, no - v0.6.1 for foss/2016a -> in X11?
+    ('libxml2', '2.11.4'), #   * [x] libxml2=2.10.3, 2023a: v2.11.4, 2023b: v2.11.5
+    ('zlib', '1.2.13'), #   * [x] libzlib=1.2.13, yes
+    #   * [?] llvm-openmp=17.0.6, LLVM v16.0.6 for both -> already there as LLVM
+    ('lz4', '1.9.4'), #   * [x] lz4-c=1.9.4, yes both
+    ('Markdown', '3.6'), #   * [x] markdown=3.5.2, 2023a: no, 2023b: v3.6 -> created
+    #   * [x] markupsafe=2.1.5, pypi -> exts_list -> v2.1.3 in pypi-bundle
+    #   * [x] matplotlib=3.8.3, 2023a: v3.7.2, 2023b: v3.8.2 -> already there
+    #   * [x] matplotlib-base=3.8.3, same as matplotlib?
+    ('METIS', '5.1.0'), #   * [x] metis=5.1.1, METIS, 2023a: v5.1.0, 2023b: v5.1.0
+    #   * [ ] mkl=2024.0.0
+    #   * [ ] mkl-devel=2024.0.0
+    #   * [ ] mkl-include=2024.0.0
+    ('MPC', '1.3.1'), #   * [x] mpc=1.3.1, yes
+    ('MPFR', '4.2.0'), #   * [x] mpfr=4.2.1, 2023a: v4.2.0, 2023b: v4.2.1
+    #   * [ ] mpg123=1.32.4, not in EB not on pypi, https://www.mpg123.de/
+    ('mpmath', '1.3.0'), #   * [x] mpmath=1.3.0, no - v1.2.1 for GCC 11.3.0 -> created
+    #   * [x] multidict=6.0.5, pypi -> exts_list -> v6.0.4 in aiohttp
+    #   * [x] munkres=1.1.4, maybe in exts_list? only 1 ec with it (for foss/2018b) -> exts_list
+    #   * [ ] mysql-common=8.0.33=hf1915f5_6 ???
+    #   * [ ] mysql-libs=8.0.33=hca2cd23_6 ???
+    ('NCCL', '2.18.3', versionsuffix), #   * [x] nccl=2.20.5.1, only for CUDA, not same version
+    ('ncurses', '6.4'), #   * [x] ncurses=6.4, yes both
+    ('nettle', '3.9.1'), #   * [x] nettle=3.6, v3.9.1 for both
+    ('networkx', '3.1'), #   * [x] networkx=3.2.1, 2023a: v3.1, 2023b: v3.2.1
+    ('NSPR','4.35'), #   * [x] nspr=4.35, yes both
+    ('NSS', '3.89.1'), #   * [x] nss=3.98, 2023a: v3.89.1, 2023b: v3.94
+    ('SciPy-bundle', '2023.07'), #   * [x] **numpy=1.26.4, 2023a: v1.25.1, 2023b: v1.26.2**
+    #   * [x] oauthlib=3.2.2, pypi -> exts_list -> in TensorFlow-CUDA (PR)
+    ('OpenBabel', '3.1.1'), #   * [x] openbabel=3.1.1, 2023a: v3.1.1, 2023b: no
+    #   * [ ] openh264=2.1.1, no, not on pypi, https://github.com/cisco/openh264
+    ('OpenJPEG', '2.5.0'), #   * [x] openjpeg=2.5.0, yes both
+    #   * [ ] openssl=3.1.5
+    #   * [x] opt_einsum=3.3.0, pypi -> exts_list -> in e3nn
+    #   * [x] ordered-set=4.1.0, pypi -> exts_list -> in deepdiff
+    ('orjson', '3.9.15'),  #   * [x] orjson=3.9.15, -> CREATED
+    #   * [x] packaging=23.2, yes and version can be changed by exts_list, v23.1 for 2023a in py-bundle
+    #   * [x] **pandas=2.2.1, 2023a: v2.0.3, 2023b: v2.1.3** - scipy-bundle
+    ('PCRE2', '10.42'), #   * [x] pcre2=10.43=hcad00b1_0
+    ('Perl', '5.36.1'), #   * [x] perl=5.32.1=7_hd590300_perl5
+    ('Pillow', '10.0.0'), #   * [x] pillow=9.4.0=py310h023d228_1
+    #   * [x] pip=24.0=pyhd8ed1ab_0
+    ('pixman', '0.42.2'), #   * [x] pixman=0.43.2=h59595ed_0
+    ('PLY', '3.11'), #   * [x] ply=3.11=py_1
+    #   * [x] protobuf=4.21.12=py310heca2aa9_0 -> already with libprotobuf
+    ('PSIPRED', '4.02'), #   * [x] psipred=4.01=1, no v4.02 for 8.3.0 -> created
+    ('psutil', '5.9.8'), #   * [x] psutil=5.9.8=py310h2372a71_0
+    #   * [?] pthread-stubs=0.4=h36c2ea0_1001, no, v0.4 for 6.4.0 -> in X11?
+    #   * [ ] pulseaudio=16.1=hcb278e6_3, no, https://www.freedesktop.org/wiki/Software/PulseAudio/
+    #   * [ ] pulseaudio-client=16.1=h5195f5e_3
+    #   * [ ] pulseaudio-daemon=16.1=ha8d29e2_3
+    #   * [x] pyasn1=0.5.1=pyhd8ed1ab_0 -> exts_list -> v0.5.0 in pypi-bundle
+    #   * [x] pyasn1-modules=0.3.0=pyhd8ed1ab_0 -> in TensorFlow-CUDA (PR)
+    #   * [x] pycparser=2.21=pyhd8ed1ab_0 -> in pypi-bundle
+    ('PyTorch-Geometric', '2.5.0', '-PyTorch-2.1.2-CUDA-%(cudaver)s'), #   * [x] pyg=2.5.0=py310_torch_2.0.0_cu118
+    #   * [x] pygments=2.17.2, v2.15.1 in pypi-bundle
+    #   * [x] pyjwt=2.8.0=pyhd8ed1ab_1 -> exts_list
+    #   * [x] pyopenssl=24.0.0=pyhd8ed1ab_0 -> exts_list
+    #   * [x] pyparsing=3.1.2=pyhd8ed1ab_0, ERROR3 -> v3.1.0 in pypi-bundle not from EB v3.1.1
+    ('PyQt5', '5.15.10'), #   * [x] pyqt=5.15.9=py310h04931ad_5
+    #   * [x] pyqt5-sip=12.12.2=py310hc6cd4ac_5, ok in PyQt5
+    #   * [x] pysocks=1.7.1=pyha2e5f31_6 -> exts_list
+    #   * [x] **python=3.10.13** -> 3.11.3
+    #   * [x] python-dateutil=2.9.0=pyhd8ed1ab_0, v2.8.2 in python
+    ('flatbuffers-python', '23.5.26'), #   * [x] python-flatbuffers=24.3.6=pyh59ac667_0
+    #   * [x] python-tzdata=2024.1=pyhd8ed1ab_0 -> exts_list (as tzdata) -> v2023.3 in scipy-bundle
+    #   * [ ] python_abi=3.10=4_cp310 ?
+    ('PyTorch-bundle', '2.1.2', versionsuffix), #   * [x] **pytorch=2.0.1, v2.1.2 for 2023a/b**
+    #   * [x] pytorch-cuda=11.8=h7e8668a_5
+    #   * [x] pytorch-mutex=1.0=cuda
+    #   * [x] pytz=2024.1=pyhd8ed1ab_0, v2023.3 in python-bundle
+    #   * [x] pyu2f=0.1.5=pyhd8ed1ab_0 -> exts_list
+    #   * [x] qt-main=5.15.8=h5d23da1_6, in PyQt5?
+    ('RE2', '2023-08-01'), #   * [x] re2=2023.02.01=hcb278e6_0
+    ('libreadline', '8.2'), #   * [x] readline=8.2=h8228510_1
+    #   * [x] requests=2.31.0=pyhd8ed1ab_0, v2.31.0 in python-bundle
+    #   * [x] requests-oauthlib=1.3.1=pyhd8ed1ab_0, -> exts_list -> v2.0.0 in TensorFlow-CUDA (PR)
+    #   * [x] rsa=4.9=pyhd8ed1ab_0 -> exts_list -> in TensorFlow-CUDA (PR)
+    ('scikit-learn', '1.3.1'), #   * [x] scikit-learn=1.4.1.post1=py310h1fdf081_0
+    #   * [x] **scipy=1.12.0, 2023a: v1.11.1, 2023b: v1.11.4**
+    #   * [x] setuptools=69.1.1=pyhd8ed1ab_0, 12.3.0: v67.7.2
+    #   * [-] signalp6=6.0g=1 -> should be patch out and optional
+    ('SIP', '6.8.1'), #   * [x] sip=6.7.12=py310hc6cd4ac_0
+    #   * [x] six=1.16.0=pyh6c4a22f_0, in python-bundle
+    ('snappy', '1.1.10'), #   * [x] snappy=1.1.10=h9fff704_0
+    ('sympy', '1.12'), #   * [x] sympy=1.12=pypyh9d50eac_103
+    ('tbb', '2021.11.0'), #   * [x] tbb=2021.9.0=hf52228f_0
+    ('tensorboard', '2.15.1'), #   * [x] tensorboard=2.11.2=pyhd8ed1ab_0
+    #   * [x] tensorboard-data-server=0.6.1=py310h600f1e7_4
+    #   * [x] tensorboard-plugin-wit=1.8.1=pyhd8ed1ab_0
+    ('TensorFlow', '2.15.1', versionsuffix), # -> PR for CUDA version: https://github.com/easybuilders/easybuild-easyconfigs/pull/20358
+    #   * [!] tensorflow=2.11.0=cuda112py310he87a039_0 
+    #   * [!] tensorflow-base=2.11.0=cuda112py310h52da4a5_0
+    #   * [!] tensorflow-estimator=2.11.0=cuda112py310h37add04_0
+    #   * [x] termcolor=2.4.0=pyhd8ed1ab_0 -> exts_list
+    #   * [x] threadpoolctl=3.3.0=pyhc1e730c_0, v3.1.0 in py-bundle
+    ('Tk', '8.6.13'), #   * [x] tk=8.6.13=noxft_h4845f30_101
+    #   * [x] toml=0.10.2=pyhd8ed1ab_0, v0.10.2 in py-bundle
+    #   * [x] tomli=2.0.1=pyhd8ed1ab_0, v2.0.1 in py-bundle
+    #   * [x] torchaudio=2.0.2=py310_cu118, pytorch-bundle
+    #   * [x] torchtriton=2.0.0=py310, anywhere, in PyTorch
+    #   * [x] torchvision=0.15.2=py310_cu118, pytorch-bundle
+    ('tornado', '6.3.2'), #   * [x] tornado=6.4=py310h2372a71_0
+    ('tqdm', '4.66.1'), #   * [x] tqdm=4.66.2=pyhd8ed1ab_0
+    ('typing-extensions', '4.9.0'), #   * [x] typing-extensions=4.10.0=hd8ed1ab_0
+    #   * [x] typing_extensions=4.10.0=pyha770c72_0
+    #   * [x] tzdata=2024a=h0c530f3_0 -> exts_list -> v2023.3 in scipy-bundle
+    #   * [x] unicodedata2=15.1.0=py310h2372a71_0 -> exts_list
+    ('UnZip', '6.0'), #   * [x] unzip=6.0=h7f98852_3
+    #   * [x] urllib3=2.2.1=pyhd8ed1ab_0, v1.26.16 in py-bundle
+    #   * [x] werkzeug=3.0.1=pyhd8ed1ab_0, -> exts_list -> in TensorFlow v 3.0.2
+    #   * [x] wheel=0.42.0=pyhd8ed1ab_0, v0.40.0 in py-bundle
+    ('wrapt', '1.15.0'), #   * [x] wrapt=1.16.0=py310h2372a71_0
+    ('X11', '20230603'), #   * [x] xcb-util=0.4.0=h516909a_0 ->X11
+    #   * [x] xcb-util-image=0.4.0=h166bdaf_0 ->X11
+    #   * [x] xcb-util-keysyms=0.4.0=h516909a_0 ->X11
+    #   * [?] xcb-util-renderutil=0.3.9=h166bdaf_0 ->X11?
+    #   * [?] xcb-util-wm=0.4.1=h516909a_0 ->X11?
+    #   * [x] xkeyboard-config=2.38=h0b41bf4_0 -> X11
+    #   * [x] xorg-kbproto=1.0.7=h7f98852_1002-> X11
+    #   * [x] xorg-libice=1.1.1=hd590300_0-> X11
+    #   * [x] xorg-libsm=1.2.4=h7391055_0-> X11
+    #   * [x] xorg-libx11=1.8.4=h0b41bf4_0-> X11
+    #   * [x] xorg-libxau=1.0.11=hd590300_0-> X11
+    #   * [x] xorg-libxdmcp=1.1.3=h7f98852_0-> X11
+    #   * [x] xorg-libxext=1.3.4=h0b41bf4_2-> X11
+    #   * [x] xorg-libxrender=0.9.10=h7f98852_1003-> X11
+    #   * [x] xorg-renderproto=0.11.1=h7f98852_1002-> X11
+    #   * [x] xorg-xextproto=7.3.0=h0b41bf4_1003-> X11
+    #   * [x] xorg-xproto=7.0.31=h7f98852_1007-> X11
+    ('XZ', '5.4.2'), #   * [x] xz=5.2.6=h166bdaf_0
+    #   * [x] yarl=1.9.4=py310h2372a71_0 -> exts_list -> v1.9.2 in aiohttp
+    ('Zip', '3.0'), #   * [x] zip=3.0=hd590300_3
+    #   * [x] zipp=3.17.0=pyhd8ed1ab_0 -> exts_list
+    #   * [x] zlib=1.2.13=hd590300_5
+    ('zstd', '1.5.5'), #   * [x] zstd=1.5.5=hfc55251_0
+    #   - pip:
+    #     [x] antlr4-python3-runtime==4.9.3 -> exts_list
+    #     [x] assertpy==1.1 -> exts_list
+    #     [x] configparser==6.0.1 -> exts_list
+    #     git+https://github.com/NVIDIA/dllogger.git@0540a43971f4a8a16693a9de9de73c1072020769
+    #     [x] docker-pycreds==0.4.0 -> in wandb
+    ('e3nn', '0.3.3', versionsuffix), # [x] e3nn==0.3.3 no, v0.3.3 for 2022a -> created
+    ('GitPython', '3.1.40'), # [x] gitdb==4.0.11 -> in GitPython
+    #     [?] gitpython==3.1.42
+    ('Hydra', '1.3.2'), # [x] hydra-core==1.3.2
+    #     [x] omegaconf==2.3.0 -> exts_list -> in Hydra
+    #     [x] opt-einsum-fx==0.1.4 -> exts_list -> in e3nn
+    #     [x] pathtools==0.1.2 -> exts_list
+    #     [x] promise==2.3 -> exts_list
+    #     [x] pynvml==11.0.0 -> exts_list
+    #     [x] pyrsistent==0.20.0 -> exts_list - 0.19.3 in pypi-bundle
+    ('PyYAML', '6.0'), # [x] pyyaml==6.0.1
+    #     [x] sentry-sdk==1.41.0, V1.38.1 in wandb
+    #     [x[ shortuuid==1.0.12 -> exts_list
+    #     [x] smmap==5.0.1 -> in GitPython
+    #     [x] subprocess32==3.5.4 -> exts_list
+    ('wandb', '0.16.1'), # [x] wandb==0.12.0
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+}
+
+exts_list = [
+    ('asttokens', '2.4.1', {
+        'checksums': ['b03869718ba9a6eb027e134bfdf69f38a236d681c83c160d510768af11254ba0'],
+    }),
+    ('blinker', '1.7.0', {
+        'checksums': ['e6820ff6fa4e4d1d8e2747c2283749c3f547e4fee112b98555cdcdae32996182'],
+    }),
+    ('cached-property', '1.5.2', {
+        'checksums': ['9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130'],
+    }),
+    ('executing', '2.0.1', {
+        'checksums': ['35afe2ce3affba8ee97f2d69927fa823b08b472b7b994e36a52a964b93d16147'],
+    }),
+    ('icecream', '2.1.3', {
+        'checksums': ['0aa4a7c3374ec36153a1d08f81e3080e83d8ac1eefd97d2f4fe9544e8f9b49de'],
+    }),
+    ('importlib-metadata', '7.0.2', {
+        'source_tmpl': 'importlib_metadata-%(version)s.tar.gz',
+        'checksums': ['198f568f3230878cb1b44fbd7975f87906c22336dba2e4a7f05278c281fbd792'],
+    }),
+    ('Keras-Preprocessing', '1.1.2', {
+        'source_tmpl': 'Keras_Preprocessing-%(version)s.tar.gz',
+        'checksums': ['add82567c50c8bc648c14195bf544a5ce7c1f76761536956c3d2978970179ef3'],
+    }),
+    ('munkres', '1.1.4', {
+        'source_tmpl': 'release-%(version)s.tar.gz',
+        'source_urls': ['https://github.com/bmc/munkres/archive/'],
+        'checksums': ['6a297282895e4f7c27902bb5ad045d06458905daafb80a9ce14b9d87ca391205'],
+    }),
+    ('PyJWT', '2.8.0', {
+        'modulename': 'jwt',
+        'checksums': ['57e28d156e3d5c10088e0c68abb90bfac3df82b40a71bd0daa20c65ccd5c23de'],
+    }),
+    ('pyOpenSSL', '24.0.0', {
+        'preinstallopts': "sed -i 's/cryptography>=41.0.5,<43/cryptography/' setup.py && ",
+        'modulename': 'OpenSSL',
+        'checksums': ['6aa33039a93fffa4563e655b61d11364d01264be8ccb49906101e02a334530bf'],
+    }),
+    ('PySocks', '1.7.1', {
+        'modulename': 'socks',
+        'checksums': ['3f8804571ebe159c380ac6de37643bb4685970655d3bba243530d6558b799aa0'],
+    }),
+    ('pyu2f', '0.1.5', {
+        'checksums': ['a3caa3a11842fc7d5746376f37195e6af5f17c0a15737538bb1cebf656fb306b'],
+    }),
+    ('termcolor', '2.4.0', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['9297c0df9c99445c2412e832e882a7884038a25617c60cea2ad69488d4040d63'],
+    }),
+    ('tzdata', '2024.1', {  # v2023.3 in scipy-bundle
+        'checksums': ['2674120f8d891909751c38abcdfd386ac0a5a1127954fbc332af6b5ceae07efd'],
+    }),
+    ('unicodedata2', '15.1.0', {
+        'checksums': ['cb30f189ad66482f8529a45da71b2a8841e9bd2bb376cc2933003a4a55a07648'],
+    }),
+    ('zipp', '3.17.0', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['0e923e726174922dce09c53c59ad483ff7bbb8e572e00c7f7c46b88556409f31'],
+    }),
+    ('antlr4-python3-runtime', '4.9.3', {
+        'modulename': 'antlr4',
+        'checksums': ['f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b'],
+    }),
+    ('assertpy', '1.1', {
+        'checksums': ['acc64329934ad71a3221de185517a43af33e373bb44dc05b5a9b174394ef4833'],
+    }),
+    ('configparser', '6.0.1', {
+        'checksums': ['db45513e971e509496b150be31bd67b0e14ab20b78a383b677e4b158e2c682d8'],
+    }),
+    ('pathtools', '0.1.2', {
+        'checksums': ['7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0'],
+    }),
+    ('promise', '2.3', {
+        'checksums': ['dfd18337c523ba4b6a58801c164c1904a9d4d1b1747c7d5dbf45b693a49d93d0'],
+    }),
+    ('shortuuid', '1.0.12', {
+        'checksums': ['c39f1b348b3c1e9b115a954b33b76c8c522d2d177a9d20acdbb20d24fac3ccfd'],
+    }),
+    ('subprocess32', '3.5.4', {
+        'checksums': ['eb2937c80497978d181efa1b839ec2d9622cf9600a039a79d0e108d1f9aec79d'],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'lib'
