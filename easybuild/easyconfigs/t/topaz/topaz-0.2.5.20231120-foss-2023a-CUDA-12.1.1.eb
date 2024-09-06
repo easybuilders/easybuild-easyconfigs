@@ -1,0 +1,61 @@
+# Thomas Hoffman, EMBL Heidelberg, structures-it@embl.de, 2023/11
+easyblock = 'PythonPackage'
+
+name = 'topaz'
+_mainversion = '0.2.5'
+_commitdate = '20231120'
+_commit = '25cb2cb'
+version = '%s.%s' % (_mainversion, _commitdate)
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'http://cb.csail.mit.edu/cb/topaz/'
+
+description = """Particle picking software for single particle cryo-electron microscopy using
+convolutional neural networks and positive-unlabeled learning. Includes methods
+for micrograph denoising."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('PyTorch-bundle', '2.1.2', versionsuffix),
+    ('scikit-learn', '1.3.1'),
+    ('scikit-image', '0.22.0'),
+]
+
+source_urls = ['https://github.com/tbepler/topaz/archive']
+sources = [{
+    'download_filename': '%s.tar.gz' % _commit,
+    'filename': '%(name)s-%(version)s.tar.gz'
+}]
+patches = [
+    'topaz-0.2.5_install_relion3_wrappers.patch',
+    'topaz-0.2.5.20231120_helical-filament-picking.patch',
+    'topaz-0.2.5.20231120_update-description.patch',
+]
+checksums = [
+    {'topaz-0.2.5.20231120.tar.gz': 'ca0630f9a69622eb3e10c9de310f58ac846e60a5504c4533398a9a75b3091df9'},
+    {'topaz-0.2.5_install_relion3_wrappers.patch': '0fe23a0ecaf887aaa89641a7e7cf37fafd3134384b0a8f46acb4e17537d1a151'},
+    {'topaz-0.2.5.20231120_helical-filament-picking.patch':
+     '320466e4ac1d1f06ba392a419aefa369905baa6877717868cd8ea7135b6bc28f'},
+    {'topaz-0.2.5.20231120_update-description.patch':
+     '073241dba2de63e543136a387ff7ef698a5e0139ab3356de021e370338fa57c1'},
+]
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+options = {'modulename': 'topaz'}
+
+_relion3_wrappers = ['denoise', 'pick', 'train', 'train_denoise']
+
+sanity_check_paths = {
+    'files': ["bin/run_topaz_%s.py" % x for x in _relion3_wrappers],
+    'dirs': [],
+}
+sanity_check_commands = ['run_topaz_%s.py --help' % x for x in _relion3_wrappers] + ['topaz --help']
+
+moduleclass = 'chem'

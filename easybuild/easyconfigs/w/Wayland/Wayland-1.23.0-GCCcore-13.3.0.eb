@@ -1,0 +1,63 @@
+# Author: Jasper Grimm (UoY)
+# URL of Wayland download changed to GitLab due to changes upstream
+# Author: J. Sassmannshausen (Imperial College London/UK)
+easyblock = 'Bundle'
+
+name = 'Wayland'
+version = '1.23.0'
+
+homepage = 'https://wayland.freedesktop.org/'
+description = """
+Wayland is a project to define a protocol for a compositor to talk to
+ its clients as well as a library implementation of the protocol.  The
+ compositor can be a standalone display server running on Linux kernel
+ modesetting and evdev input devices, an X application, or a wayland
+ client itself.  The clients can be traditional applications, X servers
+ (rootless or fullscreen) or other display servers.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Meson', '1.4.0'),
+    ('Ninja', '1.12.1'),
+    ('pkgconf', '2.2.0'),
+    ('binutils', '2.42'),
+]
+
+dependencies = [
+    ('libffi', '3.4.5'),
+    ('expat', '2.6.2'),
+    ('libxml2', '2.12.7'),
+]
+
+default_easyblock = 'MesonNinja'
+default_component_specs = {
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    ('wayland', version, {
+        'source_urls': ['https://gitlab.freedesktop.org/wayland/%(namelower)s/-/releases/%(version)s/downloads'],
+        'checksums': ['05b3e1574d3e67626b5974f862f36b5b427c7ceeb965cb36a4e6c2d342e45ab2'],
+        'sources': [SOURCE_TAR_XZ],
+        'configopts': "-Ddocumentation=false",
+    }),
+    ('wayland-protocols', '1.36', {
+        'source_urls': ['https://gitlab.freedesktop.org/wayland/%(namelower)s/-/releases/%(version)s/downloads'],
+        'checksums': ['71fd4de05e79f9a1ca559fac30c1f8365fa10346422f9fe795f74d77b9ef7e92'],
+        'sources': [SOURCE_TAR_XZ],
+        'preconfigopts': "PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH "
+    }),
+]
+
+_libs = ['lib/libwayland-%s.%s' % (x, SHLIB_EXT) for x in ['client', 'cursor', 'egl', 'server']]
+sanity_check_paths = {
+    'files': ['bin/wayland-scanner'] + _libs,
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = ["wayland-scanner --help", "wayland-scanner --version"]
+
+moduleclass = 'vis'

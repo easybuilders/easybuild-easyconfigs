@@ -1,0 +1,41 @@
+easyblock = 'PythonBundle'
+
+name = 'flash-attention'
+version = '2.6.3'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/Dao-AILab/flash-attention'
+description = """Fast and memory-efficient exact attention."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [('Ninja', '1.11.1')]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('PyTorch-bundle', '2.1.2', versionsuffix),
+    ('einops', '0.7.0'),
+    ('CUTLASS', '3.4.0', versionsuffix),
+]
+
+sanity_pip_check = True
+use_pip = True
+
+exts_list = [
+    (name, version, {
+        'modulename': 'flash_attn',
+        # solves Invalid cross-device link error
+        # https://github.com/Dao-AILab/flash-attention/issues/875
+        'preinstallopts': "sed -i 's/os.rename/shutil.move/' setup.py && ",
+        'source_urls': ['https://github.com/Dao-AILab/flash-attention/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['136e149165d4c8c67273d16daa957b5cd5e6fc629061ffd39fa5a25224454d6c'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'from flash_attn import flash_attn_qkvpacked_func, flash_attn_func'",
+]
+
+moduleclass = 'lib'

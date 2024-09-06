@@ -1,0 +1,61 @@
+easyblock = 'MakeCp'
+
+name = 'FDMNES'
+
+version = '2024-02-29'
+
+homepage = 'https://fdmnes.neel.cnrs.fr'
+description = """X-ray spectroscopies are techniques which probe the electronic and structural
+properties of the materials. Most often performed at synchrotron, they are extensively used
+to analyse all classes of materials. The advances on the experimental side need the complementary
+progress on the theoretical side to extract confidentely all the information the data can furnish.
+
+In this context, the purpose of our FDMNES project is to supply to the community a user friendly
+ab initio code to simulate X-ray absorption and emission spectroscopies as well as resonant x-ray
+scattering and x-ray Raman spectroscopies, among other techniques.
+
+FDMNES, for Finite Difference Method Near Edge Structure, uses the density functional theory (DFT).
+It is thus specially devoted to the simulation of the K edges of all the chemical
+elements and of the L23 edges of the heavy ones.
+For the other edges, it includes advances by the use of the time dependent DFT (TD-DFT)."""
+
+toolchain = {'name': 'gomkl', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+sources = [{
+    'source_urls': ['https://cloud.neel.cnrs.fr/index.php/s/tDpQWmec7S4Ei4G'],
+    'download_filename': 'download',
+    'filename': '%(namelower)s_fortran_prog_%(version)s.zip',
+}]
+checksums = ['bcf0928dd8f44bb0098aed4b8d45c8cf4cedf7cee1a598342de6115d7066c2fb']
+
+dependencies = [
+    ('MUMPS', '5.6.1', '-metis-seq'),
+    ('OpenMPI', '4.1.5'),
+    ('SCOTCH', '7.0.3'),
+]
+
+parallel = 1
+
+prebuildopts = "sed -i 's/-llapack -lblas/$LIBLAPACK/g;"
+# to avoid the `/bin/sh: line 1: -lscotch: command not found` error
+prebuildopts += '/-lscotch/d;'
+prebuildopts += 's/lpord \\\\/lpord -lscotch -lscotcherr -lpthread -Wl,--start-group '
+prebuildopts += '-lmkl_gf_lp64 -lmkl_sequential -lmkl_core -Wl,--end-group -lgfortran/g;'
+# to avoid the `undefined reference to 'main_rixs_'` error
+prebuildopts += "s/mat_solve_mumps.o/mat_solve_mumps.o RIXS.o/g' makefile && echo Here && cat makefile && "
+
+buildopts = 'FC="$FC" FFLAGS="-c $FFLAGS -fallow-argument-mismatch -fallow-invalid-boz -I$EBROOTMUMPS/include"'
+
+files_to_copy = [
+    (['%(builddir)s/fdmnes'], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/fdmnes'],
+    'dirs': []
+}
+
+sanity_check_commands = ['fdmnes --help']
+
+moduleclass = 'chem'

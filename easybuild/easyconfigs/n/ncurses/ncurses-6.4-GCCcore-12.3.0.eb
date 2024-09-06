@@ -18,9 +18,13 @@ source_urls = [GNU_SOURCE]
 sources = [SOURCE_TAR_GZ]
 checksums = ['6931283d9ac87c5073f30b6290c4c75f21632bb4fc3603ac8100812bed248159']
 
-builddependencies = [('binutils', '2.40')]
+builddependencies = [
+    ('binutils', '2.40'),
+    ('pkgconf', '1.9.5')
+]
 
 local_common_configopts = "--with-shared --enable-overwrite --without-ada --enable-symlinks --with-versioned-syms "
+local_common_configopts += "--enable-pc-files "
 configopts = [
     # build ncurses: serial build in default paths with shared libraries
     local_common_configopts,
@@ -35,12 +39,14 @@ postinstallcmds = ['cd %(installdir)s/lib && for l in libncurses{.,_,w}*; do ln 
 _target_suffix = ['', 'w']  # '': ncurses, 'w': ncursesw
 _lib_suffix = ['%s%s' % (x, y) for x in _target_suffix for y in ['.a', '_g.a', '.' + SHLIB_EXT]]
 _lib_names = ['form', 'menu', 'ncurses', 'panel', 'tinfo']
+_pc_names = ['form', 'menu', 'ncurses++', 'ncurses', 'panel']
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ["captoinfo", "clear", "infocmp", "infotocap", "ncurses%(version_major)s-config",
                                      "reset", "tabs", "tic", "toe", "tput", "tset"]] +
              ['lib/lib%s%s' % (x, y) for x in _lib_names for y in _lib_suffix] +
-             ['lib/libncurses++%s.a' % x for x in _target_suffix],
+             ['lib/libncurses++%s.a' % x for x in _target_suffix] +
+             ['lib/pkgconfig/%s%s.pc' % (x, y) for x in _pc_names for y in _target_suffix],
     'dirs': ['include', 'include/ncursesw'],
 }
 

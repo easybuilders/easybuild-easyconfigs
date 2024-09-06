@@ -1,0 +1,3999 @@
+Backport RISC-V support to version 0.9.0 by using a combination of
+(slightly modified) versions of the following pull requests:
+https://github.com/flame/blis/pull/693
+https://github.com/flame/blis/pull/750
+
+Bob Dröge (University of Groningen)
+
+diff --git a/CREDITS b/CREDITS
+index 9cc846d5c..d53c406e7 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -98,6 +98,7 @@ but many others have contributed code, ideas, and feedback, including
+   Karl Rupp                @karlrupp
+   Martin Schatz                                       (The University of Texas at Austin)
+   Nico Schlömer            @nschloe
++  Angelika Schwarz         @angsch
+   Rene Sitt
+   Tony Skjellum            @tonyskjellum              (The University of Tennessee at Chattanooga)
+   Mikhail Smelyanskiy                                 (Intel, Parallel Computing Lab)
+diff --git a/config/rv32i/bli_cntx_init_rv32i.c b/config/rv32i/bli_cntx_init_rv32i.c
+new file mode 100644
+index 000000000..84fd2dca6
+--- /dev/null
++++ b/config/rv32i/bli_cntx_init_rv32i.c
+@@ -0,0 +1,44 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2014, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++#include "blis.h"
++
++
++void bli_cntx_init_rv32i( cntx_t* cntx )
++{
++	// Set default kernel blocksizes and functions.
++	bli_cntx_init_rv32i_ref( cntx );
++
++	// -------------------------------------------------------------------------
++}
+diff --git a/config/rv32i/bli_kernel_defs_rv32i.h b/config/rv32i/bli_kernel_defs_rv32i.h
+new file mode 100644
+index 000000000..fe51f998d
+--- /dev/null
++++ b/config/rv32i/bli_kernel_defs_rv32i.h
+@@ -0,0 +1,43 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2022, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++//#ifndef BLIS_KERNEL_DEFS_H
++//#define BLIS_KERNEL_DEFS_H
++
++
++// -- REGISTER BLOCK SIZES (FOR REFERENCE KERNELS) ----------------------------
++
++// Fall through to generic sizes
++
++//#endif
+diff --git a/config/rv32i/make_defs.mk b/config/rv32i/make_defs.mk
+new file mode 100644
+index 000000000..40849ce66
+--- /dev/null
++++ b/config/rv32i/make_defs.mk
+@@ -0,0 +1,94 @@
++#
++#
++#  BLIS
++#  An object-based framework for developing high-performance BLAS-like
++#  libraries.
++#
++#  Copyright (C) 2014, The University of Texas at Austin
++#
++#  Redistribution and use in source and binary forms, with or without
++#  modification, are permitted provided that the following conditions are
++#  met:
++#   - Redistributions of source code must retain the above copyright
++#     notice, this list of conditions and the following disclaimer.
++#   - Redistributions in binary form must reproduce the above copyright
++#     notice, this list of conditions and the following disclaimer in the
++#     documentation and/or other materials provided with the distribution.
++#   - Neither the name(s) of the copyright holder(s) nor the names of its
++#     contributors may be used to endorse or promote products derived
++#     from this software without specific prior written permission.
++#
++#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++#  HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++#
++
++
++# Declare the name of the current configuration and add it to the
++# running list of configurations included by common.mk.
++THIS_CONFIG    := rv32i
++#CONFIGS_INCL   += $(THIS_CONFIG)
++
++#
++# --- Determine the C compiler and related flags ---
++#
++
++# NOTE: The build system will append these variables with various
++# general-purpose/configuration-agnostic flags in common.mk. You
++# may specify additional flags here as needed.
++CPPROCFLAGS    := -DRISCV_SIZE=32
++# Atomic instructions must be enabled either via hardware
++# (-march=rv32ia) or by linking against libatomic
++CMISCFLAGS     := -march=$(shell $(CC) -E frame/base/bli_riscv_detect_arch.h | grep '^[^\#]') -mabi=ilp32
++CPICFLAGS      :=
++CWARNFLAGS     := -Wall -Wno-unused-function -Wfatal-errors
++
++# In case the A extension is not available
++LDFLAGS        += -latomic
++
++ifneq ($(DEBUG_TYPE),off)
++CDBGFLAGS      := -g
++endif
++
++ifeq ($(DEBUG_TYPE),noopt)
++COPTFLAGS      := -O0
++else
++COPTFLAGS      := -O2
++endif
++
++# Flags specific to optimized kernels.
++CKOPTFLAGS     := $(COPTFLAGS) -O3
++ifeq ($(CC_VENDOR),gcc)
++CKVECFLAGS     :=
++else
++ifeq ($(CC_VENDOR),clang)
++CKVECFLAGS     :=
++else
++$(error gcc or clang is required for this configuration.)
++endif
++endif
++
++# Flags specific to reference kernels.
++CROPTFLAGS     := $(CKOPTFLAGS)
++ifeq ($(CC_VENDOR),gcc)
++CRVECFLAGS     := $(CKVECFLAGS) -funsafe-math-optimizations -ffp-contract=fast
++else
++ifeq ($(CC_VENDOR),clang)
++CRVECFLAGS     := $(CKVECFLAGS) -funsafe-math-optimizations -ffp-contract=fast
++else
++CRVECFLAGS     := $(CKVECFLAGS)
++endif
++endif
++
++# Store all of the variables here to new variables containing the
++# configuration name.
++$(eval $(call store-make-defs,$(THIS_CONFIG)))
+diff --git a/config/rv32iv/bli_cntx_init_rv32iv.c b/config/rv32iv/bli_cntx_init_rv32iv.c
+new file mode 100644
+index 000000000..dd10a3655
+--- /dev/null
++++ b/config/rv32iv/bli_cntx_init_rv32iv.c
+@@ -0,0 +1,109 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2014, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++#include "../../kernels/rviv/3/bli_rviv_utils.h"
++
++void bli_cntx_init_rv32iv( cntx_t* cntx )
++{
++	blksz_t blkszs[ BLIS_NUM_BLKSZS ];
++
++	// Set default kernel blocksizes and functions.
++	bli_cntx_init_rv32iv_ref( cntx );
++
++	// -------------------------------------------------------------------------
++
++	// A reasonable assumptions for application cores is VLEN >= 128 bits, i.e.,
++	// v >= 4. Embedded cores, however, may implement the minimal configuration,
++	// which allows VLEN = 32 bits. Here, we assume VLEN >= 128 and otherwise
++	// fall back to the reference kernels.
++	const uint32_t v = get_vlenb() / sizeof(float);
++
++	if ( v >= 4 )
++	{
++		const uint32_t mr_s = 4 * v;
++		const uint32_t mr_d = 2 * v;
++		const uint32_t mr_c = 2 * v;
++		const uint32_t mr_z = v;
++
++		// Update the context with optimized native gemm micro-kernels.
++		bli_cntx_set_ukrs
++		(
++		  cntx,
++
++		  // level-3
++		  BLIS_GEMM_UKR, BLIS_FLOAT,    bli_sgemm_rviv_4vx4,
++		  BLIS_GEMM_UKR, BLIS_DOUBLE,   bli_dgemm_rviv_4vx4,
++		  BLIS_GEMM_UKR, BLIS_SCOMPLEX, bli_cgemm_rviv_4vx4,
++		  BLIS_GEMM_UKR, BLIS_DCOMPLEX, bli_zgemm_rviv_4vx4,
++
++		  BLIS_VA_END
++		);
++
++		// Update the context with storage preferences.
++		bli_cntx_set_ukr_prefs
++		(
++		  cntx,
++
++		  // level-3
++		  BLIS_GEMM_UKR_ROW_PREF, BLIS_FLOAT,    FALSE,
++		  BLIS_GEMM_UKR_ROW_PREF, BLIS_DOUBLE,   FALSE,
++		  BLIS_GEMM_UKR_ROW_PREF, BLIS_SCOMPLEX, FALSE,
++		  BLIS_GEMM_UKR_ROW_PREF, BLIS_DCOMPLEX, FALSE,
++
++		  BLIS_VA_END
++		);
++
++		// Initialize level-3 blocksize objects with architecture-specific values.
++		//                                              s        d        c        z
++		bli_blksz_init_easy( &blkszs[ BLIS_MR ],     mr_s,    mr_d,    mr_c,    mr_z );
++		bli_blksz_init_easy( &blkszs[ BLIS_NR ],        4,       4,       4,       4 );
++		bli_blksz_init_easy( &blkszs[ BLIS_MC ],  20*mr_s, 20*mr_d, 60*mr_c, 30*mr_z );
++		bli_blksz_init_easy( &blkszs[ BLIS_KC ],      640,     320,     320,     160 );
++		bli_blksz_init_easy( &blkszs[ BLIS_NC ],     3072,    3072,    3072,    3072 );
++
++		bli_cntx_set_blkszs
++		(
++		  cntx,
++
++		  // level-3
++		  BLIS_NC, &blkszs[ BLIS_NC ], BLIS_NR,
++		  BLIS_KC, &blkszs[ BLIS_KC ], BLIS_KR,
++		  BLIS_MC, &blkszs[ BLIS_MC ], BLIS_MR,
++		  BLIS_NR, &blkszs[ BLIS_NR ], BLIS_NR,
++		  BLIS_MR, &blkszs[ BLIS_MR ], BLIS_MR,
++
++		  BLIS_VA_END
++		);
++	}
++}
+diff --git a/config/rv32iv/bli_kernel_defs_rv32iv.h b/config/rv32iv/bli_kernel_defs_rv32iv.h
+new file mode 100644
+index 000000000..b17989208
+--- /dev/null
++++ b/config/rv32iv/bli_kernel_defs_rv32iv.h
+@@ -0,0 +1,43 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2022, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++//#ifndef BLIS_KERNEL_DEFS_H
++//#define BLIS_KERNEL_DEFS_H
++
++
++// -- REGISTER BLOCK SIZES (FOR REFERENCE KERNELS) ----------------------------
++
++
++
++//#endif
+diff --git a/config/rv32iv/make_defs.mk b/config/rv32iv/make_defs.mk
+new file mode 100644
+index 000000000..3cef697ac
+--- /dev/null
++++ b/config/rv32iv/make_defs.mk
+@@ -0,0 +1,96 @@
++#
++#
++#  BLIS
++#  An object-based framework for developing high-performance BLAS-like
++#  libraries.
++#
++#  Copyright (C) 2014, The University of Texas at Austin
++#
++#  Redistribution and use in source and binary forms, with or without
++#  modification, are permitted provided that the following conditions are
++#  met:
++#   - Redistributions of source code must retain the above copyright
++#     notice, this list of conditions and the following disclaimer.
++#   - Redistributions in binary form must reproduce the above copyright
++#     notice, this list of conditions and the following disclaimer in the
++#     documentation and/or other materials provided with the distribution.
++#   - Neither the name(s) of the copyright holder(s) nor the names of its
++#     contributors may be used to endorse or promote products derived
++#     from this software without specific prior written permission.
++#
++#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++#  HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++#
++
++
++# Declare the name of the current configuration and add it to the
++# running list of configurations included by common.mk.
++THIS_CONFIG    := rv32iv
++#CONFIGS_INCL   += $(THIS_CONFIG)
++
++#
++# --- Determine the C compiler and related flags ---
++#
++
++# NOTE: The build system will append these variables with various
++# general-purpose/configuration-agnostic flags in common.mk. You
++# may specify additional flags here as needed.
++CPPROCFLAGS    := -DRISCV_SIZE=32
++# Atomic instructions must be enabled either via hardware
++# (-march=rv32iav) or by linking against libatomic
++CMISCFLAGS     := -march=$(shell $(CC) -DFORCE_RISCV_VECTOR -E frame/base/bli_riscv_detect_arch.h | grep '^[^\#]') -mabi=ilp32d
++CPICFLAGS      :=
++CWARNFLAGS     := -Wall -Wno-unused-function -Wfatal-errors
++
++# In case the A extension is not available
++LDFLAGS        += -latomic
++
++ifneq ($(DEBUG_TYPE),off)
++CDBGFLAGS      := -g
++endif
++
++ifeq ($(DEBUG_TYPE),noopt)
++COPTFLAGS      := -O0
++else
++COPTFLAGS      := -O0
++endif
++
++# Flags specific to optimized kernels.
++CKOPTFLAGS     := $(COPTFLAGS) -O3
++ifeq ($(CC_VENDOR),gcc)
++CKVECFLAGS     :=
++else
++ifeq ($(CC_VENDOR),clang)
++CKVECFLAGS     :=
++else
++$(error gcc or clang is required for this configuration.)
++endif
++endif
++
++# Flags specific to reference kernels.
++CROPTFLAGS     := $(CKOPTFLAGS)
++ifeq ($(CC_VENDOR),gcc)
++# Lower compiler optimization to -O1. At -O3, gcc version 12.0.1 20220505
++# computes offsets for the matrix ab in the ref gemm kernel incorrectly.
++CRVECFLAGS     := $(CKVECFLAGS) -O1
++else
++ifeq ($(CC_VENDOR),clang)
++CRVECFLAGS     := $(CKVECFLAGS) -funsafe-math-optimizations -ffp-contract=fast
++else
++CRVECFLAGS     := $(CKVECFLAGS)
++endif
++endif
++
++# Store all of the variables here to new variables containing the
++# configuration name.
++$(eval $(call store-make-defs,$(THIS_CONFIG)))
+diff --git a/config/rv64i/bli_cntx_init_rv64i.c b/config/rv64i/bli_cntx_init_rv64i.c
+new file mode 100644
+index 000000000..f670e4a57
+--- /dev/null
++++ b/config/rv64i/bli_cntx_init_rv64i.c
+@@ -0,0 +1,44 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2014, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++#include "blis.h"
++
++
++void bli_cntx_init_rv64i( cntx_t* cntx )
++{
++	// Set default kernel blocksizes and functions.
++	bli_cntx_init_rv64i_ref( cntx );
++
++	// -------------------------------------------------------------------------
++}
+diff --git a/config/rv64i/bli_kernel_defs_rv64i.h b/config/rv64i/bli_kernel_defs_rv64i.h
+new file mode 100644
+index 000000000..fe51f998d
+--- /dev/null
++++ b/config/rv64i/bli_kernel_defs_rv64i.h
+@@ -0,0 +1,43 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2022, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++//#ifndef BLIS_KERNEL_DEFS_H
++//#define BLIS_KERNEL_DEFS_H
++
++
++// -- REGISTER BLOCK SIZES (FOR REFERENCE KERNELS) ----------------------------
++
++// Fall through to generic sizes
++
++//#endif
+diff --git a/config/rv64i/make_defs.mk b/config/rv64i/make_defs.mk
+new file mode 100644
+index 000000000..6c69dd84e
+--- /dev/null
++++ b/config/rv64i/make_defs.mk
+@@ -0,0 +1,92 @@
++#
++#
++#  BLIS
++#  An object-based framework for developing high-performance BLAS-like
++#  libraries.
++#
++#  Copyright (C) 2014, The University of Texas at Austin
++#
++#  Redistribution and use in source and binary forms, with or without
++#  modification, are permitted provided that the following conditions are
++#  met:
++#   - Redistributions of source code must retain the above copyright
++#     notice, this list of conditions and the following disclaimer.
++#   - Redistributions in binary form must reproduce the above copyright
++#     notice, this list of conditions and the following disclaimer in the
++#     documentation and/or other materials provided with the distribution.
++#   - Neither the name(s) of the copyright holder(s) nor the names of its
++#     contributors may be used to endorse or promote products derived
++#     from this software without specific prior written permission.
++#
++#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++#  HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++#
++
++
++# Declare the name of the current configuration and add it to the
++# running list of configurations included by common.mk.
++THIS_CONFIG    := rv64i
++#CONFIGS_INCL   += $(THIS_CONFIG)
++
++#
++# --- Determine the C compiler and related flags ---
++#
++
++# NOTE: The build system will append these variables with various
++# general-purpose/configuration-agnostic flags in common.mk. You
++# may specify additional flags here as needed.
++CPPROCFLAGS    := -DRISCV_SIZE=64
++CMISCFLAGS     := -march=$(shell $(CC) -E frame/base/bli_riscv_detect_arch.h | grep '^[^\#]') -mabi=lp64
++CPICFLAGS      :=
++CWARNFLAGS     := -Wall -Wno-unused-function -Wfatal-errors
++
++# In case the A extension is not available
++LDFLAGS        += -latomic
++
++ifneq ($(DEBUG_TYPE),off)
++CDBGFLAGS      := -g
++endif
++
++ifeq ($(DEBUG_TYPE),noopt)
++COPTFLAGS      := -O0
++else
++COPTFLAGS      := -O2
++endif
++
++# Flags specific to optimized kernels.
++CKOPTFLAGS     := $(COPTFLAGS) -O3
++ifeq ($(CC_VENDOR),gcc)
++CKVECFLAGS     :=
++else
++ifeq ($(CC_VENDOR),clang)
++CKVECFLAGS     :=
++else
++$(error gcc or clang is required for this configuration.)
++endif
++endif
++
++# Flags specific to reference kernels.
++CROPTFLAGS     := $(CKOPTFLAGS)
++ifeq ($(CC_VENDOR),gcc)
++CRVECFLAGS     := $(CKVECFLAGS) -funsafe-math-optimizations -ffp-contract=fast
++else
++ifeq ($(CC_VENDOR),clang)
++CRVECFLAGS     := $(CKVECFLAGS) -funsafe-math-optimizations -ffp-contract=fast
++else
++CRVECFLAGS     := $(CKVECFLAGS)
++endif
++endif
++
++# Store all of the variables here to new variables containing the
++# configuration name.
++$(eval $(call store-make-defs,$(THIS_CONFIG)))
+diff --git a/config/rv64iv/bli_cntx_init_rv64iv.c b/config/rv64iv/bli_cntx_init_rv64iv.c
+new file mode 100644
+index 000000000..eb1f79ebc
+--- /dev/null
++++ b/config/rv64iv/bli_cntx_init_rv64iv.c
+@@ -0,0 +1,114 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2014, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++#include "../../kernels/rviv/3/bli_rviv_utils.h"
++
++void bli_cntx_init_rv64iv( cntx_t* cntx )
++{
++	blksz_t blkszs[ BLIS_NUM_BLKSZS ];
++
++	// Set default kernel blocksizes and functions.
++	bli_cntx_init_rv64iv_ref( cntx );
++
++	// -------------------------------------------------------------------------
++
++	// A reasonable assumptions for application cores is VLEN >= 128 bits, i.e.,
++	// v >= 4. Embedded cores, however, may implement the minimal configuration,
++	// which allows VLEN = 32 bits. Here, we assume VLEN >= 128 and otherwise
++	// fall back to the reference kernels.
++	const uint32_t v = get_vlenb() / sizeof(float);
++
++	if ( v >= 4 )
++	{
++		const uint32_t mr_s = 4 * v;
++		const uint32_t mr_d = 2 * v;
++		const uint32_t mr_c = 2 * v;
++		const uint32_t mr_z = v;
++
++		// TODO: Register different kernels based on the value
++		// of v to avoid MC becoming too big. (e.g. 2vx8)
++
++		// Update the context with optimized native gemm micro-kernels.
++		bli_cntx_set_ukrs
++		(
++		  cntx,
++
++		  // level-3
++		  BLIS_GEMM_UKR, BLIS_FLOAT,    bli_sgemm_rviv_4vx4,
++		  BLIS_GEMM_UKR, BLIS_DOUBLE,   bli_dgemm_rviv_4vx4,
++		  BLIS_GEMM_UKR, BLIS_SCOMPLEX, bli_cgemm_rviv_4vx4,
++		  BLIS_GEMM_UKR, BLIS_DCOMPLEX, bli_zgemm_rviv_4vx4,
++
++		  BLIS_VA_END
++		);
++
++		// Update the context with storage preferences.
++		bli_cntx_set_ukr_prefs
++		(
++		  cntx,
++
++		  // level-3
++		  BLIS_GEMM_UKR_ROW_PREF, BLIS_FLOAT,    FALSE,
++		  BLIS_GEMM_UKR_ROW_PREF, BLIS_DOUBLE,   FALSE,
++		  BLIS_GEMM_UKR_ROW_PREF, BLIS_SCOMPLEX, FALSE,
++		  BLIS_GEMM_UKR_ROW_PREF, BLIS_DCOMPLEX, FALSE,
++
++		  BLIS_VA_END
++		);
++
++		// Initialize level-3 blocksize objects with architecture-specific values.
++		//                                              s        d        c        z
++		bli_blksz_init_easy( &blkszs[ BLIS_MR ],     mr_s,    mr_d,    mr_c,    mr_z );
++		bli_blksz_init_easy( &blkszs[ BLIS_NR ],        4,       4,       4,       4 );
++		bli_blksz_init_easy( &blkszs[ BLIS_MC ],  20*mr_s, 20*mr_d, 60*mr_c, 30*mr_z );
++		bli_blksz_init_easy( &blkszs[ BLIS_KC ],      640,     320,     320,     160 );
++		bli_blksz_init_easy( &blkszs[ BLIS_NC ],     3072,    3072,    3072,    3072 );
++
++		// Update the context with the current architecture's register and cache
++		// blocksizes (and multiples) for native execution.
++		bli_cntx_set_blkszs
++		(
++		  cntx,
++
++		  // level-3
++		  BLIS_NC, &blkszs[ BLIS_NC ], BLIS_NR,
++		  BLIS_KC, &blkszs[ BLIS_KC ], BLIS_KR,
++		  BLIS_MC, &blkszs[ BLIS_MC ], BLIS_MR,
++		  BLIS_NR, &blkszs[ BLIS_NR ], BLIS_NR,
++		  BLIS_MR, &blkszs[ BLIS_MR ], BLIS_MR,
++
++		  BLIS_VA_END
++		);
++	}
++}
+diff --git a/config/rv64iv/bli_kernel_defs_rv64iv.h b/config/rv64iv/bli_kernel_defs_rv64iv.h
+new file mode 100644
+index 000000000..18ca4030e
+--- /dev/null
++++ b/config/rv64iv/bli_kernel_defs_rv64iv.h
+@@ -0,0 +1,42 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2022, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++//#ifndef BLIS_KERNEL_DEFS_H
++//#define BLIS_KERNEL_DEFS_H
++
++
++// -- REGISTER BLOCK SIZES (FOR REFERENCE KERNELS) ----------------------------
++
++
++//#endif
+diff --git a/config/rv64iv/make_defs.mk b/config/rv64iv/make_defs.mk
+new file mode 100644
+index 000000000..06545d461
+--- /dev/null
++++ b/config/rv64iv/make_defs.mk
+@@ -0,0 +1,93 @@
++#
++#
++#  BLIS
++#  An object-based framework for developing high-performance BLAS-like
++#  libraries.
++#
++#  Copyright (C) 2014, The University of Texas at Austin
++#
++#  Redistribution and use in source and binary forms, with or without
++#  modification, are permitted provided that the following conditions are
++#  met:
++#   - Redistributions of source code must retain the above copyright
++#     notice, this list of conditions and the following disclaimer.
++#   - Redistributions in binary form must reproduce the above copyright
++#     notice, this list of conditions and the following disclaimer in the
++#     documentation and/or other materials provided with the distribution.
++#   - Neither the name(s) of the copyright holder(s) nor the names of its
++#     contributors may be used to endorse or promote products derived
++#     from this software without specific prior written permission.
++#
++#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++#  HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++#
++
++
++# Declare the name of the current configuration and add it to the
++# running list of configurations included by common.mk.
++THIS_CONFIG    := rv64iv
++#CONFIGS_INCL   += $(THIS_CONFIG)
++
++#
++# --- Determine the C compiler and related flags ---
++#
++
++# NOTE: The build system will append these variables with various
++# general-purpose/configuration-agnostic flags in common.mk. You
++# may specify additional flags here as needed.
++CPPROCFLAGS    := -DRISCV_SIZE=64
++CMISCFLAGS     := -march=$(shell $(CC) -DFORCE_RISCV_VECTOR -E frame/base/bli_riscv_detect_arch.h | grep '^[^\#]') -mabi=lp64d
++CPICFLAGS      :=
++CWARNFLAGS     := -Wall -Wno-unused-function -Wfatal-errors
++
++# In case the A extension is not available
++LDFLAGS        += -latomic
++
++ifneq ($(DEBUG_TYPE),off)
++CDBGFLAGS      := -g
++endif
++
++ifeq ($(DEBUG_TYPE),noopt)
++COPTFLAGS      := -O0
++else
++COPTFLAGS      := -O2 -ftree-vectorize
++endif
++
++# Flags specific to optimized kernels.
++CKOPTFLAGS     := $(COPTFLAGS) -O3
++ifeq ($(CC_VENDOR),gcc)
++CKVECFLAGS     :=
++else
++ifeq ($(CC_VENDOR),clang)
++CKVECFLAGS     :=
++else
++$(error gcc or clang is required for this configuration.)
++endif
++endif
++
++# Flags specific to reference kernels.
++CROPTFLAGS     := $(CKOPTFLAGS)
++ifeq ($(CC_VENDOR),gcc)
++# Lower compiler optimization. cinvscalv fails at -O1
++CRVECFLAGS     := $(CKVECFLAGS) -O0
++else
++ifeq ($(CC_VENDOR),clang)
++CRVECFLAGS     := $(CKVECFLAGS) -funsafe-math-optimizations -ffp-contract=fast
++else
++CRVECFLAGS     := $(CKVECFLAGS)
++endif
++endif
++
++# Store all of the variables here to new variables containing the
++# configuration name.
++$(eval $(call store-make-defs,$(THIS_CONFIG)))
+diff --git a/config_registry b/config_registry
+index f25d66e7f..2138ba515 100644
+--- a/config_registry
++++ b/config_registry
+@@ -46,5 +46,11 @@
+ power9:      power9
+ bgq:         bgq
+ 
++# RISC-V architectures.
++rv32i:       rv32i/rvi
++rv64i:       rv64i/rvi
++rv32iv:      rv32iv/rviv
++rv64iv:      rv64iv/rviv
++
+ # Generic architectures.
+ generic:     generic
+diff --git a/configure b/configure
+index a953c25c5..9a8dc8b7f 100755
+--- a/configure
++++ b/configure
+@@ -1230,14 +1230,25 @@ auto_detect()
+ 	# NOTE: -D_GNU_SOURCE is needed to enable POSIX extensions to
+ 	# pthreads (i.e., barriers).
+ 
+-	cmd="${cc} ${config_defines} \
++	cmd="${cc} \
+ 	      -DBLIS_CONFIGURETIME_CPUID \
+ 	      ${c_hdr_paths} \
+ 	      -std=c99 -D_GNU_SOURCE \
+-	      ${cflags} \
+-	      ${c_src_filepaths} \
+-	      ${ldflags} \
+-	      -o ${autodetect_x}"
++	      ${cflags}"
++
++	# Special case for RISC-V, whose architecture can be detected with
++	# preprocessor macros alone. This avoids having to run RISC-V binaries
++	# on a cross-compiler host. Returns "generic" if RISC-V not detected.
++	riscv_config=$(${cmd} -E "${dist_path}/frame/base/bli_riscv_cpuid.h" |
++	               grep '^[^#]')
++	if [[ $riscv_config != *generic* ]]; then
++		echo "${riscv_config}"
++		return
++	fi
++
++	# Finish command for building executable
++	cmd="${cmd} ${config_defines} ${c_src_filepaths} ${ldflags} \
++	     -o ${autodetect_x}"
+ 
+ 	if [ "${debug_auto_detect}" == "no" ]; then 
+
+diff --git a/frame/base/bli_arch.c b/frame/base/bli_arch.c
+index b697e35f9..5fef62ce1 100644
+--- a/frame/base/bli_arch.c
++++ b/frame/base/bli_arch.c
+@@ -233,6 +233,20 @@
+ 		id = BLIS_ARCH_BGQ;
+ 		#endif
+ 
++		// RISC-V microarchitectures
++		#ifdef BLIS_FAMILY_RV32I
++		id = BLIS_ARCH_RV32I;
++		#endif
++		#ifdef BLIS_FAMILY_RV64I
++		id = BLIS_ARCH_RV64I;
++		#endif
++		#ifdef BLIS_FAMILY_RV32IV
++		id = BLIS_ARCH_RV32IV;
++		#endif
++		#ifdef BLIS_FAMILY_RV64IV
++		id = BLIS_ARCH_RV64IV;
++		#endif
++
+ 		// Generic microarchitecture.
+ 		#ifdef BLIS_FAMILY_GENERIC
+ 		id = BLIS_ARCH_GENERIC;
+@@ -283,6 +297,11 @@
+     "power9",
+     "power7",
+     "bgq",
++
++    "rv32i",
++    "rv64i",
++    "rv32iv",
++    "rv64iv",
+     
+     "generic"
+ };
+diff --git a/frame/base/bli_gks.c b/frame/base/bli_gks.c
+index df0abc8ed..c1fd4c866 100644
+--- a/frame/base/bli_gks.c
++++ b/frame/base/bli_gks.c
+@@ -202,6 +202,32 @@
+ 		                                              bli_cntx_init_bgq_ind );
+ #endif
+ 
++		// -- RISC-V architectures --------------------------------------------
++
++#ifdef BLIS_CONFIG_RV32I
++		bli_gks_register_cntx( BLIS_ARCH_RV32I,       bli_cntx_init_rv32i,
++		                                              bli_cntx_init_rv32i_ref,
++		                                              bli_cntx_init_rv32i_ind );
++#endif
++
++#ifdef BLIS_CONFIG_RV64I
++		bli_gks_register_cntx( BLIS_ARCH_RV64I,       bli_cntx_init_rv64i,
++		                                              bli_cntx_init_rv64i_ref,
++		                                              bli_cntx_init_rv64i_ind );
++#endif
++
++#ifdef BLIS_CONFIG_RV32IV
++		bli_gks_register_cntx( BLIS_ARCH_RV32IV,      bli_cntx_init_rv32iv,
++		                                              bli_cntx_init_rv32iv_ref,
++		                                              bli_cntx_init_rv32iv_ind );
++#endif
++
++#ifdef BLIS_CONFIG_RV64IV
++		bli_gks_register_cntx( BLIS_ARCH_RV64IV,      bli_cntx_init_rv64iv,
++		                                              bli_cntx_init_rv64iv_ref,
++		                                              bli_cntx_init_rv64iv_ind );
++#endif
++
+ 		// Generic architectures
+ #ifdef BLIS_CONFIG_GENERIC
+ 		bli_gks_register_cntx( BLIS_ARCH_GENERIC,     bli_cntx_init_generic,
+diff --git a/frame/base/bli_riscv_cpuid.h b/frame/base/bli_riscv_cpuid.h
+new file mode 100644
+index 000000000..4f0c25a33
+--- /dev/null
++++ b/frame/base/bli_riscv_cpuid.h
+@@ -0,0 +1,67 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++
++*/
++
++/* RISC-V autodetection code which works with native or cross-compilers.
++   Compile with $CC -E and ignore all output lines starting with #.  On RISC-V
++   it may return rv32i (base 32-bit integer RISC-V), rv32iv (rv32i plus vector
++   extensions), rv64i (base 64-bit integer RISC-V), or rv64iv (rv64i plus
++   vector extensions). On 128-bit integer RISC-V, it falls back to generic
++   for now. For toolchains which do not yet support RISC-V feature-detection
++   macros, it will fall back on generic, so the BLIS configure script may need
++   the RISC-V configuration to be explicitly specified. */
++
++// false if !defined(__riscv) || !defined(__riscv_xlen)
++#if __riscv && __riscv_xlen == 64
++
++#if __riscv_vector // false if !defined(__riscv_vector)
++rv64iv
++#else
++rv64i
++#endif
++
++// false if !defined(__riscv) || !defined(__riscv_xlen) || __riscv_e32 != 0
++#elif __riscv && __riscv_xlen == 32 && !__riscv_e32
++
++#if __riscv_vector // false if !defined(__riscv_vector)
++rv32iv
++#else
++rv32i
++#endif
++
++#else
++
++generic  // fall back on BLIS runtime CPUID autodetection algorithm
++
++#endif
+diff --git a/frame/base/bli_riscv_detect_arch.h b/frame/base/bli_riscv_detect_arch.h
+new file mode 100644
+index 000000000..448b0f39d
+--- /dev/null
++++ b/frame/base/bli_riscv_detect_arch.h
+@@ -0,0 +1,155 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++
++*/
++
++/* Construct a RISC-V architecture string based on available features. */
++
++#if __riscv
++
++#if __riscv_arch_test
++
++#if __riscv_i
++#define RISCV_I i
++#else
++#define RISCV_I
++#endif
++
++#if __riscv_e
++#define RISCV_E e
++#else
++#define RISCV_E
++#endif
++
++#if __riscv_m
++#define RISCV_M m
++#else
++#define RISCV_M
++#endif
++
++#if __riscv_a
++#define RISCV_A a
++#else
++#define RISCV_A
++#endif
++
++#if __riscv_f
++#define RISCV_F f
++#else
++#define RISCV_F
++#endif
++
++#if __riscv_d
++#define RISCV_D d
++#else
++#define RISCV_D
++#endif
++
++#if __riscv_c
++#define RISCV_C c
++#else
++#define RISCV_C
++#endif
++
++#if __riscv_p
++#define RISCV_P p
++#else
++#define RISCV_P
++#endif
++
++/* FORCE_RISCV_VECTOR is a Clang workaround */
++#if __riscv_v || FORCE_RISCV_VECTOR
++#define RISCV_V v
++#else
++#define RISCV_V
++#endif
++
++#else /* __riscv_arch_test */
++
++/* We assume I and E are exclusive when __riscv_arch_test isn't defined */
++#if __riscv_32e
++#define RISCV_I
++#define RISCV_E e
++#else
++#define RISCV_I i
++#define RISCV_E
++#endif
++
++#if __riscv_mul
++#define RISCV_M m
++#else
++#define RISCV_M
++#endif
++
++#if __riscv_atomic
++#define RISCV_A a
++#else
++#define RISCV_A
++#endif
++
++#if __riscv_flen >= 32
++#define RISCV_F f
++#else
++#define RISCV_F
++#endif
++
++#if __riscv_flen >= 64
++#define RISCV_D d
++#else
++#define RISCV_D
++#endif
++
++#if __riscv_compressed
++#define RISCV_C c
++#else
++#define RISCV_C
++#endif
++
++#define RISCV_P
++
++/* FORCE_RISCV_VECTOR is a Clang workaround */
++#if __riscv_vector || FORCE_RISCV_VECTOR
++#define RISCV_V v
++#else
++#define RISCV_V
++#endif
++
++#endif /* __riscv_arch_test */
++
++#define CAT2(a,b) a##b
++#define CAT(a,b) CAT2(a,b)
++
++CAT(rv, CAT(__riscv_xlen, CAT(RISCV_I, CAT(RISCV_E, CAT(RISCV_M, CAT(RISCV_A,
++CAT(RISCV_F, CAT(RISCV_D, CAT(RISCV_C, CAT(RISCV_P, RISCV_V))))))))))
++
++#endif /* __riscv */
+diff --git a/frame/include/bli_arch_config.h b/frame/include/bli_arch_config.h
+index 0485295df..c80e8e922 100644
+--- a/frame/include/bli_arch_config.h
++++ b/frame/include/bli_arch_config.h
+@@ -131,6 +131,22 @@ CNTX_INIT_PROTS( power7 )
+ CNTX_INIT_PROTS( bgq )
+ #endif
+ 
++// -- RISC-V --
++
++#ifdef BLIS_CONFIG_RV32I
++CNTX_INIT_PROTS( rv32i )
++#endif
++#ifdef BLIS_CONFIG_RV64I
++CNTX_INIT_PROTS( rv64i )
++#endif
++#ifdef BLIS_CONFIG_RV32IV
++CNTX_INIT_PROTS( rv32iv )
++#endif
++#ifdef BLIS_CONFIG_RV64IV
++CNTX_INIT_PROTS( rv64iv )
++#endif
++
++
+ // -- Generic --
+ 
+ #ifdef BLIS_CONFIG_GENERIC
+@@ -343,6 +359,12 @@ CNTX_INIT_PROTS( generic )
+ #endif
+ 
+ 
++#ifdef BLIS_KERNELS_RVI
++#include "bli_kernels_rvi.h"
++#endif
++#ifdef BLIS_KERNELS_RVIV
++#include "bli_kernels_rviv.h"
++#endif
+ 
+ #endif
+ 
+diff --git a/frame/include/bli_misc_macro_defs.h b/frame/include/bli_misc_macro_defs.h
+index 903b4ece6..31e0150f6 100644
+--- a/frame/include/bli_misc_macro_defs.h
++++ b/frame/include/bli_misc_macro_defs.h
+@@ -170,5 +170,7 @@ BLIS_INLINE void bli_toggle_bool( bool* b )
+ #define BLIS_VA_END  (-1)
+ 
+ 
+-#endif
++// Static assertion compatible with any version of C/C++
++#define bli_static_assert(cond) while(0){struct s {int STATIC_ASSERT_FAILED : !!(cond);};}
+ 
++#endif
+diff --git a/frame/include/bli_type_defs.h b/frame/include/bli_type_defs.h
+index cb933bfa4..b246fda05 100644
+--- a/frame/include/bli_type_defs.h
++++ b/frame/include/bli_type_defs.h
+@@ -965,6 +965,12 @@ typedef enum
+ 	BLIS_ARCH_POWER7,
+ 	BLIS_ARCH_BGQ,
+ 
++	// RISC-V
++	BLIS_ARCH_RV32I,
++	BLIS_ARCH_RV64I,
++	BLIS_ARCH_RV32IV,
++	BLIS_ARCH_RV64IV,
++
+ 	// Generic architecture/configuration
+ 	BLIS_ARCH_GENERIC,
+ 
+diff --git a/kernels/rvi/bli_kernels_rvi.h b/kernels/rvi/bli_kernels_rvi.h
+new file mode 100644
+index 000000000..d06afae62
+--- /dev/null
++++ b/kernels/rvi/bli_kernels_rvi.h
+@@ -0,0 +1,33 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
+diff --git a/kernels/rviv/3/bli_cgemm_rviv_4vx4.c b/kernels/rviv/3/bli_cgemm_rviv_4vx4.c
+new file mode 100644
+index 000000000..9ef333a78
+--- /dev/null
++++ b/kernels/rviv/3/bli_cgemm_rviv_4vx4.c
+@@ -0,0 +1,79 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++#include "bli_rviv_utils.h"
++
++void bli_cgemm_rviv_asm_4vx4
++    (
++             intptr_t   k,
++       const void*      alpha,
++       const void*      a,
++       const void*      b,
++       const void*      beta,
++             void*      c, intptr_t rs_c, intptr_t cs_c
++    );
++
++void bli_cgemm_rviv_4vx4
++     (
++             dim_t      m,
++             dim_t      n,
++             dim_t      k,
++       const void*      alpha,
++       const void*      a,
++       const void*      b,
++       const void*      beta,
++             void*      c, inc_t rs_c, inc_t cs_c,
++             auxinfo_t* data,
++       const cntx_t*    cntx
++     )
++{
++	// The assembly kernels always take native machine-sized integer arguments.
++	// dim_t and inc_t are normally defined as being machine-sized. If larger, assert.
++	bli_static_assert( sizeof(dim_t) <= sizeof(intptr_t) &&
++	                   sizeof(inc_t) <= sizeof(intptr_t) );
++
++	// Extract vector-length dependent mr, nr that are fixed at configure time.
++	const inc_t mr = bli_cntx_get_blksz_def_dt( BLIS_SCOMPLEX, BLIS_MR, cntx );
++	const inc_t nr = 4;
++
++	GEMM_UKR_SETUP_CT( c, mr, nr, false );
++
++	// The kernel assumes rs_c == 1, and the context should not deviate from it.
++	assert( rs_c == 1 );
++
++	bli_cgemm_rviv_asm_4vx4( k, alpha, a, b, beta, c,
++	                         get_vlenb() * 2, cs_c * sizeof(scomplex) );
++
++	GEMM_UKR_FLUSH_CT( c );
++}
+diff --git a/kernels/rviv/3/bli_cgemm_rviv_asm_4vx4.S b/kernels/rviv/3/bli_cgemm_rviv_asm_4vx4.S
+new file mode 100644
+index 000000000..98c73d23d
+--- /dev/null
++++ b/kernels/rviv/3/bli_cgemm_rviv_asm_4vx4.S
+@@ -0,0 +1,45 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++
++*/
++
++#define REALNAME bli_cgemm_rviv_asm_4vx4
++#define DATASIZE 8
++#define VTYPE e32
++#define FLOAD flw
++#define FZERO(fr) fcvt.s.w fr, x0
++#define FEQ feq.s
++#define VLE vlseg2e32.v
++#define VSE vsseg2e32.v
++
++#include "bli_czgemm_rviv_asm_4vx4.h"
+diff --git a/kernels/rviv/3/bli_czgemm_rviv_asm_4vx4.h b/kernels/rviv/3/bli_czgemm_rviv_asm_4vx4.h
+new file mode 100644
+index 000000000..8f7727c8d
+--- /dev/null
++++ b/kernels/rviv/3/bli_czgemm_rviv_asm_4vx4.h
+@@ -0,0 +1,801 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++
++*/
++
++	.text
++	.align      2
++	.global     REALNAME
++
++// void REALNAME(intptr_t k, void* alpha, void* a, void* b,
++//               void* beta, void* c, intptr_t rs_c, intptr_t cs_c)
++//
++// register arguments:
++// a0   k
++// a1   alpha
++// a2   a
++// a3   b
++// a4   beta
++// a5   c
++// a6   rs_c
++// a7   cs_c
++//
++
++#define REALSIZE (DATASIZE/2)
++
++#define loop_counter a0
++
++#define A00_ptr   a2
++#define A10_ptr   t0
++#define A01_ptr   t1
++#define A11_ptr   t2
++
++#define B_row_ptr a3
++
++#define C00_ptr   a5
++#define C01_ptr   t3
++#define C02_ptr   t4
++#define C03_ptr   t5
++#define C10_ptr   s1
++#define C11_ptr   s2
++#define C12_ptr   s3
++#define C13_ptr   s4
++
++#define tmp       t6
++
++#define ALPHA_re  fa0
++#define ALPHA_im  fa1
++#define BETA_re   fa2
++#define BETA_im   fa3
++
++#define B00_re    fa4
++#define B00_im    fa5
++#define B01_re    fa6
++#define B01_im    fa7
++#define B02_re    fa0
++#define B02_im    fa1
++#define B03_re    fa2
++#define B03_im    fa3
++
++#define B10_re    ft0
++#define B10_im    ft1
++#define B11_re    ft2
++#define B11_im    ft3
++#define B12_re    ft4
++#define B12_im    ft5
++#define B13_re    ft6
++#define B13_im    ft7
++
++#define fzero     ft8
++
++#define A00_re    v24
++#define A00_im    v25
++#define A10_re    v26
++#define A10_im    v27
++#define A01_re    v28
++#define A01_im    v29
++#define A11_re    v30
++#define A11_im    v31
++
++#define C0_re     v24
++#define C0_im     v25
++#define C1_re     v26
++#define C1_im     v27
++#define C2_re     v28
++#define C2_im     v29
++#define C3_re     v30
++#define C3_im     v31
++
++#define AB00_re   v0
++#define AB00_im   v1
++#define AB01_re   v2
++#define AB01_im   v3
++#define AB02_re   v4
++#define AB02_im   v5
++#define AB03_re   v6
++#define AB03_im   v7
++#define AB10_re   v8
++#define AB10_im   v9
++#define AB11_re   v10
++#define AB11_im   v11
++#define AB12_re   v12
++#define AB12_im   v13
++#define AB13_re   v14
++#define AB13_im   v15
++
++#define tmp0_re   v16
++#define tmp0_im   v17
++#define tmp1_re   v18
++#define tmp1_im   v19
++#define tmp2_re   v20
++#define tmp2_im   v21
++#define tmp3_re   v22
++#define tmp3_im   v23
++
++#define rs_c  a6
++#define cs_c  a7
++
++REALNAME:
++	#include "rviv_save_registers.h"
++
++	vsetvli s0, zero, VTYPE, m1, ta, ma
++	csrr s0, vlenb
++	slli s0, s0, 1
++	FZERO(fzero)
++
++	// Set up pointers
++	add C01_ptr, C00_ptr, cs_c
++	add C02_ptr, C01_ptr, cs_c
++	add C03_ptr, C02_ptr, cs_c
++	add C10_ptr, C00_ptr, rs_c
++	add C11_ptr, C01_ptr, rs_c
++	add C12_ptr, C02_ptr, rs_c
++	add C13_ptr, C03_ptr, rs_c
++
++	// Zero-initialize accumulators
++	vxor.vv AB00_re, AB00_re, AB00_re
++	vxor.vv AB00_im, AB00_im, AB00_im
++	vxor.vv AB01_re, AB01_re, AB01_re
++	vxor.vv AB01_im, AB01_im, AB01_im
++	vxor.vv AB02_re, AB02_re, AB02_re
++	vxor.vv AB02_im, AB02_im, AB02_im
++	vxor.vv AB03_re, AB03_re, AB03_re
++	vxor.vv AB03_im, AB03_im, AB03_im
++	vxor.vv AB10_re, AB10_re, AB10_re
++	vxor.vv AB10_im, AB10_im, AB10_im
++	vxor.vv AB11_re, AB11_re, AB11_re
++	vxor.vv AB11_im, AB11_im, AB11_im
++	vxor.vv AB12_re, AB12_re, AB12_re
++	vxor.vv AB12_im, AB12_im, AB12_im
++	vxor.vv AB13_re, AB13_re, AB13_re
++	vxor.vv AB13_im, AB13_im, AB13_im
++
++	// Handle k == 0
++	beqz loop_counter, MULTIPLYBETA
++
++	add A10_ptr, A00_ptr, s0
++	slli s0, s0, 1      // length of a column of A in bytes
++	add A01_ptr, A00_ptr, s0
++	add A11_ptr, A10_ptr, s0
++
++	li tmp, 3
++	ble loop_counter, tmp, TAIL_UNROLL_2
++
++	// Preload A and B
++	// Load and deinterleave A(:,l)
++	VLE A00_re, (A00_ptr)
++	VLE A10_re, (A10_ptr)
++
++	// Load B(l,0:3)
++	FLOAD B00_re, 0*REALSIZE(B_row_ptr)
++	FLOAD B00_im, 1*REALSIZE(B_row_ptr)
++	FLOAD B01_re, 2*REALSIZE(B_row_ptr)
++	FLOAD B01_im, 3*REALSIZE(B_row_ptr)
++	FLOAD B02_re, 4*REALSIZE(B_row_ptr)
++	FLOAD B02_im, 5*REALSIZE(B_row_ptr)
++	FLOAD B03_re, 6*REALSIZE(B_row_ptr)
++	FLOAD B03_im, 7*REALSIZE(B_row_ptr)
++
++	// Load and deinterleave A(:,l+1)
++	VLE A01_re, (A01_ptr)
++	VLE A11_re, (A11_ptr)
++
++LOOP_UNROLL_4: // loop_counter >= 4
++	addi loop_counter, loop_counter, -4
++
++	vfmacc.vf  AB00_re, B00_re, A00_re   // AB(:,0) += A(:,l) * B(l,0)
++	vfnmsac.vf AB00_re, B00_im, A00_im
++	vfmacc.vf  AB00_im, B00_re, A00_im
++	vfmacc.vf  AB00_im, B00_im, A00_re
++	vfmacc.vf  AB10_re, B00_re, A10_re
++	vfnmsac.vf AB10_re, B00_im, A10_im
++	vfmacc.vf  AB10_im, B00_re, A10_im
++	vfmacc.vf  AB10_im, B00_im, A10_re
++
++	vfmacc.vf  AB01_re, B01_re, A00_re   // AB(:,1) += A(:,l) * B(l,1)
++	vfnmsac.vf AB01_re, B01_im, A00_im
++	vfmacc.vf  AB01_im, B01_re, A00_im
++	vfmacc.vf  AB01_im, B01_im, A00_re
++	vfmacc.vf  AB11_re, B01_re, A10_re
++	vfnmsac.vf AB11_re, B01_im, A10_im
++	vfmacc.vf  AB11_im, B01_re, A10_im
++	vfmacc.vf  AB11_im, B01_im, A10_re
++
++	// Point to A(:,l+2), A(:,l+3)
++	add A00_ptr, A01_ptr, s0
++	add A10_ptr, A11_ptr, s0
++	add A01_ptr, A00_ptr, s0
++	add A11_ptr, A10_ptr, s0
++
++	// Load B(l+1,0:3)
++	FLOAD B10_re,  8*REALSIZE(B_row_ptr)
++	FLOAD B10_im,  9*REALSIZE(B_row_ptr)
++	FLOAD B11_re, 10*REALSIZE(B_row_ptr)
++	FLOAD B11_im, 11*REALSIZE(B_row_ptr)
++	FLOAD B12_re, 12*REALSIZE(B_row_ptr)
++	FLOAD B12_im, 13*REALSIZE(B_row_ptr)
++	FLOAD B13_re, 14*REALSIZE(B_row_ptr)
++	FLOAD B13_im, 15*REALSIZE(B_row_ptr)
++	addi B_row_ptr, B_row_ptr, 16*REALSIZE
++
++	vfmacc.vf  AB00_re, B10_re, A01_re   // AB(:,0) += A(:,l+1) * B(l+1,0)
++	vfnmsac.vf AB00_re, B10_im, A01_im
++	vfmacc.vf  AB00_im, B10_re, A01_im
++	vfmacc.vf  AB00_im, B10_im, A01_re
++	vfmacc.vf  AB10_re, B10_re, A11_re
++	vfnmsac.vf AB10_re, B10_im, A11_im
++	vfmacc.vf  AB10_im, B10_re, A11_im
++	vfmacc.vf  AB10_im, B10_im, A11_re
++
++	vfmacc.vf  AB02_re, B02_re, A00_re   // AB(:,2) += A(:,l) * B(l,2)
++	vfnmsac.vf AB02_re, B02_im, A00_im
++	vfmacc.vf  AB02_im, B02_re, A00_im
++	vfmacc.vf  AB02_im, B02_im, A00_re
++	vfmacc.vf  AB12_re, B02_re, A10_re
++	vfnmsac.vf AB12_re, B02_im, A10_im
++	vfmacc.vf  AB12_im, B02_re, A10_im
++	vfmacc.vf  AB12_im, B02_im, A10_re
++
++	vfmacc.vf  AB03_re, B03_re, A00_re   // AB(:,3) += A(:,l) * B(l,3)
++	vfnmsac.vf AB03_re, B03_im, A00_im
++	vfmacc.vf  AB03_im, B03_re, A00_im
++	vfmacc.vf  AB03_im, B03_im, A00_re
++	vfmacc.vf  AB13_re, B03_re, A10_re
++	vfnmsac.vf AB13_re, B03_im, A10_im
++	vfmacc.vf  AB13_im, B03_re, A10_im
++	vfmacc.vf  AB13_im, B03_im, A10_re
++
++	// Load and deinterleave A(:,l+2)
++	VLE A00_re, (A00_ptr)
++	VLE A10_re, (A10_ptr)
++
++	// Load B(l+2, 0:3)
++	FLOAD B00_re, 0*REALSIZE(B_row_ptr)
++	FLOAD B00_im, 1*REALSIZE(B_row_ptr)
++	FLOAD B01_re, 2*REALSIZE(B_row_ptr)
++	FLOAD B01_im, 3*REALSIZE(B_row_ptr)
++	FLOAD B02_re, 4*REALSIZE(B_row_ptr)
++	FLOAD B02_im, 5*REALSIZE(B_row_ptr)
++	FLOAD B03_re, 6*REALSIZE(B_row_ptr)
++	FLOAD B03_im, 7*REALSIZE(B_row_ptr)
++
++	vfmacc.vf  AB01_re, B11_re, A01_re   // AB(:,1) += A(:,l+1) * B(l+1,1)
++	vfnmsac.vf AB01_re, B11_im, A01_im
++	vfmacc.vf  AB01_im, B11_re, A01_im
++	vfmacc.vf  AB01_im, B11_im, A01_re
++	vfmacc.vf  AB11_re, B11_re, A11_re
++	vfnmsac.vf AB11_re, B11_im, A11_im
++	vfmacc.vf  AB11_im, B11_re, A11_im
++	vfmacc.vf  AB11_im, B11_im, A11_re
++
++	vfmacc.vf  AB02_re, B12_re, A01_re   // AB(:,2) += A(:,l+1) * B(l+1,2)
++	vfnmsac.vf AB02_re, B12_im, A01_im
++	vfmacc.vf  AB02_im, B12_re, A01_im
++	vfmacc.vf  AB02_im, B12_im, A01_re
++	vfmacc.vf  AB12_re, B12_re, A11_re
++	vfnmsac.vf AB12_re, B12_im, A11_im
++	vfmacc.vf  AB12_im, B12_re, A11_im
++	vfmacc.vf  AB12_im, B12_im, A11_re
++
++	vfmacc.vf  AB03_re, B13_re, A01_re   // AB(:,3) += A(:,l+1) * B(l+1,3)
++	vfnmsac.vf AB03_re, B13_im, A01_im
++	vfmacc.vf  AB03_im, B13_re, A01_im
++	vfmacc.vf  AB03_im, B13_im, A01_re
++	vfmacc.vf  AB13_re, B13_re, A11_re
++	vfnmsac.vf AB13_re, B13_im, A11_im
++	vfmacc.vf  AB13_im, B13_re, A11_im
++	vfmacc.vf  AB13_im, B13_im, A11_re
++
++	// Load and deinterleave A(:,l+3)
++	VLE A01_re, (A01_ptr)
++	VLE A11_re, (A11_ptr)
++
++	// Point to A(:,l+2), A(:,l+3)
++	add A00_ptr, A01_ptr, s0
++	add A10_ptr, A11_ptr, s0
++	add A01_ptr, A00_ptr, s0
++	add A11_ptr, A10_ptr, s0
++
++	// Load B(l+3, 0:3)
++	FLOAD B10_re,  8*REALSIZE(B_row_ptr)
++	FLOAD B10_im,  9*REALSIZE(B_row_ptr)
++	FLOAD B11_re, 10*REALSIZE(B_row_ptr)
++	FLOAD B11_im, 11*REALSIZE(B_row_ptr)
++	FLOAD B12_re, 12*REALSIZE(B_row_ptr)
++	FLOAD B12_im, 13*REALSIZE(B_row_ptr)
++	FLOAD B13_re, 14*REALSIZE(B_row_ptr)
++	FLOAD B13_im, 15*REALSIZE(B_row_ptr)
++	addi B_row_ptr, B_row_ptr, 16*REALSIZE
++
++	vfmacc.vf  AB00_re, B00_re, A00_re   // AB(:,0) += A(:,l+2) * B(l+2,0)
++	vfnmsac.vf AB00_re, B00_im, A00_im
++	vfmacc.vf  AB00_im, B00_re, A00_im
++	vfmacc.vf  AB00_im, B00_im, A00_re
++	vfmacc.vf  AB10_re, B00_re, A10_re
++	vfnmsac.vf AB10_re, B00_im, A10_im
++	vfmacc.vf  AB10_im, B00_re, A10_im
++	vfmacc.vf  AB10_im, B00_im, A10_re
++
++	vfmacc.vf  AB00_re, B10_re, A01_re   // AB(:,0) += A(:,l+3) * B(l+3,0)
++	vfnmsac.vf AB00_re, B10_im, A01_im
++	vfmacc.vf  AB00_im, B10_re, A01_im
++	vfmacc.vf  AB00_im, B10_im, A01_re
++	vfmacc.vf  AB10_re, B10_re, A11_re
++	vfnmsac.vf AB10_re, B10_im, A11_im
++	vfmacc.vf  AB10_im, B10_re, A11_im
++	vfmacc.vf  AB10_im, B10_im, A11_re
++
++	vfmacc.vf  AB01_re, B01_re, A00_re   // AB(:,1) += A(:,l+2) * B(l+2,1)
++	vfnmsac.vf AB01_re, B01_im, A00_im
++	vfmacc.vf  AB01_im, B01_re, A00_im
++	vfmacc.vf  AB01_im, B01_im, A00_re
++	vfmacc.vf  AB11_re, B01_re, A10_re
++	vfnmsac.vf AB11_re, B01_im, A10_im
++	vfmacc.vf  AB11_im, B01_re, A10_im
++	vfmacc.vf  AB11_im, B01_im, A10_re
++
++	vfmacc.vf  AB01_re, B11_re, A01_re   // AB(:,1) += A(:,l+3) * B(l+3,1)
++	vfnmsac.vf AB01_re, B11_im, A01_im
++	vfmacc.vf  AB01_im, B11_re, A01_im
++	vfmacc.vf  AB01_im, B11_im, A01_re
++	vfmacc.vf  AB11_re, B11_re, A11_re
++	vfnmsac.vf AB11_re, B11_im, A11_im
++	vfmacc.vf  AB11_im, B11_re, A11_im
++	vfmacc.vf  AB11_im, B11_im, A11_re
++
++	vfmacc.vf  AB02_re, B02_re, A00_re   // AB(:,2) += A(:,l+2) * B(l+2,2)
++	vfnmsac.vf AB02_re, B02_im, A00_im
++	vfmacc.vf  AB02_im, B02_re, A00_im
++	vfmacc.vf  AB02_im, B02_im, A00_re
++	vfmacc.vf  AB12_re, B02_re, A10_re
++	vfnmsac.vf AB12_re, B02_im, A10_im
++	vfmacc.vf  AB12_im, B02_re, A10_im
++	vfmacc.vf  AB12_im, B02_im, A10_re
++
++	vfmacc.vf  AB02_re, B12_re, A01_re   // AB(:,2) += A(:,l+3) * B(l+3,2)
++	vfnmsac.vf AB02_re, B12_im, A01_im
++	vfmacc.vf  AB02_im, B12_re, A01_im
++	vfmacc.vf  AB02_im, B12_im, A01_re
++	vfmacc.vf  AB12_re, B12_re, A11_re
++	vfnmsac.vf AB12_re, B12_im, A11_im
++	vfmacc.vf  AB12_im, B12_re, A11_im
++	vfmacc.vf  AB12_im, B12_im, A11_re
++
++	vfmacc.vf  AB03_re, B03_re, A00_re   // AB(:,3) += A(:,l+2) * B(l+2,3)
++	vfnmsac.vf AB03_re, B03_im, A00_im
++	vfmacc.vf  AB03_im, B03_re, A00_im
++	vfmacc.vf  AB03_im, B03_im, A00_re
++	vfmacc.vf  AB13_re, B03_re, A10_re
++	vfnmsac.vf AB13_re, B03_im, A10_im
++	vfmacc.vf  AB13_im, B03_re, A10_im
++	vfmacc.vf  AB13_im, B03_im, A10_re
++
++	vfmacc.vf  AB03_re, B13_re, A01_re   // AB(:,3) += A(:,l+3) * B(l+3,3)
++	vfnmsac.vf AB03_re, B13_im, A01_im
++	vfmacc.vf  AB03_im, B13_re, A01_im
++	vfmacc.vf  AB03_im, B13_im, A01_re
++	vfmacc.vf  AB13_re, B13_re, A11_re
++	vfnmsac.vf AB13_re, B13_im, A11_im
++	vfmacc.vf  AB13_im, B13_re, A11_im
++	vfmacc.vf  AB13_im, B13_im, A11_re
++
++	li tmp, 3
++	ble loop_counter, tmp, TAIL_UNROLL_2
++
++	// Load A and B for the next iteration
++	VLE A00_re, (A00_ptr)
++	VLE A10_re, (A10_ptr)
++	VLE A01_re, (A01_ptr)
++	VLE A11_re, (A11_ptr)
++
++	FLOAD B00_re, 0*REALSIZE(B_row_ptr)
++	FLOAD B00_im, 1*REALSIZE(B_row_ptr)
++	FLOAD B01_re, 2*REALSIZE(B_row_ptr)
++	FLOAD B01_im, 3*REALSIZE(B_row_ptr)
++	FLOAD B02_re, 4*REALSIZE(B_row_ptr)
++	FLOAD B02_im, 5*REALSIZE(B_row_ptr)
++	FLOAD B03_re, 6*REALSIZE(B_row_ptr)
++	FLOAD B03_im, 7*REALSIZE(B_row_ptr)
++
++	j LOOP_UNROLL_4
++
++TAIL_UNROLL_2: // loop_counter <= 3
++	li tmp, 1
++	ble loop_counter, tmp, TAIL_UNROLL_1
++
++	addi loop_counter, loop_counter, -2
++
++	// Load and deinterleave A(:,l)
++	VLE A00_re, (A00_ptr)
++	VLE A10_re, (A10_ptr)
++
++	// Load B(l, 0:3)
++	FLOAD B00_re, 0*REALSIZE(B_row_ptr)
++	FLOAD B00_im, 1*REALSIZE(B_row_ptr)
++	FLOAD B01_re, 2*REALSIZE(B_row_ptr)
++	FLOAD B01_im, 3*REALSIZE(B_row_ptr)
++	FLOAD B02_re, 4*REALSIZE(B_row_ptr)
++	FLOAD B02_im, 5*REALSIZE(B_row_ptr)
++	FLOAD B03_re, 6*REALSIZE(B_row_ptr)
++	FLOAD B03_im, 7*REALSIZE(B_row_ptr)
++
++	vfmacc.vf  AB00_re, B00_re, A00_re   // AB(:,0) += A(:,l) * B(l,0)
++	vfnmsac.vf AB00_re, B00_im, A00_im
++	vfmacc.vf  AB00_im, B00_re, A00_im
++	vfmacc.vf  AB00_im, B00_im, A00_re
++	vfmacc.vf  AB10_re, B00_re, A10_re
++	vfnmsac.vf AB10_re, B00_im, A10_im
++	vfmacc.vf  AB10_im, B00_re, A10_im
++	vfmacc.vf  AB10_im, B00_im, A10_re
++
++	vfmacc.vf  AB01_re, B01_re, A00_re   // AB(:,1) += A(:,l) * B(l,1)
++	vfnmsac.vf AB01_re, B01_im, A00_im
++	vfmacc.vf  AB01_im, B01_re, A00_im
++	vfmacc.vf  AB01_im, B01_im, A00_re
++	vfmacc.vf  AB11_re, B01_re, A10_re
++	vfnmsac.vf AB11_re, B01_im, A10_im
++	vfmacc.vf  AB11_im, B01_re, A10_im
++	vfmacc.vf  AB11_im, B01_im, A10_re
++
++	// Load and deinterleave A(:,l+1)
++	VLE A01_re, (A01_ptr)
++	VLE A11_re, (A11_ptr)
++
++	// Load B(l+1, 0:3)
++	FLOAD B10_re,  8*REALSIZE(B_row_ptr)
++	FLOAD B10_im,  9*REALSIZE(B_row_ptr)
++	FLOAD B11_re, 10*REALSIZE(B_row_ptr)
++	FLOAD B11_im, 11*REALSIZE(B_row_ptr)
++	FLOAD B12_re, 12*REALSIZE(B_row_ptr)
++	FLOAD B12_im, 13*REALSIZE(B_row_ptr)
++	FLOAD B13_re, 14*REALSIZE(B_row_ptr)
++	FLOAD B13_im, 15*REALSIZE(B_row_ptr)
++
++	vfmacc.vf  AB00_re, B10_re, A01_re   // AB(:,0) += A(:,l+1) * B(l+1,0)
++	vfnmsac.vf AB00_re, B10_im, A01_im
++	vfmacc.vf  AB00_im, B10_re, A01_im
++	vfmacc.vf  AB00_im, B10_im, A01_re
++	vfmacc.vf  AB10_re, B10_re, A11_re
++	vfnmsac.vf AB10_re, B10_im, A11_im
++	vfmacc.vf  AB10_im, B10_re, A11_im
++	vfmacc.vf  AB10_im, B10_im, A11_re
++
++	vfmacc.vf  AB01_re, B11_re, A01_re   // AB(:,1) += A(:,l+1) * B(l+1,1)
++	vfnmsac.vf AB01_re, B11_im, A01_im
++	vfmacc.vf  AB01_im, B11_re, A01_im
++	vfmacc.vf  AB01_im, B11_im, A01_re
++	vfmacc.vf  AB11_re, B11_re, A11_re
++	vfnmsac.vf AB11_re, B11_im, A11_im
++	vfmacc.vf  AB11_im, B11_re, A11_im
++	vfmacc.vf  AB11_im, B11_im, A11_re
++
++	vfmacc.vf  AB02_re, B02_re, A00_re   // AB(:,2) += A(:,l) * B(l,2)
++	vfnmsac.vf AB02_re, B02_im, A00_im
++	vfmacc.vf  AB02_im, B02_re, A00_im
++	vfmacc.vf  AB02_im, B02_im, A00_re
++	vfmacc.vf  AB12_re, B02_re, A10_re
++	vfnmsac.vf AB12_re, B02_im, A10_im
++	vfmacc.vf  AB12_im, B02_re, A10_im
++	vfmacc.vf  AB12_im, B02_im, A10_re
++
++	vfmacc.vf  AB03_re, B03_re, A00_re   // AB(:,3) += A(:,l) * B(l,3)
++	vfnmsac.vf AB03_re, B03_im, A00_im
++	vfmacc.vf  AB03_im, B03_re, A00_im
++	vfmacc.vf  AB03_im, B03_im, A00_re
++	vfmacc.vf  AB13_re, B03_re, A10_re
++	vfnmsac.vf AB13_re, B03_im, A10_im
++	vfmacc.vf  AB13_im, B03_re, A10_im
++	vfmacc.vf  AB13_im, B03_im, A10_re
++
++	vfmacc.vf  AB02_re, B12_re, A01_re   // AB(:,2) += A(:,l+1) * B(l+1,2)
++	vfnmsac.vf AB02_re, B12_im, A01_im
++	vfmacc.vf  AB02_im, B12_re, A01_im
++	vfmacc.vf  AB02_im, B12_im, A01_re
++	vfmacc.vf  AB12_re, B12_re, A11_re
++	vfnmsac.vf AB12_re, B12_im, A11_im
++	vfmacc.vf  AB12_im, B12_re, A11_im
++	vfmacc.vf  AB12_im, B12_im, A11_re
++
++	vfmacc.vf  AB03_re, B13_re, A01_re   // AB(:,3) += A(:,l+1) * B(l+1,3)
++	vfnmsac.vf AB03_re, B13_im, A01_im
++	vfmacc.vf  AB03_im, B13_re, A01_im
++	vfmacc.vf  AB03_im, B13_im, A01_re
++	vfmacc.vf  AB13_re, B13_re, A11_re
++	vfnmsac.vf AB13_re, B13_im, A11_im
++	vfmacc.vf  AB13_im, B13_re, A11_im
++	vfmacc.vf  AB13_im, B13_im, A11_re
++
++	beqz loop_counter, MULTIPLYALPHA
++
++	// Advance pointers
++	add A00_ptr, A01_ptr, s0
++	add A10_ptr, A11_ptr, s0
++	addi B_row_ptr, B_row_ptr, 16*REALSIZE
++
++TAIL_UNROLL_1: // loop_counter <= 1
++	beqz loop_counter, MULTIPLYALPHA
++
++	// Load and deinterleave A(:,l)
++	VLE A00_re, (A00_ptr)
++	VLE A10_re, (A10_ptr)
++
++	// Load B(l,0:3)
++	FLOAD B00_re, 0*REALSIZE(B_row_ptr)
++	FLOAD B00_im, 1*REALSIZE(B_row_ptr)
++	FLOAD B01_re, 2*REALSIZE(B_row_ptr)
++	FLOAD B01_im, 3*REALSIZE(B_row_ptr)
++	FLOAD B02_re, 4*REALSIZE(B_row_ptr)
++	FLOAD B02_im, 5*REALSIZE(B_row_ptr)
++	FLOAD B03_re, 6*REALSIZE(B_row_ptr)
++	FLOAD B03_im, 7*REALSIZE(B_row_ptr)
++
++	vfmacc.vf  AB00_re, B00_re, A00_re   // AB(:,0) += A(:,l) * B(l,0)
++	vfnmsac.vf AB00_re, B00_im, A00_im
++	vfmacc.vf  AB00_im, B00_re, A00_im
++	vfmacc.vf  AB00_im, B00_im, A00_re
++	vfmacc.vf  AB10_re, B00_re, A10_re
++	vfnmsac.vf AB10_re, B00_im, A10_im
++	vfmacc.vf  AB10_im, B00_re, A10_im
++	vfmacc.vf  AB10_im, B00_im, A10_re
++
++	vfmacc.vf  AB01_re, B01_re, A00_re   // AB(:,1) += A(:,l) * B(l,1)
++	vfnmsac.vf AB01_re, B01_im, A00_im
++	vfmacc.vf  AB01_im, B01_re, A00_im
++	vfmacc.vf  AB01_im, B01_im, A00_re
++	vfmacc.vf  AB11_re, B01_re, A10_re
++	vfnmsac.vf AB11_re, B01_im, A10_im
++	vfmacc.vf  AB11_im, B01_re, A10_im
++	vfmacc.vf  AB11_im, B01_im, A10_re
++
++	vfmacc.vf  AB02_re, B02_re, A00_re   // AB(:,2) += A(:,l) * B(l,2)
++	vfnmsac.vf AB02_re, B02_im, A00_im
++	vfmacc.vf  AB02_im, B02_re, A00_im
++	vfmacc.vf  AB02_im, B02_im, A00_re
++	vfmacc.vf  AB12_re, B02_re, A10_re
++	vfnmsac.vf AB12_re, B02_im, A10_im
++	vfmacc.vf  AB12_im, B02_re, A10_im
++	vfmacc.vf  AB12_im, B02_im, A10_re
++
++	vfmacc.vf  AB03_re, B03_re, A00_re   // AB(:,3) += A(:,l) * B(l,3)
++	vfnmsac.vf AB03_re, B03_im, A00_im
++	vfmacc.vf  AB03_im, B03_re, A00_im
++	vfmacc.vf  AB03_im, B03_im, A00_re
++	vfmacc.vf  AB13_re, B03_re, A10_re
++	vfnmsac.vf AB13_re, B03_im, A10_im
++	vfmacc.vf  AB13_im, B03_re, A10_im
++	vfmacc.vf  AB13_im, B03_im, A10_re
++
++MULTIPLYALPHA:
++	FLOAD ALPHA_re, 0*REALSIZE(a1)
++	FLOAD ALPHA_im, 1*REALSIZE(a1)
++
++	FEQ tmp, ALPHA_im, fzero
++	bne tmp, zero, ALPHAREAL
++
++	// [AB00, ..., AB03] * alpha
++	vfmul.vf  tmp0_re, AB00_im, ALPHA_im
++	vfmul.vf  tmp0_im, AB00_re, ALPHA_im
++	vfmul.vf  tmp1_re, AB01_im, ALPHA_im
++	vfmul.vf  tmp1_im, AB01_re, ALPHA_im
++	vfmul.vf  tmp2_re, AB02_im, ALPHA_im
++	vfmul.vf  tmp2_im, AB02_re, ALPHA_im
++	vfmul.vf  tmp3_re, AB03_im, ALPHA_im
++	vfmul.vf  tmp3_im, AB03_re, ALPHA_im
++	vfmsub.vf AB00_re, ALPHA_re, tmp0_re
++	vfmsub.vf AB01_re, ALPHA_re, tmp1_re
++	vfmsub.vf AB02_re, ALPHA_re, tmp2_re
++	vfmsub.vf AB03_re, ALPHA_re, tmp3_re
++	vfmadd.vf AB00_im, ALPHA_re, tmp0_im
++	vfmadd.vf AB01_im, ALPHA_re, tmp1_im
++	vfmadd.vf AB02_im, ALPHA_re, tmp2_im
++	vfmadd.vf AB03_im, ALPHA_re, tmp3_im
++
++	// [AB10, ..., AB13] * alpha
++	vfmul.vf  tmp0_re, AB10_im, ALPHA_im
++	vfmul.vf  tmp0_im, AB10_re, ALPHA_im
++	vfmul.vf  tmp1_re, AB11_im, ALPHA_im
++	vfmul.vf  tmp1_im, AB11_re, ALPHA_im
++	vfmul.vf  tmp2_re, AB12_im, ALPHA_im
++	vfmul.vf  tmp2_im, AB12_re, ALPHA_im
++	vfmul.vf  tmp3_re, AB13_im, ALPHA_im
++	vfmul.vf  tmp3_im, AB13_re, ALPHA_im
++	vfmsub.vf AB10_re, ALPHA_re, tmp0_re
++	vfmsub.vf AB11_re, ALPHA_re, tmp1_re
++	vfmsub.vf AB12_re, ALPHA_re, tmp2_re
++	vfmsub.vf AB13_re, ALPHA_re, tmp3_re
++	vfmadd.vf AB10_im, ALPHA_re, tmp0_im
++	vfmadd.vf AB11_im, ALPHA_re, tmp1_im
++	vfmadd.vf AB12_im, ALPHA_re, tmp2_im
++	vfmadd.vf AB13_im, ALPHA_re, tmp3_im
++
++	j MULTIPLYBETA
++
++ALPHAREAL:
++	vfmul.vf AB00_re, AB00_re, ALPHA_re
++	vfmul.vf AB00_im, AB00_im, ALPHA_re
++	vfmul.vf AB01_re, AB01_re, ALPHA_re
++	vfmul.vf AB01_im, AB01_im, ALPHA_re
++	vfmul.vf AB02_re, AB02_re, ALPHA_re
++	vfmul.vf AB02_im, AB02_im, ALPHA_re
++	vfmul.vf AB03_re, AB03_re, ALPHA_re
++	vfmul.vf AB03_im, AB03_im, ALPHA_re
++
++	vfmul.vf AB10_re, AB10_re, ALPHA_re
++	vfmul.vf AB10_im, AB10_im, ALPHA_re
++	vfmul.vf AB11_re, AB11_re, ALPHA_re
++	vfmul.vf AB11_im, AB11_im, ALPHA_re
++	vfmul.vf AB12_re, AB12_re, ALPHA_re
++	vfmul.vf AB12_im, AB12_im, ALPHA_re
++	vfmul.vf AB13_re, AB13_re, ALPHA_re
++	vfmul.vf AB13_im, AB13_im, ALPHA_re
++
++MULTIPLYBETA:
++	FLOAD BETA_re,  0*REALSIZE(a4)
++	FLOAD BETA_im,  1*REALSIZE(a4)
++	FEQ tmp, BETA_im, fzero
++	bne tmp, zero, BETAREAL
++
++	// Load and deinterleave C(0:VLEN-1, 0:1)
++	VLE C0_re, (C00_ptr)
++	VLE C1_re, (C01_ptr)
++
++	// Load and deinterleave C(0:VLEN-1, 2:3)
++	VLE C2_re, (C02_ptr)
++	VLE C3_re, (C03_ptr)
++
++	// C(0:VLEN-1,0:1) * beta + AB(0:VLEN-1,0:1)
++	vfmacc.vf   AB00_re, BETA_re, C0_re
++	vfnmsac.vf  AB00_re, BETA_im, C0_im
++	vfmacc.vf   AB00_im, BETA_re, C0_im
++	vfmacc.vf   AB00_im, BETA_im, C0_re
++	VSE AB00_re, (C00_ptr)
++
++	vfmacc.vf   AB01_re, BETA_re, C1_re
++	vfnmsac.vf  AB01_re, BETA_im, C1_im
++	vfmacc.vf   AB01_im, BETA_re, C1_im
++	vfmacc.vf   AB01_im, BETA_im, C1_re
++	VSE AB01_re, (C01_ptr)
++
++	// C(0:VLEN-1,2:3) * beta + AB(0:VLEN-1,2:3)
++	vfmacc.vf   AB02_re, BETA_re, C2_re
++	vfnmsac.vf  AB02_re, BETA_im, C2_im
++	vfmacc.vf   AB02_im, BETA_re, C2_im
++	vfmacc.vf   AB02_im, BETA_im, C2_re
++	VSE AB02_re, (C02_ptr)
++
++	vfmacc.vf   AB03_re, BETA_re, C3_re
++	vfnmsac.vf  AB03_re, BETA_im, C3_im
++	vfmacc.vf   AB03_im, BETA_re, C3_im
++	vfmacc.vf   AB03_im, BETA_im, C3_re
++	VSE AB03_re, (C03_ptr)
++
++	// Load and deinterleave C(VLEN:2*VLEN-1, 0:1)
++	VLE C0_re, (C10_ptr)
++	VLE C1_re, (C11_ptr)
++
++	// Load and deinterleave C(VLEN:2*VLEN-1, 2:3)
++	VLE C2_re, (C12_ptr)
++	VLE C3_re, (C13_ptr)
++
++	// C(VLEN:2*VLEN-1,0:1) * beta + AB(VLEN:2*VLEN-1,0:1)
++	vfmacc.vf   AB10_re, BETA_re, C0_re
++	vfnmsac.vf  AB10_re, BETA_im, C0_im
++	vfmacc.vf   AB10_im, BETA_re, C0_im
++	vfmacc.vf   AB10_im, BETA_im, C0_re
++	VSE AB10_re, (C10_ptr)
++
++	vfmacc.vf   AB11_re, BETA_re, C1_re
++	vfnmsac.vf  AB11_re, BETA_im, C1_im
++	vfmacc.vf   AB11_im, BETA_re, C1_im
++	vfmacc.vf   AB11_im, BETA_im, C1_re
++	VSE AB11_re, (C11_ptr)
++
++	// C(VLEN:2*VLEN-1,2:3) * beta + AB(VLEN:2*VLEN-1,2:3)
++	vfmacc.vf   AB12_re, BETA_re, C2_re
++	vfnmsac.vf  AB12_re, BETA_im, C2_im
++	vfmacc.vf   AB12_im, BETA_re, C2_im
++	vfmacc.vf   AB12_im, BETA_im, C2_re
++	VSE AB12_re, (C12_ptr)
++
++	vfmacc.vf   AB13_re, BETA_re, C3_re
++	vfnmsac.vf  AB13_re, BETA_im, C3_im
++	vfmacc.vf   AB13_im, BETA_re, C3_im
++	vfmacc.vf   AB13_im, BETA_im, C3_re
++	VSE AB13_re, (C13_ptr)
++
++	j END
++
++BETAREAL:
++	FEQ tmp, BETA_re, fzero
++	bne tmp, zero, BETAZERO
++
++	// Load and deinterleave C(0:VLEN-1, 0:3)
++	VLE C0_re, (C00_ptr)
++	VLE C1_re, (C01_ptr)
++	VLE C2_re, (C02_ptr)
++	VLE C3_re, (C03_ptr)
++
++	// C(0:VLEN-1,0:3) * beta + AB(0:VLEN-1,0:3)
++	vfmacc.vf   AB00_re, BETA_re, C0_re
++	vfmacc.vf   AB00_im, BETA_re, C0_im
++	vfmacc.vf   AB01_re, BETA_re, C1_re
++	vfmacc.vf   AB01_im, BETA_re, C1_im
++
++	vfmacc.vf   AB02_re, BETA_re, C2_re
++	vfmacc.vf   AB02_im, BETA_re, C2_im
++	vfmacc.vf   AB03_re, BETA_re, C3_re
++	vfmacc.vf   AB03_im, BETA_re, C3_im
++
++	VSE AB00_re, (C00_ptr)
++	VSE AB01_re, (C01_ptr)
++	VSE AB02_re, (C02_ptr)
++	VSE AB03_re, (C03_ptr)
++
++	// Load and deinterleave C(VLEN:2*VLEN-1, 0:3)
++	VLE C0_re, (C10_ptr)
++	VLE C1_re, (C11_ptr)
++	VLE C2_re, (C12_ptr)
++	VLE C3_re, (C13_ptr)
++
++	// C(VLEN:2*VLEN-1,0:3) * beta + AB(VLEN:2*VLEN-1,0:3)
++	vfmacc.vf   AB10_re, BETA_re, C0_re
++	vfmacc.vf   AB10_im, BETA_re, C0_im
++	vfmacc.vf   AB11_re, BETA_re, C1_re
++	vfmacc.vf   AB11_im, BETA_re, C1_im
++
++	vfmacc.vf   AB12_re, BETA_re, C2_re
++	vfmacc.vf   AB12_im, BETA_re, C2_im
++	vfmacc.vf   AB13_re, BETA_re, C3_re
++	vfmacc.vf   AB13_im, BETA_re, C3_im
++
++	VSE AB10_re, (C10_ptr)
++	VSE AB11_re, (C11_ptr)
++	VSE AB12_re, (C12_ptr)
++	VSE AB13_re, (C13_ptr)
++
++	j END
++
++BETAZERO:
++	VSE AB00_re, (C00_ptr)
++	VSE AB01_re, (C01_ptr)
++	VSE AB02_re, (C02_ptr)
++	VSE AB03_re, (C03_ptr)
++
++	VSE AB10_re, (C10_ptr)
++	VSE AB11_re, (C11_ptr)
++	VSE AB12_re, (C12_ptr)
++	VSE AB13_re, (C13_ptr)
++
++END:
++	#include "rviv_restore_registers.h"
++	ret
+diff --git a/kernels/rviv/3/bli_dgemm_rviv_4vx4.c b/kernels/rviv/3/bli_dgemm_rviv_4vx4.c
+new file mode 100644
+index 000000000..e03716a5a
+--- /dev/null
++++ b/kernels/rviv/3/bli_dgemm_rviv_4vx4.c
+@@ -0,0 +1,79 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++
++*/
++#include "bli_rviv_utils.h"
++
++void bli_dgemm_rviv_asm_4vx4
++    (
++             intptr_t   k,
++       const void*      alpha,
++       const void*      a,
++       const void*      b,
++       const void*      beta,
++             void*      c, intptr_t rs_c, intptr_t cs_c
++    );
++
++void bli_dgemm_rviv_4vx4
++     (
++             dim_t      m,
++             dim_t      n,
++             dim_t      k,
++       const void*      alpha,
++       const void*      a,
++       const void*      b,
++       const void*      beta,
++             void*      c, inc_t rs_c, inc_t cs_c,
++             auxinfo_t* data,
++       const cntx_t*    cntx
++     )
++{
++	// The assembly kernels always take native machine-sized integer arguments.
++	// dim_t and inc_t are normally defined as being machine-sized. If larger, assert.
++	bli_static_assert( sizeof(dim_t) <= sizeof(intptr_t) &&
++	                   sizeof(inc_t) <= sizeof(intptr_t) );
++
++	// Extract vector-length dependent mr, nr that are fixed at configure time.
++	const inc_t mr = bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_MR, cntx );
++	const inc_t nr = 4;
++
++	GEMM_UKR_SETUP_CT( d, mr, nr, false );
++
++	// The kernel assumes rs_c == 1, and the context should not deviate from it.
++	assert( rs_c == 1 );
++
++	bli_dgemm_rviv_asm_4vx4( k, alpha, a, b, beta, c,
++	                         get_vlenb(), cs_c * sizeof(double) );
++
++	GEMM_UKR_FLUSH_CT( d );
++}
+diff --git a/kernels/rviv/3/bli_dgemm_rviv_asm_4vx4.S b/kernels/rviv/3/bli_dgemm_rviv_asm_4vx4.S
+new file mode 100644
+index 000000000..b29c6da5e
+--- /dev/null
++++ b/kernels/rviv/3/bli_dgemm_rviv_asm_4vx4.S
+@@ -0,0 +1,45 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++
++*/
++
++#define REALNAME bli_dgemm_rviv_asm_4vx4
++#define DATASIZE 8
++#define VTYPE e64
++#define FLOAD fld
++#define FZERO(fr) fcvt.d.w fr, x0
++#define FEQ feq.d
++#define VLE vle64.v
++#define VSE vse64.v
++
++#include "bli_sdgemm_rviv_asm_4vx4.h"
+diff --git a/kernels/rviv/3/bli_rviv_utils.h b/kernels/rviv/3/bli_rviv_utils.h
+new file mode 100644
+index 000000000..e4570321d
+--- /dev/null
++++ b/kernels/rviv/3/bli_rviv_utils.h
+@@ -0,0 +1,46 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++#include "blis.h"
++#include <assert.h>
++
++static inline uintptr_t get_vlenb(void)
++{
++	uintptr_t vlenb = 0;
++	__asm__ volatile (
++	   " csrr %0, vlenb"    // vector length in bytes
++	  : "=r" (vlenb)
++	);
++	return vlenb;
++}
+diff --git a/kernels/rviv/3/bli_sdgemm_rviv_asm_4vx4.h b/kernels/rviv/3/bli_sdgemm_rviv_asm_4vx4.h
+new file mode 100644
+index 000000000..998a4e27d
+--- /dev/null
++++ b/kernels/rviv/3/bli_sdgemm_rviv_asm_4vx4.h
+@@ -0,0 +1,627 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++
++*/
++
++	.text
++	.align      2
++	.global     REALNAME
++
++// void REALNAME(intptr_t k, void* alpha, void* a, void* b,
++//               void* beta, void* c, intptr_t rs_c, intptr_t cs_c)
++//
++// register arguments:
++// a0   k
++// a1   alpha
++// a2   a
++// a3   b
++// a4   beta
++// a5   c
++// a6   rs_c
++// a7   cs_c
++//
++
++#define loop_counter a0
++
++#define A00_ptr   a2
++#define A10_ptr   t0
++#define A20_ptr   t1
++#define A30_ptr   t2
++#define A01_ptr   s5
++#define A11_ptr   s6
++#define A21_ptr   s7
++#define A31_ptr   t6
++
++#define B_row_ptr a3
++
++#define C00_ptr   a5
++#define C01_ptr   t3
++#define C02_ptr   t4
++#define C03_ptr   t5
++#define C10_ptr   s1
++#define C11_ptr   s2
++#define C12_ptr   s3
++#define C13_ptr   s4
++
++#define tmp    t6
++
++#define ALPHA  fa1
++#define BETA   fa2
++
++#define B00    fa4
++#define B01    fa5
++#define B02    fa6
++#define B03    fa7
++
++#define B10    fa0
++#define B11    fa1
++#define B12    fa2
++#define B13    fa3
++
++#define fzero  ft8
++
++#define A00    v24
++#define A10    v25
++#define A20    v26
++#define A30    v27
++
++#define A01    v28
++#define A11    v29
++#define A21    v30
++#define A31    v31
++
++#define C00    v16
++#define C01    v17
++#define C02    v18
++#define C03    v19
++#define C10    v20
++#define C11    v21
++#define C12    v22
++#define C13    v23
++#define C20    v0
++#define C21    v1
++#define C22    v2
++#define C23    v3
++#define C30    v4
++#define C31    v5
++#define C32    v6
++#define C33    v7
++
++#define AB00   v0
++#define AB01   v1
++#define AB02   v2
++#define AB03   v3
++#define AB10   v4
++#define AB11   v5
++#define AB12   v6
++#define AB13   v7
++#define AB20   v8
++#define AB21   v9
++#define AB22   v10
++#define AB23   v11
++#define AB30   v12
++#define AB31   v13
++#define AB32   v14
++#define AB33   v15
++
++#define rs_c   a6
++#define cs_c   a7
++
++REALNAME:
++	#include "rviv_save_registers.h"
++
++	vsetvli s0, zero, VTYPE, m1, ta, ma
++	csrr s0, vlenb
++	FZERO(fzero)
++
++	// Set up pointers
++	add C01_ptr, C00_ptr, cs_c
++	add C02_ptr, C01_ptr, cs_c
++	add C03_ptr, C02_ptr, cs_c
++	add C10_ptr, C00_ptr, rs_c
++	add C11_ptr, C01_ptr, rs_c
++	add C12_ptr, C02_ptr, rs_c
++	add C13_ptr, C03_ptr, rs_c
++
++	// Zero-initialize accumulators
++	vxor.vv AB00, AB00, AB00
++	vxor.vv AB01, AB01, AB01
++	vxor.vv AB02, AB02, AB02
++	vxor.vv AB03, AB03, AB03
++	vxor.vv AB10, AB10, AB10
++	vxor.vv AB11, AB11, AB11
++	vxor.vv AB12, AB12, AB12
++	vxor.vv AB13, AB13, AB13
++	vxor.vv AB20, AB20, AB20
++	vxor.vv AB21, AB21, AB21
++	vxor.vv AB22, AB22, AB22
++	vxor.vv AB23, AB23, AB23
++	vxor.vv AB30, AB30, AB30
++	vxor.vv AB31, AB31, AB31
++	vxor.vv AB32, AB32, AB32
++	vxor.vv AB33, AB33, AB33
++
++	// Handle k == 0
++	beqz loop_counter, MULTIPLYBETA
++
++	// Set up pointers to rows of A
++	add A10_ptr, A00_ptr, s0
++	add A20_ptr, A10_ptr, s0
++	add A30_ptr, A20_ptr, s0
++
++	slli s0, s0, 2 // length of a column of A in bytes
++
++	li tmp, 3
++	ble loop_counter, tmp, TAIL_UNROLL_2
++
++	// Preload A and B
++	// Load A(:,l)
++	VLE A00, (A00_ptr)
++	VLE A10, (A10_ptr)
++	VLE A20, (A20_ptr)
++	VLE A30, (A30_ptr)
++
++	// Load B(l,0:3)
++	FLOAD B00, 0*DATASIZE(B_row_ptr)
++	FLOAD B01, 1*DATASIZE(B_row_ptr)
++	FLOAD B02, 2*DATASIZE(B_row_ptr)
++	FLOAD B03, 3*DATASIZE(B_row_ptr)
++
++	// Set up pointers to A(:,l+1)
++	add A01_ptr, A00_ptr, s0
++	add A11_ptr, A10_ptr, s0
++	add A21_ptr, A20_ptr, s0
++	add A31_ptr, A30_ptr, s0
++
++LOOP_UNROLL_4:
++	addi loop_counter, loop_counter, -4
++
++	vfmacc.vf AB00, B00, A00   // AB(0,:) += A(0,0) * B(0,:)
++	vfmacc.vf AB01, B01, A00
++	vfmacc.vf AB02, B02, A00
++	vfmacc.vf AB03, B03, A00
++
++	vfmacc.vf AB10, B00, A10   // AB(1,:) += A(1,0) * B(0,:)
++	vfmacc.vf AB11, B01, A10
++	vfmacc.vf AB12, B02, A10
++	vfmacc.vf AB13, B03, A10
++
++	// Load B(l+1,0:3)
++	FLOAD B10, 4*DATASIZE(B_row_ptr)
++	FLOAD B11, 5*DATASIZE(B_row_ptr)
++	FLOAD B12, 6*DATASIZE(B_row_ptr)
++	FLOAD B13, 7*DATASIZE(B_row_ptr)
++	addi B_row_ptr, B_row_ptr, 8*DATASIZE
++
++	vfmacc.vf AB20, B00, A20   // AB(2,:) += A(2,0) * B(0,:)
++	vfmacc.vf AB21, B01, A20
++	vfmacc.vf AB22, B02, A20
++	vfmacc.vf AB23, B03, A20
++
++	// Load A(:,l+1)
++	VLE A01, (A01_ptr)
++	VLE A11, (A11_ptr)
++	VLE A21, (A21_ptr)
++	VLE A31, (A31_ptr)
++
++	// Point to A(:,l+2)
++	add A00_ptr, A01_ptr, s0
++	add A10_ptr, A11_ptr, s0
++	add A20_ptr, A21_ptr, s0
++	add A30_ptr, A31_ptr, s0
++
++	vfmacc.vf AB30, B00, A30   // AB(3,:) += A(3,0) * B(0,:)
++	vfmacc.vf AB31, B01, A30
++	vfmacc.vf AB32, B02, A30
++	vfmacc.vf AB33, B03, A30
++
++	vfmacc.vf AB00, B10, A01   // AB(0,:) += A(0,1) * B(1,:)
++	vfmacc.vf AB01, B11, A01
++	vfmacc.vf AB02, B12, A01
++	vfmacc.vf AB03, B13, A01
++
++	// Load B(l+2,0:3)
++	FLOAD B00, 0*DATASIZE(B_row_ptr)
++	FLOAD B01, 1*DATASIZE(B_row_ptr)
++	FLOAD B02, 2*DATASIZE(B_row_ptr)
++	FLOAD B03, 3*DATASIZE(B_row_ptr)
++
++	vfmacc.vf AB10, B10, A11   // AB(1,:) += A(1,1) * B(1,:)
++	vfmacc.vf AB11, B11, A11
++	vfmacc.vf AB12, B12, A11
++	vfmacc.vf AB13, B13, A11
++
++	// Load A(:,l+2)
++	VLE A00, (A00_ptr)
++	VLE A10, (A10_ptr)
++	VLE A20, (A20_ptr)
++	VLE A30, (A30_ptr)
++
++	// Point to A(:,l+3)
++	add A01_ptr, A00_ptr, s0
++	add A11_ptr, A10_ptr, s0
++	add A21_ptr, A20_ptr, s0
++	add A31_ptr, A30_ptr, s0
++
++	vfmacc.vf AB20, B10, A21   // AB(2,:) += A(2,1) * B(1,:)
++	vfmacc.vf AB21, B11, A21
++	vfmacc.vf AB22, B12, A21
++	vfmacc.vf AB23, B13, A21
++
++	vfmacc.vf AB30, B10, A31   // AB(3,:) += A(3,1) * B(1,:)
++	vfmacc.vf AB31, B11, A31
++	vfmacc.vf AB32, B12, A31
++	vfmacc.vf AB33, B13, A31
++
++	// Load A(:,l+3)
++	VLE A01, (A01_ptr)
++	VLE A11, (A11_ptr)
++	VLE A21, (A21_ptr)
++	VLE A31, (A31_ptr)
++
++	// Point to A(:,l+4)
++	add A00_ptr, A01_ptr, s0
++	add A10_ptr, A11_ptr, s0
++	add A20_ptr, A21_ptr, s0
++	add A30_ptr, A31_ptr, s0
++
++	vfmacc.vf AB00, B00, A00   // AB(0,:) += A(0,2) * B(2,:)
++	vfmacc.vf AB01, B01, A00
++	vfmacc.vf AB02, B02, A00
++	vfmacc.vf AB03, B03, A00
++
++	// Load B(l+3,0:3)
++	FLOAD B10, 4*DATASIZE(B_row_ptr)
++	FLOAD B11, 5*DATASIZE(B_row_ptr)
++	FLOAD B12, 6*DATASIZE(B_row_ptr)
++	FLOAD B13, 7*DATASIZE(B_row_ptr)
++	addi B_row_ptr, B_row_ptr, 8*DATASIZE
++
++	vfmacc.vf AB10, B00, A10   // AB(1,:) += A(1,2) * B(2,:)
++	vfmacc.vf AB11, B01, A10
++	vfmacc.vf AB12, B02, A10
++	vfmacc.vf AB13, B03, A10
++
++	vfmacc.vf AB20, B00, A20   // AB(2,:) += A(2,2) * B(2,:)
++	vfmacc.vf AB21, B01, A20
++	vfmacc.vf AB22, B02, A20
++	vfmacc.vf AB23, B03, A20
++
++	vfmacc.vf AB30, B00, A30   // AB(3,:) += A(3,2) * B(3,:)
++	vfmacc.vf AB31, B01, A30
++	vfmacc.vf AB32, B02, A30
++	vfmacc.vf AB33, B03, A30
++
++	vfmacc.vf AB00, B10, A01   // AB(0,:) += A(0,3) * B(3,:)
++	vfmacc.vf AB01, B11, A01
++	vfmacc.vf AB02, B12, A01
++	vfmacc.vf AB03, B13, A01
++
++	vfmacc.vf AB10, B10, A11   // AB(1,:) += A(1,3) * B(3,:)
++	vfmacc.vf AB11, B11, A11
++	vfmacc.vf AB12, B12, A11
++	vfmacc.vf AB13, B13, A11
++
++	vfmacc.vf AB20, B10, A21   // AB(2,:) += A(2,3) * B(3,:)
++	vfmacc.vf AB21, B11, A21
++	vfmacc.vf AB22, B12, A21
++	vfmacc.vf AB23, B13, A21
++
++	vfmacc.vf AB30, B10, A31   // AB(3,:) += A(3,3) * B(3,:)
++	vfmacc.vf AB31, B11, A31
++	vfmacc.vf AB32, B12, A31
++	vfmacc.vf AB33, B13, A31
++
++	li tmp, 3
++	ble loop_counter, tmp, TAIL_UNROLL_2
++
++	// Load A and B for the next iteration
++	// Load B(l,0:3)
++	FLOAD B00, 0*DATASIZE(B_row_ptr)
++	FLOAD B01, 1*DATASIZE(B_row_ptr)
++	FLOAD B02, 2*DATASIZE(B_row_ptr)
++	FLOAD B03, 3*DATASIZE(B_row_ptr)
++
++	// Load A(:,l)
++	VLE A00, (A00_ptr)
++	VLE A10, (A10_ptr)
++	VLE A20, (A20_ptr)
++	VLE A30, (A30_ptr)
++
++	// Set up pointers to A(:,l+1)
++	add A01_ptr, A00_ptr, s0
++	add A11_ptr, A10_ptr, s0
++	add A21_ptr, A20_ptr, s0
++	add A31_ptr, A30_ptr, s0
++
++	j LOOP_UNROLL_4
++
++TAIL_UNROLL_2: // loop_counter <= 3
++	li tmp, 1
++	ble loop_counter, tmp, TAIL_UNROLL_1
++
++	addi loop_counter, loop_counter, -2
++
++	// Load B(l,0:3)
++	FLOAD B00, 0*DATASIZE(B_row_ptr)
++	FLOAD B01, 1*DATASIZE(B_row_ptr)
++	FLOAD B02, 2*DATASIZE(B_row_ptr)
++	FLOAD B03, 3*DATASIZE(B_row_ptr)
++
++	// Load A(0:1,l)
++	VLE A00, (A00_ptr)
++	VLE A10, (A10_ptr)
++
++	// Point to A(:,l+1)
++	add A01_ptr, A00_ptr, s0
++	add A11_ptr, A10_ptr, s0
++	add A21_ptr, A20_ptr, s0
++	add A31_ptr, A30_ptr, s0
++
++	vfmacc.vf AB00, B00, A00   // AB(0,:) += A(0,0) * B(0,:)
++	vfmacc.vf AB01, B01, A00
++	vfmacc.vf AB02, B02, A00
++	vfmacc.vf AB03, B03, A00
++
++	// Load A(2:3,l)
++	VLE A20, (A20_ptr)
++	VLE A30, (A30_ptr)
++
++	vfmacc.vf AB10, B00, A10   // AB(1,:) += A(1,0) * B(0,:)
++	vfmacc.vf AB11, B01, A10
++	vfmacc.vf AB12, B02, A10
++	vfmacc.vf AB13, B03, A10
++
++	// Load B(l+1,0:3)
++	FLOAD B10, 4*DATASIZE(B_row_ptr)
++	FLOAD B11, 5*DATASIZE(B_row_ptr)
++	FLOAD B12, 6*DATASIZE(B_row_ptr)
++	FLOAD B13, 7*DATASIZE(B_row_ptr)
++	addi B_row_ptr, B_row_ptr, 8*DATASIZE
++
++	// Load A(:,l+1)
++	VLE A01, (A01_ptr)
++	VLE A11, (A11_ptr)
++	VLE A21, (A21_ptr)
++	VLE A31, (A31_ptr)
++
++	vfmacc.vf AB20, B00, A20   // AB(2,:) += A(2,0) * B(0,:)
++	vfmacc.vf AB21, B01, A20
++	vfmacc.vf AB22, B02, A20
++	vfmacc.vf AB23, B03, A20
++
++	vfmacc.vf AB30, B00, A30   // AB(3,:) += A(3,0) * B(0,:)
++	vfmacc.vf AB31, B01, A30
++	vfmacc.vf AB32, B02, A30
++	vfmacc.vf AB33, B03, A30
++
++	// Point to A(:,l+2)
++	add A00_ptr, A01_ptr, s0
++	add A10_ptr, A11_ptr, s0
++	add A20_ptr, A21_ptr, s0
++	add A30_ptr, A31_ptr, s0
++
++	vfmacc.vf AB00, B10, A01   // AB(0,:) += A(0,1) * B(1,:)
++	vfmacc.vf AB01, B11, A01
++	vfmacc.vf AB02, B12, A01
++	vfmacc.vf AB03, B13, A01
++
++	vfmacc.vf AB10, B10, A11   // AB(1,:) += A(1,1) * B(1,:)
++	vfmacc.vf AB11, B11, A11
++	vfmacc.vf AB12, B12, A11
++	vfmacc.vf AB13, B13, A11
++
++	vfmacc.vf AB20, B10, A21   // AB(2,:) += A(2,1) * B(1,:)
++	vfmacc.vf AB21, B11, A21
++	vfmacc.vf AB22, B12, A21
++	vfmacc.vf AB23, B13, A21
++
++	vfmacc.vf AB30, B10, A31   // AB(3,:) += A(3,1) * B(1,:)
++	vfmacc.vf AB31, B11, A31
++	vfmacc.vf AB32, B12, A31
++	vfmacc.vf AB33, B13, A31
++
++	li tmp, 1
++	ble loop_counter, tmp, TAIL_UNROLL_1
++
++TAIL_UNROLL_1: // loop_counter <= 1
++	beqz loop_counter, MULTIPLYALPHA
++
++	// Load row of B
++	FLOAD B00, 0*DATASIZE(B_row_ptr)
++	FLOAD B01, 1*DATASIZE(B_row_ptr)
++	FLOAD B02, 2*DATASIZE(B_row_ptr)
++	FLOAD B03, 3*DATASIZE(B_row_ptr)
++
++	// Load A(:,l)
++	VLE A00, (A00_ptr)
++	VLE A10, (A10_ptr)
++	VLE A20, (A20_ptr)
++	VLE A30, (A30_ptr)
++
++	vfmacc.vf AB00, B00, A00   // AB(0,:) += A(0,0) * B(0,:)
++	vfmacc.vf AB01, B01, A00
++	vfmacc.vf AB02, B02, A00
++	vfmacc.vf AB03, B03, A00
++
++	vfmacc.vf AB10, B00, A10   // AB(1,:) += A(1,0) * B(0,:)
++	vfmacc.vf AB11, B01, A10
++	vfmacc.vf AB12, B02, A10
++	vfmacc.vf AB13, B03, A10
++
++	vfmacc.vf AB20, B00, A20   // AB(2,:) += A(2,0) * B(0,:)
++	vfmacc.vf AB21, B01, A20
++	vfmacc.vf AB22, B02, A20
++	vfmacc.vf AB23, B03, A20
++
++	vfmacc.vf AB30, B00, A30   // AB(3,:) += A(3,0) * B(0,:)
++	vfmacc.vf AB31, B01, A30
++	vfmacc.vf AB32, B02, A30
++	vfmacc.vf AB33, B03, A30
++
++MULTIPLYALPHA:
++	FLOAD ALPHA, (a1)
++
++	// Multiply with alpha
++	vfmul.vf AB00, AB00, ALPHA
++	vfmul.vf AB01, AB01, ALPHA
++	vfmul.vf AB02, AB02, ALPHA
++	vfmul.vf AB03, AB03, ALPHA
++
++	vfmul.vf AB10, AB10, ALPHA
++	vfmul.vf AB11, AB11, ALPHA
++	vfmul.vf AB12, AB12, ALPHA
++	vfmul.vf AB13, AB13, ALPHA
++
++	vfmul.vf AB20, AB20, ALPHA
++	vfmul.vf AB21, AB21, ALPHA
++	vfmul.vf AB22, AB22, ALPHA
++	vfmul.vf AB23, AB23, ALPHA
++
++	vfmul.vf AB30, AB30, ALPHA
++	vfmul.vf AB31, AB31, ALPHA
++	vfmul.vf AB32, AB32, ALPHA
++	vfmul.vf AB33, AB33, ALPHA
++
++MULTIPLYBETA:
++	FLOAD BETA,  (a4)
++	FEQ tmp, BETA, fzero
++	beq tmp, zero, BETANOTZERO
++
++BETAZERO:
++	VSE AB00, (C00_ptr)
++	VSE AB01, (C01_ptr)
++	VSE AB02, (C02_ptr)
++	VSE AB03, (C03_ptr)
++
++	add C00_ptr, C10_ptr, rs_c  // advance pointers to row 2*VLEN
++	add C01_ptr, C11_ptr, rs_c
++	add C02_ptr, C12_ptr, rs_c
++	add C03_ptr, C13_ptr, rs_c
++
++	VSE AB10, (C10_ptr)
++	VSE AB11, (C11_ptr)
++	VSE AB12, (C12_ptr)
++	VSE AB13, (C13_ptr)
++
++	add C10_ptr, C00_ptr, rs_c  // advance pointers to row 3*VLEN
++	add C11_ptr, C01_ptr, rs_c
++	add C12_ptr, C02_ptr, rs_c
++	add C13_ptr, C03_ptr, rs_c
++
++	VSE AB20, (C00_ptr)
++	VSE AB21, (C01_ptr)
++	VSE AB22, (C02_ptr)
++	VSE AB23, (C03_ptr)
++
++	VSE AB30, (C10_ptr)
++	VSE AB31, (C11_ptr)
++	VSE AB32, (C12_ptr)
++	VSE AB33, (C13_ptr)
++
++	j END
++
++BETANOTZERO:
++	VLE C00, (C00_ptr)  // Load C(0:VLEN-1, 0:3)
++	VLE C01, (C01_ptr)
++	VLE C02, (C02_ptr)
++	VLE C03, (C03_ptr)
++
++	vfmacc.vf AB00, BETA, C00
++	vfmacc.vf AB01, BETA, C01
++	vfmacc.vf AB02, BETA, C02
++	vfmacc.vf AB03, BETA, C03
++
++	VSE AB00, (C00_ptr)  // Store C(0:VLEN-1, 0:3)
++	VSE AB01, (C01_ptr)
++	VSE AB02, (C02_ptr)
++	VSE AB03, (C03_ptr)
++
++	add C00_ptr, C10_ptr, rs_c  // advance pointers to row 2*VLEN
++	add C01_ptr, C11_ptr, rs_c
++	add C02_ptr, C12_ptr, rs_c
++	add C03_ptr, C13_ptr, rs_c
++
++	VLE C10, (C10_ptr)  // Load C(VLEN:2*VLEN-1, 0:3)
++	VLE C11, (C11_ptr)
++	VLE C12, (C12_ptr)
++	VLE C13, (C13_ptr)
++
++	vfmacc.vf AB10, BETA, C10
++	vfmacc.vf AB11, BETA, C11
++	vfmacc.vf AB12, BETA, C12
++	vfmacc.vf AB13, BETA, C13
++
++	VSE AB10, (C10_ptr)  // Store C(VLEN:2*VLEN-1, 0:3)
++	VSE AB11, (C11_ptr)
++	VSE AB12, (C12_ptr)
++	VSE AB13, (C13_ptr)
++
++	add C10_ptr, C00_ptr, rs_c  // advance pointers to row 3*VLEN
++	add C11_ptr, C01_ptr, rs_c
++	add C12_ptr, C02_ptr, rs_c
++	add C13_ptr, C03_ptr, rs_c
++
++	VLE C20, (C00_ptr)  // Load C(2*VLEN:3*VLEN-1, 0:3)
++	VLE C21, (C01_ptr)
++	VLE C22, (C02_ptr)
++	VLE C23, (C03_ptr)
++
++	vfmacc.vf AB20, BETA, C20
++	vfmacc.vf AB21, BETA, C21
++	vfmacc.vf AB22, BETA, C22
++	vfmacc.vf AB23, BETA, C23
++
++	VSE AB20, (C00_ptr)  // Store C(2*VLEN:3*VLEN-1, 0:3)
++	VSE AB21, (C01_ptr)
++	VSE AB22, (C02_ptr)
++	VSE AB23, (C03_ptr)
++
++	VLE C30, (C10_ptr)  // Load C(3*VLEN:4*VLEN-1, 0:3)
++	VLE C31, (C11_ptr)
++	VLE C32, (C12_ptr)
++	VLE C33, (C13_ptr)
++
++	vfmacc.vf AB30, BETA, C30
++	vfmacc.vf AB31, BETA, C31
++	vfmacc.vf AB32, BETA, C32
++	vfmacc.vf AB33, BETA, C33
++
++	VSE AB30, (C10_ptr)  // Store C(3*VLEN:4*VLEN-1, 0:3)
++	VSE AB31, (C11_ptr)
++	VSE AB32, (C12_ptr)
++	VSE AB33, (C13_ptr)
++
++END:
++	#include "rviv_restore_registers.h"
++	ret
+diff --git a/kernels/rviv/3/bli_sgemm_rviv_4vx4.c b/kernels/rviv/3/bli_sgemm_rviv_4vx4.c
+new file mode 100644
+index 000000000..c240d0391
+--- /dev/null
++++ b/kernels/rviv/3/bli_sgemm_rviv_4vx4.c
+@@ -0,0 +1,80 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++
++*/
++
++#include "bli_rviv_utils.h"
++
++void bli_sgemm_rviv_asm_4vx4
++    (
++             intptr_t   k,
++       const void*      alpha,
++       const void*      a,
++       const void*      b,
++       const void*      beta,
++             void*      c, inc_t rs_c, inc_t cs_c
++    );
++
++void bli_sgemm_rviv_4vx4
++     (
++             dim_t      m,
++             dim_t      n,
++             dim_t      k,
++       const void*      alpha,
++       const void*      a,
++       const void*      b,
++       const void*      beta,
++             void*      c, inc_t rs_c, inc_t cs_c,
++             auxinfo_t* data,
++       const cntx_t*    cntx
++     )
++{
++	// The assembly kernels always take native machine-sized integer arguments.
++	// dim_t and inc_t are normally defined as being machine-sized. If larger, assert.
++	bli_static_assert( sizeof(dim_t) <= sizeof(intptr_t) &&
++	                   sizeof(inc_t) <= sizeof(intptr_t) );
++
++	// Extract vector-length dependent mr, nr that are fixed at configure time.
++	const inc_t mr = bli_cntx_get_blksz_def_dt( BLIS_FLOAT, BLIS_MR, cntx );
++	const inc_t nr = 4;
++
++	GEMM_UKR_SETUP_CT( s, mr, nr, false );
++
++	// The kernel assumes rs_c == 1, and the context should not deviate from it.
++	assert( rs_c == 1 );
++
++	bli_sgemm_rviv_asm_4vx4( k, alpha, a, b, beta, c,
++	                         get_vlenb(), cs_c * sizeof(float) );
++
++	GEMM_UKR_FLUSH_CT( s );
++}
+diff --git a/kernels/rviv/3/bli_sgemm_rviv_asm_4vx4.S b/kernels/rviv/3/bli_sgemm_rviv_asm_4vx4.S
+new file mode 100644
+index 000000000..2a917fc8e
+--- /dev/null
++++ b/kernels/rviv/3/bli_sgemm_rviv_asm_4vx4.S
+@@ -0,0 +1,45 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++
++*/
++
++#define REALNAME bli_sgemm_rviv_asm_4vx4
++#define DATASIZE 4
++#define VTYPE e32
++#define FLOAD flw
++#define FZERO(fr) fcvt.s.w fr, x0
++#define FEQ feq.s
++#define VLE vle32.v
++#define VSE vse32.v
++
++#include "bli_sdgemm_rviv_asm_4vx4.h"
+diff --git a/kernels/rviv/3/bli_zgemm_rviv_4vx4.c b/kernels/rviv/3/bli_zgemm_rviv_4vx4.c
+new file mode 100644
+index 000000000..3d9940f9b
+--- /dev/null
++++ b/kernels/rviv/3/bli_zgemm_rviv_4vx4.c
+@@ -0,0 +1,80 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++#include "bli_rviv_utils.h"
++
++void bli_zgemm_rviv_asm_4vx4
++    (
++             intptr_t   k,
++       const void*      alpha,
++       const void*      a,
++       const void*      b,
++       const void*      beta,
++             void*      c, intptr_t rs_c, intptr_t cs_c
++    );
++
++
++void bli_zgemm_rviv_4vx4
++     (
++             dim_t      m,
++             dim_t      n,
++             dim_t      k,
++       const void*      alpha,
++       const void*      a,
++       const void*      b,
++       const void*      beta,
++             void*      c, inc_t rs_c, inc_t cs_c,
++             auxinfo_t* data,
++       const cntx_t*    cntx
++     )
++{
++	// The assembly kernels always take native machine-sized integer arguments.
++	// dim_t and inc_t are normally defined as being machine-sized. If larger, assert.
++	bli_static_assert( sizeof(dim_t) <= sizeof(intptr_t) &&
++	                   sizeof(inc_t) <= sizeof(intptr_t) );
++
++	// Extract vector-length dependent mr, nr that are fixed at configure time.
++	const inc_t mr = bli_cntx_get_blksz_def_dt( BLIS_DCOMPLEX, BLIS_MR, cntx );
++	const inc_t nr = 4;
++
++	GEMM_UKR_SETUP_CT( z, mr, nr, false );
++
++	// The kernel assumes rs_c == 1, and the context should not deviate from it.
++	assert( rs_c == 1 );
++
++	bli_zgemm_rviv_asm_4vx4( k, alpha, a, b, beta, c,
++	                         get_vlenb() * 2, cs_c * sizeof(dcomplex) );
++
++	GEMM_UKR_FLUSH_CT( z );
++}
+diff --git a/kernels/rviv/3/bli_zgemm_rviv_asm_4vx4.S b/kernels/rviv/3/bli_zgemm_rviv_asm_4vx4.S
+new file mode 100644
+index 000000000..ae61a415d
+--- /dev/null
++++ b/kernels/rviv/3/bli_zgemm_rviv_asm_4vx4.S
+@@ -0,0 +1,44 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++#define REALNAME bli_zgemm_rviv_asm_4vx4
++#define DATASIZE 16
++#define VTYPE e64
++#define FLOAD fld
++#define FZERO(fr) fcvt.d.w fr, x0
++#define FEQ feq.d
++#define VLE vlseg2e64.v
++#define VSE vsseg2e64.v
++
++#include "bli_czgemm_rviv_asm_4vx4.h"
+diff --git a/kernels/rviv/3/rviv_restore_registers.h b/kernels/rviv/3/rviv_restore_registers.h
+new file mode 100644
+index 000000000..bcf7d17c8
+--- /dev/null
++++ b/kernels/rviv/3/rviv_restore_registers.h
+@@ -0,0 +1,77 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++
++// 128-bit RISC-V is assumed to support the __riscv_xlen test macro
++#if __riscv_xlen == 128  // false if !defined(__riscv_xlen)
++
++	lq s7, 112(sp)
++	lq s6,  96(sp)
++	lq s5,  80(sp)
++	lq s4,  64(sp)
++	lq s3,  48(sp)
++	lq s2,  32(sp)
++	lq s1,  16(sp)
++	lq s0,   0(sp)
++	addi sp, sp, 128
++
++// 64-bit RISC-V can be indicated by either __riscv_xlen == 64 or
++// RISCV_SIZE == 64, to support toolchains which do not currently
++// support __riscv_xlen. If a macro is undefined, it is considered 0.
++#elif __riscv_xlen == 64 || RISCV_SIZE == 64
++
++	ld s7, 56(sp)
++	ld s6, 48(sp)
++	ld s5, 40(sp)
++	ld s4, 32(sp)
++	ld s3, 24(sp)
++	ld s2, 16(sp)
++	ld s1,  8(sp)
++	ld s0,  0(sp)
++	addi sp, sp, 64
++
++#else
++// else 32-bit RISC-V is assumed
++
++	lw s7, 28(sp)
++	lw s6, 24(sp)
++	lw s5, 20(sp)
++	lw s4, 16(sp)
++	lw s3, 12(sp)
++	lw s2,  8(sp)
++	lw s1,  4(sp)
++	lw s0,  0(sp)
++	addi sp, sp, 32
++
++#endif
+diff --git a/kernels/rviv/3/rviv_save_registers.h b/kernels/rviv/3/rviv_save_registers.h
+new file mode 100644
+index 000000000..537c76ca6
+--- /dev/null
++++ b/kernels/rviv/3/rviv_save_registers.h
+@@ -0,0 +1,77 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++
++*/
++
++// 128-bit RISC-V is assumed to support the __riscv_xlen test macro
++#if __riscv_xlen == 128  // false if !defined(__riscv_xlen)
++
++	addi sp, sp, -128
++	sq s7, 112(sp)
++	sq s6,  96(sp)
++	sq s5,  80(sp)
++	sq s4,  64(sp)
++	sq s3,  48(sp)
++	sq s2,  32(sp)
++	sq s1,  16(sp)
++	sq s0,   0(sp)
++
++// 64-bit RISC-V can be indicated by either __riscv_xlen == 64 or
++// RISCV_SIZE == 64, to support toolchains which do not currently
++// support __riscv_xlen. If a macro is undefined, it is considered 0.
++#elif __riscv_xlen == 64 || RISCV_SIZE == 64
++
++	addi sp, sp, -64
++	sd s7, 56(sp)
++	sd s6, 48(sp)
++	sd s5, 40(sp)
++	sd s4, 32(sp)
++	sd s3, 24(sp)
++	sd s2, 16(sp)
++	sd s1,  8(sp)
++	sd s0,  0(sp)
++
++#else
++// else 32-bit RISC-V is assumed
++
++	addi sp, sp, -32
++	sw s7, 28(sp)
++	sw s6, 24(sp)
++	sw s5, 20(sp)
++	sw s4, 16(sp)
++	sw s3, 12(sp)
++	sw s2,  8(sp)
++	sw s1,  4(sp)
++	sw s0,  0(sp)
++
++#endif
+diff --git a/kernels/rviv/bli_kernels_rviv.h b/kernels/rviv/bli_kernels_rviv.h
+new file mode 100644
+index 000000000..82a652396
+--- /dev/null
++++ b/kernels/rviv/bli_kernels_rviv.h
+@@ -0,0 +1,38 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++GEMM_UKR_PROT( float,    s, gemm_rviv_4vx4 )
++GEMM_UKR_PROT( double,   d, gemm_rviv_4vx4 )
++GEMM_UKR_PROT( scomplex, c, gemm_rviv_4vx4 )
++GEMM_UKR_PROT( dcomplex, z, gemm_rviv_4vx4 )
+diff --git a/travis/do_riscv.sh b/travis/do_riscv.sh
+new file mode 100755
+index 000000000..a51d33061
+--- /dev/null
++++ b/travis/do_riscv.sh
+@@ -0,0 +1,36 @@
++#!/bin/bash
++
++set -e
++set -x
++
++TAG=2023.02.25
++
++# The prebuilt toolchains only support hardfloat, so we only
++# test these for now.
++case $1 in
++	"rv32iv")
++	TARBALL=riscv32-glibc-ubuntu-20.04-nightly-${TAG}-nightly.tar.gz
++	;;
++	"rv64iv")
++	TARBALL=riscv64-glibc-ubuntu-20.04-nightly-${TAG}-nightly.tar.gz
++	;;
++	*)
++	exit 1
++	;;
++esac
++
++TOOLCHAIN_PATH=$DIST_PATH/../toolchain
++TOOLCHAIN_URL=https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/${TAG}/${TARBALL}
++
++mkdir -p $TOOLCHAIN_PATH
++cd $TOOLCHAIN_PATH
++
++wget $TOOLCHAIN_URL
++tar -xf $TARBALL
++
++# Once CI upgrades to jammy, the next three lines can be removed.
++# The qemu version installed via packages (qemu-user qemu-user-binfmt)
++# is sufficient.
++TARBALL_QEMU=qemu-riscv-2023.02.25-ubuntu-20.04.tar.gz
++wget https://github.com/flame/ci-utils/raw/master/riscv/${TARBALL_QEMU}
++tar -xf $TARBALL_QEMU
+diff --git a/frame/base/bli_riscv_cpuid.h b/build/detect/riscv/bli_riscv_cpuid.h
+similarity index 100%
+rename from frame/base/bli_riscv_cpuid.h
+rename to build/detect/riscv/bli_riscv_cpuid.h
+diff --git a/build/detect/riscv/bli_riscv_detect_abi.h b/build/detect/riscv/bli_riscv_detect_abi.h
+new file mode 100644
+index 000000000..a5a373926
+--- /dev/null
++++ b/build/detect/riscv/bli_riscv_detect_abi.h
+@@ -0,0 +1,63 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2023, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++
++*/
++
++/* Construct a RISC-V ABI string based on available features. */
++
++#if __riscv
++
++#define CAT2(a,b) a##b
++#define CAT(a,b) CAT2(a,b)
++
++#if __riscv_xlen == 32
++#define RISCV_INT_ABI ilp32
++#else
++#define RISCV_INT_ABI lp64
++#endif
++
++#if __riscv_abi_rve
++CAT(RISCV_INT_ABI, e)
++#elif __riscv_float_abi_soft
++RISCV_INT_ABI
++#elif __riscv_float_abi_single
++CAT(RISCV_INT_ABI, f)
++#elif __riscv_float_abi_double
++CAT(RISCV_INT_ABI, d)
++#elif __riscv_float_abi_quad
++CAT(RISCV_INT_ABI, q)
++#else
++#error "Unknown RISC-V ABI"
++#endif
++
++#endif /* __riscv */
+diff --git a/frame/base/bli_riscv_detect_arch.h b/build/detect/riscv/bli_riscv_detect_arch.h
+similarity index 72%
+rename from frame/base/bli_riscv_detect_arch.h
+rename to build/detect/riscv/bli_riscv_detect_arch.h
+index 448b0f39d..55542f508 100644
+--- a/frame/base/bli_riscv_detect_arch.h
++++ b/build/detect/riscv/bli_riscv_detect_arch.h
+@@ -75,6 +75,12 @@
+ #define RISCV_D
+ #endif
+ 
++#if __riscv_flen >= 128
++#define RISCV_Q q
++#else
++#define RISCV_Q
++#endif
++
+ #if __riscv_c
+ #define RISCV_C c
+ #else
+@@ -94,6 +100,47 @@
+ #define RISCV_V
+ #endif
+ 
++/* No test currently for Zicsr, which was removed from the base ISA,
++   but F implies Zicsr */
++#if __riscv_f
++#define RISCV_ZICSR _zicsr
++#else
++#define RISCV_ZICSR
++#endif
++
++/* No test currently for Zifencei, which was removed from the base ISA */
++#define RISCV_ZIFENCEI
++
++#if __riscv_zba
++#define RISCV_ZBA _zba
++#else
++#define RISCV_ZBA
++#endif
++
++#if __riscv_zbb
++#define RISCV_ZBB _zbb
++#else
++#define RISCV_ZBB
++#endif
++
++#if __riscv_zbc
++#define RISCV_ZBC _zbc
++#else
++#define RISCV_ZBC
++#endif
++
++#if __riscv_zbs
++#define RISCV_ZBS _zbs
++#else
++#define RISCV_ZBS
++#endif
++
++#if __riscv_zfh
++#define RISCV_ZFH _zfh
++#else
++#define RISCV_ZFH
++#endif
++
+ #else /* __riscv_arch_test */
+ 
+ /* We assume I and E are exclusive when __riscv_arch_test isn't defined */
+@@ -129,6 +176,12 @@
+ #define RISCV_D
+ #endif
+ 
++#if __riscv_flen >= 128
++#define RISCV_Q q
++#else
++#define RISCV_Q
++#endif
++
+ #if __riscv_compressed
+ #define RISCV_C c
+ #else
+@@ -144,12 +197,29 @@
+ #define RISCV_V
+ #endif
+ 
++/* No test currently for Zicsr, which was removed from the base ISA, but
++   F implies Zicsr */
++#if __riscv_flen >= 32
++#define RISCV_ZICSR _zicsr
++#else
++#define RISCV_ZICSR
++#endif
++
++#define RISCV_ZIFENCEI
++#define RISCV_ZBA
++#define RISCV_ZBB
++#define RISCV_ZBC
++#define RISCV_ZBS
++#define RISCV_ZFH
++
+ #endif /* __riscv_arch_test */
+ 
+ #define CAT2(a,b) a##b
+ #define CAT(a,b) CAT2(a,b)
+ 
+ CAT(rv, CAT(__riscv_xlen, CAT(RISCV_I, CAT(RISCV_E, CAT(RISCV_M, CAT(RISCV_A,
+-CAT(RISCV_F, CAT(RISCV_D, CAT(RISCV_C, CAT(RISCV_P, RISCV_V))))))))))
++CAT(RISCV_F, CAT(RISCV_D, CAT(RISCV_Q, CAT(RISCV_C, CAT(RISCV_P, CAT(RISCV_V,
++CAT(RISCV_ZICSR, CAT(RISCV_ZIFENCEI, CAT(RISCV_ZBA, CAT(RISCV_ZBB,
++CAT(RISCV_ZBC, CAT(RISCV_ZBS, RISCV_ZFH))))))))))))))))))
+ 
+ #endif /* __riscv */
+diff --git a/config/rv32i/make_defs.mk b/config/rv32i/make_defs.mk
+index 86b7143dd..21128717f 100644
+--- a/config/rv32i/make_defs.mk
++++ b/config/rv32i/make_defs.mk
+@@ -46,9 +46,17 @@ THIS_CONFIG    := rv32i
+ # general-purpose/configuration-agnostic flags in common.mk. You
+ # may specify additional flags here as needed.
+ CPPROCFLAGS    := -DRISCV_SIZE=32
+-# Atomic instructions must be enabled either via hardware
+-# (-march=rv32ia) or by linking against libatomic
+-CMISCFLAGS     := -march=$(shell $(CC) -E frame/base/bli_riscv_detect_arch.h | grep '^[^\#]') -mabi=ilp32
++
++RISCV_ARCH     := $(shell $(CC) -E build/detect/riscv/bli_riscv_detect_arch.h | grep '^[^\#]')
++RISCV_ABI      := $(shell $(CC) -E build/detect/riscv/bli_riscv_detect_abi.h | grep '^[^\#]')
++
++ifeq (,$(findstring 32,$(RISCV_ARCH)))
++$(error The RISC-V compiler architecture $(RISCV_ARCH) is not compatible with $(THIS_CONFIG))
++else ifeq (,$(findstring 32,$(RISCV_ABI)))
++$(error The RISC-V compiler ABI $(RISCV_ABI) is not compatible with $(THIS_CONFIG))
++endif
++
++CMISCFLAGS     := -march=$(RISCV_ARCH) -mabi=$(RISCV_ABI)
+ CPICFLAGS      :=
+ CWARNFLAGS     := -Wall -Wno-unused-function -Wfatal-errors
+ 
+diff --git a/config/rv32iv/make_defs.mk b/config/rv32iv/make_defs.mk
+index e8d9cca57..9daaee3d6 100644
+--- a/config/rv32iv/make_defs.mk
++++ b/config/rv32iv/make_defs.mk
+@@ -46,9 +46,17 @@ THIS_CONFIG    := rv32iv
+ # general-purpose/configuration-agnostic flags in common.mk. You
+ # may specify additional flags here as needed.
+ CPPROCFLAGS    := -DRISCV_SIZE=32
+-# Atomic instructions must be enabled either via hardware
+-# (-march=rv32iav) or by linking against libatomic
+-CMISCFLAGS     := -march=$(shell $(CC) -DFORCE_RISCV_VECTOR -E frame/base/bli_riscv_detect_arch.h | grep '^[^\#]') -mabi=ilp32d
++
++RISCV_ARCH     := $(shell $(CC) -DFORCE_RISCV_VECTOR -E build/detect/riscv/bli_riscv_detect_arch.h | grep '^[^\#]')
++RISCV_ABI      := $(shell $(CC) -DFORCE_RISCV_VECTOR -E build/detect/riscv/bli_riscv_detect_abi.h | grep '^[^\#]')
++
++ifeq (,$(findstring 32,$(RISCV_ARCH)))
++$(error The RISC-V compiler architecture $(RISCV_ARCH) is not compatible with $(THIS_CONFIG))
++else ifeq (,$(findstring 32,$(RISCV_ABI)))
++$(error The RISC-V compiler ABI $(RISCV_ABI) is not compatible with $(THIS_CONFIG))
++endif
++
++CMISCFLAGS     := -march=$(RISCV_ARCH) -mabi=$(RISCV_ABI)
+ CPICFLAGS      :=
+ CWARNFLAGS     := -Wall -Wno-unused-function -Wfatal-errors
+ 
+diff --git a/config/rv64i/make_defs.mk b/config/rv64i/make_defs.mk
+index bee21ed0d..7c055f012 100644
+--- a/config/rv64i/make_defs.mk
++++ b/config/rv64i/make_defs.mk
+@@ -46,7 +46,17 @@ THIS_CONFIG    := rv64i
+ # general-purpose/configuration-agnostic flags in common.mk. You
+ # may specify additional flags here as needed.
+ CPPROCFLAGS    := -DRISCV_SIZE=64
+-CMISCFLAGS     := -march=$(shell $(CC) -E frame/base/bli_riscv_detect_arch.h | grep '^[^\#]') -mabi=lp64
++
++RISCV_ARCH     := $(shell $(CC) -E build/detect/riscv/bli_riscv_detect_arch.h | grep '^[^\#]')
++RISCV_ABI      := $(shell $(CC) -E build/detect/riscv/bli_riscv_detect_abi.h | grep '^[^\#]')
++
++ifeq (,$(findstring 64,$(RISCV_ARCH)))
++$(error The RISC-V compiler architecture $(RISCV_ARCH) is not compatible with $(THIS_CONFIG))
++else ifeq (,$(findstring 64,$(RISCV_ABI)))
++$(error The RISC-V compiler ABI $(RISCV_ABI) is not compatible with $(THIS_CONFIG))
++endif
++
++CMISCFLAGS     := -march=$(RISCV_ARCH) -mabi=$(RISCV_ABI)
+ CPICFLAGS      :=
+ CWARNFLAGS     := -Wall -Wno-unused-function -Wfatal-errors
+ 
+diff --git a/config/rv64iv/make_defs.mk b/config/rv64iv/make_defs.mk
+index 1c9849fbe..9ec5a889a 100644
+--- a/config/rv64iv/make_defs.mk
++++ b/config/rv64iv/make_defs.mk
+@@ -46,7 +46,17 @@ THIS_CONFIG    := rv64iv
+ # general-purpose/configuration-agnostic flags in common.mk. You
+ # may specify additional flags here as needed.
+ CPPROCFLAGS    := -DRISCV_SIZE=64
+-CMISCFLAGS     := -march=$(shell $(CC) -DFORCE_RISCV_VECTOR -E frame/base/bli_riscv_detect_arch.h | grep '^[^\#]') -mabi=lp64d
++
++RISCV_ARCH     := $(shell $(CC) -DFORCE_RISCV_VECTOR -E build/detect/riscv/bli_riscv_detect_arch.h | grep '^[^\#]')
++RISCV_ABI      := $(shell $(CC) -DFORCE_RISCV_VECTOR -E build/detect/riscv/bli_riscv_detect_abi.h | grep '^[^\#]')
++
++ifeq (,$(findstring 64,$(RISCV_ARCH)))
++$(error The RISC-V compiler architecture $(RISCV_ARCH) is not compatible with $(THIS_CONFIG))
++else ifeq (,$(findstring 64,$(RISCV_ABI)))
++$(error The RISC-V compiler ABI $(RISCV_ABI) is not compatible with $(THIS_CONFIG))
++endif
++
++CMISCFLAGS     := -march=$(RISCV_ARCH) -mabi=$(RISCV_ABI)
+ CPICFLAGS      :=
+ CWARNFLAGS     := -Wall -Wno-unused-function -Wfatal-errors
+ 
+diff --git a/configure b/configure
+index 6938d47cd..f87093cad 100755
+--- a/configure
++++ b/configure
+@@ -1252,7 +1252,7 @@ auto_detect()
+ 	# Special case for RISC-V, whose architecture can be detected with
+ 	# preprocessor macros alone. This avoids having to run RISC-V binaries
+ 	# on a cross-compiler host. Returns "generic" if RISC-V not detected.
+-	riscv_config=$(${cmd} -E "${dist_path}/frame/base/bli_riscv_cpuid.h" |
++	riscv_config=$(${cmd} -E "${dist_path}/build/detect/riscv/bli_riscv_cpuid.h" |
+ 	               grep '^[^#]')
+ 	if [[ $riscv_config != *generic* ]]; then
+ 		echo "${riscv_config}"

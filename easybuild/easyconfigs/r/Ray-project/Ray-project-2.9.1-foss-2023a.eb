@@ -1,0 +1,73 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'Ray-project'
+version = '2.9.1'
+
+homepage = "https://docs.ray.io/en/latest/"
+description = "Ray is a fast and simple framework for building and running distributed applications."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+builddependencies = [
+    ('redis-py', '5.0.1'),
+    ('hatchling', '1.18.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('protobuf-python', '4.24.0'),
+    ('PyYAML', '6.0'),
+    ('lz4', '1.9.4'),
+    ('mpi4py', '3.1.4'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('grpcio', '1.62.1', {
+        'modulename': 'grpc',
+        'preinstallopts': "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && ",
+        'checksums': ['6c455e008fa86d9e9a9d85bb76da4277c0d7d9668a3bfa70dbe86e9f3c759947'],
+    }),
+    ('aiosignal', '1.3.1', {
+        'checksums': ['54cd96e15e1649b75d6c87526a6ff0b6c1b0dd3459f43d9ca11d48c339b68cfc'],
+    }),
+    ('expandvars', '0.12.0', {
+        'checksums': ['7d1adfa55728cf4b5d812ece3d087703faea953e0c0a1a78415de9df5024d844'],
+    }),
+    ('frozenlist', '1.4.1', {
+        'checksums': ['c037a86e8513059a2613aaba4d817bb90b9d9b6b69aace3ce9c877e8c8ed402b'],
+    }),
+    ('lz4', '4.3.3', {
+        'checksums': ['01fe674ef2889dbb9899d8a67361e0c4a2c833af5aeb37dd505727cf5d2a131e'],
+    }),
+    ('Ray', version, {
+        'source_tmpl': '%(namelower)s-%(version)s-cp311-cp311-manylinux2014_%(arch)s.whl',
+        'checksums': [{
+            '%(namelower)s-%(version)s-cp311-cp311-manylinux2014_x86_64.whl': (
+                'fabc520990c1b98dde592813d62737e5e817460e0ac359f32ba029ace292cbe2'
+            ),
+            '%(namelower)s-%(version)s-cp311-cp311-manylinux2014_aarch64.whl': (
+                '1907649d69efdc1b9ffbc03db086f6d768216cb73908ebd4038ac5030effef9e'
+            ),
+        }],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ray'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'ray --help'
+]
+
+sanity_pip_check = True
+
+moduleclass = 'tools'

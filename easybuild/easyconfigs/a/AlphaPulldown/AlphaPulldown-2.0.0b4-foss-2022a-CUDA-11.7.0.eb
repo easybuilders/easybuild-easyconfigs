@@ -1,0 +1,106 @@
+# created by Denis Kristak (Inuits)
+easyblock = 'PythonBundle'
+
+name = 'AlphaPulldown'
+version = '2.0.0b4'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/KosinskiLab/AlphaPulldown'
+description = """AlphaPulldown is a Python package that streamlines protein-protein
+interaction screens and high-throughput modelling of higher-order oligomers using AlphaFold-Multimer"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('OpenMM', '8.0.0'),
+    ('Kalign', '3.3.5'),
+    ('PyYAML', '6.0'),
+    ('jax', '0.3.25', versionsuffix),  # also provides absl-py
+    ('Biopython', '1.79'),
+    ('h5py', '3.7.0'),
+    ('IPython', '8.5.0'),
+    ('JupyterLab', '3.5.0'),
+    ('matplotlib', '3.5.2'),
+    ('TensorFlow', '2.11.0', versionsuffix),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('tqdm', '4.64.0'),
+    ('dm-tree', '0.1.8'),
+    ('py3Dmol', '2.0.1.post1'),
+    ('HMMER', '3.3.2'),
+    ('HH-suite', '3.3.0'),
+    ('Uni-Core', '0.0.3', versionsuffix),
+]
+
+use_pip = True
+
+exts_list = [
+    ('importlib-resources', '5.13.0', {
+        'modulename': 'importlib_resources',
+        'source_tmpl': 'importlib_resources-%(version)s.tar.gz',
+        'checksums': ['82d5c6cca930697dbbd86c93333bb2c2e72861d4789a11c2662b933e5ad2b528'],
+    }),
+    ('jmp', '0.0.4', {
+        'checksums': ['5dfeb0fd7c7a9f72a70fff0aab9d0cbfae32a809c02f4037ff3485ceb33e1730'],
+    }),
+    ('dm-haiku', '0.0.9', {
+        'modulename': 'haiku',
+        'source_urls': ['https://github.com/deepmind/dm-haiku/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['d550f07f5891ede30ada5faafde98f549ed1b8ceadb7a601cca3d81db7d82414'],
+    }),
+    ('contextlib2', '21.6.0', {
+        'checksums': ['ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869'],
+    }),
+    ('ml-collections', '0.1.1', {
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+        'sources': ['ml_collections-%(version)s.tar.gz'],
+        'checksums': ['3fefcc72ec433aa1e5d32307a3e474bbb67f405be814ea52a2166bfc9dbe68cc'],
+    }),
+    ('PDBFixer', '1.9', {
+        'source_urls': ['https://github.com/openmm/pdbfixer/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['88b9a77e50655f89d0eb2075093773e82c27a4cef842cb7d735c877b20cd39fb'],
+    }),
+    ('ihm', '1.3', {
+        'checksums': ['09f69809fd81509cc26b60253c55b02ce79fc01fc8f4a068bca2953a7dfd33be'],
+    }),
+    ('modelcif', '1.0', {
+        'checksums': ['e8375bc502a73dcfab0b7fbdd454d67d393bbb8969981eb52199d77192a3de56'],
+    }),
+    (name, version, {
+        'sources': [{
+            'filename': SOURCE_TAR_GZ,
+            'git_config': {
+                'url': 'https://github.com/KosinskiLab',
+                'repo_name': 'AlphaPulldown',
+                'tag': version,
+                'recursive': True,
+            },
+        }],
+        'patches': ['AlphaPulldown-2.0.0b2_fix-import-protein_letters_3to1.patch'],
+        'checksums': [
+            None,
+            'd41247cd12f6ef8579adbc893f6c1af5fba051167ee838449974365f4bdccf06',
+        ],
+        # remove strict version requirements for Python dependencies
+        'preinstallopts': "sed -i 's/[>=]=.*//g' setup.cfg && ",
+    }),
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/run_multimer_jobs.py', 'bin/rename_colab_search_a3m.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/alphapulldown'],
+}
+
+sanity_check_commands = [
+    "run_multimer_jobs.py --help | grep 'A script to perform structure prediction'",
+    "convert_to_modelcif.py --help | grep 'turn it into a ModelCIF'",
+]
+
+moduleclass = 'bio'

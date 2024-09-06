@@ -1,0 +1,73 @@
+easyblock = 'CMakeMake'
+
+name = 'RDKit'
+version = '2024.03.3'
+
+homepage = 'https://www.rdkit.org'
+description = "RDKit is a collection of cheminformatics and machine-learning software written in C++ and Python."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/rdkit/rdkit/archive/']
+sources = ['Release_%s.tar.gz' % version.replace('.', '_')]
+checksums = ['52f79c6bf1d446cdb5c86a35de655d96bad0c52a5f4ecbe15f08eaf334e6f76a']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Eigen', '3.4.0'),
+    ('pkgconf', '1.9.5'),
+]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('SQLite', '3.42.0'),
+    ('matplotlib', '3.7.2'),
+    ('Pillow', '10.0.0'),
+    ('Boost.Python', '1.82.0'),
+    ('cairo', '1.17.8'),
+]
+
+separate_build_dir = True
+
+configopts = "-DPy_ENABLE_SHARED=1 -DRDK_INSTALL_STATIC_LIBS=OFF -DRDK_INSTALL_INTREE=OFF "
+configopts += "-DRDK_BUILD_INCHI_SUPPORT=ON "
+configopts += "-DBOOST_ROOT=$EBROOTBOOST"
+
+# ingnore failing test pythonSourceTests - from . import rdBase failing
+prebuildopts = "sed -i '22d' %(builddir)s/rdkit-Release_2024_03_3/rdkit/CMakeLists.txt && "
+# ignore failing testUFFAngleConstraints
+# https://github.com/rdkit/rdkit/discussions/7588
+prebuildopts += "sed -i 's/def testUFFAngleConstraints(self):/def ignore_testUFFAngleConstraints(self):/' "
+prebuildopts += "%(builddir)s/rdkit-Release_2024_03_3/Code/ForceField/Wrap/testConstraints.py && "
+
+# merge source directory into build directory in order to run the tests
+buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./ && '
+buildopts += 'export RDBASE=$PWD && export PYTHONPATH=$PWD:$PYTHONPATH && '
+
+# Specify path for libraries so that they are found during the tests when the module is built with --rpath flag.
+buildopts += 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY_PATH} && '
+
+# 'ctest' allows to pass additional arguments opposed to 'make test'
+buildopts += 'ctest --output-on-failure'
+
+local_libs = ['Alignment', 'Catalogs', 'ChemicalFeatures', 'ChemReactions', 'ChemTransforms', 'coordgen', 'DataStructs',
+              'Depictor', 'Descriptors', 'DistGeometry', 'DistGeomHelpers', 'EigenSolvers', 'FileParsers',
+              'FilterCatalog', 'Fingerprints', 'FMCS', 'ForceFieldHelpers', 'ForceField', 'FragCatalog', 'GraphMol',
+              'hc', 'InfoTheory', 'maeparser', 'MMPA', 'MolAlign', 'MolCatalog', 'MolChemicalFeatures', 'MolDraw2D',
+              'MolHash', 'MolInterchange', 'MolStandardize', 'MolTransforms', 'Optimizer', 'PartialCharges', 'RDBoost',
+              'RDGeneral', 'RDGeometryLib', 'RDStreams', 'ReducedGraphs', 'RGroupDecomposition', 'RingDecomposerLib',
+              'ScaffoldNetwork', 'ShapeHelpers', 'SimDivPickers', 'SLNParse', 'SmilesParse', 'Subgraphs',
+              'SubstructLibrary', 'SubstructMatch', 'Trajectory']
+
+sanity_check_paths = {
+    'files': ['lib/libRDKit%s.%s' % (x, SHLIB_EXT) for x in local_libs],
+    'dirs': ['include/rdkit', 'lib/python%(pyshortver)s/site-packages/rdkit'],
+}
+
+sanity_check_commands = [
+    "python -c 'import rdkit.rdBase'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'chem'

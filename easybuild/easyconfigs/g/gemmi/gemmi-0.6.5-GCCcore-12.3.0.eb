@@ -1,0 +1,57 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/05
+easyblock = 'CMakePythonPackage'
+
+name = 'gemmi'
+version = '0.6.5'
+
+homepage = 'https://gemmi.readthedocs.io/'
+description = """Gemmi is a library, accompanied by a set of programs, developed primarily for  
+use in macromolecular crystallography (MX). For working with:
+
+macromolecular models (content of PDB, PDBx/mmCIF and mmJSON files), refinement
+restraints (CIF files), reflection data (MTZ and mmCIF formats), data on a 3D  
+grid (electron density maps, masks, MRC/CCP4 format) crystallographic symmetry.
+Parts of this library can be useful in structural bioinformatics (for symmetry-
+aware analysis of protein models), and in other molecular-structure sciences   
+that use CIF files (we have the fastest open-source CIF parser)."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'opt': True}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['9159506a16e0d22bbeeefc4d34137099318307db1b2bebf06fb2ae501571b19c']
+
+github_account = 'project-gemmi'
+
+configopts = [
+    '-DSTRIP_BINARY=ON '
+    '-DUSE_FORTRAN=1 -DBUILD_SHARED_LIBS=%s' % x for x in ['OFF', 'ON']]
+
+builddependencies = [
+    ('pybind11', '2.11.1'),
+    ('pybind11-stubgen', '2.5.1'),
+    ('CMake', '3.26.3'),
+    ('scikit-build-core', '0.5.0'),
+    ('meson-python', '0.13.2'),
+    ('binutils', '2.40')
+]
+dependencies = [('Python', '3.11.3')]
+
+local_pipcmd = "mkdir %(builddir)s/pybuild &&"
+local_pipcmd += "python -m pip install -ve %(builddir)s/%(name)s-%(version)s"
+local_pipcmd += " --no-deps --ignore-installed --prefix=%(installdir)s --no-build-isolation"
+local_pipcmd += ' --config-settings="cmake.args=-DSTANDALONE_PYTHON_MODULE=OFF"'  # use lib/libgemmi_cpp.so
+local_pipcmd += ' --config-settings="cmake.args=-DBUILD_GEMMI_PROGRAM=OFF"'
+local_pipcmd += ' --config-settings="cmake.args=-DINSTALL_DEV_FILES=OFF"'
+local_pipcmd += ' --config-settings=editable.rebuild=true -Cbuild-dir=%(builddir)s/pybuild '
+postinstallcmds = [local_pipcmd]
+
+sanity_check_paths = {
+    'files': ['bin/gemmi', 'lib/libgemmi_cpp.%s' % SHLIB_EXT, 'lib/libgemmi_cpp.a'],
+    'dirs': ['bin', 'lib', 'include/gemmi', 'lib/python%(pyshortver)s/site-packages/%(name)s-%(version)s.dist-info']
+}
+
+sanity_check_commands = ['gemmi -h']
+
+moduleclass = 'bio'

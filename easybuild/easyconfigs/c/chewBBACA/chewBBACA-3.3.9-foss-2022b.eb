@@ -1,0 +1,66 @@
+easyblock = 'PythonBundle'
+
+name = 'chewBBACA'
+version = '3.3.9'
+
+homepage = 'https://github.com/B-UMMI/chewBBACA'
+description = """chewBBACA is a software suite for the creation and evaluation of core genome and whole genome 
+MultiLocus Sequence Typing (cg/wgMLST) schemas and results. The "BBACA" stands for "BSR-Based Allele Calling Algorithm".
+BSR stands for BLAST Score Ratio as proposed by Rasko DA et al. The "chew" part adds extra coolness to the name and 
+could be thought of as "Comprehensive and Highly Efficient Workflow"."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('SciPy-bundle', '2023.02'),
+    # Cython 3 is required, see https://github.com/althonos/pyrodigal/issues/40
+    # Cython included with Python-bundle-PyPI (0.29.35) is too old
+    ('Cython', '3.0.8'),
+    ('Biopython', '1.81'),
+    ('plotly.py', '5.13.1'),
+    ('BLAST+', '2.14.0'),
+    ('prodigal', '2.6.3'),
+    ('MAFFT', '7.505', '-with-extensions'),
+    ('FastTree', '2.1.11'),
+    ('archspec', '0.2.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('pyrodigal', '3.5.1', {
+        'checksums': ['20af59a6d968c88910b99d5f647bb7dd22d49e440ead95fe715cdd2c49f36e9f'],
+    }),
+    ('isodate', '0.6.1', {
+        'checksums': ['48c5881de7e8b0a0d648cb024c8062dc84e7b840ed81e864c7614fd3c127bde9'],
+    }),
+    ('rdflib', '7.0.0', {
+        'checksums': ['9995eb8569428059b8c1affd26b25eac510d64f5043d9ce8c84e0d0036e995ae'],
+    }),
+    ('SPARQLWrapper', '2.0.0', {
+        'modulename': 'SPARQLWrapper',
+        'checksums': ['3fed3ebcc77617a4a74d2644b86fd88e0f32e7f7003ac7b2b334c026201731f1'],
+    }),
+    (name, version, {
+        'modulename': 'CHEWBBACA',
+        # relax numpy version requirement
+        'preinstallopts': "sed -i 's/numpy~=1.24.3/numpy~=1.24.2/g' pyproject.toml && ",
+        'runtest': "python setup.py test",
+        'sources': ['%(namelower)s-%(version)s.tar.gz'],
+        'checksums': ['4bf0792b8cdd1783b50340ac713748ef2a351209cacb50ad4c9e2fe2e7fba772'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/chewBBACA.py', 'bin/chewie'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'chewBBACA.py --help',
+    'chewie --help',
+]
+
+moduleclass = 'bio'

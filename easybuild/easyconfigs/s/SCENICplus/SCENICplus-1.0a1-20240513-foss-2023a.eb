@@ -1,0 +1,279 @@
+easyblock = 'PythonBundle'
+
+name = 'SCENICplus'
+version = '1.0a1-20240513'
+local_commit = "fa55dae"
+
+homepage = 'https://github.com/aertslab/scenicplus'
+description = """SCENIC+ is a python package to build gene regulatory networks (GRNs)
+using combined or separate single-cell gene expression (scRNA-seq) and single-cell
+chromatin accessibility (scATAC-seq) data."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('poetry', '1.5.1'),
+    ('maturin', '1.4.0', '-Rust-1.75.0'),
+    ('CMake', '3.26.3'),
+]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('Single-cell-python-bundle', '2024.02'),
+    ('anndata', '0.10.5.post1'),
+    ('BeautifulSoup', '4.12.2'),
+    ('h5py', '3.9.0'),
+    ('python-igraph', '0.11.4'),
+    ('imageio', '2.33.1'),
+    ('leidenalg', '0.10.2'),
+    ('lxml', '4.9.2'),
+    ('MACS2', '2.2.9.1'),
+    ('numba', '0.58.1'),
+    ('polars', '0.20.2'),
+    ('Arrow', '14.0.1'),
+    ('plotly.py', '5.16.0'),
+    ('pybedtools', '0.9.1'),
+    ('pyBigWig', '0.3.22'),
+    ('pyGAM', '0.9.1'),
+    ('Pysam', '0.22.0'),
+    ('Ray-project', '2.9.1'),
+    ('scikit-image', '0.22.0'),
+    ('snakemake', '8.4.2'),
+    ('statsmodels', '0.14.1'),
+    ('IPython', '8.14.0'),
+    ('Pandoc', '3.1.2', '', SYSTEM),
+    ('ipympl', '0.9.3'),
+    ('PyTables', '3.8.0'),
+    ('Sphinx-RTD-Theme', '2.0.0'),
+    ('scrublet', '0.2.3'),
+    ('numexpr', '2.9.0'),
+    ('Kaleido', '0.2.1'),
+    ('pyfasta', '0.5.2'),
+    ('gensim', '4.3.2'),
+]
+
+# fix requirements.txt of scenicplus
+local_preinstallopts = (
+    "sed -i"
+    " -e '/typing==3.7.4.3/d'"
+    " -e 's/==.*//g'"
+    " -e '/pyarrow-hotfix/d'"
+    " -e '/line-profiler/d'"
+    " -e '/ndindex/d'"
+    " -e '/sinfo/d'"
+    " requirements.txt && "
+)
+# unpin version restriction and delete typing requirement
+local_pycistopic_preinstallopts = (
+    "sed -i"
+    " -e 's/pyscenic>=0.12.0/pyscenic/'"
+    " -e 's/pandas==1.5/pandas/'"
+    " -e 's/python-Levenshtein/Levenshtein/'"
+    " -e 's/python-igraph/igraph/'"
+    " -e '/typing/d'"
+    # delete pyscenic and loomxpy req from commit - have versions now
+    " -e '/pyscenic@git/d'"
+    " -e '/loomxpy@git/d'"
+    " requirements.txt && "
+    "sed -i"
+    " -e 's/pandas == 1.5/pandas/'"
+    " -e 's/matplotlib < 3.7/matplotlib/'"
+    " pyproject.toml && "
+)
+# delete typing from requirements
+local_pycistarget_preinstallopts = "sed -i '/typing/d' requirements.txt && "
+# unpin version restriction and delete poetry.lock
+local_loomxpy_preinstallopts = "sed -i 's/pyscenic>=0.12.0/pyscenic/' requirements.txt && "
+local_loomxpy_preinstallopts += "sed -i 's/pyscenic = \">=0.12.0\"/pyscenic = \"*\"/' pyproject.toml && "
+local_loomxpy_preinstallopts += "rm poetry.lock && "
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('bs4', '0.0.2', {
+        'checksums': ['a48685c58f50fe127722417bae83fe6badf500d54b55f7e39ffe43b798653925'],
+    }),
+    ('attr', '0.3.2', {
+        'checksums': ['1ceebca768181cdcce9827611b1d728e592be5d293911539ea3d0b0bfa1146f4'],
+    }),
+    ('attrs', '23.2.0', {
+        'checksums': ['935dc3b529c262f6cf76e50877d35a4bd3c1de194fd41f47a2b7ae8f19971f30'],
+    }),
+    ('lda', '3.0.0', {
+        'checksums': ['c9acbc1c55d2928f7e3e2336352b3382d78e43dbb0d12bf9ed97f87bce6d6708'],
+    }),
+    ('zope.interface', '6.2', {
+        'checksums': ['3b6c62813c63c543a06394a636978b22dffa8c5410affc9331ce6cdb5bfa8565'],
+    }),
+    ('zope.event', '5.0', {
+        'checksums': ['bac440d8d9891b4068e2b5a2c5e2c9765a9df762944bda6955f96bb9b91e67cd'],
+    }),
+    ('gevent', '24.2.1', {
+        'checksums': ['432fc76f680acf7cf188c2ee0f5d3ab73b63c1f03114c7cd8a34cebbe5aa2056'],
+    }),
+    ('xmltodict', '0.13.0', {
+        'checksums': ['341595a488e3e01a85a9d8911d8912fd922ede5fecc4dce437eb4b6c8d037e56'],
+    }),
+    ('suds-community', '1.1.2', {
+        'modulename': 'suds',
+        'checksums': ['883b4173ad23e7b20e9779ac7238b06140c50d7852afd5dc49dad1ea5f5a3d08'],
+    }),
+    ('grequests', '0.7.0', {
+        'checksums': ['5c33f14268df5b8fa1107d8537815be6febbad6ec560524d6a404b7778cf6ba6'],
+    }),
+    ('pexpect', '4.9.0', {
+        'checksums': ['ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f'],
+    }),
+    ('colorlog', '6.8.2', {
+        'checksums': ['3e3e079a41feb5a1b64f978b5ea4f46040a94f11f0e8bbb8261e3dbbeca64d44'],
+    }),
+    ('easydev', '0.12.1', {
+        'checksums': ['b47b7e6f75316ac9045b46487930e16ddb567f3899310deee11d72d8e1f0a231'],
+    }),
+    ('bioservices', '1.11.2', {
+        'checksums': ['31baaab4ab813b93f79995ba8cad431a16cbee99e1b0c6f9e419dd4be0c73a9e'],
+    }),
+    ('gseapy', '0.10.8', {
+        'checksums': ['15be80bac73768501f5cecf6751aeb2e41416fd144bd6daa2ec453ad08a10ce0'],
+    }),
+    ('ncls', '0.0.68', {
+        'checksums': ['81aaa5abb123bb21797ed2f8ef921e20222db14a3ecbc61ccf447532f2b7ba93'],
+    }),
+    ('pybigtools', '0.1.2', {
+        'checksums': ['0f21bc8b4f2dce67c6e5287af895f5f28a8c6eb123d809e3ab5679e2131dbf58'],
+    }),
+    ('pybiomart', '0.2.0', {
+        'checksums': ['e9eac20db921820670c646d99725b0ee279e407379e5e8c3ec7245a07425d8fe'],
+    }),
+    ('sorted_nearest', '0.0.39', {
+        'checksums': ['16a51d5db87ae226b47ace43c176bb672477a1b7ba8052ea9291a6356c9c69b1'],
+    }),
+    ('pyranges', '0.0.111', {
+        'checksums': ['d2cf3c31c1b9c6e1bf6e1e89254d8bd993bfb4401f2c4ede0ebc9c8e0678147d'],
+    }),
+    ('pyrle', '0.0.39', {
+        'checksums': ['1be4be7814d3941db907aaf19f311bd46a407244316cadbf4b73109685c055c5'],
+    }),
+    ('pyvis', '0.3.2', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['5720c4ca8161dc5d9ab352015723abb7a8bb8fb443edeb07f7a322db34a97555'],
+    }),
+    ('url-normalize', '1.4.3', {
+        'checksums': ['d23d3a070ac52a67b83a1c59a0e68f8608d1cd538783b401bc9de2c0fac999b2'],
+    }),
+    ('cattrs', '23.2.3', {
+        'checksums': ['a934090d95abaa9e911dac357e3a8699e0b4b14f8529bcc7d2b1ad9d51672b9f'],
+    }),
+    ('requests_cache', '1.2.0', {
+        'checksums': ['db1c709ca343cc1cd5b6c8b1a5387298eceed02306a6040760db538c885e3838'],
+    }),
+    ('scanorama', '1.7.4', {
+        'checksums': ['67de100e63abc3028c7780d3a217e43e920a5781230bc6b6a51349d4605e005c'],
+    }),
+    ('rich_argparse', '1.4.0', {
+        'checksums': ['c275f34ea3afe36aec6342c2a2298893104b5650528941fb53c21067276dba19'],
+    }),
+    ('scatac_fragment_tools', '0.1.0', {
+        'checksums': ['e77a03ad1b7170c212f1ac672dad2c5d7e7f091b94e47b36a2ec2adc42051857'],
+    }),
+    ('snakemake_interface_common', '1.17.1', {
+        'checksums': ['555c8218d9b68ddc1046f94a517e7d0f22e15bdc839d6ce149608d8ec137b9ae'],
+    }),
+    ('snakemake_interface_report_plugins', '1.0.0', {
+        'checksums': ['02311cdc4bebab2a1c28469b5e6d5c6ac6e9c66998ad4e4b3229f1472127490f'],
+    }),
+    ('statistics', '1.0.3.5', {
+        'checksums': ['2dc379b80b07bf2ddd5488cad06b2b9531da4dd31edb04dc9ec0dc226486c138'],
+    }),
+    ('globre', '0.1.5', {
+        'checksums': ['ee214204f237e9114b8f61eeb61c2abd1e665ca3b59e5a6a0b070971c0bb12e2'],
+    }),
+    ('bidict', '0.23.1', {
+        'checksums': ['03069d763bc387bbd20e7d49914e75fc4132a41937fa3405417e1a5a2d006d71'],
+    }),
+    ('tmtoolkit', '0.12.0', {
+        'checksums': ['6df5429cd675989f21d9f075ddb11fe5ae273d6544fc337a2589bab2bc331909'],
+    }),
+    ('tspex', '0.6.3', {
+        'checksums': ['315bfa1f60ea582777c549313cad9e9da0a4d11c5f69a6fc767bd0823dc46316'],
+    }),
+    ('plumbum', '1.8.3', {
+        'checksums': ['6092c85ab970b7a7a9d5d85c75200bc93be82b33c9bdf640ffa87d2d7c8709f0'],
+    }),
+    ('pandoc', '2.3', {
+        'checksums': ['e772c2c6d871146894579828dbaf1efd538eb64fc7e71d4a6b3a11a18baef90d'],
+    }),
+    ('nbsphinx', '0.9.4', {
+        'checksums': ['042a60806fc23d519bc5bef59d95570713913fe442fda759d53e3aaf62104794'],
+    }),
+    ('nbsphinx-link', '1.3.0', {
+        'checksums': ['fa3079a74c0dff1b2079e79a34babe770706ba8aa9cc0609c6dbfd593461a077'],
+    }),
+    ('numpydoc', '1.7.0', {
+        'checksums': ['866e5ae5b6509dcf873fc6381120f5c31acf13b135636c1a81d68c166a95f921'],
+    }),
+    ('pyOpenSSL', '23.2.0', {
+        'modulename': 'OpenSSL',
+        'checksums': ['276f931f55a452e7dea69c7173e984eb2a4407ce413c918aa34b55f82f9b8bac'],
+    }),
+    ('entrypoints', '0.4', {
+        'checksums': ['b706eddaa9218a19ebcd67b56818f05bb27589b1ca9e8d797b74affad4ccacd4'],
+    }),
+    ('ansicolors', '1.1.8', {
+        'modulename': 'colors',
+        'source_tmpl': '%(name)s-%(version)s-py2.py3-none-any.whl',
+        'checksums': ['00d2dde5a675579325902536738dd27e4fac1fd68f773fe36c21044eb559e187'],
+    }),
+    ('papermill', '2.6.0', {
+        'checksums': ['9fe2a91912fd578f391b4cc8d6d105e73124dcd0cde2a43c3c4a1c77ac88ea24'],
+    }),
+    ('mypy_extensions', '1.0.0', {
+        'checksums': ['75dbf8955dc00442a438fc4d0666508a9a97b6bd41aa2f0ffe9d2f2725af0782'],
+    }),
+    ('typing_inspect', '0.9.0', {
+        'checksums': ['b23fc42ff6f6ef6954e4852c1fb512cdd18dbea03134f91f856a95ccc9461f78'],
+    }),
+    ('marshmallow', '3.21.1', {
+        'checksums': ['4e65e9e0d80fc9e609574b9983cf32579f305c718afb30d7233ab818571768c3'],
+    }),
+    ('dataclasses_json', '0.6.4', {
+        'checksums': ['73696ebf24936560cca79a2430cbc4f3dd23ac7bf46ed17f38e5e5e7657a6377'],
+    }),
+    ('loomxpy', '0.4.2', {
+        'preinstallopts': local_loomxpy_preinstallopts,
+        'checksums': ['188411b77e04fa8458c0a7f02cfb3f15b58410a020f81f522957e922e79cdd82'],
+    }),
+    ('pycisTopic', '2.0a-dca4bb6', {
+        'modulename': 'pycisTopic',
+        'preinstallopts': local_pycistopic_preinstallopts,
+        # download commit dca4bb6 to be compatible with pycistarget
+        'source_urls': ['https://github.com/aertslab/pycisTopic/archive/'],
+        'sources': [{'download_filename': 'dca4bb6.tar.gz', 'filename': '%(name)s-%(version)s-dca4bb6.tar.gz'}],
+        'checksums': ['82edc9313bbb587aeb1540fd5b095b6eafb422fa12a5fc97ba090b99b684b240'],
+    }),
+    ('pycistarget', '1.0a1-16d14b9', {
+        'preinstallopts': local_pycistarget_preinstallopts,
+        # download commit 16d14b9 to make '$ scenicplus' work
+        'source_urls': ['https://github.com/aertslab/pycistarget/archive/'],
+        'sources': [{'download_filename': '16d14b9.tar.gz', 'filename': '%(name)s-%(version)s-16d14b9.tar.gz'}],
+        'checksums': ['7285ac03be9d148437442a726366d7c6f9f5f86bc6636369149a2bc2cd8e0e29'],
+    }),
+    ('scenicplus', version, {
+        'preinstallopts': local_preinstallopts,
+        'source_urls': ['https://github.com/aertslab/scenicplus/archive/'],
+        'sources': [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['88cddec1ab2618861e5c93e8a0b17b8e9e2aa3a76410d882c35d472f98724e29'],
+    }),
+]
+
+# copy files to let 'scenicplus init_snakemake' works 
+postinstallcmds = [
+    "cp -r %%(builddir)s/scenicplus/scenicplus-%s*/src/scenicplus/snakemake "
+    "%%(installdir)s/lib/python%%(pyshortver)s/site-packages/scenicplus" % local_commit
+]
+
+sanity_check_commands = ['scenicplus init_snakemake --help']
+
+moduleclass = 'bio'

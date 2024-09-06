@@ -1,0 +1,18 @@
+fix for: error: PyDataType_SET_ELSIZE was not declared in this scope
+see https://github.com/pydata/numexpr/pull/485
+
+--- numexpr-2.10.0/numexpr/interpreter.cpp.orig	2024-06-14 21:47:27.999098607 +0200
++++ numexpr-2.10.0/numexpr/interpreter.cpp	2024-06-14 21:49:53.403776961 +0200
+@@ -47,6 +47,12 @@
+ #define AVAILABLE(Haystack, Haystack_Len, J, Needle_Len)   \
+   ((Haystack_Len) >= (J) + (Needle_Len))
+ 
++// To allow building with NumPy<2 locally define the new NumPy macros:
++#if NPY_ABI_VERSION < 0x02000000
++  #define PyDataType_ELSIZE(descr) ((descr)->elsize)
++  #define PyDataType_SET_ELSIZE(descr, size) (descr)->elsize = size
++#endif
++
+ #include "str-two-way.hpp"
+ 
+ #ifdef DEBUG
