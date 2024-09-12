@@ -40,6 +40,9 @@ local_tf_builddir = '%(builddir)s/' + local_tf_dir
 local_jax_prebuildopts = "sed -i -f jaxlib_local-tensorflow-repo.sed WORKSPACE && "
 local_jax_prebuildopts += "sed -i 's|EB_TF_REPOPATH|%s|' WORKSPACE && " % local_tf_builddir
 
+# Avoid warning (treated as error) in upb/table.c
+local_jaxlib_buildopts = '--bazel_options="--copt=-Wno-maybe-uninitialized" '
+
 use_pip = True
 
 default_easyblock = 'PythonPackage'
@@ -85,6 +88,7 @@ components = [
         ],
         'start_dir': 'jax-jaxlib-v%(version)s',
         'prebuildopts': local_jax_prebuildopts,
+        'buildopts': local_jaxlib_buildopts,
     }),
 ]
 
