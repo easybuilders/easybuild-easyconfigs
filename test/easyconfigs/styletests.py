@@ -45,6 +45,10 @@ except ImportError:
 class StyleTest(TestCase):
     log = fancylogger.getLogger("StyleTest", fname=False)
 
+    def test_style_check(self):
+        """Check the easyconfigs for style"""
+        print("TEST it is run")
+
     @skipIf(not pep8, 'no pep8 available')
     def test_style_conformance(self):
         """Check the easyconfigs for style"""
@@ -52,6 +56,7 @@ class StyleTest(TestCase):
         easyconfigs_path = get_paths_for("easyconfigs")[0]
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
         specs = sorted(specs)
+        print("Running style tests on ", specs)
 
         self.mock_stderr(True)
         self.mock_stdout(True)
@@ -59,6 +64,8 @@ class StyleTest(TestCase):
         stderr, stdout = self.get_stderr(), self.get_stdout()
         self.mock_stderr(False)
         self.mock_stdout(False)
+        print("Finished with", result, "stdout:", stdout)
+        print("stderr:", stderr)
 
         error_msg = '\n'.join([
             "There shouldn't be any code style errors (and/or warnings), found %d:" % result,
