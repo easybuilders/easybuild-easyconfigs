@@ -1,0 +1,49 @@
+# Last contribution from IT4Innovations National Supercomputing Center, Czech Republic
+# Jakub Kropacek, 2022
+
+easyblock = 'ConfigureMake'
+
+name = 'Togl'
+version = '2.0'
+
+homepage = 'https://sourceforge.net/projects/togl/'
+description = """A Tcl/Tk widget for OpenGL rendering."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['https://downloads.sourceforge.net/project/%(namelower)s/%(name)s/%(version)s/']
+sources = ['%(name)s%(version)s-src.tar.gz']
+patches = [
+    'Togl-2.0_configure.patch',
+    'Togl-2.0_decl.patch',
+]
+checksums = [
+    'b7d4a90bbad3aca618d505ee99e7fd8fb04c829f63231dda2360f557ba3f7610',  # Togl2.0-src.tar.gz
+    'da97f36b60cd107444cd92453809135b14dc1e8775146b3ba0731da8002e6f9f',  # Togl-2.0_configure.patch
+    '05db6b3ca5139f60616d074903883a3070fcfb1eb8c965b0938779b4f9a6ec6a',  # Togl-2.0_decl.patch
+]
+
+builddependencies = [('binutils', '2.37')]
+
+dependencies = [
+    ('Mesa', '21.1.7'),
+    ('Tk', '8.6.11'),
+    ('Tcl', '8.6.11'),
+]
+
+preconfigopts = 'export CFLAGS="$CFLAGS -DTOGL_USE_FONTS=0" && '
+
+configopts = "--prefix=%(installdir)s --exec-prefix=%(installdir)s "
+configopts += "--with-tcl=$EBROOTTCL/lib --with-tk=$EBROOTTK/lib"
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['include', 'lib', 'lib/%(name)s%(version)s'],
+}
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': 'lib/%(name)s%(version)s',
+    'LIBRARY_PATH': 'lib/%(name)s%(version)s',
+}
+
+moduleclass = 'vis'

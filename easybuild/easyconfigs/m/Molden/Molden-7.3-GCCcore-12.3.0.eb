@@ -1,0 +1,50 @@
+easyblock = 'MakeCp'
+
+name = 'Molden'
+version = '7.3'
+
+homepage = 'https://www.theochem.ru.nl/molden/'
+description = """Molden is a package for displaying Molecular Density from the
+ Ab Initio packages GAMESS-UK, GAMESS-US and GAUSSIAN and the Semi-Empirical
+ packages Mopac/Ampac"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://ftp.science.ru.nl/Molden/']
+sources = ['%(namelower)s%(version)s.tar.gz']
+patches = [
+    'Molden-7.3_fix_makefile_for_easybuild.patch',
+    'Molden-7.3_fix_arg_handling.patch',
+]
+checksums = [
+    {'molden7.3.tar.gz': '870f4fa6635229791bb09bbbd07f51456b2c90101d73564dc47ed7769b8c07a1'},
+    {'Molden-7.3_fix_makefile_for_easybuild.patch': 'b97d794cf92978d151d70485250367eebf719885c6a909ca3404a800903e3f7a'},
+    {'Molden-7.3_fix_arg_handling.patch': 'e7d0654a7c7a0b069ff4a904d3334ea19f6b0147003bc460745db8b8d5f931cf'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('makedepend', '1.0.7'),
+]
+
+dependencies = [
+    ('X11', '20230603'),
+    ('libglvnd', '1.6.0'),
+    ('libGLU', '9.0.3'),
+]
+
+buildopts = 'CC="$CC" FC="$F90" FFLAGS="$FFLAGS -fallow-argument-mismatch" all'
+
+parallel = 1
+
+files_to_copy = [(['bin/%s' % x for x in ['ambfor', 'ambmd', 'gmolden', 'molden', 'surf']], 'bin'),
+                 'CopyRight', 'README', 'REGISTER']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['ambfor', 'ambmd', 'gmolden', 'molden', 'surf']] + ['README', 'REGISTER'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["molden -h"]
+
+moduleclass = 'chem'

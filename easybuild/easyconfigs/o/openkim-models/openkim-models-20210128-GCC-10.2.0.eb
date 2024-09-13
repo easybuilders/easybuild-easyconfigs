@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'openkim-models'
+version = '20210128'
+
+homepage = 'https://openkim.org/'
+description = """Open Knowledgebase of Interatomic Models.
+
+OpenKIM is an API and a collection of interatomic models (potentials) for
+atomistic simulations.  It is a library that can be used by simulation programs
+to get access to the models in the OpenKIM database.
+
+This EasyBuild installs the models.  The API itself is in the kim-api
+package.
+ """
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('kim-api', '2.2.1'),
+]
+
+source_urls = ['https://s3.openkim.org/archives/collection/']
+sources = ['openkim-models-2021-01-28.txz']
+checksums = ['8824adee02ae4583bd378cc81140fbb49515c5965708ee98d856d122d48dd95f']
+
+separate_build_dir = True
+abs_path_compilers = True   # Otherwise some KIM-API magic breaks cmake.
+configopts = '-DKIM_API_INSTALL_COLLECTION=SYSTEM '
+configopts += '-DKIM_API_PORTABLE_MODEL_INSTALL_PREFIX=%(installdir)s/lib/kim-api/portable-models '
+configopts += '-DKIM_API_SIMULATOR_MODEL_INSTALL_PREFIX=%(installdir)s/lib/kim-api/simulator-models '
+configopts += '-DKIM_API_MODEL_DRIVER_INSTALL_PREFIX=%(installdir)s/lib/kim-api/model-drivers '
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/kim-api/model-drivers', 'lib/kim-api/portable-models', 'lib/kim-api/simulator-models']
+}
+
+modextravars = {
+    'KIM_API_MODEL_DRIVERS_DIR': '%(installdir)s/lib/kim-api/model-drivers',
+    'KIM_API_PORTABLE_MODELS_DIR': '%(installdir)s/lib/kim-api/portable-models',
+    'KIM_API_SIMULATOR_MODELS_DIR': '%(installdir)s/lib/kim-api/simulator-models',
+}
+
+
+moduleclass = 'chem'

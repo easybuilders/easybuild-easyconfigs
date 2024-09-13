@@ -1,0 +1,293 @@
+Adds write mode to ensure h5 files are created as intended.
+
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/analysis/test/test_rdf.py.orig	2023-12-11 16:49:03.170062363 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/analysis/test/test_rdf.py	2023-12-11 16:54:57.393259317 +0000
+@@ -54,7 +54,7 @@
+     # Setup a test FF
+     ff = get_ff_water32()
+     # Run a test simulation
+-    with h5.File(__name__ + 'test_rdf1_online.h5', driver='core', backing_store=False) as f:
++    with h5.File(__name__ + 'test_rdf1_online.h5', mode='w', driver='core', backing_store=False) as f:
+         hdf5 = HDF5Writer(f)
+         select = ff.system.get_indexes('O')
+         rdf0 = RDF(4.5*angstrom, 0.1*angstrom, f, select0=select)
+@@ -85,7 +85,7 @@
+     # Setup a test FF
+     ff = get_ff_water32()
+     # Run a test simulation
+-    with h5.File(__name__ + '.test_rdf2_online.h5', driver='core', backing_store=False) as f:
++    with h5.File(__name__ + '.test_rdf2_online.h5', mode='w', driver='core', backing_store=False) as f:
+         hdf5 = HDF5Writer(f)
+         select0 = ff.system.get_indexes('O')
+         select1 = ff.system.get_indexes('H')
+@@ -156,7 +156,7 @@
+     fn_xyz = pkg_resources.resource_filename(__name__, '../../data/test/chloro_pos.xyz')
+     fn_vol = pkg_resources.resource_filename(__name__, '../../data/test/chloro_vol.txt')
+     system = System.from_file(fn_xyz, rvecs=np.diag([48.877]*3))
+-    with h5.File(__name__ + '.test_rdf_from_file_variable_cell', driver='core', backing_store=False) as f:
++    with h5.File(__name__ + '.test_rdf_from_file_variable_cell', mode='w', driver='core', backing_store=False) as f:
+         # Prepare in-memory HDF5 file
+         system.to_hdf5(f)
+         xyz_to_hdf5(f, fn_xyz)
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/analysis/test/test_spectrum.py.orig	2023-12-11 16:56:45.254710284 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/analysis/test/test_spectrum.py	2023-12-11 16:57:01.733626405 +0000
+@@ -58,7 +58,7 @@
+         # Setup a test FF
+         ff = get_ff_water32()
+         # Run a test simulation
+-        with h5.File('yaff.analysis.test.test_spectrum.test_spectrum_online_%i.h5' % bsize, driver='core', backing_store=False) as f:
++        with h5.File('yaff.analysis.test.test_spectrum.test_spectrum_online_%i.h5' % bsize, mode='w', driver='core', backing_store=False) as f:
+             hdf5 = HDF5Writer(f)
+             spectrum0 = Spectrum(f, bsize=bsize)
+             nve = VerletIntegrator(ff, 1.0*femtosecond, hooks=[hdf5, spectrum0])
+@@ -95,7 +95,7 @@
+ 
+ 
+ def test_spectrum_iter_indexes():
+-    with h5.File('yaff.analysis.test.test_spectrum.test_spectrum_iter_indexes.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.analysis.test.test_spectrum.test_spectrum_iter_indexes.h5', mode='w', driver='core', backing_store=False) as f:
+         spectrum = Spectrum(f, bsize=10)
+     l = list(spectrum._iter_indexes(np.zeros((10, 5, 3), float)))
+     assert l == [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1),
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/conversion/test/test_cp2k.py.orig	2023-12-11 16:58:37.780137513 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/conversion/test/test_cp2k.py	2023-12-11 16:58:51.184069284 +0000
+@@ -33,7 +33,7 @@
+ 
+ 
+ def test_cp2k_ener_to_hdf5():
+-    with h5.File(__name__ + '.test_xyz_to_hdf5.h5', driver='core', backing_store=False) as f:
++    with h5.File(__name__ + '.test_xyz_to_hdf5.h5', mode='w', driver='core', backing_store=False) as f:
+         # Bad practice. The trajectory file has no system directory...
+         # Actual trajectory conversion, twice
+         for i in range(2):
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/conversion/test/test_dlpoly.py.orig	2023-12-11 17:01:09.540364868 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/conversion/test/test_dlpoly.py	2023-12-11 17:01:36.290228634 +0000
+@@ -33,7 +33,7 @@
+ 
+ 
+ def test_dlpoly_history_uo():
+-    with h5.File(__name__ + '.test_dlpoly_history_uo.h5', driver='core', backing_store=False) as f:
++    with h5.File(__name__ + '.test_dlpoly_history_uo.h5', mode='w', driver='core', backing_store=False) as f:
+         # Bad practice. The trajectory file has no system directory...
+         # Actual trajectory conversion, twice
+         for i in range(2):
+@@ -60,7 +60,7 @@
+ 
+ 
+ def test_dlpoly_history_sam():
+-    with h5.File(__name__ + '.test_dlpoly_history_sam.h5', driver='core', backing_store=False) as f:
++    with h5.File(__name__ + '.test_dlpoly_history_sam.h5', mode='w', driver='core', backing_store=False) as f:
+         # Bad practice. The trajectory file has no system directory...
+         # Actual trajectory conversion, twice
+         for i in range(2):
+@@ -84,7 +84,7 @@
+ 
+ def test_dlpoly_history_an():
+     raise SkipTest('Fails, ask An why because dlpoly_history_sam does work')
+-    with h5.File(__name__ + '.test_dlpoly_history_an.h5', driver='core', backing_store=False) as f:
++    with h5.File(__name__ + '.test_dlpoly_history_an.h5', mode='w', driver='core', backing_store=False) as f:
+         # Bad practice. The trajectory file has no system directory...
+         # Actual trajectory conversion, par1
+         fn = pkg_resources.resource_filename(__name__, '../../data/test/dlpoly_HISTORY_an1')
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/conversion/test/test_gaussian.py.orig	2023-12-11 17:03:12.986736177 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/conversion/test/test_gaussian.py	2023-12-11 17:03:28.326658047 +0000
+@@ -85,7 +85,7 @@
+     vel_unit = np.sqrt(amu)/second
+     fn_xyz = pkg_resources.resource_filename(__name__, '../../data/test/gaussian_sioh4_md.xyz')
+     fn_log = pkg_resources.resource_filename(__name__, '../../data/test/gaussian_sioh4_md.log')
+-    with h5.File('yaff.conversion.test.test_gaussian.test_to_hdf5.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.conversion.test.test_gaussian.test_to_hdf5.h5', mode='w', driver='core', backing_store=False) as f:
+         system = System.from_file(fn_xyz)
+         system.to_hdf5(f)
+         # Actual trajectory conversion, twice
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/conversion/test/test_xyz.py.orig	2023-12-11 17:04:41.964283021 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/conversion/test/test_xyz.py	2023-12-11 17:04:52.624228732 +0000
+@@ -34,7 +34,7 @@
+ 
+ 
+ def test_xyz_to_hdf5():
+-    with h5.File('yaff.conversion.test.test_xyz.test_xyz_to_hdf5.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.conversion.test.test_xyz.test_xyz_to_hdf5.h5', mode='w', driver='core', backing_store=False) as f:
+         # Bad practice. Proper use is to initialize the system object from a
+         # different XYZ (or yet something else) with a single geometry.
+         fn_xyz = pkg_resources.resource_filename(__name__, '../../data/test/water_trajectory.xyz')
+@@ -55,7 +55,7 @@
+ 
+ 
+ def test_xyz_to_hdf5_alt():
+-    with h5.File('yaff.conversion.test.test_xyz.test_xyz_to_hdf5_alt.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.conversion.test.test_xyz.test_xyz_to_hdf5_alt.h5', mode='w', driver='core', backing_store=False) as f:
+         # Bad practice. Proper use is to initialize the system object from a
+         # different XYZ (or yet something else) with a single geometry.
+         fn_xyz = pkg_resources.resource_filename(__name__, '../../data/test/water_trajectory.xyz')
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/examples/001_tutorial_bks/nvt/analysis.py.orig	2023-12-11 17:16:05.373802516 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/examples/001_tutorial_bks/nvt/analysis.py	2023-12-11 17:16:27.458690041 +0000
+@@ -48,7 +48,7 @@
+ p_unit = 1e9*pascal
+ 
+ # Open the trajectory file for post-processing the MD simulation
+-with h5.File('traj_%s.h5' % suffix) as f:
++with h5.File('traj_%s.h5' % suffix, mode='r+') as f:
+     # Get the isotropic pressure. This is the trace of the time-dependent virial
+     # stress divided by three.
+     press = np.array(f['trajectory/press'][nskip:])
+
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/sampling/test/test_verlet.py.orig	2023-12-11 17:37:15.223312935 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/sampling/test/test_verlet.py	2023-12-11 17:37:28.158245974 +0000
+@@ -77,7 +77,7 @@
+ 
+ 
+ def test_hdf5():
+-    with h5.File('yaff.sampling.test.test_verlet.test_hdf5.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.sampling.test.test_verlet.test_hdf5.h5', mode='w', driver='core', backing_store=False) as f:
+         hdf5 = HDF5Writer(f)
+         nve = VerletIntegrator(get_ff_water32(), 1.0*femtosecond, hooks=hdf5)
+         nve.run(15)
+@@ -88,7 +88,7 @@
+ 
+ 
+ def test_hdf5_start():
+-    with h5.File('yaff.sampling.test.test_verlet.test_hdf5_start.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.sampling.test.test_verlet.test_hdf5_start.h5', mode='w', driver='core', backing_store=False) as f:
+         hdf5 = HDF5Writer(f, start=2)
+         nve = VerletIntegrator(get_ff_water32(), 1.0*femtosecond, hooks=hdf5)
+         nve.run(5)
+@@ -99,7 +99,7 @@
+ 
+ 
+ def test_hdf5_step():
+-    with h5.File('yaff.sampling.test.test_verlet.test_hdf5_step.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.sampling.test.test_verlet.test_hdf5_step.h5', mode='w', driver='core', backing_store=False) as f:
+         hdf5 = HDF5Writer(f, step=2)
+         nve = VerletIntegrator(get_ff_water32(), 1.0*femtosecond, hooks=hdf5)
+         nve.run(5)
+@@ -113,7 +113,7 @@
+     # This test does not write all possible outputs
+     sys = get_system_water()
+     ff = ForceField.generate(sys, pkg_resources.resource_filename(__name__, '../../data/test/parameters_water_bondharm.txt'))
+-    with h5.File('yaff.sampling.test.test_verlet.test_hdf5_simple.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.sampling.test.test_verlet.test_hdf5_simple.h5', mode='w', driver='core', backing_store=False) as f:
+         hdf5 = HDF5Writer(f)
+         nve = VerletIntegrator(ff, 1.0*femtosecond, hooks=hdf5)
+         nve.run(15)
+@@ -138,7 +138,7 @@
+     part_bias.add_term(bias1)
+     cv_tracker = CVStateItem([cv0,cv1])
+     bias_tracker = BiasStateItem(part_bias)
+-    with h5.File('yaff.sampling.test.test_verlet.test_hdf5_cvs.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.sampling.test.test_verlet.test_hdf5_cvs.h5', mode='w', driver='core', backing_store=False) as f:
+         hdf5 = HDF5Writer(f)
+         nve = VerletIntegrator(ff, 1.0*femtosecond, hooks=hdf5, state=[cv_tracker, bias_tracker])
+         nve.run(5)
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/analysis/test/common.py.orig	2023-12-11 17:47:09.632235821 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/analysis/test/common.py	2023-12-11 17:47:19.706183672 +0000
+@@ -40,7 +40,7 @@
+         # Setup a test FF
+         ff = get_ff_water32()
+         # Run a test simulation
+-        with h5.File('%s/output.h5' % dn_tmp) as f:
++        with h5.File('%s/output.h5' % dn_tmp, mode='w') as f:
+             hdf5 = HDF5Writer(f)
+             nve = VerletIntegrator(ff, 1.0*femtosecond, hooks=hdf5)
+             nve.run(5)
+@@ -55,7 +55,7 @@
+         # Setup a test FF
+         ff = get_ff_water32()
+         # Run a test simulation
+-        with h5.File('%s/output.h5' % dn_tmp) as f:
++        with h5.File('%s/output.h5' % dn_tmp, mode='w') as f:
+             hdf5 = HDF5Writer(f)
+             thermostat = LangevinThermostat(temp=300)
+             nvt = VerletIntegrator(ff, 1.0*femtosecond, hooks=[hdf5, thermostat])
+@@ -71,7 +71,7 @@
+         # Setup a test FF
+         ff = get_ff_water32()
+         # Run a test simulation
+-        with h5.File('%s/output.h5' % dn_tmp) as f:
++        with h5.File('%s/output.h5' % dn_tmp, mode='w') as f:
+             hdf5 = HDF5Writer(f)
+             opt = CGOptimizer(FullCellDOF(ff), hooks=hdf5)
+             opt.run(5)
+@@ -94,7 +94,7 @@
+         # Dihedral angles are periodic, this has to be taken into account!
+         periodicities = np.array([2.0*np.pi,2.0*np.pi])
+         # Run a test simulation
+-        with h5.File('%s/output.h5' % dn_tmp) as f:
++        with h5.File('%s/output.h5' % dn_tmp, mode='w') as f:
+             hdf5 = HDF5Writer(f)
+             mtd = MTDHook(ff, [cv0,cv1], sigmas, K, f=f, start=pace, step=pace,
+                 periodicities=periodicities)
+53c53
+<     with h5.File('yaff.sampling.test.test_enhanced.test_mtd_alanine.h5', driver='core', backing_store=False) as f:
+---
+>     with h5.File('yaff.sampling.test.test_enhanced.test_mtd_alanine.h5', mode='w', driver='core', backing_store=False) as f:
+140c140
+<             driver='core', backing_store=False) as f0:
+---
+>             mode='w', driver='core', backing_store=False) as f0:
+148c148
+<                 driver='core', backing_store=False) as f1:
+---
+>                 mode='w', driver='core', backing_store=False) as f1:
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/analysis/test/test_diffusion.py.orig	2023-12-11 17:54:24.258996848 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/analysis/test/test_diffusion.py	2023-12-11 17:54:35.027941887 +0000
+@@ -53,7 +53,7 @@
+     # Setup a test FF
+     ff = get_ff_water32()
+     # Run a test simulation
+-    with h5.File('yaff.analysis.test.test_diffusion.test_diff_online.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.analysis.test.test_diffusion.test_diff_online.h5', mode='w', driver='core', backing_store=False) as f:
+         hdf5 = HDF5Writer(f)
+         select = ff.system.get_indexes('O')
+         diff0 = Diffusion(f, select=select)
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/sampling/test/test_enhanced.py.orig	2023-12-11 17:55:55.676530269 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/sampling/test/test_enhanced.py	2023-12-11 17:56:12.271445571 +0000
+@@ -50,7 +50,7 @@
+     # Construct metadynamics as a Yaff hook
+     ff = get_alaninedipeptide_amber99ff()
+     cv = CVInternalCoordinate(ff.system, DihedAngle(4,6,8,14))
+-    with h5.File('yaff.sampling.test.test_enhanced.test_mtd_alanine.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.sampling.test.test_enhanced.test_mtd_alanine.h5', mode='w', driver='core', backing_store=False) as f:
+         hdf5 = HDF5Writer(f)
+         mtd = MTDHook(ff, cv, sigma, K, f = f, start=pace, step=pace, periodicities=2*np.pi)
+         nvt = VerletIntegrator(ff, 1.0*femtosecond, hooks=[mtd])
+@@ -137,7 +137,7 @@
+     ff = get_alaninedipeptide_amber99ff()
+     cv = CVInternalCoordinate(ff.system, DihedAngle(4,6,8,14))
+     with h5.File('yaff.sampling.test.test_enhanced.test_mtd_restart.h5',
+-            driver='core', backing_store=False) as f0:
++            mode='w', driver='core', backing_store=False) as f0:
+         hdf5 = HDF5Writer(f0)
+         mtd = MTDHook(ff, cv, sigma, K, f = f0, start=pace, step=pace, periodicities=2*np.pi)
+         nvt = VerletIntegrator(ff, 1.0*femtosecond, hooks=[mtd])
+@@ -145,7 +145,7 @@
+         nvt.run(12)
+         ff = get_alaninedipeptide_amber99ff()
+         with h5.File('yaff.sampling.test.test_enhanced.test_mtd_restarted.h5',
+-                driver='core', backing_store=False) as f1:
++                mode='w', driver='core', backing_store=False) as f1:
+             mtd_restart = MTDHook(ff, cv, sigma, K, f=f1, start=pace,
+                 step=pace, restart_file=f0, periodicities=2*np.pi)
+             nvt = VerletIntegrator(ff, 1.0*femtosecond, hooks=[mtd_restart])
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/sampling/test/test_mc.py.orig	2023-12-11 17:57:03.929181919 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/sampling/test/test_mc.py	2023-12-11 17:57:38.412005932 +0000
+@@ -110,7 +110,7 @@
+     fn_host = pkg_resources.resource_filename(__name__, '../../data/test/CAU_13.chk')
+     fn_pars = pkg_resources.resource_filename(__name__, '../../data/test/parameters_CAU-13_xylene.txt')
+     fn_guest = pkg_resources.resource_filename(__name__, '../../data/test/xylene.chk')
+-    with h5.File('yaff.sampling.test.test_verlet.test_hdf5_start.h5', driver='core', backing_store=False) as f:
++    with h5.File('yaff.sampling.test.test_verlet.test_hdf5_start.h5', mode='w', driver='core', backing_store=False) as f:
+         hdf5 = MCHDF5Writer(f)
+         gcmc = GCMC.from_files(fn_guest, fn_pars, host=fn_host, hooks=[hdf5])
+         gcmc.set_external_conditions(200*kelvin, 1000*bar)
+--- 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/sampling/test/test_opt.py.orig	2023-12-11 18:10:36.504037548 +0000
++++ 1.6.0/foss-2023a/yaff/yaff-1.6.0/yaff/sampling/test/test_opt.py	2023-12-11 18:10:48.346977460 +0000
+@@ -120,7 +120,7 @@
+ 
+ 
+ def test_cg_hdf5():
+-    with h5.File(__name__ + '.test_cg_hdf5.h5', driver='core', backing_store=False) as f:
++    with h5.File(__name__ + '.test_cg_hdf5.h5', mode='w', driver='core', backing_store=False) as f:
+         hdf5 = HDF5Writer(f)
+         opt = CGOptimizer(CartesianDOF(get_ff_water32()), hooks=hdf5)
+         opt.run(15)

@@ -1,0 +1,50 @@
+name = 'OpenBLAS'
+version = '0.3.27'
+
+homepage = 'https://www.openblas.net/'
+description = "OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version."
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+source_urls = [
+    # order matters, trying to download the large.tgz/timing.tgz LAPACK tarballs from GitHub causes trouble
+    'https://www.netlib.org/lapack/timing/',
+    'https://github.com/xianyi/OpenBLAS/archive/',
+]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    ('large.tgz', '.'),
+    ('timing.tgz', '.'),
+    'OpenBLAS-0.3.15_workaround-gcc-miscompilation.patch',
+    'OpenBLAS-0.3.21_fix-order-vectorization.patch',
+    'OpenBLAS-0.3.26_lapack_qr_noninittest.patch',
+    'OpenBLAS-0.3.27_fix_zscal.patch',
+    'OpenBLAS-0.3.27_riscv-drop-static-fortran-flag.patch',
+]
+checksums = [
+    {'v0.3.27.tar.gz': 'aa2d68b1564fe2b13bc292672608e9cdeeeb6dc34995512e65c3b10f4599e897'},
+    {'large.tgz': 'f328d88b7fa97722f271d7d0cfea1c220e0f8e5ed5ff01d8ef1eb51d6f4243a1'},
+    {'timing.tgz': '999c65f8ea8bd4eac7f1c7f3463d4946917afd20a997807300fe35d70122f3af'},
+    {'OpenBLAS-0.3.15_workaround-gcc-miscompilation.patch':
+     'e6b326fb8c4a8a6fd07741d9983c37a72c55c9ff9a4f74a80e1352ce5f975971'},
+    {'OpenBLAS-0.3.21_fix-order-vectorization.patch':
+     '08af834e5d60441fd35c128758ed9c092ba6887c829e0471ecd489079539047d'},
+    {'OpenBLAS-0.3.26_lapack_qr_noninittest.patch': '4781bf1d7b239374fd8069e15b4e2c0ef0e8efaa1a7d4c33557bd5b27e5de77c'},
+    {'OpenBLAS-0.3.27_fix_zscal.patch': '9210d7b66538dabaddbe1bfceb16f8225708856f60876ca5561b19d3599f9fd1'},
+    {'OpenBLAS-0.3.27_riscv-drop-static-fortran-flag.patch':
+     'f374e41efffd592ab1c9034df9e7abf1045ed151f4fc0fd0da618ce9826f2d4b'},
+]
+
+builddependencies = [
+    ('make', '4.4.1'),
+    # required by LAPACK test suite
+    ('Python', '3.12.3'),
+]
+
+run_lapack_tests = True
+max_failing_lapack_tests_num_errors = 150
+
+# extensive testing can be enabled by uncommenting the line below
+# runtest = 'PATH=.:$PATH lapack-timing'
+
+moduleclass = 'numlib'

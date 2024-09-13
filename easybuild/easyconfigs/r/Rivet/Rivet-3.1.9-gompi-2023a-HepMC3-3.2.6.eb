@@ -1,0 +1,54 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Alexander Puck Neuwirth <alexander@neuwirth-informatik.de>
+
+easyblock = 'ConfigureMake'
+
+name = 'Rivet'
+version = '3.1.9'
+local_hepmc = "HepMC3"
+local_hepmcver = "3.2.6"
+versionsuffix = '-%s-%s' % (local_hepmc, local_hepmcver)
+
+homepage = 'https://gitlab.com/hepcedar/rivet'
+description = """
+Rivet toolkit (Robust Independent Validation of Experiment and Theory)
+
+To use your own analysis you must append the path to `RIVET_ANALYSIS_PATH`.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.hepforge.org/archive/rivet/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['ddf0f13f722d0b4fc61969f3db06416b6b68f721dba36ca5d2a85c2759bf9fd7']
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('YODA', '1.9.9'),
+    ('fastjet', '3.4.2'),
+    ('fastjet-contrib', '1.053'),
+    ('HepMC3', '3.2.6'),
+    ('GSL', '2.7'),
+    ('zlib', '1.2.13')
+]
+
+configopts = "--with-yoda=$EBROOTYODA --with-fastjet=$EBROOTFASTJET --with-hepmc3=$EBROOTHEPMC3 "
+configopts += "--with-zlib=${EBROOTZLIB:-%(sysroot)s/usr}"
+
+sanity_check_paths = {
+    'files': ['bin/rivet-config', 'lib/libRivet.%s' % SHLIB_EXT],
+    'dirs': ['share/Rivet', 'lib/Rivet']
+}
+sanity_check_commands = ["python -c 'import rivet'"]
+
+modloadmsg = """
+To use your own analysis you must append the path to `RIVET_ANALYSIS_PATH`.
+You might want to load `texlive` or `matplotlib` if you want to create plots.
+"""
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    # 'RIVET_ANALYSIS_PATH': '/path/to/share/Rivet/',  # please adapt for system-wided shared non-default analysis
+}
+
+moduleclass = 'phys'

@@ -1,0 +1,49 @@
+easyblock = "ConfigureMake"
+
+name = 'CORSIKA'
+version = '77550'
+
+homepage = "https://www.iap.kit.edu/corsika"
+description = """CORSIKA (COsmic Ray SImulations for KAscade) is a program for detailed
+simulation of extensive air showers initiated by high energy cosmic ray
+particles. Protons, light nuclei up to iron, photons, and many other particles
+may be treated as primaries."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+download_instructions = "Sources have to be requested to the developers"
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-%(version)s_fix_include.patch']
+checksums = [
+    {'corsika-77550.tar.gz': 'fed74c144e22deb5a7c1d2dc1f04f0100eb2732cb48665a3da49ce471a3775ee'},
+    {'CORSIKA-77550_fix_include.patch': 'e858fc4c1fa33d31d050b2fca50e130c23b2d3e4b81b851af34dc3f39e9c709e'},
+]
+
+dependencies = [
+    ("ROOT", "6.30.06"),
+]
+
+# custom coconut script does not recognize -j
+parallel = False
+
+# execute ./coconut manually with your own options and extract configure command from top of config.log
+_mpi_opts = "--enable-PARALLEL --with-mpirunner-lib=src/parallel --enable-PARALLELIB "
+configopts = "CORDETECTOR=HORIZONTAL CORTIMELIB=TIMEAUTO CORHEMODEL=QGSJETII CORLEMODEL=URQMD "
+configopts += "--enable-UPWARD --enable-SLANT --enable-THIN --enable-COREAS "
+configopts += _mpi_opts
+
+build_cmd = "./coconut"
+buildopts = "--batch " + _mpi_opts
+
+install_cmd = ' && '.join([
+    'mkdir -p %(installdir)s/bin',
+    'cp %(builddir)s/%(namelower)s-%(version)s/run/* %(installdir)s/bin/',
+])
+
+sanity_check_paths = {
+    'files': ['bin/mpi_corsika77550Linux_QGSII_urqmd_thin_coreas_parallel_runner'],
+    'dirs': [],
+}
+
+moduleclass = "phys"

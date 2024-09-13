@@ -29,7 +29,18 @@ download_dep_fail = True
 sanity_pip_check = True
 use_pip = True
 
-sanity_check_commands = ["cd %(builddir)s/%(namelower)s-%(version)s/demo/demo1 && ./run.sh"] + [
-    "%s -h" % x for x in ['mageck', 'mageckGSEA']]
+postinstallcmds = ["cp -a demo %(installdir)s"]
+
+sanity_check_paths = {
+    'files': ['bin/mageck', 'bin/mageckGSEA', 'bin/RRA'],
+    'dirs': ['demo', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    # copy demo to build directory, after making sure it exists, so --sanity-check-only works;
+    # enable write permissions, since installation directory may be read-only
+    "mkdir -p %(builddir)s && cp -a %(installdir)s/demo %(builddir)s/ && chmod -R u+w %(builddir)s/demo",
+    "cd %(builddir)s/demo/demo1 && ./run.sh",
+] + ["%s -h" % x for x in ['mageck', 'mageckGSEA']]
 
 moduleclass = 'bio'

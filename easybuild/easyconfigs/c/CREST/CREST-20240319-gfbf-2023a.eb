@@ -1,0 +1,44 @@
+# Author: Jasper Grimm (UoY)
+# Update to 2.12:
+# Author: J. Sassmannshausen (Imperial College London)
+
+easyblock = 'CMakeMake'
+
+name = 'CREST'
+version = '20240319'
+_commit = '2719412edf8bb606cebdd4cd6bbb4cdbd249e1e5'
+
+homepage = 'https://xtb-docs.readthedocs.io/en/latest/crest.html'
+description = """CREST is an utility/driver program for the xtb program. Originally it was designed
+ as conformer sampling program, hence the abbreviation Conformer–Rotamer Ensemble Sampling Tool,
+ but now offers also some utility functions for calculations with the GFNn–xTB methods. Generally
+ the program functions as an IO based OMP scheduler (i.e., calculations are performed by the xtb
+ program) and tool for the creation and analysation of structure ensembles.
+"""
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+toolchainopts = {'opt': True, 'optarch': True, 'extra_fflags': '-ffree-line-length-none'}
+
+separate_build_dir = False
+
+github_account = 'grimme-lab'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % _commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['770b7ca72bc47bc4e1ffd8ca56566df7b03f4d3b702b04ec6b83bad9a125884d']
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [('xtb', '6.6.1')]  # required to run the program
+
+# Simple test command just to check if the program is working:
+test_cmd = 'export PATH=%%(builddir)s/%%(namelower)s-%s:$PATH && ' % _commit
+test_cmd += 'cd %%(builddir)s/%%(namelower)s-%s/examples/expl-0/ && ./run.sh ' % _commit
+
+sanity_check_paths = {
+    'files': ['bin/%s' % name.lower()],
+    'dirs': [],
+}
+
+sanity_check_commands = ["crest -h", "crest --cite"]
+
+moduleclass = 'chem'

@@ -1,0 +1,44 @@
+easyblock = 'Tarball'
+
+name = 'MaxQuant'
+version = '2.4.2.0'
+
+homepage = 'https://maxquant.org/maxquant'
+description = """MaxQuant is a quantitative proteomics software package designed for analyzing large
+ mass-spectrometric data sets. It is specifically aimed at high-resolution MS data. Several labeling
+ techniques as well as label-free quantification are supported."""
+
+toolchain = SYSTEM
+
+download_instructions = """
+To download the MaxQuant source tarball, register at:
+    https://www.maxquant.org/download_asset/maxquant/latest
+You should receive a unique download URL via email.
+"""
+
+sources = ['%(name)s_%(version)s.zip']
+checksums = ['03d8acc28ff8d71772d72d3da493e508553bd30f52f09c979bb9fcdb090e7799']
+
+dependencies = [('dotNET-SDK', '3.1.300', '-linux-x64')]
+
+sanity_check_paths = {
+    'files': ['%(name)s.exe', 'bin/%(name)sCmd.exe', 'bin/%(name)sGui.exe'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    ("dotnet $EBROOTMAXQUANT/bin/%(name)sCmd.exe --version 2>&1 | grep -q 2.4.1.0", ''),  # reports wrong version
+    ("dotnet $EBROOTMAXQUANT/bin/%(name)sCmd.exe --help 2>&1 | grep -q USAGE", '')
+]
+
+modaliases = {
+    'maxquantcmd': 'dotnet $EBROOTMAXQUANT/bin/%(name)sCmd.exe',
+    'maxquantgui': 'dotnet $EBROOTMAXQUANT/bin/%(name)sGui.exe',
+}
+
+modloadmsg = """
+To run MaxQuant in command-line mode:  maxquantcmd <options>
+                in GUI mode:           maxquantgui
+"""
+
+moduleclass = 'bio'

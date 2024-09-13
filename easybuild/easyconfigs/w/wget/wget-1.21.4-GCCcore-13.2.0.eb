@@ -1,0 +1,50 @@
+easyblock = 'ConfigureMake'
+
+name = 'wget'
+version = '1.21.4'
+
+homepage = 'https://www.gnu.org/software/wget'
+description = """GNU Wget is a free software package for retrieving files using HTTP, HTTPS and FTP,
+ the most widely-used Internet protocols. It is a non-interactive commandline tool,
+ so it may easily be called from scripts, cron jobs, terminals without X-Windows support, etc."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCE_TAR_GZ]
+checksums = [
+    {SOURCE_TAR_GZ: '81542f5cefb8faacc39bbbc6c82ded80e3e4a88505ae72ea51df27525bcde04c'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('pkgconf', '2.0.3'),
+    ('Perl', '5.38.0'),
+]
+dependencies = [
+    ('PCRE', '8.45'),
+    ('libidn2', '2.3.2'),
+    ('zlib', '1.2.13'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+    # OS dependency should be preferred if the os version is more recent then this version,
+    # it's nice to have an up to date gnutls for security reasons
+    # ('GnuTLS', '3.7.1'),
+]
+
+# make sure pkgconfig picks up system packages (OpenSSL & co)
+local_pc = "%(sysroot)s/usr/lib64/pkgconfig:"
+local_pc += "%(sysroot)s/usr/lib/pkgconfig:"
+local_pc += "%(sysroot)s/usr/lib/x86_64-linux-gnu/pkgconfig"
+preconfigopts = "export PKG_CONFIG_PATH=%s && " % local_pc
+configopts = '--with-ssl=openssl '
+
+# Optionally, you can use gnutls (default) instead of OpenSSL.
+# Do not forget to comment out configopts in that case.
+# osdependencies = [('gnutls-devel', 'gnutls-dev', 'libgnutls-devel')]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': [],
+}
+
+moduleclass = 'devel'

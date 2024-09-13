@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'libxc'
+version = '6.2.2'
+
+homepage = 'https://libxc.gitlab.io'
+description = """Libxc is a library of exchange-correlation functionals for density-functional theory.
+ The aim is to provide a portable, well tested and reliable set of exchange and correlation functionals."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://gitlab.com/libxc/libxc/-/archive/%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = [('a0f6f1bba7ba5c0c85b2bfe65aca1591025f509a7f11471b4cd651a79491b045',
+              '3b0523924579cf494cafc6fea92945257f35692b004217d3dfd3ea7ca780e8dc')]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Perl', '5.36.1'),
+]
+
+local_common_configopts = "-DENABLE_FORTRAN=ON -DENABLE_XHOST=OFF "
+
+# don't disable building of third and fourth derivates, since it's required by some software that depends on libxc
+# (like ABINIT, which requires "3rd derivatives of energy")
+# see also https://github.com/pyscf/pyscf/issues/1103
+local_common_configopts += "-DDISABLE_KXC=OFF -DDISABLE_LXC=OFF"
+
+# perform iterative build to get both static and shared libraries
+configopts = [
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
+]
+
+# make sure that built libraries (libxc*.so*) in build directory are picked when running tests
+# this is required when RPATH linking is used
+pretestopts = "export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj:$LD_LIBRARY_PATH && "
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/xc-info'] +
+             ['lib/libxc%s.%s' % (x, y) for x in ['', 'f03', 'f90'] for y in ['a', SHLIB_EXT]],
+    'dirs': ['include', 'lib/pkgconfig', 'lib/cmake/Libxc'],
+}
+
+sanity_check_commands = ['xc-info 1']
+
+moduleclass = 'chem'

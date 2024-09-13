@@ -1,0 +1,57 @@
+easyblock = 'PythonBundle'
+
+name = 'CNVkit'
+version = '0.9.10'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://github.com/etal/cnvkit'
+description = """A command-line toolkit and Python library for detecting copy
+ number variants and alterations genome-wide from high-throughput sequencing."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('scikit-learn', '1.2.1'),
+    ('Biopython', '1.81'),
+    ('matplotlib', '3.7.0'),
+    ('networkx', '3.0'),
+    ('Pillow', '9.4.0'),
+    ('Pysam', '0.21.0'),
+    ('PyYAML', '6.0'),
+    ('pyfaidx', '0.7.2.1'),
+    ('R', '4.2.2'),
+    ('R-bundle-Bioconductor', '3.16', versionsuffix),
+]
+
+exts_list = [
+    ('reportlab', '3.6.8', {
+        'checksums': ['dc7657fcb0bc3e485c3c869a44dddb52d711356a01a456664b7bef827222c982'],
+    }),
+    ('pomegranate', '0.14.8', {
+        'checksums': ['2296651290482dd53204ffaaaea267ceee057ce1b3ef1f9d9793febe66d6693d'],
+    }),
+    (name, version, {
+        'modulename': 'cnvlib',
+        # workflow test disabled for now during build - directory available for later running
+        # 'postinstallcmds': ['cd test/ && make'],
+        'postinstallcmds': ['cp -a test %(installdir)s'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/etal/cnvkit/archive/'],
+        'checksums': ['56739496f1f59511661107e662d81e5fd8af413571e853b0a1b34d882a19349a'],
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/cnvkit.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'cnvkit.py --help',
+]
+
+moduleclass = 'bio'

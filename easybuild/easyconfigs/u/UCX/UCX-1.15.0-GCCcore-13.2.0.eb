@@ -1,0 +1,60 @@
+easyblock = 'ConfigureMake'
+
+name = 'UCX'
+version = '1.15.0'
+
+homepage = 'https://www.openucx.org/'
+description = """Unified Communication X
+An open-source production grade communication framework for data centric
+and high-performance applications
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openucx/ucx/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+patches = [
+    'UCX-1.13.1-dynamic_modules.patch',
+]
+checksums = [
+    {'ucx-1.15.0.tar.gz': '4b202087076bc1c98f9249144f0c277a8ea88ad4ca6f404f94baa9cb3aebda6d'},
+    {'UCX-1.13.1-dynamic_modules.patch': '00874687bd90b795fff61aaa183f6c6bea2210aa1003b28f23d9ebf7066f8782'},
+]
+
+# Uncomment when updating to final release
+# sources = ['%(namelower)s-%(version)s.tar.gz']
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Autotools', '20220317'),
+    ('pkgconf', '2.0.3'),
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('numactl', '2.0.16'),
+]
+
+if ARCH == "riscv64":
+    patches += ['UCX-1.15.0-add_riscv_support.patch']
+    checksums += [{'UCX-1.15.0-add_riscv_support.patch':
+                   '700640d469f441f3ee2c9d42e3a533f78f0c892c1d3c221aebd41279668d118e'}]
+    preconfigopts = 'autoreconf -fi && '
+
+configopts = '--enable-optimizations --enable-cma --enable-mt --with-verbs '
+configopts += '--without-java --without-go --disable-doxygen-doc '
+# include the configure options from contrib/configure-release
+configopts += '--disable-logging --disable-debug --disable-assertions --disable-params-check '
+
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': ['bin/ucx_info', 'bin/ucx_perftest', 'bin/ucx_read_profile'],
+    'dirs': ['include', 'lib', 'share']
+}
+
+sanity_check_commands = ["ucx_info -d"]
+
+moduleclass = 'lib'
