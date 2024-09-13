@@ -56,7 +56,7 @@ class StyleTest(TestCase):
         easyconfigs_path = get_paths_for("easyconfigs")[0]
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
         specs = sorted(specs)
-        print("Running style tests on ", specs)
+        print("Running style tests %s on ", len(specs), [s for s in specs if 'VTK-9.3.0' in s])
 
         self.mock_stderr(True)
         self.mock_stdout(True)
