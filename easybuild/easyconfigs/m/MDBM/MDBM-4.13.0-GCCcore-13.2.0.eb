@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'MDBM'
+version = '4.13.0'
+
+homepage = 'https://github.com/yahoo/mdbm'
+
+description = """MDBM is a super-fast memory-mapped key/value store"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/yahoo/%(namelower)s/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_headers.patch']
+checksums = [
+    {'v4.13.0.tar.gz': '99cec32e02639048f96abf4475eb3f97fc669541560cd030992bab155f0cb7f8'},
+    {'MDBM-4.13.0_headers.patch': 'bf056d4e5efd4a085f89e042b61040380e2f8df55e877c7b1e71c8f76903962f'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('CppUnit', '1.15.1'),
+    ('libreadline', '8.2'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'sed -i -e "s/error/no-error/ ; s@/tmp/install@%(installdir)s@" Makefile.base && '
+prebuildopts += 'LDADD=-ldl'
+
+sanity_check_paths = {
+    'files': ['bin/mdbm_config', 'include/mdbm.h', 'lib64/libmdbm.so'],
+    'dirs': ['bin', 'include', 'lib64'],
+}
+
+moduleclass = 'data'
