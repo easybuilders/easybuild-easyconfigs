@@ -1,0 +1,44 @@
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'gdma'
+version = '2.2.6'
+
+homepage = 'https://github.com/psi4/gdma'
+description = """Anthony Stone's GDMA (http://www-stone.ch.cam.ac.uk/programs.html) 
+wrapped in CMake for Psi4 (https://github.com/psi4/psi4)"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'openmp': 'ON'}
+
+source_urls = ['https://github.com/psi4/gdma/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['7744b9626a1ce499f15be9d7d0317f3b3cb126a8451f0067319e1d48a0301b72']
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+]
+
+local_common_configopts = '-DBUILD_FPIC=ON '
+# perform iterative build to get both static and shared libraries
+configopts = [
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
+]
+
+# runtest uses ctest
+test_cmd = 'ctest'
+runtest = ''
+
+sanity_check_paths = {
+    'files': ['lib/libgdma.a', 'lib/libgdma.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'chem'
