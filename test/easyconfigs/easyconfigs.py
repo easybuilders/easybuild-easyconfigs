@@ -663,6 +663,8 @@ class EasyConfigTest(TestCase):
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
             # Napari 0.4.19post1 requires VisPy >=0.14.1 <0.15
             'VisPy': [('0.14.1;', ['napari-0.4.19.post1-'])],
+            # Visit-3.4.1 requires VTK 9.2.x
+            'VTK': [('9.2.6;', ['Visit-3.4.1-'])],
             # WPS 3.9.1 requires WRF 3.9.1.1
             'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
@@ -1051,14 +1053,13 @@ class EasyConfigTest(TestCase):
             # ignore git/svn dirs & archived easyconfigs
             if '/.git/' in dirpath or '/.svn/' in dirpath or '__archive__' in dirpath:
                 continue
-            # check whether list of .eb files is non-empty
-            easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
+            # check whether list of .eb files is non-empty, only exception: TEMPLATE.eb
+            easyconfig_files = [fn for fn in filenames if fn.endswith('eb') and fn != 'TEMPLATE.eb']
             if easyconfig_files:
                 # check whether path matches required pattern
                 if not easyconfig_dirs_regex.search(dirpath):
-                    # only exception: TEMPLATE.eb
-                    if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
-                        self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
+                    if not dirpath.endswith('/easybuild/easyconfigs'):
+                        self.fail("There should be no easyconfig files in %s, found %s" % (dirpath, easyconfig_files))
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1079,7 +1080,7 @@ class EasyConfigTest(TestCase):
                 duplicates[name] = names[name]
 
         if duplicates:
-            self.assertTrue(False, "EasyConfigs with case-insensitive name clash: %s" % duplicates)
+            self.fail("EasyConfigs with case-insensitive name clash: %s" % duplicates)
 
     @skip_if_not_pr_to_non_main_branch()
     def test_pr_sha256_checksums(self):
@@ -1097,25 +1098,19 @@ class EasyConfigTest(TestCase):
             'R-bundle-Bioconductor-3.[2-5]',
         ]
 
-        # the check_sha256_checksums function (again) creates an EasyBlock instance
-        # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
-        # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__;
-        # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
-        # likewise for 'patches' and 'checksums'
-        bundle_easyblocks = ['Bundle', 'CargoPythonBundle', 'PythonBundle', 'EB_OpenSSL_wrapper']
-        for ec in self.changed_ecs:
-            if ec['easyblock'] in bundle_easyblocks or ec['name'] in ['Clang-AOMP']:
-                ec['sources'] = []
-                ec['patches'] = []
-                ec['checksums'] = []
-
         # filter out deprecated easyconfigs
-        retained_changed_ecs = []
-        for ec in self.changed_ecs:
-            if not ec['deprecated']:
-                retained_changed_ecs.append(ec)
+        retained_changed_ecs = [ec for ec in self.changed_ecs if not ec['deprecated']]
 
-        checksum_issues = check_sha256_checksums(retained_changed_ecs, whitelist=whitelist)
+        # The check_sha256_checksums function creates an EasyBlock instance.
+        # For easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
+        # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__.
+        # Therefore, we need to a operate on a copy of those easyconfigs.
+        bundle_easyblocks = {'Bundle', 'CargoPythonBundle', 'PythonBundle', 'EB_OpenSSL_wrapper'}
+
+        def is_bundle(ec):
+            return ec['easyblock'] in bundle_easyblocks or ec['name'] == 'Clang-AOMP'
+        ecs = [ec.copy() if is_bundle(ec) else ec for ec in retained_changed_ecs]
+        checksum_issues = check_sha256_checksums(ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
     @skip_if_not_pr_to_non_main_branch()
@@ -1136,6 +1131,11 @@ class EasyConfigTest(TestCase):
             r'.*-2016[ab]-Python-.*',
             # mympirun is installed with system Python, pip may not be installed for system Python
             r'vsc-mympirun.*',
+            # ReFrame intentionally installs its deps in a %(installdir)s/external subdir, which is added
+            # to sys.path by the ReFrame command, and is intentionally NOT on the PYTHONPATH.
+            # Thus, a pip check fails, but this is expected and ok, it is still a working ReFrame installation
+            # See https://github.com/easybuilders/easybuild-easyconfigs/pull/21269 for more info
+            r'ReFrame.*',
         ]
 
         failing_checks = []
