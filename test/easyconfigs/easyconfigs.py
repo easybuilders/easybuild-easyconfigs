@@ -40,6 +40,7 @@ from unittest import TestCase, TestLoader, main, skip
 import easybuild.main as eb_main
 import easybuild.tools.options as eboptions
 from easybuild.base import fancylogger
+from easybuild.easyblocks.generic.cargo import Cargo
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
@@ -1507,6 +1508,12 @@ def template_easyconfig_test(self, spec):
                     failing_checks.append("OpenSSL should not be listed as OS dependency")
 
     src_cnt = len(ec['sources'])
+
+    # if easyblock derives from Cargo easyblock we need to take into account list of crates,
+    # which get added to list of sources, to correctly determine number of checksums for sources (incl. crates)
+    if isinstance(app, Cargo):
+        src_cnt += len(ec.get('crates', []))
+
     patch_checksums = ec['checksums'][src_cnt:]
 
     # make sure all patch files are available
