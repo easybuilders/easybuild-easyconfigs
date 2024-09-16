@@ -1,0 +1,102 @@
+* fix --batch conditions
+* remove MaterialsStudio22.1 subdir
+Author: Miguel Dias Costa (National University of Singapore)
+--- install.orig	2022-12-04 16:30:18.594832000 +0800
++++ install	2022-12-04 16:32:58.924789000 +0800
+@@ -61,11 +61,16 @@
+ if ($batch) {
+     # Set default values if we're not interactive
+     $installroot ||= '/opt/BIOVIA' if $UID == 0;
+-    print "\nERROR: The installation directory has not been defined using the installroot/-r option \n\n";usage unless $installroot;
++    if (not $installroot){
++	print "\nERROR: The installation directory has not been defined using the installroot/-r option \n\n";
++	usage;
++    }
+ 
+-    
+-	$lproot ||= $ENV{BIOVIA_LIC_PACK_DIR};
+-	print "\nERROR: Either a License Pack installation directory is not defined using the lproot option or the installed License pack is not supported.\n\n";usage unless $lproot && is_valid_licensepack($lproot);
++    $lproot ||= $ENV{BIOVIA_LIC_PACK_DIR};
++    if (not $installroot || not is_valid_licensepack($lproot)){
++	print "\nERROR: Either a License Pack installation directory is not defined using the lproot option or the installed License pack is not supported.\n\n";
++	usage;
++    }
+ 
+     # Default to non-root installation if ... we're not root. Or not on Red Hat.
+     $nonroot ||= ($UID != 0 || ! -f "/etc/redhat-release");
+@@ -106,16 +111,16 @@
+     my $goodinstalldir;
+     while (!$goodinstalldir) {
+         $installroot ||= question "Please enter the location in which to install Materials Studio 2022\n" .
+-                                  "The location where Materials Studio will be installed is <install location>/MaterialsStudio22.1\n", $nonroot ? $ENV{HOME} . "/BIOVIA" : "/opt/BIOVIA";
++                                  "The location where Materials Studio will be installed is <install location>\n", $nonroot ? $ENV{HOME} . "/BIOVIA" : "/opt/BIOVIA";
+ 
+-        if (! -e "$installroot/MaterialsStudio22.1") {
++        if (! -e "$installroot") {
+             $goodinstalldir = 1;
+         } else {
+             print "The specified installation directory appears to already contain a Materials\n";
+             print "Studio 2022 installation.\n";
+             my $response = question "Would you like to remove it before installing? (y/N)", "N";
+             if (is_yes_answer $response) {
+-                system("rm -rf $installroot/MaterialsStudio22.1");
++                system("rm -rf $installroot");
+                 $goodinstalldir = 1;
+             } else {
+                 $installroot = undef;
+@@ -215,7 +220,7 @@
+     $installer->do_nonroot_installation(@rpmfiles);
+ } else {
+     $installer->do_rpm_installation(@rpmfiles);
+-    my $pswd="$installroot/MaterialsStudio22.1/etc/Gateway/configurations/default/conf/passwd";
++    my $pswd="$installroot/etc/Gateway/configurations/default/conf/passwd";
+     open(my $p,">>",  "$pswd");
+     close($p);
+     chmod 0600,$pswd;
+@@ -291,7 +296,7 @@
+                         will run a manual installation instead of using RPM.
+   --installroot=<dir>, -r <dir>
+                         Specify the location into which to install. Files will
+-                        be placed into <dir>/MaterialsStudio22.1. Required if
++                        be placed into <dir>. Required if
+                         --batch is specified and non-root installation is
+                         requested.
+   --lproot=<dir>        Specify the location of the License Pack installation
+--- lib/BIOVIA/MSInstall.pm.orig	2022-12-04 15:09:10.333409000 +0800
++++ lib/BIOVIA/MSInstall.pm	2022-12-04 15:45:45.459805000 +0800
+@@ -33,7 +33,7 @@
+ sub do_nonroot_installation {
+     my ($self, @rpmfile) = @_;
+ 
+-    my $msroot = $self->{installroot} . "/MaterialsStudio22.1";
++    my $msroot = $self->{installroot};
+ 
+     if (! -d $self->{installroot}) {
+         mkpath $self->{installroot} or die "Couldn't create installation directory $self->{installroot}\n";
+@@ -50,7 +50,7 @@
+             die "Failed to extract RPM file.\n";
+         }
+     }
+-    system "cp", "-a", "$tmpdir/opt/BIOVIA/MaterialsStudio22.1", "$msroot";
++    system "cp", "-a", <$tmpdir/opt/BIOVIA/MaterialsStudio22.1/*>, "$msroot";
+     
+     chdir $msroot;
+     $ret = system "rm", "-rf", "$tmpdir";
+@@ -59,7 +59,7 @@
+     }
+ 
+     my @args = (
+-        "--installroot=$self->{installroot}/MaterialsStudio22.1",
++        "--installroot=$self->{installroot}",
+         "--user=" . ($self->{username} || ""),
+         "--group=" . ($self->{groupname} || ""),
+     );
+@@ -99,7 +99,7 @@
+ sub run_license_admin {
+     my ($self) = @_;
+ 
+-    my $installroot = $self->{installroot} . "/MaterialsStudio22.1";
++    my $installroot = $self->{installroot};
+ 
+ =for comment
+ Don't actually change UID. Revisit this if the ownership of the automatic licensepack install changes.
