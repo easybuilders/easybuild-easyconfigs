@@ -1,0 +1,21 @@
+From: Alexander Grund <Flamefire@users.noreply.github.com>
+Date: Mon, 5 Dec 2022 17:03:50 +0100
+[PATCH] Prepend psiimport path instead of overwriting `$PYTHONPATH`
+When `psi4` binary is found but the Python package is not we should not overwrite the `$PYTHONPATH` before importing `psi4` as that may cause other required packages to be not found anymore. Hence prepend it. See #292
+---
+diff --git a/qcengine-0.26.0.orig/qcengine/programs/psi4.py b/qcengine-0.26.0/qcengine/programs/psi4.py
+index 7dd4d5e..437cdea 100644
+--- a/qcengine-0.26.0.orig/qcengine/programs/psi4.py
++++ b/qcengine-0.26.0/qcengine/programs/psi4.py
+@@ -66,7 +66,9 @@ class Psi4Harness(ProgramHarness):
+         if psiapi and not psithon:
+             psiimport = str(Path(which_import("psi4")).parent.parent)
+             env = os.environ.copy()
+-            env["PYTHONPATH"] = psiimport
++            pythonpath = env.get("PYTHONPATH")
++            # Prepend psiimport to $PYTHONPATH (carefull if it's empty/unset)
++            env["PYTHONPATH"] = os.pathsep.join([psiimport, pythonpath] if pythonpath else [psiimport])
+             with popen(["python", "-c", "import psi4; print(psi4.executable[:-5])"], popen_kwargs={"env": env}) as exc:
+                 exc["proc"].wait(timeout=30)
+             os.environ["PATH"] += os.pathsep + exc["stdout"].split()[-1]
+
