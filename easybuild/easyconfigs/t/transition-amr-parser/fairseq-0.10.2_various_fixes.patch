@@ -1,0 +1,36 @@
+Fixes:
+* os.unlink fails if path is not a link
+* THC has been removed in PyTorch v1.11+
+* dataclasses is part of stdlib in Python v3.7+
+Author: Samuel Moors (Vrije Universiteit Brussel)
+
+diff -ur fairseq-0.10.2.orig/fairseq/clib/libnat_cuda/edit_dist.cu fairseq-0.10.2/fairseq/clib/libnat_cuda/edit_dist.cu
+--- fairseq-0.10.2.orig/fairseq/clib/libnat_cuda/edit_dist.cu	2021-01-05 21:02:23.000000000 +0100
++++ fairseq-0.10.2/fairseq/clib/libnat_cuda/edit_dist.cu	2024-04-03 10:37:16.571121615 +0200
+@@ -7,7 +7,7 @@
+ */
+ 
+ #include "edit_dist.h"
+-#include <THC/THC.h>
++#include <c10/cuda/CUDAStream.h>
+ #include <cuda.h>
+ #include <cuda_runtime.h>
+ #include <device_launch_parameters.h>
+diff -ur fairseq-0.10.2.orig/setup.py fairseq-0.10.2/setup.py
+--- fairseq-0.10.2.orig/setup.py	2021-01-05 21:02:23.000000000 +0100
++++ fairseq-0.10.2/setup.py	2024-04-03 10:36:21.393323000 +0200
+@@ -154,7 +154,6 @@
+         install_requires=[
+             "cffi",
+             "cython",
+-            "dataclasses",
+             "hydra-core",
+             "numpy",
+             "regex",
+@@ -213,5 +212,5 @@
+     }
+     do_setup(package_data)
+ finally:
+-    if "build_ext" not in sys.argv[1:] and os.path.exists(fairseq_examples):
++    if "build_ext" not in sys.argv[1:] and os.path.islink(fairseq_examples):
+         os.unlink(fairseq_examples)
