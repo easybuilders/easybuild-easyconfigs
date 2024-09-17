@@ -1,0 +1,69 @@
+Based on https://gitlab.com/petsc/petsc/-/merge_requests/5257
+Author: J. Sassmannshausen / ICL (UK)
+diff --git a/petsc-3.17.0.orig/config/examples/arch-ci-freebsd-cxx-cmplx-pkgs-dbg.py b/petsc-3.17.0/config/examples/arch-ci-freebsd-cxx-cmplx-pkgs-dbg.py
+index ecc3b03..6c6c354 100755
+--- a/petsc-3.17.0.orig/config/examples/arch-ci-freebsd-cxx-cmplx-pkgs-dbg.py
++++ b/petsc-3.17.0/config/examples/arch-ci-freebsd-cxx-cmplx-pkgs-dbg.py
+@@ -36,6 +36,7 @@ configure_options = [
+   '--with-mpi-f90module-visibility=0',
+   '--download-kokkos=1',
+   '--download-kokkos-kernels=1',
++  '--with-ssl=1',
+   ]
+ 
+ if __name__ == '__main__':
+diff --git a/petsc-3.17.0.orig/config/examples/arch-ci-linux-gcc-pkgs-opt.py b/petsc-3.17.0/config/examples/arch-ci-linux-gcc-pkgs-opt.py
+index 8828156..132e3d6 100755
+--- a/petsc-3.17.0.orig/config/examples/arch-ci-linux-gcc-pkgs-opt.py
++++ b/petsc-3.17.0/config/examples/arch-ci-linux-gcc-pkgs-opt.py
+@@ -28,6 +28,7 @@ configure_options = [
+   '--download-amrex',
+   '--download-hypre',
+   '--download-ks',
++  '--with-ssl=1',
+ ]
+ 
+ if __name__ == '__main__':
+diff --git a/petsc-3.17.0.orig/src/sys/webclient/box.c b/petsc-3.17.0/src/sys/webclient/box.c
+index d306966..eb2fac7 100644
+--- a/petsc-3.17.0.orig/src/sys/webclient/box.c
++++ b/petsc-3.17.0/src/sys/webclient/box.c
+@@ -304,9 +304,9 @@ PetscErrorCode PetscBoxUpload(MPI_Comm comm,const char access_token[],const char
+     PetscCall(PetscPushJSONValue(body,"mimeType","text.html",len));
+     PetscCall(PetscStrcat(body,","));
+     PetscCall(PetscPushJSONValue(body,"description","a file",len));
+-    ierr = PetscStrcat(body, "}\r\n\r\n"
+-                             "--foo_bar_baz\r\n"
+-                             "Content-Type: text/html\r\n\r\n");PetscCall(ierr);
++    PetscCall(PetscStrcat(body, "}\r\n\r\n"
++                                "--foo_bar_baz\r\n"
++                                "Content-Type: text/html\r\n\r\n"));
+     PetscCall(PetscStrlen(body,&blen));
+     fd = fopen (filename, "r");
+     PetscCheck(fd,PETSC_COMM_SELF,PETSC_ERR_FILE_OPEN,"Unable to open file: %s",filename);
+diff --git a/petsc-3.17.0.orig/src/sys/webclient/client.c b/petsc-3.17.0/src/sys/webclient/client.c
+index dfe6b12..350cac9 100644
+--- a/petsc-3.17.0.orig/src/sys/webclient/client.c
++++ b/petsc-3.17.0/src/sys/webclient/client.c
+@@ -123,7 +123,7 @@ static PetscErrorCode PetscHTTPBuildRequest(const char type[],const char url[],c
+ 
+   if (header) {
+     PetscCall(PetscStrendswith(header,"\r\n",&flg));
+-    PetscCheck(flg,PETSC_COMM_SELF,PETSC_ERR_ARG_WRONG,"header must end with \\r\");
++    PetscCheck(flg,PETSC_COMM_SELF,PETSC_ERR_ARG_WRONG,"header must end with \\r\\n");
+   }
+ 
+   PetscCall(PetscStrlen(type,&typelen));
+diff --git a/petsc-3.17.0.orig/src/sys/webclient/google.c b/petsc-3.17.0/src/sys/webclient/google.c
+index 8626b7c..c66f8cc 100644
+--- a/petsc-3.17.0.orig/src/sys/webclient/google.c
++++ b/petsc-3.17.0/src/sys/webclient/google.c
+@@ -158,7 +158,7 @@ PetscErrorCode PetscGoogleDriveUpload(MPI_Comm comm,const char access_token[],co
+     fd = fopen (filename, "r");
+     PetscCheck(fd,PETSC_COMM_SELF,PETSC_ERR_FILE_OPEN,"Unable to open file: %s",filename);
+     rd = fread (body+blen, sizeof (unsigned char), sb.st_size, fd);
+-    PetscCheckFalse(rd != (size_t) sb.st_size,PETSC_COMM_SELF,PETSC_ERR_FILE_OPEN,"Unable to read entire file: %s %d %d",filename,(int)rd,sb.st_size);
++    PetscCheckFalse(rd != (size_t) sb.st_size,PETSC_COMM_SELF,PETSC_ERR_FILE_OPEN,"Unable to read entire file: %s %d %d",filename,(int)rd,(int)sb.st_size);
+     fclose(fd);
+     body[blen + rd] = 0;
+     ierr = PetscStrcat(body,"\r\n\r\n"
