@@ -1,0 +1,45 @@
+##
+# Author:    Abdoul Wahid MAINASSARA <wahid.mainassara@lxp.lu>
+##
+easyblock = 'CMakeMake'
+
+name = 'QMCPACK'
+version = '3.14.0'
+
+homepage = 'https://qmcpack.org/'
+description = """QMCPACK is an open-source, high-performance electronic
+ structure code that implements numerous Quantum Monte Carlo (QMC) algorithms.
+ Its main applications are electronic structure calculations of molecular, 
+ periodic 2D, and periodic 3D solid-state systems."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['08bf712423c5ff8d983ba13c1892e767515f0996e865dff38f66d151d3de9548']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('PySCF', '2.0.1'),
+    ('HDF5', '1.12.2'),
+    ('Boost', '1.79.0'),
+]
+
+#configopts = '-DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DMPIEXEC_EXECUTABLE=$(which srun) -DMPIEXEC_PREFLAGS="--cpu-bind;no;--overlap"'
+#configopts = '-DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DMPIEXEC_EXECUTABLE=$(which srun) -DMPIEXEC_PREFLAGS="--cpu-bind;no"'
+#configopts = '-DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DMPIEXEC_EXECUTABLE=$(which srun) -DMPIEXEC_PREFLAGS="--cpu-bind;no;--exact"'
+configopts = '-DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DMPIEXEC_EXECUTABLE=$(which orterun)'
+
+#runtest = 'test ARGS="-R deterministic -LE unstable"'
+#Disable test cause MPI tests are failing due to not enough slot (Just MPI config)
+runtest = False 
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['bin']
+}
+
+moduleclass = 'chem'
