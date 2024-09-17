@@ -1,0 +1,65 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'ConfigureMake'
+
+name = 'Gubbins'
+version = '3.3.5'
+
+homepage = "https://nickjcroucher.github.io/gubbins/"
+description = """Gubbins (Genealogies Unbiased By recomBinations In Nucleotide Sequences) is an algorithm that
+ iteratively identifies loci containing elevated densities of base substitutions, which are marked as recombinations,
+ while concurrently constructing a phylogeny based on the putative point mutations outside of these regions.
+ Simulations demonstrate the algorithm generates highly accurate reconstructions under realistic models of short-term
+ bacterial evolution, and can be run in only a few hours on alignments of hundreds of bacterial genome sequences."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+source_urls = ['https://github.com/nickjcroucher/gubbins/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['4ee363f82708bdda0c00d1c6c334cf20127bd852ee488619f61140771a279774']
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('Autoconf-archive', '2023.02.20'),
+    ('pkgconf', '1.9.3'),
+    ('Check', '0.15.2'),
+    ('subunit', '1.4.3'),
+]
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('Biopython', '1.81'),
+    ('DendroPy', '4.5.2'),
+    ('numba', '0.58.1'),
+    ('SciPy-bundle', '2023.02'),
+    ('FastTree', '2.1.11'),
+    ('IQ-TREE', '2.2.2.6'),
+    ('rapidNJ', '2.3.3'),
+    ('RAxML', '8.2.12', '-avx2'),
+    ('RAxML-NG', '1.2.0'),
+    ('SKA2', '0.3.7'),
+    ('dill', '0.3.7'),
+    ('multiprocess', '0.70.15'),
+]
+
+preconfigopts = "autoreconf -i && "
+# runtest = 'check'  # runs the Python tests and this causes package to be installed into the Python install
+postinstallcmds = [
+    """sed -i 's/self.executable = "iqtree"/self.executable = "iqtree2"/' python/gubbins/treebuilders.py""",
+    "cd python && python -m pip install --prefix %(installdir)s --no-build-isolation . "
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/gubbins', 'lib/libgubbins.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "gubbins --help",
+    "run_gubbins.py --version",
+    'python -c "import gubbins"',
+    'python -m pip check',
+]
+
+moduleclass = 'bio'
