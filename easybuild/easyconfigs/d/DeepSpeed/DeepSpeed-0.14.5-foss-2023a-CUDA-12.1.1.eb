@@ -1,0 +1,79 @@
+easyblock = 'PythonBundle'
+
+name = 'DeepSpeed'
+version = '0.14.5'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = "http://www.deepspeed.ai/"
+description = """
+DeepSpeed is a deep learning optimization library that makes distributed training easy, efficient, and effective.
+"""
+
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('Ninja', '1.11.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('NCCL', '2.18.3', versionsuffix),
+    ('CUTLASS', '3.5.0', versionsuffix),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('CuPy', '13.0.0', versionsuffix),
+    ('DLPack', '0.8'),
+    ('py-cpuinfo', '9.0.0'),
+    ('pydantic', '2.5.3'),
+    ('tqdm', '4.66.1'),
+    ('libaio', '0.3.113'),  # for async_io (builddep only?)
+    ('Transformers', '4.39.3'),
+]
+
+use_pip = True
+
+github_account = 'microsoft'
+exts_list = [
+    ('hjson', '3.1.0', {
+        'checksums': ['55af475a27cf83a7969c808399d7bccdec8fb836a07ddbd574587593b9cdcf75'],
+    }),
+    ('pynvml', '11.5.3', {
+        'checksums': ['183d223ae487e5f00402d8da06c68c978ef8a9295793ee75559839c6ade7b229'],
+    }),
+    ('mup', '1.0.0', {
+        'checksums': ['9639e3d19f90e754f985ed444542ed2f8a049f3c0488fcb6efe150f30922cf74'],
+    }),
+    ('accelerate', '0.34.2', {
+        'checksums': ['98c1ebe1f5a45c0a3af02dc60b5bb8b7d58d60c3326a326a06ce6d956b18ca5b'],
+    }),
+    ('triton', '2.1.0', {
+        'sources': [{'filename': '%(name)s-%(version)s-0-cp311-cp311-manylinux2014_%(arch)s.manylinux_2_17_%(arch)s.whl'}],
+        'checksums': ['919b06453f0033ea52c13eaf7833de0e57db3178d23d4e04f9fc71c4f2c32bf8'],
+    }),
+    (name, version, {
+        # Test suite not available on pypi
+        'installopts': '--global-option="build_ext" --global-option="-j%(parallel)s"',
+        'patches': [
+            'DeepSpeed-0.14.2_no-ninja-dep.patch',
+            'DeepSpeed-0.14.5_pic-compile.patch',
+        ],
+        'runtest': 'PATH="$PATH:./bin" pytest tests/unit/ -k "not TestTensorBoard and not TestWandb and not TestCometML"',
+        'source_urls': [GITHUB_SOURCE],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'testinstall': True,
+        'checksums': [
+            {'DeepSpeed-0.14.5.tar.gz': '9f5622715cbd89c7382bfecf7fb188419ad3f2af7764dc6de35917abc6390cce'},
+            {'DeepSpeed-0.14.2_no-ninja-dep.patch': '03ab528096387e7f18d2a5a6f5fc20ed86d1ca8f63f0e65f266f4dda30e11776'},
+            {'DeepSpeed-0.14.5_pic-compile.patch': '7d250f6bf57d006cab01a8763803b026f0d9029634557746c2a759893ab279b3'},
+        ],
+    }),
+]
+
+sanity_check_commands = [
+    "deepspeed --help",
+    "python -m deepspeed.env_report",
+]
+sanity_pip_check = True
+
+moduleclass = 'ai'

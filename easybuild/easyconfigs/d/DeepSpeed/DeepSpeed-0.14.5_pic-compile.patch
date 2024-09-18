@@ -1,0 +1,141 @@
+From 90afd671dadf9fd6a7a221428f2c04c16d637494 Mon Sep 17 00:00:00 2001
+From: Viktor Rehnberg <viktor.rehnberg@gmail.com>
+Date: Thu, 23 May 2024 07:09:53 +0000
+Subject: [PATCH] Compile with PIC
+
+---
+ op_builder/builder.py     | 15 ++++++++++-----
+ op_builder/cpu/builder.py |  3 ++-
+ op_builder/fused_adam.py  |  4 +++-
+ op_builder/fused_lamb.py  |  4 +++-
+ op_builder/fused_lion.py  |  4 +++-
+ op_builder/xpu/builder.py |  3 ++-
+ 6 files changed, 23 insertions(+), 10 deletions(-)
+
+diff --git a/op_builder/builder.py b/op_builder/builder.py
+index ec7566aa..f08e1799 100644
+--- a/op_builder/builder.py
++++ b/op_builder/builder.py
+@@ -288,13 +288,13 @@ class OpBuilder(ABC):
+         '''
+         Returns optional list of compiler flags to forward to nvcc when building CUDA sources
+         '''
+-        return []
++        return ['-fPIC']
+ 
+     def cxx_args(self):
+         '''
+         Returns optional list of compiler flags to forward to the build
+         '''
+-        return []
++        return ['-fPIC']
+ 
+     def is_compatible(self, verbose=True):
+         '''
+@@ -746,15 +746,18 @@ class CUDAOpBuilder(OpBuilder):
+             )
+ 
+     def cxx_args(self):
++        args = super().cxx_args()
+         if sys.platform == "win32":
+-            return ['-O2']
++            args += ['-O2']
+         else:
+-            return ['-O3', '-std=c++17', '-g', '-Wno-reorder']
++            args += ['-O3', '-std=c++17', '-g', '-Wno-reorder']
++        return args
+ 
+     def nvcc_args(self):
+         if self.build_for_cpu:
+             return []
+-        args = ['-O3']
++        args = super().nvcc_args()
++        args += ['-O3']
+         if self.is_rocm_pytorch():
+             ROCM_MAJOR, ROCM_MINOR = self.installed_rocm_version()
+             args += [
+@@ -835,6 +838,8 @@ class TorchCPUOpBuilder(CUDAOpBuilder):
+                 '-lcublas',
+                 '-g',
+             ]
++        else:
++            args += super(CUDAOpBuilder, self).cxx_args()
+ 
+         CPU_ARCH = self.cpu_arch()
+         SIMD_WIDTH = self.simd_width()
+diff --git a/op_builder/cpu/builder.py b/op_builder/cpu/builder.py
+index d881842a..dfc5a31d 100644
+--- a/op_builder/cpu/builder.py
++++ b/op_builder/cpu/builder.py
+@@ -30,7 +30,8 @@ class CPUOpBuilder(OpBuilder):
+         return cpp_ext
+ 
+     def cxx_args(self):
+-        args = ['-O3', '-g', '-Wno-reorder']
++        args = super().cxx_args()
++        args += ['-O3', '-g', '-Wno-reorder']
+         CPU_ARCH = self.cpu_arch()
+         SIMD_WIDTH = self.simd_width()
+         args += [CPU_ARCH, '-fopenmp', SIMD_WIDTH]
+diff --git a/op_builder/fused_adam.py b/op_builder/fused_adam.py
+index ac6e4eea..0c723572 100644
+--- a/op_builder/fused_adam.py
++++ b/op_builder/fused_adam.py
+@@ -29,7 +29,9 @@ class FusedAdamBuilder(CUDAOpBuilder):
+         return args + self.version_dependent_macros()
+ 
+     def nvcc_args(self):
+-        nvcc_flags = ['-O3'] + self.version_dependent_macros()
++        nvcc_flags = super(CUDAOpBuilder, self).nvcc_args()
++        nvcc_flags += ['-O3']
++        nvcc_flags += self.version_dependent_macros()
+         if not self.is_rocm_pytorch():
+             nvcc_flags.extend(
+                 ['-allow-unsupported-compiler' if sys.platform == "win32" else '', '-lineinfo', '--use_fast_math'] +
+diff --git a/op_builder/fused_lamb.py b/op_builder/fused_lamb.py
+index f0cb5577..a59b97d4 100644
+--- a/op_builder/fused_lamb.py
++++ b/op_builder/fused_lamb.py
+@@ -29,7 +29,9 @@ class FusedLambBuilder(CUDAOpBuilder):
+         return args + self.version_dependent_macros()
+ 
+     def nvcc_args(self):
+-        nvcc_flags = ['-O3'] + self.version_dependent_macros()
++        nvcc_flags = super(CUDAOpBuilder, self).nvcc_args()
++        nvcc_flags += ['-O3']
++        nvcc_flags += self.version_dependent_macros()
+         if self.is_rocm_pytorch():
+             ROCM_MAJOR, ROCM_MINOR = self.installed_rocm_version()
+             nvcc_flags += ['-DROCM_VERSION_MAJOR=%s' % ROCM_MAJOR, '-DROCM_VERSION_MINOR=%s' % ROCM_MINOR]
+diff --git a/op_builder/fused_lion.py b/op_builder/fused_lion.py
+index b900a8f2..119232b5 100644
+--- a/op_builder/fused_lion.py
++++ b/op_builder/fused_lion.py
+@@ -29,7 +29,9 @@ class FusedLionBuilder(CUDAOpBuilder):
+         return args + self.version_dependent_macros()
+ 
+     def nvcc_args(self):
+-        nvcc_flags = ['-O3'] + self.version_dependent_macros()
++        nvcc_flags = super(CUDAOpBuilder, self).nvcc_args()
++        nvcc_flags += ['-O3']
++        nvcc_flags += self.version_dependent_macros()
+         if not self.is_rocm_pytorch():
+             nvcc_flags.extend(
+                 ['-allow-unsupported-compiler' if sys.platform == "win32" else '', '-lineinfo', '--use_fast_math'] +
+diff --git a/op_builder/xpu/builder.py b/op_builder/xpu/builder.py
+index f430b7b6..5a1a2219 100644
+--- a/op_builder/xpu/builder.py
++++ b/op_builder/xpu/builder.py
+@@ -52,7 +52,8 @@ class SYCLOpBuilder(OpBuilder):
+         return version_ge_1_1 + version_ge_1_3 + version_ge_1_5
+ 
+     def cxx_args(self):
+-        cxx_flags = [
++        cxx_flags = super().cxx_args()
++        cxx_flags += [
+             '-fsycl', '-fsycl-targets=spir64_gen', '-g', '-gdwarf-4', '-O3', '-std=c++17', '-fPIC', '-DMKL_ILP64',
+             '-fno-strict-aliasing'
+         ]
+-- 
+2.39.3
+
