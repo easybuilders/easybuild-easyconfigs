@@ -603,6 +603,10 @@ class EasyConfigTest(TestCase):
                                r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3', r'scanpy-1\.7\.2-',
                                r'umap-learn-0\.4\.6-']),
             ],
+            'Octave': [
+                # Octave requires Java/21
+                (r'9\.2\.0', [r'Java-21']),
+            ],
             'OpenFOAM': [
                 # CFDEMcoupling requires OpenFOAM 5.x
                 (r'5\.0-20180606', [r'CFDEMcoupling-3\.8\.0']),
