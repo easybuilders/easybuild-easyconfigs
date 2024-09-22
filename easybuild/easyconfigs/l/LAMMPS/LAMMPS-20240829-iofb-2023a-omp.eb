@@ -1,0 +1,229 @@
+name = 'LAMMPS'
+
+version = '20240829'
+
+versionsuffix = '-omp'
+local_version = '29Aug2024'
+modaltsoftname = '%(namelower)s-omp'
+
+homepage = 'https://www.lammps.org'
+description = """LAMMPS is a classical molecular dynamics code, and an acronym
+for Large-scale Atomic/Molecular Massively Parallel Simulator. LAMMPS has
+potentials for solid-state materials (metals, semiconductors) and soft matter
+(biomolecules, polymers) and coarse-grained or mesoscopic systems. It can be
+used to model atoms or, more generically, as a parallel particle simulator at
+the atomic, meso, or continuum scale. LAMMPS runs on single processors or in
+parallel using message-passing techniques and a spatial-decomposition of the
+simulation domain. The code is designed to be easy to modify or extend with new
+functionality.
+"""
+
+toolchain = {'name': 'iofb', 'version': '2023a'}
+toolchainopts = {'openmp': True, 'usempi': True, 'extra_cflags': '-march=x86-64-v3 -axCore-AVX512 ', 'extra_cxxflags': '-march=x86-64-v3 -axCore-AVX512 ', 'extra_fflags': '-march=core-avx2 -axCore-AVX512 ', 'extra_fcflags': '-march=core-avx2 -axCore-AVX512 ', 'extra_f90flags': '-march=core-avx2 -axCore-AVX512 ', 'optarch': ''}
+
+source_urls = ['https://github.com/%(namelower)s/%(namelower)s/archive/refs/tags/']
+sources = ['stable_%s.tar.gz' % local_version]
+patches = [
+    '%(name)s-2Aug2023_install_lammps_python_package_in_eb_software_module.patch',
+    #'%(name)s-2Aug2023_fix-timestep-balance-example.patch',
+]
+checksums = [
+    {'stable_29Aug2024.tar.gz': '6112e0cc352c3140a4874c7f74db3c0c8e30134024164509ecf3772b305fde2e'},
+    {'LAMMPS-2Aug2023_install_lammps_python_package_in_eb_software_module.patch':
+     '723c944b62b9d28427d25e80a7a67049631702d344df49268a6846aa0cd0fe04'},
+]
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('pkgconf', '1.9.5'),
+    ('python-build-bundle', '2023b'),
+]
+
+dependencies = [
+    #('FFTW', '3.3.10', '', ('intel-compilers', '2023.2.1')),
+    ('libpng', '1.6.39'),
+    ('libjpeg-turbo', '2.1.5.1'),
+    ('netCDF', '4.9.2', '-mpi', ('iompi', '2023a')),
+    ('PnetCDF', '1.12.3', '', ('iompi', '2023a')),
+    ('GSL', '2.7', '', ('intel-compilers', '2023.2.1')),
+    ('zlib', '1.2.13'),
+    ('gzip', '1.12'),
+    ('cURL', '8.0.1'),
+    ('HDF5', '1.14.2', '-mpi', ('iompi', '2023a')),
+    ('PCRE', '8.45'),
+    ('libxml2', '2.11.4'),
+    ('FFmpeg', '6.0'),
+    ('Voro++', '0.4.6', '', SYSTEM),
+    ('kim-api', '2.3.0', '', SYSTEM),
+    ('Eigen', '3.4.0', '', SYSTEM),
+    ('PLUMED', '2.8.3'),
+    ('n2p2', '2.2.0'),   # Required for ML-HDNNP
+    # VTK package is auto-disabled if this dep is not available
+    #('VTK', '9.3.0'),
+    # We use a custom build of MDI
+    #('MDI', '1.4.26'),
+]
+
+multi_deps = {'Python': ['3.11', '3.10']}
+
+preconfigopts = "ln -s %(builddir)s/%(namelower)s-* %(builddir)s/%(namelower)s-stable_%(version)s && "
+
+configopts  = ' -DPKG_INTEL=off -DBUILD_DOC=off -DWITH_GZIP=yes  '
+configopts += ' -DBLAS_LIBRARIES="$LIBBLAS" -DLAPACK_LIBRARIES="$LIBLAPACK"  '
+configopts += ' -DDOWNLOAD_KIM=OFF -DKokkos_ENABLE_OPENMP=no -DPKG_KOKKOS=off '
+configopts += ' -DDOWNLOAD_N2P2=OFF -DN2P2_DIR=$EBROOTN2P2 '
+
+# copying examples and potentials twice doesn't work
+
+preinstallopts = "rm -rf %(installdir)s/{examples,potentials} && "
+
+# Excluded packages due to requiring additional (non-trivial) deps
+# - ADIOS
+# - ML-HDNNP (requires N2P2)
+# - ML-QUIP
+# - MSCG
+# - QMMM (setup seems complex)
+
+enhance_sanity_check = True
+
+multi_deps_load_default = False
+
+build_shared_libs = True
+
+# To use additional custom configuration options, use the 'configopts' easyconfig parameter
+# See docs and lammps easyblock for more information.
+# https://github.com/lammps/lammps/blob/master/cmake/README.md#lammps-configuration-options
+
+# OpenMP-Kokkos build is default in the current easyblock. One can switch to serial backend of Kokkos,
+# which is claimed to be faster in pure MPI calculations
+# configopts  = "-DKokkos_ENABLE_SERIAL=yes "
+
+# packages auto-enabled by easyblock
+# 'GPU'    - if cuda package is present and kokkos is disabled
+# 'KOKKOS' - if kokkos is enabled (by default)
+# 'INTEL'  - if builing on Intel CPU
+# 'OPENMP' - if OpenMP swithed on in 'toolchainopts'
+
+# Not supported yet: 'ADIOS', 'BOCS', 'MDI', 'ML-QUIP', 'PLUMED', 'SCAFACOS', 'VTK'
+
+# Complete list of packages:
+
+# 'ADIOS', 'AMOEBA', 'ASPHERE', 'ATC', 'AWPMD', 'BOCS', 'BODY', 'BPM', 'BROWNIAN', 
+# 'CG-DNA', 'CG-SPICA', 'CLASS2', 'COLLOID', 'COLVARS', 'COMPRESS', 'CORESHELL', 
+# 'DIELECTRIC', 'DIFFRACTION', 'DIPOLE', 'DPD-BASIC', 'DPD-MESO', 'DPD-REACT', 
+# 'DPD-SMOOTH', 'DRUDE', 'EFF', 'ELECTRODE', 'EXTRA-COMMAND', 'EXTRA-COMPUTE', 
+# 'EXTRA-DUMP', 'EXTRA-FIX', 'EXTRA-MOLECULE', 'EXTRA-PAIR', 'FEP', 'GPU', 
+# 'GRANULAR', 'H5MD', 'INTEL', 'INTERLAYER', 'KIM', 'KOKKOS', 'KSPACE', 'LATBOLTZ', 
+# 'LEPTON', 'MACHDYN', 'MANIFOLD', 'MANYBODY', 'MC', 'MDI', 'MEAM', 'MESONT', 'MGPT', 
+# 'MISC', 'ML-HDNNP', 'ML-IAP', 'ML-PACE', 'ML-POD', 'ML-QUIP', 'ML-RANN', 'ML-SNAP', 
+# 'ML-UF3', 'MOFFF', 'MOLECULE', 'MOLFILE', 'NETCDF', 'OPENMP', 'OPT', 'ORIENT', 
+# 'PERI', 'PHONON', 'PLUGIN', 'PLUMED', 'POEMS', 'PTM', 'PYTHON', 'QEQ', 'QMMM', 
+# 'QTB', 'REACTION', 'REAXFF', 'REPLICA', 'RHEO', 'RIGID', 'SCAFACOS', 'SHOCK', 
+# 'SMTBQ', 'SPH', 'SPIN', 'SRD', 'TALLY', 'UEF', 'VORONOI', 'VTK', 'YAFF'
+
+general_packages = [
+    # 'ADIOS', 
+    'AMOEBA', 
+    'ASPHERE', 
+    'ATC', 
+    'AWPMD', 
+    # 'BOCS', 
+    'BODY', 
+    'BPM', 
+    'BROWNIAN', 
+    'CG-DNA', 
+    'CG-SPICA', 
+    'CLASS2', 
+    'COLLOID', 
+    'COLVARS', 
+    'COMPRESS', 
+    'CORESHELL', 
+    'DIELECTRIC', 
+    'DIFFRACTION', 
+    'DIPOLE', 
+    'DPD-BASIC', 
+    'DPD-MESO', 
+    'DPD-REACT', 
+    'DPD-SMOOTH', 
+    'DRUDE', 
+    'EFF', 
+    'ELECTRODE', 
+    'EXTRA-COMMAND', 
+    'EXTRA-COMPUTE', 
+    'EXTRA-DUMP', 
+    'EXTRA-FIX', 
+    'EXTRA-MOLECULE', 
+    'EXTRA-PAIR', 
+    'FEP', 
+    # 'GPU', 
+    'GRANULAR', 
+    'H5MD', 
+    'INTEL', 
+    'INTERLAYER', 
+    'KIM', 
+    # 'KOKKOS', 
+    'KSPACE', 
+    'LATBOLTZ', 
+    'LEPTON', 
+    'MACHDYN', 
+    'MANIFOLD', 
+    'MANYBODY', 
+    'MC', 
+    # 'MDI', 
+    'MEAM', 
+    'MESONT', 
+    'MGPT', 
+    'MISC', 
+    'ML-HDNNP', 
+    'ML-IAP', 
+    'ML-PACE', 
+    'ML-POD', 
+    # 'ML-QUIP', 
+    'ML-RANN', 
+    'ML-SNAP', 
+    'ML-UF3', 
+    'MOFFF', 
+    'MOLECULE', 
+    'MOLFILE', 
+    'NETCDF', 
+    'OPENMP', 
+    'OPT', 
+    'ORIENT', 
+    'PERI', 
+    'PHONON', 
+    'PLUGIN', 
+    'PLUMED', 
+    'POEMS', 
+    'PTM', 
+    'PYTHON', 
+    'QEQ', 
+    'QMMM', 
+    'QTB', 
+    'REACTION', 
+    'REAXFF', 
+    'REPLICA', 
+    'RHEO', 
+    'RIGID', 
+    # 'SCAFACOS', 
+    'SHOCK', 
+    # 'SMTBQ', 
+    'SPH', 
+    'SPIN', 
+    'SRD', 
+    'TALLY', 
+    'UEF', 
+    'VORONOI', 
+    # 'VTK', 
+    'YAFF'
+]
+
+kokkos = False
+
+user_packages = []
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['share', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'chem'
