@@ -1,0 +1,73 @@
+easyblock = 'PythonBundle'
+
+name = 'awscli'
+version = '2.17.54'
+
+homepage = 'https://pypi.python.org/pypi/awscli'
+description = 'Universal Command Line Environment for AWS'
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.27.6'),  # required for awscrt
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('PyYAML', '6.0.1'),
+    ('ruamel.yaml', '0.18.6'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('jmespath', '1.0.1', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980'],
+    }),
+    ('botocore', '1.35.22', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['d9bc656e7dde0b3e3f3080fc54bacff6a97fd7806b98acbcc21c7f9d4d0102b9'],
+    }),
+    ('s3transfer', '0.10.2', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['eca1c20de70a39daee580aef4986996620f365c4e0fda6a86100231d62f1bf69'],
+    }),
+    ('prompt_toolkit', '3.0.47', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['0d7bfa67001d5e39d02c224b663abc33687405033a8c422d0d675a5a13361d10'],
+    }),
+    ('distro', '1.9.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2'],
+    }),
+    ('awscrt', '0.21.5', {
+        'preinstallopts': "export AWS_CRT_BUILD_USE_SYSTEM_LIBCRYPTO=1 && ",
+        'checksums': ['7ec2a67af30fbf386494df00bbdf996f7024000df6b01ab160014afef2b91005'],
+    }),
+    # older version of `urllib3` to avoid `ImportError: cannot import name 'DEFAULT_CIPHERS' from 'urllib3.util.ssl_'`
+    # see https://github.com/aws/aws-cli/issues/7905#issuecomment-1559817550
+    ('urllib3', '1.26.20', {
+        'source_tmpl': SOURCE_WHL,
+        'checksums': ['0ed14ccfbf1c30a9072c7ca157e4319b70d65f623e91e7b32fadb2853431016e'],
+    }),
+    (name, version, {
+        # version requirements are too strict
+        'preinstallopts': """sed -i 's/>[^"]*//g' pyproject.toml && """,
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/aws/aws-cli/archive/'],
+        'checksums': ['c0a37eeb52b7df336e117667b67a275929701e9f6dad0ddb7de59a6f834e5b48'],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/aws'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+}
+
+sanity_check_commands = ["aws help"]
+
+moduleclass = 'tools'

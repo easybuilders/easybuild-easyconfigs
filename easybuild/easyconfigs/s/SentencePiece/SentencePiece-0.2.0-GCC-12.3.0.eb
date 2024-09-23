@@ -1,0 +1,70 @@
+easyblock = 'Bundle'
+
+name = 'SentencePiece'
+version = '0.2.0'
+
+homepage = 'https://github.com/google/sentencepiece'
+description = "Unsupervised text tokenizer for Neural Network-based text generation."
+github_account = 'google'
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('gperftools', '2.12'),
+]
+
+default_component_specs = {
+    'source_urls': [GITHUB_LOWER_SOURCE],
+    'sources': ['v%(version)s.tar.gz'],
+    'checksums': ['9970f0a0afee1648890293321665e5b2efa04eaec9f1671fcf8048f456f5bb86'],
+}
+
+local_external_absl = 'sed -i %(builddir)s/'
+
+components = [
+    (name, version, {
+        'easyblock': 'CMakeMake',
+        'separate_build_dir': True,
+        'start_dir': '%(namelower)s-%(version)s',
+        # using internal protobuf there is no matching pc file so requirement is removed:
+        'preconfigopts': 'sed -i s/Requires.private.*// ../sentencepiece-%(version)s/sentencepiece.pc.in &&',
+    }),
+    ('sentencepiece', version, {
+        'easyblock': 'PythonPackage',
+        'start_dir': '%(namelower)s-%(version)s/python',
+        # Unpredicable where pc files end up; including both lib and lib64
+        'prebuildopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib64/pkgconfig:%(installdir)s/lib/pkgconfig/:'
+                        '$PKG_CONFIG_PATH && ',
+        'preinstallopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib64/pkgconfig:%(installdir)s/lib/pkgconfig/:'
+                          '$PKG_CONFIG_PATH && ',
+        'use_pip': True,
+        'download_dep_fail': True,
+        'sanity_pip_check': True,
+    }),
+]
+
+postinstallcmds = ['cp -a %(builddir)s/%(namelower)s-%(version)s/{data,doc} %(installdir)s/']
+
+sanity_check_paths = {
+    'files': ['bin/spm_%s' % x for x in ['decode', 'encode', 'export_vocab', 'normalize', 'train']] +
+             ['lib/libsentencepiece.%s' % SHLIB_EXT, 'lib/libsentencepiece_train.%s' % SHLIB_EXT] +
+             ['include/sentencepiece_processor.h', 'include/sentencepiece_trainer.h'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'data', 'doc'],
+}
+
+sanity_check_commands = [
+    'spm_train --help | grep accept_language',  # --help has exit code 1, so we check for output text
+    "python -c 'import sentencepiece'",
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'lib'
