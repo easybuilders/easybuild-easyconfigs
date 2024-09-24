@@ -1,0 +1,56 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Updated: Denis Kristak
+easyblock = 'PythonBundle'
+
+name = 'Cartopy'
+version = '0.22.0'
+
+homepage = 'https://scitools.org.uk/cartopy/docs/latest/'
+description = """Cartopy is a Python package designed to make drawing maps for data analysis and visualisation easy."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    # sufficiently recent Cython is required, to fix issues like:
+    #   pykdtree/kdtree.c:2437:76: error: PyArrayObject {aka struct tagPyArrayObject} has no member named data
+    # Cython included with Python-bundle-PyPI (0.29.35) is not sufficient
+    ('Cython', '3.0.8'),
+    ('Fiona', '1.9.5'),
+    ('GDAL', '3.7.1'),
+    ('GEOS', '3.12.0'),
+    ('matplotlib', '3.7.2'),
+    ('pyproj', '3.6.0'),
+    ('SciPy-bundle', '2023.07'),
+    ('Shapely', '2.0.1'),
+    ('lxml', '4.9.2'),
+    ('Pillow', '10.0.0'),
+    ('PROJ', '9.2.0'),
+    ('PyYAML', '6.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('OWSLib', '0.29.3', {
+        'checksums': ['3baf34058458b933767ee43e632174cb0baebf49d326da179faacb9772f98539'],
+    }),
+    ('pyepsg', '0.4.0', {
+        'checksums': ['2d08fad1e7a8b47a90a4e43da485ba95705923425aefc4e2a3efa540dbd470d7'],
+    }),
+    ('pykdtree', '1.3.10', {
+        'checksums': ['41e7c5d669cadc2188acc4bbb4b0b4dcaf492d84512f1e6517a7ab2d122c911d'],
+    }),
+    ('pyshp', '2.3.1', {
+        'modulename': 'shapefile',
+        'checksums': ['4caec82fd8dd096feba8217858068bacb2a3b5950f43c048c6dc32a3489d5af1'],
+    }),
+    (name, version, {
+        'checksums': ['b300f90120931d43f11ef87c064ea1dacec1b59a4940aa76ebf82cf09548bb49'],
+        'preinstallopts': r"""sed -i 's/dynamic = \["version"\]/version = "%(version)s"/g' pyproject.toml && """
+    }),
+]
+
+moduleclass = 'geo'

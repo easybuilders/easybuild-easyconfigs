@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2023 Ghent University
+# Copyright 2013-2024 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -336,6 +336,14 @@ class EasyConfigTest(TestCase):
         fails = []
 
         for ec in self.parsed_easyconfigs:
+            # make sure we don't add backdoored XZ versions (5.6.0, 5.6.1)
+            # see https://access.redhat.com/security/cve/CVE-2024-3094
+            if ec['ec']['name'] == 'XZ' and ec['ec']['version'] in ('5.6.0', '5.6.1'):
+                fail = ("XZ versions 5.6.0 and 5.6.1 contain malicious code, and should not be introduced into"
+                        " EasyBuild. Please use another version instead. For more details, see"
+                        " https://access.redhat.com/security/cve/CVE-2024-3094")
+                fails.append(fail)
+
             # make sure that no odd versions (like 1.13) of HDF5 are used as a dependency,
             # since those are released candidates - only even versions (like 1.12) are stable releases;
             # see https://docs.hdfgroup.org/archive/support/HDF5/doc/TechNotes/Version.html
@@ -355,9 +363,9 @@ class EasyConfigTest(TestCase):
         # 'guilty' until proven 'innocent'
         res = False
 
-        # filter out wrapped Java versions
+        # filter out wrapped Java or dotNET-Core versions
         # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
-        if dep == 'Java':
+        if dep in ['Java', 'dotNET-Core']:
             dep_vars_to_check = sorted(dep_vars.keys())
 
             retained_dep_vars = []
@@ -394,6 +402,18 @@ class EasyConfigTest(TestCase):
                     if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs) and len(dep_vars) > 1:
                         dep_vars.pop(key)
 
+        # multiple variants of Meson is OK as long as they are deps for meson-python, since meson-python should only be
+        # a build dependency elsewhere
+        if dep == 'Meson' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out Meson variants that are only used as a dependency for meson-python
+                if all(ec.startswith('meson-python-') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
+
         # multiple versions of Boost is OK as long as they are deps for a matching Boost.Python
         if dep == 'Boost' and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -419,6 +439,8 @@ class EasyConfigTest(TestCase):
             # filter out BLIS and libFLAME with -amd versionsuffix
             # (AMD forks, used in gobff/*-amd toolchains)
             (['BLIS', 'libFLAME'], '-amd'),
+            # filter out OpenBLAS with -int8 versionsuffix, used by GAMESS-US
+            ('OpenBLAS', '-int8'),
             # filter out ScaLAPACK with -BLIS-* versionsuffix, used in goblf toolchain
             ('ScaLAPACK', ('-BLIS-', True)),
             # filter out ScaLAPACK with -bf versionsuffix, used in gobff toolchain
@@ -456,7 +478,7 @@ class EasyConfigTest(TestCase):
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
         versionsuffix_deps = ['ASE', 'Boost', 'CUDA', 'CUDAcore', 'Java', 'Lua',
-                              'PLUMED', 'PyTorch', 'R', 'TensorFlow']
+                              'PLUMED', 'PyTorch', 'R', 'Rust', 'TensorFlow']
         if dep in versionsuffix_deps and len(dep_vars) > 1:
 
             # check for '-CUDA-*' versionsuffix for CUDAcore dependency
@@ -481,6 +503,21 @@ class EasyConfigTest(TestCase):
                     if '; versionsuffix: -Python-2' in key:
                         dep_vars.pop(key)
                     # always retain at least one variant
+                    if len(dep_vars) == 1:
+                        break
+
+        # for some dependencies, we allow exceptions for software with the same version
+        # but with a -int64 versionsuffix in both the dependency and all its dependents
+        int64_deps = ['SCOTCH', 'METIS']
+        if dep in int64_deps and len(dep_vars) > 1:
+            unique_dep_vers = {version_regex.search(x).group('version') for x in list(dep_vars)}
+            if len(unique_dep_vers) == 1:
+                for key in list(dep_vars):
+                    if all(re.search('-int64', v) for v in dep_vars[key]) and re.search(
+                        '; versionsuffix: .*-int64', key
+                    ):
+                        dep_vars.pop(key)
+                    # always retain at least one dep variant
                     if len(dep_vars) == 1:
                         break
 
@@ -550,6 +587,8 @@ class EasyConfigTest(TestCase):
                 # SimpleITK 2.1.0 requires Lua 5.3.x, MedPy and nnU-Net depend on SimpleITK
                 (r'5\.3\.5', [r'nnU-Net-1\.7\.0-', r'MedPy-0\.4\.0-', r'SimpleITK-2\.1\.0-']),
             ],
+            # FDMNES requires sequential variant of MUMPS
+            'MUMPS': [(r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES'])],
             # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0, Finder requires SRA-Toolkit 3.0.0
             'ncbi-vdb': [(r'3\.0\.0', [r'SRA-Toolkit-3\.0\.0', r'finder-1\.1\.0'])],
             # TensorFlow 2.5+ requires a more recent NCCL than version 2.4.8 used in 2019b generation;
@@ -572,6 +611,11 @@ class EasyConfigTest(TestCase):
                 # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
             ],
+            'pydantic': [
+                # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
+                ('1.10.13;', ['GTDB-Tk-2.3.2-', 'GTDB-Tk-2.4.0-']),
+                ('2.7.4;', ['MultiQC-1.22.3-']),
+            ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
@@ -589,7 +633,8 @@ class EasyConfigTest(TestCase):
             # Shasta requires spoa 3.x
             'spoa': [(r'3\.4\.0', [r'Shasta-0\.8\.0-'])],
             # UShER requires tbb-2020.3 as newer versions will not build
-            'tbb': [('2020.3', ['UShER-0.5.0-'])],
+            # orthagogue requires tbb-2020.3 as 2021 versions are not backward compatible with the previous releases
+            'tbb': [('2020.3', ['UShER-0.5.0-', 'orthAgogue-20141105-'])],
             'TensorFlow': [
                 # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
                 # artic-ncov2019 requires medaka
@@ -616,6 +661,10 @@ class EasyConfigTest(TestCase):
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
+            # Napari 0.4.19post1 requires VisPy >=0.14.1 <0.15
+            'VisPy': [('0.14.1;', ['napari-0.4.19.post1-'])],
+            # Visit-3.4.1 requires VTK 9.2.x
+            'VTK': [('9.2.6;', ['Visit-3.4.1-'])],
             # WPS 3.9.1 requires WRF 3.9.1.1
             'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
@@ -824,6 +873,30 @@ class EasyConfigTest(TestCase):
             'version: 2020.03; versionsuffix:': ['matplotlib-3.2.1-foss-2020a.eb'],
         }))
 
+        # multiple dependency variants of specific software is OK, but only if indicated via versionsuffix
+        self.assertTrue(self.check_dep_vars('2019b', 'TensorFlow', {
+            'version: 1.15.2; versionsuffix: -TensorFlow-1.15.2':
+                ['Horovod-0.18.2-fosscuda-2019b-TensorFlow-1.15.2.eb'],
+            'version: 2.2.0; versionsuffix: -TensorFlow-2.2.0-Python-3.7.4':
+                ['Horovod-0.19.5-fosscuda-2019b-TensorFlow-2.2.0-Python-3.7.4.eb'],
+            'version: 2.1.0; versionsuffix: -Python-3.7.4': ['Keras-2.3.1-foss-2019b-Python-3.7.4.eb'],
+        }))
+
+        self.assertFalse(self.check_dep_vars('2019b', 'TensorFlow', {
+            'version: 1.15.2; versionsuffix: ': ['Horovod-0.18.2-fosscuda-2019b.eb'],
+            'version: 2.1.0; versionsuffix: -Python-3.7.4': ['Keras-2.3.1-foss-2019b-Python-3.7.4.eb'],
+        }))
+
+        self.assertTrue(self.check_dep_vars('2022b', 'Rust', {
+            'version: 1.65.0; versionsuffix: ': ['maturin-1.1.0-GCCcore-12.2.0.eb'],
+            'version: 1.75.0; versionsuffix: -Rust-1.75.0': ['maturin-1.4.0-GCCcore-12.2.0-Rust-1.75.0.eb'],
+        }))
+
+        self.assertFalse(self.check_dep_vars('2022b', 'Rust', {
+            'version: 1.65.0; versionsuffix: ': ['maturin-1.1.0-GCCcore-12.2.0.eb'],
+            'version: 1.75.0; versionsuffix: ': ['maturin-1.4.0-GCCcore-12.2.0.eb'],
+        }))
+
     def test_dep_versions_per_toolchain_generation(self):
         """
         Check whether there's only one dependency version per toolchain generation actively used.
@@ -928,14 +1001,13 @@ class EasyConfigTest(TestCase):
             # ignore git/svn dirs & archived easyconfigs
             if '/.git/' in dirpath or '/.svn/' in dirpath or '__archive__' in dirpath:
                 continue
-            # check whether list of .eb files is non-empty
-            easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
+            # check whether list of .eb files is non-empty, only exception: TEMPLATE.eb
+            easyconfig_files = [fn for fn in filenames if fn.endswith('eb') and fn != 'TEMPLATE.eb']
             if easyconfig_files:
                 # check whether path matches required pattern
                 if not easyconfig_dirs_regex.search(dirpath):
-                    # only exception: TEMPLATE.eb
-                    if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
-                        self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
+                    if not dirpath.endswith('/easybuild/easyconfigs'):
+                        self.fail("There should be no easyconfig files in %s, found %s" % (dirpath, easyconfig_files))
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -956,7 +1028,7 @@ class EasyConfigTest(TestCase):
                 duplicates[name] = names[name]
 
         if duplicates:
-            self.assertTrue(False, "EasyConfigs with case-insensitive name clash: %s" % duplicates)
+            self.fail("EasyConfigs with case-insensitive name clash: %s" % duplicates)
 
     @skip_if_not_pr_to_non_main_branch()
     def test_pr_sha256_checksums(self):
@@ -974,25 +1046,19 @@ class EasyConfigTest(TestCase):
             'R-bundle-Bioconductor-3.[2-5]',
         ]
 
-        # the check_sha256_checksums function (again) creates an EasyBlock instance
-        # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
-        # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__;
-        # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
-        # likewise for 'patches' and 'checksums'
-        bundle_easyblocks = ['Bundle', 'CargoPythonBundle', 'PythonBundle', 'EB_OpenSSL_wrapper']
-        for ec in self.changed_ecs:
-            if ec['easyblock'] in bundle_easyblocks or ec['name'] in ['Clang-AOMP']:
-                ec['sources'] = []
-                ec['patches'] = []
-                ec['checksums'] = []
-
         # filter out deprecated easyconfigs
-        retained_changed_ecs = []
-        for ec in self.changed_ecs:
-            if not ec['deprecated']:
-                retained_changed_ecs.append(ec)
+        retained_changed_ecs = [ec for ec in self.changed_ecs if not ec['deprecated']]
 
-        checksum_issues = check_sha256_checksums(retained_changed_ecs, whitelist=whitelist)
+        # The check_sha256_checksums function creates an EasyBlock instance.
+        # For easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
+        # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__.
+        # Therefore, we need to a operate on a copy of those easyconfigs.
+        bundle_easyblocks = {'Bundle', 'CargoPythonBundle', 'PythonBundle', 'EB_OpenSSL_wrapper'}
+
+        def is_bundle(ec):
+            return ec['easyblock'] in bundle_easyblocks or ec['name'] == 'Clang-AOMP'
+        ecs = [ec.copy() if is_bundle(ec) else ec for ec in retained_changed_ecs]
+        checksum_issues = check_sha256_checksums(ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
     @skip_if_not_pr_to_non_main_branch()
@@ -1009,10 +1075,15 @@ class EasyConfigTest(TestCase):
 
         whitelist_pip_check = [
             r'Mako-1.0.4.*Python-2.7.12.*',
-            # no pip 9.x or newer for configparser easyconfigs using a 2016a or 2016b toolchain
-            r'configparser-3.5.0.*-2016[ab].*',
+            # no pip 9.x or newer for easyconfigs using a 2016a or 2016b toolchain
+            r'.*-2016[ab]-Python-.*',
             # mympirun is installed with system Python, pip may not be installed for system Python
             r'vsc-mympirun.*',
+            # ReFrame intentionally installs its deps in a %(installdir)s/external subdir, which is added
+            # to sys.path by the ReFrame command, and is intentionally NOT on the PYTHONPATH.
+            # Thus, a pip check fails, but this is expected and ok, it is still a working ReFrame installation
+            # See https://github.com/easybuilders/easybuild-easyconfigs/pull/21269 for more info
+            r'ReFrame.*',
         ]
 
         failing_checks = []
@@ -1142,8 +1213,9 @@ class EasyConfigTest(TestCase):
         # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PerlBundle,
         #           PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage', 'CrayToolchain',
-                     'GoPackage', 'JuliaBundle', 'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
+        whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage',
+                     'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'ModuleRC',
+                     'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
@@ -1307,7 +1379,7 @@ def template_easyconfig_test(self, spec):
         # cache the parsed easyconfig, to avoid that it is parsed again
         EasyConfigTest._parsed_easyconfigs.append(ecs[0])
     else:
-        self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
+        self.fail("easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
 
     # check easyconfig file name
     expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))
@@ -1351,18 +1423,20 @@ def template_easyconfig_test(self, spec):
     app = app_class(ec)
 
     # more sanity checks
-    self.assertTrue(name, app.name)
-    self.assertTrue(ec['version'], app.version)
+    self.assertEqual(name, app.name)
+    self.assertEqual(ec['version'], app.version)
+
+    failing_checks = []
 
     # make sure that deprecated 'dummy' toolchain is no longer used, should use 'system' toolchain instead
-    ec_fn = os.path.basename(spec)
-    error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
-    self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
+    if ec['toolchain']['name'] == 'dummy':
+        failing_checks.append("%s should use 'system' toolchain rather than deprecated 'dummy' toolchain")
 
     # make sure that $root is not used, since it is not compatible with module files in Lua syntax
     res = re.findall(r'.*\$root.*', ec.rawtxt, re.M)
-    error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
-    self.assertFalse(res, error_msg % res)
+    if res:
+        failing_checks.append("Found use of '$root', not compatible with modules in Lua syntax, "
+                              "use '%%(installdir)s' instead: %s" % res)
 
     # check for redefined easyconfig parameters, there should be none...
     param_def_regex = re.compile(r'^(?P<key>\w+)\s*=', re.M)
@@ -1373,10 +1447,9 @@ def template_easyconfig_test(self, spec):
         if cnt > 1:
             redefined_keys.append((key, cnt))
 
-    redefined_keys_error_msg = "There should be no redefined easyconfig parameters, found %d: " % len(redefined_keys)
-    redefined_keys_error_msg += ', '.join('%s (%d)' % x for x in redefined_keys)
-
-    self.assertFalse(redefined_keys, redefined_keys_error_msg)
+    if redefined_keys:
+        failing_checks.append("There should be no redefined easyconfig parameters, found %d: " % len(redefined_keys) +
+                              ', '.join('%s (%d)' % x for x in redefined_keys))
 
     # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
     old_urls = [
@@ -1384,8 +1457,10 @@ def template_easyconfig_test(self, spec):
         'hpcugent.github.com/easybuild',
         'hpcugent.github.io/easybuild',
     ]
-    for old_url in old_urls:
-        self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' not found in %s" % (old_url, spec))
+    failing_checks.extend("Old URL '%s' found" % old_url for old_url in old_urls if old_url in ec.rawtxt)
+
+    # Note the use of app.cfg which might contain sources populated by e.g. the Cargo easyblock
+    sources, patches, checksums = app.cfg['sources'], app.cfg['patches'], app.cfg['checksums']
 
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
@@ -1403,15 +1478,15 @@ def template_easyconfig_test(self, spec):
             requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
 
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
-        requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
+        requires_binutils &= bool(sources or ec['exts_list'] or ec.get('components'))
 
         if requires_binutils:
             # dependencies() returns both build and runtime dependencies
             # in some cases, binutils can also be a runtime dep (e.g. for Clang)
             # Also using GCC directly as a build dep is also allowed (it includes the correct binutils)
             dep_names = [d['name'] for d in ec.dependencies()]
-            self.assertTrue('binutils' in dep_names or 'GCC' in dep_names,
-                            "binutils or GCC is a build dep in %s: %s" % (spec, dep_names))
+            if 'binutils' not in dep_names and 'GCC' not in dep_names:
+                failing_checks.append("binutils or GCC is a build dep: " + str(dep_names))
 
     # make sure that OpenSSL wrapper is used rather than OS dependency,
     # for easyconfigs using a 2021a (sub)toolchain or more recent common toolchain version
@@ -1431,16 +1506,16 @@ def template_easyconfig_test(self, spec):
 
             gcc_subtc_2021a = tcname in ('GCCcore', 'GCC') and tcver > LooseVersion('10.3')
             if gcc_subtc_2021a or (tcname in ('foss', 'gompi', 'iimpi', 'intel') and tcver >= LooseVersion('2021')):
-                self.assertFalse(openssl_osdep, "OpenSSL should not be listed as OS dependency in %s" % spec)
+                if openssl_osdep:
+                    failing_checks.append("OpenSSL should not be listed as OS dependency")
 
-    src_cnt = len(ec['sources'])
-    patch_checksums = ec['checksums'][src_cnt:]
+    src_cnt = len(sources)
+    patch_checksums = checksums[src_cnt:]
 
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
     basedir = os.path.dirname(os.path.dirname(specdir))
-    specfn = os.path.basename(spec)
-    for idx, patch in enumerate(ec['patches']):
+    for idx, patch in enumerate(patches):
         patch_dir = specdir
         if isinstance(patch, str):
             patch_name = patch
@@ -1453,29 +1528,29 @@ def template_easyconfig_test(self, spec):
 
         # only check actual patch files, not other files being copied via the patch functionality
         patch_full = os.path.join(patch_dir, patch_name)
-        if patch_name.endswith('.patch'):
-            msg = "Patch file %s is available for %s" % (patch_full, specfn)
-            self.assertTrue(os.path.isfile(patch_full), msg)
-
+        if patch_name.endswith('.patch') and not os.path.isfile(patch_full):
+            failing_checks.append("Patch file %s is missing" % patch_full)
         # verify checksum for each patch file
-        if idx < len(patch_checksums) and (os.path.exists(patch_full) or patch_name.endswith('.patch')):
+        elif idx < len(patch_checksums) and (os.path.exists(patch_full) or patch_name.endswith('.patch')):
             checksum = patch_checksums[idx]
-            error_msg = "Invalid checksum for patch file %s in %s: %s" % (patch_name, ec_fn, checksum)
-            res = verify_checksum(patch_full, checksum)
-            self.assertTrue(res, error_msg)
+            if not verify_checksum(patch_full, checksum):
+                failing_checks.append("Invalid checksum for patch file %s: %s" % (patch_name, checksum))
 
     # make sure 'source' step is not being skipped,
     # since that implies not verifying the checksum
-    error_msg = "'source' step should not be skipped in %s, since that implies not verifying checksums" % ec_fn
-    self.assertFalse(ec['checksums'] and ('source' in ec['skipsteps']), error_msg)
+    if checksums and ('source' in ec['skipsteps']):
+        failing_checks.append("'source' step should not be skipped, since that implies not verifying checksums")
 
     for ext in ec.get_ref('exts_list'):
         if isinstance(ext, (tuple, list)) and len(ext) == 3:
             ext_name = ext[0]
-            self.assertTrue(isinstance(ext[2], dict),
-                            "3rd element of extension spec for %s must be a dictionary" % ext_name)
+            if not isinstance(ext[2], dict):
+                failing_checks.append("3rd element of extension spec for %s must be a dictionary" % ext_name)
 
-    ext_patch_issues = []
+    # Need to check now as collect_exts_file_info relies on correct exts_list
+    if failing_checks:
+        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(failing_checks))
+
     # After the sanity check above, use collect_exts_file_info to resolve templates etc. correctly
     for ext in app.collect_exts_file_info(fetch_files=False, verify_checksums=False):
         try:
@@ -1495,22 +1570,21 @@ def template_easyconfig_test(self, spec):
             # only check actual patch files, not other files being copied via the patch functionality
             ext_patch_full = os.path.join(specdir, ext_patch['name'])
             if ext_patch_full.endswith('.patch') and not os.path.isfile(ext_patch_full):
-                ext_patch_issues.append("Patch file %s for extension %s is missing." % (ext_patch['name'], ext_name))
+                failing_checks.append("Patch file %s for extension %s is missing." % (ext_patch['name'], ext_name))
                 continue
 
             # verify checksum for each patch file
             if idx < len(patch_checksums) and os.path.exists(ext_patch_full):
                 checksum = patch_checksums[idx]
                 if not verify_checksum(ext_patch_full, checksum):
-                    ext_patch_issues.append("Invalid checksum for patch %s for extension %s: %s."
-                                            % (ext_patch['name'], ext_name, checksum))
-    if ext_patch_issues:
-        self.fail("Verification of patches for %s failed:\n%s" % (ec_fn, '\n'.join(ext_patch_issues)))
+                    failing_checks.append("Invalid checksum for patch %s for extension %s: %s."
+                                          % (ext_patch['name'], ext_name, checksum))
 
     # check whether all extra_options defined for used easyblock are defined
     extra_opts = app.extra_options()
     for key in extra_opts:
-        self.assertTrue(key in app.cfg)
+        if key not in app.cfg:
+            failing_checks.append("Missing extra_option '%s'" % key)
 
     app.close_log()
     os.remove(app.logfile)
@@ -1548,24 +1622,32 @@ def template_easyconfig_test(self, spec):
         # if may get resolved using a subtoolchain, which is then hardcoded in the dumped easyconfig
         if key in DEPENDENCY_PARAMETERS:
             # number of dependencies should remain the same
-            self.assertEqual(len(orig_val), len(dumped_val))
+            if len(orig_val) != len(dumped_val):
+                failing_checks.append("Length difference for %s: %s vs %s" % (key, orig_val, dumped_val))
+                continue
             for orig_dep, dumped_dep in zip(orig_val, dumped_val):
                 # name should always match
-                self.assertEqual(orig_dep[0], dumped_dep[0])
+                if orig_dep[0] != dumped_dep[0]:
+                    failing_checks.append("Different name in %s: %s vs %s" % (key, orig_dep[0], dumped_dep[0]))
 
+                desc = '%s of %s' % (orig_dep[0], key)
                 # version should always match, or be a possibility from the version dict
                 if isinstance(orig_dep[1], dict):
-                    self.assertTrue(dumped_dep[1] in orig_dep[1].values())
-                else:
-                    self.assertEqual(orig_dep[1], dumped_dep[1])
+                    if dumped_dep[1] not in orig_dep[1].values():
+                        failing_checks.append("Wrong version in %s: %s vs %s"
+                                              % (desc, dumped_dep[1], orig_dep[1].values()))
+                elif orig_dep[1] != dumped_dep[1]:
+                    failing_checks.append("Different version in %s: %s vs %s" % (desc, orig_dep[1], dumped_dep[1]))
 
                 # 3rd value is versionsuffix;
                 if len(dumped_dep) >= 3:
                     # if no versionsuffix was specified in original dep spec, then dumped value should be empty string
                     if len(orig_dep) >= 3:
-                        self.assertEqual(dumped_dep[2], orig_dep[2])
-                    else:
-                        self.assertEqual(dumped_dep[2], '')
+                        if orig_dep[2] != dumped_dep[2]:
+                            failing_checks.append("Different versionsuffix in %s: %s vs %s"
+                                                  % (desc, orig_dep[2], dumped_dep[2]))
+                    elif dumped_dep[2] != '':
+                        failing_checks.append("Unexpected versionsuffix in %s: %s" % (desc, dumped_dep[2]))
 
                 # 4th value is toolchain spec
                 if len(dumped_dep) >= 4:
@@ -1573,31 +1655,38 @@ def template_easyconfig_test(self, spec):
                         # use of `True` is deprecated in favour of the more intuitive `SYSTEM` template
                         if orig_dep[3] is True:
                             if skip_system_template_check:
-                                self.assertEqual(dumped_dep[3], EASYCONFIG_CONSTANTS['SYSTEM'][0])
+                                if dumped_dep[3] != EASYCONFIG_CONSTANTS['SYSTEM'][0]:
+                                    failing_checks.append("Should use SYSTEM in %s, found %s"
+                                                          % (desc, dumped_dep[3]))
                             else:
-                                error_msg = (
-                                    "use of `True` to indicate the system toolchain for dependency "
-                                    "%s is deprecated, use the `SYSTEM` template constant instead" % dumped_dep[0]
+                                failing_checks.append(
+                                    "use of `True` to indicate the system toolchain for "
+                                    "%s is deprecated, use the `SYSTEM` template constant instead" % desc
                                 )
-                                self.fail(error_msg)
-                        else:
-                            self.assertEqual(dumped_dep[3], orig_dep[3])
+                        elif orig_dep[3] != dumped_dep[3]:
+                            failing_checks.append("Different toolchain in %s: %s vs %s"
+                                                  % (desc, orig_dep[3], dumped_dep[3]))
                     else:
                         # if a subtoolchain is specifed (only) in the dumped easyconfig,
                         # it should *not* be the same as the parent toolchain
-                        self.assertNotEqual(dumped_dep[3], (orig_toolchain['name'], orig_toolchain['version']))
+                        parent_tc = (orig_toolchain['name'], orig_toolchain['version'])
+                        if dumped_dep[3] == parent_tc:
+                            failing_checks.append("Explicit toolchain in %s should not be the parent toolchain (%s)"
+                                                  % (desc, parent_tc))
 
         # take into account that for some string-valued easyconfig parameters (configopts & co),
         # the easyblock may have injected additional values, which affects the dumped easyconfig file
         elif isinstance(orig_val, string_type):
-            error_msg = "%s value '%s' should start with '%s'" % (key, dumped_val, orig_val)
-            self.assertTrue(dumped_val.startswith(orig_val), error_msg)
-        else:
-            error_msg = "%s value should be equal in original and dumped easyconfig: '%s' vs '%s'"
-            self.assertEqual(orig_val, dumped_val, error_msg % (key, orig_val, dumped_val))
+            if not dumped_val.startswith(orig_val):
+                failing_checks.append("%s value '%s' should start with '%s'" % (key, dumped_val, orig_val))
+        elif orig_val != dumped_val:
+            failing_checks.append("%s value should be equal in original and dumped easyconfig: '%s' vs '%s'")
 
-    # test passed, so set back to True
-    single_tests_ok = True and prev_single_tests_ok
+    if failing_checks:
+        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(failing_checks))
+
+    # test passed, so set back
+    single_tests_ok = prev_single_tests_ok
 
 
 def suite(loader=None):

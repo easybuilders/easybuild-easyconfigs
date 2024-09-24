@@ -1,0 +1,77 @@
+easyblock = 'Tarball'
+
+name = 'COMEBin'
+local_commit = '987db95'
+version = '1.0.3-20240310'
+
+homepage = 'https://github.com/ziyewang/COMEBin'
+description = "Effective binning of metagenomic contigs using COntrastive Multi-viEw representation learning"
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://github.com/ziyewang/COMEBin/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = ['COMEBin-1.0.3_fix-run-script.patch']
+checksums = [
+    {'COMEBin-1.0.3-20240310.tar.gz': 'aa9c9e98d0cd121b2be60cae85d735527f510ad07df1a84ed6405cbc66eea684'},
+    {'COMEBin-1.0.3_fix-run-script.patch': 'e9ac578667d4f7233cf716cc98b134b8bd7cb7bcc70a06322500319d84b67773'},
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('matplotlib', '3.5.2'),
+    ('PyTorch', '1.12.0'),
+    ('tensorboard', '2.10.0'),
+    ('Biopython', '1.79'),
+    ('scikit-learn', '1.1.2'),
+    ('tqdm', '4.64.0'),
+    ('leidenalg', '0.9.1'),
+    ('BEDTools', '2.30.0'),
+    ('BWA', '0.7.17'),
+    ('CheckM', '1.2.2'),
+    ('FragGeneScan', '1.31'),
+    ('HMMER', '3.3.2'),
+    ('pplacer', '1.1.alpha19', '', SYSTEM),
+    ('prodigal', '2.6.3'),
+    ('SAMtools', '1.16.1'),
+    ('python-igraph', '0.10.3'),
+    ('PyYAML', '6.0'),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'download_dep_fail': True,
+    'sanity_pip_check': True,
+}
+
+exts_list = [
+    ('fastjsonschema', '2.19.1', {
+        'checksums': ['e3126a94bdc4623d3de4485f8d468a12f02a67921315ddc87836d6e456dc789d'],
+    }),
+    ('hnswlib', '0.8.0', {
+        'checksums': ['cb6d037eedebb34a7134e7dc78966441dfd04c9cf5ee93911be911ced951c44c'],
+    }),
+    ('biolib', '0.1.9', {
+        'checksums': ['bc9ae68c6d76d46e4295fe0b1df5a48b575fe96374bd96d624c3330feb94856f'],
+    }),
+]
+
+postinstallcmds = ["chmod a+x %(installdir)s/bin/run_comebin.sh"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/run_comebin.sh', 'COMEBin/main.py'],
+    'dirs': ['COMEBin/models', 'COMEBin/scripts'],
+}
+
+sanity_check_commands = [
+    "run_comebin.sh | grep '^Usage: bash run_comebin.sh'"
+    "python %(installdir)s/COMEBin/main.py --help",
+]
+
+moduleclass = 'bio'
