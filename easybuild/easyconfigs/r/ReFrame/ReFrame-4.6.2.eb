@@ -1,0 +1,91 @@
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '4.6.2'
+
+homepage = 'https://github.com/reframe-hpc/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = SYSTEM
+
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+# Required by lxml, which is installed by ReFrame's bootstrap installer
+osdependencies = [
+    ('libxml2'),
+    ('libxslt', 'libxslt1.1'),
+]
+
+# We use pip, setuptools and wheel compatible with Python 3.7 and above
+# Note that ReFrame itself is compatible also with Python 3.6
+# As listed in the python_requires in https://github.com/reframe-hpc/reframe/blob/v4.6.2/setup.cfg
+# To use with Python 3.6, please install ReFrame-4.6.2-Python-3.6.eb instead
+req_py_majver = 3
+req_py_minver = 7
+
+use_pip = True
+
+exts_list = [
+    # stick to pip 24.0, which is compatible with Python 3.7
+    # we still need pip outside of ReFrame's external dependencies, since the install cmd uses pip
+    ('pip', '24.0', {
+        'use_pip': False,
+        'checksums': ['ea9bd1a847e8c5774a5777bb398c19e80bcd4e2aa16a4b301b718fe6f593aba2'],
+    }),
+    # Require new enough setuptools to work with Python 3.12, which doesn't have pkgutil.ImpImporter anymore
+    # See https://github.com/pypa/setuptools/commit/6653e747c3815b140156249205397ef3719581ee
+    # 68.0.0 is the latest compatible with Python 3.7
+    ('setuptools', '68.0.0', {
+        'use_pip': False,
+        'source_urls': ['https://pypi.python.org/packages/source/s/setuptools/'],
+        'checksums': ['baf1fdb41c6da4cd2eae722e135500da913332ab3f2f5c7d33af9b492acb5235'],
+    }),
+    # stick to wheel 0.42.0, which is compatible with Python 3.7
+    ('wheel', '0.42.0', {
+        'source_tmpl': 'wheel-%(version)s-py3-none-any.whl',
+        'checksums': ['177f9c9b0d45c47873b619f5b650346d632cdc35fb5e4d25058e09c9e581433d'],
+    }),
+    # ReFrame's bootstrap script is intended to run with zero dependencies. It downloads all python deps for ReFrame
+    # into a %(installdir)/external directory. ReFrame's main executable (reframe) adds this dir to python's sys.path
+    # so that ReFrame (and only ReFrame) will find & use all of these dependencies.
+    # In EasyBuild, we should adhere to this installation method because a) it is how ReFrame is meant to be used and
+    # b) it isolates all of ReFrame dependencies from any other python code you run. Thus, there is no chance that
+    # a test will pick up on any python deps from ReFrame itself.
+    # For this to work, we need to disable download_dep_fail and sanity_pip_check, as both are _expected_ to fail
+    # for this setup.
+    ('reframe', version, {
+        # Deps are downloaded to %(installdir)/external, which won't polute the PYTHONPATH, so is ok
+        'download_dep_fail': False,
+        # ReFrame uses its custom sys.path to find necessary packages, they are not on PYTYHONPATH
+        # Thus, the regular pip sanity check is expected to fail, even if ReFrame would run just fine 
+        'sanity_pip_check': False,
+        # Set modulename to False, as to skip the sanity_check-step from extension.py (python -c "import reframe")
+        # This step would fail, since the regular python interpreter wouldn't find the additional packages in
+        # %(installdir)/external. That's fine, as ReFrame should never be imported directly, only through the
+        # reframe command.
+        'modulename': False,
+        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && "
+                          "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && ",
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/reframe-hpc/reframe/archive/'],
+        'checksums': ['d3343815ee3d2c330b91a1cdb924ba184119ed7d9fc88a4a754b939a4259df82'],
+    }),
+]
+
+postinstallcmds = [
+    "cp -a tools examples %(installdir)s",
+    "mkdir -p %(installdir)s/share && cp -a share/completions %(installdir)s/share/completions",
+    r"sed -i 's@/\(python[0-9.]*\)$@/\1 -S@g' %(installdir)s/bin/reframe",
+]
+
+sanity_check_paths = {
+    'files': ['bin/reframe',
+              'share/completions/reframe.bash',
+              'share/completions/reframe.fish',
+              'share/completions/reframe.tcsh'],
+    'dirs': ['external', 'lib', 'tools', 'examples']
+}
+
+sanity_check_commands = ['reframe -V']
+
+moduleclass = 'devel'

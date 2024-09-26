@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMEEG'
+version = '2.5.7'
+
+homepage = 'http://openmeeg.github.io/'
+description = """The OpenMEEG software is a C++ package for solving the forward problems of
+electroencephalography (EEG) and magnetoencephalography (MEG)."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+github_account = "openmeeg"
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%(version)s.tar.gz']
+patches = ['OpenMEEG-2.5.7_find-blas-lapack-from-cmake.patch']
+checksums = [
+    {'2.5.7.tar.gz': '19e982821affb67fedb76fbeac6fbdc0b6653f3c8d4a6f807ef729566a42b0dc'},
+    {'OpenMEEG-2.5.7_find-blas-lapack-from-cmake.patch':
+     '223d15c9efac40f7875ca6605409613be7a9d2509b3baebde362e08297357367'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('SWIG', '4.1.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('HDF5', '1.14.0'),
+    ('MATIO', '1.5.26'),
+]
+
+configopts = "-DENABLE_PYTHON=on -DPython3_ROOT_DIR=$EBROOTPYTHON "
+configopts += "-DCMAKE_INSTALL_LIBDIR=lib "
+
+_om_binaries = [
+    'om_assemble', 'om_forward', 'om_geometry_info', 'om_matrix_convert', 'om_mesh_concat', 'om_mesh_info',
+    'om_mesh_to_dip', 'om_project_sensors', 'om_squids2vtk', 'om_check_geom', 'om_gain', 'om_make_nerve',
+    'om_matrix_info', 'om_mesh_convert', 'om_mesh_smooth', 'om_minverser', 'om_register_squids',
+]
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _om_binaries] +
+             ['lib/libOpenMEEG.%s' % SHLIB_EXT, 'lib/libOpenMEEGMaths.%s' % SHLIB_EXT],
+    'dirs': ['include/OpenMEEG', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "om_mesh_info --help",
+    "pip check",
+    "python -c 'import openmeeg'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'data'
