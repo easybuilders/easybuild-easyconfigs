@@ -1,0 +1,76 @@
+# /!\ IMPORTANT: you need at least 8 cores to complete successfully the tests
+# Author: Jiri Furst <jiri.furst@gmail.com>
+# Based on Dakota 6.15 easyconfig by Sebastien Varrette (Falkor)
+easyblock = 'CMakeMake'
+
+name = 'Dakota'
+version = '6.16.0'
+
+homepage = "https://dakota.sandia.gov/"
+description = """
+ The Dakota project delivers both state-of-the-art research and robust, usable
+ software for optimization and UQ. Broadly, the Dakota software's advanced
+ parametric analyses enable design exploration, model calibration, risk
+ analysis, and quantification of margins and uncertainty with computational
+ models.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+# Disable architecture optimization, otherwise the basic tests fail
+toolchainopts = {'pic': True, 'usempi': True, 'optarch': False}
+
+source_urls = ['https://dakota.sandia.gov/sites/default/files/distributions/public/']
+sources = ["%(namelower)s-%(version_major_minor)s.0-public-src-cli.tar.gz"]
+patches = ["%(name)s-%(version)s-boost177-dllimport.patch"]
+checksums = [
+    '49684ade2a937465d85b0fc69c96408be38bc1603ed2e7e8156d93eee3567d2f',  # dakota-6.16.0-public-src-cli.tar.gz
+    '23aa52a4fe4267ba65368597b2b6c9e6e4bd4a1c8c4f1383055d73602ae9cc2d',  # Dakota-6.16.0-boost177-dllimport.patch
+]
+
+
+download_instructions = """
+1. Visit https://dakota.sandia.gov/download.html
+2. Download %s
+
+or
+
+1. Run easybuild with --insecure-download flag, i.e.
+   eb --insecure-download -r Dakota-6.16.0-foss-2022a.eb
+""" % sources[0]
+
+dependencies = [
+    ('Boost',    '1.79.0'),
+    ('Perl',     '5.34.1'),
+    ('Python',   '3.10.4'),
+    ('HDF5',     '1.12.2'),
+    ('GSL',      '2.7'),
+]
+
+builddependencies = [
+    ('CMake', '3.23.1')
+]
+
+separate_build_dir = True
+build_shared_libs = True
+
+# disable GUI
+configopts = "-DHAVE_X_GRAPHICS=OFF "
+# set other dependencies
+configopts += "-DBLAS_LIBS=${EBROOTFLEXIBLAS}/lib/libflexiblas.%s " % SHLIB_EXT
+configopts += "-DLAPACK_LIBS=${EBROOTFLEXIBLAS}/lib/libflexiblas.%s " % SHLIB_EXT
+configopts += "-DDAKOTA_HAVE_MPI=ON "
+configopts += "-DBoost_NO_SYSTEM_PATHS=ON "
+configopts += "-DDAKOTA_HAVE_HDF5=ON "
+configopts += "-DDAKOTA_HAVE_GSL=ON "
+
+runtest = ' test ARGS="-L AcceptanceTest -j %(parallel)s" '
+
+# Run install step in parallel
+installopts = ' -j %(parallel)s '
+
+sanity_check_paths = {
+    'files': ["bin/dakota"],
+    'dirs': []
+}
+
+moduleclass = 'math'
