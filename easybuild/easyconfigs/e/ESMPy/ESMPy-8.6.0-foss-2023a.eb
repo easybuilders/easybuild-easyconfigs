@@ -20,6 +20,17 @@ dependencies = [
 
 use_pip = True
 
+# downloads of data files from data.earthsystemmodeling.org are failing at the
+# time of writting, switch to github.com:
+_switch_data_url_regex = r"s/^\(DATA_URL.*earthsystemmodeling.org\)/# \1/;s/# \(DATA_URL.*github.com\)/\1/"
+
+_pre_test_cmds = [
+    "sed -i '%s' src/esmpy/util/cache_data.py" % _switch_data_url_regex,
+    "unset ESMPY_DATA_DIR",
+    "export ESMPY_DATA_NEW_DIR=/tmp",
+    "",
+]
+
 exts_list = [
     ('esmpy', version, {
         'patches': ['ESMPy-%(version)s_use-static-version.patch'],
@@ -32,7 +43,7 @@ exts_list = [
              '5d8725ee868c5f5040d13fe1ab54e07d425b7b07eb4d146eac81c8e2e49ddec8'},
         ],
         'start_dir': 'src/addon/%(name)s',
-        'pretestopts': "unset ESMPY_DATA_DIR && env ESMPY_DATA_NEW_DIR=/tmp",
+        'pretestopts': " && ".join(_pre_test_cmds),
         'runtest': 'pytest',
         'testinstall': True,
     }),
