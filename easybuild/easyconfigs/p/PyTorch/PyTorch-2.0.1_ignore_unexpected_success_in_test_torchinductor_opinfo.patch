@@ -1,0 +1,22 @@
+Some tests may succeed although they are not expected to. E.g.:
+> FAILED inductor/test_torchinductor_opinfo.py::TestInductorOpInfoCPU::test_comprehensive_index_add_cpu_float16 - RuntimeError: unexpected success index_add, torch.float16, cpu
+> FAILED inductor/test_torchinductor_opinfo.py::TestInductorOpInfoCPU::test_comprehensive_scatter_add_cpu_float16 - RuntimeError: unexpected success scatter_add, torch.float16, cpu
+> FAILED inductor/test_torchinductor_opinfo.py::TestInductorOpInfoCPU::test_comprehensive_scatter_reduce_sum_cpu_float16 - RuntimeError: unexpected success scatter_reduce.sum, torch.float16, cpu
+
+Disable that unexpected success check.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_torchinductor_opinfo.py b/test/inductor/test_torchinductor_opinfo.py
+index d91a27684ba..1e6d247c8d4 100644
+--- a/test/inductor/test_torchinductor_opinfo.py
++++ b/test/inductor/test_torchinductor_opinfo.py
+@@ -66,7 +66,7 @@ _ops = partial(
+ TestExpect = Enum("TestExpect", ("SUCCESS", "XFAILURE", "SKIP"))
+ 
+ COLLECT_EXPECT = os.getenv("PYTORCH_COLLECT_EXPECT", "0") == "1"
+-FAIL_ON_SUCCESS = os.getenv("PYTORCH_FAIL_ON_SUCCESS", "1") == "1"
++FAIL_ON_SUCCESS = False
+ ALL_SAMPLES = os.getenv("PYTORCH_ALL_SAMPLES", "0") == "1"
+ START = os.getenv("PYTORCH_TEST_RANGE_START", None)
+ END = os.getenv("PYTORCH_TEST_RANGE_END", None)

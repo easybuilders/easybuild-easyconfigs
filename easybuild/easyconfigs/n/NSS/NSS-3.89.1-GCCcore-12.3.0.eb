@@ -1,0 +1,64 @@
+easyblock = 'MakeCp'
+
+name = 'NSS'
+version = '3.89.1'
+
+homepage = 'https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS'
+description = """Network Security Services (NSS) is a set of libraries designed to support cross-platform development
+ of security-enabled client and server applications."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://ftp.mozilla.org/pub/security/nss/releases/NSS_%s_RTM/src/' % version.replace('.', '_')]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'NSS-3.39_pkgconfig.patch',
+    'NSS-3.55_fix-ftbfs-glibc-invalid-oob-error.patch',
+]
+checksums = [
+    {'nss-3.89.1.tar.gz': '3adaedb9e70c3c5f40603bf60a01e336190a6dbe01929d395f16b01fe84a0156'},
+    {'NSS-3.39_pkgconfig.patch': '5c4b55842e5afd1e8e67b90635f6474510b89242963c4ac2622d3e3da9062774'},
+    {'NSS-3.55_fix-ftbfs-glibc-invalid-oob-error.patch':
+     '15768297c5dd6918132af281531afcfe3e358f45a00bc2655d20a6cbe4310a9b'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Perl', '5.36.1'),
+]
+
+dependencies = [
+    ('NSPR', '4.35'),
+    ('zlib', '1.2.13'),
+]
+
+# building in parallel fails
+parallel = 1
+
+# disable use of -Werror to work around compilation errors with newer glibc versions,
+# see also https://sourceware.org/bugzilla/show_bug.cgi?id=27476
+buildopts = "NSS_ENABLE_WERROR=0 "
+# fix for not being able to find header files
+buildopts += 'BUILD_OPT=1 USE_64=1 CPATH="$EBROOTNSPR/include/nspr:$CPATH" '
+# fix c standard causing missing functions
+buildopts += 'OS_REL_CFLAGS="-D_XOPEN_SOURCE " && '
+# also install pkgconfig file (see patch)
+buildopts += "cd config && make PREFIX=%(installdir)s BUILD_OPT=1 USE_64=1 && cd -"
+# optional testsuite (takes a long time)
+# buildopts += " && cd %(builddir)s/%(namelower)s-%(version)s/%(namelower)s/tests && BUILD_OPT=1 USE_64=1 ./all.sh "
+
+files_to_copy = ['../dist/Linux*.OBJ/*', (['../dist/public/*'], 'include')]
+
+sanity_check_paths = {
+    'files': ['bin/nss-config', 'bin/multinit', 'lib/libnss.a'],
+    'dirs': ['include/dbm', 'include/nss'],
+}
+
+sanity_check_commands = [
+    "multinit --help",
+    "nss-config --version",
+]
+
+modextrapaths = {'CPATH': 'include/nss'}
+
+moduleclass = 'lib'

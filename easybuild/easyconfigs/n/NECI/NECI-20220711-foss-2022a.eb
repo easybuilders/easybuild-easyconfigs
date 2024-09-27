@@ -1,0 +1,52 @@
+easyblock = 'CMakeMakeCp'
+name = 'NECI'
+version = '20220711'
+_commit = 'd7a9e87ed6a4a29479dc25fbf36a7bb556c3f5a3'
+
+homepage = 'https://github.com/ghb24/NECI_STABLE'
+description = """Standalone NECI codebase designed for FCIQMC and other stochastic quantum
+chemistry methods."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'usempi': True}
+
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/ghb24',
+        'repo_name': 'NECI_STABLE',
+        'recursive': True,
+        'commit': _commit,
+    },
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = ['NECI-20220711_fix-cmake-print-summary.patch']
+checksums = [
+    None,
+    'e189f1b3991b28502dbd8285a04784e7e422d0a9e01e3f28025d0458b479af2d',
+]
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+]
+
+dependencies = [
+    ('HDF5', '1.12.2'),
+]
+
+# enable support for HDF5
+configopts = "-DENABLE_HDF5=ON"
+
+test_cmd = 'ctest'
+runtest = '-j'
+
+files_to_copy = ['bin', 'lib', (['modules'], 'include')]
+
+_binaries = ['dneci', 'kdneci', 'kmneci', 'kneci', 'mneci', 'neci']
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _binaries] + ['lib/lib%s.a' % x for x in _binaries],
+    'dirs': ['include'],
+}
+
+moduleclass = 'chem'

@@ -1,0 +1,75 @@
+Add autodetection for Intel Ice Lake SP
+https://github.com/xianyi/OpenBLAS/pull/3233
+diff --git a/cpuid_x86.c b/cpuid_x86.c
+index 44704fcd9..18ff122e5 100644
+--- a/cpuid_x86.c
++++ b/cpuid_x86.c
+@@ -1398,6 +1398,17 @@ int get_cpuname(void){
+ 	    return CPUTYPE_SANDYBRIDGE;
+ 	  else
+ 	  return CPUTYPE_NEHALEM;
++	case 10: // Ice Lake SP
++	  if(support_avx512_bf16())
++            return CPUTYPE_COOPERLAKE;	
++          if(support_avx512())
++            return CPUTYPE_SKYLAKEX;
++          if(support_avx2())
++            return CPUTYPE_HASWELL;
++          if(support_avx())
++	    return CPUTYPE_SANDYBRIDGE;
++	  else
++	  return CPUTYPE_NEHALEM;	
+         }
+       break;
+       case 7: // family 6 exmodel 7
+@@ -2112,7 +2123,22 @@ int get_coretype(void){
+ #endif
+ 	  else
+ 	    return CORE_NEHALEM;
+-#endif			
++#endif
++	if (model == 10)
++#ifndef NO_AVX512
++	  if(support_avx512_bf16())
++            return CORE_COOPERLAKE;
++	  return CORE_SKYLAKEX;
++#else
++	  if(support_avx())
++#ifndef NO_AVX2
++	    return CORE_HASWELL;
++#else
++	    return CORE_SANDYBRIDGE;
++#endif
++	  else
++	    return CORE_NEHALEM;
++#endif	
+         break;    	
+       case 7:
+         if (model == 10) 
+diff --git a/driver/others/dynamic.c b/driver/others/dynamic.c
+index 158e1b3da..46ad06a7c 100644
+--- a/driver/others/dynamic.c
++++ b/driver/others/dynamic.c
+@@ -621,6 +621,22 @@ static gotoblas_t *get_coretype(void){
+ 	    return &gotoblas_NEHALEM;
+ 	  }
+         }
++	if (model == 10) {
++          // Ice Lake SP
++	   if(support_avx512_bf16())
++             return &gotoblas_COOPERLAKE;
++          if (support_avx512()) 
++	    return &gotoblas_SKYLAKEX;
++	  if(support_avx2())
++	    return &gotoblas_HASWELL;
++	  if(support_avx()) {
++	    openblas_warning(FALLBACK_VERBOSE, SANDYBRIDGE_FALLBACK);
++	    return &gotoblas_SANDYBRIDGE;
++	  } else {
++	    openblas_warning(FALLBACK_VERBOSE, NEHALEM_FALLBACK);
++	    return &gotoblas_NEHALEM;
++	  }
++        }      
+         return NULL;  
+       case 7:
+ 	if (model == 10) // Goldmont Plus

@@ -1,0 +1,59 @@
+easyblock = 'CMakeMake'
+
+name = 'IDG'
+version = '1.2.0'
+
+homepage = 'https://idg.readthedocs.io/'
+description = """Image Domain Gridding (IDG) is a fast method for convolutional resampling (gridding/degridding)
+of radio astronomical data (visibilities). Direction dependent effects (DDEs) or A-tems can be applied
+in the gridding process.
+The algorithm is described in "Image Domain Gridding: a fast method for convolutional resampling of visibilities",
+Van der Tol (2018).
+The implementation is described in "Radio-astronomical imaging on graphics processors", Veenboer (2020).
+Please cite these papers in publications using IDG.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+sources = [
+    {
+        'filename': '%(name)s-v%(version)s.tar.gz',
+        # Repo uses git submodules, which are not included in the release tarballs.
+        # Thus, we let EasyBuild download directly from the git repository.
+        'git_config': {
+            'url': 'https://gitlab.com/astron-idg',
+            'repo_name': '%(name)s',
+            'tag': '%(version)s',
+            'clone_into': '%(name)s',
+            'recursive': True
+        }
+    },
+]
+patches = ['IDG-1.2.0_fix-for-xsimd-error-on-neoverse-v1.patch']
+checksums = [
+    None,  # checksum for git clone source is non-deterministic
+    # IDG-1.2.0_fix-for-xsimd-error-on-neoverse-v1.patch
+    '3811028d7757cd7085501bf3209f8eb526eafb67caf2950110a25a7a072df3c1',
+]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+]
+dependencies = [
+    ('Boost', '1.83.0'),
+    ('Python', '3.11.5'),
+]
+
+
+configopts = "-DBUILD_WITH_MPI=ON -DBUILD_WITH_PYTHON=ON "
+configopts += "-DBUILD_WITH_DEMOS=ON "
+
+sanity_check_paths = {
+    'files': [
+        'include/%(namelower)s-api.h', 'include/%(namelower)s.h',
+        'lib/libidg.%s' % SHLIB_EXT, 'lib/libidg-api.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['include', 'lib', 'lib64'],
+}
+
+moduleclass = 'lib'

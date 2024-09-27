@@ -1,0 +1,72 @@
+easyblock = 'PythonBundle'
+
+name = 'scib-metrics'
+version = '0.3.3'
+
+homepage = 'https://scib-metrics.readthedocs.io'
+description = "Accelerated and Python-only metrics for benchmarking single-cell integration outputs"
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('matplotlib', '3.4.2'),
+    ('jax', '0.3.9'),
+    ('scikit-learn', '0.24.2'),
+    ('anndata', '0.9.2'),
+    ('python-igraph', '0.9.6'),
+    ('scanpy', '1.8.1'),
+    ('tqdm', '4.61.2'),
+    ('dm-tree', '0.1.6'),
+]
+
+use_pip = True
+
+# avoid hatchling requirement to install scib-metrics
+local_preinstallopts_scib_metrics = """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """
+local_preinstallopts_scib_metrics += """-e 's/^requires = .*/requires = ["setuptools"]/g' """
+# strip out requirement for igraph (it's provided as dependency, but invisible to pip so 'pip check' fails)
+local_preinstallopts_scib_metrics += "-e '/igraph/d' pyproject.toml && "
+
+exts_list = [
+    # more recent setuptools required because scib-metrics uses pyproject.toml
+    ('setuptools', '68.1.2', {
+        'checksums': ['3d4dfa6d95f1b101d695a6160a7626e15583af71a5f52176efa5d39a054d475d'],
+    }),
+    ('toolz', '0.12.0', {
+        'checksums': ['88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194'],
+    }),
+    ('typing-extensions', '4.7.1', {
+        'sources': ['typing_extensions-%(version)s.tar.gz'],
+        'checksums': ['b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2'],
+    }),
+    ('chex', '0.1.6', {
+        'checksums': ['adb5d2352b5f0d248ccf594be1b1bf9ee7a2bee2a57f0eac78547538d479b0e7'],
+    }),
+    ('plottable', '0.1.5', {
+        'checksums': ['235d762a31c82129dc5bf74205c103a14b1e4393d0f921cc0231be5de884041d'],
+    }),
+    ('pynndescent', '0.5.10', {
+        'checksums': ['5d5dc683c03ef55fe3ddf693859720ca18f85c6e6e5bb0b4f14870278d5288ad'],
+    }),
+    ('mdurl', '0.1.2', {
+        'checksums': ['bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba'],
+    }),
+    ('markdown-it-py', '2.2.0', {
+        'checksums': ['7c9a5e412688bc771c67432cbfebcdd686c93ce6484913dccf06cb5a0bea35a1'],
+        'modulename': 'markdown_it',
+    }),
+    ('rich', '13.2.0', {
+        'checksums': ['f1a00cdd3eebf999a15d85ec498bfe0b1a77efe9b34f645768a54132ef444ac5'],
+    }),
+    (name, version, {
+        'sources': ['scib_metrics-%(version)s.tar.gz'],
+        'checksums': ['2d33017a7455cc0c203ceb9403586859d5f1906255a0d5d5578c5fba5346d012'],
+        'preinstallopts': local_preinstallopts_scib_metrics,
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

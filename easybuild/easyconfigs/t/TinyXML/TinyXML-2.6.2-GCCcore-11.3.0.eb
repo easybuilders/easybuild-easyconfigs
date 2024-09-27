@@ -1,0 +1,60 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'MakeCp'
+
+name = 'TinyXML'
+version = '2.6.2'
+
+homepage = 'https://sourceforge.net/projects/tinyxml'
+description = """TinyXML is a simple, small, minimal, C++ XML parser that can be easily integrating
+ into other programs. It reads XML and creates C++ objects representing the XML document. The
+ objects can be manipulated, changed, and saved again as XML.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%%(namelower)s_%s.tar.gz' % version.replace('.', '_')]
+patches = [
+    '%(name)s-2.6.2-enforce-use-stl.patch',
+    '%(name)s-2.6.2-entity-encoding.patch',
+    '%(name)s-2.6.2-CVE-2021-42260.patch',
+    '%(name)s-2.6.2-tagindex-type.patch',
+]
+checksums = [
+    {'tinyxml_2_6_2.tar.gz': '15bdfdcec58a7da30adc87ac2b078e4417dbe5392f3afb719f9ba6d062645593'},
+    {'TinyXML-2.6.2-enforce-use-stl.patch': '16a5b5e842eb0336be606131e5fb12a9165970f7bd943780ba09df2e1e8b29b1'},
+    {'TinyXML-2.6.2-entity-encoding.patch': 'c5128e03933cd2e22eb85554d58f615f4dbc9177bd144cae2913c0bd7b140c2b'},
+    {'TinyXML-2.6.2-CVE-2021-42260.patch': '3c4a6d9606944f54be5f108f278bb9137d78c6da9aa369a3d3faf87077a0a4bd'},
+    {'TinyXML-2.6.2-tagindex-type.patch': 'cd1a1888ca0be64bb2cccc0c90eb070f3c789b8b9b7e02946ab8c4d38340424d'},
+]
+
+builddependencies = [('binutils', '2.38')]
+
+buildopts = ' '.join([
+    'CXXFLAGS="$CXXFLAGS $CPPFLAGS -DTIXML_USE_STL" CXX="$CXX" LDFLAGS="$LDFLAGS" LD="$LD"',
+    # build a shared library
+    '&& $CXX -shared -Wl,-soname,lib%(namelower)s.so.%(version)s -o lib%(namelower)s.so.%(version)s $LDFLAGS *.o',
+])
+
+_incs = ['tinystr.h', 'tinyxml.h']
+_libs = ['lib%(namelower)s.so.%(version)s']
+
+files_to_copy = [
+    (_incs, 'include'),
+    (_libs, 'lib'),
+]
+
+postinstallcmds = [' && '.join([
+    "cd %(installdir)s/lib",
+    "ln -s lib%(namelower)s.so.%(version)s lib%(namelower)s.so.%(version_major)s",
+    "ln -s lib%(namelower)s.so.%(version)s lib%(namelower)s.so.%(version_major_minor)s",
+    "ln -s lib%(namelower)s.so.%(version)s lib%(namelower)s.so",
+])]
+
+sanity_check_paths = {
+    'files': ['include/%s' % i for i in _incs] + ['lib/%s' % l for l in _libs],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

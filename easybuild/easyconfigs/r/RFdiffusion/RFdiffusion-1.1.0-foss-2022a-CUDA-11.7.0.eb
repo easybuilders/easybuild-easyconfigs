@@ -1,0 +1,61 @@
+easyblock = 'PythonBundle'
+
+name = 'RFdiffusion'
+version = '1.1.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/RosettaCommons/RFdiffusion'
+description = """
+RFdiffusion is an open source method for structure generation, with or without conditional information 
+(a motif, target etc). It can perform a whole range of protein design challenges as we have outlined 
+in the RFdiffusion paper.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('e3nn', '0.3.3', versionsuffix),
+    ('wandb', '0.13.4'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('pynvml', '11.0.0', {
+        'checksums': ['d5fc4a22d355b40c341d6ba0aa888a2d4d2253177d243900f8401b7e6cacb1bb'],
+    }),
+    ('dllogger', '1.0.0', {
+        'source_urls': ['https://github.com/NVIDIA/dllogger/archive/refs/tags'],
+        'sources': ['v%(version)s.zip'],
+        'checksums': ['07d0cd9b9b56f454f0c186a0889137e9f94e1979fca3d35911967c874c93c191'],
+    }),
+    ('decorator', '5.1.1', {
+        'checksums': ['637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330'],
+    }),
+    ('se3-transformer', version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/RosettaCommons/RFdiffusion/archive/refs/tags'],
+        'start_dir': 'env/SE3Transformer',
+        'checksums': ['57d82f0d43540c2912eda3f1d34ad90b13db14966ee069c427e217fe78f0297f'],
+    }),
+    (name, version, {
+        'patches': ['%(name)s-%(version)s_fix-find-packages.patch'],
+        'sources': {
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'download_filename': 'v%(version)s.tar.gz',
+            'source_urls': ['https://github.com/RosettaCommons/RFdiffusion/archive/refs/tags'],
+        },
+        'checksums': [
+            {'RFdiffusion-1.1.0.tar.gz': '57d82f0d43540c2912eda3f1d34ad90b13db14966ee069c427e217fe78f0297f'},
+            {'RFdiffusion-1.1.0_fix-find-packages.patch':
+             'e25da7f476acacb6af58bd84f40aca712538900b0b48532b22f9a133d6886da2'},
+        ],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

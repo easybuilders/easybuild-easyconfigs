@@ -1,0 +1,70 @@
+easyblock = 'Bundle'
+
+name = 'rMATS-turbo'
+version = '4.2.0'
+
+homepage = 'https://github.com/Xinglab/rmats-turbo'
+description = """rMATS turbo is the C/Cython version of rMATS (refer to https://rnaseq-mats.sourceforge.io)."""
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+toolchainopts = {'openmp': True}
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('GSL', '2.7'),
+    ('SAMtools', '1.18'),
+    ('STAR', '2.7.11a'),
+    ('BamTools', '2.5.2'),
+]
+
+local_ldflags = " -lm -lgsl -lgslcblas $LIBLAPACK"
+local_buildopts = '  CC="$CC" CXX="$CXX" FC="$FC" LDFLAGS="%s"' % local_ldflags
+
+default_component_specs = {
+    'sources': ['v%(version)s.tar.gz'],
+    'source_urls': ['https://github.com/Xinglab/%(name)s/archive/refs/tags/'],
+    'checksums': ['80fd32ffa00190b2eb3fcefcd4efb0d466a808c5e80bc91419a71bc033cdbd72'],
+}
+
+components = [
+    (name, version, {
+        'easyblock': 'MakeCp',
+        'start_dir': 'rmats-turbo-%(version)s/rMATS_C',
+        'buildopts': "%s" % local_buildopts,
+        'files_to_copy': [(['rMATSexe', '../rmats.py', '../rMATS_C', '../rMATS_R', '../rMATS_P'], 'bin')]
+    }),
+    ('rmats-turbo-python', version, {
+        'easyblock': 'PythonPackage',
+        'patches': ['rMATS-turbo-%(version)s_bamtools_as_dependency.patch'],
+        'checksums': [
+            '80fd32ffa00190b2eb3fcefcd4efb0d466a808c5e80bc91419a71bc033cdbd72',
+            'a4c70e3d8ef9723fcb801d39a62c132f8f1903fb3a60dad330de895c12f5f7e7',
+        ],
+        'start_dir': 'rmats-turbo-%(version)s/rMATS_pipeline',
+        'use_pip': True,
+        'download_dep_fail': True,
+        'sanity_pip_check': True,
+        'options': {'modulename': 'rmatspipeline'},
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']
+}
+
+postinstallcmds = ["chmod a+x %(installdir)s/bin/rmats.py"]
+
+sanity_check_commands = [
+    'rmats.py --version',
+]
+
+sanity_check_paths = {
+    'files': ['bin/rMATSexe', 'bin/rmats.py'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

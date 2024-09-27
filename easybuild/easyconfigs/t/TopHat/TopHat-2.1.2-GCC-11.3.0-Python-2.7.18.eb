@@ -1,0 +1,53 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# Modified by: Adam Huffman
+# The Francis Crick Institute
+
+easyblock = 'ConfigureMake'
+
+name = 'TopHat'
+version = '2.1.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://ccb.jhu.edu/software/%(namelower)s/'
+description = "TopHat is a fast splice junction mapper for RNA-Seq reads."
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'cstd': 'gnu++98', 'pic': True}
+
+github_account = 'infphilo'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'tophat-2.0.13-zlib.patch',
+    'TopHat-2.1.2_fix-configure.patch',
+]
+checksums = [
+    {'v2.1.2.tar.gz': '15016b82255dad085d4ee7d970e50f0e53a280d466335553d47790d8344ff4b1'},
+    {'tophat-2.0.13-zlib.patch': 'a33075c2affda995ddbd250933dbcaf94f68768b1eebead58a69705fc40306ef'},
+    {'TopHat-2.1.2_fix-configure.patch': '5b92002848632f727381860f87f6b1b8867b60db6298c49b8387e5c61af9850d'},
+]
+
+builddependencies = [('Autotools', '20220317')]
+
+dependencies = [
+    ('Boost', '1.79.0'),
+    ('zlib', '1.2.12'),
+    ('Python', '2.7.18', '-bare'),
+]
+
+preconfigopts = './autogen.sh && '
+configopts = '--with-boost=$EBROOTBOOST'
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["tophat --help 2>&1 | grep 'TopHat maps short sequences'"]
+
+moduleclass = 'bio'
