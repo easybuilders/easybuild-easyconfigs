@@ -1,0 +1,45 @@
+easyblock = "PythonBundle"
+
+name = 'python-casacore'
+version = '3.5.2'
+
+homepage = 'https://casacore.github.io/python-casacore/#'
+description = """Python-casacore is a set of Python bindings for casacore,
+a c++ library used in radio astronomy. Python-casacore replaces the old pyrap."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('casacore', '3.5.0'),
+    ('Boost.Python', '1.83.0'),
+    ('SciPy-bundle', '2023.11'),
+    ('CFITSIO', '4.3.1'),
+]
+
+exts_list = [
+    ('setuptools', '69.1.0', {
+        'checksums': ['850894c4195f09c4ed30dba56213bf7c3f21d86ed6bdaafb5df5972593bfc401'],
+    }),
+    (name, version, {
+        # Module uses $LD_LIBRARY_PATH to find libraries
+        # See https://github.com/EESSI/software-layer/pull/497#issuecomment-1991196996
+        'preinstallopts': 'if [[ -z "$LD_LIBRARY_PATH" ]]; then export LD_LIBRARY_PATH="$LIBRARY_PATH"; fi && ',
+        'checksums': ['ad70c8e08893eec928b3e38c099bda8863f5aa9d099fd00694ad2b0d48eba08f'],
+        'modulename': 'casacore'
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    ('python', "-c 'import casacore'"),
+]
+
+moduleclass = 'astro'

@@ -1,0 +1,87 @@
+backport of https://github.com/openpmix/openpmix/pull/3150 to PMIx 3.1.x
+diff -ru pmix-3.1.5.orig/src/mca/common/dstore/dstore_base.c pmix-3.1.5/src/mca/common/dstore/dstore_base.c
+--- pmix-3.1.5.orig/src/mca/common/dstore/dstore_base.c	2020-02-19 05:55:43.000000000 +0100
++++ pmix-3.1.5/src/mca/common/dstore/dstore_base.c	2023-09-11 15:17:22.502130578 +0200
+@@ -525,7 +525,7 @@
+             }
+         }
+         if (s->setjobuid > 0){
+-            if (0 > chown(s->nspace_path, (uid_t) s->jobuid, (gid_t) -1)){
++            if (0 > lchown(s->nspace_path, (uid_t) s->jobuid, (gid_t) -1)){
+                 rc = PMIX_ERROR;
+                 PMIX_ERROR_LOG(rc);
+                 return rc;
+@@ -1677,7 +1677,7 @@
+             }
+         }
+         if (ds_ctx->setjobuid > 0) {
+-            if (chown(ds_ctx->base_path, (uid_t) ds_ctx->jobuid, (gid_t) -1) < 0){
++            if (lchown(ds_ctx->base_path, (uid_t) ds_ctx->jobuid, (gid_t) -1) < 0){
+                 rc = PMIX_ERR_NO_PERMISSIONS;
+                 PMIX_ERROR_LOG(rc);
+                 goto err_exit;
+diff -ru pmix-3.1.5.orig/src/mca/common/dstore/dstore_segment.c pmix-3.1.5/src/mca/common/dstore/dstore_segment.c
+--- pmix-3.1.5.orig/src/mca/common/dstore/dstore_segment.c	2020-02-19 05:55:43.000000000 +0100
++++ pmix-3.1.5/src/mca/common/dstore/dstore_segment.c	2023-09-11 15:17:22.502130578 +0200
+@@ -120,7 +120,7 @@
+ 
+             if (setuid > 0){
+                 rc = PMIX_ERR_PERM;
+-                if (0 > chown(file_name, (uid_t) uid, (gid_t) -1)){
++                if (0 > lchown(file_name, (uid_t) uid, (gid_t) -1)){
+                     PMIX_ERROR_LOG(rc);
+                     goto err_exit;
+                 }
+@@ -211,7 +211,7 @@
+ 
+         if (setuid > 0){
+             rc = PMIX_ERR_PERM;
+-            if (0 > chown(file_name, (uid_t) uid, (gid_t) -1)){
++            if (0 > lchown(file_name, (uid_t) uid, (gid_t) -1)){
+                 PMIX_ERROR_LOG(rc);
+                 goto err_exit;
+             }
+diff -ru pmix-3.1.5.orig/src/mca/gds/ds12/gds_ds12_lock_fcntl.c pmix-3.1.5/src/mca/gds/ds12/gds_ds12_lock_fcntl.c
+--- pmix-3.1.5.orig/src/mca/gds/ds12/gds_ds12_lock_fcntl.c	2020-02-19 05:55:43.000000000 +0100
++++ pmix-3.1.5/src/mca/gds/ds12/gds_ds12_lock_fcntl.c	2023-09-11 15:17:22.502130578 +0200
+@@ -127,7 +127,7 @@
+             }
+         }
+         if (0 != setuid) {
+-            if (0 > chown(lock_ctx->lockfile, uid, (gid_t) -1)) {
++            if (0 > lchown(lock_ctx->lockfile, uid, (gid_t) -1)) {
+                 rc = PMIX_ERROR;
+                 PMIX_ERROR_LOG(rc);
+                 goto error;
+diff -ru pmix-3.1.5.orig/src/mca/gds/ds12/gds_ds12_lock_pthread.c pmix-3.1.5/src/mca/gds/ds12/gds_ds12_lock_pthread.c
+--- pmix-3.1.5.orig/src/mca/gds/ds12/gds_ds12_lock_pthread.c	2020-02-19 05:55:43.000000000 +0100
++++ pmix-3.1.5/src/mca/gds/ds12/gds_ds12_lock_pthread.c	2023-09-11 15:17:22.502130578 +0200
+@@ -113,7 +113,7 @@
+         }
+         memset(lock_ctx->segment->seg_base_addr, 0, size);
+         if (0 != setuid) {
+-            if (0 > chown(lock_ctx->lockfile, (uid_t) uid, (gid_t) -1)){
++            if (0 > lchown(lock_ctx->lockfile, (uid_t) uid, (gid_t) -1)){
+                 rc = PMIX_ERROR;
+                 PMIX_ERROR_LOG(rc);
+                 goto error;
+diff -ru pmix-3.1.5.orig/src/mca/ptl/usock/ptl_usock_component.c pmix-3.1.5/src/mca/ptl/usock/ptl_usock_component.c
+--- pmix-3.1.5.orig/src/mca/ptl/usock/ptl_usock_component.c	2020-02-19 05:55:43.000000000 +0100
++++ pmix-3.1.5/src/mca/ptl/usock/ptl_usock_component.c	2023-09-11 15:19:31.883298870 +0200
+@@ -267,14 +267,14 @@
+     }
+     /* chown as required */
+     if (lt->owner_given) {
+-        if (0 != chown(address->sun_path, lt->owner, -1)) {
++        if (0 != lchown(address->sun_path, lt->owner, -1)) {
+             pmix_output(0, "CANNOT CHOWN socket %s: %s", address->sun_path, strerror (errno));
+             CLOSE_THE_SOCKET(lt->socket);
+             goto sockerror;
+         }
+     }
+     if (lt->group_given) {
+-        if (0 != chown(address->sun_path, -1, lt->group)) {
++        if (0 != lchown(address->sun_path, -1, lt->group)) {
+             pmix_output(0, "CANNOT CHOWN socket %s: %s", address->sun_path, strerror (errno));
+             CLOSE_THE_SOCKET(lt->socket);
+             goto sockerror;

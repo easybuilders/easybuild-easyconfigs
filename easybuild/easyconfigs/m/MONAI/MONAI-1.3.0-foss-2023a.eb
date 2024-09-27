@@ -1,0 +1,98 @@
+easyblock = 'PythonBundle'
+
+name = 'MONAI'
+version = '1.3.0'
+
+homepage = 'https://monai.io/'
+description = """
+MONAI is a PyTorch-based, open-source framework for deep learning in healthcare
+imaging, part of PyTorch Ecosystem.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+github_account = 'Project-MONAI'
+
+builddependencies = [
+    ('hatchling', '1.18.0'),
+    ('Ninja', '1.11.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('PyTorch', '2.1.2'),
+    ('einops', '0.7.0'),
+    ('ITK', '5.3.0'),
+    ('NiBabel', '5.2.0'),
+    ('scikit-image', '0.22.0'),
+    ('tensorboard', '2.15.1'),
+    ('torchvision', '0.16.0'),
+    ('tqdm', '4.66.1'),
+    ('Pillow', '10.0.0'),
+    ('openslide-python', '1.3.1'),
+    ('BeautifulSoup', '4.12.2'),
+]
+
+use_pip = True
+
+# install MONAI with list of 'extras', which require additional dependencies
+local_pip_extras = "einops,fire,gdown,ignite,itk,jsonschema,lmdb,nibabel,"
+local_pip_extras += "openslide,pandas,pillow,psutil,pydicom,pyyaml,scipy,"
+local_pip_extras += "skimage,tensorboard,torchvision,tqdm"
+
+# PyTorch-Ignite v0.4.11 bundled as an extension because MONAI v1.3.0 has a strict requirement on it
+exts_list = [
+    ('gdown', '4.7.1', {
+        'checksums': ['347f23769679aaf7efa73e5655270fcda8ca56be65eb84a4a21d143989541045'],
+    }),
+    ('lmdb', '1.4.1', {
+        'checksums': ['1f4c76af24e907593487c904ef5eba1993beb38ed385af82adb25a858f2d658d'],
+    }),
+    ('termcolor', '2.3.0', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['3afb05607b89aed0ffe25202399ee0867ad4d3cb4180d98aaf8eefa6a5f7d475'],
+    }),
+    ('fire', '0.5.0', {
+        'checksums': ['a6b0d49e98c8963910021f92bba66f65ab440da2982b78eb1bbf95a0a34aacc6'],
+    }),
+    ('pytorch-ignite', '0.4.11', {
+        'modulename': 'ignite',
+        'patches': ['PyTorch-Ignite-0.4.11_fix_error_on_importing_Events.patch'],
+        'checksums': [
+            {'pytorch-ignite-0.4.11.tar.gz': 'ee31096a58679417097ef7f3f27d88bec40b789ac5e13cd9ed08bc89ca8ce2e2'},
+            {'PyTorch-Ignite-0.4.11_fix_error_on_importing_Events.patch':
+             'd45c0da30c01f7ce47b7be49a6d5d6eb9529c94a0b9de89260d4b07d9d2359e0'},
+        ],
+    }),
+    (name, version, {
+        'preinstallopts': 'BUILD_MONAI=1',
+        'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
+        'sources': ['%(version)s.tar.gz'],
+        'use_pip_extras': local_pip_extras,
+        # 2 valid checksums, as source tarball provided by GitHub for MONAI 1.3.0 slightly changed at some point
+        # see also https://github.com/easybuilders/easybuild-easyconfigs/issues/20617
+        'checksums': [('67e0f55678faad4bd38b1ea69d5de94586b20b551b8ad745415623a8b6c1c5e2',
+                       '076d75458d490b4f2dafbf5974fcc8e07a86c03f39f5ef48c6689ab6e4347da9')],
+    }),
+]
+
+sanity_pip_check = True
+
+# 'pip check' does not verify whether all optional dependencies required to support 'extras'
+# are actually available, so we do it here via an import check;
+local_extra_mod_check = {x: x for x in local_pip_extras.split(",")}
+# Some special cases with different module name than extra name
+local_extra_mod_check['pillow'] = 'PIL'
+local_extra_mod_check['pyyaml'] = 'yaml'
+
+sanity_check_commands = ["python -c 'import monai; monai.config.print_config()'"]
+sanity_check_commands += ["python -c 'import %s'" % local_extra_mod_check[x] for x in local_extra_mod_check]
+
+sanity_check_paths = {
+    'files': ['lib/python%%(pyshortver)s/site-packages/%%(namelower)s/_C.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/ignite'],
+}
+
+moduleclass = 'vis'

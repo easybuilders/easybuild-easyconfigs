@@ -1,0 +1,61 @@
+name = 'Gurobi'
+version = '11.0.0'
+
+homepage = 'https://www.gurobi.com'
+description = """The Gurobi Optimizer is a state-of-the-art solver for mathematical programming.
+The solvers in the Gurobi Optimizer were designed from the ground up to exploit modern
+architectures and multi-core processors, using the most advanced implementations of the
+latest algorithms."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://packages.gurobi.com/%(version_major_minor)s/']
+sources = ['gurobi%(version)s_linux64.tar.gz']
+patches = ['Gurobi-11.0.0_use-eb-python-gurobi-shell.patch']
+checksums = [
+    {'gurobi11.0.0_linux64.tar.gz': '6a1ec7499b230aea0542bc893bf0642ae8ce983dd5ef0c37cb3a253d827ce634'},
+    {'Gurobi-11.0.0_use-eb-python-gurobi-shell.patch':
+     '566473a3ba4e35b0e74595368f9f4133fc4a3c97cca84154c4b938645786e663'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('gurobipy', '11.0.0', {
+        'sources': ['gurobipy-%(version)s-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_%(arch)s.whl'],
+        'checksums': [{
+            'gurobipy-%(version)s-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_aarch64.whl':
+                '096f63ca02fbe810bae25311be598c9d8c5874362e85eac46ef0a4fdb3eaf96b',
+            'gurobipy-%(version)s-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl':
+                'a98abda1cb45f548fff17370eb30cc6e187d04edc5d9984a68d194491598a993',
+        }],
+    }),
+]
+
+# remove bundled Python interpreter in favour of the dependency in EB
+postinstallcmds = ['rm %(installdir)s/bin/python*']
+
+# license is mandatory for installation
+# use EB_GUROBI_LICENSE_FILE environment variable, or 
+# uncomment and modify the following variable:
+# license_file = '/path/to/my-license-file'
+
+modloadmsg = """Gurobi shell based on Python %(pyver)s can be launched with command `gurobi.sh`
+Gurobi Python Interface can be loaded in Python %(pyver)s with 'import gurobipy'
+"""
+
+moduleclass = 'math'
