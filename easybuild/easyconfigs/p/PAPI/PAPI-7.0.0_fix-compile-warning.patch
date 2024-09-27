@@ -1,0 +1,21 @@
+Fix error during compilation caused by a warning:
+pfmlib_perf_event_pmu.c: In function gen_tracepoint_table:
+pfmlib_perf_event_pmu.c:433:27: Error: p could be used uninitialized [-Werror=maybe-uninitialized]
+  433 |                 p->modmsk = 0,
+      |                 ~~~~~~~~~~^~~
+cc1: All warnings handled as errors
+
+Author: Alexander Grund (TU Dresden)
+
+diff -aur a/src/libpfm4/lib/pfmlib_perf_event_pmu.c b/src/libpfm4/lib/pfmlib_perf_event_pmu.c
+--- a/src/libpfm4/lib/pfmlib_perf_event_pmu.c	2023-02-02 15:07:10.990410868 +0100
++++ b/src/libpfm4/lib/pfmlib_perf_event_pmu.c	2023-02-02 15:05:51.962978074 +0100
+@@ -361,7 +361,7 @@
+ {
+ 	DIR *dir1, *dir2;
+ 	struct dirent *d1, *d2;
+-	perf_event_t *p;
++	perf_event_t *p = NULL;
+ 	perf_umask_t *um;
+ 	char d2path[MAXPATHLEN];
+ 	char idpath[MAXPATHLEN];

@@ -1,0 +1,62 @@
+easyblock = 'PythonPackage'
+
+name = 'pyspoa'
+version = '0.2.1'
+
+local_cereal_version = '1.3.2'
+
+homepage = 'https://github.com/nanoporetech/pyspoa'
+description = "Python bindings to spoa."
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+toolchainopts = {'extra_cflags': "-fpermissive"}
+
+sources = [
+    {
+        'filename': '%(name)s-%(version)s.tar.gz',
+        'git_config': {
+            'url': 'https://github.com/nanoporetech',
+            'repo_name': 'pyspoa',
+            'tag': 'v%(version)s',
+            'recursive': True,
+            'keep_git_dir': True,
+        }
+    },
+    {
+        'source_urls': ['https://github.com/USCiLab/cereal/archive/'],
+        'download_filename': 'v%s.tar.gz' % local_cereal_version,
+        'filename': 'cereal-%s.tar.gz' % local_cereal_version,
+    },
+]
+
+patches = ['pyspoa-%(version)s_use-spoa-dep.patch']
+
+checksums = [
+    None,
+    '16a7ad9b31ba5880dac55d62b5d6f243c3ebc8d46a3514149e56b5e7ea81f85f',
+    'dffd946e3b36e4872846fe983d287f992b5bf177798e11141bf0d645cfc0664d',
+]
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('pybind11', '2.11.1'),
+    ('spoa', '4.1.0'),
+]
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+preinstallopts = "mkdir -p src/vendor/cereal && ln -s %(builddir)s/cereal-*/include src/vendor/cereal/include && "
+# strip out cmake requirements, since we provide that as proper dependency
+preinstallopts += "sed -i 's/.cmake==[0-9.]*.//g' setup.py && "
+preinstallopts += "export libspoa=$EBROOTSPOA/lib/libspoa.a && "
+
+options = {'modulename': 'spoa'}
+
+sanity_check_commands = ["cd %(builddir)s/*/tests && python test_pyspoa.py"]
+
+moduleclass = 'lib'

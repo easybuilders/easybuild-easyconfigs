@@ -1,0 +1,50 @@
+easyblock = 'PythonPackage'
+
+name = 'dlib'
+version = '19.24.6'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/davisking/dlib'
+description = """Dlib is a modern C++ toolkit containing machine learning
+algorithms and tools for creating complex software in C++ to solve real world
+problems. It is used in both industry and academia in a wide range of domains
+including robotics, embedded devices, mobile phones, and large high performance
+computing environments."""
+
+# dlib can use BLAS/LAPACK, so using full toolchain
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True}
+
+sources = [SOURCE_TAR_GZ]
+patches = ['dlib-19.24.6_FlexiBLAS.patch']
+checksums = [
+    {'dlib-19.24.6.tar.gz': '77e3c28ac2c66141514b07cbb74b7c7f80381c019ce5fec99007980bc6490d7d'},
+    {'dlib-19.24.6_FlexiBLAS.patch': '47fb348d5f1cd064a135d33cf49fdef56ade24a64218311743076cb6b313738b'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('pkgconf', '1.9.5'),
+]
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('cuDNN', '8.9.2.26', versionsuffix, SYSTEM),
+    ('Python', '3.11.3'),
+    ('libjxl', '0.8.2'),
+    ('X11', '20230603'),
+]
+
+download_dep_fail = True
+use_pip = True
+
+preinstallopts = "export CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s && "
+preinstallopts += "sed -i 's/BLAS_REFERENCE cblas/BLAS_REFERENCE flexiblas/g' dlib/cmake_utils/find_blas.cmake && "
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_pip_check = True
+
+moduleclass = 'lib'

@@ -1,0 +1,67 @@
+# Updated to latest version
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'PythonBundle'
+
+name = 'dxpy'
+version = '0.345.0'
+
+homepage = 'http://autodoc.dnanexus.com/'
+description = "DNAnexus Platform API bindings for Python"
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+
+builddependencies = [
+    ('binutils', '2.39'),
+]
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('FUSE', '3.14.1'),
+    ('BeautifulSoup', '4.11.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('argcomplete', '3.0.5', {
+        'checksums': ['fe3ce77125f434a0dd1bffe5f4643e64126d5731ce8d173d36f62fa43d6eb6f7'],
+    }),
+    ('xattr', '0.10.1', {
+        'checksums': ['c12e7d81ffaa0605b3ac8c22c2994a8e18a9cf1c59287a1b7722a2289c952ec5'],
+    }),
+    ('fusepy', '3.0.1', {
+        'modulename': 'fuse',
+        'patches': ['fusepy-3.0.1_fix-libfuse.patch'],
+        'checksums': [
+            '72ff783ec2f43de3ab394e3f7457605bf04c8cf288a2f4068b4cde141d4ee6bd',  # fusepy-3.0.1.tar.gz
+            '7650c5f922c24b820f2b33e0b5b1af8923c1a5c4ff397701cd970ea33c757fbe',  # fusepy-3.0.1_fix-libfuse.patch
+        ],
+    }),
+    ('backports.ssl_match_hostname', '3.7.0.1', {
+        'checksums': ['bb82e60f9fbf4c080eabd957c39f0641f0fc247d9a16e31e26d594d8f42b9fd2'],
+    }),
+    ('python-magic', '0.4.27', {
+        'modulename': 'magic',
+        'checksums': ['c1ba14b08e4a5f5c31a302b7721239695b2f0f058d125bd5ce1ee36b9d9d3c3b'],
+    }),
+    ('websocket_client', '0.54.0', {
+        'modulename': 'websocket',
+        'checksums': ['e51562c91ddb8148e791f0155fdb01325d99bb52c4cdbb291aee7a3563fd0849'],
+    }),
+    (name, version, {
+        'checksums': ['cf5b47e83866a9c87a4fc59262eac500e860f6a890e6a897a577eff68e28cff2'],
+        # strip away too strict version requirements for requests dependency
+        'preinstallopts': "sed -i 's/requests.*/requests/g' requirements.txt && ",
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/dx'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["dx --help"]
+
+moduleclass = 'bio'

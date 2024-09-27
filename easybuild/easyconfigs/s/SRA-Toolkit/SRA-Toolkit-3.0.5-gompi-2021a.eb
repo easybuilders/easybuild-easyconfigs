@@ -1,0 +1,69 @@
+# updated: Denis Kristak (INUITS)
+# updated: Sebastien Moretti (SIB - Vital-IT)
+easyblock = 'CMakeMake'
+
+name = 'SRA-Toolkit'
+version = '3.0.5'
+
+homepage = 'https://github.com/ncbi/sra-tools'
+description = """The SRA Toolkit, and the source-code SRA System Development
+ Kit (SDK), will allow you to programmatically access data housed within SRA
+ and convert it from the SRA format"""
+github_account = 'ncbi'
+
+toolchain = {'name': 'gompi', 'version': '2021a'}
+toolchainopts = {'extra_cflags': '-DH5_USE_110_API'}
+
+source_urls = ['https://github.com/ncbi/sra-tools/archive/refs/tags/']
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = [
+    {'SRA-Toolkit-3.0.5.tar.gz': '6dca9889ca9cfa83e9ce1c39bf7ae5654576fc79c4f608e902272a49573a05e0'},
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.7.6'),
+    ('Perl', '5.32.1', '-minimal'),
+    ('Python', '3.9.5', '-bare'),
+]
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('ncbi-vdb', version),
+    ('bzip2', '1.0.8'),
+    ('file', '5.40'),
+    ('HDF5', '1.10.7'),
+    ('libxml2', '2.9.10'),
+    ('zlib', '1.2.11'),
+]
+
+configopts = '-DVDB_INCDIR="$EBROOTNCBIMINVDB/include" -DVDB_LIBDIR="$EBROOTNCBIMINVDB/lib" '
+configopts += '-DBUILD_TOOLS_LOADERS=ON -DBUILD_TOOLS_INTERNAL=ON'
+
+_sra_bin = [
+    'abi-dump', 'abi-load', 'align-info', 'bam-load', 'cache-mgr', 'cg-load', 'copycat', 'fasterq-dump', 'fastq-dump',
+    'fastq-load', 'helicos-load', 'illumina-dump', 'illumina-load', 'kar', 'kdbmeta', 'latf-load', 'pacbio-load',
+    'prefetch', 'rcexplain', 'sam-dump', 'sff-dump', 'sff-load', 'srapath', 'sra-pileup', 'sra-sort', 'sra-stat',
+    'sratools', 'srf-load', 'test-sra', 'vdb-config', 'vdb-copy', 'vdb-decrypt', 'vdb-dump', 'vdb-encrypt', 'vdb-lock',
+    'vdb-unlock', 'vdb-validate',
+]
+
+_ngs_libs = ['libncbi-ngs.a', 'libncbi-ngs-c++.a', 'libncbi-ngs.%s' % SHLIB_EXT,
+             'libngs-c++.a', 'libngs-c++.%s' % SHLIB_EXT]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _sra_bin] + ['lib/%s' % l for l in _ngs_libs],
+    'dirs': ['jar', 'include/ncbi-vdb', 'include/ngs']
+}
+
+sanity_check_commands = [
+    "abi-dump --help",
+    "kar --help",
+    "sra-sort --help",
+]
+
+modextrapaths = {'CLASSPATH': 'jar/ngs-java.jar'}
+
+moduleclass = 'bio'

@@ -1,0 +1,50 @@
+# Contribution from the NIHR Biomedical Research Centre
+# Guy's and St Thomas' NHS Foundation Trust and King's College London
+# Based on STAR-2.7.7a-GCC-10.2.0.eb 
+# uploaded by J. Sassmannshausen
+
+easyblock = 'MakeCp'
+
+name = 'STAR'
+version = '2.7.10b'
+
+homepage = 'https://github.com/alexdobin/STAR'
+description = "STAR aligns RNA-seq reads to a reference genome using uncompressed suffix arrays."
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'openmp': True}
+
+github_account = 'alexdobin'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+patches = ['STAR-%(version)s_use-external-htslib.patch']
+checksums = [
+    {'2.7.10b.tar.gz': '0d1b71de6c5be1c5d90b32130d2abcd5785a4fc7c1e9bf19cc391947f2dc46e5'},
+    {'STAR-2.7.10b_use-external-htslib.patch': '1d8a24532a384b3065001c672e486b74094f162cb98829d2ec961401215de7da'},
+]
+
+dependencies = [
+    ('HTSlib', '1.15.1'),
+    ('zlib', '1.2.12'),
+]
+
+start_dir = 'source'
+
+buildopts = ' %(name)s && make %(name)slong'
+
+files_to_copy = [
+    (['source/%(name)s', 'source/%(name)slong'], 'bin'),
+    'CHANGES.md', 'doc', 'extras', 'LICENSE', 'README.md', 'RELEASEnotes.md',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'bin/%(name)slong'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "STAR --help",
+    "STARlong --help",
+]
+
+moduleclass = 'bio'

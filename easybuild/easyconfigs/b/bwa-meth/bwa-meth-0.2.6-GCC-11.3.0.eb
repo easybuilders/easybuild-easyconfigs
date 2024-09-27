@@ -1,0 +1,50 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'bwa-meth'
+version = '0.2.6'
+
+homepage = 'https://github.com/brentp/bwa-meth'
+description = """Fast and accurante alignment of BS-Seq reads."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SAMtools', '1.13'),
+    ('BWA', '0.7.17'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('toolshed', '0.4.6', {
+        'checksums': ['23a31c177bf84244b30a9f12c7a8a17a66a2d63043ead0460c31b9ff42f9fb93'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/brentp/bwa-meth/archive'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'checksums': ['c1d98aa6d34f103752de7ff3148c9586e5571417accb4a39f5bac8546dab497d'],
+        # fix TypeError when using --help, see https://github.com/brentp/bwa-meth/pull/87
+        'preinstallopts': "sed -i 's/44% /44%% /g' bwameth.py && ",
+        'modulename': 'bwameth',
+    }),
+]
+
+fix_python_shebang_for = ['bin/bwameth.py', 'bin/toolshed']
+
+sanity_check_paths = {
+    'files': ['bin/bwameth.py', 'bin/toolshed'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "toolshed --help",
+    "bwameth.py --help",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

@@ -1,0 +1,22 @@
+Bazel doesn't always copy all files as required leading e.g. to failures in TF sanity check: https://github.com/tensorflow/tensorflow/issues/60326
+
+From https://github.com/bazelbuild/bazel/pull/19378
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/src/main/starlark/builtins_bzl/common/cc/experimental_cc_shared_library.bzl b/src/main/starlark/builtins_bzl/common/cc/experimental_cc_shared_library.bzl
+index b9f3b5b7ac..3af1e61c63 100644
+--- a/src/main/starlark/builtins_bzl/common/cc/experimental_cc_shared_library.bzl
++++ b/src/main/starlark/builtins_bzl/common/cc/experimental_cc_shared_library.bzl
+@@ -728,7 +728,10 @@ def _cc_shared_library_impl(ctx):
+         # precompiled_dynamic_library.dynamic_library could be None if the library to link just contains
+         # an interface library which is valid if the actual library is obtained from the system.
+         if precompiled_dynamic_library.dynamic_library != None:
+-            precompiled_only_dynamic_libraries_runfiles.append(precompiled_dynamic_library.dynamic_library)
++            if precompiled_dynamic_library.resolved_symlink_dynamic_library != None:
++                precompiled_only_dynamic_libraries_runfiles.append(precompiled_dynamic_library.resolved_symlink_dynamic_library)
++            else:
++                precompiled_only_dynamic_libraries_runfiles.append(precompiled_dynamic_library.dynamic_library)
+ 
+     runfiles = runfiles.merge(ctx.runfiles(files = precompiled_only_dynamic_libraries_runfiles))
+ 
