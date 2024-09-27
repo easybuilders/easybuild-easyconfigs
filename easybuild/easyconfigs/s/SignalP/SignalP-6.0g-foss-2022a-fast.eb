@@ -1,0 +1,51 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'PythonPackage'
+
+name = 'SignalP'
+version = '6.0g'
+_suffix = 'fast'
+versionsuffix = '-' + _suffix
+
+homepage = 'https://services.healthtech.dtu.dk/software.php'
+description = """SignalP predicts the presence  and  location of signal peptide  cleavage sites
+in  amino acid  sequences  from  different organisms"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+download_instructions = """
+SignalP requires registration and acceptance of licence terms (academic use only).
+ [1] go to: https://services.healthtech.dtu.dk/service.php?SignalP-6.0
+ [2] navigate to the "Downloads" tab
+ [3] select "%s" type under version "%%(version)s"
+ [4] complete the form; you should receive a download link via email
+""" % _suffix
+
+sources = ['%%(namelower)s-%%(version)s.%s.tar.gz' % _suffix]
+unpack_options = '--strip-components=1'
+checksums = ['a16fcea2b30067d2622d446031978bd86927e2e1cecf29a567c7922f6861b5aa']
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),    # numpy > 1.19.2
+    ('tqdm', '4.64.0'),             # tqdm > 4.46.1
+    ('PyTorch', '1.12.0'),          # torch > 1.7.0
+    ('matplotlib', '3.5.2'),        # matplotlib > 3.3.2
+]
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+_bin = '%%(namelower)s%s' % version[0]
+sanity_check_paths = {
+    'files': ['bin/%s' % _bin],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+sanity_check_commands = ['%s --help' % _bin]
+
+moduleclass = 'bio'

@@ -1,0 +1,48 @@
+easyblock = 'PythonBundle'
+
+name = 'SHAP'
+version = '0.42.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = "https://github.com/slundberg/shap"
+description = """SHAP (SHapley Additive exPlanations) is a game theoretic approach to explain the output of any
+ machine learning model. It connects optimal credit allocation with local explanations using the classic Shapley
+ values from game theory and their related extensions."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('scikit-learn', '0.21.3', versionsuffix),
+    ('tqdm', '4.41.1'),
+    ('numba', '0.47.0', versionsuffix),
+]
+
+sanity_pip_check = True
+use_pip = True
+
+# ignore too strict requirement for 'packaging' Python package
+local_preinstallopts = "sed -i 's/packaging>[0-9.]*/packaging/g' pyproject.toml && "
+# fix compatibility with numba 0.47.0
+local_preinstallopts += "sed -i 's/from numba.core.errors import/from numba.errors import/g' shap/maskers/_image.py && "
+
+exts_list = [
+    # recent setuptools required to avoid UNKNOWN and 0.0.0 in SHAP installation
+    ('setuptools', '67.8.0', {
+        'checksums': ['62642358adc77ffa87233bc4d2354c4b2682d214048f500964dbe760ccedf102'],
+    }),
+    ('cloudpickle', '2.2.1', {
+        'checksums': ['d89684b8de9e34a2a43b3460fbca07d09d6e25ce858df4d5a44240403b6178f5'],
+    }),
+    ('slicer', '0.0.7', {
+        'checksums': ['f5d5f7b45f98d155b9c0ba6554fa9770c6b26d5793a3e77a1030fb56910ebeec'],
+    }),
+    (name, version, {
+        'sources': [SOURCELOWER_TAR_GZ],
+        'checksums': ['64403915e4a07d2951e7eee4af0e835b1b519367b11806fe1aa4bd6d81adb626'],
+        'preinstallopts': local_preinstallopts,
+    }),
+]
+
+moduleclass = 'data'

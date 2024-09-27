@@ -1,0 +1,60 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'CMakeMake'
+
+name = 'ParaView'
+version = '5.9.1'
+versionsuffix = '-mpi'
+
+homepage = "https://www.paraview.org"
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'intel', 'version': '2021a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+local_download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['https://www.paraview.org/paraview-downloads/%s' % local_download_suffix]
+sources = ["%(name)s-v%(version)s.tar.gz"]
+checksums = ['efbcba00ba38c23d0ada1bde7144a8745caa308d9e1f94a4a71d8af63732266f']
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('XZ', '5.2.5'),
+    ('HDF5', '1.10.7'),
+    ('netCDF', '4.8.0'),
+    ('libGLU', '9.0.1'),
+    ('X11', '20210518'),
+    ('Mesa', '21.1.1'),
+    ('Qt5', '5.15.2'),
+    ('zlib', '1.2.11'),
+    ('FFmpeg', '4.3.2'),
+    ('Szip', '2.1.1'),
+]
+
+builddependencies = [('CMake', '3.20.1')]
+
+separate_build_dir = True
+
+# Paraview
+configopts = '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DPARAVIEW_BUILD_SHARED_LIBS=ON '
+configopts += '-DPARAVIEW_USE_MPI=ON '
+configopts += '-DPARAVIEW_ENABLE_FFMPEG=ON '
+configopts += '-DPARAVIEW_USE_PYTHON=ON '
+configopts += '-DPython3_ROOT_DIR=$EBROOTPYTHON '
+
+# OpenGL & Mesa
+configopts += '-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s ' % SHLIB_EXT
+configopts += '-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include '
+
+sanity_check_paths = {
+    'files': ['bin/paraview', 'bin/pvpython'],
+    'dirs': ['include/paraview-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['python -c "import paraview"']
+
+modextrapaths = {'PYTHONPATH': ['lib64/python%(pyshortver)s/site-packages', 'lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'vis'

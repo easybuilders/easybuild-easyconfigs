@@ -1,0 +1,52 @@
+easyblock = 'Bundle'
+
+name = 'SNAP-ESA-python'
+version = '8.0'
+local_javasuffix = '-Java-%(javaver)s'
+versionsuffix = local_javasuffix + '-Python-%(pyver)s'
+
+homepage = 'https://step.esa.int/main/toolboxes/snap/'
+description = "Python interface to the Sentinel Application Platform (SNAP) API"
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+dependencies = [
+    ('Java', '1.8', '', SYSTEM),
+    ('SNAP-ESA', version, local_javasuffix, SYSTEM),
+    ('Python', '2.7.18'),
+]
+
+local_pysite = 'lib/python%(pyshortver)s/site-packages'
+local_pyinstalldir = '%%(installdir)s/%s' % local_pysite
+
+postinstallcmds = [
+    # Install snappy from SNAP-ESA
+    # snappy-conf is buggy and it hangs after doing the installation of snappy,
+    # start snappy-conf in a new SID and kill all processes of its PGID
+    # whenever it prints the final line starting with "or copy"
+    "mkdir -p %s" % local_pyinstalldir,
+    ('LOG="$(mktemp -d)/snappy-conf.log"; mkfifo $LOG; trap "rm -f $LOG" EXIT;'
+     'setsid snappy-conf $EBROOTPYTHON/bin/python %s 2>&1 > $LOG & CONFPID=$!;'
+     'while read line; do echo "$line"; [ -z "${line##or copy*}" ] && kill -- -$CONFPID; done < $LOG;')
+    % local_pyinstalldir,
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [local_pysite],
+}
+
+sanity_check_commands = ["python -c 'import snappy'"]
+
+modextrapaths = {'PYTHONPATH': [local_pysite]}
+
+local_javaopts = " -Dsnap.pythonExecutable=python"
+local_javaopts += " -Dsnap.pythonModuleDir=%s" % local_pyinstalldir
+
+# update $JAVA_TOOL_OPTIONS when module is loaded, use empty string as default value if $JAVA_TOOL_OPTIONS is not set
+modluafooter = 'setenv("JAVA_TOOL_OPTIONS", (os.getenv("JAVA_TOOL_OPTIONS") or "") .. "%s")' % local_javaopts
+# likewise, but when using Tcl as module syntax
+local_tcl_JAVA_TOOL_OPTIONS = '[expr {[info exists ::env(JAVA_TOOL_OPTIONS)] ? $::env(JAVA_TOOL_OPTIONS) : ""}]'
+modtclfooter = 'setenv JAVA_TOOL_OPTIONS [concat %s "%s"]' % (local_tcl_JAVA_TOOL_OPTIONS, local_javaopts)
+
+moduleclass = 'geo'

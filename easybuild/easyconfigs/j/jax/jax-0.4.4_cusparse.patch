@@ -1,0 +1,39 @@
+Skip tests:
+ ** On entry to cusparseSpMM_bufferSize(): matrix B and C must be in column-major order
+  cuSparseTest.test_coo_matmat1
+  cuSparseTest.test_coo_matmat3
+  cuSparseTest.test_coo_matmat5
+  test_coo_sorted_indices_gpu_lowerings
+ ** On entry to cusparseSpMM_bufferSize(): opA != CUSPARSE_OPERATION_NON_TRANSPOSE is not supported with CUSPARSE_SPMM_COO_ALG2
+  cuSparseTest.test_coo_matmat6
+  cuSparseTest.test_coo_matmat7
+ ** On entry to cusparseSpMM_bufferSize(): CUSPARSE_SPMM_COO_ALG2 does not support 64-bit indices
+  test_coo_matmat_layout
+Patch by Simon Branford (University of Birmingham)
+--- tests/sparse_test.py.orig	2023-02-23 08:59:00.381238000 +0000
++++ tests/sparse_test.py	2023-02-23 10:39:59.054404886 +0000
+@@ -445,6 +445,8 @@
+     with self.gpu_matmul_dtype_warning_context(dtype):
+       self.assertAllClose(op(M) @ v, jit(matvec)(*args), rtol=MATMUL_TOL)
+ 
++  @unittest.skip("""1, 3, 5: On entry to cusparseSpMM_bufferSize(): matrix B and C must be in column-major order;
++6, 7: On entry to cusparseSpMM_bufferSize(): opA != CUSPARSE_OPERATION_NON_TRANSPOSE is not supported with CUSPARSE_SPMM_COO_ALG2""")
+   @jtu.sample_product(
+     shape=[(5, 8), (8, 5), (5, 5), (8, 8)],
+     dtype=all_dtypes,
+@@ -465,6 +467,7 @@
+     with self.gpu_matmul_dtype_warning_context(dtype):
+       self.assertAllClose(op(M) @ B, jit(matmat)(*args), rtol=MATMUL_TOL)
+ 
++  @unittest.skip("On entry to cusparseSpMM_bufferSize(): CUSPARSE_SPMM_COO_ALG2 does not support 64-bit indices")
+   def test_coo_matmat_layout(self):
+     # Regression test for https://github.com/google/jax/issues/7533
+     d = jnp.array([1.0, 2.0, 3.0, 4.0])
+@@ -494,6 +497,7 @@
+ 
+   @unittest.skipIf(not GPU_LOWERING_ENABLED, "test requires cusparse/hipsparse")
+   @unittest.skipIf(jtu.device_under_test() != "gpu", "test requires GPU")
++  @unittest.skip("On entry to cusparseSpMM_bufferSize(): matrix B and C must be in column-major order")
+   def test_coo_sorted_indices_gpu_lowerings(self):
+     dtype = jnp.float32
+ 

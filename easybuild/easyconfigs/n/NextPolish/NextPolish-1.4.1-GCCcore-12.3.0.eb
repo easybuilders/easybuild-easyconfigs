@@ -1,0 +1,72 @@
+easyblock = 'MakeCp'
+
+name = 'NextPolish'
+version = '1.4.1'
+
+homepage = 'https://github.com/Nextomics/NextPolish'
+description = 'NextDenovo is a string graph-based de novo assembler for long reads.'
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/Nextomics/NextPolish/releases/download/']
+sources = [{
+    'download_filename': 'v%(version)s/%(name)s.tgz',
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['2a5f66f3db7f76e583a6b6e28f9c1f3c392258b8d755050d7abe129a2fbb48c4']
+
+builddependencies = [('binutils', '2.40')]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('BWA', '0.7.17'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'preinstallopts': '',
+    'installopts': '',
+}
+
+exts_list = [
+    ('Paralleltask', '0.2.3', {
+        'modulename': 'paralleltask',
+        'checksums': ['8015a8311d5021bc44edbfbf45ff2557a529999e235d25190bac62993fdf7b66'],
+    }),
+]
+
+# fix make -C util - warning: jobserver unavailable
+parallel = 1
+
+# fix bwa bug - https://github.com/Nextomics/NextPolish/issues/83
+prebuildopts = "sed -i 's/seq_count bwa samtools minimap2/seq_count samtools minimap2/' Makefile && "
+prebuildopts += "rm -rf util/bwa && "
+prebuildopts += (
+    "sed -i"
+    " -e 's/seq_count bwa_ samtools_/seq_count samtools_/'"
+    " -e '29d'"  # @+make clean -C $(BWADIR)
+    " -e '18,20d'"  # bwa_:	@+make -C $(BWADIR)
+    " -e '1d'"  # BWADIR = ./bwa
+    " util/Makefile && "
+)
+postinstallcmds = ['cd %(installdir)s/bin && ln -s $EBROOTBWA/bin/bwa']
+
+files_to_copy = ['bin', 'lib', 'test_data', 'LICENSE', 'nextPolish']
+
+sanity_check_paths = {
+    'files': ['nextPolish', 'bin/minimap2', 'bin/paralleltask', 'bin/bwa'],
+    'dirs': ['test_data', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['nextPolish --help']
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'PATH': '',
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,72 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonBundle'
+
+name = 'Cellpose'
+version = '2.2.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://www.cellpose.org'
+description = """a generalist algorithm for cellular segmentation"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('OpenCV', '4.6.0', versionsuffix + '-contrib'),
+    ('SciPy-bundle', '2022.05'),
+    ('PyQt5', '5.15.5'),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('PyQtGraph', '0.13.3'),
+    ('numba', '0.56.4', versionsuffix),
+    ('tqdm', '4.64.0'),
+    ('imagecodecs', '2022.9.26'),
+    ('scikit-build', '0.15.0'),
+    ('QtPy', '2.3.0'),
+]
+
+use_pip = True
+
+# avoid hatchling requirement to install
+# (since installing it introduces conflicting version requirements with poetry included with Python)
+_preinstallopts_no_hatchling = """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """
+_preinstallopts_no_hatchling += """-e 's/^requires = .*/requires = ["setuptools"]/g' """
+_preinstallopts_no_hatchling += r"""-e 's/dynamic = \["version"\]/version = "%(version)s"/g' pyproject.toml && """
+
+exts_list = [
+    ('tifffile', '2023.4.12', {
+        'checksums': ['2fa99f9890caab919d932a0acaa9d0f5843dc2ef3594e212963932e20713badd'],
+    }),
+    ('natsort', '8.3.1', {
+        'checksums': ['517595492dde570a4fd6b6a76f644440c1ba51e2338c8a671d7f0475fda8f9fd'],
+    }),
+    ('fastremap', '1.13.5', {
+        'preinstallopts': "export PBR_VERSION=1.2.3 && ",
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/seung-lab/fastremap/archive/'],
+        'checksums': ['ee0e9e798e9f331b7c46e98768735a42bb6e287b3aa56c31c322ba585f4036b7'],
+    }),
+    ('roifile', '2023.5.12', {
+        'checksums': ['32eeba0d9ad52cc249d6a234b737c1808a6c5d7d9baae6453709eb74222b3433'],
+    }),
+    ('superqt', '0.6.6', {
+        'preinstallopts': _preinstallopts_no_hatchling,
+        'checksums': ['792e09165c8a788ee245bdb784e018f9077fb309253354d86793cdf1d092f99f'],
+    }),
+    (name, version, {
+        # OpenCV dependency provides opencv-contrib-python (equivalent to opencv-python-headless)
+        'preinstallopts': "sed -i 's/opencv-python-headless/opencv-contrib-python/g' setup.py && ",
+        'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
+        'use_pip_extras': 'gui',
+        'checksums': ['f21773d364d117eb6fd84c3fb27375845ef373793139ef1668c15491294a3b47'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

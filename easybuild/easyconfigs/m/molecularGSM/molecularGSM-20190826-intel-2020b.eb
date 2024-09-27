@@ -1,0 +1,60 @@
+easyblock = 'CMakeMake'
+
+name = 'molecularGSM'
+version = '20190826'
+_commit_moleculargsm = '02ae717'
+_commit_tribits = '5308a8e'
+
+homepage = 'https://github.com/ZimmermanGroup/molecularGSM'
+description = """Code for single-ended and double-ended molecular GSM.
+The growing string method is a reaction path and transition state finding method developed in c++."""
+
+toolchain = {'name': 'intel', 'version': '2020b'}
+toolchainopts = {'debug': True, 'noopt': True, 'extra_cxxflags': '-traceback', 'optarch': False}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/ZimmermanGroup/molecularGSM/archive/'],
+        'download_filename': '%s.tar.gz' % _commit_moleculargsm,
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://github.com/TriBITSPub/TriBITS/archive'],
+        'download_filename': '%s.tar.gz' % _commit_tribits,
+        'filename': 'TriBITS-%s.tar.gz' % _commit_tribits,
+        'extract_cmd': 'tar -xzf %s -C %(name)s-* && cd %(name)s-* && mv TriBITS-* TriBITS',
+    },
+]
+patches = [
+    'molecularGSM-20190826_fix_intel.patch',
+    'molecularGSM-20190826_fix_ase_test.patch',
+]
+checksums = [
+    '7bb7fd30d4220f720c25a0c6f761eba2b62f94b3be91b15eb536e49778245afc',  # molecularGSM-20190826.tar.gz
+    '121c3885f8b8d2080a299db7f3f527520c985671280e69cb7beb00cd9e9f3e00',  # TriBITS-5308a8e.tar.gz
+    '64b81dec0380db1d350c6ab33d10acb4364ad929544596025e6c7dfea6144a70',  # molecularGSM-20190826_fix_intel.patch
+    '13b4f207af96749a118dee66a5b1fa9606c65c4c39b1b9981edfe713b46dd9c5',  # molecularGSM-20190826_fix_ase_test.patch
+]
+
+builddependencies = [('CMake', '3.18.4')]
+
+configopts = [
+    '',  # default is MOPAC
+    '-DGSM_ENABLE_QCHEM=1',
+    '-DGSM_ENABLE_QCHEM_SF=1',
+    '-DGSM_ENABLE_ORCA=1',
+    '-DGSM_ENABLE_GAUSSIAN=1',
+    '-DGSM_ENABLE_MOLPRO=1',
+    '-DGSM_ENABLE_ASE=1',
+]
+
+install_cmd = 'mkdir -p %(installdir)s/bin && cp -a GSM/*.exe %(installdir)s/bin/'
+
+_bins = ['ase', 'gaussian', 'molpro', 'mopac', 'orca', 'qchem', 'qchem_sf']
+
+sanity_check_paths = {
+    'files': ['bin/gsm.%s.exe' % x for x in _bins],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
