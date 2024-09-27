@@ -1,0 +1,39 @@
+From bc32eb363105af80de12560cf52bf295db70f5ff Mon Sep 17 00:00:00 2001
+From: Karsten Bolding <karsten@bolding-bruggeman.com>
+Date: Mon, 21 Feb 2022 10:42:16 +0100
+Subject: [PATCH] use gotm_stim_driver from STIM - instead of just ice
+diff --git a/src/gotm/gotm.F90.orig b/src/gotm/gotm.F90
+index 4149664..5146bfa 100644
+--- a/src/gotm/gotm.F90.orig
++++ b/src/gotm/gotm.F90
+@@ -58,7 +58,7 @@
+    use airsea_variables, only: qa,ta
+ 
+ #ifdef _ICE_
+-   use ice,         only: init_ice, post_init_ice, do_ice, clean_ice, ice_cover
++   use gotm_stim_driver, only: init_ice, post_init_ice, do_ice, clean_ice, ice_cover
+    use stim_variables, only: Tice_surface,albedo_ice,transmissivity
+ #endif
+ 
+@@ -743,7 +743,7 @@
+ 
+ #ifdef _ICE_
+       Qsw = I_0%value
+-      call do_ice(h(nlev),dt,T(nlev),S(nlev),ta,precip%value,Qsw,surface_fluxes)
++      call do_ice(h(nlev),dt,u_taus,T(nlev),S(nlev),ta,precip%value,Qsw,surface_fluxes)
+ #endif
+ 
+ !     reset some quantities
+diff --git a/src/gotm/register_all_variables.F90.orig b/src/gotm/register_all_variables.F90
+index b1895bb..967dac9 100644
+--- a/src/gotm/register_all_variables.F90.orig
++++ b/src/gotm/register_all_variables.F90
+@@ -185,7 +185,7 @@
+ ! !DESCRIPTION:
+ !
+ ! !USES:
+-   use ice, only: ice_model
++   use gotm_stim_driver, only: ice_model
+    use stim_variables, only: Tice_surface,Tice,Tf
+    use stim_variables, only: Hice, Hfrazil, dHis, dHib
+    use stim_variables, only: surface_ice_energy,bottom_ice_energy

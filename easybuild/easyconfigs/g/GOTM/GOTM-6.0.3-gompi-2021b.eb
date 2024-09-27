@@ -1,0 +1,52 @@
+easyblock = "CMakeMake"
+
+name = 'GOTM'
+version = '6.0.3'
+
+homepage = 'https://gotm.net'
+description = """GOTM - the General Ocean Turbulence Model is an ambitious name for a
+one-dimensional water column model for marine and limnological applications. It
+is coupled to a choice of traditional as well as state-of-the-art
+parameterisations for vertical turbulent mixing. The package consists of the
+FORTRAN source code, a number of idealised and realistic test cases, and a
+scientific documentation, all published under the GNU public license."""
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/gotm-model/code/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+patches = ['GOTM-6.0.3_use_eb_deps.patch']
+checksums = [
+    'c8418c733287adce8152eba352680299235064d19dc93cf56aa48a0432855049',  # v6.0.3.tar.gz
+    'c1463a7c0cd5ba79eb0f80d0db847fb8bd63b2c449767d0ee2b7b6058078829f',  # GOTM-6.0.3_use_eb_deps.patch
+]
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+]
+
+dependencies = [
+    ('FABM', '1.0.3'),
+    ('flexout', '20220209'),
+    ('netCDF-Fortran', '4.5.3'),
+]
+
+configopts = '-DBUILD_SHARED_LIBS=ON '
+# Use FABM from EasyBuild
+configopts += '-DGOTM_USE_FABM=ON -DFABM_PREFIX=$EBROOTFABM '
+
+# Install extra libraries not covered in CMake build
+postinstallcmds = ["find %%(builddir)s -name '*.%s' -exec cp '{}' %%(installdir)s/lib/ \;" % SHLIB_EXT]
+
+_gotm_libs = ['airsea', 'config', 'gotm_fabm', 'input_manager', 'turbulence', 'util']
+_gotm_extra_libs = ['airsea_driver', 'meanflow', 'gotm', 'gotm_fabm_io', 'observations', 'stokes_drift']
+
+sanity_check_paths = {
+    'files': ['bin/gotm'] + ['lib/lib%s.%s' % (l, SHLIB_EXT) for l in _gotm_libs + _gotm_extra_libs],
+    'dirs': ['cmake', 'include'],
+}
+
+sanity_check_commands = ["gotm -h"]
+
+moduleclass = 'geo'

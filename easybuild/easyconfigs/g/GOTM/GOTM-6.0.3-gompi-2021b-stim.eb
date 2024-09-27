@@ -1,0 +1,79 @@
+easyblock = "CMakeMake"
+
+name = 'GOTM'
+version = '6.0.3'
+versionsuffix = '-stim'
+_stim_commit = 'c5537cebe0c85375e5e8aed1bb38c35ffb2f3c60'
+
+homepage = 'https://gotm.net'
+description = """GOTM - the General Ocean Turbulence Model is an ambitious name for a
+one-dimensional water column model for marine and limnological applications. It
+is coupled to a choice of traditional as well as state-of-the-art
+parameterisations for vertical turbulent mixing. The package consists of the
+FORTRAN source code, a number of idealised and realistic test cases, and a
+scientific documentation, all published under the GNU public license.
+This module of GOTM includes the Simple Thermodynamic Ice Models (STIM), which
+provides a common interface of ice models to hydrodynamic models.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+toolchainopts = {'pic': True}
+
+# GOTM with STIM requires building both packages at the same time due to a circular dependency:
+# - GOTM needs the gotm_stim_driver.mod from STIM
+# - STIM needs settings.mod from GOTM to build the driver
+source_urls = [
+    'https://github.com/gotm-model/code/archive/refs/tags',
+    'https://github.com/BoldingBruggeman/stim/archive',
+]
+sources = [
+    {'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ},
+    {
+        'download_filename': '%s.tar.gz' % _stim_commit,
+        'filename': 'STIM-%s.tar.gz' % _stim_commit[0:8],
+        'extract_cmd': 'tar -xzf %s --strip-components 1 -C code-%(version)s/extern/stim',
+    },
+]
+patches = [
+    'GOTM-6.0.3_use_eb_deps.patch',
+    'GOTM-6.0.3_use_gotm_stim_driver.patch',
+]
+checksums = [
+    'c8418c733287adce8152eba352680299235064d19dc93cf56aa48a0432855049',  # GOTM-6.0.3.tar.gz
+    'a043c323049238e5c449c89bc398b35d2d38b82c1920ebfd4590dc75eb9be8cd',  # STIM-20220225.tar.gz
+    'c1463a7c0cd5ba79eb0f80d0db847fb8bd63b2c449767d0ee2b7b6058078829f',  # GOTM-6.0.3_use_eb_deps.patch
+    'cfc9e06684b371f83dd3394c4d6cbce08a2a730429508be3878d513fb04c79e7',  # GOTM-6.0.3_use_gotm_stim_driver.patch
+]
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+]
+
+dependencies = [
+    ('FABM', '1.0.3'),
+    ('flexout', '20220209'),
+    ('netCDF-Fortran', '4.5.3'),
+]
+
+configopts = '-DBUILD_SHARED_LIBS=ON '
+# Use FABM from EasyBuild
+configopts += '-DGOTM_USE_FABM=ON -DFABM_PREFIX=$EBROOTFABM '
+# Enable STIM
+configopts += '-DGOTM_USE_STIM=ON '
+
+# Install extra libraries not covered in CMake build
+postinstallcmds = ["find %%(builddir)s -name '*.%s' -exec cp '{}' %%(installdir)s/lib/ \;" % SHLIB_EXT]
+
+_gotm_libs = ['airsea', 'config', 'gotm_fabm', 'input_manager', 'turbulence', 'util']
+_gotm_extra_libs = ['airsea_driver', 'meanflow', 'gotm', 'gotm_fabm_io', 'observations', 'stokes_drift']
+_stim_libs = ['stim']
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s' % (l, SHLIB_EXT) for l in _gotm_libs + _gotm_extra_libs + _stim_libs] +
+             ['bin/gotm', 'include/gotm_stim_driver.mod'],
+    'dirs': ['cmake', 'include'],
+}
+
+sanity_check_commands = ["gotm -h"]
+
+moduleclass = 'geo'
