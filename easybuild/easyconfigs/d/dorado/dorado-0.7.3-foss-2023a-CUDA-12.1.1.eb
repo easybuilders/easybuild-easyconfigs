@@ -1,0 +1,89 @@
+easyblock = 'CMakeMake'
+
+name = 'dorado'
+version = '0.7.3'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/nanoporetech/dorado'
+description = """Dorado is a high-performance, easy-to-use, open source basecaller for Oxford Nanopore reads."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/nanoporetech/dorado/archive/']
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/nanoporetech',
+        'repo_name': name,
+        'tag': 'v%(version)s',
+        'recursive': True,
+    },
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = [
+    '%(name)s-%(version)s_include-fstream.patch',
+    '%(name)s-%(version)s_dont_install_external_libraries.patch',
+]
+
+checksums = [
+    None,
+    'a32cbd34185bcc5ae3d552a072e396825aa7184187cd11c70a4380618387a530',
+    '2a250d606c0ae17f47d99981309fa204a1394ddd81851a1d530dcd0aea2306ac',
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('PyTorch', '2.1.2', '-CUDA-%(cudaver)s'),
+    ('HDF5', '1.14.0'),
+    ('zstd', '1.5.5'),
+    ('HTSlib', '1.18'),
+    ('kineto', '0.4.0'),
+    ('libaec', '1.0.6'),
+]
+
+# don't link to OpenSSL static libraries
+# fix for CMake Error "missing: OPENSSL_CRYPTO_LIBRARY" (if only shared OpenSSL libraries are available)
+preconfigopts = "sed -i '/OPENSSL_USE_STATIC_LIBS TRUE/d' ../dorado/cmake/OpenSSL.cmake && "
+# link in the ssl and crypto libs, to fix:
+# undefined reference to symbol 'SSL_get_peer_certificate@@OPENSSL_1_1_0'
+preconfigopts += "sed -i 's/OpenSSL::SSL/ssl\\n    crypto/g' ../dorado/dorado/utils/CMakeLists.txt && "
+
+# don't use vendored HTSlib, use provided HTSlib dependency
+preconfigopts += "rm -r ../dorado/dorado/3rdparty/htslib/ && "
+preconfigopts += "sed -i '/add_dependencies.*htslib_project/d' ../dorado/CMakeLists.txt && "
+preconfigopts += "sed -i '/add_dependencies.*htslib_project/d' ../dorado/dorado/utils/CMakeLists.txt && "
+preconfigopts += "sed -i '/Htslib.cmake/d' ../dorado/CMakeLists.txt && "
+# link with -lhts, not -lhtslib
+preconfigopts += "sed -i 's/htslib/hts/g' ../dorado/CMakeLists.txt && "
+preconfigopts += "sed -i 's/htslib/hts/g' ../dorado/dorado/utils/CMakeLists.txt && "
+
+# disable treating warnings like errors by stripping out -Werror
+# cfr. https://github.com/nanoporetech/dorado/issues/779
+preconfigopts += "sed -i 's/-Werror//g' ../dorado/cmake/Warnings.cmake && "
+
+_copts = [
+    "-DCUDA_TOOLKIT_ROOT_DIR=$EBROOTCUDA",
+    "-DCMAKE_CUDA_COMPILER=$EBROOTCUDA/bin/nvcc",
+    '-DOPENSSL_ROOT_DIR=$EBROOTOPENSSL',
+    "-DDORADO_LIBTORCH_DIR=$EBROOTPYTORCH/lib",
+    # add -pthread flag (in addition to -lpthread) to avoid linking error:
+    # in function `_GLOBAL__sub_I_mutex.cc': mutex.cc:(.text.startup+0x17): undefined reference to `pthread_atfork'
+    '-DCMAKE_C_FLAGS="$CFLAGS -pthread"',
+]
+
+configopts = ' '.join(_copts)
+
+sanity_check_paths = {
+    'files': ['bin/dorado'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["dorado basecaller --help"]
+
+moduleclass = 'bio'

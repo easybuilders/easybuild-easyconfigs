@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'GDMA'
+version = '2.3.3_20230603'
+_commit = '6b8e81ec'
+
+homepage = 'https://gitlab.com/anthonyjs/gdma'
+description = """
+The GDMA program carries out Distributed Multipole Analysis of wavefunctions
+calculated by the Gaussian system of programs or the Psi4 package, using the
+formatted checkpoint files that they can produce. The result is a set of
+multipole moments at sites defined by the user (usually at the positions of the
+atomic nuclei) which, given an accurate wavefunction, provide an accurate
+description of the electrostatic field of the molecule."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+sources = [{
+    'source_urls': ['https://gitlab.com/anthonyjs/gdma/-/archive/'],
+    'download_filename': '%s.tar.gz' % _commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['cc008932ae8768e6cbd444337a998e02b2100c123492c260d6020590e76bec1e']
+
+parallel = 1
+
+skipsteps = ['configure']
+
+# avoid using git to obtain the commit: not a cloned repo
+prebuildopts = """sed -i "/^log =/,/^commit =/c commit = '%s'" src/version.py && """ % _commit
+
+preinstallopts = 'mkdir -p %(installdir)s/bin && '
+installopts = 'INSTALL_DIR=%(installdir)s/bin'
+
+sanity_check_paths = {
+    'files': ['bin/gdma'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['echo|gdma']
+
+moduleclass = 'chem'
