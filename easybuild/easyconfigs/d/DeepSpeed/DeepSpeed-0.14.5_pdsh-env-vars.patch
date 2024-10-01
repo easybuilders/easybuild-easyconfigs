@@ -1,34 +1,32 @@
-From 00b832aad94e8bd003ce8d4d99b6f442678e04a0 Mon Sep 17 00:00:00 2001
+From aba7406021d9ea81f7c99e5d0143ed6509acc9e9 Mon Sep 17 00:00:00 2001
 From: Viktor Rehnberg <viktor.rehnberg@gmail.com>
 Date: Wed, 25 Sep 2024 09:29:23 +0000
 Subject: [PATCH] Add software relevant environment variables
 
 The multinode runner launches processes with pdsh, if LD_LIBRARY_PATH is
 not included in these exports then the python .so file may not be found.
-Also including all environment variables added by module load DeepSpeed.
+Also including what seemed important and was added from loading DeepSpeed.
+(Couldn't add everything, then argumet list becomes too long).
 
 See
  - https://github.com/easybuilders/easybuild-easyconfigs/pull/21438#issuecomment-2373540098
- - https://github.com/easybuilders/easybuild-easyconfigs/pull/21438#issuecomment-2385060679
 for more details.
 ---
- deepspeed/launcher/runner.py | 7 +++++++
- 1 file changed, 7 insertions(+)
+ deepspeed/launcher/runner.py | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/deepspeed/launcher/runner.py b/deepspeed/launcher/runner.py
-index 07d1713e..02d077d8 100755
+index 07d1713e..e9cd61b8 100755
 --- a/deepspeed/launcher/runner.py
 +++ b/deepspeed/launcher/runner.py
-@@ -32,6 +32,13 @@ from deepspeed.accelerator import get_accelerator
+@@ -32,6 +32,11 @@ from deepspeed.accelerator import get_accelerator
  
  DLTS_HOSTFILE = "/job/hostfile"
  EXPORT_ENVS = ['MLFLOW', 'PYTHON', 'MV2', 'UCX']
-+EXPORT_ENVS += [ # Diff `module load DeepSpeed` vs `module purge`
-+    'LD_LIBRARY_PATH', 'PATH', 'EB', 'TRITON', 'CUDA',  # needed
-+    'ACLOCAL', 'CMAKE', 'CPATH', 'LIBRARY_PATH', '_LMFILES', '__LMOD',
-+    'LOADEDMODULES', 'MANPATH', '_ModuleTable', 'MPL', 'NCCL',
-+    'PKG_CONFIG_PATH', 'PYTHONPATH', 'SLURM_MPI_TYPE',
-+    'SLURM_PMIX_DIRECT_CONN_UCX', 'UCX_MODULE', 'XDG_DATA_DIRS',
++EXPORT_ENVS += [ # Extra based on what's added by module load DeepSpeed
++    'LD_LIBRARY_PATH', 'PATH', 'EB', 'TRITON', 'CUDA',  # important
++    'ACLOCAL', 'CMAKE', 'CPATH', 'LIBRARY_PATH', 'MPL', 'NCCL',
++    'PKG_CONFIG_PATH', 'XDG_DATA_DIRS',
 +]
  EXPORT_ENVS += NEBULA_EXPORT_ENVS
  DEEPSPEED_ENVIRONMENT_NAME = os.getenv("DS_ENV_FILE", ".deepspeed_env")

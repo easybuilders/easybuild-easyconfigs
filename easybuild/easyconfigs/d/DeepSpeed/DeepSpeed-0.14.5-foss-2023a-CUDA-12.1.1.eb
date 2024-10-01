@@ -50,7 +50,14 @@ exts_list = [
         'checksums': ['9639e3d19f90e754f985ed444542ed2f8a049f3c0488fcb6efe150f30922cf74'],
     }),
     (name, version, {
-        # Test suite not available on pypi
+        'ds_build_opts_to_skip': [
+            # DS_BUILD_<OPT>=0 http://www.deepspeed.ai/tutorials/advanced-install/#pre-install-deepspeed-ops
+            'SPARSE_ATTN',  # requires PyTorch<2.0, triton==1.0.0
+            'EVOFORMER_ATTN',  # requires PyTorch<2.0, triton==1.0.0
+            'CUTLASS_OPS',  # requires dskernels
+            'RAGGED_DEVICE_OPS',  # requires dskernels
+
+        ],
         'installopts': '--global-option="build_ext" --global-option="-j%(parallel)s"',
         'patches': [
             'DeepSpeed-0.14.2_no-ninja-dep.patch',
@@ -64,6 +71,7 @@ exts_list = [
             ' and not TestWandb'  # requires wandb
             ' and not TestCometMonitor"'  # requires comet
         ),
+        # Test suite not available on pypi
         'source_urls': [GITHUB_SOURCE],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
         'testinstall': True,
@@ -72,15 +80,11 @@ exts_list = [
             {'DeepSpeed-0.14.2_no-ninja-dep.patch': '03ab528096387e7f18d2a5a6f5fc20ed86d1ca8f63f0e65f266f4dda30e11776'},
             {'DeepSpeed-0.14.5_pic-compile.patch': '7d250f6bf57d006cab01a8763803b026f0d9029634557746c2a759893ab279b3'},
             {'DeepSpeed-0.14.5_pdsh-env-vars.patch':
-             'f4703d16fa2859fdcb82445573a68df94c66dde21575e17fb17b22723afb328d'},
+             '02f053d8de17e4e607b223e836658d8223cb26a3a7d8c9135e67b69aaa7f83a9'},
         ],
     }),
 ]
 
-sanity_check_commands = [
-    "deepspeed --help",
-    "python -m deepspeed.env_report",
-]
 sanity_pip_check = True
 
 moduleclass = 'ai'
