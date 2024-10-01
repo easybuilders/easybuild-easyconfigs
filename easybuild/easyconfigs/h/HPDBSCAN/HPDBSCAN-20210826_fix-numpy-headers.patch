@@ -1,0 +1,81 @@
+Fix finding numpy includes such as `<numpy/arrayobject.h>`.
+Fixes failing compilation unless the numpy headers are in the compilers search path (e.g. $CPATH)
+See https://github.com/Markus-Goetz/hpdbscan/pull/12
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6c3e450..b25c597 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -44,7 +44,7 @@ TARGET_COMPILE_OPTIONS(hpdbscan-bin PRIVATE ${OpenMP_CXX_FLAGS})
+ 
+ ## hdf5
+ FIND_PACKAGE(HDF5 1.8.10 REQUIRED)
+-INCLUDE_DIRECTORIES("${HDF5_INCLUDE_DIRS}")
++TARGET_INCLUDE_DIRECTORIES(hpdbscan-bin PRIVATE "${HDF5_INCLUDE_DIRS}")
+ TARGET_LINK_LIBRARIES(hpdbscan-bin PRIVATE "${HDF5_LIBRARIES}")
+ 
+ ## swig and python detection for optional bindings
+@@ -57,10 +57,9 @@ IF(SWIG_FOUND)
+             MESSAGE("PYTHON HEADERS NOT FOUND, BUILDING WITHOUT BINDINGS")
+             MESSAGE("TRY INSTALLING THE python-dev OR python-devel PACKAGE")
+         ELSE()
+-            INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
+ 	    FIND_PACKAGE(NumPy)
+-	    IF(NUMPY_FOUND)
+-		EXECUTE_PROCESS(COMMAND swig -c++ -python -I"${PYTHON_INCLUDE_DIRS}" -I"${NUMPY_INCLUDE_DIRS}" -o "${CMAKE_CURRENT_BINARY_DIR}/hpdbscan_wrap.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/swig/hpdbscan.i")
++	    IF(NumPy_FOUND)
++		EXECUTE_PROCESS(COMMAND swig -c++ -python -o "${CMAKE_CURRENT_BINARY_DIR}/hpdbscan_wrap.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/swig/hpdbscan.i")
+                 ADD_LIBRARY(hpdbscan-binding SHARED ${CMAKE_CURRENT_BINARY_DIR}/hpdbscan_wrap.cpp)
+                 IF(MPI_FOUND)
+                     FIND_PACKAGE(MPI4PY)
+@@ -71,8 +70,10 @@ IF(SWIG_FOUND)
+                         MESSAGE("MPI FOUND, BUT MPI4PY MISSING, BINDING WILL BE BUILT WITHOUT MPI SUPPORT")
+                     ENDIF()
+                 ENDIF()
++                TARGET_INCLUDE_DIRECTORIES(hpdbscan-binding PRIVATE ${PYTHON_INCLUDE_DIRS} ${NUMPY_INCLUDE_DIRS})
+                 TARGET_LINK_LIBRARIES(hpdbscan-binding PRIVATE ${OpenMP_CXX_FLAGS})
+                 TARGET_COMPILE_OPTIONS(hpdbscan-binding PRIVATE ${OpenMP_CXX_FLAGS})
++                TARGET_INCLUDE_DIRECTORIES(hpdbscan-binding PRIVATE "${HDF5_INCLUDE_DIRS}")
+                 TARGET_LINK_LIBRARIES(hpdbscan-binding PRIVATE "${HDF5_LIBRARIES}")
+                 
+                 # rename the library
+diff --git a/cmake/FindNumPy.cmake b/cmake/FindNumPy.cmake
+index ba0d7fd..8e353b5 100644
+--- a/cmake/FindNumPy.cmake
++++ b/cmake/FindNumPy.cmake
+@@ -1,28 +1,15 @@
+ # modified from https://github.com/live-clones/xdmf/blob/master/CMake/FindMPI4PY.cmake
+ 
+-IF(NOT NUMPY_INCLUDE_DIR)
++IF(NOT NUMPY_INCLUDE_DIRS)
+     EXECUTE_PROCESS(COMMAND
+       "${PYTHON_EXECUTABLE}" "-c" "import numpy as np; print(np.get_include())"
+-      OUTPUT_VARIABLE NUMPY_INCLUDE_DIR
++      OUTPUT_VARIABLE NUMPY_COMMAND_OUTPUT
+       RESULT_VARIABLE NUMPY_COMMAND_RESULT
+       OUTPUT_STRIP_TRAILING_WHITESPACE)
+-    IF(NUMPY_COMMAND_RESULT)
+-        MESSAGE("numpy not found")
+-	SET(NUMPY_FOUND FALSE)
+-    ELSE()
+-	    IF(NUMPY_INCLUDE_DIR MATCHES "Traceback")
+-            MESSAGE("numpy matches traceback")
+-	    ## Did not successfully include NUMPY
+-	    SET(NUMPY_FOUND FALSE)
+-        ELSE()
+-            ## successful
+-	    SET(NUMPY_FOUND TRUE)
+-	    SET(NUMPY_INCLUDE_DIR ${NUMPY_INCLUDE_DIR} CACHE STRING "numpy include path")
+-        ENDIF()
++    IF(NOT NUMPY_COMMAND_RESULT AND NOT NUMPY_COMMAND_OUTPUT MATCHES "Traceback")
++        SET(NUMPY_INCLUDE_DIRS ${NUMPY_COMMAND_OUTPUT} CACHE STRING "numpy include path")
+     ENDIF()
+-ELSE()
+-	SET(NUMPY_FOUND TRUE)
+ ENDIF()
+ 
+ INCLUDE(FindPackageHandleStandardArgs)
+-FIND_PACKAGE_HANDLE_STANDARD_ARGS(NUMPY DEFAULT_MSG NUMPY_INCLUDE_DIR)
++FIND_PACKAGE_HANDLE_STANDARD_ARGS(NumPy DEFAULT_MSG NUMPY_INCLUDE_DIRS)
