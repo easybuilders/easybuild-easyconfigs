@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'occt'
+version = '7.8.1'
+local_v = version.replace('.', '_')
+
+homepage = 'https://www.opencascade.com/'
+description = """Open CASCADE Technology (OCCT) is an object-oriented C++
+class library designed for rapid production of sophisticated domain-specific
+CAD/CAM/CAE applications."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ['https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags']
+sources = [{'download_filename': 'V%s.tar.gz' % local_v, 'filename': SOURCE_TAR_GZ}]
+patches = ['occt-OpenCASCADEConfig-cmake.patch']
+checksums = [
+    {'occt-7.8.1.tar.gz': '7321af48c34dc253bf8aae3f0430e8cb10976961d534d8509e72516978aa82f5'},
+    {'occt-OpenCASCADEConfig-cmake.patch': 'f4b7ff289a3077c94d7c80665076af6d7c5d80da945311feca3558662e394f5d'},
+]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('Doxygen', '1.9.8'),
+    ('binutils', '2.40'),
+]
+dependencies = [
+    ('Mesa', '23.1.9'),
+    ('freetype', '2.13.2'),
+    ('Tcl', '8.6.13'),
+    ('Tk', '8.6.13'),
+    ('FreeImage', '3.18.0'),
+    ('tbb', '2021.13.0'),
+]
+
+separate_build_dir = True
+
+configopts = "-DUSE_FREEIMAGE=ON -D3RDPARTY_FREEIMAGE_DIR=$EBROOTFREEIMAGE "
+configopts += "-D3RDPARTY_TBB_DIR=$EBROOTTBB "
+configopts += "-D3RDPARTY_TCL_DIR=$EBROOTTCL "
+configopts += "-D3RDPARTY_TK_DIR=$EBROOTTK "
+configopts += "-D3RDPARTY_FREETYPE_DIR=$EBROOTFREETYPE "
+
+sanity_check_paths = {
+    'files': ['bin/DRAWEXE', 'bin/env.sh'],
+    'dirs': ['lib/cmake/opencascade'],
+}
+
+sanity_check_commands = ['DRAWEXE -h']
+
+moduleclass = 'cae'
