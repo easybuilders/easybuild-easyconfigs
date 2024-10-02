@@ -1767,10 +1767,9 @@ def template_easyconfig_test(self, spec):
     # don't allow updating of $PYTHONPATH with standard lib/python*/site-packages path,
     # since that's already taken care of by EasyBuild framework now
     # (cfr. https://github.com/easybuilders/easybuild-framework/pull/4539)
-    modextrapaths = ec.get('modextrapaths', {})
+    modextrapaths = ec.get('modextrapaths', {}, resolve=True)
     regex = re.compile(r'^lib*/python[0-9]\.[0-9]+/site-packages$')
     for key, value in modextrapaths.items():
-        value = resolve_template(value, ec.template_values)
         if key == 'PYTHONPATH':
             if isinstance(value, str):
                 value = [value]
