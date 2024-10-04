@@ -1,0 +1,49 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Updated: Denis Kristak
+easyblock = 'CMakeMake'
+
+name = 'SimpleITK'
+version = '2.1.0'
+
+homepage = 'http://www.simpleitk.org'
+description = """SimpleITK is a simplified programming interface to the algorithms and data structures of
+ the Insight Toolkit (ITK)."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+
+source_urls = [PYPI_LOWER_SOURCE]
+sources = [SOURCE_TAR_GZ]
+checksums = ['d5d3b805863b9dfcffeebec69a1b79b5709fc814b12cb9ab759ccbd3e4746839']
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('SWIG', '4.0.2'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('Lua', '5.3.5'),
+    ('ITK', '5.2.1'),
+    ('scikit-build', '0.11.1'),
+]
+
+start_dir = 'SimpleITK'
+
+configopts = "-DWRAP_PYTHON=ON -DWRAP_LUA=OFF -DWRAP_RUBY=OFF "
+configopts += "-DWRAP_TCL=OFF -DWRAP_JAVA=OFF -DWRAP_R=OFF -DWRAP_CSHARP=OFF "
+
+postinstallcmds = [
+    "cd %(builddir)s/easybuild_obj/Wrapping/Python && "
+    "pip install --ignore-installed --no-deps --prefix=%(installdir)s . ",
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['lib/libSimpleITK_ITKBiasCorrection-%(version_major_minor)s.a'],
+    'dirs': ['include/%(name)s-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -c 'import %(name)s'"]
+
+moduleclass = 'tools'

@@ -1,0 +1,64 @@
+easyblock = 'Bundle'
+
+name = 'how_are_we_stranded_here'
+version = '1.0.1'
+
+homepage = 'https://github.com/signalbash/how_are_we_stranded_here'
+description = "Python package for testing strandedness of RNA-Seq fastq files"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+builddependencies = [
+    ('Autotools', '20210726'),
+    ('CMake', '3.22.1'),
+    ('zlib', '1.2.11'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('RSeQC', '4.0.0'),
+    ('SciPy-bundle', '2021.10'),
+    ('HDF5', '1.12.1'),
+    ('HTSlib', '1.14'),
+]
+
+default_component_specs = {
+    'sources': ['v%(version)s.tar.gz'],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('kallisto', '0.44.0', {
+        'source_urls': ['https://github.com/pachterlab/kallisto/archive/refs/tags/'],
+        'easyblock': 'CMakeMake',
+        'patches': ['%(name)s-%(version)s-include_limits.patch'],
+        'preconfigopts': "cd ../%(name)s-%(version)s/ext/htslib/ && \
+                        sed -i '/AC_PROG_CC/a AC_CANONICAL_HOST' configure.ac && \
+                        autoreconf -i && autoheader && autoconf && cd - && ",
+        'checksums': [
+            '35a81201a56f4557697e6fe693dc6b701bbbd0a7b2b6e1c6c845ef816d67ca29',  # v0.44.0.tag.gz
+            '4ad7d54f104fe779560107109fd0fc65ffc9af22822765be96816c1424b91da0',  # kallisto-0.44.0-include_limits.patch
+        ],
+    }),
+    (name, version, {
+        'source_urls': ["https://github.com/signalbash/how_are_we_stranded_here/archive/refs/tags/"],
+        'easyblock': 'PythonPackage',
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'download_dep_fail': True,
+        'checksums': ['f66b3f7035d55c4584c4843582c9d94d3fa597cc1dc9ad9f36ffc2d3849a5210'],
+    }),
+]
+
+parallel = 1  # Build doesn't complete without this
+
+sanity_check_paths = {
+    'files': ['bin/check_strandedness'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["check_strandedness --help"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'bio'

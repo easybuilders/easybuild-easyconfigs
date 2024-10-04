@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'gnuplot'
+version = '5.4.6'
+
+homepage = 'http://gnuplot.sourceforge.net'
+description = """Portable interactive, function plotting utility"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+
+source_urls = [('https://sourceforge.net/projects/gnuplot/files/gnuplot/%(version)s', 'download')]
+sources = [SOURCE_TAR_GZ]
+checksums = ['02fc27918200ed64d8f0c3b84fe81b95b59cd47ad99f270939ae497c19f27419']
+
+builddependencies = [
+    ('binutils', '2.39'),
+    ('pkgconf', '1.9.3'),
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('ncurses', '6.3'),
+    ('cairo', '1.17.4'),
+    ('libjpeg-turbo', '2.1.4'),
+    ('libpng', '1.6.38'),
+    ('libgd', '2.3.3'),
+    ('Pango', '1.50.12'),
+    ('libcerf', '2.3'),
+    ('X11', '20221110'),
+    ('Qt5', '5.15.7'),
+    ('Lua', '5.4.4'),
+]
+
+preconfigopts = 'autoreconf && '
+
+# make sure that right Lua library is used (bypassing pkg-config)
+preconfigopts += 'export LUA_CFLAGS="-I$EBROOTLUA/include" && export LUA_LIBS="$EBROOTLUA/lib/liblua.a" && '
+
+configopts = '--with-qt=qt5 --without-latex --disable-wxwidgets'
+
+sanity_check_paths = {
+    'files': ['bin/gnuplot'],
+    'dirs': []
+}
+# make sure that pdf terminal type is available
+sanity_check_commands = ["gnuplot -e 'set terminal pdf'"]
+
+moduleclass = 'vis'

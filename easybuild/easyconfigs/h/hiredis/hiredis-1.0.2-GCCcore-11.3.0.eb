@@ -1,0 +1,49 @@
+# Author: Alexander Grund (TU Dresden)
+# Based on EC by J. Sassmannshausen (Imperial College London)
+
+easyblock = 'CMakeMake'
+
+name = 'hiredis'
+version = '1.0.2'
+
+homepage = 'https://github.com/redis/hiredis'
+description = """Hiredis is a minimalistic C client library for the Redis database.
+
+It is minimalistic because it just adds minimal support for the protocol,
+but at the same time it uses a high level printf-alike API in order to
+make it much higher level than otherwise suggested by its minimal code base
+and the lack of explicit bindings for every Redis command."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'redis'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_build-also-static-library.patch',
+    '%(name)s-%(version)s_use-same-name-for-static-lib.patch'
+]
+checksums = [
+    'e0ab696e2f07deb4252dda45b703d09854e53b9703c7d52182ce5a22616c3819',  # v1.0.2.tar.gz
+    # hiredis-1.0.2_build-also-static-library.patch
+    '224cb6fdbf8488cc6583323f5cde09e98d10fd201ddfd117572594ed98eb642c',
+    # hiredis-1.0.2_use-same-name-for-static-lib.patch
+    '7ef1c90331a0ed92e7ae2905827c3c8bb79e19545b0bae3b44a06a11564ec8de',
+]
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('binutils', '2.38'),
+]
+
+dependencies = [
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libhiredis.a', 'lib/libhiredis.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'tools'

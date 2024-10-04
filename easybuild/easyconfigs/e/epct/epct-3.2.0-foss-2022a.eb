@@ -1,0 +1,67 @@
+easyblock = 'PythonBundle'
+
+name = 'epct'
+version = '3.2.0'
+
+homepage = 'https://gitlab.eumetsat.int/eumetlab/data-services/eumdac'
+description = """
+This is the epct (EUMETSAT Product Customisation Toolbox) Python package for the EUMETSAT Data
+Tailor. The EUMETSAT Data Tailor makes it possible for users to subset and aggregate EUMETSAT
+data products in space and time, filter layers, generate quicklooks, project onto new
+coordinate reference systems, and reformat into common GIS formats (netCDF, GeoTIFF, etc.). 
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('dask', '2022.10.0'),
+    ('netcdf4-python', '1.6.1'),
+    ('xarray', '2022.6.0'),
+    ('GDAL', '3.5.0'),
+    ('h5py', '3.7.0'),
+    ('ecCodes', '2.27.0'),
+]
+
+use_pip = True
+
+_fix_pkg_version = """sed -i 's/version = "0.0.0"/version = "%(version)s"/g' setup.py && """
+_relax_gdal_req = """sed -i 's/gdal==.*/gdal",/g' setup.py && """
+
+exts_list = [
+    ('findlibs', '0.0.2', {
+        'checksums': ['6c7e038496f9a97783ab2cd5736bb68522d5bebd8b0eb17c976b6a4ae4032c8d'],
+    }),
+    ('Chameleon', '4.2.0', {
+        'checksums': ['2a7bda67ba9f8fa31d1e17b8d1cefdae8687741293ffe0938e831e71843b4751'],
+    }),
+    ('cfgrib', '0.9.10.3', {
+        'checksums': ['c10806058c80c48610c201bf05eb292401807806ab9423ab4965ae23dbb6b521'],
+    }),
+    ('eccodes', '1.5.0', {
+        'checksums': ['e70c8f159140c343c215fd608ddf533be652ff05ad2ff17243c7b66cf92127fa'],
+    }),
+    ('structlog', '21.5.0', {
+        'checksums': ['68c4c29c003714fe86834f347cb107452847ba52414390a7ee583472bde00fc9'],
+    }),
+    ('epct_plugin_gis', '3.1.0', {
+        'preinstallopts': _fix_pkg_version + _relax_gdal_req,
+        'source_tmpl': 'epct_plugin_gis-3.1.0.tar.bz2',
+        'source_urls': [
+            'https://gitlab.eumetsat.int/open-source/data-tailor-plugins/epct_plugin_gis/-/archive/%(version)s/'
+        ],
+        'checksums': ['05b292bbeae0870736f330126d6233dfc5d17031fa07714acb62854b0941f462'],
+    }),
+    (name, version, {
+        'preinstallopts': _fix_pkg_version,
+        'source_tmpl': '%(name)s-%(version)s.tar.bz2',
+        'source_urls': ['https://gitlab.eumetsat.int/open-source/%(name)s/-/archive/%(version)s/'],
+        'start_dir': 'epct',
+        'checksums': ['e5ce1699a71bb446a5739c1b531bfefcf2956e5f1afba5d956b80bb187725b1f'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'

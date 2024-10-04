@@ -1,0 +1,49 @@
+Replace dynamic versioning with a plain static version string. Tarballs of
+ESMPy downloaded from github lack git repository data required by
+setuptools-git-versioning.
+author: Alex Domingo (Vrije Universiteit Brussel)
+diff --git a/pyproject.toml.orig b/pyproject.toml
+index b3da4b6..e0e207d 100644
+--- a/src/addon/esmpy/pyproject.toml.orig
++++ b/src/addon/esmpy/pyproject.toml
+@@ -1,5 +1,5 @@
+ [build-system]
+-requires = [ "setuptools>=41", "wheel", "setuptools-git-versioning" ]
++requires = [ "setuptools>=41", "wheel" ]
+ build-backend = "setuptools.build_meta"
+ 
+ [project]
+@@ -12,15 +12,8 @@ license = { text = "University of Illinois-NCSA" }
+ dependencies = [
+     "numpy",
+     'importlib-metadata; python_version < "3.8"',
+-    # setuptools-git-versioning shouldn't be needed here, but is
+-    # included as a workaround for problems with the build-time
+-    # installation of this package with python 3.10 (given by the
+-    # build-system section above). By including it here, we at least
+-    # ensure that this package will be available for a second or
+-    # subsequent pip install of esmpy.
+-    'setuptools-git-versioning; python_version >= "3.10"',
+ ]
+-dynamic = [ "version" ]
++version = "EB_ESMPY_VERSION"
+ 
+ [project.optional-dependencies]
+ testing = [
+@@ -28,16 +21,6 @@ testing = [
+     "pytest-json-report",
+ ]
+ 
+-[tool.setuptools-git-versioning]
+-enabled = true
+-template = "{tag}"
+-dev_template = "{tag}"
+-dirty_template = "{tag}"
+-starting_version = "8.6.0" # this is a backup for pip <= 22.0 where git-versioning doesn't work
+-
+-[tool.dynamic]
+-version = "placeholder" # this is a placeholder for the version pulled with git-versioning
+-
+ [tool.setuptools.packages.find]
+ where = [ "src" ]
+ exclude = [ "doc*" ]

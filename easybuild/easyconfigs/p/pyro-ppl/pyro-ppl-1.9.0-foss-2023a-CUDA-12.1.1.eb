@@ -1,0 +1,47 @@
+# Author: Denis Krišťák (INUITS)
+
+easyblock = 'PythonBundle'
+
+name = 'pyro-ppl'
+version = '1.9.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/pyro-ppl/pyro'
+description = "Pyro is a flexible, scalable deep probabilistic programming library built on PyTorch."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('tqdm', '4.66.1'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('opt-einsum', '3.3.0', {
+        'source_tmpl': 'opt_einsum-%(version)s.tar.gz',
+        'checksums': ['59f6475f77bbc37dcf7cd748519c0ec60722e91e63ca114e68821c0c54a46549'],
+    }),
+    ('pyro-api', '0.1.2', {
+        'modulename': 'pyroapi',
+        'checksums': ['a1b900d9580aa1c2fab3b123ab7ff33413744da7c5f440bd4aadc4d40d14d920'],
+    }),
+    (name, version, {
+        'modulename': 'pyro',
+        'checksums': ['41f4c005159568280fbc511648960a98a2b1a410027d8bd0a43220ac9b102cdf'],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_commands = [
+    "python -c 'from pyroapi import distributions as dist'",
+    "python -c 'from pyroapi import infer, ops, optim, pyro, pyro_backend'",
+    "python -c 'from pyro import infer, nn, distributions'",
+]
+
+moduleclass = 'tools'

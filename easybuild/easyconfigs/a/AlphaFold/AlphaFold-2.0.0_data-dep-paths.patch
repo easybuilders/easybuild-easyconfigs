@@ -1,0 +1,115 @@
+pick up on $ALPHAFOLD_DATA_DIR to specify location to downloaded data
+(see https://github.com/deepmind/alphafold/blob/main/docker/run_docker.py);
+pick up on HH-suite, HHMER, Kalign dependencies provided via EasyBuild
+author: Kenneth Hoste (HPC-UGent)
+diff --git a/run_alphafold.py b/run_alphafold.py
+index 61f7ef2..81c97a0 100644
+--- a/run_alphafold.py
++++ b/run_alphafold.py
+@@ -36,6 +36,46 @@ from alphafold.model import model
+ from alphafold.relax import relax
+ # Internal import (7716).
+ 
++
++data_dir = os.getenv('ALPHAFOLD_DATA_DIR')
++if data_dir:
++    uniref90_database_path = os.path.join(data_dir, 'uniref90', 'uniref90.fasta')
++    mgnify_database_path = os.path.join(data_dir, 'mgnify', 'mgy_clusters.fa')
++    bfd_database_path = os.path.join(data_dir, 'bfd', 'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt')
++    uniclust30_database_path = os.path.join(data_dir, 'uniclust30', 'uniclust30_2018_08', 'uniclust30_2018_08')
++    pdb70_database_path = os.path.join(data_dir, 'pdb70', 'pdb70')
++    template_mmcif_dir = os.path.join(data_dir, 'pdb_mmcif', 'mmcif_files')
++    obsolete_pdbs_path = os.path.join(data_dir, 'pdb_mmcif', 'obsolete.dat')
++else:
++    sys.stderr.write("$ALPHAFOLD_DATA_DIR is not defined!")
++    uniref90_database_path = None
++    mgnify_database_path = None
++    bfd_database_path = None
++    uniclust30_database_path = None
++    pdb70_database_path = None
++    template_mmcif_dir = None
++    obsolete_pdbs_path = None
++
++hmmer_root = os.getenv('EBROOTHMMER')
++if hmmer_root:
++    jackhmmer_binary_path = os.path.join(hmmer_root, 'bin', 'jackhmmer')
++else:
++    jackhmmer_binary_path = '/usr/bin/jackhmmer'
++
++hhsuite_root = os.getenv('EBROOTHHMINSUITE')
++if hhsuite_root:
++    hhblits_binary_path = os.path.join(hhsuite_root, 'bin', 'hhblits')
++    hhsearch_binary_path = os.path.join(hhsuite_root, 'bin', 'hhsearch')
++else:
++    hhblits_binary_path = '/usr/bin/hhblits'
++    hhsearch_binary_path = '/usr/bin/hhsearch'
++
++kalign_root = os.getenv('EBROOTKALIGN')
++if kalign_root:
++    kalign_binary_path = os.path.join(kalign_root, 'bin', 'kalign')
++else:
++    kalign_binary_path = '/usr/bin/kalign'
++
+ flags.DEFINE_list('fasta_paths', None, 'Paths to FASTA files, each containing '
+                   'one sequence. Paths should be separated by commas. '
+                   'All FASTA paths must have a unique basename as the '
+@@ -44,30 +83,30 @@ flags.DEFINE_list('fasta_paths', None, 'Paths to FASTA files, each containing '
+ flags.DEFINE_string('output_dir', None, 'Path to a directory that will '
+                     'store the results.')
+ flags.DEFINE_list('model_names', None, 'Names of models to use.')
+-flags.DEFINE_string('data_dir', None, 'Path to directory of supporting data.')
+-flags.DEFINE_string('jackhmmer_binary_path', '/usr/bin/jackhmmer',
++flags.DEFINE_string('data_dir', data_dir, 'Path to directory of supporting data.')
++flags.DEFINE_string('jackhmmer_binary_path', jackhmmer_binary_path,
+                     'Path to the JackHMMER executable.')
+-flags.DEFINE_string('hhblits_binary_path', '/usr/bin/hhblits',
++flags.DEFINE_string('hhblits_binary_path', hhblits_binary_path,
+                     'Path to the HHblits executable.')
+-flags.DEFINE_string('hhsearch_binary_path', '/usr/bin/hhsearch',
++flags.DEFINE_string('hhsearch_binary_path', hhsearch_binary_path,
+                     'Path to the HHsearch executable.')
+-flags.DEFINE_string('kalign_binary_path', '/usr/bin/kalign',
++flags.DEFINE_string('kalign_binary_path', kalign_binary_path,
+                     'Path to the Kalign executable.')
+-flags.DEFINE_string('uniref90_database_path', None, 'Path to the Uniref90 '
++flags.DEFINE_string('uniref90_database_path', uniref90_database_path, 'Path to the Uniref90 '
+                     'database for use by JackHMMER.')
+-flags.DEFINE_string('mgnify_database_path', None, 'Path to the MGnify '
++flags.DEFINE_string('mgnify_database_path', mgnify_database_path, 'Path to the MGnify '
+                     'database for use by JackHMMER.')
+-flags.DEFINE_string('bfd_database_path', None, 'Path to the BFD '
++flags.DEFINE_string('bfd_database_path', bfd_database_path, 'Path to the BFD '
+                     'database for use by HHblits.')
+-flags.DEFINE_string('uniclust30_database_path', None, 'Path to the Uniclust30 '
++flags.DEFINE_string('uniclust30_database_path', uniclust30_database_path, 'Path to the Uniclust30 '
+                     'database for use by HHblits.')
+-flags.DEFINE_string('pdb70_database_path', None, 'Path to the PDB70 '
++flags.DEFINE_string('pdb70_database_path', pdb70_database_path, 'Path to the PDB70 '
+                     'database for use by HHsearch.')
+-flags.DEFINE_string('template_mmcif_dir', None, 'Path to a directory with '
++flags.DEFINE_string('template_mmcif_dir', template_mmcif_dir, 'Path to a directory with '
+                     'template mmCIF structures, each named <pdb_id>.cif')
+ flags.DEFINE_string('max_template_date', None, 'Maximum template release date '
+                     'to consider. Important if folding historical test sets.')
+-flags.DEFINE_string('obsolete_pdbs_path', None, 'Path to file containing a '
++flags.DEFINE_string('obsolete_pdbs_path', obsolete_pdbs_path, 'Path to file containing a '
+                     'mapping from obsolete PDB IDs to the PDB IDs of their '
+                     'replacements.')
+ flags.DEFINE_enum('preset', 'full_dbs', ['full_dbs', 'casp14'],
+@@ -268,16 +307,8 @@ if __name__ == '__main__':
+       'fasta_paths',
+       'output_dir',
+       'model_names',
+-      'data_dir',
+       'preset',
+-      'uniref90_database_path',
+-      'mgnify_database_path',
+-      'uniclust30_database_path',
+-      'bfd_database_path',
+-      'pdb70_database_path',
+-      'template_mmcif_dir',
+       'max_template_date',
+-      'obsolete_pdbs_path',
+   ])
+ 
+   app.run(main)

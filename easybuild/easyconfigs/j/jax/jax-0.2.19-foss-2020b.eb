@@ -1,0 +1,111 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonBundle'
+
+name = 'jax'
+version = '0.2.19'
+homepage = 'https://pypi.python.org/pypi/jax'
+description = """Composable transformations of Python+NumPy programs: 
+differentiate, vectorize, JIT to GPU/TPU, and more"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+builddependencies = [
+    ('Bazel', '3.7.2'),
+    ('Cython', '0.29.22'),
+    ('pytest-xdist', '2.3.0'),
+    # git 2.x required to fetch repository 'io_bazel_rules_docker'
+    ('git', '2.28.0', '-nodocs'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('flatbuffers-python', '1.12'),
+]
+
+# downloading TensorFlow tarball to avoid that Bazel downloads it during the build
+# note: this *must* be the exact same commit as used in jaxlib-*/WORKSPACE
+local_tf_commit = '4039feeb743bc42cd0a3d8146ce63fc05d23eb8d'
+local_tf_dir = 'tensorflow-%s' % local_tf_commit
+local_tf_builddir = '%(builddir)s/' + local_tf_dir
+
+local_jax_prebuildopts = "sed -i 's$pathToSed$%s$g' WORKSPACE && " % local_tf_builddir
+
+use_pip = True
+
+# running the tests with lots of cores results in test failures because not enough threads can be started,
+# so limit to a reasonable number of cores to use at maximum
+maxparallel = 5
+
+default_easyblock = 'PythonPackage'
+default_component_specs = {
+    'sources': [SOURCE_TAR_GZ],
+    'source_urls': [PYPI_SOURCE],
+    'start_dir': '%(name)s-%(version)s',
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'download_dep_fail': True,
+}
+
+components = [
+    ('absl-py', '0.13.0', {
+        'options': {'modulename': 'absl'},
+        'checksums': ['6953272383486044699fd0e9f00aad167a27e08ce19aae66c6c4b10e7e767793'],
+    }),
+    ('jaxlib', '0.1.70', {
+        'sources': [
+            '%(name)s-v%(version)s.tar.gz',
+            {
+                'download_filename': '%s.tar.gz' % local_tf_commit,
+                'filename': 'tensorflow-%s.tar.gz' % local_tf_commit,
+            }
+        ],
+        'source_urls': [
+            'https://github.com/google/jax/archive/',
+            'https://github.com/tensorflow/tensorflow/archive/'
+        ],
+        'patches': [
+            '%(name)s-%(version)s_add-bazel-args-to-shutdown.patch',
+            '%(name)s-%(version)s_no-tensorflow-download.patch',
+            ('TensorFlow-%s_mlir-build-env.patch' % local_tf_commit, '../' + local_tf_dir),
+        ],
+        'checksums': [
+            # jaxlib-v0.1.70.tar.gz
+            '5d136c4b72bb254a3700cbac276ebe77108841936ff6d728050775f24a8e36fe',
+            # tensorflow-4039feeb743bc42cd0a3d8146ce63fc05d23eb8d.tar.gz
+            '0f13410284b9186e436350e9617b3bed2d65f1dc1a220fd37ad9ef43c2035663',
+            # jaxlib-0.1.70_add-bazel-args-to-shutdown.patch
+            'c0ea6abd7827d3c37bdd60c30c7b0613fc86b91274c6a1a4cf13a3c7f9ce7631',
+            # jaxlib-0.1.70_no-tensorflow-download.patch
+            '1496c6be9336fb563b997f8da83d690a9b3a0a6e29fdd87fac60409300a2fd95',
+            # TensorFlow-4039feeb743bc42cd0a3d8146ce63fc05d23eb8d-build-env.patch
+            'd067836b1d18d66a8c69fb3db311855c8a56c0106d42a11299a1733c385e9c22',
+        ],
+        'start_dir': 'jax-jaxlib-v%(version)s',
+        'prebuildopts': local_jax_prebuildopts,
+    }),
+]
+
+exts_list = [
+    ('opt_einsum', '3.3.0', {
+        'checksums': ['59f6475f77bbc37dcf7cd748519c0ec60722e91e63ca114e68821c0c54a46549'],
+    }),
+    (name, version, {
+        'source_tmpl': '%(name)s-v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/google/jax/archive/'],
+        'patches': [
+            'jax-%(version)s_fix-update-of-cache-access-time.patch',
+        ],
+        'checksums': [
+            'fb6f665b1461ac67954c1004da00d12e1c41b65b744a5fa0311d26d1a784a96c',  # jax-v0.2.19.tar.gz
+            # jax-0.2.19_fix-update-of-cache-access-time.patch
+            'e20562f67d63cc7e3478f7a92940291b2c8e328d605426bbabf89d8c2e1dd806',
+        ],
+        'runtest': 'pytest -n %(parallel)s tests',
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'tools'

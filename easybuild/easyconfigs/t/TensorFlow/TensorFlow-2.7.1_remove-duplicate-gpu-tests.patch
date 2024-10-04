@@ -1,0 +1,46 @@
+TensorFlow adds some GPU tests twice increasing the runtime of the test suite.
+This filters out the test part meant for CPU.
+
+See https://github.com/tensorflow/tensorflow/issues/47081
+
+Author: Alexander Grund (TU Dresden)
+
+diff -ur tensorflow-2.7.1.orig/tensorflow/tensorflow.bzl tensorflow-2.7.1/tensorflow/tensorflow.bzl
+--- tensorflow-2.7.1.orig/tensorflow/tensorflow.bzl	2022-01-30 16:27:47.000000000 +0100
++++ tensorflow-2.7.1/tensorflow/tensorflow.bzl	2022-02-12 21:20:58.679307477 +0100
+@@ -1195,20 +1195,21 @@
+         kernels = [],
+         linkopts = [],
+         **kwargs):
+-    tf_cc_test(
+-        name = name,
+-        size = size,
+-        srcs = srcs,
+-        args = args,
+-        data = data,
+-        extra_copts = extra_copts + if_cuda(["-DNV_CUDNN_DISABLE_EXCEPTION"]),
+-        kernels = kernels,
+-        linkopts = linkopts,
+-        linkstatic = linkstatic,
+-        tags = tags,
+-        deps = deps,
+-        **kwargs
+-    )
++    if 'gpu' not in tags:
++        tf_cc_test(
++            name = name,
++            size = size,
++            srcs = srcs,
++            args = args,
++            data = data,
++            extra_copts = extra_copts + if_cuda(["-DNV_CUDNN_DISABLE_EXCEPTION"]),
++            kernels = kernels,
++            linkopts = linkopts,
++            linkstatic = linkstatic,
++            tags = tags,
++            deps = deps,
++            **kwargs
++        )
+     tf_cc_test(
+         name = name,
+         size = size,

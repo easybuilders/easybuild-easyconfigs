@@ -1,0 +1,265 @@
+Patch to make sure that gfortran can be used, also includes EasyBuild specific environment variables
+Some of it is based on the Debian patches
+Author: J. Sassmannshausen (ICL/UK)
+diff --git a/pgplot.orig/drivers/pndriv.c b/pgplot/drivers/pndriv.c
+index 2b2f87d..63fa246 100644
+--- a/pgplot.orig/drivers/pndriv.c
++++ b/pgplot/drivers/pndriv.c
+@@ -222,7 +222,7 @@ static void write_image_file(DeviceData *dev) {
+ 	return;
+   }
+ 
+-  if (setjmp(png_ptr->jmpbuf)) { /* not really sure what I'm doing here... */
++  if (setjmp(png_jmpbuf(png_ptr))) { /* not really sure what I'm doing here... */
+ 	fprintf(stderr,"%s: error in libpng while writing file %s, plotting disabled\n", png_ident, filename);
+ 	png_destroy_write_struct(&png_ptr,&info_ptr);
+ 	dev->error = true;
+diff --git a/pgplot.orig/drivers.list b/pgplot/drivers.list
+index 11108bb..b6ff758 100644
+--- a/pgplot.orig/drivers.list
++++ b/pgplot/drivers.list
+@@ -3,48 +3,50 @@
+ ! To configure PGPLOT, ensure that drivers you do not want are
+ ! commented out (place ! in column 1). N.B. Many device-drivers are
+ ! available on selected operating systems only.
++! Modified by Gopal Narayanan <gopal@debian.org> for debian Jul 6, 2001
+ !------------------------------------------------------------------------------
+ ! File       Code       Description                                Restrictions
+ ! BCDRIV 0 /BCANON    Canon Laser printer (bitmap version), landscape
+ ! CADRIV 0 /CANON     Canon Laser printer, LBP-8/A2, landscape
+ ! CCDRIV 0 /CCP       DEC LJ250 Color Companion printer
+-! CGDRIV 1 /CGM       CGM metafile, indexed colour selection            C
+-! CGDRIV 2 /CGMD      CGM metafile, direct colour selection             C
++ CGDRIV 1 /CGM       CGM metafile, indexed colour selection            C
++ CGDRIV 2 /CGMD      CGM metafile, direct colour selection             C
+ ! CWDRIV 0 /CW6320    Gould/Bryans Colourwriter 6320 pen plotter	Std F77
+ ! EPDRIV 0 /EPSON     Epson FX100 dot matrix printer
+ ! EXDRIV 1 /EXCL      Talaris/EXCL printers, landscape
+ ! EXDRIV 2 /EXCL      Talaris/EXCL printers, portrait
+ ! GCDRIV 0 /GENICOM   Genicom 4410 dot-matrix printer, landscape
+ !             Caution: use of GIDRIV may require a license from Unisys:
+-! GIDRIV 1 /GIF       GIF-format file, landscape
+-! GIDRIV 2 /VGIF      GIF-format file, portrait
+-! GLDRIV 1 /HPGL      Hewlett-Packard HP-GL plotters, landscape		Std F77
+-! GLDRIV 2 /VHPGL     Hewlett-Packard HP-GL plotters, portrait		Std F77
++!             Since Unisys patent has expired allowing now. <June 16, 2006>
++ GIDRIV 1 /GIF       GIF-format file, landscape
++ GIDRIV 2 /VGIF      GIF-format file, portrait
++ GLDRIV 1 /HPGL      Hewlett-Packard HP-GL plotters, landscape		Std F77
++ GLDRIV 2 /VHPGL     Hewlett-Packard HP-GL plotters, portrait		Std F77
+ ! GODRIV 0 /GOC       GOC Sigma T5670 terminal				VMS 
+ ! GVDRIV 0 /GVENICOM  Genicom 4410 dot-matrix printer, portrait
+-! HGDRIV 0 /HPGL2     Hewlett-Packard graphics language
++ HGDRIV 0 /HPGL2     Hewlett-Packard graphics language
+ ! HIDRIV 0 /HIDMP     Houston Instruments HIDMP pen plotter
+ ! HJDRIV 0 /HJ        Hewlett-Packard Desk/Laserjet printer
+-! HPDRIV 0 /HP7221    Hewlett-Packard HP7221 pen plotter		Std F77
++ HPDRIV 0 /HP7221    Hewlett-Packard HP7221 pen plotter		Std F77
+ ! LADRIV 0 /LA50      Dec LA50 and other sixel printers
+ ! LJDRIV 0 /LJ        Hewlett-Packard LaserJet printers                 VMS
+ ! LSDRIV 1 /LIPS2     Canon LaserShot printer (landscape)
+ ! LSDRIV 2 /VLIPS2    Canon LaserShot printer (portrait)
+ ! LNDRIV 0 /LN03      Dec LN03-PLUS Laser printer (landscape)           VMS
+ ! LVDRIV 0 /LVN03     Dec LN03-PLUS Laser printer (portrait)            VMS
+-! LXDRIV 0 /LATEX     LaTeX picture environment
++ LXDRIV 0 /LATEX     LaTeX picture environment
+ ! MFDRIV 0 /FILE      PGPLOT graphics metafile
+ ! NEDRIV 0 /NEXT      Computers running NeXTstep operating system
+   NUDRIV 0 /NULL      Null device (no output)				Std F77
+-! PGDRIV 0 /PGMF      PGPLOT metafile (new format, experimental)        Std F77
+-! PNDRIV 1 /PNG       Portable Network Graphics file                    C
+-! PNDRIV 2 /TPNG      Portable Network Graphics file - transparent background C
++  PGDRIV 0 /PGMF      PGPLOT metafile (new format, experimental)        Std F77
++ PNDRIV 1 /PNG       Portable Network Graphics file                    C
++ PNDRIV 2 /TPNG      Portable Network Graphics file - transparent background C
+ ! PPDRIV 1 /PPM       Portable Pixel Map file, landscape
+ ! PPDRIV 2 /VPPM      Portable PIxel Map file, portrait
+-! PSDRIV 1 /PS        PostScript printers, monochrome, landscape	Std F77
+-! PSDRIV 2 /VPS       Postscript printers, monochrome, portrait		Std F77
+-! PSDRIV 3 /CPS       PostScript printers, color, landscape		Std F77
+-! PSDRIV 4 /VCPS      PostScript printers, color, portrait		Std F77
++ PSDRIV 1 /PS        PostScript printers, monochrome, landscape	Std F77
++ PSDRIV 2 /VPS       Postscript printers, monochrome, portrait		Std F77
++ PSDRIV 3 /CPS       PostScript printers, color, landscape		Std F77
++ PSDRIV 4 /VCPS      PostScript printers, color, portrait		Std F77
+ ! PXDRIV 0 /PRINTRONI Printronix P300 or P600 dot-matrix printer
+ ! QMDRIV 1 /QMS       QUIC devices (QMS and Talaris), landscape		Std F77
+ ! QMDRIV 2 /VQMS      QUIC devices (QMS and Talaris), portrait		Std F77
+diff --git a/pgplot.orig/makemake b/pgplot/makemake
+index e48455e..93b9985 100755
+--- a/pgplot.orig/makemake
++++ b/pgplot/makemake
+@@ -658,6 +658,8 @@ CPGPLOT_LIB=$CPGPLOT_LIB
+ #
+ SHARED_LIB=$SHARED_LIB
+ SHARED_LD=$SHARED_LD
++SHARED_LD_PGPLOT_OPTS=$SHARED_LD_PGPLOT_OPTS
++SHARED_LD_CPGPLOT_OPTS=$SHARED_LD_CPGPLOT_OPTS
+ #
+ # The libraries that the shared PGPLOT library depends upon.
+ # This is for systems that allow one to specify what libraries
+@@ -667,6 +669,7 @@ SHARED_LD=$SHARED_LD
+ # libraries when they link their executables.
+ #
+ SHARED_LIB_LIBS=$SHARED_LIB_LIBS
++SHARED_LIB_CPGPLOT_LIBS=$SHARED_LIB_CPGPLOT_LIBS
+ #
+ # Ranlib command if required
+ #
+@@ -806,7 +809,8 @@ grexec.o: grexec.f
+ # libraries.
+ #-----------------------------------------------------------------------
+ 
+-lib : libpgplot.a $(SHARED_LIB)
++#lib : libpgplot.a $(SHARED_LIB)
++lib : libpgplot.a
+ 
+ libpgplot.a : $(PG_ROUTINES) $(PG_NON_STANDARD) $(GR_ROUTINES) \
+ 	   $(DISPATCH_ROUTINE) $(DRIVERS) $(SYSTEM_ROUTINES)
+@@ -816,6 +820,16 @@ libpgplot.a : $(PG_ROUTINES) $(PG_NON_STANDARD) $(GR_ROUTINES) \
+ 		$(DRIVERS) $(SYSTEM_ROUTINES) | sort | uniq`
+ 	$(RANLIB) libpgplot.a
+ 
++#shared: $(PG_ROUTINES) $(PG_NON_STANDARD) $(GR_ROUTINES) \
++#	   $(DISPATCH_ROUTINE) $(DRIVERS) $(SYSTEM_ROUTINES)
++#	   $(SHARED_LD)
++
++shared: $(PG_ROUTINES) $(PG_NON_STANDARD) \
++	$(GR_ROUTINES) $(DISPATCH_ROUTINE) $(DRIVERS) $(SYSTEM_ROUTINES)
++	$(SHARED_LD) $(SHARED_LD_PGPLOT_OPTS) `ls $(PG_ROUTINES) \
++	$(PG_NON_STANDARD) $(GR_ROUTINES) $(DISPATCH_ROUTINE) \
++	$(DRIVERS) $(SYSTEM_ROUTINES) | sort | uniq` $(SHARED_LIB_LIBS)
++
+ EOD
+ 
+ # Emit the shared library dependency if requested.
+@@ -824,7 +838,7 @@ if test -n "$SHARED_LIB" -a -n "$SHARED_LD"; then
+ cat >> makefile << \EOD
+ $(SHARED_LIB): $(PG_ROUTINES) $(PG_NON_STANDARD) \
+ 	$(GR_ROUTINES) $(DISPATCH_ROUTINE) $(DRIVERS) $(SYSTEM_ROUTINES)
+-	$(SHARED_LD) `ls $(PG_ROUTINES) \
++	$(SHARED_LD) $(SHARED_LD_PGPLOT_OPTS) `ls $(PG_ROUTINES) \
+ 	$(PG_NON_STANDARD) $(GR_ROUTINES) $(DISPATCH_ROUTINE) \
+ 	$(DRIVERS) $(SYSTEM_ROUTINES) | sort | uniq` $(SHARED_LIB_LIBS)
+ EOD
+@@ -1019,13 +1033,14 @@ EOD
+ 
+ cat >> makefile << \EOD
+ 
++DEB_HOST_MULTIARCH=$(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
++
+ # Miscellaneous include files required by drivers
+ 
+ griv00.o : $(DRVDIR)/gadef.h $(DRVDIR)/gmdef.h $(DRVDIR)/gphdef.h
+ grivas.o : $(DRVDIR)/gadef.h
+ grtv00.o : $(DRVDIR)/imdef.h
+ pgxwin.o : $(DRVDIR)/pgxwin.h
+-pndriv.o : ./png.h ./pngconf.h ./zlib.h ./zconf.h
+ 
+ x2driv.o figdisp_comm.o: $(DRVDIR)/commands.h
+ 
+@@ -1039,6 +1054,8 @@ cpg:	libcpgplot.a cpgplot.h cpgdemo
+ 	@echo 'will be needed.'
+ 	@echo ' '
+ 
++cpg-shared: libcpgplot.so
++
+ pgbind: $(SRC)/cpg/pgbind.c
+ 	$(CCOMPL) $(CFLAGC) $(SRC)/cpg/pgbind.c -o pgbind
+ 
+@@ -1050,6 +1067,13 @@ libcpgplot.a cpgplot.h: $(PG_SOURCE) pgbind
+ 	$(RANLIB) libcpgplot.a
+ 	rm -f cpg*.o
+ 
++libcpgplot.so: $(PG_SOURCE) pgbind
++	./pgbind $(PGBIND_FLAGS) -w $(PG_SOURCE)
++	$(CCOMPL) -c $(CFLAGC) cpg*.c
++	rm -f cpg*.c
++	$(SHARED_LD) $(SHARED_LD_CPGPLOT_OPTS) cpg*.o $(SHARED_LIB_CPGPLOT_LIBS)
++	rm -f cpg*.o
++
+ cpgdemo: cpgplot.h $(SRC)/cpg/cpgdemo.c libcpgplot.a
+ 	$(CCOMPL) $(CFLAGD) -c -I. $(SRC)/cpg/cpgdemo.c
+ 	$(FCOMPL) -o cpgdemo cpgdemo.o $(CPGPLOT_LIB) $(LIBS)
+diff --git a/pgplot.orig/sys_linux/g77_gcc.conf b/pgplot/sys_linux/g77_gcc.conf
+index d6b73e6..b3905b0 100644
+--- a/pgplot.orig/sys_linux/g77_gcc.conf
++++ b/pgplot/sys_linux/g77_gcc.conf
+@@ -1,11 +1,11 @@
+-# The GNU g77 FORTRAN compiler and Gnu gcc C compiler on an elf-system.
++# The GNU gfortran FORTRAN compiler and Gnu gcc C compiler on an elf-system.
+ #-----------------------------------------------------------------------
+ 
+ # Optional: Needed by XWDRIV (/xwindow and /xserve) and
+ #           X2DRIV (/xdisp and /figdisp).
+ # The arguments needed by the C compiler to locate X-window include files.
+  
+-   XINCL="-I/usr/X11R6/include"
++   XINCL="-I${EBROOTLIBPNG}/include -I${BROOTZLIB}/include"
+ 
+ # Optional: Needed by XMDRIV (/xmotif).
+ # The arguments needed by the C compiler to locate Motif, Xt and
+@@ -34,13 +34,13 @@
+ # Mandatory.
+ # The FORTRAN compiler to use.
+  
+-   FCOMPL="g77"
++   FCOMPL="gfortran"
+ 
+ # Mandatory.
+ # The FORTRAN compiler flags to use when compiling the pgplot library.
+ # (NB. makemake prepends -c to $FFLAGC where needed)
+  
+-   FFLAGC="-u -Wall -fPIC -O"
++   FFLAGC="-u -Wall -fPIC -O3 -std=legacy "
+ 
+ # Mandatory.
+ # The FORTRAN compiler flags to use when compiling fortran demo programs.
+@@ -57,12 +57,12 @@
+ # Mandatory.
+ # The C compiler flags to use when compiling the pgplot library.
+  
+-   CFLAGC="-Wall -fPIC -DPG_PPU -O"
++   CFLAGC="-Wall -fPIC -DPG_PPU -O3"
+ 
+ # Mandatory.
+ # The C compiler flags to use when compiling C demo programs.
+  
+-   CFLAGD="-Wall -O"
++   CFLAGD="-Wall -O3"
+ 
+ # Optional: Only needed if the cpgplot library is to be compiled.
+ # The flags to use when running pgbind to create the C pgplot wrapper
+@@ -74,7 +74,7 @@
+ # The library-specification flags to use when linking normal pgplot
+ # demo programs.
+  
+-   LIBS="-L/usr/X11R6/lib -lX11"
++   LIBS="-L${EBROOTLIBPNG}/lib -lpng"
+ 
+ # Optional: Needed by XMDRIV (/xmotif).
+ # The library-specification flags to use when linking motif
+@@ -108,7 +108,11 @@
+ # Optional: Needed if SHARED_LIB is set.
+ # How to create a shared library from a trailing list of object files.
+  
+-   SHARED_LD="gcc -shared  -o $SHARED_LIB"
++   SHARED_LD_PGPLOT_OPTS="-o $SHARED_LIB.5.2.2 -Wl,-soname,libpgplot.so.5.2.2"
++
++   SHARED_LD_CPGPLOT_OPTS="-o libcpgplot.so.5.2.2 -Wl,-soname,libcpgplot.so.5.2.2"
++
++   SHARED_LD="gfortran -shared"
+ 
+ # Optional:
+ # On systems such as Solaris 2.x, that allow specification of the
+@@ -117,7 +121,9 @@
+ # library-specification flags used to specify these libraries to
+ # $SHARED_LD
+  
+-   SHARED_LIB_LIBS=""
++   SHARED_LIB_LIBS="-L/usr/X11R6/lib -lX11 -lpng -lc -lgfortran"
++
++   SHARED_LIB_CPGPLOT_LIBS="-L. -lpgplot"
+ 
+ # Optional:
+ # Compiler name used on Next systems to compile objective-C files.

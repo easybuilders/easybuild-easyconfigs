@@ -1,0 +1,68 @@
+# Author: Jasper Grimm (UoY)
+# Updated: Petr Král, Pavel Tománek (INUITS)
+easyblock = 'PythonBundle'
+
+name = 'duplex-tools'
+version = '0.3.3'
+
+homepage = 'https://github.com/nanoporetech/duplex-tools'
+description = """
+Duplex Tools contains a set of utilities for dealing with Duplex sequencing data. Tools are provided
+ to identify and prepare duplex pairs for basecalling by Dorado (recommended) and Guppy, and for
+ recovering simplex basecalls from incorrectly concatenated pairs.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+_minimap2_ver = '2.26'
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('matplotlib', '3.7.2'),
+    ('edlib', '1.3.9'),
+    ('minimap2', _minimap2_ver),
+    ('python-parasail', '1.3.4'),
+    ('Pysam', '0.22.0'),
+    ('tqdm', '4.66.1'),
+    ('Arrow', '14.0.1'),
+    ('h5py', '3.9.0'),
+    ('pod5-file-format', '0.3.10'),
+    ('parasail', '2.6.2'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('mappy', _minimap2_ver, {
+        'checksums': ['e53fbe9a3ea8762a64b8103f4f779c9fb16d418eaa0a731f45cebc83867a9b71'],
+    }),
+    ('natsort', '8.4.0', {
+        'checksums': ['45312c4a0e5507593da193dedd04abb1469253b601ecaf63445ad80f0a1ea581'],
+    }),
+    ('pyfastx', '2.0.1', {
+        # PYPI source tarball is incomplete, causes ImportErrors
+        # see https://github.com/lmdu/pyfastx/issues/60
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'source_urls': ['https://github.com/lmdu/%(name)s/archive'],
+        'checksums': ['93aff63ce88bc5cfe7152d8dcb3f2164356bcd8f95a68fb20af107e59a7f9b55'],
+    }),
+    (name, version, {
+        'sources': [{'download_filename': 'duplex_tools-%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['883e0a6610d14328a640b6a31eaef90592d2967cda68db0547a4d99924281300'],
+    }),
+]
+
+_bins = ['dorado_stereo.sh', 'duplex_tools', 'minimap2.py', 'natsort', 'pyfastx']
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _bins],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'dorado_stereo.sh -h',
+    'duplex_tools --help',
+    'pyfastx --help',
+]
+
+moduleclass = 'bio'

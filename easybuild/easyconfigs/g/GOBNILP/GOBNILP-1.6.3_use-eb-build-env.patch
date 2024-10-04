@@ -1,0 +1,79 @@
+Use build environment and dependencies from EasyBuild
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- Makefile.orig	2023-03-31 18:33:07.943785000 +0200
++++ Makefile	2023-03-31 18:42:53.636293000 +0200
+@@ -5,15 +5,25 @@
+ # This file was created by editing the Makefile for the linear ordering
+ # example in SCIP
+ 
+-# Set the path the SCIP directory
+-SCIPDIR = scip
+-
+-# Include default project Makefile from SCIP
+-include $(SCIPDIR)/make/make.project
++# Set paths and flags to SCIP libraries
++SCIPDIR        = $(EBROOTSCIP)
++SCIPLIB        = scip
++OBJSCIPLIB     = objscip
++LPILIB         = lpispx2
++NLPILIB        = nlpi.cppad
++LPSLDFLAGS     = -lzimpl -lsoplex -lgmp -lreadline -lncurses -lz
++
++# Set paths to LOP
++LOPSRC			=	../scip-321/examples/LOP/src
++LOPOBJ			=	../scip-321/examples/LOP/obj/cons_linearordering.o
+ 
+ # This missing for scip < 3
+ VALGRIND = false
+ 
++SRCDIR = src
++OBJDIR = obj
++BINDIR = bin
++
+ # Declare the phony targets
+ .PHONY: all doxygen manual pedmanual gobnilp clean test
+ 
+@@ -46,7 +57,7 @@
+ MAINSRC			=	$(wildcard $(SRCDIR)/*.c)
+ MAINOBJ			=	$(notdir $(MAINSRC:.c=.o))
+ 
+-MAIN				=	$(MAINNAME).$(BASE).$(LPS)$(EXEEXTENSION)
++MAIN				=	$(MAINNAME)
+ MAINFILE			=	$(BINDIR)/$(MAIN)
+ ifeq ($(OSTYPE),mingw)
+ 	MAINSHORTLINK	=	$(BINDIR)/$(MAINNAME).exe
+@@ -63,7 +74,7 @@
+ LATEXCMD			=	@pdflatex -halt-on-error -interaction=errorstopmode
+ 
+ #Needs to appear first so that "make" makes gobnilp
+-gobnilp: $(SCIP) $(MAINFILE) $(MAINSHORTLINK)
++gobnilp: $(MAINFILE) $(MAINSHORTLINK)
+ 
+ #-----------------------------------------------------------------------
+ #----------------------------      All      ----------------------------
+@@ -161,19 +172,16 @@
+ 
+ $(MAINSHORTLINK): $(MAINFILE)
+ 		@rm -f $@
+-		@cd $(dir $@) && ln -s $(notdir $(MAINFILE)) $(notdir $@)
+ 
+-$(MAINFILE): $(BINDIR) $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(NLPILIBFILE) $(MAINOBJFILES)
+-		@echo "-> linking $@"
+-		@$(LINKCXX) $(STATICFLAG) $(MAINOBJFILES) \
+-		$(LINKCXX_L)$(SCIPDIR)/lib $(LINKCXX_l)$(SCIPLIB)$(LINKLIBSUFFIX) \
+-                $(LINKCXX_l)$(OBJSCIPLIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(LPILIB)$(LINKLIBSUFFIX) $(LINKCXX_l)$(NLPILIB)$(LINKLIBSUFFIX) \
+-                $(OFLAGS) $(LPSLDFLAGS) \
+-		$(LDFLAGS) $(LINKCXX_o)$@
++$(MAINFILE): $(BINDIR) $(OBJDIR) $(MAINOBJFILES)
++		echo "-> linking $@"
++		$(CXX) -static $(MAINOBJFILES) $(LOPOBJ) \
++		-L$(SCIPDIR)/lib -l$(SCIPLIB) -l$(OBJSCIPLIB) -l$(LPILIB) -l$(NLPILIB) \
++		$(LDFLAGS) $(LPSLDFLAGS) -o $@
+ 
+ $(OBJDIR)/%.o: $(SRCDIR)/%.c
+ 		@echo "-> compiling $*.c"
+-		@$(CC) $(FLAGS) $(OFLAGS) $(BINOFLAGS) $(CFLAGS) -c -g $< $(CC_o)$@
++		@$(CC) $(CFLAGS) $(CPPFLAGS) -I$(LOPSRC) -c -g $< -o $@
+ 
+ $(OBJDIR):
+ 		@-mkdir -p $(OBJDIR)

@@ -1,0 +1,47 @@
+easyblock = 'Binary'
+
+name = 'InterProScan_data'
+version = '5.55-88.0'
+
+homepage = 'https://www.ebi.ac.uk/interpro/'
+# also https://github.com/ebi-pf-team/interproscan
+description = """InterProScan is a sequence analysis application (nucleotide and protein sequences) that combines
+ different protein signature recognition methods into one resource [data only]."""
+# software_license = 'LicenseApachev2'
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = [
+    'https://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/alt/',
+]
+sources = [
+    'interproscan-data-%(version)s.tar.gz',
+]
+checksums = [
+    '2beffa16b367a1884800f0d65c2dcb1e772d7330688e76b8f02f9cc48564f12a',  # interproscan-data-5.55-88.0.tar.gz
+]
+
+dependencies = [
+    ('InterProScan',  '%(version)s'),
+]
+
+extract_sources = False
+
+# NOTE The regular InterProScan data package does not contain the lookup_service data way too large!
+install_cmd = 'tar xfz interproscan-data-%(version)s.tar.gz --directory %(installdir)s/ --strip-components=1 && '
+install_cmd += 'rm -f interproscan-data-%(version)s.tar.gz && '
+install_cmd += 'rm -rf $EBROOTINTERPROSCAN/data && '
+install_cmd += 'ln -s %(installdir)s/data $EBROOTINTERPROSCAN/data'
+
+# NOTE finalize the data indexing that needs to be done before/at the first use
+postinstallcmds = ["$EBROOTINTERPROSCAN/interproscan.sh || true"]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['data/antifam', 'data/cdd', 'data/gene3d', 'data/hamap',
+             'data/panther', 'data/pfam', 'data/phobius', 'data/pirsf',
+             'data/pirsr', 'data/prints', 'data/prosite', 'data/sfld',
+             'data/smart', 'data/superfamily', 'data/tigrfam', 'data/tmhmm'],
+}
+
+moduleclass = 'bio'

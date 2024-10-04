@@ -1,0 +1,55 @@
+# this recipe is configured for use with Gaussian G16, revision A03 or later
+
+easyblock = 'MakeCp'
+
+name = 'NBO'
+version = '7.0.10'
+
+homepage = 'http://nbo.chem.wisc.edu/'
+description = """ The Natural Bond Orbital (NBO) program is a discovery tool
+for chemical insights from complex wavefunctions. """
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+toolchainopts = {'pic': True, 'i8': True}  # remove 'i8' if Gaussian was compiled with 32-bit integers
+
+download_instructions = """
+NBO7 is proprietary software, order here: https://charge.wisc.edu/chemistry/order_nbo7.aspx
+The dowloaded tarball does not contain the bug-fix version so rename to nbo7.0.10-src.tar.gz
+"""
+sources = ['nbo%(version)s-src.tar.gz']
+patches = [
+    'NBO-%(version)s_make.patch',
+]
+checksums = [
+    {'nbo7.0.10-src.tar.gz': 'a60d1f4d4592ec386b5378841d9fba75918c48b50de08d8de0a50db42bc96da1'},
+    {'NBO-7.0.10_make.patch': 'c37f5a9980c56198f9610611b0fbda8ad65c961ec19b163d602dc3330fced145'},
+]
+
+dependencies = [
+    ('OpenBLAS', '0.3.12'),
+]
+
+local_intlength = 'i8'  # change to i4 if Gaussian was compiled with 32-bit integers
+
+buildopts = 'FC=$FC CC=$CC NBODIR="%(builddir)s/nbo7" STATIC="false" PROFILE="true" '
+buildopts += 'INT=%s ' % local_intlength
+
+parallel = 1
+
+files_to_copy = ['bin', 'dox', 'man', 'tests']
+
+postinstallcmds = [
+    'sed -i -e "s|setenv GAUNBO.*|setenv GAUNBO g16nbo|" %(installdir)s/bin/gaunbo{6,7}',
+    'sed -i -e "s|setenv BINDIR.*|setenv BINDIR %(installdir)s/bin|" %(installdir)s/bin/gaunbo{6,7}',
+    'sed -i -e "s|setenv INT.*|setenv INT %s|" %%(installdir)s/bin/gaunbo{6,7}' % local_intlength,
+    'cp %(builddir)s/nbo7/gennbo %(builddir)s/nbo7/gennbo.sh %(installdir)s/bin',
+    'sed -i -e "s|setenv NBOBIN ./bin|setenv NBOBIN %(installdir)s/bin|" %(installdir)s/bin/gennbo',
+    'sed -i "s|setenv NBOBIN ./bin|setenv NBOBIN %(installdir)s/bin|" %(installdir)s/bin/gennbo.sh',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s.%s.exe' % (x, local_intlength) for x in ('gennbo', 'g09nbo', 'g16nbo', 'nbo7')],
+    'dirs': [],
+}
+
+moduleclass = 'chem'

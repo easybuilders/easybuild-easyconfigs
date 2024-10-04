@@ -1,0 +1,76 @@
+easyblock = 'PythonBundle'
+
+name = 'PyTorch-bundle'
+version = '1.12.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pytorch.org/'
+description = """PyTorch with compatible versions of official Torch extensions."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('RE2', '2022-06-01'),  # for torchtext
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('PyTorch', version, versionsuffix),
+    ('Pillow-SIMD', '9.2.0'),  # for torchvision
+    ('SentencePiece', '0.1.97'),  # for torchtext
+    ('tqdm', '4.64.0'),  # for torchtext
+    ('double-conversion', '3.2.0'),  # for torchtext
+    ('utf8proc', '2.7.0'),  # for torchtext
+    ('tensorboard', '2.10.0'),  # for torch-tb-profiler
+]
+
+use_pip = True
+
+exts_list = [
+    ('portalocker', '2.7.0', {
+        'checksums': ['032e81d534a88ec1736d03f780ba073f047a06c478b06e2937486f334e955c51'],
+    }),
+    ('torchdata', '0.4.1', {
+        'preinstallopts': "USE_SYSTEM_LIBS=1 ",
+        'source_urls': ['https://github.com/pytorch/data/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['71c0aa3aca3b04a986a2cd4cc2e0be114984ca836dc4def2c700bf1bd1ff087e'],
+    }),
+    ('torchtext', '0.13.1', {
+        'source_urls': ['https://github.com/pytorch/text/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'patches': [
+            'torchtext-0.13.1_use-system-libs.patch',
+            'torchtext-0.13.1_cxx_17.patch',
+        ],
+        'checksums': [
+            {'torchtext-0.13.1.tar.gz': '1f7de1fd8c6303ea13ef2aed48a6df67df5f92d1c4a6918253be7decd93753be'},
+            {'torchtext-0.13.1_use-system-libs.patch':
+             '3e2f170a2870ac274f452b53862f65e5e94f6da1c3af488aeb3001e0500cb0e5'},
+            {'torchtext-0.13.1_cxx_17.patch': 'fd242c139baa27352d1065cece4658a3ede76f46ffec08ac04a554301e547f22'},
+        ],
+    }),
+    ('torchvision', '0.13.1', {
+        'source_urls': ['https://github.com/pytorch/vision/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['c32fab734e62c7744dadeb82f7510ff58cc3bca1189d17b16aa99b08afc42249'],
+    }),
+    ('pytorch-ignite', '0.4.11', {
+        'modulename': 'ignite',
+        'source_urls': ['https://github.com/pytorch/ignite/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['33e7485cea3cac08d7a49a3a01d3013e1156128867602bff0a8e32b2c5ebd4e9'],
+    }),
+    ('torch-tb-profiler', '0.4.1', {
+        'modulename': 'torch.profiler',
+        'sources': ['torch_tb_profiler-%(version)s.tar.gz'],
+        'checksums': ['f2c7fb27d420be443ffde50ada655c19f76a245d21e7772de753196fd0967685'],
+    }),
+    # torchaudio-0.12.1 needs more work before it can be added
+]
+
+sanity_pip_check = True
+
+moduleclass = 'ai'

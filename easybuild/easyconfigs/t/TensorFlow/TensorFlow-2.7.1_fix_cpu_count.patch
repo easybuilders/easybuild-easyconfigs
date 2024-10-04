@@ -1,0 +1,25 @@
+Use len(os.sched_getaffinity(0)), which returns the number cores available to the job,
+rather than multiprocessing.cpu_count(), which returns the total number of cores in the node,
+and which causes the interleave_test to fail for less than 8 cores
+Author: Samuel Moors (Vrije Universiteit Brussel)
+diff -ur tensorflow-2.7.1.orig/tensorflow/python/data/kernel_tests/interleave_test.py tensorflow-2.7.1/tensorflow/python/data/kernel_tests/interleave_test.py
+--- tensorflow-2.7.1.orig/tensorflow/python/data/kernel_tests/interleave_test.py	2022-01-30 16:27:47.000000000 +0100
++++ tensorflow-2.7.1/tensorflow/python/data/kernel_tests/interleave_test.py	2022-05-12 10:35:46.155364224 +0200
+@@ -59,13 +59,14 @@
+   # interleaved.
+   open_iterators = []
+   if cycle_length is None:
++    cpu_count = len(os.sched_getaffinity(0))
+     # The logic here needs to match interleave C++ kernels.
+     if num_parallel_calls is None:
+-      cycle_length = multiprocessing.cpu_count()
++      cycle_length = cpu_count
+     elif num_parallel_calls == dataset_ops.AUTOTUNE:
+-      cycle_length = (multiprocessing.cpu_count() + 2) // 3
++      cycle_length = (cpu_count + 2) // 3
+     else:
+-      cycle_length = min(num_parallel_calls, multiprocessing.cpu_count())
++      cycle_length = min(num_parallel_calls, cpu_count)
+ 
+   for i in range(cycle_length):
+     if all_iterators:

@@ -1,0 +1,51 @@
+# Author: Denis Krišťák (INUITS)
+# Modified: Jasper Grimm (UoY)
+
+easyblock = 'CMakeMake'
+
+name = 'igraph'
+version = '0.9.5'
+
+homepage = 'https://igraph.org'
+description = """igraph is a collection of network analysis tools with the emphasis on
+efficiency, portability and ease of use. igraph is open source and free. igraph can be
+programmed in R, Python and C/C++."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/igraph/igraph/releases/download/%(version)s']
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['c4e3f67892e1e287865d799162406b3f94916ad6f2cc069a9239e36ca495a17a']
+
+builddependencies = [
+    ('Autotools', '20210726'),
+    ('pkgconf', '1.8.0'),
+    ('CMake', '3.21.1'),
+]
+
+dependencies = [
+    ('GLPK', '5.0'),
+    ('libxml2', '2.9.10'),
+    ('zlib', '1.2.11'),
+    ('SuiteSparse', '5.10.1', '-METIS-5.1.0'),
+    ('arpack-ng', '3.8.0'),
+]
+
+# Build static and shared libraries
+configopts = ["-DBUILD_SHARED_LIBS=OFF", "-DBUILD_SHARED_LIBS=ON"]
+
+# extra folder `igraph` is wrong, since all other software expects it to be in ./include folder directly
+postinstallcmds = [
+    'mv %(installdir)s/include/igraph/* %(installdir)s/include/ && rmdir %(installdir)s/include/igraph ',
+]
+
+_includes = ['include/igraph%s.h' % x for x in ['', '_blas', '_constants', '_lapack', '_types', '_version']]
+_libs = ['lib/libigraph.%s' % x for x in ['a', SHLIB_EXT]]
+
+sanity_check_paths = {
+    'files': _includes + _libs,
+    'dirs': [],
+}
+
+moduleclass = 'lib'

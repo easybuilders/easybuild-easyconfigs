@@ -1,0 +1,35 @@
+easyblock = 'MakeCp'
+
+name = 'TRAVIS-Analyzer'
+version = '210521'
+
+homepage = 'http://www.travis-analyzer.de/'
+description = """
+TRAVIS is a free tool for analyzing and visualizing trajectories from all kinds
+of Molecular Dynamics or Monte Carlo simulations."""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+toolchainopts = {'cstd': 'c++14'}
+
+source_urls = ['http://www.travis-analyzer.de/files']
+sources = ['travis-src-%(version)s.tar.gz']
+checksums = ['f085071c467957b79275f2a64325a465579e310833f827cf2333811f681f4330']
+
+# use CFLAGS from EB
+prebuildopts = "sed -i 's/^CFLAGS .*14/CFLAGS := $(CFLAGS)/' Makefile && "
+prebuildopts += "CXX=${CXX}"
+
+local_exe = 'travis'
+files_to_copy = [
+    (['exe/%s' % local_exe], 'bin'),
+    (['README', 'travis-quickstart.pdf'], 'share'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % local_exe],
+    'dirs': ['share']
+}
+
+sanity_check_commands = [('%s' % local_exe, '-help')]
+
+moduleclass = 'chem'

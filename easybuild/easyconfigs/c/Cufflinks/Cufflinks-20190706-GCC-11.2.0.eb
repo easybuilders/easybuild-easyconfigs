@@ -1,0 +1,45 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+name = 'Cufflinks'
+version = '20190706'
+local_commit = 'dc3b0cb'
+
+homepage = 'http://cole-trapnell-lab.github.io/%(namelower)s/'
+description = "Transcript assembly, differential expression, and differential regulation for RNA-Seq"
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'cole-trapnell-lab'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['444c632083a473fe4fd99ff189cef5bbd95daee0912e8eefe79534bf225fbcb6']
+
+builddependencies = [
+    ('Eigen', '3.3.9'),
+    ('Autotools', '20210726'),
+    ('SAMtools', '1.14'),
+    ('Boost', '1.75.0'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('HTSlib', '1.14'),
+]
+
+preconfigopts = 'autoreconf -i && export LIBS="${LIBS} -lhts" && export CFLAGS="$CFLAGS -fcommon" && '
+configopts = '--with-boost=${EBROOTBOOST} --with-bam=${EBROOTSAMTOOLS}'
+
+buildopts = "BOOST_FILESYSTEM_LIB=$EBROOTBOOST/lib/libboost_filesystem.a "
+buildopts += "BOOST_SERIALIZATION_LIB=$EBROOTBOOST/lib/libboost_serialization.a "
+buildopts += "BOOST_SYSTEM_LIB=$EBROOTBOOST/lib/libboost_system.a "
+buildopts += "BOOST_THREAD_LIB=$EBROOTBOOST/lib/libboost_thread.a "
+
+sanity_check_paths = {
+    'files': ['bin/cufflinks'],
+    'dirs': []
+}
+
+sanity_check_commands = ["cufflinks 2>&1 | grep 'Usage:.* cufflinks'"]
+
+moduleclass = 'bio'

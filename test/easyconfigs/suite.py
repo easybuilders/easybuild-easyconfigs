@@ -1,6 +1,6 @@
 #!/usr/bin/python
 ##
-# Copyright 2012-2021 Ghent University
+# Copyright 2012-2024 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),

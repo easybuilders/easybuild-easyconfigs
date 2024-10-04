@@ -1,0 +1,48 @@
+easyblock = 'PythonPackage'
+
+name = 'PyTables'
+version = '3.6.1'
+
+homepage = 'https://www.pytables.org'
+description = """PyTables is a package for managing hierarchical datasets and designed to efficiently and easily cope
+ with extremely large amounts of data. PyTables is built on top of the HDF5 library, using the Python language and the
+ NumPy package. It features an object-oriented interface that, combined with C extensions for the performance-critical
+ parts of the code (generated using Cython), makes it a fast, yet extremely easy to use tool for interactively browse,
+ process and search very large amounts of data. One important feature of PyTables is that it optimizes memory and disk
+ resources so that data takes much less space (specially if on-flight compression is used) than other solutions such as
+ relational or object oriented databases."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/PyTables/PyTables/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-fix-libs.patch']
+checksums = [
+    '4cea86bab5bcb5423a07c7951b8c65e24b674e0dcec0e448d434829eff5f18d0',  # v3.6.1.tar.gz
+    '8df2a6379a9e4a941cb939ed1257a7d6105792d9c5e9dd0abd4bba3ece767c3a',  # PyTables-3.6.1-fix-libs.patch
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),  # provides numexpr
+    ('HDF5', '1.10.7'),
+    ('LZO', '2.10'),
+    ('Blosc', '1.21.0'),
+]
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+local_bins = ['pt2to3', 'ptdump', 'ptrepack', 'pttree']
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+options = {'modulename': 'tables'}
+
+sanity_check_commands = ["%s --help" % x for x in local_bins]
+
+moduleclass = 'data'

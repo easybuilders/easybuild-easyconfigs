@@ -1,0 +1,109 @@
+Fix access to unitialized memory resulting in e.g. failures in TestNNDeviceTypeCPU.test_groupnorm_nhwc_cpu_float32
+See https://github.com/pytorch/pytorch/issues/32502
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h
+index cb8bb78597..f5084f2101 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h
+@@ -142,7 +142,7 @@ class Vectorized<ComplexDbl> {
+           vec_vsx_ld(offset16, reinterpret_cast<const double*>(ptr))};
+     }
+ 
+-    __at_align__ value_type tmp_values[size()];
++    __at_align__ value_type tmp_values[size()] = {};
+     std::memcpy(tmp_values, ptr, std::min(count, size()) * sizeof(value_type));
+ 
+     return {
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h
+index 8445a31fb3..b4e35acfb4 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h
+@@ -196,7 +196,7 @@ class Vectorized<ComplexFlt> {
+           vec_vsx_ld(offset16, reinterpret_cast<const float*>(ptr))};
+     }
+ 
+-    __at_align__ value_type tmp_values[size()];
++    __at_align__ value_type tmp_values[size()] = {};
+     std::memcpy(tmp_values, ptr, std::min(count, size()) * sizeof(value_type));
+ 
+     return {
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_double_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_double_vsx.h
+index c53b7c792e..810e79ebfe 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_double_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_double_vsx.h
+@@ -171,7 +171,7 @@ class Vectorized<double> {
+           vec_vsx_ld(offset16, reinterpret_cast<const value_type*>(ptr))};
+     }
+ 
+-    __at_align__ value_type tmp_values[size()];
++    __at_align__ value_type tmp_values[size()] = {};
+     std::memcpy(tmp_values, ptr, std::min(count, size()) * sizeof(value_type));
+ 
+     return {vec_vsx_ld(offset0, tmp_values), vec_vsx_ld(offset16, tmp_values)};
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_float_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_float_vsx.h
+index 0267c40e1e..1a6aec7dbe 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_float_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_float_vsx.h
+@@ -180,7 +180,7 @@ class Vectorized<float> {
+           vec_vsx_ld(offset16, reinterpret_cast<const value_type*>(ptr))};
+     }
+ 
+-    __at_align__ value_type tmp_values[size()];
++    __at_align__ value_type tmp_values[size()] = {};
+     std::memcpy(tmp_values, ptr, std::min(count, size()) * sizeof(value_type));
+ 
+     return {vec_vsx_ld(offset0, tmp_values), vec_vsx_ld(offset16, tmp_values)};
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
+index 464a13c9f5..7c300c8087 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
+@@ -269,7 +269,7 @@ class Vectorized<int16_t> {
+           vec_vsx_ld(offset16, reinterpret_cast<const value_type*>(ptr))};
+     }
+ 
+-    __at_align__ value_type tmp_values[size()];
++    __at_align__ value_type tmp_values[size()] = {};
+     std::memcpy(tmp_values, ptr, std::min(count, size()) * sizeof(value_type));
+ 
+     return {vec_vsx_ld(offset0, tmp_values), vec_vsx_ld(offset16, tmp_values)};
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h
+index 6ef6147447..c98ab6215e 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h
+@@ -199,7 +199,7 @@ class Vectorized<int32_t> {
+           vec_vsx_ld(offset16, reinterpret_cast<const value_type*>(ptr))};
+     }
+ 
+-    __at_align__ value_type tmp_values[size()];
++    __at_align__ value_type tmp_values[size()] = {};
+     std::memcpy(tmp_values, ptr, std::min(count, size()) * sizeof(value_type));
+ 
+     return {vec_vsx_ld(offset0, tmp_values), vec_vsx_ld(offset16, tmp_values)};
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h
+index c0f1146d9d..a4171026a2 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h
+@@ -148,7 +148,7 @@ class Vectorized<int64_t> {
+               (vint64)vec_vsx_ld(offset16, dptr)};
+     }
+ 
+-    __at_align__ double tmp_values[size()];
++    __at_align__ double tmp_values[size()] = {};
+     std::memcpy(tmp_values, ptr, std::min(count, size()) * sizeof(value_type));
+ 
+     return {
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_qint32_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_qint32_vsx.h
+index c3cec14a5b..a85730c9a6 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_qint32_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_qint32_vsx.h
+@@ -81,7 +81,7 @@ struct Vectorized<c10::qint32> {
+           vec_vsx_ld(offset16, reinterpret_cast<const value_type*>(ptr))};
+     }
+ 
+-    __at_align__ value_type tmp_values[size()];
++    __at_align__ value_type tmp_values[size()] = {};
+     std::memcpy(tmp_values, ptr, std::min(count, size()) * sizeof(value_type));
+ 
+     return {vec_vsx_ld(offset0, tmp_values), vec_vsx_ld(offset16, tmp_values)};

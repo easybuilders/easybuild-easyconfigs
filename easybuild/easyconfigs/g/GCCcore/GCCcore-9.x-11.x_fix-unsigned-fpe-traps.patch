@@ -1,0 +1,33 @@
+From 99b520f031c0e491d7e170916df11dd645d60617 Mon Sep 17 00:00:00 2001
+From: Andrew Pinski <apinski@marvell.com>
+Date: Thu, 29 Jul 2021 19:48:46 -0700
+Subject: [PATCH] Fix PR 101683: FP exceptions for float->unsigned
+
+Just like the old bug PR9651, unsigned_fix rtl should
+also be handled as a trapping instruction.
+
+OK? Bootstrapped and tested on x86_64-linux-gnu with no regressions.
+
+gcc/ChangeLog:
+
+	PR rtl-optimization/101683
+	* rtlanal.c (may_trap_p_1): Handle UNSIGNED_FIX.
+---
+ gcc/rtlanal.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/gcc/rtlanal.c b/gcc/rtlanal.c
+index 3b8d88afd4d..f7f3acb75db 100644
+--- a/gcc/rtlanal.c
++++ b/gcc/rtlanal.c
+@@ -3261,6 +3261,7 @@ may_trap_p_1 (const_rtx x, unsigned flags)
+       break;
+ 
+     case FIX:
++    case UNSIGNED_FIX:
+       /* Conversion of floating point might trap.  */
+       if (flag_trapping_math && HONOR_NANS (XEXP (x, 0)))
+ 	return 1;
+-- 
+2.27.0
+

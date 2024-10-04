@@ -1,0 +1,62 @@
+easyblock = 'MakeCp'
+
+name = 'Elk'
+version = '7.2.42'
+
+homepage = 'http://elk.sourceforge.net/'
+description = """An all-electron full-potential linearised
+augmented-plane wave (FP-LAPW) code with many advanced features. Written
+originally at Karl-Franzens-Universität Graz as a milestone of the
+EXCITING EU Research and Training Network, the code is designed to be as
+simple as possible so that new developments in the field of density
+functional theory (DFT) can be added quickly and reliably.
+"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'usempi': True, 'openmp': True, 'opt': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = [SOURCELOWER_TGZ]
+checksums = ['73f03776dbf9b2147bfcc5b7c062af5befa0944608f6fc4b6a1e590615400fc6']
+
+dependencies = [
+    ('libxc', '5.1.5'),
+    ('Wannier90', '3.1.0'),
+]
+
+
+# make.inc file is generated interactively by "setup" command, creating it here
+prebuildopts = 'echo "F90_OPTS = -std=legacy $FFLAGS" > make.inc && '
+prebuildopts += 'echo "F77_OPTS = -std=legacy $FFLAGS" >> make.inc && '
+prebuildopts += 'echo "LIB_LPK = $LIBLAPACK" >> make.inc && '
+prebuildopts += 'echo "LIB_FFT = $LIBFFT" >> make.inc && '
+prebuildopts += 'echo "LIB_W90 = -lwannier" >> make.inc && '
+prebuildopts += 'echo "LIB_libxc = -lxcf90 -lxc" >> make.inc && '
+prebuildopts += 'echo "SRC_libxc = libxcf90.f90 libxcifc.f90" >> make.inc && '
+prebuildopts += 'echo "SRC_FFT = zfftifc_fftw.f90" >> make.inc && '
+prebuildopts += 'echo "SRC_OBLAS = oblas_stub.f90" >> make.inc && '
+prebuildopts += 'echo "SRC_BLIS = blis_stub.f90" >> make.inc && '
+prebuildopts += 'echo "SRC_MKL = mkl_stub.f90" >> make.inc && '
+
+buildopts = 'all'
+
+runtest = 'test'
+
+parallel = 1
+
+files_to_copy = [(
+    [
+        'src/elk', 'src/spacegroup/spacegroup', 'src/eos/eos',
+        'utilities/elk-bands/elk-bands', 'utilities/elk-optics/elk-optics.py',
+        'utilities/wien2k-elk/se.pl'
+    ], 'bin'
+)]
+
+sanity_check_paths = {
+    'files': ['bin/elk', 'bin/spacegroup', 'bin/eos'],
+    'dirs': []
+}
+
+sanity_check_commands = ["elk | grep '^Elk code version %(version)s'"]
+
+moduleclass = 'phys'

@@ -1,0 +1,87 @@
+easyblock = 'Bundle'
+
+name = 'ResistanceGA'
+version = '4.2-5'
+local_commit = '04326a8'
+local_juliaver = '1.9.2'
+versionsuffix = '-R-%%(rver)s-Julia-%s' % local_juliaver
+
+homepage = 'https://github.com/wpeterman/ResistanceGA'
+description = "An R package to optimize resistance surfaces using Genetic Algorithms."
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('R', '4.2.1'),
+    ('Julia', local_juliaver, '-linux-%s' % ARCH, SYSTEM),
+    ('Circuitscape', '5.12.3', '-Julia-%s' % local_juliaver, SYSTEM),
+    ('RCall', '0.13.17', versionsuffix),
+]
+
+exts_defaultclass = 'RPackage'
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/',
+        'https://cran.rstudio.com/src/contrib/',
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s/',
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+exts_list = [
+    ('Suppressor', '0.2.4', {
+        'easyblock': 'JuliaPackage',
+        'exts_filter': ("julia -e 'using %(ext_name)s'", ''),
+        'preinstallopts': "export LD_LIBRARY_PATH=$EBROOTJULIA/lib/julia:$LD_LIBRARY_PATH && ",
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/JuliaIO/Suppressor.jl/archive/'],
+        'checksums': ['5075b06ed6aa0956c786e5b5fe3d77571a4dd34e6d63b45e113c312729384cf4'],
+    }),
+    ('GA', '3.2.2', {
+        'checksums': ['6245c634a11b8414bde7ed326b8c615512645489b19969619484c865e900bf8c'],
+    }),
+    ('MuMIn', '1.47.1', {
+        'checksums': ['1223b5ada6f7d58220ac0267fa3473993190742646cbbb3dfe63895e61621af6'],
+    }),
+    ('spdep', '1.2-7', {
+        'checksums': ['9dac594825bf2d0aa31e845bfec05d8ce206327840fe455391741dbbdf9c9eea'],
+    }),
+    ('JuliaCall', '0.17.5', {
+        'patches': ['JuliaCall-0.17.5-top_level_macro.patch'],
+        'checksums': [
+            {'JuliaCall_0.17.5.tar.gz': '92542f9f02fe43702c18cf6c5a52fcbfc5ef3da6a2f73bfded773f4fc5edd90c'},
+            {'JuliaCall-0.17.5-top_level_macro.patch':
+             '68508176c44fab479bce2a1a4e0302f835bd0d6a980abf860d713bb71f12145a'},
+        ],
+    }),
+    ('XR', '0.7.2', {
+        'checksums': ['7fc35f607d68095f861711fda9acbd8804829ad3915a22a407ab1e9fb89c1949'],
+    }),
+    ('XRJulia', '0.9.0', {
+        'checksums': ['f59fddbe7ab65562f6e019ca7016417fff81f5b7e5f0ddeb00129aaaa6336f68'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/wpeterman/ResistanceGA/archive/'],
+        'sources': [{'download_filename': '04326a8.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['6791c8b42559c0abe94b7a326961f45af2939905021cb9da7220383bf2ea3d75'],
+    }),
+]
+
+modextrapaths = {
+    'R_LIBS_SITE': '',
+}
+
+# When loading R and Julia, there seems to be a library collision and Julia (namely Pkg module) doesn't work properly
+# This is a workaround to make Julia find the correct libraries
+modluafooter = """
+prepend_path("LD_LIBRARY_PATH", os.getenv("EBROOTJULIA") .. "/lib/julia")
+"""
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['%(name)s'],
+}
+
+moduleclass = 'bio'

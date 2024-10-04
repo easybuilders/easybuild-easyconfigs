@@ -1,0 +1,40 @@
+easyblock = 'MakeCp'
+
+name = 'bamFilters'
+local_commit = '93e334e'
+version = '2022-06-30'
+
+homepage = 'https://github.com/institut-de-genomique/bamFilters'
+description = """A utility tool to filter alignments from bam files,
+ using identity percent, low complexity and read coverage."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/institut-de-genomique/bamFilters/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['63a2a57093f0d360ce21775de8bb118e60cbd8856593e02c608f930745e1b463']
+
+builddependencies = [('SAMtools', '1.13')]  # libbam.a, is provided by SAMtools only up to version 1.13
+
+dependencies = [
+    ('HTSlib', '1.15.1'),
+    ('BamTools', '2.5.2'),
+    ('zlib', '1.2.12'),
+    ('bzip2', '1.0.8'),
+]
+prebuildopts = 'mkdir obj && '
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS" SAMTOOLS_LIBDIR="$EBROOTSAMTOOLS/lib"'
+buildopts += ' LIBS="$LIBS -lhts -lbam -lz -lbz2 -lcurl -lssl -lcrypto -llzma"'
+
+files_to_copy = [
+    (['bamFilters'], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/bamFilters'],
+    'dirs': []
+}
+
+sanity_check_commands = ['bamFilters -h 2>&1 | grep "Usage"']
+
+moduleclass = 'bio'

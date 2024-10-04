@@ -1,0 +1,58 @@
+# Contribution by
+# DeepThought, Flinders University
+# Updated to v24.2.0
+# R.QIAO <rob.qiao@flinders.edu.au>
+
+easyblock = 'PythonPackage'
+
+name = 'cDNA_Cupcake'
+version = '24.2.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/Magdoll/cDNA_Cupcake'
+description = """cDNA_Cupcake is a miscellaneous collection of Python and
+R scripts used for analyzing sequencing data.
+"""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+source_urls = ['https://github.com/Magdoll/cDNA_Cupcake/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['9aa75ef3d00e9983772021dca3c5595df5ea23c39fb0004e4330e55edc782002']
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', versionsuffix),
+    ('Biopython', '1.78', versionsuffix),
+    ('bx-python', '0.8.9', versionsuffix),
+    ('bcbio-gff', '0.6.6', versionsuffix),
+    ('scikit-learn', '0.23.1', versionsuffix),
+    ('Pysam', '0.16.0.1'),
+]
+
+download_dep_fail = True
+use_pip = True
+
+preinstallopts = "sed -i 's/sklearn/scikit-learn/g' setup.py && "
+
+sanity_pip_check = True
+sanity_check_paths = {
+    # check for particular Cupcake ToFU scripts,
+    # https://github.com/Magdoll/cDNA_Cupcake/wiki/Cupcake-ToFU:-supporting-scripts-for-Iso-Seq-after-clustering-step
+    'files': [
+        'bin/collapse_isoforms_by_sam.py',
+        'bin/get_abundance_post_collapse.py',
+        'bin/simple_stats_post_collapse.py'
+    ],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'collapse_isoforms_by_sam.py -h',
+    'get_abundance_post_collapse.py -h',
+    'simple_stats_post_collapse.py -h',
+]
+
+options = {'modulename': 'cupcake'}
+
+moduleclass = 'bio'

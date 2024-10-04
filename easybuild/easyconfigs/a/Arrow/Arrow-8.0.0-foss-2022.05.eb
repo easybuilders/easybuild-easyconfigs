@@ -1,0 +1,77 @@
+easyblock = 'CMakeMake'
+
+name = 'Arrow'
+version = '8.0.0'
+
+homepage = 'https://arrow.apache.org'
+description = """Apache Arrow (incl. PyArrow Python bindings), a cross-language development platform
+ for in-memory data."""
+
+toolchain = {'name': 'foss', 'version': '2022.05'}
+
+source_urls = ['https://archive.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s']
+sources = ['apache-arrow-%(version)s.tar.gz']
+patches = ['Arrow-8.0.0_fix-BaseExtensionType-arrow-ext-methods.patch']
+checksums = [
+    {'apache-arrow-8.0.0.tar.gz': 'ad9a05705117c989c116bae9ac70492fe015050e1b80fb0e38fde4b5d863aaa3'},
+    {'Arrow-8.0.0_fix-BaseExtensionType-arrow-ext-methods.patch':
+     '2db8a4c655e2a3f0ec7dac05e13bda6c2843203568873e736d2f1b8321b0dfc7'},
+]
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('Autotools', '20220317'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('pkgconf', '1.8.0'),
+]
+
+# Arrow strongly prefers included jemalloc, so not including it as a dependency
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),  # for numpy
+    ('Boost', '1.79.0'),
+    ('lz4', '1.9.3'),
+    ('zlib', '1.2.12'),
+    ('bzip2', '1.0.8'),
+    ('zstd', '1.5.2'),
+    ('snappy', '1.1.9'),
+    ('RapidJSON', '1.1.0'),
+    ('RE2', '2022-06-01'),
+    ('utf8proc', '2.7.0'),
+]
+
+start_dir = 'cpp'
+
+# see https://arrow.apache.org/docs/developers/python.html
+configopts = "-DARROW_DATASET=on -DARROW_PYTHON=on -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON "
+configopts += "-DCMAKE_INSTALL_LIBDIR=lib -DPython3_ROOT_DIR=$EBROOTPYTHON "
+configopts += "-DARROW_WITH_ZLIB=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_ZSTD=ON -DARROW_WITH_LZ4=ON "
+configopts += "-DZSTD_ROOT=$EBROOTZSTD "
+
+# also install Python bindings
+local_install_pyarrow_cmds = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
+local_install_pyarrow_cmds += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+local_install_pyarrow_cmds += "cd %(builddir)s/*arrow-%(version)s/python && export XDG_CACHE_HOME=$TMPDIR && "
+local_install_pyarrow_cmds += "sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml && "
+local_install_pyarrow_cmds += "Python3_ROOT_DIR=$EBROOTPYTHON "
+local_install_pyarrow_cmds += "PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 "
+local_install_pyarrow_cmds += "python -m pip install --prefix %(installdir)s --no-build-isolation ."
+postinstallcmds = [local_install_pyarrow_cmds]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['lib/libarrow.a', 'lib/libarrow.%s' % SHLIB_EXT,
+              'lib/libarrow_python.a', 'lib/libarrow_python.%s' % SHLIB_EXT],
+    'dirs': ['include/arrow', 'lib/cmake/arrow', 'lib/pkgconfig', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import pyarrow'",
+    "python -c 'import pyarrow.dataset'",
+    "python -c 'import pyarrow.parquet'",
+    "python -c 'from pyarrow.lib import BaseExtensionType; print(BaseExtensionType.__arrow_ext_class__)'",
+]
+
+moduleclass = 'data'

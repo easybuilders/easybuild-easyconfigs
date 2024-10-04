@@ -1,0 +1,56 @@
+# easyconfig file for waLBerla v6.1
+easyblock = 'CMakeMakeCp'
+
+name = 'waLBerla'
+version = '6.1'
+
+homepage = "https://walberla.net/index.html"
+description = """Widely applicable Lattics-Boltzmann from Erlangen is a 
+block-structured high-performance framework for multiphysics simulations"""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://i10git.cs.fau.de/walberla/walberla/-/archive/v6.1']
+sources = ['%(name)s-v%(version)s.tar.gz']
+patches = ['waLBerla-6.1_fix_cmakelist_for_easybuild_without_python.patch']
+checksums = [
+    {'waLBerla-v6.1.tar.gz': 'f0acdd9ad6543bc9306c8aae953dd5065986271d4398916ae0469db8b21c007a'},
+    {'waLBerla-6.1_fix_cmakelist_for_easybuild_without_python.patch':
+     'e64927d85ed6ac4c52921c33c504d4f6e7038fd618c89cf7efdadbcf638a1048'},
+]
+
+builddependencies = [('CMake', '3.24.3')]
+
+dependencies = [
+    ('Boost.MPI', '1.81.0'),
+]
+
+parallel = 1
+
+configopts = "-DWALBERLA_BUILD_WITH_PYTHON=OFF "
+configopts += "-DWALBERLA_BUILD_SHOWCASES=OFF "
+configopts += "-DWALBERLA_BUILD_DOC=OFF "
+configopts += "-DWALBERLA_BUILD_BENCHMARKS=OFF"
+
+
+files_to_copy = [
+    (['%(builddir)s/easybuild_obj/*'], 'build'),
+    (['%(start_dir)s/src/*'], 'src'),
+]
+
+sanity_check_paths = {
+    'files': [
+        'build/src/waLBerlaDefinitions.h',
+        'build/apps/tutorials/basics/01_Tutorial_BlocksAndFields1',
+        'build/utilities/filterCompileCommands.py'
+    ],
+    'dirs': ['src', 'build/apps', 'build/tests', 'build/utilities']
+}
+
+sanity_check_commands = [
+    "mkdir -p %(builddir)s && cp -a %(installdir)s/build/apps/tutorials/lbm %(builddir)s/",
+    "cd %(builddir)s/lbm && chmod -R u+w . && ./01_BasicLBM 01_BasicLBM.prm",
+]
+
+moduleclass = 'chem'

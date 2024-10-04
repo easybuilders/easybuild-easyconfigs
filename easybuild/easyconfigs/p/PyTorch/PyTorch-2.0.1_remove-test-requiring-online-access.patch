@@ -1,0 +1,30 @@
+This downloads a Perl file from a Github repo which may fail in:
+
+  File "test/test_cuda.py", line 4632, in test_memory_snapshot
+    torch.cuda.memory._save_segment_usage(f.name)
+  File "/torch/cuda/memory.py", line 610, in _save_segment_usage
+    f.write(_segments(snapshot))
+  File "/torch/cuda/_memory_viz.py", line 60, in segments
+    return format_flamegraph(f.getvalue())
+  File "/torch/cuda/_memory_viz.py", line 21, in format_flamegraph
+    urllib.request.urlretrieve(
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_cuda.py b/test/test_cuda.py
+index 7f2693b52c5..4bff69e5cad 100644
+--- a/test/test_cuda.py
++++ b/test/test_cuda.py
+@@ -4993,12 +4993,6 @@ class TestCudaComm(TestCase):
+                                 found_it = True
+             self.assertTrue(found_it)
+ 
+-            if not IS_WINDOWS:
+-                with tempfile.NamedTemporaryFile() as f:
+-                    torch.cuda.memory._save_segment_usage(f.name)
+-                    with open(f.name, 'r') as f2:
+-                        self.assertTrue('test_cuda.py' in f2.read())
+-
+             del x
+             torch.cuda.empty_cache()
+             ss = torch.cuda.memory._snapshot()

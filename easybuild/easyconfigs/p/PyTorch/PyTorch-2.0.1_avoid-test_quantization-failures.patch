@@ -1,0 +1,19 @@
+The quantized values returned by hypothesis as test inputs might still cause overflows.
+Hence reduce their maximum value by a factor that should fix most such cases.
+See e.g. https://github.com/pytorch/pytorch/issues/111471
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/hypothesis_utils.py b/torch/testing/_internal/hypothesis_utils.py
+index 15e7b4512a4..67df4d74e9d 100644
+--- a/torch/testing/_internal/hypothesis_utils.py
++++ b/torch/testing/_internal/hypothesis_utils.py
+@@ -36,6 +36,8 @@ _ENFORCED_ZERO_POINT = defaultdict(lambda: None, {
+ def _get_valid_min_max(qparams):
+     scale, zero_point, quantized_type = qparams
+     adjustment = 1 + torch.finfo(torch.float).eps
++    # provide some leeway for scaling values without overflowing long
++    adjustment *= 1e4
+     _long_type_info = torch.iinfo(torch.long)
+     long_min, long_max = _long_type_info.min / adjustment, _long_type_info.max / adjustment
+     # make sure intermediate results are within the range of long

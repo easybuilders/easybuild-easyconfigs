@@ -1,0 +1,47 @@
+easyblock = 'CMakeMake'
+
+name = 'STRUMPACK'
+version = '6.1.0'
+
+homepage = 'https://fastmath-scidac.llnl.gov/software/strumpack.html'
+description = """STRUMPACK - STRUctured Matrix PACKage - Fast linear solvers and preconditioner
+ for both dense and sparse systems using low-rank structured factorization with randomized sampling."""
+
+toolchain = {'name': 'intel', 'version': '2020b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/pghysels/%(name)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['219ec7360594172464aafa6ecac1fd161097db6fb9ee35af5c1ca61531f4f5c4']
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('ParMETIS', '4.0.3'),
+    ('SCOTCH', '6.1.0'),
+]
+
+configopts = '-DSTRUMPACK_USE_OPENMP=ON '
+configopts += '-DTPL_SCALAPACK_LIBRARIES="${LIBSCALAPACK_MT}" '
+configopts += '-DTPL_METIS_INCLUDE_DIRS=${EBROOTPARMETIS}/include '
+configopts += '-DTPL_METIS_LIBRARY_DIR=${EBROOTPARMETIS}/lib '
+configopts += '-DTPL_ENABLE_PARMETIS=ON '
+configopts += '-DTPL_PARMETIS_INCLUDE_DIRS=${EBROOTPARMETIS}/include '
+configopts += '-DTPL_PARMETIS_LIBRARY_DIR=${EBROOTPARMETIS}/lib '
+configopts += '-DTPL_ENABLE_SCOTCH=ON '
+configopts += '-DTPL_SCOTCH_INCLUDE_DIRS=${EBROOTSCOTCH}/include '
+configopts += '-DTPL_SCOTCH_LIBRARY_DIR=${EBROOTSCOTCH}/lib '
+configopts += '-DTPL_ENABLE_BPACK=OFF '
+configopts += '-DTPL_ENABLE_ZFP=OFF '
+configopts += '-DTPL_ENABLE_SLATE=OFF '
+
+sanity_check_paths = {
+    'files': ['lib/libstrumpack.a'],
+    'dirs': ['include/%s' % x for x in ['BLR', 'clustering', 'dense', 'HSS', 'kernel', 'misc', 'python', 'sparse']] +
+            ['lib'],
+}
+
+moduleclass = 'numlib'
