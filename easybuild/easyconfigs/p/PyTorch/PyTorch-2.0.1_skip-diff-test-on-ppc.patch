@@ -1,0 +1,26 @@
+The workaround for over/underflow isn't implemented for PPC yet.
+So skip the test.
+See https://github.com/pytorch/pytorch/issues/109870
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_binary_ufuncs.py b/test/test_binary_ufuncs.py
+index 57fc1b76f18..06c129e007a 100644
+--- a/test/test_binary_ufuncs.py
++++ b/test/test_binary_ufuncs.py
+@@ -27,6 +27,7 @@ from torch.testing._internal.common_utils import (
+     numpy_to_torch_dtype_dict,
+     TEST_SCIPY,
+     set_default_dtype,
++    IS_PPC,
+ )
+ from torch.testing._internal.common_device_type import (
+     expectedFailureMeta,
+@@ -1091,6 +1092,7 @@ class TestBinaryUfuncs(TestCase):
+             )
+ 
+     @dtypes(*complex_types())
++    @skipIf(IS_PPC, "Vectorized div fails on PPC: #109870")
+     def test_complex_div_underflow_overflow(self, device, dtype):
+         # test to make sure the complex division does not produce underflow or overflow
+         # in the intermediate of its calculations

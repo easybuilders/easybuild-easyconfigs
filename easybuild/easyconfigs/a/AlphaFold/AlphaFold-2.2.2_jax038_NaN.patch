@@ -1,0 +1,16 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de
+# Resulting pdb files contain NaNs because jax >= 0.3.8 is used.
+# Fix according to https://github.com/deepmind/alphafold/issues/513 and
+# https://jax.readthedocs.io/en/latest/changelog.html#jax-0-3-8-april-29-2022
+diff -ru alphafold-2.2.2/alphafold/model/utils.py alphafold-2.2.2_jax38_NaN/alphafold/model/utils.py
+--- alphafold-2.2.2/alphafold/model/utils.py	2022-06-13 17:49:22.000000000 +0200
++++ alphafold-2.2.2_jax38_NaN/alphafold/model/utils.py	2022-07-18 10:17:59.672423061 +0200
+@@ -34,7 +34,7 @@
+ 
+ def batched_gather(params, indices, axis=0, batch_dims=0):
+   """Implements a JAX equivalent of `tf.gather` with `axis` and `batch_dims`."""
+-  take_fn = lambda p, i: jnp.take(p, i, axis=axis)
++  take_fn = lambda p, i: jnp.take(p, i, axis=axis, mode="clip")
+   for _ in range(batch_dims):
+     take_fn = jax.vmap(take_fn)
+   return take_fn(params, indices)

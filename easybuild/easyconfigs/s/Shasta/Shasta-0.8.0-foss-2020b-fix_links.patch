@@ -1,0 +1,111 @@
+fix linking to BLAS + lapack (original didnt expect any alternatives to blas - like openblas)
+Author: Denis Kristak
+diff -ruN shasta-0.8.0_orig/dynamicExecutable/CMakeLists.txt shasta-0.8.0/dynamicExecutable/CMakeLists.txt
+--- shasta-0.8.0_orig/dynamicExecutable/CMakeLists.txt	2021-11-11 15:34:47.786798000 +0100
++++ shasta-0.8.0/dynamicExecutable/CMakeLists.txt	2021-11-11 15:33:29.419991000 +0100
+@@ -53,6 +53,7 @@
+ 
+ # Include directory.
+ include_directories(../src)
++include_directories($EBROOTSCALAPACK)
+ 
+ # Define our executable.
+ add_executable(shastaDynamicExecutable ${SOURCES})
+@@ -68,13 +69,13 @@
+         shastaDynamicExecutable
+         shastaDynamicLibrary
+         atomic boost_system boost_program_options boost_chrono spoa cpu_features png z 
+-        lapack blas gfortran quadmath pthread)
++        openblas gfortran quadmath pthread)
+ else(X86_64)
+     target_link_libraries(
+         shastaDynamicExecutable
+         shastaDynamicLibrary
+         atomic boost_system boost_program_options boost_chrono spoa png z 
+-        lapack blas gfortran pthread)
++        openblas gfortran pthread)
+ endif(X86_64)
+ 
+ if(BUILD_DEBUG) 
+diff -ruN shasta-0.8.0_orig/dynamicLibrary/CMakeLists.txt shasta-0.8.0/dynamicLibrary/CMakeLists.txt
+--- shasta-0.8.0_orig/dynamicLibrary/CMakeLists.txt	2021-11-11 15:34:39.528314000 +0100
++++ shasta-0.8.0/dynamicLibrary/CMakeLists.txt	2021-11-16 12:33:17.852745000 +0100
+@@ -54,6 +54,8 @@
+ 
+ # Include directory.
+ include_directories(../src)
++include_directories($EBROOTSCALAPACK)
++
+ 
+ # Define our library.
+ add_library(shastaDynamicLibrary SHARED ${SOURCES})
+@@ -70,23 +72,23 @@
+ # Python 3.8 requires the `--embed` flag to be passed in.
+ # find_python cmake module was introduced in v3.12, which isn't available for installation
+ # via `apt` on Ubuntu 18.04 LTS. So I am not using it. 
+-execute_process(COMMAND /usr/bin/python3-config --embed --libs OUTPUT_VARIABLE
++execute_process(COMMAND /usr/bin/env python3-config --embed --libs OUTPUT_VARIABLE
+ SHASTA_PYTHON_LIBRARIES RESULT_VARIABLE COMMAND_RESULT)
+ if(${COMMAND_RESULT} EQUAL 0)
+     # Python3 version is >= 3.8.0. So the --embed flag worked. Otherwise the command
+     # would have failed with a non-zero exit code.
+ else()
+-    execute_process(COMMAND /usr/bin/python3-config --libs OUTPUT_VARIABLE SHASTA_PYTHON_LIBRARIES)
++    execute_process(COMMAND /usr/bin/env python3-config --libs OUTPUT_VARIABLE SHASTA_PYTHON_LIBRARIES)
+ endif()
+-execute_process(COMMAND python3 -m pybind11 --includes OUTPUT_VARIABLE SHASTA_PYTHON_INCLUDES)
++execute_process(COMMAND /usr/bin/env python3 -m pybind11 --includes OUTPUT_VARIABLE SHASTA_PYTHON_INCLUDES)
+ add_definitions(${SHASTA_PYTHON_INCLUDES})
+-string(STRIP ${SHASTA_PYTHON_LIBRARIES} SHASTA_PYTHON_LIBRARIES)
++string(STRIP "${SHASTA_PYTHON_LIBRARIES}" SHASTA_PYTHON_LIBRARIES)
+ SET(CMAKE_LINKER_FLAGS  "${CMAKE_LINKER_FLAGS} ${SHASTA_PYTHON_LIBRARIES}")
+ 
+ # Libraries to link with.
+ target_link_libraries(
+     shastaDynamicLibrary 
+-     atomic png boost_program_options pthread z spoa lapack blas ${SHASTA_PYTHON_LIBRARIES})
++     atomic png boost_program_options pthread z spoa openblas ${SHASTA_PYTHON_LIBRARIES})
+ 
+ # Install the shared library into the bin directory.
+ install(TARGETS shastaDynamicLibrary DESTINATION shasta-install/bin)
+diff -ruN shasta-0.8.0_orig/staticExecutable/CMakeLists.txt shasta-0.8.0/staticExecutable/CMakeLists.txt
+--- shasta-0.8.0_orig/staticExecutable/CMakeLists.txt	2021-11-10 14:30:44.182620000 +0100
++++ shasta-0.8.0/staticExecutable/CMakeLists.txt	2021-11-11 15:34:12.652136000 +0100
+@@ -49,6 +49,8 @@
+ 
+ # Include directory.
+ include_directories(../src)
++include_directories($EBROOTSCALAPACK)
++
+ 
+ # Include directories required on macOS.
+ if(MACOS)
+@@ -86,14 +88,14 @@
+             shastaStaticExecutable
+             shastaStaticLibrary
+             atomic boost_system boost_program_options boost_chrono spoa cpu_features png z
+-            lapack blas gfortran quadmath
++            openblas gfortran quadmath
+             -Wl,--whole-archive -lpthread -Wl,--no-whole-archive)
+     else(X86_64)
+         target_link_libraries(
+             shastaStaticExecutable
+             shastaStaticLibrary
+             atomic boost_system boost_program_options boost_chrono spoa png z
+-            lapack blas gfortran
++            openblas gfortran
+             -Wl,--whole-archive -lpthread -Wl,--no-whole-archive)
+     endif(X86_64) 
+     
+diff -ruN shasta-0.8.0_orig/staticLibrary/CMakeLists.txt shasta-0.8.0/staticLibrary/CMakeLists.txt
+--- shasta-0.8.0_orig/staticLibrary/CMakeLists.txt	2021-11-10 14:30:44.316688000 +0100
++++ shasta-0.8.0/staticLibrary/CMakeLists.txt	2021-11-11 12:40:27.492732000 +0100
+@@ -49,6 +49,8 @@
+ 
+ # Include directory.
+ include_directories(../src)
++include_directories($EBROOTSCALAPACK)
++
+ 
+ # Include directories required on macOS.
+ if(MACOS)

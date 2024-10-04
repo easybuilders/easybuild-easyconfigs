@@ -1,0 +1,43 @@
+From 39fd5f0742a971acfca749638f6fc8f4472a1e4b Mon Sep 17 00:00:00 2001
+From: Sutou Kouhei <kou@clear-code.com>
+Date: Tue, 18 Aug 2020 06:51:22 +0900
+Subject: [PATCH] ARROW-9744: [Python] Fix build failure on aarch64
+
+pyarrow just uses SetupCxxFlags.cmake. It doesn't use
+DefineOptions.cmake. We need to define ARROW_ARMV8_ARCH in pyarrow
+too. It's defined in DefineOptions.cmake.
+---
+ cpp/cmake_modules/DefineOptions.cmake | 3 +++
+ python/CMakeLists.txt                 | 5 +++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/cpp/cmake_modules/DefineOptions.cmake b/cpp/cmake_modules/DefineOptions.cmake
+index cf860cb41898..0d0303d86eae 100644
+--- a/cpp/cmake_modules/DefineOptions.cmake
++++ b/cpp/cmake_modules/DefineOptions.cmake
+@@ -114,6 +114,9 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+ 
+   # Arm64 architectures and extensions can lead to exploding combinations.
+   # So set it directly through cmake command line.
++  #
++  # If you change this, you need to change the definition in
++  # python/CMakeLists.txt too.
+   define_option_string(ARROW_ARMV8_ARCH
+                        "Arm64 arch and extensions"
+                        "armv8-a" # Default
+diff --git a/python/CMakeLists.txt b/python/CMakeLists.txt
+index 2a43b165d7ed..273296ad2d2b 100644
+--- a/python/CMakeLists.txt
++++ b/python/CMakeLists.txt
+@@ -97,6 +97,11 @@ include(BuildUtils)
+ # Cython generated code emits way to many warnings at CHECKIN and EVERYTHING
+ set(BUILD_WARNING_LEVEL "PRODUCTION")
+ 
++# This must be synchronized with the definition in
++# cpp/cmake_modules/DefineOptions.cmake.
++set(ARROW_ARMV8_ARCH
++    "armv8-a"
++    CACHE STRING "Arm64 arch and extensions: armv8-a, armv8-a or armv8-a+crc+crypto")
+ include(SetupCxxFlags)
+ 
+ # Add common flags

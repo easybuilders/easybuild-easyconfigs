@@ -1,0 +1,46 @@
+easyblock = 'MesonNinja'
+
+name = 'MODFLOW'
+version = '6.4.4'
+
+homepage = 'https://www.usgs.gov/mission-areas/water-resources/science/modflow-and-related-programs'
+description = """
+MODFLOW is the USGS's modular hydrologic model. MODFLOW is considered an
+ international standard for simulating and predicting groundwater conditions
+ and groundwater/surface-water interactions. 
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+github_account = "MODFLOW-USGS"
+source_urls = ['https://github.com/%(github_account)s/%(namelower)s6/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['bab887399d1882c84296e7bad20d6143aa07c1476943e6465c14a8738e1ded53']
+
+builddependencies = [
+    ('Meson', '1.1.1'),
+    ('Ninja', '1.11.1'),
+    ('binutils', '2.40'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('PETSc', '3.20.3'),
+    ('netCDF-Fortran', '4.6.1'),
+]
+
+# Needed because of https://github.com/mesonbuild/meson/issues/12993
+preconfigopts = "PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=true"
+configopts = '-Ddebug=false -Dparallel=true'
+
+runtest = 'meson test'
+testopts = '--verbose --no-rebuild'
+
+sanity_check_commands = ['mf6 --version']
+
+sanity_check_paths = {
+    'files': ['bin/mf6', 'bin/mf5to6', 'bin/zbud6', 'lib/libmf6.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'geo'

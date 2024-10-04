@@ -1,0 +1,129 @@
+# author: Denis Kristak (INUITS)
+# changing example command to contain absolute paths + tabs escaping + changing plotting type to cairo
+diff -ruN crispr-dav-2.3.4_orig/Examples/example1/run.sh crispr-dav-2.3.4/Examples/example1/run.sh
+--- crispr-dav-2.3.4_orig/Examples/example1/run.sh	2019-07-26 21:15:08.000000000 +0200
++++ crispr-dav-2.3.4/Examples/example1/run.sh	2021-06-22 12:57:41.700453098 +0200
+@@ -4,6 +4,7 @@
+ 
+ ## If there is problem loading Perl modules., set PERL5LIB accordingly.
+ #export PERL5LIB=$HOME/perlmod/lib/perl5:$PERL5LIB
+-../../crispr.pl --conf conf.txt --region amplicon.bed --crispr site.bed \
+-	--sitemap sample.site --fastqmap fastq.list --genome genomex 
++
++$EBROOTCRISPRMINDAV/crispr.pl --conf $EBROOTCRISPRMINDAV/Examples/example1/conf.txt --region $EBROOTCRISPRMINDAV/Examples/example1/amplicon.bed --crispr $EBROOTCRISPRMINDAV/Examples/example1/site.bed \
++	--sitemap $EBROOTCRISPRMINDAV/Examples/example1/sample.site --fastqmap $EBROOTCRISPRMINDAV/Examples/example1/fastq.list --genome genomex --verbose 1
+ 
+diff -ruN crispr-dav-2.3.4_orig/Modules/NGS.pm crispr-dav-2.3.4/Modules/NGS.pm
+--- crispr-dav-2.3.4_orig/Modules/NGS.pm	2019-07-26 21:15:08.000000000 +0200
++++ crispr-dav-2.3.4/Modules/NGS.pm	2021-06-21 17:37:39.381993860 +0200
+@@ -296,7 +296,7 @@
+     my $cmd      = "$self->{bwa} mem";
+     $cmd .= " $h{param}" if $h{param};
+     if ( $h{id} && $h{sm} ) {
+-        $cmd .= " -R \'\@RG\tID:$h{id}\tSM:$h{sm}\tPL:$h{pl}\'";
++        $cmd .= " -R \'\@RG\\tID:$h{id}\\tSM:$h{sm}\\tPL:$h{pl}\'";
+     }
+     $cmd .= " $h{idxbase} $h{read1_inf}";
+     $cmd .= " $h{read2_inf}" if -f $h{read2_inf};
+@@ -558,7 +558,7 @@
+     # file is already indexed.
+     my $cmd = "rm -rf $workdir && mkdir -p $workdir" .
+       " && $self->{java} -Djava.io.tmpdir=$tmpdir -jar $h{abra} --threads 2" .
+-      " --ref $h{ref_fasta} --targets $h{target_bed} --working $workdir" .
++      " --ref $h{ref_fasta} --targets $h{target_bed} --tmpdir $workdir" .
+       " --in $h{bam_inf} --out $h{bam_outf}";
+     
+     if ($h{single}) {
+diff -ruN crispr-dav-2.3.4_orig/Rscripts/allele.R crispr-dav-2.3.4/Rscripts/allele.R
+--- crispr-dav-2.3.4_orig/Rscripts/allele.R	2019-07-26 21:15:08.000000000 +0200
++++ crispr-dav-2.3.4/Rscripts/allele.R	2021-06-22 13:13:45.868418215 +0200
+@@ -114,7 +114,7 @@
+ } else {
+ 	h<-400
+ 	w<- ifelse(n>40, 13*n, h*1.25)
+-	png(filename=outfile, height=h, width=w)
++	png(filename=outfile, type='cairo', height=h, width=w)
+ }
+ 
+ on.exit(dev.off())
+diff -ruN crispr-dav-2.3.4_orig/Rscripts/amplicon.R crispr-dav-2.3.4/Rscripts/amplicon.R
+--- crispr-dav-2.3.4_orig/Rscripts/amplicon.R	2019-07-26 21:15:08.000000000 +0200
++++ crispr-dav-2.3.4/Rscripts/amplicon.R	2021-06-22 13:13:45.868418215 +0200
+@@ -111,7 +111,7 @@
+ 	if ( high_res ) {
+ 		tiff(filename=outfile, width=5, height=4, units='in', res=1200)	
+ 	} else {
+-		png(filename=outfile, width=500, height=400)
++		png(filename=outfile, type='cairo', width=500, height=400)
+ 	}
+ 	on.exit(dev.off())
+ 	print(p)
+diff -ruN crispr-dav-2.3.4_orig/Rscripts/hdr.R crispr-dav-2.3.4/Rscripts/hdr.R
+--- crispr-dav-2.3.4_orig/Rscripts/hdr.R	2019-07-26 21:15:08.000000000 +0200
++++ crispr-dav-2.3.4/Rscripts/hdr.R	2021-06-22 13:13:45.868418215 +0200
+@@ -102,7 +102,7 @@
+ 	h<-400
+ 	barspace=60
+ 	w<- ifelse( n*barspace<h, h, n*barspace)
+-	png(filename=outfile, width=w, height=h)
++	png(filename=outfile, type='cairo', width=w, height=h)
+ }
+ 
+ print(p)
+diff -ruN crispr-dav-2.3.4_orig/Rscripts/indel.R crispr-dav-2.3.4/Rscripts/indel.R
+--- crispr-dav-2.3.4_orig/Rscripts/indel.R	2019-07-26 21:15:08.000000000 +0200
++++ crispr-dav-2.3.4/Rscripts/indel.R	2021-06-22 13:27:15.254201732 +0200
+@@ -81,7 +81,7 @@
+ 	} else {
+ 		h<-450
+ 		w<- ifelse(n>10, 50*n, h)
+-		png(filename=imgfile, height=h, width=w)
++		png(filename=imgfile, type='cairo', height=h, width=w)
+ 	}
+ 
+ 	on.exit(dev.off())
+diff -ruN crispr-dav-2.3.4_orig/Rscripts/read_chr.R crispr-dav-2.3.4/Rscripts/read_chr.R
+--- crispr-dav-2.3.4_orig/Rscripts/read_chr.R	2019-07-26 21:15:08.000000000 +0200
++++ crispr-dav-2.3.4/Rscripts/read_chr.R	2021-06-22 13:13:45.868418215 +0200
+@@ -72,7 +72,7 @@
+ 	w<-ifelse(n>5, 100*n, 550)
+ 	max_w=1000
+ 	w <- ifelse(w>max_w, max_w, w)
+-	png(filename=outfile, height=h, width=w)
++	png(filename=outfile, type='cairo', height=h, width=w)
+ }
+ 
+ print(p)
+diff -ruN crispr-dav-2.3.4_orig/Rscripts/read_stats.R crispr-dav-2.3.4/Rscripts/read_stats.R
+--- crispr-dav-2.3.4_orig/Rscripts/read_stats.R	2019-07-26 21:15:08.000000000 +0200
++++ crispr-dav-2.3.4/Rscripts/read_stats.R	2021-06-22 13:13:45.868418215 +0200
+@@ -69,7 +69,7 @@
+ } else {
+ 	h<-400
+ 	w<- ifelse(n>10, 50*n, h)
+-	png(filename=outfile, height=h, width=w)
++	png(filename=outfile, type='cairo', height=h, width=w)
+ }
+ 
+ p <- ggplot(dat.m, aes(x=Sample, y=value, fill=variable)) + 
+diff -ruN crispr-dav-2.3.4_orig/Rscripts/snp.R crispr-dav-2.3.4/Rscripts/snp.R
+--- crispr-dav-2.3.4_orig/Rscripts/snp.R	2019-07-26 21:15:08.000000000 +0200
++++ crispr-dav-2.3.4/Rscripts/snp.R	2021-06-22 13:13:45.868418215 +0200
+@@ -76,7 +76,7 @@
+ 	if ( high_res ) {
+     	tiff(filename=outfile, width=5, height=4, units='in', res=1200)
+ 	} else {
+-    	png(filename=outfile, width=500, height=400)
++    	png(filename=outfile, type='cairo', width=500, height=400)
+ 	}
+ 	print(p)
+ 	invisible(dev.off())
+@@ -182,7 +182,7 @@
+ 		wt <- 600
+ 	}
+ 	ht <- 400
+-	png(filename=outfile, width=wt, height=ht)
++	png(filename=outfile, type='cairo', width=wt, height=ht)
+ }
+ 
+ print(p)

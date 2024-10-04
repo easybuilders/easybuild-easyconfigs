@@ -1,0 +1,26 @@
+The behavior relied on by Abseil is unsupported by GCC and leads to misoptimizations.
+See https://github.com/tensorflow/tensorflow/issues/47179
+
+Author: Alexander Grund
+
+diff --git a/third_party/absl/com_google_absl_fix_mac_and_nvcc_build.patch b/third_party/absl/com_google_absl_fix_mac_and_nvcc_build.patch
+index 6301119ab2c..0b8b4838726 100644
+--- a/third_party/absl/com_google_absl_fix_mac_and_nvcc_build.patch
++++ b/third_party/absl/com_google_absl_fix_mac_and_nvcc_build.patch
+@@ -1,3 +1,16 @@
++diff --git a/absl/container/internal/container_memory.h b/absl/container/internal/container_memory.h
++index d24b0f8..f8847b5 100644
++--- a/absl/container/internal/container_memory.h
+++++ b/absl/container/internal/container_memory.h
++@@ -338,7 +338,7 @@ struct map_slot_policy {
++   // If pair<const K, V> and pair<K, V> are layout-compatible, we can accept one
++   // or the other via slot_type. We are also free to access the key via
++   // slot_type::key in this case.
++-  using kMutableKeys = memory_internal::IsLayoutCompatible<K, V>;
+++  using kMutableKeys = std::false_type;
++
++  public:
++   static value_type& element(slot_type* slot) { return slot->value; }
+ diff --git a/absl/container/internal/compressed_tuple.h b/absl/container/internal/compressed_tuple.h
+ index 4bfe92f..01db713 100644
+ --- a/absl/container/internal/compressed_tuple.h

@@ -1,0 +1,38 @@
+From 614d0228c3ef8cc7251b2593f4cda537d73cb84e Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Wed, 19 May 2021 17:51:06 +0200
+Subject: [PATCH] Only sync CUDA if the operation is run on GPU
+
+This fixes test failures when PyTorch is build without CUDA
+---
+ test/test_torch.py | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/test/test_torch.py b/test/test_torch.py
+index f071ffed0235b..3bc9234daf255 100644
+--- a/test/test_torch.py
++++ b/test/test_torch.py
+@@ -7289,8 +7289,9 @@ def test_multinomial_invalid(self, device):
+         def test(probs):
+             with self.assertRaisesRegex(RuntimeError,
+                                         'probability tensor contains either `inf`, `nan` or element < 0'):
+-                torch.multinomial(probs.to(device), 2)
+-                torch.cuda.synchronize()
++                out = torch.multinomial(probs.to(device), 2)
++                if out.is_cuda:
++                    torch.cuda.synchronize()
+ 
+         test(torch.tensor([1., -1., 1.]))
+         test(torch.tensor([1., inf, 1.]))
+@@ -7301,8 +7302,9 @@ def test_multinomial_invalid_distribution(self, device):
+         def test(probs, replacement):
+             with self.assertRaisesRegex(RuntimeError,
+                                         r"invalid multinomial distribution \(sum of probabilities <= 0\)"):
+-                torch.multinomial(probs, 2, replacement)
+-                torch.cuda.synchronize()
++                out = torch.multinomial(probs, 2, replacement)
++                if out.is_cuda:
++                    torch.cuda.synchronize()
+ 
+         x = torch.zeros(3, device=device)
+         y = torch.zeros(3, 3, device=device)

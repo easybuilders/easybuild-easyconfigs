@@ -1,0 +1,81 @@
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Danilo Gonzalez <danilo.gonzalez@hpcnow.com>
+# License::     GPL-v3.0
+
+easyblock = 'PythonBundle'
+
+name = 'medaka'
+version = '1.4.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/nanoporetech/medaka'
+description = "medaka is a tool to create a consensus sequence from nanopore sequencing data."
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+builddependencies = [('Autotools', '20180311')]
+
+dependencies = [
+    ('Python', '3.7.4'),  # includes cffi
+    # TensorFlow 2.2.2 required by medaka 1.4.3, see requirements.txt
+    ('TensorFlow', '2.2.2', versionsuffix),
+    ('Biopython', '1.75', versionsuffix),
+    ('h5py', '2.10.0', versionsuffix),
+    # Pysam 0.16.0.1 is strictly required, see requirements.txt
+    ('Pysam', '0.16.0.1'),
+    ('SAMtools', '1.10'),
+    ('minimap2', '2.17'),
+    ('HTSlib', '1.10.2'),  # for tabix, bgzip
+    ('Racon', '1.4.13'),
+    ('spoa', '4.0.0'),
+    ('networkx', '2.4', versionsuffix),
+    ('edlib', '1.3.8.post1', versionsuffix),
+    ('pyspoa', '0.0.4', versionsuffix),
+    ('ont-fast5-api', '3.3.0', versionsuffix),
+    ('pyfaidx', '0.5.9.5', versionsuffix),
+]
+
+use_pip = True
+
+exts_list = [
+    ('mappy', '2.20', {
+        'checksums': ['00c8720783ac982b514b01b86349ede9809eeaccdf1328acb5a16dfeef51458b'],
+    }),
+    ('parasail', '1.2.4', {
+        'checksums': ['8e6e0762924a461bb437cbb71122765c6912dace880e338bd19c7f9d12efead2'],
+    }),
+    ('isal', '0.10.0', {
+        'checksums': ['3f89471065c2837d1235877dbdcdbd8b7649068723026b0582010fa106a71ff3'],
+    }),
+    ('xopen', '1.1.0', {
+        'checksums': ['38277eb96313b2e8822e19e793791801a1f41bf13ee5b48616a97afc65e9adb3'],
+    }),
+    ('whatshap', '1.1', {
+        'checksums': ['4e6486e6ce2babf55a225dd9e0030df6fcc27629d34803428cbe88a79137bb6f'],
+    }),
+    ('intervaltree', '3.1.0', {
+        'checksums': ['902b1b88936918f9b2a19e0e5eb7ccb430ae45cde4f39ea4b36932920d33952d'],
+    }),
+    ('sortedcontainers', '2.4.0', {
+        'checksums': ['25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88'],
+    }),
+    (name, version, {
+        'patches': ['medaka-1.4.3_use-SAMtools-dep.patch'],
+        'checksums': [
+            '59997b5fdaff6f2040f2df2d3d3eb2d6d1805916a720e8275309caf4d2d4b8a5',  # medaka-1.4.3.tar.gz
+            '06b1d8344035ebcfaf1893e62f37db9b4cab0053ad7a073113630872d44be33e',  # medaka-1.4.3_use-SAMtools-dep.patch
+        ],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/medaka', 'bin/medaka_consensus'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["medaka --help"]
+
+moduleclass = 'bio'

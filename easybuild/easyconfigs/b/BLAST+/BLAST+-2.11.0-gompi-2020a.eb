@@ -1,0 +1,57 @@
+##
+# EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste (UGent)
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of
+# the policy: https://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'BLAST+'
+version = '2.11.0'
+
+homepage = 'https://blast.ncbi.nlm.nih.gov/'
+description = """Basic Local Alignment Search Tool, or BLAST, is an algorithm
+ for comparing primary biological sequence information, such as the amino-acid
+ sequences of different proteins or the nucleotides of DNA sequences."""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://ftp.ncbi.nlm.nih.gov/blast/executables/%(namelower)s/%(version)s/']
+sources = ['ncbi-blast-%(version)s+-src.tar.gz']
+checksums = ['d88e1858ae7ce553545a795a2120e657a799a6d334f2a07ef0330cc3e74e1954']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.8'),
+    ('PCRE', '8.44'),
+    ('Boost', '1.72.0'),
+    ('GMP', '6.2.0'),
+    ('libpng', '1.6.37'),
+    ('libjpeg-turbo', '2.0.4'),
+    ('LMDB', '0.9.24'),
+]
+
+
+# Disable auto-vectorization for the API on CPUs with AVX512 (Intel Skylake and onwards)
+# Compilation fails on src/algo/blast/api/prelim_stage.cpp
+local_apimake = 'src/algo/blast/api/Makefile.xblast.lib'
+preconfigopts = "sed -i 's/FAST_CXXFLAGS)/FAST_CXXFLAGS) -fno-tree-vectorize/g' %s &&" % local_apimake
+
+configopts = "--with-64 --with-z=$EBROOTZLIB --with-bz2=$EBROOTBZIP2 "
+configopts += "--with-pcre=$EBROOTPCRE --with-boost=$EBROOTBOOST "
+configopts += "--with-gmp=$EBROOTGMP --with-png=$EBROOTLIBPNG "
+configopts += "--with-jpeg=$EBROOTLIBJPEGMINTURBO --with-lmdb=$EBROOTLMDB"
+
+sanity_check_paths = {
+    'files': ['bin/blastn', 'bin/blastp', 'bin/blastx'],
+    'dirs': []
+}
+
+moduleclass = 'bio'

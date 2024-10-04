@@ -1,0 +1,41 @@
+Our error checking doesn't work well with the parallel/sharded pytorch test.
+As the overall gain is low, disable it and always run the full test suite in a single process.
+Additionally remove the fail-on-first-error flag (-x) to collect all errors.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/run_test.py b/test/run_test.py
+index f7c80f3f0a6..9e930d774ed 100755
+--- a/test/run_test.py
++++ b/test/run_test.py
+@@ -718,18 +718,18 @@ def print_log_file(test: str, file_path: str, failed: bool) -> None:
+ 
+ 
+ def run_test_ops(test_module, test_directory, options):
+-    if 'slow-gradcheck' in os.getenv("BUILD_ENVIRONMENT", ""):
++    if True:
+         # there are a lot of tests that take up a lot of space in slowgrad check, so don't bother parallelizing
+         # it's also on periodic so we don't care about TTS as much
+         return run_test(test_module, test_directory, copy.deepcopy(options),
+-                        extra_unittest_args=["--use-pytest", '-vv', '-x', '--reruns=2', '-rfEX'],
++                        extra_unittest_args=["--use-pytest", '-vv', '--reruns=2', '-rfEX'],
+                         )
+     return_codes = []
+     os.environ["NUM_PARALLEL_PROCS"] = str(NUM_PROCS)
+     pool = get_context("spawn").Pool(NUM_PROCS)
+     for i in range(NUM_PROCS):
+         return_code = pool.apply_async(run_test, args=(test_module, test_directory, copy.deepcopy(options)),
+-                                       kwds={"extra_unittest_args": ["--use-pytest", '-vv', '-x', '--reruns=2', '-rfEX',
++                                       kwds={"extra_unittest_args": ["--use-pytest", '-vv', '--reruns=2', '-rfEX',
+                                                                      f'--shard-id={i}', f'--num-shards={NUM_PROCS}',
+                                                                      "-k=not _linalg_cholesky_"],
+                                              })
+@@ -742,7 +742,7 @@ def run_test_ops(test_module, test_directory, options):
+         if return_code.get() != 0:
+             return return_code.get()
+     return_code = run_test(test_module, test_directory, copy.deepcopy(options),
+-                           extra_unittest_args=["--use-pytest", '-vv', '-x', '--reruns=2', '-rfEX',
++                           extra_unittest_args=["--use-pytest", '-vv', '--reruns=2', '-rfEX',
+                                                 "-k=_linalg_cholesky_"],
+                            )
+     return return_code

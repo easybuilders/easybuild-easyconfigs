@@ -1,0 +1,45 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Updated: Denis Kristak
+# Updated: Thomas Hoffmann (EMBL)
+easyblock = 'CMakeMake'
+
+name = 'LERC'
+version = '3.0'
+
+homepage = 'https://github.com/Esri/lerc'
+description = """LERC is an open-source image or raster format which supports rapid encoding and decoding
+for any pixel type (not just RGB or Byte). Users set the maximum compression error per pixel while encoding,
+so the precision of the original input image is preserved (within user defined error bounds)."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/Esri/lerc/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['8c0148f5c22d823eff7b2c999b0781f8095e49a7d3195f13c68c5541dd5740a1']
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('CMake', '3.20.1'),
+]
+
+configopts = '-DCMAKE_INSTALL_LIBDIR=lib'
+
+postinstallcmds = [
+    # copy the LercTest source file to a LercTest subdir in the installation directory and compile it
+    # (needs to be done here instead of in the sanity check, else it won't work when RPATH linking is enabled)
+    "cd %(builddir)s/lerc-%(version)s/src/LercTest && sed -i -e 's@../LercLib/include/@@' main.cpp",
+    "mkdir %(installdir)s/LercTest",
+    "cp %(builddir)s/lerc-%(version)s/src/LercTest/main.cpp %(installdir)s/LercTest/main.cpp",
+    "cd %(installdir)s/LercTest && ${CXX} ${CXXFLAGS} main.cpp -o LercTest -I../include -L../lib -lLerc",
+]
+
+sanity_check_commands = [
+    "%(installdir)s/LercTest/LercTest",
+]
+
+sanity_check_paths = {
+    'files': ['include/Lerc_c_api.h', 'include/Lerc_types.h', 'lib/libLerc.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

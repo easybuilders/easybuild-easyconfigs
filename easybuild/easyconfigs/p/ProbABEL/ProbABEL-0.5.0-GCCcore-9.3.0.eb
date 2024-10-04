@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'ProbABEL'
+version = '0.5.0'
+
+homepage = "https://github.com/GenABEL-Project/ProbABEL"
+description = """Tool for genome-wide association analysis of imputed genetic data."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'cstd': 'c++03'}
+
+github_account = 'GenABEL-Project'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['883f618cce4e08f25bc90faa68d47c3e548d56c177760288fbd8368df0636917']
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('Autotools', '20180311'),
+]
+
+# Use the bundled Eigen, as tests fail with Eigen > 3.2.1 (https://github.com/GenABEL-Project/ProbABEL/issues/11)
+dependencies = [('Perl', '5.30.2')]
+
+preconfigopts = "autoreconf -i && "
+configopts = '--disable-latex-doc'
+
+runtest = 'check'
+
+postinstallcmds = ["mv %(installdir)s/etc/probabel_config.cfg.example %(installdir)s/etc/probabel_config.cfg"]
+
+fix_perl_shebang_for = ['bin/probabel']
+
+sanity_check_paths = {
+    'files': ['bin/probabel', 'bin/pacoxph', 'bin/palinear', 'bin/palogist', 'etc/probabel_config.cfg'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = ["%s --help" % x for x in ['pacoxph', 'palinear', 'palogist', 'probabel']]
+
+moduleclass = 'bio'

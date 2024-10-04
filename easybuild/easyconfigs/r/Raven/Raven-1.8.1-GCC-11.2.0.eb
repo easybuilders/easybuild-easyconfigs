@@ -1,0 +1,63 @@
+easyblock = "CMakeNinja"
+
+name = "Raven"
+version = "1.8.1"
+
+homepage = "https://github.com/lbcb-sci/raven"
+description = "Raven is a de novo genome assembler for long uncorrected reads."
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+source_urls = ["https://github.com/lbcb-sci/raven/archive/refs/tags/"]
+sources = ["%(version)s.tar.gz"]
+checksums = ['00009e9027761fa28313db4e2b5c5f40ebc10e6631b43b755e321ac6bbcc2c06']
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('Ninja', '1.10.2'),
+]
+
+preinstallopts = "export CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s && "
+configopts = '-DRAVEN_BUILD_EXE=1 -G Ninja '
+configopts += '-DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python '
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('zlib', '1.2.11'),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+# inject addition CMake options to make sure that Python dependency is actually used
+local_ravenpy_preinstallopts = r"""sed -i 's|cmake_args += \["-GNinja"\]|cmake_args += \["""
+local_ravenpy_preinstallopts += r'"-GNinja", "-DPYBIND11_FINDPYTHON=ON", "-DPython_FIND_STRATEGY=LOCATION",'
+local_ravenpy_preinstallopts += r""" "-DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python"\]|' setup.py && """
+
+exts_list = [
+    (name, version, {
+        'modulename': 'ravenpy',
+        'source_urls': ['https://github.com/lbcb-sci/raven/archive/refs/tags/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['00009e9027761fa28313db4e2b5c5f40ebc10e6631b43b755e321ac6bbcc2c06'],
+        'preinstallopts': local_ravenpy_preinstallopts,
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/raven'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "export PYTHONNOUSERSITE=1 && python%(pyshortver)s -m pip check",
+    "raven --help"
+]
+
+moduleclass = 'bio'

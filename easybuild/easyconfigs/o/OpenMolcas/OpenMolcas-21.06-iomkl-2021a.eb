@@ -1,0 +1,46 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMolcas'
+version = '21.06'
+
+homepage = 'https://gitlab.com/Molcas/OpenMolcas'
+description = "OpenMolcas is a quantum chemistry software package"
+
+toolchain = {'name': 'iomkl', 'version': '2021a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://gitlab.com/Molcas/%(name)s/-/archive/v%(version)s/']
+sources = ['%(name)s-v%(version)s.tar.gz']
+patches = ['%(name)s-21.06_mcpdft_deps.patch']
+checksums = [
+    '54cf989c1e0fcb7e8927f0c64fe356b300bf3537e4868356eea47105a8a06e3a',  # %(name)s-v21.06.tar.gz
+    '708763e060aa0174bbe9c0cc336b509fbf492066465908dd919452836a7a793a',  # %(name)s-21.06_mcpdft_deps.patch
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+]
+dependencies = [
+    ('GlobalArrays', '5.8'),
+    ('HDF5', '1.10.7'),
+    ('Python', '3.9.5'),
+]
+
+preconfigopts = 'GAROOT=$EBROOTGLOBALARRAYS'
+configopts = "-DLINALG=MKL -DMKLROOT=$MKLROOT -DMPI=ON -DOPENMP=ON -DGA=ON -DBUILD_SHARED_LIBS=ON -DTOOLS=ON -DFDE=ON"
+
+
+sanity_check_paths = {
+    'files': ['bin/dynamix.exe', 'bin/mpprop.exe', 'lib/libmolcas.so', 'sbin/help_basis', 'pymolcas'],
+    'dirs': ['data/', 'basis_library/'],
+}
+
+modextrapaths = {'PATH': ''}
+
+modextravars = {
+    'MOLCAS': '%(installdir)s',
+    'MOLCAS_DRIVER': '%(installdir)s/pymolcas',
+    'MOLCAS_SOURCE': '%(installdir)s',
+}
+
+moduleclass = 'chem'

@@ -1,0 +1,42 @@
+Fix compile error on ARM:
+> ./tensorflow/lite/kernels/internal/optimized/depthwiseconv_3x3_filter_common.h:132:58: error: cannot convert 'int32x2_t' to 'int8x8_t'
+
+From https://github.com/tensorflow/tensorflow/pull/53782
+
+From 4463f25d1622d162f870ff685da20f2c6df5bc6a Mon Sep 17 00:00:00 2001
+From: Stephan Hartmann <stha09@googlemail.com>
+Date: Sat, 15 Jan 2022 21:06:27 +0100
+Subject: [PATCH] Fix casting in vdotq_four_lane_s32() in TFLite
+
+When building with GCC and dotprod ARM extension enabled,
+vreinterpret_s32_s8() casts int8x8_t to int32x2_t. However, third
+argument of vdotq_lane_s32() expects parameter of type int8x8_t.
+---
+ .../optimized/depthwiseconv_3x3_filter_common.h        | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/tensorflow/lite/kernels/internal/optimized/depthwiseconv_3x3_filter_common.h b/tensorflow/lite/kernels/internal/optimized/depthwiseconv_3x3_filter_common.h
+index 916edd561ff32..c519a81bc864d 100644
+--- a/tensorflow/lite/kernels/internal/optimized/depthwiseconv_3x3_filter_common.h
++++ b/tensorflow/lite/kernels/internal/optimized/depthwiseconv_3x3_filter_common.h
+@@ -129,16 +129,14 @@ inline int32x4_t vdotq_four_lane_s32(int32x4_t acc, int8x16_t lhs,
+                                      int8x16_t rhs, const int lane) {
+   switch (lane) {
+     case 0:
+-      return vdotq_lane_s32(acc, lhs, vreinterpret_s32_s8(vget_low_s8(rhs)), 0);
++      return vdotq_lane_s32(acc, lhs, vget_low_s8(rhs), 0);
+     case 1:
+-      return vdotq_lane_s32(acc, lhs, vreinterpret_s32_s8(vget_low_s8(rhs)), 1);
++      return vdotq_lane_s32(acc, lhs, vget_low_s8(rhs), 1);
+     case 2:
+-      return vdotq_lane_s32(acc, lhs, vreinterpret_s32_s8(vget_high_s8(rhs)),
+-                            0);
++      return vdotq_lane_s32(acc, lhs, vget_high_s8(rhs), 0);
+     case 3:
+     default:
+-      return vdotq_lane_s32(acc, lhs, vreinterpret_s32_s8(vget_high_s8(rhs)),
+-                            1);
++      return vdotq_lane_s32(acc, lhs, vget_high_s8(rhs), 1);
+   }
+ }
+ 

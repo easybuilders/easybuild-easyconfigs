@@ -22,7 +22,10 @@ dependencies = [
 
 use_pip = True
 
-exts_default_options = {'source_urls': [PYPI_SOURCE]}
+# version restrictions are too strict, so strip them out
+local_carputils_preinstallopts = "sed -i 's/[=><]=[0-9].*//g' requirements.txt && "
+# inject proper version, to prevent installing carputils with 0.0.0 as version...
+local_carputils_preinstallopts += """sed -i 's/ description=/ version="0.0.1-pre", description=/g' setup.py && """
 
 exts_list = [
     ('doxypypy', '0.8.8.6', {
@@ -38,7 +41,7 @@ exts_list = [
         'source_tmpl': 'carputils-%s.tar.gz' % local_commit,
         'checksums': ['695af109e4b23797ac94a86b49ce5a98b4d002dc094b062927b53efa72f822f0'],
         # version restrictions are too strict, so strip them out
-        'preinstallopts': "sed -i 's/[=>]=[0-9].*//g' requirements.txt && ",
+        'preinstallopts': local_carputils_preinstallopts,
     }),
 ]
 

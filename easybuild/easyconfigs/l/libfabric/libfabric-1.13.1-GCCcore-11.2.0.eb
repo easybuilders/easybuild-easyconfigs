@@ -1,0 +1,69 @@
+easyblock = 'ConfigureMake'
+
+name = 'libfabric'
+version = '1.13.1'
+
+homepage = 'https://ofiwg.github.io/libfabric/'
+description = """
+Libfabric is a core component of OFI. It is the library that defines and exports
+the user-space API of OFI, and is typically the only software that applications
+deal with directly. It works in conjunction with provider libraries, which are
+often integrated directly into libfabric.
+"""
+
+# The psm3 provider (enabled by default) requires an AVX capable system to run
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'ofiwg'
+source_urls = ['https://github.com/ofiwg/%(name)s/releases/download/v%(version)s']
+sources = [SOURCE_TAR_BZ2]
+patches = [
+    ('%(name)s-1.13.0_psm3-version.patch', 0),
+    '%(name)s-1.12.1_disable-psm3-avx-config.patch',
+]
+checksums = [
+    '8e6eed38c4a39aa4cbf7d5d3734f0eecbfc030182f1f9b3be470702f2586d30e',  # libfabric-1.13.1.tar.bz2
+    'f357a60f9cfd054469fef46f560531aa53ded3b7708c313b73d9bfdcb89bf24d',  # libfabric-1.13.0_psm3-version.patch
+    # libfabric-1.12.1_disable-psm3-avx-config.patch
+    '129be05a824b41eeb7bddac3c23aa421a13f7dde622948df942a265ccc96125a',
+]
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('pkg-config', '0.29.2'),
+    ('Autotools', '20210726'),
+]
+
+dependencies = [
+    ('numactl', '2.0.14'),
+    # PSM2 dependency for libfabric should be used on Omnipath systems,
+    # but that PSM2 has CUDA as dependency so it's commented out by default;
+    # PSM2 only compiles on x86_64
+    # ('PSM2', {'arch=x86_64': '12.0.1', 'arch=*': False}),
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+# Regenerate build files
+preconfigopts = "autoreconf -f -i &&"
+
+# Disable deprecated "sockets" provider
+configopts = "--disable-sockets "
+
+# Disable usNIC provider by default as this requires specific osdependencies
+# If you want to enable this provider you need to uncomment the following line:
+# osdependencies.append(('libnl3-devel', 'libnl3-dev'))
+configopts += "--disable-usnic "
+
+buildopts = "V=1"
+
+sanity_check_paths = {
+    'files': ['bin/fi_info', 'bin/fi_pingpong', 'bin/fi_strerror'] +
+             ['lib/libfabric.%s' % x for x in ['a', SHLIB_EXT]],
+    'dirs': ['include/rdma', 'lib/pkgconfig', 'share']
+}
+
+sanity_check_commands = ['fi_info']
+
+moduleclass = 'lib'

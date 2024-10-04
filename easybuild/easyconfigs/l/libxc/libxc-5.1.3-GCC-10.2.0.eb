@@ -1,0 +1,46 @@
+easyblock = 'CMakeMake'
+
+name = 'libxc'
+version = '5.1.3'
+
+homepage = 'https://libxc.gitlab.io'
+description = """Libxc is a library of exchange-correlation functionals for density-functional theory.
+ The aim is to provide a portable, well tested and reliable set of exchange and correlation functionals."""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+source_urls = ['https://gitlab.com/libxc/libxc/-/archive/%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = [('0350defdd6c1b165e4cf19995f590eee6e0b9db95a6b221d28cecec40f4e85cd',
+              '53cbccae4227794c4f4e042d0c20c3171894d8eacd13fd78aab376d5971a966c')]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('Perl', '5.32.0'),
+]
+
+separate_build_dir = True
+
+local_common_configopts = "-DENABLE_FORTRAN=ON -DENABLE_FORTRAN03=ON -DENABLE_XHOST=OFF"
+
+# perform iterative build to get both static and shared libraries
+configopts = [
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
+]
+
+parallel = 1
+
+# make sure that built libraries (libxc*.so*) in build directory are picked when running tests
+# this is required when RPATH linking is used
+pretestopts = "export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj:$LD_LIBRARY_PATH && "
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/xc-info'] +
+             ['lib/libxc%s.%s' % (x, y) for x in ['', 'f03', 'f90'] for y in ['a', SHLIB_EXT]],
+    'dirs': ['include', 'lib/pkgconfig', 'share/cmake/Libxc'],
+}
+
+moduleclass = 'chem'

@@ -1,0 +1,23 @@
+Fix `run_alphafold_test.py` to use an unique directory per test to avoid pollution when the tests are run multiple times
+See https://github.com/deepmind/alphafold/issues/365
+Patch by Simon Branford (University of Birmingham)
+--- run_alphafold_test.py.orig	2022-02-13 11:09:48.465041000 +0000
++++ run_alphafold_test.py	2022-02-13 12:02:17.963970000 +0000
+@@ -59,14 +59,13 @@
+     model_runner_mock.multimer_mode = False
+     amber_relaxer_mock.process.return_value = ('RELAXED', None, None)
+ 
+-    fasta_path = os.path.join(absltest.get_default_test_tmpdir(),
+-                              'target.fasta')
++    out_dir = self.create_tempdir().full_path
++
++    fasta_path = os.path.join(out_dir, 'target.fasta')
+     with open(fasta_path, 'wt') as f:
+       f.write('>A\nAAAAAAAAAAAAA')
+     fasta_name = 'test'
+ 
+-    out_dir = absltest.get_default_test_tmpdir()
+-
+     run_alphafold.predict_structure(
+         fasta_path=fasta_path,
+         fasta_name=fasta_name,

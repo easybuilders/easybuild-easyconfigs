@@ -1,0 +1,40 @@
+easyblock = 'PythonPackage'
+name = 'thirdorder'
+version = '1.1.1'
+
+homepage = 'https://bitbucket.org/sousaw/thirdorder/'
+description = """A Python script to help create input files for computing anhamonic
+interatomic force constants, harnessing the symmetries of the system to minimize the
+number of required DFT calculations. A second mode of operation allows the user to
+build the third-order IFC matrix from the results of those runs."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('spglib', '2.0.2'),
+]
+
+source_urls = ['https://bitbucket.org/sousaw/thirdorder/get/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['f95e6371d78231d68028ec4e28d1d45ce60b1093e64f87e4b0cdb259375cd0d4']
+
+use_pip = True
+sanity_pip_check = True
+download_dep_fail = True
+
+# Thirdorder need to be built using Cython and it needs to have a version in setup.py
+preinstallopts = r'sed -i -e "s/^USE_CYTHON.*/USE_CYTHON=True/" '
+preinstallopts += r'-e "s/^\(setup(.*\))$/\1, version=\"%(version)s\")/" setup.py && '
+
+options = {'modulename': 'thirdorder_core'}
+
+postinstallcmds = ["mkdir %(installdir)s/bin && cp thirdorder_*.py %(installdir)s/bin/"]
+
+sanity_check_paths = {
+    'files': ['bin/thirdorder_%s.py' % x for x in ["castep", "espresso", "vasp"]],
+    'dirs': ['bin', 'lib'],
+}
+
+moduleclass = 'chem'

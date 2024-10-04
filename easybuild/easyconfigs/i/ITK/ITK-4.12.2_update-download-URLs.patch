@@ -1,0 +1,211 @@
+From 716fe079a6fad64f63f1166c7cb1565acef982ee Mon Sep 17 00:00:00 2001
+From: Matt McCormick <matt.mccormick@kitware.com>
+Date: Wed, 6 Jun 2018 11:32:18 -0400
+Subject: [PATCH] BUG: Migrate midas3.kitware.com to data.kitware.com
+
+midas3.kitware.com is deprecated.
+
+Change-Id: Iba445e27b6c0f136cc6c5a361c088075dfa1facb
+
+
+Backported to 4.12.2
+Author (backport): Alexander Grund (TU Dresden)
+
+diff --git a/CMake/ITKExternalData.cmake b/CMake/ITKExternalData.cmake
+index a97d725922..4e2dcd2965 100644
+--- a/CMake/ITKExternalData.cmake
++++ b/CMake/ITKExternalData.cmake
+@@ -37,9 +37,6 @@ if(NOT ITK_FORBID_DOWNLOADS)
+     # Data published on Girder
+     "https://data.kitware.com:443/api/v1/file/hashsum/%(algo)/%(hash)/download"
+ 
+-    # Data published on MIDAS
+-    "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=%(hash)&algorithm=%(algo)"
+-
+     # Data published by developers using git-gerrit-push.
+     "https://itk.org/files/ExternalData/%(algo)/%(hash)"
+ 
+diff --git a/CMake/itkExternal_FFTW.cmake b/CMake/itkExternal_FFTW.cmake
+index 7b44f0d68c..bcfae61c2e 100644
+--- a/CMake/itkExternal_FFTW.cmake
++++ b/CMake/itkExternal_FFTW.cmake
+@@ -82,15 +82,15 @@ else()
+     endif()
+ 
+     set(_fftw_target_version 3.3.4)
+-    set(_fftw_url_md5 "2edab8c06b24feeb3b82bbb3ebf3e7b3")
+-    set(_fftw_url "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${_fftw_url_md5}&name=fftw-${_fftw_target_version}.tar.gz")
++    set(_fftw_url_hash "1ee2c7bec3657f6846e63c6dfa71410563830d2b951966bf0123bd8f4f2f5d6b50f13b76d9a7b0eae70e44856f829ca6ceb3d080bb01649d1572c9f3f68e8eb1")
++    set(_fftw_url "https://data.kitware.com/api/v1/file/hashsum/sha512/${_fftw_url_hash}/download")
+ 
+     if(ITK_USE_FFTWF)
+       itk_download_attempt_check(FFTW)
+       ExternalProject_add(fftwf
+         PREFIX fftwf
+         URL "${_fftw_url}"
+-        URL_MD5 "${_fftw_url_md5}"
++        URL_HASH SHA512="${_fftw_url_hash}"
+         DOWNLOAD_NAME "fftw-${_fftw_target_version}.tar.gz"
+         CONFIGURE_COMMAND
+           env
+@@ -118,7 +118,7 @@ else()
+       ExternalProject_add(fftwd
+         PREFIX fftwd
+         URL "${_fftw_url}"
+-        URL_MD5 "${_fftw_url_md5}"
++        URL_HASH SHA512="${_fftw_url_hash}"
+         DOWNLOAD_NAME "fftw-${_fftw_target_version}.tar.gz"
+         CONFIGURE_COMMAND
+           env
+diff --git a/Utilities/Maintenance/JREUpdate.py b/Utilities/Maintenance/JREUpdate.py
+index 09bb5d37f2..2026ec7a7d 100755
+--- a/Utilities/Maintenance/JREUpdate.py
++++ b/Utilities/Maintenance/JREUpdate.py
+@@ -10,8 +10,8 @@ plugin "just works".
+ The Fiji fellows maintain Git repositories that tracks the OpenJDK JRE.
+ Here we clone that repository and create the JRE tarball from it.
+ 
+-Currently, the tarball needs to be uploaded manually to midas3.kitware.com.
+-In the future, pydas can be used for automatic upload.
++Currently, the tarball needs to be uploaded manually to data.kitware.com.
++In the future, the Python girder client can be used for automatic upload.
+ """
+ 
+ from __future__ import print_function
+diff --git a/Utilities/Maintenance/SourceTarball.bash b/Utilities/Maintenance/SourceTarball.bash
+index 1c0335674e..221d88813b 100755
+--- a/Utilities/Maintenance/SourceTarball.bash
++++ b/Utilities/Maintenance/SourceTarball.bash
+@@ -57,7 +57,7 @@ download_object() {
+   algo="$1" ; hash="$2" ; path="$3"
+   mkdir -p $(dirname "$path") &&
+   if wget "https://www.itk.org/files/ExternalData/$algo/$hash" -O "$path.tmp$$" 1>&2 || \
+-     wget "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${hash}&algorithm=${algo}" -O "$path.tmp$$" 1>&2; then
++     wget "https://slicer.kitware.com/midas3/api/rest?method=midas.bitstream.download&checksum=${hash}&algorithm=${algo}" -O "$path.tmp$$" 1>&2; then
+     mv "$path.tmp$$" "$path"
+   else
+     rm -f "$path.tmp$$"
+diff --git a/Wrapping/Generators/CastXML/CMakeLists.txt b/Wrapping/Generators/CastXML/CMakeLists.txt
+index f15d0cce01..f4f698b78a 100644
+--- a/Wrapping/Generators/CastXML/CMakeLists.txt
++++ b/Wrapping/Generators/CastXML/CMakeLists.txt
+@@ -25,23 +25,22 @@ else()
+   # If 64 bit Linux build host, use the CastXML binary
+   if(CMAKE_HOST_SYSTEM_NAME MATCHES "Linux" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+ 
+-    set(_castxml_hash 48d812ca105d7aa10fdc2d16678f7388)
+-    set(_castxml_url "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${_castxml_hash}&name=castxml-linux.tar.gz")
++    set(_castxml_hash 1e0f51ab98592ac9934bb1c93040fd473519a02d1e3ce0090443f4f3566eb8354eb3e5bd04a2c91d832d33d0d712363c508bd2304da34db9963787890808ec9e)
++    set(_castxml_url "https://data.kitware.com/api/v1/file/hashsum/sha512/${_castxml_hash}/download")
+     set(_download_castxml_binaries 1)
+ 
+   # If 64 bit Windows build host, use the CastXML binary
+   elseif(CMAKE_HOST_SYSTEM_NAME MATCHES "Windows" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "AMD64")
+ 
+-    set(_castxml_hash dd0cf24fd9d9a06ed49189f11e72c9f0)
+-    set(_castxml_url https://midas3.kitware.com/midas/download/bitstream/460537/castxml-windows.zip)
+-    set(_castxml_url "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${_castxml_hash}&name=castxml-windows.zip")
++    set(_castxml_hash 1c379ea91f4c0d9b8127d841edee7c415fdde40665a2a3682aef22def75bd1cea99d26bb3b1b243e61e976d78233ed12a2614236e76206d1ae083583f4bc17ea)
++    set(_castxml_url "https://data.kitware.com/api/v1/file/hashsum/sha512/${_castxml_hash}/download")
+     set(_download_castxml_binaries 1)
+ 
+   # If 64 bit Mac OS X build host ( >= 10.9, Mavericks), use the CastXML binary
+   elseif(CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64" AND (NOT CMAKE_HOST_SYSTEM_VERSION VERSION_LESS "13.0.0"))
+ 
+-    set(_castxml_hash 5de72fb4970513f805457db9a2c4e6a3)
+-    set(_castxml_url "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${_castxml_hash}&name=castxml-macosx.tar.gz")
++    set(_castxml_hash 2fa32cd083ed901499774eb34249c70c2d32a93c55e27dbb62f5ec3c7386ab6745dbbad78c653a0909b05b5d965839ec31ad9fca294cc0b7af9dfc15e2a7e063)
++    set(_castxml_url "https://data.kitware.com/api/v1/file/hashsum/sha512/${_castxml_hash}/download")
+     set(_download_castxml_binaries 1)
+ 
+   endif()
+@@ -53,7 +52,7 @@ else()
+     endif()
+     ExternalProject_Add(castxml
+       URL ${_castxml_url}
+-      URL_MD5 ${_castxml_hash}
++      URL_HASH SHA512=${_castxml_hash}
+       CONFIGURE_COMMAND ""
+       BUILD_COMMAND ""
+       INSTALL_COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_BINARY_DIR}/castxml-prefix/src/castxml" "${CMAKE_CURRENT_BINARY_DIR}/castxml"
+@@ -98,9 +97,10 @@ else()
+         itk_download_attempt_check(Clang)
+       endif()
+       set(llvm_version 3.7.0)
++      set(llvm_hash 57b5ded48d777f10f26963a4)
+       ExternalProject_Add(llvm
+-        URL https://midas3.kitware.com/midas/download/bitstream/457222/llvm-${llvm_version}.src.tar.gz
+-        URL_MD5 255939e1ba0a40d687a683e41323baca
++        URL "https://data.kitware.com/api/v1/file/${llvm_hash}/download"
++        URL_HASH MD5=${llvm_hash}
+         SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/llvm-${llvm_version}
+         CMAKE_ARGS -Wno-dev
+         CMAKE_GENERATOR "${CMAKE_GENERATOR}"
+@@ -113,12 +113,13 @@ else()
+           -DLLVM_INCLUDE_DOCS:BOOL=OFF
+         INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/llvm
+         )
++      set(clang_hash 57b5dec48d777f10f2696395)
+       ExternalProject_Add(clang
+         # This is the upstream source code repackages in a .tar.gz for
+         # compatibility with older CMake. Also the tests/ and doc/ directories
+         # are removed to remove symlink files and save space.
+-        URL https://midas3.kitware.com/midas/download/bitstream/457221/cfe-${llvm_version}.src.tar.gz
+-        URL_MD5 d4290cab76f44be2d38631f819b8c2ec
++        URL "https://data.kitware.com/api/v1/file/${clang_hash}/download"
++        URL_HASH_MD5=${clang_hash}
+         DEPENDS llvm
+         SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cfe-${llvm_version}
+         CMAKE_ARGS -Wno-dev
+diff --git a/Wrapping/Generators/SwigInterface/CMakeLists.txt b/Wrapping/Generators/SwigInterface/CMakeLists.txt
+index b92cf8cb83..cd27f7a41b 100644
+--- a/Wrapping/Generators/SwigInterface/CMakeLists.txt
++++ b/Wrapping/Generators/SwigInterface/CMakeLists.txt
+@@ -24,8 +24,8 @@ mark_as_advanced(ITK_USE_SYSTEM_SWIG)
+ set(swig_version_min 3.0.0)
+ 
+ set(ITK_SWIG_VERSION 3.0.12)
+-set(swig_md5     "82133dfa7bba75ff9ad98a7046be687c")
+-set(swigwin_md5  "a49524dad2c91ae1920974e7062bfc93")
++set(swig_hash     "85605bd98bf2b56f5bfca23ae23d76d764d76a174b05836c8686825e912d6326c370e9cf2134c0bf4f425560be103b16bf9c9d075077f52e713a69082616e906")
++set(swigwin_hash  "90734503b9c3cd54c3351182d116d100fdcb379fe2e4a510264f81f1e07d5035c778416c665b1fbeeeea56e8aec55af27c53c7f4b082ff54d4fc3a6c0cd382a8")
+ 
+ if(WIN32)
+   set(swig_ep "${CMAKE_CURRENT_BINARY_DIR}/swigwin-${ITK_SWIG_VERSION}/swig.exe")
+@@ -68,8 +68,8 @@ else()
+         itk_download_attempt_check(SWIG)
+       endif()
+       ExternalProject_Add(swig
+-        URL "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${swigwin_md5}&name=swigwin-${ITK_SWIG_VERSION}.zip"
+-        URL_MD5 ${swigwin_md5}
++        URL "https://data.kitware.com/api/v1/file/hashsum/sha512/${swigwin_hash}/download"
++        URL_HASH SHA512=${swigwin_hash}
+         SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/swigwin-${SWIG_VERSION}
+         CONFIGURE_COMMAND ""
+         BUILD_COMMAND ""
+@@ -141,11 +141,10 @@ else()
+               install
+         )
+       endif()
+-      set(pcre_md5 890c808122bd90f398e6bc40ec862102)
+-      set(pcre_version 8.40)
++      set(pcre_hash f919957ce6e1f52b5579faa7fccfe192944884dc56ad831ebb3e3787f752fe2f14567fe302d884fa86900018e92b758e4589406f7e8d7af1baa2a1d6add40865)
+       ExternalProject_Add(PCRE
+-        URL "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${pcre_md5}&name=pcre-${pcre_version}.tar.gz"
+-        URL_MD5 ${pcre_md5}
++        URL "https://data.kitware.com/api/v1/file/hashsum/sha512/${pcre_hash}/download"
++        URL_HASH SHA512=${pcre_hash}
+         CONFIGURE_COMMAND
+           ${pcre_env}
+           ../PCRE/configure
+@@ -245,8 +244,8 @@ message(STATUS \"Swig configure successfully completed.\")
+       endif()
+ 
+       ExternalProject_Add(swig
+-        URL "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${swig_md5}&name=swig-${ITK_SWIG_VERSION}.tar.gz"
+-        URL_MD5 ${swig_md5}
++        URL "https://data.kitware.com/api/v1/file/hashsum/sha512/${swig_hash}/download"
++        URL_HASH SHA512=${swig_hash}
+         CONFIGURE_COMMAND
+           ${extra_swig_configure_env} ${CMAKE_COMMAND} -P "${_swig_configure_script}"
+         ${extra_external_project_commands}

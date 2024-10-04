@@ -1,0 +1,44 @@
+# Author: Denis Krišťák (INUITS)
+
+easyblock = 'CMakeMake'
+
+name = 'igraph'
+version = '0.9.1'
+
+homepage = 'https://igraph.org'
+description = """igraph is a collection of network analysis tools with the emphasis on
+efficiency, portability and ease of use. igraph is open source and free. igraph can be
+programmed in R, Python and C/C++."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/igraph/igraph/releases/download/%(version)s']
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['1902810650e8f9d98feefa3eca735db5a879416d00a08f68aad2ca07964cee9f']
+
+builddependencies = [
+    ('Autotools', '20200321'),
+    ('pkg-config', '0.29.2'),
+    ('CMake', '3.18.4'),
+]
+
+dependencies = [
+    ('GLPK', '4.65'),
+    ('libxml2', '2.9.10'),
+    ('zlib', '1.2.11'),
+]
+
+configopts = "--with-external-blas --with-external-lapack --with-external-glpk"
+
+# extra folder `igraph` is wrong, since all other software expects it to be in ./include folder directly
+postinstallcmds = [
+    'mv %(installdir)s/include/igraph/* %(installdir)s/include/ && rmdir %(installdir)s/include/igraph ',
+]
+
+sanity_check_paths = {
+    'files': ['include/igraph%s.h' % x for x in ['', '_blas', '_constants', '_lapack', '_types', '_version']],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

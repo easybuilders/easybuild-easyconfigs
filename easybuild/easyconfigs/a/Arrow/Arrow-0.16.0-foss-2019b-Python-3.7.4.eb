@@ -1,0 +1,64 @@
+easyblock = 'CMakeMake'
+
+name = 'Arrow'
+version = '0.16.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://arrow.apache.org'
+description = """Apache Arrow (incl. PyArrow Python bindings), a cross-language development platform
+ for in-memory data."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = ['https://archive.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s']
+sources = ['apache-%(namelower)s-%(version)s.tar.gz']
+checksums = ['261992de4029a1593195ff4000501503bd403146471b3168bd2cc414ad0fb7f5']
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('Autotools', '20180311'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.3.2'),
+    ('pkg-config', '0.29.2'),
+]
+
+# Arrow strongly prefers included jemalloc, so not including it as a dependency
+dependencies = [
+    ('Python', '3.7.4'),
+    ('Boost', '1.71.0'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+]
+
+separate_build_dir = True
+start_dir = 'cpp'
+
+# see https://arrow.apache.org/docs/python/development.html
+configopts = "-DARROW_PYTHON=on -DARROW_PARQUET=on -DCMAKE_INSTALL_LIBDIR=lib"
+
+# fix download of thrift 0.12.0, which is now archived
+prebuildopts = "sed -i 's@dlcdn.apache.org@archive.apache.org/dist/@g' "
+prebuildopts += "thrift_ep-prefix/src/thrift_ep-stamp/download-thrift_ep.cmake && "
+
+# also install Python bindings
+local_install_pyarrow_cmds = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
+local_install_pyarrow_cmds += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+local_install_pyarrow_cmds += "export PYARROW_WITH_PARQUET=1 && "
+local_install_pyarrow_cmds += "cd %(builddir)s/*arrow-%(version)s/python && "
+local_install_pyarrow_cmds += "export XDG_CACHE_HOME=$TMPDIR && "
+local_install_pyarrow_cmds += "pip install --prefix %(installdir)s --no-build-isolation ."
+postinstallcmds = [local_install_pyarrow_cmds]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['lib/libarrow.a', 'lib/libarrow.%s' % SHLIB_EXT,
+              'lib/libarrow_python.a', 'lib/libarrow_python.%s' % SHLIB_EXT],
+    'dirs': ['include/arrow', 'lib/cmake/arrow', 'lib/pkgconfig', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import pyarrow'",
+    "python -c 'import pyarrow.parquet'",
+]
+
+moduleclass = 'data'

@@ -1,0 +1,45 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Authors::   Inge Gutheil <i.gutheil@fz-juelich.de>, Alan O'Cais <a.ocais@fz-juelich.de>
+# License::   MIT/GPL
+#
+##
+
+name = 'ELPA'
+version = '2021.05.001'
+
+homepage = 'https://elpa.mpcdf.mpg.de'
+description = """Eigenvalue SoLvers for Petaflop-Applications ."""
+
+toolchain = {'name': 'intel', 'version': '2021a'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = ['https://gitlab.mpcdf.mpg.de/elpa/elpa/-/archive/new_release_%(version)s/']
+sources = ['elpa-new_release_%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix_hardcoded_perl_path.patch']
+checksums = [
+    'aea66a18e87574c7c292e852e45943e16f8bc3839f456635d1d610957840d146',  # elpa-new_release_2021.05.001.tar.gz
+    # ELPA-2021.05.001_fix_hardcoded_perl_path.patch
+    'af3f8cd063100d403cb2fe53cfc85eb2d5a2ef3348a3e6d5cf2d3680ebb4ec02',
+]
+
+builddependencies = [
+    ('Autotools', '20210128'),
+    # remove_xcompiler script requires 'python' command,
+    ('Python', '3.9.5'),
+    ('Perl', '5.32.1'),
+]
+
+preconfigopts = './autogen.sh && '
+# If the build is running in a batch job, make sure Intel libmpi does
+# not try to use Slurm to run the MPI_THREAD test code that ELPA's
+# configure is running without "mpirun".
+preconfigopts += 'unset SLURM_JOBID && unset SLURM_NODELIST && unset I_MPI_PMI_LIBRARY && '
+
+# When building in parallel, the file test_setup_mpi.mod is sometimes
+# used before it is built, leading to an error.  This must be a bug in
+# the makefile affecting parallel builds.
+maxparallel = 1
+
+moduleclass = 'math'

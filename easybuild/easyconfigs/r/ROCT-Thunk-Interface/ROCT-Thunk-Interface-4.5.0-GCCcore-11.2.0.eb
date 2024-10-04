@@ -1,0 +1,44 @@
+easyblock = 'CMakeMake'
+
+name = 'ROCT-Thunk-Interface'
+version = '4.5.0'
+
+homepage = 'https://github.com/RadeonOpenCompute/ROCT-Thunk-Interface'
+description = "The user-mode API interfaces used to interact with the ROCk driver"
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ["https://github.com/RadeonOpenCompute/ROCT-Thunk-Interface/archive/refs/tags/"]
+sources = ["rocm-%(version)s.tar.gz"]
+checksums = ['620b39959e0ee5d709b8cf6eb3cc06c8356d72838343756230c638899b10bb9a']
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('CMake', '3.21.1'),
+    ('pkg-config', '0.29.2'),
+]
+dependencies = [
+    ('libdrm', '2.4.107'),
+    ('numactl', '2.0.14'),
+]
+
+# The following group ensures that the user is in the 'video' group. According
+# to AMD this is necessary to interact with the GPU, but testing has shown this
+# to not be the case. If you experience problems this could be one area to
+# check out
+# group = 'video'
+
+preconfigopts = r"""sed -i 's/\({HSAKMT_LINK_FLAGS}\)" \(-.*\) )/\1 \2" )/g' ../ROCT-*/CMakeLists.txt && """
+
+configopts = "-DCMAKE_INSTALL_LIBDIR=%(installdir)s/lib -DBUILD_SHARED_LIBS=ON"
+
+installopts = " && cp -a %(builddir)s/%(name)s-rocm-%(version)s/include %(installdir)s/"
+
+sanity_check_paths = {
+    'files': ['include/hsakmt.h', 'include/hsakmttypes.h', 'include/linux/kfd_ioctl.h',
+              'lib/libhsakmt.%s' % SHLIB_EXT],
+    'dirs': ['lib/cmake/hsakmt', 'share/pkgconfig'],
+}
+
+moduleclass = 'tools'

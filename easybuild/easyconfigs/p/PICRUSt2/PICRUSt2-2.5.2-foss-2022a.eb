@@ -1,0 +1,49 @@
+easyblock = 'PythonBundle'
+
+name = 'PICRUSt2'
+version = '2.5.2'
+
+homepage = 'https://github.com/picrust/picrust2'
+description = """PICRUSt2 (Phylogenetic Investigation of Communities by
+ Reconstruction of Unobserved States) is a software for predicting
+ functional abundances based only on marker gene sequences."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('h5py', '3.7.0'),
+    ('biom-format', '2.1.14'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('joblib', '1.3.1', {
+        'checksums': ['1f937906df65329ba98013dc9692fe22a4c5e4a648112de500508b18a21b41e3'],
+    }),
+    (name, version, {
+        'modulename': '%(namelower)s',
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/picrust/%(namelower)s/archive'],
+        'checksums': ['a8c3832bf759233b52b41c56a0ffef72491e431fee347a7c05695596c76a1a4c'],
+    }),
+]
+
+postinstallcmds = [
+    "cp -a %(start_dir)s%(name)s/%(namelower)s-%(version)s/%(namelower)s/default_files"
+    " %(installdir)s/lib/python%(pyshortver)s/site-packages/%(namelower)s/"
+]
+
+sanity_check_commands = [
+    "python -c 'from picrust2.default import default_tables'"
+]
+
+sanity_check_paths = {
+    'files': ['bin/picrust2_pipeline.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/picrust2/default_files'],
+}
+
+moduleclass = 'bio'

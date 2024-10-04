@@ -1,0 +1,51 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'Tarball'
+
+name = 'AMPHORA2'
+version = '20190730'
+local_commit = '9fb9ce8'
+local_raxmlsuffix = '-pthreads-avx2'
+local_javasuffix = '-Java-%(javaver)s'
+versionsuffix = local_javasuffix + local_raxmlsuffix
+
+homepage = 'https://github.com/wu-lab-uva/AMPHORA2'
+description = "An Automated Phylogenomic Inference Pipeline for Bacterial and Archaeal Sequences."
+
+toolchain = {'name': 'gompi', 'version': '2020b'}
+
+github_account = 'wu-lab-uva'
+source_urls = [GITHUB_SOURCE]
+sources = ['%s.tar.gz' % local_commit]
+checksums = ['2d361fcc2b800c3daaf25692988af6105669cba2ff513aba82f36089beb2839f']
+
+dependencies = [
+    ('Perl', '5.32.0'),
+    ('Java', '13', '', SYSTEM),
+    ('BioPerl', '1.7.8'),
+    ('HMMER', '3.3.2'),
+    ('EMBOSS', '6.6.0', local_javasuffix),
+    ('RAxML', '8.2.12', local_raxmlsuffix),
+]
+
+local_scripts = ['%s.pl' % x for x in ['MarkerAlignTrim', 'MarkerScanner', 'Phylotyping']]
+fix_perl_shebang_for = ['Scripts/*.pl']
+
+# Exit with code 0 when running -Help
+preinstall_cmd = "sed -i 's|die $usage if $help|if ($help) {print $usage; exit 0}|g' Scripts/*.pl && "
+# Fix RAxML binary name
+preinstall_cmd += "sed -i 's|raxmlHPC-PTHREADS|raxmlHPC%s|g' Scripts/Phylotyping.pl" % local_raxmlsuffix.upper()
+
+sanity_check_paths = {
+    'files': ['Scripts/%s' % x for x in local_scripts],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%s -Help" % x for x in local_scripts]
+
+modextrapaths = {
+    'AMPHORA2_home': '',
+    'PATH': 'Scripts',
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,149 @@
+# From d899734ae0958e0abd660ee3ba3736e2c17b4319 Mon Sep 17 00:00:00 2001              
+# From: Andreas Tille <tille@debian.org>                                              
+# Date: Fri, 3 Mar 2017 09:46:51 +0100                                                
+# Subject: [PATCH] Avoid name space conflict with official bwa and fermi-lite         
+# libraries
+
+diff -Nru SeqLib-1.2.0.orig/SeqLib/BFC.h SeqLib-1.2.0/SeqLib/BFC.h
+--- SeqLib-1.2.0.orig/SeqLib/BFC.h	2021-05-10 15:56:45.000000000 +0100
++++ SeqLib-1.2.0/SeqLib/BFC.h	2021-05-10 16:50:43.000000000 +0100
+@@ -117,7 +117,7 @@
+     float kcov;
+ 
+     // reads to correct in place
+-    fseq1_t * m_seqs;
++    fml_seq1_t * m_seqs;
+ 
+     // number of sequeces
+     size_t n_seqs;
+diff -Nru SeqLib-1.2.0.orig/SeqLib/FermiAssembler.h SeqLib-1.2.0/SeqLib/FermiAssembler.h
+--- SeqLib-1.2.0.orig/SeqLib/FermiAssembler.h	2021-05-10 15:56:45.000000000 +0100
++++ SeqLib-1.2.0/SeqLib/FermiAssembler.h	2021-05-10 16:50:43.000000000 +0100
+@@ -124,7 +124,7 @@
+   private:
+ 
+     // reads to assemble
+-    fseq1_t *m_seqs;
++    fml_seq1_t *m_seqs;
+   
+     // size of m_seqs
+     size_t m;
+diff -Nru SeqLib-1.2.0.orig/src/BFC.cpp SeqLib-1.2.0/src/BFC.cpp
+--- SeqLib-1.2.0.orig/src/BFC.cpp	2021-05-10 15:56:43.000000000 +0100
++++ SeqLib-1.2.0/src/BFC.cpp	2021-05-10 16:51:26.000000000 +0100
+@@ -31,6 +31,7 @@
+ */
+ 
+ #include "SeqLib/BFC.h"
++#include <fml/bfc.h>
+ 
+ #include <stdexcept>
+ #include <algorithm>
+@@ -42,12 +43,12 @@
+     // do the intial allocation
+     if (n_seqs == 0 && !m_seqs) {
+       m_seqs_size = 32;
+-      m_seqs = (fseq1_t*)malloc(m_seqs_size * sizeof(fseq1_t));
++      m_seqs = (fml_seq1_t*)malloc(m_seqs_size * sizeof(fml_seq1_t));
+     }
+     // realloc if not enough space
+     else if (n_seqs >= m_seqs_size) {
+       m_seqs_size = 2 * m_seqs_size;
+-      m_seqs = (fseq1_t*)realloc(m_seqs, m_seqs_size * sizeof(fseq1_t));
++      m_seqs = (fml_seq1_t*)realloc(m_seqs, m_seqs_size * sizeof(fml_seq1_t));
+     }
+ 
+     if (!m_seqs)
+@@ -60,7 +61,7 @@
+     if (!strlen(seq))
+       return false;
+ 
+-    fseq1_t *s;
++    fml_seq1_t *s;
+     
+     s = &m_seqs[n_seqs];
+     
+@@ -108,13 +109,13 @@
+     assert(n_seqs == 0);
+     assert(m_names.size() == 0);
+ 
+-    m_seqs = (fseq1_t*)malloc(1 * sizeof(fseq1_t));
++    m_seqs = (fml_seq1_t*)malloc(1 * sizeof(fml_seq1_t));
+     n_seqs = 1;
+     
+     //uint64_t size = 0;
+     //for (std::vector<char*>::const_iterator r = v.begin(); r != v.end(); ++r) {
+     //    for (auto& r : v) {
+-    fseq1_t *s;
++    fml_seq1_t *s;
+     s = &m_seqs[0];
+     s->seq   = strdup(str.c_str());
+     s->qual  = q.empty() || q.length() != str.length() ? NULL : strdup(q.c_str()); 
+diff -Nru SeqLib-1.2.0.orig/src/FermiAssembler.cpp SeqLib-1.2.0/src/FermiAssembler.cpp
+--- SeqLib-1.2.0.orig/src/FermiAssembler.cpp	2021-05-10 15:56:43.000000000 +0100
++++ SeqLib-1.2.0/src/FermiAssembler.cpp	2021-05-10 16:50:43.000000000 +0100
+@@ -51,13 +51,13 @@
+ 
+       // dynamically alloc the memory
+       if (m <= n_seqs) m = m <= 0 ? 32 : (m * 2); // if out of mem, double it
+-      m_seqs = (fseq1_t *)realloc(m_seqs, m * sizeof(fseq1_t));
++      m_seqs = (fml_seq1_t *)realloc(m_seqs, m * sizeof(fml_seq1_t));
+ 
+       // add the name
+       m_names.push_back(r.Name);
+ 
+       // construct the seq
+-      fseq1_t *s;
++      fml_seq1_t *s;
+       s       = &m_seqs[n_seqs];
+       s->seq  = strdup(r.Seq.c_str());
+       s->qual = r.Qual.empty() ? NULL : strdup(r.Qual.c_str());
+@@ -70,12 +70,12 @@
+     {
+       // alloc the memory
+       m      = n_seqs + v.size();
+-      m_seqs = (fseq1_t *)realloc(m_seqs, m * sizeof(fseq1_t));
++      m_seqs = (fml_seq1_t *)realloc(m_seqs, m * sizeof(fml_seq1_t));
+ 
+       for (UnalignedSequenceVector::const_iterator r = v.begin(); r != v.end();
+            ++r) {
+         m_names.push_back(r->Name);
+-        fseq1_t *s;
++        fml_seq1_t *s;
+ 
+         s = &m_seqs[n_seqs];
+ 
+@@ -90,13 +90,13 @@
+     {
+       // alloc the memory
+       m_seqs =
+-        (fseq1_t *)realloc(m_seqs, (n_seqs + brv.size()) * sizeof(fseq1_t));
++        (fml_seq1_t *)realloc(m_seqs, (n_seqs + brv.size()) * sizeof(fml_seq1_t));
+ 
+       uint64_t size = 0;
+       for (BamRecordVector::const_iterator r = brv.begin(); r != brv.end();
+            ++r) {
+         m_names.push_back(r->Qname());
+-        fseq1_t *s;
++        fml_seq1_t *s;
+ 
+         s = &m_seqs[n_seqs];
+ 
+@@ -120,7 +120,7 @@
+       if (!m_seqs) return; // already cleared
+ 
+       for (size_t i = 0; i < n_seqs; ++i) {
+-        fseq1_t *s = &m_seqs[i];
++        fml_seq1_t *s = &m_seqs[i];
+         if (s->qual) free(s->qual);
+         s->qual = NULL;
+         if (s->seq) free(s->seq);
+@@ -173,7 +173,7 @@
+     {
+       UnalignedSequenceVector r;
+       for (size_t i = 0; i < n_seqs; ++i) {
+-        fseq1_t *s = &m_seqs[i];
++        fml_seq1_t *s = &m_seqs[i];
+         UnalignedSequence read;
+         if (s->seq) read.Seq = (std::string(s->seq));
+         read.Name = m_names[i];

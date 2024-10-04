@@ -1,0 +1,93 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/04
+easyblock = 'ConfigureMake'
+
+name = 'IMOD'
+version = '4.11.5'
+
+homepage = 'https://bio3d.colorado.edu/imod/'
+description = """IMOD is a set of image processing, modeling and display
+programs used for tomographic reconstruction and for 3D reconstruction of EM
+serial sections and optical sections. The package contains tools for assembling
+and aligning data within multiple types and sizes of image stacks, viewing 3-D
+data from any orientation, and modeling and display of the image files. IMOD
+was developed primarily by David Mastronarde, Rick Gaudette, Sue Held, Jim
+Kremer, Quanren Xiong, and John Heumann at the University of Colorado."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+# download manually from mercurial repository and create source tarball:
+# hg clone --debug http://bio3d.colorado.edu/imod/nightlyBuilds/IMOD
+# get lunch 
+# cd IMOD
+# hg update -r IMOD_4-11-5
+# cd ..
+# tar czf IMOD-4.11.5.tar.gz IMOD
+sources = [SOURCE_TAR_GZ]
+patches = ['IMOD-%(version)s_fix-csvtohtml-py3.patch']
+checksums = [
+    # can't include a valid checksum for source tarball, since it has to be created manually
+    None,  # IMOD-4.11.5.tar.gz
+    '8ba0c3cbe30d755ab3fb918688982e818795b9f7f41218bd6bf231c85bea4971',  # IMOD-4.11.5_fix-csvtohtml-py3.patch
+]
+
+dependencies = [
+    ('LibTIFF', '4.1.0'),
+    ('Qt5', '5.14.2'),
+    ('Java', '11', '', SYSTEM),
+    ('HDF5', '1.10.7'),
+    ('Python', '3.8.6'),
+]
+
+# parallel build sometimes fails
+parallel = 1
+
+# modify all qmake pro files in order to pass CFLAGS
+local_qmake_pass_cflags = "find -name *.pro -exec sed -i -e '$aQMAKE_CXXFLAGS += $$(CFLAGS)' {} \\; &&"
+
+# exports required for configure and build
+local_exports = 'export QTDIR=$EBROOTQT5 &&'
+local_exports += 'export HDF5_DIR=$EBROOTHDF5 &&'
+local_exports += 'export QMAKESPEC=$EBROOTQT5/mkspecs/`qmake -query QMAKE_SPEC` &&'
+#  readw_or_imod.f and others with gfortran10: 
+#     Error: Type mismatch between actual argument at (1) and actual argument at (2) (INTEGER(4)/INTEGER(2))
+#     => set -fallow-argument-mismatch. Runs through without this option with GCC 8.3.0.
+local_exports += 'export CFLAGS="$CFLAGS -fallow-argument-mismatch" &&'  # required for gfortran10
+
+preconfigopts = local_exports
+preconfigopts += local_qmake_pass_cflags
+
+# IMOD's configure script is named setup and does not know the parameter --prefix, but -i. 
+# CFLAGs are passed with -flags.
+configure_cmd = './setup '
+configure_cmd += '-flags "$CFLAGS" '    # inject CFLAGS
+configure_cmd += '-i %(installdir)s '  # set installdir
+configure_cmd += ' #'  # avoid passing unknown arg --prefix
+
+prebuildopts = local_exports
+
+# create some missing directories required for installation process:
+preinstallopts = 'mkdir %(installdir)s/{man/cat1,bin,autodoc,SystemTemplate,lib/imodplug,com,html,Plugins} -p && '
+
+# patch hardcoded /usr/bin/python to use Python included as dependency
+preinstallopts += "find pysrc -name '*.py' | xargs sed -i 's@^#!/usr/bin/python@#!/usr/bin/env python@g' && "
+preinstallopts += "ls manpages/{csvtohtml,adocdefaults} | xargs sed -i 's@^#!.*/python -u@#!/usr/bin/env python@g' && "
+preinstallopts += "xargs sed -i 's@^#!.*/python -u@#!/usr/bin/env python@g' html/makeqhp && "
+
+modextravars = {
+    'IMOD_DIR': "%(installdir)s",
+    'IMOD_PLUGIN_DIR': '%(installdir)s/lib/imodplug',
+    'IMOD_JAVADIR': '$JAVA_HOME',
+    'FOR_DISABLE_STACK_TRACE': '1',
+}
+modloadmsg = 'Please set the environment variable $IMOD_CALIB_DIR if appropriate.'
+# Observed problems with alias on a tcl based module system. Use bin/subm python script instead.
+# modaliases = {
+#     'subm': 'submfg $* &'
+# }
+sanity_check_paths = {
+    'files': ['VERSION', 'bin/subm'],
+    'dirs': ['bin', 'lib', 'com', 'autodoc', 'pylib', 'Plugins', 'man', 'SystemTemplate'],
+}
+
+moduleclass = 'vis'

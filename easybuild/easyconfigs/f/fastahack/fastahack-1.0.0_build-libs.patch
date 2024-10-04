@@ -1,0 +1,97 @@
+# Patch to build static and dynamic libraries. Based on PR by outpaddling:
+#  https://github.com/ekg/fastahack/pull/10
+
+
+diff -Nru fastahack-1.0.0.orig/Makefile fastahack-1.0.0/Makefile
+--- fastahack-1.0.0.orig/Makefile	2021-05-06 15:18:11.000000000 +0100
++++ fastahack-1.0.0/Makefile	2021-05-07 14:29:15.000000000 +0100
+@@ -1,42 +1,61 @@
+ 
+ # Use ?= to allow overriding from the env or command-line
++CC ?=		gcc
+ CXX ?=		g++
+ CXXFLAGS ?=	-O3
+-PREFIX ?=	./stage
+-STRIP_CMD ?=	strip
++
++PREFIX ?=	/usr/local
++STRIP ?=	strip
+ INSTALL ?=	install -c
+ MKDIR ?=	mkdir -p
++AR ?=		ar
++ARFLAGS ?=	rs
+ 
+ # Required flags that we shouldn't override
+-CXXFLAGS +=	-D_FILE_OFFSET_BITS=64
+-
+-OBJS =	Fasta.o FastaHack.o split.o disorder.o
+-
+-all:	fastahack
+-
+-fastahack: $(OBJS)
+-	$(CXX) $(CXXFLAGS) $(OBJS) -o fastahack
+-
+-FastaHack.o: Fasta.h FastaHack.cpp
+-	$(CXX) $(CXXFLAGS) -c FastaHack.cpp
+-
+-Fasta.o: Fasta.h Fasta.cpp
+-	$(CXX) $(CXXFLAGS) -c Fasta.cpp
+-
+-split.o: split.h split.cpp
+-	$(CXX) $(CXXFLAGS) -c split.cpp
+-
+-disorder.o: disorder.c disorder.h
+-	$(CXX) $(CXXFLAGS) -c disorder.c
+-
+-install: fastahack
+-	$(MKDIR) $(DESTDIR)$(PREFIX)/bin
+-	$(INSTALL) fastahack $(DESTDIR)$(PREFIX)/bin
++DFLAGS +=	-D_FILE_OFFSET_BITS=64
++BIN =		fastahack
++LIB = 		fastahack.a
++SOVERSION =	1
++SLIB = 		libfastahack.so
++OBJS = Fasta.o split.o disorder.o
++MAIN = FastaHack.o
++
++BINDIR = $(DESTDIR)$(PREFIX)/bin
++INCDIR = $(DESTDIR)$(PREFIX)/include/fastahack
++LIBDIR = $(DESTDIR)$(PREFIX)/lib
++
++.SUFFIXES:.c .cpp .o .pico .so
++
++.c.o .cpp.o:
++	$(CXX) $(CXXFLAGS) $(DFLAGS) -I. $(CPPFLAGS) -c -o $@ $<
++
++.c.pico .cpp.pico:
++	$(CXX) $(CXXFLAGS) $(DFLAGS) -I. $(CPPFLAGS) -fPIC -c -o $@ $<
++
++all: $(BIN) $(SLIB) $(LIB)
++
++$(LIB): $(OBJS)
++	$(AR) $(ARFLAGS) $@ $^
++
++$(SLIB): $(OBJS:.o=.pico)
++	$(CXX) -shared -Wl,-soname,$(SLIB).$(SOVERSION) $(LDFLAGS) -o $@ $^ $(LIBS)
++	ln -sf $@ $(SLIB).$(SOVERSION)
++
++$(BIN): $(OBJS) $(MAIN)
++	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
++
++install: all
++	$(MKDIR) $(BINDIR)
++	$(MKDIR) $(INCDIR)
++	$(MKDIR) $(LIBDIR)
++	$(INSTALL) $(BIN) $(BINDIR)
++	$(INSTALL) *.h $(INCDIR)
++	$(INSTALL) $(LIB) $(SLIB) $(SLIB).$(SOVERSION) $(LIBDIR)
+ 
+ install-strip: install
+-	$(STRIP_CMD) $(DESTDIR)$(PREFIX)/bin/fastahack
++	$(STRIP) $(BINDIR)/$(BIN) $(LIBDIR)/$(LIB) $(LIBDIR)/$(SLIB)
+ 
+ clean:
+-	rm -rf fastahack *.o stage
++	rm -rf $(BIN) $(LIB) $(SLIB) $(OBJS) $(DESTDIR)
+ 
+ .PHONY: clean

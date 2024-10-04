@@ -1,0 +1,49 @@
+easyblock = 'PythonPackage'
+
+name = 'Pillow-SIMD'
+version = '8.2.0'
+
+homepage = 'https://github.com/uploadcare/pillow-simd'
+description = """Pillow is the 'friendly PIL fork' by Alex Clark and Contributors.
+ PIL is the Python Imaging Library by Fredrik Lundh and Contributors."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/uploadcare/pillow-simd/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['Pillow-%(version_major)s_CVE-2021-23437.patch']
+checksums = [
+    'd966a27bd027d960c62ce5593858b4bf3e98ea44b9f7684a4486086b6f0ea3aa',  # 8.2.0.tar.gz
+    '12bac0ff4f815d1e60ed129106c2990c8c6157891fd90ec8aaec88a5a642d521',  # Pillow-8_CVE-2021-23437.patch
+]
+
+builddependencies = [('binutils', '2.36.1')]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('libjpeg-turbo', '2.0.6'),
+    ('libpng', '1.6.37'),
+    ('zlib', '1.2.11'),
+    ('LibTIFF', '4.2.0'),
+    ('freetype', '2.10.4')
+]
+
+use_pip = True
+download_dep_fail = True
+
+# patch setup.py to prefix hardcoded /usr/* and /lib paths with value of %(sysroot) template
+# (which will be empty if EasyBuild is not configured to use an alternate sysroot);
+# see also https://gitlab.com/eessi/support/-/issues/9
+preinstallopts = """sed -i 's@"/usr/@"%(sysroot)s/usr/@g' setup.py && """
+preinstallopts += """sed -i 's@"/lib@"%(sysroot)s/lib@g' setup.py && """
+
+options = {'modulename': 'PIL'}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/PIL'],
+}
+
+sanity_pip_check = True
+
+moduleclass = 'vis'

@@ -1,0 +1,71 @@
+easyblock = 'EB_GCC'
+
+name = 'GCCcore'
+version = '11.2.0'
+
+homepage = 'https://gcc.gnu.org/'
+description = """The GNU Compiler Collection includes front ends for C, C++, Objective-C, Fortran, Java, and Ada,
+ as well as libraries for these languages (libstdc++, libgcj,...)."""
+
+toolchain = SYSTEM
+
+source_urls = [
+    'https://ftpmirror.gnu.org/gnu/gcc/gcc-%(version)s',  # GCC auto-resolving HTTP mirror
+    'https://ftpmirror.gnu.org/gnu/gmp',  # idem for GMP
+    'https://ftpmirror.gnu.org/gnu/mpfr',  # idem for MPFR
+    'https://ftpmirror.gnu.org/gnu/mpc',  # idem for MPC
+    'ftp://gcc.gnu.org/pub/gcc/infrastructure/',  # GCC dependencies
+    'https://gcc.gnu.org/pub/gcc/infrastructure/',  # HTTPS mirror for GCC dependencies
+    'https://libisl.sourceforge.io/',  # fallback URL for isl
+    'https://sourceware.org/pub/newlib/',  # for newlib
+    'https://github.com/MentorEmbedded/nvptx-tools/archive',  # for nvptx-tools
+]
+sources = [
+    'gcc-%(version)s.tar.gz',
+    'gmp-6.2.1.tar.bz2',
+    'mpfr-4.1.0.tar.bz2',
+    'mpc-1.2.1.tar.gz',
+    'isl-0.24.tar.bz2',
+    'newlib-4.1.0.tar.gz',
+    {'download_filename': 'd0524fb.tar.gz', 'filename': 'nvptx-tools-20210115.tar.gz'},
+]
+patches = [
+    'GCCcore-6.2.0-fix-find-isl.patch',
+    'GCCcore-9.3.0_gmp-c99.patch',
+    'GCCcore-9.x-11.x_fix-unsigned-fpe-traps.patch',
+    'GCCcore-11_fix-libsanitzer-glibc-2.36.patch',
+    'GCCcore-11.1.0_fix-AVX2-intrinsics.patch',
+    'GCCcore-11.3.0_fix-vectorizer.patch',
+]
+checksums = [
+    {'gcc-11.2.0.tar.gz': 'f0837f1bf8244a5cc23bd96ff6366712a791cfae01df8e25b137698aca26efc1'},
+    {'gmp-6.2.1.tar.bz2': 'eae9326beb4158c386e39a356818031bd28f3124cf915f8c5b1dc4c7a36b4d7c'},
+    {'mpfr-4.1.0.tar.bz2': 'feced2d430dd5a97805fa289fed3fc8ff2b094c02d05287fd6133e7f1f0ec926'},
+    {'mpc-1.2.1.tar.gz': '17503d2c395dfcf106b622dc142683c1199431d095367c6aacba6eec30340459'},
+    {'isl-0.24.tar.bz2': 'fcf78dd9656c10eb8cf9fbd5f59a0b6b01386205fe1934b3b287a0a1898145c0'},
+    {'newlib-4.1.0.tar.gz': 'f296e372f51324224d387cc116dc37a6bd397198756746f93a2b02e9a5d40154'},
+    {'nvptx-tools-20210115.tar.gz': '466abe1cef9cf294318ecb3c221593356f7a9e1674be987d576bc70d833d84a2'},
+    {'GCCcore-6.2.0-fix-find-isl.patch': '5ad909606d17d851c6ad629b4fddb6c1621844218b8d139fed18c502a7696c68'},
+    {'GCCcore-9.3.0_gmp-c99.patch': '0e135e1cc7cec701beea9d7d17a61bab34cfd496b4b555930016b98db99f922e'},
+    {'GCCcore-9.x-11.x_fix-unsigned-fpe-traps.patch':
+     '03a2e4aeda78d398edd680d6a1ba842b8ceb29c126ebb7fe2e3541ddfe4fbed4'},
+    {'GCCcore-11_fix-libsanitzer-glibc-2.36.patch': '5c6c3b4655883a23dd9da7ef99751e5db23f35189c03689d2ab755b22cb39a60'},
+    {'GCCcore-11.1.0_fix-AVX2-intrinsics.patch': 'a06c09cc6ba25ec4e0a28280eb6b25cdb331f7835d07ebb3a83536214d3d68fa'},
+    {'GCCcore-11.3.0_fix-vectorizer.patch': '7dff25b678e2f65b81d9bf0c8402ad46c25a04b0c0d610db50b763ecc5f9ef98'},
+]
+
+builddependencies = [
+    ('M4', '1.4.19'),
+    ('binutils', '2.37'),
+]
+
+languages = ['c', 'c++', 'fortran']
+
+withisl = True
+withnvptx = True
+
+# Perl is only required when building with NVPTX support
+if withnvptx:
+    osdependencies = ['perl']
+
+moduleclass = 'compiler'

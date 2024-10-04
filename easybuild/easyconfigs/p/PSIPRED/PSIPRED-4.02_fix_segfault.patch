@@ -1,0 +1,42 @@
+Fixes a segmentation fault for inputs with lines longer than 254 characters
+author: Christoph Siegert (Leipzig University)
+
+diff --git a/src/sspred_avpred.c b/src/sspred_avpred.c
+index a6af260..a68b653 100644
+--- a/src/sspred_avpred.c
++++ b/src/sspred_avpred.c
+@@ -44,6 +44,8 @@ int             seqlen;
+ 
+ char seq[MAXSEQLEN];
+ 
++char buf[4096];
++
+ enum aacodes
+ {
+     ALA, ARG, ASN, ASP, CYS,
+@@ -238,7 +240,6 @@ predict(int argc, char **argv)
+ int             getmtx(FILE *lfil)
+ {
+     int             aa, i, j, naa;
+-    char            buf[256], *p;
+     
+     if (fscanf(lfil, "%d", &naa) != 1)
+ 	fail("Bad mtx file - no sequence length!");
+@@ -251,7 +252,7 @@ int             getmtx(FILE *lfil)
+     
+     while (!feof(lfil))
+     {
+-	if (!fgets(buf, 65536, lfil))
++	if (!fgets(buf, sizeof(buf), lfil))
+ 	    fail("Bad mtx file!");
+ 	if (!strncmp(buf, "-32768 ", 7))
+ 	{
+@@ -262,7 +263,7 @@ int             getmtx(FILE *lfil)
+ 		aa = aanum(seq[j]);
+ 		if (aa < 20)
+ 		    profile[j][aa] += 0000;
+-		if (!fgets(buf, 65536, lfil))
++		if (!fgets(buf, sizeof(buf), lfil))
+ 		    break;
+ 	    }
+ 	}

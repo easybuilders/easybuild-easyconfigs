@@ -1,0 +1,78 @@
+easyblock = 'EB_GCC'
+
+name = 'GCCcore'
+version = '12.1.0'
+
+homepage = 'https://gcc.gnu.org/'
+description = """The GNU Compiler Collection includes front ends for C, C++, Objective-C, Fortran, Java, and Ada,
+ as well as libraries for these languages (libstdc++, libgcj,...)."""
+
+toolchain = SYSTEM
+
+source_urls = [
+    'https://ftpmirror.gnu.org/gnu/gcc/gcc-%(version)s',  # GCC auto-resolving HTTP mirror
+    'https://sourceware.org/pub/gcc/releases/gcc-%(version)s',  # fallback URL for GCC
+    'https://ftpmirror.gnu.org/gnu/gmp',  # idem for GMP
+    'https://ftpmirror.gnu.org/gnu/mpfr',  # idem for MPFR
+    'https://ftpmirror.gnu.org/gnu/mpc',  # idem for MPC
+    'ftp://gcc.gnu.org/pub/gcc/infrastructure/',  # GCC dependencies
+    'https://gcc.gnu.org/pub/gcc/infrastructure/',  # HTTPS mirror for GCC dependencies
+    'https://libisl.sourceforge.io/',  # fallback URL for isl
+    'https://sourceware.org/pub/newlib/',  # for newlib
+    'https://github.com/MentorEmbedded/nvptx-tools/archive',  # for nvptx-tools
+]
+sources = [
+    'gcc-%(version)s.tar.gz',
+    'gmp-6.2.1.tar.bz2',
+    'mpfr-4.1.0.tar.bz2',
+    'mpc-1.2.1.tar.gz',
+    'isl-0.24.tar.bz2',
+    'newlib-4.1.0.tar.gz',
+    {'download_filename': '7292758.tar.gz', 'filename': 'nvptx-tools-20220412.tar.gz'},
+]
+patches = [
+    'GCCcore-6.2.0-fix-find-isl.patch',
+    'GCCcore-9.3.0_gmp-c99.patch',
+    'GCCcore-12.1.0_allow-pragma-wself-init.patch',
+    'GCCcore-12.1.0_fix-double-destruct.patch',
+    'GCCcore-12.1.0_fix-Wuninitialized-in-AVX-headers.patch',
+    'GCCcore-12.2.0_fix-avx512-misoptimization.patch',
+    'GCCcore-12.2.0_fix-vectorizer.patch',
+    'GCCcore-12.x_riscv_multiarch_support.patch',
+]
+checksums = [
+    {'gcc-12.1.0.tar.gz': 'e88a004a14697bbbaba311f38a938c716d9a652fd151aaaa4cf1b5b99b90e2de'},
+    {'gmp-6.2.1.tar.bz2': 'eae9326beb4158c386e39a356818031bd28f3124cf915f8c5b1dc4c7a36b4d7c'},
+    {'mpfr-4.1.0.tar.bz2': 'feced2d430dd5a97805fa289fed3fc8ff2b094c02d05287fd6133e7f1f0ec926'},
+    {'mpc-1.2.1.tar.gz': '17503d2c395dfcf106b622dc142683c1199431d095367c6aacba6eec30340459'},
+    {'isl-0.24.tar.bz2': 'fcf78dd9656c10eb8cf9fbd5f59a0b6b01386205fe1934b3b287a0a1898145c0'},
+    {'newlib-4.1.0.tar.gz': 'f296e372f51324224d387cc116dc37a6bd397198756746f93a2b02e9a5d40154'},
+    {'nvptx-tools-20220412.tar.gz': '20e3c1eeae7f375c36455b6036c4801de16b854910ff54268bbd3346f3685080'},
+    {'GCCcore-6.2.0-fix-find-isl.patch': '5ad909606d17d851c6ad629b4fddb6c1621844218b8d139fed18c502a7696c68'},
+    {'GCCcore-9.3.0_gmp-c99.patch': '0e135e1cc7cec701beea9d7d17a61bab34cfd496b4b555930016b98db99f922e'},
+    {'GCCcore-12.1.0_allow-pragma-wself-init.patch':
+     '464f5faa9b23e805995d10dcdacca83df6321cac70826e9a3bc5bc9cd737f6a1'},
+    {'GCCcore-12.1.0_fix-double-destruct.patch': '2e09c125318b6c15ec60f1807d77fb7d1f32b64a4e5d1c9a3da89ba2ca738d35'},
+    {'GCCcore-12.1.0_fix-Wuninitialized-in-AVX-headers.patch':
+     '0ea675960795e238a43ae7d685a0082b21f0b63cf2fe499f6d55e89e0aaee392'},
+    {'GCCcore-12.2.0_fix-avx512-misoptimization.patch':
+     'bb3db707727b9975b0005346ef04230a96b3ad896f004a34262a82a244b5d436'},
+    {'GCCcore-12.2.0_fix-vectorizer.patch': '0b76fc379308fd189ee39c4a3a49facacf8ede08dbec4280f289341083f1632b'},
+    {'GCCcore-12.x_riscv_multiarch_support.patch': '92fc2b17b6943611a657904500fbf3db8160eddbcea320828d4a50a885e2778f'},
+]
+
+builddependencies = [
+    ('M4', '1.4.19'),
+    ('binutils', '2.38'),
+]
+
+languages = ['c', 'c++', 'fortran']
+
+withisl = True
+withnvptx = True
+
+# Perl is only required when building with NVPTX support
+if withnvptx:
+    osdependencies = ['perl']
+
+moduleclass = 'compiler'

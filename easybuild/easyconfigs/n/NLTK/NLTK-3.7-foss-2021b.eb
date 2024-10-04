@@ -1,0 +1,57 @@
+easyblock = 'PythonBundle'
+
+name = 'NLTK'
+version = '3.7'
+
+homepage = 'https://www.nltk.org/'
+description = "NLTK is a leading platform for building Python programs to work with human language data."
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('scikit-learn', '1.0.1'),
+    ('matplotlib', '3.4.3'),
+    ('tqdm', '4.62.3'),
+]
+
+local_nltk_data_install = []
+# Install NLTK data sets (7.4 GB)
+# local_nltk_data = '/path/to/database/nltk_data'
+# local_nltk_data_install = [
+#     "mkdir -p %s && NLTK_DATA=%s python -m nltk.downloader all" % (local_nltk_data, local_nltk_data)
+# ]
+# modextravars = {'NLTK_DATA': local_nltk_data}
+
+build_info_msg = """To install the NLTK data sets, and set the NLTK_DATA in the module file, during install set the
+ 'local_nltk_data' path and uncomment the 'local_nltk_data_install' and 'modextravars'. This can be done either by
+ having a local copy of the easyconfig or by using hooks."""
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('regex', '2022.1.18', {
+        'checksums': ['97f32dc03a8054a4c4a5ab5d761ed4861e828b2c200febd4e46857069a483916'],
+    }),
+    ('python-crfsuite', '0.9.7', {
+        'modulename': 'pycrfsuite',
+        'checksums': ['3b4538d2ce5007e4e42005818247bf43ade89ef08a66d158462e2f7c5d63cee7'],
+    }),
+    (name, version, {
+        'source_tmpl': '%(namelower)s-%(version)s.zip',
+        'checksums': ['d6507d6460cec76d70afea4242a226a7542f85c669177b9c7f562b7cf1b05502'],
+        'use_pip_extras': 'corenlp,machine_learning,plot,tgrep',
+        'postinstallcmds': local_nltk_data_install,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+sanity_check_commands = [('%(namelower)s', '--version')]
+
+moduleclass = 'devel'

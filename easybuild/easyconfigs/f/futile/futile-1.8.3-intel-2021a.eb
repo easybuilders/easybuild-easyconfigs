@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'futile'
+version = '1.8.3'
+
+homepage = 'https://launchpad.net/futile'
+description = """
+ The FUTILE project (Fortran Utilities for the Treatment of Innermost Level of Executables) is a set of modules 
+ and wrapper that encapsulate the most common low-level operations of a Fortran code.
+ """
+
+toolchain = {'name': 'intel', 'version': '2021a'}
+toolchainopts = {'pic': True, 'usempi': True, 'openmp': True}
+
+source_urls = ['https://launchpad.net/bigdft/%(version_major_minor)s/%(version)s/+download/']
+sources = ['bigdft-suite-%(version)s.tar.gz']
+patches = [
+    'futile_index_bug.patch',
+    'futile_intel_bug.patch',
+]
+checksums = [
+    '39aeae8bd62ad5d82ed20a47006aa478d93b3751ae7929027088c2e6b8439388',  # bigdft-suite-1.8.3.tar.gz
+    '5ef5f8ad7644259da0d2d2bcb64c44b923cb64b1eedf03898d0da18228ea392f',  # futile_index_bug.patch
+    'e3681e6dda9364a1be4fba937423b8ac1774c3ebfd1ff04211482df25a188e95',  # futile_intel_bug.patch
+]
+
+unpack_options = " spred-suite/futile-%(version_major_minor)s.tar.gz --strip 1 && "
+unpack_options += "tar xzf futile-%(version_major_minor)s.tar.gz --transform='s,%(version_major_minor)s,%(version)s,'"
+start_dir = "futile-%(version)s"
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+dependencies = [
+    ('libyaml', '0.2.5'),
+]
+
+configopts = '--enable-dynamic-libraries '
+configopts += '--with-ext-linalg="$LIBSCALAPACK" '
+configopts += '--with-yaml-path=$EBROOTLIBYAML '
+
+sanity_check_paths = {
+    'files': ['include/futile.mod', 'include/futile.h', 'bin/futilevars.sh'] +
+             ['lib/libfutile-1.a', 'lib/libfutile-1.%s' % SHLIB_EXT],
+    'dirs': []
+}
+
+moduleclass = 'phys'

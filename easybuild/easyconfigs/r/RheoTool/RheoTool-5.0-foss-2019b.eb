@@ -1,0 +1,46 @@
+easyblock = 'Binary'
+
+name = 'RheoTool'
+version = '5.0'
+
+homepage = 'https://github.com/fppimenta/rheoTool'
+description = """RheoTool is an open-source toolbox based on OpenFOAM to simulate Generalized Newtonian Fluids (GNF)
+and viscoelastic fluids under pressure-driven and/or electrically-driven flows."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = ['https://github.com/fppimenta/rheoTool/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['2e0899684d6d7f9ddee0d93b39a6ed56262b171bc4e5536914645209b66003ed']
+
+dependencies = [
+    ('OpenFOAM', '7', '-20200508'),
+    ('Eigen', '3.3.7', '', SYSTEM),
+    ('PETSc', '3.12.4', '-Python-3.7.4'),
+]
+
+extract_sources = True
+
+install_cmd = "source $FOAM_BASH && "
+install_cmd += "export EIGEN_RHEO=$EBROOTEIGEN && "
+install_cmd += "cd of70/src && "
+
+# variables of target install directory
+install_cmd += "export WM_PROJECT_USER_DIR=%(installdir)s && "
+install_cmd += "export FOAM_USER_APPBIN=%(installdir)s/bin && "
+install_cmd += "export FOAM_USER_LIBBIN=%(installdir)s/lib && "
+install_cmd += "export LD_LIBRARY_PATH=%(installdir)s/lib:$LD_LIBRARY_PATH && "
+
+install_cmd += "./Allwmake -j %(parallel)s "
+
+sanity_check_paths = {
+    'files': ['bin/rheoBDFoam', 'lib/libthermoRheoTool.so'],
+    'dirs': [],
+}
+
+# source $FOAM_BASH must run before using RheoTool, otherwise there will be missing libraries
+sanity_check_commands = ["source $FOAM_BASH && rheoBDFoam -help"]
+
+modloadmsg = "Please run 'source $FOAM_BASH' before using RheoTool."
+
+moduleclass = 'cae'
