@@ -1,0 +1,91 @@
+Fix a compile failure due to missing template code
+Taken from https://bugs.chromium.org/p/chromium/issues/detail?id=593980
+
+diff --git i/qtwebengine/src/3rdparty/chromium/third_party/WebKit/Source/core/css/resolver/StyleBuilderConverter.cpp w/qtwebengine/src/3rdparty/chromium/third_party/WebKit/Source/core/css/resolver/StyleBuilderConverter.cpp
+index fd34261..bc3a58a 100644
+--- i/qtwebengine/src/3rdparty/chromium/third_party/WebKit/Source/core/css/resolver/StyleBuilderConverter.cpp
++++ w/qtwebengine/src/3rdparty/chromium/third_party/WebKit/Source/core/css/resolver/StyleBuilderConverter.cpp
+@@ -638,35 +638,6 @@ StyleMotionRotation StyleBuilderConverter::convertMotionRotation(const CSSValue&
+     return result;
+ }
+ 
+-template <CSSValueID cssValueFor0, CSSValueID cssValueFor100>
+-Length StyleBuilderConverter::convertPositionLength(StyleResolverState& state, const CSSValue& value)
+-{
+-    if (value.isValuePair()) {
+-        const CSSValuePair& pair = toCSSValuePair(value);
+-        Length length = StyleBuilderConverter::convertLength(state, pair.second());
+-        if (toCSSPrimitiveValue(pair.first()).getValueID() == cssValueFor0)
+-            return length;
+-        ASSERT(toCSSPrimitiveValue(pair.first()).getValueID() == cssValueFor100);
+-        return length.subtractFromOneHundredPercent();
+-    }
+-
+-    const CSSPrimitiveValue& primitiveValue = toCSSPrimitiveValue(value);
+-    if (primitiveValue.isValueID()) {
+-        switch (primitiveValue.getValueID()) {
+-        case cssValueFor0:
+-            return Length(0, Percent);
+-        case cssValueFor100:
+-            return Length(100, Percent);
+-        case CSSValueCenter:
+-            return Length(50, Percent);
+-        default:
+-            ASSERT_NOT_REACHED();
+-        }
+-    }
+-
+-    return StyleBuilderConverter::convertLength(state, primitiveValue);
+-}
+-
+ LengthPoint StyleBuilderConverter::convertPosition(StyleResolverState& state, const CSSValue& value)
+ {
+     const CSSValuePair& pair = toCSSValuePair(value);
+diff --git i/qtwebengine/src/3rdparty/chromium/third_party/WebKit/Source/core/css/resolver/StyleBuilderConverter.h w/qtwebengine/src/3rdparty/chromium/third_party/WebKit/Source/core/css/resolver/StyleBuilderConverter.h
+index 22fd808..9075bcc 100644
+--- i/qtwebengine/src/3rdparty/chromium/third_party/WebKit/Source/core/css/resolver/StyleBuilderConverter.h
++++ w/qtwebengine/src/3rdparty/chromium/third_party/WebKit/Source/core/css/resolver/StyleBuilderConverter.h
+@@ -30,6 +30,7 @@
+ #include "core/css/CSSStringValue.h"
+ #include "core/css/CSSValue.h"
+ #include "core/css/CSSValueList.h"
++#include "core/css/CSSValuePair.h"
+ #include "core/css/resolver/StyleResolverState.h"
+ #include "core/style/QuotesData.h"
+ #include "core/style/ShadowList.h"
+@@ -118,6 +119,35 @@ T StyleBuilderConverter::convertComputedLength(StyleResolverState& state, const
+     return toCSSPrimitiveValue(value).computeLength<T>(state.cssToLengthConversionData());
+ }
+ 
++template <CSSValueID cssValueFor0, CSSValueID cssValueFor100>
++Length StyleBuilderConverter::convertPositionLength(StyleResolverState& state, const CSSValue& value)
++{
++    if (value.isValuePair()) {
++        const CSSValuePair& pair = toCSSValuePair(value);
++        Length length = StyleBuilderConverter::convertLength(state, pair.second());
++        if (toCSSPrimitiveValue(pair.first()).getValueID() == cssValueFor0)
++            return length;
++        ASSERT(toCSSPrimitiveValue(pair.first()).getValueID() == cssValueFor100);
++        return length.subtractFromOneHundredPercent();
++    }
++
++    const CSSPrimitiveValue& primitiveValue = toCSSPrimitiveValue(value);
++    if (primitiveValue.isValueID()) {
++        switch (primitiveValue.getValueID()) {
++        case cssValueFor0:
++            return Length(0, Percent);
++        case cssValueFor100:
++            return Length(100, Percent);
++        case CSSValueCenter:
++            return Length(50, Percent);
++        default:
++            ASSERT_NOT_REACHED();
++        }
++    }
++
++    return StyleBuilderConverter::convertLength(state, primitiveValue);
++}
++
+ template <typename T>
+ T StyleBuilderConverter::convertFlags(StyleResolverState& state, const CSSValue& value)
+ {

@@ -1,0 +1,22 @@
+`test_out` may fail due to slightly different values caused by different order of matrizes in SGEMM:
+
+> Mismatched elements: 1 / 50 (2.0%)
+> Greatest absolute difference: 1.430511474609375e-05 at index (4, 5) (up to 1e-05 allowed)
+> Greatest relative difference: 4.65393206065873e-06 at index (4, 5) (up to 1.3e-06 allowed)
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_ops.py b/test/test_ops.py
+index 291361d53d..2e0597376d 100644
+--- a/test/test_ops.py
++++ b/test/test_ops.py
+@@ -418,6 +418,9 @@ class TestCommon(TestCase):
+             self.skipTest("Skipped! Op has not supported dtypes on this device.")
+         dtype = torch.float32 if torch.float32 in supported_dtypes else list(supported_dtypes)[0]
+ 
++        if dtype is torch.float32:
++            self.precision, self.rel_tol = (1.5e-05, 1e-05)
++
+         # NOTE: only tests on first sample
+         samples = op.sample_inputs(device, dtype)
+         sample = first_sample(self, samples)

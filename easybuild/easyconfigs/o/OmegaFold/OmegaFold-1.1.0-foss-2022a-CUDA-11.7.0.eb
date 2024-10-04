@@ -1,0 +1,41 @@
+easyblock = 'PythonBundle'
+
+name = 'OmegaFold'
+version = '1.1.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/HeliXonProtein/OmegaFold'
+description = """OmegaFold: High-resolution de novo Structure Prediction from Primary Sequence"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('PyTorch', '1.12.0', '-CUDA-%(cudaver)s'),
+    ('Biopython', '1.79'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+# add missing version for OmegaFold
+exts_list = [
+    (name, version, {
+        'preinstallopts': """sed -i '/^setup(/a version="%(version)s",' setup.py && """,
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/HeliXonProtein/OmegaFold/archive/'],
+        'checksums': ['ab3b48fe7721539b6943b49cdbafc9799e15b4425a324cc25daf15a24e3f9e37'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/omegafold'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/omegafold'],
+}
+
+sanity_check_commands = [
+    "omegafold --help",
+]
+
+moduleclass = 'bio'

@@ -1,0 +1,31 @@
+name = 'SuiteSparse'
+version = '5.13.0'
+local_metis_ver = '5.1.0'
+versionsuffix = '-METIS-%s' % local_metis_ver
+
+homepage = 'https://faculty.cse.tamu.edu/davis/suitesparse.html'
+description = """SuiteSparse is a collection of libraries manipulate sparse matrices."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'unroll': True, 'pic': True}
+
+source_urls = ['https://github.com/DrTimothyAldenDavis/SuiteSparse/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['59c6ca2959623f0c69226cf9afb9a018d12a37fab3a8869db5f6d7f83b6b147d']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('M4', '1.4.19'),
+]
+
+dependencies = [
+    ('METIS', local_metis_ver),
+    ('MPFR', '4.1.0'),
+]
+
+# make sure that bin/demo can find libsuitesparseconfig.so.5 during build
+prebuildopts = "export LD_LIBRARY_PATH=%(builddir)s/SuiteSparse-%(version)s/lib:$LD_LIBRARY_PATH && "
+# remove broken symlink
+prebuildopts += "rm GraphBLAS/CUDA/test/graphblascuda_test && "
+
+moduleclass = 'numlib'

@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'UCX'
+version = '1.14.1'
+
+homepage = 'https://www.openucx.org/'
+description = """Unified Communication X
+An open-source production grade communication framework for data centric
+and high-performance applications
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openucx/ucx/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+patches = [
+    'UCX-1.11.0_fix-implicit-odp-release.patch',
+    'UCX-1.13.1-dynamic_modules.patch',
+]
+checksums = [
+    {'ucx-1.14.1.tar.gz': 'baa0634cafb269a3112f626eb226bcd2ca8c9fcf0fec3b8e2a3553baad5f77aa'},
+    {'UCX-1.11.0_fix-implicit-odp-release.patch': 'e21d66b75f3727a98dbd1737b419a6f77c0c5a8ac660a21affcbf10bb3b941ed'},
+    {'UCX-1.13.1-dynamic_modules.patch': '00874687bd90b795fff61aaa183f6c6bea2210aa1003b28f23d9ebf7066f8782'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Autotools', '20220317'),
+    ('pkgconf', '1.9.5'),
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('numactl', '2.0.16'),
+]
+
+configopts = '--enable-optimizations --enable-cma --enable-mt --with-verbs '
+configopts += '--without-java --without-go --disable-doxygen-doc '
+# include the configure options from contrib/configure-release
+configopts += '--disable-logging --disable-debug --disable-assertions --disable-params-check '
+
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': ['bin/ucx_info', 'bin/ucx_perftest', 'bin/ucx_read_profile'],
+    'dirs': ['include', 'lib', 'share']
+}
+
+sanity_check_commands = ["ucx_info -d"]
+
+moduleclass = 'lib'

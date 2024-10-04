@@ -10,11 +10,13 @@ toolchain = {'name': 'foss', 'version': '2019b'}
 source_urls = ['https://cloud.r-project.org/src/base/R-%(version_major)s']
 sources = [SOURCE_TAR_GZ]
 patches = [
-    '%(name)s-%(version)s_fix_long_dbl_on_ppc.patch',
+    'R-%(version)s_fix_long_dbl_on_ppc.patch',
+    'R-4.x_fix-CVE-2024-27322.patch',
 ]
 checksums = [
-    'bd65a45cddfb88f37370fbcee4ac8dd3f1aebeebe47c2f968fd9770ba2bbc954',  # R-3.6.2.tar.gz
-    '833b80f9a62751eae9cfbad6116542acf932e9c6511235145be32264aacdce69',  # R-3.6.2_fix_long_dbl_on_ppc.patch
+    {'R-3.6.2.tar.gz': 'bd65a45cddfb88f37370fbcee4ac8dd3f1aebeebe47c2f968fd9770ba2bbc954'},
+    {'R-3.6.2_fix_long_dbl_on_ppc.patch': '833b80f9a62751eae9cfbad6116542acf932e9c6511235145be32264aacdce69'},
+    {'R-4.x_fix-CVE-2024-27322.patch': 'd8560e15c3c5716f99e852541901014d406f2a73136b0b74f11ba529f7a7b00d'},
 ]
 
 builddependencies = [
@@ -35,7 +37,7 @@ dependencies = [
     ('libpng', '1.6.37'),  # for plotting in R
     ('libjpeg-turbo', '2.0.3'),  # for plottting in R
     ('LibTIFF', '4.0.10'),
-    ('Java', '11', '', True),
+    ('Java', '11', '', SYSTEM),
     ('Tk', '8.6.9'),  # for tcltk
     ('cURL', '7.66.0'),  # for RCurl
     ('libxml2', '2.9.9'),  # for XML
@@ -77,15 +79,21 @@ exts_default_options = {
 # !! order of packages is important !!
 # packages updated on 16 December 2019
 exts_list = [
+    # include packages that are part of the base installation of R,
+    # both to make sure they are available (via sanity check),
+    # and to be able to pass the check for required dependencies when installing extensions in parallel
     'base',
+    'compiler',
     'datasets',
     'graphics',
     'grDevices',
     'grid',
     'methods',
+    'parallel',
     'splines',
     'stats',
     'stats4',
+    'tcltk',
     'tools',
     'utils',
     ('Rmpi', '0.6-9', {

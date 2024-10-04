@@ -1,0 +1,67 @@
+easyblock = 'ConfigureMake'
+
+name = 'GDAL'
+version = '3.5.0'
+
+homepage = 'https://www.gdal.org'
+description = """GDAL is a translator library for raster geospatial data formats that is released under an X/MIT style
+ Open Source license by the Open Source Geospatial Foundation. As a library, it presents a single abstract data model
+ to the calling application for all supported formats. It also comes with a variety of useful commandline utilities for
+ data translation and processing."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://download.osgeo.org/gdal/%(version)s/']
+sources = [SOURCELOWER_TAR_XZ]
+patches = ['GDAL-3.0.0_fix-python-CC-CXX.patch']
+checksums = [
+    'd49121e5348a51659807be4fb866aa840f8dbec4d1acba6d17fdefa72125bfc9',  # gdal-3.5.0.tar.xz
+    '223a0ed1afb245527d546bb19e4f80c00f768516ab106d82e53cf36b5a1a2381',  # GDAL-3.0.0_fix-python-CC-CXX.patch
+]
+
+builddependencies = [
+    ('pkgconf', '1.8.0'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('netCDF', '4.9.0'),
+    ('expat', '2.4.8'),
+    ('GEOS', '3.10.3'),
+    ('SQLite', '3.38.3'),
+    ('libxml2', '2.9.13'),
+    ('libpng', '1.6.37'),
+    ('libjpeg-turbo', '2.1.3'),
+    ('LibTIFF', '4.3.0'),
+    ('zlib', '1.2.12'),
+    ('cURL', '7.83.0'),
+    ('PCRE', '8.45'),
+    ('PROJ', '9.0.0'),
+    ('libgeotiff', '1.7.1'),
+    ('SciPy-bundle', '2022.05'),
+    ('HDF5', '1.12.2'),
+    ('HDF', '4.2.15'),
+    ('OpenJPEG', '2.5.0'),
+]
+
+preconfigopts = r"sed -e 's/-llapack/\$LIBLAPACK/g' -i.eb configure && "
+configopts = '--with-expat=$EBROOTEXPAT --with-libz=$EBROOTLIBZ'
+configopts += ' --with-hdf5=$EBROOTHDF5 --with-netcdf=$EBROOTNETCDF'
+configopts += ' --with-xml2=yes --with-geos=$EBROOTGEOS/bin/geos-config --with-jpeg=$EBROOTLIBJPEGMINTURBO'
+configopts += ' --with-png=$EBROOTLIBPNG --with-sqlite3=$EBROOTSQLITE'
+configopts += ' --with-libtiff=$EBROOTLIBTIFF --with-pcre=$EBROOTPCRE --with-python=$EBROOTPYTHON/bin/python'
+configopts += ' --with-geotiff=$EBROOTLIBGEOTIFF --with-hdf4=$EBROOTHDF'
+
+maxparallel = 100
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['lib/libgdal.a', 'lib/libgdal.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'include', 'lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = ["python -c 'import osgeo.gdal'"]
+
+moduleclass = 'data'

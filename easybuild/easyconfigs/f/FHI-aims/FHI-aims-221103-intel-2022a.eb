@@ -1,0 +1,57 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Authors::   Dugan Witherick (University of Warwick)
+# Updated to 210716_3
+# J. Sassmannshausen (Imperial College London/UK)
+##
+easyblock = 'CMakeMake'
+
+name = 'FHI-aims'
+version = '221103'
+
+homepage = 'https://fhi-aims.org/'
+description = """FHI-aims is an efficient, accurate all-electron,
+full-potential electronic structure code package for computational molecular
+and materials science (non-periodic and periodic systems). The code supports
+DFT (semilocal and hybrid) and many-body perturbation theory. FHI-aims is
+particularly efficient for molecular systems and nanostructures, while
+maintaining high numerical accuracy for all production tasks. Production
+calculations handle up to several thousand atoms and can efficiently use (ten)
+thousands of cores. 
+"""
+
+toolchain = {'name': 'intel', 'version': '2022a'}
+toolchainopts = {'opt': True, 'precise': True}
+
+download_instructions = """
+The source code must be downloaded manually from the FHI-aims club
+(https://fhi-aims.org/get-the-code-menu/login).
+Access to the FHI-aims club requires a valid license and registration.
+Details on available license options and how to register to access
+FHI-aims club may be found at:
+https://fhi-aims.org/get-the-code-menu/get-the-code """
+
+sources = ['%(namelower)s.%(version)s.tgz']
+checksums = ['1905147a15968b6b719a4f5d9495a958df648d3ccee58f5012734be5d6727749']
+
+builddependencies = [('CMake', '3.24.3')]
+
+configopts = ' -DCMAKE_Fortran_COMPILER="$MPIF90" '
+configopts += ' -DLIBS="mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64 mkl_intel_lp64 mkl_sequential mkl_core" '
+configopts += ' -DLIB_PATHS="$CMAKE_LIBRARY_PATH" '
+configopts += ' -DCMAKE_C_FLAGS="$CFLAGS -ip" '
+configopts += ' -DCMAKE_Fortran_FLAGS="$FFLAGS -ip" '
+configopts += ' -DFortran_MIN_FLAGS="-O0 -fp-model precise" '
+configopts += ' -DTARGET_NAME="aims.x" '
+
+postinstallcmds = ["cp -ar %(builddir)s/%(namelower)s.%(version)s/{CHANGELOG.md,doc,external} %(installdir)s/",
+                   "cp -ar %(builddir)s/%(namelower)s.%(version)s/{regression_tests,species_defaults} %(installdir)s/",
+                   "cp -ar %(builddir)s/%(namelower)s.%(version)s/{testcases,utilities} %(installdir)s/"]
+
+sanity_check_paths = {
+    'files': ['bin/aims.x'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'

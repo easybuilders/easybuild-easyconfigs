@@ -1,0 +1,81 @@
+easyblock = 'PythonPackage'
+
+name = 'SCGid'
+version = '0.9b0'
+# No tagged commit for SCGid 0.9b, taking commit from commit history
+local_commit = 'be106e4cd888fd913a527ea821e510e0afb100be'
+
+homepage = 'https://github.com/amsesk/SCGid'
+description = 'A consensus approach to contig filtering and genome prediction from single-cell sequencing libraries'
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ["https://github.com/amsesk/SCGid/archive"]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = [
+    "SCGid-0.9-fixPrintToPython3.patch",
+    "SCGid-0.9b0-initEdit.patch"
+]
+checksums = [
+    '1f625e8f87b4d5e4ec9831ebe48763676679d6d6c41b05ef0bb59e6a7f839153',  # SCGid-0.9b0.tar.gz
+    'ee251b71ed3eed097b05751a3cea302d954000e1a8112e6e3f297e67c84996f7',  # SCGid-0.9-fixPrintToPython3.patch
+    '7ae6759deffbb4f4c07943fd9aa44739e5b3d0e9ef724cee3e1dc03b71ad4735',  # SCGid-0.9b0-initEdit.patch
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('R', '4.1.2'),
+    ('BLAST+', '2.12.0'),
+    ('AUGUSTUS', '3.4.0'),
+    ('Java', '11', '', SYSTEM),
+    ('Maven', '3.6.3', '', SYSTEM),
+    ('plotly.py', '5.4.0'),
+    ('ETE', '3.1.2'),
+    ('PyYAML', '5.4.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+download_dep_fail = True
+
+exts_defaultclass = "Tarball"
+
+options = {'modulename': False}
+
+local_clams_commit = "e326c34307803b9ea8ffc975ddd9bd05643af931"
+
+local_esom_download_instructions = """You need to manually provide the Databionics ESOM 'source' file.
+Please follow these steps:
+(1): Download the installer for ESOM version %(version)s from
+     https://sourceforge.net/projects/databionic-esom/files/databionic-esom/%(version)s/esom-%(version)s-installer.jar
+(2): Run the installer, and follow through the installation process using the GUI:
+       java -jar esom-%(version)s-installer.jar
+(3): Go to the installation directory where you installed ESOM %(version)s, and create a tarball:
+       tar cvzf esom-%(version)s.tar.gz *
+(4): Move esom-%(version)s.tar.gz to the directory with the SCGid source files (in the EasyBuild sourcepath).
+(5): Re-run EasyBuild to install this SCGid easyconfig file.
+"""
+
+exts_list = [
+    ('ClaMS-CLI', '31012020', {
+        'source_urls': ['https://github.com/amsesk/ClaMS-CLI-fork/archive'],
+        'sources': [{
+            'download_filename': '%s.tar.gz' % local_clams_commit,
+            'filename': 'ClaMS-CLI-%(version)s.tar.gz'
+        }],
+        'checksums': ['743397fc8308e363f127bd7e5165ac9d769c10305f6e33d9e408db8f343170db'],
+    }),
+    ('ESOM', '1.1', {
+        'download_instructions': local_esom_download_instructions,
+        'source_tmpl': 'esom-%(version)s.tar.gz',
+        'checksums': [None]
+    }),
+]
+
+postinstallcmds = [
+    'ln -s %%(installdir)s/ClaMS-CLI-fork-%s/ClaMS-CLI.jar %%(installdir)s/ClaMS-CLI.jar' % local_clams_commit,
+]
+
+sanity_check_commands = ["scgid --help"]
+
+moduleclass = 'bio'

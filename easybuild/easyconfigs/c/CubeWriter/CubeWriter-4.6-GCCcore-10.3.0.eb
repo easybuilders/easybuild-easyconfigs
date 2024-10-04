@@ -1,0 +1,55 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2019 Juelich Supercomputing Centre, Germany
+# Authors::   Markus Geimer <m.geimer@fz-juelich.de>
+# License::   3-clause BSD
+#
+# This work is based on experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+
+easyblock = 'EB_Score_minus_P'
+
+name = 'CubeWriter'
+version = '4.6'
+
+homepage = 'https://www.scalasca.org/software/cube-4.x/download.html'
+description = """
+ Cube, which is used as performance report explorer for Scalasca and Score-P,
+ is a generic tool for displaying a multi-dimensional performance space
+ consisting of the dimensions (i) performance metric, (ii) call path, and
+ (iii) system resource. Each dimension can be represented as a tree, where
+ non-leaf nodes of the tree can be collapsed or expanded to achieve the
+ desired level of granularity.
+
+ This module provides the Cube high-performance C writer library component.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://apps.fz-juelich.de/scalasca/releases/cube/%(version_major_minor)s/dist']
+sources = ['cubew-%(version)s.tar.gz']
+checksums = [
+    '99fe58ce7ab13061ebfbc360aedaecc28099a30636c5269a42c0cbaf57149aa8',  # cubew-4.6.tar.gz
+]
+
+builddependencies = [
+    # use same binutils version that was used when building GCCcore
+    ('binutils', '2.36.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+]
+
+configopts = '--enable-shared'
+
+sanity_check_paths = {
+    'files': ['bin/cubew-config',
+              'lib/libcube4w.a', 'lib/libcube4w.%s' % SHLIB_EXT],
+    'dirs': ['include/cubew'],
+}
+
+moduleclass = 'perf'

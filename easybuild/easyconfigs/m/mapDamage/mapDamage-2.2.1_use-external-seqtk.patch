@@ -1,0 +1,74 @@
+Author: Jasper Grimm (UoY)
+Allow mapDamage to use a seqtk from $PATH, instead of looking in its install dir
+--------------------------------------------------------------------------------
+diff -Nru mapDamage-2.2.1.orig/bin/mapDamage mapDamage-2.2.1/bin/mapDamage
+--- mapDamage-2.2.1.orig/bin/mapDamage	2022-01-11 14:40:48.000000000 +0000
++++ mapDamage-2.2.1/bin/mapDamage	2022-01-11 14:48:37.000000000 +0000
+@@ -6,6 +6,7 @@
+ import time
+ import sys
+ import os
++from shutil import which
+ 
+ """ Copyright (c) 2012  Aurélien Ginolhac, Mikkel Schubert, Hákon Jónsson
+ and Ludovic Orlando
+@@ -149,7 +150,7 @@
+         sys.path.insert(0,path_to_mm)
+     import mapdamage
+ 
+-    fpath_seqtk = mapdamage.rscript.construct_path("seqtk", folder="seqtk")
++    fpath_seqtk = which("seqtk") #mapdamage.rscript.construct_path("seqtk", folder="seqtk")
+     if not (os.path.isfile(fpath_seqtk) and os.access(fpath_seqtk, os.X_OK)):
+         sys.stderr.write("Seqtk executable not accessible; mapDamage has not\n"
+                          "been intalled properly or current user does not\n"
+diff -Nru mapDamage-2.2.1.orig/mapdamage/composition.py mapDamage-2.2.1/mapdamage/composition.py
+--- mapDamage-2.2.1.orig/mapdamage/composition.py	2022-01-11 14:40:49.000000000 +0000
++++ mapDamage-2.2.1/mapdamage/composition.py	2022-01-11 14:49:24.000000000 +0000
+@@ -3,6 +3,7 @@
+ import csv
+ import subprocess
+ import sys
++from shutil import which
+ 
+ def count_ref_comp(read, chrom, before, after, comp):
+   """ record basae composition in external genomic regions """
+@@ -33,7 +34,7 @@
+     Gets the basecomposition of all the sequences in filename
+     and returns the value to destination if given.
+     """
+-    path_to_seqtk = mapdamage.rscript.construct_path("seqtk",folder="seqtk")
++    path_to_seqtk = which("seqtk") # mapdamage.rscript.construct_path("seqtk",folder="seqtk")
+     bases = {"A":0,"C":0,"G":0,"T":0}
+     alp = ["A","C","G","T"]
+     try:
+diff -Nru mapDamage-2.2.1.orig/setup.py mapDamage-2.2.1/setup.py
+--- mapDamage-2.2.1.orig/setup.py	2022-01-11 14:40:48.000000000 +0000
++++ mapDamage-2.2.1/setup.py	2022-01-11 14:45:14.000000000 +0000
+@@ -45,13 +45,13 @@
+     def run(self):
+         self.record=""
+         setup_version()
+-        compile_seqtk()
++        # compile_seqtk()
+         DistutilsInstall.run(self)
+         # fixing the permission problem of seqtk
+-        files = self.get_outputs()
+-        for fi in files:
+-            if fi.endswith("seqtk/seqtk"):
+-                os.chmod(fi,0o755)
++        # files = self.get_outputs()
++        # for fi in files:
++        #     if fi.endswith("seqtk/seqtk"):
++        #         os.chmod(fi,0o755)
+ 
+ 
+ 
+@@ -64,7 +64,7 @@
+     author='AurÃ©lien Ginolhac, Mikkel Schubert, Ãkon JÃ³nsson',
+     author_email='MSchubert@snm.ku.dk, jonsson.hakon@gmail.com',
+     packages=['mapdamage'],
+-    package_data={'mapdamage': ['Rscripts/*.R','Rscripts/stats/*.R','tests/*','seqtk/seqtk']},
++    package_data={'mapdamage': ['Rscripts/*.R','Rscripts/stats/*.R','tests/*']},
+     scripts=['bin/mapDamage'],
+     url='https://github.com/ginolhac/mapDamage',
+     license='LICENSE.txt',

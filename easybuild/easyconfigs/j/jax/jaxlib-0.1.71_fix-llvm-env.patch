@@ -1,0 +1,33 @@
+Enable use_default_shell_env for the MLIR table generator so that the environment (action_env etc.) is correctly passed to the tool
+See https://github.com/google/jax/issues/7842
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/third_party/llvm/workspace.bzl b/third_party/llvm/workspace.bzl
+index c0c7ef3db29..63ccda6dc65 100644
+--- a/third_party/llvm/workspace.bzl
++++ b/third_party/llvm/workspace.bzl
+@@ -16,4 +16,5 @@ def repo(name):
+             "https://github.com/llvm/llvm-project/archive/{commit}.tar.gz".format(commit = LLVM_COMMIT),
+         ],
+         build_file = "//third_party/llvm:BUILD.bazel",
++        patch_file = "//third_party/llvm:fix-ctx.run.patch",
+     )
+diff --git a/third_party/llvm/fix-ctx.run.patch b/third_party/llvm/fix-ctx.run.patch
+new file mode 100644
+index 00000000000..65aff1fcd3f
+--- /dev/null
++++ b/third_party/llvm/fix-ctx.run.patch
+@@ -0,0 +1,12 @@
++diff --git a/utils/bazel/llvm-project-overlay/mlir/tblgen.bzl b/utils/bazel/llvm-project-overlay/mlir/tblgen.bzl
++index 64685aa1cbc10..177789797a3e0 100644
++--- a/utils/bazel/llvm-project-overlay/mlir/tblgen.bzl
+++++ b/utils/bazel/llvm-project-overlay/mlir/tblgen.bzl
++@@ -169,6 +169,7 @@ def _gentbl_rule_impl(ctx):
++         inputs = trans_srcs,
++         executable = ctx.executable.tblgen,
++         arguments = [args],
+++        use_default_shell_env = True,
++         mnemonic = "TdGenerate",
++     )
++ 

@@ -1,0 +1,138 @@
+easyblock = 'PythonBundle'
+
+name = 'phyluce'
+version = '1.7.3'
+
+homepage = 'https://github.com/faircloth-lab/phyluce'
+description = """
+phyluce is a software package for working with data generated from sequence capture of UCE 
+(ultra-conserved element) loci, as first published in [BCF2012]. Specifically, phyluce is a suite of programs to:
+1) assemble raw sequence reads from Illumina platforms into contigs
+2) determine which contigs represent UCE loci
+3) filter potentially paralagous UCE loci
+4) generate different sets of UCE loci across taxa of interest
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Biopython', '1.83'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('snakemake', '8.4.2'),
+    ('DendroPy', '4.6.1'),
+    ('bx-python', '0.10.0'),
+    ('ABySS', '2.3.7'),
+    ('BCFtools', '1.18'),
+    ('BEDTools', '2.31.0'),
+    ('BWA', '0.7.17'),
+    ('Gblocks', '0.91b', '', SYSTEM),
+    ('LASTZ', '1.04.22'),
+    ('MAFFT', '7.520', '-with-extensions'),
+    ('MUSCLE', '5.1.0'),
+    ('Pilon', '1.23', '-Java-11', SYSTEM),
+    ('RAxML-NG', '1.2.0'),
+    ('SAMtools', '1.18'),
+    ('seqtk', '1.4'),
+    ('SPAdes', '3.15.4'),
+    ('trimAl', '1.4.1'),
+    ('Velvet', '1.2.10', '-mt-kmer_191')
+]
+
+exts_list = [
+    (name, version, {
+        'source_urls': ['https://github.com/faircloth-lab/phyluce/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'patches': [
+            '%(name)s-%(version)s_fix-config-paths.patch',
+            '%(name)s-%(version)s_removal-Bio-Alphabet.patch',
+        ],
+        'checksums': [
+            {'v1.7.3.tar.gz': '931fd512730bb101266b27728576df00277858d256e1ab30d64b474588362e11'},
+            {'phyluce-1.7.3_fix-config-paths.patch':
+             '22d5467d7498a9b2b718660e9580fb41986964e122e4c3baf851a324a968ae5d'},
+            {'phyluce-1.7.3_removal-Bio-Alphabet.patch':
+             '9401f8b8052924476d2a73d8ac2672e750eadf11618c672d9679f3c99234049d'},
+        ],
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["%s --help" % x for x in [
+    "phyluce_align_extract_taxa_from_alignments",
+    "phyluce_align_extract_taxon_fasta_from_alignments",
+    "phyluce_align_filter_alignments",
+    "phyluce_align_format_concatenated_phylip_for_paml",
+    "phyluce_align_get_align_summary_data",
+    "phyluce_align_get_gblocks_trimmed_alignments_from_untrimmed",
+    "phyluce_align_get_incomplete_matrix_estimates",
+    "phyluce_align_get_informative_sites",
+    "phyluce_align_get_only_loci_with_min_taxa",
+    "phyluce_align_get_ry_recoded_alignments",
+    "phyluce_align_get_smilogram_from_alignments",
+    "phyluce_align_get_taxon_locus_counts_in_alignments",
+    "phyluce_align_get_trimal_trimmed_alignments_from_untrimmed",
+    "phyluce_align_move_align_by_conf_file",
+    "phyluce_align_randomly_sample_and_concatenate",
+    "phyluce_align_reduce_alignments_with_raxml",
+    "phyluce_align_remove_empty_taxa",
+    "phyluce_align_remove_locus_name_from_files",
+    "phyluce_align_screen_alignments_for_problems",
+    "phyluce_align_seqcap_align",
+    "phyluce_align_split_concat_nexus_to_loci",
+    "phyluce_assembly_assemblo_abyss",
+    "phyluce_assembly_assemblo_spades",
+    "phyluce_assembly_assemblo_velvet",
+    "phyluce_assembly_explode_get_fastas_file",
+    "phyluce_assembly_extract_contigs_to_barcodes",
+    "phyluce_assembly_get_bed_from_lastz",
+    "phyluce_assembly_get_fasta_lengths",
+    "phyluce_assembly_get_fastas_from_match_counts",
+    "phyluce_assembly_get_fastq_lengths",
+    "phyluce_assembly_get_match_counts",
+    "phyluce_assembly_match_contigs_to_barcodes",
+    "phyluce_genetrees_get_mean_bootrep_support",
+    "phyluce_genetrees_generate_multilocus_bootstrap_count",
+    "phyluce_genetrees_rename_tree_leaves",
+    "phyluce_genetrees_sort_multilocus_bootstraps",
+    "phyluce_genetrees_get_tree_counts",
+    "phyluce_ncbi_chunk_fasta_for_ncbi",
+    "phyluce_ncbi_prep_uce_align_files_for_ncbi",
+    "phyluce_probe_easy_lastz",
+    "phyluce_probe_get_genome_sequences_from_bed",
+    "phyluce_probe_get_locus_bed_from_lastz_files",
+    "phyluce_probe_get_multi_fasta_table",
+    "phyluce_probe_get_multi_merge_table",
+    "phyluce_probe_get_probe_bed_from_lastz_files",
+    "phyluce_probe_get_screened_loci_by_proximity",
+    "phyluce_probe_get_subsets_of_tiled_probes",
+    "phyluce_probe_get_tiled_probe_from_multiple_inputs",
+    "phyluce_probe_get_tiled_probes",
+    "phyluce_probe_query_multi_fasta_table",
+    "phyluce_probe_query_multi_merge_table",
+    "phyluce_probe_reconstruct_uce_from_probe",
+    "phyluce_probe_remove_duplicate_hits_from_probes_using_lastz",
+    "phyluce_probe_remove_overlapping_probes_given_config",
+    "phyluce_probe_run_multiple_lastzs_sqlite",
+    "phyluce_probe_slice_sequence_from_genomes",
+    "phyluce_probe_strip_masked_loci_from_set",
+    "phyluce_utilities_combine_reads",
+    "phyluce_utilities_filter_bed_by_fasta",
+    "phyluce_utilities_get_bed_from_fasta",
+    "phyluce_utilities_merge_multiple_gzip_files",
+    "phyluce_utilities_merge_next_seq_gzip_files",
+    "phyluce_utilities_replace_many_links",
+    "phyluce_utilities_unmix_fasta_reads",
+    "phyluce_workflow",
+]]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages/phyluce'}
+
+moduleclass = 'bio'

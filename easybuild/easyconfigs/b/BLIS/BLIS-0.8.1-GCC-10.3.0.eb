@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'BLIS'
+version = '0.8.1'
+
+homepage = 'https://github.com/flame/blis/'
+description = """BLIS is a portable software framework for instantiating high-performance
+BLAS-like dense linear algebra libraries."""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/flame/blis/archive/']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_enable_ppc_autodetect.patch',
+    '%(name)s-%(version)s_fix_dgemm-fpe-signalling-on-broadwell.patch',
+]
+checksums = [
+    '729694128719801e82fae7b5f2489ab73e4a467f46271beff09588c9265a697b',  # 0.8.1.tar.gz
+    # BLIS-0.8.1_enable_ppc_autodetect.patch
+    'b8a3d564a8d4f205e70241765ddfd28331c3c12355ef9c44172c9a0cab9f0111',
+    # BLIS-0.8.1_fix_dgemm-fpe-signalling-on-broadwell.patch
+    '345fa39933e9d1442d2eb1e4ed9129df3fe4aefecf4d104e5d4f25b3bca24d0d',
+]
+
+builddependencies = [
+    ('Python', '3.9.5'),
+    ('Perl', '5.32.1'),
+]
+
+configopts = '--enable-cblas --enable-threading=openmp --enable-shared CC="$CC" auto'
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/blis/cblas.h', 'include/blis/blis.h',
+              'lib/libblis.a', 'lib/libblis.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+modextrapaths = {'CPATH': 'include/blis'}
+
+moduleclass = 'numlib'

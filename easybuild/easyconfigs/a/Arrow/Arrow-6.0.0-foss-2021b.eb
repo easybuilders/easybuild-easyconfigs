@@ -1,0 +1,70 @@
+easyblock = 'CMakeMake'
+
+name = 'Arrow'
+version = '6.0.0'
+
+homepage = 'https://arrow.apache.org'
+description = """Apache Arrow (incl. PyArrow Python bindings), a cross-language development platform
+ for in-memory data."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://archive.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s']
+sources = ['apache-arrow-%(version)s.tar.gz']
+checksums = ['69d268f9e82d3ebef595ad1bdc83d4cb02b20c181946a68631f6645d7c1f7a90']
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+    ('Autotools', '20210726'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.7.6'),
+    ('pkg-config', '0.29.2'),
+]
+
+# Arrow strongly prefers included jemalloc, so not including it as a dependency
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),  # for numpy
+    ('Boost', '1.77.0'),
+    ('lz4', '1.9.3'),
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.8'),
+    ('zstd', '1.5.0'),
+    ('snappy', '1.1.9'),
+    ('RapidJSON', '1.1.0'),
+    ('RE2', '2022-02-01'),
+    ('utf8proc', '2.6.1'),
+]
+
+start_dir = 'cpp'
+
+# see https://arrow.apache.org/docs/developers/python.html
+configopts = "-DARROW_DATASET=on -DARROW_PYTHON=on -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON "
+configopts += "-DCMAKE_INSTALL_LIBDIR=lib -DPython3_ROOT_DIR=$EBROOTPYTHON "
+configopts += "-DARROW_WITH_ZLIB=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_ZSTD=ON -DARROW_WITH_LZ4=ON "
+
+# also install Python bindings
+local_install_pyarrow_cmds = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
+local_install_pyarrow_cmds += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+local_install_pyarrow_cmds += "cd %(builddir)s/*arrow-%(version)s/python && export XDG_CACHE_HOME=$TMPDIR && "
+local_install_pyarrow_cmds += "sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml && "
+local_install_pyarrow_cmds += "Python3_ROOT_DIR=$EBROOTPYTHON "
+local_install_pyarrow_cmds += "PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 "
+local_install_pyarrow_cmds += "python -m pip install --prefix %(installdir)s --no-build-isolation ."
+postinstallcmds = [local_install_pyarrow_cmds]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['lib/libarrow.a', 'lib/libarrow.%s' % SHLIB_EXT,
+              'lib/libarrow_python.a', 'lib/libarrow_python.%s' % SHLIB_EXT],
+    'dirs': ['include/arrow', 'lib/cmake/arrow', 'lib/pkgconfig', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import pyarrow'",
+    "python -c 'import pyarrow.dataset'",
+    "python -c 'import pyarrow.parquet'",
+]
+
+moduleclass = 'data'

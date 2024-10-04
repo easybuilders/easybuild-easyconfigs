@@ -1,0 +1,57 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/1
+easyblock = 'MakeCp'
+
+name = 'MotionCor3'
+version = '1.0.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/czimaginginstitute/MotionCor3'
+
+description = """Anisotropic correction of beam induced motion for cryo-electron microscopy and  
+cryo-electron tomography images.
+MotionCor3, an improved implementation of MotionCor2 with addition of CTF       
+(Contrast Transfer Function) estimation, is a multi-GPU accelerated software    
+package that enables single-pixel level correction of anisotropic beam induced  
+sample motion for cryo-electron microscopy and cryo-electron tomography images. 
+The iterative, patch-based motion detection combined with spatial and temporal  
+constraints and dose weighting provides robust and accurate correction. By      
+refining the measurement of early motion, MotionCor3 further improves correction
+on tilted samples. The efficiency achieved by multi-GPU acceleration and        
+parallelization enables correction to keep pace with automated data collection. 
+The recent addition of a very robust GPU-accelerated CTF estimation makes       
+MotionCor3 more versatile in cryoEM and cryoET processing pipeline."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_makefile.patch']
+checksums = [
+    {'v1.0.1.tar.gz': '9b1eaa43f67c6ca54c1cea6ad53ee78726a14a87a3c5d91e7820786ebe0786a3'},
+    {'MotionCor3-1.0.1_makefile.patch': 'd047c1f097eead3173a60fd3ae821ee7b285728bf8470f496021580f11875d12'},
+]
+
+github_account = 'czimaginginstitute'
+
+build_cmd = 'make exe -f makefile11 CUDAHOME=$CUDA_HOME CUDACC="%(cuda_cc_cmake)s"'
+
+builddependencies = [
+    ('binutils', '2.40')
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('LibTIFF', '4.5.0'),
+]
+
+files_to_copy = [(['%(name)s'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = ['%(name)s --help']
+
+moduleclass = 'bio'

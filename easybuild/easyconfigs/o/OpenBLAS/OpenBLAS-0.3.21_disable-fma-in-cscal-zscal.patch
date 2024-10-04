@@ -1,0 +1,68 @@
+From e7e3aa29482281edba46a27fcd452d7ed630f46a Mon Sep 17 00:00:00 2001
+From: Bart Oldeman <bartoldeman@users.noreply.github.com>
+Date: Thu, 27 Oct 2022 17:20:44 -0400
+Subject: [PATCH] x86_64: prevent GCC and Clang from generating FMAs in
+ cscal/zscal.
+
+If e.g. -march=haswell is set in CFLAGS, GCC generates FMAs by default, which
+is inconsistent with the microkernels, none of which use FMAs. These
+inconsistencies cause a few failures in the LAPACK testcases, where
+eigenvalue results with/without eigenvectors are compared.
+
+Moreover using FMAs for multiplication of complex numbers can give surprising
+results, see 22aa81f for more information.
+
+This uses the same syntax as used in 22aa81f for zarch (s390x).
+---
+ kernel/x86_64/cscal.c | 13 +++++++++++++
+ kernel/x86_64/zscal.c | 13 +++++++++++++
+ 2 files changed, 26 insertions(+)
+
+diff --git a/kernel/x86_64/cscal.c b/kernel/x86_64/cscal.c
+index dc3f688c69..6ae66d9731 100644
+--- a/kernel/x86_64/cscal.c
++++ b/kernel/x86_64/cscal.c
+@@ -25,6 +25,19 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *****************************************************************************/
+ 
++/*
++ * Avoid contraction of floating point operations, specifically fused
++ * multiply-add, because they can cause unexpected results in complex
++ * multiplication.
++ */
++#if defined(__GNUC__) && !defined(__clang__)
++#pragma GCC optimize ("fp-contract=off")
++#endif
++
++#if defined(__clang__)
++#pragma clang fp contract(off)
++#endif
++
+ #include "common.h"
+ 
+ 
+diff --git a/kernel/x86_64/zscal.c b/kernel/x86_64/zscal.c
+index 3744c98bb7..dfdb4230b6 100644
+--- a/kernel/x86_64/zscal.c
++++ b/kernel/x86_64/zscal.c
+@@ -25,6 +25,19 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *****************************************************************************/
+ 
++/*
++ * Avoid contraction of floating point operations, specifically fused
++ * multiply-add, because they can cause unexpected results in complex
++ * multiplication.
++ */
++#if defined(__GNUC__) && !defined(__clang__)
++#pragma GCC optimize ("fp-contract=off")
++#endif
++
++#if defined(__clang__)
++#pragma clang fp contract(off)
++#endif
++
+ #include "common.h"
+ 
+ 

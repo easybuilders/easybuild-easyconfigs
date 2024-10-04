@@ -1,0 +1,67 @@
+easyblock = 'PythonBundle'
+
+name = 'JupyterLab'
+version = '3.5.0'
+
+homepage = "https://jupyter.org/"
+description = """JupyterLab is the next-generation user interface for Project Jupyter offering all the familiar
+ building blocks of the classic Jupyter Notebook (notebook, terminal, text editor, file browser, rich outputs,
+ etc.) in a flexible and powerful user interface. JupyterLab will eventually replace the classic Jupyter
+ Notebook."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+builddependencies = [
+    ('binutils', '2.38'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('IPython', '8.5.0'),
+    ('jupyter-server', '1.21.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('json5', '0.9.10', {
+        'checksums': ['ad9f048c5b5a4c3802524474ce40a622fae789860a86f10cc4f7e5f9cf9b46ab'],
+    }),
+    ('notebook_shim', '0.1.0', {
+        'checksums': ['7897e47a36d92248925a2143e3596f19c60597708f7bef50d81fcd31d7263e85'],
+    }),
+    ('nbclassic', '0.4.8', {
+        'checksums': ['c74d8a500f8e058d46b576a41e5bc640711e1032cf7541dde5f73ea49497e283'],
+    }),
+    ('jupyterlab_server', '2.13.0', {
+        'checksums': ['2040298a133458aa22f287a877d6bb91ff973f6298d562264f9f7b75e92a5ace'],
+    }),
+    ('jupyterlab', version, {
+        'checksums': ['e02556c8ea1b386963c4b464e4618aee153c5416b07ab481425c817a033323a2'],
+    }),
+]
+
+sanity_check_commands = ["jupyter lab --help"]
+
+modextrapaths = {
+    'JUPYTER_PATH': 'share/jupyter',
+    'JUPYTER_CONFIG_PATH': 'etc/jupyter',
+}
+modextravars = {
+    # only one path allowed as JUPYTERLAB_DIR
+    'JUPYTERLAB_DIR': '%(installdir)s/share/jupyter/lab',
+}
+
+# keep user's configuration in their home directory
+# note: '~' is not expanded by JupyterLab
+modluafooter = """
+setenv("JUPYTERLAB_SETTINGS_DIR", pathJoin(os.getenv("HOME"), ".jupyter", "lab", "user-settings"))
+setenv("JUPYTERLAB_WORKSPACES_DIR", pathJoin(os.getenv("HOME"), ".jupyter", "lab", "workspaces"))
+"""
+modtclfooter = """
+setenv JUPYTERLAB_SETTINGS_DIR "$::env(HOME)/.jupyter/lab/user-settings"
+setenv JUPYTERLAB_WORKSPACES_DIR "$::env(HOME)/.jupyter/lab/workspaces"
+"""
+
+moduleclass = 'tools'

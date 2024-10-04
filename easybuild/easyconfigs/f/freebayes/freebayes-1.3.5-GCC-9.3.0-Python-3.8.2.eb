@@ -1,0 +1,59 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'MesonNinja'
+
+name = 'freebayes'
+version = '1.3.5'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/ekg/freebayes'
+description = """FreeBayes is a Bayesian genetic variant detector designed to find small
+ polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels (insertions and
+ deletions), MNPs (multi-nucleotide polymorphisms), and complex events (composite insertion and
+ substitution events) smaller than the length of a short-read sequencing alignment.
+"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+github_account = name
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-1.3.5_find-external-libs.patch',
+    '%(name)s-1.3.5_fix-includes.patch',
+    '%(name)s-1.3.5_install-libs-headers.patch',
+]
+checksums = [
+    'af195a8c54b742d01af5a7e1fd1781a89290d726b310216c83e78c650d7aee49',  # v1.3.5.tar.gz
+    '68b62f532fb658cbee20aa0a9d19a4f5ab942f64510753bc01eb44006bad15dc',  # freebayes-1.3.5_find-external-libs.patch
+    '4c6c74b30bf3b2f04b8a50bbdef26e74f6e2412f3efbd81512226e557c2a53d1',  # freebayes-1.3.5_fix-includes.patch
+    '9a30129ea9457cfd49234b5b4cca0b3f9ac64765f122632f8eb9a1295ee6cb13',  # freebayes-1.3.5_install-libs-headers.patch
+]
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('Meson', '0.55.1', versionsuffix),
+    ('Ninja', '1.10.0'),
+    ('pkgconfig', '1.5.1', versionsuffix),
+]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SAMtools', '1.11'),
+    ('parallel', '20200522'),
+    ('intervaltree', '0.1'),
+    ('libffi', '3.3'),
+    ('SeqLib', '1.2.0'),
+    ('vcflib', '1.0.2', versionsuffix),
+    ('VCFtools', '0.1.16'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'bin/bamleftalign', 'scripts/%(name)s-parallel'],
+    'dirs': ['bin', 'scripts'],
+}
+sanity_check_commands = ["%(name)s -h"]
+
+modextrapaths = {'PATH': ['scripts']}
+
+moduleclass = 'bio'

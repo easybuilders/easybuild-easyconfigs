@@ -1,0 +1,114 @@
+easyblock = 'MakeCp'
+
+name = 'HAL'
+version = '2.1'
+
+homepage = 'https://github.com/ComparativeGenomicsToolkit/hal'
+description = """HAL is a structure to efficiently store and index multiple genome alignments
+and ancestral reconstructions. HAL is a graph-based representation which
+provides several advantages over matrix/block-based formats such as MAF, such as
+improved scalability and the ability to perform queries with respect to an
+arbitrary reference or subtree.
+
+This package includes the HAL API and several analysis and conversion tools
+which are described below. HAL files are presently stored in either HDF5 or mmap
+format, but we note that the tools and most of the API are format-independent,
+so other databases could be implemented in the future.
+"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+local_sonLib_datetime = '20210415'
+local_sonLib_hash = '562a466e4570c93a647ffb10aa2628143b4ee9f4'
+
+sources = [
+    {
+        'source_urls': ['https://github.com/ComparativeGenomicsToolkit/hal/archive/refs/tags/'],
+        'filename': 'release-V%(version)s.tar.gz',
+        'extract_cmd': 'tar xvf %s && mv hal-release-V%(version)s hal'
+    },
+    {
+        'source_urls': ['https://github.com/ComparativeGenomicsToolkit/sonLib/archive/'],
+        'download_filename': '%s.tar.gz' % local_sonLib_hash,
+        'filename': 'sonLib-%s-%s.tar.gz' % (local_sonLib_datetime, local_sonLib_hash),
+        'extract_cmd': 'tar xvf %s && mv sonLib-' + local_sonLib_hash + ' hal/sonLib'
+    },
+]
+checksums = [
+    '540255be1af55abf390359fe034b82d7e61bdf6c3277df3cc01259cd450994e5',  # release-V2.1.tar.gz
+    # sonLib-20210415-562a466e4570c93a647ffb10aa2628143b4ee9f4.tar.gz
+    '3ef2b1dd7805b636afae104728c74e0dff2cfee3a68166836300eff4d0952109',
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('HDF5', '1.10.7'),
+    ('Sibelia', '3.0.7'),
+    ('PyYAML', '5.3.1'),
+]
+
+prebuildopts = 'pushd sonLib && make && popd && '
+buildopts = 'sonLibRootDir=$(pwd)/sonLib'
+
+files_to_copy = [
+    (['bin/*', 'sonLib/bin/*'], 'bin'),
+    (['lib/*', 'sonLib/lib/*'], 'lib'),
+    (['sonLib/src/sonLib/*'], 'lib/python%(pyshortver)s/site-packages/sonLib'),
+    (['__init__.py', 'mutations', 'randgen', 'analysis', 'extract', 'modify',
+      'phyloP', 'assemblyHub', 'extra', 'validate', 'blockViz', 'stats', 'maf', 'liftover'],
+     'lib/python%(pyshortver)s/site-packages/hal')
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'source_urls': [PYPI_SOURCE],
+}
+exts_list = [
+    ('addict', '2.2.1', {
+        'checksums': ['f22493f056032f50e4931a82444fcba8ef74c8fc994c5d06aa546a1433c2b8b0'],
+    }),
+    ('dill', '0.3.4', {
+        'source_tmpl': 'dill-%(version)s.zip',
+        'checksums': ['9f9734205146b2b353ab3fec9af0070237b6ddae78452af83d2fca84d739e675'],
+    }),
+    ('enlighten', '1.10.1', {
+        'checksums': ['3391916586364aedced5d6926482b48745e4948f822de096d32258ba238ea984'],
+    }),
+    ('websocket-client', '1.1.0', {
+        'modulename': 'websocket',
+        'checksums': ['b68e4959d704768fa20e35c9d508c8dc2bbc041fd8d267c0d7345cffe2824568'],
+    }),
+    ('blessed', '1.18.1', {
+        'checksums': ['8b09936def6bc06583db99b65636b980075733e13550cb6af262ce724a55da23'],
+    }),
+    ('prefixed', '0.3.2', {
+        'checksums': ['ca48277ba5fa8346dd4b760847da930c7b84416387c39e93affef086add2c029'],
+    }),
+    ('docker', '4.3.1', {
+        'checksums': ['bad94b8dd001a8a4af19ce4becc17f41b09f228173ffe6a4e0355389eef142f2'],
+    }),
+    ('toil', '5.3.0', {
+        'checksums': ['4ea8f703ee697c4b5ff506db545d0dbb6e4753fbfc61c4230f1eccba8f860e7c'],
+    }),
+    ('newick', '1.3.0', {
+        'checksums': ['a34010de5047481277dfad76b29f3db525d539f34d876437a861da6a24fca0c8'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/halValidate'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = [
+    "halValidate --help 2>&1 | grep 'halValidate v%(version)s'",
+    "python -c 'from sonLib.bioio import getTempFile'",
+    "python -c 'from hal.stats.halStats import getHalGenomes'"
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'bio'

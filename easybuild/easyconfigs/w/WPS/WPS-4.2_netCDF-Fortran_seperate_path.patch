@@ -1,0 +1,90 @@
+# Allow netCDF library with separate directories for C and Fortran
+# ============================================================================
+# This patch has been around in EasyBuild since 2013; it was committed by
+# @boegel then.  Adapted by @andreas-h to accomodate WPSv4 and foss toolchain
+#
+# updated for WPS v4.1 by Kenneth Hoste (HPC-UGent)
+# updated for WPS v4.2 by Åke Sandgren (HPC2N)
+
+diff -ru WPS-4.2.orig/arch/Config.pl WPS-4.2/arch/Config.pl
+--- WPS-4.2.orig/arch/Config.pl	2020-04-23 21:31:06.000000000 +0200
++++ WPS-4.2/arch/Config.pl	2021-04-14 13:11:31.470659452 +0200
+@@ -41,6 +41,7 @@
+     if(substr( $ARGV[0], 1, 8 ) eq "netcdff=")
+     {
+         $sw_netcdff_lib = substr( $ARGV[0], 9);
++        $sw_netcdff_lib =~ s/!/ /g ;
+     }
+     if(substr( $ARGV[0], 1, 6 ) eq "phdf5=")
+     {
+diff -ru WPS-4.2.orig/arch/preamble WPS-4.2/arch/preamble
+--- WPS-4.2.orig/arch/preamble	2020-04-23 21:31:06.000000000 +0200
++++ WPS-4.2/arch/preamble	2021-04-14 13:11:31.470659452 +0200
+@@ -39,7 +39,7 @@
+                         -I$(WRF_DIR)/external/io_grib1 \
+                         -I$(WRF_DIR)/external/io_int \
+                         -I$(WRF_DIR)/inc \
+-                        -I$(NETCDF)/include
++                        -I$(NETCDF)/include -I$(NETCDFF)/include
+ 
+ WRF_LIB         =       -L$(WRF_DIR)/external/io_grib1 -lio_grib1 \
+                         -L$(WRF_DIR)/external/io_grib_share -lio_grib_share \
+diff -ru WPS-4.2.orig/configure WPS-4.2/configure
+--- WPS-4.2.orig/configure	2020-04-23 21:31:06.000000000 +0200
++++ WPS-4.2/configure	2021-04-14 13:11:31.470659452 +0200
+@@ -119,9 +119,14 @@
+   echo "Will use NETCDF in dir: $NETCDF"
+   # for 3.6.2 and greater there might be a second library, libnetcdff.a .  Check for this and use
+   # if available
+-  NETCDFF=" "
+-  if [ -f "$NETCDF/lib/libnetcdff.a" ] ; then
+-    NETCDFF="-lnetcdff"
++  USENETCDFF=" "
++  # for netCDF 4.2 and greater, the Fortran library is a seperate install
++  if [ -z "$NETCDFF" ]
++  then
++    NETCDFF=$NETCDF
++  fi
++  if [ -f "$NETCDFF/lib/libnetcdff.a" ] ; then
++    USENETCDFF="-L$NETCDFF/lib!-lnetcdff"
+   fi
+ else
+   echo "Will configure for use without NetCDF"
+@@ -190,7 +195,7 @@
+ fi
+ 
+ # Found perl, so proceed with configuration
+-perl arch/Config.pl -perl=$PERL -netcdf=$NETCDF -netcdff=$NETCDFF -os=$os -mach=$mach -wrfdir=$wrf_dir
++perl arch/Config.pl -perl=$PERL -netcdf=$NETCDF -netcdff=$USENETCDFF -os=$os -mach=$mach -wrfdir=$wrf_dir
+ 
+ 
+ #Checking cross-compiling capability for some particular environment 
+@@ -356,9 +361,9 @@
+         end program
+ EOF
+     FFLAGS=`grep ^FFLAGS configure.wps | cut -d"=" -f2-`
+-    cp $NETCDF/include/netcdf.inc .
++    cp $NETCDFF/include/netcdf.inc .
+     FC=`grep ^SFC configure.wps | cut -d"=" -f2-`
+-    $FC ${FFLAGS} fort_netcdf.f -o fort_netcdf -L${NETCDF}/lib $NETCDFF -lnetcdf > /dev/null 2>&1 
++    $FC ${FFLAGS} fort_netcdf.f -o fort_netcdf -L${NETCDF}/lib -lnetcdf $USENETCDFF > /dev/null 2>&1 
+     if [ -f "fort_netcdf" ] ; then
+       ./fort_netcdf > /dev/null 2>&1
+       if [ $? = 0 ]; then
+diff -ru WPS-4.2.orig/util/src/Makefile WPS-4.2/util/src/Makefile
+--- WPS-4.2.orig/util/src/Makefile	2020-04-23 21:31:06.000000000 +0200
++++ WPS-4.2/util/src/Makefile	2021-04-14 13:11:31.470659452 +0200
+@@ -41,11 +41,11 @@
+ 		write_met_module.o misc_definitions_module.o met_data_module.o
+ 	$(SFC) $(LDFLAGS) -o $@ elev_angle.o cio.o module_debug.o gridinfo_module.o \
+ 		write_met_module.o misc_definitions_module.o met_data_module.o \
+-		-L$(NETCDF)/lib -I$(NETCDF)/include -lnetcdf
++		-L$(NETCDFF)/lib -I$(NETCDFF)/include -lnetcdff
+ 
+ elev_angle.o: elev_angle.F cio.o module_debug.o gridinfo_module.o \
+ 		write_met_module.o misc_definitions_module.o
+-	$(SFC) -c elev_angle.F -I$(NETCDF)/include
++	$(SFC) -c elev_angle.F -I$(NETCDFF)/include
+ 
+ calc_ecmwf_p.exe: calc_ecmwf_p.o cio.o module_debug.o module_stringutil.o gridinfo_module.o read_met_module.o \
+ 		write_met_module.o module_date_pack.o misc_definitions_module.o met_data_module.o constants_module.o

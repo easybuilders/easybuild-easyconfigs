@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'BLIS'
+version = '0.9.0'
+
+homepage = 'https://github.com/flame/blis/'
+description = """BLIS is a portable software framework for instantiating high-performance
+BLAS-like dense linear algebra libraries."""
+
+toolchain = {'name': 'intel-compilers', 'version': '2022.1.0'}
+toolchainopts = {'oneapi': True}
+
+source_urls = ['https://github.com/flame/blis/archive/']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_blastest-enable-complex-return-intel.patch',
+    '%(name)s-%(version)s_ifx-complex-return-intel.patch',
+]
+checksums = [
+    '1135f664be7355427b91025075562805cdc6cc730d3173f83533b2c5dcc2f308',  # 0.9.0.tar.gz
+    # BLIS-0.9.0_blastest-enable-complex-return-intel.patch
+    '0f1966b340d1f24cf02070f00f72f232b4cbfcd242ee9ce8c5f09f7220397cb4',
+    '097a2647b5c66386155cf6a33a2a617b876bd0f9096a2912359eb0897a29d2d5',  # BLIS-0.9.0_ifx-complex-return-intel.patch
+]
+
+builddependencies = [
+    ('Python', '3.10.4', '-bare'),
+    ('Perl', '5.34.1'),
+]
+
+configopts = '--enable-cblas --enable-threading=openmp --enable-shared CC="$CC" auto'
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/blis/cblas.h', 'include/blis/blis.h',
+              'lib/libblis.a', 'lib/libblis.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+modextrapaths = {'CPATH': 'include/blis'}
+
+moduleclass = 'numlib'

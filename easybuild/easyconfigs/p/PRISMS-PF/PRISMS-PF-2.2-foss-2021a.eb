@@ -1,0 +1,71 @@
+easyblock = 'Bundle'
+
+name = 'PRISMS-PF'
+version = '2.2'
+
+homepage = 'https://prisms-center.github.io/phaseField'
+description = """PRISMS-PF is a powerful, massively parallel finite element code for conducting phase field and
+ other related simulations of microstructural evolution."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+builddependencies = [('CMake', '3.20.1')]
+
+dependencies = [
+    ('Boost', '1.76.0'),
+    ('GSL', '2.7'),
+    ('HDF5', '1.10.7'),
+    ('METIS', '5.1.0'),
+    ('netCDF', '4.8.0'),
+    ('p4est', '2.8'),
+    ('PETSc', '3.15.1'),
+    ('zlib', '1.2.11'),
+]
+
+local_dealii_configopts = "-DDEAL_II_WITH_LAPACK=ON -DDEAL_II_WITH_MPI=ON "
+local_dealii_configopts += "-DDEAL_II_WITH_BOOST=ON -DBOOST_DIR=$EBROOTBOOST "
+local_dealii_configopts += "-DDEAL_II_WITH_GSL=ON -DGSL_DIR=$EBROOTGSL "
+local_dealii_configopts += "-DDEAL_II_WITH_HDF5=ON -DHDF5_DIR=$EBROOTHDF5 "
+local_dealii_configopts += "-DDEAL_II_WITH_METIS=ON -DMETIS_DIR=$EBROOTMETIS "
+local_dealii_configopts += "-DDEAL_II_WITH_P4EST=ON -DP4EST_DIR=$EBROOTP4EST "
+local_dealii_configopts += "-DDEAL_II_WITH_PETSC=ON -DPETSC_DIR=$EBROOTPETSC "
+local_dealii_configopts += "-DDEAL_II_WITH_ZLIB=ON -DZLIB_DIR=$EBROOTZLIB "
+
+components = [
+    # PRISMS-PF v2.2 is not compatible yet with deal.II v9.3.x,
+    # so include deal.II v9.2.0 as bundle component (rather than using it as a dependency)
+    ('deal.II', '9.2.0', {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/dealii/dealii/releases/download/v%(version)s/'],
+        'sources': ['dealii-%(version)s.tar.gz'],
+        'patches': ['deal.II-9.2.0_fix-boost-include.patch'],
+        'checksums': [
+            'd05a82fb40f1f1e24407451814b5a6004e39366a44c81208b1ae9d65f3efa43a',  # dealii-9.2.0.tar.gz
+            '3eb1a25123ea2c72835a227a0174c2d0dbb6350793a01375757f06f72e77811a',  # deal.II-9.2.0_fix-boost-include.patch
+        ],
+        'start_dir': 'dealii-%(version)s',
+        'preconfigopts': 'export LDFLAGS="$LDFLAGS $CFLAGS" && ',
+        'configopts': local_dealii_configopts,
+    }),
+    (name, version, {
+        'easyblock': 'CMakeMakeCp',
+        'source_urls': ['https://github.com/prisms-center/phaseField/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['17214a1b04b9e4ae031663831ce20fb30f1db60b0890fe2055d52852798d9ae9'],
+        'start_dir': 'phaseField-%(version)s',
+        'configopts': "-DCMAKE_PREFIX_PATH=$EBROOTDEALII",
+        'buildopts': 'release',
+        'files_to_copy': [
+            'applications',
+            (['include/*'], 'include'),
+            (['libprisms_pf*.a'], 'lib'),
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libdeal_II.%s' % SHLIB_EXT, 'lib/libprisms_pf.a', 'lib/libprisms_pf_debug.a'],
+    'dirs': ['applications', 'include/deal.II', 'lib/cmake', 'lib/pkgconfig', 'share/deal.II'],
+}
+
+moduleclass = 'phys'

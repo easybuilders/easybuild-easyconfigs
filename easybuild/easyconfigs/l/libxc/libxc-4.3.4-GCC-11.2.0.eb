@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'libxc'
+version = '4.3.4'
+
+homepage = 'https://libxc.gitlab.io'
+description = """Libxc is a library of exchange-correlation functionals for density-functional theory.
+ The aim is to provide a portable, well tested and reliable set of exchange and correlation functionals."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+source_urls = ['https://gitlab.com/libxc/libxc/-/archive/%(version)s/']
+sources = [SOURCE_TAR_GZ]
+patches = [
+    'libxc-%(version)s_lm-fix.patch',
+    'libxc-%(version)s_fix-CMakeLists.patch',
+    'libxc-%(version)s_fix-timeout.patch',
+]
+checksums = [
+    ('a8ee37ddc5079339854bd313272856c9d41a27802472ee9ae44b58ee9a298337',
+     '83aba38dfa03f34cc74f84c14c83bf501a43493c818c797e2d0682647569b147'),  # libxc-4.3.4.tar.gz
+    'f2cae17533d3527e11cfec958a7f253872f7c5fcd104c3cffc02382be0ccfb9c',  # libxc-4.3.4_lm-fix.patch
+    '5a5e7d69729326e0d44e60b554ba6d8650a28958ec54b27a98757dc78a040946',  # libxc-4.3.4_fix-CMakeLists.patch
+    'd44d4a35ae22542c3086e57638e0e2b6b1ad8e98d0898036972a0248cf8778e8',  # libxc-4.3.4_fix-timeout.patch
+]
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+    ('Perl', '5.34.0'),
+]
+
+separate_build_dir = True
+
+parallel = 1
+
+local_common_configopts = "-DENABLE_FORTRAN=ON -DENABLE_FORTRAN03=ON -DENABLE_XHOST=OFF"
+
+# perform iterative build to get both static and shared libraries
+configopts = [
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
+]
+
+# make sure that built libraries (libxc*.so*) in build directory are picked when running tests
+# this is required when RPATH linking is used
+pretestopts = "export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj:$LD_LIBRARY_PATH && "
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/xc-info', 'bin/xc-threshold'] +
+             ['lib/libxc%s.%s' % (x, y) for x in ['', 'f03', 'f90'] for y in ['a', SHLIB_EXT]],
+    'dirs': ['include', 'lib/pkgconfig', 'share/cmake/Libxc'],
+}
+
+moduleclass = 'chem'

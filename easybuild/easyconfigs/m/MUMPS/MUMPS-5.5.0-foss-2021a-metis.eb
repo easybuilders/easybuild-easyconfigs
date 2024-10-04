@@ -1,0 +1,35 @@
+name = 'MUMPS'
+version = '5.5.0'
+versionsuffix = '-metis'
+
+homepage = 'https://graal.ens-lyon.fr/MUMPS/'
+description = "A parallel sparse direct solver"
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://graal.ens-lyon.fr/MUMPS/']
+sources = ['%(name)s_%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_shared-pord.patch',    # builds the shared libs of PORD
+    '%(name)s-%(version)s_shared-mumps.patch',   # builds shared libs of MUMPS
+]
+checksums = [
+    'e54d17c5e42a36c40607a03279e0704d239d71d38503aab68ef3bfe0a9a79c13',  # MUMPS_5.5.0.tar.gz
+    'a21b5c84125dceaf015a54d6d1dea61cb0c93b24130ba5a7d5a2cdf83de5f197',  # MUMPS-5.5.0_shared-pord.patch
+    '7c597d2696dbe48c0a964e332af7e86b2c98daf643ba588d6bd5f2f4864ad015',  # MUMPS-5.5.0_shared-mumps.patch
+]
+
+dependencies = [
+    ('SCOTCH', '6.1.0'),
+    ('METIS', '5.1.0'),
+]
+
+parallel = 1
+
+# fix 'Type mismatch between actual argument' errors with GCC 10.x
+prebuildopts = 'export FFLAGS="$FFLAGS -fallow-argument-mismatch" && '
+
+buildopts = 'all SONAME_VERSION="%(version)s"'
+
+moduleclass = 'math'

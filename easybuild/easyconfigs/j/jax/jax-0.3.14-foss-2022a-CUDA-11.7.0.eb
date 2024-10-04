@@ -1,0 +1,126 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+# Updated by: Alex Domingo (Vrije Universiteit Brussel)
+easyblock = 'PythonBundle'
+
+name = 'jax'
+version = '0.3.14'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pypi.python.org/pypi/jax'
+description = """Composable transformations of Python+NumPy programs:
+differentiate, vectorize, JIT to GPU/TPU, and more"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('Bazel', '5.1.1'),
+    ('pytest-xdist', '2.5.0'),
+    # git 2.x required to fetch repository 'io_bazel_rules_docker'
+    ('git', '2.36.0', '-nodocs'),
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('cuDNN', '8.4.1.50', versionsuffix, SYSTEM),
+    ('NCCL', '2.12.12', versionsuffix),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('flatbuffers-python', '2.0'),
+]
+
+# downloading TensorFlow tarball to avoid that Bazel downloads it during the build
+# note: this *must* be the exact same commit as used in jaxlib-*/WORKSPACE
+local_tf_commit = 'd250676d7776cfbca38e8690b75e1376afecf58d'
+local_tf_dir = 'tensorflow-%s' % local_tf_commit
+local_tf_builddir = '%(builddir)s/' + local_tf_dir
+
+# replace remote TensorFlow repository with the local one from EB
+local_jax_prebuildopts = "sed -i -f jaxlib_local-tensorflow-repo.sed WORKSPACE && "
+local_jax_prebuildopts += "sed -i 's|EB_TF_REPOPATH|%s|' WORKSPACE && " % local_tf_builddir
+
+use_pip = True
+
+default_easyblock = 'PythonPackage'
+default_component_specs = {
+    'sources': [SOURCE_TAR_GZ],
+    'source_urls': [PYPI_SOURCE],
+    'start_dir': '%(name)s-%(version)s',
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'download_dep_fail': True,
+}
+
+components = [
+    ('absl-py', '1.1.0', {
+        'options': {'modulename': 'absl'},
+        'checksums': ['3aa39f898329c2156ff525dfa69ce709e42d77aab18bf4917719d6f260aa6a08'],
+    }),
+    ('jaxlib', '0.3.14', {
+        'sources': [
+            '%(name)s-v%(version)s.tar.gz',
+            {
+                'download_filename': '%s.tar.gz' % local_tf_commit,
+                'filename': 'tensorflow-%s.tar.gz' % local_tf_commit,
+            }
+        ],
+        'source_urls': [
+            'https://github.com/google/jax/archive/',
+            'https://github.com/tensorflow/tensorflow/archive/'
+        ],
+        'patches': [
+            ('jaxlib_local-tensorflow-repo.sed', '.'),
+            'jaxlib-0.1.70_add-bazel-args-to-shutdown.patch',
+            ('TensorFlow-2.7.0_cuda-noncanonical-include-paths.patch', '../' + local_tf_dir),
+        ],
+        'checksums': [
+            # jaxlib-v0.3.14.tar.gz
+            '6d6b660cb915b3fbf151dc67a471623e5f83b6a66493b9e438273d290a43b40f',
+            # tensorflow-d250676d7776cfbca38e8690b75e1376afecf58d.tar.gz
+            'a99890443df024e52d9c7b075e9916250c6cc6b778d62c384b7dcd1903d8f4f1',
+            # jaxlib_local-tensorflow-repo.sed
+            'abb5c3b97f4e317bce9f22ed3eeea3b9715365818d8b50720d937e2d41d5c4e5',
+            # jaxlib-0.1.70_add-bazel-args-to-shutdown.patch
+            'c0ea6abd7827d3c37bdd60c30c7b0613fc86b91274c6a1a4cf13a3c7f9ce7631',
+            # TensorFlow-2.7.0_cuda-noncanonical-include-paths.patch
+            '0a759010c253d49755955cd5f028e75de4a4c447dcc8f5a0d9f47cce6881a9db',
+        ],
+        'start_dir': 'jax-jaxlib-v%(version)s',
+        'prebuildopts': local_jax_prebuildopts,
+    }),
+]
+
+exts_list = [
+    ('opt_einsum', '3.3.0', {
+        'checksums': ['59f6475f77bbc37dcf7cd748519c0ec60722e91e63ca114e68821c0c54a46549'],
+    }),
+    ('etils', '0.6.0', {
+        'checksums': ['6677241051835d0db11c4947bcad938f57b51ea102290624f892f1e4e51b70e5'],
+    }),
+    (name, version, {
+        'source_tmpl': '%(name)s-v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/google/jax/archive/'],
+        'patches': [
+            'jax-0.3.9_relax-test-tolerance.patch',
+            'jax-0.3.14_relax-test-tolerances.patch',
+        ],
+        'checksums': [
+            '225624375094d2067bc3af5abe0a73c6b530916edc1422c30a451d3f3e1b5a82',  # jax-v0.3.14.tar.gz
+            '3da3c8b4d9ff3449b51a4f39d6bbadd348ea3bd4ca493a6f1292743f86fa7b3d',  # jax-0.3.9_relax-test-tolerance.patch
+            # jax-0.3.14_relax-test-tolerances.patch
+            '387e98a89ca03ca898a1925d7c2d57d0568f6a72b0cb516469903dddd9424689',
+        ],
+        # deliberately not testing in parallel, as that results in (additional) failing tests;
+        # use XLA_PYTHON_CLIENT_ALLOCATOR=platform to allocate and deallocate GPU memory during testing,
+        # see https://github.com/google/jax/issues/7323 and
+        # https://github.com/google/jax/blob/main/docs/gpu_memory_allocation.rst;
+        # use CUDA_VISIBLE_DEVICES=0 to avoid failing tests on systems with multiple GPUs;
+        # use NVIDIA_TF32_OVERRIDE=0 to avoid lossing numerical precision by disabling TF32 Tensor Cores;
+        'runtest': "NVIDIA_TF32_OVERRIDE=0 CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_ALLOCATOR=platform "
+                   "JAX_ENABLE_X64=true pytest -vv tests",
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'tools'

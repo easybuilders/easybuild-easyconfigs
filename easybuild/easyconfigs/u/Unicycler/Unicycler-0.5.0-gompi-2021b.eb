@@ -1,0 +1,44 @@
+easyblock = 'PythonPackage'
+
+name = 'Unicycler'
+version = '0.5.0'
+
+homepage = 'https://github.com/rrwick/Unicycler'
+description = """ Unicycler is an assembly pipeline for bacterial genomes. It can assemble Illumina-only read sets
+ where it functions as a SPAdes-optimiser. It can also assembly long-read-only sets (PacBio or Nanopore)
+ where it runs a miniasm+Racon pipeline. """
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+
+github_account = 'rrwick'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_available-cpus.patch']
+checksums = [
+    {'v0.5.0.tar.gz': '84a8709c9f2e624225410af702d779ffb0cb06f7c22c20e1f01b989945e08a47'},
+    {'Unicycler-0.5.0_available-cpus.patch': '4c99e889826924b375e07f264b8a8a875a094d63127d5b39c3ebfaab267ce235'},
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SPAdes', '3.15.3'),
+    ('Racon', '1.5.0'),
+    ('BLAST+', '2.12.0'),
+]
+
+download_dep_fail = True
+use_pip = True
+
+_test_cmd = 'unicycler -t %(parallel)s -1 short_reads_1.fastq.gz -2 short_reads_2.fastq.gz -o outdir'
+postinstallcmds = [
+    ' '.join([
+        "cd %(builddir)s/%(name)s-%(version)s/sample_data &&",
+        "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH",
+        "PATH=%(installdir)s/bin:$PATH",
+        _test_cmd,
+    ]),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

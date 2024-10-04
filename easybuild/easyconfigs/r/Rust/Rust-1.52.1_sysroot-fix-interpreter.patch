@@ -1,0 +1,30 @@
+Use patchelf to fix interpreter of binaries that are used during Rust bootstrap procedure
+when EasyBuild is configured to build in an alternate sysroot
+
+This fixes problems like due to a clash with the interpreter from the host, and a more recent libc.so.6 that's picked up
+from the alternate sysroot:
+error: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.32' not found (required by /tmp/easybuild/build/Rust/1.52.1/GCCcore-10.3.0/rustc-1.52.1-src/build/bootstrap/debug/deps/libproc_macro_error_attr-fbfef320d848b049.so)
+
+author: Kenneth Hoste (HPC-UGent)
+
+--- rustc-1.42.0-src/src/bootstrap/bootstrap.py.orig    2020-03-09 22:11:17.000000000 +0000
++++ rustc-1.42.0-src/src/bootstrap/bootstrap.py 2021-12-16 10:34:25.100100855 +0000
+@@ -446,6 +446,18 @@
+         if ostype != "Linux":
+             return
+
++        sysroot = os.getenv("EASYBUILD_SYSROOT")
++        if sysroot and not fname.endswith(".so"):
++            # determine patch to interpreter in host via output produced by 'file -b /bin/bash'
++            readelf_out = subprocess.check_output(['readelf', '-l', '/bin/bash']).decode('ascii', 'ignore').strip()
++            regex = re.compile('.*program interpreter: ([^\]]+)', re.M)
++            res = regex.search(readelf_out)
++            interpreter_path = os.path.join(sysroot, res.group(1).lstrip('/'))
++            if not os.path.exists(interpreter_path):
++                raise Exception("Derived path to interpreter does not exist: %s" % interpreter_path)
++            cmd = ["patchelf", "--set-interpreter", interpreter_path, fname]
++            run(cmd, verbose=True)
++
+         if not os.path.exists("/etc/NIXOS"):
+             return
+         if os.path.exists("/lib"):
