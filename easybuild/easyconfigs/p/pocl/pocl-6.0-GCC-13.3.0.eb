@@ -1,0 +1,48 @@
+# https://github.com/pocl/pocl/issues/1219
+# "PoCL 3.1 supports LLVM only up to 15", so need 4.0 for working with Clang 16
+easyblock = 'CMakeNinja'
+
+name = 'pocl'
+version = '6.0'
+
+homepage = 'http://portablecl.org'
+description = """PoCL is a portable open source (MIT-licensed) implementation 
+of the OpenCL standard (1.2 with some 2.0 features supported)."""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/pocl/pocl/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = []
+checksums = [
+    'de9710223fc1855f833dbbf42ea2681e06aa8ec0464f0201104dc80a74dfd1f2',  # v6.0.tar.gz
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Ninja', '1.12.1'),
+    ('pkgconf', '2.2.0'),
+]
+
+dependencies = [
+    ('Clang', '18.1.8'),
+    ('hwloc', '2.10.0'),
+    ('libtool', '2.4.7'),
+    ('libxml2', '2.12.7'),
+]
+
+separate_build_dir = True
+
+# disable attempt to find an ICD loader, always build libOpenCL.so
+configopts = "-DENABLE_ICD=0 -DINSTALL_OPENCL_HEADERS=1 "
+# make sure we use the easybuild Clang
+configopts += "-DWITH_LLVM_CONFIG=$EBROOTCLANG/bin/llvm-config -DSTATIC_LLVM=ON "
+# avoid host CPU auto-detection (which may fail on recent CPUs)
+configopts += "-DLLC_HOST_CPU=native "
+
+sanity_check_paths = {
+    'files': ['bin/poclcc', 'lib64/libOpenCL.%s' % SHLIB_EXT],
+    'dirs': ['include/CL', 'lib64/pkgconfig'],
+}
+
+moduleclass = 'lib'
