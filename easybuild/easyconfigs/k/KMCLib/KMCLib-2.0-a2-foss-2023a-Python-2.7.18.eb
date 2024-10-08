@@ -16,12 +16,12 @@ checksums = ['796620a67ad010df4b11734f703151c17441f82cef026f3d56386a34056d0213']
 builddependencies = [
     ('binutils', '2.40'),
     ('CMake', '3.26.3'),
+    ('SWIG', '4.1.1'),
 ]
 
 dependencies = [
     ('Python', '2.7.18'),
     ('numpy', '1.16.6', versionsuffix),
-    ('SWIG', '4.1.1'),
 ]
 
 start_dir = 'c++'
@@ -31,10 +31,13 @@ preconfigopts += 'make CC="$CC" CXX="$CXX" CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS"
 
 prebuildopts = 'export CPATH=$EBROOTPYTHON/include/python%(pyshortver)s:$CPATH && '
 
-postinstallcmds = [
-    'cp -r "%(builddir)s/%(name)s-%(version)s/python/src/KMCLib" "%(installdir)s"',
-    'cp -r "%(builddir)s/../python/src/KMCLib/Backend/"* "%(installdir)s/KMCLib/Backend/"',
-]
+buildopts = ' && cd "%(builddir)s" && '
+buildopts += 'cp -r "../python/src/KMCLib/Backend/"* "%(name)s-%(version)s/python/src/KMCLib/Backend/"'
+
+test_cmd = 'export PYTHONPATH="%(builddir)s/%(name)s-%(version)s/python/src:$PYTHONPATH" && '
+test_cmd += 'python "%(builddir)s/%(name)s-%(version)s/python/unittest/utest.py"'
+
+postinstallcmds = ['cp -r "%(builddir)s/%(name)s-%(version)s/python/src/KMCLib" "%(installdir)s"']
 
 modextrapaths = {'PYTHONPATH': ''}
 
@@ -43,9 +46,6 @@ sanity_check_paths = {
     'dirs': ['KMCLib/Backend'],
 }
 
-sanity_check_commands = [
-    "python -c 'from KMCLib import *'",
-    'python %(builddir)s/%(name)s-%(version)s/python/unittest/utest.py'
-]
+sanity_check_commands = ["python -c 'from KMCLib import *'"]
 
 moduleclass = 'math'
