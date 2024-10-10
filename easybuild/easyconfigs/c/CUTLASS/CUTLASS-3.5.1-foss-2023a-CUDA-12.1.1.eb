@@ -1,7 +1,7 @@
 easyblock = 'CMakeMake'
 
 name = 'CUTLASS'
-version = '3.5.0'
+version = '3.5.1'
 versionsuffix = '-CUDA-%(cudaver)s'
 
 homepage = 'https://github.com/NVIDIA/cutlass'
@@ -21,8 +21,13 @@ toolchain = {'name': 'foss', 'version': '2023a'}
 
 github_account = 'NVIDIA'
 source_urls = [GITHUB_LOWER_SOURCE]
+patches = ['CUTLASS-3.5.1_install_tools.patch']
+
 sources = ['v%(version)s.tar.gz']
-checksums = ['ef6af8526e3ad04f9827f35ee57eec555d09447f70a0ad0cf684a2e426ccbcb6']
+checksums = [
+    {'v%(version)s.tar.gz': '20b7247cda2d257cbf8ba59ba3ca40a9211c4da61a9c9913e32b33a2c5883a36'},
+    {'CUTLASS-3.5.1_install_tools.patch': '18fa5361b15848d98435b8b08bd921130718b963ca4ad47fa0db96fbe815e509'},
+]
 
 builddependencies = [
     ('CMake', '3.26.3'),
@@ -38,12 +43,13 @@ _copts = [
     '-DCUTLASS_NVCC_ARCHS="%(cuda_cc_cmake)s"',
     '-DCUTLASS_ENABLE_CUBLAS=1',
     '-DCUTLASS_ENABLE_CUDNN=1',
+    '-DCUTLASS_ENABLE_TOOLS=1',
 ]
 configopts = ' '.join(_copts)
 
 sanity_check_paths = {
     'files': ['include/cutlass/cutlass.h', 'lib/libcutlass.%s' % SHLIB_EXT],
-    'dirs': ['lib/cmake'],
+    'dirs': ['lib/cmake', 'tools/util/include'],
 }
 
 moduleclass = 'lib'

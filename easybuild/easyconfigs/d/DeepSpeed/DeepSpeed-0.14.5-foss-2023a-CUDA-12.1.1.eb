@@ -20,7 +20,7 @@ dependencies = [
     ('Python', '3.11.3'),
     ('CUDA', '12.1.1', '', SYSTEM),
     ('NCCL', '2.18.3', versionsuffix),
-    ('CUTLASS', '3.5.0', versionsuffix),
+    ('CUTLASS', '3.5.1', versionsuffix),
     ('PyTorch', '2.1.2', versionsuffix),
     ('CuPy', '13.0.0', versionsuffix),
     ('Triton', '2.1.0', versionsuffix),
@@ -50,19 +50,19 @@ exts_list = [
         'checksums': ['9639e3d19f90e754f985ed444542ed2f8a049f3c0488fcb6efe150f30922cf74'],
     }),
     (name, version, {
-        'ds_build_opts_to_skip': [
+        'ds_build_ops_to_skip': [
             # DS_BUILD_<OPT>=0 http://www.deepspeed.ai/tutorials/advanced-install/#pre-install-deepspeed-ops
-            'SPARSE_ATTN',  # requires PyTorch<2.0, triton==1.0.0
-            'EVOFORMER_ATTN',  # requires PyTorch<2.0, triton==1.0.0
+            'SPARSE_ATTN',  # requires PyTorch<2.0
+            'FP_QUANTIZER',  # Untested triton version (2.1.0), only 2.3.0 and 2.3.1 are known to be compatible
             'CUTLASS_OPS',  # requires dskernels
             'RAGGED_DEVICE_OPS',  # requires dskernels
-
         ],
         'installopts': '--global-option="build_ext" --global-option="-j%(parallel)s"',
         'patches': [
             'DeepSpeed-0.14.2_no-ninja-dep.patch',
             'DeepSpeed-0.14.5_pic-compile.patch',
             'DeepSpeed-0.14.5_pdsh-env-vars.patch',
+            'DeepSpeed-0.14.5_use-eb-cutlass.patch',
         ],
         'runtest': (
             'PATH="$PATH:$PWD/bin"'  # deepspeed cli used in a lot of tests
@@ -81,6 +81,8 @@ exts_list = [
             {'DeepSpeed-0.14.5_pic-compile.patch': '7d250f6bf57d006cab01a8763803b026f0d9029634557746c2a759893ab279b3'},
             {'DeepSpeed-0.14.5_pdsh-env-vars.patch':
              '02f053d8de17e4e607b223e836658d8223cb26a3a7d8c9135e67b69aaa7f83a9'},
+            {'DeepSpeed-0.14.5_use-eb-cutlass.patch':
+             '43675f7c84fd0b0cea1050a4419020b377de414fc7f83d69b8010ab368964d8d'},
         ],
     }),
 ]

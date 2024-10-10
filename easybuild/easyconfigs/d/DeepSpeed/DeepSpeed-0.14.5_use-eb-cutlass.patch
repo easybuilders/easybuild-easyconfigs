@@ -1,0 +1,55 @@
+From 27a64a22d6f84585ce9685e72ed9000f569ba941 Mon Sep 17 00:00:00 2001
+From: Viktor Rehnberg <viktor.rehnberg@gmail.com>
+Date: Thu, 10 Oct 2024 05:57:38 +0000
+Subject: [PATCH] Use EB env vars to search for CUTLASS
+
+Instead of needing to set CUTLASS_PATH to the cutlass source directory,
+use EBROOTCUTLASS to find the installation directory.
+---
+ op_builder/evoformer_attn.py | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/op_builder/evoformer_attn.py b/op_builder/evoformer_attn.py
+index af3aa742..5545b1aa 100644
+--- a/op_builder/evoformer_attn.py
++++ b/op_builder/evoformer_attn.py
+@@ -5,6 +5,7 @@
+ 
+ from .builder import CUDAOpBuilder, installed_cuda_version
+ import os
++from packaging.version import Version
+ 
+ 
+ class EvoformerAttnBuilder(CUDAOpBuilder):
+@@ -14,7 +15,8 @@ class EvoformerAttnBuilder(CUDAOpBuilder):
+     def __init__(self, name=None):
+         name = self.NAME if name is None else name
+         super().__init__(name=name)
+-        self.cutlass_path = os.environ.get('CUTLASS_PATH')
++        self.cutlass_path = os.environ.get('EBROOTCUTLASS')
++        self.cutlass_version = os.environ.get('EBVERSIONCUTLASS')
+ 
+     def absolute_name(self):
+         return f'deepspeed.ops.{self.NAME}_op'
+@@ -50,13 +52,12 @@ class EvoformerAttnBuilder(CUDAOpBuilder):
+             return False
+         if self.cutlass_path is None:
+             if verbose:
+-                self.warning("Please specify the CUTLASS repo directory as environment variable $CUTLASS_PATH")
++                self.warning("EBROOTCUTLASS not set, please load CUTLASS module.")
++            return False
++        if Version(self.cutlass_version) < Version('3.1.0'):
++            if verbose:
++                self.warning(f"Please use CUTLASS version >= 3.1.0, detected {self.cutlass_version}")
+             return False
+-        with open(f'{self.cutlass_path}/CHANGELOG.md', 'r') as f:
+-            if '3.1.0' not in f.read():
+-                if verbose:
+-                    self.warning("Please use CUTLASS version >= 3.1.0")
+-                return False
+         cuda_okay = True
+         if not self.is_rocm_pytorch() and torch.cuda.is_available():  #ignore-cuda
+             sys_cuda_major, _ = installed_cuda_version()
+-- 
+2.39.3
+
