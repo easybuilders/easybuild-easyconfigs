@@ -1,0 +1,40 @@
+Author: Denis Kristak (Inuits)
+Manually setting Python executable, as the CMake module does not seem to be able to find the correct one automatically.
+diff -ruN Levenshtein-0.22.0_orig/CMakeLists.txt Levenshtein-0.22.0/CMakeLists.txt
+--- Levenshtein-0.22.0_orig/CMakeLists.txt	2023-09-26 10:38:23.000000000 +0100
++++ Levenshtein-0.22.0/CMakeLists.txt	2023-10-09 14:20:30.887939047 +0100
+@@ -18,16 +18,18 @@
+     add_compile_options(-Wall -Wextra -pedantic)
+ endif()
+ 
+-if(CMAKE_VERSION VERSION_LESS 3.18)
+-    find_package(Python COMPONENTS Interpreter Development REQUIRED)
+-else()
+-    set(Python_ARTIFACTS_INTERACTIVE TRUE)
+-    find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+-endif()
++set(Python3_EXECUTABLE "$ENV{EBROOTPYTHON}/bin")
++set(Python3_INCLUDE_DIR "$ENV{EBROOTPYTHON}/include/python3.10")
++set(Python3_LIBRARY "$ENV{EBROOTPYTHON}/lib")
++message(STATUS "Python3_EXECUTABLE value: ${Python3_EXECUTABLE}")
++message(STATUS "Python3_INCLUDE_DIR value: ${Python3_INCLUDE_DIR}")
++message(STATUS "Python3_LIBRARY value: ${Python3_LIBRARY}")
++
++find_package(Python COMPONENTS Interpreter Development REQUIRED)
+ 
+ if(CMAKE_VERSION VERSION_LESS 3.17)
+     execute_process(
+-        COMMAND "${Python_EXECUTABLE}" -c
++        COMMAND "${Python3_EXECUTABLE}" -c
+                 "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX').split('.')[1])"
+         OUTPUT_VARIABLE Python_SOABI
+         OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT)
+@@ -35,7 +37,7 @@
+ elseif("${Python_INTERPRETER_ID}" STREQUAL "PyPy")
+     message(STATUS "PyPy SOABI: ${Python_SOABI}")
+     execute_process(
+-        COMMAND "${Python_EXECUTABLE}" -c
++        COMMAND "${Python3_EXECUTABLE}" -c
+                 "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX').split('.')[1])"
+         OUTPUT_VARIABLE Python_SOABI
+         OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT)
