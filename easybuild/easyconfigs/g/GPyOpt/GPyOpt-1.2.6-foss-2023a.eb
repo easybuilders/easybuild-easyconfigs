@@ -1,0 +1,63 @@
+easyblock = 'PythonBundle'
+
+name = 'GPyOpt'
+version = '1.2.6'
+
+homepage = 'https://sheffieldml.github.io/GPyOpt'
+description = "GPyOpt is a Python open-source library for Bayesian Optimization"
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('matplotlib', '3.7.2'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('paramz', '0.9.6', {
+        'sources': ['%(name)s-%(version)s-py3-none-any.whl'],
+        'checksums': ['4916be6f77f457316bcac8460be9c226026aed81fe7be302b32c0ba74e2ac6dd'],
+    }),
+    ('GPy', '1.13.2', {
+        'modulename': 'GPy',
+        'checksums': ['a38256b4dda536a5b5e6134a3924b42d454e987ee801fb6fc8b55a922da27920'],
+    }),
+    ('python-dateutil', '2.9.0.post0', {
+        'modulename': 'dateutil',
+        'checksums': ['37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3'],
+    }),
+    ('pyDOE', '0.3.8', {
+        'modulename': '%(name)s',
+        'sources': ['%(name)s-%(version)s.zip'],
+        'checksums': ['cbd6f14ae26d3c9f736013205f53ea1191add4567033c3ee77b7dd356566c4b6'],
+    }),
+    ('sobol-seq', '0.2.0', {
+        'sources': ['sobol_seq-%(version)s.tar.gz'],
+        'checksums': ['e16e701bd7b03ec6ce65b3a64c9205799f6a2d00c2054dd8c4ff4343f3981172'],
+    }),
+    ('emcee', '2.2.1', {
+        'checksums': ['b83551e342b37311897906b3b8acf32979f4c5542e0a25786ada862d26241172'],
+    }),
+    (name, version, {
+        'modulename': 'GPyOpt',
+        'checksums': ['e714daa035bb529a6db23c53665a762a4ab3456b9329c19ad3b03983f94c9b2a'],
+    }),
+]
+
+local_GPy_file = '%(installdir)s/lib/python%(pyshortver)s/site-packages/GPy/plotting/matplot_dep/plot_definitions.py'
+
+# Fix GPy with matplotlib>=3.4.0
+# see issue 953 and fix from https://github.com/SheffieldML/GPy/pull/960
+postinstallcmds = [
+    'sed -i '
+    '''-e 's|ax._process_unit_info(xdata=X, ydata=y1)|ax._process_unit_info([("x", X), ("y", y1)], convert=False)|' '''
+    '''-e 's|ax._process_unit_info(ydata=y2)|ax._process_unit_info([("y", y2)], convert=False)|' %s''' % local_GPy_file,
+]
+
+
+sanity_pip_check = True
+
+moduleclass = 'math'
