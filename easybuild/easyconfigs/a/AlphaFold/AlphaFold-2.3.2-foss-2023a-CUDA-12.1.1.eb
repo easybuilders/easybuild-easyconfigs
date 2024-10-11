@@ -18,7 +18,7 @@ dependencies = [
     ('CUDA', '12.1.1', '', SYSTEM),
     ('SciPy-bundle', '2023.07'),
     ('PyYAML', '6.0'),
-    ('TensorFlow', '2.15.1'),  # doesn't require TF-gpu
+    ('TensorFlow', '2.13.0'),  # doesn't require TF-gpu
     ('Biopython', '1.83'),
     ('HH-suite', '3.3.0'),
     ('HMMER', '3.4'),
@@ -84,21 +84,21 @@ exts_list = [
         'checksums': ['3fefcc72ec433aa1e5d32307a3e474bbb67f405be814ea52a2166bfc9dbe68cc'],
     }),
     (name, version, {
-        'source_urls': ['https://github.com/deepmind/alphafold/archive/refs/tags/'],
-        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
         'patches': [
             'AlphaFold-2.0.0_fix-packages.patch',
-            'AlphaFold-2.3.2_data-dep-paths-shebang-UniRef30_2023_02.patch',
+            'AlphaFold-2.3.2_data-dep-paths-shebang-UniRef30.patch',
             'AlphaFold-2.0.0_n-cpu.patch',
             'AlphaFold-2.0.1_setup_rm_tfcpu.patch',
             'AlphaFold-2.3.2_use_openmm_8.0.0.patch',
             'AlphaFold-2.3.2_BioPythonPDBData.patch',
         ],
+        'source_urls': ['https://github.com/deepmind/alphafold/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': [
             {'AlphaFold-2.3.2.tar.gz': '4ea8005ba1b573fa1585e4c29b7d188c5cbfa59b4e4761c9f0c15c9db9584a8e'},
             {'AlphaFold-2.0.0_fix-packages.patch': '826d2d1a5d6ac52c51a60ba210e1947d5631a1e2d76f8815305b5d23f74458db'},
-            {'AlphaFold-2.3.2_data-dep-paths-shebang-UniRef30_2023_02.patch':
-             '72a7b7cb8be4105f7bd32b404454afa465300d16b1ccc9933c9a70873f134f4e'},
+            {'AlphaFold-2.3.2_data-dep-paths-shebang-UniRef30.patch':
+             '58cd0ce4094afe76909649abe68034c4fbdb500967f5c818f49b530356dc012b'},
             {'AlphaFold-2.0.0_n-cpu.patch': 'dfda4dd5f9aba19fe2b6eb9a0ec583d12dcefdfee8ab8803fc57ad48d582db04'},
             {'AlphaFold-2.0.1_setup_rm_tfcpu.patch':
              '1a2e4e843bd9a4d15ee39e6c37cc63ba281311cc7a0a5610f0e43b52ef93faac'},
@@ -151,13 +151,17 @@ modextravars = {
     # 
     # Download with $EBROOTALPHAFOLD/scripts/download_all_data.sh /path/to/AlphaFold_DBs/$EBVERSIONALPHAFOLD
     'ALPHAFOLD_DATA_DIR': '/path/to/AlphaFold_DBs/%(versions)s',  # please adapt
+    # Adapt in order to use a different version of UniRef30 by default,
+    # e.g.,  v2023_02 from https://wwwuser.gwdg.de/~compbiol/uniclust/2023_02/UniRef30_2023_02_hhsuite.tar.gz:
+    'ALPHAFOLD_UNIREF30_VER': '2021_03',
     'OPENMM_RELAX': 'CUDA'  # unset or set to 'CPU' in order not to run the energy minimization on GPU; PR#189
 }
 
-modloadmsg = """Unlike previous modules, this module is using the updated UniRef30_2023_02 by default!
-In order to use the old UniRef30, please explicitly pass the command line parameter:
---uniref30_database_path $ALPHAFOLD_DATA_DIR/uniref30/UniRef30_2021_03"""
-
-# Remark: Please modify $EBROOTALPHAFOLD/scripts/download_uniref30.sh in order to download old UniRef30 2021.03
+postinstallmsgs = [
+    "A newer version of UniRef30 (2023_02) is available at: "
+    "https://wwwuser.gwdg.de/~compbiol/uniclust/2023_02/UniRef30_2023_02_hhsuite.tar.gz. "
+    "Untar to $ALPHAFOLD_DATA_DIR/uniref30/ and set the default version accordingly by changing "
+    "modextravars:ALPHAFOLD_UNIREF30_VER."
+]
 
 moduleclass = 'bio'
