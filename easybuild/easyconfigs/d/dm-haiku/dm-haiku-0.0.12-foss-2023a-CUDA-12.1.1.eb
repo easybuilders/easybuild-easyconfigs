@@ -1,0 +1,62 @@
+# update 0.9.11: Thomas Hoffmann (EMBL) 
+easyblock = 'PythonBundle'
+
+name = 'dm-haiku'
+version = '0.0.12'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/deepmind/dm-haiku'
+description = """Haiku is a simple neural network library for JAX developed by some of the authors of Sonnet, a neural
+network library for TensorFlow."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('jax', '0.4.25', versionsuffix),  # required by jmp, also provides absl-py
+    ('PyYAML', '6.0'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('tensorstore', '0.1.53'),
+    ('protobuf-python', '4.24.0'),
+]
+
+use_pip = True
+# flax > 0.8.5 req jax >= 0.4.27
+# optax 0.2.3 req. jax >= 0.4.27
+# orbax_checkpoint 0.5.18 req. jax >=0.4.25
+# orbax_checkpoint 0.5.19 req. jax >=0.4.26
+
+exts_list = [
+    ('jmp', '0.0.4', {
+        'checksums': ['5dfeb0fd7c7a9f72a70fff0aab9d0cbfae32a809c02f4037ff3485ceb33e1730'],
+    }),
+    ('flax', '0.8.4', {
+        'checksums': ['968683f850198e1aa5eb2d9d1e20bead880ef7423c14f042db9d60848cb1c90b'],
+    }),
+    ('optax', '0.2.2', {
+        'checksums': ['f09bf790ef4b09fb9c35f79a07594c6196a719919985f542dc84b0bf97812e0e'],
+    }),
+    ('chex', '0.1.86', {
+        'checksums': ['e8b0f96330eba4144659e1617c0f7a57b161e8cbb021e55c6d5056c7378091d1'],
+    }),
+    ('nest_asyncio', '1.6.0', {
+        'checksums': ['6f172d5449aca15afd6c646851f4e31e02c598d553a667e38cafa997cfec55fe'],
+    }),
+    ('orbax_checkpoint', '0.5.18', {
+        'modulename': 'orbax.checkpoint',
+        'preinstallopts': """sed -i 's/jax >= 0.4.25/&\\*/g' pyproject.toml &&""",
+        'checksums': ['29f5d311b412760bd6a2fecab3bdbf75407bc00dc6d0457d19478258ecc8fa6d'],
+    }),
+    ('toolz', '1.0.0', {
+        'checksums': ['2c86e3d9a04798ac556793bced838816296a2f085017664e4995cb40a1047a02'],
+    }),
+    (name, version, {
+        'modulename': 'haiku',
+        'checksums': ['ba0b3acf71433156737fe342c486da11727e5e6c9e054245f4f9b8f0b53eb608'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'
