@@ -655,6 +655,8 @@ class EasyConfigTest(TestCase):
                 ('2.5.3;', ['medaka-1.5.0-']),
                 # tensorflow-probability version to TF version
                 ('2.8.4;', ['tensorflow-probability-0.16.0-']),
+                # AlphaPulldown
+                ('2.15.1', ['AlphaPulldown-2.0.0b6']),
             ],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
