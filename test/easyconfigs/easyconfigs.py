@@ -1781,7 +1781,7 @@ def template_easyconfig_test(self, spec):
     # meson buildtype should be specified with easyblock parameter "buildtype" not with custom configopts.
     if ec['easyblock'] == 'MesonNinja':
         configopts = ec.get('configopts', '', resolve=True)
-        if '--buildtype ' in configopts:
+        if '--buildtype ' in configopts or '--buildtype=' in configopts:
             fail_msg = "Build type should be specified via MesonNinja parameter 'buildtype' instead of configopts."
             failing_checks.append(fail_msg)
 
