@@ -1567,7 +1567,11 @@ def template_easyconfig_test(self, spec):
 
         for idx, ext_patch in enumerate(ext.get('patches', [])):
             if isinstance(ext_patch, (tuple, list)):
-                ext_patch = ext_patch[0]
+                ext_patch['name'] = ext_patch[0]
+            elif isinstance(ext_patch, dict) and ext_patch['alt_location']:
+                    specdir = os.path.join(basedir, letter_dir_for(ext_patch['alt_location']), ext_patch['alt_location'])
+            else:
+                ext_patch['name'] = ext_patch
 
             # only check actual patch files, not other files being copied via the patch functionality
             ext_patch_full = os.path.join(specdir, ext_patch['name'])
