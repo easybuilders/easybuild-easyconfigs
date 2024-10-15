@@ -1569,7 +1569,7 @@ def template_easyconfig_test(self, spec):
             if isinstance(ext_patch, (tuple, list)):
                 ext_patch['name'] = ext_patch[0]
             elif isinstance(ext_patch, dict) and ext_patch['alt_location']:
-                    specdir = os.path.join(basedir, letter_dir_for(ext_patch['alt_location']), ext_patch['alt_location'])
+                specdir = os.path.join(basedir, letter_dir_for(ext_patch['alt_location']), ext_patch['alt_location'])
             else:
                 ext_patch['name'] = ext_patch
 
