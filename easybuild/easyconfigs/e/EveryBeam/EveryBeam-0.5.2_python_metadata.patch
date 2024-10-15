@@ -1,0 +1,31 @@
+# Running the CMake build, the metadata for the python package isn't generated
+# A
+# pip install . --prefix=installdir
+# would resolve this, but the downside is that the official setup.py will _also_ trigger a rebuild
+# for all the C-libraries. This patch will ensure we only generate the python metadata for this package
+# The metadata is needed for other pip-installs to identify that this package is already installed
+# which will avoid e.g. users duplicating everybeam in a virtualenv when they already have
+# this module loaded
+#
+# Note that this patch require a directory 'everybeam' to be created in the builddir with
+# mkdir -p %(builddir)s/EveryBeam/everybeam
+diff -Nru EveryBeam.orig/setup.py EveryBeam/setup.py
+--- EveryBeam.orig/setup.py     2024-10-15 16:29:24.215492950 +0200
++++ EveryBeam/setup.py  2024-10-15 16:30:38.835973294 +0200
+@@ -137,8 +137,6 @@
+     description="EveryBeam",
+     long_description=open("README.md", "rt").read(),
+     long_description_content_type="text/markdown",
+-    ext_modules=[CMakeExtension("everybeam")],
+-    cmdclass={"build_ext": CMakeBuild},
+     zip_safe=False,
+     python_requires=">=3.6",
+     url="https://everybeam.readthedocs.io/",
+@@ -150,5 +148,5 @@
+         "Programming Language :: Python :: 3",
+         "Topic :: Scientific/Engineering :: Astronomy",
+     ],
+-    data_files=data_files,
++    packages=['everybeam']
+ )
+
