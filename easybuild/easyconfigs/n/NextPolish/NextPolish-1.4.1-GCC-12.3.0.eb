@@ -64,13 +64,14 @@ postinstallcmds = [
     # links to binaries
     "cd %(installdir)s/bin && ln -s $EBROOTBWA/bin/bwa && "
     "ln -s $EBROOTSAMTOOLS/bin/samtools && ln -s $EBROOTMINIMAP2/bin/minimap2",
-    # set RPATH to calgs.so
-    "patchelf --force-rpath --set-rpath '\$ORIGIN:\$ORIGIN/../lib:$EBROOTZLIB/lib' %(installdir)s/lib/calgs.so",
-    # set RPATH to nextpolish1.so and nextpolish2.so
-    "patchelf --force-rpath --set-rpath "
-    "'\$ORIGIN:\$ORIGIN/../lib:$EBROOTZLIB/lib:$EBROOTBZIP2/lib:$EBROOTXZ/lib' %(installdir)s/lib/nextpolish1.so",
-    "patchelf --force-rpath --set-rpath "
-    "'\$ORIGIN:\$ORIGIN/../lib:$EBROOTZLIB/lib:$EBROOTBZIP2/lib:$EBROOTXZ/lib' %(installdir)s/lib/nextpolish2.so",
+    # set RPATH to calgs.so, nextpolish1.so and nextpolish2.so
+    "if %(rpath_enabled)s; then "
+    "patchelf --force-rpath --set-rpath '$ORIGIN:$ORIGIN/../lib'"
+    '":$EBROOTZLIB/lib" %(installdir)s/lib/calgs.so && '
+    "patchelf --force-rpath --set-rpath '$ORIGIN:$ORIGIN/../lib'"
+    '"$EBROOTZLIB/lib:$EBROOTBZIP2/lib:$EBROOTXZ/lib" %(installdir)s/lib/nextpolish1.so && '
+    "patchelf --force-rpath --set-rpath '$ORIGIN:$ORIGIN/../lib'"
+    '"$EBROOTZLIB/lib:$EBROOTBZIP2/lib:$EBROOTXZ/lib" %(installdir)s/lib/nextpolish2.so; fi',
 ]
 
 files_to_copy = ['bin', 'lib', 'test_data', 'LICENSE', 'nextPolish']
