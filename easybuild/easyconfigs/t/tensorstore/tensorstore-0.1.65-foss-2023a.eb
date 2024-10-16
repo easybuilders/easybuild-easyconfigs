@@ -1,0 +1,62 @@
+# Thomas Hoffmann, EMBL Heidlelberg, structures-it@embl.de, 2024/10
+easyblock = 'PythonBundle'
+
+name = 'tensorstore'
+version = '0.1.65'
+
+homepage = 'https://github.com/google/tensorstore'
+description = """TensorStore is an open-source C++ and Python software library designed for      
+storage and manipulation of large multi-dimensional arrays."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+builddependencies = [
+    ('NASM', '2.16.01'),
+    ('pybind11', '2.11.1'),
+    ('Bazel', '6.3.1'),
+
+
+
+    ('PyYAML', '6.0'),
+    ('zlib', '1.2.13'),
+    ('LibTIFF', '4.5.0'),
+    ('snappy', '1.1.10'),
+    ('Brotli', '1.0.9'),
+    ('protobuf', '24.0'),
+    ('bzip2', '1.0.8'),
+    ('zstd', '1.5.5'),
+    ('libwebp', '1.3.1'),
+    ('nlohmann_json', '3.11.2'),
+    ('Blosc', '1.21.5'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('ml_dtypes', '0.3.2'),
+]
+
+use_pip = True
+
+
+local_ts_useebbazel = """sed -i 's/bazel_path =.*/"""
+local_ts_useebbazel += """bazel_path = os.path.join(os.getenv("EBROOTBAZEL"),"bin", "bazel")/g'"""
+local_ts_useebbazel += " bazelisk.py&& "  # TODO: patch?
+local_ts_version = """sed -i "s/use_scm_version=/version='%(version)s',&/g" setup.py&&"""
+local_ts_bzl_exp = """export TENSORSTORE_BAZEL_STARTUP_OPTIONS='--output_user_root %(builddir)s/cache' &&"""
+# inject CFLAGS:
+local_ts_bzl_exp += """export TENSORSTORE_BAZEL_BUILD_OPTIONS="$(for i in  $CFLAGS;do echo --copt=$i; done)" &&"""
+
+
+local_ts_preinstall = local_ts_version + local_ts_useebbazel + local_ts_bzl_exp
+
+exts_list = [
+    (name, version, {
+        'installopts': '-v',
+        'preinstallopts': local_ts_preinstall,
+        'checksums': ['65cbe5a600c32569bb0b9f597ea318cc298a13b42d5fc98168c97bb11f320eae'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'
