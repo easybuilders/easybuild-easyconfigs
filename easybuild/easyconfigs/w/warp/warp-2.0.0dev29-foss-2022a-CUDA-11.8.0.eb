@@ -1,15 +1,15 @@
-# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/07
+# Thomas Hoffmann, EMBL Heidelberg,  structures-it@embl.de, 2024/09
 easyblock = 'CMakeMake'
 
 name = 'warp'
-local_ver = '2.0.0dev20'
-local_commit = 'afe0bdce289eebe2c67339a180bae18e9895a628e'
-local_commit_date = '20240710'
-version = '%s.%s' % (local_ver, local_commit_date)
+local_ver = '2.0.0dev29'
+version = local_ver
+local_cudasuffix = '-CUDA-%(cudaver)s'
+# versionsuffix = '%s-debug' % local_cudasuffix  # for debug build see local_configopts->DOTNET_POPTS
+versionsuffix = '%s' % local_cudasuffix
 
 local_dotnet_arch = 'x64'
 
-versionsuffix = '-CUDA-%(cudaver)s'
 
 homepage = 'https://github.com/warpem/warp'
 description = """Warp is a set of tools for cryo-EM and cryo-ET data processing including, among 
@@ -20,20 +20,15 @@ other tools: Warp, M, WarpTools, MTools, MCore, and Noise2Map."""
 toolchain = {'name': 'foss', 'version': '2022a'}
 toolchainopts = {'pic': True, 'cstd': 'c++17', 'usempi': True}
 
-# github_account = 'warpem'
-
-source_urls = ['https://github.com/warpem/warp/archive/']
-sources = [{
-    'filename': '%s.%s-%s.tar.gz' % (name, version, local_commit),
-    'download_filename': '%s.tar.gz' % local_commit
-}]
+github_account = 'warpem'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
 patches = [
     ('warp-2.0.0dev0_cmake.patch', 1),
     'warp-2.0.0dev0_inject_cudacc.patch',
 ]
 checksums = [
-    {'warp.2.0.0dev20.20240710-afe0bdce289eebe2c67339a180bae18e9895a628.tar.gz':
-     '63370b21af18d7ac4011bf3567ddab22331de2e2fc44671514f705a402a57c1e'},
+    {'v2.0.0dev29.tar.gz': 'c014ec970483c02590f08278de28483f7bffec098883e1cc500393cc3f1bce86'},
     {'warp-2.0.0dev0_cmake.patch': 'd40152f787bde4f527c299d3af026ed5b7ad77f3431fa97446fa22a02b0d2971'},
     {'warp-2.0.0dev0_inject_cudacc.patch': '6a1ab6b3b6760dccb327c2e98f3188b16abc5aa31f2d6484838a39a3452eb86c'},
 ]
@@ -48,13 +43,13 @@ dependencies = [
     # NativeAcceleration/gtom/src/Masking/IrregularSphereMask.cu
     # Use CUDA 11.8 due to https://github.com/pytorch/pytorch/issues/88038
     ('CUDA', '11.8.0', '', SYSTEM),
-    ('cuDNN', '8.7.0.84', versionsuffix, SYSTEM),
+    ('cuDNN', '8.7.0.84', local_cudasuffix, SYSTEM),
     ('Python', '3.10.4'),
-    ('PyTorch', '2.0.1', versionsuffix),
+    ('PyTorch', '2.0.1', local_cudasuffix),
     ('LibTIFF', '4.3.0'),
-    ('torchvision', '0.15.2', versionsuffix),
-    ('AreTomo2', '1.0.0', versionsuffix),
-    # ('IMOD', '4.12.62', versionsuffix),  # optional
+    ('torchvision', '0.15.2', local_cudasuffix),
+    ('AreTomo2', '1.0.0', local_cudasuffix),
+    # ('IMOD', '4.12.21', local_cudasuffix),  # optional (4.12.62 does not work)
 ]
 
 local_binaries = [
@@ -70,13 +65,16 @@ local_configopts = [
     '-DCUDA_VERBOSE_BUILD=ON',
     '-DCAFFE2_USE_CUDNN=1'
     '-DDOTNET_BINARIES="%s"' % " ".join(local_binaries),
+    #  '-DDOTNET_POPTS="-p:PublishSingleFile=true"'  # uncomment for debug build
 ]
 configopts = ' '.join(local_configopts)
+
+postinstallcmds=['cp %(builddir)s/*/bin/*.pdb %(installdir)s/bin']
 
 build_type = ''
 
 sanity_check_paths = {
-    'files': ['lib/libSkiaSharp.%s' % SHLIB_EXT],
+    'files': ['lib/libSkiaSharp.%s' % SHLIB_EXT, 'bin/MCore.pdb'],
     'dirs': ['bin', 'lib'],
 }
 
