@@ -29,17 +29,22 @@ dependencies = [
 
 use_pip = True
 
-local_pytest_cmd = 'pytest modin/tests/pandas --ignore=modin/tests/pandas/test_io.py --ignore=modin/tests/pandas/integrations/test_lazy_import.py'
-
 exts_list = [
     ('unidist', '0.7.1', {
         'source_tmpl': '%(version)s.tar.gz',
         'source_urls': ['https://github.com/modin-project/%(name)s/archive/refs/tags/'],
         'checksums': ['9bae91f0bbc33af3b55948990f69400ee819dfda9c635286e6917aebd7f24791'],
     }),
+    # Cannot test for Ray due to unix socket issue
     (name, version, {
         'patches': ['modin-0.32.0_fix-pytest-config.patch'],
-        'runtest': "MODIN_BACKEND=unidist UNIDIST_BACKEND=mpi pytest modin/tests/pandas --ignore=modin/tests/pandas/test_io.py --ignore=modin/tests/pandas/integrations/test_lazy_import.py && MODIN_BACKEND=ray pytest modin/tests/pandas --ignore=modin/tests/pandas/test_io.py --ignore=modin/tests/pandas/integrations/test_lazy_import.py && MODIN_BACKEND=dask pytest modin/tests/pandas --ignore=modin/tests/pandas/test_io.py --ignore=modin/tests/pandas/integrations/test_lazy_import.py",
+        'runtest': (
+            "MODIN_BACKEND=unidist UNIDIST_BACKEND=mpi pytest modin/tests/pandas "
+            " --ignore=modin/tests/pandas/test_io.py "
+            "--ignore=modin/tests/pandas/integrations/test_lazy_import.py &&"
+            " MODIN_BACKEND=dask pytest modin/tests/pandas --ignore=modin/tests/pandas/test_io.py"
+            " --ignore=modin/tests/pandas/integrations/test_lazy_import.py"
+        ),
         'source_tmpl': '%(version)s.tar.gz',
         'source_urls': ['https://github.com/modin-project/%(name)s/archive/refs/tags'],
         'testinstall': True,
