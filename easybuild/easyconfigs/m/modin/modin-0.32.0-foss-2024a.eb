@@ -11,6 +11,9 @@ toolchain = {'name': 'foss', 'version': '2024a'}
 
 builddependencies = [
     ('Cython', '3.0.10'),
+    # Needed for tests
+    ('boto3', '1.35.36'),
+    ('s3fs', '2024.9.0'),
 ]
 
 dependencies = [
@@ -24,17 +27,27 @@ dependencies = [
     ('mpi4py', '4.0.1')
 ]
 
-download_dep_fail = True
 use_pip = True
 
+local_pytest_cmd = 'pytest modin/tests/pandas --ignore=modin/tests/pandas/test_io.py --ignore=modin/tests/pandas/integrations/test_lazy_import.py'
+
 exts_list = [
-    (name, version, {
-        'checksums': ['9f68557add5e92617d006eb98bfd93d298e7d4d9932a0cd48a5e38ee4f30a134'],
-    }),
     ('unidist', '0.7.1', {
-        'source_tmpl': '%(namelower)s-%(version)s-cp312-cp312-manylinux_2_17_%(arch)s.manylinux2014_%(arch)s.whl',
-        'use_pip_extras': 'mpi',
-        'checksums': ['1433753726d8be0e484ca53f75d501afa8c4d94acf9c45a0970949411b4b41e0'],
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/modin-project/%(name)s/archive/refs/tags/'],
+        'checksums': ['9bae91f0bbc33af3b55948990f69400ee819dfda9c635286e6917aebd7f24791'],
+    }),
+    (name, version, {
+        'patches': ['modin-0.32.0_fix-pytest-config.patch'],
+        'runtest': 'MODIN_BACKEND=unidist UNIDIST_BACKEND=mpi %(local_pytest_cmd)s && MODIN_BACKEND=ray %(local_pytest_cmd)s && MODIN_BACKEND=dask %(local_pytest_cmd)s' % {'local_pytest_cmd': local_pytest_cmd},
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/modin-project/%(name)s/archive/refs/tags'],
+        'testinstall': True,
+        'checksums': [
+            {'0.32.0.tar.gz': 'f2ef11f384a7d47eb6680a2f6f4bbc3404fa6290163d36384032daff3837b063'},
+            {'modin-0.32.0_fix-pytest-config.patch':
+             'c49bd5c072a87321760c7c5eebc957f4f6962763a3526a500fe6330cf3f2b765'},
+        ],
     }),
 ]
 
