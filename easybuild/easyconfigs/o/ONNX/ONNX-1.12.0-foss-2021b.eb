@@ -1,0 +1,57 @@
+easyblock = 'PythonPackage'
+
+name = 'ONNX'
+version = '1.12.0'
+
+homepage = 'https://onnx.ai/'
+description = """
+Open Neural Network Exchange (ONNX) is an open ecosystem that empowers AI
+developers to choose the right tools as their project evolves. ONNX provides an
+open source format for AI models, both deep learning and traditional ML. It
+defines an extensible computation graph model, as well as definitions of
+built-in operators and standard data types. Currently we focus on the
+capabilities needed for inferencing (scoring)."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+local_whl_tmpl = '%%(namelower)s-%%(version)s-cp39-cp39-manylinux_2_17_%s.manylinux2014_%s.whl'
+sources = [local_whl_tmpl % ('%(arch)s', '%(arch)s')]
+checksums = [
+    {
+        local_whl_tmpl % ('x86_64', 'x86_64'):
+            'c7a9b3ea02c30efc1d2662337e280266aca491a8e86be0d8a657f874b7cccd1e',
+        local_whl_tmpl % ('aarch64', 'aarch64'):
+            'fab13feb4d94342aae6d357d480f2e47d41b9f4e584367542b21ca6defda9e0a',
+    }
+]
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('protobuf-python', '3.17.3'),
+    ('typing-extensions', '3.10.0.2'),
+]
+
+use_pip = True
+download_dep_fail = True
+
+preinstallopts = 'env MAX_JOBS="%(parallel)s"'
+
+sanity_check_paths = {
+    'files': ['bin/check-model', 'bin/check-node', 'bin/backend-test-tools'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    ('check-model', '-h'),
+    ('check-node', '-h'),
+    ('backend-test-tools', '-h'),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'devel'
