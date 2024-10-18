@@ -45,10 +45,13 @@ dependencies = [
 local_preinstallopts = "sed -i 's/pydantic<2.0/pydantic/' %(builddir)s/%(name)s/%(name)s-%(version)s/setup.cfg && "
 
 # ignore the failing part of ddpm test - seems constraints are wrong
-# https://github.com/vanderschaarlab/synthcity/blob/v0.2.10/tests/plugins/generic/test_ddpm.py#L114
+# see https://github.com/vanderschaarlab/synthcity/blob/v0.2.10/tests/plugins/generic/test_ddpm.py#L114
 local_pretestopts = (
     "sed -i '138,144d' %(builddir)s/%(name)s/%(name)s-%(version)s/tests/plugins/generic/test_ddpm.py && "
 )
+# solve problem with PyTorch-Lightning _validate_srun_variables method
+# see https://github.com/easybuilders/easybuild-easyconfigs/pull/21141#issuecomment-2318854045
+local_pretestopts += "export SLURM_NTASKS_PER_NODE=$SLURM_NTASKS && "
 
 # fix invalid syntax of xgbse/setup.py
 local_xgbse_preinstallopts = r"sed -i -e '45,49d' -e 's/pandas>=1.0.\*/pandas>=1.0.0/' setup.py && "
