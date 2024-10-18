@@ -1,0 +1,90 @@
+Patch configure of OpenMPI to allow NVIDIA HPC compilers
+to be detected correctly. If these changes are not applied,
+building OpenMPI may fail due to flags not being
+transferred to libtool but to the compiler, causing an
+unknown flag error.
+
+--- a/configure	2024-07-23 01:27:56.275411119 +0200
++++ b/configure	2024-10-01 11:48:22.019890493 +0200
+@@ -28949,7 +28949,7 @@
+ ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+ if test -n "$ac_tool_prefix"; then
+-  for ac_prog in gfortran f95 fort xlf95 ifort ifc efc pgfortran pgf95 lf95 f90 xlf90 pgf90 epcf90 nagfor
++  for ac_prog in gfortran f95 fort xlf95 ifort ifc efc pgfortran nvfortran pgf95 lf95 f90 xlf90 pgf90 epcf90 nagfor
+   do
+     # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
+ set dummy $ac_tool_prefix$ac_prog; ac_word=$2
+@@ -28998,7 +28998,7 @@
+ fi
+ if test -z "$FC"; then
+   ac_ct_FC=$FC
+-  for ac_prog in gfortran f95 fort xlf95 ifort ifc efc pgfortran pgf95 lf95 f90 xlf90 pgf90 epcf90 nagfor
++  for ac_prog in gfortran f95 fort xlf95 ifort ifc efc pgfortran nvfortran pgf95 lf95 f90 xlf90 pgf90 epcf90 nagfor
+ do
+   # Extract the first word of "$ac_prog", so it can be a program name with args.
+ set dummy $ac_prog; ac_word=$2
+@@ -200360,9 +200360,8 @@
+ 	lt_prog_compiler_pic='-fPIC'
+ 	lt_prog_compiler_static='-static'
+ 	;;
+-      pgcc* | pgf77* | pgf90* | pgf95* | pgfortran*)
+-        # Portland Group compilers (*not* the Pentium gcc compiler,
+-	# which looks to be a dead project)
++      pgcc* | pgf77* | pgf90* | pgf95* | pgfortran* | nvc* | nvfortran*)
++        # NVIDIA HPC Compilers
+ 	lt_prog_compiler_wl='-Wl,'
+ 	lt_prog_compiler_pic='-fpic'
+ 	lt_prog_compiler_static='-Bstatic'
+@@ -201004,12 +201003,16 @@
+ 	tmp_addflag=' $pic_flag'
+ 	tmp_sharedflag='-shared'
+ 	case $cc_basename,$host_cpu in
+-        pgcc*)				# Portland Group C compiler
++        pgcc* | nvc*)				# NVIDIA HPC C compiler
+ 	  whole_archive_flag_spec='$wl--whole-archive`for conv in $convenience\"\"; do test  -n \"$conv\" && new_convenience=\"$new_convenience,$conv\"; done; func_echo_all \"$new_convenience\"` $wl--no-whole-archive'
+ 	  tmp_addflag=' $pic_flag'
+ 	  ;;
+-	pgf77* | pgf90* | pgf95* | pgfortran*)
+-					# Portland Group f77 and f90 compilers
++	pgCC* | pgcpp* | pgc++* | nvc++*)				# NVIDIA HPC C++ compiler
++	  whole_archive_flag_spec='$wl--whole-archive`for conv in $convenience\"\"; do test  -n \"$conv\" && new_convenience=\"$new_convenience,$conv\"; done; func_echo_all \"$new_convenience\"` $wl--no-whole-archive'
++	  tmp_addflag=' $pic_flag'
++	  ;;
++	pgf77* | pgf90* | pgf95* | pgfortran* | nvfortran*)
++					# NVIDIA HPC Fortran compiler
+ 	  whole_archive_flag_spec='$wl--whole-archive`for conv in $convenience\"\"; do test  -n \"$conv\" && new_convenience=\"$new_convenience,$conv\"; done; func_echo_all \"$new_convenience\"` $wl--no-whole-archive'
+ 	  tmp_addflag=' $pic_flag -Mnomain' ;;
+ 	ecc*,ia64* | icc*,ia64*)	# Intel C compiler on ia64
+@@ -207710,9 +207713,8 @@
+ 	lt_prog_compiler_pic_FC='-fPIC'
+ 	lt_prog_compiler_static_FC='-static'
+ 	;;
+-      pgcc* | pgf77* | pgf90* | pgf95* | pgfortran*)
+-        # Portland Group compilers (*not* the Pentium gcc compiler,
+-	# which looks to be a dead project)
++      pgcc* | pgf77* | pgf90* | pgf95* | pgfortran* | nvc* | nvfortran*)
++        # NVIDIA HPC Compilers
+ 	lt_prog_compiler_wl_FC='-Wl,'
+ 	lt_prog_compiler_pic_FC='-fpic'
+ 	lt_prog_compiler_static_FC='-Bstatic'
+@@ -208339,12 +208341,16 @@
+ 	tmp_addflag=' $pic_flag'
+ 	tmp_sharedflag='-shared'
+ 	case $cc_basename,$host_cpu in
+-        pgcc*)				# Portland Group C compiler
++        pgcc* | nvc*)				# NVIDIA HPC C compiler
+ 	  whole_archive_flag_spec_FC='$wl--whole-archive`for conv in $convenience\"\"; do test  -n \"$conv\" && new_convenience=\"$new_convenience,$conv\"; done; func_echo_all \"$new_convenience\"` $wl--no-whole-archive'
+ 	  tmp_addflag=' $pic_flag'
+ 	  ;;
+-	pgf77* | pgf90* | pgf95* | pgfortran*)
+-					# Portland Group f77 and f90 compilers
++	pgCC* | pgcpp* | pgc++* | nvc++*)				# NVIDIA HPC C++ compiler
++	  whole_archive_flag_spec_FC='$wl--whole-archive`for conv in $convenience\"\"; do test  -n \"$conv\" && new_convenience=\"$new_convenience,$conv\"; done; func_echo_all \"$new_convenience\"` $wl--no-whole-archive'
++	  tmp_addflag=' $pic_flag'
++	  ;;
++	pgf77* | pgf90* | pgf95* | pgfortran* | nvfortran*)
++					# NVIDIA HPC Fortran compiler
+ 	  whole_archive_flag_spec_FC='$wl--whole-archive`for conv in $convenience\"\"; do test  -n \"$conv\" && new_convenience=\"$new_convenience,$conv\"; done; func_echo_all \"$new_convenience\"` $wl--no-whole-archive'
+ 	  tmp_addflag=' $pic_flag -Mnomain' ;;
+ 	ecc*,ia64* | icc*,ia64*)	# Intel C compiler on ia64
