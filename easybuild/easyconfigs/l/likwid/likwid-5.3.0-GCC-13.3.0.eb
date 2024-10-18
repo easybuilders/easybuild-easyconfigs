@@ -4,6 +4,7 @@ name = 'likwid'
 version = '5.3.0'
 
 homepage = 'https://github.com/RRZE-HPC/likwid'
+
 description = """
 Likwid stands for Like I knew what I am doing. This project contributes easy
 to use command line tools for Linux to support programmers in developing high
@@ -15,6 +16,7 @@ toolchainopts = {'pic': True}
 
 source_urls = ['https://github.com/RRZE-HPC/%(name)s/archive/']
 sources = ['v%(version)s.tar.gz']
+
 checksums = ['c290e554c4253124ac2ab8b056e14ee4d23966b8c9fbfa10ba81f75ae543ce4e']
 
 builddependencies = [
@@ -24,32 +26,29 @@ dependencies = [
     ('hwloc', '2.10.0'),
 ]
 
+skipsteps = ['configure']
+
 # include_GCC.mk is using ifort by default.
 # Changing it to gfortran, to be consistent with GCC toolchain
-prebuildopts = "sed -i 's@FC  = ifort@FC  = gfortran@g' make/include_GCC.mk && "
-prebuildopts += "sed -i 's@FCFLAGS = -module ./ # ifort@FCFLAGS = -J ./ -fsyntax-only #gfortran@g' make/include_GCC.mk "
-prebuildopts += "&& "
+prebuildopts = """sed -i 's@FC  = ifort@FC  = gfortran@g' make/include_GCC.mk && """
+prebuildopts += """sed -i 's@FCFLAGS  = -module ./  # ifort@FCFLAGS  = -J ./  -fsyntax-only  #gfortran@g' """
+prebuildopts += """ make/include_GCC.mk && """
 
-buildopts = 'CC="$CC" CFLAGS="$CFLAGS -std=c99" '
-buildopts += 'PREFIX=%(installdir)s BUILDFREQ="" ACCESSMODE=perf_event FORTRAN_INTERFACE=true '
-buildopts += 'CFG_FILE_PATH=%(installdir)s/etc/%(name)s.cfg TOPO_FILE_PATH=%(installdir)s/etc/likwid_topo.cfg '
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS -std=c99" PREFIX=%(installdir)s BUILDFREQ="" ACCESSMODE=perf_event '
+buildopts += 'FORTRAN_INTERFACE=true '
+buildopts += 'CFG_FILE_PATH=%(installdir)s/etc/likwid.cfg  TOPO_FILE_PATH=%(installdir)s/etc/likwid_topo.cfg '
 buildopts += 'HWLOC_INCLUDE_DIR=$EBROOTHWLOC/include HWLOC_LIB_DIR=$EBROOTHWLOC/lib HWLOC_LIB_NAME=hwloc '
-
-installopts = 'CC="$CC" CFLAGS="$CFLAGS -std=c99" '
-installopts += 'PREFIX=%(installdir)s BUILDFREQ="" ACCESSMODE=perf_event FORTRAN_INTERFACE=true '
-installopts += 'CFG_FILE_PATH=%(installdir)s/etc/%(name)s.cfg TOPO_FILE_PATH=%(installdir)s/etc/likwid_topo.cfg '
-installopts += 'HWLOC_INCLUDE_DIR=$EBROOTHWLOC/include HWLOC_LIB_DIR=$EBROOTHWLOC/lib HWLOC_LIB_NAME=hwloc '
-installopts += 'INSTALL_CHOWN="" '
 
 maxparallel = 1
 
-skipsteps = ['configure']
+installopts = buildopts + 'INSTALL_CHOWN="" '
 
 sanity_check_paths = {
-    'files': ['bin/%(name)s-memsweeper', 'bin/%(name)s-mpirun', 'bin/%(name)s-perfctr', 'bin/%(name)s-perfscope',
-              'bin/%(name)s-pin', 'bin/%(name)s-powermeter', 'bin/%(name)s-topology', 'lib/liblikwidpin.so',
-              'lib/liblikwid.so', 'include/%(name)s.mod'],
-    'dirs': ['man/man1'],
+    'files': ['bin/likwid-memsweeper', 'bin/likwid-mpirun', 'bin/likwid-perfctr',
+              'bin/likwid-perfscope', 'bin/likwid-pin', 'bin/likwid-powermeter',
+              'bin/likwid-topology', 'lib/liblikwidpin.%s' % SHLIB_EXT,
+              'lib/liblikwid.%s' % SHLIB_EXT, 'include/likwid.mod'],
+    'dirs': ['man/man1']
 }
 
 moduleclass = 'tools'
