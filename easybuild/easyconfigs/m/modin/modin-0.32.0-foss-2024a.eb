@@ -29,14 +29,15 @@ dependencies = [
 use_pip = True
 
 exts_list = [
-    # modin has another backend, "unidist", for MPI, but it seems broken currently.
-    # The unidist backend will just fire up all cores as if initializing but not actually advance.
-    # Also cannot test for Ray in general due to unix socket issue, need to specify short tmpdir path
+    ('unidist', '0.7.2', {
+        'checksums': ['6386e1ad5143fe132b9f96e232fe85fc39830ed2886515440e4ba1473255e4a0'],
+    }),
     (name, version, {
         'patches': ['modin-0.32.0_fix-pytest-config.patch'],
         'runtest': (
-            "MODIN_ENGINE=dask pytest modin/tests/pandas/test_general.py"
-        ),
+	    "MODIN_ENGINE=unidist UNIDIST_ENGINE=mpi pytest modin/tests/pandas/test_general.py "
+	    "MODIN_ENGINE=dask pytest modin/tests/pandas/test_general.py"
+	),
         'source_tmpl': '%(version)s.tar.gz',
         'source_urls': ['https://github.com/modin-project/%(name)s/archive/refs/tags'],
         'testinstall': True,
