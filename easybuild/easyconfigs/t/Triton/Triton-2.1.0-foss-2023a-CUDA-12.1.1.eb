@@ -1,0 +1,56 @@
+easyblock = 'PythonPackage'
+
+name = 'Triton'
+version = '2.1.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://triton-lang.org/'
+
+description = """Triton is a language and compiler for parallel programming. It aims to provide a
+Python-based programming environment for productively writing custom DNN compute
+kernels capable of running at maximal throughput on modern GPU hardware."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+github_account = 'openai'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s-disable_rocm_support.patch',
+    '%(name)s-%(version)s-use_eb_env_python_build.patch',
+]
+checksums = [
+    {'v2.1.0.tar.gz': '4338ca0e80a059aec2671f02bfc9320119b051f378449cf5f56a1273597a3d99'},
+    {'Triton-2.1.0-disable_rocm_support.patch': 'e4d7c0947c3287b3f0871a004e8b483963f637c9fa3ef6212ac3a34660de2a7c'},
+    {'Triton-2.1.0-use_eb_env_python_build.patch': 'd68bf766c699ad6a778d9449d3bccdadc2f20f1f86ba13e1359ad297b12fbf7c'},
+]
+
+builddependencies = [
+    ('Clang', '17.0.0_20230515', versionsuffix),  # this is the exact commit that would be downloaded by Triton
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('PyTorch', '2.1.2', versionsuffix),
+]
+
+use_pip = True
+download_dep_fail = True
+
+start_dir = 'python'
+
+preinstallopts = 'export LLVM_INCLUDE_DIRS=$EBROOTCLANG/include && '
+preinstallopts += 'export LLVM_LIBRARY_DIR=$EBROOTCLANG/lib && '
+preinstallopts += 'export LLVM_SYSPATH=$EBROOTCLANG && '
+preinstallopts += 'export TRITON_BUILD_WITH_CLANG_LLD=1 && '
+
+# make pip print output of cmake
+installopts = "-v "
+
+sanity_pip_check = True
+
+modluafooter = 'setenv("TRITON_PTXAS_PATH", pathJoin(os.getenv("CUDA_HOME"), "bin", "ptxas"))'
+
+moduleclass = 'devel'

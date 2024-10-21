@@ -439,6 +439,8 @@ class EasyConfigTest(TestCase):
             # filter out BLIS and libFLAME with -amd versionsuffix
             # (AMD forks, used in gobff/*-amd toolchains)
             (['BLIS', 'libFLAME'], '-amd'),
+            # filter out libcint with -pypzpx versionsuffix, used by MOLGW
+            ('libcint', '-pypzpx'),
             # filter out OpenBLAS with -int8 versionsuffix, used by GAMESS-US
             ('OpenBLAS', '-int8'),
             # filter out ScaLAPACK with -BLIS-* versionsuffix, used in goblf toolchain
@@ -1001,14 +1003,13 @@ class EasyConfigTest(TestCase):
             # ignore git/svn dirs & archived easyconfigs
             if '/.git/' in dirpath or '/.svn/' in dirpath or '__archive__' in dirpath:
                 continue
-            # check whether list of .eb files is non-empty
-            easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
+            # check whether list of .eb files is non-empty, only exception: TEMPLATE.eb
+            easyconfig_files = [fn for fn in filenames if fn.endswith('eb') and fn != 'TEMPLATE.eb']
             if easyconfig_files:
                 # check whether path matches required pattern
                 if not easyconfig_dirs_regex.search(dirpath):
-                    # only exception: TEMPLATE.eb
-                    if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
-                        self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
+                    if not dirpath.endswith('/easybuild/easyconfigs'):
+                        self.fail("There should be no easyconfig files in %s, found %s" % (dirpath, easyconfig_files))
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1029,7 +1030,7 @@ class EasyConfigTest(TestCase):
                 duplicates[name] = names[name]
 
         if duplicates:
-            self.assertTrue(False, "EasyConfigs with case-insensitive name clash: %s" % duplicates)
+            self.fail("EasyConfigs with case-insensitive name clash: %s" % duplicates)
 
     @skip_if_not_pr_to_non_main_branch()
     def test_pr_sha256_checksums(self):
@@ -1460,6 +1461,9 @@ def template_easyconfig_test(self, spec):
     ]
     failing_checks.extend("Old URL '%s' found" % old_url for old_url in old_urls if old_url in ec.rawtxt)
 
+    # Note the use of app.cfg which might contain sources populated by e.g. the Cargo easyblock
+    sources, patches, checksums = app.cfg['sources'], app.cfg['patches'], app.cfg['checksums']
+
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # easyblocks without a build step
@@ -1476,7 +1480,7 @@ def template_easyconfig_test(self, spec):
             requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
 
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
-        requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
+        requires_binutils &= bool(sources or ec['exts_list'] or ec.get('components'))
 
         if requires_binutils:
             # dependencies() returns both build and runtime dependencies
@@ -1507,13 +1511,13 @@ def template_easyconfig_test(self, spec):
                 if openssl_osdep:
                     failing_checks.append("OpenSSL should not be listed as OS dependency")
 
-    src_cnt = len(ec['sources'])
-    patch_checksums = ec['checksums'][src_cnt:]
+    src_cnt = len(sources)
+    patch_checksums = checksums[src_cnt:]
 
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
     basedir = os.path.dirname(os.path.dirname(specdir))
-    for idx, patch in enumerate(ec['patches']):
+    for idx, patch in enumerate(patches):
         patch_dir = specdir
         if isinstance(patch, str):
             patch_name = patch
@@ -1536,7 +1540,7 @@ def template_easyconfig_test(self, spec):
 
     # make sure 'source' step is not being skipped,
     # since that implies not verifying the checksum
-    if ec['checksums'] and ('source' in ec['skipsteps']):
+    if checksums and ('source' in ec['skipsteps']):
         failing_checks.append("'source' step should not be skipped, since that implies not verifying checksums")
 
     for ext in ec.get_ref('exts_list'):
