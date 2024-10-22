@@ -1,0 +1,46 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.4.3'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+based on Density Futional Theory (DFT). In this version scripts and modules for calculating transition 
+states, VTSTTools (http://theory.cm.utexas.edu/vtsttools/)
+has been implemented to the original version of vasp This version of vasp also supports 
+HDF5, Wannier90, Libbeef, and Libxc."""
+
+local_compver = '2023.2.1'
+local_binfiles = ['vasp_std', 'vasp_gam', 'vasp_ncl']
+
+toolchain = {'name': 'iimpi', 'version': '2023a'}
+builddependencies = [
+    ('FFTW', '3.3.10', '', ('intel-compilers', local_compver)),
+    ('wannier90', '3.1.0', '', ('iimpi', '2023a')),
+    ('HDF5', '1.14.2', '',( 'intel-compilers', local_compver)),
+    ('ScaLAPACK', '2.2.0', '', ('iimpi', '2023a')),
+    ('libxc', '6.2.2', '', ('intel-compilers', local_compver)),
+    ('FlexiBLAS', '3.3.1', '', ('intel-compilers', local_compver)),
+]
+
+patches = ['%(namelower)s-%(version)s.patch']
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = ['%(namelower)s.%(version)s.tar']
+checksums = ['690bf1403f0e7db8258950255cc177c6',  #vasp.6.4.3.tar,
+             '3a8c5332578a149853df611c679f599f',  #vasp-6.4.3.patch,
+]
+prebuildopts = 'cp arch/makefile.include.intel ./makefile.include && '
+prebuildopts += 'unset LIBS && '
+
+postinstallcmds = ["chmod -R o-rwx %(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
+parallel = 1
+
+files_to_copy = [(['bin/%s' % x for x in local_binfiles], 'bin')]
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binfiles],
+    'dirs': []
+}
+moduleclass = 'phys'
+
