@@ -48,7 +48,10 @@ from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
 from easybuild.framework.easyconfig.easyconfig import resolve_template
-from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
+from easybuild.framework.easyconfig.parser import (
+    EasyConfigParser, fetch_parameters_from_easyconfig,
+    DEPRECATED_EASYCONFIG_PARAMETERS,
+)
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config, LooseVersion
 from easybuild.tools.build_log import EasyBuildError
@@ -1083,6 +1086,25 @@ class EasyConfigTest(TestCase):
 
         if duplicates:
             self.fail("EasyConfigs with case-insensitive name clash: %s" % duplicates)
+
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_deprecated_ec_params(self):
+        """Check that no deprecated EasyConfig parameters are used."""
+        deprecated_params = {old_param: new_param
+                             for old_param, (new_param, _) in DEPRECATED_EASYCONFIG_PARAMETERS.items()}
+        deprecated_params['parallel'] = 'maxparallel'
+        failing_checks = []
+        for ec in self.changed_ecs:
+            pure_ec = ec.parser.get_config_dict()
+            # Special handling:
+            for param in pure_ec:
+                new_param = deprecated_params.get(param)
+                if new_param:
+                    ec_fn = os.path.basename(ec.path)
+                    failing_checks.append(f"Deprecated parameter '{param}' used in {ec_fn}. "
+                                          f"Use '{new_param}' instead.")
+        if failing_checks:
+            self.fail("\n".join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
     def test_pr_sha256_checksums(self):
