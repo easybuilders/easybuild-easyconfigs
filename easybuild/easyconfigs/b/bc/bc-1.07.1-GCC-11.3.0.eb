@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'bc'
+version = '1.07.1'
+
+homepage = 'https://www.gnu.org/software/bc/'
+description = """bc is an arbitrary precision numeric processing language."""
+
+source_urls = ['https://ftp.gnu.org/gnu/bc/']
+sources = [SOURCELOWER_TAR_GZ]
+
+checksums = ['62adfca89b0a1c0164c2cdca59ca210c1d44c3ffc46daf9931cf4942664cb02a']
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+builddependencies = [
+    ('makeinfo', '6.8'),
+]
+
+dependencies = [
+    ('libreadline', '8.1.2'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+]
+
+# overwrite fix-libmath_h script which requires 'ed' to be installed;
+# not actually needed, build just fine without it (and libmath.h is not part of the installation, only binaries are)
+preconfigopts = "echo 'echo not touching libmath.h, already patched...' bc/fix-libmath_h && "
+
+configopts = "--with-readline"
+
+sanity_check_paths = {
+    'files': ['bin/bc', 'bin/dc'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "bc --help",
+    "dc --help",
+]
+
+moduleclass = 'system'
