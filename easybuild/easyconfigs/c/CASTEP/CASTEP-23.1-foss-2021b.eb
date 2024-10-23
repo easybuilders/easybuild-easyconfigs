@@ -1,0 +1,50 @@
+easyblock = 'ConfigureMake'
+
+name = 'CASTEP'
+version = '23.1'
+
+homepage = 'http://www.castep.org'
+description = """
+CASTEP is an electronic structure materials modelling code based on density
+functional theory (DFT), with functionality including geometry optimization
+molecular dynamics, phonons, NMR chemical shifts and much more.
+"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+download_instructions = """CASTEP is proprietary software, available under a free-of-charge license for academic use
+only. Visit http://www.castep.org and navigate to "Getting Castep" to apply for a license."""
+
+sources = [SOURCE_TAR_GZ]
+checksums = ['57d4f31835199d183ecae3c12c0f82ed5c188a50a0baf5651ff3cd8b504fc441']
+
+# Python+numpy are needed for the elastic constants and castepconv utilities, but
+# should work with any system or eb Python including 2.7.
+dependencies = [
+    ('Perl', '5.34.0'),
+    ('Python', '3.9.6'),
+]
+
+skipsteps = ['configure']
+
+_generic_opts = ' COMMS_ARCH=mpi FFT=fftw3 MATH_LIBS="-lflexiblas" '
+
+buildopts = _generic_opts + 'FFTLIBDIR=$FFT_LIB_DIR MATHLIBDIR=$BLAS_LIB_DIR'
+buildopts += ' castep tools utilities'
+
+preinstallopts = 'mkdir -p %(installdir)s/bin &&'
+installopts = _generic_opts + 'INSTALL_DIR="%(installdir)s/bin"'
+installopts += ' install-castep install-tools install-utilities'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['castep.mpi', 'optados.mpi', 'orbitals2bands', 'dispersion.pl',
+                                     'elastics.py', 'ceteprouts.pm']],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'castep.mpi --help',
+    'optados.mpi --help',
+]
+
+moduleclass = 'phys'
