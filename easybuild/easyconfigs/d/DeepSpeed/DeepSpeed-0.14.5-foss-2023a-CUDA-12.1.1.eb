@@ -1,0 +1,92 @@
+easyblock = 'PythonBundle'
+
+name = 'DeepSpeed'
+version = '0.14.5'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = "http://www.deepspeed.ai/"
+description = """
+DeepSpeed is a deep learning optimization library that makes distributed training easy, efficient, and effective.
+"""
+
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('Ninja', '1.11.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('NCCL', '2.18.3', versionsuffix),
+    ('CUTLASS', '3.5.1', versionsuffix),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('CuPy', '13.0.0', versionsuffix),
+    ('Triton', '2.1.0', versionsuffix),
+    ('accelerate', '0.33.0', versionsuffix),
+    ('PyTorch-bundle', '2.1.2', versionsuffix),  # torchvision dependency for mup
+    ('Seaborn', '0.13.2'),  # dependency for mup
+    ('DLPack', '0.8'),
+    ('py-cpuinfo', '9.0.0'),
+    ('pydantic', '2.5.3'),
+    ('tqdm', '4.66.1'),
+    ('libaio', '0.3.113'),  # for async_io (builddep only?)
+    ('Transformers', '4.39.3'),
+]
+
+use_pip = True
+
+github_account = 'microsoft'
+exts_list = [
+    ('hjson', '3.1.0', {
+        'checksums': ['55af475a27cf83a7969c808399d7bccdec8fb836a07ddbd574587593b9cdcf75'],
+    }),
+    ('nvidia-ml-py', '12.535.161', {
+        'checksums': ['2bcc31ff7a0ea291ed8d7fc39b149391a42c2fb1cb4256c935e692de488b4d17'],
+        'modulename': 'pynvml',
+    }),
+    ('mup', '1.0.0', {
+        'checksums': ['9639e3d19f90e754f985ed444542ed2f8a049f3c0488fcb6efe150f30922cf74'],
+    }),
+    (name, version, {
+        'ds_build_ops_to_skip': [
+            # DS_BUILD_<OPT>=0 http://www.deepspeed.ai/tutorials/advanced-install/#pre-install-deepspeed-ops
+            'SPARSE_ATTN',  # requires PyTorch<2.0
+            'FP_QUANTIZER',  # Untested triton version (2.1.0), only 2.3.0 and 2.3.1 are known to be compatible
+            'CUTLASS_OPS',  # requires dskernels
+            'RAGGED_DEVICE_OPS',  # requires dskernels
+        ],
+        'installopts': '--global-option="build_ext" --global-option="-j%(parallel)s"',
+        'patches': [
+            'DeepSpeed-0.14.2_no-ninja-dep.patch',
+            'DeepSpeed-0.14.5_pic-compile.patch',
+            'DeepSpeed-0.14.5_pdsh-env-vars.patch',
+            'DeepSpeed-0.14.5_use-eb-cutlass.patch',
+        ],
+        'runtest': (
+            'PATH="$PATH:$PWD/bin"'  # deepspeed cli used in a lot of tests
+            ' pytest tests/unit/'
+            ' -k "not TestTensorBoard'  # requires tensorboard
+            ' and not TestWandb'  # requires wandb
+            ' and not TestCometMonitor"'  # requires comet
+        ),
+        # Test suite not available on pypi
+        'source_urls': [GITHUB_SOURCE],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'testinstall': True,
+        'checksums': [
+            {'DeepSpeed-0.14.5.tar.gz': '9f5622715cbd89c7382bfecf7fb188419ad3f2af7764dc6de35917abc6390cce'},
+            {'DeepSpeed-0.14.2_no-ninja-dep.patch': '03ab528096387e7f18d2a5a6f5fc20ed86d1ca8f63f0e65f266f4dda30e11776'},
+            {'DeepSpeed-0.14.5_pic-compile.patch': '7d250f6bf57d006cab01a8763803b026f0d9029634557746c2a759893ab279b3'},
+            {'DeepSpeed-0.14.5_pdsh-env-vars.patch':
+             '02f053d8de17e4e607b223e836658d8223cb26a3a7d8c9135e67b69aaa7f83a9'},
+            {'DeepSpeed-0.14.5_use-eb-cutlass.patch':
+             '43675f7c84fd0b0cea1050a4419020b377de414fc7f83d69b8010ab368964d8d'},
+        ],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'ai'
