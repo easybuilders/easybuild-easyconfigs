@@ -1365,6 +1365,51 @@ class EasyConfigTest(TestCase):
         self.assertFalse(no_descr_patches, "No description found in patches: %s" % ', '.join(no_descr_patches))
 
 
+def verify_patch(specdir, patch_spec, checksum_idx, patch_checksums, extension_name=None):
+    """Verify existance and checksum of the given patch.
+
+    specdir         - Directory of the easyconfig
+    patch_spec      - Patch entry
+    checksum_idx    - Expected index in the checksum list
+    patch_checksums - List of checksums for patches
+    extension_name  - Name of the extensions this patch is for if any
+
+    Return a (possibly empty) list of failure messages
+    """
+    patch_dir = specdir
+    if isinstance(patch_spec, str):
+        patch_name = patch_spec
+    elif isinstance(patch_spec, (tuple, list)):
+        patch_name = patch_spec[0]
+    elif isinstance(patch_spec, dict):
+        patch_name = patch_spec['name']
+        alt_location = patch_spec.get('alt_location')
+        if alt_location:
+            basedir = os.path.dirname(os.path.dirname(specdir))
+            patch_dir = os.path.join(basedir, letter_dir_for(alt_location), alt_location)
+    else:
+        # Should have already been verified
+        raise RuntimeError('Patch spec is not a string, tuple, list or dict: %s\nType: %s' % (patch_spec,
+                                                                                              type(patch_spec)))
+
+    patch_path = os.path.join(patch_dir, patch_name)
+    patch_descr = "patch file " + patch_name
+    if extension_name:
+        patch_descr += "of extension " + extension_name
+
+    # only check actual patch files, not other files being copied via the patch functionality
+    if patch_path.endswith('.patch'):
+        if not os.path.isfile(patch_path):
+            return [patch_descr + "is missing"]
+
+        if checksum_idx < len(patch_checksums):
+            checksum = patch_checksums[checksum_idx]
+            if not verify_checksum(patch_path, checksum):
+                return ["Invalid checksum for %s: %s" % (patch_descr, checksum)]
+
+    return []  # No error
+
+
 def template_easyconfig_test(self, spec):
     """Tests for an individual easyconfig: parsing, instantiating easyblock, check patches, ..."""
 
@@ -1516,27 +1561,9 @@ def template_easyconfig_test(self, spec):
 
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
-    basedir = os.path.dirname(os.path.dirname(specdir))
-    for idx, patch in enumerate(patches):
-        patch_dir = specdir
-        if isinstance(patch, str):
-            patch_name = patch
-        elif isinstance(patch, (tuple, list)):
-            patch_name = patch[0]
-        elif isinstance(patch, dict):
-            patch_name = patch['name']
-            if patch['alt_location']:
-                patch_dir = os.path.join(basedir, letter_dir_for(patch['alt_location']), patch['alt_location'])
 
-        # only check actual patch files, not other files being copied via the patch functionality
-        patch_full = os.path.join(patch_dir, patch_name)
-        if patch_name.endswith('.patch') and not os.path.isfile(patch_full):
-            failing_checks.append("Patch file %s is missing" % patch_full)
-        # verify checksum for each patch file
-        elif idx < len(patch_checksums) and (os.path.exists(patch_full) or patch_name.endswith('.patch')):
-            checksum = patch_checksums[idx]
-            if not verify_checksum(patch_full, checksum):
-                failing_checks.append("Invalid checksum for patch file %s: %s" % (patch_name, checksum))
+    for idx, patch in enumerate(patches):
+        failing_checks.extend(verify_patch(specdir, patch, idx, patch_checksums))
 
     # make sure 'source' step is not being skipped,
     # since that implies not verifying the checksum
@@ -1566,21 +1593,7 @@ def template_easyconfig_test(self, spec):
         patch_checksums = checksums[src_cnt:]
 
         for idx, ext_patch in enumerate(ext.get('patches', [])):
-            if isinstance(ext_patch, (tuple, list)):
-                ext_patch = ext_patch[0]
-
-            # only check actual patch files, not other files being copied via the patch functionality
-            ext_patch_full = os.path.join(specdir, ext_patch['name'])
-            if ext_patch_full.endswith('.patch') and not os.path.isfile(ext_patch_full):
-                failing_checks.append("Patch file %s for extension %s is missing." % (ext_patch['name'], ext_name))
-                continue
-
-            # verify checksum for each patch file
-            if idx < len(patch_checksums) and os.path.exists(ext_patch_full):
-                checksum = patch_checksums[idx]
-                if not verify_checksum(ext_patch_full, checksum):
-                    failing_checks.append("Invalid checksum for patch %s for extension %s: %s."
-                                          % (ext_patch['name'], ext_name, checksum))
+            failing_checks.extend(verify_patch(specdir, ext_patch, idx, patch_checksums, extension_name=ext_name))
 
     # check whether all extra_options defined for used easyblock are defined
     extra_opts = app.extra_options()
