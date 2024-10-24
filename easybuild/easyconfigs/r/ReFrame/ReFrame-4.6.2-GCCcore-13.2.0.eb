@@ -1,0 +1,76 @@
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '4.6.2'
+
+homepage = 'https://github.com/reframe-hpc/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('cURL', '8.3.0'),  # Used by ReFrame to download pip in the bootstrap
+]
+
+# Note that for ReFrame's CPU autodetect to work
+# the system also needs to provide (new enough versions of) these dependencies
+dependencies = [
+    ('Python', '3.11.5'),
+    ('libxslt', '1.1.38'),  # Required by lxml, which is installed by ReFrame's bootstrap installer
+    ('libxml2', '2.11.5'),  # Required by lxml, which is installed by ReFrame's bootstrap installer
+]
+
+use_pip = True
+
+exts_list = [
+    # ReFrame's bootstrap script is intended to run with zero dependencies. It downloads all python deps for ReFrame
+    # into a %(installdir)/external directory. ReFrame's main executable (reframe) adds this dir to python's sys.path
+    # so that ReFrame (and only ReFrame) will find & use all of these dependencies.
+    # In EasyBuild, we should adhere to this installation method because a) it is how ReFrame is meant to be used and
+    # b) it isolates all of ReFrame dependencies from any other python code you run. Thus, there is no chance that
+    # a test will pick up on any python deps from ReFrame itself.
+    # For this to work, we need to disable download_dep_fail and sanity_pip_check, as both are _expected_ to fail
+    # for this setup.
+    ('reframe', version, {
+        # Deps are downloaded to %(installdir)/external, which won't polute the PYTHONPATH, so is ok
+        'download_dep_fail': False,
+        # ReFrame uses its custom sys.path to find necessary packages, they are not on PYTYHONPATH
+        # Thus, the regular pip sanity check is expected to fail, even if ReFrame would run just fine 
+        'sanity_pip_check': False,
+        # Set modulename to False, as to skip the sanity_check-step from extension.py (python -c "import reframe")
+        # This step would fail, since the regular python interpreter wouldn't find the additional packages in
+        # %(installdir)/external. That's fine, as ReFrame should never be imported directly, only through the
+        # reframe command.
+        'modulename': False,
+        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && "
+                          "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && ",
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/reframe-hpc/reframe/archive/'],
+        'checksums': ['d3343815ee3d2c330b91a1cdb924ba184119ed7d9fc88a4a754b939a4259df82'],
+    }),
+]
+
+postinstallcmds = [
+    "cp -a tools examples %(installdir)s",
+    "mkdir -p %(installdir)s/share && cp -a share/completions %(installdir)s/share/completions",
+    r"sed -i 's@/\(python[0-9.]*\)$@/\1 -S@g' %(installdir)s/bin/reframe",
+]
+
+sanity_check_paths = {
+    'files': ['bin/reframe',
+              'share/completions/reframe.bash',
+              'share/completions/reframe.fish',
+              'share/completions/reframe.tcsh'],
+    'dirs': ['external', 'lib', 'tools', 'examples']
+}
+
+sanity_check_commands = ['reframe -V']
+
+# Since this is at the GCCcore toolchain level, make sure ReFrame is configured to purge modules before running
+# any tests by default
+modextravars = {
+    'RFM_PURGE_ENVIRONMENT': '1',
+}
+
+moduleclass = 'devel'
