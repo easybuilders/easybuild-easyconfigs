@@ -1,0 +1,44 @@
+# Ensure that the shared library path is injected into the environment for lldb-api tests even if
+# BUILD_SHARED_LIBS -> LLVM_ENABLE_SHARED_LIBS is not set
+# This is needed when building shared libraries with LLVM_BUILD_LLVM_DYLIB
+diff --git a/lldb/test/API/lit.cfg.py b/lldb/test/API/lit.cfg.py
+index 96520c7c8262..7d3fcbbc3a62 100644
+--- a/lldb/test/API/lit.cfg.py
++++ b/lldb/test/API/lit.cfg.py
+@@ -151,22 +151,21 @@ if platform.system() == "Darwin":
+         config.python_executable = python_executable
+ 
+ # Shared library build of LLVM may require LD_LIBRARY_PATH or equivalent.
+-if is_configured("shared_libs"):
+-    for shlibpath_var in find_shlibpath_var():
+-        # In stand-alone build llvm_shlib_dir specifies LLDB's lib directory while
+-        # llvm_libs_dir specifies LLVM's lib directory.
+-        shlibpath = os.path.pathsep.join(
+-            (
+-                config.llvm_shlib_dir,
+-                config.llvm_libs_dir,
+-                config.environment.get(shlibpath_var, ""),
+-            )
+-        )
+-        config.environment[shlibpath_var] = shlibpath
+-    else:
+-        lit_config.warning(
+-            "unable to inject shared library path on '{}'".format(platform.system())
++for shlibpath_var in find_shlibpath_var():
++    # In stand-alone build llvm_shlib_dir specifies LLDB's lib directory while
++    # llvm_libs_dir specifies LLVM's lib directory.
++    shlibpath = os.path.pathsep.join(
++        (
++            config.llvm_shlib_dir,
++            config.llvm_libs_dir,
++            config.environment.get(shlibpath_var, ""),
+         )
++    )
++    config.environment[shlibpath_var] = shlibpath
++else:
++    lit_config.warning(
++        "unable to inject shared library path on '{}'".format(platform.system())
++    )
+ 
+ lldb_use_simulator = lit_config.params.get("lldb-run-with-simulator", None)
+ if lldb_use_simulator:
