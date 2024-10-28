@@ -1,11 +1,12 @@
 # Ensure that the shared library path is injected into the environment for lldb-api tests even if
 # BUILD_SHARED_LIBS -> LLVM_ENABLE_SHARED_LIBS is not set
-# This is needed when building shared libraries with LLVM_BUILD_LLVM_DYLIB
+# This is needed when building shared libraries with LLVM_BUILD_LLVM_DYLIB and if libatomic is not
+# available in a system path.
 diff --git a/lldb/test/API/lit.cfg.py b/lldb/test/API/lit.cfg.py
-index 96520c7c8262..7d3fcbbc3a62 100644
+index 96520c7c8262..4b67bb651969 100644
 --- a/lldb/test/API/lit.cfg.py
 +++ b/lldb/test/API/lit.cfg.py
-@@ -151,22 +151,21 @@ if platform.system() == "Darwin":
+@@ -151,22 +151,22 @@ if platform.system() == "Darwin":
          config.python_executable = python_executable
  
  # Shared library build of LLVM may require LD_LIBRARY_PATH or equivalent.
@@ -35,6 +36,7 @@ index 96520c7c8262..7d3fcbbc3a62 100644
          )
 +    )
 +    config.environment[shlibpath_var] = shlibpath
++    break
 +else:
 +    lit_config.warning(
 +        "unable to inject shared library path on '{}'".format(platform.system())
@@ -42,3 +44,12 @@ index 96520c7c8262..7d3fcbbc3a62 100644
  
  lldb_use_simulator = lit_config.params.get("lldb-run-with-simulator", None)
  if lldb_use_simulator:
+@@ -223,7 +223,7 @@ if is_configured("has_libcxx") and config.has_libcxx:
+ 
+ # Forward ASan-specific environment variables to tests, as a test may load an
+ # ASan-ified dylib.
+-for env_var in ("ASAN_OPTIONS", "DYLD_INSERT_LIBRARIES"):
++for env_var in ("ASAN_OPTIONS", "DYLD_INSERT_LIBRARIES", shlibpath_var):
+     if env_var in config.environment:
+         dotest_cmd += ["--inferior-env", env_var + "=" + config.environment[env_var]]
+ 
