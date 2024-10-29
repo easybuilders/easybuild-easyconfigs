@@ -8,7 +8,6 @@ from pathlib import Path
 
 
 def get_first_commit_date(repo, file_path):
-    print(f"Checking commit dates for {file_path}")
     commits = list(repo.iter_commits(paths=file_path))
     if commits:
         return commits[-1].committed_date
@@ -18,7 +17,6 @@ def get_first_commit_date(repo, file_path):
 
 
 def sort_by_added_date(repo, file_paths):
-    print("Compute first commit dates")
     files_with_dates = [(get_first_commit_date(repo, file_path), file_path) for file_path in file_paths]
     sorted_files = sorted(files_with_dates, reverse=True)
     return [file for date, file in sorted_files]
@@ -30,7 +28,6 @@ def similar_easyconfigs(repo, new_file):
 
 
 def diff(old, new):
-    print(f"Diffing {old} vs {new}")
     with open(old, 'r') as old_file, open(new, 'r') as new_file:
         old_lines = list(old_file)
         new_lines = list(new_file)
