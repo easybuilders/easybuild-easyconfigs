@@ -58,7 +58,7 @@ event_path = os.getenv("GITHUB_EVENT_PATH")
 token = os.getenv("GH_TOKEN")
 repo = os.getenv("GITHUB_REPOSITORY")
 base_branch_name = os.getenv("GITHUB_BASE_REF")
-pr_branch_name = os.getenv("GITHUB_HEAD_REF")
+pr_ref_name = os.getenv("GITHUB_REF_NAME")
 
 with open(event_path) as f:
     data = json.load(f)
@@ -68,14 +68,15 @@ pr_number = data['pull_request']['number']
 print("PR number:", pr_number)
 print("Repo:", repo)
 print("Base branch name:", base_branch_name)
-print("PR branch name:", pr_branch_name)
+print("PR ref:", pr_ref_name)
 
 gitrepo = git.Repo(".")
-branches = {x.name: x for x in gitrepo.remote().refs}
-base_branch = branches['origin/' + base_branch_name]
-pr_branch = branches['origin/' + pr_branch_name]
 
-pr_diff = base_branch.commit.diff(pr_branch.commit)
+
+target_commit = gitrepo.commit('origin/' + base_branch_name)
+pr_commit = gitrepo.commit('pull/' + pr_ref_name)
+pr_diff = target_commit.diff(pr_commit)
+
 new_ecs, changed_ecs = pr_ecs(pr_diff)
 
 print("Changed ECs:", changed_ecs)
