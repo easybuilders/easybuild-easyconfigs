@@ -83,7 +83,7 @@ new_software = False
 updated_software = False
 comment = ''
 for new_file in new_ecs:
-    neighbours = similar_easyconfigs(gitrepo, new_file)
+    neighbours = similar_easyconfigs(gitrepo, new_file,  new_ecs)
     print(f"Found {len(neighbours)} neighbours for {new_file}")
     if neighbours:
         updated_software = True
@@ -97,7 +97,7 @@ for new_file in new_ecs:
             comment += f'[{neighbour}](https://github.com/{repo}/blob/{base_branch_name}/{neighbour})\n\n'
             comment += '```diff\n'
             comment += diff(neighbour, new_file)
-            comment += '```\n</details>\n'
+            comment += '```\n</details>\n\n'
     else:
         new_software = True
 
