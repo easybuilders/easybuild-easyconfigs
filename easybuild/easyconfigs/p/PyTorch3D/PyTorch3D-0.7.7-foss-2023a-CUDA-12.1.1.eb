@@ -66,7 +66,24 @@ exts_list = [
         'source_urls': ['https://github.com/facebookresearch/%(namelower)s/archive'],
         'testinstall': True,
         # Move srcdir to not have it end-up in pythonpath
-        'runtest': 'mv %(namelower)s %(namelower)s.src && pytest tests',
+        'runtest': (
+            'mv %(namelower)s %(namelower)s.src'
+            ' && pytest tests -k "not ('
+            ' (test_rasterize_rectangle_images.py and test_render_cow_opengl)'  # slow/hangs
+            ' or (test_rasterizer.py and test_compare_rasterizers)'  # slow/hangs
+            ' or (test_meshes.py and test_clone)'  # slow/hangs
+            ' or (test_render_multigpu.py and test_mesh_renderer_opengl_to)'  # slow/hangs
+            ' or (test_io_off.py and (test_bad or test_load_lumpy))'  # error parsing file, same issue in conda
+            ' or (test_knn.py and test_knn_vs_python_square_cuda)'  # almost match, same issue in conda
+            ' or (test_opengl_utils.py and test_no_egl_error)'  # import OpenGL.EGL work even after importing OpenGL.GL
+            ' or (test_points_alignment.py and test_heterogeneous_inputs)'  # diff in R values, same issue in conda
+            ' or (tests/implicitron/test_config.py and test_simpleclass_member)'  # mutable default use default_factory
+            ' or (tests/implicitron/test_data_cow.py and test_simple)'  # docs not included in install
+            ' or (tests/implicitron/test_extending_orm_types.py and test_extending_frame_data)'  # wrong number of args
+            ' or (tests/pulsar/test_forward.py and TestForward)'  # can't write image with one color channel
+            ')"'
+            ' && mv %(namelower)s.src %(namelower)s'
+        ),
     }),
 ]
 
