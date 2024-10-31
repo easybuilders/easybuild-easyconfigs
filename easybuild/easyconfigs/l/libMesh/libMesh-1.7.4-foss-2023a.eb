@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'libMesh'
+version = '1.7.4'
+
+homepage = 'https://github.com/libMesh/libmesh'
+description = """The libMesh library provides a framework for the numerical simulation of
+partial differential equations using arbitrary unstructured discretizations on serial and
+parallel platforms. A major goal of the library is to provide support for adaptive mesh
+refinement (AMR) computations in parallel while allowing a research scientist to focus on the
+physics they are modeling. """
+
+toolchain = {'name': 'foss', 'version': '2023a' }
+
+source_urls = ['https://github.com/libMesh/libmesh/releases/download/v%(version)s/']
+sources = ['libmesh-%(version)s.tar.gz']
+patches = [
+#  'libMesh-1.7.2-version.patch',
+  'libMesh-1.7.2-xdr.patch',
+]
+
+dependencies = [
+# VTK support fails
+#	('VTK', '9.3.0', '-mpi'),
+#	('GLPK', '5.0'),     # libglpk is in Gentoo-prefix
+	('Eigen', '3.4.0', '', ('system', 'system')),
+	('PETSc', '3.20.0'),
+	('Boost.MPI', '1.82.0', '', ('gompi', '2023a')),
+	('HDF5', '1.10.11'),
+	('NLopt', '2.7.1'),
+	('tbb', '2021.10.0'),
+]
+
+#preconfigopts = ' CPPFLAGS=" $CPPFLAGS -I$EBROOTGENTOO/include/tirpc" LIBS=" -ltirpc " '
+
+# netcdf conflicts with ours
+configopts = " CXX=mpic++ CC=mpicc --enable-curl --disable-strict-lgpl "
+configopts += " --enable-parmesh --enable-distmesh --enable-xdr " 
+configopts += " --enable-hdf5 --with-hdf5=$EBROOTHDF5 " 
+#configopts += " --with-vtk-include=$EBROOTVTK/include/vtk-9.3 --with-vtk-lib=$EBROOTVTK/lib "
+configopts += " --with-eigen-include=$EBROOTEIGEN/include "
+configopts += " --with-glpk-include=$EBROOTGENTOO/include --with-glpk-lib=$EBROOTGENTOO/lib64 "
+configopts += " --with-nlopt-include=$EBROOTNLOPT/include --with-nlopt-lib=$EBROOTNLOPT/lib "
+configopts += " --with-curl-include=$EBROOTGENTOO/include/curl --with-curl-lib=$EBROOTGENTOO/lib "
+configopts += " --with-tbb=$EBROOTTBB/tbb "
+
+
+runtest = "check"
+
+modluafooter = """
+setenv("LIBMESH_DIR", root)
+"""
