@@ -24,7 +24,7 @@ def sort_by_added_date(repo, file_paths):
 
 def similar_easyconfigs(repo, new_file):
     possible_neighbours = [x for x in new_file.parent.glob('*.eb') if x != new_file]
-    return sort_by_added_date(repo, possible_neighbours)[:3]  # top 3 choices
+    return sort_by_added_date(repo, possible_neighbours)
 
 
 def diff(old, new):
@@ -79,18 +79,38 @@ new_ecs, changed_ecs = pr_ecs(pr_diff)
 print("Changed ECs:", changed_ecs)
 print("Newly added ECs:", new_ecs)
 
-new_software = False
-updated_software = False
-comment = ''
+new_software = 0
+updated_software = 0
+to_diff = dict()
 for new_file in new_ecs:
     neighbours = similar_easyconfigs(gitrepo, new_file)
     print(f"Found {len(neighbours)} neighbours for {new_file}")
     if neighbours:
-        updated_software = True
-        print(f"Diffs for {new_file}")
-        comment += f'#### Updated software `{new_file.name}`\n\n'
+        updated_software += 1
+        to_diff[new_file] = neighbours
+    else:
+        new_software += 1
 
-        for neighbour in neighbours:
+print(f"Generating comment for {len(to_diff)} updates softwares")
+# Limit comment size for large PRs:
+if len(to_diff) > 20:  # Too much, either bad PR or some broad change. Not diffing.
+    max_diffs_per_software = 0
+elif len(to_diff) > 10:
+    max_diffs_per_software = 1
+elif len(to_diff) > 5:
+    max_diffs_per_software = 2
+else:
+    max_diffs_per_software = 3
+
+comment = ''
+if max_diffs_per_software > 0:
+    for new_file, neighbours in to_diff.items():
+        compare_neighbours = neighbours[:max_diffs_per_software]
+        if compare_neighbours:
+            print(f"Diffs for {new_file}")
+            comment += f'#### Updated software `{new_file.name}`\n\n'
+
+        for neighbour in compare_neighbours:
             print(f"against {neighbour}")
             comment += '<details>\n'
             comment += f'<summary>Diff against <code>{neighbour.name}</code></summary>\n\n'
@@ -98,9 +118,6 @@ for new_file in new_ecs:
             comment += '```diff\n'
             comment += diff(neighbour, new_file)
             comment += '```\n</details>\n\n'
-    else:
-        new_software = True
-
 
 print("Adjusting labels")
 current_labels = [label['name'] for label in data['pull_request']['labels']]
