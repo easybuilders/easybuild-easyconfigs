@@ -59,26 +59,22 @@ event_path = os.getenv("GITHUB_EVENT_PATH")
 token = os.getenv("GH_TOKEN")
 repo = os.getenv("GITHUB_REPOSITORY")
 base_branch_name = os.getenv("GITHUB_BASE_REF")
-pr_ref_name = os.getenv("GITHUB_REF_NAME")
 
 with open(event_path) as f:
     data = json.load(f)
 
-print('env:', os.environ)
-print('data:', data)
-
 pr_number = data['pull_request']['number']
+merge_commit_sha = data['pull_request']['merge_commit_sha']
 
 print("PR number:", pr_number)
 print("Repo:", repo)
 print("Base branch name:", base_branch_name)
-print("PR ref:", pr_ref_name)
+print("Merge commit ref:", )
 
 gitrepo = git.Repo(".")
 
-
 target_commit = gitrepo.commit('origin/' + base_branch_name)
-pr_commit = gitrepo.commit('pull/' + pr_ref_name)
+pr_commit = gitrepo.commit(merge_commit_sha)
 pr_diff = target_commit.diff(pr_commit)
 
 new_ecs, changed_ecs = pr_ecs(pr_diff)
