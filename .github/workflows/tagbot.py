@@ -1,3 +1,7 @@
+# NOTE: In order to write comment and edit labels, this script requires workflows with write permissions.
+# It should not use any untrusted third party code, or any code checked into the repository itself
+# as that could indirectly grant PRs the ability to edit labels and comments on PRs.
+
 import os
 import git
 import requests
