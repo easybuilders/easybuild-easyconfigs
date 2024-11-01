@@ -78,9 +78,11 @@ pr_commit = gitrepo.commit(merge_commit_sha)
 pr_diff = target_commit.diff(pr_commit)
 
 new_ecs, changed_ecs = pr_ecs(pr_diff)
+modified_workflow = any(item.a_path.startswith('.github/workflows/') for item in pr_diff)
 
 print("Changed ECs:", changed_ecs)
 print("Newly added ECs:", new_ecs)
+print("Modified workflow:", modified_workflow)
 
 new_software = 0
 updated_software = 0
@@ -125,9 +127,14 @@ if max_diffs_per_software > 0:
 print("Adjusting labels")
 current_labels = [label['name'] for label in data['pull_request']['labels']]
 
+label_checks = [(changed_ecs, 'change'),
+                (new_software, 'new'),
+                (updated_software, 'update'),
+                (modified_workflow, 'workflow')]
+
 labels_add = []
 labels_del = []
-for condition, label in [(changed_ecs, 'change'), (new_software, 'new'), (updated_software, 'update')]:
+for condition, label in label_checks:
     if condition and label not in current_labels:
         labels_add.append(label)
     elif not condition and label in current_labels:
