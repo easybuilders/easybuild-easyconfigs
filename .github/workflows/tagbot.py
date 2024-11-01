@@ -69,7 +69,7 @@ merge_commit_sha = data['pull_request']['merge_commit_sha']
 print("PR number:", pr_number)
 print("Repo:", repo)
 print("Base branch name:", base_branch_name)
-print("Merge commit ref:", )
+print("Merge commit ref:", merge_commit_sha)
 
 gitrepo = git.Repo(".")
 
