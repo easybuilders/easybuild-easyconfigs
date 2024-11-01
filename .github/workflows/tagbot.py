@@ -64,6 +64,9 @@ pr_ref_name = os.getenv("GITHUB_REF_NAME")
 with open(event_path) as f:
     data = json.load(f)
 
+print('env:', os.environ)
+print('data:', data)
+
 pr_number = data['pull_request']['number']
 
 print("PR number:", pr_number)
