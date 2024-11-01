@@ -1,0 +1,30 @@
+name: Tagbot
+on: [pull_request]
+
+jobs:
+  tagbot:
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - run: |
+        # Make sure the script is unmodified
+        echo "8be2d295e8436ce557acc8a4d3b82a639913ae65de0d1a76871f21359b4e8d9f .github/workflows/tagbot.py"|sha256sum --check --status
+
+    - name: set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+
+    - name: Get packages
+      run: pip install gitpython requests
+
+    - name: Tag and comment
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: python .github/workflows/tagbot.py
+
