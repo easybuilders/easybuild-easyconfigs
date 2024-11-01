@@ -11,9 +11,25 @@ jobs:
       with:
         fetch-depth: 0
 
-    - run: |
-        # Make sure the script is unmodified as it runs with write permissions
-        echo "f525f362a99f13764791185da4d45959a632ef54e3b6b865461dabddb1b1df34 .github/workflows/tagbot.py"|sha256sum --check --status
+    - name: Check if file has changed
+      run: |
+        if git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep -q .github/workflows/tagbot.py; then
+          echo "tagbot_modified=true" >> $GITHUB_ENV
+        else
+          echo "tagbot_modified=false" >> $GITHUB_ENV
+        fi
+
+    - name: Post warning comment
+      if: env.file_modified == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: ${{ github.event.pull_request.number }},
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: "⚠️ Warning: The tagbot.py file has been modified. Please review changes carefully."
+          })
 
     - name: set up Python
       uses: actions/setup-python@v5
@@ -24,6 +40,7 @@ jobs:
       run: pip install gitpython requests
 
     - name: Tag and comment
+      if: env.tagbot_modified == 'false'
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: python .github/workflows/tagbot.py
