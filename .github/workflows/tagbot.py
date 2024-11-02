@@ -51,6 +51,7 @@ base_branch_name = os.getenv("GITHUB_BASE_REF")
 with open(event_path) as f:
     data = json.load(f)
 
+print(data)
 pr_number = data['pull_request']['number']
 merge_commit_sha = data['pull_request']['merge_commit_sha']
 
