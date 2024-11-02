@@ -61,6 +61,7 @@ print("Merge commit ref:", merge_commit_sha)
 gitrepo = git.Repo("pr")
 
 target_commit = gitrepo.commit('origin/' + base_branch_name)
+print("Target commit ref:", target_commit)
 pr_commit = gitrepo.commit(merge_commit_sha)
 pr_diff = target_commit.diff(pr_commit)
 
