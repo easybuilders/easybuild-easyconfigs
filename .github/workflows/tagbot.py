@@ -6,7 +6,6 @@ import os
 import git
 import requests
 import json
-import difflib
 from datetime import datetime
 from pathlib import Path
 
@@ -29,17 +28,6 @@ def sort_by_added_date(repo, file_paths):
 def similar_easyconfigs(repo, new_file):
     possible_neighbours = [x for x in new_file.parent.glob('*.eb') if x != new_file]
     return sort_by_added_date(repo, possible_neighbours)
-
-
-def diff(old, new):
-    with open(old, 'r') as old_file, open(new, 'r') as new_file:
-        old_lines = list(old_file)
-        new_lines = list(new_file)
-        return ''.join(difflib.unified_diff(
-            old_lines,
-            new_lines,
-            fromfile=str(old),
-            tofile=str(new)))
 
 
 def pr_ecs(pr_diff):
@@ -67,11 +55,10 @@ pr_number = data['pull_request']['number']
 merge_commit_sha = data['pull_request']['merge_commit_sha']
 
 print("PR number:", pr_number)
-print("Repo:", repo)
 print("Base branch name:", base_branch_name)
 print("Merge commit ref:", merge_commit_sha)
 
-gitrepo = git.Repo(".")
+gitrepo = git.Repo("pr")
 
 target_commit = gitrepo.commit('origin/' + base_branch_name)
 pr_commit = gitrepo.commit(merge_commit_sha)
@@ -121,7 +108,7 @@ if max_diffs_per_software > 0:
             comment += f'<summary>Diff against <code>{neighbour.name}</code></summary>\n\n'
             comment += f'[{neighbour}](https://github.com/{repo}/blob/{base_branch_name}/{neighbour})\n\n'
             comment += '```diff\n'
-            comment += diff(neighbour, new_file)
+            comment += gitrepo.git.diff(f'HEAD:{neighbour}', f'HEAD:{new_file}')
             comment += '```\n</details>\n\n'
 
 print("Adjusting labels")
