@@ -15,8 +15,7 @@ def get_first_commit_date(repo, file_path):
     if commits:
         return commits[-1].committed_date
     else:
-        print(f"{file_path} has no commit info, putting it last")
-        return datetime.datetime.min
+        raise ValueError(f'{file_path} has no commit info, this should not happen')
 
 
 def sort_by_added_date(repo, file_paths):
@@ -43,28 +42,30 @@ def pr_ecs(pr_diff):
 
 
 GITHUB_API_URL = 'https://api.github.com'
-event_path = os.getenv("GITHUB_EVENT_PATH")
-token = os.getenv("GH_TOKEN")
-repo = os.getenv("GITHUB_REPOSITORY")
-base_branch_name = os.getenv("GITHUB_BASE_REF")
+event_path = os.getenv('GITHUB_EVENT_PATH')
+token = os.getenv('GH_TOKEN')
+repo = os.getenv('GITHUB_REPOSITORY')
+base_branch_name = os.getenv('GITHUB_BASE_REF')
 
 with open(event_path) as f:
     data = json.load(f)
 
 print(data)
 pr_number = data['pull_request']['number']
-merge_commit_sha = data['pull_request']['merge_commit_sha']
+# Can't rely on merge_commit_sha for pull_request_target as it might be outdated
+# merge_commit_sha = data['pull_request']['merge_commit_sha']
 
 print("PR number:", pr_number)
 print("Base branch name:", base_branch_name)
-print("Merge commit ref:", merge_commit_sha)
 
-gitrepo = git.Repo("pr")
+# Change into "pr" checkout directory to allow diffs and glob to work on the same content
+os.chdir('pr')
+gitrepo = git.Repo('.')
 
 target_commit = gitrepo.commit('origin/' + base_branch_name)
 print("Target commit ref:", target_commit)
-pr_commit = gitrepo.commit(merge_commit_sha)
-pr_diff = target_commit.diff(pr_commit)
+merge_commit = gitrepo.head.commit
+pr_diff = target_commit.diff(merge_commit)
 
 new_ecs, changed_ecs = pr_ecs(pr_diff)
 modified_workflow = any(item.a_path.startswith('.github/workflows/') for item in pr_diff)
