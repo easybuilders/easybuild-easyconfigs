@@ -16,7 +16,7 @@ jobs:
     - name: Checkout base branch for workflow scripts
       uses: actions/checkout@v4
 
-    - name: Checkout PR for computing diff
+    - name: Checkout PR for computing diff into "pr" subdirectory
       uses: actions/checkout@v4
       with:
         ref: "${{ github.event.pull_request.head.sha }}"
@@ -26,10 +26,11 @@ jobs:
     - name: Attempt Merge
       id: merge
       run: |
+        cd pr
         git merge --no-commit --no-ff origin/${{ github.event.pull_request.base.ref }}
       continue-on-error: true
 
-    - name: Check merge result
+    - name: Abort if merge failed
       if: steps.merge.outcome == 'failure'
       run: |
         echo "Merge conflict detected, failing job."
