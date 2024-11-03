@@ -64,13 +64,15 @@ gitrepo = git.Repo('.')
 target_commit = gitrepo.commit('origin/' + base_branch_name)
 print("Target commit ref:", target_commit)
 merge_commit = gitrepo.head.commit
+print("Merge commit:", merge_commit)
 pr_diff = target_commit.diff(merge_commit)
 
 new_ecs, changed_ecs = pr_ecs(pr_diff)
 modified_workflow = any(item.a_path.startswith('.github/workflows/') for item in pr_diff)
 
-print("Changed ECs:", changed_ecs)
-print("Newly added ECs:", new_ecs)
+
+print("Changed ECs:", ', '.join(changed_ecs))
+print("Newly added ECs:", ', '.join(new_ecs))
 print("Modified workflow:", modified_workflow)
 
 new_software = 0
