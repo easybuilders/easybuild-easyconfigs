@@ -111,7 +111,7 @@ if max_diffs_per_software > 0:
             comment += f'[{neighbour}](https://github.com/{repo}/blob/{base_branch_name}/{neighbour})\n\n'
             comment += '```diff\n'
             comment += gitrepo.git.diff(f'HEAD:{neighbour}', f'HEAD:{new_file}')
-            comment += '```\n</details>\n\n'
+            comment += '\n```\n</details>\n\n'
 
 print("Adjusting labels")
 current_labels = [label['name'] for label in data['pull_request']['labels']]
