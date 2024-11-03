@@ -71,8 +71,8 @@ new_ecs, changed_ecs = pr_ecs(pr_diff)
 modified_workflow = any(item.a_path.startswith('.github/workflows/') for item in pr_diff)
 
 
-print("Changed ECs:", ', '.join(changed_ecs))
-print("Newly added ECs:", ', '.join(new_ecs))
+print("Changed ECs:", ', '.join(str(p) for p in changed_ecs))
+print("Newly added ECs:", ', '.join(str(p) for p in new_ecs))
 print("Modified workflow:", modified_workflow)
 
 new_software = 0
