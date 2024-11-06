@@ -15,8 +15,9 @@ toolchain = {'name': 'foss', 'version': '2023a' }
 source_urls = ['https://github.com/libMesh/libmesh/releases/download/v%(version)s/']
 sources = ['libmesh-%(version)s.tar.gz']
 patches = [
-#  'libMesh-1.7.2-version.patch',
   'libMesh-1.7.2-xdr.patch',
+  'libMesh-1.7.5-netcdf-4.6.2-tests-hdf5-compat.patch',
+  'libMesh-1.7.5-skip_problematic_tests.patch',       # exclude crashing examples
 ]
 
 dependencies = [
@@ -26,12 +27,10 @@ dependencies = [
 	('Eigen', '3.4.0', '', ('system', 'system')),
 	('PETSc', '3.20.0'),
 	('Boost.MPI', '1.82.0', '', ('gompi', '2023a')),
-	('HDF5', '1.10.11'),
+	('HDF5', '1.14.2'),
 	('NLopt', '2.7.1'),
 	('tbb', '2021.10.0'),
 ]
-
-#preconfigopts = ' CPPFLAGS=" $CPPFLAGS -I$EBROOTGENTOO/include/tirpc" LIBS=" -ltirpc " '
 
 # netcdf conflicts with ours
 configopts = " CXX=mpic++ CC=mpicc --enable-curl --disable-strict-lgpl "
@@ -44,7 +43,8 @@ configopts += " --with-nlopt-include=$EBROOTNLOPT/include --with-nlopt-lib=$EBRO
 configopts += " --with-curl-include=$EBROOTGENTOO/include/curl --with-curl-lib=$EBROOTGENTOO/lib "
 configopts += " --with-tbb=$EBROOTTBB/tbb "
 
-
+# Examples optimization_ex2 and transient_ex2 crash the build
+# This has been reported in libMesh/libmesh#3708.
 runtest = "check"
 
 modluafooter = """
