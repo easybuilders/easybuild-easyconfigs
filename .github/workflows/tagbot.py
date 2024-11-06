@@ -1,9 +1,11 @@
+# NOTE: In order to write comment and edit labels, this script requires workflows with write permissions.
+# It should not use any untrusted third party code, or any code checked into the repository itself
+# as that could indirectly grant PRs the ability to edit labels and comments on PRs.
+
 import os
 import git
 import requests
 import json
-import difflib
-from datetime import datetime
 from pathlib import Path
 
 
@@ -12,8 +14,7 @@ def get_first_commit_date(repo, file_path):
     if commits:
         return commits[-1].committed_date
     else:
-        print(f"{file_path} has no commit info, putting it last")
-        return datetime.datetime.min
+        raise ValueError(f'{file_path} has no commit info, this should not happen')
 
 
 def sort_by_added_date(repo, file_paths):
@@ -25,17 +26,6 @@ def sort_by_added_date(repo, file_paths):
 def similar_easyconfigs(repo, new_file):
     possible_neighbours = [x for x in new_file.parent.glob('*.eb') if x != new_file]
     return sort_by_added_date(repo, possible_neighbours)
-
-
-def diff(old, new):
-    with open(old, 'r') as old_file, open(new, 'r') as new_file:
-        old_lines = list(old_file)
-        new_lines = list(new_file)
-        return ''.join(difflib.unified_diff(
-            old_lines,
-            new_lines,
-            fromfile=str(old),
-            tofile=str(new)))
 
 
 def pr_ecs(pr_diff):
@@ -51,33 +41,38 @@ def pr_ecs(pr_diff):
 
 
 GITHUB_API_URL = 'https://api.github.com'
-event_path = os.getenv("GITHUB_EVENT_PATH")
-token = os.getenv("GH_TOKEN")
-repo = os.getenv("GITHUB_REPOSITORY")
-base_branch_name = os.getenv("GITHUB_BASE_REF")
-pr_ref_name = os.getenv("GITHUB_REF_NAME")
+event_path = os.getenv('GITHUB_EVENT_PATH')
+token = os.getenv('GH_TOKEN')
+repo = os.getenv('GITHUB_REPOSITORY')
+base_branch_name = os.getenv('GITHUB_BASE_REF')
 
 with open(event_path) as f:
     data = json.load(f)
 
 pr_number = data['pull_request']['number']
+# Can't rely on merge_commit_sha for pull_request_target as it might be outdated
+# merge_commit_sha = data['pull_request']['merge_commit_sha']
 
 print("PR number:", pr_number)
-print("Repo:", repo)
 print("Base branch name:", base_branch_name)
-print("PR ref:", pr_ref_name)
 
-gitrepo = git.Repo(".")
-
+# Change into "pr" checkout directory to allow diffs and glob to work on the same content
+os.chdir('pr')
+gitrepo = git.Repo('.')
 
 target_commit = gitrepo.commit('origin/' + base_branch_name)
-pr_commit = gitrepo.commit('pull/' + pr_ref_name)
-pr_diff = target_commit.diff(pr_commit)
+print("Target commit ref:", target_commit)
+merge_commit = gitrepo.head.commit
+print("Merge commit:", merge_commit)
+pr_diff = target_commit.diff(merge_commit)
 
 new_ecs, changed_ecs = pr_ecs(pr_diff)
+modified_workflow = any(item.a_path.startswith('.github/workflows/') for item in pr_diff)
 
-print("Changed ECs:", changed_ecs)
-print("Newly added ECs:", new_ecs)
+
+print("Changed ECs:", ', '.join(str(p) for p in changed_ecs))
+print("Newly added ECs:", ', '.join(str(p) for p in new_ecs))
+print("Modified workflow:", modified_workflow)
 
 new_software = 0
 updated_software = 0
@@ -116,15 +111,20 @@ if max_diffs_per_software > 0:
             comment += f'<summary>Diff against <code>{neighbour.name}</code></summary>\n\n'
             comment += f'[{neighbour}](https://github.com/{repo}/blob/{base_branch_name}/{neighbour})\n\n'
             comment += '```diff\n'
-            comment += diff(neighbour, new_file)
-            comment += '```\n</details>\n\n'
+            comment += gitrepo.git.diff(f'HEAD:{neighbour}', f'HEAD:{new_file}')
+            comment += '\n```\n</details>\n\n'
 
 print("Adjusting labels")
 current_labels = [label['name'] for label in data['pull_request']['labels']]
 
+label_checks = [(changed_ecs, 'change'),
+                (new_software, 'new'),
+                (updated_software, 'update'),
+                (modified_workflow, 'workflow')]
+
 labels_add = []
 labels_del = []
-for condition, label in [(changed_ecs, 'change'), (new_software, 'new'), (updated_software, 'update')]:
+for condition, label in label_checks:
     if condition and label not in current_labels:
         labels_add.append(label)
     elif not condition and label in current_labels:
