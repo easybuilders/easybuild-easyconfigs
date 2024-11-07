@@ -1,0 +1,91 @@
+# #
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+# #
+easyblock = 'ConfigureMake'
+
+name = 'MEME'
+version = '5.5.7'
+
+homepage = 'http://meme-suite.org'
+description = """The MEME Suite allows you to: 
+ - discover motifs using MEME, DREME (DNA only) or GLAM2 on groups of related DNA or protein sequences, 
+ - search sequence databases with motifs using MAST, FIMO, MCAST or GLAM2SCAN, 
+ - compare a motif to all motifs in a database of motifs, 
+ - associate motifs with Gene Ontology terms via their putative target genes, 
+ - analyse motif enrichment using SpaMo or CentriMo.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+
+#https://meme-suite.org/meme/meme-software/Databases/motifs/motif_databases.12.25.tgz
+#https://meme-suite.org/meme/meme-software/Databases/gomo/gomo_databases.3.2.tgz
+#https://meme-suite.org/meme/meme-software/Databases/tgene/tgene_databases.1.0.tgz
+
+source_urls = [
+    'http://%(namelower)s-suite.org/%(namelower)s-software/%(version)s/',
+    'http://%(namelower)s-suite.org/%(namelower)s-software/Databases/motifs/',
+    'http://%(namelower)s-suite.org/%(namelower)s-software/Databases/gomo/',
+    'https://meme-suite.org/meme/meme-software/Databases/tgene/'
+    ]
+sources = [
+    SOURCELOWER_TAR_GZ,
+    'motif_databases.12.25.tgz',
+    'gomo_databases.3.2.tgz',
+    'tgene_databases.1.0.tgz',
+]
+checksums = [
+    {'meme-5.5.7.tar.gz': '1dca8d0e6d1d36570c1a88ab8dbe7e4b177733fbbeacaa2e8c4674febf57aaf4'},
+    {'motif_databases.12.25.tgz': '2fc3e710cd4f6cf272851ca12fa73d56752170faada704f71895252073ffdc4e'},
+    {'gomo_databases.3.2.tgz': '41fff46f710a1a8853df8b5ee5f9ceefb62a32b1f63b5fce5c1be2c956352255'},
+    {'tgene_databases.1.0.tgz': '7e54ab48247a2c5221859c82f50fa68f314afbaf11679c71cebc6b646aa74b35'},
+]
+
+dependencies = [
+    ('Python', '3.11'),
+    ('Perl', '5.36.1'),
+    ('zlib', '1.2.8'),
+]
+
+configopts  = '--with-url="http://%(namelower)s-suite.org/" '
+configopts += '--enable-build-libxml2 --enable-build-libxslt '
+configopts += '--with-db=%(installdir)s/db '
+configopts += '--with-perl=$EBROOTPERL/bin/perl '
+configopts += '--with-python=$EBROOTPYTHON/bin/python '
+configopts += '--with-python3=$EBROOTPYTHON/bin/python '
+configopts += '--with-gs=${EBROOTGENTOO-$NIXUSER_PROFILE}/bin/gs '
+
+configure_cmd_prefix = "mkdir -p %(installdir)s/db && "
+
+modextrapaths = {
+    'PATH': 'scripts',
+    'PERL5LIB': 'lib/%(namelower)s-%(version)s/perl',
+    'PYTHONPATH': 'lib/%(namelower)s-%(version)s/python',
+}
+
+postinstallcmds = ['mkdir -p %(installdir)s/db && cd %(builddir)s/%(namelower)s-%(version)s/ && cp -r ../tgene_databases ../gomo_databases ../motif_databases %(installdir)s/db && cp -r scripts tests %(installdir)s/']
+
+local_meme_binaries = [
+    'ame', 'centrimo', 'dreme', 'dust', 'fimo', 'glam2', 'glam2scan', 'gomo', 
+    'mast', 'mcast', 'meme', 'meme-chip', 'momo', 'purge', 'spamo', 'tomtom',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_meme_binaries],
+    'dirs': ['db', 'lib', 'libexec', 'share'],
+}
+
+modextrapaths = {
+    'PATH': 'scripts',
+    'PERL5LIB': 'lib/%(namelower)s-%(version)s/perl',
+    'PYTHONPATH': 'lib/%(namelower)s-%(version)s/python',
+}
+
+moduleclass = 'bio'
