@@ -37,11 +37,13 @@ use_pip = True
 
 exts_list = [
     ('termcolor', '2.3.0', {
+        'checksums': ['b5b08f68937f138fe92f6c089b99f1e2da0ae56c52b78bf7075fd95420fd9a5a'],
     }),
     ('yacs', '0.1.8', {
         'checksums': ['efc4c732942b3103bea904ee89af98bcd27d01f0ac12d8d4d369f1e7a2914384'],
     }),
     ('iopath', '0.1.10', {
+        'checksums': ['3311c16a4d9137223e20f141655759933e1eda24f8bff166af834af3c645ef01'],
     }),
     ('antlr4-python3-runtime', '4.9.3', {
         'modulename': 'antlr4',
@@ -50,29 +52,58 @@ exts_list = [
     ('omegaconf', '2.3.0', {
         'checksums': ['d5d4b6d29955cc50ad50c46dc269bcd92c6e00f5f90d23ab5fee7bfca4ba4cc7'],
     }),
-    ('lpips', '0.1.4'),
+    ('lpips', '0.1.4', {
+        'checksums': ['3846331df6c69688aec3d300a5eeef6c529435bc8460bd58201c3d62e56188fa'],
+    }),
     (name, version, {
+        'patches': [
+            'PyTorch3D-0.7.8_fix-opengl-test-hang.patch',
+            'PyTorch3D-0.7.8_use-installdir-in-test.patch',
+            'PyTorch3D-0.7.8_squeeze-1-channel-imgs-in-test.patch',
+            'PyTorch3D-0.7.8_bar-dataclass-immutable-in-test.patch',
+            'PyTorch3D-0.7.8_remove-relative-sys-path-insert.patch',
+            'PyTorch3D-0.7.8_fix-kwarg-only-in-test.patch',
+            'PyTorch3D-0.7.8_run-test_opengl_utils-last.patch',
+        ],
         'source_tmpl': 'V%(version)s.tar.gz',
         'source_urls': ['https://github.com/facebookresearch/%(namelower)s/archive'],
+        'checksums': [
+            {'V0.7.8.tar.gz': 'd91298b17ec203fbcea62587e4e9c36b1ef717f98114d6919ff9acece5ea0f99'},
+            {'PyTorch3D-0.7.8_fix-opengl-test-hang.patch':
+             'f23cac69535f4c72857688b9fcb8dbd1813a857653ea38e84d958e212b45d139'},
+            {'PyTorch3D-0.7.8_use-installdir-in-test.patch':
+             '02298334e742c6cf85c4656afe706530dad9bf91ff75cc39d221a8621bd398b2'},
+            {'PyTorch3D-0.7.8_squeeze-1-channel-imgs-in-test.patch':
+             '6895bf4913b93cc919c216a532e44844a0a7e9b51789c77ac2c807b586019fc7'},
+            {'PyTorch3D-0.7.8_bar-dataclass-immutable-in-test.patch':
+             '82d1162410b8217557dffba9c1bbb21db3f9eaccaa1398cba4c0fa74ff50cf69'},
+            {'PyTorch3D-0.7.8_remove-relative-sys-path-insert.patch':
+             'b1f1da4a9b610a139c13efb733e564d17213daa714cbd83dcf3217ea68687936'},
+            {'PyTorch3D-0.7.8_fix-kwarg-only-in-test.patch':
+             '4a1036e9c3a51655155d88a86051f6469a10fbbb5d2dee57dc0fefba9b95e5bf'},
+            {'PyTorch3D-0.7.8_run-test_opengl_utils-last.patch':
+             'bc0031ccc5e0565b66ce56cf49011a4b6d65420f2a18af148b015bb688b26b81'},
+        ],
         'testinstall': True,
-        # Move srcdir to not have it end-up in pythonpath
         'runtest': (
-            'mv %(namelower)s %(namelower)s.src'
-            ' && pytest tests -k "not ('
-            ' (test_rasterize_rectangle_images.py and test_render_cow_opengl)'  # slow/hangs
-            ' or (test_rasterizer.py and test_compare_rasterizers)'  # slow/hangs
-            ' or (test_meshes.py and test_clone)'  # slow/hangs
-            ' or (test_render_multigpu.py and test_mesh_renderer_opengl_to)'  # slow/hangs
-            ' or (test_io_off.py and (test_bad or test_load_lumpy))'  # error parsing file, same issue in conda
-            ' or (test_knn.py and test_knn_vs_python_square_cuda)'  # almost match, same issue in conda
-            ' or (test_opengl_utils.py and test_no_egl_error)'  # import OpenGL.EGL work even after importing OpenGL.GL
-            ' or (test_points_alignment.py and test_heterogeneous_inputs)'  # diff in R values, same issue in conda
-            ' or (tests/implicitron/test_config.py and test_simpleclass_member)'  # mutable default use default_factory
-            ' or (tests/implicitron/test_data_cow.py and test_simple)'  # docs not included in install
-            ' or (tests/implicitron/test_extending_orm_types.py and test_extending_frame_data)'  # wrong number of args
-            ' or (tests/pulsar/test_forward.py and TestForward)'  # can't write image with one color channel
-            ')"'
-            ' && mv %(namelower)s.src %(namelower)s'
+            # Running in srcdir will make pytorch3d overshadow testinstall
+            'ln -s $PWD/tests/ ../tests'
+            ' && ln -s $PWD/docs ../docs'  # includes data used in tests
+            ' && ln -s $PWD/website ../website'  # used in test_build (consider skipping instead)
+            ' && cd ../'
+            # Run tests
+            ' && pytest -ra tests/'
+            ' --deselect='.join([
+                # Error parsing file, same issue when running with conda installation
+                'tests/test_io_off.py::TestMeshOffIO::test_bad'
+                'tests/test_io_off.py::TestMeshOffIO::test_load_lumpy'
+                # Almost match, same issue when running with conda installation
+                'tests/test_knn.py::TestKNN::test_knn_vs_python_square_cuda'
+                # Diff in R values, same issue when running with conda installation
+                'tests/test_points_alignment.py::TestICP::test_heterogeneous_inputs'
+                # Flaky
+                'tests/test_render_meshes.py::TestRenderMeshes::test_simple_sphere_elevated_camera'
+            ])
         ),
     }),
 ]
