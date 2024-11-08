@@ -629,7 +629,7 @@ class EasyConfigTest(TestCase):
             ],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
-                                   r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
+                                   r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1', r'OPERA-MS-0\.9\.0-20240703'])],
             # NanoPlot, NanoComp use an older version of Seaborn
             'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
             # Shasta requires spoa 3.x
