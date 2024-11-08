@@ -1,4 +1,4 @@
-From 2b1baf3226d82923ae9b4edc18a601d2dccf6bef Mon Sep 17 00:00:00 2001
+From ddbf7ab23ce2e83747ff6a1482ac512e06da82ca Mon Sep 17 00:00:00 2001
 From: Viktor Rehnberg <viktor.rehnberg@gmail.com>
 Date: Mon, 4 Nov 2024 15:31:55 +0100
 Subject: [PATCH] Fix quantization tests
@@ -11,7 +11,7 @@ disabled distributed test to avoid thread locks hanging.
  1 file changed, 22 insertions(+), 21 deletions(-)
 
 diff --git a/tests/unit/inference/quantization/test_intX_quantization.py b/tests/unit/inference/quantization/test_intX_quantization.py
-index 77b51fcd..f5a87dea 100644
+index 77b51fcd..9e0d7ac0 100644
 --- a/tests/unit/inference/quantization/test_intX_quantization.py
 +++ b/tests/unit/inference/quantization/test_intX_quantization.py
 @@ -17,6 +17,7 @@ from transformers import AutoConfig, OPTConfig, AutoModel
@@ -41,7 +41,7 @@ index 77b51fcd..f5a87dea 100644
                  device="nvme",
                  pin_memory=True,
 -                nvme_path='~/tmp_offload_dir',
-+                nvme_path=tmp_path / "tmp_offload_dir",
++                nvme_path=str(tmp_path / "tmp_offload_dir"),
                  buffer_count=5,
                  buffer_size=1 * GB,
              )
@@ -73,7 +73,7 @@ index 77b51fcd..f5a87dea 100644
                  device="nvme",
                  pin_memory=True,
 -                nvme_path='~/tmp_offload_dir',
-+                nvme_path=tmp_path / "tmp_offload_dir",
++                nvme_path=str(tmp_path / "tmp_offload_dir"),
                  buffer_count=5,
                  buffer_size=1 * GB,
              )
@@ -86,15 +86,6 @@ index 77b51fcd..f5a87dea 100644
  
      input_ids = torch.ones(1, 16, dtype=torch.int32, device=device)
      attention_mask = torch.ones(1, 16, dtype=torch.float32, device=device)
-@@ -257,7 +258,7 @@ def group_dim(request):
-     return request.param
- 
- 
--class TestQuantizedInt(DistributedTest):
-+class TestQuantizedInt():
- 
-     def test_model_quantization(self, quantization_bits):
-         reset_random()
 @@ -376,31 +377,31 @@ class TestQuantizedInt(DistributedTest):
          quantization_test_helper(torch.float16, 8)
  
