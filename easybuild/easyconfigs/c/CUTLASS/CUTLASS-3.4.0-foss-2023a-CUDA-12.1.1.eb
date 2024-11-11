@@ -21,8 +21,13 @@ toolchain = {'name': 'foss', 'version': '2023a'}
 
 github_account = 'NVIDIA'
 source_urls = [GITHUB_LOWER_SOURCE]
+patches = ['CUTLASS-3.4.0_install_tools.patch']
+
 sources = ['v%(version)s.tar.gz']
-checksums = ['49f4b854acc2a520126ceefe4f701cfe8c2b039045873e311b1f10a8ca5d5de1']
+checksums = [
+    {'v%(version)s.tar.gz': '49f4b854acc2a520126ceefe4f701cfe8c2b039045873e311b1f10a8ca5d5de1'},
+    {'CUTLASS-3.4.0_install_tools.patch': '52c2f17a0fb78febf7100288a25e001a8a7fa24d52c8437225146834d6efce79'},
+]
 
 builddependencies = [
     ('CMake', '3.26.3'),
@@ -38,12 +43,13 @@ _copts = [
     '-DCUTLASS_NVCC_ARCHS="%(cuda_cc_cmake)s"',
     '-DCUTLASS_ENABLE_CUBLAS=1',
     '-DCUTLASS_ENABLE_CUDNN=1',
+    '-DCUTLASS_ENABLE_TOOLS=1',
 ]
 configopts = ' '.join(_copts)
 
 sanity_check_paths = {
     'files': ['include/cutlass/cutlass.h', 'lib/libcutlass.%s' % SHLIB_EXT],
-    'dirs': ['lib/cmake'],
+    'dirs': ['lib/cmake', 'tools/util/include'],
 }
 
 moduleclass = 'lib'
