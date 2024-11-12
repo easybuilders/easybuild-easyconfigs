@@ -1364,6 +1364,10 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(no_descr_patches, "No description found in patches: %s" % ', '.join(no_descr_patches))
 
+    def test_debug_message(self):
+        print(self)
+        subprocess.run('df -h')
+
 
 def verify_patch(specdir, patch_spec, checksum_idx, patch_checksums, extension_name=None):
     """Verify existance and checksum of the given patch.
