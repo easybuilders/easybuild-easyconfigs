@@ -1,0 +1,37 @@
+# diff -Nru NAMD_3.0.1_Source.orig/arch/Linux-x86_64.cuda12 NAMD_3.0.1_Source/arch/Linux-x86_64.cuda12
+# create new file to handle case where cuda12 is used, with content from file Linux-x86_64.cuda11.8
+# needed to ensure NAMD compiled with H100 support sm_90, which is included in cuda11.8 file
+# without this change NAMD config script logic will use Linux-x86_64.cuda11 which does not have sm_90 support
+# added November 11, 2024 by Pawel Pomorski (SHARCNET)
+--- NAMD_3.0.1_Source.orig/arch/Linux-x86_64.cuda12	1970-01-01 00:00:00.000000000 +0000
++++ NAMD_3.0.1_Source/arch/Linux-x86_64.cuda12	2024-11-12 00:44:21.802517227 +0000
+@@ -0,0 +1,29 @@
++# suppliment and override build definitions for CUDA 11
++
++# set directory default for TCB file system, override by user config
++CUDADIR=/usr/local/encap/cuda-11.8
++
++# CUDA 11 has deprecated compute capability 3.x and 5.x
++# limit CUDADLINKOPTS to architectures available in libcufft_static
++
++CUDADLINKOPTS = \
++  -gencode arch=compute_50,code=sm_50 \
++  -gencode arch=compute_60,code=sm_60 \
++  -gencode arch=compute_70,code=sm_70 \
++  -gencode arch=compute_75,code=sm_75 \
++  -gencode arch=compute_80,code=sm_80 \
++  -gencode arch=compute_90,code=sm_90 \
++  -gencode arch=compute_90,code=compute_90
++
++CUDAGENCODE = \
++  -gencode arch=compute_52,code=sm_52 \
++  -gencode arch=compute_60,code=sm_60 \
++  -gencode arch=compute_61,code=sm_61 \
++  -gencode arch=compute_70,code=sm_70 \
++  -gencode arch=compute_75,code=sm_75 \
++  -gencode arch=compute_80,code=sm_80 \
++  -gencode arch=compute_86,code=sm_86 \
++  -gencode arch=compute_89,code=sm_89 \
++  -gencode arch=compute_90,code=sm_90 \
++  -gencode arch=compute_90,code=compute_90
++
