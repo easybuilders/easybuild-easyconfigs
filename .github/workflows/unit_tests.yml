@@ -22,9 +22,15 @@ jobs:
             module_syntax: Tcl
       fail-fast: false
     steps:
+    - name: Check disk usage
+      run: df -h
+
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0 # Required for git merge-base to work
+
+    - name: Check disk usage2
+      run: df -h
 
     - name: Cache source files in /tmp/sources
       id: cache-sources
@@ -33,11 +39,17 @@ jobs:
         path: /tmp/sources
         key: eb-sourcepath
 
+    - name: Check disk usage
+      run: df -h
+
     - name: set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{matrix.python}}
         architecture: x64
+
+    - name: Check disk usage
+      run: df -h
 
     - name: install OS & Python packages
       run: |
@@ -56,6 +68,9 @@ jobs:
         # required for test_dep_graph
         pip install pep8 python-graph-core python-graph-dot
 
+    - name: Check disk usage
+      run: df -h
+
     - name: install EasyBuild framework
       run: |
           cd $HOME
@@ -73,6 +88,9 @@ jobs:
           cd easybuild-easyblocks; git log -n 1; cd -
           pip install $PWD/easybuild-easyblocks
 
+    - name: Check disk usage
+      run: df -h
+
     - name: install modules tool
       run: |
           cd $HOME
@@ -87,6 +105,9 @@ jobs:
           echo $MOD_INIT > mod_init
           echo $PATH > path
           if [ ! -z $MODULESHOME ]; then echo $MODULESHOME > moduleshome; fi
+
+    - name: Check disk usage
+      run: df -h
 
     - name: run test suite
       env:
@@ -150,6 +171,10 @@ jobs:
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
           # use /tmp/sources because that has cached downloads (see cache step above)
           eb --prefix /tmp/$USER/$GITHUB_SHA --sourcepath /tmp/sources M4-1.4.18.eb
+
+    - name: Check disk usage
+      run: df -h
+
 
   test-sdist:
     runs-on: ubuntu-24.04
