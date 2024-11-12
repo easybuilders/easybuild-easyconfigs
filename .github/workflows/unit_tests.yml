@@ -91,11 +91,6 @@ jobs:
           # check disk usage to investigate errors
           df -h
           sudo du -sch /opt/* /usr/* /usr/local*/ $HOME/* | sort -hr
-          sudo apt-get
-          sudo apt-get autoclean
-          sudo apt-get autoremove
-          sudo apt-get clean
-          df -h
 
     - name: run test suite
       env:
@@ -103,11 +98,15 @@ jobs:
         EASYBUILD_MODULE_SYNTAX: ${{matrix.module_syntax}}
       run: |
           # pull in target so we can diff against it to obtain list of touched files
+          echo "Fetching..."
           if [ "x$GITHUB_BASE_REF" != 'xmain' ]; then git fetch -v origin ${GITHUB_BASE_REF}:${GITHUB_BASE_REF}; fi
+          echo "done fetching."
 
           # initialize environment for modules tool
+          echo "Initializing environment..."
           if [ -f $HOME/moduleshome ]; then export MODULESHOME=$(cat $HOME/moduleshome); fi
           source $(cat $HOME/mod_init); type module
+          echo "Done initializing environment."
 
           # make sure 'eb' is available via $PATH, and that $PYTHONPATH is set (some tests expect that);
           # also pick up changes to $PATH set by sourcing $MOD_INIT
@@ -126,21 +125,27 @@ jobs:
             export EASYBUILD_MODULES_TOOL=Lmod
           fi
 
+          echo "Run eb info commands..."
           eb --version
           eb --show-config
           # gather some useful info on test system
           eb --show-system-info
+          echo "Done running eb info commands"
 
           # run test suite
           # if tests failed, print error message that is picked up by boegelbot to determine end of test output
+          echo "Running test suite..."
           python -O -m test.easyconfigs.suite || (echo "ERROR: Not all tests were successful" && exit 1)
+          echo "Done running test suite."
 
           unset PYTHONPATH
 
           # install easyconfigs via distribution package
+          echo "Installing easyconfigs via distribution package..."
           python setup.py sdist > /dev/null
           ls dist
           pip install dist/easybuild-easyconfigs*tar.gz > /dev/null
+          echo "Done installing easyconfigs via distribution package."
 
           # robot-paths value should not be empty, but have an entry that includes easybuild/easyconfigs subdir
           echo "eb --show-config"
@@ -158,7 +163,9 @@ jobs:
 
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
           # use /tmp/sources because that has cached downloads (see cache step above)
+          echo "Try installing M4..."
           eb --prefix /tmp/$USER/$GITHUB_SHA --sourcepath /tmp/sources M4-1.4.18.eb
+          echo "Done trying installing M4."
 
   test-sdist:
     runs-on: ubuntu-20.04
