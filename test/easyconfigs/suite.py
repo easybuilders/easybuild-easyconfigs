@@ -52,7 +52,7 @@ fancylogger.setLogLevelError()
 class EasyConfigsTestSuite(unittest.TestSuite):
     def __init__(self, loader):
         # call suite() for each module and then run them all
-        super(EasyConfigsTestSuite, self).__init__([x.suite(loader) for x in [s]])
+        super(EasyConfigsTestSuite, self).__init__([x.suite(loader) for x in [e]])
 
     def run(self, *args, **kwargs):
         os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
