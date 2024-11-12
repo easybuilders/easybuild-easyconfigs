@@ -41,9 +41,6 @@ jobs:
 
     - name: install OS & Python packages
       run: |
-        # remove big unused packages we don't need, to save space
-        sudo dpkg --remove azure-cli microsoft-edge-stable google-cloud-cli-anthoscli google-cloud-cli
-
         # disable apt-get update, we don't really need it,
         # and it does more harm than good (it's fairly expensive, and it results in flaky test runs)
         # sudo apt-get update
@@ -93,6 +90,7 @@ jobs:
 
           # check disk usage to investigate errors
           df -h
+          sudo du -sch /home/* | sort -nr
           #sudo du -sch /opt/* /usr/* /usr/local*/ $HOME/* | sort -hr
           dpkg-query -Wf '${Installed-Size}\t${Package}\t${db:Status-Status}\n' | sort -nr | awk '$1>100000'
 
@@ -138,6 +136,7 @@ jobs:
 
           # run test suite
           # if tests failed, print error message that is picked up by boegelbot to determine end of test output
+          sudo du -sch /home/* | sort -nr
           echo "Running test suite..."
           python -O -m test.easyconfigs.suite || (echo "ERROR: Not all tests were successful" && exit 1)
           echo "Done running test suite."
