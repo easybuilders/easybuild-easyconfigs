@@ -1,0 +1,93 @@
+easyblock = 'CMakeMake'
+
+name = 'DFTB+'
+version = '24.1'
+
+homepage = 'https://www.dftb-plus.info'
+description = """DFTB+ is a fast and efficient versatile quantum mechanical simulation package.
+It is based on the Density Functional Tight Binding (DFTB) method, containing
+almost all of the useful extensions which have been developed for the DFTB
+framework so far.  Using DFTB+ you can carry out quantum mechanical simulations
+like with ab-initio density functional theory based packages, but in an
+approximate way gaining typically around two order of magnitude in speed."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'openmp': True, 'pic': True}
+
+_external_dir = '%%(builddir)s/dftbplus-%%(version)s/external/%s/origin/'
+_external_extract = 'mkdir -p %s && tar -C %s' % (_external_dir, _external_dir)
+_external_extract += ' --strip-components=1 -xzf %%s'
+
+source_urls = ['https://github.com/dftbplus/dftbplus/releases/download/%(version)s']
+sources = [
+    'dftbplus-%(version)s.tar.xz',
+    {
+        # Slater-Koster (slakos) data for testing
+        'source_urls': ['https://github.com/dftbplus/testparams/archive'],
+        'download_filename': 'fbe3d62127d86bd8e49ad25a1e5793e6a095e8e7.tar.gz',
+        'filename': 'slakos-data-%(version)s.tar.gz',
+        'extract_cmd': _external_extract % ('slakos', 'slakos'),
+    },
+    {
+        # GBSA (gbsa) data for testing
+        'source_urls': ['https://github.com/grimme-lab/gbsa-parameters/archive'],
+        'download_filename': '6836c4d997e4135e418cfbe273c96b1a3adb13e2.tar.gz',
+        'filename': 'gbsa-data-%(version)s.tar.gz',
+        'extract_cmd': _external_extract % ('gbsa', 'gbsa'),
+    },
+]
+checksums = [
+    {'dftbplus-24.1.tar.xz': '3bc405d1ab834b6b145ca671fb44565ec50a6f576e9e18e7a1ae2c613a311321'},
+    {'slakos-data-24.1.tar.gz': '78a0494c2ff9216d6a9199ba07d632b18b809e0198f43905c044b5748bde488d'},
+    {'gbsa-data-24.1.tar.gz': 'd464f9f7b1883d1353b433d0c7eae2f5606af092d9b51d38e9ed15e072610a79'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('pkgconf', '1.9.5'),
+    ('git', '2.41.0', '-nodocs'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('dftd4', '3.7.0'),
+    ('ELSI', '2.11.0', '-PEXSI'),
+    ('libmbd', '0.12.6'),
+]
+
+# Prefer dependencies from EB than bundled sources
+configopts = '-DHYBRID_CONFIG_METHODS="Find;Submodule;Fetch" '
+configopts += '-DWITH_MPI=1 -DWITH_OMP=1 -DWITH_SDFTD3=1 -DWITH_ELSI=1 -DWITH_MBD=1 -DWITH_UNIT_TESTS=1 '
+configopts += '-DBUILD_SHARED_LIBS=1 -DWITH_API=1 -DWITH_PYTHON=0 '  # Python bindings installed as extension
+configopts += '-DSCALAPACK_LIBRARY="$LIBSCALAPACK" '
+
+runtest = 'test'
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+    'runtest': False,
+}
+exts_list = [
+    ('dptools', version, {
+        'source_tmpl': 'dftbplus-%(version)s.tar.xz',
+        'source_urls': ['https://github.com/dftbplus/dftbplus/releases/download/%(version)s'],
+        'start_dir': 'tools/dptools',
+        'checksums': ['3bc405d1ab834b6b145ca671fb44565ec50a6f576e9e18e7a1ae2c613a311321'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/' + x for x in ['dftb+', 'dp_bands', 'dp_dos', 'gen2cif', 'gen2xyz', 'makecube',
+                                   'modes', 'repeatgen', 'straingen', 'waveplot', 'xyz2gen']] +
+             ['lib/libdftbplus.%s' % SHLIB_EXT, 'lib/libmpifx.%s' % SHLIB_EXT],
+    'dirs': ['include/dftbplus', 'lib/cmake', 'lib/pkgconfig', 'lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = ["python -c 'import dptools'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'phys'
