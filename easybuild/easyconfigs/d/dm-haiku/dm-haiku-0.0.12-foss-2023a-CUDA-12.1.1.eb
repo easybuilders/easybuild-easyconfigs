@@ -1,0 +1,50 @@
+# update 0.0.12: Thomas Hoffmann (EMBL) 
+easyblock = 'PythonBundle'
+
+name = 'dm-haiku'
+version = '0.0.12'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/deepmind/dm-haiku'
+description = """Haiku is a simple neural network library for JAX developed by some of the authors of Sonnet, a neural
+network library for TensorFlow."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('jax', '0.4.25', versionsuffix),  # required by jmp, also provides absl-py
+    ('PyYAML', '6.0'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('tensorstore', '0.1.65'),
+    ('protobuf-python', '4.24.0'),
+    ('Optax', '0.2.2', versionsuffix),
+]
+
+use_pip = True
+
+exts_list = [
+    ('jmp', '0.0.4', {
+        'checksums': ['5dfeb0fd7c7a9f72a70fff0aab9d0cbfae32a809c02f4037ff3485ceb33e1730'],
+    }),
+    ('flax', '0.8.4', {
+        'checksums': ['968683f850198e1aa5eb2d9d1e20bead880ef7423c14f042db9d60848cb1c90b'],
+    }),
+    ('nest_asyncio', '1.6.0', {
+        'checksums': ['6f172d5449aca15afd6c646851f4e31e02c598d553a667e38cafa997cfec55fe'],
+    }),
+    ('orbax_checkpoint', '0.5.18', {
+        'modulename': 'orbax.checkpoint',
+        'preinstallopts': """sed -i 's/jax >= 0.4.25/&\\*/g' pyproject.toml &&""",
+        'checksums': ['29f5d311b412760bd6a2fecab3bdbf75407bc00dc6d0457d19478258ecc8fa6d'],
+    }),
+    (name, version, {
+        'modulename': 'haiku',
+        'checksums': ['ba0b3acf71433156737fe342c486da11727e5e6c9e054245f4f9b8f0b53eb608'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'
