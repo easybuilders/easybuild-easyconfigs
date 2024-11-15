@@ -1,0 +1,62 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.4.2'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+based on Density Futional Theory (DFT). In this version VASPsol (https://github.com/henniggroup/VASPsol)
+and scripts and modules for calculating transition states and VTSTTools (http://theory.cm.utexas.edu/vtsttools/)
+has been implemented to the original version of vasp. This version of vasp also supports  HDF5, Wannier90, and Libxc."""
+
+toolchain = {'name': 'iimpi', 'version': '2023a'}
+local_compver = '2023.2.1'
+local_vstat = 'vtstcode-199'
+local_vtstscripts = 'vtstscripts-1033'
+local_binfiles = ['vasp_std', 'vasp_gam', 'vasp_ncl']
+
+builddependencies = [
+    ('FFTW', '3.3.10', '', ('intel-compilers', local_compver)),
+    ('wannier90', '3.1.0', '', ('iimpi', '2023a')),
+    ('HDF5', '1.14.2', '',( 'intel-compilers', local_compver)),
+    ('ScaLAPACK', '2.2.0', '', ('iimpi', '2023a')),
+    ('libxc', '6.2.2', '', ('intel-compilers', local_compver)),
+    ('FlexiBLAS', '3.3.1', '', ('intel-compilers', local_compver)),
+]
+
+patches = ['%(namelower)s-%(version)s.patch','%(namelower)s-%(version)s-vtsttools.patch', '%(namelower)s-%(version)s-VASPsol.patch']
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+source_urls = ['https://github.com/henniggroup/VASPsol/archive/', 'http://theory.cm.utexas.edu/code/vtstscripts_old', 'http://theory.cm.utexas.edu/code/']
+sources = ['%(namelower)s.%(version)s.tar', 'V1.0.tar.gz', '%s.tgz' %local_vtstscripts, '%s.tgz' %local_vstat]
+checksums = ['5ae64a887ea307ebe34e4d4a46795258',  #vasp.6.4.2.tar,
+             'd312a26de9676cc657d86fe91480ccf7',  #V1.0.tar.gz,
+             '9422e548b0408a41695b0e70eec042d7663fbf9e4b7e3980c86bb2fc6cd5fafc',  #vtstscripts-1033.tgz,
+             '130261a4c15ce3f6b92cf3ead9949bb72b0f0211503f3326a9ad848e2bdfec19',  #vtstcode-1033.tgz,
+             '7104b1399a5a986c8c568709b5b487cf',  #vasp-6.4.2.patch,
+             '381a7be19b60adfdf0a37273c00fbe30d44351be2a17543ba5c77828937ed787',  #vasp.6.4.2-vtsttools.patch,
+             '6af7a5c1f24b75a4f5642d9f880fffd5',  #vasp.6.4.2-VASPsol.patch,
+]
+prebuildopts = 'cp arch/makefile.include.intel ./makefile.include && '
+prebuildopts += 'unset LIBS && '
+prebuildopts += 'cp  -r ../%s/vtstcode6.4/* src  && ' %local_vstat 
+prebuildopts += 'cp ../VASPsol-1.0/src/solvation.F src  && '
+
+#Following is part of the vaspSol modifcation that  cannot be  patched through a patched file.
+prebuildopts += 'sed -i "s/M_sum_s(SP_GRIDC%COMM,1,Ecorr4,0,0,0))/M_sum_1(SP_GRIDC%COMM,Ecorr4))/g" src/solvation.F && '
+prebuildopts += 'sed -i "s/M_sum_s(SP_GRIDC%COMM,1,Ecorr3,0,0,0))/M_sum_1(SP_GRIDC%COMM,Ecorr3))/g" src/solvation.F && '
+
+prebuildopts += 'unset LIBS && '
+
+postinstallcmds = ["chmod -R o-rwx %(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
+parallel = 1
+
+files_to_copy = [(['bin/%s' % x for x in local_binfiles], 'bin'), '../%s' %local_vtstscripts]
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binfiles],
+    'dirs': []
+}
+modextrapaths = {'PATH': local_vtstscripts}
+moduleclass = 'phys'
+

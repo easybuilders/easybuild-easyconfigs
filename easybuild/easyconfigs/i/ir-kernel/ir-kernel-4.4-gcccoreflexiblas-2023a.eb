@@ -1,0 +1,120 @@
+easyblock = 'Bundle'
+
+name = 'ir-kernel'
+version = '4.4'
+
+homepage = 'https://irkernel.github.io'
+description = """The R kernel for the 'Jupyter' environment executes R code 
+ which the front-end (Jupyter Notebook or other front-ends) submits to the 
+ kernel via the network."""
+
+toolchain = {'name': 'gcccoreflexiblas', 'version': '2023a'}
+
+dependencies = [
+    ('R', '4.4.0'),
+    ('ipykernel', '2024b'),
+#    ('Python', '3.11'),
+#    ('IPython', '7.26.0'),
+#    ('ZeroMQ', '4.3.4'),
+]
+
+exts_defaultclass = 'RPackage'
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/',
+        'https://cran.rstudio.com/src/contrib/',
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s/',
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+exts_list = [
+    ('base64enc', '0.1-3', {
+        'checksums': ['6d856d8a364bcdc499a0bf38bfd283b7c743d08f0b288174fba7dbf0a04b688d'],
+    }),
+    ('digest', '0.6.37', {
+        'checksums': ['82c4d149994b8a4a9af930f5a8e47420829935abed41f3f9030e94b6a48f0321'],
+    }),
+    ('rlang', '1.1.4', {
+        'checksums': ['f2d74527508bf3287102470beb27de0d234c3cbba399c28d3312f2c83c64a6e1'],
+    }),
+    ('fastmap', '1.2.0', {
+        'checksums': ['b1da04a2915d1d057f3c2525e295ef15016a64e6667eac83a14641bbd83b9246'],
+    }),
+    ('ellipsis', '0.3.2', {
+        'checksums': ['a90266e5eb59c7f419774d5c6d6bd5e09701a26c9218c5933c9bce6765aa1558'],
+    }),
+    ('htmltools', '0.5.8.1', {
+        'checksums': ['f9f62293ec06c353c4584db6ccedb06a2da12e485208bd26b856f17dd013f176'],
+    }),
+    ('jsonlite', '1.8.9', {
+        'checksums': ['89f130e0e1163328c01decd54e7712b5ebf3d0a667da0052833722cb9a6e90b0'],
+    }),
+    ('cli', '3.6.3', {
+        'checksums': ['4295085f11221c54b1dd2b1d39a675a85dfd9f900294297567e1d36f65ac4841'],
+    }),
+    ('fansi', '1.0.6', {
+        'checksums': ['ea9dc690dfe50a7fad7c5eb863c157d70385512173574c56f4253b6dfe431863'],
+    }),
+    ('glue', '1.7.0', {
+        'checksums': ['1af51b51f52c1aeb3bfe9349f55896dd78b5542ffdd5654e432e4d646e4a86dc'],
+    }),
+    ('lifecycle', '1.0.4', {
+        'checksums': ['ada4d3c7e84b0c93105e888647c5754219a8334f6e1f82d5afaf83d4855b91cc'],
+    }),
+    ('utf8', '1.2.4', {
+        'checksums': ['418f824bbd9cd868d2d8a0d4345545c62151d321224cdffca8b1ffd98a167b7d'],
+    }),
+    ('vctrs', '0.6.5', {
+        'checksums': ['43167d2248fd699594044b5c8f1dbb7ed163f2d64761e08ba805b04e7ec8e402'],
+    }),
+    ('pillar', '1.9.0', {
+        'checksums': ['f23eb486c087f864c2b4072d5cba01d5bebf2f554118bcba6886d8dbceb87acc'],
+    }),
+    ('repr', '1.1.7', {
+        'checksums': ['73bd696b4d4211096e0d1e382d5ce6591527d2ff400cc7ae8230f0235eed021b'],
+    }),
+    ('IRdisplay', '1.1', {
+        'checksums': ['83eb030ff91f546cb647899f8aa3f5dc9fe163a89a981696447ea49cc98e8d2b'],
+    }),
+    ('pbdZMQ', '0.3-13', {
+        'checksums': ['4139a88323642b734a83a8d73ea34550f8ef279389e794a5a3a5f3e8f579839a'],
+    }),
+    ('evaluate', '1.0.0', {
+        'checksums': ['61e095e28f93c73828649ea755c8d2cad5b533ed9b5d1bfc2f6ba49dc20b937a'],
+    }),
+    ('crayon', '1.5.3', {
+        'checksums': ['3e74a0685541efb5ea763b92cfd5c859df71c46b0605967a0b5dbb7326e9da69'],
+    }),
+    ('uuid', '1.2-1', {
+        'checksums': ['f90e49733d7d6ea7cf91abdc07b7d0e9a34a4b993e6914d754f0621281fc4b96'],
+    }),
+    ('IRkernel', '1.3.2', {
+        'checksums': ['e1c6d8bddc23e5039dd9c537feb371f937d60028fb753b90345698c58ae424a6'],
+    }),
+]
+
+modextrapaths = {
+    'R_LIBS_SITE': '',
+    'JUPYTER_PATH': 'IRkernel'
+}
+
+# IPython notebook looks for the json kernel file in kernels/IRkernel
+# We start the kernel with default bitmapType 'cairo'. This is a more sensible default
+# for headless nodes. See https://github.com/IRkernel/IRkernel/issues/388
+local_kerneldir = '%(installdir)s/IRkernel'
+postinstallcmds = [
+    'mkdir -p %s/kernels/ir' % local_kerneldir,
+    'cp %s/kernelspec/* %s/kernels/ir' % (local_kerneldir, local_kerneldir),
+    'sed -i \'s/"IRkernel::main()"/"options(bitmapType=\\x27cairo\\x27); IRkernel::main()"/g\' %s/kernels/ir/kernel.json' % local_kerneldir,
+    'sed -i \'s/"display_name":"R"/"display_name":"R %s"/g\'  %s/kernels/ir/kernel.json' % (version, local_kerneldir)
+]
+
+sanity_check_paths = {
+    'files': ['%s/kernels/ir/kernel.json' % local_kerneldir],
+    'dirs': ['IRkernel'],
+}
+
+moduleclass = 'tools'

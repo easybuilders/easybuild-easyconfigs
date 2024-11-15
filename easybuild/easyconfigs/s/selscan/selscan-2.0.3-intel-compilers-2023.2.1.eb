@@ -1,0 +1,45 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# Modified by: Adam Huffman
+# The Francis Crick Institute
+easyblock = 'MakeCp'
+
+name = 'selscan'
+version = '2.0.3'
+
+homepage = 'https://github.com/szpiech/selscan'
+description = """selscan -- a program to calculate EHH-based scans for positive selection in 
+	genomes
+selscan currently implements EHH, iHS, XP-EHH, nSL, and iHH12 and requires phased data. 
+It should be run separately for each chromosome and population (or population 
+pair for XP-EHH).  selscan is 'dumb' with respect ancestral/derived coding and
+simply expects haplotype data to be coded 0/1.  Unstandardized iHS scores are 
+thus reported as ln(iHH1/iHH0) based on the coding you have provided."""
+
+toolchain = {'version': '2023.2.1', 'name': 'intel-compilers'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/szpiech/selscan/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-Makefile.patch']
+checksums = [
+    {'v2.0.3.tar.gz': '61fd181aa751d10c78a9cb7985fc047f23c068eae95fe3ea071c5f1f4e77f34d'},
+    {'selscan-2.0.3-Makefile.patch': 'b99bee0d5e8eb7ac74b214a2a7c978fbcd300e3e1caf6a1ba84c8d10a24d1d36'},
+]
+
+dependencies = [
+    ('GSL', '2.7'),
+]
+
+prebuildopts = "cd src && "
+
+files_to_copy = ['example', 'manual', (['src/%(name)s', 'src/norm'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'bin/norm'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,296 @@
+Patch libMesh's NetCDF tests for compatibiy with HDF5 >= 1.12.
+
+The below patch has been taken from upstream[1] and modified so that it can be
+applied to the netcdf-c-4.6.2 sources included with libMesh.
+
+[1]: https://github.com/Unidata/netcdf-c/commit/9f9b125028b28d8e94f2c990c8d92a7df76fde78
+Author: Oliver Stueker
+Date:   2024-11-05
+
+diff --git a/contrib/netcdf/v4/h5_test/tst_h_atts3.c b/contrib/netcdf/v4/h5_test/tst_h_atts3.c
+index 7976821b0..4fb672798 100644
+--- a/contrib/netcdf/v4/h5_test/tst_h_atts3.c
++++ b/contrib/netcdf/v4/h5_test/tst_h_atts3.c
+@@ -46,7 +46,11 @@ main()
+       hid_t file_typeid1[NUM_OBJ], native_typeid1[NUM_OBJ];
+       hid_t file_typeid2, native_typeid2;
+       hsize_t num_obj;
++#if H5_VERSION_GE(1,12,0)
++      H5O_info2_t obj_info;
++#else
+       H5O_info_t obj_info;
++#endif
+       char obj_name[STR_LEN + 1];
+       hsize_t dims[1] = {ATT_LEN}; /* netcdf attributes always 1-D. */
+       struct s1
+@@ -148,8 +152,14 @@ main()
+       for (i = 0; i < num_obj; i++)
+       {
+ 	 /* Get the name, and make sure this is a type. */
++
++#if H5_VERSION_GE(1,12,0)
++	 if (H5Oget_info_by_idx3(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
++				 i, &obj_info, H5O_INFO_BASIC, H5P_DEFAULT) < 0) ERR;
++#else
+ 	 if (H5Oget_info_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
+ 				i, &obj_info, H5P_DEFAULT) < 0) ERR;
++#endif
+ 	 if (H5Lget_name_by_idx(grpid, ".", H5_INDEX_NAME, H5_ITER_INC, i,
+ 				obj_name, STR_LEN + 1, H5P_DEFAULT) < 0) ERR;
+ 	 if (obj_info.type != H5O_TYPE_NAMED_DATATYPE) ERR;
+@@ -267,8 +277,13 @@ main()
+       for (i = 0; i < num_obj; i++)
+       {
+ 	 /* Get the name, and make sure this is a type. */
++#if H5_VERSION_GE(1,12,0)
++       	 if (H5Oget_info_by_idx3(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
++                                 i, &obj_info, H5O_INFO_BASIC, H5P_DEFAULT) < 0) ERR; 
++#else
+ 	 if (H5Oget_info_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
+ 				i, &obj_info, H5P_DEFAULT) < 0) ERR;
++#endif
+ 	 if (H5Lget_name_by_idx(grpid, ".", H5_INDEX_NAME, H5_ITER_INC, i,
+ 				obj_name, STR_LEN + 1, H5P_DEFAULT) < 0) ERR;
+ 	 if (obj_info.type != H5O_TYPE_NAMED_DATATYPE) ERR;
+diff --git a/contrib/netcdf/v4/h5_test/tst_h_atts4.c b/contrib/netcdf/v4/h5_test/tst_h_atts4.c
+index 6228dd661..d70f4a497 100644
+--- a/contrib/netcdf/v4/h5_test/tst_h_atts4.c
++++ b/contrib/netcdf/v4/h5_test/tst_h_atts4.c
+@@ -49,7 +49,11 @@ main()
+       hid_t file_typeid1[NUM_OBJ_2], native_typeid1[NUM_OBJ_2];
+       hid_t file_typeid2, native_typeid2;
+       hsize_t num_obj;
++#if H5_VERSION_GE(1,12,0)
++      H5O_info2_t obj_info;
++#else
+       H5O_info_t obj_info;
++#endif
+       char obj_name[STR_LEN + 1];
+       hsize_t dims[1] = {ATT_LEN}; /* netcdf attributes always 1-D. */
+       struct s1
+@@ -139,8 +143,13 @@ main()
+       for (i = 0; i < num_obj; i++)
+       {
+ 	 /* Get the name, and make sure this is a type. */
++#if H5_VERSION_GE(1,12,0)
++	 if (H5Oget_info_by_idx3(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
++				 i, &obj_info, H5O_INFO_BASIC, H5P_DEFAULT) < 0) ERR;
++#else
+ 	 if (H5Oget_info_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
+ 				i, &obj_info, H5P_DEFAULT) < 0) ERR;
++#endif
+ 	 if (H5Lget_name_by_idx(grpid, ".", H5_INDEX_NAME, H5_ITER_INC, i,
+ 				obj_name, STR_LEN + 1, H5P_DEFAULT) < 0) ERR;
+ 	 if (obj_info.type != H5O_TYPE_NAMED_DATATYPE) ERR;
+diff --git a/contrib/netcdf/v4/h5_test/tst_h_compounds2.c b/contrib/netcdf/v4/h5_test/tst_h_compounds2.c
+index 2f885a57a..9707b801d 100644
+--- a/contrib/netcdf/v4/h5_test/tst_h_compounds2.c
++++ b/contrib/netcdf/v4/h5_test/tst_h_compounds2.c
+@@ -48,7 +48,11 @@ main()
+       hsize_t dims[1];
+       hsize_t num_obj, i_obj;
+       char obj_name[STR_LEN + 1];
++#if H5_VERSION_GE(1,12,0)
++      H5O_info2_t obj_info;
++#else
+       H5O_info_t obj_info;
++#endif
+       hid_t fapl_id, fcpl_id;
+       htri_t equal;
+       char file_in[STR_LEN * 2];
+@@ -131,8 +135,13 @@ main()
+       if (H5Gget_num_objs(grpid, &num_obj) < 0) ERR;
+       for (i_obj = 0; i_obj < num_obj; i_obj++)
+       {
++#if H5_VERSION_GE(1, 12, 0)
++	 if (H5Oget_info_by_idx3(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, 
++				i_obj, &obj_info, H5O_INFO_BASIC, H5P_DEFAULT) < 0) ERR;
++#else
+ 	 if (H5Oget_info_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, 
+ 				i_obj, &obj_info, H5P_DEFAULT) < 0) ERR;
++#endif
+ 	 if (H5Lget_name_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, 
+ 				i_obj, obj_name, STR_LEN + 1, H5P_DEFAULT) < 0) ERR;
+ 
+@@ -194,8 +203,13 @@ main()
+       if (H5Gget_num_objs(grpid, &num_obj) < 0) ERR;
+       for (i_obj = 0; i_obj < num_obj; i_obj++)
+       {
++#if H5_VERSION_GE(1,12,0)
++	 if (H5Oget_info_by_idx3(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, i_obj, &obj_info, 
++				H5O_INFO_BASIC, H5P_DEFAULT) < 0) ERR;
++#else
+ 	 if (H5Oget_info_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, i_obj, &obj_info, 
+ 				H5P_DEFAULT) < 0) ERR;
++#endif
+ 	 if (H5Lget_name_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, i_obj, obj_name, 
+ 				STR_LEN + 1, H5P_DEFAULT) < 0) ERR;
+ 
+diff --git a/contrib/netcdf/v4/h5_test/tst_h_files4.c b/contrib/netcdf/v4/h5_test/tst_h_files4.c
+index eef3e1608..7ea991acd 100644
+--- a/contrib/netcdf/v4/h5_test/tst_h_files4.c
++++ b/contrib/netcdf/v4/h5_test/tst_h_files4.c
+@@ -44,14 +44,23 @@ with the H5Lvisit function call
+ 
+ */
+ herr_t
+-op_func (hid_t g_id, const char *name, const H5L_info_t *info, 
++op_func (hid_t g_id, const char *name, 
++#if H5_VERSION_GE(1,12,0)
++         const H5L_info2_t *info,
++#else
++         const H5L_info_t *info,
++#endif
+ 	 void *op_data)  
+ {
+    hid_t id;
+    H5I_type_t obj_type;
+ 
+    strcpy((char *)op_data, name);
++#if H5_VERSION_GE(1,12,0)
++   if ((id = H5Oopen_by_token(g_id, info->u.token)) < 0) ERR;
++#else
+    if ((id = H5Oopen_by_addr(g_id, info->u.address)) < 0) ERR;
++#endif
+ 
+ /* Using H5Ovisit is really slow. Use H5Iget_type for a fast
+  * answer. */
+@@ -169,7 +178,11 @@ main()
+    {
+       hid_t fapl_id, fileid, grpid;
+       H5_index_t idx_field = H5_INDEX_CRT_ORDER;
++#if H5_VERSION_GE(1,12,0)
++      H5O_info2_t obj_info;
++#else
+       H5O_info_t obj_info;
++#endif
+       hsize_t num_obj;
+       ssize_t size;
+       char obj_name[STR_LEN + 1];
+@@ -186,8 +199,13 @@ main()
+       if (H5Gget_num_objs(grpid, &num_obj) < 0) ERR;
+       for (i = 0; i < num_obj; i++)
+       {
++#if H5_VERSION_GE(1,12,0)
++	 if (H5Oget_info_by_idx3(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, 
++                                 i, &obj_info, H5O_INFO_BASIC, H5P_DEFAULT)) ERR;
++#else
+ 	 if (H5Oget_info_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, 
+ 				i, &obj_info, H5P_DEFAULT)) ERR;
++#endif
+ 	 if ((size = H5Lget_name_by_idx(grpid, ".", idx_field, H5_ITER_INC, i,
+ 					NULL, 0, H5P_DEFAULT)) < 0) ERR;
+ 	 if (H5Lget_name_by_idx(grpid, ".", idx_field, H5_ITER_INC, i,
+diff --git a/contrib/netcdf/v4/h5_test/tst_h_vars2.c b/contrib/netcdf/v4/h5_test/tst_h_vars2.c
+index 49158ba86..2b731b3c9 100644
+--- a/contrib/netcdf/v4/h5_test/tst_h_vars2.c
++++ b/contrib/netcdf/v4/h5_test/tst_h_vars2.c
+@@ -31,7 +31,11 @@ main()
+       hsize_t num_obj;
+       hid_t fileid, grpid, spaceid;
+       int i;
++#if H5_VERSION_GE(1,12,0)
++      H5O_info2_t obj_info;
++#else
+       H5O_info_t obj_info;
++#endif
+       char names[NUM_ELEMENTS][MAX_SYMBOL_LEN + 1] = {"H", "He", "Li", "Be", "B", "C"};
+       char name[MAX_SYMBOL_LEN + 1];
+       ssize_t size;
+@@ -79,8 +83,13 @@ main()
+       if (num_obj != NUM_ELEMENTS) ERR;
+       for (i = 0; i < num_obj; i++)
+       {
++#if H5_VERSION_GE(1,12,0)
++	 if (H5Oget_info_by_idx3(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
++                                 i, &obj_info, H5O_INFO_BASIC, H5P_DEFAULT) < 0) ERR;
++#else
+ 	 if (H5Oget_info_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
+ 				i, &obj_info, H5P_DEFAULT) < 0) ERR;
++#endif
+ 	 if (obj_info.type != H5O_TYPE_DATASET) ERR;
+ 	 if ((size = H5Lget_name_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, i,
+ 					NULL, 0, H5P_DEFAULT)) < 0) ERR;
+@@ -106,7 +115,11 @@ main()
+       hid_t fileid, grpid;
+       hsize_t num_obj;
+       int i;
++#if H5_VERSION_GE(1,12,0)
++      H5O_info2_t obj_info;
++#else
+       H5O_info_t obj_info;
++#endif
+       char names[NUM_DIMSCALES][MAX_SYMBOL_LEN + 1] = {"b", "a"};
+       char name[MAX_SYMBOL_LEN + 1];
+       hid_t dimscaleid;
+@@ -152,8 +165,13 @@ main()
+       if (num_obj != NUM_DIMSCALES) ERR;
+       for (i = 0; i < num_obj; i++)
+       {
++#if H5_VERSION_GE(1,12,0)
++	 if (H5Oget_info_by_idx3(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
++				 i, &obj_info, H5O_INFO_BASIC, H5P_DEFAULT) < 0) ERR;
++#else
+ 	 if (H5Oget_info_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
+ 				i, &obj_info, H5P_DEFAULT) < 0) ERR;
++#endif
+ 	 if (obj_info.type != H5O_TYPE_DATASET) ERR;
+ 	 if ((size = H5Lget_name_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, i,
+                                 	 NULL, 0, H5P_DEFAULT)) < 0) ERR;
+@@ -178,7 +196,11 @@ main()
+       hsize_t num_obj;
+       hid_t fileid, grpid, spaceid;
+       float val = 3.1495;
++#if H5_VERSION_GE(1,12,0)
++      H5O_info2_t obj_info;
++#else
+       H5O_info_t obj_info;
++#endif
+       char name[MAX_NAME_LEN + 1];
+       ssize_t size;
+ 
+@@ -238,8 +260,14 @@ main()
+ 
+       if (H5Gget_num_objs(grpid, &num_obj) < 0) ERR;
+       if (num_obj != 1) ERR;
++
++#if H5_VERSION_GE(1,12,0)
++      if (H5Oget_info_by_idx3(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
++			      0, &obj_info, H5O_INFO_BASIC, H5P_DEFAULT) < 0) ERR;
++#else
+       if (H5Oget_info_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
+ 			     0, &obj_info, H5P_DEFAULT) < 0) ERR;
++#endif
+       if (obj_info.type != H5O_TYPE_DATASET) ERR;
+       if ((size = H5Lget_name_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, 0,
+ 				     NULL, 0, H5P_DEFAULT)) < 0) ERR;
+diff --git a/contrib/netcdf/v4/nc_test4/tst_xplatform2.c b/contrib/netcdf/v4/nc_test4/tst_xplatform2.c
+index 6b6e1ab24..acefe1807 100644
+--- a/contrib/netcdf/v4/nc_test4/tst_xplatform2.c
++++ b/contrib/netcdf/v4/nc_test4/tst_xplatform2.c
+@@ -564,7 +564,11 @@ main(int argc, char **argv)
+       hid_t file_typeid1[NUM_OBJ], native_typeid1[NUM_OBJ];
+       hid_t file_typeid2, native_typeid2;
+       hsize_t num_obj, i;
++#if H5_VERSION_GE(1,12,0)
++      H5O_info2_t obj_info;
++#else
+       H5O_info_t obj_info;
++#endif
+       char obj_name[NC_MAX_NAME + 1];
+ 
+       /* Open one of the netCDF test files. */
+@@ -579,8 +583,13 @@ main(int argc, char **argv)
+       for (i = 0; i < num_obj; i++)
+       {
+ 	 /* Get the name. */
++#if H5_VERSION_GE(1,12,0)
++	 if (H5Oget_info_by_idx3(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
++                                 i, &obj_info, H5O_INFO_BASIC, H5P_DEFAULT) < 0) ERR_RET;
++#else
+ 	 if (H5Oget_info_by_idx(grpid, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC,
+ 				i, &obj_info, H5P_DEFAULT) < 0) ERR_RET;
++#endif
+ 	 if (H5Lget_name_by_idx(grpid, ".", H5_INDEX_NAME, H5_ITER_INC, i,
+ 				obj_name, NC_MAX_NAME + 1, H5P_DEFAULT) < 0) ERR_RET;
+ 	 printf(" reading type %s ", obj_name);

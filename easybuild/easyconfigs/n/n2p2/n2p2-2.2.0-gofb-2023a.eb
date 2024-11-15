@@ -1,0 +1,42 @@
+easyblock = 'MakeCp'
+
+name = 'n2p2'
+version = '2.2.0'
+
+homepage = 'https://compphysvienna.github.io/n2p2/'
+description = """A neural network potential package: high-dimensional neural network potentials in computational physics and chemistry."""
+
+toolchain = {'name': 'gofb', 'version': '2023a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/CompPhysVienna/%(name)s/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_support-pip.patch']
+checksums = [
+    '4acaa255632a7b9811d7530fd52ac7dd0bb3a8e3a3cf8512beadd29b62c1bfef',
+    '57288eee852385f73b73f3b05533101f4f596b5a6a1ceba5d9371fce35d9d873',
+]
+
+builddependencies = [('Cython', '0.29.36')]
+multi_deps = {'Python': ['3.10', '3.11', '3.12']}
+
+dependencies = [
+    ('Eigen', '3.4.0'),
+    ('GSL', '2.7'),
+]
+
+buildopts = '-C src MFLAGS=-s PROJECT_CC="$CXX" PROJECT_CFLAGS="$CFLAGS" PROJECT_LDFLAGS_BLAS="-lflexiblas -lgsl -lgslcblas" MODE=shared'
+buildopts += ' && pip install src/pynnp --prefix=%(start_dir)s'
+
+files_to_copy = ["bin", "include", "lib"]
+
+sanity_check_paths = {
+    'files': ['bin/nnp-train'],
+    'dirs': [],
+}
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+}
+
+moduleclass = 'phys'

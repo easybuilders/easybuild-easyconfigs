@@ -1,0 +1,52 @@
+--- src/pot.F.orig	2024-10-05 16:12:08.000000000 -0700
++++ src/pot.F	2024-10-05 16:18:46.000000000 -0700
+@@ -407,6 +407,12 @@
+       IF (LBEXTERNAL()) CALL BEXT_ADDV(CVTOT,GRIDC,SIZE(CVTOT,2))
+ ! bexternal__
+       CALL POT_FLIP(CVTOT, GRIDC,WDES%NCDIJ )
++! solvation__
++! vaclevel
++      IF (LSOL) CALL GET_FERMISHIFT(LATT_CUR, T_INFO, GRIDC, WDES, CWORK, CHTOT)
++! vaclevel
++! solvation__
++
+ !=======================================================================
+ ! if overlap is used :
+ ! copy CVTOT to SV and set contribution of unbalanced lattice-vectors
+--- src/mpi.F.orig	2024-09-24 22:09:31.202605907 -0700
++++ src/mpi.F	2024-09-24 22:10:45.685692978 -0700
+@@ -2344,6 +2344,34 @@
+       PROFILING_STOP('m_sumb_s')
+ 
+       END SUBROUTINE M_sumb_s
++! Subroutine for VASPsol - Added by D. Gaissmaier
++!----------------------------------------------------------------------
++!
++! Global sum function - required for VASPsol
++!
++!----------------------------------------------------------------------
++
++      SUBROUTINE M_sum_1(COMM, v1)
++      USE mpimy
++      IMPLICIT NONE
++
++      TYPE(communic) COMM
++      REAL(q) vec(1),v1
++
++      vec(1)=v1
++
++      CALL M_sumb_d(COMM, vec, 1)
++
++      v1=vec(1)
++
++      RETURN
++      END SUBROUTINE
++! End of VASPsol subroutine
++
++!----------------------------------------------------------------------
++!
++! to make live easier, a global sum for 2 scalars
++ 
+ 
+ !!!----------------------------------------------------------------------
+ !!!

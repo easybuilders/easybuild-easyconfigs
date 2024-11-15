@@ -1,0 +1,56 @@
+--- src/pot.F.orig	2024-10-02 11:04:34.000000000 -0700
++++ src/pot.F	2024-10-02 10:56:30.000000000 -0700
+@@ -406,6 +406,16 @@
+       IF (LBEXTERNAL()) CALL BEXT_ADDV(CVTOT,GRIDC,SIZE(CVTOT,2))
+ ! bexternal__
+       CALL POT_FLIP(CVTOT, GRIDC,WDES%NCDIJ )
++! --- VASPsol modification ---------------------------------------------
++! --- Added by D. Gaissmaier -------------------------------------------
++! --- Patch (pbz_patch_541) Compute the FERMI SHIFT (VASPsol)  ---------
++! ----------------------------------------------------------------------
++! solvation__
++! vaclevel
++      IF (LSOL) CALL GET_FERMISHIFT(LATT_CUR, T_INFO, GRIDC, WDES, CWORK, CHTOT)
++! vaclevel
++! solvation
++! --- End of VASPsol modification --------------------------------------
+ !=======================================================================
+ ! if overlap is used :
+ ! copy CVTOT to SV and set contribution of unbalanced lattice-vectors
+--- src/mpi.F.orig	2024-10-02 10:56:57.000000000 -0700
++++ src/mpi.F	2024-10-02 11:00:41.000000000 -0700
+@@ -2043,6 +2043,34 @@
+ 
+ #endif // MPI_INPLACE
+ 
++! Subroutine for VASPsol - Added by D. Gaissmaier
++!----------------------------------------------------------------------
++!
++! Global sum function - required for VASPsol
++!
++!----------------------------------------------------------------------
++
++      SUBROUTINE M_sum_1(COMM, v1)
++      USE mpimy
++      IMPLICIT NONE
++
++      TYPE(communic) COMM
++      REAL(q) vec(1),v1
++
++      vec(1)=v1
++
++      CALL M_sumb_d(COMM, vec, 1)
++
++      v1=vec(1)
++
++      RETURN
++      END SUBROUTINE
++! End of VASPsol subroutine
++
++!----------------------------------------------------------------------
++!
++! to make live easier, a global sum for 2 scalars
++ 
+ !----------------------------------------------------------------------
+ !
+ ! to make live easier, a global sum for 2 scalars

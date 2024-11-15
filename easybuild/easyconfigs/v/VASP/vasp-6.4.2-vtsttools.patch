@@ -1,0 +1,64 @@
+--- src/makefile.orig	2024-09-25 09:59:29.401739108 -0700
++++ src/makefile	2024-09-25 10:00:13.536769700 -0700
+@@ -16,7 +16,7 @@
+ OFLAG=$(OFLAG_2)
+ OFLAG_IN=$(OFLAG)
+ 
+-LIB=lib parser
++LIB=lib parser pyamff_fortran
+ LLIB=-Llib -ldmy -Lparser -lparser
+ 
+ SRCDIR=../../src
+@@ -150,7 +150,7 @@
+ 	$(MAKE) -C $@ -j1
+ #	$(MAKE) -C $@
+ 
+-dependencies: sources
++dependencies: sources  libs
+ 	$(MAKE) depend
+ 
+ depend: $(F90SRC)
+--- src/.objects.orig	2024-03-19 02:18:07.000000000 -0700
++++ src/.objects	2024-09-26 08:51:14.208853929 -0700
+@@ -127,6 +127,21 @@
+ 	dos.o \
+ 	elf.o \
+ 	hamil_rot.o \
++	bfgs.o \
++	dynmat.o \
++	instanton.o \
++	lbfgs.o \
++	sd.o \
++	cg.o \
++	dimer.o \
++	bbm.o \
++	fire.o \
++	lanczos.o \
++	neb.o \
++	qm.o \
++	pyamff_fortran/*.o \
++	ml_pyamff.o \
++	opt.o \
+ 	chain.o \
+ 	dyna.o \
+ 	fileio.o \
+--- src/main.F.orig	2023-07-20 00:39:11.000000000 -0700
++++ src/main.F	2024-10-16 20:17:25.000000000 -0700
+@@ -966,7 +966,7 @@
+ ! init all chains (INCAR reader)
+ !-----------------------------------------------------------------------
+       LCHAIN = IMAGES > 0 .AND. .NOT.AFQMC_SET % ACTIVE
+-      IF (LCHAIN) CALL chain_init( T_INFO, IO)
++      CALL chain_init( T_INFO, IO)
+ !-----------------------------------------------------------------------
+ !xml finish copying parameters from INCAR to xml file
+ ! no INCAR reading from here
+@@ -3652,7 +3652,7 @@
+       ENDIF
+ 
+       CALL CHAIN_FORCE(T_INFO%NIONS,DYN%POSION,TOTEN,TIFOR, &
+-           LATT_CUR%A,LATT_CUR%B,IO%IU6)
++           TSIF,LATT_CUR%A,LATT_CUR%B,IO%IU6) 
+ 
+       CALL PARALLEL_TEMPERING(NSTEP,T_INFO%NIONS,DYN%POSION,DYN%VEL,TOTEN,TIFOR,DYN%TEBEG,DYN%TEEND, &
+            LATT_CUR%A,LATT_CUR%B,IO%IU6)

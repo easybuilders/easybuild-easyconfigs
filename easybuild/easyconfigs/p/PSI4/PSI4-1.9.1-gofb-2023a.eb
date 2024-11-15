@@ -1,0 +1,80 @@
+easyblock = 'CMakeMake'
+
+name = 'PSI4'
+version = '1.9.1'
+
+homepage = 'http://www.psicode.org/'
+description = """PSI4 is an open-source suite of ab initio quantum chemistry programs designed for
+ efficient, high-accuracy simulations of a variety of molecular properties. We can routinely perform
+ computations with more than 2500 basis functions running serially or in parallel."""
+
+# PSI4 is mainly threaded with OpenMP but the driver can use mpi4py.
+toolchain = {'name': 'gofb', 'version': '2023a'}
+
+source_urls = ['https://github.com/psi4/psi4/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['ccd69bdc1d8319470513b4d3c1e0d737fc7788a50d7e48f8db762a0fcf795dad']
+
+multi_deps = {'Python': ['3.10', '3.11']}
+
+builddependencies = [
+    ("Eigen", "3.4.0"),
+    ("Boost", "1.82.0"),
+    ("CMake", "3.23.1"),
+    ("python-build-bundle", "2023b"),
+]
+
+dependencies = [
+    ('libxc', '6.2.2'),
+    ('SciPy-Stack', '2023b'),
+]
+
+preconfigopts = " && ".join([
+    # Some python packages are required by the configure script and at runtime that are not pulled by the build.
+    # OptKing is here to avoid psi4 installing it via setup.py, triggering https://github.com/ComputeCanada/software-stack/issues/137
+    "pip install msgpack-python==0.5.6 Pint==0.17 pydantic==1.8.2 qcelemental==0.25.1 qcengine==0.26.0 OptKing@git+https://github.com/psi-rking/optking.git@0.2.1 --prefix=%(installdir)s",
+    # Instead of building libxc, use our module
+    "sed -i -e '1 s/7.0.0/6.2.2/' %(builddir)s/%(namelower)s-%(version)s/external/upstream/libxc/CMakeLists.txt",
+    "export EBPYTHONPREFIXES=%(installdir)s:$EBPYTHONPREFIXES",
+    "" # To append &&
+])
+# Don't remove the python packages just installed
+keeppreviousinstall = True
+separate_build_dir = True
+start_dir = "%(namelower)s-%(version)s"
+
+configopts = " ".join([
+    '-DPYMOD_INSTALL_LIBDIR="/python%(pyshortver)s/site-packages"', # Location within CMAKE_INSTALL_LIBDIR (lib)
+    '-DCMAKE_PREFIX_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages',
+    '-DENABLE_dkh=ON',        # enabled in conda package
+    '-DENABLE_ecpint=ON',     # enabled in conda package
+    '-DENABLE_PCMSolver=ON',  # enabled in conda package
+    '-DENABLE_XHOST=OFF',     # turns off processor-specific optimization
+])
+
+"""
+With pytest-xdist manually run:
+    pytest $EBROOTPSI4/lib/python3.11/site-packages/psi4/tests/ -n 8
+for a full run of tests
+"""
+
+sanity_check_paths = {
+    'files': [
+        'bin/psi4',
+    ],
+    'dirs': [
+        'bin',
+        'include/psi4',
+        'lib/python%(pyshortver)s/site-packages',
+    ]
+}
+
+sanity_check_commands = [
+    "python -c 'import psi4'"
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'chem'

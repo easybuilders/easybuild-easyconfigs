@@ -1,0 +1,35 @@
+easyblock = 'ConfigureMake'
+
+name = 'wannier90'
+version = '1.2'
+
+homepage = 'http://www.wannier.org/'
+description = "The Maximally-Localised Generalised Wannier Functions  calculates the counterpart of localized molecular orbitals for crystalline systems from the wavefuction."
+
+toolchain = {'name': 'iompi', 'version': '2023a'}
+toolchainopts = {'openmp': False}
+
+source_urls = ['https://github.com/wannier-developers/%(name)s/archive/']
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = [
+    '764165971f0ee35ff16041320c2cbc29',
+]  # wannier90-1.2.tar.gz,
+
+builddependencies = [('FlexiBLAS', '3.3.1')]
+prebuildopts = "cp config/make.sys.ifort ./make.sys && "
+build_cmd = 'make LIBS=-lflexiblas_intel'
+buildopts = ['all']
+
+postinstallcmds = ['mkdir %(installdir)s/bin %(installdir)s/lib && cp wannier90.x %(installdir)s/bin && cp libwannier.a %(installdir)s/lib']
+installopts = ['PREFIX=%(installdir)s install']
+
+parallel = 1
+
+skipsteps = ['configure', 'install']
+
+sanity_check_paths = {
+    'files': ['bin/wannier90.x', 'lib/libwannier.a'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
