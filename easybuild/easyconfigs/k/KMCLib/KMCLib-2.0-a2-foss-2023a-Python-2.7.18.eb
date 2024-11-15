@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'KMCLib'
+version = '2.0-a2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/leetmaa/KMCLib'
+description = """KMCLib - a general framework for lattice kinetic Monte Carlo (KMC) simulations"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/leetmaa/KMCLib/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['796620a67ad010df4b11734f703151c17441f82cef026f3d56386a34056d0213']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+    ('SWIG', '4.1.1'),
+]
+
+dependencies = [
+    ('Python', '2.7.18'),
+    ('numpy', '1.16.6', versionsuffix),
+]
+
+start_dir = 'c++'
+
+preconfigopts = 'cd ../%(name)s-%(version)s/c++/externals && '
+preconfigopts += 'make CC="$CC" CXX="$CXX" CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" && cd - && '
+
+prebuildopts = 'export CPATH=$EBROOTPYTHON/include/python%(pyshortver)s:$CPATH && '
+
+buildopts = ' && cp wrap/Backend.py wrap/_Backend.so wrap/Custom.py wrap/_Custom.so'
+buildopts += ' "%(builddir)s/%(name)s-%(version)s/python/src/KMCLib/Backend/"'
+
+test_cmd = 'export PYTHONPATH="%(builddir)s/%(name)s-%(version)s/python/src:$PYTHONPATH" && '
+test_cmd += 'python "%(builddir)s/%(name)s-%(version)s/python/unittest/utest.py"'
+
+install_cmd = 'cp -r "%(builddir)s/%(name)s-%(version)s/python/src/KMCLib" "%(installdir)s/"'
+
+modextrapaths = {'PYTHONPATH': ''}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['KMCLib/Backend'],
+}
+
+sanity_check_commands = ["python -c 'from KMCLib import *'"]
+
+moduleclass = 'math'
