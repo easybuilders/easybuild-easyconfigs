@@ -1,0 +1,64 @@
+easyblock = 'MakeCp'
+
+name = 'InChI'
+version = '1.07.1'
+
+docurls = [
+    'https://www.inchi-trust.org/download/%(version_major)s%(version_minor)s/INCHI-1-DOC.zip',
+    'https://www.inchi-trust.org/download/%(version_major)s%(version_minor)s/readme.txt',
+]
+
+homepage = 'https://www.inchi-trust.org/'
+description = """The IUPAC International Chemical Identifier (InChI TM) is a non-proprietary
+identifier for chemical substances that can be used in printed and electronic
+data sources thus enabling easier linking of diverse data compilations."""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/IUPAC-%(name)s/%(name)s/releases/download/v%(version)s/']
+sources = [
+    {'download_filename': 'INCHI-1-SRC.zip',  'filename': 'INCHI-%(version)s-SRC.zip'},
+    {'download_filename': 'INCHI-1-TEST.zip', 'filename': 'INCHI-%(version)s-TEST.zip'},
+]
+patches = ['InChI-%(version)s_build-fixes.patch']
+checksums = [
+    'fe6e1ee25714988f7b86420b7615b4e1d7c01fda9b93d63b634a0c021ac9f917',  # INCHI-1.07.1-SRC.zip
+    '4e0dd15d505be0db86bc4b345bdb0610aa63e202ac413a3671d6b735a1f7e7ad',  # INCHI-1.07.1-TEST.zip
+    '0b83087c59f6e3bcab86f2fd2cf8604bbbaf49ba9de6e4cbcabdb9c6ca740e6e',  # InChI-1.07.1_build-fixes.patch
+]
+
+# dos2unix may be another builddependency useful to "clean" some files
+builddependencies = [
+    ('make', '4.4.1'),
+]
+
+build_cmd = 'cd INCHI_API/demos/inchi_main/gcc && '
+build_cmd += 'SHARED_LINK_PARM="$OPTFLAGS" '
+build_cmd += 'OPTFLAGS="$OPTFLAGS -Wno-comment -Wno-parentheses -Wno-unused -Wno-unused-but-set-variable" '
+build_cmd += 'make -j %(parallel)s && '
+build_cmd += 'cd - && cd INCHI_EXE/inchi-1/gcc && '
+build_cmd += 'LINKER_OPTIONS="$OPTFLAGS" '
+build_cmd += 'OPTFLAGS="$OPTFLAGS -Wno-comment -Wno-parentheses -Wno-unused -Wno-unused-but-set-variable" '
+build_cmd += 'make'
+
+files_to_copy = [
+    (['INCHI_EXE/bin/Linux/inchi-1'],                                                     'bin'),
+    (['INCHI_API/bin/Linux/libinchi.so*'],                                                'lib'),
+    (['INCHI_BASE/src/ichisize.h', 'INCHI_BASE/src/inchi_api.h', 'INCHI_BASE/src/ixa.h'], 'include'),
+    'readme.txt',
+]
+
+# NOTE libinchi.so are not symlinks in the final build, but redundant copies!
+# NOTE `keepsymlinks = True` does not look to do it, so use this trick
+postinstallcmds = ["cd %%(installdir)s/lib/ && rm -f libinchi.so.1 && "
+                   "ln -s libinchi.so.1.* libinchi.so.1 && ln -s libinchi.so.1 libinchi.%s" % SHLIB_EXT]
+
+sanity_check_paths = {
+    'files': ['bin/inchi-1', 'lib/libinchi.%s' % SHLIB_EXT, 'readme.txt'],
+    'dirs': ['lib', 'include']
+}
+
+sanity_check_commands = ["inchi-1"]
+# NOTE currently no real tests because they are complicated to run (not in a good format, zipped, ...)
+
+moduleclass = 'chem'
