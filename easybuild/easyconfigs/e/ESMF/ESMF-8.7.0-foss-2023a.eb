@@ -11,6 +11,10 @@ toolchainopts = {'usempi': True, 'openmp': True, 'cstd': 'c++11', 'pic': True}
 source_urls = ['https://github.com/esmf-org/esmf/archive/']
 sources = ['v%(version)s.tar.gz']
 patches = ['ESMF-6.1.1_libopts.patch']
+checksums = [
+    {'v8.7.0.tar.gz': 'd7ab266e2af8c8b230721d4df59e61aa03c612a95cc39c07a2d5695746f21f56'},
+    {'ESMF-6.1.1_libopts.patch': '3851627f07c32a7da55d99072d619942bd3a1d9dd002e1557716158e7aacdaf4'},
+]
 
 builddependencies = [('CMake', '3.26.3')]
 
@@ -21,6 +25,8 @@ dependencies = [
     ('libarchive', '3.6.2'),
     ('ParallelIO', '2.6.3'),
 ]
+
+multi_deps = {'Python': ['3.10', '3.11', '3.12']}
 
 # disable errors from GCC 10 on mismatches between actual and dummy argument lists (GCC 9 behaviour)
 
@@ -35,5 +41,25 @@ buildopts += ' ESMF_PIO_LIBPATH="${EBROOTPARALLELIO}/lib64"'
 # too parallel causes the build to become really slow
 
 maxparallel = 8
+
+multi_deps_load_default = False
+enhance_sanity_check = True
+
+# Depends on any numpy at runtime.
+modluafooter = """
+if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
+  depends_on(between("scipy-stack",'2023b','<2024b'))
+end
+
+extensions("esmpy/%(version)s")
+whatis("Extensions: esmpy-%(version)s")
+"""
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
 
 moduleclass = 'geo'
