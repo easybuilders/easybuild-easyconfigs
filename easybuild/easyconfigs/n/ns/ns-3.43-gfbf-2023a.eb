@@ -38,7 +38,8 @@ configure_cmd = './ns3 configure --enable-examples --enable-tests --enable-pytho
 build_cmd = './ns3 build'
 
 pretestopts = """sed -i 's/pypath = .*/pypath = os.path.join(NS3_BUILDDIR, "bindings", "python")/g' test.py && """
-pretestopts += 'ln -sr build/lib64 build/lib && '
+pretestopts += """sed -i 's/"test" not in x/"-test-" not in x/g' bindings/python/ns__init__.py && """
+pretestopts += 'mv build/lib64 build/lib && '
 test_cmd = './test.py --jobs %(parallel)s --verbose-failed'
 
 install_cmd = './ns3 --jobs %(parallel)s install'
@@ -46,12 +47,18 @@ install_cmd = './ns3 --jobs %(parallel)s install'
 postinstallcmds = [
     'cd %(installdir)s && ln -s libexec/ns3 bin',
     'cp -a build/{examples,utils,scratch} %(installdir)s',
+    'mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages',
     'cp ns3 %(installdir)s/bin',
+    'cp -a build/bindings/python/ns %(installdir)s/lib/python%(pyshortver)s/site-packages/',
 ]
 
 sanity_check_paths = {
     'files': ['lib/libns%%(version)s-energy-optimized.%s' % SHLIB_EXT],
     'dirs': ['examples', 'include', 'utils', 'scratch'],
 }
+
+sanity_check_commands = ["python -c 'from ns import ns'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 moduleclass = 'tools'
