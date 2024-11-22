@@ -9,10 +9,15 @@ toolchain = {'name': 'foss', 'version': '2021b'}
 
 source_urls = ['https://cloud.r-project.org/src/base/R-%(version_major)s']
 sources = [SOURCE_TAR_GZ]
-patches = ['%(name)s-4.1.0_identify-flexiblas-in-configure.patch']
+patches = [
+    'R-4.1.0_identify-flexiblas-in-configure.patch',
+    'R-4.x_fix-CVE-2024-27322.patch',
+]
 checksums = [
-    '38eab7719b7ad095388f06aa090c5a2b202791945de60d3e2bb0eab1f5097488',  # R-4.2.0.tar.gz
-    '2c6720e2e144ae4fe00842daab0ebba72241080603e0ff1a6ca758738041b257',  # R-4.1.0_identify-flexiblas-in-configure.patch
+    {'R-4.2.0.tar.gz': '38eab7719b7ad095388f06aa090c5a2b202791945de60d3e2bb0eab1f5097488'},
+    {'R-4.1.0_identify-flexiblas-in-configure.patch':
+     '2c6720e2e144ae4fe00842daab0ebba72241080603e0ff1a6ca758738041b257'},
+    {'R-4.x_fix-CVE-2024-27322.patch': 'd8560e15c3c5716f99e852541901014d406f2a73136b0b74f11ba529f7a7b00d'},
 ]
 
 builddependencies = [
@@ -77,6 +82,14 @@ exts_default_options = {
     ],
     'source_tmpl': '%(name)s_%(version)s.tar.gz',
 }
+
+# the dbarts extension needs an additional compiler flag on Arm systems to prevent "incompatible types" errors
+# cfr. https://github.com/vdorie/dbarts/issues/66
+if ARCH == 'aarch64':
+    local_dbarts_preinstallopts = 'sed -i "s|-c partition_neon.c|-flax-vector-conversions -c partition_neon.c|"'
+    local_dbarts_preinstallopts += ' src/misc/Makefile && '
+else:
+    local_dbarts_preinstallopts = ''
 
 # !! order of packages is important !!
 # packages updated on 27th April 2022
@@ -2796,6 +2809,7 @@ exts_list = [
     }),
     ('dbarts', '0.9-22', {
         'checksums': ['68fa2bfe274811c91ea7b67da46c4ffe527eb662d75edbec26ffe934ddc7150a'],
+        'preinstallopts': local_dbarts_preinstallopts,
     }),
     ('proftools', '0.99-3', {
         'checksums': ['e034eb1531af54013143da3e15229e1d4c2260f8eb79c93846014db3bdefb724'],

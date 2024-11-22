@@ -1,0 +1,68 @@
+easyblock = 'PythonBundle'
+
+name = 'MOABB'
+version = '1.0.0'
+
+homepage = 'https://neurotechx.github.io/moabb/'
+description = """Build a comprehensive benchmark of popular Brain-Computer Interface (BCI)
+algorithms applied on an extensive list of freely available EEG datasets."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('poetry', '1.5.1'),
+]
+
+# MOABB optionally interfaces with the following ML frameworks:
+# TensorFlow, Keras, scikeras, Braindecode, PyTorch
+# These can be manually loaded by the users depending on their needs
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('MNE-Python', '1.6.1'),
+    ('h5py', '3.9.0'),
+    ('scikit-learn', '1.3.1'),
+    ('matplotlib', '3.7.2'),
+    ('Seaborn', '0.13.2'),
+    ('PyYAML', '6.0'),
+    ('tqdm', '4.66.1'),
+]
+
+use_pip = True
+
+# relax too strict version requirements (constraints seem quite arbitrary)
+# anyhow we run the unit tests to check the installation
+_relax_req = 's/= "^/= ">=/g;s/h5py =.*/h5py = ">=3.7.0"/'
+
+exts_list = [
+    ('coverage', '7.0.1', {
+        'checksums': ['a4a574a19eeb67575a5328a5760bbbb737faa685616586a9f9da4281f940109c'],
+    }),
+    ('memory_profiler', '0.61.0', {
+        'checksums': ['4e5b73d7864a1d1292fb76a03e82a3e78ef934d06828a698d9dada76da2067b0'],
+    }),
+    ('EDFlib-Python', '1.0.6', {
+        'modulename': 'EDFlib',
+        'checksums': ['dbd1d2cf80013f8627b0b08bb969e157b70de5eb241156052e7dea15fd4c06bc'],
+    }),
+    ('pyriemann', '0.5', {
+        'checksums': ['20f886e19fb2d9cbd954a81e8326d53f8b0a306c29880df2f037a5f7ce754009'],
+    }),
+    ('moabb', version, {
+        'patches': ['MOABB-1.0.0_disable-flacky-tests.patch'],
+        'checksums': [
+            {'moabb-1.0.0.tar.gz': 'b7d884030c5691939e8a48810e12b81527c08331ea99cb8b77a26d965341546e'},
+            {'MOABB-1.0.0_disable-flacky-tests.patch':
+             'da5374e7a49d9fbaa7577f0310eab4fd4eb264b0ce869bc27e90350b223c6019'},
+        ],
+        'preinstallopts': "sed -i '%s' pyproject.toml &&" % _relax_req,
+        'runtest': ("cd %(builddir)s/%(name)s/%(name)s-%(version)s && "
+                    "MOABB_RESULTS=$PWD python -m unittest moabb.tests"),
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'tools'

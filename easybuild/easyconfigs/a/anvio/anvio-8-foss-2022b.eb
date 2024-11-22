@@ -1,0 +1,111 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'anvio'
+version = '8'
+
+homepage = 'https://merenlab.org/software/anvio/'
+description = """An analysis and visualization platform for 'omics data."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+github_account = 'merenlab'
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('SciPy-bundle', '2023.02'),
+    ('Pysam', '0.21.0'),
+    ('matplotlib', '3.7.0'),
+    ('scikit-learn', '1.2.1'),
+    ('prodigal', '2.6.3'),
+    ('Biopython', '1.81'),
+    ('h5py', '3.8.0'),
+    ('HMMER', '3.3.2'),
+    ('networkx', '3.0'),
+    ('numba', '0.58.1'),
+    ('statsmodels', '0.14.0'),
+    ('snakemake', '7.32.3'),
+    ('ETE', '3.1.3'),
+    ('dill', '0.3.7'),
+    ('Seaborn', '0.12.2'),
+    ('Levenshtein', '0.24.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('bottle', '0.12.25', {
+        'checksums': ['e1a9c94970ae6d710b3fb4526294dfeb86f2cb4a81eff3a4b98dc40fb0e5e021'],
+    }),
+    ('colored', '2.2.4', {
+        'checksums': ['595e1dd7f3b472ea5f12af21d2fec8a2ea2cf8f9d93e67180197330b26df9b61'],
+    }),
+    ('asgiref', '3.7.2', {
+        'checksums': ['9e0ce3aa93a819ba5b45120216b23878cf6e8525eb3848653452b4192b92afed'],
+    }),
+    ('sqlparse', '0.4.4', {
+        'checksums': ['d446183e84b8349fa3061f0fe7f06ca94ba65b426946ffebe6e3e8295332420c'],
+    }),
+    ('Django', '5.0.1', {
+        'checksums': ['8c8659665bc6e3a44fefe1ab0a291e5a3fb3979f9a8230be29de975e57e8f854'],
+    }),
+    ('illumina-utils', '2.13', {
+        'checksums': ['e688ca221ea6178614073b72205fce7b4a54695237c7aa96713492ecd99bd56e'],
+        # python-Levenshtein was renamed to Levenshtein
+        'preinstallopts': "sed -i 's/python-Levenshtein/Levenshtein/g' requirements.txt && ",
+        'modulename': 'IlluminaUtils',
+    }),
+    ('mistune', '3.0.2', {
+        'checksums': ['fc7f93ded930c92394ef2cb6f04a8aabab4117a91449e72dcc8dfa646a508be8'],
+    }),
+    ('multiprocess', '0.70.15', {
+        'checksums': ['f20eed3036c0ef477b07a4177cf7c1ba520d9a2677870a4f47fe026f0cd6787e'],
+    }),
+    ('Paste', '3.7.1', {
+        'checksums': ['6d07a8e1c7fa72b8cf403762a002f80d12c0384056956dd0a87cb9a3be64749a'],
+    }),
+    ('plotext', '5.2.8', {
+        'checksums': ['319a287baabeb8576a711995f973a2eba631c887aa6b0f33ab016f12c50ffebe'],
+    }),
+    ('pyani', '0.2.12', {
+        'checksums': ['4f56b217656f53416b333b69495a4ba8cde782e64e475e1481cb2213ce6b9388'],
+    }),
+    ('rich_argparse', '1.4.0', {
+        'checksums': ['c275f34ea3afe36aec6342c2a2298893104b5650528941fb53c21067276dba19'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/merenlab/anvio/releases/download/v%(version)s/'],
+        'patches': ['anvio-8_fix-rU.patch'],
+        'checksums': [
+            {'anvio-8.tar.gz': '13da84d48d7266a8986815efb024772fa26ad1c8a951d42897c3a51e3d924feb'},
+            {'anvio-8_fix-rU.patch': '5eafa5962f59b563cfc3913fb688963b5fe052714c7d7c66b013af065e7a2fea'},
+        ],
+        # remove too strict requirements for Python packages anvio depends on
+        'preinstallopts': "sed -i -e 's/==.*//g' -e 's/<=.*//g' requirements.txt && ",
+    }),
+]
+
+local_binaries_list = [
+    'anvi-pan-genome',
+    'anvi-script-reformat-fasta',
+    'anvi-profile',
+    'anvi-help',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries_list],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "anvi-self-test --suite mini --no-interactive",
+    "anvi-pan-genome --help",
+    "anvi-script-reformat-fasta --help",
+    "anvi-profile --version",
+    "anvi-help --help",
+]
+
+moduleclass = 'bio'

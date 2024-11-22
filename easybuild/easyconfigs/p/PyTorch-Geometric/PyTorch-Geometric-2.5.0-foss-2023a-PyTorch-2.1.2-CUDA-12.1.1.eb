@@ -1,0 +1,101 @@
+easyblock = 'PythonBundle'
+
+name = 'PyTorch-Geometric'
+version = '2.5.0'
+local_pytorchver = '2.1.2'
+versionsuffix = '-PyTorch-%s-CUDA-%%(cudaver)s' % local_pytorchver
+
+homepage = 'https://github.com/rusty1s/pytorch_geometric'
+description = "PyTorch Geometric (PyG) is a geometric deep learning extension library for PyTorch."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('PDM', '2.12.4'),
+    ('Parallel-Hashmap', '1.3.12'),  # header only
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('PyTorch', local_pytorchver, '-CUDA-%(cudaver)s'),
+    ('scikit-learn', '1.3.1'),
+    ('scikit-image', '0.22.0'),
+    ('numba', '0.58.1'),
+    ('h5py', '3.9.0'),
+    ('tqdm', '4.66.1'),
+    ('RDFlib', '7.0.0'),
+    ('ASE', '3.22.1'),
+    ('YACS', '0.1.8'),
+    ('aiohttp', '3.8.5'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('googledrivedownloader', '0.4', {
+        'modulename': 'google_drive_downloader',
+        'checksums': ['4b34c1337b2ff3bf2bd7581818efbdcaea7d50ffd484ccf80809688f5ca0e204'],
+    }),
+    ('plyfile', '1.0.3', {
+        'patches': ['plyfile-1.0.3_use_pdm_backend.patch'],
+        'checksums': [
+            {'plyfile-1.0.3.tar.gz': '0ecbe8e7ce55a7bbc6c9dea24242fffa0ab7d9bed33fbd5ad567ca013bcc5222'},
+            {'plyfile-1.0.3_use_pdm_backend.patch': '815611863f16e785ef03a7992a0b99e433150212ff03559c7f6fce4e86d9e0a7'},
+        ],
+    }),
+    ('torch_scatter', '2.1.2', {
+        'source_urls': ['https://github.com/rusty1s/pytorch_scatter/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['6f375dbc9cfe03f330aa29ea553e9c7432e9b040d039b041f08bf05df1a8bf37'],
+        'runtest': 'pytest',
+        'testinstall': True,
+    }),
+    ('torch_sparse', '0.6.18', {
+        'source_urls': ['https://github.com/rusty1s/pytorch_sparse/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['a9e194cddc17481001ac4592a058450493ce13780e8ce3eb54d4f79706e69c91'],
+        'runtest': 'pytest -k "not test_spmm[dtype10-device10-sum] and not test_spmm[dtype16-device16-add]"',  # flaky
+        'testinstall': True,
+    }),
+    ('torch_cluster', '1.6.3', {
+        'source_urls': ['https://github.com/rusty1s/pytorch_cluster/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['0e2b08095e03cf87ce9b23b7a7352236a25d3ed92d92351dc020fd927ea8dbfe'],
+        'runtest': 'pytest',
+        'testinstall': True,
+    }),
+    ('torch_spline_conv', '1.2.2', {
+        'source_urls': ['https://github.com/rusty1s/pytorch_spline_conv/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['258947394514ba487b2617268ae7102e9a06fd15d79f5d8239a96211a85adc3d'],
+        'runtest': 'pytest',
+        'testinstall': True,
+    }),
+    ('python-louvain', '0.16', {
+        'modulename': 'community.community_louvain',
+        'checksums': ['b7ba2df5002fd28d3ee789a49532baad11fe648e4f2117cf0798e7520a1da56b'],
+    }),
+    ('torch_geometric', version, {
+        'source_urls': ['https://github.com/pyg-team/pytorch_geometric/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['f9abf00dc7fd1039ef1d9734a0fbd8c52196e39ca9fc4816afd98a8f311265be'],
+        'runtest': (
+            'pytest'
+            ' --ignore=test/test_edge_index.py'  # many tests require PyTorch with MKL
+            ' --ignore=test/nn/models/test_graph_unet.py'  # requires PyTorch with MKL
+            ' --ignore=test/nn/pool/test_asap.py'  # requires PyTorch with MKL
+            ' --ignore=test/transforms/test_add_metapaths.py'  # requires PyTorch with MKL
+            ' --ignore=test/transforms/test_two_hop.py'  # requires PyTorch with MKL
+            ' --ignore=test/test_inspector.py'  # test failing due to typing change
+            ' --ignore=test/nn/conv/test_hetero_conv.py'  # unknown jit compilation issue
+            ' --ignore=test/nn/conv/test_sage_conv.py'  # unknown jit compilation issue
+            ' -k "not test_multithreading_neighbor_loader" '  # picky about number of cores in the environment
+        ),
+        'testinstall': True,
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'
