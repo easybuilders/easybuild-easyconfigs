@@ -14,7 +14,11 @@ toolchain = {'name': 'gfbf', 'version': '2023a'}
 
 source_urls = ['https://www.nsnam.org/releases/']
 sources = ['ns-allinone-%(version)s.tar.bz2']
-checksums = ['b8873410948be3ae468ff97e7dfca3d6d8248a2c831e9f24d015483009bafb8d']
+patches = ['ns-%(version)s_various_fixes.patch']
+checksums = [
+    {'ns-allinone-3.43.tar.bz2': 'b8873410948be3ae468ff97e7dfca3d6d8248a2c831e9f24d015483009bafb8d'},
+    {'ns-3.43_various_fixes.patch': 'c36f56eced53eb61e2bb9b1e87b3ba01da2ae29208fb1d52b0316b8495384ed3'},
+]
 
 builddependencies = [
     ('Ninja', '1.11.1'),
@@ -37,9 +41,8 @@ configure_cmd = './ns3 configure --enable-examples --enable-tests --enable-pytho
 
 build_cmd = './ns3 build'
 
-pretestopts = """sed -i 's/pypath = .*/pypath = os.path.join(NS3_BUILDDIR, "bindings", "python")/g' test.py && """
-pretestopts += """sed -i 's/"test" not in x/"-test-" not in x/g' bindings/python/ns__init__.py && """
-pretestopts += 'mv build/lib64 build/lib && '
+# pretestopts = """sed -i 's/"test" not in x/"-test-" not in x/g' build/bindings/python/ns/__init__.py && """
+pretestopts = 'mv build/lib64 build/lib && '
 test_cmd = './test.py --jobs %(parallel)s --verbose-failed'
 
 install_cmd = './ns3 --jobs %(parallel)s install'
