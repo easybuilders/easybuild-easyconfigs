@@ -1,0 +1,58 @@
+easyblock = 'ConfigureMake'
+
+name = 'RMBlast'
+version = '2.14.1'
+
+homepage = 'http://www.repeatmasker.org/RMBlast.html'
+description = """RMBlast is a RepeatMasker compatible version of the standard NCBI BLAST suite. The primary difference between
+ this distribution and the NCBI distribution is the addition of a new program 'rmblastn' for use with RepeatMasker and
+ RepeatModeler."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+#https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.14.1/ncbi-blast-2.14.1+-src.tar.gz
+#https://www.repehttps://www.repeatmasker.org/rmblast/isb-2.14.1+-rmblast.patch.gz
+
+source_urls = [
+    'http://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/%(version)s',
+]
+sources = [
+    'ncbi-blast-%(version)s+-src.tar.gz',
+]
+patches = [('isb-%(version)s+-%(namelower)s.patch', 2)]
+checksums = [
+    {'ncbi-blast-2.14.1+-src.tar.gz': '712c2dbdf0fb13cc1c2d4f4ef5dd1ce4b06c3b57e96dfea8f23e6e99f5b1650e'},
+    {'isb-2.14.1+-rmblast.patch': 'b432dc00d726b68aafbcd393273dfeb6823022923482e87f30d87cf22dc34449'},
+]
+
+dependencies = [
+    ('Boost', '1.82.0'),
+    ('LMDB', '0.9.31'),
+    ('HDF5', '1.14.2'),
+    ('protobuf', '24.4'),
+    ('GSL', '2.7'),
+    #('wxWidgets', '3.2.2.1'),
+]
+
+configopts  = '--with-boost=$EBROOTBOOST '
+configopts += '--with-64 --with-bin-release '
+configopts += '--without-debug --with-mt '
+configopts += '--with-projects=scripts/projects/rmblastn/project.lst '
+configopts += '--without-krb5  --without-openssl '
+configopts += '--with-lmdb=$EBROOTLMDB '
+configopts += '--with-hdf5=$EBROOTHDF5 '
+configopts += '--with-libxml=$EBROOTGENTOO '
+configopts += '--with-wxwidgets=$EBROOTWXWIDGETS '
+configopts += '--with-libxslt=$EBROOTGENTOO '
+
+#prebuildopts = "sed -i -e 's;(incdir)/\*;(incdir)/*\.*;g' %(builddir)s/ncbi-blast-*/c++/Makefile && "
+#configopts += " && pwd && sed -i -e 's;LIBS = \(.*\);LIBS = $(LMDB_LIBS) \1;g' c++/src/app/rmblastn/Makefile.rmblastn.app "
+
+sanity_check_paths = {
+    'files': ['bin/blastp', 'bin/blastn', 'bin/deltablast', 'bin/rmblastn'],
+    'dirs': ['lib', 'bin']
+}
+
+sanity_check_commands = ["blastp -help && blastn -help"]
+
+moduleclass = 'bio'
