@@ -1,6 +1,6 @@
 easyblock = 'MesonNinja'
 
-name = 'GST-plugins-base'
+name = 'GStreamer'
 version = '1.24.8'
 
 homepage = 'https://gstreamer.freedesktop.org/'
@@ -11,33 +11,37 @@ description = """GStreamer is a library for constructing graphs of media-handlin
 
 toolchain = {'name': 'GCC', 'version': '13.2.0'}
 
-source_urls = ['https://gstreamer.freedesktop.org/src/gst-plugins-base']
+source_urls = ['https://%(namelower)s.freedesktop.org/src/%(namelower)s']
 sources = [SOURCELOWER_TAR_XZ]
-checksums = ['10fb31743750ccd498d3933e8aaecda563ebc65596a6ab875b47ee936e4b9599']
+patches = ['%(name)s-1.24_fix_bad_suid.patch']
+checksums = ['b807dbf36c5d2b3ce1c604133ed0c737350f9523ce4d8d644a1177c5f9d6ded3',  # gstreamer-1.24.8.tar.xz
+             'e40c8b195cc9d44f2d9b92e57608e097ef8dac6fa761c5610fcb836f88610cb1',  # %(name)s-1.24_fix_bad_suid.patch
+             ]
 
 builddependencies = [
     ('Meson', '1.4.0'),
     ('Ninja', '1.12.1'),
+    ('Perl', '5.38.2'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
     ('GObject-Introspection', '1.80.1'),
     ('gettext', '0.22.5'),
     ('pkgconf', '2.2.0'),
-    ('Bison', '3.8.2'),
+]
+dependencies = [
+    ('Python', '3.12.3'),
+    ('zlib', '1.3.1'),
+    ('GMP', '6.3.0'),
+    ('GSL', '2.8'),
+    ('GLib', '2.80.4'),
+    ('libunwind', '1.8.1'),
+    ('elfutils', '0.191'),
 ]
 
-dependencies = [
-    ('zlib', '1.3.1'),
-    ('GLib', '2.80.4'),
-    ('GStreamer', '1.24.8'),
-    ('Gdk-Pixbuf', '2.42.10'),
-    ('X11', '20240607'),
-    ('Mesa', '23.1.9'),
-    ('Graphene', '1.10.8'),
-]
 
 sanity_check_paths = {
-    'files': ['bin/gst-%s-1.0' % x for x in ['discoverer', 'play', 'device-monitor']] +
-             ['lib/libgst%s-1.0.%s' % (x, SHLIB_EXT) for x in ['app', 'audio', 'video']],
-    'dirs': ['include', 'share']
+    'files': [],
+    'dirs': ['include', 'share', 'libexec'],
 }
 
 moduleclass = 'vis'
