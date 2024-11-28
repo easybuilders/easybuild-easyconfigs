@@ -1,0 +1,67 @@
+jax-0.4.25_fix-pybind11-systemlib.patch: Add missing value for System Pybind11 Bazel config
+jax-0.4.25_fix-pybind11-systemlib.patch: Author: Alexander Grund (TU Dresden)
+
+THEMBL: fix cupti include path.
+
+diff --git a/third_party/xla/fix-pybind11-systemlib.patch b/third_party/xla/fix-pybind11-systemlib.patch
+new file mode 100644
+index 000000000..68bd2063d
+--- /dev/null
++++ b/third_party/xla/fix-pybind11-systemlib.patch
+@@ -0,0 +1,13 @@
++--- xla-orig/third_party/tsl/third_party/systemlibs/pybind11.BUILD
+++++ xla-4ccfe33c71665ddcbca5b127fefe8baa3ed632d4/third_party/tsl/third_party/systemlibs/pybind11.BUILD
++@@ -6,3 +6,10 @@
++         "@tsl//third_party/python_runtime:headers",
++     ],
++ )
+++
+++# Needed by pybind11_bazel.
+++config_setting(
+++    name = "osx",
+++    constraint_values = ["@platforms//os:osx"],
+++)
+++
+diff -ruN jax-jax-v0.4.35/jaxlib/gpu/vendor.h jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib/jaxlib/gpu/vendor.h
+--- jax-jax-v0.4.35/jaxlib/gpu/vendor.h	2024-10-22 21:00:23.000000000 +0200
++++ jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib/jaxlib/gpu/vendor.h	2024-11-26 10:56:20.396087442 +0100
+@@ -23,7 +23,7 @@
+ #if defined(JAX_GPU_CUDA)
+ 
+ // IWYU pragma: begin_exports
+-#include "third_party/gpus/cuda/extras/CUPTI/include/cupti.h"
++#include <cupti.h>
+ #include "third_party/gpus/cuda/include/cooperative_groups.h"
+ #include "third_party/gpus/cuda/include/cuComplex.h"
+ #include "third_party/gpus/cuda/include/cublas_v2.h"
+diff -ruN jax-jax-v0.4.35/third_party/xla/workspace.bzl jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib/third_party/xla/workspace.bzl
+--- jax-jax-v0.4.35/third_party/xla/workspace.bzl	2024-10-22 21:00:23.000000000 +0200
++++ jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib/third_party/xla/workspace.bzl	2024-11-27 12:17:37.913466273 +0100
+@@ -30,6 +30,11 @@
+         sha256 = XLA_SHA256,
+         strip_prefix = "xla-{commit}".format(commit = XLA_COMMIT),
+         urls = tf_mirror_urls("https://github.com/openxla/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)),
++        patch_file = [
++           "//third_party/xla:xla-76da73_cupti.patch",
++           "//third_party/xla:fix-pybind11-systemlib.patch",
++       ],
++       
+     )
+ 
+     # For development, one often wants to make changes to the TF repository as well
+diff -ruN jax-jax-v0.4.35/third_party/xla/xla-76da73_cupti.patch jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib/third_party/xla/xla-76da73_cupti.patch
+--- jax-jax-v0.4.35/third_party/xla/xla-76da73_cupti.patch	1970-01-01 01:00:00.000000000 +0100
++++ jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib/third_party/xla/xla-76da73_cupti.patch	2024-11-27 12:18:26.668582799 +0100
+@@ -0,0 +1,12 @@
++diff -ru xla-76da730179313b3bebad6dea6861768421b7358c/xla/tsl/cuda/cupti_stub.cc xla-76da730179313b3bebad6dea6861768421b7358c_cupti/xla/tsl/cuda/cupti_stub.cc
++--- xla-76da730179313b3bebad6dea6861768421b7358c/xla/tsl/cuda/cupti_stub.cc	2024-10-21 20:29:31.000000000 +0200
+++++ xla-76da730179313b3bebad6dea6861768421b7358c_cupti/xla/tsl/cuda/cupti_stub.cc	2024-11-26 12:04:11.695539146 +0100
++@@ -13,7 +13,7 @@
++ limitations under the License.
++ ==============================================================================*/
++ 
++-#include "third_party/gpus/cuda/extras/CUPTI/include/cupti.h"
+++#include <cupti.h>
++ #include "third_party/gpus/cuda/include/cuda.h"
++ #include "tsl/platform/dso_loader.h"
++ #include "tsl/platform/load_library.h"
