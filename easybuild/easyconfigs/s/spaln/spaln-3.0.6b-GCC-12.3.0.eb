@@ -1,0 +1,49 @@
+# updated: Denis Kristak (INUITS)
+# Update: Petr Král (INUITS)
+easyblock = 'ConfigureMake'
+
+name = 'spaln'
+version = '3.0.6b'
+
+homepage = 'https://github.com/ogotoh/spaln'
+description = """Spaln (space-efficient spliced alignment) is a stand-alone program that maps
+ and aligns a set of cDNA or protein sequences onto a whole genomic sequence in a single job."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+# disable use of -march=native, which makes compilation fail due to missing header files like fwd2s1_simd.h;
+# see also https://github.com/ogotoh/spaln/issues/56
+toolchainopts = {'optarch': False}
+
+source_urls = ['https://github.com/ogotoh/spaln/archive/']
+sources = ['ver.%(version)s.tar.gz']
+checksums = ['8e496ef6d02696543f4a5e31922f464555eff9b8405da366587ba7bea27b4e76']
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('Perl', '5.36.1'),
+]
+
+start_dir = 'src'
+
+# not a standard `configure` - does not accept standard `--prefix` option
+# see https://github.com/ogotoh/spaln/issues/74
+prefix_opt = '--exec_prefix='
+
+configopts = "--exec_prefix=bin --table_dir=table --alndbs_dir=seqdb"
+
+installopts = 'DESTDIR=%(installdir)s/'
+
+fix_perl_shebang_for = ['seqdb/*.pl']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['makdbs', 'makmdm', 'sortgrcd', 'spaln']],
+    'dirs': ['seqdb', 'table'],
+}
+
+sanity_check_commands = ["spaln -h 2>&1 | grep 'SPALN version %(version)s'"]
+modextrapaths = {
+    'PATH': 'seqdb',
+    'PERL5LIB': 'seqdb',
+}
+
+moduleclass = 'bio'
