@@ -1,0 +1,122 @@
+# Using correct JasPer functions
+# ==============================
+# WPS uses depreceated version of JasPer interface.
+# See https://github.com/wrf-model/WPS/issues/207
+# @author Stefan Wolfsheimer (SURF)
+
+
+diff -Nru WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/base/jas_init.c WPS-4.6.0/external/jasper-1.900.29/src/libjasper/base/jas_init.c
+--- WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/base/jas_init.c	2024-06-13 00:06:55.000000000 +0200
++++ WPS-4.6.0/external/jasper-1.900.29/src/libjasper/base/jas_init.c	2024-11-29 10:17:24.964788000 +0100
+@@ -123,8 +123,8 @@
+ 	jas_image_addfmt(fmtid, "jp2", "jp2",
+ 	  "JPEG-2000 JP2 File Format Syntax (ISO/IEC 15444-1)", &fmtops);
+ 	++fmtid;
+-	fmtops.decode = jpc_decode;
+-	fmtops.encode = jpc_encode;
++	fmtops.decode = jas_image_decode;
++	fmtops.encode = jas_image_encode;
+ 	fmtops.validate = jpc_validate;
+ 	jas_image_addfmt(fmtid, "jpc", "jpc",
+ 	  "JPEG-2000 Code Stream Syntax (ISO/IEC 15444-1)", &fmtops);
+diff -Nru WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/include/jasper/jas_image.h WPS-4.6.0/external/jasper-1.900.29/src/libjasper/include/jasper/jas_image.h
+--- WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/include/jasper/jas_image.h	2024-06-13 00:06:55.000000000 +0200
++++ WPS-4.6.0/external/jasper-1.900.29/src/libjasper/include/jasper/jas_image.h	2024-11-29 10:17:24.977624441 +0100
+@@ -557,8 +557,8 @@
+ 
+ #if !defined(EXCLUDE_JPC_SUPPORT)
+ /* Format-dependent operations for JPEG-2000 code stream support. */
+-jas_image_t *jpc_decode(jas_stream_t *in, const char *optstr);
+-int jpc_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
++jas_image_t *jas_image_decode(jas_stream_t *in, const char *optstr);
++int jas_image_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
+ int jpc_validate(jas_stream_t *in);
+ #endif
+ 
+diff -Nru WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/jp2/jp2_dec.c WPS-4.6.0/external/jasper-1.900.29/src/libjasper/jp2/jp2_dec.c
+--- WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/jp2/jp2_dec.c	2024-06-13 00:06:55.000000000 +0200
++++ WPS-4.6.0/external/jasper-1.900.29/src/libjasper/jp2/jp2_dec.c	2024-11-29 10:17:24.990192019 +0100
+@@ -215,7 +215,7 @@
+ 		goto error;
+ 	}
+ 
+-	if (!(dec->image = jpc_decode(in, optstr))) {
++	if (!(dec->image = jas_image_decode(in, optstr))) {
+ 		jas_eprintf("error: cannot decode code stream\n");
+ 		goto error;
+ 	}
+diff -Nru WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/jp2/jp2_enc.c WPS-4.6.0/external/jasper-1.900.29/src/libjasper/jp2/jp2_enc.c
+--- WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/jp2/jp2_enc.c	2024-06-13 00:06:55.000000000 +0200
++++ WPS-4.6.0/external/jasper-1.900.29/src/libjasper/jp2/jp2_enc.c	2024-11-29 10:17:25.002777520 +0100
+@@ -346,7 +346,7 @@
+ 	sprintf(buf, "%s\n_jp2overhead=%lu\n", (optstr ? optstr : ""),
+ 	  (unsigned long) overhead);
+ 
+-	if (jpc_encode(image, out, buf)) {
++	if (jas_image_encode(image, out, buf)) {
+ 		goto error;
+ 	}
+ 
+diff -Nru WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/jpc/jpc_dec.c WPS-4.6.0/external/jasper-1.900.29/src/libjasper/jpc/jpc_dec.c
+--- WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/jpc/jpc_dec.c	2024-06-13 00:06:55.000000000 +0200
++++ WPS-4.6.0/external/jasper-1.900.29/src/libjasper/jpc/jpc_dec.c	2024-11-29 10:17:25.015484538 +0100
+@@ -235,7 +235,7 @@
+ * The main entry point for the JPEG-2000 decoder.
+ \******************************************************************************/
+ 
+-jas_image_t *jpc_decode(jas_stream_t *in, const char *optstr)
++jas_image_t *jas_image_decode(jas_stream_t *in, const char *optstr)
+ {
+ 	jpc_dec_importopts_t *opts;
+ 	jpc_dec_t *dec;
+@@ -244,7 +244,7 @@
+ 	dec = 0;
+ 	opts = 0;
+ 
+-	JAS_DBGLOG(100, ("jpc_decode(%p, \"%s\")\n", in, optstr));
++	JAS_DBGLOG(100, ("jas_image_decode(%p, \"%s\")\n", in, optstr));
+ 
+ 	if (!(opts = jpc_dec_opts_create(optstr))) {
+ 		goto error;
+diff -Nru WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/jpc/jpc_enc.c WPS-4.6.0/external/jasper-1.900.29/src/libjasper/jpc/jpc_enc.c
+--- WPS-4.6.0.orig/external/jasper-1.900.29/src/libjasper/jpc/jpc_enc.c	2024-06-13 00:06:55.000000000 +0200
++++ WPS-4.6.0/external/jasper-1.900.29/src/libjasper/jpc/jpc_enc.c	2024-11-29 10:17:25.028597372 +0100
+@@ -277,7 +277,7 @@
+ * The main encoder entry point.
+ \******************************************************************************/
+ 
+-int jpc_encode(jas_image_t *image, jas_stream_t *out, const char *optstr)
++int jas_image_encode(jas_image_t *image, jas_stream_t *out, const char *optstr)
+ {
+ 	jpc_enc_t *enc;
+ 	jpc_enc_cp_t *cp;
+diff -Nru WPS-4.6.0.orig/ungrib/src/ngl/g2/dec_jpeg2000.c WPS-4.6.0/ungrib/src/ngl/g2/dec_jpeg2000.c
+--- WPS-4.6.0.orig/ungrib/src/ngl/g2/dec_jpeg2000.c	2024-06-13 00:06:55.000000000 +0200
++++ WPS-4.6.0/ungrib/src/ngl/g2/dec_jpeg2000.c	2024-11-29 10:17:25.041671000 +0100
+@@ -80,9 +80,9 @@
+ /*   
+  *     Decode JPEG200 codestream into jas_image_t structure.
+  */      
+-    image=jpc_decode(jpcstream,opts);
++    image=jas_image_decode(jpcstream,opts);
+     if ( image == 0 ) {
+-       printf(" jpc_decode return = %d \n",ier);
++       printf(" jas_image_decode return = %d \n",ier);
+        return -3;
+     }
+     
+diff -Nru WPS-4.6.0.orig/ungrib/src/ngl/g2/enc_jpeg2000.c WPS-4.6.0/ungrib/src/ngl/g2/enc_jpeg2000.c
+--- WPS-4.6.0.orig/ungrib/src/ngl/g2/enc_jpeg2000.c	2024-06-13 00:06:55.000000000 +0200
++++ WPS-4.6.0/ungrib/src/ngl/g2/enc_jpeg2000.c	2024-11-29 10:17:25.054123000 +0100
+@@ -178,9 +178,9 @@
+ /*
+  *     Encode image.
+  */
+-    ier=jpc_encode(&image,jpcstream,opts);
++    ier=jas_image_encode(&image,jpcstream,opts);
+     if ( ier != 0 ) {
+-       printf(" jpc_encode return = %d \n",ier);
++       printf(" jas_image_encode return = %d \n",ier);
+        return -3;
+     }
+ /*
