@@ -614,7 +614,7 @@ class EasyConfigTest(TestCase):
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
             ],
             'pybind11': [
-                ('2.13.6;', ['jax-0.4.35']),
+                ('2.13.6;', ['jax-0.4.35-']),
             ],
             'pydantic': [
                 # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
