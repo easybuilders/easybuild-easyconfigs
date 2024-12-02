@@ -16,8 +16,6 @@ dependencies = [
     ('Julia', local_juliaver, '-linux-%s' % ARCH, SYSTEM),
 ]
 
-preinstallopts = "export LD_LIBRARY_PATH=$EBROOTJULIA/lib/julia:$LD_LIBRARY_PATH && "
-
 exts_default_options = {
     'source_tmpl': 'v%(version)s.tar.gz',
 }
@@ -224,17 +222,15 @@ exts_list = [
     }),
 ]
 
-sanity_check_commands = ["julia -e 'using Pkg;Pkg.test(\"%(name)s\")'"]
+local_julia_env = "%(installdir)s/environments/v" + '.'.join(local_juliaver.split('.')[:2])
+
+sanity_check_commands = [
+    """julia -e 'using Pkg; Pkg.activate("%s"); Pkg.test("%%(name)s")'""" % local_julia_env,
+]
 
 sanity_check_paths = {
     'files': [],
     'dirs': ['packages/%(name)s'],
 }
-
-# When loading R and Julia, there seems to be a library collision and Julia (namely Pkg module) doesn't work properly
-# This is a workaround to make Julia find the correct libraries
-modluafooter = """
-prepend_path("LD_LIBRARY_PATH", os.getenv("EBROOTJULIA") .. "/lib/julia")
-"""
 
 moduleclass = 'tools'
