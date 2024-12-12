@@ -1,0 +1,39 @@
+easyblock = 'MakeCp'
+
+name = 'StringTie'
+version = '2.2.3'
+
+homepage = 'https://ccb.jhu.edu/software/stringtie/'
+description = 'StringTie is a fast and highly efficient assembler of RNA-Seq alignments into potential transcripts'
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/gpertea/%(namelower)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['f372640b70a8fde763712d2f0565aff71f5facdc2300c8af829fea94a05ff208']
+
+builddependencies = [
+    ('HTSlib', '1.19'),
+]
+
+local_libs = 'HTSLIB="$EBROOTHTSLIB/lib" LIBS="-lhts -lbz2 -llzma -ldeflate -lz $LIBS"'
+buildopts = 'release ' + local_libs
+
+# the test script downloads some test data from the internet
+runtest = 'test'
+testopts = local_libs
+
+files_to_copy = [
+    (['%(namelower)s', 'prepDE.py3'], 'bin'),
+    'README.md',
+    'LICENSE'
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['%(namelower)s --help']
+
+moduleclass = 'bio'
