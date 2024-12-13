@@ -1,0 +1,82 @@
+easyblock = 'CMakeMake'
+
+name = 'casacore'
+version = '3.6.1'
+
+homepage = 'https://github.com/casacore/casacore'
+description = """A suite of C++ libraries for radio astronomy data processing.
+The ephemerides data needs to be in DATA_DIR and the location must be specified at runtime.
+Thus user's can update them.
+"""
+
+toolchain = {'name': 'gofb', 'version': '2023a'}
+
+source_urls = ['https://github.com/%(name)s/%(name)s/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    '480d3340fa17e9ba67f18efbaff4bbb272a01d1f400d2295c0b6c86eb7abcf82',
+]
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('numpy', '2.1.1'),
+    ('CFITSIO', '4.3.0'),
+    ('WCSLIB', '8.3'),
+    ('HDF5', '1.14.2'),
+    ('GSL', '2.7'),
+    ('Boost', '1.85.0'),
+    ('FFTW', '3.3.10'),
+    ('python-build-bundle', '2024a')
+]
+
+multi_deps = {'Python': ['3.10', '3.11', '3.12'] }
+multi_deps_extensions_only = True
+
+configopts = ' '.join([
+    '-DBUILD_PYTHON=OFF',
+    '-DBUILD_PYTHON3=ON',
+    '-DUSE_OPENMP=ON',
+    '-DUSE_HDF5=ON',
+    '-DUSE_MPI=ON',
+    '-DDATA_DIR=%(installdir)s/data',
+])
+
+# Install casacore data
+postinstallcmds = [
+    'wget --retry-connrefused ftp://anonymous@ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar -O /tmp/WSRT_Measures.ztar',
+    "tar xfvz /tmp/WSRT_Measures.ztar --one-top-level=%(installdir)s/data",
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    (f'python_{name}', version, {
+        'source_urls': [PYPI_SOURCE],
+        'checksums': ['ddc1ac186b6ea2636ac6a271568de52f485ebf6f21d9d00a4216fc3a1651bb81'],
+        'modulename': 'casacore',
+        'use_pip': True,
+        'preinstallopts': 'unset CASACORE_DATA && ',
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'lib/libcasa_casa.%s' % SHLIB_EXT,
+        'lib/libcasa_mirlib.%s' % SHLIB_EXT,
+        'lib/libcasa_ms.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['bin', 'include/%(name)s'],
+}
+
+sanity_check_commands = [
+    ('measuresdata', ''),
+    "python -c 'import casacore'",
+]
+
+modextravars = {
+    'CASACORE_DATA': '%(installdir)s/data',
+}
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'lib'
