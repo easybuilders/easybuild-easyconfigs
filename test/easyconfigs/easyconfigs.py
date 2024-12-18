@@ -1625,7 +1625,7 @@ def template_easyconfig_test(self, spec):
             requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
 
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
-        requires_binutils &= bool(sources or ec['exts_list'] or ec.get('components'))
+        requires_binutils &= bool(sources or ec.get_ref('exts_list') or ec.get_ref('components'))
 
         if requires_binutils:
             # dependencies() returns both build and runtime dependencies
