@@ -1,0 +1,58 @@
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '4.7.1'
+
+homepage = 'https://github.com/reframe-hpc/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('cURL', '8.3.0'),  # Used by ReFrame to download pip in the bootstrap
+]
+
+# Note that for ReFrame's CPU autodetect to work
+# the system also needs to provide (new enough versions of) these dependencies
+dependencies = [
+    ('Python', '3.11.5'),
+    ('libxslt', '1.1.38'),  # Required by lxml, which is installed by ReFrame's bootstrap installer
+    ('libxml2', '2.11.5'),  # Required by lxml, which is installed by ReFrame's bootstrap installer
+]
+
+exts_list = [
+    ('reframe', version, {
+        'download_dep_fail': False,
+        'modulename': False,
+        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && ./bootstrap.sh +docs +pygelf && cp --recursive external %(installdir)s && ",
+        'sanity_pip_check': False,
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/reframe-hpc/reframe/archive/'],
+        'checksums': ['ed693368d8b47327981a0db2b984c88d7dd703add1ffe736c95f9193ef727baf'],
+    }),
+]
+
+postinstallcmds = [
+    "cp --archive tools examples %(installdir)s",
+    "mkdir --parents %(installdir)s/share && cp --archive share/completions %(installdir)s/share/completions",
+    r"sed -i 's@/\(python[0-9.]*\)$@/\1 -S@g' %(installdir)s/bin/reframe",
+]
+
+sanity_check_paths = {
+    'files': ['bin/reframe',
+              'share/completions/reframe.bash',
+              'share/completions/reframe.fish',
+              'share/completions/reframe.tcsh'],
+    'dirs': ['external', 'lib', 'tools', 'examples']
+}
+
+sanity_check_commands = ['reframe --version']
+
+# Since this is at the GCCcore toolchain level, make sure ReFrame is configured to purge modules before running
+# any tests by default
+modextravars = {
+    'RFM_PURGE_ENVIRONMENT': '1',
+}
+
+moduleclass = 'devel'
