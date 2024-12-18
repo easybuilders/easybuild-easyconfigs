@@ -1607,7 +1607,7 @@ def template_easyconfig_test(self, spec):
     failing_checks.extend("Old URL '%s' found" % old_url for old_url in old_urls if old_url in ec.rawtxt)
 
     # Note the use of app.cfg which might contain sources populated by e.g. the Cargo easyblock
-    sources, patches, checksums = app.cfg['sources'], app.cfg['patches'], app.cfg['checksums']
+    sources, patches, checksums = app.cfg.get_ref('sources'), app.cfg['patches'], app.cfg['checksums']
 
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
