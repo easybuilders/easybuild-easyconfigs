@@ -1474,7 +1474,7 @@ def verify_patch(specdir, patch_spec, checksum_idx, patch_checksums, extension_n
     patch_path = os.path.join(patch_dir, patch_name)
     patch_descr = "patch file " + patch_name
     if extension_name:
-        patch_descr += "of extension " + extension_name
+        patch_descr += " of extension " + extension_name
 
     # only check actual patch files, not other files being copied via the patch functionality
     if patch_path.endswith('.patch'):
@@ -1724,8 +1724,8 @@ def template_easyconfig_test(self, spec):
         if key not in DEFAULT_CONFIG and key not in extra_opts:
             continue
 
-        orig_val = resolve_template(ec_dict[key], ec.template_values)
-        dumped_val = resolve_template(dumped_ec[key], ec.template_values)
+        orig_val = resolve_template(ec_dict[key], ec.template_values, expect_resolved=False)
+        dumped_val = resolve_template(dumped_ec[key], ec.template_values, expect_resolved=False)
 
         # skip SYSTEM template constant check for 2019b and older toolchain generation easyconfigs
         # since these fail other CI checks when updated
