@@ -1,0 +1,193 @@
+easyblock = 'PythonBundle'
+
+name = 'PyTorch-bundle'
+version = '2.3.0'
+
+homepage = 'https://pytorch.org/'
+description = """PyTorch with compatible versions of official Torch extensions."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('RE2', '2023-08-01'),  # for torchtext
+    ('parameterized', '0.9.0'),  # for torchtext and torchaudio tests
+    ('scikit-learn', '1.3.1'),  # for torchaudio and pytorch-ignite tests
+    ('scikit-image', '0.22.0'),  # for pytorch-ignite tests
+    ('dill', '0.3.7'),  # for pytorch-ignite tests
+    ('matplotlib', '3.7.2'),  # for pytorch-ignite tests
+    ('librosa', '0.10.1'),  # for torchaudio tests
+    ('NLTK', '3.8.1'),  # for torchtext tests
+    ('Scalene', '1.5.26'),  # for pynvml in ignite tests
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('PyTorch', version),
+    ('Pillow-SIMD', '9.5.0'),  # for torchvision
+    ('libjpeg-turbo', '2.1.5.1'),  # for torchvision
+    ('SentencePiece', '0.2.0'),  # for torchtext
+    ('tqdm', '4.66.1'),  # for torchtext
+    ('double-conversion', '3.3.0'),  # for torchtext
+    ('utf8proc', '2.8.0'),  # for torchtext
+    ('tensorboard', '2.15.1'),  # for torch-tb-profiler
+    ('FFmpeg', '6.0'),  # for torchvision and torchaudio
+    ('SoX', '14.4.2'),  # for torchaudio
+]
+
+use_pip = True
+
+# Check with https://pytorch.org/audio/stable/installation.html#compatibility-matrix
+exts_list = [
+    ('tensordict', '0.4.0', {
+        'source_urls': ['https://github.com/pytorch/%(name)s/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['c6a565cc88d4f8bc1e1f5e6aba23c2c099f08799730c2716fe6b8706d015b7a5'],
+    }),
+    ('torchrl', '0.4.0', {
+        'source_urls': ['https://github.com/pytorch/rl/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['8851a84316f2a1d61d23ec753c90b545bc6479890ec65c5278987ae7c8a2ceec'],
+    }),
+    ('portalocker', '3.0.0', {
+        'checksums': ['21f535de2e7a82c94c130c054adb5c7421d480d5619d61073996e2f89bcb879b'],
+    }),
+    ('torchdata', '0.8.0', {
+        'preinstallopts': "USE_SYSTEM_LIBS=1 ",
+        'runtest': False,  # circular test requirements
+        'source_urls': ['https://github.com/pytorch/data/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['d5d27b264e79d7d00ad4998f14d097b770332d979672dceb6d038caf204f1208'],
+    }),
+    ('torchtext', '0.18.0', {
+        'patches': [
+            'torchtext-0.14.1_use-system-libs.patch',
+            'torchtext-0.16.2_download-to-project-root.patch',
+        ],
+        'runtest': (
+            'pytest test/torchtext_unittest'
+            ' -k "not test_vocab_from_raw_text_file"'  # segfaults
+            '" and not test_get_tokenizer_moses"'  # requires sacremoses
+            '" and not test_get_tokenizer_spacy"'  # requires spaCy
+            '" and not test_download_charngram_vectors"'  # requires internet access and required host may fail
+        ),
+        'source_urls': ['https://github.com/pytorch/text/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
+        'checksums': [
+            {'torchtext-0.18.0.tar.gz': 'fe4eb4b361388ef7840dcad117ae95b32252db5520c4eb2b3bead627468fbdf2'},
+            {'torchtext-0.14.1_use-system-libs.patch':
+             '1366d10c4755b6003194f7313ca11d165a80a13d325bee9d669ea2b333d82536'},
+            {'torchtext-0.16.2_download-to-project-root.patch':
+             '9d5599a9983729cf1fc7ab2a2f65d1887f223f528e15662ba1b4a5e359c9686d'},
+        ],
+    }),
+    ('pytest-mock', '3.14.0', {  # for torchvision tests
+        'checksums': ['2719255a1efeceadbc056d6bf3df3d1c5015530fb40cf347c0f9afac88410bd0'],
+    }),
+    ('torchvision', '0.18.1', {
+        'installopts': '-v',
+        'patches': [
+            'torchvision-0.16.2_quantized_tol.patch',
+        ],
+        'runtest': (
+            'pytest'
+            ' -m "not xfail"'  # don't run tests that are expected that they might fail
+            ' -k "not test_frame_reading_mem_vs_file"'  # this one hangs
+            '" and not test_antialias_default_warning"'  # flaky test which is removed in later versions
+        ),
+        'source_urls': ['https://github.com/pytorch/vision/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
+        'checksums': [
+            {'torchvision-0.18.1.tar.gz': '347d472a9ceecc44e0bee1eda140d63cfaffc74a54ec07d4b98da7698ce75516'},
+            {'torchvision-0.16.2_quantized_tol.patch':
+             '457cdf8ad6653838c552890bce95dbe30b7573b1643334284f5f4a58f74f6e40'},
+        ],
+    }),
+    ('torchaudio', version, {
+        'installopts': "--no-use-pep517 -v",
+        'patches': [
+            'torchaudio-2.3.0_use-external-sox.patch',
+            'torchaudio-2.1.2_transform_test_tol.patch',
+        ],
+        'preinstallopts': ('rm -r third_party/{sox,ffmpeg/multi};'  # runs twice when testinstall
+                           ' USE_CUDA=0 USE_OPENMP=1 USE_FFMPEG=1 FFMPEG_ROOT="$EBROOTFFMPEG"'),
+        'runtest': (
+            'pytest -vvv test/torchaudio_unittest/'
+            ' -k "not TestProcessPoolExecutor"'  # hang maybe related https://github.com/pytorch/audio/issues/1021
+            '" and not FilterGraphWithCudaAccel"'  # requires FFmpeg with CUDA support
+            '" and not kaldi_io_test"'  # requires kaldi_io
+            '" and not test_dup_hw_acel"'  # requires special render device permissions
+            '" and not test_h264_cuvid"'  # requires special render device permissions
+            '" and not test_hevc_cuvid"'  # requires special render device permissions
+        ),
+        'source_urls': ['https://github.com/pytorch/audio/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
+        'checksums': [
+            {'torchaudio-2.3.0.tar.gz': '83f6351754ed57cb625b1322bab8e12c9140213a9b79626cc5bf7dfd122f869d'},
+            {'torchaudio-2.3.0_use-external-sox.patch':
+             '894884b0b8e4d21130a19bf9eb6da2a95e1b854d02547d075ad1dd8ab97a8956'},
+            {'torchaudio-2.1.2_transform_test_tol.patch':
+             '57f315c60db70ed2bd9711bcf6f7c7c24dac8c2f04e00488996eb2dc507bdfd2'},
+        ],
+    }),
+    ('pytorch-ignite', '0.5.1', {
+        'modulename': 'ignite',
+        'patches': ['torch-ignite-0.4.13_dont_destroy_python_path_in_test_launcher.patch'],
+        'preinstallopts': "sed -i 's/^from visdom/# from visdom/g' tests/ignite/handlers/conftest.py && ",
+        'runtest': (
+            'pytest -vvv tests/ignite'
+            ' -m "not distributed"'
+            ' --ignore=tests/ignite/handlers/test_checkpoint.py'  # fails by comparing tensors on different devices
+            ' --ignore=tests/ignite/handlers/test_clearml_logger.py'  # requires clearml
+            ' --ignore=tests/ignite/handlers/test_mlflow_logger.py'  # requires mlflow
+            ' --ignore=tests/ignite/handlers/test_neptune_logger.py'  # requires neptune
+            ' --ignore=tests/ignite/handlers/test_polyaxon_logger.py'  # requires polyaxon
+            ' --ignore=tests/ignite/handlers/test_tensorboard_logger.py'  # requires tensorboardX
+            ' --ignore=tests/ignite/handlers/test_tqdm_logger.py'  # fragile tests on some platforms
+            ' --ignore=tests/ignite/handlers/test_visdom_logger.py'  # requires visdom
+            ' --ignore=tests/ignite/handlers/test_wandb_logger.py'  # requires wandb
+            ' --ignore=tests/ignite/metrics/gan/test_fid.py'  # requires pytorch_fid
+            ' --ignore=tests/ignite/metrics/nlp/test_rouge.py'  # requires rouge
+            ' --treat-unrun-as-failed'
+            ' -k "not test_setup_visdom_logging"'  # requires visdom
+            '" and not test_setup_plx_logging"'  # requires polyaxon
+            '" and not test_setup_mlflow_logging"'  # requires mlflow
+            '" and not test_setup_clearml_logging"'  # requires clearml
+            '" and not test_setup_neptune_logging"'  # requires neptune
+            '" and not test__setup_ddp_vars_from_slurm_env_bad_configs"'  # fails sometimes
+            '" and not test__native_dist_model_create_from_backend_bad_config"'  # fails sometimes
+            '" and not test_inception_score"'  # fails sometimes due to connection problem with download.pytorch.org
+            '" and not test_logger_type_support"'  # fails with FileNotFoundError: [Errno 2] No such file or directory
+        ),
+        'source_urls': ['https://github.com/pytorch/ignite/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
+        'checksums': [
+            {'pytorch-ignite-0.5.1.tar.gz': 'b41e7c7bd33530b22fd1787a6d79b89c5efebd13f37c2a53cf3ac3a25d1fbe13'},
+            {'torch-ignite-0.4.13_dont_destroy_python_path_in_test_launcher.patch':
+             'fd5dfe99f4c8804d6c57e4d9140d9e556e0724b379f9eaae8aeaf1b7bd058686'},
+        ],
+    }),
+    ('torch-tb-profiler', '0.4.3', {
+        'modulename': 'torch.profiler',
+        'runtest': (
+            'pytest'
+            ' --ignore=test/test_tensorboard_end2end.py'  # timeouts
+            ' -k "not test_dump_gpu_metrics"'  # missing file
+            '" and not test_profiler_api_with_record_shapes_memory_stack"'  # fails
+            '" and not test_profiler_api_without_record_shapes_memory_stack"'  # fails
+            '" and not test_profiler_api_without_step"'  # fails
+            '" and not test_autograd_api"'  # fails
+        ),
+        'sources': ['torch_tb_profiler-%(version)s.tar.gz'],
+        'testinstall': True,
+        'checksums': ['8b8d29b2de960b3c4423087b23cec29beaf9ac3a8c7b046c18fd25b218f726b1'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'ai'
