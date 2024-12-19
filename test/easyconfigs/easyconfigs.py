@@ -1027,7 +1027,7 @@ class EasyConfigTest(TestCase):
         """Make sure specified sanity check paths adher to the requirements."""
 
         for ec in self.parsed_easyconfigs:
-            ec_scp = ec['ec']['sanity_check_paths']
+            ec_scp = ec['ec'].get_ref('sanity_check_paths')
             if ec_scp != {}:
                 # if sanity_check_paths is specified (i.e., non-default), it must adher to the requirements
                 # both 'files' and 'dirs' keys, both with list values and with at least one a non-empty list
@@ -1044,7 +1044,7 @@ class EasyConfigTest(TestCase):
         r_libs_ecs = []
         for ec in self.parsed_easyconfigs:
             for key in ('modextrapaths', 'modextravars'):
-                if 'R_LIBS' in ec['ec'][key]:
+                if 'R_LIBS' in ec['ec'].get_ref(key):
                     r_libs_ecs.append(ec['spec'])
 
         error_msg = "%d easyconfigs found which set $R_LIBS, should be $R_LIBS_SITE: %s"
@@ -1398,8 +1398,8 @@ class EasyConfigTest(TestCase):
         failing_checks = []
         for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
-            build_type = ec.get('build_type')
-            configopts = ec.get('configopts')
+            build_type = ec.get_ref('build_type') if 'build_type' in ec else ''
+            configopts = ec.get_ref('configopts')
             if isinstance(configopts, list):
                 configopts = ' '.join(configopts)
 
@@ -1417,7 +1417,7 @@ class EasyConfigTest(TestCase):
         failing_checks = []
         for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
-            configopts = ec.get('configopts')
+            configopts = ec.get_ref('configopts')
             if isinstance(configopts, list):
                 configopts = ' '.join(configopts)
 
