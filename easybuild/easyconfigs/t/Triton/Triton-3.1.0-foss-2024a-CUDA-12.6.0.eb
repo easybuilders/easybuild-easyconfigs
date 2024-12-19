@@ -1,0 +1,88 @@
+# Update 3.1.0: Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/12
+# TODO: run unittests
+easyblock = 'PythonBundle'
+
+name = 'Triton'
+version = '3.1.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+# There is no 3.1 in pypi and no 3.1-tag at github. However, 5fe38ffd is version bump 3.1 in the release_3.1.x branch:
+local_commit = '5fe38ffd73c2ac6ed6323b554205186696631c6f'
+# Triton 3.1.0 commit 5fe38ffd73c2ac6ed6323b554205186696631c6f requires a particular commit of LLVM 
+# (acc. to cmake/llvm-hash.txt: 10dc3a8e916d73291269e5e2b82dd22681489aa1, 2024/05/23):
+local_clang_commit = '10dc3a8e916d73291269e5e2b82dd22681489aa1'
+
+homepage = 'https://triton-lang.org/'
+
+description = """Triton is a language and compiler for parallel programming. It aims to provide a
+Python-based programming environment for productively writing custom DNN compute
+kernels capable of running at maximal throughput on modern GPU hardware."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+github_account = 'openai'
+
+builddependencies = [
+    ('Clang', '18.1.6_%s' % local_clang_commit[:7], versionsuffix),
+    ('CMake', '3.29.3'),
+    ('Ninja', '1.12.1'),
+    ('pybind11', '2.13.6'),
+    ('poetry', '1.8.3'),
+    ('nlohmann_json', '3.11.3'),
+    ('googletest', '1.15.2'),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('Z3', '4.13.0'),
+]
+
+use_pip = True
+download_dep_fail = True
+
+_tr_start_dir = 'python'
+
+_tr_preinstallopts = 'export PYBIND11_SYSPATH=$EBROOTPYBIND11 && '
+_tr_preinstallopts += 'export JSON_SYSPATH=$EBROOTNLOHMANN_JSON && '
+_tr_preinstallopts += 'export LLVM_INCLUDE_DIRS=$EBROOTCLANG/include && '
+_tr_preinstallopts += 'export LLVM_LIBRARY_DIR=$EBROOTCLANG/lib && '
+_tr_preinstallopts += 'export LLVM_SYSPATH=$EBROOTCLANG && '
+_tr_preinstallopts += 'export TRITON_BUILD_WITH_CLANG_LLD=1 && '
+_tr_preinstallopts += 'export TRITON_HOME=/tmp/triton_home/ && '
+_tr_installopts = "-v "
+
+exts_list = [
+    (name, version, {
+        'installopts': "-v ",
+        'patches': [
+            # disable AMD GPU, disable all downloads, use pybind11 and json from EB:
+            'Triton-3.1.0_5fe38ff_eb_env_python_build.patch'
+        ],
+        'postinstallcmds': [
+            'rm -rf %(installdir)s/lib/python%(pyshortver)s/site-packages/triton/backends/nvidia/lib/libdevice.10.bc'
+        ],
+        'preinstallopts': _tr_preinstallopts,
+        'source_urls': ['https://github.com/triton-lang/triton/archive/'],
+        'sources': [{
+            'filename': 'v%%(version)s-%s.tar.gz' % local_commit,
+            'download_filename': '%s.tar.gz' % local_commit,
+        }],
+        'start_dir': 'python',
+        'checksums': [
+            {'v3.1.0-5fe38ff.tar.gz': '933babc32b69872efbce05fe8be61129fecf52c724fadea42d8c7b2d10e16ad9'},
+            {'Triton-3.1.0_5fe38ff_eb_env_python_build.patch':
+             '6b46064b4892c7df340b6afd7ffb4abb2ea4486df9406626cd9b2c92a748705d'},
+        ],
+    }),
+    ('filelock', '3.15.1', {
+        'checksums': ['58a2549afdf9e02e10720eaa4d4470f56386d7a6f72edd7d0596337af8ed7ad8'],
+    }),
+]
+
+sanity_pip_check = True
+
+modluafooter = 'setenv("TRITON_PTXAS_PATH", pathJoin(os.getenv("CUDA_HOME"), "bin", "ptxas"));'
+modluafooter += 'setenv("TRITON_LIBDEVICE_PATH", pathJoin(os.getenv("CUDA_HOME"), "nvvm", '
+modluafooter += '"libdevice", "libdevice.10.bc")) '
+
+moduleclass = 'devel'
