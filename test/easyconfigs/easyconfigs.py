@@ -632,7 +632,7 @@ class EasyConfigTest(TestCase):
             ],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
-                                   r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
+                                   r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1', r'OPERA-MS-0\.9\.0-20240703'])],
             # NanoPlot, NanoComp use an older version of Seaborn
             'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
             # Shasta requires spoa 3.x
@@ -1027,7 +1027,7 @@ class EasyConfigTest(TestCase):
         """Make sure specified sanity check paths adher to the requirements."""
 
         for ec in self.parsed_easyconfigs:
-            ec_scp = ec['ec']['sanity_check_paths']
+            ec_scp = ec['ec'].get_ref('sanity_check_paths')
             if ec_scp != {}:
                 # if sanity_check_paths is specified (i.e., non-default), it must adher to the requirements
                 # both 'files' and 'dirs' keys, both with list values and with at least one a non-empty list
@@ -1044,7 +1044,7 @@ class EasyConfigTest(TestCase):
         r_libs_ecs = []
         for ec in self.parsed_easyconfigs:
             for key in ('modextrapaths', 'modextravars'):
-                if 'R_LIBS' in ec['ec'][key]:
+                if 'R_LIBS' in ec['ec'].get_ref(key):
                     r_libs_ecs.append(ec['spec'])
 
         error_msg = "%d easyconfigs found which set $R_LIBS, should be $R_LIBS_SITE: %s"
@@ -1270,12 +1270,12 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
-        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PerlBundle,
+        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle & JuliaPackage, PerlBundle,
         #           PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
         whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage',
-                     'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'ModuleRC',
-                     'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
+                     'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'JuliaPackage',
+                     'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
@@ -1398,8 +1398,8 @@ class EasyConfigTest(TestCase):
         failing_checks = []
         for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
-            build_type = ec.get('build_type')
-            configopts = ec.get('configopts')
+            build_type = ec.get_ref('build_type') if 'build_type' in ec else ''
+            configopts = ec.get_ref('configopts')
             if isinstance(configopts, list):
                 configopts = ' '.join(configopts)
 
@@ -1417,7 +1417,7 @@ class EasyConfigTest(TestCase):
         failing_checks = []
         for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
-            configopts = ec.get('configopts')
+            configopts = ec.get_ref('configopts')
             if isinstance(configopts, list):
                 configopts = ' '.join(configopts)
 
@@ -1442,6 +1442,51 @@ class EasyConfigTest(TestCase):
                 no_descr_patches.append(patch)
 
         self.assertFalse(no_descr_patches, "No description found in patches: %s" % ', '.join(no_descr_patches))
+
+
+def verify_patch(specdir, patch_spec, checksum_idx, patch_checksums, extension_name=None):
+    """Verify existance and checksum of the given patch.
+
+    specdir         - Directory of the easyconfig
+    patch_spec      - Patch entry
+    checksum_idx    - Expected index in the checksum list
+    patch_checksums - List of checksums for patches
+    extension_name  - Name of the extensions this patch is for if any
+
+    Return a (possibly empty) list of failure messages
+    """
+    patch_dir = specdir
+    if isinstance(patch_spec, str):
+        patch_name = patch_spec
+    elif isinstance(patch_spec, (tuple, list)):
+        patch_name = patch_spec[0]
+    elif isinstance(patch_spec, dict):
+        patch_name = patch_spec['name']
+        alt_location = patch_spec.get('alt_location')
+        if alt_location:
+            basedir = os.path.dirname(os.path.dirname(specdir))
+            patch_dir = os.path.join(basedir, letter_dir_for(alt_location), alt_location)
+    else:
+        # Should have already been verified
+        raise RuntimeError('Patch spec is not a string, tuple, list or dict: %s\nType: %s' % (patch_spec,
+                                                                                              type(patch_spec)))
+
+    patch_path = os.path.join(patch_dir, patch_name)
+    patch_descr = "patch file " + patch_name
+    if extension_name:
+        patch_descr += " of extension " + extension_name
+
+    # only check actual patch files, not other files being copied via the patch functionality
+    if patch_path.endswith('.patch'):
+        if not os.path.isfile(patch_path):
+            return [patch_descr + "is missing"]
+
+        if checksum_idx < len(patch_checksums):
+            checksum = patch_checksums[checksum_idx]
+            if not verify_checksum(patch_path, checksum):
+                return ["Invalid checksum for %s: %s" % (patch_descr, checksum)]
+
+    return []  # No error
 
 
 def template_easyconfig_test(self, spec):
@@ -1562,7 +1607,7 @@ def template_easyconfig_test(self, spec):
     failing_checks.extend("Old URL '%s' found" % old_url for old_url in old_urls if old_url in ec.rawtxt)
 
     # Note the use of app.cfg which might contain sources populated by e.g. the Cargo easyblock
-    sources, patches, checksums = app.cfg['sources'], app.cfg['patches'], app.cfg['checksums']
+    sources, patches, checksums = app.cfg.get_ref('sources'), app.cfg['patches'], app.cfg['checksums']
 
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
@@ -1580,7 +1625,7 @@ def template_easyconfig_test(self, spec):
             requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
 
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
-        requires_binutils &= bool(sources or ec['exts_list'] or ec.get('components'))
+        requires_binutils &= bool(sources or ec.get_ref('exts_list') or ec.get_ref('components'))
 
         if requires_binutils:
             # dependencies() returns both build and runtime dependencies
@@ -1616,27 +1661,9 @@ def template_easyconfig_test(self, spec):
 
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
-    basedir = os.path.dirname(os.path.dirname(specdir))
-    for idx, patch in enumerate(patches):
-        patch_dir = specdir
-        if isinstance(patch, str):
-            patch_name = patch
-        elif isinstance(patch, (tuple, list)):
-            patch_name = patch[0]
-        elif isinstance(patch, dict):
-            patch_name = patch['name']
-            if patch['alt_location']:
-                patch_dir = os.path.join(basedir, letter_dir_for(patch['alt_location']), patch['alt_location'])
 
-        # only check actual patch files, not other files being copied via the patch functionality
-        patch_full = os.path.join(patch_dir, patch_name)
-        if patch_name.endswith('.patch') and not os.path.isfile(patch_full):
-            failing_checks.append("Patch file %s is missing" % patch_full)
-        # verify checksum for each patch file
-        elif idx < len(patch_checksums) and (os.path.exists(patch_full) or patch_name.endswith('.patch')):
-            checksum = patch_checksums[idx]
-            if not verify_checksum(patch_full, checksum):
-                failing_checks.append("Invalid checksum for patch file %s: %s" % (patch_name, checksum))
+    for idx, patch in enumerate(patches):
+        failing_checks.extend(verify_patch(specdir, patch, idx, patch_checksums))
 
     # make sure 'source' step is not being skipped,
     # since that implies not verifying the checksum
@@ -1666,21 +1693,7 @@ def template_easyconfig_test(self, spec):
         patch_checksums = checksums[src_cnt:]
 
         for idx, ext_patch in enumerate(ext.get('patches', [])):
-            if isinstance(ext_patch, (tuple, list)):
-                ext_patch = ext_patch[0]
-
-            # only check actual patch files, not other files being copied via the patch functionality
-            ext_patch_full = os.path.join(specdir, ext_patch['name'])
-            if ext_patch_full.endswith('.patch') and not os.path.isfile(ext_patch_full):
-                failing_checks.append("Patch file %s for extension %s is missing." % (ext_patch['name'], ext_name))
-                continue
-
-            # verify checksum for each patch file
-            if idx < len(patch_checksums) and os.path.exists(ext_patch_full):
-                checksum = patch_checksums[idx]
-                if not verify_checksum(ext_patch_full, checksum):
-                    failing_checks.append("Invalid checksum for patch %s for extension %s: %s."
-                                          % (ext_patch['name'], ext_name, checksum))
+            failing_checks.extend(verify_patch(specdir, ext_patch, idx, patch_checksums, extension_name=ext_name))
 
     # check whether all extra_options defined for used easyblock are defined
     extra_opts = app.extra_options()
@@ -1711,8 +1724,8 @@ def template_easyconfig_test(self, spec):
         if key not in DEFAULT_CONFIG and key not in extra_opts:
             continue
 
-        orig_val = resolve_template(ec_dict[key], ec.template_values)
-        dumped_val = resolve_template(dumped_ec[key], ec.template_values)
+        orig_val = resolve_template(ec_dict[key], ec.template_values, expect_resolved=False)
+        dumped_val = resolve_template(dumped_ec[key], ec.template_values, expect_resolved=False)
 
         # skip SYSTEM template constant check for 2019b and older toolchain generation easyconfigs
         # since these fail other CI checks when updated
