@@ -37,12 +37,8 @@ _skip_tests = [
     'testing/test_helpconfig.py',
 ]
 _ignore_tests = ' --ignore='.join(_skip_tests)
-
+_pretestexports = """export PATH=$(echo $PYTHONPATH|awk -F ':' '{print $1}'|sed -e "s/lib.python.*/bin/g"):$PATH &&"""
 exts_list = [
-    ('setuptools-scm', '8.1.0', {
-        'source_tmpl': 'setuptools_scm-%(version)s.tar.gz',
-        'checksums': ['42dea1b65771cba93b7a515d65a65d8246e560768a66b9106a592c8e7f26c8a7'],
-    }),
     ('flit-core', '3.10.1', {
         'source_tmpl': 'flit_core-%(version)s.tar.gz',
         'checksums': ['66e5b87874a0d6e39691f0e22f09306736b633548670ad3c09ec9db03c5662f7'],
@@ -58,13 +54,15 @@ exts_list = [
     }),
     (name, version, {
         'checksums': ['70b98107bd648308a7952b06e6ca9a50bc660be218d53c257cc1fc94fda10181'],
+        'testinstall': True,
+        'pretestopts': _pretestexports,
+        'runtest': 'cd %%(builddir)s/%%(name)s/%%(name)s-%%(version)s && pytest --ignore=%s testing' % _ignore_tests,
+        'test_cmd': 'bingo',
     }),
 ]
 
 sanity_check_commands = [
     "python -c 'import pytest'",
-    'cd %%(builddir)s/%%(name)s/%%(name)s-%%(version)s && %%(installdir)s/bin/pytest --ignore=%s testing'
-    % _ignore_tests,
 ]
 
 sanity_pip_check = True
