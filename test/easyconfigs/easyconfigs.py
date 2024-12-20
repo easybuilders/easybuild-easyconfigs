@@ -658,6 +658,8 @@ class EasyConfigTest(TestCase):
                 # tensorflow-probability version to TF version
                 ('2.8.4;', ['tensorflow-probability-0.16.0-']),
             ],
+            # vLLM has pinned dependency tiktoken == 0.6.0
+            'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
