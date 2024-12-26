@@ -661,6 +661,8 @@ class EasyConfigTest(TestCase):
                 # tensorflow-probability version to TF version
                 ('2.8.4;', ['tensorflow-probability-0.16.0-']),
             ],
+            # vLLM has pinned dependency tiktoken == 0.6.0
+            'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
@@ -1065,6 +1067,30 @@ class EasyConfigTest(TestCase):
                 if not easyconfig_dirs_regex.search(dirpath):
                     if not dirpath.endswith('/easybuild/easyconfigs'):
                         self.fail("There should be no easyconfig files in %s, found %s" % (dirpath, easyconfig_files))
+
+    def test_easybuild_easyconfigs_latest_release(self):
+        """
+        Check which easyconfig file would be picked up by 'eb --install-latest-eb-release'
+        """
+        # this mimics the logic used in the find_easybuild_easyconfig used by EasyBuild framework
+        # to obtain an easyconfig file when --install-latest-eb-release is used
+        topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        easybuild_dir = os.path.join(topdir, 'easybuild', 'easyconfigs', 'e', 'EasyBuild')
+        ecs = os.listdir(easybuild_dir)
+
+        file_versions = []
+        for ec in ecs:
+            txt = read_file(os.path.join(easybuild_dir, ec))
+            for line in txt.split('\n'):
+                if re.search(r'^version\s*=', line):
+                    scope = {}
+                    exec(line, scope)
+                    version = scope['version']
+                    file_versions.append((LooseVersion(version), ec))
+
+        most_recent = sorted(file_versions)[-1]
+        self.assertEqual(most_recent[0], LooseVersion('4.9.4'))
+        self.assertEqual(most_recent[1], 'EasyBuild-4.9.4.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
