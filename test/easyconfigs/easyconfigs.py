@@ -43,7 +43,6 @@ from easybuild.base import fancylogger
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.framework.easyconfig.constants import EASYCONFIG_CONSTANTS
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
@@ -1691,10 +1690,9 @@ def template_easyconfig_test(self, spec):
     for idx, patch in enumerate(patches):
         failing_checks.extend(verify_patch(specdir, patch, idx, patch_checksums))
 
-    # make sure 'source' step is not being skipped,
-    # since that implies not verifying the checksum
-    if checksums and ('source' in ec['skipsteps']):
-        failing_checks.append("'source' step should not be skipped, since that implies not verifying checksums")
+    # make sure 'fetch' step is not being skipped, since that implies not verifying the checksum
+    if checksums and ('fetch' in ec['skipsteps']):
+        failing_checks.append("'fetch' step should not be skipped, since that implies not verifying checksums")
 
     for ext in ec.get_ref('exts_list'):
         if isinstance(ext, (tuple, list)) and len(ext) == 3:
@@ -1753,11 +1751,6 @@ def template_easyconfig_test(self, spec):
         orig_val = resolve_template(ec_dict[key], ec.template_values, expect_resolved=False)
         dumped_val = resolve_template(dumped_ec[key], ec.template_values, expect_resolved=False)
 
-        # skip SYSTEM template constant check for 2019b and older toolchain generation easyconfigs
-        # since these fail other CI checks when updated
-        regex = re.compile(r'(201\d([ab]|\.\d+))|(^[1-8]\.\d+\.\d+)')
-        skip_system_template_check = regex.match(ec['toolchain']['version'])
-
         # take into account that dumped value for *dependencies may include hard-coded subtoolchains
         # if no easyconfig was found for the dependency with the 'parent' toolchain,
         # if may get resolved using a subtoolchain, which is then hardcoded in the dumped easyconfig
@@ -1795,15 +1788,10 @@ def template_easyconfig_test(self, spec):
                     if len(orig_dep) >= 4:
                         # use of `True` is deprecated in favour of the more intuitive `SYSTEM` template
                         if orig_dep[3] is True:
-                            if skip_system_template_check:
-                                if dumped_dep[3] != EASYCONFIG_CONSTANTS['SYSTEM'][0]:
-                                    failing_checks.append("Should use SYSTEM in %s, found %s"
-                                                          % (desc, dumped_dep[3]))
-                            else:
-                                failing_checks.append(
-                                    "use of `True` to indicate the system toolchain for "
-                                    "%s is deprecated, use the `SYSTEM` template constant instead" % desc
-                                )
+                            failing_checks.append(
+                                "use of `True` to indicate the system toolchain for "
+                                "%s is deprecated, use the `SYSTEM` template constant instead" % desc
+                            )
                         elif orig_dep[3] != dumped_dep[3]:
                             failing_checks.append("Different toolchain in %s: %s vs %s"
                                                   % (desc, orig_dep[3], dumped_dep[3]))
