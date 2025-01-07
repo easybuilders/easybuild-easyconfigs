@@ -1,0 +1,146 @@
+easyblock = 'CMakeMake'
+
+name = 'dftbplus'
+version = '24.1'
+
+homepage = 'https://www.dftb-plus.info'
+description = """DFTB+ is a fast and efficient versatile quantum mechanical simulation package.
+It is based on the Density Functional Tight Binding (DFTB) method, containing
+almost all of the useful extensions which have been developed for the DFTB
+framework so far.  Using DFTB+ you can carry out quantum mechanical simulations
+like with ab-initio density functional theory based packages, but in an
+approximate way gaining typically around two order of magnitude in speed."""
+
+toolchain = {'name': 'iofbf', 'version': '2023a'}
+
+separate_build_dir = True
+
+parallel = 8
+
+local_external_dir = '%%(builddir)s/dftbplus-%%(version)s/external/%s/origin/'
+local_external_extract  = ' mkdir -p %s && tar -C %s' % (local_external_dir, local_external_dir)
+local_external_extract += ' --strip-components=1 -xzf %%s'
+
+sources = [
+    {
+        # DFTB+ source code
+        'source_urls': ['https://github.com/dftbplus/dftbplus/archive'],
+        'download_filename': '%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        # libmbd source code
+        'source_urls': ['https://github.com/libmbd/libmbd/releases/download/0.12.8/'],
+        'download_filename': 'libmbd-0.12.8.tar.gz',
+        'filename': 'mbd-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('mbd', 'mbd'),
+    },
+    {
+        # libnegf source code
+        'source_urls': ['https://github.com/libnegf/libnegf/archive/refs/tags'],
+        'download_filename': 'v1.1.3.tar.gz',
+        'filename': 'libnegf-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('libnegf', 'libnegf'),
+    },
+    {
+        # dftd3 source code
+        'source_urls': ['https://github.com/awvwgk/simple-dftd3/archive'],
+        'download_filename': 'v0.6.0.tar.gz',
+        'filename': 'dftd3-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('dftd3', 'dftd3'),
+    },
+    {
+        # Slater-Koster data for testing
+        'source_urls': ['https://github.com/dftbplus/testparams/archive'],
+        'download_filename': '6165104e60efbdb3ad05d005c282ada50f12dfef.tar.gz',
+        'filename': 'slakos-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('slakos', 'slakos'),
+    },
+    {
+        # GBSA parameters for testing
+        'source_urls': ['https://github.com/grimme-lab/gbsa-parameters/archive'],
+        'download_filename': '6836c4d997e4135e418cfbe273c96b1a3adb13e2.tar.gz',
+        'filename': 'gbsa-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('gbsa', 'gbsa'),
+    },
+]
+checksums = [
+    {'dftbplus-24.1.tar.gz': '776d83779666e06bf2930c3b1665cdb8e7409b8003e33e0178fbae8b47f5e0b1'},
+    {'mbd-24.1.tar.gz': 'c50a61068d7aeb1ff76c32dcbf6aae848e47972bdbcfe609bd6050e853f76b1e'},
+    {'libnegf-24.1.tar.gz': '8d2a41791e459a203db4e4f3a9395804434ce2cd91b1bbb09111cffb032f237e'},
+    {'dftd3-24.1.tar.gz': '4bef311f8e5a2c32141eddeea65615c3c8480f917cd884488ede059fb0962a50'},
+    {'slakos-24.1.tar.gz': '4d7b62f018c85ccfc1838495c0d2db635ced21332dbc51e67889049a8662becb'},
+    {'gbsa-24.1.tar.gz': 'd464f9f7b1883d1353b433d0c7eae2f5606af092d9b51d38e9ed15e072610a79'},
+]
+
+dependencies = [
+    ('SciPy-Stack', '2024b'),
+    ('mpi4py', '3.1.4'),
+    ('CMake', '3.27.7'),
+]
+
+configure_cmd_prefix = 'FC=ifort CC=icc'
+
+configopts  = ' -DWITH_ARPACK=OFF '
+configopts += ' -DWITH_MBD=ON '
+configopts += ' -DWITH_TRANSPORT=ON '
+configopts += ' -DWITH_DFTD3=ON '
+configopts += ' -DWITH_MPI=ON '
+configopts += ' -DWITH_PYTHON=ON '
+configopts += ' -DWITH_API=ON '
+configopts += ' -DENABLE_DYNAMIC_LOADING=ON '
+configopts += ' -DWITH_UNIT_TESTS= ON '
+configopts += ' -DWITH_TBLITE=ON '
+
+configopts += ' -DBLAS_LIBRARY=$LIBBLAS '
+configopts += ' -DLAPACK_LIBRARY=$LIBLAPACK '
+configopts += ' -DSCALAPACK_LIBRARY="${LIBSCALAPACK}" '
+configopts += ' -DTEST_MPI_PROCS=2 '
+configopts += ' -DTEST_OMP_THREADS=2 '
+
+local_dftb_binaries = [
+    'buildwire', 'calc_timeprop_spectrum', 'flux', 'makecube', 'phonons',
+    'printunits', 'skderivs', 'waveplot', 'calc_timeprop_maxpoldir', 
+    'dftb+', 'integvalue', 'modes', 'polyvalue', 'setupgeom', 'splvalue',
+]
+
+#pretestopts = 'cd %(builddir)s/easybuild_obj && '
+
+#runtest = 'test'
+
+multi_deps = {'Python': ['3.11', '3.10']}
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+    'runtest': False,
+}
+
+exts_list = [
+    ('dptools', version, {
+        'source_tmpl': 'dftbplus-%(version)s.tar.xz',
+        'source_urls': ['https://github.com/dftbplus/dftbplus/releases/download/%(version)s'],
+        'start_dir': 'tools/dptools',
+        'checksums': ['3bc405d1ab834b6b145ca671fb44565ec50a6f576e9e18e7a1ae2c613a311321'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/' + x for x in local_dftb_binaries],
+    'dirs': [], #['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = [('python', '-c "import dptools"')]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+modextrapaths = {
+    "EBPYTHONPREFIXES": "",
+}
+
+moduleclass = 'phys'
+modluafooter = """
+depends_on("python")
+"""

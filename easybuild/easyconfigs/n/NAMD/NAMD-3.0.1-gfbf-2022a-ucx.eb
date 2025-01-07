@@ -1,0 +1,40 @@
+name = 'NAMD'
+version = '3.0.1'
+versionsuffix = '-ucx'
+
+homepage = 'http://www.ks.uiuc.edu/Research/namd/'
+description = """NAMD is a parallel molecular dynamics code designed for high-performance simulation of
+ large biomolecular systems."""
+
+toolchain = {'name': 'gfbf', 'version': '2022a'}
+toolchainopts = {'opt': True,'pic': True}
+
+sources = ['NAMD_%(version)s_Source.tar.gz']
+checksums = [ '3be0854545c45e58afb439a96708e127aef435d30113cc89adbab8f4b6888733']
+
+dependencies = [
+    ('UCX', '1.12.1'),
+]
+
+# /bin/csh is required by 'config' script
+osdependencies = ['tcsh']
+charm_arch = "ucx-linux-x86_64 slurmpmi2"
+charm_opts = "--incdir=$EBROOTGENTOO/include/slurm --libdir=$EBROOTGENTOO/lib64 --with-production"
+
+
+runtest=False
+
+moduleclass = 'chem'
+modaltsoftname = "namd-ucx"
+
+modluafooter = """
+family("namd")
+if (mode() == "load" and os.getenv("RSNT_INTERCONNECT") == "omnipath") then
+        local warn_message = [[
+    This version of NAMD does not work with this cluster's networking. Please use namd-mpi instead.
+
+    Cette version de NAMD ne fonctionne pas avec la connectique de cette grappe. Utilisez namd-mpi.
+    ]]
+    LmodWarning(warn_message)
+end
+"""

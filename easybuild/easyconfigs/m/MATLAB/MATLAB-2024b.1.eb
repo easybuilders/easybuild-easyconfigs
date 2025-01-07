@@ -10,8 +10,18 @@ toolchain = SYSTEM
 
 # be sure to copy both DVD content to the SAME directory, 
 # including the hidden files, especially .dvd1 and .dvd2 
-sources = ['R%(version_major)s_Update_%(version_minor)s_Linux.iso']
-checksums = ['cd00952625bde47a2510900fec51e2dc4798e4b250b20597e45266df384a9133']
+source_urls = ['https://ssd.mathworks.com/supportfiles/downloads/MathWorksServiceHost/v2024.11.0.2/release/glnxa64/']
+sources = [
+    'R%(version_major)s_Update_%(version_minor)s_Linux.iso',
+    {
+        'filename': 'managed_mathworksservicehost_2024.11.0.2_package_glnxa64.zip',
+        'extract_cmd': 'unzip -d ServiceHost -qq %s',
+    },
+]
+checksums = [
+    'cd00952625bde47a2510900fec51e2dc4798e4b250b20597e45266df384a9133',
+    '30dc96c2e041fd7e6ad39ba44e2f0c7c93428bb53982b403069b5082576cda98',
+]
 
 #skipsteps = ['fetch', 'ready', 'source', 'patch', 'prepare', 'configure', 'build', 'test', 'install']
 preinstallopts = 'rmdir %(installdir)s && p=$(dirname %(installdir)s) && bwrap --dev-bind / / --tmpfs $p --bind $p $p/orig bash -c "'
@@ -29,6 +39,11 @@ installopts = " && " + " && ".join ([
 	"find %(installdir)s/sys/os/glnxa64 -name 'libquadmath.so*' -exec mv {} {}.bak \;",
 	# never use included Mesa software OpenGL implementation
 	'ln -sf $EPREFIX/bin/true %(installdir)s/bin/glnxa64/need_softwareopengl',
+        # install central ServiceHost
+        'cp -rp ServiceHost %(installdir)s',
+        'echo LatestDSInstallerVersion 2024.11.0.2 > %(installdir)s/ServiceHost/LatestInstall.info',
+        'echo LatestDSInstallRoot %(installdir)s/ServiceHost >> %(installdir)s/ServiceHost/LatestInstall.info',
+        'echo DSLauncherExecutable %(installdir)s/ServiceHost/bin/glnxa64/MathWorksServiceHost >> %(installdir)s/ServiceHost/LatestInstall.info',
 	'/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_origin',
 	'/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/extern/engines/python --add_path %(installdir)s/bin/glnxa64 --add_origin --any_interpreter ',
 	'mv %(installdir)s $p/orig',
@@ -44,6 +59,7 @@ modextrapaths = {'EBPYTHONPREFIXES': ['extern/engines/python']}
 # license_server_port = '1234'
 # key = '00000-00000-00000-00000-00000-00000-00000-00000-00000-00000-00000-00000'
 # modextravars = {'LM_LICENSE_FILE': '%s@%s' % (license_server_port, license_server)}
+modextravars = {'MATHWORKS_SERVICE_HOST_MANAGED_INSTALL_ROOT': '%(installdir)s/ServiceHost'}
 
 moduleclass = 'math'
 

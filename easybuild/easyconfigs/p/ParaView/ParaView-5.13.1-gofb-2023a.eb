@@ -20,10 +20,13 @@ sources = [
 ]
 patches = ['ParaView-5.11.1-remove_glew_init_warning.patch']
 
-builddependencies = [('CMake', '3.27.7')]
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('ispc', '1.21.1'),
+]
 
 dependencies = [
-    ('SciPy-Stack', '2024b'),
+    ('SciPy-Stack', '2024a'),
     ('Boost', '1.82.0', '', ('GCC', '12.3.0')),
     ('XZ', '5.4.2'),
     ('HDF5', '1.14.2'),
@@ -68,8 +71,21 @@ _copts = [
     '-DVTK_OPENGL_HAS_OSMESA=OFF']
 configopts = ' '.join(_copts)
 
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+}
+exts_list = [
+    ('openpmd_api', '0.15.2', {
+        'sources': ['openPMD-api-%(version)s.tar.gz'],
+        'checksums': ['6c441be362d9a2c7f6de10b18ad003f162da82722e1d978a9631b59bf63a2ede'],
+        'preinstallopts': 'if ! [ -h  %(installdir)s/lib ]; then rm -rf %(installdir)s/lib; ln -s lib64 %(installdir)s/lib; fi && openPMD_USE_MPI=ON ',
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", "")
+
 postinstallcmds = [ 
-    "ln -s lib64 %(installdir)s/lib",
     "cp %(builddir)s/nvidia-index-libs-5.12*/lib/* %(installdir)s/lib64 ",
     "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib64",
     "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib64/python3.10 --add_path %(installdir)s/lib64",
