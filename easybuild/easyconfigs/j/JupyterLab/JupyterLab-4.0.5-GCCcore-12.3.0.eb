@@ -20,18 +20,8 @@ dependencies = [
     ('jupyter-server', '2.7.2'),
 ]
 
-# keep user's configuration in their home directory
-# note: '~' is not expanded by JupyterLab
-modluafooter = """
-setenv("JUPYTERLAB_SETTINGS_DIR", pathJoin(os.getenv("HOME"), ".jupyter", "lab", "user-settings"))
-setenv("JUPYTERLAB_WORKSPACES_DIR", pathJoin(os.getenv("HOME"), ".jupyter", "lab", "workspaces"))
-"""
-modtclfooter = """
-setenv JUPYTERLAB_SETTINGS_DIR "$::env(HOME)/.jupyter/lab/user-settings"
-setenv JUPYTERLAB_WORKSPACES_DIR "$::env(HOME)/.jupyter/lab/workspaces"
-"""
-sanity_pip_check = True
 use_pip = True
+sanity_pip_check = True
 
 exts_list = [
     ('json5', '0.9.14', {
@@ -51,20 +41,28 @@ exts_list = [
     }),
 ]
 
-local_binaries = [
-    'jupyter-lab',
-    'jupyter-labextension',
-    'jupyter-labhub',
-]
 sanity_check_paths = {
-    'files': [],
+    'files': ['bin/jupyter-lab', 'bin/jupyter-labextension', 'bin/jupyter-labhub'],
     'dirs': ['etc/jupyter', 'share/jupyter'],
 }
 
 sanity_check_commands = ['jupyter lab --help']
 
 modextrapaths = {'EB_ENV_JUPYTER_ROOT': ''}
+modextravars = {
+    # only one path allowed as JUPYTERLAB_DIR
+    'JUPYTERLAB_DIR': '%(installdir)s/share/jupyter/lab',
+}
 
-modextravars = {'JUPYTERLAB_DIR': '%(installdir)s/share/jupyter/lab'}
+# keep user's configuration in their home directory
+# note: '~' is not expanded by JupyterLab
+modluafooter = """
+setenv("JUPYTERLAB_SETTINGS_DIR", pathJoin(os.getenv("HOME"), ".jupyter", "lab", "user-settings"))
+setenv("JUPYTERLAB_WORKSPACES_DIR", pathJoin(os.getenv("HOME"), ".jupyter", "lab", "workspaces"))
+"""
+modtclfooter = """
+setenv JUPYTERLAB_SETTINGS_DIR "$::env(HOME)/.jupyter/lab/user-settings"
+setenv JUPYTERLAB_WORKSPACES_DIR "$::env(HOME)/.jupyter/lab/workspaces"
+"""
 
 moduleclass = 'tools'

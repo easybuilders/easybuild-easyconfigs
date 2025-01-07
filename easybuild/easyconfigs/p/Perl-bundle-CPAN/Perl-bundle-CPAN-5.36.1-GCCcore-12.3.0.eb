@@ -1767,17 +1767,13 @@ exts_list = [
         'source_urls': ['https://cpan.metacpan.org/authors/id/J/JD/JDHEDDEN'],
         'checksums': ['9dfd6ca2822724347e0eb6759d00709425814703ad5c66bdb6214579868bcac4'],
     }),
-    ('Time::HiRes', '1.9764', {
-        'runtest': False,  # https://github.com/easybuilders/easybuild-easyconfigs/issues/20145 unreliable atime tests
-        'source_tmpl': 'Time-HiRes-%(version)s.tar.gz',
-        'source_urls': ['https://cpan.metacpan.org/authors/id/A/AT/ATOOMIC'],
-        'checksums': ['9841be5587bfb7cd1f2fe267b5e5ac04ce25e79d5cc77e5ef9a9c5abd101d7b1'],
-    }),
     ('Term::ReadLine::Gnu', '1.45', {
         'modulename': 'Term::ReadLine',
         'source_tmpl': 'Term-ReadLine-Gnu-%(version)s.tar.gz',
         'source_urls': ['https://cpan.metacpan.org/authors/id/H/HA/HAYASHI'],
         'checksums': ['9f4f7abbc69ea58ab7f24992d47f7391bb4aed6fb701fedaeb1a9f1cdc7fab8a'],
+        # make sure that library provided by ncurses dependency is used instead of libtermcap
+        'preinstallopts': "sed -s 's/-ltermcap/-lncurses/g' Makefile.PL && ",
     }),
     ('ExtUtils::MakeMaker', '7.70', {
         'source_tmpl': 'ExtUtils-MakeMaker-%(version)s.tar.gz',
@@ -1923,7 +1919,12 @@ exts_list = [
     ('Cwd', '3.75', {
         'source_tmpl': 'PathTools-%(version)s.tar.gz',
         'source_urls': ['https://cpan.metacpan.org/authors/id/X/XS/XSAWYERX'],
-        'checksums': ['a558503aa6b1f8c727c0073339081a77888606aa701ada1ad62dd9d8c3f945a2'],
+        'patches': ['PathTools-3.75_fix-cwd_enoent-test.patch'],
+        'checksums': [
+            'a558503aa6b1f8c727c0073339081a77888606aa701ada1ad62dd9d8c3f945a2',
+            {'PathTools-3.75_fix-cwd_enoent-test.patch':
+             '7a456a99d9b04a36359f3623f0deef8fe7f472c742f99cdcf0215c50afbbe7b1'},
+        ],
     }),
     ('MIME::Base64', '3.16', {
         'source_tmpl': 'MIME-Base64-%(version)s.tar.gz',
