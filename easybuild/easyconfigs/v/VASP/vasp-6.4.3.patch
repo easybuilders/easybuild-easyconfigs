@@ -1,6 +1,6 @@
---- arch/makefile.include.intel.orig	2023-12-12 18:44:55.929640651 +0000
-+++ arch/makefile.include.intel	2023-12-12 18:48:57.270799573 +0000
-@@ -48,23 +48,32 @@
+--- arch/makefile.include.intel.orig	2025-01-07 14:46:00.000000000 -0800
++++ arch/makefile.include.intel	2025-01-08 10:53:29.000000000 -0800
+@@ -48,23 +48,44 @@
  
  # When compiling on the target machine itself, change this to the
  # relevant target when cross-compiling for another architecture
@@ -41,7 +41,19 @@
 -#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
 +LLIBS          +=  -lwannier
 +
++#VASPsol support
++CPP_OPTIONS += -Dsol_compat
++
 +#Libxc-support
 +CPP_OPTIONS += -DUSELIBXC
 +LLIBS       += -lxcf03 -lxc
 +
++#Libbeef support
++CPP_OPTIONS += -Dlibbeef
++LLIBS       += -lbeef
++
++#DFTD4 support
++CPP_OPTIONS += -DDFTD4
++DFTD4_ROOT  ?= $(EBROOTDFTD4)
++LLIBS       += $(shell pkg-config --with-path=$(DFTD4_ROOT)/lib64/pkgconfig --libs dftd4 mctc-lib)
++INCS        += $(shell pkg-config --with-path=$(DFTD4_ROOT)/lib64/pkgconfig --cflags dftd4) 
