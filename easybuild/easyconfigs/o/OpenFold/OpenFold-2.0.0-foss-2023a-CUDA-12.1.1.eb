@@ -92,11 +92,11 @@ exts_list = [
     }),
 ]
 
-local_resources_dir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/openfold/resources/'
-# local_resources_target_dir = '/databases/bio/%(namelower)s-%(version)s'
+_resources_dir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/openfold/resources/'
+_resources_target_dir = '/databases/bio/%(namelower)s-%(version)s'
 
-local_scp_url = 'https://git.scicore.unibas.ch/schwede/openstructure/-/raw/'
-local_scp_url += '7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt'
+_scp_url = 'https://git.scicore.unibas.ch/schwede/openstructure/-/raw/'
+_scp_url += '7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt'
 
 postinstallcmds = [
     'cp -a run_pretrained_openfold.py thread_sequence.py train_openfold.py %(installdir)s/bin',
@@ -106,13 +106,12 @@ postinstallcmds = [
     # see also install_third_party_dependencies.sh script;
     # we currently can't let EasyBuild download (and cache + checksum) this,
     # because an extension can only have a single source file, and (Python)Bundle doesn't allow any "parent" downloads
-    "cd %%(builddir)s && curl -OL %s && cp -a stereo_chemical_props.txt %s" % (local_scp_url, local_resources_dir),
+    "cd %s && curl -OL %s" % (_resources_dir, _scp_url),
     # manually download openfold parameters and alphafold parameters
     # see scripts download_alphafold_params.sh + download_openfold_params.sh
-    # download to local_resources_target_dir and add symlinks in local_resources_dir
-    # or download directly into local_resources_dir
-    # 'ln -s %s/openfold_params %s' % (local_resources_target_dir, local_resources_dir),
-    # 'ln -s %s/params %s' % (local_resources_target_dir, local_resources_dir),
+    # download to local_resources_target_dir and add symlinks in _resources_dir
+    # or download directly into _resources_dir
+    # 'cd %s && for n in %s/*; do ln -s $n; done' % (_resources_dir, _resources_target_dir),
 ]
 
 fix_python_shebang_for = ['bin/*.py', '/bin/scripts/*.py']
