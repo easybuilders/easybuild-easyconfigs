@@ -32,17 +32,27 @@ dependencies = [
 # Use BLAS/LAPACK from toolchain
 configopts = '--with-blas="$LIBBLAS" '
 configopts += '--with-lapack="$LIBLAPACK" '
-configopts += '--with-metis-lib="-lmetis" '
-configopts += '--with-mumps-lib="-lesmumps -lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord '
-configopts += '-lmpi_mpifh -lmetis -lscotch -lptscotch -lptscotcherr -lscotcherrexit -lscotcherr $LIBSCALAPACK" '
-configopts += '--without-glpk --with-coinutils-lib="-lCoinUtils" '
-configopts += '--with-coinutils-datadir=$EBROOTCOINUTILS/share/coin/Data '
-configopts += '--with-osi-lib="-lOsi" --with-osi-datadir=$EBROOTOSI/share/coin/Data '
 
+# Use METIS AND MUMPS from EB
+# --with-metis-lib is ignored
+configopts += '--with-metis-lib="-lmetis" '
+configopts += '--with-mumps-lib="-lesmumps -lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord -lmpi_mpifh '
+configopts += '-lmetis  -lscotch -lptscotch -lptscotcherr -lscotcherrexit -lscotcherr $LIBSCALAPACK" '
+
+# Disable GLPK because Clp requires headers from its sources
+configopts += '--without-glpk '
+
+# Use CoinUtils from EB
+configopts += '--with-coinutils-lib="-lCoinUtils" '
+configopts += '--with-coinutils-datadir=$EBROOTCOINUTILS/share/coin/Data '
+
+# Use Osi from EB
+configopts += '--with-osi-lib="-lOsi" '
+configopts += '--with-osi-datadir=$EBROOTOSI/share/coin/Data '
 
 sanity_check_paths = {
-    'files': ['bin/%(namelower)s', 'lib/libClp.so', 'lib/libClpSolver.so', 'lib/libOsiClp.so'],
-    'dirs': ['include/coin', 'lib/pkgconfig', 'share/coin'],
+    'files': ['bin/clp'] + ['lib/lib%s.%s' % (x, SHLIB_EXT) for x in ['Clp', 'ClpSolver', 'OsiClp']],
+    'dirs': ['include/coin', 'lib/pkgconfig', 'share/coin']
 }
 
 # other coin-or projects expect <header.hpp> instead of <coin/header.hpp>
