@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2024 Ghent University
+# Copyright 2013-2025 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -627,6 +627,8 @@ class EasyConfigTest(TestCase):
                                'NGSpeciesID-0.1.1.1-']),
                 ('0.18.0;', ['medaka-1.6.0-', 'NGSpeciesID-0.1.2.1-', 'WhatsHap-1.4-']),
             ],
+            # PyTorch-Lightning-1.8.4 is requiered in synthcity-0.2.10 and DECAF-synthetic-data-0.1.6
+            'PyTorch-Lightning': [('1.8.4;', ['synthcity-0.2.10-', 'DECAF-synthetic-data-0.1.6-'])],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1', r'OPERA-MS-0\.9\.0-20240703'])],
@@ -658,6 +660,8 @@ class EasyConfigTest(TestCase):
                 # tensorflow-probability version to TF version
                 ('2.8.4;', ['tensorflow-probability-0.16.0-']),
             ],
+            # vLLM has pinned dependency tiktoken == 0.6.0
+            'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
@@ -1011,6 +1015,30 @@ class EasyConfigTest(TestCase):
                     if not dirpath.endswith('/easybuild/easyconfigs'):
                         self.fail("There should be no easyconfig files in %s, found %s" % (dirpath, easyconfig_files))
 
+    def test_easybuild_easyconfigs_latest_release(self):
+        """
+        Check which easyconfig file would be picked up by 'eb --install-latest-eb-release'
+        """
+        # this mimics the logic used in the find_easybuild_easyconfig used by EasyBuild framework
+        # to obtain an easyconfig file when --install-latest-eb-release is used
+        topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        easybuild_dir = os.path.join(topdir, 'easybuild', 'easyconfigs', 'e', 'EasyBuild')
+        ecs = os.listdir(easybuild_dir)
+
+        file_versions = []
+        for ec in ecs:
+            txt = read_file(os.path.join(easybuild_dir, ec))
+            for line in txt.split('\n'):
+                if re.search(r'^version\s*=', line):
+                    scope = {}
+                    exec(line, scope)
+                    version = scope['version']
+                    file_versions.append((LooseVersion(version), ec))
+
+        most_recent = sorted(file_versions)[-1]
+        self.assertEqual(most_recent[0], LooseVersion('4.9.4'))
+        self.assertEqual(most_recent[1], 'EasyBuild-4.9.4.eb')
+
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
         topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -1212,12 +1240,12 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
-        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PerlBundle,
+        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle & JuliaPackage, PerlBundle,
         #           PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
         whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage',
-                     'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'ModuleRC',
-                     'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
+                     'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'JuliaPackage',
+                     'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
