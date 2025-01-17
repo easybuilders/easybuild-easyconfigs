@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'CASTEP'
+version = '24.1'
+
+homepage = 'http://www.castep.org/'
+description = """CASTEP is a leading code for calculating the properties of materials from first principles. 
+Using density functional theory, it can simulate a wide range of properties of materials proprieties including 
+energetics, structure at the atomic level, vibrational properties, electronic response properties etc. In 
+particular it has a wide range of spectroscopic features that link directly to experiment, such as infra-red and 
+Raman spectroscopies, NMR, and core level spectra."""
+
+toolchain = {'name': 'iofb', 'version': '2023a'}
+
+sources = ['CASTEP-%(version)s.tar.gz']
+patches = ['CASTEP-%(version)s.patch']
+checksums = [
+    '97d77a4f3ce3f5c5b87e812f15a2c2cb23918acd7034c91a872b6d66ea0f7dbb',  # CASTEP-24.1.tar.gz,
+    'be63bc6e09277d24c544da5dcf52847f9058691cda7b91b0438f2c298b5872ea',  # CASTEP-24.1.patch,
+]
+
+skipsteps = ['configure']
+
+dependencies = [('Python', '3.11.5')]
+builddependencies = [('FFTW','3.3.10'),
+]
+
+buildopts  = " COMMS_ARCH=mpi SUBARCH=mpi FFT=fftw3 FFTLIBDIR=$EBROOTFFTW/lib "
+buildopts += " MATHLIBS=flexiblas MATHLIBDIR=$EBROOTFLEXIBLAS/lib LIBXC=compile "
+
+preinstallopts = "mkdir %(installdir)s/bin && "
+
+installopts = " COMMS_ARCH=mpi SUBARCH=mpi FFT=fftw3 FFTLIBDIR=$EBROOTFFTW/lib "
+installopts += " MATHLIBS=flexiblas MATHLIBDIR=$EBROOTFLEXIBLAS/lib LIBXC=compile "
+installopts += "INSTALL_DIR=%(installdir)s/bin install-castep install-tools install-utilities"
+
+sanity_check_paths = {
+    'files': ['bin/c2x', 'bin/mdtep', 'bin/castep.mpi'],
+    'dirs': ['lib/python3.11'],
+}
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+moduleclass = 'math'
