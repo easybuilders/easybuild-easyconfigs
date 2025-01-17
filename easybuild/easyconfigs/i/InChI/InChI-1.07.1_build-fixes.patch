@@ -1,0 +1,59 @@
+diff -ur INCHI-1-SRC.orig/INCHI_API/demos/inchi_main/gcc/makefile INCHI-1-SRC/INCHI_API/demos/inchi_main/gcc/makefile
+--- INCHI-1-SRC.orig/INCHI_API/demos/inchi_main/gcc/makefile	2024-11-15 14:21:42.110093000 +0100
++++ INCHI-1-SRC/INCHI_API/demos/inchi_main/gcc/makefile	2024-11-15 14:24:04.363887000 +0100
+@@ -92,9 +92,9 @@
+ 	ifdef OS_ID
+ # or: ifeq ($(OS_ID),$(filter $(OS_ID),0 1 2 3))
+ # djb-rwth: avoiding the use of LD_LIBRARY_PATH by adding LIB_DIR to runtime library search path
+-	LINKER_CWD_PATH = -Wl,-R,"",-rpath=$(LIB_DIR)
++	LINKER_CWD_PATH =
+ 	endif
+-	LINKER = $(C_COMPILER) -s $(LINKER_CWD_PATH)
++	LINKER = $(C_COMPILER) $(LINKER_CWD_PATH)
+ endif
+ # djb-rwth: space for shared link parameters SHARED_LINK_PARMS
+ ifndef P_LIBR
+@@ -116,7 +116,7 @@
+ # === C Compiler Options =======
+ ifndef C_OPTIONS
+ 	ifndef CALLER_IS_MOL2INCHI
+-	C_OPTIONS = -std=c11 -ansi -O2 -c -fno-strict-aliasing
++	C_OPTIONS = -std=c11 -ansi $(OPTFLAGS) -c -fno-strict-aliasing
+ 	else
+ 	C_OPTIONS = -std=c11 -O2 -c -fno-strict-aliasing
+ 	endif
+@@ -283,4 +283,4 @@
+ else
+ $(info GCC or Clang not detected. Please edit makefile in order to include available C compiler. Terminating.)
+ $(info )
+-endif
+\ No newline at end of file
++endif
+diff -ur INCHI-1-SRC.orig/INCHI_EXE/inchi-1/gcc/makefile INCHI-1-SRC/INCHI_EXE/inchi-1/gcc/makefile
+--- INCHI-1-SRC.orig/INCHI_EXE/inchi-1/gcc/makefile	2024-11-15 14:21:39.239226000 +0100
++++ INCHI-1-SRC/INCHI_EXE/inchi-1/gcc/makefile	2024-11-15 14:26:20.742991000 +0100
+@@ -64,7 +64,7 @@
+ CPP_COMPILER = g++
+ endif
+ ifndef LINKER
+-LINKER = g++ -s
++LINKER = gcc
+ endif
+ endif
+ # djb-rwth: adding executable extension where needed
+@@ -90,7 +90,7 @@
+ endif
+ #P_INCL = -I$(P_MAIN) -I$(P_BASE)
+ P_INCL = -I$(P_MAIN) -I$(P_BASE)
+-C_COMPILER_OPTIONS = $(P_INCL) -std=c11 -ansi -DCOMPILE_ANSI_ONLY -DTARGET_EXE_STANDALONE -O2 -c -fno-strict-aliasing
++C_COMPILER_OPTIONS = $(P_INCL) -std=c11 -ansi -DCOMPILE_ANSI_ONLY -DTARGET_EXE_STANDALONE $(OPTFLAGS) -c -fno-strict-aliasing
+ #C_COMPILER_OPTIONS = -c $(P_INCL) -ansi -O2 -fsigned-char -ffunction-sections -fexpensive-optimizations -fstack-check -fexceptions -Wall -pedantic -Wbad-function-cast -Wreturn-type -Wformat -Wuninitialized -Wcast-align -Wshadow -Wunused -Wunused-value -Wunused-variable -Wunused-function -Wunused-parameter -Wunused-label -Wcomment -Wcast-qual -Wconversion -Wimplicit-int -Wmissing-braces -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wsign-compare -Wfloat-equal -Wstrict-prototypes -Wwrite-strings -Wundef -Waggregate-return -Wchar-subscripts -Wformat-nonliteral -Wnested-externs -Wsequence-point -Wpointer-arith -mfancy-math-387 -mieee-fp -mno-soft-float
+ ifeq ($(OS_ID),0)
+ # no -ansi option due to reported MinGw bug
+@@ -210,4 +210,4 @@
+ else
+ $(info GCC or Clang not detected. Please edit makefile to include available C compiler. Terminating.)
+ $(info )
+-endif
+\ No newline at end of file
++endif
