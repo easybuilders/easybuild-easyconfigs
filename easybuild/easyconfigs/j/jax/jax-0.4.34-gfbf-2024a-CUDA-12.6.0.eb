@@ -156,6 +156,18 @@ components = [
     }),
 
 ]
+#failing:
+##tests/lax_test.py::FunctionAccuracyTest::testSuccessOnComplexPlane_expm1_complex128 FAILED [ 98%]
+##tests/lax_test.py::FunctionAccuracyTest::testSuccessOnComplexPlane_expm1_complex64 FAILED [ 98%]
+##tests/lax_test.py::FunctionAccuracyTest::testSuccessOnComplexPlane_tan_complex128 FAILED [ 99%]
+##tests/lax_test.py::FunctionAccuracyTest::testSuccessOnComplexPlane_tan_complex64 FAILED [ 99%]
+##FAILED tests/lax_test.py::FunctionAccuracyTest::testSuccessOnComplexPlane_expm1_complex128 - AssertionError: 
+##FAILED tests/lax_test.py::FunctionAccuracyTest::testSuccessOnComplexPlane_expm1_complex64 - AssertionError: 
+##FAILED tests/lax_test.py::FunctionAccuracyTest::testSuccessOnComplexPlane_tan_complex128 - AssertionError: 
+##FAILED tests/lax_test.py::FunctionAccuracyTest::testSuccessOnComplexPlane_tan_complex64 - AssertionError: 
+##tests/nn_test.py::NNFunctionsTest::testDotProductAttentionMask7 FAILED   [ 10%]
+##FAILED tests/nn_test.py::NNFunctionsTest::testDotProductAttentionMask7 - AssertionError: 
+# 
 
 # Some tests require an isolated run:  TODO: still required?
 local_isolated_tests = [
@@ -198,8 +210,21 @@ exts_list = [
     }),
 ]
 sanity_check_commands = [
-    'python -c "import jax_cuda12_plugin"'
+    """python -c "import jax_cuda"$(echo $EBVERSIONCUDA|awk -F '.' '{print $1}')"_plugin" """
 ]
 sanity_pip_check = True
 
+# TODO: patch to set default XLA_FLAGS
+modluafooter = """
+setenv("XLA_FLAGS", "--xla_gpu_cuda_data_dir=" .. os.getenv("CUDA_HOME"));
+"""
+
+modtclfooter = """
+setenv XLA_FLAGS --xla_gpu_cuda_data_dir=$::env(CUDA_HOME)
+"""
+
+#TODO: sanity check paths
+
+
 moduleclass = 'ai'
+
