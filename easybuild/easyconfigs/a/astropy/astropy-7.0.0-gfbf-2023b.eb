@@ -1,0 +1,56 @@
+easyblock = 'PythonBundle'
+
+name = 'astropy'
+version = '7.0.0'
+
+homepage = 'https://www.astropy.org/'
+description = """The Astropy Project is a community effort to develop a common 
+core package for Astronomy in Python and foster an ecosystem of interoperable 
+astronomy packages.
+
+The Astropy community is committed to supporting diversity and inclusion."""
+
+toolchain = {'name': 'gfbf', 'version': '2023b'}
+
+builddependencies = [
+    ('Cython', '3.0.10'),
+    ('hypothesis', '6.90.0'),  # Needed to run the tests
+]
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('PyYAML', '6.0.1'),
+    ('matplotlib', '3.8.2'),
+]
+
+sanity_pip_check = True
+use_pip = True
+
+exts_list = [
+    ('colorlog', '6.9.0', {
+        'checksums': ['bfba54a1b93b94f54e1f4fe48395725a3d92fd2a4af702f6bd70946bdc0c6ac2'],
+    }),
+    ('pyerfa', '2.0.1.5', {
+        'modulename': 'erfa',
+        'checksums': ['17d6b24fe4846c65d5e7d8c362dcb08199dc63b30a236aedd73875cc83e1f6c0'],
+    }),
+    ('extension-helpers', '1.2.0', {
+        'modulename': 'extension_helpers',
+        'source_tmpl': 'extension_helpers-%(version)s.tar.gz',
+        'checksums': ['e7d9c8f71804edd7ecd05b5d59a5b504f6e24867970abfc12771242eed76ebcc'],
+    }),
+    ('astropy-iers-data', '0.2025.1.6.0.33.42', {
+        'source_tmpl': 'astropy_iers_data-%(version)s.tar.gz',
+        'checksums': ['0c7e61bcadbafa7db073074eb5f90754449fab65e59abbbc9a65004b5eb4e763'],
+    }),
+    (name, version, {
+        'checksums': ['e92d7c9fee86eb3df8714e5dd41bbf9f163d343e1a183d95bf6bd09e4313c940'],
+        # Create test installation, since Astropy tests cannot be run on the source / build dir since the import at
+        # https://github.com/astropy/astropy/blob/465a7ffe0cc9c776bc668a6938d029ffb83b68de/astropy/__init__.py#L146
+        # will fail
+        'testinstall': 'True',
+        'runtest': 'cd $EB_TEST_INSTALLDIR && pytest -n %(parallel)s --pyargs astropy'
+    }),
+]
+
+moduleclass = 'astro'
