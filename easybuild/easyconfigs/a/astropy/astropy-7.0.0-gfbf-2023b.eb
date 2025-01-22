@@ -14,7 +14,7 @@ toolchain = {'name': 'gfbf', 'version': '2023b'}
 
 builddependencies = [
     ('Cython', '3.0.10'),
-    ('hypothesis', '6.90.0'),  # Needed to run the tests
+    ('astropy-testing', '7.0.0'),  # Only needed for test step
 ]
 dependencies = [
     ('Python', '3.11.5'),
@@ -49,7 +49,10 @@ exts_list = [
         # https://github.com/astropy/astropy/blob/465a7ffe0cc9c776bc668a6938d029ffb83b68de/astropy/__init__.py#L146
         # will fail
         'testinstall': 'True',
-        'runtest': 'cd $EB_TEST_INSTALLDIR && pytest -n %(parallel)s --pyargs astropy'
+        # Run tests, but skip test_delay_doc_updates, which has a known issues
+        # https://github.com/astropy/astropy/issues/17558
+        # (Probably) fixed in 7.0.X and 7.1 https://github.com/astropy/astropy/pull/17559
+        'runtest': 'cd $EB_TEST_INSTALLDIR && pytest -n %(parallel)s -k "not test_delay_doc_updates" --pyargs astropy'
     }),
 ]
 
