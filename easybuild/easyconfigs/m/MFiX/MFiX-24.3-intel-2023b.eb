@@ -1,0 +1,47 @@
+# Author: Ehsan Moravveji (VSC, KU Leuven)
+
+easyblock = 'CMakeMake'
+
+name = 'MFiX'
+version = '24.3'
+
+homepage = 'https://mfix.netl.doe.gov/products/mfix/'
+description = 'The National Energy Technology Laboratory’s (NETL’s) computational fluid dynamics (CFD) code, MFiX —Multiphase Flow with Interphase eXchanges— is central to the laboratory’s multiphase flow reactor modeling efforts. This open-source software has over three decades of development history and more than 7,000 registered users worldwide. MFiX has become the standard for comparing, implementing, and evaluating multiphase flow constitutive models and has been applied to an extremely diverse range of multiphase flows applications. The successes achieved in modeling complex multiphase flow systems have led to new and improved key attributes such as drag, polydispersity, attrition, and agglomeration models, among other significant advances.'
+
+toolchain = {'name': 'intel', 'version': '2023b'}
+toolchainopts = {'usempi': True}
+
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['d6313d02b4631a6b2eef944c158bb7b1a2eecfe7bcee9f533ce71571f1acffe8']
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('binutils', '2.40'),
+]
+
+configopts = ' '.join([
+    '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
+    '-DENABLE_MPI=1',
+    '-DCMAKE_Fortran_COMPILER=mpiifort',
+    '-DCMAKE_C_COMPILER=mpiicc',
+    '-DCMAKE_CXX_COMPILER=mpiicpc',
+    '-DCMAKE_Fortran_FLAGS="-O2 -Wall -fcheck=all"',
+])
+
+separate_build_dir = False
+
+test_cmd = ' && '.join([
+    'cd tutorials/dem/mixer_3d',
+    '%(installdir)s/mfixsolver_dmp -f mixer_dem_3d.mfx',
+])
+
+sanity_check_paths = {
+   'files': ['mfixsolver_dmp'],
+   'dirs': [],
+}
+
+postinstallcmds = [
+    'chmod o-rwx %(installdir)s',
+]
+
+moduleclass = 'cae'
