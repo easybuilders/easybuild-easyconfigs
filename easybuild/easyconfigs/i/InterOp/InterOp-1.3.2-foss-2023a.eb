@@ -17,7 +17,32 @@ checksums = ['4989480b3d074ac36499f122a1de109840b6edab238cc6482f6025d1021d4564']
 
 builddependencies = [
     ('CMake', '3.26.3'),
+    ('SWIG', '4.1.1'),
 ]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('dotNET-Core', '8.0', '', SYSTEM),
+]
+
+prebuildopts = 'export NUGET_HTTP_CACHE_PATH=%(builddir)s/nuget-cache && '
+prebuildopts += 'export NUGET_PLUGINS_CACHE_PATH=%(builddir)s/plugins-cach && '
+prebuildopts += 'export NUGET_PACKAGES=%(builddir)s/packages && '
+
+# change `HOME` to fix NuGet error `Could not find a part of the path`
+local_change_home = 'export HOME=%(builddir)s/home && '
+
+prebuildopts = local_change_home
+
+buildopts = " && make python_lib"
+
+preinstallopts = local_change_home
+
+installopts = ' && cd src/ext/python && '
+installopts += 'pip install --no-deps --ignore-installed --prefix %(installdir)s --no-build-isolation .'
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 local_bins = [
     'dumpbin',
@@ -36,6 +61,6 @@ sanity_check_paths = {
     'dirs': ['include/%(namelower)s'],
 }
 
-sanity_check_commands = ['%s --help' % binary for binary in local_bins]
+sanity_check_commands = ['%s --help' % binary for binary in local_bins] + ['python -m interop --test']
 
 moduleclass = 'bio'
