@@ -6,6 +6,7 @@
 # Help from the FHI-aims developers and Alexander Grund to move to oneAPI is greatly appreciated
 # This version makes use of an external ELPA installation. 
 # Note: You need to know which ELPA kernel was used (see below for details)!
+# The automatic ELPA kernel selection is courtesy of Steen Lysgaard
 # J. Sassmannshausen (Imperial College London/UK)
 ##
 easyblock = 'CMakeMake'
@@ -46,16 +47,25 @@ dependencies = [
     ('ELPA', '2023.05.001'),
 ]
 
+# Check the AVX capabilities of the ELPA installation, courtesy of Steen Lysgaard
+preconfigopts = """
+AVX_CAP=$(elpa2_print_kernels | grep -o 'AVX[0-9]*' | sort -r | head -n1)
+if [ -z "$AVX_CAP" ]; then
+    AVX_CAP="Generic"
+fi
+echo 'ELPA-Kernel is' $AVX_CAP
+"""
+
 configopts = ' -DCMAKE_Fortran_COMPILER="$MPIF90" -DCMAKE_CXX_COMPILER="$MPICXX"  -DCMAKE_C_COMPILER="$MPICC" '
 configopts += ' -DLIBS="mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64 mkl_intel_lp64 mkl_sequential mkl_core" '
 configopts += ' -DLIB_PATHS="$EBROOTIMKL/mkl/latest/lib/intel64" '
 configopts += ' -DFortran_MIN_FLAGS="-O0 -fp-model precise" '
 configopts += ' -DTARGET_NAME="aims.x" '
-# This is for ELPA. Build ELAP first to see which kernel is selected and then adjust the kernel settings here!
-# Possible values are: AVX, AVX2 and AVX512 
+# This is for ELPA. Build ELAP first to see which kernel is selected!
+# Possible values are: AVX, AVX2 and AVX512, but will be automatically selected from the script above 
 # We also need to include the libelpa library so the -DLIBS overwrites the previous ones
 configopts += ' -DLIBS="mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64 mkl_intel_lp64 mkl_sequential mkl_core -lelpa" '
-configopts += ' -DUSE_EXTERNAL_ELPA=ON -DELPA2_KERNEL="AVX2" '
+configopts += ' -DUSE_EXTERNAL_ELPA=ON -DELPA2_KERNEL="$AVX_CAP" '
 configopts += ' -DINC_PATHS=$EBROOTELPA/include/elpa-$EBVERSIONELPA/modules/ '
 
 postinstallcmds = ["cp -ar %(builddir)s/%(namelower)s.%(version)s/{CHANGELOG.md,doc} %(installdir)s/",
