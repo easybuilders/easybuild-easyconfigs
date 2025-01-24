@@ -47,13 +47,16 @@ dependencies = [
 ]
 
 configopts = ' -DCMAKE_Fortran_COMPILER="$MPIF90" -DCMAKE_CXX_COMPILER="$MPICXX"  -DCMAKE_C_COMPILER="$MPICC" '
-configopts += ' -DLIBS="mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64 mkl_intel_lp64 mkl_sequential mkl_core elpa" '
+configopts += ' -DLIBS="mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64 mkl_intel_lp64 mkl_sequential mkl_core" '
 configopts += ' -DLIB_PATHS="$EBROOTIMKL/mkl/latest/lib/intel64" '
 configopts += ' -DFortran_MIN_FLAGS="-O0 -fp-model precise" '
+configopts += ' -DTARGET_NAME="aims.x" '
 # This is for ELPA. Build ELAP first to see which kernel is selected and then adjust the kernel settings here!
 # Possible values are: AVX, AVX2 and AVX512 
-configopts += ' -DUSE_EXTERNAL_ELPA=ON -DELPA2_KERNEL="AVX2" -DINC_PATHS=$EBROOTELPA/include/elpa-2023.05.001/modules/ '
-configopts += ' -DTARGET_NAME="aims.x" '
+# We also need to include the libelpa library so the -DLIBS overwrites the previous ones
+configopts += ' -DLIBS="mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64 mkl_intel_lp64 mkl_sequential mkl_core -lelpa" '
+configopts += ' -DUSE_EXTERNAL_ELPA=ON -DELPA2_KERNEL="AVX2" '
+configopts += ' -DINC_PATHS=$EBROOTELPA/include/elpa-$EBVERSIONELPA/modules/ '
 
 postinstallcmds = ["cp -ar %(builddir)s/%(namelower)s.%(version)s/{CHANGELOG.md,doc} %(installdir)s/",
                    "cp -ar %(builddir)s/%(namelower)s.%(version)s/{regression_tests,species_defaults} %(installdir)s/",
