@@ -10,7 +10,18 @@ toolchain = {'name': 'foss', 'version': '2024a'}
 
 source_urls = ['https://github.com/rdkit/rdkit/archive/']
 sources = ['Release_%s.tar.gz' % version.replace('.', '_')]
-checksums = ['b0870aec4dca12da5ee1100a769eaf4c71c3a6f99339f8aa72d30affc068a632']
+patches = [
+    # fix failing testUFFAngleConstraints in test pyForceFieldConstraints
+    # by increasing number of Minimzers steps from default (200) to 500 in 
+    # order to allow convergence.
+    # see also: https://github.com/rdkit/rdkit/discussions/7588
+    'RDKit-2024.03.5_relax_pyForceFieldConstraints.patch'
+]
+checksums = [
+    {'Release_2024_03_5.tar.gz': 'b0870aec4dca12da5ee1100a769eaf4c71c3a6f99339f8aa72d30affc068a632'},
+    {'RDKit-2024.03.5_relax_pyForceFieldConstraints.patch':
+     'a988ea722ee88ec293ff079e8d64264ed1d58db4204668809760e29685c55195'},
+]
 
 builddependencies = [
     ('CMake', '3.29.3'),
@@ -38,22 +49,14 @@ _src_dir = '%%(builddir)s/rdkit-Release_%s' % version.replace('.', '_')
 
 # ingnore failing test pythonSourceTests - from . import rdBase failing
 prebuildopts = "sed -i '22d' %s/rdkit/CMakeLists.txt && " % _src_dir
-# ignore failing testUFFAngleConstraints
-# https://github.com/rdkit/rdkit/discussions/7588
-prebuildopts += "sed -i 's/def testUFFAngleConstraints(self):/def ignore_testUFFAngleConstraints(self):/' "
-prebuildopts += "%s/Code/ForceField/Wrap/testConstraints.py && " % _src_dir
-
-# fails on zen4 - investigate
-prebuildopts += "sed -i '/distGeomHelpersCatch/{N;N;d}' %s/Code/GraphMol/DistGeomHelpers/CMakeLists.txt && " % _src_dir
-prebuildopts += "sed -i '/pyDistGeomHelpers/d' %s/Code/GraphMol/DistGeomHelpers/Wrap/CMakeLists.txt && " % _src_dir
 
 # merge source directory into build directory in order to run the tests
 buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./  '
 
 # Specify path for libraries so that they are found during the tests when the module is built with --rpath flag.
-pretestopts = 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY_PATH} &&
-pretestopts += "export RDBASE=$PWD && "
-pretestopts += "export PYTHONPATH=$PWD:$PYTHONPATH &&"
+pretestopts = 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY_PATH} &&'
+pretestopts += 'export RDBASE=$PWD && '
+pretestopts += 'export PYTHONPATH=$PWD:$PYTHONPATH &&'
 runtest = True
 
 # generate minimal dist-info:
