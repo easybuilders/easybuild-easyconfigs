@@ -48,15 +48,13 @@ prebuildopts += "sed -i '/distGeomHelpersCatch/{N;N;d}' %s/Code/GraphMol/DistGeo
 prebuildopts += "sed -i '/pyDistGeomHelpers/d' %s/Code/GraphMol/DistGeomHelpers/Wrap/CMakeLists.txt && " % _src_dir
 
 # merge source directory into build directory in order to run the tests
-buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./ && '
-buildopts += 'export RDBASE=$PWD && export PYTHONPATH=$PWD:$PYTHONPATH && '
+buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./  '
 
 # Specify path for libraries so that they are found during the tests when the module is built with --rpath flag.
-buildopts += 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY_PATH} && '
-
-# 'ctest' allows to pass additional arguments opposed to 'make test'
-buildopts += 'ctest --output-on-failure'
-
+pretestopts = 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY_PATH} &&
+pretestopts += "export RDBASE=$PWD && "
+pretestopts += "export PYTHONPATH=$PWD:$PYTHONPATH &&"
+runtest = True
 
 # generate minimal dist-info:
 _distinfodir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/rdkit-%(version)s.dist-info'
