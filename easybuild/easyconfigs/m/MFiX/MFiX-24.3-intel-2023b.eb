@@ -18,18 +18,22 @@ such as drag, polydispersity, attrition, and agglomeration models, among other s
 
 toolchain = {'name': 'intel', 'version': '2023b'}
 toolchainopts = {
-    'usempi': True, 
-    'pic': True, 
-    'extra_fflags': '-fallow-argument-mismatch'
+    'usempi': True,
+    'pic': True,
+    'extra_fflags': '-fallow-argument-mismatch',
 }
 
 sources = ['%(namelower)s-%(version)s.tar.gz']
 checksums = ['d6313d02b4631a6b2eef944c158bb7b1a2eecfe7bcee9f533ce71571f1acffe8']
 
+download_instructions = 'Fetch the source %s after logging into %s' % (sources[0], homepage)
+
 builddependencies = [
     ('CMake', '3.27.6'),
     ('binutils', '2.40'),
 ]
+
+preconfigcmds = 'mkdir -p %(installdir)/bin'
 
 configopts = '-DENABLE_MPI=1'
 
@@ -40,8 +44,13 @@ test_cmd = ' && '.join([
     '%(builddir)s/%(namelower)s-%(version)s/mfixsolver_dmp -f mixer_dem_3d.mfx',
 ])
 
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin',
+    'mv %(installdir)s/mfixsolver_dmp %(installdir)s/bin/mfixsolver_dmp',
+]
+
 sanity_check_paths = {
-    'files': ['mfixsolver_dmp'],
+    'files': ['bin/mfixsolver_dmp'],
     'dirs': [],
 }
 
