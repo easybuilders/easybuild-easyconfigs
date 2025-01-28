@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'WannierTools'
+version = '2.7.0'
+
+homepage = 'http://www.wanniertools.com'
+description = """WannierTools is an open source software that studies the physical properties of given tight-binding
+ model."""
+
+toolchain = {'name': 'iimpi', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/quanshengwu/wannier_tools/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['WannierTools-2.7.0_fix_Makefile.patch']
+checksums = [
+    {'v2.7.0.tar.gz': '4c744da7996d43df2c0810a7ff6fb09d7d690eaf6a2bf56e48f8a0ea6c673b2e'},
+    {'WannierTools-2.7.0_fix_Makefile.patch': '8e877e22cc8e427d0022667b7d9c99f18a277ab4908168653d59b05be4d9ab9d'},
+]
+
+dependencies = [
+    ('imkl', '2023.2.0'),
+    ('arpack-ng', '3.9.1', '', ('ifb', '2023a')),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'cd src && '
+preinstallopts = prebuildopts
+
+# use -cpp -fallow-argument-mismatch -ffree-line-length-512 for GNU based compilers
+# use -fpp for Intel based compilers
+# We use the same Makefile regardless of toolchain due to the Makefile patch
+buildopts = '-f Makefile.intel-mpi '
+installopts = '-f Makefile.intel-mpi PREFIX=%(installdir)s '
+
+# No dependecies in the Makefile
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/wt.x'],
+    'dirs': []
+}
+
+moduleclass = 'chem'
