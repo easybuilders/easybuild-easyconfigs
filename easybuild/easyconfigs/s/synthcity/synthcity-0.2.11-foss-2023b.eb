@@ -57,6 +57,10 @@ local_xgbse_preinstallopts = (
     " pyproject.toml && "
 )
 
+# solve problem with PyTorch-Lightning _validate_srun_variables method
+# see https://github.com/easybuilders/easybuild-easyconfigs/pull/21141#issuecomment-2318854045
+local_pretestopts = "export SLURM_NTASKS_PER_NODE=$SLURM_NTASKS && "
+
 exts_list = [
     # tests exts:
     ('stevedore', '5.3.0', {
@@ -228,7 +232,7 @@ exts_list = [
     (name, version, {
         'source_urls': ['https://github.com/vanderschaarlab/synthcity/archive/'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
-        'runtest': 'cd tests && pytest -vvvs -m "not slow" --ignore=plugins/generic/test_great.py',
+        'runtest': local_pretestopts + 'cd tests && pytest -vvvs -m "not slow" --ignore=plugins/generic/test_great.py',
         'testinstall': True,
         'checksums': ['5926d2e869e1528e556fb794d5f7e914c635113f9cc58034612fa067cdbf84d4'],
     }),
