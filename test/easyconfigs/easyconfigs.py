@@ -388,12 +388,11 @@ class EasyConfigTest(TestCase):
         version_regex = re.compile('^version: (?P<version>[^;]+);')
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
-        # same goes for WRF and WPS; Gurobi and Rgurobi; ncbi-vdb and SRA-Toolkit; GPAW-setups and GPAW
+        # same goes for WRF and WPS; Gurobi and Rgurobi; ncbi-vdb and SRA-Toolkit
         multiple_allowed_variants = [('HTSlib', 'BCFtools'),
                                      ('WRF', 'WPS'),
                                      ('Gurobi', 'Rgurobi'),
-                                     ('ncbi-vdb', 'SRA-Toolkit'),
-                                     ('GPAW-setups', 'GPAW')]
+                                     ('ncbi-vdb', 'SRA-Toolkit')]
         for dep_name, parent_name in multiple_allowed_variants:
             if dep == dep_name and len(dep_vars) > 1:
                 for key in list(dep_vars):
@@ -423,6 +422,17 @@ class EasyConfigTest(TestCase):
                 boost_ver = version_regex.search(key).group('version')
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
+
+        # multiple variants of GPAW-setups is OK as long as they are deps for GPAW
+        if dep == 'GPAW-setups' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out Meson variants that are only used as a dependency for meson-python
+                if all(ec.startswith('GPAW') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
 
         # Pairs of name, versionsuffix that should be removed from dep_vars if exactly one matching key is found.
         # The name is checked against 'dep' and can be a list to allow multiple
