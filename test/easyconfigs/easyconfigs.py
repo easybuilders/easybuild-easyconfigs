@@ -388,11 +388,12 @@ class EasyConfigTest(TestCase):
         version_regex = re.compile('^version: (?P<version>[^;]+);')
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
-        # same goes for WRF and WPS; Gurobi and Rgurobi; ncbi-vdb and SRA-Toolkit
+        # same goes for WRF and WPS; Gurobi and Rgurobi; ncbi-vdb and SRA-Toolkit; GPAW-setups and GPAW
         multiple_allowed_variants = [('HTSlib', 'BCFtools'),
                                      ('WRF', 'WPS'),
                                      ('Gurobi', 'Rgurobi'),
-                                     ('ncbi-vdb', 'SRA-Toolkit')]
+                                     ('ncbi-vdb', 'SRA-Toolkit'),
+                                     ('GPAW-setups', 'GPAW')]
         for dep_name, parent_name in multiple_allowed_variants:
             if dep == dep_name and len(dep_vars) > 1:
                 for key in list(dep_vars):
