@@ -427,7 +427,7 @@ class EasyConfigTest(TestCase):
         if dep == 'GPAW-setups' and len(dep_vars) > 1:
             for key in list(dep_vars):
                 ecs = dep_vars[key]
-                # filter out Meson variants that are only used as a dependency for meson-python
+                # filter out GPAW-setups variants that are only used as a dependency for GPAW
                 if all(ec.startswith('GPAW') for ec in ecs):
                     dep_vars.pop(key)
                 # always retain at least one dep variant
