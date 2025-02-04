@@ -1,0 +1,67 @@
+easyblock = 'PythonBundle'
+
+name = 'CellRank'
+version = '2.0.2'
+
+homepage = 'https://cellrank.readthedocs.io/en/stable/'
+description = """CellRank is a toolkit to uncover cellular dynamics based on
+ Markov state modeling of single-cell data.  It contains two main modules:
+kernels compute cell-cell transition probabilities and estimators generate
+hypothesis based on these. """
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('petsc4py', '3.17.4'),
+    ('slepc4py', '3.17.2'),
+    ('scikit-learn', '1.1.2'),
+    ('scVelo', '0.2.5'),
+    ('scanpy', '1.9.1'),  # also provides anndata
+    ('numba', '0.56.4'),
+    ('networkx', '2.8.4'),
+    ('matplotlib', '3.5.2'),
+    ('Seaborn', '0.12.1'),
+    ('wrapt', '1.15.0'),
+]
+
+use_pip = True
+
+_preinstallopts_pygam = """sed -i -e 's/numpy = .*/numpy = "^1.22.3"/g' """
+_preinstallopts_pygam += """-e 's/scipy = .*/scipy = "^1.8.1"/g' pyproject.toml && """
+
+exts_list = [
+    ('docrep', '0.3.2', {
+        'checksums': ['ed8a17e201abd829ef8da78a0b6f4d51fb99a4cbd0554adbed3309297f964314'],
+    }),
+    ('python-utils', '3.8.1', {
+        'checksums': ['ec3a672465efb6c673845a43afcfafaa23d2594c24324a40ec18a0c59478dc0b'],
+    }),
+    ('progressbar2', '4.3.2', {
+        'modulename': 'progressbar',
+        'checksums': ['c37e6e1b4e57ab43f95c3d0e8d90061bec140e4fed56b8343183db3aa1e19a52'],
+    }),
+    ('pygam', '0.9.0', {
+        'patches': ['pygam-0.9.0_fix-poetry.patch'],
+        'checksums': [
+            {'pygam-0.9.0.tar.gz': 'dba62285a275cdd15a6adf764f6717b3cd077502f01cf1bcee5ce7cbda221956'},
+            {'pygam-0.9.0_fix-poetry.patch': '90460a5416167f146f5bf2c55e46c23d1e7a8f864652e24665354a1b39d7e3d0'},
+        ],
+        'preinstallopts': _preinstallopts_pygam,
+    }),
+    ('pygpcca', '1.0.4', {
+        'checksums': ['5e3b49279abc62d25133811daeee050715f995ff02042c46e2a2034331d090d1'],
+        'preinstallopts': "sed -i 's/jinja2==/jinja2>=/g' requirements.txt && ",
+    }),
+    ('cellrank', version, {
+        'checksums': ['47c1d2e953ac91f572937d816142b4ac5f0c876174c60f857562de76a9f8aa61'],
+        # strip away too strict version requirements for pandas + anndata
+        'preinstallopts': "sed -i -e 's/pandas>=1.5.0/pandas/g' -e 's/anndata>=0.9/anndata/g' pyproject.toml && ",
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_commands = ["python -c 'import cellrank as cr'"]
+
+moduleclass = 'bio'

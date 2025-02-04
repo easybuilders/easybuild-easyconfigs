@@ -1,0 +1,87 @@
+easyblock = 'EB_PSI'
+
+name = 'PSI4'
+version = '1.9.1'
+
+homepage = 'https://www.psicode.org/'
+description = """PSI4 is an open-source suite of ab initio quantum chemistry programs designed for
+efficient, high-accuracy simulations of a variety of molecular properties. We can routinely perform
+computations with more than 2500 basis functions running serially or in parallel.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/psi4/psi4/archive']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'PSI4-%(version)s_fix_cmake_release.patch',
+    'PSI4-1.7_fix_snsmp2_version.patch',
+]
+checksums = [
+    {'v1.9.1.tar.gz': 'ccd69bdc1d8319470513b4d3c1e0d737fc7788a50d7e48f8db762a0fcf795dad'},
+    {'PSI4-1.9.1_fix_cmake_release.patch': '8f2bb210508cbb78a258c8d85d10d456c61e0f828865f3efb8d3bac9184df24e'},
+    {'PSI4-1.7_fix_snsmp2_version.patch': '064dcf60e74e0c449f77bb6e4dcf4b3338edad7d9a046089ecc2979aed1a00f9'},
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('libxc', '6.2.2'),
+    ('CheMPS2', '1.8.12'),
+    ('networkx', '3.1'),
+    ('pytest', '7.4.2'),
+    ('Boost', '1.82.0'),
+    ('PyYAML', '6.0'),
+    ('SciPy-bundle', '2023.07'),
+    ('Pint', '0.23'),
+    ('pydantic', '2.5.3'),
+    ('py-cpuinfo', '9.0.0'),
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Eigen', '3.4.0'),
+    ('poetry', '1.7.1'),  # for qcelemental
+]
+
+configopts = '-DENABLE_MPI=ON -DENABLE_PLUGINS=ON -DENABLE_XHOST=OFF '
+#  Install python module to the standard location instead of lib
+configopts += '-DPYMOD_INSTALL_LIBDIR=/python%(pyshortver)s/site-packages '
+#  Add bundled (downloaded) packages
+# -DENABLE_simint=ON does not work with intel/2018, so have to make with GCCcore
+configopts += '-DENABLE_dkh=ON -DENABLE_gdma=ON -DENABLE_resp=ON -DENABLE_snsmp2=ON '
+# allow PSI4 to download and build a forked version of PCMSolver otherwise tests fail
+configopts += '-DENABLE_PCMSolver=ON '
+
+# runtest uses ctest, and some of the tests have to be manually compared
+# to the reference output (those tests are marked failed)
+# After installing PSI4, you can test the package using psi4 --test command. (This uses pytest framework)
+# runtest = '-L smoke'
+runtest = False
+
+exts_defaultclass = 'PythonPackage'
+exts_filter = ("python -s -c 'import %(ext_name)s'", '')
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('qcelemental', '0.28.0', {
+        'checksums': ['da96fddb88c1701f812b25369a6a169d35f2d5446c37c62e86048cb0f1b168a2'],
+    }),
+    ('qcengine', '0.30.0', {
+        'checksums': ['ba62d34dbcf487e8368f6c19762a19e1c5f06af7e705f6c583c0632b35bccf7d'],
+    }),
+    ('snsmp2', '1.0.0', {
+        'source_tmpl': '%(name)s-%(version)s-py2.py3-none-any.whl',
+        'checksums': ['acfc95f8eb40e18d9d0c737b42fc8dfa786c381a5510a3094772b82538d211ed'],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_commands = ["python -s -c 'import psi4'"]
+
+moduleclass = 'chem'

@@ -1,0 +1,167 @@
+easyblock = 'PythonBundle'
+
+name = 'AlphaFold'
+version = '2.3.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://deepmind.com/research/case-studies/alphafold'
+description = "AlphaFold can predict protein structures with atomic accuracy even where no similar structure is known"
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('poetry', '1.5.1')
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('SciPy-bundle', '2023.07'),
+    ('PyYAML', '6.0'),
+    ('TensorFlow', '2.13.0'),  # doesn't require TF-gpu
+    ('Biopython', '1.83'),
+    ('HH-suite', '3.3.0'),
+    ('HMMER', '3.4'),
+    ('Kalign', '3.4.0'),
+    ('jax', '0.4.25', versionsuffix),  # also provides absl-py  # requirement is ==0.3.25!
+    ('UCX-CUDA', '1.14.1', versionsuffix),
+    ('cuDNN', '8.9.2.26', versionsuffix, SYSTEM),
+    ('NCCL', '2.18.3', versionsuffix),
+    ('OpenMM', '8.0.0', versionsuffix),
+    ('dm-tree', '0.1.8'),
+    ('dm-haiku', '0.0.12', versionsuffix),
+]
+
+# commit to use for downloading stereo_chemical_props.txt and copy to alphafold/common,
+# see docker/Dockerfile in AlphaFold repository
+local_scp_commit = '7102c6'
+
+components = [
+    ('stereo_chemical_props.txt',  local_scp_commit, {
+        'easyblock': 'Binary',
+        'source_urls': [
+            'https://git.scicore.unibas.ch/schwede/openstructure/-/raw/%s/modules/mol/alg/src/' % local_scp_commit,
+        ],
+        'sources': [
+            {
+                'download_filename': 'stereo_chemical_props.txt',
+                'filename': 'stereo_chemical_props-%s.txt' % local_scp_commit,
+                'extract_cmd': "cp %s ./stereo_chemical_props.txt",
+            }
+        ],
+        'checksums': [
+            '24510899eeb49167cffedec8fa45363a4d08279c0c637a403b452f7d0ac09451',  # stereo_chemical_props-7102c6.txt
+        ]
+    })
+]
+
+use_pip = True
+
+exts_list = [
+    ('PDBFixer', '1.9', {
+        'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['88b9a77e50655f89d0eb2075093773e82c27a4cef842cb7d735c877b20cd39fb'],
+    }),
+    ('tabulate', '0.9.0', {
+        'checksums': ['0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c'],
+    }),
+    ('websocket-client', '1.5.1', {
+        'modulename': 'websocket',
+        'checksums': ['3f09e6d8230892547132177f575a4e3e73cfdf06526e20cc02aa1c3b47184d40'],
+    }),
+    ('docker', '7.0.0', {
+        'checksums': ['323736fb92cd9418fc5e7133bc953e11a9da04f4483f828b527db553f1e7e5a3'],
+    }),
+    ('immutabledict', '4.1.0', {
+        'checksums': ['93d100ccd2cd09a1fd3f136b9328c6e59529ba341de8bb499437f6819159fe8a'],
+    }),
+    ('contextlib2', '21.6.0', {
+        'checksums': ['ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869'],
+    }),
+    ('ml_collections', '0.1.1', {
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+        'checksums': ['3fefcc72ec433aa1e5d32307a3e474bbb67f405be814ea52a2166bfc9dbe68cc'],
+    }),
+    (name, version, {
+        'patches': [
+            'AlphaFold-2.0.0_fix-packages.patch',
+            'AlphaFold-2.3.2_data-dep-paths-shebang-UniRef30.patch',
+            'AlphaFold-2.0.0_n-cpu.patch',
+            'AlphaFold-2.0.1_setup_rm_tfcpu.patch',
+            'AlphaFold-2.3.2_use_openmm_8.0.0.patch',
+            'AlphaFold-2.3.2_BioPythonPDBData.patch',
+        ],
+        'source_urls': ['https://github.com/deepmind/alphafold/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': [
+            {'AlphaFold-2.3.2.tar.gz': '4ea8005ba1b573fa1585e4c29b7d188c5cbfa59b4e4761c9f0c15c9db9584a8e'},
+            {'AlphaFold-2.0.0_fix-packages.patch': '826d2d1a5d6ac52c51a60ba210e1947d5631a1e2d76f8815305b5d23f74458db'},
+            {'AlphaFold-2.3.2_data-dep-paths-shebang-UniRef30.patch':
+             '58cd0ce4094afe76909649abe68034c4fbdb500967f5c818f49b530356dc012b'},
+            {'AlphaFold-2.0.0_n-cpu.patch': 'dfda4dd5f9aba19fe2b6eb9a0ec583d12dcefdfee8ab8803fc57ad48d582db04'},
+            {'AlphaFold-2.0.1_setup_rm_tfcpu.patch':
+             '1a2e4e843bd9a4d15ee39e6c37cc63ba281311cc7a0a5610f0e43b52ef93faac'},
+            {'AlphaFold-2.3.2_use_openmm_8.0.0.patch':
+             'bbef940c0c959040aaf3984ec47777a229c164517b54616a2688d58fae636d84'},
+            {'AlphaFold-2.3.2_BioPythonPDBData.patch':
+             'e4483a525ae5c4dc5a5f633bed8cf5337c329e64b603ab7b684a9d18cd26a22f'},
+        ],
+    }),
+]
+
+local_pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+local_link_scp = 'ln -s %%(installdir)s/stereo_chemical_props.txt %s/alphafold/common' % local_pylibdir
+
+postinstallcmds = [
+    'cp %(builddir)s/AlphaFold/alphafold-%(version)s/run_alphafold*.py %(installdir)s/bin',
+    'cp -rpP %(builddir)s/AlphaFold/alphafold-%(version)s/scripts %(installdir)s',
+    'cd %(installdir)s/bin && ln -s run_alphafold.py alphafold',
+    'chmod a+x %(installdir)s/bin/run_alphafold.py',
+    local_link_scp,
+]
+
+sanity_check_paths = {
+    'files': ['bin/alphafold', 'bin/pdbfixer', 'bin/run_alphafold.py', 'stereo_chemical_props.txt'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'scripts'],
+}
+
+sanity_check_commands = [
+    "pdbfixer --help",
+    "python -m openmm.testInstallation",
+    "python -c 'import alphafold'",
+    "alphafold --help 2>&1 | grep 'Full AlphaFold protein structure prediction script'",
+    "python %(installdir)s/bin/run_alphafold_test.py",
+]
+
+sanity_pip_check = True
+
+# these allow to make predictions on proteins that would typically be too long to fit into GPU memory;
+# see https://github.com/deepmind/alphafold/blob/main/docker/run_docker.py
+modextravars = {
+    # these allow to make predictions on proteins that would typically be too long to fit into GPU memory;
+    # see https://github.com/deepmind/alphafold/blob/main/docker/run_docker.py
+    'TF_FORCE_UNIFIED_MEMORY': '1',
+    # jaxlib 0.4.1: https://jax.readthedocs.io/en/latest/changelog.html#jaxlib-0-4-1-dec-13-2022 
+    # "The behavior of XLA_PYTHON_CLIENT_MEM_FRACTION=.XX has been changed to allocate XX% of the total GPU memory 
+    # instead of the previous behavior of using currently available GPU memory to calculate preallocation. Please refer
+    # to GPU memory allocation for more details."
+    # https://jax.readthedocs.io/en/latest/gpu_memory_allocation.html
+    'XLA_PYTHON_CLIENT_MEM_FRACTION': '2.5',
+    # 
+    # Download with $EBROOTALPHAFOLD/scripts/download_all_data.sh /path/to/AlphaFold_DBs/$EBVERSIONALPHAFOLD
+    'ALPHAFOLD_DATA_DIR': '/path/to/AlphaFold_DBs/%(versions)s',  # please adapt
+    # Adapt in order to use a different version of UniRef30 by default,
+    # e.g.,  v2023_02 from https://wwwuser.gwdg.de/~compbiol/uniclust/2023_02/UniRef30_2023_02_hhsuite.tar.gz:
+    'ALPHAFOLD_UNIREF30_VER': '2021_03',
+    'OPENMM_RELAX': 'CUDA'  # unset or set to 'CPU' in order not to run the energy minimization on GPU; PR#189
+}
+
+postinstallmsgs = [
+    "A newer version of UniRef30 (2023_02) is available at: "
+    "https://wwwuser.gwdg.de/~compbiol/uniclust/2023_02/UniRef30_2023_02_hhsuite.tar.gz. "
+    "Untar to $ALPHAFOLD_DATA_DIR/uniref30/ and set the default version accordingly by changing "
+    "modextravars:ALPHAFOLD_UNIREF30_VER."
+]
+
+moduleclass = 'bio'

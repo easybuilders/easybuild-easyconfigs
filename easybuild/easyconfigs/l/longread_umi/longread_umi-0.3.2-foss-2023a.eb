@@ -1,0 +1,84 @@
+easyblock = 'Bundle'
+
+name = 'longread_umi'
+version = '0.3.2'
+
+homepage = 'https://github.com/SorenKarst/longread_umi'
+description = "A collection of scripts for processing longread UMI data."
+github_account = 'SorenKarst'
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('cutadapt', '4.9'),
+    ('BCFtools', '1.18'),
+    ('BWA', '0.7.17'),
+    ('Filtlong', '0.2.1'),
+    ('gawk', '5.3.0'),
+    ('medaka', '1.11.3'),
+    ('minimap2', '2.26'),
+    ('parallel', '20230722'),
+    ('Pysam', '0.22.0'),
+    ('Racon', '1.5.0'),
+    ('SAMtools', '1.18'),
+    ('seqtk', '1.4'),
+    ('VSEARCH', '2.25.0'),
+]
+
+components = [
+    (name, version, {
+        'easyblock': 'Tarball',
+        'source_urls': [GITHUB_LOWER_SOURCE],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['62b8e156c00c0ec10fa8eae1cde5430922462f167fc537417ce0b47cd50a20cb'],
+        'start_dir': '%(name)s-%(version)s',
+    }),
+    # PythonPackage executes Bundle-level postinstallcmds for some reason,
+    # which rely on both components being installed, so Porechop is installed second
+    ('Porechop', '0.2.4', {
+        'easyblock': 'PythonPackage',
+        'source_urls': ['https://github.com/rrwick/Porechop/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['44b499157d933be43f702cec198d1d693dcb9276e3c545669be63c2612493299'],
+        'start_dir': '%(name)s-%(version)s',
+        'use_pip': True,
+        'download_dep_fail': True,
+        'sanity_pip_check': True,
+    }),
+]
+
+# Adapt the built-in tool check but make it fail on error, replace usearch with vsearch and use our version
+local_deps_patch = (
+    "sed -i "
+    "-e '2s;^;set -e ;' "
+    "-e 's/USEARCH=usearch/USEARCH=vsearch/' "
+    "-e 's;$(git --git-dir ${LONGREAD_UMI_PATH}/.git describe --tag);%(version)s;' "
+    "%(installdir)s/scripts/dependencies.sh"
+)
+
+postinstallcmds = [
+    'find %(installdir)s -name "*.sh" -exec chmod +x {} \\;',
+    'ln -s %(installdir)s/longread_umi.sh %(installdir)s/bin/longread_umi',
+    # Part of the installation process; longread uses porechop with custom adapters
+    'cp %(installdir)s/scripts/adapters.py %(installdir)s/lib/python%(pyshortver)s/site-packages/porechop/',
+    local_deps_patch,
+    # -minsize option not supported by 'vsearch -cluster_fast', and probably not needed
+    "sed -i 's/-minsize 1//g' %(installdir)s/scripts/umi_binning.sh",
+]
+
+sanity_check_paths = {
+    'files': ['bin/longread_umi'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = [
+    'longread_umi -h | grep qc_pipeline',
+    'longread_umi nanopore_pipeline -h | grep rrna_operon',
+    'source %(installdir)s/scripts/dependencies.sh && longread_umi_version_dump',
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'bio'

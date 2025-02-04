@@ -1,0 +1,59 @@
+easyblock = 'PythonBundle'
+
+name = 'ESMPy'
+version = '8.6.0'
+
+homepage = 'https://earthsystemmodeling.org/esmpy'
+description = "Earth System Modeling Framework (ESMF) Python Interface"
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('pytest', '7.4.2'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('ESMF', version),
+]
+
+use_pip = True
+
+# downloads of data files from data.earthsystemmodeling.org are failing at the
+# time of writting, switch to github.com:
+_switch_data_url_regex = r"s/^\(DATA_URL.*earthsystemmodeling.org\)/# \1/;s/# \(DATA_URL.*github.com\)/\1/"
+
+_pre_test_cmds = [
+    "sed -i '%s' src/esmpy/util/cache_data.py" % _switch_data_url_regex,
+    "unset ESMPY_DATA_DIR",
+    "export ESMPY_DATA_NEW_DIR=/tmp",
+    "",
+]
+
+exts_list = [
+    ('esmpy', version, {
+        'patches': ['ESMPy-%(version)s_use-static-version.patch'],
+        'source_urls': ['https://github.com/esmf-org/esmf/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': [
+            {'v8.6.0.tar.gz':
+             'ed057eaddb158a3cce2afc0712b49353b7038b45b29aee86180f381457c0ebe7'},
+            {'ESMPy-8.6.0_use-static-version.patch':
+             '4878e0066593c993e7fc16638ab8e671693c402263b13d1c903b5c5b717f6468'},
+        ],
+        'start_dir': 'src/addon/%(name)s',
+        'preinstallopts': "sed -i 's/EB_ESMPY_VERSION/%(version)s/' pyproject.toml && ",
+        'pretestopts': " && ".join(_pre_test_cmds),
+        'runtest': 'pytest',
+        'testinstall': True,
+    }),
+]
+
+sanity_pip_check = True
+
+# set data directory to a user-writable directory
+# default: %(installdir)s/lib/python%(pyshortver)s/site-packages/esmpy/data
+modextravars = {'ESMPY_DATA_DIR': '/tmp'}
+
+moduleclass = 'geo'

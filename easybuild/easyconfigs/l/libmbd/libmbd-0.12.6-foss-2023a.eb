@@ -1,0 +1,59 @@
+easyblock = 'CMakeMake'
+
+name = 'libmbd'
+version = '0.12.6'
+
+homepage = 'https://libmbd.github.io/index.html'
+description = """
+Libmbd implements the many-body dispersion (MBD) method in several programming languages and frameworks:
+
+ - The Fortran implementation is the reference, most advanced implementation, with support for analytical 
+   gradients and distributed parallelism, and additional functionality beyond the MBD method itself. 
+   It provides a low-level and a high-level Fortran API, as well as a C API. Furthermore, Python bindings 
+   to the C API are provided.
+ - The Python/Numpy implementation is intended for prototyping, and as a high-level language reference.
+ - The Python/Tensorflow implementation is an experiment that should enable rapid prototyping of machine 
+   learning applications with MBD.
+
+The Python-based implementations as well as Python bindings to the Libmbd C API are accessible from the 
+Python package called Pymbd.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+github_account = 'libmbd'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['9f8154b6b2f57e78a8e33d3b315a244185e8e5ecb03661a469808af7512e761e']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('ELSI', '2.11.0', '-PEXSI'),
+]
+
+# build scripts expect either a git repo or a defined version string in a file
+_versiontag_file = '%(builddir)s/%(name)s-%(version)s/cmake/LibmbdVersionTag.cmake'
+preconfigopts = "echo 'set(VERSION_TAG \"%%(version)s\")' > %s && " % _versiontag_file
+
+configopts = "-DENABLE_SCALAPACK_MPI=ON -DENABLE_ELSI=ON "
+configopts += "-DMPIEXEC_MAX_NUMPROCS=1 "  # number of procs in the tests
+
+# make sure that built libraries (libmbd.so) in build directory are picked when running tests
+# this is required when RPATH linking is used
+pretestopts = "export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj:$LD_LIBRARY_PATH && "
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['lib/libmbd.%s' % SHLIB_EXT, 'include/mbd/mbd.h', 'include/mbd/mbd.mod'],
+    'dirs': ['lib/cmake/mbd'],
+}
+
+moduleclass = 'phys'

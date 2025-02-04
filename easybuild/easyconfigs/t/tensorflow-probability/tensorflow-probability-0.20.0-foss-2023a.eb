@@ -28,6 +28,12 @@ dependencies = [
 
 use_pip = True
 
+# avoid pip check fail when tensorflow-probability is a dependency
+local_postinstallcmds = "cd %(installdir)s/lib/python%(pyshortver)s/site-packages && "
+local_postinstallcmds += "mv tfp_nightly-%(version)s.dist-info tensorflow_probability-%(version)s.dist-info && "
+local_postinstallcmds += "sed -i 's/Name: tfp-nightly/Name: %(name)s/' "
+local_postinstallcmds += "tensorflow_probability-%(version)s.dist-info/METADATA"
+
 exts_list = [
     ('cloudpickle', '3.0.0', {
         'checksums': ['996d9a482c6fb4f33c1a35335cf8afd065d2a56e973270364840712d9131a882'],
@@ -37,6 +43,7 @@ exts_list = [
         'source_tmpl': 'v%(version)s.tar.gz',
         'source_urls': ['https://github.com/tensorflow/probability/archive/'],
         'checksums': ['f0fb9a1f88a36a8f57d4d9cce4f9bf8dfacb6fc7778751729fe3c3067e5a1363'],
+        'postinstallcmds': [local_postinstallcmds],
     }),
 ]
 
