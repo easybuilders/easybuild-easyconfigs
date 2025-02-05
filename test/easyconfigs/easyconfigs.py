@@ -423,6 +423,17 @@ class EasyConfigTest(TestCase):
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
 
+        # multiple variants of GPAW-setups is OK as long as they are deps for GPAW
+        if dep == 'GPAW-setups' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out GPAW-setups variants that are only used as a dependency for GPAW
+                if all(ec.startswith('GPAW') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
+
         # Pairs of name, versionsuffix that should be removed from dep_vars if exactly one matching key is found.
         # The name is checked against 'dep' and can be a list to allow multiple
         # If the versionsuffix is a 2-element tuple, the second element should be set to True
