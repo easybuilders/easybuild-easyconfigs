@@ -991,37 +991,32 @@ class EasyConfigTest(TestCase):
             ]:
                 continue
 
-            if (('download_instructions' in ec and ec['download_instructions']) or ('crates' in ec and ec['crates']) or
-                    ('channels' in ec and ec['channels']) or ('source_urls' in ec and ec['source_urls'])):
-                continue
+            with ec.disable_templating():
+                if ec.get('download_instructions') or ec.get('crates') or ec.get('channels') or ec.get('source_urls'):
+                    continue
 
-            ok = False
-            for source in ec['sources']:
-                if isinstance(source, dict):
-                    if 'git_config' in source:
-                        ok = True
-                        break
-                    if 'source_urls' in source:
-                        ok = True
-                        break
-
-            for ext in ec['exts_list']:
-                if isinstance(ext, tuple) and len(ext) >= 3:
-                    if 'source_urls' in ext[2]:
-                        ok = True
-                        break
-
-            if 'components' in ec and ec['components']:
-                for component in ec['components']:
-                    if len(component) > 2 and not isinstance(component[2], str):
-                        if 'source_urls' in component[2]:
+                ok = False
+                for source in ec['sources']:
+                    if isinstance(source, dict):
+                        if 'git_config' in source or 'source_urls' in source:
                             ok = True
                             break
 
-            if ok:
-                continue
+                for ext in ec['exts_list']:
+                    if isinstance(ext, tuple) and len(ext) >= 3:
+                        if 'source_urls' in ext[2]:
+                            ok = True
+                            break
 
-            problem_ecs.append(easyconfig['spec'])
+                if 'components' in ec and ec['components']:
+                    for component in ec['components']:
+                        if len(component) > 2 and not isinstance(component[2], str):
+                            if 'source_urls' in component[2]:
+                                ok = True
+                                break
+
+                if not ok:
+                    problem_ecs.append(easyconfig['spec'])
 
         error_msg = "%d easyconfigs found without defined sources or download_instructions: %s"
         self.assertEqual(problem_ecs, [], error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
@@ -1030,7 +1025,7 @@ class EasyConfigTest(TestCase):
         """Make sure specified sanity check paths adher to the requirements."""
 
         for ec in self.parsed_easyconfigs:
-            ec_scp = ec['ec'].get_ref('sanity_check_paths')
+            ec_scp = ec['ec'].get('sanity_check_paths', resolve=False)
             if ec_scp != {}:
                 # if sanity_check_paths is specified (i.e., non-default), it must adher to the requirements
                 # both 'files' and 'dirs' keys, both with list values and with at least one a non-empty list
@@ -1046,9 +1041,8 @@ class EasyConfigTest(TestCase):
 
         r_libs_ecs = []
         for ec in self.parsed_easyconfigs:
-            for key in ('modextrapaths', 'modextravars'):
-                if 'R_LIBS' in ec['ec'].get_ref(key):
-                    r_libs_ecs.append(ec['spec'])
+            if any('R_LIBS' in ec['ec'].get(key, resolve=False) for key in ('modextrapaths', 'modextravars')):
+                r_libs_ecs.append(ec['spec'])
 
         error_msg = "%d easyconfigs found which set $R_LIBS, should be $R_LIBS_SITE: %s"
         self.assertEqual(r_libs_ecs, [], error_msg % (len(r_libs_ecs), ', '.join(r_libs_ecs)))
@@ -1734,6 +1728,7 @@ def template_easyconfig_test(self, spec):
     dummy_template_values = {
         'builddir': '/dummy/builddir',
         'installdir': '/dummy/installdir',
+        'startdir': '/dummy/startdir',
         'parallel': '2',
     }
     ec.template_values.update(dummy_template_values)
@@ -1831,7 +1826,7 @@ def template_easyconfig_test(self, spec):
 
     # meson buildtype should be specified with easyblock parameter "buildtype" not with custom configopts.
     if ec['easyblock'] == 'MesonNinja':
-        configopts = ec.get('configopts', '', resolve=True)
+        configopts = ec.get('configopts', '', resolve=False)
         if '--buildtype ' in configopts or '--buildtype=' in configopts:
             fail_msg = "Build type should be specified via MesonNinja parameter 'buildtype' instead of configopts."
             failing_checks.append(fail_msg)
