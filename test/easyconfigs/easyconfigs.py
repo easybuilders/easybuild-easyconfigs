@@ -558,6 +558,9 @@ class EasyConfigTest(TestCase):
             # Score-P 8.3+ requires Cube 4.8.2+ but we have 4.8.1 already
             'CubeLib': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
             'CubeWriter': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
+            # Current rapthor requires WSclean 3.5 or newer, which in turn requires EveryBeam 0.6.X or newer
+            # Requires us to also bump DP3 version (to 6.2) and its dependency on EveryBeam
+            'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2', r'WSClean-3\.[5-9]'])],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
