@@ -1,0 +1,84 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenSim'
+version = '4.5.1'
+
+homepage = 'https://simtk.org/projects/opensim'
+description ="OpenSim is a freely available, user extensible software system  that lets users develop models of musculoskeletal structures and create dynamic simulations of movement."
+
+toolchain = {'name': 'gccflexiblas', 'version': '2023a'}
+
+separate_build_dir = True
+
+parallel=8
+
+sources = [
+    {
+        'source_urls': ['https://github.com/opensim-org/opensim-core/archive/refs/tags/'],
+        'download_filename': '%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+]
+
+patches = ['OpenSim-4.5.1-gccflexiblas-2023a.patch']
+
+checksums = [
+    {'OpenSim-4.5.1.tar.gz': '00d69c48e971b6e0c4056a78450e613c'},
+    {'OpenSim-4.5.1-gccflexiblas-2023a.patch': '0f32cde34746aeb621983e591db13e06'},
+]
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('SWIG', '4.1.1'),
+    ('numpy', '2.1.1'),
+]
+
+dependencies = [
+    ('MATLAB', '2023b.2'),
+    ('Eigen', '3.4.0')
+]
+
+preconfigopts = "mkdir dep-build && "
+preconfigopts += "cd dep-build && "
+preconfigopts += "cmake ../../%(namelower)s-core-%(version)s/dependencies -DCMAKE_INSTALL_PREFIX=%(installdir)s/../opensim_dependencies_install -DOPENSIM_WITH_CASADI=ON -DOPENSIM_WITH_TROPTER=ON -DSUPERBUILD_eigen=OFF && "
+preconfigopts += "make -j 8 && "
+preconfigopts += "mkdir -p %(installdir)s/../opensim_dependencies_install/colpack/lib && "
+preconfigopts += "ln -sf %(installdir)s/../opensim_dependencies_install/colpack/lib64/libColPack.so.0 %(installdir)s/../opensim_dependencies_install/colpack/lib/libColPack.so.0 && "
+preconfigopts += "ln -sf %(installdir)s/../opensim_dependencies_install/colpack/lib64/libColPack.so %(installdir)s/../opensim_dependencies_install/colpack/lib/libColPack.so && "
+preconfigopts += "cd .. && "
+
+multi_deps = {'Python': ['3.10', '3.11']}
+
+configopts = "-DCMAKE_BUILD_TYPE=RelWithDebInfo "
+configopts += "-DBUILD_PYTHON_WRAPPING=ON "
+configopts += "-DBUILD_JAVA_WRAPPING=ON "
+configopts += "-DWITH_BTK=ON "
+configopts += "-DOPENSIM_WITH_CASADI=ON "
+configopts += "-DOPENSIM_WITH_TROPTER=ON "
+configopts += "-DOPENSIM_DEPENDENCIES_DIR=%(installdir)s/../opensim_dependencies_install/ "
+configopts += "-Ddocopt_DIR=%(installdir)s/../opensim_dependencies_install/docopt/lib64/cmake/docopt/ "
+configopts += "-DTROPTER_WITH_OPENMP=ON "
+configopts += "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,%(installdir)s/../opensim_dependencies_install/ipopt/lib/:%(installdir)s/../opensim_dependencies_install/colpack/lib64/:%(installdir)s/../opensim_dependencies_install/mumps/lib "
+configopts += "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,%(installdir)s/../opensim_dependencies_install/ipopt/lib/:%(installdir)s/../opensim_dependencies_install/colpack/lib64/:%(installdir)s/../opensim_dependencies_install/mumps/lib "
+
+postinstallcmds = [
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --add_origin --add_path %(installdir)s/lib --path %(installdir)s/lib/python%(pyshortver)s/site-packages/opensim ",
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --add_origin --add_path %(installdir)s/lib64 --path %(installdir)s/lib/python%(pyshortver)s/site-packages/opensim ",
+]
+
+#sanity_check_commands = [('python', '-c "import opensim"')] 
+
+usage = """For use with the Python bindings, the numpy package must be available, e.g. through first loading a scipy-stack module or a virtual environment where numpy is installed"""
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+    'MATLABPATH': 'share/doc/OpenSim/Code/Matlab/Utilities'
+}
+
+# set environment variables for MATLAB so that it uses same BLAS/LAPACK libraries as IPOPT
+modextravars = {
+    'BLAS_VERSION': '/cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v3/Core/flexiblascore/3.3.1/lib/libflexiblas.so',
+    'LAPACK_VERSION': '/cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v3/Core/flexiblascore/3.3.1/lib/liblapacke.so'
+}
+
+moduleclass = 'bio'
