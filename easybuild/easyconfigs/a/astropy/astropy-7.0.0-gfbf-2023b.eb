@@ -32,8 +32,6 @@ local_pytest_args = "not test_delay_doc_updates and not test_datetime_timedelta_
 local_pytest_args += " and not remote_data"
 # This test fails if the Easybuild tempdir is in a location for which the path is not equal to the realpath
 local_pytest_args += " and not test_write_jsviewer_local"
-local_runtest_cmd = f'cd $EB_PYTHONPACKAGE_TEST_INSTALLDIR && pytest -n %(parallel)s -k "{local_pytest_args}" '
-local_runtest_cmd += '--pyargs astropy'
 
 exts_list = [
     ('colorlog', '6.9.0', {
@@ -61,7 +59,8 @@ exts_list = [
         # Run tests, but skip test_delay_doc_updates, which has a known issues
         # https://github.com/astropy/astropy/issues/17558
         # (Probably) fixed in 7.0.X and 7.1 https://github.com/astropy/astropy/pull/17559
-        'runtest': local_runtest_cmd,
+        'runtest': 'cd $EB_PYTHONPACKAGE_TEST_INSTALLDIR'
+                   ' && pytest -n %%(parallel)s -k "%s" --pyargs astropy' % local_pytest_args
     }),
 ]
 
