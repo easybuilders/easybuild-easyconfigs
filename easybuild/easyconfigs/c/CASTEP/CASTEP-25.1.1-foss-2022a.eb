@@ -1,0 +1,53 @@
+easyblock = 'ConfigureMake'
+
+name = 'CASTEP'
+version = '25.1.1'
+
+homepage = 'http://www.castep.org'
+description = """
+CASTEP is an electronic structure materials modelling code based on density
+functional theory (DFT), with functionality including geometry optimization
+molecular dynamics, phonons, NMR chemical shifts and much more.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+# CASTEP is proprietary software, available under a free-of-charge license for academic use only.
+# Visit http://www.castep.org and navigate to "Getting Castep" to apply for a license.
+
+local_patch_ver = version.split('.')[-1]
+sources = ['CASTEP-%%(version_major_minor)s%s.tar.gz' % local_patch_ver]
+checksums = ['af6851a973ef83bbd725f6f33ff7616dd9d589bd75cf74cd106b13c3369167f6']
+
+# Python+numpy are needed for the elastic constants and castepconv utilities, but
+# should work with any system or eb Python including 2.7.
+# Python and perl really ought to be a dependency for building, running the test suite as well as
+# run-time dependencies for various auxiliary utilities.
+# In practice the system ones will work fine
+
+dependencies = [
+    ('Perl', '5.34.1', '', ('GCCcore', '11.3.0')),
+]
+
+skipsteps = ['configure']
+
+buildopts = 'COMMS_ARCH=mpi FFT=fftw3 MATH_LIBS="-lflexiblas"'
+buildopts += ' FFTLIBDIR=$FFT_LIB_DIR MATHLIBDIR=$BLAS_LIB_DIR %(namelower)s tools utilities'
+
+preinstallopts = "mkdir -p %(installdir)s/bin &&"
+
+installopts = 'COMMS_ARCH=mpi FFT=fftw3 MATH_LIBS="-lflexiblas" INSTALL_DIR="%(installdir)s/bin"'
+installopts += ' install-%(namelower)s install-tools install-utilities'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['castep.mpi', 'optados', 'orbitals2bands', 'dispersion.pl',
+                                     'elastics.py', 'ceteprouts.pm']],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'castep.mpi --help',
+    'optados --help',
+]
+
+moduleclass = 'chem'
