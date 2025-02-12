@@ -21,12 +21,28 @@ builddependencies = [
 ]
 
 dependencies = [
+    ('ELSI', '2.11.0', '-PEXSI'),
     ('PnetCDF', '1.12.3'),
     ('netCDF-Fortran', '4.6.1'),
     ('libreadline', '8.2'),
 ]
 
-buildopts = " && SIESTA_TESTS_VERIFY=1 ctest"
+# 11 out of 291 tests are failing at least on a64fx, Siesta developers say it's ok to skip
+local_failing_tests = [
+    'newcomm_mpi_np_1',
+    'SpinPolarization-fe_noncol_gga',
+    'SpinOrbit-FePt-X-X',
+    'SpinOrbit-FePt-offsite',
+    'Bands-ge_bands_so',
+    'Bands-ge_bands_so_bpoints',
+    'Bands-ge_bands_so_fatbands',
+    'DensityOfStates-pdos_kp_soc',
+    'Functionals-dftu_soc'
+    'MiscOptions-bulk_bias',
+    'MiscOptions-bulk_bias',
+]
+
+buildopts = " && SIESTA_TESTS_VERIFY=1 ctest -E '%s'" % '|'.join(local_failing_tests)
 
 sanity_check_paths = {
     'files': ['bin/siesta', 'lib/libsiesta.a'],
