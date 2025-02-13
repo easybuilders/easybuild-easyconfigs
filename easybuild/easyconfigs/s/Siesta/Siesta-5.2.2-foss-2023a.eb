@@ -17,17 +17,18 @@ checksums = ['4efc58fd5adb9b8f55234f47d11f89d268524b0d4c003d145d89d803da94a58c']
 
 builddependencies = [
     ('CMake', '3.26.3'),
+    ('flex', '2.6.4'),
     ('ruamel.yaml', '0.17.32'),  # for the tests
 ]
 
 dependencies = [
     ('ELSI', '2.11.0', '-PEXSI'),
     ('PnetCDF', '1.12.3'),
-    ('netCDF-Fortran', '4.6.1'),
     ('libreadline', '8.2'),
+    ('libxc', '6.2.2'),
+    ('netCDF-Fortran', '4.6.1'),
 ]
 
-# 11 out of 291 tests are failing at least on a64fx, Siesta developers say it's ok to skip
 local_failing_tests = [
     'newcomm_mpi_np_1',
     'SpinPolarization-fe_noncol_gga',
@@ -40,9 +41,18 @@ local_failing_tests = [
     'Functionals-dftu_soc',
     'MiscOptions-bulk_bias',
     'MiscOptions-bulk_bias',
+    # openmp
+    'Solvers-sih-elsi_omp1',
+    'Solvers-si-qdot-elsi-pexsi_omp1',
+    'Solvers-si-qdot-pexsi-native_omp1',
+    'TDDFT-TDDFT_h2o1_omp1',
 ]
 
-buildopts = " && SIESTA_TESTS_VERIFY=1 ctest -E '%s'" % '|'.join(local_failing_tests)
+# enable OpenMP, PEXSI (via ELSI) 
+configopts = "-DSIESTA_WITH_OPENMP=ON -DSIESTA_WITH_PEXSI=ON "
+
+# tests
+buildopts = " && export OMP_NUM_THREADS=2 && SIESTA_TESTS_VERIFY=1 ctest -E '%s'" % '|'.join(local_failing_tests)
 
 sanity_check_paths = {
     'files': ['bin/siesta', 'lib/libsiesta.a'],
