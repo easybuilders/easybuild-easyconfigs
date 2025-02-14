@@ -1297,10 +1297,12 @@ class EasyConfigTest(TestCase):
         # some generic easyblocks already have a decent customised sanity_check_paths,
         # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle & JuliaPackage, PerlBundle,
         #           PythonBundle & PythonPackage;
-        # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
+        # BuildEnv, ModuleRC SystemCompiler and Toolchain easyblocks do not install anything so there is nothing
+        # to check.
         whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage',
                      'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'JuliaPackage',
-                     'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
+                     'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'SystemCompiler', 'SystemCompilerGCC',
+                     'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
