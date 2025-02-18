@@ -423,6 +423,17 @@ class EasyConfigTest(TestCase):
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
 
+        # multiple variants of GPAW-setups is OK as long as they are deps for GPAW
+        if dep == 'GPAW-setups' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out GPAW-setups variants that are only used as a dependency for GPAW
+                if all(ec.startswith('GPAW') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
+
         # Pairs of name, versionsuffix that should be removed from dep_vars if exactly one matching key is found.
         # The name is checked against 'dep' and can be a list to allow multiple
         # If the versionsuffix is a 2-element tuple, the second element should be set to True
@@ -547,6 +558,9 @@ class EasyConfigTest(TestCase):
             # Score-P 8.3+ requires Cube 4.8.2+ but we have 4.8.1 already
             'CubeLib': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
             'CubeWriter': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
+            # Current rapthor requires WSclean 3.5 or newer, which in turn requires EveryBeam 0.6.X or newer
+            # Requires us to also bump DP3 version (to 6.2) and its dependency on EveryBeam
+            'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2', r'WSClean-3\.[5-9]'])],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
@@ -1210,6 +1224,12 @@ class EasyConfigTest(TestCase):
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
                     failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
+
+            # When using Rust it should use CargoPython*
+            if easyblock in ('PythonBundle', 'PythonPackage'):
+                if any(dep['name'] == 'Rust' or '-Rust-' in dep['versionsuffix'] for dep in ec.dependencies()):
+                    failing_checks.append('Use Cargo%s instead of %s when Rust is used in %s'
+                                          % (easyblock, easyblock, ec_fn))
 
         if failing_checks:
             self.fail('\n'.join(failing_checks))
