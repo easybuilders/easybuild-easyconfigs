@@ -1,0 +1,43 @@
+# Digital Research Alliance of Canada - Calcul Québec - Université Laval
+
+easyblock = 'Apptainer'
+
+name = 'DeepVariant'
+version = '1.8.0'
+versionsuffix = '-gpu'
+modaltsoftname = 'deepvariant-gpu'
+
+homepage = 'https://github.com/google/deepvariant'
+description = """DeepVariant is a deep learning-based variant caller that takes aligned reads (in BAM or CRAM format), produces pileup image tensors from them, classifies each tensor using a convolutional neural network, and finally reports the results in a standard VCF or gVCF file.
+
+DeepVariant supports germline variant-calling in diploid organisms."""
+
+toolchain = SYSTEM
+dependencies = [('Apptainer', '1')]
+
+installopts = '-s google/deepvariant:%(version)s-gpu '
+installopts += '-i image '
+installopts += '-n %(namelower)s-gpu '
+installopts += '-v %(version)s '
+
+container_path = '/cvmfs/containers.computecanada.ca/content/containers/%(namelower)s-gpu-%(version)s'
+aliases = ["run_deepvariant"]
+apptainer_params = '-e'
+
+sanity_check_paths = {
+    'files': ["opt/deepvariant/bin/run_deepvariant"],
+    'dirs': ["opt/deepvariant/bin"],
+}
+
+modloadmsg = "To run deepvaraint execute: \n" \
+             "run_deepvariant --model_type=WGS \ \n" \
+             "--ref=$INPUT_DIR/my_ref.fasta \ \n" \
+             "--reads=$INPUT_DIR/my_sample.bam \ \n" \
+             "--regions chrxx:1,000-10,010,000 \ \n" \
+             "--output_vcf=${OUTPUT_DIR}/output.vcf.gz \ \n" \
+             "--output_gvcf=${OUTPUT_DIR}/output.g.vcf.gz \ \n" \
+             "--num_shards=$(nproc) \ \n" \
+             "--intermediate_results_dir ${OUTPUT_DIR}/intermediate_results_dir \ \n" \
+             "--vcf_stats_report=true"
+
+moduleclass = 'bio'
