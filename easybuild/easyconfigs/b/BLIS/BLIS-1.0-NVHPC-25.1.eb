@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'BLIS'
+version = '1.0'
+
+homepage = 'https://github.com/flame/blis/'
+description = """BLIS is a portable software framework for instantiating high-performance
+BLAS-like dense linear algebra libraries."""
+
+toolchain = {'name': 'NVHPC', 'version': '25.1'}
+toolchainopts = {'optarch': False}
+
+source_urls = ['https://github.com/flame/blis/archive/']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-0.9.0_family-x86_64_v3.patch',
+]
+checksums = [
+    '9c12972aa1e50f64ca61684eba6828f2f3dd509384b1e41a1e8a9aedea4b16a6',
+    # BLIS-0.9.0_family-x86_64_v3.patch
+    '10b59c309dba9b240c9c4c05a2f079ff3a305dc802e2d2fff61c54a4d31b197b',
+]
+
+builddependencies = [
+    ('Python', '3.11.3'),
+    ('Perl', '5.38.2'),
+]
+
+preconfigopts = "sed -i 's/march=knl/march=x86-64-v3/g' config/knl/make_defs.mk && "
+preconfigopts += "sed -i -e 's/clang/nvc/g' -e 's/-funsafe-math-optimizations -ffp-contract=fast//g' "
+preconfigopts +=       "config/{excavator,haswell,knl,skx,zen,zen2,zen3,x86_64_v3}/make_defs.mk && "
+preconfigopts += "declare -A ARCH_MAP=( [avx2]='x86_64_v3' [avx512]='skx' ) &&"
+local_configopts = '--complex-return=intel --enable-cblas --enable-threading=openmp --enable-shared CC="$CC" ${ARCH_MAP[$RSNT_ARCH]}'
+configopts = ['-i64 -b64 ' + local_configopts, local_configopts]
+buildopts = ['LIBBLIS=libblis64', '']
+installopts = buildopts
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/blis/cblas.h', 'include/blis/blis.h',
+              'lib/libblis64.a', 'lib/libblis64.%s' % SHLIB_EXT,
+              'lib/libblis.a', 'lib/libblis.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+modextrapaths = {'CPATH': 'include/blis'}
+
+moduleclass = 'numlib'
