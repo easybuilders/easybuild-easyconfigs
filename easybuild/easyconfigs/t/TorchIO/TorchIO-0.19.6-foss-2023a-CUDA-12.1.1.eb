@@ -1,0 +1,60 @@
+easyblock = 'PythonBundle'
+
+name = 'TorchIO'
+version = '0.19.6'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://torchio.readthedocs.io/'
+description = """
+TorchIO is an open-source Python library for efficient loading, preprocessing,
+augmentation and patch-based sampling of 3D medical images in deep learning,
+following the design of PyTorch.
+
+It includes multiple intensity and spatial transforms for data augmentation and
+preprocessing. These transforms include typical computer vision operations such
+as random affine transformations and also domain-specific ones such as
+simulation of intensity artifacts due to MRI magnetic field inhomogeneity
+(bias) or k-space motion artifacts."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('hatchling', '1.18.0'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('tqdm', '4.66.1'),
+    ('Deprecated', '1.2.14'),
+    ('SimpleITK', '2.3.1'),
+    ('NiBabel', '5.2.0'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('humanize', '4.8.0', {
+        'checksums': ['9783373bf1eec713a770ecaa7c2d7a7902c98398009dfa3d8a2df91eec9311e8'],
+    }),
+    ('typer', '0.9.0', {
+        'checksums': ['50922fd79aea2f4751a8e0408ff10d2662bd0c8bbfa84755a699f3bada2978b2'],
+    }),
+    ('torchio', version, {
+        'checksums': ['c3afe16c3d822b6cb4aa103ffd6ec28816c95faa03cbeb22f33ff4cf81ec05df'],
+    }),
+]
+
+_bins = ['tiohd', 'tiotr', 'torchio-transform']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _bins],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+}
+
+sanity_check_commands = ['%s --help' % x for x in _bins]
+
+sanity_pip_check = True
+
+moduleclass = 'vis'

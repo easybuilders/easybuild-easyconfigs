@@ -1,0 +1,54 @@
+easyblock = 'PythonBundle'
+
+name = 'junos-eznc'
+version = '2.7.1'
+
+homepage = 'https://github.com/Juniper/py-junos-eznc'
+description = "Python library for Junos automation."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+builddependencies = [('binutils', '2.40')]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('lxml', '4.9.2'),
+    ('PyYAML', '6.0'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('bcrypt', '4.0.1'),
+]
+
+exts_list = [
+    ('yamlordereddictloader', '0.4.2', {
+        'checksums': ['36af2f6210fcff5da4fc4c12e1d815f973dceb41044e795e1f06115d634bca13'],
+    }),
+    ('transitions', '0.9.2', {
+        'checksums': ['2f8490dbdbd419366cef1516032ab06d07ccb5839ef54905e842a472692d4204'],
+    }),
+    ('scp', '0.15.0', {
+        'checksums': ['f1b22e9932123ccf17eebf19e0953c6e9148f589f93d91b872941a696305c83f'],
+    }),
+    ('pyserial', '3.5', {
+        'modulename': 'serial',
+        'checksums': ['3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb'],
+    }),
+    ('ncclient', '0.6.15', {
+        'checksums': ['6757cb41bc9160dfe47f22f5de8cf2f1adf22f27463fb50453cc415ab96773d8'],
+    }),
+    ('paramiko', '3.4.0', {
+        # Juniper fork of paramiko - compatible with junos-eznc
+        'source_urls': ['https://github.com/Juniper/paramiko/archive/'],
+        'sources': [{'download_filename': 'v%(version)s-JNPR.tar.gz', 'filename': '%(name)s-%(version)s-JNPR.tar.gz'}],
+        'checksums': ['6b3b62e18a2b693169eaa50a7cdd2ab5637fc423205ce85e109cb37722f9eeda'],
+    }),
+    (name, version, {
+        'modulename': 'jnpr.junos',
+        # delete 'os.system("pip install git+https://github.com/Juniper/paramiko.git@v3.4.0-JNPR")' from setup.py
+        'preinstallopts': "sed -i '/pip install/d' setup.py && ",
+        'checksums': ['371f0298bf03e0cb4c017c43f6f4122263584eda0d690d0112e93f13daae41ac'],
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+moduleclass = 'tools'

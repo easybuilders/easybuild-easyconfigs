@@ -1,0 +1,66 @@
+easyblock = 'EB_OpenFOAM'
+
+name = 'OpenFOAM-Extend'
+local_commit = 'aa97a0'
+version = '4.1-20210705'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.extend-project.de/'
+description = """OpenFOAM is a free, open source CFD software package.
+OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+involving chemical reactions, turbulence and heat transfer,
+to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+sources = [{
+    'filename': '%%(name)s-%%(version)s-%s.tar.gz' % local_commit,
+    'git_config': {
+        'url': 'https://git.code.sf.net/p/foam-extend/',
+        'repo_name': 'foam-extend-4.1',
+        'commit': local_commit,
+    },
+}]
+patches = [
+    'OpenFOAM-Extend-3.2-ParMGridGen.patch',
+    'OpenFOAM-Extend-3.1_build-qa.patch',
+    'OpenFOAM-Extend-4.1_comp-mpi.patch',
+    'OpenFOAM-Extend-3.1_skip-ThirdParty-OpenMPI.patch',
+    'OpenFOAM-Extend-4.1-20210705_fix-private-PackedList.patch',
+]
+checksums = [
+    # no checksum for OpenFOAM-Extend-4.1-20200408-f2c557.tar.gz since it's created from git repo,
+    # and hence resuluting tarball won't be exactly the same on all systems
+    None,
+    'f7676a7a12ced7c74caea64c62826a28449fdb2beb8b5be2c4ae7528ffece16e',  # OpenFOAM-Extend-3.2-ParMGridGen.patch
+    '14dcc12ea7191ba42a9c297fcb2f4fbc2c55bf57226029489aa116e2d060b4bf',  # OpenFOAM-Extend-3.1_build-qa.patch
+    'e71a77b6f39653f9a0d4b0ce6691433c742df74f23402782c69a8b736c98eb7a',  # OpenFOAM-Extend-4.1_comp-mpi.patch
+    # OpenFOAM-Extend-3.1_skip-ThirdParty-OpenMPI.patch
+    'c88b23cd2f5dcf3bd86e02d7ea5dc6719c2049cf4b20e39f1b3262381dee3c50',
+    # OpenFOAM-Extend-4.1-20210705_fix-private-PackedList.patch
+    '47868f35d9a899047be8da451df46e165fc813bc809b96b1c35a0cccddb1a9e6',
+]
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('M4', '1.4.19'),
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('hwloc', '2.9.1'),
+    ('ParMETIS', '4.0.3'),
+    ('METIS', '5.1.0'),  # order matters, METIS need to be listed after ParMETIS to get $CPATH right
+    ('SCOTCH', '7.0.3'),
+    ('Mesquite', '2.3.0'),
+    ('ParMGridGen', '1.0'),
+    ('Python', '2.7.18'),
+    # Libccmio v2.6.1, zoltan v3.5
+]
+
+# too many builds in parallel actually slows down the build
+maxparallel = 4
+
+moduleclass = 'cae'

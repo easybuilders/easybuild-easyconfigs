@@ -1,0 +1,64 @@
+easyblock = 'PythonBundle'
+
+name = 'CheckM2'
+version = '1.0.2'
+
+homepage = 'https://github.com/chklovski/CheckM2/'
+description = "Assessing the quality of metagenome-derived genome bins using machine learning"
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+builddependencies = [('CMake', '3.24.3')]
+dependencies = [
+    ('Python', '3.10.8'),
+    ('SciPy-bundle', '2023.02'),
+    ('DIAMOND', '2.1.8'),
+    ('TensorFlow', '2.13.0'),
+    ('prodigal', '2.6.3'),
+    ('h5py', '3.8.0'),
+    ('tqdm', '4.64.1'),
+]
+
+exts_list = [
+    ('scikit-learn', '0.23.2', {
+        'modulename': 'sklearn',
+        'checksums': ['20766f515e6cd6f954554387dfae705d93c7b544ec0e6c6a5d8e006f6f7ef480'],
+    }),
+    ('lightgbm', '3.2.1', {
+        'checksums': ['bd98e3b501b4c24dc127f4ad93e467f42923fe3eefa99e143b5b93158f024395'],
+    }),
+    (name, version, {
+        'patches': ['%(name)s-%(version)s_fileManager.py-database-fix.patch'],
+        'source_urls': ['https://github.com/chklovski/CheckM2/archive/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': [
+            {'1.0.2.tar.gz': '9d3129e4d0b53acc38519a259cc1e20a215dff0cbce51cef874545ca2fff005a'},
+            {'CheckM2-1.0.2_fileManager.py-database-fix.patch':
+             '953f0eeef49ea537c0cb97c173a2488c29f09b58cd10800c60078b436a7ea2c7'},
+        ],
+    }),
+]
+
+postinstallcmds = [
+    # np.float is depreciated in newer numpy
+    'sed -i "s/np.float/float/g" %(installdir)s/lib/python%(pyshortver)s/site-packages/checkm2/predictQuality.py',
+    # update DB_LOCATION_DEFINITION in defaultValues.py to env CHECKM2DB
+    "cd %(installdir)s/lib/python%(pyshortver)s/site-packages/checkm2 && "
+    r"sed -i 's/\(DB_LOCATION_DEFINITION\) = .*/\1 = os.environ.get(\"CHECKM2DB\", \"Not Set\")/' defaultValues.py",
+]
+
+modloadmsg = """You need download a diamond database now and setup a path to this db:
+First you need to setup $CHECKM2DB as:
+$ export CHECKM2DB="path/to/database/CheckM2_database/uniref100.KO.1.dmnd"
+Next, download the database (/CheckM2_database/uniref100.KO.1.dmnd will be created):
+$ checkm2 database --download --path path/to/database
+You can check path to the database by:
+$ checkm2 database --current
+You can either test if everything is setup properly by:
+$ checkm2 testrun
+"""
+
+use_pip = True
+sanity_pip_check = True
+
+moduleclass = 'bio'

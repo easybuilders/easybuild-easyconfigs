@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'FFmpeg'
+version = '7.0.2'
+
+homepage = 'https://www.ffmpeg.org/'
+description = "A complete, cross-platform solution to record, convert and stream audio and video."
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://%(namelower)s.org/releases/']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['1ed250407ea8f955cca2f1139da3229fbc13032a0802e4b744be195865ff1541']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('pkgconf', '2.2.0'),
+    ('ffnvcodec', '12.2.72.0', '', SYSTEM),  # optional nvenc/dec support
+]
+dependencies = [
+    ('NASM', '2.16.03'),
+    ('zlib', '1.3.1'),
+    ('bzip2', '1.0.8'),
+    ('x264', '20240513'),
+    ('LAME', '3.100'),
+    ('x265', '3.6'),
+    ('X11', '20240607'),
+    ('freetype', '2.13.2'),
+    ('fontconfig', '2.15.0'),
+    ('FriBidi', '1.0.15'),
+    ('SDL2', '2.30.6'),
+]
+
+configopts = '--enable-pic --enable-shared --enable-gpl --enable-version3 --enable-nonfree --cc="$CC" --cxx="$CXX" '
+configopts += '--enable-libx264 --enable-libx265 --enable-libmp3lame --enable-libfreetype --enable-fontconfig '
+configopts += '--enable-libfribidi --enable-sdl2 --disable-htmlpages'
+
+sanity_check_paths = {
+    'files': ['bin/ff%s' % x for x in ['mpeg', 'probe', 'play']] +
+             ['lib/lib%s.%s' % (x, y) for x in ['avdevice', 'avfilter', 'avformat', 'avcodec', 'postproc',
+                                                'swresample', 'swscale', 'avutil'] for y in [SHLIB_EXT, 'a']],
+    'dirs': ['include']
+}
+
+moduleclass = 'vis'

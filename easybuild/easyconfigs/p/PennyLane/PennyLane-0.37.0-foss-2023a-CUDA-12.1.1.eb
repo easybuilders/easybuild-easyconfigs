@@ -1,0 +1,68 @@
+easyblock = 'PythonBundle'
+
+name = 'PennyLane'
+version = '0.37.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = "https://pennylane.ai/"
+description = """PennyLane is a cross-platform Python library for
+quantum computing, quantum machine learning, and quantum
+chemistry. Train a quantum computer the same way as a neural network."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+local_pennylane_test_backends = [
+    # tests to enable when testing pennylane
+    ('jax', '0.4.25', versionsuffix),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('TensorFlow', '2.15.1', versionsuffix),
+]
+
+local_pennylane_lightning_extras = ['qubit', 'gpu', 'kokkos']
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('networkx', '3.1'),
+    ('rustworkx', '0.15.1'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+]
+
+if 'gpu' in local_pennylane_lightning_extras:
+    dependencies += [
+        ('cuQuantum', '24.08.0.5', versionsuffix, SYSTEM)
+    ]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Ninja', '1.11.1'),
+    ('pybind11', '2.11.1'),
+] + local_pennylane_test_backends
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('autograd', '1.6.2', {
+        'checksums': ['8731e08a0c4e389d8695a40072ada4512641c113b6cace8f4cfbe8eb7e9aedeb'],
+    }),
+    ('autoray', '0.6.12', {
+        'checksums': ['721328aa06fc3577155d988052614a7b4bd6e4d01b340695344031ee4abd2a1e'],
+    }),
+    ('cachetools', '5.2.1', {
+        'checksums': ['5991bc0e08a1319bb618d3195ca5b6bc76646a49c21d55962977197b301cc1fe'],
+    }),
+    ('pennylane', version, {
+        'source_urls': ['https://github.com/PennyLaneAI/pennylane/archive/refs/tags'],
+        'sources': [{'filename': '%(name)s-v%(version)s.tar.gz', 'download_filename': 'v%(version)s.tar.gz'}],
+        'checksums': ['3e5eaab9da28ac43099e5850fde0c5763bc4e37271804463fc35dab8b08e2f15'],
+    }),
+    ('pennylane_lightning', version, {
+        'source_urls': ['https://github.com/PennyLaneAI/pennylane-lightning/archive/refs/tags'],
+        'sources': [{'filename': '%(name)s-v%(version)s.tar.gz', 'download_filename': 'v%(version)s.tar.gz'}],
+        'checksums': ['3f70e3e3b7e4d0f6a679919c0c83e451e129666b021bb529dd02eb915d0666a0'],
+        'use_pip_extras': 'qubit,gpu,kokkos',
+    }),
+]
+
+moduleclass = 'ai'

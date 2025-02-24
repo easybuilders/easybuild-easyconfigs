@@ -1,0 +1,150 @@
+name = 'QuantumESPRESSO'
+version = '7.3.1'
+
+homepage = 'https://www.quantum-espresso.org'
+description = """Quantum ESPRESSO  is an integrated suite of computer codes
+for electronic-structure calculations and materials modeling at the nanoscale.
+It is based on density-functional theory, plane waves, and pseudopotentials
+(both norm-conserving and ultrasoft).
+"""
+
+toolchain = {'name': 'intel', 'version': '2023a'}
+toolchainopts = {
+    'usempi': True,
+    'openmp': True,
+}
+
+# Check hashes inside external/submodule_commit_hash_records when making file for new version
+local_lapack_hash = "12d825396fcef1e0a1b27be9f119f9e554621e55"
+local_mbd_hash = "82005cbb65bdf5d32ca021848eec8f19da956a77"
+local_devxlib_hash = "a6b89ef77b1ceda48e967921f1f5488d2df9226d"
+local_fox_hash = "3453648e6837658b747b895bb7bef4b1ed2eac40"
+# Different from the one at tag qe-7.3.1 because of:
+# https://gitlab.com/QEF/q-e/-/issues/666
+local_d3q_hash = "de4718351e7bbb9d1d12aad2b7ca232d06775b83"
+local_qe_gipaw_hash = "75b01b694c9ba4df55d294cacc27cf28591b2161"
+local_qmcpack_hash = "f72ab25fa4ea755c1b4b230ae8074b47d5509c70"
+local_w90_hash = "1d6b187374a2d50b509e5e79e2cab01a79ff7ce1"
+
+sources = [
+    {
+        'filename': 'q-e-qe-%(version)s.tar.gz',
+        'extract_cmd': 'mkdir -p %(builddir)s/qe-%(version)s && tar xzvf %s --strip-components=1 -C $_',
+        'source_urls': ['https://gitlab.com/QEF/q-e/-/archive/qe-%(version)s']
+    },
+    {
+        "filename": "lapack-%s.tar.gz" % local_lapack_hash,
+        "git_config": {
+            "url": "https://github.com/Reference-LAPACK",
+            "repo_name": "lapack",
+            "commit": local_lapack_hash,
+        },
+    },
+    {
+        "filename": "mbd-%s.tar.gz" % local_mbd_hash,
+        "git_config": {
+            "url": "https://github.com/libmbd",
+            "repo_name": "libmbd",
+            "commit": local_mbd_hash,
+            'clone_into': 'mbd',
+        },
+    },
+    {
+        "filename": "devxlib-%s.tar.gz" % local_devxlib_hash,
+        "git_config": {
+            "url": "https://gitlab.com/max-centre/components",
+            "repo_name": "devicexlib",
+            "commit": local_devxlib_hash,
+            'clone_into': 'devxlib',
+        },
+    },
+    {
+        "filename": "d3q-%s.tar.gz" % local_d3q_hash,
+        "git_config": {
+            "url": "https://github.com/anharmonic",
+            "repo_name": "d3q",
+            "commit": local_d3q_hash,
+        },
+    },
+    {
+        "filename": "fox-%s.tar.gz" % local_fox_hash,
+        "git_config": {
+            "url": "https://github.com/pietrodelugas",
+            "repo_name": "fox",
+            "commit": local_fox_hash,
+        },
+    },
+    {
+        "filename": "qe-gipaw-%s.tar.gz" % local_qe_gipaw_hash,
+        "git_config": {
+            "url": "https://github.com/dceresoli",
+            "repo_name": "qe-gipaw",
+            "commit": local_qe_gipaw_hash,
+        },
+    },
+    {
+        "filename": "pw2qmcpack-%s.tar.gz" % local_qmcpack_hash,
+        "git_config": {
+            "url": "https://github.com/QMCPACK",
+            "repo_name": "pw2qmcpack",
+            "commit": local_qmcpack_hash,
+        },
+    },
+    {
+        "filename": "wannier90-%s.tar.gz" % local_w90_hash,
+        "git_config": {
+            "url": "https://github.com/wannier-developers",
+            "repo_name": "wannier90",
+            "commit": local_w90_hash,
+        },
+    },
+]
+# Holding off checksum checks untill 5.0.x
+# https://github.com/easybuilders/easybuild-framework/pull/4248
+# checksums = [
+#     {'q-e-qe-7.3.1.tar.gz': '2c58b8fadfe4177de5a8b69eba447db5e623420b070dea6fd26c1533b081d844'},
+#     {'lapack-%s.tar.gz' % local_lapack_hash: 'c05532ae0e5fe35f473206dda12970da5f2e2214620487d71837ddcf0ea6b21d'},
+#     {'mbd-%s.tar.gz' % local_mbd_hash: 'a180682c00bb890c9b1e26a98addbd68e32f970c06439acf7582415f4c589800'},
+#     {'devxlib-%s.tar.gz' % local_devxlib_hash: '76da8fe5a2050f58efdc92fa8831efec25c19190df7f4e5e39c173a5fbae83b4'},
+#     {'d3q-%s.tar.gz' % local_d3q_hash: '43e50753a56af05d181b859d3e29d842fb3fc4352f00cb7fe229a435a1f20c31'},
+#     {'fox-%s.tar.gz' % local_fox_hash: '99b6a899a3f947d7763aa318e86f9f08db684568bfdcd293f3318bee9d7f1948'},
+#     {'qe-gipaw-%s.tar.gz' % local_qe_gipaw_hash: '9ac8314363d29cc2f1ce85abd8f26c1a3ae311d54f6e6034d656442dd101c928'},
+#     {'pw2qmcpack-%s.tar.gz' % local_qmcpack_hash: 'a8136da8429fc49ab560ef7356cd6f0a2714dfbb137baff7961f46dfe32061eb'},
+#     {'wannier90-%s.tar.gz' % local_w90_hash: 'f989497790ec9777bdc159945bbf42156edb7268011f972874dec67dd4f58658'},
+# ]
+checksums = [
+    '2c58b8fadfe4177de5a8b69eba447db5e623420b070dea6fd26c1533b081d844',
+    None, None, None, None, None, None, None, None
+]
+
+builddependencies = [
+    ('M4', '1.4.19'),
+    ('CMake', '3.26.3'),
+    ("pkgconf", "1.9.5"),
+]
+dependencies = [
+    ('HDF5', '1.14.0'),
+    ('ELPA', '2023.05.001'),
+    ('libxc', '6.2.2'),
+]
+
+# Disabled because of
+# https://gitlab.com/QEF/q-e/-/issues/667
+# https://github.com/anharmonic/d3q/issues/15
+build_shared_libs = False
+with_scalapack = True
+with_gipaw = False  # https://github.com/dceresoli/qe-gipaw/issues/19
+with_d3q = True
+with_qmcpack = True
+
+moduleclass = 'chem'
+
+test_suite_threshold = 0.4  # Low threshold because of https://gitlab.com/QEF/q-e/-/issues/665
+test_suite_max_failed = 5  # Allow for some flaky tests (failed due to strict thresholds)
+test_suite_allow_failures = [
+    'test_qe_xclib_',  # 7.3.1:  https://gitlab.com/QEF/q-e/-/issues/640
+    '--hp_',  # 7.3.1:  Broken testsuite (https://gitlab.com/QEF/q-e/-/issues/665)
+    '--ph_',  # 7.3.1:  Broken testsuite (https://gitlab.com/QEF/q-e/-/issues/665)
+    '--epw_',  # 7.3.1:  Broken testsuite (https://gitlab.com/QEF/q-e/-/issues/665)
+    '--tddfpt_',  # 7.3.1:  Broken testsuite (https://gitlab.com/QEF/q-e/-/issues/665)
+]

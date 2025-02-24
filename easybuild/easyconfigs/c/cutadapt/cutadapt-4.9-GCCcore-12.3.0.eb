@@ -1,0 +1,60 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics (SIB)
+# Biozentrum - University of Basel
+# Modified by: Adam Huffman, Jonas Demeulemeester
+# The Francis Crick Institute
+# Modified by: Albert Bogdanowicz
+# Institute of Biochemistry and Biophysics PAS
+# Modified by: Jasper Grimm
+# University of York
+
+easyblock = 'PythonBundle'
+
+name = 'cutadapt'
+version = '4.9'
+
+homepage = 'https://opensource.scilifelab.se/projects/cutadapt/'
+description = """Cutadapt finds and removes adapter sequences, primers, poly-A tails and
+ other types of unwanted sequence from your high-throughput sequencing reads."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Cython', '3.0.8'),  # required for dnaio
+]
+
+dependencies = [
+    ('pigz', '2.8'),
+    ('Python', '3.11.3'),
+    ('python-isal', '1.1.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    # note: newer xopen versions require newer python-isal
+    ('xopen', '1.7.0', {
+        'checksums': ['901f9c8298e95ed74767a4bd76d9f4cf71d8de27b8cf296ac3e7bc1c11520d9f'],
+    }),
+    ('dnaio', '1.2.1', {
+        'checksums': ['4786dc63614b9f3011463d9ea9d981723dd38d1091a415a557f71d8c74400f38'],
+    }),
+    (name, version, {
+        'checksums': ['da3b45775b07334d2e2580a7b154d19ea7e872f0da813bb1ac2a4da712bfc223'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cutadapt'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "cutadapt --help",
+    "cutadapt --version",
+]
+
+moduleclass = 'bio'

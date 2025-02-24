@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'PLUMED'
+version = '2.9.2'
+
+homepage = 'https://www.plumed.org'
+description = """PLUMED is an open source library for free energy calculations in molecular systems which
+ works together with some of the most popular molecular dynamics engines. Free energy calculations can be
+ performed as a function of many order parameters with a particular  focus on biological problems, using
+ state of the art methods such as metadynamics, umbrella sampling and Jarzynski-equation based steered MD.
+ The software, written in C++, can be easily interfaced with both fortran and C/C++ codes.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'usempi': 'True'}
+
+source_urls = ['https://github.com/plumed/plumed2/releases/download/v%(version)s/']
+sources = [SOURCE_TGZ]
+checksums = ['6fc23fe31074ad6b7a0eb9e2441fce5b3d92514d0d87206594c59c75e4c83d6e']
+
+builddependencies = [
+    ('xxd', '9.1.0307'),
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('GSL', '2.7'),
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('Boost', '1.83.0'),
+]
+
+preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
+configopts = '--exec-prefix=%(installdir)s --enable-gsl --enable-modules=all --enable-python '
+configopts += '--enable-boost_graph --enable-boost_serialization '
+prebuildopts = 'source sourceme.sh && '
+
+# install path for PLUMED libraries must be included in $LD_LIBRARY_PATH when Python bindings get built/installed
+preinstallopts = 'LD_LIBRARY_PATH="%(installdir)s/lib:$LD_LIBRARY_PATH" '
+
+sanity_check_paths = {
+    'files': ['bin/plumed', 'lib/libplumedKernel.%s' % SHLIB_EXT, 'lib/libplumed.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = ["python -c 'import plumed'"]
+
+modextrapaths = {
+    'PLUMED_KERNEL': 'lib/libplumedKernel.%s' % SHLIB_EXT,
+    'PLUMED_ROOT': 'lib/plumed',
+    'PYTHONPATH': 'lib/plumed/python',
+}
+
+moduleclass = 'chem'

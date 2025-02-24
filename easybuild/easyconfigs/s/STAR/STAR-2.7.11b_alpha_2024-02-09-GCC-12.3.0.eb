@@ -1,0 +1,57 @@
+# Contribution from the NIHR Biomedical Research Centre
+# Guy's and St Thomas' NHS Foundation Trust and King's College London
+# Based on STAR-2.7.7a-GCC-10.2.0.eb 
+# uploaded by J. Sassmannshausen
+# modified by Thomas Eylenbosch
+
+easyblock = 'MakeCp'
+
+name = 'STAR'
+version = '2.7.11b_alpha_2024-02-09'
+
+homepage = 'https://github.com/dobinlab/STAR_pre_releases'
+description = "STAR aligns RNA-seq reads to a reference genome using uncompressed suffix arrays."
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/dobinlab/STAR_pre_releases/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['STAR-2.7.11a_use-external-htslib.patch']
+checksums = [
+    {'2.7.11b_alpha_2024-02-09.tar.gz': '7a7bae1f802fc5bc5b270da89e66a824480fb33e21f7ebfbf7ed56e1d4907c1c'},
+    {'STAR-2.7.11a_use-external-htslib.patch': '2fdc3ed9372d983f77d861d6f16a60a553598358dce9ff8216f96eb20e63ce4e'},
+]
+
+builddependencies = [
+    ('xxd', '9.0.2112'),
+]
+
+dependencies = [
+    ('HTSlib', '1.18'),
+    ('zlib', '1.2.13'),
+]
+
+start_dir = 'source'
+
+# by default this is set to -mavx2 which makes it fail on non x86 systems
+prebuildopts = 'CXXFLAGS_SIMD= '
+
+buildopts = ' STAR && make STARlong'
+
+files_to_copy = [
+    (['source/%(name)s', 'source/%(name)slong'], 'bin'),
+    'CHANGES.md', 'doc', 'extras', 'LICENSE', 'README.md', 'RELEASEnotes.md',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'bin/%(name)slong'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "STAR --help",
+    "STARlong --help",
+]
+
+moduleclass = 'bio'

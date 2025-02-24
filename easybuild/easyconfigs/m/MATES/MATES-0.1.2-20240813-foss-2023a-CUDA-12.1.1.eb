@@ -1,0 +1,58 @@
+easyblock = 'PythonBundle'
+
+name = 'MATES'
+version = '0.1.2-20240813'
+local_commit = 'd5ee15b'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/mcgilldinglab/MATES'
+description = "A Deep Learning-Based Model for Quantifying Transposable Elements in Single-Cell Sequencing Data."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('matplotlib', '3.7.2'),
+    ('anndata', '0.10.5.post1'),
+    ('SAMtools', '1.18'),
+    ('pybedtools', '0.9.1'),
+    ('PyTorch-bundle', '2.1.2', versionsuffix),
+    ('Pysam', '0.22.0'),
+    ('tqdm', '4.66.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('sorted_nearest', '0.0.39', {
+        'checksums': ['16a51d5db87ae226b47ace43c176bb672477a1b7ba8052ea9291a6356c9c69b1'],
+    }),
+    ('ncls', '0.0.68', {
+        'checksums': ['81aaa5abb123bb21797ed2f8ef921e20222db14a3ecbc61ccf447532f2b7ba93'],
+    }),
+    ('natsort', '8.4.0', {
+        'checksums': ['45312c4a0e5507593da193dedd04abb1469253b601ecaf63445ad80f0a1ea581'],
+    }),
+    ('pyranges', '0.0.129', {
+        'checksums': ['bee83b4fad0062be9586668c6b0fc4270d5e761951975e018202993680071fb3'],
+    }),
+    (name, version, {
+        'modulename': 'MATES',
+        # unpin exact versions of dependencies
+        'preinstallopts': r"sed -i 's/==.*//g' requirements.txt && sed -i 's/==.*/\",/g' setup.py && ",
+        'source_urls': ['https://github.com/mcgilldinglab/MATES/archive'],
+        'sources': [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['aca36b2b99ebed975fdf61670a9b551c1ab7882ff2b9d4ed3f25f2e13805652c'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'from MATES import bam_processor, data_processor, MATES_model'",
+    "python -c 'from MATES import TE_quantifier, TE_quantifier_LongRead, TE_quantifier_Intronic'",
+]
+
+moduleclass = 'bio'

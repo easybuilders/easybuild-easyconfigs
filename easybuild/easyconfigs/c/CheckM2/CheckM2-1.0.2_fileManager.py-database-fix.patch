@@ -1,0 +1,126 @@
+Author: Pavel Tomanek (Inuits) + Kenneth Hoste (HPC-UGent)
+This patch changes the way a path to the diamond database is set. It used to be stored in install dir in
+diamond_path.json, but since this is unmodifiable file for user, the path is stored in env variable CHECKM2DB.
+The patch needs to change whole file - there was a problem with dos style endings (CRLF).
+diff -ruZ CheckM2-1.0.2.orig/checkm2/fileManager.py CheckM2-1.0.2/checkm2/fileManager.py
+--- CheckM2-1.0.2.orig/checkm2/fileManager.py	2023-05-19 01:56:46.000000000 +0200
++++ CheckM2-1.0.2/checkm2/fileManager.py	2024-05-30 22:13:45.230761282 +0200
+@@ -22,62 +22,34 @@
+ 
+               diamond_definition = self.__get_db_file()
+ 
+-              if diamond_definition['DBPATH'] == 'Not Set':
++              if diamond_definition == 'Not Set':
+                 self.DATABASE_DIR = 'Not Set'
+               else:
+-                self.DATABASE_DIR = diamond_definition['DBPATH']
++                self.DATABASE_DIR = diamond_definition
+         else:
+             diamond_definition = self.__get_db_file()
+ 
+-            if diamond_definition['DBPATH'] == 'Not Set':
++            if diamond_definition == 'Not Set':
+                 self.DATABASE_DIR = 'Not Set'
+             else:
+-                self.DATABASE_DIR = diamond_definition['DBPATH']
++                self.DATABASE_DIR = diamond_definition
+ 
+ 
+     def __get_db_file(self):
+-        diamond_location = DefaultValues.DB_LOCATION_DEFINITION
+-        try:
+-            with open(diamond_location) as f:
+-                diamond_definition = json.load(f)
+-                return diamond_definition
+-        except:
+-            logging.warning('Could not open DIAMOND location definition file. Creating new file.')
+-            db_ref_file = {"Type": "DIAMONDDB", "DBPATH": "Not Set"}
+-            with open(diamond_location, 'w') as dl:
+-                json.dump(db_ref_file, dl)
+-            try:
+-                with open(diamond_location) as f:
+-                    diamond_definition = json.load(f)
+-                    return diamond_definition
+-            except Exception as e:
+-                logging.error('Could not create new file: {}'.format(e))
+-                sys.exit(1)
+-
++        return DefaultValues.DB_LOCATION_DEFINITION
+ 
+     def get_DB_location(self):
+         if self.DATABASE_DIR == 'Not Set':
+-            logging.error('DIAMOND database not found. Please download database using <checkm2 database --download>')
++            logging.error(
++                'DIAMOND database not found. Please download database using $ checkm2 database --download --path /path/to/database '
++                + ',but FIRST set CHECKM2DB to PATH by $ export CHECKM2DB=\"/path/to/database/CheckM2_database/uniref100.KO.1.dmnd\"'
++            )
+             sys.exit(1)
+         else:
+             return self.DATABASE_DIR
+ 
+     def set_DB_location(self, provided_location):
+-        logging.info('Checking provided DIAMOND database location')
+-        if versionControl.VersionControl().checksum_version_validate_DIAMOND(provided_location):
+-            #great - let's set it
+-            diamond_definition = self.__get_db_file()
+-
+-            diamond_definition['DBPATH'] = os.path.abspath(provided_location)
+-            with open(DefaultValues.DB_LOCATION_DEFINITION, 'w') as dd:
+-                json.dump(diamond_definition, dd)
+-
+-            logging.info("Database check successful! Database path successfully added.")
+-
+-        else:
+-            logging.error("Checksum in CheckM2 reference doesn't match provided database. Please check your files.")
+-            sys.exit(1)
+-
++        logging.info("Set path to database location by: $ export CHECKM2DB=path/to/database/CheckM2_database/uniref100.KO.1.dmnd")
+ 
+     def download_database(self, download_location):
+ 
+@@ -87,32 +59,11 @@
+ 
+         diamond_location = DefaultValues.DB_LOCATION_DEFINITION
+         
+-        try:
+-            with open(diamond_location) as f:
+-                diamond_definition = json.load(f)
+-        except:
+-            logging.warning('Could not open DIAMOND location definition file. Creating new file.')
+-            x = {"Type": "DIAMONDDB", "DBPATH": "Not Set"}
+-            with open(diamond_location, 'w') as dl:
+-                json.dump(x, dl)
+-            try:
+-                with open(diamond_location) as f:
+-                    diamond_definition = json.load(f)
+-            except Exception as e:
+-                logging.error('Could not create new file: {}'.format(e))
+-                sys.exit(1)
+-        if diamond_definition['DBPATH'] != 'Not Set':
+-            logging.warning('DIAMOND database found at {}. Overwriting previous database.'.format(diamond_definition['DBPATH']))
+-            
+-        
+         make_sure_path_exists(os.path.join(download_location, 'CheckM2_database'))
+         
+         backpack_downloader = zenodo_backpack.zenodo_backpack_downloader('INFO')
+         highest_compatible_version, DOI = versionControl.VersionControl().return_highest_compatible_DB_version()
+ 
+-        
+-        diamond_loc_final = os.path.join(download_location, 'CheckM2_database', 'uniref100.KO.1.dmnd')
+-
+         if download_location is not None:
+             #check we have writing permission
+             try:
+@@ -126,12 +77,6 @@
+             
+             backpack_downloader.download_and_extract(download_location, DOI, progress_bar=True, no_check_version=False)
+             
+-            diamond_definition['DBPATH'] = os.path.abspath(diamond_loc_final)
+-
+-            with open(diamond_location, 'w') as dd:
+-                json.dump(diamond_definition, dd)
+-            
+-
+         else:
+             logging.info('Failed to determine download location')
+             sys.exit(1)

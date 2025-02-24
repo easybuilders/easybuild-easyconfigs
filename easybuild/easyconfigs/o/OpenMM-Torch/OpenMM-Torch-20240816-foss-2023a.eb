@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMM-Torch'
+version = '20240816'
+local_commit = '8893c0f'
+
+homepage = 'https://openmm.org/'
+description = """
+OpenMM-Torch is an OpenMM plugin to define forces with neural networks.
+The OpenMM-Torch package provides an interface to the PyTorch machine learning framework.
+It lets you define new types of forces through PyTorch code. 
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'cstd': 'c++17'}
+
+source_urls = ['https://github.com/openmm/%(namelower)s/archive']
+sources = ['%s.tar.gz' % local_commit]
+checksums = ['c2abf0bfce61b6e2e1f42d27a89032b4b994f7d67eb238ddf1a7d299cae551bf']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('PyTorch', '2.1.2'),
+    ('OpenMM', '8.0.0'),
+]
+
+configopts = '-DOPENMM_DIR="${EBROOTOPENMM}" '
+configopts += '-DPYTORCH_DIR="${EBROOTPYTORCH}/lib/python%(pyshortver)s/site-packages/torch"'
+
+# install Python bindings
+postinstallcmds = [
+    "sed -i 's|pip install |pip install --prefix=%(installdir)s |' %(start_dir)s/python/CMakeLists.txt",
+    "make PythonInstall",
+]
+
+sanity_check_paths = {
+    'files': ['lib/python%(pyshortver)s/site-packages/openmmtorch.py'],
+    'dirs': ['lib', 'include'],
+}
+
+sanity_check_commands = [
+    "python -c 'import openmmtorch'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'bio'

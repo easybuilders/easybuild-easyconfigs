@@ -1,0 +1,51 @@
+easyblock = 'CmdCp'
+
+name = 'APOST3D'
+version = '20240527'
+local_commit = 'e06c8b0'
+
+description = """
+Open-source APOST-3D software features a large number of wavefunction analysis tools developed
+over the past 20 years, aiming at connecting classical chemical concepts with the electronic
+structure of molecules. APOST-3D relies on the identification of the atom in the molecule
+(AIM), and several analysis tools are implemented in the most general way so that they can be
+used in combination with any chosen AIM.
+A Fortran-based code developed at the Universitat de Girona (UdG) by P. Salvador and collaborators.
+"""
+homepage = 'https://github.com/mgimferrer/APOST3D'
+
+toolchain = {'name': 'intel-compilers', 'version': '2023.1.0'}
+
+builddependencies = [
+    ('make', '4.4.1'),
+]
+
+source_urls = ['https://github.com/mgimferrer/APOST3D/archive']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['1eb9a0f97b4dd135b782b96cadc37b3acfc27c69521cf3aab6cc10d4fc9292af']
+
+local_cmds = ' export APOST3D_PATH=%(start_dir)s && '
+# Compile provided Libxc version 4.2.3
+# (it is not possible to couple APOST-3D with newer Libxc libraries):
+local_cmds += 'bash compile_libxc.sh && '
+# Compile
+local_cmds += 'make -f Makefile_profgen && '
+# Run test calculations on single-processor:
+local_cmds += 'bash compiler-runtest && '
+# Recompile using info geneated in previous step
+local_cmds += 'make -f Makefile_profuse && '
+# Run test calculations in parallel:
+local_cmds += 'bash compiler-runtest2'
+
+cmds_map = [('.*', local_cmds)]
+
+local_bin_files = ['apost3d', 'apost3d-eos', 'eos_aom']
+
+files_to_copy = [(local_bin_files, 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_bin_files],
+    'dirs': [''],
+}
+
+moduleclass = 'chem'

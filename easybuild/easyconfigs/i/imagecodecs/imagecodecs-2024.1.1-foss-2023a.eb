@@ -1,0 +1,78 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+# update: Thomas Hoffmann (EMBL), Denis Kristak (Inuits), Cintia Willemyns (Vrije Universiteit Brussel)
+easyblock = 'PythonBundle'
+
+name = 'imagecodecs'
+version = '2024.1.1'
+
+homepage = 'https://github.com/cgohlke/imagecodecs'
+description = """Imagecodecs is a Python library that provides block-oriented, in-memory buffer transformation,
+compression, and decompression functions for use in the tifffile, czifile, zarr, and other
+scientific image input/output modules."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+local_openjpeg_maj_min = '2.5'
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('Cython', '3.0.8'),
+    ('matplotlib', '3.7.2'),
+    ('Brotli', '1.0.9'),
+    ('Blosc', '1.21.5'),
+    ('Blosc2', '2.8.0'),
+    ('CFITSIO', '4.3.0'),
+    ('CharLS', '2.4.2'),
+    ('giflib', '5.2.1'),
+    ('jxrlib', '1.1'),
+    ('LittleCMS', '2.15'),
+    ('LERC', '4.0.0'),
+    ('libaec', '1.0.6'),
+    ('libavif', '1.0.4'),
+    ('libdeflate', '1.18'),
+    ('libjpeg-turbo', '2.1.5.1'),
+    ('libjxl', '0.8.2'),
+    ('LibLZF', '3.6'),
+    ('libpng', '1.6.39'),
+    ('LibTIFF', '4.5.0'),
+    ('libwebp', '1.3.1'),
+    ('lz4', '1.9.4'),
+    ('OpenJPEG', local_openjpeg_maj_min + '.0'),
+    ('snappy', '1.1.10'),
+    ('zlib-ng', '2.1.6'),
+    ('Zopfli', '1.0.3'),
+    ('zfp', '1.0.1'),
+    ('zstd', '1.5.5'),
+    ('Brunsli', '0.1'),
+    ('HDF5', '1.14.0'),
+    ('h5py', '3.9.0'),
+    ('libheif', '1.17.6'),
+    ('bitshuffle', '0.5.1'),  # Cannot be as extension because Cython 3.0.8 is too new
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('colorlog', '6.8.2', {
+        'checksums': ['3e3e079a41feb5a1b64f978b5ea4f46040a94f11f0e8bbb8261e3dbbeca64d44'],
+    }),
+    (name, version, {
+        'buildopts': '--global-option="build_ext" --global-option="--lite"',
+        'extract_cmd': "tar -xvf %s && find . -type f -print0 | xargs -0 dos2unix",
+        'patches': ['imagecodecs-2024.1.1_fix-aec-version.patch'],
+        'preinstallopts': "export CPATH=$EBROOTOPENJPEG/include/openjpeg-2.5/:$CPATH && ",
+        'source_urls': [
+            'https://github.com/cgohlke/imagecodecs/releases/download/v%(version)s/imagecodecs-2024.1.1.tar.gz'
+        ],
+        'sources': ['%(name)s-%(version)s.tar.gz'],
+        'checksums': [
+            {'imagecodecs-2024.1.1.tar.gz': 'fde46bd698d008255deef5411c59b35c0e875295e835bf6079f7e2ab22f216eb'},
+            {'imagecodecs-2024.1.1_fix-aec-version.patch':
+             '7feb0a5fe37893d1a186f85c8f6cdb940704605ee2da5ea8e5d555ec5bfa01aa'},
+        ],
+    }),
+]
+
+moduleclass = 'lib'

@@ -1,0 +1,42 @@
+easyblock = 'MakeCp'
+
+name = 'Kent_tools'
+version = '468'
+
+homepage = 'https://genome.cse.ucsc.edu/'
+description = """Kent utilities: collection of tools used by the UCSC genome browser."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+source_urls = [
+    'https://hgdownload.cse.ucsc.edu/admin/exe/',
+    'https://hgdownload.cse.ucsc.edu/admin/exe/userApps.archive/',
+]
+sources = ['userApps.v%(version)s.src.tgz']
+checksums = ['f57b49be7e4eeb0719ac9414ca8878f93916fc3eb8dd408c8f7e076a999d1ca8']
+
+dependencies = [
+    ('MariaDB', '11.6.0'),
+    ('libpng', '1.6.39'),
+    ('zlib', '1.2.13'),
+    ('util-linux', '2.39'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('freetype', '2.13.0'),
+]
+
+prebuildopts = 'sed -i "s/rsync -a /cp -a /" %(builddir)s/userApps/kent/src/parasol/makefile && '
+
+buildopts = 'CC="$CC" COPT="$CFLAGS -fcommon" PNGLIB="-L$EBROOTLIBPNG/lib -lpng" ZLIB="-L$EBROOTZLIB/lib -lz" '
+buildopts += 'SSL_DIR="$EBROOTOPENSSL" SSLDIR="$EBROOTOPENSSL" MYSQLLIBS="-L$EBROOTMARIADB/lib -lmariadb -lstdc++" '
+
+local_binaries = ['blat', 'bedPartition', 'getRna', 'liftOver', 'mafGene', 'splitFile', 'twoBitToFa']
+
+files_to_copy = [(['bin/*'], 'bin'), 'licenseBlat.txt', 'licenseUcscGenomeBrowser.txt']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%s 2>&1 | grep '^usage:'" % x for x in local_binaries]
+
+moduleclass = 'bio'

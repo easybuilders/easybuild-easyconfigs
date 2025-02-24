@@ -1,0 +1,81 @@
+easyblock = 'PythonBundle'
+
+name = 'GimmeMotifs'
+version = '0.17.2'
+
+homepage = 'https://github.com/vanheeringen-lab/gimmemotifs'
+description = "Suite of motif tools, including a motif prediction pipeline for ChIP-seq experiments"
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [('poetry', '1.5.1')]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('matplotlib', '3.7.2'),
+    ('pybedtools', '0.9.1'),
+    ('Pysam', '0.22.0'),
+    ('scikit-learn', '1.3.1'),
+    ('Seaborn', '0.13.2'),
+    ('statsmodels', '0.14.1'),
+    ('tqdm', '4.66.1'),
+    ('genomepy', '0.16.1'),
+    ('qnorm', '0.8.1'),
+    ('Arrow', '14.0.1'),  # provides pyarrow, required by feather-format
+    ('HTSeq', '2.0.7'),  # required by biofluff
+    ('pyBigWig', '0.3.22'),  # required by biofluff
+]
+
+use_pip = True
+
+exts_list = [
+    ('palettable', '3.3.3', {
+        'checksums': ['094dd7d9a5fc1cca4854773e5c1fc6a315b33bd5b3a8f47064928facaf0490a8'],
+    }),
+    ('biofluff', '3.0.4', {
+        'modulename': 'fluff',
+        # remove pyBigWig dependency - pip_check fails with "import pybigwig"
+        'preinstallopts': "sed -i '/pyBigWig/d' setup.py && ",
+        'checksums': ['ef7b0a54103a830f197f21aa3d1ade8bdcddf613b437ea38c95260bb45324d6b'],
+    }),
+    ('diskcache', '5.6.3', {
+        'checksums': ['2c3a3fa2743d8535d832ec61c2054a1641f41775aa7c556758a109941e33e4fc'],
+    }),
+    ('feather-format', '0.4.1', {
+        'modulename': 'feather',
+        'checksums': ['45f67e3745d394d4f160ca6d636bbfd4f8b68d01199dc1649b6e487d3e878903'],
+    }),
+    ('iteround', '1.0.4', {
+        'source_urls': ['https://github.com/cgdeboer/iteround/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['445e4f0c793ae558e4db3cdee7e23d77459b9c586e8021667aa60c14ba7ff45f'],
+    }),
+    ('logomaker', '0.8', {
+        'checksums': ['d8c7501a7d6d7961cd68e5a44e939000ebf1b0c4197a0c9198351e1d681d3f6d'],
+    }),
+    ('loguru', '0.7.2', {
+        'checksums': ['e671a53522515f34fd406340ee968cb9ecafbc4b36c679da03c18fd8d0bd51ac'],
+    }),
+    ('xxhash', '3.4.1', {
+        'checksums': ['0379d6cf1ff987cd421609a264ce025e74f346e3e145dd106c0cc2e3ec3f99a9'],
+    }),
+    ('xdg', '6.0.0', {
+        'checksums': ['24278094f2d45e846d1eb28a2ebb92d7b67fc0cab5249ee3ce88c95f649a1c92'],
+    }),
+    ('gimmemotifs', version, {
+        'preinstallopts': """sed -i '/"configparser"/d' setup.py && """,
+        'checksums': ['fbf70997abce6a75451c10b96994f8dbc03152b01df5cf30bf4397c98a9b54d2'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/gimme'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["gimme --help"]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

@@ -1,0 +1,64 @@
+easyblock = 'CMakeMake'
+
+name = 'Visit'
+version = '3.4.1'
+
+homepage = 'https://github.com/visit-dav/visit'
+description = """
+VisIt is an Open Source, interactive, scalable, visualization, animation
+and analysis tool. From Unix, Windows or Mac workstations, users can
+interactively visualize and analyze data ranging in scale from small
+(<101 core) desktop-sized projects to large (>105 core) leadership-class
+computing facility simulation campaigns. Users can quickly generate
+visualizations, animate them through time, manipulate them with a
+variety of operators and mathematical expressions, and save the
+resulting images and animations for presentations. VisIt contains a rich
+set of visualization features to enable users to view a wide variety of
+data including scalar and vector fields defined on two- and
+three-dimensional (2D and 3D) structured, adaptive and unstructured
+meshes. Owing to its customizeable plugin design, VisIt is capabable of
+visualizing data from over 120 different scientific data formats.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/visit-dav/visit/releases/download/v%(version)s/']
+sources = ['%(namelower)s%(version)s.tar.gz']
+checksums = ['942108cb294f4c9584a1628225b0be39c114c7e9e01805fb335d9c0b507689f5']
+
+builddependencies = [('CMake', '3.26.3')]
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('X11', '20230603'),
+    ('Mesa', '23.1.4'),
+    ('libglvnd', '1.6.0'),
+    ('Qt5', '5.15.10'),
+    ('Qwt', '6.3.0'),
+    # Visit-3.4.1 needs VTK-9.2.x (not 9.3.x) - https://github.com/visit-dav/visit/issues/19547
+    ('VTK', '9.2.6'),
+    ('FFmpeg', '6.0'),
+]
+
+configopts = "-DVISIT_ZLIB_DIR=$EBROOTZLIB "
+configopts += "-DVISIT_VTK_DIR=$EBROOTVTK -DVISIT_VTK_VERSION=$EBVERSIONVTK "
+configopts += "-DVISIT_QWT_DIR=$EBROOTQWT "
+configopts += "-DVISIT_QT_VERSION=$EBVERSIONQT5 -DVISIT_QT_DIR=$EBROOTQT5 "
+configopts += "-DVISIT_OSMESA_DIR=$EBROOTMESA "
+configopts += "-DVISIT_MESAGL_DIR=$EBROOTLIBGLVND "
+configopts += "-DPYTHON_DIR=$EBROOTPYTHON "
+configopts += "-DVISIT_PYTHON_SKIP_INSTALL=ON "
+configopts += "-DVISIT_PARALLEL=ON -DVISIT_MPI_COMPILER=$MPICC -DVISIT_MPI_COMPILER_CXX=$MPICXX "
+configopts += "-DOpenGL_GL_PREFERENCE=GLVND "
+
+# add missing include to fix make step
+prebuildopts = "sed -i '23 a #include <cmath>' %(builddir)s/%(namelower)s%(version)s/src/gui/QvisStripChart.C && "
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['frontendlauncher', 'frontendlauncher.py', 'visit']],
+    'dirs': ['%(version)s/bin'],
+}
+
+moduleclass = 'vis'

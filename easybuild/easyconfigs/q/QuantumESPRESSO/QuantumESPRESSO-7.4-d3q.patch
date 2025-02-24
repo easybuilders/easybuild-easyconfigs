@@ -1,0 +1,30 @@
+Fix line length greather than 132 characters.
+Also fix the use of ZGEMM3M, which is not available in the FlexiBLAS library.
+See https://github.com/anharmonic/d3q/issues/22
+--- a/d3q/thermal2/PROGRAM_r2q.f90
++++ b/d3q/thermal2/PROGRAM_r2q.f90
+@@ -744,7 +744,8 @@ PROGRAM r2q
+ 
+ 
+   WRITE(*,'(2x,a,f12.8)') "Note: q-point and path length in units of 2pi/alat, conversion to bohr^-1: ", S%tpiba
+-  WRITE(*,'(2x,2(a,f12.8))') "Note: phonons are in cm^-1, conversion to Rydberg: ", 1.d+5/RY_TO_CMM1,"E-5  to THz:", RY_TO_THZ/RY_TO_CMM1
++  WRITE(*,'(2x,2(a,f12.8))') "Note: phonons are in cm^-1, conversion to Rydberg: ", &
++    1.d+5/RY_TO_CMM1,"E-5  to THz:", RY_TO_THZ/RY_TO_CMM1
+ 
+   IF( input%calculation=="dos") THEN
+     CALL PH_DOS(input,S,fc2)
+diff --git a/thermal2/functions.f90 b/thermal2/functions.f90
+index 90d8a90..9e9adb2 100644
+--- a/d3q/thermal2/functions.f90
++++ b/d3q/thermal2/functions.f90
+@@ -465,8 +465,8 @@ end subroutine quicksort_idx
+     !
+     !rotate_d2 = MATMUL(TRANSPOSE(CONJG(U)), MATMUL(D,U))
+     !
+-    CALL ZGEMM3M('N', 'N', nat3, nat3, nat3, alpha, D, nat3, U, nat3, beta, A, nat3)
+-    CALL ZGEMM3M('C', 'N', nat3, nat3, nat3, alpha, U, nat3, A, nat3, beta, rotate_d2, nat3)
++    CALL ZGEMM('N', 'N', nat3, nat3, nat3, alpha, D, nat3, U, nat3, beta, A, nat3)
++    CALL ZGEMM('C', 'N', nat3, nat3, nat3, alpha, U, nat3, A, nat3, beta, rotate_d2, nat3)
+     !
+   END FUNCTION
+   !

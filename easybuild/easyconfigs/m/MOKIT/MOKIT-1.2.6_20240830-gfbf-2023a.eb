@@ -1,0 +1,64 @@
+easyblock = 'Bundle'
+
+name = 'MOKIT'
+version = '1.2.6_20240830'
+_commit = 'd66560a6a7926e5e21b45cbcc9213aaa26bd997d'
+
+homepage = 'https://github.com/1234zou/MOKIT'
+description = """
+MOKIT offers various utilities and modules to transfer MOs among various quantum chemistry software packages."""
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+toolchainopts = {'openmp': True}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+]
+
+_makefile = 'Makefile.gnu_openblas_conda'
+maxparallel = 1
+
+default_component_specs = {
+    'source_urls': ['https://github.com/1234zou/MOKIT/archive'],
+    'checksums': ['b4e7224ac5b56e6d0116f7759a3017c57d527b1d35c32e3b2733904f7f7c4de5'],
+    'sources': [{
+        'download_filename': '%s.tar.gz' % _commit,
+        'filename': SOURCE_TAR_GZ,
+    }],
+}
+
+components = [
+    (name, version, {
+        'easyblock': 'MakeCp',
+        'start_dir': 'MOKIT-%s/src' % _commit,
+        'prebuildopts': 'sed -i -e "s/^MKL_FLAGS.*/MKL_FLAGS = $LIBBLAS/" %s && ' % _makefile,
+        'buildopts': 'all -f %s' % _makefile,
+        'files_to_copy': ['../bin'],
+    }),
+    ('mokit', version, {
+        'easyblock': 'PythonPackage',
+        'start_dir': 'MOKIT-%s' % _commit,
+        'use_pip': True,
+        'download_dep_fail': True,
+        'sanity_pip_check': True,
+        'options': {'modulename': 'mokit'},
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = [
+    'fch2inp | grep Example',
+    'geom_opt | grep Example',
+    "python -s -c 'from mokit.lib.gaussian import load_mol_from_fch'",
+]
+
+sanity_check_paths = {
+    'files': ['bin/geom_opt', 'bin/fch2inp'],
+    'dirs': ['lib/python3.11/site-packages/mokit'],
+}
+
+moduleclass = 'chem'

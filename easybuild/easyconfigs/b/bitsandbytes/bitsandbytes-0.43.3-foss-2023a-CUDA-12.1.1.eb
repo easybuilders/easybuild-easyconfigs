@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'bitsandbytes'
+version = '0.43.3'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://huggingface.co/docs/bitsandbytes/main/en/index'
+description = "bitsandbytes enables accessible large language models via k-bit quantization for PyTorch."
+github_account = 'bitsandbytes-foundation'
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['7a468bc977da19c176cc578954bfd7a3c64182f387a6849e9f0a38d5cba1b4df']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('SciPy-bundle', '2023.07'),
+]
+
+configopts = '-DCOMPUTE_BACKEND=cuda'
+skipsteps = ['install']
+
+postinstallcmds = [
+    'pip install --prefix=%(installdir)s --no-deps --ignore-installed --no-index --no-build-isolation %(start_dir)s',
+]
+
+sanity_check_paths = {
+    'files': ['lib/python%%(pyshortver)s/site-packages/bitsandbytes/libbitsandbytes_cuda121.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import bitsandbytes'",
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'ai'

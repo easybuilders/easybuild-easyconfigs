@@ -1,0 +1,78 @@
+# Based off the 2017 version by John Dey jfdey@fredhutch.org
+# https://github.com/easybuilders/easybuild-easyconfigs/pull/5085
+easyblock = 'Tarball'
+
+name = 'texlive'
+version = '20230313'
+local_ver_year = version[:4]
+
+homepage = 'https://tug.org'
+description = """TeX is a typesetting language. Instead of visually formatting your text, you enter your manuscript
+ text intertwined with TeX commands in a plain text file. You then run TeX to produce formatted output, such as a
+ PDF file. Thus, in contrast to standard word processors, your document is a separate file that does not pretend to
+ be a representation of the final typeset output, and so can be easily edited and manipulated."""
+
+toolchain = {'name': 'GCC', 'version': '13.2.0'}
+
+source_urls = [
+    'ftp://tug.org/texlive/historic/%s/' % local_ver_year,
+    'https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/%s/' % local_ver_year,
+]
+sources = [
+    {
+        'download_filename': 'install-tl-unx.tar.gz',
+        'filename': 'install-tl-unx-%(version)s.tar.gz'
+    }
+]
+checksums = ['d97bdb3b1903428e56373e70861b24db448243d74d950cdff96f4e888f008605']
+
+dependencies = [
+    ('X11', '20231019'),
+    ('libpng', '1.6.40'),
+    ('libGLU', '9.0.3'),
+    ('Perl', '5.38.0'),
+    ('HarfBuzz', '8.2.2'),
+    ('poppler', '24.04.0'),
+    ('cairo', '1.18.0'),
+    ('fontconfig', '2.14.2'),
+    ('zlib', '1.2.13'),
+    ('graphite2', '1.3.14'),
+]
+
+# For the latest release, the tlnet-final repository isn't available yet, so we use the default
+# But, the default can _not_ be used for the historic releases. The only way to write an EasyConfig
+# that will work today and in the future, is to try one by one.
+# Similarly, ftp is not available on all HPC systems, hence providing fallback to https
+# See https://github.com/easybuilders/easybuild-easyconfigs/issues/17871
+local_install_tl = "%%(builddir)s/install-tl-%%(version)s/install-tl -profile %%(installdir)s/texlive.profile %s"
+local_ftp = '-repository ftp://ftp.math.utah.edu/pub/tex/historic/systems/textlive/%s/tlnet-final' % local_ver_year
+local_https = '-repository https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/%s/tlnet-final' % local_ver_year
+local_install_tl_or = (
+    ' || '.join([
+        local_install_tl % '',
+        local_install_tl % local_ftp,
+        local_install_tl % local_https,
+    ])
+)
+postinstallcmds = [
+    'echo "TEXDIR         %%(installdir)s/" > %%(installdir)s/texlive.profile && '
+    'echo "TEXMFLOCAL     %%(installdir)s/texmf-local" >> %%(installdir)s/texlive.profile && '
+    'echo "TEXMFSYSCONFIG %%(installdir)s/texmf-config" >> %%(installdir)s/texlive.profile && '
+    'echo "TEXMFSYSVAR    %%(installdir)s/texmf-var" >> %%(installdir)s/texlive.profile && '
+    '%s' % local_install_tl_or
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(arch)s-linux/tex', 'bin/%(arch)s-linux/latex'],
+    'dirs': ['bin/%(arch)s-linux', 'texmf-dist'],
+}
+
+modextrapaths = {
+    'INFOPATH': 'texmf-dist/doc/info',
+    'MANPATH': 'texmf-dist/doc/man',
+    'PATH': 'bin/%(arch)s-linux',
+}
+
+modextravars = {'TEXMFHOME': '%(installdir)s/texmf-dist'}
+
+moduleclass = 'devel'

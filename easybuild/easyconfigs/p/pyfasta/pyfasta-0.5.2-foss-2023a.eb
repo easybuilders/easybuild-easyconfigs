@@ -1,0 +1,44 @@
+easyblock = 'PythonBundle'
+
+name = 'pyfasta'
+version = '0.5.2'
+
+homepage = 'https://pypi.org/project/pyfasta/'
+description = """fast, memory-efficient, pythonic (and command-line) access to fasta sequence files"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+]
+
+use_pip = True
+
+local_preinstallopts = (
+    "sed -i"
+    " -e 's/from fasta/from pyfasta.fasta/'"
+    " -e 's/from records/from pyfasta.records/'"
+    " -e 's/from split_fasta/from pyfasta.split_fasta/'"
+    " %(name)s/__init__.py && "
+)
+local_preinstallopts += "sed -i 's/from collections/from collections.abc/' pyfasta/fasta.py && "
+local_preinstallopts += "sed -i 's/from records/from pyfasta.records/' pyfasta/fasta.py && "
+local_preinstallopts += "sed -i 's/import cPickle/import _pickle as cPickle/' pyfasta/records.py && "
+local_preinstallopts += "sed -i 's/from cStringIO import StringIO/from io import StringIO/' pyfasta/split_fasta.py && "
+
+exts_list = [
+    (name, version, {
+        'preinstallopts': local_preinstallopts,
+        'checksums': ['ab08d75fa90253bc91933d10567d5d9cca2718f4796ef3bdc36b68df0e45b258'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/pyfasta'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = ['pyfasta extract --help']
+sanity_pip_check = True
+
+moduleclass = 'tools'

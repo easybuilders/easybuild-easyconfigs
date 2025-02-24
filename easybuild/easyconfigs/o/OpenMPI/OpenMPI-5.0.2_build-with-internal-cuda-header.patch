@@ -1,0 +1,139 @@
+Allow building Open MPI with an internal CUDA header and stub library via
+--with-cuda=%(start_dir)s/opal/mca/cuda
+by providing an internal minimal cuda.h header file, and function stubs.
+This eliminates the CUDA (build)dependency; as long as the runtime CUDA version is 8.0+,
+the system's libcuda.so will be used successfully by dynamically loaded plugins in
+$EBROOTOPENMPI/lib/openmpi, not by the main libmpi.so.
+
+Author: Bart Oldeman <bart.oldeman@calculquebec.ca>
+diff -urN openmpi-5.0.2.orig/opal/mca/cuda/cuda.c openmpi-5.0.2/opal/mca/cuda/cuda.c
+--- openmpi-5.0.2.orig/opal/mca/cuda/lib/cuda.c	1970-01-01 00:00:00.000000000 +0000
++++ openmpi-5.0.2/opal/mca/cuda/lib/cuda.c	2024-02-15 01:39:24.969142045 +0000
+@@ -0,0 +1,28 @@
++#include "cuda.h"
++
++CUresult cuPointerGetAttribute(void *, CUpointer_attribute, CUdeviceptr) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuMemcpyAsync(CUdeviceptr, CUdeviceptr, size_t, CUstream) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuMemAlloc(CUdeviceptr *, size_t) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuMemFree(CUdeviceptr buf) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuCtxGetCurrent(void *cuContext) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuStreamCreate(CUstream *, int) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuEventCreate(CUevent *, int) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuEventRecord(CUevent, CUstream) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuEventQuery(CUevent) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuEventDestroy(CUevent) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuMemHostRegister(void *, size_t, unsigned int) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuMemHostUnregister(void *) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuMemGetAddressRange(CUdeviceptr *, size_t *, CUdeviceptr) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuIpcGetEventHandle(CUipcEventHandle *, CUevent) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuIpcOpenEventHandle(CUevent *, CUipcEventHandle) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuIpcOpenMemHandle(CUdeviceptr *, CUipcMemHandle, unsigned int) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuIpcCloseMemHandle(CUdeviceptr) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuIpcGetMemHandle(CUipcMemHandle *, CUdeviceptr) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuCtxGetDevice(CUdevice *) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuDeviceCanAccessPeer(int *, CUdevice, CUdevice) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuCtxSetCurrent(CUcontext) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuStreamSynchronize(CUstream) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuStreamDestroy(CUstream) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuPointerSetAttribute(const void *, CUpointer_attribute, CUdeviceptr) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuDeviceGetPCIBusId(char*, int, CUdevice) { return CUDA_ERROR_UNKNOWN; }
++CUresult cuPointerGetAttributes(unsigned int, CUpointer_attribute *, void **, CUdeviceptr) { return CUDA_ERROR_UNKNOWN; }
+diff -urN openmpi-5.0.2.orig/opal/mca/cuda/include/cuda.h openmpi-5.0.2/opal/mca/cuda/include/cuda.h
+--- openmpi-5.0.2.orig/opal/mca/cuda/include/cuda.h	1970-01-01 00:00:00.000000000 +0000
++++ openmpi-5.0.2/opal/mca/cuda/include/cuda.h	2024-02-15 03:07:26.480531383 +0000
+@@ -0,0 +1,95 @@
++/* This header provides minimal parts of the CUDA Driver API, without having to
++   rely on the proprietary CUDA toolkit.
++
++   References (to avoid copying from NVidia's proprietary cuda.h):
++   https://github.com/gcc-mirror/gcc/blob/master/include/cuda/cuda.h
++   https://github.com/Theano/libgpuarray/blob/master/src/loaders/libcuda.h
++   https://github.com/CPFL/gdev/blob/master/cuda/driver/cuda.h
++   https://github.com/CudaWrangler/cuew/blob/master/include/cuew.h
++*/
++
++#ifndef OMPI_CUDA_H
++#define OMPI_CUDA_H
++
++#include <stddef.h>
++
++#define CUDA_VERSION 8000
++
++typedef void *CUcontext;
++typedef int CUdevice;
++#if defined(__LP64__) || defined(_WIN64)
++typedef unsigned long long CUdeviceptr;
++#else
++typedef unsigned CUdeviceptr;
++#endif
++typedef void *CUevent;
++typedef void *CUstream;
++
++typedef enum {
++  CUDA_SUCCESS = 0,
++  CUDA_ERROR_INVALID_VALUE = 1,
++  CUDA_ERROR_NOT_INITIALIZED = 3,
++  CUDA_ERROR_DEINITIALIZED = 4,
++  CUDA_ERROR_ALREADY_MAPPED = 208,
++  CUDA_ERROR_NOT_READY = 600,
++  CUDA_ERROR_UNKNOWN = 999,
++} CUresult;
++
++enum {
++  CU_EVENT_DISABLE_TIMING = 0x2,
++  CU_EVENT_INTERPROCESS = 0x4,
++};
++
++enum {
++  CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS = 0x1,
++};
++
++typedef enum {
++  CU_POINTER_ATTRIBUTE_CONTEXT = 1,
++  CU_POINTER_ATTRIBUTE_MEMORY_TYPE = 2,
++  CU_POINTER_ATTRIBUTE_SYNC_MEMOPS = 6,
++  CU_POINTER_ATTRIBUTE_BUFFER_ID = 7,
++  CU_POINTER_ATTRIBUTE_IS_MANAGED = 8,
++} CUpointer_attribute;
++
++typedef enum {
++  CU_MEMORYTYPE_HOST = 0x01,
++} CUmemorytype;
++
++#define CU_IPC_HANDLE_SIZE 64
++typedef struct CUipcEventHandle_st {
++  char reserved[CU_IPC_HANDLE_SIZE];
++} CUipcEventHandle;
++
++typedef struct CUipcMemHandle_st {
++    char reserved[CU_IPC_HANDLE_SIZE];
++} CUipcMemHandle;
++
++CUresult cuPointerGetAttribute(void *, CUpointer_attribute, CUdeviceptr);
++CUresult cuMemcpyAsync(CUdeviceptr, CUdeviceptr, size_t, CUstream);
++CUresult cuMemAlloc(CUdeviceptr *, size_t);
++CUresult cuMemFree(CUdeviceptr buf);
++CUresult cuCtxGetCurrent(void *cuContext);
++CUresult cuStreamCreate(CUstream *, int);
++CUresult cuEventCreate(CUevent *, int);
++CUresult cuEventRecord(CUevent, CUstream);
++CUresult cuEventQuery(CUevent);
++CUresult cuEventDestroy(CUevent);
++CUresult cuMemHostRegister(void *, size_t, unsigned int);
++CUresult cuMemHostUnregister(void *);
++CUresult cuMemGetAddressRange(CUdeviceptr *, size_t *, CUdeviceptr);
++CUresult cuIpcGetEventHandle(CUipcEventHandle *, CUevent);
++CUresult cuIpcOpenEventHandle(CUevent *, CUipcEventHandle);
++CUresult cuIpcOpenMemHandle(CUdeviceptr *, CUipcMemHandle, unsigned int);
++CUresult cuIpcCloseMemHandle(CUdeviceptr);
++CUresult cuIpcGetMemHandle(CUipcMemHandle *, CUdeviceptr);
++CUresult cuCtxGetDevice(CUdevice *);
++CUresult cuDeviceCanAccessPeer(int *, CUdevice, CUdevice);
++CUresult cuCtxSetCurrent(CUcontext);
++CUresult cuStreamSynchronize(CUstream);
++CUresult cuStreamDestroy(CUstream);
++CUresult cuPointerSetAttribute(const void *, CUpointer_attribute, CUdeviceptr);
++CUresult cuDeviceGetPCIBusId(char*, int, CUdevice);
++CUresult cuPointerGetAttributes(unsigned int, CUpointer_attribute *, void **, CUdeviceptr);
++
++#endif

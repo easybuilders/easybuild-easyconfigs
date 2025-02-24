@@ -1,0 +1,50 @@
+easyblock = 'CMakeMakeCp'
+
+name = 'z5py'
+version = '2.0.17'
+
+homepage = 'https://github.com/constantinpape/z5/'
+description = """Lightweight C++ and Python interface for datasets in zarr and N5 format."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/constantinpape/z5/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['76acaeec7203b8d3baec45ccce82cd260dc1893f1516640acec5de6d74c078ef']
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('bzip2', '1.0.8'),
+    ('lz4', '1.9.4'),
+    ('XZ', '5.4.2'),
+    ('zlib', '1.2.13'),
+    ('xtensor', '0.24.7'),
+    ('python-blosc', '1.11.0'),
+    ('imageio', '2.33.1'),
+    ('h5py', '3.9.0'),
+    ('nlohmann_json', '3.11.2'),
+    ('zarr', '2.17.1'),
+    ('pybind11', '2.11.1'),
+]
+
+configopts = '-DWITH_ZLIB=ON -DWITH_BZIP2=ON '
+# Fix path to python executable - it finds v3.6.8 from /usr/bin/ without this fix
+configopts += '-DPYTHON_EXECUTABLE="$EBROOTPYTHON/bin/python" '
+
+# export PYTHON_MODULE_INSTALL_DIR to fix make install
+preinstallopts = 'export PYTHON_MODULE_INSTALL_DIR="%(builddir)s/easybuild_obj/python/" && '
+
+files_to_copy = [(['python/z5py'], 'lib/python%(pyshortver)s/site-packages'), 'z5-config.cmake']
+
+sanity_check_paths = {
+    'files': ['z5-config.cmake'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/z5py'],
+}
+sanity_check_commands = ["python -c 'import z5py'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'vis'
