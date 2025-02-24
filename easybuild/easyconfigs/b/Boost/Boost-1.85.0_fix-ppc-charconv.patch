@@ -1,0 +1,1160 @@
+Avoid compile errors on ppc64le like
+> libs/charconv/build/../src/from_chars.cpp: In function 'boost::charconv::from_chars_result boost::charconv::from_chars_erange(const char*, const char*, __ieee128&, chars_format)':
+> libs/charconv/build/../src/from_chars.cpp:120:48: error: 'compute_float128' is not a member of 'boost::charconv::detail'; did you mean 'compute_float32'?
+>   120 |     auto return_val = boost::charconv::detail::compute_float128(exponent, significand, sign, success);
+>       |                                                ^~~~~~~~~~~~~~~~
+>       |                                                compute_float32
+> libs/charconv/build/../src/from_chars.cpp: In function 'boost::charconv::from_chars_result boost::charconv::from_chars_erange(const char*, const char*, long double&, chars_format)':
+> libs/charconv/build/../src/from_chars.cpp:258:48: error: 'compute_float80' is not a member of 'boost::charconv::detail'; did you mean 'compute_float64'?
+>   258 |     auto return_val = boost::charconv::detail::compute_float80<long double>(exponent, significand, sign, success);
+>       |                                                ^~~~~~~~~~~~~~~
+>       |                                                compute_float64
+
+Combined https://github.com/boostorg/charconv/pull/177, https://github.com/boostorg/charconv/pull/183, https://github.com/boostorg/charconv/pull/222
+Author: Matt Borland <matt@mattborland.com>
+
+Patch-file Author: Alexander Grund (TU Dresden)
+
+diff --git a/libs/charconv/CMakeLists.txt b/libs/charconv/CMakeLists.txt
+index 8120419..b5f468e 100644
+--- a/libs/charconv/CMakeLists.txt
++++ b/libs/charconv/CMakeLists.txt
+@@ -22,24 +22,20 @@ target_include_directories(boost_charconv PUBLIC include)
+ include(CheckCXXSourceCompiles)
+ check_cxx_source_compiles(config/has_float128.cpp QUADMATH_FOUND)
+ 
++target_link_libraries(boost_charconv
++  PUBLIC
++    Boost::config
++    Boost::assert
++    Boost::core
++)
++
+ if(NOT QUADMATH_FOUND)
+   message(STATUS "Boost.Charconv: quadmath support OFF")
+   target_compile_definitions(boost_charconv PUBLIC BOOST_CHARCONV_NO_QUADMATH)
+-  target_link_libraries(boost_charconv
+-    PUBLIC
+-      Boost::config
+-      Boost::assert
+-      Boost::core
+-  )
+ else()
+   message(STATUS "Boost.Charconv: quadmath support ON")
+-  target_link_libraries(boost_charconv
+-    PUBLIC
+-      Boost::config
+-      Boost::assert
+-      Boost::core
+-      quadmath
+-  )
++  target_compile_definitions(boost_charconv PUBLIC BOOST_CHARCONV_HAS_QUADMATH)
++  target_link_libraries(boost_charconv PUBLIC quadmath)
+ endif()
+ 
+ target_compile_features(boost_charconv PUBLIC cxx_std_11)
+diff --git a/libs/charconv/build/Jamfile b/libs/charconv/build/Jamfile
+index 09802d5..695f1b2 100644
+--- a/libs/charconv/build/Jamfile
++++ b/libs/charconv/build/Jamfile
+@@ -21,7 +21,7 @@ lib boost_charconv
+     <define>BOOST_CHARCONV_SOURCE=1
+ 
+     [ requires cxx11_variadic_templates cxx11_decltype ]
+-    [ check-target-builds ../config//has_float128 "GCC libquadmath and __float128 support" : <library>"quadmath" ]
++    [ check-target-builds ../config//has_float128 "GCC libquadmath and __float128 support" : <library>"quadmath" <define>BOOST_CHARCONV_HAS_QUADMATH ]
+ 
+   # default-build
+   :
+diff --git a/libs/charconv/doc/charconv/build.adoc b/libs/charconv/doc/charconv/build.adoc
+index db17732..f7da7fa 100644
+--- a/libs/charconv/doc/charconv/build.adoc
++++ b/libs/charconv/doc/charconv/build.adoc
+@@ -68,6 +68,13 @@ For example, using a `conanfile.txt`:
+ boost_charconv/1.0.0
+ ----
+ 
++== `__float128` and `std::float128_t` Support
++
++If using B2 or CMake the build system will automatically define `BOOST_CHARCONV_HAS_QUADMATH` and link against it if the build system can successfully run a small test case.
++If you are using another build system and you want support for these types you will have to define `BOOST_CHARCONV_HAS_QUADMATH`, and link against https://gcc.gnu.org/onlinedocs/libquadmath/[libquadmath].
++
++IMPORTANT: libquadmath is only available on supported platforms (e.g. Linux with x86, x86_64, PPC64, and IA64).
++
+ == Dependencies
+ 
+-This library depends on: Boost.Assert, Boost.Config, Boost.Core, and  https://gcc.gnu.org/onlinedocs/libquadmath/[libquadmath] on supported platforms (e.g. Linux with x86, x86_64, PPC64, and IA64).
++This library depends on: Boost.Assert, Boost.Config, Boost.Core, and optionally libquadmath (see above).
+diff --git a/boost/charconv/detail/compute_float80.hpp b/boost/charconv/detail/compute_float80.hpp
+index c12a4f5..ad1e514 100644
+--- a/boost/charconv/detail/compute_float80.hpp
++++ b/boost/charconv/detail/compute_float80.hpp
+@@ -37,19 +37,6 @@ static constexpr long double powers_of_ten_ld[] = {
+     1e49L, 1e50L, 1e51L, 1e52L, 1e53L, 1e54L, 1e55L
+ };
+ 
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
+-static constexpr __float128 powers_of_tenq[] = {
+-    1e0Q,  1e1Q,  1e2Q,  1e3Q,  1e4Q,  1e5Q,  1e6Q,
+-    1e7Q,  1e8Q,  1e9Q,  1e10Q, 1e11Q, 1e12Q, 1e13Q,
+-    1e14Q, 1e15Q, 1e16Q, 1e17Q, 1e18Q, 1e19Q, 1e20Q,
+-    1e21Q, 1e22Q, 1e23Q, 1e24Q, 1e25Q, 1e26Q, 1e27Q,
+-    1e28Q, 1e29Q, 1e30Q, 1e31Q, 1e32Q, 1e33Q, 1e34Q,
+-    1e35Q, 1e36Q, 1e37Q, 1e38Q, 1e39Q, 1e40Q, 1e41Q,
+-    1e42Q, 1e43Q, 1e44Q, 1e45Q, 1e46Q, 1e47Q, 1e48Q,
+-    1e49Q, 1e50Q, 1e51Q, 1e52Q, 1e53Q, 1e54Q, 1e55Q
+-};
+-#endif
+-
+ template <typename ResultType, typename Unsigned_Integer, typename ArrayPtr>
+ inline ResultType fast_path(std::int64_t q, Unsigned_Integer w, bool negative, ArrayPtr table) noexcept
+ {
+@@ -78,42 +65,6 @@ inline ResultType fast_path(std::int64_t q, Unsigned_Integer w, bool negative, A
+     return ld;
+ }
+ 
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
+-template <typename Unsigned_Integer>
+-inline __float128 compute_float128(std::int64_t q, Unsigned_Integer w, bool negative, std::errc& success) noexcept
+-{
+-    // GLIBC uses 2^-16444 but MPFR uses 2^-16445 as the smallest subnormal value for 80 bit
+-    // 39 is the max number of digits in an uint128_t
+-    static constexpr auto smallest_power = -4951 - 39;
+-    static constexpr auto largest_power = 4932;
+-
+-    if (-55 <= q && q <= 48 && w <= static_cast<Unsigned_Integer>(1) << 113)
+-    {
+-        success = std::errc();
+-        return fast_path<__float128>(q, w, negative, powers_of_tenq);
+-    }
+-
+-    if (w == 0)
+-    {
+-        success = std::errc();
+-        return negative ? -0.0Q : 0.0Q;
+-    }
+-    else if (q > largest_power)
+-    {
+-        success = std::errc::result_out_of_range;
+-        return negative ? -HUGE_VALQ : HUGE_VALQ;
+-    }
+-    else if (q < smallest_power)
+-    {
+-        success = std::errc::result_out_of_range;
+-        return negative ? -0.0Q : 0.0Q;
+-    }
+-
+-    success = std::errc::not_supported;
+-    return 0;
+-}
+-#endif
+-
+ template <typename ResultType, typename Unsigned_Integer>
+ inline ResultType compute_float80(std::int64_t q, Unsigned_Integer w, bool negative, std::errc& success) noexcept
+ {
+diff --git a/boost/charconv/detail/config.hpp b/boost/charconv/detail/config.hpp
+index 714d4a8..e0e2500 100644
+--- a/boost/charconv/detail/config.hpp
++++ b/boost/charconv/detail/config.hpp
+@@ -27,11 +27,6 @@
+ #  define BOOST_CHARCONV_UINT128_MAX (2 * static_cast<boost::uint128_type>(BOOST_CHARCONV_INT128_MAX) + 1)
+ #endif
+ 
+-#if defined(BOOST_HAS_FLOAT128) && !defined(__STRICT_ANSI__) && !defined(BOOST_CHARCONV_NO_QUADMATH)
+-#  define BOOST_CHARCONV_HAS_FLOAT128
+-#  include <quadmath.h>
+-#endif
+-
+ #ifndef BOOST_NO_CXX14_CONSTEXPR
+ #  define BOOST_CHARCONV_CXX14_CONSTEXPR BOOST_CXX14_CONSTEXPR
+ #  define BOOST_CHARCONV_CXX14_CONSTEXPR_NO_INLINE BOOST_CXX14_CONSTEXPR
+diff --git a/boost/charconv/detail/emulated128.hpp b/boost/charconv/detail/emulated128.hpp
+index 5e12930..e77133d 100644
+--- a/boost/charconv/detail/emulated128.hpp
++++ b/boost/charconv/detail/emulated128.hpp
+@@ -136,10 +136,6 @@ struct uint128
+     explicit constexpr operator boost::uint128_type() const noexcept { return (static_cast<boost::uint128_type>(high) << 64) + low; }
+     #endif
+ 
+-    #ifdef BOOST_CHARCONV_HAS_FLOAT128
+-    explicit operator __float128() const noexcept { return ldexpq(static_cast<__float128>(high), 64) + static_cast<__float128>(low); }
+-    #endif
+-
+     FLOAT_CONVERSION_OPERATOR(float)        // NOLINT
+     FLOAT_CONVERSION_OPERATOR(double)       // NOLINT
+     FLOAT_CONVERSION_OPERATOR(long double)  // NOLINT
+diff --git a/boost/charconv/detail/fallback_routines.hpp b/boost/charconv/detail/fallback_routines.hpp
+index d2349c7..681aef5 100644
+--- a/boost/charconv/detail/fallback_routines.hpp
++++ b/boost/charconv/detail/fallback_routines.hpp
+@@ -21,13 +21,6 @@ namespace boost {
+ namespace charconv {
+ namespace detail {
+ 
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
+-inline int print_val(char* first, std::size_t size, char* format, __float128 value) noexcept
+-{
+-    return quadmath_snprintf(first, size, format, value);
+-}
+-#endif
+-
+ template <typename T>
+ inline int print_val(char* first, std::size_t size, char* format, T value) noexcept
+ {
+@@ -73,19 +66,11 @@ to_chars_result to_chars_printf_impl(char* first, char* last, T value, chars_for
+     }
+ 
+     // Add the type identifier
+-    #ifdef BOOST_CHARCONV_HAS_FLOAT128
+-    BOOST_CHARCONV_IF_CONSTEXPR (std::is_same<T, __float128>::value || std::is_same<T, long double>::value)
+-    {
+-        format[pos] = std::is_same<T, __float128>::value ? 'Q' : 'L';
+-        ++pos;
+-    }
+-    #else
+     BOOST_CHARCONV_IF_CONSTEXPR (std::is_same<T, long double>::value)
+     {
+         format[pos] = 'L';
+         ++pos;
+     }
+-    #endif
+ 
+     // Add the format character
+     switch (fmt)
+@@ -205,18 +190,7 @@ from_chars_result from_chars_strtod_impl(const char* first, const char* last, T&
+             r = {last, std::errc::result_out_of_range};
+         }
+     }
+-    #ifdef BOOST_CHARCONV_HAS_FLOAT128
+-    else
+-    {
+-        return_value = strtoflt128(buffer, &str_end);
+-
+-        if (return_value == HUGE_VALQ)
+-        {
+-            r = {last, std::errc::result_out_of_range};
+-        }
+-    }
+-    #endif
+-
++    
+     // Since this is a fallback routine we are safe to check for 0
+     if (return_value == 0 && str_end == last)
+     {
+diff --git a/boost/charconv/detail/generate_nan.hpp b/boost/charconv/detail/generate_nan.hpp
+deleted file mode 100644
+index e527ade..0000000
+--- a/boost/charconv/detail/generate_nan.hpp
++++ /dev/null
+@@ -1,56 +0,0 @@
+-// Copyright 2024 Matt Borland
+-// Distributed under the Boost Software License, Version 1.0.
+-// https://www.boost.org/LICENSE_1_0.txt
+-
+-#ifndef BOOST_GENERATE_NAN_HPP
+-#define BOOST_GENERATE_NAN_HPP
+-
+-#include <cstdint>
+-#include <cstring>
+-
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
+-
+-namespace boost {
+-namespace charconv {
+-namespace detail {
+-
+-struct words
+-{
+-#if BOOST_CHARCONV_ENDIAN_LITTLE_BYTE
+-    std::uint64_t lo;
+-    std::uint64_t hi;
+-#else
+-    std::uint64_t hi;
+-    std::uint64_t lo;
+-#endif
+-};
+-
+-inline __float128 nans BOOST_PREVENT_MACRO_SUBSTITUTION () noexcept
+-{
+-    words bits;
+-    bits.hi = UINT64_C(0x7FFF400000000000);
+-    bits.lo = UINT64_C(0);
+-
+-    __float128 return_val;
+-    std::memcpy(&return_val, &bits, sizeof(__float128));
+-    return return_val;
+-}
+-
+-inline __float128 nanq BOOST_PREVENT_MACRO_SUBSTITUTION () noexcept
+-{
+-    words bits;
+-    bits.hi = UINT64_C(0x7FFF800000000000);
+-    bits.lo = UINT64_C(0);
+-
+-    __float128 return_val;
+-    std::memcpy(&return_val, &bits, sizeof(__float128));
+-    return return_val;
+-}
+-
+-} //namespace detail
+-} //namespace charconv
+-} //namespace boost
+-
+-#endif
+-
+-#endif //BOOST_GENERATE_NAN_HPP
+diff --git a/boost/charconv/detail/issignaling.hpp b/boost/charconv/detail/issignaling.hpp
+index 5ff8a5d..865460e 100644
+--- a/boost/charconv/detail/issignaling.hpp
++++ b/boost/charconv/detail/issignaling.hpp
+@@ -15,7 +15,7 @@ namespace boost { namespace charconv { namespace detail {
+ template <typename T>
+ inline bool issignaling BOOST_PREVENT_MACRO_SUBSTITUTION (T x) noexcept;
+ 
+-#if BOOST_CHARCONV_LDBL_BITS == 128 || defined(BOOST_CHARCONV_HAS_FLOAT128)
++#if BOOST_CHARCONV_LDBL_BITS == 128
+ 
+ struct words128
+ {
+diff --git a/boost/charconv/detail/ryu/ryu_generic_128.hpp b/boost/charconv/detail/ryu/ryu_generic_128.hpp
+index ad69202..9a04ef2 100644
+--- a/boost/charconv/detail/ryu/ryu_generic_128.hpp
++++ b/boost/charconv/detail/ryu/ryu_generic_128.hpp
+@@ -662,7 +662,7 @@ static inline struct floating_decimal_128 long_double_to_fd128(long double d) no
+     return generic_binary_to_decimal(bits, 64, 15, true);
+ }
+ 
+-#else
++#elif BOOST_CHARCONV_LDBL_BITS == 128
+ 
+ static inline struct floating_decimal_128 long_double_to_fd128(long double d) noexcept
+ {
+@@ -682,42 +682,6 @@ static inline struct floating_decimal_128 long_double_to_fd128(long double d) no
+ 
+ #endif
+ 
+-#ifdef BOOST_HAS_FLOAT128
+-
+-static inline struct floating_decimal_128 float128_to_fd128(__float128 d) noexcept
+-{
+-    #ifdef BOOST_CHARCONV_HAS_INT128
+-    unsigned_128_type bits = 0;
+-    std::memcpy(&bits, &d, sizeof(__float128));
+-    #else
+-    trivial_uint128 trivial_bits;
+-    std::memcpy(&trivial_bits, &d, sizeof(__float128));
+-    unsigned_128_type bits {trivial_bits};
+-    #endif
+-
+-    return generic_binary_to_decimal(bits, 112, 15, false);
+-}
+-
+-#endif
+-
+-#ifdef BOOST_CHARCONV_HAS_STDFLOAT128
+-
+-static inline struct floating_decimal_128 stdfloat128_to_fd128(std::float128_t d) noexcept
+-{
+-    #ifdef BOOST_CHARCONV_HAS_INT128
+-    unsigned_128_type bits = 0;
+-    std::memcpy(&bits, &d, sizeof(std::float128_t));
+-    #else
+-    trivial_uint128 trivial_bits;
+-    std::memcpy(&trivial_bits, &d, sizeof(std::float128_t));
+-    unsigned_128_type bits {trivial_bits};
+-    #endif
+-
+-    return generic_binary_to_decimal(bits, 112, 15, false);
+-}
+-
+-#endif
+-
+ }}}} // Namespaces
+ 
+ #endif //BOOST_RYU_GENERIC_128_HPP
+diff --git a/boost/charconv/from_chars.hpp b/boost/charconv/from_chars.hpp
+index 459d4c8..50f911a 100644
+--- a/boost/charconv/from_chars.hpp
++++ b/boost/charconv/from_chars.hpp
+@@ -141,7 +141,7 @@ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const char* last, double& value, chars_format fmt = chars_format::general) noexcept;
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const char* last, long double& value, chars_format fmt = chars_format::general) noexcept;
+ 
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
++#ifdef BOOST_CHARCONV_HAS_QUADMATH
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const char* last, __float128& value, chars_format fmt = chars_format::general) noexcept;
+ #endif
+ 
+@@ -155,7 +155,7 @@ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const
+ #ifdef BOOST_CHARCONV_HAS_FLOAT64
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const char* last, std::float64_t& value, chars_format fmt = chars_format::general) noexcept;
+ #endif
+-#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_FLOAT128)
++#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_QUADMATH)
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const char* last, std::float128_t& value, chars_format fmt = chars_format::general) noexcept;
+ #endif
+ #ifdef BOOST_CHARCONV_HAS_BRAINFLOAT16
+diff --git a/boost/charconv/limits.hpp b/boost/charconv/limits.hpp
+index beac057..f62809f 100644
+--- a/boost/charconv/limits.hpp
++++ b/boost/charconv/limits.hpp
+@@ -72,7 +72,7 @@ template<typename T> struct limits
+         std::numeric_limits<T>::max_digits10 + 3 + 2 + detail::exp_digits( std::numeric_limits<T>::max_exponent10 ); // as above
+ };
+ 
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
++#if defined(BOOST_CHARCONV_HAS_QUADMATH)
+ 
+ template <> struct limits<__float128>
+ {
+diff --git a/boost/charconv/to_chars.hpp b/boost/charconv/to_chars.hpp
+index 3946e46..53f0c56 100644
+--- a/boost/charconv/to_chars.hpp
++++ b/boost/charconv/to_chars.hpp
+@@ -91,7 +91,7 @@ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, double val
+ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, long double value,
+                                              chars_format fmt, int precision) noexcept;
+ 
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
++#ifdef BOOST_CHARCONV_HAS_QUADMATH
+ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, __float128 value,
+                                              chars_format fmt = chars_format::general) noexcept;
+ 
+@@ -120,7 +120,7 @@ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, std::float
+ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, std::float64_t value, 
+                                              chars_format fmt, int precision) noexcept;
+ #endif
+-#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_FLOAT128)
++#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_QUADMATH)
+ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, std::float128_t value,
+                                              chars_format fmt = chars_format::general) noexcept;
+ 
+diff --git a/libs/charconv/src/from_chars.cpp b/libs/charconv/src/from_chars.cpp
+index 4fe8829..ec8d741 100644
+--- a/libs/charconv/src/from_chars.cpp
++++ b/libs/charconv/src/from_chars.cpp
+@@ -11,11 +11,11 @@
+ # define NO_WARN_MBCS_MFC_DEPRECATION
+ #endif
+ 
++#include "float128_impl.hpp"
+ #include "from_chars_float_impl.hpp"
+ #include <boost/charconv/detail/fast_float/fast_float.hpp>
+ #include <boost/charconv/from_chars.hpp>
+ #include <boost/charconv/detail/bit_layouts.hpp>
+-#include <boost/charconv/detail/generate_nan.hpp>
+ #include <system_error>
+ #include <string>
+ #include <cstdlib>
+@@ -50,7 +50,7 @@ boost::charconv::from_chars_result boost::charconv::from_chars_erange(const char
+     return boost::charconv::detail::from_chars_float_impl(first, last, value, fmt);
+ }
+ 
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
++#ifdef BOOST_CHARCONV_HAS_QUADMATH
+ boost::charconv::from_chars_result boost::charconv::from_chars_erange(const char* first, const char* last, __float128& value, boost::charconv::chars_format fmt) noexcept
+ {
+     bool sign {};
+@@ -271,7 +271,7 @@ boost::charconv::from_chars_result boost::charconv::from_chars_erange(const char
+     return r;
+ }
+ 
+-#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_FLOAT128)
++#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_QUADMATH)
+ boost::charconv::from_chars_result boost::charconv::from_chars_erange(const char* first, const char* last, std::float128_t& value, boost::charconv::chars_format fmt) noexcept
+ {
+     static_assert(sizeof(__float128) == sizeof(std::float128_t));
+@@ -304,7 +304,7 @@ boost::charconv::from_chars_result boost::charconv::from_chars_erange(boost::cor
+     return boost::charconv::from_chars_erange(sv.data(), sv.data() + sv.size(), value, fmt);
+ }
+ 
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
++#ifdef BOOST_CHARCONV_HAS_QUADMATH
+ boost::charconv::from_chars_result boost::charconv::from_chars_erange(boost::core::string_view sv, __float128& value, boost::charconv::chars_format fmt) noexcept
+ {
+     return boost::charconv::from_chars_erange(sv.data(), sv.data() + sv.size(), value, fmt);
+@@ -330,7 +330,7 @@ boost::charconv::from_chars_result boost::charconv::from_chars_erange(boost::cor
+     return boost::charconv::from_chars_erange(sv.data(), sv.data() + sv.size(), value, fmt);
+ }
+ #endif
+-#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_FLOAT128)
++#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_QUADMATH)
+ boost::charconv::from_chars_result boost::charconv::from_chars_erange(boost::core::string_view sv, std::float128_t& value, boost::charconv::chars_format fmt) noexcept
+ {
+     return boost::charconv::from_chars_erange(sv.data(), sv.data() + sv.size(), value, fmt);
+@@ -377,7 +377,7 @@ boost::charconv::from_chars_result boost::charconv::from_chars(const char* first
+     return from_chars_strict_impl(first, last, value, fmt);
+ }
+ 
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
++#ifdef BOOST_CHARCONV_HAS_QUADMATH
+ boost::charconv::from_chars_result boost::charconv::from_chars(const char* first, const char* last, __float128& value, boost::charconv::chars_format fmt) noexcept
+ {
+     return from_chars_strict_impl(first, last, value, fmt);
+@@ -405,7 +405,7 @@ boost::charconv::from_chars_result boost::charconv::from_chars(const char* first
+ }
+ #endif
+ 
+-#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_FLOAT128)
++#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_QUADMATH)
+ boost::charconv::from_chars_result boost::charconv::from_chars(const char* first, const char* last, std::float128_t& value, boost::charconv::chars_format fmt) noexcept
+ {
+     return from_chars_strict_impl(first, last, value, fmt);
+@@ -434,7 +434,7 @@ boost::charconv::from_chars_result boost::charconv::from_chars(boost::core::stri
+     return from_chars_strict_impl(sv.data(), sv.data() + sv.size(), value, fmt);
+ }
+ 
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
++#ifdef BOOST_CHARCONV_HAS_QUADMATH
+ boost::charconv::from_chars_result boost::charconv::from_chars(boost::core::string_view sv, __float128& value, boost::charconv::chars_format fmt) noexcept
+ {
+     return from_chars_strict_impl(sv.data(), sv.data() + sv.size(), value, fmt);
+@@ -462,7 +462,7 @@ boost::charconv::from_chars_result boost::charconv::from_chars(boost::core::stri
+ }
+ #endif
+ 
+-#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_FLOAT128)
++#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_QUADMATH)
+ boost::charconv::from_chars_result boost::charconv::from_chars(boost::core::string_view sv, std::float128_t& value, boost::charconv::chars_format fmt) noexcept
+ {
+     return from_chars_strict_impl(sv.data(), sv.data() + sv.size(), value, fmt);
+diff --git a/libs/charconv/src/to_chars.cpp b/libs/charconv/src/to_chars.cpp
+index 0293126..38ccf19 100644
+--- a/libs/charconv/src/to_chars.cpp
++++ b/libs/charconv/src/to_chars.cpp
+@@ -4,6 +4,7 @@
+ // Distributed under the Boost Software License, Version 1.0.
+ // https://www.boost.org/LICENSE_1_0.txt
+ 
++#include "float128_impl.hpp"
+ #include "to_chars_float_impl.hpp"
+ #include <boost/charconv/to_chars.hpp>
+ #include <boost/charconv/chars_format.hpp>
+@@ -660,7 +661,7 @@ boost::charconv::to_chars_result boost::charconv::to_chars( char* first, char* l
+ 
+ #endif
+ 
+-#ifdef BOOST_CHARCONV_HAS_FLOAT128
++#ifdef BOOST_CHARCONV_HAS_QUADMATH
+ 
+ boost::charconv::to_chars_result boost::charconv::to_chars(char* first, char* last, __float128 value, boost::charconv::chars_format fmt) noexcept
+ {
+@@ -747,7 +748,7 @@ boost::charconv::to_chars_result boost::charconv::to_chars(char* first, char* la
+ }
+ #endif
+ 
+-#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_FLOAT128)
++#if defined(BOOST_CHARCONV_HAS_STDFLOAT128) && defined(BOOST_CHARCONV_HAS_QUADMATH)
+ 
+ boost::charconv::to_chars_result boost::charconv::to_chars(char* first, char* last, std::float128_t value,
+                                                            boost::charconv::chars_format fmt) noexcept
+diff --git a/libs/charconv/src/to_chars_float_impl.hpp b/libs/charconv/src/to_chars_float_impl.hpp
+index 3db4567..2ae90bf 100644
+--- a/libs/charconv/src/to_chars_float_impl.hpp
++++ b/libs/charconv/src/to_chars_float_impl.hpp
+@@ -7,6 +7,7 @@
+ #ifndef BOOST_CHARCONV_DETAIL_TO_CHARS_FLOAT_IMPL_HPP
+ #define BOOST_CHARCONV_DETAIL_TO_CHARS_FLOAT_IMPL_HPP
+ 
++#include "float128_impl.hpp"
+ #include <boost/charconv/detail/apply_sign.hpp>
+ #include <boost/charconv/detail/integer_search_trees.hpp>
+ #include <boost/charconv/detail/memcpy.hpp>
+@@ -38,7 +39,7 @@
+ #include <iostream>
+ #endif
+ 
+-#if (BOOST_CHARCONV_LDBL_BITS == 80 || BOOST_CHARCONV_LDBL_BITS == 128) || defined(BOOST_CHARCONV_HAS_FLOAT128)
++#if (BOOST_CHARCONV_LDBL_BITS == 80 || BOOST_CHARCONV_LDBL_BITS == 128)
+ #  include <boost/charconv/detail/ryu/ryu_generic_128.hpp>
+ #  include <boost/charconv/detail/issignaling.hpp>
+ #endif
+@@ -274,13 +274,17 @@ to_chars_result to_chars_hex(char* first, char* last, Real value, int precision)
+         typename std::conditional<std::is_same<Real, float>::value, ieee754_binary32,
+             typename std::conditional<std::is_same<Real, double>::value, ieee754_binary64,
+                     #ifdef BOOST_CHARCONV_HAS_FLOAT128
+-                    typename std::conditional<std::is_same<Real, __float128>::value || BOOST_CHARCONV_LDBL_BITS == 128, ieee754_binary128, ieee754_binary80>::type
+-                    #elif BOOST_CHARCONV_LDBL_BITS == 128
+-                    ieee754_binary128
+-                    #elif BOOST_CHARCONV_LDBL_BITS == 80
+-                    ieee754_binary80
+-                    #else
+-                    ieee754_binary64
++                    typename std::conditional<std::is_same<Real, __float128>::value, ieee754_binary128,
++                    #endif
++                        #if BOOST_CHARCONV_LDBL_BITS == 128
++                        ieee754_binary128
++                        #elif BOOST_CHARCONV_LDBL_BITS == 80
++                        ieee754_binary80
++                        #else
++                        ieee754_binary64
++                        #endif
++                    #ifdef BOOST_CHARCONV_HAS_FLOAT128
++                    >::type
+                     #endif
+             >::type>::type
+         #ifdef BOOST_CHARCONV_HAS_FLOAT16
+
+diff --git a/libs/charconv/src/float128_impl.hpp b/libs/charconv/src/float128_impl.hpp
+new file mode 100644
+index 0000000..e6b2261
+--- /dev/null
++++ b/libs/charconv/src/float128_impl.hpp
+@@ -0,0 +1,359 @@
++// Copyright 2024 Matt Borland
++// Distributed under the Boost Software License, Version 1.0.
++// https://www.boost.org/LICENSE_1_0.txt
++
++#ifndef BOOST_CHARCONV_FLOAT128_IMPL_HPP
++#define BOOST_CHARCONV_FLOAT128_IMPL_HPP
++
++#include <boost/charconv/detail/config.hpp>
++#include <boost/charconv/detail/ryu/ryu_generic_128.hpp>
++#include <boost/charconv/detail/compute_float80.hpp>
++#include <boost/charconv/detail/fallback_routines.hpp>
++#include <boost/charconv/detail/issignaling.hpp>
++#include <boost/charconv/limits.hpp>
++#include <system_error>
++#include <cstring>
++#include <cstdint>
++
++// Only add in float128 support if the build system says it can
++#ifdef BOOST_CHARCONV_HAS_QUADMATH
++
++#include <quadmath.h>
++
++#define BOOST_CHARCONV_HAS_FLOAT128
++
++namespace boost {
++namespace charconv {
++
++namespace detail {
++
++// --------------------------------------------------------------------------------------------------------------------
++// Ryu
++// --------------------------------------------------------------------------------------------------------------------
++
++
++namespace ryu {
++
++inline struct floating_decimal_128 float128_to_fd128(__float128 d) noexcept
++{
++#ifdef BOOST_CHARCONV_HAS_INT128
++    unsigned_128_type bits = 0;
++    std::memcpy(&bits, &d, sizeof(__float128));
++#else
++    trivial_uint128 trivial_bits;
++    std::memcpy(&trivial_bits, &d, sizeof(__float128));
++    unsigned_128_type bits {trivial_bits};
++#endif
++
++    return generic_binary_to_decimal(bits, 112, 15, false);
++}
++
++#  ifdef BOOST_CHARCONV_HAS_STDFLOAT128
++
++inline struct floating_decimal_128 stdfloat128_to_fd128(std::float128_t d) noexcept
++{
++#ifdef BOOST_CHARCONV_HAS_INT128
++    unsigned_128_type bits = 0;
++    std::memcpy(&bits, &d, sizeof(std::float128_t));
++#else
++    trivial_uint128 trivial_bits;
++    std::memcpy(&trivial_bits, &d, sizeof(std::float128_t));
++    unsigned_128_type bits {trivial_bits};
++#endif
++
++    return generic_binary_to_decimal(bits, 112, 15, false);
++}
++
++#  endif
++
++} // namespace ryu
++
++// --------------------------------------------------------------------------------------------------------------------
++// fast_float
++// --------------------------------------------------------------------------------------------------------------------
++
++static constexpr __float128 powers_of_tenq[] = {
++    1e0Q,  1e1Q,  1e2Q,  1e3Q,  1e4Q,  1e5Q,  1e6Q,
++    1e7Q,  1e8Q,  1e9Q,  1e10Q, 1e11Q, 1e12Q, 1e13Q,
++    1e14Q, 1e15Q, 1e16Q, 1e17Q, 1e18Q, 1e19Q, 1e20Q,
++    1e21Q, 1e22Q, 1e23Q, 1e24Q, 1e25Q, 1e26Q, 1e27Q,
++    1e28Q, 1e29Q, 1e30Q, 1e31Q, 1e32Q, 1e33Q, 1e34Q,
++    1e35Q, 1e36Q, 1e37Q, 1e38Q, 1e39Q, 1e40Q, 1e41Q,
++    1e42Q, 1e43Q, 1e44Q, 1e45Q, 1e46Q, 1e47Q, 1e48Q,
++    1e49Q, 1e50Q, 1e51Q, 1e52Q, 1e53Q, 1e54Q, 1e55Q
++};
++
++template <typename Unsigned_Integer>
++inline __float128 to_float128(Unsigned_Integer w) noexcept
++{
++    return static_cast<__float128>(w);
++}
++
++template <>
++inline __float128 to_float128<uint128>(uint128 w) noexcept
++{
++    return ldexp(static_cast<__float128>(w.high), 64) + static_cast<__float128>(w.low);
++}
++
++template <typename Unsigned_Integer, typename ArrayPtr>
++inline __float128 fast_path_float128(std::int64_t q, Unsigned_Integer w, bool negative, ArrayPtr table) noexcept
++{
++    // The general idea is as follows.
++    // if 0 <= s <= 2^64 and if 10^0 <= p <= 10^27
++    // Both s and p can be represented exactly
++    // because of this s*p and s/p will produce
++    // correctly rounded values
++
++    auto ld = to_float128(w);
++
++    if (q < 0)
++    {
++        ld /= table[-q];
++    }
++    else
++    {
++        ld *= table[q];
++    }
++
++    if (negative)
++    {
++        ld = -ld;
++    }
++
++    return ld;
++}
++
++template <typename Unsigned_Integer>
++inline __float128 compute_float128(std::int64_t q, Unsigned_Integer w, bool negative, std::errc& success) noexcept
++{
++    // GLIBC uses 2^-16444 but MPFR uses 2^-16445 as the smallest subnormal value for 80 bit
++    // 39 is the max number of digits in an uint128_t
++    static constexpr auto smallest_power = -4951 - 39;
++    static constexpr auto largest_power = 4932;
++
++    if (-55 <= q && q <= 48 && w <= static_cast<Unsigned_Integer>(1) << 113)
++    {
++        success = std::errc();
++        return fast_path_float128(q, w, negative, powers_of_tenq);
++    }
++
++    if (w == 0)
++    {
++        success = std::errc();
++        return negative ? -0.0Q : 0.0Q;
++    }
++    else if (q > largest_power)
++    {
++        success = std::errc::result_out_of_range;
++        return negative ? -HUGE_VALQ : HUGE_VALQ;
++    }
++    else if (q < smallest_power)
++    {
++        success = std::errc::result_out_of_range;
++        return negative ? -0.0Q : 0.0Q;
++    }
++
++    success = std::errc::not_supported;
++    return 0;
++}
++
++// --------------------------------------------------------------------------------------------------------------------
++// fallback printf
++// --------------------------------------------------------------------------------------------------------------------
++
++template <>
++inline to_chars_result to_chars_printf_impl<__float128>(char* first, char* last, __float128 value, chars_format fmt, int precision)
++{
++    // v % + . + num_digits(INT_MAX) + specifier + null terminator
++    // 1 + 1 + 10 + 1 + 1
++    char format[14] {};
++    std::memcpy(format, "%", 1); // NOLINT : No null terminator is purposeful
++    std::size_t pos = 1;
++
++    // precision of -1 is unspecified
++    if (precision != -1 && fmt != chars_format::fixed)
++    {
++        format[pos] = '.';
++        ++pos;
++        const auto unsigned_precision = static_cast<std::uint32_t>(precision);
++        if (unsigned_precision < 10)
++        {
++            boost::charconv::detail::print_1_digit(unsigned_precision, format + pos);
++            ++pos;
++        }
++        else if (unsigned_precision < 100)
++        {
++            boost::charconv::detail::print_2_digits(unsigned_precision, format + pos);
++            pos += 2;
++        }
++        else
++        {
++            boost::charconv::detail::to_chars_int(format + pos, format + sizeof(format), precision);
++            pos = std::strlen(format);
++        }
++    }
++    else if (fmt == chars_format::fixed)
++    {
++        // Force 0 decimal places
++        std::memcpy(format + pos, ".0", 2); // NOLINT : No null terminator is purposeful
++        pos += 2;
++    }
++
++    // Add the type identifier
++    format[pos] = 'Q';
++    ++pos;
++
++    // Add the format character
++    switch (fmt)
++    {
++        case boost::charconv::chars_format::general:
++            format[pos] = 'g';
++            break;
++
++        case boost::charconv::chars_format::scientific:
++            format[pos] = 'e';
++            break;
++
++        case boost::charconv::chars_format::fixed:
++            format[pos] = 'f';
++            break;
++
++        case boost::charconv::chars_format::hex:
++            format[pos] = 'a';
++            break;
++    }
++
++    const auto rv = quadmath_snprintf(first, static_cast<std::size_t>(last - first), format, value);
++
++    if (rv <= 0)
++    {
++        return {last, static_cast<std::errc>(errno)};
++    }
++
++    return {first + rv, std::errc()};
++}
++
++// --------------------------------------------------------------------------------------------------------------------
++// fallback strtod
++// --------------------------------------------------------------------------------------------------------------------
++
++template <>
++inline from_chars_result from_chars_strtod_impl<__float128>(const char* first, const char* last, __float128& value, char* buffer) noexcept
++{
++    // For strto(f/d)
++    // Floating point value corresponding to the contents of str on success.
++    // If the converted value falls out of range of corresponding return type, range error occurs and HUGE_VAL, HUGE_VALF or HUGE_VALL is returned.
++    // If no conversion can be performed, 0 is returned and *str_end is set to str.
++
++    std::memcpy(buffer, first, static_cast<std::size_t>(last - first));
++    buffer[last - first] = '\0';
++    convert_string_locale(buffer);
++
++    char* str_end;
++    __float128 return_value {};
++    from_chars_result r {nullptr, std::errc()};
++
++    return_value = strtoflt128(buffer, &str_end);
++
++    if (return_value == HUGE_VALQ)
++    {
++        r = {last, std::errc::result_out_of_range};
++    }
++
++    // Since this is a fallback routine we are safe to check for 0
++    if (return_value == 0 && str_end == last)
++    {
++        r = {first, std::errc::result_out_of_range};
++    }
++
++    if (r)
++    {
++        value = return_value;
++        r = {first + (str_end - buffer), std::errc()};
++    }
++
++    return r;
++}
++
++template <>
++inline from_chars_result from_chars_strtod<__float128>(const char* first, const char* last, __float128& value) noexcept
++{
++    if (last - first < 1024)
++    {
++        char buffer[1024];
++        return from_chars_strtod_impl(first, last, value, buffer);
++    }
++
++    // If the string to be parsed does not fit into the 1024 byte static buffer than we have to allocate a buffer.
++    // malloc is used here because it does not throw on allocation failure.
++
++    char* buffer = static_cast<char*>(std::malloc(static_cast<std::size_t>(last - first + 1)));
++    if (buffer == nullptr)
++    {
++        return {first, std::errc::not_enough_memory};
++    }
++
++    auto r = from_chars_strtod_impl(first, last, value, buffer);
++    std::free(buffer);
++
++    return r;
++}
++
++// --------------------------------------------------------------------------------------------------------------------
++// nans
++// --------------------------------------------------------------------------------------------------------------------
++
++struct words
++{
++#if BOOST_CHARCONV_ENDIAN_LITTLE_BYTE
++    std::uint64_t lo;
++    std::uint64_t hi;
++#else
++    std::uint64_t hi;
++    std::uint64_t lo;
++#endif
++};
++
++inline __float128 nans BOOST_PREVENT_MACRO_SUBSTITUTION () noexcept
++{
++    words bits;
++    bits.hi = UINT64_C(0x7FFF400000000000);
++    bits.lo = UINT64_C(0);
++
++    __float128 return_val;
++    std::memcpy(&return_val, &bits, sizeof(__float128));
++    return return_val;
++}
++
++inline __float128 nanq BOOST_PREVENT_MACRO_SUBSTITUTION () noexcept
++{
++    words bits;
++    bits.hi = UINT64_C(0x7FFF800000000000);
++    bits.lo = UINT64_C(0);
++
++    __float128 return_val;
++    std::memcpy(&return_val, &bits, sizeof(__float128));
++    return return_val;
++}
++
++template <>
++inline bool issignaling<__float128> BOOST_PREVENT_MACRO_SUBSTITUTION (__float128 x) noexcept
++{
++    words bits;
++    std::memcpy(&bits, &x, sizeof(__float128));
++
++    std::uint64_t hi_word = bits.hi;
++    std::uint64_t lo_word = bits.lo;
++
++    hi_word ^= UINT64_C(0x0000800000000000);
++    hi_word |= (lo_word | -lo_word) >> 63;
++    return ((hi_word & INT64_MAX) > UINT64_C(0x7FFF800000000000));
++}
++
++} //namespace detail
++} //namespace charconv
++} //namespace boost
++
++#endif //BOOST_CHARCONV_HAS_FLOAT128
++
++#endif //BOOST_CHARCONV_FLOAT128_IMPL_HPP
+diff --git a/boost/charconv/detail/bit_layouts.hpp b/boost/charconv/detail/bit_layouts.hpp
+index 498b5bb8..c163ce06 100644
+--- a/boost/charconv/detail/bit_layouts.hpp
++++ b/boost/charconv/detail/bit_layouts.hpp
+@@ -126,7 +126,8 @@ struct IEEEl2bits
+ #define BOOST_CHARCONV_LDBL_BITS 64
+ 
+ #else // Unsupported long double representation
+-#  define BOOST_MATH_UNSUPPORTED_LONG_DOUBLE
++#  define BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE
++#  define BOOST_CHARCONV_LDBL_BITS -1
+ #endif
+ 
+ struct IEEEbinary128
+diff --git a/boost/charconv/from_chars.hpp b/boost/charconv/from_chars.hpp
+index 50f911ae..10e4cb4a 100644
+--- a/boost/charconv/from_chars.hpp
++++ b/boost/charconv/from_chars.hpp
+@@ -139,7 +139,10 @@ BOOST_CHARCONV_GCC5_CONSTEXPR from_chars_result from_chars(boost::core::string_v
+ 
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const char* last, float& value, chars_format fmt = chars_format::general) noexcept;
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const char* last, double& value, chars_format fmt = chars_format::general) noexcept;
++
++#ifndef BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const char* last, long double& value, chars_format fmt = chars_format::general) noexcept;
++#endif
+ 
+ #ifdef BOOST_CHARCONV_HAS_QUADMATH
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const char* last, __float128& value, chars_format fmt = chars_format::general) noexcept;
+@@ -164,7 +167,10 @@ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(const char* first, const
+ 
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(boost::core::string_view sv, float& value, chars_format fmt = chars_format::general) noexcept;
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(boost::core::string_view sv, double& value, chars_format fmt = chars_format::general) noexcept;
++
++#ifndef BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(boost::core::string_view sv, long double& value, chars_format fmt = chars_format::general) noexcept;
++#endif
+ 
+ #ifdef BOOST_CHARCONV_HAS_FLOAT128
+ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(boost::core::string_view sv, __float128& value, chars_format fmt = chars_format::general) noexcept;
+@@ -193,7 +199,10 @@ BOOST_CHARCONV_DECL from_chars_result from_chars_erange(boost::core::string_view
+ 
+ BOOST_CHARCONV_DECL from_chars_result from_chars(const char* first, const char* last, float& value, chars_format fmt = chars_format::general) noexcept;
+ BOOST_CHARCONV_DECL from_chars_result from_chars(const char* first, const char* last, double& value, chars_format fmt = chars_format::general) noexcept;
++
++#ifndef BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE
+ BOOST_CHARCONV_DECL from_chars_result from_chars(const char* first, const char* last, long double& value, chars_format fmt = chars_format::general) noexcept;
++#endif
+ 
+ #ifdef BOOST_CHARCONV_HAS_FLOAT128
+ BOOST_CHARCONV_DECL from_chars_result from_chars(const char* first, const char* last, __float128& value, chars_format fmt = chars_format::general) noexcept;
+@@ -216,7 +225,10 @@ BOOST_CHARCONV_DECL from_chars_result from_chars(const char* first, const char*
+ 
+ BOOST_CHARCONV_DECL from_chars_result from_chars(boost::core::string_view sv, float& value, chars_format fmt = chars_format::general) noexcept;
+ BOOST_CHARCONV_DECL from_chars_result from_chars(boost::core::string_view sv, double& value, chars_format fmt = chars_format::general) noexcept;
++
++#ifndef BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE
+ BOOST_CHARCONV_DECL from_chars_result from_chars(boost::core::string_view sv, long double& value, chars_format fmt = chars_format::general) noexcept;
++#endif
+ 
+ #ifdef BOOST_CHARCONV_HAS_FLOAT128
+ BOOST_CHARCONV_DECL from_chars_result from_chars(boost::core::string_view sv, __float128& value, chars_format fmt = chars_format::general) noexcept;
+diff --git a/boost/charconv/to_chars.hpp b/boost/charconv/to_chars.hpp
+index 53f0c56e..7192fda5 100644
+--- a/boost/charconv/to_chars.hpp
++++ b/boost/charconv/to_chars.hpp
+@@ -81,15 +81,21 @@ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, float valu
+                                              chars_format fmt = chars_format::general) noexcept;
+ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, double value,
+                                              chars_format fmt = chars_format::general) noexcept;
++
++#ifndef BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE
+ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, long double value,
+                                              chars_format fmt = chars_format::general) noexcept;
++#endif
+ 
+ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, float value,
+                                              chars_format fmt, int precision) noexcept;
+ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, double value, 
+                                              chars_format fmt, int precision) noexcept;
++
++#ifndef BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE
+ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, long double value,
+                                              chars_format fmt, int precision) noexcept;
++#endif
+ 
+ #ifdef BOOST_CHARCONV_HAS_QUADMATH
+ BOOST_CHARCONV_DECL to_chars_result to_chars(char* first, char* last, __float128 value,
+diff --git a/libs/charconv/src/from_chars.cpp b/libs/charconv/src/from_chars.cpp
+index bbfaff29..2c01e73c 100644
+--- a/libs/charconv/src/from_chars.cpp
++++ b/libs/charconv/src/from_chars.cpp
+@@ -229,7 +229,7 @@ boost::charconv::from_chars_result boost::charconv::from_chars_erange(const char
+     return r;
+ }
+ 
+-#else
++#elif !defined(BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE)
+ 
+ boost::charconv::from_chars_result boost::charconv::from_chars_erange(const char* first, const char* last, long double& value, boost::charconv::chars_format fmt) noexcept
+ {
+@@ -323,10 +323,12 @@ boost::charconv::from_chars_result boost::charconv::from_chars_erange(boost::cor
+     return boost::charconv::from_chars_erange(sv.data(), sv.data() + sv.size(), value, fmt);
+ }
+ 
++#ifndef BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE
+ boost::charconv::from_chars_result boost::charconv::from_chars_erange(boost::core::string_view sv, long double& value, boost::charconv::chars_format fmt) noexcept
+ {
+     return boost::charconv::from_chars_erange(sv.data(), sv.data() + sv.size(), value, fmt);
+ }
++#endif
+ 
+ #ifdef BOOST_CHARCONV_HAS_QUADMATH
+ boost::charconv::from_chars_result boost::charconv::from_chars_erange(boost::core::string_view sv, __float128& value, boost::charconv::chars_format fmt) noexcept
+@@ -396,10 +398,12 @@ boost::charconv::from_chars_result boost::charconv::from_chars(const char* first
+     return from_chars_strict_impl(first, last, value, fmt);
+ }
+ 
++#ifndef BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE
+ boost::charconv::from_chars_result boost::charconv::from_chars(const char* first, const char* last, long double& value, boost::charconv::chars_format fmt) noexcept
+ {
+     return from_chars_strict_impl(first, last, value, fmt);
+ }
++#endif
+ 
+ #ifdef BOOST_CHARCONV_HAS_QUADMATH
+ boost::charconv::from_chars_result boost::charconv::from_chars(const char* first, const char* last, __float128& value, boost::charconv::chars_format fmt) noexcept
+@@ -453,10 +457,12 @@ boost::charconv::from_chars_result boost::charconv::from_chars(boost::core::stri
+     return from_chars_strict_impl(sv.data(), sv.data() + sv.size(), value, fmt);
+ }
+ 
++#ifndef BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE
+ boost::charconv::from_chars_result boost::charconv::from_chars(boost::core::string_view sv, long double& value, boost::charconv::chars_format fmt) noexcept
+ {
+     return from_chars_strict_impl(sv.data(), sv.data() + sv.size(), value, fmt);
+ }
++#endif
+ 
+ #ifdef BOOST_CHARCONV_HAS_QUADMATH
+ boost::charconv::from_chars_result boost::charconv::from_chars(boost::core::string_view sv, __float128& value, boost::charconv::chars_format fmt) noexcept
+diff --git a/libs/charconv/src/to_chars.cpp b/libs/charconv/src/to_chars.cpp
+index 06be7e46..035a44a5 100644
+--- a/libs/charconv/src/to_chars.cpp
++++ b/libs/charconv/src/to_chars.cpp
+@@ -602,7 +602,7 @@ boost::charconv::to_chars_result boost::charconv::to_chars(char* first, char* la
+     return boost::charconv::detail::to_chars_float_impl(first, last, static_cast<double>(value), fmt, precision);
+ }
+ 
+-#elif (BOOST_CHARCONV_LDBL_BITS == 80 || BOOST_CHARCONV_LDBL_BITS == 128)
++#elif !defined(BOOST_CHARCONV_UNSUPPORTED_LONG_DOUBLE)
+ 
+ boost::charconv::to_chars_result boost::charconv::to_chars(char* first, char* last, long double value,
+                                                            boost::charconv::chars_format fmt) noexcept
+@@ -621,44 +621,6 @@ boost::charconv::to_chars_result boost::charconv::to_chars(char* first, char* la
+     return boost::charconv::detail::to_chars_float_impl(first, last, value, fmt, precision);
+ }
+ 
+-#else
+-
+-boost::charconv::to_chars_result boost::charconv::to_chars( char* first, char* last, long double value,
+-                                                            boost::charconv::chars_format fmt, int precision) noexcept
+-{
+-    if (std::isnan(value))
+-    {
+-        bool is_negative = false;
+-        if (std::signbit(value))
+-        {
+-            is_negative = true;
+-            *first++ = '-';
+-        }
+-
+-        if (issignaling(value))
+-        {
+-            std::memcpy(first, "nan(snan)", 9);
+-            return { first + 9 + static_cast<int>(is_negative), std::errc() };
+-        }
+-        else
+-        {
+-            if (is_negative)
+-            {
+-                std::memcpy(first, "nan(ind)", 8);
+-                return { first + 9, std::errc() };
+-            }
+-            else
+-            {
+-                std::memcpy(first, "nan", 3);
+-                return { first + 3, std::errc() };
+-            }
+-        }
+-    }
+-
+-    // Fallback to printf
+-    return boost::charconv::detail::to_chars_printf_impl(first, last, value, fmt, precision);
+-}
+-
+ #endif
+ 
+ #ifdef BOOST_CHARCONV_HAS_QUADMATH
