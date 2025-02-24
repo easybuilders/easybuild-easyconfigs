@@ -1,0 +1,90 @@
+easyblock = 'Binary'
+
+name = 'TELEMAC-MASCARET'
+version = '8p5r0'
+
+homepage = 'http://www.opentelemac.org'
+description = """TELEMAC-MASCARET is an integrated suite of solvers for use in the field of free-surface flow. Having
+been used in the context of many studies throughout the world, it has become one of the major standards in its field."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'extra_fcflags': "-fallow-invalid-boz"}
+
+source_urls = ['https://gitlab.pam-retd.fr/otm/telemac-mascaret/-/archive/v%(version)s/']
+sources = ['telemac-mascaret-v%(version)s.tar.gz']
+checksums = ['2beb9793fb83d17de31b17f001f985fc30702c151e2ced614f5e0117e8e34aa0']
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),  # provides numpy, scipy
+    ('matplotlib', '3.7.2'),
+    ('HDF5', '1.14.0'),
+    ('METIS', '5.1.0'),
+    ('SCOTCH', '7.0.3'),
+    ('MUMPS', '5.6.1', '-metis'),
+]
+
+extract_sources = True
+unpack_options = '--strip-components=1'
+
+buildininstalldir = True
+
+local_tweak_cfg_cmd = ' '.join([
+    "sed -i -e 's/S10.gfortran/easybuild/g'",
+    # strip out use of AED, GOTM, MED (optional dependencies)
+    r"-e 's/\(^[a-z]*_aed:\).*/\1/g' -e 's/\(^[a-z]*_gotm:\).*/\1/g' -e 's/\(^[a-z]*_med:\).*/\1/g'",
+    # replace -O2 with desired compiler options
+    '-e "s/-O2/$F90FLAGS/g"',
+    # fix linker option for BLAS
+    '-e "s/ -lblas/ $LIBBLAS/g"',
+    # downgrade Fortran compiler error to warning
+    "-e 's/^fflags_gfo:/fflags_gfo: -fallow-invalid-boz/g'",
+    # Disable hyperthreading option 
+    "-e 's/--use-hwthread-cpus//'",
+    "$HOMETEL/configs/systel.easybuild.cfg",
+])
+
+install_cmd = ' && '.join([
+    "export HOMETEL=$PWD",
+    # add Python scripts to $PATH and $PYTHONPATH
+    "export PATH=$HOMETEL/scripts/python3/:$PATH",
+    "export PYTHONPATH=$HOMETEL/scripts/python3:$PYTHONPATH",
+    # force python to flush its output
+    "export PYTHONUNBUFFERED=1",
+    "cp $HOMETEL/configs/systel.edf.cfg $HOMETEL/configs/systel.easybuild.cfg",
+    local_tweak_cfg_cmd,
+    "export SYSTELCFG=$HOMETEL/configs/systel.easybuild.cfg",
+    "export USETELCFG=easybuild.dyn",
+    "export SCALAPACKHOME=$EBROOTSCALAPACK",
+    "export METISHOME=$EBROOTMETIS",
+    "export SCOTCHHOME=$EBROOTSCOTCH",
+    "export MUMPSHOME=$EBROOTMUMPS",
+    "export HDF5HOME=$EBROOTHDF5",
+    "config.py",
+    "compile_telemac.py -j %(parallel)s",
+])
+
+sanity_check_paths = {
+    'files': ['builds/easybuild.dyn/bin/telemac2d', 'builds/easybuild.dyn/bin/telemac3d',
+              'builds/easybuild.dyn/lib/libtelemac2d.%s' % SHLIB_EXT,
+              'builds/easybuild.dyn/lib/libtelemac3d.%s' % SHLIB_EXT],
+    'dirs': ['scripts/python3'],
+}
+
+sanity_check_commands = [
+    "tmpdir=$(mktemp -d) && cp -a %(installdir)s/examples/telemac2d/gouttedo $tmpdir/ && chmod -R u+w $tmpdir && "
+    "cd $tmpdir/gouttedo && telemac2d.py t2d_gouttedo.cas",
+]
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': 'builds/easybuild.dyn/lib',
+    'PATH': 'scripts/python3',
+    'PYTHONPATH': 'scripts/python3',
+}
+
+modextravars = {
+    'SYSTELCFG': '%(installdir)s/configs/systel.easybuild.cfg',
+    'USETELCFG': 'easybuild.dyn',
+}
+
+moduleclass = 'geo'

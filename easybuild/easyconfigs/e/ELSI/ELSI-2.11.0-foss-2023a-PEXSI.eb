@@ -1,0 +1,47 @@
+name = 'ELSI'
+version = '2.11.0'
+versionsuffix = '-PEXSI'
+
+homepage = 'https://wordpress.elsi-interchange.org/'
+description = """ELSI provides and enhances scalable, open-source software library solutions for
+ electronic structure calculations in  materials science, condensed matter physics, chemistry, and many other fields.
+ ELSI focuses on methods that solve or circumvent eigenvalue problems in electronic structure theory.
+ The ELSI infrastructure should also be useful for other challenging eigenvalue problems.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'pic': True, 'cstd': 'c++11', 'extra_fflags': '-fallow-argument-mismatch'}
+
+source_urls = ['https://gitlab.com/elsi_project/elsi_interface/-/archive/v2.11.0/']
+sources = ['elsi_interface-v%(version)s.tar.gz']
+patches = [
+    'ELSI-2.11.0_bison_3.8_compat.patch',
+]
+checksums = [
+    {'elsi_interface-v2.11.0.tar.gz': '2e6929827ed9c99a32381ed9da40482e862c28608d59d4f27db7dcbcaed1520d'},
+    {'ELSI-2.11.0_bison_3.8_compat.patch': 'a1284f5c0f442129610aa0fb463cc2b54450e3511a2fd6c871fadc21a16e9504'},
+]
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('ELPA', '2023.05.001'),
+    ('NTPoly', '3.1.0'),
+]
+
+abs_path_compilers = True
+build_internal_pexsi = True
+
+configopts = '-DENABLE_BSEPACK=ON '
+
+# Tests use 4 MPI ranks, they require a minimum of 4 cores 
+# Map each MPI process to a single CPU core to avoid tests fails
+pretestopts = "export OMPI_MCA_rmaps_base_mapping_policy=slot:PE=1 && "
+
+runtest = True
+
+moduleclass = 'math'
