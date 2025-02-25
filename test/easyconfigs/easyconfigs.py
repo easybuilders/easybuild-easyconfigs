@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2024 Ghent University
+# Copyright 2013-2025 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -423,6 +423,17 @@ class EasyConfigTest(TestCase):
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
 
+        # multiple variants of GPAW-setups is OK as long as they are deps for GPAW
+        if dep == 'GPAW-setups' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out GPAW-setups variants that are only used as a dependency for GPAW
+                if all(ec.startswith('GPAW') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
+
         # Pairs of name, versionsuffix that should be removed from dep_vars if exactly one matching key is found.
         # The name is checked against 'dep' and can be a list to allow multiple
         # If the versionsuffix is a 2-element tuple, the second element should be set to True
@@ -547,6 +558,9 @@ class EasyConfigTest(TestCase):
             # Score-P 8.3+ requires Cube 4.8.2+ but we have 4.8.1 already
             'CubeLib': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
             'CubeWriter': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
+            # Current rapthor requires WSclean 3.5 or newer, which in turn requires EveryBeam 0.6.X or newer
+            # Requires us to also bump DP3 version (to 6.2) and its dependency on EveryBeam
+            'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2', r'WSClean-3\.[5-9]'])],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
@@ -627,6 +641,8 @@ class EasyConfigTest(TestCase):
                                'NGSpeciesID-0.1.1.1-']),
                 ('0.18.0;', ['medaka-1.6.0-', 'NGSpeciesID-0.1.2.1-', 'WhatsHap-1.4-']),
             ],
+            # PyTorch-Lightning-1.8.4 is requiered in synthcity-0.2.10 and DECAF-synthetic-data-0.1.6
+            'PyTorch-Lightning': [('1.8.4;', ['synthcity-0.2.10-', 'DECAF-synthetic-data-0.1.6-'])],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1', r'OPERA-MS-0\.9\.0-20240703'])],
@@ -658,6 +674,8 @@ class EasyConfigTest(TestCase):
                 # tensorflow-probability version to TF version
                 ('2.8.4;', ['tensorflow-probability-0.16.0-']),
             ],
+            # vLLM has pinned dependency tiktoken == 0.6.0
+            'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
@@ -1011,6 +1029,30 @@ class EasyConfigTest(TestCase):
                     if not dirpath.endswith('/easybuild/easyconfigs'):
                         self.fail("There should be no easyconfig files in %s, found %s" % (dirpath, easyconfig_files))
 
+    def test_easybuild_easyconfigs_latest_release(self):
+        """
+        Check which easyconfig file would be picked up by 'eb --install-latest-eb-release'
+        """
+        # this mimics the logic used in the find_easybuild_easyconfig used by EasyBuild framework
+        # to obtain an easyconfig file when --install-latest-eb-release is used
+        topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        easybuild_dir = os.path.join(topdir, 'easybuild', 'easyconfigs', 'e', 'EasyBuild')
+        ecs = os.listdir(easybuild_dir)
+
+        file_versions = []
+        for ec in ecs:
+            txt = read_file(os.path.join(easybuild_dir, ec))
+            for line in txt.split('\n'):
+                if re.search(r'^version\s*=', line):
+                    scope = {}
+                    exec(line, scope)
+                    version = scope['version']
+                    file_versions.append((LooseVersion(version), ec))
+
+        most_recent = sorted(file_versions)[-1]
+        self.assertEqual(most_recent[0], LooseVersion('4.9.4'))
+        self.assertEqual(most_recent[1], 'EasyBuild-4.9.4.eb')
+
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
         topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -1182,6 +1224,12 @@ class EasyConfigTest(TestCase):
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
                     failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
+
+            # When using Rust it should use CargoPython*
+            if easyblock in ('PythonBundle', 'PythonPackage'):
+                if any(dep['name'] == 'Rust' or '-Rust-' in dep['versionsuffix'] for dep in ec.dependencies()):
+                    failing_checks.append('Use Cargo%s instead of %s when Rust is used in %s'
+                                          % (easyblock, easyblock, ec_fn))
 
         if failing_checks:
             self.fail('\n'.join(failing_checks))
