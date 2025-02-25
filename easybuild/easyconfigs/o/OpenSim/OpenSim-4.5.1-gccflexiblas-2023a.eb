@@ -20,11 +20,11 @@ sources = [
     },
 ]
 
-patches = ['OpenSim-4.5.1-gccflexiblas-2023a.patch']
+patches = [('OpenSim-4.5.1-gccflexiblas-2023a.patch', 1)]
 
 checksums = [
     {'OpenSim-4.5.1.tar.gz': '00d69c48e971b6e0c4056a78450e613c'},
-    {'OpenSim-4.5.1-gccflexiblas-2023a.patch': '0f32cde34746aeb621983e591db13e06'},
+    {'OpenSim-4.5.1-gccflexiblas-2023a.patch': '629276d3e3357193783b692d3af1a7e1'},
 ]
 
 builddependencies = [
@@ -40,15 +40,15 @@ dependencies = [
 
 preconfigopts = "mkdir dep-build && "
 preconfigopts += "cd dep-build && "
-preconfigopts += "cmake ../../%(namelower)s-core-%(version)s/dependencies -DCMAKE_INSTALL_PREFIX=%(installdir)s/../opensim_dependencies_install -DOPENSIM_WITH_CASADI=ON -DOPENSIM_WITH_TROPTER=ON -DSUPERBUILD_eigen=OFF && "
+preconfigopts += "cmake ../../%(namelower)s-core-%(version)s/dependencies -DCMAKE_INSTALL_PREFIX=%(installdir)s/opensim_dependencies_install -DOPENSIM_WITH_CASADI=ON -DOPENSIM_WITH_TROPTER=ON -DSUPERBUILD_eigen=OFF && "
 preconfigopts += "make -j 8 && "
-preconfigopts += "mkdir -p %(installdir)s/../opensim_dependencies_install/colpack/lib && "
-preconfigopts += "ln -sf %(installdir)s/../opensim_dependencies_install/colpack/lib64/libColPack.so.0 %(installdir)s/../opensim_dependencies_install/colpack/lib/libColPack.so.0 && "
-preconfigopts += "ln -sf %(installdir)s/../opensim_dependencies_install/colpack/lib64/libColPack.so %(installdir)s/../opensim_dependencies_install/colpack/lib/libColPack.so && "
+preconfigopts += "mkdir -p %(installdir)s/opensim_dependencies_install/colpack/lib && "
+preconfigopts += "ln -sf %(installdir)s/opensim_dependencies_install/colpack/lib64/libColPack.so.0 %(installdir)s/opensim_dependencies_install/colpack/lib/libColPack.so.0 && "
+preconfigopts += "ln -sf %(installdir)s/opensim_dependencies_install/colpack/lib64/libColPack.so %(installdir)s/opensim_dependencies_install/colpack/lib/libColPack.so && "
 preconfigopts += "cd .. && "
 preconfigopts += "export MLM_LICENSE_FILE=${HOME}/.licenses/matlab.lic && "
 
-multi_deps = {'Python': ['3.10', '3.11']}
+multi_deps = {'Python': ['3.10', '3.11', '3.12']}
 
 configopts = "-DCMAKE_BUILD_TYPE=RelWithDebInfo "
 configopts += "-DBUILD_PYTHON_WRAPPING=ON "
@@ -56,15 +56,25 @@ configopts += "-DBUILD_JAVA_WRAPPING=ON "
 configopts += "-DWITH_BTK=ON "
 configopts += "-DOPENSIM_WITH_CASADI=ON "
 configopts += "-DOPENSIM_WITH_TROPTER=ON "
-configopts += "-DOPENSIM_DEPENDENCIES_DIR=%(installdir)s/../opensim_dependencies_install/ "
-configopts += "-Ddocopt_DIR=%(installdir)s/../opensim_dependencies_install/docopt/lib64/cmake/docopt/ "
+configopts += "-DOPENSIM_DEPENDENCIES_DIR=%(installdir)s/opensim_dependencies_install/ "
+configopts += "-Ddocopt_DIR=%(installdir)s/opensim_dependencies_install/docopt/lib64/cmake/docopt/ "
 configopts += "-DTROPTER_WITH_OPENMP=ON "
-configopts += "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,%(installdir)s/../opensim_dependencies_install/ipopt/lib/:%(installdir)s/../opensim_dependencies_install/colpack/lib64/:%(installdir)s/../opensim_dependencies_install/mumps/lib "
-configopts += "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,%(installdir)s/../opensim_dependencies_install/ipopt/lib/:%(installdir)s/../opensim_dependencies_install/colpack/lib64/:%(installdir)s/../opensim_dependencies_install/mumps/lib "
+configopts += "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,%(installdir)s/opensim_dependencies_install/ipopt/lib/:%(installdir)s/opensim_dependencies_install/colpack/lib64/:%(installdir)s/opensim_dependencies_install/mumps/lib "
+configopts += "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,%(installdir)s/opensim_dependencies_install/ipopt/lib/:%(installdir)s/opensim_dependencies_install/colpack/lib64/:%(installdir)s/opensim_dependencies_install/mumps/lib "
+
+preinstallopts = "cd dep-build && "
+preinstallopts += "rm -r metis-prefix && "
+preinstallopts += "make -j 8 && "
+preinstallopts += "mkdir -p %(installdir)s/opensim_dependencies_install/colpack/lib && "
+preinstallopts += "ln -sf %(installdir)s/opensim_dependencies_install/colpack/lib64/libColPack.so.0 %(installdir)s/opensim_dependencies_install/colpack/lib/libColPack.so.0 && "
+preinstallopts += "ln -sf %(installdir)s/opensim_dependencies_install/colpack/lib64/libColPack.so %(installdir)s/opensim_dependencies_install/colpack/lib/libColPack.so && "
+preinstallopts += "cd .. && "
 
 postinstallcmds = [
-	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --add_origin --add_path %(installdir)s/lib --path %(installdir)s/lib/python%(pyshortver)s/site-packages/opensim ",
-	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --add_origin --add_path %(installdir)s/lib64 --path %(installdir)s/lib/python%(pyshortver)s/site-packages/opensim ",
+    "for d in $(find %(installdir)s/lib/ -name 'python*'); \
+	do echo Calling setrpaths.sh --path ${d}/site-packages/opensim --add_path %(installdir)s/lib; \
+    /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path ${d}/site-packages/opensim --add_path %(installdir)s/lib64; \
+	/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path ${d}/site-packages/opensim --add_path %(installdir)s/lib; done",
 ]
 
 #sanity_check_commands = [('python', '-c "import opensim"')] 
