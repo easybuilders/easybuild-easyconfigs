@@ -1,0 +1,69 @@
+easyblock = 'CMakeMake'
+
+name = 'SymEngine'
+version = '0.14.0'
+
+homepage = 'https://github.com/symengine/symengine'
+description = "SymEngine is a standalone fast C++ symbolic manipulation library."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/symengine/symengine/releases/download/v%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['11c5f64e9eec998152437f288b8429ec001168277d55f3f5f1df78e3cf129707']
+
+#patches = ['SymEngine-0.11.1-fix-flint-header.patch']
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('numpy', '2.1.1'),
+    ('Cython', '3.0.11'),
+    ('FLINT', '3.0.0'),
+    ('LLVM', '16.0.6'),
+]
+
+dependencies = [
+]
+
+configopts = " ".join([
+    "-DBUILD_SHARED_LIBS=ON",
+    "-DWITH_GMP=ON",
+    "-DWITH_MPFR=ON",
+    "-DWITH_MPC=ON",
+    "-DWITH_FLINT=ON",
+    "-DWITH_LLVM=ON",
+    "-DWITH_OPENMP=ON",
+    "-DINTEGER_CLASS=FLINT",
+    "-DWITH_TCMALLOC=ON",
+])
+
+multi_deps = {'Python': ['3.11', '3.12', '3.13']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('symengine', version, {
+        'sources': [{'source_urls': ['https://github.com/symengine/symengine.py/releases/download/v%(version)s/'], 'filename': 'symengine.py-%(version)s.tar.gz'}],
+        'use_pip': True,
+        'checksums': ['38e742a9b3d03b36f07b2ccba39e7e3d626e37557c26bb03ce575b95cfbd9cc4'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_paths = {
+    'files': ['lib64/libsymengine.so'],
+    'dirs': ['include/symengine', 'lib/cmake/symengine', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import symengine'",
+    "python -c 'from symengine import var;var(\"x y z\");e = (x+y+z)**2;e.expand();'",
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'lib'
