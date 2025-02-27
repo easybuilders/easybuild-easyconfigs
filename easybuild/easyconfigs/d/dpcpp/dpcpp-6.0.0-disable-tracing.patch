@@ -1,0 +1,23 @@
+Patch setting the unified-runtime cmake option UR_ENABLE_TRACING to OFF
+author: Rafal Bielski (Codeplay Software Ltd)
+diff -ruN llvm-6.0.0.orig/sycl/cmake/modules/FetchUnifiedRuntime.cmake llvm-6.0.0/sycl/cmake/modules/FetchUnifiedRuntime.cmake
+--- llvm-6.0.0.orig/sycl/cmake/modules/FetchUnifiedRuntime.cmake	2025-02-27 00:25:36.354290776 +0000
++++ llvm-6.0.0/sycl/cmake/modules/FetchUnifiedRuntime.cmake	2025-02-27 00:24:59.118290516 +0000
+@@ -31,13 +31,16 @@
+ set(UR_BUILD_TESTS OFF CACHE BOOL "Build unit tests." FORCE)
+ set(UR_BUILD_XPTI_LIBS OFF)
+ set(UR_ENABLE_SYMBOLIZER ON CACHE BOOL "Enable symbolizer for sanitizer layer.")
+-set(UR_ENABLE_TRACING ON)
++set(UR_ENABLE_TRACING OFF)
+ 
+ if("level_zero" IN_LIST SYCL_ENABLE_PLUGINS)
+   set(UR_BUILD_ADAPTER_L0 ON)
+ endif()
+ if("cuda" IN_LIST SYCL_ENABLE_PLUGINS)
+   set(UR_BUILD_ADAPTER_CUDA ON)
++  find_package(CUDA 10.1 REQUIRED)
++  unset(CUDA_cupti_LIBRARY CACHE)
++  set(_FindCUDA_testing TRUE)
+ endif()
+ if("hip" IN_LIST SYCL_ENABLE_PLUGINS)
+   set(UR_BUILD_ADAPTER_HIP ON)
