@@ -1830,12 +1830,12 @@ def template_easyconfig_test(self, spec):
             fail_msg += f"'{orig_val}' vs '{dumped_val}'"
             failing_checks.append(fail_msg)
 
-    # don't allow updating of $PYTHONPATH with standard lib/python*/site-packages path,
-    # since that's already taken care of by EasyBuild framework now
-    # (cfr. https://github.com/easybuilders/easybuild-framework/pull/4539)
     modextrapaths = ec.get('modextrapaths', {}, resolve=True)
     regex = re.compile(r'^lib*/python[0-9]\.[0-9]+/site-packages$')
     for key, value in modextrapaths.items():
+        # don't allow updating of $PYTHONPATH with standard lib/python*/site-packages path,
+        # since that's already taken care of by EasyBuild framework now
+        # (cfr. https://github.com/easybuilders/easybuild-framework/pull/4539)
         if key == 'PYTHONPATH':
             if isinstance(value, str):
                 value = [value]
@@ -1843,6 +1843,10 @@ def template_easyconfig_test(self, spec):
                 fail_msg = "PYTHONPATH should not be specified in modextrapaths with standard path that matches "
                 fail_msg += f"'{regex.pattern}'"
                 failing_checks.append(fail_msg)
+        # don't allow hardcoding 'CPATH' in modextrapaths, should use MODULE_LOAD_ENV_HEADERS constant instead
+        if key == 'CPATH':
+            fail_msg = "'CPATH' should not be used in modextrapaths, use MODULE_LOAD_ENV_HEADERS constant instead"
+            failing_checks.append(fail_msg)
 
     # meson buildtype should be specified with easyblock parameter "buildtype" not with custom configopts.
     if ec['easyblock'] == 'MesonNinja':
