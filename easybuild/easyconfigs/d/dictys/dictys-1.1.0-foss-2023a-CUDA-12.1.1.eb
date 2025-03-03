@@ -1,0 +1,83 @@
+easyblock = 'PythonBundle'
+
+name = 'dictys'
+version = '1.1.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/pinellolab/dictys'
+description = "Context specific and dynamic gene regulatory network reconstruction and analysis."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [('poetry', '1.5.1')]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('PyTorch-bundle', '2.1.2', versionsuffix),
+    ('pybedtools', '0.9.1'),
+    ('SAMtools', '1.18'),
+    ('MACS2', '2.2.9.1'),
+    ('FFmpeg', '6.0'),
+    ('matplotlib', '3.7.2'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('networkx', '3.1'),
+    ('h5py', '3.9.0'),
+    ('pyro-ppl', '1.9.0', versionsuffix),
+    ('adjustText', '0.7.3'),
+    ('Pysam', '0.22.0'),
+    ('paramiko', '3.2.0'),
+    ('Jupyter-bundle', '20230823'),
+    ('Qtconsole', '5.5.1'),
+    ('junos-eznc', '2.7.1'),
+]
+
+# regenerate WellingtonC.c to works with python 3.11 + unpin matplotlib version
+local_pyDNase_preinstallopts = (
+    "cd pyDNase/footprinting && rm WellingtonC.c && cythonize -i WellingtonC.pyx && cd .. && cd .. && "
+    "sed -i 's/matplotlib < 2.0.0/matplotlib/' setup.py && "
+)
+
+exts_list = [
+    ('jupyter_console', '6.6.3', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['309d33409fcc92ffdad25f0bcdf9a4a9daa61b6f341177570fdac03de5352485'],
+    }),
+    ('jupyter', '1.0.0', {
+        'checksums': ['d9dc4b3318f310e34c82951ea5d6683f67bed7def4b259fafbfe4f1beb1d8e5f'],
+    }),
+    ('args', '0.1.0', {
+        'checksums': ['a785b8d837625e9b61c39108532d95b85274acd679693b71ebb5156848fcf814'],
+    }),
+    ('clint', '0.5.1', {
+        'checksums': ['05224c32b1075563d0b16d0015faaf9da43aa214e4a2140e51f08789e7a4c5aa'],
+    }),
+    ('pynetbox', '7.4.0', {
+        'checksums': ['fd0b1f197b3880048408ff5ed84422dd599bcd9389e32cb06a09b9b0d55c1636'],
+    }),
+    ('absl-py', '1.4.0', {
+        'modulename': 'absl',
+        'checksums': ['d2c244d01048ba476e7c080bd2c6df5e141d211de80223460d5b3b8a2a58433d'],
+    }),
+    ('aerleon', '1.9.0', {
+        'checksums': ['850cd621dda750263db313d4473302b48b82adaaa9220e6fd0677cb7900f95f6'],
+    }),
+    ('homer', '0.7.0', {
+        'checksums': ['efaf9b3948f6aecdf88cc87c0296a18aed77c152489a7f85c571965fb16f9e57'],
+    }),
+    ('pyDNase', '0.3.0', {
+        'preinstallopts': local_pyDNase_preinstallopts,
+        'modulename': 'pyDNase',
+        'checksums': ['dba03cadca37929a1cc41545e962136f29efc41f8e3c6de042c51c47ee04d558'],
+    }),
+    (name, version, {
+        'checksums': ['59610a8c57e9fc525ec5d13b69efc8b513c78a85a595e0e2b0138da62a035978'],
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+sanity_check_commands = ["dictys --help"]
+
+moduleclass = 'bio'

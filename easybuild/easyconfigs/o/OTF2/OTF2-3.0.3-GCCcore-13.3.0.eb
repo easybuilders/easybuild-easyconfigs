@@ -1,0 +1,60 @@
+# #
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# Copyright:: Copyright 2013-2024 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+# Markus Geimer <m.geimer@fz-juelich.de>
+# Jan André Reuter <j.reuter@fz-juelich.de>
+# License::   3-clause BSD
+#
+# This work is based on experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+# #
+
+easyblock = 'EB_Score_minus_P'
+
+name = 'OTF2'
+version = '3.0.3'
+
+homepage = 'https://www.score-p.org'
+description = """
+ The Open Trace Format 2 is a highly scalable, memory efficient event trace
+ data format plus support library. It is the new standard trace format for
+ Scalasca, Vampir, and TAU and is open for other tools.
+
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['http://perftools.pages.jsc.fz-juelich.de/cicd/%(namelower)s/tags/%(namelower)s-%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['otf2-3.0.3-update-py-compile.patch']
+checksums = [
+    '18a3905f7917340387e3edc8e5766f31ab1af41f4ecc5665da6c769ca21c4ee8',  # otf2-3.0.3.tar.gz
+    '5b1dad8788642eaa97bc03003c9329380340ba10649e556a30ce541165cf8da4',  # otf2-3.0.3-update-py-compile.patch
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+]
+dependencies = [
+    # SIONlib container support (optional):
+    ('SIONlib', '1.7.7', '-tools'),
+    # OTF2 Python bindings
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+]
+
+local_pyshortver = '3.12'
+configopts = '--enable-shared'
+
+modextrapaths = {'PYTHONPATH': ['lib64/python%s/site-packages' % local_pyshortver]}
+
+sanity_check_paths = {
+    'files': ['bin/otf2-config', 'include/otf2/otf2.h',
+              'lib/libotf2.a', 'lib/libotf2.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+sanity_check_commands = ['%(namelower)s-config --help',
+                         'python -c "import %(namelower)s"']
+
+moduleclass = 'perf'
