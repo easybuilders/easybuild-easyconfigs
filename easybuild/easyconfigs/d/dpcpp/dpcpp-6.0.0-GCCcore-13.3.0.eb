@@ -25,12 +25,13 @@ source_urls = ['https://github.com/intel/llvm/archive/refs/tags/']
 sources = ['v%(version)s.tar.gz']
 
 # Patch disabling unified-runtime tracing and its dependency on a specific
-# version of CUDA CUPTI library which would reduce portability
-patches = ['dpcpp-6.0.0-disable-tracing.patch']
+# version of CUDA CUPTI library which would reduce portability, as well as
+# fixing an issue with finding libcuda.so
+patches = ['dpcpp-6.0.0-cmake-cuda-deps.patch']
 
 checksums = [
     {'v6.0.0.tar.gz': 'f7a30b3075e2690b207063bb66504ebcb466ddf10604f6467b5a1785eb022ce8'},
-    {'dpcpp-6.0.0-disable-tracing.patch': '4ebab996a6a769a1836db3594f136ccf4cfc699f05b95824480339cd9acf7f5a'},
+    {'dpcpp-6.0.0-cmake-cuda-deps.patch': '37cb78ac15d351dc233a19856454b3bc235ecec6a6d71d59d40805bc8ff7b279'},
 ]
 
 builddependencies = [
@@ -72,7 +73,8 @@ installopts = '-C ' + build_dir
 
 # Ensure DPC++ picks up libstdc++ from the GCCcore module and not from system
 postinstallcmds = [
-    'echo "--gcc-toolchain=$EBROOTGCCCORE" > %(installdir)s/bin/clang++.cfg'
+    'echo "--gcc-toolchain=$EBROOTGCCCORE" > %(installdir)s/bin/clang++.cfg',
+    'echo "--gcc-toolchain=$EBROOTGCCCORE" > %(installdir)s/bin/clang.cfg'
 ]
 
 # OpenMP libs install in lib/<target-triple>
