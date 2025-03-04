@@ -3,7 +3,7 @@
 easyblock = 'CMakeMake'
 
 name = 'MFiX'
-version = '24.3'
+version = '24.4.1'
 
 homepage = 'https://mfix.netl.doe.gov/products/mfix/'
 description = """
@@ -16,13 +16,25 @@ The successes achieved in modeling complex multiphase flow systems have led to n
 such as drag, polydispersity, attrition, and agglomeration models, among other significant advances.
 """
 
+citing = """
+The use of MFIX is to be acknowledged in any published paper based on computations using this software by 
+citing the MFIX theory manual. MFIX is being developed at NETL with active collaboration from ORNL and funding
+through OIT of DOE. Some of the submodels are being developed by researchers outside of NETL. The use of such 
+submodels is to be acknowledged by citing the appropriate papers of the developers of the  submodels.
+"""
+
 toolchain = {'name': 'intel', 'version': '2023b'}
-toolchainopts = {'usempi': True, 'pic': True}
+toolchainopts = {'usempi': True}
 
+# Source URLs are linked under https://mfix.netl.doe.gov/products/mfix/mfix-archive/
+# (which requires an account to access). Linked URLs found there are open.
+source_urls = ['https://mfix.netl.doe.gov/s3/35d029c0/cfd4465f36afd13c89f92073390d7759//source/%(namelower)s/']
 sources = ['%(namelower)s-%(version)s.tar.gz']
-checksums = ['d6313d02b4631a6b2eef944c158bb7b1a2eecfe7bcee9f533ce71571f1acffe8']
-
-download_instructions = 'Fetch the source %s after logging into %s' % (sources[0], homepage)
+patches = ['MFiX-24.4.1-remove-tab.patch']
+checksums = [
+    'c603bc11c0ac07662b206b816c85e189ba2562fc05b31260ba296447a7def1af',  # mfix-24.4.1.tar.gz
+    '0ad4ab803da6ea070e2018da38fbbddcf43cef6747ae5f7da9531d51ef6161de',  # MFiX-24.4.1-remove-tab.patch 
+]
 
 builddependencies = [
     ('CMake', '3.27.6'),
@@ -37,6 +49,8 @@ postinstallcmds = [
     'mkdir -p %(installdir)s/bin',
     'mv %(installdir)s/mfixsolver_dmp %(installdir)s/bin/mfixsolver_dmp',
 ]
+
+parallel = 4
 
 test_cmd = ' && '.join([
     'cd tutorials/dem/mixer_3d',
