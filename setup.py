@@ -1,5 +1,5 @@
 ##
-# Copyright 2012-2024 Ghent University
+# Copyright 2012-2025 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -44,7 +44,7 @@ from distutils.core import setup
 # recent setuptools versions will *TRANSFORM* something like 'X.Y.Zdev' into 'X.Y.Z.dev0', with a warning like
 #   UserWarning: Normalizing '2.4.0dev' to '2.4.0.dev0'
 # This causes problems further up the dependency chain...
-VERSION = '4.9.3.dev0'
+VERSION = '5.0.0beta2'
 
 MAJ_VER = VERSION.split('.')[0]
 MAJMIN_VER = '.'.join(VERSION.split('.')[0:2])
@@ -109,6 +109,9 @@ versions, etc.).""",
         "easybuild_framework(>=%s.0)" % MAJ_VER,
         "easybuild_easyblocks(>=%s)" % MAJMIN_VER,
     ],
+    extras_require={
+        "archive": ["easybuild-easyconfigs-archive>=%s" % MAJ_VER],
+    },
     # not known by distutils, but required to avoid that easy_install installs easyconfigs package as a zipped egg
     zip_safe=False,
 )
