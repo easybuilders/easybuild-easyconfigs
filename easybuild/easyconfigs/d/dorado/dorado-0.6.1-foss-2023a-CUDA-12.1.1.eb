@@ -29,6 +29,7 @@ checksums = [
 builddependencies = [
     ('binutils', '2.40'),
     ('CMake', '3.26.3'),
+    ('patchelf', '0.18.0'),
 ]
 
 dependencies = [
@@ -69,6 +70,22 @@ configopts += "-DDORADO_LIBTORCH_DIR=$EBROOTPYTORCH/lib "
 # add -pthread flag (in addition to -lpthread) to avoid linking error:
 # in function `_GLOBAL__sub_I_mutex.cc': mutex.cc:(.text.startup+0x17): undefined reference to `pthread_atfork'
 configopts += '-DCMAKE_C_FLAGS="$CFLAGS -pthread" '
+
+# disable CMake fiddling with RPATH when EasyBuild is configured to use RPATH linking
+configopts += "$(if %(rpath_enabled)s; then "
+configopts += "echo '-DCMAKE_SKIP_INSTALL_RPATH=YES -DCMAKE_SKIP_RPATH=YES'; fi) "
+
+# CUDA libraries that are copied to installdir need to be patched to have an RPATH section
+# when EasyBuild is configured to use RPATH linking (required to pass RPATH sanity check);
+# by default, CMake sets RUNPATH to '$ORIGIN' rather than RPATH (but that's disabled above)
+postinstallcmds = [
+    "if %(rpath_enabled)s; then "
+    "  for lib in $(ls %(installdir)s/lib/lib{cu,nv}*.so*); do "
+    "    echo setting RPATH in $lib;"
+    "    patchelf --force-rpath --set-rpath '$ORIGIN' $lib;"
+    "  done;"
+    "fi",
+]
 
 sanity_check_paths = {
     'files': ['bin/dorado'],

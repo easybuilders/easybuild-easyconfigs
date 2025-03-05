@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2024 Ghent University
+# Copyright 2013-2025 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -423,6 +423,17 @@ class EasyConfigTest(TestCase):
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
 
+        # multiple variants of GPAW-setups is OK as long as they are deps for GPAW
+        if dep == 'GPAW-setups' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out GPAW-setups variants that are only used as a dependency for GPAW
+                if all(ec.startswith('GPAW') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
+
         # Pairs of name, versionsuffix that should be removed from dep_vars if exactly one matching key is found.
         # The name is checked against 'dep' and can be a list to allow multiple
         # If the versionsuffix is a 2-element tuple, the second element should be set to True
@@ -547,6 +558,9 @@ class EasyConfigTest(TestCase):
             # Score-P 8.3+ requires Cube 4.8.2+ but we have 4.8.1 already
             'CubeLib': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
             'CubeWriter': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
+            # Current rapthor requires WSclean 3.5 or newer, which in turn requires EveryBeam 0.6.X or newer
+            # Requires us to also bump DP3 version (to 6.2) and its dependency on EveryBeam
+            'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2', r'WSClean-3\.[5-9]'])],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
@@ -627,9 +641,11 @@ class EasyConfigTest(TestCase):
                                'NGSpeciesID-0.1.1.1-']),
                 ('0.18.0;', ['medaka-1.6.0-', 'NGSpeciesID-0.1.2.1-', 'WhatsHap-1.4-']),
             ],
+            # PyTorch-Lightning-1.8.4 is requiered in synthcity-0.2.10 and DECAF-synthetic-data-0.1.6
+            'PyTorch-Lightning': [('1.8.4;', ['synthcity-0.2.10-', 'DECAF-synthetic-data-0.1.6-'])],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
-                                   r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
+                                   r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1', r'OPERA-MS-0\.9\.0-20240703'])],
             # NanoPlot, NanoComp use an older version of Seaborn
             'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
             # Shasta requires spoa 3.x
@@ -658,6 +674,8 @@ class EasyConfigTest(TestCase):
                 # tensorflow-probability version to TF version
                 ('2.8.4;', ['tensorflow-probability-0.16.0-']),
             ],
+            # vLLM has pinned dependency tiktoken == 0.6.0
+            'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
@@ -1011,6 +1029,30 @@ class EasyConfigTest(TestCase):
                     if not dirpath.endswith('/easybuild/easyconfigs'):
                         self.fail("There should be no easyconfig files in %s, found %s" % (dirpath, easyconfig_files))
 
+    def test_easybuild_easyconfigs_latest_release(self):
+        """
+        Check which easyconfig file would be picked up by 'eb --install-latest-eb-release'
+        """
+        # this mimics the logic used in the find_easybuild_easyconfig used by EasyBuild framework
+        # to obtain an easyconfig file when --install-latest-eb-release is used
+        topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        easybuild_dir = os.path.join(topdir, 'easybuild', 'easyconfigs', 'e', 'EasyBuild')
+        ecs = os.listdir(easybuild_dir)
+
+        file_versions = []
+        for ec in ecs:
+            txt = read_file(os.path.join(easybuild_dir, ec))
+            for line in txt.split('\n'):
+                if re.search(r'^version\s*=', line):
+                    scope = {}
+                    exec(line, scope)
+                    version = scope['version']
+                    file_versions.append((LooseVersion(version), ec))
+
+        most_recent = sorted(file_versions)[-1]
+        self.assertEqual(most_recent[0], LooseVersion('4.9.4'))
+        self.assertEqual(most_recent[1], 'EasyBuild-4.9.4.eb')
+
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
         topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -1183,6 +1225,12 @@ class EasyConfigTest(TestCase):
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
                     failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
 
+            # When using Rust it should use CargoPython*
+            if easyblock in ('PythonBundle', 'PythonPackage'):
+                if any(dep['name'] == 'Rust' or '-Rust-' in dep['versionsuffix'] for dep in ec.dependencies()):
+                    failing_checks.append('Use Cargo%s instead of %s when Rust is used in %s'
+                                          % (easyblock, easyblock, ec_fn))
+
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
@@ -1212,12 +1260,12 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
-        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PerlBundle,
+        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle & JuliaPackage, PerlBundle,
         #           PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
         whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage',
-                     'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'ModuleRC',
-                     'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
+                     'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'JuliaPackage',
+                     'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
@@ -1363,6 +1411,51 @@ class EasyConfigTest(TestCase):
                 no_descr_patches.append(patch)
 
         self.assertFalse(no_descr_patches, "No description found in patches: %s" % ', '.join(no_descr_patches))
+
+
+def verify_patch(specdir, patch_spec, checksum_idx, patch_checksums, extension_name=None):
+    """Verify existance and checksum of the given patch.
+
+    specdir         - Directory of the easyconfig
+    patch_spec      - Patch entry
+    checksum_idx    - Expected index in the checksum list
+    patch_checksums - List of checksums for patches
+    extension_name  - Name of the extensions this patch is for if any
+
+    Return a (possibly empty) list of failure messages
+    """
+    patch_dir = specdir
+    if isinstance(patch_spec, str):
+        patch_name = patch_spec
+    elif isinstance(patch_spec, (tuple, list)):
+        patch_name = patch_spec[0]
+    elif isinstance(patch_spec, dict):
+        patch_name = patch_spec['name']
+        alt_location = patch_spec.get('alt_location')
+        if alt_location:
+            basedir = os.path.dirname(os.path.dirname(specdir))
+            patch_dir = os.path.join(basedir, letter_dir_for(alt_location), alt_location)
+    else:
+        # Should have already been verified
+        raise RuntimeError('Patch spec is not a string, tuple, list or dict: %s\nType: %s' % (patch_spec,
+                                                                                              type(patch_spec)))
+
+    patch_path = os.path.join(patch_dir, patch_name)
+    patch_descr = "patch file " + patch_name
+    if extension_name:
+        patch_descr += "of extension " + extension_name
+
+    # only check actual patch files, not other files being copied via the patch functionality
+    if patch_path.endswith('.patch'):
+        if not os.path.isfile(patch_path):
+            return [patch_descr + "is missing"]
+
+        if checksum_idx < len(patch_checksums):
+            checksum = patch_checksums[checksum_idx]
+            if not verify_checksum(patch_path, checksum):
+                return ["Invalid checksum for %s: %s" % (patch_descr, checksum)]
+
+    return []  # No error
 
 
 def template_easyconfig_test(self, spec):
@@ -1516,27 +1609,9 @@ def template_easyconfig_test(self, spec):
 
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
-    basedir = os.path.dirname(os.path.dirname(specdir))
-    for idx, patch in enumerate(patches):
-        patch_dir = specdir
-        if isinstance(patch, str):
-            patch_name = patch
-        elif isinstance(patch, (tuple, list)):
-            patch_name = patch[0]
-        elif isinstance(patch, dict):
-            patch_name = patch['name']
-            if patch['alt_location']:
-                patch_dir = os.path.join(basedir, letter_dir_for(patch['alt_location']), patch['alt_location'])
 
-        # only check actual patch files, not other files being copied via the patch functionality
-        patch_full = os.path.join(patch_dir, patch_name)
-        if patch_name.endswith('.patch') and not os.path.isfile(patch_full):
-            failing_checks.append("Patch file %s is missing" % patch_full)
-        # verify checksum for each patch file
-        elif idx < len(patch_checksums) and (os.path.exists(patch_full) or patch_name.endswith('.patch')):
-            checksum = patch_checksums[idx]
-            if not verify_checksum(patch_full, checksum):
-                failing_checks.append("Invalid checksum for patch file %s: %s" % (patch_name, checksum))
+    for idx, patch in enumerate(patches):
+        failing_checks.extend(verify_patch(specdir, patch, idx, patch_checksums))
 
     # make sure 'source' step is not being skipped,
     # since that implies not verifying the checksum
@@ -1566,21 +1641,7 @@ def template_easyconfig_test(self, spec):
         patch_checksums = checksums[src_cnt:]
 
         for idx, ext_patch in enumerate(ext.get('patches', [])):
-            if isinstance(ext_patch, (tuple, list)):
-                ext_patch = ext_patch[0]
-
-            # only check actual patch files, not other files being copied via the patch functionality
-            ext_patch_full = os.path.join(specdir, ext_patch['name'])
-            if ext_patch_full.endswith('.patch') and not os.path.isfile(ext_patch_full):
-                failing_checks.append("Patch file %s for extension %s is missing." % (ext_patch['name'], ext_name))
-                continue
-
-            # verify checksum for each patch file
-            if idx < len(patch_checksums) and os.path.exists(ext_patch_full):
-                checksum = patch_checksums[idx]
-                if not verify_checksum(ext_patch_full, checksum):
-                    failing_checks.append("Invalid checksum for patch %s for extension %s: %s."
-                                          % (ext_patch['name'], ext_name, checksum))
+            failing_checks.extend(verify_patch(specdir, ext_patch, idx, patch_checksums, extension_name=ext_name))
 
     # check whether all extra_options defined for used easyblock are defined
     extra_opts = app.extra_options()
