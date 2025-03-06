@@ -1,0 +1,64 @@
+commit 1db372bc52dcb833f5072894f6a882d10e5eb344
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Thu Nov 3 15:26:48 2022 +0100
+
+    Description: enhance the cmake build scripts to:
+     - allow targetting of multiple CUDA architectures (with -gencode=)
+     - introduce DEFAULT_CUDA_ARCH to set the default CUDA arch target (-arch=)
+    Original Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+    
+    Modified to correctly set NVCC build flags and allow externally setting --std=xxx flag.
+
+diff -ru relion-4.0.0.orig/cmake/BuildTypes.cmake relion-4.0.0/cmake/BuildTypes.cmake
+--- relion-4.0.0.orig/cmake/BuildTypes.cmake	2022-09-28 03:20:54.000000000 +0200
++++ relion-4.0.0/cmake/BuildTypes.cmake	2022-12-12 09:42:38.956533072 +0100
+@@ -3,9 +3,9 @@
+ # Because gcc is compliant with a float128 type, fftw has become as well. nvcc is NOT. 
+ # So -D__INTEL_COMPILER just manages to avoid compiling float128-targets (see fftw3.h, for instance).
+ # Add -G to allow cuda-gdb to break inside kernels.
+-set(EXTRA_NVCC_FLAGS "-D__INTEL_COMPILER --default-stream per-thread --std=c++11")
++set(EXTRA_NVCC_FLAGS "-D__INTEL_COMPILER --default-stream per-thread")
+ 
+-set(RELION_NVCC_FLAGS "${CUDARCH} ${WARN_DBL} ${EXTRA_NVCC_FLAGS}" CACHE STRING "" FORCE)
++set(RELION_NVCC_FLAGS "${WARN_DBL} ${EXTRA_NVCC_FLAGS}" CACHE STRING "" FORCE)
+ #message(STATUS "RELION_NVCC_FLAGS: ${RELION_NVCC_FLAGS}")
+ 
+ # -------------------------- 
+diff -ru relion-4.0.0.orig/CMakeLists.txt relion-4.0.0/CMakeLists.txt
+--- relion-4.0.0.orig/CMakeLists.txt	2022-09-28 03:20:54.000000000 +0200
++++ relion-4.0.0/CMakeLists.txt	2022-12-12 10:18:05.714302104 +0100
+@@ -73,13 +73,20 @@
+ # ------------------OPTIONS WHICH ARE NEEDED TO SET BUILD-TYPES (COMPILATION FLAGS)--
+ # ------------------------------------------------------------------------CUDA-ARCH--
+ if(NOT DEFINED CUDA_ARCH)
+-    message(STATUS "Setting fallback CUDA_ARCH=50")
+-    set(CUDARCH "-arch=sm_50")
++    message(STATUS "Setting fallback CUDA_ARCH=5.0")
++    set(CUDA_ARCH "5.0")
+ else(NOT DEFINED CUDA_ARCH)
+     message(STATUS "Using provided CUDA_ARCH=${CUDA_ARCH}")
+-    set(CUDARCH "-arch=sm_${CUDA_ARCH}")
+ endif(NOT DEFINED CUDA_ARCH)
+-    
++
++if(NOT DEFINED DEFAULT_CUDA_ARCH)
++    string(REGEX MATCH "[0-9]+\\.[0-9]+" DEFAULT_CUDA_ARCH "${CUDA_ARCH}")
++    message(STATUS "Setting fallback DEFAULT_CUDA_ARCH=${DEFAULT_CUDA_ARCH}")
++endif()
++
++string(REPLACE "." "" DEFAULT_CUDA_SM ${DEFAULT_CUDA_ARCH})
++set(CUDA_SM "-arch=sm_${DEFAULT_CUDA_SM}")
++
+ # -------------------------------------------------------------------FURTHER OPTIONS--
+ 
+ 
+@@ -155,6 +162,8 @@
+     if(CUDA)
+         add_definitions(-D_CUDA_ENABLED)
+     endif()
++    cuda_select_nvcc_arch_flags(CUDA_GENCODE "${CUDA_ARCH}")
++    list(APPEND CUDA_NVCC_FLAGS ${CUDA_SM} ${CUDA_GENCODE})
+ else(CUDA_FOUND)
+     message(STATUS "Using non-cuda compilation....")
+ endif(CUDA_FOUND)
+Only in relion-4.0.0: .CMakeLists.txt.swp
