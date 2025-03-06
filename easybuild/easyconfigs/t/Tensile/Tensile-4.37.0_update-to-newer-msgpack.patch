@@ -1,0 +1,25 @@
+Update CMake file to handle newer msgpack versions where c/c++ is split in separate packages.
+
+Åke Sandgren, 2023-09-11
+diff -ru Tensile-rocm-5.6.0.orig/Tensile/Source/lib/CMakeLists.txt Tensile-rocm-5.6.0/Tensile/Source/lib/CMakeLists.txt
+--- Tensile-rocm-5.6.0.orig/Tensile/Source/lib/CMakeLists.txt	2023-06-12 19:51:58.000000000 +0200
++++ Tensile-rocm-5.6.0/Tensile/Source/lib/CMakeLists.txt	2023-09-11 14:08:10.085437885 +0200
+@@ -97,13 +97,13 @@
+ endif()
+ 
+ if(TENSILE_USE_MSGPACK)
+-    find_package(msgpack REQUIRED)
++    find_package(msgpack-cxx REQUIRED)
+     target_compile_definitions(TensileHost PUBLIC -DTENSILE_MSGPACK=1)
+ 
+-    if(TARGET msgpackc-cxx)
+-        get_target_property(msgpack_inc msgpackc-cxx INTERFACE_INCLUDE_DIRECTORIES)
+-    elseif(TARGET msgpackc)
+-        get_target_property(msgpack_inc msgpackc INTERFACE_INCLUDE_DIRECTORIES)
++    if(TARGET msgpack-cxx)
++        get_target_property(msgpack_inc msgpack-cxx INTERFACE_INCLUDE_DIRECTORIES)
++    elseif(TARGET msgpack-c)
++        get_target_property(msgpack_inc msgpack-c INTERFACE_INCLUDE_DIRECTORIES)
+     endif()
+ 
+     if(DEFINED msgpack_inc)
