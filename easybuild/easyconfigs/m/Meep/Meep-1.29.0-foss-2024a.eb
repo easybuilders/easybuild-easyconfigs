@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'Meep'
+version = '1.29.0'
+
+homepage = 'https://meep.readthedocs.io/en/latest/'
+description = """Meep (or MEEP) is a free finite-difference time-domain (FDTD) simulation software package
+ developed at MIT to model electromagnetic systems."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'usempi': True, 'opt': True, 'unroll': True, 'pic': True}
+
+source_urls = ['https://github.com/NanoComp/%(namelower)s/releases/download/v%(version)s/']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['68279f862cf9342a6e0f2023667d6a6ac7c1eafe46663705519772f312412194']
+
+builddependencies = [
+    ('Autotools', '20231222'),
+    ('pkgconfig', '1.5.5', '-python'),
+    ('SWIG', '4.2.1')
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('matplotlib', '3.9.2'),
+    ('MPB', '1.11.1'),
+    ('Harminv', '1.4.2'),
+    ('HDF5', '1.14.5'),
+    ('libctl', '4.5.1'),
+    ('libGDSII', '0.21'),
+    ('GSL', '2.8'),
+    ('Guile', '3.0.10'),
+]
+
+configopts = "--with-pic --with-mpi --with-blas=flexiblas --with-lapack=flexiblas --without-gcc-arch "
+configopts += "--with-libctl=$EBROOTLIBCTL/share/libctl --enable-shared "
+
+sanity_check_paths = {
+    'files': ['bin/meep', 'include/meep.hpp', 'lib/libmeep.a', 'lib/libpympb.a',
+              'lib/libmeep.%s' % SHLIB_EXT, 'lib/libpympb.%s' % SHLIB_EXT],
+    'dirs': ['include/meep', 'lib/python%(pyshortver)s/site-packages/meep', 'share/meep'],
+}
+
+sanity_check_commands = [
+    "meep --help",
+    "python -c 'import meep'",
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'phys'
