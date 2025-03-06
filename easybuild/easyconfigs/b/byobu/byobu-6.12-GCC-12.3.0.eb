@@ -1,0 +1,56 @@
+# #
+# This is a contribution from Flomics Biotech SL (http://flomics.com)
+# Copyright::   Flomics Biotech SL
+# Authors::     Cris Tunyi-Dominguez <cristina.tuni@flomics.com>
+# License::     GPL-v3.0
+# #
+
+easyblock = 'ConfigureMake'
+
+name = 'Byobu'
+version = '6.12'
+
+homepage = 'https://byobu.org'
+description = """Byobu is an elegant enhancement of the otherwise functional, plain, practical GNU Screen. Byobu
+includes an enhanced profile, configuration utilities, and system status notifications for the GNU screen window
+manager as well as the Tmux terminal multiplexer"""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/dustinkirkland/byobu/archive/refs/tags']
+sources = [f'{version}.tar.gz']
+checksums = ['abb000331858609dfda9214115705506249f69237625633c80487abe2093dd45']
+
+builddependencies = [
+    ('Autotools', '20231222'),
+]
+
+osdependencies = [('screen', ''), ('tmux', '')]
+
+dependencies = [
+    ('ncurses', '6.4')
+]
+
+preconfigopts = "autoreconf -i && "
+
+sanity_check_paths = {
+    'files': ['bin/byobu', 'bin/byobu-config', 'bin/byobu-select-session'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'byobu --version',
+    'tmux -V',
+]
+
+moduleclass = 'tools'
+
+postinstallcmds = [
+    'sed -i "s|/nfs/user|/usr/bin|" %(installdir)s/bin/byobu',
+    'chmod +x %(installdir)s/bin/byobu',
+]
+
+buildopts = 'CC=gcc'
+configopts = '--disable-static --prefix=%(installdir)s'
+
