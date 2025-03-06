@@ -1,0 +1,60 @@
+easyblock = 'Bundle'
+
+name = 'poppler'
+version = '23.01.0'
+
+homepage = 'https://poppler.freedesktop.org'
+description = "Poppler is a PDF rendering library"
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+
+builddependencies = [
+    ('binutils', '2.39'),
+    ('CMake', '3.24.3'),
+    ('pkgconf', '1.9.3'),
+    ('Python', '3.10.8', '-bare'),
+]
+
+dependencies = [
+    ('freetype', '2.12.1'),
+    ('fontconfig', '2.14.1'),
+    ('libjpeg-turbo', '2.1.4'),
+    ('libpng', '1.6.38'),
+    ('NSS', '3.85'),
+    ('LibTIFF', '4.4.0'),
+    ('Qt6', '6.4.2'),
+    ('Boost', '1.81.0'),
+    ('cairo', '1.17.4'),
+    ('OpenJPEG', '2.5.0'),
+    ('zlib', '1.2.12'),
+]
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'start_dir': '%(name)s-%(version)s',
+}
+
+components = [
+    (name, version, {
+        'source_urls': ['https://poppler.freedesktop.org/'],
+        'sources': [SOURCE_TAR_XZ],
+        'checksums': ['fae9b88d3d5033117d38477b79220cfd0d8e252c278ec870ab1832501741fd94'],
+        'configopts': "-DENABLE_BOOST=ON",
+    }),
+    ('poppler-data', '0.4.11', {
+        'source_urls': ['https://poppler.freedesktop.org/'],
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['2cec05cd1bb03af98a8b06a1e22f6e6e1a65b1e2f3816cb3069bb0874825f08c'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/pdfinfo', 'lib/libpoppler.%s' % SHLIB_EXT, 'lib/libpoppler-cpp.%s' % SHLIB_EXT,
+              'lib/libpoppler-glib.%s' % SHLIB_EXT, 'lib/libpoppler-qt6.%s' % SHLIB_EXT],
+    'dirs': ['include/poppler', 'lib/pkgconfig', 'share'],
+}
+
+sanity_check_commands = ["pdfinfo --help"]
+
+moduleclass = 'lib'
