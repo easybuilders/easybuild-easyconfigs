@@ -1147,6 +1147,12 @@ class EasyConfigTest(TestCase):
                 use_pip = ec.get('use_pip')
                 if use_pip is None:
                     use_pip = exts_default_options.get('use_pip')
+                # Options if only a single extension is present
+                single_ext_options = {}
+                if len(ec.get('exts_list', [])) == 1:
+                    ext = ec['exts_list'][0]
+                    if isinstance(ext, (tuple, list)) and len(ext) == 3:
+                        single_ext_options = ext[2]
 
             # only easyconfig parameters as they are defined in the easyconfig file,
             # does *not* include other easyconfig parameters with their default value!
@@ -1183,9 +1189,10 @@ class EasyConfigTest(TestCase):
                     failing_checks.append(fail)
                 else:
                     # both download_dep_fail and use_pip should be set via exts_default_options
-                    # when installing Python packages as extensions
+                    # when installing Python packages as extensions.
+                    # Except if there is only a single extension that does set it
                     for key in ['download_dep_fail', 'use_pip']:
-                        if exts_default_options.get(key) is None:
+                        if exts_default_options.get(key) is None and single_ext_options.get(key) is None:
                             failing_checks.append("'%s' should be set in exts_default_options in %s" % (key, ec_fn))
 
             # if Python is a dependency, that should be reflected in the versionsuffix since v3.8.6
