@@ -994,8 +994,16 @@ class EasyConfigTest(TestCase):
         for easyconfig in self.parsed_easyconfigs:
             ec = easyconfig['ec']
             # easyblocks where there'll be no sources
-            if ec['easyblock'] in ['BuildEnv', 'Bundle', 'CrayToolchain', 'ModuleRC', 'SystemCompiler', 'SystemMPI',
-                                   'Toolchain']:
+            if ec['easyblock'] in [
+                'BuildEnv',
+                'Bundle',
+                'CrayToolchain',
+                'ModuleRC',
+                'SystemCompiler',
+                'SystemCompilerGCC',
+                'SystemMPI',
+                'Toolchain',
+            ]:
                 continue
 
             # easyconfigs where a dep provides the source
