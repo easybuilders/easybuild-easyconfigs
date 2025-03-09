@@ -220,10 +220,10 @@ class EasyConfigTest(TestCase):
         changed_ecs_files = get_eb_files_from_diff(diff_filter='M')
         added_ecs_files = get_eb_files_from_diff(diff_filter='A')
 
-        # ignore template easyconfig (TEMPLATE.eb) and archived easyconfigs
+        # ignore archived easyconfigs
         def filter_ecs(ecs):
             archive_path = os.path.join('easybuild', 'easyconfigs', '__archive__')
-            return [ec for ec in ecs if os.path.basename(ec) != 'TEMPLATE.eb' and archive_path not in ec]
+            return [ec for ec in ecs if archive_path not in ec]
 
         changed_ecs_files = filter_ecs(changed_ecs_files)
         added_ecs_files = filter_ecs(added_ecs_files)
@@ -1077,8 +1077,8 @@ class EasyConfigTest(TestCase):
             # ignore git/svn dirs & archived easyconfigs
             if '/.git/' in dirpath or '/.svn/' in dirpath or '__archive__' in dirpath:
                 continue
-            # check whether list of .eb files is non-empty, only exception: TEMPLATE.eb
-            easyconfig_files = [fn for fn in filenames if fn.endswith('eb') and fn != 'TEMPLATE.eb']
+            # check whether list of .eb files is non-empty
+            easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
             if easyconfig_files:
                 # check whether path matches required pattern
                 if not easyconfig_dirs_regex.search(dirpath):
@@ -1890,7 +1890,7 @@ def suite(loader=None):
             dirs.remove('__archive__')
 
         for spec in specs:
-            if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
+            if spec.endswith('.eb'):
                 cnt += 1
                 innertest = make_inner_test(os.path.join(subpath, spec))
                 innertest.__doc__ = "Test for easyconfig %s" % spec
