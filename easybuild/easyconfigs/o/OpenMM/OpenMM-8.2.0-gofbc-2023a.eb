@@ -1,0 +1,87 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMM'
+version = '8.2.0'
+
+homepage = 'http://openmm.org'
+description = "OpenMM is a toolkit for molecular simulation."
+
+toolchain = {'name': 'gofbc', 'version': '2023a'}
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/%(namelower)s/%(namelower)s/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['61bc7b9254c603de1eb3274f0007725331f10b74d0442facb80be3d468ad5977']
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('FFTW', '3.3.10'),
+    ('SWIG', '4.1.1'),
+    ('Cython', '0.29.36'), # Needs Cython for install only
+]
+
+dependencies = [
+    ('SciPy-Stack', '2024a', '', SYSTEM),
+]
+
+
+#builddependencies = [
+#    ('CMake', '3.26.5', '', ('system', 'system')),
+#    ('FFTW', '3.3.10', '', ('GCC', '12.3.0')),
+#    ('SWIG', '4.1.1', '', SYSTEM),
+#    ('SciPy-Stack', '2024a', '', SYSTEM),
+#]
+
+multi_deps = {'Python': ['3.11.5']}
+
+configopts = "-DOPENMM_GENERATE_API_DOCS=OFF -DOPENMM_BUILD_CUDA_LIB=ON -DOPENMM_BUILD_OPENCL_LIB=ON -DCUDA_CUDA_LIBRARY=/usr/lib64/nvidia/libcuda.so -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python3"
+
+preinstallopts = "export OPENMM_INCLUDE_PATH=%(installdir)s/include && export OPENMM_LIB_PATH=%(installdir)s/lib && "
+installopts = "&& cd python && python setup.py build && pip install --prefix=%(installdir)s ."
+
+# Exclude some tests (regexps).  Can't test TestCuda* b/c there's no GPU in build-node.
+runtest = """test -e ARGS="-E '(Integrator)|(Thermostat)|(Barostat)|(Rpmd)|(Amoeba)|(HippoNonbondedForce)|(TestOpenCL)|(TestCuda)|(TestDrudeNoseHoover)'" """
+multi_deps_load_default = False
+exts_defaultclass = 'PythonPackage'
+exts_filter = (
+    "module load scipy-stack/2024a && python -c 'import %(ext_name)s'",
+    '',
+)
+# if some python is already loaded, use it, otherwise use default python module
+modluafooter = """
+-- needed for CUDA:
+setenv("OPENMM_CUDA_COMPILER", pathJoin(os.getenv("EBROOTCUDA"),"bin/nvcc"))
+
+depends_on('scipy-stack')
+"""
+
+exts_list = [
+    ('pdbfixer', '1.9', {
+        'installopts': '',
+        'preinstallopts': '',
+        'runtest': False,
+        'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags'],
+        'sources': ['%(version)s.tar.gz'],
+        'use_pip': True,
+        'checksums': ['88b9a77e50655f89d0eb2075093773e82c27a4cef842cb7d735c877b20cd39fb'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['include/%(name)s.h', 'lib/python%(pyshortver)s/site-packages/%(namelower)s/%(namelower)s.py', 'lib/libOpenMM.so'],
+    'dirs': ['bin', 'include', 'include/%(namelower)s', 'lib', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import %(namelower)s'",
+    "python -c 'import simtk'",
+    "module load scipy-stack/2024a && python%(pyshortver)s -m %(namelower)s.testInstallation",
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+    'OPENMM_INCLUDE_PATH': 'include',
+    'OPENMM_LIB_PATH': 'lib',
+}
+
+moduleclass = 'chem'
