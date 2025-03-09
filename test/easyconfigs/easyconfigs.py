@@ -994,8 +994,16 @@ class EasyConfigTest(TestCase):
         for easyconfig in self.parsed_easyconfigs:
             ec = easyconfig['ec']
             # easyblocks where there'll be no sources
-            if ec['easyblock'] in ['BuildEnv', 'Bundle', 'CrayToolchain', 'ModuleRC', 'SystemCompiler', 'SystemMPI',
-                                   'Toolchain']:
+            if ec['easyblock'] in [
+                'BuildEnv',
+                'Bundle',
+                'CrayToolchain',
+                'ModuleRC',
+                'SystemCompiler',
+                'SystemCompilerGCC',
+                'SystemMPI',
+                'Toolchain',
+            ]:
                 continue
 
             # easyconfigs where a dep provides the source
@@ -1313,10 +1321,12 @@ class EasyConfigTest(TestCase):
         # some generic easyblocks already have a decent customised sanity_check_paths,
         # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle & JuliaPackage, PerlBundle,
         #           PythonBundle & PythonPackage;
-        # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
+        # BuildEnv, ModuleRC SystemCompiler and Toolchain easyblocks do not install anything so there is nothing
+        # to check.
         whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage',
                      'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'JuliaPackage',
-                     'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
+                     'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'SystemCompiler', 'SystemCompilerGCC',
+                     'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
