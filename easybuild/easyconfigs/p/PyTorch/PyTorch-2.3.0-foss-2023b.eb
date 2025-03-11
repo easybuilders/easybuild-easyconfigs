@@ -42,6 +42,8 @@ patches = [
     'PyTorch-2.3.0_fix-test_extension_backend-without-vectorization.patch',
     'PyTorch-2.3.0_disable_tests_which_need_network_download.patch',
     'PyTorch-2.3.0_avoid_caffe2_test_cpp_jit.patch',
+    'PyTorch-2.3.0_fix_missing_masked_load_for_int_type.patch',
+    'PyTorch-2.3.0_skip_test_var_mean_differentiable.patch',
 ]
 checksums = [
     {'pytorch-v2.3.0.tar.gz': '69579513b26261bbab32e13b7efc99ad287fcf3103087f2d4fdf1adacd25316f'},
@@ -102,6 +104,10 @@ checksums = [
      'b7fd1a5135dfd4098cdc054182f7bf84a23ac98462a00477712182b5442da855'},
     {'PyTorch-2.3.0_avoid_caffe2_test_cpp_jit.patch':
      '041adcd91d994b8c2ab57d227f081cd57e572c157117b37171e1eb8eb576f8fc'},
+    {'PyTorch-2.3.0_fix_missing_masked_load_for_int_type.patch':
+     'aa6ff764f3f7bf84372a8a257fe1b4ae6dc4b9744ad35f0f9015f2696c62a41e'},
+    {'PyTorch-2.3.0_skip_test_var_mean_differentiable.patch':
+     '9703fd0f1fca8916f6d79d83e9a7efe8e3f717362a5fdaa8f5d9da90d0c75018'},
 ]
 
 osdependencies = [OS_PKG_IBVERBS_DEV]
@@ -162,7 +168,8 @@ excluded_tests = {
     ]
 }
 
-runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'
+local_test_opts = '--continue-through-error --pipe-logs --verbose %(excluded_tests)s'
+runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py ' + local_test_opts
 
 # Especially test_quantization has a few corner cases that are triggered by the random input values,
 # those cannot be easily avoided, see https://github.com/pytorch/pytorch/issues/107030
