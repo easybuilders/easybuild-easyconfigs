@@ -1,0 +1,96 @@
+# this patch adds implementation of functions
+# * setCoordSysHP
+# * printerror
+# which used to be declared in healpix header files, but it is apparently not the case with current version
+# Josef Dvoracek | Institute of Physics | Czech Academy of Sciences | 2022-09-02
+
+
+diff -Nru ./effconv-1.1_ORIG/src/read_healpix_intmap.c ./effconv-1.1/src/read_healpix_intmap.c
+--- ./effconv-1.1_ORIG/src/read_healpix_intmap.c	2013-03-11 08:54:36.000000000 +0100
++++ ./effconv-1.1/src/read_healpix_intmap.c	2022-08-26 14:19:16.000000000 +0200
+@@ -74,6 +74,22 @@
+    Feb 2003, EH, added coordsys and ordering
+ */
+ 
++void printerror(int status) {
++  /*****************************************************/
++  /* Print out cfitsio error messages and exit program */
++  /*****************************************************/
++
++  //copied in from cfitsio by jose.d
++
++  if (status) {
++    fits_report_error(stderr, status); /* print error report */
++
++    exit(status); /* terminate the program, returning error status */
++  }
++  return;
++}
++
++
+ int *read_healpix_intmap(char *infile, long *nside, char *coordsys, char *ordering) {
+   
+   /* Local Declarations */
+diff -Nru ./effconv-1.1_ORIG/src/write_healpix_intmap.c ./effconv-1.1/src/write_healpix_intmap.c
+--- ./effconv-1.1_ORIG/src/write_healpix_intmap.c	2013-03-11 08:54:36.000000000 +0100
++++ ./effconv-1.1/src/write_healpix_intmap.c	2022-08-26 14:23:19.000000000 +0200
+@@ -84,6 +84,17 @@
+ #include "fitsio.h"
+ 
+ /* void setCoordSysHP(char *,char *); */
++static void setCoordSysHP(char coordsys, char * coordsys9) {
++  strcpy(coordsys9, "C       ");
++  if (coordsys == 'G')
++    strcpy(coordsys9, "G       ");
++  else if (coordsys == 'E')
++    strcpy(coordsys9, "E       ");
++  else if ((coordsys != 'C') && (coordsys != 'Q'))
++    fprintf(stderr, "%s (%d): System Cordinates are not correct"
++      "(Galactic,Ecliptic,Celestial=Equatorial). "
++      " Celestial system was set.\n", __FILE__, __LINE__);
++}
+ 
+ 
+ int write_healpix_intmap(
+diff -Nru ./effconv-1.1_ORIG/src/write_healpix_intmap_unit.c ./effconv-1.1/src/write_healpix_intmap_unit.c
+--- ./effconv-1.1_ORIG/src/write_healpix_intmap_unit.c	2013-03-11 08:54:36.000000000 +0100
++++ ./effconv-1.1/src/write_healpix_intmap_unit.c	2022-08-26 14:25:13.000000000 +0200
+@@ -84,6 +84,17 @@
+ #include "fitsio.h"
+ 
+ /* void setCoordSysHP(char *,char *); */
++static void setCoordSysHP(char coordsys, char * coordsys9) {
++  strcpy(coordsys9, "C       ");
++  if (coordsys == 'G')
++    strcpy(coordsys9, "G       ");
++  else if (coordsys == 'E')
++    strcpy(coordsys9, "E       ");
++  else if ((coordsys != 'C') && (coordsys != 'Q'))
++    fprintf(stderr, "%s (%d): System Cordinates are not correct"
++      "(Galactic,Ecliptic,Celestial=Equatorial). "
++      " Celestial system was set.\n", __FILE__, __LINE__);
++}
+ 
+ 
+ int write_healpix_intmap_unit( int *signal, long nside, char *filename,
+diff -Nru ./effconv-1.1_ORIG/src/write_healpix_pol_map.c ./effconv-1.1/src/write_healpix_pol_map.c
+--- ./effconv-1.1_ORIG/src/write_healpix_pol_map.c	2013-03-11 08:54:36.000000000 +0100
++++ ./effconv-1.1/src/write_healpix_pol_map.c	2022-08-26 14:25:37.000000000 +0200
+@@ -84,6 +84,17 @@
+ #include "fitsio.h"
+ 
+ /* void setCoordSysHP(char *,char *); */
++static void setCoordSysHP(char coordsys, char * coordsys9) {
++  strcpy(coordsys9, "C       ");
++  if (coordsys == 'G')
++    strcpy(coordsys9, "G       ");
++  else if (coordsys == 'E')
++    strcpy(coordsys9, "E       ");
++  else if ((coordsys != 'C') && (coordsys != 'Q'))
++    fprintf(stderr, "%s (%d): System Cordinates are not correct"
++      "(Galactic,Ecliptic,Celestial=Equatorial). "
++      " Celestial system was set.\n", __FILE__, __LINE__);
++}
+ 
+ 
+ int write_healpix_pol_map( float **signal, char *filename, long nmap,
