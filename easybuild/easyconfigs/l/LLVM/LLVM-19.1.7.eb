@@ -1,0 +1,76 @@
+name = 'LLVM'
+version = '19.1.7'
+
+
+homepage = "https://llvm.org/"
+description = """The LLVM Core libraries provide a modern source- and target-independent
+ optimizer, along with code generation support for many popular CPUs
+ (as well as some less common ones!) These libraries are built around a well
+ specified code representation known as the LLVM intermediate representation
+ ("LLVM IR"). The LLVM Core libraries are well documented, and it is
+ particularly easy to invent your own language (or port an existing compiler)
+ to use LLVM as an optimizer and code generator."""
+
+toolchain = SYSTEM
+toolchainopts = {}
+
+source_urls = ['https://github.com/llvm/llvm-project/releases/download/llvmorg-%(version)s/']
+sources = [
+    'llvm-project-%(version)s.src.tar.xz',
+]
+patches = [
+    'LLVM-18.1.8_envintest.patch',
+    'LLVM-19.1.7_libomptarget_tests.patch',
+    'LLVM-19.1.7_clang_rpathwrap_test.patch',
+]
+checksums = [
+    {'llvm-project-19.1.7.src.tar.xz': '82401fea7b79d0078043f7598b835284d6650a75b93e64b6f761ea7b63097501'},
+    {'LLVM-18.1.8_envintest.patch': '8e25dfab8a29a860717b4bd2d8cdd0e795433766d7fffbda32d06a2bde47058d'},
+    # {'LLVM-19.1.1_libomptarget_tests.patch': 'a6cc11a2fb79e087d6c58fa5c01e5d6c95c952453ba8c1a09a0d4d3e6d109bd2'},
+]
+
+local_gcc_version = '13.3.0'
+local_gcc_compiler = ('GCCcore', local_gcc_version)
+
+builddependencies = [
+    ('GCCcore', local_gcc_version, '', SYSTEM),
+    # ('binutils', '2.42', '', SYSTEM),
+    ('CMake', '3.29.3', '', local_gcc_compiler),
+    ('psutil', '6.0.0', '', local_gcc_compiler),  # Needed to enable test timeout in lit
+    ('Python', '3.12.3', '', local_gcc_compiler),
+    ('lit', '18.1.8', '', local_gcc_compiler),
+    ('git', '2.45.1', '', local_gcc_compiler),
+]
+
+dependencies = [
+    ('ncurses', '6.5', '', SYSTEM),
+    ('zlib', '1.3.1', '', SYSTEM),
+]
+
+build_shared_libs = True
+
+bootstrap = True
+full_llvm = True
+build_clang_extras = True
+build_runtimes = True
+build_lld = True
+build_lldb = True
+build_bolt = True
+build_openmp = True
+build_openmp_tools = True
+build_openmp_offload = True
+usepolly = True
+
+# Need to reconcile full_llvm and python_bindings as loading python will cause a conflict between system
+# ncurses/zlib and the GCC ones
+python_bindings = False
+
+# build_targets = ['all']
+# disable_werror = True
+
+skip_all_tests = False
+skip_sanitizer_tests = False
+test_suite_max_failed = 30  # Could increase depending of number of targets compiled for
+test_suite_timeout_single = 5*60
+
+moduleclass = 'compiler'
