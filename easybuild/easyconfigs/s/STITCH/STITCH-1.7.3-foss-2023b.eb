@@ -1,0 +1,49 @@
+easyblock = 'Bundle'
+
+name = 'STITCH'
+version = '1.7.3'
+
+homepage = 'https://github.com/rwdavies/STITCH'
+description = "Sequencing To Imputation Through Constructing Haplotypes"
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+dependencies = [
+    ('GMP', '6.3.0'),
+    ('MPFR', '4.2.1'),
+    ('MPC', '1.3.1'),
+    ('SAMtools', '1.19.2'),
+    ('BCFtools', '1.19'),
+    ('HTSlib', '1.19.1'),
+    ('SeqLib', '1.2.0'),
+    ('R', '4.4.1'),
+    ('R-bundle-CRAN', '2024.06'),
+]
+
+exts_defaultclass = 'RPackage'
+
+exts_list = [
+    ('rrbgen', '0.0.6', {
+        'source_urls': ['https://github.com/rwdavies/rrbgen/releases/download/%(version)s'],
+        'sources': ['%(name)s_%(version)s.tar.gz'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/rwdavies/STITCH/archive'],
+        'sources': ['%(version)s.tar.gz'],
+        'patches': ['STITCH-1.7.3_use_external_hts_and_seqlib.patch'],
+        'start_dir': '%(name)s',
+        'postinstallcmds': [
+            'mkdir %(installdir)s/bin',
+            'cp ../STITCH.R %(installdir)s/bin',
+        ],
+    }),
+]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': ['bin/STITCH.R'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
