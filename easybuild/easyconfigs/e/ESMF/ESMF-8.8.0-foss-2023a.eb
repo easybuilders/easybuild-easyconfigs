@@ -1,0 +1,64 @@
+name = 'ESMF'
+version = "8.8.0"
+
+homepage = 'https://www.earthsystemcog.org/projects/esmf/'
+description = """The Earth System Modeling Framework (ESMF) is a suite of software tools for developing
+ high-performance, multi-component Earth science modeling applications."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'openmp': True, 'cstd': 'c++11', 'pic': True}
+
+source_urls = ['https://github.com/esmf-org/esmf/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['ESMF-6.1.1_libopts.patch', 'ESMF-pyproject-deps.patch']
+checksums = [
+    {'v8.8.0.tar.gz': 'f89327428aeef6ad34660b5b78f30d1c55ec67efb8f7df1991fdaa6b1eb3a27c'},
+    {'ESMF-6.1.1_libopts.patch': '3851627f07c32a7da55d99072d619942bd3a1d9dd002e1557716158e7aacdaf4'},
+    {'ESMF-pyproject-deps.patch': '56775df5411751269bdbe799135f3c7883023070fceab66de75c5569fad76fad'}
+]
+
+builddependencies = [('CMake', '3.27.7')]
+
+dependencies = [
+    ('netCDF', '4.9.2'),
+    ('netCDF-Fortran', '4.6.1'),
+    ('netCDF-C++4', '4.3.1'),
+    ('libarchive', '3.6.2'),
+    ('ParallelIO', '2.6.3'),
+]
+
+multi_deps = {'Python': ['3.11', '3.12', '3.13']}
+
+# preconfigopts = 'sed -i -e "/setuptools-git-versioning;/d" src/addon/esmpy/pyproject.toml && '
+
+# disable errors from GCC 10 on mismatches between actual and dummy argument lists (GCC 9 behaviour)
+prebuildopts = 'ESMF_F90COMPILEOPTS="${ESMF_F90COMPILEOPTS} -fallow-argument-mismatch"'
+
+buildopts = ' '.join([
+    'ESMF_NETCDF_INCLUDE=$EBROOTNETCDFMINFORTRAN/include',
+    'ESMF_NETCDF_LIBS="`nc-config --libs` `nf-config --flibs` `ncxx4-config --libs`"',
+    'ESMF_PIO_INCLUDE="${EBROOTPARALLELIO}/include"',
+    'ESMF_PIO_LIBPATH="${EBROOTPARALLELIO}/lib64"',
+])
+
+# too parallel causes the build to become really slow
+maxparallel = 8
+
+multi_deps_load_default = False
+enhance_sanity_check = True
+
+# Depends on any numpy at runtime
+modluafooter = """
+depends_on("scipy-stack")
+extensions("esmpy/%(version)s")
+whatis("Extensions: esmpy-%(version)s")
+"""
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'geo'
