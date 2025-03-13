@@ -1,0 +1,59 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'Antimony'
+version = '2.14'
+
+homepage = 'https://github.com/sys-bio/antimony'
+description = """Antimony, a human-readable, human-writable modular model
+definition language."""
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+
+github_account = 'sys-bio'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_fix_python_system_install.patch',
+    '%(name)s-%(version)s_link_binaries_with_shared_libs.patch',
+]
+checksums = [
+    {'v2.14.tar.gz': 'ab03d8771bb2c5bf5e09e23500d02b818f7542bc86c1f81c44114e58911c3fdd'},
+    {'Antimony-2.14_fix_python_system_install.patch':
+     'a923792ce8afd646e4fef6473bf2b0b81a3ef05fe3f0dcf9e9aae7d8e519620c'},
+    {'Antimony-2.14_link_binaries_with_shared_libs.patch':
+     '56f78ba39474b00d4d4ee47c1fbed3de215bbbdec496c20e744a2891a1857eb4'},
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('Check', '0.15.2'),
+]
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('libSBML', '5.20.2'),
+]
+
+_copts = [
+    '-DWITH_CHECK=ON',
+    '-DWITH_QTANTIMONY=OFF',
+    '-DWITH_STATIC_SBML=OFF',
+    '-DWITH_LIBSBML_EXPAT=ON',
+    '-DWITH_PYTHON=ON',
+    '-DPYTHON_LOCAL_INSTALL=OFF',
+    '-DPYTHON_SYSTEM_INSTALL=ON',
+]
+configopts = ' '.join(_copts)
+
+use_pip = False
+sanity_pip_check = True
+download_dep_fail = True
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/rehashantimony', 'include/antimony_api.h', 'lib/libantimony.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+moduleclass = 'bio'
