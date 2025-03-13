@@ -1,0 +1,86 @@
+easyblock = 'CMakeMake'
+
+name = 'RStudio-Server'
+version = '2022.02.2+485'
+
+homepage = 'https://www.rstudio.com/'
+description = """RStudio Server enables you to provide a browser
+based interface to a version of R running on a remote Linux
+server, bringing the power and productivity of the
+RStudio IDE to server-based deployments of R."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/rstudio/rstudio/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-1.2.1335-fix_env.patch']
+checksums = [
+    'a9351fcd3bb4ab1f7d526b289dad06f02800d5b883655d9a49fa4b7c1ce6b299',  # v2022.02.2+485.tar.gz
+    'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b',  # RStudio-Server-1.2.1335-fix_env.patch
+]
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('pkg-config', '0.29.2'),
+    ('nodejs', '14.17.6'),
+    ('yaml-cpp', '0.7.0'),
+    ('ant', '1.10.11', '-Java-11', True),
+]
+dependencies = [
+    ('SOCI', '4.0.3'),
+    ('Boost', '1.77.0'),
+    ('Java', '11', '', True),
+    ('R', '4.1.2'),
+]
+
+# Quarto currently not supported on ARM (or CentOS7?) so pandoc is used as a fallback
+local_markdown_package = {'aarch64': 'pandoc', 'x86_64': 'quarto'}
+local_quarto = {'aarch64': 'FALSE', 'x86_64': 'TRUE'}
+
+preconfigopts = " && ".join([
+    "unset JAVA_TOOLS_OPTIONS",
+    "export RSTUDIO_TOOLS_ROOT=%(builddir)s",  # otherwise sudo
+    "cd %(builddir)s/rstudio-*/dependencies/common",
+    # These all download external (versioned) files (and hard to extract here)  
+    "env HOME=$RSTUDIO_TOOLS_ROOT ./install-cef",
+    "env HOME=$RSTUDIO_TOOLS_ROOT ./install-dictionaries",
+    "env HOME=$RSTUDIO_TOOLS_ROOT ./install-mathjax",
+    "env HOME=$RSTUDIO_TOOLS_ROOT ./install-%s" % local_markdown_package[ARCH],
+    "env HOME=$RSTUDIO_TOOLS_ROOT ./install-npm-dependencies",
+    "cd %(builddir)s/rstudio-*/",
+    "env HOME=$RSTUDIO_TOOLS_ROOT ",  # Also set HOME for CMake command
+])
+
+# Now the main config command
+configopts = " ".join([
+    '-DRSTUDIO_TARGET=Server',
+    '-DRSTUDIO_BOOST_SIGNALS_VERSION=2',
+    '-DRSTUDIO_UNINSTALL_PREVIOUS=ON',
+    '-DRSTUDIO_USE_SYSTEM_YAML_CPP=ON',
+    '-DQUARTO_ENABLED=%s' % local_quarto[ARCH],
+    '-DSOCI_CORE_LIB=$EBROOTSOCI/lib/libsoci_core.so',
+    '-DSOCI_POSTGRESQL_LIB=$EBROOTSOCI/lib/libsoci_postgresql.so',
+    '-DSOCI_SQLITE_LIB=$EBROOTSOCI/lib/libsoci_sqlite3.so',
+])
+
+separate_build_dir = False
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'bin/rsession', 'bin/rserver', 'bin/rserver-pam', 'bin/rpostback'],
+    'dirs': ['R', 'resources', 'www', 'www-symbolmaps'],
+}
+
+sanity_check_commands = [
+    # This command requires environment variables R_HOME and R_DOC_DIR
+    "R_HOME=$EBROOTR/lib64/R R_DOC_DIR=$R_HOME/doc rsession --verify-installation=1",
+    # This command requires a db conf (this may also be needed for live use)
+    # and need the current user, otherwise defaults to root
+    ' && '.join([
+        'MYTMP=$(mktemp -d)',
+        'echo -e "provider=sqlite\ndirectory=$MYTMP/db" >> $MYTMP/db.conf',
+        """rserver --verify-installation=1 --database-config-file=$MYTMP/db.conf \
+        --server-data-dir=$MYTMP/sdd --server-user=$USER""",
+    ])
+]
+
+moduleclass = 'devel'
