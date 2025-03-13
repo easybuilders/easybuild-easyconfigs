@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'mumax3'
+version = '3.10'
+versionsuffix = '-CUDA-12.1.1'
+
+homepage = 'https://github.com/mumax/3'
+description = "GPU accelerated micromagnetic simulator"
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/mumax/3/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['42c858661cec3896685ff4babea11e711f71fd6ea37d20c2bed7e4a918702caa']
+
+builddependencies = [
+    ('Go', '1.22.4', '', SYSTEM),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('gnuplot', '5.4.8'),
+]
+
+# Go is picky w.r.t. name of build directory, we must build in src/gitub.com/mumax/3
+prebuildopts = "mkdir -p %(builddir)s/src/github.com/mumax && "
+prebuildopts += "cp -a %(start_dir)s %(builddir)s/src/github.com/mumax/3 && "
+prebuildopts += "cd %(builddir)s/src/github.com/mumax/3 && "
+# rebuild CUDA kernels using CUDA compute capabilities specified in EasyBuild configuration + build mumax3 command
+prebuildopts += "make realclean && export CUDA_CC='%(cuda_cc_cmake)s' && "
+prebuildopts += "export GOPATH=%(builddir)s && go mod init && make cudakernels && cd cmd/%(name)s && "
+
+files_to_copy = [(['%(builddir)s/bin/mumax3'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/mumax3'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "mumax3 -v",
+]
+
+moduleclass = 'cae'
