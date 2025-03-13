@@ -1,0 +1,22 @@
+Point to EBROOTCUDA when considering include path for compile_cuda
+
+Author: Viktor Rehnberg (Chalmers University of Technology)
+
+diff -ruN tinygrad.old/runtime/ops_cuda.py tinygrad/runtime/ops_cuda.py
+--- tinygrad.old/runtime/ops_cuda.py	2024-04-08 12:35:23.988835244 +0000
++++ tinygrad/runtime/ops_cuda.py	2024-04-08 12:38:18.879043024 +0000
+@@ -1,4 +1,5 @@
+ from __future__ import annotations
++import os
+ import subprocess, hashlib, tempfile, ctypes, ctypes.util, functools, re
+ from pathlib import Path
+ from typing import Tuple, Optional
+@@ -29,7 +30,7 @@
+ 
+ def cu_time_execution(cb, enable=False) -> Optional[float]: return time_execution_cuda_style(cb, cuda.CUevent, cuda.cuEventCreate, cuda.cuEventRecord, cuda.cuEventSynchronize, cuda.cuEventDestroy_v2, cuda.cuEventElapsedTime, enable=enable) if not CUDACPU else cpu_time_execution(cb, enable=enable)  # noqa: E501
+ 
+-def compile_cuda(prg) -> bytes: return compile_cuda_style(prg, [f'--gpu-architecture={CUDADevice.default_arch_name}', "-I/usr/local/cuda/include", "-I/usr/include", "-I/opt/cuda/include/"], cuda.nvrtcProgram, cuda.nvrtcCreateProgram, cuda.nvrtcCompileProgram, cuda.nvrtcGetPTX, cuda.nvrtcGetPTXSize, cuda.nvrtcGetProgramLog, cuda.nvrtcGetProgramLogSize, check)  # noqa: E501
++def compile_cuda(prg) -> bytes: return compile_cuda_style(prg, [f'--gpu-architecture={CUDADevice.default_arch_name}', f"-I{os.environ['EBROOTCUDA']}/include"], cuda.nvrtcProgram, cuda.nvrtcCreateProgram, cuda.nvrtcCompileProgram, cuda.nvrtcGetPTX, cuda.nvrtcGetPTXSize, cuda.nvrtcGetProgramLog, cuda.nvrtcGetProgramLogSize, check)  # noqa: E501
+ 
+ class CUDAProgram:
+   def __init__(self, device:CUDADevice, name:str, lib:bytes):
