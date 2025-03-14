@@ -1,0 +1,40 @@
+From ecd50ceee3d475887d7d70759f27767ac121d55f Mon Sep 17 00:00:00 2001
+From: Viktor Rehnberg <viktor.rehnberg@gmail.com>
+Date: Thu, 31 Oct 2024 17:03:39 +0000
+Subject: [PATCH] Get install dir based on importlib
+
+---
+ tests/implicitron/test_build.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tests/implicitron/test_build.py b/tests/implicitron/test_build.py
+index 646497f..cc255d6 100644
+--- a/tests/implicitron/test_build.py
++++ b/tests/implicitron/test_build.py
+@@ -9,6 +9,7 @@ import os
+ import sys
+ import unittest
+ import unittest.mock
++from pathlib import Path
+ 
+ from tests.common_testing import get_pytorch3d_dir
+ 
+@@ -20,6 +21,7 @@ class TestBuild(unittest.TestCase):
+         # which may fail if there are import cycles.
+ 
+         with unittest.mock.patch.dict(sys.modules):
++            root_dir = Path(importlib.util.find_spec("pytorch3d").origin)
+             for module in list(sys.modules):
+                 # If any of pytorch3d is already imported,
+                 # the test would be pointless.
+@@ -30,7 +32,6 @@ class TestBuild(unittest.TestCase):
+             # so make sure it has been imported here.
+             import torchvision.utils  # noqa
+ 
+-            root_dir = get_pytorch3d_dir() / "pytorch3d"
+             # Exclude opengl-related files, as Implicitron is decoupled from opengl
+             # components which will not work without adding a dep on pytorch3d_opengl.
+             ignored_modules = (
+-- 
+2.39.3
+
