@@ -1,0 +1,52 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Aurelio Rodriguez <aurelio.rodriguez@hpcnow.com>
+# License::     GPL-v3.0
+# #
+easyblock = 'CmdCp'
+
+name = 'SWAN'
+version = '4131'
+
+homepage = 'https://swanmodel.sourceforge.io/'
+description = """
+SWAN is a third-generation wave model, developed at Delft University of Technology, that computes random, 
+short-crested wind-generated waves in coastal regions and inland waters. 
+"""
+
+toolchain = {'name': 'intel', 'version': '2021b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://swanmodel.sourceforge.io/download/zip']
+sources = ['%(namelower)s%(version)s.tar.gz']
+patches = ['SWAN-4131-platform.patch']
+checksums = [
+    'cd3ba1f0d79123f1b7d42a43169f07575b59b01e604c5e66fbc09769e227432e',  # swan4131.tar.gz
+    '8110c05142d6aaae58c7d29c6613f60438b8538b9385d1cc6846ca07cc6d0d17',  # SWAN-4131-platform.patch
+]
+
+builddependencies = [('Perl', '5.34.0')]
+dependencies = [('netCDF-Fortran', '4.5.3')]
+
+local_cmds = "make clobber; FC=ifort make config; make omp; mv swan.exe swan_omp.exe;"
+local_cmds += "make clobber; FC=ifort make config; make mpi; mv swan.exe swan_mpi.exe;"
+
+cmds_map = [('', local_cmds)]
+
+parallel = 1
+
+files_to_copy = [(['swan_omp.exe', 'swan_mpi.exe', 'hcat.exe'], 'bin'), ]
+
+postinstallcmds = [
+    "cd %(installdir)s/bin; ln -s swan_mpi.exe swan.exe",
+]
+
+sanity_check_paths = {
+    'files': ['bin/swan_omp.exe', 'bin/swan_mpi.exe', 'bin/swan.exe', 'bin/hcat.exe'],
+    'dirs': []
+}
+
+moduleclass = 'geo'
+
+docurls = ['https://swanmodel.sourceforge.io/']
