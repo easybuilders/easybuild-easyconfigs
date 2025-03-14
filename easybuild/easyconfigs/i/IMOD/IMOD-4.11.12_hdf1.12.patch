@@ -1,0 +1,36 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/08
+# add H5O_INFO_BASIC (better _ALL?)
+# H5Oget_info_by_idx3 API changed for HDF5 version >= 1.12.0
+# https://stackoverflow.com/questions/62157364/why-is-hdf5-giving-a-too-few-arguments-error-here
+# https://support.hdfgroup.org/ftp/HDF5/prev-releases/ReleaseFiles/hdf5-1.12.0-RELEASE.txt
+diff -ru IMOD/libiimod/iihdf.c IMOD_hdf5/libiimod/iihdf.c
+--- IMOD/libiimod/iihdf.c	2022-02-24 19:07:06.000000000 +0100
++++ IMOD_hdf5/libiimod/iihdf.c	2023-08-24 18:31:53.029981337 +0200
+@@ -774,7 +774,7 @@
+   }
+ 
+   /* Find out if there are attributes */
+-  if (!retval && H5Oget_info(groupID, &objInfo) < 0)
++  if (!retval && H5Oget_info(groupID, &objInfo, H5O_INFO_BASIC) < 0)
+     retval = IIERR_IO_ERROR;
+   if (!retval)
+     gdptr->numAttributes = (int)objInfo.num_attrs;
+@@ -820,8 +820,7 @@
+     }
+ 
+     /* Get the info */
+-    if (H5Oget_info_by_idx(groupID, ".", H5_INDEX_NAME, H5_ITER_INC, (hsize_t)ind,
+-                           &objInfo, H5P_DEFAULT) < 0) {
++    if (H5Oget_info_by_idx(groupID, ".", H5_INDEX_NAME, H5_ITER_INC, (hsize_t)ind, &objInfo, H5P_DEFAULT, H5O_INFO_BASIC) < 0) {
+       retval = IIERR_IO_ERROR;
+       break;
+     }
+@@ -931,7 +930,7 @@
+             sMaxGroupNum = B3DMAX(sMaxGroupNum, groupNum);
+           }
+           dsData.dsetID = dsetID;
+-          if (H5Oget_info(dsetID, &objInfo) < 0)
++          if (H5Oget_info(dsetID, &objInfo, H5O_INFO_BASIC) < 0)
+             retval = IIERR_IO_ERROR;
+           if (!retval)
+             dsData.numAttributes = (int)objInfo.num_attrs;
