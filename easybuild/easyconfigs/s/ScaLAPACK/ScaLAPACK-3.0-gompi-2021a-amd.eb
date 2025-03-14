@@ -1,0 +1,54 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'CMakeMake'
+
+name = 'ScaLAPACK'
+version = '3.0'
+versionsuffix = '-amd'
+
+homepage = 'https://www.netlib.org/scalapack/'
+description = """The ScaLAPACK (or Scalable LAPACK) library includes a subset of LAPACK routines
+redesigned for distributed memory MIMD parallel computers."""
+
+toolchain = {'name': 'gompi', 'version': '2021a'}
+toolchainopts = {'pic': True}
+
+# https://github.com/amd/scalapack/archive/3.0.tar.gz
+source_urls = ['https://github.com/amd/scalapack/archive/']
+sources = ['%(version)s.tar.gz']
+#patches = ['ScaLAPACK_2.2_fix_GCC10X.patch']
+checksums = [
+    '6e6f3578f44a8e64518d276e7580530599ecfa8729f568303ed2590688e7096f', #3.0.tar.gz
+#    '690b764cea8503abfad9fc4d4d32323e6c92fb2487482feca4212c300e22efe8', #ScaLAPACK_2.2_fix_GCC10X.patch
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+]
+
+dependencies = [
+    ('BLIS', version, versionsuffix),
+    ('libFLAME', version, versionsuffix),
+]
+
+# Config Opts based on AOCL User Guide:
+# https://developer.amd.com/wp-content/resources/AOCL_User%20Guide_2.2.pdf
+
+configopts = '-DBUILD_SHARED_LIBS=ON '
+configopts += '-DBLAS_LIBRARIES="$EBROOTBLIS/lib/libblis-mt.a" '
+configopts += '-DLAPACK_LIBRARIES="$EBROOTLIBFLAME/lib/libflame.a" '
+configopts += '-DCMAKE_C_COMPILER=mpicc '
+configopts += '-DCMAKE_Fortran_COMPILER=mpif90 '
+configopts += '-DUSE_OPTIMIZED_LAPACK_BLAS=ON '
+configopts += '-DUSE_F2C=ON '
+configopts += '-DCMAKE_Fortran_FLAGS="-lpthread -fopenmp -fallow-argument-mismatch $DCMAKE_Fortran_FLAGS" '
+#configopts += 'FFLAGS="$FFLAGS -fallow-argument-mismatch" '
+
+sanity_check_paths = {
+    'files': ['lib/libscalapack.%s' % SHLIB_EXT, 'lib64/libscalapack.%s' % SHLIB_EXT],
+    'dirs': ["lib", "lib64"],
+}
+
+
+moduleclass = 'numlib'
