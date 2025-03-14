@@ -1,0 +1,53 @@
+--- micromamba	1969-12-31 16:00:00.000000000 -0800
++++ micromamba	2024-01-17 10:41:49.921401842 -0800
+@@ -0,0 +1,51 @@
++#!/bin/bash
++
++# As of eb 4.90 the Conda.py easyblock does not support 
++# micromamba up to 1.5.6.  There are 3 issues :
++# 1. micromamba does not support the --force option
++# 2. micromamba does not support setuptools
++# 3. micromamba has a bug: does not allow empty prefix 
++#    folders to exist
++# This wrapper catches the micromamba command and passes 
++# it to micromamba-bin 
++
++# Function to remove --force argument
++remove_force_arg() {
++    local args=()
++    for arg in "$@"; do
++        [[ $arg != "--force" ]] && args+=("$arg")
++    done
++    echo "${args[@]}"
++}
++
++# Function to handle micromamba create command
++handle_create_command() {
++    local args=("$@")
++    for ((i = 0; i < ${#args[@]}; i++)); do
++        if [[ ${args[$i]} == "-p" ]] && (( i + 1 < ${#args[@]} )); then
++            local prefix_folder=${args[$i + 1]}
++            # echo "Removing existing empty prefix folder: $prefix_folder"
++            [ -d "$prefix_folder" ] && rmdir "$prefix_folder"
++        fi
++    done
++    echo "${args[@]}"
++}
++
++# Check for "create_default_packages setuptools" in the command
++for arg in "$@"; do
++    if [[ $prev_arg == "create_default_packages" ]] && [[ $arg == "setuptools" ]]; then
++        #echo "Ignoring command due to 'create_default_packages setuptools'"
++        exit 0
++    fi
++    prev_arg=$arg
++done
++
++# First, remove --force argument if present
++args=$(remove_force_arg "$@")
++
++# Check if the command is 'create' and handle accordingly
++if [[ $1 == "create" ]]; then
++    args=$(handle_create_command $args)
++fi
++micromamba-bin $args
