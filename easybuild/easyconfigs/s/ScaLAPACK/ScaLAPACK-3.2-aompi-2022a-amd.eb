@@ -1,0 +1,41 @@
+name = 'ScaLAPACK'
+version = '3.2'
+versionsuffix = '-amd'
+
+homepage = 'https://www.netlib.org/scalapack/'
+description = """The ScaLAPACK (or Scalable LAPACK) library includes a subset of LAPACK routines
+ redesigned for distributed memory MIMD parallel computers."""
+
+toolchain = {'name': 'aompi', 'version': '2022a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/amd/aocl-scalapack/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['9e00979bb1be39d627bdacb01774bc043029840d542fafc934d16fec3e3b0892']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('BLIS', version, versionsuffix),
+    ('libFLAME', version, versionsuffix),
+]
+
+# Config Opts based on AOCL User Guide:
+# https://developer.amd.com/wp-content/resources/57404_User_Guide_AMD_AOCL_v3.2_GA.pdf
+
+configopts = '-DBUILD_SHARED_LIBS=ON '
+configopts += '-DBLAS_LIBRARIES="-fopenmp $EBROOTBLIS/lib/libblis-mt.%s" ' % SHLIB_EXT
+configopts += '-DLAPACK_LIBRARIES="$EBROOTLIBFLAME/lib/libflame.%s" ' % SHLIB_EXT
+configopts += '-DCMAKE_C_COMPILER=mpicc '
+configopts += '-DCMAKE_Fortran_COMPILER=mpif90 '
+configopts += '-DCMAKE_Fortran_FLAGS="-lpthread -fopenmp $DCMAKE_Fortran_FLAGS" '
+configopts += '-DUSE_OPTIMIZED_LAPACK_BLAS=OFF '
+
+sanity_check_paths = {
+    'files': ['lib/libscalapack.%s' % SHLIB_EXT, 'lib64/libscalapack.%s' % SHLIB_EXT],
+    'dirs': ["lib", "lib64"],
+}
+
+moduleclass = 'numlib'

@@ -1,0 +1,37 @@
+easyblock = 'Toolchain'
+
+name = 'amd'
+version = '2022a'
+
+homepage = 'None'
+description = """AMD Optimizing C Compiler (AOCC) based compiler toolchain, including
+ OpenMPI for MPI support and AOCL libraries."""
+
+toolchain = SYSTEM
+
+local_aoccver = '3.2.0'
+local_aoclver = '3.2'
+
+# toolchains used to build foss dependencies
+local_compiler_tc = ('AOCC', local_aoccver)
+local_comp_mpi_tc = ('aompi', version)
+
+# we need AOCC and OpenMPI as explicit dependencies instead of aompi toolchain
+# because of toolchain preparation functions
+dependencies = [
+    ('AOCC', local_aoccver),
+    ('OpenMPI', '4.1.4', '', local_compiler_tc),
+    ('BLIS', local_aoclver, '-amd', local_compiler_tc),
+    ('libFLAME', local_aoclver, '-amd', (local_compiler_tc)),
+    ('FFTW', '3.3.10', '-amd', local_comp_mpi_tc),
+    ('ScaLAPACK', local_aoclver, '-amd', local_comp_mpi_tc),
+    # TODO add more AOCL libs
+    # https://developer.amd.com/wp-content/resources/57404_User_Guide_AMD_AOCL_v3.2_GA.pdf
+    # ('AOCL-RNG', local_aoclver, ...)
+    # ('AOCL-SecureRNG', local_aoclver, ...)
+    # ('AOCL-Sparse', local_aoclver, ...)
+    # ('AOCL-LibMem', local_aoclver, ...)
+    # ('AOCL-Cryptography', local_aoclver, ...)
+]
+
+moduleclass = 'toolchain'
