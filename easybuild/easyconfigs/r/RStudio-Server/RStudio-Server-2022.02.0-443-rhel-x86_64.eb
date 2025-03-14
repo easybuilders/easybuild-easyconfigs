@@ -1,0 +1,37 @@
+easyblock = 'Binary'
+
+name = 'RStudio-Server'
+version = '2022.02.0-443'
+versionsuffix = '-rhel-%s' % ARCH
+
+homepage = 'https://www.rstudio.com/'
+description = """This is the RStudio Server version.
+RStudio is a set of integrated tools designed to help you be more productive with R.
+
+The server can be started with:
+  rserver --server-daemonize=0 --www-port 8787 --rsession-which-r=$(which R)
+"""
+
+toolchain = SYSTEM
+
+source_urls = ['https://download2.rstudio.org/server/rhel8/%s' % ARCH]
+sources = ['rstudio-server-rhel-%%(version)s-%s.rpm' % ARCH]
+checksums = ['8eb698ddde2043b9f143296c46a4b1643e7a4b5373740f15e016bf2da1ad6289']
+
+# both rpm2cio (provided by rpm package) and cpio commands are required for installing
+osdependencies = ['cpio', 'rpm']
+
+install_cmd = "rpm2cpio rstudio-server*.rpm | cpio -idmv && cp -a usr/lib/rstudio-server/* %(installdir)s"
+
+sanity_check_paths = {
+    'files': ['bin/rstudio-server'],
+    'dirs': ['db', 'R', 'resources'],
+}
+
+sanity_check_commands = [
+    # make sure all required libraries are found
+    "ldd %(installdir)s/bin/rserver",
+    "rstudio-server version",
+]
+
+moduleclass = 'cae'
