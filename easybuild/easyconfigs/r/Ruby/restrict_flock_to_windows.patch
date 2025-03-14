@@ -1,0 +1,29 @@
+This is necessary when installing to NFS targets. The upstream PR tries to fix
+a different issue but works for easybuild as it restricts flock to windows
+(where it seems to be required)
+https://github.com/rubygems/rubygems/pull/5278/commits/9a65adf301ea630b5a08f5b3c0de4662a54cd8b8
+
+From 9a65adf301ea630b5a08f5b3c0de4662a54cd8b8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?David=20Rodr=C3=ADguez?= <deivid.rodriguez@riseup.net>
+Date: Tue, 11 Jan 2022 19:53:41 +0100
+Subject: [PATCH] Restrict `flock` to Windows
+
+It was introduced to fix some race conditions there, but it doesn't seem
+necessary on other systems and it's actually causing issues there.
+---
+ lib/rubygems.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/rubygems.rb b/lib/rubygems.rb
+index c568981e52d..22781260206 100644
+--- a/lib/rubygems.rb
++++ b/lib/rubygems.rb
+@@ -781,7 +781,7 @@ def self.write_binary(path, data)
+ 
+   def self.open_with_flock(path, flags, &block)
+     File.open(path, flags) do |io|
+-      if !java_platform? && !solaris_platform?
++      if !java_platform? && win_platform?
+         begin
+           io.flock(File::LOCK_EX)
+         rescue Errno::ENOSYS, Errno::ENOTSUP
