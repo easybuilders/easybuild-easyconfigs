@@ -1,0 +1,96 @@
+easyblock = 'PythonBundle'
+
+name = 'transition-amr-parser'
+version = '0.5.4'
+_pytorch_version = '1.13.1'
+_cuda_suffix = '-CUDA-%(cudaver)s'
+versionsuffix = '-PyTorch-%s%s' % (_pytorch_version, _cuda_suffix)
+
+homepage = 'https://github.com/IBM/transition-amr-parser'
+description = """
+State-of-the-Art Abstract Meaning Representation (AMR) parsing, see papers with
+code. Models both distribution over graphs and aligments with a
+transition-based approach. Parser supports generic text-to-graph as long as it
+is expressed in Penman notation."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('Ninja', '1.10.2'),
+]
+dependencies = [
+    ('Python', '3.10.4'),
+    ('PyYAML', '6.0'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('NCCL', '2.12.12', _cuda_suffix),
+    ('PyTorch', _pytorch_version, _cuda_suffix),
+    ('PyTorch-Geometric', '2.1.0', versionsuffix),
+    ('IPython', '8.5.0'),
+    ('tqdm', '4.64.0'),
+    ('h5py', '3.7.0'),
+    ('boto3', '1.26.37'),
+    ('line_profiler', '4.1.1'),
+    ('Hydra', '1.3.2'),
+    ('lxml', '4.9.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+local_preinstallopts = """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """
+local_preinstallopts += """-e 's/^requires = .*/requires = ["setuptools"]/g' """
+local_preinstallopts += """-e 's/dynamic = \["version"\]/version = "%(version)s"/g' """  # noqa: W605
+# fix license key format: must be a table
+local_preinstallopts += """-e 's/license = \(.*\)/license = {text = \\1}/g' pyproject.toml && """  # noqa: W605
+
+# add tornado v6.1 to override tornado v6.2 included in IPython
+exts_list = [
+    ('tornado', '6.1', {
+        'checksums': ['33c6e81d7bd55b468d2e793517c909b139960b6c790a60b7991b9b6b76fb9791'],
+    }),
+    ('penman', '1.3.0', {
+        'preinstallopts': local_preinstallopts,
+        'checksums': ['efdaf3b10dd54220318b3b8948c5b36114cf8718cb6eb67fa0f32dbb3515c2bf'],
+    }),
+    ('smatch', '1.0.4', {
+        'checksums': ['33f4401dd0c23517fb64872bb4981e081a8a58a7bb1f34a4bf04243de30e19e9'],
+    }),
+    ('ipdb', '0.13.13', {
+        'checksums': ['e3ac6018ef05126d442af680aad863006ec19d02290561ac88b8b1c0b0cfc726'],
+    }),
+    ('pyinstrument', '4.6.2', {
+        'checksums': ['0002ee517ed8502bbda6eb2bb1ba8f95a55492fcdf03811ba13d4806e50dd7f6'],
+    }),
+    ('progressbar', '2.5', {
+        'checksums': ['5d81cb529da2e223b53962afd6c8ca0f05c6670e40309a7219eacc36af9b6c63'],
+    }),
+    ('portalocker', '2.7.0', {
+        'checksums': ['032e81d534a88ec1736d03f780ba073f047a06c478b06e2937486f334e955c51'],
+    }),
+    ('sacrebleu', '2.4.1', {
+        'patches': ['sacrebleu-%(version)s_fix_setup.patch'],
+        'checksums': [
+            {'sacrebleu-2.4.1.tar.gz': '294f5cb46c18a1ee6d066899b7cb6ad9393eaf824d362baded5551930e95bd4e'},
+            {'sacrebleu-2.4.1_fix_setup.patch': '2964b9c59c2f65ad6549246f67f6f2f6571d809de47b8c5a9a288c57fe07828d'},
+        ],
+    }),
+    ('fairseq', '0.10.2', {
+        'patches': ['fairseq-%(version)s_various_fixes.patch'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/facebookresearch/fairseq/archive/refs/tags'],
+        'checksums': [
+            {'v0.10.2.tar.gz': '4328a7cb5fe6aea874817a863eb7f1ace91d621bc504345e6d022ce64e065da0'},
+            {'fairseq-0.10.2_various_fixes.patch': '565b2972140c7b8aa206b507e9c515939e8b6399df8b0639b463b4eacbc35f61'},
+        ],
+    }),
+    ('transition-neural-parser', version, {
+        'modulename': 'transition_amr_parser',
+        'source_tmpl': 'transition_neural_parser-%(version)s.tar.gz',
+        'checksums': ['3cc721d326f5bb1d6ddcdc3fe050037ec54913c1b2f7b765df0c8333ecd836b2'],
+    }),
+]
+
+sanity_check_commands = ['amr-parse --help']
+
+moduleclass = 'tools'
