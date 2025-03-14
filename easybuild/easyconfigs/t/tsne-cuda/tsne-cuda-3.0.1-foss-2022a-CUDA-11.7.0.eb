@@ -1,0 +1,57 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+easyblock = 'CMakePythonPackage'
+
+name = 'tsne-cuda'
+version = '3.0.1'
+versionsuffix = '-CUDA-11.7.0'
+
+homepage = 'https://github.com/CannyLab/tsne-cuda'
+description = """A optimized CUDA version of FIt-SNE algorithm with associated python modules. We
+find that our implementation of t-SNE can be up to 1200x faster than Sklearn, or
+up to 50x faster than Multicore-TSNE when used with the right GPU. The paper    
+describing our approach, as well as the results below, is available at          
+https://arxiv.org/abs/1807.11824."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+github_account = 'CannyLab'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_cudacc.patch']
+checksums = [
+    {'3.0.1.tar.gz': '0f778247191f483df22dc4dbed792c9a6a9152ee7404329c4d9da3fd9a8774d6'},
+    {'tsne-cuda-3.0.1_cudacc.patch': 'f9a097e871daf2951e4aa8f8a1f50bfe6ecd3f85f54f604dadf22519603aa013'},
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('googletest', '1.11.0'),
+    ('cxxopts', '3.1.1'),
+    ('cppzmq', '4.9.0', '', SYSTEM),
+
+]
+dependencies = [
+    ('Python', '3.10.4'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('gflags', '2.2.2'),
+    ('ZeroMQ', '4.3.4'),
+    ('faiss', '1.7.2', versionsuffix),
+]
+
+configopts = "-DCMAKE_CUDA_ARCHITECTURES='%(cuda_cc_cmake)s' "
+configopts += '-DBUILD_PYTHON=ON '
+configopts += '-DWITH_MKL=OFF '
+configopts += '-DWITH_ZMQ=ON '
+
+use_pip = True
+
+install_cmd = 'python -m pip install python/ --prefix=%(installdir)s '
+
+options = {'modulename': 'tsnecuda'}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/tsnecuda'],
+}
+
+moduleclass = 'ai'
