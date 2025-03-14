@@ -1,0 +1,55 @@
+##
+# This is a contribution from DeepThought HPC Service, Flinders University, Adelaide, Australia and HPCNow! 
+# Homepage: 	https://staff.flinders.edu.au/research/deep-thought; http://hpcnow.com
+#
+# Authors::	Robert Qiao <rob.qiao@flinders.edu.au>; Leah Han <leah.han@hpcnow.com>; 
+# 		Jonney Huang <jonney.huang@hpcnow.com>
+#
+# License::	Custom
+#
+# Notes::
+##
+
+easyblock = 'CMakeMake'
+
+name = 'PEST++'
+version = '5.2.7'
+
+homepage = 'https://github.com/usgs/pestpp'
+description = """PEST++ is a software suite aimed at supporting
+ complex numerical models in the decision-support context.
+ Much focus has been devoted to supporting environmental models
+ but these tools are readily applicable to any computer model.
+"""
+
+toolchain = {'name': 'iimpi', 'version': '2023a'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = ['https://github.com/usgs/pestpp/archive/refs/tags']
+sources = ['%(version)s.tar.gz']
+checksums = ['e669a761e3472eef1e0a4ebf282720bfebf08e438dbc8c8d3491801a4559c027']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('ScaLAPACK', '2.2.0', '', ('gompi', '2023a-fb')),
+]
+
+configopts = '-DENABLE_Fortran=ON'
+
+# The default target (all) fails to build all binaries, the following is equivalent to all
+local_targets = [
+    'pestpp-sen', 'pestpp-glm', 'pestpp-ies',
+    'pestpp-opt', 'pestpp-swp', 'pestpp-mou',
+    'pestpp-sqp', 'pestpp-da', 'pestpp-pso',
+]
+buildopts = ' '.join(local_targets)
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_targets],
+    'dirs': [],
+}
+
+moduleclass = 'geo'
