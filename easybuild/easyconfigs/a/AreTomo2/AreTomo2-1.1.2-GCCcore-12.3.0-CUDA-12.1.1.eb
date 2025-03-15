@@ -1,0 +1,56 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/1
+easyblock = 'MakeCp'
+
+name = 'AreTomo2'
+version = '1.1.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/czimaginginstitute/AreTomo2'
+
+description = """AreTomo2, a multi-GPU accelerated software package that fully automates motion- 
+corrected marker-free tomographic alignment and reconstruction, now includes    
+robust GPU-accelerated CTF (Contrast Transfer Function) estimation in a single  
+package. AreTomo2 is part of our endeavor to build a fully-automated high-      
+throughput processing pipeline that enables real-time reconstruction of         
+tomograms in parallel with tomographic data collection. It strives to be fast   
+and accurate, as well as provides for easy integration into subtomogram         
+processing workflows by generating IMod compatible files containing alignment   
+and CTF parameters needed to bootstrap subtomogram averaging. AreTomo2 can also 
+be used for on-the-fly reconstruction of tomograms and CTF estimation in        
+parallel with tilt series collection, enabling real-time assessment of sample   
+quality and adjustment of collection parameters"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_makefile_lib.patch']
+checksums = [
+    {'v1.1.2.tar.gz': '4cbb4d25d28778041d80ef2c598519b17b9a40aa84e1e99daf48ad5a90d946b4'},
+    {'AreTomo2-1.1.2_makefile_lib.patch': '53b3694104c4149d2714e503fb2a7cb9be7cbb0e500ee6991a606faa1c10a314'},
+]
+
+github_account = 'czimaginginstitute'
+
+prebuildopts = 'rm -rf LibSrc/Lib/*.a && '
+build_cmd = 'make clean -f makefile11 && make exe -f makefile11 CUDAHOME=$CUDA_HOME CUDACC="%(cuda_cc_cmake)s"'
+
+builddependencies = [
+    ('binutils', '2.40')
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+]
+
+files_to_copy = [(['%(name)s'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = ['%(name)s -h']
+
+moduleclass = 'bio'

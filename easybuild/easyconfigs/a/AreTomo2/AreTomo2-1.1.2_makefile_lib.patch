@@ -1,0 +1,96 @@
+# Thomas Hoffmann, EBML Heidelberg, structures-it@embl.de, 2024/10
+# Allow to inject cuda compute capabilities and cfalgs.
+# Add targets for libmrcfile.a, libutil.a, and libclean
+diff -ru AreTomo2-1.1.2/LibSrc/Mrcfile/makefile AreTomo2-1.1.2_makefile/LibSrc/Mrcfile/makefile
+--- AreTomo2-1.1.2/LibSrc/Mrcfile/makefile	2024-02-21 05:57:47.000000000 +0100
++++ AreTomo2-1.1.2_makefile/LibSrc/Mrcfile/makefile	2024-10-31 12:55:25.131194106 +0100
+@@ -19,8 +19,8 @@
+ OBJS	= $(patsubst %.cpp, %.o, $(SRCS))
+ OUT	= libmrcfile.a
+ 
+-CC = g++ -std=c++11
+-CFLAGS	= -m64 -c -g -pthread -IInclude -I$(INCDIR)
++#CC = g++ -std=c++11
++CFLAGS_	= -m64 -c -g -pthread -IInclude -I$(INCDIR) $(CFLAGS)
+ 
+ all: $(OBJS)
+ 	@ar rcs $(OUT) $(OBJS)
+@@ -33,7 +33,9 @@
+ 
+ %.o: %.cpp
+ 	@echo Compile $<
+-	@$(CC) $(CFLAGS) $< -o $@
++	@echo $(CC) $(CFLAGS_) $< -o $@
++	@$(CC) $(CFLAGS_) $< -o $@
+ 
+ clean:
++	@echo rm -f $(OUT) $(OBJS) *.*~ makefile~
+ 	@rm -f $(OUT) $(OBJS) *.*~ makefile~
+diff -ru AreTomo2-1.1.2/LibSrc/Util/makefile AreTomo2-1.1.2_makefile/LibSrc/Util/makefile
+--- AreTomo2-1.1.2/LibSrc/Util/makefile	2024-02-21 05:57:47.000000000 +0100
++++ AreTomo2-1.1.2_makefile/LibSrc/Util/makefile	2024-10-31 12:55:10.603854025 +0100
+@@ -5,8 +5,8 @@
+ #-------------------
+ OUT = libutil.a
+ 
+-CC = g++ -std=c++11
+-CFLAG = -c -g -pthread -m64
++#CC = g++ -std=c++11
++CFLAG = -c -g -pthread -m64 $(CFLAGS)
+ 
+ all: $(OBJS)
+ 	@echo create library $(OUT) and move to $(PROJ_DIR)/Lib
+@@ -16,6 +16,7 @@
+ 	@cp $(HDRS) $(PROJ_DIR)/Include/Util
+ 
+ %.o: %.cpp
++	echo $(CC) $(CFLAG) $< -o $@
+ 	$(CC) $(CFLAG) $< -o $@
+ 
+ list:
+diff -ru AreTomo2-1.1.2/makefile11 AreTomo2-1.1.2_makefile/makefile11
+--- AreTomo2-1.1.2/makefile11	2024-02-21 05:57:47.000000000 +0100
++++ AreTomo2-1.1.2_makefile/makefile11	2024-10-31 12:52:55.796679029 +0100
+@@ -179,7 +179,24 @@
+ 
+ compile: $(OBJS)
+ 
+-exe: $(OBJS)
++libclean:
++	$(MAKE) -C LibSrc/Util clean
++	$(MAKE) -C LibSrc/Mrcfile clean
++
++LibSrc/Lib/libutil.a:
++	$(MAKE) -C LibSrc/Util   
++
++LibSrc/Lib/libmrcfile.a:
++	$(MAKE) -C LibSrc/Mrcfile  
++
++exe: $(OBJS) LibSrc/Lib/libmrcfile.a LibSrc/Lib/libutil.a
++	@echo g++ -g -pthread -m64 $(OBJS) \
++	$(PRJLIB)/libmrcfile.a \
++	$(PRJLIB)/libutil.a \
++	-L$(CUDALIB) -L/usr/lib64 \
++	-lcufft -lcudart -lcuda -lc -lm -lpthread \
++	-o AreTomo2
++ 
+ 	@g++ -g -pthread -m64 $(OBJS) \
+ 	$(PRJLIB)/libmrcfile.a \
+ 	$(PRJLIB)/libutil.a \
+@@ -193,10 +210,12 @@
+ 	@echo $< has been compiled.
+ 
+ %.o: %.cpp
++	@echo $(CC) $(CFLAG) -I$(PRJINC) -I$(CUDAINC) \
++		$< -o $@
+ 	@$(CC) $(CFLAG) -I$(PRJINC) -I$(CUDAINC) \
+ 		$< -o $@
+ 	@echo $< has been compiled.
+ 
+-clean:
+-	@rm -f $(OBJS) $(CUCPPS) *.h~ makefile~ AreTomo2
+-	
++clean: libclean
++	@echo rm -f $(OBJS) $(CUCPPS) *.h~ makefile~ AreTomo2 LibSrc/Lib/*.a
++	@rm -f $(OBJS) $(CUCPPS) *.h~ makefile~ AreTomo2 LibSrc/Lib/*.a
+Only in AreTomo2-1.1.2_makefile: .makefile11.swp
