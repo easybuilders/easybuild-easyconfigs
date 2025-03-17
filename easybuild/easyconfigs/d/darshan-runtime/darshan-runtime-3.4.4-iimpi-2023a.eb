@@ -1,0 +1,53 @@
+easyblock = 'ConfigureMake'
+
+name = 'darshan-runtime'
+version = '3.4.4'
+
+homepage = 'https://www.mcs.anl.gov/research/projects/darshan/'
+description = """Darshan is a scalable HPC I/O characterization tool. It is
+designed to capture an accurate picture of application I/O behavior, including
+properties such as patterns of access within files, with minimum overhead.
+The name is taken from a Sanskrit word for 'sight' or 'vision'.
+darshan-runtime instruments (MPI) applications."""
+
+toolchain = {'name': 'iimpi', 'version': '2023a'}
+
+source_urls = ['https://ftp.mcs.anl.gov/pub/darshan/releases']
+sources = ['darshan-%(version)s.tar.gz']
+checksums = ['d9c9df5aca94dc5ca3d56fd763bec2f74771d35126d61cb897373d2166ccd867']
+
+start_dir = 'darshan-runtime'
+
+builddependencies = [
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.0'),
+]
+
+preconfigopts = [
+    "../prepare.sh && ",
+]
+
+# The with-jobid-env configuration option is only used to determine darshan
+# file names. If the variable used here is not set, the pid will be used instead.
+configopts = "--with-jobid-env=SLURM_JOBID "
+configopts += "--with-log-path-by-env=DARSHAN_LOG_PATH "
+configopts += "--enable-hdf5-mod --with-hdf5=${EBROOTHDF5} "
+
+sanity_check_paths = {
+    'files': ['bin/darshan-config', 'lib/libdarshan.' + SHLIB_EXT],
+    'dirs': [],
+}
+
+# Default location for darshan output files is set to user's home directory
+# DARSHAN_LOG_PATH has to be set in order for darshan to generate output
+modtclfooter = """
+setenv DARSHAN_LOG_PATH os.getenv("HOME")
+"""
+modluafooter = """
+setenv("DARSHAN_LOG_PATH", os.getenv("HOME"))
+"""
+
+moduleclass = 'tools'
