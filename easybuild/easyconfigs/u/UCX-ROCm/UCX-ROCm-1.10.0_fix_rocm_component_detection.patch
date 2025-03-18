@@ -1,0 +1,24 @@
+The original build setup assumes that all ROCm components can be found
+in the location given by the --with-rocm=... configure option.
+But in EB the required components are split between Clang-AOMP and HIP.
+This patch inserts those two locations in the corresponding M4 script.
+
+Maxime Van den Bossche
+--- config/m4/rocm.m4.orig      2024-01-12 13:51:45.096182724 +0100
++++ config/m4/rocm.m4   2024-01-12 13:55:21.435617990 +0100
+@@ -60,6 +60,7 @@
+ rocm_happy=no
+ hip_happy=no
+ AS_IF([test "x$with_rocm" != "xno"],
++    with_rocm=$EBROOTCLANGMINAOMP
+     [AS_CASE(["x$with_rocm"],
+         [x|xguess|xyes],
+             [AC_MSG_NOTICE([ROCm path was not specified. Guessing ...])
+@@ -102,6 +103,7 @@
+     LDFLAGS="$SAVE_LDFLAGS"
+     LIBS="$SAVE_LIBS"
+
++    with_rocm=$EBROOTHIP
+     HIP_BUILD_FLAGS([$with_rocm], [HIP_LIBS], [HIP_LDFLAGS], [HIP_CPPFLAGS])
+
+     CPPFLAGS="$HIP_CPPFLAGS $CPPFLAGS"
