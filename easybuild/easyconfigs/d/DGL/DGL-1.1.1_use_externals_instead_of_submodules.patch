@@ -1,0 +1,64 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/07
+# based on DGL-0.9.1_use_externals_instead_of_submodules.patch,
+# but build libxsmm because LIBXSMM_MELTW_FLAG_OPREDUCE_VECS_REDOP_MAX is required from commit 8009060 > v1.17
+diff -ru dgl-1.1.1/CMakeLists.txt dgl-1.1.1_use_externals_instead_of_submodules/CMakeLists.txt
+--- dgl-1.1.1/CMakeLists.txt	2023-06-23 07:00:04.000000000 +0200
++++ dgl-1.1.1_use_externals_instead_of_submodules/CMakeLists.txt	2023-07-06 11:08:46.258340318 +0200
+@@ -176,12 +176,12 @@
+ 
+ # include directories
+ target_include_directories(dgl PRIVATE "include")
+-target_include_directories(dgl PRIVATE "third_party/dlpack/include")
+-target_include_directories(dgl PRIVATE "third_party/dmlc-core/include")
+-target_include_directories(dgl PRIVATE "third_party/phmap/")
++#target_include_directories(dgl PRIVATE "third_party/dlpack/include")
++#target_include_directories(dgl PRIVATE "third_party/dmlc-core/include")
++#target_include_directories(dgl PRIVATE "third_party/phmap/")
+ target_include_directories(dgl PRIVATE "third_party/METIS/include/")
+ target_include_directories(dgl PRIVATE "tensoradapter/include")
+-target_include_directories(dgl PRIVATE "third_party/nanoflann/include")
++#target_include_directories(dgl PRIVATE "third_party/nanoflann/include")
+ target_include_directories(dgl PRIVATE "third_party/libxsmm/include")
+ target_include_directories(dgl PRIVATE "third_party/pcg/include")
+ 
+@@ -189,7 +189,7 @@
+ if (USE_HDFS)
+   option(DMLC_HDFS_SHARED "dgl has to build with dynamic hdfs library" ON)
+ endif()
+-add_subdirectory("third_party/dmlc-core")
++#add_subdirectory("third_party/dmlc-core")
+ list(APPEND DGL_LINKER_LIBS dmlc)
+ set(GOOGLE_TEST 0) # Turn off dmlc-core test
+ 
+@@ -220,6 +220,7 @@
+   endif(REBUILD_LIBXSMM)
+   add_dependencies(dgl libxsmm)
+   list(APPEND DGL_LINKER_LIBS -L${CMAKE_SOURCE_DIR}/third_party/libxsmm/lib/ xsmm.a)
++  list(APPEND DGL_LINKER_LIBS  flexiblas)
+ endif((NOT MSVC) AND USE_LIBXSMM)
+ 
+ if(NOT MSVC)
+@@ -305,15 +306,18 @@
+ # Testing
+ if(BUILD_CPP_TEST)
+   message(STATUS "Build with unittest")
+-  add_subdirectory(./third_party/googletest)
++  #add_subdirectory(./third_party/googletest)
+   enable_testing()
+   include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+   include_directories("include")
+-  include_directories("third_party/dlpack/include")
+-  include_directories("third_party/dmlc-core/include")
+-  include_directories("third_party/phmap")
++  #include_directories("third_party/dlpack/include")
++  #include_directories("third_party/dmlc-core/include")
++  #include_directories("third_party/phmap")
+   include_directories("third_party/libxsmm/include")
+   include_directories("third_party/pcg/include")
++  if (USE_AVX)     #TH?
++    include_directories("third_party/xbyak")    #TH ?
++  endif(USE_AVX)   #TH ?
+   file(GLOB_RECURSE TEST_SRC_FILES ${PROJECT_SOURCE_DIR}/tests/cpp/*.cc)
+   add_executable(runUnitTests ${TEST_SRC_FILES})
+   target_link_libraries(runUnitTests gtest gtest_main)
+Only in dgl-1.1.1_use_externals_instead_of_submodules: .CMakeLists.txt.swp
