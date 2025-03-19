@@ -46,7 +46,7 @@ fancylogger.disableDefaultHandlers()
 fancylogger.setLogLevelError()
 
 # make sure no deprecated behaviour is triggered
-# os.environ['EASYBUILD_DEPRECATED'] = '10000'
+os.environ['EASYBUILD_DEPRECATED'] = '10000'
 
 
 class EasyConfigsTestSuite(unittest.TestSuite):
