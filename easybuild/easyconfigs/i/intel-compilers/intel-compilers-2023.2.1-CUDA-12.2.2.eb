@@ -1,0 +1,83 @@
+easyblock = 'Bundle'
+
+name = 'intel-compilers'
+version = '2023.2.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://software.intel.com/content/www/us/en/develop/tools/oneapi/hpc-toolkit.html'
+description = "Intel C, C++ & Fortran compilers (classic and oneAPI) with CodePlay SYCL support for NVIDIA GPUs"
+
+toolchain = SYSTEM
+
+sanity_check_all_components = True
+
+local_gccver = '13.2.0'
+dependencies = [
+    ('GCCcore', local_gccver),
+    ('binutils', '2.40', '', ('GCCcore', local_gccver)),
+    ('CUDA', '12.2.2'),
+]
+
+components = [
+    # see https://software.intel.com/content/www/us/en/develop/articles/oneapi-standalone-components.html
+    (name, version, {
+        'easyblock': 'EB_intel_minus_compilers',
+        'source_urls': [
+            'https://registrationcenter-download.intel.com/akdlm/IRC_NAS/ebf5d9aa-17a7-46a4-b5df-ace004227c0e/',
+            'https://registrationcenter-download.intel.com/akdlm/IRC_NAS/0d65c8d4-f245-4756-80c4-6712b43cf835/'
+        ],
+        'sources': [
+            'l_dpcpp-cpp-compiler_p_%(version)s.8_offline.sh',
+            'l_fortran-compiler_p_%(version)s.8_offline.sh'
+        ],
+        'checksums': [
+            'f5656b2f5bb5d904639e6ef1f90a2d2e760d2906e82ebc0dd387709738ca714b',
+            # l_dpcpp-cpp-compiler_p_2023.2.1.8_offline.sh
+            'd4e36abc014c184698fec318a127f15a696b5333b3b0282aba1968b351207185'
+            # l_fortran-compiler_p_2023.2.1.8_offline.sh
+        ],
+    }),
+    # see https://developer.codeplay.com/products/oneapi/nvidia/download
+    ('codeplay-oneapi-for-nvidia-gpus', version, {
+        'easyblock': 'Binary',
+        'sources': [{
+            'source_urls': [
+                'https://developer.codeplay.com/api/v1/products/',
+            ],
+            'download_filename': 'download?product=oneapi&variant=nvidia&version=%(version)s',
+            'filename': 'codeplay-oneapi-sycl-for-nvidia-%(version)s.sh',
+        }],
+        'checksums': [
+            '1a733775d66958bf36b0b72be7df783d177369f70a99415df64e4d223a090d53',
+            # codeplay-oneapi-sycl-for-nvidia-%(version)s.sh
+        ],
+        'install_cmd': 'sh codeplay-oneapi-sycl-for-nvidia-%(version)s.sh --install-dir %(installdir)s --yes',
+        'sanity_check_paths': {
+            'files': [
+                'compiler/2023.2.1/linux/lib/libpi_cuda.%s' % SHLIB_EXT,
+                'compiler/2023.2.1/linux/include/sycl/detail/plugins/cuda/features.hpp',
+            ],
+            'dirs': [],
+        },
+    }),
+]
+
+sanity_check_commands = [
+    "icc --version",
+    "icx --version",
+    "icpc --version",
+    "icpx --version",
+    "ifx --version",
+    "ifort --version"
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [
+        'compiler/2023.2.1/linux/bin',
+        'compiler/2023.2.1/linux/lib',
+        'compiler/2023.2.1/linux/include',
+    ],
+}
+
+moduleclass = 'compiler'
