@@ -1,0 +1,24 @@
+Linking of C object files with the nvfortran compiler in lapack-test
+failes with a "multiple definition of `main'" error.
+See issue https://github.com/OpenMathLib/OpenBLAS/issues/4625
+Tested with NVHPC-23.7-CUDA-12.1.1
+--- lapack-netlib/INSTALL/Makefile.orig	2023-04-01 22:18:01.000000000 +0200
++++ lapack-netlib/INSTALL/Makefile	2024-04-11 11:55:15.489833571 +0200
+@@ -6,7 +6,7 @@
+ 
+ ifneq ($(C_LAPACK), 1)
+ testlsame: lsame.o lsametst.o
+-	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^
++	$(FC) $(FFLAGS) $(LDFLAGS) -Mnomain -o $@ $^
+ 
+ testslamch: slamch.o lsame.o slamchtst.o
+ 	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^
+@@ -16,7 +16,7 @@
+ 
+ testsecond: second_$(TIMER).o secondtst.o
+ 	@echo "[INFO] : TIMER value: $(TIMER) (given by make.inc)"
+-	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^
++	$(FC) $(FFLAGS) $(LDFLAGS) -Mnomain -o $@ $^
+ 
+ testdsecnd: dsecnd_$(TIMER).o dsecndtst.o
+ 	@echo "[INFO] : TIMER value: $(TIMER) (given by make.inc)"
