@@ -22,21 +22,21 @@ cmds_map = [(
     '.*',
     'sed -i \'s/scala.sys.process.Process("git rev-parse --short HEAD").lineStream.head/"%(version)s"/\' version.sbt'
     ' && sbt --sbt-dir "$TMPDIR/sbt" assembly --ivy "$TMPDIR/ivy2"'
-    ' && echo -e \'#!/bin/bash\\ncd $(dirname $0) && exec java -jar ../lib/fgbio-%(version)s.jar "$@"\' >> fbgio'
-    ' && chmod +x fbgio'
+    ' && echo -e \'#!/bin/bash\\nexec java -jar "${EBROOTFGBIO}/lib/%(name)s-%(version)s.jar" "$@"\' >> %(name)s'
+    ' && chmod +x %(name)s'
 )]
 
 files_to_copy = [
-    (['fbgio'], 'bin'),
-    (['target/scala-*/fgbio-%(version)s.jar'], 'lib'),
+    (['%(name)s'], 'bin'),
+    (['target/scala-*/%(name)s-%(version)s.jar'], 'lib'),
 ]
 
 sanity_check_paths = {
-    'files': ['bin/fbgio', 'lib/fgbio-%(version)s.jar'],
+    'files': ['bin/%(name)s', 'lib/%(name)s-%(version)s.jar'],
     'dirs': [],
 }
 
 # --help, --version, ... all exit with status code one, so we need to check the output
-sanity_check_commands = ['fbgio --help 2>&1 | grep -q Version']
+sanity_check_commands = ['%(name)s --help 2>&1 | grep -q Version']
 
 moduleclass = 'bio'
