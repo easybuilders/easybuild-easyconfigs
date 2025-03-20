@@ -1,0 +1,69 @@
+easyblock = 'Bundle'
+
+name = 'COAWST-deps'
+version = '3.8'
+
+homepage = 'https://github.com/DOI-USGS/COAWST'
+description = """
+A Coupled-Ocean-Atmosphere-Wave-Sediment Transport Modeling System. COAWST is
+an open-source tool that combines many sophisticated systems that each provide
+relative earth-system components necessary to investigate the dynamics of
+coastal storm impacts."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+dependencies = [
+    ('netCDF', '4.9.2'),
+    ('netCDF-Fortran', '4.6.1'),
+    ('CMake', '3.26.3'),  # needed for building SWAN
+]
+
+default_easyblock = 'ConfigureMake'
+
+components = [
+    ('MCT', version, {
+        'source_urls': ['https://github.com/DOI-USGS/COAWST/archive/refs/tags'],
+        'sources': ['COAWST_v%(version)s.tar.gz'],
+        'checksums': ['7bb820b32cdbb9e5047df67780296a61f53b34d5c3605b2c59ff4d224fac268e'],
+        'start_dir': 'Lib/MCT',
+        'preconfigopts': 'export FCFLAGS="$FCFLAGS -fallow-argument-mismatch" && ',
+    }),
+    ('SCRIP_COAWST', version, {
+        'sources': [{'filename': 'COAWST_v%(version)s.tar.gz', 'extract_cmd': 'echo already extracted: %s'}],
+        'checksums': ['7bb820b32cdbb9e5047df67780296a61f53b34d5c3605b2c59ff4d224fac268e'],
+        'start_dir': 'Lib/SCRIP_COAWST',
+        'skipsteps': ['configure'],
+        'buildopts': 'FORT=$FC_SEQ',
+        'install_cmd': 'mkdir %(installdir)s/bin && cp scrip_coawst %(installdir)s/bin',
+    }),
+]
+
+unpack_options = '--strip-components=1'
+maxparallel = 1
+
+postinstallcmds = [
+    # don't export which_MPI in build_coawst, we do it in the easyconfig
+    r"sed -i 's/\(^\s*export\s\+which_MPI=\)/#\1/g' " + '%(builddir)s/build_coawst.sh',
+    # remove -assume flag, which is not supported by gfortran
+    "sed -i '/-assume byterecl/d' %(builddir)s/Compilers/Linux-gfortran.mk",
+    'mkdir -p %(installdir)s/src',
+    'cp -a %(builddir)s/* %(installdir)s/src',
+    'rm -r %(installdir)s/src/Lib',
+]
+
+modextravars = {
+    'which_MPI': 'openmpi',
+}
+
+modextrapaths = {
+    'MCT_LIBDIR': 'lib',
+    'MCT_INCDIR': 'include',
+}
+
+sanity_check_paths = {
+    'files': ['bin/scrip_coawst', 'lib/libmct.a', 'lib/libmpeu.a'],
+    'dirs': ['include', 'src'],
+}
+
+moduleclass = 'geo'
