@@ -1,0 +1,145 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/08
+# fix imports and types for py3
+diff -ru PyRTF-0.45/PyRTF/Elements.py PyRTF-0.45_py3/PyRTF/Elements.py
+--- PyRTF-0.45/PyRTF/Elements.py	2005-05-09 03:48:50.000000000 +0200
++++ PyRTF-0.45_py3/PyRTF/Elements.py	2023-08-02 15:41:39.187797850 +0200
+@@ -1,9 +1,9 @@
+-from	types		import	IntType, FloatType, LongType, StringTypes
++from	types		import *	
+ from	copy		import	deepcopy
+ from    binascii    import  hexlify
+ 
+-from    Constants   import  *
+-from	Styles		import	*
++from    .Constants   import  *
++from	.Styles		import	*
+ 
+ class UnhandledParamError( Exception ) :
+ 	def __init__( self, param ) :
+@@ -513,7 +513,7 @@
+ 
+ 	def AddRow( self, *cells ) :
+ 		height = None
+-		if isinstance( cells[ 0 ], (IntType, FloatType, LongType) ):
++		if isinstance( cells[ 0 ], (int, float) ):
+ 			height = int( cells[ 0 ] )
+ 			cells  = cells[ 1 : ]
+ 
+@@ -562,7 +562,7 @@
+ 		self._append = super( Cell, self ).append
+ 
+ 		for param in params :
+-			if   isinstance( param, StringType ) : self.append    ( param )
++			if   isinstance( param, str ) : self.append    ( param )
+ 			elif isinstance( param, Paragraph  ) : self.append    ( param )
+ 			elif isinstance( param, FramePS    ) : self.SetFrame  ( param )
+ 			elif isinstance( param, MarginsPS  ) : self.SetMargins( param )
+@@ -679,4 +679,4 @@
+ 
+ 	result = Inline( text_props )
+ 	apply( result.append, params )
+-	return result
+\ No newline at end of file
++	return result
+diff -ru PyRTF-0.45/PyRTF/__init__.py PyRTF-0.45_py3/PyRTF/__init__.py
+--- PyRTF-0.45/PyRTF/__init__.py	2005-03-01 07:56:24.000000000 +0100
++++ PyRTF-0.45_py3/PyRTF/__init__.py	2023-08-02 10:49:40.552306670 +0200
+@@ -1,4 +1,4 @@
+-from	PropertySets	import	*
+-from	Elements	import	*
+-from	Styles		import	*
+-from	Renderer	import	*
++from	.PropertySets	import	*
++from	.Elements	import	*
++from	.Styles		import	*
++from	.Renderer	import	*
+diff -ru PyRTF-0.45/PyRTF/PropertySets.py PyRTF-0.45_py3/PyRTF/PropertySets.py
+--- PyRTF-0.45/PyRTF/PropertySets.py	2005-03-16 23:37:31.000000000 +0100
++++ PyRTF-0.45_py3/PyRTF/PropertySets.py	2023-08-02 15:28:10.964629423 +0200
+@@ -9,7 +9,7 @@
+ 
+ """
+ 
+-from	types		import	StringType
++from	types		import	*
+ from	copy		import	deepcopy
+ 
+ 
+@@ -17,7 +17,7 @@
+ #	We need some basic Type like fonts, colours and paper definitions
+ #
+ def MakeAttributeName( value ) :
+-	assert value and type( value ) is StringType
++	assert value and type( value ) is str
+ 	value = value.replace( ' ', '' )
+ 	return value
+ 
+diff -ru PyRTF-0.45/PyRTF/Renderer.py PyRTF-0.45_py3/PyRTF/Renderer.py
+--- PyRTF-0.45/PyRTF/Renderer.py	2005-04-03 01:11:09.000000000 +0200
++++ PyRTF-0.45_py3/PyRTF/Renderer.py	2023-08-02 15:33:12.745835154 +0200
+@@ -1,6 +1,6 @@
+-from types import StringType, ListType, TupleType
++from types import * 
+ from copy import deepcopy
+-from Elements import *
++from .Elements import *
+ 
+ DEFAULT_TAB_WIDTH = 720
+ 
+@@ -438,7 +438,7 @@
+ 			elif clss == Table :
+ 				self.WriteTableElement( element )
+ 
+-			elif clss == StringType :
++			elif clss == str :
+ 				self.WriteParagraphElement( Paragraph( element ) )
+ 
+ 			elif clss in [ RawCode, Image ] :
+@@ -474,7 +474,7 @@
+ 
+ 		for element in paragraph_elem :
+ 
+-			if isinstance( element, StringType ) :
++			if isinstance( element, str ) :
+ 				self._write( element )
+ 
+ 			elif isinstance( element, RawCode ) :
+@@ -513,7 +513,7 @@
+ 		if overrides : self._write( '{%s ' % repr( overrides ) )
+ 
+ 		#	if the data is just a string then we can now write it
+-		if isinstance( text_elem.Data, StringType ) :
++		if isinstance( text_elem.Data, str ) :
+ 			self._write( text_elem.Data or '' )
+ 
+ 		elif text_elem.Data == TAB :
+@@ -535,7 +535,7 @@
+ 
+ 		for element in inline_elem :
+ 			#	if the data is just a string then we can now write it
+-			if isinstance( element, StringType ) :
++			if isinstance( element, str ) :
+ 				self._write( element )
+ 
+ 			elif isinstance( element, RawCode ) :
+@@ -620,7 +620,7 @@
+ 					last_idx = len( cell ) - 1
+ 					for element_idx, element in enumerate( cell ) :
+ 						#	wrap plain strings in paragraph tags
+-						if isinstance( element, StringType ) :
++						if isinstance( element, str ) :
+ 							element = Paragraph( element )
+ 
+ 						#	don't forget the prefix or else word crashes and does all sorts of strange things
+diff -ru PyRTF-0.45/PyRTF/Styles.py PyRTF-0.45_py3/PyRTF/Styles.py
+--- PyRTF-0.45/PyRTF/Styles.py	2005-03-01 07:56:24.000000000 +0100
++++ PyRTF-0.45_py3/PyRTF/Styles.py	2023-08-02 15:24:37.903532082 +0200
+@@ -6,7 +6,7 @@
+ 
+ """
+ 
+-from PropertySets import *
++from .PropertySets import *
+ 
+ class TextStyle :
+ 	def __init__( self, text_props, name=None, shading_props=None ) :
