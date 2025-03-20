@@ -12,7 +12,7 @@ toolchain = {'name': 'fosscuda', 'version': '2020b'}
 toolchainopts = {'pic': True}
 
 sources = [{
-    'filename': SOURCE_TAR_GZ,
+    'filename': SOURCE_TAR_XZ,
     'git_config': {
         'url': 'https://github.com/clara-parabricks',
         'repo_name': name,
@@ -20,8 +20,7 @@ sources = [{
         'recursive': True,
     },
 }]
-# no checksum for source tarball because it's created locally via 'git clone'
-checksums = [None]
+checksums = ['ac3946d7172853efe3260339e7edc430bbbd585ed490c7f1ad9f7644446a5ae6']
 
 builddependencies = [
     ('CMake', '3.18.4'),
@@ -53,12 +52,6 @@ skipsteps = ['test']
 
 exts_defaultclass = 'PythonPackage'
 
-exts_default_options = {
-    'download_dep_fail': True,
-    'use_pip': True,
-    'sanity_pip_check': True,
-}
-
 local_genomeworks_preinstallopts = "sed -i 's/[=~]=/>=/g' requirements.txt && "
 local_genomeworks_preinstallopts += "export GW_INSTALL_DIR=%(installdir)s && "
 local_genomeworks_preinstallopts += "export GW_VERSION=%(version)s && "
@@ -70,9 +63,8 @@ exts_list = [
         'checksums': ['d8e9609d6c580a16a1224a3dc8965789e03ebc4c3e5ffd05ada54a2fed5dcacd'],
     }),
     ('genomeworks', version, {
-        'sources': ['GenomeWorks-%(version)s.tar.gz'],
-        # no checksum for source tarball because it's created locally via 'git clone'
-        'checksums': [None],
+        'sources': sources,
+        'checksums': checksums,
         'start_dir': 'pygenomeworks',
         'preinstallopts': local_genomeworks_preinstallopts,
     }),
@@ -91,7 +83,5 @@ sanity_check_commands = [
     "genome_simulator --help",
     "python -c 'import genomeworks'",
 ]
-
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 moduleclass = 'bio'
