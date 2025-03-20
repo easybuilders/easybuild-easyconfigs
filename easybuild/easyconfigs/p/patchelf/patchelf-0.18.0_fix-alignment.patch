@@ -1,0 +1,31 @@
+Author - Pavel Tománek
+Fix alignment problem when rewriting sections
+https://github.com/NixOS/patchelf/pull/566
+--- src/patchelf.cc.orig	2024-10-07 16:45:17.515584318 +0200
++++ src/patchelf.cc	2024-10-07 16:47:14.622270000 +0200
+@@ -843,7 +843,7 @@
+         neededSpace += headerTableSpace;
+     debug("needed space is %d\n", neededSpace);
+ 
+-    Elf_Off startOffset = roundUp(fileContents->size(), getPageSize());
++    Elf_Off startOffset = roundUp(fileContents->size(), alignStartPage);
+ 
+     // In older version of binutils (2.30), readelf would check if the dynamic
+     // section segment is strictly smaller than the file (and not same size).
+@@ -879,7 +879,7 @@
+         rdi(lastSeg.p_type) == PT_LOAD &&
+         rdi(lastSeg.p_flags) == (PF_R | PF_W) &&
+         rdi(lastSeg.p_align) == alignStartPage) {
+-        auto segEnd = roundUp(rdi(lastSeg.p_offset) + rdi(lastSeg.p_memsz), getPageSize());
++        auto segEnd = roundUp(rdi(lastSeg.p_offset) + rdi(lastSeg.p_memsz), alignStartPage);
+         if (segEnd == startOffset) {
+             auto newSz = startOffset + neededSpace - rdi(lastSeg.p_offset);
+             wri(lastSeg.p_filesz, wri(lastSeg.p_memsz, newSz));
+@@ -898,6 +898,7 @@
+         wri(phdr.p_filesz, wri(phdr.p_memsz, neededSpace));
+         wri(phdr.p_flags, PF_R | PF_W);
+         wri(phdr.p_align, alignStartPage);
++        assert(startPage % alignStartPage == startOffset % alignStartPage);
+     }
+ 
+     normalizeNoteSegments();

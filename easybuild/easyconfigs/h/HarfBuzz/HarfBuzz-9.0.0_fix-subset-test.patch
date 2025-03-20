@@ -1,0 +1,26 @@
+The test "feature_variation_instance_collect_lookups" fails when run in environments
+where the decimal separator is not a dot (".").
+Fix this by using the C locale.
+See https://github.com/harfbuzz/harfbuzz/pull/4857
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/subset/run-tests.py b/test/subset/run-tests.py
+index 9e09d95d1d9..c0c256d8974 100755
+--- a/test/subset/run-tests.py
++++ b/test/subset/run-tests.py
+@@ -135,10 +135,13 @@ def check_ots (path):
+ 
+ has_ots = has_ots()
+ 
++env = os.environ.copy()
++env['LC_ALL'] = 'C'
+ process = subprocess.Popen ([hb_subset, '--batch'],
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+-                            stderr=sys.stdout)
++                            stderr=sys.stdout,
++                            env=env)
+ 
+ fails = 0
+ for path in args:

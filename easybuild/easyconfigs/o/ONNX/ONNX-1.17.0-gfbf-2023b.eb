@@ -1,0 +1,59 @@
+easyblock = 'PythonPackage'
+
+name = 'ONNX'
+version = '1.17.0'
+
+homepage = 'https://onnx.ai'
+description = """
+Open Neural Network Exchange (ONNX) is an open ecosystem that empowers AI
+developers to choose the right tools as their project evolves. ONNX provides an
+open source format for AI models, both deep learning and traditional ML. It
+defines an extensible computation graph model, as well as definitions of
+built-in operators and standard data types. Currently we focus on the
+capabilities needed for inferencing (scoring)."""
+
+toolchain = {'name': 'gfbf', 'version': '2023b'}
+
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['48ca1a91ff73c1d5e3ea2eef20ae5d0e709bb8a2355ed798ffc2169753013fd3']
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('protobuf-python', '4.25.3'),
+    ('typing-extensions', '4.10.0'),
+]
+
+# hardcode version in pyproject.toml rather than determining it dynamically
+preinstallopts = """sed -i 's/"version",//g' pyproject.toml && """
+preinstallopts += """sed -i 's/readme = .*/version = "%(version)s"/g' pyproject.toml && """
+
+# fix for: undefined symbol: _ZN6google8protobuf8internal15ThreadSafeArena13thread_cache_E
+# see also https://bugs.archlinux.org/task/75242
+# author: Kenneth Hoste (HPC-UGent)
+preinstallopts += "sed -i '50 s/if(MSVC)/#if(MSVC)/' CMakeLists.txt && "
+preinstallopts += "sed -i '53 s/endif()/#endif()/' CMakeLists.txt && "
+
+# specify C++17 standard and link to protobuf shared library (also requires patch to use -DPROTOBUF_USE_DLLS);
+# required to fix "error: 'string_view' in namespace 'std' does not name a type",
+# see also https://github.com/onnx/onnx/issues/5430
+preinstallopts += "export CMAKE_ARGS='-DCMAKE_CXX_STANDARD=17 -DONNX_USE_PROTOBUF_SHARED_LIBS=ON' && "
+
+preinstallopts += 'env MAX_JOBS="%(parallel)s"'
+
+sanity_check_paths = {
+    'files': ['bin/check-model', 'bin/check-node', 'bin/backend-test-tools'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    ('check-model', '-h'),
+    ('check-node', '-h'),
+    ('backend-test-tools', '-h'),
+]
+
+moduleclass = 'devel'
