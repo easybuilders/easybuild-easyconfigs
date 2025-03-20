@@ -1,0 +1,314 @@
+- use EasyBuild provided dependencies (libreadline, Boost, CGAL, SCOTCH, ParaView, ...)
+- comment out environment settings handled through EasyBuild
+- use correct value for $WM_PROJECT_VERSION
+- fix small compilation issue in ptscotchDecomp.C (w.r.t. location of #include <mpi.h>)
+by Kenneth Hoste (HPC-UGent), based on earlier patch for OpenFOAM 4.1 by Ward Poelmans <wpoely86@gmail.com>
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/applications/utilities/mesh/manipulation/setSet/Allwmake OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/applications/utilities/mesh/manipulation/setSet/Allwmake
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/applications/utilities/mesh/manipulation/setSet/Allwmake	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/applications/utilities/mesh/manipulation/setSet/Allwmake	2018-01-23 11:14:29.924844000 +0100
+@@ -7,18 +7,18 @@
+ unset COMP_FLAGS LINK_FLAGS
+ 
+ # Use readline if available
+-if [ -f /usr/include/readline/readline.h ]
++if [ -f $EBROOTLIBREADLINE/include/readline/readline.h ]
+ then
+     echo "    found <readline/readline.h>  --  enabling readline support."
+     export COMP_FLAGS="-DHAS_READLINE"
+ 
+     # readline may require ncurses
+-    if [ -f /usr/include/ncurses/ncurses.h ]
++    if [ -f $EBROOTNCURSES/include/ncurses.h ]
+     then
+         echo "    found <ncurses/ncurses.h>  --  maybe required by readline."
+-        export LINK_FLAGS="-lreadline -lncurses"
++        export LINK_FLAGS="-L$EBROOTLIBREADLINE/lib -lreadline -L$EBROOTNCURSES/lib -lncurses"
+     else
+-        export LINK_FLAGS="-lreadline"
++        export LINK_FLAGS="-L$EBROOTLIBREADLINE/lib -lreadline"
+     fi
+ fi
+ 
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/applications/utilities/postProcessing/graphics/PVReaders/Allwmake OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/applications/utilities/postProcessing/graphics/PVReaders/Allwmake
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/applications/utilities/postProcessing/graphics/PVReaders/Allwmake	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/applications/utilities/postProcessing/graphics/PVReaders/Allwmake	2018-01-23 10:58:51.176326000 +0100
+@@ -14,8 +14,8 @@
+         }
+ 
+         # ensure CMake gets the correct C/C++ compilers
+-        [ -n "$WM_CC" ] && export CC="$WM_CC"
+-        [ -n "$WM_CXX" ] && export CXX="$WM_CXX"
++#        [ -n "$WM_CC" ] && export CC="$WM_CC"
++#        [ -n "$WM_CXX" ] && export CXX="$WM_CXX"
+ 
+         wmake $targetType vtkPVblockMesh
+         wmake $targetType vtkPVFoam
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/bashrc OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/bashrc
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/bashrc	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/bashrc	2018-01-23 11:15:41.122782000 +0100
+@@ -32,7 +32,7 @@
+ #------------------------------------------------------------------------------
+ 
+ export WM_PROJECT=OpenFOAM
+-export WM_PROJECT_VERSION=5.x
++export WM_PROJECT_VERSION=5.0-20180108
+ 
+ ################################################################################
+ # USER EDITABLE PART: Changes made here may be lost with the next upgrade
+@@ -43,8 +43,9 @@
+ # Please set to the appropriate path if the default is not correct.
+ #
+ [ "$BASH" -o "$ZSH_NAME" ] && \
+-export FOAM_INST_DIR=$(cd $(dirname ${BASH_SOURCE:-$0})/../.. && pwd -P) || \
+-export FOAM_INST_DIR=$HOME/$WM_PROJECT
++#export FOAM_INST_DIR=$(cd $(dirname ${BASH_SOURCE:-$0})/../.. && pwd -P) || \
++#export FOAM_INST_DIR=$HOME/$WM_PROJECT
++# For Easybuild: set by the module
+ # export FOAM_INST_DIR=~$WM_PROJECT
+ # export FOAM_INST_DIR=/opt/$WM_PROJECT
+ # export FOAM_INST_DIR=/usr/local/$WM_PROJECT
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/CGAL OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/CGAL
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/CGAL	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/CGAL	2018-01-23 11:17:23.118954000 +0100
+@@ -35,33 +35,8 @@
+ #
+ #------------------------------------------------------------------------------
+ 
+-boost_version=boost-system
+-cgal_version=cgal-system
+-#cgal_version=CGAL-4.10
+-
+-thirdPartyPath=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER
+-
+-if [ "$boost_version" != "boost-system"  ]
+-then
+-    export BOOST_ARCH_PATH=$thirdPartyPath/$boost_version
+-    if [ -d "$BOOST_ARCH_PATH" ]
+-    then
+-        _foamAddLib $BOOST_ARCH_PATH/lib
+-    fi
+-else
+-    unset BOOST_ARCH_PATH
+-fi
+-
+-if [ "$cgal_version" != "cgal-system" ]
+-then
+-    export CGAL_ARCH_PATH=$thirdPartyPath/$cgal_version
+-    if [ -d "$CGAL_ARCH_PATH" ]
+-    then
+-        _foamAddLib $CGAL_ARCH_PATH/lib$WM_COMPILER_LIB_ARCH
+-    fi
+-else
+-    unset CGAL_ARCH_PATH
+-fi
++export CGAL_ARCH_PATH=$EBROOTCGAL
++export BOOST_ARCH_PATH=$EBROOTBOOST
+ 
+ if [ "$FOAM_VERBOSE" -a "$PS1" ]
+ then
+@@ -70,6 +45,4 @@
+     echo "    $cgal_version at $CGAL_ARCH_PATH" 1>&2
+ fi
+ 
+-unset thirdPartyPath
+-
+ #------------------------------------------------------------------------------
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/gperftools OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/gperftools
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/gperftools	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/gperftools	2018-01-23 10:58:51.191762000 +0100
+@@ -29,13 +29,7 @@
+ #
+ #------------------------------------------------------------------------------
+ 
+-version=svn
+-gperftools_install=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER
+-
+-GPERFTOOLS_VERSION=gperftools-$version
+-GPERFTOOLS_ARCH_PATH=$gperftools_install/$GPERFTOOLS_VERSION
+-
+-export PATH=$GPERFTOOLS_ARCH_PATH/bin:$PATH
+-export LD_LIBRARY_PATH=$GPERFTOOLS_ARCH_PATH/lib:$LD_LIBRARY_PATH
++GPERFTOOLS_VERSION=gperftools-$EBVERSIONGPERFTOOLS
++GPERFTOOLS_ARCH_PATH=$EBROOTGPERFTOOLS
+ 
+ #------------------------------------------------------------------------------
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/metis OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/metis
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/metis	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/metis	2018-01-23 10:58:51.195914000 +0100
+@@ -34,7 +34,7 @@
+ #
+ #------------------------------------------------------------------------------
+ 
+-export METIS_VERSION=metis-5.1.0
+-export METIS_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER$WM_PRECISION_OPTION$WM_LABEL_OPTION/$METIS_VERSION
++export METIS_VERSION=metis-$EBVERSIONMETIS
++export METIS_ARCH_PATH=$EBROOTMETIS
+ 
+ #------------------------------------------------------------------------------
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/mpi OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/mpi
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/mpi	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/mpi	2018-01-23 10:58:51.199497836 +0100
+@@ -249,6 +249,9 @@
+     _foamAddPath    $MPI_ARCH_PATH/bin64
+     _foamAddLib     $MPI_ARCH_PATH/lib64
+     ;;
++EASYBUILDMPI)
++    export FOAM_MPI=mpi
++    ;;
+ *)
+     export FOAM_MPI=dummy
+     ;;
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/paraview OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/paraview
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/paraview	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/paraview	2018-01-23 11:20:00.546299000 +0100
+@@ -41,21 +41,6 @@
+         ) \
+         && PATH="$cleaned"
+ 
+-# Determine the cmake to be used
+-unset CMAKE_HOME
+-for cmake in cmake-3.2.1 cmake-2.8.12.1 cmake-2.8.8 cmake-2.8.4 cmake-2.8.3 \
+-             cmake-2.8.1 cmake-3.9.0
+-do
+-    cmake=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$cmake
+-    if [ -r $cmake ]
+-    then
+-        export CMAKE_HOME=$cmake
+-        export CMAKE_ROOT=$cmake
+-        export PATH=$CMAKE_HOME/bin:$PATH
+-        break
+-    fi
+-done
+-
+ 
+ #- ParaView version, automatically determine major version
+ #export ParaView_VERSION=3.12.0
+@@ -65,7 +50,7 @@
+ #export ParaView_VERSION=4.4.0
+ #export ParaView_VERSION=5.0.0
+ #export ParaView_VERSION=5.0.1
+-export ParaView_VERSION=5.4.0
++export ParaView_VERSION=$EBVERSIONPARAVIEW
+ export ParaView_MAJOR=detect
+ 
+ 
+@@ -106,21 +91,15 @@
+ paraviewInstDir=$WM_THIRD_PARTY_DIR/ParaView-$ParaView_VERSION
+ paraviewArchName=ParaView-$ParaView_VERSION
+ 
+-export ParaView_DIR=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$paraviewArchName
++export ParaView_DIR=$EBROOTPARAVIEW
+ 
+ # Set paths if binaries or source are present
+ if [ -r $ParaView_DIR -o -r $paraviewInstDir ]
+ then
+     export ParaView_INCLUDE_DIR=$ParaView_DIR/include/paraview-$ParaView_MAJOR
+-    if [ ! -d $ParaView_INCLUDE_DIR -a -d $ParaView_DIR/include/paraview-3.0 ]
+-    then
+-        export ParaView_INCLUDE_DIR=$ParaView_DIR/include/paraview-3.0
+-    fi
+ 
+     ParaView_LIB_DIR=$ParaView_DIR/lib/paraview-$ParaView_MAJOR
+ 
+-    export PATH=$ParaView_DIR/bin:$PATH
+-    export LD_LIBRARY_PATH=$ParaView_LIB_DIR:$LD_LIBRARY_PATH
+     export PV_PLUGIN_PATH=$FOAM_LIBBIN/paraview-$ParaView_MAJOR
+ 
+     if [ "$FOAM_VERBOSE" -a "$PS1" ]
+@@ -132,17 +111,6 @@
+         echo "    PV_PLUGIN_PATH       : $PV_PLUGIN_PATH"
+     fi
+ 
+-    # Add in python libraries if required
+-    paraviewPython=$ParaView_DIR/Utilities/VTKPythonWrapping
+-    if [ -r $paraviewPython ]
+-    then
+-        if [ "$PYTHONPATH" ]
+-        then
+-            export PYTHONPATH=$PYTHONPATH:$paraviewPython:$ParaView_LIB_DIR
+-        else
+-            export PYTHONPATH=$paraviewPython:$ParaView_LIB_DIR
+-        fi
+-    fi
+ else
+     unset PV_PLUGIN_PATH
+ fi
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/scotch OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/scotch
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/scotch	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/scotch	2018-01-23 10:58:51.207891000 +0100
+@@ -37,7 +37,7 @@
+ #
+ #------------------------------------------------------------------------------
+ 
+-export SCOTCH_VERSION=scotch_6.0.3
+-export SCOTCH_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER$WM_PRECISION_OPTION$WM_LABEL_OPTION/$SCOTCH_VERSION
++export SCOTCH_VERSION=scotch_$EBVERSIONSCOTCH
++export SCOTCH_ARCH_PATH=$EBROOTSCOTCH
+ 
+ #------------------------------------------------------------------------------
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/settings OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/settings
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/etc/config.sh/settings	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/etc/config.sh/settings	2018-01-23 10:58:51.210513521 +0100
+@@ -61,11 +61,11 @@
+         64)
+             WM_ARCH=linux64
+             export WM_COMPILER_LIB_ARCH=64
+-            export WM_CC='gcc'
+-            export WM_CXX='g++'
+-            export WM_CFLAGS='-m64 -fPIC'
+-            export WM_CXXFLAGS='-m64 -fPIC -std=c++0x'
+-            export WM_LDFLAGS='-m64'
++            export WM_CC=$CC
++            export WM_CXX=$CXX
++            export WM_CFLAGS=$CFLAGS
++            export WM_CXXFLAGS=$CXXFLAGS
++            export WM_LDFLAGS=$LDFLAGS
+             ;;
+         *)
+             echo "Unknown WM_ARCH_OPTION '$WM_ARCH_OPTION', should be 32 or 64"\
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/src/parallel/decompose/ptscotchDecomp/Make/options OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/src/parallel/decompose/ptscotchDecomp/Make/options
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/src/parallel/decompose/ptscotchDecomp/Make/options	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/src/parallel/decompose/ptscotchDecomp/Make/options	2018-01-23 10:58:51.218420000 +0100
+@@ -4,14 +4,7 @@
+ EXE_INC = \
+     $(PFLAGS) $(PINC) \
+     -I$(SCOTCH_ARCH_PATH)/include/$(FOAM_MPI) \
+-    -I$(SCOTCH_ARCH_PATH)/include \
+-    -I/usr/include/scotch \
+     -I../decompositionMethods/lnInclude
+ 
+ LIB_LIBS = \
+-    -L$(SCOTCH_ARCH_PATH)/lib \
+-    -L$(FOAM_EXT_LIBBIN)/$(FOAM_MPI) \
+-    -lptscotch \
+-    -lptscotcherrexit \
+-    -lscotch \
+-    -lrt
++    -L$(SCOTCH_ARCH_PATH)/lib -L$(FOAM_EXT_LIBBIN)/$(FOAM_MPI) -lptscotch -lptscotcherrexit -lscotch ${LINK_FLAGS} -lrt
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2018-01-23 10:58:51.224134473 +0100
+@@ -30,10 +30,11 @@
+ #include "globalIndex.H"
+ #include "SubField.H"
+ 
++#include <mpi.h>
++
+ extern "C"
+ {
+     #include <stdio.h>
+-    #include <mpi.h>
+     #include "ptscotch.h"
+ }
+ 
+diff -ru OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/src/parallel/decompose/scotchDecomp/Make/options OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/src/parallel/decompose/scotchDecomp/Make/options
+--- OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d.orig/src/parallel/decompose/scotchDecomp/Make/options	2018-01-08 11:58:00.000000000 +0100
++++ OpenFOAM-5.x-c409ae7d90966250bb3be9cfbc2a0538bc8e288d/src/parallel/decompose/scotchDecomp/Make/options	2018-01-23 10:58:51.229165000 +0100
+@@ -8,7 +8,6 @@
+ EXE_INC = \
+     $(PFLAGS) $(PINC) \
+     -I$(SCOTCH_ARCH_PATH)/include \
+-    -I/usr/include/scotch \
+     -I../decompositionMethods/lnInclude
+ 
+ LIB_LIBS = \
