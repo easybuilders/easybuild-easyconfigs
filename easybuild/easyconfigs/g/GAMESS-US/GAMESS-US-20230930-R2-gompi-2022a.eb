@@ -1,0 +1,49 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2017 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+#                                 Ghent University / The Francis Crick Institute
+#
+# Authors::
+# * Kenneth Hoste <kenneth.hoste@ugent.be>
+# * Ward Poelmans <wpoely86@gmail.com>
+# * Oliver Stueker <oliver.stueker@ace-net.ca>
+# License::   MIT/GPL
+##
+name = 'GAMESS-US'
+version = '20230930-R2'
+
+maxcpus = '1024'
+maxnodes = '1024'
+hyperthreading = False
+
+homepage = 'https://www.msg.chem.iastate.edu/gamess/'
+description = """The General Atomic and Molecular Electronic Structure System (GAMESS)
+is a general ab initio quantum chemistry package.
+This module can be used on a maximum of %s nodes and %s CPUs per node.
+ """ % (maxnodes, maxcpus)
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+toolchainopts = {'usempi': True, 'openmp': False}
+
+dependencies = [
+    ('OpenBLAS', '0.3.20', '-int8'),
+    ('libxc', '5.2.3'),
+]
+
+download_instructions = """
+1. Manually download via http://www.msg.chem.iastate.edu/gamess/download.html (requires registration)
+2. Rename gamess-current.tar.gz to gamess-%(version)s.tar.gz
+"""
+sources = ['gamess-%(version)s.tar.gz']
+patches = ['GAMESS-US-20230930_add_slurm_support_mpi_target.patch']
+checksums = [
+    {'gamess-20230930-R2.tar.gz': '2b7cf4af17fb2eab5bf3609bf820437728cd36d87f44857dce25bafa9e9622ad'},
+    {'GAMESS-US-20230930_add_slurm_support_mpi_target.patch':
+     'ceed5f160678aba3b1885337a3e5955177b9df465c0ef2f50e4c5e52fe11f70d'},
+]
+
+# custom location of gamess workdir
+# scratch_dir = '/path/to/fast/storage'
+# user_scratch_dir = '/path/to/fast/storage'
+
+moduleclass = 'chem'

@@ -1,0 +1,31 @@
+Fix a left-over function causing compilation warnings or errors:
+mtl_ofi_component.c:298:5: error: implicit declaration of function 'mca_common_cuda_fini'; did you mean 'ompi_comm_cid_init'? [-Werror=implicit-function-declaration]
+     mca_common_cuda_fini();
+     ^~~~~~~~~~~~~~~~~~~~
+
+See https://github.com/open-mpi/ompi/issues/11381
+
+From 7676618c43d489b145e730d1d7603f0292a031c0 Mon Sep 17 00:00:00 2001
+From: Jingyin Tang <jytang@amazon.com>
+Date: Mon, 6 Feb 2023 13:48:51 -0500
+Subject: [PATCH] Fix compilation issue in OFI with CUDA
+
+Signed-off-by: Jingyin Tang <jytang@amazon.com>
+---
+ ompi/mca/mtl/ofi/mtl_ofi_component.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/ompi/mca/mtl/ofi/mtl_ofi_component.c b/ompi/mca/mtl/ofi/mtl_ofi_component.c
+index c1aac6934d0..e36f020b206 100644
+--- a/ompi/mca/mtl/ofi/mtl_ofi_component.c
++++ b/ompi/mca/mtl/ofi/mtl_ofi_component.c
+@@ -294,9 +294,6 @@ ompi_mtl_ofi_component_query(mca_base_module_t **module, int *priority)
+ static int
+ ompi_mtl_ofi_component_close(void)
+ {
+-#if OPAL_CUDA_SUPPORT
+-    mca_common_cuda_fini();
+-#endif
+     return opal_common_ofi_close();
+ }
+ 

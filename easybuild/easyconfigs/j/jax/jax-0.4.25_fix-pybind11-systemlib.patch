@@ -1,0 +1,38 @@
+Add missing value for System Pybind11 Bazel config
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/third_party/xla/fix-pybind11-systemlib.patch b/third_party/xla/fix-pybind11-systemlib.patch
+new file mode 100644
+index 000000000..68bd2063d
+--- /dev/null
++++ b/third_party/xla/fix-pybind11-systemlib.patch
+@@ -0,0 +1,13 @@
++--- xla-orig/third_party/tsl/third_party/systemlibs/pybind11.BUILD
+++++ xla-4ccfe33c71665ddcbca5b127fefe8baa3ed632d4/third_party/tsl/third_party/systemlibs/pybind11.BUILD
++@@ -6,3 +6,10 @@
++         "@tsl//third_party/python_runtime:headers",
++     ],
++ )
+++
+++# Needed by pybind11_bazel.
+++config_setting(
+++    name = "osx",
+++    constraint_values = ["@platforms//os:osx"],
+++)
+++
+diff --git a/third_party/xla/workspace.bzl b/third_party/xla/workspace.bzl
+index ebc8d9838..125e1c173 100644
+--- a/third_party/xla/workspace.bzl
++++ b/third_party/xla/workspace.bzl
+@@ -29,6 +29,9 @@ def repo():
+         sha256 = XLA_SHA256,
+         strip_prefix = "xla-{commit}".format(commit = XLA_COMMIT),
+         urls = tf_mirror_urls("https://github.com/openxla/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)),
++        patch_file = [
++            "//third_party/xla:fix-pybind11-systemlib.patch",
++        ],
+     )
+ 
+     # For development, one often wants to make changes to the TF repository as well
+

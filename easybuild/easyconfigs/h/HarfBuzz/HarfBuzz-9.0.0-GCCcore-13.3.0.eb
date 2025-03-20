@@ -1,0 +1,51 @@
+easyblock = 'MesonNinja'
+
+name = 'HarfBuzz'
+version = '9.0.0'
+
+homepage = 'https://www.freedesktop.org/wiki/Software/HarfBuzz'
+description = """HarfBuzz is an OpenType text shaping engine."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+github_account = 'harfbuzz'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+patches = ['HarfBuzz-9.0.0_fix-subset-test.patch']
+checksums = [
+    {'9.0.0.tar.gz': 'b7e481b109d19aefdba31e9f5888aa0cdfbe7608fed9a43494c060ce1f8a34d2'},
+    {'HarfBuzz-9.0.0_fix-subset-test.patch': '1635505c27c312dca507863f2a865eb88d42e35ff4cc241cfa0e90c0ade8b790'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('GObject-Introspection', '1.80.1'),
+    ('pkgconf', '2.2.0'),
+    ('Ninja', '1.12.1'),
+    ('Meson', '1.4.0'),
+    ('fonttools', '4.53.1'),  # For tests
+]
+
+dependencies = [
+    ('GLib', '2.80.4'),
+    ('ICU', '75.1'),
+    ('cairo', '1.18.0'),
+    ('freetype', '2.13.2'),
+]
+
+configopts = '--default-library=both'  # static and shared library
+configopts += ' -Dgobject=enabled -Dintrospection=enabled'
+configopts += ' -Dglib=enabled'
+configopts += ' -Dicu=enabled'
+configopts += ' -Dcairo=enabled'
+configopts += ' -Dfreetype=enabled'
+
+runtest = 'meson'
+testopts = 'test -C %(builddir)s/easybuild_obj -t 60'
+
+sanity_check_paths = {
+    'files': ['lib/libharfbuzz.%s' % SHLIB_EXT, 'bin/hb-view'],
+    'dirs': []
+}
+
+moduleclass = 'vis'

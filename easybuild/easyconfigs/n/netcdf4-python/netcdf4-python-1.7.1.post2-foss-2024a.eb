@@ -1,0 +1,55 @@
+easyblock = 'PythonBundle'
+
+name = 'netcdf4-python'
+version = '1.7.1.post2'
+
+homepage = 'https://unidata.github.io/netcdf4-python/'
+description = "Python/numpy interface to netCDF."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'usempi': True}
+
+builddependencies = [
+    ('Cython', '3.0.10'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('netCDF', '4.9.2'),
+    ('cURL', '8.7.1'),
+    ('mpi4py', '4.0.1'),
+]
+
+fix_python_shebang_for = ['bin/*']
+
+exts_list = [
+    ('cftime', '1.6.4', {
+        'checksums': ['e325406193758a7ed67308deb52e727782a19e384e183378e7ff62098be0aedc'],
+    }),
+    (name, version, {
+        'patches': [
+            'netcdf4-python-1.7.1.post2_relax_tolerance_compression_test.patch',
+        ],
+        'source_tmpl': 'netcdf4-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/n/netCDF4'],
+        'checksums': [
+            {'netcdf4-1.7.1.post2.tar.gz': '37d557e36654889d7020192bfb56f9d5f93894cb32997eb837ae586c538fd7b6'},
+            {'netcdf4-python-1.7.1.post2_relax_tolerance_compression_test.patch':
+             '7faa7e839ad1e816ffd0153e4b76b43ebce3e14d35f0534f812168dfaa78316c'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/nc3tonc4', 'bin/nc4tonc3', 'bin/ncinfo'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "nc4tonc3 --help",
+    "nc3tonc4 --help",
+    "ncinfo --help",
+]
+
+moduleclass = 'data'

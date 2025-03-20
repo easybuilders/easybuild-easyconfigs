@@ -1,0 +1,43 @@
+Using Fortran compilers which differ "too much" from GCC fails building NumPy with something like
+> A valid Fortran version was not found in this string: [...]
+
+See https://github.com/easybuilders/easybuild-easyblocks/issues/2518 and https://github.com/numpy/numpy/pull/26502
+
+Fix by converting the hard error into a warning as the issue would be handled later if required.
+E.g. for building NumPy we don't need a Fortran compiler at all.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/numpy/distutils/fcompiler/gnu.py b/numpy/distutils/fcompiler/gnu.py
+index eac4cbb477..8a1043fe26 100644
+--- a/numpy/distutils/fcompiler/gnu.py
++++ b/numpy/distutils/fcompiler/gnu.py
+@@ -8,6 +8,7 @@ import hashlib
+ import base64
+ import subprocess
+ from subprocess import Popen, PIPE, STDOUT
++from distutils import log
+ from numpy.distutils.exec_command import filepath_from_subprocess_output
+ from numpy.distutils.fcompiler import FCompiler
+ from distutils.version import LooseVersion
+@@ -69,9 +70,9 @@ class GnuFCompiler(FCompiler):
+                     # from the version string
+                     return ('gfortran', v)
+ 
+-        # If still nothing, raise an error to make the problem easy to find.
+-        err = 'A valid Fortran version was not found in this string:\n'
+-        raise ValueError(err + version_string)
++        # If still nothing, warn to make the problem easy to find.
++        log.warn('A valid Fortran version was not found in this string:\n'
++                 + version_string)
+ 
+     def version_match(self, version_string):
+         v = self.gnu_version_match(version_string)
+@@ -539,7 +540,6 @@ def _can_target(cmd, arch):
+ 
+ 
+ if __name__ == '__main__':
+-    from distutils import log
+     from numpy.distutils import customized_fcompiler
+     log.set_verbosity(2)
+ 

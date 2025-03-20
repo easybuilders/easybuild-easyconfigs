@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'FDS'
+version = '6.9.1'
+
+homepage = 'https://pages.nist.gov/fds-smv'
+description = """Fire Dynamics Simulator (FDS) is a large-eddy simulation (LES) code for low-speed flows,
+ with an emphasis on smoke and heat transport from fires."""
+
+toolchain = {'name': 'iomkl', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True, 'openmp': True}
+
+source_urls = ['https://github.com/firemodels/fds/archive/']
+sources = ['FDS-%(version)s.tar.gz']
+patches = ['FDS-%(version)s_intel_ompi.patch']
+checksums = [
+    {'FDS-6.9.1.tar.gz': 'e0fe22d1386dc06512489ddf190dbdbee4c9865856f4a7ca48aec8425b4c0867'},
+    {'FDS-6.9.1_intel_ompi.patch': '719137600e35025dce7dfcb88472e113143c571321bea01ceebfdbb6bc3c3fbb'},
+]
+
+unpack_options = '--strip-components=1'
+
+start_dir = 'Build'
+
+# just run make in the install dir
+skipsteps = ['configure', 'install']
+buildininstalldir = True
+
+buildopts = 'impi_intel_linux_openmp &&'
+buildopts += 'cd %(installdir)s/Build && ln -s fds_impi_intel_linux_openmp fds'
+
+modextrapaths = {'PATH': 'Build'}
+
+sanity_check_paths = {
+    'files': ['Build/fds'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "fds 2>&1 | grep 'MPI version'",
+]
+
+moduleclass = 'phys'
