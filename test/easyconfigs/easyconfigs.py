@@ -220,10 +220,10 @@ class EasyConfigTest(TestCase):
         changed_ecs_files = get_eb_files_from_diff(diff_filter='M')
         added_ecs_files = get_eb_files_from_diff(diff_filter='A')
 
-        # ignore template easyconfig (TEMPLATE.eb) and archived easyconfigs
+        # ignore archived easyconfigs
         def filter_ecs(ecs):
             archive_path = os.path.join('easybuild', 'easyconfigs', '__archive__')
-            return [ec for ec in ecs if os.path.basename(ec) != 'TEMPLATE.eb' and archive_path not in ec]
+            return [ec for ec in ecs if archive_path not in ec]
 
         changed_ecs_files = filter_ecs(changed_ecs_files)
         added_ecs_files = filter_ecs(added_ecs_files)
@@ -994,8 +994,16 @@ class EasyConfigTest(TestCase):
         for easyconfig in self.parsed_easyconfigs:
             ec = easyconfig['ec']
             # easyblocks where there'll be no sources
-            if ec['easyblock'] in ['BuildEnv', 'Bundle', 'CrayToolchain', 'ModuleRC', 'SystemCompiler', 'SystemMPI',
-                                   'Toolchain']:
+            if ec['easyblock'] in [
+                'BuildEnv',
+                'Bundle',
+                'CrayToolchain',
+                'ModuleRC',
+                'SystemCompiler',
+                'SystemCompilerGCC',
+                'SystemMPI',
+                'Toolchain',
+            ]:
                 continue
 
             # easyconfigs where a dep provides the source
@@ -1069,8 +1077,8 @@ class EasyConfigTest(TestCase):
             # ignore git/svn dirs & archived easyconfigs
             if '/.git/' in dirpath or '/.svn/' in dirpath or '__archive__' in dirpath:
                 continue
-            # check whether list of .eb files is non-empty, only exception: TEMPLATE.eb
-            easyconfig_files = [fn for fn in filenames if fn.endswith('eb') and fn != 'TEMPLATE.eb']
+            # check whether list of .eb files is non-empty
+            easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
             if easyconfig_files:
                 # check whether path matches required pattern
                 if not easyconfig_dirs_regex.search(dirpath):
@@ -1098,8 +1106,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('4.9.4'))
-        self.assertEqual(most_recent[1], 'EasyBuild-4.9.4.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.0.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.0.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1313,10 +1321,12 @@ class EasyConfigTest(TestCase):
         # some generic easyblocks already have a decent customised sanity_check_paths,
         # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle & JuliaPackage, PerlBundle,
         #           PythonBundle & PythonPackage;
-        # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
+        # BuildEnv, ModuleRC SystemCompiler and Toolchain easyblocks do not install anything so there is nothing
+        # to check.
         whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage',
                      'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'JuliaPackage',
-                     'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
+                     'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'SystemCompiler', 'SystemCompilerGCC',
+                     'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
@@ -1880,7 +1890,7 @@ def suite(loader=None):
             dirs.remove('__archive__')
 
         for spec in specs:
-            if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
+            if spec.endswith('.eb'):
                 cnt += 1
                 innertest = make_inner_test(os.path.join(subpath, spec))
                 innertest.__doc__ = "Test for easyconfig %s" % spec
