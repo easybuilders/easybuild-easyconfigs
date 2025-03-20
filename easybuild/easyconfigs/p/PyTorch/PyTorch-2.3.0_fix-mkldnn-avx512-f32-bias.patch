@@ -1,0 +1,19 @@
+Fix a bug in MKLDNN that leads to e.g. a failure in
+test_conv_deconv_1d_lower_precision_cpu_bfloat16, test_conv_deconv_2d_lower_precision_cpu_bfloat16, test_conv_deconv_3d_lower_precision_cpu_bfloat16
+
+From: https://github.com/uxlfoundation/oneDNN/commit/c145daecbfb285a876a689e665ef0f2875638a60
+From: Dmitrii Zarukin <dmitry.zarukin@intel.com>
+Subject: [PATCH] cpu: x64: avx512_core_amx: kernel: fix f32 bias application
+
+diff -ur a/third_party/ideep/mkl-dnn/src/cpu/x64/jit_avx512_core_amx_conv_kernel.cpp b/third_party/ideep/mkl-dnn/src/cpu/x64/jit_avx512_core_amx_conv_kernel.cpp
+--- a/third_party/ideep/mkl-dnn/src/cpu/x64/jit_avx512_core_amx_conv_kernel.cpp
++++ b/third_party/ideep/mkl-dnn/src/cpu/x64/jit_avx512_core_amx_conv_kernel.cpp
+@@ -3205,7 +3205,7 @@
+                 vpslld(zmm_in, zmm_in, 16);
+                 break;
+             case data_type::f16: vcvtph2ps(zmm_in_k, addr); break;
+-            case data_type::f32: vaddps(zmm_in_k, addr); return;
++            case data_type::f32: vmovups(zmm_in_k, addr); break;
+             default: assert(!"Unsupported data type in xf16 conv");
+         }
+         vaddps(zmm_out, zmm_in);
