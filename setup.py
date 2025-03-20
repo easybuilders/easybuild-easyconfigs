@@ -44,7 +44,7 @@ from distutils.core import setup
 # recent setuptools versions will *TRANSFORM* something like 'X.Y.Zdev' into 'X.Y.Z.dev0', with a warning like
 #   UserWarning: Normalizing '2.4.0dev' to '2.4.0.dev0'
 # This causes problems further up the dependency chain...
-VERSION = '5.0.0'
+VERSION = '5.0.1.dev0'
 
 MAJ_VER = VERSION.split('.')[0]
 MAJMIN_VER = '.'.join(VERSION.split('.')[0:2])
@@ -103,6 +103,8 @@ versions, etc.).""",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Topic :: Software Development :: Build Tools",
     ],
     packages=[],
