@@ -255,7 +255,7 @@ class EasyConfigTest(TestCase):
                     EasyConfigTest._parsed_easyconfigs.extend(ec)
                 changed_ecs.append(ec[0]['ec'])
             else:
-                raise RuntimeError("Failed to find parsed easyconfig for %s" % os.path.basename(ec_file))
+                raise RuntimeError("Failed to find parsed easyconfig for " + os.path.basename(ec_file))
         EasyConfigTest._changed_ecs = changed_ecs
 
     def _get_changed_patches(self):
@@ -697,7 +697,7 @@ class EasyConfigTest(TestCase):
             for key in list(dep_vars):
                 for version_pattern, parents in alt_dep_versions[dep]:
                     # filter out known alternative dependency versions
-                    if re.search('^version: %s' % version_pattern, key):
+                    if re.search(f'^version: {version_pattern}', key):
                         # only filter if the easyconfig using this dep variants is known
                         if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
                             dep_vars.pop(key)
@@ -935,7 +935,7 @@ class EasyConfigTest(TestCase):
                 if res:
                     tc_gen = res.group('tc_gen')
                     all_deps_tc_gen = all_deps.setdefault(tc_gen, {})
-                    for dep_name, dep_ver, dep_versuff, dep_mod_name in get_deps_for(ec):
+                    for dep_name, dep_ver, dep_versuff, _dep_mod_name in get_deps_for(ec):
                         dep_variants = all_deps_tc_gen.setdefault(dep_name, {})
                         # a variant is defined by version + versionsuffix
                         variant = "version: %s; versionsuffix: %s" % (dep_ver, dep_versuff)
@@ -1531,8 +1531,9 @@ class EasyConfigTest(TestCase):
                 https_url = http_url.replace('http://', 'https://')
                 try:
                     req = Request(https_url, None, {'User-Agent': 'EasyBuild', 'Accept': '*/*'})
-                    https_url_works = bool(urlopen(req, timeout=5))
-                except Exception:
+                    with urlopen(req, timeout=5) as u:
+                        https_url_works = bool(u)
+                except Exception:  # pylint: disable=broad-exception-caught
                     https_url_works = False
             checked_urls[http_url] = https_url_works
 
