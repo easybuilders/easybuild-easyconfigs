@@ -1221,6 +1221,12 @@ class EasyConfigTest(TestCase):
                 use_pip = ec.get('use_pip')
                 if use_pip is None:
                     use_pip = exts_default_options.get('use_pip')
+                # Options if only a single extension is present
+                single_ext_options = {}
+                if len(ec.get('exts_list', [])) == 1:
+                    ext = ec['exts_list'][0]
+                    if isinstance(ext, (tuple, list)) and len(ext) == 3:
+                        single_ext_options = ext[2]
 
             # only easyconfig parameters as they are defined in the easyconfig file,
             # does *not* include other easyconfig parameters with their default value!
