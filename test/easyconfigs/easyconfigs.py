@@ -34,6 +34,7 @@ import shutil
 import stat
 import tempfile
 from collections import defaultdict
+from typing import List
 from unittest import TestCase, TestLoader, main, skip
 from urllib.request import urlopen
 
@@ -46,7 +47,7 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
-from easybuild.framework.easyconfig.easyconfig import resolve_template
+from easybuild.framework.easyconfig.easyconfig import EasyConfig, resolve_template
 from easybuild.framework.easyconfig.parser import (
     EasyConfigParser, fetch_parameters_from_easyconfig,
     DEPRECATED_EASYCONFIG_PARAMETERS,
@@ -271,38 +272,38 @@ class EasyConfigTest(TestCase):
         EasyConfigTest._changed_patches = changed_patches + added_patches
 
     @property
-    def parsed_easyconfigs(self):
+    def parsed_easyconfigs(self) -> List[EasyConfig]:
         # parse all easyconfigs if they haven't been already
         EasyConfigTest.parse_all_easyconfigs()
         return EasyConfigTest._parsed_easyconfigs
 
     @property
-    def ordered_specs(self):
+    def ordered_specs(self) -> List[dict]:
         # Resolve dependencies if not done
         if EasyConfigTest._ordered_specs is None:
             EasyConfigTest.resolve_all_dependencies()
         return EasyConfigTest._ordered_specs
 
     @property
-    def changed_ecs_filenames(self):
+    def changed_ecs_filenames(self) -> List[str]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs_filenames
 
     @property
-    def added_ecs_filenames(self):
+    def added_ecs_filenames(self) -> List[str]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._added_ecs_filenames
 
     @property
-    def changed_ecs(self):
+    def changed_ecs(self) -> List[EasyConfig]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs
 
     @property
-    def changed_patches(self):
+    def changed_patches(self) -> List[str]:
         if EasyConfigTest._changed_patches is None:
             self._get_changed_patches()
         return EasyConfigTest._changed_patches
