@@ -75,9 +75,20 @@ preconfigopts = 'sed -i "s/MultiMedia/Multimedia/g" ../qt-everywhere-src-%(versi
 preconfigopts += 'sed -i "23i set(Python3_ROOT_DIR \\$ENV{EBROOTPYTHON})" '
 preconfigopts += '../qt-everywhere-src-%(version)s/qtwebengine/src/gn/CMakeLists.txt && '  # Typo
 
+# Ninja uses all visible cores by default, which can lead to lack of sufficient memory;
+# so $NINJAFLAGS is set to control number of parallel processes used by Ninja;
+# note that $NINJAFLAGS is not a generic thing for Ninja, it's very specific to the Qt6 build procedure
+preconfigopts += ' export NINJAFLAGS="-j%(parallel)s" && '
+prebuildopts = ' export NINJAFLAGS="-j%(parallel)s" && '
+
 configopts = "-Wno-dev -DFEATURE_qtpdf_build=OFF -DQT_AVOID_CMAKE_ARCHIVING_API=ON "
 configopts += "-DPython3_ROOT_DIR=$EBROOTPYTHON -DBUILD_qtwayland=OFF "
 
+# V8-Context-Snapshot needs to be disabled on aarch64
+# as it fails with "./v8_context_snapshot_generator failed with exit code -5"
+# which suggests a potential segmentation fault or memory-related issue
+if ARCH == "aarch64":
+    configopts += "-DFEATURE_webengine_v8_context_snapshot=OFF "
 
 # Removed from Qt6.0.0 but may be added back in the future
 # configopts += '-DBUILD_qtgamepad=OFF '  # Does not work on CentOS 7
