@@ -1041,7 +1041,8 @@ class EasyConfigTest(TestCase):
                     problem_ecs.append(easyconfig['spec'])
 
         error_msg = "%d easyconfigs found without defined sources or download_instructions: %s"
-        self.assertEqual(problem_ecs, [], error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
+        if problem_ecs:
+            self.fail(error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
@@ -1106,8 +1107,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('4.9.4'))
-        self.assertEqual(most_recent[1], 'EasyBuild-4.9.4.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.0.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.0.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
