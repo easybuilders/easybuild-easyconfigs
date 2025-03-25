@@ -18,12 +18,12 @@ checksums = ['608cd202ac5066096fdc7e5adb322aca2fe7b4d118543a7c4b54dc183a6b3b54']
 
 builddependencies = [
     ('CMake', '3.31.0'),
-    ('oldest-supported-numpy', '2024a'),
-    ('python-build-bundle', '2023b'),
+    ('numpy', '2.1.1'),
+    ('python-build-bundle', '2025a'),
 ]
 
 dependencies = [
-    ('GLFW', '3.3.8'),
+    ('GLFW', '3.4'),
 ]
 
 multi_deps = {'Python': ['3.11', '3.12', '3.13']}
@@ -33,7 +33,6 @@ exts_defaultclass = 'PythonPackage'
 exts_default_options = {'source_urls': [PYPI_SOURCE], 'use_pip': True}
 exts_list = [
     ('mujoco', version, {
-        'installopts': " mujoco-mjx==%(version)s ",
         'preinstallopts': " export MUJOCO_PATH=%(installdir)s &&  export MUJOCO_PLUGIN_PATH=%(installdir)s/share/mujoco/model/plugin && ",
         'sources': ['mujoco-%(version)s.tar.gz'],
         'checksums': ['0fb12ab715bc2b6d2394a6330b8c3a1dd95b0f3ba812bfe4f6c91e0a1ca3ad0f'],
@@ -45,7 +44,7 @@ exts_filter = ("module load scipy-stack && python -c 'import %(ext_name)s'", "")
 sanity_check_paths = {
     'files': ['bin/basic', 'bin/compile', 'bin/record', 'bin/simulate',
               'lib64/libmujoco.%s' % SHLIB_EXT],
-    'dirs': ['include', 'lib/python%(pyshortver)s/site-packages/mujoco/mjx', 'share/mujoco/model'],
+    'dirs': ['include', 'share/mujoco/model'],
 }
 
 sanity_check_commands = [
@@ -60,9 +59,7 @@ modextrapaths = {
 
 # Depends on any numpy at runtime.
 modluafooter = """
-if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
-  depends_on(between("scipy-stack",'2023b','<2024b'))
-end
+depends_on("scipy-stack")
 """
 
 moduleclass = 'phys'
