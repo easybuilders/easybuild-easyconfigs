@@ -1041,7 +1041,8 @@ class EasyConfigTest(TestCase):
                     problem_ecs.append(easyconfig['spec'])
 
         error_msg = "%d easyconfigs found without defined sources or download_instructions: %s"
-        self.assertEqual(problem_ecs, [], error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
+        if problem_ecs:
+            self.fail(error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
