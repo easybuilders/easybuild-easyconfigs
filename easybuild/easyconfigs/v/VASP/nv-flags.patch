@@ -1,0 +1,43 @@
+diff --git a/vasp.6.4.3.orig/arch/makefile.include.nvhpc_omp_acc b/vasp.6.4.3/arch/makefile.include.nvhpc_omp_acc
+index 8e98b4e..7ad4569 100644
+--- a/vasp.6.4.3.orig/arch/makefile.include.nvhpc_omp_acc
++++ b/vasp.6.4.3/arch/makefile.include.nvhpc_omp_acc
+@@ -17,9 +17,9 @@ CPP         = nvfortran -Mpreprocess -Mfree -Mextend -E $(CPP_OPTIONS) $*$(FUFFI
+ 
+ # N.B.: you might need to change the cuda-version here
+ #       to one that comes with your NVIDIA-HPC SDK
+-CC          = mpicc  -acc -gpu=cc60,cc70,cc80,cuda11.8 -mp
+-FC          = mpif90 -acc -gpu=cc60,cc70,cc80,cuda11.8 -mp
+-FCL         = mpif90 -acc -gpu=cc60,cc70,cc80,cuda11.8 -mp -c++libs
++CC          = mpicc  -acc -gpu=cc89,cuda12.6 -mp
++FC          = mpif90 -acc -gpu=cc89,cuda12.6 -mp
++FCL         = mpif90 -acc -gpu=cc89,cuda12.6 -mp -c++libs
+ 
+ FREE        = -Mfree
+ 
+@@ -62,12 +62,12 @@ FFLAGS     += $(VASP_TARGET_CPU)
+ 
+ # Specify your NV HPC-SDK installation (mandatory)
+ #... first try to set it automatically
+-NVROOT      =$(shell which nvfortran | awk -F /compilers/bin/nvfortran '{ print $$1 }')
++# NVROOT      =$(shell which nvfortran | awk -F /compilers/bin/nvfortran '{ print $$1 }')
+ 
+ # If the above fails, then NVROOT needs to be set manually
+-#NVHPC      ?= /opt/nvidia/hpc_sdk
+-#NVVERSION   = 21.11
+-#NVROOT      = $(NVHPC)/Linux_x86_64/$(NVVERSION)
++NVHPC       = ${EBROOTNVHPC}
++NVVERSION   = ${EBVERSIONNVHPC}
++NVROOT      = $(NVHPC)/Linux_x86_64/$(NVVERSION)
+ 
+ ## Improves performance when using NV HPC-SDK >=21.11 and CUDA >11.2
+ #OFLAG_IN   = -fast -Mwarperf
+@@ -85,7 +85,7 @@ BLAS        = -lblas
+ LAPACK      = -llapack
+ 
+ # scaLAPACK (mandatory)
+-SCALAPACK   = -Mscalapack
++SCALAPACK   = -lscalapack
+ 
+ LLIBS      += $(SCALAPACK) $(LAPACK) $(BLAS)
+ 
