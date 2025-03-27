@@ -1,5 +1,5 @@
 easyblock = 'Binary'
-name = 'QuantumATK'
+name = 'quantumatk'
 version = '2024.09'
 homepage = 'https://www.synopsys.com/silicon/quantumatk.html'
 description = """QuantumATK is a complete atomistic simulation toolkit. QuantumATK addresses key applications in the semiconductor industry and is a core component of the Synopsys Design-Technology Co-Optimization (DTCO) solution. Atomic-scale modeling tools in QuantumATK range from classical force fields for handling large and to some extent more realistic materials systems to ab initio tools that provide highly accurate results for smaller systems. """
@@ -9,7 +9,9 @@ toolchain = SYSTEM
 sources = ['QuantumATK_vW-%(version)s.tar.gz']
 extract_sources = True
 checksums = ['d3aa0b3c502aba48a9b239ef516043962b1ef6dd9a148ba484a06c073983496b']
-install_cmd = './SynopsysInstaller_v5.8.run -dir . ; ./installer -target %(installdir)s -source . -batch_installer'
+install_cmd = "./SynopsysInstaller_v5.8.run -dir . && "
+install_cmd += "cat << EOF > config \nSourceDir: $(pwd) \nSiteID: 000 \nPRODUCTS: quantumatk \nRELEASES: W-2024.09 \nquantumatk, W-2024.09 { \n   DESCRIPTION: Synopsys QuantumATK \n   POSTARGVALUE: softwareRendering (no) \n   POSTARGVALUE: addToPath(yes) \n   POSTARGVALUE: openLicenseDoc(no) \n   POSTARGVALUE: runProgramAfterInstall(no) \n} \nEOF\n "
+install_cmd += "./installer -target %(installdir)s -batch_installer -config config"
 postinstallcmds = ["sed -i 's/TENTATIVE_PATHS=/#TENTATIVE_PATHS=/g' %(installdir)s/quantumatk/W-%(version)s/atkpython/bin/activate_env && sed -i 's/0/1/g'  %(installdir)s/quantumatk/W-%(version)s/software-rendering "]
 sanity_check_paths = {
       'files': ['quantumatk/W-2024.09/bin/quantumatk','quantumatk/W-2024.09/bin/atkpython'],
