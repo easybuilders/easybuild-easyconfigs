@@ -1,0 +1,63 @@
+easyblock = 'Bundle'
+
+name = 'GOBNILP'
+version = '1.6.3'
+_nodots_version = version.replace('.', '')
+_scip_version = '3.2.1'
+_scip_nodots_version = _scip_version.replace('.', '')
+
+homepage = 'https://www.cs.york.ac.uk/aig/sw/gobnilp/'
+description = """GOBNILP (Globally Optimal Bayesian Network learning using Integer Linear
+Programming) is a C program which learns Bayesian networks from complete
+discrete data or from local scores."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+dependencies = [
+    ('SCIP', _scip_version),
+    ('ZIMPL', '3.3.4'),
+    ('SoPlex', '2.2.1'),
+    ('GMP', '6.2.1'),
+    ('libreadline', '8.1'),
+    ('ncurses', '6.3'),
+    ('zlib', '1.2.12'),
+]
+
+default_easyblock = 'MakeCp'
+
+components = [
+    ('LOP', _scip_version, {
+        'source_urls': ['https://github.com/scipopt/scip/archive/refs/tags/'],
+        'sources': ['v%s.tar.gz' % _scip_nodots_version],
+        'patches': ['LOP-%(version)s_standalone-scip-lop-build.patch'],
+        'checksums': [
+            {'v321.tar.gz':
+                '015bdda4e681782fd03b61421b93aa3c1b913e5eea18bb8730d5fb9e4d67b4cb'},
+            {'LOP-3.2.1_standalone-scip-lop-build.patch':
+                'f996e56f1311fa4a613635b38969da731faf0ea9f10097799b1fa9a84598651e'},
+        ],
+        'start_dir': 'scip-%s/examples/%%(name)s' % _scip_nodots_version,
+        'buildopts': '%(namelower)s COMP=gnu OPT=opt LPS=spx2',
+        'files_to_copy': [(['bin/%(namelower)s'], 'bin')],
+    }),
+    (name, version, {
+        'source_urls': ['http://www.cs.york.ac.uk/aig/sw/gobnilp'],
+        'sources': ['%(namelower)s%(version)s.tar.gz'],
+        'patches': ['%(name)s-%(version)s_use-eb-build-env.patch'],
+        'checksums': [
+            {'gobnilp1.6.3.tar.gz':
+                'b31e5c87032f85f7404654beca47d472fd6c5dd7a5f82108bd5043ff0b8fa33c'},
+            {'GOBNILP-1.6.3_use-eb-build-env.patch':
+                '9235ec8b9d05d9915f9961d4b46c2220e0d3b75f555a226a5667dcc69d76dae9'},
+        ],
+        'start_dir': '%(namelower)s' + _nodots_version,
+        'files_to_copy': [(['bin/%(namelower)s'], 'bin')],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/gobnilp', 'bin/lop'],
+    'dirs': [],
+}
+
+moduleclass = 'math'
