@@ -1,0 +1,25 @@
+test_baddbmm_cpu_bfloat16 in test_linalg.py fails with
+> AssertionError: Tensor-likes are not close!
+> 
+> Mismatched elements: 1387 / 6000 (23.1%)
+> Greatest absolute difference: 3.98046875 at index (0, 11, 7) (up to 0.5 allowed)
+> Greatest relative difference: 1324.7142857142858 at index (0, 4, 9) (up to 0.016 allowed)
+
+Happens also with the official 2.0.1 PIP package, and seems to be known to be flaky: https://github.com/pytorch/pytorch/issues/103046
+So assume this to be expected and skip the test.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_linalg.py b/test/test_linalg.py
+index 29a0e482d86..d195ad60add 100644
+--- a/test/test_linalg.py
++++ b/test/test_linalg.py
+@@ -5871,7 +5871,7 @@ scipy_lobpcg  | {:10.2e}  | {:10.2e}  | {:6} | N/A
+ 
+     @precisionOverride({torch.half: 0.1, torch.bfloat16: 0.5})
+     @onlyNativeDeviceTypes
+-    @dtypes(*floating_and_complex_types_and(torch.bfloat16))
++    @dtypes(*floating_and_complex_types())
+     @tf32_on_and_off(0.05)
+     def test_baddbmm(self, device, dtype):
+         if self.device_type == 'cuda' and dtype is torch.bfloat16 and not SM53OrLater:

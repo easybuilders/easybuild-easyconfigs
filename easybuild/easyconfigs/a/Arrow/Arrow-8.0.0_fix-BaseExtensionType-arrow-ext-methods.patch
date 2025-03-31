@@ -1,0 +1,25 @@
+fix for:
+AttributeError: 'pyarrow.lib.BaseExtensionType' object has no attribute '__arrow_ext_class__'
+see https://github.com/apache/arrow/pull/33802
+diff -u python/pyarrow/types.pxi.orig python/pyarrow/types.pxi
+--- python/pyarrow/types.pxi.orig	2022-05-03 18:59:12.000000000 +0200
++++ python/pyarrow/types.pxi	2024-01-09 13:15:20.313755064 +0100
+@@ -760,6 +836,18 @@
+         DataType.init(self, type)
+         self.ext_type = <const CExtensionType*> type.get()
+ 
++    def __arrow_ext_class__(self):
++        """
++        The associated array extension class
++        """
++        return ExtensionArray
++
++    def __arrow_ext_scalar_class__(self):
++        """
++        The associated scalar class
++        """
++        return ExtensionScalar
++
+     @property
+     def extension_name(self):
+         """

@@ -1,0 +1,38 @@
+Fixes use of `np.unicode` instead of `np.unicode_`.
+
++++ 1.4.8/foss-2023a/molmod-1.4.8/molmod/io/test/test_chk.py	2023-12-11 14:55:11.534543922 +0000
+--- 1.4.8/foss-2023a/molmod-1.4.8/molmod/io/test/test_chk.py.orig	2023-12-11 14:53:00.080194283 +0000
+@@ -62,7 +62,7 @@
+ 
+ 
+ def test_strings_array_unicode():
++    data = {'values': np.array(['foo', 'bar'], dtype=np.unicode_)}
+-    data = {'values': np.array(['foo', 'bar'], dtype=np.unicode)}
+     check_data_array('test_strings_array', data, np.dtype('U22'))
+ 
+ 
+@@ -90,8 +90,8 @@
+ 
+ 
+ def test_strings():
++    check_data('test_strings_array', {'values': 'foo'}, (str, np.unicode_))
++    check_data('test_strings_array', {'values': 'foo bar'}, (str, np.unicode_))
+-    check_data('test_strings_array', {'values': 'foo'}, (str, np.unicode))
+-    check_data('test_strings_array', {'values': 'foo bar'}, (str, np.unicode))
+ 
+ 
+ def test_floats():
+
+--- 1.4.8/foss-2023a/molmod-1.4.8/molmod/io/chk.py.orig	2023-12-11 15:11:10.785959605 +0000
++++ 1.4.8/foss-2023a/molmod-1.4.8/molmod/io/chk.py	2023-12-11 15:12:24.978584525 +0000
+@@ -141,8 +141,8 @@
+                 if value.dtype.fields is not None:
+                     raise TypeError('Arrays with fields are not supported.')
+                 shape_str = ','.join(str(i) for i in value.shape)
+-                if issubclass(value.dtype.type, (str, np.unicode, np.bytes_)):
+-                    value = value.astype(np.unicode)
++                if issubclass(value.dtype.type, (str, np.unicode_, np.bytes_)):
++                    value = value.astype(np.unicode_)
+                     for cell in value.flat:
+                         if len(cell) >= 22:
+                             raise ValueError('In case of string arrays, a string may contain at most 21 characters.')

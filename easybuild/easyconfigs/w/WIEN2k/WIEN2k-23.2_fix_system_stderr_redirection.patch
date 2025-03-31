@@ -1,0 +1,31 @@
+This fix removes the assumption that tcsh is being used to run the software.
+
+--- SRC_Globals/W2kinit.F.orig	2023-11-08 17:54:06.183370012 +0100
++++ SRC_Globals/W2kinit.F	2023-11-08 18:29:21.436975434 +0100
+@@ -403,7 +403,7 @@
+         logical AVX512, AVX2, AVX, SSE        
+         integer istat, system
+         AVX512=.false.; AVX2=.false.; AVX=.false.; SSE=.false.
+-                istat=system('ls /proc/cpuinfo > /dev/null')
++                istat=system('test -f /proc/cpuinfo')
+         if(istat.ne.0.and.myid.eq.0) then
+            print*, "Could not read your /proc/cpuinfo. The default kernel of your ELPA installation"
+            print*, "will be used."
+@@ -413,13 +413,13 @@
+ !_REAL     print*, "                        ELPA_DEFAULT_real_kernel"
+ !_COMPLEX  print*, "                       ELPA_DEFAULT_complex_kernel"
+         else
+-           istat=system('grep -i avx512 /proc/cpuinfo > /dev/null')
++           istat=system('grep -qi avx512 /proc/cpuinfo')
+            if(istat.eq.0) AVX512=.true.
+-           istat=system('grep -i avx2 /proc/cpuinfo > /dev/null')
++           istat=system('grep -qi avx2 /proc/cpuinfo')
+            if(istat.eq.0) AVX2=.true.
+-           istat=system('grep -i avx /proc/cpuinfo > /dev/null')
++           istat=system('grep -qi avx /proc/cpuinfo')
+            if(istat.eq.0) AVX=.true.
+-           istat=system('grep -i sse /proc/cpuinfo > /dev/null')
++           istat=system('grep -qi sse /proc/cpuinfo')
+            if(istat.eq.0) SSE=.true.
+         endif
+         return 

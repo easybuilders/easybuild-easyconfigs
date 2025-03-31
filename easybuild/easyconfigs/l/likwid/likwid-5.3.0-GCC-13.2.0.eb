@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'likwid'
+version = '5.3.0'
+
+homepage = 'https://github.com/RRZE-HPC/likwid'
+
+description = """
+Likwid stands for Like I knew what I am doing. This project contributes easy
+to use command line tools for Linux to support programmers in developing high
+performance multi threaded programs.
+"""
+
+toolchain = {'name': 'GCC', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/RRZE-HPC/likwid/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['c290e554c4253124ac2ab8b056e14ee4d23966b8c9fbfa10ba81f75ae543ce4e']
+
+builddependencies = [
+    ('Perl', '5.38.0'),
+]
+
+dependencies = [
+    ('hwloc', '2.9.2'),
+]
+
+skipsteps = ['configure']
+
+# include_GCC.mk is using ifort by default.
+# Changing it to gfortran, to be consistent with GCC toolchain
+prebuildopts = """sed -i 's@FC  = ifort@FC  = gfortran@g' make/include_GCC.mk && """
+prebuildopts += """sed -i 's@FCFLAGS  = -module ./  # ifort@FCFLAGS  = -J ./  -fsyntax-only  #gfortran@g' """
+prebuildopts += """ make/include_GCC.mk && """
+
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS -std=c99" PREFIX=%(installdir)s BUILDFREQ="" ACCESSMODE=perf_event '
+buildopts += 'FORTRAN_INTERFACE=true '
+buildopts += 'CFG_FILE_PATH=%(installdir)s/etc/likwid.cfg  TOPO_FILE_PATH=%(installdir)s/etc/likwid_topo.cfg '
+buildopts += 'HWLOC_INCLUDE_DIR=$EBROOTHWLOC/include HWLOC_LIB_DIR=$EBROOTHWLOC/lib HWLOC_LIB_NAME=hwloc '
+
+maxparallel = 1
+
+installopts = buildopts + 'INSTALL_CHOWN="" '
+
+sanity_check_paths = {
+    'files': ['bin/likwid-memsweeper', 'bin/likwid-mpirun', 'bin/likwid-perfctr',
+              'bin/likwid-perfscope', 'bin/likwid-pin', 'bin/likwid-powermeter',
+              'bin/likwid-topology', 'lib/liblikwidpin.%s' % SHLIB_EXT,
+              'lib/liblikwid.%s' % SHLIB_EXT, 'include/likwid.mod'],
+    'dirs': ['man/man1']
+}
+
+moduleclass = 'tools'

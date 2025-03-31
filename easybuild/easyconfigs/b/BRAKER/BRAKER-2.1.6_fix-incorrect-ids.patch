@@ -1,0 +1,44 @@
+From f38630c1cad3e11b525f84d517c7949cb4c2d7eb Mon Sep 17 00:00:00 2001
+From: Katharina Hoff <katharina.hoff@gmail.com>
+Date: Mon, 19 Apr 2021 16:34:57 +0200
+Subject: [PATCH] fixing part of the issue
+ https://github.com/Gaius-Augustus/BRAKER/issues/354 where gene and transcript
+ line have incorrect ids
+
+---
+ scripts/merge_transcript_sets.pl | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/scripts/merge_transcript_sets.pl b/scripts/merge_transcript_sets.pl
+index 04f6c3e..5cfd6c0 100755
+--- a/scripts/merge_transcript_sets.pl
++++ b/scripts/merge_transcript_sets.pl
+@@ -83,14 +83,15 @@
+             my $txid;
+             if($line =~ m/transcript_id/){
+                 $line =~ m/transcript_id "([^"]+)";/;
++
+                 $txid = $1;
+                 push(@{$txid_to_elements{$txid}}, $line);
+                 foreach(@store_for_txid){
+-                    push(@{$txid_to_elements{$txid}}, $_)
++                    push(@{$txid_to_elements{$txid}}, $_);
+                 }
+                 @store_for_txid = ();
+             }else{
+-                $line =~ s/\t([\t]+)$/\tfile_${file_counter}_$1/;
++                $line =~ s/\t([^\t]+)$/\tfile_${file_counter}_$1/;
+                 push(@store_for_txid, $line);
+             }
+             # currently, UTR features are ignored
+@@ -111,9 +112,8 @@
+     # always keep the first occuring transcript structure, only add from other gene sets if it has not been in the set, yet
+     # this might discard alternative UTR splicing isoforms at present
+     while (my ($key, $value) = each (%txid_to_struct_local)){
+-        #print "key is $key and value is $value\n";
++        print "key is $key and value is $value\n";
+         if(not(defined($uniq_struct_to_txid{$value}))){
+-            #print "adding transcript\n";
+             $uniq_struct_to_txid{$value} = $key;
+         }
+     }
