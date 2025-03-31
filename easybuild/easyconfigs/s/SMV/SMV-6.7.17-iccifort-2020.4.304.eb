@@ -1,0 +1,73 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author::   Denis Kristak (INUITS)
+##
+
+easyblock = 'MakeCp'
+
+name = 'SMV'  # SmokeView
+version = '6.7.17'
+
+homepage = 'https://github.com/firemodels/smv'
+description = """Smokeview is a visualization program that displays output of FDS and CFAST simulations."""
+
+toolchain = {'name': 'iccifort', 'version': '2020.4.304'}
+
+source_urls = ['https://github.com/firemodels/%(name)s/archive/refs/tags/']
+sources = ['%(name)s%(version)s.tar.gz']
+patches = [
+    'SMV-%(version)s_missing-includes.patch',
+    ('example.smv', '.'),  # example file for sanity check
+]
+checksums = [
+    '2e718af991e48228bf374fdefcce00d2e8b5827cc29ae2138ae267fda896f127',  # SMV6.7.17.tar.gz
+    '2b287f3e6ff368422684bd887568a369b9db3426a94efefcccc7680392b742ab',  # SMV-6.7.17_missing-includes.patch
+    '1adf7dcc5293ec7a5f7ec01a828dec88b4ddd025505167b4e361d9450f66ea59',  # example.smv
+]
+
+dependencies = [
+    ('libgd', '2.3.0'),
+    ('freeglut', '3.2.1'),
+    ('libjpeg-turbo', '2.0.5'),
+    ('libpng', '1.6.37'),
+    ('zlib', '1.2.11'),
+    ('Lua', '5.4.2'),
+    ('LPeg', '1.0.2'),
+    ('libGLU', '9.0.1'),
+    ('glew', '2.1.0'),
+    ('Xvfb', '1.20.9'),
+]
+
+local_buildopts = ' -lglui -lglut -lfreeglut -lGLU -lGL -llibgd '
+local_buildopts += ' LDFLAGS=" -L%(installdir)s -L$EBROOTFREEGLUT/lib -L$EBROOTLIBGD/lib " '
+local_buildopts += ' IFLAGS=" -I$EBROOTFREEGLUT/include/GL -I%(builddir)s/smv-SMV%(version)s/Source/glui_v2_1_beta/ '
+local_buildopts += ' -I%(builddir)s/smv-SMV%(version)s/Source/glui_gl/GL/glut.h "'
+local_buildopts += ' EB_L_PATH=%(installdir)s '
+local_buildopts += ' CFLAGS="-Dpp_LINUX" '
+
+prebuildopts = "cd %(builddir)s/smv-SMV%(version)s/Build/LIBS/intel_linux_64/ && "
+prebuildopts += " make all -f make_LIBS.make "
+prebuildopts += "SRCDIR=%(builddir)s/smv-SMV%(version)s/Source/ LIBDIR=%(installdir)s && "
+prebuildopts += "cd %(builddir)s/smv-SMV%(version)s/Build/smokeview/ && "
+prebuildopts += "export IFORT_COMPILER_LIB=$EBROOTICCIFORT/lib64/intel64/ && "
+
+buildopts = ' intel_linux_64 ' + local_buildopts
+
+files_to_copy = [
+    (["./Build/smokeview/*.o", "./Build/smokeview/smokeview_linux_64*"], 'bin'),
+]
+
+postinstallcmds = [
+    'ln -s %(installdir)s/bin/smokeview_linux_64 %(installdir)s/bin/smokeview'
+]
+
+sanity_check_commands = [
+    "cd %(builddir)s/smv-SMV%(version)s && timeout 10 xvfb-run smokeview example 2>&1 | grep 'Terminated' ",
+]
+
+sanity_check_paths = {
+    'files': ['bin/smokeview'],
+    'dirs': [],
+}
+
+moduleclass = 'vis'

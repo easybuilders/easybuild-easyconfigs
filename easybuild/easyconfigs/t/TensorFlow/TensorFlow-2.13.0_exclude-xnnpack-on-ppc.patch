@@ -1,0 +1,46 @@
+XNNPACK is not supported on PowerPC so disable it by default.
+See https://github.com/tensorflow/tensorflow/issues/58768
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/lite/BUILD b/tensorflow/lite/BUILD
+index c08cd7bcec5..c23c0eedac8 100644
+--- a/tensorflow/lite/BUILD
++++ b/tensorflow/lite/BUILD
+@@ -829,6 +829,8 @@ cc_library(
+     defines = select({
+         ":tflite_kernel_use_xnnpack_false": [],
+         ":tflite_with_xnnpack_explicit_false": [],
++        # XNNPACK is not supported on PPC
++        "//tensorflow:linux_ppc64le": [],
+         "//conditions:default": [
+             "TFLITE_KERNEL_USE_XNNPACK",
+         ],
+@@ -864,9 +866,11 @@ cc_library(
+     # Note: adding ":tflite_with_xnnpack_enabled" to the values of following
+     # configuration conditions will make TFLite interpreter to apply XNNPACK
+     # delegate by default.
+-    deps = [
+-        ":tflite_with_xnnpack_enabled",
+-    ],
++    deps = select({
++        # XNNPACK is not supported on PPC
++        "//tensorflow:linux_ppc64le": [],
++        "//conditions:default": [":tflite_with_xnnpack_enabled"],
++     }),
+ )
+ 
+ cc_library(
+diff --git a/tensorflow/lite/kernels/BUILD b/tensorflow/lite/kernels/BUILD
+index 9c3ebdfaaba..a042f8ccedb 100644
+--- a/tensorflow/lite/kernels/BUILD
++++ b/tensorflow/lite/kernels/BUILD
+@@ -735,6 +735,8 @@ BUILTIN_KERNEL_DEPS = [
+     ],
+ }) + select({
+     "//tensorflow/lite:tflite_with_xnnpack_explicit_false": [],
++    # XNNPACK is not supported on PPC
++    "//tensorflow:linux_ppc64le": [],
+     "//conditions:default": [
+         "@XNNPACK//:xnnpack_for_tflite",
+     ],

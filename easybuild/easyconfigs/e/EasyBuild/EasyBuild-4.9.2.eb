@@ -1,0 +1,56 @@
+easyblock = 'EB_EasyBuildMeta'
+
+name = 'EasyBuild'
+version = '4.9.2'
+
+homepage = 'https://easybuilders.github.io/easybuild'
+description = """EasyBuild is a software build and installation framework
+ written in Python that allows you to install software in a structured,
+ repeatable and robust way."""
+
+toolchain = SYSTEM
+
+source_urls = [
+    # easybuild-framework
+    'https://files.pythonhosted.org/packages/cc/1f/676fc9e29c68e9c39c6dadf150ab4e5bf4907de4b9afd2bc6e0afd24ab7c/',
+    # easybuild-easyblocks
+    'https://files.pythonhosted.org/packages/5d/85/e8593ceeb00c61253204e74d2a8360076ce016f42d83d33841f8e7de57a1/',
+    # easybuild-easyconfigs
+    'https://files.pythonhosted.org/packages/99/b2/d899b4310bc54a10e0fb46995a2abc333857db16d116f22a53b0313d13d7/',
+]
+# note: subdirectory for each unpacked source tarball is renamed because custom easyblock in older EasyBuild version
+# that is used for installing EasyBuild with EasyBuild expects subdirectories with '-' rather than '_';
+# see also https://github.com/easybuilders/easybuild-easyblocks/pull/3358
+sources = [
+    {
+        'filename': 'easybuild_framework-%(version)s.tar.gz',
+        'extract_cmd': "tar xfvz %s && mv easybuild_framework-%(version)s easybuild-framework-%(version)s",
+    },
+    {
+        'filename': 'easybuild_easyblocks-%(version)s.tar.gz',
+        'extract_cmd': "tar xfvz %s && mv easybuild_easyblocks-%(version)s easybuild-easyblocks-%(version)s",
+    },
+    {
+        'filename': 'easybuild_easyconfigs-%(version)s.tar.gz',
+        'extract_cmd': "tar xfvz %s && mv easybuild_easyconfigs-%(version)s easybuild-easyconfigs-%(version)s",
+    },
+]
+checksums = [
+    {'easybuild_framework-4.9.2.tar.gz': 'cc6e0fe7bab2a96d424656ed70bf33e3b083eef5ceaa5d5fed88aa7b91dd3d63'},
+    {'easybuild_easyblocks-4.9.2.tar.gz': '48202a89995a3d0a19228a35e409228bb6aa190ec7d7a7560e449303954953df'},
+    {'easybuild_easyconfigs-4.9.2.tar.gz': '52d6f6378fc331cda8a94ff196d5bd6bb74c8029c973ee6a92763c256571eec7'},
+]
+
+# order matters a lot, to avoid having dependencies auto-resolved (--no-deps easy_install option doesn't work?)
+# EasyBuild is a (set of) Python packages, so it depends on Python
+# usually, we want to use the system Python, so no actual Python dependency is listed
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+local_pyshortver = '.'.join(SYS_PYTHON_VERSION.split('.')[:2])
+
+sanity_check_paths = {
+    'files': ['bin/eb'],
+    'dirs': ['lib/python%s/site-packages' % local_pyshortver],
+}
+
+moduleclass = 'tools'

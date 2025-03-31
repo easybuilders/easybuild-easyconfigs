@@ -1,0 +1,78 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'CMakeMake'
+
+name = 'QGIS'
+version = '3.28.1'
+
+homepage = 'http://www.qgis.org/'
+description = "QGIS is a user friendly Open Source Geographic Information System (GIS)"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'pic': True, 'cstd': 'gnu++11'}
+
+source_urls = ['http://qgis.org/downloads/']
+sources = [SOURCELOWER_TAR_BZ2]
+patches = ['QGIS-%(version)s_fix-SIP-macro.patch']
+checksums = [
+    {'qgis-3.28.1.tar.bz2': '09015bb68c45556ffe9d480272d24048e6276a6bf1c010fd77beae64329ff674'},
+    {'QGIS-3.28.1_fix-SIP-macro.patch': '141b7730666b3e703b9a6648d1e5a2686f8819f6a4938c6d60aa8c8d65820bd3'},
+]
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.7.6'),
+    ('pkgconf', '1.8.0'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Qt5', '5.15.2'),
+    ('Qt5Webkit', '5.212.0-alpha4'),
+    ('PyQt5', '5.15.4'),
+    ('PROJ', '8.1.0'),
+    ('GEOS', '3.9.1'),
+    ('SQLite', '3.36'),
+    ('libspatialite', '5.0.1'),
+    ('libspatialindex', '1.9.3'),
+    ('PyYAML', '5.4.1'),
+    ('Cartopy', '0.20.3'),
+    ('psycopg2', '2.9.5'),
+    ('GDAL', '3.3.2'),
+    ('Qwt', '6.2.0'),
+    ('expat', '2.4.1'),
+    ('QCA', '2.3.5'),
+    # QScintilla must be listed after PyQt5 due to Python bindings 'overriding' those of PyQt5
+    ('QScintilla', '2.11.6'),
+    ('GSL', '2.7'),
+    ('libzip', '1.7.3'),
+    ('QtKeychain', '0.13.2'),
+    ('ICU', '69.1'),
+    ('PostgreSQL', '13.4'),
+    ('GRASS', '8.2.0'),
+    ('protobuf', '3.17.3'),
+    ('exiv2', '0.27.5'),
+]
+
+# specify locations that CMake can't figure out correctly
+_copts = [
+    "-DCMAKE_PREFIX_PATH=$EBROOTQT",
+    "-DQSCINTILLA_LIBRARY=$EBROOTQSCINTILLA/lib/libqscintilla2_qt5.%s" % SHLIB_EXT,
+    "-DQt5WebKit_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKit",
+    "-DQt5WebKitWidgets_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKitWidgets",
+    "-DPYQT5_SIP_DIR=$EBROOTPYQT5/share/sip",
+    "-DQSCI_SIP_DIR=$EBROOTQSCINTILLA/share/sip/PyQt5",
+    "-DGRASS_PREFIX8=$EBROOTGRASS/grass8",
+]
+configopts = ' '.join(_copts)
+
+sanity_check_paths = {
+    'files': ['bin/qgis', 'bin/qgis_bench', 'lib/libqgis_analysis.%s' % SHLIB_EXT,
+              'lib/libqgis_app.%s' % SHLIB_EXT, 'lib/libqgis_core.%s' % SHLIB_EXT, 'lib/libqgis_gui.%s' % SHLIB_EXT,
+              'lib/libqgis_native.%s' % SHLIB_EXT, 'lib/libqgispython.%s' % SHLIB_EXT],
+    'dirs': ['include/qgis', 'man', 'share/qgis'],
+}
+
+moduleclass = 'geo'

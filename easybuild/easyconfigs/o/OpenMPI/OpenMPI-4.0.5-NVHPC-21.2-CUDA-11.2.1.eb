@@ -1,0 +1,50 @@
+name = 'OpenMPI'
+version = '4.0.5'
+versionsuffix = '-CUDA-11.2.1'
+
+homepage = 'https://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-3 implementation."""
+
+toolchain = {'name': 'NVHPC', 'version': '21.2'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'OpenMPI-4.0.1_remove-pmix-check-in-pmi-switch.patch',
+    'OpenMPI-4.x_fix_pmix_discovery.patch',
+    'OpenMPI-4.0.5-6-pml-ucx-datatype-memleak.patch',
+    'OpenMPI-4.0.5_fix-MS_RDONLY-error.patch',
+]
+checksums = [
+    '572e777441fd47d7f06f1b8a166e7f44b8ea01b8b2e79d1e299d509725d1bd05',  # openmpi-4.0.5.tar.gz
+    # OpenMPI-4.0.1_remove-pmix-check-in-pmi-switch.patch
+    'a5737061eb9006e862f30019776adf092d800f681272be7f1575e74b4bfa20fb',
+    '547641fff884c917237d158b0b13bdf387977cf0dddfd7e49e78d5f759a6a31b',  # OpenMPI-4.x_fix_pmix_discovery.patch
+    # OpenMPI-4.0.5-6-pml-ucx-datatype-memleak.patch
+    '7d8695f0d23453c82638ad33b18e41690274d5c7784291213e98335b42c54578',
+    {'OpenMPI-4.0.5_fix-MS_RDONLY-error.patch': 'b4cd3d947cd4f3d47c7cf531c2b4bcdaa5d6db1ec024a0a97f5a3b42c95f6b82'},
+]
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('hwloc', '2.2.0'),
+    ('libevent', '2.1.12'),
+    ('UCX', '1.9.0', versionsuffix),
+    ('libfabric', '1.11.0'),
+    ('PMIx', '3.1.5'),
+]
+
+configopts = '--with-cuda=$EBROOTCUDACORE '
+
+# disable MPI1 compatibility for now, see what breaks...
+# configopts += '--enable-mpi1-compatibility '
+
+# to enable SLURM integration (site-specific)
+# configopts += '--with-slurm --with-pmi=/usr/include/slurm --with-pmi-libdir=/usr'
+
+moduleclass = 'mpi'

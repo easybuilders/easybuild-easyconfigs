@@ -1,0 +1,47 @@
+easyblock = 'CMakeMake'
+
+name = 'AOFlagger'
+version = '3.4.0'
+
+homepage = 'https://aoflagger.readthedocs.io/'
+description = """The AOFlagger is a tool that can find and remove radio-frequency interference (RFI)
+in radio astronomical observations. It can make use of Lua scripts to make flagging strategies flexible,
+and the tools are applicable to a wide set of telescopes."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+sources = [{
+    'source_urls': ['https://gitlab.com/aroffringa/aoflagger/-/package_files/96704214/'],
+    'filename': '%(namelower)s-v%(version)s.tar.bz2',
+    'download_filename': 'download'  # provided source tarball is not versioned...
+}]
+checksums = ['9560b7381b68f37d842599f222a8aa2a5d3d3d501d1277471e1a0ba3d7b2aeba']
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+]
+dependencies = [
+    ('casacore', '3.5.0'),
+    ('Boost', '1.79.0'),
+    ('CFITSIO', '4.2.0'),
+    ('GSL', '2.7'),
+    ('HDF5', '1.12.2'),
+    ('Python', '3.10.4'),
+    ('Lua', '5.4.4'),
+    ('libpng', '1.6.37'),
+    ('libxml2', '2.9.13'),
+]
+
+# Without this, the wrong (system) python is picked up by cmake
+# in cases where the system python is newer than the one used in these EasyConfigs
+# See PR # 19119
+configopts = '-DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python '
+
+sanity_check_paths = {
+    'files': ['include/aoflagger.h', 'bin/aoflagger'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = [('aoflagger', '-v')]
+
+moduleclass = 'lib'

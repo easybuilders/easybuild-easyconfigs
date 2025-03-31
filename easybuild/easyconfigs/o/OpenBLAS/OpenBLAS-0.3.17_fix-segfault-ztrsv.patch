@@ -1,0 +1,29 @@
+fix segmentation fault triggered via scipy tests
+and https://github.com/xianyi/OpenBLAS/issues/3419 + https://github.com/xianyi/OpenBLAS/pull/3420
+From 2845f54eb8ad4c79d0374b52cceac434fc93d8ac Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Wed, 20 Oct 2021 10:50:02 +0200
+Subject: [PATCH] Remove dangerous optimization from previous #3252 - buffer is
+ never unused here
+
+---
+ interface/ztrsv.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/interface/ztrsv.c b/interface/ztrsv.c
+index cf750b0b0c..cbb7bba13b 100644
+--- a/interface/ztrsv.c
++++ b/interface/ztrsv.c
+@@ -199,12 +199,6 @@ void CNAME(enum CBLAS_ORDER order, enum CBLAS_UPLO Uplo,
+ 
+   if (n == 0) return;
+ 
+-  if (incx == 1 && trans == 0 && n < 50) {
+-    buffer = NULL;
+-    (trsv[(trans<<2) | (uplo<<1) | unit])(n, a, lda, x, incx, buffer);
+-    return;
+-  }
+-
+   IDEBUG_START;
+ 
+   FUNCTION_PROFILE_START();

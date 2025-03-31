@@ -1,0 +1,439 @@
+# Author: Caspar van Leeuwen
+# Company: SURF
+# The CudaFuser test suite checks CUDA capabilities, even if 'RUN_CUDA' is false.
+# That makes the test fail on non-GPU nodes.
+# In this patch, I wrapped the logic in 'if RUN_CUDA' blocks in order to make sure
+# no CUDA calls are made when RUN_CUDA=false
+# Furthermore, I swapped all occurences of @unittest.skipIf(not RUN_CUDA, ...) and @unittest.skipIf(is_pre_volta())
+# The latter check is a more specific 'skip' condition: you should only check if a GPU is pre-volta,
+# if there are CUDA devices present to begin with. Again, doing this in the wrong order would incur CUDA calls
+# on non-CUDA nodes.
+# Note that this has been fixed in master, so we probably don't need this patch beyond PT 1.11
+diff -Nru pytorch-1.11.0-rc3.orig/test/test_jit_cuda_fuser.py pytorch-1.11.0-rc3/test/test_jit_cuda_fuser.py
+--- pytorch-1.11.0-rc3.orig/test/test_jit_cuda_fuser.py	2022-02-24 18:06:55.180421593 +0100
++++ pytorch-1.11.0-rc3/test/test_jit_cuda_fuser.py	2022-02-25 13:30:47.112845480 +0100
+@@ -57,18 +57,25 @@
+         torch._C._jit_set_nvfuser_horizontal_mode(old_value)
+ 
+ def is_pre_volta():
+-    prop = torch.cuda.get_device_properties(torch.cuda.current_device())
+-    return prop.major < 7
+-
+-TEST_BF16 = torch.cuda.is_bf16_supported()
++    if RUN_CUDA:
++        prop = torch.cuda.get_device_properties(torch.cuda.current_device())
++        return prop.major < 7
++    else:
++        return True
++
++if RUN_CUDA:
++    TEST_BF16 = torch.cuda.is_bf16_supported()
++else:
++    TEST_BF16=False
+ 
+ class TestCudaFuser(JitTestCase):
+ 
+-    special_values = torch.tensor(
+-        [float("-inf"), -10, -math.pi,
+-            -1, -0.5, 0, 1, 0.5,
+-            math.pi, 10, float("inf"),
+-            float("nan")], dtype=torch.float, device='cuda')
++    if RUN_CUDA:
++        special_values = torch.tensor(
++            [float("-inf"), -10, -math.pi,
++                -1, -0.5, 0, 1, 0.5,
++                math.pi, 10, float("inf"),
++                float("nan")], dtype=torch.float, device='cuda')
+ 
+     int_types = [
+         torch.int8,
+@@ -253,8 +260,8 @@
+         self.assertEqual(o, jit_o)
+         self.assertGraphContains(t_jit.graph_for(x, y, z, q), FUSION_GUARD)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_reduction_dtypes_axis(self):
+@@ -1120,8 +1127,8 @@
+         self.assertTrue(self._compare("comparing output failed", o, jit_o, 1e-4))
+         self.assertGraphContains(t_jit.graph_for(x, y), FUSION_GUARD)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_reduction(self):
+@@ -1170,8 +1177,8 @@
+         FileCheck().check(FUSION_GUARD).run(g)
+         FileCheck().check(FUSION_GUARD).run(v2.graph)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_layer_norm_autodiff(self):
+@@ -1212,8 +1219,8 @@
+                 args.append(torch.randn(shapes, dtype=torch.float32, device="cuda").requires_grad_())
+             self._layer_norm_autodiff_helper(m, grad, shapes, args)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_layer_norm_parser(self):
+@@ -1273,8 +1280,8 @@
+         self.assertGraphContains(t_jit.graph_for(x), FUSION_GUARD)
+ 
+     @unittest.skipIf(True, "codegen failure awaiting fix")
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_native_layer_norm(self):
+@@ -1288,8 +1295,8 @@
+                     self._native_layer_norm_helper(input_shape, norm_shape, torch.float32, "cuda", 1e-4, affine)
+ 
+     @unittest.skipIf(True, "codegen failure awaiting fix")
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_native_layer_norm_half(self):
+@@ -1301,8 +1308,8 @@
+                 norm_shape = [input_shape[idx] for idx in range(dims - offset, dims)]
+                 self._native_layer_norm_helper(input_shape, norm_shape, torch.float16, "cuda", 5e-3)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     @unittest.skipIf(not TEST_BF16, "device does not support BFloat16")
+@@ -1362,8 +1369,8 @@
+         self.assertTrue(self._compare("comparing running_var failed", eager_running_var, jit_running_var, error))
+         self.assertGraphContains(t_jit.graph_for(x, running_mean, running_var), FUSION_GUARD)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_norm_channels_last(self):
+@@ -1374,8 +1381,8 @@
+                 for mf in [torch.channels_last, torch.contiguous_format]:
+                     self._norm_helper(size, torch.float32, "cuda", 1e-4, is_batch_norm_else_instance_norm, memory_format=mf)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_norm(self):
+@@ -1391,8 +1398,8 @@
+                         x[1] = C
+                         self._norm_helper(x, torch.float32, "cuda", 1e-4, is_batch_norm_else_instance_norm)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_norm_large(self):
+@@ -1407,8 +1414,8 @@
+                     x[1] = C
+                     self._norm_helper(x, torch.float32, "cuda", 1e-4, is_batch_norm_else_instance_norm)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_norm_half(self):
+@@ -1424,8 +1431,8 @@
+                         x[1] = C
+                         self._norm_helper(x, torch.float16, "cuda", 5e-3, is_batch_norm_else_instance_norm)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     @unittest.skipIf(not TEST_BF16, "device does not support BFloat16")
+@@ -1469,8 +1476,8 @@
+         self.assertTrue(self._compare("comparing output failed", o, jit_o, error))
+         self.assertGraphContains(t_jit.graph_for(x, y), FUSION_GUARD)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_softmax_dtype(self):
+@@ -1511,8 +1518,8 @@
+         )[0].graph
+         FileCheck().check(FUSION_GUARD).run(bwd_graph)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test__softmax_function(self):
+@@ -1535,8 +1542,8 @@
+         self.assertTrue(self._compare("comparing output failed", o, jit_o, 1e-3))
+         self.assertGraphContainsExactly(t_jit.graph_for(x, y), FUSION_GUARD, 1, consider_subgraphs=True)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test__softmax_function_half_to_float(self):
+@@ -1559,8 +1566,8 @@
+         self.assertTrue(self._compare("comparing output failed", o, jit_o, 1e-3))
+         self.assertGraphContainsExactly(t_jit.graph_for(x, y), FUSION_GUARD, 1, consider_subgraphs=True)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_softmax(self):
+@@ -1575,8 +1582,8 @@
+                 x[reduction_dim] = reduction_size
+                 self._softmax_helper(x, reduction_dim, torch.float32, "cuda", 1e-4)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_softmax_half(self):
+@@ -1591,8 +1598,8 @@
+                 x[reduction_dim] = reduction_size
+                 self._softmax_helper(x, reduction_dim, torch.float16, "cuda", 5e-3)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     @unittest.skipIf(not TEST_BF16, "device does not support BFloat16")
+@@ -1608,8 +1615,8 @@
+                 x[reduction_dim] = reduction_size
+                 self._softmax_helper(x, reduction_dim, torch.bfloat16, "cuda", 1e-1)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_reduction_permutation(self):
+@@ -1622,8 +1629,8 @@
+                     for perm1 in itertools.permutations(range(len(x))):
+                         self._reduction_helper(x, axes, torch.float32, "cuda", perm0, perm1)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_reduction_multiple_output(self):
+@@ -1767,8 +1774,8 @@
+         self.assertEqual(o, jit_o)
+         '''
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_pw_single_reduction_partition(self):
+@@ -1792,8 +1799,8 @@
+         self.assertEqual(o, jit_o)
+         self.assertGraphContains(t_jit.graph_for(x, y, z), FUSION_GUARD)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_permutation_preservation(self):
+@@ -1830,8 +1837,8 @@
+         self.assertGraphContains(t_jit.graph_for(x), FUSION_GUARD)
+         self.assertTrue(jit_o.is_contiguous(memory_format=torch.channels_last))
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_normalization_partition(self):
+@@ -1858,8 +1865,8 @@
+         self.assertEqual(o, jit_o)
+         self.assertGraphContains(t_jit.graph_for(x, y, z, r_m, r_v), FUSION_GUARD)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_sum_to_one(self):
+@@ -1879,8 +1886,8 @@
+         self.assertEqual(o, jit_o)
+         self.assertGraphContains(t_jit.graph_for(x), FUSION_GUARD)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_single_reduction_broadcast(self):
+@@ -1903,8 +1910,8 @@
+         self.assertEqual(o, jit_o)
+         self.assertGraphContains(t_jit.graph_for(x, y, z), FUSION_GUARD)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_trivial_reduction(self):
+@@ -1940,8 +1947,8 @@
+         repro_jit = torch.jit.script(repro)
+         self._run_helper(repro_jit, repro, x, 0.6)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_reduction_sizes_op(self):
+@@ -1964,8 +1971,8 @@
+         # have been optimized away
+         self.assertGraphContainsExactly(t_jit.graph_for(x, y), FUSION_GUARD, 0)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_profile_ivalue(self):
+@@ -1987,8 +1994,8 @@
+         self.assertEqual(o, jit_o)
+         self.assertGraphContains(t_jit.graph_for(x, y, (0, 1), False), FUSION_GUARD)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_sum_to_size(self):
+@@ -2021,8 +2028,8 @@
+         self.assertEqual(o.dtype, jit_o.dtype)
+         self.assertEqual(o, jit_o)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_grad_sum_to_size(self):
+@@ -2145,8 +2152,8 @@
+             self.assertTrue((percent_zeros >= (prob - 0.01)) and (percent_zeros <= (prob + 0.01)))
+             self.assertGraphContainsExactly(t_jit.graph_for(x, prob, True), FUSION_GUARD, 1, consider_subgraphs=True)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_dropout_training_fusion(self):
+@@ -2294,8 +2301,8 @@
+             self.assertEqual(x.grad.dtype, x.dtype)
+             self.assertEqual(y.grad.dtype, y.dtype)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_autocast_1(self):
+@@ -2331,8 +2338,8 @@
+         self.assertEqual(x.grad.dtype, x.dtype)
+         self.assertEqual(y.grad.dtype, y.dtype)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_autocast_2(self):
+@@ -2367,8 +2374,8 @@
+         self.assertEqual(jit_o.dtype, torch.float)
+         self.assertEqual(x.grad.dtype, x.dtype)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     @unittest.skipIf(not TEST_BF16, "device does not support BFloat16")
+@@ -2405,8 +2412,8 @@
+         self.assertEqual(x.grad.dtype, x.dtype)
+         self.assertEqual(y.grad.dtype, y.dtype)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     @unittest.skipIf(not TEST_BF16, "device does not support BFloat16")
+@@ -2817,8 +2824,8 @@
+                                           ref_module.bn.running_var,
+                                           e0))
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_batch_norm_half(self):
+@@ -2832,8 +2839,8 @@
+                 training, track_running_stats = training_and_track
+                 self._test_batch_norm_impl_index_helper(4, 8, 5, affine, track_running_stats, training, torch.half)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_batch_norm_impl_index_correctness(self):
+@@ -2947,8 +2954,8 @@
+         self.assertGraphContainsExactly(graph, FUSION_GROUP, 0)
+         self.assertGraphContains(graph, 'prim::add_optional', True)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_remove_output_used_only_in_dtype(self):
+@@ -2980,8 +2987,8 @@
+             graph = jitted.graph_for(x, y)
+             self.assertGraphContains(graph, FUSION_GROUP, True)
+ 
+-    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_fix_shape_expression_bn(self):

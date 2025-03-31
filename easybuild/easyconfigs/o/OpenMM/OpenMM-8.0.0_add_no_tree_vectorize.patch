@@ -1,0 +1,16 @@
+# This patch resolves the tree vectorizatior error that appears when "-march" is used with GCC 11.3.0:
+#   .../openmm-8.0.0/platforms/common/src/CommonKernels.cpp:5055:6: internal compiler error: in vect_get_vec_defs_for_operand, at tree-vect-stmts.c:1450
+#   5055 | void CommonCalcGayBerneForceKernel::sortAtoms() {
+# Author: maxim-masterov (SURF)
+
+diff -Nru openmm-8.0.0.orig/platforms/common/src/CommonKernels.cpp openmm-8.0.0/platforms/common/src/CommonKernels.cpp
+--- openmm-8.0.0.orig/platforms/common/src/CommonKernels.cpp	2023-03-29 10:08:28.765461000 +0200
++++ openmm-8.0.0/platforms/common/src/CommonKernels.cpp	2023-04-04 15:55:17.152316000 +0200
+@@ -5052,6 +5052,7 @@
+     sortAtoms();
+ }
+ 
++__attribute__((optimize("no-tree-vectorize")))
+ void CommonCalcGayBerneForceKernel::sortAtoms() {
+     // Sort the list of atoms by type to avoid thread divergence.  This is executed every time
+     // the atoms are reordered.

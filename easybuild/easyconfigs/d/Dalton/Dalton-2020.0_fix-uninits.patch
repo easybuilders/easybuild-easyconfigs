@@ -1,0 +1,65 @@
+# Fix a bunch of uninitialized variables.
+#
+# Åke Sandgren
+diff -ru dalton.orig/DALTON/abacus/herpar.F dalton/DALTON/abacus/herpar.F
+--- dalton.orig/DALTON/abacus/herpar.F	2021-10-05 13:33:24.000000000 +0200
++++ dalton/DALTON/abacus/herpar.F	2021-10-05 13:48:35.109344495 +0200
+@@ -1351,6 +1351,15 @@
+       kfree = kwork
+       lfree = lwork
+ 
++#ifdef VAR_MPI
++      ! Make dummy allocation so we don't trip on uninitialized
++      ! variables in call to HER_RVINIT
++      nelement_d = 1
++      nelement_f = 1
++      call memallocmpi(nelement_d*8,dmat_p)
++      call memallocmpi(nelement_f*8,fmat_p)
++#endif
++
+ !     Receive initialization from master - 1 - common block information
+ !     =================================================================
+ !
+@@ -1375,6 +1384,9 @@
+           nelement_f = n2basx*rma_win_info%nmat_max_wo_win
+       end if
+ #ifdef VAR_MPI
++      ! Free the dummy allocations before doing the real allocations
++      call memfreempi(dmat_buff)
++      call memfreempi(fmat_buff)
+       call memallocmpi(nelement_d*8,dmat_p)
+       call memallocmpi(nelement_f*8,fmat_p)
+ #endif
+diff -ru dalton.orig/DALTON/cc/ccsd_input.F dalton/DALTON/cc/ccsd_input.F
+--- dalton.orig/DALTON/cc/ccsd_input.F	2021-10-05 13:33:24.000000000 +0200
++++ dalton/DALTON/cc/ccsd_input.F	2021-10-05 13:50:01.384748651 +0200
+@@ -101,6 +101,7 @@
+       LOGICAL   SET, NEWDEF, SIRFF
+       CHARACTER PROMPT*1, WORD*7, TABLE(NTABLE)*7, WORD1*7
+       CHARACTER*(80) LINE
++      INTEGER ITEST
+ C
+       SAVE SET
+ CSONIA/FRAN/TBPEDERSEN
+@@ -138,6 +139,9 @@
+ C
+       IF (SET) RETURN
+       SET = .TRUE.
++
++      ITEST = 0
++
+ C
+ CSPAS:8/11-13: Initialization of CCSDINP, CCLR, CCSDSYM 
+ C              and other common blocks is moved to a new routine
+diff -ru dalton.orig/DALTON/sirius/sirqmmm.F dalton/DALTON/sirius/sirqmmm.F
+--- dalton.orig/DALTON/sirius/sirqmmm.F	2021-10-05 13:33:24.000000000 +0200
++++ dalton/DALTON/sirius/sirqmmm.F	2021-10-05 13:50:43.212473540 +0200
+@@ -4333,6 +4333,8 @@
+       CALL MPIXBCAST(CONMAT,1,'LOGICAL',MASTER)
+ 
+       KELF    = 1
++      KELFEL  = 1
++      KELFNU  = 1
+       IF (SPLDIP) THEN
+          KELFEL = KELF   + 3*POLDIM
+          KELFNU = KELFEL + 3*POLDIM
