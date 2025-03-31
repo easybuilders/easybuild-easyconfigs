@@ -1,0 +1,33 @@
+easyblock = 'ConfigureMake'
+
+name = 'libnsl'
+version = '2.0.1'
+
+homepage = 'https://github.com/thkukuk/libnsl'
+description = """The libnsl package contains the public client interface for NIS(YP)."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/thkukuk/%(name)s/releases/download/v%(version)s/']
+sources = [SOURCE_TAR_XZ]
+checksums = ['5c9e470b232a7acd3433491ac5221b4832f0c71318618dc6aa04dd05ffcd8fd9']
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('libtirpc', '1.3.3'),
+]
+
+# Provide a symlink for libnsl.so.1, which used to be part of glibc.
+# This new version of libnsl should be backwards compatible.
+postinstallcmds = ['ln -s libnsl.so %(installdir)s/lib/libnsl.so.1']
+
+sanity_check_paths = {
+    'files': ['include/rpcsvc/yp.h', 'lib/libnsl.a',
+              'lib/libnsl.%s' % SHLIB_EXT, 'lib/libnsl.%s.1' % SHLIB_EXT],
+    'dirs': ['include']
+}
+
+moduleclass = 'devel'
