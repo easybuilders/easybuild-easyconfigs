@@ -1,0 +1,197 @@
+Tests are incorrectly not skipped causing failures related to MKL.
+See https://github.com/tensorflow/tensorflow/issues/59252
+
+Use a patch from TF 2.11: https://github.com/tensorflow/tensorflow/commit/5ec3d2e626589540bcfbeb7dac40255034e587df
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/core/util/BUILD b/tensorflow/core/util/BUILD
+index 8881f6fd5e9..25882152abf 100644
+--- a/tensorflow/core/util/BUILD
++++ b/tensorflow/core/util/BUILD
+@@ -491,6 +491,11 @@ cc_library(
+         "//tensorflow/python:__pkg__",
+         "//tensorflow/python/util:__pkg__",
+     ],
++    deps = [
++        "//tensorflow/core/platform:platform_port",
++        "//tensorflow/core/util:env_var",
++        "@com_google_absl//absl/base",
++    ],
+     alwayslink = 1,
+ )
+ 
+diff --git a/tensorflow/core/util/port.cc b/tensorflow/core/util/port.cc
+index 358b39bfb00..0aa3cfa708e 100644
+--- a/tensorflow/core/util/port.cc
++++ b/tensorflow/core/util/port.cc
+@@ -15,6 +15,9 @@ limitations under the License.
+ 
+ #include "tensorflow/core/util/port.h"
+ 
++#include "absl/base/call_once.h"
++#include "tensorflow/core/platform/cpu_info.h"
++#include "tensorflow/core/util/env_var.h"
+ 
+ namespace tensorflow {
+ 
+@@ -60,10 +63,57 @@ bool GpuSupportsHalfMatMulAndConv() {
+ }
+ 
+ bool IsMklEnabled() {
+-#if defined(INTEL_MKL) && defined(ENABLE_MKL)
+-  return true;
+-#else
++#ifndef INTEL_MKL
+   return false;
+-#endif  // INTEL_MKL && ENABLE_MKL
++#endif
++  static absl::once_flag once;  // NOLINT(clang-diagnostic-unreachable-code)
++#ifdef ENABLE_MKL
++  // Keeping TF_DISABLE_MKL env variable for legacy reasons.
++  static bool oneDNN_disabled = false;
++  absl::call_once(once, [&] {
++    TF_CHECK_OK(ReadBoolFromEnvVar("TF_DISABLE_MKL", false, &oneDNN_disabled));
++    if (oneDNN_disabled) VLOG(2) << "TF-MKL: Disabling oneDNN";
++  });
++  return (!oneDNN_disabled);
++#else
++  // Linux: Turn oneDNN on by default for CPUs with neural network features.
++  // Windows: oneDNN is off by default.
++  // No need to guard for other platforms here because INTEL_MKL is only defined
++  // for non-mobile Linux or Windows.
++  static bool oneDNN_enabled =
++#ifdef __linux__
++      port::TestCPUFeature(port::CPUFeature::AVX512_VNNI) ||
++      port::TestCPUFeature(port::CPUFeature::AVX512_BF16) ||
++      port::TestCPUFeature(port::CPUFeature::AVX_VNNI) ||
++      port::TestCPUFeature(port::CPUFeature::AMX_TILE) ||
++      port::TestCPUFeature(port::CPUFeature::AMX_INT8) ||
++      port::TestCPUFeature(port::CPUFeature::AMX_BF16);
++#else
++      false;
++#endif  // __linux__
++  absl::call_once(once, [&] {
++    auto status = ReadBoolFromEnvVar("TF_ENABLE_ONEDNN_OPTS", oneDNN_enabled,
++                                     &oneDNN_enabled);
++    if (!status.ok()) {
++      LOG(WARNING) << "TF_ENABLE_ONEDNN_OPTS is not set to either '0', 'false',"
++                   << " '1', or 'true'. Using the default setting: "
++                   << oneDNN_enabled;
++    }
++    if (oneDNN_enabled) {
++#ifndef DNNL_AARCH64_USE_ACL
++      LOG(INFO) << "oneDNN custom operations are on. "
++                << "You may see slightly different numerical results due to "
++                << "floating-point round-off errors from different computation "
++                << "orders. To turn them off, set the environment variable "
++                << "`TF_ENABLE_ONEDNN_OPTS=0`.";
++#else
++      LOG(INFO) << "Experimental oneDNN custom operations are on. "
++                << "If you experience issues, please turn them off by setting "
++                << "the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.";
++#endif  // !DNNL_AARCH64_USE_ACL
++    }
++  });
++  return oneDNN_enabled;
++#endif  // ENABLE_MKL
+ }
+ }  // end namespace tensorflow
+diff --git a/tensorflow/core/util/util.cc b/tensorflow/core/util/util.cc
+index eef2618de91..1c12f552d7d 100644
+--- a/tensorflow/core/util/util.cc
++++ b/tensorflow/core/util/util.cc
+@@ -15,16 +15,10 @@ limitations under the License.
+ 
+ #include "tensorflow/core/util/util.h"
+ 
+-#include <string>
+-#include <vector>
+-
+-#include "absl/base/call_once.h"
+-#include "tensorflow/core/framework/device_factory.h"
+ #include "tensorflow/core/lib/gtl/inlined_vector.h"
+ #include "tensorflow/core/lib/strings/strcat.h"
+-#include "tensorflow/core/platform/cpu_info.h"
+ #include "tensorflow/core/platform/logging.h"
+-#include "tensorflow/core/util/env_var.h"
++#include "tensorflow/core/util/port.h"
+ 
+ namespace tensorflow {
+ 
+@@ -127,59 +121,7 @@ string SliceDebugString(const TensorShape& shape, const int64_t flat) {
+   return result;
+ }
+ 
+-bool IsMKLEnabled() {
+-#ifndef INTEL_MKL
+-  return false;
+-#endif  // !INTEL_MKL
+-  static absl::once_flag once;
+-#ifdef ENABLE_MKL
+-  // Keeping TF_DISABLE_MKL env variable for legacy reasons.
+-  static bool oneDNN_disabled = false;
+-  absl::call_once(once, [&] {
+-    TF_CHECK_OK(ReadBoolFromEnvVar("TF_DISABLE_MKL", false, &oneDNN_disabled));
+-    if (oneDNN_disabled) VLOG(2) << "TF-MKL: Disabling oneDNN";
+-  });
+-  return (!oneDNN_disabled);
+-#else
+-  // Linux: Turn oneDNN on by default for CPUs with neural network features.
+-  // Windows: oneDNN is off by default.
+-  // No need to guard for other platforms here because INTEL_MKL is only defined
+-  // for non-mobile Linux or Windows.
+-  static bool oneDNN_enabled =
+-#ifdef __linux__
+-      port::TestCPUFeature(port::CPUFeature::AVX512_VNNI) ||
+-      port::TestCPUFeature(port::CPUFeature::AVX512_BF16) ||
+-      port::TestCPUFeature(port::CPUFeature::AVX_VNNI) ||
+-      port::TestCPUFeature(port::CPUFeature::AMX_TILE) ||
+-      port::TestCPUFeature(port::CPUFeature::AMX_INT8) ||
+-      port::TestCPUFeature(port::CPUFeature::AMX_BF16);
+-#else
+-      false;
+-#endif  // __linux__
+-  absl::call_once(once, [&] {
+-    auto status = ReadBoolFromEnvVar("TF_ENABLE_ONEDNN_OPTS", oneDNN_enabled,
+-                                     &oneDNN_enabled);
+-    if (!status.ok()) {
+-      LOG(WARNING) << "TF_ENABLE_ONEDNN_OPTS is not set to either '0', 'false',"
+-                   << " '1', or 'true'. Using the default setting: "
+-                   << oneDNN_enabled;
+-    }
+-    if (oneDNN_enabled) {
+-#ifndef DNNL_AARCH64_USE_ACL
+-      LOG(INFO) << "oneDNN custom operations are on. "
+-                << "You may see slightly different numerical results due to "
+-                << "floating-point round-off errors from different computation "
+-                << "orders. To turn them off, set the environment variable "
+-                << "`TF_ENABLE_ONEDNN_OPTS=0`.";
+-#else
+-      LOG(INFO) << "Experimental oneDNN custom operations are on. "
+-                << "If you experience issues, please turn them off by setting "
+-                << "the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.";
+-#endif  // !DNNL_AARCH64_USE_ACL
+-    }
+-  });
+-  return oneDNN_enabled;
+-#endif  // ENABLE_MKL
+-}
++// TODO(penporn): Remove this function from util.cc
++bool IsMKLEnabled() { return IsMklEnabled(); }
+ 
+ }  // namespace tensorflow
+diff --git a/tensorflow/python/framework/test_util.py b/tensorflow/python/framework/test_util.py
+index 02149d89b2f..e859ec47a1e 100644
+--- a/tensorflow/python/framework/test_util.py
++++ b/tensorflow/python/framework/test_util.py
+@@ -359,8 +359,7 @@ def GpuSupportsHalfMatMulAndConv():
+ 
+ 
+ def IsMklEnabled():
+-  return (_pywrap_util_port.IsMklEnabled() or
+-          os.getenv("TF_ENABLE_ONEDNN_OPTS", "False").lower() in ["true", "1"])
++  return _pywrap_util_port.IsMklEnabled()
+ 
+ 
+ def InstallStackTraceHandler():

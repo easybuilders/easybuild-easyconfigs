@@ -1,0 +1,39 @@
+# EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Max Voit
+
+easyblock = 'MakeCp'
+
+name = 'CAFE5'
+version = '5.0.0'
+
+homepage = 'https://github.com/hahnlab/CAFE5'
+
+description = """Software for Computational Analysis of gene Family Evolution
+
+The purpose of CAFE is to analyze changes in gene family size in a way that
+accounts for phylogenetic history and provides a statistical foundation for
+evolutionary inferences. The program uses a birth and death process to model
+gene gain and loss across a user-specified phylogenetic tree. The distribution
+of family sizes generated under this model can provide a basis for assessing the
+significance of the observed family size differences among taxa."""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+toolchainopts = {'openmp': True, 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/hahnlab/CAFE5/releases/download/v5.0']
+sources = [SOURCE_TAR_GZ]
+checksums = ['9e6dfd27fb915ba927f007e1f851630ff0547589b8196bd5f4606f3b23a78118']
+
+buildopts = 'CFLAGS="$CXXFLAGS -I. -include config.h" LINKER="$CXX $CXXFLAGS -o" '
+with_configure = True
+files_to_copy = ['bin', 'examples']
+postinstallcmds = ['chmod -x %(installdir)s/examples/*.txt']
+
+sanity_check_paths = {
+    'files': ['bin/cafe5'],
+    'dirs': ['examples'],
+}
+
+sanity_check_commands = ['cafe5 --help']
+
+moduleclass = 'bio'

@@ -1,0 +1,58 @@
+easyblock = 'ConfigureMake'
+
+name = 'SCIP'
+version = '3.2.1'
+
+homepage = 'https://www.scipopt.org/'
+description = """SCIP is currently one of the fastest non-commercial solvers for mixed integer
+programming (MIP) and mixed integer nonlinear programming (MINLP). It is also a
+framework for constraint integer programming and branch-cut-and-price. It
+allows for total control of the solution process and the access of detailed
+information down to the guts of the solver."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+github_account = 'scipopt'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%s.tar.gz' % version.replace('.', '')]
+checksums = ['015bdda4e681782fd03b61421b93aa3c1b913e5eea18bb8730d5fb9e4d67b4cb']
+
+dependencies = [
+    ('SoPlex', '2.2.1'),
+    ('ZIMPL', '3.3.4'),
+    ('GMP', '6.2.1'),
+    ('libreadline', '8.1'),
+    ('zlib', '1.2.12'),
+]
+
+skipsteps = ['configure']
+
+# prepare symlinks to installation files of dependencies
+prebuildopts = 'mkdir -p lib && '
+prebuildopts += 'ln -sf "$EBROOTSOPLEX/include" "lib/spxinc" && '
+prebuildopts += 'ln -sf "$EBROOTZIMPL/include" "lib/zimplinc" && '
+prebuildopts += 'for lib in "$EBROOTSOPLEX/lib/libsoplex*.a"; do ln -sf "$lib" "lib/"; done && '
+prebuildopts += 'for lib in "$EBROOTZIMPL/lib/libzimpl*.a"; do ln -sf "$lib" "lib/"; done && '
+
+# use SoPlex v2 as LP solver
+buildopts = 'LPS=spx2 '
+buildopts += 'MAKESOFTLINKS=false COMP=gnu OPT=opt '
+
+installopts = 'INSTALLDIR="%(installdir)s" '
+installopts += buildopts
+
+postinstallcmds = [
+    # add extra headers to installation directory
+    'cp "src/scip/misc.h" "%(installdir)s/include/scip/"',
+    # copy examples folder
+    'cp -r "examples" "%(installdir)s/"',
+]
+
+sanity_check_paths = {
+    'files': ['bin/scip', 'lib/liblpispx2.a', 'lib/libnlpi.cppad.a', 'lib/libobjscip.a', 'lib/libscip.a'],
+    'dirs': ['examples', 'include'],
+}
+
+sanity_check_commands = ["scip -h"]
+
+moduleclass = 'math'

@@ -1,0 +1,61 @@
+Removes the need to input dependency paths into interactive "scgid init" command
+Author: Orient Kružík (INUITS)
+diff -ruN SCGid-master-orig/scgid/config.py SCGid-master/scgid/config.py
+--- SCGid-master-orig/scgid/config.py	2021-10-28 06:18:47.000000000 +0200
++++ SCGid-master/scgid/config.py	2022-03-04 20:46:46.268401879 +0100
+@@ -143,6 +143,9 @@
+         self.DB = os.path.join(self.HOME, 'database')
+         self.initial_config = {}
+         self.initial_config["mpicmd"] = "mpirun"
++        self.initial_config["clams_path"] = "%s/ClaMS-CLI.jar" % os.getenv("EBROOTSCGID", "CLAMS_INSTALL_DIR_UNKNOWN")
++        self.initial_config["esom_path"] = os.getenv("EBROOTSCGID", "ESOM_INSTALL_DIR_UNKNOWN")
++        self.initial_config["path_to_Rscript"] = "%s/bin/Rscript" % os.getenv("EBROOTR", "RSCRIPT_INSTALL_DIR_UNKNOWN")
+ 
+     def welcome(self):
+         print (scgid_banner)
+@@ -157,36 +160,6 @@
+             print (f"{output_cols['RED']}ERROR: SCGid v1.0.0 is only compatible with python 3.x.x. Exitting...{output_cols['RESET']}")
+             sys.exit(1)
+ 
+-    def config_third_party_deps(self):
+-        tpdeps = {
+-            "esom_path": {
+-                'target': lambda path: os.path.isfile(os.path.join(path,"bin","esomstart")),
+-                'question': "Enter full path to ESOM install: "
+-                },
+-            "clams_path": {
+-                'target': lambda path: os.path.isfile(path) and os.path.split(path)[1] == "ClaMS-CLI.jar",
+-                'question': "Enter full path to ClaMS-CLI.jar: "
+-                },
+-            "path_to_Rscript": {
+-                'target': lambda path: os.path.isfile(path) and os.path.split(path)[1] == "Rscript",
+-                'question': "Enter full path to Rscript: "
+-                }
+-            }
+-        for var, stuff in tpdeps.items():
+-            while True:
+-                entry = input(stuff['question'])
+-                if entry == "DEBUG_SKIP":
+-                    break
+-                else:
+-                    if not stuff["target"](entry):
+-                        report_outcome (stuff['question'], "RED", "[NOT FOUND, TRY AGAIN]")
+-                    else:
+-                        report_outcome (stuff['question'], "GREEN", "[GOOD]")
+-                        tpdeps[var] = entry
+-                        break
+-
+-        self.initial_config.update(tpdeps)
+-    
+     def config_spdb (self):
+ 
+         self.initial_config['default_spdb'] = None
+@@ -318,8 +291,6 @@
+         
+         self.welcome()
+ 
+-        self.config_third_party_deps()
+-
+         self.config_spdb()
+ 
+         self.config_taxdb()

@@ -1,0 +1,129 @@
+Fix wrongly implemented _mm_loadu_si32/16 resulting in failures in e.g. PyTorch tests
+due to wrong values as the order in the vectorized elements is wrong.
+
+From 85568e505c3b06708ec0fb21d1ab4f78e0c66896 Mon Sep 17 00:00:00 2001
+From: Jakub Jelinek <jakub@redhat.com>
+Date: Mon, 14 Mar 2022 10:44:38 +0100
+Subject: [PATCH 1/1] i386: Fix up _mm_loadu_si{16,32} [PR99754]
+
+These intrinsics are supposed to do an unaligned may_alias load
+of a 16-bit or 32-bit value and store it as the first element of
+a 128-bit integer vector, with all other elements cleared.
+
+The current _mm_storeu_* implementation implements that correctly, uses
+__*_u types to do the store and extracts the first element of a vector into
+it.
+But _mm_loadu_si{16,32} gets it all wrong.  It performs an aligned
+non-may_alias load and because _mm_set_epi{16,32} has the args reversed,
+it also inserts it into the last vector element instead of first.
+
+The following patch fixes that.
+
+Note, while the Intrinsics guide for _mm_loadu_si32 says SSE2,
+for _mm_loadu_si16 it says strangely SSE.  But the intrinsics
+returns __m128i, which is only defined in emmintrin.h, and
+_mm_set_epi16 is also only SSE2 and later in emmintrin.h.
+Even clang defines it in emmintrin.h and ends up with inlining
+failure when calling _mm_loadu_si16 from sse,no-sse2 function.
+So, isn't that a bug in the intrinsic guide instead?
+
+2022-03-14  Jakub Jelinek  <jakub@redhat.com>
+
+	PR target/99754
+	* config/i386/emmintrin.h (_mm_loadu_si32): Put loaded value into
+	first 	rather than last element of the vector, use __m32_u to do
+	a really unaligned load, use just 0 instead of (int)0.
+	(_mm_loadu_si16): Put loaded value into first rather than last
+	element of the vector, use __m16_u to do a really unaligned load,
+	use just 0 instead of (short)0.
+
+	* gcc.target/i386/pr99754-1.c: New test.
+	* gcc.target/i386/pr99754-2.c: New test.
+---
+ gcc/config/i386/emmintrin.h               |  5 ++---
+ gcc/testsuite/gcc.target/i386/pr99754-1.c | 20 +++++++++++++++++++
+ gcc/testsuite/gcc.target/i386/pr99754-2.c | 24 +++++++++++++++++++++++
+ 3 files changed, 46 insertions(+), 3 deletions(-)
+ create mode 100644 gcc/testsuite/gcc.target/i386/pr99754-1.c
+ create mode 100644 gcc/testsuite/gcc.target/i386/pr99754-2.c
+
+diff --git a/gcc/config/i386/emmintrin.h b/gcc/config/i386/emmintrin.h
+index eb6de5c5038..ead06228572 100644
+--- a/gcc/config/i386/emmintrin.h
++++ b/gcc/config/i386/emmintrin.h
+@@ -718,14 +718,13 @@ _mm_loadu_si64 (void const *__P)
+ extern __inline __m128i __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+ _mm_loadu_si32 (void const *__P)
+ {
+-  return _mm_set_epi32 (*(int *)__P, (int)0, (int)0, (int)0);
++  return _mm_set_epi32 (0, 0, 0, (*(__m32_u *)__P)[0]);
+ }
+ 
+ extern __inline __m128i __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+ _mm_loadu_si16 (void const *__P)
+ {
+-  return _mm_set_epi16 (*(short *)__P, (short)0, (short)0, (short)0,
+-			(short)0, (short)0, (short)0, (short)0);
++  return _mm_set_epi16 (0, 0, 0, 0, 0, 0, 0, (*(__m16_u *)__P)[0]);
+ }
+ 
+ extern __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+diff --git a/gcc/testsuite/gcc.target/i386/pr99754-1.c b/gcc/testsuite/gcc.target/i386/pr99754-1.c
+new file mode 100644
+index 00000000000..9c953724881
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/i386/pr99754-1.c
+@@ -0,0 +1,20 @@
++/* PR target/99754 */
++/* { dg-do run } */
++/* { dg-options "-O2 -msse2" } */
++/* { dg-require-effective-target sse2 } */
++
++#include "sse2-check.h"
++#include <emmintrin.h>
++
++static void
++sse2_test (void)
++{
++  union { unsigned char buf[32]; long long ll; } u;
++  u.buf[1] = 0xfe;
++  u.buf[2] = 0xca;
++  u.buf[17] = 0xaa;
++  u.buf[18] = 0x55;
++  _mm_storeu_si16 (&u.buf[17], _mm_loadu_si16 (&u.buf[1]));
++  if (u.buf[17] != 0xfe || u.buf[18] != 0xca)
++    abort ();
++}
+diff --git a/gcc/testsuite/gcc.target/i386/pr99754-2.c b/gcc/testsuite/gcc.target/i386/pr99754-2.c
+new file mode 100644
+index 00000000000..f7a1dd3e124
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/i386/pr99754-2.c
+@@ -0,0 +1,24 @@
++/* PR target/99754 */
++/* { dg-do run } */
++/* { dg-options "-O2 -msse2" } */
++/* { dg-require-effective-target sse2 } */
++
++#include "sse2-check.h"
++#include <emmintrin.h>
++
++static void
++sse2_test (void)
++{
++  union { unsigned char buf[32]; long long ll; } u;
++  u.buf[1] = 0xbe;
++  u.buf[2] = 0xba;
++  u.buf[3] = 0xfe;
++  u.buf[4] = 0xca;
++  u.buf[17] = 0xaa;
++  u.buf[18] = 0x55;
++  u.buf[19] = 0xaa;
++  u.buf[20] = 0x55;
++  _mm_storeu_si32 (&u.buf[17], _mm_loadu_si32 (&u.buf[1]));
++  if (u.buf[17] != 0xbe || u.buf[18] != 0xba || u.buf[19] != 0xfe || u.buf[20] != 0xca)
++    abort ();
++}
+-- 
+2.31.1
+

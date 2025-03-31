@@ -25,7 +25,7 @@ builddependencies = [
 ]
 
 dependencies = [
-    ('OpenSSL', '1.1', '', True),
+    ('OpenSSL', '1.1', '', SYSTEM),
 ]
 
 configopts = "--enable-extended --sysconfdir=%(installdir)s/etc "
@@ -33,6 +33,12 @@ configopts = "--enable-extended --sysconfdir=%(installdir)s/etc "
 # avoid build dependency on Ninja, which requires Python,
 # since Rust is a build dependency for cryptography that is included with Python
 configopts += "--set=llvm.ninja=false "
+
+# Use ./x.py to bootstrap so that options like -j N are correctly passed through
+# see: https://rustc-dev-guide.rust-lang.org/building/how-to-build-and-run.html#what-is-xpy
+# (ConfigureMake already adds `-j %(parallel)s` to the `build_cmd`)
+build_cmd = "./x.py build"
+install_cmd = "./x.py install -j %(parallel)s"
 
 # avoid failure when home directory is an NFS mount,
 # see https://github.com/rust-lang/cargo/issues/6652
