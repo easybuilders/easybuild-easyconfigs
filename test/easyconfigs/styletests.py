@@ -1,5 +1,5 @@
 ##
-# Copyright 2016-2021 Ghent University
+# Copyright 2016-2025 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-Style tests for easyconfig files. Uses pep8.
+Style tests for easyconfig files. Uses pycodestyle.
 
 @author: Ward Poelmans (Ghent University)
 """
@@ -37,15 +37,15 @@ from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.framework.easyconfig.style import check_easyconfigs_style
 
 try:
-    import pep8
+    import pycodestyle
 except ImportError:
-    pep8 = None
+    pycodestyle = None
 
 
 class StyleTest(TestCase):
     log = fancylogger.getLogger("StyleTest", fname=False)
 
-    @skipIf(not pep8, 'no pep8 available')
+    @skipIf(not pycodestyle, 'pycodestyle is not available')
     def test_style_conformance(self):
         """Check the easyconfigs for style"""
         # all available easyconfig files

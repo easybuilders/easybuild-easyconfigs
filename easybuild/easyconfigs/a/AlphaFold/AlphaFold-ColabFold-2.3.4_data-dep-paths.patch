@@ -1,0 +1,134 @@
+pick up on $ALPHAFOLD_DATA_DIR to specify location to downloaded data
+(see https://github.com/deepmind/alphafold/blob/main/docker/run_docker.py);
+pick up on HH-suite, HHMER, Kalign dependencies provided via EasyBuild
+author: Kenneth Hoste (HPC-UGent)
+--- run_alphafold.py.orig	2023-02-18 15:59:05.000000000 +0100
++++ run_alphafold.py	2023-04-17 13:54:08.910029182 +0200
+@@ -42,6 +42,46 @@
+ import numpy as np
+ 
+ # Internal import (7716).
++use_reduced_dbs = any("--db_preset=reduced_dbs" in s for s in sys.argv[1:])
++use_monomer_preset = not any("--model_preset=multimer" in s for s in sys.argv[1:])
++
++data_dir = os.getenv('ALPHAFOLD_DATA_DIR')
++use_gpu_relax = os.getenv('OPENMM_RELAX')=='CUDA'
++
++if data_dir:
++    mgnify_database_path = os.path.join(data_dir, 'mgnify', 'mgy_clusters_2022_05.fa')
++    uniref90_database_path = os.path.join(data_dir, 'uniref90', 'uniref90.fasta')
++    template_mmcif_dir = os.path.join(data_dir, 'pdb_mmcif', 'mmcif_files')
++    obsolete_pdbs_path = os.path.join(data_dir, 'pdb_mmcif', 'obsolete.dat')
++    if use_monomer_preset:
++        pdb_seqres_database_path = None
++        uniprot_database_path = None
++        pdb70_database_path = os.path.join(data_dir, 'pdb70', 'pdb70')
++    else:
++        pdb_seqres_database_path = os.path.join(data_dir, 'pdb_seqres', 'pdb_seqres.txt')
++        uniprot_database_path = os.path.join(data_dir, 'uniprot', 'uniprot.fasta')
++        pdb70_database_path = None
++    if use_reduced_dbs:
++        small_bfd_database_path =  os.path.join(data_dir, 'small_bfd','bfd-first_non_consensus_sequences.fasta')
++        uniref30_database_path = None 
++        bfd_database_path = None 
++    else:
++        small_bfd_database_path = None 
++        bfd_database_path = os.path.join(data_dir, 'bfd', 'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt')
++        uniref30_database_path = os.path.join(data_dir, 'uniref30', 'UniRef30_2021_03')
++else:
++    sys.stderr.write("$ALPHAFOLD_DATA_DIR is not defined!")
++    uniref90_database_path = None
++    mgnify_database_path = None
++    bfd_database_path = None
++    uniref30_database_path = None
++    pdb70_database_path = None
++    template_mmcif_dir = None
++    obsolete_pdbs_path = None
++    small_bfd_database_path = None
++    uniprot_database_path = None
++    pdb_seqres_database_path = None 
++    use_gpu_relax = None
+ 
+ logging.set_verbosity(logging.INFO)
+ 
+@@ -59,7 +99,7 @@
+     'separated by commas. All FASTA paths must have a unique basename as the '
+     'basename is used to name the output directories for each prediction.')
+ 
+-flags.DEFINE_string('data_dir', None, 'Path to directory of supporting data.')
++flags.DEFINE_string('data_dir', data_dir, 'Path to directory of supporting data.')
+ flags.DEFINE_string('output_dir', None, 'Path to a directory that will '
+                     'store the results.')
+ flags.DEFINE_string('jackhmmer_binary_path', shutil.which('jackhmmer'),
+@@ -74,27 +114,27 @@
+                     'Path to the hmmbuild executable.')
+ flags.DEFINE_string('kalign_binary_path', shutil.which('kalign'),
+                     'Path to the Kalign executable.')
+-flags.DEFINE_string('uniref90_database_path', None, 'Path to the Uniref90 '
++flags.DEFINE_string('uniref90_database_path', uniref90_database_path, 'Path to the Uniref90 '
+                     'database for use by JackHMMER.')
+-flags.DEFINE_string('mgnify_database_path', None, 'Path to the MGnify '
++flags.DEFINE_string('mgnify_database_path', mgnify_database_path, 'Path to the MGnify '
+                     'database for use by JackHMMER.')
+-flags.DEFINE_string('bfd_database_path', None, 'Path to the BFD '
++flags.DEFINE_string('bfd_database_path', bfd_database_path, 'Path to the BFD '
+                     'database for use by HHblits.')
+-flags.DEFINE_string('small_bfd_database_path', None, 'Path to the small '
++flags.DEFINE_string('small_bfd_database_path', small_bfd_database_path, 'Path to the small '
+                     'version of BFD used with the "reduced_dbs" preset.')
+-flags.DEFINE_string('uniref30_database_path', None, 'Path to the UniRef30 '
++flags.DEFINE_string('uniref30_database_path', uniref30_database_path, 'Path to the UniRef30 '
+                     'database for use by HHblits.')
+-flags.DEFINE_string('uniprot_database_path', None, 'Path to the Uniprot '
++flags.DEFINE_string('uniprot_database_path', uniprot_database_path, 'Path to the Uniprot '
+                     'database for use by JackHMMer.')
+-flags.DEFINE_string('pdb70_database_path', None, 'Path to the PDB70 '
++flags.DEFINE_string('pdb70_database_path', pdb70_database_path, 'Path to the PDB70 '
+                     'database for use by HHsearch.')
+-flags.DEFINE_string('pdb_seqres_database_path', None, 'Path to the PDB '
++flags.DEFINE_string('pdb_seqres_database_path', pdb_seqres_database_path, 'Path to the PDB '
+                     'seqres database for use by hmmsearch.')
+-flags.DEFINE_string('template_mmcif_dir', None, 'Path to a directory with '
++flags.DEFINE_string('template_mmcif_dir', template_mmcif_dir, 'Path to a directory with '
+                     'template mmCIF structures, each named <pdb_id>.cif')
+ flags.DEFINE_string('max_template_date', None, 'Maximum template release date '
+                     'to consider. Important if folding historical test sets.')
+-flags.DEFINE_string('obsolete_pdbs_path', None, 'Path to file containing a '
++flags.DEFINE_string('obsolete_pdbs_path', obsolete_pdbs_path, 'Path to file containing a '
+                     'mapping from obsolete PDB IDs to the PDB IDs of their '
+                     'replacements.')
+ flags.DEFINE_enum('db_preset', 'full_dbs',
+@@ -137,7 +177,7 @@
+                         'distracting stereochemical violations but might help '
+                         'in case you are having issues with the relaxation '
+                         'stage.')
+-flags.DEFINE_boolean('use_gpu_relax', None, 'Whether to relax on GPU. '
++flags.DEFINE_boolean('use_gpu_relax', use_gpu_relax, 'Whether to relax on GPU. '
+                      'Relax on GPU can be much faster than CPU, so it is '
+                      'recommended to enable if possible. GPUs must be available'
+                      ' if this setting is enabled.')
+@@ -334,6 +374,10 @@
+                        'sure it is installed on your system.')
+ 
+   use_small_bfd = FLAGS.db_preset == 'reduced_dbs'
++  if use_small_bfd and data_dir:
++    bfd_database_path = None
++    uniref30_database_path = None
++  
+   _check_flag('small_bfd_database_path', 'db_preset',
+               should_be_set=use_small_bfd)
+   _check_flag('bfd_database_path', 'db_preset',
+@@ -456,13 +500,7 @@
+   flags.mark_flags_as_required([
+       'fasta_paths',
+       'output_dir',
+-      'data_dir',
+-      'uniref90_database_path',
+-      'mgnify_database_path',
+-      'template_mmcif_dir',
+       'max_template_date',
+-      'obsolete_pdbs_path',
+-      'use_gpu_relax',
+   ])
+ 
+   app.run(main)

@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'GnuTLS'
+version = '3.7.3'
+
+homepage = 'https://www.gnutls.org'
+description = """GnuTLS is a secure communications library implementing the SSL, TLS
+ and DTLS protocols and technologies around them. It provides a simple
+ C language application programming interface (API) to access the secure
+ communications protocols as well as APIs to parse and write X.509, PKCS #12,
+ OpenPGP and other required structures. It is aimed to be portable
+ and efficient with focus on security and interoperability."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['https://www.gnupg.org/ftp/gcrypt/gnutls/v%(version_major_minor)s']
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['fc59c43bc31ab20a6977ff083029277a31935b8355ce387b634fa433f8f6c49a']
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('pkgconf', '1.8.0'),
+]
+
+dependencies = [
+    ('GMP', '6.2.1'),
+    ('nettle', '3.7.3'),
+    ('Guile', '3.0.7'),
+    ('libtasn1', '4.18.0'),
+    ('libidn2', '2.3.2'),
+    ('p11-kit', '0.24.1'),
+    ('zlib', '1.2.11'),
+    ('zstd', '1.5.0'),
+]
+
+configopts = "--with-guile-site-dir=%(installdir)s/lib/guile --enable-openssl-compatibility "
+configopts += "--with-guile-site-ccache-dir=%(installdir)s/lib/guile/site-ccache "
+configopts += "--with-guile-extension-dir=%(installdir)s/lib/guile/extensions "
+configopts += "--with-idn --with-p11-kit --without-tpm --without-tpm2"
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['certtool', 'gnutls-cli', 'gnutls-cli-debug',
+                                     'gnutls-serv', 'ocsptool', 'psktool', 'srptool']] +
+             ['lib/libgnutls%s' % x for x in ['.%s' % SHLIB_EXT, 'xx.%s' % SHLIB_EXT, '-openssl.%s' % SHLIB_EXT]],
+    'dirs': ['include/gnutls', 'lib/guile'],
+}
+
+moduleclass = 'system'

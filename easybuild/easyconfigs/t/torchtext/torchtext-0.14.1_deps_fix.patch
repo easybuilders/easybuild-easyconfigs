@@ -1,0 +1,54 @@
+The error "string_view has not been declared in std" appears when not using C++17
+diff -u text/CMakeLists.txt.orig text/CMakeLists.txt
+--- text/CMakeLists.txt.orig	2023-03-08 14:33:35.618931003 +0100
++++ text/CMakeLists.txt	2023-03-08 14:35:03.169072623 +0100
+@@ -24,10 +24,10 @@
+ if(env_cxx_standard GREATER -1)
+   message(
+       WARNING "C++ standard version definition detected in environment variable."
+-      "PyTorch requires -std=c++14. Please remove -std=c++ settings in your environment.")
++      "PyTorch requires -std=c++17. Please remove -std=c++ settings in your environment.")
+ endif()
+
+-set(CMAKE_CXX_STANDARD 14)
++set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_C_STANDARD 11)
+
+ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+@@ -63,5 +63,10 @@
+
+ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_COMPILED_WITH_CXX_ABI} -Wall ${TORCH_CXX_FLAGS}")
+
+-add_subdirectory(third_party)
++find_package(double-conversion)
++find_package(re2)
++find_library(SENTENCEPIECE_LIBRARY sentencepiece PATHS $ENV{EBROOTSENTENCEPIECE}/lib64)
++find_library(SENTENCEPIECE_TRAIN_LIBRARY sentencepiece_train PATHS $ENV{EBROOTSENTENCEPIECE}/lib64)
++find_library(UTF8PROC_LIBRARY utf8proc PATHS $ENV{UTF8PROC}/lib64)
++
+ add_subdirectory(torchtext/csrc)
+diff -u text/torchtext/csrc/CMakeLists.txt.orig text/torchtext/csrc/CMakeLists.txt
+--- text/torchtext/csrc/CMakeLists.txt.orig 2023-03-08 14:11:53.387582628 +0100
++++ text/torchtext/csrc/CMakeLists.txt      2023-03-08 14:16:11.159140070 +0100
+@@ -18,10 +18,6 @@
+ set(
+   LIBTORCHTEXT_INCLUDE_DIRS
+   ${PROJECT_SOURCE_DIR}
+-  ${PROJECT_SOURCE_DIR}/third_party/sentencepiece/src
+-  $<TARGET_PROPERTY:re2,INCLUDE_DIRECTORIES>
+-  $<TARGET_PROPERTY:double-conversion,INCLUDE_DIRECTORIES>
+-  $<TARGET_PROPERTY:utf8proc,INCLUDE_DIRECTORIES>
+   ${TORCH_INSTALL_PREFIX}/include
+   ${TORCH_INSTALL_PREFIX}/include/torch/csrc/api/include
+   )
+@@ -119,10 +115,6 @@
+   set(
+     EXTENSION_INCLUDE_DIRS
+     ${PROJECT_SOURCE_DIR}
+-    ${PROJECT_SOURCE_DIR}/third_party/sentencepiece/src
+-    $<TARGET_PROPERTY:re2,INCLUDE_DIRECTORIES>
+-    $<TARGET_PROPERTY:double-conversion,INCLUDE_DIRECTORIES>
+-    $<TARGET_PROPERTY:utf8proc,INCLUDE_DIRECTORIES>
+     ${TORCH_INSTALL_PREFIX}/include
+     ${TORCH_INSTALL_PREFIX}/include/torch/csrc/api/include
+     )

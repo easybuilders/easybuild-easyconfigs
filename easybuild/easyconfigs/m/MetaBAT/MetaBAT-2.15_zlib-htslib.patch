@@ -1,0 +1,35 @@
+avoid downloading and building of zlib and htslib, since they're provided as dependencies by EasyBuild
+author: Kenneth Hoste (HPC-UGent)
+--- berkeleylab-metabat-0db17a40717d/CMakeLists.txt.orig	2022-11-11 12:11:10.473978638 +0000
++++ berkeleylab-metabat-0db17a40717d/CMakeLists.txt	2022-11-11 12:12:34.246072148 +0000
+@@ -8,8 +8,8 @@
+ message("Installing ${CMAKE_BUILD_TYPE} MetaBAT into ${CMAKE_INSTALL_PREFIX}")
+ 
+ include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
+-include(cmake/zlib.cmake)
+-include(cmake/htslib.cmake)
++set(zlib_LIB ${ZLIB_LIBRARY})
++set(htslib_LIB ${HTSLIB_LIBRARY})
+ 
+ set(CMAKE_CXX_STANDARD 11)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+--- berkeleylab-metabat-0db17a40717d/src/CMakeLists.txt.orig	2022-11-11 12:23:52.313823937 +0000
++++ berkeleylab-metabat-0db17a40717d/src/CMakeLists.txt	2022-11-11 12:24:18.424465217 +0000
+@@ -36,7 +36,7 @@
+ foreach(target ${targets})
+ 
+    add_executable(${target} ${target}.cpp)
+-   add_dependencies(${target} htslib zlib check_git_repository)
++   add_dependencies(${target} check_git_repository)
+    target_link_libraries(${target} ${zlib_LIB} ${Boost_LIBRARIES} ${EXTRALIBS} ) 
+ 
+ endforeach()
+@@ -48,7 +48,7 @@
+ set(targets jgi_summarize_bam_contig_depths contigOverlaps)
+ foreach(target ${targets})
+    add_executable(${target} ${target}.cpp)
+-   add_dependencies(${target} htslib zlib check_git_repository)
++   add_dependencies(${target} check_git_repository)
+    target_link_libraries(${target} ${htslib_LIB} ${zlib_LIB} ${Boost_LIBRARIES} ) 
+ endforeach()
+ 

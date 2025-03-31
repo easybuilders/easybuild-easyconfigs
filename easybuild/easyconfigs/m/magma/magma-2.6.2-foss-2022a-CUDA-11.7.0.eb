@@ -1,0 +1,44 @@
+easyblock = 'CMakeMake'
+
+name = 'magma'
+version = '2.6.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://icl.cs.utk.edu/magma/'
+description = """The MAGMA project aims to develop a dense linear algebra library similar to
+ LAPACK but for heterogeneous/hybrid architectures, starting with current Multicore+GPU systems."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = ['https://icl.cs.utk.edu/projectsfiles/%(name)s/downloads/']
+sources = [SOURCE_TAR_GZ]
+patches = ['%(name)s-%(version_major_minor)s.1_allow-all-sms.patch']
+checksums = [
+    '75b554dab00903e2d10b972c913e50e7f88cbc62f3ae432b5a086c7e4eda0a71',  # %(name)s-%(version)s.tar.gz
+    # %(name)s-%(version_major_minor)s.1_allow-all-sms.patch
+    'b89285bac007b68e88e3b5ddbb7f94dbc8a9d77590e58c352e477574d8dca738',
+]
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+]
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('UCX-CUDA', '1.12.1', versionsuffix),
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['3.5', '5.0', '6.0', '7.0', '7.5', '8.0', '8.6']
+
+# make sure both static and shared libs are built
+configopts = [
+    '-DBUILD_SHARED_LIBS=%s -DGPU_TARGET="%%(cuda_sm_space_sep)s" ' % local_shared for local_shared in ('ON', 'OFF')
+]
+
+sanity_check_paths = {
+    'files': ['lib/libmagma.%s' % SHLIB_EXT, 'lib/libmagma.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'

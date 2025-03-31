@@ -1,0 +1,217 @@
+This allows to process any sm_xx passed to GPU_TARGET. Previously some were silently ignored
+See https://bitbucket.org/icl/magma/issues/32/list-of-whitelisted-sm_-values-for-cuda-is
+and https://bitbucket.org/icl/magma/pull-requests/5
+
+Author: Alexander Grund (TU Dresden)
+Updated to 2.6.1: micketeer@gmail.com
+Updated to 2.7.2: Alexandre Strube (JSC)
+
+--- CMakeLists.txt.orig	2023-09-15 09:54:41.000000000 +0000
++++ CMakeLists.txt	2023-09-15 10:01:07.000000000 +0000
+@@ -140,161 +140,14 @@
+ 
+     include_directories( ${CUDAToolkit_INCLUDE_DIRS} )
+ 
+-    if (GPU_TARGET MATCHES Fermi)
+-        set( GPU_TARGET "${GPU_TARGET} sm_20" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES Kepler)
+-        set( GPU_TARGET "${GPU_TARGET} sm_30 sm_35 sm_37" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES Maxwell)
+-        set( GPU_TARGET "${GPU_TARGET} sm_50" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES Pascal)
+-        set( GPU_TARGET "${GPU_TARGET} sm_60" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES Volta)
+-        set( GPU_TARGET "${GPU_TARGET} sm_70" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES Turing)
+-        set( GPU_TARGET "${GPU_TARGET} sm_75" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES Ampere)
+-        set( GPU_TARGET "${GPU_TARGET} sm_80" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES Hopper)
+-        set( GPU_TARGET "${GPU_TARGET} sm_90" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_20)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 200 )
+-        endif()
+-        list(APPEND __cuda_architectures 20)
+-        message( STATUS "    compile for CUDA arch 2.0 (Fermi)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_30)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 300 )
+-        endif()
+-        list(APPEND __cuda_architectures 30)
+-        message( STATUS "    compile for CUDA arch 3.0 (Kepler)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_35)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 300 )
+-        endif()
+-        list(APPEND __cuda_architectures 35)
+-        message( STATUS "    compile for CUDA arch 3.5 (Kepler)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_37)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 300 )
+-        endif()
+-        list(APPEND __cuda_architectures 37)
+-        message( STATUS "    compile for CUDA arch 3.7 (Kepler)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_50)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 500 )
+-        endif()
+-        list(APPEND __cuda_architectures 50)
+-        message( STATUS "    compile for CUDA arch 5.0 (Maxwell)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_52)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 520 )
+-        endif()
+-        list(APPEND __cuda_architectures 52)
+-        message( STATUS "    compile for CUDA arch 5.2 (Maxwell)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_53)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 530 )
+-        endif()
+-        list(APPEND __cuda_architectures 53)
+-        message( STATUS "    compile for CUDA arch 5.3 (Maxwell)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_60)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 600 )
+-        endif()
+-        list(APPEND __cuda_architectures 60)
+-        message( STATUS "    compile for CUDA arch 6.0 (Pascal)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_61)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 610 )
+-        endif()
+-        list(APPEND __cuda_architectures 61)
+-        message( STATUS "    compile for CUDA arch 6.1 (Pascal)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_62)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 620 )
+-        endif()
+-        list(APPEND __cuda_architectures 62)
+-        message( STATUS "    compile for CUDA arch 6.2 (Pascal)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_70)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 700 )
+-        endif()
+-        list(APPEND __cuda_architectures 70)
+-        message( STATUS "    compile for CUDA arch 7.0 (Volta)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_71)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 710 )
+-        endif()
+-        list(APPEND __cuda_architectures 71)
+-        message( STATUS "    compile for CUDA arch 7.1 (Volta)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_75)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 750 )
+-        endif()
+-        list(APPEND __cuda_architectures 75)
+-        message( STATUS "    compile for CUDA arch 7.5 (Turing)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_80)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 800 )
+-        endif()
+-        list(APPEND __cuda_architectures 80)
+-        message( STATUS "    compile for CUDA arch 8.0 (Ampere)" )
+-    endif()
+-
+-    if (GPU_TARGET MATCHES sm_90)
+-        if (NOT MIN_ARCH)
+-            set( MIN_ARCH 900 )
+-        endif()
+-        list(APPEND __cuda_architectures 90)
+-        message( STATUS "    compile for CUDA arch 9.0 (Hopper)" )
+-    endif()
+-
+-    if (NOT MIN_ARCH)
+-        message( FATAL_ERROR "GPU_TARGET must contain one or more of Fermi, Kepler, Maxwell, Pascal, Volta, Turing, Ampere, or valid sm_[0-9][0-9]" )
+-    endif()
++    # NVCC options for the different cards
++    # sm_xx is binary, compute_xx is PTX for forward compatability
++    # MIN_SM/MAX_SM is lowest/highest requested version
++    # NV_SM    accumulates sm_xx for all requested versions
++    # NV_COMP  is compute_xx for highest requested version
++    set( MIN_SM 99 )
++    set( MAX_SM 0 )
++    set( NV_SM    "" )
+ 
+     set(CUDA_ARCHITECTURES "${__cuda_architectures}")
+ 
+@@ -312,8 +312,34 @@
+         )
+     endif(COMPILER_SUPPORTS_FPIC)
+ 
+-    set(MAGMA_HAVE_CUDA "1")
+-    set(MAGMA_CUDA_ARCH_MIN "${MIN_ARCH}")
++    string( REGEX MATCHALL "sm_[0-9][0-9]" sms "${GPU_TARGET}" )
++    list( SORT sms ) # To make output easier to reason about
++    foreach (sm IN LISTS sms)
++        string( REPLACE "sm_" "" sm "${sm}") # Remove sm_ prefix
++        if (sm LESS MIN_SM)
++            set( MIN_SM "${sm}" )
++        endif()
++        if (sm GREATER MAX_SM)
++            set( MAX_SM "${sm}" )
++        endif()
++        list( APPEND NV_SM -gencode arch=compute_${sm},code=sm_${sm} )
++        string( REGEX REPLACE "([0-9])([0-9])" "\\1.\\2" cuda_arch "${sm}" )
++        message( STATUS "    compile for CUDA arch ${cuda_arch}" )
++    endforeach()
++
++    if (NOT NV_SM)
++        message( FATAL_ERROR
++                 "GPU_TARGET must contain one or more of "
++                 "Fermi, Kepler, Maxwell, Pascal, Volta, Turing, Ampere, or valid sm_[0-9][0-9]"
++                 "Was: ${GPU_TARGET}" )
++    endif()
++
++    set( MIN_ARCH ${MIN_SM}0 )
++    set( NV_COMP -gencode arch=compute_${MAX_SM},code=compute_${MAX_SM} )
++
++    list( APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC ${NV_SM} ${NV_COMP} ${FORTRAN_CONVENTION} )
++    add_definitions( -DMAGMA_HAVE_CUDA=1 )
++    add_definitions( -DMAGMA_CUDA_ARCH_MIN=${MIN_ARCH} )
+     message( STATUS "Define -DMAGMA_HAVE_CUDA -DMAGMA_CUDA_ARCH_MIN=${MIN_ARCH}" )
+   else()
+     message( STATUS "Could not find CUDA" )

@@ -1,0 +1,143 @@
+Fix installed CMake config files.
+From https://patch-diff.githubusercontent.com/raw/jbeder/yaml-cpp/pull/1077
+
+From a339bea6bb7bd461a41e874f78b46a5af98277ff Mon Sep 17 00:00:00 2001
+From: Felix <flx107809@gmail.com>
+Date: Thu, 30 Dec 2021 12:53:31 +0100
+Subject: [PATCH 1/2] untabify CMakeLists.txt in some places
+
+This is to align with the other code parts in this file.
+---
+ CMakeLists.txt | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f65efefa..6adbf45a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -141,30 +141,30 @@ write_basic_package_version_file(
+ configure_file(yaml-cpp.pc.in yaml-cpp.pc @ONLY)
+ 
+ if (YAML_CPP_INSTALL)
+-	install(TARGETS yaml-cpp
++  install(TARGETS yaml-cpp
+     EXPORT yaml-cpp-targets
+     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+-	install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
++  install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+-		FILES_MATCHING PATTERN "*.h")
++                FILES_MATCHING PATTERN "*.h")
+   install(EXPORT yaml-cpp-targets
+     DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/yaml-cpp")
+-	install(FILES
+-		"${PROJECT_BINARY_DIR}/yaml-cpp-config.cmake"
+-		"${PROJECT_BINARY_DIR}/yaml-cpp-config-version.cmake"
++  install(FILES
++                "${PROJECT_BINARY_DIR}/yaml-cpp-config.cmake"
++                "${PROJECT_BINARY_DIR}/yaml-cpp-config-version.cmake"
+     DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/yaml-cpp")
+   install(FILES "${PROJECT_BINARY_DIR}/yaml-cpp.pc"
+     DESTINATION ${CMAKE_INSTALL_DATADIR}/pkgconfig)
+ endif()
+ 
+ if(YAML_CPP_BUILD_TESTS)
+-	add_subdirectory(test)
++  add_subdirectory(test)
+ endif()
+ 
+ if(YAML_CPP_BUILD_TOOLS)
+-	add_subdirectory(util)
++  add_subdirectory(util)
+ endif()
+ 
+ if (YAML_CPP_CLANG_FORMAT_EXE)
+
+From c1f987850a6282435f499bee76b12e32d7472f12 Mon Sep 17 00:00:00 2001
+From: Felix <flx107809@gmail.com>
+Date: Thu, 30 Dec 2021 15:35:54 +0100
+Subject: [PATCH 2/2] fix cmake export
+
+After configure the file `yaml-cpp-config.cmake.in` the result ends up with
+empty variables.  (see also the discussion in #774).
+
+Rework this file and the call to `configure_package_config_file` according the
+cmake documentation
+(https://cmake.org/cmake/help/v3.22/module/CMakePackageConfigHelpers.html?highlight=configure_package_config#command:configure_package_config_file)
+to overcome this issue and allow a simple `find_package` after install.
+
+As there was some discussion about the place where to install the
+`yaml-cpp-config.cmake` file, e.g. #1055, factor out the install location into
+an extra variable to make it easier changing this location in the future.
+---
+ CMakeLists.txt           | 17 ++++++++++++-----
+ yaml-cpp-config.cmake.in | 10 ++++++----
+ 2 files changed, 18 insertions(+), 9 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6adbf45a..e9310792 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -129,10 +129,16 @@ set_target_properties(yaml-cpp PROPERTIES
+   PROJECT_LABEL "yaml-cpp ${yaml-cpp-label-postfix}"
+   DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}")
+ 
++# FIXME(felix2012): A more common place for the cmake export would be
++# `CMAKE_INSTALL_LIBDIR`, as e.g. done in ubuntu or in this project for GTest
++set(CONFIG_EXPORT_DIR "${CMAKE_INSTALL_DATADIR}/cmake/yaml-cpp")
++set(EXPORT_TARGETS yaml-cpp)
+ configure_package_config_file(
+   "${PROJECT_SOURCE_DIR}/yaml-cpp-config.cmake.in"
+   "${PROJECT_BINARY_DIR}/yaml-cpp-config.cmake"
+-  INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/yaml-cpp")
++  INSTALL_DESTINATION "${CONFIG_EXPORT_DIR}"
++  PATH_VARS CMAKE_INSTALL_INCLUDEDIR CONFIG_EXPORT_DIR)
++unset(EXPORT_TARGETS)
+ 
+ write_basic_package_version_file(
+   "${PROJECT_BINARY_DIR}/yaml-cpp-config-version.cmake"
+@@ -150,14 +156,15 @@ if (YAML_CPP_INSTALL)
+     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+                 FILES_MATCHING PATTERN "*.h")
+   install(EXPORT yaml-cpp-targets
+-    DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/yaml-cpp")
++    DESTINATION "${CONFIG_EXPORT_DIR}")
+   install(FILES
+-                "${PROJECT_BINARY_DIR}/yaml-cpp-config.cmake"
+-                "${PROJECT_BINARY_DIR}/yaml-cpp-config-version.cmake"
+-    DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/yaml-cpp")
++      "${PROJECT_BINARY_DIR}/yaml-cpp-config.cmake"
++      "${PROJECT_BINARY_DIR}/yaml-cpp-config-version.cmake"
++    DESTINATION "${CONFIG_EXPORT_DIR}")
+   install(FILES "${PROJECT_BINARY_DIR}/yaml-cpp.pc"
+     DESTINATION ${CMAKE_INSTALL_DATADIR}/pkgconfig)
+ endif()
++unset(CONFIG_EXPORT_DIR)
+ 
+ if(YAML_CPP_BUILD_TESTS)
+   add_subdirectory(test)
+diff --git a/yaml-cpp-config.cmake.in b/yaml-cpp-config.cmake.in
+index 7b41e3f3..a7ace3dc 100644
+--- a/yaml-cpp-config.cmake.in
++++ b/yaml-cpp-config.cmake.in
+@@ -3,12 +3,14 @@
+ #  YAML_CPP_INCLUDE_DIR - include directory
+ #  YAML_CPP_LIBRARIES    - libraries to link against
+ 
+-# Compute paths
+-get_filename_component(YAML_CPP_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+-set(YAML_CPP_INCLUDE_DIR "@CONFIG_INCLUDE_DIRS@")
++@PACKAGE_INIT@
++
++set_and_check(YAML_CPP_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+ 
+ # Our library dependencies (contains definitions for IMPORTED targets)
+-include("${YAML_CPP_CMAKE_DIR}/yaml-cpp-targets.cmake")
++include(@PACKAGE_CONFIG_EXPORT_DIR@/yaml-cpp-targets.cmake)
+ 
+ # These are IMPORTED targets created by yaml-cpp-targets.cmake
+ set(YAML_CPP_LIBRARIES "@EXPORT_TARGETS@")
++
++check_required_components(@EXPORT_TARGETS@)

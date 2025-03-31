@@ -1,0 +1,52 @@
+easyblock = 'MakeCp'
+name = 'CCL'
+version = '1.12.2'
+
+homepage = 'https://ccl.clozure.com/'
+description = """Clozure CL (often called CCL for short) is a free Common Lisp
+ implementation with a long history. Some distinguishing features of the implementation
+ include fast compilation speed, native threads, a precise, generational, compacting
+ garbage collector, and a convenient foreign-function interface."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ['https://github.com/Clozure/ccl/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s-linuxx86.tar.gz']
+checksums = ['a94fda3daf26ce8c3d08e0db0e6e9907995acc10e0f8aad2125790b93eaa1556']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('M4', '1.4.19'),
+]
+
+local_ccl_bin = 'lx86cl64'
+local_ccl_dirs = [
+    'compiler', 'level-0', 'level-1', 'lib', 'library', 'lisp-kernel', 'scripts', 'tools', 'xdump', 'x86-headers64'
+]
+
+# Build the kernel
+buildopts = "-C lisp-kernel/linuxx8664 all CC=${CC} && "
+# Rebuild CCL
+buildopts += "./%s -n -b -Q -e '(ccl:rebuild-ccl :full t)' -e '(ccl:quit)'" % local_ccl_bin
+
+files_to_copy = [local_ccl_bin, '%s.image' % local_ccl_bin] + local_ccl_dirs
+
+postinstallcmds = [
+    # Cleanup of build files
+    "find %(installdir)s -type f -name '*fsl' -delete",
+    "find %(installdir)s/lisp-kernel -type f -name '*.o' -delete",
+    # Link executable with generic name
+    "mkdir %(installdir)s/bin",
+    "cd %%(installdir)s/bin && ln -s ../%s ccl" % local_ccl_bin,
+]
+
+sanity_check_paths = {
+    'files': [local_ccl_bin, '%s.image' % local_ccl_bin, 'bin/ccl'],
+    'dirs': local_ccl_dirs,
+}
+
+sanity_check_commands = ["ccl --help"]
+
+modextrapaths = {'CCL_DEFAULT_DIRECTORY': ''}
+
+moduleclass = 'lang'

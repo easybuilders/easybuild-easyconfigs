@@ -1,0 +1,105 @@
+easyblock = 'Bundle'
+
+name = 'MAKER'
+version = '3.01.04'
+
+homepage = 'https://yandell-lab.org/software/maker.html'
+description = """
+MAKER is a portable and easily configurable genome annotation pipeline. Its
+purpose is to allow smaller eukaryotic and prokaryotic genome projects to
+independently annotate their genomes and to create genome databases.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [('binutils', '2.38')]
+
+dependencies = [
+    ('Perl', '5.34.1'),
+    ('BioPerl', '1.7.8'),
+    ('BLAST+', '2.13.0'),
+    ('SNAP-HMM', '20221022'),
+    ('RepeatMasker', '4.1.4'),
+    ('Exonerate', '2.4.0'),
+    # optional:
+    ('AUGUSTUS', '3.5.0'),
+    ('GeneMark-ET', '4.71'),
+]
+
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+_libdir = 'lib/perl5/site_perl/%(perlver)s'
+
+exts_list = [
+    ('Acme::Damn', '0.08', {
+        'source_tmpl': 'Acme-Damn-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/I/IB/IBB'],
+        'checksums': ['310d2d03ff912dcd42e4d946174099f41fe3a2dd57a497d6bd65baf1759b7e0e'],
+    }),
+    ('Sys::SigAction', '0.23', {
+        'source_tmpl': 'Sys-SigAction-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/L/LB/LBAXTER'],
+        'checksums': ['c4ef6c9345534031fcbbe2adc347fc7194d47afc945e7a44fac7e9563095d353'],
+    }),
+    ('forks', '0.36', {
+        'source_tmpl': 'forks-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RY/RYBSKEJ'],
+        'checksums': ['61be24e44f4c6fea230e8354678beb5b7adcfefd909a47db8f0a251b0ab65993'],
+    }),
+    ('Perl::Unsafe::Signals', '0.03', {
+        'source_tmpl': 'Perl-Unsafe-Signals-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RG/RGARCIA'],
+        'checksums': ['d311ae7d73e8d0c2346dfacb82aa952322e70cd928b09d502d739e60e35f829d'],
+    }),
+    ('Bit::Vector', '7.4', {
+        'source_tmpl': 'Bit-Vector-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/S/ST/STBEY'],
+        'checksums': ['3c6daa671fecfbc35f92a9385b563d65f50dfc6bdc8b4805f9ef46c0d035a926'],
+    }),
+    ('Inline::C', '0.82', {
+        'source_tmpl': 'Inline-C-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/E/ET/ETJ'],
+        'checksums': ['10fbcf1e158d1c8d77e1dd934e379165b126a45c13645ad0be9dc07d151dd0cc'],
+    }),
+    ('IO::All', '0.87', {
+        'source_tmpl': 'IO-All-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/F/FR/FREW'],
+        'checksums': ['54e21d250c0229127e30b77a3461e10077854ec244f26fb670f1b445ed4c4d5b'],
+    }),
+    ('IO::Prompt', '0.997004', {
+        'source_tmpl': 'IO-Prompt-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DC/DCONWAY'],
+        'checksums': ['f17bb305ee6ac8b5b203e6d826eb940c4f3f6d6f4bfe719c3b3a225f46f58615'],
+    }),
+    (name, version, {
+        'modulename': False,
+        # fix hardcoded paths to libraries
+        'preinstallopts': r"find ../ -type f -exec sed -i 's|RealBin/\.\./lib|RealBin/../%s|g' {} \; && " % _libdir,
+        'postinstallcmds': [
+            'cp -a ../bin %(installdir)s/',
+            'cp -an blib/lib/* ../lib/* %%(installdir)s/%s/' % _libdir,
+        ],
+        'source_tmpl': 'Version_%(version)s.tar.gz',
+        'source_urls': ['https://github.com/Yandell-Lab/maker/archive/refs/tags/'],
+        'start_dir': 'src',
+        'checksums': ['b9513585c90dc88288e903aff87bfddc7a66a39ec2b79619465ca7d679021fa7'],
+    }),
+]
+
+modextrapaths = {
+    'PERL5LIB': _libdir,
+}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['bin', _libdir],
+}
+
+sanity_check_commands = [
+    'maker --help',
+    'maker2zff --help',
+    'fasta_tool',
+]
+
+moduleclass = 'bio'
