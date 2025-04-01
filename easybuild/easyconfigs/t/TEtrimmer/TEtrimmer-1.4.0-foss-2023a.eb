@@ -1,4 +1,4 @@
-easyblock = 'Bundle'
+easyblock = 'PythonBundle'
 
 name = 'TEtrimmer'
 version = '1.4.0'
@@ -46,27 +46,17 @@ dependencies = [
     ('Ghostscript', '10.01.2'),
 ]
 
-
-default_easyblock = 'PackedBinary'
-
 components = [
     (name, version, {
+        'easyblock': 'PackedBinary',
         'source_urls': ['https://github.com/qjiangzhao/TEtrimmer/archive/refs/tags/'],
         'sources': ['v%(version)s.tar.gz'],
         'checksums': ['973eb61d3fd23677a38d14328ea0b4f8f38508b1af9a4ea52c137e460238a626'],
     }),
 ]
 
-exts_defaultclass = 'PythonPackage'
-
-exts_default_options = {
-    'source_urls': [PYPI_SOURCE],
-    'use_pip': True,
-    'sanity_pip_check': True,
-}
-
 modextrapaths = {
-    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages:tetrimmer'],
+    'PYTHONPATH': ['tetrimmer'],
     'PATH': ['tetrimmer'],
 }
 
@@ -86,6 +76,8 @@ exts_list = [
 postinstallcmds = [
     r"""sed -i 's|iqtree_command = \["iqtree"|iqtree_command = \["iqtree2"|' %(installdir)s/tetrimmer/MSAcluster.py""",
     "chmod +x %(installdir)s/tetrimmer/*.py",
+    # avoid changing file permissions
+    "sed -i 's/change_permission =.*/change_permission = True/' %(installdir)s/tetrimmer/TEtrimmer.py",
     "cd %(installdir)s/tetrimmer && ln -s TEtrimmer.py TEtrimmer",
 ]
 
