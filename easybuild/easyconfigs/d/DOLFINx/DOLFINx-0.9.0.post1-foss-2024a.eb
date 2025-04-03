@@ -1,0 +1,65 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'DOLFINx'
+version = '0.9.0.post1'
+
+homepage = 'https://github.com/FEniCS/dolfinx'
+description = """DOLFINx is the computational environment of [FEniCSx](https://fenicsproject.org/),
+and implements the FEniCS Problem Solving Environment in C++ and Python. DOLFINx is a new version of
+DOLFIN and is actively developed. Documentation can be viewed at https://docs.fenicsproject.org."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = ['https://github.com/FEniCS/dolfinx/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['2bba19954eeb8a048493327037723b9bad9d945f74b71b1c5680faf47c6dbab5']
+
+builddependencies = [
+    ('pkgconf', '2.2.0'),
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+    ('scikit-build-core', '0.11.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('spdlog', '1.12.0'),
+    ('pugixml', '1.15'),
+    ('Boost', '1.85.0'),
+    ('PETSc', '3.22.4'),
+    ('SLEPc', '3.22.2'),
+    ('ParMETIS', '4.0.3'),
+    ('HDF5', '1.14.5'),
+    ('SCOTCH', '7.0.6'),
+    ('KaHIP', '3.18'),
+    ('Basix', '0.9.0'),
+    ('FFCx', '0.9.0')
+]
+
+start_dir = 'cpp'
+parallel = 8
+
+preconfigopts = 'Basix_DIR=$EBROOTBASIX/lib/python3.12/site-packages/basix/lib/cmake/basix'
+
+sanity_check_paths = {
+    'files': ['include/dolfinx.h', 'lib64/dolfinx/dolfinx.conf', 'lib64/libdolfinx.so'],
+    'dirs': ['include/dolfinx', 'lib/cmake/dolfinx']
+}
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [('fenics-dolfinx', version, {
+    'modulename': 'dolfinx',
+    'nosource': True,
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'preinstallopts': 'DOLFINX_DIR=%(installdir)s',
+    'start_dir': '../python',
+})]
+
+modextrapaths = {
+    'DOLFINX_DIR': '.',
+    'CMAKE_PREFIX_PATH': 'lib64/cmake/%(namelower)s',
+}
+
+moduleclass = 'numlib'
