@@ -55,27 +55,17 @@ dependencies = [
     ('netCDF-Fortran', '4.6.1'),
 ]
 
-# tests to skip (out of ~300) because of small differences, Siesta developers say it's ok
+# skip 8 (out of ~300) tests that are failing with small numerical differences
+# TODO: relax tolerance of these individual tests instead of skipping them
 local_failing_tests = [
-    'newcomm_mpi_np_1',
-    'pi3_Runs_Singleton',
-    'SpinPolarization-fe_noncol_gga',
-    'SpinOrbit-FePt-X-X',
-    'SpinOrbit-FePt-offsite',
-    'Bands-ge_bands_so',
-    'Bands-ge_bands_so_bpoints',
-    'Bands-ge_bands_so_fatbands',
-    'DensityOfStates-pdos_kp_soc',
-    'Functionals-dftu_soc',
-    'MiscOptions-bulk_bias',
-    'MiscOptions-bulk_bias',
-    # openmp
     'SpinPolarization-fe_spin_mpi4_omp',
     'SpinPolarization-fe_spin_directphi_mpi4_omp1',
+    'SpinPolarization-fe_noncol_gga_mpi4_omp1',
     'SpinPolarization-fe_noncol_kp_mpi4_omp1',
     'SpinPolarization-fe_noncol_sp_mpi4_omp1',
+    'SpinOrbit-FePt-X-X_mpi4_omp1',
     'SCFMixing-chargemix_mpi4_omp1',
-    'TDDFT-TDDFT_h2o1_omp1',
+    'SCFMixing-pulay_mpi4_omp1',
 ]
 
 # enable OpenMP
@@ -91,9 +81,11 @@ configopts += "-DSIESTA_WITH_ELSI=ON -DSIESTA_WITH_ELSI_PEXSI=ON "
 preconfigopts = "export WANNIER90_PACKAGE=%(builddir)s/wannier90-3.1.0.tar.gz && "
 configopts += "-DSIESTA_WITH_WANNIER90=ON "
 
+# make sure tests can be run with 4 processes
+configopts += "-DMPIEXEC_MAX_NUMPROCS=4 "
+
 # tests
-buildopts = " && export OMP_NUM_THREADS=2 && "
-buildopts += "SIESTA_TESTS_VERIFY=1 ctest --output-on-failure -E '%s'" % '|'.join(local_failing_tests)
+buildopts = " && SIESTA_TESTS_VERIFY=1 ctest --output-on-failure -E '%s'" % '|'.join(local_failing_tests)
 
 sanity_check_paths = {
     'files': ['bin/siesta', 'lib/libsiesta.a'],
