@@ -5,18 +5,28 @@ Backport of https://github.com/pytorch/pytorch/pull/128212
 Author: Alexander Grund (TU Dresden)
 
 diff --git a/torch/csrc/distributed/c10d/init.cpp b/torch/csrc/distributed/c10d/init.cpp
-index 8056008579c..83d645eb62b 100644
+index 8056008579c..1d165dcbdfb 100644
 --- a/torch/csrc/distributed/c10d/init.cpp
 +++ b/torch/csrc/distributed/c10d/init.cpp
-@@ -997,6 +997,7 @@ Example::
+@@ -997,16 +997,18 @@ Example::
                   const std::string& key,
                   const std::string& expected_value,
                   const std::string& desired_value) -> py::bytes {
-+                py::gil_scoped_release guard;
-                 std::vector<uint8_t> expectedValue_(
-                     expected_value.begin(), expected_value.end());
-                 std::vector<uint8_t> desiredValue_(
-@@ -1006,7 +1007,6 @@ Example::
+-                std::vector<uint8_t> expectedValue_(
+-                    expected_value.begin(), expected_value.end());
+-                std::vector<uint8_t> desiredValue_(
+-                    desired_value.begin(), desired_value.end());
+-                auto value =
+-                    store.compareSet(key, expectedValue_, desiredValue_);
++                auto value = [&]() {
++                    py::gil_scoped_release guard;
++                    std::vector<uint8_t> expectedValue_(
++                        expected_value.begin(), expected_value.end());
++                    std::vector<uint8_t> desiredValue_(
++                        desired_value.begin(), desired_value.end());
++                    return store.compareSet(
++                        key, expectedValue_, desiredValue_);
++                }();
                  return py::bytes(
                      reinterpret_cast<char*>(value.data()), value.size());
                },
