@@ -1,0 +1,144 @@
+--- ./CMakeLists.txt.orig	2025-04-10 20:18:26.389745671 +0000
++++ ./CMakeLists.txt	2025-04-10 20:18:13.727621962 +0000
+@@ -234,18 +234,20 @@
+ endif()
+ 
+ # GSL - adding /usr/local/include so all targets that use GSL_INCLUDES get omp.h
+-set(TARGET_NAME_GSL gsl)
+-file(GLOB_RECURSE GSL_SOURCES ${PROJECT_SOURCE_DIR}/gsl/*.c ${PROJECT_SOURCE_DIR}/gsl/*/*.c)
+-set(GSL_INCLUDES ${PROJECT_SOURCE_DIR}/gsl ${PROJECT_SOURCE_DIR}/gsl/specfunc ${PROJECT_SOURCE_DIR}/gsl/blas ${PROJECT_SOURCE_DIR}/gsl/rng ${PROJECT_SOURCE_DIR}/gsl/cdf ${PROJECT_SOURCE_DIR}/gsl/vector ${PROJECT_SOURCE_DIR}/gsl/err ${PROJECT_SOURCE_DIR}/gsl/sys ${PROJECT_SOURCE_DIR}/gsl/randist ${PROJECT_SOURCE_DIR}/gsl/matrix ${PROJECT_SOURCE_DIR}/gsl/cblas ${PROJECT_SOURCE_DIR}/gsl/complex ${PROJECT_SOURCE_DIR}/gsl/block ${PROJECT_SOURCE_DIR}/gsl/interpolation ${PROJECT_SOURCE_DIR}/gsl/linalg /usr/local/include)
+-add_library(${TARGET_NAME_GSL} STATIC ${GSL_SOURCES})
+-target_include_directories(${TARGET_NAME_GSL} PUBLIC ${GSL_INCLUDES})
++# Use external GSL instead
++#set(TARGET_NAME_GSL gsl)
++#file(GLOB_RECURSE GSL_SOURCES ${PROJECT_SOURCE_DIR}/gsl/*.c ${PROJECT_SOURCE_DIR}/gsl/*/*.c)
++#set(GSL_INCLUDES ${PROJECT_SOURCE_DIR}/gsl ${PROJECT_SOURCE_DIR}/gsl/specfunc ${PROJECT_SOURCE_DIR}/gsl/blas ${PROJECT_SOURCE_DIR}/gsl/rng ${PROJECT_SOURCE_DIR}/gsl/cdf ${PROJECT_SOURCE_DIR}/gsl/vector ${PROJECT_SOURCE_DIR}/gsl/err ${PROJECT_SOURCE_DIR}/gsl/sys ${PROJECT_SOURCE_DIR}/gsl/randist ${PROJECT_SOURCE_DIR}/gsl/matrix ${PROJECT_SOURCE_DIR}/gsl/cblas ${PROJECT_SOURCE_DIR}/gsl/complex ${PROJECT_SOURCE_DIR}/gsl/block ${PROJECT_SOURCE_DIR}/gsl/interpolation ${PROJECT_SOURCE_DIR}/gsl/linalg /usr/local/include)
++#add_library(${TARGET_NAME_GSL} STATIC ${GSL_SOURCES})
++#target_include_directories(${TARGET_NAME_GSL} PUBLIC ${GSL_INCLUDES})
+ 
+ # ZLIB
+-set(TARGET_NAME_ZLIB eidos_zlib)
+-file(GLOB_RECURSE ZLIB_SOURCES ${PROJECT_SOURCE_DIR}/eidos_zlib/*.c)
+-set(ZLIB_INCLUDES ${PROJECT_SOURCE_DIR}/eidos_zlib)
+-add_library(${TARGET_NAME_ZLIB} STATIC ${ZLIB_SOURCES})
+-target_include_directories(${TARGET_NAME_ZLIB} PUBLIC)
++# Use external GSL instead
++#set(TARGET_NAME_ZLIB eidos_zlib)
++#file(GLOB_RECURSE ZLIB_SOURCES ${PROJECT_SOURCE_DIR}/eidos_zlib/*.c)
++#set(ZLIB_INCLUDES ${PROJECT_SOURCE_DIR}/eidos_zlib)
++#add_library(${TARGET_NAME_ZLIB} STATIC ${ZLIB_SOURCES})
++#target_include_directories(${TARGET_NAME_ZLIB} PUBLIC)
+ 
+ # KASTORE
+ set(TARGET_NAME_KASTORE kastore)
+@@ -279,7 +281,7 @@
+ 
+ add_executable(${TARGET_NAME_SLIM} ${SLIM_SOURCES})
+ target_include_directories(${TARGET_NAME_SLIM} PRIVATE ${GSL_INCLUDES} "${PROJECT_SOURCE_DIR}/core" "${PROJECT_SOURCE_DIR}/eidos")
+-target_link_libraries(${TARGET_NAME_SLIM} PUBLIC gsl eidos_zlib tables)
++target_link_libraries(${TARGET_NAME_SLIM} PUBLIC gsl gslcblas z tables)
+ if(PARALLEL)
+ 	# linking in the OpenMP library is maybe automatic with gcc?
+ 	#target_link_libraries(${TARGET_NAME_SLIM} PUBLIC omp)
+@@ -301,7 +303,7 @@
+ file(GLOB_RECURSE EIDOS_SOURCES  ${PROJECT_SOURCE_DIR}/eidos/*.cpp  ${PROJECT_SOURCE_DIR}/eidostool/*.cpp)
+ add_executable(${TARGET_NAME_EIDOS} ${EIDOS_SOURCES})
+ target_include_directories(${TARGET_NAME_EIDOS} PRIVATE ${GSL_INCLUDES} "${PROJECT_SOURCE_DIR}/eidos")
+-target_link_libraries(${TARGET_NAME_EIDOS} PUBLIC gsl eidos_zlib tables)
++target_link_libraries(${TARGET_NAME_EIDOS} PUBLIC gsl gslcblas z tables)
+ if(PARALLEL)
+ 	# linking in the OpenMP library is maybe automatic with gcc?
+ 	#target_link_libraries(${TARGET_NAME_EIDOS} PUBLIC omp)
+@@ -378,15 +380,15 @@
+   
+   # Operating System-specific install stuff.
+   if(APPLE)
+-    target_link_libraries( ${TARGET_NAME_SLIMGUI} PUBLIC OpenGL::GL gsl tables eidos_zlib )
++    target_link_libraries( ${TARGET_NAME_SLIMGUI} PUBLIC OpenGL::GL gsl gslcblas tables z  )
+   else()
+     if(WIN32)
+       set_source_files_properties(${QTSLIM_SOURCES} PROPERTIES COMPILE_FLAGS "-include config.h")
+       set_source_files_properties(${GNULIB_NAMESPACE_SOURCES} TARGET_DIRECTORY slim eidos SLiMgui PROPERTIES COMPILE_FLAGS "-include config.h -DGNULIB_NAMESPACE=gnulib")
+       target_include_directories(${TARGET_NAME_SLIMGUI} BEFORE PUBLIC ${GNU_DIR})
+-      target_link_libraries(${TARGET_NAME_SLIMGUI} PUBLIC OpenGL::GL gsl tables eidos_zlib gnu )
++      target_link_libraries( ${TARGET_NAME_SLIMGUI} PUBLIC OpenGL::GL gsl gslcblas tables z gnu )
+     else()
+-      target_link_libraries( ${TARGET_NAME_SLIMGUI} PUBLIC OpenGL::GL gsl tables eidos_zlib )
++      target_link_libraries( ${TARGET_NAME_SLIMGUI} PUBLIC OpenGL::GL gsl gslcblas tables z )
+ 
+       # Install icons and desktop files to the data root directory (usually /usr/local/share, or /usr/share).
+       if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.14")
+--- ./eidos/eidos_globals.cpp.orig	2025-04-10 20:22:21.692043569 +0000
++++ ./eidos/eidos_globals.cpp	2025-04-10 20:24:07.441075275 +0000
+@@ -67,13 +67,13 @@
+ #endif
+ 
+ // for Eidos_WelchTTest()
+-#include "gsl_cdf.h"
++#include "gsl/gsl_cdf.h"
+ 
+ // for Eidos_calc_sha_256()
+ #include <stdint.h>
+ 
+ // for _Eidos_FlushZipBuffer()
+-#include "../eidos_zlib/zlib.h"
++#include "zlib.h"
+ 
+ // for Eidos_ColorPaletteLookup()
+ #include "eidos_tinycolormap.h"
+--- ./eidos/eidos_rng.h.orig	2025-04-10 20:25:00.099589020 +0000
++++ ./eidos/eidos_rng.h	2025-04-10 20:25:21.006792997 +0000
+@@ -29,8 +29,8 @@
+ 
+ // We have our own private copy of (parts of) the GSL library, so that we don't have link dependencies.
+ // See the _README file in the gsl directory for information on the local copy of the GSL included in this project.
+-#include "gsl_rng.h"
+-#include "gsl_randist.h"
++#include "gsl/gsl_rng.h"
++#include "gsl/gsl_randist.h"
+ 
+ #include <stdint.h>
+ #include <cmath>
+--- ./eidos/eidos_functions_distributions.cpp.orig	2025-04-10 20:20:09.127749400 +0000
++++ ./eidos/eidos_functions_distributions.cpp	2025-04-10 20:20:36.302014888 +0000
+@@ -23,9 +23,9 @@
+ 
+ #include <vector>
+ 
+-#include "gsl_linalg.h"
+-#include "gsl_errno.h"
+-#include "gsl_cdf.h"
++#include "gsl/gsl_linalg.h"
++#include "gsl/gsl_errno.h"
++#include "gsl/gsl_cdf.h"
+ 
+ 
+ // BCH 20 October 2016: continuing to try to fix problems with gcc 5.4.0 on Linux without breaking other
+--- ./eidos/eidos_functions_files.cpp.orig	2025-04-10 20:21:57.577808305 +0000
++++ ./eidos/eidos_functions_files.cpp	2025-04-10 20:22:12.613955002 +0000
+@@ -29,7 +29,7 @@
+ #include <fstream>
+ #include <sys/stat.h>
+ 
+-#include "../eidos_zlib/zlib.h"
++#include "zlib.h"
+ 
+ 
+ // ************************************************************************************
+--- core/spatial_map.cpp.orig	2025-04-10 21:36:59.709881476 +0000
++++ core/spatial_map.cpp	2025-04-10 21:48:55.505852822 +0000
+@@ -23,10 +23,10 @@
+ #include "subpopulation.h"
+ #include "eidos_class_Image.h"
+ 
+-#include "gsl_math.h"
+-#include "gsl_spline.h"
+-#include "gsl_interp2d.h"
+-#include "gsl_spline2d.h"
++#include "gsl/gsl_math.h"
++#include "gsl/gsl_spline.h"
++#include "gsl/gsl_interp2d.h"
++#include "gsl/gsl_spline2d.h"
+ 
+ #include <utility>
+ #include <string>
