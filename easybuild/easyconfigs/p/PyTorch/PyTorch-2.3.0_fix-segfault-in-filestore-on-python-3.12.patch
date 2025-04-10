@@ -1,0 +1,26 @@
+Fix a segmentation fault on Python 3.12 happening e.g. in distributed/test_store.py::FileStoreTest::test_compare_set
+
+Backport of https://github.com/pytorch/pytorch/pull/128212
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/csrc/distributed/c10d/init.cpp b/torch/csrc/distributed/c10d/init.cpp
+index 8056008579c..83d645eb62b 100644
+--- a/torch/csrc/distributed/c10d/init.cpp
++++ b/torch/csrc/distributed/c10d/init.cpp
+@@ -997,6 +997,7 @@ Example::
+                  const std::string& key,
+                  const std::string& expected_value,
+                  const std::string& desired_value) -> py::bytes {
++                py::gil_scoped_release guard;
+                 std::vector<uint8_t> expectedValue_(
+                     expected_value.begin(), expected_value.end());
+                 std::vector<uint8_t> desiredValue_(
+@@ -1006,7 +1007,6 @@ Example::
+                 return py::bytes(
+                     reinterpret_cast<char*>(value.data()), value.size());
+               },
+-              py::call_guard<py::gil_scoped_release>(),
+               R"(
+ Inserts the key-value pair into the store based on the supplied ``key`` and
+ performs comparison between ``expected_value`` and ``desired_value`` before inserting. ``desired_value``
