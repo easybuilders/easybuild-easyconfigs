@@ -40,9 +40,21 @@ exts_list = [
     }),
 ]
 
+# download data to bin to let lts commnad works with immutable installdir and link greedy to bin/binaries
+postinstallcmds = [
+    'export PYTHONPATH=%(installdir)s/lib/python3.11/site-packages:$PYTHONPATH && '
+    """python -c "from LST_AI.utils import download_data; download_data('%(installdir)s/bin')" && """
+    'cd %(installdir)s/bin/binaries && rm greedy && ln -s $EBROOTGREEDY/bin/greedy'
+]
+
 sanity_check_paths = {
-    'files': ['bin/lst'],
-    'dirs': ['lib/python%(pyshortver)s/site-packages/LST_AI'],
+    'files': ['bin/lst', 'bin/binaries/greedy'],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages/LST_AI',
+        'bin/atlas',
+        'bin/binaries',
+        'bin/model',
+    ],
 }
 
 sanity_check_commands = ['lst --help']
