@@ -1,0 +1,131 @@
+name = 'ANSYS'
+version = '2025R1'
+
+homepage = 'http://www.ansys.com'
+description = """ANSYS simulation software enables organizations to confidently predict 
+    how their products will operate in the real world. We believe that every product is 
+    a promise of something greater."""
+
+toolchain = SYSTEM
+
+# sha256sum tar of isos
+sources = ['ANSYS-%(version)s.tar']  # /tmp/ANSYS/2025R1/system-system/alldisks
+checksums = ['2385b266568e5fff0e8febe7073d050d6f2d0ad6b6161f8a0e56343064412090']
+extract_sources = True
+
+# Default iso installation [working dir: /tmp/ANSYS/2025R1/system-system/alldisks] 
+# ./INSTALL -silent -install_dir %(installdir)s -licserverinfo 2325:1055:license3.sharcnet.ca -nochecks
+license_server = 'license3.sharcnet.ca -nochecks'
+
+# $ cat /cvmfs/local/var/log/easybuild-ANSYS-2025R1-20240402.011509.MhyYt.log | grep "dir set to"
+#   Build dir set to /tmp/ANSYS/2025R1/system-system
+#   Software install dir set to /home/roberpj/.local/easybuild/software/2023/x86-64-v3/Core/ansys/2025R1
+#   Module install dir set to /home/roberpj/.local/easybuild/modules/2023/
+# Installation prefix /home/roberpj/.local/easybuild/software/2023/x86-64-v3/Core/ansys/2025R1
+# AWPROOTDIR = /home/roberpj/.local/easybuild/software/2023/x86-64-v3/Core/ansys/2025R1/v251
+
+postinstallcmds = [
+  # Replace setmwruntime with one that works (should create patchfile for this later)
+  "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch2/2025R1;\
+   mv %(installdir)s/v251/commonfiles/MainWin/linx64/mw/setmwruntime{,-orig};\
+   cp $a/setmwruntime-$EBVERSIONGENTOO %(installdir)s/v251/commonfiles/MainWin/linx64/mw/setmwruntime;\
+   chmod 755 %(installdir)s/v251/commonfiles/MainWin/linx64/mw/setmwruntime;\
+   mv %(installdir)s/v251/Electronics/Linux64/mainwin560/Linux64/mw/setmwruntime{,-orig};\
+   cp $a/setmwruntime-$EBVERSIONGENTOO %(installdir)s/v251/Electronics/Linux64/mainwin560/Linux64/mw/setmwruntime;\
+   chmod 755 %(installdir)s/v251/commonfiles/MainWin/linx64/mw/setmwruntime;",
+  # Set same perms on all directories
+  "find %(installdir)s -type d -exec chmod 755 {} \;",
+  # Set same perms on all shared libraries to avoid warning in log file
+  "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 755 {} \;",
+  # Rename some libs as these maybe older than system equivalents and missing new symbols
+  "find %(installdir)s \( -type f -o -type l \) -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libgcc_s.so*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libfreetype*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libgfortran.so*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libgfortran.so.3*bak' -print0 | while IFS= \
+   read -r -d $'\\0' file; do echo \"Removing bak from $file\"; mv \"$file\" \"${file%.bak}\"; done;",
+  # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
+  "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
+   sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+  # Run setrpaths.sh in all directories
+  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+  # Find and patch lmutil to use lsb-loader
+  "for a in $(find %(installdir)s -type f -name lmutil); do echo Considering $a; \
+   if [ $(patchelf --print-interpreter $a) == '/lib64/ld-lsb-x86-64.so.3' ]; then \
+   patchelf --set-interpreter $EPREFIX/usr/lib64/ld-lsb-x86-64.so.3 $a; fi; done;",
+  # Find and patch lmgrd to use lsb-loader
+  "for a in $(find %(installdir)s -type f -name lmgrd); do echo Considering $a; \
+   if [ $(patchelf --print-interpreter $a) == '/lib64/ld-lsb-x86-64.so.3' ]; then \
+   patchelf --set-interpreter $EPREFIX/usr/lib64/ld-lsb-x86-64.so.3 $a; fi; done;",
+  # Avoid warning when starting workbench mechanical: sh: domainname: command not found
+  #"whichhostname=/cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname;\
+  #"whichhostname=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/bin/hostname;\
+  "whichhostname=$(which hostname);\
+   echo \"whichhostname = $whichhostname\";\
+   cd %(installdir)s/v251/Tools/mono/Linux64/bin;\
+   ln -s $whichhostname domainname;",
+  # Replace '/bin/sh' instances
+  #"whichsh=/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh;\
+  #"whichsh=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/bin/sh;\
+  "whichsh=$(which sh);\
+   echo \"whichsh = $whichsh\";\
+   whichshesc=\"$(echo \"$whichsh\" | sed -e 's/[\/&]/\\\&/g')\";\
+   echo \"whichshesc = $whichshesc\";\
+   find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
+   xargs -0 grep -riIlZ '/bin/sh' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   sed -i \"s|\/bin\/sh|$whichshesc|g\" \"$file\"; done;",
+  # Replace '/bin/bash' instances
+  #"whichbash=/cvmfs/soft.computecanada.ca/gentoo/2020/bin/bash;\
+  #"whichbash=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/bin/bash;\
+  "whichbash=$(which bash);\
+   echo \"my whichbash = \$whichbash\";\
+   whichbashesc=\"$(echo \"$whichbash\" | sed -e 's/[\/&]/\\\&/g')\";\
+   echo \"my whichbashesc = $whichbashesc\";\
+   find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
+   xargs -0 grep -riIlZ '/bin/bash' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   sed -i \"s|\/bin\/bash|$whichbashesc|g\" \"$file\"; done;",
+  # Remove /sbin/ from both of the /sbin/lspci entries inside libApipWrapper.so
+  "find %(installdir)s -type f ! -size 0 -name 'libApipWrapper.so' -print0 | xargs -0 \
+   grep -rilZ '/sbin/lspci' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   perl -0777 -pe 's/\/sbin\//substr q{}.\"\\0\"x length$&,0,length$&/e or die \"pattern not found\"' -i \"$file\"; \
+   perl -0777 -pe 's/\/sbin\//substr q{}.\"\\0\"x length$&,0,length$&/e or die \"pattern not found\"' -i \"$file\"; done;",
+  # Avoid warning when starting workbench: Unit[s] is not valid for quantity Time
+  "cd %(installdir)s/v251/tp/CUEUnits/linx64/lib;\
+   mv libCUEUnits.so libCUEUnits.so-orig;\
+   ln -s ../../../../aisol/lib/linx64/libCUEUnits.so libCUEUnits.so;",
+  # Make sharcnet license the default for coupled solvers
+  "cd %(installdir)s/shared_files/licensing;\
+   echo 'SERVER=1055@license3.sharcnet.ca' > ansyslmd.ini;\
+   echo 'ANSYSLI_SERVERS=2325@license3.sharcnet.ca' >> ansyslmd.ini;"
+  # Replace "$1" with ${1} to Avoid newer grep: warning: stray \ before -
+  "cp -a %(installdir)s/v251/ansys/bin/anssh.ini{,-orig};\
+   sed -i 's|grep \"$1\"|grep \${1}|g' \"%(installdir)s/v251/ansys/bin/anssh.ini\";",
+  # Replace '^\/' with '^/' to Avoid newer grep: warning: stray \ before "y
+  "find %(installdir)s -type f \( -name 'mpi*fl' -o -name 'mpi*en' \) -exec cp -a {}{,-orig} \;;\
+   find %(installdir)s -type f \( -name 'mpi*fl' -o -name 'mpi*en' \) -exec sed -i \"s|'^\\\\\/'|'^/'|g\" \"{}\" \;"
+]
+
+modextravars = {
+    'ANS_FLEXLM_DISABLE_DEFLICPATH': '1',
+    'LM_PROJECT': 'research',
+    'SLURM_ENABLED': '1',
+    'SCHEDULER_TIGHT_COUPLING': '1',
+}
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__ANSYS_LICENSE_FILE", "ansys")
+if (not found) then
+	local error_message = [[
+We did not find a suitable license for ANSYS. If you have access to one, you can create the file $HOME/.licenses/ansys.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an ANSYS license, please see https://docs.computecanada.ca/wiki/ANSYS 
+
+Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a une licence de ANSYS, vous pouvez creer le fichier $HOME/.licenses/ansys.lic avec l'information de la licence. Si vous   pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour ANSYS, veuillez consulter la page https://docs.computecanada.ca/wiki/ANSYS/fr
+	]]
+	LmodError(error_message)
+elseif (path) then
+	-- load the license file which should contain Lua commands to set the license path
+	assert(loadfile(path))()
+end
+"""
+
+moduleclass = 'tools'
