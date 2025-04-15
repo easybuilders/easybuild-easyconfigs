@@ -1,0 +1,47 @@
+easyblock = "CmdCp"
+
+name = "slurm-completion"
+version = "23.02.7"
+
+homepage = "https://slurm.schedmd.com/"
+description = "bash completion for Slurm client commands"
+
+toolchain = SYSTEM
+
+source_urls = ["https://raw.githubusercontent.com/SchedMD/slurm/refs/tags/slurm-%s-1/contribs/slurm_completion_help" % version.replace(".","-")]
+sources = ["slurm_completion.sh"]
+patches = [
+    "bash-completion-compat.patch",
+    "no-shopt-extglob.patch",
+]
+checksums = [
+    {'slurm_completion.sh': '2ce1d1f5bca030fec3313d7c82018f2215db57cb165c698e40fc5fc619ef4e10'},
+    {'bash-completion-compat.patch': '2b9b1339566569e97763fd0a5b24eb4f27b3a6318fc4ffdafae90da2d1ea735d'},
+    {'no-shopt-extglob.patch': 'efed7e99cf9f1e36ef29efa7273742e740b946ca86457d5fbc95b5318ef89ee2'},
+]
+
+# These sed transformations and patches
+# a) remove the dependency of the bash-completion package
+# b) remove the need for "shopt -s extglob"
+build_cmd_targets = "slurm_completion.lua"
+cmds_map = [
+    (".*", fr"""
+sed -E -e 's@elif (! \[\[ -f "/usr/share)@elif false \&\& \1@' \
+       -e 's@(! declare)@false \&\& \1@' \
+       -e 's@([-a-z]+)\?\(s\)@\1 \| \1s@g' \
+       -e 's@([-a-z]+)\?\(\+\|\-\)@\1 \| \1+ \| \1-@' \
+       -e 's@(_filedir)@__slurm\1@' \
+       -e 's@(__ltrim_colon_completions)@__slurm\1@' \
+       -e 's@([[:blank:]])(_init_completion)@\1__slurm_\2@' {sources[0]} | \
+$LMOD_DIR/sh_to_modulefile /dev/stdin > %(target)s.lua
+""")]
+files_to_copy = [build_cmd_targets]
+
+sanity_check_paths = {'files': files_to_copy, 'dirs': []}
+
+# don't do expensive database queries
+modextravars = {"SLURM_COMP_VALUE": "0"}
+
+modluafooter = f'assert(loadfile("%(installdir)s/{build_cmd_targets}"))()'
+
+moduleclass = "tools"

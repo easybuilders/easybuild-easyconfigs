@@ -1,0 +1,38 @@
+easyblock = 'Tarball'
+
+name = 'InterProScan'
+version = "5.73-104.0"
+
+homepage = 'http://www.ebi.ac.uk/interpro/'
+description = """
+InterProScan is a sequence analysis application (nucleotide and protein 
+sequences) that combines different protein signature recognition methods 
+into one resource."""
+
+toolchain = SYSTEM
+
+source_urls = ['ftp://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/%(version)s']
+sources = ['%(namelower)s-%(version)s-64-bit.tar.gz']
+checksums = ['4abe85662e6a0aebe38554704de8e40aebadad5a7539229455b31f6229be384b']
+
+dependencies = [
+    ('Java', '17'),
+    ('Python', '3.11'),
+    ('Perl', '5.36.1'),
+    ('InterProScan_data',  '%(version)s'),
+]
+
+postinstallcmds = ['cd %(installdir)s/ && sed -i "s/head -n 1/grep version/g" %(installdir)s/%(namelower)s.sh && /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --any_interpreter && find %(installdir)s/bin -type d | xargs -i /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter && find %(installdir)s/lib -type d | xargs -i /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter && rm -rf %(installdir)s/data && ln -s ${EBROOTINTERPROSCAN_DATA}/data %(installdir)s/data']
+
+sanity_check_paths = {
+    'files': ['%(namelower)s-%(version_major)s.jar', '%(namelower)s.sh', '%(namelower)s.properties'],
+    'dirs': ['bin', 'lib'],
+}
+
+modextrapaths = {
+    'PATH': '.',
+}
+
+modextravars = {'JAVA': '/cvmfs/soft.computecanada.ca/easybuild/software/2020/Core/java/%(javaver)s/bin/java'}
+
+moduleclass = 'bio'

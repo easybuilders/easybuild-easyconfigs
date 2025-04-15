@@ -1,0 +1,74 @@
+easyblock = 'CMakeMake'
+
+name = 'occt'
+version = '7.8.1'
+
+homepage = 'https://www.opencascade.com/'
+description = """Open CASCADE Technology (OCCT) is an object-oriented C++
+class library designed for rapid production of sophisticated domain-specific
+CAD/CAM/CAE applications."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags']
+sources = ['V7_8_1.tar.gz']
+checksums = ['7321af48c34dc253bf8aae3f0430e8cb10976961d534d8509e72516978aa82f5']
+
+builddependencies = [
+    ('CMake', '3.31.0'),
+    ('SWIG', '4.2.1'),
+    ('numpy', '2.1.1'),
+    ('Doxygen', '1.8.16'),
+    ('tbb', '2021.10.0'),
+    ('RapidJSON', '1.1.0'),
+]
+
+dependencies = [
+    ('Tk', '8.6.12'),  # for tcltk
+    ('Mesa', '19.1.7'),
+    ('freetype', '2.10.1'),
+    ('Tcl', '8.6.12'),
+    ('FreeImage', '3.18.0'),
+]
+
+multi_deps = {'Python': ['3.11', '3.12', '3.13']}
+
+separate_build_dir = True
+
+configopts = '-DUSE_FFMPEG=ON '
+configopts += '-DUSE_FREEIMAGE=ON '
+configopts += '-DUSE_TBB=ON '
+configopts += '-D3RDPARTY_TBB_DIR=$EBROOTTBB '
+
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'CMakePythonPackage'
+exts_list = [
+    ('pythonocc-core', '7.8.1.1', {
+        'configopts': "-DOCCT_INCLUDE_DIR=%(installdir)s/include/opencascade -DOCCT_LIBRARY_DIR=%(installdir)s/lib -DCMAKE_BUILD_TYPE=Release -DPYTHONOCC_INSTALL_DIRECTORY=%(installdir)s/lib/python%(pyshortver)s/site-packages/OCC -DPYTHONOCC_MESHDS_NUMPY=ON",
+        'easyblock': 'CMakePythonPackage',
+        'modulename': False,
+        'source_urls': ['https://github.com/tpaviot/pythonocc-core/archive/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['f95f74f7fdf9d2eb1f1a5ff8e26d9f3a47c3ca190b8897f478e3562fcf13ef80'],
+    }),
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+sanity_check_paths = {
+    'files': ['bin/DRAWEXE', 'bin/env.sh'],
+    'dirs': ['lib/cmake/opencascade'],
+}
+
+usage = """For use with the Python extensions, the numpy package must be available, e.g. through first loading a scipy-stack module or a virtual environment where numpy is installed"""
+
+sanity_check_commands = [
+     "module load scipy-stack; python%(pyshortver)s -c 'from OCC import Core'",
+     "DRAWEXE -h"
+]
+
+moduleclass = 'numlib'

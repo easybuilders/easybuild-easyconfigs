@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'libmbd'
+version = '0.12.8'
+
+homepage = 'https://github.com/libmbd/libmbd'
+description = """A general-purpose package for scalable quantum many-body dispersion calculations."""
+
+toolchain = {'name': 'iifb', 'version': '2023a'}
+
+source_urls = ['https://github.com/libmbd/libmbd/releases/download/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['c50a61068d7aeb1ff76c32dcbf6aae848e47972bdbcfe609bd6050e853f76b1e']
+builddependencies = [
+    ('ScaLAPACK', '2.2.0'),
+    ('CMake', '3.21.4'),
+    ('python-build-bundle', '2024a'),
+    ('SciPy-Stack', '2024b'),
+]
+multi_deps = {'Python': ['3.10', '3.11', '3.12']}
+multi_deps_extensions_only = True
+
+configopts = ['-DBLAS_LIBRARIES=$BLAS_LIB_DIR/$BLAS_SHARED_LIBS -DENABLE_SCALAPACK_MPI=ON']
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('pymbd', version, {
+        'checksums': ['bef4a62022f632689add1a0cae60cc880579d15e419097cfaab06db9771c120b'],
+	'use_pip': True,
+    }),
+]
+exts_filter = ("""module load python-build-bundle/2024a scipy-stack/2024b;  python -c 'import %(ext_name)s'""", '')
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+sanity_check_paths = {
+    'files': ['lib64/libmbd.so'],
+    'dirs': ['lib/python3.10','lib/python3.11','lib/python3.12'],
+}
+
+moduleclass = 'chem'
+
+

@@ -1,0 +1,34 @@
+easyblock = 'CMakeMake'
+
+name = 'libmbd'
+version = '0.12.8'
+
+homepage = 'https://github.com/dftd4/dftd4/'
+description = """DFTD4 van-der-Waals functional is generally Applicable Atomic-Charge Dependent London Dispersion Correction."""
+
+toolchain = {'name': 'iimpi', 'version': '2023a'}
+local_compver = '2023.2.1'
+
+source_urls = ['https://github.com/libmbd/libmbd/releases/download/%(version)s/']
+sources = ['%(name)s-%(version)s.tar.gz', 'pymbd-%(version)s.tar.gz']
+checksums = ['4fab918392eddb91c8d7f1c1de79f70a',  #v3.3.0.tar.gz, 
+             'bcc0698422bd7108388ca08b9d8886c6', #dftd4-3.3.0.patch,
+]
+#patches = ['dftd4-3.3.0.patch']
+builddependencies = [
+    ('FlexiBLAS', '3.3.1', '', ('intel-compilers', local_compver)),
+    ('ScaLAPACK', '2.2.0', '', ('iimpi', '2023a')),
+    ('CMake', '3.21.4'),
+]
+configopts = ['-DENABLE_SCALAPACK_MPI=ON']
+
+postinstallcmds = ["cd ../pymbd-%(version)s/; export LIBRARY_PATH=%(installdir)s/lib64 ; export LIBMBD_PREFIX=%(installdir)s; for ver in 3.10 3.11 ; do module load python/$ver; pip install ./ --prefix=%(installdir)s; done"]
+
+sanity_check_paths = {
+    'files': ['lib64/libmbd.so'],
+    'dirs': ['lib/python3.10','lib/python3.11'],
+}
+
+moduleclass = 'chem'
+
+

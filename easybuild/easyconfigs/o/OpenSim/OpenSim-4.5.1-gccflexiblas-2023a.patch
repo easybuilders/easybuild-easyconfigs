@@ -1,0 +1,33 @@
+diff -ruN opensim-core-4.5.1.orig/cmake/FindMatlab.cmake opensim-core-4.5.1/cmake/FindMatlab.cmake
+--- opensim-core-4.5.1.orig/cmake/FindMatlab.cmake	2024-08-22 21:54:21.000000000 +0000
++++ opensim-core-4.5.1/cmake/FindMatlab.cmake	2025-01-20 18:32:45.775771320 +0000
+@@ -666,7 +666,7 @@
+     OUTPUT_VARIABLE _matlab_version_from_cmd_dummy
+     RESULT_VARIABLE _matlab_result_version_call
+     ERROR_VARIABLE _matlab_result_version_call_error
+-    TIMEOUT 30
++    TIMEOUT 360
+     WORKING_DIRECTORY "${_matlab_temporary_folder}"
+     ${devnull}
+     )
+diff -ruN opensim-core-4.5.1.orig/dependencies/CMakeLists.txt opensim-core-4.5.1/dependencies/CMakeLists.txt
+--- opensim-core-4.5.1.orig/dependencies/CMakeLists.txt	2024-08-22 21:54:21.000000000 +0000
++++ opensim-core-4.5.1/dependencies/CMakeLists.txt	2025-01-20 18:26:58.193347543 +0000
+@@ -336,7 +336,7 @@
+             GIT_REPOSITORY    https://github.com/coin-or-tools/ThirdParty-Mumps.git
+             GIT_TAG           releases/3.0.5
+             PATCH_COMMAND cd <SOURCE_DIR> && ./get.Mumps
+-            CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> ADD_FFLAGS=-fallow-argument-mismatch ADD_CFLAGS=-Wno-error=implicit-function-declaration
++CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --with-blas=$ENV{LIBBLAS} --with-lapack=$ENV{LIBLAPACK} --build=x86_64-pc-linux-gnu --host=x86_64-pc-linux-gnu
+             BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} ${BUILD_FLAGS}
+             INSTALL_DIR       "${CMAKE_INSTALL_PREFIX}/mumps"
+             INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} install)
+@@ -346,7 +346,7 @@
+             URL https://github.com/coin-or/Ipopt/archive/refs/tags/releases/3.14.16.zip
+             INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/ipopt"
+             # Suppress warnings treated as errors in Clang/LLVM with -Wno-error=implicit-function-declaration
+-            CONFIGURE_COMMAND <SOURCE_DIR>/configure --with-mumps --prefix=<INSTALL_DIR> --with-mumps-cflags="-I${CMAKE_INSTALL_PREFIX}/mumps/include/coin-or/mumps" --with-mumps-lflags="-L${CMAKE_INSTALL_PREFIX}/mumps/lib -lcoinmumps"
++CONFIGURE_COMMAND <SOURCE_DIR>/configure --with-mumps --prefix=<INSTALL_DIR> --with-mumps-cflags="-I${CMAKE_INSTALL_PREFIX}/mumps/include/coin-or/mumps" --with-mumps-lflags="-L${CMAKE_INSTALL_PREFIX}/mumps/lib -lcoinmumps" --with-blas=$ENV{LIBBLAS} --with-lapack=$ENV{LIBLAPACK} --build=x86_64-pc-linux-gnu --host=x86_64-pc-linux-gnu
+             BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} ${BUILD_FLAGS}
+             INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} install)
+     endif()

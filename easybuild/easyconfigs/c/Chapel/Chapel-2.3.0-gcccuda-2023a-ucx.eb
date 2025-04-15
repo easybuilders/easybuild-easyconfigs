@@ -1,0 +1,55 @@
+name = 'Chapel'
+version = '2.3.0'
+versionsuffix = '-ucx-cuda'
+
+homepage = 'https://chapel-lang.org'
+description = """ Chapel is a programming language designed for productive parallel computing on large-scale systems. """
+
+toolchain = {'name': 'gcccuda', 'version': '2023a'}
+toolchainopts = {'optarch': True, 'pic': True}
+buildopts = ''
+
+source_urls = ['https://github.com/chapel-lang/chapel/releases/download/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['0185970388aef1f1fae2a031edf060d5eac4eb6e6b1089e7e3b15a130edd8a31']
+
+sanity_check_paths = {
+    'files': ['chapel-2.3.0/bin/linux64-x86_64/chpl' ],
+    'dirs': [],
+}
+
+# preconfigopts = 'source util/setchplenv.bash && '
+
+modextravars = {
+    'CHPL_HOME': '%(installdir)s/chapel-2.3.0',
+    'CHPL_LLVM': 'bundled',
+    'CHPL_COMM': 'gasnet',
+    'CHPL_COMM_SUBSTRATE': 'ibv',
+    'CHPL_LAUNCHER': 'gasnetrun_ibv',
+    'GASNET_IBV_SPAWNER': 'ssh',
+    'CHPL_TARGET_CPU': 'none',
+    'CHPL_HWLOC': 'system',
+    'GASNET_PHYSMEM_MAX': '1G',
+    'CHPL_LOCALE_MODEL': 'gpu',
+    'CHPL_GPU': 'nvidia',
+}
+
+prebuildopts  = 'export CHPL_LLVM=bundled && '
+prebuildopts += 'export CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv && '
+prebuildopts += 'export CHPL_LAUNCHER=gasnetrun_ibv GASNET_IBV_SPAWNER=ssh && '
+prebuildopts += 'export CHPL_TARGET_CPU=none CHPL_HWLOC=system && '
+prebuildopts += 'export CHPL_LOCALE_MODEL=gpu && '
+
+prebuildopts += f"export CHPL_HOME={modextravars['CHPL_HOME']} && "
+
+prebuildopts += 'export CHPL_TARGET_CC="$CHPL_HOME/third-party/llvm/install/linux64-x86_64/bin/clang --gcc-toolchain=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr --sysroot=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3 --start-no-unused-arguments -Wl,-dynamic-linker,/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/lib64/ld-linux-x86-64.so.2 --end-no-unused-arguments" && '
+prebuildopts += 'export CHPL_TARGET_CXX="$CHPL_HOME/third-party/llvm/install/linux64-x86_64/bin/clang++ --gcc-toolchain=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr --sysroot=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3 --start-no-unused-arguments -Wl,-dynamic-linker,/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/lib64/ld-linux-x86-64.so.2 --end-no-unused-arguments" && '
+prebuildopts += 'export CHPL_TARGET_LD="$CHPL_HOME/third-party/llvm/install/linux64-x86_64/bin/clang++ --gcc-toolchain=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr --sysroot=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3 --start-no-unused-arguments -Wl,-dynamic-linker,/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/lib64/ld-linux-x86-64.so.2 --end-no-unused-arguments" && '
+
+modextrapaths = {
+    'PATH': 'chapel-2.3.0/bin/linux64-x86_64',
+}
+
+modaltsoftname = "chapel-ucx-cuda"
+
+moduleclass = 'lang'

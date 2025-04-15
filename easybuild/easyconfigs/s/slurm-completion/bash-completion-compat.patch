@@ -1,0 +1,55 @@
+--- slurm_completion.sh	2025-01-09 15:19:16.864926016 +0000
++++ slurm_completion.sh	2025-01-09 14:02:17.397442276 +0000
+@@ -1,4 +1,52 @@
+ #!/usr/bin/env bash
++
++# additions for CC
++
++# basic version of _filedir that does built-in bash completion
++function _filedir()
++{
++	if [[ $1 == -d ]]; then
++		compopt -o dirnames
++	else
++		compopt -o bashdefault -o default
++	fi
++}
++
++# copied from bash-completion package
++function __ltrim_colon_completions()
++{
++	if [[ $1 == *:* && $COMP_WORDBREAKS == *:* ]]; then
++		# Remove colon-word prefix from COMPREPLY items
++		local colon_word=${1%"${1##*:}"}
++		local i=${#COMPREPLY[*]}
++		while ((i-- > 0)); do
++			COMPREPLY[i]=${COMPREPLY[i]#"$colon_word"}
++		done
++	fi
++}
++
++# basic version of __init_completion in bash-completion, resplitting without = and :
++function __slurm__init_completion()
++{
++	local i oldlen len pos=$COMP_POINT line="$COMP_LINE" IFS=${COMP_WORDBREAKS//[$3]}
++	read -r -a COMP_WORDS <<< "$line"
++	oldlen=${#line}
++	for ((i = 0; i < ${#COMP_WORDS[@]}; i++)); do
++		line=${line#*${COMP_WORDS[i]}}
++		len=${#line}
++		((pos-=oldlen-len))
++		if ((pos<=0)); then
++			COMP_CWORD=$i
++			break
++		fi
++		oldlen=$len
++	done
++	cur="${COMP_WORDS[COMP_CWORD]}"
++	prev="${COMP_WORDS[COMP_CWORD - 1]}"
++	cword="${COMP_CWORD}"
++	words=("${COMP_WORDS[@]}")
++}
++
+ ################################################################################
+ # slurm_completion.sh - bash completion script for Slurm client commands.
+ #

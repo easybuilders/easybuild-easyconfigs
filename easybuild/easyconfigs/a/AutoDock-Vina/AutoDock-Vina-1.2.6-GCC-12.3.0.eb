@@ -1,0 +1,67 @@
+easyblock = 'MakeCp'
+
+name = 'AutoDock-Vina'
+version = '1.2.6'
+
+homepage = 'https://vina.scripps.edu/'
+description = "AutoDock Vina is an open-source program for doing molecular docking."
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+github_account = 'ccsb-scripps'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['9a3b888feaab511e3188b012bde1d41be0d72b54aa9516465b383f31dc394743']
+
+builddependencies = [
+    ('SWIG', '4.1.1'),
+]
+
+dependencies = [
+    ('Boost', '1.85.0'),
+    ('SciPy-Stack', '2025a'),
+]
+multi_deps = {
+	'Python': ['3.10', '3.11', '3.12', '3.13']
+}
+
+start_dir = 'build/linux/release'
+
+buildopts = 'GPP="$CXX" BOOST_INCLUDE="$EBROOTBOOST/include"'
+
+files_to_copy = [
+    (['vina', 'vina_split'], 'bin'),
+    (['docs', 'example', 'LICENSE', 'README.md'], 'share'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+}
+
+# fix hardcoded paths in setup.py
+_ext_boost_paths = ('$EBROOTBOOST/include', '$EBROOTBOOST/lib')
+_ext_fix_paths = r'sed -i "s|= locate_boost()|= \"%s\", \"%s\"|" setup.py && ' % _ext_boost_paths
+_ext_fix_paths += r"sed -i 's|\.\./\.\./src|%%(builddir)s/%%(name)s/%s-%%(version)s/src|g' setup.py && " % name
+
+exts_list = [
+    ('vina', version, {
+        'preinstallopts': """sed -i "s|= locate_boost()|= '$EBROOTBOOST/include', '$EBROOTBOOST/lib'|" setup.py && sed -i 's|\.\./\.\./src|%(builddir)s/%(name)s/AutoDock-Vina-%(version)s/src|g' setup.py && """,
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'start_dir': 'build/python',
+        'checksums': ['9a3b888feaab511e3188b012bde1d41be0d72b54aa9516465b383f31dc394743'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/vina', 'bin/vina_split'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = [('vina', '--help')]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'bio'

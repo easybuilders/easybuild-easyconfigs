@@ -1,0 +1,42 @@
+easyblock = 'CMakeNinja'
+
+name = 'RASPA3'
+version = "3.0.3"
+
+homepage = 'https://iraspa.org/raspa/'
+description = """RASPA is a software package for simulating adsorption and diffusion of
+molecules in flexible nanoporous materials."""
+
+toolchain = {'name': 'gccflexiblas', 'version': '2023a'}
+toolchainopts = {
+    'opt': True,
+    'openmp': True,
+    'extra_cxxflags': '-stdlib=libc++ -fvisibility=hidden -fexperimental-library -Xclang -ffast-math',
+}
+
+source_urls = ['https://github.com/iRASPA/RASPA3/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['f39ca0bedc3275b5b28b74763ec3f79a242a8ab046c327b00897b45e69cfa575']
+
+builddependencies = [
+    ('CMake', '3.31.0'),
+    ('Clang', '18.1.8'),
+    ('HDF5', '1.14.2'),
+    ('Python', '3.11.5'),
+]
+
+configopts = ' '.join([
+    '-DCMAKE_C_COMPILER="clang"',
+    '-DCMAKE_CXX_COMPILER="clang++"',
+    '-DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld"',
+    '-DCMAKE_INTERPROCEDURAL_OPTIMIZATION:BOOL="TRUE"',
+])
+
+sanity_check_paths = {
+    'files': ['bin/raspa3'],
+    'dirs': []
+}
+
+sanity_check_commands = ['raspa3 -h']
+
+moduleclass = 'phys'

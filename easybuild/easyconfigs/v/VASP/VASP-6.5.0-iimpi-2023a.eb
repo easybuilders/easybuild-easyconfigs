@@ -1,0 +1,49 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.5.0'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+based on Density Futional Theory (DFT). In this version we included HDF5, Libxc, Elpa, Libmbd and dftd4 libraries to vasp executable files. Please note that VTSTTools and vaspSOL are NOT implenented in this version becasue they have not yet released for this version of vasp at the time we installed it."""
+
+local_compver = '2023.2.1'
+local_binfiles = ['vasp_std', 'vasp_gam', 'vasp_ncl']
+
+toolchain = {'name': 'iimpi', 'version': '2023a'}
+builddependencies = [
+    ('FFTW', '3.3.10', '', ('intel-compilers', local_compver)),
+    ('wannier90', '3.1.0', '', ('iimpi', '2023a')),
+    ('HDF5', '1.14.2', '',( 'intel-compilers', local_compver)),
+    ('ScaLAPACK', '2.2.0', '', ('iimpi', '2023a')),
+    ('libxc', '6.2.2', '', ('intel-compilers', local_compver)),
+    ('FlexiBLAS', '3.3.1', '', ('intel-compilers', local_compver)),
+    ('dftd4', '3.7.0', '', ('ifb', '2023a')),
+    ('libbeef', '0.1.2', '', ('intel-compilers', local_compver)),
+    ('ELPA', '2024.05.001'),
+    ('libmbd', '0.12.8'),
+
+
+]
+
+patches = ['%(namelower)s-%(version)s.patch']
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = ['%(namelower)s.%(version)s.tgz']
+checksums = ['19831c88c18c88be6097e379d9140c50',  #vasp.6.5.0.tgz,
+             'e683af49f8665c0df2233b7b50c871ef',  #vasp-6.5.patch,
+]
+prebuildopts = 'cp arch/makefile.include.intel ./makefile.include && '
+prebuildopts += 'unset LIBS && '
+
+postinstallcmds = ["chmod -R o-rwx %(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
+parallel = 1
+
+files_to_copy = [(['bin/%s' % x for x in local_binfiles], 'bin')]
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binfiles],
+    'dirs': []
+}
+moduleclass = 'phys'
+

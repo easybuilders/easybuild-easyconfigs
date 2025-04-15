@@ -1,0 +1,55 @@
+easyblock = 'ConfigureMake'
+
+name = 'Julia'
+version = '1.11.3'
+
+homepage = 'https://julialang.org'
+description = "Julia is a high-level, high-performance dynamic programming language for numerical computing"
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/JuliaLang/%(namelower)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['80f371ece1576fb7a38c8c930f7cad592fe314083b8a1fc9cd8bd8b165c9cb76']
+
+#patches = [
+#    '%(name)s-%(version_major_minor)s.1-limit-initial-OpenBLAS-threads.patch',
+#    '%(name)s-%(version)s-OpenBLAS-checksum.patch',
+#]
+
+builddependencies = [
+    ('imkl', '2023.2.0', '', SYSTEM),
+]
+
+prebuildopts = "declare -A ARCH_MAP=( [avx2]=x86-64-v3 [avx512]=x86-64-v4 ) && declare -A OPENBLAS_ARCH_MAP=( [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+
+# Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
+
+buildopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+preinstallopts = "declare -A ARCH_MAP=( [avx2]=x86-64-v3 [avx512]=x86-64-v4 ) && declare -A OPENBLAS_ARCH_MAP=( [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+
+installopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+# so that the Pardiso Julia package can find MKL
+
+postinstallcmds = [
+    """patchelf --set-rpath '$ORIGIN:$ORIGIN/..:'"$MKLROOT/lib/intel64" %(installdir)s/lib/%(namelower)s/libjulia-internal.so.%(version_major_minor)s""",
+]
+
+skipsteps = ['configure']
+
+# : means the default path, this way extension modules can append to it
+
+modluafooter = """
+append_path("JULIA_DEPOT_PATH", ":")
+"""
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'include/%(namelower)s/%(namelower)s.h', 'lib/libjulia.so'],
+    'dirs': ['bin', 'etc', 'include', 'lib', 'share'],
+}
+
+sanity_check_commands = ['%(namelower)s --help']
+
+moduleclass = 'lang'

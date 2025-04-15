@@ -24,11 +24,19 @@ dependencies = [
     ('mctc-lib', '0.3.1'),
     ('mstore', '0.2.0'),
     ('simple-dftd3', '1.0.0'),
-    ('dftd4', '3.6.0')
+    ('dftd4', '3.6.0'),
 ]
 
-multi_deps = {'Python': ['3.10', '3.11']}
-multi_deps_extensions_only = True
+local_python_versions = ['3.10', '3.11']
+# make sure both static and shared libs are built
+local_configopts = [
+    "-DBUILD_SHARED_LIBS=OFF ",
+    "-DBUILD_SHARED_LIBS=ON ",
+]
+configopts = local_configopts * len(local_python_versions)
+multi_deps = {'Python': sorted(local_python_versions * 2)}
+
+#multi_deps_extensions_only = True
 
 # run suite of tests with ctest
 test_cmd = 'ctest --parallel 1'
@@ -44,16 +52,18 @@ exts_list = [
             '48654770b2681a354d9f6a849c5bc903b94a18c39c25c61754807d8add1ad7a9',
             'be04116d444c3bd526bb3521981d773fa5af5c2b82fb5c9f31ba528d6fec4e40',
         ],
-        'prebuildopts': ' export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && ',
+        'prebuildopts': ' export CC=gcc && export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && ',
         'use_pip': True,
+        'sanity_pip_check': False,
     }),
 ]
-exts_filter = ("module load scipy-stack && python -c 'import %(ext_name)s'", '')
+
+exts_filter = ("module load scipy-stack/2023b && python -c 'import %(ext_name)s' && module load xtb/6.6.1 && python -c 'import tblite.ase'", '')
 
 modextrapaths = {'EBPYTHONPREFIXES': '' }
 
 sanity_check_paths = {
-    'files': ['bin/%(name)s', 'include/%(name)s.h', 'lib/lib%(name)s.a'],
+    'files': ['bin/%(name)s', 'include/%(name)s.h', 'lib/lib%(name)s.so', 'lib/lib%(name)s.a'],
     'dirs': ['share'],
 }
 

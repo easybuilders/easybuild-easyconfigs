@@ -1,0 +1,193 @@
+easyblock = 'PythonBundle'
+
+name = 'python-build-bundle'
+version = '2025a'
+
+homepage = 'http://python.org/'
+
+description = """Bundle which contains Python packages useful for building"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+builddependencies = [
+    ('Rust', '1.76.0'),  # required for setuptools-rust, which is needed for cryptography
+    ('pytest', '8.2.2'), # required for running tests with installed pybind11
+]
+
+
+multi_deps = {
+    'Python': ['3.10', '3.11', '3.12', '3.13']
+}
+
+multi_deps_load_default = False
+
+exts_default_options = {
+    'download_dep_fail': True,
+    'sanity_pip_check': False,
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'fix_python_shebang_for': ['bin/%(name)s'],
+    'preinstallopts': "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
+}
+
+# order is important!
+exts_list = [
+    ('flit-core', '3.10.1', {
+        'source_tmpl': 'flit_core-%(version)s.tar.gz',
+    }),
+    ('wheel', '0.45.1', {
+        'fix_python_shebang_for': ['bin/wheel'],
+    }),
+    ('setuptools', '75.8.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+    ('packaging', '24.2'),
+    ('pbr', '6.1.0', {
+        'fix_python_shebang_for': ['bin/pbr'],
+    }),
+    ('toml', '0.10.2'),
+    ('tomli', '2.2.1'),
+    ('setuptools_scm', '8.1.0'),
+    ('flit-scm', '1.7.0', {
+        'source_tmpl': 'flit_scm-%(version)s.tar.gz',
+    }),
+    ('pyparsing', '3.2.1'),
+    ('pycparser', '2.22'),
+    ('typing_extensions', '4.12.2'),
+    ('cffi', '1.17.1'),
+    ('setuptools-rust', '1.10.2', {'source_tmpl': "setuptools_rust-%(version)s.tar.gz",}),
+    ('semantic_version', '2.10.0'),
+    ('maturin', '1.8.1', {
+        # avoid that cargo uses $HOME/.cargo, which can lead to build failures if home directory is NFS mounted,
+        # see https://github.com/rust-lang/cargo/issues/6652
+        'preinstallopts': "export CARGO_HOME=%(builddir)s/cargo && export CARGO_BUILD_JOBS=-1 && ",
+    }),
+    ('cryptography', '44.0.0', {
+        # avoid that cargo uses $HOME/.cargo, which can lead to build failures if home directory is NFS mounted,
+        # see https://github.com/rust-lang/cargo/issues/6652
+        'preinstallopts': "export CARGO_HOME=%(builddir)s/cargo && export CARGO_BUILD_JOBS=-1 && ",
+        'modulename': "cryptography.hazmat.bindings.openssl.binding",
+    }),
+#    ('appdirs', '1.4.4'),
+    ('pathspec', '0.12.1'),
+    ('trove_classifiers', '2025.1.15.22'),
+    ('hatchling', '1.27.0'),
+    ('hatch_vcs', '0.4.0'),
+    ('hatch_fancy_pypi_readme', '24.1.0', {
+        'fix_python_shebang_for': ['bin/hatch-fancy-pypi-readme'],
+    }),
+    ('platformdirs', '4.3.6'),
+    ('filelock', '3.17.0'),
+    ('distlib', '0.3.9'),
+    ('importlib_metadata', '8.6.1'),
+    ('editables', '0.5'),
+    ('exceptiongroup', '1.2.2'),
+    ('importlib_resources', '6.5.2'),
+    ('virtualenv', '20.29.1', {
+        'fix_python_shebang_for': ['bin/virtualenv'],
+        # 'patches': ['virtualenv-importlib_metadata.patch'],
+    }),
+    ('charset-normalizer', '3.4.1', {
+        'fix_python_shebang_for': ['bin/normalizer'],
+        'source_tmpl': "charset_normalizer-%(version)s.tar.gz",
+    }),
+    ('idna', '3.10'),
+    ('certifi', '2024.12.14'),
+    ('urllib3', '2.3.0'),
+    ('requests', '2.32.3'),
+    ('shellingham', '1.5.4'),
+    ('requests-toolbelt', '1.0.0'),
+#    ('scandir', '1.10.0'),
+#    ('pathlib2', '2.3.7.post1'),
+    ('zipp', '3.21.0'),
+#    ('more-itertools', '8.12.0'),
+#    ('attrs', '21.4.0', {
+#        'modulename': 'attr',
+#    }),
+    ('pytoml', '0.1.21'),
+    ('jeepney', '0.8.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+    ('SecretStorage', '3.3.3'),
+    ('keyring', '25.6.0', {
+        'fix_python_shebang_for': ['bin/keyring'],
+        'modulename': False,  # Doesn't work properly if HOME directory contains keys
+    }),
+    ('keyrings.alt', '5.0.2', {
+        'modulename': False,
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+    ('tomlkit', '0.13.2', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+    ('pkginfo', '1.12.0', {
+        'fix_python_shebang_for': ['bin/pkginfo'],
+    }),
+    ('pexpect', '4.9.0'),
+#    ('lockfile', '0.12.2'),
+    ('pylev', '1.4.0'),
+    ('pastel', '0.2.1', {
+        'source_tmpl': SOURCE_WHL,
+    }),
+    ('clikit', '0.6.2', {
+        'source_tmpl': SOURCE_WHL,
+    }),
+    ('msgpack', '1.1.0'),
+    ('cachecontrol', '0.14.0', {
+        'fix_python_shebang_for': ['bin/doesitcache'],
+    }),
+    ('ptyprocess', '0.7.0', {
+        'source_tmpl': SOURCE_WHL,
+    }),
+    ('webencodings', '0.5.1'),
+    ('cleo', '2.1.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+    ('cachy', '0.3.0'),
+    ('poetry_core', '2.0.1', {
+        'modulename': 'poetry.core',
+    }),
+    ('crashtest', '0.4.1', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+    ('poetry', '2.0.1', {
+        'fix_python_shebang_for': ['bin/poetry'],
+    }),
+    ('pybind11', '2.13.6', {
+        'source_urls': ['https://github.com/pybind/pybind11/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'fix_python_shebang_for': ['bin/pybind11-config'],
+    }),
+    ('distro', '1.9.0'),
+    ('scikit_build', '0.18.1', {
+        'modulename': 'skbuild',
+    }),
+    ('scikit_build_core', '0.10.7'),
+    ('archspec', '0.2.5'),
+    ('pyproject_metadata', '0.9.0'),
+    ('meson', '1.7.0',  {
+        'modulename': 'mesonbuild',
+    }),
+    ('ninja', '1.11.1.1', {
+        # distributed with python, but not actually python
+        'modulename': False
+    }),
+    ('meson_python', '0.17.1', {
+        'modulename': 'mesonpy',
+    }),
+    ('pyproject_hooks', '1.2.0'),
+    ('build', '1.2.2.post1'),
+    ('nanobind', '2.4.0'),
+]
+
+# pkg_resources contains .egg files for testing purposes. This packages is deprecated, but is still shipped with setuptools.
+postinstallcmds = [
+    "rm -vr %(installdir)s/lib/python*/site-packages/pkg_resources/tests/data/my-test-package*/*.egg"
+]
+
+moduleclass = 'lang'
+sanity_check_paths = {'files': [], 'dirs': ['lib/python%(pyshortver)s/site-packages']}
+sanity_pip_check = False

@@ -1,0 +1,111 @@
+--- slurm_completion.sh	2025-01-09 15:21:42.762342332 +0000
++++ slurm_completion.sh	2025-01-09 14:02:17.397442276 +0000
+@@ -276,18 +277,15 @@
+ 
+ 	__slurm_log_debug "$(__func__): cur='$cur' curitem='$curitem' curlist='$curlist'"
+ 
+-	case "${curitem}" in
+-	*:)
++	if [[ "${curitem}" == *: ]]; then
+ 		__slurm_log_debug "$(__func__): expect count spec"
+-		;;
+-	*:+([[:digit:]])+([[:alpha:]]))
++	elif [[ "${curitem}" == *:+([[:digit:]])+([[:alpha:]]) ]]; then
+ 		__slurm_log_debug "$(__func__): found count unit spec"
+ 		local item=""
+ 		item="$(echo "$curitem" | sed -E "s/[[:alpha:]]+$//g")"
+ 		options="$(compgen -P "${item}" -W "${units[*]}")"
+ 		__slurm_comp "${options[*]}" "${prefix-}" "${curitem}" "${suffix-}" ""
+-		;;
+-	*:+([[:digit:]]))
++	elif [[ "${curitem}" == *:+([[:digit:]]) ]]; then
+ 		__slurm_log_debug "$(__func__): found count spec"
+ 		if [[ -n $units ]]; then
+ 			options="$(compgen -P "${curitem}" -W "${units[*]}")"
+@@ -295,8 +293,7 @@
+ 		else
+ 			__slurm_comp "${curitem[*]}" "${prefix-}" "${curitem}" "${suffix-}" ""
+ 		fi
+-		;;
+-	*)
++	else
+ 		__slurm_log_debug "$(__func__): expect item spec"
+ 		options="$(compgen -W "${options[*]}" -S ":" -- "${curitem}")"
+ 
+@@ -309,8 +306,7 @@
+ 		done
+ 
+ 		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+-		;;
+-	esac
++	fi
+ }
+ 
+ # Completion function for parameters
+@@ -325,7 +321,8 @@
+ 
+ 	# build array without seen items
+ 	for param in $options; do
+-		p="${param%%?(\\)=*}"
++		p="${param%%=*}"
++		p="${p%\\}"
+ 		__slurm_log_trace "$(__func__): for loop: param='$param' p*='$p'"
+ 		[[ ${words[*]} =~ ${p}= ]] && continue
+ 		[[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && continue
+@@ -526,7 +523,8 @@
+ 
+ 	for p in $params; do
+ 		__slurm_log_trace "$(__func__): for loop: p='$p' p*='${p%%=*}'"
+-		if [[ ${words[*]} =~ ${p%%?(\\)=*} ]]; then
++		p=${p%%=*}
++		if [[ ${words[*]} =~ ${p%\\} ]]; then
+ 			param="$p"
+ 			break
+ 		fi
+@@ -548,8 +546,9 @@
+ 
+ 	case "${cur}" in
+ 	--?*=* | ?*=*)
+-		prev="${cur%%?(\\)=*}"
+-		cur="${cur#*?(\\)=}"
++		prev="${cur%%=*}"
++		prev="${prev%\\}"
++		cur="${cur#*=}"
+ 		;;
+ 	*) return 1 ;;
+ 	esac
+@@ -1208,11 +1207,9 @@
+ 		;;
+ 	esac
+ 
+-	case "${curitem2}" in
+-	*+)
++	if [[ "${curitem2}" == *+ ]]; then
+ 		__slurm_log_debug "$(__func__): expect time spec"
+-		;;
+-	*++([0-9]))
++	elif [[ "${curitem2}" == *++([0-9]) ]] ; then
+ 		__slurm_log_debug "$(__func__): found time spec"
+ 
+ 		compreply+=("$(compgen -W "${curitem}" -S "${suffix}" -- "${curitem}")")
+@@ -1221,8 +1218,7 @@
+ 			compreply+=("$(compgen -W "${curitem}" -S "?" -- "${curitem}")")
+ 		fi
+ 		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+-		;;
+-	*)
++	else
+ 		__slurm_log_debug "$(__func__): expect job spec"
+ 		local jobs=()
+ 		local options=""
+@@ -1242,8 +1238,7 @@
+ 			compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S "?" -- "${curitem2}")")
+ 		fi
+ 		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+-		;;
+-	esac
++	fi
+ }
+ 
+ # Slurm completion helper for salloc, sbatch, srun
+

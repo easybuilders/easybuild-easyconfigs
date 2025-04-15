@@ -1,0 +1,47 @@
+--- wannier_tools-2.7.0.orig/src/Makefile.intel-mpi	2025-01-27 19:14:54.021697660 +0000
++++ wannier_tools-2.7.0/src/Makefile.intel-mpi	2025-01-28 00:32:39.792993254 +0000
+@@ -12,7 +12,7 @@
+ 	main.o
+ 
+ # compiler
+-F90  = mpiifort -fpp -DMPI -DINTELMKL -fpe3
++F90  = mpiifort -fpp -fpe3 -DMPI -DINTELMKL -DARPACK
+ 
+ INCLUDE = -I${MKLROOT}/include
+ WFLAG = -nogen-interface
+@@ -21,27 +21,23 @@
+ LFLAG = $(OFLAG)
+ 
+ # ARPACK LIBRARY
+-ARPACK=/Users/quan/work/workplace/ARPACK/libarpack_MAC.a
+-
+-# blas and lapack libraries
+-# static linking
+-#LIBS = -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a \
+-        ${MKLROOT}/lib/intel64/libmkl_sequential.a \
+-        ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl \
+-		  ${ARPACK}
++ARPACK=${EBROOTARPACKMINNG}/lib/libarpack.a
+ 
+ # dynamic linking
+ LIBS = ${ARPACK} -L/${MKLROOT}/lib/intel64 -lmkl_core -lmkl_sequential -lmkl_intel_lp64 -lpthread
+  
+-main : $(OBJ)
+-	$(F90) $(LFLAG) $(OBJ) -o wt.x $(LIBS)
+-	cp -f wt.x ../bin
++wt.x : $(OBJ)
++	$(F90) $(LFLAGS) $(OBJ) -o wt.x $(LIBS)
+ 
+ .SUFFIXES: .o .f90
+ 
+ .f90.o :
+ 	$(F90) $(FFLAG) $(INCLUDE) -c $*.f90
++	$(F90) $(F90FLAGS) -c $*.f90
++
++install: wt.x
++	install -d $(PREFIX)/bin
++	install wt.x $(PREFIX)/bin
+ 
+ clean :
+ 	rm -f *.o *.mod *~ wt.x
+-

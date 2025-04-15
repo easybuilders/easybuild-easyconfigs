@@ -1,0 +1,46 @@
+# Note:
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# It was auto-generated based on a template easyconfig, so it should be used with care.
+# Author: Helene Gingras
+
+easyblock = 'CMakeMake'
+
+name = 'CasADi'
+version = '3.6.7'
+
+homepage = 'https://github.com/casadi/casadi'
+description = "CasADi is an open-source tool for nonlinear optimization and algorithmic differentiation."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+# For sources line to work correctly with --try-software-version, you MUST employ %s OR use a construct like SOURCE_TAR_GZ
+source_urls = ['https://github.com/%(namelower)s/%(namelower)s/releases/download/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['21cde87288afebb32a2a035bf6b6a91a025e24ee14aba7a0ae5515707b9887c1']
+
+builddependencies = [
+    ('CMake', '3.31.0'),
+]
+dependencies = [
+    ('SciPy-Stack', '2024a'),
+]  # For numpy
+multi_deps = {'Python': ['3.10', '3.11']}
+
+configopts = "-DWITH_PYTHON=ON -DPYTHON_PREFIX=%(installdir)s/lib/python%(pyshortver)s/site-packages"
+
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/ --add_path %(installdir)s/lib",
+]
+multi_deps_load_default = False
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+# The sanity test MUST be tuned before going production and submitting your contribution to upstream git repositories
+sanity_check_commands = ['python -c "import %(namelower)s"']
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'math'
