@@ -1,0 +1,323 @@
+easyblock = 'PythonBundle'
+
+name = 'TensorFlow'
+version = '2.17.1'
+
+homepage = 'https://www.tensorflow.org/'
+description = "An open-source software library for Machine Intelligence"
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('hatchling', '1.24.2'),
+    ('Bazel', '6.5.0'),
+    # git 2.x required, see also https://github.com/tensorflow/tensorflow/issues/29053
+    ('git', '2.45.1'),
+    ('pybind11', '2.12.0'),
+    ('UnZip', '6.0'),
+    # Required to build some of the extensions
+    ('poetry', '1.8.3'),
+    # Protobuf disabled since 2.13.0 easyconfigs:
+    # Compiling with system protobuf don't seem to work, see:
+    # https://github.com/tensorflow/tensorflow/issues/61593
+    # ('protobuf', '24.0'),
+    ('Cython', '3.0.10'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('h5py', '3.12.1'),
+    ('cURL', '8.7.1'),
+    ('dill', '0.3.9'),
+    ('double-conversion', '3.3.0'),
+    ('flatbuffers', '24.3.25'),
+    ('flatbuffers-python', '24.3.25'),
+    ('giflib', '5.2.1'),
+    ('hwloc', '2.10.0'),
+    ('ICU', '75.1'),
+    ('JsonCpp', '1.9.5'),
+    ('libjpeg-turbo', '3.0.1'),
+    ('ml_dtypes', '0.5.0'),
+    ('NASM', '2.16.03'), # in no dep - maybe delete, x86 assembler
+    ('nsync', '1.29.2'),
+    ('SQLite', '3.45.3'),
+    ('patchelf', '0.18.0'),
+    ('libpng', '1.6.43'),
+    ('snappy', '1.1.10'),
+    ('zlib', '1.3.1'),
+    ('grpcio', '1.70.0'),
+    ('wrapt', '1.16.0'),
+    ('Markdown', '3.7'),
+    ('absl-py', '2.1.0'),
+    ('tensorboard', '2.18.0'),
+]
+
+# Dependencies created and updated using findPythonDeps, see:
+# https://docs.easybuild.io/api/easybuild/scripts/findPythonDeps
+# Notable changes since 2.13.0-foss-2023a
+# - tensoboard-wit deprecated as of tensorboard 2.13.0 (tensorboard@33abcb54d7)
+# - portpicker for tests no longer needed (TF@e85860e838)
+# - opt_einsum now comes from ml_dtypes
+exts_list = [
+    ('astor', '0.8.1', {
+        'checksums': ['6a6effda93f4e1ce9f618779b2dd1d9d84f1e32812c23a29b3fff6fd7f63fa5e'],
+    }),
+    ('termcolor', '2.5.0', {
+        'checksums': ['998d8d27da6d48442e8e1f016119076b690d962507531df4890fcd2db2ef8a6f'],
+    }),
+    ('Werkzeug', '3.1.3', {
+        'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
+        'checksums': ['60723ce945c19328679790e3282cc758aa4a6040e4bb330f53d30fa546d44746'],
+    }),
+    ('keras', '3.9.2', {
+        'checksums': ['322aab6418ee3de1e2bd0871b60a07f0e444e744a7e8cba79af8b42408879ecf'],
+    }),
+    ('google-pasta', '0.2.0', {
+        'modulename': 'pasta',
+        'checksums': ['c9f2c8dfc8f96d0d5808299920721be30c9eec37f2389f28904f454565c8a16e'],
+    }),
+    ('astunparse', '1.6.3', {
+        'checksums': ['5ad93a8456f0d084c3456d059fd9a92cce667963232cbf763eac3bc5b7940872'],
+    }),
+    ('tblib', '2.0.0', {
+        'checksums': ['a6df30f272c08bf8be66e0775fad862005d950a6b8449b94f7c788731d70ecd7'],
+    }),
+    (name, version, {
+        'patches': [
+            'TensorFlow-2.13.0_add-missing-system-protobuf-targets.patch',
+            'TensorFlow-2.15.1_fix-flatbuffer-license.patch',
+            'TensorFlow-2.15.1_fix-pybind11-build.patch',
+            'TensorFlow-2.15.1_add-default-shell-env.patch',
+            'TensorFlow-2.4.0_dont-use-var-lock.patch',
+            'TensorFlow-2.13.0_exclude-xnnpack-on-ppc.patch',
+            'TensorFlow-2.15.1_disable-avx512-extensions.patch',
+            'patch1.1-fix_setup.py.patch',
+            'patch2.1-disable-tf32-in-fused-matmul-tests.patch',
+        ],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
+        'with_xla': True,
+        'checksums': [
+            {'v2.17.1.tar.gz': '2d3cfb48510f92f3a52fb05b820481c6f066a342a9f5296fe26d72c4ea757700'},
+            {'TensorFlow-2.13.0_add-missing-system-protobuf-targets.patch':
+             '77d8c8a5627493fc7c38b4de79d49e60ff6628b05ff969f4cd3ff9857176c459'},
+            {'TensorFlow-2.15.1_fix-flatbuffer-license.patch':
+             '2c04d5095977a628a238dbf93c5fada7159c86752a7183e64e0cf7c7ab00caf4'},
+            {'TensorFlow-2.15.1_fix-pybind11-build.patch':
+             '3bb350ac92ab99c63c951c96b3b0160699f5f16822b64f72111ebfd2275cafce'},
+            {'TensorFlow-2.15.1_add-default-shell-env.patch':
+             '3d5196b4bf2e91048dc8a18f9e8f487a223fcd973d6302e80b0d4000ea3d652b'},
+            {'TensorFlow-2.4.0_dont-use-var-lock.patch':
+             'b14f2493fd2edf79abd1c4f2dde6c98a3e7d5cb9c25ab9386df874d5f072d6b5'},
+            {'TensorFlow-2.13.0_exclude-xnnpack-on-ppc.patch':
+             'd0818206846911d946666ded7d3216c0546e37cee1890a2f48dc1a9d71047cad'},
+            {'TensorFlow-2.15.1_disable-avx512-extensions.patch':
+             '506ceecff67237eed9cd9e9e114bc1461f35a343f77f83cb3dab710aa701dc0f'},
+            {'patch1.1-fix_setup.py.patch': '3725f863e2034ec8ddfde36dcabb729e39081851b5efd72aa1616c2055cb4562'},
+        ],
+    }),
+]
+
+# (name, version, {
+#         'patches': [
+#             'TensorFlow-2.13.0_add-missing-system-protobuf-targets.patch', OK
+#             'TensorFlow-2.15.1_remove-libclang-dep.patch', -> UPDATE of setup.py - OK patch1
+#             'TensorFlow-2.15.1_remove-io-gcs-filesystem-dep.patch', -> UPDATE of setup.py - OK patch1
+#             'TensorFlow-2.15.1_add-default-shell-env.patch', OK
+#             'TensorFlow-2.15.1_fix-flatbuffer-license.patch', OK
+#             'TensorFlow-2.15.1_fix-pybind11-build.patch', OK
+#             'TensorFlow-2.15.1_fix-AVX512-eigen-compilation.patch', -> not working but during bazel build not appling
+#             'TensorFlow-2.15.1_fix-AVX512-eigen-compilation-gcc13.patch', not working - added here - needs fix-AVX512-eigen-compilation.patch
+#             'TensorFlow-2.15.1_upgrade-ml_dtypes-dependency-version.patch', -> UPDATE of setup.py - OK patch1
+#             'TensorFlow-2.1.0_fix-cuda-build.patch', -> not working -> this looks fixed in 2.17.1 OK?
+#             'TensorFlow-2.4.0_dont-use-var-lock.patch', OK
+#             'TensorFlow-2.13.0_exclude-xnnpack-on-ppc.patch', OK
+#             'TensorFlow-2.15.1_remove-duplicate-gpu-tests.patch', -> not working TEST -> seems already fixed in 2.17.1 OK?
+#             'TensorFlow-2.15.1_fix-cuda_build_defs.patch', -> not working -> this looks fixed in 2.17.1 OK?
+                # there are 3 fixes:
+                    # 1) third_party/nccl/system.BUILD.tpl - already fixed OK
+                    # 2) third_party/xla/third_party/nccl/system.BUILD.tpl - not there anymore OK
+                    # 3) third_party/xla/third_party/tsl/third_party/nccl/system.BUILD.tpl - already fixed OK
+#             'TensorFlow-2.15.1_disable-avx512-extensions.patch', OK
+#             'TensorFlow-2.15.1_disable-tf32-in-fused-matmul-tests.patch' -> not working TEST -> created patch2.1-disable-tf32-in-fused-matmul-tests.patch - OK
+#         ],
+#         'source_tmpl': 'v%(version)s.tar.gz',
+#         'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
+#         'test_script': 'TensorFlow-2.x_mnist-test.py',
+#         'test_tag_filters_cpu': '-gpu,-tpu,-no_cuda_on_cpu_tap,-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
+#         'test_tag_filters_gpu': ('gpu,-no_gpu,-nogpu,-gpu_cupti,-no_cuda11,'
+#                                  '-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only'),
+#         'test_targets': [
+#             '//tensorflow/core/...',
+#             '-//tensorflow/core:example_java_proto',
+#             '-//tensorflow/core/example:example_protos_closure',
+#             '//tensorflow/cc/...',
+#             '//tensorflow/c/...',
+#             '//tensorflow/python/...',
+#             '-//tensorflow/c/eager:c_api_test_gpu',
+#             '-//tensorflow/c/eager:c_api_distributed_test',
+#             '-//tensorflow/c/eager:c_api_distributed_test_gpu',
+#             '-//tensorflow/c/eager:c_api_cluster_test_gpu',
+#             '-//tensorflow/c/eager:c_api_remote_function_test_gpu',
+#             '-//tensorflow/c/eager:c_api_remote_test_gpu',
+#             '-//tensorflow/core/common_runtime:collective_param_resolver_local_test',
+#             '-//tensorflow/core/kernels/mkl:mkl_fused_ops_test',
+#             '-//tensorflow/core/kernels/mkl:mkl_fused_batch_norm_op_test',
+#             '-//tensorflow/core/ir/importexport/tests/roundtrip/...',
+#         ],
+#         'testopts': "--test_env=HOME=/tmp --test_timeout=3600 --test_size_filters=small ",
+#         'testopts_gpu': ('--test_env=HOME=/tmp --test_timeout=3600 --test_size_filters=small '
+#                          '--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute '),
+#         'with_xla': True,
+#         'checksums': [
+#             {'v2.15.1.tar.gz': 'f36416d831f06fe866e149c7cd752da410a11178b01ff5620e9f265511ed57cf'},
+#             {'TensorFlow-2.13.0_add-missing-system-protobuf-targets.patch':
+#              '77d8c8a5627493fc7c38b4de79d49e60ff6628b05ff969f4cd3ff9857176c459'},
+#             {'TensorFlow-2.15.1_remove-libclang-dep.patch':
+#              '871b2f0221b7a150ac9f563ffad7187e052a7eedd95c20fb4524987d7edb6f21'},
+#             {'TensorFlow-2.15.1_remove-io-gcs-filesystem-dep.patch':
+#              'eba7351a4b0696c589b9c507bacb0257ebce8c39fde39ab72d5d6a69deaaec02'},
+#             {'TensorFlow-2.15.1_add-default-shell-env.patch':
+#              '3d5196b4bf2e91048dc8a18f9e8f487a223fcd973d6302e80b0d4000ea3d652b'},
+#             {'TensorFlow-2.15.1_fix-flatbuffer-license.patch':
+#              '2c04d5095977a628a238dbf93c5fada7159c86752a7183e64e0cf7c7ab00caf4'},
+#             {'TensorFlow-2.15.1_fix-pybind11-build.patch':
+#              '3bb350ac92ab99c63c951c96b3b0160699f5f16822b64f72111ebfd2275cafce'},
+#             {'TensorFlow-2.15.1_fix-AVX512-eigen-compilation.patch':
+#              '761059e5f5f5eeeef8aed5517a7685a0eb0a9193d4afe8d45237527681c9c0a3'},
+#             {'TensorFlow-2.15.1_fix-AVX512-eigen-compilation-gcc13.patch':
+#              '68adc4bb726a60f2deed2d746d305960505c5cd3abbc018bad1074d95e2a3853'},
+#             {'TensorFlow-2.15.1_upgrade-ml_dtypes-dependency-version.patch':
+#              'da4a8e63251a7f6aca38a55f8d4ee2955278c320bd20158a78dabd4decb8c9f0'},
+#         ],
+#     }),
+
+#  Taken from tensorboard-2.15.1-gfbf-2023a.eb:
+#  Relax restriction on protobuf dependency as issue was fixed
+#  in https://github.com/protocolbuffers/upb/pull/1514
+#  see also: https://github.com/easybuilders/easybuild-easyconfigs/pull/19671
+# postinstallcmds = [
+#     'sed -i "s/Requires-Dist: protobuf.*/Requires-Dist: protobuf >=3.19.6/g" ' +
+#     '%(installdir)s/lib/python%(pyshortver)s/site-packages/tensorboard-2.15.2.dist-info/METADATA',
+# ]
+
+moduleclass = 'lib'
+
+# E8:
+    # -> update easyblock to add PATH to bazel build - L971 -> not help :(
+    # -> seems patchelf is not on the PATH
+    # <- build nearly done - patchelf is in deps
+        # [14,093 / 14,094] [Prepa] Action tensorflow/tools/pip_package/wheel_house
+        # SUBCOMMAND: # //tensorflow/tools/pip_package:wheel [action 'Action tensorflow/tools/pip_package/wheel_house', configuration: 27c5d858386b230acd447b1fcb701ea8fde4c0c745b933c5bf7444388d93d52d, execution platform: @local_execution_config_platform//:platform]
+        # (cd /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/execroot/org_tensorflow && \
+        # exec env - \
+        # bazel-out/k8-opt-exec-50AE0418/bin/tensorflow/tools/pip_package/build_pip_package_py @bazel-out/k8-opt/bin/tensorflow/tools/pip_package/wheel_house-0.params)
+        # # Configuration: 27c5d858386b230acd447b1fcb701ea8fde4c0c745b933c5bf7444388d93d52d
+        # # Execution platform: @local_execution_config_platform//:platform
+        # [14,093 / 14,094] Action tensorflow/tools/pip_package/wheel_house; 1s local
+        # ERROR: /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/tensorflow-2.17.1/tensorflow/tools/pip_package/BUILD:265:9: Action tensorflow/tools/pip_package/wheel_house failed: (Exit 1): build_pip_package_py failed: error executing command (from target //tensorflow/tools/pip_package:wheel)
+        # (cd /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/execroot/org_tensorflow && \
+        # exec env - \
+        # bazel-out/k8-opt-exec-50AE0418/bin/tensorflow/tools/pip_package/build_pip_package_py @bazel-out/k8-opt/bin/tensorflow/tools/pip_package/wheel_house-0.params)
+        # # Configuration: 27c5d858386b230acd447b1fcb701ea8fde4c0c745b933c5bf7444388d93d52d
+        # # Execution platform: @local_execution_config_platform//:platform
+        # Traceback (most recent call last):
+        # File "/tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/execroot/org_tensorflow/bazel-out/k8-opt-exec-50AE0418/bin/tensorflow/tools/pip_package/build_pip_package_py.runfiles/org_tensorflow/tensorflow/tools/pip_package/build_pip_package.py", line 343, in <module>
+        #     prepare_wheel_srcs(args.headers, args.srcs, args.xla_aot,
+        # File "/tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/execroot/org_tensorflow/bazel-out/k8-opt-exec-50AE0418/bin/tensorflow/tools/pip_package/build_pip_package_py.runfiles/org_tensorflow/tensorflow/tools/pip_package/build_pip_package.py", line 197, in prepare_wheel_srcs
+        #     patch_so(srcs_dir)
+        # File "/tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/execroot/org_tensorflow/bazel-out/k8-opt-exec-50AE0418/bin/tensorflow/tools/pip_package/build_pip_package_py.runfiles/org_tensorflow/tensorflow/tools/pip_package/build_pip_package.py", line 242, in patch_so
+        #     rpath = subprocess.check_output(
+        #             ^^^^^^^^^^^^^^^^^^^^^^^^
+        # File "/tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/external/python_x86_64-unknown-linux-gnu/lib/python3.12/subprocess.py", line 466, in check_output
+        #     return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+        #         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        # File "/tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/external/python_x86_64-unknown-linux-gnu/lib/python3.12/subprocess.py", line 548, in run
+        #     with Popen(*popenargs, **kwargs) as process:
+        #         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        # File "/tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/external/python_x86_64-unknown-linux-gnu/lib/python3.12/subprocess.py", line 1026, in __init__
+        #     self._execute_child(args, executable, preexec_fn, close_fds,
+        # File "/tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/external/python_x86_64-unknown-linux-gnu/lib/python3.12/subprocess.py", line 1950, in _execute_child
+        #     raise child_exception_type(errno_num, err_msg, err_filename)
+        # FileNotFoundError: [Errno 2] No such file or directory: 'patchelf'
+        # Target //tensorflow/tools/pip_package:wheel failed to build
+        # INFO: Elapsed time: 8276.555s, Critical Path: 263.76s
+        # INFO: 14094 processes: 993 internal, 13101 local.
+# E7: OK
+    # -> posibly fixed in TensorFlow-2.15.1_add-default-shell-env.patch
+    # -> absl-py work ok...
+    # ERROR: /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/tensorflow-2.17.1/tensorflow/python/util/BUILD:756:18: Extracting tensorflow APIs for //tensorflow/python/util:tf_inspect to bazel-out/k8-opt/bin/tensorflow/python/util/tf_inspect_extracted_tensorflow_api.json. failed: (Exit 1): main failed: error executing command (from target //tensorflow/python/util:tf_inspect)
+    #   (cd /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/execroot/org_tensorflow && \
+    #   exec env - \
+    #   bazel-out/k8-opt-exec-50AE0418/bin/tensorflow/python/tools/api/generator2/extractor/main --output bazel-out/k8-opt/bin/tensorflow/python/util/tf_inspect_extracted_tensorflow_api.json --decorator tensorflow.python.util.tf_export.tf_export --api_name tensorflow tensorflow/python/util/tf_inspect.py)
+    # # Configuration: 68a9a1eb4733c168b1855c6c0bc0145ab4a1941b21e6e10d0591be21ddaf581f
+    # # Execution platform: @local_execution_config_platform//:platform
+    # Traceback (most recent call last):
+    #   File "/tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/execroot/org_tensorflow/bazel-out/k8-opt-exec-50AE0418/bin/tensorflow/python/tools/api/generator2/extractor/main.runfiles/org_tensorflow/tensorflow/python/tools/api/generator2/extractor/main.py", line 17, in <module>
+    #     from absl import app
+    # ModuleNotFoundError: No module named 'absl'
+    # Target //tensorflow/tools/pip_package:wheel failed to build
+# E6: OK
+    # -> add patch 'TensorFlow-2.15.1_fix-flatbuffer-license.patch' + 'TensorFlow-2.15.1_fix-pybind11-build.patch'
+    # ERROR: /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/tensorflow-2.17.1/tensorflow/tools/pip_package/BUILD:83:10: no such target '@flatbuffers//:LICENSE': target 'LICENSE' not declared in package '' defined by /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/external/flatbuffers/BUILD.bazel (Tip: use `query "@flatbuffers//:*"` to see all the targets in that package) and referenced by '//tensorflow/tools/pip_package:licenses'
+# E5: OK
+    # -> update easyblosk to use need wheel build command: https://github.com/tensorflow/tensorflow/issues/63298#issuecomment-1986141742 -> OK
+    # same issue here: https://github.com/tensorflow/tensorflow/issues/63302
+    # -> update easyblock L972 to `bazel-bin/tensorflow/tools/pip_package/build_pip_package_py` -> NO
+        # usage: build_pip_package.py [-h] --output-name OUTPUT_NAME --project-name PROJECT_NAME [--headers HEADERS] [--srcs SRCS]
+        #                     [--xla_aot XLA_AOT] [--version VERSION] [--collab COLLAB]
+        # build_pip_package.py: error: the following arguments are required: --output-name, --project-name
+    # == 2025-04-09 11:56:30,684 run.py:598 INFO Output of 'bazel-bin/tensorflow/tools/pip_package/build_pip_package ...' shell command (stdout + stderr):
+    # /usr/bin/bash: line 1: bazel-bin/tensorflow/tools/pip_package/build_pip_package: No such file or directory
+# E4: OK
+    # -> seems as a bazel version problem - in .bazelversion is 6.5.0 but I have 7.4.1 -> prepare bazel 6.5.0
+    # <- log2.txt <- bazel cmd 
+        # ERROR: /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/external/local_config_python/BUILD:10:11: in py_runtime rule @@local_config_python//:py2_runtime: 
+        # Traceback (most recent call last):
+        #     File "/virtual_builtins_bzl/common/python/py_runtime_rule.bzl", line 40, column 17, in _py_runtime_impl
+        # Error in fail: interpreter_path must be an absolute path
+        # ERROR: /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/bazel-root/141223baaa9a9295ba809e928a04b21d/external/local_config_python/BUILD:10:11: Analysis of target '@@local_config_python//:py2_runtime' failed
+        # ERROR: Analysis of target '//tensorflow/tools/pip_package:build_pip_package_py' failed; build aborted: Analysis failed
+# E3: OK
+    # -> https://github.com/tensorflow/tensorflow/blob/3c92ac03cab816044f7b18a86eb86aa01a294d95/tensorflow/tools/pip_package/BUILD#L235
+    #   was changed -> update easyblock L965 to: + ['//tensorflow/tools/pip_package:build_pip_package_py'] -> OK
+    # <- after bazel cmd <- log1.txt
+        # ERROR: Skipping '//tensorflow/tools/pip_package:build_pip_package': no such target '//tensorflow/tools/pip_package:build_pip_package': target 'build_pip_package' not declared in package 'tensorflow/tools/pip_package' defined by /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/tensorflow-2.17.1/tensorflow/tools/pip_package/BUILD (did you mean build_pip_package.py, or build_pip_package_py?)
+        # ERROR: no such target '//tensorflow/tools/pip_package:build_pip_package': target 'build_pip_package' not declared in package 'tensorflow/tools/pip_package' defined by /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/TensorFlow/tensorflow-2.17.1/tensorflow/tools/pip_package/BUILD (did you mean build_pip_package.py, or build_pip_package_py?)
+# E2: OK
+    # import astor +  No module named 'cython'
+# E1: OK
+    # fixed by termcolor 2.5.0
+    # -> try v2.19.0...
+    # -> problem with python version?
+    # == 2025-04-08 12:58:22,825 run.py:598 INFO Output of '/apps/gent/RHEL9/cascadelake-ib/software/Python/3.12.3-GCCcore-13.3.0/bin/python ...' shell command (stdout + stderr):
+    # Processing /tmp/vsc47063/easybuild/build/TensorFlow/2.17.1/foss-2024a/termcolor/termcolor-3.0.1
+    #   Preparing metadata (pyproject.toml): started
+    #   Preparing metadata (pyproject.toml): finished with status 'error'
+    #   error: subprocess-exited-with-error
+    #   × Preparing metadata (pyproject.toml) did not run successfully.
+    #   │ exit code: 1
+    #   ╰─> [21 lines of output]
+    #       Traceback (most recent call last):
+    #         File "/apps/gent/RHEL9/cascadelake-ib/software/Python/3.12.3-GCCcore-13.3.0/lib/python3.12/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 353, in <module>
+    #           main()
+    #         File "/apps/gent/RHEL9/cascadelake-ib/software/Python/3.12.3-GCCcore-13.3.0/lib/python3.12/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 335, in main
+    #           json_out['return_val'] = hook(**hook_input['kwargs'])
+    #                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    #         File "/apps/gent/RHEL9/cascadelake-ib/software/Python/3.12.3-GCCcore-13.3.0/lib/python3.12/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 152, in prepare_metadata_for_build_wheel
+    #           whl_basename = backend.build_wheel(metadata_directory, config_settings)
+    #                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    #         File "/apps/gent/RHEL9/cascadelake-ib/software/hatchling/1.24.2-GCCcore-13.3.0/lib/python3.12/site-packages/hatchling/build.py", line 58, in build_wheel
+    #           return os.path.basename(next(builder.build(directory=wheel_directory, versions=['standard'])))
+    #                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    #         File "/apps/gent/RHEL9/cascadelake-ib/software/hatchling/1.24.2-GCCcore-13.3.0/lib/python3.12/site-packages/hatchling/builders/plugin/interface.py", line 90, in build
+    #           self.metadata.validate_fields()
+    #         File "/apps/gent/RHEL9/cascadelake-ib/software/hatchling/1.24.2-GCCcore-13.3.0/lib/python3.12/site-packages/hatchling/metadata/core.py", line 266, in validate_fields
+    #           self.core.validate_fields()
+    #         File "/apps/gent/RHEL9/cascadelake-ib/software/hatchling/1.24.2-GCCcore-13.3.0/lib/python3.12/site-packages/hatchling/metadata/core.py", line 1376, in validate_fields
+    #           getattr(self, attribute)
+    #         File "/apps/gent/RHEL9/cascadelake-ib/software/hatchling/1.24.2-GCCcore-13.3.0/lib/python3.12/site-packages/hatchling/metadata/core.py", line 750, in license_files
+    #           raise TypeError(message)
+    #       TypeError: Field `project.license-files` must be a table
+    #       [end of output]
