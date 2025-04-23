@@ -1,0 +1,210 @@
+Fix polars-stream crate.
+Author: Pavel Tomanek (Inuits)
+--- crates/polars-stream/src/nodes/io_sources/multi_file_reader/mod.rs.orig	2025-04-23 11:04:57.211422000 +0200
++++ crates/polars-stream/src/nodes/io_sources/multi_file_reader/mod.rs	2025-04-23 11:44:00.326623000 +0200
+@@ -89,6 +89,22 @@
+     Finished,
+ }
+ 
++impl Clone for MultiScanState {
++    fn clone(&self) -> Self {
++        match self {
++            MultiScanState::Uninitialized { config } => {
++                MultiScanState::Uninitialized {
++                    config: Arc::clone(config),
++                }
++            }
++            MultiScanState::Initialized { .. } => {
++                panic!("Cannot clone Initialized state: non-cloneable fields")
++            }
++            MultiScanState::Finished => MultiScanState::Finished,
++        }
++    }
++}
++
+ pub struct MultiFileReader {
+     name: PlSmallStr,
+     state: MultiScanState,
+@@ -157,26 +173,32 @@
+         assert!(recv.is_empty());
+         assert!(send.len() == 1);
+ 
++        if matches!(self.state, Initialized { .. }) {
++            panic!("update_state must not be called while state is Initialized");
++        }
++        
+         send[0] = if send[0] == PortState::Done {
+             self.state = Finished;
+-
+             PortState::Done
+         } else {
+-            // Refresh first - in case there is an error we end here instead of ending when we go
+-            // into spawn.
++            let mut state = self.state.clone();
++            let verbose = self.verbose;
++    
+             async_executor::task_scope(|s| {
+                 pl_async::get_runtime()
+-                    .block_on(s.spawn_task(TaskPriority::High, self.state.refresh(self.verbose)))
++                    .block_on(s.spawn_task(TaskPriority::High, async move {
++                        state.refresh(verbose).await
++                    }))
+             })?;
+-
++    
+             match self.state {
+                 Uninitialized { .. } | Initialized { .. } => PortState::Ready,
+                 Finished => PortState::Done,
+             }
+         };
+-
++    
+         Ok(())
+-    }
++    }    
+ 
+     fn spawn<'env, 's>(
+         &'env mut self,
+@@ -187,59 +209,57 @@
+         join_handles: &mut Vec<crate::async_executor::JoinHandle<polars_error::PolarsResult<()>>>,
+     ) {
+         assert!(recv_ports.is_empty() && send_ports.len() == 1);
+-
++    
+         let phase_morsel_tx = send_ports[0].take().unwrap().serial();
+         let num_pipelines = state.num_pipelines;
+         let verbose = self.verbose;
+-
++    
++        let scan_state = std::mem::replace(&mut self.state, MultiScanState::Finished);
++    
+         join_handles.push(scope.spawn_task(TaskPriority::Low, async move {
+             use MultiScanState::*;
+-
+-            self.state.initialize(num_pipelines, verbose);
+-            self.state.refresh(verbose).await?;
+-
+-            match &mut self.state {
++            let mut state = scan_state;
++    
++            state.initialize(num_pipelines, verbose);
++            state.refresh(verbose).await?;
++    
++            match &mut state {
+                 Uninitialized { .. } => unreachable!(),
+-
++    
+                 Finished => return Ok(()),
+-
++    
+                 Initialized {
+                     send_phase_tx_to_bridge,
+                     wait_group,
+                     ..
+                 } => {
+                     use crate::async_primitives::connector::SendError;
+-
++    
+                     match send_phase_tx_to_bridge.try_send((phase_morsel_tx, wait_group.token())) {
+                         Ok(_) => wait_group.wait().await,
+-
+-                        // Should never: We only send the next value once the wait token is dropped.
++    
+                         Err(SendError::Full(_)) => unreachable!(),
+-
+-                        // Bridge has disconnected from the reader side. We know this because
+-                        // we are still holding `send_phase_tx_to_bridge`.
++    
+                         Err(SendError::Closed(_)) => {
+                             if verbose {
+                                 eprintln!("[MultiFileReader]: Bridge disconnected")
+                             }
+-
+-                            let Initialized { join_handle, .. } =
+-                                std::mem::replace(&mut self.state, Finished)
+-                            else {
++    
++                            let Initialized { join_handle, .. } = std::mem::replace(&mut state, Finished) else {
+                                 unreachable!()
+                             };
+-
++    
+                             join_handle.await?;
+-
+                             return Ok(());
+                         },
+                     }
+                 },
+             }
+-
+-            self.state.refresh(verbose).await
++    
++            state.refresh(verbose).await
+         }));
+     }
++    
+ }
+ 
+ impl MultiScanState {
+@@ -253,37 +273,37 @@
+ 
+         let slf = match slf {
+             Uninitialized { .. } | Finished => slf,
+-
++        
+             #[expect(clippy::blocks_in_conditions)]
+             Initialized {
+                 send_phase_tx_to_bridge,
+                 wait_group,
+                 bridge_state,
+                 join_handle,
+-            } => match { *bridge_state.lock().unwrap() } {
+-                BridgeState::NotYetStarted | BridgeState::Running => Initialized {
+-                    send_phase_tx_to_bridge,
+-                    wait_group,
+-                    bridge_state,
+-                    join_handle,
+-                },
+-
+-                // Never the case: holding `send_phase_tx_to_bridge` guarantees this.
+-                BridgeState::Stopped(StopReason::ComputeNodeDisconnected) => unreachable!(),
+-
+-                // If we are disconnected from the reader side, it could mean an error. Joining on
+-                // the handle should catch this.
+-                BridgeState::Stopped(StopReason::ReadersDisconnected) => {
+-                    if verbose {
+-                        eprintln!("[MultiScanState]: Readers disconnected")
+-                    }
+-
+-                    *self = Finished;
+-                    join_handle.await?;
+-                    Finished
+-                },
++            } => {
++                let bridge_state_val = *bridge_state.lock().unwrap();
++                match bridge_state_val {
++                    BridgeState::NotYetStarted | BridgeState::Running => Initialized {
++                        send_phase_tx_to_bridge,
++                        wait_group,
++                        bridge_state,
++                        join_handle,
++                    },
++        
++                    BridgeState::Stopped(StopReason::ComputeNodeDisconnected) => unreachable!(),
++        
++                    BridgeState::Stopped(StopReason::ReadersDisconnected) => {
++                        if verbose {
++                            eprintln!("[MultiScanState]: Readers disconnected")
++                        }
++        
++                        *self = Finished;
++                        join_handle.await?;
++                        Finished
++                    },
++                }
+             },
+-        };
++        };        
+ 
+         *self = slf;
+ 

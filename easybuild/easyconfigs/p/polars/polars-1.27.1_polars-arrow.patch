@@ -1,0 +1,32 @@
+Fix polars-arrow crate.
+Author: Pavel Tomanek (Inuits)
+--- crates/polars-arrow/src/storage.rs.orig	2025-04-22 17:12:28.177586000 +0200
++++ crates/polars-arrow/src/storage.rs	2025-04-22 17:13:40.959259000 +0200
+@@ -127,14 +127,14 @@
+         assert!(align_of::<T>() <= 1 << 30);
+         static INNER: SharedStorageInner<()> = SharedStorageInner {
+             ref_count: AtomicU64::new(1),
+-            ptr: core::ptr::without_provenance_mut(1 << 30), // Very overaligned for any T.
++            ptr: (1 << 30) as *mut (),
+             length_in_bytes: 0,
+             backing: BackingStorage::Leaked,
+             phantom: PhantomData,
+         };
+ 
+         Self {
+-            inner: NonNull::new(&raw const INNER as *mut SharedStorageInner<T>).unwrap(),
++            inner: unsafe { NonNull::new_unchecked(&raw const INNER as *const _ as *mut _) },
+             phantom: PhantomData,
+         }
+     }
+--- crates/polars-arrow/src/array/binview/builder.rs.orig	2025-04-22 17:15:25.915097000 +0200
++++ crates/polars-arrow/src/array/binview/builder.rs	2025-04-22 17:16:55.021671000 +0200
+@@ -148,7 +148,7 @@
+                         .get_unchecked(view.buffer_idx as usize)
+                         .clone()
+                         .expand_end_to_storage();
+-                    let buf_id = buffer.as_slice().as_ptr().addr();
++                    let buf_id = buffer.as_slice().as_ptr() as usize;
+                     let idx = match self.stolen_buffers.entry(buf_id) {
+                         Entry::Occupied(o) => *o.get(),
+                         Entry::Vacant(v) => {
