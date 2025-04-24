@@ -1,4 +1,6 @@
-Fix polars-stream crate.
+Make polars-stream compatible with Rust 1.83.0 stable.
+polars-stream is in polars/crates, builded with polars, not fetched from crates.io.
+Patch out the usage of #![feature(async_closure)].
 Author: Pavel Tomanek (Inuits)
 --- crates/polars-stream/src/nodes/io_sources/multi_file_reader/mod.rs.orig	2025-04-23 11:04:57.211422000 +0200
 +++ crates/polars-stream/src/nodes/io_sources/multi_file_reader/mod.rs	2025-04-23 11:44:00.326623000 +0200
@@ -208,3 +210,23 @@ Author: Pavel Tomanek (Inuits)
  
          *self = slf;
  
+--- crates/polars-stream/src/nodes/io_sinks/partition/by_key.rs.orig	2025-04-24 15:25:10.518214000 +0200
++++ crates/polars-stream/src/nodes/io_sinks/partition/by_key.rs	2025-04-24 15:27:42.591896000 +0200
+@@ -202,7 +202,7 @@
+ 
+             // Wrap this in a closure so that a failure to send (which signifies a failure) can be
+             // caught while waiting for tasks.
+-            let mut receive_and_pass = async || {
++            let mut receive_and_pass = async {
+                 while let Ok(mut lin_rx) = io_rx.recv().await {
+                     while let Some(Priority(Reverse(seq), (source_token, partitions))) =
+                         lin_rx.get().await
+@@ -271,7 +271,7 @@
+ 
+                 PolarsResult::Ok(())
+             };
+-            receive_and_pass().await?;
++            receive_and_pass.await?;
+ 
+             // At this point, we need to wait for all sinks to finish writing and close them. Also,
+             // sinks that ended up buffering need to output their data.
