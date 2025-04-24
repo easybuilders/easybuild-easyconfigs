@@ -1,0 +1,90 @@
+//The patch is to resolve missing boost includes and fix ambiguous function call, similar to qsimulate-open/bagel#229
+Author: Richard Top
+diff -ruN bagel-1.2.2/src/molecule/shell_base.cc bagel-1.2.2.orig/src/molecule/shell_base.cc
+--- bagel-1.2.2/src/molecule/shell_base.cc	2023-12-02 11:23:16.000000000 +0100
++++ bagel-1.2.2.orig/src/molecule/shell_base.cc	2023-12-02 11:23:59.000000000 +0100
+@@ -23,6 +23,7 @@
+ //
+ 
+ 
++#include <boost/archive/basic_archive.hpp>
+ #include <sstream>
+ #include <src/molecule/shell_base.h>
+ 
+diff -ruN bagel-1.2.2/src/molecule/shellecp.cc bagel-1.2.2.orig/src/molecule/shellecp.cc
+--- bagel-1.2.2/src/molecule/shellecp.cc	2023-12-02 11:23:16.000000000 +0100
++++ bagel-1.2.2.orig/src/molecule/shellecp.cc	2023-12-02 11:23:59.000000000 +0100
+@@ -22,7 +22,7 @@
+ // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ //
+ 
+-
++#include <boost/archive/basic_archive.hpp>
+ #include <sstream>
+ #include <src/molecule/shellecp.h>
+ 
+diff -ruN bagel-1.2.2/src/util/input/input.cc bagel-1.2.2.orig/src/util/input/input.cc
+--- bagel-1.2.2/src/util/input/input.cc	2023-12-02 11:23:17.000000000 +0100
++++ bagel-1.2.2.orig/src/util/input/input.cc	2023-12-02 11:24:05.000000000 +0100
+@@ -24,6 +24,7 @@
+ 
+ #include <fstream>
+ #include <string>
++#include <boost/archive/basic_archive.hpp>
+ #include <src/util/input/input.h>
+ #include <boost/property_tree/json_parser.hpp>
+ #include <boost/property_tree/xml_parser.hpp>
+diff -ruN bagel-1.2.2/src/util/math/btas_interface.cc bagel-1.2.2.orig/src/util/math/btas_interface.cc
+--- bagel-1.2.2/src/util/math/btas_interface.cc	2023-12-02 11:23:17.000000000 +0100
++++ bagel-1.2.2.orig/src/util/math/btas_interface.cc	2023-12-02 11:24:06.000000000 +0100
+@@ -22,6 +22,7 @@
+ // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ //
+ 
++#include <boost/archive/basic_archive.hpp>
+ #include <src/util/serialization.h>
+ #include <src/util/math/btas_interface.h>
+ 
+diff -ruN bagel-1.2.2/src/util/math/sphharmonics.cc bagel-1.2.2.orig/src/util/math/sphharmonics.cc
+--- bagel-1.2.2/src/util/math/sphharmonics.cc	2023-12-02 11:23:17.000000000 +0100
++++ bagel-1.2.2.orig/src/util/math/sphharmonics.cc	2023-12-02 11:24:06.000000000 +0100
+@@ -82,7 +82,7 @@
+   if (am > l)
+     throw runtime_error ("SphHarmonics.ylm: |m| > l");
+ 
+-  const double plm = legendre.compute(l, am, cth);
++  const double plm = ::legendre.compute(l, am, cth);
+   double fact = 1.0;
+   for (int i = 1; i <= 2*am; ++i)
+     fact *= l - am + i;
+@@ -109,8 +109,8 @@
+   const double cth = cos(theta_);
+   const int am = abs(m);
+ 
+-  const double plm = legendre.compute(l, am, cth);
+-
++  const double plm = ::legendre.compute(l, am, cth);
++  
+   double coef0 = 1.0;
+   for (unsigned int i = l + am; i > (l - am); i--) coef0 *= i;
+   const double coef = sqrt((2*l+1)/(4.0*pi__*coef0));
+@@ -133,7 +133,7 @@
+     throw runtime_error ("SphHarmonics.zlm: |m| > l");
+   const double cth = cos(theta_);
+ 
+-  const double plm = legendre.compute(l, am, cth);
++  const double plm = ::legendre.compute(l, am, cth);
+ 
+   double coef0 = 1.0;
+   for (unsigned int i = l + am; i > (l - am); i--) coef0 *= i;
+diff -ruN bagel-1.2.2/src/util/serialization.h bagel-1.2.2.orig/src/util/serialization.h
+--- bagel-1.2.2/src/util/serialization.h	2023-12-02 11:23:17.000000000 +0100
++++ bagel-1.2.2.orig/src/util/serialization.h	2023-12-02 11:24:06.000000000 +0100
+@@ -33,6 +33,7 @@
+ #include <type_traits>
+ #include <boost/version.hpp>
+ #include <boost/serialization/serialization.hpp>
++#include <boost/archive/basic_archive.hpp>
+ #include <boost/serialization/complex.hpp>
+ #include <boost/serialization/bitset.hpp>
+ #include <boost/serialization/string.hpp>
