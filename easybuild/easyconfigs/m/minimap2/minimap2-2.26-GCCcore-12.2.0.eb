@@ -5,6 +5,8 @@
 # R.QIAO
 
 # Update Petr Král (INUITS)
+
+# Add support for ARM Lara Peeters (UGent)
 easyblock = 'MakeCp'
 
 name = 'minimap2'
@@ -31,7 +33,15 @@ builddependencies = [('binutils', '2.39')]
 
 dependencies = [('zlib', '1.2.12')]
 
-buildopts = 'CC="${CC}" CFLAGS="${CFLAGS}" INCLUDES="${CPPFLAGS}"'
+# Adding -DHAVE_KALLOC because this was done in the past as the
+# INCLUDES variable was used to pass the CPPFLAGS set by EasyBuild
+# The INCLUDES variable is used for ARM support so we can no longer
+# use it to pass the CPPFLAGS set by EasyBuild
+buildopts = 'CC="${CC}" CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS} -DHAVE_KALLOC"'
+
+if ARCH == 'aarch64':
+    buildopts += ' arm_neon=1 aarch64=1'
+
 
 files_to_copy = [
     (['%(name)s'], 'bin'),
