@@ -1,0 +1,89 @@
+# Updated from WebKitGTK+-2.27.4-GCC-8.3.0.eb with more modules added
+# Author: J. Sassmannshausen (Imperial College London/UK)
+# Update: THEMBL
+
+easyblock = 'CMakeMake'
+
+name = 'WebKitGTK+'
+version = '2.41.4'
+
+homepage = 'https://webkitgtk.org/'
+description = """WebKitGTK+ is a full-featured port of the WebKit
+rendering engine, suitable for projects requiring any kind of web
+integration, from hybrid HTML/CSS applications to full-fledged web
+browsers. It offers WebKit's full functionality and is useful in a wide
+range of systems from desktop computers to embedded systems like phones,
+tablets, and televisions."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://webkitgtk.org/releases']
+sources = ['webkitgtk-%(version)s.tar.xz']
+checksums = ['ad792d4acd4e8536cc0a652fd0303bfef93a7f8718d2b3d72db83e25f52777af']
+
+osdependencies = [
+    # Would be better to use the system package due to security reasons
+    # But we need at least libgcrypt 1.7.0 and Ubuntu 16.04 and RH 7.5
+    # are both using a too old version.
+    # Update: Libcrypt 1.9.3 from EasyBuild added (J.S)
+    # ('libgcrypt-dev', 'libgcrypt20-dev', 'libgcrypt-devel'),
+    # libsecret is not actually needed since USE_LIBSECRET option is disabled
+    # ('libsecret-1-dev', 'libsecret-devel'),
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Python', '3.11.3'),
+    ('Perl', '5.36.1'),
+    ('GObject-Introspection', '1.76.1'),
+    ('pkgconf', '1.9.5'),
+    ('ccache', '4.9'),
+    ('unifdef', '2.12'),
+]
+
+dependencies = [
+    ('GLib', '2.77.1'),
+    ('gperf', '3.1'),
+    ('cairo', '1.17.8'),
+    ('GTK3', '3.24.37'),
+    ('LibSoup', '3.6.1'),
+    ('ATK', '2.38.0'),
+    ('libgcrypt', '1.10.3'),
+    ('wpebackend-fdo', '1.15.90'),
+    ('libxslt', '1.1.38'),
+    ('libtasn1', '4.19.0'),
+    ('GStreamer', '1.22.5'),
+    ('OpenJPEG', '2.5.0'),
+    ('Ruby', '3.3.0'),
+    ('GSL', '2.7'),
+    ('glew', '2.2.0', '-osmesa'),
+    ('enchant-2', '2.6.5'),
+    ('LittleCMS', '2.15'),
+    ('GST-plugins-base', '1.22.5'),
+    ('libwebp', '1.3.1'),
+    ('libavif', '1.0.4'),
+]
+
+
+# The build takes around 2.5 hours on 24 cores on AMD Rome!
+# So be patient!
+
+# Instead of using a patch file, we are disabling problematic builds in the command line.
+# At least this way, if something is not needed it can be turned off, without looking into
+# a patch file.
+configopts = "-DCMAKE_VERBOSE_MAKEFILE=ON -DPORT=GTK -DCMAKE_FIND_USE_PACKAGE_REGISTRY=FALSE "
+configopts += "-DENABLE_GAMEPAD=OFF -DUSE_LIBSECRET=OFF -DUSE_LIBHYPHEN=OFF "
+configopts += "-DUSE_WOFF2=OFF -DENABLE_JOURNALD_LOG=OFF -DENABLE_BUBBLEWRAP_SANDBOX=OFF "
+configopts += "-DENABLE_INTROSPECTION=OFF -DUSE_LIBNOTIFY=OFF "
+configopts += "-DUSE_GSTREAMER_TRANSCODER=OFF "
+
+prebuildopts = "export CCACHE_DIR=%(builddir)s/ccache && "
+preinstallopts = prebuildopts
+
+sanity_check_paths = {
+    'files': ['bin/WebKitWebDriver', 'lib/libwebkit2gtk-4.1.%s' % SHLIB_EXT,
+              'lib/libjavascriptcoregtk-4.1.%s' % SHLIB_EXT],
+    'dirs': ['include/webkitgtk-4.1/webkit2', 'libexec/webkit2gtk-4.1'],
+}
+
+moduleclass = 'lib'
