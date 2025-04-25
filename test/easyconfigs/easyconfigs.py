@@ -220,10 +220,10 @@ class EasyConfigTest(TestCase):
         changed_ecs_files = get_eb_files_from_diff(diff_filter='M')
         added_ecs_files = get_eb_files_from_diff(diff_filter='A')
 
-        # ignore template easyconfig (TEMPLATE.eb) and archived easyconfigs
+        # ignore archived easyconfigs
         def filter_ecs(ecs):
             archive_path = os.path.join('easybuild', 'easyconfigs', '__archive__')
-            return [ec for ec in ecs if os.path.basename(ec) != 'TEMPLATE.eb' and archive_path not in ec]
+            return [ec for ec in ecs if archive_path not in ec]
 
         changed_ecs_files = filter_ecs(changed_ecs_files)
         added_ecs_files = filter_ecs(added_ecs_files)
@@ -425,6 +425,17 @@ class EasyConfigTest(TestCase):
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
 
+        # multiple variants of GPAW-setups is OK as long as they are deps for GPAW
+        if dep == 'GPAW-setups' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out GPAW-setups variants that are only used as a dependency for GPAW
+                if all(ec.startswith('GPAW') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
+
         # Pairs of name, versionsuffix that should be removed from dep_vars if exactly one matching key is found.
         # The name is checked against 'dep' and can be a list to allow multiple
         # If the versionsuffix is a 2-element tuple, the second element should be set to True
@@ -549,6 +560,9 @@ class EasyConfigTest(TestCase):
             # Score-P 8.3+ requires Cube 4.8.2+ but we have 4.8.1 already
             'CubeLib': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
             'CubeWriter': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
+            # Current rapthor requires WSclean 3.5 or newer, which in turn requires EveryBeam 0.6.X or newer
+            # Requires us to also bump DP3 version (to 6.2) and its dependency on EveryBeam
+            'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2', r'WSClean-3\.[5-9]'])],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
@@ -980,8 +994,16 @@ class EasyConfigTest(TestCase):
         for easyconfig in self.parsed_easyconfigs:
             ec = easyconfig['ec']
             # easyblocks where there'll be no sources
-            if ec['easyblock'] in ['BuildEnv', 'Bundle', 'CrayToolchain', 'ModuleRC', 'SystemCompiler', 'SystemMPI',
-                                   'Toolchain']:
+            if ec['easyblock'] in [
+                'BuildEnv',
+                'Bundle',
+                'CrayToolchain',
+                'ModuleRC',
+                'SystemCompiler',
+                'SystemCompilerGCC',
+                'SystemMPI',
+                'Toolchain',
+            ]:
                 continue
 
             # easyconfigs where a dep provides the source
@@ -991,46 +1013,42 @@ class EasyConfigTest(TestCase):
             ]:
                 continue
 
-            if (('download_instructions' in ec and ec['download_instructions']) or ('crates' in ec and ec['crates']) or
-                    ('channels' in ec and ec['channels']) or ('source_urls' in ec and ec['source_urls'])):
-                continue
+            with ec.disable_templating():
+                if ec.get('download_instructions') or ec.get('crates') or ec.get('channels') or ec.get('source_urls'):
+                    continue
 
-            ok = False
-            for source in ec['sources']:
-                if isinstance(source, dict):
-                    if 'git_config' in source:
-                        ok = True
-                        break
-                    if 'source_urls' in source:
-                        ok = True
-                        break
-
-            for ext in ec['exts_list']:
-                if isinstance(ext, tuple) and len(ext) >= 3:
-                    if 'source_urls' in ext[2]:
-                        ok = True
-                        break
-
-            if 'components' in ec and ec['components']:
-                for component in ec['components']:
-                    if len(component) > 2 and not isinstance(component[2], str):
-                        if 'source_urls' in component[2]:
+                ok = False
+                for source in ec['sources']:
+                    if isinstance(source, dict):
+                        if 'git_config' in source or 'source_urls' in source:
                             ok = True
                             break
 
-            if ok:
-                continue
+                for ext in ec['exts_list']:
+                    if isinstance(ext, tuple) and len(ext) >= 3:
+                        if 'source_urls' in ext[2]:
+                            ok = True
+                            break
 
-            problem_ecs.append(easyconfig['spec'])
+                if 'components' in ec and ec['components']:
+                    for component in ec['components']:
+                        if len(component) > 2 and not isinstance(component[2], str):
+                            if 'source_urls' in component[2]:
+                                ok = True
+                                break
+
+                if not ok:
+                    problem_ecs.append(easyconfig['spec'])
 
         error_msg = "%d easyconfigs found without defined sources or download_instructions: %s"
-        self.assertEqual(problem_ecs, [], error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
+        if problem_ecs:
+            self.fail(error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
 
         for ec in self.parsed_easyconfigs:
-            ec_scp = ec['ec'].get_ref('sanity_check_paths')
+            ec_scp = ec['ec'].get('sanity_check_paths', resolve=False)
             if ec_scp != {}:
                 # if sanity_check_paths is specified (i.e., non-default), it must adher to the requirements
                 # both 'files' and 'dirs' keys, both with list values and with at least one a non-empty list
@@ -1046,9 +1064,8 @@ class EasyConfigTest(TestCase):
 
         r_libs_ecs = []
         for ec in self.parsed_easyconfigs:
-            for key in ('modextrapaths', 'modextravars'):
-                if 'R_LIBS' in ec['ec'].get_ref(key):
-                    r_libs_ecs.append(ec['spec'])
+            if any('R_LIBS' in ec['ec'].get(key, resolve=False) for key in ('modextrapaths', 'modextravars')):
+                r_libs_ecs.append(ec['spec'])
 
         error_msg = "%d easyconfigs found which set $R_LIBS, should be $R_LIBS_SITE: %s"
         self.assertEqual(r_libs_ecs, [], error_msg % (len(r_libs_ecs), ', '.join(r_libs_ecs)))
@@ -1061,8 +1078,8 @@ class EasyConfigTest(TestCase):
             # ignore git/svn dirs & archived easyconfigs
             if '/.git/' in dirpath or '/.svn/' in dirpath or '__archive__' in dirpath:
                 continue
-            # check whether list of .eb files is non-empty, only exception: TEMPLATE.eb
-            easyconfig_files = [fn for fn in filenames if fn.endswith('eb') and fn != 'TEMPLATE.eb']
+            # check whether list of .eb files is non-empty
+            easyconfig_files = [fn for fn in filenames if fn.endswith('eb')]
             if easyconfig_files:
                 # check whether path matches required pattern
                 if not easyconfig_dirs_regex.search(dirpath):
@@ -1090,8 +1107,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('4.9.4'))
-        self.assertEqual(most_recent[1], 'EasyBuild-4.9.4.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.0.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.0.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1268,6 +1285,12 @@ class EasyConfigTest(TestCase):
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
                     failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
 
+            # When using Rust it should use CargoPython*
+            if easyblock in ('PythonBundle', 'PythonPackage'):
+                if any(dep['name'] == 'Rust' or '-Rust-' in dep['versionsuffix'] for dep in ec.dependencies()):
+                    failing_checks.append('Use Cargo%s instead of %s when Rust is used in %s'
+                                          % (easyblock, easyblock, ec_fn))
+
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
@@ -1299,10 +1322,12 @@ class EasyConfigTest(TestCase):
         # some generic easyblocks already have a decent customised sanity_check_paths,
         # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle & JuliaPackage, PerlBundle,
         #           PythonBundle & PythonPackage;
-        # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
+        # BuildEnv, ModuleRC SystemCompiler and Toolchain easyblocks do not install anything so there is nothing
+        # to check.
         whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage',
                      'ConfigureMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'JuliaPackage',
-                     'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
+                     'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'SystemCompiler', 'SystemCompilerGCC',
+                     'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
@@ -1734,6 +1759,7 @@ def template_easyconfig_test(self, spec):
     dummy_template_values = {
         'builddir': '/dummy/builddir',
         'installdir': '/dummy/installdir',
+        'startdir': '/dummy/startdir',
         'parallel': '2',
     }
     ec.template_values.update(dummy_template_values)
@@ -1815,12 +1841,12 @@ def template_easyconfig_test(self, spec):
             fail_msg += f"'{orig_val}' vs '{dumped_val}'"
             failing_checks.append(fail_msg)
 
-    # don't allow updating of $PYTHONPATH with standard lib/python*/site-packages path,
-    # since that's already taken care of by EasyBuild framework now
-    # (cfr. https://github.com/easybuilders/easybuild-framework/pull/4539)
     modextrapaths = ec.get('modextrapaths', {}, resolve=True)
     regex = re.compile(r'^lib*/python[0-9]\.[0-9]+/site-packages$')
     for key, value in modextrapaths.items():
+        # don't allow updating of $PYTHONPATH with standard lib/python*/site-packages path,
+        # since that's already taken care of by EasyBuild framework now
+        # (cfr. https://github.com/easybuilders/easybuild-framework/pull/4539)
         if key == 'PYTHONPATH':
             if isinstance(value, str):
                 value = [value]
@@ -1828,10 +1854,14 @@ def template_easyconfig_test(self, spec):
                 fail_msg = "PYTHONPATH should not be specified in modextrapaths with standard path that matches "
                 fail_msg += f"'{regex.pattern}'"
                 failing_checks.append(fail_msg)
+        # don't allow hardcoding 'CPATH' in modextrapaths, should use MODULE_LOAD_ENV_HEADERS constant instead
+        if key == 'CPATH':
+            fail_msg = "'CPATH' should not be used in modextrapaths, use MODULE_LOAD_ENV_HEADERS constant instead"
+            failing_checks.append(fail_msg)
 
     # meson buildtype should be specified with easyblock parameter "buildtype" not with custom configopts.
     if ec['easyblock'] == 'MesonNinja':
-        configopts = ec.get('configopts', '', resolve=True)
+        configopts = ec.get('configopts', '', resolve=False)
         if '--buildtype ' in configopts or '--buildtype=' in configopts:
             fail_msg = "Build type should be specified via MesonNinja parameter 'buildtype' instead of configopts."
             failing_checks.append(fail_msg)
@@ -1861,7 +1891,7 @@ def suite(loader=None):
             dirs.remove('__archive__')
 
         for spec in specs:
-            if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
+            if spec.endswith('.eb'):
                 cnt += 1
                 innertest = make_inner_test(os.path.join(subpath, spec))
                 innertest.__doc__ = "Test for easyconfig %s" % spec
