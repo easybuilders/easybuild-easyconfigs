@@ -17,7 +17,11 @@ source_urls = [GNU_SOURCE]
 sources = [SOURCE_TAR_GZ]
 checksums = ['136d91bc269a9a5785e5f9e980bc76ab57428f604ce3e5a5a90cebc767971cc6']
 
-local_common_configopts = "--with-shared --enable-overwrite --without-ada --enable-symlinks --with-versioned-syms "
+# Force C standard to be C99 to avoid build failure because of stdbool.h being obsolete in GCC 15 / gnu23.
+# This trips the configure check. See https://bugzilla.redhat.com/show_bug.cgi?id=2342514#c8
+# for more information.
+local_common_configopts = "CFLAGS=-std=c99 "
+local_common_configopts += "--with-shared --enable-overwrite --without-ada --enable-symlinks --with-versioned-syms "
 configopts = [
     # build ncurses: serial build in default paths with shared libraries
     local_common_configopts + "--disable-widec",
@@ -27,7 +31,7 @@ configopts = [
 
 # need to take care of $CFLAGS ourselves with SYSTEM toolchain
 # we need to add -fPIC, but should also include -O* option to avoid compiling with -O0 (default for GCC)
-buildopts = 'CFLAGS="-O2 -fPIC"'
+buildopts = 'CFLAGS="-std=c99 -O2 -fPIC"'
 
 # Symlink libtinfo to libncurses
 # libncurses with this configopts has all the symbols from libtinfo, but some packages look for libtinfo specifically
