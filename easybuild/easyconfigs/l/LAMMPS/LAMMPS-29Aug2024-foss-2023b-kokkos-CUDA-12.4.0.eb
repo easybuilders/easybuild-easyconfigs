@@ -19,7 +19,7 @@ functionality.
 toolchain = {'name': 'foss', 'version': '2023b'}
 toolchainopts = {'openmp': True, 'usempi': True}
 
-# 'https://github.com/lammps/lammps/archive/'
+# Source URLs and patches
 source_urls = [GITHUB_LOWER_SOURCE]
 sources = ['stable_%(version)s.tar.gz']
 patches = [
@@ -31,11 +31,14 @@ checksums = [
      '723c944b62b9d28427d25e80a7a67049631702d344df49268a6846aa0cd0fe04'},
 ]
 
+
+# Build and dependencies
 builddependencies = [
     ('CMake', '3.27.6'),
     ('pkgconf', '2.0.3'),
     ('archspec', '0.2.2'),
 ]
+
 dependencies = [
     ('CUDA', '12.4.0', '', SYSTEM),
     ('UCX-CUDA', '1.15.0', _cuda_suffix),
@@ -57,12 +60,11 @@ dependencies = [
     ('Eigen', '3.4.0'),
     ('PLUMED', '2.9.2'),
     ('SciPy-bundle', '2023.11'),
-    # VTK package is auto-disabled if this dep is not available
     ('VTK', '9.3.0'),
-    # We use a custom build of MDI
     ('MDI', '1.4.29'),
     ('PyTorch', '2.4.1', _cuda_suffix),
 ]
+
 if ARCH == 'x86_64':
     # TBB and ScaFaCos are an optional dependency when building on Intel arch
     dependencies += [
@@ -70,22 +72,7 @@ if ARCH == 'x86_64':
         ('ScaFaCoS', '1.0.4'),
     ]
 
-# To use additional custom configuration options, use the 'configopts' easyconfig parameter
-# See docs and lammps easyblock for more information.
-# https://github.com/lammps/lammps/blob/master/cmake/README.md#lammps-configuration-options
-
-# OpenMP-Kokkos build is default in the current easyblock. One can switch to serial backend of Kokkos,
-# which is claimed to be faster in pure MPI calculations
-# configopts  = "-DKokkos_ENABLE_SERIAL=yes "
-
-
-# packages auto-enabled by easyblock
-# 'GPU'    - if cuda package is present and kokkos is disabled
-# 'KOKKOS' - if kokkos is enabled (by default)
-# 'INTEL'  - if builing on Intel CPU
-# 'OPENMP' - if OpenMP swithed on in 'toolchainopts'
-
-# include the following extra packages into the build
+# General packages
 general_packages = [
     'AMOEBA',
     'ASPHERE',
@@ -179,13 +166,21 @@ general_packages = [
 # - ML-QUIP
 # - MSCG
 # - QMMM (setup seems complex)
-cuda_compute_capabilities = ['7.0','7.5','8.0','8.6','8.7','8.9','9.0']
+
+cuda_compute_capabilities = ['8.6']
+
+extra_configopts = ['--enable-new-dtags']
 
 configopts = ' '.join([
-    '-D CMAKE_CXX_STANDARD=17',
-    '-D CMAKE_CXX_STANDARD_REQUIRED=ON',
-    '-D CMAKE_CXX_COMPILER=%(start_dir)s/lib/kokkos/bin/nvcc_wrapper',
-    '-D CMAKE_PREFIX_PATH=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch',
+    '-DCMAKE_CXX_STANDARD=17',
+    '-DCMAKE_CXX_STANDARD_REQUIRED=ON',
+    '-DCMAKE_CXX_COMPILER=%(start_dir)s/lib/kokkos/bin/nvcc_wrapper',
+    '-DCMAKE_PREFIX_PATH=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch',
+    '-DKokkos_ENABLE_CUDA=ON',
+    '-DKokkos_ENABLE_OPENMP=ON',
+    '-DKokkos_ENABLE_SERIAL=OFF',
+    '-DKokkos_ENABLE_PTHREAD=OFF',
+    '-DKokkos_ENABLE_CUDA_LAMBDA=ON',
 ])
 
 moduleclass = 'chem'
