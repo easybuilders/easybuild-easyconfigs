@@ -1,0 +1,66 @@
+Avoid tripping on //caffe2/test/cpp/jit:test_custom_class_registrations with IS_SANDCASTLE
+
+Author: Ake Sandgren
+Update for 2.6: Alexander Grund (TU Dresden)
+
+diff --git a/test/export/test_export.py b/test/export/test_export.py
+index 703a0c6e918..91892503955 100755
+--- a/test/export/test_export.py
++++ b/test/export/test_export.py
+@@ -11324,7 +11324,7 @@ class TestExportCustomClass(TorchTestCase):
+     def setUp(self):
+         if IS_FBCODE:
+             lib_file_path = "//caffe2/test/cpp/jit:test_custom_class_registrations"
+-        elif IS_SANDCASTLE or IS_MACOS:
++        elif False or IS_MACOS:
+             raise unittest.SkipTest("non-portable load_library call used in test")
+         elif IS_WINDOWS:
+             lib_file_path = find_library_location("torchbind_test.dll")
+diff --git a/test/export/test_lift_unlift.py b/test/export/test_lift_unlift.py
+index c027fc55717..17358101b8c 100644
+--- a/test/export/test_lift_unlift.py
++++ b/test/export/test_lift_unlift.py
+@@ -147,7 +147,7 @@ class TestLift(TestCase):
+     def setUp(self):
+         if IS_MACOS:
+             raise unittest.SkipTest("non-portable load_library call used in test")
+-        elif IS_SANDCASTLE or IS_FBCODE:
++        elif False or IS_FBCODE:
+             torch.ops.load_library(
+                 "//caffe2/test/cpp/jit:test_custom_class_registrations"
+             )
+@@ -380,7 +380,7 @@ class ConstantAttrMapTest(TestCase):
+     def setUp(self):
+         if IS_MACOS:
+             raise unittest.SkipTest("non-portable load_library call used in test")
+-        elif IS_SANDCASTLE or IS_FBCODE:
++        elif False or IS_FBCODE:
+             torch.ops.load_library(
+                 "//caffe2/test/cpp/jit:test_custom_class_registrations"
+             )
+diff --git a/test/test_weak.py b/test/test_weak.py
+index e8b6ee6f556..a6b3f0e052d 100644
+--- a/test/test_weak.py
++++ b/test/test_weak.py
+@@ -593,7 +593,7 @@ class WeakKeyDictionaryScriptObjectTestCase(TestCase):
+ 
+     def __init__(self, *args, **kw):
+         unittest.TestCase.__init__(self, *args, **kw)
+-        if IS_SANDCASTLE or IS_FBCODE:
++        if False or IS_FBCODE:
+             torch.ops.load_library(
+                 "//caffe2/test/cpp/jit:test_custom_class_registrations"
+             )
+diff --git a/torch/testing/_internal/torchbind_impls.py b/torch/testing/_internal/torchbind_impls.py
+index 5566b241f56..63159276572 100644
+--- a/torch/testing/_internal/torchbind_impls.py
++++ b/torch/testing/_internal/torchbind_impls.py
+@@ -113,7 +113,7 @@ def load_torchbind_test_lib():
+         IS_WINDOWS,
+     )
+ 
+-    if IS_SANDCASTLE or IS_FBCODE:
++    if False or IS_FBCODE:
+         torch.ops.load_library("//caffe2/test/cpp/jit:test_custom_class_registrations")
+     elif IS_MACOS:
+         raise unittest.SkipTest("non-portable load_library call used in test")
