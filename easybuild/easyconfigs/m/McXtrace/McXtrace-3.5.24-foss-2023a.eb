@@ -1,0 +1,42 @@
+# Author: Erik B Knudsen
+# United Neux
+
+easyblock = 'CMakeMake'
+
+name = 'McXtrace'
+version = '3.5.24'
+
+homepage = 'https://mcxtrace.org'
+description = "McXtrace is a Monte Carlo ray tracing X-ray instrumentaton and experiment simulation packages."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+github_account = 'mccode-dev'
+source_urls = ["https://github.com/mccode-dev/McCode/archive/refs/tags/"]
+sources = ['v%(version)s.tar.gz']
+checksums = ['b1958a24b6b7e06e65ff3fc302da6d306412fdaee15ac77fadf841e1521b773a']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('PyYAML','6.0')
+]
+
+configopts = '-DBUILD_MCXTRACE=ON -DENSURE_NCRYSTAL=off -DMCVERSION=%(version)s -DBUILD_TOOLS=off -DBUILD_MCXRUN=on'
+
+sanity_check_paths = {
+    'files': ["%(namelower)s/%(version)s/bin/mcxtrace"],
+    'dirs': [f"%(namelower)s/%(version)s/{dd}" for dd in ['samples','share','optics']]
+}
+
+sanity_check_commands = [
+    "mcxtrace -v"
+]
+
+modextravars = {'MCSTAS' : "%(installdir)s/%(namelower)s/%(version)s"}
+
+moduleclass = 'phys'
