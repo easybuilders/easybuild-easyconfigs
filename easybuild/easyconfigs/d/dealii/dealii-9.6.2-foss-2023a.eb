@@ -1,0 +1,117 @@
+easyblock = 'CMakeMake'
+
+name = 'dealii'
+version = '9.6.2'
+
+homepage = 'http://www.dealii.org/'
+description = """A C++ software library supporting the creation of finite element codes and an open community of users and developers."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True, 'extra_cxxflags' : '-I/cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v3/MPI/gcc12/openmpi4/trilinos/15.1.1/include'}
+
+source_urls = ['https://github.com/dealii/%(namelower)s/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['1051e332de3822488e91c2b0460681052a3c4c5ac261cdd7a6af784869a25523', '644781fe70aeeaf4ac1e252ab9ad24e3']
+
+# Note: this package is often built with software called candi
+# (due to it's specific dependencies/requirements)
+#    https://aspect-documentation.readthedocs.io/en/latest/user/install/local-installation/using-candi.html
+# This isn't feasible with easybuild, but the candi page has a good test afterwards to ensure
+# it's built correctly:
+#    cp -R $EBROOTDEALII/examples/step-32 .
+#    cd step-32
+#    cmake . && make
+#    mpirun -n 2 ./step-32
+
+separate_build_dir = True
+patches = ['%(name)s-%(version)s.patch']
+builddependencies = [
+   ('CMake', '3.31.0'),
+   ('SymEngine', '0.14.0'),
+#   ('Boost', '1.82.0', '-mpi', ('gompi','2023a')),
+   ('Boost', '1.82.0'),
+   ('nanoflann', '1.7.1'),
+]
+
+dependencies = [
+   ('p4est', '2.8.6'),
+   ('GSL', '2.7'),
+   ('SuiteSparse', '7.6.0'),
+   ('tbb', '2021.10.0'),
+   ('SUNDIALS', '6.6.0'),
+   ('gmsh', '4.13.1'),
+   ('ADOL-C', '2.7.2'),
+   ('arpack-ng', '3.9.1'),
+   ('ASSIMP', '5.2.5'),
+   ('HDF5', '1.14.2', '-mpi'),
+   ('METIS', '5.1.0'),
+   ('muParser', '2.3.4'),
+   ('netCDF-C++4', '4.3.1', '-mpi'),
+   ('PETSc', '3.20.0'),
+   ('SLEPc', '3.20.1'),
+   ('occt', '7.7.1'),
+   ('Trilinos', '15.1.1','',('gofb','2023a')),
+   ('SymEngine', '0.14.0'),
+   ('FLINT', '3.0.0'),
+   ('LLVM', '16.0.6'),
+]
+
+preconfigopts = 'export TRILINOS_DIR=$EBROOTTRILINOS && '
+preconfigopts += 'declare -A ARCH_MAP=( [sse3]=SSE2 [avx]=AVX [avx2]=AVX [avx512]=AVX512 ) && '
+
+configopts = '-DDEAL_II_ALLOW_PLATFORM_INTROSPECTION=OFF '
+configopts += '-DDEAL_II_WITH_64BIT_INDICES=ON '
+configopts += '-DDEAL_II_HAVE_${ARCH_MAP[$RSNT_ARCH]}=ON '
+configopts += '-DDEAL_II_WITH_BOOST=ON -DBOOST_DIR=$EBROOTBOOST '
+configopts += '-DDEAL_II_WITH_P4EST=ON '
+configopts += '-DDEAL_II_WITH_MPI=ON '
+configopts += '-DDEAL_II_WITH_TRILINOS=ON '
+configopts += '-DTBB_DIR=$EBROOTTBB '
+configopts += '-DTrilinos_ENABLE_Sacado=ON '
+configopts += '-DTrilinos_ENABLE_Stratimikos=ON '
+
+#Please note: the following components have ben removed from Trilinos-15.0: Pike;PikeImplicit;PikeBlackBox;Rythmos;Moertel;STKSearchUtil;Komplex;FEI;Domi;TpetraClassic;KokkosAlgorithms;KokkosContainers;KokkosCore
+
+configopts += '-DCMAKE_BUILD_TYPE=Release '
+configopts += '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+configopts += '-DBUILD_SHARED_LIBS=ON '
+configopts += '-DCMAKE_C_COMPILER=mpicc '
+configopts += '-DCMAKE_CXX_COMPILER=mpiCC '
+configopts += '-DCMAKE_Fortran_COMPILER=mpif90 '
+configopts += '-DLAPACK_FOUND=true '
+configopts += '-DLAPACK_LIBRARIES="$LIBLAPACK" '
+configopts += '-DSCALAPACK_DIR=$SCALAPACK_LIB_DIR '
+configopts += '-DSCALAPACK_LIBRARIES="$LIBSCALAPACK -lm" '
+configopts += '-DP4EST_DIR=${EBROOTP4EST} '
+configopts += '-DTRILINOS_DIR=${EBROOTTRILINOS} '
+configopts += '-DGSL_LIBRARIES=${EBROOTGSL}/lib/libgsl.a '
+configopts += '-DGSL_INCLUDE_DIRS=${EBROOTGSL}/include '
+configopts += '-DDEAL_II_HAVE_USABLE_FLAGS_RELEASE=ON '
+configopts += '-DGMSH_DIR=$EBROOTGMSH '
+configopts += '-DSUNDIALS_DIR=$EBROOTSUNDIALS '
+configopts += '-DUMFPACK_DIR=$EBROOTSUITESPARSE/UMFPACK '
+configopts += '-DZLIB_INCLUDE_DIR=$EBROOTGENTOO/include '
+configopts += '-DZLIB_LIBRARY=$EBROOTGENTOO/lib64/libz.so '
+configopts += '-DADOLC_DIR=$EBROOTADOLMINC '
+configopts += '-DARPACK_DIR=$EBROOTARPACKMINNG '
+configopts += '-DASSIMP_DIR=$EBROOTASSIMP '
+configopts += '-DHDF5_DIR=$EBROOTHDF5 '
+configopts += '-DMETIS_DIR=$EBROOTMETIS '
+configopts += '-DMETIS_INCLUDE_DIR=$EBROOTMETIS/include '
+configopts += '-DMETIS_LIBRARY=$EBROOTMETIS/lib/libmetis.so '
+configopts += '-DMUPARSER_DIR=$EBROOTMUPARSER '
+configopts += '-DNETCDF_DIR=$EBROOTNETCDFMINCPLUSPLUS4 '
+configopts += '-DPETSC_DIR=$EBROOTPETSC '
+configopts += '-DSLEPC_DIR=$EBROOTSLEPC '
+configopts += '-DDEAL_II_LINKER_FLAGS=-L$EBROOTGENTOO/lib64/fltk '
+
+# Too parallel is too slow, and may cause build/tests to fail:
+
+maxparallel = 8
+
+sanity_check_paths = {
+    'files': [('lib/libdeal_II.so')],
+    'dirs': ['include', 'lib'],
+}
+
+moduleclass = 'numlib'

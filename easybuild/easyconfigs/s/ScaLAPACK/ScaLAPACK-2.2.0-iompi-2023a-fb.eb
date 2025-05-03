@@ -11,10 +11,14 @@ toolchainopts = {'extra_cflags': '-Wno-implicit-function-declaration', 'extra_ff
 
 source_urls = [homepage]
 sources = [SOURCELOWER_TGZ]
-patches = ['ScaLAPACK-%(version)s_fix-GCC-10.patch']
+patches = [
+    'ScaLAPACK-%(version)s_fix-GCC-10.patch',
+    'ScaLAPACK-%(version)s_libname-suffix.patch',
+]
 checksums = [
     '40b9406c20735a9a3009d863318cb8d3e496fb073d201c5463df810e01ab2a57',  # scalapack-2.2.0.tgz
     'f6bc3c6dee012ba4a696548a2e12b6aae932ce4fd5a142153b338839f52b5906',  # ScaLAPACK-2.2.0_fix-GCC-10.patch
+    '1ca29c76aa2597625a099f328f09c4e9f2ff456afc5c8e93091d7b4d2241fd98',  # ScaLAPACK-2.2.0_libname-suffix.patch
 ]
 
 builddependencies = [
@@ -34,7 +38,7 @@ configopts += '-DLAPACK_LIBRARIES="$EBROOTFLEXIBLAS/lib/libflexiblas_intel.%s" '
 # ScaLAPACK's CMake adds -fltconsistency, incompatible with -fp-model precise.
 configopts += '-DCMAKE_Fortran_FLAGS="${FCFLAGS/-fp-model precise /}" '
 preconfigopts = ['export CFLAGS="$CFLAGS -DInt=long" FCFLAGS="$FCFLAGS -i8" && ', '']
-installopts = ['&& mv %(installdir)s/lib/libscalapack{,64}.' + SHLIB_EXT, '']
+configopts = [configopts.replace('libflexiblas', 'libflexiblas64') + ' -DLIBNAME_SUFFIX=64', configopts]
 
 sanity_check_paths = {
     'files': ['lib/libscalapack.%s' % SHLIB_EXT, 'lib64/libscalapack.%s' % SHLIB_EXT],
