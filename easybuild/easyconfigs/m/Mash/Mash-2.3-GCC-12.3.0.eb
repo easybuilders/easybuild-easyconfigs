@@ -1,0 +1,47 @@
+# Contribution by
+# DeepThought, Flinders University
+# Updated to v2.2
+# R.QIAO <rob.qiao@flinders.edu.au>
+
+easyblock = 'ConfigureMake'
+
+name = 'Mash'
+version = '2.3'
+
+homepage = 'http://mash.readthedocs.org'
+description = "Fast genome and metagenome distance estimation using MinHash"
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/marbl/Mash/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'Mash-2.2_fix-hardcoding.patch',
+    'Mash-2.1_disable-memcpy-wrap.patch',
+    'Mash-2.3_fix-GCC-11.patch',
+]
+checksums = [
+    'f96cf7305e010012c3debed966ac83ceecac0351dbbfeaa6cd7ad7f068d87fe1',  # v2.3.tar.gz
+    '0c7315af727a06f408ab3ca69da0860fc671aa870b448a41a509b1e6d7027db5',  # Mash-2.2_fix-hardcoding.patch
+    '40990cf3d192b533736374bc67a54dbd839d90b0310a0a66f994891da1f85b6e',  # Mash-2.1_disable-memcpy-wrap.patch
+    '47a55459d4e8c57949648e0f33f3ffc3529563db0efe60f495fdec046f48d94e',  # Mash-2.3_fix-GCC-11.patch
+]
+
+builddependencies = [('Autotools', '20220317')]
+dependencies = [
+    ('CapnProto', '1.0.1'),
+    ('GSL', '2.7'),
+    ('zlib', '1.2.13'),
+]
+
+preconfigopts = "./bootstrap.sh && "
+configopts = "--with-capnp=$EBROOTCAPNPROTO --with-gsl=$EBROOTGSL"
+
+sanity_check_paths = {
+    'files': ['bin/mash', 'lib/libmash.a'],
+    'dirs': ['include/mash'],
+}
+
+sanity_check_commands = ['mash --version']
+
+moduleclass = 'bio'

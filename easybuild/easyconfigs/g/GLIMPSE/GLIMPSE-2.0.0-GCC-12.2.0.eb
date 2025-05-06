@@ -1,0 +1,54 @@
+easyblock = 'MakeCp'
+
+name = 'GLIMPSE'
+version = '2.0.0'
+
+homepage = 'https://github.com/odelaneau/GLIMPSE'
+description = "GLIMPSE2 is a set of tools for phasing and imputation for low-coverage sequencing datasets"
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+
+source_urls = ['https://github.com/odelaneau/GLIMPSE/archive/']
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/odelaneau/',
+        'repo_name': 'GLIMPSE',
+        'tag': 'v%(version)s',
+        'keep_git_dir': True,
+    },
+}]
+checksums = [None]
+
+builddependencies = [
+    ('git', '2.38.1', '-nodocs'),
+]
+
+dependencies = [
+    ('Boost', '1.81.0'),
+    ('bzip2', '1.0.8'),
+    ('cURL', '7.86.0'),
+    ('HTSlib', '1.17'),
+    ('XZ', '5.2.7'),
+    ('zlib', '1.2.12'),
+]
+
+prebuildopts = 'ls */makefile | xargs sed -i "s/^CXXFLAG=.*/CXXFLAG=${CXXFLAGS}/g" && '
+prebuildopts += 'ls */makefile | xargs sed -i "s/^LDFLAG=.*/LDFLAG=${CXXFLAGS}/g" && '
+buildopts = 'CXX="$CXX" HTSSRC=${EBROOTHTSLIB} HTSLIB_LIB="-lhts -lcurl" BOOST_INC=$EBROOTBOOST/include '
+buildopts += 'BOOST_LIB_IO="-lboost_iostreams" BOOST_LIB_PO="-lboost_program_options" '
+buildopts += 'BOOST_LIB_SE="-lboost_serialization" '
+
+files_to_copy = [(['*/bin/*'], 'bin')]
+
+local_binaries = ['GLIMPSE2_chunk', 'GLIMPSE2_concordance', 'GLIMPSE2_ligate',
+                  'GLIMPSE2_phase', 'GLIMPSE2_split_reference']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%s --help" % x for x in local_binaries]
+
+moduleclass = 'bio'
