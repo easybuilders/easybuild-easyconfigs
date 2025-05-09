@@ -15,11 +15,13 @@ sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ
 patches = [
     'ncbi-vdb-2.10.7_fix-LD_LIBRARY_PATH.patch',
     'ncbi-vdb-cstdlib.patch',
+    'ncbi-vdb-3.0.0_hdf5_api.patch',
 ]
 checksums = [
-    '154317ef265104861fe8d3d2e439939ae98f33b1e28da3c45f32ae8534dbfad7',  # ncbi-vdb-3.0.0.tar.gz
-    'e8f22dbd0c2e564e296bafdf76ba0e0e2da0d13e22be5aaf322135e5f26eb133',  # ncbi-vdb-2.10.7_fix-LD_LIBRARY_PATH.patch
-    'db3d563262ca9b14e7b9a94a0be6683a9eef41a498c9c064aa05c2a6785f1655',  # ncbi-vdb-cstdlib.patch
+    {'ncbi-vdb-3.0.0.tar.gz': '154317ef265104861fe8d3d2e439939ae98f33b1e28da3c45f32ae8534dbfad7'},
+    {'ncbi-vdb-2.10.7_fix-LD_LIBRARY_PATH.patch': 'e8f22dbd0c2e564e296bafdf76ba0e0e2da0d13e22be5aaf322135e5f26eb133'},
+    {'ncbi-vdb-cstdlib.patch': 'db3d563262ca9b14e7b9a94a0be6683a9eef41a498c9c064aa05c2a6785f1655'},
+    {'ncbi-vdb-3.0.0_hdf5_api.patch': '34bdad822248118a011b5106fe5b5efaa068c19b66ed10f949a9c0b07a79de8b'},
 ]
 
 builddependencies = [
@@ -29,29 +31,17 @@ builddependencies = [
 ]
 
 dependencies = [
-    ('file', '5.43'),  # provides libmagic
-    ('HDF5', '1.10.8'),  # version 1.12.x has changes to API and is not compatible
+    ('HDF5', '1.12.2'),
     ('libxml2', '2.9.13'),
     ('bzip2', '1.0.8'),
 ]
 
-# add addtional libraries needed to statically link HDF5 from EB
-preconfigopts = "sed -i 's/-lhdf5 -Wl,-Bdynamic/-lhdf5 -Wl,-Bdynamic -lmpi -lsz/'"
-preconfigopts += " %(builddir)s/%(namelower)s-%(version)s/setup/konfigure.perl &&"
-
-configopts = ''
-configopts += ' -DHDF5_LIBDIR=$EBROOTHDF5/lib -DXML2_LIBDIR=$EBROOTLIBXML2/lib'
-configopts += ' -DHDF5_INCDIR=$EBROOTHDF5/include -DXML2_INCDIR=$EBROOTLIBXML2/include'
-
-
-# replace hardcoded optimization flags with EB settings
-prebuildopts = "find %(builddir)s/%(namelower)s-%(version)s/build/ -name \"Makefile*\" "
-prebuildopts += "-exec sed -i 's/-O3/$(EBFLAGS)/g' {} + && EBFLAGS=\"$CFLAGS\" "
-preinstallopts = 'EBFLAGS="$CFLAGS" '
+configopts = "-DHDF5_INCDIR=$EBROOTHDF5/include -DHDF5_LIBDIR=$EBROOTHDF5/lib "
+configopts += "-DXML2_INCDIR=$EBROOTLIBXML2/include -DXML2_LIBDIR=$EBROOTLIBXML2/lib "
 
 sanity_check_paths = {
-    'files': [('lib/libncbi-%s.%s' % (k, e), 'lib64/libncbi-%s.%s' % (k, e))
-              for k in ['vdb', 'wvdb'] for e in ['a', SHLIB_EXT]],
+    'files': ['include/ncbi/ncbi.h', 'include/ncbi/vdb-blast.h'] +
+             [('lib/libncbi-%s.%s' % (k, e)) for k in ['vdb', 'wvdb'] for e in ['a', SHLIB_EXT]],
     'dirs': [],
 }
 

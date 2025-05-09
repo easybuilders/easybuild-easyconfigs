@@ -1,0 +1,681 @@
+From 31d80c6b261b24220776dfaeb8a04f80f80e0a24 Mon Sep 17 00:00:00 2001
+From: Lasse Collin <lasse.collin@tukaani.org>
+Date: Sun, 4 Sep 2022 23:23:00 +0300
+Subject: [PATCH] liblzma: Vaccinate against an ill patch from RHEL/CentOS 7.
+
+RHEL/CentOS 7 shipped with 5.1.2alpha, including the threaded
+encoder that is behind #ifdef LZMA_UNSTABLE in the API headers.
+In 5.1.2alpha these symbols are under XZ_5.1.2alpha in liblzma.map.
+API/ABI compatibility tracking isn't done between development
+releases so newer releases didn't have XZ_5.1.2alpha anymore.
+
+Later RHEL/CentOS 7 updated xz to 5.2.2 but they wanted to keep
+the exported symbols compatible with 5.1.2alpha. After checking
+the ABI changes it turned out that >= 5.2.0 ABI is backward
+compatible with the threaded encoder functions from 5.1.2alpha
+(but not vice versa as fixes and extensions to these functions
+were made between 5.1.2alpha and 5.2.0).
+
+In RHEL/CentOS 7, XZ Utils 5.2.2 was patched with
+xz-5.2.2-compat-libs.patch to modify liblzma.map:
+
+  - XZ_5.1.2alpha was added with lzma_stream_encoder_mt and
+    lzma_stream_encoder_mt_memusage. This matched XZ Utils 5.1.2alpha.
+
+  - XZ_5.2 was replaced with XZ_5.2.2. It is clear that this was
+    an error; the intention was to keep using XZ_5.2 (XZ_5.2.2
+    has never been used in XZ Utils). So XZ_5.2.2 lists all
+    symbols that were listed under XZ_5.2 before the patch.
+    lzma_stream_encoder_mt and _mt_memusage are included too so
+    they are listed both here and under XZ_5.1.2alpha.
+
+The patch didn't add any __asm__(".symver ...") lines to the .c
+files. Thus the resulting liblzma.so exports the threaded encoder
+functions under XZ_5.1.2alpha only. Listing the two functions
+also under XZ_5.2.2 in liblzma.map has no effect without
+matching .symver lines.
+
+The lack of XZ_5.2 in RHEL/CentOS 7 means that binaries linked
+against unpatched XZ Utils 5.2.x won't run on RHEL/CentOS 7.
+This is unfortunate but this alone isn't too bad as the problem
+is contained within RHEL/CentOS 7 and doesn't affect users
+of other distributions. It could also be fixed internally in
+RHEL/CentOS 7.
+
+The second problem is more serious: In XZ Utils 5.2.2 the API
+headers don't have #ifdef LZMA_UNSTABLE for obvious reasons.
+This is true in RHEL/CentOS 7 version too. Thus now programs
+using new APIs can be compiled without an extra #define. However,
+the programs end up depending on symbol version XZ_5.1.2alpha
+(and possibly also XZ_5.2.2) instead of XZ_5.2 as they would
+with an unpatched XZ Utils 5.2.2. This means that such binaries
+won't run on other distributions shipping XZ Utils >= 5.2.0 as
+they don't provide XZ_5.1.2alpha or XZ_5.2.2; they only provide
+XZ_5.2 (and XZ_5.0). (This includes RHEL/CentOS 8 as the patch
+luckily isn't included there anymore with XZ Utils 5.2.4.)
+
+Binaries built by RHEL/CentOS 7 users get distributed and then
+people wonder why they don't run on some other distribution.
+Seems that people have found out about the patch and been copying
+it to some build scripts, seemingly curing the symptoms but
+actually spreading the illness further and outside RHEL/CentOS 7.
+
+The ill patch seems to be from late 2016 (RHEL 7.3) and in 2017 it
+had spread at least to EasyBuild. I heard about the events only
+recently. :-(
+
+This commit splits liblzma.map into two versions: one for
+GNU/Linux and another for other OSes that can use symbol versioning
+(FreeBSD, Solaris, maybe others). The Linux-specific file and the
+matching additions to .c files add full compatibility with binaries
+that have been built against a RHEL/CentOS-patched liblzma. Builds
+for OSes other than GNU/Linux won't get the vaccine as they should
+be immune to the problem (I really hope that no build script uses
+the RHEL/CentOS 7 patch outside GNU/Linux).
+
+The RHEL/CentOS compatibility symbols XZ_5.1.2alpha and XZ_5.2.2
+are intentionally put *after* XZ_5.2 in liblzma_linux.map. This way
+if one forgets to #define HAVE_SYMBOL_VERSIONS_LINUX when building,
+the resulting liblzma.so.5 will have lzma_stream_encoder_mt@@XZ_5.2
+since XZ_5.2 {...} is the first one that lists that function.
+Without HAVE_SYMBOL_VERSIONS_LINUX @XZ_5.1.2alpha and @XZ_5.2.2
+will be missing but that's still a minor problem compared to
+only having lzma_stream_encoder_mt@@XZ_5.1.2alpha!
+
+The "local: *;" line was moved to XZ_5.0 so that it doesn't need
+to be moved around. It doesn't matter where it is put.
+
+Having two similar liblzma_*.map files is a bit silly as it is,
+at least for now, easily possible to generate the generic one
+from the Linux-specific file. But that adds extra steps and
+increases the risk of mistakes when supporting more than one
+build system. So I rather maintain two files in parallel and let
+validate_map.sh check that they are in sync when "make mydist"
+is run.
+
+This adds .symver lines for lzma_stream_encoder_mt@XZ_5.2.2 and
+lzma_stream_encoder_mt_memusage@XZ_5.2.2 even though these
+weren't exported by RHEL/CentOS 7 (only @@XZ_5.1.2alpha was
+for these two). I added these anyway because someone might
+misunderstand the RHEL/CentOS 7 patch and think that @XZ_5.2.2
+(@@XZ_5.2.2) versions were exported too.
+
+At glance one could suggest using __typeof__ to copy the function
+prototypes when making aliases. However, this doesn't work trivially
+because __typeof__ won't copy attributes (lzma_nothrow, lzma_pure)
+and it won't change symbol visibility from hidden to default (done
+by LZMA_API()). Attributes could be copied with __copy__ attribute
+but that needs GCC 9 and a fallback method would be needed anyway.
+
+This uses __symver__ attribute with GCC >= 10 and
+__asm__(".symver ...") with everything else. The attribute method
+is required for LTO (-flto) support with GCC. Using -flto with
+GCC older than 10 is now broken on GNU/Linux and will not be fixed
+(can silently result in a broken liblzma build that has dangerously
+incorrect symbol versions). LTO builds with Clang seem to work
+with the traditional __asm__(".symver ...") method.
+
+Thanks to Boud Roukema for reporting the problem and discussing
+the details and testing the fix.
+---
+ configure.ac                                  |  23 +++-
+ src/liblzma/Makefile.am                       |  10 +-
+ src/liblzma/common/block_buffer_encoder.c     |  18 +++
+ src/liblzma/common/common.c                   |  14 ++
+ src/liblzma/common/common.h                   |  28 ++++
+ src/liblzma/common/hardware_cputhreads.c      |  12 ++
+ src/liblzma/common/stream_encoder_mt.c        |  42 ++++++
+ .../{liblzma.map => liblzma_generic.map}      |   6 +-
+ src/liblzma/liblzma_linux.map                 | 123 ++++++++++++++++++
+ src/liblzma/validate_map.sh                   | 113 ++++++++++++++--
+ 10 files changed, 374 insertions(+), 15 deletions(-)
+ rename src/liblzma/{liblzma.map => liblzma_generic.map} (100%)
+ create mode 100644 src/liblzma/liblzma_linux.map
+
+diff --git a/configure.ac b/configure.ac
+index 7945934..0167c09 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -493,7 +493,28 @@ if test "x$enable_symbol_versions" = xauto; then
+ 	esac
+ fi
+ AC_MSG_RESULT([$enable_symbol_versions])
+-AM_CONDITIONAL([COND_SYMVERS], [test "x$enable_symbol_versions" = xyes])
++
++# There are two variants for symbol versioning.
++# See src/liblzma/validate_map.sh for details.
++if test "x$enable_symbol_versions" = xyes; then
++	case $host_os in
++		linux*)
++			enable_symbol_versions=linux
++			AC_DEFINE([HAVE_SYMBOL_VERSIONS_LINUX], [1],
++				[Define to 1 to if GNU/Linux-specific details
++				are wanted for symbol versioning. This must
++				be used together with liblzma_linux.map.])
++			;;
++		*)
++			enable_symbol_versions=generic
++			;;
++	esac
++fi
++
++AM_CONDITIONAL([COND_SYMVERS_LINUX],
++	[test "x$enable_symbol_versions" = xlinux])
++AM_CONDITIONAL([COND_SYMVERS_GENERIC],
++	[test "x$enable_symbol_versions" = xgeneric])
+ 
+ 
+ ##############
+diff --git a/src/liblzma/Makefile.am b/src/liblzma/Makefile.am
+index ae8967c..cf2144d 100644
+--- a/src/liblzma/Makefile.am
++++ b/src/liblzma/Makefile.am
+@@ -26,10 +26,14 @@ liblzma_la_CPPFLAGS = \
+ 	-DTUKLIB_SYMBOL_PREFIX=lzma_
+ liblzma_la_LDFLAGS = -no-undefined -version-info 7:6:2
+ 
+-EXTRA_DIST += liblzma.map validate_map.sh
+-if COND_SYMVERS
++EXTRA_DIST += liblzma_generic.map liblzma_linux.map validate_map.sh
++if COND_SYMVERS_GENERIC
+ liblzma_la_LDFLAGS += \
+-	-Wl,--version-script=$(top_srcdir)/src/liblzma/liblzma.map
++	-Wl,--version-script=$(top_srcdir)/src/liblzma/liblzma_generic.map
++endif
++if COND_SYMVERS_LINUX
++liblzma_la_LDFLAGS += \
++	-Wl,--version-script=$(top_srcdir)/src/liblzma/liblzma_linux.map
+ endif
+ 
+ liblzma_la_SOURCES += ../common/tuklib_physmem.c
+diff --git a/src/liblzma/common/block_buffer_encoder.c b/src/liblzma/common/block_buffer_encoder.c
+index 39e263a..a47342e 100644
+--- a/src/liblzma/common/block_buffer_encoder.c
++++ b/src/liblzma/common/block_buffer_encoder.c
+@@ -325,6 +325,24 @@ lzma_block_buffer_encode(lzma_block *block, const lzma_allocator *allocator,
+ }
+ 
+ 
++#ifdef HAVE_SYMBOL_VERSIONS_LINUX
++// This is for compatibility with binaries linked against liblzma that
++// has been patched with xz-5.2.2-compat-libs.patch from RHEL/CentOS 7.
++LZMA_SYMVER_API("lzma_block_uncomp_encode@XZ_5.2.2",
++	lzma_ret, lzma_block_uncomp_encode_522)(lzma_block *block,
++		const uint8_t *in, size_t in_size,
++		uint8_t *out, size_t *out_pos, size_t out_size)
++		lzma_nothrow lzma_attr_warn_unused_result
++		__attribute__((__alias__("lzma_block_uncomp_encode_52")));
++
++LZMA_SYMVER_API("lzma_block_uncomp_encode@@XZ_5.2",
++	lzma_ret, lzma_block_uncomp_encode_52)(lzma_block *block,
++		const uint8_t *in, size_t in_size,
++		uint8_t *out, size_t *out_pos, size_t out_size)
++		lzma_nothrow lzma_attr_warn_unused_result;
++
++#define lzma_block_uncomp_encode lzma_block_uncomp_encode_52
++#endif
+ extern LZMA_API(lzma_ret)
+ lzma_block_uncomp_encode(lzma_block *block,
+ 		const uint8_t *in, size_t in_size,
+diff --git a/src/liblzma/common/common.c b/src/liblzma/common/common.c
+index cf714e5..10fc884 100644
+--- a/src/liblzma/common/common.c
++++ b/src/liblzma/common/common.c
+@@ -366,6 +366,20 @@ lzma_end(lzma_stream *strm)
+ }
+ 
+ 
++#ifdef HAVE_SYMBOL_VERSIONS_LINUX
++// This is for compatibility with binaries linked against liblzma that
++// has been patched with xz-5.2.2-compat-libs.patch from RHEL/CentOS 7.
++LZMA_SYMVER_API("lzma_get_progress@XZ_5.2.2",
++	void, lzma_get_progress_522)(lzma_stream *strm,
++		uint64_t *progress_in, uint64_t *progress_out) lzma_nothrow
++		__attribute__((__alias__("lzma_get_progress_52")));
++
++LZMA_SYMVER_API("lzma_get_progress@@XZ_5.2",
++	void, lzma_get_progress_52)(lzma_stream *strm,
++		uint64_t *progress_in, uint64_t *progress_out) lzma_nothrow;
++
++#define lzma_get_progress lzma_get_progress_52
++#endif
+ extern LZMA_API(void)
+ lzma_get_progress(lzma_stream *strm,
+ 		uint64_t *progress_in, uint64_t *progress_out)
+diff --git a/src/liblzma/common/common.h b/src/liblzma/common/common.h
+index b3d3b7a..6b659c6 100644
+--- a/src/liblzma/common/common.h
++++ b/src/liblzma/common/common.h
+@@ -34,6 +34,34 @@
+ 
+ #include "lzma.h"
+ 
++#ifdef HAVE_SYMBOL_VERSIONS_LINUX
++// To keep link-time optimization (LTO, -flto) working with GCC,
++// the __symver__ attribute must be used instead of __asm__(".symver ...").
++// Otherwise the symbol versions may be lost, resulting in broken liblzma
++// that has wrong default versions in the exported symbol list!
++// The attribute was added in GCC 10; LTO with older GCC is not supported.
++//
++// To keep -Wmissing-prototypes happy, use LZMA_SYMVER_API only with function
++// declarations (including those with __alias__ attribute) and LZMA_API with
++// the function definitions. This means a little bit of silly copy-and-paste
++// between declarations and definitions though.
++//
++// As of GCC 12.2, the __symver__ attribute supports only @ and @@ but the
++// very convenient @@@ isn't supported (it's supported by GNU assembler
++// since 2000). When using @@ instead of @@@, the internal name must not be
++// the same as the external name to avoid problems in some situations. This
++// is why "#define foo_52 foo" is needed for the default symbol versions.
++#	if TUKLIB_GNUC_REQ(10, 0)
++#		define LZMA_SYMVER_API(extnamever, type, intname) \
++			extern __attribute__((__symver__(extnamever))) \
++					LZMA_API(type) intname
++#	else
++#		define LZMA_SYMVER_API(extnamever, type, intname) \
++			__asm__(".symver " #intname "," extnamever); \
++			extern LZMA_API(type) intname
++#	endif
++#endif
++
+ // These allow helping the compiler in some often-executed branches, whose
+ // result is almost always the same.
+ #ifdef __GNUC__
+diff --git a/src/liblzma/common/hardware_cputhreads.c b/src/liblzma/common/hardware_cputhreads.c
+index f468366..5d246d2 100644
+--- a/src/liblzma/common/hardware_cputhreads.c
++++ b/src/liblzma/common/hardware_cputhreads.c
+@@ -15,6 +15,18 @@
+ #include "tuklib_cpucores.h"
+ 
+ 
++#ifdef HAVE_SYMBOL_VERSIONS_LINUX
++// This is for compatibility with binaries linked against liblzma that
++// has been patched with xz-5.2.2-compat-libs.patch from RHEL/CentOS 7.
++LZMA_SYMVER_API("lzma_cputhreads@XZ_5.2.2",
++	uint32_t, lzma_cputhreads_522)(void) lzma_nothrow
++		__attribute__((__alias__("lzma_cputhreads_52")));
++
++LZMA_SYMVER_API("lzma_cputhreads@@XZ_5.2",
++	uint32_t, lzma_cputhreads_52)(void) lzma_nothrow;
++
++#define lzma_cputhreads lzma_cputhreads_52
++#endif
+ extern LZMA_API(uint32_t)
+ lzma_cputhreads(void)
+ {
+diff --git a/src/liblzma/common/stream_encoder_mt.c b/src/liblzma/common/stream_encoder_mt.c
+index 2ab4d04..819b227 100644
+--- a/src/liblzma/common/stream_encoder_mt.c
++++ b/src/liblzma/common/stream_encoder_mt.c
+@@ -1078,6 +1078,31 @@ stream_encoder_mt_init(lzma_next_coder *next, const lzma_allocator *allocator,
+ }
+ 
+ 
++#ifdef HAVE_SYMBOL_VERSIONS_LINUX
++// These are for compatibility with binaries linked against liblzma that
++// has been patched with xz-5.2.2-compat-libs.patch from RHEL/CentOS 7.
++// Actually that patch didn't create lzma_stream_encoder_mt@XZ_5.2.2
++// but it has been added here anyway since someone might misread the
++// RHEL patch and think both @XZ_5.1.2alpha and @XZ_5.2.2 exist.
++LZMA_SYMVER_API("lzma_stream_encoder_mt@XZ_5.1.2alpha",
++	lzma_ret, lzma_stream_encoder_mt_512a)(
++		lzma_stream *strm, const lzma_mt *options)
++		lzma_nothrow lzma_attr_warn_unused_result
++		__attribute__((__alias__("lzma_stream_encoder_mt_52")));
++
++LZMA_SYMVER_API("lzma_stream_encoder_mt@XZ_5.2.2",
++	lzma_ret, lzma_stream_encoder_mt_522)(
++		lzma_stream *strm, const lzma_mt *options)
++		lzma_nothrow lzma_attr_warn_unused_result
++		__attribute__((__alias__("lzma_stream_encoder_mt_52")));
++
++LZMA_SYMVER_API("lzma_stream_encoder_mt@@XZ_5.2",
++	lzma_ret, lzma_stream_encoder_mt_52)(
++		lzma_stream *strm, const lzma_mt *options)
++		lzma_nothrow lzma_attr_warn_unused_result;
++
++#define lzma_stream_encoder_mt lzma_stream_encoder_mt_52
++#endif
+ extern LZMA_API(lzma_ret)
+ lzma_stream_encoder_mt(lzma_stream *strm, const lzma_mt *options)
+ {
+@@ -1093,6 +1118,23 @@ lzma_stream_encoder_mt(lzma_stream *strm, const lzma_mt *options)
+ }
+ 
+ 
++#ifdef HAVE_SYMBOL_VERSIONS_LINUX
++LZMA_SYMVER_API("lzma_stream_encoder_mt_memusage@XZ_5.1.2alpha",
++	uint64_t, lzma_stream_encoder_mt_memusage_512a)(
++	const lzma_mt *options) lzma_nothrow lzma_attr_pure
++	__attribute__((__alias__("lzma_stream_encoder_mt_memusage_52")));
++
++LZMA_SYMVER_API("lzma_stream_encoder_mt_memusage@XZ_5.2.2",
++	uint64_t, lzma_stream_encoder_mt_memusage_522)(
++	const lzma_mt *options) lzma_nothrow lzma_attr_pure
++	__attribute__((__alias__("lzma_stream_encoder_mt_memusage_52")));
++
++LZMA_SYMVER_API("lzma_stream_encoder_mt_memusage@@XZ_5.2",
++	uint64_t, lzma_stream_encoder_mt_memusage_52)(
++	const lzma_mt *options) lzma_nothrow lzma_attr_pure;
++
++#define lzma_stream_encoder_mt_memusage lzma_stream_encoder_mt_memusage_52
++#endif
+ // This function name is a monster but it's consistent with the older
+ // monster names. :-( 31 chars is the max that C99 requires so in that
+ // sense it's not too long. ;-)
+diff --git a/src/liblzma/liblzma.map b/src/liblzma/liblzma_generic.map
+similarity index 100%
+rename from src/liblzma/liblzma.map
+rename to src/liblzma/liblzma_generic.map
+index f53a4ea..8cca05b 100644
+--- a/src/liblzma/liblzma.map
++++ b/src/liblzma/liblzma_generic.map
+@@ -93,6 +93,9 @@ global:
+ 	lzma_vli_decode;
+ 	lzma_vli_encode;
+ 	lzma_vli_size;
++
++local:
++	*;
+ };
+ 
+ XZ_5.2 {
+@@ -102,7 +105,4 @@ global:
+ 	lzma_get_progress;
+ 	lzma_stream_encoder_mt;
+ 	lzma_stream_encoder_mt_memusage;
+-
+-local:
+-	*;
+ } XZ_5.0;
+diff --git a/src/liblzma/liblzma_linux.map b/src/liblzma/liblzma_linux.map
+new file mode 100644
+index 0000000..4be882c
+--- /dev/null
++++ b/src/liblzma/liblzma_linux.map
+@@ -0,0 +1,123 @@
++XZ_5.0 {
++global:
++	lzma_alone_decoder;
++	lzma_alone_encoder;
++	lzma_auto_decoder;
++	lzma_block_buffer_bound;
++	lzma_block_buffer_decode;
++	lzma_block_buffer_encode;
++	lzma_block_compressed_size;
++	lzma_block_decoder;
++	lzma_block_encoder;
++	lzma_block_header_decode;
++	lzma_block_header_encode;
++	lzma_block_header_size;
++	lzma_block_total_size;
++	lzma_block_unpadded_size;
++	lzma_check_is_supported;
++	lzma_check_size;
++	lzma_code;
++	lzma_crc32;
++	lzma_crc64;
++	lzma_easy_buffer_encode;
++	lzma_easy_decoder_memusage;
++	lzma_easy_encoder;
++	lzma_easy_encoder_memusage;
++	lzma_end;
++	lzma_filter_decoder_is_supported;
++	lzma_filter_encoder_is_supported;
++	lzma_filter_flags_decode;
++	lzma_filter_flags_encode;
++	lzma_filter_flags_size;
++	lzma_filters_copy;
++	lzma_filters_update;
++	lzma_get_check;
++	lzma_index_append;
++	lzma_index_block_count;
++	lzma_index_buffer_decode;
++	lzma_index_buffer_encode;
++	lzma_index_cat;
++	lzma_index_checks;
++	lzma_index_decoder;
++	lzma_index_dup;
++	lzma_index_encoder;
++	lzma_index_end;
++	lzma_index_file_size;
++	lzma_index_hash_append;
++	lzma_index_hash_decode;
++	lzma_index_hash_end;
++	lzma_index_hash_init;
++	lzma_index_hash_size;
++	lzma_index_init;
++	lzma_index_iter_init;
++	lzma_index_iter_locate;
++	lzma_index_iter_next;
++	lzma_index_iter_rewind;
++	lzma_index_memusage;
++	lzma_index_memused;
++	lzma_index_size;
++	lzma_index_stream_count;
++	lzma_index_stream_flags;
++	lzma_index_stream_padding;
++	lzma_index_stream_size;
++	lzma_index_total_size;
++	lzma_index_uncompressed_size;
++	lzma_lzma_preset;
++	lzma_memlimit_get;
++	lzma_memlimit_set;
++	lzma_memusage;
++	lzma_mf_is_supported;
++	lzma_mode_is_supported;
++	lzma_physmem;
++	lzma_properties_decode;
++	lzma_properties_encode;
++	lzma_properties_size;
++	lzma_raw_buffer_decode;
++	lzma_raw_buffer_encode;
++	lzma_raw_decoder;
++	lzma_raw_decoder_memusage;
++	lzma_raw_encoder;
++	lzma_raw_encoder_memusage;
++	lzma_stream_buffer_bound;
++	lzma_stream_buffer_decode;
++	lzma_stream_buffer_encode;
++	lzma_stream_decoder;
++	lzma_stream_encoder;
++	lzma_stream_flags_compare;
++	lzma_stream_footer_decode;
++	lzma_stream_footer_encode;
++	lzma_stream_header_decode;
++	lzma_stream_header_encode;
++	lzma_version_number;
++	lzma_version_string;
++	lzma_vli_decode;
++	lzma_vli_encode;
++	lzma_vli_size;
++
++local:
++	*;
++};
++
++XZ_5.2 {
++global:
++	lzma_block_uncomp_encode;
++	lzma_cputhreads;
++	lzma_get_progress;
++	lzma_stream_encoder_mt;
++	lzma_stream_encoder_mt_memusage;
++} XZ_5.0;
++
++XZ_5.1.2alpha {
++global:
++	lzma_stream_encoder_mt;
++	lzma_stream_encoder_mt_memusage;
++} XZ_5.0;
++
++XZ_5.2.2 {
++global:
++	lzma_block_uncomp_encode;
++	lzma_cputhreads;
++	lzma_get_progress;
++	lzma_stream_encoder_mt;
++	lzma_stream_encoder_mt_memusage;
++} XZ_5.1.2alpha;
+diff --git a/src/liblzma/validate_map.sh b/src/liblzma/validate_map.sh
+index 3aee466..2bf6f8b 100644
+--- a/src/liblzma/validate_map.sh
++++ b/src/liblzma/validate_map.sh
+@@ -2,7 +2,79 @@
+ 
+ ###############################################################################
+ #
+-# Check liblzma.map for certain types of errors
++# Check liblzma_*.map for certain types of errors.
++#
++# liblzma_generic.map is for FreeBSD and Solaris and possibly others
++# except GNU/Linux.
++#
++# liblzma_linux.map is for GNU/Linux only. This and the matching extra code
++# in the .c files make liblzma >= 5.2.7 compatible with binaries that were
++# linked against ill-patched liblzma in RHEL/CentOS 7. By providing the
++# compatibility in official XZ Utils release will hopefully prevent people
++# from further copying the broken patch to other places when they want
++# compatibility with binaries linked on RHEL/CentOS 7. The long version
++# of the story:
++#
++#     RHEL/CentOS 7 shipped with 5.1.2alpha, including the threaded
++#     encoder that is behind #ifdef LZMA_UNSTABLE in the API headers.
++#     In 5.1.2alpha these symbols are under XZ_5.1.2alpha in liblzma.map.
++#     API/ABI compatibility tracking isn't done between development
++#     releases so newer releases didn't have XZ_5.1.2alpha anymore.
++#
++#     Later RHEL/CentOS 7 updated xz to 5.2.2 but they wanted to keep
++#     the exported symbols compatible with 5.1.2alpha. After checking
++#     the ABI changes it turned out that >= 5.2.0 ABI is backward
++#     compatible with the threaded encoder functions from 5.1.2alpha
++#     (but not vice versa as fixes and extensions to these functions
++#     were made between 5.1.2alpha and 5.2.0).
++#
++#     In RHEL/CentOS 7, XZ Utils 5.2.2 was patched with
++#     xz-5.2.2-compat-libs.patch to modify liblzma.map:
++#
++#       - XZ_5.1.2alpha was added with lzma_stream_encoder_mt and
++#         lzma_stream_encoder_mt_memusage. This matched XZ Utils 5.1.2alpha.
++#
++#       - XZ_5.2 was replaced with XZ_5.2.2. It is clear that this was
++#         an error; the intention was to keep using XZ_5.2 (XZ_5.2.2
++#         has never been used in XZ Utils). So XZ_5.2.2 lists all
++#         symbols that were listed under XZ_5.2 before the patch.
++#         lzma_stream_encoder_mt and _mt_memusage are included too so
++#         they are listed both here and under XZ_5.1.2alpha.
++#
++#     The patch didn't add any __asm__(".symver ...") lines to the .c
++#     files. Thus the resulting liblzma.so exports the threaded encoder
++#     functions under XZ_5.1.2alpha only. Listing the two functions
++#     also under XZ_5.2.2 in liblzma.map has no effect without
++#     matching .symver lines.
++#
++#     The lack of XZ_5.2 in RHEL/CentOS 7 means that binaries linked
++#     against unpatched XZ Utils 5.2.x won't run on RHEL/CentOS 7.
++#     This is unfortunate but this alone isn't too bad as the problem
++#     is contained within RHEL/CentOS 7 and doesn't affect users
++#     of other distributions. It could also be fixed internally in
++#     RHEL/CentOS 7.
++#
++#     The second problem is more serious: In XZ Utils 5.2.2 the API
++#     headers don't have #ifdef LZMA_UNSTABLE for obvious reasons.
++#     This is true in RHEL/CentOS 7 version too. Thus now programs
++#     using new APIs can be compiled without an extra #define. However,
++#     the programs end up depending on symbol version XZ_5.1.2alpha
++#     (and possibly also XZ_5.2.2) instead of XZ_5.2 as they would
++#     with an unpatched XZ Utils 5.2.2. This means that such binaries
++#     won't run on other distributions shipping XZ Utils >= 5.2.0 as
++#     they don't provide XZ_5.1.2alpha or XZ_5.2.2; they only provide
++#     XZ_5.2 (and XZ_5.0). (This includes RHEL/CentOS 8 as the patch
++#     luckily isn't included there anymore with XZ Utils 5.2.4.)
++#
++#     Binaries built by RHEL/CentOS 7 users get distributed and then
++#     people wonder why they don't run on some other distribution.
++#     Seems that people have found out about the patch and been copying
++#     it to some build scripts, seemingly curing the symptoms but
++#     actually spreading the illness further and outside RHEL/CentOS 7.
++#     Adding compatibility in an official XZ Utils release should work
++#     as a vaccine against this ill patch and stop it from spreading.
++#     The vaccine is kept GNU/Linux-only as other OSes should be immune
++#     (hopefully it hasn't spread via some build script to other OSes).
+ #
+ # Author: Lasse Collin
+ #
+@@ -18,11 +90,11 @@ STATUS=0
+ 
+ cd "$(dirname "$0")"
+ 
+-# Get the list of symbols that aren't defined in liblzma.map.
++# Get the list of symbols that aren't defined in liblzma_generic.map.
+ SYMS=$(sed -n 's/^extern LZMA_API([^)]*) \([a-z0-9_]*\)(.*$/\1;/p' \
+ 		api/lzma/*.h \
+ 	| sort \
+-	| grep -Fve "$(sed '/[{}:*]/d;/^$/d;s/^	//' liblzma.map)")
++	| grep -Fve "$(sed '/[{}:*]/d;/^$/d;s/^	//' liblzma_generic.map)")
+ 
+ # Check that there are no old alpha or beta versions listed.
+ VER=$(cd ../.. && sh build-aux/version.sh)
+@@ -30,21 +102,41 @@ NAMES=
+ case $VER in
+ 	*alpha | *beta)
+ 		NAMES=$(sed -n 's/^.*XZ_\([^ ]*\)\(alpha\|beta\) .*$/\1\2/p' \
+-			liblzma.map | grep -Fv "$VER")
++			liblzma_generic.map | grep -Fv "$VER")
+ 		;;
+ esac
+ 
+ # Check for duplicate lines. It can catch missing dependencies.
+-DUPS=$(sort liblzma.map | sed '/^$/d;/^global:$/d' | uniq -d)
++DUPS=$(sort liblzma_generic.map | sed '/^$/d;/^global:$/d' | uniq -d)
++
++# Check that liblzma_linux.map is in sync with liblzma_generic.map.
++# The RHEL/CentOS 7 compatibility symbols are in a fixed location
++# so it makes it easy to remove them for comparison with liblzma_generic.map.
++#
++# NOTE: Putting XZ_5.2 before the compatibility symbols XZ_5.1.2alpha
++# and XZ_5.2.2 in liblzma_linux.map is important: If liblzma_linux.map is
++# incorrectly used without #define HAVE_SYMBOL_VERSIONS_LINUX, only the first
++# occurrence of each function name will be used from liblzma_linux.map;
++# the rest are ignored by the linker. Thus having XZ_5.2 before the
++# compatibility symbols means that @@XZ_5.2 will be used for the symbols
++# listed under XZ_5.2 {...} and the same function names later in
++# the file under XZ_5.1.2alpha {...} and XZ_5.2.2 {...} will be
++# ignored (@XZ_5.1.2alpha or @XZ_5.2.2 won't be added at all when
++# the #define HAVE_SYMBOL_VERSIONS_LINUX isn't used).
++IN_SYNC=
++if ! sed '109,123d' liblzma_linux.map \
++		| cmp -s - liblzma_generic.map; then
++	IN_SYNC=no
++fi
+ 
+ # Print error messages if needed.
+-if test -n "$SYMS$NAMES$DUPS"; then
++if test -n "$SYMS$NAMES$DUPS$IN_SYNC"; then
+ 	echo
+-	echo 'validate_map.sh found problems from liblzma.map:'
++	echo 'validate_map.sh found problems from liblzma_*.map:'
+ 	echo
+ 
+ 	if test -n "$SYMS"; then
+-		echo 'liblzma.map lacks the following symbols:'
++		echo 'liblzma_generic.map lacks the following symbols:'
+ 		echo "$SYMS"
+ 		echo
+ 	fi
+@@ -61,6 +153,11 @@ if test -n "$SYMS$NAMES$DUPS"; then
+ 		echo
+ 	fi
+ 
++	if test -n "$IN_SYNC"; then
++		echo "liblzma_generic.map and liblzma_linux.map aren't in sync"
++		echo
++	fi
++
+ 	STATUS=1
+ fi
+ 
+-- 
+2.20.1
+
