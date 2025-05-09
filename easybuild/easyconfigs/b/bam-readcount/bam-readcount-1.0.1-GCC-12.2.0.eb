@@ -1,0 +1,52 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Adam Huffman
+# The Francis Crick Institute
+easyblock = 'CMakeMake'
+
+name = 'bam-readcount'
+version = '1.0.1'
+
+homepage = 'https://github.com/genome/bam-readcount'
+description = """Count DNA sequence reads in BAM files"""
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'genome'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['8ebf84d9efee0f2d3b43f0452dbf16b27337c960e25128f6a7173119e62588b8']
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('zlib', '1.2.12'),
+    ('ncurses', '6.3'),
+]
+
+maxparallel = 1
+
+# bam-readcount uses git to insert the version during configuration with CMake
+# but in the release archives there is no git information
+# local_commit is the git commit hash of the release
+local_commit = '944c11f'
+local_versionfile = '%(builddir)s/%(name)s*/version/version.h.in'
+preconfigopts = "sed -i -e 's/@FULL_VERSION@/%%(version)s/' %s && " % local_versionfile
+preconfigopts += "sed -i -e 's/@COMMIT_HASH@/%s/' %s && " % (local_commit, local_versionfile)
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ["bin/%(name)s"],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    # --help exists with exit code 1, so use grep to check for expected pattern in help output
+    "%(name)s --help 2>&1 | grep 'Example: bam-readcount -f'",
+    "%(name)s --version | grep 'version: %(version)s '",
+]
+
+moduleclass = 'bio'
