@@ -1,0 +1,58 @@
+easyblock = 'Bundle'
+
+name = 'vitessceR'
+# the github repo has no releases / tags, that's why we have to use commit...
+version = '0.99.0-20230110'
+versionsuffix = '-R-%(rver)s'
+local_commit = '8c67168'
+
+homepage = 'https://github.com/vitessce/vitessceR'
+description = "Vitessce is a visual integration tool for exploration of spatial single-cell experiments."
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('R', '4.2.1'),
+    ('R-bundle-Bioconductor', '3.15', versionsuffix),
+    ('libsodium', '1.0.18'),
+]
+
+exts_defaultclass = 'RPackage'
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/',
+        'https://cran.rstudio.com/src/contrib/',
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s/',
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+exts_list = [
+    ('sodium', '1.2.1', {
+        'checksums': ['f76e98969710af8b6c7c7decf63706d91185eebf8a266475b554d5ad95f803a8'],
+    }),
+    ('plumber', '1.2.1', {
+        'checksums': ['6ffc13e5ce1ff7ec81f6a4ab04eb1cb9f6da4004cf205ba3098d2ec4a83f1ecc'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/vitessce/vitessceR/archive/'],
+        'sources': [{
+            'download_filename': '%s.tar.gz' % local_commit,
+            'filename': '%(name)s-%(version)s.tar.gz'
+        }],
+        'checksums': ['3a8805f989b28820e23e2c2578838fe3231e2ee3cb0051559787fe2d0eb27256'],
+    }),
+]
+
+modextrapaths = {
+    'R_LIBS_SITE': '',
+}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [name],
+}
+
+moduleclass = 'bio'

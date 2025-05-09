@@ -1,0 +1,54 @@
+easyblock = 'Binary'
+
+name = 'jupyterlab-lmod'
+version = '1.0.2'
+
+homepage = 'https://github.com/cmd-ntrf/jupyter-lmod'
+description = """ JupyterLab extension that allows user to interact with environment modules
+before launching kernels. The extension use Lmod's Python interface to accomplish
+module related task like loading, unloading, saving collection, etc."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ['https://registry.npmjs.org/jupyterlab-lmod/-']
+sources = [SOURCE_TGZ]
+checksums = ['f6db445f14741ef342f3dbc857afea1ea347893adb6bdbef9027c42522cfbf7a']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('nodejs', '16.15.1'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('JupyterLab', '3.5.0'),
+    ('jupyterlmod', '3.0.0'),
+]
+
+# WARNING: this module of jupyterlab-lmod will replace the JupyterLab App directory (JUPYTERLAB_DIR)
+# current version of jupyterlab-lmod can only be installed as source extension in JUPYTERLAB_DIR
+# this is not an issue with the default installation of JupyterLab in EB as it has no apps/extensions
+_jupyterlab_dir = '%(installdir)s/share/jupyter/lab'
+
+install_cmd = "mkdir -p %s && " % _jupyterlab_dir
+install_cmd += "JUPYTERLAB_DIR=%s " % _jupyterlab_dir
+install_cmd += "jupyter labextension install %s" % SOURCE_TGZ
+
+sanity_check_commands = [
+    "jupyter labextension check %(name)s",
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ["%s/%s" % (_jupyterlab_dir, x) for x in ['extensions', 'schemas', 'staging', 'static', 'themes']],
+}
+
+modextrapaths = {
+    'JUPYTER_PATH': 'share/jupyter',
+    'JUPYTER_CONFIG_PATH': 'etc/jupyter',
+}
+modextravars = {
+    'JUPYTERLAB_DIR': _jupyterlab_dir,
+}
+
+moduleclass = 'tools'

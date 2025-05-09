@@ -1,0 +1,59 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2013-2015 Dmitri Gribenko, Ward Poelmans
+# Authors:: Dmitri Gribenko <gribozavr@gmail.com>
+# Authors:: Ward Poelmans <wpoely86@gmail.com>
+# License:: GPLv2 or later, MIT, three-clause BSD.
+# $Id$
+##
+
+name = 'Clang'
+version = '16.0.4'
+
+homepage = 'https://clang.llvm.org/'
+description = """C, C++, Objective-C compiler, based on LLVM.  Does not
+ include C++ standard library -- use libstdc++ from GCC."""
+
+# Clang also depends on libstdc++ during runtime, but this dependency is
+# already specified as the toolchain.
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+
+source_urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-%(version)s"]
+sources = [
+    'llvm-project-%(version)s.src.tar.xz',
+]
+checksums = [
+    {'llvm-project-16.0.4.src.tar.xz': 'cf3c2a1152ed7a99866bd7f12c24528ada6d9f6336afb7a08416938762004c9f'},
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('Perl', '5.36.0'),
+    # Including Python bindings would require this as a runtime dep
+    ('Python', '3.10.8'),
+]
+dependencies = [
+    # since Clang is a compiler, binutils is a runtime dependency too
+    ('binutils', '2.39'),
+    ('hwloc', '2.8.0'),
+    ('libxml2', '2.10.3'),
+    ('ncurses', '6.3'),
+    ('GMP', '6.2.1'),
+    ('Z3', '4.12.2'),
+]
+
+# enabling RTTI makes the flang compiler need to link to libc++ so instead of
+#   flang-new -flang-experimental-exec -fopenmp hello_openmp.f90
+# you would need
+#   flang-new -flang-experimental-exec -fopenmp hello_openmp.f90 -l c++
+enable_rtti = False
+
+assertions = True
+python_bindings = False
+skip_all_tests = True
+
+llvm_runtimes = ['libunwind', 'libcxx', 'libcxxabi']
+llvm_projects = ['polly', 'lld', 'lldb', 'clang-tools-extra', 'flang']
+
+moduleclass = 'compiler'

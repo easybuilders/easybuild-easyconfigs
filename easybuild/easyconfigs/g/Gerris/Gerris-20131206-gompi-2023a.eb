@@ -1,0 +1,67 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Authors::   David Quigley (University of Warwick)
+# License::   MIT/GPL
+# $Id$
+#
+##
+easyblock = 'Bundle'
+
+name = 'Gerris'
+version = '20131206'
+
+homepage = 'http://gfs.sourceforge.net/wiki/index.php/Main_Page'
+description = """Gerris is a Free Software program for the solution of the partial
+ differential equations describing fluid flow"""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+
+builddependencies = [
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('GLib', '2.77.1'),  # for GTS
+    ('gnuplot', '5.4.8'),  # for gfsplot
+]
+
+components = [
+    ('GTS', '121130', {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['https://gts.sourceforge.net/tarballs/'],
+        'sources': ['gts-snapshot-%(version)s.tar.gz'],
+        'checksums': ['c23f72ab74bbf65599f8c0b599d6336fabe1ec2a09c19b70544eeefdc069b73b'],
+        'start_dir': 'gts-snapshot-%(version)s',
+    }),
+    (name, version, {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['http://gerris.dalembert.upmc.fr/gerris/tarballs'],
+        'sources': ['gerris-snapshot-131206.tar.gz'],
+        'checksums': ['d5346a362b104ccc858c4b79938727d56c4654b103c268e54cf3aa56d0b55b39'],
+        'start_dir': 'gerris-snapshot-%s' % version[2:],
+        'preconfigopts': "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && ",
+        'prebuildopts': "sed -i 's/MPI_Errhandler_set/MPI_Comm_set_errhandler/g' src/init.c && ",
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/gerris2D', 'bin/gerris3D', 'bin/gfscompare2D', 'bin/gfscompare3D',
+              'bin/gfsjoin', 'bin/gfsjoin2D', 'bin/gfsjoin3D',
+              'include/gfs.h', 'include/gts.h', 'include/gtsconfig.h',
+              'lib/libgfs2D.a', 'lib/libgfs2D.%s' % SHLIB_EXT,
+              'lib/libgfs3D.a', 'lib/libgfs3D.%s' % SHLIB_EXT, 'lib/libgts.%s' % SHLIB_EXT],
+    'dirs': ['share/gerris', 'include/gerris']
+}
+
+sanity_check_commands = [
+    "gerris2D -h",
+    "gerris3D -h",
+    "gfscompare2D -h",
+    "gfscompare3D -h",
+    "gfsjoin -h",
+    "gfsjoin2D -h",
+    "gfsjoin3D -h",
+]
+
+moduleclass = 'cae'
