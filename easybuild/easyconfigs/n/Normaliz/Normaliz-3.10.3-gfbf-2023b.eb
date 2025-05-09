@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'Normaliz'
+version = '3.10.3'
+
+homepage = 'https://www.normaliz.uni-osnabrueck.de/'
+description = """Normaliz is a open source tool for computations in affine monoids, vector
+configurations, rational polyhedra and rational cones. Normaliz now computes
+rational and algebraic polyhedra, i.e., polyhedra defined over real algebraic
+extensions of QQ."""
+
+toolchain = {'name': 'gfbf', 'version': '2023b'}
+toolchainopts = {'pic': True, 'openmp': True, 'cstd': 'c++14'}
+
+github_account = 'Normaliz'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['d9536ab3568053a8dd9aeabe09ef901c1c0ebbda37be50775a120eb9e7ff47cb']
+
+builddependencies = [
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('Boost', '1.83.0'),
+    ('GMP', '6.3.0'),
+    ('CoCoALib', '0.99850'),
+    ('FLINT', '3.1.1'),
+    ('E-ANTIC', '2.0.2'),
+    ('nauty', '2.8.8'),
+]
+
+preconfigopts = "autoreconf -f -i && "
+
+configopts = "--with-gmp=$EBROOTGMP --with-cocoalib=$EBROOTCOCOALIB --with-flint=$EBROOTFLINT "
+configopts += "--with-e-antic=$EBROOTEMINANTIC --with-nauty=$EBROOTNAUTY"
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['bin/normaliz'] + ['lib/libnormaliz.%s' % e for e in ['a', SHLIB_EXT]],
+    'dirs': ['include/libnormaliz']
+}
+
+sanity_check_commands = ["normaliz --help"]
+
+moduleclass = 'math'
