@@ -47,15 +47,20 @@ patches = [
     'PyTorch-2.1.2_add-cuda-skip-markers.patch',
     'PyTorch-2.1.2_fix-conj-mismatch-test-failures.patch',
     'PyTorch-2.1.2_fix-device-mesh-check.patch',
+    'PyTorch-2.1.2_fix-locale-issue-in-nvrtcCompileProgram.patch',
     'PyTorch-2.1.2_fix-test_extension_backend-without-vectorization.patch',
     'PyTorch-2.1.2_fix-test_memory_profiler.patch',
     'PyTorch-2.1.2_fix-test_torchinductor-rounding.patch',
     'PyTorch-2.1.2_fix-vsx-vector-abs.patch',
     'PyTorch-2.1.2_fix-vsx-vector-div.patch',
+    'PyTorch-2.1.2_fix-with_temp_dir-decorator.patch',
+    'PyTorch-2.1.2_fix-wrong-device-mesh-size-in-tests.patch',
     'PyTorch-2.1.2_relax-cuda-tolerances.patch',
     'PyTorch-2.1.2_remove-nccl-backend-default-without-gpus.patch',
     'PyTorch-2.1.2_skip-cpu_repro-test-without-vectorization.patch',
     'PyTorch-2.1.2_skip-failing-test_dtensor_ops-subtests.patch',
+    'PyTorch-2.1.2_skip-memory-leak-test.patch',
+    'PyTorch-2.1.2_skip-test_fsdp_tp_checkpoint_integration.patch',
     'PyTorch-2.1.2_workaround_dynamo_failure_without_nnpack.patch',
 ]
 checksums = [
@@ -120,6 +125,8 @@ checksums = [
     {'PyTorch-2.1.2_fix-conj-mismatch-test-failures.patch':
      'c164357efa4ce88095376e590ba508fc1daa87161e1e59544eda56daac7f2847'},
     {'PyTorch-2.1.2_fix-device-mesh-check.patch': 'c0efc288bf3d9a9a3c8bbd2691348a589a2677ea43880a8c987db91c8de4806b'},
+    {'PyTorch-2.1.2_fix-locale-issue-in-nvrtcCompileProgram.patch':
+     'f7adafb4e4d3b724b93237a259797b6ed6f535f83be0e34a7b759c71c6a8ddf2'},
     {'PyTorch-2.1.2_fix-test_extension_backend-without-vectorization.patch':
      'cd1455495886a7d6b2d30d48736eb0103fded21e2e36de6baac719b9c52a1c92'},
     {'PyTorch-2.1.2_fix-test_memory_profiler.patch':
@@ -128,6 +135,10 @@ checksums = [
      'a0ef99192ee2ad1509c78a8377023d5be2b5fddb16f84063b7c9a0b53d979090'},
     {'PyTorch-2.1.2_fix-vsx-vector-abs.patch': 'd67d32407faed7dc1dbab4bba0e2f7de36c3db04560ced35c94caf8d84ade886'},
     {'PyTorch-2.1.2_fix-vsx-vector-div.patch': '11f497a6892eb49b249a15320e4218e0d7ac8ae4ce67de39e4a018a064ca1acc'},
+    {'PyTorch-2.1.2_fix-with_temp_dir-decorator.patch':
+     '90bd001e034095329277d70c6facc4026b4ce6d7f8b8d6aa81c0176eeb462eb1'},
+    {'PyTorch-2.1.2_fix-wrong-device-mesh-size-in-tests.patch':
+     '07a5e4233d02fb6348872838f4d69573c777899c6f0ea4e39ae23c08660d41e5'},
     {'PyTorch-2.1.2_relax-cuda-tolerances.patch': '554ad09787f61080fafdb84216e711e32327aa357e2a9c40bb428eb6503dee6e'},
     {'PyTorch-2.1.2_remove-nccl-backend-default-without-gpus.patch':
      'e6a1efe3d127fcbf4723476a7a1c01cfcf2ccb16d1fb250f478192623e8b6a15'},
@@ -135,6 +146,9 @@ checksums = [
      '7ace835af60c58d9e0754a34c19d4b9a0c3a531f19e5d0eba8e2e49206eaa7eb'},
     {'PyTorch-2.1.2_skip-failing-test_dtensor_ops-subtests.patch':
      '6cf711bf26518550903b09ed4431de9319791e79d61aab065785d6608fd5cc88'},
+    {'PyTorch-2.1.2_skip-memory-leak-test.patch': '8d9841208e8a00a498295018aead380c360cf56e500ef23ca740adb5b36de142'},
+    {'PyTorch-2.1.2_skip-test_fsdp_tp_checkpoint_integration.patch':
+     '943ee92f5fd518f608a59e43fe426b9bb45d7e7ad0ba04639e516db2d61fa57d'},
     {'PyTorch-2.1.2_workaround_dynamo_failure_without_nnpack.patch':
      'fb96eefabf394617bbb3fbd3a7a7c1aa5991b3836edc2e5d2a30e708bfe49ba1'},
 ]
@@ -171,10 +185,9 @@ dependencies = [
     ('expecttest', '0.1.5'),
     ('networkx', '3.1'),
     ('sympy', '1.12'),
-    ('Z3', '4.12.2', '-Python-%(pyver)s'),
+    ('Z3', '4.12.2'),
 ]
 
-use_pip = True
 buildcmd = '%(python)s setup.py build'  # Run the (long) build in the build step
 
 excluded_tests = {
@@ -191,6 +204,8 @@ excluded_tests = {
         # intermittent failures on various systems
         # See https://github.com/easybuilders/easybuild-easyconfigs/issues/17712
         'distributed/rpc/test_tensorpipe_agent',
+        # Broken test, can't ever succeed, see https://github.com/pytorch/pytorch/issues/122184
+        'distributed/tensor/parallel/test_tp_random_state',
         # failures on OmniPath systems, which don't support some optional InfiniBand features
         # See https://github.com/pytorch/tensorpipe/issues/413
         'distributed/pipeline/sync/skip/test_gpipe',
@@ -206,8 +221,9 @@ runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-throu
 
 # Especially test_quantization has a few corner cases that are triggered by the random input values,
 # those cannot be easily avoided, see https://github.com/pytorch/pytorch/issues/107030
+# test_nn is also prone to spurious failures: https://github.com/pytorch/pytorch/issues/118294
 # So allow a low number of tests to fail as the tests "usually" succeed
-max_failed_tests = 50
+max_failed_tests = 2
 
 # The readelf sanity check command can be taken out once the TestRPATH test from
 # https://github.com/pytorch/pytorch/pull/109493 is accepted, since it is then checked as part of the PyTorch test suite
