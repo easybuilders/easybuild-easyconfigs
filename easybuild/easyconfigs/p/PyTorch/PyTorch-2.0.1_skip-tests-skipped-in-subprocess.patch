@@ -1,0 +1,34 @@
+Use unittest.skip to skip tests skipped by subprocesses as otherwise skipped tests
+marked as expectedFailure may succeed unexpectatly failing the testsuite.
+E.g.:
+> INFO:torch.testing._internal.common_distributed:Thread 0 skipping test <bound method TestDTensorOps.test_dtensor_op_db of <__main__.TestDTensorOpsCPU testMethod=test_dtensor_op_db_sparse_sampled_addmm_cpu_float32>> for following reason: PyTorch is built without MKL support
+> INFO:torch.testing._internal.common_distributed:Thread 1 skipping test <bound method TestDTensorOps.test_dtensor_op_db of <__main__.TestDTensorOpsCPU testMethod=test_dtensor_op_db_sparse_sampled_addmm_cpu_float32>> for following reason: PyTorch is built without MKL support
+> INFO:torch.testing._internal.common_distributed:Skipping <bound method TestDTensorOps.test_dtensor_op_db of <__main__.TestDTensorOpsCPU testMethod=test_dtensor_op_db_sparse_sampled_addmm_cpu_float32>> on sandcastle for the following reason: Test skipped at subprocess level, look at subprocess log for skip reason
+> u
+> ...
+> FAILED (unexpected successes=1)
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/common_distributed.py b/torch/testing/_internal/common_distributed.py
+index 400aa80fdca..afea4a8f89f 100644
+--- a/torch/testing/_internal/common_distributed.py
++++ b/torch/testing/_internal/common_distributed.py
+@@ -828,7 +828,7 @@ class MultiProcessTestCase(TestCase):
+             )
+         for skip in TEST_SKIPS.values():
+             if first_process.exitcode == skip.exit_code:
+-                if IS_SANDCASTLE:
++                if False:
+                     # Don't use unittest.skip to skip the test on sandcastle
+                     # since it creates tasks for skipped tests assuming there
+                     # is some follow-up needed. Instead just "pass" the test
+@@ -1123,7 +1123,7 @@ class MultiThreadedTestCase(TestCase):
+         if skip_code > 0:
+             for skip in TEST_SKIPS.values():
+                 if skip_code == skip.exit_code:
+-                    if IS_SANDCASTLE:
++                    if False:
+                         # "pass" the test with an appropriate message.
+                         logger.info(
+                             f"Skipping {fn} on sandcastle for the following reason: {skip.message}"
