@@ -1,0 +1,64 @@
+easyblock = 'Bundle'
+
+name = 'AOCL-LAPACK'
+version = '5.1'
+modaltsoftname = 'aocl-lapackcore'
+hidden = True
+
+homepage = 'https://github.com/amd/libflame'
+description = """AOCL-LAPACK is AMD's optimized version of
+                 LAPACK targeted for AMD EPYC and Ryzen CPUs."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+toolchainopts = {'opt': True}
+
+builddependencies = [
+    ('CMake', '3.31.0'),
+    ('Python', '3.11.5'),
+    ('Perl', '5.38.2'),
+]
+
+dependencies = [
+    ('AOCL-BLAS', '%(version)s'),
+]
+
+default_easyblock = 'CMakeMake'
+default_component_specs = {'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_LOWER_TAR_GZ}]}
+
+local_lapack_component = [name, version, {
+    'source_urls': ['https://github.com/amd/libflame/archive/refs/tags'],
+    'start_dir': 'libflame-%(version)s',
+    'checksums': ['25524ba78b5952303369fa0859d217e44071144fd122a9dc3f72ed0bd73e3b2d'],
+    'configopts': ('-DENABLE_AMD_FLAGS=ON -DENABLE_AOCL_BLAS=ON '
+                   '-DLF_ISA_CONFIG=NONE '
+                   '-DCMAKE_C_FLAGS_RELEASE="$CFLAGS -mtune=generic -DNDEBUG"'),
+}]
+
+local_lapack_ilp64_component = local_lapack_component[:]
+local_lapack_ilp64_component[2] = dict(local_lapack_component[2])
+local_lapack_ilp64_component[2]['patches'] = ['%(name)s-%(version)s_libname-suffix.patch']
+local_lapack_ilp64_component[2]['checksums'].append(
+    '88fb092df0f4aa553d94036dc0a4609df0f905a0c31a3fd4daeb4451bf44ff7f')
+local_lapack_ilp64_component[2]['configopts'] += (' -DENABLE_ILP64=ON -DLIBNAME_SUFFIX=64 '
+    '-DAOCL_ROOT=$EBROOTAOCLMINBLAS -DAOCL_BLAS_INCLUDE_DIR=$EBROOTAOCLMINBLAS/include/blis64 '
+    '-DAOCL_BLAS_LIB=libblis-mt64.so')
+
+components = [
+    ('AOCL-Utils', version, {
+        'source_urls': ['https://github.com/amd/aocl-utils/archive/refs/tags'],
+	'checksums': ['68d75e04013abe90ea8308a9bc99b99532233b6c7f937f35381563f4124c20a5'],
+	'start_dir': '%(namelower)s-%(version)s',
+        'preconfigopts': 'CXX=g++-12 ', # avoid bad libstdc++ symbols
+    }),
+    local_lapack_ilp64_component,
+    local_lapack_component,
+]
+
+sanity_check_paths = {
+    'files': ['include/lapack.h', 'include/FLAME.h',
+              'lib/libflame64.%s' % SHLIB_EXT,
+              'lib/libflame.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
