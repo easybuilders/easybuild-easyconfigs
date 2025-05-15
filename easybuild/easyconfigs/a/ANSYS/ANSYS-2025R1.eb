@@ -18,13 +18,6 @@ extract_sources = True
 license_server = 'license3.sharcnet.ca -nochecks'
 license_server_port = '2325:1055'
 
-# $ cat /cvmfs/local/var/log/easybuild-ANSYS-2025R1-20240402.011509.MhyYt.log | grep "dir set to"
-#   Build dir set to /tmp/ANSYS/2025R1/system-system
-#   Software install dir set to /home/roberpj/.local/easybuild/software/2023/x86-64-v3/Core/ansys/2025R1
-#   Module install dir set to /home/roberpj/.local/easybuild/modules/2023/
-# Installation prefix /home/roberpj/.local/easybuild/software/2023/x86-64-v3/Core/ansys/2025R1
-# AWPROOTDIR = /home/roberpj/.local/easybuild/software/2023/x86-64-v3/Core/ansys/2025R1/v251
-
 postinstallcmds = [
   # Replace setmwruntime with one that works (should create patchfile for this later)
   "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch2/2025R1;\
@@ -45,6 +38,7 @@ postinstallcmds = [
   "find %(installdir)s \( -type f -o -type l \) -name 'libgfortran.so*' -exec mv {} {}.bak \;",
   "find %(installdir)s \( -type f -o -type l \) -name 'libgfortran.so.3*bak' -print0 | while IFS= \
    read -r -d $'\\0' file; do echo \"Removing bak from $file\"; mv \"$file\" \"${file%.bak}\"; done;",
+  "find %(installdir)s/v251/rocky/bin/gcc-libs \( -type f -o -type l \) -name 'libstdc++.so*' -exec mv {}.bak {} \;",
   # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
   "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
    sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
@@ -112,8 +106,11 @@ modextravars = {
     'SLURM_ENABLED': '1',
     'SCHEDULER_TIGHT_COUPLING': '1',
 }
+
 modextrapaths = {
-    'PATH': ['v251/fensapice/bin'],
+    'PATH': ['v251/fensapice/bin','v251/Rocky','v251/AnsysEM'],
+    'AWP_ROOT251': ['v251'],
+    'ANSYS251_DIR': ['v251/ansys'],
 }
 
 modluafooter = """
@@ -121,9 +118,9 @@ require("SitePackage")
 local found, path = find_and_define_license_file("__ANSYS_LICENSE_FILE", "ansys")
 if (not found) then
 	local error_message = [[
-We did not find a suitable license for ANSYS. If you have access to one, you can create the file $HOME/.licenses/ansys.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an ANSYS license, please see https://docs.computecanada.ca/wiki/ANSYS 
+We did not find a suitable license for ANSYS. If you have access to one, you can create the file $HOME/.licenses/ansys.lic with the license information. If you think you should have access to one as part of your institution, please write to support@tech.alliancecan.ca so that we can configure it. For more information about configuring an ANSYS license, please see https://docs.alliancecan.ca/wiki/Ansys 
 
-Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a une licence de ANSYS, vous pouvez creer le fichier $HOME/.licenses/ansys.lic avec l'information de la licence. Si vous   pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour ANSYS, veuillez consulter la page https://docs.computecanada.ca/wiki/ANSYS/fr
+Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a une licence de ANSYS, vous pouvez creer le fichier $HOME/.licenses/ansys.lic avec l'information de la licence. Si vous   pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@tech.alliancecan.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour ANSYS, veuillez consulter la page https://docs.alliancecan.ca/wiki/Ansys/fr
 	]]
 	LmodError(error_message)
 elseif (path) then
