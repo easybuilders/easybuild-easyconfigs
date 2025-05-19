@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'gocryptfs'
+version = '2.5.4'
+
+homepage = 'https://nuetzlich.net/gocryptfs/'
+description = "An encrypted overlay filesystem written in Go. gocryptfs is built on top the excellent go-fuse FUSE library."
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/rfjakob/gocryptfs/releases/download/v%(version)s/']
+sources = ['gocryptfs_v%(version)s_src-deps.tar.gz']
+patches = ['gocryptfs-2.5.4_install.patch']
+checksums = [
+    {'gocryptfs_v2.5.4_src-deps.tar.gz': '0db47fe41f46d1ff5b3ff4f1cc1088ab324a95af03995348435dcc20a5ff0282'},
+    {'gocryptfs-2.5.4_install.patch': '0dc1dba0bac38c1cfd94d1c31a8d62c55a1167fff86bafa2b6da6ebd6e9cc6cd'},
+]
+
+builddependencies = [
+    ('Go', '1.23.6'),
+    ('Pandoc', '3.6.2'),
+]
+
+dependencies = [
+    ('OpenSSL', '3'),
+]
+
+# No configure script
+configure_cmd = ':'
+
+# Make builds Go modules; isolate the build environment
+build_cmd = 'make GOPATH=%(builddir)s/go'
+
+build_cmd_targets = ['build']
+
+# Needs the DESTDIR variable to not use a system directory
+install_cmd = 'make install DESTDIR=%(installdir)s'
+
+sanity_check_paths = {
+    'dirs': ['bin', 'share'],
+    'files': ['bin/%(name)s', 'bin/%(name)s-xray'],
+}
+
+# --help, --version, ... all exit with status code one, so we need to check the output
+sanity_check_commands = ['%(name)s --help 2>&1 | grep -q %(version)s']
+
+moduleclass = 'tools'
