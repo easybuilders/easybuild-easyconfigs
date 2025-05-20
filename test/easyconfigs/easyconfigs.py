@@ -1018,7 +1018,7 @@ class EasyConfigTest(TestCase):
                     continue
 
                 ok = False
-                for source in ec['sources']:
+                for source in ec['sources'] + ec['data_sources']:
                     if isinstance(source, dict):
                         if 'git_config' in source or 'source_urls' in source:
                             ok = True
