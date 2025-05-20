@@ -1,0 +1,177 @@
+jax-0.4.25_fix-pybind11-systemlib.patch: Add missing value for System Pybind11 Bazel config
+jax-0.4.25_fix-pybind11-systemlib.patch: Author: Alexander Grund (TU Dresden)
+
+THEMBL: fix cupti include path. xla-76da73_cuda_home.patch
+
+diff --git a/third_party/xla/fix-pybind11-systemlib.patch b/third_party/xla/fix-pybind11-systemlib.patch
+new file mode 100644
+index 000000000..68bd2063d
+--- /dev/null
++++ b/third_party/xla/fix-pybind11-systemlib.patch
+@@ -0,0 +1,13 @@
++--- xla-orig/third_party/tsl/third_party/systemlibs/pybind11.BUILD
+++++ xla-4ccfe33c71665ddcbca5b127fefe8baa3ed632d4/third_party/tsl/third_party/systemlibs/pybind11.BUILD
++@@ -6,3 +6,10 @@
++         "@tsl//third_party/python_runtime:headers",
++     ],
++ )
+++
+++# Needed by pybind11_bazel.
+++config_setting(
+++    name = "osx",
+++    constraint_values = ["@platforms//os:osx"],
+++)
+++
+diff -ruN jax-jax-v0.4.35/jaxlib/gpu/vendor.h jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib_CUDA_HOME/jaxlib/gpu/vendor.h
+--- jax-jax-v0.4.35/jaxlib/gpu/vendor.h	2024-10-22 21:00:23.000000000 +0200
++++ jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib_CUDA_HOME/jaxlib/gpu/vendor.h	2024-11-26 10:56:20.396087442 +0100
+@@ -23,7 +23,7 @@
+ #if defined(JAX_GPU_CUDA)
+ 
+ // IWYU pragma: begin_exports
+-#include "third_party/gpus/cuda/extras/CUPTI/include/cupti.h"
++#include <cupti.h>
+ #include "third_party/gpus/cuda/include/cooperative_groups.h"
+ #include "third_party/gpus/cuda/include/cuComplex.h"
+ #include "third_party/gpus/cuda/include/cublas_v2.h"
+diff -ruN jax-jax-v0.4.35/third_party/xla/workspace.bzl jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib_CUDA_HOME/third_party/xla/workspace.bzl
+--- jax-jax-v0.4.35/third_party/xla/workspace.bzl	2024-10-22 21:00:23.000000000 +0200
++++ jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib_CUDA_HOME/third_party/xla/workspace.bzl	2025-05-13 17:10:47.808768995 +0200
+@@ -30,6 +30,12 @@
+         sha256 = XLA_SHA256,
+         strip_prefix = "xla-{commit}".format(commit = XLA_COMMIT),
+         urls = tf_mirror_urls("https://github.com/openxla/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)),
++        patch_file = [
++           "//third_party/xla:xla-76da73_cupti.patch",
++           "//third_party/xla:fix-pybind11-systemlib.patch",
++           "//third_party/xla:xla-76da73_cuda_home.patch",
++       ],
++       
+     )
+ 
+     # For development, one often wants to make changes to the TF repository as well
+diff -ruN jax-jax-v0.4.35/third_party/xla/xla-76da73_cuda_home.patch jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib_CUDA_HOME/third_party/xla/xla-76da73_cuda_home.patch
+--- jax-jax-v0.4.35/third_party/xla/xla-76da73_cuda_home.patch	1970-01-01 01:00:00.000000000 +0100
++++ jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib_CUDA_HOME/third_party/xla/xla-76da73_cuda_home.patch	2025-05-13 17:06:32.728189184 +0200
+@@ -0,0 +1,29 @@
++diff -ruN xla-76da730179313b3bebad6dea6861768421b7358c/third_party/tsl/tsl/platform/default/cuda_root_path.cc xla-76da730179313b3bebad6dea6861768421b7358c_cuda_home/third_party/tsl/tsl/platform/default/cuda_root_path.cc
++--- xla-76da730179313b3bebad6dea6861768421b7358c/third_party/tsl/tsl/platform/default/cuda_root_path.cc	2024-10-21 20:29:31.000000000 +0200
+++++ xla-76da730179313b3bebad6dea6861768421b7358c_cuda_home/third_party/tsl/tsl/platform/default/cuda_root_path.cc	2025-01-23 14:56:01.967843644 +0100
++@@ -34,10 +34,15 @@
++ #include "tsl/platform/env.h"
++ #endif
++ #include "tsl/platform/logging.h"
++-
+++#include <cstdlib>
++ namespace tsl {
++ 
++ std::vector<std::string> CandidateCudaRoots() {
+++const char* env_p = std::getenv("CUDA_HOME");
+++if (!env_p) {return std::vector<std::string>();}
+++const std::string S=env_p;
+++return std::vector<std::string>(1, S);
+++#if 0
++ #if !defined(PLATFORM_GOOGLE)
++   auto roots = std::vector<std::string>{};
++   std::string runfiles_suffix = "runfiles";
++@@ -83,6 +88,7 @@
++ #else   // !defined(PLATFORM_GOOGLE)
++   return {};
++ #endif  //! defined(PLATFORM_GOOGLE)
+++#endif
++ }
++ 
++ bool PreferPtxasFromPath() { return true; }
++Binary files xla-76da730179313b3bebad6dea6861768421b7358c/xla/service/gpu/.nvptx_compiler.cc.swp and xla-76da730179313b3bebad6dea6861768421b7358c_cuda_home/xla/service/gpu/.nvptx_compiler.cc.swp differ
+diff -ruN jax-jax-v0.4.35/third_party/xla/xla-76da73_cupti.patch jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib_CUDA_HOME/third_party/xla/xla-76da73_cupti.patch
+--- jax-jax-v0.4.35/third_party/xla/xla-76da73_cupti.patch	1970-01-01 01:00:00.000000000 +0100
++++ jax-jax-v0.4.35_jaxlib_cupti__fix-pybind11-systemlib_CUDA_HOME/third_party/xla/xla-76da73_cupti.patch	2025-01-17 15:44:11.545694652 +0100
+@@ -0,0 +1,88 @@
++Binary files xla-76da730179313b3bebad6dea6861768421b7358c/third_party/tsl/third_party/gpus/cuda/hermetic/.cuda_configure.bzl.swp and xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/third_party/tsl/third_party/gpus/cuda/hermetic/.cuda_configure.bzl.swp differ
++Binary files xla-76da730179313b3bebad6dea6861768421b7358c/third_party/tsl/third_party/gpus/.find_cuda_config.py.swp and xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/third_party/tsl/third_party/gpus/.find_cuda_config.py.swp differ
++diff -ruN xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_collector.cc xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_collector.cc
++--- xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_collector.cc	2024-10-21 20:29:31.000000000 +0200
+++++ xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_collector.cc	2025-01-17 10:22:48.947856740 +0100
++@@ -24,8 +24,8 @@
++ #include "absl/hash/hash.h"
++ #include "absl/strings/str_cat.h"
++ #include "absl/strings/str_join.h"
++-#include "third_party/gpus/cuda/extras/CUPTI/include/cupti.h"
++-#include "third_party/gpus/cuda/extras/CUPTI/include/cupti_activity.h"
+++#include <cupti.h>
+++#include <cupti_activity.h>
++ #include "third_party/gpus/cuda/include/cuda.h"
++ #include "third_party/gpus/cuda/include/cuda_occupancy.h"
++ #include "xla/tsl/profiler/utils/parse_annotation.h"
++diff -ruN xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_interface.h xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_interface.h
++--- xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_interface.h	2024-10-21 20:29:31.000000000 +0200
+++++ xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_interface.h	2025-01-17 10:22:48.947856740 +0100
++@@ -19,7 +19,7 @@
++ #include <cstddef>
++ #include <cstdint>
++ 
++-#include "third_party/gpus/cuda/extras/CUPTI/include/cupti.h"
+++#include <cupti.h>
++ #include "third_party/gpus/cuda/include/cuda.h"
++ #include "tsl/platform/macros.h"
++ #include "tsl/platform/types.h"
++diff -ruN xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_profiler.h xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_profiler.h
++--- xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_profiler.h	2024-10-21 20:29:31.000000000 +0200
+++++ xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_profiler.h	2025-01-17 10:22:48.947856740 +0100
++@@ -18,7 +18,7 @@
++ #include <optional>
++ #include <string>
++ 
++-#include "third_party/gpus/cuda/extras/CUPTI/include/cupti.h"
+++#include <cupti.h>
++ #include "xla/backends/profiler/gpu/cupti_interface.h"
++ #include "tsl/platform/types.h"
++ 
++diff -ruN xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_tracer.cc xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_tracer.cc
++--- xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_tracer.cc	2024-10-21 20:29:31.000000000 +0200
+++++ xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_tracer.cc	2025-01-17 14:50:00.284134999 +0100
++@@ -24,7 +24,7 @@
++ #include "absl/cleanup/cleanup.h"
++ #include "absl/container/flat_hash_set.h"
++ #include "absl/types/span.h"
++-#include "third_party/gpus/cuda/extras/CUPTI/include/generated_nvtx_meta.h"
+++#include <generated_nvtx_meta.h>
++ #include "third_party/gpus/cuda/include/cuda.h"
++ #include "xla/backends/profiler/gpu/cupti_buffer_events.h"
++ #include "xla/backends/profiler/gpu/cupti_collector.h"
++diff -ruN xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_tracer.h xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_tracer.h
++--- xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_tracer.h	2024-10-21 20:29:31.000000000 +0200
+++++ xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_tracer.h	2025-01-17 10:22:48.948856765 +0100
++@@ -22,7 +22,7 @@
++ 
++ #include "absl/status/status.h"
++ #include "absl/types/optional.h"
++-#include "third_party/gpus/cuda/extras/CUPTI/include/cupti.h"
+++#include <cupti.h>
++ #include "third_party/gpus/cuda/include/nvtx3/nvToolsExt.h"
++ #include "xla/backends/profiler/gpu/cupti_collector.h"
++ #include "xla/backends/profiler/gpu/cupti_interface.h"
++diff -ruN xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_wrapper.h xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_wrapper.h
++--- xla-76da730179313b3bebad6dea6861768421b7358c/xla/backends/profiler/gpu/cupti_wrapper.h	2024-10-21 20:29:31.000000000 +0200
+++++ xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/backends/profiler/gpu/cupti_wrapper.h	2025-01-17 10:22:48.948856765 +0100
++@@ -19,7 +19,7 @@
++ #include <stddef.h>
++ #include <stdint.h>
++ 
++-#include "third_party/gpus/cuda/extras/CUPTI/include/cupti.h"
+++#include <cupti.h>
++ #include "third_party/gpus/cuda/include/cuda.h"
++ #include "xla/backends/profiler/gpu/cupti_interface.h"
++ 
++diff -ruN xla-76da730179313b3bebad6dea6861768421b7358c/xla/tsl/cuda/cupti_stub.cc xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/tsl/cuda/cupti_stub.cc
++--- xla-76da730179313b3bebad6dea6861768421b7358c/xla/tsl/cuda/cupti_stub.cc	2024-10-21 20:29:31.000000000 +0200
+++++ xla-76da730179313b3bebad6dea6861768421b7358c_cupti_include/xla/tsl/cuda/cupti_stub.cc	2025-01-17 10:22:48.948856765 +0100
++@@ -13,7 +13,7 @@
++ limitations under the License.
++ ==============================================================================*/
++ 
++-#include "third_party/gpus/cuda/extras/CUPTI/include/cupti.h"
+++#include <cupti.h>
++ #include "third_party/gpus/cuda/include/cuda.h"
++ #include "tsl/platform/dso_loader.h"
++ #include "tsl/platform/load_library.h"
