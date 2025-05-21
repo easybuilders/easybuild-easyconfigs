@@ -1018,7 +1018,7 @@ class EasyConfigTest(TestCase):
                     continue
 
                 ok = False
-                for source in ec['sources']:
+                for source in ec['sources'] + ec['data_sources']:
                     if isinstance(source, dict):
                         if 'git_config' in source or 'source_urls' in source:
                             ok = True
@@ -1041,7 +1041,8 @@ class EasyConfigTest(TestCase):
                     problem_ecs.append(easyconfig['spec'])
 
         error_msg = "%d easyconfigs found without defined sources or download_instructions: %s"
-        self.assertEqual(problem_ecs, [], error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
+        if problem_ecs:
+            self.fail(error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
@@ -1523,19 +1524,19 @@ def verify_patch(specdir, patch_spec, checksum_idx, patch_checksums, extension_n
                                                                                               type(patch_spec)))
 
     patch_path = os.path.join(patch_dir, patch_name)
-    patch_descr = "patch file " + patch_name
-    if extension_name:
-        patch_descr += " of extension " + extension_name
-
     # only check actual patch files, not other files being copied via the patch functionality
     if patch_path.endswith('.patch'):
+        patch_descr = f"patch file {patch_name}"
+        if extension_name:
+            patch_descr += f" of extension {extension_name}"
+
         if not os.path.isfile(patch_path):
-            return [patch_descr + "is missing"]
+            return [f"{patch_descr} is missing"]
 
         if checksum_idx < len(patch_checksums):
             checksum = patch_checksums[checksum_idx]
             if not verify_checksum(patch_path, checksum):
-                return ["Invalid checksum for %s: %s" % (patch_descr, checksum)]
+                return [f"Invalid checksum for {patch_descr}: {checksum}"]
 
     return []  # No error
 
