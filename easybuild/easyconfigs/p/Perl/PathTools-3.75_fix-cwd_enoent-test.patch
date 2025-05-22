@@ -1,0 +1,50 @@
+From 8508806268d1abe6c533393333ad151e12adfc2d Mon Sep 17 00:00:00 2001
+From: Slaven Rezic <srezic@cpan.org>
+Date: Wed, 3 Oct 2018 10:07:32 -0400
+Subject: [PATCH] Accept also ESTALE (fix for RT #133534)
+
+ESTALE may occur in some environments when accessing a
+now non-existing directory, e.g. when using NFS or in docker
+containers.
+---
+ dist/PathTools/t/cwd_enoent.t | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/dist/PathTools/t/cwd_enoent.t b/dist/PathTools/t/cwd_enoent.t
+index 8f3a1fb1fb3e..510c65ed0c9a 100644
+--- a/dist/PathTools/t/cwd_enoent.t
++++ b/dist/PathTools/t/cwd_enoent.t
+@@ -2,7 +2,7 @@ use warnings;
+ use strict;
+ 
+ use Config;
+-use Errno qw(ENOENT);
++use Errno qw();
+ use File::Temp qw(tempdir);
+ use Test::More;
+ 
+@@ -19,6 +19,7 @@ unless(mkdir("$tmp/testdir") && chdir("$tmp/testdir") && rmdir("$tmp/testdir")){
+ plan tests => 8;
+ require Cwd;
+ 
++my @acceptable_errnos = (&Errno::ENOENT, (defined &Errno::ESTALE ? &Errno::ESTALE : ()));
+ foreach my $type (qw(regular perl)) {
+     SKIP: {
+ 	skip "_perl_abs_path() not expected to work", 4
+@@ -36,12 +37,14 @@ foreach my $type (qw(regular perl)) {
+ 	$res = Cwd::getcwd();
+ 	$eno = 0+$!;
+ 	is $res, undef, "$type getcwd result on non-existent directory";
+-	is $eno, ENOENT, "$type getcwd errno on non-existent directory";
++	ok((grep { $eno == $_ } @acceptable_errnos), "$type getcwd errno on non-existent directory")
++	    or diag "Got errno code $eno, expected " . join(", ", @acceptable_errnos);
+ 	$! = 0;
+ 	$res = Cwd::abs_path(".");
+ 	$eno = 0+$!;
+ 	is $res, undef, "$type abs_path result on non-existent directory";
+-	is $eno, ENOENT, "$type abs_path errno on non-existent directory";
++	ok((grep { $eno == $_ } @acceptable_errnos), "$type abs_path errno on non-existent directory")
++	    or diag "Got errno code $eno, expected " . join(", ", @acceptable_errnos);
+     }
+ }
+ 
