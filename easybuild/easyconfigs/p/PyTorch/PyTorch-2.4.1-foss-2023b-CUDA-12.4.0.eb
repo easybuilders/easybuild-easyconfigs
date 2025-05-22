@@ -1,0 +1,142 @@
+name = 'PyTorch'
+version = '2.4.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pytorch.org/'
+description = """Tensors and Dynamic neural networks in Python with strong GPU acceleration.
+PyTorch is a deep learning framework that puts Python first."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = [GITHUB_RELEASE]
+sources = ['%(namelower)s-v%(version)s.tar.gz']
+patches = [
+    'PyTorch-1.7.0_disable-dev-shm-test.patch',
+    'PyTorch-1.12.1_add-hypothesis-suppression.patch',
+    'PyTorch-1.12.1_fix-TestTorch.test_to.patch',
+    'PyTorch-1.12.1_skip-test_round_robin.patch',
+    'PyTorch-1.13.1_fix-gcc-12-warning-in-fbgemm.patch',
+    'PyTorch-1.13.1_fix-warning-in-test-cpp-api.patch',
+    'PyTorch-1.13.1_skip-failing-singular-grad-test.patch',
+    'PyTorch-2.0.1_avoid-test_quantization-failures.patch',
+    'PyTorch-2.0.1_fix-skip-decorators.patch',
+    'PyTorch-2.0.1_skip-failing-gradtest.patch',
+    'PyTorch-2.0.1_skip-test_shuffle_reproducibility.patch',
+    'PyTorch-2.0.1_skip-tests-skipped-in-subprocess.patch',
+    'PyTorch-2.1.0_remove-test-requiring-online-access.patch',
+    'PyTorch-2.1.0_skip-dynamo-test_predispatch.patch',
+    ('PyTorch-2.4.1_fix_check_function_exists.patch','cmake/Modules'),
+]
+checksums = [
+    {'pytorch-v2.4.1.tar.gz': '39666a43c0c10f5fd46c1a7ca95dc74d3bc39de2678b70066481cbf02e58384f'},
+    {'PyTorch-1.7.0_disable-dev-shm-test.patch': '622cb1eaeadc06e13128a862d9946bcc1f1edd3d02b259c56a9aecc4d5406b8a'},
+    {'PyTorch-1.12.1_add-hypothesis-suppression.patch':
+     'e71ffb94ebe69f580fa70e0de84017058325fdff944866d6bd03463626edc32c'},
+    {'PyTorch-1.12.1_fix-TestTorch.test_to.patch': '75f27987c3f25c501e719bd2b1c70a029ae0ee28514a97fe447516aee02b1535'},
+    {'PyTorch-1.12.1_skip-test_round_robin.patch': '63d4849b78605aa088fdff695637d9473ea60dee603a3ff7f788690d70c55349'},
+    {'PyTorch-1.13.1_fix-gcc-12-warning-in-fbgemm.patch':
+     '5c7be91a6096083a0b1315efe0001537499c600f1f569953c6a2c7f4cc1d0910'},
+    {'PyTorch-1.13.1_fix-warning-in-test-cpp-api.patch':
+     'bdde0f2105215c95a54de64ec4b1a4520528510663174fef6d5b900eb1db3937'},
+    {'PyTorch-1.13.1_skip-failing-singular-grad-test.patch':
+     '72688a57b2bb617665ad1a1d5e362c5111ae912c10936bb38a089c0204729f48'},
+    {'PyTorch-2.0.1_avoid-test_quantization-failures.patch':
+     '02e3f47e4ed1d7d6077e26f1ae50073dc2b20426269930b505f4aefe5d2f33cd'},
+    {'PyTorch-2.0.1_fix-skip-decorators.patch': '2039012cef45446065e1a2097839fe20bb29fe3c1dcc926c3695ebf29832e920'},
+    {'PyTorch-2.0.1_skip-failing-gradtest.patch': '8030bdec6ba49b057ab232d19a7f1a5e542e47e2ec340653a246ec9ed59f8bc1'},
+    {'PyTorch-2.0.1_skip-test_shuffle_reproducibility.patch':
+     '7047862abc1abaff62954da59700f36d4f39fcf83167a638183b1b7f8fec78ae'},
+    {'PyTorch-2.0.1_skip-tests-skipped-in-subprocess.patch':
+     '166c134573a95230e39b9ea09ece3ad8072f39d370c9a88fb2a1e24f6aaac2b5'},
+    {'PyTorch-2.1.0_remove-test-requiring-online-access.patch':
+     '35184b8c5a1b10f79e511cc25db3b8a5585a5d58b5d1aa25dd3d250200b14fd7'},
+    {'PyTorch-2.1.0_skip-dynamo-test_predispatch.patch':
+     '6298daf9ddaa8542850eee9ea005f28594ab65b1f87af43d8aeca1579a8c4354'},
+    {'PyTorch-2.4.1_fix_check_function_exists.patch':
+     'e7568369dffdecc042654232d50eb9e292530852f1c1fbd8f25ec0b335edbc90'},
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('hypothesis', '6.90.0'),
+    ('pytest-flakefinder', '1.1.0'),
+    ('pytest-rerunfailures', '14.0'),
+    ('pytest-shard', '0.1.2'),
+    ('tlparse', '0.3.5'),
+    ('optree', '0.13.0'),
+    ('unittest-xml-reporting', '3.1.0'),
+]
+
+dependencies = [
+    ('CUDA', '12.4.0', '', SYSTEM),
+    ('cuDNN', '8.9.7.29', '-CUDA-%(cudaver)s', SYSTEM),
+    ('magma', '2.7.2', '-CUDA-%(cudaver)s'),
+    ('NCCL', '2.20.5', '-CUDA-%(cudaver)s'),
+    ('Ninja', '1.11.1'),  # Required for JIT compilation of C++ extensions
+    ('Python', '3.11.5'),
+    ('Python-bundle-PyPI', '2023.10'),
+    ('protobuf', '25.3'),
+    ('protobuf-python', '4.25.3'),
+    ('pybind11', '2.11.1'),
+    ('SciPy-bundle', '2023.11'),
+    ('PyYAML', '6.0.1'),
+    ('MPFR', '4.2.1'),
+    ('GMP', '6.3.0'),
+    ('numactl', '2.0.16'),
+    ('FFmpeg', '6.0'),
+    ('Pillow', '10.2.0'),
+    ('expecttest', '0.2.1'),
+    ('networkx', '3.2.1'),
+    ('sympy', '1.12'),
+    ('Z3', '4.13.0'),
+]
+
+buildcmd = '%(python)s setup.py build' # Run the (long) build in the build step
+
+excluded_tests = {
+    '': [
+        # This test seems to take too long on NVIDIA Ampere at least.
+        'distributed/test_distributed_spawn',
+        # Broken on CUDA 11.6/11.7: https://github.com/pytorch/pytorch/issues/75375
+        'distributions/test_constraints',
+        # no xdoctest
+        'doctests',
+        # failing on broadwell
+        # See https://github.com/easybuilders/easybuild-easyconfigs/issues/17712
+        'test_native_mha',
+        # intermittent failures on various systems
+        # See https://github.com/easybuilders/easybuild-easyconfigs/issues/17712
+        'distributed/rpc/test_tensorpipe_agent',
+        # Broken test, can't ever succeed, see https://github.com/pytorch/pytorch/issues/122184
+        'distributed/tensor/parallel/test_tp_random_state',
+        # failures on OmniPath systems, which don't support some optional InfiniBand features
+        # See https://github.com/pytorch/tensorpipe/issues/413
+        'distributed/pipeline/sync/skip/test_gpipe',
+        'distributed/pipeline/sync/skip/test_leak',
+        'distributed/pipeline/sync/test_bugs',
+        'distributed/pipeline/sync/test_inplace',
+        'distributed/pipeline/sync/test_pipe',
+        'distributed/pipeline/sync/test_transparency',
+    ]
+}
+
+runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'
+
+# Especially test_quantization has a few corner cases that are triggered by the random input values,
+# those cannot be easily avoided, see https://github.com/pytorch/pytorch/issues/107030
+# test_nn is also prone to spurious failures: https://github.com/pytorch/pytorch/issues/118294
+# So allow a low number of tests to fail as the tests "usually" succeed
+max_failed_tests = 2
+
+# The readelf sanity check command can be taken out once the TestRPATH test from
+# https://github.com/pytorch/pytorch/pull/109493 is accepted, since it is then checked as part of the PyTorch test suite
+local_libcaffe2 = "$EBROOTPYTORCH/lib/python%%(pyshortver)s/site-packages/torch/lib/libcaffe2_nvrtc.%s" % SHLIB_EXT
+sanity_check_commands = [
+    "readelf -d %s | egrep 'RPATH|RUNPATH' | grep -v stubs" % local_libcaffe2,
+]
+
+tests = ['PyTorch-check-cpp-extension.py']
+
+moduleclass = 'ai'
