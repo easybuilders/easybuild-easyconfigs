@@ -691,6 +691,8 @@ class EasyConfigTest(TestCase):
             'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
             'wxWidgets': [(r'3\.2\.0', [r'wxPython-4\.2\.0', r'GRASS-8\.2\.0', r'QGIS-3\.28\.1'])],
+            # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
+            'AUGUSTUS': [(r'3\.5\.0-20240612', [r'BRAKER-3\.0\.8'])],
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
