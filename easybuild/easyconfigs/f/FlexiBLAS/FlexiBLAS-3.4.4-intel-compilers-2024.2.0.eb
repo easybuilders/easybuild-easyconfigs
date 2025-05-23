@@ -26,6 +26,7 @@ builddependencies = [
     ('Python', '3.11.5'),  # required for running the tests
     ('BLIS', '1.0'),
     ('OpenBLAS', '0.3.27'),
+    ('AOCL-LAPACK', '5.1'),
     # imkl is commented out, since installing it requires accepting the Intel oneAPI EULA;
     # note: also commented out the lines below to add imkl to 'backends'!
     ('imkl', {'arch=x86_64': '2024.2.0', 'arch=*': False}, '', True),
@@ -33,12 +34,6 @@ builddependencies = [
 
 # icx with -ax doesn't play well with FlexiBLAS's dynamic loading
 preconfigopts = 'CFLAGS="${CFLAGS/ -axCore-AVX512/}" '
-
-configopts = ''
-configopts = [configopts + ' -DINTEGER8=ON -Dimkl_LIBRARY="mkl_intel_ilp64;mkl_intel_thread;mkl_core;iomp5;pthread;m;dl"', configopts]
-
-# workaround for first iteration of LAPACKe build (not used in the end), to have a temporary libflexiblas_intel.so symlink
-installopts = ['&& ln -sf libflexiblas64_intel.so %(installdir)s/lib64/libflexiblas_intel.so', '']
 
 # note: first listed backend will be used as default by FlexiBLAS,
 # unless otherwise specified via easyconfig parameter flexiblas_default
@@ -48,6 +43,16 @@ if ARCH == 'x86_64':
     local_backends.append('imkl')
 
 backends = local_backends
+
+configopts = '-DEXTRA="%s" ' % ';'.join(backends + ['AOCL'])
+configopts = [configopts + ' -DINTEGER8=ON -Dimkl_LIBRARY="mkl_intel_ilp64;mkl_intel_thread;mkl_core;iomp5;pthread;m;dl"' +
+              ' -DBLIS_LIBRARY=blis64 -DOpenBLAS_LIBRARY=openblas64 -DAOCL_LIBRARY="flame64;blis-mt64"',
+              configopts + '-DAOCL_LIBRARY="flame;blis-mt"']
+install_libdir = 'lib64'
+
+# workaround for first iteration of LAPACKe build (not used in the end), to have a temporary libflexiblas_intel.so symlink
+installopts = ['&& ln -sf libflexiblas64_intel.so %(installdir)s/lib64/libflexiblas_intel.so', '']
+
 flexiblas_default = 'imkl'
 
 # Install LAPACKe as extension; it's not a Python package, but this extension class can be
