@@ -691,6 +691,8 @@ class EasyConfigTest(TestCase):
             'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
             'wxWidgets': [(r'3\.2\.0', [r'wxPython-4\.2\.0', r'GRASS-8\.2\.0', r'QGIS-3\.28\.1'])],
+            # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
+            'AUGUSTUS': [(r'3\.5\.0-20240612', [r'BRAKER-3\.0\.8'])],
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -1018,7 +1020,7 @@ class EasyConfigTest(TestCase):
                     continue
 
                 ok = False
-                for source in ec['sources']:
+                for source in ec['sources'] + ec['data_sources']:
                     if isinstance(source, dict):
                         if 'git_config' in source or 'source_urls' in source:
                             ok = True
@@ -1041,7 +1043,8 @@ class EasyConfigTest(TestCase):
                     problem_ecs.append(easyconfig['spec'])
 
         error_msg = "%d easyconfigs found without defined sources or download_instructions: %s"
-        self.assertEqual(problem_ecs, [], error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
+        if problem_ecs:
+            self.fail(error_msg % (len(problem_ecs), ', '.join(problem_ecs)))
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
@@ -1106,8 +1109,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('4.9.4'))
-        self.assertEqual(most_recent[1], 'EasyBuild-4.9.4.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.0.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.0.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1523,19 +1526,19 @@ def verify_patch(specdir, patch_spec, checksum_idx, patch_checksums, extension_n
                                                                                               type(patch_spec)))
 
     patch_path = os.path.join(patch_dir, patch_name)
-    patch_descr = "patch file " + patch_name
-    if extension_name:
-        patch_descr += " of extension " + extension_name
-
     # only check actual patch files, not other files being copied via the patch functionality
     if patch_path.endswith('.patch'):
+        patch_descr = f"patch file {patch_name}"
+        if extension_name:
+            patch_descr += f" of extension {extension_name}"
+
         if not os.path.isfile(patch_path):
-            return [patch_descr + "is missing"]
+            return [f"{patch_descr} is missing"]
 
         if checksum_idx < len(patch_checksums):
             checksum = patch_checksums[checksum_idx]
             if not verify_checksum(patch_path, checksum):
-                return ["Invalid checksum for %s: %s" % (patch_descr, checksum)]
+                return [f"Invalid checksum for {patch_descr}: {checksum}"]
 
     return []  # No error
 
