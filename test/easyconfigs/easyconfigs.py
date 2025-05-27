@@ -693,6 +693,10 @@ class EasyConfigTest(TestCase):
             'wxWidgets': [(r'3\.2\.0', [r'wxPython-4\.2\.0', r'GRASS-8\.2\.0', r'QGIS-3\.28\.1'])],
             # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
             'AUGUSTUS': [(r'3\.5\.0-20240612', [r'BRAKER-3\.0\.8'])],
+            # bakta requires PyHMMER 0.10.15
+            'PyHMMER': [(r'0\.10\.15', [r'bakta-1\.10\.1'])],
+            # bakta requires python-isal 1.6.1
+            'python-isal': [(r'1\.6\.1', [r'bakta-1\.10\.1'])],
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
