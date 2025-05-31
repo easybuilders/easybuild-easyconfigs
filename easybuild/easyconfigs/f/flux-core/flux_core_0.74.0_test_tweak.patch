@@ -1,0 +1,15 @@
+J.new can be too large and lead to bash errors
+diff --git a/t/t2602-job-shell.t b/t/t2602-job-shell.t
+index 14b7a21345fa..accbf9d79c55 100755
+--- a/t/t2602-job-shell.t
++++ b/t/t2602-job-shell.t
+@@ -33,8 +33,7 @@ test_expect_success 'job-shell: fails on modified J' '
+ 	id=$(flux submit --wait-event=priority \
+ 		-n1 --urgency=hold true) &&
+ 	flux job info ${id} J | sed s/./%/85 > J.new &&
+-	flux kvs put \
+-		$(flux job id --to=kvs ${id}).J="$(cat J.new)" &&
++	cat J.new | flux kvs put --raw $(flux job id --to=kvs ${id}).J=- &&
+ 	flux job urgency ${id} default &&
+ 	test_must_fail flux job attach -vEX ${id}
+ '
