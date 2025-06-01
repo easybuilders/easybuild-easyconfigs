@@ -1,0 +1,18 @@
+Need to tweak this loop to satisfy GCC 13.2.0 on Zen4
+
+diff -rupN flux-core-0.74.0.orig/src/common/libutil/basemoji.c flux-core-0.74.0/src/common/libutil/basemoji.c
+--- flux-core-0.74.0.orig/src/common/libutil/basemoji.c	2025-05-07 02:46:54.097499500 +0200
++++ flux-core-0.74.0/src/common/libutil/basemoji.c	2025-06-01 17:19:07.963792201 +0200
+@@ -176,9 +176,9 @@ int uint64_basemoji_encode (uint64_t id,
+     /* Copy 4-byte emojis back in order so that most significant bits are
+      * on the left:
+      */
+-    for (int i = count - 4; i >= 0; i-=4) {
+-        memcpy (buf+n, reverse+i, 4);
+-        n+=4;
++    for (int i = 0; i < count; i += 4) {
++        memcpy(buf + n, reverse + (count - 4 - i), 4);
++        n += 4;
+     }
+     return 0;
+ }
