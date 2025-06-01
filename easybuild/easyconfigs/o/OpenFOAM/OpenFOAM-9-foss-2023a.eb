@@ -1,0 +1,47 @@
+name = 'OpenFOAM'
+version = '9'
+
+homepage = 'https://www.openfoam.org/'
+description = """OpenFOAM is a free, open source CFD software package.
+ OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+ involving chemical reactions, turbulence and heat transfer,
+ to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/OpenFOAM/OpenFOAM-%(version_major)s/archive']
+sources = ['version-%(version)s.tar.gz']
+patches = [
+    'OpenFOAM-%(version)s-cleanup.patch',
+    'OpenFOAM-8_fix-OSHA1stream.patch',
+]
+checksums = [
+    {'version-9.tar.gz': '0c48fb56e2fbb4dd534112811364d3b2dc12106e670a6486b361e4f864b435ee'},
+    {'OpenFOAM-9-cleanup.patch': '4b638891f32badde1a5b1b364bc3bd5e0eda180b9d9a8afdf797d5818b8b494e'},
+    {'OpenFOAM-8_fix-OSHA1stream.patch': '09a361d5c19fe7e602025d42838af36474ed2902445001d2bf5cf744862240fb'},
+]
+
+builddependencies = [
+    ('Bison', '3.8.2'),
+    ('CMake', '3.26.3'),
+    ('flex', '2.6.4'),
+]
+
+dependencies = [
+    ('libreadline', '8.2'),
+    ('ncurses', '6.4'),
+    # OpenFOAM requires 64 bit METIS using 32 bit indexes (array indexes)
+    ('METIS', '5.1.0'),
+    ('SCOTCH', '7.0.3'),
+    ('Python', '3.11.3'),
+    ('CGAL', '5.6'),
+    ('ParaView', '5.11.2'),
+    ('gnuplot', '5.4.8'),
+]
+
+# Guide CMake to the correct Python, to avoid detecting an OS supplied one instead
+_file = 'applications/utilities/postProcessing/graphics/PVReaders/CMakeLists.txt'
+_sed = "sed -i '/FIND_PACKAGE(MPI REQUIRED)/a find_package(Python3 %(pymajver)s.%(pyminver)s EXACT)'"
+prebuildopts = f"{_sed} {_file} && export Python3_ROOT_DIR=$EBROOTPYTHON &&"
+
+moduleclass = 'cae'
