@@ -1,0 +1,41 @@
+name = 'STARCCM'
+version = '19.06.009'
+versionsuffix = "-mixed"
+modaltsoftname = "starccm-mixed"
+
+homepage = 'http://mdx.plm.automation.siemens.com/star-ccm-plus'
+description = """Predicting the real-world performance of a product requires simulation tools 
+that span a variety of engineering disciplines. STAR-CCM+ is an all-in-one solution that delivers 
+accurate and efficient multidisciplinary technologies in a single integrated user interface.
+
+This version uses mixed precision."""
+
+toolchain = SYSTEM
+
+# sha256sum 
+sources = ['STAR-CCM+2410.0001_009_linux-x86_64.tar.gz']
+checksums = ['445c0bf02bc38dc74459f44a8c530a560fb2c6ed143138605ff0189a91516a8e']
+extract_sources = True
+
+postinstallcmds = [
+  # Run setrpaths.sh in all directories
+ "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+  # Redirect hard coded /lib64/libc.so.6 to GENTOO
+ "cp -a %(installdir)s/STAR-CCM+19.06.009/star/bin/compare_glibc{,-orig};\
+  sed -i \"s|'\/lib64\/libc.so.6'|'\$EBVERSIONGENTOO\/lib64\/libc.so.6'|g\" %(installdir)s/STAR-CCM+19.06.009/star/bin/compare_glibc;\
+  sed -i \"s|(\/lib64\/libc.so.6)|(\$EBVERSIONGENTOO\/lib64\/libc.so.6)|g\" %(installdir)s/STAR-CCM+19.06.009/star/bin/compare_glibc;"
+]
+
+moduleclass = 'tools'
+modluafooter = """
+require("SitePackage")
+local found = find_and_define_license_file("CDLMD_LICENSE_FILE","starccm")
+if (mode() == "load" and not found) then
+        local warning_message = [[
+	We did not find a suitable license file for StarCCM+. If you have access to one, you can create the file $HOME/.licenses/starccm.lic with the license information. You may also define the CDLMD_LICENSE_FILE environment variable yourself. This is only a warning. For more details, see https://docs.alliancecan.ca/wiki/Star-CCM+/
+	
+	Nous n'avons pas trouve de fichier de license utilisable pour StarCCM+. Si vous avez acces a une license de StarCCM+, vous pouvez creer le fichier $HOME/.licenses/starccm.lic avec l'information de la license. Vous pouvez aussi definir la variable d'environnement CDLMD_LICENSE_FILE. Ceci n'est pas une erreur. Pour plus de details, voir la page https://docs.alliancecan.ca/wiki/Star-CCM+/fr 
+	]]
+	LmodWarning(warning_message)
+end
+"""
