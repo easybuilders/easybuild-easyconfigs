@@ -1,0 +1,19 @@
+Avoids build failure when setting a C standard via -std=, due to some
+GCC versions removing support for asm when this flag is set.
+
+diff --git a/tests/explicit_bzero.c b/tests/explicit_bzero.c
+index f50ed08..e49f6bc 100644
+--- a/tests/explicit_bzero.c
++++ b/tests/explicit_bzero.c
+@@ -57,7 +57,7 @@ explicit_bzero (void *s, size_t len)
+ #elif defined __GNUC__ && !defined __clang__
+   memset (s, '\0', len);
+   /* Compiler barrier.  */
+-  asm volatile ("" ::: "memory");
++  __asm__ volatile ("" ::: "memory");
+ #elif defined __clang__
+   memset (s, '\0', len);
+   /* Compiler barrier.  */
+-- 
+2.49.0
+
