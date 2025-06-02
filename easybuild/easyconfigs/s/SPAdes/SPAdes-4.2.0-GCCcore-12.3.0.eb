@@ -1,0 +1,39 @@
+easyblock = 'CMakeMake'
+
+name = 'SPAdes'
+version = "4.2.0"
+
+homepage = 'http://cab.spbu.ru/software/spades/'
+description = "Genome assembler for single-cell and isolates data sets"
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/ablab/spades/releases/download/v%(version)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['043322129f8536411f1172b7d1c9adfcb6d49d152c10066ccc03e86b6f615a6b']
+
+builddependencies = [
+    ('CMake', '3.31.0'),
+    ('Boost', '1.82.0', '-core'),
+]
+
+start_dir = 'src'
+
+local_spades_binaries = [
+    'spades-bwa', 'spades-core', 'spades-gbuilder', 'spades-hammer',
+    'spades-ionhammer', 'spades-kmercount', 'spades.py',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_spades_binaries],
+    'dirs': [],
+}
+
+sanity_check_commands = [('%(namelower)s.py', '--test')]
+
+moduleclass = 'bio'
+
+# Depends on any python at runtime.
+modluafooter = """
+depends_on("python")
+"""

@@ -1,0 +1,53 @@
+easyblock = 'ConfigureMake'
+
+name = 'AOCL-BLAS'
+version = '5.1'
+
+homepage = 'https://github.com/amd/blis'
+description = """AOCL-BLAS is AMD's optimized version of
+                 BLAS targeted for AMD EPYC and Ryzen CPUs."""
+
+toolchain = {'name': 'intel-compilers', 'version': '2023.2.1'}
+toolchain_opts = {'optarch': False}
+
+source_urls = ['https://github.com/amd/blis/archive/']
+sources = ['AOCL-%(version)s-GA.tar.gz']
+patches = [
+    'AOCL-BLAS-5.0_family-x86_64_v3.patch',
+]
+checksums = [
+    'de75e940d57fdcf3ed868c15774412cdfb7e92bebf60fb9e418f86d7dde6e923',
+    # AOCL-BLAS-5.0_family-x86_64_v3.patch
+    'f00b3d8cc238d84fd65b4f6988f6346e59811917ac462515c695ec8421a78e06',
+]
+
+builddependencies = [
+    ('Python', '3.11.5'),
+    ('Perl', '5.38.2'),
+]
+
+preconfigopts = 'cp config/amdzen/bli_family_amdzen.h config/x86_64_v3 && '
+preconfigopts += "sed -i 's/march=knl/march=common-avx512/g' config/knl/make_defs.mk && "
+# switches seem to do the opposite with icx, remove them!
+preconfigopts += "sed -i 's/-mno-fma4 -mno-tbm -mno-xop -mno-lwp//' config/zen/amd_config.mk config/excavator/make_defs.mk && "
+preconfigopts += 'sed -i "s/CC_MAJOR := .*/CC_MAJOR:=$(icx -x c /dev/null -dM -E|grep __clang_major__ | cut -d\' \' -f3)/" config/zen*/make_defs.mk && '
+local_configopts = '--complex-return=intel --enable-cblas --enable-threading=openmp --enable-shared CC="$CC" x86_64_v3'
+configopts = ['-i64 -b64 ' + local_configopts, local_configopts]
+prebuildopts = "declare -A ARCH_MAP=( [avx2]='3 -axCore-AVX512' [avx512]='4' ) &&"
+local_buildopts = 'CC="$CC -O2 -ftree-vectorize -fno-math-errno -march=x86-64-v${ARCH_MAP[$RSNT_ARCH]}" ENABLE_VERBOSE=yes'
+buildopts = ['LIBBLIS=libblis-mt64 MK_INCL_DIR_INST=%(installdir)s/include/blis64 ' + local_buildopts, local_buildopts]
+preinstallopts = prebuildopts
+installopts = buildopts
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/blis/cblas.h', 'include/blis/blis.h',
+              'lib/libblis-mt64.a', 'lib/libblis-mt64.%s' % SHLIB_EXT,
+              'lib/libblis-mt.a', 'lib/libblis-mt.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+modextrapaths = {'CPATH': 'include/blis'}
+
+moduleclass = 'numlib'
