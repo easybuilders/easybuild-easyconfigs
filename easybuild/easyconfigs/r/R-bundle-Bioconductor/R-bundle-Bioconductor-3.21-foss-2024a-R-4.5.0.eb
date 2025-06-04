@@ -1,0 +1,1434 @@
+easyblock = 'Bundle'
+
+name = 'R-bundle-Bioconductor'
+version = '3.21'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://bioconductor.org'
+description = """Bioconductor provides tools for the analysis and coprehension
+ of high-throughput genomic data."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [('pkgconf', '2.2.0')]
+
+dependencies = [
+    ('R', '4.5.0'),
+    ('Boost', '1.85.0'),  # for mzR
+    ('GSL', '2.8'),  # for flowClust
+    ('arrow-R', '17.0.0.1', versionsuffix),  # required by RcisTarget
+]
+
+exts_default_options = {
+    'source_urls': [
+        'https://bioconductor.org/packages/3.21/bioc/src/contrib/',
+        'https://bioconductor.org/packages/3.21/bioc/src/contrib/Archive/%(name)s',
+        'https://bioconductor.org/packages/3.21/data/annotation/src/contrib/',
+        'https://bioconductor.org/packages/3.21/data/experiment/src/contrib/',
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'sources': ['%(name)s_%(version)s.tar.gz'],
+}
+
+exts_defaultclass = 'RPackage'
+
+# check whether correct version is installed in extension filter
+# (some versions in this bundle may be newer than the ones provided by R)
+local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver != '%(ext_version)s') "
+local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
+exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
+
+# CRAN packages on which these Bioconductor packages depend are available in R module on which this depends
+# !! order of packages is important !!
+# packages updated on 24 November 2024
+exts_list = [
+    ('BiocGenerics', '0.54.0', {
+        'checksums': ['413d6f74cbc671147f63eefc46b718af815d6497535c2198925d9306e00c41b9'],
+    }),
+    ('Biobase', '2.68.0', {
+        'checksums': ['993b30779a3e5043151db876d771b2913b69f26778cc93d2cb7571544dd57f0f'],
+    }),
+    ('S4Vectors', '0.46.0', {
+        'checksums': ['c34249c6a367a2a1e94158d9e60294f2b901e485d93717250a417569be187a40'],
+    }),
+    ('IRanges', '2.42.0', {
+        'checksums': ['0abb01ee93111c5fc678f9aa2f93d00d8d1548263cb60daa52645a6061b603fc'],
+    }),
+    ('GenomeInfoDbData', '1.2.14', {
+        'checksums': ['23e2fec59d4d286c5539eb679924fa69092154a0cd36c4947664884895b850d9'],
+    }),
+    ('UCSC.utils', '1.4.0', {
+        'checksums': ['db2680cf8a94a2119783905487b5a9711006c295641f415cf4e79235c83d1a26'],
+    }),
+    ('GenomeInfoDb', '1.44.0', {
+        'checksums': ['c8b446ececbafda8c7013d9856a767bbc0719df49bf5966907f56ab6c4166e67'],
+    }),
+    ('zlibbioc', '1.54.0', {
+        'checksums': ['2d4bb1af0cf42ef8f86766854d859cb80a61156fe091ca23cec34c9f56d98352'],
+    }),
+    ('XVector', '0.48.0', {
+        'checksums': ['23a7971041f20734ca3b848cd7225dfbebb86f9952d3c6657db84a50a6409b57'],
+    }),
+    ('Biostrings', '2.76.0', {
+        'checksums': ['05410c3d7cb19f43dc1e4cc3d51e5b9b373a2b0c67f0e80a18189a3a1cbe93bb'],
+    }),
+    ('KEGGREST', '1.48.0', {
+        'checksums': ['0e609b71b55db406eb5ecc93f1889f17ea69ea00aca49d3e37dea42bdf828282'],
+    }),
+    ('AnnotationDbi', '1.70.0', {
+        'checksums': ['f8de1104ab9e51379530f662dc067ba87e72cd47d7fab345c49d3f7364f6a9db'],
+    }),
+    ('GenomicRanges', '1.60.0', {
+        'checksums': ['48bf6ea611b215f449d4839255a72d764d24d260cf9bbca4b7232815eb114f20'],
+    }),
+    ('BiocParallel', '1.42.1', {
+        'checksums': ['afb7b5dece2633a5e00a81d787b2ec819197a18a52f9947868c351e5f06f5635'],
+    }),
+    ('Rhtslib', '3.4.0', {
+        'checksums': ['875c5c34e2d1a2d88788a8d4af21fa7a4f5cea8fa5403036d15cda532b03c8a7'],
+    }),
+    ('Rsamtools', '2.24.0', {
+        'checksums': ['2d9659920ff9743a8d2ddb160807d74922dfeb8309746a0e430b386ca08e77a0'],
+    }),
+    ('MatrixGenerics', '1.20.0', {
+        'checksums': ['f4b6700bc397483545212a072ebc5d5a610ff94f8b94f444c074bcffd21040fb'],
+    }),
+    ('S4Arrays', '1.8.1', {
+        'checksums': ['f1fda8034c60c08e82b9c5db314d72242e16ead89531c0c093c0f752bdf3c70f'],
+    }),
+    ('SparseArray', '1.8.0', {
+        'checksums': ['88ac6a90c7c84c92ed8b2317ad25973c1e693f15356d0de2c2c0931567398bcf'],
+    }),
+    ('DelayedArray', '0.34.1', {
+        'checksums': ['e78ffb88d53b09d2a820c1f2fe2d0f30d9497833a918d91d0633750ff023dd25'],
+    }),
+    ('SummarizedExperiment', '1.38.1', {
+        'checksums': ['e05cca796fe5a01d6e49a85f5a696d73adf4c59851f2a5db0c8b8def98dc88b8'],
+    }),
+    ('GenomicAlignments', '1.44.0', {
+        'checksums': ['249873d640a21826bb8a3eb6bac442bb79140a2ea37314e864f25d19b2141211'],
+    }),
+    ('pwalign', '1.4.0', {
+        'checksums': ['c38c93c821f860b7d171b09525f76edeee7c3ca63a63d4212fcb9d913d8b91ec'],
+    }),
+    ('ShortRead', '1.66.0', {
+        'checksums': ['77ec22127d8aa9b74f9a926dfde69877bea896869f06f363c7aa80c6dab77cb8'],
+    }),
+    ('graph', '1.86.0', {
+        'checksums': ['ac9e196dfcb43848a851ea2d339cff41f8f16c7e80e76282c8fe7b822df8f367'],
+    }),
+    ('affyio', '1.78.0', {
+        'checksums': ['313966ad240bb12005f43e948457259eed200df5904be5b55fb4ab062a1279c8'],
+    }),
+    ('preprocessCore', '1.70.0', {
+        'installopts': "--configure-args='--disable-threading'",
+        'checksums': ['7767afcc757d46dc76dbfafae21846d3b99d2fb866d019b607a820c264ab5e18'],
+    }),
+    ('BiocManager', '1.30.25', {
+        'checksums': ['83ef8b57dcc7350fe1e8c62590a60d3ad3e1f9c8660930c946b20340a4a81e15'],
+    }),
+    ('affy', '1.86.0', {
+        'checksums': ['8fe869ef608fe605e5ee768148b3a5fc7ac5878c77e9e329b7f4f732f1e6675e'],
+    }),
+    ('GO.db', '3.21.0', {
+        'checksums': ['77e9e35350924fee8a096de94833c4cd25b2b997c3062c5b5f9c1070f1d7a054'],
+    }),
+    ('limma', '3.64.1', {
+        'checksums': ['71eace12862d724c1db62cf64b668b973bbdd4d31dabe939b1b2066f99934050'],
+    }),
+    ('RBGL', '1.84.0', {
+        'checksums': ['42e06ce0bb2f8c213d4400cc977b52b4a9a2cd6f321b1aaf60c5cdb3c5ece356'],
+    }),
+    ('org.Hs.eg.db', '3.21.0', {
+        'checksums': ['3494ddec079cf57f63a7a32dc5d58825b376218631132f7c49477eab48bf31c5'],
+    }),
+    ('AnnotationForge', '1.50.0', {
+        'checksums': ['e35e60fcc6e4c8f5fc37eda233d07b74f7c5533b5e411f21e276264cbb4a10c0'],
+    }),
+    ('annaffy', '1.80.0', {
+        'checksums': ['618cb62f050b46c7ceb6ddde7420e85f0d86bf070ff50038639ba90d3b2c89a9'],
+    }),
+    ('gcrma', '2.80.0', {
+        'checksums': ['95ea85a63b87b5bad77c641f0609d8ca0b0972df944754d6147737193a7f8930'],
+    }),
+    ('oligoClasses', '1.70.0', {
+        'checksums': ['0264b3cd37f81fc373c868f5fab657fc92f30b90060b3491c4fb7489963a6510'],
+    }),
+    ('edgeR', '4.6.2', {
+        'checksums': ['97fceca5d1e72b0441efeb901e99ef8363cac60d3578fa5e4c54892f60f9c53f'],
+    }),
+    ('PFAM.db', '3.21.0', {
+        'checksums': ['aa7368001999c03ea63c8e6666dbdbe7e47c9cd38ee2778ee13a16e1a2311b1b'],
+    }),
+    ('perm', '1.0-0.4', {
+        'checksums': ['561e01793a9032b6a3676a7819fe24175eeb9e96a5314bd78b9c48d46e627be9'],
+    }),
+    ('baySeq', '2.42.0', {
+        'checksums': ['1b050dd5bcf52646b47e27ec56ff72b63c091697a8663f2bafc6d61a692f190c'],
+    }),
+    ('qvalue', '2.40.0', {
+        'checksums': ['95dab5d0e668227def2bce1d59344ab0a9cf5c5cfc1a1a461b9ff7a869c395fa'],
+    }),
+    ('impute', '1.82.0', {
+        'checksums': ['ba2066cbce86523030e9449cea85692f9bb00e5ad5a97081134b711b40f8b0de'],
+    }),
+    ('shinyFiles', '0.9.3', {
+        'checksums': ['4a72e165ee8a6e8256988f27286a2cfc4d7a42e2a902f4f2a728b1c237c07286'],
+    }),
+    ('samr', '3.0', {
+        'checksums': ['25f88ac002c2adce8881a562241bc12d683810a05defb553e8e3d4878f037506'],
+    }),
+    ('DEGseq', '1.62.0', {
+        'checksums': ['df8e21a2be2c8568e1e8a6d74a8510616394d6c6c5b0f088c84da9e556da03a4'],
+    }),
+    ('hgu133plus2.db', '3.13.0', {
+        'checksums': ['ddde58e777a8341536a664c7d4be874a2f395f8aaa019c1f738462a8ce74cc44'],
+    }),
+    ('illuminaio', '0.50.0', {
+        'checksums': ['e508dce78f9120924672afce9ecf0598be42267f119f7185b6c7250a523effab'],
+    }),
+    ('BiocIO', '1.18.0', {
+        'checksums': ['3a377d8ebc135f928ba73e487a14866e436b42fcab7e68dd8b198310f8ef5b6a'],
+    }),
+    ('restfulr', '0.0.15', {
+        'checksums': ['40ff8f1fb2987af2223e1a855bb1680c5ce2143fbce7ebc42f1edb291f80e692'],
+    }),
+    ('rtracklayer', '1.68.0', {
+        'checksums': ['a24ddd760517423ebd51218c316df3827b3a9712059606bc30802bbcb303921e'],
+    }),
+    ('filelock', '1.0.3', {
+        'checksums': ['2dcd0ec453f5ec4d96f69b0c472569d57d3c5f9956a82a48492ee02f12071137'],
+    }),
+    ('BiocFileCache', '2.16.0', {
+        'checksums': ['84e26d21817ed1f57d420f90303631acb88132ec4aa35384a54ae0318c8f54a0'],
+    }),
+    ('biomaRt', '2.64.0', {
+        'checksums': ['5fcb1ac567ce1b8c8423b1fc7ed9816f5aa3d59966c0810d0e667b394ea1dffb'],
+    }),
+    ('GenomicFeatures', '1.60.0', {
+        'checksums': ['2d4a091ebfe85d3fcef1fbd3d1c87b7b953206c03cf3c5e06a1982299f46479a'],
+    }),
+    ('bumphunter', '1.50.0', {
+        'checksums': ['bf50487a1b6a97b779a053422c9725abf041da6fe6b1299534f8a93e54e9ba15'],
+    }),
+    ('multtest', '2.64.0', {
+        'checksums': ['b936e6cca6369d0bfd03f750c9f8abe0a7613d713155aec48de21e2b46f99839'],
+    }),
+    ('scrime', '1.3.5', {
+        'checksums': ['5d97d3e57d8eb30709340fe572746029fd139456d7a955421c4e3aa75d825578'],
+    }),
+    ('siggenes', '1.82.0', {
+        'checksums': ['e9cb3cc93d38f94e546cc7d808bac3625661027f61bf80a5e70f21f163662ce6'],
+    }),
+    ('DynDoc', '1.86.0', {
+        'checksums': ['9814bc3b29c5e193ab7e32f164b6b59c2a0aba9d909188035bbd709b2a9cb421'],
+    }),
+    ('NOISeq', '2.52.0', {
+        'checksums': ['0403598e08f97761c2e7149d094750d9032c891c54c203c2bff5dafde56aa9d9'],
+    }),
+    ('Rgraphviz', '2.52.0', {
+        'patches': ['Rgraphviz-2.28.0_fno-tree-vectorize.patch'],
+        'checksums': [
+            {'Rgraphviz_2.52.0.tar.gz': '5fb51037c66ff0c539906167c0082bb4da41d39d0add161d4533efaf48bc8a91'},
+            {'Rgraphviz-2.28.0_fno-tree-vectorize.patch':
+             '15783e9daba6f63c8e655858468a99e9f4f088468dbe3b414825e5844cf6b4a9'},
+        ],
+    }),
+    ('RNASeqPower', '1.48.0', {
+        'checksums': ['088baf5444109fe4a5c58b4a4807f184157d525ca08de48cb8f866dc867ffbb9'],
+    }),
+    ('annotate', '1.86.0', {
+        'checksums': ['28025b9da9c6e97c1b065724f9d7eb2efce16d77ecc4d807830f8d105404bdd8'],
+    }),
+    ('GSEABase', '1.70.0', {
+        'checksums': ['8563fc1a7fe13682c2fe3dcb2a85ac362392a5bb76112bd9ba9354a7da9d4a88'],
+    }),
+    ('genefilter', '1.90.0', {
+        'checksums': ['cc3efb27ad71afb3394bfb8478cf448f57189132e26481abadd785543552bc7d'],
+    }),
+    ('Category', '2.74.0', {
+        'checksums': ['16aacef66a433af25bb4dcf6477c1f6c1ffe1f80bd5ec500b4f51914e1744eb9'],
+    }),
+    ('GOstats', '2.74.0', {
+        'checksums': ['441c760494acf78819b6204a8c58cc857d6b7a2dc89b17b860c8646a5aedf664'],
+    }),
+    ('BSgenome', '1.76.0', {
+        'checksums': ['c085415938ea67a9f3312c617d3b4870be4b5c6c7a05326df5666ec6b6fd8e76'],
+    }),
+    ('VariantAnnotation', '1.54.1', {
+        'checksums': ['d9f50f15f8e882d99563d4eeb2bfade9c5d17f95b8b2ab43457a2cff553a9370'],
+    }),
+    ('interactiveDisplayBase', '1.46.0', {
+        'checksums': ['081bcefc7d892a1dc5c617ef8570584f35e6751ba6b1bfe06b88b96b15a6d4f6'],
+    }),
+    ('BiocVersion', '3.21.1', {
+        'checksums': ['985c60dee9c83394f71417daefabe167f948d145b4da9496ab0425f4e8666ef7'],
+    }),
+    ('AnnotationHub', '3.16.0', {
+        'checksums': ['adffdf97f7f35449b884c7efeae0eb2c2bd6b2f8e1388144f45e2d4b83e88b09'],
+    }),
+    ('AnnotationFilter', '1.32.0', {
+        'checksums': ['7a4a24c59e4cc447380e5f796d632d076934ce566dceeb5d91fd21889313c4e4'],
+    }),
+    ('ProtGenerics', '1.40.0', {
+        'checksums': ['23a67123839c70542656c2fed7ab0a6c1a2a5a69340e89abc232ade9b28a1629'],
+    }),
+    ('ensembldb', '2.32.0', {
+        'checksums': ['4405ab371036e81c9e1d8996041f3f701a8b423bd52614446e6f38637d86f240'],
+    }),
+    ('biovizBase', '1.56.0', {
+        'checksums': ['eac1d804a2a1c26fa5c600d6e8d0175c303413fc301131561e48f0e024dbb493'],
+    }),
+    ('txdbmaker', '1.4.1', {
+        'checksums': ['92696433f937862fe4b1a9667d61a205dabe107b482fdeab39b9863336aacd79'],
+    }),
+    ('OrganismDbi', '1.50.0', {
+        'checksums': ['a401a544cf1eaae74e8823e100f85bda7d31d79d765dd9492731a0d9c3f29dd1'],
+    }),
+    ('ggbio', '1.56.0', {
+        'checksums': ['3cddf3eb522621c38633bf8e13379e63f00314d42fc78ec813902b9030e3b6ed'],
+    }),
+    ('geneplotter', '1.86.0', {
+        'checksums': ['25b55406ebf4b1ea9f0865bb6e3c2d66cf266ac7537f101de7a634208ccd488d'],
+    }),
+    ('DESeq2', '1.48.1', {
+        'checksums': ['38e8c5bae3d6a1f29c7e9f7d98d73b8908192cb28c571515158a4be9d39c65be'],
+    }),
+    ('ReportingTools', '2.48.0', {
+        'checksums': ['5255ae0a15a823f084cee296d2afd9803a1b5637af0733ea489637cecd1e7e94'],
+    }),
+    ('Glimma', '2.18.0', {
+        'checksums': ['8293e646273d017a19b5adaaeaa424cd061dede88f8ff533a6bbb5a10f3d3dd7'],
+    }),
+    ('affycoretools', '1.80.0', {
+        'checksums': ['318529e7383e78c01d057e166984d96fac49d4b393568b37502d6af2e9f35219'],
+    }),
+    ('TxDb.Hsapiens.UCSC.hg19.knownGene', '3.2.2', {
+        'checksums': ['063de2b1174782a0b2b8ab7f04a0bdf3c43252cb67c685a9f8ef2b8e318352e9'],
+    }),
+    ('Homo.sapiens', '1.3.1', {
+        'checksums': ['014809fc6ef6410be8dc1094c9cb083719f20d999065ae4bf388855be0913b94'],
+    }),
+    ('BSgenome.Hsapiens.UCSC.hg19', '1.4.3', {
+        'checksums': ['5bfa65d7836449d9b30c356968497cdfaa98be48c4e329e71e8f8a120f3e9d1a'],
+    }),
+    ('AgiMicroRna', '2.58.0', {
+        'checksums': ['35642abf0277102e1d0de68bc60fd51b90f18abb3ac2bdb188a90dcaa3a71abb'],
+    }),
+    ('geneLenDataBase', '1.44.0', {
+        'checksums': ['ea563f7ba6f8c448d71214dc51388e84ab8eba1c136a94f74b8e21407bf81532'],
+    }),
+    ('goseq', '1.60.0', {
+        'checksums': ['c02e8d9e46f515ecb94e38bd8908922e9234494acd7264194ef9ec89d517ba21'],
+    }),
+    ('KEGGgraph', '1.68.0', {
+        'checksums': ['ded3ebea23c9a2d6ec6c64d1166cbb7188d09e878adc27cc59054f28af9de233'],
+    }),
+    ('GEOquery', '2.76.0', {
+        'checksums': ['90ca741c6c1d79ec1a5c8d3b45c1d8e9d78f21a2bf8f3aa062927e4c0e343c9e'],
+    }),
+    ('gsignal', '0.3-7', {
+        'checksums': ['43430b138a58237a4e416cf85069b08054c41e1cb150c37cd0ca86bec6fe13b2'],
+    }),
+    ('mixOmics', '6.32.0', {
+        'checksums': ['5607b55e25391d98149b729a2bbd5009d3de43e6d427e93e913fdfd2eebbfc9c'],
+    }),
+    ('Rhdf5lib', '1.30.0', {
+        'patches': ['Rhdf5lib-1.20.0_fix_hardcoded_path_to_mv.patch'],
+        'checksums': [
+            {'Rhdf5lib_1.30.0.tar.gz': '170606eaa916cc0489bdc0a6dcf25fa13ee2c9275c95573b6145345d857c8746'},
+            {'Rhdf5lib-1.20.0_fix_hardcoded_path_to_mv.patch':
+             'fd35fd20166aa67cf5fbc194861d9196a2220fd40057b0524722ecc3de4774e8'},
+        ],
+    }),
+    ('rhdf5filters', '1.20.0', {
+        'checksums': ['5fc154671300686c1c5b5e532e4f33bf7cc0a2268559f836ec1b00fad39617b7'],
+    }),
+    ('rhdf5', '2.52.0', {
+        'checksums': ['1ff1808756323cc4073ac3e22dfd285db98af1857d700d5d10072be1e11a44ec'],
+    }),
+    ('h5mread', '1.0.1', {
+        'checksums': ['05bbaf493ed81ee9688377403699a8a21d611d0e4cb7eb03f4ec655591d476b6'],
+    }),
+    ('HDF5Array', '1.36.0', {
+        'checksums': ['20905563d331956093d6850a7c03467405c5500b9432dcbf6acd38df765183c6'],
+    }),
+    ('sparseMatrixStats', '1.20.0', {
+        'checksums': ['79e7e8a3a753ba730a3de23a7c2c2c68afc06b9ad857abae0b5a55a60f2cbaf5'],
+    }),
+    ('DelayedMatrixStats', '1.30.0', {
+        'checksums': ['571b396b0c5cf78e23a8ffe403777b34dab8639b193479051727ac960ba68e57'],
+    }),
+    ('minfi', '1.54.1', {
+        'checksums': ['39881e5e7e37f945ea012454b03197ec95db421013a2551fb79e4aac421a57a7'],
+    }),
+    ('FDb.InfiniumMethylation.hg19', '2.2.0', {
+        'checksums': ['605aa3643588a2f40a942fa760b92662060a0dfedb26b4e4cd6f1a78b703093f'],
+    }),
+    ('methylumi', '2.54.0', {
+        'checksums': ['53260ac6b0dd72792d8a63a1a342ac3f129fbe25098cc0997e58628de1e2b5ef'],
+    }),
+    ('lumi', '2.60.0', {
+        'checksums': ['20e90bc80d78a3361b89204f8b37b25b484ee6166f4161a525e9c6d5b4964586'],
+    }),
+    ('widgetTools', '1.86.0', {
+        'checksums': ['3aef4bc0374d92d31fe498c1db74ebc287bad11cdf793f5d187c5b46a023f2ac'],
+    }),
+    ('tkWidgets', '1.86.0', {
+        'checksums': ['e5a7fd47b6b2ac70075d07c687ddba750de081e24bfad5f3986b1d4e3f0e586b'],
+    }),
+    ('Mfuzz', '2.68.0', {
+        'checksums': ['bbe7b71256adb8fbdff48b53e574c5a1e1a62db1f9d9ea1a05590ab5f0738218'],
+    }),
+    ('venn', '1.12', {
+        'checksums': ['ed86b69bd99ceea93352a30699a0baba3fd8cdcde907a9476e92be202ad8721d'],
+    }),
+    ('maSigPro', '1.80.0', {
+        'checksums': ['a78554b9db2e0c5b5c23b3ff72a2216e24b300014e0b648e45f9cd31130b7f0b'],
+    }),
+    ('SPIA', '2.60.0', {
+        'checksums': ['000ea2edfd02addd0e8ff542860842fd524d5ddb721c7b8f4160e5498a3ddcb3'],
+    }),
+    ('Gviz', '1.52.0', {
+        'checksums': ['7cc86d4af5c0563f2627a313b3234b2e83099982121067514f196bd92b825bcb'],
+    }),
+    ('cummeRbund', '2.50.0', {
+        'checksums': ['887ad38f0fa6cf7910d49ac812b46b4742e2495bf28dfe16e891dc1f5d663fc4'],
+    }),
+    ('GenomicFiles', '1.44.1', {
+        'checksums': ['d60f84b1e6abf7e644c640e72515773bec8909e0a44979d91e3c96f0b49c28cc'],
+    }),
+    ('derfinderHelper', '1.42.0', {
+        'checksums': ['a0e59868e55aaf020cd6019eb2f56b8f12a31ce75575861411d1cc4903219ceb'],
+    }),
+    ('derfinder', '1.42.0', {
+        'checksums': ['fa93a9ed01a82fafa3fd6fb0ae51703712e51359c4dd8bfe8ca7c7e035167e20'],
+    }),
+    ('Rsubread', '2.22.1', {
+        'checksums': ['029b1ec3e4fb2248d6dc7cb0a86da09d0cc6b7d9ed48f2793f6c2b3d2c0fe220'],
+    }),
+    ('pcaMethods', '2.0.0', {
+        'checksums': ['0475d7ecf7a3003884e37d8f8a94fe6aef1678a4bae870f6511f316555703f83'],
+    }),
+    ('marray', '1.86.0', {
+        'checksums': ['5dda85e1abfaa3f09a92fe45d7f0e907fab57ea1b46ae54f4a83bd196126d2e7'],
+    }),
+    ('CGHbase', '1.68.0', {
+        'checksums': ['b22d7d67340e4b3345265d26be5008597f9225ee4b82ae3d07dff443b08ee2ce'],
+    }),
+    ('Wrench', '1.26.0', {
+        'checksums': ['af150bc07d79ddda342ea1bf80d6c76125289c9ba3e321f52e0f8c21f83a888c'],
+    }),
+    ('lpsymphony', '1.36.0', {
+        'checksums': ['58ebb8c730f8b94b294c5fe86fd747d805500f42be82af330e8a8932e11125dc'],
+    }),
+    ('IHW', '1.36.0', {
+        'checksums': ['2d28dbffcb44f11dbcc34b00b7746bc07f1ee98cf9b4149280d167913a6b1c17'],
+    }),
+    ('gdsfmt', '1.44.0', {
+        'checksums': ['d8c932b7e20e57fe39e39395fd0233580265a2bb1eb0eba9755124f27ef3e7fe'],
+    }),
+    ('SNPRelate', '1.42.0', {
+        'checksums': ['0a363ed91d54c25d5f93f5fbcc7b22f24d609a7a97ade12a0bf3efa052e59d06'],
+    }),
+    ('biomformat', '1.36.0', {
+        'checksums': ['66c1d68c9b056d83e9e4d8ae1cb044aef46804ce4baefc82f002fa0941759c36'],
+    }),
+    ('phyloseq', '1.52.0', {
+        'checksums': ['396a1bd8e4d379d278a370528324fa82f51f1d99bddf6c3d1050edb2f9d42e7b'],
+    }),
+    ('NADA', '1.6-1.1', {
+        'checksums': ['670ff6595ba074ed0a930b7a09624d5ef20616379a20e768c1a7b37332aee44a'],
+    }),
+    ('zCompositions', '1.5.0-4', {
+        'checksums': ['73188e1e065a042723ed7a48df04e22317b204222d40744b83e8c392aae16aaf'],
+    }),
+    ('RcppZiggurat', '0.1.8', {
+        'checksums': ['2eb09c74ea01532f099fa44776f7f1e66ef6ef28d17c55744c254f8832b63e10'],
+    }),
+    ('zigg', '0.0.2', {
+        'checksums': ['6ca47cc54af5b4decd80fbe420952c05c6aa7d3ddba9f489b8cccb2655082cec'],
+    }),
+    ('Rfast', '2.1.5.1', {
+        'checksums': ['f1bb242bed2bc5c294dfd2268a7e508420d7412fce0cc8e6fa2907dc97da12ba'],
+    }),
+    ('directlabels', '2025.5.20', {
+        'checksums': ['ed939f36f599e5a951c097be2b29336c16adaf6e7417976a9a104fec3c6ebe67'],
+    }),
+    ('ALDEx2', '1.40.0', {
+        'checksums': ['4f8f6eb978a2044c27d15f376c7cb7d749e9842dd46c702297c2f3a5187274b5'],
+    }),
+    ('dada2', '1.36.0', {
+        'checksums': ['314658ecbad252326b6a2b0eafedf5ea5389f4156f5225f3bcac0fb82950bb53'],
+    }),
+    ('LEA', '3.20.0', {
+        'patches': ['LEA-3.0.0_support_aarch64_and_ppc64le.patch'],
+        'checksums': [
+            {'LEA_3.20.0.tar.gz': 'ba77013f57be8d938c0687b43405fd249bf3afdf51dbd0b5c27953f976981559'},
+            {'LEA-3.0.0_support_aarch64_and_ppc64le.patch':
+             'caeaae7aa0577540bc9c03b54ce5a0fe4ff1a28ac503106e2b3acd1b9db82881'},
+        ],
+    }),
+    ('tximport', '1.36.0', {
+        'checksums': ['9ee2aa4230ead2b662e6e5ef95b590e76f210d249cbc23971e19c85fe78142b7'],
+    }),
+    ('SingleCellExperiment', '1.30.1', {
+        'checksums': ['731003da51b0cff506a4bbfc672c8f2ce5bc6d4c74106b13d9a092ebedf4d371'],
+    }),
+    ('assorthead', '1.2.0', {
+        'checksums': ['6d00461796b54ee1da063bc23045a7d745c5b6318ed9c34dbe656645a9407295'],
+    }),
+    ('beachmat', '2.24.0', {
+        'checksums': ['c5a0f6fcb334c8690bda4798ef22bfd2b3a94e708b01ee6b1414b25f69e8c141'],
+    }),
+    ('RcppAnnoy', '0.0.22', {
+        'checksums': ['9f2121d787c4d3e7beccdd65f5d1de81f31c99d57d5d61ca3cc5af7169dd8f65'],
+    }),
+    ('RcppHNSW', '0.6.0', {
+        'checksums': ['a5a6ed00a84143aa62aa67df66fcccae657d5db0a1f9bb4b955a8e94c2ff580f'],
+    }),
+    ('BiocNeighbors', '2.2.0', {
+        'checksums': ['3c5a6b91c7318702e51d3defc47591eee0a3f6babfc4c91a4b28f953e0a2d605'],
+    }),
+    ('rsvd', '1.0.5', {
+        'checksums': ['e40686b869acd4f71fdb1e8e7a6c64cd6792fc9d52a78f9e559a7176ab84e21e'],
+    }),
+    ('ScaledMatrix', '1.16.0', {
+        'checksums': ['a13bee9fe160c757b2ae758d904624c0c799178c00dba68893984154be270323'],
+    }),
+    ('BiocSingular', '1.24.0', {
+        'checksums': ['de4928f5e768d0bc586f7d9a9fe8d4928c3d7d44377dc92b8f0172a8a5e9b436'],
+    }),
+    ('scuttle', '1.18.0', {
+        'checksums': ['3802f47850811e1086b24988aa66ce827b43620cacd7297e21fb5fb917526e78'],
+    }),
+    ('RcppML', '0.3.7', {
+        'checksums': ['325c6515085527eb9123cc5e87e028547065771ed4d623048f41886ae28908c6'],
+    }),
+    ('sitmo', '2.0.2', {
+        'checksums': ['448ef8d56e36783354011845daf33f1efb83ea3b9685eea75eaf5134e24fa8c2'],
+    }),
+    ('dqrng', '0.4.1', {
+        'checksums': ['3d9df935020c3c2538bc712456079925c4b379d67407c83fbc008340e353288f'],
+    }),
+    ('uwot', '0.2.3', {
+        'checksums': ['eeb9e49e1765db61d462577b0c8426de4c52761180e8104ae70d3631b3672ecc'],
+    }),
+    ('ggrastr', '1.0.2', {
+        'checksums': ['cb27406dca99cea6440adf6edb7eb53141b60322452f5a5d4409e36516ad20d1'],
+    }),
+    ('scater', '1.36.0', {
+        'checksums': ['fbc2214f2fdb698fbe7b3b50a3676103aa40c47ad7517385f9e8e8bef8972b8b'],
+    }),
+    ('bluster', '1.18.0', {
+        'checksums': ['1182ea99c9f7b25a7802f3162abb1cce881ed56257a4604557c15421e5cda160'],
+    }),
+    ('metapod', '1.16.0', {
+        'checksums': ['5e011b0fc717eb1593939c3f5278d214ad8ec365905bcfcc70be3343a78d88c3'],
+    }),
+    ('scran', '1.36.0', {
+        'checksums': ['dd141417a7eb71674c0bdb7ad07ab707a7a2fdf0c55606c7c332701373675078'],
+    }),
+    ('SC3', '1.36.0', {
+        'checksums': ['738403efe836fa0b309d924cc0ed3d111f6e14ca0bb2b9e7a1ff7ea6e2775321'],
+    }),
+    ('ComplexHeatmap', '2.24.0', {
+        'checksums': ['2a015ad26c5a5f003ee203d77cc8d3eea5461bcf2db7ce102da1bef7db082650'],
+    }),
+    ('GENIE3', '1.30.0', {
+        'checksums': ['374928d98378632f888ad9b0c3a113f20d27089c62d0337ca207236165ac76c0'],
+    }),
+    ('dupRadar', '1.38.0', {
+        'checksums': ['015e0b44fa225f2f0a53c44a5a52a26933631b28eafe8555dbf36ab1a44336e5'],
+    }),
+    ('DNAcopy', '1.82.0', {
+        'checksums': ['391b14e801aed8a4fb41eec0e654ef45704ad39b90a47d929cf06294ecbd3ee5'],
+    }),
+    ('sva', '3.56.0', {
+        'checksums': ['3d76da4634c6d06bd744610de224c9de0c92755decf49e8d11bcbfbdd7640250'],
+    }),
+    ('ballgown', '2.40.0', {
+        'checksums': ['715beec2c50d109236a6ae9ae71e58a18ab2fee1112df2bd54be2ea87ca8917d'],
+    }),
+    ('DropletUtils', '1.28.0', {
+        'checksums': ['d703fb79c1838b68d1d06a8a7de953da5d8d681b898887999bd82765c893bd2a'],
+    }),
+    ('DeconRNASeq', '1.50.0', {
+        'checksums': ['ceb00d746d0984c96d1a9405625e5e6d7bb5d0ac13dcf4c5f12a3e3763ebb319'],
+    }),
+    ('SpatialExperiment', '1.18.1', {
+        'checksums': ['dfaec4e05bd310a0116fc2449edff385b0d5969b675f0c68d1a08c6e08b58d67'],
+    }),
+    ('GSVA', '2.2.0', {
+        'checksums': ['5d51cb26922f8f6187894d13c27f3d80b6aeef5128da32d23f7e6771d32ed676'],
+    }),
+    ('PureCN', '2.14.1', {
+        'checksums': ['e6f08ff5a5a586ccc96f038d4919f921be18ebf1709222c6bf0de6d9c8d353d6'],
+    }),
+    ('globaltest', '5.62.0', {
+        'checksums': ['c5bdf569f73e4712df89e2df90e7857f93395bfe99b35828598c01ab631c4565'],
+    }),
+    ('GlobalAncova', '4.26.0', {
+        'checksums': ['eac46e40aa94bbb72060b17c3c9095adbc77f838834a73de2921fd092173b8be'],
+    }),
+    ('vsn', '3.76.0', {
+        'checksums': ['06ce67b095f62c88d4a44b296a7d36af72e2b3ce840c4f5ab5f5b00524da645b'],
+    }),
+    ('mzID', '1.46.0', {
+        'checksums': ['82137a61154cb1b4f4f47482959942c4bc2ede133c0fe52e2d87632fc73b5377'],
+    }),
+    ('mzR', '2.42.0', {
+        'checksums': ['39f16de6491ec0f9a4617f01dcfb4d9294412cb1e54df1fd31bb739d1bd3a66a'],
+    }),
+    ('MsCoreUtils', '1.20.0', {
+        'checksums': ['e40598d9d5cb5861f6a3dbeb9c6d6d43c5328e87df28f39082bfa257f1a39676'],
+    }),
+    ('BiocBaseUtils', '1.10.0', {
+        'checksums': ['7cfea8b27ae0c80a00e440d0736538a3529aada1968d6d2692c69af7c7505beb'],
+    }),
+    ('MultiAssayExperiment', '1.34.0', {
+        'checksums': ['6309aab292466185304ae23453a101761dcedbcda11984702e11b699c2d0095b'],
+    }),
+    ('QFeatures', '1.18.0', {
+        'checksums': ['4b72d7d59aa49f5d109464f42b38e271bf3fec141542e7dfef722fcb42acf808'],
+    }),
+    ('MetaboCoreUtils', '1.16.1', {
+        'checksums': ['ac5ad9ab227ef2c8888c7bf9b1404d52f5bf8b8e0e7d444578a275fa46431765'],
+    }),
+    ('Spectra', '1.18.2', {
+        'checksums': ['79349e0c30c06fe75e3392aea6890764c5666183b5f08fa668396b7c3d2a0d48'],
+    }),
+    ('PSMatch', '1.12.0', {
+        'checksums': ['6b2e3d09e7fe299b6525bcdce80d4c6f0e907d83a44b85eadd579a97422de7db'],
+    }),
+    ('MSnbase', '2.34.1', {
+        'checksums': ['13ba7ac0fc09bb58fef2e26155415d5b44f91fcb5d49489c241479e4e49d2403'],
+    }),
+    ('MassSpecWavelet', '1.74.0', {
+        'checksums': ['284a500e09cc139f8f84c718368576682c194e85ecbe31aab0f5bc53c008adbc'],
+    }),
+    ('MsFeatures', '1.16.0', {
+        'checksums': ['22477b49026cc417af698a5b3164d925fbc05fcd7bd2e009837642f52eda1b8a'],
+    }),
+    ('MsExperiment', '1.10.0', {
+        'checksums': ['841ec6e88b3fdea85c6d8d59149d63aaa68286c22c66ffef452d5c1f16a99c73'],
+    }),
+    ('xcms', '4.6.0', {
+        'checksums': ['4bbc92b7f44b991256a47d84950ef77adbf58ef6f0ffaeb5c20bd5e392e9c5f9'],
+    }),
+    ('CAMERA', '1.64.0', {
+        'checksums': ['f7abfb2dcc21812c475d8ad3df3305142d21577cbc3195acdd4ffbe7a71d8820'],
+    }),
+    ('fgsea', '1.34.0', {
+        'checksums': ['4ae5dd3e2c6e9c2d9b38fe0010e627d700a9c365f3c7ed0fc6d903ad39e40460'],
+    }),
+    ('GWASExactHW', '1.2', {
+        'checksums': ['d3137a478338f03de52b75b3eb1b9cce135c82b81ed39fde692b1e0157ddecf7'],
+    }),
+    ('quantsmooth', '1.74.0', {
+        'checksums': ['f0a4966ddb0f1a18ac56dceb8fcba56ff9ccc72905485b613ad8a099f409c8a7'],
+    }),
+    ('GWASTools', '1.54.0', {
+        'checksums': ['33c8b1ad72175ef146880982e28c5d0b4c3f4156a468f19fa8618946957a522c'],
+    }),
+    ('SeqArray', '1.48.0', {
+        'checksums': ['77a13726d3f292559206dbe29ab8967651e35f1b59d7d57c8b9d63ac1500ad5a'],
+    }),
+    ('SeqVarTools', '1.46.0', {
+        'checksums': ['d0ef9b67246e980d61ea9aef5926a1fd49b9a7864b8243494e01f275f4690e34'],
+    }),
+    ('GENESIS', '2.38.0', {
+        'checksums': ['db74ffa3f4d1409a0722634a1882890c40bd98882ad3b069007922cb0ebadf0e'],
+    }),
+    ('MLInterfaces', '1.88.1', {
+        'checksums': ['8cf32af21bfd89c5d39c689713fef44591cb99e4a64f4a30752946f24abbf779'],
+    }),
+    ('pRoloc', '1.48.0', {
+        'checksums': ['7be85ac81438415e5935e4353f4c018e8c154607fc7f41025400c1fdc344b982'],
+    }),
+    ('pRolocdata', '1.46.0', {
+        'checksums': ['7357a85900a958b096358731b39a9fc6bb78b0d998fba716d5eee2d4e0c6581c'],
+    }),
+    ('fresh', '0.2.1', {
+        'checksums': ['5826072b9b37c683012d45e77247420a778eecdaec05947c6d507f4c3b2471a6'],
+    }),
+    ('waiter', '0.2.5', {
+        'checksums': ['9ac25e979db9242598bd0492ff862360009b51ce672184ec9f4eeb2232164979'],
+    }),
+    ('shinydashboardPlus', '2.0.5', {
+        'checksums': ['0bc34cd75f6df1d9c6cb8e7e98e18c5c9c4f739ef54c8d79462597dd1cf3a3cc'],
+    }),
+    ('shinyhelper', '0.3.2', {
+        'checksums': ['f7ed62543ab4d05a34b69a9183517a09e93e1b2da85b113282de0f9982db90b0'],
+    }),
+    ('anytime', '0.3.11', {
+        'checksums': ['ff508d514ae1efd9aab9f691f19b5ac14f4829125bff5210329ea5d491296be3'],
+    }),
+    ('shinyWidgets', '0.9.0', {
+        'checksums': ['419bce351db8d7ddf9b0e397551162d4a27f3da11e3ac5824f5ab524475cd6d4'],
+    }),
+    ('pRolocGUI', '2.18.0', {
+        'checksums': ['8ccb34f56f832da5a37c8a2c7be899888335cfa274c60f064f72dad9a5de2481'],
+    }),
+    ('EBImage', '4.50.0', {
+        'checksums': ['11a69a85ad9343d608c4a9c2b8878205cd2cbdfac6a0670ea0f9f2c61bc0cd16'],
+    }),
+    ('GenomicScores', '2.20.0', {
+        'checksums': ['bc76db1255550a633ca3f12bffd9717c9cd2d669cae1191f4f41ae3edc492930'],
+    }),
+    ('BSgenome.Mmusculus.UCSC.mm10', '1.4.3', {
+        'checksums': ['dcf602bf9fadf1ef4ce70e0c0fc92b6435467df5affe7d0872d88a93b99ff9ee'],
+    }),
+    ('TxDb.Mmusculus.UCSC.mm10.knownGene', '3.10.0', {
+        'checksums': ['696281749d01737c94894564d62093433045bc007a4528cc3d94f205edb54977'],
+    }),
+    ('regioneR', '1.40.1', {
+        'checksums': ['ac0f5850448b4c52c89e9d1a288faab7df75f238f211de7ee4ba7fb1fe0e1af1'],
+    }),
+    ('InteractionSet', '1.36.1', {
+        'checksums': ['1fa05abfcf73b32652d0a36a96dd7f4213e37bbd5337aa5abf4250a5f3887d10'],
+    }),
+    ('universalmotif', '1.26.2', {
+        'checksums': ['35a57e51d0d2e0653de405d748ac6b0db2da3a2b3b6fbf26ab75550949595a92'],
+    }),
+    ('ChIPpeakAnno', '3.42.0', {
+        'checksums': ['f08988d472f0c1a6857845905ceae7349a5c0d4e1e4a8f5c940789c797194e28'],
+    }),
+    ('seqLogo', '1.74.0', {
+        'checksums': ['d0b8687068356b151838d231cb6c587afa764f852cf90e9f3427c9cf9b835069'],
+    }),
+    ('rGADEM', '2.55.0', {
+        'checksums': ['0fe9df33655f93ba5d3589ce55df368467fd9cb2e6d3b6f6befd54e5d5dc58ba'],
+    }),
+    ('MotifDb', '1.50.0', {
+        'checksums': ['46a0077fe0966cd6359851888fd169a9f020fc4992c987e115ed306e5e81f1c4'],
+    }),
+    ('poweRlaw', '1.0.0', {
+        'checksums': ['6479817babafedf3d67297c8a0e6b711378f322fd1472471f80621c12552fcdd'],
+    }),
+    ('CNEr', '1.43.0', {
+        'checksums': ['30c5b5d82943131ade0707e71f1be1bdd4347e8d10803f8ca32fbabbab482089'],
+    }),
+    ('DirichletMultinomial', '1.50.0', {
+        'checksums': ['e8a749e75afc7cd09bbb65409cfca7f455aa9a4c1c25d699366e9a9f6d818c6c'],
+    }),
+    ('TFMPvalue', '0.0.9', {
+        'checksums': ['b9db56e75e2cee840d8b7861686dec07ee2c40cbc7d55361e5d04f1bf0c65de7'],
+    }),
+    ('TFBSTools', '1.46.0', {
+        'checksums': ['739e9069fc82e689379f56c579c0f5883c70eb95cdae434fc8b43404c7862b91'],
+    }),
+    ('motifStack', '1.52.0', {
+        'checksums': ['36732cc5ab78fb322d8ac53375cd2aedb69cbaf4b03cf33b9c9a99c81acca8bd'],
+    }),
+    ('ATACseqQC', '1.32.0', {
+        'checksums': ['98ddbdc326c518b9421dba1eec019b61f3820418b2bc6a5aea8a18dcb9dcb611'],
+    }),
+    ('ResidualMatrix', '1.18.0', {
+        'checksums': ['5b8d6ea8714a009a83060127953f64c615d25dea2b6a2f9492a6a5f345346e29'],
+    }),
+    ('batchelor', '1.24.0', {
+        'checksums': ['5f6047399a16d3ebbcb031d09f7f41300a26471c5b2df221fce022d5d198cead'],
+    }),
+    ('gsmoothr', '0.1.7', {
+        'checksums': ['b75ffd2a4a0f357762e02e46e355b45cc90ea637830f0a1b01f216bb4541e903'],
+    }),
+    ('R.devices', '2.17.2', {
+        'checksums': ['403eeaf552dd696142096973dee3460dc52c19b73fd194841dd4638e2bdcec95'],
+    }),
+    ('R.filesets', '2.15.1', {
+        'checksums': ['08f5e9269b4f5ffb86f9a369fba792d864240d5f5c02dab435007b53ee989de3'],
+    }),
+    ('aroma.light', '3.38.0', {
+        'checksums': ['8a1f6d2fec45f6a647e03f38d56f5289ba619412ab62a601f02d987a6e2dcb44'],
+    }),
+    ('PSCBS', '0.68.0', {
+        'checksums': ['877161162649ed96e009bcbc4222fbd8c2f2a5f79b3b6ff75c3802f3e8235ef7'],
+    }),
+    ('aroma.core', '3.3.1', {
+        'checksums': ['fa26bca509750eb44e85cae2d78b03870c003d4f7e0360977e924a7838805e44'],
+    }),
+    ('R.huge', '0.10.1', {
+        'checksums': ['05cb1edaaa0ad120c2946a80405c8c8da6a778873f08ff203391452527786ce8'],
+    }),
+    ('aroma.apd', '0.7.1', {
+        'checksums': ['3d2da19e9483e749c61c2a1eeac82f696c05fe6bef64e0cc924f8419cfd1d9b9'],
+    }),
+    ('aroma.affymetrix', '3.2.2', {
+        'checksums': ['18e1c9479e3e41bdfff06769d0ff2d85fcae16042cfd0eefa4dbcd0c4f3c9c40'],
+    }),
+    ('Repitools', '1.54.0', {
+        'checksums': ['3d185eb41e5fe148957e5f76a2a2f36f846798582dde564a5c809269db7dbb4c'],
+    }),
+    ('BSgenome.Hsapiens.UCSC.hg38', '1.4.5', {
+        'checksums': ['b49277e4fd955be76571f187630993b02a459c7c5b69ef62a01a75dd5226e952'],
+    }),
+    ('MEDIPS', '1.60.0', {
+        'checksums': ['bf3aec6d2ad4079c387e146fe625507cfbc0e12de09b77f03f8348d6b2b67ce7'],
+    }),
+    ('RProtoBufLib', '2.20.0', {
+        'patches': ['RProtoBufLib-2.8.0_fix-protobuf-build.patch'],
+        'checksums': [
+            {'RProtoBufLib_2.20.0.tar.gz': '984070a5dc79a58e64d1b77a01425f82ff0e0ce0c4b541cebfd1b1d7649be9ef'},
+            {'RProtoBufLib-2.8.0_fix-protobuf-build.patch':
+             '8775d74e2288000c57575f4ef45a875b4a377ac02f89efa947699ea786bedf64'},
+        ],
+    }),
+    ('cytolib', '2.20.0', {
+        'checksums': ['4289dedbc7f44d501e0f8a7d2486c1bf41e8df8df866a30334f43cd3f16d63e7'],
+    }),
+    ('flowCore', '2.20.0', {
+        'checksums': ['f7fd351c0da6ef2562d7f9fbbb84581656bec8a1e3f909a0dd74a72f580bfd96'],
+    }),
+    ('mutoss', '0.1-13', {
+        'checksums': ['b60f6fcdce44dc60c7d34c6510047f756f1442366a3566661b22aae12f4ff141'],
+    }),
+    ('qqconf', '1.3.2', {
+        'checksums': ['9405d627adf9447a003e14dac43701ea3e03ee73244038aa4a6e3dd324dd8ea3'],
+    }),
+    ('metap', '1.12', {
+        'checksums': ['6c651f08f090487287053ba42f37c5ad6f2aba403503e4fee5eafd9a27999945'],
+    }),
+    ('scattermore', '1.2', {
+        'checksums': ['5534a87b0bdd1375f0fbffc1a5c980ad64e33a108435a67469b8324b580602d1'],
+    }),
+    ('SeuratObject', '5.1.0', {
+        'checksums': ['ddd4aee40b267af5d1065d98fb523a76f68468fc65ff21f4918f49d2c3a3f02a'],
+    }),
+    ('leidenbase', '0.1.35', {
+        'checksums': ['0339e1fa967b6decc222b0aaecd8190c5697458c2a7034b0348490cdfc9f807d'],
+    }),
+    ('Seurat', '5.3.0', {
+        'checksums': ['12abaf6cea4aa30f73028387e74ecb405b17acbae414d43522e764f3179908a7'],
+    }),
+    ('ALL', '1.50.0', {
+        'checksums': ['a64c4dac485cdf3293354d66f4087522661998776c2201ab15822e58538cd2c6'],
+    }),
+    ('ConsensusClusterPlus', '1.72.0', {
+        'checksums': ['4ab8fd0437cd61de2cf04528f4c383593fcacb347458b534852a5fe8ed00bf57'],
+    }),
+    ('flowViz', '1.72.0', {
+        'checksums': ['b2c22ba58f6f49c3c985af0ecc5fe9e598af3fd6af05c4af10c67c55c32db68c'],
+    }),
+    ('ncdfFlow', '2.54.0', {
+        'checksums': ['c05b4117ceea8f2d3a5794d96d6473178487dfe8979f7af60574eb7a78cc9b2c'],
+    }),
+    ('aws.signature', '0.6.0', {
+        'checksums': ['f7fe4f686979be21e5a8ba7ae11f0fade4f5aaf4e98063b5349ee0962dbb9496'],
+    }),
+    ('aws.s3', '0.3.21', {
+        'checksums': ['bd21054ab63555d294e7465dcb6c86f107db52ba841aeac5bdf4d00af0674c8c'],
+    }),
+    ('flowWorkspace', '4.20.0', {
+        'checksums': ['7d8391be36d9befdc2cb6bdc28501865a9d45cab2f31d000d13404ff0f8a2bcb'],
+    }),
+    ('ash', '1.0-15', {
+        'checksums': ['8b0a7bc39dd0ce2172f09edc5b5e029347d041a4d508bbff3f3fd6f69450c2ab'],
+    }),
+    ('hdrcde', '3.4', {
+        'checksums': ['4341c6a021da46dcae3b1ef6d580e84dcf625c2b2139f537d0c26ec90899149b'],
+    }),
+    ('rainbow', '3.8', {
+        'checksums': ['eca456288b70fe4b6c74a587d8624d3b36d67f8f9ffc13320eefb17a952d823d'],
+    }),
+    ('fds', '1.8', {
+        'checksums': ['203a5e7671e542dcb83d4c75d0f4012aaebc32d54f94657afaf9e71e99dd0489'],
+    }),
+    ('fda', '6.3.0', {
+        'checksums': ['73ff60918267986b630cccda31beeb212fc5c7d6164e4cb3f7629d2583a76637'],
+    }),
+    ('flowStats', '4.20.0', {
+        'checksums': ['0c8bdcb613930328d8bb81f7b448f7f4ea0f6170fcee7e051e7ca9c63c56a5b6'],
+    }),
+    ('flowClust', '3.46.0', {
+        'installopts': "--configure-args='--with-gsl=${EBROOTGSL} --enable-bundled-gsl=false'",
+        'checksums': ['e651185771dc37e3cf1b97b7d42140e73572d2f09f1c17a738542a17c27df513'],
+    }),
+    ('openCyto', '2.20.0', {
+        'checksums': ['3e6a9951bf458c0f63e6ae151192f85998db47c3e139ef2d8bafe6fd9e21e4a3'],
+    }),
+    ('ggcyto', '1.36.0', {
+        'checksums': ['5ffd06d85c43de39d21499a7307ba464ed74c1dab3d515a86ac7a6bd0bb8ab5d'],
+    }),
+    ('CytoML', '2.20.0', {
+        'checksums': ['bc5ddb80729f42b01cfa60296cbe05254b72f846979bf2ac919bad7f6cbf3c77'],
+    }),
+    ('colorRamps', '2.3.4', {
+        'checksums': ['3cdf311123ea1924ee1446b9b5bd7aa3282ca00addb6e7181f98578eb6b18ff8'],
+    }),
+    ('ggnewscale', '0.5.1', {
+        'checksums': ['cd50179f406bb2f009e85cdde72899a176181bdecfb41dfca4de3d74af026e92'],
+    }),
+    ('ggpointdensity', '0.2.0', {
+        'checksums': ['611ecce4f8b7cfb8ccb31b2a7df2dbb8f1eb5cbb7b49db860785ebac8098f21e'],
+    }),
+    ('FlowSOM', '2.16.0', {
+        'checksums': ['8dfa3791c2e731e9bf72d49ddcd9d3b8065c45ffbd124a1698de76ef13d0a5a7'],
+    }),
+    ('HMMcopy', '1.50.0', {
+        'checksums': ['075bc3c5a8532e866c009a3101d1158064495caa42bf925b090820d4e15490df'],
+    }),
+    ('diffcyt', '1.28.0', {
+        'checksums': ['48be4f2bca607e0cbb1a10d4ff57a0fb3bee3db289af65586079ec9de11be59b'],
+    }),
+    ('blme', '1.0-6', {
+        'checksums': ['0608978044a00d0baaf09a694dc6edeac59dbfa373c4548e4ebbe335345c173e'],
+    }),
+    ('remaCor', '0.0.18', {
+        'checksums': ['57e4ffba44392f300525b18db36a44437a6fafce38a06eff065f5482e4171631'],
+    }),
+    ('fANCOVA', '0.6-1', {
+        'checksums': ['c3ea3640d9a87abbfeae713141d606ece93bc88b9952f41a37b3f1fbe802bc12'],
+    }),
+    ('variancePartition', '1.38.0', {
+        'checksums': ['df8b9098415d93585d180c46e1756a262fa40b5ab49eda7b2246bd41b48a94cf'],
+    }),
+    ('muscat', '1.22.0', {
+        'checksums': ['2a6bd96c8b297ec9c809aae09b492cde95f5dd42ee6ec52537610ab4fa4870bd'],
+    }),
+    ('IlluminaHumanMethylation450kmanifest', '0.4.0', {
+        'checksums': ['41b2e54bac3feafc7646fe40bce3aa2b92c10871b0a13657c5736517792fa763'],
+    }),
+    ('IlluminaHumanMethylationEPICmanifest', '0.3.0', {
+        'checksums': ['e39a69d98486cec981e97c56f45bbe47d2ccb5bbb66a1b16fa0685575493902a'],
+    }),
+    ('IlluminaHumanMethylation450kanno.ilmn12.hg19', '0.6.1', {
+        'checksums': ['3627d75a6303f4d307fa6daf0c5afd57649c60a268b3d4be7e8ac8edc4b1e288'],
+    }),
+    ('IlluminaHumanMethylationEPICanno.ilm10b2.hg19', '0.6.0', {
+        'checksums': ['4decdbc78a6a8d02bf8aecb0d6e1d81134ae9dbc2375add52574f07829e8cd69'],
+    }),
+    ('IlluminaHumanMethylationEPICanno.ilm10b4.hg19', '0.6.0', {
+        'checksums': ['2c8128126b63e7fa805a5f3b02449367dca9c3be3eb5f6300acc718826590719'],
+    }),
+    ('conumee', '1.42.0', {
+        'checksums': ['a6f5e2177635f37118a3be2d79bb536f507e56308de27c4b4af30d78ada4189f'],
+    }),
+    ('BSgenome.Cfamiliaris.UCSC.canFam3', '1.4.0', {
+        'checksums': ['99c55b6f7808822a3dae6679e60ecfb88a2b618159484bc35303c000bd4820c7'],
+    }),
+    ('ExperimentHub', '2.16.0', {
+        'checksums': ['faef066aeacc5cd944b52ab0ca472622a7861356c897147e422cca36a5222bce'],
+    }),
+    ('SingleR', '2.10.0', {
+        'checksums': ['ced605600807a6319a98c921678dcc23fe4e405b51367c9907c3c5f9b746ab60'],
+    }),
+    ('FlowSorted.Blood.EPIC', '2.12.0', {
+        'checksums': ['704eb58d110ed7768fbfdb83af580226b9aa1181b527113b7f8c0f775300fd82'],
+    }),
+    ('FlowSorted.CordBloodCombined.450k', '1.24.0', {
+        'checksums': ['d4b2eca33b60843b826c02f6e78a519e2a42b584b079548d0f6e204a7b27691e'],
+    }),
+    ('DRIMSeq', '1.36.0', {
+        'checksums': ['7bb143233c10c75f63b1726bc6745d2b28d1edc265ca93fade6d5d2f3f07d5e9'],
+    }),
+    ('stageR', '1.30.1', {
+        'checksums': ['655d27db14408fa519a09cfcf561600ed65a33f8eb4e171f1415bb74411aa44a'],
+    }),
+    ('isva', '1.9', {
+        'checksums': ['9fd016e0b34034d271d45f8a0d0db62780bf0187112e45f610aa9237014e1d17'],
+    }),
+    ('org.Mm.eg.db', '3.21.0', {
+        'checksums': ['0b8e75105f37fb84586e4e3875c28bfe09a2889c2b711303c636073399c22e07'],
+    }),
+    ('org.Rn.eg.db', '3.21.0', {
+        'checksums': ['973becf95fb68245ffe7b2e13e3b160ebef41624c19fe7fc053d9047a82a4814'],
+    }),
+    ('ROC', '1.84.0', {
+        'checksums': ['359bbc7b79ac64db6b23db3bbd5b49784a01ff5a9a5ac31c057a00b6900ddc2e'],
+    }),
+    ('wateRmelon', '2.14.0', {
+        'checksums': ['d503f137dd9f4c58e819a5926ede8e1569a1731e6531be7b152409b51952fe61'],
+    }),
+    ('GLAD', '2.72.0', {
+        'checksums': ['f08872262b0d83e72ec3747f0b5073e57fc6aa33e5d1a58d9a001b3756d94115'],
+    }),
+    ('IlluminaHumanMethylationEPICv2manifest', '1.0.0', {
+        'checksums': ['f41cbb23145daab677dbe49cc00a469b826e05a0900a0a313b222a867a098bfc'],
+    }),
+    ('IlluminaHumanMethylationEPICv2anno.20a1.hg38', '1.0.0', {
+        'checksums': ['aae07c726c534fc017c5c730d2e3189120d2c73f52f5c4306a842a7cd4a8e46e'],
+    }),
+    ('missMethyl', '1.42.0', {
+        'checksums': ['b7a9f1889aeb24fc10f83e7227c45c95280cab7ee30daba00d2cee06001a4b83'],
+    }),
+    ('MethylSeekR', '1.48.0', {
+        'checksums': ['a5e912affeb3b558c2bf1be2ab437ee59d0929e832737044c3d0956ad6793f7b'],
+    }),
+    ('affxparser', '1.80.0', {
+        'checksums': ['ce8ce6f955d642d417435f5679048067dd1dc6f59f8b07b2573a0ff1451474c8'],
+    }),
+    ('ccdata', '1.34.0', {
+        'checksums': ['8bbf5313f648505c39db086e84fe64e054441a42440a91c5b7cc550605d7510e'],
+    }),
+    ('lsa', '0.73.3', {
+        'checksums': ['f07f1159f215501495d7a077911e7ed2ac61e1705899f3be3a5cf9012778619a'],
+    }),
+    ('ccmap', '1.34.0', {
+        'checksums': ['43ee85e643bd28d0d85e108c17ed0ca8e00136390a138f6f25eed48b833d0cce'],
+    }),
+    ('oligo', '1.72.0', {
+        'checksums': ['42e9b93ae53e7a21f2c9648be111e057cbcc6e7cf7240efee86efcacdd97a7b8'],
+    }),
+    ('SMVar', '1.3.4', {
+        'checksums': ['aaea3ef7da6cee1bb86fef166df766229c8b7cac9fcf5bc28da7adff5e2c01d6'],
+    }),
+    ('metaMA', '3.1.3', {
+        'checksums': ['3a0c0351b83419984095cb2c1d77d222d1cdb7158dd8c80fc384bf175ab9358e'],
+    }),
+    ('randomcoloR', '1.1.0.1', {
+        'checksums': ['cbae51a47a92b2cc3d5ab48877818404429fb73fc795430ec622a8dff20f1067'],
+    }),
+    ('shinyBS', '0.61.1', {
+        'checksums': ['0aed72473060531d0e782ba62092493002137df6b251af9e2294e2a40a32a140'],
+    }),
+    ('shinypanel', '0.1.5', {
+        'checksums': ['3264a5a75a306881e6a1622413298d7f3cda3dc78f54446171925774bab97a00'],
+    }),
+    ('snpStats', '1.58.0', {
+        'checksums': ['ff7de4a8c1182909f49913d8a527b324cd900fee9b4b07deef36e9d0bc6ee712'],
+    }),
+    ('mixsqp', '0.3-54', {
+        'checksums': ['f7d0de918a221c58b3618dc3290a0ebe052256999ee3be35a19384f26b1dfb8e'],
+    }),
+    ('susieR', '0.14.1', {
+        'checksums': ['8608412e3313f8908466662c5900b7915f73f40e37362ce77edc4b219e8bd9fc'],
+    }),
+    ('coloc', '5.2.3', {
+        'checksums': ['259dbd9613d809aa60ad148f6e187249642510f0dbbd15a50b25588d9a426150'],
+    }),
+    ('SCANVIS', '1.22.0', {
+        'checksums': ['a0419df7197c82fc77b06a6ca8c2a5bc79c0d97e581b40b1c73d1eded8475098'],
+    }),
+    ('EnsDb.Hsapiens.v86', '2.99.0', {
+        'checksums': ['552c07bcc2a1420089d4330deafaeb5303e03d0fa75c96b78075dfd67eeee7be'],
+    }),
+    ('agricolae', '1.3-7', {
+        'checksums': ['c5ade90ee23299de1d20e93406d9f4cb39bd92c51094e29306ec74baa1b34a7d'],
+    }),
+    ('bookdown', '0.43', {
+        'checksums': ['911a207c7ab0ccd29245e245f45142b2f01bc5a70d1516425138b6643fff0be0'],
+    }),
+    ('BiocStyle', '2.36.0', {
+        'checksums': ['d4ba63f39b30785a6840f6e71dd8467822a8bcd50392b21f8bcfa015b33528e0'],
+    }),
+    ('ggdendro', '0.2.0', {
+        'checksums': ['1940c34ddb30083a4c3bc3be98b6b466dcc78e03ac22a32088744db8bff7aa69'],
+    }),
+    ('pmp', '1.20.0', {
+        'checksums': ['660abd487c2c4189ce4a881e94e0930985a8086128cd7483429a1c95d0550410'],
+    }),
+    ('MultiDataSet', '1.36.0', {
+        'checksums': ['b770c0809d594cdc35134a07d7a51c77f8b9352d0d48850a7f4ef36ec7012da8'],
+    }),
+    ('ropls', '1.40.0', {
+        'checksums': ['7bcd2a8fcc200003892a28c82bf6445d258ac053ef8cae47177d05d1aa905411'],
+    }),
+    ('ontologyIndex', '2.12', {
+        'checksums': ['a8e5d67a5ef4acb099edcc0d4ee47aeb013557fafc7ee1c071c405f636f8c03d'],
+    }),
+    ('rols', '3.4.0', {
+        'checksums': ['9bc044413c374c2f068a00903339b41aae9930d5237fe86aaf44d32407b9daec'],
+    }),
+    ('struct', '1.20.1', {
+        'checksums': ['5b583b92de5b26c82d3097e760306d253b36c27492e51e1192fb210211f234e2'],
+    }),
+    ('ggthemes', '5.1.0', {
+        'checksums': ['074819acfe8bb2233426a0fef3bb448c5ce817bb14d517252fa05932e28bbd0e'],
+    }),
+    ('structToolbox', '1.20.0', {
+        'checksums': ['b751dc2cde21615733b43fd4988b418962e9b89e2744125de02160a3065fc0f3'],
+    }),
+    ('EnsDb.Hsapiens.v75', '2.99.0', {
+        'checksums': ['2c59f95959f344b2a3eaa65a00086b01a420823e30b0810fc81e49b08dcba64b'],
+    }),
+    ('ggseqlogo', '0.2', {
+        'checksums': ['1cbfd532032dd51316a1fa084bc8cdabe5517bc6ce7b3abafc0d94340e6736b7'],
+    }),
+    ('sparsesvd', '0.2-2', {
+        'checksums': ['bb40cc69ee3aec28ff1418fd16cd76d953701a7b0d6bdcb0424c71793d96d836'],
+    }),
+    ('docopt', '0.7.2', {
+        'checksums': ['783692117346074cc8860cc16f7e8b328b05fd040e5c206a869ee351e704e917'],
+    }),
+    ('qlcMatrix', '0.9.8', {
+        'checksums': ['5b23fde80b0835f673f95cc6b867755149aa1e4fcc6bf40ad0079d51cc926834'],
+    }),
+    ('Signac', '1.14.0', {
+        'checksums': ['e0aad9e2c27c148fdd376081c2de1e3db46b1835eac83ef41fe562e08363c59e'],
+    }),
+    ('motifmatchr', '1.30.0', {
+        'checksums': ['ee7d2c995a3b01c96b817a97eca67304b7ed899cc28e0d3e5e849a8236ea0d48'],
+    }),
+    ('extraDistr', '1.10.0', {
+        'checksums': ['f4264a6c2c95bb7a865655b0e84f48e30dcd584498b49d626a71adaec8eda3a9'],
+    }),
+    ('PRROC', '1.4', {
+        'checksums': ['9dbb4a7a9becb5a8f281a05fe263c4c96b187e459f1ed96b27381e838db493b6'],
+    }),
+    ('TSP', '1.2-5', {
+        'checksums': ['ab51ca1514d16ad488592918227f3333e9b0e7969f6d7757446b0d92f6aa4c20'],
+    }),
+    ('qap', '0.1-2', {
+        'checksums': ['47a4ada3ae7a3a5c9304174bd5291daad60d329d527c0c6bb5ec1ac257584da5'],
+    }),
+    ('ca', '0.71.1', {
+        'checksums': ['040c2fc94c356075f116cc7cd880530b3c9e02206c0035182c03a525ee99b424'],
+    }),
+    ('seriation', '1.5.7', {
+        'checksums': ['6c1a597f961a1eaeea26d2bb01f6b136622270e50ca48dc4f1b6cd3a26c42855'],
+    }),
+    ('egg', '0.4.5', {
+        'checksums': ['15c8ba7cf2676eb0460de7e5dfbc89fc3175ac22a8869cfd44d66d156fd6c7bb'],
+    }),
+    ('heatmaply', '1.5.0', {
+        'checksums': ['aca4dd8b0181aa97969c8c25c73343e294c4d9c24e7cbf52e97fecbed5a92db3'],
+    }),
+    ('OUTRIDER', '1.26.1', {
+        'checksums': ['9e2ab6bf8036e8905d35c2f21c4cfff086a5f2a125e55d96c0e114b287cde596'],
+    }),
+    ('FRASER', '2.4.1', {
+        'checksums': ['30eb9442027bed65f399cf538c8bbaadb6413fa3c6271185c03b64d6977cb4f4'],
+    }),
+    ('JASPAR2020', '0.99.10', {
+        'checksums': ['b9b92d141a317ebb32a14708229f6b82522ceeb5f1b88360d93b0a7cfe30375b'],
+    }),
+    ('AUCell', '1.30.1', {
+        'checksums': ['023631bdad74a43b166eec2f6bf838ee9fc1b2d48fb0e04765669657e8b17a72'],
+    }),
+    ('RcisTarget', '1.28.1', {
+        'checksums': ['2ba030c96d20fbc24b24d27d66e9d71bc363aaa1ae8d98fd97fe688b38e8d170'],
+    }),
+    ('NMF', '0.28', {
+        'checksums': ['77dfe7b323ee5e5f8801851d1d4356932e2ffc810a7ac7faf5542cbfd92eeefb'],
+    }),
+    ('densEstBayes', '1.0-2.2', {
+        'checksums': ['8361df9cd4b34fabfca19360bb680a8a3c68386a72bb69cf00dfa19daf97b679'],
+    }),
+    ('reldist', '1.7-2', {
+        'checksums': ['d9086cbc14ed7c65d72da285b86a07e77cbfebc478ba7327b769bd08549229c9'],
+    }),
+    ('M3Drop', '1.34.0', {
+        'checksums': ['3a48cfcb35d68278616549fb8cdd8003e94e9ddf31a275a60fd80269628d4329'],
+    }),
+    ('bsseq', '1.44.1', {
+        'checksums': ['39f9a03bd4545796eafdd666d1c41ed3cf6823872c9b1d7931ba6fa2b6d4b9af'],
+    }),
+    ('DSS', '2.56.0', {
+        'checksums': ['674add841dbf245e1792767ceaab37415e615b833c48580bb252c86b2b0e0109'],
+    }),
+    ('pathview', '1.48.0', {
+        'checksums': ['8f008d43fc4d03546b75331c648594bf1515c7ff2ae404602cd2cb642e70d624'],
+    }),
+    ('chromVAR', '1.30.1', {
+        'checksums': ['576372e0cd42647e77083b7f8e414a4a560feae075283ca73062f8d199c1baf1'],
+    }),
+    ('EnsDb.Hsapiens.v79', '2.99.0', {
+        'checksums': ['eff1ae8d7f4ed5c6bed335de63a758be593750fb0b3483c01cf50402688d244d'],
+    }),
+    ('WGCNA', '1.73', {
+        'checksums': ['e8a0a367a93190dd9f738578a82d31856e004b9de46d2775e4ed0f44a95063ce'],
+    }),
+    ('DNABarcodes', '1.38.0', {
+        'checksums': ['3d44fb6e40913c66314b71adb3dc3c836462662cfbc65d8e6f3af5451eb45aec'],
+    }),
+    ('GenomicInteractions', '1.42.0', {
+        'checksums': ['da7fb5292e0142f74129b55a521876b644a4b8204d513ae766fab2996c5f9c0b'],
+    }),
+    ('CAGEfightR', '1.28.0', {
+        'checksums': ['6949547d576934d15203083720cec7beefef3f31dc9cd4fc0f062e0ad0c9b6e5'],
+    }),
+    ('CAGEr', '2.14.0', {
+        'checksums': ['4cfba461e6b2b4222b69053cd6b98d69056e63d2203811df2776a9c668e24a15'],
+    }),
+    ('SPOTlight', '1.12.1', {
+        'checksums': ['77e59f950107b8842d9608384d5697a600cb4a24bcd4229fe11ac16aba159dcf'],
+    }),
+    ('CGHcall', '2.70.0', {
+        'checksums': ['96b1fa2ecb0144b73908de834612cae310fbd9a31d2022937c6b403314fdeef9'],
+    }),
+    ('QDNAseq', '1.44.0', {
+        'checksums': ['97ccf62103962774683d1c650200313344d932da15e11032c784d7ae8c766d7e'],
+    }),
+    ('HiCcompare', '1.30.0', {
+        'checksums': ['5b5813161b7a003d1657c31717ab507423335b47ccafa80a55273a47153308ed'],
+    }),
+    ('ROntoTools', '2.36.0', {
+        'checksums': ['5ba62b6756aed705e2f4aaa0120216211be8eb02358cff69a4ecf48346fffa81'],
+    }),
+    ('scDblFinder', '1.22.0', {
+        'checksums': ['1af9f77ab7257a021c94fafa82a63982cbcf279707a76a56a146d9388732d622'],
+    }),
+    ('treeio', '1.32.0', {
+        'checksums': ['efca2e968aabda11af54601ff4332c3f02a30a77cec76c18d30d7722d92199b9'],
+    }),
+    ('ggtree', '3.16.0', {
+        'checksums': ['da3c4f102eeb77558a9e9030c2b04a8966c0cbc9b818965827ee01660cc49b1b'],
+    }),
+    ('scistreer', '1.2.0', {
+        'checksums': ['6c445f61042866d1aef2e8ccae402d79dab657f880a1b07d02db9819cf25cd0e'],
+    }),
+    ('hahmmr', '1.0.0', {
+        'checksums': ['0990f1eef3afcffd54658f2a6f503f16c633c359c58ce05b38b9c67909d26da5'],
+    }),
+    ('numbat', '1.4.2', {
+        'checksums': ['a6113888adf9d0bf90a33310090c4809ab860db4144d69f06f56d921328fe828'],
+    }),
+    ('HiCBricks', '1.26.0', {
+        'checksums': ['7e8664cb6aecab6445f90896e824567dd791b8da58814489ec7cdefb32b0c93e'],
+    }),
+    ('dir.expiry', '1.16.0', {
+        'checksums': ['eec0a4975c7cd337fd5ffd508b644dc7c9ec88d0b71a6c3d6360970368ad1a26'],
+    }),
+    ('basilisk.utils', '1.20.0', {
+        'checksums': ['e59467f13689d85953820b1ed10be10f79133b249c5a47d273db6825b0af8e8b'],
+    }),
+    ('basilisk', '1.20.0', {
+        'checksums': ['cb2bebe9519f6e79cc048d4a59a5fe7cc75d69abb60a49a098a755b5d2334116'],
+    }),
+    ('zellkonverter', '1.18.0', {
+        'checksums': ['310fa69262f56f9ad3a33ef7bd210abf844125007acf8ce928d158568f0f4270'],
+    }),
+    ('DO.db', '2.9', {
+        'checksums': ['762bcb9b5188274fd81d82f785cf2846a5acc61fad55e2ff8ec1502282c27881'],
+    }),
+    ('GOSemSim', '2.34.0', {
+        'checksums': ['03e1892accc79c764a65fa9e96e8ea3a3355964c49b1d175ba9abbeb3e18bfdf'],
+    }),
+    ('HDO.db', '1.0.0', {
+        'checksums': ['04b951ada0ae9f0ed002c22966db70b910c2a91d139f8f706016556667370240'],
+    }),
+    ('DOSE', '4.2.0', {
+        'checksums': ['b02d86eec52d4cbb15ffa27439b7c0f8130a0641e3fa8e9c7077b00feb7143c3'],
+    }),
+    ('ggtangle', '0.0.6', {
+        'checksums': ['5401dc161c993c935a4d81522bc2a4b80a017d14d1b25234439945e18b2944e0'],
+    }),
+    ('enrichplot', '1.28.2', {
+        'checksums': ['102fefe382bbdafd1d704d146ef59cd5a89a140e1268b83f051894178905d015'],
+    }),
+    ('gson', '0.1.0', {
+        'checksums': ['14ddbee5be66d0b1dc178e41175a50ab6ed9ffed04d4361ecf5eef3548d9a381'],
+    }),
+    ('clusterProfiler', '4.16.0', {
+        'checksums': ['d4f7742441d70ddd4c6cc9f794223118d9dafd24ef7b3c45407d97a9a382feed'],
+    }),
+    ('reactome.db', '1.92.0', {
+        'checksums': ['376aa75f6ae133bd5c763790e58afada832e5ba68d3762456e67136c1957e44d'],
+    }),
+    ('graphite', '1.54.0', {
+        'checksums': ['85fd3fef4a21949806addd15d73b3e1706e2884322a70c629bd371ad45441e34'],
+    }),
+    ('ReactomePA', '1.52.0', {
+        'checksums': ['bd3deee55408b19a46923ffafc132dec5aee4d54a9299cfd2468a979d8b9023e'],
+    }),
+    ('flowClean', '1.46.0', {
+        'checksums': ['df2e73f9dc829477db04ce48ba19215d7666bb8d1b50e88b5b703c8c7251b454'],
+    }),
+    ('flowAI', '1.38.0', {
+        'checksums': ['418b73e970252177bc080c5beab2cecf6eaff53f62cf5d34d21c42e61d8348f0'],
+    }),
+    ('flowFP', '1.66.0', {
+        'checksums': ['901d8fa59b69a8b5774d42b917622b90fa0f9b5751f9eb8c49dfa30616ffe112'],
+    }),
+    ('simona', '1.6.0', {
+        'checksums': ['cd9d823efdf37fe119b4744009322cd8f38f0c947020a4ebddca7f9d99f4df34'],
+    }),
+    ('simplifyEnrichment', '2.2.0', {
+        'checksums': ['910b3bb62381791b6651ee5926b5ecc196205f8de7846623049d94370887a385'],
+    }),
+    ('RPMG', '2.2-7', {
+        'checksums': ['c413de3c126bc377fe31a948887d27f404a9637c57fe0e07b087d5509cb99f11'],
+    }),
+    ('Rwave', '2.6-5', {
+        'checksums': ['6c9ef75bb376f2e3f5c5dcd3b3fdca7d86797ce809da34f444632657189be2e4'],
+    }),
+    ('RSEIS', '4.2-4', {
+        'checksums': ['7a9b04135eaf6a6e6a2bcea75db5a4ee36888f1d1a1a2c2d3b07889a4dd0cfaa'],
+    }),
+    ('splancs', '2.01-45', {
+        'checksums': ['8bccf1d61d7feaab52da07a9c95aa66bcd3986a6b214f13b232c1e2bea4b76d3'],
+    }),
+    ('MBA', '0.1-2', {
+        'checksums': ['a5b5a1b47fa7bea3c2ca54a447ac3d55ceff7fa894fc2caca462928a79f24e92'],
+    }),
+    ('GEOmap', '2.5-11', {
+        'checksums': ['976be56d62f39b8e7526dc851bbf77f21db3d366a7ee5a7205aadce13c47cec0'],
+    }),
+    ('RFOC', '3.4-10', {
+        'checksums': ['b1211db8960b482ebb516233c86b075d1a1f006a88191a72fa98babd5a8e2100'],
+    }),
+    ('flowDensity', '1.42.0', {
+        'checksums': ['84c5720674ad4a9f7117a93f733fd9fc280a576763746f757b16b2a808a19d37'],
+    }),
+    ('flowPeaks', '1.54.0', {
+        'checksums': ['a3be29e79a0c427db93b22095bb3a57d61fda354ab1e20200e385e2d05148db5'],
+    }),
+    ('SamSPECTRAL', '1.62.0', {
+        'checksums': ['34e63b6bccb5421ec7bc6592c7effd7ce60fe6df8ee51cc7396d803d5ba8236a'],
+    }),
+    ('ddPCRclust', '1.28.0', {
+        'checksums': ['33663cfefa1ac603f25ec83726327c75116d603e4bc9a9c8ece80cabdc24c64f'],
+    }),
+    ('feature', '1.2.15', {
+        'checksums': ['de38292b7e800068a20824e2a9e7d5d4d0b465b7925db0d165346aa5030ff67b'],
+    }),
+    ('flowMerge', '2.56.0', {
+        'checksums': ['3b4dc1bb4bbcbdf8b199ff3616b7b12437ebcb603daf9ba1fcb3013a4c2822ad'],
+    }),
+    ('TrajectoryUtils', '1.16.1', {
+        'checksums': ['0ee5e2c885fc6e2207c0e620c14f1a8ace1090ff9ae18bf9c991b286a042115d'],
+    }),
+    ('slingshot', '2.16.0', {
+        'checksums': ['f5e1ad6b2d1211ea9cdf43b35d315f58fbf078f95da320282b86eb565acd499f'],
+    }),
+    ('TreeSummarizedExperiment', '2.16.1', {
+        'checksums': ['b8050e74bc4ac5602936a690cfd41fd0cfefbabdee341d284d5d495aeee65274'],
+    }),
+    ('decontam', '1.28.0', {
+        'checksums': ['cbf74b71a5e7366479367bf45aa17b965302246f5b993ff16fa23d846a38c0f6'],
+    }),
+    ('DECIPHER', '3.4.0', {
+        'checksums': ['9ecf9a995fbe15a5e473876983e9c864229397b6901750026bb8cda8c10d9fd2'],
+    }),
+    ('fillpattern', '1.0.2', {
+        'checksums': ['e4443221893fbc76dc8b986fce900e6bbf6ca4383ef70fe0d2292fc265ff9963'],
+    }),
+    ('gridtext', '0.1.5', {
+        'checksums': ['6d98716461f8574b4c8f72c6b2163b92bb394e60e247e19f42912b871616f138'],
+    }),
+    ('ggtext', '0.1.2', {
+        'checksums': ['8782171c44e5850e0c3a3c540e8db19b18b9b6e61b5ba5314dd7931d77cf7983'],
+    }),
+    ('rbiom', '2.2.0', {
+        'checksums': ['7005f1702c8c820b02219820eadd6409506f7f7bdfc7712d87335514ad81f4dc'],
+    }),
+    ('mia', '1.16.0', {
+        'checksums': ['511131f9e105809666c0430710ffb67341eecf72baea80a9ec1a0fee49330e56'],
+    }),
+    ('ANCOMBC', '2.10.1', {
+        'checksums': ['2e3fc7a5d3eb2267855621703a08515f0df4cbd9af7497a5aa7aee18f0c98e99'],
+    }),
+    ('decoupleR', '2.14.0', {
+        'checksums': ['6a8c3a90ee44e703390ee6704228b20e2f847f150bc75a0a8d4fd92713495d03'],
+    }),
+    ('UCell', '2.12.0', {
+        'checksums': ['1dea28fd3872d0e2d0d7a36332f72421a91a00a24811ad9c34ef459195399168'],
+    }),
+    ('intervals', '0.15.5', {
+        'checksums': ['11907be2c47ee4f6359055113dc0dab9ba2c35fbc743c2d52fd1ba1006c7ce5c'],
+    }),
+    ('oompaBase', '3.2.10', {
+        'checksums': ['255192acbef8937fd5116063396b463da34ef419a3736793c0bdf3eb4169d208'],
+    }),
+    ('oompaData', '3.1.5', {
+        'checksums': ['e40d94ce7bc07e43c27dfad0e56d82089941c22dd1ba1ce38a9a83f56a98a5e7'],
+    }),
+    ('TailRank', '3.2.4', {
+        'checksums': ['4ce1a11123ea9983f658b31acae842e68f1bc4befc2efc4c0a45ff4855caf51b'],
+    }),
+    ('RnBeads', '2.26.0', {
+        'checksums': ['3d298e01ddc8ca09e6ed67c875152b2aa78ae3fb89edc8d7c6b48707082b7797'],
+    }),
+    ('RnBeads.hg19', '1.40.0', {
+        'checksums': ['ce399fd9021f4e7553a41b60c78c7f957f5dbaf1de1c4c09facd4b21f50f5be5'],
+    }),
+    ('RnBeads.hg38', '1.40.0', {
+        'checksums': ['8a9a353a4415319876d264a039ec12d54a2f3110fb29df7b28ae8a9d923b780a'],
+    }),
+    ('RnBeads.mm9', '1.40.0', {
+        'checksums': ['0aa2ddadc9057686d2b897491fda98484a1ddb6cfd6fde67e937ffd7b26cd6a8'],
+    }),
+    ('RnBeads.mm10', '2.16.0', {
+        'checksums': ['2ad73b40504a19c2cfa14b920e954ea251d7fe2f5445b2e969e058cde598844e'],
+    }),
+    ('RnBeads.rn5', '1.40.0', {
+        'checksums': ['2ac76ec406c645382936f52a97a370cd1425a2fbd19fe8e5ec4c2e88e3c34f2f'],
+    }),
+    ('log4r', '0.4.4', {
+        'checksums': ['ff1f2d2552f492d66680e36776ecb515479483da5e09f260f1ada661776ce732'],
+    }),
+    ('MSstatsConvert', '1.18.0', {
+        'checksums': ['b6e85967c3a38c9583f803d65cc798748ce12f324e8e157fd93a4ff76cd9b543'],
+    }),
+    ('MSstats', '4.16.0', {
+        'checksums': ['54f5dde83d48a5262bf608d38b2e1695f5ad238445c092fe0f9f196ae5d74dc9'],
+    }),
+    ('MSstatsTMT', '2.16.0', {
+        'checksums': ['68af040608c452bbd3e2e96f0f5e19320ca96edaaf136deaf1493d81bb887d08'],
+    }),
+    ('MSstatsPTM', '2.10.0', {
+        'checksums': ['2db1b6363979f94c87813006b34d1e8014f0ed815c2205faf40eeb2922801391'],
+    }),
+    ('factoextra', '1.0.7', {
+        'checksums': ['624ff01c74933352aca55966f8a052b1ccc878f52c2c307e47f88e0665db94aa'],
+    }),
+    ('MSstatsLiP', '1.14.1', {
+        'checksums': ['0cb323092a2f56d202a0fc0e9dd65e9f7582e7566fc1259b82495a2439f771b6'],
+    }),
+    ('babelgene', '22.9', {
+        'checksums': ['ce6601dcb78352516d3b0355042c52a20e154b39d3b27b93ff52150a59c885e2'],
+    }),
+    ('msigdbr', '24.1.0', {
+        'checksums': ['2a4470512baa5129f534510f70801876242010e1cc38a18fb13181c7ab0b3166'],
+    }),
+    ('msigdb', '1.16.0', {
+        'checksums': ['c811b8960bee3e0aff87f63fef43c802e62c1c174b25861dcb504e0ddb0a5fcf'],
+    }),
+    ('escape', '2.4.0', {
+        'checksums': ['ea0cb6443f207d30faf76f1aa34ad30416a582bbe28be9ac6d5026c442848aef'],
+    }),
+    ('plyranges', '1.28.0', {
+        'checksums': ['f6326af7d3048baef371c6d9b5c814f35a3918021e4dfdfbb8505b4a33713122'],
+    }),
+    ('seqPattern', '1.40.0', {
+        'checksums': ['fd78b403eb93064193573a8625f8c332e80aae766bf023e49f89827bd0dd52ea'],
+    }),
+    ('genomation', '1.40.1', {
+        'checksums': ['da31e690cfe49aed6c9faa83579cf09d523b9a3da619abf3c54dc5c9b7805de6'],
+    }),
+    ('ChIPseeker', '1.44.0', {
+        'checksums': ['95ebeff0e1bfeeef449c1f40742235130585dbc35f8df9768e7a7374ea7efda9'],
+    }),
+    ('SimBu', '1.10.0', {
+        'checksums': ['332f48f600b67a6702172fe299358cd92a91fefdc84925e495609e77d97448b3'],
+    }),
+    ('hiAnnotator', '1.42.0', {
+        'checksums': ['df4cb070e9bb1d1ce3669cbaaf1e57307e19b9b8c171edfc762a624a78d8869d'],
+    }),
+    ('lefser', '1.18.0', {
+        'checksums': ['1097462f30aecf7ccbc04b9977940b0d7220374e029c825635e935ec475f1da6'],
+    }),
+    ('metagenomeSeq', '1.50.0', {
+        'checksums': ['92291645c8d78f756b80647d613e8aa23d77472c1174839cc9d7e0d3ae617ef5'],
+    }),
+    ('Maaslin2', '1.22.0', {
+        'checksums': ['1d9c6bfd90eb6ce6c78776226df1ac18bebf95890be8fde108654e1f22940d82'],
+    }),
+    ('ggpicrust2', '2.1.2', {
+        'checksums': ['690bd94d495c8885f8129cb9c2fd1c46d70ea0a0daf2ddef69e9cbc17d868396'],
+    }),
+    ('DEXSeq', '1.54.1', {
+        'checksums': ['1820c939d58e260ea941d249a171e312a39c35f1aeaf1e7dbe92b634c6335996'],
+    }),
+    ('DMRcaller', '1.40.0', {
+        'checksums': ['439c605491d3f57c90e8f8b72192ee941b084cd79c8466a4ca96b2744fa78c11'],
+    }),
+    ('fastseg', '1.54.0', {
+        'checksums': ['ea1b5a4afea999de6567061af5d6b8cec50d7982ffeb26b403e35019e2829a11'],
+    }),
+    ('methylKit', '1.34.0', {
+        'checksums': ['8d632eceb1fbd32d658f05fc180dc97ee09836456608d41cbc5376c30544ac25'],
+    }),
+]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['AnnotationDbi', 'BiocManager', 'GenomicFeatures'],
+}
+
+moduleclass = 'bio'
