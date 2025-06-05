@@ -1,0 +1,52 @@
+diff -ruN Python-3.11.5.orig/Lib/ctypes/__init__.py Python-3.11.5/Lib/ctypes/__init__.py
+--- Python-3.11.5.orig/Lib/ctypes/__init__.py	2025-06-03 17:24:09.817225787 +0200
++++ Python-3.11.5/Lib/ctypes/__init__.py	2025-06-03 17:26:02.851166381 +0200
+@@ -13,6 +13,8 @@
+ from _ctypes import ArgumentError
+ 
+ from struct import calcsize as _calcsize
++from ctypes import util
++import re
+ 
+ if __version__ != _ctypes_version:
+     raise Exception("Version number mismatch", __version__, _ctypes_version)
+@@ -349,6 +351,11 @@
+             flags |= _FUNCFLAG_USE_ERRNO
+         if use_last_error:
+             flags |= _FUNCFLAG_USE_LASTERROR
++        if _os.name == "posix":
++            if name and name.endswith(".so"):
++                s = re.sub(r'lib', '', name)
++                s = re.sub(r'\..*', '', s)
++                self._name=util._findLib_ld(s) 
+         if _sys.platform.startswith("aix"):
+             """When the name contains ".a(" and ends with ")",
+                e.g., "libFOO.a(libFOO.so)" - this is taken to be an
+diff -ruN Python-3.11.5.orig/Lib/ctypes/util.py Python-3.11.5/Lib/ctypes/util.py
+--- Python-3.11.5.orig/Lib/ctypes/util.py	2025-06-03 17:24:09.816225753 +0200
++++ Python-3.11.5/Lib/ctypes/util.py	2025-06-03 17:28:52.212009753 +0200
+@@ -209,7 +209,7 @@
+             expr = os.fsencode(expr)
+ 
+             try:
+-                proc = subprocess.Popen(('/sbin/ldconfig', '-r'),
++                proc = subprocess.Popen((os.environ.get('EPREFIX') + '/sbin/ldconfig', '-r'),
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.DEVNULL)
+             except OSError:  # E.g. command not found
+@@ -301,7 +301,14 @@
+             # See issue #9998 for why this is needed
+             expr = r'[^\(\)\s]*lib%s\.[^\(\)\s]*' % re.escape(name)
+             cmd = ['ld', '-t']
+-            libpath = os.environ.get('LD_LIBRARY_PATH')
++            libpath = []
++            if os.getenv('EPREFIX'):
++                libpath.append(os.getenv('EPREFIX'))
++            if os.getenv('LD_LIBRARY_PATH'):
++                libpath.append(os.getenv('LD_LIBRARY_PATH'))
++            if os.getenv('LIBRARY_PATH'):
++                libpath.append(os.getenv('LIBRARY_PATH'))
++            libpath = ':'.join(libpath)
+             if libpath:
+                 for d in libpath.split(':'):
+                     cmd.extend(['-L', d])
