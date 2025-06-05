@@ -1,0 +1,25 @@
+Patch from https://github.com/OpenMathLib/OpenBLAS/pull/5138/files
+solving issue reported in https://github.com/OpenMathLib/OpenBLAS/issues/5131
+From ebcab9097674f35c1fd7d87fee79875e4703ccab Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Mon, 17 Feb 2025 23:12:58 +0100
+Subject: [PATCH] Handle flang-new runtime library linking on Linux like
+ classic-flang
+
+---
+ exports/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/exports/Makefile b/exports/Makefile
+index 668a4866e8..04fc64cfe0 100644
+--- a/exports/Makefile
++++ b/exports/Makefile
+@@ -197,7 +197,7 @@ ifeq ($(F_COMPILER), INTEL)
+ 	-Wl,--whole-archive $< -Wl,--no-whole-archive \
+ 	-Wl,-soname,$(INTERNALNAME) $(EXTRALIB)
+ 	$(CC) $(CFLAGS) $(LDFLAGS) -w -o linktest linktest.c ../$(LIBSONAME) $(FEXTRALIB) && echo OK.
+-else ifeq ($(F_COMPILER), FLANG)
++else ifeq ($(F_COMPILER), $(filter $(F_COMPILER),FLANG FLANGNEW))
+ 	$(FC) $(FFLAGS) $(LDFLAGS) -shared -o ../$(LIBSONAME) \
+ 	-Wl,--whole-archive $< -Wl,--no-whole-archive \
+ 	-Wl,-soname,$(INTERNALNAME) $(EXTRALIB)
