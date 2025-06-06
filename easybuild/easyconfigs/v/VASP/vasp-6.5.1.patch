@@ -1,0 +1,103 @@
+--- arch/makefile.include.intel.orig	2025-01-09 11:55:22.000000000 -0800
++++ arch/makefile.include.intel	2025-01-10 14:26:32.000000000 -0800
+@@ -43,32 +43,64 @@
+ 
+ # When compiling on the target machine itself, change this to the
+ # relevant target when cross-compiling for another architecture
+-VASP_TARGET_CPU ?= -xHOST
+-FFLAGS     += $(VASP_TARGET_CPU)
++#VASP_TARGET_CPU ?= -xHOST
++#FFLAGS     += $(VASP_TARGET_CPU)
+ 
+ # Intel MKL (FFTW, BLAS, LAPACK, and scaLAPACK)
+ # (Note: for Intel Parallel Studio's MKL use -mkl instead of -qmkl)
+-FCL        += -qmkl=sequential
+-MKLROOT    ?= /path/to/your/mkl/installation
+-LLIBS      += -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+-INCS        =-I$(MKLROOT)/include/fftw
++#FCL        += -qmkl=sequential
++#MKLROOT    ?= /path/to/your/mkl/installation
++#LLIBS      += -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
++#INCS        =-I$(MKLROOT)/include/fftw
++# Flexiblas  (FFTW, BLAS, LAPACK, and scaLAPACK)
++LLIBS      += -lflexiblas_intel -lscalapack -lfftw3 
++INCS        =-I$(EBROOTFFTW)/include
++
+ 
+ # HDF5-support (optional but strongly recommended, and mandatory for some features)
+-#CPP_OPTIONS+= -DVASP_HDF5
+-#HDF5_ROOT  ?= /path/to/your/hdf5/installation
+-#LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
+-#INCS       += -I$(HDF5_ROOT)/include
++CPP_OPTIONS+= -DVASP_HDF5
++HDF5_ROOT  ?= $(EBROOTHDF5)
++LLIBS      += -lhdf5_fortran
++INCS       += -I$(HDF5_ROOT)/include
+ 
+ # For the VASP-2-Wannier90 interface (optional)
+-#CPP_OPTIONS    += -DVASP2WANNIER90
++CPP_OPTIONS    += -DVASP2WANNIER90
+ #WANNIER90_ROOT ?= /path/to/your/wannier90/installation
+-#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
++LLIBS          += -lwannier
++
++#Libxc-support
++CPP_OPTIONS += -DUSELIBXC
++LLIBS       += -lxcf03 -lxc
++INCS        += -I$(EBROOTLIBXC)/include
++#Libbeef support
++CPP_OPTIONS += -Dlibbeef
++LLIBS       += -lbeef
++
++#DFTD4 support
++CPP_OPTIONS += -DDFTD4
++DFTD4_ROOT  ?= $(EBROOTDFTD4)
++LLIBS       += $(shell pkg-config --with-path=$(DFTD4_ROOT)/lib64/pkgconfig --libs dftd4 mctc-lib)
++INCS        += $(shell pkg-config --with-path=$(DFTD4_ROOT)/lib64/pkgconfig --cflags dftd4) 
++
++#ELPA support 
++CPP_OPTIONS += -DELPA
++ELPA_ROOT   = $(EBROOTELPA)
++LLIBS       += -lelpa
++INCS        += -I$(ELPA_ROOT)/include/elpa-$(EBVERSIONELPA)/modules
++INCS        += -I$(ELPA_ROOT)/include/elpa-$(EBVERSIONELPA)/elpa
+ 
+ # For machine learning library vaspml (experimental)
+-#CPP_OPTIONS += -Dlibvaspml
+-#CPP_OPTIONS += -DVASPML_USE_CBLAS
++CPP_OPTIONS += -Dlibvaspml
++CPP_OPTIONS += -DVASPML_USE_CBLAS
+ #CPP_OPTIONS += -DVASPML_USE_MKL
+-#CPP_OPTIONS += -DVASPML_DEBUG_LEVEL=3
+-#CXX_ML      = mpiicpc -cxx=icpx
+-#CXXFLAGS_ML = -O3 -std=c++17 -Wall
+-#INCLUDE_ML  =
++CPP_OPTIONS += -DVASPML_DEBUG_LEVEL=3
++CXX_ML      = mpiicpc -cxx=icpx
++CXXFLAGS_ML = -O3 -std=c++17 -Wall
++INCLUDE_ML  =
++
++#support LIBMBD
++CPP_OPTIONS += -DLIBMBD
++LIBMBD_ROOT ?= $(EBROOTLIBMBD)
++LLIBS       +=  -lmbd
++INCS        += -I$(LIBMBD_ROOT)/include/mbd
++
+--- src/.objects.orig	2025-01-10 17:23:28.000000000 -0800
++++ src/.objects	2025-01-10 17:36:24.000000000 -0800
+@@ -72,7 +72,6 @@
+ 	fft_wrappers.o \
+ 	fft_base.o \
+ 	mgrid.o \
+-	libmbd.o \
+ 	ml_asa2.o \
+ 	ml_ff_mpi.o \
+ 	ml_ff_helper.o \
+@@ -179,6 +178,7 @@
+ 	subrot_cluster.o \
+ 	sym_grad.o \
+ 	mymath.o \
++	libmbd.o \
+ 	npt_dynamics.o \
+ 	subdftd3.o \
+ 	subdftd4.o \
