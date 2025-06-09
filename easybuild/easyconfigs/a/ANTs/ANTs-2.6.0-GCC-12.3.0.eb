@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = 'ANTs'
+version = '2.6.0'
+
+homepage = 'https://stnava.github.io/ANTs/'
+description = """ANTs extracts information from complex datasets that include imaging. ANTs is useful for managing,
+ interpreting and visualizing multidimensional data."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/ANTsX/ANTs/archive/']
+sources = ['v%(version)s.tar.gz']
+#checksums = ['ac03cee3a630da2e98cc26c9dab30b669b9ea750b70e1a8d7a7d9c58d886931f']
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('Python', '3.10'),
+    ('VTK', '9.3.0'),
+    ('ITK', '5.3.0'),
+]
+
+separate_build_dir = True
+
+configopts  = '-DCMAKE_BUILD_TYPE=Release '
+configopts += '-DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF '
+configopts += '-DSuperBuild_ANTS_USE_GIT_PROTOCOL=OFF'
+
+configopts += '-DITK_BUILD_MINC_SUPPORT=ON '
+configopts += '-DANTS_SNAPSHOT_VERSION=%(version)s '
+
+configopts += '-DUSE_SYSTEM_VTK=ON '
+
+preinstallopts = "cd ANTS-build && "
+
+sanity_check_paths = {
+    'files': ['bin/ANTS', 'bin/antsBrainExtraction.sh'],
+    'dirs': ['lib'],
+}
+
+modextravars = {'ANTSPATH': '%(installdir)s/bin'}
+
+moduleclass = 'data'
