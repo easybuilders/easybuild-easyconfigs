@@ -1,0 +1,40 @@
+name = 'cuDNN'
+version = '8.5.0.96'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://developer.nvidia.com/cudnn'
+description = """The NVIDIA CUDA Deep Neural Network library (cuDNN) is
+a GPU-accelerated library of primitives for deep neural networks."""
+
+toolchain = SYSTEM
+
+# note: cuDNN is tied to specific to CUDA versions,
+# see also https://docs.nvidia.com/deeplearning/cudnn/support-matrix/index.html#cudnn-cuda-hardware-versions
+local_short_ver = '.'.join(version.split('.')[:3])
+source_urls = ['https://developer.download.nvidia.com/compute/redist/cudnn/'
+               'v%s/local_installers/%%(cudashortver)s/' % local_short_ver]
+sources = ['%(namelower)s-linux-%(cudnnarch)s-%(version)s_cuda%(cudamajver)s-archive.tar.xz']
+checksums = [
+    {
+        '%(namelower)s-linux-x86_64-%(version)s_cuda%(cudamajver)s-archive.tar.xz':
+            '5454a6fd94f008728caae9adad993c4e85ef36302e26bce43bea7d458a5e7b6d',
+        '%(namelower)s-linux-ppc64le-%(version)s_cuda%(cudamajver)s-archive.tar.xz':
+            '00373c3d5e0b536a5557d0d0eb50706777f213a222b4030e1b71b1bec43d205f',
+        '%(namelower)s-linux-sbsa-%(version)s_cuda%(cudamajver)s-archive.tar.xz':
+            '86780abbecd4634e7363fad1d000ae23b7905a5f8383bddbf7332c6934791dde',
+    }
+]
+
+dependencies = [('CUDA', '11.7.0')]
+
+sanity_check_paths = {
+    'files': [
+        'include/cudnn.h', 'lib64/libcudnn_adv_infer_static.a', 'lib64/libcudnn_adv_train_static.a',
+        'lib64/libcudnn_cnn_infer_static.a', 'lib64/libcudnn_cnn_train_static.a',
+        'lib64/libcudnn_ops_infer_static.a', 'lib64/libcudnn_ops_train_static.a',
+        'lib64/libcudnn.%s' % SHLIB_EXT
+    ],
+    'dirs': ['include', 'lib64'],
+}
+
+moduleclass = 'numlib'
