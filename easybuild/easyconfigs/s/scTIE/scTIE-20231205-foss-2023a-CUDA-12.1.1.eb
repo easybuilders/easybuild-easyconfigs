@@ -1,0 +1,46 @@
+easyblock = 'Tarball'
+
+name = 'scTIE'
+version = '20231205'
+local_commit = '044d91a'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/SydneyBioX/scTIE'
+description = """scTIE (single-cell Temporal Integration and inference of multimodal Experiments)
+ is an autoencoder-based method for integrating multimodal profiling of scRNA-seq and scATAC-seq
+ data over a time course and inferring cell-type specific GRNs. scTIE projects cells from all time
+ points into a common embedding space, followed by extracting interpretable information from this
+ space to predict cell trajectories."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+github_account = 'SydneyBioX'
+source_urls = [GITHUB_SOURCE]
+sources = ['%s.tar.gz' % local_commit]
+checksums = ['bcbf7c846539d0f04e7bbf3cc6ae2fe075a4ba11e3a4388c29def943d39af53e']
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('SciPy-bundle', '2023.07'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('POT', '0.9.3', versionsuffix),
+]
+
+postinstallcmds = ['cd %(installdir)s && mkdir bin && ln -r -s main.py bin/sctie && chmod a+x main.py']
+
+fix_python_shebang_for = ['main.py']
+
+modextrapaths = {
+    'PATH': '',
+    'PYTHONPATH': '',
+}
+
+sanity_check_paths = {
+    'files': ['bin/sctie'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['sctie --help']
+
+moduleclass = 'bio'
