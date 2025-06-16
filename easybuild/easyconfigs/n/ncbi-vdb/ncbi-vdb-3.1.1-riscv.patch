@@ -1,0 +1,1111 @@
+# Consider RISC-V architecture in all the configuration/building process
+# Author: julianmorillo
+
+diff -Naur ncbi-vdb-3.1.1.orig/build/env.cmake ncbi-vdb-3.1.1/build/env.cmake
+--- ncbi-vdb-3.1.1.orig/build/env.cmake	2025-03-12 17:39:27.667993126 +0100
++++ ncbi-vdb-3.1.1/build/env.cmake	2025-03-12 16:41:18.576087547 +0100
+@@ -109,6 +109,8 @@
+     set(ARCH "x86_64")
+ elseif ( ${_system_processor} STREQUAL "amd64")
+     set(ARCH "x86_64")
++elseif ( ${_system_processor} STREQUAL "riscv64")
++    set(ARCH "riscv64")
+ else ()
+     message ( FATAL_ERROR "unknown architecture " ${_system_processor})
+ endif ()
+@@ -146,6 +148,10 @@
+     if( NOT WIN32 )
+         add_compile_definitions( HAVE_Z128 )
+     endif()
++elseif ("riscv64" STREQUAL ${ARCH} )
++	set ( BITS 64 )
++	add_compile_definitions( HAVE_Z128 )
++
+ endif()
+ 
+ # now any unique combinations of OS and ARCH
+diff -Naur ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/arch-impl.h ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/arch-impl.h
+--- ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/arch-impl.h	1970-01-01 01:00:00.000000000 +0100
++++ ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/arch-impl.h	2025-03-12 17:42:31.531128754 +0100
+@@ -0,0 +1,312 @@
++/*===========================================================================
++*
++*                            PUBLIC DOMAIN NOTICE
++*               National Center for Biotechnology Information
++*
++*  This software/database is a "United States Government Work" under the
++*  terms of the United States Copyright Act.  It was written as part of
++*  the author's official duties as a United States Government employee and
++*  thus cannot be copyrighted.  This software/database is freely available
++*  to the public for use. The National Library of Medicine and the U.S.
++*  Government have not placed any restriction on its use or reproduction.
++*
++*  Although all reasonable efforts have been taken to ensure the accuracy
++*  and reliability of the software and data, the NLM and the U.S.
++*  Government do not and cannot warrant the performance or results that
++*  may be obtained by using this software or data. The NLM and the U.S.
++*  Government disclaim all warranties, express or implied, including
++*  warranties of performance, merchantability or fitness for any particular
++*  purpose.
++*
++*  Please cite the author in any work or product based on this material.
++*
++* ===========================================================================
++*
++*/
++
++#ifndef _h_arch_impl_
++#define _h_arch_impl_
++
++#include <stdint.h>
++
++#ifndef USE_GCC_BUILTIN
++#define USE_GCC_BUILTIN 1
++#endif
++
++#if USE_GCC_BUILTIN
++#include <strings.h>
++#endif
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++static __inline__
++int16_t uint16_lsbit ( uint16_t self )
++{
++    return ( int16_t ) __builtin_ffs ( self ) - 1;
++}
++
++static __inline__
++int32_t uint32_lsbit ( uint32_t self )
++{
++    return __builtin_ffs ( self ) - 1;
++}
++
++static __inline__
++int32_t uint64_lsbit ( uint64_t self )
++{
++    return __builtin_ffsll ( self ) - 1;
++}
++
++static __inline__
++int16_t uint16_msbit ( uint16_t self )
++{
++    if ( self != 0 )
++        return ( int16_t ) 31 - __builtin_clz ( ( uint32_t ) self );
++    return -1;
++}
++
++static __inline__
++int32_t uint32_msbit ( uint32_t self )
++{
++    if ( self != 0 )
++        return 31 - __builtin_clz ( self );
++    return -1;
++}
++
++static __inline__
++int32_t uint64_msbit ( uint64_t self )
++{
++    if ( self != 0 )
++        return 63 - __builtin_clzll ( self );
++    return -1;
++}
++
++typedef struct int128_t int128_t;
++struct int128_t
++{
++    uint64_t lo;
++    int64_t hi;
++};
++
++static __inline__
++int64_t int128_hi ( const int128_t *self )
++{
++    return self -> hi;
++}
++
++static __inline__
++uint64_t int128_lo ( const int128_t *self )
++{
++    return self -> lo;
++}
++
++static __inline__
++void int128_sethi ( int128_t *self, int64_t i )
++{
++    self -> hi = i;
++}
++
++static __inline__
++void int128_setlo ( int128_t *self, uint64_t i )
++{
++    self -> lo = i;
++}
++
++typedef struct uint128_t uint128_t;
++struct uint128_t
++{
++    uint64_t lo;
++    uint64_t hi;
++};
++
++static __inline__
++uint64_t uint128_hi ( const uint128_t *self )
++{
++    return self -> hi;
++}
++
++static __inline__
++uint64_t uint128_lo ( const uint128_t *self )
++{
++    return self -> lo;
++}
++
++static __inline__
++void uint128_sethi ( uint128_t *self, uint64_t i )
++{
++    self -> hi = i;
++}
++
++static __inline__
++void uint128_setlo ( uint128_t *self, uint64_t i )
++{
++    self -> lo = i;
++}
++
++static __inline
++void int128_add ( int128_t *self, const int128_t *i )
++{
++    uint64_t carry = ( ( const uint32_t* ) self ) [ 0 ] + ( ( const uint32_t* ) i ) [ 0 ];
++    self -> hi += i -> hi;
++    carry = ( ( const uint32_t* ) self ) [ 1 ] + ( ( const uint32_t* ) i ) [ 1 ] + ( carry >> 32 );
++    self -> lo += i -> lo;
++    self -> hi += carry >> 32;
++}
++
++static __inline
++void int128_sub ( int128_t *self, const int128_t *i )
++{
++    int carry = i -> lo > self -> lo;
++    self -> hi -= i -> hi;
++    self -> lo -= i -> lo;
++    self -> hi -= carry;
++}
++
++static __inline
++void int128_sar ( int128_t *self, uint32_t i )
++{
++    if ( i < 64 )
++    {
++        self -> lo = ( self -> hi << ( 64 - i ) ) |  ( self -> lo >> i );
++        self -> hi >>= i;
++    }
++    else
++    {
++        self -> lo = self -> hi >> ( i - 64 );
++        self -> hi >>= 63;
++    }
++}
++
++static __inline
++void int128_shl ( int128_t *self, uint32_t i )
++{
++    if ( i < 64 )
++    {
++        self -> hi = ( self -> hi << i ) | ( int64_t ) ( self -> lo >> ( 64 - i ) );
++        self -> lo <<= i;
++    }
++    else
++    {
++        self -> hi = ( int64_t ) ( self -> lo << ( i - 64 ) );
++        self -> lo = 0;
++    }
++}
++
++static __inline
++void uint128_and ( uint128_t *self, const uint128_t *i )
++{
++    self -> lo &= i -> lo;
++    self -> hi &= i -> hi;
++}
++
++static __inline
++void uint128_or ( uint128_t *self, const uint128_t *i )
++{
++    self -> lo |= i -> lo;
++    self -> hi |= i -> hi;
++}
++
++static __inline
++void uint128_orlo ( uint128_t *self, uint64_t i )
++{
++    self -> lo |= i;
++}
++
++static __inline
++void uint128_xor ( uint128_t *self, const uint128_t *i )
++{
++    self -> lo ^= i -> lo;
++    self -> hi ^= i -> hi;
++}
++
++static __inline
++void uint128_not ( uint128_t *self )
++{
++    self -> lo = ~ self -> lo;
++    self -> hi = ~ self -> hi;
++}
++
++static __inline
++void uint128_shr ( uint128_t *self, uint32_t i )
++{
++    if ( i < 64 )
++    {
++        self -> lo = ( self -> hi << ( 64 - i ) ) |  ( self -> lo >> i );
++        self -> hi >>= i;
++    }
++    else
++    {
++        self -> lo = self -> hi >> ( i - 64 );
++        self -> hi >>= 63;
++    }
++}
++
++static __inline
++void uint128_shl ( uint128_t *self, uint32_t i )
++{
++    if ( i < 64 )
++    {
++        self -> hi = ( self -> hi << i ) | ( self -> lo >> ( 64 - i ) );
++        self -> lo <<= i;
++    }
++    else
++    {
++        self -> hi = self -> lo << ( i - 64 );
++        self -> lo = 0;
++    }
++}
++
++static __inline
++void uint128_bswap ( uint128_t *self )
++{
++    uint64_t tmp = __builtin_bswap64  ( self -> lo );
++    self -> lo = __builtin_bswap64  ( self -> hi );
++    ( ( uint64_t* ) self ) [ 1 ] = tmp;
++}
++
++static __inline
++void uint128_bswap_copy ( uint128_t *to, const uint128_t *from )
++{
++    to -> lo = __builtin_bswap64  ( from -> hi );
++    to -> hi = __builtin_bswap64  ( from -> lo );
++}
++
++static __inline__
++uint32_t uint32_rol ( uint32_t val, uint8_t bits )
++{
++    uint32_t rtn;
++    rtn = ( val << bits ) | ( val >> ( 32 - bits ) );
++    return rtn;
++}
++
++static __inline__
++uint32_t uint32_ror ( uint32_t val, uint8_t bits )
++{
++    uint32_t rtn;
++    rtn = ( val >> bits ) | ( val << ( 32 - bits ) );
++    return rtn;
++}
++
++static __inline__
++uint64_t uint64_rol ( uint64_t val, uint8_t bits )
++{
++    uint64_t rtn;
++    rtn = ( val << bits ) | ( val >> ( 64 - bits ) );
++    return rtn;
++}
++
++static __inline__
++uint64_t uint64_ror ( uint64_t val, uint8_t bits )
++{
++    uint64_t rtn;
++    rtn = ( val >> bits ) | ( val << ( 64 - bits ) );
++    return rtn;
++}
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* _h_arch_impl_ */
+diff -Naur ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/atomic.h ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/atomic.h
+--- ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/atomic.h	1970-01-01 01:00:00.000000000 +0100
++++ ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/atomic.h	2025-03-12 17:42:31.533128745 +0100
+@@ -0,0 +1,183 @@
++/*===========================================================================
++*
++*                            PUBLIC DOMAIN NOTICE
++*               National Center for Biotechnology Information
++*
++*  This software/database is a "United States Government Work" under the
++*  terms of the United States Copyright Act.  It was written as part of
++*  the author's official duties as a United States Government employee and
++*  thus cannot be copyrighted.  This software/database is freely available
++*  to the public for use. The National Library of Medicine and the U.S.
++*  Government have not placed any restriction on its use or reproduction.
++*
++*  Although all reasonable efforts have been taken to ensure the accuracy
++*  and reliability of the software and data, the NLM and the U.S.
++*  Government do not and cannot warrant the performance or results that
++*  may be obtained by using this software or data. The NLM and the U.S.
++*  Government disclaim all warranties, express or implied, including
++*  warranties of performance, merchantability or fitness for any particular
++*  purpose.
++*
++*  Please cite the author in any work or product based on this material.
++*
++* ===========================================================================
++*
++*/
++
++#ifndef _h_atomic_
++#define _h_atomic_
++
++#ifndef _h_atomic32_
++#include "atomic32.h"
++#endif
++
++#ifndef _h_atomic64_
++#include "atomic64.h"
++#endif
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#if DFLT_ATOMIC_BITS == 32
++#define ATOMIC_NAME( suffix ) \
++    atomic32_ ## suffix
++typedef int atomic_int;
++#else
++#define ATOMIC_NAME( suffix ) \
++    atomic64_ ## suffix
++typedef long int atomic_int;
++#endif
++
++typedef struct ATOMIC_NAME ( t ) atomic_t;
++
++typedef struct atomic_ptr_t atomic_ptr_t;
++struct atomic_ptr_t
++{
++    void * volatile ptr;
++};
++
++/* ( * v ) */
++#define atomic_read( v ) \
++    ATOMIC_NAME ( read ) ( v )
++
++/* ( * v ) = i */
++#define atomic_set( v, i ) \
++    ATOMIC_NAME ( set ) ( v, i )
++
++/* prior = ( * v ), ( * v ) += i, prior */
++#define atomic_read_and_add( v, i ) \
++    ATOMIC_NAME ( read_and_add ) ( v, i )
++
++/* ( * v ) += i */
++#define atomic_add( v, i ) \
++    ATOMIC_NAME ( add ) ( v, i )
++
++/* ( * v ) += i */
++#define atomic_add_and_read( v, i ) \
++    ATOMIC_NAME ( add_and_read ) ( v, i )
++
++/* ( void ) ++ ( * v ) */
++#define atomic_inc( v ) \
++    ATOMIC_NAME ( inc ) ( v )
++
++/* ( void ) -- ( * v ) */
++#define atomic_dec( v ) \
++    ATOMIC_NAME ( dec ) ( v )
++
++/* -- ( * v ) == 0 */
++#define atomic_dec_and_test( v ) \
++    ATOMIC_NAME ( dec_and_test ) ( v )
++
++/* ++ ( * v ) == 0
++   when atomic_dec_and_test uses predecrement, you want
++   postincrement to this function. so it isn't very useful */
++#define atomic_inc_and_test( v ) \
++    ATOMIC_NAME ( inc_and_test ) ( v )
++
++/* ( * v ) -- == 0
++   HERE's useful */
++#define atomic_test_and_inc( v ) \
++    ATOMIC_NAME ( test_and_inc ) ( v )
++
++/* prior = ( * v ), ( * v ) = ( prior == t ? s : prior ), prior */
++#define atomic_test_and_set( v, s, t ) \
++    ATOMIC_NAME ( test_and_set ) ( v, s, t )
++
++/* N.B. - THESE FUNCTIONS ARE FOR 64 BIT PTRS ONLY */
++    
++/* int atomic_read_ptr ( const atomic_ptr_t *v ); */
++#define atomic_read_ptr( v ) \
++    ( ( v ) -> ptr )
++
++static __inline__
++void *atomic_test_and_set_ptr ( atomic_ptr_t *v, void *s, void *t )
++{
++    void *rtn = v -> ptr;
++    if ( rtn == t )
++        v -> ptr = s;
++    return rtn;
++}
++
++/* val = ( * v ), ( ( * v ) = ( val < t ) ? val + i : val ), val */
++#define atomic_read_and_add_lt( v, i, t ) \
++    ATOMIC_NAME ( read_and_add_lt ) ( v, i, t )
++
++/* val = ( * v ), ( ( * v ) = ( val <= t ) ? val + i : val ), val */
++#define atomic_read_and_add_le( v, i, t ) \
++    ATOMIC_NAME ( read_and_add_le ) ( v, i, t )
++
++/* val = ( * v ), ( ( * v ) = ( val == t ) ? val + i : val ), val */
++#define atomic_read_and_add_eq( v, i, t ) \
++    ATOMIC_NAME ( read_and_add_eq ) ( v, i, t )
++
++/* val = ( * v ), ( ( * v ) = ( val != t ) ? val + i : val ), val */
++#define atomic_read_and_add_ne( v, i, t ) \
++    ATOMIC_NAME ( read_and_add_ne ) ( v, i, t )
++
++/* val = ( * v ), ( ( * v ) = ( val >= t ) ? val + i : val ), val */
++#define atomic_read_and_add_ge( v, i, t ) \
++    ATOMIC_NAME ( read_and_add_ge ) ( v, i, t )
++
++/* val = ( * v ), ( ( * v ) = ( val > t ) ? val + i : val ), val */
++#define atomic_read_and_add_gt( v, i, t ) \
++    ATOMIC_NAME ( read_and_add_gt ) ( v, i, t )
++
++/* val = ( * v ), ( ( * v ) = ( ( val & 1 ) == 1 ) ? val + i : val ), val */
++#define atomic_read_and_add_odd( v, i ) \
++    ATOMIC_NAME ( read_and_add_odd ) ( v, i )
++
++/* val = ( * v ), ( ( * v ) = ( ( val & 1 ) == 0 ) ? val + i : val ), val */
++#define atomic_read_and_add_even( v, i ) \
++    ATOMIC_NAME ( read_and_add_even ) ( v, i )
++
++/* DEPRECATED */
++
++/* val = ( * v ), ( * v ) = ( val < t ? val + i : val ), ( val < t ? 1 : 0 ) */
++#define atomic_add_if_lt( v, i, t ) \
++    ATOMIC_NAME ( add_if_lt ) ( v, i, t )
++
++/* val = ( * v ), ( * v ) = ( val <= t ? val + i : val ), ( val <= t ? 1 : 0 ) */
++#define atomic_add_if_le( v, i, t ) \
++    ATOMIC_NAME ( add_if_le ) ( v, i, t )
++
++/* val = ( * v ), ( * v ) = ( val == t ? val + i : val ), ( val == t ? 1 : 0 ) */
++#define atomic_add_if_eq( v, i, t ) \
++    ATOMIC_NAME ( add_if_eq ) ( v, i, t )
++
++/* val = ( * v ), ( * v ) = ( val >= t ? val + i : val ), ( val >= t ? 1 : 0 ) */
++#define atomic_add_if_ge( v, i, t ) \
++    ATOMIC_NAME ( add_if_ge ) ( v, i, t )
++
++/* val = ( * v ), ( * v ) = ( val > t ? val + i : val ), ( val > t ? 1 : 0 ) */
++#define atomic_add_if_gt( v, i, t ) \
++    ATOMIC_NAME ( add_if_gt ) ( v, i, t )
++
++#undef LOCK
++
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* _h_atomic_ */
+diff -Naur ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/atomic32.h ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/atomic32.h
+--- ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/atomic32.h	1970-01-01 01:00:00.000000000 +0100
++++ ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/atomic32.h	2025-03-12 17:42:31.535128735 +0100
+@@ -0,0 +1,229 @@
++/*===========================================================================
++*
++*                            PUBLIC DOMAIN NOTICE
++*               National Center for Biotechnology Information
++*
++*  This software/database is a "United States Government Work" under the
++*  terms of the United States Copyright Act.  It was written as part of
++*  the author's official duties as a United States Government employee and
++*  thus cannot be copyrighted.  This software/database is freely available
++*  to the public for use. The National Library of Medicine and the U.S.
++*  Government have not placed any restriction on its use or reproduction.
++*
++*  Although all reasonable efforts have been taken to ensure the accuracy
++*  and reliability of the software and data, the NLM and the U.S.
++*  Government do not and cannot warrant the performance or results that
++*  may be obtained by using this software or data. The NLM and the U.S.
++*  Government disclaim all warranties, express or implied, including
++*  warranties of performance, merchantability or fitness for any particular
++*  purpose.
++*
++*  Please cite the author in any work or product based on this material.
++*
++* ===========================================================================
++*
++*/
++
++#ifndef _h_atomic32_
++#define _h_atomic32_
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/*
++ * Make sure gcc doesn't try to be clever and move things around
++ * on us. We need to use _exactly_ the address the user gave us,
++ * not some alias that contains the same information.
++ */
++typedef struct atomic32_t atomic32_t;
++struct atomic32_t
++{
++    volatile int counter;
++};
++
++/* int atomic32_read ( const atomic32_t *v ); */
++#define atomic32_read( v ) \
++    ( ( v ) -> counter )
++
++/* void atomic32_set ( atomic32_t *v, int i ); */
++#define atomic32_set( v, i ) \
++    ( ( void ) ( ( ( v ) -> counter ) = ( i ) ) )
++
++/* add to v -> counter and return the prior value */
++static __inline__ int atomic32_read_and_add ( atomic32_t *v, int i )
++{
++    return __sync_fetch_and_add( & v -> counter, i );
++}
++
++/* if no read is needed, define the least expensive atomic add */
++#define atomic32_add( v, i ) \
++    atomic32_read_and_add ( v, i )
++
++/* add to v -> counter and return the result */
++static __inline__ int atomic32_add_and_read ( atomic32_t *v, int i )
++{
++    return __sync_add_and_fetch( & v -> counter, i );
++}
++
++/* just don't try to find out what the result was */
++static __inline__ void atomic32_inc ( atomic32_t *v )
++{
++    atomic32_add( v, 1 );
++}
++
++static __inline__ void atomic32_dec ( atomic32_t *v )
++{
++    atomic32_add( v, -1 );
++}
++
++/* decrement by one and test result for 0 */
++static __inline__ int atomic32_dec_and_test ( atomic32_t *v )
++{
++    return __sync_add_and_fetch( & v -> counter, -1 ) == 0;
++}
++
++/* when atomic32_dec_and_test uses predecrement, you want
++   postincrement to this function. so it isn't very useful */
++static __inline__ int atomic32_inc_and_test ( atomic32_t *v )
++{
++    return __sync_add_and_fetch( & v -> counter, 1 ) == 0;
++}
++
++/* HERE's useful */
++#define atomic32_test_and_inc( v ) \
++    ( atomic32_read_and_add ( v, 1 ) == 0 )
++
++static __inline__ int atomic32_test_and_set ( atomic32_t *v, int newval, int oldval )
++{
++    return __sync_val_compare_and_swap( & v -> counter, oldval, newval ); //NB: newval/oldval switched around
++}
++
++/* conditional modifications */
++static __inline__
++int atomic32_read_and_add_lt ( atomic32_t *v, int i, int t )
++{
++	int val, val_intern;
++	for ( val = atomic32_read ( v ); val < t; val = val_intern )
++	{
++		val_intern = atomic32_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic32_add_if_lt( v, i, t ) \
++    ( atomic32_read_and_add_lt ( v, i, t ) < ( t ) )
++
++static __inline__
++int atomic32_read_and_add_le ( atomic32_t *v, int i, int t )
++{
++	int val, val_intern;
++	for ( val = atomic32_read ( v ); val <= t; val = val_intern )
++	{
++		val_intern = atomic32_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic32_add_if_le( v, i, t ) \
++    ( atomic32_read_and_add_le ( v, i, t ) <= ( t ) )
++
++static __inline__
++int atomic32_read_and_add_eq ( atomic32_t *v, int i, int t )
++{
++	int val, val_intern;
++	for ( val = atomic32_read ( v ); val == t; val = val_intern )
++	{
++		val_intern = atomic32_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic32_add_if_eq( v, i, t ) \
++    ( atomic32_read_and_add_eq ( v, i, t ) == ( t ) )
++
++static __inline__
++int atomic32_read_and_add_ne ( atomic32_t *v, int i, int t )
++{
++	int val, val_intern;
++	for ( val = atomic32_read ( v ); val != t; val = val_intern )
++	{
++		val_intern = atomic32_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic32_add_if_ne( v, i, t ) \
++    ( atomic32_read_and_add_ne ( v, i, t ) != ( t ) )
++
++static __inline__
++int atomic32_read_and_add_ge ( atomic32_t *v, int i, int t )
++{
++	int val, val_intern;
++	for ( val = atomic32_read ( v ); val >= t; val = val_intern )
++	{
++		val_intern = atomic32_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic32_add_if_ge( v, i, t ) \
++    ( atomic32_read_and_add_ge ( v, i, t ) >= ( t ) )
++
++static __inline__
++int atomic32_read_and_add_gt ( atomic32_t *v, int i, int t )
++{
++	int val, val_intern;
++	for ( val = atomic32_read ( v ); val > t; val = val_intern )
++	{
++		val_intern = atomic32_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic32_add_if_gt( v, i, t ) \
++    ( atomic32_read_and_add_gt ( v, i, t ) > ( t ) )
++
++static __inline__
++int atomic32_read_and_add_odd ( atomic32_t *v, int i )
++{
++	int val, val_intern;
++	for ( val = atomic32_read ( v ); val & 1; val = val_intern )
++	{
++		val_intern = atomic32_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++static __inline__
++int atomic32_read_and_add_even ( atomic32_t *v, int i )
++{
++	int val, val_intern;
++	for ( val = atomic32_read ( v ); ! (val & 1); val = val_intern )
++	{
++		val_intern = atomic32_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* _h_atomic32_ */
+diff -Naur ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/atomic64.h ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/atomic64.h
+--- ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/atomic64.h	1970-01-01 01:00:00.000000000 +0100
++++ ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/atomic64.h	2025-03-12 17:42:31.538128720 +0100
+@@ -0,0 +1,229 @@
++/*===========================================================================
++*
++*                            PUBLIC DOMAIN NOTICE
++*               National Center for Biotechnology Information
++*
++*  This software/database is a "United States Government Work" under the
++*  terms of the United States Copyright Act.  It was written as part of
++*  the author's official duties as a United States Government employee and
++*  thus cannot be copyrighted.  This software/database is freely available
++*  to the public for use. The National Library of Medicine and the U.S.
++*  Government have not placed any restriction on its use or reproduction.
++*
++*  Although all reasonable efforts have been taken to ensure the accuracy
++*  and reliability of the software and data, the NLM and the U.S.
++*  Government do not and cannot warrant the performance or results that
++*  may be obtained by using this software or data. The NLM and the U.S.
++*  Government disclaim all warranties, express or implied, including
++*  warranties of performance, merchantability or fitness for any particular
++*  purpose.
++*
++*  Please cite the author in any work or product based on this material.
++*
++* ===========================================================================
++*
++*/
++
++#ifndef _h_atomic64_
++#define _h_atomic64_
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/*
++ * Make sure gcc doesn't try to be clever and move things around
++ * on us. We need to use _exactly_ the address the user gave us,
++ * not some alias that contains the same information.
++ */
++typedef struct atomic64_t atomic64_t;
++struct atomic64_t
++{
++    volatile long int counter;
++};
++
++/* int atomic64_read ( const atomic64_t *v ); */
++#define atomic64_read( v ) \
++    ( ( v ) -> counter )
++
++/* void atomic64_set ( atomic64_t *v, long int i ); */
++#define atomic64_set( v, i ) \
++    ( ( void ) ( ( ( v ) -> counter ) = ( i ) ) )
++
++/* add to v -> counter and return the prior value */
++static __inline__ long int atomic64_read_and_add ( atomic64_t *v, long int i )
++{
++    return __sync_fetch_and_add( & v -> counter, i );
++}
++
++/* if no read is needed, define the least expensive atomic add */
++#define atomic64_add( v, i ) \
++    atomic64_read_and_add ( v, i )
++
++/* add to v -> counter and return the result */
++static __inline__ long int atomic64_add_and_read ( atomic64_t *v, long int i )
++{
++    return __sync_add_and_fetch( & v -> counter, i );
++}
++
++/* just don't try to find out what the result was */
++static __inline__ void atomic64_inc ( atomic64_t *v )
++{
++    atomic64_add( v, 1 );
++}
++
++static __inline__ void atomic64_dec ( atomic64_t *v )
++{
++    atomic64_add( v, -1 );
++}
++
++/* decrement by one and test result for 0 */
++static __inline__ int atomic64_dec_and_test ( atomic64_t *v )
++{
++    return __sync_add_and_fetch( & v -> counter, -1 ) == 0;
++}
++
++/* when atomic64_dec_and_test uses predecrement, you want
++   postincrement to this function. so it isn't very useful */
++static __inline__ int atomic64_inc_and_test ( atomic64_t *v )
++{
++    return __sync_add_and_fetch( & v -> counter, 1 ) == 0;
++}
++
++/* HERE's useful */
++#define atomic64_test_and_inc( v ) \
++    ( atomic64_read_and_add ( v, 1L ) == 0 )
++
++static __inline__ long int atomic64_test_and_set ( atomic64_t *v, long int newval, long int oldval )
++{
++    return __sync_val_compare_and_swap( & v -> counter, oldval, newval ); //NB: newval/oldval switched around
++}
++
++/* conditional modifications */
++static __inline__
++long int atomic64_read_and_add_lt ( atomic64_t *v, long int i, long int t )
++{
++	int val, val_intern;
++	for ( val = atomic64_read ( v ); val < t; val = val_intern )
++	{
++		val_intern = atomic64_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic64_add_if_lt( v, i, t ) \
++    ( atomic64_read_and_add_lt ( v, i, t ) < ( t ) )
++
++static __inline__
++long int atomic64_read_and_add_le ( atomic64_t *v, long int i, long int t )
++{
++	int val, val_intern;
++	for ( val = atomic64_read ( v ); val <= t; val = val_intern )
++	{
++		val_intern = atomic64_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic64_add_if_le( v, i, t ) \
++    ( atomic64_read_and_add_le ( v, i, t ) <= ( t ) )
++
++static __inline__
++long int atomic64_read_and_add_eq ( atomic64_t *v, long int i, long int t )
++{
++	int val, val_intern;
++	for ( val = atomic64_read ( v ); val == t; val = val_intern )
++	{
++		val_intern = atomic64_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic64_add_if_eq( v, i, t ) \
++    ( atomic64_read_and_add_eq ( v, i, t ) == ( t ) )
++
++static __inline__
++long int atomic64_read_and_add_ne ( atomic64_t *v, long int i, long int t )
++{
++	int val, val_intern;
++	for ( val = atomic64_read ( v ); val != t; val = val_intern )
++	{
++		val_intern = atomic64_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic64_add_if_ne( v, i, t ) \
++    ( atomic64_read_and_add_ne ( v, i, t ) != ( t ) )
++
++static __inline__
++long int atomic64_read_and_add_ge ( atomic64_t *v, long int i, long int t )
++{
++	int val, val_intern;
++	for ( val = atomic64_read ( v ); val >= t; val = val_intern )
++	{
++		val_intern = atomic64_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic64_add_if_ge( v, i, t ) \
++    ( atomic64_read_and_add_ge ( v, i, t ) >= ( t ) )
++
++static __inline__
++long int atomic64_read_and_add_gt ( atomic64_t *v, long int i, long int t )
++{
++	int val, val_intern;
++	for ( val = atomic64_read ( v ); val > t; val = val_intern )
++	{
++		val_intern = atomic64_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#define atomic64_add_if_gt( v, i, t ) \
++    ( atomic64_read_and_add_gt ( v, i, t ) > ( t ) )
++
++static __inline__
++long int atomic64_read_and_add_odd ( atomic64_t *v, long int i )
++{
++	int val, val_intern;
++	for ( val = atomic64_read ( v ); val & 1; val = val_intern )
++	{
++		val_intern = atomic64_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++static __inline__
++long int atomic64_read_and_add_even ( atomic64_t *v, long int i )
++{
++	int val, val_intern;
++	for ( val = atomic64_read ( v ); ! ( val & 1 ); val = val_intern )
++	{
++		val_intern = atomic64_test_and_set ( v, val + i, val );
++		if ( val_intern == val )
++			break;
++	}
++	return val;
++}
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* _h_atomic64_ */
+diff -Naur ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/bitstr.h ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/bitstr.h
+--- ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/bitstr.h	1970-01-01 01:00:00.000000000 +0100
++++ ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/bitstr.h	2025-03-12 17:42:31.540128711 +0100
+@@ -0,0 +1,39 @@
++/*===========================================================================
++*
++*                            PUBLIC DOMAIN NOTICE
++*               National Center for Biotechnology Information
++*
++*  This software/database is a "United States Government Work" under the
++*  terms of the United States Copyright Act.  It was written as part of
++*  the author's official duties as a United States Government employee and
++*  thus cannot be copyrighted.  This software/database is freely available
++*  to the public for use. The National Library of Medicine and the U.S.
++*  Government have not placed any restriction on its use or reproduction.
++*
++*  Although all reasonable efforts have been taken to ensure the accuracy
++*  and reliability of the software and data, the NLM and the U.S.
++*  Government do not and cannot warrant the performance or results that
++*  may be obtained by using this software or data. The NLM and the U.S.
++*  Government disclaim all warranties, express or implied, including
++*  warranties of performance, merchantability or fitness for any particular
++*  purpose.
++*
++*  Please cite the author in any work or product based on this material.
++*
++* ===========================================================================
++*
++*/
++
++#ifndef _h_bitstr_
++#define _h_bitstr_
++
++/* use 64-bit accumulator, 32-bit word size */
++#define WRDSIZE 32
++#define WRDSHIFT 5
++#define WRD uint32_t
++#define ACC uint64_t
++#define BSWAP( x ) bswap_32 ( x )
++
++#include "../noarch/bitstr.h"
++
++#endif /* _h_bitstr_ */
+diff -Naur ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/strtol.h ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/strtol.h
+--- ncbi-vdb-3.1.1.orig/interfaces/cc/gcc/riscv64/strtol.h	1970-01-01 01:00:00.000000000 +0100
++++ ncbi-vdb-3.1.1/interfaces/cc/gcc/riscv64/strtol.h	2025-03-12 17:42:31.542128701 +0100
+@@ -0,0 +1,69 @@
++/*===========================================================================
++*
++*                            PUBLIC DOMAIN NOTICE
++*               National Center for Biotechnology Information
++*
++*  This software/database is a "United States Government Work" under the
++*  terms of the United States Copyright Act.  It was written as part of
++*  the author's official duties as a United States Government employee and
++*  thus cannot be copyrighted.  This software/database is freely available
++*  to the public for use. The National Library of Medicine and the U.S.
++*  Government have not placed any restriction on its use or reproduction.
++*
++*  Although all reasonable efforts have been taken to ensure the accuracy
++*  and reliability of the software and data, the NLM and the U.S.
++*  Government do not and cannot warrant the performance or results that
++*  may be obtained by using this software or data. The NLM and the U.S.
++*  Government disclaim all warranties, express or implied, including
++*  warranties of performance, merchantability or fitness for any particular
++*  purpose.
++*
++*  Please cite the author in any work or product based on this material.
++*
++* ===========================================================================
++*
++*/
++
++#ifndef _h_strtol_
++#define _h_strtol_
++
++#ifndef _h_klib_defs_
++#include <klib/defs.h>
++#endif
++
++#include <stdlib.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++
++/*--------------------------------------------------------------------------
++ * strtoi32
++ * strtou32
++ *  based upon actual usage
++ */
++#define strtoi32( str, endp, base ) \
++    ( int32_t ) strtol ( str, endp, base )
++
++#define strtou32( str, endp, base ) \
++    ( uint32_t ) strtoul ( str, endp, base )
++
++
++/*--------------------------------------------------------------------------
++ * strtoi64
++ * strtou64
++ *  based upon actual usage
++ */
++#define strtoi64( str, endp, base ) \
++    strtol ( str, endp, base )
++
++#define strtou64( str, endp, base ) \
++    strtoul ( str, endp, base )
++
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* _h_strtol_ */
