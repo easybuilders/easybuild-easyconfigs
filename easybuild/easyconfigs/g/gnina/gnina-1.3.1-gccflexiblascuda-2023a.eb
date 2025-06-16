@@ -21,6 +21,7 @@ builddependencies = [
     ('pytest', '8.2.2'),
     ('JsonCpp', '1.9.5'),
     ('cuDNN', '9.2.1'),
+    ('cuSPARSELt', '0.6.1.0'),
 ]
 
 default_easyblock = 'CMakeMake'
@@ -29,6 +30,7 @@ default_component_specs = {
     'start_dir': '%(name)s-%(version)s',
 }
 
+cuda_compute_capabilities = ['7.0', '8.0', '9.0']
 components = [
     (
         'libmolgrid', '0.5.5', {
@@ -43,13 +45,21 @@ components = [
             'source_urls': ['https://github.com/gnina/gnina/archive'],
             #'patches': ['gnina-1.0.1_fix_eigen_include.patch'],
             'checksums': ['ee2921ed940734dfdecd9760ed2402aa22da7fb4845313b2860efd03001b016b'],
-            'configopts': ' -DBUILD_TESTING=OFF -DCMAKE_CUDA_ARCHITECTURES=80 -DTORCH_CUDA_ARCH_LIST=8.0 -DBLA_VENDOR=FlexiBLAS -DRDKIT_INCLUDE_DIR=$EBROOTRDKIT/include/rdkit',
+            'configopts': ' -DBUILD_TESTING=OFF -DBLA_VENDOR=FlexiBLAS -DRDKIT_INCLUDE_DIR=$EBROOTRDKIT/include/rdkit',
         }
     ),
 ]
 
+# Remove dist cuda and cudnn lib, and patch to use ours.
 postinstallcmds = [
-    'setrpaths.sh --path %(installdir)s --add_path %(installdir)s/lib/gnina --any_interpreter',
+    # clean
+    'cd %(installdir)s/lib/gnina && rm -v libcudnn*.so* libcublas-37d11411.so.12 libgomp-98b21ff3.so.1 libcudart-9335f6a2.so.12 libnvrtc-builtins.so libnvrtc-b51b459d.so.12 libnvToolsExt-847d78f2.so.1 libcublasLt-f97bfc2c.so.12',
+
+    # Ensure names are correct
+    'cd %(installdir)s/lib/gnina && patchelf --replace-needed libcudart-9335f6a2.so.12 libcudart.so.12 --replace-needed libnvToolsExt-847d78f2.so.1 libnvToolsExt.so.1 --replace-needed libcublas-37d11411.so.12 libcublas.so.12 --replace-needed libcublasLt-f97bfc2c.so.12 libcublasLt.so.12 --replace-needed libgomp-98b21ff3.so.1 libgomp.so.1 libtorch.so libtorch_cpu.so libtorch_cuda.so libtorch_cuda_linalg.so libtorch_global_deps.so libtorch_python.so libtorchbind_test.so libshm.so libnnapi_backend.so',
+    
+    # Patch rpath so we use our libs
+    'setrpaths.sh --path %(installdir)s --add_path %(installdir)s/lib/gnina:$EBROOTCUDACORE/lib64:$EBROOTCUDNN/lib64:$EBROOTCUSPARSELT/lib64 --any_interpreter',
 ]
 
 sanity_check_paths = {
