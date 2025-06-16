@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'coxeter'
+version = '20180226'
+local_commit = '7b5a1f0'
+
+homepage = 'https://github.com/tscrim/coxeter'
+description = """A library for the study of combinatorial aspects of Coxeter group theory"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ['https://github.com/tscrim/coxeter/archive/%s/' % local_commit]
+sources = [SOURCE_TAR_GZ]
+patches = [
+    'coxeter-20180226_makefile.patch',
+    ('coxeter-20180226_sage_interface.patch', 0),
+]
+checksums = [
+    {'coxeter-20180226.tar.gz': '5e0668c40b29c03c438a6ebc0f49f13aaf155b4bcbff56303a753390e6fce3aa'},
+    {'coxeter-20180226_makefile.patch': '229ed201e41bae0ae7b22aa21d5007127aeb52fd158543dd5fff2e89797e211f'},
+    {'coxeter-20180226_sage_interface.patch': '18ba75e51a944ffccb7fa440b823f68a0aad9066e8edcdd2b52bac6b43404bd3'},
+]
+
+builddependencies = [('binutils', '2.40')]
+
+skipsteps = ['configure']
+
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS"'
+preinstallopts = 'mkdir -p "%(installdir)s/bin" "%(installdir)s/lib" && '
+installopts = 'SAGE_LOCAL="%(installdir)s"'
+
+sanity_check_paths = {
+    'files': [
+        'bin/%(name)s',
+        'lib/lib%%(name)s3.%s' % SHLIB_EXT,
+    ],
+    'dirs': [
+        'include/%(name)s',
+        'share/%(name)s',
+    ]
+}
+
+sanity_check_commands = ['echo "qq" | coxeter']
+
+moduleclass = 'math'
