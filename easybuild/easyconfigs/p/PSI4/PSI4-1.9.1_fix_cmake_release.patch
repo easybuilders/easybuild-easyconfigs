@@ -1,0 +1,95 @@
+remove CMAKE_BUILD_TYPE check (because it is set to EasyBuildRelease to avoid -O3 optimization flag)
+original patch by B. Hajgato - (Free University Brussels - VUB)
+ported to PSI4 1.3.1 by Kenneth Hoste (HPC-UGent)
+ported to PSI4 1.7 by Neil Douglas (neil.douglas@york.ac.uk)
+ported to PSI4 1.9.1 by Samuel Moors (Vrije Universiteit Brussel)
+diff -ur psi4-1.9.1.orig/cmake/autocmake_safeguards.cmake psi4-1.9.1/cmake/autocmake_safeguards.cmake
+--- psi4-1.9.1.orig/cmake/autocmake_safeguards.cmake	2024-02-08 22:08:35.000000000 +0100
++++ psi4-1.9.1/cmake/autocmake_safeguards.cmake	2024-09-19 18:06:50.961414596 +0200
+@@ -19,9 +19,3 @@
+ string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
+ string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
+ 
+-if(NOT cmake_build_type_tolower STREQUAL "debug" AND
+-   NOT cmake_build_type_tolower STREQUAL "release" AND
+-   NOT cmake_build_type_tolower STREQUAL "minsizerel" AND
+-   NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
+-    message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are Debug, Release, RelWithDebInfo, MinSizeRel (case-insensitive).")
+-endif()
+diff -ur psi4-1.9.1.orig/external/upstream/dkh/CMakeLists.txt psi4-1.9.1/external/upstream/dkh/CMakeLists.txt
+--- psi4-1.9.1.orig/external/upstream/dkh/CMakeLists.txt	2024-02-08 22:08:35.000000000 +0100
++++ psi4-1.9.1/external/upstream/dkh/CMakeLists.txt	2024-09-19 18:09:27.904110642 +0200
+@@ -24,6 +24,7 @@
+             DEPENDS lapack_external
+             URL https://github.com/psi4/dkh/archive/3ba0128.tar.gz  # v1.2 + cmake
+             UPDATE_COMMAND ""
++            PATCH_COMMAND  sed -e "s/debug/easybuildrelease/" -i cmake/autocmake_safeguards.cmake
+             CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
+                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+diff -ur psi4-1.9.1.orig/external/upstream/gau2grid/CMakeLists.txt psi4-1.9.1/external/upstream/gau2grid/CMakeLists.txt
+--- psi4-1.9.1.orig/external/upstream/gau2grid/CMakeLists.txt	2024-02-08 22:08:35.000000000 +0100
++++ psi4-1.9.1/external/upstream/gau2grid/CMakeLists.txt	2024-09-19 19:00:53.785308308 +0200
+@@ -20,6 +20,7 @@
+         DEPENDS pybind11_external
+         URL https://github.com/dgasmith/gau2grid/archive/v2.0.7.tar.gz
+         UPDATE_COMMAND ""
++        PATCH_COMMAND  sed -e "s/debug/easybuildrelease/" -i cmake/autocmake_safeguards.cmake
+         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
+                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+diff -ur psi4-1.9.1.orig/external/upstream/gdma/CMakeLists.txt psi4-1.9.1/external/upstream/gdma/CMakeLists.txt
+--- psi4-1.9.1.orig/external/upstream/gdma/CMakeLists.txt	2024-02-08 22:08:35.000000000 +0100
++++ psi4-1.9.1/external/upstream/gdma/CMakeLists.txt	2024-09-19 18:09:47.177430325 +0200
+@@ -24,6 +24,7 @@
+             DEPENDS pybind11_external
+             URL https://github.com/psi4/gdma/archive/v2.3.3.tar.gz  # Stone's upstream c2e0b548 plus commits from Andy Simmonett for lib, Holger Kruse for I/O, Lori Burns for CMake & Python
+             UPDATE_COMMAND ""
++            PATCH_COMMAND  sed -e "s/debug/easybuildrelease/" -i cmake/autocmake_safeguards.cmake
+             CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
+                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+diff -ur psi4-1.9.1.orig/external/upstream/libefp/CMakeLists.txt psi4-1.9.1/external/upstream/libefp/CMakeLists.txt
+--- psi4-1.9.1.orig/external/upstream/libefp/CMakeLists.txt	2024-02-08 22:08:35.000000000 +0100
++++ psi4-1.9.1/external/upstream/libefp/CMakeLists.txt	2024-09-19 18:10:04.346993747 +0200
+@@ -21,6 +21,7 @@
+             DEPENDS lapack_external
+             URL https://github.com/ilyak/libefp/archive/15cd7ce.tar.gz  # v1.5.0 + 10 (docs and a cmake lapack patch)
+             UPDATE_COMMAND ""
++            PATCH_COMMAND  sed -e "s/debug/easybuildrelease/" -i cmake/autocmake_safeguards.cmake
+             CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
+                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+diff -ur psi4-1.9.1.orig/external/upstream/libint/CMakeLists.txt psi4-1.9.1/external/upstream/libint/CMakeLists.txt
+--- psi4-1.9.1.orig/external/upstream/libint/CMakeLists.txt	2024-02-08 22:08:35.000000000 +0100
++++ psi4-1.9.1/external/upstream/libint/CMakeLists.txt	2024-09-19 18:10:45.532297897 +0200
+@@ -15,6 +15,7 @@
+     ExternalProject_Add(libint_external
+         # "git checkout" fails on Windows, because of "*" in filenames (e.g. basis set files)
+         URL https://github.com/loriab/libint/archive/libint_t.tar.gz
++        PATCH_COMMAND  sed -e "s/debug/easybuildrelease/" -i cmake/autocmake_safeguards.cmake
+         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
+                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+diff -ur psi4-1.9.1.orig/external/upstream/libxc/CMakeLists.txt psi4-1.9.1/external/upstream/libxc/CMakeLists.txt
+--- psi4-1.9.1.orig/external/upstream/libxc/CMakeLists.txt	2024-02-08 22:08:35.000000000 +0100
++++ psi4-1.9.1/external/upstream/libxc/CMakeLists.txt	2024-09-19 18:11:17.460151143 +0200
+@@ -24,6 +24,7 @@
+         #GIT_REPOSITORY https://gitlab.com/libxc/libxc.git
+         #GIT_TAG 5.1.5
+         #UPDATE_COMMAND ""
++        PATCH_COMMAND  sed -e "s/debug/easybuildrelease/" -i cmake/autocmake_safeguards.cmake
+         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
+                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+diff -ur psi4-1.9.1.orig/external/upstream/pcmsolver/CMakeLists.txt psi4-1.9.1/external/upstream/pcmsolver/CMakeLists.txt
+--- psi4-1.9.1.orig/external/upstream/pcmsolver/CMakeLists.txt	2024-02-08 22:08:35.000000000 +0100
++++ psi4-1.9.1/external/upstream/pcmsolver/CMakeLists.txt	2024-09-19 20:53:02.637798342 +0200
+@@ -33,6 +33,7 @@
+             #URL https://github.com/loriab/pcmsolver/archive/v1211.tar.gz
+             URL https://github.com/loriab/pcmsolver/archive/v123_plus_ming.tar.gz
+             UPDATE_COMMAND ""
++            PATCH_COMMAND  sed -e "s/debug/easybuildrelease/" -i cmake/downloaded/autocmake_safeguards.cmake
+             CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
+                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
