@@ -997,7 +997,7 @@ class EasyConfigTest(TestCase):
     def test_downloadable_or_instructions(self):
         """
         Make sure the sources are downloadable or there are instructions for how to download them
-        using the download_instructions parameter, including a link.
+        using the download_instructions parameter, including a link if one exists.
         """
         problem_ecs = []
         for easyconfig in self.parsed_easyconfigs:
