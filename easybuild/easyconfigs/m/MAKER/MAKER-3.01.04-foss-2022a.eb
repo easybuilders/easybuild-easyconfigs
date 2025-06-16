@@ -29,7 +29,7 @@ dependencies = [
 exts_defaultclass = 'PerlModule'
 exts_filter = ("perldoc -lm %(ext_name)s ", "")
 
-_libdir = 'lib/perl5/site_perl/%(perlver)s/'
+_libdir = 'lib/perl5/site_perl/%(perlver)s'
 
 exts_list = [
     ('Acme::Damn', '0.08', {
@@ -74,9 +74,11 @@ exts_list = [
     }),
     (name, version, {
         'modulename': False,
+        # fix hardcoded paths to libraries
+        'preinstallopts': r"find ../ -type f -exec sed -i 's|RealBin/\.\./lib|RealBin/../%s|g' {} \; && " % _libdir,
         'postinstallcmds': [
             'cp -a ../bin %(installdir)s/',
-            'cp -an blib/lib/* ../lib/* %%(installdir)s/%s' % _libdir,
+            'cp -an blib/lib/* ../lib/* %%(installdir)s/%s/' % _libdir,
         ],
         'source_tmpl': 'Version_%(version)s.tar.gz',
         'source_urls': ['https://github.com/Yandell-Lab/maker/archive/refs/tags/'],

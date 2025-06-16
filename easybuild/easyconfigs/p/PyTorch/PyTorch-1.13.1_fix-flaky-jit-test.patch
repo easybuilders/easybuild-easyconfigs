@@ -1,0 +1,21 @@
+Especially `test_jit_legacy` seems to be flaky.
+https://github.com/pytorch/pytorch/commit/316ba9e6fc9e2c309c1b3785e35393b4a727b918
+makes the JIT tests run serially avoiding potential races.
+So backport that commit.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/run_test.py b/test/run_test.py
+index f7c80f3f0a6..9d9b0c553e9 100755
+--- a/test/run_test.py
++++ b/test/run_test.py
+@@ -994,7 +994,8 @@ def must_serial(file: str) -> bool:
+         "distributed" in file or
+         file in CUSTOM_HANDLERS or
+         file in RUN_PARALLEL_BLOCKLIST or
+-        file in CI_SERIAL_LIST
++        file in CI_SERIAL_LIST or
++        file in JIT_EXECUTOR_TESTS
+     )
+ 
+ 
