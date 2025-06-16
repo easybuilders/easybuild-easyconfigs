@@ -1,0 +1,26 @@
+Partial patch from gnulib to fix explicit_bzero.c test when -std=c99 is passed.
+
+M4 imports the gnulib tests via a submodule, with Makefile.am simply
+pointing to `include gnulib.mk`
+
+Adapted to be used in M4 repository, original commit can be found at:
+https://cgit.git.savannah.gnu.org/cgit/gnulib.git/patch/?id=04191d1b325186fcd788a4a0a89274f8b9a9943b
+
+Author: Jan Andre Reuter (JSC)
+
+diff --git a/tests/explicit_bzero.c b/tests/explicit_bzero.c
+index ad0bfd170c..584f982924 100644
+--- a/tests/explicit_bzero.c
++++ b/tests/explicit_bzero.c
+@@ -57,7 +57,7 @@ explicit_bzero (void *s, size_t len)
+ #elif defined __GNUC__ && !defined __clang__
+   memset (s, '\0', len);
+   /* Compiler barrier.  */
+-  asm volatile ("" ::: "memory");
++  __asm__ volatile ("" ::: "memory");
+ #elif defined __clang__
+   memset (s, '\0', len);
+   /* Compiler barrier.  */
+-- 
+cgit v1.2.3
+
