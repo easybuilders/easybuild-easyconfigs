@@ -1,0 +1,47 @@
+Patch for Makefile to include Eigen, libRmath, Boost, Tabix and FlexiBLAS
+J. Sassmannshausen
+diff --git a/FastQTL.orig/Makefile b/FastQTL/Makefile
+index a7b23ec..d9504ec 100644
+--- a/FastQTL.orig/Makefile
++++ b/FastQTL/Makefile
+@@ -1,16 +1,16 @@
+ #PLEASE SPECIFY THE R path here where you built the R math library standalone 
+-RMATH=~/Software/R-3.1.3/src
++RMATH=${EBROOTLIBRMATH}/lib64
+ 
+ #compiler
+ CXX=g++
+ 
+ #internal paths
+ VPATH=$(shell for file in `find src -name *.cpp`; do echo $$(dirname $$file); done)
+-PATH_TABX=lib/Tabix
+-PATH_EIGN=lib/Eigen
++PATH_TABX=${EBROOTTABIX}
++PATH_EIGN=${EBROOTEIGEN}
+ 
+ #compiler flags
+-CXXFLAG_OPTI=-O3 -D_FAST_CORRELATION
++CXXFLAG_OPTI=-O3 -D_FAST_CORRELATION -std=gnu++98
+ CXXFLAG_DEBG=-g
+ CXXFLAG_WARN=-Wall -Wextra -Wno-sign-compare
+ CXXFLAG_MACX=-mmacosx-version-min=10.7 -stdlib=libc++
+@@ -21,15 +21,15 @@ LDFLAG_DEBG=-g
+ LDFLAG_MACX=-mmacosx-version-min=10.7 -stdlib=libc++
+ 
+ #includes
+-INC_BASE=-Isrc -I$(PATH_TABX) -I$(PATH_EIGN)
++INC_BASE=-Isrc -I$(PATH_TABX) -I$(PATH_EIGN)/include/Eigen
+ INC_MATH=-I$(RMATH)/include/
+ INC_MACX=-I/usr/local/include/
+ 
+ #libraries
+ #LIB_BASE=-lm -lboost_iostreams -lboost_program_options -lz -lgsl -lblas
+-LIB_BASE=-lm -lz -lboost_iostreams -lboost_program_options -lgsl -lblas
+-LIB_MATH=$(RMATH)/nmath/standalone/libRmath.a
+-LIB_TABX=$(PATH_TABX)/libtabix.a
++LIB_BASE=-L${EBROOTBOOST}/lib64 -lm -lz -lboost_iostreams -lboost_program_options -lgsl -lflexiblas
++LIB_MATH=$(RMATH)/libRmath.a
++LIB_TABX=$(PATH_TABX)/lib64/libtabix.a
+ LIB_MACX=-L/usr/local/lib/
+ 
+ #files (binary, objects, headers & sources)

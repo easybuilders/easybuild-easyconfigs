@@ -1,0 +1,30 @@
+Fix an issue where TensorFlow 2.5/2.6 won't build with a protobuf newer than 3.14
+Additionally, a TypeError ("expected tensorflow.TensorShapeProto got tensorflow.TensorShapeProto")
+is fixed by inverting the import statements.
+Solution/patch obtained from https://bugs.gentoo.org/800824
+
+diff -Nrup tensorflow-2.5.0_old/tensorflow/core/kernels/example_parsing_ops.cc tensorflow-2.5.0/tensorflow/core/kernels/example_parsing_ops.cc
+--- tensorflow-2.5.0_old/tensorflow/core/kernels/example_parsing_ops.cc	2021-05-12 15:26:41.000000000 +0200
++++ tensorflow-2.5.0/tensorflow/core/kernels/example_parsing_ops.cc	2021-07-14 08:09:39.927536430 +0200
+@@ -1218,7 +1218,7 @@ class DecodeJSONExampleOp : public OpKer
+           resolver_.get(), "type.googleapis.com/tensorflow.Example", &in, &out);
+       OP_REQUIRES(ctx, status.ok(),
+                   errors::InvalidArgument("Error while parsing JSON: ",
+-                                          string(status.error_message())));
++                                          string(status.message())));
+     }
+   }
+ 
+diff -Nrup tensorflow-2.5.0_old/tensorflow/python/__init__.py tensorflow-2.5.0/tensorflow/python/__init__.py
+--- tensorflow-2.5.0_old/tensorflow/python/__init__.py	2021-05-12 15:26:41.000000000 +0200
++++ tensorflow-2.5.0/tensorflow/python/__init__.py	2021-07-14 08:09:55.696294764 +0200
+@@ -37,8 +37,8 @@ import traceback
+ # go/tf-wildcard-import
+ # pylint: disable=wildcard-import,g-bad-import-order,g-import-not-at-top
+ 
+-from tensorflow.python.eager import context
+ from tensorflow.python import pywrap_tensorflow as _pywrap_tensorflow
++from tensorflow.python.eager import context
+ 
+ # pylint: enable=wildcard-import
+ 

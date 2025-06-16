@@ -1,0 +1,456 @@
+If Open MPI is built with support for CUDA there's a small
+(up to 10%) performance penalty for small messages due to overhead
+in the datatype memory copy functionality.
+
+This eliminates most of this overhead as follows:
+1. Seperate compilation of CUDA code paths in pack/unpack routines
+   instead of runtime checks in inner loops, similar to the existing
+   checksum functionality.
+2. Expose opal_cuda_enabled variable so it can be checked directly
+   in opal_datatype_copy_content_same_ddt() instead of calling a
+   function.
+3. Eliminate cbmemcpy function pointer as it always points to
+   opal_cuda_memcpy(), and a direct call is cheaper.
+
+Signed off by Bart Oldeman <bart.oldeman@calculquebec.ca>
+
+diff --git a/opal/datatype/Makefile.am b/opal/datatype/Makefile.am
+index daaaa8e4b0..ef2da1cd81 100644
+--- a/opal/datatype/Makefile.am
++++ b/opal/datatype/Makefile.am
+@@ -44,6 +44,11 @@ noinst_LTLIBRARIES = \
+ # these sources will be compiled with the special -D
+ libdatatype_reliable_la_SOURCES = opal_datatype_pack.c opal_datatype_unpack.c
+ libdatatype_reliable_la_CFLAGS = -DCHECKSUM $(AM_CFLAGS)
++if OPAL_cuda_support
++libdatatype_gpu_la_SOURCES = opal_datatype_pack.c opal_datatype_unpack.c
++libdatatype_gpu_la_CFLAGS = -DOPAL_DATATYPE_PACK_UNPACK_GPU $(AM_CFLAGS)
++noinst_LTLIBRARIES += libdatatype_gpu.la
++endif
+ 
+ # these sources will be compiled with the normal CFLAGS only
+ libdatatype_la_SOURCES = \
+@@ -69,6 +74,9 @@ libdatatype_la_SOURCES = \
+         opal_datatype_unpack.c
+ 
+ libdatatype_la_LIBADD = libdatatype_reliable.la
++if OPAL_cuda_support
++libdatatype_la_LIBADD += libdatatype_gpu.la
++endif
+ 
+ # Conditionally install the header files
+ if WANT_INSTALL_HEADERS
+diff --git a/opal/datatype/opal_convertor.c b/opal/datatype/opal_convertor.c
+index 3931d99d17..33aebe2612 100644
+--- a/opal/datatype/opal_convertor.c
++++ b/opal/datatype/opal_convertor.c
+@@ -40,8 +40,6 @@
+ #include "opal/datatype/opal_convertor_internal.h"
+ #if OPAL_CUDA_SUPPORT
+ #include "opal/datatype/opal_datatype_cuda.h"
+-#define MEMCPY_CUDA( DST, SRC, BLENGTH, CONVERTOR ) \
+-    CONVERTOR->cbmemcpy( (DST), (SRC), (BLENGTH), (CONVERTOR) )
+ #endif
+ 
+ static void opal_convertor_construct( opal_convertor_t* convertor )
+@@ -51,9 +49,6 @@ static void opal_convertor_construct( opal_convertor_t* convertor )
+     convertor->partial_length = 0;
+     convertor->remoteArch     = opal_local_arch;
+     convertor->flags          = OPAL_DATATYPE_FLAG_NO_GAPS | CONVERTOR_COMPLETED;
+-#if OPAL_CUDA_SUPPORT
+-    convertor->cbmemcpy       = &opal_cuda_memcpy;
+-#endif
+ }
+ 
+ 
+@@ -241,11 +236,7 @@ int32_t opal_convertor_pack( opal_convertor_t* pConv,
+             if( OPAL_LIKELY(NULL == iov[i].iov_base) )
+                 iov[i].iov_base = (IOVBASE_TYPE *) base_pointer;
+             else
+-#if OPAL_CUDA_SUPPORT
+-                MEMCPY_CUDA( iov[i].iov_base, base_pointer, iov[i].iov_len, pConv );
+-#else
+                 MEMCPY( iov[i].iov_base, base_pointer, iov[i].iov_len );
+-#endif
+             pending_length -= iov[i].iov_len;
+             base_pointer += iov[i].iov_len;
+         }
+@@ -258,11 +249,7 @@ complete_contiguous_data_pack:
+         if( OPAL_LIKELY(NULL == iov[i].iov_base) )
+             iov[i].iov_base = (IOVBASE_TYPE *) base_pointer;
+         else
+-#if OPAL_CUDA_SUPPORT
+-            MEMCPY_CUDA( iov[i].iov_base, base_pointer, iov[i].iov_len, pConv );
+-#else
+             MEMCPY( iov[i].iov_base, base_pointer, iov[i].iov_len );
+-#endif
+         pConv->bConverted = pConv->local_size;
+         *out_size = i + 1;
+         pConv->flags |= CONVERTOR_COMPLETED;
+@@ -296,11 +283,7 @@ int32_t opal_convertor_unpack( opal_convertor_t* pConv,
+             if( iov[i].iov_len >= pending_length ) {
+                 goto complete_contiguous_data_unpack;
+             }
+-#if OPAL_CUDA_SUPPORT
+-            MEMCPY_CUDA( base_pointer, iov[i].iov_base, iov[i].iov_len, pConv );
+-#else
+             MEMCPY( base_pointer, iov[i].iov_base, iov[i].iov_len );
+-#endif
+             pending_length -= iov[i].iov_len;
+             base_pointer += iov[i].iov_len;
+         }
+@@ -310,11 +293,7 @@ int32_t opal_convertor_unpack( opal_convertor_t* pConv,
+ 
+ complete_contiguous_data_unpack:
+         iov[i].iov_len = pending_length;
+-#if OPAL_CUDA_SUPPORT
+-        MEMCPY_CUDA( base_pointer, iov[i].iov_base, iov[i].iov_len, pConv );
+-#else
+         MEMCPY( base_pointer, iov[i].iov_base, iov[i].iov_len );
+-#endif
+         pConv->bConverted = pConv->local_size;
+         *out_size = i + 1;
+         pConv->flags |= CONVERTOR_COMPLETED;
+@@ -530,7 +509,7 @@ size_t opal_convertor_compute_remote_size( opal_convertor_t* pConvertor )
+                                                                         \
+         convertor->remote_size = convertor->local_size;                 \
+         if( OPAL_LIKELY(convertor->remoteArch == opal_local_arch) ) {   \
+-            if( !(convertor->flags & CONVERTOR_WITH_CHECKSUM) &&        \
++            if( !(convertor->flags & (CONVERTOR_WITH_CHECKSUM | CONVERTOR_CUDA)) &&        \
+                 ((convertor->flags & OPAL_DATATYPE_FLAG_NO_GAPS) || \
+                  ((convertor->flags & OPAL_DATATYPE_FLAG_CONTIGUOUS) && (1 == count))) ) { \
+                 return OPAL_SUCCESS;                                    \
+@@ -541,8 +520,8 @@ size_t opal_convertor_compute_remote_size( opal_convertor_t* pConvertor )
+         opal_convertor_compute_remote_size( convertor );                \
+         assert( NULL != convertor->use_desc->desc );                    \
+         /* For predefined datatypes (contiguous) do nothing more */     \
+-        /* if checksum is enabled then always continue */               \
+-        if( ((convertor->flags & (CONVERTOR_WITH_CHECKSUM | OPAL_DATATYPE_FLAG_NO_GAPS)) \
++        /* if checksum or cuda is enabled then always continue */       \
++        if( ((convertor->flags & (CONVERTOR_WITH_CHECKSUM | CONVERTOR_CUDA | OPAL_DATATYPE_FLAG_NO_GAPS)) \
+              == OPAL_DATATYPE_FLAG_NO_GAPS) &&                          \
+             ((convertor->flags & (CONVERTOR_SEND | CONVERTOR_HOMOGENEOUS)) == \
+              (CONVERTOR_SEND | CONVERTOR_HOMOGENEOUS)) ) {              \
+@@ -592,7 +571,19 @@ int32_t opal_convertor_prepare_for_recv( opal_convertor_t* convertor,
+             }
+         }
+     } else
+-#endif  /* defined(CHECKSUM) */
++#elif OPAL_CUDA_SUPPORT
++    if (OPAL_UNLIKELY(convertor->flags & CONVERTOR_CUDA)) {
++        if (OPAL_UNLIKELY(!(convertor->flags & CONVERTOR_HOMOGENEOUS))) {
++            convertor->fAdvance = opal_unpack_general_gpu;
++        } else {
++            if (convertor->pDesc->flags & OPAL_DATATYPE_FLAG_CONTIGUOUS) {
++                convertor->fAdvance = opal_unpack_homogeneous_contig_gpu;
++            } else {
++                convertor->fAdvance = opal_generic_simple_unpack_gpu;
++            }
++        }
++    } else
++#endif  /* defined(CHECKSUM) || OPAL_CUDA_SUPPORT */
+         if( OPAL_UNLIKELY(!(convertor->flags & CONVERTOR_HOMOGENEOUS)) ) {
+             convertor->fAdvance = opal_unpack_general;
+         } else {
+@@ -636,7 +627,25 @@ int32_t opal_convertor_prepare_for_send( opal_convertor_t* convertor,
+             }
+         }
+     } else
+-#endif  /* defined(CHECKSUM) */
++#elif OPAL_CUDA_SUPPORT
++    if (OPAL_UNLIKELY(convertor->flags & CONVERTOR_CUDA)) {
++        if (CONVERTOR_SEND_CONVERSION
++            == (convertor->flags & (CONVERTOR_SEND_CONVERSION | CONVERTOR_HOMOGENEOUS))) {
++            convertor->fAdvance = opal_pack_general_gpu;
++        } else {
++            if (datatype->flags & OPAL_DATATYPE_FLAG_CONTIGUOUS) {
++                if (((datatype->ub - datatype->lb) == (ptrdiff_t) datatype->size)
++                    || (1 >= convertor->count)) {
++                    convertor->fAdvance = opal_pack_homogeneous_contig_gpu;
++                } else {
++                    convertor->fAdvance = opal_pack_homogeneous_contig_with_gaps_gpu;
++                }
++            } else {
++                convertor->fAdvance = opal_generic_simple_pack_gpu;
++            }
++        }
++    } else
++#endif  /* defined(CHECKSUM) || OPAL_CUDA_SUPPORT */
+         if( CONVERTOR_SEND_CONVERSION == (convertor->flags & (CONVERTOR_SEND_CONVERSION|CONVERTOR_HOMOGENEOUS)) ) {
+             convertor->fAdvance = opal_pack_general;
+         } else {
+@@ -694,9 +703,6 @@ int opal_convertor_clone( const opal_convertor_t* source,
+         destination->bConverted = source->bConverted;
+         destination->stack_pos  = source->stack_pos;
+     }
+-#if OPAL_CUDA_SUPPORT
+-    destination->cbmemcpy   = source->cbmemcpy;
+-#endif
+     return OPAL_SUCCESS;
+ }
+ 
+diff --git a/opal/datatype/opal_convertor.h b/opal/datatype/opal_convertor.h
+index b24d94c37b..53b6f0d526 100644
+--- a/opal/datatype/opal_convertor.h
++++ b/opal/datatype/opal_convertor.h
+@@ -118,7 +118,6 @@ struct opal_convertor_t {
+     dt_stack_t                    static_stack[DT_STATIC_STACK_SIZE];  /**< local stack for small datatypes */
+ 
+ #if OPAL_CUDA_SUPPORT
+-    memcpy_fct_t                  cbmemcpy;       /**< memcpy or cuMemcpy */
+     void *                        stream;         /**< CUstream for async copy */
+ #endif
+ };
+diff --git a/opal/datatype/opal_datatype_copy.c b/opal/datatype/opal_datatype_copy.c
+index c70bdd24df..d7c10af3dc 100644
+--- a/opal/datatype/opal_datatype_copy.c
++++ b/opal/datatype/opal_datatype_copy.c
+@@ -86,14 +86,6 @@ static size_t opal_datatype_memop_block_size = 128 * 1024;
+ #define MEM_OP opal_cuda_memmove
+ #include "opal_datatype_copy.h"
+ 
+-#define SET_CUDA_COPY_FCT(cuda_device_bufs, fct, copy_function)     \
+-    do {                                                            \
+-        if (true == cuda_device_bufs) {                             \
+-            fct = copy_function;                                    \
+-        }                                                           \
+-    } while(0)
+-#else
+-#define SET_CUDA_COPY_FCT(cuda_device_bufs, fct, copy_function)
+ #endif
+ 
+ int32_t opal_datatype_copy_content_same_ddt( const opal_datatype_t* datatype, int32_t count,
+@@ -102,10 +94,6 @@ int32_t opal_datatype_copy_content_same_ddt( const opal_datatype_t* datatype, in
+     ptrdiff_t extent;
+     int32_t (*fct)( const opal_datatype_t*, int32_t, char*, char*);
+ 
+-#if OPAL_CUDA_SUPPORT
+-    bool cuda_device_bufs = opal_cuda_check_bufs(destination_base, source_base);
+-#endif
+-
+     DO_DEBUG( opal_output( 0, "opal_datatype_copy_content_same_ddt( %p, %d, dst %p, src %p )\n",
+                            (void*)datatype, count, (void*)destination_base, (void*)source_base ); );
+ 
+@@ -122,20 +110,25 @@ int32_t opal_datatype_copy_content_same_ddt( const opal_datatype_t* datatype, in
+     extent = (datatype->true_ub - datatype->true_lb) + (count - 1) * (datatype->ub - datatype->lb);
+ 
+     fct = non_overlap_copy_content_same_ddt;
+-    SET_CUDA_COPY_FCT(cuda_device_bufs, fct, non_overlap_cuda_copy_content_same_ddt);
+     if( destination_base < source_base ) {
+         if( (destination_base + extent) > source_base ) {
+             /* memmove */
+             fct = overlap_copy_content_same_ddt;
+-            SET_CUDA_COPY_FCT(cuda_device_bufs, fct, overlap_cuda_copy_content_same_ddt);
+         }
+     } else {
+         if( (source_base + extent) > destination_base ) {
+             /* memmove */
+             fct = overlap_copy_content_same_ddt;
+-            SET_CUDA_COPY_FCT(cuda_device_bufs, fct, overlap_cuda_copy_content_same_ddt);
+         }
+     }
++
++#if OPAL_CUDA_SUPPORT
++    if (OPAL_UNLIKELY(opal_cuda_enabled) && opal_cuda_check_bufs(destination_base, source_base)) {
++        fct = (fct == non_overlap_copy_content_same_ddt ?
++               non_overlap_cuda_copy_content_same_ddt : overlap_cuda_copy_content_same_ddt);
++    }
++#endif
++
+     return fct( datatype, count, destination_base, source_base );
+ }
+ 
+diff --git a/opal/datatype/opal_datatype_cuda.c b/opal/datatype/opal_datatype_cuda.c
+index 7869f17e90..f3b3cef8da 100644
+--- a/opal/datatype/opal_datatype_cuda.c
++++ b/opal/datatype/opal_datatype_cuda.c
+@@ -20,7 +20,7 @@
+ 
+ static bool initialized = false;
+ int opal_cuda_verbose = 0;
+-static int opal_cuda_enabled = 0; /* Starts out disabled */
++int opal_cuda_enabled = 1; /* Starts out enabled */
+ static int opal_cuda_output = 0;
+ static void opal_cuda_support_init(void);
+ static int (*common_cuda_initialization_function)(opal_common_cuda_function_table_t *) = NULL;
+@@ -48,10 +48,6 @@ void mca_cuda_convertor_init(opal_convertor_t* convertor, const void *pUserBuf)
+         opal_cuda_support_init();
+     }
+ 
+-    /* This is needed to handle case where convertor is not fully initialized
+-     * like when trying to do a sendi with convertor on the statck */
+-    convertor->cbmemcpy = (memcpy_fct_t)&opal_cuda_memcpy;
+-
+     /* If not enabled, then nothing else to do */
+     if (!opal_cuda_enabled) {
+         return;
+@@ -192,6 +188,7 @@ static void opal_cuda_support_init(void)
+ 
+     /* Callback into the common cuda initialization routine. This is only
+      * set if some work had been done already in the common cuda code.*/
++    opal_cuda_enabled = 0;
+     if (NULL != common_cuda_initialization_function) {
+         if (0 == common_cuda_initialization_function(&ftable)) {
+             opal_cuda_enabled = 1;
+diff --git a/opal/datatype/opal_datatype_cuda.h b/opal/datatype/opal_datatype_cuda.h
+index 2789320520..d512e24550 100644
+--- a/opal/datatype/opal_datatype_cuda.h
++++ b/opal/datatype/opal_datatype_cuda.h
+@@ -30,4 +30,6 @@ void* opal_cuda_memmove(void * dest, void * src, size_t size);
+ void opal_cuda_add_initialization_function(int (*fptr)(opal_common_cuda_function_table_t *));
+ void opal_cuda_set_copy_function_async(opal_convertor_t* convertor, void *stream);
+ 
++extern int opal_cuda_enabled;
++
+ #endif
+diff --git a/opal/datatype/opal_datatype_pack.c b/opal/datatype/opal_datatype_pack.c
+index b4e03a9bea..f42e292e0b 100644
+--- a/opal/datatype/opal_datatype_pack.c
++++ b/opal/datatype/opal_datatype_pack.c
+@@ -45,6 +45,11 @@
+ #define opal_pack_homogeneous_contig_with_gaps_function opal_pack_homogeneous_contig_with_gaps_checksum
+ #define opal_generic_simple_pack_function               opal_generic_simple_pack_checksum
+ #define opal_pack_general_function                      opal_pack_general_checksum
++#elif defined(OPAL_DATATYPE_PACK_UNPACK_GPU)
++#define opal_pack_homogeneous_contig_function           opal_pack_homogeneous_contig_gpu
++#define opal_pack_homogeneous_contig_with_gaps_function opal_pack_homogeneous_contig_with_gaps_gpu
++#define opal_generic_simple_pack_function               opal_generic_simple_pack_gpu
++#define opal_pack_general_function                      opal_pack_general_gpu
+ #else
+ #define opal_pack_homogeneous_contig_function           opal_pack_homogeneous_contig
+ #define opal_pack_homogeneous_contig_with_gaps_function opal_pack_homogeneous_contig_with_gaps
+diff --git a/opal/datatype/opal_datatype_pack.h b/opal/datatype/opal_datatype_pack.h
+index 2a2e79180d..7fbf0c88e2 100644
+--- a/opal/datatype/opal_datatype_pack.h
++++ b/opal/datatype/opal_datatype_pack.h
+@@ -19,11 +19,12 @@
+ 
+ #include "opal_config.h"
+ 
+-#if !defined(CHECKSUM) && OPAL_CUDA_SUPPORT
++#if defined(OPAL_DATATYPE_PACK_UNPACK_GPU)
+ /* Make use of existing macro to do CUDA style memcpy */
++#include "opal_datatype_cuda.h"
+ #undef MEMCPY_CSUM
+ #define MEMCPY_CSUM( DST, SRC, BLENGTH, CONVERTOR ) \
+-    CONVERTOR->cbmemcpy( (DST), (SRC), (BLENGTH), (CONVERTOR) )
++    opal_cuda_memcpy( (DST), (SRC), (BLENGTH), (CONVERTOR) )
+ #endif
+ 
+ /**
+diff --git a/opal/datatype/opal_datatype_prototypes.h b/opal/datatype/opal_datatype_prototypes.h
+index 668397112b..111f74f2a4 100644
+--- a/opal/datatype/opal_datatype_prototypes.h
++++ b/opal/datatype/opal_datatype_prototypes.h
+@@ -39,6 +39,16 @@ OPAL_DECLSPEC int32_t
+ opal_unpack_general_checksum( opal_convertor_t* pConvertor,
+                               struct iovec* iov, uint32_t* out_size,
+                               size_t* max_data );
++#if OPAL_CUDA_SUPPORT
++OPAL_DECLSPEC int32_t
++opal_pack_general_gpu( opal_convertor_t* pConvertor,
++                        struct iovec* iov, uint32_t* out_size,
++                        size_t* max_data );
++OPAL_DECLSPEC int32_t
++opal_unpack_general_gpu( opal_convertor_t* pConvertor,
++                          struct iovec* iov, uint32_t* out_size,
++                          size_t* max_data );
++#endif
+ 
+ /*
+  * Now the internal functions
+@@ -83,6 +93,28 @@ int32_t
+ opal_generic_simple_unpack_checksum( opal_convertor_t* pConvertor,
+                                      struct iovec* iov, uint32_t* out_size,
+                                      size_t* max_data );
++#if OPAL_CUDA_SUPPORT
++int32_t
++opal_pack_homogeneous_contig_gpu( opal_convertor_t* pConv,
++                                   struct iovec* iov, uint32_t* out_size,
++                                   size_t* max_data );
++int32_t
++opal_pack_homogeneous_contig_with_gaps_gpu( opal_convertor_t* pConv,
++                                             struct iovec* iov, uint32_t* out_size,
++                                             size_t* max_data );
++int32_t
++opal_generic_simple_pack_gpu( opal_convertor_t* pConvertor,
++                               struct iovec* iov, uint32_t* out_size,
++                               size_t* max_data );
++int32_t
++opal_unpack_homogeneous_contig_gpu( opal_convertor_t* pConv,
++                                     struct iovec* iov, uint32_t* out_size,
++                                     size_t* max_data );
++int32_t
++opal_generic_simple_unpack_gpu( opal_convertor_t* pConvertor,
++                                 struct iovec* iov, uint32_t* out_size,
++                                 size_t* max_data );
++#endif
+ 
+ END_C_DECLS
+ 
+diff --git a/opal/datatype/opal_datatype_unpack.c b/opal/datatype/opal_datatype_unpack.c
+index 26a5810dc0..668b6624aa 100644
+--- a/opal/datatype/opal_datatype_unpack.c
++++ b/opal/datatype/opal_datatype_unpack.c
+@@ -46,6 +46,10 @@
+ #define opal_unpack_general_function            opal_unpack_general_checksum
+ #define opal_unpack_homogeneous_contig_function opal_unpack_homogeneous_contig_checksum
+ #define opal_generic_simple_unpack_function     opal_generic_simple_unpack_checksum
++#elif defined(OPAL_DATATYPE_PACK_UNPACK_GPU)
++#define opal_unpack_general_function            opal_unpack_general_gpu
++#define opal_unpack_homogeneous_contig_function opal_unpack_homogeneous_contig_gpu
++#define opal_generic_simple_unpack_function     opal_generic_simple_unpack_gpu
+ #else
+ #define opal_unpack_general_function            opal_unpack_general
+ #define opal_unpack_homogeneous_contig_function opal_unpack_homogeneous_contig
+@@ -204,10 +208,10 @@ opal_unpack_partial_predefined(opal_convertor_t *pConvertor, const dt_elem_desc_
+     MEMCPY( temporary + start_position, partial_data, length );
+ 
+     /* Save the original content of the user memory */
+-#if OPAL_CUDA_SUPPORT
++#if defined(OPAL_DATATYPE_PACK_UNPACK_GPU)
+     /* In the case where the data is being unpacked from device memory, need to
+      * use the special host to device memory copy. */
+-    pConvertor->cbmemcpy(saved_data, user_data, data_length, pConvertor );
++    opal_cuda_memcpy(saved_data, user_data, data_length, pConvertor );
+ #else
+     MEMCPY( saved_data, user_data, data_length );
+ #endif
+@@ -222,15 +226,15 @@ opal_unpack_partial_predefined(opal_convertor_t *pConvertor, const dt_elem_desc_
+ 
+     /* Rebuild the data by pulling back the unmodified bytes from the original
+      * content in the user memory. */
+-#if OPAL_CUDA_SUPPORT
++#if defined(OPAL_DATATYPE_PACK_UNPACK_GPU)
+     /* Need to copy the modified user_data again so we can see which
+      * bytes need to be converted back to their original values. */
+     {
+         char resaved_data[16];
+-        pConvertor->cbmemcpy(resaved_data, user_data, data_length, pConvertor );
++        opal_cuda_memcpy(resaved_data, user_data, data_length, pConvertor );
+         for(size_t i = 0; i < data_length; i++ ) {
+             if( unused_byte == resaved_data[i] )
+-                pConvertor->cbmemcpy(&user_data[i], &saved_data[i], 1, pConvertor);
++                opal_cuda_memcpy(&user_data[i], &saved_data[i], 1, pConvertor);
+         }
+     }
+ #else
+diff --git a/opal/datatype/opal_datatype_unpack.h b/opal/datatype/opal_datatype_unpack.h
+index 33db837882..4159a475fc 100644
+--- a/opal/datatype/opal_datatype_unpack.h
++++ b/opal/datatype/opal_datatype_unpack.h
+@@ -19,11 +19,12 @@
+ 
+ #include "opal_config.h"
+ 
+-#if !defined(CHECKSUM) && OPAL_CUDA_SUPPORT
++#if defined(OPAL_DATATYPE_PACK_UNPACK_GPU)
+ /* Make use of existing macro to do CUDA style memcpy */
++#include "opal_datatype_cuda.h"
+ #undef MEMCPY_CSUM
+ #define MEMCPY_CSUM( DST, SRC, BLENGTH, CONVERTOR ) \
+-    CONVERTOR->cbmemcpy( (DST), (SRC), (BLENGTH), (CONVERTOR) )
++    opal_cuda_memcpy( (DST), (SRC), (BLENGTH), (CONVERTOR) )
+ #endif
+ 
+ /**

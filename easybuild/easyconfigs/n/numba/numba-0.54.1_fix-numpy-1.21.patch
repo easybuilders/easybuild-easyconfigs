@@ -1,0 +1,251 @@
+fix compatibility with numpy 1.21
+extracted from https://github.com/numba/numba/pull/7483
+
+--- numba-0.54.1/setup.py.orig	2021-12-15 15:49:05.785690139 +0100
++++ numba-0.54.1/setup.py	2021-12-15 15:49:09.255689514 +0100
+@@ -23,7 +23,7 @@
+ max_python_version = "3.10"  # exclusive
+ min_numpy_build_version = "1.11"
+ min_numpy_run_version = "1.17"
+-max_numpy_run_version = "1.21"
++max_numpy_run_version = "1.22"
+ min_llvmlite_version = "0.37.0rc1"
+ max_llvmlite_version = "0.38"
+
+--- numba-0.54.1/numba/__init__.py.orig	2021-10-08 19:12:54.197672600 +0200
++++ numba-0.54.1/numba/__init__.py	2021-12-15 15:57:05.995560177 +0100
+@@ -134,8 +134,8 @@
+
+     if numpy_version < (1, 17):
+         raise ImportError("Numba needs NumPy 1.17 or greater")
+-    elif numpy_version > (1, 20):
+-        raise ImportError("Numba needs NumPy 1.20 or less")
++    elif numpy_version > (1, 21):
++        raise ImportError("Numba needs NumPy 1.21 or less")
+
+     try:
+         import scipy
+
+
+From cff3dd6f92286fd8621a902d6595b65208e90013 Mon Sep 17 00:00:00 2001
+From: Sebastian Berg <sebastian@sipsolutions.net>
+Date: Thu, 30 Sep 2021 14:27:01 -0500
+Subject: [PATCH 6/8] BUG: Support the fastcall mechanism for NumPy's ufunc
+ methods
+
+This is a start to support NumPy 1.21 use of FASTCALL methods
+in ufuncs.  There are probably better ways to achieve this support.
+
+NumPy further uses `tp_vectorcall_offset` on newer versions.  This
+PR does not add support for this (meaning that a DUfunc will be
+unnecessarily slow on NumPy >=1.21 when kwargs are used).
+---
+ numba/np/ufunc/_internal.c | 99 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 97 insertions(+), 2 deletions(-)
+
+diff --git a/numba/np/ufunc/_internal.c b/numba/np/ufunc/_internal.c
+index d3ca1319b6..600014df55 100644
+--- a/numba/np/ufunc/_internal.c
++++ b/numba/np/ufunc/_internal.c
+@@ -276,6 +276,7 @@ static PyMemberDef dufunc_members[] = {
+  */
+ 
+ static struct _ufunc_dispatch {
++    /* Note that the following may also hold `_PyCFunctionFastWithKeywords` */
+     PyCFunctionWithKeywords ufunc_reduce;
+     PyCFunctionWithKeywords ufunc_accumulate;
+     PyCFunctionWithKeywords ufunc_reduceat;
+@@ -286,7 +287,7 @@ static struct _ufunc_dispatch {
+ } ufunc_dispatch;
+ 
+ static int
+-init_ufunc_dispatch(void)
++init_ufunc_dispatch(int *numpy_uses_fastcall)
+ {
+     int result = 0;
+     PyMethodDef * crnt = PyUFunc_Type.tp_methods;
+@@ -329,6 +330,16 @@ init_ufunc_dispatch(void)
+             result = -1; /* Unknown method */
+         }
+         if (result < 0) break;
++
++        /* Check whether NumPy uses fastcall (ufunc.at never uses it) */
++        if (!strncmp(crnt_name, "at", 3)) {
++            if (*numpy_uses_fastcall == -1) {
++                *numpy_uses_fastcall = crnt->ml_flags & METH_FASTCALL;
++            }
++            else if (*numpy_uses_fastcall != (crnt->ml_flags & METH_FASTCALL)) {
++                return -1;
++            }
++        }
+     }
+     if (result == 0) {
+         /* Sanity check. */
+@@ -344,6 +355,7 @@ init_ufunc_dispatch(void)
+     return result;
+ }
+ 
++
+ static PyObject *
+ dufunc_reduce(PyDUFuncObject * self, PyObject * args, PyObject *kws)
+ {
+@@ -368,6 +380,47 @@ dufunc_outer(PyDUFuncObject * self, PyObject * args, PyObject *kws)
+     return ufunc_dispatch.ufunc_outer((PyObject*)self->ufunc, args, kws);
+ }
+ 
++
++/*
++ * The following are the vectorcall versions of the above, since NumPy
++ * uses the FASTCALL/Vectorcall protocol starting with version 1.21.
++ * The only NumPy versions supporting vectorcall use Python 3.7 or higher.
++ */
++static PyObject *
++dufunc_reduce_fast(PyDUFuncObject * self,
++        PyObject *const *args, Py_ssize_t len_args, PyObject *kwnames)
++{
++    return ((_PyCFunctionFastWithKeywords)ufunc_dispatch.ufunc_reduce)(
++            (PyObject*)self->ufunc, args, len_args, kwnames);
++}
++
++static PyObject *
++dufunc_reduceat_fast(PyDUFuncObject * self,
++        PyObject *const *args, Py_ssize_t len_args, PyObject *kwnames)
++{
++    return ((_PyCFunctionFastWithKeywords)ufunc_dispatch.ufunc_reduceat)(
++            (PyObject*)self->ufunc, args, len_args, kwnames);
++}
++
++
++static PyObject *
++dufunc_accumulate_fast(PyDUFuncObject * self,
++        PyObject *const *args, Py_ssize_t len_args, PyObject *kwnames)
++{
++    return ((_PyCFunctionFastWithKeywords)ufunc_dispatch.ufunc_accumulate)(
++            (PyObject*)self->ufunc, args, len_args, kwnames);
++}
++
++
++static PyObject *
++dufunc_outer_fast(PyDUFuncObject * self,
++        PyObject *const *args, Py_ssize_t len_args, PyObject *kwnames)
++{
++    return ((_PyCFunctionFastWithKeywords)ufunc_dispatch.ufunc_outer)(
++            (PyObject*)self->ufunc, args, len_args, kwnames);
++}
++
++
+ #if NPY_API_VERSION >= 0x00000008
+ static PyObject *
+ dufunc_at(PyDUFuncObject * self, PyObject * args)
+@@ -568,6 +621,41 @@ static struct PyMethodDef dufunc_methods[] = {
+     {NULL, NULL, 0, NULL}           /* sentinel */
+ };
+ 
++
++/*
++ * If Python is new enough, NumPy may use fastcall.  In that case we have to
++ * also use fastcall for simplicity and speed.
++ */
++static struct PyMethodDef dufunc_methods_fast[] = {
++    {"reduce",
++        (PyCFunction)dufunc_reduce_fast,
++        METH_FASTCALL | METH_KEYWORDS, NULL },
++    {"accumulate",
++        (PyCFunction)dufunc_accumulate_fast,
++        METH_FASTCALL | METH_KEYWORDS, NULL },
++    {"reduceat",
++        (PyCFunction)dufunc_reduceat_fast,
++        METH_FASTCALL | METH_KEYWORDS, NULL },
++    {"outer",
++        (PyCFunction)dufunc_outer_fast,
++        METH_FASTCALL | METH_KEYWORDS, NULL},
++#if NPY_API_VERSION >= 0x00000008
++    {"at",
++        (PyCFunction)dufunc_at,
++        METH_VARARGS, NULL},
++#endif
++    {"_compile_for_args",
++        (PyCFunction)dufunc__compile_for_args,
++        METH_VARARGS | METH_KEYWORDS,
++        "Abstract method: subclasses should overload _compile_for_args() to compile the ufunc at the given arguments' types."},
++    {"_add_loop",
++        (PyCFunction)dufunc__add_loop,
++        METH_VARARGS,
++        NULL},
++    {NULL, NULL, 0, NULL}           /* sentinel */
++};
++
++
+ static PyObject *
+ dufunc_getfrozen(PyDUFuncObject * self, void * closure)
+ {
+@@ -681,8 +769,15 @@ MOD_INIT(_internal)
+         return MOD_ERROR_VAL;
+ 
+     PyDUFunc_Type.tp_new = PyType_GenericNew;
+-    if (init_ufunc_dispatch() <= 0)
++
++    int numpy_uses_fastcall = -1;
++    if (init_ufunc_dispatch(&numpy_uses_fastcall) <= 0)
+         return MOD_ERROR_VAL;
++
++    if (numpy_uses_fastcall) {
++        PyDUFunc_Type.tp_methods = dufunc_methods_fast;
++    }
++
+     if (PyType_Ready(&PyDUFunc_Type) < 0)
+         return MOD_ERROR_VAL;
+     Py_INCREF(&PyDUFunc_Type);
+
+From 4df2640b60804f1462e2f48b72f744005ed6ec9a Mon Sep 17 00:00:00 2001
+From: Stuart Archibald <stuartarchibald@users.noreply.github.com>
+Date: Fri, 15 Oct 2021 15:23:53 +0100
+Subject: [PATCH 7/8] Add suggested fix for detecting ufunc.at
+
+As title.
+---
+ numba/np/ufunc/_internal.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/numba/np/ufunc/_internal.c b/numba/np/ufunc/_internal.c
+index 600014df55..d3e19b1cdc 100644
+--- a/numba/np/ufunc/_internal.c
++++ b/numba/np/ufunc/_internal.c
+@@ -332,7 +332,7 @@ init_ufunc_dispatch(int *numpy_uses_fastcall)
+         if (result < 0) break;
+ 
+         /* Check whether NumPy uses fastcall (ufunc.at never uses it) */
+-        if (!strncmp(crnt_name, "at", 3)) {
++        if (strncmp(crnt_name, "at", 3) != 0) {
+             if (*numpy_uses_fastcall == -1) {
+                 *numpy_uses_fastcall = crnt->ml_flags & METH_FASTCALL;
+             }
+
+From 635e05661b5d715bd8a9cb9448bd24930f693c38 Mon Sep 17 00:00:00 2001
+From: Stuart Archibald <stuartarchibald@users.noreply.github.com>
+Date: Tue, 16 Nov 2021 12:06:11 +0000
+Subject: [PATCH 8/8] Skip NaT input on np.median test for np=1.21.
+
+As title. See: https://github.com/numpy/numpy/issues/20376
+---
+ numba/tests/test_array_reductions.py | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/numba/tests/test_array_reductions.py b/numba/tests/test_array_reductions.py
+index de0d445fe6..a5763a753b 100644
+--- a/numba/tests/test_array_reductions.py
++++ b/numba/tests/test_array_reductions.py
+@@ -686,8 +686,11 @@ def _do_check_nptimedelta(self, pyfunc, arr):
+         np.random.shuffle(arr)
+         self.assertPreciseEqual(cfunc(arr), pyfunc(arr))
+         # Test with a NaT
+-        arr[arr.size // 2] = 'NaT'
+-        self.assertPreciseEqual(cfunc(arr), pyfunc(arr))
++        if numpy_version != (1, 21) and 'median' not in pyfunc.__name__:
++            # There's problems with NaT handling in "median" on at least NumPy
++            # 1.21.{3, 4}. See https://github.com/numpy/numpy/issues/20376
++            arr[arr.size // 2] = 'NaT'
++            self.assertPreciseEqual(cfunc(arr), pyfunc(arr))
+         if 'median' not in pyfunc.__name__:
+             # Test with (val, NaT)^N (and with the random NaT from above)
+             # use a loop, there's some weird thing/bug with arr[1::2] = 'NaT'

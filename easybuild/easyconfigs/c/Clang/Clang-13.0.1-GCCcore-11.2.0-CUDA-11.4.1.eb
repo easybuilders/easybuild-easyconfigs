@@ -1,0 +1,78 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2013-2015 Dmitri Gribenko, Ward Poelmans
+# Authors:: Dmitri Gribenko <gribozavr@gmail.com>
+# Authors:: Ward Poelmans <wpoely86@gmail.com>
+# License:: GPLv2 or later, MIT, three-clause BSD.
+# $Id$
+##
+
+name = 'Clang'
+version = '13.0.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://clang.llvm.org/'
+description = """C, C++, Objective-C compiler, based on LLVM.  Does not
+ include C++ standard library -- use libstdc++ from GCC."""
+
+# Clang also depends on libstdc++ during runtime, but this dependency is
+# already specified as the toolchain.
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-%(version)s"]
+sources = [
+    'llvm-%(version)s.src.tar.xz',
+    'clang-%(version)s.src.tar.xz',
+    'compiler-rt-%(version)s.src.tar.xz',
+    'polly-%(version)s.src.tar.xz',
+    'openmp-%(version)s.src.tar.xz',
+    # Also include the LLVM linker
+    'lld-%(version)s.src.tar.xz',
+    'libcxx-%(version)s.src.tar.xz',
+    'libcxxabi-%(version)s.src.tar.xz',
+    'clang-tools-extra-%(version)s.src.tar.xz',
+    'libunwind-%(version)s.src.tar.xz',
+]
+checksums = [
+    'ec6b80d82c384acad2dc192903a6cf2cdbaffb889b84bfb98da9d71e630fc834',  # llvm-13.0.1.src.tar.xz
+    '787a9e2d99f5c8720aa1773e4be009461cd30d3bd40fdd24591e473467c917c9',  # clang-13.0.1.src.tar.xz
+    '7b33955031f9a9c5d63077dedb0f99d77e4e7c996266952c1cec55626dca5dfc',  # compiler-rt-13.0.1.src.tar.xz
+    'f4003e03da57b53bf206faadd0cf53f7b198c38498c605dec45743db23c10ad0',  # polly-13.0.1.src.tar.xz
+    '6b79261371616c31fea18cd3ee1797c79ee38bcaf8417676d4fa366a24c96b4f',  # openmp-13.0.1.src.tar.xz
+    '666af745e8bf7b680533b4d18b7a31dc7cab575b1e6e4d261922bbafd9644cfb',  # lld-13.0.1.src.tar.xz
+    '2f446acc00bb7cfb4e866c2fa46d1b6dbf4e7d2ab62e3c3d84e56f7b9e28110f',  # libcxx-13.0.1.src.tar.xz
+    'db5fa6093c786051e8b1c85527240924eceb6c95eeff0a2bbc57be8422b3cef1',  # libcxxabi-13.0.1.src.tar.xz
+    'cc2bc8598848513fa2257a270083e986fd61048347eccf1d801926ea709392d0',  # clang-tools-extra-13.0.1.src.tar.xz
+    'e206dbf1bbe058a113bffe189386ded99a160b2443ee1e2cd41ff810f78551ba',  # libunwind-13.0.1.src.tar.xz
+]
+
+dependencies = [
+    # since Clang is a compiler, binutils is a runtime dependency too
+    ('binutils', '2.37'),
+    ('hwloc', '2.5.0'),
+    ('libxml2', '2.9.10'),
+    ('ncurses', '6.2'),
+    ('GMP', '6.2.1'),
+    ('Z3', '4.8.12'),
+    ('libffi', '3.4.2'),
+    ('elfutils', '0.185'),
+    ('CUDA', '11.4.1', '', SYSTEM),
+]
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+    ('Python', '3.9.6'),
+    ('Perl', '5.34.0'),
+]
+
+assertions = True
+usepolly = True
+build_lld = True
+libcxx = True
+enable_rtti = True
+build_extra_clang_tools = True
+
+skip_all_tests = True
+
+moduleclass = 'compiler'

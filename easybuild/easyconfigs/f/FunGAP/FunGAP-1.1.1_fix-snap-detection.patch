@@ -1,0 +1,61 @@
+Fix detection of fathom, forge and hmm-assembler.pl, which are not part of MAKER but SNAP
+see https://github.com/CompSynBioLab-KoreaUniv/FunGAP/pull/97
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- set_dependencies.py.orig	2023-03-16 15:27:00.506475000 +0100
++++ set_dependencies.py	2023-03-16 15:31:31.102674857 +0100
+@@ -44,6 +44,10 @@
+         help='Maker bin path'
+     )
+     parser.add_argument(
++        '-s', '--snap_path', nargs=1, required=True,
++        help='SNAP-HMM bin path'
++    )
++    parser.add_argument(
+         '-r', '--with_repeat_modeler', nargs='?', default='',
+         help='User-defined RepeatModeler bin path'
+     )
+@@ -76,6 +80,7 @@
+     pfam_db_path = os.path.abspath(args.pfam_db_path[0])
+     i_genemark_path = os.path.abspath(args.genemark_path[0])
+     i_maker_path = os.path.abspath(args.maker_path[0])
++    i_snap_path = os.path.abspath(args.snap_path[0])
+     if args.with_repeat_modeler:
+         with_repeat_modeler = os.path.abspath(args.with_repeat_modeler)
+     else:
+@@ -104,8 +109,9 @@
+         pfam_scan_path, blastp_path, blastn_path, blastx_path,
+         makeblastdb_path, samtools_path, bamtools_path, augustus_path
+     ) = get_path(
+-        i_genemark_path, i_maker_path, with_repeat_modeler, with_augustus,
+-        with_hisat2, with_trinity, with_braker, with_busco, with_pfam_scan
++        i_genemark_path, i_maker_path, i_snap_path, with_repeat_modeler,
++        with_augustus, with_hisat2, with_trinity, with_braker, with_busco,
++        with_pfam_scan
+     )
+     check_working(
+         genemark_path, gmhmme3_path, probuild_path, build_database_path,
+@@ -159,8 +165,9 @@
+ 
+ 
+ def get_path(
+-        i_genemark_path, i_maker_path, with_repeat_modeler, with_augustus,
+-        with_hisat2, with_trinity, with_braker, with_busco, with_pfam_scan):
++        i_genemark_path, i_maker_path, i_snap_path, with_repeat_modeler,
++        with_augustus, with_hisat2, with_trinity, with_braker, with_busco,
++        with_pfam_scan):
+     '''Get path'''
+     print('\n** Checking the installed locations of dependencies **\n')
+ 
+@@ -198,9 +205,9 @@
+     gff3_merge_path = check_binary('Maker', i_maker_path, 'gff3_merge')
+     fasta_merge_path = check_binary('Maker', i_maker_path, 'fasta_merge')
+     maker2zff_path = check_binary('Maker', i_maker_path, 'maker2zff')
+-    fathom_path = check_binary('Snap', i_maker_path, 'fathom')
+-    forge_path = check_binary('Snap', i_maker_path, 'forge')
+-    hmm_assembler_path = check_binary('Snap', i_maker_path, 'hmm-assembler.pl')
++    fathom_path = check_binary('Snap', i_snap_path, 'fathom')
++    forge_path = check_binary('Snap', i_snap_path, 'forge')
++    hmm_assembler_path = check_binary('Snap', i_snap_path, 'hmm-assembler.pl')
+     build_database_path = check_binary(
+         'RepeatModeler (BuildDatabase)', with_repeat_modeler, 'BuildDatabase',
+     )
