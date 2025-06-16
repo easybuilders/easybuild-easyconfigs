@@ -1,0 +1,143 @@
+# Author: Caspar van Leeuwen, SURF
+# Fixes failing tests due to use of TensorFloat32
+# Setting NVIDIA_TF32_OVERRIDE=0 makes these tests pass, proving that TensorFloat32 is the issue
+# We increase tolerances for the asserts to make these tests pass
+diff -Nru pytorch_orig/test/distributed/_shard/sharded_tensor/ops/test_linear.py pytorch/test/distributed/_shard/sharded_tensor/ops/test_linear.py
+--- pytorch_orig/test/distributed/_shard/sharded_tensor/ops/test_linear.py	2022-04-07 18:31:13.069599000 +0200
++++ pytorch/test/distributed/_shard/sharded_tensor/ops/test_linear.py	2022-04-07 18:32:32.877406000 +0200
+@@ -77,7 +77,7 @@
+         local_output = local_linear(inp)
+ 
+         # Verify
+-        self.assertEqual(local_output, sharded_output)
++        self.assertEqual(local_output, sharded_output, rtol=0.02, atol=1e-03)
+ 
+         # Validate for torch.nn.functional.linear version.
+         local_output = torch.nn.functional.linear(
+@@ -91,7 +91,7 @@
+         # for reshard. We need to squeeze the # of dimensions manually.
+         if inp.dim() == 1:
+             sharded_output = sharded_output.squeeze(reshard_spec.dim)
+-        self.assertEqual(local_output, sharded_output)
++        self.assertEqual(local_output, sharded_output, rtol=0.02, atol=1e-03)
+ 
+         # Compute loss and run backward pass.
+         local_output.sum().backward()
+@@ -114,7 +114,7 @@
+ 
+         # Test backward gradient calculation.
+         self.assertEqual(sharded_linear.bias.grad, local_bias_grad)
+-        self.assertEqual(sharded_weight.grad, local_grad_narrowed)
++        self.assertEqual(sharded_weight.grad, local_grad_narrowed, rtol=0.01, atol=1e-03)
+ 
+         # Test optimizer.
+         previous = local_linear.weight.clone().detach()
+@@ -135,7 +135,7 @@
+         )
+         self.assertEqual(sharded_weight.size(), local_weight_narrowed.size())
+         self.assertNotEqual(previous_sharded_weight, sharded_weight)
+-        self.assertEqual(sharded_weight, local_weight_narrowed)
++        self.assertEqual(sharded_weight, local_weight_narrowed, rtol=0.01, atol=1e-04)
+         self.assertNotEqual(previous_sharded_bias, sharded_linear.bias)
+         self.assertEqual(sharded_linear.bias, local_linear.bias)
+ 
+diff -Nru pytorch_orig/test/distributed/_shard/sharded_tensor/test_megatron_prototype.py pytorch/test/distributed/_shard/sharded_tensor/test_megatron_prototype.py
+--- pytorch_orig/test/distributed/_shard/sharded_tensor/test_megatron_prototype.py	2022-04-07 18:31:13.091710000 +0200
++++ pytorch/test/distributed/_shard/sharded_tensor/test_megatron_prototype.py	2022-04-07 18:41:03.744644000 +0200
+@@ -113,7 +113,7 @@
+         local_output = local_megatron_lm(inp)
+ 
+         # Verify
+-        self.assertEqual(local_output, sharded_output)
++        self.assertEqual(local_output, sharded_output, rtol=0.01, atol=1e-03)
+ 
+         # Compute loss and run backward pass.
+         local_output.sum().backward()
+@@ -161,9 +161,9 @@
+         )
+ 
+         # Test backward gradient calculation.
+-        self.assertEqual(sharded_weight_fc1.grad, local_grad_narrowed_fc1)
+-        self.assertEqual(sharded_weight_fc2.grad, local_grad_narrowed_fc2)
+-        self.assertEqual(bias_grad_fc1, local_bias_grad_fc1)
++        self.assertEqual(sharded_weight_fc1.grad, local_grad_narrowed_fc1, rtol=0.01, atol=2e-03)
++        self.assertEqual(sharded_weight_fc2.grad, local_grad_narrowed_fc2, rtol=0.01, atol=1e-03)
++        self.assertEqual(bias_grad_fc1, local_bias_grad_fc1, rtol=0.01, atol=2e-02)
+         self.assertEqual(bias_grad_fc2, local_bias_grad_fc2)
+ 
+         # Test optimizer.
+@@ -171,7 +171,7 @@
+         local_bias_fc1, local_bias_fc2 = _get_bias(local_megatron_lm)
+         self.assertEqual(bias_fc1, local_bias_fc1)
+         self.assertEqual(bias_fc2, local_bias_fc2)
+-        self.assertEqual(bias_fc1.grad, local_bias_fc1.grad)
++        self.assertEqual(bias_fc1.grad, local_bias_fc1.grad, rtol=0.01, atol=2e-02)
+         self.assertEqual(bias_fc2.grad, local_bias_fc2.grad)
+         previous_sharded_weight_fc1 = sharded_weight_fc1.clone()
+         previous_sharded_weight_fc2 = sharded_weight_fc2.clone()
+@@ -197,13 +197,13 @@
+         self.assertEqual(sharded_weight_fc2.size(), local_weight_fc2_narrowed.size())
+         self.assertNotEqual(previous_sharded_weight_fc1, sharded_weight_fc1)
+         self.assertNotEqual(previous_sharded_weight_fc2, sharded_weight_fc2)
+-        self.assertEqual(sharded_weight_fc1, local_weight_fc1_narrowed)
+-        self.assertEqual(sharded_weight_fc2, local_weight_fc2_narrowed)
++        self.assertEqual(sharded_weight_fc1, local_weight_fc1_narrowed, rtol=0.01, atol=1e-03)
++        self.assertEqual(sharded_weight_fc2, local_weight_fc2_narrowed, rtol=0.01, atol=1e-03)
+ 
+         # Test bias value after optimizer.
+         local_bias_fc1, local_bias_fc2 = _get_bias(local_megatron_lm)
+         self.assertNotEqual(previous_bias_fc1, bias_fc1)
+-        self.assertEqual(bias_fc1, local_bias_fc1)
++        self.assertEqual(bias_fc1, local_bias_fc1, rtol=0.01, atol=1e-03)
+         self.assertNotEqual(previous_bias_fc2, bias_fc2)
+         self.assertEqual(bias_fc2, local_bias_fc2)
+ 
+diff -Nru pytorch_orig/test/test_stateless.py pytorch/test/test_stateless.py
+--- pytorch_orig/test/test_stateless.py	2022-04-07 18:31:13.029968000 +0200
++++ pytorch/test/test_stateless.py	2022-04-07 18:43:46.723968000 +0200
+@@ -42,7 +42,7 @@
+         # existing params in module. So here we expect the result to be the
+         # same as the input if the weight swapping went well.
+         res = _stateless.functional_call(module, parameters, x)
+-        self.assertEqual(x, res)
++        self.assertEqual(x, res, rtol=1e-04, atol=1e-04)
+         # check that the weight remain unmodified
+         cur_weight = to_check.l1.weight
+         uur_buffer = to_check.buffer
+c PyTorch-1.11.0_increase_test_tolerances_TF32.patch
+rig/test/test_jit_fuser_te.py pytorch/test/test_jit_fuser_te.py
+--- pytorch_orig/test/test_jit_fuser_te.py  2022-04-07 18:31:13.046680000 +0200
++++ pytorch/test/test_jit_fuser_te.py   2022-04-12 18:21:00.355114000 +0200
+@@ -956,7 +956,7 @@
+     def test_lstm_traced(self):
+         for device in self.devices:
+             inputs = get_lstm_inputs(device)
+-            ge = self.checkTrace(LSTMCellF, inputs)
++            ge = self.checkTrace(LSTMCellF, inputs, atol=1e-4, rtol=1e-5)
+             graph = ge.graph_for(*inputs)
+             fusion_groups = self.findFusionGroups(graph)
+             # TODO: chunk
+diff -Nru pytorch_orig/torch/testing/_internal/jit_utils.py pytorch/torch/testing/_internal/jit_utils.py
+--- pytorch_orig/torch/testing/_internal/jit_utils.py   2022-04-07 18:28:54.339477000 +0200
++++ pytorch/torch/testing/_internal/jit_utils.py    2022-04-12 18:19:59.614272000 +0200
+@@ -525,7 +525,7 @@
+     def checkTrace(self, func, reference_tensors, input_tensors=None,
+                    drop=None, allow_unused=False, verbose=False,
+                    inputs_require_grads=True, check_tolerance=1e-5, export_import=True,
+-                   _force_outplace=False):
++                   _force_outplace=False, rtol=None, atol=None):
+
+         # TODO: check gradients for parameters, not just inputs
+         def allSum(vs):
+@@ -618,7 +618,10 @@
+
+         self.assertEqual(outputs, outputs_ge)
+         if inputs_require_grads:
+-            self.assertEqual(grads, grads_ge)
++            if atol is not None and rtol is not None:
++                self.assertEqual(grads, grads_ge, atol=atol, rtol=rtol)
++            else:
++                self.assertEqual(grads, grads_ge)
+             for g2, g2_ge in zip(grads2, grads2_ge):
+                 if g2 is None and g2_ge is None:
+                     continue

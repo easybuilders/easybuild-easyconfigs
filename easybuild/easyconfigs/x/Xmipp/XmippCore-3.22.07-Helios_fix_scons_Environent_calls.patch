@@ -1,0 +1,28 @@
+commit 901b41d324b351995b9256d7ee6b370276274497
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Tue Oct 18 14:21:03 2022 +0200
+
+    Make sure SCons sees the complete environment from EasyBuild.
+
+diff --git xmippCore-3.22.07-Helios/SConstruct xmippCore-3.22.07-Helios/SConstruct
+index 1c5fec3..40ed01f 100644
+--- xmippCore-3.22.07-Helios/SConstruct
++++ xmippCore-3.22.07-Helios/SConstruct
+@@ -207,7 +207,7 @@ def addCppLibrary(env, name, dirs=[], tars=[], untarTargets=['configure'], patte
+     if not sources and env.TargetInBuild(name):
+         Exit('No sources found for Library: %s. Exiting!!!' % name)
+ 
+-    env2 = Environment()
++    env2 = Environment(ENV=os.environ)
+     env2['ENV']['PATH'] = env['ENV']['PATH']
+     env2['CXX'] = env['CXX']
+ 
+@@ -363,7 +363,7 @@ def compilerConfig(env):
+ 
+ def libraryTest(env, name, lang='c'):
+     """Check the existence of a concrete C/C++ library."""
+-    env2 = Environment(LIBS=env.get('LIBS',''))
++    env2 = Environment(ENV=os.environ,LIBS=env.get('LIBS',''))
+     conf = Configure(env2)
+     conf.CheckLib(name, language=lang)
+     env2 = conf.Finish()

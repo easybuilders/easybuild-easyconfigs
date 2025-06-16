@@ -1,0 +1,54 @@
+easyblock = 'MakeCp'
+
+name = 'LIBSVM'
+version = '3.30'
+
+homepage = 'https://www.csie.ntu.edu.tw/~cjlin/libsvm/'
+description = """LIBSVM is an integrated software for support vector classification, (C-SVC, nu-SVC), regression
+ (epsilon-SVR, nu-SVR) and distribution estimation (one-class SVM). It supports multi-class classification."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+github_account = 'cjlin1'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%s.tar.gz' % version.replace('.', '')]
+patches = [
+    'LIBSVM-3.23_shared_lib.patch',
+    'LIBSVM-3.30_add_namespace_for_benefit_of_Xmipp.patch',
+    'LIBSVM-3.30_makefile_flags_test.patch'
+]
+checksums = [
+    {'v330.tar.gz': 'e4fe41308c87cc210aec73e4f5f0fb4da14234d90e7a131763fbad3788ca2d80'},
+    {'LIBSVM-3.23_shared_lib.patch': 'c0ede89365949644f5d7f11382a3f176fd76317c7f5ae5769226ff7c3a801fe6'},
+    {'LIBSVM-3.30_add_namespace_for_benefit_of_Xmipp.patch':
+     'f51e4d0b6899041799f43a09aad1e3711a93615a8cc453243042ed8357cabb28'},
+    {'LIBSVM-3.30_makefile_flags_test.patch': 'cec86f35714a2bf131d83eaaf4d4bbc53dd93e92d0d5a7b6751774d6d237daba'},
+]
+
+dependencies = [('binutils', '2.38')]
+
+runtest = 'test'
+
+local_bins = ['svm-%s' % x for x in ['predict', 'scale', 'train']]
+
+files_to_copy = [
+    (local_bins, 'bin'),
+    (['svm.o'], 'lib'),
+    (['libsvm*'], 'lib'),
+    (['svm.h'], 'include/libsvm'),
+    'tools'
+]
+
+sanity_check_commands = [
+    'cd %%(builddir)s/libsvm-%s/ && svm-scale heart_scale' % version.replace('.', ''),
+    'cd %%(builddir)s/libsvm-%s/ && svm-train heart_scale' % version.replace('.', ''),
+    'cd %%(builddir)s/libsvm-%s/ && echo "1">t && svm-predict t heart_scale.model out' % version.replace('.', '')
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins] + ['lib/libsvm.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

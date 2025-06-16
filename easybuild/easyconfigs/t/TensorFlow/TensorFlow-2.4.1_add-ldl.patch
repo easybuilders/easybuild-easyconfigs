@@ -1,0 +1,21 @@
+The stacktrace library uses dladdr and friends but doesn't link libdl
+See https://github.com/tensorflow/tensorflow/issues/45013 and
+https://github.com/tensorflow/tensorflow/pull/56606
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/core/platform/default/BUILD b/tensorflow/core/platform/default/BUILD
+index 2f94bce8c5b..3d0d04274e4 100644
+--- a/tensorflow/core/platform/default/BUILD
++++ b/tensorflow/core/platform/default/BUILD
+@@ -377,6 +377,10 @@ cc_library(
+     name = "stacktrace_handler",
+     srcs = ["stacktrace_handler.cc"],
+     hdrs = ["//tensorflow/core/platform:stacktrace_handler.h"],
++    linkopts = select({
++        "//tensorflow:windows": [],
++        "//conditions:default": ["-ldl"],
++    }),
+     linkstatic = 1,
+     deps = [
+         "//tensorflow/core/platform",

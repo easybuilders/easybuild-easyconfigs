@@ -1,0 +1,52 @@
+From 136306c9d00c997a425f1840128847c7529b8415 Mon Sep 17 00:00:00 2001
+From: Sadra Barikbin <sadraqazvin1@yahoo.com>
+Date: Sat, 1 Apr 2023 14:54:40 +0330
+Subject: [PATCH 1/2] Fix the issue
+
+---
+ ignite/engine/events.py | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/ignite/engine/events.py b/ignite/engine/events.py
+index a80277c525d..213dd8a9878 100644
+--- a/ignite/engine/events.py
++++ b/ignite/engine/events.py
+@@ -237,7 +237,13 @@ def function_before_backprop(engine):
+                 # ...
+     """
+ 
+-    pass
++    def __new__(cls, value: str) -> "EventEnum":
++        obj = CallableEventWithFilter.__new__(cls)
++        obj._value_ = value
++        return obj
++
++    def __repr__(self) -> str:
++        return CallableEventWithFilter.__repr__(self)
+ 
+ 
+ class Events(EventEnum):
+
+From 2fd992774017fe2d603bc456c5dcca0f83167018 Mon Sep 17 00:00:00 2001
+From: Sadra Barikbin <sadraqazvin1@yahoo.com>
+Date: Thu, 13 Apr 2023 06:28:38 +0330
+Subject: [PATCH 2/2] Remove unnecessary __repr__
+
+---
+ ignite/engine/events.py | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/ignite/engine/events.py b/ignite/engine/events.py
+index 213dd8a9878..9dd99348492 100644
+--- a/ignite/engine/events.py
++++ b/ignite/engine/events.py
+@@ -242,9 +242,6 @@ def __new__(cls, value: str) -> "EventEnum":
+         obj._value_ = value
+         return obj
+ 
+-    def __repr__(self) -> str:
+-        return CallableEventWithFilter.__repr__(self)
+-
+ 
+ class Events(EventEnum):
+     """Events that are fired by the :class:`~ignite.engine.engine.Engine` during execution. Built-in events:

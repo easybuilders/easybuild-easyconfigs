@@ -1,0 +1,36 @@
+easyblock = 'Binary'
+
+name = 'MEGAN'
+version = '6.22.0'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'http://megan.informatik.uni-tuebingen.de/'
+description = "MEGAN is a comprehensive toolbox for interactively analyzing microbiome data"
+
+toolchain = SYSTEM
+
+local_installer = '%%(name)s_Community_unix_%s.sh' % version.replace('.', '_')
+source_urls = ['https://software-ab.informatik.uni-tuebingen.de/download/%(namelower)s%(version_major)s']
+sources = [local_installer]
+checksums = ['f9122124a470179dec2306bf5e59c6b6dd80843f8c11a268b3a036af709731fb']
+
+dependencies = [('Java', '17')]
+
+install_cmd = 'chmod +x %s && ./%s -q -dir %%(installdir)s' % (local_installer, local_installer)
+
+postinstallcmds = ["rm %(installdir)s/uninstall"]
+
+sanity_check_paths = {
+    'files': ['MEGAN'],
+    'dirs': ['jars', 'jars2', 'tools'],
+}
+
+sanity_check_commands = [
+    ('megan-server', '-h'),
+]
+
+modextrapaths = {
+    'PATH': ['tools', 'tools/utils'],
+}
+
+moduleclass = 'bio'
