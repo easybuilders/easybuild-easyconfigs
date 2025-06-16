@@ -1,0 +1,28 @@
+Increase tolerance of test_vmapvjpvjp_linalg_tensorsolve_cpu_float32 which fails with the same diff on multiple machines.
+
+_________________________________________ TestOperatorsCPU.test_vmapvjpvjp_linalg_tensorsolve_cpu_float32 _________________________________________
+AssertionError: Tensor-likes are not close!
+
+Mismatched elements: 6 / 288 (2.1%)
+Greatest absolute difference: 0.0005550384521484375 at index (0, 2, 1, 0, 2) (up to 0.0001 allowed)
+Greatest relative difference: 0.0002498962276149541 at index (0, 1, 0, 0, 2) (up to 0.0001 allowed)
+
+The failure occurred for item [2]
+
+See https://github.com/pytorch/pytorch/issues/114868
+
+@Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/functorch/test_ops.py b/test/functorch/test_ops.py
+index 923d75d53d9..1ae32bffba6 100644
+--- a/test/functorch/test_ops.py
++++ b/test/functorch/test_ops.py
+@@ -825,6 +825,8 @@ class TestOperators(TestCase):
+     @opsToleranceOverride('TestOperators', 'test_vmapvjpvjp', (
+         tol1('linalg.svd',
+              {torch.float32: tol(atol=1e-03, rtol=5e-04)}),
++        tol1('linalg.tensorsolve',
++             {torch.float32: tol(atol=1e-03, rtol=5e-04)}),
+         tol1('linalg.lu_factor',
+              {torch.float32: tol(atol=2e-03, rtol=2e-02)}),
+         tol1('svd',
