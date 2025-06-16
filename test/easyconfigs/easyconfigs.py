@@ -995,7 +995,10 @@ class EasyConfigTest(TestCase):
             self.fail('Should not have multiple variants of dependencies.\n' + multi_dep_vars_msg)
 
     def test_downloadable_or_instructions(self):
-        """Make sure the sources are downloadable or there are instructions for how to download them."""
+        """
+        Make sure the sources are downloadable or there are instructions for how to download them
+        using the download_instructions parameter, including a link if one exists.
+        """
         problem_ecs = []
         for easyconfig in self.parsed_easyconfigs:
             ec = easyconfig['ec']
