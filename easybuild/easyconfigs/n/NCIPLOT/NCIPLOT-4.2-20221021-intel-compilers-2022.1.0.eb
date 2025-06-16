@@ -1,0 +1,50 @@
+easyblock = 'MakeCp'
+
+name = 'NCIPLOT'
+_formal_version = '4.2'
+version = '%s-20221021' % _formal_version
+_commit = '800f1647a2a46c82dbdb5e1ae58086cdbbd90dc3'
+
+homepage = 'https://www.lct.jussieu.fr/pagesperso/contrera/index-nci.html'
+description = """ NCIPLOT is a program for revealing non covalent interactions
+ based on the reduced density gradient. """
+
+toolchain = {'name': 'intel-compilers', 'version': '2022.1.0'}
+toolchainopts = {'openmp': True}
+
+github_account = 'juliacontrerasgarcia'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%s.tar.gz' % _commit]
+checksums = ['087ec61988d53e472542b91a5237680b65f2c4f85633d7db12298fb770802082']
+
+start_dir = 'src_%%(namelower)s_%s' % _formal_version
+
+prebuildopts = "sed -i 's/include Makefile.inc//;s/nciplot: $(OBJS) $(LIBS)/nciplot: $(OBJS)/g' Makefile && "
+prebuildopts += "make clean && "
+buildopts = 'LIBS="$LIBS"'
+
+# test scripts are still hardcoded for old version 4.0
+pretestopts = "cd %(builddir)s/%(namelower)s-*/tests && "
+pretestopts += r"find . -name runtests.sh -exec sed -i 's/nciplot_4.0/nciplot_%s/g' {} \; && " % _formal_version
+pretestopts += "export OMP_NUM_THREADS=%(parallel)s && "
+test_cmd = "bash"
+runtest = "alltests.sh"
+
+files_to_copy = [
+    'dat',
+    (['nciplot'], 'bin'),
+    (['LICENSE', 'README', 'NCIPLOT_MANUAL.pdf'], 'share'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/nciplot'],
+    'dirs': ['dat', 'share'],
+}
+
+modextrapaths = {'NCIPLOT_HOME': ''}
+
+modloadmsg = """
+Set environment variable OMP_NUM_THREADS equal to the number of available cores before running this program.
+"""
+
+moduleclass = 'chem'
