@@ -1,0 +1,111 @@
+easyblock = 'CMakeNinja'
+
+name = 'RStudio-Server'
+version = '2022.07.2+576'
+versionsuffix = '-Java-%(javaver)s-R-%(rver)s'
+local_git_rev = '7872775ebddc40635780ca1ed238934c3345c5de'
+
+homepage = 'https://www.rstudio.com/'
+description = """This is the RStudio Server version.
+RStudio is a set of integrated tools designed to help you be more productive with R.
+
+The server can be started with:
+  rserver --server-daemonize=0 --www-port=8787
+
+If you need a database config one can be created with:
+  MYTMP=`mktemp -d` && echo -e "provider=sqlite\\ndirectory=${MYTMP}/sqlite" > "${MYTMP}/db.conf"
+and then used with:
+  rserver ... --database-config-file="${MYTMP}/db.conf"
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://github.com/rstudio/rstudio/archive']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-2022.07.1+554_allow-disabling-quarto.patch',
+    '%(name)s-2022.07.1+554_fix-libsoci-search.patch',
+    '%(name)s-2022.07.1+554_use-XDG_CACHE_HOME.patch',
+]
+checksums = [
+    '55705c36a9b826064b4d9aa87b58c40bb9f7cd2f149b16d554e20136306ce301',
+    # RStudio-Server-2022.07.1+554_allow-disabling-quarto.patch
+    '165306d976c7b851e1e6a2d1f0c2967984b0cd203006aa834a1a6ff17894cf81',
+    # RStudio-Server-2022.07.1+554_fix-libsoci-search.patch
+    '0dafd9fa45d745d350c0c852fe03e3e1e77558d94baae2b5c595d97765002cd5',
+    # RStudio-Server-2022.07.1+554_use-XDG_CACHE_HOME.patch
+    'd033a383c8518a85dcdf45baf14d0a9d6283d03a28576a6eb03bbfb3682d2b00',
+]
+
+builddependencies = [
+    ('ant', '1.10.11', '-Java-%(javaver)s', SYSTEM),
+    ('CMake', '3.23.1'),
+    ('Ninja', '1.10.2'),
+    ('pkgconf', '1.8.0'),
+]
+
+dependencies = [
+    ('Boost', '1.79.0'),
+    ('Java', '11', '', SYSTEM),
+    ('R', '4.2.1'),
+    ('SOCI', '4.0.3'),
+    ('yaml-cpp', '0.7.0'),
+]
+
+osdependencies = [
+    ('pam-devel', 'libpam0g-dev')
+]
+
+# Required until https://github.com/easybuilders/easybuild-framework/pull/4035
+local_start_dir = "%(builddir)s/rstudio-" + version.replace("+", "-")
+
+preconfigopts = " && ".join([
+    # Install dependencies via scripts. Done in subshell to preserve PWD
+    "(export RSTUDIO_TOOLS_ROOT='%(builddir)s'",
+    "cd '%s/dependencies/common'" % local_start_dir,
+    "./install-cef",
+    "./install-dictionaries",
+    "./install-mathjax",
+    "./install-pandoc",
+    "./install-packages",
+    "./install-npm-dependencies)",
+    ""
+])
+
+configopts = " ".join([
+    "-DRSTUDIO_TOOLS_ROOT='%(builddir)s'",
+    "-DRSTUDIO_TARGET=Server",
+    "-DRSTUDIO_USE_SYSTEM_BOOST=ON",
+    "-DRSTUDIO_USE_SYSTEM_SOCI=ON",
+    "-DRSTUDIO_USE_SYSTEM_YAML_CPP=ON",
+    "-DQUARTO_ENABLED=OFF",  # Not available on all archs, use pandoc fallback
+    "-DRSTUDIO_GIT_REVISION_HASH=" + local_git_rev
+])
+
+sanity_check_commands = [
+    # RSession requires environment variables R_HOME and R_DOC_DIR
+    'R_HOME="$EBROOTR/lib64/R" R_DOC_DIR="$R_HOME/doc" rsession --verify-installation=1',
+    # RServer requires a db conf (this may also be needed for live use)
+    # Also create and set a soem dirs so it doesn't try to use $HOME
+    'MYTMP=`mktemp -d`'
+    ' && export RSTUDIO_CONFIG_DIR="$MYTMP"'
+    ' && export XDG_DATA_HOME="$MYTMP/.data"'
+    ' && export XDG_CACHE_HOME="$MYTMP/.cache"'
+    ' && mkdir "$XDG_DATA_HOME" "$XDG_CACHE_HOME"'
+    ' && export RS_LOG_DIR="$MYTMP/log"'
+    ' && echo -e "provider=sqlite\\ndirectory=$MYTMP/db" >> "$MYTMP/db.conf"'
+    ' && rserver ' + ' '.join([
+        '--verify-installation=1',
+        '--server-user="$USER"',
+        '--database-config-file="$MYTMP/db.conf"',
+        '--server-data-dir="$MYTMP/sdd"',
+        '--secure-cookie-key-file="$MYTMP/secure-cookie-key"',
+    ]),
+]
+
+sanity_check_paths = {
+    'files': ['bin/rstudio-server'],
+    'dirs': ['bin', 'extras', 'resources', 'www', 'www-symbolmaps', 'R'],
+}
+
+moduleclass = 'lang'

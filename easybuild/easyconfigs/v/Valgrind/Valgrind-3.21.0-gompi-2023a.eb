@@ -1,0 +1,33 @@
+easyblock = 'ConfigureMake'
+
+name = 'Valgrind'
+version = '3.21.0'
+
+homepage = 'https://valgrind.org'
+description = "Valgrind: Debugging and profiling tools"
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+toolchainopts = {'optarch': True}
+
+source_urls = [
+    'https://sourceware.org/pub/valgrind/',
+    'https://www.mirrorservice.org/sites/sourceware.org/pub/valgrind/',
+]
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['10ce1618bb3e33fad16eb79552b0a3e1211762448a0d7fce11c8a6243b9ac971']
+
+configopts = ' --with-mpicc="$MPICC"'
+
+local_binaries = [
+    'callgrind_annotate', 'callgrind_control', 'cg_annotate', 'cg_diff',
+    'cg_merge', 'ms_print', 'valgrind', 'valgrind-listener', 'vgdb'
+]
+local_archs = ('amd64', 'arm64', 'ppc64le')
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries] +
+             [['lib/valgrind/libmpiwrap-%s-linux.%s' % (a, SHLIB_EXT) for a in local_archs]],
+    'dirs': []
+}
+
+moduleclass = 'debugger'

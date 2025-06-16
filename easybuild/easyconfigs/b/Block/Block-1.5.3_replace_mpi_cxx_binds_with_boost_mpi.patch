@@ -1,0 +1,107 @@
+From ced3681cd8c4fe5e10f84d23973ed0e5ee4e0098 Mon Sep 17 00:00:00 2001
+From: Matthias Degroote <mfmdegroote@gmail.com>
+Date: Sat, 13 Mar 2021 15:49:28 +0100
+Subject: [PATCH] Remove old c++ MPI bindings
+
+--- input.C.orig	2023-01-07 01:14:17.074836000 +0100
++++ input.C	2023-01-17 14:22:56.060651139 +0100
+@@ -24,7 +24,6 @@
+ #include <boost/algorithm/string.hpp>
+ #ifndef SERIAL
+ #include <boost/mpi.hpp>
+-#include "mpi.h"
+ #endif
+ #include <boost/filesystem.hpp>
+ #include "fiedler.h"
+@@ -1862,7 +1861,7 @@
+     }
+ #ifndef SERIAL
+     //wait for all procs to zero out the memory
+-    MPI::COMM_WORLD.Barrier();
++    world.barrier();
+ #endif
+     v1.set_data() = static_cast<double*>(region.get_address()) + (oneIntegralMem+twoIntegralMem)*integralIndex;
+     v2.set_data() = static_cast<double*>(region.get_address()) + oneIntegralMem + (oneIntegralMem+twoIntegralMem)*integralIndex;
+@@ -1930,16 +1929,16 @@
+   }
+ 
+ #ifndef SERIAL
+-  MPI::COMM_WORLD.Barrier();
++  world.barrier();
+   long intdim = oneIntegralMem+twoIntegralMem;
+   long  maxint = 26843540; //mpi cannot transfer more than these number of doubles
+   long maxIter = intdim/maxint; 
+   for (int i=0; i<maxIter; i++) {
+-    MPI::COMM_WORLD.Bcast(v1.set_data()+i*maxint, maxint, MPI_DOUBLE, 0);
+-    MPI::COMM_WORLD.Barrier();
++    mpi::broadcast(world, v1.set_data()+i*maxint, maxint, 0);
++    world.barrier();
+   }
+-  MPI::COMM_WORLD.Bcast(v1.set_data()+(maxIter)*maxint, oneIntegralMem+twoIntegralMem - maxIter*maxint, MPI_DOUBLE, 0);
+-  MPI::COMM_WORLD.Barrier();
++  mpi::broadcast(world, v1.set_data()+(maxIter)*maxint, oneIntegralMem+twoIntegralMem - maxIter*maxint, 0);
++  world.barrier();
+ 
+ #endif
+ }
+@@ -2197,7 +2196,7 @@
+   }
+ #ifndef SERIAL
+   //wait for all procs to zero out the memory
+-  MPI::COMM_WORLD.Barrier();
++  world.barrier();
+ #endif
+   v1.set_data() = static_cast<double*>(region.get_address()) + intdim*integralIndex;
+   vcc.set_data() = static_cast<double*>(region.get_address()) + oneIntegralMem + intdim*integralIndex;
+@@ -2302,15 +2301,15 @@
+     dumpFile.close();
+   }
+ #ifndef SERIAL
+-  MPI::COMM_WORLD.Barrier();
++  world.barrier();
+   long maxint = 26843540; //mpi cannot transfer more than these number of doubles
+   long maxIter = intdim/maxint; 
+   for (int i=0; i<maxIter; i++) {
+-    MPI::COMM_WORLD.Bcast(v1.set_data()+i*maxint, maxint, MPI_DOUBLE, 0);
+-    MPI::COMM_WORLD.Barrier();
++    mpi::broadcast(world, v1.set_data()+i*maxint, maxint, 0);
++    world.barrier();
+   }
+-  MPI::COMM_WORLD.Bcast(v1.set_data()+(maxIter)*maxint, intdim - maxIter*maxint, MPI_DOUBLE, 0);
+-  MPI::COMM_WORLD.Barrier();
++  mpi::broadcast(world, v1.set_data()+(maxIter)*maxint, intdim - maxIter*maxint, 0);
++  world.barrier();
+ 
+ #endif
+ }
+@@ -2577,7 +2576,7 @@
+     region = boost::interprocess::mapped_region{segment, boost::interprocess::read_write};
+     memset(region.get_address(), 0., (oneIntegralMem+twoIntegralMem+PerturboneIntegralMem)*m_num_Integrals*sizeof(double));
+     //wait for all procs to zero out the memory
+-    MPI::COMM_WORLD.Barrier();
++    world.barrier();
+     v1.set_data() = static_cast<double*>(region.get_address());
+     v2.set_data() = static_cast<double*>(region.get_address()) + oneIntegralMem;
+     vpt1.set_data() = static_cast<double*>(region.get_address()) + oneIntegralMem + twoIntegralMem;
+@@ -2692,16 +2691,16 @@
+   dumpFile.close();  
+   }
+ #ifndef SERIAL
+-  MPI::COMM_WORLD.Barrier();
++  world.barrier();
+   long intdim = oneIntegralMem+twoIntegralMem+PerturboneIntegralMem;
+   long  maxint = 26843540; //mpi cannot transfer more than these number of doubles
+   long maxIter = intdim/maxint; 
+   for (int i=0; i<maxIter; i++) {
+-    MPI::COMM_WORLD.Bcast(v1.set_data()+i*maxint, maxint, MPI_DOUBLE, 0);
+-    MPI::COMM_WORLD.Barrier();
++    mpi::broadcast(world, v1.set_data()+i*maxint, maxint, 0);
++    world.barrier();
+   }
+-  MPI::COMM_WORLD.Bcast(v1.set_data()+(maxIter)*maxint, oneIntegralMem+twoIntegralMem+PerturboneIntegralMem- maxIter*maxint, MPI_DOUBLE, 0);
+-  MPI::COMM_WORLD.Barrier();
++  mpi::broadcast(world, v1.set_data()+(maxIter)*maxint, oneIntegralMem+twoIntegralMem+PerturboneIntegralMem- maxIter*maxint, 0);
++  world.barrier();
+ 
+ #endif
+ }
