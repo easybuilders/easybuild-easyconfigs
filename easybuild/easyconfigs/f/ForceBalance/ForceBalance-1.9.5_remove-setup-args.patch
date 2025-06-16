@@ -1,0 +1,48 @@
+Remove broken and unused args in setup
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- forcebalance-1.9.5/setup.py.orig	2025-05-30 13:26:06.701956000 +0200
++++ forcebalance-1.9.5/setup.py	2025-05-30 13:28:53.795026000 +0200
+@@ -76,7 +76,7 @@
+ #                         include_dirs = [numpy.get_include(), os.path.join(numpy.get_include(), 'numpy')])
+     
+ 
+-def buildKeywordDictionary(args):
++def buildKeywordDictionary():
+     setupKeywords = {}
+     setupKeywords["name"]              = "forcebalance"
+     # Don't create a separate installed version number for every commit
+@@ -114,19 +114,7 @@
+ 
+     """
+ 
+-    if not args.dirty: doClean()
+-    # setupKeywords["packages"].append("forcebalance.unit")
+-    if args.test:
+-        setupKeywords["packages"].append("forcebalance.test")
+-        setupKeywords["package_dir"].update({"forcebalance.test" : "test"})
+-        
+-        os.chdir("test") # change directories to glob test files
+-        test_data = glob.glob("files/*.*") + glob.glob("files/forcefield/*.*") + glob.glob("files/targets/*/*.*") + glob.glob("files/*.*") + ["files/work_queue_worker"]
+-        os.chdir("..")
+-        setupKeywords["package_data"].update({'forcebalance.test': test_data})
+-    if args.gui:
+-        setupKeywords["packages"].append("forcebalance.gui")
+-
++    doClean()
+     return setupKeywords
+ 
+ def doClean():
+@@ -151,12 +139,7 @@
+     #     os.chdir(os.path.split(__file__)[0])
+ 
+     ## Install options
+-    parser = argparse.ArgumentParser()
+-    parser.add_argument('-d', '--dirty', action='store_true', help="don't remove previously installed forcebalance installation first")
+-    parser.add_argument('-t', '--test', action='store_true', help='install forcebalance test suite')
+-    parser.add_argument('-g', '--gui', action='store_true', help='install forcebalance gui module')
+-    args, sys.argv= parser.parse_known_args(sys.argv)
+-    setupKeywords=buildKeywordDictionary(args)
++    setupKeywords=buildKeywordDictionary()
+     ## Run setuptools command.
+     ## Refer to setup.cfg for customizing installation behavior
+     setup(**setupKeywords)
