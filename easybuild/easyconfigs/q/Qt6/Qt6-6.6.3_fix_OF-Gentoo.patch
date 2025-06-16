@@ -1,0 +1,49 @@
+############################################
+# Update from Qt5-5.14.1_fix-OF-Gentoo.patch
+# 1. qt3d/..../unzip/ioapi.h and qtquick3d/..../unzip/ioapi.h do not use OF macro anymore
+# 2. qtquick3d/..../minizip/ioapi.h is moved to qt3d/..../minizip/ioapi.h
+############################################
+fix compilation on top of zlib provided by Gentoo,
+where OF macro has been renamed to _Z_OF
+see https://bugreports.qt.io/browse/QTBUG-68467 and https://bugs.gentoo.org/383179
+author: Kenneth Hoste (HPC-UGent)
+diff --git a/qt3d/src/3rdparty/assimp/src/contrib/unzip/ioapi.h
+b/qt3d/src/3rdparty/assimp/src/contrib/zlib/contrib/unzip/ioapi.h
+index 8dcbdb06e3..e9cc96914e 100644
+--- a/qt3d/src/3rdparty/assimp/src/contrib/unzip/ioapi.h
++++ b/qt3d/src/3rdparty/assimp/src/contrib/unzip/ioapi.h
+@@ -130,6 +130,14 @@ extern "C" {
+ #endif
+
+
++// if OF macro is not defined but _Z_OF is, define OF as _Z_OF
++// required when building with zlib provided by Gentoo
++// see https://bugreports.qt.io/browse/QTBUG-68467 and https://bugs.gentoo.org/383179
++#ifndef OF
++ #ifdef _Z_OF
++   #define OF _Z_OF
++ #endif
++#endif
+
+
+ typedef voidpf   (ZCALLBACK *open_file_func)      OF((voidpf opaque, const char* filename, int mode));
+diff --git a/qtwebengine/src/3rdparty/chromium/third_party/zlib/contrib/minizip/ioapi.h b/qtwebengine/src/3rdparty/chromium/third_party/zlib/contrib/minizip/ioapi.h
+index c1b7a54847..c5546a26b9 100644
+--- a/qtwebengine/src/3rdparty/chromium/third_party/zlib/contrib/minizip/ioapi.h
++++ b/qtwebengine/src/3rdparty/chromium/third_party/zlib/contrib/minizip/ioapi.h
+@@ -130,6 +130,14 @@ extern "C" {
+ #endif
+
+
++// if OF macro is not defined but _Z_OF is, define OF as _Z_OF
++// required when building with zlib provided by Gentoo
++// see https://bugreports.qt.io/browse/QTBUG-68467 and https://bugs.gentoo.org/383179
++#ifndef OF
++ #ifdef _Z_OF
++   #define OF _Z_OF
++ #endif
++#endif
+
+
+ typedef voidpf   (ZCALLBACK *open_file_func)      OF((voidpf opaque, const char* filename, int mode));
+
