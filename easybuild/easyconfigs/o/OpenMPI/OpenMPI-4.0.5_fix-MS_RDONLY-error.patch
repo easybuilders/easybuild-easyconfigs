@@ -1,0 +1,47 @@
+From 5b525b251c3433bf50b44b05c84937a39fb10074 Mon Sep 17 00:00:00 2001
+From: Bert Wesarg <bert.wesarg@tu-dresden.de>
+Date: Tue, 23 Feb 2021 08:21:22 +0100
+Subject: [PATCH] fs/lustre: Remove unneeded includes
+
+The functionality was migrated to `fs/base/fs_base_get_parent_dir.c` long
+ago, but the includes stayed. Though in lustre 2.14 `lustre_user.h`
+moved the inclusion of `linux/fs.h` outside the `__KERNEL__` guard. This
+triggered now Debian bug #898743 [1], which states that including
+`sys/mount.h` after `linux/fs.h` breaks compilation. Thus the include
+removal also avoids this breakage.
+
+Closes #8508.
+
+[1] https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=898743
+
+Signed-off-by: Bert Wesarg <bert.wesarg@tu-dresden.de>
+---
+ ompi/mca/fs/lustre/fs_lustre.c | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+diff --git a/ompi/mca/fs/lustre/fs_lustre.c b/ompi/mca/fs/lustre/fs_lustre.c
+index df2c7c3ac7c..20fdfc76991 100644
+--- a/ompi/mca/fs/lustre/fs_lustre.c
++++ b/ompi/mca/fs/lustre/fs_lustre.c
+@@ -32,21 +32,6 @@
+ #include "ompi/mca/fs/base/base.h"
+ #include "ompi/mca/fs/lustre/fs_lustre.h"
+ 
+-#ifdef HAVE_SYS_STATFS_H
+-#include <sys/statfs.h> /* or <sys/vfs.h> */
+-#endif
+-#ifdef HAVE_SYS_PARAM_H
+-#include <sys/param.h>
+-#endif
+-#ifdef HAVE_SYS_MOUNT_H
+-#include <sys/mount.h>
+-#endif
+-#ifdef HAVE_SYS_STAT_H
+-#include <sys/stat.h>
+-#endif
+-
+-#include <sys/ioctl.h>
+-
+ /*
+  * *******************************************************************
+  * ************************ actions structure ************************
