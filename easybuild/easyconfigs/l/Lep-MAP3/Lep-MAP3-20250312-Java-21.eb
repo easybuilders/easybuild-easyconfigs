@@ -1,0 +1,45 @@
+easyblock = 'CmdCp'
+
+name = 'Lep-MAP3'
+version = '20250312'
+versionsuffix = '-Java-%(javaver)s'
+_commit = 'e5dd07c7a6236f303ca6482bb9afbce158536f43'
+
+homepage = 'https://sourceforge.net/p/lep-map3/'
+description = """Lep-MAP3 (LM3) is a novel linkage map construction software suite.
+It can handle millions of markers and thousands of individuals possibly on multiple families.
+Input genotype data can be from genome sequencing (RADseq or whole genome sequencing), SNP assay, microsatellites
+or any mixture of them. However, as the input data should be given as genotype likelihoods (posteriors),
+genome sequencing and SNP assay data is preferred."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://sourceforge.net/code-snapshots/git/l/le/lep-map3/code.git/']
+sources = [f'%(namelower)s-code-{_commit}.zip']
+checksums = ['d57b40cebca5c95c4fb3b6d29e9724124821286b3c9876b897a2ff6fa9a00f2b']
+
+dependencies = [('Java', '21')]
+
+cmds_map = [('.*', 'javac src/*.java -d build/')]
+files_to_copy = [(['build/*.class'], 'lib')]
+
+local_modules = [
+    'ParentCall2', 'Filtering2', 'SeparateChromosomes2', 'JoinSingles2All', 'OrderMarkers2', 'LMPlot',
+    'Pileup2Likelihoods', 'OutputData'
+]
+
+sanity_check_paths = {
+    'files': [f'lib/{module}.class' for module in local_modules],
+    'dirs': [],
+}
+
+sanity_check_commands = [f'java {module} 2>&1 | grep {module}' for module in local_modules]
+# also check the module aliases
+sanity_check_commands += [f'{module} 2>&1 | grep {module}' for module in local_modules]
+
+modextrapaths = {'CLASSPATH': 'lib'}
+modaliases = {module: f'java {module}' for module in local_modules}
+modloadmsg = 'To execute Lep-MAP3, use "java moduleName" or simply "moduleName", where moduleName can be one of:\n'
+modloadmsg += ', '.join(local_modules)
+
+moduleclass = 'bio'
