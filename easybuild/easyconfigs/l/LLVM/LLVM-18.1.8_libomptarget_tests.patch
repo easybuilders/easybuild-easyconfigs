@@ -1,0 +1,49 @@
+# Patch to fix bug in libomptarget testing.
+# Related to:
+# - https://github.com/easybuilders/easybuild-easyblocks/pull/3373#issuecomment-2404623211
+# - https://github.com/llvm/llvm-project/issues/90333
+diff --git a/openmp/libomptarget/test/lit.cfg b/openmp/libomptarget/test/lit.cfg
+index d912b622c05b..ad378300bc80 100644
+--- a/openmp/libomptarget/test/lit.cfg
++++ b/openmp/libomptarget/test/lit.cfg
+@@ -286,18 +286,24 @@ for libomptarget_target in config.libomptarget_all_targets:
+         config.substitutions.append(("%libomptarget-run-fail-" + \
+             libomptarget_target, \
+             "%not --crash %t"))
++
++        if '-unknown-' in config.host_triple and '-pc-' in libomptarget_target:
++            _libomptarget_target = libomptarget_target.replace('-pc-', '-unknown-')
++        else:
++            _libomptarget_target = libomptarget_target
++
+         config.substitutions.append(("%clangxx-" + libomptarget_target, \
+                                      "%clangxx %openmp_flags %cuda_flags %flags %flags_clang -fopenmp-targets=" +\
+-                                     remove_suffix_if_present(libomptarget_target)))
++                                     remove_suffix_if_present(_libomptarget_target)))
+         config.substitutions.append(("%clangxxx-force-usm-" + libomptarget_target, \
+                                      "%clangxx %openmp_flags -fopenmp-force-usm  %cuda_flags %flags %flags_clang -fopenmp-targets=" +\
+-                                     remove_suffix_if_present(libomptarget_target)))
++                                     remove_suffix_if_present(_libomptarget_target)))
+         config.substitutions.append(("%clang-" + libomptarget_target, \
+                                      "%clang %openmp_flags %cuda_flags %flags %flags_clang -fopenmp-targets=" +\
+-                                     remove_suffix_if_present(libomptarget_target)))
++                                     remove_suffix_if_present(_libomptarget_target)))
+         config.substitutions.append(("%flang-" + libomptarget_target, \
+                                      "%flang %openmp_flags %flags %flags_flang -fopenmp-targets=" +\
+-                                     remove_suffix_if_present(libomptarget_target)))
++                                     remove_suffix_if_present(_libomptarget_target)))
+         config.substitutions.append(("%fcheck-" + libomptarget_target, \
+             config.libomptarget_filecheck + " %s"))
+     else:
+diff --git a/openmp/libomptarget/test/lit.site.cfg.in b/openmp/libomptarget/test/lit.site.cfg.in
+index 7c75aaa18fa7..15189c156986 100644
+--- a/openmp/libomptarget/test/lit.site.cfg.in
++++ b/openmp/libomptarget/test/lit.site.cfg.in
+@@ -19,6 +19,7 @@ config.omp_header_directory = "@LIBOMPTARGET_OPENMP_HEADER_FOLDER@"
+ config.omp_host_rtl_directory = "@LIBOMPTARGET_OPENMP_HOST_RTL_FOLDER@"
+ config.llvm_lib_directory = "@LIBOMPTARGET_LLVM_LIBRARY_DIR@"
+ config.operating_system = "@CMAKE_SYSTEM_NAME@"
++config.host_triple = "@LLVM_HOST_TRIPLE@"
+ config.libomptarget_all_targets = "@LIBOMPTARGET_ALL_TARGETS@".split()
+ config.libomptarget_current_target = "@CURRENT_TARGET@"
+ config.libomptarget_filecheck = "@OPENMP_FILECHECK_EXECUTABLE@"
