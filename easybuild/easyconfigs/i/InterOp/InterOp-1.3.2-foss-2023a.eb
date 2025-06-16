@@ -1,0 +1,66 @@
+easyblock = 'CMakeMake'
+
+name = 'InterOp'
+version = '1.3.2'
+
+homepage = 'https://illumina.github.io/interop/index.html'
+description = """The Illumina InterOp libraries are a set of common routines used for reading
+InterOp metric files produced by Illumina sequencers including NextSeq 1k/2k and NovaSeqX.
+These libraries are backwards compatible and capable of supporting prior releases of the software,
+ with one exception: GA systems have been excluded."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/Illumina/interop/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['4989480b3d074ac36499f122a1de109840b6edab238cc6482f6025d1021d4564']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('SWIG', '4.1.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('dotNET-Core', '8.0', '', SYSTEM),
+]
+
+maxparallel = 1
+
+# change `HOME` to fix NuGet error `Could not find a part of the path`
+prebuildopts = 'export NUGET_HTTP_CACHE_PATH=%(builddir)s/nuget-cache && '
+prebuildopts += 'export NUGET_PLUGINS_CACHE_PATH=%(builddir)s/plugins-cach && '
+prebuildopts += 'export NUGET_PACKAGES=%(builddir)s/packages && '
+# avoid messing around in hidden subdirectory .nuget of real home directory
+local_change_home = 'export HOME=%(builddir)s/home && '
+
+prebuildopts += local_change_home
+
+buildopts = " && make python_lib"
+
+preinstallopts = local_change_home
+
+installopts = ' && cd src/ext/python && '
+installopts += 'pip install --no-deps --ignore-installed --prefix %(installdir)s --no-build-isolation .'
+
+local_bins = [
+    'dumpbin',
+    'dumptext',
+    'index-summary',
+    'plot_by_cycle',
+    'plot_by_lane',
+    'plot_flowcell',
+    'plot_qscore_heatmap',
+    'plot_qscore_histogram',
+    'summary',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % binary for binary in local_bins] + ['lib64/libinterop%s_lib.a' % s for s in ['', '_fpic']],
+    'dirs': ['include/%(namelower)s'],
+}
+
+sanity_check_commands = ['%s --help' % binary for binary in local_bins] + ['python -m interop --test']
+
+moduleclass = 'bio'
