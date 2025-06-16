@@ -1673,7 +1673,7 @@ def template_easyconfig_test(self, spec):
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # easyblocks without a build step
-        non_build_blocks = ['Binary', 'JAR', 'PackedBinary', 'Tarball']
+        non_build_blocks = ['Binary', 'JAR', 'PackedBinary', 'Tarball', 'EB_VSCode']
         # some software packages do not have a build step
         non_build_soft = ['ANIcalculator', 'Eigen']
 
