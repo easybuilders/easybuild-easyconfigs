@@ -1,0 +1,59 @@
+easyblock = 'ConfigureMake'
+
+name = 'ncbi-vdb'
+version = '2.11.2'
+
+homepage = 'https://github.com/ncbi/ncbi-vdb'
+description = """The SRA Toolkit and SDK from NCBI is a collection of tools and libraries for
+ using data in the INSDC Sequence Read Archives."""
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+
+github_account = 'ncbi'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+patches = [
+    'ncbi-vdb-2.10.7_fix-LD_LIBRARY_PATH.patch',
+    'ncbi-vdb-cstdlib.patch',
+    'ncbi-vdb-3.0.0_hdf5_api.patch',
+]
+checksums = [
+    {'ncbi-vdb-2.11.2.tar.gz': '647efea2762d63dee6d3e462b1fed2ae6d0f2cf1adb0da583ac95f3ee073abdf'},
+    {'ncbi-vdb-2.10.7_fix-LD_LIBRARY_PATH.patch': 'e8f22dbd0c2e564e296bafdf76ba0e0e2da0d13e22be5aaf322135e5f26eb133'},
+    {'ncbi-vdb-cstdlib.patch': 'db3d563262ca9b14e7b9a94a0be6683a9eef41a498c9c064aa05c2a6785f1655'},
+    {'ncbi-vdb-3.0.0_hdf5_api.patch': '34bdad822248118a011b5106fe5b5efaa068c19b66ed10f949a9c0b07a79de8b'},
+]
+
+builddependencies = [
+    ('Perl', '5.34.0', '-minimal'),
+    ('Python', '3.9.6', '-bare'),
+    ('CMake', '3.22.1'),
+]
+
+dependencies = [
+    ('NGS', '2.11.2'),
+    ('file', '5.41'),  # provides libmagic
+    ('HDF5', '1.12.1'),
+    ('libxml2', '2.9.10'),
+    ('bzip2', '1.0.8'),
+]
+
+# add addtional libraries needed to statically link HDF5 from EB
+preconfigopts = "sed -i 's/-lhdf5 -Wl,-Bdynamic/-lhdf5 -Wl,-Bdynamic -lmpi -lsz/' setup/konfigure.perl &&"
+
+configopts = "--build-prefix=%(builddir)s "  # change default build directory
+configopts += "--with-ngs-sdk-prefix=$EBROOTNGS --with-ngs-java-prefix=$EBROOTNGS/jar/ngs-java.jar "
+configopts += "--with-hdf5-prefix=$EBROOTHDF5 --with-xml2-prefix=$EBROOTLIBXML2"
+
+# replace hardcoded optimization flags with EB settings
+prebuildopts = "find build/ -name \"Makefile*\" -exec sed -i 's/-O3/$(EBFLAGS)/g' {} + && EBFLAGS=\"$CFLAGS\" "
+preinstallopts = 'EBFLAGS="$CFLAGS" '
+
+sanity_check_paths = {
+    'files': ['include/ncbi-vdb/NGS.hpp', ('lib/libncbi-ngs-c++.a', 'lib64/libncbi-ngs-c++.a')] +
+             [('lib/libncbi-%s.%s' % (k, e), 'lib64/libncbi-%s.%s' % (k, e))
+              for k in ['vdb', 'wvdb'] for e in ['a', SHLIB_EXT]],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

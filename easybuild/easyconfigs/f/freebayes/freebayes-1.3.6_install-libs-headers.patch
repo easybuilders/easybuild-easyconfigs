@@ -1,0 +1,95 @@
+Created by Jasper Grimm (UoY)
+Install header files and scripts
+Rename static lib to freebayes, and set install to True 
+Add target to build shared library
+diff -Nru freebayes-1.3.6_p2/meson.build freebayes-1.3.6_p3/meson.build
+--- freebayes-1.3.6_p2/meson.build	2022-03-29 12:59:54.000000000 +0100
++++ freebayes-1.3.6_p3/meson.build	2022-03-29 14:18:24.000000000 +0100
+@@ -203,6 +203,37 @@
+ freebayes_src = files('src/freebayes.cpp')
+ bamleftalign_src = files('src/bamleftalign.cpp')
+ 
++# FreeBayes headers
++freebayes_headers = files(
++    'src/Allele.h',
++    'src/AlleleParser.h',
++    'src/BedReader.h',
++    'src/Bias.h',
++    'src/CNV.h',
++    'src/Contamination.h',
++    'src/DataLikelihood.h',
++    'src/Dirichlet.h',
++    'src/Ewens.h',
++    'src/FBFasta.h',
++    'src/Genotype.h',
++    'src/IndelAllele.h',
++     'src/LeftAlign.h',
++    'src/Logging.h',
++    'src/Marginals.h',
++    'src/Multinomial.h',
++    'src/NonCall.h',
++    'src/Parameters.h',
++    'src/Product.h',
++    'src/Result.h',
++    'src/ResultData.h',
++    'src/Sample.h',
++    'src/SegfaultHandler.h',
++    'src/Sum.h',
++    'src/TryCatch.h',
++    'src/Utility.h',
++    'src/version_git.h',
++    )
++
+ # Include paths
+ incdir = include_directories(
+     'src',
+@@ -218,15 +249,29 @@
+     )
+ 
+ freebayes_lib = static_library(
+-    'freebayes_common',
++    'freebayes',
+     freebayes_common_src,
+     include_directories : incdir,
+     cpp_args : extra_cpp_args,
+     dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
+                     vcflib_dep, seqlib_dep, fastahack_dep, sw_dep],
+-    install : false,
++    install : true,
+     )
+ 
++freebayes_slib = shared_library(
++    'freebayes',
++    freebayes_common_src,
++    include_directories : incdir,
++    cpp_args : extra_cpp_args,
++    dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
++                    vcflib_dep, seqlib_dep, fastahack_dep, sw_dep],
++    install : true,
++    )
++
++install_headers(freebayes_headers, subdir : 'freebayes') 
++
++install_subdir('scripts', install_dir : '')
++
+ if static_build
+   link_arguments = '-static'
+ else
+@@ -241,7 +286,7 @@
+            dependencies: [zlib_dep, lzma_dep, thread_dep,
+                           htslib_dep, tabixpp_dep, vcflib_dep, seqlib_dep,
+                           fastahack_dep, sw_dep],
+-           link_with : freebayes_lib,
++           link_with : freebayes_slib,
+            install: true
+           )
+ 
+@@ -253,7 +298,7 @@
+            dependencies: [zlib_dep, lzma_dep, thread_dep,
+                           htslib_dep, vcflib_dep, seqlib_dep,
+                           fastahack_dep, sw_dep],
+-           link_with : freebayes_lib,
++           link_with : freebayes_slib,
+            install: true
+           )
+ 

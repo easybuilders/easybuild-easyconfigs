@@ -1,0 +1,26 @@
+Do not compile FBGEMM code with `-masm=intel` flag by default, because it would emit invalid assembly for `_mm512_mul_ps`
+
+From https://github.com/pytorch/FBGEMM/commit/74a084677397ea17dc80ebc129b826e29f2b0761
+
+diff -aur pytorch-1.3.1-orig/third_party/fbgemm/CMakeLists.txt pytorch-1.3.1/third_party/fbgemm/CMakeLists.txt
+--- pytorch-1.3.1-orig/third_party/fbgemm/CMakeLists.txt	2021-06-28 09:32:41.565226195 +0200
++++ pytorch-1.3.1/third_party/fbgemm/CMakeLists.txt	2021-06-28 09:34:43.822720790 +0200
+@@ -112,10 +112,16 @@ if(MSVC)
+   target_compile_options(fbgemm_avx512 PRIVATE "/arch:AVX512")
+ else(MSVC)
+   target_compile_options(fbgemm_avx2 PRIVATE
+-    "-m64" "-mavx2" "-mf16c" "-mfma" "-masm=intel")
++    "-m64" "-mavx2" "-mf16c" "-mfma")
+   target_compile_options(fbgemm_avx512 PRIVATE
+     "-m64" "-mavx2" "-mfma" "-mavx512f" "-mavx512bw" "-mavx512dq"
+-    "-mavx512vl" "-masm=intel")
++    "-mavx512vl")
++  set_source_files_properties(src/FbgemmFP16UKernelsAvx2.cc
++    PROPERTIES COMPILE_FLAGS "-masm=intel")
++  set_source_files_properties(src/FbgemmFP16UKernelsAvx512.cc
++    PROPERTIES COMPILE_FLAGS "-masm=intel")
++  set_source_files_properties(src/FbgemmFP16UKernelsAvx512_256.cc
++    PROPERTIES COMPILE_FLAGS "-masm=intel")
+ endif(MSVC)
+ 
+ if(USE_SANITIZER)

@@ -1,0 +1,57 @@
+easyblock = 'PackedBinary'
+
+name = 'MuJoCo'
+version = '2.1.1'
+
+homepage = 'https://mujoco.org/'
+description = """MuJoCo stands for Multi-Joint dynamics with Contact. It is a general purpose
+physics engine that aims to facilitate research and development in robotics,
+biomechanics, graphics and animation, machine learning, and other areas which
+demand fast and accurate simulation of articulated structures interacting with
+their environment."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['https://github.com/deepmind/mujoco/releases/download/%(version)s']
+sources = ['%(namelower)s-%(version)s-linux-%(arch)s.tar.gz']
+checksums = [
+    {
+        '%(namelower)s-%(version)s-linux-aarch64.tar.gz':
+            '83949d7d159b3b958153efcd62d3c7c9b160917b37a19cacda95c2cb1f0dda19',
+        '%(namelower)s-%(version)s-linux-x86_64.tar.gz':
+            'd422720fc53f161992b264847d6173eabbe3a3710aa0045d68738ee942f3246e',
+        '%(namelower)s-%(version)s-linux-ppc64le.tar.gz':
+            '1075785e6a737ed3072decac4c1d44db692d6f20843496dacb59196af06957b0',
+    }
+]
+
+builddependencies = [
+    ('binutils', '2.37'),
+]
+
+# MuJoCo bundles 3 variants of glew using non-standard sonames:
+# - libglew with GLX
+# - libglewegl with EGL
+# - libglewosmesa with OSMESA
+# Softare depending on MuJoCo expect these non-standard sonames, so they should not be removed
+# - libglew and libglewegl seem to work with Mesa and X11 in this toolchain
+# - libglewosmesa has to be replaced as it links to an old libOSMesa
+
+dependencies = [
+    ('glew', '2.2.0', '-osmesa'),
+]
+
+postinstallcmds = [
+    # replace bundled libglewosmesa.so with glew libs from EB
+    "ln -sf $EBROOTGLEW/lib64/libGLEW.so %(installdir)s/lib/libglewosmesa.so",
+]
+
+sanity_check_paths = {
+    'files': ['bin/basic', 'bin/derivative', 'bin/record', 'bin/simulate',
+              'lib/libmujoco.%s' % SHLIB_EXT, 'lib/libmujoco_nogl.%s' % SHLIB_EXT],
+    'dirs': ['include', 'model', 'sample'],
+}
+
+sanity_check_commands = ['basic']
+
+moduleclass = 'phys'

@@ -1,0 +1,95 @@
+see https://github.com/numba/llvmlite/issues/688
+
+changes from https://github.com/numba/llvmlite/pull/802 backported to llvmlite 0.37.0
+
+From 1d928ebcd59b23b5050234a2bf71f9be7f5f6bd1 Mon Sep 17 00:00:00 2001
+From: Richard Barnes <rbarnes@umn.edu>
+Date: Wed, 1 Dec 2021 10:29:08 -0700
+Subject: [PATCH] Enable LLVM-12 and LLVM-13
+
+---
+ ffi/build.py                   |  5 ++---
+ ffi/targets.cpp                |  2 ++
+ llvmlite/tests/test_binding.py | 19 ++++++++++++++++---
+ 3 files changed, 20 insertions(+), 6 deletions(-)
+
+diff --git a/ffi/build.py b/ffi/build.py
+index 6408bf5f..95e33c64 100755
+--- a/ffi/build.py
++++ b/ffi/build.py
+@@ -162,9 +162,8 @@ def main_posix(kind, library_ext):
+         print(msg)
+         print(warning + '\n')
+     else:
+-
+-        if not out.startswith('11'):
+-            msg = ("Building llvmlite requires LLVM 11.x.x, got "
++        if not (out.startswith('11') or out.startswith('12') or out.startswith('13')):
++            msg = ("Building llvmlite requires LLVM 11-13.x.x, got "
+                    "{!r}. Be sure to set LLVM_CONFIG to the right executable "
+                    "path.\nRead the documentation at "
+                    "http://llvmlite.pydata.org/ for more information about "
+
+--- llvmlite-0.37.0/ffi/targets.cpp.orig	2021-12-15 16:43:02.794869270 +0100
++++ llvmlite-0.37.0/ffi/targets.cpp	2021-12-15 16:43:26.665056528 +0100
+@@ -232,7 +232,9 @@
+         rm = Reloc::DynamicNoPIC;
+
+     TargetOptions opt;
++#if LLVM_VERSION_MAJOR < 12
+     opt.PrintMachineCode = PrintMC;
++#endif
+
+     bool jit = JIT;
+
+diff --git a/llvmlite/tests/test_binding.py b/llvmlite/tests/test_binding.py
+index 80495787..fee2372a 100644
+--- a/llvmlite/tests/test_binding.py
++++ b/llvmlite/tests/test_binding.py
+@@ -18,6 +18,16 @@
+ from llvmlite.tests import TestCase
+ 
+ 
++def clean_string_whitespace(x: str) -> str:
++    # Remove trailing whitespace from the end of each line
++    x = re.sub(r"\s+$", "", x, flags=re.MULTILINE)
++    # Remove intermediate blank lines
++    x = re.sub(r"\n\s*\n", r"\n", x, flags=re.MULTILINE)
++    # Remove extraneous whitespace from the beginning and end of the string
++    x = x.strip()
++    return x
++
++
+ # arvm7l needs extra ABI symbols to link successfully
+ if platform.machine() == 'armv7l':
+     llvm.load_library_permanently('libgcc_s.so.1')
+@@ -158,7 +168,7 @@ def no_de_locale():
+ target triple = "unknown-unknown-unknown"
+ target datalayout = ""
+ 
+-define i32 @"foo"() 
++define i32 @"foo"()
+ {
+ "<>!*''#":
+   ret i32 12345
+@@ -424,7 +434,10 @@ def test_nonalphanum_block_name(self):
+         bd = ir.IRBuilder(fn.append_basic_block(name="<>!*''#"))
+         bd.ret(ir.Constant(ir.IntType(32), 12345))
+         asm = str(mod)
+-        self.assertEqual(asm, asm_nonalphanum_blocklabel)
++        self.assertEqual(
++            clean_string_whitespace(asm),
++            clean_string_whitespace(asm_nonalphanum_blocklabel)
++        )
+ 
+     def test_global_context(self):
+         gcontext1 = llvm.context.get_global_context()
+@@ -509,7 +522,7 @@ def test_set_option(self):
+     def test_version(self):
+         major, minor, patch = llvm.llvm_version_info
+         # one of these can be valid
+-        valid = [(11,)]
++        valid = [(11,), (12,), (13,)]
+         self.assertIn((major,), valid)
+         self.assertIn(patch, range(10))
+ 

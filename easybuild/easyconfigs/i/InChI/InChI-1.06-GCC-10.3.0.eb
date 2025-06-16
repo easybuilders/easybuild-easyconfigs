@@ -1,0 +1,78 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+# Notes::       Based on Fedora RPM spec file https://src.fedoraproject.org/rpms/inchi/blob/rawhide/f/inchi.spec
+#               Patch made by Fedora to fix program name, linker and compilation options
+#               https://src.fedoraproject.org/rpms/inchi/blob/rawhide/f/inchi-rpm.patch
+##
+easyblock = 'MakeCp'
+
+name = 'InChI'
+version = '1.06'
+
+# NOTE not in the license list of EB
+# software_license = 'IUPAC/InChI-Trust Licence'
+software_license_urls = ['https://www.inchi-trust.org/download/%(version_major)s%(version_minor)s/LICENCE.pdf']
+docurls = [
+    'https://www.inchi-trust.org/download/%(version_major)s%(version_minor)s/INCHI-1-DOC.zip',
+    'https://www.inchi-trust.org/download/%(version_major)s%(version_minor)s/readme.txt',
+]
+
+homepage = 'https://www.inchi-trust.org/'
+description = """The IUPAC International Chemical Identifier (InChI TM) is a non-proprietary
+identifier for chemical substances that can be used in printed and electronic
+data sources thus enabling easier linking of diverse data compilations."""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://www.inchi-trust.org/download/%(version_major)s%(version_minor)s/']
+sources = [
+    {'download_filename': 'INCHI-1-SRC.zip',  'filename': 'INCHI-%(version)s-SRC.zip'},
+    {'download_filename': 'INCHI-1-TEST.zip', 'filename': 'INCHI-%(version)s-TEST.zip'},
+]
+patches = ['InChI-%(version)s_fedora-build-fixes.patch']
+checksums = [
+    '4874e310c0f2f81b881e90dd0c534752e1b9421d7d92ccfb037710022c7e7efd',  # INCHI-1.06-SRC.zip
+    '3c870ef97c8ebc86f64946db395582b87d79732000fa73d173f46c05ca19c1ff',  # INCHI-1.06-TEST.zip
+    '98acd66e46d3c5c2c3b1531e9c84e129b503e23d3a7602f3f64f37c74e420840',  # InChI-1.06_fedora-build-fixes.patch
+]
+
+# dos2unix may be another builddependency useful to "clean" some files
+builddependencies = [
+    ('make', '4.3'),
+]
+
+build_cmd = 'cd INCHI_API/demos/inchi_main/gcc && '
+build_cmd += 'SHARED_LINK_PARM="$OPTFLAGS" '
+build_cmd += 'OPTFLAGS="$OPTFLAGS -Wno-comment -Wno-parentheses -Wno-unused -Wno-unused-but-set-variable" '
+build_cmd += 'make -j %(parallel)s && '
+build_cmd += 'cd - && cd INCHI_EXE/inchi-1/gcc && '
+build_cmd += 'LINKER_OPTIONS="$OPTFLAGS" '
+build_cmd += 'OPTFLAGS="$OPTFLAGS -Wno-comment -Wno-parentheses -Wno-unused -Wno-unused-but-set-variable" '
+build_cmd += 'make'
+
+files_to_copy = [
+    (['INCHI_EXE/bin/Linux/inchi-1'],                                                     'bin'),
+    (['INCHI_API/bin/Linux/libinchi.so*'],                                                'lib'),
+    (['INCHI_BASE/src/ichisize.h', 'INCHI_BASE/src/inchi_api.h', 'INCHI_BASE/src/ixa.h'], 'include'),
+    'LICENCE.pdf',
+    'readme.txt',
+]
+
+# NOTE libinchi.so are not symlinks in the final build, but redundant copies!
+# NOTE `keepsymlinks = True` does not look to do it, so use this trick
+postinstallcmds = ["cd %%(installdir)s/lib/ && rm -f libinchi.so.1 && "
+                   "ln -s libinchi.so.1.* libinchi.so.1 && ln -s libinchi.so.1 libinchi.%s" % SHLIB_EXT]
+
+sanity_check_paths = {
+    'files': ['bin/inchi-1', 'lib/libinchi.%s' % SHLIB_EXT, 'LICENCE.pdf', 'readme.txt'],
+    'dirs': ['lib', 'include']
+}
+
+sanity_check_commands = ["inchi-1"]
+# NOTE currently no real tests because they are complicated to run (not in a good format, zipped, ...)
+
+moduleclass = 'chem'

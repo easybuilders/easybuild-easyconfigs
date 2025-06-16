@@ -1,0 +1,55 @@
+# Author: Robert Jan Schlimbach (SURF)
+# Patch to make ASAP/2.1 accept pugixml as non-header-only shared lib
+
+diff --git a/annotation/CMakeLists.txt b/annotation/CMakeLists.txt
+index 114babe..2156cd3 100644
+--- a/annotation/CMakeLists.txt
++++ b/annotation/CMakeLists.txt
+@@ -25,10 +25,9 @@ set(ANNOTATION_SOURCE
+ )
+ 
+ add_library(annotation SHARED ${ANNOTATION_SOURCE} ${ANNOTATION_HEADERS})
+-target_compile_definitions(annotation PRIVATE "PUGIXML_HEADER_ONLY")
+ generate_export_header(annotation)
+ target_include_directories(annotation PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:include/annotation> PRIVATE ${DIAGPathology_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIRS} ${PugiXML_INCLUDE_DIR})
+-target_link_libraries(annotation PUBLIC core PRIVATE  multiresolutionimageinterface)
++target_link_libraries(annotation PUBLIC core PRIVATE  multiresolutionimageinterface ${PUGIXML_LIBRARY})
+ set_target_properties(annotation PROPERTIES DEBUG_POSTFIX _d)
+ 
+ IF(APPLE)
+diff --git a/cmakemodules/FindPugiXML.cmake b/cmakemodules/FindPugiXML.cmake
+index ccffcc4..9afcfb4 100644
+--- a/cmakemodules/FindPugiXML.cmake
++++ b/cmakemodules/FindPugiXML.cmake
+@@ -5,11 +5,12 @@
+ #  PugiXML_FOUND, If false, do not try to use PugiXML.
+ 
+ find_path(PugiXML_INCLUDE_DIR pugixml.hpp)
++find_library(PUGIXML_LIBRARY NAMES pugixml)
+ 
+ # handle the QUIETLY and REQUIRED arguments and set PugiXML_FOUND to TRUE if
+ # all listed variables are TRUE
+ include(${CMAKE_ROOT}/Modules/FindPackageHandleStandardArgs.cmake)
+ FIND_PACKAGE_HANDLE_STANDARD_ARGS(PugiXML
+-                                  REQUIRED_VARS PugiXML_INCLUDE_DIR)
++                                  REQUIRED_VARS PUGIXML_LIBRARY PugiXML_INCLUDE_DIR)
+ 
+-mark_as_advanced(PugiXML_INCLUDE_DIR)
++mark_as_advanced(PugiXML_INCLUDE_DIR PUGIXML_LIBRARY)
+diff --git a/multiresolutionimageinterface/CMakeLists.txt b/multiresolutionimageinterface/CMakeLists.txt
+index 132e6ef..8d24176 100644
+--- a/multiresolutionimageinterface/CMakeLists.txt
++++ b/multiresolutionimageinterface/CMakeLists.txt
+@@ -87,11 +87,10 @@ endif(BUILD_MULTIRESOLUTIONIMAGEINTERFACE_VSI_SUPPORT)
+ 
+ add_library(multiresolutionimageinterface SHARED ${MULTIRESOLUTIONIMAGEINTERFACE_SRCS} ${MULTIRESOLUTIONIMAGEINTERFACE_HS} ${VSI_SOURCE_HS} ${VSI_SOURCE_SRCS})
+ target_include_directories(multiresolutionimageinterface PUBLIC $<BUILD_INTERFACE:${DIAGPathology_SOURCE_DIR}> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:include/multiresolutionimageinterface> PRIVATE ${PugiXML_INCLUDE_DIR} ${TIFF_INCLUDE_DIR})
+-target_link_libraries(multiresolutionimageinterface PUBLIC core PRIVATE jpeg2kcodec libtiff)
++target_link_libraries(multiresolutionimageinterface PUBLIC core PRIVATE jpeg2kcodec libtiff ${PUGIXML_LIBRARY})
+ IF(NOT WIN32)
+   target_link_libraries(multiresolutionimageinterface PRIVATE dl)
+ ENDIF(NOT WIN32)
+-target_compile_definitions(multiresolutionimageinterface PRIVATE PUGIXML_HEADER_ONLY)
+ generate_export_header(multiresolutionimageinterface)
+ set_target_properties(multiresolutionimageinterface PROPERTIES DEBUG_POSTFIX _d)
+ 

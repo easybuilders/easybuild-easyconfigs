@@ -1,0 +1,76 @@
+easyblock = 'Bundle'
+
+name = 'GTK3'
+version = '3.24.33'
+
+homepage = 'https://developer.gnome.org/gtk3/stable/'
+description = """GTK+ is the primary library used to construct user interfaces in GNOME. It
+ provides all the user interface controls, or widgets, used in a common
+ graphical application. Its object-oriented API allows you to construct
+ user interfaces without dealing with the low-level details of drawing and
+ device interaction.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('Autotools', '20220317'),
+    ('GObject-Introspection', '1.72.0'),
+    ('gettext', '0.21'),
+    ('pkgconf', '1.8.0'),
+    ('cairo', '1.17.4'),
+    ('Perl', '5.34.1'),
+]
+dependencies = [
+    ('ATK', '2.38.0'),
+    ('at-spi2-atk', '2.38.0'),
+    ('Gdk-Pixbuf', '2.42.8'),
+    ('Pango', '1.50.7'),
+    ('libepoxy', '1.5.10'),
+    ('X11', '20220504'),
+    ('FriBidi', '1.0.12'),
+]
+
+default_easyblock = 'ConfigureMake'
+
+default_component_specs = {
+    'sources': [SOURCELOWER_TAR_XZ],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    ('GTK+', version, {
+        'source_urls': [FTPGNOME_SOURCE],
+        'configopts': "--disable-silent-rules --disable-glibtest --enable-introspection=yes",
+        'checksums': ['588b06522e25d1579e989b6f9d8a1bdbf2fe13cde01a04e904ff346a225e7801'],
+    }),
+    ('hicolor-icon-theme', '0.17', {
+        'source_urls': ['https://icon-theme.freedesktop.org/releases/'],
+        'checksums': ['317484352271d18cbbcfac3868eab798d67fff1b8402e740baa6ff41d588a9d8'],
+    }),
+    ('adwaita-icon-theme', '42.0', {
+        'preconfigopts': 'autoreconf -f -i && ',
+        'source_urls': ['https://ftp.gnome.org/pub/GNOME/sources/%(namelower)s/%(version_major)s'],
+        'patches': ['adwaita-icon-theme-3.34.3_disable-svg-conversion.patch'],
+        'checksums': [
+            '5e85b5adc8dee666900fcaf271ba717f7dcb9d0a03d96dae08f9cbd27e18b1e0',
+            # adwaita-icon-theme-3.34.3_disable-svg-conversion.patch
+            'f4b86855d50759ecfc1e8f6550ec0f3a7a4ea2c80b9f5fc1685fe8967d1c5342',
+        ],
+    }),
+]
+
+postinstallcmds = ['gtk-update-icon-cache']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['gtk3-demo', 'gtk3-demo-application', 'gtk3-icon-browser', 'gtk3-widget-factory',
+                                     'gtk-builder-tool', 'gtk-launch', 'gtk-query-immodules-3.0', 'gtk-query-settings',
+                                     'gtk-update-icon-cache']] +
+             ['lib/%s-%%(version_major)s.%s' % (x, SHLIB_EXT) for x in ['libgailutil', 'libgdk', 'libgtk']],
+    'dirs': ['include/%s-%%(version_major)s.0' % x for x in ['gail', 'gtk']] +
+            ['share/icons/hicolor', 'share/icons/Adwaita'],
+}
+
+
+moduleclass = 'vis'

@@ -1,0 +1,75 @@
+From 34c502e2f6e3e7d441b6eb023468e8e1dac57ada Mon Sep 17 00:00:00 2001
+From: Michael Carilli <mcarilli@nvidia.com>
+Date: Thu, 31 Oct 2019 18:23:17 -0700
+Subject: [PATCH] Making torch/csrc/cuda nccl usage safe for nccl 2.5
+
+---
+ torch/csrc/cuda/nccl.cpp        | 4 ++--
+ torch/csrc/cuda/python_nccl.cpp | 6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/torch/csrc/cuda/nccl.cpp b/torch/csrc/cuda/nccl.cpp
+index f421d1c6fe73d..40b4ce8ae1b56 100644
+--- a/torch/csrc/cuda/nccl.cpp
++++ b/torch/csrc/cuda/nccl.cpp
+@@ -236,10 +236,10 @@ void broadcast(
+   ncclDataType_t data_type = _get_data_type(tensors[0]);
+   int64_t numel = tensors[0].numel();
+ 
+-  AutoNcclGroup nccl_group_guard;
+   const auto comms = user_comms.empty() ? _get_communicators(tensors)
+                                         : ArrayRef<ncclComm_t>(user_comms);
+ 
++  AutoNcclGroup nccl_group_guard;
+   at::cuda::OptionalCUDAGuard device_guard;
+   for (size_t i = 0, num_tensors = tensors.size(); i < num_tensors; i++) {
+     int device = tensors[i].get_device();
+@@ -282,10 +282,10 @@ void reduce(
+   ncclDataType_t data_type = _get_data_type(inputs[0]);
+ 
+   const auto count = inputs[0].numel();
+-  AutoNcclGroup nccl_group_guard;
+   auto comms_ref = user_comms.empty() ? _get_communicators(inputs)
+                                       : ArrayRef<ncclComm_t>(user_comms);
+ 
++  AutoNcclGroup nccl_group_guard;
+   at::cuda::OptionalCUDAGuard device_guard;
+   for (size_t i = 0; i < len; i++) {
+     int device = inputs[i].device().index();
+diff --git a/torch/csrc/cuda/python_nccl.cpp b/torch/csrc/cuda/python_nccl.cpp
+index 3601134322f39..8aeba37528a30 100644
+--- a/torch/csrc/cuda/python_nccl.cpp
++++ b/torch/csrc/cuda/python_nccl.cpp
+@@ -191,9 +191,9 @@ PyObject* THCPModule_nccl_all_reduce(PyObject* self, PyObject* args) {
+     ncclDataType_t data_type = _get_data_type(inputs[0]);
+ 
+     int64_t count = inputs[0].numel();
+-    AutoNcclGroup nccl_group_guard;
+     auto comms = user_comms.empty() ? _get_communicators(inputs)
+                                     : ArrayRef<ncclComm_t>(user_comms);
++    AutoNcclGroup nccl_group_guard;
+     at::cuda::OptionalCUDAGuard device_guard;
+     for (size_t i = 0; i < len; i++) {
+       int device = inputs[i].get_device();
+@@ -270,9 +270,9 @@ PyObject* THCPModule_nccl_all_gather(PyObject* self, PyObject* args) {
+     ncclDataType_t data_type = _get_data_type(inputs[0]);
+ 
+     int64_t count = inputs[0].numel();
+-    AutoNcclGroup nccl_group_guard;
+     auto comms = user_comms.empty() ? _get_communicators(inputs)
+                                     : ArrayRef<ncclComm_t>(user_comms);
++    AutoNcclGroup nccl_group_guard;
+     at::cuda::OptionalCUDAGuard device_guard;
+     for (size_t i = 0; i < len; i++) {
+       int device = inputs[i].get_device();
+@@ -332,9 +332,9 @@ PyObject* THCPModule_nccl_reduce_scatter(PyObject* self, PyObject* args) {
+     ncclDataType_t data_type = _get_data_type(inputs[0]);
+ 
+     int64_t count = inputs[0].numel() / len;
+-    AutoNcclGroup nccl_group_guard;
+     auto comms = user_comms.empty() ? _get_communicators(inputs)
+                                     : ArrayRef<ncclComm_t>(user_comms);
++    AutoNcclGroup nccl_group_guard;
+     at::cuda::OptionalCUDAGuard device_guard;
+     for (size_t i = 0; i < len; i++) {
+       int device = inputs[i].get_device();

@@ -1,0 +1,38 @@
+From 98d467891b74021ace7f248cb0856bec734e39b6 Mon Sep 17 00:00:00 2001
+From: bartoldeman <bartoldeman@users.noreply.github.com>
+Date: Mon, 11 Jul 2022 19:40:53 -0400
+Subject: [PATCH] Change complex_return='intel' for ifx. (#637)
+
+Details:
+- When checking the version string of the Fortran compiler for the
+  purposes of determining a default return convention for complex
+  domain values, grep for "IFORT" instead of "ifort" since that string
+  is common to both the 'ifx' and 'ifort' binaries provided by Intel:
+
+    $ ifx --version
+    ifx (IFORT) 2022.1.0 20220316
+    Copyright (C) 1985-2022 Intel Corporation. All rights reserved.
+
+    $ ifort --version
+    ifort (IFORT) 2021.6.0 20220226
+    Copyright (C) 1985-2022 Intel Corporation. All rights reserved.
+---
+ configure | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/configure b/configure
+index 5ff877317..a6018edab 100755
+--- a/configure
++++ b/configure
+@@ -3688,9 +3688,9 @@ main()
+ 			# Query the compiler "vendor" (ie: the compiler's simple name).
+ 			# The last part ({ read first rest ; echo $first ; }) is a workaround
+ 			# to OS X's egrep only returning the first match.
+-			fc_vendor=$(echo "${vendor_string}" | egrep -o 'ifort|GNU' | { read first rest ; echo $first ; })
++			fc_vendor=$(echo "${vendor_string}" | egrep -o 'IFORT|GNU' | { read first rest ; echo $first ; })
+ 
+-			if [ "x${fc_vendor}" = "xifort" ]; then
++			if [ "x${fc_vendor}" = "xIFORT" ]; then
+ 				complex_return='intel'
+ 			elif [ "x${fc_vendor}" = "xGNU" ]; then
+ 				complex_return='gnu'

@@ -1,0 +1,59 @@
+easyblock = 'ConfigureMake'
+
+name = 'nodejs'
+version = '16.15.1'  # LTS on 2022-06-12
+local_libversion = '93'
+
+homepage = 'https://nodejs.org'
+description = """Node.js is a platform built on Chrome's JavaScript runtime
+ for easily building fast, scalable network applications. Node.js uses an
+ event-driven, non-blocking I/O model that makes it lightweight and efficient,
+ perfect for data-intensive real-time applications that run across distributed devices."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ['https://nodejs.org/dist/v%(version)s/']
+sources = ['node-v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_fix-argument-list-too-long.patch',
+]
+checksums = [
+    {'node-v16.15.1.tar.gz': '308aee7149c4092a53c87c28ef49e23a8d1606119e79ae68333062e2a1f94208'},
+    {'nodejs-16.15.1_fix-argument-list-too-long.patch':
+     '36b5627e60fd2b861ce3dc5445b137b4fe7ec30a4f866ea540ec56bda9686405'},
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('pkgconf', '1.8.0'),
+    ('Python', '3.10.4', '-bare'),
+]
+
+dependencies = [
+    ('ICU', '71.1'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+# Use ICU and OpenSSL from EasyBuild
+local_common_configopts = "--with-intl=system-icu --shared-openssl "
+
+configopts = [
+    local_common_configopts,                  # Static build
+    '--shared %s' % local_common_configopts,  # Build libnode.so in a second run
+]
+
+# Link libv8 libs to libnode
+local_extra_sonames = ['libnode', 'libv8', 'libv8_libbase', 'libv8_libplatform']
+local_extra_libs = ['%s.%s' % (x, SHLIB_EXT) for x in local_extra_sonames]
+local_libnode_real = "libnode.%s.%s" % (SHLIB_EXT, local_libversion)
+
+postinstallcmds = [
+    "cd %%(installdir)s/lib && ln -s %s %s" % (local_libnode_real, x) for x in local_extra_libs
+]
+
+sanity_check_paths = {
+    'files': ['bin/node', 'bin/npm'] + ['lib/%s' % x for x in [local_libnode_real] + local_extra_libs],
+    'dirs': ['lib/node_modules', 'include/node']
+}
+
+moduleclass = 'lang'

@@ -1,0 +1,70 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+##
+easyblock = 'ConfigureMake'
+
+name = 'Virtuoso-opensource'
+version = '7.2.6.1'
+
+homepage = 'https://github.com/openlink/virtuoso-opensource'
+description = """Virtuoso is a high-performance and scalable Multi-Model RDBMS, Data
+Integration Middleware, Linked Data Deployment, and HTTP Application Server Platform."""
+software_license = 'LicenseGPLv2'
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/openlink/virtuoso-opensource/archive/refs/tags/']
+checksums = ['73dc3d0073d3d5694da075063b75a404649c027a1f5c635a25ede52713ff7942']
+
+builddependencies = [
+    ('Autotools', '20210128'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.7.6'),
+    ('gperf', '3.1'),
+    ('gawk', '5.1.1'),
+]
+
+dependencies = [
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('libreadline', '8.1'),
+]
+
+configure_cmd = './autogen.sh && '
+configure_cmd += './configure '
+configure_cmd += ' --enable-shared --disable-static'
+configure_cmd += ' --disable-imagemagick'
+configure_cmd += ' --enable-aio'
+configure_cmd += ' --enable-bpel-vad'
+configure_cmd += ' --enable-conductor-vad'
+configure_cmd += ' --disable-dbpedia-vad'
+configure_cmd += ' --enable-demo-vad'
+configure_cmd += ' --enable-fct-vad'
+configure_cmd += ' --enable-isparql-vad'
+configure_cmd += ' --enable-ods-vad'
+configure_cmd += ' --enable-rdfmappers-vad'
+configure_cmd += ' --enable-rdb2rdf-vad'
+configure_cmd += ' --enable-sparqldemo-vad'
+configure_cmd += ' --enable-syncml-vad'
+configure_cmd += ' --enable-tutorial-vad'
+configure_cmd += ' --with-iodbc'
+configure_cmd += ' --with-readline'
+configure_cmd += ' --with-pthreads'
+configure_cmd += ' --with-port=11111'
+
+# NOTE Rename the "isql" executable (the virtuoso client), because there may be another package
+# unixODBC that provides an executable with the same name.
+postinstallcmds = ["cd %(installdir)s/bin/ && mv isql isqlv"]
+
+sanity_check_paths = {
+    'files': ['bin/virtuoso-t', 'bin/isqlv'],
+    'dirs': ['lib', 'var'],
+}
+
+sanity_check_commands = ["isqlv --help"]
+
+moduleclass = 'data'

@@ -1,0 +1,45 @@
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# Updated to 4.6.1: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeNinja'
+
+name = 'ccache'
+version = '4.6.1'
+
+homepage = 'https://ccache.dev/'
+description = """Ccache (or “ccache”) is a compiler cache. It speeds up recompilation by
+caching previous compilations and detecting when the same compilation is being done again"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = [GITHUB_RELEASE]
+sources = [SOURCE_TAR_GZ]
+checksums = ['59b28a57c3a45e48d6049001999c9f94cd4d3e9b0196994bed9a6a7437ffa3bc']
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('CMake', '3.22.1'),
+    ('Ninja', '1.10.2'),
+    ('zstd', '1.5.0'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('hiredis', '1.0.2'),
+]
+
+# use BFD linker rather than default ld.gold (required on CentOS 8)
+preconfigopts = 'LDFLAGS=" -fuse-ld=bfd"'
+configopts = '-DENABLE_DOCUMENTATION=OFF -DENABLE_IPO=ON -DZSTD_LIBRARY="$EBROOTZSTD/lib/libzstd.a" '
+# disable hunt for faster linker, since using ld.gold may fail (on CentOS 8, for example)
+configopts += '-DUSE_FASTER_LINKER=OFF'
+
+sanity_check_paths = {
+    'files': ['bin/ccache'],
+    'dirs': []
+}
+sanity_check_commands = ['ccache --help']
+
+moduleclass = 'tools'

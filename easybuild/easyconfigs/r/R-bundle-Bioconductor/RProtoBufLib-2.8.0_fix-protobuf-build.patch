@@ -1,0 +1,41 @@
+Replace the protobuf map files so that the required symbols are extern "C++"
+Fix from https://github.com/protocolbuffers/protobuf/issues/5144#issuecomment-688723405
+
+Add extra path to includes.
+
+Patch by Simon Branford (University of Birmingham)
+--- RProtoBufLib/configure.orig	2021-06-05 10:58:25.972255000 +0100
++++ RProtoBufLib/configure	2021-06-05 11:08:16.635526105 +0100
+@@ -2867,6 +2867,23 @@
+ 	gzip -dc ${PBTGZNAME} | tar -xf -
+ fi;
+ 
++mapfiles="libprotoc.map libprotobuf-lite.map libprotobuf.map"
++for mapfile in ${mapfiles}; do
++    cat << EOF > protobuf-3.8.0/src/${mapfile}
++{
++  global:
++    extern "C++" {
++      *google*;
++    };
++    scc_info_*;
++    descriptor_table_*;
++
++  local:
++    *;
++};
++EOF
++done
++
+ #run this bootstrap script to update all the gnu auto build files (e.g.  automake symlinked fils (e.g. ./compile), alocal.m4,etc... )
+ cd ${BASEPBNAME}
+ #./autogen.sh
+--- RProtoBufLib/src/Makevars.in.orig	2021-06-05 11:58:07.587850000 +0100
++++ RProtoBufLib/src/Makevars.in	2021-06-05 11:58:57.608744000 +0100
+@@ -1,5 +1,5 @@
+ CXX_STD = CXX11
+-PKG_CPPFLAGS =-I../inst/include/ -I@PBBUILD@/include/
++PKG_CPPFLAGS =-I../inst/include/ -I@PBBUILD@/include/ -I@PBBUILD@/src
+ #expose headers in installed package include folder
+ USER_INCLUDE = ${R_PACKAGE_DIR}/include
+ USER_LIB_DIR = ${R_PACKAGE_DIR}/lib${R_ARCH}/

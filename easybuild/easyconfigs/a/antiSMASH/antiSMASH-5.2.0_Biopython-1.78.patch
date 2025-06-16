@@ -1,0 +1,470 @@
+see https://github.com/antismash/antismash/pull/310
+
+From 94eaa1570bd7a2be9e24238234ccd33ab08270c2 Mon Sep 17 00:00:00 2001
+From: Simon Shaw <SJShaw@users.noreply.github.com>
+Date: Tue, 29 Sep 2020 17:01:37 +0200
+Subject: [PATCH 1/2] chore: handle biopython's removal of Alphabet in 1.78 and
+ update
+
+---
+ antismash/common/record_processing.py         | 24 ++------------
+ antismash/common/secmet/features/region.py    |  3 ++
+ .../secmet/features/test/test_region.py       |  5 ++-
+ antismash/common/secmet/record.py             | 32 +++++++++++++++----
+ .../secmet/test/test_circular_conversion.py   | 11 ++++---
+ antismash/common/secmet/test/test_secmet.py   | 20 ++++++++++--
+ antismash/common/serialiser.py                | 15 +++------
+ antismash/common/test/helpers.py              |  4 +--
+ .../common/test/test_record_processing.py     | 17 ----------
+ .../modules/pfam2go/test/test_pfam2go.py      |  3 +-
+ antismash/modules/tta/test/test_tta.py        |  3 +-
+ setup.py                                      |  2 +-
+ 12 files changed, 67 insertions(+), 72 deletions(-)
+
+diff --git a/antismash/common/record_processing.py b/antismash/common/record_processing.py
+index 0ab8ef89..489d2b95 100644
+--- a/antismash/common/record_processing.py
++++ b/antismash/common/record_processing.py
+@@ -7,10 +7,9 @@
+ import functools
+ import logging
+ import re
+-from typing import Any, Callable, List, Set, Tuple, Union
++from typing import Any, Callable, List, Set, Tuple
+ import warnings
+ 
+-import Bio
+ from Bio.Seq import Seq, UnknownSeq
+ from Bio.SeqRecord import SeqRecord
+ from helperlibs.bio import seqio
+@@ -97,7 +96,7 @@ def parse_input_sequence(filename: str, taxon: str = "bacteria", minimum_length:
+         raise AntismashInputError("all input records smaller than minimum length (%d)" % minimum_length)
+ 
+     for record in records:
+-        if isinstance(record.seq.alphabet, Bio.Alphabet.ProteinAlphabet) or not is_nucl_seq(record.seq):
++        if not Record.is_nucleotide_sequence(record.seq):
+             raise AntismashInputError("protein records are not supported: %s" % record.id)
+ 
+     # before conversion to secmet records, trim if required
+@@ -356,8 +355,6 @@ def pre_process_sequences(sequences: List[Record], options: ConfigType, genefind
+             sequences = [sanitise_sequence(sequences[0])]
+         else:
+             sequences = parallel_function(sanitise_sequence, ([record] for record in sequences))
+-        for sequence in sequences:
+-            sequence.seq.alphabet = Bio.Alphabet.generic_dna
+ 
+     for record in sequences:
+         if record.skip or not record.seq:
+@@ -413,7 +410,7 @@ def sanitise_sequence(record: Record) -> Record:
+             has_real_content = True
+         else:
+             sanitised.append("N")
+-    record.seq = Seq("".join(sanitised), alphabet=record.seq.alphabet)
++    record.seq = Seq("".join(sanitised))
+     if not has_real_content:
+         record.skip = "contains no sequence"
+     return record
+@@ -446,21 +443,6 @@ def trim_sequence(record: SeqRecord, start: int, end: int) -> SeqRecord:
+     return new
+ 
+ 
+-def is_nucl_seq(sequence: Union[Seq, str]) -> bool:
+-    """ Determines if a sequence is a nucleotide sequence based on content.
+-
+-        Arguments:
+-            sequence: the sequence to check, either a string or Bio.Seq
+-
+-        Returns:
+-            True if more than 80% of characters are nucleotide bases
+-    """
+-    other = str(sequence).lower()
+-    for char in "acgtn":
+-        other = other.replace(char, "")
+-    return len(other) < 0.2 * len(sequence)
+-
+-
+ def records_contain_shotgun_scaffolds(records: List[Record]) -> bool:
+     """ Check if given records contain a WGS master record or supercontig record
+ 
+diff --git a/antismash/common/secmet/features/region.py b/antismash/common/secmet/features/region.py
+index 79f8f9a2..f0af7a52 100644
+--- a/antismash/common/secmet/features/region.py
++++ b/antismash/common/secmet/features/region.py
+@@ -162,6 +162,9 @@ def write_to_genbank(self, filename: str = None, directory: str = None, record:
+         cluster_record.annotations["taxonomy"] = record.annotations.get("taxonomy", [])
+         cluster_record.annotations["data_file_division"] = record.annotations.get("data_file_division", 'UNK')
+         cluster_record.annotations["comment"] = record.annotations.get("comment", '')
++        # biopython does not persist the molecule_type annotation in slices,
++        # despite it being required for output to the genbank format
++        cluster_record.annotations["molecule_type"] = record.annotations["molecule_type"]
+ 
+         # update the antiSMASH annotation to include some cluster details
+         comment_end_marker = "##antiSMASH-Data-END"
+diff --git a/antismash/common/secmet/features/test/test_region.py b/antismash/common/secmet/features/test/test_region.py
+index 0d34046a..364fc2a5 100644
+--- a/antismash/common/secmet/features/test/test_region.py
++++ b/antismash/common/secmet/features/test/test_region.py
+@@ -7,7 +7,6 @@
+ from tempfile import NamedTemporaryFile
+ import unittest
+ 
+-from Bio.Alphabet import generic_dna
+ from Bio.Seq import Seq
+ from helperlibs.bio import seqio
+ 
+@@ -138,7 +137,7 @@ def test_probabilities(self):
+         assert Region(candidate_clusters=candidates, subregions=subs).probabilities == [0.1, 0.7]
+ 
+     def test_genbank(self):
+-        dummy_record = Record(Seq("A"*100, generic_dna))
++        dummy_record = Record(Seq("A"*100))
+         clusters = [create_protocluster(3, 20, "prodA"),
+                     create_protocluster(25, 41, "prodB")]
+         for cluster in clusters:
+@@ -164,7 +163,7 @@ def test_genbank(self):
+         assert new.probabilities == region.probabilities
+ 
+     def test_prepeptide_adjustment(self):
+-        dummy_record = Record(Seq("A"*400, generic_dna))
++        dummy_record = Record(Seq("A"*400))
+         subregion = DummySubRegion(start=100, end=300)
+         dummy_record.add_subregion(subregion)
+         region = Region(subregions=[subregion])
+diff --git a/antismash/common/secmet/record.py b/antismash/common/secmet/record.py
+index 95e63725..a177b789 100644
+--- a/antismash/common/secmet/record.py
++++ b/antismash/common/secmet/record.py
+@@ -16,7 +16,7 @@
+ import logging
+ from typing import Any, Dict, List, Optional, Sequence, Type, Tuple, Union, cast
+ 
+-from Bio import Alphabet, SeqIO
++from Bio import SeqIO
+ from Bio.Seq import Seq
+ from Bio.SeqFeature import SeqFeature, FeatureLocation, CompoundLocation
+ from Bio.SeqRecord import SeqRecord
+@@ -467,6 +467,8 @@ def to_biopython(self) -> SeqRecord:
+         bio_features: List[SeqFeature] = []
+         for feature in sorted(features):
+             bio_features.extend(feature.to_biopython())
++        if "molecule_type" not in self._record.annotations:
++            self._record.annotations["molecule_type"] = "DNA"
+         return SeqRecord(self.seq, id=self._record.id, name=self._record.name,
+                          description=self._record.description,
+                          dbxrefs=self.dbxrefs, features=bio_features,
+@@ -653,9 +655,10 @@ def from_biopython(seq_record: SeqRecord, taxon: str) -> "Record":
+             postponed_features[kind.FEATURE_TYPE] = (kind, [])
+ 
+         assert isinstance(seq_record, SeqRecord), type(seq_record)
+-        if seq_record.seq and isinstance(seq_record.seq, Seq):
+-            if isinstance(seq_record.seq.alphabet, Alphabet.ProteinAlphabet):
+-                raise SecmetInvalidInputError("protein records are not supported")
++        if seq_record.annotations.get("molecule_type", "DNA") != "DNA":
++            raise SecmetInvalidInputError("protein records are not supported")
++        if seq_record.seq and not Record.is_nucleotide_sequence(seq_record.seq):
++            raise SecmetInvalidInputError("protein records are not supported")
+         transl_table = 1  # standard
+         if str(taxon) == "bacteria":
+             transl_table = 11  # bacterial, archea, plant plastid code
+@@ -831,11 +834,11 @@ def get_aa_translation_from_location(self, location: FeatureLocation,
+         string_version = str(seq)
+         for invalid in "*BJOUZ":
+             string_version = string_version.replace(invalid, "X")
+-        seq = Seq(string_version, Alphabet.generic_protein)
+ 
+         if "-" in str(seq):
+-            seq = Seq(str(seq).replace("-", ""), Alphabet.generic_protein)
+-        return seq
++            seq = Seq(str(seq).replace("-", ""))
++
++        return Seq(string_version)
+ 
+     def get_cds_features_within_regions(self) -> List[CDSFeature]:  # pylint: disable=invalid-name
+         """ Returns all CDS features in the record that are located within a
+@@ -958,3 +961,18 @@ def strip_antismash_annotations(self) -> None:
+         # clean up antiSMASH annotations in CDS features
+         for feature in self.get_cds_features():
+             feature.strip_antismash_annotations()
++
++    @staticmethod
++    def is_nucleotide_sequence(sequence: Union[Seq, str]) -> bool:
++        """ Determines if a sequence is a nucleotide sequence based on content.
++
++            Arguments:
++                sequence: the sequence to check, either a string or Bio.Seq
++
++            Returns:
++                True if more than 80% of characters are nucleotide bases
++        """
++        other = str(sequence).lower()
++        for char in "acgtn":
++            other = other.replace(char, "")
++        return len(other) < 0.2 * len(sequence)
+diff --git a/antismash/common/secmet/test/test_circular_conversion.py b/antismash/common/secmet/test/test_circular_conversion.py
+index e001480b..1619d425 100644
+--- a/antismash/common/secmet/test/test_circular_conversion.py
++++ b/antismash/common/secmet/test/test_circular_conversion.py
+@@ -6,7 +6,7 @@
+ 
+ import unittest
+ 
+-from Bio.Seq import UnknownSeq
++from Bio.Seq import Seq
+ from Bio.SeqFeature import SeqFeature
+ from Bio.SeqRecord import SeqRecord
+ 
+@@ -16,7 +16,7 @@
+ 
+ class TestBridgeConversion(unittest.TestCase):
+     def setUp(self):
+-        self.seqrec = SeqRecord(UnknownSeq(21))
++        self.seqrec = SeqRecord(Seq("A"*21))
+         loc = CompoundLocation([FeatureLocation(12, 15, strand=1),
+                                 FeatureLocation(18, 21, strand=1),
+                                 FeatureLocation(0, 3, strand=1),
+@@ -25,6 +25,7 @@ def setUp(self):
+         self.seqcds = SeqFeature(loc, type="CDS")
+         self.seqgene = SeqFeature(loc, type="gene")
+         self.seqrec.annotations["topology"] = "circular"
++        self.seqrec.annotations["molecule_type"] = "DNA"
+ 
+     def test_bridge_in_linear_record(self):
+         self.seqrec.annotations["topology"] = "linear"
+@@ -110,7 +111,7 @@ def test_gene_with_no_id(self):
+ 
+ class TestSingleLower(TestBridgeConversion):
+     def setUp(self):
+-        self.seqrec = SeqRecord(UnknownSeq(21))
++        self.seqrec = SeqRecord(Seq("A"*21))
+         loc = CompoundLocation([FeatureLocation(12, 15, strand=1),
+                                 FeatureLocation(18, 21, strand=1),
+                                 FeatureLocation(0, 9, strand=1)],
+@@ -122,7 +123,7 @@ def setUp(self):
+ 
+ class TestSingleUpper(TestBridgeConversion):
+     def setUp(self):
+-        self.seqrec = SeqRecord(UnknownSeq(21))
++        self.seqrec = SeqRecord(Seq("A"*21))
+         loc = CompoundLocation([FeatureLocation(12, 21, strand=1),
+                                 FeatureLocation(0, 3, strand=1),
+                                 FeatureLocation(6, 9, strand=1)],
+@@ -133,7 +134,7 @@ def setUp(self):
+ 
+ class TestSingleBoth(TestBridgeConversion):
+     def setUp(self):
+-        self.seqrec = SeqRecord(UnknownSeq(21))
++        self.seqrec = SeqRecord(Seq("A"*21))
+         loc = CompoundLocation([FeatureLocation(12, 21, strand=1),
+                                 FeatureLocation(0, 9, strand=1)],
+                                 operator="join")
+diff --git a/antismash/common/secmet/test/test_secmet.py b/antismash/common/secmet/test/test_secmet.py
+index d802d6fd..65ac7b2c 100644
+--- a/antismash/common/secmet/test/test_secmet.py
++++ b/antismash/common/secmet/test/test_secmet.py
+@@ -8,7 +8,6 @@
+ import unittest
+ 
+ import Bio.SeqIO
+-from Bio.Alphabet.IUPAC import IUPACProtein
+ from Bio.Seq import Seq
+ from Bio.SeqFeature import FeatureLocation, SeqFeature
+ 
+@@ -78,7 +77,7 @@ def test_protein_sequences_caught(self):
+         assert isinstance(before.seq, Seq)
+         Record.from_biopython(before, taxon="bacteria")
+ 
+-        before.seq = Seq("AAAA", IUPACProtein())
++        before.annotations["molecule_type"] = "protein"
+         with self.assertRaisesRegex(ValueError, "protein records are not supported"):
+             Record.from_biopython(before, taxon="bacteria")
+ 
+@@ -789,3 +788,20 @@ def test_nonoverlapping_location(self):
+         cds = CDSFeature(FeatureLocation(12, 18, 1), locus_tag="test", protein_id="prot", translation="MA")
+         with self.assertRaisesRegex(ValueError, "same name for mapping"):
+             record.add_cds_feature(cds)
++
++
++class TestIsNuclSeq(unittest.TestCase):
++    def test_seq(self):
++        # > 20%
++        for seq in ["AGTC", "AGCTFC", "agtcfc", "AGTCFCT"]:
++            assert Record.is_nucleotide_sequence(Seq(seq))
++        # edge case == 20% should be failure
++        assert not Record.is_nucleotide_sequence(Seq("AGFTC"))
++        # and less than 20%
++        assert not Record.is_nucleotide_sequence(Seq("AGFTCF"))
++
++    def test_str(self):
++        for seq in ["AGTC", "AGCTFC", "agtcfc", "AGTCFCT"]:
++            assert Record.is_nucleotide_sequence(seq)
++        assert not Record.is_nucleotide_sequence("AGFTC")
++        assert not Record.is_nucleotide_sequence("AGFTCF")
+diff --git a/antismash/common/serialiser.py b/antismash/common/serialiser.py
+index a9ca198d..9436b60b 100644
+--- a/antismash/common/serialiser.py
++++ b/antismash/common/serialiser.py
+@@ -10,8 +10,6 @@
+ import logging
+ from typing import Any, Dict, IO, List, Union
+ 
+-import Bio.Alphabet
+-import Bio.Alphabet.IUPAC
+ from Bio.Seq import Seq
+ from Bio.SeqFeature import SeqFeature, Reference
+ from Bio.SeqRecord import SeqRecord
+@@ -179,8 +177,10 @@ def rebuild_references(annotations: Dict) -> Dict[str, List[Reference]]:
+ 
+ def sequence_to_json(sequence: Seq) -> Dict[str, str]:
+     """ Constructs a JSON object that represents a Seq sequence """
+-    return {"data": str(sequence),
+-            "alphabet": str(sequence.alphabet).rsplit('()')[0]}  # DNA() -> DNA
++    return {
++        "data": str(sequence),
++        "alphabet": "DNA",  # for compatibility, removable on schema version change
++    }
+ 
+ 
+ def sequence_from_json(data: Union[str, Dict]) -> Seq:
+@@ -188,12 +188,7 @@ def sequence_from_json(data: Union[str, Dict]) -> Seq:
+     if isinstance(data, str):
+         data = json.loads(data)
+     assert isinstance(data, dict)
+-    alphabet = data["alphabet"]
+-    if "IUPAC" in alphabet:
+-        alphabet_class = getattr(Bio.Alphabet.IUPAC, alphabet)
+-    else:
+-        alphabet_class = getattr(Bio.Alphabet, alphabet)
+-    return Seq(data["data"], alphabet=alphabet_class())
++    return Seq(data["data"])
+ 
+ 
+ def feature_to_json(feature: SeqFeature) -> Dict[str, Any]:
+diff --git a/antismash/common/test/helpers.py b/antismash/common/test/helpers.py
+index 315c8fcc..66ff2a63 100644
+--- a/antismash/common/test/helpers.py
++++ b/antismash/common/test/helpers.py
+@@ -13,7 +13,6 @@
+ 
+ import os
+ 
+-from Bio.Seq import Seq
+ from helperlibs.wrappers.io import TemporaryDirectory
+ 
+ import antismash
+@@ -46,8 +45,9 @@ def get_simple_options(module, args):
+ 
+ class DummyRecord(Record):
+     "class for generating a Record like data structure"
+-    def __init__(self, features=None, seq='FAKESEQ', taxon='bacteria'):
++    def __init__(self, features=None, seq='AGCTACGT', taxon='bacteria'):
+         super().__init__(seq, transl_table=11 if taxon == 'bacteria' else 1)
++#        self.annotations["molecule_type"] = "DNA"
+         if features:
+             for feature in features:
+                 self.add_feature(feature)
+diff --git a/antismash/common/test/test_record_processing.py b/antismash/common/test/test_record_processing.py
+index 3deac06c..3f4c9852 100644
+--- a/antismash/common/test/test_record_processing.py
++++ b/antismash/common/test/test_record_processing.py
+@@ -154,23 +154,6 @@ def test_no_change(self):
+         assert new.seq == self.record.seq
+ 
+ 
+-class TestIsNuclSeq(unittest.TestCase):
+-    def test_seq(self):
+-        # > 20%
+-        for seq in ["AGTC", "AGCTFC", "agtcfc", "AGTCFCT"]:
+-            assert record_processing.is_nucl_seq(Seq(seq))
+-        # edge case == 20% should be failure
+-        assert not record_processing.is_nucl_seq(Seq("AGFTC"))
+-        # and less than 20%
+-        assert not record_processing.is_nucl_seq(Seq("AGFTCF"))
+-
+-    def test_str(self):
+-        for seq in ["AGTC", "AGCTFC", "agtcfc", "AGTCFCT"]:
+-            assert record_processing.is_nucl_seq(seq)
+-        assert not record_processing.is_nucl_seq("AGFTC")
+-        assert not record_processing.is_nucl_seq("AGFTCF")
+-
+-
+ class TestPreprocessRecords(unittest.TestCase):
+     def setUp(self):
+         class DummyModule:
+diff --git a/antismash/modules/pfam2go/test/test_pfam2go.py b/antismash/modules/pfam2go/test/test_pfam2go.py
+index 8f772dd6..03b80839 100644
+--- a/antismash/modules/pfam2go/test/test_pfam2go.py
++++ b/antismash/modules/pfam2go/test/test_pfam2go.py
+@@ -8,7 +8,6 @@
+ 
+ from typing import Dict
+ 
+-from Bio.Alphabet import generic_dna
+ from Bio.Seq import Seq
+ from Bio.SeqFeature import FeatureLocation
+ 
+@@ -97,7 +96,7 @@ def test_get_gos(self):
+ 
+     def test_blank_records(self):
+         blank_no_pfams = DummyRecord()
+-        blank_no_ids = Record(Seq("ATGTTATGAGGGTCATAACAT", generic_dna))
++        blank_no_ids = Record(Seq("ATGTTATGAGGGTCATAACAT"))
+         fake_pfam = DummyPFAMDomain(identifier="PF00000")
+         blank_no_ids.add_pfam_domain(fake_pfam)
+ 
+diff --git a/antismash/modules/tta/test/test_tta.py b/antismash/modules/tta/test/test_tta.py
+index e03f9fc5..eb27d548 100644
+--- a/antismash/modules/tta/test/test_tta.py
++++ b/antismash/modules/tta/test/test_tta.py
+@@ -7,7 +7,6 @@
+ from argparse import Namespace
+ import unittest
+ 
+-from Bio.Alphabet import generic_dna
+ from Bio.Seq import Seq
+ from Bio.SeqFeature import SeqFeature, FeatureLocation
+ 
+@@ -19,7 +18,7 @@
+ class TtaTest(unittest.TestCase):
+     def setUp(self):
+         # locations:            VVV         VVV
+-        record = Record(Seq("ATGTTATGAGGGTCATAACAT", generic_dna))
++        record = Record(Seq("ATGTTATGAGGGTCATAACAT"))
+ 
+         record.add_cds_feature(DummyCDS(0, 9, strand=1))
+         record.add_cds_feature(DummyCDS(12, 21, strand=-1))
+diff --git a/setup.py b/setup.py
+index cba1f338..b0b02341 100644
+--- a/setup.py
++++ b/setup.py
+@@ -16,7 +16,7 @@ def read(fname):
+ 
+ install_requires = [
+     'numpy',
+-    'biopython >=1.71,<1.77',
++    'biopython >=1.78',
+     'helperlibs',
+     'jinja2',
+     'joblib',
+
+From 98dbffe5a726444bdf9b24c8f8664533a3d450eb Mon Sep 17 00:00:00 2001
+From: Simon Shaw <SJShaw@users.noreply.github.com>
+Date: Tue, 27 Oct 2020 10:01:59 +0100
+Subject: [PATCH 2/2] chore: bump minimum python version to 3.7
+
+---
+ setup.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/setup.py b/setup.py
+index b0b02341..c7709966 100644
+--- a/setup.py
++++ b/setup.py
+@@ -95,7 +95,7 @@ def run_tests(self):
+ 
+ setup(
+     name="antismash",
+-    python_requires='>=3.5',
++    python_requires='>=3.7',
+     version=read_version(),
+     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+     package_data={

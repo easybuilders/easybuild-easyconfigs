@@ -1,0 +1,86 @@
+Some NCCL error tests fail with e.g.
+"CUDA error: uncorrectable NVLink error detected during the execution"
+
+See https://github.com/pytorch/pytorch/issues/58155
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/distributed/distributed_test.py b/torch/testing/_internal/distributed/distributed_test.py
+index 1230f6fcda..8b84a679d2 100644
+--- a/torch/testing/_internal/distributed/distributed_test.py
++++ b/torch/testing/_internal/distributed/distributed_test.py
+@@ -6050,6 +6050,7 @@ class DistributedTest:
+         @require_backends_available({"gloo", "nccl"})
+         @skip_if_rocm
+         @skip_if_lt_x_gpu(int(os.environ["WORLD_SIZE"]))
++        @unittest.skip("Broken on recent NCCL")
+         def test_monitored_barrier_allreduce_hang(self):
+             # tests expected behavior when nonzero rank hangs and we want to
+             # report first timed out rank.
+@@ -6060,6 +6061,7 @@ class DistributedTest:
+         @require_backends_available({"gloo", "nccl"})
+         @skip_if_rocm
+         @skip_if_lt_x_gpu(int(os.environ["WORLD_SIZE"]))
++        @unittest.skip("Broken on recent NCCL")
+         def test_monitored_barrier_allreduce_hang_wait_all_ranks(self):
+             # tests expected behavior when nonzero rank hangs and we want to
+             # report all timed out ranks.
+diff --git a/test/distributed/test_c10d_nccl.py b/test/distributed/test_c10d_nccl.py
+index 0209755460..79f50ee2d0 100644
+--- a/test/distributed/test_c10d_nccl.py
++++ b/test/distributed/test_c10d_nccl.py
+@@ -1940,6 +1940,7 @@ class NcclErrorHandlingTest(MultiProcessTestCase):
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
+     @skip_if_rocm
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_clean_exit(self):
+         self._test_nccl_errors_blocking(lambda: sys.exit(0))
+ 
+@@ -1948,6 +1949,7 @@ class NcclErrorHandlingTest(MultiProcessTestCase):
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
+     @skip_if_rocm
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_nonzero_exit(self):
+         self._test_nccl_errors_blocking(lambda: sys.exit(1))
+ 
+@@ -1956,6 +1958,7 @@ class NcclErrorHandlingTest(MultiProcessTestCase):
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
+     @skip_if_rocm
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_abort(self):
+         self._test_nccl_errors_blocking(lambda: os.abort())
+ 
+@@ -1964,6 +1967,7 @@ class NcclErrorHandlingTest(MultiProcessTestCase):
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
+     @skip_if_rocm
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_sigkill(self):
+         self._test_nccl_errors_blocking(lambda: os.kill(os.getpid(), signal.SIGKILL))
+ 
+@@ -1972,6 +1976,7 @@ class NcclErrorHandlingTest(MultiProcessTestCase):
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
+     @skip_if_rocm
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_sigterm(self):
+         self._test_nccl_errors_blocking(lambda: os.kill(os.getpid(), signal.SIGTERM))
+ 
+@@ -1979,6 +1984,7 @@ class NcclErrorHandlingTest(MultiProcessTestCase):
+     @requires_nccl()
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_blocking_wait_with_barrier(self):
+         store = c10d.FileStore(self.file_name, self.world_size)
+         process_group = c10d.ProcessGroupNCCL(
+@@ -2024,6 +2030,7 @@ class NcclErrorHandlingTest(MultiProcessTestCase):
+     @with_nccl_blocking_wait
+     @requires_nccl()
+     @skip_if_lt_x_gpu(3)
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_timeout(self):
+         store = c10d.FileStore(self.file_name, self.world_size)

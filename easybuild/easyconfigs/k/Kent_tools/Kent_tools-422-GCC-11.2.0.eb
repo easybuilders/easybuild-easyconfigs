@@ -1,0 +1,43 @@
+easyblock = 'MakeCp'
+
+name = 'Kent_tools'
+version = '422'
+
+homepage = 'https://genome.cse.ucsc.edu/'
+description = """Kent utilities: collection of tools used by the UCSC genome browser."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+source_urls = [
+    'https://hgdownload.cse.ucsc.edu/admin/exe/',
+    'https://hgdownload.cse.ucsc.edu/admin/exe/userApps.archive/',
+]
+sources = ['userApps.v%(version)s.src.tgz']
+patches = ['%(name)s-%(version)s-openssl.patch']
+checksums = [
+    '1edf66ad5f7c8c79586e9f878b5971d7d467c8c5efbeb31c69085d24a6e4671f',  # userApps.v422.src.tgz
+    'eedd328fc8a8e01806f4de9e8dce5b2a149edf493a17c3758803853e7881f240',  # Kent_tools-422-openssl.patch
+]
+
+dependencies = [
+    ('MariaDB', '10.6.4'),
+    ('libpng', '1.6.37'),
+    ('zlib', '1.2.11'),
+    ('util-linux', '2.37'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('freetype', '2.11.0'),
+]
+
+prebuildopts = 'sed -i "s/rsync -a /cp /" %(builddir)s/userApps/kent/src/parasol/makefile && '
+buildopts = 'CC="$CC" COPT="$CFLAGS -fcommon" PNGLIB="-L$EBROOTLIBPNG/lib -lpng" ZLIB="-L$EBROOTZLIB/lib -lz" '
+buildopts += 'SSL_DIR="$EBROOTOPENSSL" SSLDIR="$EBROOTOPENSSL" MYSQLLIBS="-L$EBROOTMARIADB/lib -lmariadb -lstdc++" '
+
+local_binaries = ['blat', 'bedPartition', 'getRna', 'liftOver', 'mafGene', 'splitFile', 'twoBitToFa']
+
+files_to_copy = [(['bin/*'], 'bin'), 'licenseBlat.txt', 'licenseUcscGenomeBrowser.txt']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
