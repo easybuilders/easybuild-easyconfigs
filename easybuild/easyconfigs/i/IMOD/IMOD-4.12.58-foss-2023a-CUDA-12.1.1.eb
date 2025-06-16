@@ -63,15 +63,17 @@ maxparallel = 1
 _qmake_pass_cflags = "find -name *.pro -exec sed -i -e '$aQMAKE_CXXFLAGS += $$(CFLAGS)' {} \\; && "
 
 # exports required for configure and build
-_exports = 'export QTDIR=$EBROOTQT5 && '
-_exports += "export CUDACC='%(cuda_cc_cmake)s' && "
-_exports += 'export HDF5_DIR=$EBROOTHDF5 && '
-_exports += 'export QMAKESPEC=$EBROOTQT5/mkspecs/`qmake -query QMAKE_SPEC` && '
-_exports += 'export CUDA_DIR=$CUDA_HOME && '
-#  readw_or_imod.f and others with gfortran10: 
-#     Error: Type mismatch between actual argument at (1) and actual argument at (2) (INTEGER(4)/INTEGER(2))
-#     => set -fallow-argument-mismatch. Runs through without this option with GCC 8.3.0.
-_exports += 'export CFLAGS="$CFLAGS -fallow-argument-mismatch" && '  # required for gfortran10
+_exports = ' && '.join([
+    'export QTDIR=$EBROOTQT5',
+    'export CUDACC="%(cuda_cc_cmake)s"',
+    'export HDF5_DIR="$EBROOTHDF5"',
+    'export QMAKESPEC="$EBROOTQT5/mkspecs/`qmake -query QMAKE_SPEC`"',
+    'export CUDA_DIR="$CUDA_HOME"',
+    #  readw_or_imod.f and others with gfortran10: 
+    #     Error: Type mismatch between actual argument at (1) and actual argument at (2) (INTEGER(4)/INTEGER(2))
+    #     => set -fallow-argument-mismatch. Runs through without this option with GCC 8.3.0.
+    'export CFLAGS="$CFLAGS -fallow-argument-mismatch"',  # required for gfortran10 and newer
+])
 
 # rename pysrc/pip.py to pysrc/PIP.py
 _renamePip = """sed -i 's/from pip/from PIP/g' pysrc/* &&"""
