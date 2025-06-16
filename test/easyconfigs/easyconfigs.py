@@ -982,6 +982,13 @@ class EasyConfigTest(TestCase):
             '12.2': '2022b',
             '12.3': '2023a',
             '13.1': None,
+            '13.1': None,
+            '13.2': '2023b',
+            '13.3': '2024a',
+            '14.1': None,
+            '14.2': '2025a',
+            '14.3': None,
+            '15.1': None,
         }
 
         multi_dep_vars_msg = ''
