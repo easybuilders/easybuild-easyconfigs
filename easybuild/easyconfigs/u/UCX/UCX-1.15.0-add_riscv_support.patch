@@ -1,0 +1,792 @@
+Backport RISC-V support to 1.15.0, based on https://github.com/openucx/ucx/pull/9168.
+
+Author: Bob Dröge (University of Groningen)
+
+diff -Nru ucx-1.15.0.orig/src/tools/info/sys_info.c ucx-1.15.0/src/tools/info/sys_info.c
+--- ucx-1.15.0.orig/src/tools/info/sys_info.c	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/tools/info/sys_info.c	2024-04-25 16:22:29.633087861 +0200
+@@ -1,6 +1,7 @@
+ /**
+ * Copyright (c) NVIDIA CORPORATION & AFFILIATES, 2001-2015. ALL RIGHTS RESERVED.
+ * Copyright (C) Shanghai Zhaoxin Semiconductor Co., Ltd. 2020. ALL RIGHTS RESERVED.
++* Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
+ *
+ * See file LICENSE for terms.
+ */
+@@ -37,7 +38,8 @@
+     [UCS_CPU_MODEL_AMD_MILAN]            = "Milan",
+     [UCS_CPU_MODEL_ZHAOXIN_ZHANGJIANG]   = "Zhangjiang",
+     [UCS_CPU_MODEL_ZHAOXIN_WUDAOKOU]     = "Wudaokou",
+-    [UCS_CPU_MODEL_ZHAOXIN_LUJIAZUI]     = "Lujiazui"
++    [UCS_CPU_MODEL_ZHAOXIN_LUJIAZUI]     = "Lujiazui",
++    [UCS_CPU_MODEL_RV64G]                = "RV64G",
+ };
+ 
+ static const char* cpu_vendor_names[] = {
+@@ -46,6 +48,7 @@
+     [UCS_CPU_VENDOR_AMD]              = "AMD",
+     [UCS_CPU_VENDOR_GENERIC_ARM]      = "Generic ARM",
+     [UCS_CPU_VENDOR_GENERIC_PPC]      = "Generic PPC",
++    [UCS_CPU_VENDOR_GENERIC_RV64G]    = "Generic RV64G",
+     [UCS_CPU_VENDOR_FUJITSU_ARM]      = "Fujitsu ARM",
+     [UCS_CPU_VENDOR_ZHAOXIN]          = "Zhaoxin"
+ };
+diff -Nru ucx-1.15.0.orig/src/ucm/bistro/bistro.c ucx-1.15.0/src/ucm/bistro/bistro.c
+--- ucx-1.15.0.orig/src/ucm/bistro/bistro.c	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucm/bistro/bistro.c	2024-04-25 16:20:49.604417755 +0200
+@@ -1,5 +1,6 @@
+ /**
+  * Copyright (c) NVIDIA CORPORATION & AFFILIATES, 2018. ALL RIGHTS RESERVED.
++ * Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
+  *
+  * See file LICENSE for terms.
+  */
+@@ -63,7 +64,7 @@
+     return status;
+ }
+ 
+-#if defined(__x86_64__) || defined (__aarch64__)
++#if defined(__x86_64__) || defined (__aarch64__) || defined (__riscv)
+ struct ucm_bistro_restore_point {
+     void               *addr;     /* address of function to restore */
+     size_t             patch_len; /* patch length */
+diff -Nru ucx-1.15.0.orig/src/ucm/bistro/bistro.h ucx-1.15.0/src/ucm/bistro/bistro.h
+--- ucx-1.15.0.orig/src/ucm/bistro/bistro.h	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucm/bistro/bistro.h	2024-04-25 16:20:49.604417755 +0200
+@@ -1,5 +1,6 @@
+ /**
+  * Copyright (c) NVIDIA CORPORATION & AFFILIATES, 2018. ALL RIGHTS RESERVED.
++ * Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
+  *
+  * See file LICENSE for terms.
+  */
+@@ -20,6 +21,8 @@
+ #  include "bistro_aarch64.h"
+ #elif defined(__x86_64__)
+ #  include "bistro_x86_64.h"
++#elif defined(__riscv)
++#  include "bistro_rv64.h"
+ #else
+ #  error "Unsupported architecture"
+ #endif
+diff -Nru ucx-1.15.0.orig/src/ucm/bistro/bistro_rv64.c ucx-1.15.0/src/ucm/bistro/bistro_rv64.c
+--- ucx-1.15.0.orig/src/ucm/bistro/bistro_rv64.c	1970-01-01 01:00:00.000000000 +0100
++++ ucx-1.15.0/src/ucm/bistro/bistro_rv64.c	2024-04-25 16:20:49.604417755 +0200
+@@ -0,0 +1,108 @@
++/**
++ * Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
++ *
++ * See file LICENSE for terms.
++ */
++
++#ifdef HAVE_CONFIG_H
++#  include "config.h"
++#endif
++
++#if defined(__riscv)
++
++#include <ucs/arch/cpu.h>
++#include <ucm/bistro/bistro.h>
++#include <ucm/bistro/bistro_int.h>
++#include <ucs/debug/assert.h>
++#include <ucs/sys/math.h>
++#include <ucm/util/sys.h>
++
++#include <assert.h>
++#include <dlfcn.h>
++#include <stdbool.h>
++#include <stdint.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sys/mman.h>
++
++#define X31 31
++#define X0  0
++
++/**
++  * @brief JALR - Add 12 bit immediate to source register, save to destination
++  * register, jump and link from destination register
++  *
++  * @param[in] _regs source register number (0-31)
++  * @param[in] _regd destination register number (0-31)
++  * @param[in] _imm 12 bit immmediate value
++  */
++#define JALR(_regs, _regd, _imm) \
++    (((_imm) << 20) | ((_regs) << 15) | (0b000 << 12) | ((_regd) << 7) | (0x67))
++
++/**
++  * @brief C_J - Indirect jump (using compressed instruction)
++  *
++  * @param[in] _imm 12 bit immmediate value
++  */
++#define C_J(_imm) \
++    ((0b101) << 13 | ((_imm >> 1) << 2) | (0b01))
++
++/**
++  * @brief AUIPIC - Add upper intermediate to PC
++  *
++  * @param[in] _regd register number (0-31)
++  * @param[in] _imm 12 bit immmediate value
++  */
++#define AUIPC(_regd, _imm) (((_imm) << 12) | ((_regd) << 7) | (0x17))
++
++/**
++  * @brief LD - Load from memory with address from register plus immediate
++  *
++  * @param[in] _regs source register number (0-31)
++  * @param[in] _regd destination register number (0-31)
++  * @param[in] _imm 12 bit immmediate value
++  */
++#define LD(_regs, _regd, _imm) \
++    (((_imm) << 20) | ((_regs) << 15) | (0b011 << 12) | ((_regd) << 7) | (0x3))
++
++/* void ucm_bistro_patch_lock(void *dst)
++{
++    static const ucm_bistro_lock_t self_jmp = {
++        .j = C_J(0)
++    };
++    ucm_bistro_modify_code(dst, &self_jmp);
++} */
++
++ucs_status_t ucm_bistro_patch(void *func_ptr, void *hook, const char *symbol,
++                              void **orig_func_p,
++                              ucm_bistro_restore_point_t **rp)
++{
++    ucs_status_t status;
++    ucm_bistro_patch_t patch;
++
++    patch = (ucm_bistro_patch_t) {
++        .auipc   = AUIPC(X31, 0),
++        .ld      = LD(31, 31, 0x10),
++        .jalr    = JALR(X31, X0, 0),
++        .spare   = 0,
++        .address = (uintptr_t)hook
++    };
++
++    if (orig_func_p != NULL) {
++        return UCS_ERR_UNSUPPORTED;
++    }
++
++    status = ucm_bistro_create_restore_point(func_ptr, sizeof(patch), rp);
++    if (UCS_STATUS_IS_ERR(status)) {
++        return status;
++    }
++
++    return ucm_bistro_apply_patch(func_ptr, &patch, sizeof(patch));
++}
++
++ucs_status_t ucm_bistro_relocate_one(ucm_bistro_relocate_context_t *ctx)
++{
++    return UCS_ERR_UNSUPPORTED;
++}
++
++#endif
+diff -Nru ucx-1.15.0.orig/src/ucm/bistro/bistro_rv64.h ucx-1.15.0/src/ucm/bistro/bistro_rv64.h
+--- ucx-1.15.0.orig/src/ucm/bistro/bistro_rv64.h	1970-01-01 01:00:00.000000000 +0100
++++ ucx-1.15.0/src/ucm/bistro/bistro_rv64.h	2024-04-25 16:20:49.604417755 +0200
+@@ -0,0 +1,58 @@
++/**
++ * Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
++ *
++ * See file LICENSE for terms.
++ */
++
++
++#ifndef UCM_BISTRO_BISTRO_RV64_H_
++#define UCM_BISTRO_BISTRO_RV64_H_
++
++#include <ucs/type/status.h>
++#include <ucs/sys/compiler_def.h>
++
++#include <stddef.h>
++#include <stdint.h>
++
++#define UCM_BISTRO_PROLOGUE
++#define UCM_BISTRO_EPILOGUE
++
++typedef struct ucm_bistro_patch {
++    uint32_t auipc;
++    uint32_t ld;
++    uint32_t jalr;
++    uint32_t spare;
++    uint64_t address;
++} UCS_S_PACKED ucm_bistro_patch_t;
++
++
++/**
++ * Set library function call hook using Binary Instrumentation
++ * method (BISTRO): replace function body by user defined call
++ *
++ * @param func_ptr     Pointer to function to patch.
++ * @param hook         User-defined function-replacer.
++ * @param symbol       Function name to replace.
++ * @param orig_func_p  Unsupported on this architecture and must be NULL.
++ *                     If set to a non-NULL value, this function returns
++ *                     @ref UCS_ERR_UNSUPPORTED.
++ * @param rp           Restore point used to restore original function.
++ *                     Optional, may be NULL.
++ *
++ * @return Error code as defined by @ref ucs_status_t
++ */
++ucs_status_t ucm_bistro_patch(void *func_ptr, void *hook, const char *symbol,
++                              void **orig_func_p,
++                              ucm_bistro_restore_point_t **rp);
++
++/* Lock implementation */
++typedef struct {
++    uint16_t j; /* jump to self */
++} UCS_S_PACKED ucm_bistro_lock_t;
++
++/**
++ * Helper functions to improve atomicity of function patching
++ */
++// void ucm_bistro_patch_lock(void *dst);
++
++#endif
+diff -Nru ucx-1.15.0.orig/src/ucm/Makefile.am ucx-1.15.0/src/ucm/Makefile.am
+--- ucx-1.15.0.orig/src/ucm/Makefile.am	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucm/Makefile.am	2024-04-25 16:20:49.604417755 +0200
+@@ -31,7 +31,8 @@
+ 	bistro/bistro.h \
+ 	bistro/bistro_x86_64.h \
+ 	bistro/bistro_aarch64.h \
+-	bistro/bistro_ppc64.h
++	bistro/bistro_ppc64.h \
++	bistro/bistro_rv64.h
+ 
+ libucm_la_SOURCES = \
+ 	event/event.c \
+@@ -44,7 +45,8 @@
+ 	bistro/bistro.c \
+ 	bistro/bistro_x86_64.c \
+ 	bistro/bistro_aarch64.c \
+-	bistro/bistro_ppc64.c
++	bistro/bistro_ppc64.c \
++	bistro/bistro_rv64.c
+ 
+ if HAVE_UCM_PTMALLOC286
+ libucm_la_CPPFLAGS += \
+diff -Nru ucx-1.15.0.orig/src/ucm/util/reloc.c ucx-1.15.0/src/ucm/util/reloc.c
+--- ucx-1.15.0.orig/src/ucm/util/reloc.c	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucm/util/reloc.c	2024-04-25 16:20:49.604417755 +0200
+@@ -91,6 +91,19 @@
+     return 0;
+ }
+ 
++static void *
++ucm_reloc_get_pointer(ElfW(Addr) base, const ElfW(Phdr) *dphdr, ElfW(Sxword) tag)
++{
++    uintptr_t entry = ucm_reloc_get_entry(base, dphdr, tag);
++
++#if defined(__riscv)
++    /* On RISC-V these are not pointers but offsets */
++    return UCS_PTR_BYTE_OFFSET(base, entry);
++#else
++    return (void *)entry;
++#endif
++}
++
+ static void ucm_reloc_file_lock(int fd, int l_type)
+ {
+     struct flock fl = { l_type, SEEK_SET, 0, 0};
+@@ -358,8 +371,8 @@
+     }
+ 
+     /* Get ELF tables pointers */
+-    symtab = (void*)ucm_reloc_get_entry(dlpi_addr, dphdr, DT_SYMTAB);
+-    strtab = (void*)ucm_reloc_get_entry(dlpi_addr, dphdr, DT_STRTAB);
++    symtab = ucm_reloc_get_pointer(dlpi_addr, dphdr, DT_SYMTAB);
++    strtab = ucm_reloc_get_pointer(dlpi_addr, dphdr, DT_STRTAB);
+     if ((symtab == NULL) || (strtab == NULL)) {
+         /* no DT_SYMTAB or DT_STRTAB sections are defined */
+         ucm_debug("%s has no dynamic symbols - skipping", dl_name)
+@@ -369,7 +382,7 @@
+     num_symbols = 0;
+ 
+     /* populate .got.plt */
+-    jmprel = (void*)ucm_reloc_get_entry(dlpi_addr, dphdr, DT_JMPREL);
++    jmprel = ucm_reloc_get_pointer(dlpi_addr, dphdr, DT_JMPREL);
+     if (jmprel != NULL) {
+         pltrelsz     = ucm_reloc_get_entry(dlpi_addr, dphdr, DT_PLTRELSZ);
+         num_symbols += ucm_dl_populate_symbols(dl_info, dlpi_addr, jmprel,
+@@ -377,7 +390,7 @@
+     }
+ 
+     /* populate .got */
+-    rela = (void*)ucm_reloc_get_entry(dlpi_addr, dphdr, DT_RELA);
++    rela = ucm_reloc_get_pointer(dlpi_addr, dphdr, DT_RELA);
+     if (rela != NULL) {
+         relasz       = ucm_reloc_get_entry(dlpi_addr, dphdr, DT_RELASZ);
+         num_symbols += ucm_dl_populate_symbols(dl_info, dlpi_addr, rela, relasz,
+diff -Nru ucx-1.15.0.orig/src/ucm/util/reloc.h ucx-1.15.0/src/ucm/util/reloc.h
+--- ucx-1.15.0.orig/src/ucm/util/reloc.h	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucm/util/reloc.h	2024-04-25 16:20:49.604417755 +0200
+@@ -54,13 +54,33 @@
+ static UCS_F_MAYBE_UNUSED
+ void* ucm_reloc_get_orig(const char *symbol, void *replacement)
+ {
++    static const int flags = RTLD_LOCAL | RTLD_NODELETE | RTLD_LAZY;
+     const char *error;
+-    void *func_ptr;
++    void *func_ptr = NULL;
++    int ret;
++    void *dl;
++    Dl_info info;
++
++    (void)dlerror();
++    ret = dladdr((void*)ucm_reloc_get_orig, &info);
++    if (ret == 0) {
++        ucm_warn("could not find address of current library: %s", dlerror());
++        return NULL;
++    }
++
++    (void)dlerror();
++    dl = dlopen(info.dli_fname, flags);
++    if (dl != NULL) {
++        (void)dlerror();
++        func_ptr = dlsym(dl, symbol);
++        ucm_trace("(libucm) found symbol %s at %p", symbol, func_ptr);
++        dlclose(dl);
++    }
+ 
+-    func_ptr = dlsym(RTLD_NEXT, symbol);
+     if (func_ptr == NULL) {
+         (void)dlerror();
+         func_ptr = dlsym(RTLD_DEFAULT, symbol);
++        ucm_trace("(default) found symbol %s at %p", symbol, func_ptr);
+         if (func_ptr == replacement) {
+             error = dlerror();
+             ucm_fatal("could not find address of original %s(): %s", symbol,
+diff -Nru ucx-1.15.0.orig/src/ucs/arch/atomic.h ucx-1.15.0/src/ucs/arch/atomic.h
+--- ucx-1.15.0.orig/src/ucs/arch/atomic.h	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucs/arch/atomic.h	2024-04-25 16:20:49.604417755 +0200
+@@ -1,5 +1,6 @@
+ /**
+ * Copyright (c) NVIDIA CORPORATION & AFFILIATES, 2001-2015. ALL RIGHTS RESERVED.
++* Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
+ *
+ * See file LICENSE for terms.
+ */
+@@ -15,6 +16,8 @@
+ #  include "generic/atomic.h"
+ #elif defined(__aarch64__)
+ #  include "generic/atomic.h"
++#elif defined(__riscv)
++#  include "generic/atomic.h"
+ #else
+ #  error "Unsupported architecture"
+ #endif
+diff -Nru ucx-1.15.0.orig/src/ucs/arch/bitops.h ucx-1.15.0/src/ucs/arch/bitops.h
+--- ucx-1.15.0.orig/src/ucs/arch/bitops.h	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucs/arch/bitops.h	2024-04-25 16:20:49.604417755 +0200
+@@ -1,6 +1,7 @@
+ /**
+ * Copyright (c) NVIDIA CORPORATION & AFFILIATES, 2001-2015. ALL RIGHTS RESERVED.
+ * Copyright (C) Huawei Technologies Co., Ltd. 2020.  ALL RIGHTS RESERVED.
++* Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
+ *
+ * See file LICENSE for terms.
+ */
+@@ -20,6 +21,8 @@
+ #  include "ppc64/bitops.h"
+ #elif defined(__aarch64__)
+ #  include "aarch64/bitops.h"
++#elif defined(__riscv)
++#  include "rv64/bitops.h"
+ #else
+ #  error "Unsupported architecture"
+ #endif
+diff -Nru ucx-1.15.0.orig/src/ucs/arch/cpu.c ucx-1.15.0/src/ucs/arch/cpu.c
+--- ucx-1.15.0.orig/src/ucs/arch/cpu.c	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucs/arch/cpu.c	2024-04-25 16:25:29.290421918 +0200
+@@ -1,6 +1,7 @@
+ /**
+ * Copyright (c) NVIDIA CORPORATION & AFFILIATES, 2019. ALL RIGHTS RESERVED.
+ * Copyright (C) Shanghai Zhaoxin Semiconductor Co., Ltd. 2020. ALL RIGHTS RESERVED.
++* Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
+ *
+ * See file LICENSE for terms.
+ */
+@@ -70,17 +71,22 @@
+     [UCS_CPU_VENDOR_ZHAOXIN] = {
+         .min = UCS_MEMUNITS_INF,
+         .max = UCS_MEMUNITS_INF
++    },
++    [UCS_CPU_VENDOR_GENERIC_RV64G] = {
++        .min = UCS_MEMUNITS_INF,
++        .max = UCS_MEMUNITS_INF
+     }
+ };
+ 
+ const size_t ucs_cpu_est_bcopy_bw[UCS_CPU_VENDOR_LAST] = {
+-    [UCS_CPU_VENDOR_UNKNOWN]     = UCS_CPU_EST_BCOPY_BW_DEFAULT,
+-    [UCS_CPU_VENDOR_INTEL]       = UCS_CPU_EST_BCOPY_BW_DEFAULT,
+-    [UCS_CPU_VENDOR_AMD]         = UCS_CPU_EST_BCOPY_BW_AMD,
+-    [UCS_CPU_VENDOR_GENERIC_ARM] = UCS_CPU_EST_BCOPY_BW_DEFAULT,
+-    [UCS_CPU_VENDOR_GENERIC_PPC] = UCS_CPU_EST_BCOPY_BW_DEFAULT,
+-    [UCS_CPU_VENDOR_FUJITSU_ARM] = UCS_CPU_EST_BCOPY_BW_FUJITSU_ARM,
+-    [UCS_CPU_VENDOR_ZHAOXIN]     = UCS_CPU_EST_BCOPY_BW_DEFAULT
++    [UCS_CPU_VENDOR_UNKNOWN]       = UCS_CPU_EST_BCOPY_BW_DEFAULT,
++    [UCS_CPU_VENDOR_INTEL]         = UCS_CPU_EST_BCOPY_BW_DEFAULT,
++    [UCS_CPU_VENDOR_AMD]           = UCS_CPU_EST_BCOPY_BW_AMD,
++    [UCS_CPU_VENDOR_GENERIC_ARM]   = UCS_CPU_EST_BCOPY_BW_DEFAULT,
++    [UCS_CPU_VENDOR_GENERIC_PPC]   = UCS_CPU_EST_BCOPY_BW_DEFAULT,
++    [UCS_CPU_VENDOR_GENERIC_RV64G] = UCS_CPU_EST_BCOPY_BW_DEFAULT,
++    [UCS_CPU_VENDOR_FUJITSU_ARM]   = UCS_CPU_EST_BCOPY_BW_FUJITSU_ARM,
++    [UCS_CPU_VENDOR_ZHAOXIN]       = UCS_CPU_EST_BCOPY_BW_DEFAULT
+ };
+ 
+ static void ucs_sysfs_get_cache_size()
+diff -Nru ucx-1.15.0.orig/src/ucs/arch/cpu.h ucx-1.15.0/src/ucs/arch/cpu.h
+--- ucx-1.15.0.orig/src/ucs/arch/cpu.h	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucs/arch/cpu.h	2024-04-25 16:20:49.604417755 +0200
+@@ -2,6 +2,7 @@
+ * Copyright (c) NVIDIA CORPORATION & AFFILIATES, 2001-2015. ALL RIGHTS RESERVED.
+ * Copyright (C) ARM Ltd. 2016.  ALL RIGHTS RESERVED.
+ * Copyright (C) Shanghai Zhaoxin Semiconductor Co., Ltd. 2020. ALL RIGHTS RESERVED.
++* Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
+ *
+ * See file LICENSE for terms.
+ */
+@@ -36,6 +37,7 @@
+     UCS_CPU_MODEL_ZHAOXIN_ZHANGJIANG,
+     UCS_CPU_MODEL_ZHAOXIN_WUDAOKOU,
+     UCS_CPU_MODEL_ZHAOXIN_LUJIAZUI,
++    UCS_CPU_MODEL_RV64G,
+     UCS_CPU_MODEL_LAST
+ } ucs_cpu_model_t;
+ 
+@@ -66,6 +68,7 @@
+     UCS_CPU_VENDOR_GENERIC_PPC,
+     UCS_CPU_VENDOR_FUJITSU_ARM,
+     UCS_CPU_VENDOR_ZHAOXIN,
++    UCS_CPU_VENDOR_GENERIC_RV64G,
+     UCS_CPU_VENDOR_LAST
+ } ucs_cpu_vendor_t;
+ 
+@@ -99,6 +102,8 @@
+ #  include "ppc64/cpu.h"
+ #elif defined(__aarch64__)
+ #  include "aarch64/cpu.h"
++#elif defined(__riscv)
++#  include "rv64/cpu.h"
+ #else
+ #  error "Unsupported architecture"
+ #endif
+diff -Nru ucx-1.15.0.orig/src/ucs/arch/global_opts.h ucx-1.15.0/src/ucs/arch/global_opts.h
+--- ucx-1.15.0.orig/src/ucs/arch/global_opts.h	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucs/arch/global_opts.h	2024-04-25 16:20:49.604417755 +0200
+@@ -1,5 +1,6 @@
+ /**
+ * Copyright (c) NVIDIA CORPORATION & AFFILIATES, 2019. ALL RIGHTS RESERVED.
++* Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
+ *
+ * See file LICENSE for terms.
+ */
+@@ -15,6 +16,8 @@
+ #  include "ppc64/global_opts.h"
+ #elif defined(__aarch64__)
+ #  include "aarch64/global_opts.h"
++#elif defined(__riscv)
++#  include "rv64/global_opts.h"
+ #else
+ #  error "Unsupported architecture"
+ #endif
+diff -Nru ucx-1.15.0.orig/src/ucs/arch/rv64/bitops.h ucx-1.15.0/src/ucs/arch/rv64/bitops.h
+--- ucx-1.15.0.orig/src/ucs/arch/rv64/bitops.h	1970-01-01 01:00:00.000000000 +0100
++++ ucx-1.15.0/src/ucs/arch/rv64/bitops.h	2024-04-25 16:20:49.608417782 +0200
+@@ -0,0 +1,33 @@
++/**
++* Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
++*
++* See file LICENSE for terms.
++*/
++
++#ifndef UCS_ARCH_RV64_BITOPS_H_
++#define UCS_ARCH_RV64_BITOPS_H_
++
++#include <ucs/sys/compiler_def.h>
++#include <stdint.h>
++
++static UCS_F_ALWAYS_INLINE unsigned __ucs_ilog2_u32(uint32_t n)
++{
++    return 31 - __builtin_clz(n);
++}
++
++static UCS_F_ALWAYS_INLINE unsigned __ucs_ilog2_u64(uint64_t n)
++{
++    return 63 - __builtin_clzll(n);
++}
++
++static UCS_F_ALWAYS_INLINE unsigned ucs_ffs32(uint32_t n)
++{
++    return __ucs_ilog2_u32(n & -n);
++}
++
++static UCS_F_ALWAYS_INLINE unsigned ucs_ffs64(uint64_t n)
++{
++    return __ucs_ilog2_u64(n & -n);
++}
++
++#endif
+diff -Nru ucx-1.15.0.orig/src/ucs/arch/rv64/cpu.c ucx-1.15.0/src/ucs/arch/rv64/cpu.c
+--- ucx-1.15.0.orig/src/ucs/arch/rv64/cpu.c	1970-01-01 01:00:00.000000000 +0100
++++ ucx-1.15.0/src/ucs/arch/rv64/cpu.c	2024-04-25 16:20:49.608417782 +0200
+@@ -0,0 +1,20 @@
++/**
++* Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
++*
++* See file LICENSE for terms.
++*/
++
++#if defined(__riscv)
++
++#ifdef HAVE_CONFIG_H
++#  include "config.h"
++#endif
++
++#include <ucs/arch/cpu.h>
++
++ucs_cpu_vendor_t ucs_arch_get_cpu_vendor()
++{
++    return UCS_CPU_VENDOR_GENERIC_RV64G;
++}
++
++#endif
+diff -Nru ucx-1.15.0.orig/src/ucs/arch/rv64/cpu.h ucx-1.15.0/src/ucs/arch/rv64/cpu.h
+--- ucx-1.15.0.orig/src/ucs/arch/rv64/cpu.h	1970-01-01 01:00:00.000000000 +0100
++++ ucx-1.15.0/src/ucs/arch/rv64/cpu.h	2024-04-25 16:20:49.608417782 +0200
+@@ -0,0 +1,113 @@
++/**
++* Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
++* Copyright (C) Rivos Inc. 2023
++*
++* See file LICENSE for terms.
++*/
++
++#ifndef UCS_ARCH_RV64_CPU_H_
++#define UCS_ARCH_RV64_CPU_H_
++
++#include <ucs/arch/generic/cpu.h>
++#include <ucs/config/global_opts.h>
++#include <ucs/config/types.h>
++#include <ucs/sys/compiler.h>
++#include <ucs/sys/compiler_def.h>
++
++#include <assert.h>
++#include <stddef.h>
++#include <stdint.h>
++#include <string.h>
++#include <sys/syscall.h>
++#include <sys/mman.h>
++#include <unistd.h>
++
++BEGIN_C_DECLS
++
++/** @file cpu.h */
++
++#define UCS_ARCH_CACHE_LINE_SIZE 64
++
++/*
++ * System call for flushing the instruction caches.
++ *
++ * Need to pass zero to lead to all HARTs (CPUs) to update their caches.
++ */
++#define ucs_rv64_icache_flush(_start, _end) \
++    syscall(SYS_riscv_flush_icache, _start, _end, 0)
++
++#define ucs_memory_bus_store_fence() asm volatile("fence ow, ow" ::: "memory")
++#define ucs_memory_bus_load_fence()  asm volatile("fence ir, ir" ::: "memory")
++
++/**
++ * The RISC-V memory model is mostly weak. The fence instruction ensures that all
++ * HARTs (CPUs) see any stores or loads before the fence before any stores or
++ * loads after the fence.
++ */
++
++#define ucs_memory_cpu_fence()              asm volatile("fence rw, rw" ::: "memory")
++#define ucs_memory_bus_cacheline_wc_flush() ucs_memory_cpu_fence()
++#define ucs_memory_cpu_store_fence()        asm volatile("fence rw, w" ::: "memory")
++#define ucs_memory_cpu_load_fence()         asm volatile("fence r, rw" ::: "memory")
++#define ucs_memory_cpu_wc_fence()           ucs_memory_cpu_fence()
++
++static inline double ucs_arch_get_clocks_per_sec()
++{
++    return ucs_arch_generic_get_clocks_per_sec();
++}
++
++static inline ucs_cpu_model_t ucs_arch_get_cpu_model()
++{
++    return UCS_CPU_MODEL_RV64G;
++}
++
++static inline int ucs_arch_get_cpu_flag()
++{
++    return UCS_CPU_FLAG_UNKNOWN;
++}
++
++static inline void ucs_cpu_init()
++{
++}
++
++ucs_cpu_vendor_t ucs_arch_get_cpu_vendor();
++
++static inline ucs_status_t ucs_arch_get_cache_size(size_t *cache_sizes)
++{
++    return UCS_ERR_UNSUPPORTED;
++}
++
++static inline uint64_t ucs_arch_read_hres_clock()
++{
++    return ucs_arch_generic_read_hres_clock();
++}
++
++#define ucs_arch_wait_mem ucs_arch_generic_wait_mem
++
++#if !HAVE___CLEAR_CACHE
++static inline void ucs_arch_clear_cache(void *start, void *end)
++{
++    /*
++    * The syscall will cause all other HARTs (CPUs) to invalidate their
++    * instruction caches. This is the equivalent of the glibc __clear_cache()
++    * implementation that ucs_clear_cache() will use if HAVE_CLEAR_CACHE is
++    * defined.
++    */
++    ucs_rv64_icache_flush(start, end);
++}
++#endif
++
++static inline void *ucs_memcpy_relaxed(void *dst, const void *src, size_t len)
++{
++    return memcpy(dst, src, len);
++}
++
++static UCS_F_ALWAYS_INLINE void
++ucs_memcpy_nontemporal(void *dst, const void *src, size_t len)
++{
++    memcpy(dst, src, len);
++}
++
++END_C_DECLS
++
++#endif
+diff -Nru ucx-1.15.0.orig/src/ucs/arch/rv64/global_opts.c ucx-1.15.0/src/ucs/arch/rv64/global_opts.c
+--- ucx-1.15.0.orig/src/ucs/arch/rv64/global_opts.c	1970-01-01 01:00:00.000000000 +0100
++++ ucx-1.15.0/src/ucs/arch/rv64/global_opts.c	2024-04-25 16:20:49.608417782 +0200
+@@ -0,0 +1,24 @@
++/**
++* Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
++*
++* See file LICENSE for terms.
++*/
++
++#if defined(__riscv)
++
++#ifdef HAVE_CONFIG_H
++#  include "config.h"
++#endif
++
++#include <ucs/arch/global_opts.h>
++#include <ucs/config/parser.h>
++
++ucs_config_field_t ucs_arch_global_opts_table[] = {
++    {NULL}
++};
++
++void ucs_arch_print_memcpy_limits(ucs_arch_global_opts_t *config)
++{
++}
++
++#endif
+diff -Nru ucx-1.15.0.orig/src/ucs/arch/rv64/global_opts.h ucx-1.15.0/src/ucs/arch/rv64/global_opts.h
+--- ucx-1.15.0.orig/src/ucs/arch/rv64/global_opts.h	1970-01-01 01:00:00.000000000 +0100
++++ ucx-1.15.0/src/ucs/arch/rv64/global_opts.h	2024-04-25 16:20:49.608417782 +0200
+@@ -0,0 +1,25 @@
++/**
++* Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
++*
++* See file LICENSE for terms.
++*/
++
++#ifndef UCS_ARCH_RV64_GLOBAL_OPTS_H_
++#define UCS_ARCH_RV64_GLOBAL_OPTS_H_
++
++#include <stddef.h>
++
++#include <ucs/sys/compiler_def.h>
++
++BEGIN_C_DECLS
++
++#define UCS_ARCH_GLOBAL_OPTS_INITALIZER {}
++
++/* built-in memcpy config */
++typedef struct ucs_arch_global_opts {
++    char dummy;
++} ucs_arch_global_opts_t;
++
++END_C_DECLS
++
++#endif
+diff -Nru ucx-1.15.0.orig/src/ucs/configure.m4 ucx-1.15.0/src/ucs/configure.m4
+--- ucx-1.15.0.orig/src/ucs/configure.m4	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucs/configure.m4	2024-04-25 16:20:49.608417782 +0200
+@@ -2,6 +2,7 @@
+ # Copyright (c) NVIDIA CORPORATION & AFFILIATES, 2001-2014. ALL RIGHTS RESERVED.
+ # Copyright (C) UT-Battelle, LLC. 2015. ALL RIGHTS RESERVED.
+ # Copyright (C) ARM, Ltd. 2016. ALL RIGHTS RESERVED.
++# Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
+ # See file LICENSE for terms.
+ #
+ 
+@@ -238,7 +239,7 @@
+         [AS_HELP_STRING([--with-cache-line-size=SIZE],
+             [Build UCX with cache line size defined by user. This parameter
+              overwrites default cache line sizes defines in
+-             UCX (x86-64: 64, Power: 128, ARMv8: 64/128). The supported values are: 64, 128])],
++             UCX (x86-64: 64, Power: 128, ARMv8: 64/128, RISCV: 64). The supported values are: 64, 128])],
+         [],
+         [with_cache_line_size=no])
+ 
+diff -Nru ucx-1.15.0.orig/src/ucs/Makefile.am ucx-1.15.0/src/ucs/Makefile.am
+--- ucx-1.15.0.orig/src/ucs/Makefile.am	2023-09-29 12:31:02.000000000 +0200
++++ ucx-1.15.0/src/ucs/Makefile.am	2024-04-25 16:20:49.604417755 +0200
+@@ -2,6 +2,7 @@
+ # Copyright (c) NVIDIA CORPORATION & AFFILIATES, 2001-2014. ALL RIGHTS RESERVED.
+ # Copyright (C) UT-Battelle, LLC. 2014-2017. ALL RIGHTS RESERVED.
+ # Copyright (C) ARM Ltd. 2016-2017.  ALL RIGHTS RESERVED.
++# Copyright (C) Tactical Computing Labs, LLC. 2022. ALL RIGHTS RESERVED.
+ # See file LICENSE for terms.
+ #
+ 
+@@ -22,6 +23,7 @@
+ nobase_dist_libucs_la_HEADERS = \
+ 	arch/aarch64/bitops.h \
+ 	arch/ppc64/bitops.h \
++	arch/rv64/bitops.h \
+ 	arch/x86_64/bitops.h \
+ 	arch/bitops.h \
+ 	algorithm/crc.h \
+@@ -82,12 +84,14 @@
+ 	arch/aarch64/global_opts.h \
+ 	arch/generic/atomic.h \
+ 	arch/ppc64/global_opts.h \
++	arch/rv64/global_opts.h \
+ 	arch/global_opts.h
+ 
+ noinst_HEADERS = \
+ 	arch/aarch64/cpu.h \
+ 	arch/generic/cpu.h \
+ 	arch/ppc64/cpu.h \
++	arch/rv64/cpu.h \
+ 	arch/x86_64/cpu.h \
+ 	arch/cpu.h \
+ 	config/ucm_opts.h \
+@@ -140,6 +144,8 @@
+ 	arch/aarch64/global_opts.c \
+ 	arch/ppc64/timebase.c \
+ 	arch/ppc64/global_opts.c \
++	arch/rv64/cpu.c \
++	arch/rv64/global_opts.c \
+ 	arch/x86_64/cpu.c \
+ 	arch/x86_64/global_opts.c \
+ 	arch/cpu.c \
