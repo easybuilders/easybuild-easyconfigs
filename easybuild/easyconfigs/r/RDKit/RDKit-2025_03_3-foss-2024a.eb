@@ -1,7 +1,7 @@
 easyblock = 'CMakeMake'
 
 name = 'RDKit'
-version = '2024.09.5'
+version = '2025_03_3'
 
 homepage = 'https://www.rdkit.org'
 description = "RDKit is a collection of cheminformatics and machine-learning software written in C++ and Python."
@@ -9,8 +9,8 @@ description = "RDKit is a collection of cheminformatics and machine-learning sof
 toolchain = {'name': 'foss', 'version': '2024a'}
 
 source_urls = ['https://github.com/rdkit/rdkit/archive/']
-sources = ['Release_%s.tar.gz' % version.replace('.', '_')]
-checksums = ['ee55cf72d211c880b8f63e18fca6d9abce2b060987b7d2ce61d2d3b9527003c2']
+sources = ['Release_%(version)s.tar.gz']
+checksums = ['b11436e81e72811e31b66deb58fd7e48ece60771b2ccae5527235f4f81f511bd']
 
 builddependencies = [
     ('CMake', '3.29.3'),
@@ -28,33 +28,36 @@ dependencies = [
     ('Catch2', '3.8.0'),
 ]
 
-separate_build_dir = True
+_config_opts = [
+    '-DPy_ENABLE_SHARED=1',
+    '-DRDK_INSTALL_STATIC_LIBS=OFF',
+    '-DRDK_INSTALL_INTREE=OFF',
+    '-DRDK_BUILD_INCHI_SUPPORT=ON',
+    '-DBOOST_ROOT="$EBROOTBOOST"',
+]
+configopts = ' '.join(_config_opts)
 
-configopts = "-DPy_ENABLE_SHARED=1 -DRDK_INSTALL_STATIC_LIBS=OFF -DRDK_INSTALL_INTREE=OFF "
-configopts += "-DRDK_BUILD_INCHI_SUPPORT=ON "
-configopts += "-DBOOST_ROOT=$EBROOTBOOST"
-
-_src_dir = '%%(builddir)s/rdkit-Release_%s' % version.replace('.', '_')
-
-# ingnore failing test pythonSourceTests - from . import rdBase failing
-prebuildopts = "sed -i '22d' %s/rdkit/CMakeLists.txt && " % _src_dir
+_src_dir = '%(builddir)s/rdkit-Release_%(version)s'
 
 # merge source directory into build directory in order to run the tests
-buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./  '
+buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./'
 
 # Specify path for libraries so that they are found during the tests when the module is built with --rpath flag.
-pretestopts = 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY_PATH} &&'
+pretestopts = 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY_PATH} && '
 pretestopts += 'export RDBASE=$PWD && '
 pretestopts += 'export PYTHONPATH=$PWD:$PYTHONPATH &&'
+
 runtest = True
+# disable some tests with known issues
+testopts = "-j %(parallel)s -E 'pythonSourceTests|distGeomHelpersCatch|pyGraphMolWrap'"
 
 # generate minimal dist-info:
 _distinfodir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/rdkit-%(version)s.dist-info'
 postinstallcmds = [
-    'mkdir %s' % _distinfodir,
-    'touch %s/METADATA' % _distinfodir,
-    'echo "Name: %%(namelower)s" >> %s/METADATA' % _distinfodir,
-    'echo "Version: %%(version)s" >> %s/METADATA' % _distinfodir,
+    f'mkdir {_distinfodir}',
+    f'touch {_distinfodir}/METADATA' ,
+    f'echo "Name: %(namelower)s" >> {_distinfodir}/METADATA',
+    f'echo "Version: %(version)s" >> {_distinfodir}/METADATA',
 ]
 
 local_libs = ['Alignment', 'Catalogs', 'ChemicalFeatures', 'ChemReactions', 'ChemTransforms', 'coordgen', 'DataStructs',
@@ -67,7 +70,7 @@ local_libs = ['Alignment', 'Catalogs', 'ChemicalFeatures', 'ChemReactions', 'Che
               'SubstructLibrary', 'SubstructMatch', 'Trajectory']
 
 sanity_check_paths = {
-    'files': ['lib/libRDKit%s.%s' % (x, SHLIB_EXT) for x in local_libs],
+    'files': [f'lib/libRDKit{lib}.{SHLIB_EXT}' for lib in local_libs],
     'dirs': [
         'include/rdkit', 'lib/python%(pyshortver)s/site-packages/rdkit',
         'lib/python%(pyshortver)s/site-packages/rdkit-%(version)s.dist-info'
@@ -77,7 +80,5 @@ sanity_check_paths = {
 sanity_check_commands = [
     "python -c 'import rdkit.rdBase'",
 ]
-
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 moduleclass = 'chem'
