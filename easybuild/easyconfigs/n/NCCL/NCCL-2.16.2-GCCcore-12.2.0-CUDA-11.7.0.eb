@@ -1,0 +1,33 @@
+name = 'NCCL'
+version = '2.16.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://developer.nvidia.com/nccl'
+description = """The NVIDIA Collective Communications Library (NCCL) implements multi-GPU and multi-node collective
+communication primitives that are performance optimized for NVIDIA GPUs."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+
+github_account = 'NVIDIA'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s-1.tar.gz']
+patches = ['NCCL-2.16.2_fix-cpuid.patch']
+checksums = [
+    {'v2.16.2-1.tar.gz': '7f7c738511a8876403fc574d13d48e7c250d934d755598d82e14bab12236fc64'},
+    {'NCCL-2.16.2_fix-cpuid.patch': '0459ecadcd32b2a7a000a2ce4f675afba908b2c0afabafde585330ff4f83e277'},
+]
+
+builddependencies = [('binutils', '2.39')]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('UCX-CUDA', '1.13.1', versionsuffix),
+]
+
+prebuildopts = "sed -i 's/NVCUFLAGS  := /NVCUFLAGS  := -allow-unsupported-compiler /' makefiles/common.mk && "
+buildopts = "VERBOSE=1"
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['3.5', '5.0', '6.0', '7.0', '7.5', '8.0', '8.6']
+
+moduleclass = 'lib'
