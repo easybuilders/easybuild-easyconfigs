@@ -1,0 +1,46 @@
+easyblock = 'PythonBundle'
+
+name = 'Uni-Core'
+version = '0.0.3'
+
+homepage = 'https://github.com/dptech-corp/Uni-Core'
+description = "An efficient distributed PyTorch framework"
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('PyTorch', '2.1.2'),
+    ('jax', '0.4.25'),  # provides absl-py
+    ('tensorboardX', '2.6.2.2'),
+    ('tqdm', '4.66.1'),
+    ('wandb', '0.16.1'),
+    ('tokenizers', '0.15.2'),
+]
+
+local_preinstallopts = "sed -i "
+local_preinstallopts += "-e 's/DISABLE_CUDA_EXTENSION = False/DISABLE_CUDA_EXTENSION = True/g' "
+local_preinstallopts += "-e 's/torch>=[0-9.]*/torch/g' setup.py && "
+
+exts_list = [
+    ('lmdb', '1.5.1', {
+        'checksums': ['717c255827d331e02f7242b44051aa06466c90f6d732ecb07b31edfb1e06c67a'],
+    }),
+    ('contextlib2', '21.6.0', {
+        'checksums': ['ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869'],
+    }),
+    ('ml-collections', '0.1.1', {
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+        'sources': ['ml_collections-%(version)s.tar.gz'],
+        'checksums': ['3fefcc72ec433aa1e5d32307a3e474bbb67f405be814ea52a2166bfc9dbe68cc'],
+    }),
+    (name, version, {
+        'modulename': 'unicore',
+        'preinstallopts': local_preinstallopts,
+        'source_urls': ['https://github.com/dptech-corp/Uni-Core/archive/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['e7a1e938d7d340d7aa483a05ed5ecf715bfa22f5f32a92e46d096da5b9a08043'],
+    }),
+]
+
+moduleclass = 'ai'
