@@ -1,0 +1,55 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# 2016-11-07 modified by:
+# Adam Huffman
+# The Francis Crick Institute
+
+easyblock = 'ConfigureMake'
+
+name = 'GMAP-GSNAP'
+version = '2023-04-20'
+
+homepage = 'http://research-pub.gene.com/gmap/'
+description = """GMAP: A Genomic Mapping and Alignment Program for mRNA and EST Sequences
+ GSNAP: Genomic Short-read Nucleotide Alignment Program"""
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+
+source_urls = ['http://research-pub.gene.com/gmap/src/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'GMAP-GSNAP-2023-02-17_cleanup-headers.patch',
+    'GMAP-GSNAP-2023-02-17_fix-typecast.patch',
+]
+checksums = [
+    {'gmap-gsnap-2023-04-20.tar.gz': 'f858bc699cbcc9b3f06751ace55c86bfc21e4ca821a90b10681feac2172b725e'},
+    {'GMAP-GSNAP-2023-02-17_cleanup-headers.patch': '7d17d4cbc717556e3a64475eb931b692e9d564b486acf6c9dbf4c2bf29853832'},
+    {'GMAP-GSNAP-2023-02-17_fix-typecast.patch': 'eafe728cf00cf52320bbf4b710ef76b662df92533d22fa67dc273855c180296f'},
+]
+
+# with these deps you can use standard compressed files
+# details in http://research-pub.gene.com/gmap/src/README
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.2.12'),
+]
+
+# GSNAP uses MAX_STACK_READLENGTH to control the use of stack or heap memory depending on the read length
+# details in http://research-pub.gene.com/gmap/src/README
+# configopts = 'MAX_STACK_READLENGTH=300'
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['bin/gmap', 'bin/gsnap'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "gmap --help",
+    "gsnap --help",
+]
+
+moduleclass = 'bio'
