@@ -1,0 +1,26 @@
+Add support for Slurm scheduler on MPI targets that do not have any nodefile
+given by the user.
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- rungms.orig	2023-07-01 08:04:29.000000000 +0200
++++ rungms	2023-12-13 16:29:19.738351362 +0100
+@@ -188,6 +188,7 @@
+                       set SCHED=none
+ if ($?PBS_O_LOGNAME)  set SCHED=PBS
+ if ($?SGE_O_LOGNAME)  set SCHED=SGE
++if ($?SLURM_JOB_ID)  set SCHED=SLURM
+ if ($SCHED == SGE) then
+    set SCR=$TMPDIR
+    echo "SGE has assigned the following compute nodes to this run:"
+@@ -805,6 +806,12 @@
+             set NNODES=$NNODES[1]
+             echo "MPI was given $NNODES nodes by PBS..."
+             breaksw
++         case SLURM:
++            scontrol show hostname "$SLURM_NODELIST" > $HOSTFILE
++            set NNODES=`wc -l $HOSTFILE`
++            set NNODES=$NNODES[1]
++            echo "MPI was given $NNODES nodes by Slurm..."
++            breaksw
+          default:
+    #     Use use provided list (a new feature to be tested).
+             if (-e $NCPUS) then

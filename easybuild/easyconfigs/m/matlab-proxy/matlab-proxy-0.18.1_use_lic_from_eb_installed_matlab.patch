@@ -1,0 +1,23 @@
+Use the license file from EB's MATLAB installation by default
+Author: Mikael Öhman micketeer@gmail.com
+--- matlab_proxy/settings.py.orig	2024-05-30 16:01:07.778707000 +0200
++++ matlab_proxy/settings.py	2024-05-30 16:03:48.517654923 +0200
+@@ -357,9 +357,16 @@
+     # folder may cause hinderance in this workflow. So specifying -licmode as 'file'
+     # overrides license_info.xml and enforces MLM_LICENSE_FILE to be the topmost priority
+ 
+-    # NLM Connection String provided by MLM_LICENSE_FILE environment variable
++    license_file = None
++    if mwi_env.get_env_name_network_license_manager() in os.environ:
++        # NLM Connection String provided by MLM_LICENSE_FILE environment variable
++        license_file = os.environ.get(mwi_env.get_env_name_network_license_manager())
++    elif 'EBROOTMATLAB' in os.environ:
++        # License file provided by MATLAB installation in EasyBuild
++        license_file = os.environ.get('EBROOTMATLAB') + '/licenses/network.lic'
++ 
+     nlm_conn_str = mwi.validators.validate_mlm_license_file(
+-        os.environ.get(mwi_env.get_env_name_network_license_manager())
++        license_file
+     )
+     matlab_lic_mode = ["-licmode", "file"] if nlm_conn_str else ""
+     # flag to hide MATLAB Window
