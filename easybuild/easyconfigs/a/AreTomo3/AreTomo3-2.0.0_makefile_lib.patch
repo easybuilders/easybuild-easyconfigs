@@ -1,0 +1,155 @@
+# Thomas Hoffmann, EBML Heidelberg, structures-it@embl.de, 2024/10
+# Allow to inject cuda compute capabilities and cfalgs.
+# Add targets for libmrcfile.a, libutil.a, and libclean
+diff -ru AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463/LibSrc/Mrcfile/makefile AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463_makefile_lib/LibSrc/Mrcfile/makefile
+--- AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463/LibSrc/Mrcfile/makefile	2024-10-23 17:27:04.000000000 +0200
++++ AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463_makefile_lib/LibSrc/Mrcfile/makefile	2024-10-30 16:00:47.894708803 +0100
+@@ -20,8 +20,8 @@
+ OBJS	= $(patsubst %.cpp, %.o, $(SRCS))
+ OUT	= libmrcfile.a
+ 
+-CC = g++ -std=c++11
+-CFLAGS	= -m64 -c -g -pthread -IInclude -I$(INC_DIR)
++# CC = g++ -std=c++11
++CFLAGS_	+= -m64 -c -g -pthread -IInclude -I$(INC_DIR) $(CFLAGS)
+ 
+ all: $(OBJS)
+ 	@ar rcs $(OUT) $(OBJS)
+@@ -34,7 +34,9 @@
+ 
+ %.o: %.cpp
+ 	@echo Compile $<
+-	@$(CC) $(CFLAGS) $< -o $@
++	@echo $(CC) $(CFLAGS_) $< -o $@
++	@$(CC) $(CFLAGS_) $< -o $@
+ 
+ clean:
++	@echo rm -f $(OUT) $(OBJS) *.*~ makefile~
+ 	@rm -f $(OUT) $(OBJS) *.*~ makefile~
+diff -ru AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463/LibSrc/Util/makefile AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463_makefile_lib/LibSrc/Util/makefile
+--- AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463/LibSrc/Util/makefile	2024-10-23 17:27:04.000000000 +0200
++++ AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463_makefile_lib/LibSrc/Util/makefile	2024-10-30 15:28:14.385237322 +0100
+@@ -13,8 +13,8 @@
+ #-------------------
+ OUT = libutil.a
+ 
+-CC = g++ -std=c++11
+-CFLAG = -c -g -pthread -m64
++#CC = g++ -std=c++11
++CFLAG = -c -g -pthread -m64 $(CFLAGS)
+ 
+ all: $(OBJS)
+ 	@echo create library $(OUT) and move to $(LIB_DIR)
+@@ -24,6 +24,7 @@
+ 	@cp $(HDRS) $(INC_DIR)/Util
+ 
+ %.o: %.cpp
++	echo $(CC) $(CFLAG) $< -o $@
+ 	$(CC) $(CFLAG) $< -o $@
+ 
+ list:
+@@ -31,6 +32,9 @@
+ 
+ clean:
+ 	@echo delete all object files and temporary files	
++	@echo rm -f $(OBJS)
+ 	@rm -f $(OBJS)
++	@echo rm -f $(UTIL_DIR)/*.*~
+ 	@rm -f $(UTIL_DIR)/*.*~
++	@echo rm -f $(UTIL_DIR)/*~
+ 	@rm -f $(UTIL_DIR)/*~
+diff -ru AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463/makefile11 AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463_makefile_lib/makefile11
+--- AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463/makefile11	2024-10-23 17:27:04.000000000 +0200
++++ AreTomo3-1e1be03852cf8fe8b0ff187eab2d796d7fefd463_makefile_lib/makefile11	2024-10-30 15:26:31.319801344 +0100
+@@ -258,23 +258,47 @@
+ 	$(CUCPPS)
+ OBJS = $(patsubst %.cpp, %.o, $(SRCS))
+ #-------------------------------------
+-CC = g++ -std=c++11
+-CFLAG = -c -g -pthread -m64
++#CC = g++ -std=c++11
++CFLAG = -c -g -pthread -m64 $(CFLAGS)
+ NVCC = $(CUDAHOME)/bin/nvcc -std=c++11
+-CUFLAG = -Xptxas -dlcm=ca -O2 \
+-	-gencode arch=compute_90,code=sm_90 \
+-	-gencode arch=compute_89,code=sm_89 \
+-	-gencode arch=compute_86,code=sm_86 \
+-	-gencode arch=compute_80,code=sm_80 \
+-	-gencode arch=compute_75,code=sm_75 \
+-	-gencode arch=compute_70,code=sm_70 \
+-        -gencode arch=compute_61,code=sm_61 
++SPACE= ' '
++SEMI= ;
++GENCODES = $(foreach x,$(subst $(SEMI),$(SPACE),$(CUDACC)),-gencode arch=compute_$x,code=sm_$x)
++CUFLAG = -Xptxas -dlcm=ca -O2 $(GENCODES)
++
++
++#CUFLAG = -Xptxas -dlcm=ca -O2 \
++#	-gencode arch=compute_90,code=sm_90 \
++#	-gencode arch=compute_89,code=sm_89 \
++#	-gencode arch=compute_86,code=sm_86 \
++#	-gencode arch=compute_80,code=sm_80 \
++#	-gencode arch=compute_75,code=sm_75 \
++#	-gencode arch=compute_70,code=sm_70 \
++#        -gencode arch=compute_61,code=sm_61 
+ #------------------------------------------
+ cuda: $(CUCPPS)
+ 
+ compile: $(OBJS)
+ 
+-exe: $(OBJS)
++libclean:
++	$(MAKE) -C LibSrc/Util clean
++	$(MAKE) -C LibSrc/Mrcfile clean
++
++LibSrc/Lib/libutil.a:
++	$(MAKE) -C LibSrc/Util   
++
++LibSrc/Lib/libmrcfile.a:
++	$(MAKE) -C LibSrc/Mrcfile  
++
++exe: $(OBJS) LibSrc/Lib/libmrcfile.a LibSrc/Lib/libutil.a
++	@echo $(NVCC) -g -G -m64 $(OBJS) \
++	$(PRJLIB)/libmrcfile.a $(PRJLIB)/libutil.a \
++	-L$(CUDALIB) -L$(CUDALIB)/stubs\
++	-L$(CONDA)/lib \
++	-L/usr/lib64 \
++	-lcufft -lcudart -lcuda -lnvToolsExt -ltiff -lc -lm -lpthread \
++	-o AreTomo3
++
+ 	@$(NVCC) -g -G -m64 $(OBJS) \
+ 	$(PRJLIB)/libmrcfile.a $(PRJLIB)/libutil.a \
+ 	-L$(CUDALIB) -L$(CUDALIB)/stubs\
+@@ -283,21 +307,30 @@
+ 	-lcufft -lcudart -lcuda -lnvToolsExt -ltiff -lc -lm -lpthread \
+ 	-o AreTomo3
+ 	@echo AreTomo3 has been generated.
++	@echo used cuda gencodes: $(GENCODES)
+ 
+ %.cpp: %.cu
+ 	@echo "-----------------------------------------------"
++	@echo $(NVCC) -cuda -cudart shared \
++		$(CUFLAG) -I$(PRJINC) \
++		-I$(CONDA)/include $< -o $@
+ 	@$(NVCC) -cuda -cudart shared \
+ 		$(CUFLAG) -I$(PRJINC) \
+ 		-I$(CONDA)/include $< -o $@
++
+ 	@echo $< has been compiled.
+ 
+ %.o: %.cpp
+ 	@echo "------------------------------------------------"
++	@echo $(CC) $(CFLAG) -I$(PRJINC) -I$(CUDAINC) \
++		-I$(CONDA)/include \
++		$< -o $@
+ 	@$(CC) $(CFLAG) -I$(PRJINC) -I$(CUDAINC) \
+ 		-I$(CONDA)/include \
+ 		$< -o $@
+ 	@echo $< has been compiled.
+ 
+-clean:
+-	@rm -f $(OBJS) $(CUCPPS) *.h~ makefile~ AreTomo3
++clean: libclean
++	@echo rm -f $(OBJS) $(CUCPPS) *.h~ makefile~ AreTomo3 $(PRJLIB)/*
++	@rm -f $(OBJS) $(CUCPPS) *.h~ makefile~ AreTomo3 $(PRJLIB)/*
+ 
