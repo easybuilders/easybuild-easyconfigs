@@ -1,0 +1,31 @@
+Using AVX3_DL in the baseline doesn't work in 1.0.3 causing the build to fail with
+> #error "Logic error: best baseline should be included in dynamic targets"
+
+This is caused by using a wrong defined and fixed by
+https://github.com/google/highway/commit/f0f688b6d6d1ec94489cc989ccb9729b0342aa58
+However that leads to a test failure:
+> HwyConvertTestGroup/HwyConvertTest.TestAllTruncate/AVX3_DL
+> u8x16 expect [0+ ->]:
+>   0x00,0x01,0x02,0x03,0x04,0x05,0x06,
+> u8x16 actual [0+ ->]:
+>   0x00,0x1A,0x02,0x1A,0x04,0x1A,0x06,
+> Abort at .../hwy/tests/convert_test.cc:386: AVX3_DL, u8x16 lane 1 mismatch: expected '0x01', got '0x1A'.
+
+Hence AVX3_DL in 1.0.3 seems to be broken and must not be used.
+This patch disables it by making the condition always false.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/hwy/detect_targets.h b/hwy/detect_targets.h
+index 2beca95b..379c4525 100644
+--- a/hwy/detect_targets.h
++++ b/hwy/detect_targets.h
+@@ -340,7 +340,7 @@
+ #if HWY_BASELINE_AVX3 != 0 && defined(__AVXVNNI__) && defined(__VAES__) && \
+     defined(__VPCLMULQDQ__) && defined(__AVX512VBMI__) &&                  \
+     defined(__AVX512VBMI2__) && defined(__AVX512VPOPCNTDQ__) &&            \
+-    defined(__AVX512BITALG__)
++    defined(__AVX512BITALG__) && 0
+ #define HWY_BASELINE_AVX3_DL HWY_AVX3_DL
+ #else
+ #define HWY_BASELINE_AVX3_DL 0

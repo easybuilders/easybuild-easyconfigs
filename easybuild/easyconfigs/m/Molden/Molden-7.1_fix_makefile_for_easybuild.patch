@@ -1,0 +1,82 @@
+# Make makefile EasyBuild friendly.
+# Author: maxim-masterov (SURF)
+diff -Nru molden7.1.orig/makefile molden7.1/makefile
+--- molden7.1.orig/makefile	2022-01-21 12:28:48.000000000 +0100
++++ molden7.1/makefile	2022-11-29 20:26:40.997854074 +0100
+@@ -13,10 +13,10 @@
+ #	Disregard compiler warnings on rdmolf.f
+ #
+ #
+-CC = cc
++#CC = cc
+ LIBS =  -lX11 -lm
+ LDR = ${FC} 
+-LIBSG = -L/usr/X11R6/lib -lGLU -lGL -lXmu -lX11 -lm
++LIBSG = -lGLU -lGL -lXmu -lX11 -lm
+ ARCH := $(shell getconf LONG_BIT)
+ AFLAG= -m$(ARCH)
+ EXTEN=
+@@ -29,20 +29,6 @@
+ uname := $(shell uname -s)
+ os :=
+ 
+-ifeq ($(uname), Linux)
+- os := $(shell head -n 1 /etc/issue | cut -d" " -f1)
+- ifeq ($(os), Ubuntu)
+-    EXTEN = exten
+-    EXTENZ = exten2
+-    LIBSG = -L/usr/X11R6/lib -lGLU -lGL -lX11 -lm
+- endif
+- ifeq ($(os), Debian)
+-    LIBSG = -L/usr/lib/X11 -lGLU -lGL -lX11 -lm
+- endif
+-
+- choosefc := 'yes'
+-endif
+-
+ ifneq (,$(findstring CYGWIN,$(uname)))
+  uname := Linux
+  choosefc := 'yes'
+@@ -52,18 +38,6 @@
+  choosefc := 'yes'
+ endif
+ 
+-
+-ifneq ($(choosefc), $(empty))
+- comg77 := $(shell which g77 | grep -i g77)
+- comgfort := $(shell which gfortran | grep -i gfortran)
+- ifneq ($(comg77), $(empty))
+-    FC = g77
+- endif
+- ifneq ($(comgfort), $(empty))
+-    FC = gfortran
+- endif
+-endif
+-
+ print-%  : ; @echo $* = $($*)
+ #
+ # Linux version
+@@ -108,17 +82,17 @@
+    EXT = ${EXTRAZ}
+ endif
+ FFLAGS = -g ${AFLAG}
+-LIBS =  -L/usr/X11R6/lib -lX11 -lm
++LIBS =  -lX11 -lm
+ ifeq ($(AFLAG),"-m64")
+-LIBS =  -L/usr/X11R6/lib64 -lX11 -lm
++LIBS =  -lX11 -lm
+ endif
+ LDR = ${FC} -g ${AFLAG}
+-CFLAGS = ${AFLAG} ${EXTRAZ} -c -g -I/usr/X11R6/include -DDOBACK -DHASTIMER -DCOLOR_OFFSET=0.0
++CFLAGS = ${AFLAG} ${EXTRAZ} -c -g -DDOBACK -DHASTIMER -DCOLOR_OFFSET=0.0
+  ifeq ($(os), Debian)
+-    CFLAGS = ${AFLAG} ${EXTRAZ} -c -I/usr/include/X11 -DDOBACK -DHASTIMER -DCOLOR_OFFSET=0.0
+-    LIBS =  -L/usr/lib/X11 -lX11 -lm
++    CFLAGS = ${AFLAG} ${EXTRAZ} -c -DDOBACK -DHASTIMER -DCOLOR_OFFSET=0.0
++    LIBS =  -lX11 -lm
+     ifeq ($(AFLAG),"-m64")
+-       LIBS =  -L/usr/X11R6/lib64 -lX11 -lm
++       LIBS =  -lX11 -lm
+     endif
+  endif
+ ifeq ($(os), FreeBSD)
