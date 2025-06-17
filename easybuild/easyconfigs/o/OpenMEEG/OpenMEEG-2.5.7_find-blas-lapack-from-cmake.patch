@@ -1,0 +1,31 @@
+Use standard FindBLAS and FindLAPACK modules from CMake instead of a custom implementation.
+Upstream modules can detect Flexiblas.
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- cmake/thirdParties.cmake.orig	2024-02-10 12:57:15.285723739 +0100
++++ cmake/thirdParties.cmake	2024-02-10 12:56:27.928866727 +0100
+@@ -1,4 +1,24 @@
+-include(FindBLASImplementation)
++find_package(BLAS REQUIRED)
++if (BLAS_FOUND)
++    set(USE_OPENBLAS ON)
++    set(HAVE_BLAS ON)
++endif (BLAS_FOUND)
++find_package(LAPACK REQUIRED)
++if (LAPACK_FOUND)
++    set(HAVE_LAPACK ON)
++endif (LAPACK_FOUND)
++
++# OpenBLAS may or may not include lapacke.
++# Check which version is used.
++
++set(CMAKE_REQUIRED_LIBRARIES LAPACK::LAPACK BLAS::BLAS)
++check_function_exists(LAPACKE_dlange LAPACKE_WORKS)
++mark_as_advanced(LAPACKE_WORKS)
++if (NOT LAPACKE_WORKS)
++    find_library(LAPACKE lapacke REQUIRED)
++    list(PREPEND _lapack_libs ${LAPACKE})
++    set_target_properties(LAPACK::LAPACK PROPERTIES INTERFACE_LINK_LIBRARIES "${_lapack_libs}")
++endif()
+ 
+ if (BLA_STATIC)
+     set(MATIO_USE_STATIC_LIBRARIES TRUE) # XXX This should be an option
