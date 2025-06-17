@@ -1,0 +1,58 @@
+easyblock = 'Bundle'
+
+name = 'FlexiBLAS'
+version = '3.2.1'
+
+homepage = 'https://gitlab.mpi-magdeburg.mpg.de/software/flexiblas-release'
+description = """FlexiBLAS is a wrapper library that enables the exchange of the BLAS and LAPACK implementation
+used by a program without recompiling or relinking it."""
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+local_extra_flags = "-fstack-protector-strong -fstack-clash-protection"
+toolchainopts = {'pic': True, 'extra_cflags': local_extra_flags, 'extra_fflags': local_extra_flags}
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('Python', '3.10.8', '-bare'),  # required for running the tests
+    ('BLIS', '0.9.0'),
+]
+
+dependencies = [
+    ('OpenBLAS', '0.3.21'),
+]
+
+# note: first listed backend will be used as default by FlexiBLAS,
+# unless otherwise specified via easyconfig parameter flexiblas_default
+local_backends = ['OpenBLAS', 'BLIS']
+
+# imkl supplies its backend via the imkl module, not as a dependency
+if ARCH == 'x86_64':
+    local_backends.append('imkl')
+
+default_component_specs = {'start_dir': '%(namelower)s-%(version)s'}
+sanity_check_all_components = True
+
+# Also build and install LAPACKE, which FlexiBLAS does not support yet
+components = [
+    (name, version, {
+        'source_urls': ['https://github.com/mpimd-csc/flexiblas/releases/download/v%(version)s/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'checksums': ['5be7e508e2dbb751b3bf372639d8e82a11f79e9ef6cbf243b64981c24a5703cf'],
+        'backends': local_backends,
+    }),
+    ('LAPACK', '3.10.1', {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/Reference-LAPACK/lapack/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['cd005cd021f144d7d5f7f33c943942db9f03a28d110d6a3b80d718a295f7f714'],
+        'configopts': ('-DBUILD_SHARED_LIBS=ON -DUSE_OPTIMIZED_BLAS=ON -DLAPACKE=ON '
+                       '-DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON '
+                       '-DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas'),
+        'sanity_check_paths': {
+            'files': ['lib/liblapacke.%s' % SHLIB_EXT, 'include/flexiblas/lapacke.h'],
+            'dirs': [],
+        },
+    }),
+]
+
+moduleclass = 'lib'

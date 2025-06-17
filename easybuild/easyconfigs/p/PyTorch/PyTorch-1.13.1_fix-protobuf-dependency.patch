@@ -1,0 +1,35 @@
+Add proper dependency in libprotobuf target to get the correct set of flags.
+Otherwise the build will fail with e.g.:
+  undefined reference to `google::protobuf::internal::ThreadSafeArena::thread_cache_'
+This is caused by missing the `PROTOBUF_USE_DLLS` define required for libprotobuf as a shared library.
+See https://github.com/pytorch/pytorch/issues/106297
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/caffe2/proto/CMakeLists.txt b/caffe2/proto/CMakeLists.txt
+index ba6b696dde4..5033e228119 100644
+--- a/caffe2/proto/CMakeLists.txt
++++ b/caffe2/proto/CMakeLists.txt
+@@ -7,6 +7,7 @@ endif()
+ caffe2_protobuf_generate_cpp_py(Caffe2_PROTO_SRCS Caffe2_PROTO_HEADERS Caffe2_PROTO_PY ${Caffe2_PROTOBUF_FILES})
+ 
+ add_library(Caffe2_PROTO OBJECT ${Caffe2_PROTO_HEADERS} ${Caffe2_PROTO_SRCS})
++target_link_libraries(Caffe2_PROTO PRIVATE protobuf::libprotobuf)
+ 
+ if(MSVC)
+   if(BUILD_SHARED_LIBS)
+diff --git a/cmake/ProtoBuf.cmake b/cmake/ProtoBuf.cmake
+index 8d7633c4ab0..fb0e9a0c5f7 100644
+--- a/cmake/ProtoBuf.cmake
++++ b/cmake/ProtoBuf.cmake
+@@ -122,10 +122,6 @@ if((NOT TARGET protobuf::libprotobuf) AND (NOT TARGET protobuf::libprotobuf-lite
+   #     "Please set the proper paths so that I can find protobuf correctly.")
+ endif()
+ 
+-get_target_property(__tmp protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
+-message(STATUS "Caffe2 protobuf include directory: " ${__tmp})
+-include_directories(BEFORE SYSTEM ${__tmp})
+-
+ # If Protobuf_VERSION is known (true in most cases, false if we are building
+ # local protobuf), then we will add a protobuf version check in
+ # Caffe2Config.cmake.in.

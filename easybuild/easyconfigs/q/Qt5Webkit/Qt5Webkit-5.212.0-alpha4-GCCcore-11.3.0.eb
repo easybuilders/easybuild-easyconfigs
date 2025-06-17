@@ -1,0 +1,63 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'CMakeNinja'
+
+name = 'Qt5Webkit'
+# Qt5 > 5.9 required at least version 5.212.0
+# At the time of writing the latest version was 5.212.0-alpha4
+version = '5.212.0-alpha4'
+
+homepage = 'https://github.com/qt/qtwebkit'
+description = "Qt Port of WebKit. WebKit is an open source web browser engine."
+docurls = ['https://github.com/qt/qtwebkit/blob/dev/README']
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/qtwebkit/qtwebkit/releases/download/qtwebkit-%(version)s/']
+sources = ['qtwebkit-%(version)s.tar.xz']
+patches = [
+    '%(name)s-%(version)s_bison3.7.patch',
+    '%(name)s-%(version)s_json.patch',
+]
+checksums = [
+    '9ca126da9273664dd23a3ccd0c9bebceb7bb534bddd743db31caf6a5a6d4a9e6',  # qtwebkit-5.212.0-alpha4.tar.xz
+    '34f37b53ee0bc31c63ce85ebd1ae95543a8ba28483e387b20efd50574bd813be',  # Qt5Webkit-5.212.0-alpha4_bison3.7.patch
+    '68e2c47882e4749c85933f176c45a8f781fa8a2e92818c58b6af15f27dadb9f5',  # Qt5Webkit-5.212.0-alpha4_json.patch
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.23.1'),
+    ('pkgconf', '1.8.0'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.1'),
+    ('Ninja', '1.10.2'),
+    ('Python', '3.10.4'),
+    ('Ruby', '3.0.3'),
+]
+
+dependencies = [
+    ('Qt5', '5.15.5'),
+    ('zlib', '1.2.12'),
+    ('SQLite', '3.38.3'),
+    ('ICU', '71.1'),
+    ('libxslt', '1.1.34'),
+    ('libjpeg-turbo', '2.1.3'),
+]
+
+configopts = "-G Ninja -DPORT=Qt -DCMAKE_BUILD_TYPE=Release -DUSE_LIBHYPHEN=OFF -DUSE_GSTREAMER=OFF "
+# Starting from ICU 68 the TRUE/FALSE macros are not defined in standard header
+# files, see https://unicode-org.github.io/icu/userguide/dev/codingguidelines.html
+configopts += "-DCMAKE_CXX_FLAGS='-DU_DEFINE_FALSE_AND_TRUE=1' "
+
+sanity_check_paths = {
+    'files': [
+        'lib64/libQt5WebKit.%s' % SHLIB_EXT,
+        'lib64/libQt5WebKitWidgets.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['include/QtWebKit', 'include/QtWebKitWidgets'],
+}
+
+moduleclass = 'devel'
