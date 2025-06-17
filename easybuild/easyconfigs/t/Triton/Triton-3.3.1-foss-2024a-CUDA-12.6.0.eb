@@ -1,0 +1,116 @@
+easyblock = 'PythonBundle'
+
+name = 'Triton'
+version = '3.3.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://triton-lang.org/'
+
+description = """Triton is a language and compiler for parallel programming. It aims to provide a
+Python-based programming environment for productively writing custom DNN compute
+kernels capable of running at maximal throughput on modern GPU hardware."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Ninja', '1.12.1'),
+    ('nlohmann_json', '3.11.3'),
+    # LLVM dependencies
+    ('git', '2.45.1'),
+    ('libxml2', '2.12.7'),
+    ('ncurses', '6.5'),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('SciPy-bundle', '2024.05'),
+    ('lit', '18.1.7'),
+    ('pybind11', '2.13.6'),
+    ('Z3', '4.13.0'),
+    # LLVM dependencies
+    ('zstd', '1.5.6'),
+    ('zlib', '1.3.1'),
+]
+
+components = [
+    # Hash from cmake/llvm-hash.txt
+    ('LLVM', 'a66376b0dc3b2ea8a84fda26faca287980986f78', {
+        'easyblock': 'CMakeNinja',
+        'source_urls': ['https://github.com/llvm/llvm-project/archive/'],
+        'sources': [{
+            'download_filename': '%(version)s.tar.gz',
+            'filename': 'llvm-project-%(version)s.tar.gz',
+        }],
+        'checksums': [
+            {'llvm-project-a66376b0dc3b2ea8a84fda26faca287980986f78.tar.gz':
+             '10eb1d36aabbc5d31c9d2af27844f51638d40be28975a4ab20ad13609f7da23d'},
+        ],
+        'start_dir': 'llvm-project-%(version)s',
+        'configopts': ' '.join([
+            # Reduce dependencies
+            '-DLLVM_ENABLE_BINDINGS=OFF',  # Requires OCAML
+            '-DLLVM_ENABLE_LIBEDIT=OFF',
+            # See https://github.com/triton-lang/triton/blob/develop/scripts/build-llvm-project.sh
+            '-DCMAKE_BUILD_TYPE="Release"',
+            '-DLLVM_CCACHE_BUILD=OFF',
+            '-DLLVM_ENABLE_ASSERTIONS=ON',
+            '-DLLVM_OPTIMIZED_TABLEGEN=ON',
+            '-DLLVM_TARGETS_TO_BUILD="Native;NVPTX;AMDGPU"',
+            '-DLLVM_ENABLE_PROJECTS="mlir;llvm"',
+        ]),
+        'srcdir': 'llvm',
+        'skipsteps': ['install'],
+    })
+]
+
+local_preinstallopts = ' '.join([
+    'TRITON_BUILD_WITH_CLANG_LLD=0',
+    "TRITON_HOME='%(builddir)s/triton_home'",
+    'TRITON_OFFLINE_BUILD=1',
+    'TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas"',
+    'TRITON_CUOBJDUMP_PATH="$CUDA_HOME/bin/cubjdump"',
+    'TRITON_NVDISASM_PATH="$CUDA_HOME/bin/nvdisasm"',
+    'LLVM_SYSPATH="%(builddir)s/easybuild_obj"',
+    'JSON_SYSPATH="$EBROOTNLOHMANN_JSON"',
+    'PYBIND11_SYSPATH="$EBROOTPYBIND11"',
+    'MAX_JOBS=%(parallel)s',
+    # Build type
+    'DEBUG=0 REL_WITH_DEB_INFO=0 TRITON_REL_BUILD_WITH_ASSERTS=1',
+    "TRITON_APPEND_CMAKE_ARGS='-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON'",
+]) + ' '
+
+exts_list = [
+    (name, version, {
+        # make pip print output of cmake
+        'installopts': "-v ",
+        # ensure that libdevice.10.bc from $EBROOTCUDA/nvvm/libdevice is used:
+        'postinstallcmds': [
+            'rm -rf %(installdir)s/lib/python%(pyshortver)s/site-packages/triton/backends/nvidia/lib/libdevice.10.bc'
+        ],
+        'preinstallopts': local_preinstallopts,
+        'source_urls': ['https://github.com/triton-lang/triton/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'patches': [
+            'Triton-3.3.1_disable-git-submodule-call.patch',
+            'Triton-3.3.1_disable-git-version-check.patch',
+        ],
+        'checksums': [
+            {'v3.3.1.tar.gz': '9dc77d9205933bf2fc05eb054f4f1d92acd79a963826174d57fe9cfd58ba367b'},
+            {'Triton-3.3.1_disable-git-submodule-call.patch':
+             '26859c9388a4f43d326e362a625e3703f2c39a6f075af590f08660d343f78e19'},
+            {'Triton-3.3.1_disable-git-version-check.patch':
+             'e77b98e127699c189d4ca3afb0c5374c5e9f1351e82d529ae2521d3dcee70fed'},
+        ],
+        'start_dir': 'python',
+    }),
+]
+
+modextravars = {
+    'TRITON_PTXAS_PATH': '$CUDA_HOME/bin/ptxas',
+    'TRITON_LIBDEVICE_PATH': '$CUDA_HOME/nvvm/libdevice/libdevice.10.bc',
+}
+
+moduleclass = 'devel'
