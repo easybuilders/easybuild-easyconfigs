@@ -1,0 +1,151 @@
+resolve Error: "pragma message: The practice of declaring the Bind placeholders (_1, _2, ...) in the global namespace is deprecated. Please use <boost/bind/bind.hpp> + using namespace boost::placeholders, or define BOOST_BIND_GLOBAL_PLACEHOLDERS to retain the current behavior."
+define BOOST_BIND_GLOBAL_PLACEHOLDERS
+replace #include <boost/bind.hpp> with #include <boost/bind/bind.hpp>,
+replace copy_option::overwrite_if_exists with copy_options::overwrite_existing
+diff -ru StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/genetic/GAOptimize.C StackBlock-f95317b08043b7c531289576d59ad74a6d920741/genetic/GAOptimize.C
+--- StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/genetic/GAOptimize.C	2020-05-25 15:51:59.000000000 +0200
++++ StackBlock-f95317b08043b7c531289576d59ad74a6d920741/genetic/GAOptimize.C	2024-01-04 15:22:29.874336000 +0100
+@@ -9,7 +9,7 @@
+ using namespace std;
+ 
+ #include <boost/function.hpp>
+-#include <boost/bind.hpp>
++#include <boost/bind/bind.hpp>
+ 
+ #ifndef SERIAL
+ #include <boost/mpi.hpp>
+@@ -18,6 +18,7 @@
+ 
+ #include <newmat.h>
+ #include <newmatutils.h>
++#include <functional>
+ 
+ namespace genetic
+ {
+@@ -58,7 +59,7 @@
+   mpi::broadcast(world, ksum, 0);
+ #endif
+ 
+-  Cell::Evaluate = boost::bind(genetic::Evaluate, 1.0/ksum, gainput.exponent, _1, K);
++  Cell::Evaluate = boost::bind(genetic::Evaluate, 1.0/ksum, gainput.exponent, std::placeholders::_1, K);
+   Cell best;
+ #ifndef SERIAL
+   int ntask = 1 + gainput.max_community / world.size();
+@@ -125,7 +126,7 @@
+   mpi::broadcast(world, ksum, 0);
+ #endif
+ 
+-  Cell::Evaluate = boost::bind(genetic::Evaluate, 1.0/ksum, gainput.exponent, _1, K);
++  Cell::Evaluate = boost::bind(genetic::Evaluate, 1.0/ksum, gainput.exponent, std::placeholders::_1, K);
+   Cell best;
+ #ifndef SERIAL
+   int ntask = 1 + gainput.max_community / world.size();
+diff -ru StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/genetic/GAOptimize.h StackBlock-f95317b08043b7c531289576d59ad74a6d920741/genetic/GAOptimize.h
+--- StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/genetic/GAOptimize.h	2020-05-25 15:51:59.000000000 +0200
++++ StackBlock-f95317b08043b7c531289576d59ad74a6d920741/genetic/GAOptimize.h	2024-01-04 15:11:37.071030036 +0100
+@@ -1,6 +1,8 @@
+ #ifndef GA_OPTIMIZE_H
+ #define GA_OPTIMIZE_H
+ 
++#define BOOST_BIND_GLOBAL_PLACEHOLDERS
++
+ #include <fstream>
+ #include "Cell.h"
+ 
+diff -ru StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/modules/npdm/npdm_permutations.C StackBlock-f95317b08043b7c531289576d59ad74a6d920741/modules/npdm/npdm_permutations.C
+--- StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/modules/npdm/npdm_permutations.C	2020-05-25 15:51:59.000000000 +0200
++++ StackBlock-f95317b08043b7c531289576d59ad74a6d920741/modules/npdm/npdm_permutations.C	2024-01-04 15:32:31.035358000 +0100
+@@ -13,6 +13,8 @@
+ #include "Stackspinblock.h"
+ #include "pario.h"
+ 
++#include <set>
++
+ namespace SpinAdapted{
+ 
+ //===========================================================================================================================================================
+diff -ru StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/StackMatrix.h StackBlock-f95317b08043b7c531289576d59ad74a6d920741/StackMatrix.h
+--- StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/StackMatrix.h	2020-05-25 15:51:59.000000000 +0200
++++ StackBlock-f95317b08043b7c531289576d59ad74a6d920741/StackMatrix.h	2024-01-04 13:51:30.872835728 +0100
+@@ -1,6 +1,8 @@
+ #ifndef SPIN_STACKMATRIX_HEADER
+ #define SPIN_STACKMATRIX_HEADER
+ 
++#define BOOST_BIND_GLOBAL_PLACEHOLDERS
++
+ #include <boost/serialization/map.hpp>
+ #include <boost/serialization/shared_ptr.hpp>
+ #include <boost/serialization/vector.hpp>
+diff -ru StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/StackOperators.h StackBlock-f95317b08043b7c531289576d59ad74a6d920741/StackOperators.h
+--- StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/StackOperators.h	2020-05-25 15:51:59.000000000 +0200
++++ StackBlock-f95317b08043b7c531289576d59ad74a6d920741/StackOperators.h	2024-01-04 13:48:49.790156000 +0100
+@@ -3,7 +3,7 @@
+ #include "StackBaseOperator.h"
+ #include <boost/function.hpp>
+ #include <boost/functional.hpp>
+-#include <boost/bind.hpp>
++#include <boost/bind/bind.hpp>
+ 
+ typedef boost::function<void (std::vector<boost::shared_ptr<SpinAdapted::StackSparseMatrix> >)> FUNCTOR;
+ typedef boost::function<void (boost::shared_ptr<SpinAdapted::StackSparseMatrix>)> FUNCTOR2;
+diff -ru StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/Stackspinblock.C StackBlock-f95317b08043b7c531289576d59ad74a6d920741/Stackspinblock.C
+--- StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/Stackspinblock.C	2020-05-25 15:51:59.000000000 +0200
++++ StackBlock-f95317b08043b7c531289576d59ad74a6d920741/Stackspinblock.C	2024-01-04 13:30:04.524917000 +0100
+@@ -23,7 +23,7 @@
+ #include <boost/serialization/array.hpp>
+ #include <boost/function.hpp>
+ #include <boost/functional.hpp>
+-#include <boost/bind.hpp>
++#include <boost/bind/bind.hpp>
+ #include <boostutils.h>
+ 
+ #ifndef SERIAL
+diff -ru StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/Stackspinblock.h StackBlock-f95317b08043b7c531289576d59ad74a6d920741/Stackspinblock.h
+--- StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/Stackspinblock.h	2020-05-25 15:51:59.000000000 +0200
++++ StackBlock-f95317b08043b7c531289576d59ad74a6d920741/Stackspinblock.h	2024-01-04 13:41:28.043983000 +0100
+@@ -1,5 +1,6 @@
+ #ifndef STACKSPINBLOCK_HEADER
+ #define STACKSPINBLOCK_HEADER
++#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+ #include <list>
+ #include <boost/serialization/map.hpp>
+ #include <boost/serialization/shared_ptr.hpp>
+diff -ru StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/Stackwavefunction.C StackBlock-f95317b08043b7c531289576d59ad74a6d920741/Stackwavefunction.C
+--- StackBlock-f95317b08043b7c531289576d59ad74a6d920741.orig/Stackwavefunction.C	2020-05-25 15:51:59.000000000 +0200
++++ StackBlock-f95317b08043b7c531289576d59ad74a6d920741/Stackwavefunction.C	2024-01-04 14:16:06.713200000 +0100
+@@ -224,7 +224,7 @@
+ 	  sprintf (fileout, "%s/%s", dmrginp.load_prefix().c_str() , outfile.c_str());
+ 	  boost::filesystem::path topath(fileout);
+ 
+-	  copy_file(frompath, topath,boost::filesystem::copy_option::overwrite_if_exists);
++	  copy_file(frompath, topath,boost::filesystem::copy_options::overwrite_existing);
+ 	}
+ 
+ 	string filename2 = itr->path().filename().string();
+@@ -242,7 +242,7 @@
+ 	  sprintf (fileout, "%s/%s", dmrginp.load_prefix().c_str() , outfile.c_str());
+ 	  boost::filesystem::path topath(fileout);
+ 
+-	  copy_file(frompath, topath,boost::filesystem::copy_option::overwrite_if_exists);
++	  copy_file(frompath, topath,boost::filesystem::copy_options::overwrite_existing);
+ 	}
+ 
+       }
+@@ -284,7 +284,7 @@
+ 	  sprintf (fileout, "%s/%s", dmrginp.load_prefix().c_str() , outfile.c_str());
+ 	  boost::filesystem::path topath(fileout);
+ 
+-	  copy_file(frompath, topath,boost::filesystem::copy_option::overwrite_if_exists);
++	  copy_file(frompath, topath,boost::filesystem::copy_options::overwrite_existing);
+ 	}
+ 
+ 	string filename2 = itr->path().filename().string();
+@@ -302,7 +302,7 @@
+ 	  sprintf (fileout, "%s/%s", dmrginp.load_prefix().c_str() , outfile.c_str());
+ 	  boost::filesystem::path topath(fileout);
+ 
+-	  copy_file(frompath, topath,boost::filesystem::copy_option::overwrite_if_exists);
++	  copy_file(frompath, topath,boost::filesystem::copy_options::overwrite_existing);
+ 	}
+ 
+       }

@@ -1,0 +1,79 @@
+easyblock = 'Bundle'
+
+name = 'GTK3'
+version = '3.24.37'
+
+homepage = 'https://developer.gnome.org/gtk3/stable/'
+description = """GTK+ is the primary library used to construct user interfaces in GNOME. It
+ provides all the user interface controls, or widgets, used in a common
+ graphical application. Its object-oriented API allows you to construct
+ user interfaces without dealing with the low-level details of drawing and
+ device interaction.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Autotools', '20220317'),
+    ('Meson', '1.1.1'),
+    ('Ninja', '1.11.1'),
+    ('pkgconf', '1.9.5'),
+    ('GObject-Introspection', '1.76.1'),
+]
+
+dependencies = [
+    ('ATK', '2.38.0'),
+    ('at-spi2-atk', '2.38.0'),
+    ('cairo', '1.17.8'),
+    ('Gdk-Pixbuf', '2.42.10'),
+    ('GLib', '2.77.1'),
+    ('Pango', '1.50.14'),
+    ('libepoxy', '1.5.10'),
+    ('X11', '20230603'),
+    ('FriBidi', '1.0.12'),
+    ('Wayland', '1.22.0'),
+]
+
+default_easyblock = 'MesonNinja'
+
+default_component_specs = {
+    'sources': [SOURCELOWER_TAR_XZ],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    ('GTK+', version, {
+        'source_urls': [FTPGNOME_SOURCE],
+        'checksums': ['6745f0b4c053794151fd0f0e2474b077cccff5f83e9dd1bf3d39fe9fe5fb7f57'],
+    }),
+    ('hicolor-icon-theme', '0.17', {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['https://icon-theme.freedesktop.org/releases/'],
+        'checksums': ['317484352271d18cbbcfac3868eab798d67fff1b8402e740baa6ff41d588a9d8'],
+    }),
+    ('adwaita-icon-theme', '44.0', {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['https://ftp.gnome.org/pub/GNOME/sources/%(namelower)s/%(version_major)s'],
+        'patches': ['adwaita-icon-theme-44.0_disable-svg-conversion.patch'],
+        'checksums': [
+            '4889c5601bbfecd25d80ba342209d0a936dcf691ee56bd6eca4cde361f1a664c',
+            # adwaita-icon-theme-44.0_disable-svg-conversion.patch
+            '9957c8b3d2a1cf8d89d6e943e59c683dbf5c5b37687316265cc82e755208f40b',
+        ],
+        'preconfigopts': 'autoreconf -f -i && ',
+    }),
+]
+
+postinstallcmds = ['gtk-update-icon-cache']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['gtk3-demo', 'gtk3-demo-application', 'gtk3-icon-browser', 'gtk3-widget-factory',
+                                     'gtk-builder-tool', 'gtk-launch', 'gtk-query-immodules-3.0', 'gtk-query-settings',
+                                     'gtk-update-icon-cache']] +
+             ['lib/%s-%%(version_major)s.%s' % (x, SHLIB_EXT) for x in ['libgailutil', 'libgdk', 'libgtk']],
+    'dirs': ['include/%s-%%(version_major)s.0' % x for x in ['gail', 'gtk']] +
+            ['share/icons/hicolor', 'share/icons/Adwaita'],
+}
+
+moduleclass = 'vis'

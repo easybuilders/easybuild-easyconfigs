@@ -1,0 +1,45 @@
+easyblock = 'MakeCp'
+
+name = 'GUIDANCE'
+version = '2.02'
+
+homepage = 'https://taux.evolseq.net/guidance/'
+description = """
+GUIDANCE is a software package for aligning biological sequences (DNA or
+amino acids) using either MAFFT, PRANK, or CLUSTALW, and calculating
+confidence scores for each column, sequence and residue in the alignment."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://taux.evolseq.net/guidance/static/download/']
+sources = ['%(namelower)s.v%(version)s.tar.gz']
+checksums = ['825e105dde526759fb5bda1cd539b24db0b90b8b586f26b1df74d9c5abaa7844']
+
+dependencies = [
+    ('Perl', '5.36.1'),
+    ('BioPerl', '1.7.8'),
+    ('Ruby', '3.3.0'),
+    ('MAFFT', '7.520', '-with-extensions'),
+    ('PRANK', '170427'),
+    ('ClustalW2', '2.1'),
+    ('MUSCLE', '5.1.0'),
+    ('PAGAN2', '1.53_20230824', '-linux64', SYSTEM),
+]
+
+files_to_copy = ['programs', 'www']
+
+_bins = ['isEqualTree', 'msa_set_score', 'removeTaxa', 'semphy']
+
+postinstallcmds = [
+    'cd %(installdir)s && mkdir bin && cd bin'
+    ' && ' + ' && '.join(['ln -s ../programs/%s/%s' % (x, x) for x in _bins])
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _bins],
+    'dirs': [],
+}
+
+sanity_check_commands = ['msa_set_score -h', 'semphy -h']
+
+moduleclass = 'bio'
