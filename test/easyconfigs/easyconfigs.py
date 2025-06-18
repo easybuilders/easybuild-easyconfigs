@@ -999,13 +999,13 @@ class EasyConfigTest(TestCase):
             # compiler-only subtoolchains GCCcore and GCC
             # r'GCCcore-[7-9]\.[0-9]\.',
             # r'GCC(core)?-1[0-9]\.[0-9]\.',  # GCCcore 10.x, etc.
-            r'GCC(core)?-1[3-9]\.[0-9]\.',  # GCCcore 13.x & newer
+            r'GCC(core)?-1[4-9]\.[0-9]\.',  # GCCcore 14.x & newer
             # only check GCC 9.x toolchains, not older GCC versions
             # (we started checking dependency variants too late for GCC 8.x and older)
             # r'GCC-9\.[0-9]\.',
             # full toolchains, like foss/2019b or intel/2020a
             # r'(201[89]|20[2-9][0-9])[ab]',
-            r'20(23b|(2[4-9]|[3-9][0-9])[ab])',  # 2023b and newer
+            r'(202[4-9]|20[3-9][0-9])[ab]',  # 2024a and newer
         ]
 
         all_deps = {}
