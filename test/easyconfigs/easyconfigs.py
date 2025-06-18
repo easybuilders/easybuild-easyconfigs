@@ -53,7 +53,7 @@ from easybuild.framework.easyconfig.parser import (
 )
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config, LooseVersion
-from easybuild.tools.build_log import EasyBuildError, print_warning
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_file, remove_file
 from easybuild.tools.filetools import verify_checksum, which, write_file
@@ -987,22 +987,25 @@ class EasyConfigTest(TestCase):
             '13.3': '2024a',
             '14.1': None,
             '14.2': '2025a',
-            '14.3': None,
+            '14.3': '2025b',
             '15.1': None,
         }
 
         multi_dep_vars_msg = ''
-        # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
-        # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
+        # restrict to checking dependencies of easyconfigs using common toolchains,
+        # and GCCcore subtoolchain for common toolchains;
+        # for now, we only enforce this for recent toolchain versions (2025a + GCCcore 14.x, and newer);
         patterns = [
             # compiler-only subtoolchains GCCcore and GCC
-            r'GCCcore-[7-9]\.[0-9]\.',
+            #r'GCCcore-[7-9]\.[0-9]\.',
+            #r'GCC(core)?-1[0-9]\.[0-9]\.',  # GCCcore 10.x, etc.
+            r'GCC(core)?-1[4-9]\.[0-9]\.',  # GCCcore 14.x & newer
             # only check GCC 9.x toolchains, not older GCC versions
             # (we started checking dependency variants too late for GCC 8.x and older)
-            r'GCC(core)?-1[0-9]\.[0-9]\.',  # GCCcore 10.x, etc.
-            r'GCC-9\.[0-9]\.',
+            #r'GCC-9\.[0-9]\.',
             # full toolchains, like foss/2019b or intel/2020a
-            r'(201[89]|20[2-9][0-9])[ab]',
+            #r'(201[89]|20[2-9][0-9])[ab]',
+            r'(202[5-9]|20[3-9][0-9])[ab]', # 2025a and newer
         ]
 
         all_deps = {}
