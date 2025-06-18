@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'HOOMD-blue'
+version = '5.1.1'
+
+homepage = 'http://glotzerlab.engin.umich.edu/hoomd-blue/'
+description = """HOOMD-blue is a general-purpose particle simulation toolkit for both
+GPUs and CPUs, with a Python interface."""
+
+toolchain = {'name': 'gompic', 'version': '2023a'}
+toolchainopts = {'openmp': False, 'usempi': True}
+
+source_urls = ['https://github.com/glotzerlab/hoomd-blue/releases/download/v%(version)s/']
+sources = ['hoomd-%(version)s.tar.gz']
+checksums = ['67c92497395262119b9b6d4df1b2b5c0c4af8517baec0f02dd8c45ed18e8d57b']
+
+builddependencies = [
+    ('CMake', '3.31.1'),
+    ('Eigen', '3.4.0'),
+    ('python-build-bundle', '2025a'),
+    ('tbb', '2021.10.0'),
+    ('Cereal', '1.3.2'),
+]
+
+multi_deps = {'Python': ['3.11', '3.12', '3.13']}
+
+configopts  = ' '.join([
+    '-DENABLE_MPI=ON',
+    '-DENABLE_CUDA=ON',
+    '-DENABLE_TBB=ON',
+    '-DENABLE_LLVM=OFF ',
+    '-DCMAKE_INSTALL_PREFIX=%(installdir)s/lib/python${EBVERSIONPYTHON:0:4}/site-packages',
+])
+
+#runtest = ' && ctest --parallel 8'
+
+sanity_check_paths = {
+    'dirs': ['lib']
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'phys'
