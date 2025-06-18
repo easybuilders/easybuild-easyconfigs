@@ -33,7 +33,7 @@ dependencies = [
     ('libwebp', '1.4.0'),
     ('Blosc', '1.21.6'),
     ('tinyxml2', '10.0.0'),
-    ('c-ares', '1.34.5'),
+    ('c-ares', '1.34.4'),
 ]
 
 _systemlibs = [
@@ -373,6 +373,10 @@ _preinstall_bazel_exports_buildopts = 'export TENSORSTORE_BAZEL_BUILD_OPTIONS="'
 _preinstall_bazel_exports_buildopts += '$(for i in  $CFLAGS;do echo --copt=$i; done) '  # pass CFLAGS to Bazel as copts
 _preinstall_bazel_exports_buildopts += '%s %s' % (_bzl_linkopts, _bzl_include_copts)
 _preinstall_bazel_exports_buildopts += ' --distdir=%s' % _dist_dir
+# pass $TMPDIR from host into sandbox used by Bazel,
+# required when using RPATH linking because of RPATH wrapper scripts;
+# see also https://github.com/bazelbuild/bazel/issues/19915
+_preinstall_bazel_exports_buildopts += ' --sandbox_add_mount_pair=$TMPDIR'
 _preinstall_bazel_exports_buildopts += '" &&'  # (end prebuild_bazel_exports_buildopts)
 
 # put all together:
