@@ -999,7 +999,7 @@ class EasyConfigTest(TestCase):
             # compiler-only subtoolchains GCCcore and GCC
             # r'GCCcore-[7-9]\.[0-9]\.',
             # r'GCC(core)?-1[0-9]\.[0-9]\.',  # GCCcore 10.x, etc.
-            r'GCC(core)?-1[4-9]\.[0-9]\.',  # GCCcore 14.x & newer
+            r'GCC(core)?-1(3\.[3-9]|[4-9]\.[0-9])\.',  # GCCcore 13.3 & newer
             # only check GCC 9.x toolchains, not older GCC versions
             # (we started checking dependency variants too late for GCC 8.x and older)
             # r'GCC-9\.[0-9]\.',
