@@ -1,0 +1,94 @@
+name = 'Amber'
+local_amber_ver = 24
+local_ambertools_ver = 24
+# Patch levels from https://ambermd.org/AmberPatches.php and https://ambermd.org/ATPatches.php
+patchlevels = (0, 0)  # (AmberTools, Amber)
+version = '%s.%s' % (local_amber_ver, patchlevels[1])
+versionsuffix = '-AmberTools-%s.%s-CUDA-%%(cudaver)s' % (local_ambertools_ver, patchlevels[0])
+
+homepage = 'https://ambermd.org/amber.html'
+description = """Amber (originally Assisted Model Building with Energy Refinement) is software for performing
+ molecular dynamics and structure prediction."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+sources = [
+    '%%(name)s%s.tar.bz2' % local_amber_ver,
+    {'filename': 'AmberTools%s.tar.bz2' % local_ambertools_ver, 'alt_location': 'AmberTools'},
+]
+patches = [
+    {'name': 'AmberTools-20_cmake-locate-netcdf.patch', 'alt_location': 'AmberTools'},
+    {'name': 'AmberTools-20_fix_missing_MPI_LIBRARY_error.patch', 'alt_location': 'AmberTools'},
+    {'name': 'AmberTools-20_fix_xblas_missing_make_dependency.patch', 'alt_location': 'AmberTools'},
+    {'name': 'AmberTools-21_CMake-FlexiBLAS.patch', 'alt_location': 'AmberTools'},
+    {'name': 'AmberTools-21_fix_incorrect_dvout_call.patch', 'alt_location': 'AmberTools'},
+    {'name': 'AmberTools-21_fix_more_blas_argument_problems.patch', 'alt_location': 'AmberTools'},
+    {'name': 'AmberTools-21_fix_potential_use_before_init.patch', 'alt_location': 'AmberTools'},
+    {'name': 'AmberTools-21_fix_rism_argument_mismatch.patch', 'alt_location': 'AmberTools'},
+    {'name': 'AmberTools-21_fix_xray_fftpack_arg_mismatch.patch', 'alt_location': 'AmberTools'},
+    'Amber-22_remove_undeclared_redundant_variable.patch',
+    'Amber-24_reduce_precision_of_kmmd_pmemd_gb_test.patch',
+    'Amber-24_skip-TempRem-tests.patch',
+]
+checksums = [
+    {'Amber24.tar.bz2': '74a7dbc4530f6302ae1efe723ba54d0fcdb03bce2b7231663ce5afc2c5660076'},
+    {'AmberTools24.tar.bz2': '52fb4fb3370a89b7ce738a2dc3e513c2fc1943fde4b4381846d9e75cc48d840f'},
+    {'AmberTools-20_cmake-locate-netcdf.patch': '473e07c53b6f641d96d333974a6af2e03413fecef79f879d3fdecf7fecaab4d0'},
+    {'AmberTools-20_fix_missing_MPI_LIBRARY_error.patch':
+     '0b89a0624167bc23876bcdefcb1055f591e38e3bd559a71d5749e342bd311acc'},
+    {'AmberTools-20_fix_xblas_missing_make_dependency.patch':
+     'ff25e91fdc72347a778c3837b581e174d6a8c71efa5b46e11391b18bca84fd65'},
+    {'AmberTools-21_CMake-FlexiBLAS.patch': '9543812c24c4b7842f64f1f8abaf2c92b5c4c0fadcdbd9811e76b81a778f0d36'},
+    {'AmberTools-21_fix_incorrect_dvout_call.patch':
+     '1054d4007f5c79126a41582e1e80514267cf406416ed6c471574cd708b16319b'},
+    {'AmberTools-21_fix_more_blas_argument_problems.patch':
+     'c6279b57752239184b942d37f760749494ae0eff95236f3368c76ac0d2726a7c'},
+    {'AmberTools-21_fix_potential_use_before_init.patch':
+     '377e645b5bd2c91ebb4d0b6fbca0407a94289e5ddc5b1e7ed0cb0b0724ad2139'},
+    {'AmberTools-21_fix_rism_argument_mismatch.patch':
+     '14255e5739cec39303df570f06820c7532f7395e1b73b1e4104377984e2c9fc1'},
+    {'AmberTools-21_fix_xray_fftpack_arg_mismatch.patch':
+     '99c954e693659efc2a1d121f91510f56408006f0751d91595f45a34b03364e2f'},
+    {'Amber-22_remove_undeclared_redundant_variable.patch':
+     'b94900c2178dd6dbf2824b17074980a3e5e6e71b38c0b2b30e1f147e4e1ac8cb'},
+    {'Amber-24_reduce_precision_of_kmmd_pmemd_gb_test.patch':
+     '38f0bcc4e270f839b40f8c49ebaac81564956e886187039732415937a90b7571'},
+    {'Amber-24_skip-TempRem-tests.patch': '3817781a05680a1041d78d49eec3637b51c5b8068c143bd586ff82be74ca320d'},
+]
+
+download_instructions = f"""{name} requires manual download from https://ambermd.org/GetAmber.php
+Required downloads: {sources[0]} and {sources[1]['filename']}"""
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('make', '4.4.1'),
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('bzip2', '1.0.8'),
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),  # mpi4py required for MMPBSA
+    ('Perl', '5.38.0'),
+    ('Boost', '1.83.0'),
+    ('libreadline', '8.2'),
+    ('matplotlib', '3.8.2'),
+    ('netCDF', '4.9.2'),
+    ('netCDF-Fortran', '4.6.1'),
+    ('PnetCDF', '1.13.0'),
+    ('Tkinter', '3.11.5'),
+    ('X11', '20231019'),
+    ('CUDA', '12.4.0', '', SYSTEM),
+    ('NCCL', '2.20.5', '-CUDA-%(cudaver)s'),
+    ('UCX-CUDA', '1.15.0', '-CUDA-%(cudaver)s'),
+]
+
+# Some CUDA tests differs from expected results
+runtest = False
+
+static = False
+
+moduleclass = 'chem'
