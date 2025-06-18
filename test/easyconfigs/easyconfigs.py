@@ -997,15 +997,15 @@ class EasyConfigTest(TestCase):
         # for now, we only enforce this for recent toolchain versions (2025a + GCCcore 14.x, and newer);
         patterns = [
             # compiler-only subtoolchains GCCcore and GCC
-            #r'GCCcore-[7-9]\.[0-9]\.',
-            #r'GCC(core)?-1[0-9]\.[0-9]\.',  # GCCcore 10.x, etc.
+            # r'GCCcore-[7-9]\.[0-9]\.',
+            # r'GCC(core)?-1[0-9]\.[0-9]\.',  # GCCcore 10.x, etc.
             r'GCC(core)?-1[4-9]\.[0-9]\.',  # GCCcore 14.x & newer
             # only check GCC 9.x toolchains, not older GCC versions
             # (we started checking dependency variants too late for GCC 8.x and older)
-            #r'GCC-9\.[0-9]\.',
+            # r'GCC-9\.[0-9]\.',
             # full toolchains, like foss/2019b or intel/2020a
-            #r'(201[89]|20[2-9][0-9])[ab]',
-            r'(202[5-9]|20[3-9][0-9])[ab]', # 2025a and newer
+            # r'(201[89]|20[2-9][0-9])[ab]',
+            r'(202[5-9]|20[3-9][0-9])[ab]',  # 2025a and newer
         ]
 
         all_deps = {}
