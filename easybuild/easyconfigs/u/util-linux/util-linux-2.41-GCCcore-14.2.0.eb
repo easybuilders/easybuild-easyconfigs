@@ -1,0 +1,48 @@
+easyblock = 'MesonNinja'
+
+name = 'util-linux'
+version = '2.41'
+
+homepage = 'https://www.kernel.org/pub/linux/utils/util-linux'
+
+description = "Set of Linux utilities"
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['%s/v%%(version_major_minor)s' % homepage]
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['util-linux-%(version)s_fix-meson-posixipc_libs.patch']
+checksums = [
+    {'util-linux-2.41.tar.gz': 'c014b5861695b603d0be2ad1e6f10d5838b9d7859e1dd72d01504556817d8a87'},
+    {'util-linux-2.41_fix-meson-posixipc_libs.patch':
+     'd21e13cea85897c159ac321806c5e0ae8eb6388dd59d9d737ce9d669a89573c8'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('pkgconf', '2.3.0'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('Meson', '1.6.1'),
+    ('Ninja', '1.12.1'),
+]
+
+dependencies = [
+    ('ncurses', '6.5'),
+    ('zlib', '1.3.1'),
+    ('SQLite', '3.47.2'),
+]
+
+# disable account related utilities (they need OS dependent pam-devel files)
+# disable wall and friends (requires group changing permissions for install user)
+configopts = "-Dbuild-chfn-chsh=disabled -Dbuild-login=disabled -Dbuild-su=disabled -Dbuild-rfkill=disabled "
+configopts += "-Dbuild-wall=disabled -Duse-tty-group=false "
+configopts += "-Dbuild-python=disabled "
+
+sanity_check_paths = {
+    'files': [f'lib/lib%s.{SHLIB_EXT}' % x for x in ['blkid', 'mount', 'uuid']],
+    'dirs': ['include', 'bin', 'share', 'sbin'],
+}
+
+moduleclass = 'tools'
