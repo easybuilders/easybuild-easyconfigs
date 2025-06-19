@@ -967,11 +967,6 @@ class EasyConfigTest(TestCase):
         # across all easyconfigs of that generation (regardless of whether a full toolchain or subtoolchain is used);
         # see https://docs.easybuild.io/common-toolchains/#common_toolchains_overview
         gcc_tc_gen_map = {
-            '6.4': '2018a',
-            '7.3': '2018b',
-            '8.2': '2019a',
-            '8.3': '2019b',
-            '9.3': '2020a',
             '10.2': '2020b',
             '10.3': '2021a',
             '11.1': None,
@@ -994,17 +989,11 @@ class EasyConfigTest(TestCase):
         multi_dep_vars_msg = ''
         # restrict to checking dependencies of easyconfigs using common toolchains,
         # and GCCcore subtoolchain for common toolchains;
-        # for now, we only enforce this for recent toolchain versions (2025a + GCCcore 14.x, and newer);
+        # for now, we only enforce this for recent toolchain versions (2023b + GCCcore 13.x, and newer);
         patterns = [
             # compiler-only subtoolchains GCCcore and GCC
-            # r'GCCcore-[7-9]\.[0-9]\.',
-            # r'GCC(core)?-1[0-9]\.[0-9]\.',  # GCCcore 10.x, etc.
             r'GCC(core)?-1[3-9]\.[0-9]\.',  # GCCcore 13.x & newer
-            # only check GCC 9.x toolchains, not older GCC versions
-            # (we started checking dependency variants too late for GCC 8.x and older)
-            # r'GCC-9\.[0-9]\.',
-            # full toolchains, like foss/2019b or intel/2020a
-            # r'(201[89]|20[2-9][0-9])[ab]',
+            # full toolchains, like foss/2022b or intel/2023a
             r'20(23b|(2[4-9]|[3-9][0-9])[ab])',  # 2023b and newer
         ]
 
