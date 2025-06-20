@@ -1,0 +1,118 @@
+easyblock = 'CMakeMake'
+
+name = 'SPIRV-tools'
+version = '2024.3'
+
+homepage = 'https://github.com/KhronosGroup/SPIRV-Tools'
+description = """The SPIR-V Tools project provides an API and commands for processing SPIR-V modules.
+The project includes an assembler, binary module parser, disassembler, validator, and optimizer for SPIR-V.
+Except for the optimizer, all are based on a common static library.
+The library contains all of the implementation details, and is used in the standalone tools whilst also enabling integration into other code bases directly.
+The optimizer implementation resides in its own library, which depends on the core library."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'pic': True, 'openmp': True, 'cstd': 'c++17'}
+
+local_vulkan_sdk_version = '1.4.309.0'
+local_googletest_version = '1.17.0'
+local_google_effcee_version = '2019.1'
+local_google_re2_version = '2024-07-02'
+local_mimalloc_version = '3.1.5'
+
+sources = [
+    # See https://github.com/KhronosGroup/SPIRV-Tools/?tab=readme-ov-file#source-code-organization
+    # The packages marked as `` in the above link needs to be added to the `external/` directory and not as deps
+    {
+        "download_filename": "v%(version)s.tar.gz",
+        "filename": "SPIRV-tools-%(version)s.tar.gz",
+        "extract_cmd": "mkdir -p %(builddir)s/spirv-tools && tar xzvf %s --strip-components=1 -C $_",
+        "source_urls": ["https://github.com/KhronosGroup/SPIRV-Tools/archive/refs/tags"],
+    },
+    {
+        "download_filename": "vulkan-sdk-%s.tar.gz" % local_vulkan_sdk_version,
+        "filename": "SPIRV-headers-vulkan-sdk-%s.tar.gz" % local_vulkan_sdk_version,
+        "extract_cmd": "mkdir -p %(builddir)s/spirv-tools/external/spirv-headers && tar xzvf %s --strip-components=1 -C $_",
+        "source_urls": ["https://github.com/KhronosGroup/SPIRV-Headers/archive/refs/tags"],
+    },
+    # Running with googletest also requires effcee -> re2
+    {
+        "source_urls": ["https://github.com/google/googletest/releases/download/v%s" % local_googletest_version],
+        "filename": "googletest-%s.tar.gz" % local_googletest_version,
+        "extract_cmd": "mkdir -p %(builddir)s/spirv-tools/external/googletest && tar xzvf %s --strip-components=1 -C $_",
+    },
+    {
+        "source_urls": ["https://github.com/google/effcee/archive/refs/tags/"],
+        "download_filename": "v%s.tar.gz" % local_google_effcee_version,
+        "filename": "effcee-%s.tar.gz" % local_google_effcee_version,
+        "extract_cmd": "mkdir -p %(builddir)s/spirv-tools/external/effcee && tar xzvf %s --strip-components=1 -C $_",
+    },
+    {
+        "source_urls": ["https://github.com/google/re2/archive/refs/tags/"],
+        "download_filename": "%s.tar.gz" % local_google_re2_version,
+        "filename": "re2-%s.tar.gz" % local_google_re2_version,
+        "extract_cmd": "mkdir -p %(builddir)s/spirv-tools/external/re2 && tar xzvf %s --strip-components=1 -C $_",
+    },
+    {
+        "source_urls": ["https://github.com/microsoft/mimalloc/archive/refs/tags/"],
+        "download_filename": "v%s.tar.gz" % local_mimalloc_version,
+        "filename": "mimalloc-%s.tar.gz" % local_mimalloc_version,
+        "extract_cmd": "mkdir -p %(builddir)s/spirv-tools/external/mimalloc && tar xzvf %s --strip-components=1 -C $_",
+    }
+]
+patches = [
+    'SPIRV-tools-2024.3-fix_hardcoded_std.patch',
+]
+checksums = [
+    {'SPIRV-tools-2024.3.tar.gz': '7b20b3b1ab9694fce1480788cd28c20aee64e29defc283c554dff0e5240651d3'},
+    {'SPIRV-headers-vulkan-sdk-1.4.309.0.tar.gz': 'a96f8b4f2dfb18f7432e5c523e220ab0075372a9509e0c25fbff21c76af0de7c'},
+    {'googletest-1.17.0.tar.gz': '65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c'},
+    {'effcee-2019.1.tar.gz': '0c49849859d356f39273fa01f674eaf687fd5e5fe83c94510784c2279bfb793d'},
+    {'re2-2024-07-02.tar.gz': 'eb2df807c781601c14a260a507a5bb4509be1ee626024cb45acbd57cb9d4032b'},
+    {'mimalloc-3.1.5.tar.gz': '1c6949032069d5ebea438ec5cedd602d06f40a92ddf0f0d9dcff0993e5f6635c'},
+    {'SPIRV-tools-2024.3-fix_hardcoded_std.patch': 'd486f023e14ec57511dec3adc803eb29667ffc812f502f2393a57a316e95c3cd'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+    ('Abseil', '20250512.1'),
+]
+
+dependencies = []
+
+configopts = ' '.join([
+    '-DSPIRV_TOOLS_USE_MIMALLOC=ON',  # Use mimalloc for memory management
+])
+
+runtest = True
+
+sanity_check_paths = {
+    'files': [
+        'bin/spirv-as',
+        'bin/spirv-cfg',
+        'bin/spirv-dis',
+        'bin/spirv-lesspipe.sh',
+        'bin/spirv-link',
+        'bin/spirv-lint',
+        'bin/spirv-objdump',
+        'bin/spirv-opt',
+        'bin/spirv-reduce',
+        'bin/spirv-val',
+        'include/spirv-tools/libspirv.h',
+        'lib/libSPIRV-Tools.a',
+        'lib/libSPIRV-Tools-shared.so',
+    ],
+    'dirs': [
+        'lib/cmake/SPIRV-Tools'
+    ],
+}
+
+sanity_check_commands = [
+    'spirv-as --version',
+    'spirv-dis --version',
+    'spirv-link --version',
+    'spirv-opt --version',
+    'spirv-val --version',
+]
+
+moduleclass = 'tools'
