@@ -16,6 +16,7 @@ description = """ a pArallel Server for Adaptive GeoInformation.
 """
 
 toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
 
 sources = [{
     'git_config': {
@@ -24,22 +25,19 @@ sources = [{
         'commit': local_commit_id,
         'recursive': True,
     },
-    'filename': SOURCE_TAR_GZ,
+    'filename': SOURCE_TAR_XZ,
 }]
 patches = [
-    ('ASAGI-CMakeList.patch', 0),
-    ('ASAGI-level.h.patch', 0),
+    'ASAGI-1.0_fix-level.h.patch',
 ]
 checksums = [
-    {'ASAGI-1.0.tar.gz': '703927701a04850a6da9754427dcf429e455ca825673587f5df389980d7452d7'},
-    {'ASAGI-CMakeList.patch': 'b7b9135adb3e21045c50eeae5caa27bb73c1cb385981e4e7561d1a64158ccdef'},
-    {'ASAGI-level.h.patch': '2dcad7665a3e541c338645f3dc8ca02fe8a3eff2719afc3eb1247bee7e11c61f'},
+    {'ASAGI-1.0.tar.xz': 'e95a15170a3cf2b8d91fa68a4e6a0ccded867ce6ec41a4fa52cf8c3747160638'},
+    {'ASAGI-1.0_fix-level.h.patch': 'a40bcf614ff59bfd4f034b0d6f1128a10f0d9a73506c247aefed4d7d69e00583'},
 ]
 
 builddependencies = [
     ('CMake', '3.26.3'),
-    ('OpenMPI', '4.1.5'),
-    ('pkg-config', '0.29.2'),
+    ('pkgconf', '1.9.5'),
 ]
 
 dependencies = [
@@ -47,16 +45,10 @@ dependencies = [
     ('numactl', '2.0.16'),
 ]
 
-preconfigopts = "mkdir build && cd build &&"
-
 configopts = " -DSHARED_LIB=yes"
-configopts += " -DCMAKE_BUILD_TYPE=Release"
-configopts += " -DMPI_C_COMPILER=mpicc -DMPI_CXX_COMPILER=mpiCC -DMPI_Fortran_COMPILER=mpif90"
 
-prebuildopts = 'cd build &&'
-preinstallopts = 'cd build &&'
 sanity_check_paths = {
-    'files': ['lib/libasagi.so'],
+    'files': ['include/asagi.h', 'lib/libasagi.%s' % SHLIB_EXT, 'lib/pkgconfig/asagi.pc'],
     'dirs': [],
 }
 
