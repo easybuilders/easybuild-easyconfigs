@@ -969,8 +969,9 @@ class EasyConfigTest(TestCase):
         # restrict to checking dependencies of easyconfigs using common toolchains
         # and GCCcore subtoolchain for common toolchains
         patterns = [
-            # compiler-only subtoolchains GCCcore and GCC
-            r'GCC(core)?-1(0\.3|[12]\.[0-9])',  # GCCcore 10.3 to 12.3
+            # compiler-only subtoolchains GCCcore, this pattern has never checked GCC toolchains
+            # retain the check as it has always been in the old generation check
+            r'GCCcore-1(0\.3|[12]\.[0-9])',  # GCCcore 10.3 to 12.3
             # full toolchains, like foss/2021a or intel/2022b
             r'202([12][ab]|3a)',  # 2021a to 2023a
         ]
