@@ -799,17 +799,6 @@ class EasyConfigTest(TestCase):
             'version: 1.66.0; versionsuffix:': ['BLAST+-2.7.1-foss-2018a.eb'],
         }))
 
-        self.assertTrue(self.check_dep_vars('2019a', 'Boost', {
-            'version: 1.64.0; versionsuffix:': [
-                'Boost.Python-1.64.0-gompi-2019a.eb',
-                'EMAN2-2.3-foss-2019a-Python-2.7.15.eb',
-            ],
-            'version: 1.70.0; versionsuffix:': [
-                'BLAST+-2.9.0-gompi-2019a.eb',
-                'Boost.Python-1.70.0-gompi-2019a.eb',
-            ],
-        }))
-
         # two variants is OK, if they're for Python 2.x and 3.x
         self.assertTrue(self.check_dep_vars('2020a', 'Python', {
             'version: 2.7.18; versionsuffix:': ['SciPy-bundle-2020.03-foss-2020a-Python-2.7.18.eb'],
