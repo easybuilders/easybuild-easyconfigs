@@ -1,0 +1,49 @@
+easyblock = 'MakeCp'
+
+name = 'msisensor-pro'
+version = '1.3.0'
+
+homepage = 'https://github.com/xjtu-omics/msisensor-pro/wiki'
+description = """MSIsensor-pro evaluates Microsatellite Instability (MSI) for cancer patients with
+ next generation sequencing data. It accepts the whole genome sequencing, whole exome sequencing and
+ target region (panel) sequencing data as input."""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/xjtu-omics/msisensor-pro/archive/refs/tags']
+sources = [{
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = ['msisensor-pro-1.3.0_makefile.patch']
+checksums = [
+    {'msisensor-pro-1.3.0.tar.gz': '30d03841abfe12daee57984bb97687222534b18aeaa17ff7f4d1116dc31cc9c1'},
+    {'msisensor-pro-1.3.0_makefile.patch': '368ff680ab409532cb204c6b828bf5ca57d8a827e952e87a4fbbe440881b657b'},
+]
+
+dependencies = [
+    ('HTSlib', '1.21'),
+    ('bzip2', '1.0.8'),
+    ('ncurses', '6.5'),
+    ('zlib', '1.3.1'),
+]
+
+prebuildopts = 'cd cpp && '
+
+files_to_copy = [
+    (['binary/%(name)s-v%(version)s'],  'bin')
+]
+
+postinstallcmds = [
+    "chmod +x %(installdir)s/bin/%(name)s-v%(version)s",
+    "cd %(installdir)s/bin && ln -s %(name)s-v%(version)s %(name)s",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s-v%(version)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%(name)s-v%(version)s --help 2>&1 | grep 'Version: v%(version)s'"]
+
+moduleclass = 'bio'
