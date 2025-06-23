@@ -552,13 +552,10 @@ class EasyConfigTest(TestCase):
 
         # some software packages require a specific (older/newer) version of a particular dependency
         alt_dep_versions = {
-            # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
-            'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
-            # EMAN2 2.3 requires Boost(.Python) 1.64.0
-            'Boost': [('1.64.0;', [r'Boost.Python-1\.64\.0-', r'EMAN2-2\.3-'])],
-            'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
+            # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
+            'AUGUSTUS': [(r'3\.5\.0-20240612', [r'BRAKER-3\.0\.8'])],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'CLHEP': [('2.4.5.1;', [r'GATE-9\.2-foss-2021b'])],
             # Score-P 8.3+ requires Cube 4.8.2+ but we have 4.8.1 already
@@ -579,52 +576,20 @@ class EasyConfigTest(TestCase):
                                                 r'GRASS-8\.2\.0',
                                                 r'QGIS-3\.28\.1']),
             ],
+            # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
-            # VMTK 1.4.x requires ITK 4.13.x
-            'ITK': [(r'4\.13\.', [r'VMTK-1\.4\.'])],
-            # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
-            'Jellyfish': [(r'1\.', [r'Kraken-1\.', r'Roary-3\.12\.0', r'metaWRAP-1\.2'])],
-            # Libint 1.1.6 is required by older CP2K versions
-            'Libint': [(r'1\.1\.6', [r'CP2K-[3-6]'])],
-            # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, horton, PySCF, WIEN2k
+            # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
+            'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
             'libxc': [
-                (r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-',
-                             r'PySCF-', r'Qiskit-', r'WIEN2k-']),
                 (r'4\.', [r'libGridXC-']),
                 (r'5\.', [r'Elk-']),
-            ],
-            # some software depends on numba, which typically requires an older LLVM;
-            # this includes BirdNET, cell2location, cryoDRGN, librosa, PyOD, Python-Geometric, scVelo, scanpy
-            'LLVM': [
-                # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
-                (r'8\.', [r'numba-0\.47\.0-', r'librosa-0\.7\.2-', r'BirdNET-20201214-',
-                          r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[346]\.[23]', r'SHAP-0\.42\.1']),
-                (r'10\.0\.1', [r'cell2location-0\.05-alpha-', r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-',
-                               r'numba-0\.52\.0-', r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3',
-                               r'scanpy-1\.7\.2-', r'umap-learn-0\.4\.6-']),
-            ],
-            'Lua': [
-                # SimpleITK 2.1.0 requires Lua 5.3.x, MedPy and nnU-Net depend on SimpleITK
-                (r'5\.3\.5', [r'nnU-Net-1\.7\.0-', r'MedPy-0\.4\.0-', r'SimpleITK-2\.1\.0-']),
             ],
             # FDMNES requires sequential variant of MUMPS
             'MUMPS': [(r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES'])],
             # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0, Finder requires SRA-Toolkit 3.0.0
             'ncbi-vdb': [(r'3\.0\.0', [r'SRA-Toolkit-3\.0\.0', r'finder-1\.1\.0'])],
-            # TensorFlow 2.5+ requires a more recent NCCL than version 2.4.8 used in 2019b generation;
-            # Horovod depends on TensorFlow, so same exception required there
-            'NCCL': [(r'2\.11\.4', [r'TensorFlow-2\.[5-9]\.', r'Horovod-0\.2[2-9]'])],
-            # rampart requires nodejs > 10, artic-ncov2019 requires rampart
-            'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
-            # some software depends on an older numba;
-            # this includes BirdNET, cell2location, cryoDRGN, librosa, PyOD, Python-Geometric, scVelo, scanpy
-            'numba': [
-                (r'0\.52\.0', [r'cell2location-0\.05-alpha-', r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-',
-                               r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3', r'scanpy-1\.7\.2-',
-                               r'umap-learn-0\.4\.6-']),
-            ],
             'OpenFOAM': [
                 # CFDEMcoupling requires OpenFOAM 5.x
                 (r'5\.0-20180606', [r'CFDEMcoupling-3\.8\.0']),
@@ -636,47 +601,26 @@ class EasyConfigTest(TestCase):
             'pydantic': [
                 # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
                 ('1.10.13;', ['GTDB-Tk-2.3.2-', 'GTDB-Tk-2.4.0-']),
-                ('2.7.4;', ['MultiQC-1.22.3-']),
             ],
-            # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
-            # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
-            # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
+            # bakta requires PyHMMER 0.10.15
+            'PyHMMER': [(r'0\.10\.15', [r'bakta-1\.10\.1'])],
             # WhatsHap 1.4 + medaka 1.6.0 require Pysam >= 0.18.0 (NGSpeciesID depends on medaka)
             'Pysam': [
-                ('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
-                               'NGSpeciesID-0.1.1.1-']),
                 ('0.18.0;', ['medaka-1.6.0-', 'NGSpeciesID-0.1.2.1-', 'WhatsHap-1.4-']),
             ],
+            # bakta requires python-isal 1.6.1
+            'python-isal': [(r'1\.6\.1', [r'bakta-1\.10\.1'])],
             # PyTorch-Lightning-1.8.4 is requiered in synthcity-0.2.10 and DECAF-synthetic-data-0.1.6
             'PyTorch-Lightning': [('1.8.4;', ['synthcity-0.2.10-', 'DECAF-synthetic-data-0.1.6-'])],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1', r'OPERA-MS-0\.9\.0-20240703'])],
-            # NanoPlot, NanoComp use an older version of Seaborn
-            'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
             # CheckM2 and its dep LightGBM requires scikit-learn-1.6.1
             'scikit-learn': [(r'1\.6\.1', [r'CheckM2-1\.1\.0-', r'LightGBM-4\.6\.0-'])],
-            # Shasta requires spoa 3.x
-            'spoa': [(r'3\.4\.0', [r'Shasta-0\.8\.0-'])],
             # UShER requires tbb-2020.3 as newer versions will not build
             # orthagogue requires tbb-2020.3 as 2021 versions are not backward compatible with the previous releases
             'tbb': [('2020.3', ['UShER-0.5.0-', 'orthAgogue-20141105-'])],
             'TensorFlow': [
-                # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
-                # artic-ncov2019 requires medaka
-                ('1.13.1;', ['medaka-0.11.4-', 'medaka-0.12.0-', 'artic-ncov2019-2020.04.13']),
-                # medaka 1.1.* and 1.2.* requires TensorFlow 2.2.0
-                # (while other 2019b easyconfigs use TensorFlow 2.1.0 as dep);
-                # TensorFlow 2.2.0 is also used as a dep for Horovod 0.19.5;
-                # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
-                ('2.2.0;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'Horovod-0.19.5-', 'decona-0.1.2-',
-                            'NGSpeciesID-0.1.1.1-']),
-                # medaka 1.4.3 (foss/2019b) depends on TensorFlow 2.2.2
-                ('2.2.2;', ['medaka-1.4.3-']),
-                # medaka 1.4.3 (foss/2020b) depends on TensorFlow 2.2.3; longread_umi and artic depend on medaka
-                ('2.2.3;', ['medaka-1.4.3-', 'artic-ncov2019-2021.06.24-', 'longread_umi-0.3.2-']),
-                # AlphaFold 2.1.2 (foss/2020b) depends on TensorFlow 2.5.0
-                ('2.5.0;', ['AlphaFold-2.1.2-']),
                 # medaka 1.5.0 (foss/2021a) depends on TensorFlow >=2.5.2, <2.6.0
                 ('2.5.3;', ['medaka-1.5.0-']),
                 # tensorflow-probability version to TF version
@@ -693,16 +637,8 @@ class EasyConfigTest(TestCase):
             'VisPy': [('0.14.1;', ['napari-0.4.19.post1-'])],
             # Visit-3.4.1 requires VTK 9.2.x
             'VTK': [('9.2.6;', ['Visit-3.4.1-'])],
-            # WPS 3.9.1 requires WRF 3.9.1.1
-            'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
             'wxWidgets': [(r'3\.2\.0', [r'wxPython-4\.2\.0', r'GRASS-8\.2\.0', r'QGIS-3\.28\.1'])],
-            # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
-            'AUGUSTUS': [(r'3\.5\.0-20240612', [r'BRAKER-3\.0\.8'])],
-            # bakta requires PyHMMER 0.10.15
-            'PyHMMER': [(r'0\.10\.15', [r'bakta-1\.10\.1'])],
-            # bakta requires python-isal 1.6.1
-            'python-isal': [(r'1\.6\.1', [r'bakta-1\.10\.1'])],
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -861,17 +797,6 @@ class EasyConfigTest(TestCase):
             'version: 1.63.0; versionsuffix: -Python-2.7.14': ['EMAN2-2.21a-foss-2018a-Python-2.7.14-Boost-1.63.0.eb'],
             'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2018a.eb'],
             'version: 1.66.0; versionsuffix:': ['BLAST+-2.7.1-foss-2018a.eb'],
-        }))
-
-        self.assertTrue(self.check_dep_vars('2019a', 'Boost', {
-            'version: 1.64.0; versionsuffix:': [
-                'Boost.Python-1.64.0-gompi-2019a.eb',
-                'EMAN2-2.3-foss-2019a-Python-2.7.15.eb',
-            ],
-            'version: 1.70.0; versionsuffix:': [
-                'BLAST+-2.9.0-gompi-2019a.eb',
-                'Boost.Python-1.70.0-gompi-2019a.eb',
-            ],
         }))
 
         # two variants is OK, if they're for Python 2.x and 3.x
