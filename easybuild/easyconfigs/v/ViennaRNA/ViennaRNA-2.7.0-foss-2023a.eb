@@ -1,0 +1,60 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'ConfigureMake'
+
+name = 'ViennaRNA'
+version = '2.7.0'
+
+homepage = 'https://www.tbi.univie.ac.at/RNA/'
+description = """The Vienna RNA Package consists of a C code library and several
+stand-alone programs for the prediction and comparison of RNA secondary structures."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.tbi.univie.ac.at/RNA/download/sourcecode/%(version_major)s_%(version_minor)s_x/']
+sources = [SOURCE_TAR_GZ]
+patches = ['%(name)s-%(version)s-flexiblas-for-RNAxplorer.patch']
+checksums = [
+    {'ViennaRNA-2.7.0.tar.gz': '9a99fd68ed380894defb4d5e6a8a2871629270028cdf7f16f0a05da6e8c71473'},
+    {'ViennaRNA-2.7.0-flexiblas-for-RNAxplorer.patch':
+     'a5c71e67193d489b9c4f2be6467da5d760f15ad562bb29c5c57f5ae38b3c51b3'},
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('flex', '2.6.4'),
+    ('pkgconf', '1.9.5'),
+    ('Bison', '3.8.2'),
+    ('SWIG', '4.1.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Perl', '5.36.1'),
+    ('GSL', '2.7'),
+    ('libgd', '2.3.3'),
+    ('X11', '20230603'),
+]
+
+# Fixes aclocal errors in 2.7.0
+preconfigopts = "autoreconf -f -i && "
+configopts = "--with-cluster --with-kinwalker --with-python3"
+# Uncomment this if you compile on pre SSE4.1 CPU
+# configopts += "--enable-sse "
+
+sanity_check_paths = {
+    'files': ['bin/RNA%s' % x for x in ['fold', 'eval', 'heat', 'pdist', 'distance',
+                                        'inverse', 'plot', 'subopt', 'Lfold', 'cofold',
+                                        'paln', 'duplex', 'alifold', 'plfold', 'up',
+                                        'aliduplex', 'Lalifold', '2Dfold', 'parconv',
+                                        'PKplex', 'plex', 'snoop', 'forester']] +
+    ['bin/Kinfold'],
+    'dirs': ['lib/perl5/site_perl/%(perlver)s/', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/',
+}
+
+moduleclass = 'bio'
