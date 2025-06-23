@@ -362,6 +362,10 @@ class EasyConfigTest(TestCase):
     def check_dep_vars(self, gen, dep, dep_vars):
         """Check whether available variants of a particular dependency are acceptable or not."""
 
+        # short-circuit in case there's only one dependency variant, or none at all
+        if len(dep_vars) <= 1:
+            return True
+
         # 'guilty' until proven 'innocent'
         res = False
 
@@ -650,6 +654,8 @@ class EasyConfigTest(TestCase):
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1', r'OPERA-MS-0\.9\.0-20240703'])],
             # NanoPlot, NanoComp use an older version of Seaborn
             'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
+            # CheckM2 and its dep LightGBM requires scikit-learn-1.6.1
+            'scikit-learn': [(r'1\.6\.1', [r'CheckM2-1\.1\.0-', r'LightGBM-4\.6\.0-'])],
             # Shasta requires spoa 3.x
             'spoa': [(r'3\.4\.0', [r'Shasta-0\.8\.0-'])],
             # UShER requires tbb-2020.3 as newer versions will not build
@@ -691,6 +697,12 @@ class EasyConfigTest(TestCase):
             'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
             'wxWidgets': [(r'3\.2\.0', [r'wxPython-4\.2\.0', r'GRASS-8\.2\.0', r'QGIS-3\.28\.1'])],
+            # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
+            'AUGUSTUS': [(r'3\.5\.0-20240612', [r'BRAKER-3\.0\.8'])],
+            # bakta requires PyHMMER 0.10.15
+            'PyHMMER': [(r'0\.10\.15', [r'bakta-1\.10\.1'])],
+            # bakta requires python-isal 1.6.1
+            'python-isal': [(r'1\.6\.1', [r'bakta-1\.10\.1'])],
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -950,18 +962,63 @@ class EasyConfigTest(TestCase):
 
         # some software also follows <year>{a,b} versioning scheme,
         # which throws off the pattern matching done below for toolchain versions
-        false_positives_regex = re.compile('^MATLAB-Engine-20[0-9][0-9][ab]')
+        false_positives_regex = re.compile(r'^MATLAB(-Engine)?-20[0-9][0-9][ab]')
+
+        # map GCC(core) version to toolchain generations;
+        # only for recent generations, where we want to limit dependency variants as much as possible
+        # across all easyconfigs of that generation (regardless of whether a full toolchain or subtoolchain is used);
+        # see https://docs.easybuild.io/common-toolchains/#common_toolchains_overview
+        gcc_tc_gen_map = {
+            '6.4': '2018a',
+            '7.3': '2018b',
+            '8.2': '2019a',
+            '8.3': '2019b',
+            '9.3': '2020a',
+            '10.2': '2020b',
+            '10.3': '2021a',
+            '11.1': None,
+            '11.2': '2021b',
+            '11.3': '2022a',
+            '11.4': None,
+            '12.1': None,
+            '12.2': '2022b',
+            '12.3': '2023a',
+            '13.1': None,
+            '13.1': None,
+            '13.2': '2023b',
+            '13.3': '2024a',
+            '14.1': None,
+            '14.2': '2025a',
+            '14.3': '2025b',
+            '15.1': None,
+        }
 
         multi_dep_vars_msg = ''
-        # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
-        # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
-        for pattern in ['20(1[89]|[2-9][0-9])[ab]', r'GCCcore-([7-9]|[1-9][0-9])\.[0-9]']:
-            all_deps = {}
-            regex = re.compile(r'^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
+        # restrict to checking dependencies of easyconfigs using common toolchains,
+        # and GCCcore subtoolchain for common toolchains;
+        # for now, we only enforce this for recent toolchain versions (2025a + GCCcore 14.x, and newer);
+        patterns = [
+            # compiler-only subtoolchains GCCcore and GCC
+            # r'GCCcore-[7-9]\.[0-9]\.',
+            # r'GCC(core)?-1[0-9]\.[0-9]\.',  # GCCcore 10.x, etc.
+            r'GCC(core)?-1[3-9]\.[0-9]\.',  # GCCcore 13.x & newer
+            # only check GCC 9.x toolchains, not older GCC versions
+            # (we started checking dependency variants too late for GCC 8.x and older)
+            # r'GCC-9\.[0-9]\.',
+            # full toolchains, like foss/2019b or intel/2020a
+            # r'(201[89]|20[2-9][0-9])[ab]',
+            r'20(23b|(2[4-9]|[3-9][0-9])[ab])',  # 2023b and newer
+        ]
 
-            # collect variants for all dependencies of easyconfigs that use a toolchain that matches
-            for ec in self.ordered_specs:
-                ec_file = os.path.basename(ec['spec'])
+        all_deps = {}
+
+        # collect variants for all dependencies of easyconfigs that use a toolchain that matches
+        for ec in self.ordered_specs:
+            ec_file = os.path.basename(ec['spec'])
+            ec_deps = None
+
+            for pattern in patterns:
+                regex = re.compile(r'^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
                 # take into account software which also follows a <year>{a,b} versioning scheme
                 ec_file = false_positives_regex.sub('', ec_file)
@@ -969,27 +1026,46 @@ class EasyConfigTest(TestCase):
                 res = regex.match(ec_file)
                 if res:
                     tc_gen = res.group('tc_gen')
+
+                    if tc_gen.startswith('GCC'):
+                        gcc_ver = tc_gen.split('-', 1)[1].rstrip('.')
+                        if gcc_ver in gcc_tc_gen_map and gcc_tc_gen_map[gcc_ver] is not None:
+                            tc_gen = gcc_tc_gen_map[gcc_ver]
+                        elif LooseVersion(gcc_ver) >= LooseVersion('10.2') and gcc_ver not in gcc_tc_gen_map:
+                            # for recent GCC versions, we really want to have a mapping in place...
+                            self.fail("No mapping for GCC(core) %s to toolchain generation!" % gcc_ver)
+
+                    if ec_deps is None:
+                        ec_deps = get_deps_for(ec)
+
                     all_deps_tc_gen = all_deps.setdefault(tc_gen, {})
-                    for dep_name, dep_ver, dep_versuff, dep_mod_name in get_deps_for(ec):
+                    for dep_name, dep_ver, dep_versuff, _ in ec_deps:
                         dep_variants = all_deps_tc_gen.setdefault(dep_name, {})
                         # a variant is defined by version + versionsuffix
                         variant = "version: %s; versionsuffix: %s" % (dep_ver, dep_versuff)
                         # keep track of which easyconfig this is a dependency
                         dep_variants.setdefault(variant, set()).add(ec_file)
 
-            # check which dependencies have more than 1 variant
-            for tc_gen, deps in sorted(all_deps.items()):
-                for dep, dep_vars in sorted(deps.items()):
-                    if not self.check_dep_vars(tc_gen, dep, dep_vars):
-                        multi_dep_vars_msg += "Found %s variants of '%s' dependency " % (len(dep_vars), dep)
-                        multi_dep_vars_msg += "in easyconfigs using '%s' toolchain generation\n* " % tc_gen
-                        multi_dep_vars_msg += '\n  * '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
-                        multi_dep_vars_msg += '\n'
+        # check which dependencies have more than 1 variant
+        multi_dep_vars, multi_dep_vars_msg = [], ''
+        for tc_gen in sorted(all_deps.keys()):
+            for dep in sorted(all_deps[tc_gen].keys()):
+                dep_vars = all_deps[tc_gen][dep]
+                if not self.check_dep_vars(tc_gen, dep, dep_vars):
+                    multi_dep_vars.append(dep)
+                    multi_dep_vars_msg += "\nfound %s variants of '%s' dependency " % (len(dep_vars), dep)
+                    multi_dep_vars_msg += "in easyconfigs using '%s' toolchain generation\n* " % tc_gen
+                    multi_dep_vars_msg += '\n* '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
+                    multi_dep_vars_msg += '\n'
+
         if multi_dep_vars_msg:
-            self.fail('Should not have multiple variants of dependencies.\n' + multi_dep_vars_msg)
+            self.fail("Should not have multi-variant dependencies in easyconfigs:\n%s" % multi_dep_vars_msg)
 
     def test_downloadable_or_instructions(self):
-        """Make sure the sources are downloadable or there are instructions for how to download them."""
+        """
+        Make sure the sources are downloadable or there are instructions for how to download them
+        using the download_instructions parameter, including a link if one exists.
+        """
         problem_ecs = []
         for easyconfig in self.parsed_easyconfigs:
             ec = easyconfig['ec']
@@ -1107,8 +1183,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.0.0'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.0.0.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.1.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.1.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
