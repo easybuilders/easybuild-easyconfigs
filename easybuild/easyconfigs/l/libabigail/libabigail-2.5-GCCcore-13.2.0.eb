@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'libabigail'
+version = '2.5'
+
+description = """
+ABIGAIL stands for the Application Binary Interface Generic Analysis and
+Instrumentation Library.
+
+It’s a framework which aims at helping developers and software distributors
+to spot some ABI-related issues like interface incompatibility in ELF shared
+libraries by performing a static analysis of the ELF binaries at hand.
+
+The type of interface incompatibilities that Abigail focuses on is related to
+changes on the exported ELF functions and variables symbols, as well as layout
+and size changes of data types of the functions and variables exported by
+shared libraries.
+
+In other words, if the return type of a function exported by a shared library
+changes in an incompatible way from one version of a given shared library to
+another, we want Abigail to help people catch that.
+"""
+homepage = 'https://sourceware.org/libabigail'
+docurls = ['https://sourceware.org/libabigail/manual']
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+builddependencies = [('binutils', '2.40')]
+
+dependencies = [
+    ('elfutils', '0.190'),
+    ('Python', '3.11.5'),
+    ('libxml2', '2.11.5'),
+]
+
+source_urls = ['https://mirrors.kernel.org/sourceware/libabigail/']
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['7cfc4e9b00ae38d87fb0c63beabb32b9cbf9ce410e52ceeb5ad5b3c5beb111f3']
+
+configopts = '--enable-manual=no --enable-apidoc=no --with-sysroot=%(sysroot)s'
+
+sanity_check_paths = {
+    'files': [
+        'bin/abicompat', 'bin/abidiff',
+        'lib/libabigail.a', 'lib/libabigail.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = [
+    "abicompat  --help | grep usage",
+    "abidiff  --help | grep usage",
+]
+
+moduleclass = 'devel'
