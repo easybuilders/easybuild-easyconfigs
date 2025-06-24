@@ -1,0 +1,46 @@
+name = 'Boost'
+version = '1.82.0'
+
+homepage = 'https://www.boost.org/'
+description = """Boost provides free peer-reviewed portable C++ source libraries."""
+
+toolchain = {'name': 'intel-compilers', 'version': '2023.1.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://archives.boost.io/release/%(version)s/source/']
+sources = ['%%(namelower)s_%s.tar.gz' % '_'.join(version.split('.'))]
+checksums = ['66a469b6e608a51f8347236f4912e27dc5c60c60d7d53ae9bfe4683316c6f04c']
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.2.13'),
+    ('XZ', '5.4.2'),
+    ('zstd', '1.5.5'),
+    ('ICU', '73.2'),
+]
+
+# add -pthread to icpx compiler tests
+_sed_cmd = "sed -i 's/icpx -x c++ -std=c++11 ;/icpx -x c++ -std=c++11 -pthread ;/g'"
+preconfigopts = f'{_sed_cmd} tools/build/src/engine/build.sh && '
+
+# -ip is not supported with OneAPI compilers
+# instead of -pch-create ... use -Xclang -emit-pch -o ...
+_sed_cmd2 = """sed -i -e 's/-c -pch-create/-c -Xclang -emit-pch -o/g' -e 's/-O3 -ip/-O3/g' -e 's/"ifort"/"ifx"/g'"""
+preconfigopts += f'{_sed_cmd2} tools/build/src/tools/intel-linux.jam && '
+
+# -wdXXX flags are not supported with OneAPI compilers
+_sed_cmd3 = r'''sed -i -E "/<toolset>intel(-linux|):<cxxflags>(\"|'|)-wd[0-9,]/d"'''
+preconfigopts += fr'find . -type f -name "Jamfile.v2" -exec {_sed_cmd3} {{}} \; && '
+
+# -fabi-version is not supported with OneAPI compilers
+_sed_cmd4 = "sed -i 's/-fabi-version=0//g'"
+preconfigopts += f'{_sed_cmd4} libs/log/CMakeLists.txt libs/log/build/log-arch-config.jam && '
+
+# preconfigopts = prebuildopts = 'export CXXFLAGS="$CXXFLAGS -Qunused-arguments" && '
+configopts = '--without-libraries=python,mpi'
+
+# disable MPI, build Boost libraries with tagged layout
+boost_mpi = False
+tagged_layout = True
+
+moduleclass = 'devel'
