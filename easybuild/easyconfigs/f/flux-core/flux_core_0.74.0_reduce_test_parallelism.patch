@@ -1,0 +1,39 @@
+From c762b3a26d54948002a9e73841dd5993b113b49f Mon Sep 17 00:00:00 2001
+From: "Mark A. Grondona" <mark.grondona@gmail.com>
+Date: Thu, 5 Jun 2025 11:34:42 -0700
+Subject: [PATCH] testsuite: reduce parallelism in t4000-issues-test-driver.t
+
+Problem: The issues tests in t4000-issues-test-driver.t are run as
+jobs in a test instance of size=2, but the instance inherits the
+total number of cores from the system, which means up to 2*ncores
+issues tests could be run at the same time. On some systems, this
+causes failures in the tests due to overloading the system.
+
+Switch to the "job" personality of test_under_flux, which will
+configure the test instance with only 2 fake cores per rank, keeping
+the parallelism of the tests to 4, which is probably a safe number.
+
+Fixes #6856
+---
+ t/t4000-issues-test-driver.t | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/t/t4000-issues-test-driver.t b/t/t4000-issues-test-driver.t
+index ad2ff5ebe8fc..2476d04e18b0 100755
+--- a/t/t4000-issues-test-driver.t
++++ b/t/t4000-issues-test-driver.t
+@@ -10,8 +10,13 @@ if test_have_prereq ASAN; then
+     test_done
+ fi
+ 
++# Note: use test_under_flux "job" personality so that only 2 cores per fake
++# node are configured in the test instance. This ensures a maximum of 4
++# issues test scripts (invoked as jobs below) run simultaneously, instead
++# of 1 per real core, which could cause test failures on overloaded systems.
++#
+ SIZE=2
+-test_under_flux ${SIZE}
++test_under_flux ${SIZE} job
+ echo "# $0: flux session size will be ${SIZE}"
+ 
+ if test -z "$T4000_ISSUES_GLOB"; then
