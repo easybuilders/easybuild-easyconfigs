@@ -1,0 +1,60 @@
+##
+# @Author: Ali Kerrache, University of Manitoba <ali.kerrache@umanitoba.ca>
+# @Date: Sep 9, 2019.
+##
+
+easyblock = 'CMakeMake'
+
+name = 'ASPECT'
+version = "3.0.0"
+
+homepage = 'https://aspect.geodynamics.org/'
+description = """ASPECT: Advanced Solver for Problems in Earth's ConvecTion. An extensible code written in C++ to support research in simulating convection in the Earth's mantle and elsewhere to provide the geosciences with a well-documented and extensible code base for their research needs and to create an open, inclusive, participatory community providing users and developers with a state-of-the-art, comprehensive software that performs well while being simple to extend."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = ['https://github.com/geodynamics/%(namelower)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['1ba757167b9422b8192206962445d90e6c4ec531a94dec468424bf42debfa4f4']
+
+# Note: to do some testing, checkout the cookbooks directory in the
+# source repository (matched to the correct version)
+
+dependencies = [
+   ('dealii', '9.6.2'),
+   ('libdap', '3.21.1'),
+   ('CMake', '3.23.1'),
+   ('Boost', '1.82.0'),
+]
+
+preconfigopts = 'export DEAL_II_DIR=$EBROOTDEALII && '
+
+configopts  = '-DASPECT_COMPARE_TEST_RESULTS=ON '
+configopts += '-DASPECT_HAVE_LINK_H=ON '
+configopts += '-DASPECT_PRECOMPILE_HEADERS=ON '
+configopts += '-DASPECT_RUN_ALL_TESTS=OFF '
+configopts += '-DASPECT_TEST_GENERATOR="Unix Makefiles" '
+configopts += '-DASPECT_USE_FP_EXCEPTIONS=ON '
+configopts += '-DASPECT_USE_PETSC=OFF '
+configopts += '-DASPECT_USE_SHARED_LIBS=ON '
+configopts += '-DASPECT_WITH_WORLD_BUILDER=ON '
+configopts += '-DASPECT_WITH_NETCDF=ON '
+configopts += '-DASPECT_WITH_LIBDAP=ON '
+configopts += '-DNETCDF_DIR=$EBROOTNETCDF '
+configopts += '-DLIBDAP_DIR=$EBROOTLIBDAP '
+
+local_aspect_incs = [
+    "citation_info", "compat", "coordinate_systems", "fe_variable_collection", 
+    "free_surface", "global", "introspection", "lateral_averaging", "melt", 
+    "newton", "parameters", "plugins", "revision", "simulator_access", 
+    "simulator", "simulator_signals", "utilities", 
+]  
+
+sanity_check_paths = {
+    'files': ['bin/aspect', ['include/aspect/%s.h' % x for x in local_aspect_incs]],
+    'dirs': [ 'bin', 'include', 'lib'],
+}
+
+moduleclass = 'geo'
