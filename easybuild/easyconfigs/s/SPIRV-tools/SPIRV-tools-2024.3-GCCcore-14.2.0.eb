@@ -14,11 +14,21 @@ The optimizer implementation resides in its own library, which depends on the co
 toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
 toolchainopts = {'pic': True, 'openmp': True, 'cstd': 'c++17'}
 
-local_vulkan_sdk_version = '1.4.309.0'
-local_googletest_version = '1.17.0'
-local_google_effcee_version = '2019.1'
-local_google_re2_version = '2024-07-02'
-local_mimalloc_version = '3.1.5'
+# From https://github.com/KhronosGroup/SPIRV-Tools/blob/v2024.3/DEPS
+local_spirv_headers_commit = '2acb319af38d43be3ea76bfabf3998e5281d8d12'
+local_googletest_commit = '1d17ea141d2c11b8917d2c7d029f1c4e2b9769b2'
+local_google_effcee_commit = 'd74d33d93043952a99ae7cd7458baf6bc8df1da0'
+local_google_re2_commit = '4a8cee3dd3c3d81b6fe8b867811e193d5819df07'
+local_abseil_commit = '1315c900e1ddbb08a23e06eeb9a06450052ccb5e'
+
+local_github_repos = [
+    ("KhronosGroup", "SPIRV-Headers", local_spirv_headers_commit, 'spirv-headers'),
+    # Running with googletest also requires effcee -> re2 + abseil
+    ("google", "googletest", local_googletest_commit, 'googletest'),
+    ("google", "effcee", local_google_effcee_commit, 'effcee'),
+    ("google", "re2", local_google_re2_commit, 're2'),
+    ("abseil", "abseil-cpp", local_abseil_commit, 'abseil_cpp'),
+]
 
 sources = [
     # See https://github.com/KhronosGroup/SPIRV-Tools/?tab=readme-ov-file#source-code-organization
@@ -28,68 +38,34 @@ sources = [
         "filename": "SPIRV-tools-%(version)s.tar.gz",
         "extract_cmd": "mkdir -p %(builddir)s/spirv-tools && tar xzvf %s --strip-components=1 -C $_",
         "source_urls": ["https://github.com/KhronosGroup/SPIRV-Tools/archive/refs/tags"],
-    },
-    {
-        "download_filename": "vulkan-sdk-%s.tar.gz" % local_vulkan_sdk_version,
-        "filename": "SPIRV-headers-vulkan-sdk-%s.tar.gz" % local_vulkan_sdk_version,
-        "extract_cmd": (
-            "mkdir -p %(builddir)s/spirv-tools/external/spirv-headers && "
-            "tar xzvf %s --strip-components=1 -C $_"
-        ),
-        "source_urls": ["https://github.com/KhronosGroup/SPIRV-Headers/archive/refs/tags"],
-    },
-    # Running with googletest also requires effcee -> re2
-    {
-        "source_urls": ["https://github.com/google/googletest/releases/download/v%s" % local_googletest_version],
-        "filename": "googletest-%s.tar.gz" % local_googletest_version,
-        "extract_cmd": (
-            "mkdir -p %(builddir)s/spirv-tools/external/googletest && "
-            "tar xzvf %s --strip-components=1 -C $_"
-        ),
-    },
-    {
-        "source_urls": ["https://github.com/google/effcee/archive/refs/tags/"],
-        "download_filename": "v%s.tar.gz" % local_google_effcee_version,
-        "filename": "effcee-%s.tar.gz" % local_google_effcee_version,
-        "extract_cmd": "mkdir -p %(builddir)s/spirv-tools/external/effcee && tar xzvf %s --strip-components=1 -C $_",
-    },
-    {
-        "source_urls": ["https://github.com/google/re2/archive/refs/tags/"],
-        "download_filename": "%s.tar.gz" % local_google_re2_version,
-        "filename": "re2-%s.tar.gz" % local_google_re2_version,
-        "extract_cmd": "mkdir -p %(builddir)s/spirv-tools/external/re2 && tar xzvf %s --strip-components=1 -C $_",
-    },
-    {
-        "source_urls": ["https://github.com/microsoft/mimalloc/archive/refs/tags/"],
-        "download_filename": "v%s.tar.gz" % local_mimalloc_version,
-        "filename": "mimalloc-%s.tar.gz" % local_mimalloc_version,
-        "extract_cmd": "mkdir -p %(builddir)s/spirv-tools/external/mimalloc && tar xzvf %s --strip-components=1 -C $_",
     }
-]
-patches = [
-    'SPIRV-tools-2024.3-fix_hardcoded_std.patch',
 ]
 checksums = [
     {'SPIRV-tools-2024.3.tar.gz': '3961edff3410599112a50bfcda2d4a828f7cb12e8294ee0f6169976ef0532b83'},
-    {'SPIRV-headers-vulkan-sdk-1.4.309.0.tar.gz': 'a96f8b4f2dfb18f7432e5c523e220ab0075372a9509e0c25fbff21c76af0de7c'},
-    {'googletest-1.17.0.tar.gz': '65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c'},
-    {'effcee-2019.1.tar.gz': '0c49849859d356f39273fa01f674eaf687fd5e5fe83c94510784c2279bfb793d'},
-    {'re2-2024-07-02.tar.gz': 'eb2df807c781601c14a260a507a5bb4509be1ee626024cb45acbd57cb9d4032b'},
-    {'mimalloc-3.1.5.tar.gz': '1c6949032069d5ebea438ec5cedd602d06f40a92ddf0f0d9dcff0993e5f6635c'},
-    {'SPIRV-tools-2024.3-fix_hardcoded_std.patch': '480a65149ec142aafc6d66009c7ab60916b7b190a427e75d5a9a82a865057086'},
+    {'SPIRV-Headers-2acb319a.tar.xz': 'dd0642dd9525c813864ff198f5a6a901426c589e7b532d855b1ca78e76524844'},
+    {'googletest-1d17ea14.tar.xz': '7a275798ac4580ea1e35dea33aac636e2564806029abe1b19c9cdd47331c14c9'},
+    {'effcee-d74d33d9.tar.xz': '40903cf0448205dab05d918aa8c7a32a816f287e7788424dd03a3ace8e2f48cf'},
+    {'re2-4a8cee3d.tar.xz': '10c5b56e9cf1d70e13c59eaf33adc092abd16bfc9b2538b307e91cae886231d5'},
+    {'abseil-cpp-1315c900.tar.xz': '96aafd90b43298877a5e24a2cedd42a0fa8a8c5b7ce7bab8cde1bdb2ac9190b2'},
 ]
+
+local_ext_dir = "%(builddir)s/spirv-tools/external"
+local_ext_cmd = "tar xvf %s --strip-components=1 -C $_"
+for owner, repo, commit, dir in local_github_repos:
+    sources.append({
+        "filename": "%s-%s.tar.xz" % (repo, commit[:8]),
+        "extract_cmd": f"mkdir -p {local_ext_dir}/{dir} && {local_ext_cmd}",
+        "git_config": {
+            "url": f"https://github.com/{owner}",
+            "repo_name": repo,
+            "commit": commit,
+        },
+    })
 
 builddependencies = [
     ('CMake', '3.31.3'),
     ('Python', '3.13.1'),
-    ('Abseil', '20250512.1'),
 ]
-
-dependencies = []
-
-configopts = ' '.join([
-    '-DSPIRV_TOOLS_USE_MIMALLOC=ON',  # Use mimalloc for memory management
-])
 
 runtest = True
 
