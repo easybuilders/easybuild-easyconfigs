@@ -8,6 +8,7 @@ description = """QCMaquis is written in C++ (C++14 standard) and parallelizes th
 a DMRG simulation with shared-memory parallelism (OpenMP)."""
 
 toolchain = {'name': 'iomkl', 'version': '2023a'}
+# disable optarch and use strict to pass tests
 toolchainopts = {'openmp': True, 'optarch': False, 'strict': True}
 
 source_urls = ['https://github.com/qcscine/qcmaquis/archive']
@@ -25,7 +26,7 @@ dependencies = [
 start_dir = 'dmrg'
 
 # preprocess fortran sources by -fpp
-configopts = '-DBUILD_OPENMOLCAS_INTERFACE=ON -DCMAKE_Fortran_FLAGS="-fpp" -DQCMAQUIS_TESTS=ON'
+configopts = '-DBUILD_OPENMOLCAS_INTERFACE=ON -DCMAKE_Fortran_FLAGS="$FFLAGS -fpp" -DQCMAQUIS_TESTS=ON'
 
 # fix build of test_wigner
 prebuildopts = "sed -i '14i#include <array>' %(start_dir)s/tests/test_wigner.cpp && "
@@ -33,8 +34,10 @@ prebuildopts = "sed -i '14i#include <array>' %(start_dir)s/tests/test_wigner.cpp
 runtest = True
 
 sanity_check_paths = {
-    'files': ['bin/dmrgIPI', 'include/maquis_dmrg.h', 'lib/libmaquis_dmrg.so'],
+    'files': ['bin/dmrgIPI', 'include/maquis_dmrg.h', 'lib/libmaquis_dmrg.%s' % SHLIB_EXT],
     'dirs': ['include', 'share/qcmaquis'],
 }
+
+sanity_check_commands = ['dmrgIPI --help']
 
 moduleclass = 'chem'
