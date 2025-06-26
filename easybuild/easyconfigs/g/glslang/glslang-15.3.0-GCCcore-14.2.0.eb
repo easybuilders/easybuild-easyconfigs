@@ -12,7 +12,16 @@ consistency between the reference compiler and the corresponding shading languag
 toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
 toolchainopts = {'pic': True}
 
-local_googletest_version = 'v1.17.0'
+# From https://github.com/KhronosGroup/glslang/blob/15.3.0/known_good.json
+local_spirv_tools_commit = 'a62abcb402009b9ca5975e6167c09f237f630e0e'
+local_spirv_headers_commit = 'aa6cef192b8e693916eb713e7a9ccadf06062ceb'
+local_googletest_commit = 'f8d7d77c06936315286eb55f8de22cd23c188571'  # equivalent to tag v1.14.0
+
+local_github_repos = [
+    ("KhronosGroup", "SPIRV-Tools", local_spirv_tools_commit, 'spirv-tools'),
+    ("KhronosGroup", "SPIRV-Headers", local_spirv_headers_commit, 'spirv-tools/external/spirv-headers'),
+    ("google", "googletest", local_googletest_commit, 'googletest'),
+]
 
 sources = [
     {
@@ -23,20 +32,27 @@ sources = [
             'tag': version,
         },
     },
-    {
-        "filename": "googletest-%s.tar.gz" % local_googletest_version,
-        'git_config': {
-            'url': 'https://github.com/google',
-            'repo_name': 'googletest',
-            'tag': local_googletest_version,
-        },
-        "extract_cmd": "mkdir -p %(builddir)s/glslang/External/googletest && tar xzvf %s --strip-components=1 -C $_",
-    },
 ]
+
 checksums = [
     {'glslang-15.3.0.tar.xz': '629cddb4dc63e03b13d4acb15917adb5261eb13d0901b1e87bebf31eb93af38c'},
-    {'googletest-v1.17.0.tar.gz': 'ad4730505d5410569e9fc8b23859685beae6bbe0ca75638a3f121d99766fcf24'},
+    {'SPIRV-Tools-a62abcb4.tar.xz': 'fd542f1e368f5ad35f75bed14ecc797279f0232dded22fe66098633505ed8d23'},
+    {'SPIRV-Headers-aa6cef19.tar.xz': 'd033dddca7e6692e1b27cb05f6dbf8d4fca23b11dd9cbfc015a43e7a04c878fa'},
+    {'googletest-f8d7d77c.tar.xz': '8dd1ff67f8abca903d3f03c78eaae7b2076a73f465cb1f369f3698bfbd6f4aad'},
 ]
+
+local_ext_dir = "%(builddir)s/glslang/External"
+local_ext_cmd = "tar xvf %s --strip-components=1 -C $_"
+for local_owner, local_repo, local_commit, local_dir in local_github_repos:
+    sources.append({
+        "filename": "%s-%s.tar.xz" % (local_repo, local_commit[:8]),
+        "extract_cmd": f"mkdir -p {local_ext_dir}/{local_dir} && {local_ext_cmd}",
+        "git_config": {
+            "url": f"https://github.com/{local_owner}",
+            "repo_name": local_repo,
+            "commit": local_commit,
+        },
+    })
 
 builddependencies = [
     ('CMake', '3.31.3'),
@@ -46,35 +62,13 @@ builddependencies = [
 
 dependencies = [
     ('Python', '3.13.1'),  # Only needed with SPIRV
-    ('SPIRV-tools', '2024.3'),
 ]
 
 configopts = ' '.join([
-    # Needed if SPIRV is used
-    '-DENABLE_OPT=ON',
-    '-DALLOW_EXTERNAL_SPIRV_TOOLS=ON',
-    # # Needed if SPIRV is not used
-    # '-DENABLE_OPT=OFF',
+    '-DENABLE_OPT=ON',  # Needed if SPIRV is used
 ])
 
 runtest = True
-
-test_cmd = ' '.join([
-    # Fancy way to ignore failed tests
-    'OUTPUT=`ctest 2>&1`;',
-    'num=`echo "$OUTPUT" | grep FAILED |',
-    # Remove lines that are not failures
-    'grep -v listed |',
-    'grep -v TESTS |',
-    'grep -v following |',
-    # Remove ignored tests
-    'grep -v spv_exportFunctions_comp |',
-    'grep -v spv_bfloat16_comp |',
-    # Count the number of failures',
-    'wc -l`;',
-    # Print output so it appears in the log and exit with appropriate code
-    'echo "$OUTPUT"; test $num -gt 0 && exit 1 || exit 0',
-])
 
 sanity_check_paths = {
     'files': [
