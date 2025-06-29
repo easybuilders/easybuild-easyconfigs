@@ -1441,8 +1441,6 @@ class EasyConfigTest(TestCase):
             # https:// doesn't work, results in index page being downloaded instead
             # (see https://github.com/easybuilders/easybuild-easyconfigs/issues/9692)
             'http://isl.gforge.inria.fr',
-            # https:// leads to File Not Found
-            'http://tau.uoregon.edu/',
             # https:// has outdated SSL configurations
             'http://faculty.scs.illinois.edu',
         ]
