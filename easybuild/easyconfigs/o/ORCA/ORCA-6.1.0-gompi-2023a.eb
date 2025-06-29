@@ -1,0 +1,67 @@
+easyblock = 'CmdCp'
+
+name = 'ORCA'
+version = '6.1.0'
+
+homepage = 'http://cec.mpg.de/forum/'
+description = """ORCA is a flexible, efficient and easy-to-use general purpose tool for quantum chemistry
+ with specific emphasis on spectroscopic properties of open-shell molecules.
+  It features a wide variety of standard quantum chemical methods ranging from semiempirical methods to DFT to single-
+ and multireference correlated ab initio methods.
+ It can also treat environmental and relativistic effects."""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+
+# Download from https://cec.mpg.de/orcadownload/index.php
+# orca_6_1_0_linux_x86-64_shared_openmpi418_avx2.tar.xz
+# xtb is now included in ORCA. There is no need to use an external xtb.
+# source_urls = ['https://github.com/grimme-lab/xtb/releases/download/v6.7.1/']
+
+sources = [
+    '%%(namelower)s_%s_linux_x86-64_shared_openmpi418_avx2.tar.xz' % (version.replace('.', '_') ),
+]
+checksums = ['f09a08b5971b18d1f85364f7e57becdb5179fbddc1a1636802551521ef778774']
+
+keepsymlinks = True
+
+files_to_copy = ['%(builddir)s/orca_6_1_0_linux_x86-64_shared_openmpi418_avx2/*']
+
+cmds_map = [('.*', ' ')]
+
+postinstallcmds = [
+    #"cp %(builddir)s/xtb-dist/bin/xtb %(installdir)s/otool_xtb",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path=$EBROOTOPENMPI/lib",
+    "chmod -R go+X %(installdir)s",
+]
+
+# On version 6, the binaries:
+# - orca_{anoint*, eprnmr*, gtoint*, cpscf*, soc*} 
+# - orca_{fci,gstep,scf}
+# are not available.
+
+local_orca_binaries = [
+    'casscf', 'cis', 'mdci', 'mp2', 'mrci', 'pc', 'rocis', 'scfgrad', 
+]
+
+local_orca_suffixes = [
+    '2mkl', 'asa', 'chelpg', 'ciprep', 'eca', 'ecplib', 'euler',
+    'fitpes', 'loc', 'mapspc', 'md', 'mergefrag',
+    'ndoint', 'numfreq', 'plot', 'pltvib', 'pop', 'rel', 'vib', 'vpot',
+]
+
+sanity_check_paths = {
+    'files': ['orca_%s%s' % (x, y) for x in local_orca_binaries for y in ["", "_mpi"]] +
+             ['orca_%s' % x for x in local_orca_suffixes] +
+             ['orca'] +
+	     ['otool_xtb'],
+    'dirs': ['datasets', 'lib'],
+    #'dirs': ['datasets', 'CompoundScripts', 'lib'],
+}
+
+group = 'soft_orca'
+
+modloadmsg = """To execute %(name)s, run: 
+   ${EBROOTORCA}/%(namelower)s %(namelower)s.inp > %(namelower)s.out
+"""
+
+moduleclass = 'chem'
