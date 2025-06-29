@@ -1443,8 +1443,6 @@ class EasyConfigTest(TestCase):
             'http://isl.gforge.inria.fr',
             # https:// leads to File Not Found
             'http://tau.uoregon.edu/',
-            # https:// has outdated SSL configurations
-            'http://faculty.scs.illinois.edu',
         ]
         # Cache: Mapping of already checked HTTP urls to whether the HTTPS variant works
         checked_urls = dict()
