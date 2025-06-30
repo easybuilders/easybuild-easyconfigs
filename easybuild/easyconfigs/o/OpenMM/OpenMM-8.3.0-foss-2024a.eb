@@ -23,10 +23,12 @@ checksums = ['120629fa0bbf43b0ebf048a78da27fd5aab9aefd1f5b7c4c33b9f674444435b2']
 builddependencies = [
     ('CMake', '3.29.3'),
     ('Doxygen', '1.11.0'),
+    ('Cython', '3.0.10'),
 ]
 
 dependencies = [
-    ('Cython', '3.0.10'),
+
+    ('Python', '3.12.3'),
     ('SciPy-bundle', '2024.05'),
     ('SWIG', '4.2.1'),
 ]
@@ -39,7 +41,11 @@ preinstallopts = ' export OPENMM_INCLUDE_PATH=%(installdir)s/include && '
 preinstallopts += ' export OPENMM_LIB_PATH=%(installdir)s/lib && '
 
 # required to install the python API
-installopts = ' && cd python && python setup.py build && python setup.py install --prefix=%(installdir)s'
+postinstallcmds = [
+    preinstallopts + 'cd python && python setup.py build && python setup.py install --prefix=%(installdir)s',
+    'echo OpenMM-%(version)s-py%(pyshortver)s-linux-%(arch)s.egg > '
+    '%(installdir)s/lib/python%(pyshortver)s/site-packages/openmm.pth',
+]
 
 sanity_check_paths = {
     'files': ['lib/libOpenMM.%s' % SHLIB_EXT],
@@ -52,7 +58,6 @@ sanity_check_commands = [
 ]
 
 modextrapaths = {
-    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages/OpenMM-%(version)s-py%(pyshortver)s-linux-%(arch)s.egg',
     'OPENMM_INCLUDE_PATH': 'include',
     'OPENMM_LIB_PATH': 'lib',
 }
