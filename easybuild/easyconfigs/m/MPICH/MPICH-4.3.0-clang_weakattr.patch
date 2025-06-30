@@ -1,0 +1,68 @@
+Taken from https://github.com/pmodels/mpich/pull/7491
+See related issue for details https://github.com/pmodels/mpich/issues/7486
+From e5fd7c3e0c5b7a59bee28e942ee5222cbac995e9 Mon Sep 17 00:00:00 2001
+From: Hui Zhou <hzhou321@anl.gov>
+Date: Fri, 27 Jun 2025 16:46:38 -0500
+Subject: [PATCH] binding/abi: fix declaration for HAVE_WEAK_ATTRIBUTE
+
+Only handle types need use ABI types (e.g. ABI_Comm) in declarations.
+For example, MPI_Comm_copy_attr_function should not be replaced as
+ABI_Comm_copy_attr_function. Clang uses weak attributes.
+---
+ maint/local_python/binding_c.py | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/maint/local_python/binding_c.py b/maint/local_python/binding_c.py
+index 93c7490ba2d..5d5ab433870 100644
+--- a/maint/local_python/binding_c.py
++++ b/maint/local_python/binding_c.py
+@@ -1783,9 +1783,9 @@ def push_impl_decl(func, impl_name=None):
+     if func['_impl_param_list']:
+         params = ', '.join(func['_impl_param_list'])
+         if func['dir'] == 'coll':
+-            # block collective use an extra errflag
++            # block collective use an extra coll_attr
+             if not RE.match(r'MPI_(I.*|Neighbor.*|.*_init)$', func['name']):
+-                params = params + ", MPIR_Errflag_t errflag"
++                params = params + ", int coll_attr"
+     else:
+         params="void"
+ 
+@@ -1841,7 +1841,7 @@ def dump_body_coll(func):
+         dump_error_check("")
+     else:
+         # blocking collectives
+-        dump_line_with_break("mpi_errno = %s(%s, MPIR_ERR_NONE);" % (mpir_name, args))
++        dump_line_with_break("mpi_errno = %s(%s, 0);" % (mpir_name, args))
+         dump_error_check("")
+ 
+ def dump_coll_v_swap(func):
+@@ -2980,10 +2980,8 @@ def get_declare_function(func, is_large, kind=""):
+         if func['return'] == 'EXTRA_STATE':
+             ret = 'void *'
+ 
+-    params = get_C_params(func, mapping)
++    params = get_C_params(func, mapping, kind == 'abi')
+     s_param = ', '.join(params)
+-    if kind == 'abi':
+-        s_param = re.sub(r'\bMPI_', 'ABI_', s_param)
+     s = "%s %s(%s)" % (ret, name, s_param)
+ 
+     if kind == 'proto':
+@@ -2993,10 +2991,14 @@ def get_declare_function(func, is_large, kind=""):
+         s += " MPICH_API_PUBLIC"
+     return s
+ 
+-def get_C_params(func, mapping):
++def get_C_params(func, mapping, is_abi=False):
+     param_list = []
++    re_Handle = r'MPI_(Comm|Datatype|Errhandler|Group|Info|Message|Op|Request|Session|Win|File)\b'
+     for p in func['c_parameters']:
+-        param_list.append(get_C_param(p, func, mapping))
++        param = get_C_param(p, func, mapping)
++        if is_abi:
++            param = re.sub(re_Handle, r'ABI_\1', param)
++        param_list.append(param)
+     if not len(param_list):
+         return ["void"]
+     else:
