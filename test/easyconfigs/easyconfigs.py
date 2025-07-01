@@ -1429,7 +1429,6 @@ class EasyConfigTest(TestCase):
 
         whitelist = [
             'ITSTool',  # https://itstool.org/ doesn't work
-            'libxml2',  # https://xmlsoft.org works, but invalid certificate
             'PycURL',  # bad certificate for https://pycurl.io/
             'UCX-',  # bad certificate for https://www.openucx.org
         ]
