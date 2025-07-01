@@ -1451,7 +1451,7 @@ class EasyConfigTest(TestCase):
             if https_url_works is None:
                 https_url = http_url.replace('http://', 'https://')
                 try:
-                    req = Request(url, None, {'User-Agent': 'EasyBuild', 'Accept': '*/*'})
+                    req = Request(https_url , None, {'User-Agent': 'EasyBuild', 'Accept': '*/*'})
                     https_url_works = bool(urlopen(req, timeout=5))
                 except Exception:
                     https_url_works = False
