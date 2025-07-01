@@ -1429,9 +1429,7 @@ class EasyConfigTest(TestCase):
 
         whitelist = [
             'Kaiju',  # invalid certificate at https://kaiju.binf.ku.dk
-            'libxml2',  # https://xmlsoft.org works, but invalid certificate
             'p4vasp',  # https://www.p4vasp.at doesn't work
-            'ITSTool',  # https://itstool.org/ doesn't work
             'UCX-',  # bad certificate for https://www.openucx.org
             'MUMPS',  # https://mumps.enseeiht.fr doesn't work
             'PyFR',  # https://www.pyfr.org doesn't work
@@ -1441,8 +1439,6 @@ class EasyConfigTest(TestCase):
             # https:// doesn't work, results in index page being downloaded instead
             # (see https://github.com/easybuilders/easybuild-easyconfigs/issues/9692)
             'http://isl.gforge.inria.fr',
-            # https:// leads to File Not Found
-            'http://tau.uoregon.edu/',
             # https:// has outdated SSL configurations
             'http://faculty.scs.illinois.edu',
         ]
