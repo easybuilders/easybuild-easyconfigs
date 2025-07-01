@@ -1,0 +1,28 @@
+easyblock = 'ConfigureMake'
+
+name = 'lsb_release'
+version = '2.0'
+local_commit = 'fd23738'
+
+homepage = 'https://github.com/OpenMandrivaSoftware/lsb-release'
+description = """LSB version query program (lsb_release) by Dominique Massonie."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/OpenMandrivaSoftware/lsb-release/archive']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': '%(name)s-%(version)s.tar.gz'}]
+checksums = ['5514f21c65245e1897b3c83b7b66babe9ebb4e9638177bd00ecaa33efa9bba2a']
+
+skipsteps = ['configure']
+
+prebuildopts = "sed -i 's|/usr/local|%(installdir)s|' Makefile && "
+prebuildopts += "sed -i 's|LSB_VERSION=$MSG_NA|LSB_VERSION=%(version)s|' lsb_release && "
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = ['%(name)s --help']
+
+moduleclass = 'tools'
