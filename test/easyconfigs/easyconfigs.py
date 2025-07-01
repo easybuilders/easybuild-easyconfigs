@@ -1428,7 +1428,6 @@ class EasyConfigTest(TestCase):
         """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
 
         whitelist = [
-            'ITSTool',  # https://itstool.org/ doesn't work
             'PycURL',  # bad certificate for https://pycurl.io/
             'UCX-',  # bad certificate for https://www.openucx.org
         ]
@@ -1436,8 +1435,6 @@ class EasyConfigTest(TestCase):
             # https:// doesn't work, results in index page being downloaded instead
             # (see https://github.com/easybuilders/easybuild-easyconfigs/issues/9692)
             'http://isl.gforge.inria.fr',
-            # https:// leads to File Not Found
-            'http://tau.uoregon.edu/',
         ]
         # Cache: Mapping of already checked HTTP urls to whether the HTTPS variant works
         checked_urls = dict()
