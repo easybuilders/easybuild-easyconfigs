@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'Tinker-HP'
+version = '20230803'
+_commit = '15d8ba1'
+
+homepage = 'https://tinker-hp.org'
+description = """
+Tinker-HP: High-Performance Massively Parallel Evolution of Tinker on CPUs & GPUs"""
+
+toolchain = {'name': 'gomkl', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+github_account = 'TinkerTools'
+
+sources = [{
+    'source_urls': [GITHUB_SOURCE],
+    'download_filename': '%s.tar.gz' % _commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['c4c5b5ef52738042cb7a0f9aca5bb90776e45386782ceb4eec673ad18e255ac3']
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('make', '4.4.1'),
+]
+
+start_dir = 'v1.2'
+
+preconfigopts = "sed -i 's/-O3/-O3 -march=native/g' configure.ac && "
+preconfigopts += "autoreconf -fi && "
+
+configopts = '--with-blaslib=mkl --enable-fft-mkl '
+
+postinstallcmds = ['cp -a params %(installdir)s']
+
+modextrapaths = {'TINKER_PARAMS': 'params'}
+
+_bins = ['%s.prod' % x for x in ['analyze', 'bar', 'dynamic', 'minimize', 'testgrad']] + ['tinkerhp']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _bins],
+    'dirs': ['params'],
+}
+
+moduleclass = 'chem'

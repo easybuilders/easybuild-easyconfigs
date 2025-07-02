@@ -1,6 +1,6 @@
 #!/usr/bin/python
 ##
-# Copyright 2012-2024 Ghent University
+# Copyright 2012-2025 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -46,7 +46,7 @@ fancylogger.disableDefaultHandlers()
 fancylogger.setLogLevelError()
 
 # make sure no deprecated behaviour is triggered
-# os.environ['EASYBUILD_DEPRECATED'] = '10000'
+os.environ['EASYBUILD_DEPRECATED'] = '10000'
 
 
 class EasyConfigsTestSuite(unittest.TestSuite):
