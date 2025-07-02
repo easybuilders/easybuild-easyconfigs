@@ -1,0 +1,50 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'libbacktrace'
+version = '20240505'
+local_commit = '11427f3'
+
+homepage = 'https://github.com/ianlancetaylor/libbacktrace/tree/master'
+description = """
+A C library that may be linked into a C/C++ program to produce symbolic backtraces
+Initially written by Ian Lance Taylor iant@golang.org.
+This is version 1.0. It is likely that this will always be version 1.0."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+sources = [{
+    'filename': SOURCE_TAR_XZ,
+    'git_config': {
+        'url': 'https://github.com/ianlancetaylor',
+        'repo_name': name,
+        'commit': local_commit,
+        'recursive': True,
+    },
+}]
+checksums = ['e7f0b8ca353f5acb468eb1668146b3b817d62b67c8ab2a8d99459d55736dbe3a']
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('gzip', '1.12'),
+    ('zstd', '1.5.5'),
+    ('zlib', '1.2.13'),
+    ('lz4', '1.9.4'),
+    ('XZ', '5.4.2'),
+]
+
+configopts = '--enable-shared '
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['lib/libbacktrace.a', 'lib/libbacktrace.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'
