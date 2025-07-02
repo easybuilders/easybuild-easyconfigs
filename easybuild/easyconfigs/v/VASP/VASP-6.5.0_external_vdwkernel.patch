@@ -1,0 +1,26 @@
+Add optional VDW_KERNEL environment variable to allow loading an external vdw_kernel.bindat file
+Author: Mikael Öhman (Chalmers University of Technology)
+--- vasp.6.5.0/src/vdw_nl.F.orig	2025-02-07 13:49:04.752534000 +0100
++++ vasp.6.5.0/src/vdw_nl.F	2025-02-07 13:51:48.416549853 +0100
+@@ -449,13 +449,19 @@
+   SUBROUTINE PHI_GENERATE(GRIDC,IVDW_NL,GAMMA_VDW,ALPHA_VDW)
+     logical :: lkern,lkern_new
+     integer :: IVDW_NL,IVDW_NL_TMP,NINTG_TMP,nmesh,IOstatus
++    character(len=255) :: vdwkernel
+     real(q) :: GAMMA_VDW,GAMMA_VDW_TMP,ALPHA_VDW,ALPHA_VDW_TMP
+     TYPE (grid_3d) GRIDC
+ 
+     !ok if the kernel table is here read it
+-    inquire( file='vdw_kernel.bindat', exist=lkern)
++    vdwkernel = 'vdw_kernel.bindat'
++    inquire( file=vdwkernel, exist=lkern)
++    IF (.NOT. lkern) then
++      call get_environment_variable("VDW_KERNEL", vdwkernel)
++      inquire( file=trim(vdwkernel), exist=lkern)
++    ENDIF
+     IF (lkern) then
+-       open (unit=10, file='vdw_kernel.bindat', form='unformatted')
++       open (unit=10, file=trim(vdwkernel), form='unformatted', action='READ')
+        read(10,IOSTAT=IOstatus) IVDW_NL_TMP,GAMMA_VDW_TMP,ALPHA_VDW_TMP,NINTG_TMP,nmesh
+        IF (IOstatus.EQ.0) THEN
+           lkern_new=.true.
