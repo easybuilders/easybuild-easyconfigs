@@ -1,0 +1,46 @@
+Fixes failing FusedMatMul test on certain GPU models
+
+diff --git a/tensorflow/core/kernels/matmul_op_test.cc b/tensorflow/core/kernels/matmul_op_test.cc
+index 8d81d4c796e..2de0365f067 100644
+--- a/tensorflow/core/kernels/matmul_op_test.cc
++++ b/tensorflow/core/kernels/matmul_op_test.cc
+@@ -21,6 +21,7 @@ limitations under the License.
+ #include "tensorflow/core/framework/tensor.h"
+ #include "tensorflow/core/kernels/ops_testutil.h"
+ #include "tensorflow/core/lib/core/status_test_util.h"
++#include "tensorflow/core/platform/tensor_float_32_utils.h"
+ #include "tensorflow/core/platform/test.h"
+ #include "tensorflow/core/platform/test_benchmark.h"
+ #include "tensorflow/core/protobuf/rewriter_config.pb.h"
+@@ -287,6 +288,7 @@ TYPED_TEST_SUITE_P(FusedMatMulWithBiasOpTest);
+ // -------------------------------------------------------------------------- //
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul256x128x64) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   this->VerifyMatMulWithBias(256, 128, 64, false, false);
+   this->VerifyMatMulWithBias(256, 128, 64, true, false);
+   this->VerifyMatMulWithBias(256, 128, 64, false, true);
+@@ -294,6 +296,7 @@ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul256x128x64) {
+ }
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul1x256x256) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   this->VerifyMatMulWithBias(1, 256, 256, false, false);
+   this->VerifyMatMulWithBias(4, 128, 256, false, false);
+   this->VerifyMatMulWithBias(1, 256, 256, true, false);
+@@ -302,6 +305,7 @@ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul1x256x256) {
+ }
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul256x256x1) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   this->VerifyMatMulWithBias(256, 256, 1, false, false);
+   this->VerifyMatMulWithBias(256, 128, 4, false, false);
+   this->VerifyMatMulWithBias(256, 256, 1, true, false);
+@@ -314,6 +318,7 @@ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul1x256x1) {
+ }
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul256x128x64WithActivation) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   for (const string& activation : {"Relu", "Relu6", "Elu", "LeakyRelu"}) {
+     this->VerifyConv2DWithBiasAndActivation(256, 128, 64, false, false,
+                                             activation);
