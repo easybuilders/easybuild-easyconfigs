@@ -35,7 +35,7 @@ import stat
 import tempfile
 from collections import defaultdict
 from unittest import TestCase, TestLoader, main, skip
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 import easybuild.main as eb_main
 import easybuild.tools.options as eboptions
@@ -1429,7 +1429,6 @@ class EasyConfigTest(TestCase):
 
         whitelist = [
             'PycURL',  # bad certificate for https://pycurl.io/
-            'UCX-',  # bad certificate for https://www.openucx.org
         ]
         url_whitelist = [
             # https:// doesn't work, results in index page being downloaded instead
@@ -1446,7 +1445,8 @@ class EasyConfigTest(TestCase):
             if https_url_works is None:
                 https_url = http_url.replace('http://', 'https://')
                 try:
-                    https_url_works = bool(urlopen(https_url, timeout=5))
+                    req = Request(https_url, None, {'User-Agent': 'EasyBuild', 'Accept': '*/*'})
+                    https_url_works = bool(urlopen(req, timeout=5))
                 except Exception:
                     https_url_works = False
             checked_urls[http_url] = https_url_works
