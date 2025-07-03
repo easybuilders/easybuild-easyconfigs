@@ -28,14 +28,18 @@ dependencies = [
 
 skipsteps = ['install']
 
-preconfigopts = "sed -i '/add_subdirectory.*\(bamtools\|zlib\).*/d' ../NextGenMap-%(version)s/CMakeLists.txt && "
+preconfigopts = r"sed -i '/add_subdirectory.*\(bamtools\|zlib\).*/d' ../NextGenMap-%(version)s/CMakeLists.txt && "
 preconfigopts += "sed -i 's/BamTools-static/bamtools/g' ../NextGenMap-%(version)s/{src,utils}/CMakeLists.txt && "
 preconfigopts += "sed -i 's/zlibstatic/z/g' ../NextGenMap-%(version)s/{src,utils}/CMakeLists.txt && "
 
 buildopts = ' && cp -r ../%(name)s-%(version)s/bin/ngm-%(version)s/. %(installdir)s/bin/'
 
-# avoid hard overwriting of $LD_LIBRARY_PATH in ngm wrapper script
-postinstallcmds = [r"sed -i 's/\(LD_LIBRARY_PATH=[^ ]*\)\"/\1:$LD_LIBRARY_PATH\"/g' %(installdir)s/bin/ngm"]
+postinstallcmds = [
+    # avoid hard overwriting of $LD_LIBRARY_PATH in ngm wrapper script
+    r"sed -i 's/\(LD_LIBRARY_PATH=[^ ]*\)\"/\1:$LD_LIBRARY_PATH\"/g' %(installdir)s/bin/ngm",
+    # fix execution permissions for ngm* binaries/scripts
+    "chmod a+x %(installdir)s/bin/ngm*",
+]
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ['ngm', 'ngm-core', 'ngm-log', 'ngm-utils', 'oclTool']],

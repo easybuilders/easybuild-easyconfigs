@@ -1,0 +1,46 @@
+name = "libWallModelledLES"
+version = "0.6.1"
+easyblock = "Binary"
+
+homepage = "https://bitbucket.org/lesituu/libwallmodelledles/"
+description = """libWallModelledLES is a library based on OpenFOAM® technology,
+extending the capabilities of OpenFOAM in the area of wall-modelled LES (WMLES).
+This is a turbulence modelling methodology, which allows to make LES cheaper
+by not resolving the inner region of turbulent boundary layers."""
+
+toolchain = {"name": "foss", "version": "2021b"}
+# Users have found that vectorizion caused OpenFOAM to produce some very incorrect results.
+# Disabling vectorize was confirmed to fix the the known issues.
+# With no test suite, sticking to known working toolchain options until proven otherwise.
+toolchainopts = {"cstd": "c++11", "vectorize": False}
+
+source_urls = ["https://bitbucket.org/lesituu/libwallmodelledles/get/"]
+sources = ["v%(version)s.tar.gz"]
+checksums = ["06b2c06ef76b5247c0a0c0260ea1e4a58bed8e930d0a0add9fe60e626c4bc0f8"]
+
+dependencies = [
+    ("OpenFOAM", "v2112"),
+]
+
+extract_sources = True
+
+install_cmd = "source $FOAM_BASH && "
+
+# variables of target install directory
+install_cmd += "export WM_PROJECT_USER_DIR=%(installdir)s && "
+install_cmd += "export FOAM_USER_APPBIN=%(installdir)s/bin && "
+install_cmd += "export FOAM_USER_LIBBIN=%(installdir)s/lib && "
+install_cmd += "export LD_LIBRARY_PATH=%(installdir)s/lib:$LD_LIBRARY_PATH && "
+
+install_cmd += "pwd && ls && ./Allwmake -j %(parallel)s "
+install_cmd += " && cp -av tests %(installdir)s "
+
+sanity_check_paths = {
+    "files": ["lib/libWallModelledLES.%s" % SHLIB_EXT],
+    "dirs": ["tests"],
+}
+sanity_check_commands = [
+    "source $FOAM_BASH && cd %(installdir)s/tests/testCases/channel_flow && pimpleFoam"
+]
+
+moduleclass = "cae"

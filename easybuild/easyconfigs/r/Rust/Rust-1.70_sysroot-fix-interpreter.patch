@@ -1,0 +1,44 @@
+Use patchelf to fix interpreter of binaries that are used during Rust bootstrap procedure
+when EasyBuild is configured to build in an alternate sysroot
+
+This fixes problems like due to a clash with the interpreter from the host, and a more recent libc.so.6 that's picked up
+from the alternate sysroot:
+error: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.32' not found (required by /tmp/easybuild/build/Rust/1.52.1/GCCcore-10.3.0/rustc-1.52.1-src/build/bootstrap/debug/deps/libproc_macro_error_attr-fbfef320d848b049.so)
+
+author: Kenneth Hoste (HPC-UGent)
+updated by: micketeer@gmail.com
+
+--- rustc-1.70.0-src.orig/src/bootstrap/bootstrap.py	2023-05-31 21:28:10.000000000 +0200
++++ rustc-1.70.0-src/src/bootstrap/bootstrap.py	2023-06-04 14:15:39.784929373 +0200
+@@ -481,6 +481,10 @@
+         if self._should_fix_bins_and_dylibs is not None:
+             return self._should_fix_bins_and_dylibs
+ 
++        if os.getenv("EASYBUILD_SYSROOT"):
++            self._should_fix_bins_and_dylibs = True
++            return True
++
+         def get_answer():
+             default_encoding = sys.getdefaultencoding()
+             try:
+@@ -531,6 +535,20 @@
+         assert self._should_fix_bins_and_dylibs is True
+         print("attempting to patch", fname)
+ 
++        easybuild_sysroot = os.getenv("EASYBUILD_SYSROOT")
++        if easybuild_sysroot:
++            if not fname.endswith(".so"):
++                # determine patch to interpreter in host via output produced by 'readelf -l /bin/bash'
++                readelf_out = subprocess.check_output(['readelf', '-l', '/bin/bash']).decode('ascii', 'ignore').strip()
++                regex = re.compile('.*program interpreter: ([^\]]+)', re.M)
++                res = regex.search(readelf_out)
++                interpreter_path = os.path.join(easybuild_sysroot, res.group(1).lstrip('/'))
++                if not os.path.exists(interpreter_path):
++                    raise Exception("Derived path to interpreter does not exist: %s" % interpreter_path)
++                cmd = ["patchelf", "--set-interpreter", interpreter_path, fname]
++                run(cmd, verbose=True)
++            return
++
+         # Only build `.nix-deps` once.
+         nix_deps_dir = self.nix_deps_dir
+         if not nix_deps_dir:

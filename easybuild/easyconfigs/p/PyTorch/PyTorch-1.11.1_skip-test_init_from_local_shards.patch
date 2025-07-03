@@ -1,0 +1,25 @@
+The test often times out and seems to be considered flaky by PyTorch:
+https://github.com/pytorch/pytorch/issues/78068
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/_shard/sharded_tensor/test_sharded_tensor.py b/test/distributed/_shard/sharded_tensor/test_sharded_tensor.py
+index cbad9458ae..72a36e0e9a 100644
+--- a/test/distributed/_shard/sharded_tensor/test_sharded_tensor.py
++++ b/test/distributed/_shard/sharded_tensor/test_sharded_tensor.py
+@@ -6,6 +6,7 @@ import io
+ import itertools
+ import pickle
+ import sys
++from unittest import skip
+ import torch
+ import torch.distributed as dist
+ from torch.distributed import rpc
+@@ -1817,6 +1818,7 @@ class TestShardedTensorFromLocalShards(ShardedTensorTestBase):
+     @with_comms
+     @skip_if_lt_x_gpu(4)
+     @requires_nccl()
++    @skip("Times out often")
+     def test_init_from_local_shards(self):
+         local_shard_metadata = ShardMetadata(
+             shard_offsets=[(self.rank // 2) * 5, (self.rank % 2) * 5],

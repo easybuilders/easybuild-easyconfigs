@@ -1,0 +1,26 @@
+Remove the undeclared (and unused) variable i from the private clause
+in an OpenMP pragma, which otherwise results in an error:
+
+   93 |     !$omp parallel do private(ihkl,i,f,angle)
+      |                                    1
+Error: Symbol i at (1) has no IMPLICIT type
+
+Bob Dröge, University of Groningen, 2022-08-18
+--- amber22_src.orig/src/pmemd/src/xray/src/xray_non_bulk_impl_cpu.F90	2022-08-18 13:12:24.807724049 +0200
++++ amber22_src/src/pmemd/src/xray/src/xray_non_bulk_impl_cpu.F90	2022-08-18 13:12:42.039809811 +0200
+@@ -90,7 +90,7 @@
+     call check_precondition(size(frac, 2) == size(scatter_type_index))
+     call check_precondition(size(hkl, 2) == size(atomic_scatter_factor, 1))
+     
+-    !$omp parallel do private(ihkl,i,f,angle)
++    !$omp parallel do private(ihkl,f,angle)
+     do ihkl = 1, size(hkl, 2)
+       
+       ! Fhkl = SUM( fj * exp(2 * M_PI * i * (h * xj + k * yj + l * zj)) ),
+@@ -127,4 +127,4 @@
+   end subroutine calc_f_non_bulk
+ 
+ 
+-end module xray_non_bulk_impl_cpu_module
+\ No newline at end of file
++end module xray_non_bulk_impl_cpu_module

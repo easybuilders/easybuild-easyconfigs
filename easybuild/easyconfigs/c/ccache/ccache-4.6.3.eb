@@ -1,0 +1,54 @@
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+
+easyblock = 'CMakeNinja'
+
+name = 'ccache'
+version = '4.6.3'
+
+homepage = 'https://ccache.dev/'
+description = """Ccache (or “ccache”) is a compiler cache. It speeds up recompilation by
+caching previous compilations and detecting when the same compilation is being done again"""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/ccache/ccache/releases/download/v%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['f46ba3706ad80c30d4d5874dee2bf9227a7fcd0ccaac31b51919a3053d84bd05']
+
+osdependencies = [('glibc-static', 'libc6-dev')]
+
+local_gccver = '11.3.0'
+builddependencies = [
+    ('GCC', local_gccver),
+    ('CMake', '3.23.1', '', ('GCCcore', local_gccver)),
+    ('Ninja', '1.10.2', '', ('GCCcore', local_gccver)),
+    ('hiredis', '1.0.2', '', ('GCCcore', local_gccver)),
+    ('zstd', '1.5.2', '', ('GCCcore', local_gccver)),
+]
+
+# use BFD linker rather than default ld.gold (required on CentOS 8)
+preconfigopts = 'LDFLAGS="-fuse-ld=bfd"'
+configopts = ' '.join([
+    '-DENABLE_DOCUMENTATION=OFF',
+    '-DENABLE_IPO=ON',
+    # Link dependencies and binary statically
+    '-DCMAKE_EXE_LINKER_FLAGS="-static"',
+    '-DZSTD_LIBRARY="$EBROOTZSTD/lib/libzstd.a"',
+    '-DHIREDIS_LIBRARY="$EBROOTHIREDIS/lib/libhiredis.a"',
+    # Disable downloading dependencies
+    '-DZSTD_FROM_INTERNET=OFF -DHIREDIS_FROM_INTERNET=OFF',
+])
+
+sanity_check_paths = {
+    'files': ['bin/ccache'],
+    'dirs': []
+}
+sanity_check_commands = [
+    'ccache --help',
+    # Ensure that the binary does not depend on any shared library
+    'LC_ALL=C ldd $(which ccache) | grep -q "not a dynamic executable"',
+]
+
+moduleclass = 'tools'
