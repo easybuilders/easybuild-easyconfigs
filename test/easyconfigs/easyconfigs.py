@@ -1225,9 +1225,6 @@ class EasyConfigTest(TestCase):
             'MATLAB-*',
             'OCaml-*',
             'OpenFOAM-Extend-4.1-*',
-            # sources for old versions of Bioconductor packages are no longer available,
-            # so not worth adding checksums for at this point
-            'R-bundle-Bioconductor-3.[2-5]',
         ]
 
         # filter out deprecated easyconfigs
