@@ -39,25 +39,32 @@ dependencies = [
 start_dir = 'cpp'
 
 # see https://arrow.apache.org/docs/developers/python.html
-configopts = "-DARROW_DATASET=on -DARROW_PYTHON=on -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON "
-configopts += "-DCMAKE_INSTALL_LIBDIR=lib -DPython3_ROOT_DIR=$EBROOTPYTHON "
-configopts += "-DARROW_WITH_ZLIB=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_ZSTD=ON -DARROW_WITH_LZ4=ON "
-configopts += "-DZSTD_ROOT=$EBROOTZSTD "
+configopts = "-DARROW_DATASET=on -DARROW_PYTHON=on -DARROW_PARQUET=ON -DARROW_ORC=ON "
+configopts += "-DPython3_ROOT_DIR=$EBROOTPYTHON "
+configopts += "-DARROW_WITH_ZLIB=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON -DARROW_WITH_SNAPPY=ON "
+configopts += "-DARROW_WITH_ZSTD=ON -DZSTD_ROOT=$EBROOTZSTD "
 
-# also install Python bindings
-local_install_pyarrow_cmds = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
-local_install_pyarrow_cmds += "export Arrow_DIR=%(installdir)s && export ArrowDataset_DIR=%(installdir)s && "
-local_install_pyarrow_cmds += "export ArrowAcero_DIR=%(installdir)s && export Parquet_DIR=%(installdir)s && "
-local_install_pyarrow_cmds += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
-local_install_pyarrow_cmds += "cd %(builddir)s/*arrow-%(version)s/python && export XDG_CACHE_HOME=$TMPDIR && "
-local_install_pyarrow_cmds += "sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml && "
-local_install_pyarrow_cmds += "Python3_ROOT_DIR=$EBROOTPYTHON "
-local_install_pyarrow_cmds += "PYARROW_CMAKE_OPTIONS='-DZSTD_LIB=$EBROOTZSTD/lib/libzstd.%s ' " % SHLIB_EXT
-local_install_pyarrow_cmds += "PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 "
-local_install_pyarrow_cmds += "python -m pip install --prefix %(installdir)s --no-build-isolation ."
-postinstallcmds = [local_install_pyarrow_cmds]
+# install Python bindings
+_pyarrow_preinstall_opts = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
+_pyarrow_preinstall_opts += "export Arrow_DIR=%(installdir)s && export ArrowDataset_DIR=%(installdir)s && "
+_pyarrow_preinstall_opts += "export ArrowAcero_DIR=%(installdir)s && export Parquet_DIR=%(installdir)s && "
+_pyarrow_preinstall_opts += "export XDG_CACHE_HOME=$TMPDIR && "
+_pyarrow_preinstall_opts += "sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml && "
+_pyarrow_preinstall_opts += "Python3_ROOT_DIR=$EBROOTPYTHON "
+_pyarrow_preinstall_opts += "PYARROW_CMAKE_OPTIONS='-DZSTD_LIB=$EBROOTZSTD/lib/libzstd.%s ' " % SHLIB_EXT
+_pyarrow_preinstall_opts += "PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 PYARROW_WITH_ORC=1 "
 
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+}
+exts_list = [
+    ('pyarrow', version, {
+        'sources': ['apache-arrow-%(version)s.tar.gz'],
+        'checksums': ['5c70eafb1011f9d124bafb328afe54f62cc5b9280b7080e1e3d668f78c0e407e'],
+        'start_dir': '%(builddir)s/apache-arrow-%(version)s/python',
+        'preinstallopts': _pyarrow_preinstall_opts,
+    }),
+]
 
 sanity_check_paths = {
     'files': ['lib/libarrow.a', 'lib/libarrow.%s' % SHLIB_EXT,
@@ -69,6 +76,7 @@ sanity_check_commands = [
     "python -c 'import pyarrow'",
     "python -c 'import pyarrow.dataset'",
     "python -c 'import pyarrow.parquet'",
+    "python -c 'import pyarrow.orc'",
 ]
 
 moduleclass = 'data'

@@ -1,0 +1,48 @@
+easyblock = 'PackedBinary'
+
+name = 'MuJoCo'
+version = '3.1.4'
+
+homepage = 'https://mujoco.org/'
+description = """MuJoCo stands for Multi-Joint dynamics with Contact. It is a general purpose
+physics engine that aims to facilitate research and development in robotics,
+biomechanics, graphics and animation, machine learning, and other areas which
+demand fast and accurate simulation of articulated structures interacting with
+their environment."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/deepmind/mujoco/releases/download/%(version)s']
+sources = ['%(namelower)s-%(version)s-linux-%(arch)s.tar.gz']
+checksums = ['3bb373e081daaf6bf179d7f83dd8fa39e491a6daa4250a1b7ac42850309cb313']
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+# MuJoCo bundles 3 variants of glew using non-standard sonames:
+# - libglew with GLX
+# - libglewegl with EGL
+# - libglewosmesa with OSMESA
+# - Software depending on MuJoCo expect these non-standard sonames, so they should not be removed
+# - libglew and libglewegl seem to work with Mesa and X11 for toolchain GCCcore/11.2.0
+# - libglewosmesa has to be replaced as it links to an old libOSMesa
+
+dependencies = [
+    ('glew', '2.2.0', '-osmesa'),
+]
+
+postinstallcmds = [
+    # replace bundled libglewosmesa.so with glew libs from EB
+    "ln -sf $EBROOTGLEW/lib64/libGLEW.so %(installdir)s/lib/libglewosmesa.so",
+]
+
+sanity_check_paths = {
+    'files': ['bin/basic', 'bin/record', 'bin/simulate',
+              'lib/libmujoco.%s' % SHLIB_EXT],
+    'dirs': ['include', 'model', 'sample'],
+}
+
+sanity_check_commands = ['basic']
+
+moduleclass = 'phys'
