@@ -60,11 +60,18 @@ configure_cmd = ' '.join([
     # Disable tracing which would otherwise introduce a dependency on a specific
     # version of CUDA (CUPTI) and reduce portability
     '--cmake-opt="-DSYCL_ENABLE_XPTI_TRACING=OFF"',
+    # Ensure build steps using the freshly-built compiler pick up libstdc++
+    # from the GCCcore module and not from system
+    '&& mkdir -p %(builddir)s/build/bin',
+    '&& echo "--gcc-toolchain=$EBROOTGCCCORE" > %(builddir)s/build/bin/clang++.cfg',
+    '&& echo "--gcc-toolchain=$EBROOTGCCCORE" > %(builddir)s/build/bin/clang.cfg',
 ])
 
 build_cmd_targets = 'deploy-sycl-toolchain omp'
 build_dir = '%(builddir)s/build'
 buildopts = '-C ' + build_dir + ' ' + build_cmd_targets
+test_cmd = 'ninja' # not needed after easybuild-easyblocks#3771
+runtest = '-C ' + build_dir
 
 install_target_subdir = '%(builddir)s/build/install'
 installopts = '-C ' + build_dir
