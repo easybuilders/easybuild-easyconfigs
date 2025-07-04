@@ -1,0 +1,71 @@
+Use build environment defined by EasyBuild
+author: Nicholas Cheng (@nicholascheng94)
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- Makefile.orig	2023-01-06 12:46:33.569558000 +0100
++++ Makefile	2023-01-06 15:47:17.535047461 +0100
+@@ -8,16 +8,16 @@
+ # change to icpc for Intel
+ #CXX = clang++
+ #MPICXX = mpiicpc
+-CXX = g++
+-MPICXX = mpic++
+-export CXX
+-export MPICXX
++#CXX = g++
++#MPICXX = mpic++
++#export CXX
++#export MPICXX
+ 
+ # BOOST include directory
+ #BOOSTDIR=/software/StackBlock/boost_1_58_0
+ #BOOSTINCLUDE = ${BOOSTDIR}/include
+-BOOSTDIR=/usr/lib
+-BOOSTINCLUDE =/usr/include
++BOOSTDIR = $(EBROOTBOOST)
++BOOSTINCLUDE = ${BOOSTDIR}/include
+ 
+ # set to yes if using BOOST version >= 1.56.0
+ USE_BOOST56 = yes
+@@ -35,7 +35,7 @@
+ 
+ #LAPACKBLAS = -lblas -llapack
+ #LAPACKBLAS =    /usr/lib/liblapack.dylib /usr/lib/libblas.dylib
+-LAPACKBLAS = 
++LAPACKBLAS = ${LIBBLAS}
+ 
+ # set if we will use MPI or OpenMP
+ USE_MPI = no
+@@ -108,12 +108,12 @@
+ 	MOLCAS_BLOCK= -DMOLCAS -fPIC
+ endif
+ 
+-FLAGS =  -I${MKLFLAGS} -I$(INCLUDE1) -I$(INCLUDE2) -I$(NEWMATINCLUDE) -I$(BOOSTINCLUDE) -I$(MOLPROINCLUDE) \
++FLAGS =  $(CPPFLAGS) -I${MKLFLAGS} -I$(INCLUDE1) -I$(INCLUDE2) -I$(NEWMATINCLUDE) -I$(BOOSTINCLUDE) -I$(MOLPROINCLUDE) \
+          -I$(HOME)/modules/generate_blocks/ -I$(HOME)/modules/onepdm -I$(HOME)/modules/twopdm/ \
+          -I$(HOME)/modules/npdm -I$(HOME)/modules/two_index_ops -I$(HOME)/modules/three_index_ops -I$(HOME)/modules/four_index_ops -std=c++0x \
+ 	 -I$(HOME)/modules/ResponseTheory -I$(HOME)/modules/nevpt2 -I$(HOME)/molcas -I$(HOME)/modules/mps_nevpt
+ 
+-LIBS +=  -L$(NEWMATLIB) -lnewmat $(BOOSTLIB) $(LAPACKBLAS) $(MALLOC)
++LIBS := $(LDFLAGS) -L$(NEWMATLIB) -lnewmat $(BOOSTLIB) $(LAPACKBLAS) $(MALLOC) $(LIBS) -lrt
+ MPI_OPT = -DSERIAL
+ 
+ 
+@@ -127,7 +127,7 @@
+ 	#endif
+    endif
+ # Intel compiler
+-  OPT = -DNDEBUG -O2 -g -funroll-loops #-ipo
++  OPT = -DNDEBUG $(OPTFLAGS) -g -funroll-loops
+ #  OPT = -g
+ #  # Useful option to define a newer g++ binary if the default g++ is too old
+ #  OPT += -gxx-name=g++-4.7
+--- newmat10/makefile.orig	2023-01-06 15:20:52.879226000 +0100
++++ newmat10/makefile	2023-01-06 15:20:30.392463000 +0100
+@@ -1,6 +1,6 @@
+ #CXX = g++
+ $(info $(CXX))
+-CXXFLAGS = -fPIC -O2 -Wall
++#CXXFLAGS = -fPIC -O2 -Wall
+ 
+ DIFF = ./sdiff
+ PRE = ./
