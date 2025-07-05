@@ -1421,9 +1421,6 @@ class EasyConfigTest(TestCase):
             'PycURL',  # bad certificate for https://pycurl.io/
         ]
         url_whitelist = [
-            # https:// doesn't work, results in index page being downloaded instead
-            # (see https://github.com/easybuilders/easybuild-easyconfigs/issues/9692)
-            'http://isl.gforge.inria.fr',
             # https:// has outdated SSL configurations
             'http://faculty.scs.illinois.edu',
         ]
