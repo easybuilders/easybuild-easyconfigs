@@ -1414,15 +1414,9 @@ class EasyConfigTest(TestCase):
         """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
 
         whitelist = [
-            'Kaiju',  # invalid certificate at https://kaiju.binf.ku.dk
-            'p4vasp',  # https://www.p4vasp.at doesn't work
-            'MUMPS',  # https://mumps.enseeiht.fr doesn't work
-            'PyFR',  # https://www.pyfr.org doesn't work
             'PycURL',  # bad certificate for https://pycurl.io/
         ]
         url_whitelist = [
-            # https:// has outdated SSL configurations
-            'http://faculty.scs.illinois.edu',
         ]
         # Cache: Mapping of already checked HTTP urls to whether the HTTPS variant works
         checked_urls = dict()
