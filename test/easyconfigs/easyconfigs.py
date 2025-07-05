@@ -1225,9 +1225,6 @@ class EasyConfigTest(TestCase):
             'MATLAB-*',
             'OCaml-*',
             'OpenFOAM-Extend-4.1-*',
-            # sources for old versions of Bioconductor packages are no longer available,
-            # so not worth adding checksums for at this point
-            'R-bundle-Bioconductor-3.[2-5]',
         ]
 
         # filter out deprecated easyconfigs
@@ -1258,9 +1255,6 @@ class EasyConfigTest(TestCase):
         ]
 
         whitelist_pip_check = [
-            r'Mako-1.0.4.*Python-2.7.12.*',
-            # no pip 9.x or newer for easyconfigs using a 2016a or 2016b toolchain
-            r'.*-2016[ab]-Python-.*',
             # mympirun is installed with system Python, pip may not be installed for system Python
             r'vsc-mympirun.*',
             # ReFrame intentionally installs its deps in a %(installdir)s/external subdir, which is added
@@ -1320,16 +1314,8 @@ class EasyConfigTest(TestCase):
             # Tkinter is an exception, since its version always matches the Python version anyway
             # Z3 is an exception, since it has easyconfigs with and without Python bindings
             exception_python_suffix = ['Tkinter', 'Z3']
-            # Also whitelist some specific easyconfigs from this check
-            # TODO: clean whitelist in EB 5.0
-            whitelist_python_suffix = [
-                'Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
-                'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb',
-                'R-keras-2.1.6-foss-2018a-R-3.4.4.eb',
-            ]
-            whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
 
-            if ec.name in exception_python_suffix or whitelisted:
+            if ec.name in exception_python_suffix:
                 continue
             elif has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                 msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
@@ -1431,9 +1417,6 @@ class EasyConfigTest(TestCase):
             'PycURL',  # bad certificate for https://pycurl.io/
         ]
         url_whitelist = [
-            # https:// doesn't work, results in index page being downloaded instead
-            # (see https://github.com/easybuilders/easybuild-easyconfigs/issues/9692)
-            'http://isl.gforge.inria.fr',
         ]
         # Cache: Mapping of already checked HTTP urls to whether the HTTPS variant works
         checked_urls = dict()
