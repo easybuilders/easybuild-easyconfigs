@@ -1706,6 +1706,7 @@ def template_easyconfig_test(self, spec):
 
     # Note the use of app.cfg which might contain sources populated by e.g. the Cargo easyblock
     sources, patches, checksums = app.cfg.get_ref('sources'), app.cfg['patches'], app.cfg['checksums']
+    post_install_patches = app.cfg['postinstallpatches']
 
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
@@ -1760,7 +1761,7 @@ def template_easyconfig_test(self, spec):
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
 
-    for idx, patch in enumerate(patches):
+    for idx, patch in enumerate(patches + post_install_patches):
         failing_checks.extend(verify_patch(specdir, patch, idx, patch_checksums))
 
     # make sure 'fetch' step is not being skipped, since that implies not verifying the checksum
