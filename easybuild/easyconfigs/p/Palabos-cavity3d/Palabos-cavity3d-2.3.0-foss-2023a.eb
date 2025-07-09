@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = 'Palabos-cavity3d'
+version = '2.3.0'
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://gitlab.com/unigespc/palabos/-/archive/v%(version)s']
+sources = ['palabos-v%(version)s.tar.gz']
+checksums = ['2085de7b06cc9c4a7b3457f7c2d17747d8960c0f861e32fc883acd504dfc1e23']
+
+homepage = 'http://www.palabos.org/'
+description = """
+Palabos (Parallel Lattice Boltzmann Solver) is a free software framework for
+fluid flow simulations based on the lattice Boltzmann method.
+"""
+
+builddependencies = [
+    ('CMake', '3.26.3'),  # CMake version compatible with foss/2023a
+]
+
+dependencies = [
+    ('HDF5', '1.14.0'),  # Palabos uses HDF5 for data management
+]
+
+start_dir = 'examples/benchmarks/cavity3d'
+
+# Disabling the installation step, the make install rule is not defined in the sources
+install_cmd = 'echo "No install step"'
+
+# Manually copy the compiled files after the build
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin',
+    'cp ../cavity3d %(installdir)s/bin/',  # Copy the binary to the bin folder
+]
+
+
+sanity_check_paths = {
+    'files': ['bin/cavity3d'],  # Only check the binary
+    'dirs': [],  # No directory checks like lib
+}
+
+# Check that the binary has been correctly installed in bin
+sanity_check_commands = ['bin/cavity3d --version']
+
+moduleclass = 'tools'
