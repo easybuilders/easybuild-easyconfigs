@@ -1,0 +1,23 @@
+Without that patch, Ninja is taken over the node and uses every available core
+The patch is using the EASYBUILD_PARALLEL variable, so set, else it is falling back to
+use 4 cores. This is important if the '--parallel=X'' flag is being used when building.
+Author: J. Saßmannshausen (Imperial College London/UK)
+diff --git a/underworld2-2.16.4.orig/setup.py b/underworld2-2.16.4/setup.py
+index 4c09b49..43c259b 100755
+--- a/underworld2-2.16.4.orig/setup.py
++++ b/underworld2-2.16.4/setup.py
+@@ -221,7 +221,13 @@ class BuildExtension(build_ext):
+             ['cmake', '-S', ext.source_dir, '-B', build_folder] + configure_args
+ 
+         # 2. Compose CMake build command
+-        build_command = ['cmake', '--build', build_folder] + build_args
++        env_var = 'EASYBUILD_PARALLEL'
++        if env_var in os.environ:
++            number_cpus = os.environ['EASYBUILD_PARALLEL']
++        else:
++            number_cpus = 4
++
++        build_command = ['cmake', '--build', build_folder, '-j', number_cpus] + build_args
+ 
+         # 3. Compose CMake install command
+         install_command = ['cmake', '--install', build_folder]
