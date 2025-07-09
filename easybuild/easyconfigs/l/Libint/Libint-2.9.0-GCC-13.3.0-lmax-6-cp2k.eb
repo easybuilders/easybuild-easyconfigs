@@ -1,0 +1,50 @@
+# #
+# This easyconfig is based on the easy config written originally by Robert Mijakovic <robert.mijakovic@lxp.lu>
+# Author:    Ben Czaja (SURF)
+# #
+name = 'Libint'
+version = '2.9.0'
+local_lmax = 6
+# custom configuration, to be used as dependency for CP2K
+versionsuffix = '-lmax-%s-cp2k' % local_lmax
+
+homepage = 'https://github.com/evaleev/libint'
+description = """Libint library is used to evaluate the traditional (electron repulsion) and certain novel two-body
+ matrix elements (integrals) over Cartesian Gaussian functions used in modern atomic and molecular theory."""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/evaleev/%(namelower)s/archive']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'Libint-2.9.0_remove-test-eri.patch',
+]
+checksums = [
+    {'v2.9.0.tar.gz': '4929b2f2d3e53479270be052e366e8c70fa154a7f309e5c2c23b7d394159687d'},
+    {'Libint-2.9.0_remove-test-eri.patch': '9d18dbf23818dc4150c80bbcc1510f5c98da19a661bed60c5e46a2384319ceb7'},
+]
+
+builddependencies = [
+    ('Autotools', '20231222'),
+    ('GMP', '6.3.0'),
+    ('Boost', '1.85.0'),
+    ('Eigen', '3.4.0'),
+    ('Python', '3.12.3'),
+    ('CMake', '3.29.3'),
+]
+
+# configure options as required by CP2K,
+# see Jenkinsfile in https://github.com/cp2k/libint-cp2k
+local_eri_max_am = '%s,%s' % (local_lmax, local_lmax - 1)
+local_eri23_max_am = '%s,%s' % (local_lmax + 2, local_lmax + 1)
+
+libint_compiler_configopts = '--enable-eri=1 --enable-eri2=1 --enable-eri3=1 --with-max-am=%s ' % local_lmax
+libint_compiler_configopts += '--with-eri-max-am=%s ' % local_eri_max_am
+libint_compiler_configopts += '--with-eri2-max-am=%s ' % local_eri23_max_am
+libint_compiler_configopts += '--with-eri3-max-am=%s ' % local_eri23_max_am
+libint_compiler_configopts += '--enable-generic-code --disable-unrolling'
+
+with_fortran = True
+
+moduleclass = 'chem'
