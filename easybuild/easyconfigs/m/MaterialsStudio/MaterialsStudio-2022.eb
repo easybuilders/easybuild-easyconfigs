@@ -1,0 +1,49 @@
+easyblock = 'Binary'
+
+name = 'MaterialsStudio'
+version = '2022'
+
+homepage = 'https://www.3dsbiovia.com/products/collaborative-science/biovia-materials-studio/'
+description = """Materials Studio is a complete modeling and simulation environment designed to allow researchers in
+materials science and chemistry to predict and understand the relationships of a material’s atomic and molecular
+structure with its properties and behavior. Using Materials Studio, researchers in many industries are engineering
+better performing materials of all types, including pharmaceuticals, catalysts, polymers and composites, metals and
+alloys, batteries and fuel cells, and more."""
+
+toolchain = SYSTEM
+
+download_instructions = """MaterialsStudio is proprietary software, licensed users should be able to download it
+ from https://www.3ds.com/support/download."""
+
+sources = ['BIOVIA_%(version)s.MaterialsStudio%(version)s.tar']
+patches = ['MaterialsStudio-2022_install.patch']
+checksums = [
+    {'BIOVIA_2022.MaterialsStudio2022.tar': 'a2f2bd163059b0d9f2da6dbc082e08178cd3beaa9358a6ae68a19bbfb4922a96'},
+    {'MaterialsStudio-2022_install.patch': '253e11013fd2ba360aa6dc6bb4a56f687b851a2f01bc766bdcd14c9c1e0d5dd7'},
+]
+
+extract_sources = True
+
+install_cmd = 'LicensePack/lp_setup_linux.sh --nox11 --target %(builddir)s/tmp '
+install_cmd += '-- -silent -P "licensepack.installLocation=%(installdir)s" '  # flags to licensepack script
+
+# Optional, specify license server directly
+# import os
+# install_cmd += os.getenv('EB_MATERIALSSTUDIO_LICENSE_SERVER_PORT') + '@' + \
+#                os.getenv('EB_MATERIALSSTUDIO_LICENSE_SERVER')
+# install_cmd += '1234@your.license.com'
+
+install_cmd += ' && ./install --batch --installroot=%(installdir)s --lproot=%(installdir)s '
+
+modextrapaths = {
+    'PATH': ['BIOVIA_LicensePack/linux/bin/', 'etc/Scripting/bin'],
+    'BIOVIA_LIC_PACK_DIR': 'BIOVIA_LicensePack',
+    'LD_LIBRARY_PATH': ['BIOVIA_LicensePack/linux/lib/', 'MpiRunTime/lib/'],
+}
+
+sanity_check_paths = {
+    'files': ['bin/dmol3.exe', 'bin/castepexe.exe'],
+    'dirs': ['etc', 'lib', 'share', 'BIOVIA_LicensePack/linux']
+}
+
+moduleclass = 'chem'
