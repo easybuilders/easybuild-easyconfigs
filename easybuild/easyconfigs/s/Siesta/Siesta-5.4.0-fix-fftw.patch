@@ -1,0 +1,253 @@
+In Src/fft.F, there is code to 'use' the iso_c_binding module, importing c_loc and c_ptr. Then, in the fftw3 wrapper, this module is imported again.
+Added workaround for C_PTR inclusion in newer gnu compilers. FFTW detection is no longer quiet.
+Author: Anthoni Alcaraz Torres (ICN2)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 29da7d775..43209efc0 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -36,6 +36,7 @@ include(GNUInstallDirs)
+ # Include Siesta specific utility functions
+ include(SiestaUtils)
+ include(SiestaConda)
++include(SiestaPrintBuildInfo)
+ siesta_util_ensure_out_of_source_build()
+ 
+ if(PROJECT_IS_TOP_LEVEL)
+@@ -107,7 +108,7 @@ mark_as_advanced(SIESTA_INSTALL SIESTA_TESTS SIESTA_SHARED_LIBS)
+ 
+ option(SIESTA_WITH_GRID_SP "Siesta: Use single-precision for grid magnitudes" FALSE)
+ 
+-option(SIESTA_BUILD_DOCS "Siesta: Create Doxygen-based documentation (WIP)" FALSE)
++option(SIESTA_BUILD_DOCS "Siesta: Create documentation (WIP)" FALSE)
+ option(SIESTA_WITH_PEXSI "Siesta: Use the PEXSI library (direct interface)" FALSE)
+ option(SIESTA_WITH_WANNIER90 "Siesta: Use the wannier90 interface" FALSE)
+ option(SIESTA_WITH_CHESS "Siesta: Use the CheSS linear-scaling library from BigDFT" FALSE)
+@@ -644,7 +645,7 @@ if( SIESTA_WITH_PEXSI )
+ endif(SIESTA_WITH_PEXSI)
+ 
+ # For STM/ol-stm only for now
+-find_package(FFTW QUIET COMPONENTS DOUBLE_LIB)
++find_package(FFTW COMPONENTS DOUBLE_LIB)
+ option(SIESTA_WITH_FFTW "FFTW support (currently only STM/ol-stm utility)" ${FFTW_DOUBLE_LIB_FOUND})
+ 
+ 
+@@ -693,7 +694,7 @@ if( SIESTA_INSTALL )
+ endif()
+ 
+ # Docs
+-# Enable BUILD_DOCS to create Doxygen-based documentation (wip)
++# Enable SIESTA_BUILD_DOCS to create Doxygen+ford-based documentation (wip)
+ add_subdirectory(Docs)
+ 
+ # add a few very basic tests for now
+@@ -710,8 +711,10 @@ if( SIESTA_TESTS )
+ 
+ endif()
+ 
+-# Print out build information for end-users
+-include(SiestaPrintBuildInfo)
++
++# Condense all build-information
++siesta_print_build_info()
++
+ 
+ # Print information about siesta and libsiesta
+ siesta_print_start_section("Siesta build")
+@@ -731,6 +734,7 @@ siesta_print_feature_info(
+     SIESTA_WITH_NETCDF_PARALLEL
+     SIESTA_WITH_LIBXC
+     SIESTA_WITH_PEXSI
++    SIESTA_WITH_FFTW
+     SIESTA_WITH_DFTD3
+     SIESTA_WITH_WANNIER90
+     SIESTA_WITH_CHESS
+@@ -757,6 +761,7 @@ siesta_print_feature_info(
+     SIESTA_REAL_KINDS # for cross-compilation
+     SIESTA_WITH_PROFILE_NVTX
+     SIESTA_PROFILE_NVTX_LIBRARY
++    SIESTA_BUILD_DOCS
+   MSGON
+     "The ${PROJECT_NAME} build information will be listed here."
+     "In particular how the targets and the variables affecting binaries are interpreted."
+diff --git a/Changes/486.build.md b/Changes/486.build.md
+new file mode 100644
+index 000000000..c0dc79d67
+--- /dev/null
++++ b/Changes/486.build.md
+@@ -0,0 +1,4 @@
++(Re)-enabled NetCDF parallel writes
++
++A flag was erroneously used and thus
++parallel writes were not possibly since 5.0.
+diff --git a/Changes/488.build.md b/Changes/488.build.md
+new file mode 100644
+index 000000000..592fb0f08
+--- /dev/null
++++ b/Changes/488.build.md
+@@ -0,0 +1,3 @@
++Added more information to the build configure
++
++Also removed unnecessary dependencies for QMMM-driver
+diff --git a/Changes/489.fix.md b/Changes/489.fix.md
+new file mode 100644
+index 000000000..16b56fc0d
+--- /dev/null
++++ b/Changes/489.fix.md
+@@ -0,0 +1 @@
++Added workaround for C_PTR inclusion in newer gnu compilers. This fixes FFTW compilation.
+diff --git a/Docs/CMakeLists.txt b/Docs/CMakeLists.txt
+index 4e7668d7c..23158c397 100644
+--- a/Docs/CMakeLists.txt
++++ b/Docs/CMakeLists.txt
+@@ -4,19 +4,29 @@
+ #
+ # Doxygen version of the documentation
+ #
++if( NOT SIESTA_BUILD_DOCS )
++  return()
++endif()
++
+ find_package(Doxygen)
+ 
+-if(DOXYGEN_FOUND AND BUILD_DOCS)
++if( DOXYGEN_FOUND )
++
+   set(DOXYGEN_CONFIG_FILE "${CMAKE_CURRENT_BINARY_DIR}/doxygen.cfg")
+   # configure doxygen.cfg.in and adapt paths
+   configure_file(doxygen.cfg.in ${DOXYGEN_CONFIG_FILE} @ONLY IMMEDIATE)
++
+   set(DOXYGEN_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+   # Add a target and build doc with all targets
+   add_custom_target(doc-doxygen ALL
+      COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_CONFIG_FILE}
+-     WORKING_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
+-  install(DIRECTORY ${DOXYGEN_OUTPUT_DIR}/html/ DESTINATION ${CMAKE_INSTALL_PREFIX}/doc/doxygen)
+-endif(DOXYGEN_FOUND AND BUILD_DOCS)
++     WORKING_DIRECTORY ${DOXYGEN_OUTPUT_DIR}
++   )
++  install(
++    DIRECTORY ${DOXYGEN_OUTPUT_DIR}/html/
++    DESTINATION ${CMAKE_INSTALL_PREFIX}/doc/doxygen
++  )
++endif()
+ 
+ #
+ # FORD version of the documentation
+@@ -24,21 +34,25 @@ endif(DOXYGEN_FOUND AND BUILD_DOCS)
+ # Some modern versions of FORD are unable to process correctly the
+ # inter-page links. Treat this as work-in-progress
+ #
+-if(BUILD_DOCS_FORD)
+- find_program(FORD_EXE ford
++find_program(FORD_EXE ford
+   DOC "path to the ford executable (required to generate the documentation)"
+-  )
++)
++if( FORD_EXE )
+ 
+- # Copy the FORD project-file into the build directory
+- set (FORD_PROJECT_FILE "${CMAKE_CURRENT_BINARY_DIR}/ford-siesta.md")
+- set(FORD_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/doc-ford-build")
+- configure_file(ford.cfg.in "${FORD_PROJECT_FILE}" @ONLY)
++  # Copy the FORD project-file into the build directory
++  set(FORD_PROJECT_FILE "${CMAKE_CURRENT_BINARY_DIR}/ford-siesta.md")
++  set(FORD_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/doc-ford-build")
++  configure_file(ford.cfg.in "${FORD_PROJECT_FILE}" @ONLY)
+ 
+- add_custom_target(doc-ford
+-  COMMENT "Generating API documentation"
+-  COMMAND "${FORD_EXE}" "${FORD_PROJECT_FILE}"
+-  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+-  VERBATIM
++  add_custom_target(doc-ford
++    COMMENT "Generating API documentation"
++    COMMAND "${FORD_EXE}" "${FORD_PROJECT_FILE}"
++    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
++    VERBATIM
+   )
+-  install(DIRECTORY "${FORD_OUTPUT_DIR}/" DESTINATION ${CMAKE_INSTALL_PREFIX}/doc/ford)
++  install(
++    DIRECTORY "${FORD_OUTPUT_DIR}/"
++    DESTINATION ${CMAKE_INSTALL_PREFIX}/doc/ford
++  )
++
+ endif()
+diff --git a/Src/easy-ncdf/CMakeLists.txt b/Src/easy-ncdf/CMakeLists.txt
+index 7fa73b49b..8f542cfa8 100644
+--- a/Src/easy-ncdf/CMakeLists.txt
++++ b/Src/easy-ncdf/CMakeLists.txt
+@@ -8,7 +8,7 @@ siesta_add_library(
+     netcdf_ncdf.F90
+   )
+ 
+-if(WITH_NCDF_PARALLEL)
++if(SIESTA_WITH_NCDF_PARALLEL)
+   target_compile_definitions(
+     ${PROJECT_NAME}.libncdf
+     PRIVATE
+diff --git a/Src/fft.F b/Src/fft.F
+index 8dcf0f572..03010faa4 100644
+--- a/Src/fft.F
++++ b/Src/fft.F
+@@ -51,6 +51,8 @@
+       MODULE m_fft
+ 
+       use precision,    only : dp, grid_p
++      use, intrinsic :: iso_c_binding, only : C_PTR, C_DOUBLE_COMPLEX
++      use, intrinsic :: iso_c_binding, only : c_loc, c_f_pointer
+       use parallel,     only : Node, Nodes, processorY
+       use moreMeshSubs, only : UNIFORM, getMeshBox
+       use sys,          only : die
+@@ -60,7 +62,6 @@
+       use gpfa_fft,     only : setgpfa=>setgpfa_check     ! Sets gpfa routine
+       use m_timer,      only : timer_start ! Start counting CPU time
+       use m_timer,      only : timer_stop ! Stop counting CPU time
+-      use, intrinsic :: iso_c_binding, only : c_loc, C_PTR
+ #ifdef MPI
+       use mpi_siesta
+ #endif
+diff --git a/Util/QMMM-driver/Src/CMakeLists.txt b/Util/QMMM-driver/Src/CMakeLists.txt
+index eada56a00..cac04e459 100644
+--- a/Util/QMMM-driver/Src/CMakeLists.txt
++++ b/Util/QMMM-driver/Src/CMakeLists.txt
+@@ -232,13 +232,11 @@ target_link_libraries(
+   ${PROJECT_NAME}.libsys
+   ${PROJECT_NAME}.libncps
+   ${PROJECT_NAME}.libpsop
+-  ${PROJECT_NAME}.libms
+   ${PROJECT_NAME}.libunits
+   $<$<BOOL:${SIESTA_WITH_FLOOK}>:flook::flook>
+   $<$<OR:$<BOOL:${SIESTA_WITH_NCDF}>,$<BOOL:${SIESTA_WITH_FLOOK}>>:${PROJECT_NAME}.libfdict>
+   $<$<BOOL:${SIESTA_WITH_NCDF}>:${PROJECT_NAME}.libncdf>
+   $<$<BOOL:${SIESTA_WITH_NETCDF}>:NetCDF::NetCDF_Fortran>
+-  $<$<BOOL:${SIESTA_WITH_MPI}>:SCALAPACK::SCALAPACK>
+   $<$<BOOL:${SIESTA_WITH_DFTD3}>:s-dftd3::s-dftd3>
+   LAPACK::LAPACK
+   $<$<BOOL:${SIESTA_WITH_OPENMP}>:OpenMP::OpenMP_Fortran>
+diff --git a/cmake/SiestaPrintBuildInfo.cmake b/cmake/SiestaPrintBuildInfo.cmake
+index 08af6af08..8ad33c7a8 100644
+--- a/cmake/SiestaPrintBuildInfo.cmake
++++ b/cmake/SiestaPrintBuildInfo.cmake
+@@ -410,7 +410,7 @@ macro(siesta_print_end_section)
+ 
+ endmacro()
+ 
+-
++macro(siesta_print_build_info)
+ 
+ message(${_mode} "")
+ message(${_mode}
+@@ -757,6 +757,7 @@ siesta_print_feature_info(
+   NAME FFTW
+   OPTION SIESTA_WITH_FFTW
+   FOUND FFTW_DOUBLE_LIB_FOUND
++  TARGETS FFTW::Double
+   )
+ 
+ 
+@@ -792,3 +793,4 @@ siesta_print_end_section()
+ message(${_mode} "Done with build information")
+ message(${_mode} "")
+ 
++endmacro(siesta_print_build_info)
