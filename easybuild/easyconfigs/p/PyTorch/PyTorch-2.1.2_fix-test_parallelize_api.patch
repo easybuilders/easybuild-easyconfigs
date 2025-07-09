@@ -1,0 +1,24 @@
+The test_linear_row_wise_parallel subtest fails when run on e.g. 6 GPUs with
+
+> RuntimeError: a and b must have same reduction dim, but got [9, 18] X [16, 10].
+> RuntimeError: a and b must have same reduction dim, but got [9, 6] X [16, 10].
+
+Reason is the test suite expects at most 4 GPUs.
+See https://github.com/pytorch/pytorch/issues/141335
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/tensor/parallel/test_parallelize_api.py b/test/distributed/tensor/parallel/test_parallelize_api.py
+index b5eaf6eaf78..901c7131cfe 100644
+--- a/test/distributed/tensor/parallel/test_parallelize_api.py
++++ b/test/distributed/tensor/parallel/test_parallelize_api.py
+@@ -28,8 +28,7 @@ from torch.testing._internal.distributed._tensor.common_dtensor import (
+ class TensorParallelAPITests(DTensorTestBase):
+     @property
+     def world_size(self):
+-        gpu_num = torch.cuda.device_count()
+-        return gpu_num if gpu_num % 2 == 0 and gpu_num > 4 else 4
++        return 4
+ 
+     @with_comms
+     def test_create_1d_device_mesh(self):
