@@ -1,0 +1,58 @@
+# Built with EasyBuild version 4.9.0 on 2024-01-19_16-15-55
+easyblock = 'CMakeMake'
+
+name = 'RELION'
+version = '4.0.1'
+local_cuda_version = '12.1.1'
+versionsuffix = '-CUDA-%s' % local_cuda_version
+
+homepage = 'http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page'
+description = """RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a stand-alone computer
+ program that employs an empirical Bayesian approach to refinement of (multiple) 3D reconstructions or 2D class
+ averages in electron cryo-microscopy (cryo-EM)."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/3dem/relion/archive']
+sources = ['%(version)s.tar.gz']
+checksums = ['0ebbd94ad922d7f457e3f3b81f5660e2691a845d9a53f0f1c9fbeb4e54cd5c17']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('X11', '20230603'),
+    ('FLTK', '1.3.8'),
+    ('libpng', '1.6.39'),
+    ('LibTIFF', '4.5.0'),
+    ('tbb', '2021.11.0'),
+    ('zlib', '1.2.13'),
+    ('ctffind', '4.1.14'),
+    ('MotionCor2', '1.6.4', '-Mar31_2023'),
+    ('Gctf', '1.06-CUDA-' + local_cuda_version, '', SYSTEM),
+    ('gnuplot', '5.4.8'),
+    ('unblur', '1.0.2'),
+    ('summovie', '1.0.2', '', SYSTEM),
+    ('ResMap', '1.1.4', '', SYSTEM),
+    ('FFTW', '3.3.10'),
+    ('CUDA', local_cuda_version, '', SYSTEM),
+]
+
+local_cuda_compute_capabilities = ['5.0', '5.2', '5.3', '6.0', '6.1', '6.2', '7.0', '8.0']
+local_caps = [''.join(x.split('.')) for x in local_cuda_compute_capabilities]
+local_cuda_gencodes = ';'.join(['-gencode arch=compute_%s,code=sm_%s' % (x, x) for x in local_caps])
+local_cuda_arch = "%s %s" % (local_caps[0], local_cuda_gencodes)
+
+configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-lpthread'  -DMPI_INCLUDE_PATH=$EBROOTOPENMPI/include "
+configopts += "-DMPI_C_COMPILER=$EBROOTOPENMPI/bin/mpicc -DMPI_CXX_COMPILER=$EBROOTOPENMPI/bin/mpicxx "
+configopts += "-DCUDA=ON -DCudaTexture=ON "
+configopts += "-DCUDA_ARCH='" + local_cuda_arch + "'"
+
+sanity_check_paths = {
+    'files': ['bin/relion'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
