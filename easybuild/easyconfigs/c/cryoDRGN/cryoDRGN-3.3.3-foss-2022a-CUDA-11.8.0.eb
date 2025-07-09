@@ -1,0 +1,76 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/05
+easyblock = 'PythonBundle'
+
+name = 'cryoDRGN'
+version = '3.3.3'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://cb.csail.mit.edu/cb/cryodrgn/'
+description = """cryoDRGN: Deep Reconstructing Generative Networks for cryo-EM heterogeneous
+ reconstruction.
+ CryoDRGN is a neural network based algorithm for heterogeneous cryo-EM reconstruction. In
+ particular, the method models a continuous distribution over 3D structures by using a neural
+ network based representation for the volume.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+# requirements clashing with foss>2022a:
+#   python < 3.11  (GCCcore-12.3.0: 3.11.3)
+#   numpy<1.23     (SciPy-bundle/2023.07-gfbf-2023a: 1.25.1)
+#   scipy>=1.3.1   (SciPy-bundle/2023.07-gfbf-2023a: 1.11.1)
+#   pandas<2       (SciPy-bundle/2023.07-gfbf-2023a: 2.0.3)
+#   matplotlib<3.7 (gfbf 2023a: 3.7.2)
+#   ipywidgets<8   (Jupyter-bundle/20230823-GCCcore-12.3.0: 8.1.0)
+
+dependencies = [
+    ('CUDA', '11.8.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('IPython', '8.5.0'),
+    ('JupyterLab', '3.5.0'),
+    ('SciPy-bundle', '2022.05'),
+    ('PyTorch', '2.0.1', versionsuffix),
+    ('scikit-learn', '1.1.2'),
+    ('matplotlib', '3.5.2'),
+    ('umap-learn', '0.5.3'),
+    ('plotly.py', '5.12.0'),
+    # ('Seaborn', '0.12.1'),  # requires < 0.12, therfore provide as exts
+    ('healpy', '1.16.6'),
+]
+
+
+local_inject_version = """sed -i 's/dynamic = ."version"./version = "%s"/g' pyproject.toml &&""" % version
+local_inject_version += """sed -i "/^.tool.setuptools_scm.$/,+1d" pyproject.toml &&"""
+
+exts_list = [
+    ('colorlover', '0.3.0', {
+        'checksums': ['b8fb7246ab46e1f5e6715649453c1762e245a515de5ff2d2b4aab7a6e67fa4e2'],
+    }),
+    ('cufflinks', '0.17.3', {
+        'checksums': ['48c1b3406dc030004121966489eebc5518cea70fd4e3f16379b491328501a644'],
+    }),
+    ('seaborn', '0.11.2', {
+        'checksums': ['cf45e9286d40826864be0e3c066f98536982baf701a7caa386511792d61ff4f6'],
+    }),
+    ('cryodrgn', version, {
+        'postinstallcmds': [
+            'cp  utils/* analysis_scripts/* %(installdir)s/bin',
+            'chmod +x %(installdir)s/bin/*.py',
+        ],
+        'preinstallopts': local_inject_version,
+        'source_urls': ['https://github.com/ml-struct-bio/cryodrgn/archive/refs/tags/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['241ca3ca9a19001eba56366ea3877503093501070b4fe89dfbb07f07f16e535c'],
+    }),
+]
+
+local_tools = [
+    'cryodrgn', 'analyze_convergence.py', 'kmeans.py', 'cryodrgn_utils',
+    'plot_loss.py', 'plot_z1.py', 'plot_z2.py', 'plot_z_pca.py', 'run_umap.py', 'tsne.py'
+]
+
+
+fix_python_shebang_for = ['bin/%s' % x for x in local_tools]
+
+sanity_check_commands = ['%s -h' % x for x in local_tools]
+
+moduleclass = 'bio'
