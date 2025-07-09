@@ -1,0 +1,44 @@
+easyblock = 'CMakeMake'
+
+name = 'rocSOLVER'
+version = '3.22.0'
+_rocm_version = '5.6.0'
+versionsuffix = '-ROCm-%s' % _rocm_version
+
+homepage = 'https://rocsolver.readthedocs.io/en/latest'
+description = """rocSOLVER is an implementation of LAPACK routines on
+top of AMD’s open source ROCm platform. rocSOLVER is implemented in the
+HIP programming language and optimized for AMD’s latest discrete GPUs.
+"""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/ROCmSoftwarePlatform/rocSOLVER/archive/'],
+        'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
+        'filename': '%%(name)s-%%(version)s-rocm-%s.tar.gz' % _rocm_version,
+    },
+]
+checksums = ['54baa7f35f3c53da9005054e6f7aeecece5526dafcb277af32cbcb3996b0cbbc']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('fmt', '9.1.0'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('HIP', _rocm_version, '-amd'),
+    ('rocBLAS', '3.0.0', versionsuffix),
+    ('rocSPARSE', '2.5.2', versionsuffix),
+]
+
+preconfigopts = 'export CC=hipcc CXX=hipcc && '
+
+sanity_check_paths = {
+    'files': ['include/%(namelower)s/%(namelower)s.h', 'lib/lib%%(namelower)s.%s' % SHLIB_EXT],
+    'dirs': ['lib/cmake/%(namelower)s'],
+}
+
+moduleclass = 'lib'

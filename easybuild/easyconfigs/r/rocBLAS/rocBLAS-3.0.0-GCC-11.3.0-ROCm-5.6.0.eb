@@ -1,0 +1,47 @@
+easyblock = 'CMakeMake'
+
+name = 'rocBLAS'
+version = '3.0.0'
+_rocm_version = '5.6.0'
+versionsuffix = '-ROCm-%s' % _rocm_version
+
+homepage = 'https://rocblas.readthedocs.io/en/latest'
+description = """rocBLAS is the AMD library for Basic Linear Algebra
+Subprograms (BLAS) on the ROCm platform. It is implemented in the HIP
+programming language and optimized for AMD GPUs."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/ROCmSoftwarePlatform/rocBLAS/archive/'],
+        'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
+        'filename': '%%(name)s-%%(version)s-rocm-%s.tar.gz' % _rocm_version,
+    },
+]
+patches = [
+    '%(name)s-%(version)s_use_existing_Tensil.patch',
+]
+checksums = [
+    {'rocBLAS-3.0.0-rocm-5.6.0.tar.gz': '6a70b27eede02c45f46095a6ce8421af9a774a565e39f5e1074783ecf00c1ea7'},
+    {'rocBLAS-3.0.0_use_existing_Tensil.patch': 'a9c93f99a87f72cb45d03907744a2e4d863c6712d0b901e64366f439fb9578d5'},
+]
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('HIP', _rocm_version, '-amd'),
+    ('Tensile', '4.37.0', versionsuffix),
+]
+
+preconfigopts = 'export CC=hipcc CXX=hipcc && '
+
+sanity_check_paths = {
+    'files': ['include/%(namelower)s/%(namelower)s.h', 'lib/lib%%(namelower)s.%s' % SHLIB_EXT],
+    'dirs': ['lib/cmake/%(namelower)s'],
+}
+
+moduleclass = 'lib'
