@@ -1,0 +1,80 @@
+easyblock = 'Tarball'
+
+name = 'SqueezeMeta'
+version = '1.6.5'
+
+homepage = 'https://github.com/jtamames/SqueezeMeta'
+description = """SqueezeMeta is a full automatic pipeline for metagenomics/metatranscriptomics,
+ covering all steps of the analysis."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://github.com/jtamames/SqueezeMeta/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['ccfa06c54b7b9d5b6932912a6b4d32c4fbf7572661ad882cbaa0ab224ae5cff6']
+
+dependencies = [
+    ('Perl', '5.38.0'),
+    ('Perl-bundle-CPAN', '5.38.0'),  # provides XML::Parser
+    ('XML-LibXML', '2.0210'),
+    ('Python', '3.11.5'),
+    ('matplotlib', '3.8.2'),
+    ('Pysam', '0.22.0'),
+    ('R', '4.4.1'),
+    ('BLAST+', '2.16.0'),
+    ('BWA', '0.7.18'),
+    ('CD-HIT', '4.8.1'),
+    ('CheckM', '1.2.3'),
+    ('DAS_Tool', '1.1.7', '-R-%(rver)s'),  # depends on prodigal & pullseq
+    ('DIAMOND', '2.1.9'),
+    ('MEGAHIT', '1.2.9'),
+    ('minimap2', '2.28'),
+    ('Java', '17', '', SYSTEM),
+    ('RDP-Classifier', '2.14', '-Java-%(javaver)s', SYSTEM),
+    ('MetaBAT', '2.17'),
+    ('MinPath', '1.6'),  # depends on GPLK (which provides glpsol)
+    ('PRINSEQ', '0.20.4'),
+    ('Trimmomatic', '0.39', '-Java-%(javaver)s', SYSTEM),
+    ('AMOS', '3.1.0'),
+    ('MaxBin', '2.2.7'),
+    ('SPAdes', '4.1.0'),
+    ('Bowtie2', '2.5.4'),
+    ('canu', '2.2'),
+    ('HMMER', '3.4'),
+    ('MUMmer', '4.0.1'),
+    ('pplacer', '1.1.alpha19', '', SYSTEM),
+    ('Short-Pair', '20170125'),
+    ('SAMtools', '1.19.2'),
+    ('CompareM', '0.1.2'),
+    ('R-bundle-Bioconductor', '3.19', '-R-%(rver)s')  # provides pathview needed for SQMtools
+]
+
+keepsymlinks = True
+
+postinstallcmds = [
+    # backup patched barrnap
+    "cp %(installdir)s/bin/barrnap %(builddir)s/",
+    # remove vendored tools that are include as dependencies
+    "rm -r %(installdir)s/bin/*",
+    "cp %(builddir)s/barrnap %(installdir)s/bin/",
+    # also install SQMtools R library
+    "mkdir %(installdir)s/R && R CMD INSTALL lib/SQMtools --library=%(installdir)s/R/ --no-clean-on-error",
+]
+
+fix_perl_shebang_for = [
+    '%(installdir)s/scripts/*.pl',
+]
+
+sanity_check_paths = {
+    'files': ['scripts/SqueezeMeta.pl'],
+    'dirs': ['utils/install_utils/'],
+}
+
+sanity_check_commands = ["""echo 'library("SQMtools")' | R -q --no-save"""]
+
+modextrapaths = {
+    'PATH': 'scripts',
+    'R_LIBS_SITE': 'R',
+}
+
+moduleclass = 'bio'
