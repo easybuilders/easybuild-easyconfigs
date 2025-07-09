@@ -1,0 +1,34 @@
+easyblock = 'ConfigureMake'
+
+name = 'LibreQDA'
+version = '1.0.1'
+
+homepage = 'https://gitlab.com/bin-cirst/libreqda/libre-qda'
+description = """LibreQDA is an open-source web-based document tagging tool for qualitative data analysis.
+
+Using this tool, you can upload a collection of documents, create a hierarchy of codes, and annotate portions of documents with codes and notes that you can recall and organize later."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+source_urls = ['https://gitlab.com/bin-cirst/libreqda/libre-qda/-/archive/%(name_lower)s-v%(version)s']
+sources = ['libre-qda-libreqda-v%(version)s.tar.gz']
+patches = ['libreqda-%(version)s-alliancecan.patch']
+checksums = [
+    {'libre-qda-libreqda-v1.0.1.tar.gz': 'b21efbfffa736d6eff2294e5bcdcf097b63314a81de8ab1dd9383aed52360d02'},
+    {'libreqda-1.0.1-alliancecan.patch': 'eec551b8e48546a26b3a2e8b6bed76e03c6512df3d2391c6d1f4c913b4e803e5'},
+]
+
+dependencies = [('Python', '3.11')]
+builddependencies = [('python-build-bundle','2025b')]
+
+skipsteps = ['configure', 'build']
+preinstallopts = 'poetry lock && '
+install_cmd = 'poetry bundle venv'
+installopts = '%(installdir)s/bundle'
+postinstallcmds = ['mkdir %(installdir)s/bin; ln -s %(installdir)s/bundle/bin/taguette %(installdir)s/bin/taguette']
+
+sanity_check_paths = {
+    'files': ['bundle/bin/taguette', 'bin/taguette'],
+    'dirs': ['bundle/lib']
+}
+
+moduleclass = 'data'
