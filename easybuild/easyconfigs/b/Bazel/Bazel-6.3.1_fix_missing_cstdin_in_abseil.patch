@@ -1,0 +1,35 @@
+Add patch to abseil to add missing inclusde of cstdint
+
+Åke Sandgren, 2024-06-27
+diff -rNu 6.3.1.orig/distdir_deps.bzl 6.3.1/distdir_deps.bzl
+--- 6.3.1.orig/distdir_deps.bzl	1980-01-01 00:00:00.000000000 +0100
++++ 6.3.1/distdir_deps.bzl	2024-06-27 16:07:12.735316672 +0200
+@@ -235,6 +235,10 @@
+             "https://mirror.bazel.build/github.com/abseil/abseil-cpp/archive/refs/tags/20211102.0.tar.gz",
+             "https://github.com/abseil/abseil-cpp/archive/refs/tags/20211102.0.tar.gz",
+         ],
++        "patch_args": ["-p1"],
++        "patches": [
++            "//third_party/py/abseil:fix-cstdint-for-gcc-13.patch",
++        ],
+         "used_in": [
+             "additional_distfiles",
+             "test_WORKSPACE_files",
+diff -rNu 6.3.1.orig/third_party/py/abseil/fix-cstdint-for-gcc-13.patch 6.3.1/third_party/py/abseil/fix-cstdint-for-gcc-13.patch
+--- 6.3.1.orig/third_party/py/abseil/fix-cstdint-for-gcc-13.patch	1970-01-01 01:00:00.000000000 +0100
++++ 6.3.1/third_party/py/abseil/fix-cstdint-for-gcc-13.patch	2024-06-27 16:06:21.323644443 +0200
+@@ -0,0 +1,14 @@
++GCC 13 requires cstdint in extension.h
++
++Åke Sandgren, 2024-06-27
++diff -ru abseil-cpp-20211102.0.orig/absl/strings/internal/str_format/extension.h abseil-cpp-20211102.0/absl/strings/internal/str_format/extension.h
++--- abseil-cpp-20211102.0.orig/absl/strings/internal/str_format/extension.h	2021-11-03 16:26:14.000000000 +0100
+++++ abseil-cpp-20211102.0/absl/strings/internal/str_format/extension.h	2024-06-27 16:03:31.932598041 +0200
++@@ -21,6 +21,7 @@
++ #include <cstddef>
++ #include <cstring>
++ #include <ostream>
+++#include <cstdint>
++ 
++ #include "absl/base/config.h"
++ #include "absl/base/port.h"
