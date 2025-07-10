@@ -1,0 +1,38 @@
+Fix "system" install of python part so it actually works.
+Fix load of shared lib to use LD_LIBRARY_PATH
+
+Åke Sandgren, 2024-01-04
+diff -ru antimony-2.14.orig/src/bindings/python/CMakeLists.txt antimony-2.14/src/bindings/python/CMakeLists.txt
+--- antimony-2.14.orig/src/bindings/python/CMakeLists.txt	2023-12-19 21:11:13.000000000 +0100
++++ antimony-2.14/src/bindings/python/CMakeLists.txt	2024-01-04 10:30:02.593599565 +0100
+@@ -65,10 +65,11 @@
+ if (PYTHON_SYSTEM_INSTALL)
+    #Copy all the files into a local 'antimony' directory.
+    INSTALL(FILES ${antimony_python_files} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/antimony)
++   INSTALL(FILES ${PYTHON_CTYPES_FILE} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/antimony)
+ #   install(TARGETS ${LIBANTIMONY_LIBRARY} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/antimony)
+ 
+-   #Now run 'python setup.py install' with that directory as the target.
+-   INSTALL(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E chdir ${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")
++   #Now run 'python -m pip install' with that directory as the base.
++   INSTALL(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E chdir ${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_EXECUTABLE} -m pip install --prefix=${CMAKE_INSTALL_PREFIX} .)")
+ endif()
+ 
+ #...and/or we instead copy antimony_python_files into the install directory, along with setup.py, and let the user run that directly.
+diff -ru antimony-2.14.orig/src/bindings/python/createAntimonyLib.py antimony-2.14/src/bindings/python/createAntimonyLib.py
+--- antimony-2.14.orig/src/bindings/python/createAntimonyLib.py	2023-12-19 21:11:13.000000000 +0100
++++ antimony-2.14/src/bindings/python/createAntimonyLib.py	2024-01-04 10:09:48.307822896 +0100
+@@ -206,11 +206,11 @@
+ if __osname == "Windows":
+    __sharedLib = os.path.join(__libdir, 'libantimony.dll')
+ elif __osname == "Linux":
+-   __sharedLib = os.path.join(__libdir, "libantimony.so")
++   __sharedLib = "libantimony.so"
+ elif __osname == "Darwin":
+    __sharedLib = os.path.join(__libdir, "libantimony.dylib")
+ 
+-if not os.path.isfile(__sharedLib):
++if __osname != "Linux" and not os.path.isfile(__sharedLib):
+     print('Unable to find shared library file', __sharedLib, "Exiting.")
+     exit()
+ else:
