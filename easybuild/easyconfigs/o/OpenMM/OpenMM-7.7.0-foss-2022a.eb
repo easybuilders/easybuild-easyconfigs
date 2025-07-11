@@ -39,7 +39,11 @@ preinstallopts = ' export OPENMM_INCLUDE_PATH=%(installdir)s/include && '
 preinstallopts += ' export OPENMM_LIB_PATH=%(installdir)s/lib && '
 
 # required to install the python API
-installopts = ' && cd python && python setup.py build && python setup.py install --prefix=%(installdir)s'
+postinstallcmds = [
+    preinstallopts + 'cd python && python setup.py build && python setup.py install --prefix=%(installdir)s',
+    'echo OpenMM-%(version)s-py%(pyshortver)s-linux-%(arch)s.egg > '
+    '%(installdir)s/lib/python%(pyshortver)s/site-packages/openmm.pth',
+]
 
 sanity_check_paths = {
     'files': ['lib/libOpenMM.%s' % SHLIB_EXT],
@@ -52,7 +56,6 @@ sanity_check_commands = [
 ]
 
 modextrapaths = {
-    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages/OpenMM-%(version)s-py%(pyshortver)s-linux-%(arch)s.egg',
     'OPENMM_INCLUDE_PATH': 'include',
     'OPENMM_LIB_PATH': 'lib',
 }
