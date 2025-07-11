@@ -1,0 +1,59 @@
+easyblock = 'CMakeMake'
+
+name = 'Cling'
+version = '1.2'
+# Newer cling-llvm18 versions fail to build Cling 1.2 due to removed is Temp
+# parameter in Clang Parser constructor.
+local_llvm_version = '20250207-01'
+
+homepage = "https://root.cern/cling/"
+description = """
+Cling is an interactive C++ interpreter, built on the top of LLVM and Clang libraries.
+Its advantages over the standard interpreters are that it has command line prompt
+and uses just-in-time (JIT) compiler for compilation.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [
+    'https://github.com/root-project/cling/archive/',
+    'https://github.com/root-project/llvm-project/archive/refs/tags/',
+]
+sources = [
+    'v%(version)s.tar.gz',
+    f'cling-llvm18-{local_llvm_version}.tar.gz',
+]
+patches = ['Cling-1.2_disable-demo.patch']
+checksums = [
+    {'v1.2.tar.gz': 'beee8e461424d267ee2dec88b3de57326bc8e3470b4ceae2744de7d3d3aba1eb'},
+    {'cling-llvm18-20250207-01.tar.gz': '7b8fc17e40af6c69d6f33f8cf931c22cc411dccaa210ed53ae3f09dcba591515'},
+    {'Cling-1.2_disable-demo.patch': 'ce2b8048f1fb1c42b0f549b9094b5ed8fa23d3ebecb54ff662398da1dd1f6ffa'},
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+]
+
+srcdir = f"%(builddir)s/llvm-project-cling-llvm18-{local_llvm_version}/llvm"
+
+configopts = '-DLLVM_BUILD_TOOLS=Off '
+configopts += '-DLLVM_EXTERNAL_PROJECTS=cling '
+configopts += '-DLLVM_EXTERNAL_CLING_SOURCE_DIR=../cling-%(version)s/ '
+configopts += '-DLLVM_ENABLE_PROJECTS=clang '
+configopts += '-DLLVM_TARGETS_TO_BUILD="host;NVPTX;AMDGPU" '
+
+postinstallcmds = [
+    # copy Jupyter kernel install files
+    # https://cdn.rawgit.com/root-project/cling/master/www/jupyter.html
+    'mkdir -p %(installdir)s/share/cling/ ',
+    'cp -a %(builddir)s/cling-%(version)s/tools/Jupyter %(installdir)s/share/cling ',
+]
+
+sanity_check_paths = {
+    'files': ['bin/cling'],
+    'dirs': ['bin', 'include', 'lib', 'share'],
+}
+
+moduleclass = 'tools'
