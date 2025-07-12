@@ -1,0 +1,127 @@
+An intended optimization in linalg.solve that no longer applies leads to failures in some tests in test_ops.py
+due to small discrepancies depending on the memory layout of the input tensors.
+
+test_vmapvjp_linalg_tensorsolve_cpu_float32 fails with:
+> Mismatched elements: 222 / 288 (77.1%)
+> Greatest absolute difference: 0.13232421875 at index (0, 0, 3, 1, 1) (up to 0.0001 allowed)
+> Greatest relative difference: 0.00012596177111845464 at index (0, 1, 3, 2, 0) (up to 0.0001 allowed)
+
+test_vmapvjpvjp_linalg_tensorsolve_cpu_float32 fails with:
+> Mismatched elements: 6 / 288 (2.1%)
+> Greatest absolute difference: 0.0005550384521484375 at index (0, 2, 1, 0, 2) (up to 0.0001 allowed)
+> Greatest relative difference: 0.0002498962276149541 at index (0, 1, 0, 0, 2) (up to 0.0001 allowed)
+
+See https://github.com/pytorch/pytorch/issues/151440
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/functorch/BatchRulesLinearAlgebra.cpp b/aten/src/ATen/functorch/BatchRulesLinearAlgebra.cpp
+index ec5969d32c0..4dc32570c8c 100644
+--- a/aten/src/ATen/functorch/BatchRulesLinearAlgebra.cpp
++++ b/aten/src/ATen/functorch/BatchRulesLinearAlgebra.cpp
+@@ -382,14 +382,6 @@ fourOutputs solve_ex_batch_rule(
+   A_ = ensure_has_bdim(A_, A_bdim.has_value(), batch_size);
+   B_ = ensure_has_bdim(B_, B_bdim.has_value(), batch_size);
+ 
+-  // NOTE [ solve_ex Batch Rule Contiguity ]
+-  // A determines whether or not linalg_solve takes an optimized path. We need the check on A_ to match the one run on
+-  // A as BatchedTensor since it might have been saved by autograd (specifically by the jvp) and the autograd behvaior
+-  // differs based on whether or not the optimized path was taken
+-  const auto batched_A_was_contiguous = A_bdim.has_value() ? at::select(A, *A_bdim, 0).is_contiguous() : A.is_contiguous();
+-  if (batched_A_was_contiguous && !A.is_complex()) {
+-    A_ = A_.contiguous();
+-  }
+   auto res = _linalg_solve_ex(A_, B_, left, check_errors);
+   return std::make_tuple(std::move(std::get<0>(res)), 0, std::move(std::get<1>(res)), 0, std::move(std::get<2>(res)), 0, std::move(std::get<3>(res)), 0);
+ }
+diff --git a/aten/src/ATen/native/BatchLinearAlgebra.cpp b/aten/src/ATen/native/BatchLinearAlgebra.cpp
+index 02b5d76892e..82c90d6fe41 100644
+--- a/aten/src/ATen/native/BatchLinearAlgebra.cpp
++++ b/aten/src/ATen/native/BatchLinearAlgebra.cpp
+@@ -1946,15 +1946,10 @@ TORCH_IMPL_FUNC(_linalg_solve_ex_out)(const Tensor& A,
+                                       const Tensor& LU,
+                                       const Tensor& pivots,
+                                       const Tensor& info) {
+-  // Possible optimization: Compute the LU factorization of A^T if A is contiguous
+-  // Then we solve A^T X = B with adjoint=True
+-  // This saves a copy as A doesn't need to be copied into an F-contig matrix in lu_factor
+-  // This optimization makes functorch's batching rule difficult. See NOTE [ solve_ex Batch Rule Contiguity ]
+-  const bool use_A_T = A.is_contiguous() && !A.is_complex();
+   at::linalg_lu_factor_ex_out(const_cast<Tensor&>(LU),
+                               const_cast<Tensor&>(pivots),
+                               const_cast<Tensor&>(info),
+-                              use_A_T ? A.mT() : A);
++                              A);
+   if (check_errors) {
+     at::_linalg_check_errors(info, "torch.linalg.solve_ex", A.dim() == 2);
+   }
+@@ -1963,7 +1958,7 @@ TORCH_IMPL_FUNC(_linalg_solve_ex_out)(const Tensor& A,
+   const bool vector_case = at::native::linalg_solve_is_vector_rhs(LU, B);
+   auto result_ = vector_case ? result.unsqueeze(-1) : result;
+   auto B_ = vector_case ? B.unsqueeze(-1) : B;
+-  at::linalg_lu_solve_out(result_, LU, pivots, B_, left, /*adjoint*/use_A_T);
++  at::linalg_lu_solve_out(result_, LU, pivots, B_, left);
+ }
+ 
+ std::tuple<Tensor&, Tensor&> linalg_solve_ex_out(const Tensor& A,
+diff --git a/tools/autograd/derivatives.yaml b/tools/autograd/derivatives.yaml
+index fa77b906b1b..9493a92e933 100644
+--- a/tools/autograd/derivatives.yaml
++++ b/tools/autograd/derivatives.yaml
+@@ -1576,7 +1576,7 @@
+ 
+ - name: _linalg_solve_ex(Tensor A, Tensor B, *, bool left=True, bool check_errors=False) -> (Tensor result, Tensor LU, Tensor pivots, Tensor info)
+   A, B: linalg_solve_backward(grad, result, A, LU, pivots, left, grad_input_mask[1])
+-  result: "linalg_solve_jvp(A_t, B_t, result, LU, pivots, left, A_p.is_contiguous() && !A_p.is_complex())"
++  result: "linalg_solve_jvp(A_t, B_t, result, LU, pivots, left)"
+   output_differentiability: [True, False, False, False]  # LU is an auxiliary tensor not exposed to the user
+ 
+ - name: sort(Tensor self, int dim=-1, bool descending=False) -> (Tensor values, Tensor indices)
+diff --git a/torch/csrc/autograd/FunctionsManual.cpp b/torch/csrc/autograd/FunctionsManual.cpp
+index f231373ff65..d683c37987e 100644
+--- a/torch/csrc/autograd/FunctionsManual.cpp
++++ b/torch/csrc/autograd/FunctionsManual.cpp
+@@ -5823,8 +5823,7 @@ Tensor linalg_solve_jvp(
+     const Tensor& X,
+     const Tensor& LU,
+     const Tensor& pivots,
+-    const bool left,
+-    const bool use_A_T) {
++    const bool left) {
+   at::NoTF32Guard disable_tf32;
+   // For left=True (left=False is analogous)
+   // dX = A^{-1}(dB - dAX)
+@@ -5847,7 +5846,7 @@ Tensor linalg_solve_jvp(
+   auto dB_ = vector_to_matrix(dB);
+   auto R_ = left ? dA.matmul(X_) : X_.matmul(dA);
+   auto dX_ =
+-      at::linalg_lu_solve(LU, pivots, dB_ - R_, left, /*adjoint*/ use_A_T);
++      at::linalg_lu_solve(LU, pivots, dB_ - R_, left);
+   return matrix_to_vector(dX_);
+ }
+ 
+@@ -5885,9 +5884,8 @@ std::tuple<Tensor, Tensor> linalg_solve_backward(
+   if (at::GradMode::is_enabled()) {
+     gB_ = at::linalg_solve(A.mH(), vector_to_matrix(gX), left);
+   } else {
+-    const auto use_A_T = A.is_contiguous() && !A.is_complex();
+     gB_ = at::linalg_lu_solve(
+-        LU, pivots, vector_to_matrix(gX), left, /*adjoint*/ !use_A_T);
++        LU, pivots, vector_to_matrix(gX), left, /*adjoint*/ true);
+   }
+ 
+   Tensor gA_;
+diff --git a/torch/csrc/autograd/FunctionsManual.h b/torch/csrc/autograd/FunctionsManual.h
+index 4f9fe796947..124ec87509f 100644
+--- a/torch/csrc/autograd/FunctionsManual.h
++++ b/torch/csrc/autograd/FunctionsManual.h
+@@ -866,8 +866,7 @@ Tensor linalg_solve_jvp(
+     const Tensor& X,
+     const Tensor& LU,
+     const Tensor& pivots,
+-    const bool left,
+-    const bool use_A_T);
++    const bool left);
+ Tensor lu_unpack_backward(
+     const Tensor& L_grad,
+     const Tensor& U_grad,

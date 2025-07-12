@@ -1,0 +1,22 @@
+Fix random failures of test_aot_export_with_torch_cond
+> -     cond = torch.ops.higher_order.cond(gt, true_graph_0, false_graph_0, [arg0_1]);  gt = true_graph_0 = false_graph_0 = arg0_1 = None
+> +     cond = torch.ops.higher_order.cond(gt, true_graph_0, false_graph_0, [arg0_1, 3, 4]);  gt = true_graph_0 = false_graph_0 = arg0_1 = None
+> ?                                                                                ++++++
+
+Trivial backport of https://github.com/pytorch/pytorch/pull/145330
+
+Author: Alexander Grund (TU Dresden)
+
+--- a/test/functorch/test_aotdispatch.py
++++ b/test/functorch/test_aotdispatch.py
+@@ -3973,6 +3972,10 @@ def forward(self, *args):
+ 
+ 
+ class TestAOTExport(AOTTestCase):
++    def setUp(self):
++        super().setUp()
++        torch._dynamo.reset()
++
+     def test_aot_export_ban_dropout_mut_pre_dispatch(self):
+         def fn(p, x):
+             y = torch.ops.aten.dropout.default(x, 0.1, train=False)
