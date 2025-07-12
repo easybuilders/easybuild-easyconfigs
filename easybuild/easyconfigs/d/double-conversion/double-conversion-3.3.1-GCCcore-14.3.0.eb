@@ -19,13 +19,15 @@ builddependencies = [
 
 # Build static lib, static lib with -fPIC and shared lib
 configopts = [
-    '',
-    "-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_STATIC_LIBRARY_SUFFIX_CXX=_pic.a",
-    '-DBUILD_SHARED_LIBS=ON',
+    # v3.3.1 doesn't support CMake 4.0 yet. Bump policy (and therefore minimum version)
+    # to 3.15, as done upstream: https://github.com/google/double-conversion/pull/246
+    x + "-DCMAKE_POLICY_VERSION_MINIMUM=3.15 "
+    for x in [
+        "",
+        "-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_STATIC_LIBRARY_SUFFIX_CXX=_pic.a ",
+        "-DBUILD_SHARED_LIBS=ON ",
+    ]
 ]
-# v3.3.1 doesn't support CMake 4.0 yet. Bump policy (and therefore minimum version)
-# to 3.15, as done upstream: https://github.com/google/double-conversion/pull/246
-configopts = [x + ' -DCMAKE_POLICY_VERSION_MINIMUM=3.15 ' for x in configopts]
 
 sanity_check_paths = {
     'files': ['include/double-conversion/%s.h' % h for h in ['bignum', 'cached-powers', 'diy-fp', 'double-conversion',
