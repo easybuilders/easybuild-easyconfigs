@@ -17,7 +17,6 @@ analysis and data management. For scalability across multiprocessor platforms,
 MPI (Message Passing Interface) is leveraged, and for performant operation all
 heavy computations are executed within a statically typed layer.
 """
-
 citing = """
 Mansour, J., Giordani, J., Moresi, L., Beucher, R., Kaluza, O., Velic, M.,
 Farrington, R., Quenette, S., Beall, A., 2020, Underworld2:
@@ -45,7 +44,8 @@ dependencies = [
     ('Python', '3.11.5'),
     ('SciPy-bundle', '2023.11'),
     ('Python-bundle-PyPI', '2023.10'),
-    ('PETSc', '3.22.5', '-MUMPS'),
+    # ('PETSc', '3.22.5'),  # needs to be changed once PETSc is build with MUMPS
+    ('PETSc', '3.22.5', '-mumps'),
     ('HDF5', '1.14.3'),
     ('libxml2', '2.11.5'),
     ('LavaVu', '1.9.9'),
@@ -57,6 +57,7 @@ dependencies = [
     ('meshio', '5.3.5'),
     ('poetry', '1.7.1'),
     ('hatchling', '1.18.0'),
+    ('pytest', '8.2.2'),  # required for testing
 ]
 
 exts_list = [
@@ -119,11 +120,19 @@ exts_list = [
     }),
     ('underworld', version, {
         'patches': ['Underworld-2.16.4_ninja-job.patch'],
+        'source_urls': ['https://github.com/underworldcode/underworld2/archive'],
+        'sources': ['v%(version)s.tar.gz'],
         'checksums': [
-            {'underworld-2.16.4.tar.gz': '642ffb109dcf215218b4c9cc1c926a5e139d22d32f96814973145c0a725f4b37'},
+            {'v2.16.4.tar.gz': '70b2ccadc4917b82cf64819956acf2a0c8b69fcb3117188e801ef435da2c2f28'},
             {'Underworld-2.16.4_ninja-job.patch': '45d6af4a3a13e4065e003f2a9d222170e6898ac635677681f8f94a4d6d706dfe'},
         ],
     }),
 ]
 
-moduleclass = 'devel'
+# Some of the tests take quite some time, so you might want to disable them. 
+sanity_check_commands = [
+    'cd %(start_dir)s/underworld/underworld2-%(version)s && '
+    'pytest -vvv docs/pytests/tests.py docs/pytests/test_examples.py  docs/pytests/test_user_guide.py'
+]
+
+moduleclass = 'geo'
