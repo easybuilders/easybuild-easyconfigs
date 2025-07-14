@@ -102,8 +102,6 @@ exts_list = [
         'source_urls': ['https://github.com/OpenGATE/opengate/archive/'],
         'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': 'opengate-%(version)s.tar.gz'}],
         'start_dir': 'core',
-        # skip 'import opengate_core' in sanity_checks - missing LD_PRELOAD - added to sanity_check_commands
-        'modulename': False,
         'checksums': ['91551b9275c1793b61ec0b68b9ca9b4aa5e81fc16731d6ec5b4bf8f19d52c010'],
     }),
     ('opengate', version, {
@@ -111,8 +109,6 @@ exts_list = [
         'preinstallopts': "sed -i '/itk/d' setup.py && ",
         'source_urls': ['https://github.com/OpenGATE/opengate/archive/'],
         'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
-        # skip 'import opengate' in sanity_checks - missing LD_PRELOAD - added to sanity_check_commands
-        'modulename': False,
         'checksums': ['91551b9275c1793b61ec0b68b9ca9b4aa5e81fc16731d6ec5b4bf8f19d52c010'],
     }),
 ]
@@ -124,16 +120,6 @@ postinstallcmds = [
     "rm %(installdir)s/lib/python%(pyshortver)s/site-packages/opengate_core/geant4_data/easybuild",
 ]
 
-sanity_check_commands = [
-    "python -c 'import opengate_core' && "
-    "python -c 'import opengate' && "
-    "opengate_info"
-]
-
-# export LD_PRELOAD=<path to libG4processes>:<path to libG4geometry>:${LD_PRELOAD}
-# to fix ImportError: cannot allocate memory in static TLS block
-# upstream issue: https://github.com/OpenGATE/opengate/issues/638
-# the code: https://github.com/OpenGATE/opengate/blob/10.0.2/opengate/__init__.py#L26
-modextravars = {'LD_PRELOAD': '$EBROOTGEANT4/lib/libG4processes.so:$EBROOTGEANT4/lib/libG4geometry.so:$LD_PRELOAD'}
+sanity_check_commands = ["opengate_info"]
 
 moduleclass = 'cae'
