@@ -1,0 +1,96 @@
+# This build enables both HDF5 and Wannier-90, both are optional but recommended
+# It also upgrades the build to Intel's OneAPI
+# Furthermore, it sets the vdw_kernel as an external file (courtesy of Mikael Öhman)
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.4.3'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a
+computer program for atomic scale materials modelling, e.g. electronic
+structure calculations and quantum-mechanical molecular dynamics,
+from first principles.
+
+This build includes HDF5 and the Wannier-90 functions."""
+
+toolchain = {'name': 'intel', 'version': '2024a'}
+toolchainopts = {'usempi': True}
+
+download_instructions = """
+VASP is proprietary software,
+see http://www.vasp.at/index.php/faqs
+on how to obtain a license for the software."""
+sources = [
+    '%(namelower)s.%(version)s.tgz',
+    'vdw_kernel.bindat.gz',  # Big-endian version of vdw_kernel.bindat, gzip-compressed.
+]
+patches = [
+    # This patch replaces the hardcoded path with the environment variable VDW_KERNEL
+    # This patch also addes HDF5 and Wannier-90
+    'vasp-6.4.3_vdw_kernel_file-HDF5-Wannier.patch',
+]
+checksums = [
+    {'vasp.6.4.3.tgz': 'fe30e773f2a3e909b5e0baa9654032dfbdeff7ec157bc348cee7681a7b6c24f4'},
+    {'vdw_kernel.bindat.gz': '650c6a194ab077676a834902ef68e2f4fe426be813ef12b3963c4198d3324f86'},
+    {'vasp-6.4.3_vdw_kernel_file-HDF5-Wannier.patch':
+     '5836a805be4e331105d53c8be80ae29a9d2b7549bd457d6d95b4f8dde1e97b73'},
+]
+
+dependencies = [
+    ('HDF5', '1.14.5'),
+    ('Wannier90', '3.1.0'),
+]
+
+prebuildopts = 'cp arch/makefile.include.intel ./makefile.include && '
+# Increase MPI block size (from Micketeer):
+prebuildopts += 'sed -i "s|MPI_BLOCK=8000|MPI_BLOCK=65536|" makefile.include && '
+
+# VASP uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+buildopts = 'all '  # building std gam and ncl
+buildopts += 'DEPS=1 '  # required for VASP parallel builds
+
+# Testing, can take a long time!
+# This section has been taken from VASP-6.3.2-nvofbf-2022.07.eb
+# The important bit seems to be to set ulimit -s to unlimited, as else segfaults
+# will occure during some of the tests.
+# https://www.vasp.at/wiki/index.php/Validation_tests
+
+# it is recommended to run the testsuite with 4 MPI processes,
+# but it's also recommended to use only 1 MPI process per GPU,
+# so running the test on GPUs requires 4 GPUs?
+local_test_mpiprocs = 4
+
+pretestopts = 'export MPIRUN="mpirun -np %s  " && ' % local_test_mpiprocs
+pretestopts += 'export OMP_NUM_THREADS=1 && export OMP_STACKSIZE=512m && ulimit -s unlimited && '
+pretestopts += 'export VASP_TESTSUITE_EXE_STD="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_std" && '
+pretestopts += 'export VASP_TESTSUITE_EXE_NCL="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_ncl" && '
+pretestopts += 'export VASP_TESTSUITE_EXE_GAM="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_gam" && '
+
+# skip tests that are too long
+local_test_skip = 'HEG_333_LW '
+
+pretestopts += 'export VASP_TESTSUITE_SKIP_TESTS="%s" && ' % local_test_skip
+runtest = 'test'
+
+files_to_copy = [
+    (['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin'),
+    (['../vdw_kernel.bindat'], '.'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'dirs': [],
+}
+
+# This environment variable works together with the vasp-6.4.3_vdw_kernel_file-HDF5-Wannier.patch
+# so that it can be used without having to copy this file around.
+modextravars = {
+    'VDW_KERNEL': '%(installdir)s/vdw_kernel.bindat',
+}
+
+moduleclass = 'phys'
