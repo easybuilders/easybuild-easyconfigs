@@ -1,0 +1,62 @@
+easyblock = 'ConfigureMake'
+
+name = 'Mothur'
+version = '1.48.3'
+
+homepage = 'http://www.mothur.org/'
+description = """Mothur is a single piece of open-source, expandable software
+ to fill the bioinformatics needs of the microbial ecology community."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/%(namelower)s/%(namelower)s/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'Mothur-1.48.3-fix_c++standard.patch',
+    'Mothur-1.48.3-fix_compilation.patch',
+]
+checksums = [
+    '70129ef4f7cae5840aece54a1f4097a5044b824c9e62b9fcc7460ad70d4de3c0',
+    'ef4024f62c8871d3cc60f6c506c0a4f762afdc65a2a8f2052a6f5e5e06944bd2', # Mothur-1.48.3-fix_c++standard.patch
+    '2c33e8ab16fcb5641a138efe9608edcfa4ff12c7efe808f31acfcdd2ed0d598d', # Mothur-1.48.3-fix_compilation.patch
+]
+
+builddependencies = [
+    ('Boost', '1.82.0'),
+    ('HDF5', '1.14.2'),
+    ('GSL', '2.7'),
+]
+
+dependencies = []
+
+skipsteps = ['configure']
+
+# prepend CXXFLAGS set by EB
+prebuildopts = "CXXFLAGS=$CXXFLAGS "
+buildopts  = " ".join([
+    "OPTIMIZE=yes",
+    "USEREADLINE=yes",
+    "USEBOOST=yes",
+    "USEHDF5=yes",
+    "USEGSL=yes",
+    "BOOST_LIBRARY_DIR=$EBROOTBOOST/lib",
+    "BOOST_INCLUDE_DIR=$EBROOTBOOST/include",
+    "HDF5_LIBRARY_DIR=$EBROOTHDF5/lib",
+    "HDF5_INCLUDE_DIR=$EBROOTHDF5/include",
+    "GSL_LIBRARY_DIR=$EBROOTGSL/lib",
+    "GSL_INCLUDE_DIR=$EBROOTGSL/include",
+])
+
+# `make install` thinks it is up to date
+postinstallcmds = [
+    'mkdir %(installdir)s/bin/',
+    'cp -v mothur %(installdir)s/bin/',
+    'cp -v uchime %(installdir)s/bin/',
+]
+
+sanity_check_paths = {
+    'files': ['bin/mothur'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
