@@ -1,0 +1,36 @@
+Fix a segmentation fault on Python 3.12 happening e.g. in distributed/test_store.py::FileStoreTest::test_compare_set
+
+Backport of https://github.com/pytorch/pytorch/pull/128212
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/csrc/distributed/c10d/init.cpp b/torch/csrc/distributed/c10d/init.cpp
+index 8056008579c..1d165dcbdfb 100644
+--- a/torch/csrc/distributed/c10d/init.cpp
++++ b/torch/csrc/distributed/c10d/init.cpp
+@@ -997,16 +997,18 @@ Example::
+                  const std::string& key,
+                  const std::string& expected_value,
+                  const std::string& desired_value) -> py::bytes {
+-                std::vector<uint8_t> expectedValue_(
+-                    expected_value.begin(), expected_value.end());
+-                std::vector<uint8_t> desiredValue_(
+-                    desired_value.begin(), desired_value.end());
+-                auto value =
+-                    store.compareSet(key, expectedValue_, desiredValue_);
++                auto value = [&]() {
++                    py::gil_scoped_release guard;
++                    std::vector<uint8_t> expectedValue_(
++                        expected_value.begin(), expected_value.end());
++                    std::vector<uint8_t> desiredValue_(
++                        desired_value.begin(), desired_value.end());
++                    return store.compareSet(
++                        key, expectedValue_, desiredValue_);
++                }();
+                 return py::bytes(
+                     reinterpret_cast<char*>(value.data()), value.size());
+               },
+-              py::call_guard<py::gil_scoped_release>(),
+               R"(
+ Inserts the key-value pair into the store based on the supplied ``key`` and
+ performs comparison between ``expected_value`` and ``desired_value`` before inserting. ``desired_value``
