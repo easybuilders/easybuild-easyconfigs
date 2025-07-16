@@ -1,0 +1,46 @@
+easyblock = 'Binary'
+
+name = 'AladinDesktop'
+version = '12.060'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://aladin.cds.unistra.fr/AladinDesktop/'
+description = """Aladin Desktop is the main application of the Aladin Sky Atlas suite.
+ This application allows the user to visualize and manipulate digitized astronomical images
+ or full surveys, superimpose entries from astronomical catalogues or databases, and interactively
+ access related data and information from the Simbad database, the VizieR service and other
+ archives for all known astronomical objects in the field."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+# For some reason, only the first digit after the dot is included in the download URL
+local_maj_min_version = version.split('.')
+local_url_version = local_maj_min_version[0] + '.' + local_maj_min_version[1][0]
+local_jarname = 'Aladin%s.jar' % local_url_version
+source_urls = ['https://aladin.cds.unistra.fr/java/']
+
+# The only way to download a specific version from Aladin is to download the jar file (local_jarname) directly
+# Thus, we download the Unix shell launcher (Aladin) seperately
+sources = [local_jarname, 'Aladin']
+extract_sources = False
+
+dependencies = [
+    ('Java', '17', '', SYSTEM),
+    ('X11', '20231019'),
+]
+
+# To install, we put the versioned jar in /lib and the Unix shell launcher in /bin
+# However, the unix shell launcher expects an Aladin.jar (without version) in the same folder
+# Thus, we create a simlink in bin/Aladin.jar to the versioned Aladin jar file in /lib
+install_cmds = [
+    'mkdir -p %%(installdir)s/lib && cp %s %%(installdir)s/lib/' % local_jarname,
+    'mkdir -p %(installdir)s/bin && cp Aladin %(installdir)s/bin/',
+    'ln -s %%(installdir)s/lib/%s %%(installdir)s/bin/Aladin.jar' % local_jarname
+]
+
+sanity_check_paths = {
+    'files': ['bin/Aladin', 'bin/Aladin.jar', 'lib/%s' % local_jarname],
+    'dirs': [],
+}
+
+moduleclass = 'tools'
