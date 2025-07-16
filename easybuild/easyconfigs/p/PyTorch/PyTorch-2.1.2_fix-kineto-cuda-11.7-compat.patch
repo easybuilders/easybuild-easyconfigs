@@ -1,0 +1,51 @@
+From 288e9553c6579964cd7b765a34f7f9c6f51c5c2b Mon Sep 17 00:00:00 2001
+From: Brian Coutinho <bcoutinho@meta.com>
+Date: Fri, 29 Sep 2023 14:29:34 -0700
+Subject: [PATCH] Fix support for CUDA 11.7 with new cudalaunchkernelexc
+ callbacks (#810)
+
+Summary:
+Pull Request resolved: https://github.com/pytorch/kineto/pull/810
+
+Fix issue https://github.com/pytorch/kineto/issues/809
+
+There was a change to guard the use of that callback based on CUPTI API VERSION.
+https://github.com/pytorch/kineto/pull/792 that enables this above CUPTI API version >=17
+
+Just checking the headers however.
+CUDA 11.7.1 (and 11.7.0) do not have the CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernelExC_v11060 callback
+> https://gitlab.com/nvidia/headers/cuda-individual/cupti/-/blob/cuda-11.7.1/cupti_runtime_cbid.h?ref_type=tags
+
+CUPTI API Version 17
+>https://gitlab.com/nvidia/headers/cuda-individual/cupti/-/blob/cuda-11.7.1/cupti_version.h?ref_type=tags#L104
+
+And,  CUDA 11.8.0 does have CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernelExC_v11060 callback
+> https://gitlab.com/nvidia/headers/cuda-individual/cupti/-/blob/cuda-11.8.0/cupti_runtime_cbid.h?ref_type=tags#L440
+
+CUPTI API Version 18
+> https://gitlab.com/nvidia/headers/cuda-individual/cupti/-/blob/cuda-11.8.0/cupti_version.h?ref_type=tags#L105
+
+Update the define to use CUPTI API 18 and above
+
+Reviewed By: davidberard98
+
+Differential Revision: D49779962
+
+fbshipit-source-id: 8c7371a27e117f7a1df6bb3017156728715ded94
+---
+ libkineto/src/CuptiActivity.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libkineto/src/CuptiActivity.cpp b/libkineto/src/CuptiActivity.cpp
+index 5ecfa1ad..feddb288 100644
+--- a/libkineto/src/CuptiActivity.cpp
++++ b/libkineto/src/CuptiActivity.cpp
+@@ -248,7 +248,7 @@ inline bool RuntimeActivity::flowStart() const {
+       activity_.cbid == CUPTI_RUNTIME_TRACE_CBID_cudaDeviceSynchronize_v3020 ||
+       activity_.cbid == CUPTI_RUNTIME_TRACE_CBID_cudaStreamWaitEvent_v3020;
+ 
+-#if defined(CUPTI_API_VERSION) && CUPTI_API_VERSION >= 17
++#if defined(CUPTI_API_VERSION) && CUPTI_API_VERSION >= 18
+   should_correlate |=
+       activity_.cbid == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernelExC_v11060;
+ #endif
