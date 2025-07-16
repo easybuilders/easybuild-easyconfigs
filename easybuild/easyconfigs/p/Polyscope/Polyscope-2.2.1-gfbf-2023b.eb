@@ -1,0 +1,76 @@
+easyblock = 'CMakeMake'
+
+name = 'Polyscope'
+version = '2.2.1'
+
+homepage = 'https://polyscope.run/'
+description = """Polyscope is a C++/Python viewer and user interface for
+3D data such as meshes and point clouds. It allows you to register your
+data and quickly generate informative and beautiful visualizations,
+either programmatically or via a dynamic GUI. Polyscope is designed to
+be lightweight—it does not “take ownership” over your entire program,
+and it is easy to integrate with existing codebases and popular
+libraries. The lofty objective of Polyscope is to offer a useful visual
+interface to your data via a single line of code."""
+
+toolchain = {'name': 'gfbf', 'version': '2023b'}
+
+github_account = 'nmwsharp'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'source_urls': ['https://github.com/ocornut/imgui/archive'],
+        'download_filename': 'v1.90.5.tar.gz',
+        'filename': 'imgui-1.90.5.tar.gz',
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/deps/imgui/imgui --strip-components=1 -xf %s",
+    },
+    {
+        'filename': 'happly-20240207-master.tar.xz',
+        'git_config': {
+            'url': 'https://github.com/nmwsharp',
+            'repo_name': 'happly',
+            'commit': '8a606309daaa680eee495c8279feb0b704148f4a',
+        },
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/deps/happly --strip-components=1 -xf %s",
+    },
+]
+patches = [
+    '%(name)s-%(version)s_use_external_GLFW+GLM.patch',
+]
+checksums = [
+    {'v2.2.1.tar.gz': '1952d20722cb37c5531e88d5b7f5db88c2827c55fd7ada481c2ac425f3bc4d25'},
+    {'imgui-1.90.5.tar.gz': 'e94b48dba7311c85ba8e3e6fe7c734d76a0eed21b2b42c5180fd5706d1562241'},
+    {'happly-20240207-master.tar.xz': '57b0e57035ba6603825dfe7db52e532f0ce0925551dbddb8ded5930c6525623f'},
+    {'Polyscope-2.2.1_use_external_GLFW+GLM.patch': '072353ee11262b66a3245fc2fba060efa7fc98676ec1f69b6792b6c5672cd3f8'},
+]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('libglvnd', '1.7.0'),
+    ('GLFW', '3.4'),
+    ('GLM', '1.0.1'),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+exts_list = [
+    ('polyscope', version, {
+        'checksums': ['b01f0b76cdec3e6728e16e273b07d4630a3073bba41e9fdd3721d569a1417b7e'],
+    }),
+]
+sanity_check_paths = {
+    'files': ['include/polyscope/polyscope.h', 'lib/libpolyscope.a'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'vis'
