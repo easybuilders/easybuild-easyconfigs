@@ -1,4 +1,7 @@
-# Template for a minimal python bundle on GCCcore 13.3.0
+# Thanks to Mikael Öhman, Alexandre Strube and Alex Domingo for helping with
+# the Python problem
+# Author: J. Saßmannshausen (Imperial College London / UK)
+
 easyblock = 'PythonBundle'
 
 name = 'LavaVu'
@@ -44,6 +47,7 @@ dependencies = [
     ('aiohttp', '3.9.5'),
     ('jupyter-server-proxy', '4.1.2'),
     ('matplotlib', '3.8.2'),
+    ('Mesa', '23.1.9'),
 ]
 
 exts_list = [
@@ -52,6 +56,17 @@ exts_list = [
         'checksums': ['de0125055bb2fed019c1afe8fe5a9844739a46196a1ee8838fa6b6b2a149aaad'],
     }),
     ('lavavu', version, {
+        # Possible choices: EGL, OSMESA or X11
+        'prebuildopts': 'export LV_EGL=1 && ',
+        # The original symlink leads to problems, so we are doing this dance to get that fixed:
+        'postinstallcmds': [
+            'rm -f %(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/osmesa/LavaVuPython.py && '
+            'cp -f %(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/LavaVuPython.py '
+            '%(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/osmesa/ &&'
+            'cd  %(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/osmesa/ && '
+            'sed -i "9,11d" LavaVuPython.py && sed -i "s/    import _LavaVuPython/import _LavaVuPython/" '
+            'LavaVuPython.py && cd - '
+        ],
         'checksums': ['7e31c0d18b8bff3690101df3b12d883c2fdfdada3d88b15b082559b77d7c416d'],
     }),
 ]
