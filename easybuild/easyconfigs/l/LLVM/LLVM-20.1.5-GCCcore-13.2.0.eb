@@ -56,7 +56,7 @@ checksums = [
     {'LLVM-20.1.5-GCCcore-13.2.0_riscv_execution_engine.patch':
         '7d795920e98c2c65df30ed01cc7e9251d69ae25e2674c251bc283ed44b53d02f'},
     {'LLVM-20.1.5-GCCcore-13.2.0_riscv_MLIR.patch':
-        '826c8d6ee1e8112988d2b2cef13bc99d84989959cca31812b4fcc750a3d8a9b0'},
+        '286195607e056acda857ad58c8c3fbf2427dc1a4f815f5f63747061c57665f43'},
 ]
 
 builddependencies = [
@@ -87,15 +87,15 @@ build_openmp = True
 build_openmp_tools = True
 
 # openmp offload is not supported for riscv64 (https://clang.llvm.org/docs/OffloadingDesign.html)
-# There is a Bug in (at least) testing phase. See https://github.com/llvm/llvm-project/issues/134245
+# There is a Bug in (at least) testing phase of BOLT for RISC-V. See https://github.com/llvm/llvm-project/issues/134245
 if ARCH != 'riscv64':
     build_openmp_offload = True
     build_bolt = True
 else:
     build_openmp_offload = False
     build_bolt = False
-usepolly = True
 
+use_polly = True
 
 python_bindings = True
 
@@ -118,6 +118,13 @@ if ARCH == 'riscv64':
     # binutils 2.40 is too old and doesn't recognize the 'zaamo' ISA extension used in the test
     # with binutils >= 2.41, this test would work
     test_suite_ignore_patterns.append("Driver/save-mlir-temps.f90",)
+    # All these tests use a relocation type not supported on RISC-V
+    test_suite_ignore_patterns.append("mlir-runner/async-group.mlir",)
+    test_suite_ignore_patterns.append("mlir-runner/async-error.mlir",)
+    test_suite_ignore_patterns.append("mlir-runner/async.mlir",)
+    test_suite_ignore_patterns.append("mlir-runner/global-memref.mlir",)
+    test_suite_ignore_patterns.append("mlir-runner/unranked-memref.mlir",)
+    test_suite_ignore_patterns.append("mlir-runner/utils.mlir",)
 
 # LLVM will produce .mod files for its flang installation at the 3rd stage of the build via Clang+Flang
 # These should not be checked for sanity, as we want to build LLVM on top of GCCcore to be used as a new toolchain
