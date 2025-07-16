@@ -1,0 +1,57 @@
+easyblock = 'ConfigureMake'
+
+name = 'gocryptfs'
+version = '2.5.4'
+
+homepage = 'https://nuetzlich.net/gocryptfs/'
+description = """An encrypted overlay filesystem written in Go and built on top the go-fuse FUSE library."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/rfjakob/gocryptfs/releases/download/v%(version)s/']
+sources = ['%(name)s_v%(version)s_src-deps.tar.gz']
+patches = ['%(name)s-2.5.4_install.patch']
+checksums = [
+    {'gocryptfs_v2.5.4_src-deps.tar.gz': '0db47fe41f46d1ff5b3ff4f1cc1088ab324a95af03995348435dcc20a5ff0282'},
+    {'gocryptfs-2.5.4_install.patch': '0dc1dba0bac38c1cfd94d1c31a8d62c55a1167fff86bafa2b6da6ebd6e9cc6cd'},
+]
+
+builddependencies = [
+    ('Go', '1.23.6'),
+    ('Pandoc', '3.6.2'),
+]
+
+build_info_msg = """This easyconfig relies on the go-fuse library that requires the FUSE kernel module at runtime.
+
+Kernel module for FUSE: a userspace filesystem framework.
+https://www.kernel.org/doc/html/next/filesystems/fuse.html
+RHEL module name: 'fuse'
+Debian module name: 'fuse'"""
+
+dependencies = [
+    ('OpenSSL', '3'),
+]
+
+skipsteps = ['configure']
+
+# Make builds Go modules; isolate the build environment
+buildopts = 'GOPATH=%(builddir)s/go'
+
+build_cmd_targets = ['build']
+
+# Needs the DESTDIR variable to not use a system directory
+installopts = 'DESTDIR=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'bin/%(name)s-xray'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = [
+    '%(name)s --help',
+    '%(name)s-xray --help',
+    '%(name)s --version | grep --quiet %(version)s',
+    '%(name)s-xray --version | grep --quiet %(version)s',
+]
+
+moduleclass = 'tools'
