@@ -1,0 +1,81 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/06
+easyblock = 'PythonBundle'
+
+name = 'AlphaLink2'
+local_sha = 'fc32ec2abf2f867aeaf148a6ac3b9bf4bee91d8d'
+local_commitdate = '20230629'
+local_commitnr = '01'
+version = '0.0.1.%s.%s.%s' % (local_commitdate, local_commitnr, local_sha[:7])
+
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/Rappsilber-Laboratory/AlphaLink2'
+description = "AlphaLink2: Modelling protein complexes with crosslinking mass spectrometry and deep learning"
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('SciPy-bundle', '2022.05'),
+    ('Biopython', '1.79'),
+    ('HH-suite', '3.3.0'),
+    ('HMMER', '3.3.2'),
+    ('Kalign', '3.3.5'),
+    ('UCX-CUDA', '1.12.1', versionsuffix),
+    ('cuDNN', '8.4.1.50', versionsuffix, SYSTEM),
+    ('Uni-Core', '0.0.2', versionsuffix),
+    # OpenFold does not require deepminds openmm patch for openmm ver >= 7.6
+    ('OpenMM', '8.0.0', '-CUDA-%(cudaver)s'),
+    ('AlphaFold', '2.3.2', versionsuffix),
+]
+
+use_pip = True
+
+# flash_attn (FlashAttention) is optional, speeds up MSA attention for sequences with < 1000 residues
+# TODO; PR 18425
+source_urls = [PYPI_SOURCE]
+exts_list = [
+    (name, version, {
+        'modulename': 'unifold',
+        'source_urls': ['https://github.com/Rappsilber-Laboratory/AlphaLink2/archive/'],
+        'sources': [{
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'download_filename': 'fc32ec2abf2f867aeaf148a6ac3b9bf4bee91d8d.tar.gz'
+        }],
+        'checksums': [
+            {'AlphaLink2-0.0.1.20230629.01.fc32ec2.tar.gz':
+             '9b8ab71bb30df16819f9182791f143b665496ffafb4d9df1e8a0c95ef615447c'},
+        ],
+    }),
+]
+
+postinstallcmds = [
+    'mkdir %(installdir)s/bin &&'
+    'cp generate_crosslink_pickle.py inference.py *.sh scripts/*.py %(installdir)s/bin/ &&'
+    'cp unifold/homo_search.py %(installdir)s/bin -rpP && '
+    'cp -r scripts/download %(installdir)s &&'
+    'chmod -R +x %(installdir)s/bin &&'
+    'sed -i "1i #!/usr/bin/env bash" %(installdir)s/bin/*.sh&&'
+    'sed -i "s|python unifold/||g" %(installdir)s/bin/run_*.sh&&'
+    'sed -i "s|python inference.py|inference.py|g" %(installdir)s/bin/run_*.sh'
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+
+sanity_check_paths = {
+    'files': ['bin/run_alphalink.sh'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+}
+
+sanity_check_commands = [
+    "homo_search.py --help|grep 'Run CPU MSA & template searching to get pickled features.'",
+    "inference.py --help",
+    "generate_crosslink_pickle.py --help",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
