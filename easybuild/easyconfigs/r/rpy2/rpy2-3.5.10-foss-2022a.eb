@@ -1,0 +1,48 @@
+# Author: Pavel Grochal (INUITS)
+# Updated: Denis Kristak (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'rpy2'
+version = '3.5.10'
+
+homepage = 'https://rpy2.github.io'
+description = """rpy2 is an interface to R running embedded in a Python process."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('R', '4.2.1'),
+    ('IPython', '8.5.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('tzdata', '2023.3', {
+        'checksums': ['11ef1e08e54acb0d4f95bdb1be05da659673de4acbd21bf9c69e94cc5e907a3a'],
+    }),
+    ('pytz-deprecation-shim', '0.1.0.post0', {
+        'source_tmpl': 'pytz_deprecation_shim-%(version)s.tar.gz',
+        'checksums': ['af097bae1b616dde5c5744441e2ddc69e74dfdcb0c263129610d85b87445a59d'],
+    }),
+    # stick to tzlocal==2.1, see https://github.com/rpy2/rpy2/issues/823
+    ('tzlocal', '2.1', {
+        'checksums': ['643c97c5294aedc737780a49d9df30889321cbe1204eac2c2ec6134035a92e44'],
+    }),
+    (name, version, {
+        'checksums': ['f81f0afb01e3c6f515c09573bc585c0e1c7e385ec81415ce0a62268c605ec7fc'],
+        # disable failing 'test_svg_plotting_args' test, see https://github.com/rpy2/rpy2/issues/974
+        'preinstallopts': r"sed -i 's/\(test_svg_plotting_args\)/disabled_\1/g' rpy2/tests/ipython/test_rmagic.py && ",
+    }),
+]
+
+sanity_check_commands = [
+    "pytest --pyargs rpy2 "
+]
+
+moduleclass = 'tools'
