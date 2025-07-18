@@ -1,0 +1,41 @@
+From https://github.com/xmlrunner/unittest-xml-reporting/pull/274
+
+From: =?UTF-8?q?Arttu=20Per=C3=A4l=C3=A4?= <arttu@perala.me>
+Date: Tue, 3 Jan 2023 14:36:48 +0200
+Subject: [PATCH] Fix test result description fetching on Python 3.11
+
+Python 3.11 changes `TextTestResult.printErrors()` to print out
+unexpected successes and their descriptions.
+
+Fixes:
+>   File "/lib/python3.12/unittest/runner.py", line 152, in printErrors
+>    self.stream.writeln(f"UNEXPECTED SUCCESS: {self.getDescription(test)}")
+>                                               ^^^^^^^^^^^^^^^^^^^^^^^^^
+>  File "/lib/python3.12/unittest/runner.py", line 50, in getDescription
+>    doc_first_line = test.shortDescription()
+>                     ^^^^^^^^^^^^^^^^^^^^^
+> AttributeError: 'tuple' object has no attribute 'shortDescription'
+
+diff --git a/xmlrunner/result.py b/xmlrunner/result.py
+index 96fc675..03f2150 100644
+--- a/xmlrunner/result.py
++++ b/xmlrunner/result.py
+@@ -188,6 +188,9 @@ def get_error_info(self):
+         """
+         return self.test_exception_info
+ 
++    def shortDescription(self):
++        return self.test_description
++
+ 
+ class _XMLTestResult(TextTestResult):
+     """
+@@ -673,3 +676,8 @@ def generate_reports(self, test_runner):
+     def _exc_info_to_string(self, err, test):
+         """Converts a sys.exc_info()-style tuple of values into a string."""
+         return super(_XMLTestResult, self)._exc_info_to_string(err, test)
++
++    def getDescription(self, test):
++        if isinstance(test, tuple):
++            test = test[0]
++        return super().getDescription(test)
