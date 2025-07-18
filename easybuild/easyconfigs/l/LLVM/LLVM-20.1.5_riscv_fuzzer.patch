@@ -1,0 +1,52 @@
+# Author: julian.morillo@bsc.es
+# Fuzzing tools (especially libFuzzer + -fsanitize=address,fuzzer) are still less well-supported on RISC-V compared to x86_64 or aarch64. 
+# This patch mark as UNSUPPORTED for RISC-V tests that use 'libfuzzer' + '-fsanitize=address,fuzzer'
+diff -Naur compiler-rt-ORIG/test/fuzzer/coverage.test compiler-rt/test/fuzzer/coverage.test
+--- compiler-rt-ORIG/test/fuzzer/coverage.test	2025-07-17 11:21:44.644517221 +0200
++++ compiler-rt/test/fuzzer/coverage.test	2025-07-17 11:23:37.168515303 +0200
+@@ -2,6 +2,7 @@
+ UNSUPPORTED: target={{.*windows.*}}
+ # FIXME: CreatePCArray() emits PLT stub addresses for entry blocks, which are ignored by TracePC::PrintCoverage().
+ UNSUPPORTED: target=s390x{{.*}}
++UNSUPPORTED: target=riscv64{{.*}}
+ RUN: %cpp_compiler -mllvm -use-unknown-locations=Disable  %S/NullDerefTest.cpp -o %t-NullDerefTest
+ RUN: %cpp_compiler -mllvm -use-unknown-locations=Disable %S/DSO1.cpp -fPIC %ld_flags_rpath_so1 -O0 -shared -o %dynamiclib1
+ RUN: %cpp_compiler -mllvm -use-unknown-locations=Disable %S/DSO2.cpp -fPIC %ld_flags_rpath_so2 -O0 -shared -o %dynamiclib2
+diff -Naur compiler-rt-ORIG/test/fuzzer/fork.test compiler-rt/test/fuzzer/fork.test
+--- compiler-rt-ORIG/test/fuzzer/fork.test	2025-07-17 11:21:44.644517221 +0200
++++ compiler-rt/test/fuzzer/fork.test	2025-07-17 11:24:50.016515834 +0200
+@@ -1,4 +1,4 @@
+-# UNSUPPORTED: darwin, target={{.*freebsd.*}}, target=aarch64{{.*}}
++# UNSUPPORTED: darwin, target={{.*freebsd.*}}, target=aarch64{{.*}}, target=riscv64{{.*}}
+ BINGO: BINGO
+ RUN: %cpp_compiler %S/SimpleTest.cpp -o %t-SimpleTest
+ RUN: not %run %t-SimpleTest -fork=1 2>&1 | FileCheck %s --check-prefix=BINGO
+diff -Naur compiler-rt-ORIG/test/fuzzer/fork_corpus_groups.test compiler-rt/test/fuzzer/fork_corpus_groups.test
+--- compiler-rt-ORIG/test/fuzzer/fork_corpus_groups.test	2025-07-17 11:21:44.644517221 +0200
++++ compiler-rt/test/fuzzer/fork_corpus_groups.test	2025-07-17 11:25:56.960515183 +0200
+@@ -1,4 +1,4 @@
+-# UNSUPPORTED: darwin, target={{.*freebsd.*}}, target=aarch64{{.*}}
++# UNSUPPORTED: darwin, target={{.*freebsd.*}}, target=aarch64{{.*}}, target=riscv64{{.*}}
+ BINGO: BINGO
+ RUN: %cpp_compiler %S/SimpleTest.cpp -o %t-SimpleTest
+ RUN: not %run %t-SimpleTest -fork=1 -fork_corpus_groups=1 2>&1 | FileCheck %s --check-prefix=BINGO
+diff -Naur compiler-rt-ORIG/test/fuzzer/full-coverage.test compiler-rt/test/fuzzer/full-coverage.test
+--- compiler-rt-ORIG/test/fuzzer/full-coverage.test	2025-07-17 11:21:44.644517221 +0200
++++ compiler-rt/test/fuzzer/full-coverage.test	2025-07-17 11:26:49.472514866 +0200
+@@ -2,6 +2,7 @@
+ UNSUPPORTED: target={{.*windows.*}}
+ # FIXME: See coverage.test.  Using UNSUPPORTED here due to random failures.
+ UNSUPPORTED: target=s390x{{.*}}
++UNSUPPORTED: target=riscv64{{.*}}
+ RUN: %cpp_compiler %S/DSO1.cpp -fPIC %ld_flags_rpath_so1 -O0 -shared -o %dynamiclib1
+ RUN: %cpp_compiler %S/DSO2.cpp -fPIC %ld_flags_rpath_so2 -O0 -shared -o %dynamiclib2
+ RUN: %cpp_compiler %S/DSOTestMain.cpp %S/DSOTestExtra.cpp %ld_flags_rpath_exe1 %ld_flags_rpath_exe2 -o %t-DSOTest
+diff -Naur compiler-rt-ORIG/test/fuzzer/print-func.test compiler-rt/test/fuzzer/print-func.test
+--- compiler-rt-ORIG/test/fuzzer/print-func.test	2025-07-17 11:21:44.648517220 +0200
++++ compiler-rt/test/fuzzer/print-func.test	2025-07-17 11:28:05.132539994 +0200
+@@ -1,4 +1,4 @@
+-UNSUPPORTED: darwin, target=aarch64{{.*}}
++UNSUPPORTED: darwin, target=aarch64{{.*}}, target=riscv64{{.*}}
+ RUN: %cpp_compiler %S/PrintFuncTest.cpp -o %t
+ RUN: %run %t -seed=1 -runs=100000 2>&1 | FileCheck %s
+ RUN: %run %t -seed=1 -runs=100000 -print_funcs=0 2>&1 | FileCheck %s --check-prefix=NO
