@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'Autoconf'
+version = '2.72'
+
+homepage = 'https://www.gnu.org/software/autoconf/'
+
+description = """
+ Autoconf is an extensible package of M4 macros that produce shell scripts
+ to automatically configure software source code packages. These scripts can
+ adapt the packages to many kinds of UNIX-like systems without manual user
+ intervention. Autoconf creates a configuration script for a package from a
+ template file that lists the operating system features that the package can
+ use, in the form of M4 macro calls.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['Autoconf-2.71-Port-better-to-NVHPC.patch']
+checksums = [
+    'afb181a76e1ee72832f6581c0eddf8df032b83e2e0239ef79ebedc4467d92d6e',  # autoconf-2.72.tar.gz
+    '157453a2f74821b06d3f7cd1ba8d2622f12d9e6d172a01e3ff8e8d32b3d7bfeb',  # Autoconf-2.71-Port-better-to-NVHPC.patch
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+]
+
+dependencies = [
+    ('M4', '1.4.20'),
+    # non-standard Perl modules are required,
+    # see https://github.com/easybuilders/easybuild-easyconfigs/issues/1822
+    ('Perl', '5.40.2'),
+]
+
+preconfigopts = "export PERL='/usr/bin/env perl' && "
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x
+              for x in ["autoconf", "autoheader", "autom4te", "autoreconf",
+                        "autoscan", "autoupdate", "ifnames"]],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "autoconf --help",
+    "autom4te --help",
+]
+
+moduleclass = 'devel'

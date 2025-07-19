@@ -14,7 +14,7 @@ you should be able to initiate a recursive build of the following bits::
 
 which is going to build the following modules/easyconfigs::
 
-  g/GCC/GCC-4.8.4.eb			## if this breaks use: --try-amend=parallel=1
+  g/GCC/GCC-4.8.4.eb			## if this breaks use: --parallel=1
   n/ncurses/ncurses-5.9-GCC-4.8.4.eb    ## On MacOSX, this should pick a special patch
   l/Lua/Lua-5.1.4-8-GCC-4.8.4.eb        ## Lmod is written in Lua, which needs ncurses
   l/Lmod/Lmod-5.9-GCC-4.8.4.eb          ## Lmod should be built with -r, to build the above
