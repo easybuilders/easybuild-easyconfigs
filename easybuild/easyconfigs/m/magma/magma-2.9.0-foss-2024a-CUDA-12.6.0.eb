@@ -26,17 +26,12 @@ dependencies = [
 ]
 
 # default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
-# cuda_compute_capabilities = ['9.0']
-
-# magma.so is so large that linking fails without this
-preconfigopts = "head -216 ../magma-2.9.0/CMakeLists.txt > /tmp/a && "
-preconfigopts += "echo '        string(APPEND CMAKE_CUDA_FLAGS \" -Xfatbin -compress-all\")' >> /tmp/a && "
-preconfigopts += "tail -523 ../magma-2.9.0/CMakeLists.txt >> /tmp/a && "
-preconfigopts += "mv /tmp/a ../magma-2.9.0/CMakeLists.txt && "
+cuda_compute_capabilities = ['5.0', '6.0', '7.0', '7.5', '8.0', '8.6', '9.0']
 
 # make sure both static and shared libs are built
+# magma.so is large, compress it to avoid link failure
 configopts = [
-    '-DBUILD_SHARED_LIBS=%s \
+    '-DBUILD_SHARED_LIBS=%s -DCMAKE_CUDA_FLAGS="-Xfatbin -compress-all" \
      -DGPU_TARGET="%%(cuda_sm_space_sep)s" ' % local_shared for local_shared in ('ON', 'OFF')
 ]
 
