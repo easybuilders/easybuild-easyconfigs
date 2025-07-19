@@ -1,0 +1,833 @@
+Parmed is bundled with AmberTools in /src/parmed.
+Replace bundeled Parmed by latest commit 9fa8b08b760f57d45a271854ffa4a17f3f2647c0 from https://github.com/ParmEd/ParmEd
+This commit fix the compatibility with Numpy 2.x and Python 3.13.
+Author: Pavel Tomanek (Inutits)
+diff '--color=auto' -ruN AmberTools/src/parmed/CMakeLists.txt AmberTools/src/parmed/CMakeLists.txt
+--- AmberTools/src/parmed/CMakeLists.txt	2025-04-28 16:10:07.000000000 +0200
++++ AmberTools/src/parmed/CMakeLists.txt	2025-07-15 14:14:33.311381053 +0200
+@@ -1,3 +1,31 @@
+ project(parmed)
+ 
+-install_python_library()
++set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/parmed-build)
++
++set(STAMP_FILE ${BUILD_DIR}/parmed-build.stamp)
++
++file(MAKE_DIRECTORY ${BUILD_DIR})
++
++#find all python scripts and C files as dependencies
++file(GLOB_RECURSE PARMED_SOURCES "*.py" "*.cpp" "*.h")
++
++add_custom_command(OUTPUT ${STAMP_FILE}
++	COMMAND ${PYTHON_EXECUTABLE} setup.py build ${PYTHON_COMPILER_ARG} -b ${BUILD_DIR}
++	COMMAND ${CMAKE_COMMAND} -E touch ${STAMP_FILE}
++	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++	DEPENDS ${PARMED_SOURCES} 
++	VERBATIM
++	COMMENT "Building parmed native library")
++
++#We want to build the python library during the build step so as to catch any build errors
++add_custom_target(parmed ALL DEPENDS ${STAMP_FILE})
++	
++install(CODE "
++	${FIX_BACKSLASHES_CMD}
++	execute_process(
++    COMMAND \"${PYTHON_EXECUTABLE}\" 
++    	\"${CMAKE_CURRENT_SOURCE_DIR}/setup.py\" 
++    	 build -b \"${BUILD_DIR}\" ${PYTHON_COMPILER_ARG}
++    	 install -f ${PYTHON_PREFIX_ARG} --no-setuptools
++    	\"--install-scripts=\${CMAKE_INSTALL_PREFIX_BS}${BINDIR}\"
++    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})" COMPONENT Python)
+\ No newline at end of file
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/amber/_amberparm.py AmberTools/src/parmed/parmed/amber/_amberparm.py
+--- AmberTools/src/parmed/parmed/amber/_amberparm.py	2025-03-24 15:55:38.000000000 +0100
++++ AmberTools/src/parmed/parmed/amber/_amberparm.py	2025-07-15 14:14:34.029926404 +0200
+@@ -2147,7 +2147,7 @@
+                     box[4] = box[4].value_in_unit(u.degrees)
+                 if u.is_quantity(box[5]):
+                     box[5] = box[5].value_in_unit(u.degrees)
+-            box = np.array(box, dtype=np.float64, copy=False, subok=True).reshape((-1, 6))
++            box = np.asanyarray(box, dtype=np.float64).reshape((-1, 6))
+ 
+             # We are adding a box for the first time, so make sure we add some flags
+             if self._box is None:
+@@ -2373,7 +2373,7 @@
+     @property
+     def velocities(self):
+         """ Atomic velocities in units of angstroms/picoseconds """
+-        return np.array(self.vels, copy=False).reshape(self.natom, 3)
++        return np.asarray(self.vels).reshape(self.natom, 3)
+ 
+     @property
+     def box_vectors(self):
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/amber/asciicrd.py AmberTools/src/parmed/parmed/amber/asciicrd.py
+--- AmberTools/src/parmed/parmed/amber/asciicrd.py	2025-03-24 15:55:38.000000000 +0100
++++ AmberTools/src/parmed/parmed/amber/asciicrd.py	2025-07-15 14:14:34.032045000 +0200
+@@ -317,7 +317,7 @@
+     def coordinates(self, stuff):
+         if self._status == 'old':
+             raise RuntimeError('Cannot set coordinates on an old restart')
+-        stuff = np.array(stuff, copy=False).ravel()
++        stuff = np.asarray(stuff).ravel()
+         if self.natom > 0 and len(stuff) != 3 * self.natom:
+             raise ValueError(f'Got {len(stuff)} coordinates for {self.natom} atoms')
+         if self._coords_written:
+@@ -351,7 +351,7 @@
+     def velocities(self, stuff):
+         if self._status == 'old':
+             raise RuntimeError('Cannot set velocities on an old restart')
+-        stuff = np.array(stuff, copy=False).ravel()
++        stuff = np.asarray(stuff).ravel()
+         if not self._coords_written:
+             raise RuntimeError('Coordinates must be set before velocities')
+         if self._cell_lengths_written or self._cell_angles_written:
+@@ -413,7 +413,7 @@
+             raise RuntimeError('Can only write cell lengths once')
+         if len(stuff) != 3:
+             raise ValueError('Expected 3 numbers for cell lengths')
+-        self._cell_lengths = np.array(stuff, copy=False)
++        self._cell_lengths = np.asarray(stuff)
+         self._file.write('%12.7f%12.7f%12.7f' % (stuff[0], stuff[1], stuff[2]))
+         self._cell_lengths_written = True
+ 
+@@ -429,7 +429,7 @@
+             raise RuntimeError('Can only write cell angles once')
+         if len(stuff) != 3:
+             raise ValueError('Expected 3 numbers for cell angles')
+-        self._cell_angles = np.array(stuff, copy=False)
++        self._cell_angles = np.asarray(stuff)
+         self._file.write('%12.7f%12.7f%12.7f\n' % (stuff[0],stuff[1],stuff[2]))
+         self._cell_angles_written = True
+ 
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/amber/mdin/cntrl.py AmberTools/src/parmed/parmed/amber/mdin/cntrl.py
+--- AmberTools/src/parmed/parmed/amber/mdin/cntrl.py	2025-04-15 16:32:32.000000000 +0200
++++ AmberTools/src/parmed/parmed/amber/mdin/cntrl.py	2025-07-15 14:14:34.033373000 +0200
+@@ -37,7 +37,6 @@
+             'repcrd' : 1, 'numwatkeep' : -1, 'hybridgb' : 0, 'ntwprt' : 0,
+             'tausw' : 0.1, 'ntwr' : 500, 'iyammp' : 0, 'imcdo' : -1,
+             'igb' : 0, 'alpb' : 0, 'arad' : 15.0, 'rgbmax' : 25.0,
+-            'ala' : 0.0, 'arg' : 0.0, 'asn' : 0.0, 'asp' : 0.0, 'cys' : 0.0, 'gln' : 0.0, 'glu' : 0.0, 'gly' : 0.0, 'his' : 0.0, 'hip' : 0.0, 'ile' : 0.0, 'leu' : 0.0, 'lys' : 0.0, 'met' : 0.0, 'phe' : 0.0, 'pro' : 0.0, 'ser' : 0.0, 'thr' : 0.0, 'triptophan' : 0.0, 'tyr' : 0.0, 'valine' : 0.0, 'bb' : 0.0,
+             'saltcon' : 0.0, 'offset' : -999999.0, 'ntwf' : 0,
+             'gbsa' : 0, 'vrand' : 1000, 'surften' : 0.005, 'iwrap' : 0,
+             'nrespa' : 1, 'nrespai' : 1, 'gamma_ln' : 0.0, 'extdiel' : 78.5,
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/amber/mdin/mdin.py AmberTools/src/parmed/parmed/amber/mdin/mdin.py
+--- AmberTools/src/parmed/parmed/amber/mdin/mdin.py	2025-04-12 00:27:44.000000000 +0200
++++ AmberTools/src/parmed/parmed/amber/mdin/mdin.py	2025-07-15 14:14:34.034585000 +0200
+@@ -4,6 +4,7 @@
+ dictionaries with default values, etc. It can read and write mdins.
+ """
+ from io import TextIOBase
++from re import findall
+ 
+ # This module will create and read a sander/pmemd input
+ from .cntrl import cntrl
+@@ -24,6 +25,13 @@
+     else:
+         return line + string
+ 
++def splitStr(string):
++    # split string at commas not within single or double quotes
++    pattern = r"""('[^']*'|"[^"]*"|[^'",\s]+)"""
++    matches = findall(pattern, string)
++
++    return matches
++
+ 
+ class Mdin:
+ 
+@@ -176,7 +184,7 @@
+             elif inblock and lines[i].strip().startswith('&'):
+                 raise InputError(f"Invalid input file ({filename}). Namelist not terminated")
+             elif inblock:
+-                items = lines[i].strip().split(',')
++                items = splitStr(lines[i].strip())
+                 j = 0
+                 while j < len(items):
+                     items[j] = items[j].strip()
+@@ -194,11 +202,20 @@
+         begin_field = -1
+         for i in range(len(block_fields)):
+             for j in range(len(block_fields[i])):
+-                if not '=' in block_fields[i][j]:
++                if block_fields[i][j].startswith("'") or block_fields[i][j].startswith("\"") or not '=' in block_fields[i][j]:
+                     if begin_field == -1:
+                         raise InputError(f'Invalid input file ({filename}).')
+                     else:
+-                        block_fields[i][begin_field] += ',' + block_fields[i][j]
++                        if block_fields[i][j].startswith("'") or block_fields[i][j].startswith("\""):
++                            block_fields[i][begin_field] += block_fields[i][j]
++                        
++                            # prevents treating '=' in quoted field values (e.g. wildcards for restraintmask)
++                            # from delimiting new fields
++                            if '=' in block_fields[i][j]:
++                                block_fields[i][j] = block_fields[i][j].replace('=','')
++                        
++                        else:
++                            block_fields[i][begin_field] += ',' + block_fields[i][j]
+                 else:
+                     begin_field = j
+ 
+@@ -208,7 +225,7 @@
+                 if not '=' in block_fields[i][j]:
+                     continue
+                 else:
+-                    var = block_fields[i][j].split('=')
++                    var = block_fields[i][j].split('=', 1)
+                     self.change(blocks[i], var[0].strip(), var[1].strip())
+ 
+     def change(self, namelist, variable, value):
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/amber/netcdffiles.py AmberTools/src/parmed/parmed/amber/netcdffiles.py
+--- AmberTools/src/parmed/parmed/amber/netcdffiles.py	2025-03-24 15:55:38.000000000 +0100
++++ AmberTools/src/parmed/parmed/amber/netcdffiles.py	2025-07-15 14:14:34.036332000 +0200
+@@ -241,7 +241,7 @@
+ 
+     @coordinates.setter
+     def coordinates(self, stuff):
+-        stuff = np.array(stuff, copy=False).reshape((self.atom, 3))
++        stuff = np.asarray(stuff).reshape((self.atom, 3))
+         self._ncfile.variables['coordinates'][:] = stuff
+         self.flush()
+ 
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/amber/parameters.py AmberTools/src/parmed/parmed/amber/parameters.py
+--- AmberTools/src/parmed/parmed/amber/parameters.py	2025-03-24 15:55:38.000000000 +0100
++++ AmberTools/src/parmed/parmed/amber/parameters.py	2025-07-15 14:14:34.037264000 +0200
+@@ -25,13 +25,13 @@
+ _bondre = re.compile(r'(..?)-(..?)\s+%(FLOATRE)s\s+%(FLOATRE)s' % subs)
+ _anglere = re.compile(r'(..?)-(..?)-(..?)\s+%(FLOATRE)s\s+%(FLOATRE)s' % subs)
+ _dihedre = re.compile(r'(..?)-(..?)-(..?)-(..?)\s+%(FLOATRE)s\s+'
+-                      '%(FLOATRE)s\s+%(FLOATRE)s\s+%(FLOATRE)s' % subs)
++                      r'%(FLOATRE)s\s+%(FLOATRE)s\s+%(FLOATRE)s' % subs)
+ _dihed2re = re.compile(r'\s*%(FLOATRE)s\s+%(FLOATRE)s\s+%(FLOATRE)s\s+'
+                        '%(FLOATRE)s' % subs)
+ _sceere = re.compile(r'SCEE=\s*%(FLOATRE)s' % subs)
+ _scnbre = re.compile(r'SCNB=\s*%(FLOATRE)s' % subs)
+ _impropre = re.compile(r'(..?)-(..?)-(..?)-(..?)\s+'
+-                       '%(FLOATRE)s\s+%(FLOATRE)s\s+%(FLOATRE)s' % subs)
++                       r'%(FLOATRE)s\s+%(FLOATRE)s\s+%(FLOATRE)s' % subs)
+ # Leaprc regexes
+ _atomtypere = re.compile(r"""({\s*["']([\w\+\-]+)["']\s*["'](\w+)["']\s*"""
+                          r"""["'](\w+)["']\s*})""")
+@@ -196,6 +196,33 @@
+ 
+     def __init__(self, *filenames):
+         super(AmberParameterSet, self).__init__()
++
++
++        # See: <AmberSourceDist>/AmberTools/src/leap/src/leap/commands.c:1694
++        # (`oCmd_loadAmberParams`). Amber's loadAmberParams uses a "nasty,
++        # special kludge" to ensure parm10, parm99, and parm15 are loaded no
++        # more than once.  If this behavior is not replicated in ParmEd, Amber
++        # parameters may be loaded incorrectly. For example, consider the
++        # following leaprc:
++        # > source leaprc.protein.ff14sb
++        #   # ...
++        #   # parm10 = loadAmberParams parm10.dat
++        #   # frcmod14SB = loadAmberParams frcmod.ff14SB
++        #   # ...
++        # > source leaprc.RNA.OL3
++        #   # ...
++        #   # parm10 = loadAmberParams parm10.dat
++        #   # ...
++        # Without replicating the "special kludge", leaprc.RNA.OL3 will reload
++        # parm10 and overwrite many of the changes introduced by loading
++        # frcmod.ff14SB.  The solution is to match Amber's behavior and ensure
++        # each of parm15, parm99, and parm15 are loaded at most once.
++        self.__is_parm_loaded = {
++            "parm10.dat": False,
++            "parm99.dat": False,
++            "parm15": False,
++        }
++
+         self.default_scee = 1.2
+         self.default_scnb = 2.0
+         self.titles = []
+@@ -280,6 +307,21 @@
+             line = line.replace(r'\ ', '_BSTOKEN_')
+             if _loadparamsre.findall(line):
+                 fname = process_fname(_loadparamsre.findall(line)[0])
++
++                # In Amber, loading any parm file beginning with "parm15"
++                # (e.g., "parm15ipq.dat") qualifies as loading parm15
++                parm_loaded_key = fname
++                if fname.startswith("parm15"):
++                    parm_loaded_key = "parm15"
++
++                # Match amber's `tleap` by ensuring that certain parm files
++                # (e.g., "parm10.dat") are loaded exactly once.
++                if parm_loaded_key in params.__is_parm_loaded:
++                    if params.__is_parm_loaded[parm_loaded_key]:
++                        warnings.warn(f"Skipping {fname}: already loaded")
++                        continue
++                    params.__is_parm_loaded[parm_loaded_key] = True
++
+                 params.load_parameters(_find_amber_file(fname, search_oldff))
+             elif _loadoffre.findall(line):
+                 fname = process_fname(_loadoffre.findall(line)[0])
+@@ -786,7 +828,9 @@
+                 a1, a2, a3, a4 = a2, a4, a3, a1
+             elif a4 == 'X':
+                 a1, a2, a3, a4 = a4, a1, a3, a2
+-            a1, a2, a4 = sorted([a1, a2, a4])
++                a2, a4 = sorted([a2, a4])
++            else:
++                a1, a2, a4 = sorted([a1, a2, a4])
+             if (a1, a2, a3, a4) in written_impropers:
+                 if written_impropers[(a1, a2, a3, a4)] != typ:
+                     raise ValueError('Multiple impropers with the same atom set not allowed')
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/formats/pdb.py AmberTools/src/parmed/parmed/formats/pdb.py
+--- AmberTools/src/parmed/parmed/formats/pdb.py	2025-04-12 00:27:44.000000000 +0200
++++ AmberTools/src/parmed/parmed/formats/pdb.py	2025-07-15 14:14:34.045140280 +0200
+@@ -7,9 +7,11 @@
+ from functools import lru_cache, reduce
+ from string import ascii_letters
+ import io
+-import ftplib
++import urllib
+ import gzip
+ import logging
++import urllib.error
++import urllib.request
+ import numpy as np
+ from ..exceptions import PDBError, PDBWarning
+ from ..formats.pdbx import PdbxReader, PdbxWriter, containers
+@@ -192,7 +194,7 @@
+                         'ANISOU', 'CISPEP', 'CONECT', 'DBREF ', 'HELIX ', 'HET   ', 'LINK  ', 'MODRES',
+                         'REVDAT', 'SEQADV', 'SHEET ', 'SSBOND', 'FORMUL', 'HETNAM', 'HETSYN', 'SEQRES', 'SITE  ',
+                         'ENDMDL', 'MODEL ', 'TER   ', 'JRNL  ', 'REMARK', 'TER', 'DBREF ', 'DBREF2', 'DBREF1',
+-                        'DBREF', 'HET', 'LINKR '}:
++                        'DBREF', 'HET', 'LINKR ', 'TURN  '}:
+                     continue
+                 # Hack to support reduce-added flags
+                 elif line[:6] == 'USER  ' and line[6:9] == 'MOD':
+@@ -311,16 +313,18 @@
+             raise ValueError('pdb_id must be the 4-letter PDB code')
+ 
+         pdb_id = pdb_id.lower()
+-        ftp = ftplib.FTP('ftp.wwpdb.org', timeout=timeout)
+-        ftp.login()
++        
++        url = (
++            'https://files.wwpdb.org/pub/pdb/data/structures/divided/pdb/%s/pdb%s.ent.gz'
++        ) % (pdb_id[1:3], pdb_id)
++
+         fileobj = io.BytesIO()
+         try:
+-            ftp_loc = f"/pub/pdb/data/structures/divided/pdb/{pdb_id[1:3]}/pdb{pdb_id}.ent.gz"
+-            ftp.retrbinary(f"RETR {ftp_loc}", fileobj.write)
+-        except ftplib.all_errors as err:
++            with urllib.request.urlopen(url, timeout=timeout) as response:
++                fileobj.write(response.read())
++        except (urllib.error.URLError, urllib.error.HTTPError) as err:
+             raise IOError(f"Could not retrieve PDB ID {pdb_id}; {err}") from err
+-        finally:
+-            ftp.close()
++
+         # Rewind, wrap it in a GzipFile and send it to parse
+         fileobj.seek(0)
+         fileobj = io.TextIOWrapper(gzip.GzipFile(fileobj=fileobj, mode='r'))
+@@ -971,7 +975,7 @@
+                 symm_line = "REMARK 290   SMTRY" + fmt % tuple(arr_list)
+                 dest.write(symm_line)
+         if coordinates is not None:
+-            coords = np.array(coordinates, copy=False, subok=True)
++            coords = np.asanyarray(coordinates)
+             try:
+                 coords = coords.reshape((-1, len(struct.atoms), 3))
+             except ValueError:
+@@ -1180,17 +1184,18 @@
+             raise ValueError('pdb_id must be the 4-letter PDB code')
+ 
+         pdb_id = pdb_id.lower()
+-        ftp = ftplib.FTP('ftp.wwpdb.org', timeout=timeout)
+-        ftp.login()
++                
++        url = (
++            'https://files.wwpdb.org/pub/pdb/data/structures/divided/mmCIF/%s/%s.cif.gz'
++        ) % (pdb_id[1:3], pdb_id)
++        
+         fileobj = io.BytesIO()
+         try:
+-            ftp.retrbinary('RETR /pub/pdb/data/structures/divided/mmCIF/'
+-                           '%s/%s.cif.gz' % (pdb_id[1:3], pdb_id),
+-                           fileobj.write)
+-        except ftplib.all_errors as err:
+-            raise IOError('Could not retrieve PDB ID %s; %s' % (pdb_id, err))
+-        finally:
+-            ftp.close()
++            with urllib.request.urlopen(url, timeout=timeout) as response:
++                fileobj.write(response.read())
++        except (urllib.error.URLError, urllib.error.HTTPError) as err:
++            raise IOError(f"Could not retrieve PDB ID {pdb_id}; {err}") from err
++        
+         fileobj.seek(0)
+         fileobj = io.TextIOWrapper(gzip.GzipFile(fileobj=fileobj, mode='r'))
+         if saveto is not None:
+@@ -1646,7 +1651,7 @@
+         sym.append([struct.space_group])
+         cont.append(sym)
+         if coordinates is not None:
+-            coords = np.array(coordinates, copy=False, subok=True)
++            coords = np.asanyarray(coordinates)
+             try:
+                 coords = coords.reshape((-1, len(struct.atoms), 3))
+             except ValueError:
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/formats/pdbx/PdbxReader.py AmberTools/src/parmed/parmed/formats/pdbx/PdbxReader.py
+--- AmberTools/src/parmed/parmed/formats/pdbx/PdbxReader.py	2025-03-24 15:55:38.000000000 +0100
++++ AmberTools/src/parmed/parmed/formats/pdbx/PdbxReader.py	2025-07-15 14:14:34.046252000 +0200
+@@ -326,16 +326,16 @@
+         mmcifRe = re.compile(
+             r"(?:"
+ 
+-             "(?:_(.+?)[.](\S+))"               "|"  # _category.attribute
++            r"(?:_(.+?)[.](\S+))"              r"|"  # _category.attribute
+ 
+-             "(?:['](.*?)(?:[']\s|[']$))"       "|"  # single quoted strings
+-             "(?:[\"](.*?)(?:[\"]\s|[\"]$))"    "|"  # double quoted strings             
++            r"(?:['](.*?)(?:[']\s|[']$))"      r"|"  # single quoted strings
++            r"(?:[\"](.*?)(?:[\"]\s|[\"]$))"   r"|"  # double quoted strings             
+ 
+-             "(?:\s*#.*$)"                      "|"  # comments (dumped)
++            r"(?:\s*#.*$)"                     r"|"  # comments (dumped)
+ 
+-             "(\S+)"                                 # unquoted words
++            r"(\S+)"                                 # unquoted words
+ 
+-             ")")
++            r")")
+ 
+         fileIter = iter(ifh)
+ 
+@@ -398,15 +398,15 @@
+         mmcifRe = re.compile(
+             r"(?:"
+ 
+-             "(?:_(.+?)[.](\S+))"               "|"  # _category.attribute
++            r"(?:_(.+?)[.](\S+))"               r"|"  # _category.attribute
+ 
+-             "(?:['\"](.*?)(?:['\"]\s|['\"]$))" "|"  # quoted strings
++            r"(?:['\"](.*?)(?:['\"]\s|['\"]$))" r"|"  # quoted strings
+ 
+-             "(?:\s*#.*$)"                      "|"  # comments (dumped)
++            r"(?:\s*#.*$)"                      r"|"  # comments (dumped)
+ 
+-             "(\S+)"                                 # unquoted words
++            r"(\S+)"                                  # unquoted words
+ 
+-             ")")
++            r")")
+ 
+         fileIter = iter(ifh)
+ 
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/formats/pqr.py AmberTools/src/parmed/parmed/formats/pqr.py
+--- AmberTools/src/parmed/parmed/formats/pqr.py	2025-03-24 15:55:38.000000000 +0100
++++ AmberTools/src/parmed/parmed/formats/pqr.py	2025-07-15 14:14:34.047320000 +0200
+@@ -257,7 +257,7 @@
+                     struct.box[0], struct.box[1], struct.box[2], struct.box[3],
+                     struct.box[4], struct.box[5]))
+         if coordinates is not None:
+-            coords = np.array(coordinates, copy=False, subok=True)
++            coords = np.asanyarray(coordinates)
+             try:
+                 coords = coords.reshape((-1, len(struct.atoms), 3))
+             except ValueError:
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/structure.py AmberTools/src/parmed/parmed/structure.py
+--- AmberTools/src/parmed/parmed/structure.py	2025-04-12 00:27:44.000000000 +0200
++++ AmberTools/src/parmed/parmed/structure.py	2025-07-15 14:14:33.979311750 +0200
+@@ -23,7 +23,7 @@
+                               OutOfPlaneExtraPointFrame, PiTorsion, ResidueList, StretchBend,
+                               ThreeParticleExtraPointFrame, TorsionTorsion, TrackedList,
+                               TrigonalAngle, TwoParticleExtraPointFrame, UnassignedAtomType,
+-                              UreyBradley, Link, LocalCoordinatesFrame)
++                              UreyBradley, Link, LocalCoordinatesFrame, QualitativeBondType)
+ from .utils import PYPY, find_atom_pairs, tag_molecules
+ from .utils.decorators import needs_openmm
+ from .vec3 import Vec3
+@@ -1796,7 +1796,7 @@
+             if u.is_quantity(value):
+                 value = value.value_in_unit(u.angstroms)
+             value = list(value)
+-            coords = np.array(value, dtype=np.float64, copy=False, subok=True)
++            coords = np.asanyarray(value, dtype=np.float64)
+             coords = coords.reshape((-1, len(self.atoms), 3))
+             if len(coords) > 0:
+                 for a, xyz in zip(self.atoms, coords[0]):
+@@ -1877,7 +1877,7 @@
+                 box = value
+             else:
+                 box = _strip_box_units(list(value))
+-            box = np.array(box, dtype=np.float64, copy=False, subok=True)
++            box = np.asanyarray(box, dtype=np.float64)
+             if box.shape != (6,):
+                 if len(box.shape) != 2 or box.shape[-1] != 6:
+                     raise ValueError('Box information must be 6 floats')
+@@ -1944,7 +1944,7 @@
+                 except AttributeError:
+                     pass
+         else:
+-            value = np.array(value, copy=False).reshape(
++            value = np.asarray(value).reshape(
+                 (-1, len(self.atoms), 3))
+             for atom, xyz in zip(self.atoms, value[0]):
+                 atom.vx, atom.vy, atom.vz = xyz
+@@ -3833,7 +3833,7 @@
+ 
+         def idx(thing):
+             return thing.idx if thing is not None else None
+-        retdict['bonds'] = [(b.atom1.idx, b.atom2.idx, idx(b.type))
++        retdict['bonds'] = [(b.atom1.idx, b.atom2.idx, idx(b.type), b.order, b.qualitative_type)
+                             for b in self.bonds]
+         retdict['angles'] = [(a.atom1.idx, a.atom2.idx, a.atom3.idx,
+                               idx(a.type)) for a in self.angles]
+@@ -3910,15 +3910,27 @@
+                 return None
+             return typelist[idx]
+ 
++        def assign_order(bond_tuple):
++            if len(bond_tuple) < 4:
++                return 1.0
++            return bond_tuple[3]
++
++        def assign_qualitative_type(bond_tuple):
++            if len(bond_tuple) < 5:
++                return None
++            qualitative_type = bond_tuple[4]
++            return QualitativeBondType(qualitative_type) if qualitative_type is not None else None
++
+         # Set the topology arrays
+         self.bonds = TrackedList(
+-            Bond(self.atoms[it[0]], self.atoms[it[1]],
+-                 type=assign_type(self.bond_types, it[2]))
++            Bond(
++                self.atoms[it[0]], self.atoms[it[1]], type=assign_type(self.bond_types, it[2]),
++                order=assign_order(it), qualitative_type=assign_qualitative_type(it),
++            )
+             for it in d['bonds']
+         )
+         self.angles = TrackedList(
+-            Angle(self.atoms[it[0]], self.atoms[it[1]], self.atoms[it[2]],
+-                  type=assign_type(self.angle_types, it[3]))
++            Angle(self.atoms[it[0]], self.atoms[it[1]], self.atoms[it[2]], type=assign_type(self.angle_types, it[3]))
+             for it in d['angles']
+         )
+         self.dihedrals = TrackedList(
+@@ -3957,8 +3969,7 @@
+         )
+         self.pi_torsions = TrackedList(
+             PiTorsion(self.atoms[it[0]], self.atoms[it[1]], self.atoms[it[2]], self.atoms[it[3]],
+-                      self.atoms[it[4]], self.atoms[it[5]],
+-                      type=assign_type(self.pi_torsion_types, it[6]))
++                      self.atoms[it[4]], self.atoms[it[5]], type=assign_type(self.pi_torsion_types, it[6]))
+             for it in d['pi_torsions']
+         )
+         self.stretch_bends = TrackedList(
+@@ -3968,8 +3979,7 @@
+         )
+         self.torsion_torsions = TrackedList(
+             TorsionTorsion(self.atoms[it[0]], self.atoms[it[1]], self.atoms[it[2]],
+-                           self.atoms[it[3]], self.atoms[it[4]],
+-                           type=assign_type(self.torsion_torsion_types, it[5]))
++                           self.atoms[it[3]], self.atoms[it[4]], type=assign_type(self.torsion_torsion_types, it[5]))
+             for it in d['torsion_torsions']
+         )
+         self.chiral_frames = TrackedList(
+@@ -3979,8 +3989,7 @@
+             MultipoleFrame(self.atoms[it[0]], *it[1:]) for it in d['multipole_frames']
+         )
+         self.adjusts = TrackedList(
+-            NonbondedException(self.atoms[it[0]], self.atoms[it[1]],
+-                               assign_type(self.adjust_types, it[2]))
++            NonbondedException(self.atoms[it[0]], self.atoms[it[1]], assign_type(self.adjust_types, it[2]))
+             for it in d['adjusts']
+         )
+         self.acceptors = TrackedList(
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/tools/actions.py AmberTools/src/parmed/parmed/tools/actions.py
+--- AmberTools/src/parmed/parmed/tools/actions.py	2025-04-12 00:27:44.000000000 +0200
++++ AmberTools/src/parmed/parmed/tools/actions.py	2025-07-15 14:14:33.983722587 +0200
+@@ -1044,7 +1044,7 @@
+         return (
+             f"Changing {self.mask} Lennard-Jones well depth from {self.orig_depth:.4f} to "
+             f"{self.depth:.4f} (kal/mol) and radius from {self.orig_radius:.4f} to "
+-            "{self.radius:.4f} (Angstroms)"
++            f"{self.radius:.4f} (Angstroms)"
+         )
+ 
+     def execute(self):
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/tools/simulations/openmm.py AmberTools/src/parmed/parmed/tools/simulations/openmm.py
+--- AmberTools/src/parmed/parmed/tools/simulations/openmm.py	2025-04-12 00:27:44.000000000 +0200
++++ AmberTools/src/parmed/parmed/tools/simulations/openmm.py	2025-07-15 14:14:33.988749000 +0200
+@@ -16,6 +16,7 @@
+ import sys
+ import warnings
+ from ...vec3 import Vec3
++from ...geometry import reduce_box_vectors
+ try:
+     from openmm.app import (
+         forcefield as ff, OBC1, OBC2, GBn, HCT, GBn2, Simulation, DCDReporter, amberprmtopfile
+@@ -41,6 +42,7 @@
+ from parmed.openmm import (StateDataReporter, NetCDFReporter, MdcrdReporter,
+         RestartReporter, ProgressReporter, EnergyMinimizerReporter)
+ from parmed import unit as u
++from parmed.geometry import reduce_box_vectors
+ 
+ # Load the Amber topology file
+ parm = AmberParm('%s', '%s')
+@@ -495,15 +497,17 @@
+     if parm.ptr('ifbox') > 0:
+         # Only set box vectors if box is present
+         if scriptfile is not None:
+-            scriptfile.write('simulation.context.setPeriodicBoxVectors(*parm.box_vectors)\n\n')
+-        simulation.context.setPeriodicBoxVectors(*position_container.box_vectors)
++            scriptfile.write('reduced_box_vecs = reduce_box_vectors(*position_container.box_vectors)*u.angstroms\n'
++                             'simulation.context.setPeriodicBoxVectors(*reduced_box_vecs)\n\n')
++        reduced_box_vecs = reduce_box_vectors(*position_container.box_vectors)*u.angstroms
++        simulation.context.setPeriodicBoxVectors(*reduced_box_vecs)
+ 
+     # Velocities
+     if runmd and mdin.cntrl_nml['irest'] == 1 and position_container.hasvels:
+         if scriptfile is not None:
+             scriptfile.write('# Set velocities\n')
+-            scriptfile.write('simulation.context.setVelocities(parm.velocities)\n')
+-        simulation.context.setVelocities(position_container.velocities)
++            scriptfile.write('simulation.context.setVelocities(parm.velocities/10)\n')
++        simulation.context.setVelocities(position_container.velocities/10) # /10 for Å/ps to nm/ps
+     elif runmd:
+         if scriptfile is not None:
+             scriptfile.write('# Set velocities\n')
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/topologyobjects.py AmberTools/src/parmed/parmed/topologyobjects.py
+--- AmberTools/src/parmed/parmed/topologyobjects.py	2025-04-12 00:27:44.000000000 +0200
++++ AmberTools/src/parmed/parmed/topologyobjects.py	2025-07-15 14:14:33.990409228 +0200
+@@ -5183,7 +5183,7 @@
+                 if self.charge is not other.charge:
+                     return False
+             elif abs(self.charge - other.charge) > TINY:
+-                return True
++                return False
+             # At this point, we have all the attributes we need to compare
+             return (abs(self.epsilon - other.epsilon) < TINY and
+                     abs(self.rmin - other.rmin) < TINY and
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/utils/netcdf.py AmberTools/src/parmed/parmed/utils/netcdf.py
+--- AmberTools/src/parmed/parmed/utils/netcdf.py	2025-03-24 15:55:38.000000000 +0100
++++ AmberTools/src/parmed/parmed/utils/netcdf.py	2025-07-15 14:14:34.000940000 +0200
+@@ -39,15 +39,25 @@
+ from operator import mul
+ from collections import OrderedDict
+ from platform import python_implementation
++from typing import Any
+ 
+ import mmap as mm
+ 
+ import numpy as np
+-from numpy.compat import asbytes, asstr
+ from numpy import frombuffer, dtype, empty, array, asarray
+ from numpy import little_endian as LITTLE_ENDIAN
+ from functools import reduce
+ 
++def asbytes(s: Any) -> bytes:
++    """Ensures input is in bytes format. Mimics numpy.compat.asbytes"""
++    return str(s).encode("latin1") if isinstance(s, str) else s
++
++
++def asstr(b: Any) -> str:
++    """Ensures input is in string format. Mimics numpy.compat.asstr"""
++    return b.decode("latin1") if isinstance(b, bytes) else str(b)
++
++
+ 
+ IS_PYPY = python_implementation() == 'PyPy'
+ 
+diff '--color=auto' -ruN AmberTools/src/parmed/parmed/_version.py AmberTools/src/parmed/parmed/_version.py
+--- AmberTools/src/parmed/parmed/_version.py	2025-04-12 00:27:44.000000000 +0200
++++ AmberTools/src/parmed/parmed/_version.py	2025-07-15 14:14:34.002969000 +0200
+@@ -26,9 +26,9 @@
+     # setup.py/versioneer.py will grep for the variable names, so they must
+     # each be defined on a line of their own. _version.py will just call
+     # get_keywords().
+-    git_refnames = "$Format:%d$"
+-    git_full = "$Format:%H$"
+-    git_date = "$Format:%ci$"
++    git_refnames = " (HEAD -> master)"
++    git_full = "9fa8b08b760f57d45a271854ffa4a17f3f2647c0"
++    git_date = "2025-06-18 11:45:24 +0200"
+     keywords = {"refnames": git_refnames, "full": git_full, "date": git_date}
+     return keywords
+ 
+diff '--color=auto' -ruN AmberTools/src/parmed/README.md AmberTools/src/parmed/README.md
+--- AmberTools/src/parmed/README.md	1970-01-01 01:00:00.000000000 +0100
++++ AmberTools/src/parmed/README.md	2025-07-15 14:14:34.050463000 +0200
+@@ -0,0 +1,158 @@
++# ParmEd
++
++Cross-program parameter and topology file editor and molecular mechanical
++simulator engine.
++
++## Badges
++
++![(Build/Test Status)](https://github.com/ParmEd/ParmEd/workflows/Tests/badge.svg)
++[![codecov](https://codecov.io/gh/ParmEd/ParmEd/branch/master/graph/badge.svg)](https://codecov.io/gh/ParmEd/ParmEd)
++
++## Description
++
++ParmEd is a package designed to facilitate creating and easily manipulating
++molecular systems that are fully described by a common classical force field.
++Supported force fields include Amber, CHARMM, AMOEBA, and several others that
++share a similar functional form (e.g., GROMOS).
++
++ParmEd is capable of reading and writing to a wide array of different file
++formats, like the Amber topology and coordinate files, CHARMM PSF, parameter,
++topology, and coordinate files, Tinker parameter, topology, and coordinate
++files, and many others. The expressive central data structure (the ``Structure``
++class) makes it easy to quickly and safely manipulate a chemical system, its
++underlying topology, and force field parameters describing its potential energy
++function.
++
++There are two parts of ParmEd---a documented API that you can incorporate into
++your own Python scripts and programs, and a GUI/CLI pair of programs that
++provide a means to quickly perform various modifications to chemical systems for
++rapid prototyping.
++
++The API also provides bindings to the [OpenMM](https://openmm.org)
++library, permitting you to carry out full molecular dynamics investigations
++using ParmEd on high-performant hardware, like AMD and NVidia GPUs.
++
++## Installing ParmEd
++
++To install ParmEd, either clone this git repository or download [the latest
++release](https://github.com/ParmEd/ParmEd/releases) and unpack the resulting
++tarball. This should create a new ParmEd source code directory. Change to that
++directory and build ParmEd with the command
++
++```sh
++python setup.py install
++```
++
++Note, if you are using the system Python, you may need to either run the above
++command as root (e.g., by using ``sudo``) or add the ``--user`` flag to install
++it to your home directory. I would suggest the latter choice.
++
++AMBER user can overwrite installed version by
++
++```sh
++python setup.py install --prefix=$AMBERHOME
++```
++
++## Testing ParmEd
++
++In order to automatically run the ParmEd tests, execute the following:
++
++```sh
++cd test
++py.test .
++```
++
++## Examples
++
++```python
++import parmed as pmd
++
++# convert GROMACS topology to AMBER format
++gmx_top = pmd.load_file('pmaawaterFE20mer2.top', xyz='pmaawaterFE20mer2.gro')
++gmx_top.save('pmaa.top', format='amber')
++gmx_top.save('pmaa.crd', format='rst7')
++
++# convert AMBER topology to GROMACS, CHARMM formats
++amber = pmd.load_file('prmtop', 'inpcrd')
++# Save a GROMACS topology and GRO files
++amber.save('gromacs.top')
++amber.save('gromacs.gro')
++
++# Save a CHARMM PSF and crd files
++amber.save('charmm.psf')
++amber.save('charmm.crd')
++
++# Save a DLPOLY FIELD and CONFIG files
++amber.save('dlpoly.field')
++amber.save('dlpoly.config')
++
++# convert mol2 to pdb file
++mol2_parm = pmd.load_file('my.mol2')
++mol2_parm.save('my.pdb')
++
++# and many more
++```
++
++## Documentation
++
++Want to learn more?  Visit the ParmEd documentation page at
++https://parmed.github.io/ParmEd for examples, descriptions, and API
++documentation.
++
++## Authors and Contributors
++
++The following people have contributed directly to the coding and validation
++efforts in ParmEd (in alphabetical order).  And a special thanks to all of you
++who helped improve this project either by providing feedback, bug reports, or
++other general comments!
++
++* Jason Swails (principal developer) | jason.swails@gmail.com
++
++* Carlos Hernandez
++* David L. Mobley
++* Hai Nguyen
++* Lee-Ping Wang
++* Pawel Janowski
++
++## License
++
++```
++                    LESSER GPL LICENSE INFO
++
++Copyright (C) 2010 - 2014 Jason Swails
++
++This program is free software; you can redistribute it and/or modify
++it under the terms of the GNU Lesser General Public License as published by
++the Free Software Foundation
++
++This program is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU Lesser General Public License
++along with this program; if not, write to the Free Software
++Foundation, Inc., 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.
++
++The `fortranformat` package is released under the MIT license, Copyright (C)
++Brendan Arnold. See `fortranformat/__init__.py` for more information.
++```
++
++## For Developers
++
++The standard residue template library is generated from the chemical component database by running the `ccd.js` script
++supplied by @dsehnal. Run it using the comments at the top of the file. The chemical component dictionary can be
++downloaded from https://www.wwpdb.org/data/ccd.
++
++The version used in the current release was downloaded on Jan 23, 2023.
++
++The final file is generated using `get_hybridization_from_rdkit.py` to add the hybridization information as determined
++by RDKit.
++
++## Citation
++
++If you make use of ParmEd for research and would like to cite your use of it in
++a research paper, please use the following citation:
++
++https://dx.doi.org/10.1007/s10822-016-9977-1
+diff '--color=auto' -ruN AmberTools/src/parmed/scripts/parmed AmberTools/src/parmed/scripts/parmed
+--- AmberTools/src/parmed/scripts/parmed	1970-01-01 01:00:00.000000000 +0100
++++ AmberTools/src/parmed/scripts/parmed	2025-07-15 14:14:34.051018993 +0200
+@@ -0,0 +1,6 @@
++#!/usr/bin/env python
++import os
++import sys
++
++from parmed.scripts import clapp
++clapp()
+diff '--color=auto' -ruN AmberTools/src/parmed/scripts/xparmed AmberTools/src/parmed/scripts/xparmed
+--- AmberTools/src/parmed/scripts/xparmed	1970-01-01 01:00:00.000000000 +0100
++++ AmberTools/src/parmed/scripts/xparmed	2025-07-15 14:14:34.051315176 +0200
+@@ -0,0 +1,4 @@
++#!/usr/bin/env python
++from parmed.scripts import guiapp
++
++guiapp()
