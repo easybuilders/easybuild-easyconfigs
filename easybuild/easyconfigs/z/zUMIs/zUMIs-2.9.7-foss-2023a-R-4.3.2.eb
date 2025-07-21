@@ -1,0 +1,50 @@
+easyblock = 'Tarball'
+
+name = 'zUMIs'
+version = '2.9.7'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://github.com/sdparekh/zUMIs'
+description = """A fast and flexible pipeline to process RNA sequencing data with UMIs."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+github_account = 'sdparekh'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['11eb3d99804a67e47b36b69accd0298c93c76b642d801292a618bc7888d34962']
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('pigz', '2.8'),
+    ('Pysam', '0.22.0'),
+    ('SAMtools', '1.18'),
+    ('STAR', '2.7.11a'),
+    ('R', '4.3.2'),
+    ('R-bundle-Bioconductor', '3.18', '-R-%(rver)s'),
+]
+
+postinstallcmds = [
+    # remove updated/deleted/not-working stuff from --help text
+    "sed -i '33 s/${zumis}/zumis/' %(installdir)s/zUMIs.sh",
+    "sed -i '43,46d' %(installdir)s/zUMIs.sh",
+    "sed -i '7,10d' %(installdir)s/zUMIs.sh",
+    "mkdir -p %(installdir)s/bin",
+    "ln -s %(installdir)s/zUMIs.sh %(installdir)s/bin/zumis",
+]
+
+modloadmsg = """
+To run zUMIs do not use '$ zUMIs.sh ...' command but only '$ zumis ...' instead.
+Do NOT run with conda (do not use flag '-c').
+"""
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': ["bin/zumis"],
+    'dirs': [],
+}
+
+sanity_check_commands = ['zumis -h 2>&1 | grep "USAGE"']
+
+moduleclass = 'tools'

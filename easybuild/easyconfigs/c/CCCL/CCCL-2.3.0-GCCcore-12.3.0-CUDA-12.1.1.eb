@@ -1,0 +1,38 @@
+easyblock = 'CMakeMake'
+
+name = 'CCCL'
+version = '2.3.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/NVIDIA/cccl'
+
+description = """CUDA C++ Core Libraries (header only)"""
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+github_account = 'NVIDIA'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['922c9e72a7d6d91ef6a1421f2545a947529a179d307853be1b1615c02241c271']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+]
+
+configopts = '-DCMAKE_CUDA_ARCHITECTURES="%(cuda_cc_cmake)s" '
+# Testing disabled due to it trying to use the wrong compiler (needs nvcc) due to the toolchain
+configopts += '-DCCCL_ENABLE_EXAMPLES=OFF -DCCCL_ENABLE_TESTING=OFF '
+configopts += '-DLIBCUDACXX_ENABLE_CMAKE_TESTS=OFF -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=OFF '
+configopts += '-DCUB_ENABLE_HEADER_TESTING=OFF -DCUB_ENABLE_TESTING=OFF '
+configopts += '-DTHRUST_ENABLE_HEADER_TESTING=OFF -DTHRUST_ENABLE_TESTING=OFF '
+
+sanity_check_paths = {
+    'files': ['include/cuda/version'],
+    'dirs': ['include/cub', 'include/thrust', 'include/cuda'],
+}
+
+moduleclass = 'lib'
