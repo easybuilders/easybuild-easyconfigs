@@ -1,0 +1,43 @@
+Skip tests that fail when compiling with iimkl/2023a:
+
+Disable PROPACK test for complex, as it appears to be broken when
+using Intel compiler.  The tests were already skipped in a few other
+cases for similar reasons.
+
+Skip test test_x0_equals_Mb[bicgstab-nonsymposdef-F], it fails to
+converge.  Many other solvers are skipped with this test case for
+similar reasons, although it is worrying that it works with OpenBLAS
+and not with MKL.
+
+Author: Jakob Schiotz (Techn. Univ. Denmark) <schiotz@fysik.dtu.dk>
+
+--- scipy/sparse/linalg/tests/test_propack.py.old	2023-10-24 12:12:17.722133108 +0200
++++ scipy/sparse/linalg/tests/test_propack.py	2023-10-24 12:14:02.072938068 +0200
+@@ -34,14 +34,8 @@
+ for dtype_flavour in TOLS.keys():
+     marks = []
+     if is_complex_type(dtype_flavour):
+-        if is_32bit():
+-            # PROPACK has issues w/ complex on 32-bit; see gh-14433
+-            marks = [pytest.mark.skip]
+-        elif is_windows() and np.dtype(dtype_flavour).itemsize == 16:
+-            # windows crashes for complex128 (so don't xfail); see gh-15108
+-            marks = [pytest.mark.skip]
+-        else:
+-            marks = [pytest.mark.slow]  # type: ignore[list-item]
++        # PROPACK crashes for complex with Intel compiler.
++        marks = [pytest.mark.skip]
+     _dtypes.append(pytest.param(dtype_flavour, marks=marks,
+                                 id=dtype_flavour.__name__))
+ _dtypes = tuple(_dtypes)  # type: ignore[assignment]
+--- scipy/sparse/linalg/_isolve/tests/test_iterative.py.old	2023-10-24 17:07:24.697195558 +0200
++++ scipy/sparse/linalg/_isolve/tests/test_iterative.py	2023-10-24 17:07:46.106361595 +0200
+@@ -162,7 +162,7 @@
+         self.cases.append(Case("nonsymposdef", A,
+                                skip=sym_solvers + [cgs, qmr, bicg, tfqmr]))
+         self.cases.append(Case("nonsymposdef-F", A.astype('F'),
+-                               skip=sym_solvers + [cgs, qmr, bicg, tfqmr]))
++                               skip=sym_solvers + [cgs, qmr, bicg, bicgstab, tfqmr]))
+ 
+         # Symmetric, non-pd, hitting cgs/bicg/bicgstab/qmr/tfqmr breakdown
+         A = np.array([[0, 0, 0, 0, 0, 1, -1, -0, -0, -0, -0],
