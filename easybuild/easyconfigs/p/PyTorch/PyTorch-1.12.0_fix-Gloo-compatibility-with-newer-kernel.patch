@@ -1,0 +1,30 @@
+`struct ethtool_link_settings` contains a "Flexible array member" which must be the last member
+in a struct. However in an anonymous struct in Gloo it is before a member intented to provide
+the storage for that array causing a warning/error in GCC for newer kernels
+where the Flexible array member is used instead of a zero-sized array.
+> /usr/include/linux/ethtool.h:2182:17: error: flexible array member ethtool_link_settings::link_mode_masks not at end of struct gloo::getInterfaceSpeedGLinkSettings(int, ifreq*)::<unnamed>
+>  2182 |         __u32   link_mode_masks[];
+See https://github.com/facebookincubator/gloo/issues/345
+
+Fix by using an union of that struct and another struct providing the storage.
+
+Author: Alexander Grund (TU Dresden)
+
+diff -ur pytorch-v1.12.0-orig/third_party/gloo/gloo/common/linux.cc pytorch-v1.12.0/third_party/gloo/gloo/common/linux.cc
+--- pytorch-v1.12.0-orig/third_party/gloo/gloo/common/linux.cc	2024-03-21 09:26:21.393691678 +0100
++++ pytorch-v1.12.0/third_party/gloo/gloo/common/linux.cc	2024-03-21 09:40:49.263165348 +0100
+@@ -187,9 +187,12 @@
+ static int getInterfaceSpeedGLinkSettings(int sock, struct ifreq* ifr) {
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+   constexpr auto link_mode_data_nwords = 3 * 127;
+-  struct {
++  union {
+     struct ethtool_link_settings req;
+-    __u32 link_mode_data[link_mode_data_nwords];
++    struct { // Only to provide the memory
++        __u32 link_mode_data[link_mode_data_nwords];
++        struct ethtool_link_settings dummy;
++    };
+   } ecmd;
+   int rv;
+ 
