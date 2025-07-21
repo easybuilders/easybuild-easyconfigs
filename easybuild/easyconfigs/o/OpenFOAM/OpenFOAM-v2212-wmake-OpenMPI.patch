@@ -1,0 +1,42 @@
+# - Corrected output of "wmake -show-c" and "wmake -show-c++" with OpenMPI in
+#   order to allow compilation of paraFoam. This is required as we define the
+#   compiler as "OMPI_CC=gcc mpicc" when using OpenMPI
+#   (this patch should not be removed in future versions due to this definition)
+# - Add mplibEASYBUILDMPI configuration for wmake (OpenMPI version)
+#
+# author: Jiri Furst <Jiri.Furst@gmail.com>
+--- OpenFOAM-v2112/wmake/makefiles/info.orig	2019-11-07 18:12:53.000000000 +0100
++++ OpenFOAM-v2112/wmake/makefiles/info	2019-11-23 12:52:50.700688579 +0100
+@@ -73,19 +73,19 @@
+ 
+ .PHONY: c
+ c:
+-	@echo "$(firstword $(cc))"
++	@echo "$(lastword $(cc))"
+ 
+ .PHONY: cxx
+ cxx:
+-	@echo "$(firstword $(CC))"
++	@echo "$(lastword $(CC))"
+ 
+ .PHONY: cflags
+ cflags:
+-	@echo "$(wordlist 2,$(words $(COMPILE_C)), $(COMPILE_C))"
++	@echo "$(wordlist 3,$(words $(COMPILE_C)), $(COMPILE_C))"
+ 
+ .PHONY: cxxflags
+ cxxflags:
+-	@echo "$(wordlist 2,$(words $(COMPILE_CXX)), $(COMPILE_CXX))"
++	@echo "$(wordlist 3,$(words $(COMPILE_CXX)), $(COMPILE_CXX))"
+ 
+ .PHONY: cflags-arch
+ cflags-arch:
+--- /dev/null	2023-03-06 18:30:28.397302047 +0100
++++ OpenFOAM-v2212/wmake/rules/General/mplibEASYBUILDMPI	2023-03-10 14:52:38.100740228 +0100
+@@ -0,0 +1,6 @@
++#------------------------------------------------------------------------------
++# Use openmpi mpicc to obtain settings - mpicc must be available
++
++include $(GENERAL_RULES)/mpi-mpicc-openmpi
++
++#------------------------------------------------------------------------------

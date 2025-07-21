@@ -9,7 +9,11 @@ toolchain = {'name': 'foss', 'version': '2022a'}
 
 source_urls = ['https://github.com/pyscf/pyscf/archive/']
 sources = ['v%(version)s.tar.gz']
-checksums = ['814240aa73f57ba96aee8264e3914c09f96ebdce1e42784da4b5e9a474ecb280']
+patches = [('pyscf-version.egg-info', '.')]
+checksums = [
+    {'v2.1.1.tar.gz': '814240aa73f57ba96aee8264e3914c09f96ebdce1e42784da4b5e9a474ecb280'},
+    {'pyscf-version.egg-info': '159e017963beeec9e490992773cb1d9f9e975e819d93e67f40f0fbb16635b4a7'},
+]
 
 builddependencies = [
     ('CMake', '3.23.1'),
@@ -33,8 +37,6 @@ dependencies = [
 
 exts_defaultclass = 'PythonPackage'
 exts_default_options = {
-    'download_dep_fail': True,
-    'use_pip': True,
     'modulename': 'pyscf.%(name)s',
     'source_urls': ['https://github.com/pyscf/%(name)s/archive/'],
     'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
@@ -70,10 +72,17 @@ exts_list = [
     ('shciscf', 'dd398d2', {
         'checksums': ['96032337e8877478d410f2edd8490d267a8b6ddb8fad6152b201f4da912fd694'],
     }),
+    ('nptyping', '2.5.0', {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['e3d35b53af967e6fb407c3016ff9abae954d3a0568f7cc13a461084224e8e20a'],
+        'modulename': 'nptyping',
+    }),
     ('MCfun', '1a9ae31', {
-        'modulename': 'mcfun',
         'source_urls': ['https://github.com/Multi-collinear/%(name)s/archive/'],
         'checksums': ['482397f0c964f27ff15687e4b56554c51e0f249e2ad5b96fd1d6cb8a2f7f2c72'],
+        'preinstallopts': """sed -i "s/'typing', //" setup.py &&""",
+        'modulename': 'mcfun',
     }),
     ('pyqmc', '0.5.0', {
         'modulename': 'pyqmc',
@@ -124,10 +133,17 @@ exts_list = [
 
 start_dir = 'pyscf/lib'
 configopts = "-DBUILD_LIBCINT=OFF -DBUILD_LIBXC=OFF -DBUILD_XCFUN=OFF"
-prebuildopts = "export PYSCF_INC_DIR=$EBROOTQCINT/include:$EBROOTLIBXC/lib && "
+prebuildopts = "export PYSCF_INC_DIR=$EBROOTLIBCINT/include:$EBROOTLIBXC/lib && "
 
 _py_site_packages = 'lib/python%(pyshortver)s/site-packages'
 files_to_copy = [(['pyscf'], _py_site_packages)]
+
+# Install a egg-info file so PySCF is more python friendly
+local_egg_info_src = '%(builddir)s/pyscf-%(version)s/pyscf-version.egg-info'
+local_egg_info_dest = f'%(installdir)s/{_py_site_packages}/pyscf-%(version)s.egg-info'
+postinstallcmds = [
+    f'sed "s/#PySCF_VERSION#/%(version)s/" {local_egg_info_src} > {local_egg_info_dest}',
+]
 
 sanity_check_paths = {
     'files': [_py_site_packages + '/pyscf/__init__.py'],
@@ -135,7 +151,5 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = ["python -c 'import pyscf'"]
-
-modextrapaths = {'PYTHONPATH': _py_site_packages}
 
 moduleclass = 'chem'
