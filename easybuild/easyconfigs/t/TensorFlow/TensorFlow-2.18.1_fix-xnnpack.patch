@@ -1,0 +1,28 @@
+XNNPACK is not supported on PowerPC so disable it by default.
+See https://github.com/tensorflow/tensorflow/issues/58768
+--- tensorflow/lite/BUILD.orig	2025-05-05 11:27:10.183226000 +0200
++++ tensorflow/lite/BUILD	2025-05-05 11:29:43.675964000 +0200
+@@ -914,6 +914,8 @@
+     defines = select({
+         ":tflite_kernel_use_xnnpack_false": [],
+         ":tflite_with_xnnpack_explicit_false": [],
++        # XNNPACK is not supported on PPC
++        "//tensorflow:linux_ppc64le": [],
+         "//conditions:default": [
+             "TFLITE_KERNEL_USE_XNNPACK",
+         ],
+@@ -949,9 +951,11 @@
+     # Note: adding ":tflite_with_xnnpack_enabled" to the values of following
+     # configuration conditions will make TFLite interpreter to apply XNNPACK
+     # delegate by default.
+-    deps = [
+-        ":tflite_with_xnnpack_enabled",
+-    ],
++    deps = select({
++       # XNNPACK is not supported on PPC
++       "//tensorflow:linux_ppc64le": [],
++       "//conditions:default": [":tflite_with_xnnpack_enabled"],
++    }),
+ )
+ 
+ cc_library(

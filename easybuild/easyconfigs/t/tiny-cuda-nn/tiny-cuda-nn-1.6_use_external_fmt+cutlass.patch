@@ -1,0 +1,67 @@
+Use external fmt and CUTLASS
+
+Åke Sandgren, 2023-11-23
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 600bc41..c1bfba9 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -44,14 +44,6 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+ 	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo")
+ endif()
+ 
+-if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/cutlass/CMakeLists.txt")
+-	message(FATAL_ERROR
+-		"Some tiny-cuda-nn dependencies are missing. "
+-		"If you forgot the \"--recursive\" flag when cloning this project, "
+-		"this can be fixed by calling \"git submodule update --init --recursive\"."
+-	)
+-endif()
+-
+ if (APPLE)
+ 	set(CMAKE_MACOSX_RPATH ON)
+ endif()
+@@ -187,7 +179,6 @@ find_library(
+ )
+ 
+ set(BUILD_SHARED_LIBS OFF)
+-add_subdirectory("dependencies/fmt")
+ 
+ ###############################################################################
+ # tiny-cuda-nn library, samples, and benchmarks
+@@ -225,9 +216,6 @@ target_compile_options(tiny-cuda-nn PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:${CUDA_NVC
+ target_include_directories(tiny-cuda-nn PUBLIC
+ 	"include"
+ 	"dependencies"
+-	"dependencies/cutlass/include"
+-	"dependencies/cutlass/tools/util/include"
+-	"dependencies/fmt/include"
+ )
+ target_link_libraries(tiny-cuda-nn PUBLIC ${CUDA_LIBRARIES} cuda cublas fmt)
+ 
+diff --git a/bindings/torch/setup.py b/bindings/torch/setup.py
+index 351a2ed..5a2886f 100644
+--- a/bindings/torch/setup.py
++++ b/bindings/torch/setup.py
+@@ -89,8 +89,6 @@ bindings_dir = os.path.dirname(__file__)
+ root_dir = os.path.abspath(os.path.join(bindings_dir, "../.."))
+ source_files = [
+ 	"tinycudann/bindings.cpp",
+-	"../../dependencies/fmt/src/format.cc",
+-	"../../dependencies/fmt/src/os.cc",
+ 	"../../src/cpp_api.cu",
+ 	"../../src/common.cu",
+ 	"../../src/common_device.cu",
+@@ -115,12 +113,9 @@ ext = CUDAExtension(
+ 	include_dirs=[
+ 		"%s/include" % root_dir,
+ 		"%s/dependencies" % root_dir,
+-		"%s/dependencies/cutlass/include" % root_dir,
+-		"%s/dependencies/cutlass/tools/util/include" % root_dir,
+-		"%s/dependencies/fmt/include" % root_dir,
+ 	],
+ 	extra_compile_args={"cxx": cflags, "nvcc": nvcc_flags},
+-	libraries=["cuda", "cudadevrt", "cudart_static"],
++	libraries=["cuda", "cudadevrt", "cudart_static", "fmt"],
+ )
+ ext_modules = [ext]
+ 
