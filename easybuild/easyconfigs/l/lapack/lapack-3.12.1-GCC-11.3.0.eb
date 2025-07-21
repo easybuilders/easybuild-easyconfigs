@@ -1,0 +1,47 @@
+# EasyConfig file for the Netlib reference BLAS and LAPACK, including
+# BLAS++ and LAPACK++. Needs to be build without any kind of BLAS in the
+# system!
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'lapack'
+version = '3.12.1'
+
+homepage = 'https://github.com/Reference-LAPACK/lapack'
+description = """
+LAPACK is a library of Fortran subroutines for solving the most commonly
+occurring problems in numerical linear algebra.
+Note: this is the refercence BLAS and LAPACK installation from Netlib!
+We are also building the BLAS++ and LAPACK++ libraries
+"""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'optarch': False, 'pic': True}
+
+github_account = 'Reference-LAPACK'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['2ca6407a001a474d4d4d35f3a61550156050c48016d949f0da0529c0aa052422']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('Doxygen', '1.9.4'),
+    ('Python', '3.10.4', '-bare'),  # for testing only
+    ('testsweeper', '2023.11.05'),
+]
+
+_base_configopts = '-DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=ON -DCBLAS=ON '
+_base_configopts += '-DLAPACKE=ON '  # additional libraries, BLAS++/LAPACK++ are only build for INDEX64 OFF!
+_base_configopts += '-DBUILD_MAN_DOCUMENTATION=ON '   # build man-pages
+configopts = [f'{_base_configopts} -DBUILD_INDEX64={x} -DBLAS++={y} -DLAPACK++={y}'
+              for x, y in [('OFF', 'ON'), ('ON', 'OFF'),]]
+
+sanity_check_paths = {
+    'files': [f'lib/lib%(namelower)s.{SHLIB_EXT}'],
+    'dirs': ['include'],
+}
+
+runtest = 'test'
+
+moduleclass = 'numlib'
