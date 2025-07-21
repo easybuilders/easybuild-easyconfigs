@@ -3,7 +3,7 @@ easyblock = 'EB_Amber'
 name = 'AmberTools'
 local_ambertools_ver = 25
 # Patch levels from http://ambermd.org/AmberPatches.php and http://ambermd.org/ATPatches.php
-patchlevels = (1, 0)  # (AmberTools, Amber)
+patchlevels = (2, 0)  # (AmberTools, Amber)
 version = '%s.%s' % (local_ambertools_ver, patchlevels[0])
 
 homepage = 'https://ambermd.org/'
@@ -32,6 +32,7 @@ patches = [
     'AmberTools-21_fix_xray_fftpack_arg_mismatch.patch',
     'AmberTools-25_fix_test_missing_dirs.patch',
     'AmberTools-25_parmed-update.patch',
+    'AmberTools-25_fix-boost.patch',
 ]
 checksums = [
     {'AmberTools25.tar.bz2': 'ac009b2adeb25ccd2191db28905b867df49240e038dc590f423edf0d84f8a13b'},
@@ -50,7 +51,8 @@ checksums = [
     {'AmberTools-21_fix_xray_fftpack_arg_mismatch.patch':
      '99c954e693659efc2a1d121f91510f56408006f0751d91595f45a34b03364e2f'},
     {'AmberTools-25_fix_test_missing_dirs.patch': '1c4c44cb012b625933781e9811f1657d5ddfd14cfbf4894bb1f767995eadc3b6'},
-    {'AmberTools-25_parmed-update.patch': 'b16934cea7bb782ce07fdddbdbe0750c6044e7300fd0e0afa20e3b4cd94fc3d5'},
+    {'AmberTools-25_parmed-update.patch': '2216c7883be026ce48aac7589f75749f2a42ec74f6e3ceba378d762403c50924'},
+    {'AmberTools-25_fix-boost.patch': 'f4ccf7dedb5aa5b289ad5f69f3c1dc808c3fcc226d7118eaba40b108688e37cc'},
 ]
 
 builddependencies = [
@@ -69,6 +71,7 @@ dependencies = [
     ('SciPy-bundle', '2025.06'),
     ('Perl', '5.40.0'),
     ('Perl-bundle-CPAN', '5.40.0'),
+    ('Boost', '1.88.0'),
     ('libreadline', '8.2'),
     ('matplotlib', '3.10.3'),
     ('netCDF', '4.9.3'),
@@ -77,11 +80,28 @@ dependencies = [
     ('Tkinter', '%(pyver)s'),
     ('X11', '20250521'),
     ('mpi4py', '4.1.0'),
+    ('FFTW', '3.3.10'),
+    ('netcdf4-python', '1.7.2'),
+    ('PyYAML', '6.0.2'),
+    ('RDKit', '2025.03.4'),
 ]
 
-# recreate all cpp files in pytraj with new cython - compatibilty with python 3.13
+_fe_toolkit_path = "%(builddir)s/%(name)s/src/fe-toolkit/"
+_setup_path = "/src/python/setup.py"
+_fe_toolkit_pkgs = ['edgembar', 'fetkutils', 'ndfes']
+# recythonize pytraj files - python3.13 compability
 prebuildopts = "cd %(builddir)s/%(name)s/src/pytraj && find . -name '*.cpp' -delete && python setup.py --cythonize && "
 prebuildopts += "cd %(builddir)s/easybuild_obj && "
+# unpin numpy version restriction in fe-toolkit pkgs
+prebuildopts += """sed -i "/'numpy<2',/d" """
+for pkg in _fe_toolkit_pkgs:
+    prebuildopts += f"{_fe_toolkit_path}{pkg}{_setup_path} "
+prebuildopts += '&& '
+
+sanity_check_commands = [
+    f"python -c 'import {', '.join(_fe_toolkit_pkgs)}'",
+    "pip check",
+]
 
 runtest = True
 
