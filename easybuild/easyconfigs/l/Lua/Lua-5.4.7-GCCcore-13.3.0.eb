@@ -1,5 +1,6 @@
 name = 'Lua'
 version = '5.4.7'
+local_luaposix_version = '36.3'
 
 homepage = 'https://www.lua.org/'
 description = """Lua is a powerful, fast, lightweight, embeddable scripting language.
@@ -12,9 +13,21 @@ description = """Lua is a powerful, fast, lightweight, embeddable scripting lang
 toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
 toolchainopts = {'pic': True}
 
-source_urls = ['https://www.%(namelower)s.org/ftp/']
-sources = [SOURCELOWER_TAR_GZ]
-checksums = ['9fbf5e28ef86c69858f6d3d34eccc32e911c1a28b4120ff3e84aaa70cfbf1e30']
+source_urls = [
+    'https://www.%(namelower)s.org/ftp/',
+    'https://github.com/luaposix/luaposix/archive/refs/tags/',
+]
+sources = [
+    SOURCELOWER_TAR_GZ,
+    {
+        'download_filename': 'v%s.tar.gz' % local_luaposix_version,
+        'filename': 'luaposix-v%s.tar.gz' % local_luaposix_version,
+    }
+]
+checksums = [
+    '9fbf5e28ef86c69858f6d3d34eccc32e911c1a28b4120ff3e84aaa70cfbf1e30',
+    '82cd9a96c41a4a3205c050206f0564ff4456f773a8f9ffc9235ff8f1907ca5e6',
+]
 
 builddependencies = [
     ('binutils', '2.42'),
@@ -24,5 +37,15 @@ dependencies = [
     ('libreadline', '8.2'),
 ]
 
+# install and sanity check luaposix
+local_luaposix_chdir = "cd ../luaposix-%s &&" % local_luaposix_version
+local_luke_opts = "PREFIX=%(installdir)s LUAVERSION=%(version_major_minor)s LUA_DIR=%(installdir)s "
+local_luke_opts += "LUA_INCDIR=%(installdir)s/include"
+postinstallcmds = [
+    local_luaposix_chdir + "build-aux/luke package=luaposix version=%s %s" % (local_luaposix_version, local_luke_opts),
+    local_luaposix_chdir + "build-aux/luke install %s --quiet " % local_luke_opts,
+]
+enhance_sanity_check = True
+sanity_check_commands = ['lua -e \'local posix = require("posix"); print(posix.uname())\'']
 
 moduleclass = 'lang'
