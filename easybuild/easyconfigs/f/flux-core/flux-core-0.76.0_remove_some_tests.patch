@@ -3,702 +3,79 @@ Depending on the EasyBuild configuration, this may or may not be true (they work
 For now we just remove the problematic tests.
 See https://github.com/flux-framework/flux-core/issues/6908 for details.
 
-diff -rupN flux-core-0.76.0.orig/t/t2603-job-shell-initrc.t flux-core-0.76.0/t/t2603-job-shell-initrc.t
---- flux-core-0.76.0.orig/t/t2603-job-shell-initrc.t	2025-07-01 18:42:05.117249541 +0200
-+++ flux-core-0.76.0/t/t2603-job-shell-initrc.t	1970-01-01 01:00:00.000000000 +0100
-@@ -1,303 +0,0 @@
--#!/bin/sh
--#
--test_description='Test flux-shell initrc.lua implementation'
--
--. `dirname $0`/sharness.sh
--
--test_under_flux 4
--
--FLUX_SHELL="${FLUX_BUILD_DIR}/src/shell/flux-shell"
--
--INITRC_TESTDIR="${SHARNESS_TEST_SRCDIR}/shell/initrc"
--INITRC_PLUGINPATH="${SHARNESS_TEST_DIRECTORY}/shell/plugins/.libs"
--
--# test initrc files need to be able to find fluxometer.lua:
--export LUA_PATH="${SHARNESS_TEST_DIRECTORY}/?.lua;$(lua -e 'print(package.path)')"
--
--test_expect_success 'flux-shell: initrc: conf.shell_* attributes are set' '
--	flux getattr conf.shell_initrc &&
--	flux getattr conf.shell_pluginpath
--'
--test_expect_success 'flux-shell: initrc: conf.shell_initrc can be set' '
--	cat <<-EOF >test-initrc.lua &&
--	shell.log("loaded test-initrc")
--	EOF
--	initrc_old=$(flux getattr conf.shell_initrc) &&
--	flux setattr conf.shell_initrc $(pwd)/test-initrc.lua &&
--	flux run true > test-initrc.output 2>&1 &&
--	test_debug "cat test-initrc.output" &&
--	grep "loaded test-initrc" test-initrc.output &&
--	flux setattr conf.shell_initrc "${initrc_old}"
--'
--test_expect_success 'flux-shell: initrc: plugin.searchpath set via broker attr' '
--	cat <<-EOF >print-searchpath.lua &&
--	shell.log("plugin.searchpath = "..plugin.searchpath)
--	EOF
--	old_pluginpath=$(flux getattr conf.shell_pluginpath) &&
--	flux setattr conf.shell_pluginpath /test/foo &&
--	flux run -o initrc=$(pwd)/print-searchpath.lua true \
--		>print-searchpath.out 2>&1 &&
--	test_debug "cat print-searchpath.out" &&
--	grep "plugin.searchpath = /test/foo" print-searchpath.out &&
--	flux setattr conf.shell_pluginpath "${old_pluginpath}"
--'
--test_expect_success 'flux-shell: default initrc obeys FLUX_SHELL_RC_PATH' '
--	mkdir test-dir.d &&
--	cat >test-dir.d/test.lua <<-EOF &&
--	shell.log ("plugin loaded from test-dir.d")
--	EOF
--	FLUX_SHELL_RC_PATH=$(pwd)/test-dir.d \
--	  flux run hostname >rcpath.log 2>&1 &&
--	grep "plugin loaded from test-dir.d" rcpath.log
--'
--test_expect_success 'flux-shell: initrc: specifying initrc of /dev/null works' '
--	flux run -o verbose -o initrc=/dev/null true > devnull.log 2>&1 &&
--	test_debug "cat devnull.log" &&
--	grep "Loading /dev/null" devnull.log
--'
--test_expect_success 'flux-shell: initrc: bad initrc in jobspec fails' '
--	test_must_fail_or_be_terminated \
--		flux run -o verbose -o initrc=nosuchfile true
--'
--test_expect_success 'flux-shell: initrc: in jobspec works' '
--	name=ok &&
--	cat >${name}.lua <<-EOT &&
--	    io.stderr:write ("jobspec initrc OK\n")
--	EOT
--	flux run -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "jobspec initrc OK" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: failed initrc causes termination' '
--	name=failed &&
--	cat >${name}.lua <<-EOT &&
--	=
--	EOT
--	test_must_fail_or_be_terminated \
--	    flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "unexpected symbol" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: access task in non-task context fails' '
--	name=invalid-access &&
--	cat >${name}.lua <<-"EOT" &&
--	    io.stderr:write (task.info .. "\n")
--	EOT
--	test_must_fail_or_be_terminated \
--	    flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "attempt to access task outside of task context" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: bad plugin.register usage fails' '
--	name=bad-register &&
--	cat >${name}.lua <<-EOT &&
--	    plugin.register {}
--	EOT
--	test_must_fail_or_be_terminated \
--	    flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "required handlers table missing" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: bad plugin.register usage fails' '
--	name=handlers-not-array &&
--	cat >${name}.lua <<-"EOT" &&
--	    plugin.register {
--          handlers = {
--             topic = "*",
--             fn = function (topic) shell.log (topic) end
--          }
--        }
--	EOT
--	test_must_fail_or_be_terminated \
--	    flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "no entries" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: assignment to shell method fails' '
--	name=bad-assign &&
--	cat >${name}.lua <<-EOT &&
--	    shell.getenv = "my data"
--	EOT
--	test_must_fail_or_be_terminated \
--	    flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep " attempt to set read-only field" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: return false from plugin aborts shell' '
--	name=failed-return &&
--	cat >${name}.lua <<-EOT &&
--	    plugin.register {
--              name = "$name",
--              handlers = {
--		{ topic="*", fn = function () return false end }
--              }
--	    }
--	EOT
--	test_must_fail_or_be_terminated \
--	    flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "plugin.*: shell.init failed" ${name}.log
--'
--# Submit all test initrcs to instance:
--test_expect_success 'flux-shell: initrc: run tests in shell/initrc/tests' '
--	flux bulksubmit --quiet --watch -n1 -o initc={} echo run test {./}  \
--	    ::: ${INITRC_TESTDIR}/tests/*.lua >&2
--'
--test_expect_success 'flux-shell: initrc: loads single .so successfully' '
--	name=conftest-success &&
--	cat >${name}.lua <<-EOT &&
--        plugin.searchpath = "${INITRC_PLUGINPATH}"
--	plugin.load { file = "dummy.so", conf = { result = 0 } }
--	EOT
--	flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "dummy: OK result=0" ${name}.log
--'
--
--test_expect_success 'flux-shell: initrc: script fails on plugin.load failure' '
--	name=conftest-failure &&
--	cat >${name}.lua <<-EOT &&
--        plugin.searchpath = "${INITRC_PLUGINPATH}"
--	plugin.load { file = "dummy.so", conf = { result = -1 } }
--	EOT
--	test_must_fail_or_be_terminated \
--	    flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "dummy: OK result=-1" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: plugin pattern nomatch not fatal' '
--	name=nomatch-noprob &&
--	cat >${name}.lua <<-EOT &&
--	plugin.load { file = "nofile*.so" }
--	EOT
--	flux run --label-io -o verbose -o initrc=${name}.lua \
--	    echo Hi > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "0: Hi" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: plugin nonpattern nomatch fatal' '
--	name=nomatch-prob &&
--	cat >${name}.lua <<-EOT &&
--	plugin.load { file = "nofile.so" }
--	EOT
--	test_must_fail_or_be_terminated \
--	    flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "nofile.so: File not found" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: plugin.load accepts string arg' '
--	name=string-arg-nomatch &&
--	cat >${name}.lua <<-EOT &&
--	plugin.load "nomatch-again.so"
--	EOT
--	test_must_fail_or_be_terminated \
--	    flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "nomatch-again.so: File not found" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: plugin.load bad argument fatal' '
--	name=load-bad-arg &&
--	cat >${name}.lua <<-EOT &&
--	plugin.load (true)
--	EOT
--	test_must_fail_or_be_terminated \
--	    flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "plugin.load: invalid argument" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: plugin.load passes conf to plugin' '
--	name=conftest &&
--	cat >${name}.lua <<-EOT &&
--        plugin.searchpath = "${INITRC_PLUGINPATH}"
--	plugin.load { file = "conftest.so",
--                      conf = { keys = { "one", "two", "three" },
--                               one = "foo",
--                               two = "two",
--                               three = "bar" }
--	            }
--	EOT
--	flux run -o verbose -o initrc=${name}.lua true > ${name}.log 2>&1 &&
--	test_debug "cat ${name}.log" &&
--	grep "conftest: one=foo" ${name}.log &&
--	grep "conftest: two=two" ${name}.log &&
--	grep "conftest: three=bar" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: load invalid args plugins' '
--	name=invalid-args &&
--	cat >${name}.lua <<-EOT &&
--        plugin.searchpath = "${INITRC_PLUGINPATH}"
--	plugin.load { file = "invalid-args.so" }
--	EOT
--	flux run -o verbose -o initrc=${name}.lua true
--'
--test_expect_success 'flux-shell: initrc: load getopt plugin' '
--	name=getopt &&
--	cat >${name}.lua <<-EOF &&
--	plugin.searchpath = "${INITRC_PLUGINPATH}"
--	plugin.load { file = "getopt.so" }
--	EOF
--	flux run -o verbose -o initrc=${name}.lua -o test=1 true
--'
--test_expect_success 'flux-shell: initrc: jobspec-info plugin works' '
--	name=jobspec-info &&
--	cat >${name}.lua <<-EOF &&
--	plugin.searchpath = "${INITRC_PLUGINPATH}"
--	plugin.load { file = "jobspec-info.so" }
--	EOF
--	cat >${name}.json <<-"EOF" &&
--	{ "ntasks":1, "nnodes":1, "nslots":1,
--	  "cores_per_slot":1,
--	  "slots_per_node":1
--	}
--	EOF
--	flux run -N1 -n1 -c1 -o verbose=2 \
--		-o initrc=${name}.lua \
--		-o ^jobspec_info=${name}.json true
--'
--test_expect_success 'flux-shell: initrc: shell log functions available' '
--	name=shell.log &&
--	cat >${name}.lua <<-EOF &&
--	shell.log ("test: shell.log")
--	shell.debug ("test: debug")
--
--	shell.log_error ("test: error")
--	EOF
--	flux run -o verbose -o initrc=${name}.lua true \
--		> ${name}.log 2>&1 &&
--	grep "test: shell.log" ${name}.log &&
--	grep "DEBUG: test: debug" ${name}.log &&
--	grep "ERROR: test: error" ${name}.log
--'
--test_expect_success 'flux-shell: initrc: shell.die function works' '
--	name=shell.die &&
--	cat >${name}.lua <<-EOF &&
--        -- shell.die test
--	shell.die ("test: shell.die")
--	EOF
--	test_must_fail_or_be_terminated \
--		flux run -o verbose -o initrc=${name}.lua true \
--		> ${name}.log 2>&1 &&
--	grep "FATAL: test: shell.die" ${name}.log
--'
--test_expect_success MULTICORE 'flux-shell: initrc: shell.rankinfo reports broker_rank' '
--	name=shell.rankinfo.broker_rank &&
--	cat >${name}.lua <<-EOF &&
--	ri0 = shell.get_rankinfo(0)
--	ri1 = shell.get_rankinfo(1)
--	if ri0.broker_rank ~= 1 or ri1.broker_rank ~= 3 then
--	  shell.log ("rankinfo(0).broker_rank = "
--	             ..shell.get_rankinfo(0).broker_rank)
--	  shell.log ("rankinfo(1).broker_rank = "
--	             ..shell.get_rankinfo(1).broker_rank)
--	  shell.die ("rankinfo.broker_rank incorrect!")
--	end
--	if ri0.ntasks ~= 2 or ri1.ntasks ~= 1 then
--	  shell.die ("got ri[0].ntasks = "..ri0.ntasks
--	             .." ri[1].ntasks = "..ri1.ntasks)
--	end
--	EOF
--	flux run -N2 -n3 --requires=rank:1,3 \
--	    -o verbose -o initrc=${name}.lua true
--'
--flux job info $(flux job last) R
--test_done
-diff -rupN flux-core-0.76.0.orig/t/t2613-job-shell-batch.t flux-core-0.76.0/t/t2613-job-shell-batch.t
---- flux-core-0.76.0.orig/t/t2613-job-shell-batch.t	2025-07-01 18:42:05.117249541 +0200
-+++ flux-core-0.76.0/t/t2613-job-shell-batch.t	1970-01-01 01:00:00.000000000 +0100
-@@ -1,63 +0,0 @@
--#!/bin/sh
--#
--test_description='Test flux-shell per-resource and batch support'
--
--. `dirname $0`/sharness.sh
--
--test_under_flux 2 job
--
--test_expect_success 'flux-shell: bails on invalid per-resource' '
--	test_expect_code 1 flux run -o per-resource.type=foo hostname
--'
--test_expect_success 'flux-shell: bails on invalid per-resource count' '
--	test_expect_code 1 flux run -o per-resource.count=0 hostname
--'
--test_expect_success 'flux-shell: bails on invalid per-resource object' '
--	test_expect_code 1 flux run -o per-resource.blah hostname
--'
--test_expect_success 'flux-shell: bails on invalid batch object' '
--	test_expect_code 1 flux run --setattr system.batch.broker-opts=5 \
--		hostname
--'
--test_expect_success 'flux-shell: per-resource with count works' '
--	flux run \
--	        -o per-resource.type=core \
--	        -o per-resource.count=4 \
--	        echo foo > 4-per-core.out 2>4-per-core.err &&
--	test_debug "grep . 4-per-core.*" &&
--	cat <<-EOF >4-per-core.expected &&
--	foo
--	foo
--	foo
--	foo
--	EOF
--	test_cmp 4-per-core.expected 4-per-core.out
--'
--test_expect_success 'flux-shell: per-resource type=node works' '
--	ncores=$(flux resource list -s up -no {ncores}) &&
--	flux run -n ${ncores} \
--	        -o per-resource.type=node \
--	        -o per-resource.count=1 \
--	        echo foo > per-node.out 2>per-node.err &&
--	test_debug "grep . per-node.*" &&
--	cat <<-EOF >per-node.expected &&
--	foo
--	foo
--	EOF
--	test_cmp per-node.expected per-node.out
--'
--test_expect_success 'flux-shell: historical batch jobspec still work' '
--	for spec in $SHARNESS_TEST_SRCDIR/batch/jobspec/*.json; do
--		input=$(basename $spec) &&
--		cat $spec |
--		    jq -S ".attributes.system.environment.PATH=\"$PATH\"" |
--		    jq -S ".attributes.system.environment.PYTHONPATH=\"$PYTHONPATH\"" |
--		    jq -S ".attributes.system.environment.HOME=\"$HOME\"" |
--		    jq -S ".attributes.system.cwd=\"$(pwd)\"" \
--		    >$input &&
--		flux job submit --flags=waitable $input
--	done &&
--	flux job attach -vEX $(flux job last) &&
--	flux job wait --all --verbose
--'
--test_done
-diff -rupN flux-core-0.76.0.orig/t/t3002-pmi.t flux-core-0.76.0/t/t3002-pmi.t
---- flux-core-0.76.0.orig/t/t3002-pmi.t	2025-07-01 18:42:05.120249562 +0200
-+++ flux-core-0.76.0/t/t3002-pmi.t	1970-01-01 01:00:00.000000000 +0100
-@@ -1,321 +0,0 @@
--#!/bin/sh
--#
--
--test_description="Test Flux PMI implementation"
--
--. `dirname $0`/sharness.sh
--
--export TEST_UNDER_FLUX_CORES_PER_RANK=4
--SIZE=$(test_size_large)
--test_under_flux ${SIZE} job
--
--kvstest=${FLUX_BUILD_DIR}/src/common/libpmi/test_kvstest
--kvstest2=${FLUX_BUILD_DIR}/src/common/libpmi/test_kvstest2
--pmi_info=${FLUX_BUILD_DIR}/src/common/libpmi/test_pmi_info
--pmi2_info=${FLUX_BUILD_DIR}/src/common/libpmi/test_pmi2_info
--
--test_expect_success 'flux run sets PMI_FD' '
--	flux run printenv PMI_FD
--'
--test_expect_success 'flux run sets FLUX_PMI_LIBRARY_PATH' '
--	flux run printenv FLUX_PMI_LIBRARY_PATH
--'
--test_expect_success 'flux run sets LD_LIBRARY_PATH if unset' '
--	flux run --env=-LD_LIBRARY_PATH printenv LD_LIBRARY_PATH \
--	    >libpath.out &&
--	echo $(dirname $(flux config builtin pmi_library_path)) \
--	    >libpath.exp &&
--	test_cmp libpath.exp libpath.out
--'
--test_expect_success 'flux run prepends to LD_LIBRARY_PATH if set' '
--	flux run --env=LD_LIBRARY_PATH=/a printenv LD_LIBRARY_PATH \
--	    >libpath2.out &&
--	echo $(dirname $(flux config builtin pmi_library_path)):/a \
--	    >libpath2.exp &&
--	test_cmp libpath2.exp libpath2.out
--'
--test_expect_success 'flux run -o pmi=off does not set LD_LIBRARY_PATH' '
--	test_must_fail flux run -o pmi=off --env=-LD_LIBRARY_PATH \
--	    printenv LD_LIBRARY_PATH
--'
--test_expect_success 'flux run -o pmi=simple sets PMI_FD' '
--	flux run -o pmi=simple printenv PMI_FD
--'
--test_expect_success 'flux run -o pmi=pmi1 sets PMI_FD' '
--	flux run -o pmi=pmi1 printenv PMI_FD
--'
--test_expect_success 'flux run -o pmi=pmi2 sets PMI_FD' '
--	flux run -o pmi=pmi2 printenv PMI_FD
--'
--test_expect_success 'flux run -o pmi=simple,unknown sets PMI_FD' '
--	flux run -o pmi=simple,unknown printenv PMI_FD
--'
--test_expect_success 'flux run -o pmi=unknown,simple sets PMI_FD' '
--	flux run -o pmi=unknown,simple printenv PMI_FD
--'
--test_expect_success 'flux run -o pmi=unknown does not set PMI_FD' '
--	test_must_fail flux run -o pmi=unknown printenv PMI_FD
--'
--test_expect_success 'flux run -o pmi=off does not set PMI_FD' '
--	test_must_fail flux run -o pmi=off printenv PMI_FD
--'
--test_expect_success 'flux run -o pmi=off does not set FLUX_PMI_LIBRARY_PATH' '
--	test_must_fail flux run -o pmi=off printenv FLUX_PMI_LIBRARY_PATH
--'
--test_expect_success 'flux run -o pmi.badopt fails' '
--	test_must_fail flux run -o pmi.badopt true
--'
--test_expect_success 'flux run -o pmi-simple.exchange.badopt fails' '
--	test_must_fail flux run -o pmi-simple.exchange.badopt true
--'
--test_expect_success 'flux run -o pmi-simple.exchange.k=foo fails' '
--	test_must_fail flux run -o pmi-simple.exchange.k=foo true
--'
--test_expect_success 'flux run -o pmi-simple.nomap=foo fails' '
--	test_must_fail flux run -o pmi-simple.nomap=foo true
--'
--
--test_expect_success 'pmi_info works' '
--	flux run -n${SIZE} -N${SIZE} ${pmi_info}
--'
--
--test_expect_success 'pmi_info --clique shows each node with own clique' '
--	flux run -n${SIZE} -N${SIZE} \
--		${pmi_info} --clique >clique.out &&
--	count=$(cut -f2 -d: clique.out | sort | uniq | wc -l) &&
--	test $count -eq ${SIZE}
--'
--test_expect_success 'pmi_info --clique none shows each task in its own clique' '
--	flux run -opmi-simple.nomap -n${SIZE} -N${SIZE} \
--		${pmi_info} --clique >clique.none.out &&
--	count=$(cut -f2 -d: clique.none.out | sort | uniq | wc -l) &&
--	test $count -eq ${SIZE}
--'
--test_expect_success 'kvstest works' '
--	flux run -n${SIZE} -N${SIZE} ${kvstest}
--'
--
--test_expect_success 'kvstest works with -o pmi-simple.exchange.k=1' '
--	flux run -n${SIZE} -N${SIZE} -o pmi-simple.exchange.k=1 ${kvstest}
--'
--test_expect_success 'kvstest works with -o pmi-simple.exchange.k=SIZE' '
--	flux run -n${SIZE} -N${SIZE} -o pmi-simple.exchange.k=${SIZE} \
--		${kvstest} 2>kvstest_k.err &&
--	grep "using k=${SIZE}" kvstest_k.err
--'
--test_expect_success 'kvstest works with -o pmi-simple.exchange.k=SIZE+1' '
--	flux run -n${SIZE} -N${SIZE} -o pmi-simple.exchange.k=$((${SIZE}+1)) \
--		${kvstest} 2>kvstest_kp1.err &&
--	grep "using k=${SIZE}" kvstest_kp1.err
--'
--
--test_expect_success 'kvstest fails with -o pmi-simple.kvs=unknown' '
--	test_must_fail flux run -o pmi-simple.kvs=unknown ${kvstest}
--'
--
--test_expect_success 'kvstest -N8 works' '
--	flux run -n${SIZE} -N${SIZE} ${kvstest} -N8
--'
--
--test_expect_success 'verbose=2 shell option enables PMI server side tracing' '
--	flux run -n${SIZE} -N${SIZE} -o verbose=2 ${kvstest} 2>trace.out &&
--	grep "cmd=finalize_ack" trace.out
--'
--
--test_expect_success 'pmi2_info works' '
--	flux run -n${SIZE} -N${SIZE} ${pmi2_info}
--'
--
--# Run on one node only, to avoid the job spanning multiple brokers.
--# "Node-scope" PMI2 attributes are really "shell scope", and
--# PMI_process_mapping is used by the test to expect which ranks can exchange
--# node scope attributes.
--test_expect_success 'kvstest2 works' '
--	flux run -n4 -N1 -overbose=2 ${kvstest2}
--'
--
--# Abort test uses ! for expected failure rather than 'test_expect_code'
--# because the job exit code is not deterministic.  'test_must_fail' cannot be
--# used either because 128 + SIGNUM is not accepted as "failure".
--
--test_expect_success 'PMI application abort is handled properly' '
--	! run_timeout 60 flux run -overbose=2 \
--		${pmi_info} --abort 0
--'
--test_expect_success 'PMI2 application abort is handled properly' '
--	! run_timeout 60 flux run -overbose=2 \
--		${pmi2_info} --abort 0
--'
--
--# Ensure that pmi_info can get clique ranks with a large enough
--# number of tasks per node that PMI_process_mapping likely
--# overflowed the max value length for the PMI-1 KVS. This ensures
--# that the PMI client picked up flux.taskmap instead:
--
--test_expect_success 'PMI1 can calculate clique ranks with 128 tasks per node' '
--	flux run -t 1m -N2 --taskmap=cyclic --tasks-per-node=128 \
--		${pmi_info} --clique >tpn.128.out &&
--	test_debug "cat tpn.128.out" &&
--	grep "0: clique=0,2,4,6,8,10,12,14,16,18,20" tpn.128.out
--'
--
--test_expect_success 'flux-pmi barrier works' '
--	flux run --label-io -n2 \
--	    flux pmi barrier
--'
--test_expect_success 'flux-pmi barrier --count works' '
--	flux run --label-io -n2 \
--	    flux pmi barrier --count=2
--'
--test_expect_success 'flux-pmi barrier --abort works' '
--	test_expect_code 143 flux run --label-io -n2 \
--	    flux pmi barrier --abort=1 2>barrier_abort.err &&
--	grep -i abort barrier_abort.err
--'
--test_expect_success 'flux-pmi exchange works' '
--	flux run --label-io -n2 \
--	    flux pmi exchange
--'
--test_expect_success 'flux-pmi exchange --count works' '
--	flux run --label-io -n2 \
--	    flux pmi exchange --count=2
--'
--test_expect_success 'flux-pmi get PMI_process_mapping works' '
--	flux run --label-io -n2 \
--	    flux pmi get PMI_process_mapping
--'
--test_expect_success 'flux-pmi get --ranks=1 flux.taskmap works' '
--	flux run --label-io -n2 \
--	    flux pmi get --ranks=1 flux.taskmap
--'
--test_expect_success 'flux-pmi get --ranks=all flux.instance-level works' '
--	flux run --label-io -n2 \
--	    flux pmi get --ranks=all flux.instance-level
--'
--test_expect_success 'flux-pmi get works with multiple keys' '
--	flux run --label-io -n2 \
--	    flux pmi get flux.instance-level PMI_process_mapping
--'
--test_expect_success 'flux-pmi works outside of job' '
--	flux pmi -v --libpmi-noflux barrier
--'
--test_expect_success 'flux-pmi fails with bad subcommand' '
--	test_must_fail flux run flux pmi notacmd
--'
--test_expect_success 'flux-pmi get fails with bad option' '
--	test_must_fail flux run flux pmi get --badopt foo
--'
--test_expect_success 'flux-pmi get fails with bad ranks option' '
--	test_must_fail flux run flux pmi get --ranks=1.2 flux.taskmap
--'
--test_expect_success 'flux-pmi fails with bad ranks option' '
--	test_must_fail flux run \
--	    flux pmi --method=badmethod barrier
--'
--# method=simple (covered above also)
--test_expect_success 'flux-pmi --method=simple fails outside of job' '
--	test_must_fail flux pmi --method=simple barrier
--'
--test_expect_success 'flux-pmi -v --method=simple works within job' '
--	flux run --label-io -n2 flux pmi -v --method=simple barrier
--'
--test_expect_success 'flux-pmi -opmi=off --method=simple fails' '
--	test_must_fail flux run -o pmi=off \
--	    flux pmi --method=simple barrier
--'
--# method=libpmi
--test_expect_success 'get pmi library path' '
--	flux config builtin pmi_library_path >libpmi
--'
--test_expect_success 'flux-pmi --method=libpmi:/bad/path fails' '
--	test_must_fail flux run \
--	    flux pmi --method=libpmi:/bad/path barrier
--'
--test_expect_success 'flux-pmi --method=libpmi barrier works w/ flux libpmi.so' '
--	flux run -n2 bash -c "\
--	    flux pmi -v --method=libpmi:$(cat libpmi) barrier"
--'
--test_expect_success 'flux-pmi --method=libpmi barrier abort works w/ flux libpmi.so' '
--	test_expect_code 143 flux run -n2 bash -c "\
--	    flux pmi -v --method=libpmi:$(cat libpmi) barrier --abort 1"
--'
--test_expect_success 'flux-pmi --method=libpmi exchange works w/ flux libpmi.so' '
--	flux run -n2 bash -c "\
--	    flux pmi -v --method=libpmi:$(cat libpmi) exchange"
--'
--test_expect_success 'flux-pmi --method=libpmi get works w/ flux libpmi.so' '
--	flux run -n2 bash -c "\
--	    flux pmi -v --method=libpmi:$(cat libpmi) get flux.taskmap"
--'
--test_expect_success 'flux-pmi --libpmi-noflux fails w/ flux libpmi.so' '
--	test_must_fail flux run bash -c "\
--	    flux pmi --method=libpmi:$(cat libpmi) --libpmi-noflux barrier"
--'
--test_expect_success 'flux broker refuses the Flux libpmi.so and goes single' '
--	FLUX_PMI_DEBUG=1 FLUX_PMI_CLIENT_METHODS="libpmi single" \
--	    LD_LIBRARY_PATH=$(dirname $(cat libpmi)) \
--            flux start true 2>debug.err &&
--	grep single debug.err
--'
--# method=libpmi2
--test_expect_success 'get pmi2 library path' '
--	flux config builtin pmi_library_path | sed s/libpmi/libpmi2/ >libpmi2
--'
--test_expect_success 'flux-pmi --method=libpmi2:/bad/path fails' '
--	test_must_fail flux run \
--	    flux pmi --method=libpmi2:/bad/path barrier
--'
--test_expect_success 'flux-pmi --method=libpmi2 barrier works w/ flux pmi lib' '
--	flux run -n2 bash -c "\
--	    flux pmi -v --method=libpmi2:$(cat libpmi2) barrier"
--'
--test_expect_success 'flux-pmi --method=libpmi2 barrier works w/ flux pmi lib' '
--	test_expect_code 143 flux run -n2 bash -c "\
--	    flux pmi -v --method=libpmi2:$(cat libpmi2) barrier --abort 1"
--'
--test_expect_success 'flux-pmi --method=libpmi2 exchange works w/ flux pmi lib' '
--	flux run -n2 bash -c "\
--	    flux pmi -v --method=libpmi2:$(cat libpmi2) exchange"
--'
--test_expect_success 'flux-pmi --method=libpmi2 exchange works w/ cray quirks' '
--	flux run -n2 bash -c "\
--	    flux pmi -v --libpmi2-cray --method=libpmi2:$(cat libpmi2) exchange"
--'
--test_expect_success 'flux-pmi --method=libpmi2 get works w/ flux pmi lib' '
--	flux run -n2 bash -c "\
--	    flux pmi -v --method=libpmi2:$(cat libpmi2) get flux.taskmap"
--'
--test_expect_success 'flux-pmi --method=libpmi2 get fails w/ cray quirks' '
--	test_must_fail flux run -n2 bash -c "\
--	    flux pmi -v --libpmi2-cray --method=libpmi2:$(cat libpmi2) \
--	        get flux.taskmap"
--'
--test_expect_success 'PMI_process_mapping special case works' '
--	flux run -n2 bash -c "\
--	    flux pmi -v --method=libpmi2:$(cat libpmi2) get PMI_process_mapping"
--'
--test_expect_success 'flux-pmi --libpmi-noflux fails w/ flux libpmi2.so' '
--	test_must_fail flux run bash -c "\
--	    flux pmi --method=libpmi2:$(cat libpmi2) --libpmi-noflux barrier"
--'
--test_expect_success 'flux broker refuses the Flux pmi lib and goes single' '
--	FLUX_PMI_DEBUG=1 FLUX_PMI_CLIENT_METHODS="libpmi2 single" \
--	    LD_LIBRARY_PATH=$(dirname $(cat libpmi2)) \
--            flux start true 2>debug.err &&
--	grep single debug.err
--'
--# method=single
--test_expect_success 'flux-pmi --method=single barrier works' '
--	flux pmi -v --method=single barrier
--'
--test_expect_success 'flux-pmi --method=single exchange works' '
--	flux pmi -v --method=single exchange
--'
--test_expect_success 'flux-pmi --method=single get notakey fails' '
--	test_must_fail flux pmi --method=single get notakey
--'
--test_expect_success 'flux-pmi -opmi=off --method=single works' '
--	flux run -o pmi=off \
--	    flux pmi --method=single barrier
--'
--test_done
+diff -rupN flux-core-0.76.0.orig/t/Makefile.am flux-core-0.76.0/t/Makefile.am
+--- flux-core-0.76.0.orig/t/Makefile.am	2025-07-01 18:42:05.057249115 +0200
++++ flux-core-0.76.0/t/Makefile.am	2025-07-22 14:52:29.288973731 +0200
+@@ -206,7 +206,6 @@ TESTSCRIPTS = \
+ 	t2501-job-status.t \
+ 	t2600-job-shell-rcalc.t \
+ 	t2602-job-shell.t \
+-	t2603-job-shell-initrc.t \
+ 	t2604-job-shell-affinity.t \
+ 	t2606-job-shell-output-redirection.t \
+ 	t2607-job-shell-input.t \
+@@ -215,7 +214,6 @@ TESTSCRIPTS = \
+ 	t2610-job-shell-mpir.t \
+ 	t2611-debug-emulate.t \
+ 	t2612-job-shell-pty.t \
+-	t2613-job-shell-batch.t \
+ 	t2614-job-shell-doom.t \
+ 	t2615-job-shell-rlimit.t \
+ 	t2616-job-shell-taskmap.t \
+@@ -253,7 +251,6 @@ TESTSCRIPTS = \
+ 	t2900-job-timelimits.t \
+ 	t3000-mpi-basic.t \
+ 	t3001-mpi-personalities.t \
+-	t3002-pmi.t \
+ 	t3003-mpi-abort.t \
+ 	t3201-crontabs.t \
+ 	t3300-system-basic.t \
+diff -rupN flux-core-0.76.0.orig/t/Makefile.in flux-core-0.76.0/t/Makefile.in
+--- flux-core-0.76.0.orig/t/Makefile.in	2025-07-01 18:42:56.164627328 +0200
++++ flux-core-0.76.0/t/Makefile.in	2025-07-22 14:54:58.610618658 +0200
+@@ -1047,11 +1047,11 @@ am__dist_check_SCRIPTS_DIST = t9000-syst
+ 	t2410-sdexec-memlimit.t t2411-sdexec-job.t t2412-sdmon.t \
+ 	t2413-sdmon-resource.t t2500-job-attach.t t2501-job-status.t \
+ 	t2600-job-shell-rcalc.t t2602-job-shell.t \
+-	t2603-job-shell-initrc.t t2604-job-shell-affinity.t \
++	t2604-job-shell-affinity.t \
+ 	t2606-job-shell-output-redirection.t t2607-job-shell-input.t \
+ 	t2608-job-shell-log.t t2609-job-shell-events.t \
+ 	t2610-job-shell-mpir.t t2611-debug-emulate.t \
+-	t2612-job-shell-pty.t t2613-job-shell-batch.t \
++	t2612-job-shell-pty.t \
+ 	t2614-job-shell-doom.t t2615-job-shell-rlimit.t \
+ 	t2616-job-shell-taskmap.t t2616-job-shell-taskmap-hostfile.t \
+ 	t2617-job-shell-stage-in.t t2618-job-shell-signal.t \
+@@ -1067,7 +1067,7 @@ am__dist_check_SCRIPTS_DIST = t9000-syst
+ 	t2810-kvs-garbage-collect.t t2811-flux-pgrep.t \
+ 	t2812-flux-job-last.t t2813-flux-watch.t t2814-hostlist-cmd.t \
+ 	t2815-post-job-event.t t2816-fsck-cmd.t t2900-job-timelimits.t \
+-	t3000-mpi-basic.t t3001-mpi-personalities.t t3002-pmi.t \
++	t3000-mpi-basic.t t3001-mpi-personalities.t \
+ 	t3003-mpi-abort.t t3201-crontabs.t t3300-system-basic.t \
+ 	t3301-system-latestart.t t3302-system-offline.t \
+ 	t3303-system-healthcheck.t t3304-system-rpctrack-down.t \
+@@ -2011,11 +2011,11 @@ TESTSCRIPTS = $(LONGTESTSCRIPTS) t0000-s
+ 	t2410-sdexec-memlimit.t t2411-sdexec-job.t t2412-sdmon.t \
+ 	t2413-sdmon-resource.t t2500-job-attach.t t2501-job-status.t \
+ 	t2600-job-shell-rcalc.t t2602-job-shell.t \
+-	t2603-job-shell-initrc.t t2604-job-shell-affinity.t \
++	t2604-job-shell-affinity.t \
+ 	t2606-job-shell-output-redirection.t t2607-job-shell-input.t \
+ 	t2608-job-shell-log.t t2609-job-shell-events.t \
+ 	t2610-job-shell-mpir.t t2611-debug-emulate.t \
+-	t2612-job-shell-pty.t t2613-job-shell-batch.t \
++	t2612-job-shell-pty.t \
+ 	t2614-job-shell-doom.t t2615-job-shell-rlimit.t \
+ 	t2616-job-shell-taskmap.t t2616-job-shell-taskmap-hostfile.t \
+ 	t2617-job-shell-stage-in.t t2618-job-shell-signal.t \
+@@ -2031,7 +2031,7 @@ TESTSCRIPTS = $(LONGTESTSCRIPTS) t0000-s
+ 	t2810-kvs-garbage-collect.t t2811-flux-pgrep.t \
+ 	t2812-flux-job-last.t t2813-flux-watch.t t2814-hostlist-cmd.t \
+ 	t2815-post-job-event.t t2816-fsck-cmd.t t2900-job-timelimits.t \
+-	t3000-mpi-basic.t t3001-mpi-personalities.t t3002-pmi.t \
++	t3000-mpi-basic.t t3001-mpi-personalities.t \
+ 	t3003-mpi-abort.t t3201-crontabs.t t3300-system-basic.t \
+ 	t3301-system-latestart.t t3302-system-offline.t \
+ 	t3303-system-healthcheck.t t3304-system-rpctrack-down.t \
