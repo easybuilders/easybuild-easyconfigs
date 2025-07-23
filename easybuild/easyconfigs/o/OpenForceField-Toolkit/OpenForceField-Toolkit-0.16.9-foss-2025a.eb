@@ -2,7 +2,6 @@ easyblock = 'PythonBundle'
 
 name = 'OpenForceField-Toolkit'
 version = '0.16.9'
-versionsuffix = '-base-with-RDKit'
 
 homepage = 'https://github.com/openforcefield/openff-toolkit'
 description = """The Open Force Field Toolkit provides implementations of the SMIRNOFF format,
@@ -24,7 +23,7 @@ dependencies = [
     ('RDKit', '2025.03.4'),
     ('MDTraj', '1.11.0'),
     ('JupyterNotebook', '7.4.4'),
-    # ('AmberTools', '25.1'),
+    ('AmberTools', '25.2'),
     ('Pint', '0.24.4'),
     ('nglview', '3.1.4'),
 ]
@@ -32,18 +31,23 @@ dependencies = [
 # fix old syntax in versioneer.py
 _fix_versioneer = "sed -i -e 's/SafeConfigParser()/ConfigParser()/' -e 's/readfp(/read_file(/' versioneer.py && "
 # fix version in OpenForceFields-Utilities
-_off_utilities_fix = (
+_utilities_fix = (
     r"sed -i -e '/\"versioningit\"/d' -e '/dynamic/d' -e  '13 a version = \"0.1.15\"' pyproject.toml && "
 )
 # fix version in OpenForceFields-Units
-_off_units_fix = r"sed -i -e '/\"versioningit\"/d' -e '/dynamic/d' -e  '13 a version = \"0.3.1\"' pyproject.toml && "
+_units_fix = r"sed -i -e '/\"versioningit\"/d' -e '/dynamic/d' -e  '13 a version = \"0.3.1\"' pyproject.toml && "
+_interchange_fix = r"sed -i -e '/\"versioningit\"/d' -e '/dynamic/d' -e  '13 a version = \"0.4.3\"' pyproject.toml && "
 # fix version and license in OpenForceFields-Toolkit
-_off_toolkit_fix = (
+_toolkit_fix = (
     "sed -i -e "
     r"'s/, \"versioningit\"//' "
     "-e '/dynamic/d' "
     r"-e  '18 a version = \"0.16.9\"' "
     "-e 's/:: MIT/:: MIT License/' pyproject.toml && "
+)
+# fix AmberTools version in GLOBAL_TOOLKIT_REGISTRY
+_fix_ambertools_version = (
+    """sed -i 's/get_ambertools_version()/"25.2"/' openff/toolkit/utils/ambertools_wrapper.py && """
 )
 
 exts_list = [
@@ -107,21 +111,28 @@ exts_list = [
     }),
     ('OpenForceField-Utilities', '0.1.15', {
         'modulename': 'openff.utilities',
-        'preinstallopts': _off_utilities_fix,
+        'preinstallopts': _utilities_fix,
         'source_urls': ['https://github.com/openforcefield/openff-utilities/archive/'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': ['8bf8c1b297ddb75b303f212ff149bfec533ba711534071d4b9c018bf7e7d2769'],
     }),
     ('OpenForceField-Units', '0.3.1', {
         'modulename': 'openff.units',
-        'preinstallopts': _off_units_fix,
+        'preinstallopts': _units_fix,
         'source_urls': ['https://github.com/openforcefield/openff-units/archive/'],
         'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': ['5276462b88726ae7f6927580d8728c8703c6e72b61a76fd5fb8669a83d8eac5c'],
     }),
+    ('OpenForceField-Interchange', '0.4.3', {
+        'modulename': 'openff.interchange',
+        'preinstallopts': _interchange_fix,
+        'source_urls': ['https://github.com/openforcefield/openff-interchange/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['0fe78c67725cb969cb032dca299f22d2110359c0694d7e5942d41cd57d1dadcd'],
+    }),
     (name, version, {
         'modulename': 'openff.toolkit',
-        'preinstallopts': _off_toolkit_fix,
+        'preinstallopts': f"{_toolkit_fix}{_fix_ambertools_version}",
         'source_urls': ['https://github.com/openforcefield/openff-toolkit/archive/'],
         'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': ['26d817f4f254293a4551a0a73f1bf94debf7532f422daa2253a2f7ec8c44b02f'],
@@ -130,7 +141,10 @@ exts_list = [
 
 sanity_check_commands = [
     "python -c 'from openff.toolkit import Molecule, Topology, ForceField'",
+    "python -c 'from openff.interchange import Interchange'",
     "python -c 'from openff.units import unit'",
+    "python -c 'from openff.interchange.components.mdconfig import MDConfig'",
+    "python -c 'from openff.interchange.models import TopologyKey'",
     "python -c 'from openff.toolkit.typing.engines.smirnoff import ForceField'",
 ]
 
