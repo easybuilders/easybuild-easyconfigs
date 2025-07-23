@@ -1,0 +1,18 @@
+Scipy 1.13 on at least Python 3.12+ causes failures for complex logaddexp in these tests:
+    TestBinaryUfuncsCPU.test_logaddexp_cpu_complex64
+    TestBinaryUfuncsCPU.test_logaddexp_cpu_complex128
+See https://github.com/pytorch/pytorch/issues/123655
+
+diff --git a/test/test_binary_ufuncs.py b/test/test_binary_ufuncs.py
+index 55ead3684cc..80937d23ff2 100644
+--- a/test/test_binary_ufuncs.py
++++ b/test/test_binary_ufuncs.py
+@@ -3447,6 +3447,8 @@ class TestBinaryUfuncs(TestCase):
+             our_func = torch.logaddexp2
+         elif dtype in (torch.complex64, torch.complex128):
+             # numpy has not implemented logaddexp for complex
++            if scipy.__version__.startswith('1.13.'):
++                return  # scipy 1.13.0 has a bug in logaddexp for complex
+             def _ref_func(x, y):
+                 return scipy.special.logsumexp(np.stack((x, y), axis=0), axis=0)
+             ref_func = _ref_func
