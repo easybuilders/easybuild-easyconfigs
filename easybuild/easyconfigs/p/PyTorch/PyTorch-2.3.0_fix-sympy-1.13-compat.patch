@@ -1,0 +1,29 @@
+There is an assertion failure with sympy 1.13.3:
+>   File "torch/fx/experimental/symbolic_shapes.py", line 6403, in _evaluate_expr
+>    assert orig_expr == hint, f"{orig_expr} != {hint}"
+>           ^^^^^^^^^^^^^^^^^
+> AssertionError: 0 != 0.0
+
+Backport of https://github.com/pytorch/pytorch/pull/147197
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/fx/experimental/symbolic_shapes.py b/torch/fx/experimental/symbolic_shapes.py
+index e9b7f56f974..7fea78c0c5e 100644
+--- a/torch/fx/experimental/symbolic_shapes.py
++++ b/torch/fx/experimental/symbolic_shapes.py
+@@ -4105,9 +4105,11 @@ class ShapeEnv:
+         try:
+             if orig_expr.is_number:
+                 self.log.debug("eval %s [trivial]", orig_expr)
+-                # NB: don't test float as there may be precision issues
+-                if isinstance(hint, (int, bool)):
+-                    assert orig_expr == hint, f"{orig_expr} != {hint}"
++                if hint is not None:
++                    if isinstance(hint, bool):
++                        assert orig_expr == hint, f"{orig_expr} != {hint}"
++                    else:
++                        assert sympy.Eq(orig_expr, hint), f"{orig_expr} != {hint}"
+                 return orig_expr
+ 
+             expr = orig_expr
