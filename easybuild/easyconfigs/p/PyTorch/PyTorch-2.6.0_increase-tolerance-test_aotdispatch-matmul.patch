@@ -1,0 +1,36 @@
+test_aot_autograd_exhaustive_matmul_cpu_float32 and test_aot_autograd_exhaustive___rmatmul___cpu_float32
+fail when using OpenBLAS instead of MKL:
+
+> Mismatched elements: 1 / 10 (10.0%)
+> Greatest absolute difference: 5.91278076171875e-05 at index (7,) (up to 1e-05 allowed)
+> Greatest relative difference: 3.468156592134619e-06 at index (7,) (up to 1.3e-06 allowed)
+
+Relax the tolerances to allow it to pass.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/functorch/test_aotdispatch.py b/test/functorch/test_aotdispatch.py
+index 6213f8f0817..b7748ad8707 100644
+--- a/test/functorch/test_aotdispatch.py
++++ b/test/functorch/test_aotdispatch.py
+@@ -74,6 +74,7 @@ from torch.testing._internal.common_utils import (
+     skipIfRocm,
+     skipIfTorchDynamo,
+     TestCase,
++    TEST_MKL,
+     xfail_inherited_tests,
+     xfailIfS390X,
+     xfailIfTorchDynamo,
+@@ -6434,6 +6435,12 @@ aot_autograd_failures = {
+     decorate("nn.functional.conv2d", decorator=unittest.skipIf(IS_ARM64, "flaky")),
+ }
+ 
++if not TEST_MKL:
++    aot_autograd_failures.update({
++        decorate("matmul", decorator=toleranceOverride({torch.float32: tol(atol=6e-05, rtol=4e-06)})),
++        decorate("__rmatmul__", decorator=toleranceOverride({torch.float32: tol(atol=6e-05, rtol=4e-06)})),
++    })
++
+ symbolic_aot_autograd_failures = {
+     xfail("combinations", ""),  # aten.masked_select.default
+     xfail(
