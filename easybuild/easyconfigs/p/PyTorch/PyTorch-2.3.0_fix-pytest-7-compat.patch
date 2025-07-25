@@ -1,0 +1,47 @@
+PyTest 7 removed the ability to pass `None` to `pytest.warns()`, and expects no arguments instead.
+This now leads to this error:
+> TypeError: exceptions must be derived from Warning, not <class 'NoneType'>
+
+Update to use native warnings-as-errors handling.
+See https://docs.pytest.org/en/7.0.x/how-to/capture-warnings.html#additional-use-cases-of-warnings-in-tests
+Author: Alexander Grund (TU Dresden)
+--- a/test/distributed/pipeline/sync/test_pipe.py
++++ b/test/distributed/pipeline/sync/test_pipe.py
+@@ -9,6 +9,7 @@
+ from collections import OrderedDict
+ from copy import deepcopy
+ import time
++import warnings
+ 
+ import pytest
+ import random
+@@ -87,23 +88,21 @@ def test_batch_size_indivisible(setup_rpc):
+     model = nn.Sequential(nn.Linear(1, 1))
+     model = Pipe(model, chunks=4)
+ 
+-    with pytest.warns(None) as record:
++    with warnings.catch_warnings():
++        # Indivisible batch size is legal.
++        warnings.simplefilter("error")
+         model(torch.rand(7, 1))
+ 
+-    # Indivisible batch size is legal.
+-    assert not record
+-
+ 
+ def test_batch_size_small(setup_rpc):
+     model = nn.Sequential(nn.Linear(1, 1))
+     model = Pipe(model, chunks=4)
+ 
+-    with pytest.warns(None) as record:
++    with warnings.catch_warnings():
++        # Batch size smaller than chunks is legal.
++        warnings.simplefilter("error")
+         model(torch.rand(2, 1))
+ 
+-    # Batch size smaller than chunks is legal.
+-    assert not record
+-
+ 
+ def test_checkpoint_mode(setup_rpc):
+     def count_grad_fn(grad_fn, name, visited=None):
