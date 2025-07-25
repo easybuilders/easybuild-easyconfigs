@@ -1,0 +1,81 @@
+easyblock = 'PythonBundle'
+
+name = 'MACE'
+version = '0.3.13'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/ACEsuit/mace'
+description = """
+MACE provides fast and accurate machine learning interatomic potentials with higher order equivariant message passing.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [('hatchling', '1.24.2')]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('PyTorch', '2.6.0', versionsuffix),
+    ('ASE', '3.23.0'),
+    ('e3nn', '0.4.4', versionsuffix),
+    ('GitPython', '3.1.43'),
+    ('tqdm', '4.66.5'),
+    ('orjson', '3.10.13'),
+    ('h5py', '3.12.1'),
+    ('meson-python', '0.16.0'),
+]
+
+exts_list = [
+    ('configargparse', '1.7.1', {
+        'checksums': ['79c2ddae836a1e5914b71d58e4b9adbd9f7779d4e6351a637b7d2d9b6c46d3d9'],
+    }),
+    ('lmdb', '1.7.2', {
+        'checksums': ['fa386cdd2ab077b119609af5a058106d0698ba3686f6e0c14af027c607db32c2'],
+    }),
+    ('matscipy', '1.1.1', {
+        'checksums': ['2d806d27bfcb99c6e365e0e20cee08e71952ce37b5df3667a1b955dbe26138c2'],
+    }),
+    ('opt-einsum', '3.4.0', {
+        'source_tmpl': 'opt_einsum-%(version)s.tar.gz',
+        'checksums': ['96ca72f1b886d148241348783498194c577fa30a8faac108586b14f1ba4473ac'],
+    }),
+    ('prettytable', '3.9.0', {
+        'checksums': ['f4ed94803c23073a90620b201965e5dc0bccf1760b7a7eaf3158cab8aaffdf34'],
+    }),
+    ('python-hostlist', '2.2.2', {
+        'modulename': 'hostlist',
+        'source_tmpl': 'python_hostlist-%(version)s.tar.gz',
+        'checksums': ['64fbef20dd9f5834135f8503ac3d35a544c063ea2cb98af88fd512ed16fbaa8a'],
+    }),
+    ('torch-ema', '0.3', {
+        'source_tmpl': 'torch_ema-%(version)s.tar.gz',
+        'checksums': ['5a3595405fa311995f01291a1d4a9242d6be08a0fc9db29152ec6cfd586ea414'],
+    }),
+    ('lightning-utilities', '0.14.3', {
+        'source_tmpl': 'lightning_utilities-%(version)s.tar.gz',
+        'checksums': ['37e2f83f273890052955a44054382c211a303012ee577619efbaa5df9e65e9f5'],
+    }),
+    ('torchmetrics', '1.7.4', {
+        'checksums': ['506a1a5c7c304cd77ba323ca4b009e46b814fd2be9dcf0f4ccc2e5c0f5b4b0c1'],
+    }),
+    ('mace-torch', version, {
+        'modulename': 'mace',
+        'source_tmpl': 'mace_torch-%(version)s.tar.gz',
+        'checksums': ['32b44478cb40ffe625216a81bcbac001165baff1fa9378a47ad50c4550806da5'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/mace_run_train', 'bin/mace_prepare_data', 'bin/hostlist'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = [
+    "python -c 'from mace.calculators import MACECalculator'",
+    "python -c 'from mace.calculators import mace_mp'",
+    "mace_run_train --help",
+]
+
+moduleclass = 'ai'
