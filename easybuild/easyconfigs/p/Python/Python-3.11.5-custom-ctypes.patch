@@ -1,43 +1,122 @@
 diff -ruN Python-3.11.5.orig/Lib/ctypes/__init__.py Python-3.11.5/Lib/ctypes/__init__.py
 --- Python-3.11.5.orig/Lib/ctypes/__init__.py	2025-06-03 17:24:09.817225787 +0200
 +++ Python-3.11.5/Lib/ctypes/__init__.py	2025-06-03 17:26:02.851166381 +0200
-@@ -13,6 +13,8 @@
- from _ctypes import ArgumentError
+@@ -14,6 +14,8 @@
  
  from struct import calcsize as _calcsize
-+from ctypes import util
-+import re
  
++from ctypes import util
++
  if __version__ != _ctypes_version:
      raise Exception("Version number mismatch", __version__, _ctypes_version)
-@@ -349,6 +351,11 @@
+ 
+@@ -349,6 +351,9 @@
              flags |= _FUNCFLAG_USE_ERRNO
          if use_last_error:
              flags |= _FUNCFLAG_USE_LASTERROR
 +        if _os.name == "posix":
-+            if name and name.endswith(".so"):
-+                s = re.sub(r'lib', '', name)
-+                s = re.sub(r'\..*', '', s)
-+                self._name=util._findLib_ld(s) 
++            if name:
++                self._name = util.find_library(name)
          if _sys.platform.startswith("aix"):
              """When the name contains ".a(" and ends with ")",
                 e.g., "libFOO.a(libFOO.so)" - this is taken to be an
 diff -ruN Python-3.11.5.orig/Lib/ctypes/util.py Python-3.11.5/Lib/ctypes/util.py
 --- Python-3.11.5.orig/Lib/ctypes/util.py	2025-06-03 17:24:09.816225753 +0200
 +++ Python-3.11.5/Lib/ctypes/util.py	2025-06-03 17:28:52.212009753 +0200
-@@ -301,7 +301,14 @@
+@@ -149,6 +149,54 @@
+             return os.fsdecode(file)
+ 
+ 
++    def _findLib_gcc_fullname(name):
++        # Run GCC's linker with the -t (aka --trace) option and examine the
++        # library name it prints out. The GCC command will fail because we
++        # haven't supplied a proper program with main(), but that does not
++        # matter.
++        expr = r'^.*%s.*$' % re.escape(name)
++        c_compiler = shutil.which('gcc')
++        if not c_compiler:
++            c_compiler = shutil.which('cc')
++        if not c_compiler:
++            # No C compiler available, give up
++            return None
++
++        temp = tempfile.NamedTemporaryFile()
++        try:
++            args = [c_compiler, '-Wl,-t', '-o', temp.name, '-l:' + name]
++            # print(args)
++            env = dict(os.environ)
++            env['LC_ALL'] = 'C'
++            env['LANG'] = 'C'
++            try:
++                proc = subprocess.Popen(args,
++                                        stdout=subprocess.PIPE,
++                                        stderr=subprocess.STDOUT,
++                                        env=env)
++            except OSError:  # E.g. bad executable
++                return None
++            with proc:
++                trace = proc.stdout.read().decode()
++        finally:
++            try:
++                temp.close()
++            except FileNotFoundError:
++                # Raised if the file was already removed, which is the normal
++                # behaviour of GCC if linking fails
++                pass
++        res = re.findall(expr, trace, re.MULTILINE)
++        if not res:
++            return None
++
++        for file in res:
++            # Check if the given file is an elf file: gcc can report
++            # some files that are linker scripts and not actual
++            # shared objects. See bpo-41976 for more details
++            if not _is_elf(file):
++                continue
++            return file
++
+     if sys.platform == "sunos5":
+         # use /usr/ccs/bin/dump on solaris
+         def _get_soname(f):
+@@ -283,7 +331,7 @@
+             abi_type = mach_map.get(machine, 'libc6')
+ 
+             # XXX assuming GLIBC's ldconfig (with option -p)
+-            regex = r'\s+(lib%s\.[^\s]+)\s+\(%s'
++            regex = r'\s+(lib%s\.[^\s]+)\s+\(%s\)\s+=>\s+(\S+)'
+             regex = os.fsencode(regex % (re.escape(name), abi_type))
+             try:
+                 with subprocess.Popen(['/cvmfs/software.eessi.io/versions/2023.06/compat/linux/x86_64/sbin/ldconfig', '-p'],
+@@ -293,7 +341,7 @@
+                                       env={'LC_ALL': 'C', 'LANG': 'C'}) as p:
+                     res = re.search(regex, p.stdout.read())
+                     if res:
+-                        return os.fsdecode(res.group(1))
++                        return os.fsdecode(res.group(2))
+             except OSError:
+                 pass
+ 
+@@ -301,7 +349,7 @@
              # See issue #9998 for why this is needed
              expr = r'[^\(\)\s]*lib%s\.[^\(\)\s]*' % re.escape(name)
              cmd = ['ld', '-t']
 -            libpath = os.environ.get('LD_LIBRARY_PATH')
-+            libpath = []
-+            if os.getenv('EPREFIX'):
-+                libpath.append(os.getenv('EPREFIX' + '/usr/lib64'))
-+            if os.getenv('LD_LIBRARY_PATH'):
-+                libpath.append(os.getenv('LD_LIBRARY_PATH'))
-+            if os.getenv('LIBRARY_PATH'):
-+                libpath.append(os.getenv('LIBRARY_PATH'))
-+            libpath = ':'.join(libpath)
++            libpath = os.environ.get('LIBRARY_PATH')
              if libpath:
                  for d in libpath.split(':'):
                      cmd.extend(['-L', d])
+@@ -326,8 +326,12 @@
+ 
+         def find_library(name):
+             # See issue #9998
+-            return _findSoname_ldconfig(name) or \
+-                   _get_soname(_findLib_gcc(name)) or _get_soname(_findLib_ld(name))
++            if os.path.exists(name):
++                return name
++            else:
++                return _findSoname_ldconfig(name) or \
++                   _findLib_gcc(name) or _findLib_ld(name) or \
++                   _findLib_gcc_fullname(name) 
+ 
+ ################################################################
+ # test code
