@@ -1,0 +1,73 @@
+easyblock = 'ConfigureMake'
+
+name = 'luaposix'
+version = '36.3'
+
+homepage = 'http://luaposix.github.io/luaposix'
+description = """
+A library binding various POSIX APIs. POSIX is the IEEE Portable Operating System
+ Interface standard. luaposix is based on lposix.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/%(name)s/%(name)s/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['82cd9a96c41a4a3205c050206f0564ff4456f773a8f9ffc9235ff8f1907ca5e6']
+
+
+local_lua_version = '5.4.6'
+local_lua_version_maj_min = '.'.join(local_lua_version.split('.')[:2])
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+dependencies = [
+    ('Lua', local_lua_version),
+]
+
+skipsteps = [
+    'configure',
+]
+
+# Don't want -j added to our custom build command
+max_parallel = 1
+
+local_luke_opts = f"PREFIX=%(installdir)s LUAVERSION={local_lua_version_maj_min} LUA_DIR=$EBROOTLUA "
+local_luke_opts += "LUA_INCDIR=$EBROOTLUA/include"
+
+prebuildopts = local_luke_opts
+build_cmd = "build-aux/luke package=%%(name)s version=%%(version)s %s" % local_luke_opts
+
+preinstallopts = local_luke_opts
+install_cmd = "build-aux/luke install %s --quiet" % local_luke_opts
+
+local_libdir = f'lib/lua/{local_lua_version_maj_min}/posix'
+local_libs = [
+    'ctype', 'poll', 'unistd', 'fcntl', 'signal', 'time', 'syslog',
+]
+
+sanity_check_paths = {
+    'files': [f'{local_libdir}/{lib}.{SHLIB_EXT}' for lib in local_libs],
+    'dirs': [f'share/lua/{local_lua_version_maj_min}/posix'],
+}
+sanity_check_commands = ['lua -e \'local posix = require("posix"); print(posix.uname())\'']
+
+# Lua supports extensions via the path-like variables below
+# They syntax is different though, ';' is the separator (';;' at the end also tells it to also look in the default
+# locations, but ours is empty so we don't worry about that).
+# Ideally we would like direct support, but as these variables allow wild cards ('?') this is not currently supported
+# by EasyBuild (which expects paths to exist). To work around this we use module footers:
+modluafooter = """
+prepend_path("LUA_PATH", pathJoin("%%(installdir)s", "share", "lua", "%s", "?", "init.lua"), ";")
+prepend_path("LUA_PATH", pathJoin("%%(installdir)s", "share", "lua", "%s", "?.lua"), ";")
+prepend_path("LUA_CPATH", pathJoin("%%(installdir)s", "lib", "lua", "%s", "?.so"), ";")
+""" % (local_lua_version_maj_min, local_lua_version_maj_min, local_lua_version_maj_min)
+modtclfooter = f"""
+prepend-path -delim ";" "LUA_PATH" "%(installdir)s/share/lua/{local_lua_version_maj_min}/?/init.lua"
+prepend-path -delim ";" "LUA_PATH" "%(installdir)s/share/lua/{local_lua_version_maj_min}/?.lua"
+prepend-path -delim ";" "LUA_CPATH" "%(installdir)s/lib/lua/{local_lua_version_maj_min}/?.so"
+"""
+
+moduleclass = 'lang'
