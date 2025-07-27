@@ -15,7 +15,6 @@ toolchain = {'name': 'foss', 'version': '2025a'}
 
 builddependencies = [
     ('CMake', '3.31.3'),
-    ('pybind11', '2.13.6'),
 ]
 
 dependencies = [
@@ -24,14 +23,27 @@ dependencies = [
     ('absl-py', '2.3.1'),
     ('matplotlib', '3.10.3'),
     ('networkx', '3.5'),
+    ('pybind11', '2.13.6'),
+    ('protobuf-python', '6.31.1'),
+    ('sympy', '1.14.0'),
     ('tqdm', '4.67.1'),
 ]
+
+local_build_cmd = 'python -m pip install --prefix=%(installdir)s --no-deps --ignore-installed --no-build-isolation '
+local_cirq_modules = '-e ./cirq-core -e ./cirq-google -e ./cirq-ionq -e ./cirq-aqt'  # -e ./cirq-pascal -e ./cirq-web'
 
 exts_list = [
     ('duet', '0.2.9', {
         'checksums': ['d6fa39582e6a3dce1096c47e5fbcbda648a633eed94a38943e68662afa2587f3'],
     }),
-    ('cirq-core', '1.6.0', {
+    # ('typedunits', '0.0.1.dev20250509200845'),
+    ('google-api-core', '2.25.1', {
+        'modulename': 'google.api_core',
+        'source_tmpl': 'google_api_core-%(version)s.tar.gz',
+        'checksums': ['d2aaa0b13c78c61cb3f4282c464c046e45fbd75755683c9c525e6e8f7ed0a5e8'],
+    }),
+    ('cirq', '1.6.0', {
+        'buildcmd': '%s %s' % (local_build_cmd, local_cirq_modules),
         'source_tmpl': 'v%(version)s.tar.gz',
         'source_urls': ['https://github.com/quantumlib/Cirq/archive/refs/tags/'],
         'checksums': ['d65e80185faeb452d811cfb6d78ff23fb4d5151900db22ae38b635bf39ac21ef'],
