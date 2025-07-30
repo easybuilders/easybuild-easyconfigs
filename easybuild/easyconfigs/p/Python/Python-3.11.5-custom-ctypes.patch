@@ -10,13 +10,15 @@ diff -ruN Python-3.11.5.orig/Lib/ctypes/__init__.py Python-3.11.5/Lib/ctypes/__i
  if __version__ != _ctypes_version:
      raise Exception("Version number mismatch", __version__, _ctypes_version)
  
-@@ -349,6 +351,9 @@
+@@ -349,6 +351,11 @@
              flags |= _FUNCFLAG_USE_ERRNO
          if use_last_error:
              flags |= _FUNCFLAG_USE_LASTERROR
 +        if _os.name == "posix":
 +            if name:
-+                self._name = util.find_library(name)
++                fullpath = util.find_library(name)
++                if fullpath is not None:
++                    self._name = fullpath
          if _sys.platform.startswith("aix"):
              """When the name contains ".a(" and ends with ")",
                 e.g., "libFOO.a(libFOO.so)" - this is taken to be an
@@ -32,7 +34,7 @@ diff -ruN Python-3.11.5.orig/Lib/ctypes/util.py Python-3.11.5/Lib/ctypes/util.py
 +        # library name it prints out. The GCC command will fail because we
 +        # haven't supplied a proper program with main(), but that does not
 +        # matter.
-+        expr = r'^.*%s.*$' % re.escape(name)
++        expr = os.fsencode(r'^[^\(\)\s]*%s[^\(\)\s]*' % re.escape(name))
 +        c_compiler = shutil.which('gcc')
 +        if not c_compiler:
 +            c_compiler = shutil.which('cc')
@@ -86,7 +88,7 @@ diff -ruN Python-3.11.5.orig/Lib/ctypes/util.py Python-3.11.5/Lib/ctypes/util.py
 +            regex = r'\s+(lib%s\.[^\s]+)\s+\(%s\)\s+=>\s+(\S+)'
              regex = os.fsencode(regex % (re.escape(name), abi_type))
              try:
-                 with subprocess.Popen(['/cvmfs/software.eessi.io/versions/2023.06/compat/linux/x86_64/sbin/ldconfig', '-p'],
+                 with subprocess.Popen(['/sbin/ldconfig', '-p'],
 @@ -293,7 +341,7 @@
                                        env={'LC_ALL': 'C', 'LANG': 'C'}) as p:
                      res = re.search(regex, p.stdout.read())
