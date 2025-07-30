@@ -1,19 +1,24 @@
-diff -ruN Python-3.11.5.orig/Lib/ctypes/__init__.py Python-3.11.5/Lib/ctypes/__init__.py
---- Python-3.11.5.orig/Lib/ctypes/__init__.py	2025-06-03 17:24:09.817225787 +0200
-+++ Python-3.11.5/Lib/ctypes/__init__.py	2025-06-03 17:26:02.851166381 +0200
-@@ -14,6 +14,8 @@
+Override ctypes behavior to enable support for EB provided libraries. 
+This should be only applied if LD_LIBRARY_PATH is disabled. 
+Authors: Danilo Gonzalez (DoItNow group), Caspar van Leeuwen (SURF) and Alan O'cais (CECAM)
+diff -ruN Python-3.11.5/Lib/ctypes/__init__.py Python-3.11.5.patched/Lib/ctypes/__init__.py
+--- Python-3.11.5/Lib/ctypes/__init__.py	2023-08-24 14:09:18.000000000 +0200
++++ Python-3.11.5.patched/Lib/ctypes/__init__.py	2025-07-30 16:29:40.600331232 +0200
+@@ -14,6 +14,9 @@
  
  from struct import calcsize as _calcsize
  
++# Add util to use find_library capabilities
 +from ctypes import util
 +
  if __version__ != _ctypes_version:
      raise Exception("Version number mismatch", __version__, _ctypes_version)
  
-@@ -349,6 +351,11 @@
+@@ -349,6 +352,12 @@
              flags |= _FUNCFLAG_USE_ERRNO
          if use_last_error:
              flags |= _FUNCFLAG_USE_LASTERROR
++        # define CDLL instance name as fullpath
 +        if _os.name == "posix":
 +            if name:
 +                fullpath = util.find_library(name)
@@ -22,18 +27,18 @@ diff -ruN Python-3.11.5.orig/Lib/ctypes/__init__.py Python-3.11.5/Lib/ctypes/__i
          if _sys.platform.startswith("aix"):
              """When the name contains ".a(" and ends with ")",
                 e.g., "libFOO.a(libFOO.so)" - this is taken to be an
-diff -ruN Python-3.11.5.orig/Lib/ctypes/util.py Python-3.11.5/Lib/ctypes/util.py
---- Python-3.11.5.orig/Lib/ctypes/util.py	2025-06-03 17:24:09.816225753 +0200
-+++ Python-3.11.5/Lib/ctypes/util.py	2025-06-03 17:28:52.212009753 +0200
-@@ -149,6 +149,54 @@
+diff -ruN Python-3.11.5/Lib/ctypes/util.py Python-3.11.5.patched/Lib/ctypes/util.py
+--- Python-3.11.5/Lib/ctypes/util.py	2023-08-24 14:09:18.000000000 +0200
++++ Python-3.11.5.patched/Lib/ctypes/util.py	2025-07-30 16:39:37.423162529 +0200
+@@ -148,6 +148,53 @@
+                 continue
              return os.fsdecode(file)
- 
  
 +    def _findLib_gcc_fullname(name):
 +        # Run GCC's linker with the -t (aka --trace) option and examine the
 +        # library name it prints out. The GCC command will fail because we
 +        # haven't supplied a proper program with main(), but that does not
-+        # matter.
++        # matter. This function will return the full path of the requested library
 +        expr = os.fsencode(r'^[^\(\)\s]*%s[^\(\)\s]*' % re.escape(name))
 +        c_compiler = shutil.which('gcc')
 +        if not c_compiler:
@@ -76,43 +81,54 @@ diff -ruN Python-3.11.5.orig/Lib/ctypes/util.py Python-3.11.5/Lib/ctypes/util.py
 +            if not _is_elf(file):
 +                continue
 +            return file
-+
+ 
      if sys.platform == "sunos5":
          # use /usr/ccs/bin/dump on solaris
-         def _get_soname(f):
-@@ -283,7 +331,7 @@
+@@ -283,7 +330,8 @@
              abi_type = mach_map.get(machine, 'libc6')
  
              # XXX assuming GLIBC's ldconfig (with option -p)
 -            regex = r'\s+(lib%s\.[^\s]+)\s+\(%s'
++            # Regular expresion that captures complete line of ldconfig -p output that matches with library name. 
 +            regex = r'\s+(lib%s\.[^\s]+)\s+\(%s\)\s+=>\s+(\S+)'
              regex = os.fsencode(regex % (re.escape(name), abi_type))
              try:
                  with subprocess.Popen(['/sbin/ldconfig', '-p'],
-@@ -293,7 +341,7 @@
+@@ -293,7 +341,8 @@
                                        env={'LC_ALL': 'C', 'LANG': 'C'}) as p:
                      res = re.search(regex, p.stdout.read())
                      if res:
 -                        return os.fsdecode(res.group(1))
++                        # return the regex second group, that is the library fullpath
 +                        return os.fsdecode(res.group(2))
              except OSError:
                  pass
  
-@@ -301,7 +349,7 @@
+@@ -301,10 +350,12 @@
              # See issue #9998 for why this is needed
              expr = r'[^\(\)\s]*lib%s\.[^\(\)\s]*' % re.escape(name)
              cmd = ['ld', '-t']
 -            libpath = os.environ.get('LD_LIBRARY_PATH')
++            # use LIBRARY_PATH instead of LD_LIBRARY_PATH to use EB provided shared libraries
 +            libpath = os.environ.get('LIBRARY_PATH')
              if libpath:
                  for d in libpath.split(':'):
-                     cmd.extend(['-L', d])
-@@ -326,8 +326,12 @@
+-                    cmd.extend(['-L', d])
++                    if stubs not in d.split('/'):
++                        cmd.extend(['-L', d])
+             cmd.extend(['-o', os.devnull, '-l%s' % name])
+             result = None
+             try:
+@@ -325,9 +375,15 @@
+             return result
  
          def find_library(name):
-             # See issue #9998
+-            # See issue #9998
 -            return _findSoname_ldconfig(name) or \
 -                   _get_soname(_findLib_gcc(name)) or _get_soname(_findLib_ld(name))
++            # Redefine find_library function, it will return the provided name if
++            # path exist, else it will use the set of functions to find the full library path. 
++            # it will return the one that has a match. 
 +            if os.path.exists(name):
 +                return name
 +            else:
