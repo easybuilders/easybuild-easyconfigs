@@ -1,0 +1,27 @@
+When the GPUs use 64bit BARs the RPC module fails during the initialization with:
+> E           RuntimeError: In getBar1SizeOfGpu at tensorpipe/channel/cuda_gdr/context_impl.cc:242 "": No such file or directory
+
+This causes KeyboardInterrupt errors in distributed/rpc/test_share_memory
+
+See https://github.com/pytorch/pytorch/issues/159354
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/third_party/tensorpipe/tensorpipe/channel/cuda_gdr/context_impl.cc b/third_party/tensorpipe/tensorpipe/channel/cuda_gdr/context_impl.cc
+index 182a04a..b26751e 100644
+--- a/third_party/tensorpipe/tensorpipe/channel/cuda_gdr/context_impl.cc
++++ b/third_party/tensorpipe/tensorpipe/channel/cuda_gdr/context_impl.cc
+@@ -239,6 +239,13 @@ size_t getBar1SizeOfGpu(int gpuIdx) {
+ 
+   struct stat bar1Stats;
+   int rv = ::stat(pciPath.c_str(), &bar1Stats);
++  if (rv < 0 && errno == ENOENT) {
++    // Some GPUs use 64 bit BARs using 2 slots each,
++    // so the BAR 0 spans slots 0 & 1 and BAR 1 is at slots 2 & 3
++    TP_VLOG(5) << "GPU #" << gpuIdx << " might has 64 bit BARs";
++    pciPath[pciPath.size() - 1] = '2';
++    rv = ::stat(pciPath.c_str(), &bar1Stats);
++  }
+   TP_THROW_SYSTEM_IF(rv < 0, errno);
+ 
+   return bar1Stats.st_size;
