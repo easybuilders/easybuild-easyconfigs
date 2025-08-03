@@ -1,4 +1,4 @@
-easyblock = 'CMakeMake'
+easyblock = 'ConfigureMake'
 
 name = 'libtommath'
 version = '1.3.0'
@@ -18,20 +18,20 @@ checksums = ['6d099e93ff00fa9b18346f4bcd97dcc48c3e91286f7e16c4ac5515a7171c3149']
 
 builddependencies = [
     ('binutils', '2.44'),
-    ('CMake', '4.0.3'),
+    ('Autotools', '20250527'),  # for libtool
 ]
 
-configopts = [
-    '',
-    '-DBUILD_SHARED_LIBS=ON'
-]
+skipsteps = ['configure']
+
+prebuildopts = 'sed -i -e "s/644 $(LIBNAME)/755 $(LIBNAME)/g" makefile.shared && '
+buildopts = ['-f makefile.shared ', '-f makefile ']
+installopts = ['-f makefile.shared PREFIX=%(installdir)s ', '-f makefile PREFIX=%(installdir)s ']
 
 sanity_check_paths = {
     'files': ['include/tommath.h',
               'lib/libtommath.a',
               f'lib/libtommath.{SHLIB_EXT}'],
-    'dirs': ['lib/cmake/libtommath',
-             'lib/pkgconfig'],
+    'dirs': ['lib/pkgconfig'],
 }
 
 moduleclass = 'lib'
