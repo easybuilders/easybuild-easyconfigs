@@ -1,0 +1,53 @@
+easyblock = 'CMakeMake'
+
+name = 'NLopt'
+version = '2.10.0'
+
+homepage = 'https://nlopt.readthedocs.io/en/latest/'
+description = """ NLopt is a free/open-source library for nonlinear optimization,
+ providing a common interface for a number of different free optimization routines
+ available online as well as original implementations of various other algorithms. """
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/stevengj/nlopt/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['506f83a9e778ad4f204446e99509cb2bdf5539de8beccc260a014bd560237be1']
+
+builddependencies = [
+    ('CMake', '3.31.0'),
+    ('binutils', '2.40'),
+    ('numpy', '2.1.1'),
+    ('SWIG', '4.2.1'),
+]
+multi_deps = {'Python': ['3.11', '3.11', '3.12', '3.12', '3.13', '3.13'] }
+modextrapaths = {
+	'EBPYTHONPREFIXES': '',
+}
+
+local_configopts = '-DNLOPT_PYTHON=ON -DPython_EXECUTABLE=$EBROOTPYTHON/bin/python '
+configopts = [
+    '-DBUILD_SHARED_LIBS=ON ' + local_configopts,
+    '-DBUILD_SHARED_LIBS=OFF ' + local_configopts,
+    '-DBUILD_SHARED_LIBS=ON ' + local_configopts,
+    '-DBUILD_SHARED_LIBS=OFF ' + local_configopts,
+    '-DBUILD_SHARED_LIBS=ON ' + local_configopts,
+    '-DBUILD_SHARED_LIBS=OFF ' + local_configopts,
+]
+postinstallcmds = ['/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --add_path %(installdir)s/lib']
+
+sanity_check_paths = {
+    'files': ['lib/libnlopt.a', 'lib/libnlopt.%s' % SHLIB_EXT, 'include/nlopt.h'],
+    'dirs': ['lib'],
+    'dirs': [
+        'lib/pkgconfig',
+        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+sanity_check_commands = ["module load scipy-stack; python -c 'import nlopt'"]
+
+moduleclass = 'numlib'
+#modluafooter = """
+#depends_on("scipy-stack")
+#"""
