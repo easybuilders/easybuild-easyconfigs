@@ -1,0 +1,27 @@
+easyblock = 'Toolchain'
+
+name = 'gmpflf'
+version = '2024.06'
+
+homepage = '(none)'
+description = """GNU Compiler Collection (GCC) based compiler toolchain, including
+ MPICH for MPI support, FlexiBLAS (OpenBLAS and LAPACK), FFTW and ScaLAPACK."""
+
+toolchain = SYSTEM
+
+local_gccver = '12.3.0'
+
+# toolchain used to build gmpflf dependencies
+local_comp_mpi_tc = ('gmpich', version)
+
+# we need GCC and MPICH as explicit dependencies instead of gompi toolchain
+# because of toolchain preparation functions
+dependencies = [
+    ('GCC', local_gccver),
+    ('MPICH', '4.2.1', '', ('GCC', local_gccver)),
+    ('FlexiBLAS', '3.3.1', '', ('GCC', local_gccver)),
+    ('FFTW', '3.3.10', '', ('GCC', local_gccver)),
+    ('FFTW.MPI', '3.3.10', '', local_comp_mpi_tc),
+    ('ScaLAPACK', '2.2.0', '-fb', local_comp_mpi_tc),
+]
+moduleclass = 'toolchain'
