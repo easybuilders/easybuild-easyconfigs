@@ -1,0 +1,27 @@
+--- AmberTools/src/pytraj/CMakeLists.txt.orig	2025-05-02 01:57:25.964702744 +0000
++++ AmberTools/src/pytraj/CMakeLists.txt	2025-05-03 02:58:36.196355776 +0000
+@@ -24,7 +24,7 @@
+ endif()
+ 
+ #------------------------------------------------------------------------------------------
+-
++set(ENV{CPPTRAJHOME} ${CMAKE_CURRENT_SOURCE_DIR}/../cpptraj)
+ set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/python-build)
+ set(STAMP_FILE ${BUILD_DIR}/pytraj-build.stamp)
+ set(LIBDIR_FILE ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/libcpptraj.location)
+@@ -62,12 +62,13 @@
+ 	${FIX_BACKSLASHES_CMD}
+ 	execute_process(
+     COMMAND \"${CMAKE_COMMAND}\" -E env  --unset=AMBERHOME
+-    \"CPPTRAJ_HEADERDIR=${CMAKE_CURRENT_SOURCE_DIR}/../cpptraj/src\" \"CPPTRAJ_LIBDIR=\${CPPTRAJ_LIBDIR}\"
++    \"CPPTRAJ_HEADERDIR=${CMAKE_CURRENT_SOURCE_DIR}/../cpptraj/src\"
++    \"CPPTRAJ_LIBDIR=\${CPPTRAJ_LIBDIR}\" \"CPPTRAJHOME=${CMAKE_CURRENT_SOURCE_DIR}/../cpptraj\"
+     \"CXX=${CMAKE_CXX_COMPILER}\"
+     \"CC=${CMAKE_C_COMPILER}\"
+     ${RPATH_ARG}
+     ${PYTHONPATH_SET_CMD}
+-	${PYTHON_EXECUTABLE} ./setup.py build -b ${BUILD_DIR} ${OPENMP_ARG} ${PYTHON_COMPILER_ARG} ${WIN64_DEFINE_ARG} install -f ${PYTHON_PREFIX_ARG} --single-version-externally-managed --root /
++    ${PYTHON_EXECUTABLE} -m pip install --force-reinstall --no-deps --root / ${PYTHON_PREFIX_ARG} .
+     WORKING_DIRECTORY \"${CMAKE_CURRENT_SOURCE_DIR}\")")
+ 
+ add_subdirectory(tests)
