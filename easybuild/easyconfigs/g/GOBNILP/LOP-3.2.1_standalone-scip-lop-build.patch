@@ -1,0 +1,41 @@
+Build LOP example standalone without triggering a full build of SCIP
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- Makefile.orig	2023-03-31 18:52:55.793723000 +0200
++++ Makefile	2023-03-31 18:54:59.590029000 +0200
+@@ -29,6 +29,7 @@
+ #-----------------------------------------------------------------------------
+ 
+ include $(SCIPDIR)/make/make.project
++OBJDIR		=	obj
+ 
+ #-----------------------------------------------------------------------------
+ # Main Program
+@@ -39,9 +40,9 @@
+ MAINSRC		=	$(addprefix $(SRCDIR)/,$(MAINOBJ:.o=.c))
+ MAINDEP		=	$(SRCDIR)/depend.cmain.$(OPT)
+ 
+-MAIN		=	$(MAINNAME).$(BASE).$(LPS)$(EXEEXTENSION)
++MAIN		=	$(MAINNAME)
+ MAINFILE	=	$(BINDIR)/$(MAIN)
+-MAINSHORTLINK	=	$(BINDIR)/$(MAINNAME)
++MAINSHORTLINK	=	$(MAINNAME)
+ MAINOBJFILES	=	$(addprefix $(OBJDIR)/,$(MAINOBJ))
+ 
+ #-----------------------------------------------------------------------------
+@@ -79,7 +80,6 @@
+ 
+ $(MAINSHORTLINK):	$(MAINFILE)
+ 		@rm -f $@
+-		cd $(dir $@) && ln -s $(notdir $(MAINFILE)) $(notdir $@)
+ 
+ $(OBJDIR):
+ 		@-mkdir -p $(OBJDIR)
+@@ -123,7 +123,7 @@
+ 
+ 
+ # main target
+-$(MAINFILE):	$(BINDIR) $(OBJDIR) $(SCIPLIBFILE) $(LPILIBFILE) $(NLPILIBFILE) $(MAINOBJFILES)
++$(MAINFILE):	$(BINDIR) $(OBJDIR) $(MAINOBJFILES)
+ 		@echo "-> linking $@"
+ ifeq ($(VERBOSE),true)
+ 		$(LINKCXX) $(MAINOBJFILES) \

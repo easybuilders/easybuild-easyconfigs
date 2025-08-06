@@ -1,0 +1,22 @@
+This test is flaky when run with the type float16.
+I.e. TestNNDeviceTypeCPU.test_embedding_bag_device_cpu_int32_int32_float16 & 
+     TestNNDeviceTypeCPU.test_embedding_bag_device_cpu_int64_int64_float16
+fail.
+See https://github.com/pytorch/pytorch/issues/86638
+So remove the half precision test.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/nn/test_embedding.py b/test/nn/test_embedding.py
+index f76e01c65c5..6b5de2b1059 100644
+--- a/test/nn/test_embedding.py
++++ b/test/nn/test_embedding.py
+@@ -1108,7 +1108,7 @@ class TestEmbeddingNNDeviceType(NNTestCase):
+             self.assertRaises(RuntimeError, lambda: es(input.view(-1), offset))
+ 
+     @skipMeta
+-    @dtypes(*itertools.product((torch.int, torch.long), (torch.int, torch.long), (torch.float, torch.double, torch.half)))
++    @dtypes(*itertools.product((torch.int, torch.long), (torch.int, torch.long), (torch.float, torch.double)))
+     def test_embedding_bag_device(self, device, dtypes):
+         with set_default_dtype(torch.double):
+             self._test_EmbeddingBag(device, 'sum', False, wdtype=dtypes[2], dtype=dtypes[0], odtype=dtypes[1])

@@ -1,9 +1,9 @@
 Make CUDA/ROCm plugins link against the existing ucs/ucm/uct libraries.
 
 Åke Sandgren, Mikael Öhman 2021-08-09
-diff -ru ucx-1.11.0.orig/configure.ac ucx-1.11.0/configure.ac
---- ucx-1.11.0.orig/configure.ac	2021-06-26 02:05:59.632558898 +0200
-+++ ucx-1.11.0/configure.ac	2021-06-26 02:08:39.330081752 +0200
+diff -ru ucx-1.11.2.orig/configure.ac ucx-1.11.2/configure.ac
+--- ucx-1.11.2.orig/configure.ac	2021-09-23 22:36:08.000000000 +0200
++++ ucx-1.11.2/configure.ac	2023-01-03 10:29:43.816777145 +0100
 @@ -29,13 +29,13 @@
  AC_GNU_SOURCE
  AC_CONFIG_HEADERS([config.h])
@@ -25,9 +25,9 @@ diff -ru ucx-1.11.0.orig/configure.ac ucx-1.11.0/configure.ac
  
  AH_TOP([
  #ifndef UCX_CONFIG_H
-diff -ru ucx-1.11.0.orig/src/ucm/cuda/Makefile.am ucx-1.11.0/src/ucm/cuda/Makefile.am
---- ucx-1.11.0.orig/src/ucm/cuda/Makefile.am	2021-08-09 19:14:56.904346018 +0200
-+++ ucx-1.11.0/src/ucm/cuda/Makefile.am	2021-08-09 19:15:22.472286262 +0200
+diff -ru ucx-1.11.2.orig/src/ucm/cuda/Makefile.am ucx-1.11.2/src/ucm/cuda/Makefile.am
+--- ucx-1.11.2.orig/src/ucm/cuda/Makefile.am	2021-07-10 09:59:16.000000000 +0200
++++ ucx-1.11.2/src/ucm/cuda/Makefile.am	2023-01-03 10:29:43.816777145 +0100
 @@ -9,7 +9,7 @@
  module_LTLIBRARIES      = libucm_cuda.la
  libucm_cuda_la_CPPFLAGS = $(BASE_CPPFLAGS) $(CUDA_CPPFLAGS)
@@ -37,9 +37,21 @@ diff -ru ucx-1.11.0.orig/src/ucm/cuda/Makefile.am ucx-1.11.0/src/ucm/cuda/Makefi
  libucm_cuda_la_LDFLAGS  = $(UCM_MODULE_LDFLAGS) \
                            $(patsubst %, -Xlinker %, $(CUDA_LDFLAGS)) \
                            -version-info $(SOVERSION)
-diff -ru ucx-1.11.0.orig/src/uct/cuda/Makefile.am ucx-1.11.0/src/uct/cuda/Makefile.am
---- ucx-1.11.0.orig/src/uct/cuda/gdr_copy/Makefile.am	2021-08-09 19:16:59.146060323 +0200
-+++ ucx-1.11.0/src/uct/cuda/gdr_copy/Makefile.am	2021-08-09 19:17:27.915993083 +0200
+diff -ru ucx-1.11.2.orig/src/ucm/rocm/Makefile.am ucx-1.11.2/src/ucm/rocm/Makefile.am
+--- ucx-1.11.2.orig/src/ucm/rocm/Makefile.am	2021-02-27 02:18:15.000000000 +0100
++++ ucx-1.11.2/src/ucm/rocm/Makefile.am	2023-01-03 10:32:04.931602717 +0100
+@@ -10,7 +10,7 @@
+ module_LTLIBRARIES      = libucm_rocm.la
+ libucm_rocm_la_CPPFLAGS = $(BASE_CPPFLAGS) $(ROCM_CPPFLAGS)
+ libucm_rocm_la_CFLAGS   = $(BASE_CFLAGS) $(ROCM_CFLAGS)
+-libucm_rocm_la_LIBADD   = ../libucm.la
++libucm_rocm_la_LIBADD   = -lucm
+ libucm_rocm_la_LDFLAGS  = $(UCM_MODULE_LDFLAGS) \
+                           $(ROCM_LDFLAGS) $(ROCM_LIBS) -version-info $(SOVERSION) \
+                           $(patsubst %, -Xlinker %, -L$(ROCM_ROOT)/lib -rpath $(ROCM_ROOT)/hip/lib -rpath $(ROCM_ROOT)/lib) \
+diff -ru ucx-1.11.2.orig/src/uct/cuda/gdr_copy/Makefile.am ucx-1.11.2/src/uct/cuda/gdr_copy/Makefile.am
+--- ucx-1.11.2.orig/src/uct/cuda/gdr_copy/Makefile.am	2021-07-10 09:59:16.000000000 +0200
++++ ucx-1.11.2/src/uct/cuda/gdr_copy/Makefile.am	2023-01-03 10:29:43.816777145 +0100
 @@ -10,7 +10,7 @@
  libuct_cuda_gdrcopy_la_CFLAGS   = $(BASE_CFLAGS)
  libuct_cuda_gdrcopy_la_LDFLAGS  = $(CUDA_LDFLAGS) $(GDR_COPY_LDFLAGS) \
@@ -48,10 +60,10 @@ diff -ru ucx-1.11.0.orig/src/uct/cuda/Makefile.am ucx-1.11.0/src/uct/cuda/Makefi
 +libuct_cuda_gdrcopy_la_LIBADD   = -lucs \
                                    $(top_builddir)/src/uct/cuda/libuct_cuda.la \
                                    $(CUDA_LIBS)
-
-diff -ru ucx-1.11.0.orig/src/uct/cuda/gdr_copy/Makefile.am ucx-1.11.0/src/uct/cuda/gdr_copy/Makefile.am
---- ucx-1.11.0.orig/src/uct/cuda/Makefile.am	2021-08-09 19:16:06.472183427 +0200
-+++ ucx-1.11.0/src/uct/cuda/Makefile.am	2021-08-09 19:16:38.201109272 +0200
+ 
+diff -ru ucx-1.11.2.orig/src/uct/cuda/Makefile.am ucx-1.11.2/src/uct/cuda/Makefile.am
+--- ucx-1.11.2.orig/src/uct/cuda/Makefile.am	2021-07-10 09:59:16.000000000 +0200
++++ ucx-1.11.2/src/uct/cuda/Makefile.am	2023-01-03 10:29:43.816777145 +0100
 @@ -11,8 +11,8 @@
  libuct_cuda_la_CPPFLAGS = $(BASE_CPPFLAGS) $(CUDA_CPPFLAGS)
  libuct_cuda_la_CFLAGS   = $(BASE_CFLAGS) $(CUDA_CFLAGS)
@@ -63,4 +75,16 @@ diff -ru ucx-1.11.0.orig/src/uct/cuda/gdr_copy/Makefile.am ucx-1.11.0/src/uct/cu
                            $(CUDA_LIBS)
  
  noinst_HEADERS = \
-
+diff -ru ucx-1.11.2.orig/src/uct/rocm/Makefile.am ucx-1.11.2/src/uct/rocm/Makefile.am
+--- ucx-1.11.2.orig/src/uct/rocm/Makefile.am	2021-02-27 02:18:15.000000000 +0100
++++ ucx-1.11.2/src/uct/rocm/Makefile.am	2023-01-03 10:31:38.195822390 +0100
+@@ -10,8 +10,7 @@
+ module_LTLIBRARIES      = libuct_rocm.la
+ libuct_rocm_la_CPPFLAGS = $(BASE_CPPFLAGS) $(ROCM_CPPFLAGS)
+ libuct_rocm_la_CFLAGS   = $(BASE_CFLAGS)
+-libuct_rocm_la_LIBADD   = $(top_builddir)/src/ucs/libucs.la \
+-                          $(top_builddir)/src/uct/libuct.la
++libuct_rocm_la_LIBADD   = -lucs -luct
+ libuct_rocm_la_LDFLAGS  = $(ROCM_LDFLAGS) $(ROCM_LIBS) -version-info $(SOVERSION) \
+                           $(patsubst %, -Xlinker %, -L$(ROCM_ROOT)/lib -rpath $(ROCM_ROOT)/hip/lib -rpath $(ROCM_ROOT)/lib) \
+                           $(patsubst %, -Xlinker %, --enable-new-dtags) \

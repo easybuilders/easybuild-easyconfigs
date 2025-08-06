@@ -1,0 +1,59 @@
+easyblock = 'Tarball'
+
+name = 'DAS_Tool'
+version = '1.1.3'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://github.com/cmks/DAS_Tool'
+description = """DAS Tool is an automated method that integrates the results of a flexible number of binning
+ algorithms to calculate an optimized, non-redundant set of bins from a single assembly."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = ['https://github.com/cmks/DAS_Tool/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['DAS_Tool-1.1.1-deafaultSearchEngBLAST.patch']
+checksums = [
+    'c2d41a38a7a92d53d412ac3f2b8ab5b9fa64c56021aa5c4dd51fefd7c96b68f4',  # 1.1.3.tar.gz
+    'dc89e6ab7129d170d24da28720cec0937b4d958b5ae46049373d57dde8b8a27a',  # DAS_Tool-1.1.1-deafaultSearchEngBLAST.patch
+]
+
+dependencies = [
+    ('R', '4.1.0'),
+    ('Python', '3.9.5'),
+    ('Ruby', '3.0.1'),
+    ('pullseq', '1.0.2'),
+    ('prodigal', '2.6.3'),
+    ('BLAST+', '2.11.0'),
+]
+
+exts_defaultclass = 'RPackage'
+
+exts_list = [
+    (name, version, {
+        'modulename': 'DASTool',
+        'source_tmpl': 'DASTool_%(version)s.tar.gz',
+        'source_urls': ['https://github.com/cmks/DAS_Tool/raw/%(version)s/package/'],
+        'checksums': ['050ba4fa061ceb398a6881652b4b5f14736581a35edd00ef9ae4cea986f38d18'],
+    }),
+]
+
+postinstallcmds = [
+    "cd %(installdir)s && unzip db.zip -d db",
+    "chmod a+x %(installdir)s/DAS_Tool",
+]
+
+sanity_check_paths = {
+    'files': ['DAS_Tool', 'db/arc.all.faa', 'db/arc.scg.lookup'],
+    'dirs': ['DASTool/R'],
+}
+
+# Help gets printed correctly, but the error code is 1
+sanity_check_commands = ['DAS_Tool -h | grep "DAS Tool version %s"' % version]
+
+modextrapaths = {
+    'PATH': '',
+    'R_LIBS_SITE': '',
+}
+
+moduleclass = 'bio'
