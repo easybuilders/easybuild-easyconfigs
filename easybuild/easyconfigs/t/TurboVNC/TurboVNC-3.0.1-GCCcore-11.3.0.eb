@@ -1,0 +1,66 @@
+easyblock = 'CMakeMake'
+
+name = 'TurboVNC'
+version = '3.0.1'
+
+homepage = 'https://www.turbovnc.org'
+description = """TurboVNC is a derivative of VNC (Virtual Network Computing) that is tuned to provide
+ peak performance for 3D and video workloads."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/TurboVNC/turbovnc/archive']
+sources = ['%(version)s.tar.gz']
+patches = ['TurboVNC-%(version)s_fix-libX11-libs.patch']
+checksums = [
+    'f0bd45e4e6f8cb8a52b5ccdef70fbc28ba8776591554c166db113eedc914dd86',  # 3.0.1.tar.gz
+    '11acc18ae10355c7c6816fad0a68ed55fbcb7a04efd30740c619a1d82ecbd4c2',  # TurboVNC-3.0.1_fix-libX11-libs.patch
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('X11', '20220504'),
+    ('pixman', '0.40.0'),
+    ('libjpeg-turbo', '2.1.3'),
+    ('Mesa', '22.0.3'),
+    ('libGLU', '9.0.2'),
+    ('libglvnd', '1.4.0'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+osdependencies = [
+    ('pam-devel', 'libpam0g-dev'),
+]
+
+configopts = "-DTVNC_BUILDJAVA=0 -DTVNC_SYSTEMX11=1 "
+configopts += "-DX11_X11_LIB=$EBROOTX11/lib/libX11.%s " % SHLIB_EXT
+configopts += "-DX11_Xau_LIB=$EBROOTX11/lib/libXau.%s " % SHLIB_EXT
+configopts += "-DX11_SM_LIB=$EBROOTX11/lib/libSM.%s " % SHLIB_EXT
+configopts += "-DX11_ICE_LIB=$EBROOTX11/lib/libICE.%s " % SHLIB_EXT
+configopts += "-DX11_Pixman_LIB=$EBROOTPIXMAN/lib/libpixman-1.%s.0 " % SHLIB_EXT
+configopts += "-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s " % SHLIB_EXT
+configopts += "-DOPENGL_egl_LIBRARY=$EBROOTLIBGLVND/lib/libEGL.%s " % SHLIB_EXT
+configopts += "-DOPENGL_opengl_LIBRARY=$EBROOTLIBGLVND/lib/libOpenGL.%s " % SHLIB_EXT
+configopts += "-DOPENGL_glx_LIBRARY=$EBROOTLIBGLVND/lib/libGLX.%s " % SHLIB_EXT
+
+# if installdir starts with /opt, i.e. /opt/xxx, CMake will set SYSCONFDIR to /etc/opt/xxx instead of /opt/xxx/etc
+# https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html
+# the solution is to define CMAKE_INSTALL_SYSCONFDIR explicitly
+configopts += "-DCMAKE_INSTALL_SYSCONFDIR=%(installdir)s/etc "
+
+# remove etc/turbovncserver-security.conf, to avoid errors like:
+# (EE) Fatal server error:
+# (EE) ERROR: .../TurboVNC/2.2.3-GCCcore-8.2.0/etc/turbovncserver-security.conf must be owned by you or by root
+postinstallcmds = ["rm -rf %(installdir)s/etc/turbovncserver-security.conf"]
+
+sanity_check_paths = {
+    'files': ['bin/vncserver', 'bin/vncpasswd', 'bin/Xvnc'],
+    'dirs': [],
+}
+
+moduleclass = 'vis'

@@ -1,0 +1,53 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'PAPI'
+version = '7.0.0'
+
+homepage = 'https://icl.cs.utk.edu/projects/papi/'
+
+description = """
+ PAPI provides the tool designer and application engineer with a consistent
+ interface and methodology for use of the performance counter hardware found
+ in most major microprocessors. PAPI enables software engineers to see, in near
+ real time, the relation between software performance and processor events.
+ In addition Component PAPI provides access to a collection of components
+ that expose performance measurement opportunites across the hardware and
+ software stack.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ['https://icl.cs.utk.edu/projects/papi/downloads/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-%(version)s_fix-compile-warning.patch']
+checksums = [
+    '799dcc317a47da96beaeed445812ecb6ae49df7c0504a4569797c1f7d74c4fd2',
+    {'PAPI-7.0.0_fix-compile-warning.patch': 'a5d2b266669d55cb0280b4c2fed1a53c7705eb5bad7fc7d247a414e81b3f65a8'},
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+]
+
+start_dir = 'src'
+
+configopts = "--with-components=rapl "  # for energy measurements
+
+# There is also "fulltest" that is a superset of "test" but hangs on some processors
+# indefinitely with a defunct `make` process. So use only "test".
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ["bin/papi_%s" % x
+              for x in ["avail", "clockres", "command_line", "component_avail",
+                        "cost", "decode", "error_codes", "event_chooser",
+                        "mem_info", "multiplex_cost", "native_avail",
+                        "version", "xml_event_info"]],
+    'dirs': [],
+}
+
+moduleclass = 'perf'

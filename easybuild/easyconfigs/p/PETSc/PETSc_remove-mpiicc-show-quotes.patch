@@ -1,0 +1,18 @@
+The PETSc configuration script relies on the output of the command
+"mpicc/mpiicc -show". For some versions of mpiicc, that command prints
+include and link paths between double quotes, which confuses the PETSc
+configuration script. This patch removes the double quotes again and should
+only be necessary when using mpiicc newer than 2021a.
+Author: Steven Vandenbrande
+diff -Nru config/PETSc/Configure.py.back config/PETSc/Configure.py`
+--- config/PETSc/Configure.py.back	2023-02-09 14:59:14.086680000 +0100
++++ config/PETSc/Configure.py	2023-02-09 14:59:03.095892000 +0100
+@@ -251,7 +251,7 @@
+     compiler = self.setCompilers.getCompiler()
+     if [s for s in ['mpicc','mpiicc'] if os.path.basename(compiler).find(s)>=0]:
+       try:
+-        output   = self.executeShellCommand(compiler + ' -show', log = self.log)[0]
++        output   = self.executeShellCommand(compiler + ' -show', log = self.log)[0].replace('"', '')
+         compiler = output.split(' ')[0]
+         self.addDefine('MPICC_SHOW','"'+output.strip().replace('\n','\\\\n')+'"')
+       except:

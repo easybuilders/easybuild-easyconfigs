@@ -1,0 +1,484 @@
+fix for: ValueError: invalid mode: 'rU'
+see also https://github.com/merenlab/anvio/commit/a974118fc6f1b53c846892fc6dee0a86e6658963
+and https://github.com/merenlab/anvio/commit/ac5908eac71809b31f3bd0ff92bbb573cc17f730
+
+From a974118fc6f1b53c846892fc6dee0a86e6658963 Mon Sep 17 00:00:00 2001
+From: "A. Murat Eren" <a.murat.eren@gmail.com>
+Date: Wed, 25 Oct 2023 16:09:42 +0200
+Subject: [PATCH] rU -> r.
+
+we will see tonight if things explode and we will blame meren for that.
+---
+ anvio/cogs.py                       |  6 +++---
+ anvio/dbops.py                      |  4 ++--
+ anvio/drivers/emapper.py            |  2 +-
+ anvio/fastalib.py                   |  2 +-
+ anvio/filesnpaths.py                |  8 ++++----
+ anvio/interactive.py                |  2 +-
+ anvio/kegg.py                       | 14 +++++++-------
+ anvio/mcgclassifier.py              |  4 ++--
+ anvio/merger.py                     |  2 +-
+ anvio/panops.py                     |  2 +-
+ anvio/parsers/kaiju.py              |  2 +-
+ anvio/profiler.py                   |  2 +-
+ anvio/programs.py                   |  2 +-
+ anvio/samplesops.py                 |  4 ++--
+ anvio/structureops.py               |  2 +-
+ anvio/variabilityops.py             |  2 +-
+ anvio/workflows/__init__.py         |  2 +-
+ bin/anvi-export-structures          |  2 +-
+ bin/anvi-get-sequences-for-hmm-hits |  2 +-
+ 19 files changed, 33 insertions(+), 33 deletions(-)
+
+diff --git a/anvio/cogs.py b/anvio/cogs.py
+index c14041a710..1700af254d 100644
+--- a/anvio/cogs.py
++++ b/anvio/cogs.py
+@@ -702,7 +702,7 @@ def raise_error(line_num, line_content, fields, e):
+         p_id_without_cog_id = set([])
+ 
+         line_counter = 0
+-        for line in open(input_file_path, 'rU').readlines():
++        for line in open(input_file_path, 'r').readlines():
+             line_counter += 1
+ 
+             if line_counter % 500 == 0:
+@@ -823,7 +823,7 @@ def format_categories(self, input_file_path, output_file_path):
+         progress.update('...')
+ 
+         output = open(output_file_path, 'w')
+-        for line in open(input_file_path, 'rU').readlines():
++        for line in open(input_file_path, 'r').readlines():
+             if line.startswith('#'):
+                 continue
+ 
+@@ -951,7 +951,7 @@ def check_raw_data_hash_and_existence(self, input_file_path, output_file_path):
+ 
+         # Get a dictionnary of checksums, the file is formatted as "checksum filename" per line
+         checksums = {}
+-        for line in open(input_file_path, 'rU').readlines():
++        for line in open(input_file_path, 'r').readlines():
+             stripped = line.strip('\n').split(' ')
+             file_name = stripped[-1].strip('*')
+             checksums[file_name] = stripped[0]
+diff --git a/anvio/dbops.py b/anvio/dbops.py
+index 34e3198a8a..ce700b784d 100644
+--- a/anvio/dbops.py
++++ b/anvio/dbops.py
+@@ -4335,7 +4335,7 @@ def create(self, args):
+ 
+         if description_file_path:
+             filesnpaths.is_file_plain_text(description_file_path)
+-            description = open(os.path.abspath(description_file_path), 'rU').read()
++            description = open(os.path.abspath(description_file_path), 'r').read()
+         else:
+             description = ''
+ 
+@@ -4957,7 +4957,7 @@ def get_description_in_db(anvio_db_path, run=run):
+ 
+ def update_description_in_db_from_file(anvio_db_path, description_file_path, run=run):
+     filesnpaths.is_file_plain_text(description_file_path)
+-    description = open(os.path.abspath(description_file_path), 'rU').read()
++    description = open(os.path.abspath(description_file_path), 'r').read()
+ 
+     update_description_in_db(anvio_db_path, description, run=run)
+ 
+diff --git a/anvio/drivers/emapper.py b/anvio/drivers/emapper.py
+index 7ea2d8fa53..dd94e9baa8 100644
+--- a/anvio/drivers/emapper.py
++++ b/anvio/drivers/emapper.py
+@@ -357,7 +357,7 @@ def populate_annotations_dict(self, annotations_file_path):
+ 
+         num_entries_processed = 0
+         self.progress.new('Parsing the annotations file')
+-        for line in open(annotations_file_path, 'rU').readlines():
++        for line in open(annotations_file_path, 'r').readlines():
+             if line.startswith('#') or line == '\n':
+                 continue
+ 
+diff --git a/anvio/fastalib.py b/anvio/fastalib.py
+index 2da45c16f0..0980098ae7 100644
+--- a/anvio/fastalib.py
++++ b/anvio/fastalib.py
+@@ -97,7 +97,7 @@ def __init__(self, fasta_file_path, lazy_init=True, unique=False, allow_mixed_ca
+         if self.compressed:
+             self.file_pointer = gzip.open(self.fasta_file_path, mode="rt")
+         else:
+-            self.file_pointer = io.open(self.fasta_file_path, 'rU', newline='')
++            self.file_pointer = io.open(self.fasta_file_path, 'r', newline='')
+ 
+         if not self.file_pointer.read(1) == '>':
+             self.file_pointer.close()
+diff --git a/anvio/filesnpaths.py b/anvio/filesnpaths.py
+index 93327207de..a9d7939cbc 100644
+--- a/anvio/filesnpaths.py
++++ b/anvio/filesnpaths.py
+@@ -73,7 +73,7 @@ def is_proper_external_gene_calls_file(file_path):
+     headers_proper = ['gene_callers_id', 'contig', 'start', 'stop', 'direction', 'partial', 'call_type', 'source', 'version', 'aa_sequence']
+     call_types_allowed = set(list(constants.gene_call_types.values()))
+ 
+-    with open(file_path, 'rU') as input_file:
++    with open(file_path, 'r') as input_file:
+         headers = input_file.readline().strip().split('\t')
+ 
+         if len(headers) == 10:
+@@ -196,7 +196,7 @@ def is_file_empty(file_path):
+ 
+ def is_file_tab_delimited(file_path, separator='\t', expected_number_of_fields=None, dont_raise=False):
+     is_file_exists(file_path)
+-    f = open(file_path, 'rU')
++    f = open(file_path, 'r')
+ 
+     try:
+         while True:
+@@ -246,7 +246,7 @@ def is_file_json_formatted(file_path):
+     is_file_exists(file_path)
+ 
+     try:
+-        json.load(open(file_path, 'rU'))
++        json.load(open(file_path, 'r'))
+     except ValueError as e:
+         raise FilesNPathsError("File '%s' does not seem to be a properly formatted JSON "
+                            "file ('%s', cries the library)." % (file_path, e))
+@@ -272,7 +272,7 @@ def is_file_plain_text(file_path, dont_raise=False):
+     is_file_exists(file_path)
+ 
+     try:
+-        open(os.path.abspath(file_path), 'rU').read(512)
++        open(os.path.abspath(file_path), 'r').read(512)
+     except IsADirectoryError:
+         if dont_raise:
+             return False
+diff --git a/anvio/interactive.py b/anvio/interactive.py
+index f397c0e56d..1564353064 100644
+--- a/anvio/interactive.py
++++ b/anvio/interactive.py
+@@ -546,7 +546,7 @@ def process_external_item_order(self):
+ 
+         filesnpaths.is_file_exists(self.item_order_path)
+ 
+-        item_order = [l.strip() for l in open(self.item_order_path, 'rU').readlines()]
++        item_order = [l.strip() for l in open(self.item_order_path, 'r').readlines()]
+         self.run.info('Items order', 'An items order with %d items is found at %s.' % (len(item_order), self.item_order_path), mc='cyan')
+ 
+         self.progress.new('External items order')
+diff --git a/anvio/kegg.py b/anvio/kegg.py
+index 13fbaf57b1..4f25761453 100644
+--- a/anvio/kegg.py
++++ b/anvio/kegg.py
+@@ -924,7 +924,7 @@ def process_pathway_file(self):
+         filesnpaths.is_file_exists(self.kegg_pathway_file)
+         filesnpaths.is_file_plain_text(self.kegg_pathway_file)
+ 
+-        f = open(self.kegg_pathway_file, 'rU')
++        f = open(self.kegg_pathway_file, 'r')
+         self.progress.new("Parsing KEGG Pathway file")
+ 
+         current_category = None
+@@ -998,7 +998,7 @@ def get_accessions_from_htext_file(self, htext_file):
+         filesnpaths.is_file_exists(htext_file)
+         filesnpaths.is_file_plain_text(htext_file)
+ 
+-        f = open(htext_file, 'rU')
++        f = open(htext_file, 'r')
+         self.progress.new(f"Parsing KEGG htext file: {htext_file}")
+ 
+         target_level = None
+@@ -1077,7 +1077,7 @@ def download_generic_flat_file(self, accession, download_dir="./"):
+         utils.download_file(self.kegg_rest_api_get + '/' + accession,
+             file_path, progress=self.progress, run=self.run)
+         # verify entire file has been downloaded
+-        f = open(file_path, 'rU')
++        f = open(file_path, 'r')
+         f.seek(0, os.SEEK_END)
+         f.seek(f.tell() - 4, os.SEEK_SET)
+         last_line = f.readline().strip('\n')
+@@ -1146,7 +1146,7 @@ def download_pathways(self):
+             utils.download_file(self.kegg_rest_api_get + '/' + konum,
+                 file_path, progress=self.progress, run=self.run)
+             # verify entire file has been downloaded
+-            f = open(file_path, 'rU')
++            f = open(file_path, 'r')
+             f.seek(0, os.SEEK_END)
+             f.seek(f.tell() - 4, os.SEEK_SET)
+             last_line = f.readline().strip('\n')
+@@ -1528,7 +1528,7 @@ def process_module_file(self):
+         filesnpaths.is_file_exists(self.kegg_module_file)
+         filesnpaths.is_file_plain_text(self.kegg_module_file)
+ 
+-        f = open(self.kegg_module_file, 'rU')
++        f = open(self.kegg_module_file, 'r')
+         self.progress.new("Parsing KEGG Module file")
+ 
+         current_module_type = None
+@@ -1641,7 +1641,7 @@ def confirm_downloaded_modules(self):
+                                   f"on your computer. Very sorry to tell you this, but you need to re-download the KEGG "
+                                   f"data. We recommend the --reset flag.")
+             # verify entire file has been downloaded
+-            f = open(file_path, 'rU')
++            f = open(file_path, 'r')
+             f.seek(0, os.SEEK_END)
+             f.seek(f.tell() - 4, os.SEEK_SET)
+             last_line = f.readline().strip('\n')
+@@ -6677,7 +6677,7 @@ def create(self):
+         for mnum in self.module_dict.keys():
+             self.progress.update("Parsing Module %s" % mnum)
+             mod_file_path = os.path.join(self.module_data_directory, mnum)
+-            f = open(mod_file_path, 'rU')
++            f = open(mod_file_path, 'r')
+ 
+             prev_data_name_field = None
+             module_has_annotation_source = False
+diff --git a/anvio/mcgclassifier.py b/anvio/mcgclassifier.py
+index 2d9f0b0bb3..bd38770778 100644
+--- a/anvio/mcgclassifier.py
++++ b/anvio/mcgclassifier.py
+@@ -92,7 +92,7 @@ def __init__(self, args, run=run, progress=progress):
+         if self.exclude_samples:
+             # check that there is a file like this
+             filesnpaths.is_file_exists(self.exclude_samples)
+-            self.samples_to_exclude = set([l.split('\t')[0].strip() for l in open(self.exclude_samples, 'rU').readlines()])
++            self.samples_to_exclude = set([l.split('\t')[0].strip() for l in open(self.exclude_samples, 'r').readlines()])
+ 
+             if not self.samples_to_exclude:
+                 raise ConfigError("You asked to exclude samples, but provided an empty list.")
+@@ -102,7 +102,7 @@ def __init__(self, args, run=run, progress=progress):
+         if self.include_samples:
+             # check that there is a file like this
+             filesnpaths.is_file_exists(self.include_samples)
+-            self.samples_to_include = set([l.split('\t')[0].strip() for l in open(self.include_samples, 'rU').readlines()])
++            self.samples_to_include = set([l.split('\t')[0].strip() for l in open(self.include_samples, 'r').readlines()])
+ 
+             if not self.samples_to_include:
+                 raise ConfigError("You provided an empty list of samples to include.")
+diff --git a/anvio/merger.py b/anvio/merger.py
+index 0e2aa44480..440f07a592 100644
+--- a/anvio/merger.py
++++ b/anvio/merger.py
+@@ -334,7 +334,7 @@ def sanity_check(self):
+         # do we have a description file?
+         if self.description_file_path:
+             filesnpaths.is_file_plain_text(self.description_file_path)
+-            self.description = open(os.path.abspath(self.description_file_path), 'rU').read()
++            self.description = open(os.path.abspath(self.description_file_path), 'r').read()
+ 
+ 
+     def set_sample_id(self):
+diff --git a/anvio/panops.py b/anvio/panops.py
+index 5cf700d29a..824c2d5ac8 100644
+--- a/anvio/panops.py
++++ b/anvio/panops.py
+@@ -234,7 +234,7 @@ def check_params(self):
+ 
+         if self.description_file_path:
+             filesnpaths.is_file_plain_text(self.description_file_path)
+-            self.description = open(os.path.abspath(self.description_file_path), 'rU').read()
++            self.description = open(os.path.abspath(self.description_file_path), 'r').read()
+ 
+         self.pan_db_path = self.get_output_file_path(self.project_name + '-PAN.db')
+ 
+diff --git a/anvio/parsers/kaiju.py b/anvio/parsers/kaiju.py
+index 4d8f60e60b..057320a42a 100644
+--- a/anvio/parsers/kaiju.py
++++ b/anvio/parsers/kaiju.py
+@@ -62,7 +62,7 @@ def fix_input_file(self, input_file_path):
+ 
+         corrected_temp_file_path = filesnpaths.get_temp_file_path()
+         corrected_temp_file = open(corrected_temp_file_path, 'w')
+-        input_file = open(input_file_path, 'rU')
++        input_file = open(input_file_path, 'r')
+ 
+         num_correct_lines = 0
+         for line in input_file.readlines():
+diff --git a/anvio/profiler.py b/anvio/profiler.py
+index 2a25ec3592..d2facf2a25 100644
+--- a/anvio/profiler.py
++++ b/anvio/profiler.py
+@@ -450,7 +450,7 @@ def init_dirs_and_dbs(self):
+ 
+         if self.description_file_path:
+             filesnpaths.is_file_plain_text(self.description_file_path)
+-            self.description = open(os.path.abspath(self.description_file_path), 'rU').read()
++            self.description = open(os.path.abspath(self.description_file_path), 'r').read()
+ 
+         if self.output_directory:
+             self.output_directory = filesnpaths.check_output_directory(self.output_directory, ok_if_exists=self.overwrite_output_destinations)
+diff --git a/anvio/programs.py b/anvio/programs.py
+index b404d470a9..230f4c248d 100644
+--- a/anvio/programs.py
++++ b/anvio/programs.py
+@@ -55,7 +55,7 @@ def get_until_blank(output):
+ 
+ 
+ def get_meta_information_from_file(file_path, meta_tag):
+-    all_lines = [l.strip() for l in open(file_path, 'rU').readlines()]
++    all_lines = [l.strip() for l in open(file_path, 'r').readlines()]
+ 
+     meta_tag_content = ''
+ 
+diff --git a/anvio/samplesops.py b/anvio/samplesops.py
+index f603df9779..814b0d96f4 100644
+--- a/anvio/samplesops.py
++++ b/anvio/samplesops.py
+@@ -50,7 +50,7 @@ def process_samples_information_file(self, samples_information_path):
+         self.sample_names_in_samples_information_file = filesnpaths.is_proper_samples_information_file(samples_information_path)
+ 
+         self.samples_information_dict, self.aliases_to_attributes_dict = self.convert_samples_information_dict(utils.get_TAB_delimited_file_as_dictionary(samples_information_path))
+-        self.samples_information_default_layer_order = open(samples_information_path, 'rU').readline().strip().split('\t')[1:]
++        self.samples_information_default_layer_order = open(samples_information_path, 'r').readline().strip().split('\t')[1:]
+ 
+         self.run.info('Samples information', 'Loaded for %d samples' % len(self.samples_information_dict), quiet=self.quiet)
+ 
+@@ -122,7 +122,7 @@ def process_single_order_data(self, single_order_path, single_order_name):
+ 
+         filesnpaths.is_file_plain_text(single_order_path)
+ 
+-        single_order_file_content = [l.strip('\n') for l in open(single_order_path, 'rU').readlines()]
++        single_order_file_content = [l.strip('\n') for l in open(single_order_path, 'r').readlines()]
+ 
+         if len(single_order_file_content) != 1:
+             raise SamplesError("The single order file should contain a single line of information. It can't have nothing,\
+diff --git a/anvio/structureops.py b/anvio/structureops.py
+index aa47125fe2..d9a41fcaca 100755
+--- a/anvio/structureops.py
++++ b/anvio/structureops.py
+@@ -1968,7 +1968,7 @@ def get_path(self, gene_callers_id):
+ 
+     def is_header_ok(self):
+         headers_proper = ['gene_callers_id', 'path']
+-        with open(self.path, 'rU') as input_file:
++        with open(self.path, 'r') as input_file:
+             headers = input_file.readline().strip().split('\t')
+             missing_headers = [h for h in headers_proper if h not in headers]
+ 
+diff --git a/anvio/variabilityops.py b/anvio/variabilityops.py
+index c116469a15..deb19b14e3 100644
+--- a/anvio/variabilityops.py
++++ b/anvio/variabilityops.py
+@@ -764,7 +764,7 @@ def sanity_check(self):
+             filesnpaths.is_file_tab_delimited(self.genes_of_interest_path, expected_number_of_fields=1)
+ 
+             try:
+-                self.gene_caller_ids = [int(g.strip()) for g in open(self.genes_of_interest_path, 'rU').readlines()]
++                self.gene_caller_ids = [int(g.strip()) for g in open(self.genes_of_interest_path, 'r').readlines()]
+             except:
+                 raise ConfigError("The gene caller ids anvi'o found in that file does not seem like gene caller "
+                                   "ids anvi'o would use. There is something wrong here :(")
+diff --git a/anvio/workflows/__init__.py b/anvio/workflows/__init__.py
+index ffae6b78dd..828dab9af0 100644
+--- a/anvio/workflows/__init__.py
++++ b/anvio/workflows/__init__.py
+@@ -333,7 +333,7 @@ def dry_run(self, workflow_graph_output_file_path_prefix='workflow'):
+         # we are (it still may be better to do it elsewhere more appropriate .. so
+         # we can look more decent or whatever):
+         if self.save_workflow_graph:
+-            lines = open(log_file_path, 'rU').readlines()
++            lines = open(log_file_path, 'r').readlines()
+ 
+             try:
+                 line_of_interest = [line_no for line_no in range(0, len(lines)) if lines[line_no].startswith('digraph')][0]
+diff --git a/bin/anvi-export-structures b/bin/anvi-export-structures
+index 147f82c346..0f059b74ed 100755
+--- a/bin/anvi-export-structures
++++ b/bin/anvi-export-structures
+@@ -38,7 +38,7 @@ def main(args):
+         raise ConfigError("Pick one of --gene-caller-ids and --genes-of-interest")
+     elif genes_of_interest_path:
+         filesnpaths.is_file_exists(args.genes_of_interest)
+-        genes_of_interest = set(int(g.strip()) for g in open(args.genes_of_interest, 'rU').readlines())
++        genes_of_interest = set(int(g.strip()) for g in open(args.genes_of_interest, 'r').readlines())
+     elif gene_caller_ids:
+         genes_of_interest = set(int(g) for g in gene_caller_ids.split(','))
+     else:
+diff --git a/bin/anvi-get-sequences-for-hmm-hits b/bin/anvi-get-sequences-for-hmm-hits
+index b18183737d..f2fec99652 100755
+--- a/bin/anvi-get-sequences-for-hmm-hits
++++ b/bin/anvi-get-sequences-for-hmm-hits
+@@ -166,7 +166,7 @@ def main(args):
+ 
+     # figure out gene names.. if the user provided a file, use that, otherwhise parse gene names out of the comma-separated text
+     if args.gene_names and filesnpaths.is_file_exists(args.gene_names, dont_raise=True):
+-        gene_names = [g.strip() for g in open(args.gene_names, 'rU').readlines()] if args.gene_names else []
++        gene_names = [g.strip() for g in open(args.gene_names, 'r').readlines()] if args.gene_names else []
+     else:
+         gene_names = [g.strip() for g in args.gene_names.split(',')] if args.gene_names else []
+ 
+From ac5908eac71809b31f3bd0ff92bbb573cc17f730 Mon Sep 17 00:00:00 2001
+From: "A. Murat Eren" <a.murat.eren@gmail.com>
+Date: Wed, 25 Oct 2023 16:06:15 +0200
+Subject: [PATCH] rU is deprecated for a long time
+
+---
+ anvio/utils.py | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/anvio/utils.py b/anvio/utils.py
+index 4e599aaa3..c52888934 100644
+--- a/anvio/utils.py
++++ b/anvio/utils.py
+@@ -850,7 +850,7 @@ def transpose_tab_delimited_file(input_file_path, output_file_path, remove_after
+     filesnpaths.is_file_tab_delimited(input_file_path)
+     filesnpaths.is_output_file_writable(output_file_path)
+ 
+-    file_content = [line.strip('\n').split('\t') for line in open(input_file_path, 'rU').readlines()]
++    file_content = [line.strip('\n').split('\t') for line in open(input_file_path, 'r').readlines()]
+ 
+     output_file = open(output_file_path, 'w')
+     for entry in zip(*file_content):
+@@ -1048,7 +1048,7 @@ def get_column_data_from_TAB_delim_file(input_file_path, column_indices=[], expe
+     for index in column_indices:
+         d[index] = []
+ 
+-    with open(input_file_path, "rU") as input_file:
++    with open(input_file_path, "r") as input_file:
+         for line in input_file.readlines():
+             fields = line.strip('\n').split(separator)
+ 
+@@ -1066,9 +1066,9 @@ def get_columns_of_TAB_delim_file(file_path, include_first_column=False):
+     filesnpaths.is_file_exists(file_path)
+ 
+     if include_first_column:
+-        return open(file_path, 'rU').readline().strip('\n').split('\t')
++        return open(file_path, 'r').readline().strip('\n').split('\t')
+     else:
+-        return open(file_path, 'rU').readline().strip('\n').split('\t')[1:]
++        return open(file_path, 'r').readline().strip('\n').split('\t')[1:]
+ 
+ 
+ def get_names_order_from_newick_tree(newick_tree, newick_format=1, reverse=False, names_with_only_digits_ok=False):
+@@ -1095,7 +1095,7 @@ def get_vectors_from_TAB_delim_matrix(file_path, cols_to_return=None, rows_to_re
+     id_to_sample_dict = {}
+     sample_to_id_dict = {}
+ 
+-    input_matrix = open(file_path, 'rU')
++    input_matrix = open(file_path, 'r')
+     columns = input_matrix.readline().strip('\n').split('\t')[1:]
+ 
+     fields_of_interest = []
+@@ -1489,7 +1489,7 @@ def get_gene_caller_ids_from_args(gene_caller_ids, delimiter=','):
+     gene_caller_ids_set = set([])
+     if gene_caller_ids:
+         if os.path.exists(gene_caller_ids):
+-            gene_caller_ids_set = set([g.strip() for g in open(gene_caller_ids, 'rU').readlines()])
++            gene_caller_ids_set = set([g.strip() for g in open(gene_caller_ids, 'r').readlines()])
+         else:
+             gene_caller_ids_set = set([g.strip() for g in gene_caller_ids.split(delimiter)])
+ 
+@@ -1764,7 +1764,7 @@ def concatenate_files(dest_file, file_list, remove_concatenated_files=False):
+ 
+     dest_file_obj = open(dest_file, 'w')
+     for chunk_path in file_list:
+-        for line in open(chunk_path, 'rU'):
++        for line in open(chunk_path, 'r'):
+             dest_file_obj.write(line)
+ 
+     dest_file_obj.close()
+@@ -3547,7 +3547,7 @@ def get_TAB_delimited_file_as_dictionary(file_path, expected_fields=None, dict_t
+     failed_lines = []
+     column_mapping_for_line_failed = None
+ 
+-    f = open(file_path, 'rU')
++    f = open(file_path, 'r')
+ 
+     # learn the number of fields and reset the file:
+     num_fields = len(f.readline().strip('\n').split(separator))

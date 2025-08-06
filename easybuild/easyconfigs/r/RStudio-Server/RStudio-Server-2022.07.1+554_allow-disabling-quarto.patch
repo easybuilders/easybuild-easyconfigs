@@ -1,0 +1,46 @@
+From 9b7ac4b2952a47568d23f6cbfed4a797798ee161 Mon Sep 17 00:00:00 2001
+From: Kevin Ushey <kevinushey@gmail.com>
+Date: Fri, 19 Aug 2022 10:01:14 -0700
+Subject: [PATCH] make it possible to control QUARTO_ENABLED from command line
+
+---
+ CMakeGlobals.txt | 26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
+
+diff --git a/CMakeGlobals.txt b/CMakeGlobals.txt
+index 6dfe1017a9a..cbd8e865672 100644
+--- a/CMakeGlobals.txt
++++ b/CMakeGlobals.txt
+@@ -244,18 +244,20 @@ if(LINUX AND EXISTS "/etc/centos-release")
+ endif()
+ 
+ # quarto support
+-if(LINUX AND UNAME_M STREQUAL aarch64)
+-   # disabled on linux aarch64
+-   message(STATUS "quarto does not yet support aarch64 builds of Linux; disabling quarto")
+-   set(QUARTO_ENABLED FALSE CACHE INTERNAL "")
+-elseif(IS_CENTOS7)
+-   # disable quarto on Centos 7
+-   message(STATUS "quarto is not supported on Centos7; disabling quarto")
+-   set(QUARTO_ENABLED FALSE CACHE INTERNAL "")
+-else()
+-   # enable by default
+-   set(QUARTO_ENABLED TRUE CACHE INTERNAL "")
+-   add_definitions(-DQUARTO_ENABLED)
++if(NOT DEFINED QUARTO_ENABLED)
++   if(LINUX AND UNAME_M STREQUAL aarch64)
++      # disabled on linux aarch64
++      message(STATUS "quarto does not yet support aarch64 builds of Linux; disabling quarto")
++      set(QUARTO_ENABLED FALSE CACHE INTERNAL "")
++   elseif(IS_CENTOS7)
++      # disable quarto on Centos 7
++      message(STATUS "quarto is not supported on Centos7; disabling quarto")
++      set(QUARTO_ENABLED FALSE CACHE INTERNAL "")
++   else()
++      # enable by default
++      set(QUARTO_ENABLED TRUE CACHE INTERNAL "")
++      add_definitions(-DQUARTO_ENABLED)
++   endif()
+ endif()
+ 
+ # install freedesktop integration files if we are installing into /usr

@@ -1,0 +1,39 @@
+# Author: Ben Czaja (SURF) based on orginal from Jasper Grimm (UoY)
+
+easyblock = 'MakeCp'
+
+name = 'PLINK'
+version = '2.00a3.6'
+
+homepage = 'https://www.cog-genomics.org/plink/2.0/'
+description = 'Whole-genome association analysis toolset'
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/chrchang/plink-ng/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['7e650aef534f257c412509bf30afe0dd478fd32069fe8206e258abf35a3cfc6f']
+
+dependencies = [
+    ('FlexiBLAS', '3.2.0'),
+    ('libdeflate', '1.10'),
+    ('zstd', '1.5.2'),
+]
+
+start_dir = '2.0'
+
+# ignore suggested Makefile in build_dynamic, the dev Makefile is better
+buildopts = 'BLASFLAGS="-lflexiblas" BLASFLAGS64="-lflexiblas"'
+buildopts += ' LDFLAGS="$LIBS -ldeflate -lz -lzstd" ZLIB="" CSRC="include/SFMT.c"'
+buildopts += ' BASEFLAGS="$OPTFLAGS -DZSTD_MULTITHREAD"'
+
+files_to_copy = ['bin', (['include/*.h'], 'include'), 'ReadMe.md', 'COPYING', 'COPYING.LESSER']
+
+sanity_check_paths = {
+    'files': ['bin/plink2', 'bin/pgen_compress'],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ["plink2 --help"]
+
+moduleclass = 'bio'

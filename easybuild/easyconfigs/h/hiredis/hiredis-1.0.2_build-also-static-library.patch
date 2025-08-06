@@ -1,0 +1,151 @@
+From https://github.com/redis/hiredis/pull/851
+
+From 07c3618ffe7912c2ebc589ea45501c687a19cf2c Mon Sep 17 00:00:00 2001
+From: masariello <masariello@users.noreply.github.com>
+Date: Wed, 22 Jul 2020 14:23:53 +0100
+Subject: [PATCH 1/2] Add static library target and cpack support
+
+---
+ CMakeLists.txt  | 42 +++++++++++++++++++++++++++++++++++++++---
+ hiredis.targets | 11 +++++++++++
+ 2 files changed, 50 insertions(+), 3 deletions(-)
+ create mode 100644 hiredis.targets
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 87a4ac614..55c026b8f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -40,6 +40,7 @@ IF(WIN32)
+ ENDIF()
+ 
+ ADD_LIBRARY(hiredis SHARED ${hiredis_sources})
++ADD_LIBRARY(hiredis_static STATIC ${hiredis_sources})
+ 
+ SET_TARGET_PROPERTIES(hiredis
+     PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+@@ -48,16 +49,47 @@ IF(WIN32 OR MINGW)
+     TARGET_LINK_LIBRARIES(hiredis PRIVATE ws2_32)
+ ENDIF()
+ 
+-TARGET_INCLUDE_DIRECTORIES(hiredis PUBLIC $<INSTALL_INTERFACE:.> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
++TARGET_INCLUDE_DIRECTORIES(hiredis PUBLIC $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
++TARGET_INCLUDE_DIRECTORIES(hiredis_static PUBLIC $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+ 
+ CONFIGURE_FILE(hiredis.pc.in hiredis.pc @ONLY)
+ 
+-INSTALL(TARGETS hiredis
++set(CPACK_PACKAGE_VENDOR "Redis")
++set(CPACK_PACKAGE_DESCRIPTION "\
++Hiredis is a minimalistic C client library for the Redis database.
++
++It is minimalistic because it just adds minimal support for the protocol, \
++but at the same time it uses a high level printf-alike API in order to make \
++it much higher level than otherwise suggested by its minimal code base and the \
++lack of explicit bindings for every Redis command.
++
++Apart from supporting sending commands and receiving replies, it comes with a \
++reply parser that is decoupled from the I/O layer. It is a stream parser designed \
++for easy reusability, which can for instance be used in higher level language bindings \
++for efficient reply parsing.
++
++Hiredis only supports the binary-safe Redis protocol, so you can use it with any Redis \
++version >= 1.2.0.
++
++The library comes with multiple APIs. There is the synchronous API, the asynchronous API \
++and the reply parsing API.")
++set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/redis/hiredis")
++set(CPACK_PACKAGE_CONTACT "michael dot grunder at gmail dot com")
++set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
++set(CPACK_RPM_PACKAGE_AUTOREQPROV ON)
++
++include(CPack)
++
++INSTALL(TARGETS hiredis hiredis_static
+     EXPORT hiredis-targets
+     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
++# For NuGet packages
++INSTALL(FILES hiredis.targets
++    DESTINATION build/native)
++
+ INSTALL(FILES hiredis.h read.h sds.h async.h alloc.h
+     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hiredis)
+     
+@@ -98,6 +130,8 @@ IF(ENABLE_SSL)
+         ssl.c)
+     ADD_LIBRARY(hiredis_ssl SHARED
+             ${hiredis_ssl_sources})
++    ADD_LIBRARY(hiredis_ssl_static STATIC
++            ${hiredis_ssl_sources})
+ 
+     IF (APPLE)
+         SET_PROPERTY(TARGET hiredis_ssl PROPERTY LINK_FLAGS "-Wl,-undefined -Wl,dynamic_lookup")
+@@ -109,13 +143,15 @@ IF(ENABLE_SSL)
+         VERSION "${HIREDIS_SONAME}")
+ 
+     TARGET_INCLUDE_DIRECTORIES(hiredis_ssl PRIVATE "${OPENSSL_INCLUDE_DIR}")
++    TARGET_INCLUDE_DIRECTORIES(hiredis_ssl_static PRIVATE "${OPENSSL_INCLUDE_DIR}")
++    
+     TARGET_LINK_LIBRARIES(hiredis_ssl PRIVATE ${OPENSSL_LIBRARIES})
+     IF (WIN32 OR MINGW)
+         TARGET_LINK_LIBRARIES(hiredis_ssl PRIVATE hiredis)
+     ENDIF()
+     CONFIGURE_FILE(hiredis_ssl.pc.in hiredis_ssl.pc @ONLY)
+ 
+-    INSTALL(TARGETS hiredis_ssl
++    INSTALL(TARGETS hiredis_ssl hiredis_ssl_static
+         EXPORT hiredis_ssl-targets
+         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+diff --git a/hiredis.targets b/hiredis.targets
+new file mode 100644
+index 000000000..effd8a561
+--- /dev/null
++++ b/hiredis.targets
+@@ -0,0 +1,11 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemDefinitionGroup>
++    <ClCompile>
++      <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)\..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
++    </ClCompile>
++    <Link>
++      <AdditionalLibraryDirectories>$(MSBuildThisFileDirectory)\..\..\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
++    </Link>
++  </ItemDefinitionGroup>
++</Project>
+\ No newline at end of file
+
+From 1b40ec509628c73ac272c8599a3c923e34800d54 Mon Sep 17 00:00:00 2001
+From: Alessio M <masariello@gmail.com>
+Date: Fri, 4 Sep 2020 09:37:11 +0100
+Subject: [PATCH 2/2] fixed issue with unit test linking on windows with SSL
+
+---
+ CMakeLists.txt | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4bdee1864..53e9f5871 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -50,7 +50,8 @@ SET_TARGET_PROPERTIES(hiredis
+     PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+     VERSION "${HIREDIS_SONAME}")
+ IF(WIN32 OR MINGW)
+-    TARGET_LINK_LIBRARIES(hiredis PRIVATE ws2_32)
++    TARGET_LINK_LIBRARIES(hiredis PUBLIC ws2_32 crypt32)
++    TARGET_LINK_LIBRARIES(hiredis_static PUBLIC ws2_32 crypt32)
+ ENDIF()
+ 
+ TARGET_INCLUDE_DIRECTORIES(hiredis PUBLIC $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+@@ -152,6 +153,7 @@ IF(ENABLE_SSL)
+     TARGET_LINK_LIBRARIES(hiredis_ssl PRIVATE ${OPENSSL_LIBRARIES})
+     IF (WIN32 OR MINGW)
+         TARGET_LINK_LIBRARIES(hiredis_ssl PRIVATE hiredis)
++        TARGET_LINK_LIBRARIES(hiredis_ssl_static PUBLIC hiredis_static)
+     ENDIF()
+     CONFIGURE_FILE(hiredis_ssl.pc.in hiredis_ssl.pc @ONLY)
+ 
