@@ -977,6 +977,7 @@ class EasyConfigTest(TestCase):
             '2025.0.0': None,
             '2025.1.0': None,
             '2025.1.1': '2025a',
+            '2025.2.0': '2025b',
         }
 
         multi_dep_vars_msg = ''
