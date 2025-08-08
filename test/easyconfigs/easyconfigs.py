@@ -954,6 +954,7 @@ class EasyConfigTest(TestCase):
             '14.2': '2025a',
             '14.3': '2025b',
             '15.1': None,
+            '15.2': None,  # maybe 2026a?
         }
 
         # map intel-compilers to toolchain generations
