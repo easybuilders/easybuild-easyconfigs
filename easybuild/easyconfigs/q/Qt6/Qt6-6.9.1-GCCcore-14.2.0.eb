@@ -1,0 +1,89 @@
+easyblock = 'CMakeNinja'
+
+name = 'Qt6'
+version = '6.9.1'
+
+homepage = 'https://qt.io/'
+description = "Qt is a comprehensive cross-platform C++ application framework."
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+# disabling use of -ftree-vectorize is required to avoid compilation failures on some systems (e.g. Intel Skylake X)
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    'https://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/new_archive/qt/%(version_major_minor)s/%(version)s/single/',
+]
+sources = ['qt-everywhere-src-%(version)s.tar.xz']
+patches = [
+    '%(name)s-6.6.3_fix_OF-Gentoo.patch',
+    '%(name)s-6.7.2_fix_cpu_features.patch',
+    '%(name)s-6.5.2_fix_too_long_filenames.patch',
+]
+checksums = [
+    {'qt-everywhere-src-6.9.1.tar.xz': '364fde2d7fa42dd7c9b2ea6db3d462dd54f3869e9fd0ca0a0ca62f750cd8329b'},
+    {'Qt6-6.6.3_fix_OF-Gentoo.patch': 'd4d4878ac76cb985e45eb3b6e90ba2233f65807d6bd9bbe2b71365b181347b7b'},
+    {'Qt6-6.7.2_fix_cpu_features.patch': '3f37e7a4e4ed38cc82037be9504bc644e48bf258555ffff848183142725c9dc8'},
+    {'Qt6-6.5.2_fix_too_long_filenames.patch': 'b4a2aa3c72fe01d8b9cbab6da43cdbd968bd139f5dd9daba83181eb5d6125dac'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('pkgconf', '2.3.0'),
+    ('CMake', '3.31.3'),
+    ('Ninja', '1.12.1'),
+    # deps for QtWebEngine
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.3'),
+    ('re2c', '4.2'),
+]
+dependencies = [
+    ('double-conversion', '3.3.1'),
+    ('GLib', '2.85.1'),
+    ('PCRE2', '10.45'),
+    ('libpng', '1.6.48'),
+    ('LibTIFF', '4.7.0'),
+    ('libwebp', '1.5.0'),
+    ('JasPer', '4.2.5'),
+    ('HarfBuzz', '11.2.1'),
+    ('SQLite', '3.47.2'),
+    ('graphite2', '1.3.14'),
+    ('assimp', '6.0.2'),
+    ('FFmpeg', '7.1.1'),
+    ('X11', '20250521'),
+    ('fontconfig', '2.16.2'),
+    ('zlib', '1.3.1'),
+    ('Python', '3.13.1'),
+    ('Python-bundle-PyPI', '2025.04'),
+    ('freetype', '2.13.3'),
+    ('DBus', '1.16.2'),
+    ('libevent', '2.1.12'),  # WebEngine
+    ('libGLU', '9.0.3'),
+    ('libjpeg-turbo', '3.1.0'),
+    ('NSS', '3.113'),
+    ('snappy', '1.2.2'),
+    ('OpenSSL', '3', '', SYSTEM),
+    ('ICU', '76.1'),
+    ('nodejs', '22.16.0'),
+    # ('gRPC', '1.52.2'),  # WebEngine needs older Abseil/gRPC/protobuf
+]
+
+preconfigopts = 'sed -i "s/MultiMedia/Multimedia/g" ../qt-everywhere-src-%(version)s/qtcharts/CMakeLists.txt && sed -i "23i set(Python3_ROOT_DIR \\$ENV{EBROOTPYTHON})" ../qt-everywhere-src-%(version)s/qtwebengine/src/gn/CMakeLists.txt &&  export NINJAFLAGS="-j%(parallel)s" && '
+configopts = "-Wno-dev -DFEATURE_qtpdf_build=OFF -DQT_AVOID_CMAKE_ARCHIVING_API=ON -DPython3_ROOT_DIR=$EBROOTPYTHON -DBUILD_qtwayland=OFF "
+
+prebuildopts = ' export NINJAFLAGS="-j%(parallel)s" && '
+
+
+# Removed from Qt6.0.0 but may be added back in the future
+# configopts += '-DBUILD_qtgamepad=OFF '  # Does not work on CentOS 7
+
+sanity_check_paths = {
+    'files': ['bin/qmake6', 'lib/libQt6Core.so', 'lib/libQt6WebEngineCore.so'],
+    'dirs': ['include/QtCore', 'include/QtWebEngineCore'],
+}
+
+sanity_check_commands = ['qmake6 --help']
+
+moduleclass = 'devel'
