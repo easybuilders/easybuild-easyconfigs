@@ -1,0 +1,85 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# Modified by: Adam Huffman
+# The Francis Crick Institute
+
+easyblock = 'MakeCp'
+
+name = 'ngsTools'
+version = '1.0.1'
+
+homepage = 'https://github.com/mfumagalli/ngsTools'
+description = """ngsTools is a collection of programs for population genetics analyses from NGS data, taking into account data statistical uncertainty. The methods implemented in these programs do not rely on SNP or genotype calling, and are particularly suitable for low sequencing depth data. An application note illustrating its application has published (Fumagalli et al., 2014)."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+# The zip file was incomplete so it was downloaded through git and tarred up.
+
+#sources = ['%(name)s-%(version)s.tar.gz']
+#checksums = ['1aa1fc78ed88cf0436b75f72ddf5822c65bccd1a1567db51015aac8f8d616571']
+
+# source_urls = ['https://github.com/mfumagalli/ngsTools/archive/']
+
+#sources = [{
+#    'filename': '%(name)s-%(version)s.tar.gz',
+#    'git_config': {
+#        'url': 'https://github.com/mfumagalli',
+#        'repo_name': 'ngsTools',
+#        'commit': '14b68ed',
+#        'recursive': True,
+#        'keep_git_dir': True,
+#    }
+#}]
+
+sources = ['%(name)s-%(version)s.tar.xz']
+checksums = ['c82920cfd4389d7335d3acea80a093a620a4bdfbd39f4e155b5fee241dc2d81b']
+
+dependencies = [
+    ('GSL', '2.7'),
+]
+
+buildopts = 'CC="$CC" CXX="$CXX"'
+
+max_parallel = 1
+
+local_misc_bins = [
+    "supersim", "contamination2", "msHOT2glf", "ngsPSMC", "msToGlf",
+    "printIcounts", "thetaStat", "smartCount", "contamination",
+    "realSFS", "splitgl", "ibs", "scounts", "NGSadmix", "haploToPlink",
+] # "plot_psmc.py", "plot_psmc.py"
+
+files_to_copy = [
+    (['angsd/angsd'], 'bin'),
+    (['htslib/tabix', 'htslib/htsfile', 'htslib/bgzip'], 'bin'),
+    (['ngsDist/ngsDist', 'ngsF/ngsF'], 'bin'),
+    (['ngsF-HMM/ngsF-HMM'], 'bin'),  
+    (['ngsLD/ngsLD'], 'bin'),
+    (['ngsPopGen/ngsCovar', 'ngsPopGen/ngs2dSFS'], 'bin'),
+    (['ngsPopGen/ngsStat', 'ngsPopGen/ngsFST'], 'bin'),
+    (['ngsSim/ngsSim'], 'bin'),
+    (['ngsUtils/GetSubSim', 'ngsUtils/GetMergedGeno'], 'bin'),
+    (['ngsUtils/GetSubGeno', 'ngsUtils/GetSwitchedGeno'], 'bin'),
+    (['angsd/misc/%s' % x for x in local_misc_bins], 'bin'),
+    (['angsd/R'], 'angsd'),
+    (['htslib/libhts.a', 'htslib/libhts.so'], 'lib'),
+    'Scripts', 'Files',
+    'LICENSE', 'README.md', 'TUTORIAL.md',
+]
+
+local_ngstools_bins = [
+    'angsd', 'GetSubGeno', 'GetSwitchedGeno', 'ngsCovar', 'ngsF',
+    'ngsFST', 'ngsSim', 'tabix', 'GetMergedGeno', 'GetSubSim',
+    'ngs2dSFS', 'ngsDist', 'ngsF-HMM', 'ngsLD', 'ngsStat',
+]
+
+local_files = local_misc_bins + local_ngstools_bins
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_files],
+    'dirs': ["Scripts"],
+}
+
+moduleclass = 'bio'
