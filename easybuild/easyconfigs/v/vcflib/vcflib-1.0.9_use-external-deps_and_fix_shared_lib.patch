@@ -1,0 +1,204 @@
+Use external deps for as much as possible
+Add shared library
+Update VERSION
+Based on patches from 1.0.3 and old 1.0.9
+
+Åke Sandgren, 2024-01-16
+diff -ru vcflib-1.0.9.orig/CMakeLists.txt vcflib-1.0.9/CMakeLists.txt
+--- vcflib-1.0.9.orig/CMakeLists.txt	2023-02-11 17:41:26.000000000 +0100
++++ vcflib-1.0.9/CMakeLists.txt	2024-01-16 08:10:32.112086067 +0100
+@@ -45,6 +45,12 @@
+ 
+ set(EXTRA_FLAGS " ") # otherwise it injects OFF
+ 
++# ---- Get version
++
++file (STRINGS "VERSION" BUILD_NUMBER)
++add_definitions(-DVCFLIB_VERSION="${BUILD_NUMBER}")
++add_definitions(-DVERSION="${BUILD_NUMBER}")
++
+ # ---- Dependencies
+ 
+ if(OPENMP)
+@@ -59,7 +65,7 @@
+ set_package_properties(Threads PROPERTIES TYPE REQUIRED)
+ 
+ pkg_check_modules(HTSLIB htslib)   # Optionally builds from contrib/
+-pkg_check_modules(TABIXPP tabixpp) # Optionally builds from contrib/
++#pkg_check_modules(TABIXPP tabixpp) # Optionally builds from contrib/
+ 
+ # ---- Build switches
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+@@ -109,25 +115,25 @@
+ # ---- Include files
+ 
+ include_directories(include)
+-include_directories(contrib/fastahack)
+-include_directories(contrib/intervaltree)
+-include_directories(contrib/smithwaterman)
+-include_directories(contrib/multichoose)
+-include_directories(contrib/filevercmp)
++# include_directories(contrib/fastahack)
++# include_directories(contrib/intervaltree)
++# include_directories(contrib/smithwaterman)
++# include_directories(contrib/multichoose)
++# include_directories(contrib/filevercmp)
+ include_directories(contrib/c-progress-bar)
+ 
+-if(NOT HTSLIB_FOUND)
+-  set(HTSLIB_LOCAL contrib/tabixpp/htslib)
+-  set(TABIX_FOUND OFF) # also build tabixpp if htslib is missing
+-endif()
+-
+-if (NOT TABIX_FOUND)
+-  set(TABIXPP_LOCAL contrib/tabixpp)
+-  include_directories(contrib/tabixpp)
+-  set(tabixpp_SOURCE
+-    contrib/tabixpp/tabix.cpp
+-  )
+-endif()
++# if(NOT HTSLIB_FOUND)
++#  set(HTSLIB_LOCAL contrib/tabixpp/htslib)
++#  set(TABIX_FOUND OFF) # also build tabixpp if htslib is missing
++#endif()
++
++#if (NOT TABIX_FOUND)
++#  set(TABIXPP_LOCAL contrib/tabixpp)
++#  include_directories(contrib/tabixpp)
++#  set(tabixpp_SOURCE
++#    contrib/tabixpp/tabix.cpp
++#  )
++#endif()
+ 
+ if(WFA_GITMODULE)
+   set(WFA_LOCAL contrib/WFA2-lib)
+@@ -135,14 +141,14 @@
+ 
+ file(GLOB INCLUDES
+   src/*.h*
+-  contrib/multichoose/*.h*
+-  contrib/intervaltree/*.h*
+-  contrib/smithwaterman/*.h*
+-  contrib/fastahack/*.h*
+-  contrib/filevercmp/*.h*
+-  )
++#  contrib/multichoose/*.h*
++#  contrib/intervaltree/*.h*
++#  contrib/smithwaterman/*.h*
++#  contrib/fastahack/*.h*
++#  contrib/filevercmp/*.h*
++)
+ 
+-set(vcflib_SOURCE
++set(SOURCES
+     src/vcf-c-api.cpp
+     src/legacy.cpp
+     src/vcf-wfa.cpp
+@@ -158,14 +164,14 @@
+     src/LeftAlign.cpp
+     src/cigar.cpp
+     src/allele.cpp
+-    contrib/fastahack/Fasta.cpp
+-    contrib/smithwaterman/SmithWatermanGotoh.cpp
+-    contrib/smithwaterman/Repeats.cpp
+-    contrib/smithwaterman/IndelAllele.cpp
+-    contrib/smithwaterman/disorder.cpp
+-    contrib/smithwaterman/LeftAlign.cpp
+-    contrib/fsom/fsom.c
+-    contrib/filevercmp/filevercmp.c
++#    contrib/fastahack/Fasta.cpp
++#    contrib/smithwaterman/SmithWatermanGotoh.cpp
++#    contrib/smithwaterman/Repeats.cpp
++#    contrib/smithwaterman/IndelAllele.cpp
++#    contrib/smithwaterman/disorder.cpp
++#    contrib/smithwaterman/LeftAlign.cpp
++#    contrib/fsom/fsom.c
++#    contrib/filevercmp/filevercmp.c
+     contrib/c-progress-bar/progress.c
+ )
+ 
+@@ -173,10 +179,6 @@
+     list(APPEND vcflib_SOURCE ${tabixpp_SOURCE})
+ endif()
+ 
+-add_library(vcflib STATIC
+-    ${vcflib_SOURCE}
+-    )
+-
+ set(BINS
+     vcfecho
+     dumpContigsFromHeader
+@@ -304,12 +306,6 @@
+     vcfvarstats
+     )
+ 
+-# ---- Get version
+-
+-file (STRINGS "VERSION" BUILD_NUMBER)
+-add_definitions(-DVCFLIB_VERSION="${BUILD_NUMBER}")
+-add_definitions(-DVERSION="${BUILD_NUMBER}")
+-
+ # ---- Build htslib
+ #
+ # Note by default we use the distributed htslib! These are
+@@ -363,7 +359,7 @@
+   add_subdirectory(${WFA_LOCAL} EXCLUDE_FROM_ALL)
+   set(WFALIB wfa2) # pick up the wfa2 lib target from the included CMakeLists.txt
+ else(WFA_GITMODULE)
+-  set(WFA_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/wfa2lib)
++  # set(WFA_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/wfa2lib)
+   find_library(WFALIB wfa2 wfa) # distro search for shared lib
+   if(NOT WFALIB)
+     message(STATUS "ERROR: Can not find libfwa! Make sure it is installed or use the git submodule instead")
+@@ -419,9 +415,9 @@
+   ${ZLIB_LIBRARIES}
+   ${LIBLZMA_LIBRARIES}
+   ${BZIP2_LIBRARIES}
+-  ${TABIXPP_LIBRARIES}
++  tabixpp
+   ${CMAKE_THREAD_LIBS_INIT}
+-  ${WFA_LINK_LIBRARIES}
++  ${WFALIB}
+   ${HTSLIB_LINK_LIBRARIES}
+ )
+ 
+@@ -429,7 +425,14 @@
+   list(APPEND vcflib_LIBS ${ZIG_LINK_LIBRARIES})
+ endif()
+ 
++add_library(vcflib_static STATIC ${SOURCES})
++set_target_properties(vcflib_static PROPERTIES OUTPUT_NAME vcflib)
++add_library(vcflib SHARED ${SOURCES})
++set_target_properties(vcflib PROPERTIES VERSION ${BUILD_NUMBER} SOVERSION 1)
++target_link_libraries(vcflib tabixpp fastahack sw fsom filevercmp ${WFALIB} ${LDFLAGS} ${LIBS})
++
+ add_dependencies(vcflib ${vcflib_DEPS})
++add_dependencies(vcflib_static ${vcflib_DEPS})
+ 
+ # ---- Build all
+ 
+@@ -437,7 +440,7 @@
+   foreach(BIN ${BINS})
+     add_executable(${BIN} src/${BIN}.cpp)
+     add_dependencies(${BIN} vcflib)
+-    target_link_libraries(${BIN} PUBLIC ${vcflib_LIBS} vcflib)
++    target_link_libraries(${BIN} PUBLIC vcflib ${vcflib_LIBS})
+   endforeach(BIN ${BINS})
+   # These binaries include WFALIB
+   target_link_libraries(vcfallelicprimitives PUBLIC ${WFALIB})
+@@ -576,7 +579,8 @@
+ 
+ # ---- Install
+ 
+-install(TARGETS vcflib ARCHIVE DESTINATION ${CMAKE_INSTALL_BINDIR})
++install(TARGETS vcflib LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS vcflib_static ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ install(FILES ${INCLUDES} DESTINATION include)
+ 
+diff -ru vcflib-1.0.9.orig/VERSION vcflib-1.0.9/VERSION
+--- vcflib-1.0.9.orig/VERSION	2023-02-11 17:41:26.000000000 +0100
++++ vcflib-1.0.9/VERSION	2024-01-15 16:33:28.640523913 +0100
+@@ -1 +1 @@
+-1.0.7
++1.0.9

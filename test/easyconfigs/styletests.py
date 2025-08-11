@@ -1,5 +1,5 @@
 ##
-# Copyright 2016-2023 Ghent University
+# Copyright 2016-2025 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-Style tests for easyconfig files. Uses pep8.
+Style tests for easyconfig files. Uses pycodestyle.
 
 @author: Ward Poelmans (Ghent University)
 """
@@ -37,15 +37,15 @@ from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.framework.easyconfig.style import check_easyconfigs_style
 
 try:
-    import pep8
+    import pycodestyle
 except ImportError:
-    pep8 = None
+    pycodestyle = None
 
 
 class StyleTest(TestCase):
     log = fancylogger.getLogger("StyleTest", fname=False)
 
-    @skipIf(not pep8, 'no pep8 available')
+    @skipIf(not pycodestyle, 'pycodestyle is not available')
     def test_style_conformance(self):
         """Check the easyconfigs for style"""
         # all available easyconfig files
@@ -53,19 +53,16 @@ class StyleTest(TestCase):
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
         specs = sorted(specs)
 
-        self.mock_stderr(True)
-        self.mock_stdout(True)
-        result = check_easyconfigs_style(specs)
-        stderr, stdout = self.get_stderr(), self.get_stdout()
-        self.mock_stderr(False)
-        self.mock_stdout(False)
+        with self.mocked_stdout_stderr():
+            result = check_easyconfigs_style(specs)
+            stderr, stdout = self.get_stderr(), self.get_stdout()
 
-        error_msg = '\n'.join([
-            "There shouldn't be any code style errors (and/or warnings), found %d:" % result,
-            stdout,
-            stderr,
-        ])
-        self.assertEqual(result, 0, error_msg)
+        if result != 0:
+            self.fail('\n'.join([
+                "There shouldn't be any code style errors (and/or warnings), found %d:" % result,
+                stdout,
+                stderr,
+            ]))
 
 
 def suite(loader=None):

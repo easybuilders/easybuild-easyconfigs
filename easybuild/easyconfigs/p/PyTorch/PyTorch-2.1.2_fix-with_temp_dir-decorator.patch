@@ -1,0 +1,19 @@
+The decorator fails to pass the argument list to the function.
+This then fails e.g. test/distributed/checkpoint/test_fsdp_optim_state.py with
+> TypeError: FsdpOptimStateCheckpoint.test_load_sharded_optimizer_state_dict() missing 1 required positional argument: 'pass_planner'
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/distributed/checkpoint_utils.py b/torch/testing/_internal/distributed/checkpoint_utils.py
+index 1a6e43a038c..52f79b37bfd 100644
+--- a/torch/testing/_internal/distributed/checkpoint_utils.py
++++ b/torch/testing/_internal/distributed/checkpoint_utils.py
+@@ -31,7 +31,7 @@ def with_temp_dir(
+         self.temp_dir = object_list[0]
+ 
+         try:
+-            func(self)
++            func(self, *args, **kwargs)
+         finally:
+             if dist.get_rank() == 0:
+                 shutil.rmtree(self.temp_dir, ignore_errors=True)

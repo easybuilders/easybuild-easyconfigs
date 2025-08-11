@@ -1,0 +1,137 @@
+diff -Nru extrae-4.2.0.orig/tests/functional/hw-counters/check_Extrae_PAPI_TOT_CYC.sh extrae-4.2.0/tests/functional/hw-counters/check_Extrae_PAPI_TOT_CYC.sh
+--- extrae-4.2.0.orig/tests/functional/hw-counters/check_Extrae_PAPI_TOT_CYC.sh	2024-07-01 16:12:03.454963219 +0200
++++ extrae-4.2.0/tests/functional/hw-counters/check_Extrae_PAPI_TOT_CYC.sh	2024-07-03 16:51:00.533542188 +0200
+@@ -10,7 +10,29 @@
+ EXTRAE_CONFIG_FILE=extrae-PAPI_TOT_CYC.xml ./check_Extrae_counters_xml
+ ../../../src/merger/mpi2prv -f TRACE.mpits -o ${TRACE}.prv
+ 
+-# Check
++# Check PAPI availability
++if ! command -v papi_avail &> /dev/null
++then
++        echo "papi_avail could not be found"
++        exit 0
++fi
++
++# Check COUNTER availability
++PAPI_TOT_CYC_available=`papi_avail | grep PAPI_TOT_CYC | awk '{print $3}'`
++if [[ "$PAPI_TOT_CYC_available" == No ]]
++then
++        echo "PAPI_TOT_CYC is not available"
++        exit 0
++fi
++
++# Check that HW counters are accessible
++ACCESS_LEVEL=`sysctl kernel.perf_event_paranoid |awk '{print $3}'`
++if [ $ACCESS_LEVEL \> 1 ]
++then
++        echo "perf_event_paranoid configuration does not allow access to HW counters"
++        exit 0
++fi
++
+ CheckEntryInPCF ${TRACE}.pcf PAPI_TOT_CYC
+ 
+ rm -fr TRACE* set-0 ${TRACE}.???
+diff -Nru extrae-4.2.0.orig/tests/functional/hw-counters/check_Extrae_PAPI_TOT_INS_CYC.sh extrae-4.2.0/tests/functional/hw-counters/check_Extrae_PAPI_TOT_INS_CYC.sh
+--- extrae-4.2.0.orig/tests/functional/hw-counters/check_Extrae_PAPI_TOT_INS_CYC.sh	2024-07-01 16:12:03.448963249 +0200
++++ extrae-4.2.0/tests/functional/hw-counters/check_Extrae_PAPI_TOT_INS_CYC.sh	2024-07-03 16:52:55.509932826 +0200
+@@ -10,7 +10,30 @@
+ EXTRAE_CONFIG_FILE=extrae-PAPI_TOT_INS_CYC.xml ./check_Extrae_counters_xml
+ ../../../src/merger/mpi2prv -f TRACE.mpits -o ${TRACE}.prv
+ 
+-# Check
++# Check PAPI availability
++if ! command -v papi_avail &> /dev/null
++then
++        echo "papi_avail could not be found"
++        exit 0
++fi
++
++# Check COUNTER availability
++PAPI_TOT_CYC_available=`papi_avail | grep PAPI_TOT_CYC | awk '{print $3}'`
++if [[ "$PAPI_TOT_CYC_available" == No ]]
++then
++        echo "PAPI_TOT_CYC is not available"
++        exit 0
++fi
++
++# Check counters accessibility level
++ACCESS_LEVEL=`sysctl kernel.perf_event_paranoid |awk '{print $3}'`
++if [ $ACCESS_LEVEL \> 1 ]
++then
++        echo "perf_event_paranoid configuration does not allow access to HW counters"
++        exit 0
++fi
++
++
+ CheckEntryInPCF ${TRACE}.pcf PAPI_TOT_INS
+ CheckEntryInPCF ${TRACE}.pcf PAPI_TOT_CYC
+ 
+diff -Nru extrae-4.2.0.orig/tests/functional/hw-counters/check_Extrae_PAPI_TOT_INS.sh extrae-4.2.0/tests/functional/hw-counters/check_Extrae_PAPI_TOT_INS.sh
+--- extrae-4.2.0.orig/tests/functional/hw-counters/check_Extrae_PAPI_TOT_INS.sh	2024-07-01 16:12:03.455963214 +0200
++++ extrae-4.2.0/tests/functional/hw-counters/check_Extrae_PAPI_TOT_INS.sh	2024-07-03 16:54:17.878497036 +0200
+@@ -10,7 +10,29 @@
+ EXTRAE_CONFIG_FILE=extrae-PAPI_TOT_INS.xml ./check_Extrae_counters_xml
+ ../../../src/merger/mpi2prv -f TRACE.mpits -o ${TRACE}.prv
+ 
+-# Check
++# Check PAPI availability
++if ! command -v papi_avail &> /dev/null
++then
++        echo "papi_avail could not be found"
++        exit 0
++fi
++
++# Check COUNTERS availability
++PAPI_TOT_INS_available=`papi_avail | grep PAPI_TOT_INS | awk '{print $3}'`
++if [[ "$PAPI_TOT_INS_available" == No ]]
++then
++        echo "PAPI_TOT_INS is not available"
++        exit 0
++fi
++
++# Check COUNTERS accessibility level
++ACCESS_LEVEL=`sysctl kernel.perf_event_paranoid |awk '{print $3}'`
++if [ $ACCESS_LEVEL \> 1 ]
++then
++        echo "perf_event_paranoid configuration does not allow access to HW counters"
++        exit 0
++fi
++
+ CheckEntryInPCF ${TRACE}.pcf PAPI_TOT_INS
+ 
+ rm -fr TRACE* set-0 ${TRACE}.???
+diff -Nru extrae-4.2.0.orig/tests/functional/xml/check_Extrae_xml_envvar_counters.sh extrae-4.2.0/tests/functional/xml/check_Extrae_xml_envvar_counters.sh
+--- extrae-4.2.0.orig/tests/functional/xml/check_Extrae_xml_envvar_counters.sh	2024-07-01 16:12:03.484963068 +0200
++++ extrae-4.2.0/tests/functional/xml/check_Extrae_xml_envvar_counters.sh	2024-07-03 16:56:41.975736132 +0200
+@@ -10,7 +10,29 @@
+ COUNTERS=PAPI_TOT_INS EXTRAE_CONFIG_FILE=extrae_envvar_counters.xml ./check_Extrae_xml
+ ../../../src/merger/mpi2prv -f TRACE.mpits -o ${TRACE}.prv
+ 
+-# Check
++# Check PAPI availability
++if ! command -v papi_avail &> /dev/null
++then
++        echo "papi_avail could not be found"
++        exit 0
++fi
++
++# Check COUNTER availability
++PAPI_TOT_INS_available=`papi_avail | grep PAPI_TOT_INS | awk '{print $3}'`
++if [[ "$PAPI_TOT_INS_available" == No ]]
++then
++        echo "PAPI_TOT_INS is not available"
++        exit 0
++fi
++
++# Check COUNTERS accessibility level
++ACCESS_LEVEL=`sysctl kernel.perf_event_paranoid |awk '{print $3}'`
++if [ $ACCESS_LEVEL \> 1 ]
++then
++        echo "perf_event_paranoid configuration does not allow access to HW counters"
++        exit 0
++fi
++
+ CheckEntryInPCF ${TRACE}.pcf PAPI_TOT_INS
+ 
+ rm -fr TRACE* set-0 ${TRACE}.???

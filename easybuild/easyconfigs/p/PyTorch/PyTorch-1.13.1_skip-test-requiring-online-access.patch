@@ -1,0 +1,25 @@
+This tests downloads a Perl file from a Github repo which may fail in:
+
+  File "test/test_cuda.py", line 4632, in test_memory_snapshot
+    torch.cuda.memory._save_segment_usage(f.name)
+  File "/torch/cuda/memory.py", line 610, in _save_segment_usage
+    f.write(_segments(snapshot))
+  File "/torch/cuda/_memory_viz.py", line 60, in segments
+    return format_flamegraph(f.getvalue())
+  File "/torch/cuda/_memory_viz.py", line 21, in format_flamegraph
+    urllib.request.urlretrieve(
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_cuda.py b/test/test_cuda.py
+index 50644c22875..64d0eeb2fd4 100644
+--- a/test/test_cuda.py
++++ b/test/test_cuda.py
+@@ -4599,6 +4599,7 @@ class TestCudaComm(TestCase):
+             cat = torch.cat((outputs[0][i].to('cpu'), outputs[1][i].to('cpu')))
+             self.assertTrue(torch.equal(x, cat))
+ 
++    @unittest.skip("Requires internet access")
+     def test_memory_snapshot(self):
+         try:
+             torch.cuda.memory.empty_cache()
