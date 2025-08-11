@@ -1,0 +1,45 @@
+A test of the thousands separator in tsprintf.c is based on the output from the GNU C Library up to 2.36,
+which is incorrect (https://sourceware.org/bugzilla/show_bug.cgi?id=23432).
+The output has changed in 2.37 (partly fixed), so that tsprintf fails with glibc 2.37.
+The tsprintf-thousands patch (https://www.mpfr.org/mpfr-4.2.0/patch01) modifies the test to conform to POSIX
+and also avoid the buggy case in 2.36 and below. However, this new test, which was expected to succeed, 
+triggers a serious bug in 2.37 (bug 30068 / CVE-2023-25139 - https://sourceware.org/bugzilla/show_bug.cgi?id=30068).
+We did not modify the test again since this bug affects MPFR's mpfr_sprintf function, with a possible buffer overflow
+in particular cases. This bug has been fixed in the 2.37 branch.
+In short, this patch is useful (and needed) for a fixed glibc 2.37 and some other libraries, depending on the current locales.
+
+diff -ru mpfr-4.1.0.orig/PATCHES mpfr-4.1.0/PATCHES
+--- mpfr-4.1.0.orig/PATCHES	2011-06-30 02:17:40.000000000 +0200
++++ mpfr-4.1.0/PATCHES	2023-09-08 12:29:11.711226986 +0200
+@@ -0,0 +1 @@
++tsprintf-thousands
+diff -ru mpfr-4.1.0.orig/tests/tsprintf.c mpfr-4.1.0/tests/tsprintf.c
+--- mpfr-4.1.0.orig/tests/tsprintf.c	2020-04-09 00:39:35.000000000 +0200
++++ mpfr-4.1.0/tests/tsprintf.c	2023-09-08 12:29:11.712226986 +0200
+@@ -1651,7 +1651,25 @@
+   check_sprintf ("000000001,000", "%'013.4Rg", x);
+ 
+ #ifdef PRINTF_GROUPFLAG
+-  check_vsprintf ("+01,234,567  :", "%0+ -'13.10Pd:", (mpfr_prec_t) 1234567);
++  /* Do not test the thousands separator with a precision field larger
++     than the number of digits (thus needing leading zeros), such as
++     "%0+ -'13.10Pd:" (used up to MPFR 4.2.0), since the GNU libc is
++     buggy: https://sourceware.org/bugzilla/show_bug.cgi?id=23432
++     We don't know about the other implementations.
++     This new test works fine with glibc up to 2.36, but fails with 2.37
++     (as reported by Klaus Dittrich in the MPFR mailing-list); this is
++     actually a bug introduced in glibc 2.37, not in MPFR:
++       https://sourceware.org/bugzilla/show_bug.cgi?id=30068
++     Since this bug can yield a buffer overflow (CVE-2023-25139), possibly
++     affecting MPFR users, let us rather require a fix in glibc. This bug
++     has been fixed in the 2.37 branch:
++       https://sourceware.org/git/?p=glibc.git;a=commit;h=07b9521fc6
++     If we wanted to check that and avoid a failure of the test because of
++     a buggy C library (while MPFR would be consistent with the C library),
++     we could compare the MPFR output with both the correct output and the
++     output from the C library (possibly buggy). But to do that in a clean
++     way, this would require a change in the check_vsprintf() call. */
++  check_vsprintf ("+1,234,567   :", "%0+ -'13Pd:", (mpfr_prec_t) 1234567);
+ #endif
+ 
+   mpfr_clear (x);

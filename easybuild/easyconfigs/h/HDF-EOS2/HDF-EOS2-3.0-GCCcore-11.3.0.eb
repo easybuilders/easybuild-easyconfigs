@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'HDF-EOS2'
+version = '3.0'
+
+homepage = 'https://hdfeos.org/'
+description = """HDF-EOS libraries are software libraries built on HDF libraries.
+ It supports three data structures for remote sensing data: Grid, Point and Swath."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://git.earthdata.nasa.gov/projects/DAS/repos/hdfeos/raw/']
+sources = [
+    {'download_filename': '%(namelower)s-%(version)s-src.tar.gz?at=3128a738021501c821549955f6c78348e5f33850',
+     'filename': SOURCE_TAR_GZ}
+]
+checksums = ['3a5564b4d69b541139ff7dfdad948696cf31d9d1a6ea8af290c91a4c0ee37188']
+
+builddependencies = [
+    ('binutils', '2.38'),
+]
+
+dependencies = [
+    ('HDF', '4.2.15'),
+    ('Szip', '2.1.1'),
+]
+
+preconfigopts = 'export CC="$EBROOTHDF/bin/h4cc -Df2cFortran" && '
+
+# `--enable-install-include`` mentioned at https://hdfeos.org/software/hdfeos.php
+# but not available, likely the default and the option removed. Recheck in next release!
+configopts = "--with-szlib=$EBROOTSZIP "
+
+sanity_check_paths = {
+    'files': ['include/HdfEosDef.h', 'lib/libGctp.a', 'lib/libhdfeos.a'],
+    'dirs': ['include', 'lib'],
+}
+
+moduleclass = 'data'
