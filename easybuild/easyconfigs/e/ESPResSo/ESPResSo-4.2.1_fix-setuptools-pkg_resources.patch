@@ -1,0 +1,79 @@
+fix for failing 'decorators' test:
+AttributeError: module 'setuptools.version' has no attribute 'pkg_resources'
+
+see https://github.com/espressomd/espresso/pull/4709
+
+From 111283a0e0184e1674ef29ec0bd873a099574096 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jean-No=C3=ABl=20Grad?= <jgrad@icp.uni-stuttgart.de>
+Date: Tue, 18 Apr 2023 10:46:51 +0200
+Subject: [PATCH] python: Update deprecated setuptools functionality
+
+Starting with setuptools v67.3.0, the pkg_resources module is being
+progressively phased out from the setuptools main module.
+---
+ doc/tutorials/constant_pH/constant_pH.ipynb     | 4 ++--
+ maintainer/benchmarks/mc_acid_base_reservoir.py | 4 ++--
+ testsuite/python/unittest_decorators.py         | 4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/doc/tutorials/constant_pH/constant_pH.ipynb b/doc/tutorials/constant_pH/constant_pH.ipynb
+index bcfd5bdf993..ca4029465a4 100644
+--- a/doc/tutorials/constant_pH/constant_pH.ipynb
++++ b/doc/tutorials/constant_pH/constant_pH.ipynb
+@@ -137,10 +137,10 @@
+     "plt.rcParams.update({'font.size': 18})\n",
+     "\n",
+     "import numpy as np\n",
+-    "import setuptools\n",
++    "import pkg_resources\n",
+     "import pint  # module for working with units and dimensions\n",
+     "import time\n",
+-    "assert setuptools.version.pkg_resources.packaging.specifiers.SpecifierSet('>=0.10.1').contains(pint.__version__), \\\n",
++    "assert pkg_resources.packaging.specifiers.SpecifierSet('>=0.10.1').contains(pint.__version__), \\\n",
+     "  f'pint version {pint.__version__} is too old: several numpy operations can cast away the unit'\n",
+     "\n",
+     "import espressomd\n",
+diff --git a/maintainer/benchmarks/mc_acid_base_reservoir.py b/maintainer/benchmarks/mc_acid_base_reservoir.py
+index 97e465e8c70..a7a7a965f73 100644
+--- a/maintainer/benchmarks/mc_acid_base_reservoir.py
++++ b/maintainer/benchmarks/mc_acid_base_reservoir.py
+@@ -24,7 +24,7 @@
+ import espressomd
+ import espressomd.electrostatics
+ import espressomd.reaction_methods
+-import setuptools
++import pkg_resources
+ import argparse
+ 
+ parser = argparse.ArgumentParser(description="Benchmark MC simulations in the grand-reaction ensemble. "
+@@ -45,7 +45,7 @@
+ # process and check arguments
+ assert args.particles_per_core >= 100, "you need to use at least 100 particles per core to avoid finite-size effects in the simulation"
+ espressomd.assert_features(['WCA', 'ELECTROSTATICS'])
+-assert setuptools.version.pkg_resources.packaging.specifiers.SpecifierSet('>=0.10.1').contains(pint.__version__), \
++assert pkg_resources.packaging.specifiers.SpecifierSet('>=0.10.1').contains(pint.__version__), \
+     f'pint version {pint.__version__} is too old: several numpy operations can cast away the unit'
+ 
+ 
+diff --git a/testsuite/python/unittest_decorators.py b/testsuite/python/unittest_decorators.py
+index 109f89cc8d7..a9a0e5200c4 100644
+--- a/testsuite/python/unittest_decorators.py
++++ b/testsuite/python/unittest_decorators.py
+@@ -19,7 +19,7 @@
+ 
+ import sys
+ import importlib
+-import setuptools
++import pkg_resources
+ import unittest
+ 
+ import espressomd
+@@ -74,7 +74,7 @@ def skipIfUnmetModuleVersionRequirement(module, version_requirement):
+         _module = importlib.import_module(module)
+     except ImportError:
+         return skipIfMissingModules(module)
+-    if not setuptools.version.pkg_resources.packaging.specifiers.SpecifierSet(
++    if not pkg_resources.packaging.specifiers.SpecifierSet(
+             version_requirement).contains(_module.__version__):
+         return unittest.skip(
+             "Skipping test: version requirement not met for module {}".format(module))

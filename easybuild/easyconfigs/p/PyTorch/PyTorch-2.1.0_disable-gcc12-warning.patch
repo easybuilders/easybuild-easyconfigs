@@ -1,0 +1,32 @@
+GCC 12 has a false positive warning when compiled for some architectures, e.g. Intel Sapphire Rapids.
+See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=112370
+
+Suppress this warning such that the build doesn't error.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3a48eaf4e29..faa06c8177a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -561,6 +561,7 @@ if(MSVC)
+   string(APPEND CMAKE_CXX_FLAGS " /FS")
+   string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler /FS")
+ endif(MSVC)
++append_cxx_flag_if_supported("-Wno-free-nonheap-object" CMAKE_CXX_FLAGS)
+ 
+ string(APPEND CMAKE_CUDA_FLAGS " -Xfatbin -compress-all")
+ 
+diff --git a/cmake/public/utils.cmake b/cmake/public/utils.cmake
+index 4d48c0f0f3d..bda17319ce7 100644
+--- a/cmake/public/utils.cmake
++++ b/cmake/public/utils.cmake
+@@ -533,6 +533,8 @@ function(torch_update_find_cuda_flags)
+   endif()
+ endfunction()
+ 
++include(CheckCXXCompilerFlag)
++
+ ##############################################################################
+ # CHeck if given flag is supported and append it to provided outputvar
+ # Also define HAS_UPPER_CASE_FLAG_NAME variable

@@ -1,0 +1,33 @@
+easyblock = 'ConfigureMake'
+
+name = 'SuAVE-biomat'
+version = '2.0.0-20230815'
+local_commit = '8c1911b'
+
+homepage = 'https://github.com/SuAVE-Software/source_v2.0'
+description = "Surface Assessment via Grid Evaluation (SuAVE) for Every Surface Curvature and Cavity Shape"
+
+toolchain = {'name': 'intel', 'version': '2023a'}
+
+source_urls = ['https://github.com/SuAVE-Software/source_v2.0/archive']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['613fc1ac23f1b83304083128b03d199db28fb76187b834f614007cd537e6056f']
+
+skipsteps = ['configure']
+
+prebuildopts = 'sed -i "s/gfortran/${FC}/g" Makefile && '
+buildopts = 'FCFLAGS="${FCFLAGS}" '
+
+installopts = "INSTALL_PATH=%(installdir)s/bin"
+
+local_bins = ['s_area', 's_bend', 's_count', 's_dens', 's_densph', 's_filter', 's_gauss', 's_grid', 's_gridsph',
+              's_index', 's_inertia', 's_order', 's_shell', 's_spher', 's_stat', 's_thick', 's_topog']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%s -help" % x for x in local_bins]
+
+moduleclass = 'chem'

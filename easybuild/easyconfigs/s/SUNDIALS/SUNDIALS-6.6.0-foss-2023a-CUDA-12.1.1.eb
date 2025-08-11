@@ -1,0 +1,57 @@
+easyblock = 'CMakeMake'
+
+name = 'SUNDIALS'
+version = '6.6.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://computing.llnl.gov/projects/sundials'
+
+description = "SUNDIALS: SUite of Nonlinear and DIfferential/ALgebraic Equation Solvers"
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'openmp': True, 'usempi': True, 'pic': True}
+
+source_urls = ['https://github.com/LLNL/sundials/releases/download/v%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    '%(name)s-%(version)s_fix_bad_find_library_calls.patch',
+]
+checksums = [
+    {'sundials-6.6.0.tar.gz': 'f90029b8da846c8faff5530fd1fa4847079188d040554f55c1d5d1e04743d29d'},
+    {'SUNDIALS-6.6.0_fix_bad_find_library_calls.patch':
+     'c5e3248bd036fee17436649280ff7156a2722698c33ec20a5e635e3a60d16823'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('SuiteSparse', '7.1.0'),
+]
+
+_copts = [
+    '-DENABLE_MPI=ON',
+    '-DENABLE_OPENMP=ON',
+    '-DENABLE_LAPACK=ON',
+    '-DENABLE_KLU=ON',
+    '-DENABLE_CUDA=ON',
+    '-DCMAKE_CUDA_ARCHITECTURES="%(cuda_cc_cmake)s"',
+    '-DSUNDIALS_INDEX_SIZE=32',  # SUNMATRIX_CUSPARSE module needs 32-bit indexing
+]
+configopts = ' '.join(_copts)
+
+local_solvers = ['arkode', 'cvode', 'cvodes', 'ida', 'idas', 'kinsol']
+
+sanity_check_paths = {
+    'files': ['lib/libsundials_%s.a' % s for s in local_solvers +
+              ['nvecopenmp', 'nvecparallel', 'nvecserial']] +
+             ['lib/libsundials_%s.%s' % (s, SHLIB_EXT) for s in local_solvers +
+              ['nvecopenmp', 'nvecparallel', 'nvecserial']],
+    'dirs': ['examples/%s' % s for s in local_solvers] +
+            ['include/%s' % s for s in local_solvers] +
+            ['examples/nvector', 'include/nvector', 'include/sundials'],
+}
+
+moduleclass = 'math'
