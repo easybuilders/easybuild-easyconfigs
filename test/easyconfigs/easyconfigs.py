@@ -599,7 +599,7 @@ class EasyConfigTest(TestCase):
                 # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
             ],
-            # CP2K 2024.2 requiers PLUMED 2.9.3 
+            # CP2K 2024.2 requiers PLUMED 2.9.3
             'PLUMED': [(r'2\.9\.3', [r'CP2K-2024\.2'])],
             'pydantic': [
                 # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
