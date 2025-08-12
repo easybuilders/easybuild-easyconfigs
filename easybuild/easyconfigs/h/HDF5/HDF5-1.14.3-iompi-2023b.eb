@@ -1,0 +1,31 @@
+name = 'HDF5'
+# Note: Odd minor releases are only RCs and should not be used.
+version = '1.14.3'
+
+homepage = 'https://portal.hdfgroup.org/display/support'
+description = """HDF5 is a data model, library, and file format for storing and managing data.
+ It supports an unlimited variety of datatypes, and is designed for flexible
+ and efficient I/O and for high volume and complex data."""
+
+toolchain = {'name': 'iompi', 'version': '2023b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://support.hdfgroup.org/ftp/%(name)s/releases/%(namelower)s-%(version_major_minor)s/%(namelower)s-%(version)s/src']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-%(version_major_minor)s.3_suppress_fp_exceptions.patch']
+checksums = [
+    {SOURCELOWER_TAR_GZ: '09cdb287aa7a89148c1638dd20891fdbae08102cf433ef128fd345338aa237c7'},
+    {'%(name)s-%(version_major_minor)s.3_suppress_fp_exceptions.patch': 'bf33e579c93a16043c54b266321bbe95e4a8797f7fe6d096a13ce905ed2ffde7'},
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('Szip', '2.1.1'),
+]
+
+postinstallcmds = [
+    'sed -i -r "s, -I[^[:space:]]+H5FDsubfiling , -I%(installdir)s/include ,g" %(installdir)s/bin/h5c++',
+    'sed -i -r "s, -I[^[:space:]]+H5FDsubfiling , -I%(installdir)s/include ,g" %(installdir)s/bin/h5pcc',
+]
+
+moduleclass = 'data'
