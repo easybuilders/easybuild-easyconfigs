@@ -577,10 +577,13 @@ class EasyConfigTest(TestCase):
             ],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
+            # autoCAS-2.3.1 requires serial h5py
+            'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS-2\.3\.1-iomkl-2023a'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             # Java 21 is used as dep for Octave 9.2.0 (other 2023b easyconfigs use Java 11)
-            'Java': [(r'21', [r'Octave-9\.2\.0'])],
+            # and MDSplus
+            'Java': [(r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1'])],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
             'libxc': [
@@ -953,6 +956,7 @@ class EasyConfigTest(TestCase):
             '14.2': '2025a',
             '14.3': '2025b',
             '15.1': None,
+            '15.2': None,  # maybe 2026a?
         }
 
         # map intel-compilers to toolchain generations
@@ -976,6 +980,7 @@ class EasyConfigTest(TestCase):
             '2025.0.0': None,
             '2025.1.0': None,
             '2025.1.1': '2025a',
+            '2025.2.0': '2025b',
         }
 
         multi_dep_vars_msg = ''
@@ -1703,7 +1708,7 @@ def template_easyconfig_test(self, spec):
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # easyblocks without a build step
-        non_build_blocks = ['Binary', 'JAR', 'PackedBinary', 'Tarball']
+        non_build_blocks = ['Binary', 'JAR', 'PackedBinary', 'Tarball', 'EB_VSCode']
         # some software packages do not have a build step
         non_build_soft = ['ANIcalculator', 'Eigen']
 
