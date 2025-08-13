@@ -1,0 +1,75 @@
+name = 'Amber'
+modaltsoftname = 'amber-pmemd'
+local_amber_ver = 24
+
+# Patch levels from http://ambermd.org/AmberPatches.php and http://ambermd.org/ATPatches.php
+patchlevels =(0, 0)  # (AmberTools, Amber)
+version = '%s.%s' % (local_amber_ver, patchlevels[1]+3) # All 3 updates are already applied in the downloaded source tarball
+
+homepage = "https://ambermd.org/AmberTools.php"
+description = """Amber-PMEMD is Amber’s high-performance MD engine, optimized for both CPU and GPU execution. Unlike earlier Amber versions, the amber-pmemd module no longer includes AmberTools."""
+
+toolchain = {'name': 'gofbc', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+# Download requires accepting non-commercial license
+sources = [
+    'pmemd%s.tar.bz2' % local_amber_ver,
+]
+patches = [
+    'AmberTools-20_cmake-locate-netcdf.patch',
+    'AmberTools-22_CMake-FlexiBLAS.patch',    
+    'Amber-24-fix_NCCL.patch',
+    'AmberTools-20_fix_missing_MPI_LIBRARY_error.patch',
+    'Amber-24-fix_xray_missing-type.patch',
+    'AmberTools-25_CudaConfig.patch',
+]
+
+checksums = [
+    {'pmemd24.tar.bz2':'09cde63941e7e567773ef0d8831be72fe782d6042b45f5be82bef207bde9f682'},
+    {'AmberTools-20_cmake-locate-netcdf.patch':'0f7cd116b67b4fe1c8ecad8fec5168c603b9e3e121adcfea56a31bda0ec16471'},
+    {'AmberTools-22_CMake-FlexiBLAS.patch':'9543812c24c4b7842f64f1f8abaf2c92b5c4c0fadcdbd9811e76b81a778f0d36'},
+    {'Amber-24-fix_NCCL.patch':'ca8ca1e7089ab5afa3eb5e53f79a06cf35688a4bf66861700ca392344e73696e'},
+    {'AmberTools-20_fix_missing_MPI_LIBRARY_error.patch':'0b89a0624167bc23876bcdefcb1055f591e38e3bd559a71d5749e342bd311acc'},
+    {'Amber-24-fix_xray_missing-type.patch':'5e7b5ba0018ee49eb2ba316414364757c01a038f99aad3872e8b53f3269a3766'},
+    {'AmberTools-25_CudaConfig.patch':'9e70d38889e911d63a0b5b67d8ea64e925f4337d9136ca4a7cd146d0b9df274f'}, 
+
+]
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('NCCL', '2.26.2','',('gcccorecuda','2023a')),    
+    ('Python', '3.11.5'),
+    ('SciPy-Stack', '2024b'), 
+]
+
+dependencies = [
+    ('netCDF', '4.9.2'),
+    ('netCDF-Fortran', '4.6.1'),
+]
+
+separate_build_dir = True
+# All tests are expected to pass or be skipped
+runtest = False
+
+#static = False
+configopts = ' ' 
+configopts += ' -DNCCL=TRUE'
+configopts += ' -DPMEMD_ONLY=TRUE'
+configopts += ' -DBUILD_PYTHON=FALSE'
+configopts += ' -DBUILD_TOOLS=FALSE'
+
+postinstallcmds = [
+    ' '.join([
+        '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh',
+        '--path %(installdir)s/',
+        '--any_interpreter',
+        '--add_origin',
+        '--add_path %(installdir)s/lib',
+    ]),
+]
+
+
+sanity_check_paths = {'files': ['bin/pmemd.cuda'], 'dirs': []}
+
+moduleclass = 'chem'

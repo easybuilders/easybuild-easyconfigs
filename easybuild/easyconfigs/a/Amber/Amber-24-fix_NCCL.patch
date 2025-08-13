@@ -1,0 +1,42 @@
+--- cmake/FindNCCL.cmake.orig	2025-05-31 13:16:15.260833357 +0000
++++ cmake/FindNCCL.cmake	2025-05-31 13:17:48.314125647 +0000
+@@ -11,13 +11,14 @@
+ # up to use these paths.
+ 
+ if(CUDA AND NOT HIP)
+-    find_path(NCCL_INCLUDE_DIR NAMES nccl.h PATHS $ENV{NCCL_HOME}/include)
+-    find_library(NCCL_LIBRARY NAMES nccl nccl-static PATHS $ENV{NCCL_HOME}/lib)
++	find_path(NCCL_INCLUDE_DIR NAMES nccl.h PATHS $ENV{$EBROOTNCCL}/include)
++	find_library(NCCL_LIBRARY NAMES nccl nccl-static PATHS $ENV{$EBROOTNCCL}/lib)
+ 
+     include(FindPackageHandleStandardArgs)
+     find_package_handle_standard_args(NCCL DEFAULT_MSG NCCL_INCLUDE_DIR NCCL_LIBRARY)
+ 
+     if(NCCL_FOUND)
++	set(nccl_ENABLED TRUE)    
+         add_library(nccl UNKNOWN IMPORTED)
+         set_property(TARGET nccl PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${NCCL_INCLUDE_DIR})
+         set_property(TARGET nccl PROPERTY IMPORTED_LOCATION ${NCCL_LIBRARY})
+
+-- cmake/3rdPartyTools.cmake.orig	2025-05-31 18:32:29.248332000 +0000
++++ cmake/3rdPartyTools.cmake	2025-05-31 18:34:10.499384292 +0000
+@@ -11,7 +11,8 @@
+ zlib
+ libbz2
+ kmmd
+-libm)
++libm
++nccl)
+ 
+ set(3RDPARTY_TOOL_USES
+ "for fundamental linear algebra calculations"
+@@ -21,7 +22,8 @@
+ "for various compression and decompression tasks"
+ "for various compression and decompression tasks"
+ "Machine-learning molecular dynamics"
+-"for fundamental math routines if they are not contained in the C library")
++"for fundamental math routines if they are not contained in the C library"
++"for interGPU communications")
+ 
+ # Logic to disable tools
+ set(3RDPARTY_SUBDIRS "")
