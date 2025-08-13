@@ -560,6 +560,8 @@ class EasyConfigTest(TestCase):
             # Score-P 8.3+ requires Cube 4.8.2+ but we have 4.8.1 already
             'CubeLib': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
             'CubeWriter': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
+            # MACE-0.3.8-CUDA-12.1.1 needs e3nn-0.4.4-CUDA-12.1.1 as dependency
+            'e3nn': [(r'0\.4\.4; versionsuffix: -CUDA-12\.1\.1', [r'MACE-0\.3\.8-foss-2023a-CUDA-12\.1\.1'])],
             # Current rapthor requires WSclean 3.5 or newer, which in turn requires EveryBeam 0.6.X or newer
             # Requires us to also bump DP3 version (to 6.2) and its dependency on EveryBeam
             'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2', r'WSClean-3\.[5-9]'])],
@@ -577,6 +579,8 @@ class EasyConfigTest(TestCase):
             ],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
+            # autoCAS-2.3.1 requires serial h5py
+            'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS-2\.3\.1-iomkl-2023a'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             # Java 21 is used as dep for Octave 9.2.0 (other 2023b easyconfigs use Java 11)
