@@ -1,0 +1,23 @@
+The `AX_CXX_LIBRARY_LDFLAGS` autoconf macro incorrectly identifies some Intel compiler optimization flags as library
+dependencies. The macro parses the verbose compiler output looking for patterns starting with `-l`, assuming they are
+all library flags. In particular:
+- `-lwp` - Actually from `-target-feature -lwp` (disables Light Weight Profiling CPU feature)
+- `-loopopt` - Actually from `-mllvm -loopopt` (LLVM loop optimization flag)
+This results in these non-existent "libraries" being added to various build configurations.
+This patch adds specific filtering for known Intel compiler flags that are commonly misidentified.
+--- package/m4/ax_cxx_library_ldflags.m4.orig	2025-08-13 13:30:02.721679032 +0200
++++ package/m4/ax_cxx_library_ldflags.m4	2025-08-13 13:30:08.579715712 +0200
+@@ -89,6 +89,13 @@
+           # Ignore these flags.
+         -lang* | -lcrt0.o | -lc | -lgcc | -libmil | -LANG:=*)
+           ;;
++          # Ignore Intel compiler specific flags that look like libraries but aren't.
++          # These flags come from Intel compiler verbose output and are incorrectly
++          # parsed as library flags:
++          # -lwp: disables Light Weight Profiling CPU feature (-target-feature -lwp)
++          # -loopopt: LLVM loop optimization flag (-mllvm -loopopt)
++        -lwp | -loopopt )
++          ;;
+         -lcrt1.o | -lcrt2.o |-lcrtbegin.o )
+           ;;
+         -lkernel32)
