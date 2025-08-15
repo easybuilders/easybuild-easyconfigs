@@ -1,0 +1,53 @@
+easyblock = 'MesonNinja'
+
+name = 'GObject-Introspection'
+version = '1.84.0'
+
+homepage = 'https://gi.readthedocs.io/en/latest/'
+description = """GObject introspection is a middleware layer between C libraries
+ (using GObject) and language bindings. The C library can be scanned at
+ compile time and generate a metadata file, in addition to the actual
+ native C library. Then at runtime, language bindings can read this
+ metadata and automatically provide bindings to call into the C library."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = [FTPGNOME_SOURCE]
+sources = [SOURCELOWER_TAR_XZ]
+patches = ['GObject-Introspection-1.80.1_install-GLib-GIR-files.patch']
+checksums = [
+    {'gobject-introspection-1.84.0.tar.xz': '945b57da7ec262e5c266b89e091d14be800cc424277d82a02872b7d794a84779'},
+    {'GObject-Introspection-1.80.1_install-GLib-GIR-files.patch':
+     'c1909f1b7fd30784ae789ac0b5e45e0ca3dd2456890b864efa86a2f8c2e563aa'},
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('pkgconf', '2.4.3'),
+    ('CMake', '4.0.3'),
+    ('Meson', '1.8.2'),
+    ('Ninja', '1.13.0'),
+    ('Bison', '3.8.2'),
+    ('cairo', '1.18.4'),
+    ('flex', '2.6.4'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('GLib', '2.85.3'),
+    ('libffi', '3.5.1'),
+    ('util-linux', '2.41'),
+]
+
+preconfigopts = "env GI_SCANNER_DISABLE_CACHE=true "
+configopts = "-Dcairo=enabled"
+
+sanity_check_paths = {
+    'files': ['bin/g-ir-%s' % x for x in ['annotation-tool', 'compiler', 'generate', 'scanner']] +
+             ['lib/libgirepository-1.0.' + SHLIB_EXT],
+    'dirs': ['include', 'share']
+}
+
+sanity_check_commands = ["g-ir-scanner --help"]
+
+moduleclass = 'devel'
