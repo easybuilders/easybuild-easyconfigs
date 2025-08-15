@@ -606,7 +606,7 @@ class EasyConfigTest(TestCase):
             ],
             'PMIx': [
                 # PRRTE 4.0+ requires PMIx 6.0+ and vice-versa
-                (r'6\.0\.0', [r'PRRTEx-4\.0\.0']),
+                (r'6\.0\.0', [r'PRRTE-4\.0\.0']),
             ],
             'pydantic': [
                 # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
