@@ -11,6 +11,9 @@ github_account = 'NVIDIA'
 
 toolchain = {'name': 'gfbf', 'version': '2025a'}
 
+builddependencies = [
+    ('Cython', '3.1.1'),
+]
 dependencies = [
     ('CUDA', '%(version_major)s.%(version_minor)s.0', '', SYSTEM),
     ('Python', '3.13.1'),
@@ -23,12 +26,16 @@ exts_list = [
     }),
     ('cuda-python', version, {
         'modulename': 'cuda',
-        'source_urls': ['https://github.com/%(github_account)s/%(namelower)s/archive'],
-        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(namelower)s-%(version)s.tar.gz'}],
+        'source_urls': [GITHUB_LOWER_SOURCE],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
         'checksums': ['9c3d6c9792e0c295d06bbc35b7ef91405dba465f78495e552223d2ddb9f61048'],
+        'start_dir': 'cuda_bindings',
     }),
 ]
 
-sanity_check_commands = ["python -c 'from cuda import cuda, nvrtc'"]
+sanity_check_commands = [
+    "python -sc 'from cuda import cuda, nvrtc'",
+    "python -sc 'from cuda.bindings import driver, nvrtc'",
+]
 
 moduleclass = 'lib'
