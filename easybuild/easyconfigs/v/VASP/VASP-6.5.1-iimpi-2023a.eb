@@ -27,15 +27,22 @@ builddependencies = [
 
 ]
 
+sources = ['%(namelower)s.%(version)s.tgz']
 patches = ['%(namelower)s-%(version)s.patch']
+checksums = [
+    {'vasp.6.5.1.tgz': 'a53fd9dd2a66472a4aa30074dbda44634fc663ea2628377fc01d870e37136f61'},
+    {'vasp-6.5.1.patch': 'd6f6f3ca3f486fbac007e84baf0217e32de9c8959eef744732b69dd08778852e'},
+]
 
 # Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
-sources = ['%(namelower)s.%(version)s.tgz']
-checksums = ['0de1aa0993970e5aed5891d04c0b2cd2',  #vasp.6.5.0.tgz,
-             'e683af49f8665c0df2233b7b50c871ef',  #vasp-6.5.patch,
-]
 prebuildopts = 'cp arch/makefile.include.intel ./makefile.include && '
 prebuildopts += 'unset LIBS && '
+import os
+if os.getenv('RSNT_ARCH') == 'avx512':
+  local_vasp_target_cpu ='"-march=x86-64-v4 -axCore-AVX512"'
+elif os.getenv('RSNT_ARCH') == 'avx2':
+  local_vasp_target_cpu ='"-march=x86-64-v3 -axCore-AVX2"'
+build_cmd = 'make VASP_TARGET_CPU=%s' % local_vasp_target_cpu
 
 postinstallcmds = ["chmod -R o-rwx %(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
 parallel = 1

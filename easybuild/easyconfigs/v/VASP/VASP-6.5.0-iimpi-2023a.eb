@@ -36,6 +36,12 @@ checksums = ['19831c88c18c88be6097e379d9140c50',  #vasp.6.5.0.tgz,
 ]
 prebuildopts = 'cp arch/makefile.include.intel ./makefile.include && '
 prebuildopts += 'unset LIBS && '
+import os
+if os.getenv('RSNT_ARCH') == 'avx512':
+  local_vasp_target_cpu ='"-march=x86-64-v4 -axCore-AVX512"'
+elif os.getenv('RSNT_ARCH') == 'avx2':
+  local_vasp_target_cpu ='"-march=x86-64-v3 -axCore-AVX2"'
+build_cmd = 'make VASP_TARGET_CPU=%s' % local_vasp_target_cpu
 
 postinstallcmds = ["chmod -R o-rwx %(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
 parallel = 1

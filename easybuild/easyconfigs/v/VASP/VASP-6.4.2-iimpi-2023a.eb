@@ -27,19 +27,20 @@ builddependencies = [
     ('libbeef', '0.1.2', '', ('intel-compilers', local_compver)),
 ]
 
-patches = ['%(namelower)s-%(version)s.patch','%(namelower)s-%(version)s-vtsttools.patch', '%(namelower)s-%(version)s-VASPsol.patch']
-
-# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
 source_urls = ['https://github.com/henniggroup/VASPsol/archive/', 'http://theory.cm.utexas.edu/code/vtstscripts_old', 'http://theory.cm.utexas.edu/code/']
 sources = ['%(namelower)s.%(version)s.tar', 'V1.0.tar.gz', '%s.tgz' %local_vtstscripts, '%s.tgz' %local_vstat]
-checksums = ['5ae64a887ea307ebe34e4d4a46795258',  #vasp.6.4.2.tar,
-             'd312a26de9676cc657d86fe91480ccf7',  #V1.0.tar.gz,
-             '9422e548b0408a41695b0e70eec042d7663fbf9e4b7e3980c86bb2fc6cd5fafc',  #vtstscripts-1033.tgz,
-             '130261a4c15ce3f6b92cf3ead9949bb72b0f0211503f3326a9ad848e2bdfec19',  #vtstcode-1033.tgz,
-             '5655f0d627bd2028491dbc829dccf2b9',  #vasp-6.4.2.patch,
-             '2ed626bfd2bbae77863a378cb73aa0b6',  #vasp.6.4.2-vtsttools.patch,
-             '6af7a5c1f24b75a4f5642d9f880fffd5',  #vasp.6.4.2-VASPsol.patch,
+patches = ['%(namelower)s-%(version)s.patch','%(namelower)s-%(version)s-vtsttools.patch', '%(namelower)s-%(version)s-VASPsol.patch']
+checksums = [
+    {'vasp.6.4.2.tar': '2085fe80b2ff68f070906e9b1f2cbace0f868155b86f41a6b6c2da8ba845b49e'},
+    {'V1.0.tar.gz': '77f9934c4db433d574d6b317fc73d0d3628e4a6b8b58e7eb7fabc22225e90c26'},
+    {'vtstscripts-1033.tgz': '9422e548b0408a41695b0e70eec042d7663fbf9e4b7e3980c86bb2fc6cd5fafc'},
+    {'vtstcode-199.tgz': '130261a4c15ce3f6b92cf3ead9949bb72b0f0211503f3326a9ad848e2bdfec19'},
+    {'vasp-6.4.2.patch': '670738e0c38c64cf96215c6282f7f2007a593c036491b821c54b8f3567d781d2'},
+    {'vasp-6.4.2-vtsttools.patch': '381a7be19b60adfdf0a37273c00fbe30d44351be2a17543ba5c77828937ed787'},
+    {'vasp-6.4.2-VASPsol.patch': 'f543e7348f7a6c0fd3b26a27831b7a65bde8fdc52915414ea9254ad5f61670a1'},
 ]
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
 prebuildopts = 'cp arch/makefile.include.intel ./makefile.include && '
 prebuildopts += 'unset LIBS && '
 prebuildopts += 'cp  -r ../%s/vtstcode6.4/* src  && ' %local_vstat 
@@ -48,9 +49,14 @@ prebuildopts += 'cp ../VASPsol-1.0/src/solvation.F src  && '
 #Following is part of the vaspSol modifcation that  cannot be  patched through a patched file.
 prebuildopts += 'sed -i "s/M_sum_s(SP_GRIDC%COMM,1,Ecorr4,0,0,0))/M_sum_1(SP_GRIDC%COMM,Ecorr4))/g" src/solvation.F && '
 prebuildopts += 'sed -i "s/M_sum_s(SP_GRIDC%COMM,1,Ecorr3,0,0,0))/M_sum_1(SP_GRIDC%COMM,Ecorr3))/g" src/solvation.F && '
+import os
+if os.getenv('RSNT_ARCH') == 'avx512':
+  local_vasp_target_cpu ='"-march=-march=x86-64-v4 -axCore-AVX512"'
+elif os.getenv('RSNT_ARCH') == 'avx2':
+  local_vasp_target_cpu ='"-march=x86-64-v3 -axCore-AVX2"'
 
 prebuildopts += 'unset LIBS && '
-#build_cmd = 'make FC=mpifort FCL=mpifort'
+build_cmd = 'make VASP_TARGET_CPU=%s' % local_vasp_target_cpu
 
 postinstallcmds = ["chmod -R o-rwx %(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
 parallel = 1
