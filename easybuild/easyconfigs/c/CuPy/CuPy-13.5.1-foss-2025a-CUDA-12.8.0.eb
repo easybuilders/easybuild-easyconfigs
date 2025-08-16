@@ -1,0 +1,105 @@
+easyblock = 'PythonBundle'
+
+name = 'CuPy'
+version = '13.5.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://cupy.dev'
+description = "CuPy is an open-source array library accelerated with NVIDIA CUDA."
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('hypothesis', '6.133.2'),
+    ('setuptools', '80.9.0'),
+    ('Cython', '3.1.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('cuDNN', '8.9.7.29', versionsuffix, SYSTEM),
+    ('NCCL', '2.26.6', versionsuffix),
+    ('cuTENSOR', '2.3.0.6', versionsuffix, SYSTEM),
+    # ('cuSPARSELt', '0.6.0.6', versionsuffix, SYSTEM),
+    ('cuSPARSELt', '0.8.0.4', versionsuffix, SYSTEM),
+]
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+_skip_tests = [
+    '--ignore tests/example_tests',  # examples are not included
+    # '--ignore tests/cupy_tests/fft_tests/test_fft.py',  # CUFFT_INTERNAL_ERROR
+    # # Sorting broken on at least T4 (this is troubling):
+    # '--deselect tests/cupy_tests/'
+    # 'sorting_tests/test_sort.py::TestArgsort_param_0_{external=False}::test_argsort_one_dim',
+    # '--deselect tests/cupy_tests/'
+    # 'sorting_tests/test_sort.py::TestArgsort_param_1_{external=True}::test_argsort_one_dim',
+    # # https://github.com/cupy/cupy/issues/8255:
+    # '--deselect tests/cupyx_tests/'
+    # 'scipy_tests/signal_tests/test_filter_design.py::TestSOSFreqz::test_sos_freqz_against_mp',
+    # # Floating point precision issues:
+    # '--deselect tests/cupy_tests/core_tests/fusion_tests/test_reduction.py::TestFusion',
+    # '--deselect tests/cupyx_tests/'
+    # 'scipy_tests/signal_tests/test_filter_design.py::TestSOSFreqz::test_sosfrez_design_cheb2_2',
+    # '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_fir_filter_design.py::TestFirls::test_firls',
+    # '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_iir_filter_design.py::TestButtord::test_ellip_butter',
+    # '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_iir_filter_design.py::TestEllipord::test_bandstop',
+    # '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_iir_filter_design.py::TestEllipord::test_fs_param',
+    # '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_iir_filter_design.py::TestEllipord::test_ellip_butter',
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_ltisys.py::Test_bode::test_from_state_space',
+    # '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_ltisys.py::TestPlacePoles::test_real_2',
+    # '--deselect tests/cupyx_tests/'
+    # 'scipy_tests/signal_tests/test_polyutils.py::TestPartialFractionExpansion::test_residuez_general',
+    # Slightly above tolerance (test should be patched):
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_fir_filter_design.py::TestMinimumPhase::test_hilbert',
+    # Not understood:
+    '--deselect tests/cupyx_tests/'
+    'scipy_tests/special_tests/test_statistics.py::TestTwoArgumentDistribution::test_linspace_broadcast',
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_signaltools.py::TestOrderFilter::test_order_filter',
+    # The following five have been patched on github and should be reenabled for the next version.
+    '--deselect tests/cupyx_tests/'
+    'scipy_tests/sparse_tests/test_coo.py::TestCooMatrixScipyComparison::test_dot_zero_dim',
+    '--deselect tests/cupyx_tests/'
+    'scipy_tests/sparse_tests/test_coo.py::TestCooMatrixScipyComparison::test_sum_tuple_axis',
+    '--deselect tests/cupyx_tests/'
+    'scipy_tests/sparse_tests/test_csc.py::TestCscMatrixScipyComparison::test_sum_tuple_axis',
+    '--deselect tests/cupyx_tests/'
+    'scipy_tests/sparse_tests/test_csr.py::TestCsrMatrixScipyComparison::test_sum_tuple_axis',
+]
+
+_parallel_tests = 4  # tests can require a lot of VRAM
+
+exts_list = [
+    ('fastrlock', '0.8.3', {
+        'checksums': ['4af6734d92eaa3ab4373e6c9a1dd0d5ad1304e172b1521733c6c3b3d73c8fa5d'],
+    }),
+    ('cupy', version, {
+        'patches': [
+            'cupy-13.0.0_cusparselt_0.6.0.patch',
+            'cupy-13.0.0_eb_ccc.patch',
+            'CuPy-13.5.1-Fix-resample-error-message-for-SciPy-1.16-update.patch',
+            'CuPy-13.5.1-Deselect-TestDiaMatrixScipyComparison-test_sum_tuple_axis.patch', 
+        ],
+        'preinstallopts': 'CUPY_NUM_BUILD_JOBS=%(parallel)s EB_CCC="%(cuda_cc_cmake)s" ',
+        'runtest': 'export CUPY_TEST_GPU_LIMIT=1 CUPY_CACHE_DIR="%%(builddir)s" && '
+                   'pytest -n %s tests -k "not slow" ' % _parallel_tests + ' '.join(_skip_tests),
+        'testinstall': True,
+        'checksums': [
+            {'cupy-13.5.1.tar.gz': '3dba2f30258463482d52deb420862fbbbaf2c446165a5e8d67377ac6cb5c0870'},
+            {'cupy-13.0.0_cusparselt_0.6.0.patch': '09cb12d26e78079c50b06f17002bf54c66e5e4743b917c5a218d3fe90124d499'},
+            {'cupy-13.0.0_eb_ccc.patch': 'bfe8b46344759f58491f55418bd9c856d6f72d681ee5fef12820009f808d2db1'},
+            {'CuPy-13.5.1-Fix-resample-error-message-for-SciPy-1.16-update.patch':
+             '14db7bb9ab4e0d922f7ffde81dc465db97e45f34c7a8d70460c65eafb2f9d38a'},
+            {'CuPy-13.5.1-Deselect-TestDiaMatrixScipyComparison-test_sum_tuple_axis.patch':
+             '21206b48573e03b8c2e611bcf35417123b4ecaa0a7a1c164d789d7fb48273209'},
+        ],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import cupy'",
+]
+
+moduleclass = 'lib'

@@ -1,0 +1,50 @@
+From c055d7a91c526032ca16271217b606bbfaff9e44 Mon Sep 17 00:00:00 2001
+From: Akifumi Imanishi <imanishi@preferred.jp>
+Date: Tue, 15 Jul 2025 02:49:52 +0000
+Subject: [PATCH] Fix resample error message for SciPy 1.16 update
+
+---
+ cupyx/scipy/signal/_resample.py                            | 5 ++++-
+ tests/cupyx_tests/scipy_tests/signal_tests/test_windows.py | 3 ++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/cupyx/scipy/signal/_resample.py b/cupyx/scipy/signal/_resample.py
+index c257e6f4b..9216b897a 100644
+--- a/cupyx/scipy/signal/_resample.py
++++ b/cupyx/scipy/signal/_resample.py
+@@ -329,7 +329,10 @@ def resample(x, num, t=None, axis=0, window=None, domain="time"):
+             W = window(fftfreq(Nx))
+         elif isinstance(window, cupy.ndarray):
+             if window.shape != (Nx,):
+-                raise ValueError('window must have the same length as data')
++                raise ValueError(
++                    f"{window.shape=} != ({Nx},), i.e., window length "
++                    "is not equal to number of frequency bins!"
++                )
+             W = window
+         else:
+             W = ifftshift(get_window(window, Nx))
+diff --git a/tests/cupyx_tests/scipy_tests/signal_tests/test_windows.py b/tests/cupyx_tests/scipy_tests/signal_tests/test_windows.py
+index 2e84221fd..faa0b2444 100644
+--- a/tests/cupyx_tests/scipy_tests/signal_tests/test_windows.py
++++ b/tests/cupyx_tests/scipy_tests/signal_tests/test_windows.py
+@@ -510,6 +510,7 @@ class TestGetWindow:
+         # Unknown window type error
+         assert_raises(ValueError, windows.get_window, 'broken', 4)
+ 
++    @testing.with_requires("scipy>=1.16")
+     @testing.numpy_cupy_allclose(scipy_name='scp', rtol=1e-13, atol=1e-13)
+     def test_array_as_window(self, xp, scp):
+         # scipy github issue 3603
+@@ -518,7 +519,7 @@ class TestGetWindow:
+ 
+         win = scp.signal.windows.get_window(('kaiser', 8.0), osfactor // 2)
+         if hasattr(scp.signal, 'resample'):
+-            with assert_raises(ValueError, match='must have the same length'):
++            with assert_raises(ValueError, match='window length is not equal'):
+                 scp.signal.resample(sig, len(sig) * osfactor, window=win)
+         return win
+ 
+-- 
+2.39.5 (Apple Git-154)
+
