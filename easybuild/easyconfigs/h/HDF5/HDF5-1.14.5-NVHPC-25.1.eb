@@ -1,0 +1,93 @@
+name = 'HDF5'
+version = '1.14.5'
+
+homepage = 'https://portal.hdfgroup.org/display/support'
+description = """HDF5 is a data model, library, and file format for storing and managing data.
+ It supports an unlimited variety of datatypes, and is designed for flexible
+ and efficient I/O and for high volume and complex data."""
+
+toolchain = {'name': 'NVHPC', 'version': '25.1'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://support.hdfgroup.org/releases/hdf5/v1_14/v1_14_5/downloads/']
+sources = [SOURCELOWER_TAR_GZ]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('Szip', '2.1.1'),
+]
+
+# For the extensions
+builddependencies = [
+    ('Cython', '3.0.10'),
+    ('numpy', '2.1.1'),
+    ('python-build-bundle', '2024a'),
+]
+
+multi_deps = {'Python': ['3.10', '3.11', '3.12']}
+multi_deps_extensions_only = True
+
+configopts = "--with-default-plugindir=%(installdir)s/lib/plugin"
+
+# otherwise blosc2 libs end up in lib64 but HDF5 in lib
+preinstallopts = 'ln -s lib %(installdir)s/lib64 && '
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': False,
+    'preinstallopts': "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH"
+}
+local_common_ext_cflags = 'CFLAGS="-noswitcherror $CFLAGS" '
+exts_list = [
+    ('cached-property', '2.0.1', {
+        'sources': ['cached_property-%(version)s.tar.gz'],
+    }),
+    ('ndindex', '1.9.2', {
+        'preinstallopts': local_common_ext_cflags,
+    }),
+    ('py-cpuinfo', '9.0.0', {
+        'modulename': 'cpuinfo',
+    }),
+    ('h5py', '3.12.1', {
+        'preinstallopts': ('sed -i -e "/cmdclass = CMDCLASS,/a zip_safe = False," setup.py && '
+        ' H5PY_SETUP_REQUIRES=0 ' + local_common_ext_cflags),
+    }),
+    ('numexpr', '2.10.1', {
+        'preinstallopts': local_common_ext_cflags + 'CC=nvc++ ',
+    }),
+    ('blosc2', '2.7.1'),
+    ('tables', '3.10.1', {
+        'preinstallopts': 'unset LIBS && rm -r c-blosc/{blosc,internal-complibs} && sed -i "s@/usr/local@$EBROOTGENTOO@" setup.py && BLOSC2_DIR=%(installdir)s ' + local_common_ext_cflags,
+    }),
+    ('hdf5-blosc', '1.0.1', {
+        'easyblock': 'CMakePythonPackage',
+        'source_urls': ['https://github.com/Blosc/hdf5-blosc/archive/refs/tags'],
+        'sources': ['v%(version)s.tar.gz'],
+        'configure_cmd': 'cmake',
+        'configopts': '-DCMAKE_INSTALL_LIBDIR:PATH=lib64 -DPLUGIN_INSTALL_PATH=%(installdir)s/lib/plugin ../hdf5blosc/hdf5-blosc-%(version)s',
+        'use_pip': False,
+        'sanity_check_paths': {
+            'files': ['lib/plugin/libH5Zblosc.%s' % SHLIB_EXT, 'include/blosc_filter.h'],
+            'dirs': [],
+        },
+        'modulename': False, # skips Python-specific sanity check
+    }),
+]
+
+exts_filter = ("""module load python-build-bundle/2024a numpy/.2.1.1;  python -c 'import %(ext_name)s'""", '')
+
+sanity_check_paths = {
+    'files': [
+        'lib/libhdf5.so'
+    ],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'data'
