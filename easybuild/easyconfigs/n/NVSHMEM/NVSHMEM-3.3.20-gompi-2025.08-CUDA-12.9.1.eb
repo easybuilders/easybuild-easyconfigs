@@ -22,7 +22,13 @@ sources = [{
     'filename': '%(namelower)s_src_cuda12-all-all-%(version)s.tar.gz',
     'extract_cmd': 'tar xf %s',
 }]
-checksums = ['96ec9620e82ec90de92c7d61a7ba03c0eba05075bf10e1fc4a066d45e7f7d21f']
+patches = ['NVSHMEM-3.3.20_update_cxx_standard.patch']
+checksums = [
+    # nvshmem_src_cuda12-all-all-3.3.20.tar.gz
+    '96ec9620e82ec90de92c7d61a7ba03c0eba05075bf10e1fc4a066d45e7f7d21f',
+    # NVSHMEM-3.3.20_update_cxx_standard.patch
+    '560eda0fb6e44c8f7666fb18a87d5b6505f0fb77316908718df6e835db52b49f'
+]
 
 builddependencies = [
     ('Autotools', '20250527'),
@@ -34,6 +40,7 @@ dependencies = [
     ('CUDA', '12.9.1', '', SYSTEM),
     ('NCCL', '2.27.7', versionsuffix),
     ('UCX-CUDA', '1.19.0', versionsuffix),
+    ('Python', '3.13.5'),
 ]
 
 configopts = '-DNVSHMEM_USE_GDRCOPY=1 '
@@ -44,18 +51,10 @@ configopts += '-DNVSHMEMTEST_USE_MPI_LAUNCHER=1 '
 configopts += '-DNCCL_HOME=${EBROOTNCCL} '
 configopts += '-DNVSHMEM_USE_NCCL=1 '
 # configopts += '-DNVSHMEM_IBGDA_SUPPORT=1 '
-configopts += '-DNVSHMEM_BUILDDIR=%(builddir)s '
-configopts += '-DNVSHMEM_EXAMPLES_BUILDDIR=${NVSHMEM_BUILDDIR}/examples/obj '
-configopts += '-DNVSHMEM_OTHERTEST_BUILDDIR=${NVSHMEM_BUILDDIR}/othertest/obj '
-configopts += '-DNVSHMEM_TEST_BUILDDIR=${NVSHMEM_BUILDDIR}/test/obj '
-configopts += '-DNVSHMEM_PERFTEST_BUILDDIR=${NVSHMEM_BUILDDIR}/perftest/obj '
 configopts += '-DNVSHMEM_PREFIX=%(installdir)s '
-configopts += '-DNVSHMEM_EXAMPLES_INSTALL=${NVSHMEM_PREFIX}/examples '
-configopts += '-DNVSHMEM_OTHERTEST_INSTALL=${NVSHMEM_PREFIX}/othertest '
-configopts += '-DNVSHMEM_PERFTEST_INSTALL=${NVSHMEM_PREFIX}/perftest '
-configopts += '-DNVSHMEM_TEST_INSTALL=${NVSHMEM_PREFIX}/test '
-
-# build_type = None
+# NVSHMEM builds a wheel package if this option is enabled.
+# Properly installing the Python bindings is better handled in a separate EC.
+configopts += '-DNVSHMEM_BUILD_PYTHON_LIB=OFF '
 
 sanity_check_paths = {
     'files': ['lib/libnvshmem.a', 'lib/nvshmem_bootstrap_mpi.%s' % SHLIB_EXT],
