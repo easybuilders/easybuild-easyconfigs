@@ -1,0 +1,54 @@
+name: Tagbot
+on: [pull_request_target]
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+jobs:
+  tagbot:
+    # Note: can't rely on github.event.pull_request.merge_commit_sha because pull_request_target
+    # does not wait for github mergability check, and the value is outdated.
+    # Instead we merge manually in a temporary subdir "pr"
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+    steps:
+    - name: Checkout base branch for workflow scripts
+      uses: actions/checkout@v4
+
+    - name: Checkout PR for computing diff into "pr" subdirectory
+      uses: actions/checkout@v4
+      with:
+        ref: "${{ github.event.pull_request.head.sha }}"
+        path: 'pr'
+        fetch-depth: 0
+        
+    - name: Attempt test merge
+      id: merge
+      run: |
+        git config user.name "github-workflow"
+        git config user.email "github-workflow@github.com"
+        git merge --no-edit --no-ff origin/${{ github.event.pull_request.base.ref }}
+      continue-on-error: true
+      working-directory: pr
+
+    - name: Abort if merge failed
+      if: steps.merge.outcome == 'failure'
+      run: |
+        echo "Merge conflict detected, failing job."
+        exit 1
+
+    - name: set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+
+    - name: Get packages
+      run: pip install gitpython requests
+
+    - name: Tag and comment
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: python .github/workflows/tagbot.py
+
