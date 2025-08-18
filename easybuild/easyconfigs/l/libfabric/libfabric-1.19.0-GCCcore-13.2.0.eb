@@ -1,0 +1,66 @@
+easyblock = 'ConfigureMake'
+
+name = 'libfabric'
+version = '1.19.0'
+
+homepage = 'https://ofiwg.github.io/libfabric/'
+description = """
+Libfabric is a core component of OFI. It is the library that defines and exports
+the user-space API of OFI, and is typically the only software that applications
+deal with directly. It works in conjunction with provider libraries, which are
+often integrated directly into libfabric.
+"""
+
+# The psm3 provider (enabled by default) requires an AVX capable system to run
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/ofiwg/libfabric/releases/download/v%(version)s']
+sources = [SOURCE_TAR_BZ2]
+patches = [
+    '%(name)s-1.18.0_disable-psm3-avx-config.patch',
+]
+checksums = [
+    {'libfabric-1.19.0.tar.bz2': 'f14c764be9103e80c46223bde66e530e5954cb28b3835b57c8e728479603ef9e'},
+    {'libfabric-1.18.0_disable-psm3-avx-config.patch':
+     '79db0bfe759d65ef68301701e0842f1e8dcd4ace8bfc5bca8f7c8846501a67cb'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('pkgconf', '2.0.3'),
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('numactl', '2.0.16'),
+    # PSM2 dependency for libfabric should be used on Omnipath systems,
+    # but that PSM2 has CUDA as dependency so it's commented out by default;
+    # PSM2 only compiles on x86_64
+    # ('PSM2', {'arch=x86_64': '12.0.1', 'arch=*': False}),
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+# Regenerate build files to pick up psm3-axv-config patch
+preconfigopts = "./autogen.sh &&"
+
+# Disable deprecated "sockets" provider
+configopts = "--disable-sockets "
+
+# Disable usNIC provider by default as this requires specific osdependencies
+# If you want to enable this provider you need to uncomment the following line:
+# osdependencies.append(('libnl3-devel', 'libnl3-dev'))
+configopts += "--disable-usnic "
+
+buildopts = "V=1"
+
+sanity_check_paths = {
+    'files': ['bin/fi_info', 'bin/fi_pingpong', 'bin/fi_strerror'] +
+             ['lib/libfabric.%s' % x for x in ['a', SHLIB_EXT]],
+    'dirs': ['include/rdma', 'lib/pkgconfig', 'share']
+}
+
+sanity_check_commands = ['fi_info']
+
+moduleclass = 'lib'

@@ -1,0 +1,44 @@
+easyblock = 'ConfigureMake'
+
+name = 'DBus'
+version = '1.15.4'
+
+homepage = 'https://dbus.freedesktop.org/'
+
+description = """
+ D-Bus is a message bus system, a simple way for applications to talk
+ to one another.  In addition to interprocess communication, D-Bus helps
+ coordinate process lifecycle; it makes it simple and reliable to code
+ a "single instance" application or daemon, and to launch applications
+ and daemons on demand when their services are needed.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://dbus.freedesktop.org/releases/dbus']
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['bfe53d9e54a4977ec344928521b031af2e97cf78aea58f5d8e2b85ea0a80028b']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('expat', '2.5.0'),
+]
+
+configopts = '--with-systemdsystemunitdir=no '
+# disable documentation
+configopts += '--disable-xml-docs --disable-doxygen-docs --disable-ducktype-docs'
+
+sanity_check_paths = {
+    'files': ['bin/dbus-%s' % x for x in
+              ['cleanup-sockets', 'daemon', 'launch', 'monitor',
+               'run-session', 'send', 'uuidgen']] +
+             ['lib/libdbus-1.%s' % x for x in ['a', SHLIB_EXT]],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'devel'

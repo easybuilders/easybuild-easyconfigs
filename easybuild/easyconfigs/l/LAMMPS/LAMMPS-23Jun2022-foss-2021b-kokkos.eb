@@ -20,7 +20,12 @@ toolchainopts = {'openmp': True, 'usempi': True}
 # 'https://github.com/lammps/lammps/archive/'
 source_urls = [GITHUB_LOWER_SOURCE]
 sources = ['stable_%(version)s_update1.tar.gz']
-checksums = ['58e3b2b984f8935bb0db5631e143be2826c45ffd48844f7c394f36624a3e17a2']
+patches = ['LAMMPS-23June2022_fix-timestep-balance-example.patch']
+checksums = [
+    {'stable_23Jun2022_update1.tar.gz': '58e3b2b984f8935bb0db5631e143be2826c45ffd48844f7c394f36624a3e17a2'},
+    {'LAMMPS-23June2022_fix-timestep-balance-example.patch':
+     '0ad6c953f08b0d539b189b7aa7cef76774aebb9d633b07d5b6001ac0fcea3081'},
+]
 
 builddependencies = [
     ('CMake', '3.22.1'),
@@ -37,7 +42,6 @@ dependencies = [
     ('gzip', '1.10'),
     ('cURL', '7.78.0'),
     ('HDF5', '1.12.1'),
-    ('tbb', '2020.3'),
     ('PCRE', '8.45'),
     ('libxml2', '2.9.10'),
     ('FFmpeg', '4.3.2'),
@@ -45,11 +49,16 @@ dependencies = [
     ('kim-api', '2.3.0'),
     ('Eigen', '3.4.0'),
     ('PLUMED', '2.7.3'),
-    ('ScaFaCoS', '1.0.1'),
     ('SciPy-bundle', '2021.10'),
     # VTK package is auto-disabled if this dep is not available
     ('VTK', '9.1.0'),
 ]
+if ARCH == 'x86_64':
+    # TBB and ScaFaCoSis an optional dependency when building on Intel arch
+    dependencies += [
+        ('tbb', '2020.3'),
+        ('ScaFaCoS', '1.0.1'),
+    ]
 
 # To use additional custom configuration options, use the 'configopts' easyconfig parameter
 # See docs and lammps easyblock for more information.

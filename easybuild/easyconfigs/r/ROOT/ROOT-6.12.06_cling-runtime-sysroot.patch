@@ -1,0 +1,25 @@
+This patch disables the runtime sysroot feature for cling since we would not be cross-compiling in an EasyBuild context. 
+
+Reusing existing patch found in Gentoo ebuild for ROOT, see url:
+https://github.com/gentoo/gentoo/blob/master/sci-physics/root/files/root-6.12.06_cling-runtime-sysroot.patch
+
+Patch needed for at runtime for ROOT in EESSI:
+https://github.com/EESSI/software-layer/pull/769
+
+Index: root-6.12.06/interpreter/cling/lib/Utils/Paths.cpp
+===================================================================
+--- root-6.12.06.orig/interpreter/cling/lib/Utils/Paths.cpp
++++ root-6.12.06/interpreter/cling/lib/Utils/Paths.cpp
+@@ -57,11 +57,6 @@ using namespace clang;
+ void CopyIncludePaths(const clang::HeaderSearchOptions& Opts,
+                       llvm::SmallVectorImpl<std::string>& incpaths,
+                       bool withSystem, bool withFlags) {
+-  if (withFlags && Opts.Sysroot != "/") {
+-    incpaths.push_back("-isysroot");
+-    incpaths.push_back(Opts.Sysroot);
+-  }
+-
+   /// User specified include entries.
+   for (unsigned i = 0, e = Opts.UserEntries.size(); i != e; ++i) {
+     const HeaderSearchOptions::Entry &E = Opts.UserEntries[i];
+

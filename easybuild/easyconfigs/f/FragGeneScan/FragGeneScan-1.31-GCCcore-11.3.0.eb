@@ -1,0 +1,38 @@
+easyblock = 'MakeCp'
+
+name = 'FragGeneScan'
+version = '1.31'
+
+homepage = 'https://omics.informatics.indiana.edu/FragGeneScan/'
+description = "FragGeneScan is an application for finding (fragmented) genes in short reads."
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%(name)s%(version)s.tar.gz']
+checksums = ['cd3212d0f148218eb3b17d24fcd1fc897fb9fee9b2c902682edde29f895f426c']
+
+builddependencies = [('binutils', '2.38')]
+
+dependencies = [('Perl', '5.34.1')]
+
+fix_perl_shebang_for = ['*.pl']
+
+prebuildopts = "make clean && "
+buildopts = 'CC="$CC" CFLAG="$CFLAGS" fgs && chmod -R go+rx *.pl train example'
+
+files_to_copy = ['FragGeneScan', 'run_FragGeneScan.pl', 'example', 'train']
+
+modextrapaths = {'PATH': ['']}
+
+sanity_check_paths = {
+    'files': ['FragGeneScan', 'run_FragGeneScan.pl'],
+    'dirs': ['example', 'train'],
+}
+
+sanity_check_commands = [
+    './run_FragGeneScan.pl help',
+    './run_FragGeneScan.pl -genome=./example/NC_000913.fna -out=./example/NC_000913-fgs  -complete=1  -train=complete'
+]
+
+moduleclass = 'bio'

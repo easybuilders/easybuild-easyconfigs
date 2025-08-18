@@ -1,0 +1,64 @@
+easyblock = 'CMakeMake'
+
+name = 'HOOMD-blue'
+version = "4.0.1"
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = "https://glotzerlab.engin.umich.edu/hoomd-blue/"
+description = """HOOMD-blue is a general-purpose particle simulation
+toolkit, implementing molecular dynamics and hard particle Monte Carlo
+optimized for fast execution on both GPUs and CPUs."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'usempi': True}
+
+github_account = 'glotzerlab'
+source_urls = [GITHUB_LOWER_RELEASE]
+sources = ['hoomd-%(version)s.tar.gz']
+checksums = ['b63dd8debb96f9c530983bd54ecbafa8fd07e017ded3ea64604cfb1f41a644b8']
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('pybind11', '2.9.2'),
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('UCX-CUDA', '1.12.1', versionsuffix),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('tbb', '2021.5.0'),
+    ('Eigen', '3.4.0'),
+    ('Cereal', '1.3.2', '', SYSTEM),
+]
+
+_copts = [
+    '-DENABLE_GPU=ON',
+    '-DHOOMD_GPU_PLATFORM=CUDA',
+    '-DENABLE_MPI=ON',
+    '-DBUILD_MD=ON',
+    '-DBUILD_METAL=ON',
+    '-DENABLE_TBB=ON',
+    '-DBUILD_TESTING=ON',
+    '-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python',
+]
+configopts = ' '.join(_copts)
+
+postinstallcmds = [
+    'ln -s hoomd/include %(installdir)s/include',
+]
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['hoomd/__init__.py', 'hoomd/include/hoomd/Compute.h'],
+    'dirs': ['lib/cmake'],
+}
+
+sanity_check_commands = [
+    "python -c 'import hoomd'",
+]
+
+modextrapaths = {'PYTHONPATH': ''}
+
+moduleclass = 'phys'
