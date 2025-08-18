@@ -553,8 +553,6 @@ class EasyConfigTest(TestCase):
         alt_dep_versions = {
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
-            # MACE-0.3.8-CUDA-12.1.1 needs ASE-3.24.0 (dep of matscipy-1.1.1)
-            'ASE': [(r'3\.24\.0', [r'MACE-0\.3\.8-foss-2023a-CUDA-12\.1\.1'])],
             # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
             'AUGUSTUS': [(r'3\.5\.0-20240612', [r'BRAKER-3\.0\.8'])],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
@@ -605,6 +603,10 @@ class EasyConfigTest(TestCase):
             'ParaView': [
                 # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
+            ],
+            'PMIx': [
+                # PRRTE 4.0+ requires PMIx 6.0+ and vice-versa
+                (r'6\.0\.0', [r'PRRTE-4\.0\.0']),
             ],
             'pydantic': [
                 # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
