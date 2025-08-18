@@ -19,8 +19,6 @@ dependencies = [
     ('tqdm', '4.66.1'),
 ]
 
-use_pip = True
-
 exts_list = [
     ('argon2-cffi-bindings', '21.2.0', {
         'modulename': '_argon2_cffi_bindings',
@@ -50,11 +48,13 @@ exts_list = [
     }),
     (name, version, {
         'modulename': 'HTSplotter',
-        'source_tmpl': SOURCE_PY3_WHL,
-        'checksums': ['6067735d14f15ca2fd35963701a96e39edaf0899742bfa7ccc8f9867a0279346'],
+        # Fixes the following error.
+        # `TypeError: rv_generic_interval() missing 1 required positional argument: 'confidence'`
+        # see https://github.com/KatherLab/marugoto/issues/14
+        # see also scipy release notes https://docs.scipy.org/doc/scipy/release/1.9.0-notes.html#deprecated-features
+        'preinstallopts': "sed -i 's/alpha/confidence/g' HTSplotter/save_hdf5brfiles.py && ",
+        'checksums': ['51c0cee4e8eeecfd03f32dd707e0fa433cec91abb9334ec1d28e7f82615dbe29'],
     }),
 ]
-
-sanity_pip_check = True
 
 moduleclass = 'bio'
