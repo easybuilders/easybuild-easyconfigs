@@ -560,6 +560,8 @@ class EasyConfigTest(TestCase):
             # Score-P 8.3+ requires Cube 4.8.2+ but we have 4.8.1 already
             'CubeLib': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
             'CubeWriter': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
+            # MACE-0.3.8-CUDA-12.1.1 needs e3nn-0.4.4-CUDA-12.1.1 as dependency
+            'e3nn': [(r'0\.4\.4; versionsuffix: -CUDA-12\.1\.1', [r'MACE-0\.3\.8-foss-2023a-CUDA-12\.1\.1'])],
             # Current rapthor requires WSclean 3.5 or newer, which in turn requires EveryBeam 0.6.X or newer
             # Requires us to also bump DP3 version (to 6.2) and its dependency on EveryBeam
             'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2', r'WSClean-3\.[5-9]'])],
@@ -601,6 +603,10 @@ class EasyConfigTest(TestCase):
             'ParaView': [
                 # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
+            ],
+            'PMIx': [
+                # PRRTE 4.0+ requires PMIx 6.0+ and vice-versa
+                (r'6\.0\.0', [r'PRRTE-4\.0\.0']),
             ],
             'pydantic': [
                 # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
