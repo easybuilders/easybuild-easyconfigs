@@ -1,0 +1,241 @@
+Fix parmed compatibility with Numpy 2.x and python 3.13
+From: https://aur.archlinux.org/cgit/aur.git/tree/0002-NumPy-2-compatibility.patch?h=ambertools
+Added by: Pavel Tomanek (Inuits)
+--- a/AmberTools/src/parmed/parmed/amber/_amberparm.py
++++ b/AmberTools/src/parmed/parmed/amber/_amberparm.py
+@@ -2147,7 +2147,7 @@ class AmberParm(AmberFormat, Structure):
+                     box[4] = box[4].value_in_unit(u.degrees)
+                 if u.is_quantity(box[5]):
+                     box[5] = box[5].value_in_unit(u.degrees)
+-            box = np.array(box, dtype=np.float64, copy=False, subok=True).reshape((-1, 6))
++            box = np.asanyarray(box, dtype=np.float64).reshape((-1, 6))
+ 
+             # We are adding a box for the first time, so make sure we add some flags
+             if self._box is None:
+@@ -2373,7 +2373,7 @@ class Rst7(object):
+     @property
+     def velocities(self):
+         """ Atomic velocities in units of angstroms/picoseconds """
+-        return np.array(self.vels, copy=False).reshape(self.natom, 3)
++        return np.asarray(self.vels).reshape(self.natom, 3)
+ 
+     @property
+     def box_vectors(self):
+--- a/AmberTools/src/parmed/parmed/amber/asciicrd.py
++++ b/AmberTools/src/parmed/parmed/amber/asciicrd.py
+@@ -317,7 +317,7 @@ class AmberAsciiRestart(_AmberAsciiCoordinateFile):
+     def coordinates(self, stuff):
+         if self._status == 'old':
+             raise RuntimeError('Cannot set coordinates on an old restart')
+-        stuff = np.array(stuff, copy=False).ravel()
++        stuff = np.asarray(stuff).ravel()
+         if self.natom > 0 and len(stuff) != 3 * self.natom:
+             raise ValueError(f'Got {len(stuff)} coordinates for {self.natom} atoms')
+         if self._coords_written:
+@@ -351,7 +351,7 @@ class AmberAsciiRestart(_AmberAsciiCoordinateFile):
+     def velocities(self, stuff):
+         if self._status == 'old':
+             raise RuntimeError('Cannot set velocities on an old restart')
+-        stuff = np.array(stuff, copy=False).ravel()
++        stuff = np.asarray(stuff).ravel()
+         if not self._coords_written:
+             raise RuntimeError('Coordinates must be set before velocities')
+         if self._cell_lengths_written or self._cell_angles_written:
+@@ -413,7 +413,7 @@ class AmberAsciiRestart(_AmberAsciiCoordinateFile):
+             raise RuntimeError('Can only write cell lengths once')
+         if len(stuff) != 3:
+             raise ValueError('Expected 3 numbers for cell lengths')
+-        self._cell_lengths = np.array(stuff, copy=False)
++        self._cell_lengths = np.asarray(stuff)
+         self._file.write('%12.7f%12.7f%12.7f' % (stuff[0], stuff[1], stuff[2]))
+         self._cell_lengths_written = True
+ 
+@@ -429,7 +429,7 @@ class AmberAsciiRestart(_AmberAsciiCoordinateFile):
+             raise RuntimeError('Can only write cell angles once')
+         if len(stuff) != 3:
+             raise ValueError('Expected 3 numbers for cell angles')
+-        self._cell_angles = np.array(stuff, copy=False)
++        self._cell_angles = np.asarray(stuff)
+         self._file.write('%12.7f%12.7f%12.7f\n' % (stuff[0],stuff[1],stuff[2]))
+         self._cell_angles_written = True
+ 
+--- a/AmberTools/src/parmed/parmed/amber/netcdffiles.py
++++ b/AmberTools/src/parmed/parmed/amber/netcdffiles.py
+@@ -241,7 +241,7 @@ class NetCDFRestart(metaclass=FileFormatType):
+ 
+     @coordinates.setter
+     def coordinates(self, stuff):
+-        stuff = np.array(stuff, copy=False).reshape((self.atom, 3))
++        stuff = np.asarray(stuff).reshape((self.atom, 3))
+         self._ncfile.variables['coordinates'][:] = stuff
+         self.flush()
+ 
+--- a/AmberTools/src/parmed/parmed/formats/pdb.py
++++ b/AmberTools/src/parmed/parmed/formats/pdb.py
+@@ -971,7 +971,7 @@ class PDBFile(metaclass=FileFormatType):
+                 symm_line = "REMARK 290   SMTRY" + fmt % tuple(arr_list)
+                 dest.write(symm_line)
+         if coordinates is not None:
+-            coords = np.array(coordinates, copy=False, subok=True)
++            coords = np.asanyarray(coordinates)
+             try:
+                 coords = coords.reshape((-1, len(struct.atoms), 3))
+             except ValueError:
+@@ -1646,7 +1646,7 @@ class CIFFile(metaclass=FileFormatType):
+         sym.append([struct.space_group])
+         cont.append(sym)
+         if coordinates is not None:
+-            coords = np.array(coordinates, copy=False, subok=True)
++            coords = np.asanyarray(coordinates)
+             try:
+                 coords = coords.reshape((-1, len(struct.atoms), 3))
+             except ValueError:
+--- a/AmberTools/src/parmed/parmed/formats/pqr.py
++++ b/AmberTools/src/parmed/parmed/formats/pqr.py
+@@ -257,7 +257,7 @@ class PQRFile(metaclass=FileFormatType):
+                     struct.box[0], struct.box[1], struct.box[2], struct.box[3],
+                     struct.box[4], struct.box[5]))
+         if coordinates is not None:
+-            coords = np.array(coordinates, copy=False, subok=True)
++            coords = np.asanyarray(coordinates)
+             try:
+                 coords = coords.reshape((-1, len(struct.atoms), 3))
+             except ValueError:
+--- a/AmberTools/src/parmed/parmed/structure.py
++++ b/AmberTools/src/parmed/parmed/structure.py
+@@ -23,7 +23,7 @@
+                               OutOfPlaneExtraPointFrame, PiTorsion, ResidueList, StretchBend,
+                               ThreeParticleExtraPointFrame, TorsionTorsion, TrackedList,
+                               TrigonalAngle, TwoParticleExtraPointFrame, UnassignedAtomType,
+-                              UreyBradley, Link, LocalCoordinatesFrame)
++                              UreyBradley, Link, LocalCoordinatesFrame, QualitativeBondType)
+ from .utils import PYPY, find_atom_pairs, tag_molecules
+ from .utils.decorators import needs_openmm
+ from .vec3 import Vec3
+@@ -1796,7 +1796,7 @@
+             if u.is_quantity(value):
+                 value = value.value_in_unit(u.angstroms)
+             value = list(value)
+-            coords = np.array(value, dtype=np.float64, copy=False, subok=True)
++            coords = np.asanyarray(value, dtype=np.float64)
+             coords = coords.reshape((-1, len(self.atoms), 3))
+             if len(coords) > 0:
+                 for a, xyz in zip(self.atoms, coords[0]):
+@@ -1877,7 +1877,7 @@
+                 box = value
+             else:
+                 box = _strip_box_units(list(value))
+-            box = np.array(box, dtype=np.float64, copy=False, subok=True)
++            box = np.asanyarray(box, dtype=np.float64)
+             if box.shape != (6,):
+                 if len(box.shape) != 2 or box.shape[-1] != 6:
+                     raise ValueError('Box information must be 6 floats')
+@@ -1944,7 +1944,7 @@
+                 except AttributeError:
+                     pass
+         else:
+-            value = np.array(value, copy=False).reshape(
++            value = np.asarray(value).reshape(
+                 (-1, len(self.atoms), 3))
+             for atom, xyz in zip(self.atoms, value[0]):
+                 atom.vx, atom.vy, atom.vz = xyz
+@@ -3833,7 +3833,7 @@
+ 
+         def idx(thing):
+             return thing.idx if thing is not None else None
+-        retdict['bonds'] = [(b.atom1.idx, b.atom2.idx, idx(b.type))
++        retdict['bonds'] = [(b.atom1.idx, b.atom2.idx, idx(b.type), b.order, b.qualitative_type)
+                             for b in self.bonds]
+         retdict['angles'] = [(a.atom1.idx, a.atom2.idx, a.atom3.idx,
+                               idx(a.type)) for a in self.angles]
+@@ -3910,15 +3910,27 @@
+                 return None
+             return typelist[idx]
+ 
++        def assign_order(bond_tuple):
++            if len(bond_tuple) < 4:
++                return 1.0
++            return bond_tuple[3]
++
++        def assign_qualitative_type(bond_tuple):
++            if len(bond_tuple) < 5:
++                return None
++            qualitative_type = bond_tuple[4]
++            return QualitativeBondType(qualitative_type) if qualitative_type is not None else None
++
+         # Set the topology arrays
+         self.bonds = TrackedList(
+-            Bond(self.atoms[it[0]], self.atoms[it[1]],
+-                 type=assign_type(self.bond_types, it[2]))
++            Bond(
++                self.atoms[it[0]], self.atoms[it[1]], type=assign_type(self.bond_types, it[2]),
++                order=assign_order(it), qualitative_type=assign_qualitative_type(it),
++            )
+             for it in d['bonds']
+         )
+         self.angles = TrackedList(
+-            Angle(self.atoms[it[0]], self.atoms[it[1]], self.atoms[it[2]],
+-                  type=assign_type(self.angle_types, it[3]))
++            Angle(self.atoms[it[0]], self.atoms[it[1]], self.atoms[it[2]], type=assign_type(self.angle_types, it[3]))
+             for it in d['angles']
+         )
+         self.dihedrals = TrackedList(
+@@ -3957,8 +3969,7 @@
+         )
+         self.pi_torsions = TrackedList(
+             PiTorsion(self.atoms[it[0]], self.atoms[it[1]], self.atoms[it[2]], self.atoms[it[3]],
+-                      self.atoms[it[4]], self.atoms[it[5]],
+-                      type=assign_type(self.pi_torsion_types, it[6]))
++                      self.atoms[it[4]], self.atoms[it[5]], type=assign_type(self.pi_torsion_types, it[6]))
+             for it in d['pi_torsions']
+         )
+         self.stretch_bends = TrackedList(
+@@ -3968,8 +3979,7 @@
+         )
+         self.torsion_torsions = TrackedList(
+             TorsionTorsion(self.atoms[it[0]], self.atoms[it[1]], self.atoms[it[2]],
+-                           self.atoms[it[3]], self.atoms[it[4]],
+-                           type=assign_type(self.torsion_torsion_types, it[5]))
++                           self.atoms[it[3]], self.atoms[it[4]], type=assign_type(self.torsion_torsion_types, it[5]))
+             for it in d['torsion_torsions']
+         )
+         self.chiral_frames = TrackedList(
+@@ -3979,8 +3989,7 @@
+             MultipoleFrame(self.atoms[it[0]], *it[1:]) for it in d['multipole_frames']
+         )
+         self.adjusts = TrackedList(
+-            NonbondedException(self.atoms[it[0]], self.atoms[it[1]],
+-                               assign_type(self.adjust_types, it[2]))
++            NonbondedException(self.atoms[it[0]], self.atoms[it[1]], assign_type(self.adjust_types, it[2]))
+             for it in d['adjusts']
+         )
+         self.acceptors = TrackedList(
+--- a/AmberTools/src/parmed/parmed/utils/netcdf.py	2025-03-24 15:55:38.000000000 +0100
++++ b/AmberTools/src/parmed/parmed/utils/netcdf.py	2025-07-15 14:14:34.000940000 +0200
+@@ -39,15 +39,25 @@
+ from operator import mul
+ from collections import OrderedDict
+ from platform import python_implementation
++from typing import Any
+ 
+ import mmap as mm
+ 
+ import numpy as np
+-from numpy.compat import asbytes, asstr
+ from numpy import frombuffer, dtype, empty, array, asarray
+ from numpy import little_endian as LITTLE_ENDIAN
+ from functools import reduce
+ 
++def asbytes(s: Any) -> bytes:
++    """Ensures input is in bytes format. Mimics numpy.compat.asbytes"""
++    return str(s).encode("latin1") if isinstance(s, str) else s
++
++
++def asstr(b: Any) -> str:
++    """Ensures input is in string format. Mimics numpy.compat.asstr"""
++    return b.decode("latin1") if isinstance(b, bytes) else str(b)
++
++
+ 
+ IS_PYPY = python_implementation() == 'PyPy'
+ 
