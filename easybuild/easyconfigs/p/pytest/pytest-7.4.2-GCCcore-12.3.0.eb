@@ -1,0 +1,67 @@
+easyblock = 'PythonBundle'
+
+name = 'pytest'
+version = '7.4.2'
+
+homepage = 'https://docs.pytest.org/en/latest/'
+description = """The pytest framework makes it easy to write small,
+readable tests, and can scale to support complex functional testing for
+applications and libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('hatchling', '1.18.0'),
+    ('flit', '3.9.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('hypothesis', '6.82.0'),
+]
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+# Note! Some of the file system related tests may fail on shared file systems.
+# Notably TestPOSIXLocalPath.test_copy_stat_file, TestPOSIXLocalPath.test_copy_stat_dir
+# and test_source_mtime_long_long are known to fail on GPFS
+# Build with buildpath and tmpdir set to a local file system to avoid this
+# or use --ignore-test-failures
+_skip_tests = [
+    'testing/io/test_terminalwriter.py',
+    'testing/test_terminal.py',
+    'testing/test_debugging.py',
+    'testing/test_config.py',
+    'testing/test_helpconfig.py',
+]
+_ignore_tests = ' --ignore='.join(_skip_tests)
+
+exts_list = [
+    ('iniconfig', '2.0.0', {
+        'checksums': ['2d91e135bf72d31a410b17c16da610a82cb55f6b0477d1a902134b24a455b8b3'],
+    }),
+    ('exceptiongroup', '1.1.1', {
+        'checksums': ['d484c3090ba2889ae2928419117447a14daf3c1231d5e30d0aae34f354f01785'],
+    }),
+    ('pluggy', '1.2.0', {
+        'checksums': ['d12f0c4b579b15f5e054301bb226ee85eeeba08ffec228092f8defbaa3a4c4b3'],
+    }),
+    ('elementpath', '4.1.5', {
+        'checksums': ['c2d6dc524b29ef751ecfc416b0627668119d8812441c555d7471da41d4bacb8d'],
+    }),
+    ('xmlschema', '2.5.0', {
+        'checksums': ['276a03e0fd3c94c148d528bff4d9482f9b99bf8c7b4056a2e8e703d28149d454'],
+    }),
+    (name, version, {
+        'checksums': ['a766259cfab564a2ad52cb1aae1b881a75c3eb7e34ca3779697c23ed47c47069'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import pytest'",
+    'cd %%(builddir)s/%%(name)s/%%(name)s-%%(version)s && %%(installdir)s/bin/pytest --ignore=%s testing'
+    % _ignore_tests,
+]
+
+moduleclass = 'lib'

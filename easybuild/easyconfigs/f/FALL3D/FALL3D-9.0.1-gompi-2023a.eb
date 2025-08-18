@@ -1,0 +1,40 @@
+easyblock = 'CMakeMakeCp'
+name = 'FALL3D'
+version = '9.0.1'
+
+homepage = 'https://gitlab.com/fall3d-suite/fall3d'
+description = "FALL3D is an open-source volcanic ash dispersal model."
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+toolchainopts = {'opt': True}
+
+source_urls = ['https://gitlab.com/fall3d-suite/fall3d/-/archive/%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['17e734c8fe8b94c0f463f93667a372c003f98a0be5522ed957e8dd82bc03534c']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+dependencies = [
+    ('netCDF-Fortran', '4.6.1'),
+]
+
+configopts = "-DWITH-MPI=YES"
+local_executable = "Fall3d.x"
+
+# When using -DDETAIL_BIN, the executable name will depend on the compiler and options
+# configopts = "-DDETAIL_BIN=YES -DWITH-MPI=YES"
+# local_executable = "Fall3d.GNU.r8.mpi.cpu.x"
+
+files_to_copy = [(['bin/%s' % local_executable], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % local_executable],
+    'dirs': []
+}
+sanity_check_commands = [
+    # This is a flaky check, as the option is not understood but the command does not return an error code
+    "%s --help" % local_executable
+]
+
+moduleclass = 'geo'

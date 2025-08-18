@@ -1,0 +1,30 @@
+easyblock = 'ConfigureMake'
+
+name = 'GlobalArrays'
+version = '5.8'
+
+homepage = 'https://hpc.pnl.gov/globalarrays'
+description = "Global Arrays (GA) is a Partitioned Global Address Space (PGAS) programming model"
+
+toolchain = {'name': 'iomkl', 'version': '2021a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/%(name)s/ga/releases/download/']
+sources = ['v%(version)s/ga-%(version)s.tar.gz']
+checksums = ['64df7d1ea4053d24d84ca361e67a6f51c7b17ed7d626cb18a9fbc759f4a078ac']
+
+configopts = ' --with-mpi --enable-i8 '
+configopts += '--with-blas8="-L$MLROOT/lib/intel64 -lmkl_sequential -lmkl_intel_ilp64" '
+configopts += '--with-scalapack8="L$MKLROOT/lib/intel64 -lmkl_scalapack_ilp64 -lmkl_intel_ilp64 '
+configopts += '-lmkl_sequential -lmkl_core -lmkl_blacs_intelmpi_ilp64 -lpthread -lm -ldl"'
+# select armci network as (Comex) MPI-1 two-sided
+configopts += ' --with-mpi-ts'
+
+
+sanity_check_paths = {
+    'files': ['bin/adjust.x', 'bin/collisions.x', 'bin/ga-config', 'lib/libarmci.a',
+              'lib/libcomex.a', 'lib/libga.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'
