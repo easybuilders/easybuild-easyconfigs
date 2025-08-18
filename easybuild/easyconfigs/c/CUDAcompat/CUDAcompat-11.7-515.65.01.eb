@@ -1,0 +1,45 @@
+name = 'CUDAcompat'
+version = '11.7'
+nv_version = '515.65.01'
+versionsuffix = "-" + nv_version
+
+# Minimal driver requirements for each production branch / major version as found on
+# https://docs.nvidia.com/deploy/cuda-compatibility/index.html#use-the-right-compat-package
+# Compatibility test can be skipped with --skip-test-step/--ignore-test-failure
+# but then tests running actual CUDA applications should be used to verify compatibility
+compatible_driver_versions = [
+    '450.36.06',  # (CUDA 11.0)
+    '470.57.02',  # (CUDA 11.4)
+    '510.39.01',  # (CUDA 11.6)
+]
+
+homepage = 'https://docs.nvidia.com/deploy/cuda-compatibility/index.html'
+description = """Using the CUDA Forward Compatibility package,
+ system administrators can run applications built using a newer toolkit
+ even when an older driver that does not satisfy the minimum required driver version
+ is installed on the system.
+ This forward compatibility allows the CUDA deployments in data centers and enterprises
+ to benefit from the faster release cadence and the latest features and performance of CUDA Toolkit.
+"""
+
+toolchain = SYSTEM
+
+# The full driver runfile installers are downloaded but we will only use a small portion of them
+# (see https://docs.nvidia.com/deploy/cuda-compatibility/index.html#manually-installing-from-runfile)
+# By downloading, you accept the "License For Customer Use of NVIDIA Software for use of the driver
+# (https://www.nvidia.com/content/DriverDownload-March2009/licence.php?lang=us)
+
+# accept_eula = True
+
+source_urls = ['https://us.download.nvidia.com/tesla/' + nv_version]
+sources = ['NVIDIA-Linux-%%(arch)s-%s.run' % nv_version]
+checksums = [{
+    'NVIDIA-Linux-aarch64-%s.run' % nv_version:
+        '0d2ac6c6ca144c8c7bbf1a62034998463b21f2660a793607d88c031650d93e93',
+    'NVIDIA-Linux-ppc64le-%s.run' % nv_version:
+        'd217c7539d049ab1b7a889815d14d1655116616e7e9943387a1b190aec816063',
+    'NVIDIA-Linux-x86_64-%s.run' % nv_version:
+        '0492ddc5b5e65aa00cbc762e8d6680205c8d08e103b7131087a15126aee495e9',
+}]
+
+moduleclass = 'system'

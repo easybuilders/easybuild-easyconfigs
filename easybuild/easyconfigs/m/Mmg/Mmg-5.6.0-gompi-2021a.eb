@@ -1,0 +1,47 @@
+easyblock = 'CMakeMake'
+
+name = 'Mmg'
+version = '5.6.0'
+
+homepage = 'https://www.mmgtools.org/'
+description = """
+Mmg is an open source software for simplicial remeshing. It provides 3 applications and 4 libraries:
+the mmg2d application and the libmmg2d library: adaptation and optimization of a two-dimensional
+triangulation and generation of a triangulation from a set of points or from given boundary edges
+the mmgs application and the libmmgs library: adaptation and optimization of a surface triangulation
+and isovalue discretization the mmg3d application and the libmmg3d library: adaptation and optimization
+of a tetrahedral mesh and implicit domain meshing the libmmg library gathering the libmmg2d,
+libmmgs and libmmg3d libraries."""
+
+toolchain = {'name': 'gompi', 'version': '2021a'}
+
+source_urls = ['https://github.com/MmgTools/mmg/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['mmg-%(version)s_remove_ci_tests.patch']
+
+checksums = [
+    'bbf9163d65bc6e0f81dd3acc5a51e4a8c47a7fdae849abc26277e01154fe2437',  # v5.6.0.tar.gz
+    '99de7437fb9d036c786b7f1526da93d4aa1d28e728fe7279f4c9204bbbb9f734',  # mmg-5.6.0_remove_ci_tests.patch
+
+]
+
+builddependencies = [('CMake', '3.20.1')]
+
+dependencies = [('SCOTCH', '6.1.0')]
+
+# CI tests require downloading of data that might not be available in the future.
+# Sticking to tests included in the source with help of patch
+configopts = '-DUSE_SCOTCH=ON -DBUILD_TESTING=ON -DONLY_VERY_SHORT_TESTS=ON '
+configopts += '-DTEST_LIBMMG2D=ON -DTEST_LIBMMG3D=ON -DTEST_LIBMMGS=ON '
+configopts += '-DLIBMMG2D_SHARED=ON -DLIBMMG3D_SHARED=ON -DLIBMMGS_SHARED=ON -DLIBMMG_SHARED=ON '
+
+pretestopts = 'export CTEST_PARALLEL_LEVEL=%(parallel)s &&'
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/%s_O3' % x for x in ['mmg2d', 'mmg3d', 'mmgs']] +
+             ['lib/lib%s.%s' % (x, y) for x in ['mmg2d', 'mmg3d', 'mmgs', 'mmg'] for y in ['a', SHLIB_EXT]],
+    'dirs': ['include/mmg/%s' % x for x in ['mmg2d', 'mmg3d', 'mmgs']]
+}
+
+moduleclass = 'math'

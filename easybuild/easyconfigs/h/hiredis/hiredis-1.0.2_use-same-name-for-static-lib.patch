@@ -1,0 +1,43 @@
+From https://patch-diff.githubusercontent.com/raw/redis/hiredis/pull/1057
+
+From dd4bf97836d07df0a4502b72f9024d0231156711 Mon Sep 17 00:00:00 2001
+From: Orgad Shaneh <orgad.shaneh@audiocodes.com>
+Date: Tue, 29 Mar 2022 17:16:19 +0300
+Subject: [PATCH] Use the same name for static and shared libraries
+
+On all system except MSVC, the targets are different.
+
+Unix: libhiredis.so, libhiredis.a
+MinGW: libhiredis.dll+libhiredis.dll.a, libhiredis.a
+MSVC: hiredis.dll+hiredis.lib, hiredis_static.lib
+---
+ CMakeLists.txt | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index fe6720b28..899cd14d0 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -50,6 +50,11 @@ ADD_LIBRARY(hiredis_static STATIC ${hiredis_sources})
+ ADD_LIBRARY(hiredis::hiredis ALIAS hiredis)
+ ADD_LIBRARY(hiredis::hiredis_static ALIAS hiredis_static)
+ 
++IF(NOT MSVC)
++    SET_TARGET_PROPERTIES(hiredis_static
++        PROPERTIES OUTPUT_NAME hiredis)
++ENDIF()
++
+ SET_TARGET_PROPERTIES(hiredis
+     PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+     VERSION "${HIREDIS_SONAME}")
+@@ -160,6 +165,10 @@ IF(ENABLE_SSL)
+             ${hiredis_ssl_sources})
+     ADD_LIBRARY(hiredis_ssl_static STATIC
+             ${hiredis_ssl_sources})
++    IF(NOT MSVC)
++        SET_TARGET_PROPERTIES(hiredis_ssl_static
++            PROPERTIES OUTPUT_NAME hiredis_ssl)
++    ENDIF()
+ 
+     IF (APPLE)
+         SET_PROPERTY(TARGET hiredis_ssl PROPERTY LINK_FLAGS "-Wl,-undefined -Wl,dynamic_lookup")

@@ -1,0 +1,20 @@
+The function tested is dependent on the current locale and may fail on non-English systems.
+See https://github.com/pytorch/pytorch/pull/85891
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/utils/cpp_extension.py b/torch/utils/cpp_extension.py
+index 9c6635f111..d99aae1ca2 100644
+--- a/torch/utils/cpp_extension.py
++++ b/torch/utils/cpp_extension.py
+@@ -292,7 +292,9 @@ def check_compiler_ok_for_platform(compiler: str) -> bool:
+     if any(name in compiler_path for name in _accepted_compilers_for_platform()):
+         return True
+     # If compiler wrapper is used try to infer the actual compiler by invoking it with -v flag
+-    version_string = subprocess.check_output([compiler, '-v'], stderr=subprocess.STDOUT).decode(*SUBPROCESS_DECODE_ARGS)
++    env = os.environ.copy()
++    env['LC_ALL'] = 'C'  # Don't localize output
++    version_string = subprocess.check_output([compiler, '-v'], stderr=subprocess.STDOUT, env=env).decode(*SUBPROCESS_DECODE_ARGS)
+     if IS_LINUX:
+         # Check for 'gcc' or 'g++' for sccache warpper
+         pattern = re.compile("^COLLECT_GCC=(.*)$", re.MULTILINE)

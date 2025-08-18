@@ -1,0 +1,53 @@
+easyblock = 'Binary'
+
+name = 'InterProScan'
+version = '5.62-94.0'
+
+homepage = 'https://www.ebi.ac.uk/interpro/'
+# also https://github.com/ebi-pf-team/interproscan
+description = """InterProScan is a sequence analysis application (nucleotide and protein sequences) that combines
+ different protein signature recognition methods into one resource [code only: libraries and external binaries
+ but no data]."""
+# software_license = 'LicenseApachev2'
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+source_urls = ['https://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/alt/']
+sources = ['interproscan-core-%(version)s.tar.gz']
+checksums = ['98caccaea4d47dbbb0975e7a09a4253b7e7b2796163567d2763f39d0a822c2a9']
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('Perl', '5.36.0'),
+    ('libgd', '2.3.3'),
+    ('Python', '3.10.8'),
+    ('PCRE', '8.45'),
+]
+# NOTE some analyses done by InterProScan require extra tools not included in the interproscan
+# distribution because of license issues.
+# Those tools are SignalP, TMHMM and Phobius.
+# To allow InterProScan to use them you have to copy or symlink their executable in the
+# corresponding %(installdir)s/bin/TOOL/VERSION/ folder.
+
+extract_sources = False
+
+# NOTE The data can be added manually afterwards with for example a symlink called *data*
+# in %(installdir)s/
+# But simpler to use the InterProScan_data-*.eb file. The regular InterProScan data package
+# does not contain the lookup_service data way too large!
+install_cmd = 'tar xfz %(namelower)s-core-%(version)s.tar.gz && '
+install_cmd += 'cd %(namelower)s-%(version)s/ && '
+install_cmd += 'find . -type d -name bin32 | xargs rm -Rf && '
+install_cmd += 'rm -f test* && rm -Rf src/ && '
+install_cmd += 'chmod -x *.jar && '
+install_cmd += 'cp -r * %(installdir)s/ && cd .. && '
+install_cmd += 'rm -Rf %(namelower)s-%(version)s/'
+
+sanity_check_paths = {
+    'files': ['interproscan-%(version_major)s.jar', 'interproscan.sh', 'interproscan.properties'],
+    'dirs': ['bin', 'lib'],
+}
+
+sanity_check_commands = ["interproscan.sh 2>&1 | grep 'Welcome to InterProScan-%(version)s'"]
+
+moduleclass = 'bio'

@@ -1,0 +1,63 @@
+##
+# EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste (UGent)
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of
+# the policy: https://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'RMBlast'
+version = '2.13.0'
+
+homepage = 'https://www.repeatmasker.org/rmblast/'
+description = """RMBlast is a RepeatMasker compatible version of the standard NCBI BLAST suite. The primary
+ difference between this distribution and the NCBI distribution is the addition of a new program 'rmblastn'
+ for use with RepeatMasker and RepeatModeler."""
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+toolchainopts = {'usempi': True}
+
+# RMBlast is distributed as a patch that applies on top of BLAST+
+source_urls = ['https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/%(version)s/']
+sources = ['ncbi-blast-%(version)s+-src.tar.gz']
+patches = [('https://www.repeatmasker.org/%(namelower)s/isb-%(version)s+-%(namelower)s.patch.gz', 2)]
+checksums = [
+    {'ncbi-blast-2.13.0+-src.tar.gz': '89553714d133daf28c477f83d333794b3c62e4148408c072a1b4620e5ec4feb2'},
+    {'isb-2.13.0+-rmblast.patch.gz': '06595546318577b450e4a82c641017b2818b1741446e7ac675d82aef3d8f7f3d'},
+]
+
+dependencies = [
+    ('zlib', '1.2.12'),
+    ('bzip2', '1.0.8'),
+    ('PCRE', '8.45'),
+    ('Boost.MPI', '1.79.0'),
+    ('GMP', '6.2.1'),
+    ('libpng', '1.6.37'),
+    ('libjpeg-turbo', '2.1.3'),
+    ('LMDB', '0.9.29'),
+]
+
+# Disable auto-vectorization for the API on CPUs with AVX512 (Intel Skylake and onwards)
+# Compilation fails on src/algo/blast/api/prelim_stage.cpp
+local_apimake = 'src/algo/blast/api/Makefile.xblast.lib'
+preconfigopts = "sed -i 's/FAST_CXXFLAGS)/FAST_CXXFLAGS) -fno-tree-vectorize/g' %s &&" % local_apimake
+
+configopts = "--with-64 --with-z=$EBROOTZLIB --with-bz2=$EBROOTBZIP2 "
+configopts += "--with-pcre=$EBROOTPCRE --with-boost=$EBROOTBOOST "
+configopts += "--with-gmp=$EBROOTGMP --with-png=$EBROOTLIBPNG "
+configopts += "--with-jpeg=$EBROOTLIBJPEGMINTURBO --with-lmdb=$EBROOTLMDB"
+
+prebuildopts = "sed -i 's/LIBS =/LIBS = $(BLAST_THIRD_PARTY_LIBS)/' src/app/rmblastn/Makefile.rmblastn.app && "
+
+sanity_check_paths = {
+    'files': ['bin/blastp', 'bin/blastn', 'bin/deltablast', 'bin/rmblastn'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
