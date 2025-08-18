@@ -1,0 +1,161 @@
+commit 2ba4892b9327e5d21fdd712e178447d2ecd3665a
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Wed Aug 24 08:15:39 2022 +0200
+
+    Use external Zlib and GSL instead of internal ones.
+    And use correctly names zlib functions.
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 487c7bcd..0aae03ea 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -157,18 +157,20 @@ endif()
+ #endif()
+ 
+ # GSL 
+-set(TARGET_NAME gsl)
+-file(GLOB_RECURSE GSL_SOURCES ${PROJECT_SOURCE_DIR}/gsl/*.c ${PROJECT_SOURCE_DIR}/gsl/*/*.c)
+-set(GSL_INCLUDES ${PROJECT_SOURCE_DIR}/gsl ${PROJECT_SOURCE_DIR}/gsl/specfunc ${PROJECT_SOURCE_DIR}/gsl/blas ${PROJECT_SOURCE_DIR}/gsl/rng ${PROJECT_SOURCE_DIR}/gsl/cdf ${PROJECT_SOURCE_DIR}/gsl/vector ${PROJECT_SOURCE_DIR}/gsl/err ${PROJECT_SOURCE_DIR}/gsl/sys ${PROJECT_SOURCE_DIR}/gsl/randist ${PROJECT_SOURCE_DIR}/gsl/matrix ${PROJECT_SOURCE_DIR}/gsl/cblas ${PROJECT_SOURCE_DIR}/gsl/complex ${PROJECT_SOURCE_DIR}/gsl/block ${PROJECT_SOURCE_DIR}/gsl/linalg)
+-add_library(${TARGET_NAME} STATIC ${GSL_SOURCES})
+-target_include_directories(${TARGET_NAME} PUBLIC ${GSL_INCLUDES})
++# Use external GSL instead
++#set(TARGET_NAME gsl)
++#file(GLOB_RECURSE GSL_SOURCES ${PROJECT_SOURCE_DIR}/gsl/*.c ${PROJECT_SOURCE_DIR}/gsl/*/*.c)
++#set(GSL_INCLUDES ${PROJECT_SOURCE_DIR}/gsl ${PROJECT_SOURCE_DIR}/gsl/specfunc ${PROJECT_SOURCE_DIR}/gsl/blas ${PROJECT_SOURCE_DIR}/gsl/rng ${PROJECT_SOURCE_DIR}/gsl/cdf ${PROJECT_SOURCE_DIR}/gsl/vector ${PROJECT_SOURCE_DIR}/gsl/err ${PROJECT_SOURCE_DIR}/gsl/sys ${PROJECT_SOURCE_DIR}/gsl/randist ${PROJECT_SOURCE_DIR}/gsl/matrix ${PROJECT_SOURCE_DIR}/gsl/cblas ${PROJECT_SOURCE_DIR}/gsl/complex ${PROJECT_SOURCE_DIR}/gsl/block ${PROJECT_SOURCE_DIR}/gsl/linalg)
++#add_library(${TARGET_NAME} STATIC ${GSL_SOURCES})
++#target_include_directories(${TARGET_NAME} PUBLIC ${GSL_INCLUDES})
+ 
+ # ZLIB
+-set(TARGET_NAME eidos_zlib)
+-file(GLOB_RECURSE ZLIB_SOURCES ${PROJECT_SOURCE_DIR}/eidos_zlib/*.c)
+-set(ZLIB_INCLUDES ${PROJECT_SOURCE_DIR}/eidos_zlib)
+-add_library(${TARGET_NAME} STATIC ${ZLIB_SOURCES})
+-target_include_directories(${TARGET_NAME} PUBLIC)
++# Use external Zlib instead
++#set(TARGET_NAME eidos_zlib)
++#file(GLOB_RECURSE ZLIB_SOURCES ${PROJECT_SOURCE_DIR}/eidos_zlib/*.c)
++#set(ZLIB_INCLUDES ${PROJECT_SOURCE_DIR}/eidos_zlib)
++#add_library(${TARGET_NAME} STATIC ${ZLIB_SOURCES})
++#target_include_directories(${TARGET_NAME} PUBLIC)
+ 
+ # KASTORE
+ set(TARGET_NAME kastore)
+@@ -198,7 +200,7 @@ list(APPEND SLIM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/GitSHA1.cpp" ${PROJECT_SOU
+ 
+ add_executable(${TARGET_NAME} ${SLIM_SOURCES})
+ target_include_directories(${TARGET_NAME} PRIVATE ${GSL_INCLUDES} "${PROJECT_SOURCE_DIR}/core" "${PROJECT_SOURCE_DIR}/eidos")
+-target_link_libraries(${TARGET_NAME} PUBLIC gsl eidos_zlib tables)
++target_link_libraries(${TARGET_NAME} PUBLIC gsl gslcblas z tables)
+ if(WIN32)
+     set_source_files_properties(${SLIM_SOURCES} PROPERTIES COMPILE_FLAGS "-include config.h")
+     set_source_files_properties(${GNULIB_NAMESPACE_SOURCES} TARGET_DIRECTORY slim PROPERTIES COMPILE_FLAGS "-include config.h -DGNULIB_NAMESPACE=gnulib")
+@@ -211,7 +213,7 @@ set(TARGET_NAME eidos)
+ file(GLOB_RECURSE EIDOS_SOURCES  ${PROJECT_SOURCE_DIR}/eidos/*.cpp  ${PROJECT_SOURCE_DIR}/eidostool/*.cpp)
+ add_executable(${TARGET_NAME} ${EIDOS_SOURCES})
+ target_include_directories(${TARGET_NAME} PRIVATE ${GSL_INCLUDES} "${PROJECT_SOURCE_DIR}/eidos")
+-target_link_libraries(${TARGET_NAME} PUBLIC gsl eidos_zlib tables)
++target_link_libraries(${TARGET_NAME} PUBLIC gsl gslcblas z tables)
+ if(WIN32)
+     set_source_files_properties(${EIDOS_SOURCES} PROPERTIES COMPILE_FLAGS "-include config.h")
+     set_source_files_properties(${GNULIB_NAMESPACE_SOURCES} TARGET_DIRECTORY slim eidos PROPERTIES COMPILE_FLAGS "-include config.h -DGNULIB_NAMESPACE=gnulib")
+@@ -244,15 +246,15 @@ set_target_properties( ${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+ target_compile_definitions( ${TARGET_NAME} PRIVATE EIDOSGUI=1 SLIMGUI=1)
+ target_include_directories(${TARGET_NAME} PUBLIC ${GSL_INCLUDES} "${PROJECT_SOURCE_DIR}/QtSLiM" "${PROJECT_SOURCE_DIR}/eidos" "${PROJECT_SOURCE_DIR}/core" "${PROJECT_SOURCE_DIR}/treerec" "${PROJECT_SOURCE_DIR}/treerec/tskit/kastore")
+ if(APPLE)
+-	target_link_libraries( ${TARGET_NAME} PUBLIC Qt5::Widgets Qt5::Core Qt5::Gui OpenGL::GL gsl tables eidos_zlib /usr/lib/libobjc.A.dylib )
++	target_link_libraries( ${TARGET_NAME} PUBLIC Qt5::Widgets Qt5::Core Qt5::Gui OpenGL::GL gsl gslcblas tables z /usr/lib/libobjc.A.dylib )
+ else()
+     if(WIN32)
+         set_source_files_properties(${QTSLIM_SOURCES} PROPERTIES COMPILE_FLAGS "-include config.h")
+         set_source_files_properties(${GNULIB_NAMESPACE_SOURCES} TARGET_DIRECTORY slim eidos SLiMgui PROPERTIES COMPILE_FLAGS "-include config.h -DGNULIB_NAMESPACE=gnulib")
+         target_include_directories(${TARGET_NAME} BEFORE PUBLIC ${GNU_DIR})
+-        target_link_libraries(${TARGET_NAME} PUBLIC Qt5::Widgets Qt5::Core Qt5::Gui OpenGL::GL gsl tables eidos_zlib gnu )
++        target_link_libraries(${TARGET_NAME} PUBLIC Qt5::Widgets Qt5::Core Qt5::Gui OpenGL::GL gsl gslcblas tables z gnu )
+     else()
+-	    target_link_libraries( ${TARGET_NAME} PUBLIC Qt5::Widgets Qt5::Core Qt5::Gui OpenGL::GL gsl tables eidos_zlib )
++	    target_link_libraries( ${TARGET_NAME} PUBLIC Qt5::Widgets Qt5::Core Qt5::Gui OpenGL::GL gsl gslcblas tables z )
+     endif()
+ endif()
+ install(TARGETS ${TARGET_NAME} DESTINATION bin)
+diff --git a/eidos/eidos_functions.cpp b/eidos/eidos_functions.cpp
+index 4f52c763..ac9de199 100644
+--- a/eidos/eidos_functions.cpp
++++ b/eidos/eidos_functions.cpp
+@@ -55,11 +55,11 @@
+ 
+ #include "string.h"
+ 
+-#include "gsl_linalg.h"
+-#include "gsl_errno.h"
+-#include "gsl_cdf.h"
++#include <gsl/gsl_linalg.h>
++#include <gsl/gsl_errno.h>
++#include <gsl/gsl_cdf.h>
+ 
+-#include "../eidos_zlib/zlib.h"
++#include <zlib.h>
+ 
+ #include "eidos_globals.h"
+ #if EIDOS_ROBIN_HOOD_HASHING
+@@ -11475,7 +11475,7 @@ EidosValue_SP Eidos_ExecuteFunction_writeTempFile(const std::vector<EidosValue_S
+ 	if (do_compress)
+ 	{
+ 		// compression using zlib; very different from the no-compression case, unfortunately, because here we use C-based APIs
+-		gzFile gzf = z_gzdopen(fd, "wb");
++		gzFile gzf = gzdopen(fd, "wb");
+ 		
+ 		if (!gzf)
+ 		{
+diff --git a/eidos/eidos_globals.cpp b/eidos/eidos_globals.cpp
+index dc801c2f..95984159 100644
+--- a/eidos/eidos_globals.cpp
++++ b/eidos/eidos_globals.cpp
+@@ -65,13 +65,13 @@
+ #endif
+ 
+ // for Eidos_WelchTTest()
+-#include "gsl_cdf.h"
++#include <gsl/gsl_cdf.h>
+ 
+ // for Eidos_calc_sha_256()
+ #include <stdint.h>
+ 
+ // for _Eidos_FlushZipBuffer()
+-#include "../eidos_zlib/zlib.h"
++#include <zlib.h>
+ 
+ // for Eidos_ColorPaletteLookup()
+ #include "eidos_tinycolormap.h"
+@@ -1570,7 +1570,7 @@ bool _Eidos_FlushZipBuffer(const std::string &file_path, const std::string &outs
+ {
+ 	//std::cout << "_Eidos_FlushZipBuffer() called for " << file_path << std::endl;
+ 	
+-	gzFile gzf = z_gzopen(file_path.c_str(), "ab");
++	gzFile gzf = gzopen(file_path.c_str(), "ab");
+ 	
+ 	if (!gzf)
+ 		return false;
+@@ -1678,7 +1678,7 @@ void Eidos_WriteToFile(const std::string &p_file_path, std::vector<const std::st
+ 		{
+ 			// this code can handle both the append and the non-append case, but the append case may generate very low-quality
+ 			// compression (potentially even worse than the uncompressed data) due to having an excess of gzip headers
+-			gzFile gzf = z_gzopen(p_file_path.c_str(), p_append ? "ab" : "wb");
++			gzFile gzf = gzopen(p_file_path.c_str(), p_append ? "ab" : "wb");
+ 			
+ 			if (!gzf)
+ 				EIDOS_TERMINATION << "#ERROR (Eidos_WriteToFile): could not write to file at path " << p_file_path << "." << EidosTerminate(nullptr);
+diff --git a/eidos/eidos_rng.h b/eidos/eidos_rng.h
+index 313f75d7..7ab9db4d 100644
+--- a/eidos/eidos_rng.h
++++ b/eidos/eidos_rng.h
+@@ -29,8 +29,8 @@
+ 
+ // We have our own private copy of (parts of) the GSL library, so that we don't have link dependencies.
+ // See the _README file in the gsl directory for information on the local copy of the GSL included in this project.
+-#include "gsl_rng.h"
+-#include "gsl_randist.h"
++#include <gsl/gsl_rng.h>
++#include <gsl/gsl_randist.h>
+ 
+ #include <stdint.h>
+ #include <cmath>

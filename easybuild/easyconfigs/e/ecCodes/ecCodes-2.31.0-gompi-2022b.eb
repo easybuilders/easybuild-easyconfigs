@@ -1,0 +1,46 @@
+easyblock = 'CMakeMake'
+
+name = 'ecCodes'
+version = '2.31.0'
+
+homepage = 'https://software.ecmwf.int/wiki/display/ECC/ecCodes+Home'
+description = """ecCodes is a package developed by ECMWF which provides an application programming interface and
+ a set of tools for decoding and encoding messages in the following formats: WMO FM-92 GRIB edition 1 and edition 2,
+ WMO FM-94 BUFR edition 3 and edition 4, WMO GTS abbreviated header (only decoding)."""
+
+toolchain = {'name': 'gompi', 'version': '2022b'}
+toolchainopts = {'usempi': False}
+
+source_urls = ['https://github.com/ecmwf/eccodes/archive/refs/tags/']
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': '%(namelower)s-%(version)s.tar.gz'}]
+checksums = ['cb4cd3bab9cebd85a00397e12ce8e4a579b2f0a25aaf6df763436cf37db063e1']
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('ecBuild', '3.8.0', '', SYSTEM),
+]
+dependencies = [
+    ('netCDF', '4.9.0'),
+    ('JasPer', '4.0.0'),
+    ('libjpeg-turbo', '2.1.4'),
+    ('libpng', '1.6.38'),
+    ('zlib', '1.2.12'),
+    ('libaec', '1.0.6'),
+]
+
+# Python bindings are provided by a separate package 'eccodes-python'
+configopts = "-DENABLE_NETCDF=ON -DENABLE_PNG=ON -DENABLE_PYTHON=OFF -DENABLE_JPG=ON "
+configopts += "-DENABLE_JPG_LIBJASPER=ON -DENABLE_ECCODES_THREADS=ON"
+
+
+sanity_check_paths = {
+    'files': ['bin/bufr_compare', 'bin/bufr_copy', 'bin/bufr_dump', 'bin/bufr_filter', 'bin/bufr_get', 'bin/bufr_ls',
+              'bin/grib_compare', 'bin/grib_copy', 'bin/grib_dump', 'bin/grib_filter', 'bin/grib_get', 'bin/grib_ls',
+              'bin/gts_compare', 'bin/gts_copy', 'bin/gts_dump', 'bin/gts_filter', 'bin/gts_get', 'bin/gts_ls',
+              'bin/metar_compare', 'bin/metar_copy', 'bin/metar_dump', 'bin/metar_filter', 'bin/metar_get',
+              'bin/metar_ls', 'bin/codes_count', 'bin/codes_info', 'bin/codes_split_file',
+              'lib/libeccodes_f90.%s' % SHLIB_EXT, 'lib/libeccodes.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'tools'
