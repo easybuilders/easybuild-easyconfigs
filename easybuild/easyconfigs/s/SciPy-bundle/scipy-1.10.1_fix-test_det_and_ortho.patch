@@ -1,0 +1,43 @@
+Based on https://github.com/scipy/scipy/pull/18288 to fix failing TestOrthoGroup.test_det_and_ortho
+> /tmp/easybuild-tmp/eb-cdq2z1jo/tmp8_aj6pfo/install/lib/python3.10/site-packages/scipy/stats/tests/test_multivariate.py:1827: in test_det_and_ortho
+>     assert_array_less([0]*10, [np.nonzero(d < 0)[0].shape[0] for d in dets])
+> ...
+> E   AssertionError: 
+> E   Arrays are not less-ordered
+> E
+> E   Mismatched elements: 1 / 10 (10%)
+> E   Max absolute difference: 7
+> E   Max relative difference: 1.
+> E    x: array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+> E    y: array([4, 5, 5, 6, 6, 0, 6, 7, 5, 4])
+
+But removed the new test_det_distribution_gh18272 which fails with
+> ValueError('expected square matrix')
+
+which is likely an issue caused by the differing versions
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/scipy/stats/tests/test_multivariate.py b/scipy/stats/tests/test_multivariate.py
+index ec16e94c7775..3a8abceb6152 100644
+--- a/scipy/stats/tests/test_multivariate.py
++++ b/scipy/stats/tests/test_multivariate.py
+@@ -1860,18 +1860,12 @@ def test_det_and_ortho(self):
+         dets = np.array([[np.linalg.det(x) for x in xx] for xx in xs])
+         assert_allclose(np.fabs(dets), np.ones(dets.shape), rtol=1e-13)
+ 
+-        # Test that we get both positive and negative determinants
+-        # Check that we have at least one and less than 10 negative dets in a sample of 10. The rest are positive by the previous test.
+-        # Test each dimension separately
+-        assert_array_less([0]*10, [np.nonzero(d < 0)[0].shape[0] for d in dets])
+-        assert_array_less([np.nonzero(d < 0)[0].shape[0] for d in dets], [10]*10)
+-
+         # Test that these are orthogonal matrices
+         for xx in xs:
+             for x in xx:
+                 assert_array_almost_equal(np.dot(x, x.T),
+                                           np.eye(x.shape[0]))
+ 
+     def test_haar(self):
+         # Test that the distribution is constant under rotation
+         # Every column should have the same distribution
