@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'llama.cpp'
+version = 'b4595'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/ggerganov/llama.cpp'
+description = "Inference of Meta's LLaMA model (and others) in pure C/C++"
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/ggerganov/llama.cpp/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['b7443edde74efd430f3dc94bcea18b1a112263805341569c7f0ac4e30e6f5530']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('poetry', '1.5.1'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('cURL', '8.0.1'),
+    ('SentencePiece', '0.2.0'),
+    ('Transformers', '4.39.3'),
+    ('protobuf', '24.0'),
+]
+
+cuda_compute_capabilities = ['5.2', '6.0', '7.0', '7.5', '8.0', '8.6', '9.0']
+
+configopts = "-DLLAMA_CURL=ON -DGGML_CUDA=ON"
+
+installopts = ' && cd %(builddir)s/%(name)s-%(version)s/gguf-py && '
+installopts += 'pip install --no-deps --ignore-installed --prefix %(installdir)s --no-build-isolation .'
+
+sanity_check_paths = {
+    'files': [
+        'bin/llama-cli',
+        'bin/convert_hf_to_gguf.py',
+        'include/llama-cpp.h',
+        'lib/libllama.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/gguf'],
+}
+
+sanity_check_commands = [
+    "llama-cli --help",
+    "convert_hf_to_gguf.py --help",
+]
+
+moduleclass = 'tools'
