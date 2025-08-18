@@ -1,0 +1,195 @@
+Backport of upstream commit 7fae9873a74c7a5a62044bb6a4cde8e3ac1a5e5d (by Jason Merrill <jason@redhat.com>)
+Fixes a misoptimization in C++ where an object might get destroyed twice
+when an exception is throw while it is returned.
+See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=112301
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/gcc/cp/except.cc b/gcc/cp/except.cc
+index da0a65c613d..31138ebc75f 100644
+--- a/gcc/cp/except.cc
++++ b/gcc/cp/except.cc
+@@ -1355,6 +1355,14 @@ maybe_splice_retval_cleanup (tree compound_stmt)
+ 	  tsi_delink (&iter);
+ 	}
+       tree dtor = build_cleanup (retval);
++      if (!function_body)
++	{
++	  /* Clear the sentinel so we don't try to destroy the retval again on
++	     rethrow (c++/112301).  */
++	  tree clear = build2 (MODIFY_EXPR, boolean_type_node,
++			       current_retval_sentinel, boolean_false_node);
++	  dtor = build2 (COMPOUND_EXPR, void_type_node, clear, dtor);
++	}
+       tree cond = build3 (COND_EXPR, void_type_node, current_retval_sentinel,
+ 			  dtor, void_node);
+       tree cleanup = build_stmt (loc, CLEANUP_STMT,
+diff --git a/gcc/cp/semantics.cc b/gcc/cp/semantics.cc
+index ab48f11c9be..3520360225c 100644
+--- a/gcc/cp/semantics.cc
++++ b/gcc/cp/semantics.cc
+@@ -4817,6 +4817,7 @@ public:
+   tree var;
+   tree result;
+   hash_table<nofree_ptr_hash <tree_node> > visited;
++  bool in_nrv_cleanup;
+ };
+ 
+ /* Helper function for walk_tree, used by finalize_nrv below.  */
+@@ -4840,7 +4841,35 @@ finalize_nrv_r (tree* tp, int* walk_subtrees, void* data)
+      thrown.  */
+   else if (TREE_CODE (*tp) == CLEANUP_STMT
+ 	   && CLEANUP_DECL (*tp) == dp->var)
+-    CLEANUP_EH_ONLY (*tp) = 1;
++    {
++      dp->in_nrv_cleanup = true;
++      cp_walk_tree (&CLEANUP_BODY (*tp), finalize_nrv_r, data, 0);
++      dp->in_nrv_cleanup = false;
++      cp_walk_tree (&CLEANUP_EXPR (*tp), finalize_nrv_r, data, 0);
++      *walk_subtrees = 0;
++
++      CLEANUP_EH_ONLY (*tp) = true;
++
++      /* If a cleanup might throw, we need to clear current_retval_sentinel on
++	 the exception path so an outer cleanup added by
++	 maybe_splice_retval_cleanup doesn't run.  */
++      if (cp_function_chain->throwing_cleanup)
++	{
++	  tree clear = build2 (MODIFY_EXPR, boolean_type_node,
++			       current_retval_sentinel,
++			       boolean_false_node);
++
++	  /* We're already only on the EH path, just prepend it.  */
++	  tree &exp = CLEANUP_EXPR (*tp);
++	  exp = build2 (COMPOUND_EXPR, void_type_node, clear, exp);
++	}
++    }
++  /* Disable maybe_splice_retval_cleanup within the NRV cleanup scope, we don't
++     want to destroy the retval before the variable goes out of scope.  */
++  else if (TREE_CODE (*tp) == CLEANUP_STMT
++	   && dp->in_nrv_cleanup
++	   && CLEANUP_DECL (*tp) == dp->result)
++    CLEANUP_EXPR (*tp) = void_node;
+   /* Replace the DECL_EXPR for the NRV with an initialization of the
+      RESULT_DECL, if needed.  */
+   else if (TREE_CODE (*tp) == DECL_EXPR
+@@ -4896,6 +4925,7 @@ finalize_nrv (tree *tp, tree var, tree result)
+ 
+   data.var = var;
+   data.result = result;
++  data.in_nrv_cleanup = false;
+   cp_walk_tree (tp, finalize_nrv_r, &data, 0);
+ }
+ 
+diff --git a/gcc/testsuite/g++.dg/eh/return1.C b/gcc/testsuite/g++.dg/eh/return1.C
+index ac2225405da..7224b2c162e 100644
+--- a/gcc/testsuite/g++.dg/eh/return1.C
++++ b/gcc/testsuite/g++.dg/eh/return1.C
+@@ -16,13 +16,14 @@ extern "C" int printf (const char *, ...);
+ 
+ struct X
+ {
+-  X(bool throws) : throws_(throws) { ++c; DEBUG; }
+-  X(const X& x); // not defined
++  X(bool throws) : i(-42), throws_(throws) { ++c; DEBUG; }
++  X(const X& x): i(x.i), throws_(x.throws_) { ++c; DEBUG; }
+   ~X() THROWS
+   {
+-    ++d; DEBUG;
++    i = ++d; DEBUG;
+     if (throws_) { throw 1; }
+   }
++  int i;
+ private:
+   bool throws_;
+ };
+@@ -54,6 +55,75 @@ X i()
+   return X(false);
+ }
+ 
++// c++/112301
++X i3()
++{
++  try {
++    X x(true);
++    return X(false);
++  } catch(...) { throw; }
++}
++
++X i4()
++{
++  try {
++    X x(true);
++    X x2(false);
++    return x2;
++  } catch(...) { throw; }
++}
++
++X i4a()
++{
++  try {
++    X x2(false);
++    X x(true);
++    return x2;
++  } catch(...) { throw; }
++}
++
++X i4b()
++{
++  X x(true);
++  X x2(false);
++  return x2;
++}
++
++X i4c()
++{
++  X x2(false);
++  X x(true);
++  return x2;
++}
++
++X i5()
++{
++  X x2(false);
++
++  try {
++    X x(true);
++    return x2;
++  } catch(...) {
++    if (x2.i != -42)
++      d += 42;
++    throw;
++  }
++}
++
++X i6()
++{
++  X x2(false);
++
++  try {
++    X x(true);
++    return x2;
++  } catch(...) {
++    if (x2.i != -42)
++      d += 42;
++  }
++  return x2;
++}
++
+ X j()
+ {
+   try {
+@@ -92,6 +162,13 @@ int main()
+ 
+   try { i(); }
+   catch (...) {}
++  try { i3(); } catch (...) {}
++  try { i4(); } catch (...) {}
++  try { i4a(); } catch (...) {}
++  try { i4b(); } catch (...) {}
++  try { i4c(); } catch (...) {}
++  try { i5(); } catch (...) {}
++  try { i6(); } catch (...) {}
+ 
+   try { j(); } catch (...) {}
+ 

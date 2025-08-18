@@ -1,0 +1,73 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMolcas'
+version = '21.06'
+
+homepage = "https://gitlab.com/Molcas/OpenMolcas"
+description = "OpenMolcas is a quantum chemistry software package."
+
+toolchain = {'name': 'iomkl', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'optarch': False}  # optarch required to pass all tests
+
+source_urls = ['https://gitlab.com/Molcas/OpenMolcas/-/archive/v%(version)s/']
+sources = ["%(name)s-v%(version)s.tar.gz"]
+patches = [
+    'OpenMolcas-%(version)s_mcpdft_deps.patch',
+    'OpenMolcas-%(version)s_IntelLLVM-C-compiler.patch',
+]
+checksums = [
+    {'OpenMolcas-v21.06.tar.gz': ('255928a7098c85366303ec3b6b87a44814cc4ea1b1899440e560e622c41cbae2',
+                                  '54cf989c1e0fcb7e8927f0c64fe356b300bf3537e4868356eea47105a8a06e3a')},
+    {'OpenMolcas-21.06_mcpdft_deps.patch': '708763e060aa0174bbe9c0cc336b509fbf492066465908dd919452836a7a793a'},
+    {'OpenMolcas-21.06_IntelLLVM-C-compiler.patch': 'c52782c3eb1ca8bc1df9ff52d61acf8bb335e564585fd0a6cdedfab337e89306'},
+]
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('HDF5', '1.14.0'),
+    ('GlobalArrays', '5.8.2'),
+]
+
+build_shared_libs = True
+
+preconfigopts = 'GAROOT=$EBROOTGLOBALARRAYS'
+_copts = [
+    '-DLINALG=MKL',
+    '-DMKLROOT=$MKLROOT',
+    '-DOPENMP=ON',
+    '-DTOOLS=ON',
+    '-DFDE=ON',
+    '-DMPI=ON',
+    '-DGA=ON',
+    '-DPython_ROOT=$EBROOTPYTHON',
+]
+configopts = ' '.join(_copts)
+
+pretestopts = 'MOLCAS=%(builddir)s/easybuild_obj '
+pretestopts += 'MOLCAS_DRIVER=%(builddir)s/easybuild_obj/pymolcas '
+pretestopts += 'MOLCAS_SOURCE=%(builddir)s/easybuild_obj '
+pretestopts += 'PATH=%(builddir)s/easybuild_obj:$PATH '
+test_cmd = 'pymolcas verify'
+
+fix_python_shebang_for = ['pymolcas', 'Tools/AugerOca/*.py', 'Tools/AugerOca/auger_oca/*.py', 'Tools/mort/mort.py',
+                          'Tools/dynamixtools/dynamixtools.py']
+
+modextrapaths = {'PATH': ''}
+modextravars = {
+    'MOLCAS': '%(installdir)s',
+    'MOLCAS_DRIVER': '%(installdir)s/pymolcas',
+    'MOLCAS_SOURCE': '%(installdir)s',
+}
+
+sanity_check_commands = ['pymolcas --help']
+
+sanity_check_paths = {
+    'files': ['bin/dynamix.exe', 'bin/mpprop.exe', 'lib/libmolcas.%s' % SHLIB_EXT,
+              'sbin/help_basis', 'pymolcas'],
+    'dirs': ['data/', 'basis_library/'],
+}
+
+moduleclass = 'chem'
