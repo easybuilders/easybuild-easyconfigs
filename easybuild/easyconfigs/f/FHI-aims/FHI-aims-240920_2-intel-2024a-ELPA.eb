@@ -1,0 +1,83 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Authors::   Dugan Witherick (University of Warwick)
+# Updated to 240507
+# Help from the FHI-aims developers and Alexander Grund to move to oneAPI is greatly appreciated
+# This version makes use of an external ELPA installation.
+# Note: You need to know which ELPA kernel was used (see below for details)!
+# The automatic ELPA kernel selection is courtesy of Steen Lysgaard
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'FHI-aims'
+version = '240920_2'
+versionsuffix = '-ELPA'
+
+homepage = 'https://fhi-aims.org/'
+description = """FHI-aims is an efficient, accurate all-electron,
+full-potential electronic structure code package for computational molecular
+and materials science (non-periodic and periodic systems). The code supports
+DFT (semilocal and hybrid) and many-body perturbation theory. FHI-aims is
+particularly efficient for molecular systems and nanostructures, while
+maintaining high numerical accuracy for all production tasks. Production
+calculations handle up to several thousand atoms and can efficiently use (ten)thousands of cores.
+
+This build utilises an external ELPA installation!
+"""
+
+toolchain = {'name': 'intel', 'version': '2024a'}
+toolchainopts = {'opt': True, 'precise': True, 'usempi': True, 'oneapi': True}
+
+download_instructions = """
+The source code must be downloaded manually from the FHI-aims club
+(https://fhi-aims.org/get-the-code-menu/login).
+Access to the FHI-aims club requires a valid license and registration.
+Details on available license options and how to register to access
+FHI-aims club may be found at:
+https://fhi-aims.org/get-the-code-menu/get-the-code """
+
+sources = ['%(namelower)s.%(version)s.tgz']
+checksums = ['b585299e21aab90b613aa97f48abd82b117feaa074367511ba55966f458cb49a']
+
+builddependencies = [('CMake', '3.29.3')]
+
+dependencies = [
+    ('ELPA', '2024.05.001'),
+]
+
+# Check the AVX capabilities of the ELPA installation, courtesy of Steen Lysgaard
+preconfigopts = """
+AVX_CAP=$(elpa2_print_kernels | grep -o 'AVX[0-9]*' | sort -r | head -n1)
+if [ -z "$AVX_CAP" ]; then
+    AVX_CAP="Generic"
+fi
+echo 'ELPA-Kernel is' $AVX_CAP
+"""
+
+configopts = ' -DCMAKE_Fortran_COMPILER="$MPIF90" -DCMAKE_CXX_COMPILER="$MPICXX"  -DCMAKE_C_COMPILER="$MPICC" '
+configopts += ' -DLIB_PATHS="$SCALAPACK_LIB_DIR" '
+configopts += ' -DFortran_MIN_FLAGS="-O0 -fp-model precise" '
+configopts += ' -DTARGET_NAME="aims.x" '
+# This is for ELPA. Build ELPA first to see which kernel is selected!
+# Possible values are: AVX, AVX2 and AVX512, but will be automatically selected from the script above
+# We also need to include the libelpa library
+configopts += ' -DLIBS="mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64 mkl_intel_lp64 mkl_sequential mkl_core -lelpa" '
+configopts += ' -DUSE_EXTERNAL_ELPA=ON -DELPA2_KERNEL="$AVX_CAP" '
+configopts += ' -DINC_PATHS=$EBROOTELPA/include/elpa-$EBVERSIONELPA/modules/ '
+
+postinstallcmds = ["cp -ar %(builddir)s/%(namelower)s.%(version)s/{CHANGELOG.md,doc} %(installdir)s/",
+                   "cp -ar %(builddir)s/%(namelower)s.%(version)s/{regression_tests,species_defaults} %(installdir)s/",
+                   "cp -ar %(builddir)s/%(namelower)s.%(version)s/{testcases,utilities} %(installdir)s/"]
+
+sanity_check_paths = {
+    'files': ['bin/aims.x'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'aims.x --version &> /dev/null'
+]
+
+moduleclass = 'chem'
