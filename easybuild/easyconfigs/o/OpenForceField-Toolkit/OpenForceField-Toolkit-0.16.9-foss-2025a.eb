@@ -9,6 +9,7 @@ parameterization engine, and other tools."""
 
 toolchain = {'name': 'foss', 'version': '2025a'}
 
+_ambertools_version = '25.2'
 builddependencies = [('poetry', '2.1.2')]
 dependencies = [
     ('Python', '3.13.1'),
@@ -23,32 +24,37 @@ dependencies = [
     ('RDKit', '2025.03.4'),
     ('MDTraj', '1.11.0'),
     ('JupyterNotebook', '7.4.4'),
-    ('AmberTools', '25.2'),
+    ('AmberTools', _ambertools_version),
     ('Pint', '0.24.4'),
     ('nglview', '3.1.4'),
 ]
 
 # fix old syntax in versioneer.py
 _fix_versioneer = "sed -i -e 's/SafeConfigParser()/ConfigParser()/' -e 's/readfp(/read_file(/' versioneer.py && "
+
 # fix version in OpenForceFields-Utilities
 _utilities_fix = (
-    r"sed -i -e '/\"versioningit\"/d' -e '/dynamic/d' -e  '13 a version = \"0.1.15\"' pyproject.toml && "
+    r"sed -i -e '/\"versioningit\"/d' -e '/dynamic/d' -e '13 a version = \"%(version)s\"' pyproject.toml && "
 )
+
 # fix version in OpenForceFields-Units
-_units_fix = r"sed -i -e '/\"versioningit\"/d' -e '/dynamic/d' -e  '13 a version = \"0.3.1\"' pyproject.toml && "
+_units_fix = r"sed -i -e '/\"versioningit\"/d' -e '/dynamic/d' -e '13 a version = \"%(version)s\"' pyproject.toml && "
+
 # fix version in OpenForceFields-Interchange
-_interchange_fix = r"sed -i -e '/\"versioningit\"/d' -e '/dynamic/d' -e  '13 a version = \"0.4.3\"' pyproject.toml && "
+_interchange_fix = r"sed -i -e '/\"versioningit\"/d' -e '/dynamic/d' "
+_interchange_fix += "-e '13 a version = \"%(version)s\"' pyproject.toml && "
+
 # fix version and license in OpenForceFields-Toolkit
 _toolkit_fix = (
     "sed -i -e "
     r"'s/, \"versioningit\"//' "
     "-e '/dynamic/d' "
-    r"-e  '18 a version = \"0.16.9\"' "
+    r"-e  '18 a version = \"%(version)s\"' "
     "-e 's/:: MIT/:: MIT License/' pyproject.toml && "
 )
 # fix AmberTools version in GLOBAL_TOOLKIT_REGISTRY
 _fix_ambertools_version = (
-    """sed -i 's/get_ambertools_version()/"25.2"/' openff/toolkit/utils/ambertools_wrapper.py && """
+    """sed -i 's/get_ambertools_version()/"%s"/' openff/toolkit/utils/ambertools_wrapper.py && """ % _ambertools_version
 )
 
 exts_list = [
