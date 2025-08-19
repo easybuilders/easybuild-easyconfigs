@@ -61,6 +61,15 @@ exts_list = [
     ('lavavu', version, {
         # Possible choices: EGL, OSMESA or X11
         'prebuildopts': 'export LV_EGL=1 && ',
+        # The original symlink leads to problems, so we are doing this dance to get that fixed:
+        'postinstallcmds': [
+            'rm -f %(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/osmesa/LavaVuPython.py && '
+            'cp -f %(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/LavaVuPython.py '
+            '%(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/osmesa/ && '
+            'cd  %(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/osmesa/ && '
+            'sed -i "9,11d" LavaVuPython.py && sed -i "s/    import _LavaVuPython/import _LavaVuPython/" '
+            'LavaVuPython.py && cd - '
+        ],
         'checksums': ['8dbaf58ecaa293f62cefbb13c34cc07c8c13ae98b9c93ec5ece141b3d9c873d3'],
     }),
 ]
