@@ -1,0 +1,55 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'MakeCp'
+
+name = 'WHAM'
+version = '2.1.0'
+
+# Boltzmann’s constant is by default defined in 'kcal/mol'
+# Easyconfigs with versionsuffix 'kj_mol' change energy units at build time to 'kJ/mol'
+
+# No valid HTTPS - Let's Encrypt Cert expired loong time ago
+
+homepage = 'http://membrane.urmc.rochester.edu/?page_id=126'
+description = "An implementation of WHAM: the Weighted Histogram Analysis Method"
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+# No valid https
+
+source_urls = ['http://membrane.urmc.rochester.edu/sites/default/files/%(namelower)s/']
+sources = [
+    {'download_filename': '%(namelower)s-release-%(version)s.tgz', 'filename': '%(namelower)s-release-%(version)s.tar'},
+]
+checksums = ['bc7ce8a79269d80979a06c3593960ed936333435bb71414913fa7b5a138dd2cf']
+
+prebuildopts = "cd %(namelower)s && "
+
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS" && cd ../%(namelower)s-2d && make CC="$CC" CFLAGS="$CFLAGS"'
+
+modloadmsg = """
+Boltzmann’s constant is defined in 'kcal/mol'
+(use module of %(name)s ending in 'kj_mol' to use energy units in kJ/mol)
+"""
+
+files_to_copy = [
+    (['%(namelower)s/%(namelower)s', '%(namelower)s-2d/%(namelower)s-2d'], 'bin'),
+    'doc',
+    'nr',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'bin/%(namelower)s-2d'],
+    'dirs': ['doc', 'nr'],
+}
+
+# exits with non-zero
+
+sanity_check_commands = [
+    ("%(namelower)s --help | grep 'Command line: %(namelower)s'", ''),
+    # Yep, there is double space below.
+    ("%(namelower)s-2d --help | grep 'Command line:  %(namelower)s-2d'", ''),
+]
+
+moduleclass = 'chem'
