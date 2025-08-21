@@ -34,13 +34,21 @@ for argument in "$@"; do
 done
 
 if [[ -z "$APPTAINER_TMPDIR" ]]; then
-        export APPTAINER_TMPDIR="/var/tmp"
+        if [[ -n "$SLURM_TMPDIR" && -d "$SLURM_TMPDIR" && -w "$SLURM_TMPDIR" ]]; then
+                export APPTAINER_TMPDIR="$SLURM_TMPDIR"
+        else
+                export APPTAINER_TMPDIR="/var/tmp"
+        fi
         if [[ -d "/localscratch" && -w "/localscratch" ]]; then
                 export APPTAINER_TMPDIR="/localscratch"
         fi
 fi
 if [[ -z "$APPTAINER_WORKDIR" ]]; then
-        export APPTAINER_WORKDIR="/var/tmp"
+        if [[ -n "$SLURM_TMPDIR" && -d "$SLURM_TMPDIR" && -w "$SLURM_TMPDIR" ]]; then
+                export APPTAINER_WORKDIR="$SLURM_TMPDIR"
+        else
+                export APPTAINER_WORKDIR="/var/tmp"
+        fi
         if [[ -d "/localscratch" && -w "/localscratch" ]]; then
                 export APPTAINER_WORKDIR="/localscratch"
         fi
