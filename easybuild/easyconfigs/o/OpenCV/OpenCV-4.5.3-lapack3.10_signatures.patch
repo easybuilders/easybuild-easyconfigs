@@ -1,0 +1,74 @@
+Fixes same problem as described in https://github.com/opencv/opencv/issues/22906
+Copied from https://github.com/opencv/opencv/pull/22527
+
+From c0ecf08ca0821adb71e0ea9649f03b64ef888510 Mon Sep 17 00:00:00 2001
+From: Pavel Rojtberg <rojtberg@gmail.com>
+Date: Sat, 17 Sep 2022 13:04:22 +0200
+Subject: [PATCH 1/2] cmake: use upstream PCH support if possible
+
+---
+ cmake/OpenCVPCHSupport.cmake | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/cmake/OpenCVPCHSupport.cmake b/cmake/OpenCVPCHSupport.cmake
+index 08cd06def444..34a088b839f0 100644
+--- a/cmake/OpenCVPCHSupport.cmake
++++ b/cmake/OpenCVPCHSupport.cmake
+@@ -331,7 +331,8 @@ ENDMACRO(ADD_PRECOMPILED_HEADER)
+ MACRO(GET_NATIVE_PRECOMPILED_HEADER _targetName _input)
+ 
+   if(ENABLE_PRECOMPILED_HEADERS)
+-    if(CMAKE_GENERATOR MATCHES "^Visual.*$")
++    if(CMAKE_GENERATOR MATCHES "^Visual.*$"
++       AND (CMAKE_VERSION VERSION_LESS "3.16" OR OPENCV_SKIP_CMAKE_BUILTIN_PCH)) # with 3.16+ we use target_precompile_headers
+         set(${_targetName}_pch ${CMAKE_CURRENT_BINARY_DIR}/${_targetName}_pch.cpp)
+     endif()
+   endif()
+@@ -406,7 +407,9 @@ ENDMACRO(ADD_NATIVE_PRECOMPILED_HEADER)
+ 
+ macro(ocv_add_precompiled_header_to_target the_target pch_header)
+   if(PCHSupport_FOUND AND ENABLE_PRECOMPILED_HEADERS AND EXISTS "${pch_header}")
+-    if(CMAKE_GENERATOR MATCHES "^Visual" OR CMAKE_GENERATOR MATCHES Xcode)
++    if(NOT CMAKE_VERSION VERSION_LESS "3.16" AND NOT OPENCV_SKIP_CMAKE_BUILTIN_PCH)
++      target_precompile_headers(${the_target} PRIVATE ${pch_header})
++    elseif(CMAKE_GENERATOR MATCHES "^Visual" OR CMAKE_GENERATOR MATCHES Xcode)
+       add_native_precompiled_header(${the_target} ${pch_header})
+     elseif(CV_GCC AND CMAKE_GENERATOR MATCHES "Makefiles|Ninja")
+       add_precompiled_header(${the_target} ${pch_header})
+
+From 70779d4e66946dca4e0da602f10ec37573b9ac88 Mon Sep 17 00:00:00 2001
+From: Pavel Rojtberg <rojtberg@gmail.com>
+Date: Sat, 17 Sep 2022 13:04:42 +0200
+Subject: [PATCH 2/2] calib3d: use OCV_LAPACK_FUNC
+
+---
+ modules/calib3d/src/usac/dls_solver.cpp       | 2 +-
+ modules/calib3d/src/usac/essential_solver.cpp | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/modules/calib3d/src/usac/dls_solver.cpp b/modules/calib3d/src/usac/dls_solver.cpp
+index 0abb26cecc5b..8f109d51bf4e 100644
+--- a/modules/calib3d/src/usac/dls_solver.cpp
++++ b/modules/calib3d/src/usac/dls_solver.cpp
+@@ -160,7 +160,7 @@ class DLSPnPImpl : public DLSPnP {
+         double wr[27], wi[27] = {0}; // 27 = mat_order
+         std::vector<double> work(lwork), eig_vecs(729);
+         char jobvl = 'N', jobvr = 'V'; // only left eigen vectors are computed
+-        dgeev_(&jobvl, &jobvr, &mat_order, (double*)solution_polynomial.data, &lda, wr, wi, nullptr, &ldvl,
++        OCV_LAPACK_FUNC(dgeev)(&jobvl, &jobvr, &mat_order, (double*)solution_polynomial.data, &lda, wr, wi, nullptr, &ldvl,
+                &eig_vecs[0], &ldvr, &work[0], &lwork, &info);
+         if (info != 0) return 0;
+ #endif
+diff --git a/modules/calib3d/src/usac/essential_solver.cpp b/modules/calib3d/src/usac/essential_solver.cpp
+index 0adca0966f4a..014cd36f404b 100644
+--- a/modules/calib3d/src/usac/essential_solver.cpp
++++ b/modules/calib3d/src/usac/essential_solver.cpp
+@@ -161,7 +161,7 @@ class EssentialMinimalSolverStewenius5ptsImpl : public EssentialMinimalSolverSte
+         int mat_order = 10, info, lda = 10, ldvl = 10, ldvr = 1, lwork = 100;
+         double wr[10], wi[10] = {0}, eig_vecs[100], work[100]; // 10 = mat_order, 100 = lwork
+         char jobvl = 'V', jobvr = 'N'; // only left eigen vectors are computed
+-        dgeev_(&jobvl, &jobvr, &mat_order, action_mat_data, &lda, wr, wi, eig_vecs, &ldvl,
++        OCV_LAPACK_FUNC(dgeev)(&jobvl, &jobvr, &mat_order, action_mat_data, &lda, wr, wi, eig_vecs, &ldvl,
+                 nullptr, &ldvr, work, &lwork, &info);
+         if (info != 0) return 0;
+ #endif
