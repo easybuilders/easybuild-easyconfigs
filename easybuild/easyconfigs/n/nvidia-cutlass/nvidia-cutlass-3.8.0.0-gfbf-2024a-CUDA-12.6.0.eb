@@ -1,4 +1,4 @@
-easyblock = 'PythonPackage'
+easyblock = 'PythonBundle'
 
 name = 'nvidia-cutlass'
 version = '3.8.0.0'
@@ -17,25 +17,31 @@ The resulting flexibility simplifies their use as building blocks within custom 
 """
 
 toolchain = {'name': 'gfbf', 'version': '2024a'}
-
-builddependencies = [('binutils', '2.42')]
+builddependencies = [('poetry', '1.8.3')]
 dependencies = [
     ('CUDA', '12.6.0', '', SYSTEM),
     ('CUDA-Python', '12.6.2.post1', versionsuffix),
     ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
     ('SciPy-bundle', '2024.05'),
     ('networkx', '3.4.2'),
     ('pydot', '3.0.3'),
-    ('treelib', '1.8.0'),
 ]
 
-sources = ['nvidia_cutlass-%(version)s-py3-none-any.whl']
-checksums = ['013147221a63500205da233ae02e6262463917f3fe39cb09efbca37bfd1c39f9']
-
-options = {'modulename': 'cutlass'}
-sanity_check_commands = [
-    'python -sc "import cutlass"',
-    'python -sc "import cutlass_library"',
+exts_list = [
+    ('treelib', '1.8.0', {
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['e1be2c6b66ffbfae85079fc4c76fb4909946d01d915ee29ff6795de53aed5d55'],
+    }),
+    (name, version, {
+        'source_tmpl': 'nvidia_cutlass-%(version)s-py3-none-any.whl',
+        'checksums': ['013147221a63500205da233ae02e6262463917f3fe39cb09efbca37bfd1c39f9'],
+        'modulename': 'cutlass',
+        'sanity_check_commands': [
+            'python -sc "import cutlass"',
+            'python -sc "import cutlass_library"',
+        ]
+    }),
 ]
 
 moduleclass = 'lib'
