@@ -25,7 +25,7 @@ These patches are included in the EasyConfig and applied in the order:
 
 ## Amber and AmberTools Mirrors:
 
-From _Amber 2025 Reference Manual_ page 28 (accessed 20250827):
+From [_Amber 2025 Reference Manual_](https://ambermd.org/doc12/Amber25.pdf) page 28 (accessed 20250827):
 
 > *Mirrors* If you would like to download Amber patches from another website or even a folder on a local filesystem, you can use the `--amber-updates` and `--ambertools-updates` command-line flags to specify a particular web address (must start with http://) or a local folder (use an absolute path). You can use the `--reset-remotes` command-line flag to erase these settings and return to the default Amber locations on https://ambermd.org.
 >
