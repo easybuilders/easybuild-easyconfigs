@@ -29,13 +29,14 @@ diff -ruN Python-3.11.5/Lib/ctypes/__init__.py Python-3.11.5.patched/Lib/ctypes/
                 e.g., "libFOO.a(libFOO.so)" - this is taken to be an
 diff -ruN Python-3.11.5/Lib/ctypes/util.py Python-3.11.5.patched/Lib/ctypes/util.py
 --- Python-3.11.5/Lib/ctypes/util.py	2023-08-24 14:09:18.000000000 +0200
-+++ Python-3.11.5.patched/Lib/ctypes/util.py	2025-08-07 16:37:14.337414617 +0200
-@@ -146,8 +146,60 @@
++++ Python-3.11.5.patched/Lib/ctypes/util.py	2025-08-27 17:30:51.896990336 +0200
+@@ -146,8 +146,61 @@
              # shared objects. See bpo-41976 for more details
              if not _is_elf(file):
                  continue
 -            return os.fsdecode(file)
 +            file = os.fsdecode(file)
++            # Prevent using CUDA libraries provided on stubs
 +            if re.search(r'cuda.*stubs', file, re.IGNORECASE):
 +                continue
 +            return file
@@ -92,7 +93,7 @@ diff -ruN Python-3.11.5/Lib/ctypes/util.py Python-3.11.5.patched/Lib/ctypes/util
  
      if sys.platform == "sunos5":
          # use /usr/ccs/bin/dump on solaris
-@@ -283,7 +335,8 @@
+@@ -283,7 +336,8 @@
              abi_type = mach_map.get(machine, 'libc6')
  
              # XXX assuming GLIBC's ldconfig (with option -p)
@@ -102,7 +103,7 @@ diff -ruN Python-3.11.5/Lib/ctypes/util.py Python-3.11.5.patched/Lib/ctypes/util
              regex = os.fsencode(regex % (re.escape(name), abi_type))
              try:
                  with subprocess.Popen(['/sbin/ldconfig', '-p'],
-@@ -293,7 +346,8 @@
+@@ -293,7 +347,8 @@
                                        env={'LC_ALL': 'C', 'LANG': 'C'}) as p:
                      res = re.search(regex, p.stdout.read())
                      if res:
@@ -112,7 +113,7 @@ diff -ruN Python-3.11.5/Lib/ctypes/util.py Python-3.11.5.patched/Lib/ctypes/util
              except OSError:
                  pass
  
-@@ -301,10 +355,13 @@
+@@ -301,10 +356,13 @@
              # See issue #9998 for why this is needed
              expr = r'[^\(\)\s]*lib%s\.[^\(\)\s]*' % re.escape(name)
              cmd = ['ld', '-t']
@@ -128,7 +129,7 @@ diff -ruN Python-3.11.5/Lib/ctypes/util.py Python-3.11.5.patched/Lib/ctypes/util
              cmd.extend(['-o', os.devnull, '-l%s' % name])
              result = None
              try:
-@@ -325,9 +382,15 @@
+@@ -325,9 +383,15 @@
              return result
  
          def find_library(name):
