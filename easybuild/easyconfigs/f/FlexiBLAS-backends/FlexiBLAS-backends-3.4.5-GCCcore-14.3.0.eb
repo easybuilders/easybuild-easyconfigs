@@ -1,0 +1,45 @@
+name = 'FlexiBLAS-backends'
+easyblock = 'EB_FlexiBLAS'
+version = '3.4.5'
+# only used for backends directly from FlexiBLAScore
+modaltsoftname = 'flexiblas'
+hidden = True
+
+homepage = 'https://gitlab.mpi-magdeburg.mpg.de/software/flexiblas-release'
+description = """FlexiBLAS is a wrapper library that enables the exchange of the BLAS and LAPACK implementation
+used by a program without recompiling or relinking it."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+local_extra_flags = "-fstack-protector-strong -fstack-clash-protection"
+toolchainopts = {'pic': True, 'extra_cflags': local_extra_flags, 'extra_fflags': local_extra_flags}
+
+source_urls = ['https://gitlab.mpi-magdeburg.mpg.de/api/v4/projects/386/packages/generic/flexiblas-source/v3.4.5/']
+sources = ['flexiblas-%(version)s.tar.gz']
+patches = ['FlexiBLAS-3.4.5_fix-imkl.patch']
+checksums = [
+    'e819949c614c4968919b0ea4e873ab916d95cdc6943e9d091a78d209b7d6ed07',  # flexiblas-3.4.5.tar.gz
+    'd583d570f216ca7914a0f664ffa1a292350db4ff6feca623abc6e3574d7d6245',  # FlexiBLAS-3.4.5_fix-imkl.patch
+]
+
+# note: first listed library will be used as default by FlexiBLAS,
+# unless otherwise specified via easyconfig parameter flexiblas_default
+builddependencies = [
+    ('CMake', '3.31.0'),
+    ('imkl', '2025.2.0'),
+    ('BLIS', '2.0'),
+    ('OpenBLAS', '0.3.30'),
+    ('AOCL-LAPACK', '5.1'),
+]
+
+flexiblas_default = 'imkl'
+
+backends = ['OpenBLAS', 'BLIS', 'imkl']
+
+local_backends = '-DEXTRA="%s" ' % ';'.join(backends + ['AOCL_mt'])
+configopts = [local_backends + '-DAOCL_mt_LIBRARY="flame;blis-mt"',
+    (local_backends + '-DINTEGER8=ON '
+     '-Dimkl_LIBRARY="mkl_gf_ilp64;mkl_gnu_thread;mkl_core;gomp;pthread;m;dl" -DBLIS_LIBRARY=blis64 -DOpenBLAS_LIBRARY=openblas64 -DAOCL_mt_LIBRARY="flame64;blis-mt64"')]
+
+install_libdir = 'lib64'
+
+moduleclass = 'lib'
