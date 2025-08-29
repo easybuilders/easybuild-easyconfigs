@@ -35,7 +35,33 @@ dependencies = [
     ('zlib', '1.3.1'),
 ]
 
+local_arch = {"arm64": "sbsa", "aarch64": "sbsa"}.get(ARCH, ARCH)
+
 components = [
+    # Use same major.minor version as Triton, see this file using the right tag instead of 'main':
+    # https://github.com/triton-lang/triton/blob/main/cmake/nvidia-toolchain-version.json
+    # Check https://developer.download.nvidia.com/compute/cuda/redist for the latest version of redistrib_*.json.
+    # Generate checksums with:
+    #   wget -O- https://developer.download.nvidia.com/compute/cuda/redist/redistrib_12.4.1.json | \
+    #     jq -r '.cuda_nvcc | to_entries[] | select(.value | type=="object") | "'\
+    #     \''" + (.value.relative_path | split("/")[-1]) + "'\'': '\''" + .value.sha256 + "'\'',"'
+    ('CUDA-NVCC', '12.4.131', {
+        'easyblock': 'MakeCp',
+        'source_urls': [f'https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvcc/linux-{local_arch}'],
+        'sources': [f'cuda_nvcc-linux-{local_arch}-%(version)s-archive.tar.xz'],
+        'checksums': [{
+            'cuda_nvcc-linux-x86_64-12.4.131-archive.tar.xz':
+            '7ffba1ada0e4b8c17e451ac7a60d386aa2642ecd08d71202a0b100c98bd74681',
+            'cuda_nvcc-linux-ppc64le-12.4.131-archive.tar.xz':
+            '2934e83a4df2e0f4182e148753cfd1f29af226a280ea459008819531e9edb5b9',
+            'cuda_nvcc-linux-sbsa-12.4.131-archive.tar.xz':
+            '83f130dab0325e12b90fdf1279c0cbbd88acf638ef0a7e0cad72d50855a4f44a',
+            'cuda_nvcc-linux-aarch64-12.4.131-archive.tar.xz':
+            '9e7a26fb7acd86ec8d4b67799a329d9bc6bd48bbf27a89f87df4385eb7fe5758',
+        }],
+        'skipsteps': ['build'],
+        'files_to_copy': [(['cuda_nvcc-linux*/bin/ptxas'], 'tools')],
+    }),
     # Hash from cmake/llvm-hash.txt
     ('LLVM', 'a66376b0dc3b2ea8a84fda26faca287980986f78', {
         'easyblock': 'CMakeNinja',
@@ -71,7 +97,7 @@ local_preinstallopts = ' '.join([
     'TRITON_BUILD_WITH_CLANG_LLD=0',
     "TRITON_HOME='%(builddir)s/triton_home'",
     'TRITON_OFFLINE_BUILD=1',
-    'TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas"',
+    'TRITON_PTXAS_PATH="%(installdir)s/tools/ptxas"',
     'TRITON_CUOBJDUMP_PATH="$CUDA_HOME/bin/cubjdump"',
     'TRITON_NVDISASM_PATH="$CUDA_HOME/bin/nvdisasm"',
     'LLVM_SYSPATH="%(builddir)s/llvm_build_dir"',
@@ -97,8 +123,6 @@ exts_list = [
         'patches': [
             'Triton-3.3.1_disable-git-submodule-call.patch',
             'Triton-3.3.1_disable-git-version-check.patch',
-            'Triton-3.3.1_fix-invalid-memory-access.patch',
-            'Triton-3.3.1_support-CUDA-12.6.patch',
         ],
         'checksums': [
             {'v3.3.1.tar.gz': '9dc77d9205933bf2fc05eb054f4f1d92acd79a963826174d57fe9cfd58ba367b'},
@@ -106,10 +130,6 @@ exts_list = [
              '26859c9388a4f43d326e362a625e3703f2c39a6f075af590f08660d343f78e19'},
             {'Triton-3.3.1_disable-git-version-check.patch':
              'e77b98e127699c189d4ca3afb0c5374c5e9f1351e82d529ae2521d3dcee70fed'},
-            {'Triton-3.3.1_fix-invalid-memory-access.patch':
-             '2b4fc80b6d06b8339318ec32e600022b6e11be57c5e6fe9588cbebe690abd888'},
-            {'Triton-3.3.1_support-CUDA-12.6.patch':
-             '8839dae8e876102afbec2f72f2b354c3f1f2e7ac00231cdc6ac16ebdf13fbbcc'},
         ],
         'start_dir': 'python',
     }),
@@ -124,8 +144,11 @@ checksums = [
 sanity_check_commands = ['TRITON_HOME=$TMPDIR/eb-triton_home '
                          'python %(installdir)s/test/triton_test.py %(cuda_compute_capabilities)s']
 
+modextrapaths = {
+    'TRITON_PTXAS_PATH': 'tools/ptxas',
+}
 modextravars = {
-    'TRITON_PTXAS_PATH': '$CUDA_HOME/bin/ptxas',
+    # Search for "_path_to_binary" in Triton sources
     'TRITON_CUOBJDUMP_PATH': '$CUDA_HOME/bin/cubjdump',
     'TRITON_LIBDEVICE_PATH': '$CUDA_HOME/nvvm/libdevice/libdevice.10.bc',
 }
