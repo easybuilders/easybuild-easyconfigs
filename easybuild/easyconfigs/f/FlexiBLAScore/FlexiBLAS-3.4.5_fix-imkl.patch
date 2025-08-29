@@ -1,0 +1,24 @@
+CMake-related fixes to use correct backend for MKL
+
+Author: Bart Oldeman <bart.oldeman@calculquebec.ca>
+diff -ur flexiblas-3.4.5.orig/src/CMakeLists.txt flexiblas-3.4.5/src/CMakeLists.txt
+--- flexiblas-3.4.5.orig/src/CMakeLists.txt	2025-01-30 14:55:11.000000000 +0000
++++ flexiblas-3.4.5/src/CMakeLists.txt	2025-08-29 19:08:03.479729889 +0000
+@@ -452,7 +452,7 @@
+     ENDIF()
+ ENDMACRO()
+ 
+-MACRO(BuildBackendBlas VENDOR BACKEND_CODE)
++MACRO(BuildBackendBlas VENDOR BACKEND_CODE_PARAM)
+     MESSAGE(STATUS "Build additional BLAS interface: ${VENDOR}")
+     MESSAGE(STATUS "-- Libs: ${${VENDOR}_LIBRARY}")
+     MESSAGE(STATUS "-- Linker Flags: ${${VENDOR}_LINKER_FLAGS}")
+@@ -478,6 +478,8 @@
+     # Use the MKL Backend Code if it is MKL
+     IF(_MKL_VERSION)
+         SET(BACKEND_CODE backends/intel_mkl/backend.c)
++    ELSE()
++        SET(BACKEND_CODE ${BACKEND_CODE_PARAM})
+     ENDIF()
+ 
+     SET(CMAKE_REQUIRED_LIBRARIES ${__CMAKE_REQUIRED_LIBRARIES})
