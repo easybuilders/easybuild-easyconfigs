@@ -1,0 +1,177 @@
+easyblock = 'Bundle'
+
+name = 'OpenGL'
+version = '2025b'
+
+homepage = 'http://www.opengl.org/'
+description = """
+Open Graphics Library (OpenGL) is a cross-language, cross-platform application programming interface (API) for rendering
+2D and 3D vector graphics. Mesa is an open-source implementation of the OpenGL specification - a system for rendering
+interactive 3D graphics. NVIDIA supports OpenGL and a complete set of OpenGL extensions, designed to give a maximum
+performance on NVIDIA GPUs.
+
+This is a GL vendor neutral dispatch (GLVND) installation with Mesa and NVIDIA in the same lib-directory. Mesa or NVIDIA
+OpenGL is set individually for each XScreen.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Autotools', '20250527'),
+    ('Bison', '3.8.2'),
+    ('CMake', '4.0.3'),
+    ('Mako', '1.3.10'),
+    ('Meson', '1.8.2'),
+    ('Ninja', '1.13.0'),
+    ('Python', '3.13.5'),
+    ('PyYAML', '6.0.2'),
+    ('flex', '2.6.4'),
+    ('expat', '2.7.1'),
+    ('glslang', '15.3.0'),
+    ('libclc', '20.1.8'),
+    ('libxml2', '2.14.3'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('LLVM', '20.1.8'),
+    ('Wayland', '1.24.0'),
+    ('X11', '20250608'),
+    ('elfutils', '0.193'),
+    ('libdrm', '2.4.125'),
+    ('libunwind', '1.8.2'),
+    ('nettle', '3.10.2'),
+    ('zlib', '1.3.1'),
+]
+
+default_easyblock = 'MesonNinja'
+
+local_pkg_config = 'export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%(installdir)s/lib/pkgconfig && '
+local_pkg_config += 'export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%(installdir)s/lib64/pkgconfig && '
+
+local_glew_buildopts = 'GLEW_PREFIX=%(installdir)s GLEW_DEST=%(installdir)s '
+local_glew_buildopts += 'LDFLAGS.EXTRA="-L${EBROOTX11}/lib/ -lX11" LDFLAGS.GL="-L%(installdir)s/lib -lGL"'
+
+local_mesa_configopts = "-Dplatforms=x11,wayland -Dvulkan-drivers='swrast,amd' -Dvulkan-layers='device-select' "
+local_mesa_configopts += "-Dllvm=enabled -Dshared-llvm=enabled -Dlibunwind=enabled -Degl=enabled -Dglvnd=enabled "
+local_mesa_configopts += "-Dglx=auto -Dgbm=enabled -Dgles1=enabled -Dgles2=enabled -Dgallium-drivers=llvmpipe,radeonsi "
+local_mesa_configopts += "-Dvideo-codecs=vc1dec,h264dec,h264enc,h265dec,h265enc,av1dec,av1enc,vp9dec "
+
+components = [
+    # A vendor neutral dispatch layer
+    ('libglvnd', '1.7.0', {
+        'source_urls': ['https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v%(version)s/'],
+        'sources': ['%(name)s-v%(version)s.tar.gz'],
+        'checksums': ['2b6e15b06aafb4c0b6e2348124808cbd9b291c647299eaaba2e3202f51ff2f3d'],
+        'start_dir': '%(namelower)s-v%(version)s',
+    }),
+    # Mesa for software rendering, not hardware rendering.
+    ('Mesa', '25.1.9', {
+        'easyblock': 'EB_Mesa',
+        'source_urls': [
+            'https://mesa.freedesktop.org/archive/',
+            'https://mesa.freedesktop.org/archive/%(version)s',
+            'ftp://ftp.freedesktop.org/pub/mesa/%(version)s',
+            'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x/%(version)s',
+            'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x',
+        ],
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['412df33a1bb3c785ed698555a3972118a37c458e7accf6ae53f4bb87b3db454a'],
+        'start_dir': '%(namelower)s-%(version)s',
+        'preconfigopts': local_pkg_config,
+        'configopts': local_mesa_configopts,
+    }),
+    # OpenGL Utility Library - offers higher level GL-graphics functions
+    ('libGLU', '9.0.3', {
+        'source_urls': ['https://archive.mesa3d.org/glu/'],
+        'sources': ['glu-%(version)s.tar.xz'],
+        'checksums': ['bd43fe12f374b1192eb15fe20e45ff456b9bc26ab57f0eee919f96ca0f8a330f'],
+        'start_dir': 'glu-%(version)s',
+        'preconfigopts': local_pkg_config,
+    }),
+    # OpenGL Extension Wrangler Library - determines which OpenGL extensions are supported at run-time
+    # This is just GLEW for GLX (which requires DISPLAY to be set) and not GLEW for EGL as GLEW selects GLX/EGL at
+    # compile-time and not run-time (https://github.com/nigels-com/glew/issues/172#issuecomment-357400019)
+    # Compile+Load GLEW-EGL on top to enable GLEW for EGL
+    ('glew', '2.2.0', {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['https://github.com/nigels-com/glew/releases/download/%(name)s-%(version)s/'],
+        'sources': ['%(name)s-%(version)s.tgz'],
+        'checksums': ['d4fc82893cfb00109578d0a1a2337fb8ca335b3ceccf97b97e5cc7f08e4353e1'],
+        'start_dir': '%(namelower)s-%(version)s',
+        'skipsteps': ['configure'],
+        'buildopts': local_glew_buildopts,
+        'installopts': 'GLEW_PREFIX=%(installdir)s GLEW_DEST=%(installdir)s ',
+        'install_cmd': 'make install.all ',
+    }),
+    # MESA demos - offers the important command 'eglinfo'
+    ('Mesa-demos', '9.0.0', {
+        'source_urls': ['https://archive.mesa3d.org/demos/'],
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['3046a3d26a7b051af7ebdd257a5f23bfeb160cad6ed952329cdff1e9f1ed496b'],
+        'start_dir': '%(namelower)s-%(version)s',
+        'preconfigopts': local_pkg_config,
+        'configopts': ' -D osmesa=disabled -D wayland=disabled',
+    }),
+]
+
+postinstallcmds = [
+    'cd %(installdir)s/lib && ln -sf libGL.so.1.7.0 libGL.so.1',
+    'cd %(installdir)s/lib && ln -sf libGLX_mesa.so.0 libGLX_indirect.so.0',
+    # EGL vendor ICDs
+    (
+        '{ cat > %(installdir)s/share/glvnd/egl_vendor.d/10_nvidia.json; } << \'EOF\'\n'
+        '{\n'
+        '  \"file_format_version\" : \"1.0.0\",\n'
+        '  \"ICD\" : {\n'
+        '     \"library_path\" : \"libEGL_nvidia.so.0\"\n'
+        '  }\n'
+        '}\n'
+        'EOF'
+    ),
+    (
+        '{ cat > %(installdir)s/share/glvnd/egl_vendor.d/50_mesa.json; } << \'EOF\'\n'
+        '{\n'
+        '  \"file_format_version\" : \"1.0.0\",\n'
+        '  \"ICD\" : {\n'
+        '     \"library_path\" : \"libEGL_mesa.so.0\"\n'
+        '  }\n'
+        '}\n'
+        'EOF'
+    ),
+    # correct pkg-config of GLEW
+    r'sed -i "/^libdir=/c\libdir=\${exec_prefix}\/lib" %(installdir)s/lib/pkgconfig/glew.pc',
+    r'sed -i "/^prefix=/c\prefix=%(installdir)s" %(installdir)s/lib/pkgconfig/glew.pc',
+]
+
+modextrapaths = {
+    '__EGL_VENDOR_LIBRARY_DIRS': [
+        '%(installdir)s/share/glvnd/egl_vendor.d/',
+        '/etc/glvnd/egl_vendor.d',
+        '/usr/share/glvnd/egl_vendor.d',
+    ],
+}
+
+modextravars = {
+    'EGL_PLATFORM': 'surfaceless',
+    'EGL_LOG_LEVEL': 'fatal',
+    'KNOB_MAX_WORKER_THREADS': '65535',
+}
+
+sanity_check_all_components = True
+sanity_check_paths = {
+    'files': [
+        'lib/libEGL_mesa.%s' % SHLIB_EXT, 'lib/libGLESv1_CM.%s' % SHLIB_EXT,
+        'lib/libGLESv2.%s' % SHLIB_EXT, 'include/GL/glext.h',
+        'include/GL/glx.h', 'include/GL/gl.h', 'include/GL/glxext.h',
+        'include/GLES/gl.h', 'include/GLES2/gl2.h', 'include/GLES3/gl3.h',
+        'lib/libOpenGL.%s' % SHLIB_EXT,
+        'lib/libGLEW.a', 'lib/libGLEW.%s' % SHLIB_EXT,
+        'bin/glewinfo', 'bin/visualinfo',
+        'include/GL/glew.h', 'include/GL/glxew.h', 'include/GL/wglew.h',
+    ],
+    'dirs': []
+}
+
+moduleclass = 'vis'
