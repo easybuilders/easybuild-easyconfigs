@@ -4,12 +4,12 @@ name = 'SPIRV-tools'
 version = '2024.3'
 
 homepage = 'https://github.com/KhronosGroup/SPIRV-Tools'
-description = """The SPIR-V Tools project provides an API and commands for processing SPIR-V modules.
+description = '''The SPIR-V Tools project provides an API and commands for processing SPIR-V modules.
 The project includes an assembler, binary module parser, disassembler, validator, and optimizer for SPIR-V.
 Except for the optimizer, all are based on a common static library.
 The library contains all of the implementation details, and is used in the standalone tools whilst
 also enabling integration into other code bases directly.
-The optimizer implementation resides in its own library, which depends on the core library."""
+The optimizer implementation resides in its own library, which depends on the core library.'''
 
 toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
 toolchainopts = {'pic': True, 'openmp': True, 'cstd': 'c++17'}
@@ -19,25 +19,27 @@ local_spirv_headers_commit = '2acb319af38d43be3ea76bfabf3998e5281d8d12'
 local_googletest_commit = '1d17ea141d2c11b8917d2c7d029f1c4e2b9769b2'
 local_google_effcee_commit = 'd74d33d93043952a99ae7cd7458baf6bc8df1da0'
 local_google_re2_commit = '4a8cee3dd3c3d81b6fe8b867811e193d5819df07'
+local_protobuf_commit = 'f0dc78d7e6e331b8c6bb2d5283e06aa26883ca7c'
 local_abseil_commit = '1315c900e1ddbb08a23e06eeb9a06450052ccb5e'
 
 local_github_repos = [
-    ("KhronosGroup", "SPIRV-Headers", local_spirv_headers_commit, 'spirv-headers'),
+    ('KhronosGroup', 'SPIRV-Headers', local_spirv_headers_commit, 'spirv-headers'),
     # Running with googletest also requires effcee -> re2 + abseil
-    ("google", "googletest", local_googletest_commit, 'googletest'),
-    ("google", "effcee", local_google_effcee_commit, 'effcee'),
-    ("google", "re2", local_google_re2_commit, 're2'),
-    ("abseil", "abseil-cpp", local_abseil_commit, 'abseil_cpp'),
+    ('google', 'googletest', local_googletest_commit, 'googletest'),
+    ('google', 'effcee', local_google_effcee_commit, 'effcee'),
+    ('google', 're2', local_google_re2_commit, 're2'),
+    ('protocolbuffers', 'protobuf', local_protobuf_commit, 'protobuf'),  # Required for spirv-fuzzer
+    ('abseil', 'abseil-cpp', local_abseil_commit, 'abseil_cpp'),
 ]
 
 sources = [
     # See https://github.com/KhronosGroup/SPIRV-Tools/?tab=readme-ov-file#source-code-organization
     # The packages marked as `` in the above link needs to be added to the `external/` directory and not as deps
     {
-        "download_filename": "v%(version)s.tar.gz",
-        "filename": "SPIRV-tools-%(version)s.tar.gz",
-        "extract_cmd": "mkdir -p %(builddir)s/spirv-tools && tar xzvf %s --strip-components=1 -C $_",
-        "source_urls": ["https://github.com/KhronosGroup/SPIRV-Tools/archive/refs/tags"],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': 'SPIRV-tools-%(version)s.tar.gz',
+        'extract_cmd': 'mkdir -p %(builddir)s/spirv-tools && tar xzvf %s --strip-components=1 -C $_',
+        'source_urls': ['https://github.com/KhronosGroup/SPIRV-Tools/archive/refs/tags'],
     }
 ]
 checksums = [
@@ -46,19 +48,20 @@ checksums = [
     {'googletest-1d17ea14.tar.xz': '7a275798ac4580ea1e35dea33aac636e2564806029abe1b19c9cdd47331c14c9'},
     {'effcee-d74d33d9.tar.xz': '40903cf0448205dab05d918aa8c7a32a816f287e7788424dd03a3ace8e2f48cf'},
     {'re2-4a8cee3d.tar.xz': '10c5b56e9cf1d70e13c59eaf33adc092abd16bfc9b2538b307e91cae886231d5'},
+    {'protobuf-f0dc78d7.tar.xz': 'edfca29ce9ea890de8f6fbd17cab3a1020d48f99aa354f666926bf466730704a'},
     {'abseil-cpp-1315c900.tar.xz': '96aafd90b43298877a5e24a2cedd42a0fa8a8c5b7ce7bab8cde1bdb2ac9190b2'},
 ]
 
-local_ext_dir = "%(builddir)s/spirv-tools/external"
-local_ext_cmd = "tar xvf %s --strip-components=1 -C $_"
+local_ext_dir = '%(builddir)s/spirv-tools/external'
+local_ext_cmd = 'tar xvf %s --strip-components=1 -C $_'
 for local_owner, local_repo, local_commit, local_dir in local_github_repos:
     sources.append({
-        "filename": "%s-%s.tar.xz" % (local_repo, local_commit[:8]),
-        "extract_cmd": f"mkdir -p {local_ext_dir}/{local_dir} && {local_ext_cmd}",
-        "git_config": {
-            "url": f"https://github.com/{local_owner}",
-            "repo_name": local_repo,
-            "commit": local_commit,
+        'filename': '%s-%s.tar.xz' % (local_repo, local_commit[:8]),
+        'extract_cmd': f'mkdir -p {local_ext_dir}/{local_dir} && {local_ext_cmd}',
+        'git_config': {
+            'url': f'https://github.com/{local_owner}',
+            'repo_name': local_repo,
+            'commit': local_commit,
         },
     })
 
@@ -67,6 +70,10 @@ builddependencies = [
     ('CMake', '3.31.3'),
     ('Python', '3.13.1'),
 ]
+
+configopts = ' '.join([
+    '-DSPIRV_BUILD_FUZZER=ON'
+])
 
 runtest = True
 
@@ -82,6 +89,7 @@ sanity_check_paths = {
         'bin/spirv-opt',
         'bin/spirv-reduce',
         'bin/spirv-val',
+        'bin/spirv-fuzz',
         'include/spirv-tools/libspirv.h',
         'lib/libSPIRV-Tools.a',
         'lib/libSPIRV-Tools-shared.so',
@@ -97,6 +105,7 @@ sanity_check_commands = [
     'spirv-link --version',
     'spirv-opt --version',
     'spirv-val --version',
+    'spirv-fuzz --version',
 ]
 
 moduleclass = 'tools'
