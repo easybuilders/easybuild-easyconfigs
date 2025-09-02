@@ -592,6 +592,8 @@ class EasyConfigTest(TestCase):
                 (r'4\.', [r'libGridXC-']),
                 (r'5\.', [r'Elk-']),
             ],
+            # RepeatModeler 2.0.7 requires LTR_retriever 2.9.0
+            'LTR_retriever': [(r'2\.9\.0', [r'RepeatModeler-2\.0\.7'])],
             # FDMNES requires sequential variant of MUMPS
             'MUMPS': [(r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES'])],
             # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0, Finder requires SRA-Toolkit 3.0.0
@@ -618,8 +620,8 @@ class EasyConfigTest(TestCase):
             'Pysam': [
                 ('0.18.0;', ['medaka-1.6.0-', 'NGSpeciesID-0.1.2.1-', 'WhatsHap-1.4-']),
             ],
-            # bakta requires python-isal 1.6.1
-            'python-isal': [(r'1\.6\.1', [r'bakta-1\.10\.1'])],
+            # bakta and TEsorter require python-isal 1.6.1
+            'python-isal': [(r'1\.6\.1', [r'bakta-1\.10\.1', r'TEsorter-1\.4\.7'])],
             # PyTorch-Lightning-1.8.4 is requiered in synthcity-0.2.10 and DECAF-synthetic-data-0.1.6
             'PyTorch-Lightning': [('1.8.4;', ['synthcity-0.2.10-', 'DECAF-synthetic-data-0.1.6-'])],
             # OPERA requires SAMtools 0.x
