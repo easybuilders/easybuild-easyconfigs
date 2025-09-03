@@ -1,0 +1,83 @@
+easyblock = 'CMakeMake'
+
+name = 'glslang'
+version = '15.3.0'
+
+homepage = 'https://www.khronos.org/opengles/sdk/tools/Reference-Compiler/'
+description = """Glslang is the official reference compiler front end for the OpenGL ES and OpenGL shading languages.
+It implements a strict interpretation of the specifications for these languages. It is open and free for anyone to use,
+either from a command line or programmatically. The OpenGL and OpenGL ES working groups are committed to maintaining
+consistency between the reference compiler and the corresponding shading language specifications."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'pic': True}
+
+# From https://github.com/KhronosGroup/glslang/blob/15.3.0/known_good.json
+local_googletest_commit = 'f8d7d77c06936315286eb55f8de22cd23c188571'  # equivalent to tag v1.14.0
+
+local_github_repos = [
+    ("google", "googletest", local_googletest_commit, 'googletest'),
+]
+
+sources = [
+    {
+        'filename': SOURCE_TAR_XZ,
+        'git_config': {
+            'url': 'https://github.com/KhronosGroup',
+            'repo_name': '%(name)s',
+            'tag': version,
+        },
+    },
+]
+
+checksums = [
+    {'glslang-15.3.0.tar.xz': '629cddb4dc63e03b13d4acb15917adb5261eb13d0901b1e87bebf31eb93af38c'},
+    {'googletest-f8d7d77c.tar.xz': '8dd1ff67f8abca903d3f03c78eaae7b2076a73f465cb1f369f3698bfbd6f4aad'},
+]
+
+local_ext_dir = "%(builddir)s/glslang/External"
+local_ext_cmd = "tar xvf %s --strip-components=1 -C $_"
+for local_owner, local_repo, local_commit, local_dir in local_github_repos:
+    sources.append({
+        "filename": "%s-%s.tar.xz" % (local_repo, local_commit[:8]),
+        "extract_cmd": f"mkdir -p {local_ext_dir}/{local_dir} && {local_ext_cmd}",
+        "git_config": {
+            "url": f"https://github.com/{local_owner}",
+            "repo_name": local_repo,
+            "commit": local_commit,
+        },
+    })
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('binutils', '2.42'),
+    ('Bison', '3.8.2'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),  # Only needed with SPIRV
+    ('SPIRV-tools', '2025.2.rc2'),  # Has to match the commit in `known_good.json`
+]
+
+configopts = ' '.join([
+    '-DALLOW_EXTERNAL_SPIRV_TOOLS=ON',  # Needed to build against external SPIRV-tools passed as dependency
+    '-DENABLE_OPT=ON',  # Needed if SPIRV is used
+])
+
+runtest = True
+
+sanity_check_paths = {
+    'files': [
+        'bin/glslang', 'bin/spirv-remap'
+        'lib/libglslang.a', 'lib/libGenericCodeGen.a',
+        'lib/libSPIRV.a',
+    ],
+    'dirs': ['include/glslang'],
+}
+
+sanity_check_commands = [
+    'glslang --version',
+    'spirv-remap --version',
+]
+
+moduleclass = 'compiler'
