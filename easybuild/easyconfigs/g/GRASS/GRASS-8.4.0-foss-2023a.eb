@@ -52,7 +52,6 @@ preconfigopts += (
     "sed -i 's/LDFLAGS=\"-Wl,--export-dynamic\"/LDFLAGS=\"-pthread -lm -Wl,--export-dynamic\"/g' configure && "
 )
 configopts = '--enable-largefile=yes '
-configopts += '--enable-64bit '
 configopts += '--with-cairo=yes '
 configopts += '--with-cxx '
 configopts += '--with-fftw --with-fftw-libs=$EBROOTFFTW/lib --with-fftw-includes=$EBROOTFFTW/include '
@@ -69,8 +68,6 @@ configopts += '--with-netcdf=$EBROOTNETCDF/bin/nc-config '
 configopts += '--without-odbc '
 configopts += '--with-opengl '
 configopts += '--with-openmp '
-configopts += '--with-png '
-configopts += '--with-png-libs="$EBROOTLIBPNG/lib $EBROOTZLIB/lib" --with-png-includes=$EBROOTLIBPNG/include '
 configopts += '--without-postgres '
 configopts += '--with-proj-libs=$EBROOTPROJ/lib '
 configopts += '--with-proj-includes=$EBROOTPROJ/include --with-proj-share=$EBROOTPROJ/share/proj '
@@ -79,7 +76,6 @@ configopts += '--with-readline '
 configopts += '--with-readline-libs=$EBROOTLIBREADLINE/lib --with-readline-includes=$EBROOTLIBREADLINE/include '
 configopts += '--with-sqlite '
 configopts += '--with-tiff-libs=$EBROOTLIBTIFF/lib --with-tiff-includes=$EBROOTLIBTIFF/include '
-configopts += '--with-wxwidgets=$EBROOTWXWIDGET/bin/wx-config '
 configopts += '--with-x '
 configopts += '--with-zlib-libs=$EBROOTZLIB/lib --with-zlib-includes=$EBROOTZLIB/include '
 configopts += '--with-bzlib --with-bzlib-libs=$EBROOTBZIP2/lib --with-bzlib-includes=$EBROOTBZIP2/include '
@@ -92,7 +88,18 @@ postinstallcmds = [
 
 sanity_check_paths = {
     'files': ['bin/grass'],
-    'dirs': ['grass%(version_major)s%(version_minor)s']
+    'dirs': [
+        'grass%(version_major)s%(version_minor)s/include',
+        'grass%(version_major)s%(version_minor)s/lib',
+    ]
+}
+
+sanity_check_commands = ['grass -h']
+
+modextrapaths = {
+    MODULE_LOAD_ENV_HEADERS: 'grass%(version_major)s%(version_minor)s/include',
+    'LD_LIBRARY_PATH': 'grass%(version_major)s%(version_minor)s/lib',
+    'LIBRARY_PATH': 'grass%(version_major)s%(version_minor)s/lib',
 }
 
 moduleclass = 'geo'
