@@ -1,0 +1,39 @@
+commit 9942a14e96c539cb0195475d2cd660dcdc274123
+Author: Nisanth M P <nisanthmp.01@gmail.com>
+Date:   Fri Jul 14 04:09:14 2023 +0000
+
+    Fix torch.compile g++ flag error on ppc64le (#104956)
+    
+    g++ flag -march is not recognised on ppc64le. So adding a check for platform machine to be ppc64le and using -mcpu flag instead. Other architectures will still use -march flag
+    
+    This fixes the torch.compile feature failure on ppc64le
+    
+    Pull Request resolved: https://github.com/pytorch/pytorch/pull/104956
+    Approved by: https://github.com/jgong5, https://github.com/jansel
+
+diff --git a/torch/_inductor/codecache.py b/torch/_inductor/codecache.py
+--- a/torch/_inductor/codecache.py
++++ b/torch/_inductor/codecache.py
+@@ -7,6 +7,7 @@ import json
+ import logging
+ import multiprocessing
+ import os
++import platform
+ import re
+ import shutil
+ import signal
+@@ -378,7 +379,14 @@ def optimization_flags():
+         # Also, `-march=native` is unrecognized option on M1
+         base_flags += " -Xclang -fopenmp"
+     else:
+-        base_flags += " -march=native -fopenmp"
++        if platform.machine() == "ppc64le":
++            base_flags += " -mcpu=native"
++        else:
++            base_flags += " -march=native"
++
++    # Internal cannot find libgomp.so
++    if not config.is_fbcode():
++        base_flags += " -fopenmp"
+     return base_flags
+ 
