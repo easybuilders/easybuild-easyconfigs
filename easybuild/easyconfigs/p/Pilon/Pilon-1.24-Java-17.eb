@@ -1,0 +1,38 @@
+easyblock = 'Binary'
+
+name = 'Pilon'
+version = '1.24'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://github.com/broadinstitute/pilon'
+description = "Pilon is an automated genome assembly improvement and variant detection tool"
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/broadinstitute/pilon/releases/download/v%(version)s/']
+sources = ['pilon-%(version)s.jar']
+checksums = ['ea8e7ca8669887ebe1c376bef440ba487377d4802a45c5937ed37c49cafb8df6']
+
+dependencies = [('Java', '17')]
+
+postinstallcmds = [
+    "cd %(installdir)s && ln -s pilon-%(version)s.jar pilon.jar",
+    "mkdir -p %(installdir)s/bin",
+    "echo '#!/bin/sh' > %(installdir)s/bin/pilon",
+    "echo 'java -jar -Xmx8G %(installdir)s/pilon-%(version)s.jar $@' >> %(installdir)s/bin/pilon",
+    "chmod a+rx %(installdir)s/bin/pilon"
+]
+
+modloadmsg = """
+To execute Pilon run: java -Xmx8G -jar $EBROOTPILON/pilon.jar
+Adjust the memory value according to the size of your input files
+"""
+
+sanity_check_paths = {
+    'files': ['bin/pilon', 'pilon.jar'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["pilon --help"]
+
+moduleclass = 'bio'
