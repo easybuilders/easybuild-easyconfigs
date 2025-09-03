@@ -1,0 +1,88 @@
+fix build with recent compiler & BLAS/LAPACK library
+author: Kenneth Hoste (HPC-UGent)
+
+--- emmax-beta-src/emmax.c.orig	2024-08-13 16:28:41.536119000 +0200
++++ emmax-beta-src/emmax.c	2024-08-13 16:54:06.856501202 +0200
+@@ -7,7 +7,8 @@
+ #include <float.h>
+ #include <time.h>
+ #include <cblas.h>
+-#include <clapack.h>
++#include <lapacke.h>
++#include <stdint.h>
+ #include <zlib.h>
+ //#include "lapack_wrapper.h"
+ 
+@@ -1621,15 +1622,13 @@
+ 	    double *W, 
+ 	    double *WORK, int LWORK, int *IWORK, int LIWORK) 
+ {
+-  extern  void  dsyevd_ (char *JOBZp, char *UPLOp, int *Np,
+-			 double *A, int *LDAp, 
+-			 double *W, 
+-			 double *WORK, int *LWORKp, int *IWORK, int *LIWORKp,
+-			 int *INFOp);
+   int  INFO;
+-  dsyevd_ (&JOBZ, &UPLO, &N, A, &LDA, 
++  int32_t N32 = N;
++  int32_t LDA32 = LDA;
++  int32_t LWORK32 = LWORK;
++  dsyevd_ (&JOBZ, &UPLO, &N32, A, &LDA32, 
+ 	   W, 
+-           WORK, &LWORK, IWORK, &LIWORK, &INFO);
++           WORK, &LWORK32, IWORK, &LIWORK, &INFO, 1, 1);
+   
+   return  INFO;
+ }
+@@ -1640,16 +1639,11 @@
+ 	    double *W, double *Z, int LDZ, int *ISUPPZ,
+ 	    double *WORK, int LWORK, int *IWORK, int LIWORK) 
+ {
+-  extern  void  dsyevr_ (char *JOBZp, char *RANGEp, char *UPLOp, int *Np,
+-			 double *A, int *LDAp, double *VLp, double *VUp,
+-			 int *ILp, int *IUp, double *ABSTOLp, int *Mp,
+-			 double *W, double *Z, int *LDZp, int *ISUPPZ,
+-			 double *WORK, int *LWORKp, int *IWORK, int *LIWORKp,
+-			 int *INFOp);
+   int  INFO;
+-  dsyevr_ (&JOBZ, &RANGE, &UPLO, &N, A, &LDA, &VL, &VU,
+-           &IL, &IU, &ABSTOL, M, W, Z, &LDZ, ISUPPZ,
+-           WORK, &LWORK, IWORK, &LIWORK, &INFO);
++  int32_t N32 = N, LDA32 = LDA, IL32 = IL, IU32 = IU, LDZ32 = LDZ, LWORK32 = LWORK, LIWORK32 = LIWORK;
++  dsyevr_ (&JOBZ, &RANGE, &UPLO, &N32, A, &LDA32, &VL, &VU,
++           &IL32, &IU32, &ABSTOL, M, W, Z, &LDZ32, ISUPPZ,
++           WORK, &LWORK32, IWORK, &LIWORK32, &INFO, 1, 1, 1);
+   
+   return  INFO;
+ }
+@@ -1739,16 +1733,27 @@
+   }
+   
+   /*  Turn Y into its LU form, store pivot matrix  */
+-  info = clapack_dgetrf (CblasColMajor, n, n, Y, n, ipiv);
++  dgetrf_(&n, &n, Y, &n, ipiv, &info);
+   
+   /*  Don't bother continuing when illegal argument (info<0) or singularity (info>0) occurs  */
+-  if (info!=0) return info;
++  if (info != 0) {
++    free(ipiv);
++    return info;
++  }
+   
+   /*  Feed this to the lapack inversion routine.  */
+-  info = clapack_dgetri (CblasColMajor, n, Y, n, ipiv);
++  int lwork = n * n;
++  double *work = malloc(lwork * sizeof(double));
++  if (work == NULL) {
++    printf("malloc failed for work array in matrix_invert\n");
++    free(ipiv);
++    return 2;
++  }
++  dgetri_(&n, Y, &n, ipiv, work, &lwork, &info);
+   
+   /*  Cleanup and exit  */
+   free(ipiv);
++  free(work);
+   return info;
+ }
+ 
