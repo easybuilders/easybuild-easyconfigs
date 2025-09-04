@@ -1337,19 +1337,18 @@ class EasyConfigTest(TestCase):
             # Z3 is an exception, since it has easyconfigs with and without Python bindings
             exception_python_suffix = ['Tkinter', 'Z3']
 
-            if ec.name in exception_python_suffix:
-                continue
-            elif has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
-                # This is only a failure for newly added ECs, not for existing ECS
-                # As that would probably break many ECs
-                if ec_fn in self.added_ecs_filenames:
+            if ec.name not in exception_python_suffix:
+                if has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                    msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
+                    # This is only a failure for newly added ECs, not for existing ECS
+                    # As that would probably break many ECs
+                    if ec_fn in self.added_ecs_filenames:
+                        failing_checks.append(msg)
+                    else:
+                        print('\nNote: Failed non-critical check: ' + msg)
+                elif has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                    msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
                     failing_checks.append(msg)
-                else:
-                    print('\nNote: Failed non-critical check: ' + msg)
-            elif has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
-                failing_checks.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
             if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
