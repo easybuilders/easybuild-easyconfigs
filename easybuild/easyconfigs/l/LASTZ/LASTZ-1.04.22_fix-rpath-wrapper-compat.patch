@@ -1,0 +1,76 @@
+Avoid requiring score type define to be escaped
+This ensures that it works even when our rpath-wrapper removes the quotes passed as `-Dscore_type=\'I\'`
+This avoids
+> #error ***** undecipherable score type definition *****
+
+See https://github.com/lastz/lastz/pull/64
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/src/Makefile b/src/Makefile
+index 1908774..cd7a55a 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -91,10 +91,10 @@ incFiles = lastz.h infer_scores.h \
+            utilities.h dna_utilities.h sequences.h capsule.h
+ 
+ %.o: %.c version.mak ${incFiles}
+-	${CC} -c ${CFLAGS} -Dscore_type=\'I\' $< -o $@
++	${CC} -c ${CFLAGS} -Dscore_type=I $< -o $@
+ 
+ %_D.o: %.c version.mak ${incFiles}
+-	${CC} -c ${CFLAGS} -Dscore_type=\'D\' $< -o $@
++	${CC} -c ${CFLAGS} -Dscore_type=D $< -o $@
+ 
+ %_32.o: %.c version.mak ${incFiles}
+ 	${CC} -c ${CFLAGS} ${flagsFor32} $< -o $@
+diff --git a/src/Makefile.warnings b/src/Makefile.warnings
+index 50109a6..dec9189 100644
+--- a/src/Makefile.warnings
++++ b/src/Makefile.warnings
+@@ -91,10 +91,10 @@ incFiles = lastz.h infer_scores.h \
+            utilities.h dna_utilities.h sequences.h capsule.h
+ 
+ %.o: %.c version.mak ${incFiles}
+-	${CC} -c ${CFLAGS} -Dscore_type=\'I\' $< -o $@
++	${CC} -c ${CFLAGS} -Dscore_type=I $< -o $@
+ 
+ %_D.o: %.c version.mak ${incFiles}
+-	${CC} -c ${CFLAGS} -Dscore_type=\'D\' $< -o $@
++	${CC} -c ${CFLAGS} -Dscore_type=D $< -o $@
+ 
+ %_32.o: %.c version.mak ${incFiles}
+ 	${CC} -c ${CFLAGS} ${flagsFor32} $< -o $@
+diff --git a/src/dna_utilities.h b/src/dna_utilities.h
+index f3a0ce2..ed4ef23 100644
+--- a/src/dna_utilities.h
++++ b/src/dna_utilities.h
+@@ -35,9 +35,7 @@ global int dna_utilities_dbgShowQToBest;
+ // score values--
+ //	Scores used for sequence comparisons are normally signed 32-bit integers,
+ //	but the programmer can override this at compile time by defining score_type
+-//	as one of 'F', 'D', or 'I'.  Note that some effort must be taken to get
+-//	the apostrophes into the definition from the compiler command line, such as
+-//	-Dscore_type=\'F\' .
++//	as one of 'F', 'D', or 'I'.  E.g.: -Dscore_type=F
+ //
+ //----------
+ //
+@@ -66,7 +64,16 @@ global int dna_utilities_dbgShowQToBest;
+ //----------
+ 
+ #if defined(score_type)
+-#define scoreType score_type
++// Convert the score_type define to one of the valid character constants
++#define LASTZ_CONCAT(a, b) a ## b
++
++#define LASTZ_SCORE_TYPE_I 'I'
++#define LASTZ_SCORE_TYPE_F 'F'
++#define LASTZ_SCORE_TYPE_D 'D'
++// Indirection required to expand the macro argument
++#define LASTZ_MAKE_SCORE_TYPE(c) LASTZ_CONCAT(LASTZ_SCORE_TYPE_, c)
++#define scoreType LASTZ_MAKE_SCORE_TYPE(score_type)
++
+ #else
+ #define scoreType 'I'
+ #endif
