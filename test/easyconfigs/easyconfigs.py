@@ -1793,15 +1793,22 @@ def template_easyconfig_test(self, spec):
     if checksums and ('fetch' in ec['skipsteps']):
         failing_checks.append("'fetch' step should not be skipped, since that implies not verifying checksums")
 
+    extension_names = set()
     for ext in ec.get_ref('exts_list'):
-        if isinstance(ext, (tuple, list)) and len(ext) == 3:
+        if isinstance(ext, (tuple, list)):
             ext_name = ext[0]
-            if not isinstance(ext[2], dict):
+            if len(ext) == 3 and not isinstance(ext[2], dict):
                 failing_checks.append("3rd element of extension spec for %s must be a dictionary" % ext_name)
+        else:
+            ext_name = ext
+        if ext_name in extension_names:
+            failing_checks.append(f'{ext_name} was added multiple times to exts_list')
+        else:
+            extension_names.add(ext_name)
 
     # Need to check now as collect_exts_file_info relies on correct exts_list
     if failing_checks:
-        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(failing_checks))
+        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(set(failing_checks)))
 
     # After the sanity check above, use collect_exts_file_info to resolve templates etc. correctly
     for ext in app.collect_exts_file_info(fetch_files=False, verify_checksums=False):
