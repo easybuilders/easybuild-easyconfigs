@@ -1,6 +1,5 @@
-Patch taken from https://github.com/anharmonic/d3q/pull/31
-Fixes issue in OpenMP compilation (see https://github.com/anharmonic/d3q/issues/30)
-
+diff --git a/d3q/Examples/Silicon/run b/d3q/Examples/Silicon/run
+index 939e044..1e48a44 100755
 --- a/d3q/Examples/Silicon/run
 +++ b/d3q/Examples/Silicon/run
 @@ -6,7 +6,7 @@ export EXAMPLE=$(pwd)
@@ -12,6 +11,8 @@ Fixes issue in OpenMP compilation (see https://github.com/anharmonic/d3q/issues/
  pref=" "  # e.g. "mpirun -np 4 "
  post=" "  # e.g. -npool 4
  
+diff --git a/d3q/thermal2/fc3_interp.f90 b/d3q/thermal2/fc3_interp.f90
+index 0235d9c..7a557d7 100644
 --- a/d3q/thermal2/fc3_interp.f90
 +++ b/d3q/thermal2/fc3_interp.f90
 @@ -701,6 +701,8 @@ CONTAINS
@@ -61,7 +62,7 @@ Fixes issue in OpenMP compilation (see https://github.com/anharmonic/d3q/issues/
        !$OMP END PARALLEL DO
 +
 +      ALLOCATE(Dqr%DR3(nat3, nat3, nat3, nr))
-+      Dqr%DR3(:) = TMP(:)
++      Dqr%DR3 = TMP
 +
 +      DEALLOCATE(TMP)
     END SUBROUTINE
@@ -76,3 +77,16 @@ Fixes issue in OpenMP compilation (see https://github.com/anharmonic/d3q/issues/
        DO i = 1, fc%n_R
           arg = tpi * SUM(xq2(:)*fc%xR2(:,i) + xq3(:)*fc%xR3(:,i))
           cosine = Cos(arg)
+diff --git a/d3q/thermal2/linewidth.f90 b/d3q/thermal2/linewidth.f90
+index e005d70..e5af39d 100644
+--- a/d3q/thermal2/linewidth.f90
++++ b/d3q/thermal2/linewidth.f90
+@@ -251,7 +251,7 @@ CONTAINS
+                ENDDO
+             ENDDO
+ !$OMP PARALLEL DO DEFAULT(SHARED) &
+-!$OMP             PRIVATE(i,j,k,bose_C,bose_X,dom_C,dom_X,ctm_C,ctm_X,&
++!$OMP             PRIVATE(i,j,k,bose_C,bose_X,dom_C,dom_X,&
+ !$OMP                     freqtotm1_23,freqtotm1) &
+ !$OMP             REDUCTION(+: aux) COLLAPSE(2)
+             DO j = 1,S%nat3
