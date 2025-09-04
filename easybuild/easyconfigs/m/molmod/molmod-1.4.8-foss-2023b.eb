@@ -1,0 +1,44 @@
+easyblock = 'PythonBundle'
+
+name = 'molmod'
+version = '1.4.8'
+
+homepage = 'https://molmod.github.io/molmod/'
+description = "MolMod is a Python library with many compoments that are useful to write molecular modeling programs."
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('matplotlib', '3.8.2'),
+]
+
+# disable tests that require X11 by specifying "backend: agg" in matplotlibrc
+_runtest = "export MATPLOTLIBRC=$PWD; echo 'backend: agg' > $MATPLOTLIBRC/matplotlibrc; "
+_runtest += "python setup.py build_ext -i && pytest -ra"
+
+exts_list = [
+    ('Cython', '0.29.37', {
+        'checksums': ['f813d4a6dd94adee5d4ff266191d1d95bf6d4164a4facc535422c021b2504cfb'],
+    }),
+    (name, version, {
+        'patches': [
+            'molmod-1.4.8_fix-git-version-check.patch',
+            'molmod-1.4.8_fix-np-unicode.patch',
+        ],
+        'runtest': _runtest,
+        'checksums': [
+            {'molmod-1.4.8.tar.gz': '759f8894f8a206e8d83f3f88882f29fcf73a7f9be375026e03c58e19496f42e8'},
+            {'molmod-1.4.8_fix-git-version-check.patch':
+             '6d1455f9dc3af07b723b05d144f6d8c3c0e5184e094eced1a6f59822f97dcf47'},
+            {'molmod-1.4.8_fix-np-unicode.patch': '85bd2e2981d2cdd8cfab5d1c2cf37432e2967ff82de603700383d7c31530327c'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'math'

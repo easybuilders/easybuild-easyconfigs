@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'GOMC'
+version = '2.76-20230613'
+versionsuffix = '-CUDA-%(cudaver)s'
+_commit = '9fc85fb'
+
+homepage = 'https://gomc-wsu.org/'
+description = """GPU Optimized Monte Carlo (GOMC) is a parallel molecular
+simulation code designed for high-performance simulation of large systems."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/GOMC-WSU/GOMC/archive'],
+        'download_filename': '%s.tar.gz' % _commit,
+        'filename': SOURCE_TAR_GZ,
+    },
+]
+checksums = ['14725836707e4525cc7daea219a6eb47a8aeb675d01ef6d16ad60a9986dd3c1e']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+]
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('UCX-CUDA', '1.12.1', versionsuffix),
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['6.0', '7.0', '7.5', '8.0', '8.6']
+configopts = '-DCMAKE_CUDA_ARCHITECTURES="%(cuda_cc_cmake)s" '
+
+preinstallopts = 'mkdir %(installdir)s/bin &&'
+install_cmd = 'cp'
+installopts = '%(builddir)s/easybuild_obj/%(name)s_{CPU,GPU}_* %(installdir)s/bin'
+
+_gomc_exe = ['GOMC_CPU_GCMC', 'GOMC_CPU_GEMC', 'GOMC_CPU_NPT', 'GOMC_CPU_NVT', 'GOMC_GPU_GCMC',
+             'GOMC_GPU_GEMC', 'GOMC_GPU_NPT', 'GOMC_GPU_NVT']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _gomc_exe],
+    'dirs': [],
+}
+
+sanity_check_commands = ['%s | grep "Info: GOMC"' % x for x in _gomc_exe]
+
+moduleclass = 'chem'
