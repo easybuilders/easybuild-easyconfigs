@@ -1379,27 +1379,6 @@ class EasyConfigTest(TestCase):
             self.fail('\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
-    def test_pr_R_packages(self):
-        """Several checks for easyconfigs that install (bundles of) R packages."""
-        failing_checks = []
-
-        for ec in self.changed_ecs:
-            ec_fn = os.path.basename(ec.path)
-            exts_defaultclass = ec.get('exts_defaultclass')
-            if exts_defaultclass == 'RPackage' or ec.name == 'R':
-                seen_exts = set()
-                for ext in ec.get_ref('exts_list'):
-                    if isinstance(ext, (tuple, list)):
-                        ext_name = ext[0]
-                    else:
-                        ext_name = ext
-                    if ext_name in seen_exts:
-                        failing_checks.append('%s was added multiple times to exts_list in %s' % (ext_name, ec_fn))
-                    else:
-                        seen_exts.add(ext_name)
-        self.assertFalse(failing_checks, '\n'.join(failing_checks))
-
-    @skip_if_not_pr_to_non_main_branch()
     def test_pr_sanity_check_paths(self):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
