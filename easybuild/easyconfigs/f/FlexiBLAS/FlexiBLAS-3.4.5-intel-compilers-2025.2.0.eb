@@ -1,0 +1,88 @@
+name = 'FlexiBLAS'
+version = '3.4.5'
+
+homepage = 'https://gitlab.mpi-magdeburg.mpg.de/software/flexiblas-release'
+description = """FlexiBLAS is a wrapper library that enables the exchange of the BLAS and LAPACK implementation
+used by a program without recompiling or relinking it."""
+
+toolchain = {'name': 'intel-compilers', 'version': '2025.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://gitlab.mpi-magdeburg.mpg.de/api/v4/projects/386/packages/generic/flexiblas-source/v3.4.5/']
+sources =  [SOURCELOWER_TAR_GZ]
+patches = [
+    'FlexiBLAS-3.4.5_fix-imkl.patch',
+    'FlexiBLAS-3.0.4_remove-semicolon.patch',
+]
+
+checksums = [
+    'e819949c614c4968919b0ea4e873ab916d95cdc6943e9d091a78d209b7d6ed07',  # flexiblas-3.4.5.tar.gz
+    'd583d570f216ca7914a0f664ffa1a292350db4ff6feca623abc6e3574d7d6245',  # FlexiBLAS-3.4.5_fix-imkl.patch
+    'a3bbcff7aeca6f8bab989e7e3a8069f2b7b660e4559042221eecaa30dc0ce300',  # FlexiBLAS-3.0.4_remove-semicolon.patch
+]
+
+builddependencies = [
+    ('CMake', '3.31.0'),
+    ('Python', '3.11.5'),  # required for running the tests
+    ('BLIS', '2.0'),
+    ('OpenBLAS', '0.3.30'),
+    ('AOCL-LAPACK', '5.1'),
+    # imkl is commented out, since installing it requires accepting the Intel oneAPI EULA;
+    # note: also commented out the lines below to add imkl to 'backends'!
+    ('imkl', {'arch=x86_64': '2025.2.0', 'arch=*': False}, '', True),
+]
+
+# icx with -ax doesn't play well with FlexiBLAS's dynamic loading
+preconfigopts = 'CFLAGS="${CFLAGS/ -axCore-AVX512/}" '
+
+# note: first listed backend will be used as default by FlexiBLAS,
+# unless otherwise specified via easyconfig parameter flexiblas_default
+local_backends = ['OpenBLAS', 'BLIS']
+
+if ARCH == 'x86_64':
+    local_backends.append('imkl')
+
+backends = local_backends
+
+configopts = '-DEXTRA="%s" ' % ';'.join(backends + ['AOCL'])
+configopts = [configopts + ' -DINTEGER8=ON -Dimkl_LIBRARY="mkl_intel_ilp64;mkl_intel_thread;mkl_core;iomp5;pthread;m;dl"' +
+              ' -DBLIS_LIBRARY=blis64 -DOpenBLAS_LIBRARY=openblas64 -DAOCL_LIBRARY="flame64;blis-mt64"',
+              configopts + '-DAOCL_LIBRARY="flame;blis-mt"']
+install_libdir = 'lib64'
+
+# workaround for first iteration of LAPACKe build (not used in the end), to have a temporary libflexiblas_intel.so symlink
+installopts = ['&& ln -sf libflexiblas64_intel.so %(installdir)s/lib64/libflexiblas_intel.so', '']
+
+flexiblas_default = 'imkl'
+
+# Install LAPACKe as extension; it's not a Python package, but this extension class can be
+# used anyway to build it.
+exts_defaultclass = 'CMakePythonPackage'
+exts_list = [
+    ('LAPACK', '3.12.1', {
+        'easyblock': 'CMakePythonPackage',
+        'source_urls': ['https://github.com/Reference-LAPACK/lapack/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+	'checksums': ['2ca6407a001a474d4d4d35f3a61550156050c48016d949f0da0529c0aa052422'],
+        'preconfigopts': ('module unload imkl && '
+                         'sed -i "s/project(LAPACK)/project(LAPACK Fortran)/" ../LAPACK/lapack-3.12.1/CMakeLists.txt && '),
+        'configopts': ('-DBUILD_SHARED_LIBS=ON -DUSE_OPTIMIZED_BLAS=ON -DLAPACKE=ON '
+                       '-DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON '
+                       '-DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas '
+                       '-DBLAS_LIBRARIES=%(installdir)s/lib64/libflexiblas_intel.so'),
+        'installopts': ' && rm %(installdir)s/lib64/pkgconfig/{lapack,lapacke}.pc',
+        'sanity_check_paths': {
+            'files': ['lib/liblapacke.%s' % SHLIB_EXT, 'include/flexiblas/lapacke.h'],
+            'dirs': [],
+        },
+	'modulename': False, # skips Python-specific sanity check
+    }),
+]
+
+postinstallcmds = [
+    # symlink to be able to use the GCC-compiled FlexiBLAS; the Intel-compiled one is called
+    # libflexiblas_intel.so.
+    'ln -s ../../../../../../x86-64-v3/Core/%(namelower)score/%(version)s/lib64/libflexiblas.so{,.3,.3.4} %(installdir)s/lib64',
+]
+
+moduleclass = 'lib'
