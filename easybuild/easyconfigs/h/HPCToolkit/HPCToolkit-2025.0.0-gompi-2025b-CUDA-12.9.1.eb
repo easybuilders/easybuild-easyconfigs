@@ -58,8 +58,21 @@ configopts = "-Dtests=enabled -Dmanpages=disabled -Dmanual=disabled -Dhpcprof_mp
 configopts += "-Dpapi=enabled -Dcuda=enabled -Dgtpin=disabled -Drocm=disabled -Dopencl=disabled "
 configopts += "-Dvalgrind_annotations=false -Dpython=disabled "
 
-# Tests can be flaky on a compute node, failing because it picks up an additional string the regex
-# check does not expect. Additionally, CUPTI PC sampling tests can fail if one has insufficient permissions.
+# Explicitly ensure that no environment variables related to jobs are picked up, as this
+# causes the test output to change, failing the tests. Recognized variables can be found at:
+# https://gitlab.com/hpctoolkit/hpctoolkit/-/blob/9b7a563cf9bf8b1b94322cab33816b242690b78f/src/common/lean/OSUtil.c#L69
+local_env_to_unset = [
+    "PMI_LOCAL_RANK",
+    "PMI_RANK",
+    "SLURM_LOCALID",
+    "SLURM_PROCID",
+    "PALS_LOCAL_RANKID",
+    "PALS_RANKID",
+]
+pretestopts = ""
+for local_env in local_env_to_unset:
+    pretestopts += f"unset {local_env} && "
+# CUDA related tests can fail due to insufficient permissions for CUPTI PC Sampling
 runtest = "meson test"
 
 local_preload_libs = [
