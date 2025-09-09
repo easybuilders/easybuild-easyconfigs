@@ -53,9 +53,27 @@ if ARCH == 'x86_64':
     dependencies.append(('intel-XED', '2025.06.08'))
 
 configopts = "-Dtests=enabled -Dmanpages=disabled -Dmanual=disabled -Dhpcprof_mpi=enabled "
-configopts += "-Dpapi=enabled -Dcuda=disabled -Dgtpin=disabled -Drocm=disabled "
+configopts += "-Dpapi=enabled -Dcuda=disabled -Dgtpin=disabled -Drocm=disabled -Dopencl=disabled "
 configopts += "-Dvalgrind_annotations=false -Dpython=disabled " 
 
 runtest = "meson test"
+
+local_preload_libs = [
+    'gprof', 'libc_alloc', 'libc_io', 'libc_sync', 'libdl_dlmopen', 'libdl'
+]
+
+sanity_check_paths = {
+    'files':
+        ['bin/hpcrun', 'include/hpctoolkit.h'] +
+        ['lib/libhpcrun_preload_%s.%s' % (a, SHLIB_EXT) for a in local_preload_libs] +
+	[f'lib/libhpcrun.{SHLIB_EXT}', f'lib/libhpctoolkit.{SHLIB_EXT}'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'hpcrun --version',
+    'hpcstruct --version | grep %(version)s',
+    'hpcprof --version',
+]
 
 moduleclass = 'perf'
