@@ -1,0 +1,55 @@
+easyblock = 'CMakeNinja'
+
+name = 'Octopus'
+version = "16.2"
+
+homepage = 'http://www.tddft.org/programs/octopus/wiki/index.php/Main_Page'
+description = """Octopus is a scientific program aimed at the ab initio virtual experimentation 
+ on a hopefully ever-increasing range of system types. Electrons are described quantum-mechanically 
+ within density-functional theory (DFT), in its time-dependent form (TDDFT) when doing simulations 
+ in time. Nuclei are described classically as point particles. 
+ Electron-nucleus interaction is described within the pseudopotential approximation."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'pic': True, 'openmp': True}
+
+source_urls = ['https://octopus-code.org/download/%(version)s/']
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['5d721594ab312dc0ffa5201caa752a1d5ec621b669574f06980cbbf0ad8fc4fa']
+
+builddependencies = [
+    ('CMake', '3.31.1'),
+    ('libxc', '6.2.2'),
+    ('netCDF-Fortran', '4.6.1'),
+    ('FFTW.MPI', '3.3.10'),
+    ('ETSF_IO', '1.0.4'),
+    ('GSL', '2.7'),
+    ('ParMETIS', '4.0.3'),
+    ('NLopt', '2.9.1'),
+]
+
+configopts = ' '.join([
+    "-DOCTOPUS_MPI=ON",
+    "-DOCTOPUS_OpenMP=ON",
+    "-DOCTOPUS_NATIVE=OFF",
+    "-DOCTOPUS_FFTW=ON",
+    "-DOCTOPUS_ScaLAPACK=ON",
+    "-DCMAKE_REQUIRE_FIND_PACKAGE_etsf-io=ON",
+    "-DCMAKE_REQUIRE_FIND_PACKAGE_netCDF-Fortran=ON",
+    "-DCMAKE_REQUIRE_FIND_PACKAGE_Libxc=ON",
+    "-Detsf_io_INCLUDE_DIR=$EBROOTETSF_IO/include/gcc",
+])
+
+modextrapaths = {'PATH': 'share/%(namelower)s/pseudopotentials'}
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['include', 'share', 'share/%(namelower)s'],
+}
+
+sanity_check_commands = ['%(namelower)s --version']
+
+moduleclass = 'chem'
+modluafooter = """
+depends_on("perl")
+"""
