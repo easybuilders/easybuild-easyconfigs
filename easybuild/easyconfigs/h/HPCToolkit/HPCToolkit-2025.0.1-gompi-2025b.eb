@@ -30,11 +30,12 @@ sources = [SOURCELOWER_TAR_GZ]
 checksums = ['d83a90ab053001b4c76362329d6edb6d4210ae4249551e0f1bdac869264a0392']
 
 builddependencies = [
+    ('CMake', '3.31.8'),
     ('Meson', '1.8.2'),
     ('Ninja', '1.13.0'),
-    ('pkgconf', '2.4.3'),
-    ('CMake', '3.31.8'),
     ('googletest', '1.17.0'),
+    ('patchelf', '0.18.0'),
+    ('pkgconf', '2.4.3'),
     ('yaml-cpp', '0.8.0'),
 ]
 
@@ -90,5 +91,11 @@ sanity_check_commands = [
     'hpcstruct --version | grep %(version)s',
     'hpcprof --version',
 ]
+
+# Preload libraries should not include rpaths, and HPCToolkit explicitly strips the rpath
+# via patchelf from these binaries. As we're not able to filter certain libraries only,
+# disable the rpath check entirely, as this would fail.
+# See: https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/1310
+check_readelf_rpath = False
 
 moduleclass = 'perf'
