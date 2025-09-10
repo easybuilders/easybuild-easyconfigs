@@ -1,6 +1,6 @@
 easyblock = 'CMakeMake'
 
-name = 'glslang-spirv'
+name = 'glslang-SPIRV'
 version = '15.3.0'
 
 homepage = 'https://www.khronos.org/opengles/sdk/tools/Reference-Compiler/'
@@ -23,25 +23,10 @@ local_github_repos = [
     ("google", "googletest", local_googletest_commit, 'googletest'),
 ]
 
-sources = [
-    {
-        'filename': 'glslang-%(version)s.tar.xz',
-        'git_config': {
-            'url': 'https://github.com/KhronosGroup',
-            'repo_name': 'glslang',
-            'tag': version,
-        },
-    },
-]
+sources = ['https://github.com/KhronosGroup/glslang/archive/%(version)s.tar.gz']
 
-checksums = [
-    {'glslang-15.3.0.tar.xz': '629cddb4dc63e03b13d4acb15917adb5261eb13d0901b1e87bebf31eb93af38c'},
-    {'SPIRV-Tools-a62abcb4.tar.xz': 'fd542f1e368f5ad35f75bed14ecc797279f0232dded22fe66098633505ed8d23'},
-    {'SPIRV-Headers-aa6cef19.tar.xz': 'd033dddca7e6692e1b27cb05f6dbf8d4fca23b11dd9cbfc015a43e7a04c878fa'},
-    {'googletest-f8d7d77c.tar.xz': '8dd1ff67f8abca903d3f03c78eaae7b2076a73f465cb1f369f3698bfbd6f4aad'},
-]
-
-local_ext_dir = "%(builddir)s/glslang/External"
+# Extend the sources by adding external components from their respective GitHub repos at the known good commits
+local_ext_dir = "%(builddir)s/glslang-%(version)s/External"  # Where the external components are expected to be
 local_ext_cmd = "tar xvf %s --strip-components=1 -C $_"
 for local_owner, local_repo, local_commit, local_dir in local_github_repos:
     sources.append({
@@ -53,6 +38,13 @@ for local_owner, local_repo, local_commit, local_dir in local_github_repos:
             "commit": local_commit,
         },
     })
+
+checksums = [
+    {'15.3.0.tar.gz': 'c6c21fe1873c37e639a6a9ac72d857ab63a5be6893a589f34e09a6c757174201'},
+    {'SPIRV-Tools-a62abcb4.tar.xz': 'fd542f1e368f5ad35f75bed14ecc797279f0232dded22fe66098633505ed8d23'},
+    {'SPIRV-Headers-aa6cef19.tar.xz': 'd033dddca7e6692e1b27cb05f6dbf8d4fca23b11dd9cbfc015a43e7a04c878fa'},
+    {'googletest-f8d7d77c.tar.xz': '8dd1ff67f8abca903d3f03c78eaae7b2076a73f465cb1f369f3698bfbd6f4aad'},
+]
 
 builddependencies = [
     ('CMake', '3.31.3'),
