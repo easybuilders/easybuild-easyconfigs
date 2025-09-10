@@ -15,14 +15,19 @@ toolchain = SYSTEM
 
 source_urls = ['https://github.com/richardlehane/siegfried/releases/download/v%(version)s']
 sources = ['siegfried_1-11-2_linux64_static.zip']
-
-postinstallcmds = ['mkdir %(installdir)s/bin', 'mv %(installdir)s/sf %(installdir)s/bin', 'SIEGFRIED_HOME=%(installdir)s %(installdir)s/bin/sf -update']
+builddependencies = [('Go', '1.21.3')]
+postinstallcmds = [
+  'mkdir %(installdir)s/bin', 
+  'mv %(installdir)s/sf %(installdir)s/bin', 
+  'SIEGFRIED_HOME=%(installdir)s %(installdir)s/bin/sf -update',
+  'GOBIN=%(installdir)s/bin go install github.com/richardlehane/siegfried/cmd/roy@v%(version)s'
+]
 
 sanity_check_paths = {
-  'files': ['bin/sf'],
+  'files': ['bin/sf', 'bin/roy'],
   'dirs': [],
 }
 
-sanity_check_commands = ["sf --version"]
+sanity_check_commands = ["sf --version", "roy version"]
 modextravars = {'SIEGFRIED_HOME': '%(installdir)s'}
 moduleclass = 'tools'
