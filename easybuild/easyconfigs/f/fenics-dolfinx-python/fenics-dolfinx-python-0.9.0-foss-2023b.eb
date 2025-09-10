@@ -1,0 +1,60 @@
+easyblock = 'PythonPackage'
+
+name = 'fenics-dolfinx-python'
+version = '0.9.0'
+
+homepage = 'https://github.com/FEniCS/dolfinx'
+description = "DOLFINx is the computational environment of FEniCSx - python binding "
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://github.com/FEniCS/dolfinx/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['b266c74360c2590c5745d74768c04568c965b44739becca4cd6b5aa58cdbbbd1']
+
+builddependencies = [
+    ('make', '4.4.1'),
+    ('CMake', '3.27.6'),
+    ('HDF5', '1.14.3'),
+    ('fenics-dolfinx', '%(version)s'),
+    ('nanobind', '2.5.0'),
+    ('pkgconfig', '1.5.5', '-python'),
+    ('scikit-build-core', '0.10.7'),
+    ('setuptools', '80.9.0'),
+]
+
+dependencies = [
+    ('PETSc', '3.22.5'),
+    ('Python', '3.11.5'),
+    ('SciPy-bundle','2023.11'),
+    ('cffi', '1.15.1'),
+    ('fenics-basix-python', '%(version)s'),
+    ('fenics-ffcx', '%(version)s'),
+    ('fenics-ufl', '2024.2.0'),
+    ('mpi4py', '3.1.5'),
+    ('petsc4py', '3.22.5'),
+    ('slepc4py', '3.22.2'),
+]
+
+install_src = './python'
+
+# Disable built-in check for module extension:
+#
+# python -c "import dolfinx"
+#
+# The module extension provide the dolphin Python package that is tested by the sanity check.
+#
+# See v5.1.1: easybuild-framework/easybuild/framework/extension.py:313
+#
+options = {'modulename': False}
+
+sanity_check_paths = {
+    'files': ['lib/python%(pyshortver)s/site-packages/dolfinx/__init__.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'mpirun -N 1 python -c "from mpi4py import MPI; import dolfinx"',
+]
+
+moduleclass = 'cae'
