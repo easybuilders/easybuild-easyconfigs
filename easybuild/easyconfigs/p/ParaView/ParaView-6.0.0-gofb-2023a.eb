@@ -1,0 +1,71 @@
+easyblock = 'CMakeNinja'
+
+name = 'ParaView'
+version = '6.0.0'
+
+homepage = 'https://www.paraview.org'
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'gofb', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+local_download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['https://www.paraview.org/paraview-downloads/%s' % local_download_suffix]
+sources = ["%(name)s-v%(version)s.tar.gz"]
+checksums = [
+    {'ParaView-v6.0.0.tar.gz': 'b89d83d0ad7123c1ce33cba2e6a610b646877ef88c6e96026ac4fe9612665978'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Ninja', '1.12.1')
+]
+
+dependencies = [
+    ('Boost', '1.85.0', '', ('GCC', '12.3.0')),
+    ('SciPy-Stack', '2025a'),
+    ('XZ', '5.6.3'),
+    ('HDF5', '1.14.2'),
+    ('netCDF', '4.9.2'),
+    ('libdrm', '2.4.125'),
+    ('Mesa', '25.1.3'),
+    ('Qt6', '6.5.3'),
+    ('zlib', '1.3.1'),
+    ('FFmpeg', '7.1.1'),
+    ('Szip', '2.1.1'),
+    ('OSPRay', '2.12.0'),       # Leads to incorrect coloring when using ospray 3.x
+    ('OpenVKL', '1.3.2'),
+    ('tbb', '2021.10.0'),
+]
+
+multi_deps = {'Python': ['3.10', '3.11', '3.12', '3.13'] }
+
+_copts = [
+    # Basic configuration
+    '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON',
+    '-DPARAVIEW_BUILD_SHARED_LIBS=ON',
+    '-DPARAVIEW_USE_MPI=ON',
+    '-DPARAVIEW_ENABLE_FFMPEG=ON',
+    '-DPARAVIEW_USE_PYTHON=ON',
+    '-DPython3_ROOT_DIR=$EBROOTPYTHON',
+    '-DPARAVIEW_USE_QT=ON',
+    '-DPARAVIEW_PLUGIN_ENABLE_pvNVIDIAIndeX=ON',
+    '-DPARAVIEW_ENABLE_RAYTRACING=ON',
+    # Useful input formats
+    '-DPARAVIEW_ENABLE_XDMF2=ON',
+    '-DPARAVIEW_ENABLE_XDMF3=ON',
+    # EGL, X and Mesa
+    '-DVTK_OPENGL_HAS_EGL=ON',
+    '-DVTK_USE_X=ON',
+]
+configopts = ' '.join(_copts)
+
+sanity_check_paths = {
+    'files': ['bin/paraview', 'bin/pvserver', 'bin/pvpython', 'bin/pvbatch'],
+    'dirs': ['include/paraview-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['python -c "import paraview"']
+
+
+moduleclass = 'vis'
