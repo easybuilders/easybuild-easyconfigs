@@ -26,12 +26,24 @@ dependencies = [
     ('tensorboard', '2.10.0'),  # for torch-tb-profiler
 ]
 
+local_preinstall_opts = ' '.join([
+    'USE_SYSTEM_LIBS=1',
+    'USE_OPENMP=1',
+    'USE_CUDA=1', 'TORCH_CUDA_ARCH_LIST="%(cuda_cc_semicolon_sep)s"',
+    'USE_CUDNN=1',
+    'CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s',
+]) + ' '
+
+exts_default_options = {
+    'preinstallopts': local_preinstall_opts,
+    'prebuildopts': local_preinstall_opts,
+}
+
 exts_list = [
     ('portalocker', '2.7.0', {
         'checksums': ['032e81d534a88ec1736d03f780ba073f047a06c478b06e2937486f334e955c51'],
     }),
     ('torchdata', '0.4.1', {
-        'preinstallopts': "USE_SYSTEM_LIBS=1 ",
         'source_urls': ['https://github.com/pytorch/data/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': ['71c0aa3aca3b04a986a2cd4cc2e0be114984ca836dc4def2c700bf1bd1ff087e'],
