@@ -1,0 +1,46 @@
+easyblock = 'PythonPackage'
+
+name = 'heat'
+version = '1.6.0'
+
+homepage = 'https://github.com/helmholtz-analytics/heat'
+description = """
+Heat builds on PyTorch and mpi4py to provide high-performance computing infrastructure for
+memory-intensive applications within the NumPy/SciPy ecosystem.
+"""
+
+toolchain = {'name': 'gpsmpi', 'version': '2024a'}
+
+source_urls = ['https://pypi.python.org/packages/source/h/%(name)s']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['heat-1.6.0-license-fix.patch']
+
+checksums = [
+    {'%(name)s-%(version)s.tar.gz': 'cd011e67c284b7f94d0f1c6ff8bf5309535fa26a895b0db2df83290c47dae55b'},
+    {'heat-1.6.0-license-fix.patch': 'fd45ba7e5761209f6a7e0fbd28dabf5b82fb1e0db78e3fa1596de2f4df2bf016'},
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('PyTorch', '2.5.1', '', ('gcccoreflexiblas', '13.3.0-3.4.4')),
+    ('torchvision', '0.20.1', '', ('gcccoreflexiblas', '13.3.0-3.4.4')),
+    ('SciPy-bundle', '2024.05', '', ('gcccoreflexiblas', '13.3.0-3.4.4')),
+    ('Pillow-SIMD', '10.4.0'),
+    ('mpi4py', '4.0.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+download_dep_fail = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/heat']
+}
+
+# `import heat` requires a valid MPI environment and an accessible CUDA device.
+# Hence, a sanity_check will fail in most of our build environments
+skipsteps = ['sanitycheck']
+
+moduleclass = 'lib'
