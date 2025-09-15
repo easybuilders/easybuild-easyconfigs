@@ -1,0 +1,79 @@
+diff -ruN unifrac-binaries-1.5/Makefile unifrac-binaries-1.5_mod/Makefile
+--- unifrac-binaries-1.5/Makefile	2025-04-29 01:44:39.000000000 +0200
++++ unifrac-binaries-1.5_mod/Makefile	2025-07-23 16:37:58.221697392 +0200
+@@ -120,7 +120,7 @@
+ ########### install
+ 
+ install:
+-	cd src && $(MAKE) install_lib
++	cd src && $(MAKE) install_lib && $(MAKE) install
+ 
+ install_cpu_basic:
+ 	export BUILD_VARIANT=cpu_basic ; export BUILD_FULL_OPTIMIZATION=False ; cd src && $(MAKE) install_lib
+diff -ruN unifrac-binaries-1.5/src/Makefile unifrac-binaries-1.5_mod/src/Makefile
+--- unifrac-binaries-1.5/src/Makefile	2025-04-29 01:44:39.000000000 +0200
++++ unifrac-binaries-1.5_mod/src/Makefile	2025-07-23 16:15:16.151106728 +0200
+@@ -34,7 +34,7 @@
+ 	PREFIX := $(CONDA_PREFIX)
+ endif
+ 
+-BLASLIB=-llapacke -lcblas
++BLASLIB=-llapacke -lflexiblas
+ 
+ ifeq ($(PLATFORM),Darwin)
+ 	AVX2 := $(shell sysctl -a | grep -c AVX2)
+@@ -163,9 +163,9 @@
+ endif
+ 
+ 
+-CPPFLAGS += -Wall  -std=c++17 -pedantic -I. $(OPT) -fPIC -L$(PREFIX)/lib
+-NV_CPPFLAGS += -std=c++17 -I. $(OPT) -fPIC -L$(PREFIX)/lib
+-AMD_CPPFLAGS += -std=c++17 -I. $(OPT) -fPIC -L$(PREFIX)/lib
++CPPFLAGS += -Wall  -std=c++17 -pedantic -I. $(OPT) -fPIC -L.
++NV_CPPFLAGS += -std=c++17 -I. $(OPT) -fPIC -L.
++AMD_CPPFLAGS += -std=c++17 -I. $(OPT) -fPIC -L.
+ 
+ all: api install_lib main install
+ 
+@@ -181,7 +181,7 @@
+ test_su: test_su.cpp api.hpp tree.o tsv.o biom.o biom_inmem.o biom_subsampled.o unifrac.o skbio_alt.o api.o $(UNIFRAC_FILES)
+ 	h5c++ $(CPPFLAGS) $(EXEFLAGS) test_su.cpp -o $@ tree.o biom.o biom_inmem.o biom_subsampled.o tsv.o $(UNIFRAC_FILES) unifrac.o skbio_alt.o api.o -llz4 $(BLASLIB) -lpthread
+ # then exercise the optimized code through the API interface
+-test_su_api: test_su.cpp test_helper.hpp api.hpp $(PREFIX)/lib/lib$(SSU).so
++test_su_api: test_su.cpp test_helper.hpp api.hpp lib$(SSU).so
+ 	h5c++ $(CPPFLAGS) $(EXEFLAGS) -DAPI_ONLY=1 test_su.cpp -o $@ -l$(SSU)
+ 
+ # Create an archive, so we do not need dependencies for functions we do not use
+@@ -193,13 +193,13 @@
+ test_ska: test_ska.cpp skbio_alt.hpp api.hpp test_helper.hpp biom.hpp test_ska_deps.a
+ 	h5c++ $(CPPFLAGS) $(EXEFLAGS) test_ska.cpp -o test_ska test_ska_deps.a -llz4 $(BLASLIB) -lpthread
+ 
+-test_api: test_api.cpp api.hpp test_helper.hpp biom.hpp $(PREFIX)/lib/lib$(SSU).so
++test_api: test_api.cpp api.hpp test_helper.hpp biom.hpp lib$(SSU).so
+ 	h5c++ $(CPPFLAGS) $(EXEFLAGS) test_api.cpp -o $@ -l$(SSU)
+ 
+-$(SSU): su.cpp api.hpp biom.hpp $(PREFIX)/lib/lib$(SSU).so
++$(SSU): su.cpp api.hpp biom.hpp lib$(SSU).so
+ 	h5c++ $(CPPFLAGS) $(EXEFLAGS) su.cpp -o $@ -l$(SSU)
+ 
+-$(FPD): faithpd.cpp api.hpp $(PREFIX)/lib/lib$(SSU).so
++$(FPD): faithpd.cpp api.hpp lib$(SSU).so
+ 	h5c++ $(CPPFLAGS) $(EXEFLAGS) faithpd.cpp -o $@ -l$(SSU)
+ 
+ lib$(SSU).so: tree.o biom.o biom_inmem.o biom_subsampled.o tsv.o unifrac.o cmd.o skbio_alt.o api.o $(UNIFRAC_FILES)
+diff -ruN unifrac-binaries-1.5/test/Makefile unifrac-binaries-1.5_mod/test/Makefile
+--- unifrac-binaries-1.5/test/Makefile	2025-04-29 01:44:39.000000000 +0200
++++ unifrac-binaries-1.5_mod/test/Makefile	2025-07-23 16:16:54.184441214 +0200
+@@ -14,10 +14,10 @@
+ test_binaries: capi_test capi_inmem_test
+ 
+ capi_test: capi_test.c
+-	$(CC) $(CFLAGS) -std=c99 -O0 -g capi_test.c -I../src -lssu -L${PREFIX}/lib -Wl,-rpath,${PREFIX}/lib $(LDFLAGS) -o capi_test
++	$(CC) -std=c99 -O0 -g capi_test.c -I../src  -L../src -Wl,-rpath,../src -o capi_test -lssu
+ 
+ capi_inmem_test: capi_inmem_test.c
+-	$(CC) $(CFLAGS) -std=c99 -O0 -g capi_inmem_test.c -I../src -lssu -L${PREFIX}/lib -Wl,-rpath,${PREFIX}/lib $(LDFLAGS) -o capi_inmem_test
++	$(CC) $(CFLAGS) -std=c99 -O0 -g capi_inmem_test.c -I../src  -L../src -Wl,-rpath,../src $(LDFLAGS) -o capi_inmem_test -lssu
+ 
+ clean:
+ 	-rm -f *.o capi_test capi_inmem_test
