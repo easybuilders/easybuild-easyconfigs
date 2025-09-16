@@ -592,13 +592,10 @@ class EasyConfigTest(TestCase):
                 (r'4\.', [r'libGridXC-']),
                 (r'5\.', [r'Elk-']),
             ],
-<<<<<<< HEAD
             # RepeatModeler 2.0.7 requires LTR_retriever 2.9.0
             'LTR_retriever': [(r'2\.9\.0', [r'RepeatModeler-2\.0\.7'])],
-=======
             # OpenQP requires mpi4py>=4.0.0
             'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0'])],
->>>>>>> develop
             # FDMNES requires sequential variant of MUMPS
             'MUMPS': [(r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES'])],
             # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0, Finder requires SRA-Toolkit 3.0.0
