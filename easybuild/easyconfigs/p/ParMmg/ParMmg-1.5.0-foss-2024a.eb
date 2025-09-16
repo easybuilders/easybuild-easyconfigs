@@ -4,12 +4,7 @@ name = 'ParMmg'
 version = '1.5.0'
 
 homepage = 'https://github.com/MmgTools/ParMmgA'
-description = """
-ParMmg is an open source software for parallel mesh adaptation of 3D volume meshes.
-The parallel mesh adaptation algorithm is based on iterative remeshing and repartitioning
-of the distributed mesh. It is inspired by the Yales2 algorithm. ParMmg uses the Mmg
-software to perform the sequential remeshing steps.
-"""
+description = 'ParMmg is an open source software for parallel mesh adaptation of 3D volume meshes. The parallel mesh adaptation algorithm is based on iterative remeshing and repartitioning of the distributed mesh. It is inspired by the Yales2 algorithm. ParMmg uses the Mmg software to perform the sequential remeshing steps.'
 
 toolchain = {'name': 'foss', 'version': '2024a'}
 toolchainopts = {'extra_cflags': '-Wno-error=implicit-function-declaration'}
@@ -49,13 +44,32 @@ configopts = [
     local_configopts + ' -DBUILD_SHARED_LIBS=OFF',
 ]
 
-max_parallel = 1
+max_parallel = 16
 
 runtest = True
 
+local_example_basedir = '%(start_dir)s/libexamples/adaptation_example0'
+local_sequential_test = ' && '.join([
+    'cd %s/sequential_IO/automatic_IO' % local_example_basedir,
+    'mpicc -I$EBROOTPARMMG/include/parmmg -I$EBROOTMMG/include/mmg/mmg3d main.c '
+    '-L$EBROOTPARMMG/lib -lparmmg -L$EBROOTMMG/lib -lmmg3d -lm -o pmmg-serial.exe',
+    './pmmg-serial.exe %s/cube.mesh result.seq -met %s/cube-met.sol -field %s/cube-solphys.sol' % (3*(local_example_basedir,)),
+])
+local_parallel_test = ' && '.join([
+    'cd %s/parallel_IO/automatic_IO' % local_example_basedir,
+    'mpicc -I$EBROOTPARMMG/include/parmmg -I$EBROOTMMG/include/mmg/common -I$EBROOTMMG/include/mmg/mmg3d main.c '
+    '-L$EBROOTPARMMG/lib -lparmmg -L$EBROOTMMG/lib -lmmg3d -lm -o pmmg-parallel.exe',
+    'mpirun -n 2 ./pmmg-parallel.exe ' + '%s/cube.mesh result.par 2 0' % local_example_basedir,
+])
+sanity_check_commands = [
+    local_sequential_test,
+    local_parallel_test,
+]
+
 sanity_check_paths = {
-    'files': ['bin/parmmg_O3', 'lib/libparmmg.so'],
+    'files': ['bin/parmmg_O3'] + [f'lib/libparmmg.{x}' for x in ['a', SHLIB_EXT]],
     'dirs': ['include/parmmg'],
 }
 
 moduleclass = 'math'
+
