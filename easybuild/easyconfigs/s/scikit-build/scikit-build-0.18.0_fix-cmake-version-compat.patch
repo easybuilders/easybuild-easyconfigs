@@ -1,0 +1,19 @@
+Projects might use a newer CMake version that removes compatibility with CMake 2.8.
+This makes builds fail with
+>     scikit-build could not get a working generator for your system. Aborting build.
+
+See https://github.com/scikit-build/scikit-build/pull/1159
+
+Author: Alexander Grund (TU Dresden)
+
+--- a/skbuild/platform_specifics/abstract.py
++++ b/skbuild/platform_specifics/abstract.py
+@@ -49,7 +49,7 @@ class CMakePlatform:
+         if not os.path.exists(test_folder):
+             os.makedirs(test_folder)
+         with open(f"{test_folder}/CMakeLists.txt", "w", encoding="utf-8") as f:
+-            f.write("cmake_minimum_required(VERSION 3.5)\n")
++            f.write("cmake_minimum_required(VERSION ${CMAKE_VERSION})\n")
+             f.write("PROJECT(compiler_test NONE)\n")
+             for language in languages:
+                 f.write(f"ENABLE_LANGUAGE({language:s})\n")
