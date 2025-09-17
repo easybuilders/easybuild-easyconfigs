@@ -1,8 +1,7 @@
 easyblock = 'PythonBundle'
 
 name = 'numba'
-local_numba_version = 'b8db41c873640fabdcebeb241b98556b693ef02b'
-version = 'b8db41c'
+version = '0.62.0rc2'
 
 homepage = 'https://numba.pydata.org/'
 description = """Numba is an Open Source NumPy-aware optimizing compiler for
@@ -27,16 +26,16 @@ local_llvmlite_preinstallopts += "sed -i 's/llvm_config, \"--system-libs/llvm_co
 local_llvmlite_preinstallopts += "ffi/build.py && "
 
 exts_list = [
-    ('llvmlite', '0.45.0rc1', {
+    ('llvmlite', '0.45.0', {
         'preinstallopts': local_llvmlite_preinstallopts,
-        'checksums': ['07667d66a5d150abed9157ab6c0b9393c9356f229784a4385c02f99e94fc94d4'],
-	'source_urls': ['https://github.com/numba/llvmlite/archive/refs/tags/'],
-	'sources': ['v%(version)s.tar.gz'],
+        'source_urls': ['https://github.com/numba/llvmlite/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['b00aeba86e17ba13819c08deb6840c9b1eff75fdef6076e57e1c0f50a220db0a'],
     }),
     (name, version, {
-        'checksums': ['8750ee147940a6637b80ecf7f95062185ad8726c8c28a2295b8ec1160a196f7d'],
         'source_urls': ['https://github.com/numba/numba/archive/'],
-        'sources': [f'{local_numba_version}.tar.gz'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['4e40e966a2b414a569aa405af829b6974438c9e28af347dda405fa1197ffb9aa'],
     }),
 ]
 
@@ -47,9 +46,13 @@ sanity_check_paths = {
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 
+# Tests cannot be run before installation, so `runtest` will not work.
+# Due to this, run the checks during sanity check. As the builds are
+# quite short, a rebuild after a failed sanity check shouldn't hurt too much.
 sanity_check_commands = [
-    "python -m llvmlite.tests",
-    "numba --help",
+    'numba --help',
+    'python -m llvmlite.tests',
+    'python -m numba.runtests -m %(parallel)s',
 ]
 
 moduleclass = 'lang'
