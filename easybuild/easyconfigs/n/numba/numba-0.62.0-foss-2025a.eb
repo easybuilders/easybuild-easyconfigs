@@ -1,0 +1,58 @@
+easyblock = 'PythonBundle'
+
+name = 'numba'
+version = '0.62.0'
+
+homepage = 'https://numba.pydata.org/'
+description = """Numba is an Open Source NumPy-aware optimizing compiler for
+Python sponsored by Continuum Analytics, Inc. It uses the remarkable LLVM
+compiler infrastructure to compile Python syntax to machine code."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('LLVM', '20.1.7'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+]
+
+local_llvmlite_preinstallopts = "export LLVM_CONFIG=${EBROOTLLVM}/bin/llvm-config && "
+local_llvmlite_preinstallopts += "sed -i 's/llvm_config, \"--system-libs/llvm_config, \"--link-static --system-libs/' "
+local_llvmlite_preinstallopts += "ffi/build.py && "
+
+exts_list = [
+    ('llvmlite', '0.45.0', {
+        'preinstallopts': local_llvmlite_preinstallopts,
+        'source_urls': ['https://github.com/numba/llvmlite/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['b00aeba86e17ba13819c08deb6840c9b1eff75fdef6076e57e1c0f50a220db0a'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/numba/numba/archive/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['e5057ae3202c296d48191facac31933d6e9cb5391e357fa1816c6e3b0fce13dd'],
+    }),
+]
+
+fix_python_shebang_for = ['bin/*']
+
+sanity_check_paths = {
+    'files': ['bin/numba'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+# Tests cannot be run before installation, so `runtest` will not work.
+# Due to this, run the checks during sanity check. As the builds are
+# quite short, a rebuild after a failed sanity check shouldn't hurt too much.
+sanity_check_commands = [
+    'numba --help',
+    'python -m llvmlite.tests',
+    'python -m numba.runtests -m %(parallel)s',
+]
+
+moduleclass = 'lang'
