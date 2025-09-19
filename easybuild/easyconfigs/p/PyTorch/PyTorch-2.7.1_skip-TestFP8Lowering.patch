@@ -1,0 +1,19 @@
+The test fails also with the official PyPI package:
+> torch/_inductor/select_algorithm.py:1869] [0/0] AssertionError: Input shapes should have M >= 16, N >= 16 and K >= 32
+> ...
+> torch._inductor.exc.InductorError: CompilationError: at 56:18:
+
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_fp8.py b/test/inductor/test_fp8.py
+--- a/test/inductor/test_fp8.py
++++ b/test/inductor/test_fp8.py
+@@ -617,6 +617,7 @@ class TestFP8Lowering(TestCase):
+ 
+     @unittest.skipIf(TEST_WITH_ROCM, "FP8 is not supported on ROCM")
+     @unittest.skipIf(not PLATFORM_SUPPORTS_FP8, f8_msg)
++    @unittest.skip("Fails on H100s")
+     @parametrize("M", (1, 3, 33, 257, 1024))
+     @parametrize("K", (16, 32, 1024))
+     @parametrize("N", (16, 2048))
