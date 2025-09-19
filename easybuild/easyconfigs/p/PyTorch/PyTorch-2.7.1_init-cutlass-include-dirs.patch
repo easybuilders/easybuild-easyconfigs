@@ -1,0 +1,19 @@
+diff --git a/torch/_inductor/codecache.py b/torch/_inductor/codecache.py
+index dc9f5c25365..17895251eb5 100644
+--- a/torch/_inductor/codecache.py
++++ b/torch/_inductor/codecache.py
+@@ -2824,10 +2824,14 @@ def _cuda_compiler() -> Optional[str]:
+ 
+ 
+ def _cutlass_include_paths() -> list[str]:
++    from torch._inductor.codegen.cuda.cutlass_utils import try_import_cutlass
+     if config.is_fbcode():
+         from libfb.py import parutil
+ 
+         cutlass_path = parutil.get_dir_path("cutlass-3-headers")
++    elif not try_import_cutlass():
++        log.warning("CUTLASS not available, not adding include paths")
++        return []
+     else:
+         cutlass_path = config.cuda.cutlass_dir
+     return [
