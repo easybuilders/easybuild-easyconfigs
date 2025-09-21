@@ -29,6 +29,13 @@ dependencies = [
     ('libcircle', '0.3'),
 ]
 
+# also install strmap.h that is included by mfu_flist_internal.h
+# see https://github.com/hpc/mpifileutils/issues/549
+preconfigopts = ' '.join([
+    'sed -i "s/mfu_flist_internal.h/mfu_flist_internal.h\\nstrmap.h/"',
+    '../%(name)s-%(version)s/src/common/CMakeLists.txt &&'
+])
+
 _binaries = [
     'dbcast', 'dbz2', 'dchmod', 'dcmp', 'dcp', 'ddup', 'dfind',
     'dreln', 'drm', 'dstripe', 'dsync', 'dtar', 'dwalk'
@@ -36,7 +43,7 @@ _binaries = [
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in _binaries] +
-             ['include/mfu.h', 'lib/libmfu.%s' % SHLIB_EXT],
+             ['include/mfu.h', 'include/strmap.h', 'lib/libmfu.%s' % SHLIB_EXT],
     'dirs': []
 }
 
