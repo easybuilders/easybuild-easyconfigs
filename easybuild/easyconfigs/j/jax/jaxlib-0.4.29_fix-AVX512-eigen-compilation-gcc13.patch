@@ -1,0 +1,78 @@
+Fix a compilation error for CPUs with AVX512 features on GCC 13+ where an issue in Eigen leads to
+invalid 'static_cast' from type 'const Eigen::half' to type '_Float16'
+
+See https://gitlab.com/libeigen/eigen/-/issues/2835
+
+Author: Alexander Grund (TU Dresden)
+
+diff -rNu jax-jaxlib-v0.4.29.orig/third_party/xla/fix-avx512-gcc13.patch jax-jaxlib-v0.4.29/third_party/xla/fix-avx512-gcc13.patch
+--- jax-jaxlib-v0.4.29.orig/third_party/xla/fix-avx512-gcc13.patch	1970-01-01 01:00:00.000000000 +0100
++++ jax-jaxlib-v0.4.29/third_party/xla/fix-avx512-gcc13.patch	2025-09-23 14:24:17.842348812 +0200
+@@ -0,0 +1,56 @@
++diff -rNu xla-32ba408c0e2b7ef5f5821c0781601ba17d467076.orig/third_party/tsl/third_party/eigen3/fix-avx512-gcc13.patch xla-32ba408c0e2b7ef5f5821c0781601ba17d467076/third_party/tsl/third_party/eigen3/fix-avx512-gcc13.patch
++--- xla-32ba408c0e2b7ef5f5821c0781601ba17d467076.orig/third_party/tsl/third_party/eigen3/fix-avx512-gcc13.patch	1970-01-01 01:00:00.000000000 +0100
+++++ xla-32ba408c0e2b7ef5f5821c0781601ba17d467076/third_party/tsl/third_party/eigen3/fix-avx512-gcc13.patch	2025-09-23 14:22:35.094348886 +0200
++@@ -0,0 +1,41 @@
+++diff -ur a/Eigen/src/Core/arch/AVX512/PacketMathFP16.h b/Eigen/src/Core/arch/AVX512/PacketMathFP16.h
+++--- a/Eigen/src/Core/arch/AVX512/PacketMathFP16.h
++++++ b/Eigen/src/Core/arch/AVX512/PacketMathFP16.h
+++@@ -113,7 +113,13 @@
+++ 
+++ template <>
+++ EIGEN_STRONG_INLINE Packet32h pset1<Packet32h>(const Eigen::half& from) {
+++-  return _mm512_set1_ph(static_cast<_Float16>(from));
++++  // half/half_raw is bit compatible
++++  return _mm512_set1_ph(numext::bit_cast<_Float16>(from));
++++}
++++
++++template <>
++++EIGEN_STRONG_INLINE Packet32h pzero(const Packet32h& /*a*/) {
++++  return _mm512_setzero_ph();
+++ }
+++ 
+++ // pset1frombits
+++@@ -213,10 +219,8 @@
+++ // plset
+++ template <>
+++ EIGEN_STRONG_INLINE Packet32h plset<Packet32h>(const half& a) {
+++-  return _mm512_add_ph(_mm512_set1_ph(a),
+++-                       _mm512_set_ph(31.0f, 30.0f, 29.0f, 28.0f, 27.0f, 26.0f, 25.0f, 24.0f, 23.0f, 22.0f, 21.0f, 20.0f,
+++-                                     19.0f, 18.0f, 17.0f, 16.0f, 15.0f, 14.0f, 13.0f, 12.0f, 11.0f, 10.0f, 9.0f, 8.0f,
+++-                                     7.0f, 6.0f, 5.0f, 4.0f, 3.0f, 2.0f, 1.0f, 0.0f));
++++  return _mm512_add_ph(pset1<Packet32h>(a), _mm512_set_ph(31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17,
++++                                                          16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+++ }
+++ 
+++ // por
+++@@ -507,7 +511,7 @@
+++ 
+++ template <>
+++ EIGEN_STRONG_INLINE Packet32h pnegate<Packet32h>(const Packet32h& a) {
+++-  return _mm512_sub_ph(_mm512_set1_ph(0.0), a);
++++  return psub(pzero(a), a);
+++ }
+++ 
+++ // pconj
+++
++diff -rNu xla-32ba408c0e2b7ef5f5821c0781601ba17d467076.orig/third_party/tsl/third_party/eigen3/workspace.bzl xla-32ba408c0e2b7ef5f5821c0781601ba17d467076/third_party/tsl/third_party/eigen3/workspace.bzl
++--- xla-32ba408c0e2b7ef5f5821c0781601ba17d467076.orig/third_party/tsl/third_party/eigen3/workspace.bzl	2024-06-09 23:08:50.000000000 +0200
+++++ xla-32ba408c0e2b7ef5f5821c0781601ba17d467076/third_party/tsl/third_party/eigen3/workspace.bzl	2025-09-23 14:22:35.094348886 +0200
++@@ -14,6 +14,7 @@
++     tf_http_archive(
++         name = "eigen_archive",
++         build_file = "//third_party/eigen3:eigen_archive.BUILD",
+++        patch_file = ["//third_party/eigen3:fix-avx512-gcc13.patch"],
++         sha256 = EIGEN_SHA256,
++         strip_prefix = "eigen-{commit}".format(commit = EIGEN_COMMIT),
++         urls = tf_mirror_urls("https://gitlab.com/libeigen/eigen/-/archive/{commit}/eigen-{commit}.tar.gz".format(commit = EIGEN_COMMIT)),
+diff -rNu jax-jaxlib-v0.4.29.orig/third_party/xla/workspace.bzl jax-jaxlib-v0.4.29/third_party/xla/workspace.bzl
+--- jax-jaxlib-v0.4.29.orig/third_party/xla/workspace.bzl	2025-09-23 14:20:43.142346523 +0200
++++ jax-jaxlib-v0.4.29/third_party/xla/workspace.bzl	2025-09-23 14:20:30.534345266 +0200
+@@ -32,6 +32,7 @@
+         urls = tf_mirror_urls("https://github.com/openxla/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)),
+         patch_file = [
+             "//third_party/xla:fix-pybind11-systemlib.patch",
++            "//third_party/xla:fix-avx512-gcc13.patch",
+         ],
+     )
+ 
