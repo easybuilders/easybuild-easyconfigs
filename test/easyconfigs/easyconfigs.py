@@ -194,7 +194,7 @@ class EasyConfigTest(TestCase):
         # all available easyconfig files
         easyconfigs_path = get_paths_for("easyconfigs")[0]
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
-        parsed_specs = set(ec['spec'] for ec in cls._parsed_easyconfigs)
+        parsed_specs = {ec['spec'] for ec in cls._parsed_easyconfigs}
         for spec in specs:
             if spec not in parsed_specs:
                 cls._parsed_easyconfigs.extend(process_easyconfig(spec))
@@ -857,7 +857,7 @@ class EasyConfigTest(TestCase):
         Generations 2023b and newer (GCC 13.2 and newer) are checked in the more stringent
         test_dep_versions_per_toolchain_generation.
         """
-        ecs_by_full_mod_name = dict((ec['full_mod_name'], ec) for ec in self.parsed_easyconfigs)
+        ecs_by_full_mod_name = {ec['full_mod_name']: ec for ec in self.parsed_easyconfigs}
         if len(ecs_by_full_mod_name) != len(self.parsed_easyconfigs):
             self.fail('Easyconfigs with duplicate full_mod_name found')
 
@@ -932,7 +932,7 @@ class EasyConfigTest(TestCase):
         the same toolchain generation are loaded together.
         Active for 2023b generation and newer (GCC 13.2 and newer)
         """
-        ecs_by_full_mod_name = dict((ec['full_mod_name'], ec) for ec in self.parsed_easyconfigs)
+        ecs_by_full_mod_name = {ec['full_mod_name']: ec for ec in self.parsed_easyconfigs}
         if len(ecs_by_full_mod_name) != len(self.parsed_easyconfigs):
             self.fail('Easyconfigs with duplicate full_mod_name found')
 
@@ -968,7 +968,6 @@ class EasyConfigTest(TestCase):
             '12.1': None,
             '12.2': '2022b',
             '12.3': '2023a',
-            '13.1': None,
             '13.1': None,
             '13.2': '2023b',
             '13.3': '2024a',
@@ -1760,7 +1759,7 @@ def template_easyconfig_test(self, spec):
         # exception to the dependencies of binutils (since we should eventually build a new binutils with GCCcore)
         if ec['toolchain']['version'] == 'system':
             binutils_complete_dependencies = ['M4', 'Bison', 'flex', 'help2man', 'zlib', 'binutils']
-            requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
+            requires_binutils &= ec['name'] not in binutils_complete_dependencies
 
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
         requires_binutils &= bool(sources or ec.get_ref('exts_list') or ec.get_ref('components'))
