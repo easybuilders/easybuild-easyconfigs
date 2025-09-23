@@ -1,0 +1,146 @@
+# Built with EasyBuild version 5.1.1 on 2025-09-14_15-13-05
+name = 'PETSc'
+version = "3.16.6"
+versionsuffix = '-64bits'
+
+homepage = 'http://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://ftp.mcs.anl.gov/pub/%(namelower)s/release-snapshots']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = [
+    'bfc836b52f57686b583c16ab7fae0c318a7b28141ca01656ad673c8ca23037fa',
+]
+
+dependencies = [
+    ('HDF5', '1.14.2', '-mpi'),
+]
+
+# For the extension
+builddependencies = [
+    ('SciPy-Stack', '2025a'),
+    ('mpi4py', '4.0.3'),
+]
+
+multi_deps = {'Python': ['3.10']}
+multi_deps_extensions_only = True
+
+configopts = " ".join([
+    '--with-hdf5=1',
+    '--with-hdf5-dir=$EBROOTHDF5',
+    '--with-cxx-dialect=C++14',
+    '--with-memalign=64',
+    '--with-python=no',
+    '--with-mpi4py=no',
+    '--with-64-bit-indices=1',
+])
+# Fix usage of MAKEFLAGS (can't add to start as may be missing leading dash and can't add to end as contains --)
+prebuildopts = 'sed -i -e \'s/MAKEFLAGS="\\([^"]*\\) $(MAKEFLAGS)" \\+\\([^ ]*\\)/\\2 \\1/\' lib/petsc/conf/* && '
+
+
+download_deps = [
+    'triangle',
+    'hpddm',
+    'strumpack',
+]
+
+postinstallcmds = [
+    'ln -sf %(installdir)s/lib/%(namelower)s/bin %(installdir)s/bin',
+    'ln -sf %(installdir)s/lib/%(namelower)s/conf %(installdir)s/conf',
+]
+
+keepsymlinks = True
+
+shared_libs = 1
+
+download_deps_static = [
+    'f2cblaslapack',
+    'mumps',
+    'ptscotch',
+    #'superlu',
+    'superlu_dist',
+    'parmetis',
+    'metis',
+    #'ml',
+    'SuiteSparse',
+    'hypre',
+    'prometheus',
+    'spooles',
+    #'chaco',
+    'slepc',
+    #'spai',
+    #'party',
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    # disable "pip check" which would fail with several:
+    # > $PACKAGE requires (numpy|mpi4py|msgpack), which is not installed 
+    'sanity_pip_check': False,
+}
+exts_list = [
+    ('petsc4py', version, {
+        'buildopts': '#',
+        'check_ldshared': False,
+        'modulename': 'petsc4py',
+        'preconfigopts': '#',
+        #'preconfigopts': 'find -name \'*.c\' -print0 | xargs -0 sed -i -e \'/# *include.*longintrepr/d\'',
+        'use_pip': True,
+        'runtest': False,
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums' : ['a9b4ed19ca2e62b38da51ac3a70539d9581a1354cc4464c93963d7e95bd8ef66'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_paths = {
+    'files': [
+        'lib/libpetsc.so',
+    ],
+    'dirs': [
+        'bin',
+        'conf',
+        'include',
+        'lib',
+        'share',
+        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+
+moduleclass = 'numlib'
+modluafooter = """
+family("%(namelower)s")
+"""
+
+# Build statistics
+buildstats = [{
+    "build_time": 1327.93,
+    "command_line": ['--add-system-to-minimal-toolchains', "--allow-loaded-modules='gentoo'", "--buildpath='/tmp/tyson/avx512'", "--configfiles='/cvmfs/soft.computecanada.ca/easybuild/config.cfg,/cvmfs/soft.computecanada.ca/easybuild/easybuild-computecanada-config/2023/config.cfg'", "--cuda-compute-capabilities='7.0,8.0,9.0'", '--enforce-checksums', "--env-for-shebang='/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/bin/env -S'", "--filter-deps='Bison,CMake=:3.26.5],flex,ncurses,libreadline,gzip,bzip2,zlib,binutils,M4,Autoconf,Automake,libtool,Autotools,Szip,libxml2,SQLite=:3.42.0],cURL,Doxygen,expat=:2.5.0],Mesa,libGLU,PCRE,PCRE2,libjpeg-turbo,LibTIFF,libpng,XZ,gettext,X11,pkg-config,pkgconf,libdrm,gperf,FLTK,fontconfig,freetype,GMP,GL2PS,GraphicsMagick,MPFR,libmatheval,Tcl,Tk,libX11,libXft,libXpm,libXext,libXt,make,makedepend,cairo,libiconv,FFmpeg,GLib,FLANN,hwloc=:2.9.1[,numactl,DBus,texinfo,libsndfile,Pango,Lua,FreeImage,zstd,util-linux,file,GTK+,libunwind,LAME,NASM,x264,x265,FriBidi,ASSIMP,libarchive,ImageMagick,Ghostscript,Tkinter,libtirpc,Zip,SDL2,GST-plugins-base,libevent,tcsh,time,libedit,libpciaccess,UnZip,Check,OpenSSL,giflib,libwebp,git,libgit2,patchelf,snappy,re2c,double-conversion,HarfBuzz,graphite2,NSS,libffi,json-c,Xerces-C++,OpenEXR,OpenJPEG,Brotli,Highway,Tktable,yaml-cpp,fmt,Blosc,libgd,gawk,GLPK,makeinfo,matplotlib,glew,GLM,Z3,freeglut,minizip'", "--filter-env-vars='LD_LIBRARY_PATH,LD_PRELOAD'", '--disable-fixed-installdir-naming-scheme', "--hide-deps='icc,ifort,GCCcore'", "--hide-toolchains='GCCcore,iompi,iomkl,gompic'", "--hooks='/cvmfs/soft.computecanada.ca/easybuild/easybuild-computecanada-config/2023/cc_hooks.py'", '--ignore-osdeps', "--include-easyblocks='/cvmfs/soft.computecanada.ca/easybuild/site-packages/custom-easyblocks/2023/easybuild/easyblocks/*/*.py'", "--include-module-naming-schemes='/cvmfs/soft.computecanada.ca/easybuild/easybuild-computecanada-config/SoftCCHierarchicalMNS.py'", "--include-toolchains='/cvmfs/soft.computecanada.ca/easybuild/easybuild-computecanada-config/toolchains/*.py'", "--job-cores='8'", "--job-eb-cmd='srun --mpi=none --ntasks=1 /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/bin/eb'", '--disable-map-toolchains', '--minimal-toolchains', "--module-naming-scheme='SoftCCHierarchicalMNS'", "--optarch='{\\'NVHPC\\': \\'-march=x86-64-v4\\', \\'Intel\\': \\'-march=skylake-avx512\\', \\'GCC\\': \\'-march=x86-64-v4\\'}'", "--parallel='8'", "--prefix='/home/tyson/.local/easybuild'", '--rebuild', '--recursive-module-unload', "--repositorypath='/home/tyson/.local/easybuild/ebfiles_repo,2023'", "--robot-paths='/cvmfs/soft.computecanada.ca/easybuild/site-packages/custom-easyconfigs/easybuild/easyconfigs:/home/tyson/.local/easybuild/ebfiles_repo_avx512/2023:/home/tyson/.local/easybuild/ebfiles_repo/2023:/cvmfs/soft.computecanada.ca/easybuild/ebfiles_repo_avx512/2023:/cvmfs/soft.computecanada.ca/easybuild/ebfiles_repo/2023:'", '--disable-rpath', "--sourcepath-data='/home/tyson/.local/easybuild/sources'", "--subdir-modules='modules/2023'", "--subdir-software='software/2023'", "--subdir-user-modules=''", "--suffix-modules-path=''", "--sysroot='/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3'", "--use-ccache=''", '--use-existing-modules', 'PETSc-3.16.6-gofbf-2023a-64bits.eb'],
+    "core_count": 32,
+    "cpu_arch": "x86_64",
+    "cpu_arch_name": "icelake",
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8480+",
+    "cpu_speed": 2000.0,
+    "cpu_vendor": "Intel",
+    "easybuild-easyblocks_version": "5.1.1",
+    "easybuild-framework_version": "5.1.1",
+    "gcc_version": "Using built-in specs.; COLLECT_GCC=gcc; COLLECT_LTO_WRAPPER=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/libexec/gcc/x86_64-pc-linux-gnu/12/lto-wrapper; OFFLOAD_TARGET_NAMES=nvptx-none; Target: x86_64-pc-linux-gnu; Configured with: /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/var/tmp/portage/sys-devel/gcc-12.3.1_p20230526/work/gcc-12-20230526/configure --host=x86_64-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr --bindir=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/x86_64-pc-linux-gnu/gcc-bin/12 --includedir=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib/gcc/x86_64-pc-linux-gnu/12/include --datadir=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/share/gcc-data/x86_64-pc-linux-gnu/12 --mandir=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/share/gcc-data/x86_64-pc-linux-gnu/12/man --infodir=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/share/gcc-data/x86_64-pc-linux-gnu/12/info --with-gxx-include-dir=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib/gcc/x86_64-pc-linux-gnu/12/include/g++-v12 --disable-silent-rules --disable-dependency-tracking --with-python-dir=/share/gcc-data/x86_64-pc-linux-gnu/12/python --enable-languages=c,c++,fortran --enable-obsolete --enable-secureplt --disable-werror --with-system-zlib --enable-nls --without-included-gettext --disable-libunwind-exceptions --enable-checking=release --with-bugurl=https://bugs.gentoo.org/ --with-pkgversion='Gentoo 12.3.1_p20230526 p2' --with-gcc-major-version-only --enable-libstdcxx-time --enable-lto --disable-libstdcxx-pch --enable-shared --enable-threads=posix --with-sysroot=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3 --with-build-sysroot=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3 --enable-__cxa_atexit --enable-clocale=gnu --disable-multilib --with-multilib-list=m64 --disable-fixed-point --enable-targets=all --enable-libgomp --disable-libssp --disable-libada --disable-cet --disable-systemtap --disable-valgrind-annotations --disable-vtable-verify --disable-libvtv --with-zstd --with-isl --disable-isl-version-check --disable-default-pie --disable-default-ssp --without-cuda-driver --enable-offload-targets=nvptx-none --with-build-config=bootstrap-lto; Thread model: posix; Supported LTO compression algorithms: zlib zstd; gcc version 12.3.1 20230526 (Gentoo 12.3.1_p20230526 p2) ; ",
+    "glibc_version": "2.37",
+    "hostname": "l5.nibi.sharcnet",
+    "install_size": 213268839,
+    "modules_tool": ('Lmod', '/cvmfs/soft.computecanada.ca/custom/software/lmod/lmod/libexec/lmod', '8.7.47'),
+    "os_name": "AlmaLinux",
+    "os_type": "Linux",
+    "os_version": "9.5 (Teal Serval)",
+    "platform_name": "x86_64-unknown-linux",
+    "python_version": "3.11.4 (main, Nov  4 2023, 03:43:13) [GCC 12.3.1 20230526]",
+    "system_gcc_path": "/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/x86_64-pc-linux-gnu/gcc-bin/12/gcc",
+    "system_python_path": "/cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/python/3.10.13/bin/python",
+    "timestamp": 1757877184,
+    "total_memory": 257734,
+}]
