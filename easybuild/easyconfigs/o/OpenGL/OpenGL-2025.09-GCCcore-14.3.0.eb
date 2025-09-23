@@ -6,12 +6,12 @@ version = '2025.09'
 homepage = 'http://www.opengl.org/'
 description = """
 Open Graphics Library (OpenGL) is a cross-language, cross-platform application programming interface (API) for rendering
-2D and 3D vector graphics. Mesa is an open-source implementation of the OpenGL specification - a system for rendering
-interactive 3D graphics. NVIDIA supports OpenGL and a complete set of OpenGL extensions, designed to give a maximum
-performance on NVIDIA GPUs.
+2D and 3D vector graphics.
 
-This is a GL vendor neutral dispatch (GLVND) installation with Mesa and NVIDIA in the same lib-directory. Mesa or NVIDIA
-OpenGL is set individually for each XScreen.
+This module is a bundle of software required for OpenGL rendering.
+It provides Mesa as an open-source implementation of the OpenGL specification with software rendering and AMD/Intel GPU support,
+libglvnd for a vendor neutral dispatch layer for rendering with both NVIDIA GPUs & Mesa, Mesa-demos for sample applications,
+and GLU as an computer graphics library utilizing OpenGL.
 """
 
 toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
@@ -58,14 +58,12 @@ local_mesa_configopts += "-Dglx=auto -Dgbm=enabled -Dgles1=enabled -Dgles2=enabl
 local_mesa_configopts += "-Dvideo-codecs=vc1dec,h264dec,h264enc,h265dec,h265enc,av1dec,av1enc,vp9dec "
 
 components = [
-    # A vendor neutral dispatch layer
     ('libglvnd', '1.7.0', {
         'source_urls': ['https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v%(version)s/'],
         'sources': ['%(name)s-v%(version)s.tar.gz'],
         'checksums': ['2b6e15b06aafb4c0b6e2348124808cbd9b291c647299eaaba2e3202f51ff2f3d'],
         'start_dir': '%(namelower)s-v%(version)s',
     }),
-    # Mesa for software rendering, not hardware rendering.
     ('Mesa', '25.2.2', {
         'easyblock': 'EB_Mesa',
         'source_urls': [
@@ -78,7 +76,6 @@ components = [
         'preconfigopts': local_pkg_config,
         'configopts': local_mesa_configopts,
     }),
-    # OpenGL Utility Library - offers higher level GL-graphics functions
     ('libGLU', '9.0.3', {
         'source_urls': ['https://archive.mesa3d.org/glu/'],
         'sources': ['glu-%(version)s.tar.xz'],
@@ -86,7 +83,6 @@ components = [
         'start_dir': 'glu-%(version)s',
         'preconfigopts': local_pkg_config,
     }),
-    # MESA demos - offers the important command 'eglinfo'
     ('Mesa-demos', '9.0.0', {
         'source_urls': ['https://archive.mesa3d.org/demos/'],
         'sources': [SOURCELOWER_TAR_XZ],
