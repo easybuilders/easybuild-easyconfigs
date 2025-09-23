@@ -2,17 +2,21 @@ easyblock = 'MakeCp'
 
 name = 'RAxML'
 version = '8.2.13'
-versionsuffix = '-standard'
 
 homepage = 'https://github.com/stamatak/standard-RAxML'
 description = "RAxML search algorithm for maximum likelihood based inference of phylogenetic trees."
 
-toolchain = {'name': 'gompi', 'version': '2023a'}
+toolchain = {'name': 'gompi', 'version': '2023b'}
 toolchainopts = {'usempi': True}
 
 source_urls = ['https://github.com/stamatak/standard-RAxML/archive/']
 sources = ['v%(version)s.tar.gz']
 checksums = ['28e500793324bd7d330b396ef27ea49c9186fa5e1edb3d5439036dc6c33e6067']
+
+# Make sure we are leveraging the EasyBuild set CFLAGS
+prebuildopts = "sed -i 's/^CFLAGS = /CFLAGS += /' Makefile.gcc && "
+prebuildopts += "sed -i 's/^CFLAGS = /CFLAGS += /' Makefile.PTHREADS.gcc && "
+prebuildopts += "sed -i 's/^CFLAGS = /CFLAGS += /' Makefile.HYBRID.gcc && "
 
 buildopts = '-f Makefile.gcc CC="$CC" && rm *.o && '
 buildopts += 'make -j %(parallel)s -f  Makefile.PTHREADS.gcc CC="$CC" && rm *.o && '
