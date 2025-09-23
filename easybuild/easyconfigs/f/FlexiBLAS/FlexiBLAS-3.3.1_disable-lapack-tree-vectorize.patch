@@ -1,0 +1,26 @@
+# Disable the gfortran tree vectorizer for LAPACK code, fixes segfaults during tests on zen4/zen5
+# Author: Ariel Lozano (ULB)
+diff -ur flexiblas-3.3.1_orig/contributed/lapack-3.11.0/CMakeLists.txt flexiblas-3.3.1/contributed/lapack-3.11.0/CMakeLists.txt
+--- contributed/lapack-3.11.0/CMakeLists.txt	2023-04-03 16:07:31.000000000 +0200
++++ contributed/lapack-3.11.0/CMakeLists.txt	2025-09-22 14:43:53.000000000 +0200
+@@ -111,7 +111,7 @@
+ 
+ # Disable Warings for BLAS
+ if ( CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" )
+-	SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffloat-store -Wno-conversion -Wno-maybe-uninitialized -Wno-unused-dummy-argument -Wno-unused-variable -Wno-intrinsic-shadow -Wno-surprising -Wno-character-truncation")
++	SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffloat-store -Wno-conversion -Wno-maybe-uninitialized -Wno-unused-dummy-argument -Wno-unused-variable -Wno-intrinsic-shadow -Wno-surprising -Wno-character-truncation -fno-tree-vectorize")
+ endif()
+ 
+ IF ( INTEGER8 STREQUAL ON )
+diff -ur flexiblas-3.3.1_orig/test/lapack-3.11.0/CMakeLists.txt flexiblas-3.3.1/test/lapack-3.11.0/CMakeLists.txt
+--- test/lapack-3.11.0/CMakeLists.txt	2023-04-03 16:07:36.000000000 +0200
++++ test/lapack-3.11.0/CMakeLists.txt	2025-09-22 12:05:16.000000000 +0200
+@@ -16,7 +16,7 @@
+ endif()
+ 
+ if ( CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" )
+-	SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-conversion -Wno-maybe-uninitialized -Wno-unused-dummy-argument -Wno-unused-variable -Wno-intrinsic-shadow -Wno-surprising -Wno-tabs")
++	SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-conversion -Wno-maybe-uninitialized -Wno-unused-dummy-argument -Wno-unused-variable -Wno-intrinsic-shadow -Wno-surprising -Wno-tabs -fno-tree-vectorize")
+ endif()
+ 
+ 
