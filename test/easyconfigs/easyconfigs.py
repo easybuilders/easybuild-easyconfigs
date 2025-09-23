@@ -1740,7 +1740,7 @@ def template_easyconfig_test(self, spec):
         'hpcugent.github.com/easybuild',
         'hpcugent.github.io/easybuild',
     ]
-    failing_checks.extend("Old URL '%s' found" % old_url for old_url in old_urls if old_url in ec.rawtxt)
+    failing_checks.extend("Old URL '%s' should not be used" % old_url for old_url in old_urls if old_url in ec.rawtxt)
 
     # Note the use of app.cfg which might contain sources populated by e.g. the Cargo easyblock
     sources, patches, checksums = app.cfg.get_ref('sources'), app.cfg['patches'], app.cfg['checksums']
@@ -1768,9 +1768,9 @@ def template_easyconfig_test(self, spec):
             # dependencies() returns both build and runtime dependencies
             # in some cases, binutils can also be a runtime dep (e.g. for Clang)
             # Also using GCC directly as a build dep is also allowed (it includes the correct binutils)
-            dep_names = [d['name'] for d in ec.dependencies()]
+            dep_names = ec.dependency_names()
             if 'binutils' not in dep_names and 'GCC' not in dep_names:
-                failing_checks.append("binutils or GCC is a build dep: " + str(dep_names))
+                failing_checks.append("binutils or GCC should be in build deps: " + str(dep_names))
 
     # make sure that OpenSSL wrapper is used rather than OS dependency,
     # for easyconfigs using a 2021a (sub)toolchain or more recent common toolchain version
@@ -1821,7 +1821,7 @@ def template_easyconfig_test(self, spec):
 
     # Need to check now as collect_exts_file_info relies on correct exts_list
     if failing_checks:
-        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(set(failing_checks)))
+        self.fail('Verification of %s failed:\n' % os.path.basename(spec) + '\n'.join(set(failing_checks)))
 
     # After the sanity check above, use collect_exts_file_info to resolve templates etc. correctly
     for ext in app.collect_exts_file_info(fetch_files=False, verify_checksums=False):
@@ -1909,7 +1909,7 @@ def template_easyconfig_test(self, spec):
                         # use of `True` is deprecated in favour of the more intuitive `SYSTEM` template
                         if orig_dep[3] is True:
                             failing_checks.append(
-                                "use of `True` to indicate the system toolchain for "
+                                "Use of `True` to indicate the system toolchain for "
                                 "%s is deprecated, use the `SYSTEM` template constant instead" % desc
                             )
                         elif orig_dep[3] != dumped_dep[3]:
@@ -1959,7 +1959,7 @@ def template_easyconfig_test(self, spec):
             failing_checks.append(fail_msg)
 
     if failing_checks:
-        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(failing_checks))
+        self.fail('Verification of %s failed:\n' % os.path.basename(spec) + '\n'.join(failing_checks))
 
     # test passed, so set back
     single_tests_ok = prev_single_tests_ok
