@@ -37,14 +37,38 @@ dependencies = [
     ('ml_dtypes', '0.4.0'),
 ]
 
+# grep for system_build_file in jax & xla
+local_system_libs = [
+    'pybind11',
+    'curl',
+    ('boringssl', 'openssl'),
+    ('cython', None),
+    ('six', None),
+    'zlib',
+]
+
+local_tf_system_libs = []
+local_c_path = []
+local_library_path = []
+for l in local_system_libs:
+  if isinstance(l, str):
+    l = (l, l)
+  local_name, local_module = l
+  local_tf_system_libs.append(local_name)
+  if local_module:
+    local_c_path.append(f'$EBROOT{local_module.upper()}/include')
+    local_library_path.append(f'$EBROOT{local_module.upper()}/lib')
+
+
 # downloading xla and other tarballs to avoid that Bazel downloads it during the build
 # note: this *must* be the exact same commit as used in third_party/{xla,"other"}/workspace.bzl
 local_xla_commit = '32ba408c0e2b7ef5f5821c0781601ba17d467076'
 
 local_extract_cmd = 'mkdir -p %(builddir)s/archives && cp %s %(builddir)s/archives'
 local_repo_opt = '--bazel_options="--distdir=%(builddir)s/archives" '
-local_repo_opt += '--bazel_options="--action_env=TF_SYSTEM_LIBS=pybind11" '
-local_repo_opt += '--bazel_options="--action_env=CPATH=$EBROOTPYBIND11/include" '
+local_repo_opt += f'--bazel_options="--action_env=TF_SYSTEM_LIBS={",".join(local_tf_system_libs)}" '
+local_repo_opt += f'--bazel_options="--action_env=CPATH={":".join(local_c_path)}" '
+local_repo_opt += f'--bazel_options="--action_env=LIBRARY_PATH={":".join(local_library_path)}" '
 
 
 # Some tests require an isolated run:
@@ -88,18 +112,21 @@ components = [
         ],
         'patches': [
             'jax-0.4.25_fix-pybind11-systemlib.patch',
-            'jaxlib-0.4.29_fix-AVX512-eigen-compilation-gcc13.patch',
             'jaxlib-0.4.29_use_EB_python_modules.patch',
+            'jaxlib-0.4.29_fix-AVX512-eigen-compilation-gcc13.patch',
+            'jaxlib-0.4.29_fix-xla-systemlibs.patch',
         ],
         'checksums': [
             {'jaxlib-v0.4.29.tar.gz': '3a8005f4f62d35a5aad7e3dbd596890b47c81cc6e34fcfe3dcb93b3ca7cb1246'},
             {'xla-%s.tar.gz' % local_xla_commit: '899f9fa0801f607decd0fedcb1e4c1f56010f884c271dc618448898b022715b1'},
             {'jax-0.4.25_fix-pybind11-systemlib.patch':
              'daad5b726d1a138431b05eb60ecf4c89c7b5148eb939721800bdf43d804ca033'},
-            {'jaxlib-0.4.29_fix-AVX512-eigen-compilation-gcc13.patch':
-             'b500286cc38670ca77121d9edd16a6d80ba01bf227a251b337f11540da3b6b2f'},
             {'jaxlib-0.4.29_use_EB_python_modules.patch':
              'eb64999ad92ac39c683d750ed75f992f939a0a81dc5f2dd3b5698863f2f6fab9'},
+            {'jaxlib-0.4.29_fix-AVX512-eigen-compilation-gcc13.patch':
+             'b500286cc38670ca77121d9edd16a6d80ba01bf227a251b337f11540da3b6b2f'},
+            {'jaxlib-0.4.29_fix-xla-systemlibs.patch':
+             'f164602b17deec300af7dbdbac3553299d8c83bed98d0cdfce85c4109388571d'},
         ],
         'start_dir': 'jax-jaxlib-v%(version)s',
         # Avoid warning (treated as error) in upb/table.c
