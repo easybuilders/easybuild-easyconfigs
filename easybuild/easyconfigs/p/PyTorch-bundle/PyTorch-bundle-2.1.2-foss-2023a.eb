@@ -35,7 +35,18 @@ dependencies = [
     ('SoX', '14.4.2'),  # for torchaudio
 ]
 
-use_pip = True
+local_preinstall_opts = ' '.join([
+    'USE_SYSTEM_LIBS=1',
+    'USE_OPENMP=1',
+    'USE_CUDA=0',
+    'USE_FFMPEG=1', 'FFMPEG_ROOT="$EBROOTFFMPEG"',
+    'CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s',
+])
+
+exts_default_options = {
+    'preinstallopts': local_preinstall_opts,
+    'prebuildopts': local_preinstall_opts,
+}
 
 # Check with https://pytorch.org/audio/stable/installation.html#compatibility-matrix
 exts_list = [
@@ -43,7 +54,6 @@ exts_list = [
         'checksums': ['2b035aa7828e46c58e9b31390ee1f169b98e1066ab10b9a6a861fe7e25ee4f33'],
     }),
     ('torchdata', '0.7.1', {
-        'preinstallopts': "USE_SYSTEM_LIBS=1 ",
         'source_urls': ['https://github.com/pytorch/data/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': ['ef9bbdcee759b53c3c9d99e76eb0a66da33d36bfb7f859a25a9b5e737a51fa23'],
@@ -59,7 +69,7 @@ exts_list = [
         'checksums': [
             {'torchtext-0.16.2.tar.gz': '6574b012804f65220329a2ad34a95c18e4df0d4cff2f862fb7862d57b374b013'},
             {'torchtext-0.14.1_use-system-libs.patch':
-             '1366d10c4755b6003194f7313ca11d165a80a13d325bee9d669ea2b333d82536'},
+             'a29ce29259d8c1cf3533cdc23c66e68eec660d6206ae04ced0220a7c02712b53'},
             {'torchtext-0.16.2_download-to-project-root.patch':
              '9d5599a9983729cf1fc7ab2a2f65d1887f223f528e15662ba1b4a5e359c9686d'},
         ],
@@ -76,7 +86,6 @@ exts_list = [
         'checksums': ['7f6b125602ac6d743e523ae0bfa71e1a697a2f5534064528c6ff84c2f7c2fc7f'],
     }),
     ('torchvision', '0.16.2', {
-        'preinstallopts': 'WITH_CUDA=0 TORCHVISION_INCLUDE="$EBROOTLIBJPEGMINTURBO/include:$TORCHVISION_INCLUDE"',
         'installopts': '-v',
         'patches': [
             'torchvision-0.16.2_ffmpeg-6.0-fix.patch',
@@ -105,8 +114,9 @@ exts_list = [
             'torchaudio-2.1.2_use-external-sox.patch',
             'torchaudio-2.1.2_transform_test_tol.patch',
         ],
-        'preinstallopts': ('rm -r third_party/{sox,ffmpeg/multi};'  # runs twice when testinstall
-                           ' USE_CUDA=0 USE_OPENMP=1 USE_FFMPEG=1 FFMPEG_ROOT="$EBROOTFFMPEG"'),
+        'preinstallopts': ('unset BUILD_VERSION && '
+                           'rm -r third_party/{sox,ffmpeg/multi}; '  # runs twice when testinstall
+                           + local_preinstall_opts),
         'source_urls': ['https://github.com/pytorch/audio/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': [
@@ -177,8 +187,16 @@ exts_list = [
         ),
         'testinstall': True,
     }),
+    ('tensordict', '0.3.0', {
+        'source_urls': ['https://github.com/pytorch/%(name)s/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['f0d95e8f055c3f82838fdbeb03c6a907f8786c1046791db7e39cdcd9cb8f1889'],
+    }),
+    ('torchrl', '0.3.0', {
+        'source_urls': ['https://github.com/pytorch/rl/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['3ddb63dd33590c37f8edc9784cee718c20e2ced0c6bf0135600eb2dda7014814'],
+    }),
 ]
-
-sanity_pip_check = True
 
 moduleclass = 'ai'
