@@ -553,6 +553,8 @@ class EasyConfigTest(TestCase):
         alt_dep_versions = {
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
+            # qcserenity from autoCAS requires ASE
+            'ASE': [(r'3\.24\.0, [r'autoCAS'])],
             # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
             'AUGUSTUS': [(r'3\.5\.0-20240612', [r'BRAKER-3\.0\.8'])],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
@@ -579,8 +581,8 @@ class EasyConfigTest(TestCase):
             ],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
-            # autoCAS-2.3.1 requires serial h5py
-            'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS-2\.3\.1-iomkl-2023a'])],
+            # autoCAS requires serial h5py
+            'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             # Java 21 is used as dep for Octave 9.2.0 (other 2023b easyconfigs use Java 11)
