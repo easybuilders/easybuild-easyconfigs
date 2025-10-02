@@ -35,12 +35,26 @@ exts_list = [
     }),
     (name, version, {
         'source_tmpl': 'nvidia_cutlass-%(version)s-py3-none-any.whl',
-        'checksums': ['013147221a63500205da233ae02e6262463917f3fe39cb09efbca37bfd1c39f9'],
+        'post_install_patches': [{
+            'name': 'nvidia-cutlass-3.8.0.0_fix-BytesWarning.patch',
+            'sourcepath': 'lib/python%(pyshortver)s/site-packages/cutlass',
+            'level': 3,
+        }],
+        'checksums': [
+            '013147221a63500205da233ae02e6262463917f3fe39cb09efbca37bfd1c39f9',
+            {'nvidia-cutlass-3.8.0.0_fix-BytesWarning.patch':
+             '63eb47894340c0ea03d0d2faaa49c1979915f903b5bc2ced17f8e0dd5ab854ed'},
+        ],
         'modulename': 'cutlass',
         'sanity_check_commands': [
-            'python -sc "import cutlass"',
             'python -sc "import cutlass_library"',
-        ]
+            'python -bb -sc "' + '; '.join((
+                'import cutlass',
+                # These serve as a smoke test, e.g. nvcc_version() was incompatible with -bb
+                "assert cutlass.nvcc_version().startswith('%(cudamajver)s')",
+                "assert cutlass.cuda_install_path() == '$EBROOTCUDA'",
+            )) + '"',
+        ],
     }),
 ]
 
