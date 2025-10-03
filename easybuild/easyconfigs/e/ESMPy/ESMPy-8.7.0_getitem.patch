@@ -1,0 +1,52 @@
+From 338cd064a2db2966f22d91188077a9e70906a6d2 Mon Sep 17 00:00:00 2001
+From: Bill Sacks <sacks@ucar.edu>
+Date: Mon, 9 Dec 2024 20:10:44 -0700
+Subject: [PATCH] Fix LocStream's __getitem__ for python >= 3.12
+
+The logic in LocStream's `__getitem__` was built around the assumption
+that `slice` objects aren't hashable. However, starting with Python
+3.12, `slice` objects *are* hashable. This commit changes the
+implementation of this logic while keeping the same result as before for
+both slices and strings.
+
+Note that, in theory, there are a number of other types that can be
+returned from `get_formatted_slice`, depending on the type of the `slc`
+argument to `__getitem__`: a list of multiple `slice(None)` objects, a
+`np.ndarray`, a tuple of slices, or a tuple of `np.ndarray`s. These
+cases all would have led to errors with the previous logic (entering the
+`except` block but then hitting an error in `slc_ls.stop`, since none of
+those types have a `stop` attribute), and now will lead to different
+errors (in trying to execute `__getitem__` on these objects).
+
+See https://github.com/orgs/esmf-org/discussions/313 for some context.
+
+Co-authored-by: Xylar Asay-Davis <xylarstorm@gmail.com>
+---
+ src/addon/esmpy/src/esmpy/api/locstream.py | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/src/addon/esmpy/src/esmpy/api/locstream.py b/src/addon/esmpy/src/esmpy/api/locstream.py
+index a311eb7a8d..566d532499 100644
+--- a/src/addon/esmpy/src/esmpy/api/locstream.py
++++ b/src/addon/esmpy/src/esmpy/api/locstream.py
+@@ -125,10 +125,17 @@ def __getitem__(self, slc):
+             # re-initialize slc_ls
+             slc_ls = get_formatted_slice(slc, self.rank)
+ 
+-        # slice at will
+-        try:
++        if not isinstance(slc_ls, slice):
++            # This handles the case where slc is a str, and so slc_ls remains equal to
++            # slc, and thus is also a str. In theory, we could enter this block with
++            # slc_ls being various other types emerging from get_formatted_slice; these
++            # cases are not currently handled (they will generally lead to exceptions in
++            # `__getitem__`).
++
+             ret = super(LocStream, self).__getitem__(slc_ls)
+-        except TypeError:
++        else:
++            # slc_ls is a slice
++
+             ret = self.copy()
+ 
+             # upper bounds and size
