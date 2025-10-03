@@ -553,8 +553,6 @@ class EasyConfigTest(TestCase):
         alt_dep_versions = {
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
-            # qcserenity from autoCAS requires ASE
-            'ASE': [(r'3\.24\.0', [r'autoCAS-'])],
             # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
             'AUGUSTUS': [(r'3\.5\.0-20240612', [r'BRAKER-3\.0\.8'])],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
