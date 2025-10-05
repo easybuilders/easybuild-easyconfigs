@@ -1,0 +1,39 @@
+easyblock = 'CMakeMake'
+
+name = 'QCMaquis'
+version = '4.0.0'
+
+homepage = "https://github.com/qcscine/qcmaquis"
+description = """QCMaquis parallelizes the computationally heavy steps of
+a DMRG simulation with shared-memory parallelism (OpenMP)."""
+
+toolchain = {'name': 'iomkl', 'version': '2023a'}
+
+source_urls = ['https://github.com/qcscine/qcmaquis/archive']
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['47278e6af537cbd244d6284f7f5164b8169d8d76c0e150aca4774571dde5cda3']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Eigen', '3.4.0'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.0', '-serial'),
+    ('GSL', '2.7'),
+    ('Boost', '1.82.0'),
+]
+
+# preprocess fortran sources by -fpp
+configopts = '-DBUILD_OPENMOLCAS_INTERFACE=ON -DCMAKE_Fortran_FLAGS="$FFLAGS -fpp" -DQCMAQUIS_TESTS=ON'
+
+runtest = True
+
+sanity_check_paths = {
+    'files': ['bin/dmrg_meas', 'include/maquis_dmrg.h', 'lib/libmaquis_dmrg.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share/%(namelower)s'],
+}
+
+sanity_check_commands = ['dmrg_meas --help']
+
+moduleclass = 'chem'
