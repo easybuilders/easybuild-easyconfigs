@@ -1,0 +1,116 @@
+easyblock = 'ConfigureMakePythonPackage'
+
+name = 'MUSCLE3'
+version = '0.7.1'
+
+homepage = 'https://muscle3.readthedocs.io/en/latest/index.html'
+
+description = """MUSCLE3 allows connecting multiple simulation models
+ together into a multiscale simulation. Simulation models can be as
+ simple as a single Python file, or as complex as a combination of
+ multiple separate simulation codes written in C++ or Fortran, and
+ running on an HPC machine."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/multiscale/%(namelower)s/archive/refs/tags/']
+sources = ['%(version)s.tar.gz']
+checksums = ['b3023387c21af4d924b5cd240bdba376804ae166eb2c4b812e5222b4e0d3c8e0']
+
+builddependencies = [
+    ('googletest', '1.14.0'),
+]
+
+dependencies = [
+    ('msgpack-c', '6.0.0'),
+    ('zlib', '1.2.13'),
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('QCG-PilotJob', '0.13.1'),
+    ('ruamel.yaml', '0.17.40'),
+    ('matplotlib', '3.8.2'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'msgpack_ROOT=$EBROOTMSGPACKMINC '
+preinstallopts = 'PREFIX=%(installdir)s '
+testopts = 'googletest_ROOT=$EBROOTGOOGLETEST'
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'download_dep_fail': True,
+    'sanity_pip_check': True,
+}
+
+exts_list = [
+    ('typing_extensions', '4.9.0', {
+        'checksums': ['23478f88c37f27d76ac8aee6c905017a143b0b1b886c3c9f66bc2fd94f9f5783'],
+    }),
+    ('msgpack', '1.0.7', {
+        'checksums': ['572efc93db7a4d27e404501975ca6d2d9775705c2d922390d878fcf768d92c87'],
+    }),
+    ('click', '8.1.7', {
+        'checksums': ['ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de'],
+    }),
+    ('yatiml', '0.10.0', {
+        'patches': ['yatiml-0.10.0_fix_setup.patch'],
+        'checksums': [
+            {'yatiml-0.10.0.tar.gz': '4d23bfd7bbf45ae603c08fcb70d0c86404934a0cef24fb77b532705ff195fc92'},
+            {'yatiml-0.10.0_fix_setup.patch': '7b88cc59bc45254d28c9d59110caaf3954e3e479def5d6dc987f63fdedccb849'},
+        ],
+    }),
+    ('ymmsl', '0.13.0', {
+        'patches': ['ymmsl-0.13.0_fix_setup.patch'],
+        'checksums': [
+            {'ymmsl-0.13.0.tar.gz': '861c8b728d2808b8e8eb31592af42c5c4317b441fbd83d050ccf91fa24a9212e'},
+            {'ymmsl-0.13.0_fix_setup.patch': 'b8574b51c8b252817604b136acd84109c08900f9f563d2a742b525da980841ca'},
+        ],
+    }),
+    ('netifaces', '0.11.0', {
+        'checksums': ['043a79146eb2907edf439899f262b3dfe41717d34124298ed281139a8b93ca32'],
+    }),
+    ('muscle3', version, {
+        'patches': ['muscle3-0.7.1_fix_setup.patch'],
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/multiscale/muscle3/archive/refs/tags/'],
+        'checksums': [
+            {'0.7.1.tar.gz': 'b3023387c21af4d924b5cd240bdba376804ae166eb2c4b812e5222b4e0d3c8e0'},
+            {'muscle3-0.7.1_fix_setup.patch': '5c36a507b9fe8dc762dc5054000be10a05be3d277aed4036be378b728676dda5'},
+        ],
+    }),
+]
+
+modextrapaths = {
+    'MUSCLE3_HOME': '',
+}
+
+sanity_check_paths = {
+    'files': ['include/libmuscle.f90',
+              'include/libmuscle.mod',
+              'include/libmuscle/libmuscle.hpp',
+              'include/ymmsl/ymmsl.hpp',
+              'lib/libmuscle.a',
+              'lib/libmuscle.%s' % SHLIB_EXT,
+              'lib/libmuscle_fortran.a',
+              'lib/libmuscle_fortran.%s' % SHLIB_EXT,
+              'lib/libymmsl.a',
+              'lib/libymmsl.%s' % SHLIB_EXT,
+              'lib/libymmsl_fortran.a',
+              'lib/libymmsl_fortran.%s' % SHLIB_EXT,
+              'lib/pkgconfig/libmuscle.pc',
+              'lib/pkgconfig/libmuscle_fortran.pc',
+              'lib/pkgconfig/ymmsl.pc',
+              'lib/pkgconfig/ymmsl_fortran.pc'],
+    'dirs':  ['bin',
+              'include/libmuscle/mcp',
+              'include/ymmsl',
+              'lib/pkgconfig',
+              'lib64']
+}
+
+moduleclass = 'tools'
