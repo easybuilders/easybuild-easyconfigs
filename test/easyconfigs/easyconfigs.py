@@ -560,6 +560,8 @@ class EasyConfigTest(TestCase):
             # Score-P 8.3+ requires Cube 4.8.2+ but we have 4.8.1 already
             'CubeLib': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
             'CubeWriter': [(r'4\.8\.2;', [r'Score-P-8\.[3-9]'])],
+            # MACE-0.3.8-CUDA-12.1.1 needs e3nn-0.4.4-CUDA-12.1.1 as dependency
+            'e3nn': [(r'0\.4\.4; versionsuffix: -CUDA-12\.1\.1', [r'MACE-0\.3\.8-foss-2023a-CUDA-12\.1\.1'])],
             # Current rapthor requires WSclean 3.5 or newer, which in turn requires EveryBeam 0.6.X or newer
             # Requires us to also bump DP3 version (to 6.2) and its dependency on EveryBeam
             'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2', r'WSClean-3\.[5-9]'])],
@@ -577,16 +579,21 @@ class EasyConfigTest(TestCase):
             ],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
+            # autoCAS-2.3.1 requires serial h5py
+            'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS-2\.3\.1-iomkl-2023a'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             # Java 21 is used as dep for Octave 9.2.0 (other 2023b easyconfigs use Java 11)
-            'Java': [(r'21', [r'Octave-9\.2\.0'])],
+            # and MDSplus
+            'Java': [(r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1'])],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
             'libxc': [
                 (r'4\.', [r'libGridXC-']),
                 (r'5\.', [r'Elk-']),
             ],
+            # OpenQP requires mpi4py>=4.0.0
+            'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0'])],
             # FDMNES requires sequential variant of MUMPS
             'MUMPS': [(r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES'])],
             # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0, Finder requires SRA-Toolkit 3.0.0
@@ -598,6 +605,10 @@ class EasyConfigTest(TestCase):
             'ParaView': [
                 # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
+            ],
+            'PMIx': [
+                # PRRTE 4.0+ requires PMIx 6.0+ and vice-versa
+                (r'6\.0\.0', [r'PRRTE-4\.0\.0']),
             ],
             'pydantic': [
                 # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
@@ -953,6 +964,7 @@ class EasyConfigTest(TestCase):
             '14.2': '2025a',
             '14.3': '2025b',
             '15.1': None,
+            '15.2': None,  # maybe 2026a?
         }
 
         # map intel-compilers to toolchain generations
@@ -976,6 +988,7 @@ class EasyConfigTest(TestCase):
             '2025.0.0': None,
             '2025.1.0': None,
             '2025.1.1': '2025a',
+            '2025.2.0': '2025b',
         }
 
         multi_dep_vars_msg = ''
@@ -1172,8 +1185,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.1.1'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.1.1.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.1.2'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.1.2.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1703,7 +1716,7 @@ def template_easyconfig_test(self, spec):
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # easyblocks without a build step
-        non_build_blocks = ['Binary', 'JAR', 'PackedBinary', 'Tarball']
+        non_build_blocks = ['Binary', 'JAR', 'PackedBinary', 'Tarball', 'EB_VSCode']
         # some software packages do not have a build step
         non_build_soft = ['ANIcalculator', 'Eigen']
 
