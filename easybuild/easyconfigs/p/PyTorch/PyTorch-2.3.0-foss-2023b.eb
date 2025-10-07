@@ -36,6 +36,7 @@ patches = [
     'PyTorch-2.1.2_workaround_dynamo_failure_without_nnpack.patch',
     'PyTorch-2.3.0_disable_test_linear_package_if_no_half_types_are_available.patch',
     'PyTorch-2.3.0_disable_DataType_dependent_test_if_tensorboard_is_not_available.patch',
+    'PyTorch-2.3.0_fix-cpuinfo-bug-with-smt.patch',
     'PyTorch-2.3.0_skip-test_init_from_local_shards.patch',
     'PyTorch-2.3.0_no-cuda-stubs-rpath.patch',
     'PyTorch-2.3.0_disable-gcc12-warning.patch',
@@ -94,6 +95,8 @@ checksums = [
      '23416f2d9d5226695ec3fbea0671e3650c655c19deefd3f0f8ddab5afa50f485'},
     {'PyTorch-2.3.0_disable_DataType_dependent_test_if_tensorboard_is_not_available.patch':
      '0dcbdfde6752c3ff54c5376f521b4a742167669feb7f0f1d4e1d4d55f72b664f'},
+    {'PyTorch-2.3.0_fix-cpuinfo-bug-with-smt.patch':
+     '29fb95d1dba070133b513de050febd328ed36905a73f1ca135dc633f16beafa4'},
     {'PyTorch-2.3.0_skip-test_init_from_local_shards.patch':
      '90ed9c2870f57ee6dc032d00873a37e2217a2b92a13035ded1c25ad5306455f2'},
     {'PyTorch-2.3.0_no-cuda-stubs-rpath.patch':
@@ -179,11 +182,6 @@ excluded_tests = {
 
 local_test_opts = '--continue-through-error --pipe-logs --verbose %(excluded_tests)s'
 runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py ' + local_test_opts
-
-# Especially test_quantization has a few corner cases that are triggered by the random input values,
-# those cannot be easily avoided, see https://github.com/pytorch/pytorch/issues/107030
-# So allow a low number of tests to fail as the tests "usually" succeed
-max_failed_tests = 6
 
 tests = ['PyTorch-check-cpp-extension.py']
 
