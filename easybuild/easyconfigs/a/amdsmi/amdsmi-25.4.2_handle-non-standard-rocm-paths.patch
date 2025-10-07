@@ -1,0 +1,98 @@
+Adds an explicit check for esmi_ib_library instead of trying to download it via Git.
+Sources need to be moved in EasyConfig. Also point to EasyBuild paths first before
+trying ROCm default paths.
+
+Author: Jan Andre Reuter (jan@zyten.de)
+
+diff --color -Naur amdsmi-rocm-6.4.1.orig/CMakeLists.txt amdsmi-rocm-6.4.1/CMakeLists.txt
+--- amdsmi-rocm-6.4.1.orig/CMakeLists.txt       2025-05-09 19:06:29.000000000 +0200
++++ amdsmi-rocm-6.4.1/CMakeLists.txt    2025-06-19 09:57:50.521681766 +0200
+@@ -101,42 +101,7 @@
+     set(current_esmi_tag "esmi_pkg_ver-4.1.2")
+
+     if(NOT EXISTS ${PROJECT_SOURCE_DIR}/esmi_ib_library/src)
+-        # TODO: use ExternalProject_Add instead or a submodule
+-        message(STATUS "Adding esmi_ib_library...")
+-        execute_process(COMMAND git clone --depth=1 -b ${current_esmi_tag} https://github.com/amd/esmi_ib_library.git
+-                                ${PROJECT_SOURCE_DIR}/esmi_ib_library)
+-    else()
+-        message(STATUS "esmi_ib_library already installed, checking version...")
+-
+-        # Grab latest commit and get the tag
+-        execute_process(
+-            COMMAND git rev-list --tags --max-count=1
+-            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/esmi_ib_library
+-            OUTPUT_VARIABLE latest_commit
+-            OUTPUT_STRIP_TRAILING_WHITESPACE)
+-        execute_process(
+-            COMMAND git describe --tags ${latest_commit} --match "*pkg*"
+-            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/esmi_ib_library
+-            OUTPUT_VARIABLE latest_esmi_tag
+-            OUTPUT_STRIP_TRAILING_WHITESPACE)
+-
+-        # Update to latest tags if not matched
+-        if(NOT latest_esmi_tag STREQUAL current_esmi_tag)
+-            message(STATUS "Updating esmi_ib_library...")
+-            execute_process(
+-                COMMAND git clone --depth=1 -b ${current_esmi_tag} https://github.com/amd/esmi_ib_library.git
+-                        ${PROJECT_SOURCE_DIR}/esmi_ib_library_temp RESULT_VARIABLE clone_result)
+-            if(clone_result EQUAL 0)
+-                file(REMOVE_RECURSE ${PROJECT_SOURCE_DIR}/esmi_ib_library)
+-                file(RENAME ${PROJECT_SOURCE_DIR}/esmi_ib_library_temp ${PROJECT_SOURCE_DIR}/esmi_ib_library)
+-                message(STATUS "Successfully cloned updated esmi_ib_library")
+-            else()
+-                file(REMOVE_RECURSE ${PROJECT_SOURCE_DIR}/esmi_ib_library_temp)
+-                message(FATAL_ERROR "Failed to clone updated esmi_ib_library")
+-            endif()
+-        else()
+-            message(STATUS "esmi_ib_library is the latest version: ${current_esmi_tag}...")
+-        endif()
++        message(FATAL_ERROR "Expect esmi_ib_library_src to be present in sources. Please copy the required sources from esmi.")
+     endif()
+
+     # Make sure to update the amd_hsmp.h file with the corresponding esmi version
+diff --color -Naur amdsmi-rocm-6.4.1.orig/goamdsmi_shim/smiwrapper/amdsmi_go_shim.c amdsmi-rocm-6.4.1/goamdsmi_shim/smiwrapper/amdsmi_go_shim.c
+--- amdsmi-rocm-6.4.1.orig/goamdsmi_shim/smiwrapper/amdsmi_go_shim.c    2025-05-09 19:06:29.000000000 +0200
++++ amdsmi-rocm-6.4.1/goamdsmi_shim/smiwrapper/amdsmi_go_shim.c 2025-06-19 10:01:29.342064623 +0200
+@@ -24,7 +24,7 @@
+ #include <stdint.h>
+ #include <string.h>
+ #include "amdsmi_go_shim.h"
+-#include <amd_smi/amdsmi.h>
++#include "amd_smi/amdsmi.h"
+ #include <unistd.h>
+ #define nullptr ((void*)0)
+
+@@ -38,8 +38,6 @@
+ #define MAX_GPU_POWER_FROM_DRIVER      0xFFFF
+
+ #define AMDSMI_DRIVER_NAME     "AMDSMI"
+-#define AMDSMI_LIB_FILE        "/opt/rocm/lib/libamd_smi.so"
+-#define AMDSMI_LIB64_FILE      "/opt/rocm/lib64/libamd_smi.so"
+
+ #define AMDGPU_DRIVER_NAME     "AMDGPUDriver"
+ #define AMDGPU_INITSTATE_FILE  "/sys/module/amdgpu/initstate"
+diff --color -Naur amdsmi-rocm-6.4.1.orig/py-interface/amdsmi_wrapper.py amdsmi-rocm-6.4.1/py-interface/amdsmi_wrapper.py
+--- amdsmi-rocm-6.4.1.orig/py-interface/amdsmi_wrapper.py       2025-05-09 19:06:29.000000000 +0200
++++ amdsmi-rocm-6.4.1/py-interface/amdsmi_wrapper.py    2025-06-19 09:30:58.665549378 +0200
+@@ -179,6 +179,8 @@
+ def find_smi_library():
+     err = OSError("Could not load libamd_smi.so")
+     possible_locations = list()
++    # 0. Use EasyBuild variables
++    possible_locations.append(os.path.join(os.environ.get("EBROOTAMDSMI"), "lib/libamd_smi.so"))
+     # 1.
+     rocm_path = os.getenv("ROCM_HOME", os.getenv("ROCM_PATH"))
+     if rocm_path:
+diff --color -Naur amdsmi-rocm-6.4.1.orig/tools/generator.py amdsmi-rocm-6.4.1/tools/generator.py
+--- amdsmi-rocm-6.4.1.orig/tools/generator.py   2025-05-09 19:06:29.000000000 +0200
++++ amdsmi-rocm-6.4.1/tools/generator.py        2025-06-19 09:38:12.883141175 +0200
+@@ -194,6 +194,8 @@
+ def find_smi_library():
+     err = OSError("Could not load {library_name}")
+     possible_locations = list()
++    # 0. Try EasyBuild first
++    possible_locations.append(os.path.join(os.environ.get("EBROOTAMDSMI"), "lib/{library_name}"))
+     # 1.
+     rocm_path = os.getenv("ROCM_HOME", os.getenv("ROCM_PATH"))
+     if rocm_path:
