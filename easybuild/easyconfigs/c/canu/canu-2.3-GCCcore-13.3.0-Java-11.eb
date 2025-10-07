@@ -1,0 +1,46 @@
+easyblock = 'MakeCp'
+
+name = 'canu'
+version = '2.3'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://canu.readthedocs.io'
+description = "Canu is a fork of the Celera Assembler designed for high-noise single-molecule sequencing"
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/marbl/canu/releases/download/v%(version)s/']
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['ecb071943cde722152deb861d4ab897090f00b227fd0b261592e1e3fdd3e3e1a']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    # Makefile checks git version, before making (futile) attempt to update git submodules
+    ('git', '2.45.1'),
+]
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('Perl', '5.38.2'),
+    ('gnuplot', '6.0.1'),
+    ('OpenSSL', '3', '', SYSTEM),
+]
+
+start_dir = 'src'
+
+
+prebuildopts = r'sed -i "s|java = .*command.*;|'
+prebuildopts += 'java = \'${EBROOTJAVA}/bin/java\';|" pipelines/canu/Defaults.pm && '
+
+files_to_copy = ['build/bin', 'build/lib', 'build/share', 'README*']
+
+sanity_check_paths = {
+    'files': ['bin/bogart', 'bin/canu', 'bin/meryl', 'bin/overlapPair', 'lib/libcanu.a'],
+    'dirs': ['lib/perl5/site_perl', 'share'],
+}
+sanity_check_commands = [
+    "canu -version",
+    "canu -options",
+]
+
+moduleclass = 'bio'
