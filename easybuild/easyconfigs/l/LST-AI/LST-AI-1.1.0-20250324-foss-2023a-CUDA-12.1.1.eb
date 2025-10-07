@@ -1,0 +1,62 @@
+easyblock = 'PythonBundle'
+
+name = 'LST-AI'
+version = '1.1.0-20250324'
+versionsuffix = '-CUDA-%(cudaver)s'
+local_commit = '7d5ba1c'
+
+homepage = 'https://github.com/CompImg/LST-AI'
+description = """LST-AI - Deep Learning Ensemble for Accurate MS Lesion Segmentation."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('Pillow', '10.0.0'),
+    ('scikit-image', '0.22.0'),
+    ('TensorFlow', '2.15.1', versionsuffix),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('NiBabel', '5.2.0'),
+    ('HD-BET', '20230809', versionsuffix),
+    ('greedy', '20250320'),
+]
+
+local_preinstallopts = (
+    "sed -i"
+    " -e 's/numpy<1.24.4/numpy/'"
+    " -e 's/torch<=2.1.0/torch/'"
+    " -e '16 s/>=3.8,<3.10/>=3.8/'"
+    " setup.py && "
+)
+
+exts_list = [
+    (name, version, {
+        'modulename': 'LST_AI',
+        'preinstallopts': local_preinstallopts,
+        'source_urls': ['https://github.com/CompImg/LST-AI/archive/'],
+        'sources': [{'download_filename': '7d5ba1c.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['b3c3138ec95ae39d88d199fca04c358128c601c5602d3ccce19fecac4b19fbd3'],
+    }),
+]
+
+# download data to bin to let lts commnad works with immutable installdir and link greedy to bin/binaries
+postinstallcmds = [
+    'export PYTHONPATH=%(installdir)s/lib/python3.11/site-packages:$PYTHONPATH && '
+    """python -c "from LST_AI.utils import download_data; download_data('%(installdir)s/bin')" && """
+    'cd %(installdir)s/bin/binaries && rm greedy && ln -s $EBROOTGREEDY/bin/greedy'
+]
+
+sanity_check_paths = {
+    'files': ['bin/lst', 'bin/binaries/greedy'],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages/LST_AI',
+        'bin/atlas', 'bin/binaries', 'bin/model',
+    ],
+}
+
+sanity_check_commands = ['lst --help']
+
+moduleclass = 'bio'
