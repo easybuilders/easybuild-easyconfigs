@@ -1,0 +1,39 @@
+The test checks for a substring "loadu" in generated code.
+On AVX systems that line is:
+> auto tmp0 = at::vec::Vectorized<float>::loadu(in_ptr0 + static_cast<long>(i0))
+however on non-AVX systems it is
+> auto tmp0 = in_ptr0[static_cast<long>(i0)];
+
+the difference depends on `codecache.valid_vec_isa_list()` being non-empty.
+See torch/_inductor/codegen/cpp.py:2639
+
+Modify the test to account for that.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_extension_backend.py b/test/inductor/test_extension_backend.py
+index 7d6f35d7b74..decc61d62d7 100644
+--- a/test/inductor/test_extension_backend.py
++++ b/test/inductor/test_extension_backend.py
+@@ -20,7 +20,7 @@ except ImportError:
+     )
+ 
+ from torch._C import FileCheck
+-from torch._inductor import metrics
++from torch._inductor import codecache, metrics
+ from torch._inductor.codegen.common import (
+     get_scheduling_for_device,
+     get_wrapper_codegen_for_device,
+@@ -130,7 +130,11 @@ class ExtensionBackendTests(TestCase):
+         metrics.reset()
+         opt_fn = torch.compile()(fn)
+         code = run_and_get_cpp_code(opt_fn, x, y, z)
+-        FileCheck().check("void kernel").check("loadu").check("extension_device").run(
++        if codecache.valid_vec_isa_list():
++            load_expr = 'loadu'
++        else:
++            load_expr = ' = in_ptr0[static_cast<long>(i0)];'
++        FileCheck().check("void kernel").check(load_expr).check("extension_device").run(
+             code
+         )
+         opt_fn(x, y, z)

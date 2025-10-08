@@ -1,0 +1,65 @@
+name = 'OpenBabel'
+version = '3.1.1'
+
+homepage = 'https://openbabel.org'
+description = """Open Babel is a chemical toolbox designed to speak the many
+ languages of chemical data. It's an open, collaborative project allowing anyone
+ to search, convert, analyze, or store data from molecular modeling, chemistry,
+ solid-state materials, biochemistry, or related areas."""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+# avoid failing tests on skylake and broadwell CPUs.
+# remove option 'optarch' when building on CPUs that don't support AVX2
+# see also: https://github.com/openbabel/openbabel/issues/2138
+toolchainopts = {'pic': True, 'optarch': 'mavx2'}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%%(namelower)s-%s.tar.gz' % version.replace('.', '-')]
+patches = [
+    # Fix test failure with Python 3
+    # Ref: https://github.com/openbabel/openbabel/commit/7de27f309db5f7ec026ef5c5235e5b33bf7d1a85.patch
+    'OpenBabel-3.1.1_fix-distgeom-test.patch',
+    'OpenBabel-3.1.1_fix-CoordgenLibs-no-templates.patch',
+    'OpenBabel-3.1.1_disable_bad_tests.patch',
+    'OpenBabel-3.1.1_fix-ctime.patch',
+]
+checksums = [
+    {'openbabel-3-1-1.tar.gz': 'c97023ac6300d26176c97d4ef39957f06e68848d64f1a04b0b284ccff2744f02'},
+    {'OpenBabel-3.1.1_fix-distgeom-test.patch': '8d7687eb49142bb5ba2997cf90805b42480f313515c44b3912a9f826aaf4fbcd'},
+    {'OpenBabel-3.1.1_fix-CoordgenLibs-no-templates.patch':
+     'cc0396b38a78ef70c869cd93887210c64d6f4293c016aec9269b5a0230fdb51c'},
+    {'OpenBabel-3.1.1_disable_bad_tests.patch': 'a88f54d834cc181ac66d98f0040dbfadabe9d3ef1bee7305f8e73c31c20f9de2'},
+    {'OpenBabel-3.1.1_fix-ctime.patch': '79c5b7f65d99f42f039b3942bc52bae7363f3742a7e2564b5b7bfb29aa105b36'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('SWIG', '4.1.1'),
+]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('zlib', '1.2.13'),
+    ('libxml2', '2.11.4'),
+    ('Eigen', '3.4.0'),
+    ('RapidJSON', '1.1.0-20230928'),
+    ('cairo', '1.17.8'),  # optional: for .png output
+    ('Boost', '1.82.0'),
+    ('maeparser', '1.3.1'),
+    ('CoordgenLibs', '3.0.2'),
+]
+
+configopts = '-DBoost_INCLUDE_DIR=$EBROOTBOOST/include -DBoost_LIBRARY_DIR_RELEASE=$EBROOTBOOST/lib '
+# Enable support for OpenMP compilation of forcefield code (optional)
+configopts += '-DENABLE_OPENMP=ON '
+
+# OpenBabel-3.1.1 creates directories named 3.1.0, which leads to BABEL_LIBDIR and BABEL_DATDIR
+# (set in the easyblock) having invalid values.  Work around this with some symlinks.
+postinstallcmds = [
+    'ln -s %(installdir)s/lib/openbabel/3.1.0 %(installdir)s/lib/openbabel/%(version)s',
+    'ln -s %(installdir)s/share/openbabel/3.1.0 %(installdir)s/share/openbabel/%(version)s',
+]
+
+pretestopts = 'cp lib/_openbabel.%s %%(builddir)s/openbabel-*/scripts/python/openbabel/ && ' % SHLIB_EXT
+runtest = 'test'
+
+moduleclass = 'chem'

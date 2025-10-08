@@ -16,8 +16,6 @@ allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
 req_py_majver = 3
 req_py_minver = 6
 
-use_pip = True
-
 exts_list = [
     # stick to pip 21.3.1 and wheel 0.37.1, which are compatible with Python 3.6
     ('pip', '21.3.1', {
@@ -30,6 +28,12 @@ exts_list = [
     }),
     ('reframe', version, {
         'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && "
+                          # use PyYAML 6.0.1 to solve Cython 3 incompatibility issues
+                          "sed -i 's@PyYAML==6.0@PyYAML==6.0.1@' requirements.txt && "
+                          # use the same setuptools version n the requirements.txt of the docs
+                          # to prevent jsonschema from installating the latest setuptools as well
+                          "echo \"setuptools==59.6.0; python_version == '3.6'\" >> docs/requirements.txt && "
+                          "echo \"setuptools==67.8.0; python_version >= '3.7'\" >> docs/requirements.txt && "
                           "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && "
                           "PYTHONPATH=%(builddir)s/reframe/reframe-%(version)s/external:$PYTHONPATH ",
         'source_tmpl': 'v%(version)s.tar.gz',
@@ -56,8 +60,6 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = ['reframe -V']
-
-sanity_pip_check = True
 
 modextrapaths = {
     # bootstrap script installs required dependencies to 'external' subdirectory
