@@ -1,7 +1,7 @@
 easyblock = 'CMakeNinja'
 
 name = 'Qt6'
-version = '6.9.1'
+version = '6.9.3'
 
 homepage = 'https://qt.io/'
 description = "Qt is a comprehensive cross-platform C++ application framework."
@@ -17,12 +17,12 @@ source_urls = [
 ]
 sources = ['qt-everywhere-src-%(version)s.tar.xz']
 patches = [
-    '%(name)s-6.6.3_fix_OF-Gentoo.patch',
-    '%(name)s-6.7.2_fix_cpu_features.patch',
-    '%(name)s-6.5.2_fix_too_long_filenames.patch',
+    'Qt6-6.6.3_fix_OF-Gentoo.patch',
+    'Qt6-6.7.2_fix_cpu_features.patch',
+    'Qt6-6.5.2_fix_too_long_filenames.patch',
 ]
 checksums = [
-    {'qt-everywhere-src-6.9.1.tar.xz': '364fde2d7fa42dd7c9b2ea6db3d462dd54f3869e9fd0ca0a0ca62f750cd8329b'},
+    {'qt-everywhere-src-6.9.3.tar.xz': '59d4fbf50d2524a9082f85d565f0197316cde89c26e97cfc6c157cb255b7ea18'},
     {'Qt6-6.6.3_fix_OF-Gentoo.patch': 'd4d4878ac76cb985e45eb3b6e90ba2233f65807d6bd9bbe2b71365b181347b7b'},
     {'Qt6-6.7.2_fix_cpu_features.patch': '3f37e7a4e4ed38cc82037be9504bc644e48bf258555ffff848183142725c9dc8'},
     {'Qt6-6.5.2_fix_too_long_filenames.patch': 'b4a2aa3c72fe01d8b9cbab6da43cdbd968bd139f5dd9daba83181eb5d6125dac'},
@@ -70,17 +70,23 @@ dependencies = [
     # ('gRPC', '1.52.2'),  # WebEngine needs older Abseil/gRPC/protobuf
 ]
 
-preconfigopts = 'sed -i "s/MultiMedia/Multimedia/g" ../qt-everywhere-src-%(version)s/qtcharts/CMakeLists.txt && sed -i "23i set(Python3_ROOT_DIR \\$ENV{EBROOTPYTHON})" ../qt-everywhere-src-%(version)s/qtwebengine/src/gn/CMakeLists.txt &&  export NINJAFLAGS="-j%(parallel)s" && '
-configopts = "-Wno-dev -DFEATURE_qtpdf_build=OFF -DQT_AVOID_CMAKE_ARCHIVING_API=ON -DPython3_ROOT_DIR=$EBROOTPYTHON -DBUILD_qtwayland=OFF "
+preconfigopts = 'sed -i "23i set(Python3_ROOT_DIR \\$ENV{EBROOTPYTHON})" '
+preconfigopts += '../qt-everywhere-src-%(version)s/qtwebengine/src/gn/CMakeLists.txt && '  # Typo
 
+# Ninja uses all visible cores by default, which can lead to lack of sufficient memory;
+# so $NINJAFLAGS is set to control number of parallel processes used by Ninja;
+# note that $NINJAFLAGS is not a generic thing for Ninja, it's very specific to the Qt6 build procedure
+preconfigopts += ' export NINJAFLAGS="-j%(parallel)s" && '
 prebuildopts = ' export NINJAFLAGS="-j%(parallel)s" && '
 
+configopts = "-Wno-dev -DFEATURE_qtpdf_build=OFF -DQT_AVOID_CMAKE_ARCHIVING_API=ON "
+configopts += "-DPython3_ROOT_DIR=$EBROOTPYTHON -DBUILD_qtwayland=OFF "
 
 # Removed from Qt6.0.0 but may be added back in the future
 # configopts += '-DBUILD_qtgamepad=OFF '  # Does not work on CentOS 7
 
 sanity_check_paths = {
-    'files': ['bin/qmake6', 'lib/libQt6Core.so', 'lib/libQt6WebEngineCore.so'],
+    'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT, 'lib/libQt6WebEngineCore.%s' % SHLIB_EXT],
     'dirs': ['include/QtCore', 'include/QtWebEngineCore'],
 }
 
