@@ -1,0 +1,71 @@
+easyblock = 'ConfigureMake'
+
+name = 'wxWidgets'
+version = '3.3.1'
+
+homepage = 'https://www.wxwidgets.org'
+description = """wxWidgets is a C++ library that lets developers create
+applications for Windows, Mac OS X, Linux and other platforms with a
+single code base. It has popular language bindings for Python, Perl,
+Ruby and many other languages, and unlike other cross-platform toolkits,
+wxWidgets gives applications a truly native look and feel because it
+uses the platform's native API rather than emulating the GUI."""
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'wxWidgets'
+source_urls = [GITHUB_RELEASE]
+sources = [SOURCE_TAR_BZ2]
+checksums = ['f936c8d694f9c49a367a376f99c751467150a4ed7cbf8f4723ef19b2d2d9998d']
+
+builddependencies = [
+    ('gettext', '0.24'),
+    ('pkgconf', '2.3.0'),
+    ('Python', '3.13.1'),
+]
+
+dependencies = [
+    ('libpng', '1.6.48'),
+    ('zlib', '1.3.1'),
+    ('libjpeg-turbo', '3.1.0'),
+    ('XZ', '5.6.3'),
+    ('jbigkit', '2.1'),
+    ('LibTIFF', '4.7.0'),
+    ('expat', '2.6.4'),
+    ('GTK3', '3.24.43'),
+    ('X11', '20250521'),
+    ('Mesa', '25.1.3'),
+    ('libGLU', '9.0.3'),
+    ('SDL2', '2.32.8'),
+    ('cairo', '1.18.4'),
+    ('GST-plugins-base', '1.26.6'),
+    ('GLib', '2.85.1'),
+]
+
+local_cpath_ext = '$EBROOTGTKPLUS/include/gtk-3.0:$EBROOTGLIB/include/glib-2.0:$EBROOTGLIB/lib/glib-2.0/include'
+
+preconfigopts = 'CPATH=$CPATH:%s ' % local_cpath_ext
+
+configopts = '--enable-intl --enable-ipv6 '
+# Options required by wxPython
+configopts += '--with-gtk=3 --with-gtk-prefix=$EBROOTGTKPLUS '
+# Note: the configure step might claim to find OpenGL headers in
+# /usr/include, but it will still use the ones from the Mesa dependency above
+configopts += '--with-opengl '
+configopts += '--enable-unicode --enable-sound --enable-graphics_ctx '
+configopts += '--enable-mediactrl --enable-display --enable-geometry '
+configopts += '--enable-debug_flag --enable-optimise --disable-debugreport '
+configopts += '--enable-autoidman --with-sdl '
+configopts += '--disable-webview --disable-webviewwebkit '
+configopts += '--disable-tests '
+
+
+prebuildopts = 'CPATH=$CPATH:%s ' % local_cpath_ext
+
+sanity_check_paths = {
+    'files': ['bin/wx-config', 'bin/wxrc'],
+    'dirs': ['include/wx-%(version_major_minor)s/wx', 'lib', 'share'],
+}
+
+moduleclass = 'vis'
