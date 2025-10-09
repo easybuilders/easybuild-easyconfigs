@@ -579,8 +579,8 @@ class EasyConfigTest(TestCase):
             ],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
-            # autoCAS-2.3.1 requires serial h5py
-            'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS-2\.3\.1-iomkl-2023a'])],
+            # autoCAS requires serial h5py
+            'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             # Java 21 is used as dep for Octave 9.2.0 (other 2023b easyconfigs use Java 11)
