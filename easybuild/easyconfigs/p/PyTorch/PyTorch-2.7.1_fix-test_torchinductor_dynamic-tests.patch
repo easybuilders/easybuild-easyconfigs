@@ -1,6 +1,10 @@
 Fix failures in test_torchinductor_dynamic_shapes which disappear when running the test individually.
 > RuntimeError: Tried to register an operator (test::foo(Tensor x) -> (Tensor, Tensor)) with the same name and overload name multiple times. Each overload's schema should only be registered with a single call to def(). Duplicate registration: registered at /dev/null:203. Original registration: registered at /dev/null:488
 
+Last one doesn't only fail on ROCM with:
+> AssertionError: expected to fail, but actually passed
+
+
 See https://github.com/pytorch/pytorch/issues/154216
 
 Author: Alexander Grund (TU Dresden)
@@ -79,3 +83,12 @@ Author: Alexander Grund (TU Dresden)
              return a.sum() + b.sum()
  
          f(torch.tensor([3], device=device))
+
+@@ -73,7 +73,7 @@ if TEST_WITH_ROCM:
+     test_failures["test_item_to_inputs_kernel_nobreak"] = TestFailure(
+         ("cpu", "cuda"), is_skip=True
+     )
+-    test_failures["test_unbacked_reduction"] = TestFailure(("cpu"), is_skip=True)
++test_failures["test_unbacked_reduction"] = TestFailure(("cpu"), is_skip=True)
+ 
+ 
