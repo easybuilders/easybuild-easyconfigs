@@ -27,29 +27,13 @@ dependencies = [
     ('numba', '0.62.0'),
 ]
 
-# For numba-cuda to work correctly, we need to add a sitecustomize.py to the
-# installation directory. Typically, numba-cuda would handle this via a .pth
-# file, but this fails due to us setting $PYTHONPATH. The sitecustomize.py
-# will enable this .pth file again.
-# We need to do this for both the test step & final installation to work
-# correctly. For the installation, we'll use a sanity check command.
-local_sitecustomize_command = "echo 'import site; import os; site.addsitedir(os.path.dirname(__file__))' > "
-# For testing
-local_pretestopts = local_sitecustomize_command
-local_pretestopts += "$EB_PYTHONPACKAGE_TEST_INSTALLDIR/lib/python%(pyshortver)s/site-packages/sitecustomize.py && "
-# For installation
-local_postinstallcmds = local_sitecustomize_command
-local_postinstallcmds += "%(installdir)s/lib/python%(pyshortver)s/site-packages/sitecustomize.py"
-
 exts_list = [
     ('numba_cuda', '0.20.0', {
         'source_urls': ['https://github.com/NVIDIA/numba-cuda/archive/refs/tags/'],
         'sources': ['v%(version)s.tar.gz'],
         'checksums': ['17e6803ed07589c37b5fa0757f9c0fc850146dbc24302fcea93497676f3a21fb'],
         'testinstall': True,
-        'pretestopts': local_pretestopts,
         'runtest': 'pytest --pyargs numba.cuda.tests -v',
-        'postinstallcmds': [local_postinstallcmds],
     }),
 ]
 
