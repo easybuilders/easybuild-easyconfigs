@@ -35,8 +35,10 @@ dependencies = [
     ('FFmpeg', '7.1.1'),
     ('Szip', '2.1.1'),
     ('matplotlib', '3.10.3'),               # For rendering of latex-format labels
-    ('OSPRay', '2.12.0', '', SYSTEM),       # Leads to incorrect coloring when using ospray 3.x
 ]
+if ARCH == 'x86_64':
+    # Leads to incorrect coloring when using OSPRay 3.x
+    dependencies.append(('OSPRay', '2.12.0', '', SYSTEM))
 
 _copts = [
     # Basic configuration
@@ -45,7 +47,6 @@ _copts = [
     '-DPARAVIEW_USE_MPI=ON',
     '-DPARAVIEW_ENABLE_FFMPEG=ON',
     '-DPARAVIEW_USE_PYTHON=ON',
-    '-DPARAVIEW_ENABLE_RAYTRACING=ON',
     # Useful input formats
     '-DPARAVIEW_ENABLE_XDMF2=ON',
     '-DPARAVIEW_ENABLE_XDMF3=ON',
@@ -58,6 +59,9 @@ _copts = [
     '-DVTK_OPENGL_HAS_EGL=ON',
     '-DVTK_USE_X=ON',
 ]
+if ARCH == 'x86_64':
+    # requires OSPRay dependency
+    _copts.append('-DPARAVIEW_ENABLE_RAYTRACING=ON')
 configopts = ' '.join(_copts)
 
 sanity_check_paths = {
