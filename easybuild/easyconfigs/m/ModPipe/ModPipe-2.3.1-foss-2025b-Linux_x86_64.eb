@@ -1,4 +1,4 @@
-easyblock = 'PythonPackage'
+easyblock = 'Bundle'
 
 name = 'ModPipe'
 version = '2.3.1'
@@ -14,19 +14,6 @@ a configuration file and produces one or more comparative models for that sequen
 
 toolchain = {'name': 'foss', 'version': '2025b'}
 
-source_urls = ['https://salilab.org/modpipe/']
-sources = [
-    SOURCELOWER_TAR_GZ,
-    {
-        'source_urls': [f'https://salilab.org/modeller/{_modeller_version}/'],
-        'filename': f'modeller-{_modeller_version}.tar.gz',
-    },
-]
-checksums = [
-    {'modpipe-2.3.1.tar.gz': 'a006f436305d5f582f9ce461c73f8f02e1eb6fd416705276373697715209a4a6'},
-    {'modeller-10.7.tar.gz': 'b81ffee26841ef96470341889fa4af560f968cf35ef990d95480c7eb7a5b5c8f'},
-]
-
 dependencies = [
     ('Perl', '5.40.2'),
     ('Python', '3.13.5'),
@@ -36,47 +23,44 @@ dependencies = [
     ('PyYAML', '6.0.2'),
 ]
 
-# Install Modeller-10.7 into the builddir of ModPipe - replace interactive install script
-# export MODELLER_LICENSE_KEY=your license key or this will fail
-_modeller_exe_version = '10v7'
-_modeller_installdir = '%(builddir)s/%(namelower)s-%(version)s/ext/mod'
-_modeller_builddir = f'%(builddir)s/modeller-{_modeller_version}'
-_cfg = f'{_modeller_installdir}/modlib/modeller/config.py'
-_modeller_install_cmds = (
-    f"mkdir -p {_modeller_installdir}/bin {_modeller_installdir}/lib && "
-    f"cd {_modeller_builddir} && cp -a README INSTALLATION doc examples modlib src {_modeller_installdir} && "
-    f"cd {_modeller_builddir}/bin && "
-    f"cp -a *.top lib mod{_modeller_version}_%(arch)s-intel8 {_modeller_installdir }/bin && "
-    f"cd {_modeller_builddir}/lib && cp -a %(arch)s-intel8 {_modeller_installdir}/lib && "
-    f"sed -e 's/EXECUTABLE_TYPE{_modeller_exe_version}=xxx/EXECUTABLE_TYPE{_modeller_exe_version}=%(arch)s-intel8/' "
-    rf"-e 's|MODINSTALL{_modeller_exe_version}=xxx|MODINSTALL{_modeller_exe_version}=\"{_modeller_installdir}\"|' "
-    f'{_modeller_builddir}/bin/modscript > {_modeller_installdir}/bin/mod{_modeller_version} && '
-    rf"sed -e 's|@TOPDIR@|\"{_modeller_installdir}\"|' -e 's/@EXETYPE@/%(arch)s-intel8/' "
-    f'{_modeller_builddir}/bin/modpy.sh.in > {_modeller_installdir}/bin/modpy.sh && '
-    f'chmod a+x {_modeller_installdir}/bin/mod{_modeller_version} {_modeller_installdir}/bin/modpy.sh && '
-    f'printf "%s\\n" "install_dir = \'{_modeller_installdir}\'" >> "{_cfg}" && '
-    """printf "%s\\n" "license = __import__('os').getenv('MODELLER_LICENSE_KEY', """
-    f"""'set $MODELLER_LICENSE_KEY environment variable with your license key.')" > "{_cfg}" && """
-    f'cp %(builddir)s/%(namelower)s-%(version)s/ext/guess-arch.sh {_modeller_installdir}/bin/guess-arch.sh && '
-    "cd %(start_dir)s && "
-)
-
-# install by 'python setup.py'
-use_pip = False
-
-# the paths in scripts are changed during the python setup.py based on cwd
-buildininstalldir = True
-
-skipsteps = ['install']
-prebuildopts = _modeller_install_cmds
 # fix path of HHPaths.pm from HH-suite
-prebuildopts += (
+_mp_prebuildopts = (
     "sed -i 's|lib/hh/scripts/HHPaths.pm|scripts/HHPaths.pm|' %(builddir)s/%(namelower)s-%(version)s/setup.py && "
 )
-buildcmd = '--with-blast=$EBROOTBLAST/bin --with-hhsuite=$EBROOTHHMINSUITE'
 
-# clean installdir
-postinstallcmds = [f"rm -r %(builddir)s/modeller-{_modeller_version}"]
+# run Install script to install Modeller into ModPipe
+# https://salilab.org/modpipe/doc/install-ext.html#modeller
+_modeller_install_cmd = 'cd %(builddir)s/%(namelower)s-%(version)s && '
+_modeller_install_cmd += 'MODINSTALL=%(builddir)s/modpipe-2.3.1/ext/mod ./Install'
+
+components = [
+    ('Modeller', _modeller_version, {
+        'easyblock': 'Binary',
+        'source_urls': [f'https://salilab.org/modeller/{_modeller_version}/'],
+        'sources': [f'modeller-{_modeller_version}.tar.gz'],
+        'patches': ['Modeller-10.7_install-to-modpipe.patch'],
+        'install_cmd': _modeller_install_cmd,
+        'checksums': [
+            'b81ffee26841ef96470341889fa4af560f968cf35ef990d95480c7eb7a5b5c8f',  # modeller-10.7.tar.gz
+            '5d50805f40436dcdec879b088bf5654b288c9a7d593b74df70792e46acfd903f',  # install-to-modpipe.patch
+        ],
+    }),
+    (name, version, {
+        'easyblock': 'PythonPackage',
+        'source_urls': ['https://salilab.org/modpipe/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'start_dir': '%(namelower)s-%(version)s',
+        # install by 'python setup.py --with-blast=... --with-hhsuite=...'
+        'use_pip': False,
+        'skipsteps': ['install'],
+        'prebuildopts': _mp_prebuildopts,
+        'buildcmd': '--with-blast=$EBROOTBLAST/bin --with-hhsuite=$EBROOTHHMINSUITE',
+        'checksums': ['a006f436305d5f582f9ce461c73f8f02e1eb6fd416705276373697715209a4a6'],
+    })
+]
+
+# paths in scripts are changed during the installation based on cwd
+buildininstalldir = True
 
 fix_perl_shebang_for = ['*.pl']
 fix_python_shebang_for = ['*.py']
