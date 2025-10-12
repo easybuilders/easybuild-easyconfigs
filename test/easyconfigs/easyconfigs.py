@@ -1308,6 +1308,15 @@ class EasyConfigTest(TestCase):
                     failing_checks.append("'source_urls' should not be defined when using the default value "
                                           "in %s" % ec_fn)
 
+            # --no-build-isolation option for 'pip install' should be enabled
+            pip_no_build_isolation = ec.get('pip_no_build_isolation', True)
+            for ext in ec['exts_list']:
+                if isinstance(ext, (tuple, list)) and len(ext) >= 3:
+                    ext_opts = ext[2]
+                    pip_no_build_isolation &= ext_opts.get('pip_no_build_isolation', True)
+            if not pip_no_build_isolation:
+                failing_checks.append(f"pip_no_build_isolation should not be disabled in {ec_fn}")
+
             # use_pip should be set when using PythonPackage or PythonBundle,
             # or an easyblock that derives from it (except for whitelisted easyconfigs)
             if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
