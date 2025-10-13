@@ -1,0 +1,38 @@
+easyblock = "MakeCp"
+
+name = "elbencho"
+version = "3.0-27"
+versionsuffix = "-CUDA-%(cudaver)s"
+
+homepage = "https://github.com/breuner/elbencho"
+description = """ A distributed storage benchmark for files, objects & blocks with support for GPUs"""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+dependencies = [
+    ('Boost', '1.85.0'),
+    ('libaio', '0.3.113'),
+    ('numactl', '2.0.18'),
+    ('ncurses', '6.5'),
+    ('CUDA', '12.6.0', '', SYSTEM),
+]
+
+github_account = 'breuner'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['86599a3046052c82334d474c909e1bebefefaea1225870b3f8a3f9029a29064e']
+
+buildopts = 'BUILD_VERBOSE=1 CXXFLAGS_EXTRA="$CXXFLAGS" LDFLAGS_EXTRA="$LDFLAGS"'
+
+keepsymlinks = False
+
+files_to_copy = ['bin', (['tools/%s' % x for x in ['elbencho-chart', 'elbencho-scan-path']], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['elbencho', 'elbencho-unstripped']],
+    'dirs': [],
+}
+
+sanity_check_commands = [('elbencho', '--help')]
+
+moduleclass = 'tools'

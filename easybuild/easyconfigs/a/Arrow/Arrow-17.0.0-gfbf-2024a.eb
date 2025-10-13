@@ -32,7 +32,7 @@ dependencies = [
     ('zlib', '1.3.1'),
     ('bzip2', '1.0.8'),
     ('zstd', '1.5.6'),
-    ('snappy', '1.1.10'),
+    ('snappy', '1.2.1'),
     ('RapidJSON', '1.1.0-20240815'),
     ('RE2', '2024-07-02'),
     ('utf8proc', '2.9.0'),
@@ -41,10 +41,11 @@ dependencies = [
 start_dir = 'cpp'
 
 # see https://arrow.apache.org/docs/developers/python.html
-configopts = "-DARROW_DATASET=on -DARROW_PYTHON=on -DARROW_PARQUET=ON -DARROW_ORC=ON "
-configopts += "-DCMAKE_INSTALL_LIBDIR=lib -DPython3_ROOT_DIR=$EBROOTPYTHON "
+configopts = "-DARROW_DATASET=on -DARROW_PARQUET=ON -DARROW_ORC=ON "
+configopts += "-DARROW_PYTHON=on -DPython3_ROOT_DIR=$EBROOTPYTHON "
 configopts += "-DARROW_WITH_ZLIB=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON -DARROW_WITH_SNAPPY=ON "
 configopts += "-DARROW_WITH_ZSTD=ON -DZSTD_ROOT=$EBROOTZSTD "
+configopts += "-DARROW_MIMALLOC=ON -DARROW_JEMALLOC=OFF "
 
 # install Python bindings
 _pyarrow_preinstall_opts = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
@@ -58,9 +59,6 @@ _pyarrow_preinstall_opts += "PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 PYARR
 
 exts_defaultclass = 'PythonPackage'
 exts_default_options = {
-    'download_dep_fail': True,
-    'use_pip': True,
-    'sanity_pip_check': True,
 }
 exts_list = [
     ('pyarrow', version, {
@@ -69,7 +67,7 @@ exts_list = [
             " && export Arrow_DIR=%(installdir)s && export ArrowDataset_DIR=%(installdir)s"
             " && export ArrowAcero_DIR=%(installdir)s && export Parquet_DIR=%(installdir)s"
             " && export XDG_CACHE_HOME=$TMPDIR && sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml"
-            " && Python3_ROOT_DIR=$EBROOTPYTHON PYARROW_CMAKE_OPTIONS='-DZSTD_LIB=$EBROOTZSTD/lib/libzstd.so"
+            f" && Python3_ROOT_DIR=$EBROOTPYTHON PYARROW_CMAKE_OPTIONS='-DZSTD_LIB=$EBROOTZSTD/lib/libzstd.{SHLIB_EXT}"
             " ' PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 PYARROW_WITH_ORC=1 "
         ),
         'sources': ['apache-arrow-%(version)s.tar.gz'],
@@ -77,8 +75,6 @@ exts_list = [
         'checksums': ['9d280d8042e7cf526f8c28d170d93bfab65e50f94569f6a790982a878d8d898d'],
     }),
 ]
-
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 sanity_check_paths = {
     'files': ['lib/libarrow.a', 'lib/libarrow.%s' % SHLIB_EXT,

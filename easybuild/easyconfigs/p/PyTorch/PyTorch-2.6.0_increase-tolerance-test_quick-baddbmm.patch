@@ -1,0 +1,23 @@
+Avoid a test failure in test_quick_baddbmm_cpu_complex64 in test_decomp.py
+on e.g. AMD EPYC (znver2) or Intel Sapphire Rapids:
+
+> AssertionError: Tensor-likes are not close!
+> Greatest absolute difference: 3.43852152582258e-05 at index (1, 2, 1) (up to 1e-05 allowed)
+> Greatest relative difference: 3.6034286949870875e-06 at index (1, 2, 1) (up to 1.3e-06 allowed)
+
+The failure doesn't happen with e.g. `-march=znver1` and is small enough to ignore.
+
+Author: Alexander Grund (TU Dresden)
+
+--- a/torch/testing/_internal/common_methods_invocations.py
++++ b/torch/testing/_internal/common_methods_invocations.py
+@@ -12259,6 +12259,9 @@ op_db: List[OpInfo] = [
+                DecorateInfo(
+                    toleranceOverride({torch.complex64: tol(atol=1e-05, rtol=1.2e-03)}),
+                    'TestCommon', 'test_variant_consistency_eager', device_type='cuda'),
++               DecorateInfo(
++                   toleranceOverride({torch.complex64: tol(atol=4e-05, rtol=4e-06)}),
++                   'TestDecomp', 'test_quick'),
+                DecorateInfo(
+                    toleranceOverride({torch.complex64: tol(atol=1e-05, rtol=1.2e-03)}),
+                    'TestMathBits', 'test_conj_view', device_type='cuda'),
