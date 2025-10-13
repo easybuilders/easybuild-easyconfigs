@@ -8,11 +8,17 @@ toolchain = {'name': 'GCC', 'version': '13.3.0'}
 
 source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
 sources = [SOURCELOWER_TAR_BZ2]
-patches = [('OpenMPI-5.0.2_build-with-internal-cuda-header.patch', 1)]
+patches = [
+    ('OpenMPI-5.0.2_build-with-internal-cuda-header.patch', 1),
+    'OpenMPI-5.0.3_fix_c90_compliance.patch',
+    'OpenMPI-5.0.7_fix_gpfs_compatibility.patch',
+]
 checksums = [
     {'openmpi-5.0.3.tar.bz2': '990582f206b3ab32e938aa31bbf07c639368e4405dca196fabe7f0f76eeda90b'},
     {'OpenMPI-5.0.2_build-with-internal-cuda-header.patch':
      'f52dc470543f35efef10d651dd159c771ae25f8f76a420d20d87abf4dc769ed7'},
+    {'OpenMPI-5.0.3_fix_c90_compliance.patch': 'ece1dff504673179daf298f74c978d31132fcde71af9eca38a530b30aec85cca'},
+    {'OpenMPI-5.0.7_fix_gpfs_compatibility.patch': '9739134ce273a691c9deac6e410510653a88c1542b60dbf8789e4a423447d4f6'},
 ]
 
 builddependencies = [
@@ -33,6 +39,8 @@ dependencies = [
 
 # CUDA related patches and custom configure option can be removed if CUDA support isn't wanted.
 preconfigopts = 'gcc -Iopal/mca/cuda/include -shared opal/mca/cuda/lib/cuda.c -o opal/mca/cuda/lib/libcuda.so && '
-configopts = '--with-cuda=%(start_dir)s/opal/mca/cuda --with-show-load-errors=no '
+configopts = '--with-cuda=%(start_dir)s/opal/mca/cuda --with-show-load-errors=no'
+# Do not pick up the system library automatically
+configopts += ' --without-xpmem'
 
 moduleclass = 'mpi'
