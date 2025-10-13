@@ -1,0 +1,37 @@
+Fix bamtools include path + move `pkg-config --libs protobuf` from static to dynamic libs + fix VERSION
+Author: Pavel Tománek
+--- makefile.orig	2025-01-30 11:03:58.776449332 +0100
++++ makefile	2025-01-31 11:42:04.665782706 +0100
+@@ -3,13 +3,13 @@
+ CPPFLAGS=-Wall -Wextra -std=c++17 -O3 -g -Iconcurrentqueue -IBBHash -Izstr/src -Iparallel-hashmap/parallel_hashmap/ `pkg-config --cflags protobuf` `pkg-config --cflags libsparsehash` -Wno-unused-parameter -IMEMfinder/src -I`jemalloc-config --includedir` -Icxxopts/include
+ # silly workaround: bamtools does not have pkg-config cflags for finding the include directory
+ # instead assume it's a folder at the same location as zlib
+-CPPFLAGS+=`pkg-config --cflags zlib`/bamtools
++CPPFLAGS += -I$(EBROOTBAMTOOLS)/include/bamtools
+ 
+ ODIR=obj
+ BINDIR=bin
+ SRCDIR=src
+ 
+-LIBS=-lm -lz `pkg-config --libs protobuf` -lsdsl -lbamtools
++LIBS=-lm -lz -lsdsl -lbamtools
+ JEMALLOCFLAGS= -L`jemalloc-config --libdir` -Wl,-rpath,`jemalloc-config --libdir` -ljemalloc `jemalloc-config --libs`
+ 
+ _DEPS = vg.pb.h fastqloader.h GraphAlignerWrapper.h vg.pb.h BigraphToDigraph.h stream.hpp Aligner.h ThreadReadAssertion.h AlignmentGraph.h CommonUtils.h GfaGraph.h ReadCorrection.h MinimizerSeeder.h AlignmentSelection.h EValue.h MEMSeeder.h DNAString.h DiploidHeuristic.h
+@@ -18,14 +18,14 @@
+ _OBJ = Aligner.o vg.pb.o fastqloader.o BigraphToDigraph.o ThreadReadAssertion.o AlignmentGraph.o CommonUtils.o GraphAlignerWrapper.o GfaGraph.o ReadCorrection.o MinimizerSeeder.o AlignmentSelection.o EValue.o MEMSeeder.o DNAString.o DiploidHeuristic.o
+ OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
+ 
+-LINKFLAGS = $(CPPFLAGS) -Wl,-Bstatic $(LIBS) -Wl,-Bdynamic -Wl,--as-needed -lpthread -pthread -static-libstdc++ $(JEMALLOCFLAGS) `pkg-config --libs libdivsufsort` `pkg-config --libs libdivsufsort64`
++LINKFLAGS = $(CPPFLAGS) -Wl,-Bstatic $(LIBS) -Wl,-Bdynamic -Wl,--as-needed -lpthread -pthread -static-libstdc++ $(JEMALLOCFLAGS) `pkg-config --libs libdivsufsort` `pkg-config --libs libdivsufsort64` `pkg-config --libs protobuf`
+ 
+ ifeq ($(PLATFORM),Linux)
+ else
+    CPPFLAGS += -D_LIBCPP_DISABLE_AVAILABILITY
+ endif
+ 
+-VERSION := Branch $(shell git rev-parse --abbrev-ref HEAD) commit $(shell git rev-parse HEAD) $(shell git show -s --format=%ci)
++VERSION := "1.0.20"
+ 
+ $(shell mkdir -p bin)
+ $(shell mkdir -p obj)

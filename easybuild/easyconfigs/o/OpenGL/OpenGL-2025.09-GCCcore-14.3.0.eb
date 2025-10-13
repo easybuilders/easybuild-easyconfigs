@@ -1,0 +1,128 @@
+easyblock = 'Bundle'
+
+name = 'OpenGL'
+version = '2025.09'
+
+homepage = 'http://www.opengl.org/'
+description = """
+Open Graphics Library (OpenGL) is a cross-language, cross-platform application
+programming interface (API) for rendering 2D and 3D vector graphics.
+
+This module is a bundle of software required for OpenGL rendering.
+It provides Mesa as an open-source implementation of the OpenGL specification
+with software rendering and AMD GPU support, libglvnd for a vendor neutral
+dispatch layer for rendering with both NVIDIA GPUs & Mesa, Mesa-demos for
+sample applications, and GLU as an computer graphics library utilizing OpenGL.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Bison', '3.8.2'),
+    ('CMake', '4.0.3'),
+    ('Mako', '1.3.10'),
+    ('Meson', '1.8.2'),
+    ('Ninja', '1.13.0'),
+    ('Python', '3.13.5'),
+    ('PyYAML', '6.0.2'),
+    ('flex', '2.6.4'),
+    ('expat', '2.7.1'),
+    ('glslang-SPIRV', '15.4.0'),
+    ('libclc', '20.1.8'),
+    ('libxml2', '2.14.3'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('LLVM', '20.1.8'),
+    ('Wayland', '1.24.0'),
+    ('X11', '20250608'),
+    ('elfutils', '0.193'),
+    ('libdrm', '2.4.125'),
+    ('libunwind', '1.8.2'),
+    ('nettle', '3.10.2'),
+    ('zlib', '1.3.1'),
+]
+
+default_easyblock = 'MesonNinja'
+
+local_pkg_config = 'export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%(installdir)s/lib/pkgconfig && '
+local_pkg_config += 'export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%(installdir)s/lib64/pkgconfig && '
+
+local_mesa_configopts = "-Dplatforms=x11,wayland -Dvulkan-drivers='swrast,amd' -Dvulkan-layers='device-select' "
+local_mesa_configopts += "-Dllvm=enabled -Dshared-llvm=enabled -Dlibunwind=enabled -Degl=enabled -Dglvnd=enabled "
+local_mesa_configopts += "-Dglx=auto -Dgbm=enabled -Dgles1=enabled -Dgles2=enabled -Dgallium-drivers=llvmpipe,radeonsi "
+local_mesa_configopts += "-Dvideo-codecs=vc1dec,h264dec,h264enc,h265dec,h265enc,av1dec,av1enc,vp9dec "
+
+components = [
+    ('libglvnd', '1.7.0', {
+        'source_urls': ['https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v%(version)s/'],
+        'sources': ['%(name)s-v%(version)s.tar.gz'],
+        'checksums': ['2b6e15b06aafb4c0b6e2348124808cbd9b291c647299eaaba2e3202f51ff2f3d'],
+        'start_dir': '%(namelower)s-v%(version)s',
+    }),
+    ('Mesa', '25.2.2', {
+        'easyblock': 'EB_Mesa',
+        'source_urls': [
+            'https://archive.mesa3d.org/',
+            'https://archive.mesa3d.org/older-versions/%(version_major)s.x/',
+        ],
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['43d7abcd4aa8049d8fd75538344a374104765e81e17b4a6314cee2c0160e4412'],
+        'start_dir': '%(namelower)s-%(version)s',
+        'preconfigopts': local_pkg_config,
+        'configopts': local_mesa_configopts,
+    }),
+    ('libGLU', '9.0.3', {
+        'source_urls': ['https://archive.mesa3d.org/glu/'],
+        'sources': ['glu-%(version)s.tar.xz'],
+        'checksums': ['bd43fe12f374b1192eb15fe20e45ff456b9bc26ab57f0eee919f96ca0f8a330f'],
+        'start_dir': 'glu-%(version)s',
+        'preconfigopts': local_pkg_config,
+    }),
+    ('Mesa-demos', '9.0.0', {
+        'source_urls': ['https://archive.mesa3d.org/demos/'],
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['3046a3d26a7b051af7ebdd257a5f23bfeb160cad6ed952329cdff1e9f1ed496b'],
+        'start_dir': '%(namelower)s-%(version)s',
+        'preconfigopts': local_pkg_config,
+        'configopts': ' -D osmesa=disabled -D wayland=disabled',
+    }),
+]
+
+postinstallcmds = [
+    'cd %(installdir)s/lib && ln -sf libGL.so.1.7.0 libGL.so.1',
+    'cd %(installdir)s/lib && ln -sf libGLX_mesa.so.0 libGLX_indirect.so.0',
+]
+
+modextrapaths = {
+    '__EGL_VENDOR_LIBRARY_DIRS': [
+        '/etc/glvnd/egl_vendor.d',
+        '/usr/share/glvnd/egl_vendor.d',
+        'share/glvnd/egl_vendor.d/',
+    ],
+    'VK_ADD_DRIVER_FILES': 'share/vulkan/icd.d/',
+    'VK_ADDITIONAL_IMPLICIT_LAYER_PATH_ENV_VAR': 'share/vulkan/implicit_layer.d/',
+    'VK_ADDITIONAL_EXPLICIT_LAYER_PATH_ENV_VAR': 'share/vulkan/explicit_layer.d/',
+}
+
+modextravars = {
+    'EGL_PLATFORM': 'surfaceless',
+    'EGL_LOG_LEVEL': 'fatal',
+    'KNOB_MAX_WORKER_THREADS': '65535',
+}
+
+sanity_check_all_components = True
+sanity_check_paths = {
+    'files': [
+        'lib/libEGL_mesa.%s' % SHLIB_EXT, 'lib/libGLESv1_CM.%s' % SHLIB_EXT,
+        'lib/libGLESv2.%s' % SHLIB_EXT, 'include/GL/glext.h',
+        'include/GL/glx.h', 'include/GL/gl.h', 'include/GL/glxext.h',
+        'include/GLES/gl.h', 'include/GLES2/gl2.h', 'include/GLES3/gl3.h',
+        'lib/libOpenGL.%s' % SHLIB_EXT,
+    ],
+    'dirs': []
+}
+
+moduleclass = 'vis'
