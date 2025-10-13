@@ -1235,7 +1235,6 @@ class EasyConfigTest(TestCase):
         # list of software for which checksums can not be required,
         # e.g. because 'source' files need to be constructed manually
         whitelist = [
-            'Kent_tools-*',
             'MATLAB-*',
             'OCaml-*',
             'OpenFOAM-Extend-4.1-*',
