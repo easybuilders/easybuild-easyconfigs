@@ -1236,7 +1236,9 @@ class EasyConfigTest(TestCase):
 
         # list of software for which checksums can not be required,
         # e.g. because 'source' files need to be constructed manually
-        whitelist = []
+        whitelist = [
+            'OCaml-*',
+        ]
 
         # filter out deprecated easyconfigs
         retained_changed_ecs = [ec for ec in self.changed_ecs if not ec['deprecated']]
