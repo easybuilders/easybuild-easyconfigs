@@ -1237,9 +1237,7 @@ class EasyConfigTest(TestCase):
         # list of software for which checksums can not be required,
         # e.g. because 'source' files need to be constructed manually
         whitelist = [
-            'MATLAB-*',
             'OCaml-*',
-            'OpenFOAM-Extend-4.1-*',
         ]
 
         # filter out deprecated easyconfigs
