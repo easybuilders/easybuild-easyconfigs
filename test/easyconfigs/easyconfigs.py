@@ -579,8 +579,8 @@ class EasyConfigTest(TestCase):
             ],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
-            # autoCAS-2.3.1 requires serial h5py
-            'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS-2\.3\.1-iomkl-2023a'])],
+            # autoCAS requires serial h5py
+            'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             # Java 21 is used as dep for Octave 9.2.0 (other 2023b easyconfigs use Java 11)
@@ -1185,8 +1185,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.1.1'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.1.1.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.1.2'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.1.2.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1307,6 +1307,15 @@ class EasyConfigTest(TestCase):
                 if pure_ec.get('source_urls') == python_default_urls:
                     failing_checks.append("'source_urls' should not be defined when using the default value "
                                           "in %s" % ec_fn)
+
+            # --no-build-isolation option for 'pip install' should be enabled
+            pip_no_build_isolation = ec.get('pip_no_build_isolation', True)
+            for ext in ec['exts_list']:
+                if isinstance(ext, (tuple, list)) and len(ext) >= 3:
+                    ext_opts = ext[2]
+                    pip_no_build_isolation &= ext_opts.get('pip_no_build_isolation', True)
+            if not pip_no_build_isolation:
+                failing_checks.append(f"pip_no_build_isolation should not be disabled in {ec_fn}")
 
             # use_pip should be set when using PythonPackage or PythonBundle,
             # or an easyblock that derives from it (except for whitelisted easyconfigs)

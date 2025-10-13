@@ -1,0 +1,53 @@
+easyblock = 'ConfigureMake'
+
+name = 'likwid'
+version = '5.4.1'
+
+homepage = 'https://github.com/RRZE-HPC/likwid'
+
+description = """
+Likwid stands for Like I knew what I am doing. This project contributes easy
+to use command line tools for Linux to support programmers in developing high
+performance multi threaded programs.
+"""
+
+toolchain = {'name': 'intel-compilers', 'version': '2025.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/RRZE-HPC/%(name)s/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    {'name': 'likwid-5.4.1_oneapi-support.patch', 'level': 1},
+]
+checksums = [
+    '5773851455dbba489e2e3735931e51547377cd1796c982a5ac88d0f2299c0811',  # v5.4.1.tar.gz
+    '4ad32ea4af823bd29af97bc08a46daf91ef2f073af19a4e29b5fe6d308d1e83b',  # likwid-5.4.1_oneapi-support.patch
+]
+
+builddependencies = [
+    ('Perl', '5.40.2'),
+]
+dependencies = [
+    ('hwloc', '2.12.1'),
+]
+
+skipsteps = ['configure']
+
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS -std=c99" PREFIX=%(installdir)s BUILDFREQ="" ACCESSMODE=perf_event '
+buildopts += 'FORTRAN_INTERFACE=true COMPILER=ICX '
+buildopts += 'CFG_FILE_PATH=%(installdir)s/etc/likwid.cfg  TOPO_FILE_PATH=%(installdir)s/etc/likwid_topo.cfg '
+buildopts += 'HWLOC_INCLUDE_DIR=$EBROOTHWLOC/include HWLOC_LIB_DIR=$EBROOTHWLOC/lib HWLOC_LIB_NAME=hwloc '
+
+maxparallel = 1
+
+installopts = buildopts + 'INSTALL_CHOWN="" '
+
+sanity_check_paths = {
+    'files': ['bin/likwid-memsweeper', 'bin/likwid-mpirun', 'bin/likwid-perfctr',
+              'bin/likwid-perfscope', 'bin/likwid-pin', 'bin/likwid-powermeter',
+              'bin/likwid-topology', 'lib/liblikwidpin.%s' % SHLIB_EXT,
+              'lib/liblikwid.%s' % SHLIB_EXT, 'include/likwid.mod'],
+    'dirs': ['man/man1']
+}
+
+moduleclass = 'tools'
