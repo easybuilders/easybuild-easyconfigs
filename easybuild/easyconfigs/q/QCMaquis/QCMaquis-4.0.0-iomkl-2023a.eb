@@ -29,6 +29,21 @@ configopts = '-DBUILD_OPENMOLCAS_INTERFACE=ON -DCMAKE_Fortran_FLAGS="$FFLAGS -fp
 
 runtest = True
 
+# Fix OpenMolcas 25.06 installation with DMRG
+# https://github.com/qcscine/qcmaquis/issues/33
+# https://github.com/qcscine/qcmaquis/issues/34
+_cfg_path = '%(installdir)s/share/cmake/MAQUIS_DMRGConfig.cmake'
+_solib_path = '%(installdir)s/lib/libmaquis_dmrg.so'
+postinstallcmds = [
+    # make GSL a proper dependency
+    f"sed -i -e '1i include(CMakeFindDependencyMacro)' -e '2i find_dependency(GSL REQUIRED)' {_cfg_path} && "
+    # ensure variable includes the core first (helps non-target consumers)
+    f"sed -i 's|^set(MAQUIS_DMRG_LIBRARIES |set(MAQUIS_DMRG_LIBRARIES {_solib_path} |' {_cfg_path} && "
+    # ensure the imported target pulls core + C++ runtime transitively
+    r'printf "\n# EB patch: ensure maquis core + libstdc++ are propagated\nif(TARGET qcmaquis-driver)\n  '
+    fr'target_link_libraries(qcmaquis-driver INTERFACE {_solib_path} stdc++)\nendif()\n" >> {_cfg_path}'
+]
+
 sanity_check_paths = {
     'files': ['bin/dmrg_meas', 'include/maquis_dmrg.h', 'lib/libmaquis_dmrg.%s' % SHLIB_EXT],
     'dirs': ['include', 'share/%(namelower)s'],
