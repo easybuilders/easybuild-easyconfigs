@@ -60,16 +60,20 @@ dependencies = [
 # remove line that prepends system paths to $PATH from configure script
 preconfigopts = r'sed -i "s|^PATH=\(.*\)$|#PATH=\1 |" %(start_dir)s/src/build-system/configure && '
 
-configopts = "--with-z=$EBROOTZLIB --with-bz2=$EBROOTBZIP2 "
-configopts += "--with-pcre=$EBROOTPCRE --with-boost=$EBROOTBOOST "
-configopts += "--with-gmp=$EBROOTGMP --with-png=$EBROOTLIBPNG "
-configopts += "--with-jpeg=$EBROOTLIBJPEGMINTURBO --with-lmdb=$EBROOTLMDB "
-configopts += "--with-openssl=$EBROOTOPENSSL --with-tiff=$EBROOTLIBTIFF "
-configopts += "--with-libxml=$EBROOTLIBXML2 --with-freetype=$EBROOTFREETYPE "
-configopts += "--with-zstd=$EBROOTZSTD --with-lzo=$EBROOTLZO --with-perl=$EBROOTPERL "
+_base_configopts = "--with-z=$EBROOTZLIB --with-bz2=$EBROOTBZIP2 "
+_base_configopts += "--with-pcre=$EBROOTPCRE --with-boost=$EBROOTBOOST "
+_base_configopts += "--with-gmp=$EBROOTGMP --with-png=$EBROOTLIBPNG "
+_base_configopts += "--with-jpeg=$EBROOTLIBJPEGMINTURBO --with-lmdb=$EBROOTLMDB "
+_base_configopts += "--with-openssl=$EBROOTOPENSSL --with-tiff=$EBROOTLIBTIFF "
+_base_configopts += "--with-libxml=$EBROOTLIBXML2 --with-freetype=$EBROOTFREETYPE "
+_base_configopts += "--with-zstd=$EBROOTZSTD --with-lzo=$EBROOTLZO --with-perl=$EBROOTPERL "
+
+# Building both shared and static libs in configopts:
+configopts = [f'{_base_configopts} {x}' for x in ('--with-dll', '--with-static')]
 
 sanity_check_paths = {
-    'files': ['bin/blastn', 'bin/blastp', 'bin/blastx'],
+    'files': ['bin/blastn', 'bin/blastp', 'bin/blastx',
+              'lib/libblast.a', 'lib/libblast.so'],
     'dirs': [],
 }
 
