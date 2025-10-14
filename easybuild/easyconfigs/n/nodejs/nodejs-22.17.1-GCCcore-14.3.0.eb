@@ -1,0 +1,56 @@
+easyblock = 'ConfigureMake'
+
+name = 'nodejs'
+version = '22.17.1'  # LTS on 2025-07-24
+local_libversion = '127'
+
+homepage = 'https://nodejs.org'
+description = """Node.js is a platform built on Chrome's JavaScript runtime
+ for easily building fast, scalable network applications. Node.js uses an
+ event-driven, non-blocking I/O model that makes it lightweight and efficient,
+ perfect for data-intensive real-time applications that run across distributed devices."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+# Build for 22.x fails without this. See https://github.com/easybuilders/easybuild-easyconfigs/pull/23063 for details.
+toolchainopts = {'optarch': False}
+
+source_urls = ['https://nodejs.org/dist/v%(version)s/']
+sources = ['node-v%(version)s.tar.gz']
+checksums = ['167539d86368bb911488f888a05355df5002b302285d353179c9dd957233add5']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Python', '3.13.5'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('ICU', '77.1'),
+    ('OpenSSL', '3', '', SYSTEM),
+]
+
+# Use ICU and OpenSSL from EasyBuild
+local_common_configopts = "--with-intl=system-icu --shared-openssl "
+
+configopts = [
+    local_common_configopts,                  # Static build
+    '--shared %s' % local_common_configopts,  # Build libnode.so in a second run
+]
+
+# Link libv8 libs to libnode
+local_extra_sonames = ['libnode', 'libv8', 'libv8_libbase', 'libv8_libplatform']
+local_extra_libs = [f'{x}.{SHLIB_EXT}' for x in local_extra_sonames]
+local_libnode_real = f'libnode.{SHLIB_EXT}.{local_libversion}'
+
+postinstallcmds = [
+    f"cd %(installdir)s/lib && ln -s {local_libnode_real} {x}" for x in local_extra_libs
+]
+
+sanity_check_paths = {
+    'files': ['bin/node', 'bin/npm'] + [f'lib/{x}' for x in [local_libnode_real] + local_extra_libs],
+    'dirs': ['lib/node_modules', 'include/node']
+}
+
+sanity_check_commands = ["node --help"]
+
+moduleclass = 'lang'
