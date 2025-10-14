@@ -1418,12 +1418,12 @@ class EasyConfigTest(TestCase):
                                      for d in default_dirs if d in extra_python_path)
             if easyblock == 'PythonBundle' or easyblock.endswith('PythonPackage'):
                 sanity_check_dirs = ec.get('sanity_check_paths', {}).get('dirs') or []
-                default_dirs = (
+                default_dirs = [
                     'lib/python%(pyshortver)s/site-packages',
                     'lib/python%(pyshortver)s/site-packages/%(name)s',
                     'lib64/python%(pyshortver)s/site-packages',
                     'lib64/python%(pyshortver)s/site-packages/%(name)s',
-                )
+                ]
                 with ec.allow_unresolved_templates():
                     default_dirs += [ec.resolve_template(d) for d in default_dirs]
                 failing_checks_ec.extend(f"sanity_check_paths['dirs'] should not contain {d} "
