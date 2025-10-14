@@ -38,18 +38,18 @@ dependencies = [
     ('HDF5', '1.14.5', '', local_comp_mpi_tc),
 ]
 
-# 预处理 makefile.include
+# Preprocessing makefile.include
 prebuildopts = (
     'cp arch/makefile.include.gnu_omp ./makefile.include && '
     "sed -i 's|-march=native|-march=x86-64|g' makefile.include && "
     "sed -i 's|-mtune=native||g' makefile.include && "
-    "sed -i 's|^OPENBLAS_ROOT.*|OPENBLAS_ROOT ?= /data_test/home/liuwei/software/OpenBLAS/0.3.27-GCC-13.3.0|' makefile.include && "
-    "sed -i 's|^SCALAPACK_ROOT.*|SCALAPACK_ROOT ?= /data_test/home/liuwei/software/ScaLAPACK/2.2.0-gompi-2024a-fb|' makefile.include && "
+    "sed -i 's|^OPENBLAS_ROOT.*|OPENBLAS_ROOT ?= $(EBROOTOPENBLAS)|' makefile.include && "
+    "sed -i 's|^SCALAPACK_ROOT.*|SCALAPACK_ROOT ?= $(EBROOTSCALAPACK)|' makefile.include && "
     "sed -i 's|^#CPP_OPTIONS+= -DVASP_HDF5|CPP_OPTIONS+= -DVASP_HDF5|' makefile.include && "
     "sed -i 's|^#HDF5_ROOT.*|HDF5_ROOT ?= $(EBROOTHDF5)|' makefile.include && "
     "sed -i 's|^#LLIBS.*|LLIBS += -L$(HDF5_ROOT)/lib -lhdf5_fortran|' makefile.include && "
     "sed -i 's|^#INCS.*|INCS += -I$(HDF5_ROOT)/include|' makefile.include && "
-    "sed -i 's|^FFTW_ROOT.*|FFTW_ROOT ?= /data_test/home/liuwei/software/FFTW/3.3.10-GCC-13.3.0|' makefile.include && "
+    "sed -i 's|^FFTW_ROOT.*|FFTW_ROOT ?= $(EBROOTFFTW)|' makefile.include && "
     "sed -i '/^LDFLAGS/ s|$| -L$(HDF5_ROOT)/lib -lhdf5_fortran -lhdf5|' makefile.include && "
     'unset LIBS && '
 )
@@ -86,11 +86,5 @@ sanity_check_paths = {
 modextravars = {
     'VDW_KERNEL': '%(installdir)s/vdw_kernel.bindat',
 }
-
-def local_build_step(self):
-    self.log.info("Building VASP modules sequentially (std, gam, ncl)")
-    self.system('make std')
-    self.system('make gam')
-    self.system('make ncl')
 
 moduleclass = 'phys'
