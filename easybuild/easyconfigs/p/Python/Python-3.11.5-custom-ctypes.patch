@@ -1,3 +1,15 @@
+Ctypes heavily relies on LD_LIBRARY_PATH in it's find_library, ctypes.CDLL, ctypes.cdll.LoadLibrary functions.
+This patch is meant for systems where LD_LIBRARY_PATH is filtered. It will rely on LIBRARY_PATH instead.
+It makes the following essential changes:
+- Whereever find_library searched LD_LIBRARY_PATH, LIBRARY_PATH will be searched instead
+- find_library is adapted so that it returns the full library path, not just the library name, which replaces
+  https://github.com/easybuilders/easybuild-easyblocks/pull/3352
+- The internal function _findLib_gcc, one of the functions called by find_library to locate libraries, is adapted
+  so that it also works when called by full library name (e.g. libfoo.so.1) instead of the short name (foo) only
+  This is necessary since CDLL is typically called by full name, and needs to be able to call find_library 9see below)
+- The initialization of CDLL is adapted so that it calls find_library. Then, it overwrites the name
+  with the full library path. This defers all the library localization issues to the (patched) find_library
+Authors: Danilo Gonzalez (DoItNow group), Caspar van Leeuwen (SURF) and Alan O'cais (CECAM)
 diff -Nru Python-3.11.5.orig/Lib/ctypes/__init__.py Python-3.11.5/Lib/ctypes/__init__.py
 --- Python-3.11.5.orig/Lib/ctypes/__init__.py	2025-10-13 15:58:38.405564000 +0200
 +++ Python-3.11.5/Lib/ctypes/__init__.py	2025-10-13 16:01:08.717507706 +0200
