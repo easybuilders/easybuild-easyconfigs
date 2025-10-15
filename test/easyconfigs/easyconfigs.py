@@ -1309,7 +1309,7 @@ class EasyConfigTest(TestCase):
 
             # --no-build-isolation option for 'pip install' should be enabled
             pip_no_build_isolation = ec.get('pip_no_build_isolation', True)
-            for ext in ec['exts_list']:
+            for ext in ec.get_ref('exts_list'):
                 if isinstance(ext, (tuple, list)) and len(ext) >= 3:
                     ext_opts = ext[2]
                     pip_no_build_isolation &= ext_opts.get('pip_no_build_isolation', True)
@@ -1389,7 +1389,7 @@ class EasyConfigTest(TestCase):
             exts_defaultclass = ec.get('exts_defaultclass')
             if exts_defaultclass == 'RPackage' or ec.name == 'R':
                 seen_exts = set()
-                for ext in ec['exts_list']:
+                for ext in ec.get_ref('exts_list'):
                     if isinstance(ext, (tuple, list)):
                         ext_name = ext[0]
                     else:
