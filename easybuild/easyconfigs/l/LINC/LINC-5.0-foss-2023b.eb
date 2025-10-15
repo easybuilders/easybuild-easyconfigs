@@ -6,7 +6,8 @@ version = '5.0'
 homepage = "https://linc.readthedocs.io/en/latest/"
 
 description = """
-LINC is a pipeline to correct for various instrumental and ionospheric effects in both LOFAR HBA and LOFAR LBA observations.
+LINC is a pipeline to correct for various instrumental and ionospheric effects in both LOFAR HBA and LOFAR LBA
+observations.
 """
 
 toolchain = {'name': 'foss', 'version': '2023b'}
@@ -65,9 +66,11 @@ local_pretestopts += 'export OMP_NUM_THREADS=1 && export OPENBLAS_NUM_THREADS=1 
 
 # Set the LINC_DATA_ROOT and make sure to include the python scripts (which are in /bin for some reason)
 # to the PYTHONPATH
-local_pretestopts += 'export LINC_DATA_ROOT=$EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc && export PYTHONPATH=$PYTHONPATH:$EB_PYTHONPACKAGE_TEST_INSTALLDIR/bin && '
+local_pretestopts += 'export LINC_DATA_ROOT=$EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc && '
+local_pretestopts += 'export PYTHONPATH=$PYTHONPATH:$EB_PYTHONPACKAGE_TEST_INSTALLDIR/bin && '
 local_testopts = '--no-container --preserve-entire-environment --outdir results --leave-tmpdir '
-local_testopts += '--tmpdir-prefix run_hba_calibrator $EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc/workflows/HBA_target.cwl '
+local_testopts += '--tmpdir-prefix run_hba_calibrator '
+local_testopts += '$EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc/workflows/HBA_target.cwl '
 local_testopts += 'test_jobs/HBA_target.json'
 
 exts_list = [
@@ -83,16 +86,15 @@ exts_list = [
     (name, version, {
         'modulename': False,
         'sources': [{
-                'filename': '%(name)s-v%(version)s.tar.xz',
-                'git_config': {
-                    'url': 'https://git.astron.nl/RD/',
-                    'repo_name': 'LINC',
-                    'commit': 'v%(version)s',
-                    'recursive': True,
-                    'keep_git_dir': True
-                },
+            'filename': '%(name)s-v%(version)s.tar.xz',
+            'git_config': {
+                'url': 'https://git.astron.nl/RD/',
+                'repo_name': 'LINC',
+                'commit': 'v%(version)s',
+                'recursive': True,
+                'keep_git_dir': True
             },
-        ],
+        }],
         # We cannot get a reproducible checksum, because we need to do keep_git_dir for
         # setuptools_scm to determine the version
         'checksums': [None],
