@@ -36,11 +36,11 @@ _config_opts = [
     '-DPy_ENABLE_SHARED=1',
     '-DRDK_INSTALL_STATIC_LIBS=OFF',
     '-DRDK_INSTALL_INTREE=OFF',
+    '-DRDK_BUILD_FREESASA_SUPPORT=ON',
     '-DRDK_BUILD_INCHI_SUPPORT=ON',
     '-DBOOST_ROOT="$EBROOTBOOST"',
 ]
 configopts = ' '.join(_config_opts)
-
 
 # ingnore failing test pythonSourceTests - from . import rdBase failing
 prebuildopts = "sed -i '22d' %(builddir)s/rdkit-Release_2024_09_6/rdkit/CMakeLists.txt && "
@@ -62,14 +62,14 @@ buildopts += 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY
 # we are also running the testjobs in parallel
 buildopts += 'ctest -j %(parallel)s --output-on-failure -E distGeomHelpersCatch'
 
-local_libs = ['Alignment', 'Catalogs', 'ChemicalFeatures', 'ChemReactions', 'ChemTransforms', 'coordgen', 'DataStructs',
-              'Depictor', 'Descriptors', 'DistGeometry', 'DistGeomHelpers', 'EigenSolvers', 'FileParsers',
-              'FilterCatalog', 'Fingerprints', 'FMCS', 'ForceFieldHelpers', 'ForceField', 'FragCatalog', 'GraphMol',
-              'hc', 'InfoTheory', 'maeparser', 'MMPA', 'MolAlign', 'MolCatalog', 'MolChemicalFeatures', 'MolDraw2D',
-              'MolHash', 'MolInterchange', 'MolStandardize', 'MolTransforms', 'Optimizer', 'PartialCharges', 'RDBoost',
-              'RDGeneral', 'RDGeometryLib', 'RDStreams', 'ReducedGraphs', 'RGroupDecomposition', 'RingDecomposerLib',
-              'ScaffoldNetwork', 'ShapeHelpers', 'SimDivPickers', 'SLNParse', 'SmilesParse', 'Subgraphs',
-              'SubstructLibrary', 'SubstructMatch', 'Trajectory']
+_libs = ['Alignment', 'Catalogs', 'ChemicalFeatures', 'ChemReactions', 'ChemTransforms', 'coordgen', 'DataStructs',
+         'Depictor', 'Descriptors', 'DistGeometry', 'DistGeomHelpers', 'EigenSolvers', 'FileParsers', 'FilterCatalog',
+         'Fingerprints', 'FMCS', 'ForceFieldHelpers', 'ForceField', 'FragCatalog', 'FreeSASALib', 'GraphMol',
+         'hc', 'InfoTheory', 'maeparser', 'MMPA', 'MolAlign', 'MolCatalog', 'MolChemicalFeatures', 'MolDraw2D',
+         'MolHash', 'MolInterchange', 'MolStandardize', 'MolTransforms', 'Optimizer', 'PartialCharges', 'RDBoost',
+         'RDGeneral', 'RDGeometryLib', 'RDStreams', 'ReducedGraphs', 'RGroupDecomposition', 'RingDecomposerLib',
+         'ScaffoldNetwork', 'ShapeHelpers', 'SimDivPickers', 'SLNParse', 'SmilesParse', 'Subgraphs',
+         'SubstructLibrary', 'SubstructMatch', 'Trajectory']
 
 # Install a egg-info file so RDKit is more python friendly
 local_egg_info_src = '%%(builddir)s/rdkit-Release_%s/rdkit-version.egg-info' % version.replace('.', '_')
@@ -79,7 +79,7 @@ postinstallcmds = [
 ]
 
 sanity_check_paths = {
-    'files': ['lib/libRDKit%s.%s' % (x, SHLIB_EXT) for x in local_libs],
+    'files': ['lib/libRDKit%s.%s' % (x, SHLIB_EXT) for x in _libs],
     'dirs': ['include/rdkit', 'lib/python%(pyshortver)s/site-packages/rdkit'],
 }
 
