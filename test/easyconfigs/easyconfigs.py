@@ -84,9 +84,9 @@ def get_target_branch():
     """Return the target branch of a pull request"""
     # target branch should be anything other than 'master';
     # usually is 'develop', but could also be a release branch like '3.7.x'
-    target_branch = os.environ.get('GITHUB_BASE_REF', None)
+    target_branch = os.environ.get('GITHUB_BASE_REF')
     if not target_branch:
-        target_branch = os.environ.get('TRAVIS_BRANCH', None)
+        target_branch = os.environ.get('TRAVIS_BRANCH')
     if not target_branch:
         raise RuntimeError("Did not find a target branch")
     return target_branch
@@ -1344,7 +1344,7 @@ class EasyConfigTest(TestCase):
                     ext_opts = ext[2]
                     pip_no_build_isolation &= ext_opts.get('pip_no_build_isolation', True)
             if not pip_no_build_isolation:
-                failing_checks_ec.append(f"pip_no_build_isolation should not be disabled")
+                failing_checks_ec.append("pip_no_build_isolation should not be disabled")
 
             # use_pip should be set when using PythonPackage or PythonBundle,
             # or an easyblock that derives from it (except for whitelisted easyconfigs)
@@ -1657,13 +1657,12 @@ def template_easyconfig_test(self, spec):
 
     # parse easyconfig
     ecs = process_easyconfig(spec)
-    if len(ecs) == 1:
-        ec = ecs[0]['ec']
+    if len(ecs) != 1:
+        self.fail(f"easyconfig {spec} should not contain blocks and yield only one parsed easyconfig")
 
-        # cache the parsed easyconfig, to avoid that it is parsed again
-        EasyConfigTest._parsed_easyconfigs.append(ecs[0])
-    else:
-        self.fail("easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
+    ec = ecs[0]['ec']
+    # cache the parsed easyconfig, to avoid that it is parsed again
+    EasyConfigTest._parsed_easyconfigs.append(ecs[0])
 
     # check easyconfig file name
     expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))
@@ -1781,7 +1780,7 @@ def template_easyconfig_test(self, spec):
         # exception to the dependencies of binutils (since we should eventually build a new binutils with GCCcore)
         if ec['toolchain']['version'] == 'system':
             binutils_complete_dependencies = ['M4', 'Bison', 'flex', 'help2man', 'zlib', 'binutils']
-            requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
+            requires_binutils &= ec['name'] not in binutils_complete_dependencies
 
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
         requires_binutils &= bool(sources or ec.get_ref('exts_list') or ec.get_ref('components'))
