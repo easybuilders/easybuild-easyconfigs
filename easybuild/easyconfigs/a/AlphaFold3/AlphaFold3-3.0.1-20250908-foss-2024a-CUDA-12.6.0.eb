@@ -1,11 +1,11 @@
-# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2025/02
-#
-# DRAFT!
+# Author: Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2025/02
+# Update: Pavel Tomanek (Inuits)
 easyblock = 'PythonBundle'
 
 name = 'AlphaFold3'
-version = '3.0.1'
+version = '3.0.1-20250908'
 versionsuffix = '-CUDA-%(cudaver)s'
+local_commit = 'a8ecdb2'
 
 homepage = 'https://deepmind.google/technologies/alphafold'
 description = """This package provides an implementation of the inference pipeline of AlphaFold3.
@@ -30,17 +30,18 @@ builddependencies = [
 dependencies = [
     ('Python', '3.12.3'),
     ('CUDA', '12.6.0', '', SYSTEM),
-    ('tqdm', '4.66.5'),
     ('jax', '0.6.2', versionsuffix),
-    ('dm-tree', '0.1.9'),
-    ('dm-haiku', '0.0.14', versionsuffix),
-    ('RDKit', '2025.03.3'),
     ('jax-triton', '0.3.0', versionsuffix),
     ('jaxtyping', '0.2.38', versionsuffix),
+    ('dm-haiku', '0.0.14', versionsuffix),
+    ('dm-tree', '0.1.9'),
+    ('RDKit', '2025.03.3'),
+    ('tqdm', '4.66.5'),
     ('dssp', '4.4.10'),
     ('Abseil', '20240722.0'),
     ('HMMER', '3.4'),
 ]
+
 exts_list = [
     ('zstandard', '0.23.0', {
         'checksums': ['b2d8c62d08e7255f68f7a740bae85b3c9b8e5466baa9cbf7f57f1cde0ac6bc09'],
@@ -49,26 +50,25 @@ exts_list = [
         'checksums': ['00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4'],
     }),
     (name, version, {
+        # unpin dependencies versions
+        'preinstallopts': """sed -i 's/==.*/",/g' %(start_dir)s/pyproject.toml && """,
         'patches': [
-            '%(name)s-3.0.0.20250109_relax_requirements.patch',
             '%(name)s-3.0.0_disable_fetch.patch',
             '%(name)s-3.0.0.20250109_data_path.patch',
         ],
         'postinstallcmds': [
             'cp run_alphafold.py %(installdir)s/bin',
-            'cp run_alphafold_data_test.py %(installdir)s/lib/python%(pyshortver)s/site-packages/%(namelower)s',  # for tests without models/DBs
+            'cp run_alphafold_data_test.py %(installdir)s/bin',
+            'cp run_alphafold_test.py %(installdir)s/bin',
+            'cp fetch_databases.sh %(installdir)s',
             'chmod +x %(installdir)s/bin/run_alphafold.py',
             '%(installdir)s/bin/build_data',
         ],
-        # 'runtest': "python run_alphafold_test.py",  # only with models/weights
-        # 'runtest': "python run_alphafold_data_test.py",  # also without DBs and models, but it needs to build_data first (can not test before postinstallcmds)
         'source_urls': ['https://github.com/%(github_account)s/%(namelower)s/archive'],
-        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
-        # 'testinstall': True,
+        'sources': [{'download_filename': 'a8ecdb2.tar.gz', 'filename': '%(name)s-%(version)s-a8ecdb2.tar.gz'}],
         'checksums': [
-            {'AlphaFold3-3.0.1.tar.gz': 'cfe1ae5f6e5c0d7e64570255d296a440955beaf4a8b9f05aaf142f36478a4503'},
-            {'AlphaFold3-3.0.0.20250109_relax_requirements.patch':
-             '5a60638e63f7b44f30447d306f0c196bd2505860e93c6670f646cd8967ea999b'},
+            {'AlphaFold3-3.0.1-20250908-a8ecdb2.tar.gz':
+             '77cc1ee5e9d111bafd4cd6af01d43eee01059cb3f7fd2d19fd6c38d81082246d'},
             {'AlphaFold3-3.0.0_disable_fetch.patch':
              '041a35a09f783405f40e3ba47566ad6d063a10cfd98f0efd2e2a04c78e2c155e'},
             {'AlphaFold3-3.0.0.20250109_data_path.patch':
@@ -88,35 +88,24 @@ sanity_check_commands = [
 ]
 
 modextravars = {
-    # 'DB_DIR': '/scratch/AlphaFold_DBs/%s/' % version,   # adapt
-    # acc. to:
-    # https://github.com/google-deepmind/alphafold3/
-    #  blob/main/docs/performance.md#compilation-time-workaround-with-xla-flags
+    # Compilation Time Workaround with XLA Flags
     'XLA_FLAGS': '--xla_gpu_enable_triton_gemm=false ',
-    # https://github.com/google-deepmind/alphafold3/blob/main/docs/performance.md#cuda-capability-7x-gpus:
-    # 'XLA_FLAGS': '"--xla_gpu_enable_triton_gemm=false --xla_disable_hlo_passes=custom-kernel-fusion-rewriter"',
     # Unified memory:
     'XLA_PYTHON_CLIENT_PREALLOCATE': 'false',
     'TF_FORCE_UNIFIED_MEMORY': 'true',
     'XLA_CLIENT_MEM_FRACTION': '3.2',
 }
 
-modextrapaths = {'PYTHONPATH': 'bin'}  # to be able import run_alphafold (for run_alphafold_data_test.py)
+modextrapaths = {'PYTHONPATH': 'bin'}  # to be able 'import run_alphafold'
 
-# modluafooter = """
-# setenv("AF3_MODEL_DIR", os.getenv("HOME") .. "/.alphafold3/models");
-# eb_tmpdir = os.getenv("TMPDIR")
-# if not eb_tmpdir then eb_tmpdir='/tmp' end
-# setenv("TRITON_HOME", eb_tmpdir .. "/" .. os.getenv("USER") .. "/triton_home")
-# """
-
-# modtclfooter = """
-# setenv AF3_MODEL_DIR $::env(HOME)/.alphafold3/models
-# if { [info exists ::env(TMPDIR)] } {
-#   setenv AF3_MODEL_DIR $::env(TMPDIR)/$::env(USER)/triton_home
-# } else {
-#   setenv AF3_MODEL_DIR /tmp/$::env(USER)/triton_home
-# }
-# """
+modloadmsg = """
+To let AF3 works properly you need to have Google models parameters (weights), then set:
+export AF3_MODEL_DIR="/path/to/the/dir/with/models"
+Also you should have databases dowloaded - use fetch_databases.sh to dowload them and set:
+export DB_DIR="/path/to/fetched/databases"
+You can test you installation by:
+1) python bin/run_alphafold_data_test.py (works without models)
+2) python bin/run_alphafold_test.py --model_dir="$AF3_MODEL_DIR" (only with models)
+"""
 
 moduleclass = 'bio'
