@@ -42,6 +42,34 @@ dependencies = [
     ('toil-cwl', '8.2.0'),
 ]
 
+# Get data needed to run the test
+local_pretestopts = 'mkdir -p data && '
+local_pretestopts += 'wget -nv https://support.astron.nl/software/ci_data/linc/test_data.tar.gz '
+local_pretestopts += '-O test_data.tar.gz && '
+local_pretestopts += 'wget -nv https://support.astron.nl/software/ci_data/linc/results_calibrator.tar.gz '
+local_pretestopts += '-O results_calibrator.tar.gz && tar xfz test_data.tar.gz -C data && '
+local_pretestopts += 'tar xfz results_calibrator.tar.gz -C data && '
+
+# Patch the workflow file so that it looks for the skymodels within the LINC (temporary) install dir
+local_pretestopts += 'sed -i -e "s|\"/usr/local/share/linc/skymodels/A-Team_Midres.skymodel\"|'
+local_pretestopts += '\"${EB_PYTHONPACKAGE_TEST_INSTALLDIR}/share/linc/skymodels/A-Team_Midres.skymodel\"|" '
+local_pretestopts += '-e "s|\"/usr/local/share/linc/skymodels\"|'
+local_pretestopts += '\"${EB_PYTHONPACKAGE_TEST_INSTALLDIR}/share/linc/skymodels\"|" test_jobs/HBA_target.json && '
+
+# Ensure SLURM env vars are emptied, otherwise OpenMPI may complain that OMPI wasn't build with SLURMs PMI support
+local_pretestopts += 'for i in $(env | grep SLURM); do unset "${i%=*}"; done && '
+
+# Disable OpenMP parallelism, to avoid BLAS error with DP3 and hang in clocktek
+# LINC uses it's own threading, which seems to clash with a multithreaded BLAS
+local_pretestopts += 'export OMP_NUM_THREADS=1 && export OPENBLAS_NUM_THREADS=1 && '
+
+# Se the LINC_DATA_ROOT and make sure to include the python scripts (which are in /bin for some reason)
+# to the PYTHONPATH
+local_pretestopts += 'export LINC_DATA_ROOT=$EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc && export PYTHONPATH=$PYTHONPATH:$EB_PYTHONPACKAGE_TEST_INSTALLDIR/bin && '
+local_testopts = '--no-container --preserve-entire-environment --outdir results --leave-tmpdir '
+local_testopts += '--tmpdir-prefix run_hba_calibrator $EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc/workflows/HBA_target.cwl '
+local_testopts += 'test_jobs/HBA_target.json'
+
 exts_list = [
     ('pyregion', '2.3.0', {
         'checksums': ['e8498711421173239689de523bb465245f5551a18a181cb4956d87f9c7464925'],
@@ -55,18 +83,23 @@ exts_list = [
     (name, version, {
         'modulename': False,
         'sources': [{
-            'filename': '%(name)s-v%(version)s.tar.xz',
-            'git_config': {
-                'url': 'https://git.astron.nl/RD/',
-                'repo_name': 'LINC',
-                'commit': 'v%(version)s',
-                'recursive': True,
-                'keep_git_dir': True
-            }
-        }],
+                'filename': '%(name)s-v%(version)s.tar.xz',
+                'git_config': {
+                    'url': 'https://git.astron.nl/RD/',
+                    'repo_name': 'LINC',
+                    'commit': 'v%(version)s',
+                    'recursive': True,
+                    'keep_git_dir': True
+                },
+            },
+        ],
         # We cannot get a reproducible checksum, because we need to do keep_git_dir for
         # setuptools_scm to determine the version
         'checksums': [None],
+        'testinstall': True,
+        'pretestopts': local_pretestopts,
+        'runtest': 'cwltool',
+        'testopts': local_testopts,
     }),
 ]
 
