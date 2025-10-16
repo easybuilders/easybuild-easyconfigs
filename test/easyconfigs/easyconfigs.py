@@ -569,8 +569,7 @@ class EasyConfigTest(TestCase):
             'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2',
                                         r'WSClean-3\.[5-9]',
                                         r'LSMTool-1.7.0-2023b',
-                                        r'LINC-5.0-foss-2023b']),
-            ],
+                                        r'LINC-5.0-foss-2023b'])],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
@@ -623,8 +622,7 @@ class EasyConfigTest(TestCase):
             # Pydot <3 is explicitely required by cwltool
             'pydot': [(r'2\.0\.0', [r'LINC-5.0-foss-2023b',
                                     r'toil-cwl-8.2.0-foss-2023b',
-                                    r'cwltool-3.1.20250110105449-foss-2023b']),
-            ],
+                                    r'cwltool-3.1.20250110105449-foss-2023b'])],
             # bakta requires PyHMMER 0.10.15
             'PyHMMER': [(r'0\.10\.15', [r'bakta-1\.10\.1'])],
             # WhatsHap 1.4 + medaka 1.6.0 require Pysam >= 0.18.0 (NGSpeciesID depends on medaka)
