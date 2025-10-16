@@ -43,7 +43,6 @@ dependencies = [
 exts_defaultclass = 'PythonPackage'
 exts_default_options = {
     'source_urls': [PYPI_SOURCE],
-    'installopts': '',
 }
 
 # unpin polars and h5py versions in pod5
@@ -55,6 +54,11 @@ local_preinstallopts = (
 )
 
 exts_list = [
+    ('lib-pod5', version, {
+        'nosource': True,
+        # Build and installed by CMake
+        'install_src': '%(installdir)s/lib_pod5-%(version)s-*.whl',
+    }),
     ('vbz_h5py_plugin', '1.0.1', {
         'checksums': ['c784458bb0aad6303474cb2f10956179116b35555803fd1154eb4ef362519341'],
     }),
@@ -81,14 +85,9 @@ preconfigopts = (
 )
 
 # delete add_subdirectory(third_party/pybind11) from CMakeLists.txt
-preconfigopts += "cd %(builddir)s/%(name)s-%(version)s && sed -i '/add_subdirectory(third_party/d' CMakeLists.txt && "
-preconfigopts += 'cd %(builddir)s/easybuild_obj && '
+preconfigopts += "sed -i '/add_subdirectory(third_party/d' '%(builddir)s/%(name)s-%(version)s/CMakeLists.txt' && "
 
 configopts = ' -DBUILD_PYTHON_WHEEL=ON -DZSTD_LIB="$EBROOTZSTD/lib" -DZSTD_INCLUDE_DIR="$EBROOTZSTD/include"'
-
-# install lib_pod5 from wheel - dependency of pod5
-installopts = ' && export XDG_CACHE_HOME=%(builddir)s && cd %(installdir)s'
-installopts += ' && pip install --no-deps --ignore-installed --prefix %(installdir)s lib_pod5-%(version)s-*.whl'
 
 postinstallcmds = ['rm %(installdir)s/lib_pod5-%(version)s-*.whl']
 
