@@ -568,7 +568,7 @@ class EasyConfigTest(TestCase):
             # Requires us to also bump DP3 version (to 6.2) and its dependency on EveryBeam
             'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2',
                                         r'WSClean-3\.[5-9]',
-                                        r'LSMTool-1.7.0-2023b',
+                                        r'LSMTool-1.7.0-foss-2023b',
                                         r'LINC-5.0-foss-2023b'])],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
