@@ -639,6 +639,8 @@ class EasyConfigTest(TestCase):
                 ('2.5.3;', ['medaka-1.5.0-']),
                 # tensorflow-probability version to TF version
                 ('2.8.4;', ['tensorflow-probability-0.16.0-']),
+                # Clair3 v1.0.8 uses TensorFlow 2.15.1
+                ('2.15.1;', ['Clair3-1.0.8-']),
             ],
             # vLLM has pinned dependency tiktoken == 0.6.0
             'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
