@@ -1,0 +1,86 @@
+easyblock = 'CMakeMake'
+
+name = 'RDKit'
+version = '2025.03.5'
+_version = version.replace('.', '_')
+
+homepage = 'https://www.rdkit.org'
+description = "RDKit is a collection of cheminformatics and machine-learning software written in C++ and Python."
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+source_urls = ['https://github.com/rdkit/rdkit/archive/']
+sources = [f'Release_{_version}.tar.gz']
+checksums = ['8bdb3c774ed4ae9e2727b6ce005004191447d630d8e857d36839cd8f1bca55b5']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Eigen', '3.4.0'),
+    ('pkgconf', '2.3.0'),
+]
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('SQLite', '3.47.2'),
+    ('matplotlib', '3.10.3'),
+    ('Pillow', '11.3.0'),
+    ('Boost.Python-NumPy', '1.88.0'),
+    ('cairo', '1.18.4'),
+    ('Catch2', '3.8.1'),
+]
+
+_config_opts = [
+    '-DPy_ENABLE_SHARED=1',
+    '-DRDK_INSTALL_STATIC_LIBS=OFF',
+    '-DRDK_INSTALL_INTREE=OFF',
+    '-DRDK_BUILD_FREESASA_SUPPORT=ON',
+    '-DRDK_BUILD_INCHI_SUPPORT=ON',
+    '-DBOOST_ROOT="$EBROOTBOOST"',
+]
+configopts = ' '.join(_config_opts)
+
+_src_dir = f'%(builddir)s/rdkit-Release_{_version}'
+
+# merge source directory into build directory in order to run the tests
+buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./'
+
+# Specify path for libraries so that they are found during the tests when the module is built with --rpath flag.
+pretestopts = 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY_PATH} && '
+pretestopts += 'export RDBASE=$PWD && '
+pretestopts += 'export PYTHONPATH=$PWD:$PYTHONPATH &&'
+
+runtest = True
+# disable some tests with known issues
+testopts = "-j %(parallel)s -E 'pythonSourceTests|distGeomHelpersCatch|pyGraphMolWrap'"
+
+# generate minimal dist-info:
+_distinfodir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/rdkit-%(version)s.dist-info'
+postinstallcmds = [
+    f'mkdir {_distinfodir}',
+    f'touch {_distinfodir}/METADATA',
+    f'echo "Name: %(namelower)s" >> {_distinfodir}/METADATA',
+    f'echo "Version: %(version)s" >> {_distinfodir}/METADATA',
+]
+
+_libs = ['Alignment', 'Catalogs', 'ChemicalFeatures', 'ChemReactions', 'ChemTransforms', 'coordgen', 'DataStructs',
+         'Depictor', 'Descriptors', 'DistGeometry', 'DistGeomHelpers', 'EigenSolvers', 'FileParsers', 'FilterCatalog',
+         'Fingerprints', 'FMCS', 'ForceFieldHelpers', 'ForceField', 'FragCatalog', 'FreeSASALib', 'GraphMol',
+         'hc', 'InfoTheory', 'maeparser', 'MMPA', 'MolAlign', 'MolCatalog', 'MolChemicalFeatures', 'MolDraw2D',
+         'MolHash', 'MolInterchange', 'MolStandardize', 'MolTransforms', 'Optimizer', 'PartialCharges', 'RDBoost',
+         'RDGeneral', 'RDGeometryLib', 'RDStreams', 'ReducedGraphs', 'RGroupDecomposition', 'RingDecomposerLib',
+         'ScaffoldNetwork', 'ShapeHelpers', 'SimDivPickers', 'SLNParse', 'SmilesParse', 'Subgraphs',
+         'SubstructLibrary', 'SubstructMatch', 'Trajectory']
+
+sanity_check_paths = {
+    'files': [f'lib/libRDKit{lib}.{SHLIB_EXT}' for lib in _libs],
+    'dirs': [
+        'include/rdkit', 'lib/python%(pyshortver)s/site-packages/rdkit',
+        'lib/python%(pyshortver)s/site-packages/rdkit-%(version)s.dist-info'
+    ],
+}
+
+sanity_check_commands = [
+    "python -c 'import rdkit.rdBase'",
+]
+
+moduleclass = 'chem'
