@@ -1309,7 +1309,7 @@ class EasyConfigTest(TestCase):
 
             # --no-build-isolation option for 'pip install' should be enabled
             pip_no_build_isolation = ec.get('pip_no_build_isolation', True)
-            for ext in ec['exts_list']:
+            for ext in ec.get_ref('exts_list'):
                 if isinstance(ext, (tuple, list)) and len(ext) >= 3:
                     ext_opts = ext[2]
                     pip_no_build_isolation &= ext_opts.get('pip_no_build_isolation', True)
@@ -1356,6 +1356,19 @@ class EasyConfigTest(TestCase):
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
                     failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
+            else:
+                # Make sure the user packages in $HOME/.local/lib/python*/ are ignored when running python commands
+                # For the EasyBlocks above this is handled automatically by setting $PYTHONNOUSERSITE
+                # Detect any code or module invocation (-m or -c), `python cc` and `python <filepath>`
+                python_re = re.compile(r'\bpython (-c|-m|cc|[^ ]*\w+.py) ')
+                # Detect if `-s` is present, potentially after other switches
+                ignore_user_switch_re = re.compile(r'\bpython (-\w+ )*-s ')
+                # Check the raw lines as the issue could be anywhere, not only in `sanity_check_commands`,
+                # e.g. `runtest`, `installopts`, `configopts`, ...
+                for line_nr, line in enumerate(read_file(ec.path).splitlines()):
+                    if python_re.search(line) and not ignore_user_switch_re.search(line):
+                        failing_checks.append("Python invocation in '%s' (line #%s) should use the '-s' parameter in %s"
+                                              % (line, line_nr + 1, ec_fn))
 
             # When using Rust it should use CargoPython*
             if easyblock in ('PythonBundle', 'PythonPackage'):
@@ -1376,7 +1389,7 @@ class EasyConfigTest(TestCase):
             exts_defaultclass = ec.get('exts_defaultclass')
             if exts_defaultclass == 'RPackage' or ec.name == 'R':
                 seen_exts = set()
-                for ext in ec['exts_list']:
+                for ext in ec.get_ref('exts_list'):
                     if isinstance(ext, (tuple, list)):
                         ext_name = ext[0]
                     else:
