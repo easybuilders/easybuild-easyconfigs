@@ -1,0 +1,322 @@
+Fix MPI in run scripts
+Author: Samuel Moors (Vrije Universiteit Brussel)
+diff -ur utils23.orig/runcry23 utils23/runcry23
+--- utils23.orig/runcry23	2022-11-07 15:57:24.000000000 +0100
++++ utils23/runcry23	2025-05-16 15:32:06.861320036 +0200
+@@ -165,9 +165,6 @@
+  set here = $PWD
+  set TMPDIR = $CRY23_SCRDIR/tmp$$_`whoami`
+ #
+- if (! $?VERSION ) then
+-  set VERSION = v1.0.1
+- endif
+  if (! $?CRY23_INP ) then
+   set CRY23_INP = $here
+  endif
+@@ -175,7 +172,7 @@
+   set OUTFILE = out
+  endif
+ #
+- set XDIR    = $CRY23_EXEDIR/$VERSION
++ set XDIR    = $CRY23_EXEDIR
+  set INPDIR  = $CRY23_INP
+  set OUTDIR  = $here
+ #
+diff -ur utils23.orig/runMPPcry23 utils23/runMPPcry23
+--- utils23.orig/runMPPcry23	2022-11-07 16:00:04.000000000 +0100
++++ utils23/runMPPcry23	2025-05-16 15:41:33.528486399 +0200
+@@ -1,12 +1,10 @@
+ #!/bin/csh -f
+ ### CRYSTAL23 - running script for MPPcrystal executable 
+- if ( $#argv < 2) then
++ if ( $#argv < 1) then
+   echo "  "
+   echo Usage: 
+   echo "  "
+-  echo "$0" nproc inpfilename "["filename_restart_data "("r-filename")""]"
+-  echo "  "
+-  echo nproc  "                " number of processors to be used for the calculation
++  echo "$0" inpfilename "["filename_restart_data "("r-filename")""]"
+   echo "  "
+   echo inpfilename.d12  "      " CRYSTAL input deck for wave function calculation
+   echo "  "
+@@ -177,9 +175,6 @@
+  set here = $PWD
+  set TMPDIR = $CRY23_SCRDIR/tmp_p$$_`whoami`
+ #
+- if (! $?VERSION ) then
+-  set VERSION = v1.0.1
+- endif
+  if (! $?CRY23_INP ) then
+   set CRY23_INP = $here
+  endif
+@@ -190,16 +185,13 @@
+   set OUTFILE = out
+  endif
+ #
+- set XDIR    = $CRY23_EXEDIR/$VERSION
++ set XDIR    = $CRY23_EXEDIR
+  set INPDIR  = $CRY23_INP
+  set OUTDIR  = $here
+ # Note that the job launching line, later on, is custom too.
+- set MPIDIR   = /replace/this/line/with/your/own/mpibin/directory
+- set MPIBIN   = mpirun
+ #
+- set NPROCS     = $1
+- set FILEPREFIX = $2
+- set F9PREFIX   = $3
++ set FILEPREFIX = $1
++ set F9PREFIX   = $2
+ #
+  set OUTFILE="$FILEPREFIX".$OUTFILE
+ #
+@@ -211,14 +203,6 @@
+  echo output data in $OUTDIR/$OUTFILE >>& $OUTDIR/$OUTFILE
+  echo output data in $OUTDIR/$OUTFILE
+ #
+- if(-e $MPIDIR/$MPIBIN && ! -z $MPIDIR/$MPIBIN ) then
+-  echo $MPIBIN executable in $MPIDIR >>& $OUTDIR/$OUTFILE
+-  echo $MPIBIN executable in $MPIDIR
+- else
+-  echo $MPIBIN executable in $MPIDIR not found or empty >>& $OUTDIR/$OUTFILE
+-  echo $MPIBIN executable in $MPIDIR not found or empty
+-  exit
+- endif
+ #
+  if(-e $XDIR/MPPcrystal && ! -z $XDIR/MPPcrystal ) then
+   echo MPPcrystal executable in $XDIR >>& $OUTDIR/$OUTFILE
+@@ -238,15 +222,6 @@
+   exit
+  endif
+ #
+- if (-e $CRY23P_MACH/machines.LINUX && ! -z $CRY23P_MACH/machines.LINUX) then
+-  echo file machines.LINUX in $CRY23P_MACH >>& $OUTDIR/$OUTFILE
+-  echo file machines.LINUX in $CRY23P_MACH
+- else
+-  echo file machines.LINUX in $CRY23P_MACH not found or empty >>& $OUTDIR/$OUTFILE
+-  echo file machines.LINUX in $CRY23P_MACH not found or empty
+-  exit
+- endif
+-#
+  if (-e $CRY23P_MACH/nodes.par && ! -z $CRY23P_MACH/nodes.par) then
+   echo list of nodes in $CRY23P_MACH/nodes.par >>& $OUTDIR/$OUTFILE
+   echo list of nodes in $CRY23P_MACH/nodes.par
+@@ -453,7 +428,7 @@
+ #
+  echo MPPcrystal job running in $TMPDIR on each node ...
+ # Job Launching line:
+- ${MPIDIR}/${MPIBIN} -machinefile $CRY23P_MACH/machines.LINUX -np $NPROCS $TMPDIR/MPPcrystal < $TMPDIR/INPUT >>& $OUTDIR/$OUTFILE
++ ${MPIBIN} $TMPDIR/MPPcrystal < $TMPDIR/INPUT >>& $OUTDIR/$OUTFILE
+  date >>& $OUTDIR/$OUTFILE
+  echo Contents of temporary directory in master node `hostname`: >>& $OUTDIR/$OUTFILE
+  ls -l >> $OUTDIR/$OUTFILE
+diff -ur utils23.orig/runPcry23 utils23/runPcry23
+--- utils23.orig/runPcry23	2022-11-07 16:01:25.000000000 +0100
++++ utils23/runPcry23	2025-05-16 15:32:22.316884285 +0200
+@@ -1,12 +1,10 @@
+ #!/bin/csh -f
+ ### CRYSTAL23 - running script for Pcrystal executable 
+- if ( $#argv < 2) then
++ if ( $#argv < 1) then
+   echo "  "
+   echo Usage: 
+   echo "  "
+-  echo "$0" nproc inpfilename "["filename_restart_data "("r-filename")""]"
+-  echo "  "
+-  echo nproc  "                " number of processors to be used for the calculation
++  echo "$0" inpfilename "["filename_restart_data "("r-filename")""]"
+   echo "  "
+   echo inpfilename.d12  "      " CRYSTAL input deck for wave function calculation
+   echo "  "
+@@ -177,9 +175,6 @@
+  set here = $PWD
+  set TMPDIR = $CRY23_SCRDIR/tmp_p$$_`whoami`
+ #
+- if (! $?VERSION ) then
+-  set VERSION = v1.0.1
+- endif
+  if (! $?CRY23_INP ) then
+   set CRY23_INP = $here
+  endif
+@@ -190,17 +185,14 @@
+   set OUTFILE = out
+  endif
+ #
+- set XDIR    = $CRY23_EXEDIR/$VERSION
++ set XDIR    = $CRY23_EXEDIR
+  set INPDIR  = $CRY23_INP
+  set OUTDIR  = $here
+ # Note that the job launching line, later on, is custom too.
+ # The next line defines a varable for the path to the MPI bin directory
+- set MPIDIR   = /replace/this/line/with/your/own/mpibin/directory
+- set MPIBIN   = mpirun
+ #
+- set NPROCS     = $1
+- set FILEPREFIX = $2
+- set F9PREFIX   = $3
++ set FILEPREFIX = $1
++ set F9PREFIX   = $2
+ #
+  set OUTFILE="$FILEPREFIX".$OUTFILE
+ #
+@@ -212,14 +204,6 @@
+  echo output data in $OUTDIR/$OUTFILE >>& $OUTDIR/$OUTFILE
+  echo output data in $OUTDIR/$OUTFILE
+ #
+- if(-e $MPIDIR/$MPIBIN && ! -z $MPIDIR/$MPIBIN ) then
+-  echo $MPIBIN executable in $MPIDIR >>& $OUTDIR/$OUTFILE
+-  echo $MPIBIN executable in $MPIDIR
+- else
+-  echo $MPIBIN executable in $MPIDIR not found or empty >>& $OUTDIR/$OUTFILE
+-  echo $MPIBIN executable in $MPIDIR not found or empty
+-  exit
+- endif
+ #
+  if(-e $XDIR/Pcrystal && ! -z $XDIR/Pcrystal ) then
+   echo Pcrystal executable in $XDIR >>& $OUTDIR/$OUTFILE
+@@ -239,15 +223,6 @@
+   exit
+  endif
+ #
+- if (-e $CRY23P_MACH/machines.LINUX && ! -z $CRY23P_MACH/machines.LINUX) then
+-  echo file machines.LINUX in $CRY23P_MACH >>& $OUTDIR/$OUTFILE
+-  echo file machines.LINUX in $CRY23P_MACH
+- else
+-  echo file machines.LINUX in $CRY23P_MACH not found or empty >>& $OUTDIR/$OUTFILE
+-  echo file machines.LINUX in $CRY23P_MACH not found or empty
+-  exit
+- endif
+-#
+  if (-e $CRY23P_MACH/nodes.par && ! -z $CRY23P_MACH/nodes.par) then
+   echo list of nodes in $CRY23P_MACH/nodes.par >>& $OUTDIR/$OUTFILE
+   echo list of nodes in $CRY23P_MACH/nodes.par
+@@ -454,7 +429,7 @@
+ #
+  echo Pcrystal job running in $TMPDIR on each node ...
+ # Job Launching line:
+- ${MPIDIR}/${MPIBIN} -machinefile $CRY23P_MACH/machines.LINUX -np $NPROCS $TMPDIR/Pcrystal < $TMPDIR/INPUT >>& $OUTDIR/$OUTFILE
++ ${MPIBIN} $TMPDIR/Pcrystal < $TMPDIR/INPUT >>& $OUTDIR/$OUTFILE
+  date >>& $OUTDIR/$OUTFILE
+  echo Contents of temporary directory in master node `hostname`: >>& $OUTDIR/$OUTFILE
+  ls -l >> $OUTDIR/$OUTFILE
+diff -ur utils23.orig/runPprop23 utils23/runPprop23
+--- utils23.orig/runPprop23	2022-11-07 16:03:56.000000000 +0100
++++ utils23/runPprop23	2025-05-16 16:15:06.555523261 +0200
+@@ -1,12 +1,10 @@
+ #!/bin/csh -f
+ ### CRYSTAL23 - running script for Pproperties executable 
+- if ( $#argv < 3) then
++ if ( $#argv < 2) then
+   echo "  "
+   echo Usage: 
+   echo "  "
+-  echo "$0" nproc inpfilename wavefuncfilename ""
+-  echo "  "
+-  echo nproc  "                " number of processors to be used for the calculation
++  echo "$0" inpfilename wavefuncfilename ""
+   echo "  "
+   echo inpfilename.d3  "      " CRYSTAL input deck for wave function calculation
+   echo "  "
+@@ -113,7 +111,7 @@
+   echo SEEBECK.DAT "  " inpfilename_wf-filename_SEEBECK.DAT "  " Seebeck coefficient "("BOLTZAO")"
+   echo POWER.DAT "  " inpfilename_wf-filename_POWER.DAT "  " Power factor coefficient "("BOLTZAO")"
+   echo KAPPA.DAT "    " inpfilename_wf-filename_KAPPA.DAT "    " electron thermal conductivity "("BOLTZAO")"
+-  echo SIGMAS.DAT "   " inpfilename_wf-filename_SIGMAS.DAT "   " electron conductivity * Seebeck coefficient "("BOLTZAO")"
++  echo SIGMAS.DAT "   " inpfilename_wf-filename_SIGMAS.DAT "   " electron conductivity "*" Seebeck coefficient "("BOLTZAO")"
+   echo TDF.DAT "      " inpfilename_wf-filename_TDF.DAT "      " transport distribution function "("BOLTZAO")"
+ #
+   echo definablename_numering_Kkindex_real.molden "     "definablename_numering_Kkindex_real.molden "    "data for Crystalline Orbitals Visualization "("ORBITALS")"
+@@ -196,9 +194,6 @@
+  set here = $PWD
+  set TMPDIR = $CRY23_SCRDIR/tmp_p$$_`whoami`
+ #
+- if (! $?VERSION ) then
+-  set VERSION = v1.0.1
+- endif
+  if (! $?CRY23_INP ) then
+   set CRY23_INP = $here
+  endif
+@@ -209,16 +204,13 @@
+   set OUTFILE = outp
+  endif
+ #
+- set XDIR    = $CRY23_EXEDIR/$VERSION
++ set XDIR    = $CRY23_EXEDIR
+  set INPDIR  = $CRY23_INP
+  set OUTDIR  = $here
+ # Note that the job launching line, later on, is custom too.
+- set MPIDIR   = /replace/this/line/with/your/own/mpibin/directory
+- set MPIBIN   = mpirun
+ #
+- set NPROCS     = $1
+- set FILEPREFIX = $2
+- set F9PREFIX   = $3
++ set FILEPREFIX = $1
++ set F9PREFIX   = $2
+ #
+  set OUTFILE="$FILEPREFIX".$OUTFILE
+ #
+@@ -231,23 +223,6 @@
+  echo output data in $OUTDIR/$OUTFILE >>& $OUTDIR/$OUTFILE
+  echo output data in $OUTDIR/$OUTFILE
+ #
+- if(-e $MPIDIR/$MPIBIN && ! -z $MPIDIR/$MPIBIN ) then
+-  echo $MPIBIN executable in $MPIDIR >>& $OUTDIR/$OUTFILE
+-  echo $MPIBIN executable in $MPIDIR
+- else
+-  echo $MPIBIN executable in $MPIDIR not found or empty >>& $OUTDIR/$OUTFILE
+-  echo $MPIBIN executable in $MPIDIR not found or empty
+-  exit
+- endif
+-#
+- if (-e $CRY23P_MACH/machines.LINUX && ! -z $CRY23P_MACH/machines.LINUX) then
+-  echo file machines.LINUX in $CRY23P_MACH >>& $OUTDIR/$OUTFILE
+-  echo file machines.LINUX in $CRY23P_MACH
+- else
+-  echo file machines.LINUX in $CRY23P_MACH not found or empty >>& $OUTDIR/$OUTFILE
+-  echo file machines.LINUX in $CRY23P_MACH not found or empty
+-  exit
+- endif
+ #
+  if (-e $CRY23P_MACH/nodes.par && ! -z $CRY23P_MACH/nodes.par) then
+   echo list of nodes in $CRY23P_MACH/nodes.par >>& $OUTDIR/$OUTFILE
+@@ -340,7 +315,7 @@
+    if (-e fort.9  && ! -z fort.9  ) then
+    echo Pproperties job running in $TMPDIR ...
+ # Job Launching line:
+-   ${MPIDIR}/${MPIBIN} -machinefile $CRY23P_MACH/machines.LINUX -np $NPROCS $TMPDIR/Pproperties < $TMPDIR/INPUT >>& $OUTDIR/$OUTFILE
++   ${MPIBIN} $TMPDIR/Pproperties < $TMPDIR/INPUT >>& $OUTDIR/$OUTFILE
+    date >>& $OUTDIR/$OUTFILE
+     echo Contents of temporary directory: >>& $OUTDIR/$OUTFILE
+     ls -l >>& $OUTDIR/$OUTFILE
+diff -ur utils23.orig/runprop23 utils23/runprop23
+--- utils23.orig/runprop23	2022-11-07 16:05:11.000000000 +0100
++++ utils23/runprop23	2025-05-16 16:10:42.492081970 +0200
+@@ -89,7 +89,7 @@
+   echo SEEBECK.DAT "  " inpfilename_wf-filename_SEEBECK.DAT "  " Seebeck coefficient "("BOLTZAO")"
+   echo POWER.DAT "  " inpfilename_wf-filename_POWER.DAT "  " Power factor coefficient "("BOLTZAO")"
+   echo KAPPA.DAT "    " inpfilename_wf-filename_KAPPA.DAT "    " electron thermal conductivity "("BOLTZAO")"
+-  echo SIGMAS.DAT "   " inpfilename_wf-filename_SIGMAS.DAT "   " electron conductivity * Seebeck coefficient "("BOLTZAO")"
++  echo SIGMAS.DAT "   " inpfilename_wf-filename_SIGMAS.DAT "   " electron conductivity "*" Seebeck coefficient "("BOLTZAO")"
+   echo TDF.DAT "      " inpfilename_wf-filename_TDF.DAT "      " transport distribution function "("BOLTZAO")"
+ #
+   echo definablename_numering_Kkindex_real.molden "     "definablename_numering_Kkindex_real.molden "    "data for Crystalline Orbitals Visualization "("ORBITALS")"
+@@ -118,9 +118,6 @@
+  set here = $PWD
+  set TMPDIR = $CRY23_SCRDIR/tmp_p$$_`whoami`
+ #
+- if (! $?VERSION ) then
+-  set VERSION = v1.0.1
+- endif
+  if (! $?CRY23_INP ) then
+   set CRY23_INP = $here
+  endif
+@@ -130,7 +127,7 @@
+   set OUTFILE = "$OUTFILE"p 
+  endif
+ #
+- set XDIR    = $CRY23_EXEDIR/$VERSION
++ set XDIR    = $CRY23_EXEDIR
+  set INPDIR  = $CRY23_INP
+  set OUTDIR  = $here
+ # Note that the job launching line, later on, is custom too.

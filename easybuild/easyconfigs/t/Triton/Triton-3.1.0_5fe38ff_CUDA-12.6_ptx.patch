@@ -1,0 +1,28 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2025/01
+# acc. to https://github.com/bertmaher/triton/commit/fd1709c5674b86ec277fecf55f2421e30f26b2aa :
+#  [CODEGEN] Support CUDA 12.6 (triton-lang#4588)
+#  According to the
+#  [table](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release-notes-ptx-release-history),
+#  both CUDA 12.5 and 12.6 use PTX ISA 8.5
+
+diff -ru triton/third_party/nvidia/backend/compiler.py triton-3.1.0_CUDA_12.6_ptx/third_party/nvidia/backend/compiler.py
+--- triton/third_party/nvidia/backend/compiler.py	2024-11-29 08:38:26.000000000 +0100
++++ triton-3.1.0_CUDA_12.6_ptx/third_party/nvidia/backend/compiler.py	2025-01-20 15:13:23.114632925 +0100
+@@ -44,12 +44,16 @@
+     assert isinstance(cuda_version, str)
+     major, minor = map(int, cuda_version.split('.'))
+     if major == 12:
++        if minor < 6:
++            return 80 + minor
++        elif minor == 6:
++            return 85
+         return 80 + minor
+     if major == 11:
+         return 70 + minor
+     if major == 10:
+         return 63 + minor
+-    raise RuntimeError("Triton only support CUDA 10.0 or higher")
++    raise RuntimeError("Triton only support CUDA 10.0 or higher, but got CUDA version: " + cuda_version)
+ 
+ 
+ @functools.lru_cache(None)
