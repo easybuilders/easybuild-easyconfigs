@@ -1365,9 +1365,12 @@ class EasyConfigTest(TestCase):
                 python_re = re.compile(r'\bpython (-c|-m|cc|[^ ]*\w+.py) ')
                 # Detect if `-s` is present, potentially after other switches
                 ignore_user_switch_re = re.compile(r'\bpython (-\w+ )*-s ')
+                comment_re = re.compile(r'# .*$')
                 # Check the raw lines as the issue could be anywhere, not only in `sanity_check_commands`,
                 # e.g. `runtest`, `installopts`, `configopts`, ...
                 for line_nr, line in enumerate(read_file(ec.path).splitlines()):
+                    # Strip comment if present to avoid flagging e.g. "sed '/.../' # Fix 'python -c foo' failure"
+                    line = comment_re.sub('', line)
                     if python_re.search(line) and not ignore_user_switch_re.search(line):
                         failing_checks.append("Python invocation in '%s' (line #%s) should use the '-s' parameter in %s"
                                               % (line, line_nr + 1, ec_fn))
