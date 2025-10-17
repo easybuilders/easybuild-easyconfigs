@@ -40,11 +40,6 @@ dependencies = [
     ('polars', '0.20.2'),
 ]
 
-exts_defaultclass = 'PythonPackage'
-exts_default_options = {
-    'source_urls': [PYPI_SOURCE],
-}
-
 # unpin polars and h5py versions in pod5
 local_preinstallopts = (
     "sed -i"
@@ -53,6 +48,7 @@ local_preinstallopts = (
     " pyproject.toml && "
 )
 
+exts_defaultclass = 'PythonPackage'
 exts_list = [
     ('lib-pod5', version, {
         'nosource': True,
@@ -74,19 +70,20 @@ exts_list = [
 
 # create POD5Version.cmake
 # python -m setuptools_scm && python -m pod5_make_version shows wrong version
-local_ver_sub_minor = version.split('.')[2]
+separate_build_dir = '__build'
 preconfigopts = (
-    'cd %%(builddir)s/%%(name)s-%%(version)s/cmake && '
+    'cd %(start_dir)s/cmake && '
     'touch POD5Version.cmake && '
-    'echo "set(POD5_VERSION_MAJOR %%(version_major)s)">POD5Version.cmake && '
-    'echo "set(POD5_VERSION_MINOR %%(version_minor)s)">>POD5Version.cmake && '
-    'echo "set(POD5_VERSION_REV %s)">>POD5Version.cmake && '
-    'echo "set(POD5_NUMERIC_VERSION %%(version)s)">>POD5Version.cmake && '
-    'echo "set(POD5_FULL_VERSION %%(version)s)">>POD5Version.cmake && ' % local_ver_sub_minor
+    'echo "set(POD5_VERSION_MAJOR %(version_major)s)">POD5Version.cmake && '
+    'echo "set(POD5_VERSION_MINOR %(version_minor)s)">>POD5Version.cmake && '
+    f'echo "set(POD5_VERSION_REV {version.split(".")[2]})">>POD5Version.cmake && '
+    'echo "set(POD5_NUMERIC_VERSION %(version)s)">>POD5Version.cmake && '
+    'echo "set(POD5_FULL_VERSION %(version)s)">>POD5Version.cmake && '
+    f'cd %(builddir)s/{separate_build_dir} && '
 )
 
 # delete add_subdirectory(third_party/pybind11) from CMakeLists.txt
-preconfigopts += "sed -i '/add_subdirectory(third_party/d' '%(builddir)s/%(name)s-%(version)s/CMakeLists.txt' && "
+preconfigopts += "sed -i '/add_subdirectory(third_party/d' '%(start_dir)s/CMakeLists.txt' && "
 
 configopts = ' -DBUILD_PYTHON_WHEEL=ON -DZSTD_LIB="$EBROOTZSTD/lib" -DZSTD_INCLUDE_DIR="$EBROOTZSTD/include"'
 
