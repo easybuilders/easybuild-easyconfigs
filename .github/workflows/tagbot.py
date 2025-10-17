@@ -23,8 +23,8 @@ def sort_by_added_date(repo, file_paths):
     return [file for date, file in sorted_files]
 
 
-def similar_easyconfigs(repo, new_file):
-    possible_neighbours = [x for x in new_file.parent.glob('*.eb') if x != new_file]
+def similar_easyconfigs(repo, new_file, new_ecs):
+    possible_neighbours = [x for x in new_file.parent.glob('*.eb') if x not in new_ecs]
     return sort_by_added_date(repo, possible_neighbours)
 
 
@@ -78,7 +78,7 @@ new_software = 0
 updated_software = 0
 to_diff = dict()
 for new_file in new_ecs:
-    neighbours = similar_easyconfigs(gitrepo, new_file)
+    neighbours = similar_easyconfigs(gitrepo, new_file, new_ecs)
     print(f"Found {len(neighbours)} neighbours for {new_file}")
     if neighbours:
         updated_software += 1
