@@ -639,6 +639,8 @@ class EasyConfigTest(TestCase):
                 ('2.5.3;', ['medaka-1.5.0-']),
                 # tensorflow-probability version to TF version
                 ('2.8.4;', ['tensorflow-probability-0.16.0-']),
+                # TensorFlow 2.15.1 is used by Clair3 v1.0.8 and tensorflow-probability 0.23.0
+                ('2.15.1;', ['Clair3-1.0.8-', 'tensorflow-probability-0.23.0-']),
             ],
             # vLLM has pinned dependency tiktoken == 0.6.0
             'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
@@ -1363,9 +1365,12 @@ class EasyConfigTest(TestCase):
                 python_re = re.compile(r'\bpython (-c|-m|cc|[^ ]*\w+.py) ')
                 # Detect if `-s` is present, potentially after other switches
                 ignore_user_switch_re = re.compile(r'\bpython (-\w+ )*-s ')
+                comment_re = re.compile(r'# .*$')
                 # Check the raw lines as the issue could be anywhere, not only in `sanity_check_commands`,
                 # e.g. `runtest`, `installopts`, `configopts`, ...
                 for line_nr, line in enumerate(read_file(ec.path).splitlines()):
+                    # Strip comment if present to avoid flagging e.g. "sed '/.../' # Fix 'python -c foo' failure"
+                    line = comment_re.sub('', line)
                     if python_re.search(line) and not ignore_user_switch_re.search(line):
                         failing_checks.append("Python invocation in '%s' (line #%s) should use the '-s' parameter in %s"
                                               % (line, line_nr + 1, ec_fn))

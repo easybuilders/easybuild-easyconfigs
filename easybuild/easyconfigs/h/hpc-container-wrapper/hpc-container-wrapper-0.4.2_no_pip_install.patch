@@ -1,0 +1,93 @@
+Don’t install pyyaml with pip, use EasyBuild provided pyyaml
+Author: Samuel Moors (Vrije Universiteit Brussel)
+
+diff -ur hpc-container-wrapper-0.4.2.orig/construct.py hpc-container-wrapper-0.4.2/construct.py
+--- hpc-container-wrapper-0.4.2.orig/construct.py	2025-03-03 09:28:57.000000000 +0100
++++ hpc-container-wrapper-0.4.2/construct.py	2025-09-08 13:12:16.745116267 +0200
+@@ -6,7 +6,6 @@
+ import random
+ curr_dir=pathlib.Path(__file__).parent.resolve()
+ info=sys.version_info
+-sys.path.insert(0,str(curr_dir)+"/PyDeps/lib/python{}.{}/site-packages".format(info[0],info[1]))
+ sys.path.insert(0,str(curr_dir))
+ import yaml
+ from string import Template
+diff -ur hpc-container-wrapper-0.4.2.orig/frontends/conda-containerize.py hpc-container-wrapper-0.4.2/frontends/conda-containerize.py
+--- hpc-container-wrapper-0.4.2.orig/frontends/conda-containerize.py	2025-03-03 09:28:57.000000000 +0100
++++ hpc-container-wrapper-0.4.2/frontends/conda-containerize.py	2025-09-08 13:12:16.748801710 +0200
+@@ -6,7 +6,6 @@
+ root_dir=pathlib.Path(curr_dir).parent.resolve()
+ info=sys.version_info
+ sys.path.insert(0,str(root_dir))
+-sys.path.insert(0,str(root_dir)+"/PyDeps/lib/python{}.{}/site-packages".format(info[0],info[1]))
+ import yaml
+ from cw_common import *
+ from script_shared import *
+diff -ur hpc-container-wrapper-0.4.2.orig/frontends/containerize hpc-container-wrapper-0.4.2/frontends/containerize
+--- hpc-container-wrapper-0.4.2.orig/frontends/containerize	2025-03-03 09:28:57.000000000 +0100
++++ hpc-container-wrapper-0.4.2/frontends/containerize	2025-10-07 17:00:45.967939000 +0200
+@@ -40,12 +40,10 @@
+ print_info "Using $(readlink -f $CW_GLOBAL_YAML) as default config" 2
+ 
+ # We might need to dynamically set values
+-export SAVE_PP=$PYTHONPATH
+ if [[ ! ${PYTHONNOUSERSITE+defined} ]];then
+     _USERSITE="YES"
+     PYTHONNOUSERSITE="YES"
+ fi
+-unset PYTHONPATH
+ 
+ $PY_EXE $M_SCRIPT_DIR/$calling_name.py "$@" || exit $? 
+ if [[ ! -s "$_usr_yaml" ]];then
+@@ -61,7 +59,6 @@
+     || { print_err "Configuration construction failed" ; false ;}
+ export CW_BUILD_TMPDIR
+ print_info "Using $CW_BUILD_TMPDIR as temporary directory" 1
+-export PYTHONPATH=$SAVE_PP
+ if [[ ${_USERSITE+defined} ]];then
+     unset PYTHONNOUSERSITE
+ fi
+diff -ur hpc-container-wrapper-0.4.2.orig/frontends/pip-containerize.py hpc-container-wrapper-0.4.2/frontends/pip-containerize.py
+--- hpc-container-wrapper-0.4.2.orig/frontends/pip-containerize.py	2025-03-03 09:28:57.000000000 +0100
++++ hpc-container-wrapper-0.4.2/frontends/pip-containerize.py	2025-09-08 13:12:16.773422243 +0200
+@@ -6,7 +6,6 @@
+ root_dir=pathlib.Path(curr_dir).parent.resolve()
+ info=sys.version_info
+ sys.path.insert(0,str(root_dir))
+-sys.path.insert(0,str(root_dir)+"/PyDeps/lib/python{}.{}/site-packages".format(info[0],info[1]))
+ import yaml
+ from cw_common import *
+ from script_shared import *
+diff -ur hpc-container-wrapper-0.4.2.orig/frontends/script_shared.py hpc-container-wrapper-0.4.2/frontends/script_shared.py
+--- hpc-container-wrapper-0.4.2.orig/frontends/script_shared.py	2025-03-03 09:28:57.000000000 +0100
++++ hpc-container-wrapper-0.4.2/frontends/script_shared.py	2025-09-08 13:12:16.776658768 +0200
+@@ -5,7 +5,6 @@
+ root_dir=pathlib.Path(curr_dir).parent.resolve()
+ info=sys.version_info
+ sys.path.insert(0,str(root_dir))
+-sys.path.insert(0,str(root_dir)+"/PyDeps/lib/python{}.{}/site-packages".format(info[0],info[1]))
+ import yaml
+ from cw_common import *
+ def is_valid_file(par,arg):
+diff -ur hpc-container-wrapper-0.4.2.orig/frontends/wrap-container.py hpc-container-wrapper-0.4.2/frontends/wrap-container.py
+--- hpc-container-wrapper-0.4.2.orig/frontends/wrap-container.py	2025-03-03 09:28:57.000000000 +0100
++++ hpc-container-wrapper-0.4.2/frontends/wrap-container.py	2025-09-08 13:12:16.779227572 +0200
+@@ -6,7 +6,6 @@
+ root_dir=pathlib.Path(curr_dir).parent.resolve()
+ info=sys.version_info
+ sys.path.insert(0,str(root_dir))
+-sys.path.insert(0,str(root_dir)+"/PyDeps/lib/python{}.{}/site-packages".format(info[0],info[1]))
+ import yaml
+ from cw_common import *
+ from script_shared import *
+diff -ur hpc-container-wrapper-0.4.2.orig/frontends/wrap-install.py hpc-container-wrapper-0.4.2/frontends/wrap-install.py
+--- hpc-container-wrapper-0.4.2.orig/frontends/wrap-install.py	2025-03-03 09:28:57.000000000 +0100
++++ hpc-container-wrapper-0.4.2/frontends/wrap-install.py	2025-09-08 13:12:16.781751750 +0200
+@@ -6,7 +6,6 @@
+ root_dir=pathlib.Path(curr_dir).parent.resolve()
+ info=sys.version_info
+ sys.path.insert(0,str(root_dir))
+-sys.path.insert(0,str(root_dir)+"/PyDeps/lib/python{}.{}/site-packages".format(info[0],info[1]))
+ import yaml
+ from cw_common import *
+ from script_shared import *
