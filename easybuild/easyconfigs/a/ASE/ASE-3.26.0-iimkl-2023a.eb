@@ -1,0 +1,55 @@
+easyblock = 'PythonBundle'
+
+name = 'ASE'
+version = '3.26.0'
+
+homepage = 'https://ase-lib.org'
+description = """ASE is a python package providing an open source Atomic Simulation Environment
+ in the Python scripting language.
+
+From version 3.20.1 we also include the ase-ext package, it contains optional reimplementations
+in C of functions in ASE.  ASE uses it automatically when installed."""
+
+toolchain = {'name': 'iimkl', 'version': '2023a'}
+
+builddependencies = [
+    ('setuptools', '80.9.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('Flask', '2.3.3'),           # Needed by web interface of ase.db module
+    ('matplotlib', '3.7.2'),
+    ('Tkinter', '%(pyver)s'),     # Needed by GUI of ASE
+    ('spglib-python', '2.1.0'),   # optional
+]
+
+exts_list = [
+    # Packaging must be installed here to override the one in
+    # Python-bundle-PyPI, which overrides the one in setuptools.
+    ('packaging', '25.0', {
+        'checksums': ['d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f'],
+    }),
+    ('pytest-mock', '3.14.1', {
+        'sources': ['pytest_mock-%(version)s.tar.gz'],
+        'checksums': ['159e9edac4c451ce77a5cdb9fc5d1100708d2dd4ba3c3df572f14097351af80e'],
+    }),
+    ('ase', version, {
+        'checksums': ['a071a355775b0a8062d23e9266e9d811b19d9f6d9ec5215e8032f7d93dc65075'],
+    }),
+    ('ase-ext', '20.9.0', {
+        'checksums': ['a348b0e42cf9fdd11f04b3df002b0bf150002c8df2698ff08d3c8fc7a1223aed'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ase'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+# make sure Tkinter is available, otherwise 'ase gui' will not work
+sanity_check_commands = ["python -c 'import tkinter' "]
+
+moduleclass = 'chem'
