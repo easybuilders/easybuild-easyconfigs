@@ -18,6 +18,7 @@ builddependencies = [
 
 dependencies = [
     ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
     ('hypothesis', '6.103.1'),
 ]
 
@@ -36,7 +37,7 @@ _skip_tests = [
     'testing/test_helpconfig.py',
 ]
 _ignore_tests = ' --ignore='.join(_skip_tests)
-
+_pretestexports = """export PATH=$(echo $PYTHONPATH | cut -f1 -d: | sed -e "s/lib.python.*/bin/g"):$PATH &&"""
 exts_list = [
     ('elementpath', '4.6.0', {
         'checksums': ['ba46bf07f66774927727ade55022b6c435fac06b2523cb3cd7689a1884d33468'],
@@ -46,13 +47,14 @@ exts_list = [
     }),
     (name, version, {
         'checksums': ['70b98107bd648308a7952b06e6ca9a50bc660be218d53c257cc1fc94fda10181'],
+        'testinstall': True,
+        'pretestopts': _pretestexports,
+        'runtest': 'cd %%(builddir)s/%%(name)s/%%(name)s-%%(version)s && pytest --ignore=%s testing' % _ignore_tests,
     }),
 ]
 
 sanity_check_commands = [
     "python -c 'import pytest'",
-    'cd %%(builddir)s/%%(name)s/%%(name)s-%%(version)s && %%(installdir)s/bin/pytest --ignore=%s testing'
-    % _ignore_tests,
 ]
 
 moduleclass = 'lib'
