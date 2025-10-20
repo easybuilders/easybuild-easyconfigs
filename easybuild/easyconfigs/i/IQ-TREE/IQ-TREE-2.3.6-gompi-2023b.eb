@@ -37,17 +37,26 @@ dependencies = [
     ('LSD2', '2.4.1'),
 ]
 
+_iqt_flags = []
+if ARCH == 'riscv64':
+    _iqt_flags.append('nosse')
+
+_omp_flags = ','.join(['omp'] + _iqt_flags)
+_mpi_flags = ','.join(['mpi'] + _iqt_flags)
+
 local_conf_opts = ' -DUSE_LSD2=ON '
-if ARCH != 'riscv64':
-    configopts = [
-        '-DIQTREE_FLAGS=omp' + local_conf_opts,
-        '-DIQTREE_FLAGS=mpi -DCMAKE_C_COMPILER="$MPICC" -DCMAKE_CXX_COMPILER="$MPICXX"' + local_conf_opts,
-    ]
-else:
-    configopts = [
-        '-DIQTREE_FLAGS=omp,nosse' + local_conf_opts,
-        '-DIQTREE_FLAGS=mpi,nosse -DCMAKE_C_COMPILER="$MPICC" -DCMAKE_CXX_COMPILER="$MPICXX"' + local_conf_opts,
-    ]
+configopts = [
+    ' '.join([
+        f'-DIQTREE_FLAGS={_omp_flags}',
+        local_conf_opts
+    ]),
+    ' '.join([
+        f'-DIQTREE_FLAGS={_mpi_flags}',
+        '-DCMAKE_C_COMPILER="$MPICC"',
+        '-DCMAKE_CXX_COMPILER="$MPICXX"',
+        local_conf_opts
+    ]),
+]
 
 sanity_check_paths = {
     'files': ['bin/iqtree2', 'bin/iqtree2-mpi'],
