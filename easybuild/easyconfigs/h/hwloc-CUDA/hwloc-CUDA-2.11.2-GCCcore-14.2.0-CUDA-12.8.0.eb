@@ -1,7 +1,8 @@
 easyblock = 'ConfigureMake'
 
-name = 'hwloc'
-version = '2.12.1'
+name = 'hwloc-CUDA'
+version = '2.11.2'
+versionsuffix = '-CUDA-%(cudaver)s'
 
 homepage = 'https://www.open-mpi.org/projects/hwloc/'
 
@@ -14,41 +15,54 @@ description = """
  devices such as network interfaces, InfiniBand HCAs or GPUs. It primarily
  aims at helping applications with gathering information about modern computing
  hardware so as to exploit it accordingly and efficiently.
+
+ This provides the CUDA and NVML plugins for hwloc
 """
 
-toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
 
 source_urls = ['https://www.open-mpi.org/software/hwloc/v%(version_major_minor)s/downloads/']
-sources = [SOURCE_TAR_GZ]
-checksums = ['ffa02c3a308275a9339fbe92add054fac8e9a00cb8fe8c53340094012cb7c633']
+sources = ['hwloc-%(version)s.tar.gz']
+checksums = ['866ac8ef07b350a6a2ba0c6826c37d78e8994dcbcd443bdd2b436350de19d540']
 
 builddependencies = [
-    ('binutils', '2.44'),
-    ('pkgconf', '2.4.3'),
+    ('binutils', '2.42'),
+    ('pkgconf', '2.3.0'),
 ]
 
 dependencies = [
+    ('hwloc', version),
+    ('CUDA', '12.8.0', '', SYSTEM),
     ('numactl', '2.0.19'),
-    ('libxml2', '2.14.3'),
-    ('libpciaccess', '0.18.1'),
 ]
 
 configopts = ' '.join([
     '--enable-plugins',
+    '--enable-cuda',
+    '--enable-nvml',
     '--disable-cairo',
     '--disable-opencl',
-    '--disable-cuda',
-    '--disable-nvml',
     '--disable-rsmi',
     '--disable-levelzero',
     '--disable-gl',
+    '--disable-libxml2',
+    '--disable-pci',
     '--disable-libudev',
 ])
 
-sanity_check_paths = {
-    'files': ['bin/lstopo', 'include/hwloc/linux.h', f'lib/libhwloc.{SHLIB_EXT}'],
-    'dirs': ['share/man/man3'],
+build_cmd = 'cd hwloc && make hwloc_cuda.la hwloc_nvml.la'
+install_cmd = f'cp hwloc/.libs/hwloc_{{cuda,nvml}}.{SHLIB_EXT} %(installdir)s'
+
+modextrapaths = {
+    'HWLOC_PLUGINS_PATH': '.',
 }
-sanity_check_commands = ['lstopo']
+
+sanity_check_paths = {
+    'files': [f'hwloc_cuda.{SHLIB_EXT}', f'hwloc_nvml.{SHLIB_EXT}'],
+    'dirs': [],
+}
+sanity_check_commands = [
+    'HWLOC_COMPONENTS_VERBOSE=1 lstopo 2>&1 | grep %(installdir)s'
+]
 
 moduleclass = 'system'
