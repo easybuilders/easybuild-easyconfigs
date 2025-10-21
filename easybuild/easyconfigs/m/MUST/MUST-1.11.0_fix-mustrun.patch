@@ -1,0 +1,91 @@
+Subject: [PATCH] mustrun: Add options for compilers and linker
+Also add fallback to CC and CXX if provided compilers are not
+executable.
+Author: Simon Schwitanski  (RWTH Aachen University, @schwitanski)
+---
+ utility/mustrun2.sh | 34 +++++++++++++++++++++++++++++++---
+ 1 file changed, 31 insertions(+), 3 deletions(-)
+
+diff --git a/utility/mustrun2.sh b/utility/mustrun2.sh
+index 971acc054..c2c4bc30a 100644
+--- a/utility/mustrun2.sh
++++ b/utility/mustrun2.sh
+@@ -202,6 +202,12 @@ printHelp()
+   echo "--must:instant-logging {off|info|warning|error|fatal}:"
+   echo "        Tells MUST to immediately log <level> messages that may cause the application"
+   echo "        and MUST to crash."
++  echo "--must:cc <C compiler>"
++  echo "        Tells MUST to use the provided C compiler."
++  echo "--must:cxx <C++ compiler>"
++  echo "        Tells MUST to use the provided C++ compiler."
++  echo "--must:ld <linker>"
++  echo "        Tells MUST to use the provided linker."
+   echo "<MPIRUNARGS>:"
+   echo "        Arguments you usually pass to mpirun/mpiexec, mustrun searches for a"
+   echo "        \"-n\" \"-np\" \"-p\" in the given order to determine how many tasks"
+@@ -229,7 +235,7 @@ export _LOCKED=0
+ export _LOCKDIR=""
+ 
+ MUST_OPTIONS_WITHOUT_ARGS=(verbose  quiet  timing  massif  memcheck  nocrash  clean  cleanshm  hybrid  shim  tsan  typeart  pnmpi-linked  partitioned-verbose-report  unused  info  distributed  dl  fillnodes  isp  scorep  ddt  reproduce  nodl  capture  unique  inbuilddir  noprebuilt  printmem  rma-race  user-cache  openmp  print-arguments  spawn-gdb vectorclock)
+-MUST_OPTIONS_WITH_ARGS=(mode  layout  np  mpiexec  temp  analyses  apis  language  nodesize close  timeout  output  fanin  firstfanin  precmdddt  exportflag  src  inst  wait  stacktrace  output-dir  output-email-report  filter-file  strip-path-prefix  mpimode  user-cache-dir  errorcode  instant-logging  mpi-process-prefix )
++MUST_OPTIONS_WITH_ARGS=(mode  layout  np  mpiexec  temp  analyses  apis  language  nodesize close  timeout  output  fanin  firstfanin  precmdddt  exportflag  src  inst  wait  stacktrace  output-dir  output-email-report  filter-file  strip-path-prefix  mpimode  user-cache-dir  errorcode  instant-logging  mpi-process-prefix cc cxx ld)
+ 
+ 
+ 
+@@ -1287,6 +1293,21 @@ cd ${_MUST_WDIR}
+ 
+ }
+ 
++resolve_executable() {
++    path=$1
++    if [ -x "$path" ]; then
++        printf '%s\n' "$path"
++    else
++        alt=$(which "$(basename "$path")" 2>/dev/null)
++        if [ -n "$alt" ] && [ -x "$alt" ]; then
++            printf '%s\n' "$alt"
++        else
++            musterror "Could not find the $2 at $path. Please set the $2 via MUST's option, see '$0 --help'."
++            exit 1
++        fi
++    fi
++}
++
+ #----------------- Function ----------------
+ #name: build_modules
+ #purpose: compiles modules from the generated code
+@@ -1306,7 +1327,6 @@ fi
+ mkdir BUILD
+ cd BUILD
+ 
+-set +e
+ ## Configure with cmake
+ GTI_TOOL_INCLUDE_PATH=@CMAKE_INSTALL_PREFIX@/include
+ GTI_TOOL_LIB_PATH=@CMAKE_INSTALL_PREFIX@/lib
+@@ -1315,8 +1335,13 @@ then
+   GTI_TOOL_INCLUDE_PATH="@CMAKE_BINARY_DIR@/include;@CMAKE_INSTALL_PREFIX@/include;$MUSTRUN_INCLUDE_PATH"
+   GTI_TOOL_LIB_PATH="@CMAKE_BINARY_DIR@/lib;@CMAKE_INSTALL_PREFIX@/lib"
+ fi
++# Fall back to environment variables if commandline arguments / defaults are not executable
++cc_arg=$(resolve_executable "${cc_arg}" "C compiler")
++cxx_arg=$(resolve_executable "${cxx_arg}" "C++ compiler")
++ld_arg=$(resolve_executable "${ld_arg}" "linker")
++set +e
+ assert_dir_is_locked ${inst_arg} "${BASH_SOURCE}:${LINENO}"
+-CC=@MUST_C_COMPILER@ CXX=@MUST_CXX_COMPILER@ FC=@MUST_Fortran_COMPILER@ LDFLAGS="@CMAKE_MODULE_LINKER_FLAGS@" "@CMAKE_COMMAND@" -G"Unix Makefiles" ../ -DCMAKE_LINKER=@CMAKE_LINKER@ -DCMAKE_SHARED_LINKER_FLAGS="@CMAKE_SHARED_LINKER_FLAGS@" -DCMAKE_SHARED_LINKER_FLAGS_DEBUG="@CMAKE_SHARED_LINKER_FLAGS_DEBUG@" -DCMAKE_SHARED_LINKER_FLAGS_RELEASE="@CMAKE_SHARED_LINKER_FLAGS_RELEASE@" -DCMAKE_C_FLAGS="@CMAKE_C_FLAGS@" -DCMAKE_C_FLAGS_DEBUG="@CMAKE_C_FLAGS_DEBUG@" -DCMAKE_C_FLAGS_RELEASE="@CMAKE_C_FLAGS_RELEASE@" -DCMAKE_CXX_FLAGS="@CMAKE_CXX_FLAGS@" -DCMAKE_CXX_FLAGS_DEBUG="@CMAKE_CXX_FLAGS_DEBUG@" -DCMAKE_CXX_FLAGS_RELEASE="@CMAKE_CXX_FLAGS_RELEASE@" -DCMAKE_BUILD_TYPE=@CMAKE_BUILD_TYPE@ -DCMAKE_INSTALL_PREFIX=$inst_arg -DGTI_TOOL_INCLUDE_PATH="${GTI_TOOL_INCLUDE_PATH}" -DGTI_TOOL_LIB_PATH="${GTI_TOOL_LIB_PATH}"> output.out 2>output.err
++CC=${cc_arg} CXX=${cxx_arg} FC=@MUST_Fortran_COMPILER@ LDFLAGS="@CMAKE_MODULE_LINKER_FLAGS@" "@CMAKE_COMMAND@" -G"Unix Makefiles" ../ -DCMAKE_LINKER=${ld_arg} -DCMAKE_SHARED_LINKER_FLAGS="@CMAKE_SHARED_LINKER_FLAGS@" -DCMAKE_SHARED_LINKER_FLAGS_DEBUG="@CMAKE_SHARED_LINKER_FLAGS_DEBUG@" -DCMAKE_SHARED_LINKER_FLAGS_RELEASE="@CMAKE_SHARED_LINKER_FLAGS_RELEASE@" -DCMAKE_C_FLAGS="@CMAKE_C_FLAGS@" -DCMAKE_C_FLAGS_DEBUG="@CMAKE_C_FLAGS_DEBUG@" -DCMAKE_C_FLAGS_RELEASE="@CMAKE_C_FLAGS_RELEASE@" -DCMAKE_CXX_FLAGS="@CMAKE_CXX_FLAGS@" -DCMAKE_CXX_FLAGS_DEBUG="@CMAKE_CXX_FLAGS_DEBUG@" -DCMAKE_CXX_FLAGS_RELEASE="@CMAKE_CXX_FLAGS_RELEASE@" -DCMAKE_BUILD_TYPE=@CMAKE_BUILD_TYPE@ -DCMAKE_INSTALL_PREFIX=$inst_arg -DGTI_TOOL_INCLUDE_PATH="${GTI_TOOL_INCLUDE_PATH}" -DGTI_TOOL_LIB_PATH="${GTI_TOOL_LIB_PATH}"> output.out 2>output.err
+   
+ if [ $? -ne 0 ]
+ then
+@@ -3020,6 +3045,9 @@ temp=${np_arg:="-np -n -p @MPIEXEC_NUMPROC_FLAG@"}
+ MPIEXEC=${MPIEXEC:-"@MPIEXEC@"}
+ temp=${mpiexec_arg:=$MPIEXEC}
+ temp=${analyses_arg:=""}
++temp=${cc_arg:="@MUST_C_COMPILER@"}
++temp=${cxx_arg:="@MUST_CXX_COMPILER@"}
++temp=${ld_arg:="@CMAKE_LINKER@"}
+ # temp=${apis_arg:=}
+ temp=${language_arg:=@MUST_DEFAULT_MPI_INTERFACE@}
+ #temp=${nodesize_arg:=""}
+-- 
+2.51.0
