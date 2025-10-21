@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'PYTHIA'
+version = '8.316'
+
+homepage = 'https://www.pythia.org'
+description = """PYTHIA is a program for the generation of high-energy physics collision events, i.e. for the
+description of collisions at high energies between electrons, protons, photons and heavy nuclei. It contains theory
+and models for a number of physics aspects, including hard and soft interactions, parton distributions, initial- and
+final-state parton showers, multiparton interactions, fragmentation and decay. It is largely based on original
+research, but also borrows many formulae and other knowledge from the literature. As such it is categorized as a
+general purpose Monte Carlo event generator."""
+
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.pythia.org/download/pythia83/']
+sources = ['pythia%(version_major)s%(version_minor)s.tgz']
+checksums = ['1d99301aafd6896b57435edd73850e53f368f0021a647b12cf25584d77313489']
+
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('Python', '3.13.5'),
+    ('ROOT', '6.36.02'),
+    ('HDF5', '1.14.6'),
+]
+
+configopts = '--cxx="$CXX" --cxx-common="$CXXFLAGS" '
+configopts += '--with-openmp --with-mpich --with-gzip --with-root --with-hdf5 '
+configopts += '--with-python --with-python-include=$EBROOTPYTHON/include/python*/ '
+
+sanity_check_paths = {
+    'files': ['bin/pythia%(version_major)s-config', 'lib/libpythia%(version_major)s.a',
+              'lib/libpythia%%(version_major)s.%s' % SHLIB_EXT, 'lib/pythia8.%s' % SHLIB_EXT],
+    'dirs': ['include/Pythia%(version_major)s', 'include/Pythia%(version_major)sPlugins', 'share'],
+}
+sanity_check_commands = ["python -c 'import pythia%(version_major)s'"]
+
+modextrapaths = {'PYTHONPATH': 'lib'}
+
+moduleclass = 'phys'
