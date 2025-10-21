@@ -1,0 +1,48 @@
+easyblock = 'MakeCp'
+
+name = 'OpenLB'
+version = '1.8.1'
+
+homepage = 'https://www.openlb.net'
+description = """The OpenLB project provides a C++ package for the implementation of lattice Boltzmann methods that is
+general enough to address a vast range of transport problems, e.g. in computational fluid dynamics."""
+
+examples = """Examples can be found in the $OLB_ROOT/examples directory and on GitLab:
+https://gitlab.com/openlb/release/-/tree/master/examples"""
+
+toolchain = {'name': 'gompi', 'version': '2023b'}
+toolchainopts = {'cstd': 'c++20', 'openmp': True}
+
+source_urls = ['https://gitlab.com/openlb/release/-/archive/%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['OpenLB-1.8.1-makefiles.patch', 'OpenLB-1.8.1-config-cpu.patch', 'OpenLB-1.8.1-example-makefiles.patch']
+checksums = [
+    {'openlb-1.8.1.tar.gz': 'a7d36abf456db1fbead65f1ab6dbbca79c5c792100bd111f91467daf8f33f035'},
+    {'OpenLB-1.8.1-makefiles.patch': 'c7f7cf8e9ec0993e9c7697cfa7fe74a762b2aebcd8098dfcea4a25e44759eeb2'},
+    {'OpenLB-1.8.1-config-cpu.patch': '8f55bacbcde8adf894e2fdb2ddfc274909c29968916d1a340a114783f1416dc4'},
+    {'OpenLB-1.8.1-example-makefiles.patch': 'de980039b4b3301e887299e14aebe47bb142eb800b3d0178d57f62963ab69464'},
+]
+
+dependencies = [
+    ('tinyxml2', '10.0.0'),
+    ('zlib', '1.2.13'),
+]
+
+files_to_copy = [
+    'examples',
+    'lib',
+    'src',
+    'config.mk',
+    'default.mk',
+    'default.single.mk',
+    # 'default.mixed.mk',  # only for GPU builds
+    'rules.mk',
+]
+
+sanity_check_paths = {
+    'files': ['lib/libolbcore.a', f'lib/libolbcore.{SHLIB_EXT}'],
+    'dirs': ['lib']
+}
+
+modextravars = {'OLB_ROOT': '%(installdir)s'}
+moduleclass = 'phys'
