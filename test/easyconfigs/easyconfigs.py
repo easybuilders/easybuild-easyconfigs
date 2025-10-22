@@ -1254,6 +1254,28 @@ class EasyConfigTest(TestCase):
         def is_bundle(ec):
             return ec['easyblock'] in bundle_easyblocks or ec['name'] == 'Clang-AOMP'
         ecs = [ec.copy() if is_bundle(ec) else ec for ec in retained_changed_ecs]
+
+        # remove checksum for patch_ctypes_ld_library_path for Python easyconfigs, if present;
+        # this patch gets added automatically to list of patches by Python easyblock constructor,
+        # and causes check_sha256_checksums to fail because an extra checksum is found
+        for ec in ecs:
+            ec_fn = os.path.basename(ec.path)
+            if ec['name'] == 'Python':
+                patch_ctypes_ld_library_path = ec.get('patch_ctypes_ld_library_path')
+                if patch_ctypes_ld_library_path:
+                    checksums = ec['checksums']
+                    if not isinstance(checksums, list):
+                        self.fail(f"Don't know how to handle non-list value type for checksums in {ec_fn}")
+                    idx_match = None
+                    for idx, entry in enumerate(checksums):
+                        if patch_ctypes_ld_library_path in entry:
+                            idx_match = idx
+                            break
+                    if idx_match:
+                        del checksums[idx]
+                    else:
+                        self.fail(f"No checksum found for {patch_ctypes_ld_library_path} in {ec_fn}")
+
         checksum_issues = check_sha256_checksums(ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
