@@ -1263,7 +1263,7 @@ class EasyConfigTest(TestCase):
             if ec['name'] == 'Python':
                 patch_ctypes_ld_library_path = ec.get('patch_ctypes_ld_library_path')
                 if patch_ctypes_ld_library_path:
-                    checksums = ec['checksums']
+                    checksums = ec.get_ref('checksums')
                     if not isinstance(checksums, list):
                         self.fail(f"Don't know how to handle non-list value type for checksums in {ec_fn}")
                     idx_match = None
