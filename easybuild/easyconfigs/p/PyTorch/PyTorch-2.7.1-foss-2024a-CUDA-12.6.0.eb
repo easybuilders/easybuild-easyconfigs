@@ -8,12 +8,18 @@ PyTorch is a deep learning framework that puts Python first."""
 
 toolchain = {'name': 'foss', 'version': '2024a'}
 
+local_six_version = '1.11.0'
 source_urls = [GITHUB_RELEASE]
-sources = ['%(namelower)s-v%(version)s.tar.gz']
+sources = [
+    '%(namelower)s-v%(version)s.tar.gz',
+    {
+        # Avoid downloading this during the build, see third_party/NNPACK/cmake/DownloadSix.cmake for the version
+        'filename': f'six-{local_six_version}.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe'],
+    }
+]
 patches = [
     'PyTorch-1.12.1_add-hypothesis-suppression.patch',
-    'PyTorch-1.12.1_fix-TestTorch.test_to.patch',
-    'PyTorch-1.13.1_fix-gcc-12-warning-in-fbgemm.patch',
     'PyTorch-1.13.1_skip-failing-singular-grad-test.patch',
     'PyTorch-1.7.0_disable-dev-shm-test.patch',
     'PyTorch-2.0.1_avoid-test_quantization-failures.patch',
@@ -69,17 +75,16 @@ patches = [
     'PyTorch-2.7.1_skip-test_outside_linear_module_free.patch',
     'PyTorch-2.7.1_skip-TestFP8Lowering.patch',
     'PyTorch-2.7.1_skip-tests-requiring-cc89.patch',
+    'PyTorch-2.7.1_skip-tests-requiring-SM90.patch',
     'PyTorch-2.7.1_skip-NCCL-tests-without-GPUs.patch',
     'PyTorch-2.7.1_suport-64bit-BARs.patch',
     'PyTorch-2.7.1_tolerance-test_partial_flat_weights.patch',
 ]
 checksums = [
     {'pytorch-v2.7.1.tar.gz': '5befd2e540fd55ce4782d0ca7610ce5b572d756d7ea38090ef0f3c7c428fb20f'},
+    {f'six-{local_six_version}.tar.gz': '70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9'},
     {'PyTorch-1.12.1_add-hypothesis-suppression.patch':
      'e71ffb94ebe69f580fa70e0de84017058325fdff944866d6bd03463626edc32c'},
-    {'PyTorch-1.12.1_fix-TestTorch.test_to.patch': '75f27987c3f25c501e719bd2b1c70a029ae0ee28514a97fe447516aee02b1535'},
-    {'PyTorch-1.13.1_fix-gcc-12-warning-in-fbgemm.patch':
-     '5c7be91a6096083a0b1315efe0001537499c600f1f569953c6a2c7f4cc1d0910'},
     {'PyTorch-1.13.1_skip-failing-singular-grad-test.patch':
      '72688a57b2bb617665ad1a1d5e362c5111ae912c10936bb38a089c0204729f48'},
     {'PyTorch-1.7.0_disable-dev-shm-test.patch': '622cb1eaeadc06e13128a862d9946bcc1f1edd3d02b259c56a9aecc4d5406b8a'},
@@ -178,6 +183,8 @@ checksums = [
     {'PyTorch-2.7.1_skip-TestFP8Lowering.patch': 'ab7d863a2382070905495ef14c49c54308218ccffd31b32c08f757673df51067'},
     {'PyTorch-2.7.1_skip-tests-requiring-cc89.patch':
      'ac39e77339196d734837792791baa058732fb2e87180f6007ae5512028b68659'},
+    {'PyTorch-2.7.1_skip-tests-requiring-SM90.patch':
+     '7b5891a96b58d1d404c130233ec5ddbb0ad52afdb9c334bbe4e1f27f6c78ffd8'},
     {'PyTorch-2.7.1_skip-NCCL-tests-without-GPUs.patch':
      '550c6976b9e3305ceb25cf2de5d135ca771c49acccd2d331c724ade8ccaecde2'},
     {'PyTorch-2.7.1_suport-64bit-BARs.patch': '317c3d220aa87426d86e137a6c1a8f910adf9580ca0848371e0f6800c05dbde1'},
