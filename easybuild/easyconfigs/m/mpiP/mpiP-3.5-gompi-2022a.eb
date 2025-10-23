@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+version = '3.5'
+
+homepage = 'https://github.com/LLNL/mpiP'
+name = "mpiP"
+
+description = """mpiP is a lightweight profiling library for MPI applications. Because it only collects statistical
+information about MPI functions, mpiP generates considerably less overhead and much less data than tracing tools. All
+the information captured by mpiP is task-local. It only uses communication during report generation, typically at the
+end of the experiment, to merge results from all of the tasks into one output file.
+"""
+
+usage = """
+ Example usage (take special note of the order, the mpiP library has to appear AFTER your code):
+
+    mpifort -g -o mpitest mpitest.f90 -lmpiP -lm -lbfd -liberty -lunwind -lz
+"""
+
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/LLNL/mpiP/releases/download/%(version)s/']
+sources = [SOURCELOWER_TGZ]
+checksums = ['e366843d53fa016fb03903e51c8aac901aa5155edabe64698a8d6fa618a03bbd']
+
+builddependencies = [
+    ('Python', '3.10.4'),
+]
+
+dependencies = [
+    ('libunwind', '1.6.2'),
+]
+
+configopts = '--with-cc="$CC" --with-cxx="$CXX" --with-f77="$F77" '
+configopts += "CFLAGS='-DPACKAGE=mpiP -DPACKAGE_VERSION=%(version)s' "
+
+buildopts = "PACKAGE='mpiP' PACKAGE_VERSION='%(version)s'"
+
+sanity_check_paths = {
+    'files': [f'lib/libmpiP.{SHLIB_EXT}'],
+    'dirs': ['lib', 'share']
+}
+
+moduleclass = 'perf'
