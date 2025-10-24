@@ -19,7 +19,7 @@ builddependencies = [
     ('Perl', '5.40.0'),
     ('Python', '3.13.1'),
     ('pkgconf', '2.3.0'),
-    ('xxd', '9.1.1457'),  # required for ROCR-Runtime
+    ('xxd', '9.1.1457'),  # required for ROCr-Runtime
 ]
 
 dependencies = [
@@ -33,7 +33,7 @@ dependencies = [
     ('libffi', '3.4.5'),
     ('libdrm', '2.4.125'),
     ('numactl', '2.0.19'),
-    # ('Z3', '4.13.4'),
+    ('Z3', '4.13.4'),
 ]
 
 local_rocm_llvm_source = 'llvm-project-rocm-%s.tar.gz' % _rocm_version
@@ -71,7 +71,7 @@ components = [
         'easyblock': 'EB_ROCm_minus_LLVM',
         'sources': [{
             'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
-            'filename': local_rocm_llvm_source,  # '%(name)s-%(version)s.tar.gz',
+            'filename': local_rocm_llvm_source,
             # rename the extracted directory to the one that the LLVM easyblock expects
             'extract_cmd': 'tar xfz %%s && mv %%(name)s-rocm-%s %%(name)s-%%(version)s.src' % _rocm_version,
         }],
@@ -102,12 +102,14 @@ components = [
             'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
             'filename': local_rocm_llvm_source,
             # rename the extracted directory to the one that the LLVM easyblock expects
-            'extract_cmd': 'tar xfz %%s && mv %%(name)s-rocm-%s %%(name)s-%%(version)s.src' % _rocm_version,
+            # we need to extract the sources again so that potential source changes done by easyblocks
+            # to not cause unintended behaviour in the second build
+            'extract_cmd': 'tar xfz %%s && mv llvm-project-rocm-%s %%(name)s-%%(version)s.src' % _rocm_version,
         }],
         'patches': [
             'ROCm-LLVM-6.4.1_llvm-project-19.0.0_fix-offload-build.patch',
         ],
-        'start_dir': f'llvm-project-{_llvm_version}-rocm-{_rocm_version}.src',
+        'start_dir': f'llvm-project-{_llvm_version}-openmp-rocm-{_rocm_version}.src',
         'bootstrap': True,
         'build_lld': True,
         'build_clang_extras': True,
