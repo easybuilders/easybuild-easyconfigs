@@ -1,0 +1,18 @@
+TestInductorDynamicCPU.test_unbacked_reduction_cpu doesn't only fail on ROCM with:
+> AssertionError: expected to fail, but actually passed
+
+
+See https://github.com/pytorch/pytorch/issues/154217
+
+Author: Alexander Grund (TU Dresden)
+
+--- a/test/inductor/test_torchinductor_dynamic_shapes.py
++++ b/test/inductor/test_torchinductor_dynamic_shapes.py
+@@ -513,6 +513,7 @@ class TestInductorDynamic(TestCase):
+         ).sum().backward()
+         self.assertEqual(t.grad, expect)
+ 
++    @unittest.skip("Fails on CPU")
+     @torch._dynamo.config.patch(capture_scalar_outputs=True)
+     def test_unbacked_reduction(self, device):
+         expect_fail = (
