@@ -1,0 +1,46 @@
+easyblock = "ConfigureMake"
+name = "SIONlib"
+version = "1.7.7"
+
+homepage = 'http://www.fz-juelich.de/ias/jsc/EN/Expertise/Support/Software/SIONlib/_node.html'
+description = """SIONlib is a scalable I/O library for the parallel access to
+task-local files. The library not only supports writing and reading
+binary data to or from from several thousands of processors into a
+single or a small number of physical files but also provides for
+global open and close functions to access SIONlib file in
+parallel. SIONlib provides different interfaces: parallel access using
+MPI, OpenMP, or their combination and sequential access for
+post-processing utilities.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+
+source_urls = ['http://apps.fz-juelich.de/jsc/sionlib/download.php?version=%(version)s']
+sources = ['sionlib-%(version)s.tar.gz']
+
+checksums = [
+    {'sionlib-1.7.7.tar.gz': 'df98389f973501925d70d2c224bc50e39637bd76d522c25a8abd3d96d1c8adbc'},
+]
+
+if ARCH == 'aarch64':
+    patches = ['SIONlib-1.7.7_better-support-aarch64.patch']
+    checksums += [
+        {'SIONlib-1.7.7_better-support-aarch64.patch':
+         '78baf4d8dd93f63a2b6ce81a1ba1917dd927b8691f119b34862f49813382e460'}
+    ]
+
+dependencies = [('SIONfwd', '1.0.1')]
+builddependencies = [('pkgconf', '2.4.3')]
+
+configopts = '--disable-mic --compiler=gnu --mpi=openmpi --disable-cxx '
+configopts += '--enable-sionfwd="$EBROOTSIONFWD" CFLAGS="$CFLAGS -fPIC" '
+
+sanity_check_paths = {
+    'files': [
+        "bin/sionconfig",
+        ("lib64/libsioncom_64.a", "lib/libsionmpi_64.a", "lib64/libsionmpi_64.a"),
+    ],
+    'dirs': []
+}
+
+moduleclass = 'lib'

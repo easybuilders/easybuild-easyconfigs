@@ -1,0 +1,66 @@
+Combined https://github.com/OpenMathLib/OpenBLAS/pull/4677, https://github.com/OpenMathLib/OpenBLAS/pull/4783
+Add support for Intel Meteor Lake and Emerald Rapids
+
+From bbd227ce4a657a137bc08d93ec23e49f31dff095 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Mon, 6 May 2024 00:11:44 +0200
+Subject: [PATCH] Add Intel Meteor Lake and Emerald Rapids
+
+---
+ cpuid_x86.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/cpuid_x86.c b/cpuid_x86.c
+index 6cf4d6503f..40735c5634 100644
+--- a/cpuid_x86.c
++++ b/cpuid_x86.c
+@@ -1535,6 +1535,7 @@ int get_cpuname(void){
+               return CPUTYPE_SANDYBRIDGE;
+             else
+               return CPUTYPE_NEHALEM;
++	  case 0: // Meteor Lake
+           case 7: // Rocket Lake           
+ 	    if(support_avx512())
+               return CPUTYPE_SKYLAKEX;
+@@ -1560,6 +1561,19 @@ int get_cpuname(void){
+ 	      return CPUTYPE_NEHALEM;
+         }
+         break;
++      case 12: //family 6 exmodel 12
++	switch (model) {
++	  case 15:
++	    if(support_avx512())
++              return CPUTYPE_SAPPHIRERAPIDS;
++            if(support_avx2())
++              return CPUTYPE_HASWELL;
++            if(support_avx())
++	      return CPUTYPE_SANDYBRIDGE;
++	    else
++	    return CPUTYPE_NEHALEM;
++	  }
++	break;
+       }
+       break;    
+     case 0x7:
+
+From 3063d0302142c2aad46dbbc6f3d2e6ef3bb745cf Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Thu, 4 Jul 2024 16:05:05 +0200
+Subject: [PATCH] Add another CPUID for Meteor Lake
+
+---
+ cpuid_x86.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/cpuid_x86.c b/cpuid_x86.c
+index e157232cf2..4fb51f8b3c 100644
+--- a/cpuid_x86.c
++++ b/cpuid_x86.c
+@@ -1529,6 +1529,7 @@ int get_cpuname(void){
+         switch (model) {
+           case 5: // Comet Lake H and S
+           case 6: // Comet Lake U
++	  case 10: // Meteor Lake
+             if(support_avx2())
+               return CPUTYPE_HASWELL;
+             if(support_avx())

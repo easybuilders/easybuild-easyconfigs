@@ -1,0 +1,37 @@
+easyblock = 'PythonPackage'
+
+name = 'h5py'
+version = '3.14.0'
+versionsuffix = '-serial'
+
+homepage = 'https://www.h5py.org/'
+description = """HDF5 for Python (h5py) is a general-purpose Python interface to the Hierarchical Data Format library,
+ version 5. HDF5 is a versatile, mature scientific software library designed for the fast, flexible storage of enormous
+ amounts of data."""
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+
+sources = [SOURCE_TAR_GZ]
+patches = ['h5py-%(version)s_old_license_syntax.patch']
+checksums = [
+    {'h5py-3.14.0.tar.gz': '2372116b2e0d5d3e5e705b7f663f7c8d96fa79a4052d250484ef91d24d6a08f4'},
+    {'h5py-3.14.0_old_license_syntax.patch': '54a81e3509015776b312ccf21b9efcdaecbd7c02f940c60ed906e86e22f2a5f2'},
+]
+
+builddependencies = [
+    ('pkgconf', '2.4.3'),
+    ('Cython', '3.1.2'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('HDF5', '1.14.6', '-serial'),
+]
+
+# h5py's setup.py will disable setup_requires if H5PY_SETUP_REQUIRES is set to 0
+# without this environment variable, pip will fetch the minimum numpy version h5py supports during install,
+# even though SciPy-bundle provides a newer version that satisfies h5py's install_requires dependency.
+preinstallopts = 'HDF5_MPI=OFF HDF5_DIR="$EBROOTHDF5" H5PY_SETUP_REQUIRES=0 '
+
+moduleclass = 'data'

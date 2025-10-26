@@ -22,14 +22,17 @@ checksums = [
 builddependencies = [
     ('binutils', '2.40'),
     ('CMake', '3.27.6'),
+    ('meson-python', '0.15.0'),
 ]
 
 dependencies = [
-    ('Python', '3.11.5'),
     ('mctc-lib', '0.3.1'),
     ('mstore', '0.3.0'),
     ('Simple-DFTD3', '1.2.1'),
     ('dftd4', '3.7.0'),
+    # for tblite Python bindings
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
 ]
 
 build_shared_libs = True
@@ -38,10 +41,22 @@ build_shared_libs = True
 test_cmd = 'ctest --parallel 1'
 runtest = ''
 
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+exts_list = [
+    (name, version, {
+        'checksums': ['c2334dced8e61e26cd24e1ddb53d10aa0d685cf4df451fc8547192163cddc113'],
+    }),
+]
+
 sanity_check_paths = {
     'files': ['bin/tblite',
               'lib/libtblite.%s' % SHLIB_EXT],
-    'dirs': ['include/%(name)s', 'lib/cmake', 'lib/pkgconfig'],
+    'dirs': ['include/%(name)s', 'lib/cmake', 'lib/pkgconfig',
+             'lib/python%(pyshortver)s/site-packages'],
 }
 
 sanity_check_commands = ["mctc-convert --help"]

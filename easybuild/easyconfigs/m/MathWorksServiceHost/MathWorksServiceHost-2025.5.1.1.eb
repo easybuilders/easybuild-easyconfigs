@@ -1,0 +1,35 @@
+easyblock = 'Tarball'
+
+name = 'MathWorksServiceHost'
+version = '2025.5.1.1'
+
+homepage = ''
+# https://github.com/mathworks-ref-arch/administer-mathworks-service-host
+description = """MathWorks Service Host is a collection of background processes that provide
+ required services to MATLAB and other MathWorks products. Starting from MATLAB Release
+ 2024a, MATLAB requires MathWorks Service Host."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://ssd.mathworks.com/supportfiles/downloads/MathWorksServiceHost/v%(version)s/release/glnxa64/']
+sources = ['managed_mathworksservicehost_%(version)s_package_glnxa64.zip']
+checksums = ['9b62c0bfa646144ee48304bc35f5dea87b3ad062b0ce5d9f5d3268c829e2aabd']
+
+postinstallcmds = [
+    'echo "LatestDSInstallerVersion %(version)s" > %(installdir)s/LatestInstall.info',
+    'echo "LatestDSInstallRoot %(installdir)s" >> %(installdir)s/LatestInstall.info',
+    'echo "DSLauncherExecutable %(installdir)s/bin/glnxa64/MathWorksServiceHost" >> %(installdir)s/LatestInstall.info',
+]
+
+sanity_check_paths = {
+    'files': ['bin/MATLABConnector', 'bin/glnxa64/MathWorksServiceHost'],
+    'dirs': ['bin', 'cefclient', 'extern', 'help', 'resources', 'sys', 'toolbox', 'ui'],
+}
+
+sanity_check_commands = ['MATLABConnector help']
+
+# Force MATLAB to use the installed version. Otherwise, MATLAB automatically installs the
+# latest version of MathWorks Service Host for each host into `$HOME/MathWorks` on Linux
+modextrapaths = {'MATHWORKS_SERVICE_HOST_MANAGED_INSTALL_ROOT': ''}
+
+moduleclass = 'math'

@@ -1,0 +1,55 @@
+easyblock = 'ConfigureMake'
+
+name = 'FreeImage'
+version = '3.18.0'
+
+homepage = 'http://freeimage.sourceforge.net'
+description = """FreeImage is an Open Source library project for developers who would like to support popular graphics
+image formats like PNG, BMP, JPEG, TIFF and others as needed by today's multimedia applications. FreeImage is easy to
+use, fast, multithreading safe."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'cstd': 'c++14', 'pic': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%(name)s3180.zip']
+patches = [
+    '%(name)s-%(version)s-fix-makefile.patch',
+    '%(name)s-%(version)s-fix-makefile-riscv.patch',
+    '%(name)s-%(version)s-fix-makefile-gnu.patch',
+    '%(name)s-%(version)s-unistd-include.patch',
+    '%(name)s-%(version)s-byteswap-ulong.patch',
+    '%(name)s-%(version)s-wchar-include.patch',
+]
+checksums = [
+    {'FreeImage3180.zip': 'f41379682f9ada94ea7b34fe86bf9ee00935a3147be41b6569c9605a53e438fd'},
+    {'FreeImage-3.18.0-fix-makefile.patch': '3eaa1eb9562ccfd0cb95a37879bb7e3e8c745166596d75af529478181ef006a0'},
+    {'FreeImage-3.18.0-fix-makefile-riscv.patch': 'e845d53bfd829d771638b9952d3632010c7f19c88d761a786754453827bd7e9b'},
+    {'FreeImage-3.18.0-fix-makefile-gnu.patch': 'b636012988e1b88609fbd2c130e2b4e6fa8c488cb07578e0353baf8e5aa52413'},
+    {'FreeImage-3.18.0-unistd-include.patch': 'c2aa953260ecc7614ad4144ebeeaa757a75538081ce3465e71d3bac987f7defb'},
+    {'FreeImage-3.18.0-byteswap-ulong.patch': 'bb23f9364ae296b66ab16cc1d57473c1e31c65cf571af7a42522ae7703876c4a'},
+    {'FreeImage-3.18.0-wchar-include.patch': 'a68811f069bf70983bf62905d882088cb5a277e4b600cf5a48fde447552a8ec9'},
+]
+
+builddependencies = [('binutils', '2.42')]
+
+dependencies = [('zlib', '1.3.1')]
+
+skipsteps = ['configure']
+
+buildopts = ['', '-f Makefile.fip']
+
+installopts = [
+    "INCDIR=%(installdir)s/include INSTALLDIR=%(installdir)s/lib",
+    "-f Makefile.fip INCDIR=%(installdir)s/include INSTALLDIR=%(installdir)s/lib",
+]
+
+_incs = ['include/FreeImage%s.h' % x for x in ['', 'Plus']]
+_libs = ['lib/libfreeimage%s.%s' % (x, y) for x in ['', 'plus'] for y in ['a', SHLIB_EXT]]
+
+sanity_check_paths = {
+    'files': _incs + _libs,
+    'dirs': [],
+}
+
+moduleclass = 'vis'

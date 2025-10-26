@@ -1,0 +1,22 @@
+make sure that correct libpython*.so is picked up when 'python -m test --pgo' is being run
+during build of Python, to fix problem with failing test_embed because it may pick up
+wrong libpython*.so when RPATH linking is used (especially in EESSI build environment
+where another libpython*.so is provided by the compatibility layer)
+
+see also https://github.com/EESSI/software-layer/issues/1227
+
+author: Kenneth Hoste (HPC-UGent)
+
+diff -ru Python-3.13.1.orig/configure Python-3.13.1/configure
+--- Python-3.13.1.orig/configure	2024-12-03 18:59:52.000000000 +0100
++++ Python-3.13.1/configure	2025-10-10 08:11:07.387655393 +0200
+@@ -7586,7 +7586,8 @@
+     Linux*|GNU*|NetBSD*|FreeBSD*|DragonFly*|OpenBSD*|VxWorks*)
+       LDLIBRARY='libpython$(LDVERSION).so'
+       BLDLIBRARY='-L. -lpython$(LDVERSION)'
+-      RUNSHARED=LD_LIBRARY_PATH=`pwd`${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
++      # make sure that right libpython.so is used, i.e. the one from current (build) directory
++      RUNSHARED=LD_PRELOAD=`pwd`/$LDLIBRARY${LD_PRELOAD:+:${LD_PRELOAD}}
+ 
+       # The Android Gradle plugin will only package libraries whose names end
+       # with ".so".
