@@ -1,0 +1,57 @@
+Patch away dependency on ninja python package by falling back to checking
+returncode of `ninja --version`.
+
+Author: Viktor Rehnberg (Chalmers University of Technology)
+
+
+diff --git a/deepspeed/env_report.py b/deepspeed/env_report.py
+index 85a2f9b2..8bb64626 100644
+--- a/deepspeed/env_report.py
++++ b/deepspeed/env_report.py
+@@ -62,7 +62,7 @@ def ninja_installed():
+     try:
+         import ninja  # noqa: F401 # type: ignore
+     except ImportError:
+-        return False
++        return (subprocess.run(["ninja", "--version"]).returncode == 0)
+     return True
+ 
+ 
+diff --git a/op_builder/builder.py b/op_builder/builder.py
+index 8dc825c7..970d18b2 100644
+--- a/op_builder/builder.py
++++ b/op_builder/builder.py
+@@ -487,7 +487,8 @@ class OpBuilder(ABC):
+         try:
+             import ninja  # noqa: F401 # type: ignore
+         except ImportError:
+-            raise RuntimeError(f"Unable to JIT load the {self.name} op due to ninja not being installed.")
++            if subprocess.run(["ninja", "--version"]).returncode != 0:
++                raise RuntimeError(f"Unable to JIT load the {self.name} op due to ninja not being installed.")
+ 
+         if isinstance(self, CUDAOpBuilder) and not self.is_rocm_pytorch():
+             self.build_for_cpu = not torch.cuda.is_available()
+diff --git a/op_builder/xpu/builder.py b/op_builder/xpu/builder.py
+index 81b15f19..cf0a1cc0 100644
+--- a/op_builder/xpu/builder.py
++++ b/op_builder/xpu/builder.py
+@@ -89,7 +89,8 @@ class SYCLOpBuilder(OpBuilder):
+         try:
+             import ninja  # noqa: F401
+         except ImportError:
+-            raise RuntimeError(f"Unable to JIT load the {self.name} op due to ninja not being installed.")
++            if subprocess.run(["ninja", "--version"]).returncode != 0:
++                raise RuntimeError(f"Unable to JIT load the {self.name} op due to ninja not being installed.")
+ 
+         self.jit_mode = True
+         from intel_extension_for_pytorch.xpu.cpp_extension import load
+diff --git a/requirements/requirements.txt b/requirements/requirements.txt
+index 80c9f9b3..eed77fa3 100755
+--- a/requirements/requirements.txt
++++ b/requirements/requirements.txt
+@@ -1,5 +1,4 @@
+ hjson
+-ninja
+ numpy
+ packaging>=20.0
+ psutil
