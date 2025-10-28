@@ -1,0 +1,36 @@
+Backport of https://github.com/google/XNNPACK/commit/5f23827e66cca435fa400b6e221892ac95af0079 to fix
+> unary-elementwise.cc:125:14: error: invalid 'static_cast' from type 'xnn_bfloat16' to type '_Float16'
+
+Author: Alexander Grund (TU Dresden)
+diff -ur a/third_party/XNNPACK/src/reference/unary-elementwise.cc b/third_party/XNNPACK/src/reference/unary-elementwise.cc
+--- a/third_party/XNNPACK/src/reference/unary-elementwise.cc	2025-04-02 11:29:03.536599185 +0200
++++ b/third_party/XNNPACK/src/reference/unary-elementwise.cc	2025-04-02 11:31:46.182485083 +0200
+@@ -127,6 +127,16 @@
+   }
+ };
+ 
++#ifdef XNN_HAVE_FLOAT16
++template <>
++struct ConvertOp<xnn_bfloat16, _Float16> {
++  explicit ConvertOp(const xnn_unary_uparams*) {}
++  _Float16 operator()(xnn_bfloat16 x) const {
++    return static_cast<_Float16>(static_cast<float>(x));
++  }
++};
++#endif
++
+ template <typename TIn, typename TOut>
+ const xnn_unary_elementwise_config* get_convert_config(
+     std::true_type /*input_quantized*/, std::true_type /*output_quantized*/) {
+diff -ur a/third_party/XNNPACK/src/xnnpack/simd/s16-neon.h b/third_party/XNNPACK/src/xnnpack/simd/s16-neon.h
+--- a/third_party/XNNPACK/src/xnnpack/simd/s16-neon.h	2025-04-02 11:29:03.497600412 +0200
++++ b/third_party/XNNPACK/src/xnnpack/simd/s16-neon.h	2025-04-02 11:30:22.054130343 +0200
+@@ -70,7 +70,7 @@
+     v_low = vget_high_s16(v);
+   }
+   if (num_elements & 2) {
+-    vst1_lane_s32((void*) output, vreinterpret_s32_s16(v_low), 0);
++    vst1_lane_s32((int32_t*) output, vreinterpret_s32_s16(v_low), 0);
+     output += 2;
+     v_low = vext_s16(v_low, v_low, 2);
+   }

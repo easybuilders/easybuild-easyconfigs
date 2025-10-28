@@ -1,0 +1,43 @@
+From 7d3573e54ccee08201ab3157f1a05b92b4707695 Mon Sep 17 00:00:00 2001
+From: Jakob Schiotz <schiotz@fysik.dtu.dk>
+Date: Tue, 12 Aug 2025 17:27:48 +0200
+Subject: [PATCH] Compatibility with ELPA 2025.X.Y
+
+The undocumented ELPA functions elpa_generalized_eigenvectors_d and
+elpa_generalized_eigenvectors_dc have now been documented and renamed
+to elpa_generalized_eigenvectors_double and
+elpa_generalized_eigenvectors_double_complex
+---
+ c/elpa.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/c/elpa.c b/c/elpa.c
+index 44d56e279a..7ea106203b 100644
+--- a/c/elpa.c
++++ b/c/elpa.c
+@@ -201,12 +201,21 @@ PyObject* pyelpa_general_diagonalize(PyObject *self, PyObject *args)
+     void *q = (void *)PyArray_DATA(C_obj);
+ 
+     if (PyObject_IsTrue(is_complex_obj)) {
++#if ELPA_API_VERSION > 20250000
++        elpa_generalized_eigenvectors_double_complex(handle, a, b, ev, q,
++                                                     is_already_decomposed, &err);
++#else
+         elpa_generalized_eigenvectors_dc(handle, a, b, ev, q,
+                                          is_already_decomposed, &err);
+-
++#endif
+     } else {
++#if ELPA_API_VERSION > 20250000
++        elpa_generalized_eigenvectors_double(handle, a, b, ev, q,
++                                             is_already_decomposed, &err);
++#else
+         elpa_generalized_eigenvectors_d(handle, a, b, ev, q,
+                                         is_already_decomposed, &err);
++#endif
+     }
+     return checkerr(err);
+ }
+-- 
+2.39.5 (Apple Git-154)
+
