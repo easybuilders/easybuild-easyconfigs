@@ -1,0 +1,88 @@
+Taken from https://patch-diff.githubusercontent.com/raw/ornladios/ADIOS2/pull/4697
+Current CMake logic disallows to use external dill, atl, ffs, enet if ADIOS2_USE_EXTERNAL_EVPATH is true.
+This should be the opposite as EVPath is built on top of these libraries (so it does not make sense to use
+the internal version of the libraries with an external EVPath)
+
+From 7a864f9f3416694cb4b51520b0bf2686f543b009 Mon Sep 17 00:00:00 2001
+From: crivella <davidecrivella@yahoo.it>
+Date: Mon, 27 Oct 2025 17:54:43 +0100
+Subject: [PATCH 1/2] Patch to fix building with external EVPath dependency
+
+---
+ source/adios2/toolkit/remote/CMakeLists.txt |  2 +-
+ thirdparty/CMakeLists.txt                   | 13 +++++++++----
+ 2 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/source/adios2/toolkit/remote/CMakeLists.txt b/source/adios2/toolkit/remote/CMakeLists.txt
+index 31b4ff6151..693d95fa9b 100644
+--- a/source/adios2/toolkit/remote/CMakeLists.txt
++++ b/source/adios2/toolkit/remote/CMakeLists.txt
+@@ -7,7 +7,7 @@ if (NOT ADIOS2_USE_PIP)
+   add_executable(adios2_remote_server ./remote_server.cpp)
+ 
+   target_link_libraries(adios2_remote_server
+-                        PUBLIC EVPath::EVPath adios2_core adios2sys
++                        PUBLIC adios2::thirdparty::EVPath adios2_core adios2sys
+                         PRIVATE adios2::thirdparty::pugixml $<$<PLATFORM_ID:Windows>:shlwapi>)
+ 
+   target_include_directories(adios2_remote_server PRIVATE ${PROJECT_BINARY_DIR})
+diff --git a/thirdparty/CMakeLists.txt b/thirdparty/CMakeLists.txt
+index a78a17a100..59323cc4cc 100644
+--- a/thirdparty/CMakeLists.txt
++++ b/thirdparty/CMakeLists.txt
+@@ -97,20 +97,25 @@ cmake_dependent_option(ADIOS2_USE_EXTERNAL_EVPATH
+ )
+ cmake_dependent_option(ADIOS2_USE_EXTERNAL_ATL
+   "Use an externally supplied ATL library" OFF
+-  "NOT ADIOS2_USE_EXTERNAL_EVPATH" OFF
++  "ADIOS2_USE_EXTERNAL_EVPATH" OFF
+ )
+ cmake_dependent_option(ADIOS2_USE_EXTERNAL_FFS
+   "Use an externally supplied FFS library" OFF
+-  "NOT ADIOS2_USE_EXTERNAL_EVPATH" OFF
++  "ADIOS2_USE_EXTERNAL_EVPATH" OFF
+ )
+ cmake_dependent_option(ADIOS2_USE_EXTERNAL_DILL
+   "Use an externally supplied DILL library" OFF
+-  "NOT ADIOS2_USE_EXTERNAL_FFS" OFF
++  "ADIOS2_USE_EXTERNAL_FFS" OFF
+ )
+ cmake_dependent_option(ADIOS2_USE_EXTERNAL_ENET
+   "Use an externally supplied ENET library" OFF
+-  "NOT ADIOS2_USE_EXTERNAL_EVPATH" OFF
++  "ADIOS2_USE_EXTERNAL_EVPATH" OFF
+ )
++message(WARNING "ADIOS2_USE_EXTERNAL_EVPATH: ${ADIOS2_USE_EXTERNAL_EVPATH}")
++message(WARNING "ADIOS2_USE_EXTERNAL_ATL: ${ADIOS2_USE_EXTERNAL_ATL}")
++message(WARNING "ADIOS2_USE_EXTERNAL_FFS: ${ADIOS2_USE_EXTERNAL_FFS}")
++message(WARNING "ADIOS2_USE_EXTERNAL_DILL: ${ADIOS2_USE_EXTERNAL_DILL}")
++message(WARNING "ADIOS2_USE_EXTERNAL_ENET: ${ADIOS2_USE_EXTERNAL_ENET}")
+ 
+ if(NOT ADIOS2_USE_EXTERNAL_FFS)
+   if(NOT ADIOS2_USE_EXTERNAL_ATL)
+
+From 6e87819cbdd63ba1496d1e01457781a80a5063d5 Mon Sep 17 00:00:00 2001
+From: crivella <davidecrivella@yahoo.it>
+Date: Tue, 28 Oct 2025 10:16:19 +0100
+Subject: [PATCH 2/2] Remove debug messages
+
+---
+ thirdparty/CMakeLists.txt | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/thirdparty/CMakeLists.txt b/thirdparty/CMakeLists.txt
+index 59323cc4cc..fa12341e22 100644
+--- a/thirdparty/CMakeLists.txt
++++ b/thirdparty/CMakeLists.txt
+@@ -111,11 +111,6 @@ cmake_dependent_option(ADIOS2_USE_EXTERNAL_ENET
+   "Use an externally supplied ENET library" OFF
+   "ADIOS2_USE_EXTERNAL_EVPATH" OFF
+ )
+-message(WARNING "ADIOS2_USE_EXTERNAL_EVPATH: ${ADIOS2_USE_EXTERNAL_EVPATH}")
+-message(WARNING "ADIOS2_USE_EXTERNAL_ATL: ${ADIOS2_USE_EXTERNAL_ATL}")
+-message(WARNING "ADIOS2_USE_EXTERNAL_FFS: ${ADIOS2_USE_EXTERNAL_FFS}")
+-message(WARNING "ADIOS2_USE_EXTERNAL_DILL: ${ADIOS2_USE_EXTERNAL_DILL}")
+-message(WARNING "ADIOS2_USE_EXTERNAL_ENET: ${ADIOS2_USE_EXTERNAL_ENET}")
+ 
+ if(NOT ADIOS2_USE_EXTERNAL_FFS)
+   if(NOT ADIOS2_USE_EXTERNAL_ATL)
