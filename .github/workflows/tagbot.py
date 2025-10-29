@@ -2,11 +2,12 @@
 # It should not use any untrusted third party code, or any code checked into the repository itself
 # as that could indirectly grant PRs the ability to edit labels and comments on PRs.
 
+import json
 import os
+from pathlib import Path
+
 import git
 import requests
-import json
-from pathlib import Path
 
 
 def get_first_commit_date(repo, file_path):
@@ -23,8 +24,8 @@ def sort_by_added_date(repo, file_paths):
     return [file for date, file in sorted_files]
 
 
-def similar_easyconfigs(repo, new_file):
-    possible_neighbours = [x for x in new_file.parent.glob('*.eb') if x != new_file]
+def similar_easyconfigs(repo, new_file, new_ecs):
+    possible_neighbours = [x for x in new_file.parent.glob('*.eb') if x not in new_ecs]
     return sort_by_added_date(repo, possible_neighbours)
 
 
@@ -78,13 +79,21 @@ new_software = 0
 updated_software = 0
 to_diff = dict()
 for new_file in new_ecs:
-    neighbours = similar_easyconfigs(gitrepo, new_file)
+    neighbours = similar_easyconfigs(gitrepo, new_file, new_ecs)
     print(f"Found {len(neighbours)} neighbours for {new_file}")
     if neighbours:
         updated_software += 1
         to_diff[new_file] = neighbours
     else:
         new_software += 1
+
+manual_download = False
+for file in new_ecs + changed_ecs:
+    with file.open() as f:
+        content = f.read()
+    if 'download_instructions' in content:
+        manual_download = True
+        break
 
 print(f"Generating comment for {len(to_diff)} updates softwares")
 # Limit comment size for large PRs:
@@ -120,7 +129,8 @@ current_labels = [label['name'] for label in data['pull_request']['labels']]
 label_checks = [(changed_ecs, 'change'),
                 (new_software, 'new'),
                 (updated_software, 'update'),
-                (modified_workflow, 'workflow')]
+                (modified_workflow, 'workflow'),
+                (manual_download, 'manual_download')]
 
 labels_add = []
 labels_del = []
