@@ -566,7 +566,10 @@ class EasyConfigTest(TestCase):
             'e3nn': [(r'0\.4\.4; versionsuffix: -CUDA-12\.1\.1', [r'MACE-0\.3\.8-foss-2023a-CUDA-12\.1\.1'])],
             # Current rapthor requires WSclean 3.5 or newer, which in turn requires EveryBeam 0.6.X or newer
             # Requires us to also bump DP3 version (to 6.2) and its dependency on EveryBeam
-            'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2', r'WSClean-3\.[5-9]'])],
+            'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2',
+                                        r'WSClean-3\.[5-9]',
+                                        r'LSMTool-1.7.0-foss-2023b',
+                                        r'LINC-5.0-foss-2023b'])],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
@@ -616,6 +619,10 @@ class EasyConfigTest(TestCase):
                 # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
                 ('1.10.13;', ['GTDB-Tk-2.3.2-', 'GTDB-Tk-2.4.0-']),
             ],
+            # Pydot <3 is explicitely required by cwltool
+            'pydot': [(r'2\.0\.0', [r'LINC-5.0-foss-2023b',
+                                    r'toil-cwl-8.2.0-foss-2023b',
+                                    r'cwltool-3.1.20250110105449-foss-2023b'])],
             # bakta requires PyHMMER 0.10.15
             'PyHMMER': [(r'0\.10\.15', [r'bakta-1\.10\.1'])],
             # WhatsHap 1.4 + medaka 1.6.0 require Pysam >= 0.18.0 (NGSpeciesID depends on medaka)
@@ -639,6 +646,8 @@ class EasyConfigTest(TestCase):
                 ('2.5.3;', ['medaka-1.5.0-']),
                 # tensorflow-probability version to TF version
                 ('2.8.4;', ['tensorflow-probability-0.16.0-']),
+                # TensorFlow 2.15.1 is used by Clair3 v1.0.8 and tensorflow-probability 0.23.0
+                ('2.15.1;', ['Clair3-1.0.8-', 'tensorflow-probability-0.23.0-']),
             ],
             # vLLM has pinned dependency tiktoken == 0.6.0
             'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
@@ -1252,6 +1261,28 @@ class EasyConfigTest(TestCase):
         def is_bundle(ec):
             return ec['easyblock'] in bundle_easyblocks or ec['name'] == 'Clang-AOMP'
         ecs = [ec.copy() if is_bundle(ec) else ec for ec in retained_changed_ecs]
+
+        # remove checksum for patch_ctypes_ld_library_path for Python easyconfigs, if present;
+        # this patch gets added automatically to list of patches by Python easyblock constructor,
+        # and causes check_sha256_checksums to fail because an extra checksum is found
+        for ec in ecs:
+            ec_fn = os.path.basename(ec.path)
+            if ec['name'] == 'Python':
+                patch_ctypes_ld_library_path = ec.get('patch_ctypes_ld_library_path')
+                if patch_ctypes_ld_library_path:
+                    checksums = ec.get_ref('checksums')
+                    if not isinstance(checksums, list):
+                        self.fail(f"Don't know how to handle non-list value type for checksums in {ec_fn}")
+                    idx_match = None
+                    for idx, entry in enumerate(checksums):
+                        if patch_ctypes_ld_library_path in entry:
+                            idx_match = idx
+                            break
+                    if idx_match:
+                        del checksums[idx]
+                    else:
+                        self.fail(f"No checksum found for {patch_ctypes_ld_library_path} in {ec_fn}")
+
         checksum_issues = check_sha256_checksums(ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
@@ -1362,9 +1393,12 @@ class EasyConfigTest(TestCase):
                 python_re = re.compile(r'\bpython (-c|-m|cc|[^ ]*\w+.py) ')
                 # Detect if `-s` is present, potentially after other switches
                 ignore_user_switch_re = re.compile(r'\bpython (-\w+ )*-s ')
+                comment_re = re.compile(r'# .*$')
                 # Check the raw lines as the issue could be anywhere, not only in `sanity_check_commands`,
                 # e.g. `runtest`, `installopts`, `configopts`, ...
                 for line_nr, line in enumerate(read_file(ec.path).splitlines()):
+                    # Strip comment if present to avoid flagging e.g. "sed '/.../' # Fix 'python -c foo' failure"
+                    line = comment_re.sub('', line)
                     if python_re.search(line) and not ignore_user_switch_re.search(line):
                         failing_checks.append("Python invocation in '%s' (line #%s) should use the '-s' parameter in %s"
                                               % (line, line_nr + 1, ec_fn))

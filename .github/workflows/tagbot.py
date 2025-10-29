@@ -2,11 +2,12 @@
 # It should not use any untrusted third party code, or any code checked into the repository itself
 # as that could indirectly grant PRs the ability to edit labels and comments on PRs.
 
+import json
 import os
+from pathlib import Path
+
 import git
 import requests
-import json
-from pathlib import Path
 
 
 def get_first_commit_date(repo, file_path):
@@ -86,6 +87,14 @@ for new_file in new_ecs:
     else:
         new_software += 1
 
+manual_download = False
+for file in new_ecs + changed_ecs:
+    with file.open() as f:
+        content = f.read()
+    if 'download_instructions' in content:
+        manual_download = True
+        break
+
 print(f"Generating comment for {len(to_diff)} updates softwares")
 # Limit comment size for large PRs:
 if len(to_diff) > 20:  # Too much, either bad PR or some broad change. Not diffing.
@@ -120,7 +129,8 @@ current_labels = [label['name'] for label in data['pull_request']['labels']]
 label_checks = [(changed_ecs, 'change'),
                 (new_software, 'new'),
                 (updated_software, 'update'),
-                (modified_workflow, 'workflow')]
+                (modified_workflow, 'workflow'),
+                (manual_download, 'manual_download')]
 
 labels_add = []
 labels_del = []
