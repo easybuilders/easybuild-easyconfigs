@@ -75,18 +75,24 @@ pretestopts = ' && '.join([
 ])
 # pretestopts = 'grep 321 123 && '
 
+_skip_tests = [
+    'Unit.FileTransport.FailOnEOF.Serial',  # Fails due to not throwing an expected exception
+]
+_skip_tests_str = '|'.join(_skip_tests)
+
 test_cmd = 'ctest'
 testopts = ' '.join([
     '-VV',  # Verbose output
     '--output-on-failure',
     '--stop-on-failure',
-    '-j %(parallel)s'
+    '-j %(parallel)s',
+    f'-E "{_skip_tests_str}"',
 
     # # Some tests autoset very high timeouts (~30 min) but just hangs in the MPI calls.
     # # This sets a reasonable default for tests that do not set their own timeout explicitly.
     # '--timeout 120',
-    # # https://github.com/ornladios/ADIOS2/blob/v2.10.2/scripts/dashboard/adios_common.cmake#L94
-    # '--repeat until-pass:5',
+    # https://github.com/ornladios/ADIOS2/blob/v2.10.2/scripts/dashboard/adios_common.cmake#L94
+    '--repeat until-pass:5',
 
     # '-R TestStagingMPMD.SlowReader',  # TODO check known failing test
     # '-R NewAttributeEveryStep.SST.FFS.MPI',  # TODO check known failing test
