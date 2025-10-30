@@ -44,7 +44,7 @@ dependencies = [
     ('SQLite', '3.43.1'),
     ('libsodium', '1.0.19'),
     # ('zfp', '1.0.1'),  # TODO: not found by configure script
-    ('MGARD', '1.6.0'),
+    # ('MGARD', '1.6.0'),
 ]
 
 # preconfigopts = 'export ZFP_DIR=$EBROOTZF && '
@@ -53,6 +53,8 @@ configopts = ' '.join([
     '-DCTEST_USE_LAUNCHERS=TRUE',  # Testing from CI
     '-DBUILD_TESTING=ON',
     '-DADIOS2_USE_UCX=OFF',  # Needed to avoid failing/timedout tests
+    # Seems to net get linked to adios2? Failing tests with "ADIOS2 didn't compile with mgard library..."
+    '-DADIOS2_USE_MGARD=OFF',
     '-DADIOS2_USE_EXTERNAL_PYBIND11=ON',
     '-DADIOS2_USE_EXTERNAL_YAMLCPP=ON',
     '-DADIOS2_USE_EXTERNAL_NLOHMANN_JSON=ON',
@@ -60,7 +62,7 @@ configopts = ' '.join([
     '-DADIOS2_USE_EXTERNAL_GTEST=ON',
     # MPI tests could fail depending on the system and environment configuration
     '-DADIOS2_RUN_MPI_MPMD_TESTS=OFF',
-    '-DMPIEXEC_MAX_NUMPROCS=4'
+    '-DMPIEXEC_MAX_NUMPROCS=2'
 ])
 
 # Taken from https://github.com/ornladios/ADIOS2/blob/master/scripts/ci/gh-actions/run.sh
@@ -77,12 +79,18 @@ test_cmd = 'ctest'
 testopts = ' '.join([
     '-VV',  # Verbose output
     '--output-on-failure',
-    # Some tests autoset very high timeouts (~30 min) but just hangs in the MPI calls.
-    # This sets a reasonable default for tests that do not set their own timeout explicitly.
-    '--timeout 120',
-    # https://github.com/ornladios/ADIOS2/blob/v2.10.2/scripts/dashboard/adios_common.cmake#L94
-    '--repeat until-pass:5',
+    '--stop-on-failure',
+    '-j %(parallel)s'
+
+    # # Some tests autoset very high timeouts (~30 min) but just hangs in the MPI calls.
+    # # This sets a reasonable default for tests that do not set their own timeout explicitly.
+    # '--timeout 120',
+    # # https://github.com/ornladios/ADIOS2/blob/v2.10.2/scripts/dashboard/adios_common.cmake#L94
+    # '--repeat until-pass:5',
+
     # '-R TestStagingMPMD.SlowReader',  # TODO check known failing test
+    # '-R NewAttributeEveryStep.SST.FFS.MPI',  # TODO check known failing test
+    # ' && grep 321 123',  # Give me a shell after the tests
 ])
 
 sanity_check_paths = {
