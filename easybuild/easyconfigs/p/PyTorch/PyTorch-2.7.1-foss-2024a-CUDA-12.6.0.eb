@@ -53,6 +53,7 @@ patches = [
     'PyTorch-2.7.0_skip-test_init_from_local_shards.patch',
     'PyTorch-2.7.1_avoid-caffe2-sandcastle-test-lib.patch',
     'PyTorch-2.7.1_do-not-rpath-stubs-dir-in-jit-code.patch',
+    'PyTorch-2.7.1_exit-test_c10d_ops_nccl-with-succes-when-no-gpu.patch',
     'PyTorch-2.7.1_fix-cuda-12.6-driver-api-usage.patch',
     'PyTorch-2.7.1_fix-CUDASymmetricMemory-group.patch',
     'PyTorch-2.7.1_fix-nccl-test-env.patch',
@@ -68,22 +69,23 @@ patches = [
     'PyTorch-2.7.1_serialize-test_host_memory_stats.patch',
     'PyTorch-2.7.1_skip-failing-max_autotune-tests.patch',
     'PyTorch-2.7.1_skip-failing-schedule-test.patch',
+    'PyTorch-2.7.1_skip-NCCL-tests-without-GPUs.patch',
     'PyTorch-2.7.1_skip-test_benchmark_on_non_zero_device.patch',
     'PyTorch-2.7.1_skip-test_data_parallel_rnn.patch',
     'PyTorch-2.7.1_skip-test_gds_fails_in_ci.patch',
     'PyTorch-2.7.1_skip-test_lowering_one_shot_all_reduce.patch',
     'PyTorch-2.7.1_skip-test_mixed_mm_exhaustive_dtypes.patch',
     'PyTorch-2.7.1_skip-test_outside_linear_module_free.patch',
+    'PyTorch-2.7.1_skip-test_override-without-CUDA.patch',
     'PyTorch-2.7.1_skip-TestFP8Lowering.patch',
     'PyTorch-2.7.1_skip-tests-requiring-cc89.patch',
     'PyTorch-2.7.1_skip-tests-requiring-SM90.patch',
-    'PyTorch-2.7.1_skip-NCCL-tests-without-GPUs.patch',
     'PyTorch-2.7.1_suport-64bit-BARs.patch',
     'PyTorch-2.7.1_tolerance-test_partial_flat_weights.patch',
 ]
 checksums = [
     {'pytorch-v2.7.1.tar.gz': '5befd2e540fd55ce4782d0ca7610ce5b572d756d7ea38090ef0f3c7c428fb20f'},
-    {f'six-{local_six_version}.tar.gz': '70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9'},
+    {f"six-{local_six_version}.tar.gz": "70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9"},
     {'PyTorch-1.12.1_add-hypothesis-suppression.patch':
      'e71ffb94ebe69f580fa70e0de84017058325fdff944866d6bd03463626edc32c'},
     {'PyTorch-1.13.1_skip-failing-singular-grad-test.patch':
@@ -128,7 +130,7 @@ checksums = [
     {'PyTorch-2.6.0_skip-test-requiring-MKL.patch': 'f1c9b1c77b09d59317fd52d390e7d948a147325b927ad6373c1fa1d1d6ea1ea8'},
     {'PyTorch-2.7.0_avoid_caffe2_test_cpp_jit.patch':
      '2f3255e067f5c6f0d78b4fbce94784c41bddf3d01bab9673856b0d0bbc4e3fec'},
-    {'PyTorch-2.7.0_do-not-checkout-nccl.patch': 'e97a2669efbb98e98c4cf7c5679e0bf0e98d894860e61e11b7c6496570dbed3f'},
+    {'PyTorch-2.7.0_do-not-checkout-nccl.patch': 'ad085a15dd36768ad33a934f53dc595da745e01697b44d431f8b70ae9d0eb567'},
     {'PyTorch-2.7.0_fix-distributed-tests-without-gpus.patch':
      '99d92db44f856b2fb05c221f201e50c21e57a7f6f35824f8274a380875029f24'},
     {'PyTorch-2.7.0_fix-skip-decorators.patch': 'a5197594f8b076f9a2d03ae3aa725018d55889b737a12b74d6872b5c1bd1e809'},
@@ -142,6 +144,8 @@ checksums = [
      'aaf22cb431357dc78e4db895d64febf1c7ee187e8ad27bd13544d011127354d4'},
     {'PyTorch-2.7.1_do-not-rpath-stubs-dir-in-jit-code.patch':
      '6ab92ce23618c74a4950a6dc652d8ea1ff03c101c4f93a9186da29e136b17b1a'},
+    {'PyTorch-2.7.1_exit-test_c10d_ops_nccl-with-succes-when-no-gpu.patch':
+     'ad46a9167ceeafe073618588b2ca13cdef431aae732713b5dc545a93eb9cd076'},
     {'PyTorch-2.7.1_fix-cuda-12.6-driver-api-usage.patch':
      '51b2e51ff8419f263f0b9f4352fb503f6f48f2950076f9596b299ff2a0121747'},
     {'PyTorch-2.7.1_fix-CUDASymmetricMemory-group.patch':
@@ -169,6 +173,8 @@ checksums = [
      '8611605060088b0178834d34621d407c6ba03803d65e433971f458c05adf0c10'},
     {'PyTorch-2.7.1_skip-failing-schedule-test.patch':
      '50151c6792d64c1e01533218b70f0ed974b934334b008e6df558ae8a9b999910'},
+    {'PyTorch-2.7.1_skip-NCCL-tests-without-GPUs.patch':
+     '550c6976b9e3305ceb25cf2de5d135ca771c49acccd2d331c724ade8ccaecde2'},
     {'PyTorch-2.7.1_skip-test_benchmark_on_non_zero_device.patch':
      '1c35b207b6fcc24fbfcdc7552fb4f0c9b77233f8a9032a7caa2b8f94d33491d0'},
     {'PyTorch-2.7.1_skip-test_data_parallel_rnn.patch':
@@ -181,13 +187,13 @@ checksums = [
      '709288abc802c9eb687c15f2677ebaf408d8325a4cb470d23cb72447ee0b8e13'},
     {'PyTorch-2.7.1_skip-test_outside_linear_module_free.patch':
      '4916a256b2b9914e4fdb930681b80df93ea561ddee2fc9978c4973a5650be5e9'},
+    {'PyTorch-2.7.1_skip-test_override-without-CUDA.patch':
+     'a94654b9ba492be1cef0c8f266d1e16e0c5efb35816164f8c2bfdfda2dfa65f5'},
     {'PyTorch-2.7.1_skip-TestFP8Lowering.patch': 'a1b5d15795d1c776fa7dca9e3eb8c5335d940e6961cb7d9980d1bfe49b847391'},
     {'PyTorch-2.7.1_skip-tests-requiring-cc89.patch':
      'ac39e77339196d734837792791baa058732fb2e87180f6007ae5512028b68659'},
     {'PyTorch-2.7.1_skip-tests-requiring-SM90.patch':
      '7b5891a96b58d1d404c130233ec5ddbb0ad52afdb9c334bbe4e1f27f6c78ffd8'},
-    {'PyTorch-2.7.1_skip-NCCL-tests-without-GPUs.patch':
-     '550c6976b9e3305ceb25cf2de5d135ca771c49acccd2d331c724ade8ccaecde2'},
     {'PyTorch-2.7.1_suport-64bit-BARs.patch': '317c3d220aa87426d86e137a6c1a8f910adf9580ca0848371e0f6800c05dbde1'},
     {'PyTorch-2.7.1_tolerance-test_partial_flat_weights.patch':
      'f304440a57e00b8052a5ffbf285adad8d0fdc5a812a659420b59a20deb5a9942'},
