@@ -14,7 +14,6 @@ common application programming interface for all transport modes. ADIOS2 can be 
 supercomputers, cloud systems, and personal computers. """
 
 toolchain = {'name': 'foss', 'version': '2023b'}
-toolchainopts = {'usempi': True, 'openmp': True}
 
 source_urls = ['https://github.com/ornladios/ADIOS2/archive/refs/tags/']
 sources = ['v%(version)s.tar.gz']
@@ -46,11 +45,11 @@ dependencies = [
     ('libsodium', '1.0.19'),
     ('zfp', '1.0.1'),
     ('MGARD', '1.6.0'),
-    ('UCX', '1.15.0'),
 ]
 
 configopts = ' '.join([
     '-DBUILD_TESTING=ON',
+    '-DADIOS2_USE_UCX=OFF',  # Needed to avoid failing/timedout tests
     '-DADIOS2_USE_EXTERNAL_PYBIND11=ON',
     '-DADIOS2_USE_EXTERNAL_YAMLCPP=ON',
     '-DADIOS2_USE_EXTERNAL_NLOHMANN_JSON=ON',
@@ -61,7 +60,15 @@ configopts = ' '.join([
     '-DMPIEXEC_MAX_NUMPROCS=4'
 ])
 
-pretestopts = 'export OMPI_MCA_rmaps_base_oversubscribe=true && '
+# Taken from https://github.com/ornladios/ADIOS2/blob/master/scripts/ci/gh-actions/run.sh
+pretestopts = ' && '.join([
+    'export OMPI_MCA_rmaps_base_oversubscribe=true',
+    'export OMPI_MCA_hwloc_base_binding_policy=none',
+    'export ADIOS2_IP=127.0.0.1',
+    'export OMP_NUM_THREADS=1',
+    '',  # Trailing &&
+])
+
 runtest = 'test'
 
 sanity_check_paths = {
