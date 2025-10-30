@@ -43,9 +43,11 @@ dependencies = [
     ('pugixml', '1.14'),
     ('SQLite', '3.43.1'),
     ('libsodium', '1.0.19'),
-    ('zfp', '1.0.1'),
+    # ('zfp', '1.0.1'),  # TODO: not found by configure script
     ('MGARD', '1.6.0'),
 ]
+
+# preconfigopts = 'export ZFP_DIR=$EBROOTZF && '
 
 configopts = ' '.join([
     '-DCTEST_USE_LAUNCHERS=TRUE',  # Testing from CI
@@ -69,8 +71,19 @@ pretestopts = ' && '.join([
     'export OMP_NUM_THREADS=1',
     '',  # Trailing &&
 ])
+# pretestopts = 'grep 321 123 && '
 
-runtest = 'test'
+test_cmd = 'ctest'
+testopts = ' '.join([
+    '-VV',  # Verbose output
+    '--output-on-failure',
+    # Some tests autoset very high timeouts (~30 min) but just hangs in the MPI calls.
+    # This sets a reasonable default for tests that do not set their own timeout explicitly.
+    '--timeout 120',
+    # https://github.com/ornladios/ADIOS2/blob/v2.10.2/scripts/dashboard/adios_common.cmake#L94
+    '--repeat until-pass:5',
+    # '-R TestStagingMPMD.SlowReader',  # TODO check known failing test
+])
 
 sanity_check_paths = {
     'files': [
