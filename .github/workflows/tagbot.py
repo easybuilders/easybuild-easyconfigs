@@ -176,9 +176,9 @@ for file in new_ecs + changed_ecs:
             continue
     # Check for common toolchains with our toolchain naming
     for toolchain_version in gcc_tc_gen_map.values():
-        if any(f"-foss-{toolchain_version}" in file_path, "-gompi-{toolchain_version}" in file_path,
-               f"-gfbf-{toolchain_version}" in file_path, "-iimpi-{toolchain_version}" in file_path,
-               f"-iimkl-{toolchain_version}" in file_path, "-intel-{toolchain_version}" in file_path):
+        if any([f"-foss-{toolchain_version}" in file_path, "-gompi-{toolchain_version}" in file_path,
+                f"-gfbf-{toolchain_version}" in file_path, "-iimpi-{toolchain_version}" in file_path,
+                f"-iimkl-{toolchain_version}" in file_path, "-intel-{toolchain_version}" in file_path]):
             toolchain_present[toolchain_version] = True
             continue
 
