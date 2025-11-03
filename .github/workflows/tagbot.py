@@ -163,21 +163,22 @@ for toolchain_ver in gcc_tc_gen_map.values():
     toolchain_present[toolchain_ver] = False
 
 for file in new_ecs + changed_ecs:
+    file_path = str(file)
     # Check for GCCcore / GCC
     for gcc_version in gcc_tc_gen_map.keys():
-        if f"-GCCcore-{gcc_version}" in file or f"-GCC-{gcc_version}" in file:
+        if f"-GCCcore-{gcc_version}" in file_path or f"-GCC-{gcc_version}" in file_path:
             toolchain_present[gcc_tc_gen_map[gcc_version]] = True
             continue
     # Check for intel-compilers
     for intel_version in ic_tc_gen_map.keys():
-        if f"-intel-compilers-{intel_version}" in file:
+        if f"-intel-compilers-{intel_version}" in file_path:
             toolchain_present[ic_tc_gen_map[intel_version]] = True
             continue
     # Check for common toolchains with our toolchain naming
     for toolchain_version in gcc_tc_gen_map.values():
-        if any(f"-foss-{toolchain_version}" in file, "-gompi-{toolchain_version}" in file,
-               f"-gfbf-{toolchain_version}" in file, "-iimpi-{toolchain_version}" in file,
-               f"-iimkl-{toolchain_version}" in file, "-intel-{toolchain_version}" in file):
+        if any(f"-foss-{toolchain_version}" in file_path, "-gompi-{toolchain_version}" in file_path,
+               f"-gfbf-{toolchain_version}" in file_path, "-iimpi-{toolchain_version}" in file_path,
+               f"-iimkl-{toolchain_version}" in file_path, "-intel-{toolchain_version}" in file_path):
             toolchain_present[toolchain_version] = True
             continue
 
