@@ -53,6 +53,18 @@ dependencies = [
     ('Mesa', '23.1.9'),
 ]
 
+# We need to run a post-install command, and that way it hopefully makes it
+# easier to maintain. Thanks to Davide Grassano for helping out here.
+_lavavu_dir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu'
+_lavavu_postinstall_cmd = ' && '.join([
+    f'rm -f {_lavavu_dir}/osmesa/LavaVuPython.py',
+    f'cp -f {_lavavu_dir}/LavaVuPython.py {_lavavu_dir}/osmesa/',
+    f'cd {_lavavu_dir}/osmesa/',
+    'sed -i "9,11d" LavaVuPython.py',
+    'sed -i "s/    import _LavaVuPython/import _LavaVuPython/" LavaVuPython.py',
+    'cd -',
+])
+
 exts_list = [
     ('numpy_quaternion', '2024.0.9', {
         'modulename': 'quaternion',
@@ -62,14 +74,7 @@ exts_list = [
         # Possible choices: EGL, OSMESA or X11
         'prebuildopts': 'export LV_EGL=1 && ',
         # The original symlink leads to problems, so we are doing this dance to get that fixed:
-        'postinstallcmds': [
-            'rm -f %(installdir)s/lib/python3.11/site-packages/lavavu/osmesa/LavaVuPython.py && '
-            'cp -f %(installdir)s/lib/python3.11/site-packages/lavavu/LavaVuPython.py '
-            '%(installdir)s/lib/python3.11/site-packages/lavavu/osmesa/ &&'
-            'cd  %(installdir)s/lib/python3.11/site-packages/lavavu/osmesa/ && '
-            'sed -i "9,11d" LavaVuPython.py && sed -i "s/    import _LavaVuPython/import _LavaVuPython/" '
-            'LavaVuPython.py && cd - '
-        ],
+        'postinstallcmds': [_lavavu_postinstall_cmd],
         'checksums': ['7e31c0d18b8bff3690101df3b12d883c2fdfdada3d88b15b082559b77d7c416d'],
     }),
 ]
