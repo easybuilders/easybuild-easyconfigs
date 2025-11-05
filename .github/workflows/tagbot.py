@@ -177,7 +177,7 @@ for file in new_ecs + changed_ecs:
             continue
     # Check for common toolchains with our toolchain naming
     for toolchain_version in gcc_tc_gen_map.values():
-        if any([f"-{toolchain_name}-{toolchain_version}" in file_path for toolchain_name in toolchain_names])
+        if any(f"-{toolchain_name}-{toolchain_version}" in file_path for toolchain_name in toolchain_names):
             toolchain_present[toolchain_version] = True
             continue
 
