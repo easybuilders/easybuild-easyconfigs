@@ -158,6 +158,7 @@ ic_tc_gen_map = {
     '2025.2.0': '2025b',
 }
 
+toolchain_names = ['foss', 'gompi', 'gfbf', 'iimpi', 'iimkl', 'intel']
 toolchain_present = {}
 for toolchain_ver in gcc_tc_gen_map.values():
     toolchain_present[toolchain_ver] = False
@@ -165,20 +166,18 @@ for toolchain_ver in gcc_tc_gen_map.values():
 for file in new_ecs + changed_ecs:
     file_path = str(file)
     # Check for GCCcore / GCC
-    for gcc_version in gcc_tc_gen_map.keys():
+    for gcc_version, toolchain_version in gcc_tc_gen_map.items():
         if f"-GCCcore-{gcc_version}" in file_path or f"-GCC-{gcc_version}" in file_path:
-            toolchain_present[gcc_tc_gen_map[gcc_version]] = True
+            toolchain_present[toolchain_version] = True
             continue
     # Check for intel-compilers
-    for intel_version in ic_tc_gen_map.keys():
+    for intel_version, toolchain_version in ic_tc_gen_map.items():
         if f"-intel-compilers-{intel_version}" in file_path:
-            toolchain_present[ic_tc_gen_map[intel_version]] = True
+            toolchain_present[toolchain_version] = True
             continue
     # Check for common toolchains with our toolchain naming
     for toolchain_version in gcc_tc_gen_map.values():
-        if any([f"-foss-{toolchain_version}" in file_path, "-gompi-{toolchain_version}" in file_path,
-                f"-gfbf-{toolchain_version}" in file_path, "-iimpi-{toolchain_version}" in file_path,
-                f"-iimkl-{toolchain_version}" in file_path, "-intel-{toolchain_version}" in file_path]):
+        if any([f"-{toolchain_name}-{toolchain_version}" in file_path for toolchain_name in toolchain_names])
             toolchain_present[toolchain_version] = True
             continue
 
@@ -191,7 +190,7 @@ label_checks = [(changed_ecs, 'change'),
                 (modified_workflow, 'workflow'),
                 (manual_download, 'manual_download')]
 # This covers all the toolchain labels we may be able to add
-label_checks += [(toolchain_present[key], key) for key in toolchain_present.keys()]
+label_checks += [(val, key) for key, val in toolchain_present.items()]
 
 labels_add = []
 labels_del = []
