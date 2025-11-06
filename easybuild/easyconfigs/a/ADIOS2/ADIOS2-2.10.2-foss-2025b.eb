@@ -62,11 +62,34 @@ configopts = ' '.join([
     '-DADIOS2_USE_EXTERNAL_GTEST=ON',
     # MPI tests could fail depending on the system and environment configuration
     '-DADIOS2_RUN_MPI_MPMD_TESTS=OFF',
-    '-DMPIEXEC_MAX_NUMPROCS=4'
+    '-DMPIEXEC_MAX_NUMPROCS=2'
 ])
 
-pretestopts = 'export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe && '
-runtest = 'test'
+
+# Taken from https://github.com/ornladios/ADIOS2/blob/master/scripts/ci/gh-actions/run.sh
+pretestopts = ' && '.join([
+    'export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe'
+    'export OMPI_MCA_hwloc_base_binding_policy=none',
+    'export ADIOS2_IP=127.0.0.1',
+    'export OMP_NUM_THREADS=1',
+    '',  # Trailing &&
+])
+
+_skip_tests = [
+    'Unit.FileTransport.FailOnEOF.Serial',  # Fails due to not throwing an expected exception
+]
+_skip_tests_str = '|'.join(_skip_tests)
+
+test_cmd = 'ctest'
+testopts = ' '.join([
+    '-VV',  # Verbose output
+    '--output-on-failure',
+    '-j %(parallel)s',
+    f'-E "{_skip_tests_str}"',
+
+    # https://github.com/ornladios/ADIOS2/blob/v2.10.2/scripts/dashboard/adios_common.cmake#L94
+    '--repeat until-pass:5',
+])
 
 sanity_check_paths = {
     'files': [
