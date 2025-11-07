@@ -1,0 +1,57 @@
+easyblock = 'PythonPackage'
+
+name = 'PySide6'
+version = '6.6.2'
+
+homepage = 'https://pypi.python.org/pypi/PySide6'
+description = """PySide6 is the official Python module from the Qt for Python project,
+    which provides access to the complete Qt 6.0+ framework."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ['https://download.qt.io/official_releases/QtForPython/%(namelower)s/%(name)s-%(version)s-src/']
+sources = ['pyside-setup-everywhere-src-%(version)s.tar.xz']
+checksums = ['14620b694d7af4c978443016292d3d2108ba5dc105f4170e3b71eadcaf04c9f0']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.27.6'),
+    ('Clang', '17.0.6'),
+    ('Ninja', '1.11.1'),
+    ('build', '1.0.3'),
+    ('patchelf', '0.18.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Qt6', '6.6.3'),
+]
+
+use_pip = False
+sanity_pip_check = True
+download_dep_fail = True
+
+preconfigopts = 'export CLANG_INSTALL_DIR=$EBROOTCLANG && '
+
+prebuildopts = 'export CLANG_INSTALL_DIR=$EBROOTCLANG && '
+buildcmd = 'build --parallel=%(parallel)s'
+
+preinstallopts = 'export CLANG_INSTALL_DIR=$EBROOTCLANG && '
+install_target = 'install --parallel=%(parallel)s'
+
+postinstallcmds = [  # Required for pyside-designer plugin to be installed
+    'cp %(start_dir)s/build/*/install/plugins/designer/libPySidePlugin.so  %(installdir)s',
+    'ln -sf %(installdir)s/libPySidePlugin.so ${EBROOTQT6}/plugins/designer/',
+]
+
+sanity_check_paths = {
+    'files': ['lib/python%(pyshortver)s/site-packages/%(name)s/libpyside6.abi3.so.6.6'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(name)s'],
+}
+sanity_check_commands = ["python -c 'import %(name)s as s; assert s.__version__ == \"%(version)s\"'"]
+
+options = {'modulename': 'PySide6'}
+
+modextrapaths = {'LD_LIBRARY_PATH': 'lib/python%(pyshortver)s/site-packages/%(name)s'}
+
+moduleclass = 'devel'
