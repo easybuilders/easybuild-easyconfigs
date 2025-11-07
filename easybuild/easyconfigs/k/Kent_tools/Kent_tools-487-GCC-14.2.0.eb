@@ -1,0 +1,45 @@
+easyblock = 'MakeCp'
+
+name = 'Kent_tools'
+version = '487'
+
+homepage = 'https://genome.cse.ucsc.edu/'
+description = """Kent utilities: collection of tools used by the UCSC genome browser."""
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+source_urls = [
+    'https://hgdownload.cse.ucsc.edu/admin/exe/',
+    'https://hgdownload.cse.ucsc.edu/admin/exe/userApps.archive/',
+]
+sources = ['userApps.v%(version)s.src.tgz']
+checksums = ['749009b708bf864bee77fe6ff0e46754e7d65aec97ca5578de9fa49606afcc51']
+
+dependencies = [
+    ('MariaDB', '11.8.3'),
+    ('libpng', '1.6.48'),
+    ('zlib', '1.3.1'),
+    ('util-linux', '2.41'),
+    ('OpenSSL', '3', '', SYSTEM),
+    ('freetype', '2.13.3'),
+    ('cURL', '8.11.1'),
+]
+
+prebuildopts = 'sed -i "s/rsync -a /cp -a /" %(builddir)s/userApps/kent/src/parasol/makefile && '
+
+buildopts = 'CC="$CC" COPT="$CFLAGS -fcommon" PNGLIB="-L$EBROOTLIBPNG/lib -lpng" ZLIB="-L$EBROOTZLIB/lib -lz" '
+buildopts += 'SSL_DIR="$EBROOTOPENSSL" SSLDIR="$EBROOTOPENSSL" MYSQLLIBS="-L$EBROOTMARIADB/lib -lmariadb -lstdc++" '
+# add libiconv to fix build error "undefined reference to symbol 'libiconv_open'"
+buildopts += 'ICONVLIB="-L$EBROOTLIBICONV/lib -liconv" '
+
+local_binaries = ['blat', 'bedPartition', 'getRna', 'liftOver', 'mafGene', 'splitFile', 'twoBitToFa']
+
+files_to_copy = [(['bin/*'], 'bin'), 'licenseBlat.txt', 'licenseUcscGenomeBrowser.txt']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%s 2>&1 | grep '^usage:'" % x for x in local_binaries]
+
+moduleclass = 'bio'

@@ -1,0 +1,40 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView-Catalyst'
+version = '2.0.0'
+
+homepage = 'https://docs.paraview.org/en/latest/Catalyst/'
+description = """ParaView Catalyst provides a small, easy-to-use, API that any simulation developed in C++, C, Fortran
+or Python can use to do in situ analysis without developing its own custom data analysis code.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://gitlab.kitware.com/api/v4/projects/5912/packages/generic/catalyst/v%(version)s']
+sources = ["catalyst-v%(version)s.tar.gz"]
+checksums = ['5842b690bd8afa635414da9b9c5e5d79fa37879b0d382428d0d8e26ba5374828']
+
+builddependencies = [('CMake', '4.0.3')]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+]
+
+_copts = [
+    '-DCATALYST_USE_MPI=ON',
+    '-DCATALYST_WRAP_PYTHON=ON',
+    '-DCATALYST_WRAP_FORTRAN=ON',
+]
+
+configopts = ' '.join(_copts)
+
+sanity_check_paths = {
+    'files': ['include/catalyst-%(version_major_minor)s/catalyst.hpp'],
+    'dirs': ['include/catalyst-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages', 'lib/catalyst'],
+}
+
+sanity_check_commands = ['python -s -c "import catalyst"']
+
+moduleclass = 'vis'
