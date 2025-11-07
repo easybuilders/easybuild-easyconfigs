@@ -124,11 +124,12 @@ if max_diffs_per_software > 0:
 # Add manual_label if download_instructions is present. This reads the file.
 manual_download = False
 for file in new_ecs + changed_ecs:
-    with file.open() as f:
-        content = f.read()
-    if 'download_instructions' in content:
-        manual_download = True
-        break
+    if file.is_file():
+        with file.open() as f:
+            content = f.read()
+        if 'download_instructions' in content:
+            manual_download = True
+            break
 
 # Add toolchain labels based on matching new added / changed filenames againt our toolchain policy
 # This doesn't include LLVM or NVHPC yet, and needs to be adapted together with the test suite
