@@ -6,6 +6,7 @@ version = '1.11.0'
 homepage = 'https://github.com/gabime/spdlog'
 description = 'Very fast, header-only/compiled, C++ logging library.'
 toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
 
 source_urls = ['https://github.com/gabime/spdlog/archive/refs/tags/']
 sources = ['v%(version)s.tar.gz']
@@ -16,8 +17,14 @@ builddependencies = [
     ('CMake', '3.26.3'),
 ]
 
+_base_configopts = ' -DSPDLOG_BUILD_TESTS=ON -DSPDLOG_BUILD_PIC=ON '
+
+configopts = [f'{_base_configopts} -DSPDLOG_BUILD_SHARED={x}' for x in ('OFF', 'ON')]
+
+runtest = 'test'
+
 sanity_check_paths = {
-    'files': ['include/spdlog/spdlog.h'],
+    'files': ['include/%(name)s/%(name)s.h', 'lib/lib%(name)s.a', f'lib/lib%(name)s.{SHLIB_EXT}'],
     'dirs': ['lib64/cmake', 'lib64/pkgconfig'],
 }
 
