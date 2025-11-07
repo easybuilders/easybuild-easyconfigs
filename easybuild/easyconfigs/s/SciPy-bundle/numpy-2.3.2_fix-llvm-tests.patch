@@ -1,0 +1,31 @@
+Fix build failure of f2py tests because of them linking with the C compiler
+which fails when mixing with Fortran sources. Meson somehow doesn't
+provide mechanisms for this.
+
+Also disable a single test due to LLVM 20.1.8 reporting incorrect real kinds
+for small selected kinds.
+
+Author: Jan Reuter (JSC)
+
+diff --color -Naur numpy-2.3.2.orig/numpy/f2py/_backends/meson.build.template numpy-2.3.2/numpy/f2py/_backends/meson.build.template
+--- numpy-2.3.2.orig/numpy/f2py/_backends/meson.build.template	2025-07-24 20:37:48.000000000 +0200
++++ numpy-2.3.2/numpy/f2py/_backends/meson.build.template	2025-11-06 11:27:40.412954518 +0100
+@@ -44,6 +44,7 @@
+                      inc_np,
+ ${inc_list}
+                      ],
++                     link_args: ['-lFortranRuntime', '-lFortranDecimal'],
+                      dependencies : [
+                      py_dep,
+                      quadmath_dep,
+diff --color -Naur numpy-2.3.2.orig/numpy/f2py/tests/test_kind.py numpy-2.3.2/numpy/f2py/tests/test_kind.py
+--- numpy-2.3.2.orig/numpy/f2py/tests/test_kind.py	2025-07-24 20:37:48.000000000 +0200
++++ numpy-2.3.2/numpy/f2py/tests/test_kind.py	2025-11-06 11:26:57.332879008 +0100
+@@ -27,6 +27,7 @@
+                 i
+             ), f"selectedintkind({i}): expected {selected_int_kind(i)!r} but got {selectedintkind(i)!r}"
+ 
++    @pytest.mark.skip(reason="EasyBuild: Observed failed tests for small selected kinds in LLVM 20.1.8")
+     def test_real(self):
+         """
+         Test (processor-dependent) `real` kind_func for real numbers
