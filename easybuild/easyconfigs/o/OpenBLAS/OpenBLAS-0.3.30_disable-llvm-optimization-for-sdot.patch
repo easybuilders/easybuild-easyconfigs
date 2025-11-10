@@ -5,20 +5,30 @@ See https://github.com/OpenMathLib/OpenBLAS/issues/5532
 
 Author: Jan Reuter (JSC)
 
+diff --color -Naur OpenBLAS-0.3.30.orig/kernel/arm64/dot_kernel_asimd.c OpenBLAS-0.3.30/kernel/arm64/dot_kernel_asimd.c
+--- OpenBLAS-0.3.30.orig/kernel/arm64/dot_kernel_asimd.c	2025-06-19 11:45:39.000000000 +0200
++++ OpenBLAS-0.3.30/kernel/arm64/dot_kernel_asimd.c	2025-11-10 17:47:03.143361567 +0100
+@@ -260,6 +260,7 @@
+ 	"	faddp	"OUT", v0.2d			\n"
+ #endif /* !defined(DOUBLE) */
+ 
++__attribute__((optnone))
+ static RETURN_TYPE dot_kernel_asimd(BLASLONG n, FLOAT *x, BLASLONG inc_x, FLOAT *y, BLASLONG inc_y)
+ {
+ 	RETURN_TYPE  dot = 0.0;
 diff --color -Naur OpenBLAS-0.3.30.orig/kernel/arm64/dot_kernel_sve.c OpenBLAS-0.3.30/kernel/arm64/dot_kernel_sve.c
 --- OpenBLAS-0.3.30.orig/kernel/arm64/dot_kernel_sve.c	2025-06-19 11:45:39.000000000 +0200
-+++ OpenBLAS-0.3.30/kernel/arm64/dot_kernel_sve.c	2025-11-10 11:46:08.921196028 +0100
-@@ -26,6 +26,13 @@
- THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
++++ OpenBLAS-0.3.30/kernel/arm64/dot_kernel_sve.c	2025-11-10 17:46:48.508317413 +0100
+@@ -95,6 +95,12 @@
+         SUM_VECTOR("0") \
+         RET
  
 +/* We need to disable optimization to avoid a significant amount of
 + * test failures due to misbehaving SDOT. Currently, this is the
 + * best solution according to the OpenBLAS collaborators.
 + * See https://github.com/OpenMathLib/OpenBLAS/issues/5532#issuecomment-3508889722
 + */
-+#pragma clang optimize off
-+
- #include "common.h"
- 
- #include <arm_sve.h>
++__attribute__((optnone))
+ static
+ FLOAT
+ dot_kernel_sve(BLASLONG n, FLOAT* x, FLOAT* y)
