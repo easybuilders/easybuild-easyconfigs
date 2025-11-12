@@ -30,9 +30,15 @@ exts_list = [
     ('unidist', '0.7.2', {
         'checksums': ['6386e1ad5143fe132b9f96e232fe85fc39830ed2886515440e4ba1473255e4a0'],
     }),
+    # The oversubscription is done in their own CI as well.
+    # Ray has limitations on unix socket path length, so it is not tested here.
     (name, version, {
         'patches': ['modin-0.32.0_fix-pytest-config.patch'],
-        'runtest': "MODIN_ENGINE=unidist UNIDIST_ENGINE=mpi mpiexec -n=1 --map-by :OVERSUBSCRIBE pytest modin/tests/pandas/test_general.py &&MODIN_ENGINE=dask pytest modin/tests/pandas/test_general.py",
+        'runtest': (
+            "MODIN_ENGINE=unidist UNIDIST_ENGINE=mpi "
+            "mpiexec -n=1 --map-by :OVERSUBSCRIBE pytest modin/tests/pandas/test_general.py &&"
+            "MODIN_ENGINE=dask pytest modin/tests/pandas/test_general.py"
+        ),
         'source_tmpl': '%(version)s.tar.gz',
         'source_urls': ['https://github.com/modin-project/%(name)s/archive/refs/tags'],
         'testinstall': True,
