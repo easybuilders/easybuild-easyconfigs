@@ -82,7 +82,7 @@ print("Modified workflow:", modified_workflow)
 # to make review easier.
 new_software = 0
 updated_software = 0
-to_diff = dict()
+to_diff = {}
 for new_file in new_ecs:
     neighbours = similar_easyconfigs(gitrepo, new_file, new_ecs)
     print(f"Found {len(neighbours)} neighbours for {new_file}")
