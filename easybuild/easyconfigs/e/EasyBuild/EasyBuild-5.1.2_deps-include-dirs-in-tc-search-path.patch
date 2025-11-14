@@ -1,0 +1,90 @@
+From 5b33aedf4ebb95b31742d701f980224a840d52c7 Mon Sep 17 00:00:00 2001
+From: Kenneth Hoste <kenneth.hoste@ugent.be>
+Date: Wed, 12 Nov 2025 16:20:34 +0100
+Subject: [PATCH] take into location of header files of dependencies in
+ toolchain method that defines search path for header files in build
+ environment
+
+---
+ easybuild/tools/toolchain/toolchain.py | 22 ++++++++++++++++++----
+ test/framework/easyblock.py            | 15 ++++++++++++++-
+ 2 files changed, 32 insertions(+), 5 deletions(-)
+
+diff --git a/easybuild/tools/toolchain/toolchain.py b/easybuild/tools/toolchain/toolchain.py
+index fd9d618d1f..ff85414834 100644
+--- a/easybuild/tools/toolchain/toolchain.py
++++ b/easybuild/tools/toolchain/toolchain.py
+@@ -1163,11 +1163,25 @@ def _add_dependency_cpp_headers(self, dep_root, extra_dirs=None):
+         if extra_dirs is None:
+             extra_dirs = ()
+ 
+-        header_dirs = ["include"]
+-        header_dirs = unique_ordered_extend(header_dirs, extra_dirs)
++        for env_var in SEARCH_PATH['cpp_headers'][self.search_path['cpp_headers']]:
++            header_dirs = []
++            # take into account all $*PATH environment variables for dependencies
++            for key in [y for x in SEARCH_PATH['cpp_headers'].values() for y in x if y.endswith('PATH')]:
++                val = os.getenv(key)
++                if val:
++                    self.log.debug(f"${key} when determining subdirs of {dep_root} to retain for ${env_var}: {val}")
++                    paths = val.split(':')
++                    matching_paths = [p for p in paths if p.startswith(dep_root)]
++                    subdirs = [os.path.relpath(p, dep_root) for p in matching_paths]
++                    self.log.debug(f"Subdirectories of {dep_root} to add to ${env_var}: {subdirs}")
++                    header_dirs.extend(os.path.relpath(p, dep_root) for p in matching_paths)
++                else:
++                    self.log.debug(f"${key} not defined, not used to find subdirs of {dep_root} to use for ${env_var}")
++
++            # take into account extra_dirs + only retain unique entries
++            header_dirs = unique_ordered_extend(header_dirs, extra_dirs)
+ 
+-        for env_var in SEARCH_PATH["cpp_headers"][self.search_path["cpp_headers"]]:
+-            self.log.debug("Adding header paths to toolchain variable '%s': %s", env_var, dep_root)
++            self.log.info(f"Adding header paths to toolchain variable '{env_var}': {dep_root} (subdirs: {header_dirs})")
+             self.variables.append_subdirs(env_var, dep_root, subdirs=header_dirs)
+ 
+     def _add_dependency_linker_paths(self, dep_root, extra_dirs=None):
+diff --git a/test/framework/easyblock.py b/test/framework/easyblock.py
+index 085a6c947f..97f769126c 100644
+--- a/test/framework/easyblock.py
++++ b/test/framework/easyblock.py
+@@ -3745,9 +3745,13 @@ def test_exts_deps_build_env(self):
+ 
+         zlib_root = os.path.join(self.test_prefix, 'software', 'zlib', zlib_fn)
+         write_file(os.path.join(zlib_root, 'include', 'zlib.h'), '')
++        write_file(os.path.join(zlib_root, 'include', 'zlib', 'common.h'), '')
+ 
+         zlib_mod_txt = read_file(zlib_mod_file)
+         zlib_mod_txt = re.sub("set root.*", f"set root {zlib_root}", zlib_mod_txt)
++        # add statement to inject extra subdirectory to $CPATH,
++        # which is supposed to be retained in build environment
++        zlib_mod_txt += '\nprepend-path\tCPATH\t$root/include/zlib'
+ 
+         test_mods = os.path.join(self.test_prefix, 'modules')
+         test_zlib_mod_file = os.path.join(test_mods, 'zlib', zlib_fn)
+@@ -3765,7 +3769,9 @@ def test_exts_deps_build_env(self):
+                 test_ec,
+                 '--rebuild',
+                 f'--search-path-cpp-headers={search_path_cpp_headers}',
++                '--debug',
+             ]
++            os.environ['C_INCLUDE_PATH'] = '/usr/local/include'
+             with self.mocked_stdout_stderr():
+                 with self.log_to_testlogfile():
+                     self.eb_main(args, raise_error=True, do_build=True, verbose=True)
+@@ -3778,7 +3784,14 @@ def test_exts_deps_build_env(self):
+ 
+             # check whether $C_INCLUDE_PATH is correctly set in build environment of 'bar' extension
+             for env_var in env_vars[search_path_cpp_headers]:
+-                regex = re.compile(f"^{env_var}=.*/software/zlib/{zlib_fn}/include$", re.M)
++                # both 'include' and 'include/zlib' subdirectories should be retained
++                paths = [f'software/zlib/{zlib_fn}/include/zlib', f'software/zlib/{zlib_fn}/include']
++                if env_var.endswith('PATH'):
++                    regex = re.compile(f'^{env_var}=' + ':'.join('[^ ]+/' + p for p in paths) + '$', re.M)
++                elif env_var == 'CPPFLAGS':
++                    regex = re.compile(f'^{env_var}=' + ' '.join('-I/[^ ]+/' + p for p in paths) + '$', re.M)
++                else:
++                    self.fail(f"Unknown type of environment variable: ${env_var}")
+                 self.assertTrue(regex.search(log_txt), f"Pattern '{regex.pattern}' not found in log output")
+ 
+ 
