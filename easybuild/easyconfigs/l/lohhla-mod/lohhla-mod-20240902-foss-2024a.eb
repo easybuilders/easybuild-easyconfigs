@@ -1,0 +1,50 @@
+easyblock = 'Tarball'
+
+name = 'lohhla-mod'
+version = '20240902'
+local_commit = '63ec5f3'
+
+homepage = 'https://github.com/svm-zhang/lohhla-mod'
+description = "Modernized HLALOH, a HLA loss of heterozygosity detection algorithm."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = ['https://github.com/svm-zhang/lohhla-mod/archive/']
+sources = [{'download_filename': f'{local_commit}.tar.gz', 'filename': f'%(name)s-%(version)s-{local_commit}.tar.gz'}]
+checksums = ['324e847713e7a2b448fbf04ae5ff6965c0074b71197d0fae8c15d5578b28ffcd']
+
+dependencies = [
+    ('R', '4.4.2'),
+    ('R-bundle-CRAN', '2024.11'),
+    ('R-bundle-Bioconductor', '3.20', '-R-%(rver)s'),
+    ('SAMtools', '1.21'),
+]
+
+# installs all necesary files from builddir to installdir and then cleanup build artifacts
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin %(installdir)s/lib/R/library/lohhlamod',
+    'install -m755 %(installdir)s/R/lohhlamod.R %(installdir)s/bin/lohhlamod',
+    'install -m755 %(installdir)s/R/lohhlaplot.R %(installdir)s/bin/lohhlaplot',
+    'install -m644 %(installdir)s/R/bamer.R %(installdir)s/lib/R/library/lohhlamod/',
+    'install -m644 %(installdir)s/R/cli.R %(installdir)s/lib/R/library/lohhlamod/',
+    'install -m644 %(installdir)s/R/loh.R %(installdir)s/lib/R/library/lohhlamod/',
+    'install -m644 %(installdir)s/R/pairwise_aln.R %(installdir)s/lib/R/library/lohhlamod/',
+    'install -m644 %(installdir)s/R/pathio.R %(installdir)s/lib/R/library/lohhlamod/',
+    # Cleanup: remove source dir & packaging artifacts
+    'rm -rf %(installdir)s/R',
+    'rm -f %(installdir)s/build.sh %(installdir)s/recipe.yaml %(installdir)s/.gitignore',
+]
+
+sanity_check_paths = {
+    'files': ['bin/lohhlamod', 'bin/lohhlaplot'],
+    'dirs': ['lib/R/library/lohhlamod'],
+}
+
+sanity_check_commands = [
+    'lohhlamod --help',
+    'lohhlaplot --help',
+]
+
+modextrapaths = {'R_LIBS_SITE': 'lib/R/library'}
+
+moduleclass = 'bio'

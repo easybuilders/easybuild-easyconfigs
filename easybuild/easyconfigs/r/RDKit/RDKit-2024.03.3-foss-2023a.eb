@@ -10,7 +10,11 @@ toolchain = {'name': 'foss', 'version': '2023a'}
 
 source_urls = ['https://github.com/rdkit/rdkit/archive/']
 sources = ['Release_%s.tar.gz' % version.replace('.', '_')]
-checksums = ['52f79c6bf1d446cdb5c86a35de655d96bad0c52a5f4ecbe15f08eaf334e6f76a']
+patches = [('rdkit-version.egg-info', '.')]
+checksums = [
+    {'Release_2024_03_3.tar.gz': '52f79c6bf1d446cdb5c86a35de655d96bad0c52a5f4ecbe15f08eaf334e6f76a'},
+    {'rdkit-version.egg-info': 'da8d920372ba1f0b4e909aec5960e72779f569c8a9e8f2a946e8309433921c1e'},
+]
 
 builddependencies = [
     ('CMake', '3.26.3'),
@@ -27,9 +31,8 @@ dependencies = [
     ('cairo', '1.17.8'),
 ]
 
-separate_build_dir = True
-
 configopts = "-DPy_ENABLE_SHARED=1 -DRDK_INSTALL_STATIC_LIBS=OFF -DRDK_INSTALL_INTREE=OFF "
+configopts += "-DRDK_BUILD_FREESASA_SUPPORT=ON "
 configopts += "-DRDK_BUILD_INCHI_SUPPORT=ON "
 configopts += "-DBOOST_ROOT=$EBROOTBOOST"
 
@@ -50,24 +53,30 @@ buildopts += 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY
 # 'ctest' allows to pass additional arguments opposed to 'make test'
 buildopts += 'ctest --output-on-failure'
 
-local_libs = ['Alignment', 'Catalogs', 'ChemicalFeatures', 'ChemReactions', 'ChemTransforms', 'coordgen', 'DataStructs',
-              'Depictor', 'Descriptors', 'DistGeometry', 'DistGeomHelpers', 'EigenSolvers', 'FileParsers',
-              'FilterCatalog', 'Fingerprints', 'FMCS', 'ForceFieldHelpers', 'ForceField', 'FragCatalog', 'GraphMol',
-              'hc', 'InfoTheory', 'maeparser', 'MMPA', 'MolAlign', 'MolCatalog', 'MolChemicalFeatures', 'MolDraw2D',
-              'MolHash', 'MolInterchange', 'MolStandardize', 'MolTransforms', 'Optimizer', 'PartialCharges', 'RDBoost',
-              'RDGeneral', 'RDGeometryLib', 'RDStreams', 'ReducedGraphs', 'RGroupDecomposition', 'RingDecomposerLib',
-              'ScaffoldNetwork', 'ShapeHelpers', 'SimDivPickers', 'SLNParse', 'SmilesParse', 'Subgraphs',
-              'SubstructLibrary', 'SubstructMatch', 'Trajectory']
+_libs = ['Alignment', 'Catalogs', 'ChemicalFeatures', 'ChemReactions', 'ChemTransforms', 'coordgen', 'DataStructs',
+         'Depictor', 'Descriptors', 'DistGeometry', 'DistGeomHelpers', 'EigenSolvers', 'FileParsers', 'FilterCatalog',
+         'Fingerprints', 'FMCS', 'ForceFieldHelpers', 'ForceField', 'FragCatalog', 'FreeSASALib', 'GraphMol',
+         'hc', 'InfoTheory', 'maeparser', 'MMPA', 'MolAlign', 'MolCatalog', 'MolChemicalFeatures', 'MolDraw2D',
+         'MolHash', 'MolInterchange', 'MolStandardize', 'MolTransforms', 'Optimizer', 'PartialCharges', 'RDBoost',
+         'RDGeneral', 'RDGeometryLib', 'RDStreams', 'ReducedGraphs', 'RGroupDecomposition', 'RingDecomposerLib',
+         'ScaffoldNetwork', 'ShapeHelpers', 'SimDivPickers', 'SLNParse', 'SmilesParse', 'Subgraphs',
+         'SubstructLibrary', 'SubstructMatch', 'Trajectory']
+
+# Install a egg-info file so RDKit is more python friendly
+local_egg_info_src = '%%(builddir)s/rdkit-Release_%s/rdkit-version.egg-info' % version.replace('.', '_')
+local_egg_info_dest = '%(installdir)s/lib/python%(pyshortver)s/site-packages/rdkit-%(version)s.egg-info'
+postinstallcmds = [
+    'sed "s/#RDKit_VERSION#/%%(version)s/" %s > %s' % (local_egg_info_src, local_egg_info_dest),
+]
 
 sanity_check_paths = {
-    'files': ['lib/libRDKit%s.%s' % (x, SHLIB_EXT) for x in local_libs],
+    'files': ['lib/libRDKit%s.%s' % (x, SHLIB_EXT) for x in _libs],
     'dirs': ['include/rdkit', 'lib/python%(pyshortver)s/site-packages/rdkit'],
 }
 
 sanity_check_commands = [
     "python -c 'import rdkit.rdBase'",
+    """python -c 'import pkg_resources; pkg_resources.get_distribution("rdkit")'""",
 ]
-
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 moduleclass = 'chem'

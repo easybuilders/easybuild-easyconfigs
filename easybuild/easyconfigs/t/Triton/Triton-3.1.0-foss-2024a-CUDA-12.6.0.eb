@@ -1,0 +1,117 @@
+# Update 3.1.0: Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/12
+
+easyblock = 'PythonBundle'
+
+name = 'Triton'
+
+version = '3.1.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+# There is no 3.1 in pypi and no 3.1-tag at github. However, 5fe38ffd is version bump 3.1 in the release_3.1.x branch:
+_commit = '5fe38ffd73c2ac6ed6323b554205186696631c6f'
+_clang_commit = '10dc3a8e916d73291269e5e2b82dd22681489aa1'  # acc. to cmake/llvm-hash.txt; 2024/05/23
+
+homepage = 'https://triton-lang.org/'
+
+description = """Triton is a language and compiler for parallel programming. It aims to provide a
+Python-based programming environment for productively writing custom DNN compute
+kernels capable of running at maximal throughput on modern GPU hardware."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+github_account = 'openai'
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Ninja', '1.12.1'),
+    ('pybind11', '2.13.6'),
+    ('poetry', '1.8.3'),
+    ('nlohmann_json', '3.11.3'),
+    ('googletest', '1.15.2'),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('Z3', '4.13.0'),
+    ('Python-bundle-PyPI', '2024.06'),
+]
+
+_llvm_confopts = [
+    # acc. to:
+    # https://github.com/triton-lang/triton?tab=readme-ov-file#building-with-a-custom-llvm
+    '-DLLVM_ENABLE_ASSERTIONS=ON',
+    '-DLLVM_ENABLE_PROJECTS="mlir;llvm"',
+    '-DLLVM_TARGETS_TO_BUILD="X86;NVPTX"',
+]
+
+components = [
+    ('LLVM', _clang_commit, {
+        'easyblock': 'CMakeNinja',
+        'source_urls': ['https://github.com/llvm/llvm-project/archive/'],
+        'sources': [{
+            'download_filename': '%(version)s.tar.gz',
+            'filename': 'llvm-project-%(version)s.tar.gz',
+        }],
+        'checksums': [
+            {'llvm-project-10dc3a8e916d73291269e5e2b82dd22681489aa1.tar.gz':
+             '6ee5e0f9a49d41b5f48ebc4613ce3371f686bf70fcece9f849aba3c37bdeb3e8'},
+        ],
+        'start_dir': 'llvm-project-%(version)s',
+        'configopts': ' '.join(_llvm_confopts),
+        'srcdir': 'llvm',
+        'skipsteps': ['install']
+    })
+]
+
+_tr_start_dir = 'python'
+
+_tr_preinstallopts = 'export PYBIND11_SYSPATH=$EBROOTPYBIND11 && '
+_tr_preinstallopts += 'export JSON_SYSPATH=$EBROOTNLOHMANN_JSON && '
+# use LLVM component in builddir:
+_tr_preinstallopts += 'export PATH=%(builddir)s/easybuild_obj/bin:$PATH && '
+_tr_preinstallopts += 'export LLVM_INCLUDE_DIRS=%(builddir)s/easybuild_obj/include && '
+_tr_preinstallopts += 'export LLVM_LIBRARY_DIR=%(builddir)s/easybuild_obj/lib && '
+_tr_preinstallopts += 'export LLVM_SYSPATH=%(builddir)s/easybuild_obj/ && '
+
+_tr_preinstallopts += 'export TRITON_BUILD_WITH_CLANG_LLD=false && '
+_tr_preinstallopts += 'export TRITON_HOME=%(builddir)s && '
+# fix setup.py max_jobs - use MAX_JOBS not os.cpu_count()
+_tr_preinstallopts += 'export MAX_JOBS=%(parallel)s && '
+
+_tr_installopts = "-v "
+
+exts_list = [
+    (name, version, {
+        'installopts': _tr_installopts,
+        'patches': [
+            'Triton-3.1.0_5fe38ff_eb_env_python_build.patch',
+            'Triton-3.1.0_5fe38ff_CUDA-12.6_ptx.patch',
+        ],
+        # ensure that libdevice.10.bc from $EBROOTCUDA/nvvm/libdevice is used:
+        'postinstallcmds': [
+            'rm -rf %(installdir)s/lib/python%(pyshortver)s/site-packages/triton/backends/nvidia/lib/libdevice.10.bc'
+        ],
+        'preinstallopts': _tr_preinstallopts,
+        'source_urls': ['https://github.com/triton-lang/triton/archive/'],
+        'sources': [{
+            'filename': 'v%%(version)s-%s.tar.gz' % _commit,
+            'download_filename': '%s.tar.gz' % _commit}],
+        'start_dir': 'python',
+        'checksums': [
+            {'v3.1.0-5fe38ffd73c2ac6ed6323b554205186696631c6f.tar.gz':
+             '933babc32b69872efbce05fe8be61129fecf52c724fadea42d8c7b2d10e16ad9'},
+            {'Triton-3.1.0_5fe38ff_eb_env_python_build.patch':
+             '6b46064b4892c7df340b6afd7ffb4abb2ea4486df9406626cd9b2c92a748705d'},
+            {'Triton-3.1.0_5fe38ff_CUDA-12.6_ptx.patch':
+             '2be8609141375ee381364ef74d74c12af598fc0b06357689c9f32d9f2514eff4'},
+        ],
+    }),
+]
+
+modextravars = {
+    'TRITON_PTXAS_PATH': '$CUDA_HOME/bin/ptxas',
+    # ensure that libdevice.10.bc from $EBROOTCUDA/nvvm/libdevice is used:
+    'TRITON_LIBDEVICE_PATH': '$CUDA_HOME/nvvm/libdevice/libdevice.10.bc'
+}
+
+moduleclass = 'devel'

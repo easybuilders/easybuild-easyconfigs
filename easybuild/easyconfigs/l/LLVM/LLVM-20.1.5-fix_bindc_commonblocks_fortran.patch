@@ -1,0 +1,76 @@
+Taken from https://github.com/llvm/llvm-project/pull/145669
+Needed to be able to compile HDF5
+See https://discourse.llvm.org/t/hlfir-declare-op-of-numeric-logical-or-assumed-type-entity-must-not-have-length-parameters/83629/6
+From 5326e0f8ca501d7fe5720b2b21b969928f7e694c Mon Sep 17 00:00:00 2001
+From: Jean Perier <jperier@nvidia.com>
+Date: Wed, 25 Jun 2025 03:27:44 -0700
+Subject: [PATCH] [flang] handle common block used as BIND(C) module variables
+
+---
+ flang/lib/Lower/ConvertVariable.cpp           |  7 +++-
+ .../variable-common-viewed-as-module-var.f90  | 37 +++++++++++++++++++
+ 2 files changed, 43 insertions(+), 1 deletion(-)
+ create mode 100644 flang/test/Lower/variable-common-viewed-as-module-var.f90
+
+diff --git a/flang/lib/Lower/ConvertVariable.cpp b/flang/lib/Lower/ConvertVariable.cpp
+index a28596bfd0099..6f818cd7dc303 100644
+--- a/flang/lib/Lower/ConvertVariable.cpp
++++ b/flang/lib/Lower/ConvertVariable.cpp
+@@ -687,8 +687,13 @@ static void instantiateGlobal(Fortran::lower::AbstractConverter &converter,
+   }
+   auto addrOf = builder.create<fir::AddrOfOp>(loc, global.resultType(),
+                                               global.getSymbol());
++  // The type of the global cannot be trusted to be the same as the one
++  // of the variable as some existing programs map common blocks to
++  // BIND(C) module variables (e.g. mpi_argv_null in MPI and MPI_F08).
++  mlir::Type varAddrType = fir::ReferenceType::get(converter.genType(sym));
++  mlir::Value cast = builder.createConvert(loc, varAddrType, addrOf);
+   Fortran::lower::StatementContext stmtCtx;
+-  mapSymbolAttributes(converter, var, symMap, stmtCtx, addrOf);
++  mapSymbolAttributes(converter, var, symMap, stmtCtx, cast);
+ }
+ 
+ //===----------------------------------------------------------------===//
+diff --git a/flang/test/Lower/variable-common-viewed-as-module-var.f90 b/flang/test/Lower/variable-common-viewed-as-module-var.f90
+new file mode 100644
+index 0000000000000..e303df6d91a98
+--- /dev/null
++++ b/flang/test/Lower/variable-common-viewed-as-module-var.f90
+@@ -0,0 +1,37 @@
++! RUN: bbc -emit-hlfir %s -o - | FileCheck %s
++
++! Test non standard definition of a common block as a BIND(C) variable.
++! This happens when MPI and MPI_F08 are used inside the same compilation
++! unit because MPI uses common blocks while MPI_F08 uses BIND(C) variables
++! to refer to the same objects (e.g. mpi_argv_null).
++
++module m_common_var
++ character(1) :: var
++ common /var_storage/var
++end module
++
++module m_bindc_var
++  character(1), bind(c, name="var_storage_") :: var
++end module
++
++subroutine s1()
++  use m_common_var, only : var
++  var = "a"
++end subroutine
++
++subroutine s2()
++  use m_bindc_var, only : var
++  print *, var
++end subroutine
++
++  call s1()
++  call s2()
++end
++
++! CHECK: fir.global common @var_storage_(dense<0> : vector<1xi8>) {alignment = 1 : i64} : !fir.array<1xi8>
++
++! CHECK-LABEL: func.func @_QPs1
++! CHECK: hlfir.declare %{{.*}} typeparams %c1 {uniq_name = "_QMm_common_varEvar"} : (!fir.ref<!fir.char<1>>, index) -> (!fir.ref<!fir.char<1>>, !fir.ref<!fir.char<1>>)
++
++! CHECK-LABEL: func.func @_QPs2
++! CHECK: hlfir.declare %{{.*}} typeparams %c1 {fortran_attrs = #fir.var_attrs<bind_c>, uniq_name = "var_storage_"} : (!fir.ref<!fir.char<1>>, index) -> (!fir.ref<!fir.char<1>>, !fir.ref<!fir.char<1>>)
