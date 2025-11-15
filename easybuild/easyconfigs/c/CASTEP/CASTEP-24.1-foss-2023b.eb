@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'CASTEP'
+version = '24.1'
+
+homepage = 'http://www.castep.org'
+description = """
+CASTEP is an electronic structure materials modelling code based on density
+functional theory (DFT), with functionality including geometry optimization
+molecular dynamics, phonons, NMR chemical shifts and much more.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+download_instructions = """CASTEP is proprietary software, available under a free-of-charge license for academic use
+only. Visit http://www.castep.org and navigate to "Getting Castep" to apply for a license."""
+
+sources = [SOURCE_TAR_GZ]
+checksums = ['97d77a4f3ce3f5c5b87e812f15a2c2cb23918acd7034c91a872b6d66ea0f7dbb']
+
+dependencies = [
+    ('Perl', '5.38.0'),
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),  # for elastic constants and castepconv utility
+]
+
+skipsteps = ['configure']
+
+# Avoid test failure on AVX512 (see https://github.com/easybuilders/easybuild-easyconfigs/issues/24377)
+prebuildopts = 'sed -i "s/-O3/-O2/" obj/platforms/linux_x86_64_gfortran10.mk &&'
+
+_generic_opts = ' COMMS_ARCH=mpi FFT=fftw3 MATH_LIBS="-lflexiblas" '
+
+buildopts = _generic_opts + 'FFTLIBDIR=$FFT_LIB_DIR MATHLIBDIR=$BLAS_LIB_DIR'
+buildopts += ' castep tools utilities'
+
+preinstallopts = 'mkdir -p %(installdir)s/bin &&'
+installopts = _generic_opts + 'INSTALL_DIR="%(installdir)s/bin"'
+installopts += ' install-castep install-tools install-utilities'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['castep.mpi', 'optados.mpi', 'orbitals2bands', 'dispersion.pl',
+                                     'elastics.py', 'ceteprouts.pm']],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'castep.mpi --help',
+    'optados.mpi --help',
+]
+
+moduleclass = 'phys'

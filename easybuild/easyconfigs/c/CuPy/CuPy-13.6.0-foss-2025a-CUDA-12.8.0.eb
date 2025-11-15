@@ -1,0 +1,77 @@
+easyblock = 'PythonBundle'
+
+name = 'CuPy'
+version = '13.6.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://cupy.dev'
+description = "CuPy is an open-source array library accelerated with NVIDIA CUDA."
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('hypothesis', '6.133.2'),
+    ('setuptools', '80.9.0'),
+    ('Cython', '3.1.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('NCCL', '2.26.6', versionsuffix),
+    ('cuTENSOR', '2.3.0.6', versionsuffix, SYSTEM),
+    ('cuSPARSELt', '0.8.0.4', versionsuffix, SYSTEM),  # docs say 0.7.0 or 0.7.1
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['5.0', '6.0', '7.0', '7.5', '8.0', '8.6', '9.0']
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+_skip_tests = [
+    '--ignore tests/example_tests',  # examples are not included
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_ltisys.py::Test_bode::test_from_state_space',
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_fir_filter_design.py::TestFirls::test_firls',
+    '--deselect tests/cupyx_tests/scipy_tests/signal_tests/test_ltisys.py::TestPlacePoles::test_real_2',
+    # New failures in 13.6.0, they all seems to be related to on-the-fly compilation failing
+    '--deselect tests/cupy_tests/core_tests/test_raw.py::TestRawPicklable',   # ::test_raw_picklable
+    '--deselect tests/cupy_tests/fft_tests/test_callback.py::Test1dCallbacks',
+]
+
+# For testing with new versions of CuPy, please enable the slow testing setting below,
+# but switch to the much lighter fast testing before submitting the .eb file, so users
+# can install on GPUs with moderate RAM.
+
+# _parallel_tests, _test_type = 4, 'not slow'
+_parallel_tests, _test_type = 1, 'fast'
+
+exts_list = [
+    ('fastrlock', '0.8.3', {
+        'checksums': ['4af6734d92eaa3ab4373e6c9a1dd0d5ad1304e172b1521733c6c3b3d73c8fa5d'],
+    }),
+    ('cupy', version, {
+        'patches': [
+            'cupy-13.0.0_cusparselt_0.6.0.patch',
+            'cupy-13.0.0_eb_ccc.patch',
+            'CuPy-13.6.0-Disable_TestRaw_with_nvcc_backend.patch',
+        ],
+        'preinstallopts': 'CUPY_NUM_BUILD_JOBS=%(parallel)s EB_CCC="%(cuda_cc_cmake)s" ',
+        'runtest': 'export CUPY_TEST_GPU_LIMIT=1 CUPY_CACHE_DIR="%%(builddir)s" && '
+                   'pytest -n %s tests -k "%s" ' % (_parallel_tests, _test_type) + ' '.join(_skip_tests),
+        'testinstall': True,
+        'checksums': [
+            {'cupy-13.6.0.tar.gz': '3cba30ae3dd32b5d5c6536e710cb98015227cd4ba83c46b3f1825a7ae55b6667'},
+            {'cupy-13.0.0_cusparselt_0.6.0.patch': '09cb12d26e78079c50b06f17002bf54c66e5e4743b917c5a218d3fe90124d499'},
+            {'cupy-13.0.0_eb_ccc.patch': 'bfe8b46344759f58491f55418bd9c856d6f72d681ee5fef12820009f808d2db1'},
+            {'CuPy-13.6.0-Disable_TestRaw_with_nvcc_backend.patch':
+             '958d80059b085017ed8c8de55ed82a0d52fdf964482e8ccc13d401515979d4b7'},
+        ],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import cupy'",
+]
+
+moduleclass = 'lib'
