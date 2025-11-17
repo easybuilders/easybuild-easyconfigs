@@ -1,0 +1,119 @@
+# description: fixes hardcoding found in makefiles
+# author: Julia Gustavsen (julia.gustavsen@agroscope.admin.ch)
+diff -ruN mothur-1.48.2.orig/Makefile /tmp/eb/Mothur/1.48.2/foss-2023b/mothur-1.48.2/Makefile
+--- mothur-1.48.2.orig/Makefile	2024-11-04 20:53:24.000000000 +0100
++++ /tmp/eb/Mothur/1.48.2/foss-2023b/mothur-1.48.2/Makefile	2024-11-15 10:25:46.139186951 +0100
+@@ -20,7 +20,7 @@
+ # GSL_INCLUDE_DIR - location of GSL include files
+ # MOTHUR_FILES - The MOTHUR_FILES parameter is optional, but allows you to set a default location for mothur to look for input files it can't find. This is often used for reference files you want to store in one location separate from your data.
+ 
+-INSTALL_DIR ?= "\"Enter_your_mothur_install_path_here\""
++INSTALL_DIR ?= "%(installdir)s"
+ 
+ OPTIMIZE ?= yes
+ USEREADLINE ?= yes
+@@ -29,13 +29,13 @@
+ USEGSL ?= no
+ LOGFILE_NAME ?= no
+ 
+-BOOST_LIBRARY_DIR ?= "\"Enter_your_boost_library_path_here\""
+-BOOST_INCLUDE_DIR ?= "\"Enter_your_boost_include_path_here\""
+-HDF5_LIBRARY_DIR ?= "\"Enter_your_HDF5_library_path_here\""
+-HDF5_INCLUDE_DIR ?= "\"Enter_your_HDF5_include_path_here\""
++BOOST_LIBRARY_DIR=${EBROOTBOOST}/lib
++BOOST_INCLUDE_DIR=${EBROOTBOOST}/include
++HDF5_LIBRARY_DIR=${EBROOTHDF5}/lib
++HDF5_INCLUDE_DIR=${EBROOTHDF5}/include
+ GSL_LIBRARY_DIR ?= "\"Enter_your_GSL_library_path_here\""
+ GSL_INCLUDE_DIR ?= "\"Enter_your_GSL_include_path_here\""
+-MOTHUR_FILES="\"Enter_your_default_path_here\""
++MOTHUR_FILES=''
+ MOTHUR_TOOLS="\"Enter_your_mothur_tools_path_here\""
+ VERSION = "\"1.48.2\""
+ RELEASE_DATE = "\"11/4/24\""
+@@ -47,13 +47,13 @@
+ endif
+ 
+ ifeq  ($(strip $(OPTIMIZE)),yes)
+-    CXXFLAGS += -O3
++    #CXXFLAGS += -O3
+ endif
+ 
+ CXXFLAGS += -std=c++11 -pthread -DVERSION=${VERSION} -DRELEASE_DATE=${RELEASE_DATE}
+ LDFLAGS += -std=c++11 -pthread
+ 
+-ifeq  ($(strip $(MOTHUR_FILES)),"\"Enter_your_default_path_here\"")
++ifeq  ($(strip $(MOTHUR_FILES)),'')
+ else
+     CXXFLAGS += -DMOTHUR_FILES=${MOTHUR_FILES}
+ endif
+@@ -109,7 +109,7 @@
+     subdirs :=  $(sort $(dir $(filter-out  $(skipUchime), $(wildcard source/*/))))
+     subDirIncludes = $(patsubst %, -I %, $(subdirs))
+     subDirLinking =  $(patsubst %, -L%, $(subdirs))
+-    CXXFLAGS += -I. $(subDirIncludes)
++    CXXFLAGS += -I. $(subDirIncludes) -Isource
+     LDFLAGS += $(subDirLinking)
+ 
+ 
+@@ -118,6 +118,9 @@
+ #
+     OBJECTS=$(patsubst %.cpp,%.o,$(wildcard $(addsuffix *.cpp,$(subdirs))))
+     OBJECTS+=$(patsubst %.c,%.o,$(wildcard $(addsuffix *.c,$(subdirs))))
++# Include additional objects in source/
++    OBJECTS+=$(patsubst %.cpp,%.o,$(wildcard source/*.cpp))
++    OBJECTS+=$(patsubst %.c,%.o,$(wildcard source/*.c))
+     OBJECTS+=$(patsubst %.cpp,%.o,$(wildcard *.cpp))
+     OBJECTS+=$(patsubst %.c,%.o,$(wildcard *.c))
+ 
+diff -ruN mothur-1.48.2.orig/makefile-internal /tmp/eb/Mothur/1.48.2/foss-2023b/mothur-1.48.2/makefile-internal
+--- mothur-1.48.2.orig/makefile-internal	2024-11-04 20:53:24.000000000 +0100
++++ /tmp/eb/Mothur/1.48.2/foss-2023b/mothur-1.48.2/makefile-internal	2024-11-15 10:28:51.863460631 +0100
+@@ -43,8 +43,8 @@
+ #The boost libraries allow you to read gz files.
+ ifeq  ($(strip $(USEBOOST)),yes)
+     #statically link so the boost install is not required on users machine
+-    BOOST_INCLUDE_DIR="/usr/local/include"
+-    BOOST_LIBRARY_DIR="/usr/local/lib"
++    BOOST_INCLUDE_DIR="${EBROOTBOOST}/include"
++    BOOST_LIBRARY_DIR="${EBROOTBOOST}/lib"
+ 
+     #windows paths
+     #BOOST_INCLUDE_DIR="/usr/x86_64-w64-mingw32/sys-root/mingw/include"
+@@ -62,8 +62,8 @@
+ #User specified HDF5 library
+ ifeq  ($(strip $(USEHDF5)),yes)
+ 
+-    HDF5_INCLUDE_DIR="/usr/local/include"
+-    HDF5_LIBRARY_DIR="/usr/local/lib"
++    HDF5_INCLUDE_DIR="${EBROOTHDF5}/include"
++    HDF5_LIBRARY_DIR="${EBROOTHDF5}/lib"
+ 
+     LDFLAGS +=  -L ${HDF5_LIBRARY_DIR} 
+     LIBS += ${HDF5_LIBRARY_DIR}/libhdf5_hl_cpp.a
+@@ -110,6 +110,9 @@
+ #
+     OBJECTS=$(patsubst %.cpp,%.o,$(wildcard $(addsuffix *.cpp,$(subdirs))))
+     OBJECTS+=$(patsubst %.c,%.o,$(wildcard $(addsuffix *.c,$(subdirs))))
++    # Include additional objects in source/
++    OBJECTS+=$(patsubst %.cpp,%.o,$(wildcard source/*.cpp))
++    OBJECTS+=$(patsubst %.c,%.o,$(wildcard source/*.c))
+     OBJECTS+=$(patsubst %.cpp,%.o,$(wildcard *.cpp))
+     OBJECTS+=$(patsubst %.c,%.o,$(wildcard *.c))
+ 
+diff -ruN mothur-1.48.2.orig/source/uchime_src/makefile /tmp/eb/Mothur/1.48.2/foss-2023b/mothur-1.48.2/source/uchime_src/makefile
+--- mothur-1.48.2.orig/source/uchime_src/makefile	2024-11-04 20:53:24.000000000 +0100
++++ /tmp/eb/Mothur/1.48.2/foss-2023b/mothur-1.48.2/source/uchime_src/makefile	2024-11-15 10:29:38.800547895 +0100
+@@ -1,4 +1,4 @@
+-CXXFLAGS = -O3 -D_FILE_OFFSET_BITS=64 -DNDEBUG=1 -DUCHIMES=1
++CXXFLAGS = -O3 -D_FILE_OFFSET_BITS=64 -DNDEBUG=1 -DUCHIMES=1 -std=c++11
+ LDFLAGS = -g
+ 
+ #
+@@ -26,4 +26,4 @@
+ 
+ clean :
+ 	@rm -f $(OBJECTS)
+-	
+\ No newline at end of file
++	
