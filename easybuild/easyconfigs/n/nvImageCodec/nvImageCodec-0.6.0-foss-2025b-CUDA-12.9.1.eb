@@ -27,7 +27,7 @@ checksums = [
         'libnvtiff-linux-sbsa-0.6.0.78_cuda12-archive.tar.xz':
         '3694b154003a3741b68fc9ff70ad9195a756be1feb2404be6f2482bb97574c00',
         'libnvtiff-linux-x86_64-0.6.0.78_cuda12-archive.tar.xz':
-	'2c889bf4767e4ab8e81f46e9f2b675e1d424c46e4a54bb97049bbb3b87ff4aed'
+        '2c889bf4767e4ab8e81f46e9f2b675e1d424c46e4a54bb97049bbb3b87ff4aed'
     },
 ]
 
@@ -61,15 +61,16 @@ configopts = ' '.join([
 if ARCH in ['x86_64', 'aarch64']:
     local_cudaarch = {"arm64": "sbsa", "aarch64": "sbsa"}.get(ARCH, ARCH)
     local_ext = '%(builddir)s'
+    local_source_url = 'https://developer.download.nvidia.com/compute/'
     sources += [{
-        'source_urls': ['https://developer.download.nvidia.com/compute/nvjpeg2000/redist/libnvjpeg_2k/linux-{local_cudaarch}'],
+        'source_urls': [f'{local_source_url}/nvjpeg2000/redist/libnvjpeg_2k/linux-{local_cudaarch}'],
         'filename': f'libnvjpeg_2k-linux-{local_cudaarch}-{local_nvjpeg2k_version}_cuda%(cudamajver)s-archive.tar.xz',
         'extract_cmd': f'tar --strip-components=1 -C {local_ext} -xf %s',
     }, {
-        'source_urls': ['https://developer.download.nvidia.com/compute/nvtiff/redist/libnvtiff/linux-{local_cudaarch}'],
+        'source_urls': [f'{local_source_url}/nvtiff/redist/libnvtiff/linux-{local_cudaarch}'],
         'filename': f'libnvtiff-linux-{local_cudaarch}-{local_nvtiff_version}_cuda%(cudamajver)s-archive.tar.xz',
-        'extract_cmd': f'tar --strip-components=1 -C {local_ext} -xf %s && ' + \
-	               f'mv {local_ext}/lib/%(cudamajver)s/* {local_ext}/lib',
+        'extract_cmd': f'tar --strip-components=1 -C {local_ext} -xf %s && ' +
+                       f'mv {local_ext}/lib/%(cudamajver)s/* {local_ext}/lib',
     }]
     configopts += f' -DCMAKE_PREFIX_PATH={local_ext}'
     # Also install these binary libraries
