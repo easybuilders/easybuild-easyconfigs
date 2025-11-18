@@ -50,6 +50,7 @@ dependencies = [
 ]
 
 configopts = ' '.join([
+   '-DCUDA_TARGET_ARCHS="%(cuda_cc_cmake)s"',
    '-DNVIMGCODEC_BUILD_DLPACK=OFF',
    '-DNVIMGCODEC_BUILD_PYBIND11=OFF',
    '-DWITH_DYNAMIC_NVJPEG2K=OFF',
@@ -75,8 +76,8 @@ if ARCH in ['x86_64', 'aarch64']:
     configopts += f' -DCMAKE_PREFIX_PATH={local_ext}'
     # Also install these binary libraries
     postinstallcmds = [
-        f'cp {local_ext}/include/* %(installdir)s/include/',
-        f'cp {local_ext}/lib/*.so* %(installdir)s/lib/',
+        f'cp --no-dereference {local_ext}/include/* %(installdir)s/include/',
+        f'cp --no-dereference {local_ext}/lib/*.so* %(installdir)s/lib/',
         "patchelf --remove-rpath %(installdir)s/lib/libnv{tiff,jpeg2k}*.so",
         "patchelf --force-rpath --set-rpath '$ORIGIN' %(installdir)s/lib/libnv{tiff,jpeg2k}*.so",
     ]
