@@ -1,0 +1,48 @@
+From 71c6016206c06c6d3f96a53114d0a7a015816aad Mon Sep 17 00:00:00 2001
+From: Bart Oldeman <bart.oldeman@calculquebec.ca>
+Date: Sat, 15 Nov 2025 16:04:42 +0000
+Subject: [PATCH] Fix f_check detection of LLVM 21 flang
+
+The check for GCC is confused by the GNU-stack in
+
+```
+	.file	"FIRModule"
+	.text
+	.globl	zhoge_
+	.p2align	4
+	.type	zhoge_,@function
+zhoge_:
+	xorps	%xmm0, %xmm0
+	xorps	%xmm1, %xmm1
+	retq
+.Lfunc_end0:
+	.size	zhoge_, .Lfunc_end0-zhoge_
+
+	.ident	"flang version 21.1.5"
+	.section	".note.GNU-stack","",@progbits
+```
+
+And displays:
+```
+./f_check: line 102: [: 	: integer expression expected
+```
+
+Since it expects a string with GCC anyway, better to only match
+GCC and not GNU.
+---
+ f_check | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/f_check b/f_check
+index 4b9f95b06e..156f0e5621 100755
+--- a/f_check
++++ b/f_check
+@@ -92,7 +92,7 @@ else
+ 		vendor=FLANG
+ 		openmp='-fopenmp'
+ 		;;	
+-            *GNU*|*GCC*)
++            *GCC*)
+ 
+                 v="${data#*GCC: *\) }"
+                 v="${v%%\"*}"
