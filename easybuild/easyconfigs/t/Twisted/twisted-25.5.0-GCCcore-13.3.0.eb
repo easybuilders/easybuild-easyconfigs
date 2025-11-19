@@ -1,0 +1,79 @@
+easyblock = 'PythonPackage'
+
+name = 'Twisted'
+version = '25.5.0'
+
+homepage = 'https://twisted.org'
+description = "Event-driven networking engine written in Python"
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://files.pythonhosted.org/packages/source/t/twisted']
+sources = ['twisted-%(version)s.tar.gz']
+checksums = ['1deb272358cb6be1e3e8fc6f9c8b36f78eb0fa7c2233d2dbe11ec6fee04ea316']
+
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('hatchling', '1.24.2')
+]
+
+use_pip = True
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'installopts': '',
+}
+
+exts_list = [
+    ('incremental', '24.7.1', {
+        'source_tmpl': SOURCE_TAR_GZ,
+    }),
+
+    ('zope.interface', '7.1.1', {
+        'source_tmpl': SOURCE_TAR_GZ,
+    }),
+
+    ('constantly', '23.10.4', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    }),
+
+    ('hyperlink', '21.0.0', {
+        'source_tmpl': SOURCE_TAR_GZ,
+    }),
+
+    ('automat', '25.4.16', {
+        'source_tmpl': SOURCE_PY3_WHL,
+    })
+]
+
+options = {
+    'modulename': 'twisted',
+}
+
+sanity_check_commands = [
+    # Base Twisted
+    "python -c 'import twisted; print(twisted.__version__)'",
+
+    # twisted.web: HTTP, WSGI, templating
+    "python -c 'from twisted.web.server import Site; from twisted.web.client import Agent; from twisted.web.resource import Resource; from twisted.web import wsgi'",
+
+    # twisted.words: IRC/XMPP/etc.
+    "python -c \"from twisted.words.protocols import irc, jabber\"",
+
+    # twisted.mail: IMAP/POP/SMTP
+    "python -c 'from twisted.mail import smtp, imap4, pop3'",
+
+    # twisted.positioning: just check imports & symbol presence
+    "python -c 'from twisted.positioning import nmea, base; assert hasattr(nmea, \"NMEAProtocol\")'",
+
+    # twisted.names: DNS
+    "python -c 'from twisted.names import client, server, dns; dns.Name(b\"example.com\")'",
+
+    # twisted.trial: test runner present
+    "python -m twisted.trial --help > /dev/null",
+]
+
+moduleclass = 'lib'
