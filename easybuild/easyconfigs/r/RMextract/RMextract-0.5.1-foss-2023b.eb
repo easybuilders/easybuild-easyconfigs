@@ -1,0 +1,51 @@
+easyblock = 'PythonBundle'
+
+name = 'RMextract'
+version = '0.5.1'
+
+homepage = "https://github.com/lofar-astron/RMextract"
+
+description = """
+Extract TEC, vTEC, Earthmagnetic field and Rotation Measures from GPS and WMM data for radio interferometry observations
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+# Based on https://github.com/lofar-astron/RMextract/blob/6191e8d17688a440f239745ecb0a203d74708c8b/pyproject.toml#L6
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('Meson', '1.2.3'),
+    ('Ninja', '1.11.1'),
+    ('scikit-build', '0.17.6'),
+]
+
+# Based on https://github.com/lofar-astron/RMextract/blob/6191e8d17688a440f239745ecb0a203d74708c8b/pyproject.toml#L47
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('astropy', '7.0.0'),
+    ('LoSoTo', '2.5.0'),
+    ('python-casacore', '3.5.2'),
+]
+
+exts_list = [
+    ('PySocks', '1.7.1', {
+        'checksums': ['3f8804571ebe159c380ac6de37643bb4685970655d3bba243530d6558b799aa0'],
+        'modulename': 'socks',
+    }),
+    ('rmextract', version, {
+        'checksums': ['3d9196ecfd57bab92dd6427591cc6e1b42a7cb66845b6b12f273a8b8df827e77'],
+        'modulename': 'RMextract',
+        'preinstallopts': 'export CMAKE_ARGS="-DF2PY_EXECUTABLE=$EBROOTSCIPYMINBUNDLE/bin/f2py" && ',
+    }),
+]
+
+sanity_check_commands = [
+    'createRMh5parm --help',
+    'download_IONEX --help',
+    # This actually doesn't work with the current easyconfig
+    # 'createRMParamdb --help',
+]
+
+
+moduleclass = 'astro'

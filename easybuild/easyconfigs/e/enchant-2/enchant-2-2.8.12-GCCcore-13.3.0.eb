@@ -1,0 +1,50 @@
+# Updated from enchant-1.6.1-intel-2017a.eb
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'enchant-2'
+version = '2.8.12'
+
+homepage = 'http://rrthomas.github.io/enchant/'
+description = """Enchant aims to provide a simple but comprehensive abstraction for dealing
+with different spell checking libraries in a consistent way. A client, such
+as a text editor or word processor, need not know anything about a specific
+spell-checker, and since all back-ends are plugins, new spell-checkers can
+be added without needing any change to the program using Enchant."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/rrthomas/enchant/releases/download/v%(version)s']
+sources = ['enchant-%(version)s.tar.gz']
+checksums = ['20e5fab2ca0f95ba9d1ef5052fe5b028e3e1d66d4cdea6b9adfcbd3e524c2a09']
+
+builddependencies = [
+    ('Autotools', '20231222'),
+    ('binutils', '2.42'),
+    ('M4', '1.4.19'),
+    ('pkgconf', '2.2.0'),
+    ('groff', '1.23.0'),
+]
+
+dependencies = [
+    ('hunspell', '1.7.2'),
+    ('GLib', '2.80.4'),
+]
+
+preconfigopts = "autoreconf -vfi && "
+
+buildopts = "LIBTOOL='libtool --tag=CC'"
+
+sanity_check_commands = [
+    'enchant-2 -v',
+    'enchant-lsmod-2 -v',
+]
+
+sanity_check_paths = {
+    'files': ['bin/enchant-2', 'bin/enchant-lsmod-2',
+              'lib/libenchant-2.a', 'lib/libenchant-2.%s' % SHLIB_EXT],
+    'dirs': ['include/enchant-2', 'lib/enchant-2'],
+}
+
+moduleclass = 'tools'
