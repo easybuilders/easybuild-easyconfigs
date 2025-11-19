@@ -1,0 +1,62 @@
+easyblock = 'PackedBinary'
+
+name = 'CRYSTAL'
+version = '23.1.0.1'
+_ver = version.split('.')
+versionsuffix = '-Linux'
+
+homepage = 'https://www.crystal.unito.it/'
+
+description = """
+A powerful and scalable computational tool
+for solid state chemistry and physics"""
+
+toolchain = {'name': 'gompi', 'version': '2024a'}
+
+sources = [
+    f'utils{_ver[0]}.tar.gz',
+    f'%(namelower)s{_ver[0]}_v{"_".join(_ver[1:])}_Linux-ifort21.4_openmpi4.1.1_exe.tar.gz',
+]
+patches = ['%(name)s-%(version)s_fix_run_scripts.patch']
+checksums = [
+    {'utils23.tar.gz': '6e45152e7a1561b89594257c5b1db126505aeaa0282e4ac09fc41e478a9db328'},
+    {'crystal23_v1_0_1_Linux-ifort21.4_openmpi4.1.1_exe.tar.gz':
+     'ded88a51a24f42aab3272d428dabf9ab8a1fa2621c95b7ee7f75632b59c7956b'},
+    {'CRYSTAL-23.1.0.1_fix_run_scripts.patch': '893a89450ef19a6f3b6b88129830f636c130de1ee3a813d62b044f24a1a5ab59'},
+]
+
+download_instructions = f"{name} requires manual download from https://www.crystal.unito.it/"
+download_instructions += f"\nRequired downloads: {' '.join(sources)}"
+
+dependencies = [
+    ('tcsh', '6.24.13'),
+]
+
+install_cmds = [
+    'mkdir -p %(installdir)s/bin',
+    'cp -a %(builddir)s/%(namelower)s*/*/* %(installdir)s/bin/',
+    'cp -a %(builddir)s/utils*/run* %(installdir)s/bin/',
+    'chmod +x %(installdir)s/bin/*',
+    'echo localhost >%(installdir)s/bin/nodes.par',
+]
+
+_bins = ['crystal', 'Pcrystal', 'Pproperties', 'properties']
+
+_runscripts = [
+    f'runcry{_ver[0]}', f'runMPPcry{_ver[0]}', f'runPcry{_ver[0]}', f'runPprop{_ver[0]}', f'runprop{_ver[0]}',
+]
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in _bins + _runscripts],
+    'dirs': [],
+}
+
+modextravars = {
+    'CRY23_UTILS': '%(installdir)s/bin',
+    'CRY23_EXEDIR': '%(installdir)s/bin',
+    'MPIBIN': 'mpirun',  # change to your preferred MPI launcher
+}
+
+sanity_check_commands = _runscripts
+
+moduleclass = 'chem'

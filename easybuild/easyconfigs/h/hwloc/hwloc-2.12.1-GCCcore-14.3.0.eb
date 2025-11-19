@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'hwloc'
+version = '2.12.1'
+
+homepage = 'https://www.open-mpi.org/projects/hwloc/'
+
+description = """
+ The Portable Hardware Locality (hwloc) software package provides a portable
+ abstraction (across OS, versions, architectures, ...) of the hierarchical
+ topology of modern architectures, including NUMA memory nodes, sockets, shared
+ caches, cores and simultaneous multithreading. It also gathers various system
+ attributes such as cache and memory information as well as the locality of I/O
+ devices such as network interfaces, InfiniBand HCAs or GPUs. It primarily
+ aims at helping applications with gathering information about modern computing
+ hardware so as to exploit it accordingly and efficiently.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://www.open-mpi.org/software/hwloc/v%(version_major_minor)s/downloads/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['ffa02c3a308275a9339fbe92add054fac8e9a00cb8fe8c53340094012cb7c633']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('numactl', '2.0.19'),
+    ('libxml2', '2.14.3'),
+    ('libpciaccess', '0.18.1'),
+]
+
+configopts = ' '.join([
+    '--enable-plugins',
+    '--disable-cairo',
+    '--disable-opencl',
+    '--disable-cuda',
+    '--disable-nvml',
+    '--disable-rsmi',
+    '--disable-levelzero',
+    '--disable-gl',
+    '--disable-libudev',
+])
+
+sanity_check_paths = {
+    'files': ['bin/lstopo', 'include/hwloc/linux.h', f'lib/libhwloc.{SHLIB_EXT}'],
+    'dirs': ['share/man/man3'],
+}
+sanity_check_commands = ['lstopo']
+
+moduleclass = 'system'
