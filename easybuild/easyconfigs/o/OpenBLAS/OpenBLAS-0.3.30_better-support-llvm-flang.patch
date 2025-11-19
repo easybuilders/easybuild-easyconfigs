@@ -1,16 +1,33 @@
-From ccef6ccde741e92640f2f14301e888de2c59f281 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Jan=20Andr=C3=A9=20Reuter?= <jan@zyten.de>
-Date: Tue, 18 Nov 2025 19:19:15 +0100
-Subject: [PATCH] Recognize -fdefault-integer-8 for LLVMs flang
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Combination of the following to PRs to better support
+LLVM flang in OpenBLAS. The first patch prevents an
+error in `f_check` due to LLVM flang falsely being
+classified as GCC, whereas the second fixes a miscompilation
+due to `-fdefault-integer-8` not being used when
+building the `INTERFACE64` variant of OpenBLAS, hence
+crashing every single test.
 
-Signed-off-by: Jan André Reuter <jan@zyten.de>
----
- Makefile.system | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+For more information, see:
+- https://github.com/OpenMathLib/OpenBLAS/pull/5540
+- https://github.com/OpenMathLib/OpenBLAS/pull/5534
 
+Author:
+- Jan Reuter (JSC)
+- Bart Oldeman (ComputeCanada)
+
+
+diff --git a/f_check b/f_check
+index 4b9f95b06e..156f0e5621 100755
+--- a/f_check
++++ b/f_check
+@@ -92,7 +92,7 @@ else
+ 		vendor=FLANG
+ 		openmp='-fopenmp'
+ 		;;	
+-            *GNU*|*GCC*)
++            *GCC*)
+ 
+                 v="${data#*GCC: *\) }"
+                 v="${v%%\"*}"
 diff --git a/Makefile.system b/Makefile.system
 index 6241006a8..9cfc98d48 100644
 --- a/Makefile.system
