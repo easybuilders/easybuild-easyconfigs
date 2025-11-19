@@ -1,0 +1,63 @@
+easyblock = 'CMakeMake'
+
+name = 'NVSHMEM'
+version = '3.3.20'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://developer.nvidia.com/nvshmem'
+description = """NVSHMEM is a parallel programming interface based on OpenSHMEM that provides
+efficient and scalable communication for NVIDIA GPU clusters. NVSHMEM creates a
+global address space for data that spans the memory of multiple GPUs and can be
+accessed with fine-grained GPU-initiated operations, CPU-initiated operations,
+and operations on CUDA streams.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+
+source_urls = [
+    'https://github.com/NVIDIA/nvshmem/releases/download/v%(version)s-0/',
+    'https://developer.download.nvidia.com/compute/redist/nvshmem/%(version)s/source/',
+]
+sources = ['%(namelower)s_src_cuda12-all-all-%(version)s.tar.gz']
+patches = ['NVSHMEM-3.3.20_update_cxx_standard.patch']
+
+checksums = [
+    # nvshmem_src_cuda12-all-all-3.3.20.tar.gz
+    '96ec9620e82ec90de92c7d61a7ba03c0eba05075bf10e1fc4a066d45e7f7d21f',
+    # NVSHMEM-3.3.20_update_cxx_standard.patch
+    '560eda0fb6e44c8f7666fb18a87d5b6505f0fb77316908718df6e835db52b49f'
+]
+
+builddependencies = [
+    ('Autotools', '20250527'),
+    ('pkgconf', '2.4.3'),
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('NCCL', '2.27.7', versionsuffix),
+    ('UCX-CUDA', '1.19.0', versionsuffix),
+]
+
+configopts = '-DNVSHMEM_USE_GDRCOPY=1 '
+configopts += '-DGDRCOPY_HOME=${EBROOTGDRCOPY} '
+configopts += '-DMPI_HOME=${EBROOTOPENMPI} '
+configopts += '-DNVSHMEM_MPI_SUPPORT=1 '
+configopts += '-DNVSHMEMTEST_USE_MPI_LAUNCHER=1 '
+configopts += '-DNCCL_HOME=${EBROOTNCCL} '
+configopts += '-DNVSHMEM_USE_NCCL=1 '
+# configopts += '-DNVSHMEM_IBGDA_SUPPORT=1 '
+configopts += '-DNVSHMEM_PREFIX=%(installdir)s '
+# NVSHMEM builds a wheel package if this option is enabled.
+# Properly installing the Python bindings is better handled in a separate EC.
+configopts += '-DNVSHMEM_BUILD_PYTHON_LIB=OFF '
+
+sanity_check_paths = {
+    'files': ['lib/libnvshmem.a', 'lib/nvshmem_bootstrap_mpi.%s' % SHLIB_EXT],
+    'dirs': ['include']
+}
+
+modextravars = {'NVSHMEM_HOME': '%(installdir)s'}
+
+moduleclass = 'devel'
