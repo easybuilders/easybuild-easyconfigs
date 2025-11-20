@@ -37,7 +37,19 @@ dependencies = [
     ('netCDF-Fortran', '4.6.1'),
 ]
 
+# See https://github.com/wrf-model/WRF/pull/1823
+local_warnings = ' '.join([
+    '-Wno-implicit-int',
+    '-Wno-implicit-function-declaration',
+    '-Wno-incompatible-function-pointer-types',
+])
+configopts = ''
+configopts += f" && sed -i 's/CFLAGS_LOCAL *= *-w/CFLAGS_LOCAL = -w {local_warnings}/g' configure.wrf"
+configopts += f" && sed -i 's/CC_TOOLS_CFLAGS *=/CC_TOOLS_CFLAGS = {local_warnings}/g' configure.wrf"
+
 runtest = True
+# Avoid MPI error "unable to run bstrap_proxy on [...] (pid 466990, exit code 256)"
+pretestopts = 'I_MPI_HYDRA_BOOTSTRAP=ssh '
 
 # limit parallel build to 20
 maxparallel = 20
