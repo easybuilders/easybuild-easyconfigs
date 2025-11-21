@@ -12,7 +12,9 @@ toolchain = SYSTEM
 
 allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
 
-use_pip = False
+# require Python >= 3.9 (because some extensions require Python > 3.6)
+req_py_majver = 3
+req_py_minver = 9
 
 # don't fix Python shebang for mympirun script (default is to patch files matching 'bin/*'),
 # it must be run with the system Python, even if another Python module is loaded
@@ -23,6 +25,13 @@ exts_list = [
     ('setuptools', '41.6.0', {
         'source_tmpl': '%(name)s-%(version)s.zip',
         'checksums': ['6afa61b391dcd16cb8890ec9f66cc4015a8a31a6e1c2b4e0c464514be1a3d722'],
+    }),
+    ('flit_core', '3.12.0', {
+        'checksums': ['18f63100d6f94385c6ed57a72073443e1a71a4acb4339491615d0f16d6ff01b2'],
+    }),
+    # provides bdist_wheel, required for 'future' extension
+    ('wheel', '0.45.1', {
+        'checksums': ['661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729'],
     }),
     ('future', '1.0.0', {
         'checksums': ['bd2968309307861edae1458a4f8a4f3598c03be43b97521076aebf5d94c07b05'],
@@ -65,7 +74,8 @@ sanity_check_paths = {
 }
 sanity_check_commands = ["mympirun --help"]
 
-# can't enable 'pip check' since pip may not be installed in OS
+# can't enable 'pip check' since pip may not be installed in OS,
+# and if it is, system-wide 'pip check' may not pass
 sanity_pip_check = False
 
 moduleclass = 'tools'
