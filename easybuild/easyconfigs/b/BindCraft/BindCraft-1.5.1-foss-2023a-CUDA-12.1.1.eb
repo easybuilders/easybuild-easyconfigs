@@ -1,0 +1,82 @@
+easyblock = 'Tarball'
+
+name = 'BindCraft'
+version = '1.5.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/martinpacesa/BindCraft'
+description = """Simple binder design pipeline using AlphaFold2 backpropagation, MPNN, and PyRosetta.
+ Select your target and let the script do the rest of the work and finish once you have enough designs to order!"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/martinpacesa/BindCraft/archive/refs/tags/']
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}]
+checksums = ['d4ddc3d8bee9a6ec28713aa95ee7f38499ab0091afed41c890b72b7a1e401b55']
+
+builddependencies = [
+    ('hatchling', '1.18.0'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('Biopython', '1.83'),
+    ('Seaborn', '0.13.2'),
+    ('tqdm', '4.66.1'),
+    ('OpenMM', '8.0.0', versionsuffix),
+    ('FFmpeg', '6.0'),
+    ('matplotlib', '3.7.2'),
+    ('PyRosetta', '4.release-387'),
+    ('jax', '0.4.25', versionsuffix),
+    ('dm-haiku', '0.0.12', versionsuffix),
+    ('dm-tree', '0.1.8'),
+    ('ml-collections', '0.1.1'),
+    ('Optax', '0.2.2', versionsuffix),
+    ('py3Dmol', '2.1.0'),
+    ('Jupyter-bundle', '20230823'),
+    ('Flax', '0.8.4', versionsuffix),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+exts_list = [
+    ('PDBFixer', '1.9', {
+        'source_urls': ['https://github.com/openmm/pdbfixer/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['88b9a77e50655f89d0eb2075093773e82c27a4cef842cb7d735c877b20cd39fb'],
+    }),
+    ('immutabledict', '4.2.1', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['c56a26ced38c236f79e74af3ccce53772827cef5c3bce7cab33ff2060f756373'],
+    }),
+    ('colabdesign', '1.1.3', {
+        'source_urls': ['https://github.com/sokrypton/ColabDesign/archive/'],
+        'sources': ['v1.1.3.tar.gz'],
+        'checksums': ['c5d6eceb60cd09d6779362a1b91808df749ad6bb1a38b290ced4336ac62c6950'],
+    }),
+]
+
+fix_python_shebang_for = ['bindcraft.py']
+
+postinstallcmds = [
+    'chmod a+x %(installdir)s/bindcraft.py',
+    'chmod a+x %(installdir)s/functions/DAlphaBall.gcc',
+    'chmod a+x %(installdir)s/functions/dssp',
+]
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'files': ['bindcraft.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["bindcraft.py --help"]
+
+modloadmsg = """Use af_params_dir to set the path to the AlphaFold2 weights in your advanced settings"""
+
+moduleclass = 'bio'
