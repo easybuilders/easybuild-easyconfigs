@@ -1,0 +1,47 @@
+##
+# This easyconfig is based on the easy config written originally by Robert Mijakovic <robert.mijakovic@lxp.lu>
+# Author:    Ben Czaja (SURF)
+#            maxim-masterov (SURF)
+##
+name = 'Libint'
+version = '2.11.1'
+local_lmax = 6
+# custom configuration, to be used as dependency for CP2K
+versionsuffix = '-lmax-%s-cp2k' % local_lmax
+
+homepage = 'https://github.com/evaleev/libint'
+description = """Libint library is used to evaluate the traditional (electron repulsion) and certain novel two-body
+ matrix elements (integrals) over Cartesian Gaussian functions used in modern atomic and molecular theory."""
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/evaleev/libint/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    {'v2.11.1.tar.gz': '58ab0f893d94cbed3ab35a6c26ec5e4d8541c59889407a6d30c50b8ea415bdf3'},
+]
+
+builddependencies = [
+    ('Autotools', '20240712'),
+    ('GMP', '6.3.0'),
+    ('Boost', '1.88.0'),
+    ('Eigen', '3.4.0'),
+    ('Python', '3.13.1'),
+    ('CMake', '3.31.3'),
+]
+
+# configure options as required by CP2K,
+# see Jenkinsfile in https://github.com/cp2k/libint-cp2k
+local_eri_max_am = '%s,%s' % (local_lmax, local_lmax - 1)
+local_eri23_max_am = '%s,%s' % (local_lmax + 2, local_lmax + 1)
+
+libint_compiler_configopts = '--enable-eri=1 --enable-eri2=1 --enable-eri3=1 --with-max-am=%s ' % local_lmax
+libint_compiler_configopts += '--with-eri-max-am=%s ' % local_eri_max_am
+libint_compiler_configopts += '--with-eri2-max-am=%s ' % local_eri23_max_am
+libint_compiler_configopts += '--with-eri3-max-am=%s ' % local_eri23_max_am
+libint_compiler_configopts += '--enable-generic-code --disable-unrolling'
+
+with_fortran = True
+
+moduleclass = 'chem'
