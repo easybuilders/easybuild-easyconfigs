@@ -1,0 +1,93 @@
+easyblock = 'CMakeMake'
+
+name = 'nvImageCodec'
+version = '0.6.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+local_nvjpeg2k_version = '0.9.1.47'
+local_nvtiff_version = '0.6.0.78'
+
+homepage = 'https://github.com/NVIDIA/nvImageCodec'
+description = """The nvImageCodec is an open-source library of accelerated codecs with unified interface.
+It is designed as a framework for extension modules which delivers codec plugins."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'cstd': 'c++17'}
+
+source_urls = ['https://github.com/NVIDIA/nvImageCodec/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    {'v0.6.0.tar.gz': 'b79e2fe1693656e81078a95c17b512be96e58e8a2b93e4b8bc85112c4da85e7e'},
+    {
+        'libnvjpeg_2k-linux-sbsa-0.9.1.47_cuda12-archive.tar.xz':
+        '25878f583c9797146aa7b396f8219da23f388780c4fc4f72121300aace9ba1b3',
+        'libnvjpeg_2k-linux-x86_64-0.9.1.47_cuda12-archive.tar.xz':
+        '5803ed38253923578a2ae3b21dabdc963c4effccfed07ca5e1e3acb84ecd1535',
+    },
+    {
+        'libnvtiff-linux-sbsa-0.6.0.78_cuda12-archive.tar.xz':
+        '3694b154003a3741b68fc9ff70ad9195a756be1feb2404be6f2482bb97574c00',
+        'libnvtiff-linux-x86_64-0.6.0.78_cuda12-archive.tar.xz':
+        '2c889bf4767e4ab8e81f46e9f2b675e1d424c46e4a54bb97049bbb3b87ff4aed'
+    },
+]
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('DLPack', '1.2'),
+    ('LLVM', '20.1.8'),  # uses clang python module for stub generator
+    ('patchelf', '0.18.0'),
+]
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('Python', '3.13.5'),
+    ('pybind11', '3.0.0'),
+    ('LibTIFF', '4.7.0'),
+    ('libjpeg-turbo', '3.1.1'),
+    ('OpenJPEG', '2.5.3'),
+    ('zlib', '1.3.1'),
+    ('zstd', '1.5.7'),
+]
+
+configopts = ' '.join([
+    '-DCUDA_TARGET_ARCHS="%(cuda_cc_cmake)s"',
+    '-DNVIMGCODEC_BUILD_DLPACK=OFF',
+    '-DNVIMGCODEC_BUILD_PYBIND11=OFF',
+    '-DWITH_DYNAMIC_NVJPEG2K=OFF',
+    '-DWITH_DYNAMIC_NVTIFF=OFF',
+    '-DBUILD_TEST=OFF',
+])
+
+# nvtiff and nvjpeg are only binary packages
+if ARCH in ['x86_64', 'aarch64']:
+    local_cudaarch = {"arm64": "sbsa", "aarch64": "sbsa"}.get(ARCH, ARCH)
+    local_ext = '%(builddir)s'
+    local_source_url = 'https://developer.download.nvidia.com/compute/'
+    sources += [{
+        'source_urls': [f'{local_source_url}/nvjpeg2000/redist/libnvjpeg_2k/linux-{local_cudaarch}'],
+        'filename': f'libnvjpeg_2k-linux-{local_cudaarch}-{local_nvjpeg2k_version}_cuda%(cudamajver)s-archive.tar.xz',
+        'extract_cmd': f'tar --strip-components=1 -C {local_ext} -xf %s',
+    }, {
+        'source_urls': [f'{local_source_url}/nvtiff/redist/libnvtiff/linux-{local_cudaarch}'],
+        'filename': f'libnvtiff-linux-{local_cudaarch}-{local_nvtiff_version}_cuda%(cudamajver)s-archive.tar.xz',
+        'extract_cmd': f'tar --strip-components=1 -C {local_ext} -xf %s && ' +
+                       f'mv {local_ext}/lib/%(cudamajver)s/* {local_ext}/lib',
+    }]
+    configopts += f' -DCMAKE_PREFIX_PATH={local_ext}'
+    # Also install these binary libraries
+    postinstallcmds = [
+        f'cp --no-dereference {local_ext}/include/* %(installdir)s/include/',
+        f'cp --no-dereference {local_ext}/lib/*.so* %(installdir)s/lib/',
+        "patchelf --remove-rpath %(installdir)s/lib/libnv{tiff,jpeg2k}*.so",
+        "patchelf --force-rpath --set-rpath '$ORIGIN' %(installdir)s/lib/libnv{tiff,jpeg2k}*.so",
+    ]
+
+# Skipping tests due to example files not being included in source tarball
+# and they require git lfs to download which is impractical to cache
+
+sanity_check_paths = {
+    'files': ['bin/nvimtrans', f'lib/libnvimgcodec.{SHLIB_EXT}', 'lib/libnvimgcodec_static.a'],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
