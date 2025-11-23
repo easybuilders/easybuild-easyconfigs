@@ -1,0 +1,94 @@
+From 2c278271277823b3544d991365e58f97dd4b7031 Mon Sep 17 00:00:00 2001
+From: David Truby <david.truby@arm.com>
+Date: Wed, 18 Jun 2025 10:17:05 +0100
+Subject: [PATCH 1/2] [flang][AArch64] Always compiler-rt to flang linking
+ after libgcc
+
+This patch fixes an issue where the __trampoline_setup symbol is missing
+with some programs compiled with flang. This symbol is present only in
+compiler-rt and not in libgcc. This patch adds compiler-rt to the link
+line after libgcc if libgcc is being used, so that only this symbol will
+be picked from compiler-rt.
+---
+ clang/lib/Driver/ToolChains/CommonArgs.cpp | 7 +++++++
+ flang/test/Driver/flang-ld-aarch64.f90     | 9 +++++++++
+ llvm/CMakeLists.txt                        | 7 +++++++
+ 3 files changed, 23 insertions(+)
+ create mode 100644 flang/test/Driver/flang-ld-aarch64.f90
+
+diff --git a/clang/lib/Driver/ToolChains/CommonArgs.cpp b/clang/lib/Driver/ToolChains/CommonArgs.cpp
+index d5b2c5c1e199e..672b73432847d 100644
+--- a/clang/lib/Driver/ToolChains/CommonArgs.cpp
++++ b/clang/lib/Driver/ToolChains/CommonArgs.cpp
+@@ -2252,6 +2252,13 @@ static void AddLibgcc(const ToolChain &TC, const Driver &D,
+   if (LGT == LibGccType::SharedLibGcc ||
+       (LGT == LibGccType::UnspecifiedLibGcc && D.CCCIsCXX()))
+     CmdArgs.push_back("-lgcc");
++  // compiler-rt is needed after libgcc for flang on AArch64 for the
++  // __trampoline_setup symbol
++  if (D.IsFlangMode() && TC.getArch() == llvm::Triple::aarch64) {
++    CmdArgs.push_back("--as-needed");
++    CmdArgs.push_back(TC.getCompilerRTArgString(Args, "builtins"));
++    CmdArgs.push_back("--no-as-needed");
++  }
+ }
+ 
+ void tools::AddRunTimeLibs(const ToolChain &TC, const Driver &D,
+diff --git a/flang/test/Driver/flang-ld-aarch64.f90 b/flang/test/Driver/flang-ld-aarch64.f90
+new file mode 100644
+index 0000000000000..61cd46cea5cd1
+--- /dev/null
++++ b/flang/test/Driver/flang-ld-aarch64.f90
+@@ -0,0 +1,9 @@
++! Check linker flags for AArch64 linux, since it needs both libgcc and 
++! compiler-rt, with compiler-rt second when -rtlib=libgcc.
++
++! RUN: %flang -### -rtlib=libgcc --target=aarch64-linux-gnu %S/Inputs/hello.f90 2>&1 | FileCheck %s
++
++! CHECK-LABEL:  "{{.*}}ld{{(\.exe)?}}"
++! CHECK-SAME: "-lflang_rt.runtime" "-lm"
++! CHECK-SAME: "-lgcc" "--as-needed" "-lgcc_s" "--no-as-needed"
++! CHECK-SAME: "--as-needed" "{{.*}}{{\\|/}}libclang_rt.builtins.a" "--no-as-needed"
+diff --git a/llvm/CMakeLists.txt b/llvm/CMakeLists.txt
+index 0849bec26d56a..1b91e45c202e3 100644
+--- a/llvm/CMakeLists.txt
++++ b/llvm/CMakeLists.txt
+@@ -653,6 +653,13 @@ if(LLVM_EXPERIMENTAL_TARGETS_TO_BUILD STREQUAL "all")
+   set(LLVM_EXPERIMENTAL_TARGETS_TO_BUILD ${LLVM_ALL_EXPERIMENTAL_TARGETS})
+ endif()
+ 
++if("flang" IN_LIST LLVM_ENABLE_PROJECTS AND 
++   "AArch64" IN_LIST LLVM_TARGETS_TO_BUILD AND
++   NOT "compiler-rt" IN_LIST LLVM_ENABLE_RUNTIMES)
++  message(STATUS "Enabling Flang-RT as a dependency of Flang")
++  list(APPEND LLVM_ENABLE_RUNTIMES "compiler-rt")
++endif()
++
+ set(LLVM_TARGETS_TO_BUILD
+    ${LLVM_TARGETS_TO_BUILD}
+    ${LLVM_EXPERIMENTAL_TARGETS_TO_BUILD})
+
+From 7ac19ec8841caefe163af928d8b8feed070e7069 Mon Sep 17 00:00:00 2001
+From: David Truby <david.truby@arm.com>
+Date: Mon, 23 Jun 2025 10:56:15 +0100
+Subject: [PATCH 2/2] Fix issues with CMakeLists.txt
+
+---
+ llvm/CMakeLists.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/llvm/CMakeLists.txt b/llvm/CMakeLists.txt
+index 1b91e45c202e3..15fe1d9646681 100644
+--- a/llvm/CMakeLists.txt
++++ b/llvm/CMakeLists.txt
+@@ -655,8 +655,8 @@ endif()
+ 
+ if("flang" IN_LIST LLVM_ENABLE_PROJECTS AND 
+    "AArch64" IN_LIST LLVM_TARGETS_TO_BUILD AND
+-   NOT "compiler-rt" IN_LIST LLVM_ENABLE_RUNTIMES)
+-  message(STATUS "Enabling Flang-RT as a dependency of Flang")
++   NOT ("compiler-rt" IN_LIST LLVM_ENABLE_RUNTIMES OR "compiler-rt" IN_LIST LLVM_ENABLE_PROJECTS))
++  message(STATUS "Enabling compiler-rt as a dependency of Flang")
+   list(APPEND LLVM_ENABLE_RUNTIMES "compiler-rt")
+ endif()
+ 
