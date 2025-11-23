@@ -1,0 +1,64 @@
+easyblock = 'ConfigureMake'
+
+name = 'Tinker-HP'
+version = '20241026'
+versionsuffix = '-plumed-colvars'
+_commit = '5fa89f3'
+
+homepage = 'https://tinker-hp.org'
+description = """
+Tinker-HP: High-Performance Massively Parallel Evolution of Tinker on CPUs & GPUs"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+github_account = 'TinkerTools'
+
+sources = [{
+    'source_urls': [GITHUB_SOURCE],
+    'download_filename': '%s.tar.gz' % _commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = [('tinkerhp.wrapper', 'v1.2/')]
+checksums = [
+    {'Tinker-HP-20241026.tar.gz': 'a92f8af90922a8980774c960c6846041ed25a719162d012f757308702de889ef'},
+    {'tinkerhp.wrapper': '705daf691a8fde6fa7ba79fe94c953711f044cd9f2d2b2c57d7f28870d00b736'},
+]
+
+builddependencies = [
+    ('Autotools', '20231222'),
+    ('make', '4.4.1'),
+]
+dependencies = [
+    ('imkl', '2024.2.0', '', SYSTEM),
+    ('Tcl', '8.6.14'),
+]
+
+start_dir = 'v1.2'
+
+maxparallel = 1
+
+preconfigopts = "sed -i 's/parameter (maxkey=5000)/parameter (maxkey=25000)/' source/MOD_sizes.f && "
+preconfigopts += "sed -i 's/-O3/-O3 -march=native/g' configure.ac && "
+preconfigopts += "sed -i 's/Wno-argument-mismatch/fallow-argument-mismatch/g' configure.ac && "
+preconfigopts += "autoreconf -fi && "
+
+configure_without_installdir = True
+
+configopts = '--with-blaslib=mkl --enable-fft-mkl --enable-plumed --enable-colvars'
+
+postinstallcmds = [
+    'cp -a bin params plumed/Gnu/* %(installdir)s',
+    'mv tinkerhp.wrapper %(installdir)s/bin/tinkerhp',
+]
+
+modextrapaths = {'TINKER_PARAMS': 'params'}
+
+_bins = ['analyze', 'bar', 'dynamic', 'minimize', 'pimd', 'testgrad', 'tinkerhp']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _bins],
+    'dirs': ['params'],
+}
+
+moduleclass = 'chem'

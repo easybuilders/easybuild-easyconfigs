@@ -1,0 +1,74 @@
+easyblock = 'PythonBundle'
+
+name = 'Twisted'
+version = '25.5.0'
+
+homepage = 'https://twisted.org'
+description = "Event-driven networking engine written in Python"
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('hatchling', '1.24.2'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+]
+
+exts_list = [
+    ('incremental', '24.7.1', {
+        'checksums': ['a3717c20534499835555ba727b32ee087945ba9daaf23851471dfe3d1e3d1698'],
+    }),
+
+    ('zope.interface', '7.1.1', {
+        'checksums': ['4284d664ef0ff7b709836d4de7b13d80873dc5faeffc073abdb280058bfac5e3'],
+    }),
+
+    ('constantly', '23.10.4', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['3fd9b4d1c3dc1ec9757f3c52aef7e53ad9323dbe39f51dfd4c43853b68dfa3f9'],
+    }),
+
+    ('hyperlink', '21.0.0', {
+        'checksums': ['427af957daa58bc909471c6c40f74c5450fa123dd093fc53efd2e91d2705a56b'],
+    }),
+
+    ('automat', '25.4.16', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['04e9bce696a8d5671ee698005af6e5a9fa15354140a87f4870744604dcdd3ba1'],
+    }),
+
+    ('%(namelower)s', version, {
+        'checksums': ['1deb272358cb6be1e3e8fc6f9c8b36f78eb0fa7c2233d2dbe11ec6fee04ea316'],
+    }),
+]
+
+sanity_check_commands = [
+    # Base Twisted
+    "python -c 'import twisted; print(twisted.__version__)'",
+
+    # twisted.web: HTTP, WSGI, templating
+    "python -c 'from twisted.web.server import Site; from twisted.web.client import Agent; "
+    "from twisted.web.resource import Resource; from twisted.web import wsgi'",
+
+    # twisted.words: IRC/XMPP/etc.
+    "python -c \"from twisted.words.protocols import irc, jabber\"",
+
+    # twisted.mail: IMAP/POP/SMTP
+    "python -c 'from twisted.mail import smtp, imap4, pop3'",
+
+    # twisted.positioning: just check imports & symbol presence
+    "python -c 'from twisted.positioning import nmea, base; "
+    "assert hasattr(nmea, \"NMEAProtocol\")'",
+
+    # twisted.names: DNS
+    "python -c 'from twisted.names import client, server, dns; dns.Name(b\"example.com\")'",
+
+    # twisted.trial: test runner present
+    "python -m twisted.trial --help > /dev/null",
+]
+
+moduleclass = 'lib'
