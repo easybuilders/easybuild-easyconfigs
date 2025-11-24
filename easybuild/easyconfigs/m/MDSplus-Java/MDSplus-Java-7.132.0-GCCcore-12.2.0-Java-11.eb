@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'MDSplus-Java'
+version = '7.132.0'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'http://mdsplus.org/'
+description = """MDSplus is a set of software tools for data acquisition
+  and storage and a methodology for management of complex scientific data."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+toolchainopts = {'pic': True}
+
+sources = [{
+    'filename': SOURCELOWER_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/MDSplus',
+        'repo_name': 'mdsplus',
+        'commit': 'stable_release-' + version.replace('.', '-'),
+        'recursive': True,
+    },
+}]
+patches = ['%(namelower)s-%(version)s_paths.patch']
+checksums = [
+    {'mdsplus-java-7.132.0.tar.gz': '6913f8077af9007ec04283bade8e11f6a4915c8512bc1507870598fc6d10e443'},
+    {'mdsplus-java-7.132.0_paths.patch': '51c9a91f710fdc16b50ea7a4e5f08e7f624e3880c80670ce4956dbff6206a004'},
+]
+
+builddependencies = [
+    ('binutils', '2.39'),
+    ('Autotools', '20220317'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.1'),
+]
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('MDSplus', version),
+]
+
+preconfigopts = 'find . -type f -regex .*Makefile.* -maxdepth 12 -exec '
+preconfigopts += 'sed -i "s/JAVASOURCE = 6/JAVASOURCE = 8/g" {} \; && '
+preconfigopts += 'export CFLAGS="$CFLAGS -I$EBROOTLIBXML2/include/libxml2 -std=c++14" && '
+preconfigopts += 'export FCFLAGS="$FCFLAGS -std=legacy -fallow-invalid-boz" && '
+preconfigopts += 'cd %(builddir)s/mdsplus && ./bootstrap && '
+
+configopts = '--with-jdk=$JAVA_HOME --enable-java_only --disable-doxygen-doc --disable-valgrind '
+# hardcode version via configure script (git is unavailable)
+configopts += 'RELEASE_VERSION=%(version)s BRANCH=stable '
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/jTraverser', 'bin/jScope', 'bin/jServer', 'lib/libJavaMds.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'lib', 'include', 'java/classes'],
+}
+
+modextrapaths = {'CLASSPATH': 'java/classes/*'}
+
+moduleclass = 'data'
