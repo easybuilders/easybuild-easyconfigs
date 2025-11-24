@@ -1,0 +1,51 @@
+# Allow netCDF library with separate directories for C and Fortran
+# ============================================================================
+# This patch has been around in EasyBuild since 2013; it was committed by
+# @boegel then.  Adapted by @andreas-h to accomodate WPSv4 and foss toolchain
+# updated for WPS v4.6.0 by Stefan Wolfsheimer (SURF)
+
+
+diff -Nru WPS-4.6.0.orig/arch/preamble WPS-4.6.0/arch/preamble
+--- WPS-4.6.0.orig/arch/preamble	2024-06-13 00:06:55.000000000 +0200
++++ WPS-4.6.0/arch/preamble	2024-11-29 09:25:27.634254674 +0100
+@@ -39,13 +39,14 @@
+                         -I$(WRF_DIR)/external/io_grib1 \
+                         -I$(WRF_DIR)/external/io_int \
+                         -I$(WRF_DIR)/inc \
+-                        -I$(NETCDF)/include
++                        -I$(NETCDF)/include \
++			-I$(NETCDFF_DIR)/include
+ 
+ WRF_LIB         =       -L$(WRF_DIR)/external/io_grib1 -lio_grib1 \
+                         -L$(WRF_DIR)/external/io_grib_share -lio_grib_share \
+                         -L$(WRF_DIR)/external/io_int -lwrfio_int \
+                         -L$(WRF_DIR)/external/io_netcdf -lwrfio_nf \
+-                        -L$(NETCDF)/lib CONFIGURE_NETCDFF_LIB -lnetcdf
++                        -L$(NETCDF)/lib -L$(NETCDFF_DIR)/lib -lnetcdff -lnetcdf
+ 
+ #### Architecture specific settings ####
+ 
+diff -Nru WPS-4.6.0.orig/configure WPS-4.6.0/configure
+--- WPS-4.6.0.orig/configure	2024-06-13 00:06:55.000000000 +0200
++++ WPS-4.6.0/configure	2024-11-29 09:17:10.196985634 +0100
+@@ -161,7 +161,7 @@
+   # for 3.6.2 and greater there might be a second library, libnetcdff.a .  Check for this and use
+   # if available
+   NETCDFF=" "
+-  if [ -f "$NETCDF/lib/libnetcdff.a" ] ; then
++  if [ -f "$NETCDFF_DIR/lib/libnetcdff.a" ] ; then
+     NETCDFF="-lnetcdff"
+   fi
+ else
+@@ -429,9 +429,9 @@
+     FFLAGS=`grep ^FFLAGS configure.wps | cut -d"=" -f2-`
+     FORMAT_FREE=`grep ^FORMAT_FREE configure.wps | cut -d"=" -f2-`
+     FFLAGS=`printf "%s" "${FFLAGS}" | sed -e "s/\\$(FORMAT_FREE)/${FORMAT_FREE}/g"`
+-    cp $NETCDF/include/netcdf.inc .
++    cp $NETCDFF_DIR/include/netcdf.inc .
+     FC=`grep ^SFC configure.wps | cut -d"=" -f2-`
+-    $FC ${FFLAGS} fort_netcdf.f -o fort_netcdf -L${NETCDF}/lib $NETCDFF -lnetcdf > /dev/null 2>&1 
++    $FC ${FFLAGS} fort_netcdf.f -o fort_netcdf -L${NETCDF}/lib -L${NETCDFF_DIR}/lib $NETCDFF -lnetcdf > /dev/null 2>&1 
+     if [ -f "fort_netcdf" ] ; then
+       ./fort_netcdf > /dev/null 2>&1
+       if [ $? = 0 ]; then

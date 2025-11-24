@@ -1,0 +1,827 @@
+Backport pydantic 2.x compatibility from 0.4.19 release candidates to napari 0.4.18
+Based on: https://github.com/napari/napari/commit/e9ea8d06d5f9f8e029f464b3938e6a60df3f6bb8
+diff -Nru napari-0.4.18.orig/napari/components/camera.py napari-0.4.18/napari/components/camera.py
+--- napari-0.4.18.orig/napari/components/camera.py	2024-01-25 13:30:10.975544424 +0000
++++ napari-0.4.18/napari/components/camera.py	2024-01-25 13:30:22.482507550 +0000
+@@ -2,9 +2,9 @@
+ from typing import Optional, Tuple
+ 
+ import numpy as np
+-from pydantic import validator
+ from scipy.spatial.transform import Rotation as R
+ 
++from napari._pydantic_compat import validator
+ from napari.utils.events import EventedModel
+ from napari.utils.misc import ensure_n_tuple
+ from napari.utils.translations import trans
+diff -Nru napari-0.4.18.orig/napari/components/dims.py napari-0.4.18/napari/components/dims.py
+--- napari-0.4.18.orig/napari/components/dims.py	2024-01-25 13:30:10.976544421 +0000
++++ napari-0.4.18/napari/components/dims.py	2024-01-25 13:30:22.482507550 +0000
+@@ -7,8 +7,8 @@
+ )
+ 
+ import numpy as np
+-from pydantic import root_validator, validator
+ 
++from napari._pydantic_compat import root_validator, validator
+ from napari.utils.events import EventedModel
+ from napari.utils.misc import argsort, reorder_after_dim_reduction
+ from napari.utils.translations import trans
+diff -Nru napari-0.4.18.orig/napari/components/viewer_model.py napari-0.4.18/napari/components/viewer_model.py
+--- napari-0.4.18.orig/napari/components/viewer_model.py	2024-01-25 13:30:10.977544418 +0000
++++ napari-0.4.18/napari/components/viewer_model.py	2024-01-25 13:30:22.483507547 +0000
+@@ -20,9 +20,9 @@
+ )
+ 
+ import numpy as np
+-from pydantic import Extra, Field, PrivateAttr, validator
+ 
+ from napari import layers
++from napari._pydantic_compat import Extra, Field, PrivateAttr, validator
+ from napari.components._viewer_mouse_bindings import dims_scroll
+ from napari.components.camera import Camera
+ from napari.components.cursor import Cursor
+diff -Nru napari-0.4.18.orig/napari/layers/points/_tests/test_points.py napari-0.4.18/napari/layers/points/_tests/test_points.py
+--- napari-0.4.18.orig/napari/layers/points/_tests/test_points.py	2024-01-25 13:30:10.979544411 +0000
++++ napari-0.4.18/napari/layers/points/_tests/test_points.py	2024-01-25 13:30:22.483507547 +0000
+@@ -6,9 +6,9 @@
+ import pandas as pd
+ import pytest
+ from psygnal.containers import Selection
+-from pydantic import ValidationError
+ from vispy.color import get_colormap
+ 
++from napari._pydantic_compat import ValidationError
+ from napari._tests.utils import (
+     assert_colors_equal,
+     assert_layer_state_equal,
+diff -Nru napari-0.4.18.orig/napari/layers/shapes/_tests/test_shapes.py napari-0.4.18/napari/layers/shapes/_tests/test_shapes.py
+--- napari-0.4.18.orig/napari/layers/shapes/_tests/test_shapes.py	2024-01-25 13:30:10.980544408 +0000
++++ napari-0.4.18/napari/layers/shapes/_tests/test_shapes.py	2024-01-25 13:30:22.483507547 +0000
+@@ -5,8 +5,8 @@
+ import numpy as np
+ import pandas as pd
+ import pytest
+-from pydantic import ValidationError
+ 
++from napari._pydantic_compat import ValidationError
+ from napari._tests.utils import (
+     assert_colors_equal,
+     check_layer_world_data_extent,
+diff -Nru napari-0.4.18.orig/napari/layers/_source.py napari-0.4.18/napari/layers/_source.py
+--- napari-0.4.18.orig/napari/layers/_source.py	2024-01-25 13:30:10.977544418 +0000
++++ napari-0.4.18/napari/layers/_source.py	2024-01-25 13:30:22.483507547 +0000
+@@ -6,8 +6,8 @@
+ from typing import Optional, Tuple
+ 
+ from magicgui.widgets import FunctionGui
+-from pydantic import BaseModel, validator
+ 
++from napari._pydantic_compat import BaseModel, validator
+ from napari.layers.base.base import Layer
+ 
+ 
+diff -Nru napari-0.4.18.orig/napari/layers/surface/normals.py napari-0.4.18/napari/layers/surface/normals.py
+--- napari-0.4.18.orig/napari/layers/surface/normals.py	2024-01-25 13:30:10.980544408 +0000
++++ napari-0.4.18/napari/layers/surface/normals.py	2024-01-25 13:30:22.483507547 +0000
+@@ -1,7 +1,6 @@
+ from enum import Enum, auto
+ 
+-from pydantic import Field
+-
++from napari._pydantic_compat import Field
+ from napari.utils.color import ColorValue
+ from napari.utils.events import EventedModel
+ 
+diff -Nru napari-0.4.18.orig/napari/layers/_tests/test_source.py napari-0.4.18/napari/layers/_tests/test_source.py
+--- napari-0.4.18.orig/napari/layers/_tests/test_source.py	2024-01-25 13:30:10.977544418 +0000
++++ napari-0.4.18/napari/layers/_tests/test_source.py	2024-01-25 13:30:22.483507547 +0000
+@@ -1,6 +1,6 @@
+-import pydantic
+ import pytest
+ 
++from napari._pydantic_compat import ValidationError
+ from napari.layers import Points
+ from napari.layers._source import Source, current_source, layer_source
+ 
+@@ -46,7 +46,7 @@
+ 
+ def test_source_assert_parent():
+     assert current_source() == Source()
+-    with pytest.raises(pydantic.error_wrappers.ValidationError):
++    with pytest.raises(ValidationError):
+         with layer_source(parent=''):
+             current_source()
+     assert current_source() == Source()
+diff -Nru napari-0.4.18.orig/napari/layers/utils/color_encoding.py napari-0.4.18/napari/layers/utils/color_encoding.py
+--- napari-0.4.18.orig/napari/layers/utils/color_encoding.py	2024-01-25 13:30:10.981544405 +0000
++++ napari-0.4.18/napari/layers/utils/color_encoding.py	2024-01-25 13:30:22.484507544 +0000
+@@ -9,8 +9,8 @@
+ )
+ 
+ import numpy as np
+-from pydantic import Field, parse_obj_as, validator
+ 
++from napari._pydantic_compat import Field, parse_obj_as, validator
+ from napari.layers.utils.color_transformations import ColorType
+ from napari.layers.utils.style_encoding import (
+     StyleEncoding,
+diff -Nru napari-0.4.18.orig/napari/layers/utils/color_manager.py napari-0.4.18/napari/layers/utils/color_manager.py
+--- napari-0.4.18.orig/napari/layers/utils/color_manager.py	2024-01-25 13:30:10.981544405 +0000
++++ napari-0.4.18/napari/layers/utils/color_manager.py	2024-01-25 13:30:22.484507544 +0000
+@@ -3,8 +3,8 @@
+ from typing import Any, Dict, Optional, Tuple, Union
+ 
+ import numpy as np
+-from pydantic import Field, root_validator, validator
+ 
++from napari._pydantic_compat import Field, root_validator, validator
+ from napari.layers.utils._color_manager_constants import ColorMode
+ from napari.layers.utils.color_manager_utils import (
+     _validate_colormap_mode,
+diff -Nru napari-0.4.18.orig/napari/layers/utils/plane.py napari-0.4.18/napari/layers/utils/plane.py
+--- napari-0.4.18.orig/napari/layers/utils/plane.py	2024-01-25 13:30:10.981544405 +0000
++++ napari-0.4.18/napari/layers/utils/plane.py	2024-01-25 13:30:22.484507544 +0000
+@@ -1,8 +1,8 @@
+ from typing import Tuple
+ 
+ import numpy as np
+-from pydantic import validator
+ 
++from napari._pydantic_compat import validator
+ from napari.utils.events import EventedModel, SelectableEventedList
+ from napari.utils.geometry import intersect_line_with_plane_3d
+ from napari.utils.translations import trans
+diff -Nru napari-0.4.18.orig/napari/layers/utils/string_encoding.py napari-0.4.18/napari/layers/utils/string_encoding.py
+--- napari-0.4.18.orig/napari/layers/utils/string_encoding.py	2024-01-25 13:30:10.981544405 +0000
++++ napari-0.4.18/napari/layers/utils/string_encoding.py	2024-01-25 13:30:22.484507544 +0000
+@@ -2,8 +2,8 @@
+ from typing import Any, Literal, Protocol, Sequence, Union, runtime_checkable
+ 
+ import numpy as np
+-from pydantic import parse_obj_as
+ 
++from napari._pydantic_compat import parse_obj_as
+ from napari.layers.utils.style_encoding import (
+     StyleEncoding,
+     _ConstantStyleEncoding,
+diff -Nru napari-0.4.18.orig/napari/layers/utils/_tests/test_color_manager.py napari-0.4.18/napari/layers/utils/_tests/test_color_manager.py
+--- napari-0.4.18.orig/napari/layers/utils/_tests/test_color_manager.py	2024-01-25 13:30:10.980544408 +0000
++++ napari-0.4.18/napari/layers/utils/_tests/test_color_manager.py	2024-01-25 13:30:22.483507547 +0000
+@@ -3,8 +3,8 @@
+ 
+ import numpy as np
+ import pytest
+-from pydantic import ValidationError
+ 
++from napari._pydantic_compat import ValidationError
+ from napari.layers.utils.color_manager import ColorManager, ColorProperties
+ from napari.utils.colormaps.categorical_colormap import CategoricalColormap
+ from napari.utils.colormaps.standardize_color import transform_color
+diff -Nru napari-0.4.18.orig/napari/layers/utils/_tests/test_plane.py napari-0.4.18/napari/layers/utils/_tests/test_plane.py
+--- napari-0.4.18.orig/napari/layers/utils/_tests/test_plane.py	2024-01-25 13:30:10.981544405 +0000
++++ napari-0.4.18/napari/layers/utils/_tests/test_plane.py	2024-01-25 13:30:22.483507547 +0000
+@@ -1,7 +1,7 @@
+ import numpy as np
+ import pytest
+-from pydantic import ValidationError
+ 
++from napari._pydantic_compat import ValidationError
+ from napari.layers.utils.plane import ClippingPlaneList, Plane, SlicingPlane
+ 
+ 
+diff -Nru napari-0.4.18.orig/napari/layers/utils/_tests/test_style_encoding.py napari-0.4.18/napari/layers/utils/_tests/test_style_encoding.py
+--- napari-0.4.18.orig/napari/layers/utils/_tests/test_style_encoding.py	2024-01-25 13:30:10.981544405 +0000
++++ napari-0.4.18/napari/layers/utils/_tests/test_style_encoding.py	2024-01-25 13:30:22.483507547 +0000
+@@ -13,8 +13,8 @@
+ import numpy as np
+ import pandas as pd
+ import pytest
+-from pydantic import Field
+ 
++from napari._pydantic_compat import Field
+ from napari.layers.utils.style_encoding import (
+     _ConstantStyleEncoding,
+     _DerivedStyleEncoding,
+diff -Nru napari-0.4.18.orig/napari/layers/utils/_tests/test_text_manager.py napari-0.4.18/napari/layers/utils/_tests/test_text_manager.py
+--- napari-0.4.18.orig/napari/layers/utils/_tests/test_text_manager.py	2024-01-25 13:30:10.981544405 +0000
++++ napari-0.4.18/napari/layers/utils/_tests/test_text_manager.py	2024-01-25 13:30:22.484507544 +0000
+@@ -1,8 +1,8 @@
+ import numpy as np
+ import pandas as pd
+ import pytest
+-from pydantic import ValidationError
+ 
++from napari._pydantic_compat import ValidationError
+ from napari._tests.utils import assert_colors_equal
+ from napari.layers.utils.string_encoding import (
+     ConstantStringEncoding,
+diff -Nru napari-0.4.18.orig/napari/layers/utils/text_manager.py napari-0.4.18/napari/layers/utils/text_manager.py
+--- napari-0.4.18.orig/napari/layers/utils/text_manager.py	2024-01-25 13:30:10.981544405 +0000
++++ napari-0.4.18/napari/layers/utils/text_manager.py	2024-01-25 13:30:22.484507544 +0000
+@@ -4,8 +4,8 @@
+ 
+ import numpy as np
+ import pandas as pd
+-from pydantic import PositiveInt, validator
+ 
++from napari._pydantic_compat import PositiveInt, validator
+ from napari.layers.base._base_constants import Blending
+ from napari.layers.utils._text_constants import Anchor
+ from napari.layers.utils._text_utils import get_text_anchors
+diff -Nru napari-0.4.18.orig/napari/plugins/_plugin_manager.py napari-0.4.18/napari/plugins/_plugin_manager.py
+--- napari-0.4.18.orig/napari/plugins/_plugin_manager.py	2024-01-25 13:30:10.981544405 +0000
++++ napari-0.4.18/napari/plugins/_plugin_manager.py	2024-01-25 13:30:22.484507544 +0000
+@@ -22,9 +22,9 @@
+     PluginManager as PluginManager,
+ )
+ from napari_plugin_engine.hooks import HookCaller
+-from pydantic import ValidationError
+ from typing_extensions import TypedDict
+ 
++from napari._pydantic_compat import ValidationError
+ from napari.plugins import hook_specifications
+ from napari.settings import get_settings
+ from napari.types import AugmentedWidget, LayerData, SampleDict, WidgetCallable
+diff -Nru napari-0.4.18.orig/napari/_pydantic_compat.py napari-0.4.18/napari/_pydantic_compat.py
+--- napari-0.4.18.orig/napari/_pydantic_compat.py	1970-01-01 01:00:00.000000000 +0100
++++ napari-0.4.18/napari/_pydantic_compat.py	2024-01-25 13:30:22.482507550 +0000
+@@ -0,0 +1,97 @@
++try:
++    # pydantic v2
++    from pydantic.v1 import (
++        BaseModel,
++        BaseSettings,
++        Extra,
++        Field,
++        PositiveInt,
++        PrivateAttr,
++        ValidationError,
++        color,
++        conlist,
++        constr,
++        errors,
++        main,
++        parse_obj_as,
++        root_validator,
++        types,
++        utils,
++        validator,
++    )
++    from pydantic.v1.env_settings import (
++        EnvSettingsSource,
++        SettingsError,
++        SettingsSourceCallable,
++    )
++    from pydantic.v1.error_wrappers import ErrorWrapper, display_errors
++    from pydantic.v1.fields import SHAPE_LIST, ModelField
++    from pydantic.v1.generics import GenericModel
++    from pydantic.v1.main import ClassAttribute, ModelMetaclass
++    from pydantic.v1.utils import ROOT_KEY, sequence_like
++except ImportError:
++    # pydantic v1
++    from pydantic import (
++        BaseModel,
++        BaseSettings,
++        Extra,
++        Field,
++        PositiveInt,
++        PrivateAttr,
++        ValidationError,
++        color,
++        conlist,
++        constr,
++        errors,
++        main,
++        parse_obj_as,
++        root_validator,
++        types,
++        utils,
++        validator,
++    )
++    from pydantic.env_settings import (
++        EnvSettingsSource,
++        SettingsError,
++        SettingsSourceCallable,
++    )
++    from pydantic.error_wrappers import ErrorWrapper, display_errors
++    from pydantic.fields import SHAPE_LIST, ModelField
++    from pydantic.generics import GenericModel
++    from pydantic.main import ClassAttribute, ModelMetaclass
++    from pydantic.utils import ROOT_KEY, sequence_like
++
++Color = color.Color
++
++__all__ = (
++    'BaseModel',
++    'BaseSettings',
++    'ClassAttribute',
++    'Color',
++    'EnvSettingsSource',
++    'ErrorWrapper',
++    'Extra',
++    'Field',
++    'ModelField',
++    'GenericModel',
++    'ModelMetaclass',
++    'PositiveInt',
++    'PrivateAttr',
++    'ROOT_KEY',
++    'SettingsError',
++    'SettingsSourceCallable',
++    'SHAPE_LIST',
++    'ValidationError',
++    'color',
++    'conlist',
++    'constr',
++    'display_errors',
++    'errors',
++    'main',
++    'parse_obj_as',
++    'root_validator',
++    'sequence_like',
++    'types',
++    'utils',
++    'validator',
++)
+diff -Nru napari-0.4.18.orig/napari/_qt/dialogs/preferences_dialog.py napari-0.4.18/napari/_qt/dialogs/preferences_dialog.py
+--- napari-0.4.18.orig/napari/_qt/dialogs/preferences_dialog.py	2024-01-25 13:30:10.968544447 +0000
++++ napari-0.4.18/napari/_qt/dialogs/preferences_dialog.py	2024-01-25 13:30:22.482507550 +0000
+@@ -2,7 +2,6 @@
+ from enum import EnumMeta
+ from typing import TYPE_CHECKING, Tuple, cast
+ 
+-from pydantic.main import BaseModel, ModelMetaclass
+ from qtpy.QtCore import QSize, Qt, Signal
+ from qtpy.QtWidgets import (
+     QDialog,
+@@ -14,10 +13,10 @@
+     QVBoxLayout,
+ )
+ 
++from napari._pydantic_compat import BaseModel, ModelField, ModelMetaclass
+ from napari.utils.translations import trans
+ 
+ if TYPE_CHECKING:
+-    from pydantic.fields import ModelField
+     from qtpy.QtGui import QCloseEvent, QKeyEvent
+ 
+ 
+diff -Nru napari-0.4.18.orig/napari/_qt/dialogs/_tests/test_preferences_dialog.py napari-0.4.18/napari/_qt/dialogs/_tests/test_preferences_dialog.py
+--- napari-0.4.18.orig/napari/_qt/dialogs/_tests/test_preferences_dialog.py	2024-01-25 13:30:10.968544447 +0000
++++ napari-0.4.18/napari/_qt/dialogs/_tests/test_preferences_dialog.py	2024-01-25 13:30:22.482507550 +0000
+@@ -1,7 +1,7 @@
+ import pytest
+-from pydantic import BaseModel
+ from qtpy.QtCore import Qt
+ 
++from napari._pydantic_compat import BaseModel
+ from napari._qt.dialogs.preferences_dialog import (
+     PreferencesDialog,
+     QMessageBox,
+diff -Nru napari-0.4.18.orig/napari/settings/_appearance.py napari-0.4.18/napari/settings/_appearance.py
+--- napari-0.4.18.orig/napari/settings/_appearance.py	2024-01-25 13:30:10.984544395 +0000
++++ napari-0.4.18/napari/settings/_appearance.py	2024-01-25 13:30:22.484507544 +0000
+@@ -1,5 +1,4 @@
+-from pydantic import Field
+-
++from napari._pydantic_compat import Field
+ from napari.settings._fields import Theme
+ from napari.utils.events.evented_model import EventedModel
+ from napari.utils.theme import available_themes
+diff -Nru napari-0.4.18.orig/napari/settings/_application.py napari-0.4.18/napari/settings/_application.py
+--- napari-0.4.18.orig/napari/settings/_application.py	2024-01-25 13:30:10.984544395 +0000
++++ napari-0.4.18/napari/settings/_application.py	2024-01-25 13:30:22.484507544 +0000
+@@ -3,8 +3,8 @@
+ from typing import List, Optional, Tuple
+ 
+ from psutil import virtual_memory
+-from pydantic import Field, validator
+ 
++from napari._pydantic_compat import Field, validator
+ from napari.settings._constants import LoopMode
+ from napari.settings._fields import Language
+ from napari.utils._base import _DEFAULT_LOCALE
+diff -Nru napari-0.4.18.orig/napari/settings/_base.py napari-0.4.18/napari/settings/_base.py
+--- napari-0.4.18.orig/napari/settings/_base.py	2024-01-25 13:30:10.984544395 +0000
++++ napari-0.4.18/napari/settings/_base.py	2024-01-25 13:30:22.484507544 +0000
+@@ -9,10 +9,13 @@
+ from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, cast
+ from warnings import warn
+ 
+-from pydantic import BaseModel, BaseSettings, ValidationError
+-from pydantic.env_settings import SettingsError
+-from pydantic.error_wrappers import display_errors
+-
++from napari._pydantic_compat import (
++    BaseModel,
++    BaseSettings,
++    SettingsError,
++    ValidationError,
++    display_errors,
++)
+ from napari.settings._yaml import PydanticYamlMixin
+ from napari.utils.events import EmitterGroup, EventedModel
+ from napari.utils.misc import deep_update
+@@ -23,8 +26,10 @@
+ if TYPE_CHECKING:
+     from typing import AbstractSet, Any, Union
+ 
+-    from pydantic.env_settings import EnvSettingsSource, SettingsSourceCallable
+-
++    from napari._pydantic_compat import (
++        EnvSettingsSource,
++        SettingsSourceCallable,
++    )
+     from napari.utils.events import Event
+ 
+     IntStr = Union[int, str]
+@@ -33,7 +38,7 @@
+     MappingIntStrAny = Mapping[IntStr, Any]
+ 
+ 
+-class EventedSettings(BaseSettings, EventedModel):  # type: ignore[misc]
++class EventedSettings(BaseSettings, EventedModel):
+     """A variant of EventedModel designed for settings.
+ 
+     Pydantic's BaseSettings model will attempt to determine the values of any
+@@ -116,7 +121,7 @@
+         """Return the path to/from which settings be saved/loaded."""
+         return self._config_path
+ 
+-    def dict(  # type: ignore [override]
++    def dict(
+         self,
+         *,
+         include: Union[AbstractSetIntStr, MappingIntStrAny] = None,  # type: ignore
+@@ -241,7 +246,7 @@
+             the return list to change the priority of sources.
+             """
+             cls._env_settings = nested_env_settings(env_settings)
+-            return (  # type: ignore [return-value]
++            return (
+                 init_settings,
+                 cls._env_settings,
+                 cls._config_file_settings_source,
+diff -Nru napari-0.4.18.orig/napari/settings/_experimental.py napari-0.4.18/napari/settings/_experimental.py
+--- napari-0.4.18.orig/napari/settings/_experimental.py	2024-01-25 13:30:10.984544395 +0000
++++ napari-0.4.18/napari/settings/_experimental.py	2024-01-25 13:30:22.484507544 +0000
+@@ -1,7 +1,6 @@
+ from typing import Union
+ 
+-from pydantic import Field
+-
++from napari._pydantic_compat import Field
+ from napari.settings._base import EventedSettings
+ from napari.utils.translations import trans
+ 
+diff -Nru napari-0.4.18.orig/napari/settings/_napari_settings.py napari-0.4.18/napari/settings/_napari_settings.py
+--- napari-0.4.18.orig/napari/settings/_napari_settings.py	2024-01-25 13:30:10.984544395 +0000
++++ napari-0.4.18/napari/settings/_napari_settings.py	2024-01-25 13:30:22.484507544 +0000
+@@ -2,8 +2,7 @@
+ from pathlib import Path
+ from typing import Any, Optional
+ 
+-from pydantic import Field
+-
++from napari._pydantic_compat import Field
+ from napari.settings._appearance import AppearanceSettings
+ from napari.settings._application import ApplicationSettings
+ from napari.settings._base import (
+diff -Nru napari-0.4.18.orig/napari/settings/_plugins.py napari-0.4.18/napari/settings/_plugins.py
+--- napari-0.4.18.orig/napari/settings/_plugins.py	2024-01-25 13:30:10.984544395 +0000
++++ napari-0.4.18/napari/settings/_plugins.py	2024-01-25 13:30:22.484507544 +0000
+@@ -1,8 +1,8 @@
+ from typing import Dict, List, Set
+ 
+-from pydantic import Field
+ from typing_extensions import TypedDict
+ 
++from napari._pydantic_compat import Field
+ from napari.settings._base import EventedSettings
+ from napari.utils.translations import trans
+ 
+diff -Nru napari-0.4.18.orig/napari/settings/_shortcuts.py napari-0.4.18/napari/settings/_shortcuts.py
+--- napari-0.4.18.orig/napari/settings/_shortcuts.py	2024-01-25 13:30:10.984544395 +0000
++++ napari-0.4.18/napari/settings/_shortcuts.py	2024-01-25 13:30:22.484507544 +0000
+@@ -1,7 +1,6 @@
+ from typing import Dict, List
+ 
+-from pydantic import Field, validator
+-
++from napari._pydantic_compat import Field, validator
+ from napari.utils.events.evented_model import EventedModel
+ from napari.utils.shortcuts import default_shortcuts
+ from napari.utils.translations import trans
+diff -Nru napari-0.4.18.orig/napari/settings/_tests/test_settings.py napari-0.4.18/napari/settings/_tests/test_settings.py
+--- napari-0.4.18.orig/napari/settings/_tests/test_settings.py	2024-01-25 13:30:10.984544395 +0000
++++ napari-0.4.18/napari/settings/_tests/test_settings.py	2024-01-25 13:30:22.484507544 +0000
+@@ -2,11 +2,11 @@
+ import os
+ from pathlib import Path
+ 
+-import pydantic
+ import pytest
+ from yaml import safe_load
+ 
+ from napari import settings
++from napari._pydantic_compat import Field, ValidationError
+ from napari.settings import CURRENT_SCHEMA_VERSION, NapariSettings
+ from napari.utils.theme import get_theme, register_theme
+ 
+@@ -74,7 +74,7 @@
+     data = "appearance:\n   theme: 1"
+     fake_path = tmp_path / 'fake_path.yml'
+     fake_path.write_text(data)
+-    with pytest.raises(pydantic.ValidationError):
++    with pytest.raises(ValidationError):
+         NapariSettings(fake_path)
+ 
+ 
+@@ -108,8 +108,8 @@
+     fake_path = tmp_path / 'fake_path.yml'
+     fake_path.write_text(data)
+ 
+-    settings = NapariSettings(fake_path)
+-    assert getattr(settings, "non_existing_section", None) is None
++    settings_ = NapariSettings(fake_path)
++    assert getattr(settings_, "non_existing_section", None) is None
+ 
+ 
+ def test_settings_to_dict(test_settings):
+@@ -145,11 +145,11 @@
+ 
+ 
+ def test_settings_model(test_settings):
+-    with pytest.raises(pydantic.error_wrappers.ValidationError):
++    with pytest.raises(ValidationError):
+         # Should be string
+         test_settings.appearance.theme = 1
+ 
+-    with pytest.raises(pydantic.error_wrappers.ValidationError):
++    with pytest.raises(ValidationError):
+         # Should be a valid string
+         test_settings.appearance.theme = "vaporwave"
+ 
+@@ -159,7 +159,7 @@
+     custom_theme_name = "_test_blue_"
+ 
+     # No theme registered yet, this should fail
+-    with pytest.raises(pydantic.error_wrappers.ValidationError):
++    with pytest.raises(ValidationError):
+         test_settings.appearance.theme = custom_theme_name
+ 
+     blue_theme = get_theme('dark', True)
+@@ -219,7 +219,7 @@
+ 
+ def test_settings_env_variables_fails(monkeypatch):
+     monkeypatch.setenv('NAPARI_APPEARANCE_THEME', 'FOOBAR')
+-    with pytest.raises(pydantic.ValidationError):
++    with pytest.raises(ValidationError):
+         NapariSettings()
+ 
+ 
+@@ -228,7 +228,7 @@
+     from napari.settings._base import EventedSettings
+ 
+     class Sub(EventedSettings):
+-        x: int = pydantic.Field(1, env='varname')
++        x: int = Field(1, env='varname')
+ 
+     class T(NapariSettings):
+         sub: Sub
+diff -Nru napari-0.4.18.orig/napari/settings/_yaml.py napari-0.4.18/napari/settings/_yaml.py
+--- napari-0.4.18.orig/napari/settings/_yaml.py	2024-01-25 13:30:10.984544395 +0000
++++ napari-0.4.18/napari/settings/_yaml.py	2024-01-25 13:30:22.485507540 +0000
+@@ -3,9 +3,9 @@
+ from enum import Enum
+ from typing import TYPE_CHECKING, Type
+ 
+-from pydantic import BaseModel
+ from yaml import SafeDumper, dump_all
+ 
++from napari._pydantic_compat import BaseModel
+ from napari.settings._fields import Version
+ 
+ if TYPE_CHECKING:
+@@ -77,7 +77,7 @@
+             exclude_none=exclude_none,
+         )
+         if self.__custom_root_type__:
+-            from pydantic.utils import ROOT_KEY
++            from napari._pydantic_compat import ROOT_KEY
+ 
+             data = data[ROOT_KEY]
+         return self._yaml_dump(data, dumper, **dumps_kwargs)
+diff -Nru napari-0.4.18.orig/napari/utils/colormaps/colormap.py napari-0.4.18/napari/utils/colormaps/colormap.py
+--- napari-0.4.18.orig/napari/utils/colormaps/colormap.py	2024-01-25 13:30:10.985544392 +0000
++++ napari-0.4.18/napari/utils/colormaps/colormap.py	2024-01-25 13:33:20.714011699 +0000
+@@ -2,7 +2,7 @@
+ from typing import Optional
+ 
+ import numpy as np
+-from pydantic import PrivateAttr, validator
++from napari._pydantic_compat import Field, PrivateAttr, validator
+ 
+ from napari.utils.color import ColorArray
+ from napari.utils.colormaps.colorbars import make_colorbar
+diff -Nru napari-0.4.18.orig/napari/utils/events/containers/_selection.py napari-0.4.18/napari/utils/events/containers/_selection.py
+--- napari-0.4.18.orig/napari/utils/events/containers/_selection.py	2024-01-25 13:30:10.986544389 +0000
++++ napari-0.4.18/napari/utils/events/containers/_selection.py	2024-01-25 13:30:22.485507540 +0000
+@@ -5,7 +5,7 @@
+ from napari.utils.translations import trans
+ 
+ if TYPE_CHECKING:
+-    from pydantic.fields import ModelField
++    from napari._pydantic_compat import ModelField
+ 
+ _T = TypeVar("_T")
+ _S = TypeVar("_S")
+@@ -140,7 +140,7 @@
+     @classmethod
+     def validate(cls, v, field: 'ModelField'):
+         """Pydantic validator."""
+-        from pydantic.utils import sequence_like
++        from napari._pydantic_compat import sequence_like
+ 
+         if isinstance(v, dict):
+             data = v.get("selection", [])
+@@ -180,7 +180,7 @@
+                 errors.append(error)
+ 
+         if errors:
+-            from pydantic import ValidationError
++            from napari._pydantic_compat import ValidationError
+ 
+             raise ValidationError(errors, cls)  # type: ignore
+         obj = cls(data=data)
+diff -Nru napari-0.4.18.orig/napari/utils/events/containers/_set.py napari-0.4.18/napari/utils/events/containers/_set.py
+--- napari-0.4.18.orig/napari/utils/events/containers/_set.py	2024-01-25 13:30:10.986544389 +0000
++++ napari-0.4.18/napari/utils/events/containers/_set.py	2024-01-25 13:30:22.485507540 +0000
+@@ -8,7 +8,7 @@
+ _T = TypeVar("_T")
+ 
+ if TYPE_CHECKING:
+-    from pydantic.fields import ModelField
++    from napari._pydantic_compat import ModelField
+ 
+ 
+ class EventedSet(MutableSet[_T]):
+@@ -165,7 +165,7 @@
+     @classmethod
+     def validate(cls, v, field: ModelField):
+         """Pydantic validator."""
+-        from pydantic.utils import sequence_like
++        from napari._pydantic_compat import sequence_like
+ 
+         if not sequence_like(v):
+             raise TypeError(
+@@ -185,7 +185,7 @@
+             if error:
+                 errors.append(error)
+         if errors:
+-            from pydantic import ValidationError
++            from napari._pydantic_compat import ValidationError
+ 
+             raise ValidationError(errors, cls)  # type: ignore
+         return cls(v)
+diff -Nru napari-0.4.18.orig/napari/utils/events/custom_types.py napari-0.4.18/napari/utils/events/custom_types.py
+--- napari-0.4.18.orig/napari/utils/events/custom_types.py	2024-01-25 13:30:10.986544389 +0000
++++ napari-0.4.18/napari/utils/events/custom_types.py	2024-01-25 13:30:22.485507540 +0000
+@@ -11,12 +11,13 @@
+ )
+ 
+ import numpy as np
+-from pydantic import errors, types
++
++from napari._pydantic_compat import errors, types
+ 
+ if TYPE_CHECKING:
+     from decimal import Decimal
+ 
+-    from pydantic.fields import ModelField
++    from napari._pydantic_compat import ModelField
+ 
+     Number = Union[int, float, Decimal]
+ 
+diff -Nru napari-0.4.18.orig/napari/utils/events/debugging.py napari-0.4.18/napari/utils/events/debugging.py
+--- napari-0.4.18.orig/napari/utils/events/debugging.py	2024-01-25 13:30:10.986544389 +0000
++++ napari-0.4.18/napari/utils/events/debugging.py	2024-01-25 13:30:22.485507540 +0000
+@@ -4,8 +4,7 @@
+ from textwrap import indent
+ from typing import TYPE_CHECKING, ClassVar, Set
+ 
+-from pydantic import BaseSettings, Field, PrivateAttr
+-
++from napari._pydantic_compat import BaseSettings, Field, PrivateAttr
+ from napari.utils.misc import ROOT_DIR
+ from napari.utils.translations import trans
+ 
+@@ -39,8 +38,12 @@
+     # to include/exclude when printing events.
+     include_emitters: Set[str] = Field(default_factory=set)
+     include_events: Set[str] = Field(default_factory=set)
+-    exclude_emitters: Set[str] = {'TransformChain', 'Context'}
+-    exclude_events: Set[str] = {'status', 'position'}
++    exclude_emitters: Set[str] = Field(
++        default_factory=lambda: {'TransformChain', 'Context'}
++    )
++    exclude_events: Set[str] = Field(
++        default_factory=lambda: {'status', 'position'}
++    )
+     # stack depth to show
+     stack_depth: int = 20
+     # how many sub-emit nesting levels to show
+diff -Nru napari-0.4.18.orig/napari/utils/events/evented_model.py napari-0.4.18/napari/utils/events/evented_model.py
+--- napari-0.4.18.orig/napari/utils/events/evented_model.py	2024-01-25 13:30:10.986544389 +0000
++++ napari-0.4.18/napari/utils/events/evented_model.py	2024-01-25 13:30:22.485507540 +0000
+@@ -5,8 +5,14 @@
+ from typing import Any, Callable, ClassVar, Dict, Set, Union
+ 
+ import numpy as np
+-from pydantic import BaseModel, PrivateAttr, main, utils
+ 
++from napari._pydantic_compat import (
++    BaseModel,
++    ModelMetaclass,
++    PrivateAttr,
++    main,
++    utils,
++)
+ from napari.utils.events.event import EmitterGroup, Event
+ from napari.utils.misc import pick_equality_operator
+ from napari.utils.translations import trans
+@@ -63,7 +69,7 @@
+         main.ClassAttribute = utils.ClassAttribute
+ 
+ 
+-class EventedMetaclass(main.ModelMetaclass):
++class EventedMetaclass(ModelMetaclass):
+     """pydantic ModelMetaclass that preps "equality checking" operations.
+ 
+     A metaclass is the thing that "constructs" a class, and ``ModelMetaclass``
+diff -Nru napari-0.4.18.orig/napari/utils/events/_tests/test_evented_model.py napari-0.4.18/napari/utils/events/_tests/test_evented_model.py
+--- napari-0.4.18.orig/napari/utils/events/_tests/test_evented_model.py	2024-01-25 13:30:10.986544389 +0000
++++ napari-0.4.18/napari/utils/events/_tests/test_evented_model.py	2024-01-25 13:30:22.485507540 +0000
+@@ -9,8 +9,8 @@
+ import pytest
+ from dask import delayed
+ from dask.delayed import Delayed
+-from pydantic import Field
+ 
++from napari._pydantic_compat import Field
+ from napari.utils.events import EmitterGroup, EventedModel
+ from napari.utils.events.custom_types import Array
+ from napari.utils.misc import StringEnum
+diff -Nru napari-0.4.18.orig/napari/utils/events/_tests/test_selection.py napari-0.4.18/napari/utils/events/_tests/test_selection.py
+--- napari-0.4.18.orig/napari/utils/events/_tests/test_selection.py	2024-01-25 13:30:10.986544389 +0000
++++ napari-0.4.18/napari/utils/events/_tests/test_selection.py	2024-01-25 13:30:22.485507540 +0000
+@@ -1,8 +1,8 @@
+ from unittest.mock import Mock
+ 
+ import pytest
+-from pydantic import ValidationError
+ 
++from napari._pydantic_compat import ValidationError
+ from napari.utils.events import EventedModel, Selection
+ 
+ 
+diff -Nru napari-0.4.18.orig/napari/utils/_tests/test_theme.py napari-0.4.18/napari/utils/_tests/test_theme.py
+--- napari-0.4.18.orig/napari/utils/_tests/test_theme.py	2024-01-25 13:30:10.985544392 +0000
++++ napari-0.4.18/napari/utils/_tests/test_theme.py	2024-01-25 13:30:22.485507540 +0000
+@@ -5,8 +5,8 @@
+ from npe2 import PluginManager, PluginManifest, __version__ as npe2_version
+ from npe2.manifest.schema import ContributionPoints
+ from packaging.version import parse as parse_version
+-from pydantic import ValidationError
+ 
++from napari._pydantic_compat import ValidationError
+ from napari.resources._icons import PLUGIN_FILE_NAME
+ from napari.settings import get_settings
+ from napari.utils.theme import (
+diff -Nru napari-0.4.18.orig/napari/utils/theme.py napari-0.4.18/napari/utils/theme.py
+--- napari-0.4.18.orig/napari/utils/theme.py	2024-01-25 13:30:10.987544386 +0000
++++ napari-0.4.18/napari/utils/theme.py	2024-01-25 13:30:22.485507540 +0000
+@@ -8,9 +8,8 @@
+ from typing import List, Union
+ 
+ import npe2
+-from pydantic import validator
+-from pydantic.color import Color
+ 
++from napari._pydantic_compat import Color, validator
+ from napari._vendor import darkdetect
+ from napari.resources._icons import (
+     PLUGIN_FILE_NAME,
+diff -Nru napari-0.4.18.orig/setup.cfg napari-0.4.18/setup.cfg
+--- napari-0.4.18.orig/setup.cfg	2024-01-25 13:30:10.988544382 +0000
++++ napari-0.4.18/setup.cfg	2024-01-25 13:34:10.674857084 +0000
+@@ -63,7 +63,7 @@
+ 	pint>=0.17
+ 	psutil>=5.0
+ 	psygnal>=0.3.4
+-	pydantic>=1.9.0,<2
++	pydantic>=1.9.0
+ 	pygments>=2.6.0
+ 	PyOpenGL>=3.1.0
+ 	PyYAML>=5.1

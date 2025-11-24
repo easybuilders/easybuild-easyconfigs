@@ -1,0 +1,88 @@
+test_cpu_repro fails on e.g. PPC where no AVX is available
+Failures are all of the kind
+
+    assert metrics.generated_cpp_vec_kernel_count == 1
+AssertionError
+
+As this is expected, skip the affected tests.
+See https://github.com/pytorch/pytorch/pull/117262
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_cpu_repro.py b/test/inductor/test_cpu_repro.py
+index 102c5af5168..3bc107b960b 100644
+--- a/test/inductor/test_cpu_repro.py
++++ b/test/inductor/test_cpu_repro.py
+@@ -56,6 +56,8 @@ TestCase = test_torchinductor.TestCase
+ aten = torch.ops.aten
+ check_model = test_torchinductor.check_model
+ 
++requires_vectorization = unittest.skipUnless(codecache.valid_vec_isa_list(),
++                                             "Does not support vectorization")
+ 
+ class LstmModule(torch.nn.Module):
+     def __init__(
+@@ -2165,6 +2167,7 @@ class CPUReproTests(TestCase):
+             self.assertEqual(metrics.generated_kernel_count, 1)
+             self.assertTrue(same(fn(a, b, c, idx), opt_fn(a, b, c, idx)))
+ 
++    @requires_vectorization
+     def test_lowp_fp_neg_abs(self):
+         def fn(x):
+             return x.neg().abs()
+@@ -2177,6 +2180,7 @@ class CPUReproTests(TestCase):
+             assert metrics.cpp_to_dtype_count == 0
+             assert metrics.generated_cpp_vec_kernel_count == 1
+ 
++    @requires_vectorization
+     def test_transpose_non_contiguous(self):
+         def fn(a):
+             # From part of timm HaloAttn:
+@@ -2214,6 +2218,7 @@ class CPUReproTests(TestCase):
+         self.common(fn, (x,))
+         assert metrics.generated_cpp_vec_kernel_count == 1
+ 
++    @requires_vectorization
+     def test_non_contiguous_index_with_constant_stride(self):
+         def fn(x):
+             x1 = x[:, :, :, ::2]
+@@ -2252,6 +2257,7 @@ class CPUReproTests(TestCase):
+             fn(torch.randn([8, 128]))
+         self.assertGreater(len(strings), 3)
+ 
++    @requires_vectorization
+     def test_vertical_sum_cpu_only(self):
+         def fn1(a):
+             return a.sum(dim=0)
+@@ -2269,6 +2275,7 @@ class CPUReproTests(TestCase):
+         self.common(fn2, (x,))
+         assert metrics.generated_cpp_vec_kernel_count == 1
+ 
++    @requires_vectorization
+     def test_transpose_vertical_sum_cpu_only(self):
+         def fn(a, b):
+             c = a * b
+@@ -2280,6 +2287,7 @@ class CPUReproTests(TestCase):
+         self.common(fn, (x, y))
+         assert metrics.generated_cpp_vec_kernel_count == 2
+ 
++    @requires_vectorization
+     def test_transpose_sum2d_cpu_only(self):
+         def fn(a, b):
+             c = a * b
+@@ -2291,6 +2299,7 @@ class CPUReproTests(TestCase):
+         self.common(fn, (x, y))
+         assert metrics.generated_cpp_vec_kernel_count == 2
+ 
++    @requires_vectorization
+     def test_transpose_sum_outer(self):
+         # https://github.com/pytorch/pytorch/issues/98573
+         def fn(a):
+@@ -2417,6 +2426,7 @@ class CPUReproTests(TestCase):
+         )
+         self.assertEqual(metrics.generated_kernel_count, 1)
+ 
++    @requires_vectorization
+     def test_scalar_mul_bfloat16(self):
+         def f(x):
+             return torch.ops.aten.mul.Tensor(x, 1.7015043497085571)

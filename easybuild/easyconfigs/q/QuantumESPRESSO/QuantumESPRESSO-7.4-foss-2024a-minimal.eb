@@ -1,0 +1,169 @@
+# This compiles QuantumESPRESSSO with minimal dependencies, the module
+# is intended to be used with the koopmans module, where a forked
+# version of qe-utils is used and doesn't support all the QE
+# dependencies when configuring with CMake.
+
+name = 'QuantumESPRESSO'
+version = '7.4'
+versionsuffix = '-minimal'
+
+homepage = 'https://www.quantum-espresso.org'
+description = """Quantum ESPRESSO  is an integrated suite of computer codes
+for electronic-structure calculations and materials modeling at the nanoscale.
+It is based on density-functional theory, plane waves, and pseudopotentials
+(both norm-conserving and ultrasoft).
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+toolchainopts = {
+    "usempi": True,
+    "openmp": True,
+}
+
+# Check hashes inside external/submodule_commit_hash_records when making file for new version
+local_lapack_hash = "12d825396fcef1e0a1b27be9f119f9e554621e55"
+local_mbd_hash = "89a3cc199c0a200c9f0f688c3229ef6b9a8d63bd"
+local_devxlib_hash = "a6b89ef77b1ceda48e967921f1f5488d2df9226d"
+local_fox_hash = "3453648e6837658b747b895bb7bef4b1ed2eac40"
+# Different from the one at tag qe-7.4, see https://github.com/anharmonic/d3q/issues/22
+local_d3q_hash = "808acbaf012468f42147d8d6af452ec64b9e5ab0"
+# Different from the one at tag qe-7.4
+local_qe_gipaw_hash = "9b2ae1a46cae045cc04ef02c1072f2e1e74873b2"
+local_qmcpack_hash = "f72ab25fa4ea755c1b4b230ae8074b47d5509c70"
+local_w90_hash = "1d6b187374a2d50b509e5e79e2cab01a79ff7ce1"
+
+
+sources = [
+    {
+        "filename": "q-e-qe-%(version)s.tar.gz",
+        "extract_cmd": "mkdir -p %(builddir)s/qe-%(version)s && tar xzvf %s --strip-components=1 -C $_",
+        "source_urls": ["https://gitlab.com/QEF/q-e/-/archive/qe-%(version)s"],
+    },
+    {
+        "filename": f"lapack-{local_lapack_hash[:8]}.tar.xz",
+        "git_config": {
+            "url": "https://github.com/Reference-LAPACK",
+            "repo_name": "lapack",
+            "commit": local_lapack_hash,
+        },
+    },
+    {
+        "filename": f"mbd-{local_mbd_hash[:8]}.tar.xz",
+        "git_config": {
+            "url": "https://github.com/libmbd",
+            "repo_name": "libmbd",
+            "commit": local_mbd_hash,
+            'clone_into': 'mbd',
+        },
+    },
+    {
+        "filename": f"devxlib-{local_devxlib_hash[:8]}.tar.xz",
+        "git_config": {
+            "url": "https://gitlab.com/max-centre/components",
+            "repo_name": "devicexlib",
+            "commit": local_devxlib_hash,
+            'clone_into': 'devxlib',
+        },
+    },
+    {
+        "filename": f"d3q-{local_d3q_hash[:8]}.tar.xz",
+        "git_config": {
+            "url": "https://github.com/anharmonic",
+            "repo_name": "d3q",
+            "commit": local_d3q_hash,
+        },
+    },
+    {
+        "filename": f"fox-{local_fox_hash[:8]}.tar.xz",
+        "git_config": {
+            "url": "https://github.com/pietrodelugas",
+            "repo_name": "fox",
+            "commit": local_fox_hash,
+        },
+    },
+    {
+        "filename": f"qe-gipaw-{local_qe_gipaw_hash[:8]}.tar.xz",
+        "git_config": {
+            "url": "https://github.com/dceresoli",
+            "repo_name": "qe-gipaw",
+            "commit": local_qe_gipaw_hash,
+        },
+    },
+    {
+        "filename": f"pw2qmcpack-{local_qmcpack_hash[:8]}.tar.xz",
+        "git_config": {
+            "url": "https://github.com/QMCPACK",
+            "repo_name": "pw2qmcpack",
+            "commit": local_qmcpack_hash,
+        },
+    },
+    {
+        "filename": f"wannier90-{local_w90_hash[:8]}.tar.xz",
+        "git_config": {
+            "url": "https://github.com/wannier-developers",
+            "repo_name": "wannier90",
+            "commit": local_w90_hash,
+        },
+    },
+]
+patches = [
+    # sourcepath needed for patches applied outside the first `finalpath` directory
+    {'name': 'QuantumESPRESSO-7.4-d3q.patch', 'sourcepath': '../'},
+    {'name': 'QuantumESPRESSO-7.4-parallel-symmetrization.patch'},
+]
+checksums = [
+    {'q-e-qe-7.4.tar.gz':
+     'b15dcfe25f4fbf15ccd34c1194021e90996393478226e601d876f7dea481d104'},
+    {'lapack-12d82539.tar.xz':
+     '88aea5bca5e730e99fda0a5b9d677d6036c7dd82874e0deaed5cccef1f880111'},
+    {'mbd-89a3cc19.tar.xz':
+     'd026bf0e9334874670a23cd854f445baac003d4f099afa46bab667bc67abb450'},
+    {'devxlib-a6b89ef7.tar.xz':
+     '0a9b7e5350f44017a2390c85176d1683c6ecec0e4b716a59d727f7650f16e807'},
+    {'d3q-808acbaf.tar.xz':
+     '8e42c946c33b90094ad16c3fd545f00a6801958880dfc5e5274759126a4b193c'},
+    {'fox-3453648e.tar.xz':
+     'c8c55cdf9eb2709aebac86a58f936480ee66438dffd3d65c6a35ca7771c031b3'},
+    {'qe-gipaw-9b2ae1a4.tar.xz':
+     '29e6edfda8ee71c12683b1dfce4a29c5fff8aa9046b0a8085441dce01d084475'},
+    {'pw2qmcpack-f72ab25f.tar.xz':
+     'bc9513c4901ec2469d56b8a6b66f56878cb13e3bc7fbcdc5dba0ca6dad880ab9'},
+    {'wannier90-1d6b1873.tar.xz':
+     '351531aaf3434a9aac92d39ee40df5eb949aa27d14fcb93518bf08444478cd2a'},
+    {'QuantumESPRESSO-7.4-d3q.patch':
+     '1f1686365fbf0cc56f634e072a92b3d336fe454348e514d0b4136d447f0d4923'},
+    {'QuantumESPRESSO-7.4-parallel-symmetrization.patch':
+     'e11ac954fa2289a3b453e86871a819a78972e94681f08425ec35dc51a908f7d2'},
+]
+
+builddependencies = [
+    ('M4', '1.4.19'),
+    ('CMake', '3.29.3'),
+    ('pkgconf', '2.2.0'),
+]
+dependencies = [
+    # ('HDF5', '1.14.5'),
+    # ('ELPA', '2024.05.001'),
+    # ('libxc', '6.2.2'),
+]
+
+# Disabled because of
+# https://gitlab.com/QEF/q-e/-/issues/667
+# https://github.com/anharmonic/d3q/issues/15
+build_shared_libs = False
+with_scalapack = True
+with_fox = False
+with_gipaw = False
+with_d3q = False
+with_qmcpack = False
+
+moduleclass = "chem"
+
+test_suite_threshold = (
+    0.98
+)
+test_suite_max_failed = (
+    5  # Allow for some flaky tests (failed due to strict thresholds)
+)
+test_suite_allow_failures = []

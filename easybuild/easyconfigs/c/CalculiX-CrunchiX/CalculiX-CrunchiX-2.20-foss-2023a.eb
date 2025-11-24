@@ -1,0 +1,50 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'MakeCp'
+
+name = 'CalculiX-CrunchiX'
+version = '2.20'
+
+homepage = 'http://www.calculix.de'
+description = 'A Free Software Three-Dimensional Structural Finite Element Program'
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['http://www.dhondt.de']
+sources = ['ccx_%(version)s.src.tar.bz2']
+patches = ['CalculiX-CrunchiX-2.20_improve-makefile.patch']
+checksums = [
+    {'ccx_2.20.src.tar.bz2': '63bf6ea09e7edcae93e0145b1bb0579ea7ae82e046f6075a27c8145b72761bcf'},
+    {'CalculiX-CrunchiX-2.20_improve-makefile.patch':
+     'ada15598029d231f804f61d959ce91e2bb3a58749fe5955398f42fbe87dc970c'},
+]
+
+builddependencies = [
+    ('Perl', '5.36.1'),
+]
+
+dependencies = [
+    ('arpack-ng', '3.9.0'),
+    ('SPOOLES', '2.2'),
+]
+
+start_dir = 'CalculiX/ccx_%(version)s/src'
+
+prebuildopts = 'CFLAGS="$CFLAGS $CPPFLAGS" FFLAGS="$FFLAGS -fallow-argument-mismatch"'
+buildopts = 'SPOOLES_INC_DIR="$EBROOTSPOOLES/include/spooles"'
+
+files_to_copy = [(['ccx_%(version)s'], 'bin')]
+
+postinstallcmds = ['cd %(installdir)s/bin && ln -sf ccx_%(version)s ccx']
+
+sanity_check_paths = {
+    'files': ['bin/ccx'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    # ccx {,-v} exit with code 201
+    "ccx | grep 'Usage: CalculiX.exe -i jobname'",
+    "ccx -v | grep 'Version %(version)s'",
+]
+
+moduleclass = 'math'

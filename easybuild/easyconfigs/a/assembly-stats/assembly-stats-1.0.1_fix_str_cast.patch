@@ -1,0 +1,43 @@
+# Author: Ehsan Moravveji (VSCentrum, KU Leuven)
+# Purpose: This patch prevents the compile-time error "taking address of rvalue [-fpermissive]"
+#          by redefining a simple casting from integer to string. Consequently, the additional
+#          "-fpermissive" compiler flag need not be included to supress the error.
+diff -ruN assembly-stats-original/fasta_unittest.cpp assembly-stats/fasta_unittest.cpp
+--- assembly-stats-original/fasta_unittest.cpp	2024-04-03 11:45:32.230992000 +0200
++++ assembly-stats/fasta_unittest.cpp	2024-04-03 11:50:08.868140000 +0200
+@@ -1,4 +1,5 @@
+ #include <iostream>
++#include <string>
+ #include "fasta.h"
+ #include "gtest/gtest.h"
+ 
+@@ -94,8 +95,7 @@
+     while (fa.fillFromFile(inStream))
+     {
+         counter++;
+-        string expectedName = static_cast<ostringstream*>( &(ostringstream() << counter) )->str();
+-        EXPECT_EQ(0, fa.name().compare(expectedName));
++        EXPECT_EQ(0, fa.name().compare(std::to_string(counter)));
+         EXPECT_EQ(0, fa.seq().compare("ACGT"));
+     }
+ 
+diff -ruN assembly-stats-original/fastq_unittest.cpp assembly-stats/fastq_unittest.cpp
+--- assembly-stats-original/fastq_unittest.cpp	2024-04-03 11:45:32.226036000 +0200
++++ assembly-stats/fastq_unittest.cpp	2024-04-03 12:29:04.830873000 +0200
+@@ -1,5 +1,6 @@
+ #include <list>
+ #include <iostream>
++#include <string>
+ #include <sstream>
+ #include "fastq.h"
+ #include "gtest/gtest.h"
+@@ -50,8 +51,7 @@
+     while (fq.fillFromFile(inStream))
+     {
+         counter++;
+-        string expectedName = static_cast<ostringstream*>( &(ostringstream() << counter) )->str();
+-        EXPECT_EQ(0, fq.name().compare(expectedName));
++        EXPECT_EQ(0, fq.name().compare(std::to_string(counter)));
+         EXPECT_EQ(0, fq.seq().compare("ACGT"));
+     }
+ }

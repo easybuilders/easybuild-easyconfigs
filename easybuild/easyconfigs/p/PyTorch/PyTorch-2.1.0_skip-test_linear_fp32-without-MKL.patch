@@ -1,0 +1,26 @@
+The test assumes PyTorch is compiled with MKL, so skip it if it is not.
+See https://github.com/pytorch/pytorch/pull/113949
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_mkldnn_pattern_matcher.py b/test/inductor/test_mkldnn_pattern_matcher.py
+index 0b5e2821aed..62e9774d864 100644
+--- a/test/inductor/test_mkldnn_pattern_matcher.py
++++ b/test/inductor/test_mkldnn_pattern_matcher.py
+@@ -20,7 +20,7 @@ from torch.testing._internal.common_quantization import (
+     skipIfNoDynamoSupport,
+     skipIfNoONEDNN,
+ )
+-from torch.testing._internal.common_utils import IS_LINUX, skipIfRocm
++from torch.testing._internal.common_utils import IS_LINUX, TEST_MKL, skipIfRocm
+ from torch.testing._internal.inductor_utils import HAS_CPU
+ 
+ # The dict value is match_nodes(computation_op+unary_op)
+@@ -236,6 +236,7 @@ class TestPatternMatcher(TestPatternMatcherBase):
+                     mod, (v,), matcher_count, matcher_nodes, check_autocast=True
+                 )
+ 
++    @unittest.skipIf(not TEST_MKL, "Test requires MKL")
+     def test_linear_fp32(self):
+         class M(torch.nn.Module):
+             def __init__(self, bias):

@@ -1,0 +1,24 @@
+GCC 12 has a regression (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105593)
+leading to warnings/errors during build: https://github.com/pytorch/FBGEMM/issues/1666
+Suppress the affected warning in FBGEMM.
+
+Author: Alexander Grund (TU Dresden)
+
+Submodule third_party/fbgemm contains modified content
+diff --git a/third_party/fbgemm/CMakeLists.txt b/third_party/fbgemm/CMakeLists.txt
+index 58dcb9ae..c888f0f8 100644
+--- a/third_party/fbgemm/CMakeLists.txt
++++ b/third_party/fbgemm/CMakeLists.txt
+@@ -147,10 +147,10 @@ else(MSVC)
+   string(APPEND CMAKE_CXX_FLAGS " -Werror")
+   string(APPEND CMAKE_CXX_FLAGS " -Wno-deprecated-declarations")
+   target_compile_options(fbgemm_avx2 PRIVATE
+-    "-m64" "-mavx2" "-mf16c" "-mfma")
++    "-m64" "-mavx2" "-mf16c" "-mfma" "-Wno-uninitialized")
+   target_compile_options(fbgemm_avx512 PRIVATE
+     "-m64" "-mavx2" "-mfma" "-mavx512f" "-mavx512bw" "-mavx512dq"
+-    "-mavx512vl")
++    "-mavx512vl" "-Wno-uninitialized")
+   set_source_files_properties(
+     src/FbgemmFP16UKernelsAvx2.cc
+     src/FbgemmFP16UKernelsAvx512.cc

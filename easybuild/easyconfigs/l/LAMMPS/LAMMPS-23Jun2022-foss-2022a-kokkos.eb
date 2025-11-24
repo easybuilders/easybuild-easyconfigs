@@ -20,7 +20,12 @@ toolchainopts = {'openmp': True, 'usempi': True}
 # 'https://github.com/lammps/lammps/archive/'
 source_urls = [GITHUB_LOWER_SOURCE]
 sources = ['stable_%(version)s_update4.tar.gz']
-checksums = ['42541b4dbd0d339d16ddb377e76d192bc3d1d5712fdf9e2cdc838fc980d0a0cf']
+patches = ['LAMMPS-23June2022_fix-timestep-balance-example.patch']
+checksums = [
+    {'stable_23Jun2022_update4.tar.gz': '42541b4dbd0d339d16ddb377e76d192bc3d1d5712fdf9e2cdc838fc980d0a0cf'},
+    {'LAMMPS-23June2022_fix-timestep-balance-example.patch':
+     '0ad6c953f08b0d539b189b7aa7cef76774aebb9d633b07d5b6001ac0fcea3081'},
+]
 
 builddependencies = [
     ('CMake', '3.23.1'),
@@ -37,7 +42,6 @@ dependencies = [
     ('gzip', '1.12'),
     ('cURL', '7.83.0'),
     ('HDF5', '1.12.2'),
-    ('tbb', '2021.5.0'),
     ('PCRE', '8.45'),
     ('libxml2', '2.9.13'),
     ('FFmpeg', '4.4.2'),
@@ -50,6 +54,9 @@ dependencies = [
     # VTK package is auto-disabled if this dep is not available
     ('VTK', '9.2.2'),
 ]
+if ARCH == 'x86_64':
+    # TBB is an optional dependency when building on Intel arch
+    dependencies += [('tbb', '2021.5.0'), ]
 
 # To use additional custom configuration options, use the 'configopts' easyconfig parameter
 # See docs and lammps easyblock for more information.

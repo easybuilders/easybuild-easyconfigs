@@ -1,0 +1,46 @@
+easyblock = 'CMakeMake'
+
+name = 'WSClean'
+version = '3.4'
+
+homepage = 'https://wsclean.readthedocs.io/'
+description = """WSClean (w-stacking clean) is a fast generic widefield imager.
+It implements several gridding algorithms and offers fully-automated multi-scale
+multi-frequency deconvolution."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+sources = [{
+    'source_urls': ['https://gitlab.com/aroffringa/wsclean/-/package_files/97237455/'],
+    'filename': '%(namelower)s-v%(version)s.tar.bz2',
+    'download_filename': 'download'  # endpoint for source tarball is not versioned
+}]
+checksums = ['b43d8ca490ccf34dd22aae6c5ca88a5dcb3cff0526835d3f97fa6d239745e641']
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('casacore', '3.5.0'),
+    ('EveryBeam', '0.5.2'),
+    ('Boost', '1.79.0'),
+    ('CFITSIO', '4.2.0'),
+    ('GSL', '2.7'),
+    ('HDF5', '1.12.2'),
+    ('Python', '3.10.4'),
+]
+
+# Without this, the wrong (system) python is picked up by cmake
+# in cases where the system python is newer than the one used in these EasyConfigs
+# See PR # 19119
+configopts = '-DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python '
+
+sanity_check_paths = {
+    'files': ['include/wscleaninterface.h', 'bin/wsclean'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = [('wsclean', '--version')]
+
+moduleclass = 'astro'

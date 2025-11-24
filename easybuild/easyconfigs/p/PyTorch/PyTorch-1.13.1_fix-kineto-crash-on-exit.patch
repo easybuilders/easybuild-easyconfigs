@@ -1,0 +1,102 @@
+Fix a crash in libkineto on shutdown observed in e.g. test_jit_cuda_fuser.py
+Taken from https://github.com/pytorch/kineto/pull/696
+by Dmytro Dzhulgakov <dima.v.dzhulgakov@gmail.com>
+
+Backported: Alexander Grund (TU Dresden)
+
+Submodule third_party/kineto contains modified content
+diff --git a/third_party/kineto/libkineto/include/Config.h b/third_party/kineto/libkineto/include/Config.h
+index 3e7f2d4..10c80d9 100644
+--- a/third_party/kineto/libkineto/include/Config.h
++++ b/third_party/kineto/libkineto/include/Config.h
+@@ -315,6 +315,12 @@ class Config : public AbstractConfig {
+ 
+   void print(std::ostream& s) const;
+ 
++  // Config relies on some state with global static lifetime. If other
++  // threads are using the config, it's possible that the global state
++  // is destroyed before the threads stop. By hanging onto this handle,
++  // correct destruction order can be ensured.
++  static std::shared_ptr<void> getStaticObjectsLifetimeHandle();
++
+  private:
+   explicit Config(const Config& other) = default;
+ 
+diff --git a/third_party/kineto/libkineto/src/Config.cpp b/third_party/kineto/libkineto/src/Config.cpp
+index 2b6e04e..b23abd6 100644
+--- a/third_party/kineto/libkineto/src/Config.cpp
++++ b/third_party/kineto/libkineto/src/Config.cpp
+@@ -155,10 +155,8 @@ struct FactoryMap {
+ 
+ std::shared_ptr<FactoryMap> configFactories() {
+   // Ensure this is safe to call during shutdown, even as static
+-  // destructors are invoked. Once factories destructor has been
+-  // invoked, weak_ptr.lock() will return nullptr.
+-  // But calls before that point will have a valid shared_ptr,
+-  // delaying destruction of the underlying FactoryMap.
++  // destructors are invoked. getStaticObjectLifetimeHandle hangs onto
++  // FactoryMap delaying its destruction.
+   static auto factories = std::make_shared<FactoryMap>();
+   static std::weak_ptr<FactoryMap> weak_ptr = factories;
+   return weak_ptr.lock();
+@@ -210,6 +208,10 @@ Config::Config()
+   }
+ }
+ 
++std::shared_ptr<void> Config::getStaticObjectsLifetimeHandle() {
++  return configFactories();
++}
++
+ uint8_t Config::createDeviceMask(const string& val) {
+   uint8_t res = 0;
+   for (const auto& d : splitAndTrim(val, ',')) {
+diff --git a/third_party/kineto/libkineto/src/ConfigLoader.cpp b/third_party/kineto/libkineto/src/ConfigLoader.cpp
+index 4080b67..ca72b32 100644
+--- a/third_party/kineto/libkineto/src/ConfigLoader.cpp
++++ b/third_party/kineto/libkineto/src/ConfigLoader.cpp
+@@ -157,7 +157,7 @@ void ConfigLoader::startThread() {
+   }
+ }
+ 
+-ConfigLoader::~ConfigLoader() {
++void ConfigLoader::stopThread() {
+   if (updateThread_) {
+     stopFlag_ = true;
+     {
+@@ -165,7 +165,12 @@ ConfigLoader::~ConfigLoader() {
+       updateThreadCondVar_.notify_one();
+     }
+     updateThread_->join();
++    updateThread_ = nullptr;
+   }
++}
++
++ConfigLoader::~ConfigLoader() {
++  stopThread();
+ #if !USE_GOOGLE_LOG
+   Logger::clearLoggerObservers();
+ #endif // !USE_GOOGLE_LOG
+@@ -249,6 +254,11 @@ void ConfigLoader::configureFromDaemon(
+ }
+ 
+ void ConfigLoader::updateConfigThread() {
++  // It's important to hang to this reference until the thread stops.
++  // Otherwise, the Config's static members may be destroyed before this
++  // function finishes.
++  auto handle = Config::getStaticObjectsLifetimeHandle();
++
+   auto now = system_clock::now();
+   auto next_config_load_time = now;
+   auto next_on_demand_load_time = now + onDemandConfigUpdateIntervalSecs_;
+diff --git a/third_party/kineto/libkineto/src/ConfigLoader.h b/third_party/kineto/libkineto/src/ConfigLoader.h
+index 4680816..83a94ac 100644
+--- a/third_party/kineto/libkineto/src/ConfigLoader.h
++++ b/third_party/kineto/libkineto/src/ConfigLoader.h
+@@ -108,6 +108,7 @@ class ConfigLoader {
+   DaemonConfigLoader* daemonConfigLoader();
+ 
+   void startThread();
++  void stopThread();
+   void updateConfigThread();
+   void updateBaseConfig();
+ 

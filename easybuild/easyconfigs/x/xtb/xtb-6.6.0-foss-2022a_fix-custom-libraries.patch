@@ -1,0 +1,26 @@
+From 2d82c0d639e77c12408244d1d0308dc322058b9c Mon Sep 17 00:00:00 2001
+From: Susi Lehtola <susi.lehtola@gmail.com>
+Date: Sat, 15 Apr 2023 19:10:19 +0300
+Subject: [PATCH] Restore support for custom lapack backend (#785)
+
+Signed-off-by: Susi Lehtola <susi.lehtola@gmail.com>
+---
+ meson/meson.build | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/meson/meson.build b/meson/meson.build
+index 16bba9983..7c3192780 100644
+--- a/meson/meson.build
++++ b/meson/meson.build
+@@ -146,6 +146,11 @@ elif lapack_vendor == 'openblas'
+     lib_deps += lapack_dep
+   endif
+
++elif lapack_vendor == 'custom'
++  foreach lib: get_option('custom_libraries')
++    lib_deps += fc.find_library(lib)
++  endforeach
++
+ else
+   lapack_dep = dependency('lapack', required: false)
+   if not lapack_dep.found()

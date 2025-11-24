@@ -1,17 +1,25 @@
 Remove building of dependencies we provide via easybuild
-Author: Denis Kristak (Inuits)
-diff -ruN Clair3-1.0.4_orig/build.py Clair3-1.0.4/build.py
---- Clair3-1.0.4_orig/build.py	2023-09-07 14:28:29.842168186 +0100
-+++ Clair3-1.0.4/build.py	2023-09-08 12:31:06.300472155 +0100
-@@ -52,8 +52,7 @@
-             'clair3_pileup.c',
+Author: Denis Kristak (Inuits), Kenneth Hoste (HPC-UGent)
+diff -ruN Clair3-1.0.4.orig/build.py Clair3-1.0.4/build.py
+--- Clair3-1.0.4.orig/build.py  2023-07-16 14:39:15.000000000 +0200
++++ Clair3-1.0.4/build.py       2023-09-20 16:57:43.713924133 +0200
+@@ -6,7 +6,7 @@
+
+ samver = "1.15.1"
+ file_directory = os.path.dirname(os.path.realpath(__file__))
+-htslib_dir = os.path.join(file_directory, 'samtools-{}'.format(samver), 'htslib-{}'.format(samver))
++htslib_dir = os.path.join(os.getenv('EBROOTHTSLIB'), 'lib')
+
+ libraries = ['m', 'z', 'lzma', 'bz2', 'pthread', 'curl', 'crypto']
+ extra_link_args = []
+@@ -53,7 +53,7 @@
              'clair3_full_alignment.c')],
      extra_compile_args=extra_compile_args,
--    extra_link_args=extra_link_args,
+     extra_link_args=extra_link_args,
 -    extra_objects=[os.path.join(htslib_dir, 'libhts.a')]
-+    extra_link_args=extra_link_args
++    extra_objects=[os.path.join(htslib_dir, 'libhts.so')]
  )
- 
+
  cdef = [
 diff -ruN Clair3-1.0.4_orig/Makefile Clair3-1.0.4/Makefile
 --- Clair3-1.0.4_orig/Makefile	2023-09-07 14:28:29.842168186 +0100

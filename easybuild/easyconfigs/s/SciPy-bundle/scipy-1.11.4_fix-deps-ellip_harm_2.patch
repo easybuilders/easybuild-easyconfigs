@@ -1,0 +1,38 @@
+fix for: 'scipy/special/cython_special.pxd' not found
+see also https://github.com/scipy/scipy/issues/19167
+
+From c4f6bdb78d1eac3e03399fbaacb2a1d4cf1167c8 Mon Sep 17 00:00:00 2001
+From: Ben Boeckel <ben.boeckel@kitware.com>
+Date: Thu, 31 Aug 2023 10:09:56 -0400
+Subject: [PATCH] BLD: special: fix dependencies for `_ellip_harm_2`
+
+Generating the source for `_ellip_harm_2` requires the
+`cython_special.pxd` header to be generated. So add a dependency for
+this.
+
+Closes gh-19167
+
+Co-authored-by: Ralf Gommers <ralf.gommers@gmail.com>
+---
+ scipy/special/meson.build | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/scipy/special/meson.build b/scipy/special/meson.build
+index e7e25aa54e83..900064410381 100644
+--- a/scipy/special/meson.build
++++ b/scipy/special/meson.build
+@@ -318,12 +318,12 @@ cython_special_pxd = custom_target('_dummy_cython_special.pxd',
+ uf_cython_gen = generator(cython,
+   arguments : cython_args,
+   output : '@BASENAME@.c',
+-  depends : [_cython_tree, _ufuncs_pxi_pxd_sources])
++  depends : [_cython_tree, _ufuncs_pxi_pxd_sources, cython_special_pxd])
+ 
+ uf_cython_gen_cpp = generator(cython,
+   arguments : cython_cplus_args,
+   output : '@BASENAME@.cpp',
+-  depends : [_cython_tree, _ufuncs_pxi_pxd_sources])
++  depends : [_cython_tree, _ufuncs_pxi_pxd_sources, cython_special_pxd])
+ 
+ py3.extension_module('_ufuncs',
+   [

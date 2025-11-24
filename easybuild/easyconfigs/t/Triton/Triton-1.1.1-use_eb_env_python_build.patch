@@ -1,0 +1,53 @@
+Fix Triton cmake build to use dependencies from EasyBuild
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- python/setup.py.orig	2023-12-08 00:18:55.731934000 +0100
++++ python/setup.py	2023-12-08 00:22:25.336980000 +0100
+@@ -77,28 +77,24 @@
+             self.build_extension(ext)
+ 
+     def build_extension(self, ext):
+-        llvm_include_dir, llvm_library_dir = get_llvm()
+         # self.debug = True
+         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.path)))
+-        # create build directories
++        llvm_include_dir = os.path.join(os.environ['EBROOTCLANG'], 'include')
++        llvm_library_dir = os.path.join(os.environ['EBROOTCLANG'], 'lib')
+         build_suffix = 'debug' if self.debug else 'release'
+-        llvm_build_dir = os.path.join(tempfile.gettempdir(), "llvm-" + build_suffix)
+         if not os.path.exists(self.build_temp):
+             os.makedirs(self.build_temp)
+-        if not os.path.exists(llvm_build_dir):
+-            os.makedirs(llvm_build_dir)
+         # python directories
+-        python_include_dirs = [distutils.sysconfig.get_python_inc()] + ['/usr/local/cuda/include']
++        python_include_subdir = 'python' + str(sys.version_info.major) + '.' + str(sys.version_info.minor)
++        python_include_dir = os.path.join(os.environ['EBROOTPYTHON'], 'include', python_include_subdir)
+         cmake_args = [
+             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
++            "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON",
+             "-DBUILD_TUTORIALS=OFF",
+             "-DBUILD_PYTHON_MODULE=ON",
+             "-DLLVM_INCLUDE_DIRS=" + llvm_include_dir,
+             "-DLLVM_LIBRARY_DIR=" + llvm_library_dir,
+-            #'-DPYTHON_EXECUTABLE=' + sys.executable,
+-            #'-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON',
+-            "-DTRITON_LLVM_BUILD_DIR=" + llvm_build_dir,
+-            "-DPYTHON_INCLUDE_DIRS=" + ";".join(python_include_dirs)
++            "-DPYTHON_INCLUDE_DIRS=" + python_include_dir,
+         ]
+         # configuration
+         cfg = "Debug" if self.debug else "Release"
+@@ -112,10 +107,12 @@
+         else:
+             import multiprocessing
+             cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
+-            build_args += ["--", '-j' + str(2 * multiprocessing.cpu_count())]
++            build_args += ["--", '-j' + str(len(os.sched_getaffinity(0)))]
+ 
+         env = os.environ.copy()
++        print("cmake", self.base_dir, cmake_args)
+         subprocess.check_call(["cmake", self.base_dir] + cmake_args, cwd=self.build_temp, env=env)
++        print("cmake", "--build", ".", build_args)
+         subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=self.build_temp)
+ 
+ 

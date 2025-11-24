@@ -1,0 +1,37 @@
+Fixed old numpy API usage in f90wrap. This has been fixed in commit 108f819 and version 0.2.14
+--- f90wrap/arraydatamodule.c.orig	2024-04-19 14:22:57.488265190 +0200
++++ f90wrap/arraydatamodule.c	2024-04-19 14:30:08.923493156 +0200
+@@ -59,13 +59,13 @@
+   /* Processing variable this */
+   this_Dims[0]=sizeof_fortran_t;
+   capi_this_intent |= F2PY_INTENT_IN;
+-  capi_this_tmp = array_from_pyobj(PyArray_INT,this_Dims,this_Rank,capi_this_intent,this_capi);
++  capi_this_tmp = array_from_pyobj(NPY_INT,this_Dims,this_Rank,capi_this_intent,this_capi);
+   if (capi_this_tmp == NULL) {
+     if (!PyErr_Occurred())
+       PyErr_SetString(PyExc_TypeError,"failed in converting 1st argument `this' of get_array to C/Fortran array" );
+     goto fail;
+   } else {
+-    this = (int *)(capi_this_tmp->data);
++    this = (int *)(PyArray_DATA(capi_this_tmp));
+   }
+ 
+   /* Processing variable arrayfunc */
+@@ -107,7 +107,7 @@
+   /* Construct array */
+   descr = PyArray_DescrNewFromType(typenum);
+   array = (PyArrayObject*) PyArray_NewFromDescr(&PyArray_Type, descr, nd, dimensions, NULL, 
+-                                                data, NPY_FORTRAN | NPY_WRITEABLE | NPY_ALIGNED, NULL);
++                                                data, NPY_ARRAY_F_CONTIGUOUS | NPY_ARRAY_WRITEABLE | NPY_ARRAY_ALIGNED, NULL);
+   free(dimensions);
+   if((PyObject *)capi_this_tmp!=this_capi) {
+     Py_XDECREF(capi_this_tmp);
+@@ -125,7 +125,7 @@
+ 
+ static PyMethodDef arraydata_methods[] = {
+   {"get_array", get_array, METH_VARARGS, 
+-   "Make an array from integer(sizeof_fortran_t) array containing reference to derived type object,\n and fortran array function.\n\get_array(sizeof_fortran_t, fpointer,array_fobj[,key]) -> array"},
++   "Make an array from integer(sizeof_fortran_t) array containing reference to derived type object,\n and fortran array function.\n\\get_array(sizeof_fortran_t, fpointer,array_fobj[,key]) -> array"},
+   {NULL, NULL}
+ };
+ 
