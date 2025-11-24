@@ -1,0 +1,49 @@
+easyblock = 'PythonBundle'
+
+name = 'numba-cuda'
+version = '0.20.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://numba.pydata.org/'
+description = """Numba-CUDA provides a CUDA target for the Numba Python JIT
+Compiler. It is used for writing SIMT kernels in Python, for providing
+Python bindings for accelerated device libraries, and as a compiler for
+user-defined functions in accelerated libraries like RAPIDS."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('poetry', '1.8.3'),  # required for tests
+    ('ml_dtypes', '0.5.0'),  # required for tests
+    ('filecheck-python', '1.0.3'),  # required for tests
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),  # for pytest
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('CUDA-Python', '12.6.2.post1', versionsuffix),
+    ('numba', '0.60.0'),
+]
+
+exts_list = [
+    ('numba_cuda', '0.20.0', {
+        'source_urls': ['https://github.com/NVIDIA/numba-cuda/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['17e6803ed07589c37b5fa0757f9c0fc850146dbc24302fcea93497676f3a21fb'],
+        'testinstall': True,
+        'runtest': 'pytest --pyargs numba.cuda.tests -v',
+    }),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'python -c "from numba import cuda; print(cuda.__file__)" | grep %(installdir)s',
+]
+
+moduleclass = 'lang'
