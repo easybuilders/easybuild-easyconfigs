@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name='NEMO-rcs'
+version='accu-coupled-v1.0'
+
+homepage = 'https://www.nemo-ocean.eu/'
+description = """The 'Nucleus for European Modelling of the Ocean' (NEMO) is
+a state-of-the-art modelling framework. It is used for research activities
+and forecasting services in ocean and climate sciences. """
+
+toolchain = {'name': 'iimpi', 'version': '2023a'}
+toolchainopts = {'optarch': False, # Disable automatic architecture optimization
+                 'usempi': True,
+}
+
+sources = [{
+             'filename': 'nemo_rcs_%(version)s.tar.gz',
+             'git_config': {
+                 'url': 'git@gitlab.kuleuven.be:rcs/cclm/software',
+                 'repo_name': 'nemo_rcs',
+                 'tag': '%(version)s',
+    },
+}]
+
+builddependencies = [('CMake', '3.26.3'),]
+
+dependencies = [('netCDF-Fortran', '4.6.1'),
+                ('OASIS3-MCT-rcs', '%(version)s'),
+                ('XIOS-rcs', '%(version)s'),
+]
+
+configopts = '-DTOOLS=REBUILD_NEMO'
+
+sanity_check_paths = {
+    'files': ['bin/nemo.exe',
+              'bin/rebuild_nemo.exe'],
+    'dirs': ['bin',],
+}
+
+modextrapaths = {
+    'PATH': ['bin'],
+}
+
+postinstallcmds = [
+    "chmod 750 %(installdir)s/bin/nemo.exe",
+    "chmod 750 %(installdir)s/bin/rebuild_nemo.exe",
+]
+
+moduleclass = 'geo'

@@ -1,0 +1,44 @@
+easyblock = 'CMakeMakeCp'
+
+name='OASIS3-MCT-rcs'
+version='accu-coupled-v1.0'
+
+homepage = 'https://oasis.cerfacs.fr/en/home/'
+description = """
+   The OASIS coupler is a software allowing synchronized exchanges of coupling
+   information between numerical codes representing different components
+   of the climate system. 
+   """
+
+toolchain = {'name': 'iimpi', 'version': '2023a'}
+toolchainopts = {'optarch': False}  # Disable automatic architecture optimization
+
+sources = [{
+             'filename': 'oasis-%(version)s.tar.gz',
+             'git_config': {
+                 'url': 'git@gitlab.kuleuven.be:rcs/cclm',
+                 'repo_name': 'oasis',
+                 'tag': '%(version)s',
+    },
+}]
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [('netCDF-Fortran', '4.6.1')]
+
+files_to_copy = ['build', 'lib']
+
+sanity_check_paths = {
+    'files': ['lib/libmct_oasis.a',
+              'lib/libmpeu_oasis.a',
+              'lib/libscrip.a',
+              'build/lib//psmile.MPI1/mod_oasis_advance.mod',
+    ],
+    'dirs': [],
+}
+
+modextravars = {
+    'OASISDIR': '%(installdir)s',
+}
+
+moduleclass = 'geo'
