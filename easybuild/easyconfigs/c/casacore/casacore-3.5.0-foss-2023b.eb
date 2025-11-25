@@ -4,19 +4,28 @@ name = 'casacore'
 version = '3.5.0'
 
 homepage = 'https://github.com/casacore/casacore'
-description = """A suite of C++ libraries for radio astronomy data processing.
-The ephemerides data needs to be in DATA_DIR and the location must be specified at runtime.
-Thus user's can update them.
-"""
+description = """A suite of C++ libraries for radio astronomy data processing."""
 
 toolchain = {'name': 'foss', 'version': '2023b'}
 
-source_urls = ['https://github.com/%(name)s/%(name)s/archive']
-sources = ['v%(version)s.tar.gz']
+sources = [
+    {
+        'filename': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/%(name)s/%(name)s/archive'],
+    },
+    {
+        # Note: when updating this easyconfig, check the latest WSRT_Measures tarball on the FTP and update to that
+        'filename': 'WSRT_Measures_20250128-160001.ztar',
+        'source_urls': ['ftp://anonymous@ftp.astron.nl/outgoing/Measures'],
+        'extract_cmd': 'tar xfvz %s --one-top-level=data',
+    }
+]
 patches = ['casacore-3.5.0-add-C-style-header-for-GCC-13.1.patch']
 checksums = [
-    '63f1c8eff932b0fcbd38c598a5811e6e5397b72835b637d6f426105a183b3f91',  # casacore-3.5.0.tar.gz
-    '7b35d21cd654a7a215d604310f5372319ad21b6261f4a7ae038912b97ef22983',  # add-C-style-header-for-GCC-13.1.patch
+    {'v3.5.0.tar.gz': '63f1c8eff932b0fcbd38c598a5811e6e5397b72835b637d6f426105a183b3f91'},
+    {'WSRT_Measures_20250128-160001.ztar': '5835e3f5458d8f88fd057044a891d26a5cbfdec9a865967b1189d4fd52140c80'},
+    {'casacore-3.5.0-add-C-style-header-for-GCC-13.1.patch':
+     '7b35d21cd654a7a215d604310f5372319ad21b6261f4a7ae038912b97ef22983'},
 ]
 
 builddependencies = [
@@ -39,14 +48,7 @@ configopts = '-DBUILD_PYTHON=NO -DBUILD_PYTHON3=YES -Wno-dev -DCXX11="ON" '
 configopts += '-DDATA_DIR=%(installdir)s/data -DUSE_OPENMP=ON -DUSE_HDF5=ON '
 configopts += '-DUSE_MPI=ON '
 
-local_download_cmd = 'wget --retry-connrefused ftp://anonymous@ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar '
-local_download_cmd += '-O /tmp/WSRT_Measures.ztar '
-
-# Install casacore data
-postinstallcmds = [
-    local_download_cmd,
-    "tar xfvz /tmp/WSRT_Measures.ztar --one-top-level=%(installdir)s/data",
-]
+postinstallcmds = ['cp -r %(builddir)s/data %(installdir)s']
 
 sanity_check_paths = {
     'files': [
@@ -54,7 +56,7 @@ sanity_check_paths = {
         'lib/libcasa_mirlib.%s' % SHLIB_EXT,
         'lib/libcasa_ms.%s' % SHLIB_EXT,
     ],
-    'dirs': ['bin', 'include/%(name)s'],
+    'dirs': ['bin', 'include/%(name)s', 'data/ephemerides', 'data/geodetic'],
 }
 
 sanity_check_commands = [('measuresdata', '')]

@@ -1,0 +1,65 @@
+easyblock = 'SCons'
+
+name = 'Cantera'
+version = '3.1.0-20250816'
+local_commit = '25103c9'
+
+homepage = 'https://github.com/Cantera/cantera'
+description = """Chemical kinetics, thermodynamics, and transport tool suite"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'strict': True, 'usempi': True}
+
+sources = [{
+    'filename': SOURCE_TAR_XZ,
+    'git_config': {
+        'url': 'https://github.com/' + name,
+        'repo_name': '%(namelower)s',
+        'commit': local_commit,
+        'recursive': True,
+    },
+}]
+checksums = ['5b3a3e5284bf26318a7f66b63c348ce9d757d576f1a7b03b883bfd14a8084632']
+
+builddependencies = [
+    ('SCons', '4.9.0'),
+    ('Eigen', '3.4.0'),
+    ('fmt', '11.0.2'),
+    ('googletest', '1.15.2'),
+    ('Cython', '3.0.10'),
+    ('Doxygen', '1.11.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('h5py', '3.12.1'),
+    ('pygraphviz', '1.14'),
+    ('JupyterLab', '4.2.5'),
+    ('matplotlib', '3.9.2'),
+    ('Boost', '1.85.0'),
+    ('SUNDIALS', '7.3.0'),
+    ('yaml-cpp', '0.8.0'),
+    ('ruamel.yaml', '0.18.6'),
+    ('HighFive', '2.10.1'),
+]
+
+local_common_opts = 'env_vars=all CC="$CC" CXX="$CXX" cc_flags="$CFLAGS" cxx_flags="$CXXFLAGS" '
+local_common_opts += 'blas_lapack_libs=flexiblas blas_lapack_dir=$BLAS_LAPACK_LIB_DIR '
+local_common_opts += 'sundials_include=$EBROOTSUNDIALS/include sundials_libdir=$EBROOTSUNDIALS/lib'
+buildopts = 'build ' + local_common_opts
+# tests hang, so disable them for now
+# runtest = 'test ' + local_common_opts
+installopts = 'install ' + local_common_opts
+prefix_arg = 'prefix='
+
+sanity_check_paths = {
+    'files': ['bin/cti2yaml'],
+    'dirs': ['include/cantera', 'lib/pkgconfig', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "cti2yaml --help",
+    "python -c 'import cantera'",
+]
+
+moduleclass = 'chem'

@@ -19,7 +19,7 @@ source_urls = [GITHUB_LOWER_SOURCE]
 sources = [
     {
         'download_filename': '%(version)s.tar.gz',
-        'filename': '%(namelower)s-%(version)s.tar.gz',
+        'filename': SOURCELOWER_TAR_GZ,
     },
     {
         'source_urls': ['https://github.com/KarypisLab/METIS/archive'],
@@ -34,7 +34,7 @@ sources = [
         'extract_cmd': "tar -C %(namelower)s-%(version)s/third_party/METIS/GKlib --strip-components=1 -xf %s",
     },
     {
-        'filename': 'tensorpipe-20230206.tar.gz',
+        'filename': 'tensorpipe-20230206.tar.xz',
         'git_config': {
             'url': 'https://github.com/pytorch',
             'repo_name': 'tensorpipe',
@@ -65,7 +65,7 @@ checksums = [
     '8d26ebb7ed976665bbf5bbd1792d8e6efb13a8fa16e5eb1efed75e07fb982e04',  # dgl-0.9.1.tar.gz
     'cedf0b32d32a8496bac7eb078b2b8260fb00ddb8d50c27e4082968a01bc33331',  # metis-5.1.1-DistDGL-v0.5.tar.gz
     '52aa0d383d42360f4faa0ae9537ba2ca348eeab4db5f2dfd6343192d0ff4b833',  # GKlib-METIS-v5.1.1-DistDGL-0.5.tar.gz
-    None,  # tensorpipe-20230206.tar.gz
+    '85203179f7970f4274a9f90452616ec534b1f54a87040fc98786d035efb429e4',  # tensorpipe-20230206.tar.xz
     'b02aca5d2325e9128ed9d46785b8e72366f758b873b95001f905f22afcf31bbf',  # thrust-1.17.0.tar.gz
     '16fd4860ae3196bc3eb08bf5754fa2a9697951ddae36dc9721e6614388893618',  # cub-1.17.0.tar.gz
     # DGL-0.9.1_use_externals_instead_of_submodules.patch'
@@ -113,15 +113,16 @@ runtest = 'test'
 exts_defaultclass = 'PythonPackage'
 exts_default_options = {
     'easyblock': 'PythonPackage',
-    'download_dep_fail': True,
-    'use_pip': True,
-    'sanity_pip_check': True,
     'runtest': True,
 }
 
 exts_list = [
     ('dgl', version, {
-        'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
+        'source_urls': [GITHUB_LOWER_SOURCE],
+        'sources': {
+            'download_filename': '%(version)s.tar.gz',
+            'filename': SOURCELOWER_TAR_GZ,
+        },
         'start_dir': 'python',
         'installopts': '--use-feature=in-tree-build ',
         'checksums': ['8d26ebb7ed976665bbf5bbd1792d8e6efb13a8fa16e5eb1efed75e07fb982e04'],
@@ -131,10 +132,6 @@ exts_list = [
 sanity_check_paths = {
     'files': ['lib/libdgl.%s' % SHLIB_EXT],
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
-}
-
-modextrapaths = {
-    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages'],
 }
 
 moduleclass = 'ai'

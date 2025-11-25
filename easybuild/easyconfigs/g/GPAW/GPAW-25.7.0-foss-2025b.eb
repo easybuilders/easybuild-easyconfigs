@@ -1,0 +1,47 @@
+easyblock = "PythonPackage"
+
+name = 'GPAW'
+version = '25.7.0'
+
+homepage = 'https://wiki.fysik.dtu.dk/gpaw/'
+description = """GPAW is a density-functional theory (DFT) Python code based on the projector-augmented wave (PAW)
+ method and the atomic simulation environment (ASE). It uses real-space uniform grids and multigrid methods or
+ atom-centered basis-functions."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'openmp': False}
+
+source_urls = ['https://gitlab.com/gpaw/gpaw/-/archive/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    ('GPAW-25.7.0-Dont-hack-platform.patch', 1),
+    ('GPAW-25.7.0-Elpa-2025.patch', 1),
+]
+checksums = [
+    {'gpaw-25.7.0.tar.gz': '6236e66ecc5fff838b157b4ea1aee8d748c466bec8f5be89400be1659e844adb'},
+    {'GPAW-25.7.0-Dont-hack-platform.patch': 'e071023918a8371b848935e339034c55359efbc0e6e76e075f21f48ab716270d'},
+    {'GPAW-25.7.0-Elpa-2025.patch': 'f3fa8aec51ad1f02072d6ef6d89bb9b4dfa1d9dfa4ff09f747cd9c9849369f22'},
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('SciPy-bundle', '2025.07'),
+    ('ASE', '3.26.0'),
+    ('libxc', '7.0.0'),
+    ('libvdwxc', '0.5.0'),
+    ('ELPA', '2025.06.001'),
+    ('PyYAML', '6.0.2'),
+    ('gpaw-data', '1.0.1'),
+]
+
+prebuildopts = 'GPAW_CONFIG=doc/platforms/Linux/EasyBuild/config_foss.py'
+preinstallopts = prebuildopts
+
+sanity_check_paths = {
+    'files': ['bin/gpaw%s' % x for x in ['', '-analyse-basis', '-basis', '-plot-parallel-timings',
+                                         '-runscript', '-setup', '-upfplot']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'chem'
