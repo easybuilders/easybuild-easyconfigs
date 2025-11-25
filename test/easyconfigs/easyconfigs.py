@@ -1095,10 +1095,12 @@ class EasyConfigTest(TestCase):
             ]:
                 continue
 
-            # easyconfigs where a dep provides the source
             if ec['name'] in [
+                # easyconfigs where a dependency provides the source,
                 'imkl-FFTW',  # imkl
                 'minizip',  # zlib
+                # software that have no top-level sources (only components)
+                'gnupg-bundle',
             ]:
                 continue
 

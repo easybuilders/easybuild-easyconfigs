@@ -235,7 +235,7 @@ if updated_software:
         if existing_comment["user"]["login"] == "github-actions[bot]":  # Bot username in GitHub Actions
             comment_id = existing_comment["id"]
 
-    if len(str) >= 65536:
+    if len(comment) >= 65536:
         # Comment is too long to post, so post a message saying that
         comment = "Diff of new easyconfig(s) against existing ones is too long for a GitHub comment. "
         comment += "Use `--review-pr` (and `--review-pr-filter` / `--review-pr-max`) locally."
