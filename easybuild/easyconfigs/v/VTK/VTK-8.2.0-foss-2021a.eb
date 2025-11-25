@@ -54,8 +54,6 @@ dependencies = [
     ('X11', '20210518'),
 ]
 
-separate_build_dir = True
-
 # Third party modules
 configopts = "-DVTK_USE_SYSTEM_MPI4PY=ON "
 configopts += "-DVTK_USE_SYSTEM_LZMA=ON "
@@ -73,7 +71,6 @@ configopts += "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s "
 configopts += "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%%(pyshortver)s.%s " % SHLIB_EXT
 # Other
 configopts += "-DVTK_Group_MPI:BOOL=ON "
-configopts += "-DCMAKE_INSTALL_LIBDIR=lib"
 
 preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
 
@@ -84,8 +81,6 @@ postinstallcmds = [
     'sed "s/#VTK_VERSION#/%%(version)s/" %s > %s' % (local_egg_info_src, local_egg_info_dest),
 ]
 
-modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
-
 local_vtk_exec = ['vtk%s-%%(version_major_minor)s' % x
                   for x in ['WrapJava', 'ParseJava', 'WrapPythonInit', 'WrapPython', 'WrapHierarchy']]
 local_vtk_exec += ['vtkpython', 'pvtkpython']
@@ -93,7 +88,7 @@ local_vtk_libs = ['CommonCore', 'IONetCDF', 'ParallelMPI', 'RenderingOpenGL2']
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in local_vtk_exec] +
-             ['lib/libvtk%s-%%(version_major_minor)s.%s' % (l, SHLIB_EXT) for l in local_vtk_libs],
+             ['lib/libvtk%s-%%(version_major_minor)s.%s' % (x, SHLIB_EXT) for x in local_vtk_libs],
     'dirs': ['lib/python%(pyshortver)s/site-packages/', 'include/vtk-%(version_major_minor)s'],
 }
 
@@ -101,6 +96,4 @@ sanity_check_commands = [
     ('python', "-c 'import %(namelower)s'"),
     ('python', "-c 'import pkg_resources; pkg_resources.get_distribution(\"vtk\")'"),
 ]
-
-
 moduleclass = 'vis'

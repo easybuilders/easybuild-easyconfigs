@@ -1,0 +1,53 @@
+easyblock = 'ConfigureMake'
+
+name = 'UniFrac'
+version = '1.4'
+
+homepage = 'https://github.com/biocore/unifrac-binaries'
+description = """
+UniFrac is the de facto repository for high-performance phylogenetic diversity
+calculations. The methods in this repository are based on an implementation of
+the Strided State UniFrac algorithm which is faster, and uses less memory than
+Fast UniFrac. Strided State UniFrac supports Unweighted UniFrac, Weighted
+UniFrac, Generalized UniFrac, Variance Adjusted UniFrac and meta UniFrac, in
+both double and single precision (fp32). This repository also includes Stacked
+Faith (manuscript in preparation), a method for calculating Faith's PD that is
+faster and uses less memory than the Fast UniFrac-based reference
+implementation."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://github.com/biocore/unifrac-binaries/archive/refs/tags/']
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}]
+patches = ['%(name)s-%(version)s_fix-makefiles.patch']
+checksums = [
+    {'UniFrac-1.4.tar.gz': '7067a3bcee8702caa8c3ea6e5fd8f1bb059f84a791b237762730fbf232ae785f'},
+    {'UniFrac-1.4_fix-makefiles.patch': '9032769afc20461a2ee67c54e169f776851b4c4cf613613f415c6c48267f0c9e'},
+]
+
+dependencies = [
+    ('HDF5', '1.14.3'),
+    ('lz4', '1.9.4'),
+    ('Szip', '2.1.1'),
+    ('libaec', '1.0.6'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'export PREFIX=%(installdir)s && '
+buildopts = 'api && make main'
+
+runtest = 'test'
+
+preinstallopts = prebuildopts + 'mkdir -p %(installdir)s/{lib,bin} && '
+
+sanity_check_paths = {
+    'files': ['lib/libssu.%s' % SHLIB_EXT, 'bin/ssu'],
+    'dirs': ['include/unifrac'],
+}
+
+modextrapaths = {MODULE_LOAD_ENV_HEADERS: 'include/%(namelower)s'}
+
+sanity_check_commands = ['ssu --help']
+
+moduleclass = 'bio'

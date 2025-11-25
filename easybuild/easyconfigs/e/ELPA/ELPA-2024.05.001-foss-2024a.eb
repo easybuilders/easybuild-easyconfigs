@@ -1,0 +1,46 @@
+# #
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Authors::   Inge Gutheil <i.gutheil@fz-juelich.de>, Alan O'Cais <a.ocais@fz-juelich.de>
+# License::   MIT/GPL
+#
+# #
+
+name = 'ELPA'
+version = '2024.05.001'
+local_version = version.replace('.', '_')
+
+homepage = 'https://elpa.mpcdf.mpg.de/'
+description = "Eigenvalue SoLvers for Petaflop-Applications."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = ['https://gitlab.mpcdf.mpg.de/elpa/elpa/-/archive/release_%s/' % local_version]
+sources = ['{}-release_{}.tar.gz'.format('%(namelower)s', local_version)]
+patches = [
+    '%(name)s-2023.05.001_fix_hardcoded_perl_path.patch',
+    '%(name)s-2023.05.001_fix_AVX512_support.patch',
+]
+checksums = [
+    {'elpa-release_2024_05_001.tar.gz': '5e0c685536869bb91c230d70cac5e779ff418575681836f240b3e64e10b23f3e'},
+    {'ELPA-2023.05.001_fix_hardcoded_perl_path.patch':
+     '0548105065777a2ed07dde306636251c4f96e555a801647564de37d1ddd7b0b5'},
+    {'ELPA-2023.05.001_fix_AVX512_support.patch': 'ecf08b64fe1da432a218040fa45d4ecfbb3269d58cb018b12da5a2d854bf96be'},
+]
+
+builddependencies = [
+    ('Autotools', '20231222'),
+    ('Python', '3.12.3'),
+    ('Perl', '5.38.2'),
+]
+
+preconfigopts = './autogen.sh && export LDFLAGS="-lm $LDFLAGS" && autoreconf && '
+
+# When building in parallel, the file test_setup_mpi.mod is sometimes
+# used before it is built, leading to an error.  This must be a bug in
+# the makefile affecting parallel builds.
+maxparallel = 1
+
+
+moduleclass = 'math'
