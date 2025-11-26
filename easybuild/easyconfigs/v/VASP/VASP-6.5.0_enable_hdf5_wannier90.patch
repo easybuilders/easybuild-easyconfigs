@@ -1,0 +1,145 @@
+Use build environment from EasyBuild on oneAPI and GNU configurations
+Enable HDF5 and Wannier90
+Author: J. Saßmannshausen (Imperial College London)
+Author: Alex Domingo (Vrije Universiteit Brussel)
+--- arch/makefile.include.oneapi.orig	2025-02-11 15:05:02.060424066 +0100
++++ arch/makefile.include.oneapi	2025-02-12 10:39:43.393075618 +0100
+@@ -15,9 +15,9 @@
+ 
+ FREE        = -free -names lowercase
+ 
+-FFLAGS      = -assume byterecl -w
++FFLAGS      += -assume byterecl -w
+ 
+-OFLAG       = -O2
++OFLAG       = $(OPTFLAGS)
+ OFLAG_IN    = $(OFLAG)
+ DEBUG       = -O0
+ 
+@@ -25,8 +25,8 @@
+ CPP_LIB     = $(CPP)
+ FC_LIB      = $(FC)
+ CC_LIB      = icx
+-CFLAGS_LIB  = -O
+-FFLAGS_LIB  = -O1
++CFLAGS_LIB  = $(CFLAGS) -O
++FFLAGS_LIB  = $(FFLAGS) -O1
+ FREE_LIB    = $(FREE)
+ 
+ OBJECTS_LIB = linpack_double.o
+@@ -43,26 +43,26 @@
+ 
+ # When compiling on the target machine itself, change this to the
+ # relevant target when cross-compiling for another architecture
+-VASP_TARGET_CPU ?= -xHOST
+-FFLAGS     += $(VASP_TARGET_CPU)
++#VASP_TARGET_CPU ?= -xHOST
++#FFLAGS     += $(VASP_TARGET_CPU)
+ 
+ # Intel MKL (FFTW, BLAS, LAPACK, and scaLAPACK)
+ # (Note: for Intel Parallel Studio's MKL use -mkl instead of -qmkl)
+ FCL        += -qmkl=sequential
+-MKLROOT    ?= /path/to/your/mkl/installation
+-LLIBS      += -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+-INCS        =-I$(MKLROOT)/include/fftw
++#MKLROOT    ?= /path/to/your/mkl/installation
++LLIBS      += -L$(MKLROOT)/mkl/latest/lib -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
++INCS        = -I$(MKLROOT)/include/fftw
+ 
+ # HDF5-support (optional but strongly recommended, and mandatory for some features)
+-#CPP_OPTIONS+= -DVASP_HDF5
+-#HDF5_ROOT  ?= /path/to/your/hdf5/installation
+-#LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
+-#INCS       += -I$(HDF5_ROOT)/include
++CPP_OPTIONS+= -DVASP_HDF5
++HDF5_ROOT  ?= $(EBROOTHDF5)
++LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
++INCS       += -I$(HDF5_ROOT)/include
+ 
+ # For the VASP-2-Wannier90 interface (optional)
+-#CPP_OPTIONS    += -DVASP2WANNIER90
+-#WANNIER90_ROOT ?= /path/to/your/wannier90/installation
+-#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
++CPP_OPTIONS    += -DVASP2WANNIER90
++WANNIER90_ROOT ?= $(EBROOTWANNIER90)
++LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
+ 
+ # For machine learning library vaspml (experimental)
+ #CPP_OPTIONS += -Dlibvaspml
+--- arch/makefile.include.gnu.orig	2025-02-12 09:34:12.192732046 +0100
++++ arch/makefile.include.gnu	2025-02-12 10:38:36.221406895 +0100
+@@ -15,9 +15,9 @@
+ 
+ FREE        = -ffree-form -ffree-line-length-none
+ 
+-FFLAGS      = -w -ffpe-summary=none
++FFLAGS      += -w -ffpe-summary=none
+ 
+-OFLAG       = -O2
++OFLAG       = $(OPTFLAGS)
+ OFLAG_IN    = $(OFLAG)
+ DEBUG       = -O0
+ 
+@@ -25,8 +25,8 @@
+ CPP_LIB     = $(CPP)
+ FC_LIB      = $(FC)
+ CC_LIB      = gcc
+-CFLAGS_LIB  = -O
+-FFLAGS_LIB  = -O1
++CFLAGS_LIB  = $(CFLAGS) -O
++FFLAGS_LIB  = $(FFLAGS) -O1
+ FREE_LIB    = $(FREE)
+ 
+ OBJECTS_LIB = linpack_double.o
+@@ -43,37 +43,37 @@
+ 
+ # When compiling on the target machine itself, change this to the
+ # relevant target when cross-compiling for another architecture
+-VASP_TARGET_CPU ?= -march=native
+-FFLAGS     += $(VASP_TARGET_CPU)
++#VASP_TARGET_CPU ?= -march=native
++#FFLAGS     += $(VASP_TARGET_CPU)
+ 
+ # For gcc-10 and higher (comment out for older versions)
+ FFLAGS     += -fallow-argument-mismatch
+ 
+ # BLAS and LAPACK (mandatory)
+-OPENBLAS_ROOT ?= /path/to/your/openblas/installation
+-BLASPACK    = -L$(OPENBLAS_ROOT)/lib -lopenblas
++OPENBLAS_ROOT ?= $(EBROOTFLEXIBLAS)
++BLASPACK    = -L$(OPENBLAS_ROOT)/lib $(LIBBLAS)
+ 
+ # scaLAPACK (mandatory)
+-SCALAPACK_ROOT ?= /path/to/your/scalapack/installation
+-SCALAPACK   = -L$(SCALAPACK_ROOT)/lib -lscalapack
++SCALAPACK_ROOT ?= $(EBROOTFLEXIBLAS)
++SCALAPACK   = -L$(SCALAPACK_ROOT)/lib $(LIBSCALAPACK)
+ 
+ LLIBS      += $(SCALAPACK) $(BLASPACK)
+ 
+ # FFTW (mandatory)
+-FFTW_ROOT  ?= /path/to/your/fftw/installation
++FFTW_ROOT  ?= $(EBROOTFFTW)
+ LLIBS      += -L$(FFTW_ROOT)/lib -lfftw3
+ INCS       += -I$(FFTW_ROOT)/include
+ 
+ # HDF5-support (optional but strongly recommended, and mandatory for some features)
+-#CPP_OPTIONS+= -DVASP_HDF5
+-#HDF5_ROOT  ?= /path/to/your/hdf5/installation
+-#LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
+-#INCS       += -I$(HDF5_ROOT)/include
++CPP_OPTIONS+= -DVASP_HDF5
++HDF5_ROOT  ?= $(EBROOTHDF5)
++LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
++INCS       += -I$(HDF5_ROOT)/include
+ 
+ # For the VASP-2-Wannier90 interface (optional)
+-#CPP_OPTIONS    += -DVASP2WANNIER90
+-#WANNIER90_ROOT ?= /path/to/your/wannier90/installation
+-#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
++CPP_OPTIONS    += -DVASP2WANNIER90
++WANNIER90_ROOT ?= $(EBROOTWANNIER90)
++LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
+ 
+ # For machine learning library vaspml (experimental)
+ #CPP_OPTIONS += -Dlibvaspml

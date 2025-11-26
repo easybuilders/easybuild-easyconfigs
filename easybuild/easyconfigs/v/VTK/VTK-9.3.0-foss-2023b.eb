@@ -42,9 +42,8 @@ dependencies = [
     ('XZ', '5.4.4'),
     ('libGLU', '9.0.3'),
     ('X11', '20231019'),
+    ('Qt5', '5.15.13'),
 ]
-
-separate_build_dir = True
 
 # OpenGL
 configopts = "-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s " % SHLIB_EXT
@@ -57,7 +56,10 @@ configopts += "-DPython3_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s 
 configopts += "-DPython3_LIBRARY=$EBROOTPYTHON/lib/libpython%(pyshortver)s.so "
 # Other
 configopts += "-DVTK_USE_MPI=ON "
-configopts += "-DCMAKE_INSTALL_LIBDIR=lib"
+configopts += "-DVTK_QT_VERSION=5 "
+configopts += "-DQt5_DIR=$EBROOTQT5 "
+configopts += "-DVTK_MODULE_ENABLE_VTK_GuiSupportQt=YES "
+configopts += "-DVTK_MODULE_ENABLE_VTK_ViewsQt=YES"
 
 preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
 
@@ -68,8 +70,6 @@ postinstallcmds = [
     'sed "s/#VTK_VERSION#/%%(version)s/" %s > %s' % (local_egg_info_src, local_egg_info_dest),
 ]
 
-modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
-
 local_vtk_exec = ['vtk%s-%%(version_major_minor)s' % x
                   for x in ['WrapJava', 'ParseJava', 'WrapPythonInit', 'WrapPython', 'WrapHierarchy']]
 local_vtk_exec += ['vtkpython']
@@ -77,7 +77,7 @@ local_vtk_libs = ['CommonCore', 'IONetCDF', 'ParallelCore', 'RenderingOpenGL2']
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in local_vtk_exec] + ['include/vtk-%(version_major_minor)s/vtkMPI.h'] +
-             ['lib/libvtk%s-%%(version_major_minor)s.%s' % (l, SHLIB_EXT) for l in local_vtk_libs],
+             ['lib/libvtk%s-%%(version_major_minor)s.%s' % (x, SHLIB_EXT) for x in local_vtk_libs],
     'dirs': ['lib/python%(pyshortver)s/site-packages/', 'include/vtk-%(version_major_minor)s'],
 }
 

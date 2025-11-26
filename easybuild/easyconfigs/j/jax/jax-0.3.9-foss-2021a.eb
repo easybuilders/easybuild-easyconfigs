@@ -29,7 +29,7 @@ dependencies = [
 # running the tests with lots of cores results in test failures because not enough threads can be started,
 # and running with a single core also results in systematic test failures
 # 4 cores seems to work best
-parallel = 4
+maxparallel = 4
 
 # downloading TensorFlow tarball to avoid that Bazel downloads it during the build
 # note: this *must* be the exact same commit as used in jaxlib-*/WORKSPACE
@@ -41,16 +41,11 @@ local_tf_builddir = '%(builddir)s/' + local_tf_dir
 local_jax_prebuildopts = "sed -i -f jaxlib_local-tensorflow-repo.sed WORKSPACE && "
 local_jax_prebuildopts += "sed -i 's|EB_TF_REPOPATH|%s|' WORKSPACE && " % local_tf_builddir
 
-use_pip = True
-
 default_easyblock = 'PythonPackage'
 default_component_specs = {
     'sources': [SOURCE_TAR_GZ],
     'source_urls': [PYPI_SOURCE],
     'start_dir': '%(name)s-%(version)s',
-    'use_pip': True,
-    'sanity_pip_check': True,
-    'download_dep_fail': True,
 }
 
 components = [
@@ -86,6 +81,8 @@ components = [
         ],
         'start_dir': 'jax-jaxlib-v%(version)s',
         'prebuildopts': local_jax_prebuildopts,
+        # Avoid warning (treated as error) in upb/table.c
+        'buildopts': '--bazel_options="--copt=-Wno-maybe-uninitialized"',
     }),
 ]
 
@@ -109,7 +106,5 @@ exts_list = [
         'runtest': "pytest -n %(parallel)s tests",
     }),
 ]
-
-sanity_pip_check = True
 
 moduleclass = 'tools'
