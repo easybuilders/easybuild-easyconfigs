@@ -1,0 +1,162 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+# Updated by: Alex Domingo (Vrije Universiteit Brussel)
+# Updated by: Thomas Hoffmann (EMBL Heidelberg)
+easyblock = 'PythonBundle'
+
+name = 'jax'
+version = '0.4.29'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pypi.python.org/pypi/jax'
+description = """Composable transformations of Python+NumPy programs:
+differentiate, vectorize, JIT to GPU/TPU, and more"""
+
+toolchain = {'name': 'gfbf', 'version': '2023b'}
+cuda_compute_capabilities = ["5.0", "6.0", "6.1", "7.0", "7.5", "8.0", "8.6", "9.0"]
+
+builddependencies = [
+    ('Bazel', '6.5.0', '-Java-11'),
+    # git 2.x required to fetch repository 'io_bazel_rules_docker'
+    ('git', '2.42.0'),
+    ('matplotlib', '3.8.2'),  # required for tests/lobpcg_test.py
+    ('poetry', '1.6.1'),
+    ('pybind11', '2.11.1'),
+    ('pytest-xdist', '3.6.1'),  # must be after poetry, pytest needs its own pluggy not hatchlings
+]
+
+dependencies = [
+    ('CUDA', '12.4.0', '', SYSTEM),
+    ('cuDNN', '9.1.1.17', versionsuffix, SYSTEM),
+    ('NCCL', '2.20.5', versionsuffix),
+    ('zlib', '1.2.13'),
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('absl-py', '2.1.0'),
+    ('flatbuffers-python', '24.3.25'),
+    ('ml_dtypes', '0.4.0'),
+]
+
+# grep for system_build_file in jax & xla
+local_system_libs = [
+    'pybind11',
+    'curl',
+    ('boringssl', 'openssl'),
+    ('cython', None),
+    ('six', None),
+    'zlib',
+]
+
+local_tf_system_libs = []
+local_c_path = []
+local_library_path = []
+for l in local_system_libs:
+    if isinstance(l, str):
+        l = (l, l)
+    local_name, local_module = l
+    local_tf_system_libs.append(local_name)
+    if local_module:
+        local_c_path.append(f'$EBROOT{local_module.upper()}/include')
+        local_library_path.append(f'$EBROOT{local_module.upper()}/lib')
+
+
+# downloading xla and other tarballs to avoid that Bazel downloads it during the build
+# note: this *must* be the exact same commit as used in third_party/{xla,"other"}/workspace.bzl
+local_xla_commit = '32ba408c0e2b7ef5f5821c0781601ba17d467076'
+
+local_extract_cmd = 'mkdir -p %(builddir)s/archives && cp %s %(builddir)s/archives'
+local_repo_opt = '--bazel_options="--distdir=%(builddir)s/archives" '
+local_repo_opt += f'--bazel_options="--action_env=TF_SYSTEM_LIBS={",".join(local_tf_system_libs)}" '
+local_repo_opt += f'--bazel_options="--action_env=CPATH={":".join(local_c_path)}" '
+local_repo_opt += f'--bazel_options="--action_env=LIBRARY_PATH={":".join(local_library_path)}" '
+
+
+# Some tests require an isolated run:
+local_isolated_tests = [
+    'tests/host_callback_test.py::HostCallbackTapTest::test_tap_scan_custom_jvp',
+    'tests/host_callback_test.py::HostCallbackTapTest::test_tap_transforms_doc',
+    'tests/lax_scipy_special_functions_test.py::LaxScipySpcialFunctionsTest' +
+    '::testScipySpecialFun_gammainc_s_2x1x4_float32_float32',
+]
+# deliberately not testing in parallel, as that results in (additional) failing tests;
+# use XLA_PYTHON_CLIENT_ALLOCATOR=platform to allocate and deallocate GPU memory during testing,
+# see https://github.com/google/jax/issues/7323 and
+# https://github.com/google/jax/blob/main/docs/gpu_memory_allocation.rst;
+# use CUDA_VISIBLE_DEVICES=0 to avoid failing tests on systems with multiple GPUs;
+# use NVIDIA_TF32_OVERRIDE=0 to avoid loosing numerical precision by disabling TF32 Tensor Cores;
+local_test_exports = [
+    "NVIDIA_TF32_OVERRIDE=0",
+    "CUDA_VISIBLE_DEVICES=0",
+    "XLA_PYTHON_CLIENT_ALLOCATOR=platform",
+    "JAX_ENABLE_X64=true",
+]
+local_test = ''.join(['export %s;' % x for x in local_test_exports])
+# run all tests at once except for local_isolated_tests:
+local_test += "pytest -vv tests %s && " % ' '.join(['--deselect %s' % x for x in local_isolated_tests])
+# run remaining local_isolated_tests separately:
+local_test += ' && '.join(['pytest -vv %s' % x for x in local_isolated_tests])
+
+components = [
+    ('jaxlib', version, {
+        'sources': [
+            {
+                'source_urls': ['https://github.com/google/jax/archive/'],
+                'filename': '%(name)s-v%(version)s.tar.gz',
+            },
+            {
+                'source_urls': ['https://github.com/openxla/xla/archive'],
+                'download_filename': '%s.tar.gz' % local_xla_commit,
+                'filename': 'xla-%s.tar.gz' % local_xla_commit,
+                'extract_cmd': local_extract_cmd,
+            },
+        ],
+        'patches': [
+            'jax-0.4.25_fix-pybind11-systemlib.patch',
+            'jaxlib-0.4.29_use_EB_python_modules.patch',
+            'jaxlib-0.4.29_fix-AVX512-eigen-compilation-gcc13.patch',
+            'jaxlib-0.4.29_fix-xla-systemlibs.patch',
+        ],
+        'checksums': [
+            {'jaxlib-v0.4.29.tar.gz': '3a8005f4f62d35a5aad7e3dbd596890b47c81cc6e34fcfe3dcb93b3ca7cb1246'},
+            {'xla-%s.tar.gz' % local_xla_commit: '899f9fa0801f607decd0fedcb1e4c1f56010f884c271dc618448898b022715b1'},
+            {'jax-0.4.25_fix-pybind11-systemlib.patch':
+             'daad5b726d1a138431b05eb60ecf4c89c7b5148eb939721800bdf43d804ca033'},
+            {'jaxlib-0.4.29_use_EB_python_modules.patch':
+             'eb64999ad92ac39c683d750ed75f992f939a0a81dc5f2dd3b5698863f2f6fab9'},
+            {'jaxlib-0.4.29_fix-AVX512-eigen-compilation-gcc13.patch':
+             'b500286cc38670ca77121d9edd16a6d80ba01bf227a251b337f11540da3b6b2f'},
+            {'jaxlib-0.4.29_fix-xla-systemlibs.patch':
+             'f164602b17deec300af7dbdbac3553299d8c83bed98d0cdfce85c4109388571d'},
+        ],
+        'start_dir': 'jax-jaxlib-v%(version)s',
+        # Avoid warning (treated as error) in upb/table.c
+        'buildopts': local_repo_opt + ' --bazel_options="--copt=-Wno-maybe-uninitialized"'
+    }),
+]
+
+exts_list = [
+    (name, version, {
+        'source_urls': ['https://github.com/google/jax/archive/'],
+        'source_tmpl': '%(name)s-v%(version)s.tar.gz',
+        'patches': [
+            'jax-0.4.29_disable_mosaic_test_print.patch',
+            'jax-0.4.29_use_EB_python_modules.patch',
+            'jax-0.4.29_fix_test_to_include_EBPYTHONPREFIX_in_cleaned_env.patch',
+            'jax-0.4.29_skip_test_clone_eager.patch',
+        ],
+        'checksums': [
+            {'jax-v0.4.29.tar.gz': 'bbabbba40f9d87dcedf999cc179b67326f1f0fa135ce7b19fb1101f841d23b5f'},
+            {'jax-0.4.29_disable_mosaic_test_print.patch':
+             'f170786578d2682b04e3c2d657e66b2c289d67596043587ce1295898f5165b0b'},
+            {'jax-0.4.29_use_EB_python_modules.patch':
+             'e79d9841e738d0abeebc11b74429dbc2b823ec65b02c996d7f1e3f8554fbf4d0'},
+            {'jax-0.4.29_fix_test_to_include_EBPYTHONPREFIX_in_cleaned_env.patch':
+             '1ba88230e7bb6dc686e710fad2249847d8c68147ec816c0b52d0a623435f21a2'},
+            {'jax-0.4.29_skip_test_clone_eager.patch':
+             'cb077f62cdf695eb1c217a19e59e3701578423d8c49af2d9170ae15cad5cb711'},
+        ],
+        'runtest': local_test,
+    }),
+]
+
+moduleclass = 'tools'
