@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'TRIQS-som'
+version = '2.1.1'
+
+homepage = 'https://krivenko.github.io/som/'
+description = """SOM is a TRIQS-based implementation of the Stochastic
+Optimization Method for Analytic Continuation, which solves a family of Fredholm
+integral equations of the first kind. Numerical solution of such equations is
+required to reconstruct a real-frequency spectral representation of physical
+observables (Green’s functions, dynamical susceptibilities) from noisy results
+of Quantum Monte Carlo simulations."""
+
+docurls = ['https://krivenko.github.io/som/']
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/krivenko/som/archive/refs/tags/%(version)s']
+sources = ['som-%(version)s.tar.gz']
+checksums = ['3eb33d8fe0b5849982963ae05384c2461d60f9ae8977070ce89c96570d3e03f5']
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('Boost', '1.82.0'),
+    ('TRIQS', '3.2.0')
+]
+
+builddependencies = [
+    ('CMake', '3.26.3')
+]
+
+configopts = [f'-DBUILD_SHARED_LIBS={shlib}' for shlib in ('ON', 'OFF')]
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': [f'lib/libsom_c.{ext}' for ext in (SHLIB_EXT, 'a')],
+    'dirs': ['include', 'include/som', 'lib',
+             'lib/python%(pyshortver)s/site-packages', 'share'],
+}
+
+sanity_check_commands = ["python -c 'import som'"]
+
+modextrapaths = {
+    'CPLUS_INCLUDE_PATH': 'include',
+    'CMAKE_PREFIX_PATH': 'lib/cmake/som',
+}
+modextravars = {
+    'TRIQS_SOM_ROOT': '%(installdir)s',
+    'TRIQS_SOM_VERSION': '%(version)s',
+}
+
+moduleclass = 'phys'

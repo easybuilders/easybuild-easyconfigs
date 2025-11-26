@@ -1,0 +1,42 @@
+Author: Pavel Tománek (pavelToman)
+Replace recursively downloaded third party sw with programs from EB.
+--- CMakeLists.txt.orig	2025-01-03 16:15:51.023557000 +0100
++++ CMakeLists.txt	2025-01-08 15:50:57.345502000 +0100
+@@ -95,7 +95,7 @@
+ endif()
+ 
+ find_package(Threads)
+-add_subdirectory(third_party/spdlog EXCLUDE_FROM_ALL)
++find_package(spdlog)
+ 
+ set(PRIVATE_INCLUDE_DIRECTORIES
+   ${CMAKE_CURRENT_SOURCE_DIR}/src
+@@ -246,7 +246,7 @@
+   set(BUILD_SHARED_LIBS_SAVED "${BUILD_SHARED_LIBS}")
+   set(BUILD_SHARED_LIBS OFF)
+   set(BUILD_TESTING OFF)
+-  add_subdirectory(third_party/cpu_features EXCLUDE_FROM_ALL)
++  find_package(CpuFeatures)
+   set(BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS_SAVED}")
+   list(APPEND LIBRARIES cpu_features)
+ endif()
+@@ -498,19 +498,6 @@
+   message(STATUS "NVCC host compiler: ${CUDA_HOST_COMPILER}")
+   message(STATUS "NVCC compilation flags: ${CUDA_NVCC_FLAGS}")
+ 
+-  # We should ensure that the Thrust include directories appear before
+-  # -I/usr/local/cuda/include for both GCC and NVCC, so that the headers
+-  # are coming from the submodule and not the system.
+-  set(THRUST_INCLUDE_DIRS
+-    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/thrust/dependencies/cub
+-    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/thrust
+-    )
+-  cuda_include_directories(${THRUST_INCLUDE_DIRS})
+-  list(APPEND PRIVATE_INCLUDE_DIRECTORIES ${THRUST_INCLUDE_DIRS})
+-
+-  set(CUTLASS_INCLUDE_DIRS
+-    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cutlass/include
+-  )
+   cuda_include_directories(${CUTLASS_INCLUDE_DIRS})
+   list(APPEND PRIVATE_INCLUDE_DIRECTORIES ${CUTLASS_INCLUDE_DIRS})
+ 

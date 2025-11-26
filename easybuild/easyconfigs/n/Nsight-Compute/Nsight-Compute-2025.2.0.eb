@@ -1,0 +1,47 @@
+easyblock = 'Binary'
+
+name = 'Nsight-Compute'
+version = '2025.2.0'
+homepage = 'https://developer.nvidia.com/nsight-compute'
+description = 'NVIDIA Nsight Compute is an interactive kernel profiler for CUDA applications'
+
+toolchain = SYSTEM
+
+local_nsight_compute_arch = 'armserver-' if ARCH == 'aarch64' else 'linux-'
+sources = [{
+    'filename': 'nsight-compute-%s%%(version)s.11-35613519.run' % local_nsight_compute_arch,
+    'extract_cmd': '/bin/sh %s'
+}]
+
+checksums = [{
+    'nsight-compute-linux-%(version)s.11-35613519.run':
+        '570310be321449d75f1fd8402a5df1c160aca84625a6614a7acbf4f39b84091a',
+    'nsight-compute-armserver-%(version)s.11-35613519.run':
+        '7a2636af271605c7bd1ea80d7468b38276814c605cb2a103d9dc00ee240bc4ec'
+}]
+
+download_instructions = f"""
+{name} requires manual download from
+https://developer.nvidia.com/downloads/assets/tools/secure/nsight-compute/\
+{version.replace('.', '_')}/{sources[0]['filename']}
+"""
+
+extract_sources = True
+unpack_options = '--nochown --noexec --nox11 --target %(builddir)s'
+
+install_cmd = (
+    'cp -r %(builddir)s/pkg/* %(installdir)s/ && '
+    'chmod -R a+rX %(installdir)s'
+)
+
+# Workaround due to wrong permissions once the files are extracted from the .run file
+postinstallcmds = [
+    'find %(installdir)s -type f -and -executable -and ! -name "lib*" -exec chmod go+x {} \\;'
+]
+
+sanity_check_paths = {
+    'files': ['ncu-ui', 'ncu'],
+    'dirs': ['docs', 'extras', 'host', 'sections', 'target']
+}
+
+moduleclass = 'tools'

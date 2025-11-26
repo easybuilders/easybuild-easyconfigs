@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'treeseg'
+version = '0.2.2'
+
+homepage = 'https://github.com/apburt/treeseg'
+description = """
+treeseg has been developed to near-automatically segment individual tree point
+clouds from high-density larger-area lidar point clouds acquired in forests. A
+formal, albeit somewhat outdated description of the methods can be found in our
+paper (https://doi.org/10.1111/2041-210X.13121)."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/apburt/treeseg/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix_boost_include.patch']
+checksums = [
+    {'v0.2.2.tar.gz': '69d674ff5eafb24af5a5166fa3ed3b00ebafe9540e747f24a209bb5be3c5227c'},
+    {'treeseg-0.2.2_fix_boost_include.patch': '5bc6704c07f61dc24255397327906ed7c2ccc95b2518b51d8b2c2089b746759f'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('PCL', '1.14.1'),
+    ('Armadillo', '12.6.2'),
+]
+
+_libs = ['libleafsep.%s' % SHLIB_EXT, 'libtreeseg.%s' % SHLIB_EXT]
+
+_bins = ['downsample', 'getcrownvolume', 'nearestneighbour', 'pcdPointXYZRGB2txt', 'segmentcrown', 'sepwoodleaf',
+         'txtPointTreeseg2pcd', 'findstems', 'getdtmslice', 'pcdPointTreeseg2txt', 'plotcoords', 'segmentstem', 'thin']
+
+install_cmd = ' && '.join([
+    'mkdir -p %(installdir)s/{lib,bin}',
+    'cp %s %%(installdir)s/lib/' % ' '.join(_libs),
+    'cp %s %%(installdir)s/bin/' % ' '.join(_bins),
+])
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _bins] + ['lib/%s' % x for x in _libs],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
