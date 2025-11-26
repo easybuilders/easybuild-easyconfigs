@@ -1,0 +1,93 @@
+Fix Triton cmake build to use dependencies from EasyBuild
+author: Alex Domingo (Vrije Universiteit Brussel)
+author: Samuel Moors (Vrije Universiteit Brussel)
+diff -ur triton-2.1.0.orig/lib/Target/LLVMIR/LLVMIRTranslation.cpp triton-2.1.0/lib/Target/LLVMIR/LLVMIRTranslation.cpp
+--- triton-2.1.0.orig/lib/Target/LLVMIR/LLVMIRTranslation.cpp	2023-09-01 08:28:27.000000000 +0200
++++ triton-2.1.0/lib/Target/LLVMIR/LLVMIRTranslation.cpp	2024-09-02 19:46:06.574421829 +0200
+@@ -35,6 +35,7 @@
+ #endif
+ #include <filesystem>
+ #include <iterator>
++#include <cstdlib>  // for getenv
+ 
+ namespace fs = std::filesystem;
+ 
+@@ -177,6 +178,7 @@
+   }
+ 
+   if (!funcs.empty()) {
++    std::filesystem::path cuda_home = std::getenv("CUDA_HOME");
+     static const std::string libdevice = "libdevice";
+     // first search for environmental path
+     std::string env_path = ::triton::tools::getenv("TRITON_LIBDEVICE_PATH");
+@@ -189,8 +191,7 @@
+     // `triton/third_party/cuda/lib/libdevice.10.bc`
+     static const auto this_library_path = getThisLibraryPath();
+     static const auto runtime_path =
+-        this_library_path.parent_path().parent_path() / "third_party" / "cuda" /
+-        "lib" / "libdevice.10.bc";
++        cuda_home / "nvvm" / "libdevice" / "libdevice.10.bc";
+     if (fs::exists(runtime_path)) {
+       externLibs.try_emplace(libdevice, runtime_path.string());
+     } else {
+diff -ur triton-2.1.0.orig/python/setup.py triton-2.1.0/python/setup.py
+--- triton-2.1.0.orig/python/setup.py	2023-09-01 08:28:27.000000000 +0200
++++ triton-2.1.0/python/setup.py	2024-09-02 18:16:58.044760300 +0200
+@@ -202,13 +202,13 @@
+ 
+     def build_extension(self, ext):
+         lit_dir = shutil.which('lit')
+-        user_home = os.getenv("HOME") or os.getenv("USERPROFILE") or \
+-            os.getenv("HOMEPATH") or None
+-        if not user_home:
+-            raise RuntimeError("Could not find user home directory")
+-        triton_cache_path = os.path.join(user_home, ".triton")
++        # user_home = os.getenv("HOME") or os.getenv("USERPROFILE") or \
++        #     os.getenv("HOMEPATH") or None
++        # if not user_home:
++        #     raise RuntimeError("Could not find user home directory")
++        # triton_cache_path = os.path.join(user_home, ".triton")
+         # lit is used by the test suite
+-        thirdparty_cmake_args = get_thirdparty_packages(triton_cache_path)
++        # thirdparty_cmake_args = get_thirdparty_packages(triton_cache_path)
+         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.path)))
+         # create build directories
+         if not os.path.exists(self.build_temp):
+@@ -216,8 +216,9 @@
+         # python directories
+         python_include_dir = sysconfig.get_path("platinclude")
+         cmake_args = [
++            "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON",
+             "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+-            "-DLLVM_ENABLE_WERROR=ON",
++            # "-DLLVM_ENABLE_WERROR=ON",
+             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
+             "-DTRITON_BUILD_TUTORIALS=OFF",
+             "-DTRITON_BUILD_PYTHON_MODULE=ON",
+@@ -227,7 +228,7 @@
+         ]
+         if lit_dir is not None:
+             cmake_args.append("-DLLVM_EXTERNAL_LIT=" + lit_dir)
+-        cmake_args.extend(thirdparty_cmake_args)
++        # cmake_args.extend(thirdparty_cmake_args)
+ 
+         # configuration
+         cfg = get_build_type()
+@@ -245,7 +246,7 @@
+             build_args += ["--", "/m"]
+         else:
+             cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
+-            max_jobs = os.getenv("MAX_JOBS", str(2 * os.cpu_count()))
++            max_jobs = os.getenv("MAX_JOBS", str(len(os.sched_getaffinity(0))))
+             build_args += ['-j' + max_jobs]
+ 
+         if check_env_flag("TRITON_BUILD_WITH_CLANG_LLD"):
+@@ -262,7 +263,7 @@
+         subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=cmake_dir)
+ 
+ 
+-download_and_copy_ptxas()
++# download_and_copy_ptxas()
+ 
+ 
+ setup(

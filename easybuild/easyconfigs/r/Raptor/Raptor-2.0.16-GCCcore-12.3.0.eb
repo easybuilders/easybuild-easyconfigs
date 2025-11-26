@@ -1,0 +1,55 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+# Based on Raptor2 RPM spec file:
+# https://git.rockylinux.org/staging/rpms/raptor2/-/blob/r8/SPECS/raptor2.spec
+# The RPM patches have been integrated in the version 2.0.16
+#
+# Update: Petr Král (INUITS)
+##
+easyblock = 'ConfigureMake'
+
+name = 'Raptor'
+version = '2.0.16'
+homepage = 'https://librdf.org/raptor/'
+description = """Set of parsers and serializers that generate Resource Description Framework
+(RDF) triples by parsing syntaxes or serialize the triples into a syntax."""
+# software_license = 'LicenseLGPLv2.1 + LicenseGPLv2 + LicenseApachev2'
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://download.librdf.org/source']
+sources = ['raptor2-%(version)s.tar.gz']
+checksums = ['089db78d7ac982354bdbf39d973baf09581e6904ac4c92a98c5caadb3de44680']
+
+builddependencies = [
+    ('Autotools',  '20220317'),
+    ('binutils',   '2.40'),
+    ('make',   '4.4.1'),
+]
+
+dependencies = [
+    ('libxml2',    '2.11.4'),
+    ('libxslt',    '1.1.38'),
+    ('cURL',       '8.0.1'),
+    ('ICU',        '73.2'),
+]
+
+configopts = "--disable-static --enable-release --disable-gtk-doc --with-yajl=no"
+
+# fix error: 'xmlEntity' {aka 'struct _xmlEntity'} has no member named 'checked'
+# see https://github.com/dajobe/raptor/pull/58
+local_sed_replacement = r's/LIBXML_VERSION >= 20627/LIBXML_VERSION >= 2062 \&\& LIBXML_VERSION < 21100/g'
+prebuildopts = "sed -i '%s' src/raptor_libxml.c && " % local_sed_replacement
+
+sanity_check_paths = {
+    'files': ['bin/rapper', 'lib/libraptor2.%s' % SHLIB_EXT],
+    'dirs': ['include/raptor2/']
+}
+
+sanity_check_commands = ["rapper --help"]
+
+moduleclass = 'lib'

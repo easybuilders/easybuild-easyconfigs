@@ -1,0 +1,108 @@
+easyblock = 'ConfigureMakePythonPackage'
+
+name = 'MUSCLE3'
+version = '0.8.0'
+
+homepage = 'https://muscle3.readthedocs.io/en/latest/index.html'
+
+description = """MUSCLE3 allows connecting multiple simulation models
+ together into a multiscale simulation. Simulation models can be as
+ simple as a single Python file, or as complex as a combination of
+ multiple separate simulation codes written in C++ or Fortran, and
+ running on an HPC machine."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/multiscale/%(namelower)s/archive/refs/tags/']
+sources = ['%(version)s.tar.gz']
+checksums = ['b83278c2c520e6f4be07fbd73c2ef0001b65046fb964010f7498965a05d0e479']
+
+builddependencies = [
+    ('googletest', '1.14.0'),
+]
+
+dependencies = [
+    ('msgpack-c', '3.3.0'),
+    ('zlib', '1.2.13'),
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('PyYAML', '6.0.1'),
+    ('matplotlib', '3.8.2'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'msgpack_ROOT=$EBROOTMSGPACKMINC '
+preinstallopts = 'PREFIX=%(installdir)s '
+testopts = 'googletest_ROOT=$EBROOTGOOGLETEST'
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+exts_list = [
+    ('parsimonious', '0.10.0', {
+        'checksums': ['8281600da180ec8ae35427a4ab4f7b82bfec1e3d1e52f80cb60ea82b9512501c'],
+    }),
+    ('typing_extensions', '4.12.2', {
+        'checksums': ['1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8'],
+    }),
+    ('msgpack', '1.0.8', {
+        'checksums': ['95c02b0e27e706e48d0e5426d1710ca78e0f0628d6e89d5b5a5b91a5f12274f3'],
+    }),
+    ('click', '8.1.7', {
+        'checksums': ['ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de'],
+    }),
+    ('yatiml', '0.11.1', {
+        'checksums': ['354cefe305e45a557eda18cd3adc7680a178b4a4ebf68606404bf967fb7a72af'],
+    }),
+    ('ymmsl', '0.14.0', {
+        'checksums': ['46f0168f84af78640f458cb5fb014c4872858bebd545b4fc6543e34fac9ae60a'],
+    }),
+    ('netifaces', '0.11.0', {
+        'checksums': ['043a79146eb2907edf439899f262b3dfe41717d34124298ed281139a8b93ca32'],
+    }),
+    ('muscle3', version, {
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/multiscale/muscle3/archive/refs/tags/'],
+        'checksums': ['b83278c2c520e6f4be07fbd73c2ef0001b65046fb964010f7498965a05d0e479'],
+    }),
+]
+
+modextrapaths = {
+    'MUSCLE3_HOME': '',
+}
+
+sanity_check_paths = {
+    'files': ['include/libmuscle.f90',
+              'include/libmuscle.mod',
+              'include/libmuscle/libmuscle.hpp',
+              'include/ymmsl/ymmsl.hpp',
+              'lib/libmuscle.a',
+              'lib/libmuscle.%s' % SHLIB_EXT,
+              'lib/libmuscle_fortran.a',
+              'lib/libmuscle_fortran.%s' % SHLIB_EXT,
+              'lib/libymmsl.a',
+              'lib/libymmsl.%s' % SHLIB_EXT,
+              'lib/libymmsl_fortran.a',
+              'lib/libymmsl_fortran.%s' % SHLIB_EXT,
+              'lib/pkgconfig/libmuscle.pc',
+              'lib/pkgconfig/libmuscle_fortran.pc',
+              'lib/pkgconfig/ymmsl.pc',
+              'lib/pkgconfig/ymmsl_fortran.pc'],
+    'dirs':  ['bin',
+              'include/libmuscle/mcp',
+              'include/ymmsl',
+              'lib/pkgconfig',
+              'lib64']
+}
+
+sanity_check_commands = [
+    "muscle3 --help",
+    "muscle_manager --help",
+]
+
+moduleclass = 'tools'

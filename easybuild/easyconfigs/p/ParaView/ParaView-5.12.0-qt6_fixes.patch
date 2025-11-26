@@ -1,0 +1,126 @@
+This patch solves qt6 compatibility issues. For details see
+https://gitlab.kitware.com/paraview/paraview/-/merge_requests/6836
+
+diff --git a/Plugins/CAVEInteraction/pqVRDockPanel.cxx b/Plugins/CAVEInteraction/pqVRDockPanel.cxx
+index 7a3d352b993f2930716b47dd98512ca88697374c..448ac4d3833ec1582d99139b3f3fea6bbdf7d3ce 100644
+--- a/Plugins/CAVEInteraction/pqVRDockPanel.cxx
++++ b/Plugins/CAVEInteraction/pqVRDockPanel.cxx
+@@ -159,8 +159,8 @@ void pqVRDockPanel::initStyles()
+     this->Internals->stylesCombo->addItem(QString::fromStdString(styleDescs[i]));
+   }
+ 
+-  connect(this->Internals->stylesCombo, SIGNAL(currentIndexChanged(QString)), this,
+-    SLOT(styleComboChanged(QString)), Qt::UniqueConnection);
++  QObject::connect(this->Internals->stylesCombo, &QComboBox::currentTextChanged, this,
++    &pqVRDockPanel::styleComboChanged, Qt::UniqueConnection);
+ }
+ 
+ //-----------------------------------------------------------------------------
+diff --git a/Qt/Components/pqCustomFilterDefinitionWizard.cxx b/Qt/Components/pqCustomFilterDefinitionWizard.cxx
+index 9c140a37abca11b19f0c04bf7c41645b756457d6..acd7bd99e19017a5557a41c4585586b39e5ffc58 100644
+--- a/Qt/Components/pqCustomFilterDefinitionWizard.cxx
++++ b/Qt/Components/pqCustomFilterDefinitionWizard.cxx
+@@ -134,8 +134,8 @@ pqCustomFilterDefinitionWizard::pqCustomFilterDefinitionWizard(
+     SLOT(clearNameOverwrite(const QString&)));
+ 
+   // When combo selection changes, update new label to be same as old.
+-  QObject::connect(this->Form->PropertyCombo, SIGNAL(currentIndexChanged(const QString&)),
+-    this->Form->PropertyName, SLOT(setText(const QString&)));
++  QObject::connect(this->Form->PropertyCombo, &QComboBox::currentTextChanged,
++    this->Form->PropertyName, &QLineEdit::setText);
+ }
+ 
+ //-----------------------------------------------------------------------------
+diff --git a/Qt/Components/pqDataInformationWidget.cxx b/Qt/Components/pqDataInformationWidget.cxx
+index f151d584fc8b683b5666c11c7dfad85219c1e94f..7079507a14bad98dd10bff7ddf65af896cf5e919 100644
+--- a/Qt/Components/pqDataInformationWidget.cxx
++++ b/Qt/Components/pqDataInformationWidget.cxx
+@@ -103,8 +103,8 @@ pqDataInformationWidget::pqDataInformationWidget(QWidget* _parent /*=0*/)
+   this->Model->setActiveView(pqActiveObjects::instance().activeView());
+ 
+   // Clicking on the header should sort the column.
+-  QObject::connect(this->View->horizontalHeader(), SIGNAL(sectionClicked(int)), this->View,
+-    SLOT(sortByColumn(int)));
++  QObject::connect(this->View->horizontalHeader(), &QHeaderView::sectionClicked, this->View,
++    [=](int col) { this->View->sortByColumn(col, Qt::AscendingOrder); });
+ 
+   // Set the context menu policy for the header.
+   this->View->horizontalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
+diff --git a/Qt/Components/pqDisplayRepresentationWidget.cxx b/Qt/Components/pqDisplayRepresentationWidget.cxx
+index 3e08e05e560618457e628afc9bf1fdbf3167b9f0..4d9bc9958a0034e3e2b1e7920a333a5d7f794db6 100644
+--- a/Qt/Components/pqDisplayRepresentationWidget.cxx
++++ b/Qt/Components/pqDisplayRepresentationWidget.cxx
+@@ -111,8 +111,8 @@ pqDisplayRepresentationWidget::pqDisplayRepresentationWidget(QWidget* _p)
+ {
+   this->Internal = new pqDisplayRepresentationWidget::pqInternals();
+   this->Internal->setupUi(this);
+-  this->connect(this->Internal->comboBox, SIGNAL(currentIndexChanged(const QString&)),
+-    SLOT(comboBoxChanged(const QString&)));
++  QObject::connect(this->Internal->comboBox, &QComboBox::currentTextChanged, this,
++    &pqDisplayRepresentationWidget::comboBoxChanged);
+ }
+ 
+ //-----------------------------------------------------------------------------
+diff --git a/Qt/Components/pqLinksEditor.cxx b/Qt/Components/pqLinksEditor.cxx
+index 6f02d16d44b82f616a236557f16174d3ffa96425..ae66b1c97c3d82425c2f8b849c6d656deecc64a8 100644
+--- a/Qt/Components/pqLinksEditor.cxx
++++ b/Qt/Components/pqLinksEditor.cxx
+@@ -452,8 +452,8 @@ pqLinksEditor::pqLinksEditor(vtkSMLink* link, QWidget* p)
+   QObject::connect(this->Ui->lineEdit, SIGNAL(textChanged(const QString&)), this,
+     SLOT(updateEnabledState()), Qt::QueuedConnection);
+ 
+-  QObject::connect(this->Ui->comboBox, SIGNAL(currentIndexChanged(const QString&)), this,
+-    SLOT(updateSelectedProxies()), Qt::QueuedConnection);
++  QObject::connect(this->Ui->comboBox, &QComboBox::currentTextChanged, this,
++    &pqLinksEditor::updateSelectedProxies, Qt::QueuedConnection);
+ 
+   QObject::connect(
+     this->Ui->interactiveViewLinkCheckBox, &QCheckBox::stateChanged, this,
+diff --git a/Qt/Core/pqFileDialog.cxx b/Qt/Core/pqFileDialog.cxx
+index 2a87c723a5ef4af856c71e3589ce9a5efa95b65b..6f369d1163a32e5ae3c7e3bcc00a22081e81e2a2 100644
+--- a/Qt/Core/pqFileDialog.cxx
++++ b/Qt/Core/pqFileDialog.cxx
+@@ -322,7 +322,7 @@ pqFileDialog::pqFileDialog(pqServer* server, QWidget* p, const QString& title,
+     QObject::connect(
+       impl.Ui.NavigateForward, SIGNAL(clicked(bool)), this, SLOT(onNavigateForward()));
+     impl.Ui.NavigateUp->setIcon(style()->standardPixmap(QStyle::SP_FileDialogToParent));
+-    impl.Ui.NavigateUp->setShortcut(Qt::ALT + Qt::Key_Up);
++    impl.Ui.NavigateUp->setShortcut(Qt::ALT | Qt::Key_Up);
+     impl.Ui.NavigateUp->setToolTip(
+       tr("Navigate Up (%1)").arg(impl.Ui.NavigateUp->shortcut().toString()));
+     impl.Ui.CreateFolder->setIcon(style()->standardPixmap(QStyle::SP_FileDialogNewFolder));
+@@ -378,8 +378,8 @@ pqFileDialog::pqFileDialog(pqServer* server, QWidget* p, const QString& title,
+     QObject::connect(
+       impl.Ui.Parents, SIGNAL(activated(const QString&)), this, SLOT(onNavigate(const QString&)));
+ 
+-    QObject::connect(impl.Ui.EntityType, SIGNAL(currentIndexChanged(const QString&)), this,
+-      SLOT(onFilterChange(const QString&)));
++    QObject::connect(
++      impl.Ui.EntityType, &QComboBox::currentTextChanged, this, &pqFileDialog::onFilterChange);
+ 
+     QObject::connect(impl.Ui.Favorites, SIGNAL(clicked(const QModelIndex&)), this,
+       SLOT(onClickedFavorite(const QModelIndex&)));
+diff --git a/Qt/Widgets/pqSignalAdaptors.cxx b/Qt/Widgets/pqSignalAdaptors.cxx
+index 0015c9148b80eddd926ba37c17b7d777250c1a78..8e218b945c5f7a8962ffaced17d4a011c00db153 100644
+--- a/Qt/Widgets/pqSignalAdaptors.cxx
++++ b/Qt/Widgets/pqSignalAdaptors.cxx
+@@ -16,10 +16,15 @@
+ pqSignalAdaptorComboBox::pqSignalAdaptorComboBox(QComboBox* p)
+   : QObject(p)
+ {
+-  QObject::connect(p, SIGNAL(currentIndexChanged(const QString&)), this,
+-    SIGNAL(currentTextChanged(const QString&)));
+-
+-  QObject::connect(p, SIGNAL(currentIndexChanged(int)), this, SIGNAL(currentIndexChanged(int)));
++  QObject::connect(
++    p, &QComboBox::currentTextChanged, this, &pqSignalAdaptorComboBox::currentTextChanged);
++
++#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
++  QObject::connect(
++    p, &QComboBox::currentIndexChanged, this, &pqSignalAdaptorComboBox::currentIndexChanged);
++#else
++  QObject::connect(p, SIGNAL(currentIndexChanged(int)), this, SLOT(currentIndexChanged(int)));
++#endif
+ }
+ 
+ //----------------------------------------------------------------------------
