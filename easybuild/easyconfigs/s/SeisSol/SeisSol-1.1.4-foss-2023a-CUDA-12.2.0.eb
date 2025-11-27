@@ -1,0 +1,76 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Jonney Huang <jonney.huang@hpcnow.com>
+# License::     GPL-v3.0
+# #
+
+easyblock = 'CMakeMake'
+
+name = 'SeisSol'
+local_commit_id = '6d30175'
+version = '1.1.4'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'http://www.seissol.org'
+description = """SeisSol is a software package for simulating wave propagation and dynamic rupture based on
+ the arbitrary high-order accurate derivative discontinuous Galerkin method (ADER-DG)."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/SeisSol',
+        'repo_name': 'SeisSol',
+        'commit': local_commit_id,
+        'recursive': True,
+    },
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = [
+    ('CMake_cuda.patch', 0),
+    ('chainforge_version.patch', 0),
+]
+checksums = [
+    {'SeisSol-1.1.4.tar.gz': '4c17ca7667985cb470d92c38de7f6b81ada1824264bdd7371da5531346ce72b3'},
+    {'CMake_cuda.patch': '6eb01204977aac9214b53e8bfc14f0e27056d9f6bebd0f9e097d0a8b601a6f1b'},
+    {'chainforge_version.patch': '65d5095777bfc9ac1f533d856259c14954e99025c4c15a81551ed5edb9bbf993'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('lxml', '4.9.2',),
+    ('HDF5', '1.14.0'),
+    ('netCDF', '4.9.2'),
+    ('libxsmm', '1.17'),
+    ('ParMETIS', '4.0.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('ASAGI', '1.0'),
+    ('easi', '1.3.0'),
+    ('Eigen', '3.4.0'),
+    ('PSpaMM', '0.2.1'),
+    ('SCOTCH', '7.0.3'),
+    ('gemmforge', '0.0.207'),
+    ('chainforge', '0.0.3'),
+    ('AdaptiveCpp', '24.02.0', versionsuffix),
+    ('CUDA', '12.2.0', '', SYSTEM),
+]
+
+preconfigopts = "mkdir build && cd build && "
+configopts = " -DASAGI=ON"
+configopts += " -DEVICE_BACKEND=cuda -DPRECISION=double -DUSE_GRAPH_CAPTURING=ON -DPREMULTIPLY_FLUX=ON"
+
+prebuildopts = 'cd build &&'
+preinstallopts = 'cd build &&'
+
+sanity_check_paths = {
+    'files': ['bin/SeisSol_Release_dhsw_6_elastic'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['SeisSol_Release_dhsw_6_elastic --help |grep "Show this help message"']
+
+moduleclass = 'geo'
