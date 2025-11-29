@@ -1,0 +1,40 @@
+easyblock = 'PythonBundle'
+
+name = 'dask-mpi'
+version = '2025.10.0'
+
+homepage = 'https://dask.org/'
+description = """ Dask natively scales Python. Dask provides advanced parallelism for analytics,
+enabling performance at scale for the tools you love."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('SciPy-bundle', '2025.07'),
+    ('dask', '2025.9.1'),
+    ('mpi4py', '4.1.0')
+]
+
+exts_list = [
+    (name, version, {
+        # Fix dask-mpi using outdated setup.py, which they never updated
+        # after a dependency resolved its issues with Python 3.12.
+        # See https://github.com/dask/dask-mpi/issues/137
+        'preinstallopts': 'sed -i "s/<3.12/<3.14/g" setup.py && ',
+        'checksums': ['63140e74fac82e50798e57e7fdbdd254a51383cee5ca37aa6b345b18717583c0'],
+        # disable testing due to bug in 'distributed', using the incorrect 'mpirun' path
+        # See https://github.com/dask/dask-mpi/issues/71, https://github.com/dask/distributed/issues/5069
+        'runtest': False,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/dask-mpi'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/dask_mpi'],
+}
+
+sanity_check_commands = ["dask-mpi --help"]
+
+moduleclass = 'data'
