@@ -27,6 +27,16 @@ dependencies = [
     ('numba', '0.60.0'),
 ]
 
+local_skip_tests = '--deselect=' + ' --deselect='.join([
+    # precision issue
+    'numba_cuda/numba/cuda/tests/cudapy/test_debuginfo.py::TestCudaDebugInfo::test_llvm_inliner_flag_conflict',
+    # missing tanh bfloat16 support
+    'numba_cuda/numba/cuda/tests/cudapy/test_bfloat16_bindings.py::Bfloat16Test::test_math_func',
+    'numba_cuda/numba/cuda/tests/cudapy/test_bfloat16.py::TestBfloat16HighLevelBindings::test_math_bindings',
+    # attempts to use deprecated numpy bool
+    'numba_cuda/numba/cuda/tests/cudadrv/test_cuda_ndarray.py::TestCudaNDArray::test_device_array_vectors',
+])
+
 exts_list = [
     ('numba_cuda', version, {
         'source_urls': ['https://github.com/NVIDIA/numba-cuda/archive/refs/tags/'],
@@ -38,7 +48,7 @@ exts_list = [
              '3924e9ea64e7ac6281a883de896b4d1f8c281b72e82cb8521a233f26854b1854'},
         ],
         'testinstall': True,
-        'runtest': 'pytest --pyargs numba.cuda.tests -v',
+        'runtest': f'pytest --pyargs numba.cuda.tests -v {local_skip_tests}',
     }),
 ]
 
