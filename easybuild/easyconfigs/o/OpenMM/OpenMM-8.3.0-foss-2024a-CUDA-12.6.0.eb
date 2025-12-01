@@ -1,0 +1,71 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+# Update to 7.5.1
+# J. Sassmannshausen / GSTT
+
+easyblock = 'CMakeMake'
+
+name = 'OpenMM'
+version = '8.3.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://openmm.org'
+description = "OpenMM is a toolkit for molecular simulation."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/openmm/openmm/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['120629fa0bbf43b0ebf048a78da27fd5aab9aefd1f5b7c4c33b9f674444435b2']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Doxygen', '1.11.0'),
+    ('Cython', '3.0.10'),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('SWIG', '4.2.1'),
+]
+
+# Set the OPENMM_CUDA_COMPILER variable to make sure that all tests use the right nvcc,
+# Otherwise they will use the wrong path: `/usr/local/cuda/bin/nvcc`
+pretestopts = ' export OPENMM_CUDA_COMPILER=${EBROOTCUDA}/bin/nvcc && '
+pretestopts += " CTEST_OUTPUT_ON_FAILURE=1"
+# Skip CudaCompiler test as it doesn't work when the OPENMM_CUDA_COMPILER variable is set
+local_ignore_pattern = "(Integrator)|(Thermostat)|(Barostat)|(Rpmd)|(Amoeba)|(CudaCompiler)"
+
+runtest = """test -e ARGS="-E \'%s\'" """ % local_ignore_pattern
+
+preinstallopts = ' export OPENMM_INCLUDE_PATH=%(installdir)s/include && '
+preinstallopts += ' export OPENMM_LIB_PATH=%(installdir)s/lib && '
+
+# required to install the python API
+postinstallcmds = [
+    'make PythonBdistWheel',
+    'pip install python/dist/%(name)s-%(version)s-*.whl --prefix=%(installdir)s'
+]
+
+sanity_check_paths = {
+    'files': ['lib/libOpenMM.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = [
+    "python -c 'import openmm'",
+    "python -c 'import simtk.openmm'",
+    "python -m openmm.testInstallation",
+]
+
+modextrapaths = {
+    'OPENMM_INCLUDE_PATH': 'include',
+    'OPENMM_LIB_PATH': 'lib',
+}
+
+moduleclass = 'bio'
