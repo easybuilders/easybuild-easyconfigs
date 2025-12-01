@@ -1,0 +1,25 @@
+This test has ~400 sub-tests marked as xfail, i.e. expected to fail.
+A comment states
+> these sometimes pass and sometimes fail
+
+That doesn't match the definition of "xfail"/"unittest.expectedFailure" as some are really
+"expected failures" which have to fail (like some operators which are not defined for the type tested)
+
+To reduce the flakiness and verbosity of this test suite (every xfailed tests prints an error and a rather large backtrace)
+just skip those tests by setting the last element in each tuple of the list to `False`,
+see the definition of `fail` vs `xfail` in that file.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/_tensor/test_dtensor_ops.py b/test/distributed/_tensor/test_dtensor_ops.py
+index b7d453e56be..15478840ae5 100644
+--- a/test/distributed/_tensor/test_dtensor_ops.py
++++ b/test/distributed/_tensor/test_dtensor_ops.py
+@@ -541,6 +541,7 @@ dtensor_fails = {
+     skip("squeeze"),
+ }
+ 
++dtensor_fails = [x[:-1] + (False,) for x in dtensor_fails]
+ 
+ # Add a list of ops that are currently failing BW pass
+ skip_bw = [
