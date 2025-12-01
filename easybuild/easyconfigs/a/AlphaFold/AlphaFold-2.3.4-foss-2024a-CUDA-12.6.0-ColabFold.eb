@@ -93,6 +93,15 @@ components = [
     }),
 ]
 
+_toolz_sed_list = [
+    "sed -i",
+    r" -e 's/^license = \(.*\)$/license = { text = \1 }/'",
+    "-e 's/^license-f.*//'",
+    "-e 's/^dynamic.*/version=\"1.1.0\"/'",
+    "pyproject.toml && ",
+]
+_toolz_sed_cmd = ' '.join(_toolz_sed_list)
+
 exts_list = [
     ('PDBFixer', '1.12', {
         'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
@@ -101,7 +110,7 @@ exts_list = [
     }),
     ('toolz', '1.1.0', {
         # Needed due to old setuptools being used
-        'preinstallopts': r"sed -i -e 's/^license = \(.*\)$/license = { text = \1 }/' -e 's/^license-f.*//' -e 's/^dynamic.*/version=\"1.1.0\"/' pyproject.toml && ",
+        'preinstallopts': _toolz_sed_cmd,
         'checksums': ['27a5c770d068c110d9ed9323f24f1543e83b2f300a687b7891c1a6d56b697b5b'],
     }),
     ('chex', '0.1.90', {
@@ -148,8 +157,8 @@ postinstallcmds = [
     "cp %%(builddir)s/stereo_chemical_props-%s.txt %%(installdir)s/stereo_chemical_props.txt" % local_scp_commit,
     # run tests for run_alphafold.py script;
     # shouldn't do this in sanity check to avoid breaking use of --module-only
-    #"PYTHONPATH=%%(installdir)s/lib/python%%(pyshortver)s/site-packages:$PYTHONPATH "
-    #"python %s/run_alphafold_test.py" % _alphafold_buildir,
+    # "PYTHONPATH=%%(installdir)s/lib/python%%(pyshortver)s/site-packages:$PYTHONPATH "
+    # "python %s/run_alphafold_test.py" % _alphafold_buildir,
 ]
 
 sanity_check_paths = {
