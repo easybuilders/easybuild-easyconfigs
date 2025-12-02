@@ -194,7 +194,7 @@ class EasyConfigTest(TestCase):
         # all available easyconfig files
         easyconfigs_path = get_paths_for("easyconfigs")[0]
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
-        parsed_specs = set(ec['spec'] for ec in cls._parsed_easyconfigs)
+        parsed_specs = {ec['spec'] for ec in cls._parsed_easyconfigs}
         for spec in specs:
             if spec not in parsed_specs:
                 cls._parsed_easyconfigs.extend(process_easyconfig(spec))
@@ -566,7 +566,10 @@ class EasyConfigTest(TestCase):
             'e3nn': [(r'0\.4\.4; versionsuffix: -CUDA-12\.1\.1', [r'MACE-0\.3\.8-foss-2023a-CUDA-12\.1\.1'])],
             # Current rapthor requires WSclean 3.5 or newer, which in turn requires EveryBeam 0.6.X or newer
             # Requires us to also bump DP3 version (to 6.2) and its dependency on EveryBeam
-            'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2', r'WSClean-3\.[5-9]'])],
+            'EveryBeam': [(r'0\.6\.1', [r'DP3-6\.2',
+                                        r'WSClean-3\.[5-9]',
+                                        r'LSMTool-1.7.0-foss-2023b',
+                                        r'LINC-5.0-foss-2023b'])],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
@@ -616,6 +619,10 @@ class EasyConfigTest(TestCase):
                 # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
                 ('1.10.13;', ['GTDB-Tk-2.3.2-', 'GTDB-Tk-2.4.0-']),
             ],
+            # Pydot <3 is explicitely required by cwltool
+            'pydot': [(r'2\.0\.0', [r'LINC-5.0-foss-2023b',
+                                    r'toil-cwl-8.2.0-foss-2023b',
+                                    r'cwltool-3.1.20250110105449-foss-2023b'])],
             # bakta requires PyHMMER 0.10.15
             'PyHMMER': [(r'0\.10\.15', [r'bakta-1\.10\.1'])],
             # WhatsHap 1.4 + medaka 1.6.0 require Pysam >= 0.18.0 (NGSpeciesID depends on medaka)
@@ -849,12 +856,12 @@ class EasyConfigTest(TestCase):
         Generations 2023b and newer (GCC 13.2 and newer) are checked in the more stringent
         test_dep_versions_per_toolchain_generation.
         """
-        ecs_by_full_mod_name = dict((ec['full_mod_name'], ec) for ec in self.parsed_easyconfigs)
+        ecs_by_full_mod_name = {ec['full_mod_name']: ec for ec in self.parsed_easyconfigs}
         if len(ecs_by_full_mod_name) != len(self.parsed_easyconfigs):
             self.fail('Easyconfigs with duplicate full_mod_name found')
 
         # Cache already determined dependencies
-        ec_to_deps = dict()
+        ec_to_deps = {}
 
         def get_deps_for(ec):
             """Get list of (direct) dependencies for specified easyconfig."""
@@ -924,12 +931,12 @@ class EasyConfigTest(TestCase):
         the same toolchain generation are loaded together.
         Active for 2023b generation and newer (GCC 13.2 and newer)
         """
-        ecs_by_full_mod_name = dict((ec['full_mod_name'], ec) for ec in self.parsed_easyconfigs)
+        ecs_by_full_mod_name = {ec['full_mod_name']: ec for ec in self.parsed_easyconfigs}
         if len(ecs_by_full_mod_name) != len(self.parsed_easyconfigs):
             self.fail('Easyconfigs with duplicate full_mod_name found')
 
         # Cache already determined dependencies
-        ec_to_deps = dict()
+        ec_to_deps = {}
 
         def get_deps_for(ec):
             """Get list of (direct) dependencies for specified easyconfig."""
@@ -1088,10 +1095,12 @@ class EasyConfigTest(TestCase):
             ]:
                 continue
 
-            # easyconfigs where a dep provides the source
             if ec['name'] in [
+                # easyconfigs where a dependency provides the source,
                 'imkl-FFTW',  # imkl
                 'minizip',  # zlib
+                # software that have no top-level sources (only components)
+                'gnupg-bundle',
             ]:
                 continue
 
@@ -1254,6 +1263,28 @@ class EasyConfigTest(TestCase):
         def is_bundle(ec):
             return ec['easyblock'] in bundle_easyblocks or ec['name'] == 'Clang-AOMP'
         ecs = [ec.copy() if is_bundle(ec) else ec for ec in retained_changed_ecs]
+
+        # remove checksum for patch_ctypes_ld_library_path for Python easyconfigs, if present;
+        # this patch gets added automatically to list of patches by Python easyblock constructor,
+        # and causes check_sha256_checksums to fail because an extra checksum is found
+        for ec in ecs:
+            ec_fn = os.path.basename(ec.path)
+            if ec['name'] == 'Python':
+                patch_ctypes_ld_library_path = ec.get('patch_ctypes_ld_library_path')
+                if patch_ctypes_ld_library_path:
+                    checksums = ec.get_ref('checksums')
+                    if not isinstance(checksums, list):
+                        self.fail(f"Don't know how to handle non-list value type for checksums in {ec_fn}")
+                    idx_match = None
+                    for idx, entry in enumerate(checksums):
+                        if patch_ctypes_ld_library_path in entry:
+                            idx_match = idx
+                            break
+                    if idx_match:
+                        del checksums[idx]
+                    else:
+                        self.fail(f"No checksum found for {patch_ctypes_ld_library_path} in {ec_fn}")
+
         checksum_issues = check_sha256_checksums(ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
@@ -1339,19 +1370,18 @@ class EasyConfigTest(TestCase):
             # Z3 is an exception, since it has easyconfigs with and without Python bindings
             exception_python_suffix = ['Tkinter', 'Z3']
 
-            if ec.name in exception_python_suffix:
-                continue
-            elif has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
-                # This is only a failure for newly added ECs, not for existing ECS
-                # As that would probably break many ECs
-                if ec_fn in self.added_ecs_filenames:
+            if ec.name not in exception_python_suffix:
+                if has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                    msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
+                    # This is only a failure for newly added ECs, not for existing ECS
+                    # As that would probably break many ECs
+                    if ec_fn in self.added_ecs_filenames:
+                        failing_checks.append(msg)
+                    else:
+                        print('\nNote: Failed non-critical check: ' + msg)
+                elif has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                    msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
                     failing_checks.append(msg)
-                else:
-                    print('\nNote: Failed non-critical check: ' + msg)
-            elif has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
-                failing_checks.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
             if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
@@ -1365,9 +1395,12 @@ class EasyConfigTest(TestCase):
                 python_re = re.compile(r'\bpython (-c|-m|cc|[^ ]*\w+.py) ')
                 # Detect if `-s` is present, potentially after other switches
                 ignore_user_switch_re = re.compile(r'\bpython (-\w+ )*-s ')
+                comment_re = re.compile(r'# .*$')
                 # Check the raw lines as the issue could be anywhere, not only in `sanity_check_commands`,
                 # e.g. `runtest`, `installopts`, `configopts`, ...
                 for line_nr, line in enumerate(read_file(ec.path).splitlines()):
+                    # Strip comment if present to avoid flagging e.g. "sed '/.../' # Fix 'python -c foo' failure"
+                    line = comment_re.sub('', line)
                     if python_re.search(line) and not ignore_user_switch_re.search(line):
                         failing_checks.append("Python invocation in '%s' (line #%s) should use the '-s' parameter in %s"
                                               % (line, line_nr + 1, ec_fn))
@@ -1380,27 +1413,6 @@ class EasyConfigTest(TestCase):
 
         if failing_checks:
             self.fail('\n'.join(failing_checks))
-
-    @skip_if_not_pr_to_non_main_branch()
-    def test_pr_R_packages(self):
-        """Several checks for easyconfigs that install (bundles of) R packages."""
-        failing_checks = []
-
-        for ec in self.changed_ecs:
-            ec_fn = os.path.basename(ec.path)
-            exts_defaultclass = ec.get('exts_defaultclass')
-            if exts_defaultclass == 'RPackage' or ec.name == 'R':
-                seen_exts = set()
-                for ext in ec.get_ref('exts_list'):
-                    if isinstance(ext, (tuple, list)):
-                        ext_name = ext[0]
-                    else:
-                        ext_name = ext
-                    if ext_name in seen_exts:
-                        failing_checks.append('%s was added multiple times to exts_list in %s' % (ext_name, ec_fn))
-                    else:
-                        seen_exts.add(ext_name)
-        self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
     def test_pr_sanity_check_paths(self):
@@ -1456,7 +1468,7 @@ class EasyConfigTest(TestCase):
         url_whitelist = [
         ]
         # Cache: Mapping of already checked HTTP urls to whether the HTTPS variant works
-        checked_urls = dict()
+        checked_urls = {}
 
         def check_https_url(http_url):
             """Check if the https url works"""
@@ -1796,15 +1808,22 @@ def template_easyconfig_test(self, spec):
     if checksums and ('fetch' in ec['skipsteps']):
         failing_checks.append("'fetch' step should not be skipped, since that implies not verifying checksums")
 
+    extension_names = set()
     for ext in ec.get_ref('exts_list'):
-        if isinstance(ext, (tuple, list)) and len(ext) == 3:
+        if isinstance(ext, (tuple, list)):
             ext_name = ext[0]
-            if not isinstance(ext[2], dict):
+            if len(ext) == 3 and not isinstance(ext[2], dict):
                 failing_checks.append("3rd element of extension spec for %s must be a dictionary" % ext_name)
+        else:
+            ext_name = ext
+        if ext_name in extension_names:
+            failing_checks.append(f'{ext_name} was added multiple times to exts_list')
+        else:
+            extension_names.add(ext_name)
 
     # Need to check now as collect_exts_file_info relies on correct exts_list
     if failing_checks:
-        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(failing_checks))
+        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(set(failing_checks)))
 
     # After the sanity check above, use collect_exts_file_info to resolve templates etc. correctly
     for ext in app.collect_exts_file_info(fetch_files=False, verify_checksums=False):
