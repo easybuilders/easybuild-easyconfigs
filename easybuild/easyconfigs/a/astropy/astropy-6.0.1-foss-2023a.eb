@@ -1,0 +1,62 @@
+easyblock = 'PythonBundle'
+
+name = 'astropy'
+version = '6.0.1'
+
+homepage = 'https://www.astropy.org/'
+description = """The Astropy Project is a community effort to develop a common
+ core package for Astronomy in Python and foster an ecosystem of interoperable
+ astronomy packages.
+
+The Astropy community is committed to supporting diversity and inclusion."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('Cython', '3.0.7'),
+    ('setuptools', '69.5.1'),
+    ('pytest-astropy', '0.11.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('PyYAML', '6.0'),
+    ('matplotlib', '3.7.2'),
+]
+
+local_pytest_args = "not test_delay_doc_updates and not test_datetime_timedelta_roundtrip"
+# Also disable tests that need remote data, see
+# https://git.shrewdly.se/mirror/guix/commit/2aa0127d4e3d2363c04caab88137b070b6cf1318?style=unified&whitespace=show-all&show-outdated=
+local_pytest_args += " and not remote_data and not test_name_resolve"
+# This test fails if the Easybuild tempdir is in a location for which the path is not equal to the realpath
+local_pytest_args += " and not test_write_jsviewer_local"
+local_runtest_cmd = f'cd $EB_PYTHONPACKAGE_TEST_INSTALLDIR && pytest -n %(parallel)s -k "{local_pytest_args}" '
+local_runtest_cmd += '--pyargs astropy'
+
+exts_list = [
+    ('colorlog', '6.8.2', {
+        'checksums': ['3e3e079a41feb5a1b64f978b5ea4f46040a94f11f0e8bbb8261e3dbbeca64d44'],
+    }),
+    ('pyerfa', '2.0.1.4', {
+        'modulename': 'erfa',
+        'checksums': ['acb8a6713232ea35c04bc6e40ac4e461dfcc817d395ef2a3c8051c1a33249dd3'],
+    }),
+    ('extension-helpers', '1.1.1', {
+        'modulename': 'extension_helpers',
+        'checksums': ['f95dd304a523d4ff6680d9504fa1d68a4dd03bf3bfbbe0ade4d927ed9e693f00'],
+    }),
+    ('astropy-iers-data', '0.2024.2.26.0.28.55', {
+        'checksums': ['908d69c8b7ef9b644e4c8d3c8d22818f54f1ad5d364ab98b1eb1c57b7126abd3'],
+    }),
+    (name, version, {
+        'patches': ['astropy-6.0.1_numpy.patch'],
+        'runtest': "pytest %(installdir)s",
+        'checksums': [
+            {'astropy-6.0.1.tar.gz': '89a975de356d0608e74f1f493442fb3acbbb7a85b739e074460bb0340014b39c'},
+            {'astropy-6.0.1_numpy.patch': 'c4f06fdd9757e9c175fa32b32bc1604a186d98a9569178452ed9a48ee8bc37e5'},
+        ],
+    }),
+]
+
+moduleclass = 'astro'
