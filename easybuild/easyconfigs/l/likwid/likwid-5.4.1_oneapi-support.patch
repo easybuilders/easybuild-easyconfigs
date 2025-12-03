@@ -1,0 +1,48 @@
+From 6b05c5405922e71a15b3004c5ab5e7df60f0fbf6 Mon Sep 17 00:00:00 2001
+From: Theresa Pollinger <theresa.pollinger@riken.jp>
+Date: Tue, 25 Mar 2025 11:35:13 +0900
+Subject: [PATCH] make: add naive makefile for oneapi/ICX
+
+---
+ make/include_ICX.mk | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+ create mode 100644 make/include_ICX.mk
+
+diff --git a/make/include_ICX.mk b/make/include_ICX.mk
+new file mode 100644
+index 000000000..cf8a97c9c
+--- /dev/null
++++ b/make/include_ICX.mk
+@@ -0,0 +1,32 @@
++CC  = icx-cc
++FC  = ifx
++AS  = as
++AR  = ar
++PAS = ./perl/AsmGen.pl 
++GEN_PAS = ./perl/generatePas.pl 
++GEN_GROUPS = ./perl/generateGroups.pl 
++GEN_PMHEADER = ./perl/gen_events.pl 
++
++ANSI_CFLAGS  = -std=c99 #-strict-ansi
++
++CFLAGS   =  -Ofast -fPIC -pthread
++FCFLAGS  = -module ./
++ASFLAGS  = -gdwarf-2
++PASFLAGS  = x86-64
++CPPFLAGS =
++LFLAGS   = -pthread
++
++SHARED_CFLAGS = -fPIC -pthread -fvisibility=hidden
++SHARED_LFLAGS = -shared -pthread -fvisibility=hidden
++
++DEFINES  = -D_GNU_SOURCE
++DEFINES  += -DPAGE_ALIGNMENT=4096
++
++INCLUDES =
++LIBS     = -lrt
++
++# colon seperated list of paths to search for libs at runtime on Xeon Phi file system
++ICC_LIB_RPATHS =
++ifneq (strip $(ICC_LIB_RPATHS),)
++RPATHS += -Wl,-rpath=$(ICC_LIB_RPATHS)
++endif

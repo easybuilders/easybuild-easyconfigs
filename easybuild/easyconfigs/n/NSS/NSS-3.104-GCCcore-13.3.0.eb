@@ -38,7 +38,7 @@ buildopts += 'CPATH="$EBROOTNSPR/include/nspr:$CPATH" OS_REL_CFLAGS="-D_XOPEN_SO
 buildopts += ' && cd config && make PREFIX=%(installdir)s BUILD_OPT=1 USE_64=1 && cd -'
 
 # building in parallel fails
-parallel = 1
+maxparallel = 1
 
 # optional testsuite (takes a long time)
 # buildopts += " && cd %(builddir)s/%(namelower)s-%(version)s/%(namelower)s/tests && "
@@ -48,6 +48,8 @@ files_to_copy = [
     '../dist/Linux*.OBJ/*',
     (['../dist/public/*'], 'include'),
 ]
+# symlinks in bin/ would point to outside of installation directory, so can't keep them
+keepsymlinks = False
 
 sanity_check_paths = {
     'files': ['bin/%(namelower)s-config', 'bin/multinit', 'lib/libnss.a'],
@@ -59,6 +61,6 @@ sanity_check_commands = [
     "%(namelower)s-config --version",
 ]
 
-modextrapaths = {'CPATH': 'include/%(namelower)s'}
+modextrapaths = {MODULE_LOAD_ENV_HEADERS: 'include/%(namelower)s'}
 
 moduleclass = 'lib'
