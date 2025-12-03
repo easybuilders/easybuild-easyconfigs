@@ -1,0 +1,70 @@
+easyblock = 'Bundle'
+
+name = 'BgeeCall'
+version = '1.26.0'
+versionsuffix = '-R-%(rver)s'
+
+# While BgeeCall does not require the latest Bioconductor dependencies
+# we search the latest Bioconductor release archive for them
+local_bioc_version = 3.22
+
+homepage = 'https://github.com/BgeeDB/BgeeCall'
+description = """Automatic RNA-Seq present/absent gene expression calls generation"""
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('R', '4.5.1'),
+]
+
+dependencies = [
+    ('R-bundle-Bioconductor', '3.22', versionsuffix),
+]
+
+exts_default_options = {
+    'source_urls': [
+        'https://bioconductor.org/packages/%s/bioc/src/contrib/' % local_bioc_version,
+        'https://bioconductor.org/packages/%s/bioc/src/contrib/Archive/%%(name)s' % local_bioc_version,
+        'https://bioconductor.org/packages/%s/data/annotation/src/contrib/' % local_bioc_version,
+        'https://bioconductor.org/packages/%s/data/experiment/src/contrib/' % local_bioc_version,
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz'
+}
+
+exts_defaultclass = 'RPackage'
+
+# check whether correct version is installed in extension filter
+# (some versions in this bundle may be newer than the ones provided by R)
+local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver != '%(ext_version)s') "
+local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
+exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
+
+# CRAN packages on which these Bioconductor packages depend are available in R module on which this depends
+# !! order of packages is important !!
+exts_list = [
+    ('sjlabelled', '1.2.0', {
+        'checksums': ['731c7e907361971dbc890ad80bc95a38ecc38455a0217fdbc3dbb7c60b3648ed'],
+    }),
+    ('sjmisc', '2.8.11', {
+        'checksums': ['8ed1d6a2fb1555d62a8135465b2af0dbf2ea343010b4eafe817121cbb172152c'],
+    }),
+    ('rslurm', '0.6.2', {
+        'checksums': ['540158ece7d838c9630886f37e0960353038fefa4f9cc374004240b767f6b47c'],
+    }),
+    (name, version, {
+        'checksums': ['1721b316323a1aa3c9e2292f3274564722b60b0332abc5fd5690e140498b86e2'],
+    }),
+]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [name],
+}
+
+moduleclass = 'bio'
