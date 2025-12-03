@@ -17,13 +17,17 @@ source_urls = [
 ]
 sources = ['qt-everywhere-src-%(version)s.tar.xz']
 patches = [
-    '%(name)s-6.6.3_fix_OF-Gentoo.patch',
+    'Qt6-6.6.3_fix_OF-Gentoo.patch',
     'Qt6-6.7.2_fix_cpu_features.patch',
+    'Qt6-6.5.2_fix_too_long_filenames.patch',
+    'Qt6-6.7.2-gperf_jinja_fallthrough.patch',
 ]
 checksums = [
     {'qt-everywhere-src-6.7.2.tar.xz': '0aaea247db870193c260e8453ae692ca12abc1bd841faa1a6e6c99459968ca8a'},
     {'Qt6-6.6.3_fix_OF-Gentoo.patch': 'd4d4878ac76cb985e45eb3b6e90ba2233f65807d6bd9bbe2b71365b181347b7b'},
     {'Qt6-6.7.2_fix_cpu_features.patch': '3f37e7a4e4ed38cc82037be9504bc644e48bf258555ffff848183142725c9dc8'},
+    {'Qt6-6.5.2_fix_too_long_filenames.patch': 'b4a2aa3c72fe01d8b9cbab6da43cdbd968bd139f5dd9daba83181eb5d6125dac'},
+    {'Qt6-6.7.2-gperf_jinja_fallthrough.patch': '1008ed744cde1992216d2edc1718f9360de4f92d55b95c1ec261bad482ec2110'},
 ]
 
 builddependencies = [
@@ -36,6 +40,7 @@ builddependencies = [
     ('flex', '2.6.4'),
     ('gperf', '3.1'),
     ('re2c', '3.1'),
+    ('libglvnd', '1.7.0'),  # needed for KHR/khrplatform.h
 ]
 dependencies = [
     ('double-conversion', '3.3.0'),
@@ -73,12 +78,27 @@ preconfigopts = 'sed -i "s/MultiMedia/Multimedia/g" ../qt-everywhere-src-%(versi
 preconfigopts += 'sed -i "23i set(Python3_ROOT_DIR \\$ENV{EBROOTPYTHON})" '
 preconfigopts += '../qt-everywhere-src-%(version)s/qtwebengine/src/gn/CMakeLists.txt && '  # Typo
 
+# Ninja uses all visible cores by default, which can lead to lack of sufficient memory;
+# so $NINJAFLAGS is set to control number of parallel processes used by Ninja;
+# note that $NINJAFLAGS is not a generic thing for Ninja, it's very specific to the Qt6 build procedure
+preconfigopts += ' export NINJAFLAGS="-j%(parallel)s" && '
+prebuildopts = ' export NINJAFLAGS="-j%(parallel)s" && '
+
 configopts = "-Wno-dev -DFEATURE_qtpdf_build=OFF -DQT_AVOID_CMAKE_ARCHIVING_API=ON "
 configopts += "-DPython3_ROOT_DIR=$EBROOTPYTHON -DBUILD_qtwayland=OFF "
 
+# V8-Context-Snapshot needs to be disabled on aarch64
+# as it fails with "./v8_context_snapshot_generator failed with exit code -5"
+# which suggests a potential segmentation fault or memory-related issue
+if ARCH == "aarch64":
+    configopts += "-DFEATURE_webengine_v8_context_snapshot=OFF "
 
 # Removed from Qt6.0.0 but may be added back in the future
 # configopts += '-DBUILD_qtgamepad=OFF '  # Does not work on CentOS 7
+
+# explicitly disable sysroot as it causes problems for some third party libraries
+# (and seems to work without it using rpath wrappers)
+configopts += "-DCMAKE_SYSROOT='' "
 
 sanity_check_paths = {
     'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT, 'lib/libQt6WebEngineCore.%s' % SHLIB_EXT],

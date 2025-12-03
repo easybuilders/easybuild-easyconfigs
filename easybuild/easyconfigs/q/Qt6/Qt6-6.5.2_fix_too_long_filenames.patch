@@ -1,0 +1,51 @@
+From 98d3d2597c9767f56e0cb860bfb5604bc5f63d16 Mon Sep 17 00:00:00 2001
+From: Michal Klocek <michal.klocek@qt.io>
+Date: Tue, 8 Aug 2023 18:15:43 +0200
+Subject: [PATCH] Make sure unique_name is used only for rsp with foreach
+ action
+
+$unique_name should only be used when we have action_foreach,
+otherwise single actions have no unique_name set in ninja rules.
+
+Note this changes has no effect on unit test
+NinjaActionTargetWriter.ForEachWithResponseFile results.
+
+Issue noticed on build log from
+https://bugs.gentoo.org/show_bug.cgi?id=911715
+
+diff --git a/qtwebengine/src/3rdparty/gn/src/gn/ninja_action_target_writer.cc.orig b/qtwebengine/src/3rdparty/gn/src/gn/ninja_action_target_writer.cc
+index 7fa361f..b0281c9 100644
+--- a/qtwebengine/src/3rdparty/gn/src/gn/ninja_action_target_writer.cc.orig
++++ b/qtwebengine/src/3rdparty/gn/src/gn/ninja_action_target_writer.cc
+@@ -122,7 +122,7 @@ std::string NinjaActionTargetWriter::WriteRuleDefinition() {
+     // strictly necessary for regular one-shot actions, but it's easier to
+     // just always define unique_name.
+     std::string rspfile = custom_rule_name;
+-    if (!target_->sources().empty())
++    if (!target_->sources().empty() && target_->output_type() == Target::ACTION_FOREACH)
+       rspfile += ".$unique_name";
+     rspfile += ".rsp";
+     out_ << "  rspfile = " << rspfile << std::endl;
+
+Workaround for build failures due to build directory path being too long.
+See QTBUG-59769: https://bugreports.qt.io/browse/QTBUG-59769
+
+diff --git a/qtwebengine/src/3rdparty/gn/src/gn/ninja_action_target_writer.cc.orig b/qtwebengine/src/3rdparty/gn/src/gn/ninja_action_target_writer.cc
+index b0281c9..0ecc45a 100644
+--- a/qtwebengine/src/3rdparty/gn/src/gn/ninja_action_target_writer.cc.orig
++++ b/qtwebengine/src/3rdparty/gn/src/gn/ninja_action_target_writer.cc
+@@ -122,6 +122,14 @@ std::string NinjaActionTargetWriter::WriteRuleDefinition() {
+     // strictly necessary for regular one-shot actions, but it's easier to
+     // just always define unique_name.
+     std::string rspfile = custom_rule_name;
++
++    //quick workaround if filename length > 255 - ".rsp", just cut the dirs starting from the end
++    //please note ".$unique_name" is not used at the moment
++    unsigned int pos = 0;
++    std::string delimiter("_");
++    while (rspfile.length() > 251 && (pos = rspfile.find_last_of(delimiter)) != std::string::npos)
++        rspfile = rspfile.substr(0,pos);
++
+     if (!target_->sources().empty() && target_->output_type() == Target::ACTION_FOREACH)
+       rspfile += ".$unique_name";
+     rspfile += ".rsp";

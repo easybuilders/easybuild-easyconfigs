@@ -1,0 +1,48 @@
+easyblock = 'PythonBundle'
+
+name = 'WhisperX'
+version = '3.3.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+local_pytorch_version = '2.1.2'
+
+homepage = 'https://github.com/m-bain/whisperx'
+description = "Automatic Speech Recognition with Word-level Timestamps (& Diarization)."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('PyTorch-bundle', local_pytorch_version, versionsuffix),
+    ('NLTK', '3.8.1'),
+    ('Transformers', '4.39.3'),
+    ('FFmpeg', '6.0'),
+    ('PyAV', '11.0.0'),
+    ('ONNX-Runtime', '1.19.2', versionsuffix),
+    ('pyannote.audio', '3.3.2', versionsuffix),
+]
+
+exts_list = [
+    ('faster-whisper', '1.1.0', {
+        'checksums': ['cea4bba5d4527173fdbacafa56f2ffb17dd322688f6c3fdf5fd7b6b6c193ce17'],
+    }),
+    ('ctranslate2', '4.4.0', {
+        'source_tmpl': '%(name)s-%(version)s-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['7653f1f22da29bbb0ba5704ac27b1a3fbde1f34b2b65a703dd20f7e2331eb03c'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/m-bain/whisperX/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['37136d07f991d684744129a98096ca0f300a5098a1a387aa0b6c7e5eb815a2aa'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["%(namelower)s -h"]
+
+moduleclass = 'ai'

@@ -15,11 +15,12 @@ source_urls = [
 ]
 sources = [SOURCE_TAR_XZ]
 patches = [
-    'GraphicsMagick_pkgconfig_libtiff.patch'
+    'GraphicsMagick-12.3.0_pkgconfig_libtiff-4.patch'
 ]
 checksums = [
     {'GraphicsMagick-1.3.45.tar.xz': 'dcea5167414f7c805557de2d7a47a9b3147bcbf617b91f5f0f4afe5e6543026b'},
-    {'GraphicsMagick_pkgconfig_libtiff.patch': '25b4c5361f30e23c809a078ac4b26e670d2b8341496323480037e2095d969294'},
+    {'GraphicsMagick-12.3.0_pkgconfig_libtiff-4.patch':
+     'f3f900bcc4797f12ff3e2df0fc9eb67c0cc4e532531e200b8d283988f298fa48'},
 ]
 
 builddependencies = [
@@ -40,12 +41,27 @@ dependencies = [
     ('Ghostscript', '10.03.1'),
 ]
 
-modextrapaths = {'CPATH': ['include/GraphicsMagick']}
+# When building Octave, mixing rpathed shared libraries with libGraphicsMagick++.a will cause the check on the library
+# to fail due to missing symbols. The default previously was to build the static library only.
+configure_opts = '--enable-shared --enable-static'
+
+modextrapaths = {MODULE_LOAD_ENV_HEADERS: ['include/GraphicsMagick']}
 
 sanity_check_paths = {
-    'files': ['bin/gm', 'lib/libGraphicsMagick.a', 'lib/libGraphicsMagick++.a',
-              'lib/libGraphicsMagickWand.a'],
+    'files': [
+        'bin/gm',
+        'lib/libGraphicsMagick.a',
+        'lib/libGraphicsMagick++.a',
+        'lib/libGraphicsMagickWand.a',
+        'lib/libGraphicsMagick.so',
+        'lib/libGraphicsMagick++.so',
+        'lib/libGraphicsMagickWand.so'
+    ],
     'dirs': ['include/GraphicsMagick', 'lib/pkgconfig'],
 }
+
+sanity_check_commands = [
+    "grep 'libtiff-4' %(installdir)s/lib/pkgconfig/GraphicsMagick.pc",
+]
 
 moduleclass = 'vis'

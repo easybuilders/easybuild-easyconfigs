@@ -1,0 +1,38 @@
+easyblock = 'ConfigureMake'
+
+name = 'OSU-Micro-Benchmarks'
+version = '7.5.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://mvapich.cse.ohio-state.edu/benchmarks/'
+description = """OSU Micro-Benchmarks"""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://mvapich.cse.ohio-state.edu/download/mvapich/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['160d0d5e3c3cb022520ecb247e9875bb0973b1d3cadccd6c17624f8407c52e22']
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('NCCL', '2.27.7', versionsuffix),
+    ('UCX-CUDA', '1.19.0', versionsuffix),
+    ('UCC-CUDA', '1.4.4', versionsuffix),
+]
+
+configopts = ' --enable-cuda --with-cuda=$EBROOTCUDA --enable-ncclomb --with-nccl=$EBROOTNCCL'
+
+local_benchmark_dirs = [
+    'libexec/osu-micro-benchmarks/mpi/%s' % x for x in ['collective', 'one-sided', 'pt2pt', 'startup']
+] + [
+    'libexec/osu-micro-benchmarks/xccl/%s' % x for x in ['collective', 'pt2pt']
+]
+modextrapaths = {'PATH': local_benchmark_dirs}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': local_benchmark_dirs,
+}
+
+moduleclass = 'perf'
