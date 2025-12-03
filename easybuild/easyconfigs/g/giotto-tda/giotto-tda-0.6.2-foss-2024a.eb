@@ -1,0 +1,139 @@
+easyblock = 'PythonBundle'
+
+name = 'giotto-tda'
+version = '0.6.2'
+
+homepage = 'https://github.com/giotto-ai/giotto-tda'
+description = """
+giotto-tda is a high-performance topological machine learning toolbox in Python built on top of
+scikit-learn and is distributed under the GNU AGPLv3 license. It is part of the Giotto family of
+open-source projects.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Eigen', '3.4.0'),
+    ('pybind11', '2.12.0'),  # Needed for pyflagser
+    ('Boost', '1.85.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('scikit-learn', '1.5.2'),
+    ('plotly.py', '5.24.1'),
+    ('jupyter-server', '2.14.2'),
+    ('python-igraph', '0.11.9'),
+]
+
+_flagser_commit = '7ffe927'
+_junction_commit = '5ad3be7'
+_turf_commit = '9ae0d4b'
+_hera_commit = '2c5e6c6'
+_gudhi_commit = 'a265b03'
+components = [
+    ('flagser', _flagser_commit, {
+        'easyblock': 'CMakeMake',
+        'sources': [{
+            'filename': SOURCE_TAR_XZ,
+            'git_config': {
+                'url': 'https://github.com/luetge/',
+                'repo_name': 'flagser',
+                'commit': _flagser_commit,
+            },
+        }],
+        'preconfigopts': (
+            "sed -i '/^add_custom_command(/,/^)/d' ../flagser/CMakeLists.txt && "
+            "sed -i '/^add_custom_target(generate_custom_algorithms DEPENDS include\/algorithms.h)/d' ../flagser/CMakeLists.txt && "
+            "sed -i '/#include <queue>/a #include <limits>' ../flagser/include/persistence.h && "
+        ),
+        'start_dir': 'flagser',
+    }),
+    ('junction', _junction_commit, {
+        'easyblock': 'PackedBinary',
+        'sources': [{
+            'filename': SOURCE_TAR_XZ,
+            'git_config': {
+                'url': 'https://github.com/preshing/',
+                'repo_name': 'junction',
+                'commit': _junction_commit,
+            },
+        }],
+    }),
+    ('turf', _turf_commit, {
+        'easyblock': 'PackedBinary',
+        'sources': [{
+            'filename': SOURCE_TAR_XZ,
+            'git_config': {
+                'url': 'https://github.com/preshing/',
+                'repo_name': 'turf',
+                'commit': _turf_commit,
+            },
+        }],
+    }),
+    ('hera', _hera_commit, {
+        'easyblock': 'PackedBinary',
+        'sources': [{
+            'filename': SOURCE_TAR_XZ,
+            'git_config': {
+                'url': 'https://github.com/anigmetov/',
+                'repo_name': 'hera',
+                'commit': _hera_commit,
+            },
+        }],
+    }),
+    ('gudhi-devel', _gudhi_commit, {
+        'easyblock': 'PackedBinary',
+        'sources': [{
+            'filename': SOURCE_TAR_XZ,
+            'git_config': {
+                'url': 'https://github.com/giotto-ai/',
+                'repo_name': 'gudhi-devel',
+                'commit': _gudhi_commit,
+            },
+        }],
+    }),
+]
+
+github_account = 'giotto-ai'
+
+exts_list = [
+    ('pyflagser', '0.4.7', {
+        'source_urls': [GITHUB_SOURCE],
+        'sources': ['v%(version)s.tar.gz'],
+        'preinstallopts': (
+            "sed -i 's| self.install_dependencies()||' setup.py && "
+            "sed -i '1 i\#include <cstdint>' ../../flagser/include/definitions.h && "  # Missing header since GCC13
+            "sed -i \"s|flagser/src/|../../flagser/src/|\" src/flagser*.cpp && "
+            "sed -i 's|add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/pybind11)|find_package(pybind11 REQUIRED)|' CMakeLists.txt && "
+            ),
+    }),
+    ('giotto-ph', '0.2.4', {
+        'modulename': 'gph',
+        'source_urls': [GITHUB_SOURCE],
+        'sources': ['v%(version)s.tar.gz'],
+        'preinstallopts': (
+            "sed -i 's| self.install_dependencies()||' setup.py && "
+            "sed -i '1 i\#include <cstdint>' gph/src/Flag_complex_edge_collapser.h && "  # Missing header since GCC13
+            "sed -i 's|add_subdirectory(${EXT_DIR}/pybind11)|find_package(pybind11 REQUIRED)|' CMakeLists.txt && "
+            "sed -i 's|add_subdirectory(${EXT_DIR}/junction)|add_subdirectory(../../junction junction)|' CMakeLists.txt && "
+            "sed -i 's|add_subdirectory(${EXT_DIR}/turf)|add_subdirectory(../../turf turf)|' CMakeLists.txt && "
+        )
+    }),
+    (name, version, {
+        'modulename': 'gtda',
+        'source_urls': [GITHUB_SOURCE],
+        'sources': ['v%(version)s.tar.gz'],
+        'preinstallopts': (
+            "sed -i 's| self.install_dependencies()||' setup.py && "
+            "sed -i 's|add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/gtda/externals/pybind11)| find_package(pybind11 REQUIRED)|' CMakeLists.txt && "
+            "sed -i 's|set(HERA_DIR \"gtda/externals/hera\")|set(HERA_DIR \"%(builddir)s/hera\")|' CMakeLists.txt && "
+            "sed -i 's|set(GUDHI_SRC_DIR \"gtda/externals/gudhi-devel/src\")|set(GUDHI_SRC_DIR \"%(builddir)s/gudhi-devel/src\")|' CMakeLists.txt && "
+            "sed -i 's|scikit-learn ==|scikit-learn >=|' requirements.txt && "
+        ),
+    }),
+]
+
+moduleclass = 'ai'
