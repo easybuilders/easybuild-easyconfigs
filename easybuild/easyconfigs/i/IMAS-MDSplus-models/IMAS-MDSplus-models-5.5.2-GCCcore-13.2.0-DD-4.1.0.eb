@@ -1,0 +1,57 @@
+easyblock = 'CMakeMake'
+
+name = 'IMAS-MDSplus-models'
+version = '5.5.2'
+local_dd_version = '4.1.0'
+versionsuffix = f'-DD-{local_dd_version}'
+github_account = 'iterorganization'
+
+description = 'IMAS MDSplus models'
+homepage = 'https://github.com/iterorganization/IMAS-Core'
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('MDSplus', '7.153.3'),
+]
+
+dependencies = [
+    ('IMAS-Data-Dictionary', local_dd_version),
+]
+
+source_urls = ['https://github.com/%(github_account)s/IMAS-Core/archive']
+sources = [{'download_filename': '%s.tar.gz' % version, 'filename': SOURCE_TAR_GZ}]
+patches = ['imas-mdsplus-models-5.5.2_xml-discovery.patch']
+checksums = [
+    {'IMAS-MDSplus-models-5.5.2.tar.gz': '847b8c92b4d90014e78587f9ef0191456621badee864dad63377201e87c93e07'},
+    {'imas-mdsplus-models-5.5.2_xml-discovery.patch':
+     '1292afa664cd51a3b159aa28a514cf5377fd2ff545ed01da7fe72aaad24e2e98'},
+]
+
+# CMakeMake configuration
+# See: https://docs.easybuild.io/version-specific/generic-easyblocks/#cmakemake
+
+build_type = 'RelWithDebInfo'
+srcdir = 'models/mdsplus'
+configopts = (
+    # Don't download dependencies
+    '-D AL_DOWNLOAD_DEPENDENCIES=OFF '
+    # Enable MDSplus backend
+    '-D AL_BACKEND_MDSPLUS=ON '
+    '-D AL_BUILD_MDSPLUS_MODELS=ON '
+)
+
+sanity_check_paths = {
+    'dirs': ['models/mdsplus'],
+    'files': [],
+}
+
+moduleclass = 'tools'
+
+modextrapaths = {
+    'IDS_PATH': 'models/mdsplus',
+}
+
+# Set lowercase ids_path as well (for compatibility)
+modluafooter = "setenv('ids_path', pathJoin(root, 'models/mdsplus'))"
