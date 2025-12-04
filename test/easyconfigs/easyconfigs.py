@@ -313,6 +313,14 @@ class EasyConfigTest(TestCase):
             print("(skipped dep graph test)")
             return
 
+        try:
+            # do specific import, since python-graph-dot is not compatible with setuptools >= 82.0.0
+            # in which pkg_resources was removed;
+            # see also https://github.com/easybuilders/easybuild-framework/issues/5110
+            import pygraph.classes.digraph  # noqa # pylint:disable=unused-import
+        except ImportError:
+            self.skipTest("Skipping test_dep_graph, since pygraph is not available")
+
         # temporary file for dep graph
         (hn, fn) = tempfile.mkstemp(suffix='.dot')
         os.close(hn)
