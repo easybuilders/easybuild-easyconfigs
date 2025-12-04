@@ -33,8 +33,8 @@ This script can be used to install easybuild-easyconfigs, e.g. using:
 """
 
 import os
-from distutils import log
-from distutils.core import setup
+import logging
+from setuptools import setup
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware!
@@ -49,8 +49,10 @@ VERSION = '5.1.3.dev0'
 MAJ_VER = VERSION.split('.')[0]
 MAJMIN_VER = '.'.join(VERSION.split('.')[0:2])
 
-# log levels: 0 = WARN (default), 1 = INFO, 2 = DEBUG
-log.set_verbosity(1)
+log = logging.getLogger("EasyBuild")
+
+# log levels: NOTSET (default), DEBUG, INFO, WARNING, ERROR, CRITICAL
+log.setLevel(logging.INFO)
 
 
 # utility function to read README file
