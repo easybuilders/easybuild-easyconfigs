@@ -1,31 +1,75 @@
 update to new API in ruamel.yaml version 0.18
+see https://github.com/debbiemarkslab/EVcouplings/pull/333
 author: Alex Domingo (Vrije Universiteit Brussel)
---- b/evcouplings/utils/config.py	2024-11-05 12:22:40.000000000 +0100
-+++ a/evcouplings/utils/config.py	2025-12-05 17:07:06.049884868 +0100
-@@ -10,7 +10,7 @@
+diff --git a/evcouplings/utils/config.py b/evcouplings/utils/config.py
+index fe8fb67..163f31f 100644
+--- a/evcouplings/utils/config.py
++++ b/evcouplings/utils/config.py
+@@ -10,7 +10,8 @@ Authors:
    Thomas A. Hopf
  """
  
 -import ruamel.yaml as yaml
 +from ruamel.yaml import YAML
++from ruamel.yaml.error import MarkedYAMLError
  
  
  class MissingParameterError(Exception):
-@@ -42,11 +42,9 @@
+@@ -25,7 +26,7 @@ class InvalidParameterError(Exception):
+     """
+ 
+ 
+-def parse_config(config_str, preserve_order=False):
++def parse_config(config_str):
+     """
+     Parse a configuration string
+ 
+@@ -33,29 +34,25 @@ def parse_config(config_str, preserve_order=False):
+     ----------
+     config_str : str
+         Configuration to be parsed
+-    preserve_order : bool, optional (default: True)
+-        Preserve formatting of input configuration
+-        string
+ 
+     Returns
+     -------
      dict
          Configuration dictionary
      """
++    # uses round-trip loader by default, preserving order
 +    yaml = YAML(typ='safe', pure=True)
      try:
 -        if preserve_order:
 -            return yaml.load(config_str, Loader=yaml.RoundTripLoader)
 -        else:
 -            return yaml.safe_load(config_str)
+-    except yaml.parser.ParserError as e:
 +        return yaml.load(config_str)
-     except yaml.parser.ParserError as e:
++    except MarkedYAMLError as e:
          raise InvalidParameterError(
              "Could not parse input configuration. "
-@@ -84,14 +82,11 @@
+             "Formatting mistake in config file? "
+-            "See ParserError above for details."
++            "See MarkedYAMLError above for details."
+         ) from e
+ 
+ 
+-def read_config_file(filename, preserve_order=False):
++def read_config_file(filename):
+     """
+     Read and parse a configuration file.
+ 
+@@ -70,7 +67,7 @@ def read_config_file(filename, preserve_order=False):
+         Configuration dictionary
+     """
+     with open(filename) as f:
+-        return parse_config(f, preserve_order)
++        return parse_config(f)
+ 
+ 
+ def write_config_file(out_filename, config):
+@@ -84,14 +81,11 @@ def write_config_file(out_filename, config):
      config : dict
          Config data that will be written to file
      """
