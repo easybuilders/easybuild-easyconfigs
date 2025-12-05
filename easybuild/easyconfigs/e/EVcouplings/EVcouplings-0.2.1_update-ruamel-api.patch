@@ -1,0 +1,45 @@
+update to new API in ruamel.yaml version 0.18
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- b/evcouplings/utils/config.py	2024-11-05 12:22:40.000000000 +0100
++++ a/evcouplings/utils/config.py	2025-12-05 17:07:06.049884868 +0100
+@@ -10,7 +10,7 @@
+   Thomas A. Hopf
+ """
+ 
+-import ruamel.yaml as yaml
++from ruamel.yaml import YAML
+ 
+ 
+ class MissingParameterError(Exception):
+@@ -42,11 +42,9 @@
+     dict
+         Configuration dictionary
+     """
++    yaml = YAML(typ='safe', pure=True)
+     try:
+-        if preserve_order:
+-            return yaml.load(config_str, Loader=yaml.RoundTripLoader)
+-        else:
+-            return yaml.safe_load(config_str)
++        return yaml.load(config_str)
+     except yaml.parser.ParserError as e:
+         raise InvalidParameterError(
+             "Could not parse input configuration. "
+@@ -84,14 +82,11 @@
+     config : dict
+         Config data that will be written to file
+     """
+-    if isinstance(config, yaml.comments.CommentedBase):
+-        dumper = yaml.RoundTripDumper
+-    else:
+-        dumper = yaml.Dumper
+-
++    yaml = YAML(typ='safe', pure=True)
++    yaml.default_flow_style = False
+     with open(out_filename, "w") as f:
+         f.write(
+-            yaml.dump(config, Dumper=dumper, default_flow_style=False)
++            yaml.dump(config)
+         )
+ 
+ 
