@@ -1432,7 +1432,7 @@ class EasyConfigTest(TestCase):
         # + jupyterlmod + jupyter-resource-usage
         # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
         bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'ESL-Bundle', 'FEniCS', 'GCC', 'Jupyter-bundle',
-                             'Python-bundle', 'ROCm']
+                             'Python-bundle', 'ROCm', 'llvm-compilers']
 
         failing_checks = []
 
