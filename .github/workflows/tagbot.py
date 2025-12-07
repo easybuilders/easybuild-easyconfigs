@@ -82,7 +82,7 @@ print("Modified workflow:", modified_workflow)
 # to make review easier.
 new_software = 0
 updated_software = 0
-to_diff = dict()
+to_diff = {}
 for new_file in new_ecs:
     neighbours = similar_easyconfigs(gitrepo, new_file, new_ecs)
     print(f"Found {len(neighbours)} neighbours for {new_file}")
@@ -234,6 +234,11 @@ if updated_software:
     for existing_comment in response.json():
         if existing_comment["user"]["login"] == "github-actions[bot]":  # Bot username in GitHub Actions
             comment_id = existing_comment["id"]
+
+    if len(comment) >= 65536:
+        # Comment is too long to post, so post a message saying that
+        comment = "Diff of new easyconfig(s) against existing ones is too long for a GitHub comment. "
+        comment += "Use `--review-pr` (and `--review-pr-filter` / `--review-pr-max`) locally."
 
     if comment_id:
         # Update existing comment
