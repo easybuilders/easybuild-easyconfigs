@@ -159,7 +159,13 @@ ic_tc_gen_map = {
     '2025.2.0': '2025b',
 }
 
-toolchain_names = ['foss', 'gompi', 'gfbf', 'iimpi', 'iimkl', 'intel']
+llvm_tc_gen_map = {
+    '20.1.5': '2023b',
+    '20.1.8': '2025b',
+}
+
+toolchain_names = ['foss', 'gompi', 'gfbf', 'iimpi', 'iimkl', 'intel', 'llvm-compilers', 'lfbf',
+                   'lompi', 'lmpich', 'lfoss', 'lmpflf']
 toolchain_present = {}
 for toolchain_ver in gcc_tc_gen_map.values():
     toolchain_present[toolchain_ver] = False
@@ -174,6 +180,10 @@ for file in new_ecs + changed_ecs:
     # Check for intel-compilers
     for intel_version, toolchain_version in ic_tc_gen_map.items():
         if f"-intel-compilers-{intel_version}" in file_path:
+            toolchain_present[toolchain_version] = True
+            continue
+    for llvm_version, toolchain_version in llvm_tc_gen_map.items():
+        if f"-llvm-compilers-{llvm_version}" in file_path:
             toolchain_present[toolchain_version] = True
             continue
     # Check for common toolchains with our toolchain naming
