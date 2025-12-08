@@ -1017,31 +1017,46 @@ class EasyConfigTest(TestCase):
 
         all_deps = {}
 
+        tc_groups = {
+            'LLVM': {'lfoss', 'lmpflf', 'lmpich', 'lompi', 'lfbf', 'llvm-compilers'},
+            'GCC-FOSS': {'foss', 'gmpflf', 'gmpich', 'gompi', 'gfbf', 'GCC'},
+            'Intel': {'intel', 'impmkl', 'impich', 'iimpi', 'iimkl', 'intel-compilers'},
+        }
+        tc_maps = {}
+        for tc_name, subtoolchains in tc_groups.items():
+            for subtc in subtoolchains:
+                tc_maps[subtc] = tc_name
+
         # collect variants for all dependencies of easyconfigs that use a toolchain that matches
         for ec in self.ordered_specs:
             ec_file = os.path.basename(ec['spec'])
             ec_deps = None
 
             for pattern in patterns:
-                regex = re.compile(r'^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
+                regex = re.compile(r'^.*-(?P<tc_name>[^-]+(-compilers)?)-(?P<tc_gen>%s).*\.eb$' % pattern)
 
                 # take into account software which also follows a <year>{a,b} versioning scheme
                 ec_file = self.multideps_false_positives_regex.sub('', ec_file)
 
                 res = regex.match(ec_file)
                 if res:
+                    tc_name = res.group('tc_name')
                     tc_gen = res.group('tc_gen')
 
-                    if tc_gen.startswith('GCC'):
-                        gcc_ver = tc_gen.split('-', 1)[1].rstrip('.')
+                    # Either map subtoolchain to known toolchain name, or label as unknown_map
+                    # This will preserve the old behavior by grouping all unknown toolchains together
+                    tc_family = tc_maps.get(tc_name, 'unknown_map')
+
+                    if tc_name.startswith('GCC'):
+                        gcc_ver = tc_gen.rstrip('.')
                         if gcc_ver in gcc_tc_gen_map and gcc_tc_gen_map[gcc_ver] is not None:
                             tc_gen = gcc_tc_gen_map[gcc_ver]
                         elif gcc_ver not in gcc_tc_gen_map:
                             # for recent GCC versions, we really want to have a mapping in place...
                             self.fail("No mapping for GCC(core) %s to toolchain generation!" % gcc_ver)
 
-                    if tc_gen.startswith('intel-compilers'):
-                        ic_ver = tc_gen.split('-')[2]
+                    if tc_name.startswith('intel-compilers'):
+                        ic_ver = tc_gen
                         if ic_ver in ic_tc_gen_map and ic_tc_gen_map[ic_ver] is not None:
                             tc_gen = ic_tc_gen_map[ic_ver]
                         elif ic_ver not in ic_tc_gen_map:
@@ -1051,7 +1066,8 @@ class EasyConfigTest(TestCase):
                     if ec_deps is None:
                         ec_deps = get_deps_for(ec)
 
-                    all_deps_tc_gen = all_deps.setdefault(tc_gen, {})
+                    all_deps_tc_fam = all_deps.setdefault(tc_family, {})
+                    all_deps_tc_gen = all_deps_tc_fam.setdefault(tc_gen, {})
                     for dep_name, dep_ver, dep_versuff, _ in ec_deps:
                         dep_variants = all_deps_tc_gen.setdefault(dep_name, {})
                         # a variant is defined by version + versionsuffix
@@ -1061,15 +1077,20 @@ class EasyConfigTest(TestCase):
 
         # check which dependencies have more than 1 variant
         multi_dep_vars, multi_dep_vars_msg = [], ''
-        for tc_gen in sorted(all_deps.keys()):
-            for dep in sorted(all_deps[tc_gen].keys()):
-                dep_vars = all_deps[tc_gen][dep]
-                if not self.check_dep_vars(tc_gen, dep, dep_vars):
-                    multi_dep_vars.append(dep)
-                    multi_dep_vars_msg += "\nfound %s variants of '%s' dependency " % (len(dep_vars), dep)
-                    multi_dep_vars_msg += "in easyconfigs using '%s' toolchain generation\n* " % tc_gen
-                    multi_dep_vars_msg += '\n* '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
-                    multi_dep_vars_msg += '\n'
+        for tc_name in sorted(all_deps.keys()):
+            ptr1 = all_deps[tc_name]
+            for tc_gen in sorted(ptr1.keys()):
+                ptr2 = ptr1[tc_gen]
+                for dep in sorted(ptr2.keys()):
+                    dep_vars = ptr2[dep]
+                    if not self.check_dep_vars(tc_gen, dep, dep_vars):
+                        multi_dep_vars.append(dep)
+                        multi_dep_vars_msg += "\nfound %s variants of '%s' dependency " % (len(dep_vars), dep)
+                        multi_dep_vars_msg += "in easyconfigs using '%s' toolchain '%s' generation\n* " % (
+                            tc_name, tc_gen
+                        )
+                        multi_dep_vars_msg += '\n* '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
+                        multi_dep_vars_msg += '\n'
 
         if multi_dep_vars_msg:
             self.fail("Should not have multi-variant dependencies in easyconfigs:\n%s" % multi_dep_vars_msg)
