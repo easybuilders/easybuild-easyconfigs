@@ -1,0 +1,18 @@
+Fix GROMACS using -x to pass environment variables during mpirun, which is only
+supported for OpenMPI, not for MPICH. For MPICH, use -env instead.
+
+Author: Jan Reuter (JSC)
+
+diff --color -Naur gromacs-2025.2.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt gromacs-2025.2/python_packaging/sample_restraint/tests/CMakeGROMACS.txt
+--- gromacs-2025.2.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2025-05-12 17:18:10.000000000 +0200
++++ gromacs-2025.2/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2025-12-09 20:36:44.306885572 +0100
+@@ -58,7 +58,8 @@
+     #    (https://www.open-mpi.org/doc/v3.0/man1/mpiexec.1.php)
+     add_custom_target(
+         gmxapi_extension_pytest_mpi
+-        COMMAND ${MPIEXEC_EXECUTABLE} -n 4 -x PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
++        # MPICH uses -env instead of -x to pass environment variables
++        COMMAND ${MPIEXEC_EXECUTABLE} -n 4 -env PYTHONPATH ${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
+             ${PYTHON_EXECUTABLE} -m mpi4py -m pytest -x --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+             DEPENDS gmxapi_extension _gmxapi gmx
+             )
