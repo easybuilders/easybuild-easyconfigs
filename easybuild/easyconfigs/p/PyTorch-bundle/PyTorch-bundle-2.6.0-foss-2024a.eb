@@ -1,0 +1,191 @@
+easyblock = 'PythonBundle'
+
+name = 'PyTorch-bundle'
+version = '2.6.0'
+
+homepage = 'https://pytorch.org/'
+description = """PyTorch with compatible versions of official Torch extensions."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('git', '2.45.1'),
+    ('RE2', '2024-07-02'),  # for torchtext
+    ('NLTK', '3.9.1'),  # for torchtext tests
+    ('parameterized', '0.9.0'),  # for torchtext tests
+    ('hatchling', '1.24.2'),  # for pytorch-ignite
+    ('dill', '0.3.9'),  # for pytorch-ignite tests
+    ('scikit-learn', '1.5.2'),  # for pytorch-ignite tests
+    ('scikit-image', '0.25.0'),  # for pytorch-ignite tests
+    ('visdom', '0.2.4'),  # for pytorch-ignite tests
+    ('Java', '17', '', SYSTEM),  # needed by ANTLR runtime
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('PyTorch', version),
+    ('torchaudio', version),
+    ('torchvision', '0.21.0'),
+    ('double-conversion', '3.3.0'),  # for torchtext
+    ('SentencePiece', '0.2.1'),  # for torchtext
+    ('tqdm', '4.66.5'),  # for torchtext
+    ('utf8proc', '2.9.0'),  # for torchtext
+    ('tensorboard', '2.18.0'),  # for torch-tb-profiler
+    ('orjson', '3.10.13'),  # for torchrl
+    ('lxml', '5.3.0'),  # for torchtune
+    ('HF-Datasets', '4.0.0'),  # for torchtune
+    ('Safetensors', '0.6.2'),  # for torchtune
+    ('tiktoken', '0.9.0'),  # for torchtune
+    ('tokenizers', '0.21.4'),  # for torchtune
+]
+
+exts_list = [
+    ('pynvml', '11.5.3', {
+        # needed by torch-ignite
+        # see https://github.com/pytorch/ignite/blob/adb2a557650d55db25082f9cb06ea59c7c69e562/requirements-dev.txt#L24
+        'checksums': ['183d223ae487e5f00402d8da06c68c978ef8a9295793ee75559839c6ade7b229'],
+    }),
+    ('torchtext', '0.18.0', {
+        'patches': [
+            'torchtext-0.14.1_use-system-libs.patch',
+            'torchtext-0.16.2_download-to-project-root.patch',
+            'torchtext-0.18.0-fix-torch-load-tests.patch',
+        ],
+        'source_urls': ['https://github.com/pytorch/text/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': [
+            {'torchtext-0.18.0.tar.gz': 'fe4eb4b361388ef7840dcad117ae95b32252db5520c4eb2b3bead627468fbdf2'},
+            {'torchtext-0.14.1_use-system-libs.patch':
+             'a29ce29259d8c1cf3533cdc23c66e68eec660d6206ae04ced0220a7c02712b53'},
+            {'torchtext-0.16.2_download-to-project-root.patch':
+             '9d5599a9983729cf1fc7ab2a2f65d1887f223f528e15662ba1b4a5e359c9686d'},
+            {'torchtext-0.18.0-fix-torch-load-tests.patch':
+             'accf43278cc5c293c515ce2b28e2d1788182401ffb73ba673c33724bd6ddf2aa'},
+        ],
+        'preinstallopts': "sed -i '92d' setup.py &&",  # skip fetching repo submodules
+        'runtest': (
+            'pytest test/torchtext_unittest'
+            ' -k "not test_vocab_from_raw_text_file"'  # segfaults
+            '" and not test_get_tokenizer_moses"'  # requires sacremoses
+            '" and not test_get_tokenizer_spacy"'  # requires spaCy
+            '" and not test_download_charngram_vectors"'  # requires internet access and required host may fail
+            '" and not test_builtin_pretrained_sentencepiece_processor"'  # missing file
+        ),
+        'testinstall': True,
+    }),
+    ('pytorch-ignite', '0.5.2', {
+        'modulename': 'ignite',
+        'source_urls': ['https://github.com/pytorch/ignite/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'patches': [
+            'torch-ignite-0.4.13_dont_destroy_python_path_in_test_launcher.patch',
+            'torch-ignite-0.5.2_fix-conftest-options.patch',
+            ('torch-ignite-0.5.2_fix-pynvml-smi.patch', 0),
+         ],
+        'checksums': [
+            {'pytorch-ignite-0.5.2.tar.gz': 'f11777f5ab9f74d72c66adfb9214ae16ad1752ca0e866d6bf6f1c0738c5e99c2'},
+            {'torch-ignite-0.4.13_dont_destroy_python_path_in_test_launcher.patch':
+             'fd5dfe99f4c8804d6c57e4d9140d9e556e0724b379f9eaae8aeaf1b7bd058686'},
+            {'torch-ignite-0.5.2_fix-conftest-options.patch':
+             '6347914a76f21a5134f920f02d3c4dc509c5e2bc52c46e46fe524824a637def0'},
+            {'torch-ignite-0.5.2_fix-pynvml-smi.patch':
+             'a5ddc55eaa2255e5a8643c5974eb1354cc4a6b4a26290bfc2c4d681aa4a5aeda'},
+        ],
+        'runtest': (
+            'pytest'
+            ' -m "not distributed"'
+            ' --ignore=tests/ignite/contrib/handlers/test_clearml_logger.py'  # requires clearml
+            ' --ignore=tests/ignite/contrib/handlers/test_mlflow_logger.py'  # requires mlflow
+            ' --ignore=tests/ignite/contrib/handlers/test_neptune_logger.py'  # requires neptune
+            ' --ignore=tests/ignite/contrib/handlers/test_polyaxon_logger.py'  # requires polyaxon
+            ' --ignore=tests/ignite/contrib/handlers/test_tensorboard_logger.py'  # requires tensorboardX
+            ' --ignore=tests/ignite/contrib/handlers/test_wandb_logger.py'  # requires wandb
+            ' --ignore=tests/ignite/metrics/gan/test_fid.py'  # requires pytorch_fid
+            ' --ignore=tests/ignite/metrics/nlp/test_rouge.py'  # requires rouge
+            ' --ignore=tests/ignite/metrics/vision/test_object_detection_map.py'  # requires pycocotools
+            ' --ignore=tests/ignite/handlers/test_checkpoint.py'  # fails by comparing tensors on different devices
+            ' --ignore=tests/ignite/handlers/test_clearml_logger.py'  # requires clearml
+            ' --ignore=tests/ignite/handlers/test_mlflow_logger.py'  # requires mlflow
+            ' --ignore=tests/ignite/handlers/test_neptune_logger.py'  # requires neptune
+            ' --ignore=tests/ignite/handlers/test_polyaxon_logger.py'  # requires polyaxon
+            ' --ignore=tests/ignite/handlers/test_tensorboard_logger.py' # requires tensorboardX
+            ' --ignore=tests/ignite/handlers/test_wandb_logger.py'  # requires wandb
+            ' --ignore=tests/ignite/contrib/handlers/test_tqdm_logger.py'  # fragile tests on some platforms
+            ' -k "not test_setup_plx_logging"'  # requires polyaxon
+            '" and not test_setup_mlflow_logging"'  # requires mlflow
+            '" and not test_setup_clearml_logging"'  # requires clearml
+            '" and not test_setup_neptune_logging"'  # requires neptune
+            '" and not test_setup_tb_logging"'  # requires tesorboardX
+            '" and not test__setup_ddp_vars_from_slurm_env_bad_configs"'  # fails sometimes
+            '" and not test__native_dist_model_create_from_backend_bad_config"'  # fails sometimes
+            '" and not test_inception_score"'  # fails sometimes due to connection problem with download.pytorch.org
+        ),
+        'testinstall': True,
+    }),
+    ('torch-tb-profiler', '0.4.3', {
+        'modulename': 'torch.profiler',
+        'sources': ['torch_tb_profiler-%(version)s.tar.gz'],
+        'checksums': ['8b8d29b2de960b3c4423087b23cec29beaf9ac3a8c7b046c18fd25b218f726b1'],
+        'runtest': (
+            'pytest'
+            ' --ignore=test/test_tensorboard_end2end.py'  # timeouts
+            ' -k "not test_dump_gpu_metrics"'  # missing file
+            '" and not test_profiler_api_with_record_shapes_memory_stack"'  # fails
+            '" and not test_profiler_api_without_record_shapes_memory_stack"'  # fails
+            '" and not test_profiler_api_without_step"'  # fails
+            '" and not test_autograd_api"'  # fails
+        ),
+        'testinstall': True,
+    }),
+    ('tensordict', '0.7.2', {
+        'source_urls': ['https://github.com/pytorch/%(name)s/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['7ae5edfd8f5b7da8bf10ca81a34b7a3013058bd7bfaa32837cd3fd97e7b755c6'],
+    }),
+    ('torchrl', '0.7.2', {
+        'source_urls': ['https://github.com/pytorch/rl/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['1621b621ee8c73b51dca3e52ee9f7704019c8b3bad70a67bb10f02559f4558ac'],
+    }),
+    # requirements for torchtune
+    ('antlr4-python3-runtime', '4.9.3', {
+        'modulename': 'antlr4',
+        'checksums': ['f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b'],
+    }),
+    ('omegaconf', '2.3.0', {
+        'checksums': ['d5d4b6d29955cc50ad50c46dc269bcd92c6e00f5f90d23ab5fee7bfca4ba4cc7'],
+    }),
+    ('blobfile', '3.0.0', {
+        'checksums': ['32ec777414de7bb2a76ca812a838f0d33327ca28ae844a253503cde625cdf2f1'],
+    }),
+    ('kagglehub', '0.3.12', {
+        'checksums': ['45e75854630a30605b794eb786b3757beccbbea1acca71600642f67b60e0d7bf'],
+    }),
+    ('pycryptodomex', '3.21.0', {
+        'modulename': 'Crypto',
+        'checksums': ['222d0bd05381dd25c32dd6065c071ebf084212ab79bab4599ba9e6a3e0009e6c'],
+    }),
+    ('torchao', '0.12.0', {
+        'preinstallopts': "USE_SYSTEM_LIBS=1 ",
+        'source_urls': ['https://github.com/pytorch/ao/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['c477d78ca5268187979934d3eb38590758adc5415526b3705a9a85099e40ad21'],
+    }),
+    ('torchdata', '0.11.0', {
+        'preinstallopts': "USE_SYSTEM_LIBS=1 ",
+        'source_urls': ['https://github.com/pytorch/data/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['945c53a8587567624aaad2d66204fbae9acb9535696554c53ffeb83320c308b9'],
+        'runtest': False,  # circular test requirements
+    }),
+    ('torchtune', '0.6.1', {
+        'source_urls': ['https://github.com/pytorch/%(name)s/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['80a06ba0760741aa91f5f7bfb49ef6bb779c8044409dd7ef116f5420f122214b'],
+        'preinstallopts': """sed -i 's/^dynamic.*/version = "%(version)s"/' pyproject.toml && USE_SYSTEM_LIBS=1 """,
+        'runtest': False,  # circular test requirements
+    }),
+]
+
+moduleclass = 'ai'
