@@ -1095,10 +1095,12 @@ class EasyConfigTest(TestCase):
             ]:
                 continue
 
-            # easyconfigs where a dep provides the source
             if ec['name'] in [
+                # easyconfigs where a dependency provides the source,
                 'imkl-FFTW',  # imkl
                 'minizip',  # zlib
+                # software that have no top-level sources (only components)
+                'gnupg-bundle',
             ]:
                 continue
 
@@ -1432,7 +1434,7 @@ class EasyConfigTest(TestCase):
         # + jupyterlmod + jupyter-resource-usage
         # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
         bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'ESL-Bundle', 'FEniCS', 'GCC', 'Jupyter-bundle',
-                             'Python-bundle', 'ROCm']
+                             'Python-bundle', 'ROCm', 'llvm-compilers']
 
         failing_checks = []
 
