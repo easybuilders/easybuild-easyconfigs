@@ -1,0 +1,41 @@
+easyblock = 'PythonPackage'
+
+name = 'phono3py'
+version = '3.16.0'
+
+homepage = 'http://phonopy.github.io/phono3py/'
+description = """A simulation package of phonon-phonon interaction related properties."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+sources = [SOURCE_TAR_GZ]
+patches = [
+    'phono3py-%(version)s_old_license_syntax.patch',
+    'phono3py-%(version)s_update_phonopy_version.patch',
+]
+checksums = [
+    {'phono3py-3.16.0.tar.gz': '91948644b42c70681b63b3913b1a5374e2311096a4333dd39a0423c2deb01e6a'},
+    {'phono3py-3.16.0_old_license_syntax.patch': 'd6c6ef39ec82d3fb0818e005409d912ed9bd7f15ec02f5ab1221a0adaa6b4540'},
+    {'phono3py-3.16.0_update_phonopy_version.patch':
+     'f000f3a4532464935a95bd78ee56cdb72fb310e7dc3980600fc36980c7a3cd55'},
+]
+
+builddependencies = [('CMake', '3.29.3')]
+dependencies = [
+    ('Python', '3.12.3'),
+    ('phonopy', '2.40.0'),
+]
+
+# the project creates wrappers for LAPACKE but doesn't find/link against the math libraries by default
+preinstallopts = 'echo "extra_link_args = -llapacke $LIBBLAS_MT" > site.cfg && '
+installopts = " -vvv"
+
+sanity_check_paths = {
+    'files': ['bin/phono3py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["phono3py --help"]
+
+moduleclass = 'lib'
