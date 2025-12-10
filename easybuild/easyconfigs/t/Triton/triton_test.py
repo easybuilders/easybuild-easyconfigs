@@ -12,7 +12,7 @@ def kernel(_a, _b):
 
 src = triton.compiler.ASTSource(
     fn=kernel,
-    signature="i32,i32",
+    signature={"_a":"i32", "_b":"i32"},
 )
 
 cuda_cc = sys.argv[1].split(',')[-1]
