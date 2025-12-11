@@ -60,12 +60,34 @@ components = [
         'srcdir': 'llvm',
         'skipsteps': ['install'],
     }),
+    # Use same major.minor version as Triton, see this file using the right tag instead of 'main':
+    # https://github.com/triton-lang/triton/blob/main/cmake/nvidia-toolchain-version.json
+    # Check https://developer.download.nvidia.com/compute/cuda/redist for the latest version of redistrib_*.json.
+    # Generate checksums with:
+    #   wget -O- https://developer.download.nvidia.com/compute/cuda/redist/redistrib_12.8.1.json | \
+    #     jq -r '.cuda_nvcc | to_entries[] | select(.value | type=="object") | "'\
+    #     \''" + (.value.relative_path | split("/")[-1]) + "'\'': '\''" + .value.sha256 + "'\'',"'
+    ('CUDA-NVCC', '12.8.93', {
+        'easyblock': 'MakeCp',
+        'source_urls': [f'https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvcc/linux-{local_arch}'],
+        'sources': [f'cuda_nvcc-linux-{local_arch}-%(version)s-archive.tar.xz'],
+        'checksums': [{
+            'cuda_nvcc-linux-x86_64-12.8.93-archive.tar.xz':
+            '9961b3484b6b71314063709a4f9529654f96782ad39e72bf1e00f070db8210d3',
+            'cuda_nvcc-linux-sbsa-12.8.93-archive.tar.xz':
+            'dc0b713ce69fd921aa53ac68610717d126fc273a3c554b0465cf44d7e379f467',
+            'cuda_nvcc-windows-x86_64-12.8.93-archive.zip':
+            '9fdc70b4271ed9aad4d64cd7076a7d96ec36512d074b9995fe638de669197391',
+        }],
+        'skipsteps': ['build'],
+        'files_to_copy': [(['cuda_nvcc-linux*/bin/ptxas'], 'tools')],
+    }),
 ]
 
 local_preinstallopts = ' '.join([
     "TRITON_HOME='%(builddir)s/triton_home'",
     'TRITON_OFFLINE_BUILD=1',
-    'TRITON_PTXAS_PATH="EBROOTCUDA/bin/ptxas"',
+    'TRITON_PTXAS_PATH="%(installdir)s/tools/ptxas"',
     'TRITON_CUOBJDUMP_PATH="$CUDA_HOME/bin/cubjdump"',
     'TRITON_NVDISASM_PATH="$CUDA_HOME/bin/nvdisasm"',
     'LLVM_SYSPATH="%(builddir)s/llvm_build_dir"',
@@ -106,9 +128,11 @@ checksums = [
 sanity_check_commands = ['TRITON_HOME=$TMPDIR/eb-triton_home '
                          'python %(installdir)s/test/triton_test.py %(cuda_compute_capabilities)s']
 
+modextrapaths = {
+    'TRITON_PTXAS_PATH': 'tools/ptxas',
+}
 modextravars = {
     # Search for "_path_to_binary" in Triton sources
-    'TRITON_PTXAS_PATH': '$CUDA_HOME/bin/ptxas',
     'TRITON_CUOBJDUMP_PATH': '$CUDA_HOME/bin/cubjdump',
     'TRITON_LIBDEVICE_PATH': '$CUDA_HOME/nvvm/libdevice/libdevice.10.bc',
 }
