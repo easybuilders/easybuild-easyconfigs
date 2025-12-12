@@ -1,0 +1,52 @@
+# Author: Erik B Knudsen
+# United Neux
+
+easyblock = 'CMakeMake'
+
+name = 'McXtrace'
+version = '3.6.1'
+
+homepage = 'https://mcxtrace.org'
+description = "McXtrace is a Monte Carlo ray tracing X-ray instrumentaton and experiment simulation packages."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ["https://github.com/mccode-dev/McCode/archive/refs/tags/"]
+sources = ['v%(version)s.tar.gz']
+checksums = ['b1958a24b6b7e06e65ff3fc302da6d306412fdaee15ac77fadf841e1521b773a']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('PyYAML', '6.0'),
+    ('mcpl', '2.2.0'),
+]
+
+configopts = ' '.join([
+    '-DMCVERSION=%(version)s',
+    '-DBUILD_MCXTRACE=ON',
+    '-DBUILD_MCXRUN=ON',
+    '-DENSURE_NCRYSTAL=OFF',
+    '-DENSURE_MCPL=OFF',  # Use mcpl from dependency instead of rebuilding it
+    '-DBUILD_TOOLS=OFF',
+    '-DMCCODE_USE_LEGACY_DESTINATIONS=OFF'
+])
+
+sanity_check_paths = {
+    'files': ["bin/mcxtrace", "bin/mxrun"],
+    'dirs': ['share/mcxtrace/resources/samples', 'share/mcxtrace/resources/share', 'share/mcxtrace/resources/optics'],
+}
+
+sanity_check_commands = [
+    "mcxtrace -v"
+]
+
+modextravars = {'MCXTRACE': "%(installdir)s/share/%(namelower)s/resources"}
+
+moduleclass = 'phys'
