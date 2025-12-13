@@ -1,0 +1,60 @@
+easyblock = 'Bundle'
+
+name = 'GHC'
+version = '9.12.2'
+
+homepage = 'https://haskell.org/ghc/'
+description = """The Glorious/Glasgow Haskell Compiler"""
+
+toolchain = SYSTEM
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('M4', '1.4.20'),
+]
+
+dependencies = [
+    ('ncurses', '6.5'),
+]
+
+default_easyblock = 'ConfigureMake'
+
+if ARCH == 'aarch64':
+    local_distro_tarball = 'deb10'
+else:
+    local_distro_tarball = 'rocky8'
+
+components = [
+    ('GMP', '6.3.0', {
+        'source_urls': [GNU_SOURCE],
+        'sources': [SOURCELOWER_TAR_BZ2],
+        'checksums': ['ac28211a7cfb609bae2e2c8d6058d66c8fe96434f740cf6fe2e47b000d1c20cb'],
+        'configopts': ' --enable-cxx CFLAGS="-std=c99" CXXFLAGS="-std=c++11"',
+        'start_dir': '%(namelower)s-%(version)s',
+    }),
+    (name, version, {
+        'source_urls': ['https://downloads.haskell.org/~ghc/%(version)s/'],
+        'sources': ['%%(namelower)s-%%(version)s-%s-%s-linux.tar.xz' % (ARCH, local_distro_tarball)],
+        'checksums': [{'ghc-9.12.2-aarch64-deb10-linux.tar.xz':
+                       '6048eae62ede069459398fa6f2e92ab9719e1b83e93a9014e6a410c54ed2755f',
+                      'ghc-9.12.2-x86_64-rocky8-linux.tar.xz':
+                       'b708420f792dda86898e1ac649a77d8fc7b5e03b3e8da4e813d58acf1e7c943c'}],
+        'skipsteps': ['build'],
+        'preinstallopts': 'LD_LIBRARY_PATH="%(installdir)s/lib:$LD_LIBRARY_PATH" ',
+        'start_dir': f'%(namelower)s-%(version)s-{ARCH}-unknown-linux',
+    }),
+]
+
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s' % (x, y) for x in ['gmp', 'gmpxx'] for y in [SHLIB_EXT, 'a']] +
+             ['include/gmp.h', 'include/gmpxx.h'] +
+             ['bin/ghc', 'bin/ghci', 'bin/ghc-pkg',
+                 'bin/runghc', 'bin/runhaskell'],
+    'dirs': ['bin', 'lib', 'share', 'include'],
+}
+
+sanity_check_commands = ['ghc --version']
+
+moduleclass = 'compiler'
+
