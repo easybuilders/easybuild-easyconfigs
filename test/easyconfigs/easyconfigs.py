@@ -194,7 +194,7 @@ class EasyConfigTest(TestCase):
         # all available easyconfig files
         easyconfigs_path = get_paths_for("easyconfigs")[0]
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
-        parsed_specs = set(ec['spec'] for ec in cls._parsed_easyconfigs)
+        parsed_specs = {ec['spec'] for ec in cls._parsed_easyconfigs}
         for spec in specs:
             if spec not in parsed_specs:
                 cls._parsed_easyconfigs.extend(process_easyconfig(spec))
@@ -471,6 +471,8 @@ class EasyConfigTest(TestCase):
             # filter out one per Python version
             ('Z3', ('-Python-2', True)),
             ('Z3', ('-Python-3', True)),
+            # allow Graphviz coexistence by ignoring the -minimal variant when both exist
+            ('Graphviz', '-minimal'),
         ]
         for dep_name, version_suffix in filter_variants:
             # always retain at least one dep variant
@@ -856,12 +858,12 @@ class EasyConfigTest(TestCase):
         Generations 2023b and newer (GCC 13.2 and newer) are checked in the more stringent
         test_dep_versions_per_toolchain_generation.
         """
-        ecs_by_full_mod_name = dict((ec['full_mod_name'], ec) for ec in self.parsed_easyconfigs)
+        ecs_by_full_mod_name = {ec['full_mod_name']: ec for ec in self.parsed_easyconfigs}
         if len(ecs_by_full_mod_name) != len(self.parsed_easyconfigs):
             self.fail('Easyconfigs with duplicate full_mod_name found')
 
         # Cache already determined dependencies
-        ec_to_deps = dict()
+        ec_to_deps = {}
 
         def get_deps_for(ec):
             """Get list of (direct) dependencies for specified easyconfig."""
@@ -931,12 +933,12 @@ class EasyConfigTest(TestCase):
         the same toolchain generation are loaded together.
         Active for 2023b generation and newer (GCC 13.2 and newer)
         """
-        ecs_by_full_mod_name = dict((ec['full_mod_name'], ec) for ec in self.parsed_easyconfigs)
+        ecs_by_full_mod_name = {ec['full_mod_name']: ec for ec in self.parsed_easyconfigs}
         if len(ecs_by_full_mod_name) != len(self.parsed_easyconfigs):
             self.fail('Easyconfigs with duplicate full_mod_name found')
 
         # Cache already determined dependencies
-        ec_to_deps = dict()
+        ec_to_deps = {}
 
         def get_deps_for(ec):
             """Get list of (direct) dependencies for specified easyconfig."""
@@ -1095,10 +1097,12 @@ class EasyConfigTest(TestCase):
             ]:
                 continue
 
-            # easyconfigs where a dep provides the source
             if ec['name'] in [
+                # easyconfigs where a dependency provides the source,
                 'imkl-FFTW',  # imkl
                 'minizip',  # zlib
+                # software that have no top-level sources (only components)
+                'gnupg-bundle',
             ]:
                 continue
 
@@ -1432,7 +1436,7 @@ class EasyConfigTest(TestCase):
         # + jupyterlmod + jupyter-resource-usage
         # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
         bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'ESL-Bundle', 'FEniCS', 'GCC', 'Jupyter-bundle',
-                             'Python-bundle', 'ROCm']
+                             'Python-bundle', 'ROCm', 'llvm-compilers']
 
         failing_checks = []
 
@@ -1466,7 +1470,7 @@ class EasyConfigTest(TestCase):
         url_whitelist = [
         ]
         # Cache: Mapping of already checked HTTP urls to whether the HTTPS variant works
-        checked_urls = dict()
+        checked_urls = {}
 
         def check_https_url(http_url):
             """Check if the https url works"""
