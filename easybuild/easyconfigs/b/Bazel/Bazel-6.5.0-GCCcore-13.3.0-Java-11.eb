@@ -1,0 +1,31 @@
+name = 'Bazel'
+version = '6.5.0'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://bazel.io/'
+description = """Bazel is a build tool that builds code quickly and reliably.
+It is used to build the majority of Google's software."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/bazelbuild/%(namelower)s/releases/download/%(version)s']
+sources = ['%(namelower)s-%(version)s-dist.zip']
+patches = ['Bazel-6.3.1_add-symlinks-in-runfiles.patch']
+checksums = [
+    {'bazel-6.5.0-dist.zip': 'fc89da919415289f29e4ff18a5e01270ece9a6fe83cb60967218bac4a3bb3ed2'},
+    {'Bazel-6.3.1_add-symlinks-in-runfiles.patch': '81db53aa87229557480b6f719c99a0f1af9c69dfec12185451e520b0128c3ae2'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Python', '3.12.3'),
+    ('Zip', '3.0'),
+]
+
+dependencies = [('Java', '11', '', SYSTEM)]
+
+runtest = True
+pretestopts = "sed -i 's/assertEquals/assertEqual/g' examples/py_native/test.py examples/py_native/fail.py && "
+testopts = "-- //examples/cpp:hello-success_test //examples/py/... //examples/py_native:test //examples/shell/..."
+
+moduleclass = 'devel'
