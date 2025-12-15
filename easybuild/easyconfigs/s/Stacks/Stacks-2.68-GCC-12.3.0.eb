@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'Stacks'
+version = '2.68'
+
+homepage = 'https://catchenlab.life.illinois.edu/stacks/'
+description = """Stacks is a software pipeline for building loci from short-read sequences, such as those generated on
+ the Illumina platform. Stacks was developed to work with restriction enzyme-based data, such as RAD-seq,
+ for the purpose of building genetic maps and conducting population genomics and phylogeography.
+"""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://catchenlab.life.illinois.edu/stacks/source/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-2.68_use-external-htslib.patch']
+checksums = [
+    {'stacks-2.68.tar.gz': '9dc51ea356d60eb4557b0b2d1a8854aafae492aed87f974e0249cc09aa5e7650'},
+    {'Stacks-2.68_use-external-htslib.patch': '20d77e39719107a47e6e9620490c1210a338e3503e79b4e4122518e8404f976e'},
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('HTSlib', '1.18'),
+]
+
+preconfigopts = 'autoreconf -if && '
+configopts = '--with-htslib="$EBROOTHTSLIB"'
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in ['clone_filter', 'cstacks', 'gstacks', 'kmer_filter', 'phasedstacks',
+                                   'populations', 'process_radtags', 'process_shortreads', 'sstacks',
+                                   'tsv2bam', 'ustacks']],
+    'dirs': [],
+}
+
+sanity_check_commands = ["ustacks -h 2>&1 | grep -q 'ustacks %(version)s'"]
+
+moduleclass = 'bio'

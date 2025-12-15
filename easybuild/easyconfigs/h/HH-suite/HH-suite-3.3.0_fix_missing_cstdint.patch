@@ -1,0 +1,37 @@
+commit bf3f42747ca4ddbd72e1c142aa3b648793c59045
+Author: Étienne Mollier <emollier@debian.org>
+Date:   Sun Aug 13 10:38:55 2023 +0200
+
+    src/a3m_compress.h: fix build failure with gcc 13
+    
+    Following header changes in gcc 13, hh-suite fails to build with the
+    following errors:
+    
+            In file included from /<<PKGBUILDDIR>>/src/a3m_compress.cpp:8:
+            /<<PKGBUILDDIR>>/src/a3m_compress.h:37:37: error: ‘uint16_t’ has not been declared
+               37 |   void writeU16(std::ostream& file, uint16_t);
+                  |                                     ^~~~~~~~
+            /<<PKGBUILDDIR>>/src/a3m_compress.h:38:28: error: ‘uint16_t’ has not been declared
+               38 |   void readU16(char** ptr, uint16_t &result);
+                  |                            ^~~~~~~~
+            […]
+    
+    Including cstdint in the affected file allows the build to go through.
+    This issue has initially been reported in [Debian bug #1037689].
+    
+    [Debian bug #1037689]: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1037689
+    
+    Signed-off-by: Étienne Mollier <emollier@debian.org>
+
+diff --git a/src/a3m_compress.h b/src/a3m_compress.h
+index 669daa9..645f72f 100644
+--- a/src/a3m_compress.h
++++ b/src/a3m_compress.h
+@@ -16,6 +16,7 @@
+ #include <algorithm>
+ #include <cstring>
+ #include <climits>
++#include <cstdint>
+ 
+ extern "C" {
+   #include <ffindex.h>     // fast index-based database reading
