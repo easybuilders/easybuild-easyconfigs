@@ -1,0 +1,31 @@
+name = 'HDF5'
+# Note: Odd minor releases are only RCs and should not be used.
+version = '1.14.4.3'
+
+homepage = 'https://portal.hdfgroup.org/display/support'
+description = """HDF5 is a data model, library, and file format for storing and managing data.
+ It supports an unlimited variety of datatypes, and is designed for flexible
+ and efficient I/O and for high volume and complex data."""
+
+toolchain = {'name': 'gompi', 'version': '2023b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+# to enable debug symbols, use:
+# configopts = ['--enable-build-mode=debug']
+
+# HDF5 tags are prefixed with '%(namelower)s_' for some redundant reason
+github_account = 'HDFGroup'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': '%(namelower)s_%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ}]
+checksums = ['690c1db7ba0fed4ffac61709236675ffd99d95d191e8920ee79c58d7e7ea3361']
+
+# replace src include path with installation dir for $H5BLD_CPPFLAGS
+_regex = 's, -I[^[:space:]]+H5FDsubfiling , -I%(installdir)s/include ,g'
+postinstallcmds = ['sed -i -r "%s" %%(installdir)s/bin/%s' % (_regex, x) for x in ['h5c++', 'h5pcc']]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('Szip', '2.1.1'),
+]
+
+moduleclass = 'data'
