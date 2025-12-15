@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'neko'
+version = '0.9.1'
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+homepage = 'https://neko.cfd/'
+description = """Neko is a portable framework for high-order spectral element flow simulations."""
+
+source_urls = ['https://github.com/ExtremeFLOW/neko/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['dce807d43717242f412b2810d465418150282031e5f99f139edc4207fa561a9e']
+
+builddependencies = [
+    ('Autotools', '20240712'),
+]
+
+dependencies = [
+    ('json-fortran', '9.0.5'),
+    ('HDF5', '1.14.6'),
+    ('ParMETIS', '4.0.3'),
+]
+
+# Bypass broken BLAS detection by modifying configure.ac before running regen.sh
+preconfigopts = "./regen.sh && "
+
+# EESSI requires FlexiBLAS instead of direct OpenBLAS linking
+configopts = ' '.join([
+    'FCFLAGS="$FCFLAGS -I$EBROOTJSONMINFORTRAN/include"',
+    'LDFLAGS="$LDFLAGS -L$EBROOTFLEXIBLAS/lib"'
+    '--enable-openmp',
+    '--enable-shared',
+    '--with-hdf5',
+    '--with-parmetis=$EBROOTPARMETIS',
+    '--with-blas=flexiblas',
+    '--with-lapack=flexiblas',
+])
+
+sanity_check_paths = {
+    'files': ['bin/neko', f'lib/libneko.{SHLIB_EXT}'],
+    'dirs': ['lib', 'bin'],
+}
+
+sanity_check_commands = [
+    'neko',
+]
+
+moduleclass = 'cae'
