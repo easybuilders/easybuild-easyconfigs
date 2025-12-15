@@ -88,3 +88,451 @@ index 085a6c947f..97f769126c 100644
                  self.assertTrue(regex.search(log_txt), f"Pattern '{regex.pattern}' not found in log output")
  
  
+From 1d1346f882131ab0a82d6d0c1492c8ea8fe39759 Mon Sep 17 00:00:00 2001
+From: Kenneth Hoste <kenneth.hoste@ugent.be>
+Date: Thu, 13 Nov 2025 16:42:36 +0100
+Subject: [PATCH 1/4] also pick up on toolchain components in
+ Toolchain._add_dependency_variables
+
+---
+ easybuild/tools/toolchain/toolchain.py | 37 +++++++++++++-------------
+ 1 file changed, 18 insertions(+), 19 deletions(-)
+
+diff --git a/easybuild/tools/toolchain/toolchain.py b/easybuild/tools/toolchain/toolchain.py
+index ff85414834..2eeeabb7be 100644
+--- a/easybuild/tools/toolchain/toolchain.py
++++ b/easybuild/tools/toolchain/toolchain.py
+@@ -219,7 +219,7 @@ def __init__(self, name=None, version=None, mns=None, class_constants=None, tcde
+ 
+         self._init_class_constants(class_constants)
+ 
+-        self.tcdeps = tcdeps
++        self.tcdeps = tcdeps if tcdeps else []
+ 
+         # toolchain instances are created before initiating build options sometimes, e.g. for --list-toolchains
+         self.dry_run = build_option('extended_dry_run', default=False)
+@@ -628,13 +628,12 @@ def _load_toolchain_module(self, silent=False):
+                 dry_run_msg("module load %s" % tc_mod, silent=silent)
+             else:
+                 # first simulate loads for toolchain dependencies, if required information is available
+-                if self.tcdeps is not None:
+-                    for tcdep in self.tcdeps:
+-                        modname = tcdep['short_mod_name']
+-                        dry_run_msg("module load %s [SIMULATED]" % modname, silent=silent)
+-                        # 'use '$EBROOTNAME' as value for dep install prefix (looks nice in dry run output)
+-                        deproot = '$%s' % get_software_root_env_var_name(tcdep['name'])
+-                        self._simulated_load_dependency_module(tcdep['name'], tcdep['version'], {'prefix': deproot})
++                for tcdep in self.tcdeps:
++                    modname = tcdep['short_mod_name']
++                    dry_run_msg("module load %s [SIMULATED]" % modname, silent=silent)
++                    # 'use '$EBROOTNAME' as value for dep install prefix (looks nice in dry run output)
++                    deproot = '$%s' % get_software_root_env_var_name(tcdep['name'])
++                    self._simulated_load_dependency_module(tcdep['name'], tcdep['version'], {'prefix': deproot})
+ 
+                 dry_run_msg("module load %s [SIMULATED]" % tc_mod, silent=silent)
+                 # use name of $EBROOT* env var as value for $EBROOT* env var (results in sensible dry run output)
+@@ -1140,21 +1139,21 @@ def _add_dependency_variables(self, names=None, cpp=None, ld=None):
+         :names: list of strings containing the name of the dependency
+         """
+         # collect dependencies
+-        dependencies = self.dependencies if names is None else [{"name": name} for name in names if name]
++        deps = self.dependencies if names is None else [{'name': name} for name in names if name]
+ 
+-        # collect software install prefixes for dependencies
+-        dependency_roots = []
+-        for dep in dependencies:
+-            if dep.get("external_module", False):
++        # collect software install prefixes for toolchain components + dependencies
++        dep_roots = []
++        for dep in deps + self.tcdeps:
++            if dep.get('external_module', False):
+                 # for software names provided via external modules, install prefix may be unknown
+-                names = dep["external_module_metadata"].get("name", [])
+-                dependency_roots.extend([root for root in self.get_software_root(names) if root is not None])
++                names = dep['external_module_metadata'].get('name', [])
++                dep_roots.extend([x for x in self.get_software_root(names) if x is not None])
+             else:
+-                dependency_roots.extend(self.get_software_root(dep["name"]))
++                dep_roots.extend(self.get_software_root(dep['name']))
+ 
+-        for root in dependency_roots:
+-            self._add_dependency_cpp_headers(root, extra_dirs=cpp)
+-            self._add_dependency_linker_paths(root, extra_dirs=ld)
++        for dep_root in dep_roots:
++            self._add_dependency_cpp_headers(dep_root, extra_dirs=cpp)
++            self._add_dependency_linker_paths(dep_root, extra_dirs=ld)
+ 
+     def _add_dependency_cpp_headers(self, dep_root, extra_dirs=None):
+         """
+
+From 1ceb14118e469e07074752a9cfbdd98651809842 Mon Sep 17 00:00:00 2001
+From: Kenneth Hoste <kenneth.hoste@ugent.be>
+Date: Thu, 13 Nov 2025 16:44:28 +0100
+Subject: [PATCH 2/4] add test easyconfigs so toolchain hierarchy for
+ gompi/2023a can be correctly determined
+
+---
+ .../binutils/binutils-2.40-GCCcore-12.3.0.eb  | 14 +++++++++++++
+ .../easyconfigs/test_ecs/g/GCC/GCC-12.3.0.eb  | 21 +++++++++++++++++++
+ .../test_ecs/g/gompi/gompi-2023a.eb           | 20 ++++++++++++++++++
+ .../o/OpenMPI/OpenMPI-4.1.5-GCC-12.3.0.eb     | 13 ++++++++++++
+ test/framework/filetools.py                   |  6 +++---
+ 5 files changed, 71 insertions(+), 3 deletions(-)
+ create mode 100644 test/framework/easyconfigs/test_ecs/b/binutils/binutils-2.40-GCCcore-12.3.0.eb
+ create mode 100644 test/framework/easyconfigs/test_ecs/g/GCC/GCC-12.3.0.eb
+ create mode 100644 test/framework/easyconfigs/test_ecs/g/gompi/gompi-2023a.eb
+ create mode 100644 test/framework/easyconfigs/test_ecs/o/OpenMPI/OpenMPI-4.1.5-GCC-12.3.0.eb
+
+diff --git a/test/framework/easyconfigs/test_ecs/b/binutils/binutils-2.40-GCCcore-12.3.0.eb b/test/framework/easyconfigs/test_ecs/b/binutils/binutils-2.40-GCCcore-12.3.0.eb
+new file mode 100644
+index 0000000000..231f2c9a2c
+--- /dev/null
++++ b/test/framework/easyconfigs/test_ecs/b/binutils/binutils-2.40-GCCcore-12.3.0.eb
+@@ -0,0 +1,14 @@
++# minimal easyconfig, only really neededd so toolchain hierarchy for gompi/2023a can be determined
++
++# should be software specific, but OK for testing purposes
++easyblock = 'EB_toy'
++
++name = 'binutils'
++version = '2.26'
++
++homepage = 'http://directory.fsf.org/project/binutils/'
++description = "binutils: GNU binary utilities"
++
++toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
++
++moduleclass = 'tools'
+diff --git a/test/framework/easyconfigs/test_ecs/g/GCC/GCC-12.3.0.eb b/test/framework/easyconfigs/test_ecs/g/GCC/GCC-12.3.0.eb
+new file mode 100644
+index 0000000000..6c8a5fcaad
+--- /dev/null
++++ b/test/framework/easyconfigs/test_ecs/g/GCC/GCC-12.3.0.eb
+@@ -0,0 +1,21 @@
++# minimal easyconfig, only really neededd so toolchain hierarchy for gompi/2023a can be determined
++
++# should be EB_GCC, but OK for testing purposes
++easyblock = 'EB_toy'
++
++name = 'GCC'
++version = '12.3.0'
++
++homepage = 'http://gcc.gnu.org/'
++description = """The GNU Compiler Collection includes front ends for C, C++, Objective-C, Fortran,
++ Java, and Ada, as well as libraries for these languages (libstdc++, libgcj,...)."""
++
++toolchain = SYSTEM
++
++dependencies = [
++    ('GCCcore', version),
++    # binutils built on top of GCCcore, which was built on top of (system-built) binutils
++    ('binutils', '2.40', '', ('GCCcore', version)),
++]
++
++moduleclass = 'compiler'
+diff --git a/test/framework/easyconfigs/test_ecs/g/gompi/gompi-2023a.eb b/test/framework/easyconfigs/test_ecs/g/gompi/gompi-2023a.eb
+new file mode 100644
+index 0000000000..aa3ca0275c
+--- /dev/null
++++ b/test/framework/easyconfigs/test_ecs/g/gompi/gompi-2023a.eb
+@@ -0,0 +1,20 @@
++easyblock = 'Toolchain'
++
++name = 'gompi'
++version = '2023'
++
++homepage = '(none)'
++description = """GNU Compiler Collection (GCC) based compiler toolchain,
++ including OpenMPI for MPI support."""
++
++toolchain = SYSTEM
++
++local_comp = ('GCC', '12.3.0')
++
++# compiler toolchain dependencies
++dependencies = [
++    local_comp,
++    ('OpenMPI', '4.1.5', '', local_comp),
++]
++
++moduleclass = 'toolchain'
+diff --git a/test/framework/easyconfigs/test_ecs/o/OpenMPI/OpenMPI-4.1.5-GCC-12.3.0.eb b/test/framework/easyconfigs/test_ecs/o/OpenMPI/OpenMPI-4.1.5-GCC-12.3.0.eb
+new file mode 100644
+index 0000000000..9a34c02d3e
+--- /dev/null
++++ b/test/framework/easyconfigs/test_ecs/o/OpenMPI/OpenMPI-4.1.5-GCC-12.3.0.eb
+@@ -0,0 +1,13 @@
++# minimal easyconfig, only really neededd so toolchain hierarchy for gompi/2023a can be determined
++
++easyblock = 'ConfigureMake'
++
++name = 'OpenMPI'
++version = '4.1.5'
++
++homepage = 'http://www.open-mpi.org/'
++description = """The Open MPI Project is an open source MPI-2 implementation."""
++
++toolchain = {'name': 'GCC', 'version': '12.3.0'}
++
++moduleclass = 'mpi'
+diff --git a/test/framework/filetools.py b/test/framework/filetools.py
+index 611f7a99f8..4883842b7e 100644
+--- a/test/framework/filetools.py
++++ b/test/framework/filetools.py
+@@ -2702,7 +2702,7 @@ def test_index_functions(self):
+         # test with specified path with and without trailing '/'s
+         for path in [test_ecs, test_ecs + '/', test_ecs + '//']:
+             index = ft.create_index(path)
+-            self.assertEqual(len(index), 100)
++            self.assertEqual(len(index), 104)
+ 
+             expected = [
+                 os.path.join('b', 'bzip2', 'bzip2-1.0.6-GCC-4.9.2.eb'),
+@@ -2752,7 +2752,7 @@ def test_index_functions(self):
+         regex = re.compile(r"^== found valid index for %s, so using it\.\.\.$" % ecs_dir)
+         self.assertTrue(regex.match(stdout.strip()), "Pattern '%s' matches with: %s" % (regex.pattern, stdout))
+ 
+-        self.assertEqual(len(index), 29)
++        self.assertEqual(len(index), 31)
+         for fn in expected:
+             self.assertIn(fn, index)
+ 
+@@ -2782,7 +2782,7 @@ def test_index_functions(self):
+         regex = re.compile(r"^== found valid index for %s, so using it\.\.\.$" % ecs_dir)
+         self.assertTrue(regex.match(stdout.strip()), "Pattern '%s' matches with: %s" % (regex.pattern, stdout))
+ 
+-        self.assertEqual(len(index), 29)
++        self.assertEqual(len(index), 31)
+         for fn in expected:
+             self.assertIn(fn, index)
+ 
+
+From b4edc71059c20cfef3373b68b912ed5dcde8bba3 Mon Sep 17 00:00:00 2001
+From: Kenneth Hoste <kenneth.hoste@ugent.be>
+Date: Thu, 13 Nov 2025 16:45:17 +0100
+Subject: [PATCH 3/4] extend test_exts_deps_build_env to also check for path to
+ header files of toolchain components like OpenMPI
+
+---
+ test/framework/easyblock.py | 49 ++++++++++++++++++++++++-------------
+ 1 file changed, 32 insertions(+), 17 deletions(-)
+
+diff --git a/test/framework/easyblock.py b/test/framework/easyblock.py
+index 97f769126c..5413c2c5b6 100644
+--- a/test/framework/easyblock.py
++++ b/test/framework/easyblock.py
+@@ -3720,7 +3720,7 @@ def test_exts_deps_build_env(self):
+         test_ec = os.path.join(self.test_prefix, 'test.eb')
+         test_ec_txt = read_file(toy_ec)
+         test_ec_txt += textwrap.dedent("""
+-            toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
++            toolchain = {'name': 'gompi', 'version': '2023a'}
+ 
+             dependencies = [
+                 ('zlib', '1.2.13'),
+@@ -3739,23 +3739,34 @@ def test_exts_deps_build_env(self):
+         """)
+         write_file(test_ec, test_ec_txt)
+ 
+-        # put dummy zlib module in place where we can control $EBROOTZLIB value
+-        zlib_mod_file = os.path.join(testdir, 'modules', 'zlib', '1.2.13-GCCcore-12.3.0')
+-        zlib_fn = os.path.basename(zlib_mod_file)
++        # put dummy modules in place where we can control $EBROOT value
++        openmpi_fn = '4.1.5-GCC-12.3.0'
++        zlib_fn = '1.2.13-GCCcore-12.3.0'
++        mod_files = [
++            ('OpenMPI', openmpi_fn),
++            ('zlib', zlib_fn),
++        ]
++
++        test_mods = os.path.join(self.test_prefix, 'modules')
+ 
+-        zlib_root = os.path.join(self.test_prefix, 'software', 'zlib', zlib_fn)
+-        write_file(os.path.join(zlib_root, 'include', 'zlib.h'), '')
+-        write_file(os.path.join(zlib_root, 'include', 'zlib', 'common.h'), '')
++        for name, mod_fn in mod_files:
++            mod_fp = os.path.join(testdir, 'modules', name, mod_fn)
+ 
+-        zlib_mod_txt = read_file(zlib_mod_file)
+-        zlib_mod_txt = re.sub("set root.*", f"set root {zlib_root}", zlib_mod_txt)
+-        # add statement to inject extra subdirectory to $CPATH,
+-        # which is supposed to be retained in build environment
+-        zlib_mod_txt += '\nprepend-path\tCPATH\t$root/include/zlib'
++            header_fn = 'zlib.h' if name == 'zlib' else 'mpi.h'
++
++            dep_root = os.path.join(self.test_prefix, 'software', name, mod_fn)
++            write_file(os.path.join(dep_root, 'include', header_fn), '')
++            write_file(os.path.join(dep_root, 'include', name, 'common.h'), '')
++
++            mod_txt = read_file(mod_fp)
++            mod_txt = re.sub("set root.*", f"set root {dep_root}", mod_txt)
++            # add statement to inject extra subdirectory to $CPATH,
++            # which is supposed to be retained in build environment
++            mod_txt += f'\nprepend-path\tCPATH\t$root/include/{name}'
++
++            test_mod_file = os.path.join(test_mods, name, mod_fn)
++            write_file(test_mod_file, mod_txt)
+ 
+-        test_mods = os.path.join(self.test_prefix, 'modules')
+-        test_zlib_mod_file = os.path.join(test_mods, 'zlib', zlib_fn)
+-        write_file(test_zlib_mod_file, zlib_mod_txt)
+         self.modtool.use(test_mods)
+ 
+         env_vars = {
+@@ -3771,7 +3782,6 @@ def test_exts_deps_build_env(self):
+                 f'--search-path-cpp-headers={search_path_cpp_headers}',
+                 '--debug',
+             ]
+-            os.environ['C_INCLUDE_PATH'] = '/usr/local/include'
+             with self.mocked_stdout_stderr():
+                 with self.log_to_testlogfile():
+                     self.eb_main(args, raise_error=True, do_build=True, verbose=True)
+@@ -3785,7 +3795,12 @@ def test_exts_deps_build_env(self):
+             # check whether $C_INCLUDE_PATH is correctly set in build environment of 'bar' extension
+             for env_var in env_vars[search_path_cpp_headers]:
+                 # both 'include' and 'include/zlib' subdirectories should be retained
+-                paths = [f'software/zlib/{zlib_fn}/include/zlib', f'software/zlib/{zlib_fn}/include']
++                paths = [
++                    f'software/OpenMPI/{openmpi_fn}/include/OpenMPI',
++                    f'software/OpenMPI/{openmpi_fn}/include',
++                    f'software/zlib/{zlib_fn}/include/zlib',
++                    f'software/zlib/{zlib_fn}/include',
++                ]
+                 if env_var.endswith('PATH'):
+                     regex = re.compile(f'^{env_var}=' + ':'.join('[^ ]+/' + p for p in paths) + '$', re.M)
+                 elif env_var == 'CPPFLAGS':
+
+From f7b811b49358e8608230db44835e389c2f6cbaf0 Mon Sep 17 00:00:00 2001
+From: Kenneth Hoste <kenneth.hoste@ugent.be>
+Date: Thu, 13 Nov 2025 17:28:33 +0100
+Subject: [PATCH 4/4] fix tests that got broken by adding additional test
+ easyconfigs
+
+---
+ test/framework/filetools.py | 4 ++--
+ test/framework/tweak.py     | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/test/framework/filetools.py b/test/framework/filetools.py
+index 4883842b7e..35e17c9055 100644
+--- a/test/framework/filetools.py
++++ b/test/framework/filetools.py
+@@ -2294,8 +2294,8 @@ def test_copy_dir(self):
+ 
+         ft.copy_dir(to_copy, target_dir, ignore=lambda src, names: [x for x in names if '6.4.0-2.28' in x])
+         self.assertExists(target_dir)
+-        expected = ['GCC-10.2.0.eb', 'GCC-4.6.3.eb', 'GCC-4.6.4.eb', 'GCC-4.8.2.eb', 'GCC-4.8.3.eb', 'GCC-4.9.2.eb',
+-                    'GCC-4.9.3-2.25.eb', 'GCC-4.9.3-2.26.eb', 'GCC-7.3.0-2.30.eb']
++        expected = ['GCC-10.2.0.eb', 'GCC-12.3.0.eb', 'GCC-4.6.3.eb', 'GCC-4.6.4.eb', 'GCC-4.8.2.eb',
++                    'GCC-4.8.3.eb', 'GCC-4.9.2.eb', 'GCC-4.9.3-2.25.eb', 'GCC-4.9.3-2.26.eb', 'GCC-7.3.0-2.30.eb']
+         self.assertEqual(sorted(os.listdir(target_dir)), expected)
+         # GCC-6.4.0-2.28.eb should not get copied, since it's specified as file too ignore
+         self.assertNotExists(os.path.join(target_dir, 'GCC-6.4.0-2.28.eb'))
+diff --git a/test/framework/tweak.py b/test/framework/tweak.py
+index 71d73dde8a..1acae551a9 100644
+--- a/test/framework/tweak.py
++++ b/test/framework/tweak.py
+@@ -80,7 +80,7 @@ def test_find_matching_easyconfigs(self):
+             self.assertTrue(len(ecs) == 1 and ecs[0].endswith('/%s-%s.eb' % (name, installver)))
+ 
+         ecs = find_matching_easyconfigs('GCC', '*', [test_easyconfigs_path])
+-        gccvers = ['10.2.0', '4.6.3', '4.6.4', '4.8.2', '4.8.3', '4.9.2', '4.9.3-2.25',
++        gccvers = ['10.2.0', '12.3.0', '4.6.3', '4.6.4', '4.8.2', '4.8.3', '4.9.2', '4.9.3-2.25',
+                    '4.9.3-2.26', '6.4.0-2.28', '7.3.0-2.30']
+         self.assertEqual(len(ecs), len(gccvers))
+         ecs_basename = [os.path.basename(ec) for ec in ecs]
+@@ -128,7 +128,7 @@ def test_obtain_ec_for(self):
+         }
+         (generated, ec_file) = obtain_ec_for(specs, [test_easyconfigs_path])
+         self.assertFalse(generated)
+-        self.assertEqual(os.path.basename(ec_file), 'GCC-10.2.0.eb')
++        self.assertEqual(os.path.basename(ec_file), 'GCC-12.3.0.eb')
+ 
+         # generate non-existing easyconfig
+         change_dir(self.test_prefix)
+From 5be4b970426e7575c59600c140b3fb5478e83cd8 Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Fri, 14 Nov 2025 18:15:16 +0100
+Subject: [PATCH 1/2] Fix error due to access to toolchain build dependencies
+
+In #5042 `tcdeps` is actually used to get the software roots.
+Those are only available for *runtime* dependencies of the toolchain
+module. So it will fail for build dependencies which are however
+included by EasyConfig.toolchain.
+---
+ easybuild/framework/easyconfig/easyconfig.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/easybuild/framework/easyconfig/easyconfig.py b/easybuild/framework/easyconfig/easyconfig.py
+index ac4345cc85..7c8e3b8b23 100644
+--- a/easybuild/framework/easyconfig/easyconfig.py
++++ b/easybuild/framework/easyconfig/easyconfig.py
+@@ -1279,7 +1279,7 @@ def toolchain(self):
+                 else:
+                     self.log.debug("Found easyconfig for toolchain %s version %s: %s", tcname, tcversion, tc_ecfile)
+                     tc_ec = process_easyconfig(tc_ecfile)[0]
+-                    tcdeps = tc_ec['ec'].dependencies()
++                    tcdeps = tc_ec['ec'].dependencies(runtime_only=True)
+                     self.log.debug("Toolchain dependencies based on easyconfig: %s", tcdeps)
+ 
+             self._toolchain = get_toolchain(self['toolchain'], self['toolchainopts'],
+
+From 8285fc28b4ecaad9efc36f0c110d264426822a44 Mon Sep 17 00:00:00 2001
+From: Kenneth Hoste <kenneth.hoste@ugent.be>
+Date: Fri, 14 Nov 2025 20:49:34 +0100
+Subject: [PATCH 2/2] enhance test_exts_deps_build_env to verify fix made in
+ #5048
+
+---
+ test/framework/easyblock.py                   | 20 +++++++++++++++++++
+ .../test_ecs/g/GCCcore/GCCcore-12.3.0.eb      |  6 +++++-
+ 2 files changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/test/framework/easyblock.py b/test/framework/easyblock.py
+index 5413c2c5b6..d2347029b0 100644
+--- a/test/framework/easyblock.py
++++ b/test/framework/easyblock.py
+@@ -3809,6 +3809,26 @@ def test_exts_deps_build_env(self):
+                     self.fail(f"Unknown type of environment variable: ${env_var}")
+                 self.assertTrue(regex.search(log_txt), f"Pattern '{regex.pattern}' not found in log output")
+ 
++        # verify fix made in https://github.com/easybuilders/easybuild-framework/pull/5048
++        test_ec_txt = read_file(toy_ec)
++        test_ec_txt += textwrap.dedent("""
++            toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
++        """)
++        write_file(test_ec, test_ec_txt)
++        args = [
++            test_ec,
++            '--rebuild',
++            '--debug',
++        ]
++        with self.mocked_stdout_stderr():
++            with self.log_to_testlogfile():
++                self.eb_main(args, raise_error=True, do_build=True, verbose=True)
++
++        log_txt = read_file(self.logfile)
++
++        regex = re.compile(r"\[SUCCESS\] toy/0.0-GCCcore-12.3.0", re.M)
++        self.assertTrue(regex.search(log_txt), f"Pattern '{regex.pattern}' not found in log output")
++
+ 
+ def suite(loader=None):
+     """ return all the tests in this file """
+diff --git a/test/framework/easyconfigs/test_ecs/g/GCCcore/GCCcore-12.3.0.eb b/test/framework/easyconfigs/test_ecs/g/GCCcore/GCCcore-12.3.0.eb
+index 65c1b9682f..469bd72ab9 100644
+--- a/test/framework/easyconfigs/test_ecs/g/GCCcore/GCCcore-12.3.0.eb
++++ b/test/framework/easyconfigs/test_ecs/g/GCCcore/GCCcore-12.3.0.eb
+@@ -14,7 +14,11 @@ source_urls = [
+     'http://ftpmirror.gnu.org/%(namelower)s/%(namelower)s-%(version)s',  # GCC auto-resolving HTTP mirror
+ ]
+ 
+-#gcc_name = 'GCC'
++# only here to verify the fix made in https://github.com/easybuilders/easybuild-framework/pull/5048,
++# see also test_exts_deps_build_env
++builddependencies = [
++    ('gzip', '1.4'),
++]
+ 
+ sources = [
+     SOURCELOWER_TAR_BZ2,
