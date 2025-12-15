@@ -36,7 +36,14 @@ runtest = 'test'
 
 start_dir = 'unix'
 
-postinstallcmds = ['ln -s %(installdir)s/bin/tclsh%(version_major)s.%(version_minor)s %(installdir)s/bin/tclsh']
+postinstallcmds = [
+    'ln -s %(installdir)s/bin/tclsh%(version_major)s.%(version_minor)s %(installdir)s/bin/tclsh',
+] + [
+    # Avoid that installations on top of Tcl try to access the (no longer existing) source directory
+    # See https://core.tcl-lang.org/tk/tktview/b900dc755201139b5a7cecada73405c7681b7c03
+    f"""echo "{d}='%(installdir)s'" >> '%(installdir)s/lib/tclConfig.sh'"""
+    for d in ('TCL_SRC_DIR', 'itcl_SRC_DIR', 'ITCL_SRC_DIR', 'tdbc_SRC_DIR', 'TDBC_SRC_DIR')
+]
 
 sanity_check_paths = {
     'files': ['bin/tclsh%(version_major)s.%(version_minor)s', 'bin/tclsh',
