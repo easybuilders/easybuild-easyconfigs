@@ -1,0 +1,22 @@
+Ignore LLVM '-target-feature' and the flag passed after that when
+checking which libraries are linked when building Fortran programs,
+since feature flags might contain '-l', causing them to be incorrectly
+being picked up as a linker argument.
+
+Author: Jan Reuter (JSC)
+
+diff --color -Naur autoconf-2.72.orig/lib/autoconf/fortran.m4 autoconf-2.72/lib/autoconf/fortran.m4
+--- autoconf-2.72.orig/lib/autoconf/fortran.m4	2023-12-01 14:25:07.000000000 +0100
++++ autoconf-2.72/lib/autoconf/fortran.m4	2025-11-24 17:49:00.853245146 +0100
+@@ -675,6 +675,11 @@
+ 	    ;;
+ 	  esac
+ 	  ;;
++    # for LLVM optimizer flags, ignore the next argument, which may include
++    # a feature starting with -l (e.g -target-feature -lwp)
++    -target-feature)
++      shift;
++      ;;
+ 	-[[LRuYz]])
+ 	  # These flags, when seen by themselves, take an argument.
+ 	  # We remove the space between option and argument and re-iterate
