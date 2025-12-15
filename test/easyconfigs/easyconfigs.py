@@ -471,6 +471,8 @@ class EasyConfigTest(TestCase):
             # filter out one per Python version
             ('Z3', ('-Python-2', True)),
             ('Z3', ('-Python-3', True)),
+            # allow Graphviz coexistence by ignoring the -minimal variant when both exist
+            ('Graphviz', '-minimal'),
         ]
         for dep_name, version_suffix in filter_variants:
             # always retain at least one dep variant
