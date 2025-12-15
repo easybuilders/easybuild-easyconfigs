@@ -1,5 +1,4 @@
 # This build enables both HDF5 and Wannier-90, both are optional but recommended
-# It also upgrades the build to Intel's OneAPI
 # Furthermore, it sets the vdw_kernel as an external file (courtesy of Mikael Öhman)
 # Author: J. Saßmannshausen (Imperial College London/UK)
 
@@ -16,8 +15,7 @@ from first principles.
 
 This build includes HDF5 and the Wannier-90 functions."""
 
-toolchain = {'name': 'intel', 'version': '2024a'}
-toolchainopts = {'usempi': True}
+toolchain = {'name': 'NVHPC', 'version': '25.1'}
 
 download_instructions = """VASP is proprietary software, see http://www.vasp.at/index.php/faqs
 on how to obtain a license for the software."""
@@ -26,7 +24,7 @@ sources = [
     'vdw_kernel.bindat.%(version)s.zip',
 ]
 patches = [
-    'VASP-6.5.0_enable_hdf5_wannier90.patch',
+    'VASP-6.5.0_enable_hdf5_wannier90_nvhpc.patch',
     'VASP-6.5.0_external_vdwkernel.patch',
 ]
 checksums = [
@@ -34,18 +32,20 @@ checksums = [
      '87f5a5416633af20fa8ea63f3348db477d8fc378feab4f839a617fc0663875f9'},
     {'vdw_kernel.bindat.6.5.0.zip':
      'b2b4bf577e6d4ca1aa6d463cf9325afb834a88099177fb585fe90b0b677f8484'},
-    {'VASP-6.5.0_enable_hdf5_wannier90.patch':
-     '3b4701f669da8b9e63e46f4fcaa31e2ec17de8045495af802181ae2f2ecd7636'},
+    {'VASP-6.5.0_enable_hdf5_wannier90_nvhpc.patch':
+     '85b0fc899e7896aa5ce1cebcb584b0958892a94a53aa08661f6f203f3bfadb89'},
     {'VASP-6.5.0_external_vdwkernel.patch':
      '1533ab6e045e4028f9e7d0de6b026654b9079569be81353bb460991657e48f0c'},
 ]
 
 dependencies = [
+    ('FFTW', '3.3.10'),
     ('HDF5', '1.14.5'),
     ('Wannier90', '3.1.0'),
 ]
 
-prebuildopts = 'cp arch/makefile.include.oneapi ./makefile.include && '
+prebuildopts = "cp arch/makefile.include.nvhpc_acc makefile.include && "
+prebuildopts += "sed -i 's/-gpu=[0-9cuda,.]*/-gpu=%(cuda_cc_nvhpc)s,cuda%(cudaver)s/g' makefile.include && "
 
 # VASP uses LIBS as a list of folders
 prebuildopts += 'unset LIBS && '
@@ -58,8 +58,8 @@ buildopts += 'DEPS=1 '  # required for VASP parallel builds
 # during some of the tests.
 # https://www.vasp.at/wiki/index.php/Validation_tests
 
-# Recommended to run the testsuite with 4 MPI processes
-_vasp_test_mpirun = "mpirun -np 4"
+# Offloading to GPUs with NCCL requires 1 GPU per MPI-rank
+_vasp_test_mpirun = "mpirun -np 1"
 
 # skip tests that are too long
 _vasp_test_skip = 'HEG_333_LW '
