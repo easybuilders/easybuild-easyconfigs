@@ -1,0 +1,102 @@
+easyblock = 'PythonBundle'
+
+name = 'DeePMD-kit'
+version = '3.1.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/deepmodeling/deepmd-kit/'
+description = "A deep learning package for many-body potential energy representation and molecular dynamics."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('scikit-build-core', '0.10.6'),
+    ('hatchling', '1.24.2'),
+    ('poetry', '1.8.3'),
+    ('git', '2.45.1'),
+    ('CMake', '3.29.3'),
+    ('maturin', '1.6.0'),
+]
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('ml_dtypes', '0.5.0'),
+    ('pydantic', '2.9.1'),
+    ('PyYAML', '6.0.2'),
+    ('PyTorch', '2.6.0', versionsuffix),
+    ('h5py', '3.12.1'),
+    ('mpi4py', '4.0.1'),
+    ('Deprecated', '1.2.18'),
+    ('SQLAlchemy', '2.0.36'),
+    ('ruamel.yaml', '0.18.6'),
+    ('wrapt', '1.16.0'),
+]
+
+local_deepdm_configopts = '-DENABLE_PYTORCH=TRUE '
+local_deepdm_configopts += '-DUSE_CUDA_TOOLKIT=ON '
+
+components = [
+    ('deepmd', version, {
+        'easyblock': 'PythonPackage',
+        'source_urls': ['https://pypi.python.org/packages/source/d/deepmd-kit/'],
+        'sources': ['deepmd_kit-%(version)s.tar.gz'],
+        'preinstallopts': "export DP_VARIANT=cuda &&  export DP_ENABLE_TENSORFLOW=0 && export DP_ENABLE_PYTORCH=1 && ",
+        'start_dir': 'deepmd_kit-%(version)s',
+        'checksums': ['c17105c4fc2400039458df93ae5701c6420c794d7fa267b6fe3d5ce56974502d'],
+    }),
+    ('deepmd_cpp', version, {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://pypi.python.org/packages/source/d/deepmd-kit/'],
+        'sources': ['deepmd_kit-%(version)s.tar.gz'],
+        'start_dir': 'deepmd_kit-%(version)s/source',
+        'configopts': local_deepdm_configopts,
+        'checksums': ['c17105c4fc2400039458df93ae5701c6420c794d7fa267b6fe3d5ce56974502d'],
+    }),
+]
+
+exts_list = [
+    ('typeguard', '4.4.2', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['77a78f11f09777aeae7fa08585f33b5f4ef0e7335af40005b0c422ed398ff48c'],
+    }),
+    ('dargs', '0.4.10', {
+        'checksums': ['2b39e0a93dcd323d0affb3f54ee2c11a439084d718934df08f38692dfbadddf8'],
+    }),
+    ('bracex', '2.6', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['0b0049264e7340b3ec782b5cb99beb325f36c3782a32e36e876452fd49a09952'],
+    }),
+    ('wcmatch', '10.1', {
+        'checksums': ['f11f94208c8c8484a16f4f48638a85d771d9513f4ab3f37595978801cb9465af'],
+    }),
+    ('pyfiglet', '0.8.post1', {
+        'checksums': ['c6c2321755d09267b438ec7b936825a4910fec696292139e664ca8670e103639'],
+    }),
+    ('mendeleev', '0.18.1', {
+        'checksums': ['a5b60bd313a5d2b404a6a250186e643663d5625c8138b3cfba829f1f4384f2a0'],
+    }),
+    ('array_api_compat', '1.12.0', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['a0b4795b6944a9507fde54679f9350e2ad2b1e2acf4a2408a098cdc27f890a8b'],
+    }),
+    ('monty', '2025.3.3', {
+        'checksums': ['16c1eb54b2372e765c2f3f14cff01cc76ab55c3cc12b27d49962fb8072310ae0'],
+    }),
+    ('dpdata', '1.0.0', {
+        'checksums': ['474da4d20130a85c19274a10efd45446bbf3c844d6fc06e9377298c3e52cbc78'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/dp', 'bin/dpdata', 'bin/dp_ipi', 'lib/libdeepmd_cc.so', 'lib/libdeepmd.so'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'include/deepmd'],
+}
+
+sanity_check_commands = ['dp -h']
+
+modextravars = {
+    'DP_BACKEND': 'pytorch',
+}
+
+moduleclass = 'ai'
