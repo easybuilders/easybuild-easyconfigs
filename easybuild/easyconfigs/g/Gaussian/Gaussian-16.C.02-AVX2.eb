@@ -1,0 +1,76 @@
+easyblock = 'Tarball'
+
+# IMPORTANT!!
+# Needs to be installed with --umask=007
+
+name = 'Gaussian'
+version = '16.C.02'
+versionsuffix = '-AVX2'
+local_developmentid = 'E6B-432N'
+
+homepage = 'https://www.gaussian.com/'
+
+# For the sake of users I advise changing the last line in the description
+# and versionsuffix to match the actual installed version.
+description = """
+Gaussian provides state-of-the-art capabilities for electronic structure
+modeling. Gaussian 16 is licensed for a wide variety of computer
+systems. All versions of Gaussian 16 contain every scientific/modeling
+feature, and none imposes any artificial limitations on calculations
+other than your computing resources and patience.
+
+This is the official gaussian AVX2 build.
+"""
+
+toolchain = SYSTEM
+
+# Gaussian is licensed software.
+# You need to pick the tar file of your choice from the DVD,
+# put it in your sources tree with a proper name.
+# (should be a tree that ordinary users can't read due to license restrictions)
+# and change the name in "sources"
+sources = [{
+    'filename': '%%(version)s%%(versionsuffix)s-%s.tbJ' % local_developmentid,
+    'extract_cmd': 'tar xvfJ %s',
+}]
+checksums = ['a4f793e84819b8bf979f2e9d603945b54ee2874e9c496d0cefbe5331c7ede757']
+
+start_dir = '..'
+
+postinstallcmds = [
+    'mkdir %(installdir)s/bin',
+    'ln -s ../g%(version_major)s/g%(version_major)s ../g%(version_major)s/ghelp %(installdir)s/bin',
+    'chmod -R o-rwx %(installdir)s/g%(version_major)s',
+]
+
+sanity_check_paths = {
+    'files': ['g%(version_major)s/g%(version_major)s', 'g%(version_major)s/l9999.exe'],
+    'dirs': ['g%%(version_major)s/%s' % x for x in ['bsd', 'tests', 'basis', 'doc']],
+}
+
+modextravars = {
+    'g%(version_major)sroot': '%(installdir)s',
+    'G%(version_major)sBASIS': '%(installdir)s/g%(version_major)s/basis',
+    'GAUSS_BSDDIR': '%(installdir)s/g%(version_major)s/bsd',
+    '_DSM_BARRIER': 'SHM',
+    'PGI_TERM': 'trace,abort',
+}
+
+modextrapaths = {
+    'GAUSS_EXEDIR': ['g%(version_major)s', 'g%(version_major)s/bsd'],
+    'PATH': ['g%(version_major)s/bsd', 'g%(version_major)s'],
+    'LD_LIBRARY_PATH': 'g%(version_major)s',
+}
+
+download_instructions = """
+    Gaussian is licensed software. You need to obtain a copy of Gaussian {version}{versionsuffix}. 
+    Once you have the DVD from Gaussian that contains the Gaussian installation files on it, 
+    copy the {local_developmentid}.tbJ file from the Gaussian DVD (GaussianDVD/tar/{local_developmentid}.tbJ) 
+    into the Gaussian source folder in EasyBuild (PATH_TO_EASYBUILD_FOLDER/sources/g/Gaussian).
+    Make sure to change the name of the tbJ file in the sources folder to {version}{versionsuffix}-{local_developmentid}.tbJ
+""".format(version=version, versionsuffix=versionsuffix, local_developmentid=local_developmentid)
+
+# This might be useful at some sites.
+# modaliases = {'g_searchlog': '%(installdir)s/g%(version_major)s/tests/searchlog.csh'}
+
+moduleclass = 'chem'
