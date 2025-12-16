@@ -61,30 +61,29 @@ _systemlibs = [
     'blake3'
 ]
 
-# Generate list of include paths and link path for syslibs to be passed to Bazel as --copt and --linkopt
-_bzl_include_copts = ' '.join(['--copt=-I$EBROOT%s/include' % x for x in [
-    'PYBIND11',
-    'LIBTIFF',
-    'LIBJPEGMINTURBO',
-    'ZLIB',
-    'LIBPNG',
-    'LZ4',
-    'ZSTD',
-    'CURL',
-    'XZ',
-    'BZIP2',
-    'LIBAVIF',
-    'TINYXML2',
-    'CMINARES',
-    'SNAPPY',
-    'BLOSC',
-    'LIBWEBP',
-    'NLOHMANN_JSON',
-    'BLAKE3MINC',
-]])
-
-_bzl_linkopts = _bzl_include_copts.replace('copt', 'linkopt').replace('include', 'lib').replace('-I', '-L')
-
+# Generate list of include paths and link paths for systemlibs to be passed to Bazel
+_bzl_syslib_opts = ' '.join(
+    f'--copt=-I$EBROOT{x}/include --host_copt=-I$EBROOT{x}/include '
+    f'--linkopt=-L$EBROOT{x}/lib  --host_linkopt=-L$EBROOT{x}/lib' for x in [
+        'PYBIND11',
+        'LIBTIFF',
+        'LIBJPEGMINTURBO',
+        'ZLIB',
+        'LIBPNG',
+        'LZ4',
+        'ZSTD',
+        'CURL',
+        'XZ',
+        'BZIP2',
+        'LIBAVIF',
+        'TINYXML2',
+        'CMINARES',
+        'SNAPPY',
+        'BLOSC',
+        'LIBWEBP',
+        'NLOHMANN_JSON',
+        'BLAKE3MINC',
+    ])
 
 # Download all bazel third_party artifacts by components and provide them in _dist_dir.
 _dist_dir = '%(builddir)s/dist/'
@@ -371,7 +370,7 @@ _preinstall_bazel_exports_startup += "'--output_user_root %(builddir)s/cache' &&
 # setup Bazel build options (pass CFLAGS, extra include paths and extra link paths for systemlibs:
 _preinstall_bazel_exports_buildopts = 'export TENSORSTORE_BAZEL_BUILD_OPTIONS="'
 _preinstall_bazel_exports_buildopts += '$(for i in  $CFLAGS;do echo --copt=$i; done) '  # pass CFLAGS to Bazel as copts
-_preinstall_bazel_exports_buildopts += '%s %s' % (_bzl_linkopts, _bzl_include_copts)
+_preinstall_bazel_exports_buildopts += _bzl_syslib_opts
 _preinstall_bazel_exports_buildopts += ' --distdir=%s' % _dist_dir
 # pass $TMPDIR from host into sandbox used by Bazel,
 # required when using RPATH linking because of RPATH wrapper scripts;
