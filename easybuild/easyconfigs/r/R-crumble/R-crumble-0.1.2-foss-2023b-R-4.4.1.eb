@@ -35,10 +35,6 @@ dependencies = [
     ('Safetensors', '0.4.4'),
 ]
 
-# Some R extensions (mclust, quantreg, waveslim for example) require the math library (-lm) to avoid undefined symbols.
-# Adding it to FLIBS makes sure it is present when needed.
-preconfigopts = 'export FLIBS="$FLIBS -lm" && '
-
 configopts = "--with-pic --enable-threads --enable-R-shlib"
 # some recommended packages may fail in a parallel build (e.g. Matrix), and
 # we're installing them anyway below
@@ -60,14 +56,6 @@ exts_default_options = {
 local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver != '%(ext_version)s') "
 local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
 exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
-
-# the dbarts extension needs an additional compiler flag on Arm systems to prevent "incompatible types" errors
-# cfr. https://github.com/vdorie/dbarts/issues/66
-if ARCH == 'aarch64':
-    local_dbarts_preinstallopts = 'sed -i "s|-c partition_neon.c|-flax-vector-conversions -c partition_neon.c|"'
-    local_dbarts_preinstallopts += ' src/misc/Makefile && '
-else:
-    local_dbarts_preinstallopts = ''
 
 # !! order of packages is important !!
 exts_list = [
