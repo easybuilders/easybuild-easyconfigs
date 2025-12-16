@@ -1,0 +1,112 @@
+easyblock = 'CMakeNinja'
+
+name = 'RStudio-Server'
+version = '2025.09.2+418'
+versionsuffix = '-R-%(rver)s'
+local_git_rev = '12f6d5e22720bd78dbd926bb344efe12d0dce83d'
+
+homepage = 'https://www.rstudio.com/'
+description = """This is the RStudio Server version.
+RStudio is a set of integrated tools designed to help you be more productive with R.
+
+The server can be started with:
+  rserver --server-daemonize=0 --www-port=8787
+
+If you need a database config one can be created with:
+  MYTMP=`mktemp -d` && echo -e "provider=sqlite\\ndirectory=${MYTMP}/sqlite" > "${MYTMP}/db.conf"
+and then used with:
+  rserver ... --database-config-file="${MYTMP}/db.conf"
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+source_urls = ['https://github.com/rstudio/rstudio/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['RStudio-Server-1.2.1335-fix_env.patch']
+checksums = [
+    {'v2025.09.2+418.tar.gz': '7e64e65bd3457855e981698dfb61f84e23de0d8bfcb2b1ffc28a38b5b964a769'},
+    {'RStudio-Server-1.2.1335-fix_env.patch': 'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b'},
+]
+
+# checksums = [
+#     {'v%(version)s.tar.gz': '4f976a3b77f1c3b6a61b8e1a1850aeba0e0a847efbfc17b03b2fcb19fce13d6a'},
+#     {'RStudio-Server-1.2.1335-fix_env.patch': 'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b'},
+# ]
+
+builddependencies = [
+    ('ant', '1.10.15', '-Java-%(javaver)s', SYSTEM),
+    ('CMake', '3.31.3'),
+    ('Ninja', '1.12.1'),
+    ('pkgconf', '2.3.0'),
+    ('nodejs', '22.16.0'),
+]
+
+dependencies = [
+    ('Boost', '1.88.0'),
+    ('Java', '21', '', SYSTEM),
+    ('R', '4.5.1'),
+    ('R-bundle-CRAN', '2025.10'),
+    ('SOCI', '4.1.2'),
+    ('yaml-cpp', '0.8.0'),
+]
+
+osdependencies = [
+    ('pam-devel', 'libpam0g-dev')
+]
+
+# Install dependencies via scripts. Done in subshell to preserve PWD
+preconfigopts = '(' + " && ".join([
+    "export RSTUDIO_TOOLS_ROOT='%(builddir)s'",
+    "cd '%(start_dir)s/dependencies/common'",
+    "./install-cef",
+    "./install-dictionaries",
+    "./install-mathjax",
+    "./install-quarto",  # Available for X86 and ARM
+    "./install-panmirror",
+    "./install-npm-dependencies",
+    "./install-copilot-language-server",
+    "./install-gwt",
+]) + ') && '
+
+configopts = " ".join([
+    "-DRSTUDIO_TOOLS_ROOT='%(builddir)s'",
+    "-DRSTUDIO_TARGET=Server",
+    "-DRSTUDIO_USE_SYSTEM_BOOST=ON",
+    "-DRSTUDIO_USE_SYSTEM_SOCI=ON",
+    "-DRSTUDIO_USE_SYSTEM_YAML_CPP=ON",
+    "-DQUARTO_ENABLED=ON",
+    "-DRSTUDIO_GIT_REVISION_HASH=" + local_git_rev
+])
+
+# fix for compatibility with Boost-1.85.0
+prebuildopts = "sed -i 's/return afterResponse_;/return static_cast<bool>(afterResponse_);/' "
+prebuildopts += '%(start_dir)s/src/cpp/core/json/JsonRpc.cpp && '
+
+sanity_check_commands = [
+    # RSession requires environment variables R_HOME and R_DOC_DIR
+    'R_HOME="$EBROOTR/lib64/R" R_DOC_DIR="$R_HOME/doc" rsession --verify-installation=1',
+    # RServer requires a db conf (this may also be needed for live use)
+    # Also create and set a soem dirs so it doesn't try to use $HOME
+    ' '.join([
+        'MYTMP=`mktemp -d`',
+        '&& export RSTUDIO_CONFIG_DIR="$MYTMP"',
+        '&& export XDG_DATA_HOME="$MYTMP/.data"',
+        '&& export XDG_CACHE_HOME="$MYTMP/.cache"',
+        '&& mkdir "$XDG_DATA_HOME" "$XDG_CACHE_HOME"',
+        '&& export RS_LOG_DIR="$MYTMP/log"',
+        '&& echo -e "provider=sqlite\\ndirectory=$MYTMP/db" >> "$MYTMP/db.conf"',
+        '&& rserver',
+        '--verify-installation=1',
+        '--server-user="$USER"',
+        '--database-config-file="$MYTMP/db.conf"',
+        '--server-data-dir="$MYTMP/sdd"',
+        '--secure-cookie-key-file="$MYTMP/secure-cookie-key"',
+    ]),
+]
+
+sanity_check_paths = {
+    'files': ['bin/rstudio-server'],
+    'dirs': ['bin', 'extras', 'resources', 'www', 'www-symbolmaps', 'R'],
+}
+
+moduleclass = 'lang'
