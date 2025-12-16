@@ -7,6 +7,7 @@ homepage = 'https://github.com/google/googletest'
 description = "Google's framework for writing C++ tests on a variety of platforms"
 
 toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+toolchainopts = {'pic': True}
 
 source_urls = ['https://github.com/google/googletest/archive/refs/tags/']
 sources = ['v%(version)s.tar.gz']
@@ -16,12 +17,11 @@ builddependencies = [
     ('binutils', '2.42'),
     ('CMake', '3.29.3'),
 ]
-# build twice, once for static, once for shared libraries
-configopts = ['', ' -DBUILD_SHARED_LIBS=ON ']
+# build static libs only as shared libraries cause issues with test startup on some systems
+build_shared_libs = False
 
 sanity_check_paths = {
-    'files': ['lib/lib%s.%s' % (local_lib, local_ext) for local_lib in ['gmock', 'gmock_main', 'gtest', 'gtest_main']
-              for local_ext in ['a', SHLIB_EXT]],
+    'files': ['lib/lib%s.a' % local_lib for local_lib in ['gmock', 'gmock_main', 'gtest', 'gtest_main']],
     'dirs': ['include/gmock', 'include/gtest'],
 }
 

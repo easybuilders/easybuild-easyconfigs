@@ -53,19 +53,16 @@ class StyleTest(TestCase):
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
         specs = sorted(specs)
 
-        self.mock_stderr(True)
-        self.mock_stdout(True)
-        result = check_easyconfigs_style(specs)
-        stderr, stdout = self.get_stderr(), self.get_stdout()
-        self.mock_stderr(False)
-        self.mock_stdout(False)
+        with self.mocked_stdout_stderr():
+            result = check_easyconfigs_style(specs)
+            stderr, stdout = self.get_stderr(), self.get_stdout()
 
-        error_msg = '\n'.join([
-            "There shouldn't be any code style errors (and/or warnings), found %d:" % result,
-            stdout,
-            stderr,
-        ])
-        self.assertEqual(result, 0, error_msg)
+        if result != 0:
+            self.fail('\n'.join([
+                "There shouldn't be any code style errors (and/or warnings), found %d:" % result,
+                stdout,
+                stderr,
+            ]))
 
 
 def suite(loader=None):

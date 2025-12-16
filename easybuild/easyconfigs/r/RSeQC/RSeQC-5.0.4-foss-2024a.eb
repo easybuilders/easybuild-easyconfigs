@@ -1,0 +1,60 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Adam Huffman
+# The Francis Crick Institute
+# Update: Petr Král (INUITS)
+# Update: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'PythonBundle'
+
+name = 'RSeQC'
+version = '5.0.4'
+
+homepage = 'http://rseqc.sourceforge.net/'
+description = """RSeQC provides a number of useful modules that can
+ comprehensively evaluate high throughput sequence data especially RNA-seq
+ data. Some basic modules quickly inspect sequence quality, nucleotide
+ composition bias, PCR bias and GC bias, while RNA-seq specific modules
+ evaluate sequencing saturation, mapped reads distribution, coverage
+ uniformity, strand specificity, transcript level RNA integrity etc."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('hatchling', '1.24.2'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Pysam', '0.22.1'),
+    ('bx-python', '0.13.0'),
+    ('pyBigWig', '0.3.24'),
+    ('matplotlib', '3.9.2'),
+]
+
+exts_list = [
+    ('logomaker', '0.8.7', {
+        'checksums': ['63783ce6e24449d6f1f01ce29c4ae1b91f6e54bc198e5da40ad18fcd0efc3302'],
+    }),
+    (name, version, {
+        'sources': [SOURCELOWER_TAR_GZ],
+        'modulename': 'qcmodule',
+        'checksums': ['b7f3996f3de0b0b0a09eec949281a8f3e665a20827fcb3cbbd7546b94574a088'],
+    }),
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+options = {'modulename': 'qcmodule'}
+
+sanity_check_paths = {
+    'files': ['bin/bam_stat.py', 'bin/overlay_bigwig.py', 'bin/split_paired_bam.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = [
+    'bam_stat.py --help',
+    'overlay_bigwig.py --help',
+    'split_bam.py --help',
+]
+
+moduleclass = 'bio'
