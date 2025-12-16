@@ -1,0 +1,58 @@
+easyblock = 'CMakeMake'
+
+name = 'AdaptiveCpp'
+version = '25.10.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://adaptivecpp.github.io/'
+description = '''
+AdaptiveCpp is the independent, community-driven modern platform for C++-based
+heterogeneous programming models targeting CPUs and GPUs from all major vendors.
+AdaptiveCpp lets applications adapt themselves to all the hardware found in the
+system. This includes use cases where a single binary needs to be able to target
+all supported hardware, or utilize hardware from different vendors simultaneously.
+'''
+
+toolchain = {'name': 'llvm-compilers', 'version': '20.1.8'}
+
+github_account = 'AdaptiveCpp'
+source_urls = [GITHUB_SOURCE]
+sources = [V_VERSION_TAR_GZ]
+checksums = ['334b16ebff373bd2841f83332c2ae9a45ec192f2cf964d5fdfe94e1140776059']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('CUDA', '12.9.1', '', SYSTEM),
+]
+
+local_configopts = [
+    # LLVM backend
+    '-DLLVM_ROOT=$EBROOTLLVM',
+    '-DCLANG_EXECUTABLE_PATH=$EBROOTLLVM/bin/clang++',
+    '-DCLANG_INCLUDE_PATH=$EBROOTLLVM/include/clang/20/include',
+    # CUDA backend
+    '-DWITH_CUDA_BACKEND=ON',
+    '-DCUDA_TOOLKIT_ROOT_DIR=$EBROOTCUDA',
+    # ROCm backend
+    '-DWITH_ROCM_BACKEND=OFF',
+    # OpenCL backend (for e.g. Intel GPUs)
+    '-DWITH_OPENCL_BACKEND=OFF',
+    # General options
+    '-DACPP_COMPILER_FEATURE_PROFILE=full',
+]
+configopts = ' '.join(local_configopts)
+
+sanity_check_paths = {
+    'files': ['bin/acpp', 'lib/libacpp-clang.so', 'etc/AdaptiveCpp/acpp-core.json'],
+    'dirs': ['include/AdaptiveCpp', 'lib/cmake/AdaptiveCpp/'],
+}
+sanity_check_commands = [
+    'acpp --version',
+    'acpp --acpp-version | grep "AdaptiveCpp version: 25.10.0"',
+]
+
+moduleclass = 'lang'
