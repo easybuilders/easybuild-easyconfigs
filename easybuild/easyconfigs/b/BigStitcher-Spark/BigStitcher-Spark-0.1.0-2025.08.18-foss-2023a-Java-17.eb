@@ -1,0 +1,49 @@
+easyblock = 'Tarball'
+
+name = 'BigStitcher-Spark'
+version = '0.1.0-2025.08.18'
+versionsuffix = '-Java-%(javaver)s'
+local_commit = '0c1806f'
+
+homepage = 'https://github.com/JaneliaSciComp/BigStitcher-Spark'
+description = """This package allows you to run compute-intense parts of BigStitcher distributed on your workstation,
+a cluster or the cloud using Apache Spark.."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/JaneliaSciComp/BigStitcher-Spark/archive']
+sources = [{
+    'download_filename': f'{local_commit}.tar.gz',
+    'filename': f'%(name)s-%(version)s-{local_commit}.tar.gz',
+}]
+checksums = ['6015e6bfee59aa42660667800a308b5e131e2edf6035977b8c676d5afb70abd4']
+
+builddependencies = [
+    ('Maven', '3.9.7', '', SYSTEM),
+]
+
+dependencies = [
+    ('Java', '17', '', SYSTEM),
+    ('Spark', '3.5.1', '-Java-%(javaver)s'),
+]
+
+postinstallcmds = [
+    'mvn clean package -P fatjar',
+    'cp -r %(start_dir)s/target %(installdir)s'
+]
+
+sanity_check_paths = {
+    'files': ['target/%(name)s-0.1.0-SNAPSHOT.jar'],
+    'dirs': ['target'],
+}
+
+sanity_check_commands = [
+    """
+    ( spark-submit --master local[1] --driver-memory 256m \
+    --class net.preibisch.bigstitcher.spark.SparkResaveN5 \
+    %(installdir)s/target/BigStitcher-Spark-0.1.0-SNAPSHOT.jar \
+    --help 2>&1 ) | grep 'Usage:'
+    """
+]
+
+moduleclass = 'tools'
