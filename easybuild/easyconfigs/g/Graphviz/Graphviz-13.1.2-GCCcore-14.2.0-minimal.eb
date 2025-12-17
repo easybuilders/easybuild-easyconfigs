@@ -1,0 +1,86 @@
+easyblock = 'ConfigureMake'
+
+name = 'Graphviz'
+version = '13.1.2'
+versionsuffix = '-minimal'
+local_pyver_major = '3'
+
+homepage = 'https://www.graphviz.org/'
+description = """Graphviz is open source graph visualization software. Graph visualization
+ is a way of representing structural information as diagrams of
+ abstract graphs and networks. It has important applications in networking,
+ bioinformatics,  software engineering, database and web design, machine learning,
+ and in visual interfaces for other technical domains."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ['https://gitlab.com/graphviz/graphviz/-/archive/%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-8.1.0_skip-install-data-hook.patch']
+checksums = [
+    {'graphviz-13.1.2.tar.gz': '0e79b8402e8ea13f05c0fc0e30604f1d0731cd3f60f85850cedac7e0ee420ef8'},
+    {'Graphviz-8.1.0_skip-install-data-hook.patch': '834666f1b5a8eff35f30899419e322739d71a2936408b27c8ffb4423a99a38e1'},
+]
+
+builddependencies = [
+    ('Autotools', '20240712'),
+    ('binutils', '2.42'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('SWIG', '4.3.1'),
+    ('pkgconf', '2.3.0'),
+    ('groff', '1.23.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('libgd', '2.3.3'),
+    ('zlib', '1.3.1'),
+    ('bzip2', '1.0.8'),
+    ('libjpeg-turbo', '3.1.0'),
+    ('expat', '2.6.4'),
+]
+
+preconfigopts = './autogen.sh NOCONFIG && '
+
+_copts = [
+    f'--enable-python{local_pyver_major}=yes',
+    '--enable-guile=no --enable-lua=no --enable-ocaml=no',
+    '--enable-r=no --enable-ruby=no --enable-php=no',
+    '--enable-java=no',
+    '--enable-ghostscript=no',
+    # Disable GUI-related options
+    '--without-x --without-qt --without-gtk --without-glut --enable-tcl=no',
+    # Use ltdl from libtool in EB
+    '--enable-ltdl --without-included-ltdl --disable-ltdl-install',
+    '--with-ltdl-include=$EBROOTLIBTOOL/include --with-ltdl-lib=$EBROOTLIBTOOL/lib',
+    '--with-expatincludedir=$EBROOTEXPAT/include --with-expatlibdir=$EBROOTEXPAT/lib',
+    '--with-zincludedir=$EBROOTZLIB/include --with-zlibdir=$EBROOTZLIB/lib',
+]
+
+configopts = ' '.join(_copts)
+
+postinstallcmds = ['%(installdir)s/bin/dot -c']  # Writes plugin configuration
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['acyclic', 'bcomps', 'ccomps', 'cluster', 'diffimg', 'dijkstra', 'dot',
+                                     'dot_builtins', 'edgepaint', 'gc', 'gml2gv', 'graphml2gv', 'gv2gml',
+                                     'gvcolor', 'gvgen', 'gvmap', 'gvmap.sh', 'gvpack', 'gvpr', 'gxl2gv',
+                                     'neato', 'mm2gv', 'nop', 'prune', 'sccmap', 'tred', 'unflatten']] +
+             ['lib/%s.%s' % (x, SHLIB_EXT) for x in ['libcdt', 'libcgraph', 'libgvc', 'libgvpr',
+                                                     'libpathplan', 'libxdot']],
+    'dirs': ['include', 'lib/graphviz', 'lib/graphviz/python%s' % local_pyver_major,
+             'lib/pkgconfig', 'share']
+}
+
+sanity_check_commands = [
+    ("test ! -d $EBROOTTCL/lib/*/graphviz", ''),
+    ("test ! -d $EBROOTTCL/lib64/*/graphviz", ''),
+    ('python', '-c "import gv"'),
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/graphviz/python%s' % local_pyver_major,
+}
+
+moduleclass = 'vis'
