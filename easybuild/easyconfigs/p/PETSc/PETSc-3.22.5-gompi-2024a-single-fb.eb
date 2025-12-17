@@ -1,0 +1,52 @@
+##
+# Author: Nicola Spallanzani <nicola.spallanzani@cnr.it>
+#
+# This recipe was obtained from PETSc-3.20.3-foss-2023a.eb
+#      Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+#      Author:    Jasper Grimm (UoY)
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'PETSc'
+version = '3.22.5'
+versionsuffix = '-single-fb'
+
+homepage = 'https://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'gompi', 'version': '2024a'}
+toolchainopts = {'openmp': True, 'usempi': True, 'pic': True}
+
+source_urls = [
+    'https://gitlab.com/petsc/petsc/-/archive/v%(version)s/',
+]
+sources = ['%(namelower)s-v%(version)s.tar.gz']
+checksums = ['69ee2bb9e17867b4f7a3875023708891b66cd811d967b0612acbe7391018dca7']
+
+builddependencies = [('CMake', '3.29.3')]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('FlexiBLAS', '3.4.4'),
+]
+
+configopts = ' --LIBS="$LIBS -lrt" '
+configopts += '--with-scalar-type="complex" '
+configopts += '--with-precision="single" '
+configopts += '--with-blas-lapack-lib="$EBROOTFLEXIBLAS/lib/libflexiblas.a -lgfortran" '
+
+shared_libs = 1
+
+# only required when building PETSc in a SLURM job environment
+# configopts += '--with-batch=1 --known-mpi-shared-libraries=1 --known-64-bit-blas-indices=0 '
+# prebuildopts = "srun ./conftest-arch-linux2-c-opt && ./reconfigure-arch-linux2-c-opt.py && "
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib', 'lib64', 'include']
+}
+
+
+moduleclass = 'numlib'
