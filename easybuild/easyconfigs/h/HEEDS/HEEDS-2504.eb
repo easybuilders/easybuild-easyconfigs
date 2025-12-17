@@ -1,0 +1,46 @@
+easyblock = 'Binary'
+name = 'HEEDS'
+version = '2504'
+
+homepage = 'https://plm.sw.siemens.com/en-US/simcenter/integration-solutions/heeds/'
+description = """HEEDS enables users to explore a wide range of design options and parameters, facilitating the
+discovery of optimized solutions to complex engineering problems."""
+
+toolchain = SYSTEM
+
+local_source = 'install_Simcenter-HEEDS-MDO_%(version)s_Linux64.bin'
+sources = [local_source]
+checksums = ['b955b5da11cca62d6d63cd274ea4cc827a262daf67f1da67b7bf2910f6fba7c5']
+download_instructions = f'Manually obtain {sources[0]} from Siemens'
+
+install_cmd = 'export IATEMPDIR=%(builddir)s && '
+install_cmd += f'./{local_source} -i silent '
+install_cmd += '-DUSER_INSTALL_DIR=%(installdir)s '
+install_cmd += '-DCHOSEN_INSTALL_BUNDLE_NUM=1 '  # 1 == just the application no license server
+
+# Wrapper scripts are not included in silent install
+local_scripts = ['HEEDSEvalServer', 'HEEDSMDO', 'HEEDS_NN_Trainer', 'HEEDSPost', 'HEEDSWorkflow']
+
+local_launcher = """#!/bin/bash
+BINARY=BIN_PLACEHOLDER
+APPDIR="%(installdir)s/MDO/Ver%(version)s/LX64/"
+export LD_LIBRARY_PATH="$APPDIR":$LD_LIBRARY_PATH
+unset QT_PLUGIN_PATH
+"$APPDIR/{0}" "$@"
+"""
+
+postinstallcmds = ['mkdir %(installdir)s/bin']
+postinstallcmds += ["echo '{0}' > %(installdir)s/bin/{1}".format(local_launcher.format(x), x) for x in local_scripts]
+postinstallcmds += ['chmod a+x %(installdir)s/bin/*']
+
+# Optional
+# modextravars = {
+#     'RCTECH_LICENSE_FILE': '27070@lic.example.com',
+# }
+
+sanity_check_paths = {
+    'files': [f'MDO/Ver%(version)s/LX64/{x}' for x in local_scripts],
+    'dirs': ['MDO'],
+}
+
+moduleclass = 'cae'

@@ -1,0 +1,34 @@
+name = 'ESMF'
+version = '8.9.0'
+
+homepage = 'https://github.com/esmf-org/esmf'
+description = """The Earth System Modeling Framework (ESMF) is a suite of software tools for developing
+ high-performance, multi-component Earth science modeling applications."""
+
+toolchain = {'name': 'intel', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'openmp': True, 'cstd': 'c++11', 'pic': True}
+
+source_urls = ['https://github.com/esmf-org/esmf/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['ESMF-8.9.0_libopts.patch']
+checksums = [
+    {'v8.9.0.tar.gz': '586e0101d76ff9842d9ad43567fae50317ee794d80293430d9f1847dec0eefa5'},
+    {'ESMF-8.9.0_libopts.patch': '336fe13aeb2a751a43d318393f8a75e2a3c6887bb38a63f769032559eef93760'},
+]
+
+builddependencies = [('CMake', '3.31.8')]
+
+dependencies = [
+    ('netCDF', '4.9.3'),
+    ('netCDF-Fortran', '4.6.2'),
+    ('netCDF-C++4', '4.3.1'),
+    ('libarchive', '3.8.1'),
+]
+
+buildopts = 'ESMF_NETCDF_INCLUDE=$EBROOTNETCDFMINFORTRAN/include '
+buildopts += 'ESMF_NETCDF_LIBS="`nc-config --libs` `nf-config --flibs` `ncxx4-config --libs`"'
+
+# too parallel causes the build to become really slow
+maxparallel = 8
+
+moduleclass = 'geo'
