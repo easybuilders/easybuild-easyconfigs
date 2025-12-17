@@ -1,0 +1,32 @@
+name = 'HDF5'
+# Note: Odd minor releases are only RCs and should not be used.
+version = '1.14.5'
+
+homepage = 'https://portal.hdfgroup.org/display/support'
+description = """HDF5 is a data model, library, and file format for storing and managing data.
+ It supports an unlimited variety of datatypes, and is designed for flexible
+ and efficient I/O and for high volume and complex data."""
+
+toolchain = {'name': 'nvompi', 'version': '2024.9'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+
+source_urls = ['https://github.com/HDFGroup/hdf5/archive']
+sources = ['hdf5_%(version)s.tar.gz']
+patches = ['HDF5-1.14.5_nvompi_fix_use_mpi.patch']
+checksums = [
+    'c83996dc79080a34e7b5244a1d5ea076abfd642ec12d7c25388e2fdd81d26350',  # hdf5_1.14.5.tar.gz
+    '60ef02bdd12ae62d3f284d2434728dc6b9bad61ecacc7ab9320001ce3c337df4',  # HDF5-1.14.5_nvompi_fix_use_mpi.patch
+]
+
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('Szip', '2.1.1'),
+]
+
+postinstallcmds = [
+    'sed -i -r "s, -I[^[:space:]]+H5FDsubfiling , -I%(installdir)s/include ,g" %(installdir)s/bin/h5c++',
+    'sed -i -r "s, -I[^[:space:]]+H5FDsubfiling , -I%(installdir)s/include ,g" %(installdir)s/bin/h5pcc',
+]
+
+moduleclass = 'data'
