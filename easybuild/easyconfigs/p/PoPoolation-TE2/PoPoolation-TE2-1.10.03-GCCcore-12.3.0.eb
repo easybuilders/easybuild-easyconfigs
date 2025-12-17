@@ -1,0 +1,60 @@
+easyblock = 'Binary'
+
+name = 'PoPoolation-TE2'
+version = '1.10.03'
+
+homepage = 'https://sourceforge.net/p/popoolation-te2/wiki/Home/'
+description = """
+PoPoolationTE2: enables comparative population genomics of transposable elements (TE). As a
+major innovation PoPoolation TE2 introduces the physical pileup file which allows to
+homogenize the power to identify TEs and thus enables an unbiased comparison of TE abundance
+between samples, where samples could be pooled populations, tissues or sequenced individuals.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+builddependencies = [('binutils', '2.40')]
+
+dependencies = [
+    ('BWA', '0.7.17'),
+    ('Java', '11', '', SYSTEM),
+]
+
+source_urls = ['https://sourceforge.net/projects/popoolation-te2/files/']
+sources = [
+    {
+        'filename': 'popte2.jar',
+        'download_filename': 'popte2-v%(version)s.jar',
+    },
+    'walkthrough-refgenome.zip',
+    'walkthrough-reads.zip',
+
+]
+checksums = [
+    {'popte2.jar': '95eca422a6d295277d20ec1cbbcb9000bad1f380ae7cba9005f20ff211907e32'},
+    {'walkthrough-refgenome.zip': 'ce3cb0b952a99fcae6b348cd888ee6f4c3a45d7e0b208e211ecb290cacde618c'},
+    {'walkthrough-reads.zip': '909a8f1d507bb20518f6ef1ac313a59b8e8b02b70fc911e2d6d6efdce2e258f3'},
+]
+
+postinstallcmds = [
+    "cd %(installdir)s && unzip walkthrough-refgenome.zip",
+    "cd %(installdir)s && unzip walkthrough-reads.zip",
+    "cd %(installdir)s && rm walkthrough-refgenome.zip walkthrough-reads.zip",
+]
+
+sanity_check_commands = [
+    'java -jar $EBROOTPOPOOLATIONMINTE2/popte2.jar --help 2>&1 | grep "Usage: java"',
+]
+
+sanity_check_paths = {
+    'files': ['popte2.jar'],
+    'dirs': ['walkthrough-refgenome', 'walkthrough-reads'],
+}
+
+modloadmsg = """
+To execute PoPoolation-TE2 run: java -jar $EBROOTPOPOOLATIONMINTE2/popte2.jar
+The reference genome and the Te-hierachy can be found in $EBROOTPOPOOLATIONMINTE2/walkthrough-refgenome
+Reads provided by the developer can be found under $EBROOTPOPOOLATIONMINTE2/walkthrough-reads
+"""
+
+moduleclass = 'bio'

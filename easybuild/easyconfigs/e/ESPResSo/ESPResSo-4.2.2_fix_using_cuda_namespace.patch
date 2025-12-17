@@ -1,0 +1,40 @@
+Resolve CUDA namespace, see https://github.com/espressomd/espresso/issues/5125
+
+
+diff -ruN espresso-4.2.2.orig/src/utils/include/utils/flatten.hpp espresso-4.2.2/src/utils/include/utils/flatten.hpp
+--- espresso-4.2.2.orig/src/utils/include/utils/flatten.hpp	2024-05-22 14:24:58.000000000 +0200
++++ espresso-4.2.2/src/utils/include/utils/flatten.hpp	2025-07-25 09:50:04.196956004 +0200
+@@ -27,8 +27,9 @@
+ template <class Container, class OutputIterator, class = void>
+ struct flatten_impl {
+   static OutputIterator apply(Container const &c, OutputIterator out) {
++    using ValueType = typename Container::value_type;
+     for (auto const &e : c) {
+-      out = flatten_impl<decltype(e), OutputIterator>::apply(e, out);
++      out = flatten_impl<ValueType, OutputIterator>::apply(e, out);
+     }
+ 
+     return out;
+diff -ruN espresso-4.2.2.orig/src/utils/include/utils/get.hpp espresso-4.2.2/src/utils/include/utils/get.hpp
+--- espresso-4.2.2.orig/src/utils/include/utils/get.hpp	2024-05-22 14:24:58.000000000 +0200
++++ espresso-4.2.2/src/utils/include/utils/get.hpp	2025-07-25 09:50:04.197895214 +0200
+@@ -22,10 +22,18 @@
+ #include <cstddef>
+ #include <tuple>
+ 
++#ifdef __CUDACC__
++#include <cuda/std/tuple>
++#endif
++
+ namespace Utils {
+ template <std::size_t I, typename T>
+ const std::tuple_element_t<I, T> &get(const T &v) {
+-  return std::get<I>(v);
++#ifdef __CUDACC__
++  using namespace cuda::std;
++#endif
++  using namespace std;
++  return get<I>(v);
+ }
+ 
+ template <class T> struct tuple_size : std::tuple_size<T> {};

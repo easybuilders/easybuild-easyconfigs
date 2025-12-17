@@ -1,0 +1,59 @@
+A single test failed when building on AMD Genoa a.k.a Zen4 with the error message
+reported in https://github.com/google/highway/issues/1913
+
+Building v1.0.5 passed all tests. Hence, this patch uses some of the changes made
+in v1.0.5 to let the single failing test succeed.
+
+Looking at the PRs added by v1.0.5 a promising candidate was identified
+(https://github.com/google/highway/pull/1276) and all changed files in the PR
+were "studied in detail" (assessed if the changes could be related to the failing
+test on Zen4). Luckily, the four changes provided in the patch below were
+found to resolve the issue. It was also tested if a subset of these four changes
+would resolve the issue, but this did not succeed.
+
+Author: Thomas Roeblitz (University of Bergen)
+
+diff --git a/hwy/ops/x86_256-inl.h b/hwy/ops/x86_256-inl.h
+index 4e2e83e8..2fbf99c7 100644
+--- a/hwy/ops/x86_256-inl.h
++++ b/hwy/ops/x86_256-inl.h
+@@ -4185,7 +4185,7 @@ HWY_INLINE Vec128<uint32_t> LookupAndConcatHalves(Vec256<T> v) {
+ #if HWY_TARGET <= HWY_AVX3_DL
+   alignas(32) static constexpr uint32_t kMap[8] = {
+       LO, HI, 0x10101010 + LO, 0x10101010 + HI, 0, 0, 0, 0};
+-  const auto result = _mm256_permutexvar_epi8(v.raw, Load(d32, kMap).raw);
++  const auto result = _mm256_permutexvar_epi8(Load(d32, kMap).raw, v.raw);
+ #else
+   alignas(32) static constexpr uint32_t kMap[8] = {LO,  HI,  ~0u, ~0u,
+                                                    ~0u, ~0u, LO,  HI};
+@@ -4208,7 +4208,7 @@ HWY_INLINE Vec128<uint32_t, 2> LookupAndConcatQuarters(Vec256<T> v) {
+ #if HWY_TARGET <= HWY_AVX3_DL
+   alignas(32) static constexpr uint16_t kMap[16] = {
+       LO, HI, 0x1010 + LO, 0x1010 + HI, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+-  const auto result = _mm256_permutexvar_epi8(v.raw, Load(d16, kMap).raw);
++  const auto result = _mm256_permutexvar_epi8(Load(d16, kMap).raw, v.raw);
+   return LowerHalf(Vec128<uint32_t>{_mm256_castsi256_si128(result)});
+ #else
+   constexpr uint16_t ff = static_cast<uint16_t>(~0u);
+@@ -4229,7 +4229,7 @@ HWY_API Vec32<uint8_t> TruncateTo(D /* tag */, Vec256<uint64_t> v) {
+ #if HWY_TARGET <= HWY_AVX3_DL
+   alignas(32) static constexpr uint32_t kMap[8] = {0x18100800u, 0, 0, 0,
+                                                    0,           0, 0, 0};
+-  const auto result = _mm256_permutexvar_epi8(v.raw, Load(d32, kMap).raw);
++  const auto result = _mm256_permutexvar_epi8(Load(d32, kMap).raw, v.raw);
+   return LowerHalf(LowerHalf(LowerHalf(Vec256<uint8_t>{result})));
+ #else
+   alignas(32) static constexpr uint32_t kMap[8] = {0xFFFF0800u, ~0u, ~0u, ~0u,
+diff --git a/hwy/ops/x86_512-inl.h b/hwy/ops/x86_512-inl.h
+index 167922d8..83f2ee67 100644
+--- a/hwy/ops/x86_512-inl.h
++++ b/hwy/ops/x86_512-inl.h
+@@ -3497,7 +3497,7 @@ HWY_API Vec128<uint8_t> TruncateTo(D /* tag */, const Vec512<uint32_t> v) {
+   alignas(16) static constexpr uint8_t k8From32[16] = {
+     0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60};
+   const Vec512<uint8_t> bytes{
+-      _mm512_permutexvar_epi32(LoadDup128(d8, k8From32).raw, v.raw)};
++      _mm512_permutexvar_epi8(LoadDup128(d8, k8From32).raw, v.raw)};
+ #else
+   const Full512<uint32_t> d32;
+   // In each 128 bit block, gather the lower byte of 4 uint32_t lanes into the

@@ -1,0 +1,36 @@
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'json-fortran'
+version = '9.0.5'
+
+homepage = 'https://github.com/jacobwilliams/json-fortran'
+description = "JSON-Fortran: A Modern Fortran JSON API"
+
+toolchain = {'name': 'intel-compilers', 'version': '2025.1.1'}
+
+source_urls = ['https://github.com/jacobwilliams/json-fortran/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['8ec27366be7f861cd14b277fd997be1ebee2a7e776a0b904b6f2425f0a274984']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+]
+
+configopts = '-DUSE_GNU_INSTALL_CONVENTION=TRUE'
+
+runtest = 'check'
+
+# make sure the *.mod files are copied over
+postinstallcmds = ['cp -f json_*.mod %(installdir)s/include']
+
+# the static library is called libjsonfortran-static.a
+sanity_check_paths = {
+    'files': ['lib/libjsonfortran-static.a', 'lib/libjsonfortran.%s' % SHLIB_EXT,
+              'include/json_module.mod', 'include/json_parameters.mod'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'
