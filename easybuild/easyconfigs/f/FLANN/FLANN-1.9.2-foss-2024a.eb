@@ -1,0 +1,46 @@
+# Contribution from the NIHR Biomedical Research Centre
+# Guy's and St Thomas' NHS Foundation Trust and King's College London
+# uploaded by J. Sassmannshausen
+
+easyblock = 'CMakeMake'
+
+name = 'FLANN'
+version = '1.9.2'
+
+homepage = 'https://github.com/mariusmuja/flann/'
+description = """FLANN is a library for performing fast approximate nearest
+neighbor searches in high dimensional spaces.
+It contains a collection of algorithms we found to work best for nearest
+neighbor search and a system for automatically choosing the best algorithm
+and optimum parameters depending on the dataset. FLANN is written in C++ and
+contains bindings for the following languages: C, MATLAB, Python, and Ruby.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/mariusmuja/flann/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['e26829bb0017f317d9cc45ab83ddcb8b16d75ada1ae07157006c1e7d601c8824']
+
+builddependencies = [('CMake', '3.29.3')]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('lz4', '1.9.4'),
+]
+
+configopts = "-DUSE_OPENMP=ON -DUSE_MPI=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_C_BINDINGS=ON"
+
+modextrapaths = {'PYTHONPATH': ['share/flann/python']}
+
+sanity_check_paths = {
+    'files': ['lib/libflann_cpp_s.a', 'lib/libflann_s.a',
+              'lib/libflann_cpp.%s' % SHLIB_EXT, 'lib/libflann.%s' % SHLIB_EXT],
+    'dirs': ['include/flann', 'lib/pkgconfig', 'share/flann/python'],
+}
+
+sanity_check_commands = ["python -s -c 'import pyflann'"]
+
+moduleclass = 'lib'
