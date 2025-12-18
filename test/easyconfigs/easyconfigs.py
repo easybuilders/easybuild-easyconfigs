@@ -639,8 +639,8 @@ class EasyConfigTest(TestCase):
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1', r'OPERA-MS-0\.9\.0-20240703'])],
             # Ceres-Solver-2.2.0 and COLMAP need SuiteSparse-7.8.2-METIS-5.1.0 from the used toolchain version
-            'SuiteSparse': [(r'7\.8\.2; versionsuffix: -METIS-5.1.0', [r'Ceres-Solver-2\.2\.0-foss-2024a'])],
-            'SuiteSparse': [(r'7\.8\.2; versionsuffix: -METIS-5.1.0', [r'COLMAP-3\.12\.6-foss-2024a'])],
+            'SuiteSparse': [(r'7\.8\.2; versionsuffix: -METIS-5.1.0', [r'Ceres-Solver-2\.2\.0-foss-2024a',
+                                                                       r'COLMAP-3\.12\.6-foss-2024a'])],
             # CheckM2 and its dep LightGBM requires scikit-learn-1.6.1
             'scikit-learn': [(r'1\.6\.1', [r'CheckM2-1\.1\.0-', r'LightGBM-4\.6\.0-'])],
             # UShER requires tbb-2020.3 as newer versions will not build
