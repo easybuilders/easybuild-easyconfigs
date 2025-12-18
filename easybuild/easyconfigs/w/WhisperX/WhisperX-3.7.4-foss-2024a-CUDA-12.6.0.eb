@@ -1,0 +1,57 @@
+easyblock = 'PythonBundle'
+
+name = 'WhisperX'
+version = '3.7.4'
+versionsuffix = '-CUDA-%(cudaver)s'
+local_pytorch_version = '2.7.1'
+
+homepage = 'https://github.com/m-bain/whisperx'
+description = "Automatic Speech Recognition with Word-level Timestamps (& Diarization)."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [('Cython', '3.0.10')]
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('PyTorch', '2.7.1', versionsuffix),
+    ('SciPy-bundle', '2024.05'),
+    ('CTranslate2', '4.5.0', versionsuffix),
+    ('NLTK', '3.9.1'),
+    ('Transformers', '4.55.0'),
+    ('FFmpeg', '7.0.2'),
+    ('ONNX-Runtime', '1.23.2', versionsuffix),
+    ('pyannote.audio', '3.4.0', versionsuffix),
+]
+
+# unpin versions of dependencies in WhisperX
+local_whisperx_preinstallopts = (
+    "sed -E -i "
+    r""" '/^[[:space:]]*dependencies[[:space:]]*=[[:space:]]*[[]/"""
+    r""",/^[[:space:]]*]/{s/"([^"<>!=~;[:space:]]+)[^"]*"/"\1"/g}' """
+    "pyproject.toml && "
+)
+
+exts_list = [
+    ('faster-whisper', '1.2.0', {
+        'checksums': ['56b20d616a575049a79f33b04f02db0868ce38c5d057a0b816d36ca59a6d2598'],
+    }),
+    ('av', '14.0.1', {
+        'checksums': ['2b0a17301af469ddaea46b5c1c982df1b7b5de8bc6c94cdc98cad4a67178c82a'],
+    }),
+    (name, version, {
+        'preinstallopts': local_whisperx_preinstallopts,
+        'source_urls': ['https://github.com/m-bain/whisperX/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['ffe9ce94d8895e7ba6030f3cc35a357788a458462051422dda6428d2f95324a7'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["%(namelower)s -h"]
+
+moduleclass = 'ai'
