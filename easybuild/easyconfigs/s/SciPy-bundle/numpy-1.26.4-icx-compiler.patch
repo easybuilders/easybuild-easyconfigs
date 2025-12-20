@@ -1,0 +1,198 @@
+Makes sure the new icx compiler is being picked up, and not the icc one. 
+Author: J. Sassmannshausen (Imperial College London/UK)
+diff --git a/numpy-1.26.4.orig/numpy/distutils/ccompiler_opt.py b/numpy-1.26.4/numpy/distutils/ccompiler_opt.py
+index 37a5368..5af425d 100644
+--- a/numpy-1.26.4.orig/numpy/distutils/ccompiler_opt.py
++++ b/numpy-1.26.4/numpy/distutils/ccompiler_opt.py
+@@ -211,6 +211,11 @@ class _Config:
+             opt = '-O3',
+             werror = '-Werror',
+         ),
++        icx = dict(
++            native = '-xHost',
++            opt = '-O3',
++            werror = '-Werror',
++        ),
+         iccw = dict(
+             native = '/QxHost',
+             opt = '/O3',
+@@ -369,7 +374,7 @@ class _Config:
+             ),
+             AVX512_SPR = dict(flags="-mavx512fp16"),
+         )
+-        if on_x86 and self.cc_is_icc: return dict(
++        if on_x86 and self.cc_is_icx: return dict(
+             SSE    = dict(flags="-msse"),
+             SSE2   = dict(flags="-msse2"),
+             SSE3   = dict(flags="-msse3"),
+@@ -937,7 +942,7 @@ class _CCompiler:
+         if the compiler is unknown
+     cc_is_clang : bool
+         True if the compiler is Clang
+-    cc_is_icc : bool
++    cc_is_icx : bool
+         True if the compiler is Intel compiler (unix like)
+     cc_is_iccw : bool
+         True if the compiler is Intel compiler (msvc like)
+@@ -984,7 +989,8 @@ class _CCompiler:
+             ("cc_is_clang",    ".*clang.*", ""),
+             # intel msvc like
+             ("cc_is_iccw",     ".*(intelw|intelemw|iccw).*", ""),
+-            ("cc_is_icc",      ".*(intel|icc).*", ""),  # intel unix like
++            ("cc_is_icc",      ".*(intel|icc|icx).*", ""),  # intel unix like
++            ("cc_is_icx",      ".*(intel|icx).*", ""),  # intel unix like
+             ("cc_is_msvc",     ".*msvc.*", ""),
+             ("cc_is_fcc",     ".*fcc.*", ""),
+             # undefined compiler will be treat it as gcc
+@@ -1054,7 +1060,7 @@ class _CCompiler:
+                 break
+ 
+         self.cc_name = "unknown"
+-        for name in ("gcc", "clang", "iccw", "icc", "msvc", "fcc"):
++        for name in ("gcc", "clang", "iccw", "icc", "icx", "msvc", "fcc"):
+             if getattr(self, "cc_is_" + name):
+                 self.cc_name = name
+                 break
+@@ -1133,7 +1139,7 @@ class _CCompiler:
+         ['-march=core-avx2']
+         """
+         assert(isinstance(flags, list))
+-        if self.cc_is_gcc or self.cc_is_clang or self.cc_is_icc:
++        if self.cc_is_gcc or self.cc_is_clang or self.cc_is_icx:
+             return self._cc_normalize_unix(flags)
+ 
+         if self.cc_is_msvc or self.cc_is_iccw:
+diff --git a/numpy-1.26.4.orig/numpy/distutils/tests/test_ccompiler_opt.py b/numpy-1.26.4/numpy/distutils/tests/test_ccompiler_opt.py
+index 3714aea..37968f9 100644
+--- a/numpy-1.26.4.orig/numpy/distutils/tests/test_ccompiler_opt.py
++++ b/numpy-1.26.4/numpy/distutils/tests/test_ccompiler_opt.py
+@@ -26,8 +26,8 @@ else:
+ 
+ # architectures and compilers to test
+ arch_compilers = dict(
+-    x86 = ("gcc", "clang", "icc", "iccw", "msvc"),
+-    x64 = ("gcc", "clang", "icc", "iccw", "msvc"),
++    x86 = ("gcc", "clang", "icc", "icx", "iccw", "msvc"),
++    x64 = ("gcc", "clang", "icc", "icx", "iccw", "msvc"),
+     ppc64 = ("gcc", "clang"),
+     ppc64le = ("gcc", "clang"),
+     armhf = ("gcc", "clang"),
+@@ -277,7 +277,7 @@ class _Test_CCompilerOpt:
+ 
+     def test_interface(self):
+         wrong_arch = "ppc64" if self.arch != "ppc64" else "x86"
+-        wrong_cc   = "clang" if self.cc   != "clang" else "icc"
++        wrong_cc   = "clang" if self.cc   != "clang" else "icx"
+         opt = self.opt()
+         assert_(getattr(opt, "cc_on_" + self.arch))
+         assert_(not getattr(opt, "cc_on_" + wrong_arch))
+@@ -349,7 +349,7 @@ class _Test_CCompilerOpt:
+         """
+         special cases
+         """
+-        # in icc and msvc, FMA3 and AVX2 can't be separated
++        # in icc/icx and msvc, FMA3 and AVX2 can't be separated
+         # both need to implies each other, same for avx512f & cd
+         for f0, f1 in (
+             ("fma3",    "avx2"),
+@@ -358,11 +358,11 @@ class _Test_CCompilerOpt:
+             diff = ".* sse42 .* %s .*%s$" % (f0, f1)
+             self.expect_baseline(f0,
+                 x86_gcc=".* sse42 .* %s$" % f0,
+-                x86_icc=diff, x86_iccw=diff
++                x86_icx=diff, x86_iccw=diff
+             )
+             self.expect_baseline(f1,
+                 x86_gcc=".* avx .* %s$" % f1,
+-                x86_icc=diff, x86_iccw=diff
++                x86_icx=diff, x86_iccw=diff
+             )
+         # in msvc, following features can't be separated too
+         for f in (("fma3", "avx2"), ("avx512f", "avx512cd", "avx512_skx")):
+@@ -400,7 +400,7 @@ class _Test_CCompilerOpt:
+             self.expect(o,
+                 x86_gcc=".* xop fma4 .* avx512f .* avx512_knl avx512_knm avx512_skx .*",
+                 # in icc, xop and fam4 aren't supported
+-                x86_icc=".* avx512f .* avx512_knl avx512_knm avx512_skx .*",
++                x86_icx=".* avx512f .* avx512_knl avx512_knm avx512_skx .*",
+                 x86_iccw=".* avx512f .* avx512_knl avx512_knm avx512_skx .*",
+                 # in msvc, avx512_knl avx512_knm aren't supported
+                 x86_msvc=".* xop fma4 .* avx512f .* avx512_skx .*",
+@@ -436,7 +436,7 @@ class _Test_CCompilerOpt:
+     def test_flags(self):
+         self.expect_flags(
+             "sse sse2 vsx vsx2 neon neon_fp16 vx vxe",
+-            x86_gcc="-msse -msse2", x86_icc="-msse -msse2",
++            x86_gcc="-msse -msse2", x86_icx="-msse -msse2",
+             x86_iccw="/arch:SSE2",
+             x86_msvc="/arch:SSE2" if self.march() == "x86" else "",
+             ppc64_gcc= "-mcpu=power8",
+@@ -594,7 +594,7 @@ class _Test_CCompilerOpt:
+             baseline="",
+             x86_gcc="avx512cd avx512f avx2 fma3 avx sse2",
+             x86_msvc="avx512cd avx2 avx sse2",
+-            x86_icc="avx512cd avx2 avx sse2",
++            x86_icx="avx512cd avx2 avx sse2",
+             x86_iccw="avx512cd avx2 avx sse2",
+             ppc64="vsx3 vsx2 vsx",
+             ppc64le="vsx3 vsx2",
+@@ -652,7 +652,7 @@ class _Test_CCompilerOpt:
+             */
+             """,
+             x86_gcc="avx512f avx2 sse42 sse41 sse2",
+-            x86_icc="avx512f avx2 sse42 sse41 sse2",
++            x86_icx="avx512f avx2 sse42 sse41 sse2",
+             x86_iccw="avx512f avx2 sse42 sse41 sse2",
+             x86_msvc="avx512f avx2 sse2"
+                      if self.march() == 'x86' else "avx512f avx2",
+@@ -665,7 +665,7 @@ class _Test_CCompilerOpt:
+             # 'maxopt' and autovec set the max acceptable optimization flags
+             self.expect_target_flags(
+                 "/*@targets baseline %s */" % policy,
+-                gcc={"baseline":".*-O3.*"}, icc={"baseline":".*-O3.*"},
++                gcc={"baseline":".*-O3.*"}, icx={"baseline":".*-O3.*"},
+                 iccw={"baseline":".*/O3.*"}, msvc={"baseline":".*/O2.*"},
+                 unknown={"baseline":".*"}
+             )
+@@ -673,7 +673,7 @@ class _Test_CCompilerOpt:
+         # 'werror', force compilers to treat warnings as errors
+         self.expect_target_flags(
+             "/*@targets baseline $werror */",
+-            gcc={"baseline":".*-Werror.*"}, icc={"baseline":".*-Werror.*"},
++            gcc={"baseline":".*-Werror.*"}, icx={"baseline":".*-Werror.*"},
+             iccw={"baseline":".*/Werror.*"}, msvc={"baseline":".*/WX.*"},
+             unknown={"baseline":".*"}
+         )
+@@ -769,7 +769,7 @@ class _Test_CCompilerOpt:
+             */
+             """,
+             x86_gcc=r"fma3 avx2 \(fma3 avx2\)",
+-            x86_icc="avx2", x86_iccw="avx2",
++            x86_icx="avx2", x86_iccw="avx2",
+             x86_msvc="avx2"
+         )
+ 
+@@ -793,7 +793,7 @@ def new_test(arch, cc):
+     )
+ """
+ if 1 and is_standalone:
+-    FakeCCompilerOpt.fake_info = "x86_icc"
++    FakeCCompilerOpt.fake_info = "x86_icx"
+     cco = FakeCCompilerOpt(None, cpu_baseline="avx2")
+     print(' '.join(cco.cpu_baseline_names()))
+     print(cco.cpu_baseline_flags())
+diff --git a/numpy-1.26.4.orig/numpy/distutils/tests/test_ccompiler_opt_conf.py b/numpy-1.26.4/numpy/distutils/tests/test_ccompiler_opt_conf.py
+index d9e8b2b..44dd441 100644
+--- a/numpy-1.26.4.orig/numpy/distutils/tests/test_ccompiler_opt_conf.py
++++ b/numpy-1.26.4/numpy/distutils/tests/test_ccompiler_opt_conf.py
+@@ -9,8 +9,8 @@ else:
+     from numpy.distutils.ccompiler_opt import CCompilerOpt
+ 
+ arch_compilers = dict(
+-    x86 = ("gcc", "clang", "icc", "iccw", "msvc"),
+-    x64 = ("gcc", "clang", "icc", "iccw", "msvc"),
++    x86 = ("gcc", "clang", "icc", "icx", "iccw", "msvc"),
++    x64 = ("gcc", "clang", "icc", "icx", "iccw", "msvc"),
+     ppc64 = ("gcc", "clang"),
+     ppc64le = ("gcc", "clang"),
+     armhf = ("gcc", "clang"),
