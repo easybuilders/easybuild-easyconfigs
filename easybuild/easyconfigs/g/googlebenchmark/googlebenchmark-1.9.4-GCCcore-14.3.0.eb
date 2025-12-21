@@ -1,0 +1,36 @@
+easyblock = 'CMakeMake'
+
+name = 'googlebenchmark'
+version = '1.9.4'
+
+homepage = 'https://github.com/google/benchmark'
+description = "Google's framework for writing C++ tests on a variety of platforms"
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/google/benchmark/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['b334658edd35efcf06a99d9be21e4e93e092bd5f95074c1673d5c8705d95c104']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('googletest', '1.17.0'),
+]
+
+# Disable assembly tests as highly OS and compiler dependent.
+# See https://github.com/google/benchmark/issues/1326#issuecomment-1015221235
+configopts = ['-DBENCHMARK_DOWNLOAD_DEPENDENCIES=OFF '
+              '-DBENCHMARK_USE_BUNDLED_GTEST=OFF '
+              '-DBENCHMARK_ENABLE_ASSEMBLY_TESTS=OFF ']
+build_shared_libs = False  # Shared build doesn't work properly with GTest on e.g. PPC
+
+runtest = True
+
+sanity_check_paths = {
+    'files': ['lib/libbenchmark.a'],
+    'dirs': ['include/benchmark', 'lib/cmake', 'lib/pkgconfig'],
+}
+
+moduleclass = 'tools'
