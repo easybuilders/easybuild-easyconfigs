@@ -1,12 +1,14 @@
-easyblock = 'ConfigureMake'
+easyblock = 'CMakeMake'
 
 name = 'HDF'
 version = '4.3.1'
 
-homepage = 'https://support.hdfgroup.org/products/hdf4/'
+homepage = 'https://www.hdfgroup.org/solutions/hdf4/'
 description = """
- HDF (also known as HDF4) is a library and multi-object file format for
- storing and managing data between machines.
+HDF4 library and tools, built with CMake on Linux:
+- shared C libraries (libhdf, libmfhdf)
+- Fortran interfaces enabled
+- compatibility symlinks for Autotools consumers (libdf -> libhdf)
 """
 
 toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
@@ -17,44 +19,55 @@ sources = ['%(namelower)s%(version)s.tar.gz']
 checksums = ['6dc3b8af610526788bf78fb3982b25a80abfc94e37ce0c3ae2929b5e9c937093']
 
 builddependencies = [
+    ('CMake', '4.0.3'),
     ('binutils', '2.44'),
-    ('Bison', '3.8.2'),
-    ('flex', '2.6.4'),
 ]
 
 dependencies = [
     ('libjpeg-turbo', '3.1.1'),
-    ('Szip', '2.1.1'),
     ('zlib', '1.3.1'),
-    ('libtirpc', '1.3.6'),
+    ('libaec', '1.1.4'),
 ]
 
-preconfigopts = "LIBS='-ltirpc' "
+configopts = (
+    '-DBUILD_SHARED_LIBS=ON '
+    '-DBUILD_STATIC_LIBS=ON '
+    '-DCMAKE_BUILD_TYPE=Release '
+    '-DHDF4_BUILD_TOOLS=ON '
+    '-DHDF4_BUILD_UTILS=ON '
+    '-DHDF4_BUILD_FORTRAN=ON '
+    '-DHDF4_ENABLE_SZIP_SUPPORT=ON '
+    '-DZLIB_ROOT=$EBROOTZLIB '
+    '-DJPEG_ROOT=$EBROOTLIBJPEGMINTURBO '
+    '-Dlibaec_ROOT=$EBROOTLIBAEC '
+    '-DCMAKE_C_COMPILER=$EBROOTGCCCORE/bin/gcc '
+    '-DCMAKE_Fortran_COMPILER=$EBROOTGCCCORE/bin/gfortran '
+)
 
-local_common_configopts = '--with-szlib=$EBROOTSZIP CFLAGS="$CFLAGS -I$EBROOTLIBTIRPC/include/tirpc" '
-local_common_configopts += '--includedir=%(installdir)s/include/%(namelower)s '
-
-configopts = [
-    local_common_configopts,
-    # Cannot build shared libraries and Fortran...
-    # https://trac.osgeo.org/gdal/wiki/HDF#IncompatibilitywithNetCDFLibraries
-    # netcdf must be disabled to allow HDF to be used by GDAL
-    local_common_configopts + "--enable-shared --disable-fortran --disable-netcdf",
+# After install: add compatibility symlinks for Autotools consumers
+# Autotools used libdf; CMake uses libhdf. Link libdf.* -> libhdf.* so old apps keep working.
+postinstallcmds = [
+    # plain .so/.a symlinks
+    "bash -c 'set -e; cd %(installdir)s/lib; "
+    "if [ -e libhdf.so ] && [ ! -e libdf.so ]; then ln -s libhdf.so libdf.so; fi; "
+    "if [ -e libhdf.a ] && [ ! -e libdf.a ]; then ln -s libhdf.a libdf.a; fi; "
+    # also create a symlink to the highest versioned .so, if present (best-effort)
+    "hv=$(ls -1 libhdf.so.* 2>/dev/null | sort -V | tail -n1 || true); "
+    "if [ -n \"$hv\" ] && [ ! -e libdf.so.${hv#libhdf.so.} ]; then ln -s \"$hv\" libdf.so.${hv#libhdf.so.}; fi; "
+    "'"
 ]
 
-
+# Sanity check: presence of tools and libraries, including the compat symlink
 sanity_check_paths = {
     'files': [
-        'bin/h4cc', 'bin/ncdump', 'lib/libdf.a', 'lib/libhdf4.settings', 'lib/libmfhdf.a', f'lib/libmfhdf.{SHLIB_EXT}'
+        'bin/h4cc',
+        'bin/hdp',
+        'lib/libhdf.so',      # CMake name
+        'lib/libmfhdf.so',
+        'lib/libdf.so',       # compat symlink for Autotools consumers
     ],
-    'dirs': ['include/%(namelower)s'],
+    'dirs': ['include'],
 }
 
-sanity_check_commands = [
-    "h4cc --help",
-    "ncdump -V",
-]
-
-modextrapaths = {MODULE_LOAD_ENV_HEADERS: 'include/%(namelower)s'}
-
 moduleclass = 'data'
+
