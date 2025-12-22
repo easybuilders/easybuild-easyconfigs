@@ -603,6 +603,8 @@ class EasyConfigTest(TestCase):
             'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0'])],
             # FDMNES requires sequential variant of MUMPS
             'MUMPS': [(r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES'])],
+            # RELION 5.0.0 requires fixes only in napari 0.4.19 and newer
+            'napari': [(r'0\.4\.19\.post1;', [r'RELION-5\.0\.0'])],
             # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0, Finder requires SRA-Toolkit 3.0.0
             'ncbi-vdb': [(r'3\.0\.0', [r'SRA-Toolkit-3\.0\.0', r'finder-1\.1\.0'])],
             'OpenFOAM': [
@@ -661,7 +663,7 @@ class EasyConfigTest(TestCase):
             # (for 2021b, UCX was updated to v1.11.2)
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
             # Napari 0.4.19post1 requires VisPy >=0.14.1 <0.15
-            'VisPy': [('0.14.1;', ['napari-0.4.19.post1-'])],
+            'VisPy': [('0.14.1;', ['napari-0.4.19.post1-', r'RELION-5\.0\.0'])],
             # Visit-3.4.1 requires VTK 9.2.x
             'VTK': [('9.2.6;', ['Visit-3.4.1-'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
