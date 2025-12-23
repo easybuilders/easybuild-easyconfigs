@@ -1204,8 +1204,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.1.2'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.1.2.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.2.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.2.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
