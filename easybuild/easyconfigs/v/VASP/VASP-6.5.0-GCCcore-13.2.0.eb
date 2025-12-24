@@ -1,0 +1,49 @@
+easyblock = 'MakeCp'
+
+
+name = 'VASP'
+version = '6.5.0'
+
+homepage = 'https://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+
+download_instructions = """Vasp is proprietary software, see http://www.vasp.at/index.php/faqs
+on how to get access to the code."""
+
+
+sources = ['%(namelower)s.%(version)s.tar']
+checksums = ['87f5a5416633af20fa8ea63f3348db477d8fc378feab4f839a617fc0663875f9']
+
+builddependencies = [('OpenBLAS', '0.3.24', '', ('GCC', '13.2.0')),
+                     ('ScaLAPACK', '2.2.0', '', ('gompi', '2023b-fb')),
+                     ('FFTW', '3.3.10', '', ('GCC', '13.2.0')),
+                    ]
+
+
+
+prebuildopts = 'cp arch/makefile.include.gnu ./makefile.include && '
+
+prebuildopts += 'unset LIBS && '
+
+local_targets = ['std', 'gam', 'ncl']
+
+buildopts = '%s ' % ' '.join(local_targets)
+buildopts += 'OPENBLAS_ROOT="${EBROOTBLAS}" '
+buildopts += 'SCALAPACK_ROOT="${EBROOTSCALAPACK}" '
+buildopts += 'FFTW_ROOT="${EBROOTFFTW}" '
+buildopts += 'DEPS=1 '
+
+
+files_to_copy = [(['bin/vasp_' + x for x in local_targets], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_' + x for x in local_targets],
+    'dirs': []
+}
+
+moduleclass = 'phys'
