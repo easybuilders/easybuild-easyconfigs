@@ -1,0 +1,62 @@
+# Updated to use defined modules instead of relying on subdirectory ones
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'MesonNinja'
+
+name = 'xtb'
+version = '6.7.1'
+
+homepage = 'https://xtb-docs.readthedocs.io'
+description = " xtb - An extended tight-binding semi-empirical program package. "
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': V_VERSION_TAR_GZ, 'filename': SOURCE_TAR_GZ}]
+patches = [
+    '%(name)s-6.7.1_fix-tblite-pr1072.patch',
+    '%(name)s-6.7.1_fix-dftd4-test.patch',
+]
+checksums = [
+    {'%(name)s-%(version)s.tar.gz': '52506a689147cdb4695bf1c666158b6d6d6b31726fecaa5bf53af7f4e3f3d20d'},
+    {'%(name)s-6.7.1_fix-tblite-pr1072.patch':
+     '1f10fef3e94c29926b1f632acc94c3ec92be861ee5c5139104194172726ffe68'},
+    {'%(name)s-6.7.1_fix-dftd4-test.patch':
+     '340e7d5cbc6bbaf0c53d4d292f3624cd67455b7a817818fe2cc8d26f5c34864b'},
+]
+
+builddependencies = [
+    ('Meson', '1.6.1'),
+    ('Ninja', '1.12.1'),
+    ('pkgconf', '2.3.0'),
+]
+dependencies = [
+    ('mctc-lib', '0.5.0'),
+    ('tblite', '0.4.0'),
+    ('mstore', '0.3.0'),
+    ('numsa', '0.2.0'),
+    ('CPCM-X', '1.1.0'),
+    ('dftd4', '3.7.0'),
+    ('Simple-DFTD3', '1.2.1'),
+]
+
+configopts = "-Dlapack='custom' -Dcustom_libraries='flexiblas' "
+
+github_account = 'grimme-lab'
+pretestopts = "export OMP_NUM_THREADS=2 && "
+runtest = 'meson'
+testopts = "test -C %(builddir)s/easybuild_obj -t 60"  # Ensure test don't timeout
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'include/%(name)s.h', 'lib/libxtb.a', 'lib/libxtb.so'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = ['%(name)s --help']
+
+modextravars = {
+    'XTBHOME': '%(installdir)s',
+    'XTBPATH': '%(installdir)s',
+}
+
+moduleclass = 'chem'
