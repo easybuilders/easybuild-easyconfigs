@@ -1,0 +1,51 @@
+easyblock = 'PythonBundle'
+
+name = 'aiida-pseudo'
+version = '1.5.0'
+
+homepage = 'https://aiida-pseudo.readthedocs.io/en/latest/'
+description = """The aiida-pseudo package is an AiiDA plugin that simplifies working with pseudopotentials when
+running calculations or workflows using AiiDA."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('aiida-core', '2.5.1'),
+    ('xmlschema', '2.5.1'),
+    ('jsonschema', '4.22.0'),
+]
+
+exts_list = [
+    ('pint', '0.23', {
+        'sources': ['Pint-%(version)s.tar.gz'],
+        'checksums': ['e1509b91606dbc52527c600a4ef74ffac12fff70688aff20e9072409346ec9b4'],
+    }),
+    (name, version, {
+        'sources': ['aiida_pseudo-%(version)s.tar.gz'],
+        'checksums': ['6fa7bc257e66c0d3fb96b229888eb762378aa21f896ec4a2c1981919cfd707fd'],
+    }),
+]
+
+moduleclass = 'tools'
+
+modluafooter = """
+local shell = myShellName()
+
+if (shell == "bash") or (shell == "sh") then
+    execute{cmd="eval \\"$(_AIIDA_PSEUDO_COMPLETE=bash_source aiida-pseudo)\\"", modeA={"load"}}
+    execute{
+        cmd="complete -r aiida-pseudo && unset _aiida_pseudo_completion_setup && unset _aiida_pseudo_completion",
+        modeA={"unload"}
+        }
+elseif (shell == "zsh") then
+    execute{cmd="eval \\"$(_AIIDA_PSEUDO_COMPLETE=zsh_source aiida-pseudo)\\"", modeA={"load"}}
+    execute{cmd="unset '_comps[aiida-pseudo]' && unset -f _aiida_pseudo_completion", modeA={"unload"}}
+elseif (shell == "fish") then
+    execute{cmd="eval (env _AIIDA_PSEUDO_COMPLETE=fish_source aiida-pseudo)", modeA={"load"}}
+    execute{cmd="complete -e aiida-pseudo && functions --erase _aiida_pseudo_completion", modeA={"unload"}}
+else
+    LmodMessage("Autocompletion of `aiida-pseudo` cannot be setup automatically for shell: " .. shell)
+end
+"""
