@@ -1,0 +1,88 @@
+easyblock = 'PythonBundle'
+
+name = 'SPAM'
+version = '0.8.1.4'
+
+homepage = 'https://www.spam-project.dev/'
+description = """
+spam is an open-source python tool for quantitative
+data analysis for 2D images and 3D volumes for mechanics
+applications that has developed around x-ray and neutron tomography.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Cython', '3.1.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('gmsh', '4.15.0'),
+    ('SciPy-bundle', '2025.06'),
+    ('h5py', '3.14.0'),
+    ('matplotlib', '3.10.3'),
+    ('meshio', '5.3.5'),
+    ('numba', '0.62.0'),
+    ('PyAMG', '5.3.0'),
+    ('PyYAML', '6.0.2'),
+    ('scikit-image', '0.25.0'),
+    ('emcee', '3.1.6'),
+    ('SimpleITK', '2.5.3'),
+    ('CGAL', '6.0.1'),
+    ('Eigen', '3.4.0'),
+]
+
+# fixes ValueError: invalid pyproject.toml config: `project.license`.
+local_spambind_preinstallopts = """sed -i '/license .*/d;"""
+local_spambind_preinstallopts += """s/license-.*/license={file="LICENSE.md"}/g' pyproject.toml && """
+# fixes CGAL/config.h:154:2: error: #error "CGAL requires C++ 17"
+local_spambind_preinstallopts += """sed -i 's/c++14/c++17/g' setup.py && """
+
+exts_list = [
+    ('extension-helpers', '1.4.0', {
+        'source_tmpl': 'extension_helpers-%(version)s.tar.gz',
+        'checksums': ['78d04185f196e3e0bc5fd8418ce298b014c46f7ac609f6a8c10bf70e8c978324'],
+    }),
+    ('gstools-cython', '1.1.0', {
+        'source_tmpl': 'gstools_cython-%(version)s.tar.gz',
+        'checksums': ['589431e7048de96a9ba5eb90877b20838a15cf71629c9dc586811ce1c92bc12e'],
+    }),
+    ('hankel', '1.2.2', {
+        'checksums': ['ce1d1cd1f5a621a23c5fb49d66d67c10659e844b0c4191dbfdd0de6515766045'],
+    }),
+    ('pyevtk', '1.6.0', {
+        'checksums': ['1f6be7876a3a005c8258861551da4fe7e44ff1a2e7ff2a93d6dc51deedfda5f4'],
+    }),
+    ('python-decouple', '3.8', {
+        'modulename': 'decouple',
+        'checksums': ['ba6e2657d4f376ecc46f77a3a615e058d93ba5e465c01bbe57289bfb7cce680f'],
+    }),
+    ('gstools', '1.7.0', {
+        'source_tmpl': SOURCE_PY3_WHL,  # SOURCE_TAR_GZ would need hatchling
+        'checksums': ['dfa08845f09afa3fdd142a997a946cdb247aa7263d1a453e6852e59b287a311a'],
+    }),
+    ('progressbar', '2.5', {
+        'checksums': ['5d81cb529da2e223b53962afd6c8ca0f05c6670e40309a7219eacc36af9b6c63'],
+    }),
+    ('spambind', '0.8.2', {
+        'source_urls': ['https://gitlab.com/spam-project/spambind/-/archive/version-0.8.2/'],
+        'source_tmpl': '%(name)s-version-%(version)s.tar.gz',
+        'patches': ['SPAM-0.8.1.4_spambind_typo_fix.patch'],
+        'preinstallopts': local_spambind_preinstallopts,
+        'checksums': [
+            '15f0deb3cf747c6ece8be498a06b606ca7350478b6b3755ececd46f17b1d1ea1',  # spambind-version-0.8.2.tar.gz
+            '790d65d41c23200de45cd03ae9a35a4313df5c6bf4730189e39137219991ffd6',  # SPAM-0.8.1.4_spambind_typo_fix.patch
+        ],
+    }),
+    ('tifffile', '2025.10.16', {
+        'checksums': ['425179ec7837ac0e07bc95d2ea5bea9b179ce854967c12ba07fc3f093e58efc1'],
+    }),
+    ('%(namelower)s', version, {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['1b811ffa9b9072bc63f12b0ab3de9cf21d246e3627be09b11b5996d7c897b3ae'],
+    }),
+]
+
+moduleclass = 'vis'
