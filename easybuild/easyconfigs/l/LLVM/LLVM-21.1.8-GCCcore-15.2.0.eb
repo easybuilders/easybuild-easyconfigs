@@ -1,0 +1,92 @@
+name = 'LLVM'
+version = '21.1.8'
+
+
+homepage = "https://llvm.org/"
+description = """
+The LLVM Core libraries provide a modern source- and target-independent
+optimizer, along with code generation support for many popular CPUs
+(as well as some less common ones!) These libraries are built around a well
+specified code representation known as the LLVM intermediate representation
+("LLVM IR"). The LLVM Core libraries are well documented, and it is
+particularly easy to invent your own language (or port an existing compiler)
+to use LLVM as an optimizer and code generator.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+toolchainopts = {
+    'pic': True
+}
+
+source_urls = ['https://github.com/llvm/llvm-project/releases/download/llvmorg-%(version)s/']
+sources = [
+    'llvm-project-%(version)s.src.tar.xz',
+]
+patches = [
+    'LLVM-18.1.8_envintest.patch',
+    'LLVM-19.1.7_libomptarget_tests.patch',
+    'LLVM-19.1.7_clang_rpathwrap_test.patch',
+]
+checksums = [
+    {'llvm-project-21.1.8.src.tar.xz': '4633a23617fa31a3ea51242586ea7fb1da7140e426bd62fc164261fe036aa142'},
+    {'LLVM-18.1.8_envintest.patch': '8e25dfab8a29a860717b4bd2d8cdd0e795433766d7fffbda32d06a2bde47058d'},
+    {'LLVM-19.1.7_libomptarget_tests.patch': '79a67c118d034cfb74e255696369150c73432d2b422f4834efacb26f7904edbf'},
+    {'LLVM-19.1.7_clang_rpathwrap_test.patch': '5ee6a87ec8ff1c8b736ffe0513aa2098bd2b83a1ffc647a1ad2cf966f567e8a1'},
+]
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('Python', '3.14.2'),
+    ('CMake', '4.2.1'),
+    ('psutil', '7.2.1'),  # Needed to enable test timeout in lit
+    ('lit', '18.1.8'),
+    ('git', '2.52.0'),
+]
+
+dependencies = [
+    ('libffi', '3.5.2'),
+    ('libxml2', '2.15.1'),
+    ('ncurses', '6.6'),
+    ('zlib-ng', '2.3.2'),
+    ('Z3', '4.15.4'),
+    ('zstd', '1.5.7'),
+]
+
+configopts = ' -DLIBCXX_INCLUDE_BENCHMARKS=OFF -DLIBC_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF '
+
+build_shared_libs = True
+
+bootstrap = True
+full_llvm = False
+build_clang_extras = True
+build_runtimes = True
+build_lld = True
+build_lldb = True
+build_bolt = True
+build_openmp = True
+build_openmp_tools = True
+build_openmp_offload = True
+use_polly = True
+
+python_bindings = True
+
+build_targets = ['all']
+# disable_werror = True
+
+skip_all_tests = False
+skip_sanitizer_tests = True
+test_suite_max_failed = 10
+test_suite_timeout_single = 5 * 60
+test_suite_ignore_patterns = [
+    "X86/register-fragments-bolt-symbols.s",
+    "modularize/ProblemsCoverage.modularize",
+    "Driver/atomic.f90",
+    "Driver/gcc-toolchain-install-dir.f90",
+    "api_tests/test_ompd_get_icv_from_scope.c",
+    "std/time/time.syn/formatter",
+    # Those 2 might fail with "tzdb: the path '/etc/localtime' is not a symlink"
+    "std/time/time.zone/time.zone.db/time.zone.db.tzdb",
+    "std/time/time.zone/time.zone.db/time.zone.db.access",
+]
+
+moduleclass = 'compiler'
