@@ -33,7 +33,7 @@ moduleclass = 'tools'
 modluafooter = """
 local shell = myShellName()
 
-if (shell == "bash") or (shell == "sh") then
+if (shell == "bash") then
     execute{cmd="eval \\"$(_AIIDA_PSEUDO_COMPLETE=bash_source aiida-pseudo)\\"", modeA={"load"}}
     execute{
         cmd="complete -r aiida-pseudo && unset _aiida_pseudo_completion_setup && unset _aiida_pseudo_completion",
@@ -48,4 +48,44 @@ elseif (shell == "fish") then
 else
     LmodMessage("Autocompletion of `aiida-pseudo` cannot be setup automatically for shell: " .. shell)
 end
+"""
+
+modtclfooter = """
+#%Module
+
+proc _add_shell_code {str} {
+    if {[info exists ::env(LMOD_VERSION_MAJOR)]} {
+        system [string map {\" \\\"} $str]
+    } else {
+        puts stdout $str
+    }
+}
+
+set shell [module-info shell]
+if {$shell in {bash fish zsh}} {
+    switch -- [module-info mode] {
+        load {
+            _add_shell_code "eval \"\$(env _AIIDA_PSEUDO_COMPLETE=${shell}_source aiida-pseudo)\""
+        }
+        remove - unload {
+            switch -- $shell {
+                bash {
+                    _add_shell_code {unset -f _aiida_pseudo_completion 2>/dev/null || true}
+                    _add_shell_code {unset -f _aiida_pseudo_completion_setup 2>/dev/null || true}
+                    _add_shell_code {complete -r aiida-pseudo}
+                }
+                zsh  {
+                    _add_shell_code {unset -f _aiida_pseudo_completion 2>/dev/null || true}
+                    _add_shell_code {unset {'_comps[aiida-pseudo]'}}
+                }
+                fish {
+                    _add_shell_code {functions -e _aiida_pseudo_completion}
+                    _add_shell_code {complete -e -c aiida-pseudo}
+                }
+            }
+        }
+    }
+} else {
+    puts stderr "Autocompletion of `aiida-pseudo` cannot be setup automatically for shell: $shell"
+}
 """

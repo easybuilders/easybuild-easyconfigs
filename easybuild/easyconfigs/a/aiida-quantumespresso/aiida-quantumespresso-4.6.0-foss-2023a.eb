@@ -32,7 +32,7 @@ moduleclass = 'tools'
 modluafooter = """
 local shell = myShellName()
 
-if (shell == "bash") or (shell == "sh") then
+if (shell == "bash") then
     execute{cmd="eval \\"$(_AIIDA_QUANTUMESPRESSO_COMPLETE=bash_source aiida-quantumespresso)\\"", modeA={"load"}}
     execute{
         cmd="complete -r aiida-quantumespresso && \\
@@ -55,4 +55,44 @@ elseif (shell == "fish") then
 else
     LmodMessage("Autocompletion of `aiida-quantumespresso` cannot be setup automatically for shell: " .. shell)
 end
+"""
+
+modtclfooter = """
+#%Module
+
+proc _add_shell_code {str} {
+    if {[info exists ::env(LMOD_VERSION_MAJOR)]} {
+        system [string map {\" \\\"} $str]
+    } else {
+        puts stdout $str
+    }
+}
+
+set shell [module-info shell]
+if {$shell in {bash fish zsh}} {
+    switch -- [module-info mode] {
+        load {
+            _add_shell_code "eval \"\$(env _AIIDA_QUANTUMESPRESSO_COMPLETE=${shell}_source aiida-quantumespresso)\""
+        }
+        remove - unload {
+            switch -- $shell {
+                bash {
+                    _add_shell_code {unset -f _aiida_quantumespresso_completion 2>/dev/null || true}
+                    _add_shell_code {unset -f _aiida_quantumespresso_completion_setup 2>/dev/null || true}
+                    _add_shell_code {complete -r aiida-quantumespresso}
+                }
+                zsh  {
+                    _add_shell_code {unset -f _aiida_quantumespresso_completion 2>/dev/null || true}
+                    _add_shell_code {unset {'_comps[aiida-quantumespresso]'}}
+                }
+                fish {
+                    _add_shell_code {functions -e _aiida_quantumespresso_completion}
+                    _add_shell_code {complete -e -c aiida-quantumespresso}
+                }
+            }
+        }
+    }
+} else {
+    puts stderr "Autocompletion of `aiida-quantumespresso` cannot be setup automatically for shell: $shell"
+}
 """
