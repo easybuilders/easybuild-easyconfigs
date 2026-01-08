@@ -1,0 +1,32 @@
+A crashed child process in a test might cause the parent to never complete.
+Use a timeout to avoid that.
+See https://github.com/pytorch/pytorch/pull/171972
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/common_distributed.py b/torch/testing/_internal/common_distributed.py
+index c1f75697fe8..47661c7a1fa 100644
+--- a/torch/testing/_internal/common_distributed.py
++++ b/torch/testing/_internal/common_distributed.py
+@@ -1786,8 +1786,19 @@ class MultiProcContinuousTest(TestCase):
+             if self.rank == self.MAIN_PROCESS_RANK:
+                 logger.debug(f"Waiting for workers to finish {self.id()}")  # noqa: G004
+                 # Wait for the workers to finish the test
+-                for i, completion_queue in enumerate(self.completion_queues):
+-                    rv = completion_queue.get()
++                for i, (p, completion_queue) in enumerate(
++                    zip(self.processes, self.completion_queues)
++                ):
++                    # When the process died before filling the completion queue `get` will never return.
++                    # Hence periodically check the process for liveness
++                    while True:
++                        try:
++                            rv = completion_queue.get(timeout=120)
++                        except queue.Empty:
++                            # If not alive do a last check because the timeout might have happened just before completion
++                            if not p.is_alive() and completion_queue.empty():
++                                rv = RuntimeError(f"Exited with {p.exitcode}")
++                                break
+                     if isinstance(rv, BaseException):
+                         # Hit an exception, re-raise it in the main process.
+                         logger.warning(
