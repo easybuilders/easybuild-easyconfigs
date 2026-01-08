@@ -51,36 +51,39 @@ end
 """
 
 modtclfooter = """
-#%Module
-
-proc _add_shell_code {str} {
-    if {[info exists ::env(LMOD_VERSION_MAJOR)]} {
-        system [string map {\\" \\\\\\"} $str]
-    } else {
-        puts stdout $str
-    }
-}
-
 set shell [module-info shell]
 if {$shell in {bash fish zsh}} {
-    switch -- [module-info mode] {
-        load {
-            _add_shell_code "eval \\"\\$(env _AIIDA_PSEUDO_COMPLETE=${shell}_source aiida-pseudo)\\""
-        }
-        remove - unload {
-            switch -- $shell {
-                bash {
-                    _add_shell_code {unset -f _aiida_pseudo_completion 2>/dev/null || true}
-                    _add_shell_code {unset -f _aiida_pseudo_completion_setup 2>/dev/null || true}
-                    _add_shell_code {complete -r aiida-pseudo}
+    # using "puts stdout" to send command to shell to evaluate requires EnvModules or Lmod >=8.6.18
+    if {![info exists ::env(LMOD_VERSION)] || [string equal [lindex [lsort -dictionary [list 8.6.18 $::env(LMOD_VERSION)]] 0] 8.6.18]} {
+        switch -- [module-info mode] {
+            load {
+                switch -- $shell {
+                    bash {
+                        puts stdout "eval \\"\\$(_AIIDA_PSEUDO_COMPLETE=bash_source aiida-pseudo)\\""
+                    }
+                    zsh  {
+                        puts stdout "eval \\"\\$(_AIIDA_PSEUDO_COMPLETE=zsh_source aiida-pseudo)\\""
+                    }
+                    fish {
+                        puts stdout "eval (env _AIIDA_PSEUDO_COMPLETE=fish_source aiida-pseudo)"
+                    }
                 }
-                zsh  {
-                    _add_shell_code {unset -f _aiida_pseudo_completion 2>/dev/null || true}
-                    _add_shell_code {unset {'_comps[aiida-pseudo]'}}
-                }
-                fish {
-                    _add_shell_code {functions -e _aiida_pseudo_completion}
-                    _add_shell_code {complete -e -c aiida-pseudo}
+            }
+            remove - unload {
+                switch -- $shell {
+                    bash {
+                        puts stdout {unset -f _aiida_pseudo_completion 2>/dev/null || true}
+                        puts stdout {unset -f _aiida_pseudo_completion_setup 2>/dev/null || true}
+                        puts stdout {complete -r aiida-pseudo}
+                    }
+                    zsh  {
+                        puts stdout {unset -f _aiida_pseudo_completion 2>/dev/null || true}
+                        puts stdout {unset '_comps[aiida-pseudo]'}
+                    }
+                    fish {
+                        puts stdout {functions -e _aiida_pseudo_completion}
+                        puts stdout {complete -e -c aiida-pseudo}
+                    }
                 }
             }
         }
