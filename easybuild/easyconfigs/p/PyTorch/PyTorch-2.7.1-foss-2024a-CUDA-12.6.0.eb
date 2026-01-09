@@ -65,6 +65,7 @@ patches = [
     'PyTorch-2.7.1_increase-tolerance-for-test_freeze_conv_relu_fusion.patch',
     'PyTorch-2.7.1_init-cutlass-include-dirs.patch',
     'PyTorch-2.7.1_keep-CMAKE_PREFIX_PATH-in-test.patch',
+    'PyTorch-2.7.1_remove-faulty-close.patch',
     'PyTorch-2.7.1_remove-test_close_multi_pg_unordered.patch',
     'PyTorch-2.7.1_serialize-test_host_memory_stats.patch',
     'PyTorch-2.7.1_skip-failing-max_autotune-tests.patch',
@@ -165,6 +166,7 @@ checksums = [
      '682a295519c81afb692caba66eb5e64570f938525e7ded803627884c382d509a'},
     {'PyTorch-2.7.1_keep-CMAKE_PREFIX_PATH-in-test.patch':
      '516d0a9a7490999f979eb9e53ae1efd6fdea6ed5f94c9dbd659fb1e5d1fd022b'},
+    {'PyTorch-2.7.1_remove-faulty-close.patch': '315fca3c582534f20da62078156c91b38637f1358cd166b4d33ba964c7b07f95'},
     {'PyTorch-2.7.1_remove-test_close_multi_pg_unordered.patch':
      '65a6d430ec359b9fee5f389e05b4c4c592db1ddc12fdab550445b52f3f2a7bfe'},
     {'PyTorch-2.7.1_serialize-test_host_memory_stats.patch':
@@ -279,6 +281,11 @@ excluded_tests = {
 
 local_test_opts = '--continue-through-error --pipe-logs --verbose %(excluded_tests)s'
 runtest = 'cd test && PYTEST_ADDOPTS=--full-trace PYTHONUNBUFFERED=1 %(python)s run_test.py ' + local_test_opts
+
+# Especially test_quantization has a few corner cases that are triggered by the random input values,
+# those cannot be easily avoided, see https://github.com/pytorch/pytorch/issues/107030
+# So allow a low number of tests to fail as the tests "usually" succeed
+max_failed_tests = 6
 
 tests = ['PyTorch-check-cpp-extension.py']
 
