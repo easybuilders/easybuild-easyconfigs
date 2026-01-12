@@ -1,0 +1,74 @@
+# Use table2asn the successor of tbl2asn
+# There are a few argument changes in table2asn, see https://www.ncbi.nlm.nih.gov/genbank/table2asn/
+diff -ruN prokka.orig/bin/prokka prokka/bin/prokka
+--- prokka.orig/bin/prokka	2026-01-09 14:08:49.923034893 +0100
++++ prokka/bin/prokka	2026-01-09 14:11:34.201829284 +0100
+@@ -168,10 +168,10 @@
+     MINVER  => "2.8",
+     NEEDED  => 0,  # only if --proteins used
+   },
+-  'tbl2asn' => {
+-    GETVER  => "tbl2asn - | grep '^tbl2asn'",
+-    REGEXP  => qr/tbl2asn\s+($BIDEC)/,
+-    MINVER  => "24.3",
++  'table2asn' => {
++    GETVER  => "table2asn -version | grep '^table2asn'",
++    REGEXP  => qr/table2asn:\s+($BIDEC)/,
++    MINVER  => "1.29",
+     NEEDED  => 1,
+   },
+   # now just the standard unix tools we need
+@@ -344,7 +344,7 @@
+   $mincontiglen = 200;
+ }
+ 
+-#$centre or err("You must set --centre or the NCBI tbl2asn tool won't work properly, sorry.");
++#$centre or err("You must set --centre or the NCBI table2asn tool won't work properly, sorry.");
+ ($gcode < 1 or $gcode > 25) and err("Invalid genetic code, must be 1..25");
+ $evalue >= 0 or err("Invalid --evalue, must be >= 0");
+ ($coverage >= 0 and $coverage <= 100) or err("Invalid --coverage, must be 0..100");
+@@ -1237,7 +1237,7 @@
+     my $ID = sprintf("${locustag}_%05d", $num_lt * $increment);
+     $f->add_tag_value('ID', $ID);
+     $f->add_tag_value('locus_tag', $ID);
+-    # it seems CDS features _must_ have a valid /protein_id to be output by tbl2asn into .gbk
++    # it seems CDS features _must_ have a valid /protein_id to be output by table2asn into .gbk
+     if ($centre and $f->primary_tag eq 'CDS') {
+       $f->add_tag_value('protein_id', "gnl|$centre|$ID")
+     }
+@@ -1413,26 +1413,27 @@
+ close $txtFh;
+ 
+ # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+-# Use tbl2asn tool to make .gbk and .sqn for us
++# Use table2asn tool to make .gbk and .sqn for us
+ 
+ # NOTE: the -A and -N  fake accession and version needed for Mauve!
+ # BUT: -A xxx has a bug where it uses xxx as the LOCUS (contig) ID for 1st contig
+ # SO: *sigh*
+ 
+-my $tbl2asn_opt = @seq > 10_000 ? '-M b' : '-M n';  # Issue 93 - big assemblies
++my $table2asn_opt = @seq > 10_000 ? '-M b' : '-M n';  # Issue 93 - big assemblies
+ 
+ msg("Generating Genbank and Sequin files");
+-#runcmd("tbl2asn -a s -q F -A $prefix -N 1 -y 'Annotated using $EXE $VERSION from $URL' -Z $outdir/$prefix.err -M n -V b -i $outdir/$prefix.fsa -f $outdir/$prefix.tbl 2> /dev/null");
+-#runcmd("tbl2asn -V b -a s -A $prefix -N 1 -y 'Annotated using $EXE $VERSION from $URL' -Z $outdir/$prefix.err -i $outdir/$prefix.fsa");
+-#runcmd("tbl2asn -V b -a s -N 1 -y 'Annotated using $EXE $VERSION from $URL' -Z $outdir/$prefix.err -i $outdir/$prefix.fsa 2> /dev/null");
++#runcmd("table2asn -a s -q F -A $prefix -N 1 -y 'Annotated using $EXE $VERSION from $URL' -Z $outdir/$prefix.err -M n -V b -i $outdir/$prefix.fsa -f $outdir/$prefix.tbl 2> /dev/null");
++#runcmd("table2asn -V b -a s -A $prefix -N 1 -y 'Annotated using $EXE $VERSION from $URL' -Z $outdir/$prefix.err -i $outdir/$prefix.fsa");
++#runcmd("table2asn -V b -a s -N 1 -y 'Annotated using $EXE $VERSION from $URL' -Z $outdir/$prefix.err -i $outdir/$prefix.fsa 2> /dev/null");
+ runcmd(
+-  "tbl2asn -V b -a r10k -l paired-ends $tbl2asn_opt -N $accver -y 'Annotated using $EXE $VERSION from $URL'".
+-  " -Z \Q$outdir/$prefix.err\E -i \Q$outdir/$prefix.fsa\E 2> /dev/null"
++  "table2asn -V b -a r10k -l paired-ends $table2asn_opt -N $accver -y 'Annotated using $EXE $VERSION from $URL'".
++  " -Z -i \Q$outdir/$prefix.fsa\E 2> /dev/null"
+ );
++runcmd("mv \Q$outdir/$prefix.dr\E \Q$outdir/$prefix.err\E");
+ delfile("$outdir/errorsummary.val");
+ delfile( map { "$outdir/$prefix.$_" } qw(dr fixedproducts ecn val) );
+ 
+-msg("Repairing broken .GBK output that tbl2asn produces...");
++msg("Repairing broken .GBK output that table2asn produces...");
+ runcmd("sed 's/COORDINATES: profile/COORDINATES:profile/' < \Q$outdir/$prefix.gbf\E > \Q$outdir/$prefix.gbk\E");
+ delfile("$outdir/$prefix.gbf");
+ 
