@@ -1,0 +1,76 @@
+easyblock = 'Bundle'
+
+name = 'AOCL-LAPACK'
+version = '5.1'
+
+homepage = 'https://github.com/amd/libflame'
+description = """AOCL-LAPACK is AMD's optimized version of
+                 LAPACK targeted for AMD EPYC and Ryzen CPUs."""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('Python', '3.13'), # 3.13.5
+    ('Perl', '5.40.2'),
+]
+
+dependencies = [
+    ('AOCL-BLAS', '%(version)s'),
+]
+
+default_easyblock = 'CMakeMake'
+default_component_specs = {'sources': [{'download_filename': '%(version)s.tar.gz',
+                                        'filename': SOURCE_LOWER_TAR_GZ}]}
+
+components = [
+    ('AOCL-Utils', version, {
+        'source_urls': ['https://github.com/amd/aocl-utils/archive/refs/tags'],
+	'checksums': ['68d75e04013abe90ea8308a9bc99b99532233b6c7f937f35381563f4124c20a5'],
+	'start_dir': '%(namelower)s-%(version)s',
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/amd/libflame/archive/refs/tags'],
+        'checksums': ['25524ba78b5952303369fa0859d217e44071144fd122a9dc3f72ed0bd73e3b2d'],
+        'start_dir': 'libflame-%(version)s',
+	# -DENABLE_AMD_FLAGS=ON recommended in documentation
+	# -DENABLE_AOCL_BLAS=ON tightly couples with AOCL-BLAS for optimizations
+	# -DLF_ISA_CONFIG=NONE and patching out let EasyBuild CFLAGS override AOCL-LAPACK's
+	# default of -mtune=native -O3 -mavx<depending on arch>*
+	'preconfigopts': 'sed -i "s/-mtune=native -O3//" ../libflame-%(version)s/CMakeLists.txt && ',
+        'configopts': '-DENABLE_AMD_FLAGS=ON -DENABLE_AOCL_BLAS=ON -DLF_ISA_CONFIG=NONE',
+        'test_cmd': """
+cd ../libflame-%(version)s
+BLAS_LIB=libblis-mt.so
+LAPACK_LIB=libflame.so
+BLAS_LIB_PATH=$EBROOTAOCLMINBLAS/lib
+LAPACK_LIB_PATH=$PWD/lib
+AOCLUTILS_LIB_PATH=$PWD/../easybuild_obj/Library
+export LD_LIBRARY_PATH=$BLAS_LIB_PATH:$LAPACK_LIB_PATH:$AOCLUTILS_LIB_PATH:$LD_LIBRARY_PATH
+ 
+cd test/main
+make BLAS_HEADER_PATH=$EBROOTAOCLMINBLAS/include/blis LIBFLAME=$LAPACK_LIB_PATH/$LAPACK_LIB LIBBLAS=$BLAS_LIB_PATH/$BLAS_LIB LIBAOCLUTILS_LIBRARY_PATH=$AOCLUTILS_LIB_PATH/libaoclutils.so
+./test_lapack.x
+cd ../..
+ 
+cd netlib-test
+sh run-netlib-test.sh BLAS_LIB_PATH=$BLAS_LIB_PATH LAPACK_LIB_PATH=$LAPACK_LIB_PATH AOCLUTILS_LIB_PATH=$AOCLUTILS_LIB_PATH BLAS_LIB=$BLAS_LIB LAPACK_LIB=$LAPACK_LIB
+line=$(python3 run-netlib-test-summary.py | grep "Total failed tests:")
+if [ -n "$line" ]; then
+    n=$(echo $line | cut -d' ' -f4-)
+    ((n<100))
+else
+    false
+fi
+        """
+    }),
+]
+
+
+sanity_check_paths = {
+    'files': ['include/lapack.h', 'include/FLAME.h',
+              'lib/libflame.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
