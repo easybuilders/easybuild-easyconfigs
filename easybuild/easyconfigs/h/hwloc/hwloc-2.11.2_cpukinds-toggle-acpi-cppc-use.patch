@@ -1,0 +1,67 @@
+Based on
+https://github.com/open-mpi/hwloc/commit/3f8cb1187165a63471538f81cf1f337190581beb
+but stripped down so that it can be applied to hwloc v2.12.1
+
+Author: Jan Reuter (j.reuter@fz-juelich.de)
+
+From 3f8cb1187165a63471538f81cf1f337190581beb Mon Sep 17 00:00:00 2001
+From: Brice Goglin <Brice.Goglin@inria.fr>
+Date: Tue, 13 Jan 2026 09:40:58 +0100
+Subject: [PATCH] linux/cpukinds: toggle the use of ACPI CPPC for nominal
+ frequency
+
+If Linux/cpukinds is enabled (everywhere except AMD before Zen5 so far),
+we use ACPI CPPC to get the base/nominal frequency if the cpufreq driver
+doesn't provide it.
+The env var HWLOC_LINUX_CPUKINDS is set to cppc=0, it disables CPPC.
+If set to cppc=1, it enables it and skips cpufreq/base_frequency.
+
+This shouldn't be necessary anymore on AMD thanks to the previous commit,
+but it's better to have it in case of issues like #756 on other archs.
+
+Signed-off-by: Brice Goglin <Brice.Goglin@inria.fr>
+(cherry picked from commit 2559c2f7f34fd9097a6bbc847bd66f4932c8a78e)
+---
+ hwloc/topology-linux.c | 19 ++++++++++++-------
+ 2 files changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/hwloc/topology-linux.c b/hwloc/topology-linux.c
+index eccd64420..3f1177165 100644
+--- a/hwloc/topology-linux.c
++++ b/hwloc/topology-linux.c
+@@ -4861,11 +4861,14 @@ look_sysfscpukinds(struct hwloc_topology *topology,
+   if (env) {
+     if (!strcmp(env, "none") || !strcmp(env, "0"))
+       enabled = 0;
+-    else
++    else {
+       /* if variable is given, assume anything else means enabled */
+       enabled = 1;
++      if (!strncmp(env, "cppc=", 5))
++        use_cppc_nominal_freq = atoi(env+5);
++    }
+   }
+-  if (enabled != 0 && data->is_amd_homogeneous) {
++  if (enabled == -1 && data->is_amd_homogeneous) {
+     /* If not disabled but on pre-Zen5 AMD, disable since useless.
+      * This will avoid looking at AMD CPPC which may be slow on Zen2/3 (see #756)
+      */
+@@ -4909,11 +4912,13 @@ look_sysfscpukinds(struct hwloc_topology *topology,
+     sprintf(str, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i);
+     if (hwloc_read_path_as_uint(str, &maxfreq, data->root_fd) >= 0)
+       by_pu[i].max_freq = maxfreq;
+-    /* base_frequency is in intel_pstate and works fine */
+-    sprintf(str, "/sys/devices/system/cpu/cpu%d/cpufreq/base_frequency", i);
+-    if (hwloc_read_path_as_uint(str, &basefreq, data->root_fd) >= 0) {
+-      by_pu[i].base_freq = basefreq;
+-      use_cppc_nominal_freq = 0;
++    if (use_cppc_nominal_freq != 1) {
++      /* base_frequency is in intel_pstate and works fine */
++      sprintf(str, "/sys/devices/system/cpu/cpu%d/cpufreq/base_frequency", i);
++      if (hwloc_read_path_as_uint(str, &basefreq, data->root_fd) >= 0) {
++        by_pu[i].base_freq = basefreq;
++        use_cppc_nominal_freq = 0;
++      }
+     }
+     /* try acpi_cppc/nominal_freq only if cpufreq/base_frequency failed
+      * acpi_cppc/nominal_freq is widely available, but it returns 0 on some Intel SPR,
