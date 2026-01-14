@@ -35,8 +35,12 @@ dependencies = [
     ('xarray', '2024.11.0'),
 ]
 
+# avoid srun problem
+# https://github.com/easybuilders/easybuild-easyconfigs/pull/25021#issuecomment-3744728157
+local_test_command = 'export SLURM_NTASKS_PER_NODE=$SLURM_NTASKS && '
+local_test_command += 'pytest -vs tests '
 # skip tests required optional dependencies
-local_pytest_options = (
+local_test_command += (
     '--ignore=tests/external/mrvi_jax '
     '--ignore=tests/external/tangram '
     '--ignore=tests/model/test_jaxscvi.py '
@@ -65,7 +69,7 @@ exts_list = [
     }),
     (name, version, {
         'modulename': 'scvi',
-        'runtest': "pytest -vs tests " + local_pytest_options,
+        'runtest': local_test_command,
         'sources': ['scvi_tools-%(version)s.tar.gz'],
         'testinstall': True,
         'checksums': ['ee75eaac665618b9ee6fa466f6353ef68eb33cd3d7e2c77069e743471ca2103a'],
