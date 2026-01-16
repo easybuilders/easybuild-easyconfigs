@@ -1,0 +1,42 @@
+easyblock = 'PythonPackage'
+
+name = 'DensPart'
+version = '20251124'
+local_commit = 'e7a6d84'
+
+homepage = 'https://github.com/theochem/denspart'
+description = "Atoms-in-molecules density partitioning schemes based on stockholder recipe"
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+source_urls = ['https://github.com/theochem/denspart/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['8ec2d22ecd123bb080de114049b0574e7c7b5b64f8b7ae3fee031c31b9e75441']
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('iodata', '1.0.0a8'),
+    ('gbasis', '0.1.0'),
+    ('grid', '0.0.9'),
+    ('ASE', '3.25.0'),  # required by denspart-from-gpaw
+    ('GPAW', '25.7.0'),  # required by denspart-from-gpaw
+    ('PLAMS', '2025.105'),  # provides scm.plams, required by denspart-from-adf
+]
+
+preinstallopts = "export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_DENSPART=%(version)s && "
+
+sanity_check_paths = {
+    'files': ['bin/denspart%s' % x for x in ['', '-from-adf', '-from-gpaw', '-from-horton3', '-write-extxyz']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "denspart -h",
+    "denspart-from-adf -h",
+    "denspart-from-gpaw -h",
+    "denspart-from-horton3 -h",
+    "denspart-write-extxyz -h",
+]
+
+moduleclass = 'chem'
