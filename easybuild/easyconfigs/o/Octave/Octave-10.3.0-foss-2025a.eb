@@ -1,0 +1,109 @@
+# Author: Davide Grassano (CECAM)
+
+name = 'Octave'
+version = '10.3.0'
+
+homepage = 'https://www.gnu.org/software/octave/'
+description = """GNU Octave is a high-level interpreted language, primarily intended for numerical computations."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'cstd': 'c++17'}
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+# checksums = ['aed449cba379fc1e1186ec3fc3c96e0860789278fbc823ae2cebe60344344b78']
+
+builddependencies = [
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('Autotools', '20240712'),
+    ('gperf', '3.3'),
+    ('pkgconf', '2.3.0'),
+    ('gawk', '5.3.2'),
+]
+
+dependencies = [
+    ('X11', '20250521'),
+    ('PCRE', '8.45'),
+    ('ncurses', '6.5'),
+    ('libreadline', '8.2'),
+    ('arpack-ng', '3.9.1'),
+    ('cURL', '8.11.1'),
+    ('FLTK', '1.4.4'),
+    ('fontconfig', '2.16.2'),
+    ('freetype', '2.13.3'),
+    ('GLPK', '5.0'),
+    ('GL2PS', '1.4.2'),
+    ('gnuplot', '6.0.3'),
+    ('Java', '21', '', SYSTEM),
+    ('zlib', '1.3.1'),
+    ('Mesa', '25.1.3'),
+    ('libGLU', '9.0.3'),
+    ('Qhull', '2020.2'),
+    ('QScintilla', '2.14.1'),
+    ('Qt6', '6.9.3'),
+    ('HDF5', '1.14.6'),
+    ('qrupdate', '1.1.2'),
+    ('SuiteSparse', '7.10.3'),
+    ('makeinfo', '7.2'),
+    ('libsndfile', '1.2.2'),
+    ('GraphicsMagick', '1.3.45'),
+    ('SUNDIALS', '7.3.0'),
+    # Needs the timestamped version that installs from a commit instead of a release
+    # The latest release is from 2016, and this needs the fix for https://github.com/Tencent/rapidjson/issues/1718
+    ('RapidJSON', '1.1.0-20250205'),
+]
+
+configopts = '--disable-docs '
+# correct for both GCC and Intel compilers
+configopts += '--enable-fortran-calling-convention=gfortran'
+
+local_pkg_url = 'https://downloads.sourceforge.net/'
+local_pkg_url += 'project/octave/Octave%20Forge%20Packages/Individual%20Package%20Releases/'
+exts_default_options = {'source_urls': [local_pkg_url]}
+
+exts_list = [
+    ('general', '2.1.3', {
+        'checksums': ['6a6b25266de16976807a1766ea3609c5c19997e82051c9c97378ba609dd09323'],
+    }),
+    ('io', '2.7.0', {
+        # 'checksums': ['a74a400bbd19227f6c07c585892de879cd7ae52d820da1f69f1a3e3e89452f5a'],
+    }),
+    # Required for newer statistics
+    ('datatypes', '1.1.5', {
+        'source_urls': ['https://github.com/pr0m1th3as/datatypes/archive/refs/tags/'],
+        'sources': [
+            {
+                'download_filename': 'release-%(version)s.tar.gz',
+                'filename': '%(name)s-%(version)s.tar.gz',
+            }
+        ],
+        # 'checksums': ['fd8f982fdd219a4232ce85651043adf2f9a0567f6513b9615219c741ac031cb1'],
+    }),
+    ('statistics', '1.8.0', {
+        'source_urls': ['https://github.com/gnu-octave/statistics/archive/refs/tags/'],
+        'sources': [
+            {
+                'download_filename': 'release-%(version)s.tar.gz',
+                'filename': '%(name)s-%(version)s.tar.gz',
+            }
+        ],
+
+        # 'checksums': ['fd8f982fdd219a4232ce85651043adf2f9a0567f6513b9615219c741ac031cb1'],
+    }),
+    ('struct', '1.0.18', {
+        'checksums': ['fccea7dd84c1104ed3babb47a28f05e0012a89c284f39ab094090450915294ce'],
+    }),
+    # 'optim' plugin added which is required for dynare
+    ('optim', '1.6.2', {
+        'patches': ['optim-1.6.2-octave-10.patch'],  # See https://savannah.gnu.org/bugs/?65526
+        'checksums': [
+            {'optim-1.6.2.tar.gz': '554a8e18bb7195ae861f5059c14f1a557844265c1addb5bfbf3ab9885524787e'},
+            {'optim-1.6.2-octave-10.patch': '1ef7d9f9bd1b8befb2549f52156540a0858878775f7477ca8c556a7e8a724562'},
+        ],
+    }),
+]
+
+runtest = 'check'
+
+moduleclass = 'math'
