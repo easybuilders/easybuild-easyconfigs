@@ -1,0 +1,76 @@
+easyblock = 'PythonBundle'
+
+name = 'pytest'
+version = '8.4.2'
+
+homepage = 'https://docs.pytest.org/en/latest/'
+description = """The pytest framework makes it easy to write small,
+readable tests, and can scale to support complex functional testing for
+applications and libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('hatchling', '1.27.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('Python-bundle-PyPI', '2025.04'),
+]
+
+use_pip = True
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+local_sed_cmds = " && ".join([
+    "sed -i 's/^license = \"MIT\"/license = { text = \"MIT\" }/' pyproject.toml",
+    "sed -i '/^license-files/d' pyproject.toml",
+    "sed -i '/Programming Language :: Python :: 3\.15/d' pyproject.toml",
+    ""
+])
+
+exts_list = [
+    ('hypothesis', '6.150.2', {
+        'preinstallopts': """sed -i 's/^license = "MPL-2.0"/license = { text = "MPL-2.0"}/g' pyproject.toml &&""",
+        'checksums': ['deb043c41c53eaf0955f4a08739c2a34c3d8040ee3d9a2da0aa5470122979f75'],
+    }),
+    ('elementpath', '5.1.0', {
+        'preinstallopts': local_sed_cmds,
+        'checksums': ['61618f64686ce73cf6f191b17298e2568e9a1763b125fc7f2cb796ad0eacfd1e'],
+    }),
+    ('xmlschema', '4.3.0', {
+        'preinstallopts': local_sed_cmds,
+        'checksums': ['174c531dd869cd29bf2d1203603d9e619bddf168d6289725738914c96c80936e'],
+    }),
+    (name, version, {
+        'preinstallopts': local_sed_cmds,
+        'checksums': ['86c0d0b93306b961d58d62a4db4879f27fe25513d4b969df351abdddb3c30e01'],
+    }),
+]
+
+# Note! Some of the file system related tests may fail on shared file systems.
+# Notably TestPOSIXLocalPath.test_copy_stat_file, TestPOSIXLocalPath.test_copy_stat_dir
+# and test_source_mtime_long_long are known to fail on GPFS
+# Build with buildpath and tmpdir set to a local file system to avoid this
+# or use --ignore-test-failures
+_skip_tests = [
+    'testing/io/test_terminalwriter.py',
+    'testing/test_terminal.py',
+    'testing/test_debugging.py',
+    'testing/test_config.py',
+    'testing/test_helpconfig.py',
+]
+_ignore_tests = ' --ignore='.join(_skip_tests)
+_ignore_tests += ' -k "not test_stop_iteration_runtest_protocol"'
+
+sanity_check_commands = [
+    "python -c 'import pytest'",
+    'cd %%(builddir)s/%%(name)s/%%(name)s-%%(version)s && %%(installdir)s/bin/pytest --ignore=%s testing'
+    % _ignore_tests,
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'
