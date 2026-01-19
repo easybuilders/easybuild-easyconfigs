@@ -1,0 +1,144 @@
+easyblock = 'PythonBundle'
+
+name = 'aiida-core'
+version = '2.7.2'
+
+homepage = 'https://www.aiida.net/'
+description = """Bundle of Python packages required to run AiiDA.
+An open-source Python infrastructure to help researchers with automating, managing, persisting,
+sharing and reproducing the complex workflows associated with modern computational science and all associated data.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('poetry', '2.1.2'),  # Poetry, importlib-metadata
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('Python-bundle-PyPI', '2025.04'),
+    # fixes `project.license` must be valid exactly by one definition (2 matches found)
+    # Also needed as a runtime dep for `packaging`
+    ('setuptools', '80.9.0'),
+    ('pydantic', '2.11.7'),  # pydantic_core, pydantic
+    ('paramiko', '4.0.0'),  # paramiko
+    ('SQLAlchemy', '2.0.41'),  # greenlet, alembic, SQLAlchemy
+    ('Graphviz', '13.1.2', '-minimal'),  # graphviz
+    ('matplotlib', '3.10.3'),
+    ('jupyter-server', '2.16.0'),  # PyYAML, tornado, ipython, ipywidgets, jupyter_server
+    ('jedi', '0.19.1'),  # jedi
+    ('wrapt', '1.17.2'),  # wrapt, numpy, scipy
+    ('aiohttp', '3.12.13'),  # multidict, yarl
+    ('psycopg', '3.2.9'),  # PostgreSQL, psycopg2
+    ('plumpy', '0.25.0'),  # plumpy kiwipy aio-pika
+    ('ASE', '3.25.0'),  # Needed for spglib -> seekpath -> [rest]
+    ('pymatgen', '2025.10.7'),  # pymatgen
+    ('Flask', '3.1.1'),  # Used to enable the `verdi restapi` command
+]
+
+# order is important!
+exts_list = [
+    ('asyncssh', '2.19.0', {
+        # 'checksums': ['4640d96be84d82d02ed59ea2b7105a0f7b33abe8703703cd0ab0bf87c427522f'],
+    }),
+    ('disk_objectstore', '1.3.0', {
+        # 'checksums': ['9216e973586f635b05e121a2ab90d72989b8eb64ed08f5aaae5092cabbe26e9b'],
+    }),
+    ('tqdm', '4.67.1', {
+        # 'checksums': ['6cd52cdf0fef0e0f543299cfc96fec90d7b8a7e88745f411ec33eb44d5ed3531'],
+    }),
+    ('docstring_parser', '0.17.0', {
+        # 'checksums': ['538beabd0af1e2db0146b6bd3caa526c35a34d61af9fd2887f3a8a27a739aa6e'],
+    }),
+    ('upf-to-json', '0.9.5', {
+        # 'sources': ['upf_to_json-%(version)s.tar.gz'],
+        # 'checksums': ['57614c4c8677f04f161679ce4eddb2f55b87984605b8a5253d3d288235f56e4a'],
+    }),
+    ('circus', '0.19.0', {
+        # 'checksums': ['193ce8224e068ced66724cf483106fb6674b51a57583ac1a0e7ed7a7ee8c71ab'],
+    }),
+    ('click-spinner', '0.1.10', {
+        'preinstallopts': ' && '.join([
+            # Fix error similar to https://github.com/pydata/pandas-datareader/issues/969
+            "sed -i 's/SafeConfigParser/ConfigParser/g' versioneer.py",
+            "sed -i 's/readfp/read_file/g' versioneer.py",
+            ""  # Trailing &&
+        ]),
+        'checksums': ['87eacf9d7298973a25d7615ef57d4782aebf913a532bba4b28a37e366e975daf'],
+    }),
+    ('pgsu', '0.3.0', {
+        # Use psycopg from EB instead of wheel binary
+        # 'preinstallopts': "sed -i 's/psycopg\[binary\]/psycopg/g' pyproject.toml && ",
+        # 'patches': ['aiida_core-2.5.1-pgsu.patch'],
+        # 'checksums': [
+        #     # {'pgsu-0.2.4.tar.gz': 'fb7cfa069305551d40cc104d7c5b4b6ad28bf6c5d00eedac30fb7967581ec9e3'},
+        #     {'aiida_core-2.5.1-pgsu.patch': '4393d4df8d9cd393125c8066a725990701f30c4e7a29d466904ad5e7bd6e5b8c'},
+        # ],
+    }),
+    ('archive-path', '0.4.2', {
+        'checksums': ['75279003ea986a4f6748e299ba74d95e74ad75f1bd3ae02d35c125c749633a51'],
+    }),
+    ('graphviz', '0.21', {
+        # 'sources': ['%(namelower)s-%(version)s.zip'],
+        # 'checksums': ['09d6bc81e6a9fa392e7ba52135a9d49f1ed62526f96499325930e87ca1b5925d'],
+    }),
+    # [rest] specific optional deps
+    ('aniso8601', '10.0.1', {
+        'checksums': ['25488f8663dd1528ae1f54f94ac1ea51ae25b4d531539b8bc707fed184d16845'],
+    }),
+    ('Flask-RESTful', '0.3.10', {
+        'checksums': ['fe4af2ef0027df8f9b4f797aba20c5566801b6ade995ac63b588abf1a59cec37'],
+    }),
+    ('pyparsing', '3.3.0', {
+        # 'checksums': ['edb662d6fe322d6e990b1594b5feaeadf806803359e3d4d42f11e295e588f0ea'],
+    }),
+    ('python-memcached', '1.62', {
+        'modulename': 'memcache',
+        # 'checksums': ['a2e28637be13ee0bf1a8b6843e7490f9456fd3f2a4cb60471733c7b5d5557e4f'],
+    }),
+    # [atomic_tools] specific optional deps
+    ('PyMySQL', '0.9.3', {
+        'checksums': ['d8c059dcd81dedb85a9f034d5e22dcb4442c0b201908bede99e306d65ea7c8e7'],
+    }),
+    ('PyCifRW', '4.4.6', {
+        'modulename': 'CifFile',
+        # 'checksums': ['a1b6ca0098c9c986b80a50f6cf05122ad65434a18b97a1120f83304ba485acc7'],
+    }),
+    ('seekpath', '2.1.0', {
+        'checksums': ['31cec579628262e6d4a4c3693fefa70d6ccae1ceeef7c9d10ea3cd48988452c4'],
+    }),
+    (name, version, {
+        'modulename': 'aiida',
+        'patches': ['aiida_core-2.7.2-unfix_deps.patch'],
+        'sources': ['aiida_core-%(version)s.tar.gz'],
+        # 'checksums': [
+        #     # {'aiida_core-2.5.1.tar.gz': '9a5898ca355f0494d07ec4d2f714d17abef43e2e6c0b938cc2263db0115c33b4'},
+        #     # {'aiida_core-2.5.1-psycopg.patch': '8ca8799ca053d830832ffd3f0cbc8fd9e5f67cfafdf02f53f81f4de66a3b2f25'},
+        # ],
+    }),
+]
+
+sanity_check_commands = [
+    'verdi --help',
+]
+
+moduleclass = 'tools'
+
+modluafooter = """
+local shell = myShellName()
+
+if (shell == "bash") or (shell == "sh") then
+    execute{cmd="eval \\"$(_VERDI_COMPLETE=bash_source verdi)\\"", modeA={"load"}}
+    execute{cmd="complete -r verdi && unset _verdi_completion_setup && unset _verdi_completion", modeA={"unload"}}
+elseif (shell == "zsh") then
+    execute{cmd="eval \\"$(_VERDI_COMPLETE=zsh_source verdi)\\"", modeA={"load"}}
+    execute{cmd="unset '_comps[verdi]' && unset -f _verdi_completion", modeA={"unload"}}
+elseif (shell == "fish") then
+    execute{cmd="eval (env _VERDI_COMPLETE=fish_source verdi)", modeA={"load"}}
+    execute{cmd="complete -e verdi && functions --erase _verdi_completion", modeA={"unload"}}
+else
+    LmodMessage("Autocompletion cannot be setup automatically for shell: " .. shell)
+end
+"""
