@@ -1,0 +1,124 @@
+From 43f59fcd1e33fc98adc5ff70ac82cc16f77b9ab4 Mon Sep 17 00:00:00 2001
+From: Richard Sandiford <richard.sandiford@arm.com>
+Date: Sat, 26 Jul 2025 18:38:49 +0100
+Subject: aarch64: Tweak handling of general SVE permutes [PR121027]
+
+This PR is partly about a code quality regression that was triggered
+by g:caa7a99a052929d5970677c5b639e1fa5166e334.  That patch taught the
+gimple optimisers to fold two VEC_PERM_EXPRs into one, conditional
+upon either (a) the original permutations not being "native" operations
+or (b) the combined permutation being a "native" operation.
+
+Whether something is a "native" operation is tested by calling
+can_vec_perm_const_p with allow_variable_p set to false.  This requires
+the permutation to be supported directly by TARGET_VECTORIZE_VEC_PERM_CONST,
+rather than falling back to the general vec_perm optab.
+
+This exposed a problem with the way that we handled general 2-input
+permutations for SVE.  Unlike Advanced SIMD, base SVE does not have
+an instruction to do general 2-input permutations.  We do still implement
+the vec_perm optab for SVE, but only when the vector length is known at
+compile time.  The general expansion is pretty expensive: an AND, a SUB,
+two TBLs, and an ORR.  It certainly couldn't be considered a "native"
+operation.
+
+However, if a VEC_PERM_EXPR has a constant selector, the indices can
+be wider than the elements being permuted.  This is not true for the
+vec_perm optab, where the indices and permuted elements must have the
+same precision.
+
+This leads to one case where we cannot leave a general 2-input permutation
+to be handled by the vec_perm optab: when permuting bytes on a target
+with 2048-bit vectors.  In that case, the indices of the elements in
+the second vector are in the range [256, 511], which cannot be stored
+in a byte index.
+
+TARGET_VECTORIZE_VEC_PERM_CONST therefore has to handle 2-input SVE
+permutations for one specific case.  Rather than check for that
+specific case, the code went ahead and used the vec_perm expansion
+whenever it worked.  But that undermines the !allow_variable_p
+handling in can_vec_perm_const_p; it becomes impossible for
+target-independent code to distinguish "native" operations from
+the worst-case fallback.
+
+This patch instead limits TARGET_VECTORIZE_VEC_PERM_CONST to the
+cases that it has to handle.  It fixes the PR for all vector lengths
+except 2048 bits.
+
+A better fix would be to introduce some sort of costing mechanism,
+which would allow us to reject the new VEC_PERM_EXPR even for
+2048-bit targets.  But that would be a significant amount of work
+and would not be backportable.
+
+gcc/
+	PR target/121027
+	* config/aarch64/aarch64.cc (aarch64_evpc_sve_tbl): Punt on 2-input
+	operations that can be handled by vec_perm.
+
+gcc/testsuite/
+	PR target/121027
+	* gcc.target/aarch64/sve/acle/general/perm_1.c: New test.
+
+(cherry picked from commit 1f52396c6fc940224e9d858d49e41310a6dfa43d)
+---
+ gcc/config/aarch64/aarch64.cc                       | 21 ++++++++++++++++-----
+ .../gcc.target/aarch64/sve/acle/general/perm_1.c    | 14 ++++++++++++++
+ 2 files changed, 30 insertions(+), 5 deletions(-)
+ create mode 100644 gcc/testsuite/gcc.target/aarch64/sve/acle/general/perm_1.c
+
+diff --git a/gcc/config/aarch64/aarch64.cc b/gcc/config/aarch64/aarch64.cc
+index 21084ac5492a..126a90f576d1 100644
+--- a/gcc/config/aarch64/aarch64.cc
++++ b/gcc/config/aarch64/aarch64.cc
+@@ -25941,12 +25941,23 @@ aarch64_evpc_tbl (struct expand_vec_perm_d *d)
+ static bool
+ aarch64_evpc_sve_tbl (struct expand_vec_perm_d *d)
+ {
+-  unsigned HOST_WIDE_INT nelt;
++  if (!d->one_vector_p)
++    {
++      /* aarch64_expand_sve_vec_perm does not yet handle variable-length
++	 vectors.  */
++      if (!d->perm.length ().is_constant ())
++	return false;
+ 
+-  /* Permuting two variable-length vectors could overflow the
+-     index range.  */
+-  if (!d->one_vector_p && !d->perm.length ().is_constant (&nelt))
+-    return false;
++      /* This permutation reduces to the vec_perm optab if the elements are
++	 large enough to hold all selector indices.  Do not handle that case
++	 here, since the general TBL+SUB+TBL+ORR sequence is too expensive to
++	 be considered a "native" constant permutation.
++
++	 Not doing this would undermine code that queries can_vec_perm_const_p
++	 with allow_variable_p set to false.  See PR121027.  */
++      if (selector_fits_mode_p (d->vmode, d->perm))
++	return false;
++    }
+ 
+   if (d->testing_p)
+     return true;
+diff --git a/gcc/testsuite/gcc.target/aarch64/sve/acle/general/perm_1.c b/gcc/testsuite/gcc.target/aarch64/sve/acle/general/perm_1.c
+new file mode 100644
+index 000000000000..6b920b8b6812
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/aarch64/sve/acle/general/perm_1.c
+@@ -0,0 +1,14 @@
++/* { dg-options "-O2 -msve-vector-bits=256" } */
++
++#include <arm_sve.h>
++typedef svbfloat16_t vls_bfloat16_t __attribute__((arm_sve_vector_bits(32 * 8)));
++svbfloat16_t foo(vls_bfloat16_t a, vls_bfloat16_t b)
++{
++  svbfloat16_t zero = svreinterpret_bf16_f32 (svdup_n_f32 (0.0f));
++  return svzip2_bf16(zero, svuzp1_bf16(a,b));
++}
++
++
++/* { dg-final { scan-assembler-times {\tuzp1\t} 1 } } */
++/* { dg-final { scan-assembler-times {\tzip2\t} 1 } } */
++/* { dg-final { scan-assembler-not {\ttbl\t} } } */
+-- 
+cgit 
+

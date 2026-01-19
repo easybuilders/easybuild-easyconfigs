@@ -1,0 +1,116 @@
+From 86ecf3e5832a3fd1fc0ecfbb03e91ca8e6aa806e Mon Sep 17 00:00:00 2001
+From: Richard Sandiford <richard.sandiford@arm.com>
+Date: Sat, 26 Jul 2025 18:38:48 +0100
+Subject: aarch64: Fix general permutes of svbfloat16_ts [PR121027]
+
+Testing gcc.target/aarch64/sve/permute_2.c without the associated GCC
+patch triggered an unrecognisable insn ICE for the svbfloat16_t tests.
+This was because the implementation of general two-vector permutes
+requires two TBLs and an ORR, with the ORR being represented as an
+unspec for floating-point modes.  The associated pattern did not
+cover VNx8BF.
+
+gcc/
+	PR target/121027
+	* config/aarch64/iterators.md (SVE_I): Move further up file.
+	(SVE_F): New mode iterator.
+	(SVE_ALL): Redefine in terms of SVE_I and SVE_F.
+	* config/aarch64/aarch64-sve.md (*<LOGICALF:optab><mode>3): Extend
+	to all SVE_F.
+
+gcc/testsuite/
+	PR target/121027
+	* gcc.target/aarch64/sve/permute_5.c: New test.
+
+(cherry picked from commit 4fd473f66faf5bd95c84fe5c0fa41be735a7c09f)
+---
+ gcc/config/aarch64/aarch64-sve.md                |  8 +++----
+ gcc/config/aarch64/iterators.md                  | 27 ++++++++++++------------
+ gcc/testsuite/gcc.target/aarch64/sve/permute_5.c | 10 +++++++++
+ 3 files changed, 27 insertions(+), 18 deletions(-)
+ create mode 100644 gcc/testsuite/gcc.target/aarch64/sve/permute_5.c
+
+diff --git a/gcc/config/aarch64/aarch64-sve.md b/gcc/config/aarch64/aarch64-sve.md
+index c94f4b7c995c..73d9e906b4b9 100644
+--- a/gcc/config/aarch64/aarch64-sve.md
++++ b/gcc/config/aarch64/aarch64-sve.md
+@@ -6422,10 +6422,10 @@
+ ;; by providing this, but we need to use UNSPECs since rtx logical ops
+ ;; aren't defined for floating-point modes.
+ (define_insn "*<optab><mode>3"
+-  [(set (match_operand:SVE_FULL_F 0 "register_operand" "=w")
+-	(unspec:SVE_FULL_F
+-	  [(match_operand:SVE_FULL_F 1 "register_operand" "w")
+-	   (match_operand:SVE_FULL_F 2 "register_operand" "w")]
++  [(set (match_operand:SVE_F 0 "register_operand" "=w")
++	(unspec:SVE_F
++	  [(match_operand:SVE_F 1 "register_operand" "w")
++	   (match_operand:SVE_F 2 "register_operand" "w")]
+ 	  LOGICALF))]
+   "TARGET_SVE"
+   "<logicalf_op>\t%0.d, %1.d, %2.d"
+diff --git a/gcc/config/aarch64/iterators.md b/gcc/config/aarch64/iterators.md
+index 99cde46f1ba5..254f3055b7db 100644
+--- a/gcc/config/aarch64/iterators.md
++++ b/gcc/config/aarch64/iterators.md
+@@ -519,15 +519,20 @@
+ 				     VNx4HI VNx2HI
+ 				     VNx2SI])
+ 
++;; All SVE integer vector modes.
++(define_mode_iterator SVE_I [VNx16QI VNx8QI VNx4QI VNx2QI
++			     VNx8HI VNx4HI VNx2HI
++			     VNx4SI VNx2SI
++			     VNx2DI])
++
++;; All SVE floating-point vector modes.
++(define_mode_iterator SVE_F [VNx8HF VNx4HF VNx2HF
++			     VNx8BF VNx4BF VNx2BF
++			     VNx4SF VNx2SF
++			     VNx2DF])
++
+ ;; All SVE vector modes.
+-(define_mode_iterator SVE_ALL [VNx16QI VNx8QI VNx4QI VNx2QI
+-			       VNx8HI VNx4HI VNx2HI
+-			       VNx8HF VNx4HF VNx2HF
+-			       VNx8BF VNx4BF VNx2BF
+-			       VNx4SI VNx2SI
+-			       VNx4SF VNx2SF
+-			       VNx2DI
+-			       VNx2DF])
++(define_mode_iterator SVE_ALL [SVE_I SVE_F])
+ 
+ ;; All SVE 2-vector modes.
+ (define_mode_iterator SVE_FULLx2 [VNx32QI VNx16HI VNx8SI VNx4DI
+@@ -549,12 +554,6 @@
+ ;; All SVE vector and structure modes.
+ (define_mode_iterator SVE_ALL_STRUCT [SVE_ALL SVE_STRUCT])
+ 
+-;; All SVE integer vector modes.
+-(define_mode_iterator SVE_I [VNx16QI VNx8QI VNx4QI VNx2QI
+-			     VNx8HI VNx4HI VNx2HI
+-			     VNx4SI VNx2SI
+-			     VNx2DI])
+-
+ ;; All SVE integer vector modes and Advanced SIMD 64-bit vector
+ ;; element modes
+ (define_mode_iterator SVE_I_SIMD_DI [SVE_I V2DI])
+diff --git a/gcc/testsuite/gcc.target/aarch64/sve/permute_5.c b/gcc/testsuite/gcc.target/aarch64/sve/permute_5.c
+new file mode 100644
+index 000000000000..786b05ee3e72
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/aarch64/sve/permute_5.c
+@@ -0,0 +1,10 @@
++/* { dg-options "-O -msve-vector-bits=256" } */
++
++typedef __SVBfloat16_t vbfloat16 __attribute__((arm_sve_vector_bits(256)));
++
++vbfloat16
++foo (vbfloat16 x, vbfloat16 y)
++{
++  return __builtin_shufflevector (x, y, 0, 2, 1, 3, 16, 19, 17, 18,
++				  8, 9, 10, 11, 23, 22, 21, 20);
++}
+-- 
+cgit 
+
