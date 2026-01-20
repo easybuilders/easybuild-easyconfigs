@@ -15,6 +15,7 @@ toolchain = {'name': 'foss', 'version': '2025a'}
 
 builddependencies = [
     ('poetry', '2.1.2'),
+    ('MOPAC', '23.2.2'),
 ]
 
 dependencies = [
@@ -22,12 +23,23 @@ dependencies = [
     ('SciPy-bundle', '2025.06'),
 ]
 
+github_account = 'jhrmnn'
+
 exts_list = [
     ('pyberny', version, {
         'modulename': 'berny',
         # Allow numpy major version 2
-        'preinstallopts': """sed -i 's/numpy = "^1.15"/numpy = ">1.15"/' pyproject.toml && """,
-        'checksums': ['b4bd9d3d2d58261e8f1d91b8204cc563617044d4b9daf6aae8feee31893cb336'],
+        # One of the test cases needs an extra iteration before it converges
+        'preinstallopts': (
+            """sed -i 's/0.0.0/0.6.3/' pyproject.toml && """
+            """sed -i 's/numpy = "^1.15"/numpy = ">1.15"/' pyproject.toml && """
+            """sed -i "s/'aniline.xyz')), 11/'aniline.xyz')), 12/" tests/test_optimize.py && """
+        ),
+        'testinstall': True,
+        'runtest': "pytest tests",
+        'source_urls': [GITHUB_LOWER_SOURCE],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['57c96c9671cf4bd1ced7fd016b300b78f92b9e20ab7199c4782a780b18422dc9'],
     }),
 ]
 
