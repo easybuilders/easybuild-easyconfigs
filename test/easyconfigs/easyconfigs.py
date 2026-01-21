@@ -554,8 +554,7 @@ class EasyConfigTest(TestCase):
         # some software packages require a specific (older/newer) version of a particular dependency
         alt_dep_versions = {
             # scanpy-1.10.4 and scvi-tools-1.4.1 requires anndata >= 0.11
-            'aiida-core': [(r'2\.7\.2', [r'plumpy-0.25.0-'])],
-            'aiida-shell': [(r'0\.8\.2', [r'aiida-core-2.7.2-'])],
+            'aiida-core': [(r'2\.7\.2', [r'aiida-shell-'])],
             'anndata': [(r'0\.11\.4', [r'scvi-tools-1.4.1-', r'scanpy-1.10.4-'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
@@ -619,6 +618,7 @@ class EasyConfigTest(TestCase):
                 # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
             ],
+            'plumpy': [(r'0\.25\.0', [r'aiida-core-', r'aiida-shell-'])],
             'PMIx': [
                 # PRRTE 4.0+ requires PMIx 6.0+ and vice-versa
                 (r'6\.0\.0', [r'PRRTE-4\.0\.0']),
