@@ -1,0 +1,60 @@
+easyblock = 'Tarball'
+toolchain = SYSTEM
+
+name = 'sentieon-genomics'
+version = '202503.02'
+
+homepage = 'https://www.sentieon.com/'
+description = "Sentieon Genomics tools (proprietary; requires Sentieon license)."
+
+download_instructions = """
+Download manually from the Sentieon customer portal (login required),
+then place the tarball in:
+
+  easybuild/sources/s/sentieon-genomics/
+
+Expected filename:
+  sentieon-genomics-%(version)s.tar.gz
+"""
+
+dependencies = [
+    ('jemalloc', '5.3.0-GCCcore-13.3.0'),
+]
+
+ 
+modextrapaths = {
+    'PATH': 'bin',
+    'LD_LIBRARY_PATH': 'lib',
+}
+
+modluafooter = """
+-- jemalloc preload
+local jem = os.getenv("EBROOTJEMALLOC")
+if jem ~= nil then
+    prepend_path("LD_PRELOAD", pathJoin(jem, "lib", "libjemalloc.so"))
+end
+"""
+
+
+sources = [f'{name}-{version}.tar.gz']
+checksums = ['b3d619b6b9305178ace70f7c46df786db4e697d31699df9e13db575caec2e470']
+
+sanity_check_paths = {
+    'files': ['bin/sentieon'],
+    'dirs':  ['bin'],
+}
+
+modextravars = {
+    'SENTIEON_HOME': '%(installdir)s',
+}
+
+modextrapaths = {
+    'PATH': 'bin',
+}
+
+modloadmsg = (
+    "Sentieon requires a license. Set SENTIEON_LICENSE (or use your license-server setup) "
+    "before running."
+)
+
+moduleclass = 'bio'
