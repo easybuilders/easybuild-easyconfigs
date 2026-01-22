@@ -1,0 +1,112 @@
+name = 'QuantumESPRESSO'
+version = '7.5'
+
+homepage = 'https://www.quantum-espresso.org'
+description = '''Quantum ESPRESSO  is an integrated suite of computer codes
+for electronic-structure calculations and materials modeling at the nanoscale.
+It is based on density-functional theory, plane waves, and pseudopotentials
+(both norm-conserving and ultrasoft).
+'''
+
+toolchain = {'name': 'NVHPC', 'version': '25.3-CUDA-%(cudaver)s'}
+
+toolchainopts = {'usempi': True, 'openmp': True}
+
+# Check hashes inside external/submodule_commit_hash_records when making file for new version
+_mbd_hash = '89a3cc199c0a200c9f0f688c3229ef6b9a8d63bd'
+_devxlib_hash = 'a6b89ef77b1ceda48e967921f1f5488d2df9226d'
+_fox_hash = '3453648e6837658b747b895bb7bef4b1ed2eac40'
+_qe_gipaw_hash = '717e55c36f28c512d232321adb10d5a66d3e1072'
+_qmcpack_hash = 'f72ab25fa4ea755c1b4b230ae8074b47d5509c70'
+_w90_hash = '1d6b187374a2d50b509e5e79e2cab01a79ff7ce1'
+
+sources = [
+    {
+        'filename': 'q-e-qe-%(version)s.tar.gz',
+        'extract_cmd': 'mkdir -p %(builddir)s/qe-%(version)s && tar xzvf %s --strip-components=1 -C $_',
+        'source_urls': ['https://gitlab.com/QEF/q-e/-/archive/qe-%(version)s'],
+    },
+]
+checksums = [
+    {'q-e-qe-7.5.tar.gz': '7e1f7a9a21b63192f5135218bee20a5321b66582e4756536681b76e9c59b3cc8'},
+    {'mbd-89a3cc19.tar.xz': 'd026bf0e9334874670a23cd854f445baac003d4f099afa46bab667bc67abb450'},
+    {'devxlib-a6b89ef7.tar.xz': '0a9b7e5350f44017a2390c85176d1683c6ecec0e4b716a59d727f7650f16e807'},
+    {'fox-3453648e.tar.xz': 'c8c55cdf9eb2709aebac86a58f936480ee66438dffd3d65c6a35ca7771c031b3'},
+    {'qe-gipaw-717e55c3.tar.xz': '10e1ec9cda0e5480f708c08ff65b216f7611b0378a225133116c5884b3424a33'},
+    {'pw2qmcpack-f72ab25f.tar.xz': 'bc9513c4901ec2469d56b8a6b66f56878cb13e3bc7fbcdc5dba0ca6dad880ab9'},
+    {'wannier90-1d6b1873.tar.xz': '351531aaf3434a9aac92d39ee40df5eb949aa27d14fcb93518bf08444478cd2a'},
+]
+
+_github_repos = [
+    ('github', 'libmbd', 'libmbd', _mbd_hash, 'mbd'),
+    ('gitlab', 'max-centre/components', 'devicexlib', _devxlib_hash, 'devxlib'),
+    ('github', 'pietrodelugas', 'fox', _fox_hash, 'fox'),
+    ('github', 'dceresoli', 'qe-gipaw', _qe_gipaw_hash, 'qe-gipaw'),
+    ('github', 'QMCPACK', 'pw2qmcpack', _qmcpack_hash, 'pw2qmcpack'),
+    ('github', 'wannier-developers', 'wannier90', _w90_hash, 'wannier90'),
+]
+
+for _provider, _owner, _repo, _commit, _name in _github_repos:
+    sources.append({
+        'filename': '%s-%s.tar.xz' % (_name, _commit[:8]),
+        'git_config': {
+            'url': f'https://{_provider}.com/{_owner}',
+            'repo_name': _repo,
+            'commit': _commit,
+            'clone_into': _name,
+        },
+    })
+
+local_gccver = '14.2.0'
+builddependencies = [
+    ('M4', '1.4.19', '', ('GCCcore', local_gccver)),
+    ('CMake', '3.31.3', '', ('GCCcore', local_gccver)),
+    ('pkgconf', '2.3.0', '', ('GCCcore', local_gccver)),
+    ('Python', '3.13.1', '', ('GCCcore', local_gccver)),  # required for tests
+]
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('FFTW', '3.3.10'),
+    ('HDF5', '1.14.5'),
+    ('ELPA', '2025.01.002'),
+    ('libxc', '7.0.0'),
+]
+
+with_cuda = True
+# ELPA needs scalapack (should pick NVScaLAPACK)
+with_scalapack = True
+with_gipaw = True
+# QE-GIPAW requires -DQE_ENABLE_FOX=ON
+with_fox = True
+with_qmcpack = True
+# D3Q is CPU-only and its source conflicts with global CUDA/OpenACC compiler flags in QE-7.5.
+with_d3q = False
+
+# QE test-step MPI binding check breaks with NVHPC/HPC-X (no OpenMPI module loaded)
+test_mpi_socket_binding = False
+# fix mpi problem during the tests:
+#  hwloc_set_cpubind returned "Error" for bitmap "0"
+pretestopts = (
+    "export OMPI_MCA_hwloc_base_binding_policy=none && "
+    "export OMPI_MCA_rmaps_base_oversubscribe=1 && "
+)
+
+test_suite_nprocs = 1
+test_suite_threshold = 0.9
+test_suite_max_failed = 5  # Allow for some flaky tests (failed due to strict thresholds)
+test_suite_allow_failures = [
+    # test cases that are CPU-only / not GPU-ported
+    "system--cp_al_edft--Al",
+    "system--cp_al_edft--Al.uspp",
+    "system--cp_cluster--cluster4",
+    "system--cp_cluster--cluster6",
+    "system--cp_sio2--sio2-us-lda-cg",
+    "system--cp_sio2--sio2-us-pbe-cg",
+    "system--pw_plugins-correctness",
+    "system--pw_twochem--nscf_twochem",
+    "system--pw_twochem--relax_twochem",
+    "system--pw_twochem--scf_twochem",
+    "system--pw_twochem--vc-relax_twochem",
+]
+
+moduleclass = 'chem'
