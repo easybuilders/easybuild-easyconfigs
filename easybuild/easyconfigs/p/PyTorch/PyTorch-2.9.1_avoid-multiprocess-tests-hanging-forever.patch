@@ -14,7 +14,7 @@ index c1f75697fe8..47661c7a1fa 100644
  
 +def retrieve_result_from_process_queue(
 +    process: torch.multiprocessing.Process,
-+    queue: torch.multiprocessing.Queue,
++    completion_queue: torch.multiprocessing.Queue,
 +    timeout: Optional[int] = None,
 +) -> Any:
 +    """Get result from queue associated with process.
@@ -25,10 +25,10 @@ index c1f75697fe8..47661c7a1fa 100644
 +    # Periodically check the process for liveness
 +    while True:
 +        try:
-+            return queue.get(timeout=queue_timeout)
++            return completion_queue.get(timeout=queue_timeout)
 +        except queue.Empty:
 +            # If not alive do a last check because the timeout might have happened just before completion
-+            if not process.is_alive() and queue.empty():
++            if not process.is_alive() and completion_queue.empty():
 +                # Clean up process to avoid keeping a zombie process
 +                process.terminate()  # Just to be sure
 +                process.join(600)  # Usually completes immediately
