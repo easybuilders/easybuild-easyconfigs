@@ -44,19 +44,6 @@ local_common_cmake_configopts = ' '.join([
     '-DLLVM_DIR=%(installdir)s/lib/cmake/llvm',
 ])
 
-checksums = [{
-    'llvm-project-rocm-6.4.1.tar.gz':
-        '460ad28677092b9eb86ffdc49bcb4d01035e32b4f05161d85f90c9fa80239f50',
-    'ROCR-Runtime-rocm-6.4.1.tar.gz':
-        'f72d100a46a2dd9f4c870cef156604777f1bdb1841df039d14bf37b19814b9da',
-    'aomp-extras-rocm-6.4.1.tar.gz':
-        'cf20b02b1f99f506c198866ef03f2265dc355627760f82cda3878d5bc6486afc',
-    'ROCm-LLVM-19.0.0_fix-ConstantFoldFP128-conversion-issue.patch':
-        '76fc2b0209c9e6a2d13f138b40acdab41313e979104bb66e4b1ac1aa7b4b5d03',
-    'ROCm-LLVM-19.0.0_fix-offload-build.patch':
-        '2ce1454aa3d2f50795bbc331c239f44be07f8ec836978cad130406af4340e30d',
-}]
-
 default_easyblock = 'CMakeMake'
 
 default_component_specs = {
@@ -78,6 +65,12 @@ components = [
             'extract_cmd': 'tar xfz %%s && mv %%(name)s-rocm-%s %%(name)s-%%(version)s.src' % _rocm_version,
         }],
         'patches': ['ROCm-LLVM-19.0.0_fix-ConstantFoldFP128-conversion-issue.patch'],
+        'checksums': [
+            {local_rocm_llvm_source:
+                '460ad28677092b9eb86ffdc49bcb4d01035e32b4f05161d85f90c9fa80239f50'},
+            {'ROCm-LLVM-19.0.0_fix-ConstantFoldFP128-conversion-issue.patch':
+                '76fc2b0209c9e6a2d13f138b40acdab41313e979104bb66e4b1ac1aa7b4b5d03'},
+        ],
         'start_dir': f'llvm-project-{_llvm_version}-rocm-{_rocm_version}.src',
         'bootstrap': True,
         'build_lld': True,
@@ -91,12 +84,20 @@ components = [
     ('ROCm-comgr', 'rocm-%s' % _rocm_version, {
         # sources are located in amd/comgr subdir of llvm-project component
         'sources': [{'filename': local_rocm_llvm_source, 'extract_cmd': 'echo %s'}],
+        'checksums': [
+            {local_rocm_llvm_source:
+                '460ad28677092b9eb86ffdc49bcb4d01035e32b4f05161d85f90c9fa80239f50'},
+        ],
         'srcdir': 'llvm-project-%s-%%(version)s.src/amd/comgr' % _llvm_version,
         'prebuildopts': 'export ROCM_PATH=%(installdir)s && ',
         'configopts': local_common_cmake_configopts + ' -DROCM_DIR=%(installdir)s/share/rocm/cmake'
     }),
     ('ROCR-Runtime', 'rocm-%s' % _rocm_version, {
         'srcdir': '%(name)s-%(version)s',
+        'checksums': [
+            {'ROCR-Runtime-rocm-6.4.1.tar.gz':
+                'f72d100a46a2dd9f4c870cef156604777f1bdb1841df039d14bf37b19814b9da'},
+        ],
         'configopts': local_common_cmake_configopts + ' -DBUILD_SHARED_LIBS=ON',
     }),
     ('llvm-project-openmp', '%s-rocm-%s' % (_llvm_version, _rocm_version), {
@@ -113,6 +114,14 @@ components = [
             'ROCm-LLVM-19.0.0_fix-offload-build.patch',
             'ROCm-LLVM-19.0.0_fix-ConstantFoldFP128-conversion-issue.patch',
         ],
+        'checksums': [
+            {local_rocm_llvm_source:
+                '460ad28677092b9eb86ffdc49bcb4d01035e32b4f05161d85f90c9fa80239f50'},
+            {'ROCm-LLVM-19.0.0_fix-ConstantFoldFP128-conversion-issue.patch':
+                '76fc2b0209c9e6a2d13f138b40acdab41313e979104bb66e4b1ac1aa7b4b5d03'},
+            {'ROCm-LLVM-19.0.0_fix-offload-build.patch':
+                '2ce1454aa3d2f50795bbc331c239f44be07f8ec836978cad130406af4340e30d'},
+        ],
         'start_dir': f'llvm-project-openmp-{_llvm_version}-rocm-{_rocm_version}.src',
         'bootstrap': True,
         'build_lld': True,
@@ -127,7 +136,11 @@ components = [
         'configopts':
             local_common_cmake_configopts +
             ' -DAOMP_STANDALONE_BUILD=0 '
-            '-DAOMP_VERSION_STRING=%s ' % _rocm_version
+            '-DAOMP_VERSION_STRING=%s ' % _rocm_version,
+        'checksums': [
+            {'aomp-extras-rocm-6.4.1.tar.gz':
+                'cf20b02b1f99f506c198866ef03f2265dc355627760f82cda3878d5bc6486afc'},
+        ],
     }),
 
 ]
