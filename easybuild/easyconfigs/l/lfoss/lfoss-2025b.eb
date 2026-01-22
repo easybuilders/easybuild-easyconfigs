@@ -1,0 +1,28 @@
+easyblock = 'Toolchain'
+
+name = 'lfoss'
+version = '2025b'
+
+homepage = 'https://easybuild.readthedocs.io/en/master/Common-toolchains.html#foss-toolchain'
+description = """GNU Compiler Collection (GCC) based compiler toolchain, including
+ OpenMPI for MPI support, OpenBLAS (BLAS and LAPACK support), FFTW and ScaLAPACK."""
+
+toolchain = SYSTEM
+
+local_llvmver = '20.1.8'
+
+# toolchain used to build foss dependencies
+local_comp_mpi_tc = ('lompi', version)
+
+# we need GCC and OpenMPI as explicit dependencies instead of gompi toolchain
+# because of toolchain preparation functions
+dependencies = [
+    ('llvm-compilers', local_llvmver),
+    ('OpenMPI', '5.0.8', '', ('llvm-compilers', local_llvmver)),
+    ('FlexiBLAS', '3.4.5', '', ('llvm-compilers', local_llvmver)),
+    ('FFTW', '3.3.10', '', ('llvm-compilers', local_llvmver)),
+    ('FFTW.MPI', '3.3.10', '', local_comp_mpi_tc),
+    ('ScaLAPACK', '2.2.2', '-fb', local_comp_mpi_tc),
+]
+
+moduleclass = 'toolchain'
