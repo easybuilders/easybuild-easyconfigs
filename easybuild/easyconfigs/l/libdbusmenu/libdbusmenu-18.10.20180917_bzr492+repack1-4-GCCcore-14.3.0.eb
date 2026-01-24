@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'libdbusmenu'
+version = '18.10.20180917_bzr492+repack1-4'
+
+homepage = 'https://launchpad.net/ubuntu/+source/libdbusmenu'
+description = 'Library for passing menus over DBus'
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+# Using the debian sources as launchpad doesn't list this version for download.
+source_urls = [f'https://salsa.debian.org/debian-ayatana-team/libdbusmenu/-/archive/debian/%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['dd448f0774ad923e11e40d17f82379b3d7e7e4bfde5ee1cc9d172c426730abd5']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Meson', '1.8.2'),
+    ('Ninja', '1.13.0'),
+    ('Vala', '0.56.18'),
+    ('intltool', '0.51.0'),
+    ('gettext', '0.25'),
+    ('gtk-doc', '1.35.1'),  # needed for automake
+    ('pkgconf', '2.3.0', '', SYSTEM),
+    ('gnome-common', '3.18.0', '', SYSTEM),
+    ('libxslt', '1.1.43'),
+    ('Autotools', '20250527'),
+]
+
+dependencies = [
+    ('GLib', '2.85.3'),
+    ('GObject-Introspection', '1.84.0'),
+    ('GTK3', '3.24.43'),
+]
+
+preconfigopts = './autogen.sh; '  # it autoruns configure without flags, ignore failure
+# workaround for broken configure script:
+preconfigopts += 'export HAVE_VALGRIND_FALSE=X && XSLT_PROC=xsltproc'
+# Skipping tests due to many additional dependencies
+configopts = '--disable-dumper --disable-tests'
+
+sanity_check_paths = {
+    'files': ['lib/libdbusmenu-glib.a', f'lib/libdbusmenu-glib.{SHLIB_EXT}', 'lib/libdbusmenu-gtk3.a', f'lib/libdbusmenu-gtk3.{SHLIB_EXT}'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'
