@@ -18,18 +18,33 @@ sources = [SOURCELOWER_TAR_GZ]
 checksums = ['1a93ec69996b4556062d552ed1aa0671978cfd3c17a40bf4c89a1ae169c6a4ad']
 
 builddependencies = [
-    ('CMake', '3.31.8'),
+    ('CMake', '3.29.3'),
 ]
 
 dependencies = [
     ('Python', '3.12.3'),
     ('SciPy-bundle', '2024.05'),
     ('protobuf-python', '5.28.0'),
+    ('typing-extensions', '4.11.0'),
     ('ml_dtypes', '0.5.0'),
-    ('setuptools', '80.9.0'),
 ]
 
-preinstallopts = "export CMAKE_ARGS='-DONNX_USE_PROTOBUF_SHARED_LIBS=ON' && "
+# hardcode version in pyproject.toml rather than determining it dynamically
+preinstallopts = """sed -i 's/"version",//g' pyproject.toml && """
+preinstallopts += """sed -i 's/readme = .*/version = "%(version)s"/g' pyproject.toml && """
+preinstallopts += """sed -i '/^license/d' pyproject.toml && """
+
+# fix for: undefined symbol: _ZN6google8protobuf8internal15ThreadSafeArena13thread_cache_E
+# see also https://bugs.archlinux.org/task/75242
+# author: Kenneth Hoste (HPC-UGent)
+preinstallopts += "sed -i '50 s/if(MSVC)/#if(MSVC)/' CMakeLists.txt && "
+preinstallopts += "sed -i '53 s/endif()/#endif()/' CMakeLists.txt && "
+
+# specify C++17 standard and link to protobuf shared library (also requires patch to use -DPROTOBUF_USE_DLLS);
+# required to fix "error: 'string_view' in namespace 'std' does not name a type",
+# see also https://github.com/onnx/onnx/issues/5430
+preinstallopts += "export CMAKE_ARGS='-DCMAKE_CXX_STANDARD=17 -DONNX_USE_PROTOBUF_SHARED_LIBS=ON' && "
+
 preinstallopts += 'env MAX_JOBS="%(parallel)s"'
 
 sanity_check_paths = {
@@ -38,9 +53,9 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = [
-    ('check-model', '-h'),
-    ('check-node', '-h'),
-    ('backend-test-tools', '-h'),
+    'check-model -h',
+    'check-node -h',
+    'backend-test-tools -h',
 ]
 
 moduleclass = 'devel'
