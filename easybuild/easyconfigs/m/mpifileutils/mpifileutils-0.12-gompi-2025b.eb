@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'mpifileutils'
+version = "0.12"
+
+homepage = 'https://hpc.github.io/mpifileutils/'
+
+description = """
+ MPI-Based File Utilities For Distributed Systems
+"""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+
+github_account = 'hpc'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['adfcfd2c15ad5ef827bb19def2dd094bff4e2aab7ba47e1efc5d1b0b7ba1bf2f']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('attr', '2.5.2'),
+    ('bzip2', '1.0.8'),
+    ('lwgrp', '1.0.6'),
+    ('dtcmp', '1.1.5'),
+    ('libarchive', '3.8.1'),
+    ('libcircle', '0.3'),
+]
+
+# also install strmap.h that is included by mfu_flist_internal.h
+# see https://github.com/hpc/mpifileutils/issues/549
+preconfigopts = ' '.join([
+    'sed -i "s/mfu_flist_internal.h/mfu_flist_internal.h\\nstrmap.h/"',
+    '../%(name)s-%(version)s/src/common/CMakeLists.txt &&'
+])
+
+_binaries = [
+    'dbcast', 'dbz2', 'dchmod', 'dcmp', 'dcp', 'ddup', 'dfind',
+    'dreln', 'drm', 'dstripe', 'dsync', 'dtar', 'dwalk'
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _binaries] +
+             ['include/mfu.h', 'include/strmap.h', 'lib/libmfu.%s' % SHLIB_EXT],
+    'dirs': []
+}
+
+sanity_check_commands = ['%s --help 2>&1 | grep Usage' % x for x in _binaries]
+
+moduleclass = 'tools'
