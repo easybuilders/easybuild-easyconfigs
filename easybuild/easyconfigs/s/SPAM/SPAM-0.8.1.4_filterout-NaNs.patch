@@ -1,0 +1,32 @@
+Filter out NaNs to prevent CGAL assertion violation in spambind - fix c++17 update
+Author: Pavel Tomanek (UGent/Inuits)
+--- src/spam/mesh/unstructured.py.orig	2026-01-26 11:20:43.916497000 +0100
++++ src/spam/mesh/unstructured.py	2026-01-26 11:21:56.395518000 +0100
+@@ -548,6 +548,13 @@
+     points = points.astype("<f4")
+     weights = weights.astype("<f4")
+     alpha = alpha.astype("<f4")
++    
++    # Identify NaNs. To satisfy tests and prevent CGAL crashes,
++    # we replace NaNs with a valid number and then filter connectivity.
++    nanMask = numpy.isnan(points).any(axis=1)
++    if nanMask.any():
++        # Replace NaN with a very large coordinate
++        points[nanMask] = 1e12
+ 
+     # get the number of tetrahedra so we can properly size our connectivityMatrix
+     nTet = countTetrahedraCGAL(points, weights, alpha)
+@@ -555,6 +562,13 @@
+ 
+     # setup the return types and argument types
+     triangulateCGAL(points, weights, connectivity, alpha)
++    if nanMask.any():
++        badIndices = numpy.where(nanMask)[0]
++        # Filter out rows in connectivity that contain any of the bad indices
++        row_mask = ~numpy.any(numpy.isin(connectivity, badIndices), axis=1)
++        connectivity = connectivity[row_mask]
++    
++    # If we had NaNs, remove any tetrahedra that used the "NaN" points
+ 
+     return connectivity
+ 
