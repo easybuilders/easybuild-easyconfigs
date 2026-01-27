@@ -50,28 +50,32 @@ exts_list = [
                 'keep_git_dir': True,
             }
         }],
+        'checksums': [None],
         'preinstallopts': f'git lfs pull && ',
     }),
 ]
 
+_click_bin = "wood_ms"
+_click_bin_nomin = _click_bin.replace('-', '_')
+_click_bin_envvar = _click_bin_nomin.upper()
 sanity_check_commands = [
-    'wood_ms --help',
+    f'{_click_bin} --help',
 ]
 
 moduleclass = 'chem'
 
-modluafooter = """
+modluafooter = f"""
 local shell = myShellName()
 
 if (shell == "bash") or (shell == "sh") then
-    execute{cmd="eval \\"$(_WOOD_MS_COMPLETE=bash_source wood_ms)\\"", modeA={"load"}}
-    execute{cmd="complete -r wood_ms && unset _wood_ms_completion_setup && unset _wood_ms_completion", modeA={"unload"}}
+    execute{{cmd="eval \\"$(_{_click_bin_envvar}_COMPLETE=bash_source {_click_bin})\\"", modeA={{"load"}}}}
+    execute{{cmd="complete -r {_click_bin} && unset _{_click_bin_nomin}_completion_setup && unset _{_click_bin_nomin}_completion", modeA={{"unload"}}}}
 elseif (shell == "zsh") then
-    execute{cmd="eval \\"$(_WOOD_MS_COMPLETE=zsh_source wood_ms)\\"", modeA={"load"}}
-    execute{cmd="unset '_comps[wood_ms]' && unset -f _wood_ms_completion", modeA={"unload"}}
+    execute{{cmd="eval \\"$(_{_click_bin_envvar}_COMPLETE=zsh_source {_click_bin})\\"", modeA={{"load"}}}}
+    execute{{cmd="unset '_comps[{_click_bin}]' && unset -f _{_click_bin_nomin}_completion", modeA={{"unload"}}}}
 elseif (shell == "fish") then
-    execute{cmd="eval (env _WOOD_MS_COMPLETE=fish_source wood_ms)", modeA={"load"}}
-    execute{cmd="complete -e wood_ms && functions --erase _wood_ms_completion", modeA={"unload"}}
+    execute{{cmd="eval (env _{_click_bin_envvar}_COMPLETE=fish_source {_click_bin})", modeA={{"load"}}}}
+    execute{{cmd="complete -e {_click_bin} && functions --erase _{_click_bin_nomin}_completion", modeA={{"unload"}}}}
 else
     LmodMessage("Autocompletion cannot be setup automatically for shell: " .. shell)
 end
