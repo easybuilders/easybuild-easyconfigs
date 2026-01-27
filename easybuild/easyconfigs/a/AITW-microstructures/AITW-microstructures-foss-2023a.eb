@@ -1,0 +1,78 @@
+easyblock = 'PythonBundle'
+
+name = 'AITW-microstructures'
+version = '0.1.0'
+
+homepage = 'https://www.ai-transpwood-project.eu/'
+description = """
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('git', '2.41.0', '-nodocs'),
+    ('git-lfs', '3.6.1', '', SYSTEM),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('Pillow', '10.0.0'),
+    ('PyTorch', '2.1.2')
+]
+
+_commit = '588d74a343ec313c30fc1d3ab56013dfc8e047d2'
+exts_list = [
+    ('nptyping', '2.5.0', {
+        'checksums': ['e3d35b53af967e6fb407c3016ff9abae954d3a0568f7cc13a461084224e8e20a'],
+    }),
+    ('pynrrd', '1.0.0', {
+        'modulename': 'nrrd',
+        'checksums': ['4eb4caba03fbca1b832114515e748336cb67bce70c7f3ae36bfa2e135fc990d2'],
+    }),
+    ('textual', '0.61.0', {
+        # 'checksums': ['0cfd134dde5ae49d64dd73bb32a2fb5a86d878d9caeacecaa1d640082f31124e'],
+    }),
+    ('trogon', '0.6.0', {
+        # 'checksums': ['61a57f0f1a38227d90601cd020f46960be8e36947b5e56c6932c2e01ecc5042a'],
+    }),
+    (name, version, {
+        'modulename': 'wood_microstructure',
+        'sources': [{
+            'filename': f'aitw-microstructures-{_commit[:8]}.tar.gz',
+            'git_config': {
+                # No trailing slash here is important to avooid git-lfs failing due to a double // slash
+                # 'url': 'https://github.com/AI-TranspWood',
+                'url': 'https://github.com/Crivella',
+                'repo_name': 'AITW_microstructures',
+                'commit': _commit,
+                'keep_git_dir': True,
+            }
+        }],
+        'preinstallopts': f'git lfs pull && ',
+    }),
+]
+
+sanity_check_commands = [
+    'wood_ms --help',
+]
+
+moduleclass = 'chem'
+
+modluafooter = """
+local shell = myShellName()
+
+if (shell == "bash") or (shell == "sh") then
+    execute{cmd="eval \\"$(_WOOD_MS_COMPLETE=bash_source wood_ms)\\"", modeA={"load"}}
+    execute{cmd="complete -r wood_ms && unset _wood_ms_completion_setup && unset _wood_ms_completion", modeA={"unload"}}
+elseif (shell == "zsh") then
+    execute{cmd="eval \\"$(_WOOD_MS_COMPLETE=zsh_source wood_ms)\\"", modeA={"load"}}
+    execute{cmd="unset '_comps[wood_ms]' && unset -f _wood_ms_completion", modeA={"unload"}}
+elseif (shell == "fish") then
+    execute{cmd="eval (env _WOOD_MS_COMPLETE=fish_source wood_ms)", modeA={"load"}}
+    execute{cmd="complete -e wood_ms && functions --erase _wood_ms_completion", modeA={"unload"}}
+else
+    LmodMessage("Autocompletion cannot be setup automatically for shell: " .. shell)
+end
+"""

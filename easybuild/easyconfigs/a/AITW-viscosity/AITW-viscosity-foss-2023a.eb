@@ -1,0 +1,73 @@
+easyblock = 'PythonBundle'
+
+name = 'AITW-aiida_viscosity'
+version = '0.1.0'
+
+homepage = 'https://www.ai-transpwood-project.eu/'
+description = """
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('poetry', '1.7.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('aiida-core', '2.5.1'),
+    ('aiida-shell', '0.7.1'),
+    ('RDKit', '2024.03.3'),
+    ('matplotlib', '3.7.2'),
+    ('PyQt5', '5.15.10'),
+]
+
+_commit = 'd95f45ff57e455d8d3c1b44133a12d6a5a36169d'
+exts_list = [
+    ('textual', '0.61.0', {
+        # 'checksums': ['0cfd134dde5ae49d64dd73bb32a2fb5a86d878d9caeacecaa1d640082f31124e'],
+    }),
+    ('trogon', '0.6.0', {
+        # 'checksums': ['61a57f0f1a38227d90601cd020f46960be8e36947b5e56c6932c2e01ecc5042a'],
+    }),
+    (name, version, {
+        'modulename': 'aitw_aiida_viscosity',
+        'sources': [{
+            'filename': f'aitw-viscosity-{_commit[:8]}.tar.gz',
+            'git_config': {
+                # No trailing slash here is important to avooid git-lfs failing due to a double // slash
+                'url': 'https://github.com/AI-TranspWood',
+                'repo_name': 'Molecular-liquid-shear-viscosity',
+                'commit': _commit,
+            }
+        }],
+    }),
+]
+
+_click_bin = "aitw-viscosity"
+_click_bin_nomin = _click_bin.replace('-', '_')
+_click_bin_envvar = _click_bin_nomin.upper()
+sanity_check_commands = [
+    'wood_ms --help',
+]
+
+moduleclass = 'chem'
+
+modluafooter = f"""
+local shell = myShellName()
+
+if (shell == "bash") or (shell == "sh") then
+    execute{{cmd="eval \\"$(_{_click_bin_envvar}_COMPLETE=bash_source {_click_bin})\\"", modeA={{"load"}}}}
+    execute{{cmd="complete -r {_click_bin} && unset _{_click_bin_nomin}_completion_setup && unset _{_click_bin_nomin}_completion", modeA={{"unload"}}}}
+elseif (shell == "zsh") then
+    execute{{cmd="eval \\"$(_{_click_bin_envvar}_COMPLETE=zsh_source {_click_bin})\\"", modeA={{"load"}}}}
+    execute{{cmd="unset '_comps[{_click_bin}]' && unset -f _{_click_bin_nomin}_completion", modeA={{"unload"}}}}
+elseif (shell == "fish") then
+    execute{{cmd="eval (env _{_click_bin_envvar}_COMPLETE=fish_source {_click_bin})", modeA={{"load"}}}}
+    execute{{cmd="complete -e {_click_bin} && functions --erase _{_click_bin_nomin}_completion", modeA={{"unload"}}}}
+else
+    LmodMessage("Autocompletion cannot be setup automatically for shell: " .. shell)
+end
+"""
