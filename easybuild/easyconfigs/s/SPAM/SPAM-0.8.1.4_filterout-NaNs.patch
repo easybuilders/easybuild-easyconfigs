@@ -2,31 +2,38 @@ Filter out NaNs to prevent CGAL assertion violation in spambind - fix c++17 upda
 Author: Pavel Tomanek (UGent/Inuits)
 --- src/spam/mesh/unstructured.py.orig	2026-01-26 11:20:43.916497000 +0100
 +++ src/spam/mesh/unstructured.py	2026-01-26 11:21:56.395518000 +0100
-@@ -548,6 +548,13 @@
-     points = points.astype("<f4")
+@@ -549,12 +549,32 @@
      weights = weights.astype("<f4")
      alpha = alpha.astype("<f4")
-+    
-+    # Identify NaNs. To satisfy tests and prevent CGAL crashes,
-+    # we replace NaNs with a valid number and then filter connectivity.
-+    nanMask = numpy.isnan(points).any(axis=1)
-+    if nanMask.any():
-+        # Replace NaN with a very large coordinate
-+        points[nanMask] = 1e12
  
++    # Filter out non-finite points (NaN/Inf) before passing to CGAL (spambind).
++    # Keep original indexing by remapping connectivity after triangulation.
++    good = numpy.isfinite(points).all(axis=1)
++    if not numpy.all(good):
++        orig_idx = numpy.where(good)[0].astype("<u4")
++        points_c = points[good]
++        weights_c = weights[good]
++    else:
++        orig_idx = None
++        points_c = points
++        weights_c = weights
++        
++    # Not enough points to form any tetrahedra
++    if points_c.shape[0] < 4:
++        return numpy.zeros((0, 4), dtype="<u4")
++
      # get the number of tetrahedra so we can properly size our connectivityMatrix
-     nTet = countTetrahedraCGAL(points, weights, alpha)
-@@ -555,6 +562,13 @@
+-    nTet = countTetrahedraCGAL(points, weights, alpha)
++    nTet = countTetrahedraCGAL(points_c, weights_c, alpha)
+     connectivity = numpy.zeros([nTet, 4], dtype="<u4")
  
      # setup the return types and argument types
-     triangulateCGAL(points, weights, connectivity, alpha)
-+    if nanMask.any():
-+        badIndices = numpy.where(nanMask)[0]
-+        # Filter out rows in connectivity that contain any of the bad indices
-+        row_mask = ~numpy.any(numpy.isin(connectivity, badIndices), axis=1)
-+        connectivity = connectivity[row_mask]
+-    triangulateCGAL(points, weights, connectivity, alpha)
++    triangulateCGAL(points_c, weights_c, connectivity, alpha)
 +    
-+    # If we had NaNs, remove any tetrahedra that used the "NaN" points
++    # Remap connectivity indices back to the original point indices
++    if orig_idx is not None and connectivity.size:
++        connectivity = orig_idx[connectivity]
  
      return connectivity
  
