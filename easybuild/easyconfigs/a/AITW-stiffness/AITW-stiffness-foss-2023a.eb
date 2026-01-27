@@ -1,0 +1,108 @@
+easyblock = 'PythonBundle'
+
+name = 'AITW-stiffness'
+version = '0.1.0'
+
+homepage = 'https://www.ai-transpwood-project.eu/'
+description = """
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('h5py', '3.9.0'),
+    ('TensorFlow', '2.13.0'),
+    ('tensorflow-probability', '0.20.0'),
+]
+
+_commit = '66e9d8851eef23273da1c130c7404e5a5c504929'
+exts_list = [
+    (name, version, {
+        'modulename': 'aitw_stiffness_surrogate',
+        'sources': [{
+            'filename': f'biocomposite-surrogate-{_commit[:8]}.tar.gz',
+            'git_config': {
+                # No trailing slash here is important to avoid git-lfs failing due to a double // slash
+                'url': 'https://github.com/AI-TranspWood',
+                'repo_name': 'biocomposite-surrogate',
+                'commit': _commit,
+            }
+        }],
+        'patches': ['AITW-stiffness_unfix-deps.patch'],
+        'checksums': [None],
+    }),
+]
+
+_click_bin = "aitw-stiffness"
+_click_bin_nomin = _click_bin.replace('-', '_')
+_click_bin_envvar = _click_bin_nomin.upper()
+sanity_check_commands = [
+    f'{_click_bin} --help',
+]
+
+moduleclass = 'chem'
+
+modluafooter = f"""
+local shell = myShellName()
+
+if (shell == "bash") or (shell == "sh") then
+    execute{{cmd="eval \\"$(_{_click_bin_envvar}_COMPLETE=bash_source {_click_bin})\\"", modeA={{"load"}}}}
+    execute{{cmd="complete -r {_click_bin} && unset _{_click_bin_nomin}_completion_setup && unset _{_click_bin_nomin}_completion", modeA={{"unload"}}}}
+elseif (shell == "zsh") then
+    execute{{cmd="eval \\"$(_{_click_bin_envvar}_COMPLETE=zsh_source {_click_bin})\\"", modeA={{"load"}}}}
+    execute{{cmd="unset '_comps[{_click_bin}]' && unset -f _{_click_bin_nomin}_completion", modeA={{"unload"}}}}
+elseif (shell == "fish") then
+    execute{{cmd="eval (env _{_click_bin_envvar}_COMPLETE=fish_source {_click_bin})", modeA={{"load"}}}}
+    execute{{cmd="complete -e {_click_bin} && functions --erase _{_click_bin_nomin}_completion", modeA={{"unload"}}}}
+else
+    LmodMessage("Autocompletion cannot be setup automatically for shell: " .. shell)
+end
+"""
+
+modtclfooter = f"""
+set shell [module-info shell]
+if {{$shell in {{bash fish zsh}}}} {{
+    # using "puts stdout" to send command to shell to evaluate requires EnvModules or Lmod >=8.6.18
+    if {{![info exists ::env(LMOD_VERSION)] || \\
+        [string equal [lindex [lsort -dictionary [list 8.6.18 $::env(LMOD_VERSION)]] 0] 8.6.18] \\
+    }} {{
+        switch -- [module-info mode] {{
+            load {{
+                switch -- $shell {{
+                    bash {{
+                        puts stdout "eval \\"\\$(_{_click_bin_envvar}_COMPLETE=bash_source {_click_bin})\\""
+                    }}
+                    zsh  {{
+                        puts stdout "eval \\"\\$(_{_click_bin_envvar}_COMPLETE=zsh_source {_click_bin})\\""
+                    }}
+                    fish {{
+                        puts stdout "eval (env _{_click_bin_envvar}_COMPLETE=fish_source {_click_bin})"
+                    }}
+                }}
+            }}
+            remove - unload {{
+                switch -- $shell {{
+                    bash {{
+                        puts stdout {{unset -f _{_click_bin_nomin}_completion 2>/dev/null || true}}
+                        puts stdout {{unset -f _{_click_bin_nomin}_completion_setup 2>/dev/null || true}}
+                        puts stdout {{complete -r {_click_bin}}}
+                    }}
+                    zsh  {{
+                        puts stdout {{unset -f _{_click_bin_nomin}_completion 2>/dev/null || true}}
+                        puts stdout {{unset '_comps[{_click_bin}]'}}
+                    }}
+                    fish {{
+                        puts stdout {{functions -e _{_click_bin_nomin}_completion}}
+                        puts stdout {{complete -e -c {_click_bin}}}
+                    }}
+                }}
+            }}
+        }}
+    }}
+}} else {{
+    puts stderr "Autocompletion of `aiida-pseudo` cannot be setup automatically for shell: $shell"
+}}
+"""
