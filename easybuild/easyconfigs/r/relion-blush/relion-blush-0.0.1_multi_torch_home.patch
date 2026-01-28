@@ -1,0 +1,38 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+# allow to use TORCH_HOME with modextrapaths.
+# Automatic download of v1.0.ckpt is disabled for multi TORCH_HOME.
+diff -ru relion-blush-3148869de884fc01cff6c51a047b1413fc0b62cb/relion_blush/util.py relion-blush-3148869de884fc01cff6c51a047b1413fc0b62cb_multi_torch_home/relion_blush/util.py
+--- relion-blush-3148869de884fc01cff6c51a047b1413fc0b62cb/relion_blush/util.py	2023-11-05 14:39:04.000000000 +0100
++++ relion-blush-3148869de884fc01cff6c51a047b1413fc0b62cb_multi_torch_home/relion_blush/util.py	2023-11-14 14:57:24.869842337 +0100
+@@ -806,9 +806,9 @@
+     model_path = os.path.join(dest_dir, f"{name}.ckpt")
+     model_path_gz = model_path + ".gz"
+     completed_check_path = os.path.join(dest_dir, f"{name}_installed.txt")
+-
++    is_torch_home_multi=False if os.getenv('TORCH_HOME')==None else len(os.getenv('TORCH_HOME').split(':'))>1
+     # Download file and install it if not already done
+-    if not os.path.isfile(completed_check_path):
++    if not os.path.isfile(completed_check_path) and not is_torch_home_multi: # model download disabled if multi_torch_home
+         if verbose:
+             print(f"Installing Blush model ({name})...")
+         os.makedirs(dest_dir, exist_ok=True)
+@@ -832,7 +832,18 @@
+             print(f"Blush model ({name}) successfully installed in {dest_dir}")
+ 
+     # Load checkpoint file
+-    checkpoint = torch.load(model_path, map_location="cpu")
++    if is_torch_home_multi:
++      for _p in os.getenv('TORCH_HOME').split(':'):
++          model_path = os.path.join(_p, "hub", "checkpoints", "relion_blush",f"{name}.ckpt")
++          try: 
++              checkpoint = torch.load(model_path, map_location="cpu")
++          except:
++              if verbose: 
++                  print(f'Cannot load model {model_path}')
++          else:
++              break
++    else:
++        checkpoint = torch.load(model_path, map_location="cpu")
+ 
+     # Dynamically include model as a module
+     # Make sure to check download integrity for this, otherwise major security risk
