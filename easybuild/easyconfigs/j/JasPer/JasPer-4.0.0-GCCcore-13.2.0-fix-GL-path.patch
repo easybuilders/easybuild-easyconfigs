@@ -1,0 +1,36 @@
+Explicitly link with the libGL in the path
+    
+The CMake script for JasPer is using FindOpenGL which links explicitly with the
+high level libraries but not with libGL it self. Patch the CMake scripts to find
+and link with libGL explicitly.
+
+* This patch is required in nodes where CUDA is installed. CUDA provides its own
+  version of libGL that overrides the system version. The FindOpenGL will
+  compile with the CUDA high level libraries, but the linker will try to link
+  with the system libGL.
+* CMake ignores the LD_LIBRARY_PATH making the patch the only viable method for
+  modifying the libGL used by the linker.
+* Furthermore, the system libGLU is used in this patch that requires linking the
+  legacy version of OpenGL.
+
+diff -ruN jasper-version-4.0.0.orig/CMakeLists.txt jasper-version-4.0.0/CMakeLists.txt
+--- jasper-version-4.0.0.orig/CMakeLists.txt	2022-11-05 18:06:53.000000000 +0100
++++ jasper-version-4.0.0/CMakeLists.txt	2025-08-16 23:29:54.257266546 +0200
+@@ -687,7 +687,8 @@
+ 	set(OpenGL_GL_PREFERENCE GLVND)
+ 	find_package(OpenGL)
+ 	find_package(GLUT)
+-	if((TARGET OpenGL::GL) AND (TARGET GLUT::GLUT))
++	find_library(GL GL)
++	if((TARGET OpenGL::GL) AND (TARGET GLUT::GLUT) AND (GL))
+ 		jas_get_includes_from_targets(CMAKE_REQUIRE_INCLUDES
+ 		  OpenGL::GL OpenGL::GLU GLUT::GLUT)
+ 		message("CMAKE_REQUIRE_INCLUDES ${CMAKE_REQUIRE_INCLUDES}")
+@@ -699,6 +700,7 @@
+ 			if (TARGET OpenGL::GLU)
+ 				set(JAS_OPENGL_TARGETS ${JAS_OPENGL_TARGETS} OpenGL::GLU)
+ 			endif()
++			set(JAS_OPENGL_TARGETS ${JAS_OPENGL_TARGETS} ${GL})
+ 			set(JAS_HAVE_OPENGL 1)
+ 		else()
+ 			message(WARNING "The glut.h header file is missing.")
