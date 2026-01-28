@@ -1,0 +1,68 @@
+easyblock = 'PythonBundle'
+
+name = 'MetaPhlAn'
+version = '4.2.2'
+
+homepage = 'https://github.com/biobakery/MetaPhlAn'
+description = """MetaPhlAn is a computational tool for profiling the composition
+ of microbial communities from metagenomic shotgun sequencing data """
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('Biopython', '1.84'),
+    ('Pysam', '0.22.0'),
+    ('DendroPy', '5.0.1'),
+    ('CMSeq', '1.0.4'),
+    ('biom-format', '2.1.16'),
+    ('h5py', '3.11.0'),
+    ('PhyloPhlAn', '3.1.1'),
+    ('Bowtie2', '2.5.4'),
+]
+
+exts_list = [
+    ('hclust2', '1.0.0', {
+        'checksums': ['9667f1d16628940aedd3d1d571b956a6f77795018e3ea4dd83f234419eb0096d'],
+    }),
+    (name, version, {
+        'checksums': ['220bb29dcc195fe96916667f92d4e74cb610ee2f4d78daa50eb8adfe855b4270'],
+    }),
+]
+
+local_db_ver = 'mpa_vJan25_CHOCOPhlAnSGB_202503'
+local_db_url = 'http://cmprod1.cibio.unitn.it/biobakery4/metaphlan_databases'
+local_db_root = '%(installdir)s/dbs'
+
+postinstallcmds = [
+    f'mkdir -p {local_db_root}',
+    # download with resume + retries
+    f'cd {local_db_root} && curl -L --fail --retry 10 --retry-delay 10 '
+    f'-C - -o {local_db_ver}.tar {local_db_url}/{local_db_ver}.tar',
+    f'cd {local_db_root} && curl -L --fail --retry 10 --retry-delay 10 '
+    f'-O {local_db_url}/{local_db_ver}.md5',
+    f'cd {local_db_root} && curl -L --fail --retry 10 --retry-delay 10 '
+    f'-O {local_db_url}/{local_db_ver}.nwk',
+    f'cd {local_db_root} && curl -L --fail --retry 10 --retry-delay 10 '
+    f'-O {local_db_url}/{local_db_ver}_marker_info.txt.bz2',
+    f'cd {local_db_root} && curl -L --fail --retry 10 --retry-delay 10 '
+    f'-O {local_db_url}/{local_db_ver}_species.txt.bz2',
+    # verify MD5 (the .md5 file is "MD5  filename")
+    f'cd {local_db_root} && md5sum -c {local_db_ver}.md5',
+    # unpack DB tar
+    f'cd {local_db_root} && tar xf {local_db_ver}.tar',
+]
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['%(namelower)s', 'strainphlan']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/', 'dbs'],
+}
+
+sanity_check_commands = ["metaphlan -h"]
+
+modextravars = {
+    # let MetaPhlAn auto-find the DB
+    'METAPHLAN_DB': '%(installdir)s/dbs',
+}
+
+moduleclass = 'bio'
