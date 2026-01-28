@@ -1,0 +1,57 @@
+easyblock = 'PythonBundle'
+
+name = 'CNVkit'
+version = '0.9.12'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://github.com/etal/cnvkit'
+description = """A command-line toolkit and Python library for detecting copy
+ number variants and alterations genome-wide from high-throughput sequencing."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [('Cython', '3.0.10')]
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('scikit-learn', '1.6.1'),
+    ('Biopython', '1.84'),
+    ('matplotlib', '3.9.2'),
+    ('networkx', '3.4.2'),
+    ('Pysam', '0.22.1'),
+    ('PyYAML', '6.0.2'),
+    ('pyfaidx', '0.8.1.2'),
+    ('R', '4.4.2'),
+    ('R-bundle-Bioconductor', '3.20', versionsuffix),
+]
+
+exts_list = [
+    ('reportlab', '4.4.9', {
+        'checksums': ['7cf487764294ee791a4781f5a157bebce262a666ae4bbb87786760a9676c9378'],
+    }),
+    ('pomegranate', '0.15.0', {
+        # remove cython from install_requires
+        'preinstallopts': "sed -i '92d' setup.py && ",
+        'checksums': ['315207bc79375c2b98b782199a92dfcfca45234b750f8c9ccf8e3f03d37a2c10'],
+    }),
+    (name, version, {
+        'modulename': 'cnvlib',
+        'testinstall': True,
+        'runtest': 'pytest -v test',
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/etal/cnvkit/archive/'],
+        'checksums': ['39d65ba3d9c541dfd80986ace298b2d521067d1b81edef7169196b8dcc5d63d5'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cnvkit.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'cnvkit.py --help',
+    "python -s -c 'from pomegranate import base; from pomegranate.distributions import NormalDistribution'",
+]
+
+moduleclass = 'bio'
