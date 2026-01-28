@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'EnergyPlus'
+version = '25.1.0'
+
+homepage = 'https://energyplus.net/'
+
+description = """EnergyPlus is a whole building energy simulation program that engineers, architects, and researchers
+ use to model both energy consumption—for heating, cooling, ventilation, lighting and plug and process loads—and
+water use in buildings."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/NREL/%(name)s/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'EnergyPlus-25.1.0-fix_readonly_of_files_to_delete.patch',
+]
+checksums = [
+    {'v25.1.0.tar.gz': 'c7404d5ae1460e76e88f30c6da302982ed2f81c09221ff2ceb7ed793c9bfb289'},
+    {'EnergyPlus-25.1.0-fix_readonly_of_files_to_delete.patch':
+     'd9ddd30b4278fcd82176f428d265eefaa6ada564ef5129fdd39be854e4b97e57'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('X11', '20250521'),
+]
+
+configopts = '-DBUILD_FORTRAN=yes -DLINK_WITH_PYTHON=yes '
+
+install_target_subdir = 'bin'
+
+postinstallcmds = ['ln -s ${EBROOTPYTHON}/lib/python%(pyshortver)s %(installdir)s/bin/python_standard_lib']
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': [
+        'bin',
+        'bin/python_standard_lib',
+    ],
+}
+
+sanity_check_commands = [
+    'energyplus --help',
+    'energyplus-%(version)s --help',
+    'ConvertInputFormat --help',
+]
+
+moduleclass = 'phys'
