@@ -1,0 +1,94 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+# Notes::       Patch libsbml-fix_install_libpaths.patch comes from Fedora
+#               https://src.fedoraproject.org/rpms/libsbml/blob/rawhide/f/libsbml-fix_install_libpaths.patch
+##
+easyblock = 'CMakePythonPackage'
+
+name = 'libSBML'
+version = '5.20.2'
+
+# NOTE not in the license list of EB
+# software_license = 'LGPLv2+'
+software_license_urls = ['http://sbml.org/Software/libSBML/LibSBML_License']
+docurls = [
+    'https://github.com/sbmlteam/libsbml/releases/tag/v%(version)s',
+    'http://sbml.org/Software/libSBML',
+]
+
+homepage = 'http://sbml.org/Software/libSBML'
+description = """libSBML (Systems Biology Markup Language library) is a free, open-source
+programming library to help you read, write, manipulate, translate, and
+validate SBML files and data streams. It's not an application itself (though
+it does come with example programs), but rather a library you embed in your
+own applications."""
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+
+github_account = 'sbmlteam'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    {'v5.20.2.tar.gz': 'a196cab964b0b41164d4118ef20523696510bbfd264a029df00091305a1af540'},
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('Check', '0.15.2'),
+    ('SWIG',  '4.1.1'),
+]
+
+dependencies = [
+    ('Python',  '3.10.8'),
+    ('Perl',  '5.36.0'),
+    ('expat', '2.4.9'),
+    ('bzip2', '1.0.8'),
+    ('zlib',  '1.2.12'),
+]
+
+# Java jar, Ruby or Octave can also be build here.
+_copts = [
+    '-DWITH_CHECK=ON',
+    '-DWITH_SWIG=ON',
+    '-DWITH_JAVA=OFF',
+    '-DWITH_PERL=ON',
+    '-DWITH_PYTHON=ON',
+    '-DWITH_EXPAT=ON',
+    '-DWITH_LIBXML=OFF',
+    '-DWITH_ALL_PACKAGES=ON',
+    '-DWITH_CPP_NAMESPACE=ON',
+    '-DWITH_THREADSAFE_PARSER=ON',
+]
+configopts = ' '.join(_copts)
+
+use_pip = False
+sanity_pip_check = True
+download_dep_fail = True
+
+_make_egg_info_cmd = [
+    "sed -e 's/\\${NAME}/python-libsbml/'",
+    "-e 's/\\${PACKAGE_VERSION}/%(version)s/'",
+    "%(builddir)s/%(namelower)s-%(version)s/dev/utilities/build-python/source/egg-info",
+    "> %(installdir)s/lib/python%(pyshortver)s/site-packages/python_libsbml-%(version)s.egg-info",
+]
+postinstallcmds = [
+    ' '.join(_make_egg_info_cmd),
+]
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/sbml/SBMLReader.h', 'lib/libsbml.%s' % SHLIB_EXT,
+              'lib/perl5/site_perl/%(perlver)s/%(arch)s-linux-thread-multi/LibSBML.pm'],
+    'dirs': ['share/cmake', 'lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+modextrapaths = {
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s',
+}
+
+moduleclass = 'bio'
