@@ -1,0 +1,28 @@
+# "-march=native" causes an error on RISCV so we need to set properly the value for this flag
+# Author: julianmorillo
+--- MMseqs2-15-6f452/CMakeLists.txt.orig	2025-06-16 16:33:44.015190507 +0200
++++ MMseqs2-15-6f452/CMakeLists.txt	2025-06-16 18:04:13.045612273 +0200
+@@ -90,6 +90,8 @@
+         set(ZARCH 1 CACHE INTERNAL "")
+     elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^sparc")
+         set(SPARC 1 CACHE INTERNAL "")
++    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "riscv64")
++	set(RISCV64 1 CACHE INTERNAL "")
+     else ()
+         message(WARNING "CPU without native SIMD instructions. Performance will be bad.")
+     endif ()
+@@ -113,6 +115,14 @@
+         set(MMSEQS_ARCH "-mcpu=native")
+     elseif (ZARCH)
+         set(MMSEQS_ARCH "-mcpu=native -mzvector")
++    elseif (RISCV64)
++	execute_process(
++		COMMAND bash "-c" "cat /proc/cpuinfo | grep isa | head -1 | cut -d':' -f2"
++		OUTPUT_VARIABLE RISCV64_ISA_RAW
++		OUTPUT_STRIP_TRAILING_WHITESPACE
++	)
++	string(STRIP ${RISCV64_ISA_RAW} RISCV64_ISA)
++	set(MMSEQS_ARCH "-march=${RISCV64_ISA}")
+     else ()
+         set(MMSEQS_ARCH "-march=native")
+     endif ()
