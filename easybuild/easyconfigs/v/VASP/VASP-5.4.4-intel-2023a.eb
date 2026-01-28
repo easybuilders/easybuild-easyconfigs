@@ -1,0 +1,47 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '5.4.4'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'intel', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = ['vasp.5.4.4.tar.gz']
+
+# uncommment after downloading patches from http://cms.mpi.univie.ac.at/wiki/index.php/Installing_VASP
+patches = [
+    'vasp.5.4.4.16052018.patch.gz',
+]
+
+#checksums = ['8ac646b108f974371eef398973373bf6, '751d8b85153f9912e93279cc4892e9b8]
+
+prebuildopts = 'cp arch/makefile.include.linux_intel ./makefile.include && '
+
+# path to libfftw3xf_intel.a is hardcoded in makefile.include
+prebuildopts += r'sed -i "s|\$(MKLROOT)/interfaces/fftw3xf|\$(FFTW_LIB_DIR)|" makefile.include && '
+
+# remove mkl flag to prevent mixing dynamic libs with the static libs in LIBBLACS/SCALAPACK
+prebuildopts += 'sed -i "s|-mkl[^ ]*||" makefile.include && '
+#prebuildopts += 'sed -i "s|-mkl||" makefile.include && '
+
+# VASP uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+buildopts = 'all BLACS="$LIBBLACS" SCALAPACK="$LIBSCALAPACK"'
+
+parallel = 1
+
+files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'dirs': []
+}
+
+moduleclass = 'phys'
