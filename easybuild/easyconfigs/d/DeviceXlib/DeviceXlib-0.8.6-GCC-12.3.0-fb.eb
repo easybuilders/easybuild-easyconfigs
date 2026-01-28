@@ -1,0 +1,54 @@
+##
+# Author: Nicola Spallanzani <nicola.spallanzani@cnr.it>
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'DeviceXlib'
+version = '0.8.6'
+versionsuffix = '-fb'
+
+homepage = 'https://gitlab.com/max-centre/components/devicexlib'
+
+whatis = ['Description: fortran library wrapping device-oriented routines and utilities"']
+
+description = """
+DeviceXlib is a library that wraps device-oriented routines and utilities, such as device data allocation, host-device data transfers. deviceXlib supports CUDA language, together with OpenACC and OpenMP programming paradigms. deviceXlib wraps a subset of functions from Nvidia cuBLAS, Intel oneMKL BLAS and AMD rocBLAS libraries.
+"""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://gitlab.com/max-centre/components/devicexlib/-/archive/%(version)s/']
+sources = ['devicexlib-%(version)s.tar.gz']
+checksums = ['36e6222bc59cf0ed7268cc3652a3661887109f7fe072cefe06884dcd6de2407d']
+
+dependencies = [
+    ('FlexiBLAS', '3.3.1'),
+]
+
+preconfigopts = ' && '.join([
+    'export CPP="cpp -P"',
+    'export FPP="cpp -P -traditional"',
+    'export F90FLAGS="-O3 -g -fallow-argument-mismatch -fopenmp  -cpp -fopenmp"',
+    'export CFLAGS="-O3"',
+    'export LDFLAGS="-g -pthread -fopenmp"',
+]) + ' && '
+
+configopts = ' '.join([
+    'F90=gfortran CC=gcc',
+    '--enable-openmp',
+    '--enable-parallel=no',
+    '--disable-cuda-env-check',
+    '--with-blas-libs="-L$EBROOTFLEXIBLAS/lib -lflexiblas"',
+])
+
+buildopts = 'all'
+
+sanity_check_paths = {
+    'files': ['lib/libdevXlib.a'],
+    'dirs': ['bin']
+}
+
+moduleclass = 'lib'
+
