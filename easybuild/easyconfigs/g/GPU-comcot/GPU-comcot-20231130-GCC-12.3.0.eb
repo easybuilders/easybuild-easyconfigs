@@ -1,0 +1,45 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Leah Han <leah.han@hpcnow.com>; Jordi Blasco <jordi.blasco@hpcnow.com>
+# License::     GPL-v3.0
+# #
+easyblock = 'MakeCp'
+
+name = 'GPU-comcot'
+version = '20231130'
+local_git_commit_id = 'd8e6d674d4'
+homepage = 'https://github.com/AndybnACT/GPU-comcot'
+description = """This is a program that transfer the computational component on the outermost layer
+ of COMCOT to Nvidia GPU. Currently, the speed up achieved by parallelized code on GTX-1060 comparing
+ to serial one on AMD-FX8150 is nearly 200X. The code is still under development to fulfill the full
+ functionality of the original model."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/AndybnACT/GPU-comcot/archive/']
+sources = [{
+    'filename': 'GPU-comcot-%(version)s.tar.gz',
+    'download_filename': '%s.tar.gz' % local_git_commit_id,
+}]
+checksums = ['d47cfaec501016da8e7a6e2f7825222d2f380a01e833fb642965f3d8bd555419']
+
+dependencies = [
+    ('CUDA', '12.4.0', '', SYSTEM),
+]
+
+prebuildopts = 'cp Makefile Makefile.orig && '
+prebuildopts += "sed -i 's|^FC|#FC|g' Makefile && "
+prebuildopts += "sed -i 's|^FC_FLAGS|#FC_FLAGS|g' Makefile && "
+prebuildopts += "sed -i 's|FC_FLAGS|#FCFLAGS|g' Makefile && "
+prebuildopts += "sed -i 's|^NVLIB|#NVLIB|g' Makefile && "
+
+files_to_copy = [(['comcot'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/comcot'],
+    'dirs': [],
+}
+
+sanity_check_commands = [('comcot', '--version')]
+moduleclass = 'tools'
