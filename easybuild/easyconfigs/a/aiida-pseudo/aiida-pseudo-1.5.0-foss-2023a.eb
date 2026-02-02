@@ -25,72 +25,12 @@ exts_list = [
     (name, version, {
         'sources': ['aiida_pseudo-%(version)s.tar.gz'],
         'checksums': ['6fa7bc257e66c0d3fb96b229888eb762378aa21f896ec4a2c1981919cfd707fd'],
+        'click_autocomplete_bins': ['aiida-pseudo'],
     }),
 ]
 
+sanity_check_commands = [
+    f'aitw-pseudo --help',
+]
+
 moduleclass = 'tools'
-
-modluafooter = """
-local shell = myShellName()
-
-if (shell == "bash") then
-    execute{cmd="eval \\"$(_AIIDA_PSEUDO_COMPLETE=bash_source aiida-pseudo)\\"", modeA={"load"}}
-    execute{
-        cmd="complete -r aiida-pseudo && unset _aiida_pseudo_completion_setup && unset _aiida_pseudo_completion",
-        modeA={"unload"}
-        }
-elseif (shell == "zsh") then
-    execute{cmd="eval \\"$(_AIIDA_PSEUDO_COMPLETE=zsh_source aiida-pseudo)\\"", modeA={"load"}}
-    execute{cmd="unset '_comps[aiida-pseudo]' && unset -f _aiida_pseudo_completion", modeA={"unload"}}
-elseif (shell == "fish") then
-    execute{cmd="eval (env _AIIDA_PSEUDO_COMPLETE=fish_source aiida-pseudo)", modeA={"load"}}
-    execute{cmd="complete -e aiida-pseudo && functions --erase _aiida_pseudo_completion", modeA={"unload"}}
-else
-    LmodMessage("Autocompletion of `aiida-pseudo` cannot be setup automatically for shell: " .. shell)
-end
-"""
-
-modtclfooter = """
-set shell [module-info shell]
-if {$shell in {bash fish zsh}} {
-    # using "puts stdout" to send command to shell to evaluate requires EnvModules or Lmod >=8.6.18
-    if {![info exists ::env(LMOD_VERSION)] || \\
-        [string equal [lindex [lsort -dictionary [list 8.6.18 $::env(LMOD_VERSION)]] 0] 8.6.18] \\
-    } {
-        switch -- [module-info mode] {
-            load {
-                switch -- $shell {
-                    bash {
-                        puts stdout "eval \\"\\$(_AIIDA_PSEUDO_COMPLETE=bash_source aiida-pseudo)\\""
-                    }
-                    zsh  {
-                        puts stdout "eval \\"\\$(_AIIDA_PSEUDO_COMPLETE=zsh_source aiida-pseudo)\\""
-                    }
-                    fish {
-                        puts stdout "eval (env _AIIDA_PSEUDO_COMPLETE=fish_source aiida-pseudo)"
-                    }
-                }
-            }
-            remove - unload {
-                switch -- $shell {
-                    bash {
-                        puts stdout {unset -f _aiida_pseudo_completion 2>/dev/null || true}
-                        puts stdout {unset -f _aiida_pseudo_completion_setup 2>/dev/null || true}
-                        puts stdout {complete -r aiida-pseudo}
-                    }
-                    zsh  {
-                        puts stdout {unset -f _aiida_pseudo_completion 2>/dev/null || true}
-                        puts stdout {unset '_comps[aiida-pseudo]'}
-                    }
-                    fish {
-                        puts stdout {functions -e _aiida_pseudo_completion}
-                        puts stdout {complete -e -c aiida-pseudo}
-                    }
-                }
-            }
-        }
-    }
-} else {
-    puts stderr "Autocompletion of `aiida-pseudo` cannot be setup automatically for shell: $shell"
-}
-"""

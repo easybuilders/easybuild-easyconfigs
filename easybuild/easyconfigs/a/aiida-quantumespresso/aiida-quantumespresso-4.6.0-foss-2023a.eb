@@ -24,80 +24,12 @@ exts_list = [
     (name, version, {
         'sources': ['aiida_quantumespresso-%(version)s.tar.gz'],
         'checksums': ['bcb64994e820d682bf0bda8f8338315940949cf8d3dbcaad855a30fa6eda1755'],
+        'click_autocomplete_bins': ['aiida-quantumespresso'],
     }),
 ]
 
+sanity_check_commands = [
+    f'aitw-quantumespresso --help',
+]
+
 moduleclass = 'tools'
-
-modluafooter = """
-local shell = myShellName()
-
-if (shell == "bash") then
-    execute{cmd="eval \\"$(_AIIDA_QUANTUMESPRESSO_COMPLETE=bash_source aiida-quantumespresso)\\"", modeA={"load"}}
-    execute{
-        cmd="complete -r aiida-quantumespresso && \\
-            unset _aiida_quantumespresso_completion_setup && \\
-            unset _aiida_quantumespresso_completion",
-        modeA={"unload"}
-        }
-elseif (shell == "zsh") then
-    execute{cmd="eval \\"$(_AIIDA_QUANTUMESPRESSO_COMPLETE=zsh_source aiida-quantumespresso)\\"", modeA={"load"}}
-    execute{
-        cmd="unset '_comps[aiida-quantumespresso]' && unset -f _aiida_quantumespresso_completion",
-        modeA={"unload"}
-        }
-elseif (shell == "fish") then
-    execute{cmd="eval (env _AIIDA_QUANTUMESPRESSO_COMPLETE=fish_source aiida-quantumespresso)", modeA={"load"}}
-    execute{
-        cmd="complete -e aiida-quantumespresso && functions --erase _aiida_quantumespresso_completion",
-        modeA={"unload"}
-        }
-else
-    LmodMessage("Autocompletion of `aiida-quantumespresso` cannot be setup automatically for shell: " .. shell)
-end
-"""
-
-modtclfooter = """
-set shell [module-info shell]
-if {$shell in {bash fish zsh}} {
-    # using "puts stdout" to send command to shell to evaluate requires EnvModules or Lmod >=8.6.18
-    if {![info exists ::env(LMOD_VERSION)] || \\
-        [string equal [lindex [lsort -dictionary [list 8.6.18 $::env(LMOD_VERSION)]] 0] 8.6.18] \\
-    } {
-        switch -- [module-info mode] {
-            load {
-                switch -- $shell {
-                    bash {
-                        puts stdout "eval \\"\\$(_AIIDA_QUANTUMESPRESSO_COMPLETE=bash_source aiida-quantumespresso)\\""
-                    }
-                    zsh  {
-                        puts stdout "eval \\"\\$(_AIIDA_QUANTUMESPRESSO_COMPLETE=zsh_source aiida-quantumespresso)\\""
-                    }
-                    fish {
-                        puts stdout "eval (env _AIIDA_QUANTUMESPRESSO_COMPLETE=fish_source aiida-quantumespresso)"
-                    }
-                }
-            }
-            remove - unload {
-                switch -- $shell {
-                    bash {
-                        puts stdout {unset -f _aiida_quantumespresso_completion 2>/dev/null || true}
-                        puts stdout {unset -f _aiida_quantumespresso_completion_setup 2>/dev/null || true}
-                        puts stdout {complete -r aiida-quantumespresso}
-                    }
-                    zsh  {
-                        puts stdout {unset -f _aiida_quantumespresso_completion 2>/dev/null || true}
-                        puts stdout {unset '_comps[aiida-quantumespresso]'}
-                    }
-                    fish {
-                        puts stdout {functions -e _aiida_quantumespresso_completion}
-                        puts stdout {complete -e -c aiida-quantumespresso}
-                    }
-                }
-            }
-        }
-    }
-} else {
-    puts stderr "Autocompletion of `aiida-quantumespresso` cannot be setup automatically for shell: $shell"
-}
-"""
