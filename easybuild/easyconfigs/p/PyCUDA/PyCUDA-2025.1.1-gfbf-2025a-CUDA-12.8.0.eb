@@ -1,0 +1,48 @@
+easyblock = 'PythonBundle'
+
+name = 'PyCUDA'
+version = '2025.1.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://mathema.tician.de/software/pycuda'
+description = 'PyCUDA lets you access Nvidia’s CUDA parallel computation API from Python.'
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+builddependencies = [
+    ('Cython', '3.1.1'),
+    ('hatchling', '1.27.0'),
+    ('meson-python', '0.18.0')
+]
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('Mako', '1.3.10'),
+    ('PyOpenGL', '3.1.10'),
+]
+
+
+exts_list = [
+    ('pyproject_metadata', '0.9.1', {
+        'checksums': ['b8b2253dd1b7062b78cf949a115f02ba7fa4114aabe63fa10528e9e1a954a816'],
+    }),
+    ('siphash24', '1.8', {
+        'checksums': ['aa932f0af4a7335caef772fdaf73a433a32580405c41eb17ff24077944b0aa97'],
+    }),
+    ('pytools', '2025.2.2', {
+        'checksums': ['88ec51d9233b0a2b0935ed7f153457ee70dfd31a5a0ae400f3fc6cdcaf2d43dd'],
+    }),
+    (name, version, {
+        'preinstallopts': './configure.py --cuda-root="$EBROOTCUDA" --cuda-enable-gl && ',
+        'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
+        'checksums': ['bab0678d43f469c865f5fe6024f481c781ec51fefe6686acd66c672bfabea34f'],
+    }),
+]
+
+sanity_check_commands = [
+    'python -c "import pycuda.gl"'
+]
+
+moduleclass = 'lang'
