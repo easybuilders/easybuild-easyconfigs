@@ -1,0 +1,63 @@
+easyblock = 'PythonBundle'
+
+name = 'PyOMP'
+version = '0.5.0'
+
+homepage = 'https://github.com/Python-for-HPC/PyOMP'
+description = '''
+OpenMP for Python CPU/GPU parallel programming, powered by Numba.
+
+PyOMP provides a familiar interface for CPU/GPU programming using OpenMP
+abstractions adapted for Python. Besides effortless programmability, PyOMP
+generates fast code using Numba's JIT compiler based on LLVM, which is
+competitive with equivalent C/C++ implementations.
+'''
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('Ninja', '1.13.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('numba', '0.62.0'),
+    ('LLVM', '20.1.8'),  # For OpenMP and Offload
+]
+
+exts_list = [
+    ('lark', '1.3.1', {
+        'checksums': ['b426a7a6d6d53189d318f2b6236ab5d6429eaf09259f1ca33eb716eed10d2905'],
+    }),
+    ('pyomp', version, {
+        'modulename': False,
+        'patches': ['PyOMP-0.5.0_search-for-libomptarget.patch'],
+        'preinstallopts': "export LLVM_DIR=$EBROOTLLVM && ",
+        'checksums': [
+            {'pyomp-0.5.0.tar.gz': 'fd58a33c84a2bd590944fe437ca682911f2a79a85afbbe1d979da4ff6bf82be7'},
+            {'PyOMP-0.5.0_search-for-libomptarget.patch':
+             '47eb1ee689a327de73f064fc02d80b7d41acc6be800fb70ec4dcd0896880b289'},
+        ],
+    }),
+]
+
+# PyOMP installs numba/openmp/ as a sub-package of Numba, but since Numba is installed in a separate prefix,
+# Python won't find numba.openmp automatically. A .pth file extends numba.__path__ at startup to include
+# PyOMP's Numba directory
+# To make things more readable, create two files, as .pth files are only allowed to have a single line...
+local_redirector_file = "%(installdir)s/lib/python%(pyshortver)s/site-packages/_pyomp_redirector.py"
+local_pth_file = "%(installdir)s/lib/python%(pyshortver)s/site-packages/_pyomp_redirector.pth"
+postinstallcmds = [
+    f"echo 'import numba, os, sys' > {local_redirector_file}",
+    f"echo 'for p in sys.path:' >> {local_redirector_file}",
+    f"echo '    if os.path.join(p, \"numba\") not in numba.__path__:' >> {local_redirector_file}",
+    f"echo '        numba.__path__.insert(0, os.path.join(p, \"numba\"))' >> {local_redirector_file}",
+    # include redirector file in pth file
+    f"echo 'import _pyomp_redirector' > {local_pth_file}",
+]
+
+sanity_check_commands = ['python -s -c "from numba.openmp import openmp_context"']
+
+moduleclass = 'lib'
