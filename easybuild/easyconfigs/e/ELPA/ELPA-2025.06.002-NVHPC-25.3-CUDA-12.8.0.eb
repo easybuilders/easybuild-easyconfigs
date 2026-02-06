@@ -35,9 +35,11 @@ builddependencies = [
 dependencies = [('CUDA', '12.8.0', '', SYSTEM)]
 
 preconfigopts = 'export LDFLAGS="-lm $LDFLAGS" && '
-# do not check MPI during the configure
-configopts = '--without-threading-support-check-during-build --enable-allow-thread-limiting '
-configopts += '--enable-runtime-threading-support-checks '
+# ELPA has a bit of trouble with the mixed OpenMP+MPI environment in NVHPC:
+# - allow ELPA to change the number of threads at runtime
+configopts = '--enable-runtime-threading-support-checks --enable-allow-thread-limiting '
+# - disable openmp during the build to avoid MPI checks to fail
+configopts += '--without-threading-support-check-during-build '
 
 # When building in parallel, the file test_setup_mpi.mod is sometimes
 # used before it is built, leading to an error. This must be a bug in
