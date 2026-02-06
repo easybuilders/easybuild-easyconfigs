@@ -1,0 +1,24 @@
+diff --color -Naur pyomp-0.5.0.orig/src/numba/openmp/__init__.py pyomp-0.5.0/src/numba/openmp/__init__.py
+--- pyomp-0.5.0.orig/src/numba/openmp/__init__.py	2026-02-06 03:43:32.000000000 +0100
++++ pyomp-0.5.0/src/numba/openmp/__init__.py	2026-02-06 10:17:57.830156939 +0100
+@@ -98,8 +98,18 @@
+             print("Found OpenMP target runtime library at", omptargetlib)
+         ll.load_library_permanently(str(omptargetlib))
+     else:
+-        raise RuntimeError(f"OpenMP target runtime not found at {omptargetlib}")
+-
++        # There is no bundled libomp, try to find it in standard library paths.
++        system_omptargetlib = find_library("omptarget")
++        if system_omplib:
++            if DEBUG_OPENMP >= 1:
++                print(f"Found system OpenMP runtime library: {system_omptargetlib}")
++            ll.load_library_permanently(system_omptargetlib)
++        else:
++            raise RuntimeError(
++                f"OpenMP target runtime not found. Bundled library missing at {omptargetlib} "
++                "and no system libomptarget found via ctypes.util.find_library('omptarget'). "
++                "Ensure libomptarget is available in library paths."
++            )
+ 
+ _init()
+ 
