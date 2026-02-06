@@ -1,0 +1,48 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Jonney Huang <jonney.huang@hpcnow.com>
+# License::     GPL-v3.0
+# #
+
+easyblock = 'CMakeMake'
+
+name = 'AdaptiveCpp'
+version = '24.02.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://adaptivecpp.github.io/'
+description = """AdaptiveCpp is the independent, community-driven
+modern platform for C++-based heterogeneous programming models
+targeting CPUs and GPUs from all major vendors. """
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ["https://github.com/AdaptiveCpp/AdaptiveCpp/archive/refs/tags/"]
+sources = ["v%(version)s.tar.gz"]
+checksums = ['180bdcbf40db9907ba5b3da06a57e779e1527c62528211f72e9d36a5e46b0956']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('Boost', '1.82.0'),
+    ('Clang', '16.0.6'),
+    ('Python', '3.11.3'),
+    ('CUDA', '12.2.0', '', SYSTEM),
+]
+
+configopts = '-DWITH_CUDA_BACKEND=ON '
+configopts += '-DWITH_SSCP_COMPILER=OFF -DWITH_OPENCL_BACKEND=OFF -DWITH_LEVEL_ZERO_BACKEND=OFF '
+configopts += "-DOpenMP_C_FLAGS=-fopenmp -DOpenMP_C_LIB_NAMES=gomp "
+configopts += "-DOpenMP_gomp_LIBRARY=$EBROOTGCCCORE/lib64/libgomp.so "
+configopts += "-DOpenMP_CXX_FLAGS=-fopenmp -DOpenMP_CXX_LIB_NAMES=gomp "
+
+sanity_check_paths = {
+    'files': ['bin/acpp'],
+    'dirs': ['include', 'lib'],
+}
+sanity_check_commands = ['acpp --help']
+
+moduleclass = 'compiler'
