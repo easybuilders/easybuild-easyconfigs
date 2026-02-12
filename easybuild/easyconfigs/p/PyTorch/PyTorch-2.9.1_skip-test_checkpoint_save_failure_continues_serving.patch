@@ -1,0 +1,28 @@
+The test fails with
+> AssertionError: 'fail_once policy triggered failure' not found in 'cannot pickle code objects'
+
+This is caused by a change in Python 3.13 although it only worked by accident in earlier versions.
+See https://github.com/pytorch/pytorch/issues/174669
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/checkpoint/test_async_process_executor.py b/test/distributed/checkpoint/test_async_process_executor.py
+index 9dc7095b0d6..36e639803b2 100644
+--- a/test/distributed/checkpoint/test_async_process_executor.py
++++ b/test/distributed/checkpoint/test_async_process_executor.py
+@@ -1,6 +1,7 @@
+ # Owner(s): ["oncall: distributed checkpointing"]
+ 
+ import sys
++import unittest
+ from unittest.mock import patch
+ 
+ import torch
+@@ -100,6 +101,7 @@ class TestStorageWriter(StorageWriter):
+ class TestAsyncProcessExecutor(DTensorTestBase):
+     """Test suite for async checkpoint process executor error handling using public APIs."""
+ 
++    @unittest.skipIf(sys.version_info >= (3, 13), "Can't pickle tracebacks")
+     @with_comms
+     def test_checkpoint_save_failure_continues_serving(self) -> None:
+         """Test that checkpoint save failure doesn't exit process, continues serving."""
