@@ -16,13 +16,19 @@ checksums = ['7d935790e9af081c25c495fd13c2cfcda4792983418e96358ef6e7320ee06346']
 builddependencies = [
     ('binutils', '2.44'),
     ('Autotools', '20250527'),
+    ('googletest', '1.17.0'),
 ]
 
 preconfigopts = "autoreconf -i -f &&"
-# Tests require internet access to succeed. Not disabling them explicitly
-# can cause a system googletest to be picked up, failing the build due to
-# c-ares not setting a C++ standard.
-configopts = "--disable-tests"
+# googletest requires building tests with C++17 or newer
+configopts = ' '.join([
+    'CXXFLAGS="$CXXFLAGS -std=c++17"',
+    '--enable-tests',
+])
+
+test_cmd = './test/arestest'
+# Skip tests relying on an internet connection
+runtest = '--gtest_filter="-*.Live*"'
 
 sanity_check_paths = {
     'files': ['lib/libcares.a', f'lib/libcares.{SHLIB_EXT}', 'lib/pkgconfig/libcares.pc'],
