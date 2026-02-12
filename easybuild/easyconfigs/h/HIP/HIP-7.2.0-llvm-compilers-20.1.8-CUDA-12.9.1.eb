@@ -1,0 +1,98 @@
+easyblock = 'Bundle'
+
+name = 'HIP'
+_rocm_version = '7.2.0'
+version = _rocm_version
+versionsuffix = '-CUDA-%(cudaver)s'
+
+
+homepage = 'https://github.com/ROCm/HIP'
+description = """HIP is a C++ Runtime API and Kernel Language that allows
+developers to create portable applications for AMD and NVIDIA GPUs from single
+source code."""
+docurls = ['https://rocmdocs.amd.com/projects/HIP/']
+
+toolchain = {'name': 'llvm-compilers', 'version': '20.1.8'}
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('CppHeaderParser', '2.7.4'),
+]
+
+dependencies = [
+    ('numactl', '2.0.19'),
+    ('CUDA', '12.9.1', '', SYSTEM),
+]
+
+default_easyblock = 'CMakeMake'
+
+components = [
+    ('HIPCC', '%s' % _rocm_version, {
+        'source_urls': ['https://github.com/ROCm/llvm-project/archive/'],
+        'sources': [{
+            'download_filename': 'rocm-%(version)s.tar.gz',
+            'filename': 'llvm-project-rocm-%(version)s.tar.gz',
+            'alt_location': 'ROCm-LLVM'
+        }],
+        'checksums': [
+            'e86138d2a63fbcbdf64668d55573b26ae944d0f0ae5a3f5bb59bf7bdb3124d3f',  # llvm-project-rocm-7.2.0.tar.gz
+        ],
+        'srcdir': 'llvm-project-rocm-%s/amd/hipcc' % _rocm_version,
+    }),
+    ('HIP', '%s' % _rocm_version, {
+        'sources': [
+            {
+                'source_urls': ['https://github.com/ROCm/clr/archive/'],
+                'download_filename': 'rocm-%(version)s.tar.gz',
+                'filename': 'clr-%(version)s.tar.gz',
+            },
+            {
+                'source_urls': ['https://github.com/ROCm/HIP/archive/'],
+                'download_filename': 'rocm-%(version)s.tar.gz',
+                'filename': 'HIP-%(version)s.tar.gz',
+            },
+            {
+                'source_urls': ['https://github.com/ROCm/hipother/archive'],
+                'download_filename': 'rocm-%(version)s.tar.gz',
+                'filename': 'hipother-%(version)s.tar.gz',
+            }
+        ],
+        'checksums': [
+            'fc79e674a5c6da0192437e11d3d41cc593fcc7344194f2d02fa47b965ddd1a5f',  # clr-7.2.0.tar.gz
+            '4a22fcd0baf8df47d2e234f887f5bc03d522ce78928f82d1b0669a55897c4205',  # HIP-7.2.0.tar.gz
+            '3f829fc12957261f9465e5427846c90e8ce631c0e636dbc00846a3ccd2580ab3',  # hipother-7.2.0.tar.gz
+        ],
+        'srcdir': 'clr-rocm-%s' % _rocm_version,
+        'configopts': ' '.join([
+                          '-DHIP_COMMON_DIR=%(builddir)s/hip-rocm-%(version)s/',
+                          '-DHIPNV_DIR=%(builddir)s/hipother-rocm-%(version)s/hipnv/',
+                          '-DHIP_PLATFORM=nvidia',
+                          '-DHIPCC_BIN_DIR=%(installdir)s/bin',
+                          '-DCLR_BUILD_HIP=ON',
+                          '-DCLR_BUILD_OCL=OFF'])
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['hipcc', 'hipconfig']] +
+             ['bin/%s' % x for x in ['roc-obj', 'roc-obj-extract', 'roc-obj-ls']] +
+             ['include/hip/hip_common.h', 'include/hip/hip_runtime.h'],
+    'dirs': [],
+}
+sanity_check_commands = [
+    'hipcc --help',
+    'hipconfig --full'
+]
+
+modextravars = {
+    'HIP_COMPILER': 'clang',
+    'HIP_INCLUDE_PATH': '%(installdir)s/include',
+    'HIP_LIB_PATH': '%(installdir)s/lib',
+    'HIP_PATH': '%(installdir)s',
+    'HIP_RUNTIME': 'cuda',
+    'HIP_PLATFORM': 'nvidia',
+    'HIPCC_PATH': '%(installdir)s',
+}
+
+moduleclass = 'tools'
