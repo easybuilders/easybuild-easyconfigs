@@ -1,0 +1,88 @@
+name = 'WIEN2k'
+version = '24.1'
+
+homepage = 'http://www.wien2k.at/'
+description = """The program package WIEN2k allows to perform electronic structure calculations of solids
+using density functional theory (DFT). It is based on the full-potential (linearized) augmented plane-wave
+((L)APW) + local orbitals (lo) method, one among the most accurate schemes for band structure calculations.
+WIEN2k is an all-electron scheme including relativistic effects and has many features."""
+
+toolchain = {'name': 'intel', 'version': '2025b'}
+
+sources = ['%(name)s_%(version)s.tar']
+patches = [
+    'WIEN2k-23.2_fix_libxc_for_lapw0_mpi.patch',
+    'WIEN2k-23.2_fix_system_stderr_redirection.patch',
+    'WIEN2k-24.1_fix-symmetso-angle.patch',
+    'WIEN2k-24.1_force_mpi_omp.patch',
+]
+checksums = [
+    {'WIEN2k_24.1.tar': '15ccceea0fe64c2bb94b3e7252c36537c04c8fd7c0ae46367e837cedb5402713'},
+    {'WIEN2k-23.2_fix_libxc_for_lapw0_mpi.patch': '1cc480a4824d9185ad5918dfc68c47bcb7826114626c8133d573be901bbdca84'},
+    {'WIEN2k-23.2_fix_system_stderr_redirection.patch':
+     'eb3f987b1f839b9f10c315d3f7a57e181e46bc98bec3a18e5b9942689b75fcc7'},
+    {'WIEN2k-24.1_fix-symmetso-angle.patch': '7c98153f78806f1a1e52738d54c00ec3bb34d5b144e92bc9ca99dd3c2f189bc5'},
+    {'WIEN2k-24.1_force_mpi_omp.patch': '490b0ad98a5705241270f583e0f9b7faaaaa4700ccfd23962d2eecb42be3ea14'},
+]
+
+download_instructions = """
+WIEN2k can be ordered at http://susi.theochem.tuwien.ac.at/index.html.
+"""
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Perl', '5.40.2'),
+    ('DFT-D3', '3.2.0'),
+    ('ELPA', '2025.06.001'),
+    ('FFTW.MPI', '3.3.10'),
+    ('libxc', '7.0.0'),
+]
+
+osdependencies = [
+    ('glibc-devel', 'libc6-dev'),  # required for libpthread.
+    ('tcsh')
+]
+
+# Can't be pached as the sources are recursively packed.
+prebuildopts = 'sed -i -e "3a\\\\use omp_lib" -e "s/INCLUDE \'omp_lib.h\'//" SRC_lapw1/seclr4.F &&'
+
+# remote = 'pbsssh'
+# If using a Slurm batch system it is highly recommended to use
+# 'srun -n_NP_ _EXEC_' for wien_mpirun
+wien_mpirun = 'mpirun  -np _NP_ _EXEC_'
+use_remote = False
+mpi_remote = False
+wien_granularity = True
+taskset = 'no'
+
+# Change as needed, these are the defaults
+# nmatmax = 19000
+# nume = 6000
+
+fix_perl_shebang_for = [
+    'iniel_pressure_in2reader.pl_lapw',
+    'iniel_pressure_reader.pl_lapw',
+    'setrmt_lapw',
+    'elast_setup_input.pl_lapw',
+    'bashtime2csh.pl_lapw',
+]
+
+# skip running of serial/parallel benchmark, because links to download test_case.tar.gz and mpi-benchmark.tar.gz
+# from http://www.wien2k.at/reg_user/benchmark/ that are used by WIEN2k easyblock are broken...
+runtest = False
+
+tests = [
+    # test case 1: NaCl
+    ('NaCl', '-b', '-i 100', [r'^:DIS.*0.1', r'^:ENE.*-1248.1']),
+    # test case 2: TiO2
+    ('TiO2',
+     '-b -numk 1000 -rkmax 7.5',
+     '-in1ef -cc 0.00001 -fc 0.5 -i 100',
+     [
+         r'^:ENE.*-4018.0',
+         r'^:FGL001.*\s+[0.]+\s+[0.]+\s+[0.]+\s+total forces',
+         r'^:FGL002.*total forces',
+     ]),
+]
+
+moduleclass = 'chem'
