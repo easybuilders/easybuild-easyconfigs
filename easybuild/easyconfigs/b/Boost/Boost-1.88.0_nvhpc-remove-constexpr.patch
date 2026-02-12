@@ -1,0 +1,52 @@
+Avoid the following error during the build process:
+
+"boost_1_88_0/libs/url/src/detail/replacement_field_rule.cpp", line 68:
+error: expression must have a constant value
+          grammar::tuple_rule(
+          ^
+"boost_1_88_0/libs/url/src/detail/replacement_field_rule.cpp", line 68:
+note: expression not folded to a constant due to excessive constexpr
+function call complexity
+          grammar::tuple_rule(
+          ^
+Author: Jan Reuter (JSC)
+
+diff --color -Naur boost_1_88_0.orig/libs/url/src/detail/replacement_field_rule.cpp boost_1_88_0/libs/url/src/detail/replacement_field_rule.cpp
+--- boost_1_88_0.orig/libs/url/src/detail/replacement_field_rule.cpp	2025-04-03 13:37:31.000000000 +0200
++++ boost_1_88_0/libs/url/src/detail/replacement_field_rule.cpp	2025-08-28 10:04:36.156722724 +0200
+@@ -31,7 +31,7 @@
+     char const* const end) const noexcept ->
+         system::result<value_type>
+ {
+-    static constexpr auto replacement_field_rules =
++    static auto replacement_field_rules =
+         grammar::tuple_rule(
+             // open
+             grammar::squelch(
+@@ -64,7 +64,7 @@
+     char const* const end) const noexcept
+         -> system::result<value_type>
+ {
+-    static constexpr auto identifier_rules =
++    static auto identifier_rules =
+         grammar::tuple_rule(
+             grammar::delim_rule(
+                 grammar::alpha_chars +
+@@ -94,7 +94,7 @@
+         return {};
+ 
+     // any tokens allowed in fmt specs
+-    static constexpr auto fmt_specs_token_rule =
++    static auto fmt_specs_token_rule =
+         grammar::optional_rule(
+             grammar::token_rule(
+                 grammar::vchars +
+@@ -103,7 +103,7 @@
+ 
+     // internal ids in the fmt specs
+     // "{" [arg_id] "}"
+-    static constexpr auto internal_id_rule =
++    static auto internal_id_rule =
+         grammar::tuple_rule(
+             grammar::squelch(
+                 grammar::delim_rule('{')),
