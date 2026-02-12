@@ -471,6 +471,8 @@ class EasyConfigTest(TestCase):
             # filter out one per Python version
             ('Z3', ('-Python-2', True)),
             ('Z3', ('-Python-3', True)),
+            # allow Graphviz coexistence by ignoring the -minimal variant when both exist
+            ('Graphviz', '-minimal'),
         ]
         for dep_name, version_suffix in filter_variants:
             # always retain at least one dep variant
@@ -551,6 +553,9 @@ class EasyConfigTest(TestCase):
 
         # some software packages require a specific (older/newer) version of a particular dependency
         alt_dep_versions = {
+            # scanpy-1.10.4 and scvi-tools-1.4.1 requires anndata >= 0.11
+            'aiida-core': [(r'2\.7\.2', [r'aiida-shell-'])],
+            'anndata': [(r'0\.11\.4', [r'scvi-tools-1.4.1-', r'scanpy-1.10.4-'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
@@ -601,6 +606,8 @@ class EasyConfigTest(TestCase):
             'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0'])],
             # FDMNES requires sequential variant of MUMPS
             'MUMPS': [(r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES'])],
+            # RELION 5.0.0 requires fixes only in napari 0.4.19 and newer
+            'napari': [(r'0\.4\.19\.post1;', [r'RELION-5\.0\.0'])],
             # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0, Finder requires SRA-Toolkit 3.0.0
             'ncbi-vdb': [(r'3\.0\.0', [r'SRA-Toolkit-3\.0\.0', r'finder-1\.1\.0'])],
             'OpenFOAM': [
@@ -611,6 +618,7 @@ class EasyConfigTest(TestCase):
                 # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
             ],
+            'plumpy': [(r'0\.25\.0', [r'aiida-core-', r'aiida-shell-'])],
             'PMIx': [
                 # PRRTE 4.0+ requires PMIx 6.0+ and vice-versa
                 (r'6\.0\.0', [r'PRRTE-4\.0\.0']),
@@ -636,6 +644,8 @@ class EasyConfigTest(TestCase):
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1', r'OPERA-MS-0\.9\.0-20240703'])],
+            # Ceres-Solver-2.2.0 needs SuiteSparse-7.8.2-METIS-5.1.0 from the used toolchain version
+            'SuiteSparse': [(r'7\.8\.2; versionsuffix: -METIS-5.1.0', [r'Ceres-Solver-2\.2\.0-foss-2024a'])],
             # CheckM2 and its dep LightGBM requires scikit-learn-1.6.1
             'scikit-learn': [(r'1\.6\.1', [r'CheckM2-1\.1\.0-', r'LightGBM-4\.6\.0-'])],
             # UShER requires tbb-2020.3 as newer versions will not build
@@ -651,13 +661,15 @@ class EasyConfigTest(TestCase):
             ],
             # vLLM has pinned dependency tiktoken == 0.6.0
             'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
+            # Transformers 4.57.1 needs tokenizers 0.22.1
+            'tokenizers': [('0.22.1;', ['Transformers-4.57.1-'])],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
             # Napari 0.4.19post1 requires VisPy >=0.14.1 <0.15
-            'VisPy': [('0.14.1;', ['napari-0.4.19.post1-'])],
+            'VisPy': [('0.14.1;', ['napari-0.4.19.post1-', r'RELION-5\.0\.0'])],
             # Visit-3.4.1 requires VTK 9.2.x
             'VTK': [('9.2.6;', ['Visit-3.4.1-'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
@@ -1198,8 +1210,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.1.2'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.1.2.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.2.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.2.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1434,7 +1446,7 @@ class EasyConfigTest(TestCase):
         # + jupyterlmod + jupyter-resource-usage
         # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
         bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'ESL-Bundle', 'FEniCS', 'GCC', 'Jupyter-bundle',
-                             'Python-bundle', 'ROCm']
+                             'Python-bundle', 'ROCm', 'llvm-compilers']
 
         failing_checks = []
 
