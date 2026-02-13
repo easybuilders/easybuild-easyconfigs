@@ -1,0 +1,50 @@
+Those tests (from test_ao_sparsity & test_quantization) require FBGEMM which may not be available.
+So add the skip decorator.
+See https://github.com/pytorch/pytorch/issues/87364
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/ao/sparsity/test_composability.py b/test/ao/sparsity/test_composability.py
+index 1156a7ecb8a..4239196c293 100644
+--- a/test/ao/sparsity/test_composability.py
++++ b/test/ao/sparsity/test_composability.py
+@@ -14,6 +14,7 @@ from torch.ao.quantization.quantize_fx import (
+     prepare_fx,
+     prepare_qat_fx,
+ )
++from torch.testing._internal.common_quantization import skipIfNoFBGEMM
+ from torch.testing._internal.common_utils import TestCase, xfailIfS390X
+ 
+ 
+@@ -71,6 +71,7 @@ def _calculate_sparsity(tensor):
+ # This series of tests are to check the composability goals for sparsity and quantization. Namely
+ # that performing quantization and sparsity model manipulations in various orderings
+ # does not cause problems
++@skipIfNoFBGEMM
+ class TestComposability(TestCase):
+     # This test checks whether performing quantization prepare before sparse prepare
+     # causes any issues and verifies that the correct observers are inserted and that
+@@ -346,6 +347,7 @@ class TestFxComposability(TestCase):
+     """
+ 
+     @xfailIfS390X
++    @skipIfNoFBGEMM
+     def test_q_prep_fx_before_s_prep(self):
+         r"""
+         This test checks that the ordering of prepare_fx -> sparse prepare -> convert_fx
+@@ -480,6 +482,7 @@ class TestFxComposability(TestCase):
+         self.assertGreaterAlmostEqual(cur_sparsity, sparse_config[0]["sparsity_level"])
+ 
+     @xfailIfS390X
++    @skipIfNoFBGEMM
+     def test_s_prep_before_q_prep_fx(self):
+         r"""
+         This test checks that the ordering of sparse prepare -> prepare_fx -> convert_fx
+@@ -532,6 +535,7 @@ class TestFxComposability(TestCase):
+         self.assertGreaterAlmostEqual(cur_sparsity, sparse_config[0]["sparsity_level"])
+ 
+     @xfailIfS390X
++    @skipIfNoFBGEMM
+     def test_s_prep_before_qat_prep_fx(self):
+         r"""
+         This test checks that the ordering of sparse prepare -> prepare_qat_fx -> convert_fx
