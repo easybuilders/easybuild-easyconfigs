@@ -1,5 +1,7 @@
 Update torchaudio to work with FFmpeg v7
 Author: Samuel Moors (Vrije Universiteit Brussel)
+Additional fix of encode_process.cpp: allow encoder sample_fmt fallback (e.g. s16 -> fltp for libvorbis)
+
 diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/filter_graph.cpp audio-2.6.0/src/libtorio/ffmpeg/filter_graph.cpp
 --- audio-2.6.0.orig/src/libtorio/ffmpeg/filter_graph.cpp	2025-01-29 02:11:55.000000000 +0100
 +++ audio-2.6.0/src/libtorio/ffmpeg/filter_graph.cpp	2025-12-02 22:46:46.367838000 +0100
@@ -51,6 +53,7 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/filter_graph.cpp audio-2.6.0/src/l
        ret.num_channels = l->ch_layout.nb_channels;
  #else
        // Before FFmpeg 5.1
+
 diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/filter_graph.h audio-2.6.0/src/libtorio/ffmpeg/filter_graph.h
 --- audio-2.6.0.orig/src/libtorio/ffmpeg/filter_graph.h	2025-01-29 02:11:55.000000000 +0100
 +++ audio-2.6.0/src/libtorio/ffmpeg/filter_graph.h	2025-12-01 19:52:07.342909995 +0100
@@ -63,6 +66,7 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/filter_graph.h audio-2.6.0/src/lib
  
    void add_video_src(
        AVPixelFormat format,
+
 diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/pybind/pybind.cpp audio-2.6.0/src/libtorio/ffmpeg/pybind/pybind.cpp
 --- audio-2.6.0.orig/src/libtorio/ffmpeg/pybind/pybind.cpp	2025-01-29 02:11:55.000000000 +0100
 +++ audio-2.6.0/src/libtorio/ffmpeg/pybind/pybind.cpp	2025-12-01 20:51:43.182687490 +0100
@@ -75,6 +79,7 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/pybind/pybind.cpp audio-2.6.0/src/
    FileObj* fileobj = static_cast<FileObj*>(opaque);
    buf_size = FFMIN(buf_size, fileobj->buffer_size);
  
+
 diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/conversion.cpp audio-2.6.0/src/libtorio/ffmpeg/stream_reader/conversion.cpp
 --- audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/conversion.cpp	2025-01-29 02:11:55.000000000 +0100
 +++ audio-2.6.0/src/libtorio/ffmpeg/stream_reader/conversion.cpp	2025-12-01 12:07:48.943112806 +0100
@@ -87,6 +92,7 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/conversion.cpp audio
  
    constexpr int bps = []() {
      switch (dtype) {
+
 diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/post_process.cpp audio-2.6.0/src/libtorio/ffmpeg/stream_reader/post_process.cpp
 --- audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/post_process.cpp	2025-01-29 02:11:55.000000000 +0100
 +++ audio-2.6.0/src/libtorio/ffmpeg/stream_reader/post_process.cpp	2025-12-01 20:02:13.873117462 +0100
@@ -99,6 +105,7 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/post_process.cpp aud
               const std::string& filter_desc) -> FilterGraph {
      FilterGraph f;
      f.add_audio_src(fmt, time_base, rate, channel_layout);
+
 diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/stream_processor.cpp audio-2.6.0/src/libtorio/ffmpeg/stream_reader/stream_processor.cpp
 --- audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/stream_processor.cpp	2025-01-29 02:11:55.000000000 +0100
 +++ audio-2.6.0/src/libtorio/ffmpeg/stream_reader/stream_processor.cpp	2025-12-02 20:23:50.185425554 +0100
@@ -133,6 +140,7 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/stream_processor.cpp
        } else {
          frame->pts = frame->best_effort_timestamp;
        }
+
 diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/stream_reader.cpp audio-2.6.0/src/libtorio/ffmpeg/stream_reader/stream_reader.cpp
 --- audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/stream_reader.cpp	2025-01-29 02:11:55.000000000 +0100
 +++ audio-2.6.0/src/libtorio/ffmpeg/stream_reader/stream_reader.cpp	2025-12-01 14:34:29.047656123 +0100
@@ -145,9 +153,10 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_reader/stream_reader.cpp au
        break;
      }
      case AVMEDIA_TYPE_VIDEO: {
+
 diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/encode_process.cpp audio-2.6.0/src/libtorio/ffmpeg/stream_writer/encode_process.cpp
---- audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/encode_process.cpp	2025-01-29 02:11:55.000000000 +0100
-+++ audio-2.6.0/src/libtorio/ffmpeg/stream_writer/encode_process.cpp	2025-12-03 15:21:12.403231996 +0100
+--- audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/encode_process.cpp
++++ audio-2.6.0/src/libtorio/ffmpeg/stream_writer/encode_process.cpp
 @@ -1,6 +1,8 @@
  #include <libtorio/ffmpeg/hw_context.h>
  #include <libtorio/ffmpeg/stream_writer/encode_process.h>
@@ -157,16 +166,71 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/encode_process.cpp a
  
  namespace torio::io {
  
-@@ -311,20 +313,30 @@
+@@ -227,23 +229,39 @@
+     const std::optional<std::string>& encoder_format,
+     const AVCodec* codec) {
+   if (encoder_format) {
+-    auto& enc_fmt_val = encoder_format.value();
+-    auto fmt = av_get_sample_fmt(enc_fmt_val.c_str());
+-    TORCH_CHECK(
+-        fmt != AV_SAMPLE_FMT_NONE, "Unknown sample format: ", enc_fmt_val);
+-    TORCH_CHECK(
+-        supported_sample_fmt(fmt, codec->sample_fmts),
+-        codec->name,
+-        " does not support ",
+-        encoder_format.value(),
+-        " format. Supported values are; ",
+-        get_supported_formats(codec->sample_fmts));
++    const auto& enc_fmt_val = encoder_format.value();
++    AVSampleFormat fmt = av_get_sample_fmt(enc_fmt_val.c_str());
++    TORCH_CHECK(fmt != AV_SAMPLE_FMT_NONE, "Unknown sample format: ", enc_fmt_val);
++
++    if (supported_sample_fmt(fmt, codec->sample_fmts)) {
++      return fmt;
++    }
++
++    // If codec has restrictions, fall back to its first supported format
++    // and rely on filter graph conversion.
++    if (codec->sample_fmts) {
++      TORCH_WARN_ONCE(
++          codec->name,
++          " does not support requested sample format ",
++          enc_fmt_val,
++          "; falling back to ",
++          av_get_sample_fmt_name(codec->sample_fmts[0]),
++          " and converting via filter graph.");
++      return codec->sample_fmts[0];
++    }
++
++    // If codec does not advertise supported formats, just use the requested one.
+     return fmt;
+   }
+-  if (codec->sample_fmts) {
+-    return codec->sample_fmts[0];
+-  }
+-  return src_fmt;
++
++  // No explicit encoder format requested: keep the source format if possible.
++  if (!codec->sample_fmts) {
++    return src_fmt;
++  }
++  if (supported_sample_fmt(src_fmt, codec->sample_fmts)) {
++    return src_fmt;
++  }
++  return codec->sample_fmts[0];
+ };
+ 
+ bool supported_sample_rate(const int sample_rate, const AVCodec* codec) {
+@@ -311,20 +329,28 @@
    return src_sample_rate;
  }
  
 -std::string get_supported_channels(const uint64_t* channel_layouts) {
-+// Helper to handle the "Describe" API which now requires a buffer
 +std::string describe_layout(const AVChannelLayout& layout) {
-+    char buf[256];
-+    av_channel_layout_describe(&layout, buf, sizeof(buf));
-+    return std::string(buf);
++  char buf[256];
++  int ret = av_channel_layout_describe(&layout, buf, sizeof(buf));
++  TORCH_CHECK(ret >= 0, "Failed to describe channel layout: ", av_err2string(ret));
++  return std::string(buf);
 +}
 +
 +std::string get_supported_channels(const AVChannelLayout* channel_layouts) {
@@ -187,45 +251,38 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/encode_process.cpp a
  
 -uint64_t get_channel_layout(
 -    const uint64_t src_ch_layout,
-+// Return type changed from uint64_t to AVChannelLayout
-+// Input src_ch_layout changed from uint64_t to const AVChannelLayout&
 +AVChannelLayout get_channel_layout(
 +    const AVChannelLayout& src_ch_layout,
      const std::optional<int> enc_num_channels,
      const AVCodec* codec) {
    // If the override is presented, and if it is supported by codec, we use it.
-@@ -332,14 +344,20 @@
+@@ -332,11 +358,13 @@
      const int& val = enc_num_channels.value();
      TORCH_CHECK(
          val > 0, "The number of channels must be greater than 0. Found: ", val);
 -    if (!codec->channel_layouts) {
 -      return static_cast<uint64_t>(av_get_default_channel_layout(val));
-+
-+    // Check if codec has specific supported layouts (ch_layouts replaces channel_layouts)
+-    }
+-    for (const uint64_t* it = codec->channel_layouts; *it; ++it) {
+-      if (av_get_channel_layout_nb_channels(*it) == val) {
 +    if (!codec->ch_layouts) {
 +      AVChannelLayout default_layout;
 +      av_channel_layout_default(&default_layout, val);
 +      return default_layout;
-     }
--    for (const uint64_t* it = codec->channel_layouts; *it; ++it) {
--      if (av_get_channel_layout_nb_channels(*it) == val) {
-+
++    }
 +    for (const AVChannelLayout* it = codec->ch_layouts; it->nb_channels; ++it) {
 +      if (it->nb_channels == val) {
          return *it;
        }
      }
-+
-     TORCH_CHECK(
-         false,
-         "Codec ",
-@@ -347,35 +365,42 @@
+@@ -347,35 +375,41 @@
          " does not support a channel layout consists of ",
          val,
          " channels. Supported values are: ",
 -        get_supported_channels(codec->channel_layouts));
+-  }
 +        get_supported_channels(codec->ch_layouts));
-   }
++  }
 +
    // If the codec does not have restriction on channel layout, we reuse the
    // source channel layout
@@ -264,13 +321,12 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/encode_process.cpp a
 -  codec_ctx->channel_layout = channel_layout;
 +
 +  av_channel_layout_uninit(&codec_ctx->ch_layout);
-+
 +  int ret = av_channel_layout_copy(&codec_ctx->ch_layout, &channel_layout);
 +  TORCH_CHECK(ret >= 0, "Failed to set channel layout: ", av_err2string(ret));
  
    // Set optional stuff
    if (codec_config) {
-@@ -595,23 +620,33 @@
+@@ -595,11 +629,11 @@
  FilterGraph get_audio_filter_graph(
      AVSampleFormat src_fmt,
      int src_sample_rate,
@@ -284,22 +340,20 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/encode_process.cpp a
      int nb_samples) {
    const auto desc = [&]() -> const std::string {
      std::vector<std::string> parts;
-     if (filter_desc) {
+@@ -607,11 +641,19 @@
        parts.push_back(filter_desc.value());
      }
-+
      if (filter_desc || src_fmt != enc_fmt ||
 -        src_sample_rate != enc_sample_rate || src_ch_layout != enc_ch_layout) {
-+        src_sample_rate != enc_sample_rate || av_channel_layout_compare(&src_ch_layout, &enc_ch_layout) != 0) {
-+
++        src_sample_rate != enc_sample_rate ||
++        av_channel_layout_compare(&src_ch_layout, &enc_ch_layout) != 0) {
 +      char ch_layout_str[128];
-+      int ret = av_channel_layout_describe(&enc_ch_layout,
-+                                           ch_layout_str,
-+                                           sizeof(ch_layout_str));
-+      TORCH_CHECK(ret >= 0,
-+                  "Failed to describe channel layout: ",
-+                  av_err2string(ret));
-+
++      int ret = av_channel_layout_describe(
++          &enc_ch_layout, ch_layout_str, sizeof(ch_layout_str));
++      TORCH_CHECK(
++          ret >= 0,
++          "Failed to describe channel layout: ",
++          av_err2string(ret));
        std::stringstream ss;
        ss << "aformat=sample_fmts=" << av_get_sample_fmt_name(enc_fmt)
 -         << ":sample_rates=" << enc_sample_rate << ":channel_layouts=0x"
@@ -309,10 +363,11 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/encode_process.cpp a
        parts.push_back(ss.str());
      }
      if (nb_samples > 0) {
-@@ -697,20 +732,21 @@
+@@ -696,21 +738,17 @@
+ AVFramePtr get_audio_frame(
      AVSampleFormat format,
      int sample_rate,
-     int num_channels,
+-    int num_channels,
 -    uint64_t channel_layout,
 +    AVChannelLayout channel_layout,
      int nb_samples) {
@@ -321,77 +376,57 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/encode_process.cpp a
 -  frame->channel_layout = channel_layout;
    frame->sample_rate = sample_rate;
    frame->nb_samples = nb_samples;
-+
-+  frame ->ch_layout = channel_layout;
-+
++  frame->ch_layout = channel_layout;
    int ret = av_frame_get_buffer(frame, 0);
    TORCH_CHECK(
        ret >= 0, "Error allocating the source audio frame:", av_err2string(ret));
  
-   // Note: `channels` attribute is not required for encoding, but
-   // TensorConverter refers to it
+-  // Note: `channels` attribute is not required for encoding, but
+-  // TensorConverter refers to it
 -  frame->channels = num_channels;
    frame->pts = 0;
    return frame;
  }
-@@ -767,8 +803,10 @@
+@@ -767,8 +805,8 @@
    const AVSampleFormat src_fmt = (disable_converter)
        ? av_get_sample_fmt(format.c_str())
        : get_src_sample_fmt(format);
 -  const auto src_ch_layout =
 -      static_cast<uint64_t>(av_get_default_channel_layout(src_num_channels));
-+
-+  // CHANGE: Convert integer channel count to AVChannelLayout struct
 +  AVChannelLayout src_ch_layout;
 +  av_channel_layout_default(&src_ch_layout, src_num_channels);
  
    // 2. Fetch codec from default or override
    TORCH_CHECK(
-@@ -780,7 +818,9 @@
+@@ -780,7 +818,7 @@
    // 3. Check that encoding sample format, sample rate and channels
    const AVSampleFormat enc_fmt = get_enc_fmt(src_fmt, encoder_format, codec);
    const int enc_sr = get_enc_sr(src_sample_rate, encoder_sample_rate, codec);
 -  const uint64_t enc_ch_layout = [&]() -> uint64_t {
-+
-+  // CHANGE: Return type is now AVChannelLayout
 +  const AVChannelLayout enc_ch_layout = [&]() -> AVChannelLayout {
      if (std::strcmp(codec->name, "vorbis") == 0) {
        // Special case for vorbis.
        // It only supports 2 channels, but it is not listed in channel_layouts
-@@ -788,7 +828,10 @@
+@@ -788,7 +826,9 @@
        // https://github.com/FFmpeg/FFmpeg/blob/0684e58886881a998f1a7b510d73600ff1df2b90/libavcodec/vorbisenc.c#L1277
        // This is the case for at least until FFmpeg 6.0, so it will be
        // like this for a while.
 -      return static_cast<uint64_t>(av_get_default_channel_layout(2));
-+      // CHANGE: Use struct initialization for Vorbis default
 +      AVChannelLayout layout;
 +      av_channel_layout_default(&layout, 2);
 +      return layout;
      }
      return get_channel_layout(src_ch_layout, encoder_num_channels, codec);
    }();
-@@ -796,11 +839,13 @@
-   // 4. Initialize codec context
-   AVCodecContextPtr codec_ctx =
-       get_codec_ctx(codec, format_ctx->oformat->flags);
-+  // CHANGE: You must ensure configure_audio_codec_ctx accepts AVChannelLayout now
-   configure_audio_codec_ctx(
-       codec_ctx, enc_fmt, enc_sr, enc_ch_layout, codec_config);
-   open_codec(codec_ctx, encoder_option);
- 
-   // 5. Build filter graph
-+  // CHANGE: You must ensure get_audio_filter_graph accepts AVChannelLayout now
-   FilterGraph filter_graph = get_audio_filter_graph(
-       src_fmt,
-       src_sample_rate,
-@@ -812,6 +857,7 @@
-       codec_ctx->frame_size);
- 
-   // 6. Instantiate source frame
-+  // CHANGE: You must ensure get_audio_frame accepts AVChannelLayout now
+@@ -815,7 +855,6 @@
    AVFramePtr src_frame = get_audio_frame(
        src_fmt,
        src_sample_rate,
+-      src_num_channels,
+       src_ch_layout,
+       codec_ctx->frame_size > 0 ? codec_ctx->frame_size : 256);
+ 
+
 diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/stream_writer.cpp audio-2.6.0/src/libtorio/ffmpeg/stream_writer/stream_writer.cpp
 --- audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/stream_writer.cpp	2025-01-29 02:11:55.000000000 +0100
 +++ audio-2.6.0/src/libtorio/ffmpeg/stream_writer/stream_writer.cpp	2025-12-01 14:11:58.947476037 +0100
@@ -422,6 +457,7 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/stream_writer.cpp au
      int64_t (*seek)(void* opaque, int64_t offset, int whence))
      : CustomOutput(opaque, buffer_size, write_packet, seek),
        StreamingMediaEncoder(io_ctx, format) {}
+
 diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/stream_writer.h audio-2.6.0/src/libtorio/ffmpeg/stream_writer/stream_writer.h
 --- audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/stream_writer.h	2025-01-29 02:11:55.000000000 +0100
 +++ audio-2.6.0/src/libtorio/ffmpeg/stream_writer/stream_writer.h	2025-12-01 14:12:52.557260048 +0100
@@ -473,6 +509,7 @@ diff -ur audio-2.6.0.orig/src/libtorio/ffmpeg/stream_writer/tensor_converter.cpp
  
    // https://ffmpeg.org/doxygen/4.1/muxing_8c_source.html#l00334
    if (!av_frame_is_writable(buffer)) {
+
 diff -ur audio-2.6.0.orig/src/torchaudio/io/_effector.py audio-2.6.0/src/torchaudio/io/_effector.py
 --- audio-2.6.0.orig/src/torchaudio/io/_effector.py	2025-01-29 02:11:55.000000000 +0100
 +++ audio-2.6.0/src/torchaudio/io/_effector.py	2025-12-03 16:36:30.536644472 +0100
