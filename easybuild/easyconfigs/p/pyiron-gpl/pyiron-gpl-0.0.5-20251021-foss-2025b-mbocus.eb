@@ -1,0 +1,49 @@
+easyblock = 'PythonBundle'
+
+name = 'pyiron-gpl'
+version = '0.0.5-20251021'
+local_commit = '5a3b6ef'
+versionsuffix = '-mbocus'
+
+homepage = 'https://github.com/mbocus/pyiron_gpl'
+description = """Additional modules for the pyiron IDE licensed under GPLv3.
+Sources are from fork of pyiron-gpl by mbocus.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('SciPy-bundle', '2025.07'),
+    ('pyiron', '0.5.2-20251013'),
+    ('iodata', '1.0.0a8'),
+]
+
+# fix version and unpin dep versions
+local_preinstallopts = (
+    rf"""sed -i -e "s/\('.*\)==[^']\+',/\1',/g" -e 's/versioneer.get_version(),/"{version}",/' -e "s/==[^']*//" """
+    "setup.py && "
+)
+
+exts_list = [
+    (name, version, {
+        'preinstallopts': local_preinstallopts,
+        'source_urls': ['https://github.com/mbocus/pyiron_gpl/archive/'],
+        'sources':  [{
+            'download_filename': f'{local_commit}.tar.gz',
+            'filename': f'%(name)s-%(version)s-{local_commit}.tar.gz',
+        }],
+        'checksums': ['17edf2e8ca802fd2faba0ba1fb3741243df92d0ee9af1eed693d353e9ad18b31'],
+    }),
+]
+
+# fix __version__
+postinstallcmds = [
+    f"sed -i -e 's/0.1.1/{version}/' -e '/get_versions/d' "
+    "%(installdir)s/lib/python%(pyshortver)s/site-packages/pyiron_gpl/__init__.py"
+]
+
+check_ldshared = True
+
+moduleclass = 'chem'
