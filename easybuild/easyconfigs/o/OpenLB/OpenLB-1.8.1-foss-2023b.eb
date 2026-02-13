@@ -1,0 +1,99 @@
+easyblock = 'MakeCp'
+
+name = 'OpenLB'
+version = '1.8.1'
+
+homepage = 'https://www.openlb.net'
+description = """The OpenLB project provides a C++ package for the implementation of lattice Boltzmann methods that is
+general enough to address a vast range of transport problems, e.g. in computational fluid dynamics."""
+
+examples = """Examples can be found on GitLab: https://gitlab.com/openlb/release/-/tree/master/examples
+To compile the OpenLB examples or your own code against this OpenLB installation you can use the same `Makefile`s
+provided by OpenLB, by removing the hardcoded `OLB_ROOT` variable.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'cstd': 'c++20', 'openmp': True, 'usempi': True}
+
+source_urls = ['https://gitlab.com/openlb/release/-/archive/%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'OpenLB-1.8.1-makefiles.patch',
+    'OpenLB-1.8.1-openblas.patch',
+]
+checksums = [
+    {'openlb-1.8.1.tar.gz': 'a7d36abf456db1fbead65f1ab6dbbca79c5c792100bd111f91467daf8f33f035'},
+    {'OpenLB-1.8.1-makefiles.patch': 'd72483e979e46a0c56653bde49e8a1ebaea4e2272af30369990b681fd73df1f8'},
+    {'OpenLB-1.8.1-openblas.patch': '829793763df5316e5c2faf85cffa2617d7831e314b00269ae57ae71f185b659b'},
+]
+
+dependencies = [
+    ('tinyxml2', '10.0.0'),
+    ('zlib', '1.2.13'),
+]
+
+_parallel_mode = 'HYBRID'  # Allowed values: MPI, OPENMP, HYBRID, OFF
+
+# List of FEATURES that can be enabled
+# NOTE!: OpenLB is structured to contain most of its code in its header files.
+# The features are not built with the library but they can be enabled when compiling on top of OpenLB.
+# Here we use it to provide a config.mk file that can be used to build the examples and custom code with the
+# desired features enabled (based on the dependencies we pass).
+_features = ' '.join([
+    # 'EMSCRIPTEN',
+    'OPENBLAS',  # NOTE: the patch allows using any BLAS implementation provided by the toolchain
+    # 'DISABLE_CSE',
+    # 'VDB',
+    # 'VTK',
+    # 'PRECICE',
+])
+
+# List of PLATFORMS that can be enabled
+_platforms = ' '.join([
+    'CPU_SISD',
+    'CPU_SIMD',
+    # 'GPU_CUDA',
+])
+
+_config_mk = '\n'.join([
+    'CC := $CC',
+    'CXX := $CXX',
+    'CXXFLAGS ?= $CXXFLAGS',
+    'LDFLAGS ?= ',
+    f'PARALLEL_MODE ?= {_parallel_mode}',
+    'MPIFLAGS ?= ',
+    'OMPFLAGS ?= -fopenmp',
+    f'PLATFORMS ?= {_platforms}',
+    f'FEATURES ?= {_features}',
+    'BLAS_LIBS ?= $EBVARLIBLAPACK_MT $EBVARLIBS',
+    'USE_EMBEDDED_DEPENDENCIES ?= OFF',  # disable embedded dependencies
+])
+
+prebuildopts = ' && '.join([
+    f'echo -e "{_config_mk}" > config.mk',
+    f'export PARALLEL_MODE="{_parallel_mode}"',
+    f'export PLATFORMS="{_platforms}"',
+    '',  # to have a trailing &&
+])
+
+files_to_copy = [
+    'lib',
+    (['src/*'], 'include'),
+    'config.mk',
+    'default.mk',
+    'default.single.mk',
+    # 'default.mixed.mk',  # only for GPU builds
+    'rules.mk',
+]
+
+sanity_check_paths = {
+    'files': ['lib/libolbcore.a', f'lib/libolbcore.{SHLIB_EXT}'],
+    'dirs': ['lib']
+}
+
+modextravars = {'OLB_ROOT': '%(installdir)s'}
+moduleclass = 'phys'
+
+modloadmsg = """To compile the OpenLB examples or your own code against this OpenLB installation
+you can use the same `Makefile`s provided by OpenLB, by removing the hardcoded `OLB_ROOT` variable.
+"""
