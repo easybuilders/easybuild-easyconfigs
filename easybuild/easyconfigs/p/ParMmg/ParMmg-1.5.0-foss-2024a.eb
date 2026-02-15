@@ -1,0 +1,75 @@
+easyblock = 'CMakeMake'
+
+name = 'ParMmg'
+version = '1.5.0'
+
+homepage = 'https://github.com/MmgTools/ParMmg'
+description = '''ParMmg is an open source software for parallel mesh adaptation of 3D volume meshes.
+The parallel mesh adaptation algorithm is based on iterative remeshing and repartitioning of the
+distributed mesh. It is inspired by the Yales2 algorithm. ParMmg uses the Mmg software to perform
+the sequential remeshing steps.'''
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'extra_cflags': '-Wno-error=implicit-function-declaration'}
+
+source_urls = ['https://github.com/MmgTools/%(name)s/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['0baec7914e49a26bdbb849ab64dcd92147eff79ac02ef3b2599cb05104901a7a']
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+]
+
+dependencies = [
+    ('Mmg', '5.8.0'),
+    ('SCOTCH', '7.0.6'),
+    ('ParMETIS', '4.0.3'),
+    ('VTK', '9.3.1'),
+    ('HDF5', '1.14.5'),
+    ('Doxygen', '1.11.0'),
+]
+
+local_configopts = ' '.join([
+    '-DDOWNLOAD_METIS=OFF',
+    '-DDOWNLOAD_MMG=OFF',
+    '-DUSE_ELAS=OFF',
+    '-DUSE_SCOTCH=ON',
+    '-DSCOTCH_DIR=$EBROOTSCOTCH',
+    '-DUSE_VTK=ON',
+    '-DUSE_HDF5=ON',
+    '-DBUILD_TESTING=ON',
+])
+
+configopts = [
+    local_configopts + ' -DBUILD_SHARED_LIBS=ON',
+    local_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+]
+
+runtest = True
+
+local_example_basedir = '%(start_dir)s/libexamples/adaptation_example0'
+local_sequential_test = ' && '.join([
+    'cd %s/sequential_IO/automatic_IO' % local_example_basedir,
+    'mpicc -I$EBROOTPARMMG/include/%(namelower)s -I$EBROOTMMG/include/mmg/mmg3d main.c '
+    '-L$EBROOTPARMMG/lib -lparmmg -L$EBROOTMMG/lib -lmmg3d -lm -o serial.x',
+    './serial.x %s/cube.mesh out -met %s/cube-met.sol -field %s/cube-solphys.sol' % (3 * (local_example_basedir,)),
+])
+local_parallel_test = ' && '.join([
+    'cd %s/parallel_IO/automatic_IO' % local_example_basedir,
+    'mpicc -I$EBROOTPARMMG/include/%(namelower)s -I$EBROOTMMG/include/mmg/common -I$EBROOTMMG/include/mmg/mmg3d main.c '
+    '-L$EBROOTPARMMG/lib -lparmmg -L$EBROOTMMG/lib -lmmg3d -lm -o parallel.x',
+    'mpirun -n 2 ./parallel.x ' + '%s/cube.mesh result.par 2 0' % local_example_basedir,
+])
+sanity_check_commands = [
+    local_sequential_test,
+    local_parallel_test,
+]
+
+sanity_check_paths = {
+    'files': ['bin/parmmg_O3'] + [f'lib/libparmmg.{x}' for x in ['a', SHLIB_EXT]],
+    'dirs': ['include/parmmg'],
+}
+
+moduleclass = 'math'

@@ -13,7 +13,7 @@ and isovalue discretization the mmg3d application and the libmmg3d library: adap
 of a tetrahedral mesh and implicit domain meshing the libmmg library gathering the libmmg2d,
 libmmgs and libmmg3d libraries."""
 
-toolchain = {'name': 'gompi', 'version': '2024a'}
+toolchain = {'name': 'foss', 'version': '2024a'}
 
 source_urls = ['https://github.com/MmgTools/mmg/archive']
 sources = ['v%(version)s.tar.gz']
@@ -28,7 +28,10 @@ builddependencies = [
     ('Perl', '5.38.2'),
 ]
 
-dependencies = [('SCOTCH', '7.0.6')]
+dependencies = [
+    ('SCOTCH', '7.0.6'),
+    ('VTK', '9.3.1'),
+]
 
 # common configopts for static, shared library builds
 _base_configopts = ' '.join([
@@ -36,18 +39,29 @@ _base_configopts = ' '.join([
     '-DTEST_LIBMMG2D=ON -DTEST_LIBMMG3D=ON -DTEST_LIBMMGS=ON ',
     # ensure position independent code generation for static libs
     '-DCMAKE_C_FLAGS="-fPIC ${CMAKE_C_FLAGS}" -DCMAKE_CXX_FLAGS="-fPIC ${CMAKE_CXX_FLAGS}" ',
+    # The following options are needed for linking ParMmg against Mmg
+    '-DUSE_VTK=ON',
+    '-DPMMG_CALL=1',
+    '-DMMG_INSTALL_PRIVATE_HEADERS=ON',
+    '-DUSE_POINTMAP=OFF',
 ])
 
 # iterative build for both static and shared libraries
 configopts = [' '.join([_base_configopts, x]) for x in ['-DBUILD_SHARED_LIBS=OFF', '-DBUILD_SHARED_LIBS=ON']]
+
+max_parallel = 16
 
 pretestopts = 'export CTEST_PARALLEL_LEVEL=%(parallel)s &&'
 runtest = 'test'
 
 sanity_check_paths = {
     'files': [f'bin/{x}_O3' for x in ['mmg2d', 'mmg3d', 'mmgs']] +
-             [f'lib/lib{x}.{y}' for x in ['mmg2d', 'mmg3d', 'mmgs', 'mmg'] for y in ['a', SHLIB_EXT]],
-    'dirs': [f'include/mmg/{x}' for x in ['mmg2d', 'mmg3d', 'mmgs']]
+             [f'lib/lib{x}.{y}' for x in ['mmg2d', 'mmg3d', 'mmgs', 'mmg'] for y in ['a', SHLIB_EXT]] +
+             [f'include/mmg/mmg{x}/libmmg{x}_private.h' for x in ['s', '2d', '3d']] +
+             [f'include/mmg/mmg{x}/mmg{x}externs_private.h' for x in ['s', '2d', '3d']] +
+             [f'include/mmg/common/{x}_private.h' for x in ['libmmgcommon', 'mmgcommon', 'mmg_core_export',
+                                                            'mmgexterns', 'inlined_functions', 'eigenv']],
+    'dirs': [],
 }
 
 moduleclass = 'math'
