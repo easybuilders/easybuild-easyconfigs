@@ -1,0 +1,206 @@
+easyblock = 'Bundle'
+
+name = 'Xfce'
+version = '4.20'
+
+homepage = 'https://www.xfce.org/'
+description = 'Xfce is a lightweight desktop environment for UNIX-like operating systems.'
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Meson', '1.8.2'),
+    ('Ninja', '1.13.0'),
+    ('pkgconf', '2.4.3'),
+    ('Vala', '0.56.18'),
+    ('libxslt', '1.1.43'),
+    ('Autotools', '20250527'),
+    ('gtk-doc', '1.35.1'),
+]
+
+dependencies = [
+    ('X11', '20250608'),
+    ('Wayland', '1.24.0'),
+    ('GTK3', '3.24.43'),
+    ('gtk-layer-shell', '0.9.2'),
+    ('libwnck', '43.3'),
+    ('libnotify', '0.8.7'),
+    ('GLib', '2.85.3'),
+    ('Gdk-Pixbuf', '2.42.12'),
+    ('librsvg', '2.61.0'),
+    ('GObject-Introspection', '1.84.0'),
+    ('OpenGL', '2025.09'),
+    ('libyaml', '0.2.5'),
+    ('libexif', '0.6.25'),  # ristretto
+    ('dbus-glib', '0.114'),  # parole
+    ('GST-plugins-good', '1.26.6'),  # parole
+    ('GST-plugins-bad', '1.26.6'),  # parole
+    ('GtkSourceView4', '4.8.4'),  # mousepad
+    ('VTE', '0.82.2'),  # xfce4-terminal
+]
+
+default_easyblock = 'ConfigureMake'
+
+default_component_specs = {
+    'source_urls': [
+        'https://archive.xfce.org/src/apps/%(name)s/%(version_major)s.%(version_minor)s/',
+        'https://archive.xfce.org/src/xfce/%(name)s/%(version_major)s.%(version_minor)s/',
+        'https://archive.xfce.org/src/panel-plugins/%(name)s/%(version_major)s.%(version_minor)s/',
+        'https://archive.xfce.org/xfce/%(version_major)s.%(version_minor)s/src/',
+    ],
+    'sources': [SOURCELOWER_TAR_BZ2],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    ('libdisplay-info', '0.3.0', {  # Required for X11 support in libxfce4windowing
+        'easyblock': 'MesonNinja',
+        'source_urls': ['https://gitlab.freedesktop.org/emersion/libdisplay-info/-/releases/%(version)s/downloads/'],
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['6ae77cd937f9cf7d1321d35c116062c4911e8447010a6a713ac4286f7a9d5987'],
+    }),
+    ('xfce4-dev-tools', version + '.0', {
+        'checksums': ['1fba39a08a0ecc771eaa3a3b6e4272a4f0b9e7c67d0f66e780cd6090cd4466aa'],
+    }),
+    ('libxfce4util', version + '.1', {
+        'checksums': ['84bfc4daab9e466193540c3665eee42b2cf4d24e3f38fc3e8d1e0a2bebe3b8f1'],
+    }),
+    ('xfconf', version + '.0', {
+        'checksums': ['8bc43c60f1716b13cf35fc899e2a36ea9c6cdc3478a8f051220eef0f53567efd'],
+    }),
+    ('libxfce4ui', version + '.0', {
+        'checksums': ['75e8996984f20375aadecd5c16f5147c211ed0bd26d7861ab0257561eb76eaee'],
+        'preconfigopts': 'autoreconf -if &&',
+    }),
+    ('garcon', version + '.0', {
+        'checksums': ['7fb8517c12309ca4ddf8b42c34bc0c315e38ea077b5442bfcc4509415feada8f'],
+    }),
+    ('exo', version + '.0', {
+        'checksums': ['4277f799245f1efde01cd917fd538ba6b12cf91c9f8a73fe2035fd5456ec078d'],
+    }),
+    ('libxfce4windowing', version + '.4', {
+        'checksums': ['db467f9ac4bac8f1c4e82667902841fc0957af835c29603d6659a57440b6f8cb'],
+    }),
+    ('xfce4-panel', version + '.5', {
+        'checksums': ['3f91850c9c467680c8081d561f1a3fd83355c07db07be9a96da1764f8c842b2b'],
+    }),
+    ('thunar', version + '.6', {
+        'checksums': ['e815e034c073d634d0e77566837e1d9417b65c886924e3678e3325d5466c784d'],
+        'preconfigopts': 'autoreconf -if &&',
+    }),
+    ('xfce4-settings', version + '.2', {
+        'checksums': ['6e11776e640798a1ac4168d53877f105bb3e8cf93b443c160841e3acdab63939'],
+    }),
+    ('xfce4-session', version + '.3', {
+        'checksums': ['dbf00672c5316a30b7001fe852e6a5ba9f889afeab8a247545a160d4302f1fa2'],
+        'configopts': '--with-wayland-session-prefix=%(installdir)s --with-xsession-prefix=%(installdir)s',
+    }),
+    ('xfdesktop', version + '.1', {
+        'checksums': ['acccde849265bbf4093925ba847977b7abf70bb2977e4f78216570e887c157b8'],
+    }),
+    ('xfwm4', version + '.0', {
+        'checksums': ['a58b63e49397aa0d8d1dcf0636be93c8bb5926779aef5165e0852890190dcf06'],
+    }),
+    ('xfce4-notifyd', '0.9.7', {
+        'checksums': ['170d18fd5f40cce823ffc7ae3d7e21644007c3f45808ab4835f0401d21b3516a'],
+    }),
+    ('xfce4-taskmanager', '1.6.0', {
+        'easyblock': 'MesonNinja',
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['29bdc7840ab8b9025f6c0e456a83a31090d1c9fd9e26b359baa4a4010cfb0b90'],
+    }),
+    ('xfce4-terminal', '1.1.5', {
+        'easyblock': 'MesonNinja',
+        'sources': [SOURCELOWER_TAR_XZ],
+        'patches': [
+            'xfce-terminal-1.1.5_fix_version.patch',
+            'xfce-terminal-1.1.5_fix_doc.patch',
+        ],
+        'checksums': [
+            '3c5b1d3a01a9a113852ac0f77d1c85bf3a356b43de33ec805b21ceca7d6f0a63',
+            '3a5597192091e49870c0f2358b02bfe56f25b1467669212715791fc25c977dcd',
+            'd2eed99e88ea18ea608ff7cf1c7825f29c1455736d7e0e55b6a6eb37c40f2f51',
+        ],
+    }),
+    ('xfce4-screenshooter', '1.11.3', {
+        'easyblock': 'MesonNinja',
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['1f6a14f7d1b0c440f31e24a8cc4fe2996185357fa786f0c2cdfe564ef673a710'],
+    }),
+    ('xfce4-appfinder', version + '.0', {
+        'checksums': ['82ca82f77dc83e285db45438c2fe31df445148aa986ffebf2faabee4af9e7304'],
+    }),
+    ('tumbler', version + '.1', {
+        'checksums': ['87b90df8f30144a292d70889e710c8619d8b8803f0e1db3280a4293367a42eae'],
+    }),
+    ('gigolo', '0.6.0', {
+        'easyblock': 'MesonNinja',
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['f27dbb51abe8144c1b981f2d820ad1b279c1bc4623d7333b7d4f5f4777eb45ed'],
+    }),
+    ('ristretto', '0.13.4', {
+        'easyblock': 'MesonNinja',
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['a84ef8cb80638681d9b9ef09cddff86a5d7a0e028603b4a601cf0ff6c2869ce8'],
+    }),
+    ('parole', version + '.0', {
+        'easyblock': 'MesonNinja',
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['5cf753e670d6518701133eb860d8bceb3a08a496af6a2b7cc67b93320230c983'],
+    }),
+    ('mousepad', '0.6.5', {
+        'easyblock': 'MesonNinja',
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['21762bc8c3c4f120a4a509ce39f4a5a58dbc10e3f0da66cdc6d9a8c735fff2ac'],
+    }),
+    ('xfce4-clipman-plugin', '1.7.0', {
+        'easyblock': 'MesonNinja',
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['903302c3070a951d44ee17a84fa3cf21d36c6787678af8fbfc79e469fd00cb46'],
+    }),
+    ('xfce4-genmon-plugin', '4.3.0', {
+        'easyblock': 'MesonNinja',
+        'sources': [SOURCELOWER_TAR_XZ],
+        'checksums': ['077197911d84e5ba22e7bb895ce6c038dbbd8e8e0067ed6f4e48502b7167a282'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/' + x for x in [
+        'exo-open',
+        'startxfce4',
+        'thunar',
+        'xfce4-screenshooter',
+        'xfce4-session',
+        'xfce4-terminal',
+        'xfdesktop',
+        'xfce4-panel',
+        'xfce4-taskmanager',
+        'xfwm4',
+        'xfce4-notifyd-config',
+        'xfce4-appfinder',
+        'gigolo',
+        'ristretto',
+        'parole',
+        'mousepad',
+        'xfce4-session-settings',
+    ]],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'startxfce4 --help',
+    'thunar --help',
+    'xfce4-screenshooter --help',
+    'xfce4-session --help',
+    'xfwm4 --help',
+    'xfce4-notifyd-config --help',
+    'xfce4-appfinder --help',
+    'gigolo --help',
+    'ristretto --help',
+    'mousepad --help',
+    'xfce4-session-settings --help',
+]
+
+moduleclass = 'vis'

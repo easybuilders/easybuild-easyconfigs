@@ -1,0 +1,109 @@
+From 20575c2cfdb1e22e9b4951ef0c34486c68e36e05 Mon Sep 17 00:00:00 2001
+From: Shirong_Wang <srwang20@fudan.edu.cn>
+Date: Sat, 16 Aug 2025 20:35:43 +0800
+Subject: [PATCH 1/2] ENH: MAINT: add object copy for f2py meson backend
+
+---
+ numpy/f2py/_backends/_meson.py            | 13 +++++++++++++
+ numpy/f2py/_backends/meson.build.template |  3 +++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/numpy/f2py/_backends/_meson.py b/numpy/f2py/_backends/_meson.py
+index cbd9b0e32729..4c498bab2f25 100644
+--- a/numpy/f2py/_backends/_meson.py
++++ b/numpy/f2py/_backends/_meson.py
+@@ -50,6 +50,7 @@ def __init__(
+         self.pipeline = [
+             self.initialize_template,
+             self.sources_substitution,
++            self.objects_substitution,
+             self.deps_substitution,
+             self.include_substitution,
+             self.libraries_substitution,
+@@ -79,6 +80,11 @@ def sources_substitution(self) -> None:
+             [f"{self.indent}'''{source}'''," for source in self.sources]
+         )
+ 
++    def objects_substitution(self) -> None:
++        self.substitutions["obj_list"] = ",\n".join(
++            [f"{self.indent}'''{obj}'''," for obj in self.objects]
++        )
++
+     def deps_substitution(self) -> None:
+         self.substitutions["dep_list"] = f",\n{self.indent}".join(
+             [f"{self.indent}dependency('{dep}')," for dep in self.deps]
+@@ -186,6 +192,7 @@ def run_meson(self, build_dir: Path):
+ 
+     def compile(self) -> None:
+         self.sources = _prepare_sources(self.modulename, self.sources, self.build_dir)
++        _prepare_objects(self.modulename, self.extra_objects, self.build_dir)
+         self.write_meson_build(self.build_dir)
+         self.run_meson(self.build_dir)
+         self._move_exec_to_root(self.build_dir)
+@@ -216,6 +223,12 @@ def _prepare_sources(mname, sources, bdir):
+     ]
+     return extended_sources
+ 
++def _prepare_objects(mname, objects, bdir):
++    Path(bdir).mkdir(parents=True, exist_ok=True)
++    # Copy objects
++    for obj in objects:
++        if Path(obj).exists() and Path(obj).is_file():
++            shutil.copy(obj, bdir)
+ 
+ def _get_flags(fc_flags):
+     flag_values = []
+diff --git a/numpy/f2py/_backends/meson.build.template b/numpy/f2py/_backends/meson.build.template
+index fdcc1b17ce21..58c6758cc503 100644
+--- a/numpy/f2py/_backends/meson.build.template
++++ b/numpy/f2py/_backends/meson.build.template
+@@ -43,6 +43,9 @@ ${source_list},
+                      include_directories: [
+                      inc_np,
+ ${inc_list}
++                     ],
++                     objects: [
++${obj_list}
+                      ],
+                      dependencies : [
+                      py_dep,
+
+From b78c703b3a62ae0d10056803b07a922d33768b6d Mon Sep 17 00:00:00 2001
+From: Shirong_Wang <srwang20@fudan.edu.cn>
+Date: Wed, 20 Aug 2025 19:02:02 +0800
+Subject: [PATCH 2/2] TST: add test for f2py meson with object file
+
+---
+ numpy/f2py/tests/test_f2py2e.py | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/numpy/f2py/tests/test_f2py2e.py b/numpy/f2py/tests/test_f2py2e.py
+index 2f91eb77c4bd..959e1527c482 100644
+--- a/numpy/f2py/tests/test_f2py2e.py
++++ b/numpy/f2py/tests/test_f2py2e.py
+@@ -673,6 +673,25 @@ def test_inclheader(capfd, hello_world_f90, monkeypatch):
+             assert "#include <stdbool.h>" in ocmr
+             assert "#include <stdio.h>" in ocmr
+ 
++@pytest.mark.skipif((platform.system() != 'Linux'), reason='Compiler required')
++def test_cli_obj(capfd, hello_world_f90, monkeypatch):
++    """Ensures that the extra object can be specified when using meson backend
++    """
++    ipath = Path(hello_world_f90)
++    mname = "blah"
++    odir = "tttmp"
++    obj = "extra.o"
++    monkeypatch.setattr(sys, "argv",
++                        f'f2py --backend meson --build-dir {odir} -m {mname} -c {obj} {ipath}'.split())
++
++    with util.switchdir(ipath.parent):
++        Path(obj).touch()
++        compiler_check_f2pycli()
++        with Path(f"{odir}/meson.build").open() as mesonbuild:
++            mbld = mesonbuild.read()
++            assert "objects:" in mbld
++            assert f"'''{obj}'''" in mbld
++
+ 
+ def test_inclpath():
+     """Add to the include directories

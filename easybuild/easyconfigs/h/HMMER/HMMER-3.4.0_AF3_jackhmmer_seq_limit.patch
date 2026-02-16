@@ -1,0 +1,37 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2025/10
+# according to https://github.com/google-deepmind/alphafold3/issues/525:
+# https://github.com/google-deepmind/alphafold3/commit/751a4b8612d0d53de8f6e1830c8f726e873a55cf:
+# Add support for --seq_limit in Jackhmmer - significantly reduces peak RAM use
+# 
+--- hmmer-3.4/src/jackhmmer.c
++++ hmmer-3.4/src/jackhmmer.c
+@@ -73,6 +73,7 @@ static ESL_OPTIONS options[] = {
+   { "--noali",      eslARG_NONE,        FALSE, NULL, NULL,      NULL,    NULL,  NULL,            "don't output alignments, so output is smaller",                2 },
+   { "--notextw",    eslARG_NONE,         NULL, NULL, NULL,      NULL,    NULL, "--textw",        "unlimit ASCII text output line width",                         2 },
+   { "--textw",      eslARG_INT,         "120", NULL, "n>=120",  NULL,    NULL, "--notextw",      "set max width of ASCII text output lines",                     2 },
++  { "--seq_limit",  eslARG_INT,          NULL, NULL, NULL,      NULL,    NULL, "--seq_limit",    "if set, truncate all hits after this value is reached",        2 },
+ /* Control of scoring system */
+   { "--popen",      eslARG_REAL,       "0.02", NULL, "0<=x<0.5",NULL,    NULL,  NULL,            "gap open probability",                                         3 },
+   { "--pextend",    eslARG_REAL,        "0.4", NULL, "0<=x<1",  NULL,    NULL,  NULL,            "gap extend probability",                                       3 },
+@@ -298,6 +299,7 @@ output_header(FILE *ofp, ESL_GETOPTS *go
+   if (esl_opt_IsUsed(go, "--noali")      && fprintf(ofp, "# show alignments in output:       no\n")                                                   < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+   if (esl_opt_IsUsed(go, "--notextw")    && fprintf(ofp, "# max ASCII text line length:      unlimited\n")                                            < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+   if (esl_opt_IsUsed(go, "--textw")      && fprintf(ofp, "# max ASCII text line length:      %d\n",             esl_opt_GetInteger(go, "--textw"))    < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
++  if (esl_opt_IsUsed(go, "--seq_limit")  && fprintf(ofp, "# set max sequence hits to return: %d\n",             esl_opt_GetInteger(go, "--seq_limit")) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+   if (esl_opt_IsUsed(go, "--popen")      && fprintf(ofp, "# gap open probability:            %f\n",             esl_opt_GetReal   (go, "--popen"))    < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+   if (esl_opt_IsUsed(go, "--pextend")    && fprintf(ofp, "# gap extend probability:          %f\n",             esl_opt_GetReal   (go, "--pextend"))  < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+   if (esl_opt_IsUsed(go, "--mx")         && fprintf(ofp, "# subst score matrix (built-in):   %s\n",             esl_opt_GetString (go, "--mx"))       < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+@@ -674,6 +676,13 @@ serial_master(ESL_GETOPTS *go, struct cf
+ 	  /* Print the results. */
+ 	  p7_tophits_SortBySortkey(info->th);
+ 	  p7_tophits_Threshold(info->th, info->pli);
++	  /* Limit the number of hits if specified. */
++	  if (esl_opt_IsOn(go, "--seq_limit"))
++	  {
++	    int seq_limit = esl_opt_GetInteger(go, "--seq_limit");
++	    info->th->N = ESL_MIN(info->th->N, seq_limit);
++	  }
++
+ 	  p7_tophits_CompareRanking(info->th, kh, &nnew_targets);
+ 	  p7_tophits_Targets(ofp, info->th, info->pli, textw); if (fprintf(ofp, "\n\n") < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+ 	  p7_tophits_Domains(ofp, info->th, info->pli, textw); if (fprintf(ofp, "\n\n") < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
