@@ -43,10 +43,6 @@ configopts = "--with-pic --enable-threads --enable-R-shlib"
 # we're installing them anyway below
 configopts += " --with-recommended-packages=no"
 
-# specify that at least EasyBuild v3.5.0 is required,
-# since we rely on the updated easyblock for R to configure correctly w.r.t. BLAS/LAPACK
-easybuild_version = '3.5.0'
-
 exts_defaultclass = 'RPackage'
 
 exts_default_options = {
@@ -63,6 +59,14 @@ exts_default_options = {
 local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver != '%(ext_version)s') "
 local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
 exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
+
+# the dbarts extension needs an additional compiler flag on Arm systems to prevent "incompatible types" errors
+# cfr. https://github.com/vdorie/dbarts/issues/66
+if ARCH == 'aarch64':
+    local_dbarts_preinstallopts = 'sed -i "s|-c partition_neon.c|-flax-vector-conversions -c partition_neon.c|"'
+    local_dbarts_preinstallopts += ' src/misc/Makefile && '
+else:
+    local_dbarts_preinstallopts = ''
 
 # !! order of packages is important !!
 # packages updated on 10th December 2023
@@ -863,7 +867,10 @@ exts_list = [
         'checksums': ['8e50415e415702402473caf622d86b89ddc881f6e5d888079a4818a8807ac9a2'],
     }),
     ('bold', '1.3.0', {
-        'checksums': ['0ead11d4386c4c0cd578d3a956f809db2001e387e449a431b4ad503f3da38f5f'],
+        'checksums': [
+            ('0ead11d4386c4c0cd578d3a956f809db2001e387e449a431b4ad503f3da38f5f',
+             '4920fbebd22fb1d0f1a31ccc09c98aec446bb6cb5f65a2610437e405c0512c68'),
+        ],
     }),
     ('rredlist', '0.7.1', {
         'checksums': ['92a10c37a211dc19b41b93f9ceb13d7ce1c3d3a7290cbba4c1688d944353ae85'],
@@ -1593,7 +1600,10 @@ exts_list = [
         'checksums': ['49848bcb03dd3fc3605799893d39986b521921faaa5647815274eb204bb9bf56'],
     }),
     ('signal', '1.8-0', {
-        'checksums': ['89cba854167a2b051a58cf3b73ccbf74eeb47c890ac39720611cd41f86b94684'],
+        'checksums': [
+            ('89cba854167a2b051a58cf3b73ccbf74eeb47c890ac39720611cd41f86b94684',
+             '0a604949bae91410a150a22cfa02d954f5b83166cc7a73e5409554d00e0417a7'),
+        ],
     }),
     ('tuneR', '1.4.6', {
         'checksums': ['c5441fb56dc84cafb6aa6b47d83839da1e1a4e5b19eafbb63b268d1a660647d0'],
@@ -2085,12 +2095,12 @@ exts_list = [
     }),
     ('liquidSVM', '1.2.4', {
         # Don't add optimization flags by liquidSVM which may not be known e.g. on PPC
-        'patches': ['liquidSVM-1.2.4-fix_ppc_and_aarch64_build.patch'],
+        'patches': ['liquidSVM-1.2.4-fix_ppc_aarch64_and_riscv_build.patch'],
         'preinstallopts': 'LIQUIDSVM_TARGET="empty"',
         'checksums': [
             {'liquidSVM_1.2.4.tar.gz': '15a9c7f2930e2ed3f4c5bcd9b042884ea580d2b2e52e1c68041600c196046aba'},
-            {'liquidSVM-1.2.4-fix_ppc_and_aarch64_build.patch':
-             '46b09e441c3b59af535f20d8db0dee7f1d6a7ddd511175d252115b53cb8b86f8'},
+            {'liquidSVM-1.2.4-fix_ppc_aarch64_and_riscv_build.patch':
+             '523e458061c4b61f1a6e921d72f13926844dac155c2ba1b6ebc92359e2b3e24c'},
         ],
     }),
     ('oddsratio', '2.0.1', {
@@ -2577,6 +2587,7 @@ exts_list = [
     }),
     ('dbarts', '0.9-25', {
         'checksums': ['39a78228ead17c92bd88fe5f959c888412a22a7cbbc0edfa9c09072b4182d870'],
+        'preinstallopts': local_dbarts_preinstallopts,
     }),
     ('proftools', '0.99-3', {
         'checksums': ['e034eb1531af54013143da3e15229e1d4c2260f8eb79c93846014db3bdefb724'],
@@ -3397,6 +3408,57 @@ exts_list = [
     }),
     ('spdep', '1.3-1', {
         'checksums': ['36062ccd094f9110a43cd51902c794242311fd23b861dde22c450446dce85396'],
+    }),
+    ('stringmagic', '1.0.0', {
+        'checksums': ['8152c72a2ed70577fae1e569986d1d488ce2e6b21b8f0e080c0265806c08551a'],
+    }),
+    ('dreamerr', '1.4.0', {
+        'checksums': ['3e5e4afd10623b6dac6bb9b8bf0480d41c7422884cfec2d9d9786414f9026a87'],
+    }),
+    ('fixest', '0.11.2', {
+        'checksums': ['2dee113a0689e5c4dd842c451d35c9a94a5b37536f9484611a877c1ea10e2b65'],
+    }),
+    ('cmna', '1.0.5', {
+        'checksums': ['7cf99880cb70e8fd0b022184167888b1ad32dca503e0250c1d552a84f0613898'],
+    }),
+    ('XBRL', '0.99.19.1', {
+        'checksums': ['ad9ebb5431bdfecc38b8bf3b2552f1a048878a9ac02f5a9d71279b3b099a9757'],
+    }),
+    ('rhandsontable', '0.3.8', {
+        'checksums': ['901ed9c59936f7fa52ad8db3111c8904ab962f9c74f1b6cd40f81683af35d21d'],
+    }),
+    ('missMDA', '1.19', {
+        'checksums': ['f9675884829b2fef75237c335b21991d163674320e766523c71c7a853f95e65c'],
+    }),
+    ('gcmr', '1.0.3', {
+        'checksums': ['75773d5119179f186467d33608e9ce1c030d0755dfd6ff196546884078e89754'],
+    }),
+    ('frbs', '3.2-0', {
+        'checksums': ['48505d415e3687afcb837e162b63b74173b3cd5df5f96140240e441c86343b2e'],
+    }),
+    ('pander', '0.6.6', {
+        'checksums': ['8041e6b40c0212286f35020a11db180823fe1cb709f1d88ad657f28455692ade'],
+    }),
+    ('texreg', '1.39.4', {
+        'checksums': ['3eb2dd3962652bd1b31389355cc2ecae680ae4fde91c7156454a6614e43983c0'],
+    }),
+    ('gsubfn', '0.7', {
+        'checksums': ['89351df9e65722d2862f26a0a3985666de3c86e8400808ced8a6eb6e165a4602'],
+    }),
+    ('fastGHQuad', '1.0.1', {
+        'checksums': ['5cdc491b59176a628d9e814bde63e65d8ef947dce9df36ea28e2916e97b647fe'],
+    }),
+    ('MplusAutomation', '1.1.1', {
+        'checksums': ['9340fe02eca572ad6c4d4eff19be5b0b3a007dfd1e73ad899f08a57a6aaa2529'],
+    }),
+    ('modsem', '1.0.6', {
+        'checksums': ['6cff64914366cb2216c7e73df07a824d12aa06760f3a372b750c6357d5b14252'],
+    }),
+    ('sgdGMF', '1.0', {
+        'checksums': ['b10c7237f93be1ace5f6eb54c07ea2251ab9e5874a4294401b658bd2635b2cce'],
+    }),
+    ('kableExtra', '1.4.0', {
+        'checksums': ['8fe2cc9fc2e8991685c4dc9e4904459e6f572c945319befde36d76f3ab527409'],
     }),
 ]
 

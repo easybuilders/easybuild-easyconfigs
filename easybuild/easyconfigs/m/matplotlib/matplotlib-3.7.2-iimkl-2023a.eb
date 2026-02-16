@@ -13,6 +13,7 @@ toolchain = {'name': 'iimkl', 'version': '2023a'}
 builddependencies = [
     ('pkgconf', '1.9.5'),
     ('cppy', '1.2.1'),
+    ('meson-python', '0.13.2'),
 ]
 
 dependencies = [
@@ -23,21 +24,11 @@ dependencies = [
     ('Tkinter', '%(pyver)s'),
     ('Pillow', '10.0.0'),
     ('Qhull', '2020.2'),
-    ('meson-python', '0.13.2'),
 ]
 
-use_pip = True
-sanity_pip_check = True
-
 # avoid that matplotlib downloads and builds its own copies of freetype and qhull
-_fix_setup = "sed -e 's/#system_freetype = False/system_freetype = True/g' "
-_fix_setup += "-e 's/#system_qhull = False/system_qhull = True/g' mplsetup.cfg.template >mplsetup.cfg && "
-
-_include_path = "export CPLUS_INCLUDE_PATH=$EBROOTFREETYPE/include/freetype2:${CPLUS_INCLUDE_PATH} && "
-
-local_preinstallopts = "sed -e 's/#system_freetype = False/system_freetype = True/g' -e "
-local_preinstallopts += "'s/#system_qhull = False/system_qhull = True/g' mplsetup.cfg.template >mplsetup.cfg"
-local_preinstallopts += "&& export CPLUS_INCLUDE_PATH=$EBROOTFREETYPE/include/freetype2:${CPLUS_INCLUDE_PATH} && "
+local_use_system_libs = "sed -e 's/#system_freetype = False/system_freetype = True/g' "
+local_use_system_libs += "-e 's/#system_qhull = False/system_qhull = True/g' mplsetup.cfg.template >mplsetup.cfg && "
 
 exts_list = [
     ('fonttools', '4.42.0', {
@@ -58,6 +49,8 @@ exts_list = [
         ],
     }),
     ('contourpy', '1.1.0', {
+        # ignore linker flags at compile-time - fix icpx errors
+        'preinstallopts': 'export CXXFLAGS="$CXXFLAGS -Qunused-arguments" && ',
         'checksums': ['e53046c3863828d21d531cc3b53786e6580eb1ba02477e8681009b6aa0870b21'],
     }),
     (name, version, {
@@ -66,7 +59,7 @@ exts_list = [
             {'matplotlib-3.7.2.tar.gz': 'a8cdb91dddb04436bd2f098b8fdf4b81352e68cf4d2c6756fcc414791076569b'},
             {'matplotlib-3.7.2-fix_setup.patch': '70b38f9fc9f26c67adc38440f5420d7c50d9438353ad08740cbb42a79358fb4f'},
         ],
-        'preinstallopts': local_preinstallopts,
+        'preinstallopts': local_use_system_libs,
     }),
 ]
 

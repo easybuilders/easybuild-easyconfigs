@@ -1,0 +1,40 @@
+On CI it defaults to importing JSON files with slow and disabled tests.
+Those are then skipped upon execution.
+
+Enable the default for non-CI environments to cut down testing time.
+Don't check for SANDCASTLE when determining whether to skip disabled tests.
+However, the disabled-tests JSON file needs to be downloaded from S3 and placed at "tests/.pytorch-disabled-tests.json".
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/run_test.py b/test/run_test.py
+index 44a15d4ab2c..269d4206f3e 100755
+--- a/test/run_test.py
++++ b/test/run_test.py
+@@ -531,7 +531,7 @@ def run_test(
+ 
+     # NB: These features are not available for C++ tests, but there is little incentive
+     # to implement it because we have never seen a flaky C++ test before.
+-    if IS_CI and not is_cpp_test:
++    if not is_cpp_test:
+         ci_args = ["--import-slow-tests", "--import-disabled-tests"]
+         if RERUN_DISABLED_TESTS:
+             ci_args.append("--rerun-disabled-tests")
+diff --git a/torch/testing/_internal/common_utils.py b/torch/testing/_internal/common_utils.py
+index bfc568bc146..7ef37cccccb 100644
+--- a/torch/testing/_internal/common_utils.py
++++ b/torch/testing/_internal/common_utils.py
+@@ -2722,11 +2722,11 @@ def check_if_enable(test: unittest.TestCase):
+         if not TEST_WITH_SLOW:
+             raise unittest.SkipTest("test is slow; run with PYTORCH_TEST_WITH_SLOW to enable test")
+ 
+-    if not IS_SANDCASTLE:
++    if True:
+         should_skip = False
+         skip_msg = ""
+ 
+-        for disabled_test, (issue_url, platforms) in disabled_tests_dict.items():
++        for disabled_test, (pr_num, issue_url, platforms) in disabled_tests_dict.items():
+             if matches_test(disabled_test):
+                 platform_to_conditional: dict = {
+                     "mac": IS_MACOS,

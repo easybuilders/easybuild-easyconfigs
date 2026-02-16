@@ -1,0 +1,53 @@
+author John Dey Fred Hutch Cancer Center
+  - add <ctsddef> to fix size_t not defined error
+  - change include "minimap.h", use EasyBuild Minimap2
+  - fix Makefile
+diff -ruN TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19.orig/algorithm/collection/collection.h TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19/algorithm/collection/collection.h
+--- TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19.orig/algorithm/collection/collection.h	2024-09-05 19:00:05.000000000 -0700
++++ TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19/algorithm/collection/collection.h	2025-09-10 18:14:32.836457233 -0700
+@@ -3,6 +3,7 @@
+ 
+ #include <map>
+ #include <cassert>
++#include <cstddef>
+ 
+ namespace BGIQD{
+     namespace Collection{
+diff -ruN TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19.orig/appcommon/AlignMinimap2.h TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19/appcommon/AlignMinimap2.h
+--- TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19.orig/appcommon/AlignMinimap2.h	2024-09-05 19:00:05.000000000 -0700
++++ TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19/appcommon/AlignMinimap2.h	2025-09-10 18:14:58.532346591 -0700
+@@ -1,7 +1,7 @@
+ #ifndef __APPCOMMON_ALIGNMINIMAP2_H__
+ #define __APPCOMMON_ALIGNMINIMAP2_H__
+ 
+-#include "minimap2/minimap.h"
++#include "minimap.h"
+ #include <string>
+ #include <cstring>
+ #include <cassert>
+diff -ruN TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19.orig/Makefile TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19/Makefile
+--- TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19.orig/Makefile	2024-09-05 19:00:05.000000000 -0700
++++ TGS-GapCloser-e1a7e01c6259e6651a8007e4e4c3b887bef38b19/Makefile	2025-09-10 17:50:54.677574141 -0700
+@@ -1,11 +1,17 @@
+ .PHONY: all 
+ 
+-CC ?='gcc'
+-CXX ?='g++'
+-PREFIX ?='/usr/local/TGS-GapCloser'
++CC ?= gcc
++CXX ?= g++
++PREFIX ?= /usr/local/TGS-GapCloser
++SUBDIRS = main_src_ont test
+ 
+-all: minimap2 minimap2/libminimap2.a
+-	cd main_src_ont && make CC=${CC} CXX=${CXX}
++all:    $(SUBDIRS)
++	for dir in $(SUBDIRS); do \
++		$(MAKE) -C $$dir all; \
++	done
++
++$(SUBDIRS):
++	$(MAKE) -C $@
+ 
+ minimap2:
+ 	echo "error: please download/link minimap2 into this folder "

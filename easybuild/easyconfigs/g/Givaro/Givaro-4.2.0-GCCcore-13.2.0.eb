@@ -1,0 +1,48 @@
+##
+# This file is an EasyBuild recipe; see https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright (c) 2016 Riccardo Murri <riccardo.murri@gmail.com>
+# Authors::   Riccardo Murri <riccardo.murri@gmail.com>
+# License::   GPL
+#
+# Update: Petr Král (INUITS)
+#
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'Givaro'
+version = '4.2.0'
+
+homepage = 'https://github.com/linbox-team/givaro'
+description = "C++ library for arithmetic and algebraic computations"
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ['https://github.com/linbox-team/givaro/archive']
+sources = ['v%(version)s.zip']
+checksums = ['bf51b47ac9a02be233fc39ac78d959d13630bcc78997007ffec410d940ed4c64']
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('GMP', '6.3.0'),
+]
+
+preconfigopts = "env NOCONFIGURE=1 ./autogen.sh && "
+configopts = "--with-gmp=$EBROOTGMP --enable-inline"
+
+prebuildopts = "sed -i 's/#include <iostream>/#include <iostream>\\n"
+prebuildopts += "#include <cstdint>/g' src/library/poly1/givdegree.h && "
+
+sanity_check_paths = {
+    'files': ['bin/givaro-config', 'include/givaro-config.h'],
+    'dirs': ['bin', 'include', 'lib'],
+}
+
+sanity_check_commands = ["givaro-config --help"]
+
+moduleclass = 'math'

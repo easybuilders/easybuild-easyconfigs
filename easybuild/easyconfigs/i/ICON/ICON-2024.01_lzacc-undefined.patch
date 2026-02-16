@@ -1,0 +1,40 @@
+diff -Naur icon-model.orig/src/parallel_infrastructure/mo_communication_yaxt.f90 icon-model/src/parallel_infrastructure/mo_communication_yaxt.f90
+--- icon-model.orig/src/parallel_infrastructure/mo_communication_yaxt.f90	2024-02-11 18:27:08.000000000 +0100
++++ icon-model/src/parallel_infrastructure/mo_communication_yaxt.f90	2024-02-13 09:28:31.775211101 +0100
+@@ -2541,7 +2541,11 @@
+ 
+    CALL exchange_data_grf_bottom(redist_coll, cpy_size, nfields, ndim2tot,&
+      &                           npats, src_fsize4d, dst_fsize4d, needs_cpy, &
+-     &                           recv, send)
++     &                           recv, send &
++#ifdef _OPENACC
++     &                           ,lzacc &
++#endif
++     & )
+ 
+ #if defined(_OPENACC) && ! defined(__USE_G2G)
+     IF (i_am_accel_node) THEN
+@@ -2559,7 +2563,11 @@
+ END SUBROUTINE exchange_data_grf
+ 
+   SUBROUTINE exchange_data_grf_bottom(redist_coll, cpy_size, nfields, ndim2tot,&
+-       npats, src_fsize4d, dst_fsize4d, needs_cpy, recv, send)
++       npats, src_fsize4d, dst_fsize4d, needs_cpy, recv, send &
++#ifdef _OPENACC
++     & ,lzacc &
++#endif
++     & )
+     TYPE(xt_redist), INTENT(IN) :: redist_coll
+ 
+     !> size of copy array needed for contiguous buffering
+@@ -2576,6 +2584,10 @@
+     ! recv itself is intent(in), but the pointed to data will be modified
+     TYPE(t_ptr_3d), PTR_INTENT(in) :: recv(nfields), send(nfields)
+ 
++#ifdef _OPENACC
++    LOGICAL :: lzacc
++#endif
++
+     REAL(dp), TARGET :: cpy_buf(cpy_size)
+     REAL(dp), POINTER :: cpy(:,:,:)
+     INTEGER :: i, ofs, cpy_psum, nblk, incr, nl, npnts, np, last

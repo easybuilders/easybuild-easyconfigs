@@ -1,0 +1,75 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+# Notes::       Patch libsbml-fix_install_libpaths.patch comes from Fedora
+#               https://src.fedoraproject.org/rpms/libsbml/blob/rawhide/f/libsbml-fix_install_libpaths.patch
+##
+easyblock = 'CMakeMake'
+
+name = 'libSBML'
+version = '5.19.7'
+
+# NOTE not in the license list of EB
+# software_license = 'LGPLv2+'
+software_license_urls = ['http://sbml.org/Software/libSBML/LibSBML_License']
+docurls = [
+    'https://github.com/sbmlteam/libsbml/releases/tag/v%(version)s',
+    'http://sbml.org/Software/libSBML',
+]
+
+homepage = 'http://sbml.org/Software/libSBML'
+description = """libSBML (Systems Biology Markup Language library) is a free, open-source
+programming library to help you read, write, manipulate, translate, and
+validate SBML files and data streams. It's not an application itself (though
+it does come with example programs), but rather a library you embed in your
+own applications."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/sbmlteam/libsbml/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+
+checksums = [
+    '61cbdf1a86aefbc002ac5a0cf9c0f3f91eca2ae8aa5c3e7ef78be0f5a84426c5',
+]
+
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('make',  '4.3'),
+    ('Check', '0.15.2'),
+    ('SWIG',  '4.0.2'),
+    ('expat', '2.4.8'),
+    ('bzip2', '1.0.8'),
+    ('zlib',  '1.2.12'),
+]
+
+dependencies = [
+    ('Perl',  '5.34.1'),
+]
+
+# Java jar, Ruby or Octave can also be build here.
+# Python libSBML binding better done from https://pypi.org/project/python-libsbml/
+configure_cmd = 'cmake -DCMAKE_INSTALL_PREFIX=%(installdir)s -DWITH_JAVA=OFF '
+configure_cmd += '-DWITH_CHECK=ON -DWITH_SWIG=ON -DWITH_PERL=ON -DWITH_PYTHON=OFF '
+configure_cmd += '-DWITH_EXPAT=ON -DWITH_LIBXML=OFF -Wno-dev '
+configure_cmd += '-DENABLE_{LAYOUT,QUAL,COMP,FBC,RENDER,GROUPS,MULTI,DISTRIB}=ON '
+configure_cmd += '../%(namelower)s-%(version)s'
+
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['lib64/libsbml.%s' % SHLIB_EXT, 'lib64/perl5/site_perl/5.34.1/x86_64-linux-thread-multi/LibSBML.pm'],
+    'dirs': ['lib64', 'include', 'share']
+}
+
+modextrapaths = {
+    'PERL5LIB': 'lib64/perl5/site_perl/5.34.1/x86_64-linux-thread-multi/',
+}
+
+
+moduleclass = 'bio'

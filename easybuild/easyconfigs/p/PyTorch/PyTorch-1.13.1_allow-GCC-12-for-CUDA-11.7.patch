@@ -1,0 +1,29 @@
+The JIT generator for CUDA fails as GCC 12 isn't officially compatible with CUDA 11.7.
+We can make it compatible by passing `-allow-unsupported-compiler`
+but also need to tell the PyTorch code about the raised maximum compiler version.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/utils/cpp_extension.py b/torch/utils/cpp_extension.py
+index 9ab43e5ccdd..15da97619be 100644
+--- a/torch/utils/cpp_extension.py
++++ b/torch/utils/cpp_extension.py
+@@ -56,7 +56,7 @@ CUDA_GCC_VERSIONS = {
+     '11.4': ((6, 0, 0), (11, 5, 0)),
+     '11.5': ((6, 0, 0), (11, 5, 0)),
+     '11.6': ((6, 0, 0), (11, 5, 0)),
+-    '11.7': ((6, 0, 0), (11, 5, 0)),
++    '11.7': ((6, 0, 0), (12, 3, 0)),
+ }
+ 
+ CUDA_CLANG_VERSIONS = {
+@@ -227,7 +227,8 @@ COMMON_NVCC_FLAGS = [
+     '-D__CUDA_NO_HALF_CONVERSIONS__',
+     '-D__CUDA_NO_BFLOAT16_CONVERSIONS__',
+     '-D__CUDA_NO_HALF2_OPERATORS__',
+-    '--expt-relaxed-constexpr'
++    '--expt-relaxed-constexpr',
++    '-allow-unsupported-compiler',
+ ]
+ 
+ COMMON_HIP_FLAGS = [

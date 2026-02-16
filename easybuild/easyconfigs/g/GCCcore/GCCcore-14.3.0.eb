@@ -1,0 +1,63 @@
+easyblock = 'EB_GCC'
+
+name = 'GCCcore'
+version = '14.3.0'
+
+homepage = 'https://gcc.gnu.org/'
+description = """The GNU Compiler Collection includes front ends for C, C++, Objective-C, Fortran, Java, and Ada,
+ as well as libraries for these languages (libstdc++, libgcj,...)."""
+
+toolchain = SYSTEM
+
+source_urls = [
+    'https://ftpmirror.gnu.org/gnu/gcc/gcc-%(version)s',  # GCC auto-resolving HTTP mirror
+    'https://sourceware.org/pub/gcc/releases/gcc-%(version)s',  # fallback URL for GCC
+    'https://ftpmirror.gnu.org/gnu/gmp',  # idem for GMP
+    'https://ftpmirror.gnu.org/gnu/mpfr',  # idem for MPFR
+    'https://ftpmirror.gnu.org/gnu/mpc',  # idem for MPC
+    'ftp://gcc.gnu.org/pub/gcc/infrastructure/',  # GCC dependencies
+    'https://gcc.gnu.org/pub/gcc/infrastructure/',  # HTTPS mirror for GCC dependencies
+    'https://libisl.sourceforge.io/',  # fallback URL for isl
+    'https://sourceware.org/pub/newlib/',  # for newlib
+    'https://github.com/MentorEmbedded/nvptx-tools/archive',  # for nvptx-tools
+]
+sources = [
+    'gcc-%(version)s.tar.gz',
+    'gmp-6.3.0.tar.bz2',
+    'mpfr-4.2.2.tar.bz2',
+    'mpc-1.3.1.tar.gz',
+    'isl-0.27.tar.bz2',
+    'newlib-4.5.0.20241231.tar.gz',
+    {'download_filename': 'a0c1fff.tar.gz', 'filename': 'nvptx-tools-20250523.tar.gz'},
+]
+patches = [
+    'GCCcore-6.2.0-fix-find-isl.patch',
+    'GCCcore-9.3.0_gmp-c99.patch',
+]
+checksums = [
+    {'gcc-14.3.0.tar.gz': 'ace8b8b0dbfe6abfc22f821cb093e195aa5498b7ccf7cd23e4424b9f14afed22'},
+    {'gmp-6.3.0.tar.bz2': 'ac28211a7cfb609bae2e2c8d6058d66c8fe96434f740cf6fe2e47b000d1c20cb'},
+    {'mpfr-4.2.2.tar.bz2': '9ad62c7dc910303cd384ff8f1f4767a655124980bb6d8650fe62c815a231bb7b'},
+    {'mpc-1.3.1.tar.gz': 'ab642492f5cf882b74aa0cb730cd410a81edcdbec895183ce930e706c1c759b8'},
+    {'isl-0.27.tar.bz2': '626335529331f7c89fec493de929e2e92fb3d8cc860fc7af554e0518ee0029ee'},
+    {'newlib-4.5.0.20241231.tar.gz': '33f12605e0054965996c25c1382b3e463b0af91799001f5bb8c0630f2ec8c852'},
+    {'nvptx-tools-20250523.tar.gz': '155aa3f972af6e6ad38096a902ad89f54892d21d43a3c8d4eefe0936e37f57b7'},
+    {'GCCcore-6.2.0-fix-find-isl.patch': '5ad909606d17d851c6ad629b4fddb6c1621844218b8d139fed18c502a7696c68'},
+    {'GCCcore-9.3.0_gmp-c99.patch': '0e135e1cc7cec701beea9d7d17a61bab34cfd496b4b555930016b98db99f922e'},
+]
+
+builddependencies = [
+    ('M4', '1.4.20'),
+    ('binutils', '2.44'),
+]
+
+languages = ['c', 'c++', 'fortran']
+
+withisl = True
+withnvptx = True
+
+# Perl is only required when building with NVPTX support
+if withnvptx:
+    osdependencies = ['perl']
+
+moduleclass = 'compiler'

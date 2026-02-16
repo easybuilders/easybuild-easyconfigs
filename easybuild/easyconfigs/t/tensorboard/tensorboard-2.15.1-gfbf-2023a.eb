@@ -9,6 +9,14 @@ understanding your TensorFlow runs and graphs."""
 
 toolchain = {'name': 'gfbf', 'version': '2023a'}
 
+postinstallpatches = [
+    ('tensorboard-2.10_jupyterhub-support.patch', 'lib/python%(pyshortver)s/site-packages'),
+]
+checksums = [
+    {'tensorboard-2.10_jupyterhub-support.patch':
+     '50a292e6ee518aecb5644595e0f3db4867be4f82e328e008e5a3f6a1f19baf87'},
+]
+
 builddependencies = [
     ('poetry', '1.5.1'),
 ]
@@ -17,12 +25,13 @@ dependencies = [
     ('Python', '3.11.3'),
     ('SciPy-bundle', '2023.07'),
     ('protobuf-python', '4.24.0'),
+    ('grpcio', '1.57.0'),
 ]
 
 exts_list = [
-    ('absl-py', '2.0.0', {
+    ('absl-py', '2.1.0', {
         'modulename': 'absl',
-        'checksums': ['d9690211c5fcfefcdd1a45470ac2b5c5acd45241c3af71eed96bc5441746c0d5'],
+        'checksums': ['7820790efbb316739cde8b4e19357243fc3608a152024288513dd968d7d959ff'],
     }),
     ('cachetools', '5.3.2', {
         'checksums': ['086ee420196f7b2ab9ca2db2520aca326318b68fe5ba8bc4d49cca91add450f2'],
@@ -33,9 +42,9 @@ exts_list = [
     ('rsa', '4.9', {
         'checksums': ['e38464a49c6c85d7f1351b0126661487a7e0a14a50f1675ec50eb34d4f20ef21'],
     }),
-    ('google-auth', '2.26.0', {
+    ('google-auth', '2.26.2', {
         'modulename': 'google.auth',
-        'checksums': ['5d8bf0a5143baa45368c3d08bf157babda468db1c5dd987cd2c824b788524196'],
+        'checksums': ['97327dbbf58cccb58fc5a1712bba403ae76668e64814eb30f7316f7e27126b81'],
     }),
     ('oauthlib', '3.2.2', {
         'checksums': ['9859c40929662bec5d64f34d01c99e093149682a3f38915dc0655d5a633dd918'],
@@ -46,21 +55,20 @@ exts_list = [
     ('google-auth-oauthlib', '1.2.0', {
         'checksums': ['292d2d3783349f2b0734a0a0207b1e1e322ac193c2c09d8f7c613fb7cc501ea8'],
     }),
-    ('grpcio', '1.60.0', {
-        'modulename': 'grpc',
-        'preinstallopts': "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && ",
-        'checksums': ['2199165a1affb666aa24adf0c97436686d0a61bc5fc113c037701fb7c7fceb96'],
-    }),
-    ('Markdown', '3.5.1', {
-        'checksums': ['b65d7beb248dc22f2e8a31fb706d93798093c308dc1aba295aedeb9d41a813bd'],
+    ('Markdown', '3.5.2', {
+        'checksums': ['e1ac7b3dc550ee80e602e71c1d168002f062e49f1b11e26a36264dafd4df2ef8'],
     }),
     ('tensorboard_data_server', '0.7.2', {
         'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
         'checksums': ['7e0610d205889588983836ec05dc098e80f97b7e7bbff7e994ebb78f578d0ddb'],
     }),
-    ('tensorboard_plugin_wit', '1.8.1', {
-        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
-        'checksums': ['ff26bdd583d155aa951ee3b152b3d0cffae8005dc697f72b44a8e8c2a77a8cbe'],
+    ('gviz-api', '1.10.0', {
+        'source_tmpl': 'gviz_api-%(version)s.tar.gz',
+        'checksums': ['846692dd8cc73224fc31b18e41589bd934e1cc05090c6576af4b4b26c2e71b90'],
+    }),
+    ('tensorboard-plugin-profile', '2.15.1', {
+        'source_tmpl': 'tensorboard_plugin_profile-%(version)s.tar.gz',
+        'checksums': ['84bb33e446eb4a9c0616f669fc6a42cdd40eadd9ae1d74bf756f4f0479993273'],
     }),
     ('Werkzeug', '3.0.1', {
         'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
@@ -74,12 +82,10 @@ exts_list = [
 
 #  Relax restriction on protobuf dependency as issue was fixed
 #  in https://github.com/protocolbuffers/upb/pull/1514
+#  see also: https://github.com/easybuilders/easybuild-easyconfigs/pull/19671
 postinstallcmds = [
     'sed -i "s/Requires-Dist: protobuf.*/Requires-Dist: protobuf >=3.19.6/g" ' +
     '%(installdir)s/lib/python%(pyshortver)s/site-packages/%(name)s-%(version)s.dist-info/METADATA',
 ]
-
-use_pip = True
-sanity_pip_check = True
 
 moduleclass = 'lib'
