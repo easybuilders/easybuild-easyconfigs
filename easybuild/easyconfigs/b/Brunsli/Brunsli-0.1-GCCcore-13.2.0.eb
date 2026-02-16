@@ -13,7 +13,12 @@ toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
 
 source_urls = ['https://github.com/google/brunsli/archive/']
 sources = ['v%(version)s.tar.gz']
-checksums = ['62762dc740f9fcc9706449c078f12c2a366416486d2882be50a9f201f99ac0bc']
+patches = ['Brunsli-0.1-fix-Brotli-static-library-names.patch']
+checksums = [
+    {'v0.1.tar.gz': '62762dc740f9fcc9706449c078f12c2a366416486d2882be50a9f201f99ac0bc'},
+    {'Brunsli-0.1-fix-Brotli-static-library-names.patch':
+     '0b921fb4839f0b0223c1bf08499e84afd5d428f448664fd1337173f45a815704'},
+]
 
 builddependencies = [
     ('CMake', '3.27.6'),
@@ -26,12 +31,8 @@ dependencies = [
 
 # skip use of third_party directory, since we provide Brotli via a proper dependency
 preconfigopts = "sed -i 's/add_subdirectory(third_party)//g' ../brunsli-%(version)s/CMakeLists.txt && "
-preconfigopts += "sed -i 's/\\(brotli...\\)-static/\\1/g' ../brunsli-%(version)s/brunsli.cmake && "
 
 configopts = '-DCMAKE_CXX_FLAGS="$CXXFLAGS -lbrotlienc -lbrotlidec -lbrotlicommon" '
-
-# make sure that libraries end up in <prefix>/lib (not lib64)
-configopts += "-DCMAKE_INSTALL_LIBDIR=lib "
 
 buildopts = "BROTLI_DIR=$EBROOTBROTLI BROTLI_INCLUDE=$EBROOTBROTLI/include"
 

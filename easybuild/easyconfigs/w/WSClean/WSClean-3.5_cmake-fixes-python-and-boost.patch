@@ -1,0 +1,81 @@
+From 46e7d797c9184d67b90b26a38877f91cd07b8e16 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Andr=C3=A9=20Offringa?= <offringa@gmail.com>
+Date: Sat, 7 Dec 2024 18:11:20 +0100
+Subject: [PATCH] Reduce cmake warnings caused by boost and python
+
+---
+ CMakeLists.txt       | 17 +++++++++++------
+ tests/CMakeLists.txt |  4 ++++
+ 2 files changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index bddfd61dc..a549095e9 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.8)
++cmake_minimum_required(VERSION 3.12)
+ 
+ project(wsclean)
+ 
+@@ -111,9 +111,10 @@ find_path(
+   NAMES fftw3.h
+   HINTS ENV FFTW3_INCLUDE)
+ 
+-find_package(PythonLibs 3 REQUIRED)
+-find_package(PythonInterp REQUIRED)
+-message(STATUS "Using python version ${PYTHON_VERSION_STRING}")
++find_package(
++  Python3
++  COMPONENTS Interpreter Development
++  REQUIRED)
+ 
+ # Include pybind11
+ add_subdirectory("${CMAKE_SOURCE_DIR}/external/pybind11")
+@@ -121,6 +122,10 @@ include_directories(SYSTEM ${pybind11_INCLUDE_DIRS})
+ 
+ #Prevent accidentally finding old BoostConfig.cmake file from casapy
+ set(Boost_NO_BOOST_CMAKE ON)
++if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.30")
++  # Disable warning; both old and new policies are fine
++  cmake_policy(SET CMP0167 NEW)
++endif()
+ find_package(
+   Boost
+   COMPONENTS date_time filesystem system program_options
+@@ -215,7 +220,7 @@ include_directories(SYSTEM ${CFITSIO_INCLUDE_DIR})
+ include_directories(SYSTEM ${FFTW3_INCLUDE_DIR})
+ include_directories(SYSTEM ${GSL_INCLUDE_DIR})
+ include_directories(SYSTEM ${HDF5_INCLUDE_DIRS})
+-include_directories(SYSTEM ${PYTHON_INCLUDE_DIRS})
++include_directories(SYSTEM ${Python3_INCLUDE_DIRS})
+ 
+ include(CheckCXXSourceCompiles)
+ 
+@@ -236,7 +241,7 @@ ExternalProject_Add(
+     -DCOMPILE_AS_EXTERNAL_PROJECT=On
+     -DPORTABLE=${PORTABLE}
+     -DTARGET_CPU=${TARGET_CPU}
+-    -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
++    -DPYTHON_EXECUTABLE=${Python3_EXECUTABLE}
+     -DCMAKE_INCLUDE_PATH=${CMAKE_INCLUDE_PATH}
+     -DCMAKE_LIBRARY_PATH=${CMAKE_LIBRARY_PATH}
+     -DCFITSIO_ROOT_DIR=${CFITSIO_ROOT_DIR}
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index e898b0c5a..628bc27d6 100644
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -49,6 +49,10 @@ add_custom_target(
+ 
+ set(WSCLEAN_DATA_URL https://support.astron.nl/software/ci_data/wsclean)
+ 
++if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
++  cmake_policy(SET CMP0135 "NEW")
++endif()
++
+ ExternalProject_Add(
+   jvla_test_ms
+   URL ${WSCLEAN_DATA_URL}/JVLA-MultiBand-S1_C5-minimal.ms.tar.bz2
+-- 
+GitLab
+

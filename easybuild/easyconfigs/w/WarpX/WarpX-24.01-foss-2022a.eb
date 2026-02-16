@@ -1,0 +1,73 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'WarpX'
+version = '24.01'
+
+homepage = 'https://github.com/ECP-WarpX/WarpX'
+description = """WarpX is an advanced electromagnetic & electrostatic Particle-In-Cell code.
+It supports many features including Perfectly-Matched Layers (PML), mesh refinement, and the
+boosted-frame technique."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/ECP-WarpX/WarpX/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['65b7d0a3ea20a6b685d2f1e4816144041a3b5f500e03a4e2a79021ce3e98bb84']
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('ccache', '4.6.3'),
+    ('git', '2.36.0', '-nodocs')
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('matplotlib', '3.5.2'),
+    ('HDF5', '1.12.2'),
+    ('pybind11', '2.9.2'),
+    ('Boost', '1.79.0'),
+    ('yt', '4.3.0'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+exts_list = [
+    ('openPMD-viewer', '1.10.0', {
+        'modulename': 'openpmd_viewer',
+        'checksums': ['86d73ea278d30a421d5d7ec3961d19a42f785cef2a0a5618ac8820bab26a358b'],
+    }),
+    ('periodictable', '1.6.1', {
+        'checksums': ['7c501c9f73d77b1fb28cb51e85b28429c2c44a99ce3d1274894564c72d712603'],
+    }),
+    ('picmistandard', '0.28.0', {
+        'checksums': ['aa980b0fb49fc3ff9c7e32b5927b3700c4660aefbf96567bac1f8c9c93bb7831'],
+    }),
+]
+
+configopts = '-DWarpX_PYTHON=ON -DWarpX_COMPUTE=OMP '
+configopts += '-DWarpX_DIMS="1;2;RZ;3" '
+configopts += '-DPYBIND11_INSTALL=ON -DWarpX_LIB=ON -DWarpX_QED_TABLE_GEN=ON '
+
+postinstallcmds = [
+    "mv %(builddir)s/easybuild_obj/lib/site-packages/amrex %(installdir)s/lib/python%(pyshortver)s/site-packages ",
+    "mv %(builddir)s/easybuild_obj/lib/site-packages/pywarpx %(installdir)s/lib/python%(pyshortver)s/site-packages ",
+    "mv %(start_dir)s/Examples/*.py %(installdir)s/lib/python%(pyshortver)s/site-packages ",
+    "mv %(start_dir)s/Examples %(installdir)s/ ",
+    "mv %(start_dir)s/Regression/Checksum  %(installdir)s/lib/python%(pyshortver)s/site-packages/checksumAPI ",
+    'for i in $(grep -R sys.path.insert %(installdir)s/ExampleS | grep -v Examples| cut -d ":" -f 1); '
+    ' do sed -i "/Checksum/d" $i; done',
+]
+
+sanity_check_paths = {
+    'files': ['bin/warpx.rz.MPI.OMP.DP.PDP.OPMD.QED.GENQEDTABLES',
+              'lib/libamrex_3d.so', 'lib/libamrex_2d.so', 'lib/libamrex_1d.so'],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'phys'

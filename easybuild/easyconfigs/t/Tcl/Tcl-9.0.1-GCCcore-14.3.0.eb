@@ -1,0 +1,59 @@
+easyblock = 'ConfigureMake'
+
+name = 'Tcl'
+version = '9.0.1'
+
+homepage = 'https://www.tcl.tk/'
+description = """
+ Tcl (Tool Command Language) is a very powerful but easy to learn dynamic
+ programming language, suitable for a very wide range of uses, including web
+ and desktop applications, networking, administration, testing and many more.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['http://prdownloads.sourceforge.net/%(namelower)s']
+sources = ['%(namelower)s%(version)s-src.tar.gz']
+checksums = ['a72b1607d7a399c75148c80fcdead88ed3371a29884181f200f2200cdee33bbc']
+
+builddependencies = [
+    ('binutils', '2.44'),
+]
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('libtommath', '1.3.0'),
+]
+
+configopts = 'EXTRA_INSTALL="install-private-headers" '
+configopts += '--with-system-libtommath=yes '
+
+if ARCH in ('aarch64', 'riscv64'):
+    # remove lseq tests when building on 64-bit Arm and 64-bit RISC-V,
+    # because they may hang;
+    # see https://core.tcl-lang.org/tcl/tktview/d2a3c5f80bf47362e2a9ab02152cceadc916ba24;
+    # this is fixed in Tcl 9.0.2, but coming up with a clean patch file is difficult;
+    pretestopts = "rm ../tests/lseq.test && "
+
+runtest = 'test'
+
+start_dir = 'unix'
+
+postinstallcmds = [
+    'ln -s tclsh%(version_major)s.%(version_minor)s %(installdir)s/bin/tclsh',
+    f'ln -s libtcl%(version_major)s.%(version_minor)s.{SHLIB_EXT} '
+    f'%(installdir)s/lib/libtcl.{SHLIB_EXT}',
+] + [
+    # Avoid that installations on top of Tcl try to access the (no longer existing) source directory
+    # See https://core.tcl-lang.org/tk/tktview/b900dc755201139b5a7cecada73405c7681b7c03
+    f"""echo "{d}='%(installdir)s'" >> '%(installdir)s/lib/tclConfig.sh'"""
+    for d in ('TCL_SRC_DIR', 'itcl_SRC_DIR', 'ITCL_SRC_DIR', 'tdbc_SRC_DIR', 'TDBC_SRC_DIR')
+]
+
+sanity_check_paths = {
+    'files': ['bin/tclsh%(version_major)s.%(version_minor)s', 'bin/tclsh',
+              'include/tcl.h', 'lib/libtcl%%(version_major)s.%%(version_minor)s.%s' % SHLIB_EXT,
+              f'lib/libtcl.{SHLIB_EXT}', 'lib/tclConfig.sh'],
+    'dirs': ['share'],
+}
+
+moduleclass = 'lang'

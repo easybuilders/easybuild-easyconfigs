@@ -1,0 +1,65 @@
+easyblock = 'PythonBundle'
+
+name = "LightGBM"
+version = "4.5.0"
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = "https://lightgbm.readthedocs.io"
+description = """A fast, distributed, high performance gradient boosting (GBT, GBDT, GBRT, GBM
+or MART) framework based on decision tree algorithms, used for ranking,
+classification and many other machine learning tasks."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('scikit-build-core', '0.9.3'),
+    ('wget', '1.24.5'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('Arrow', '14.0.1'),  # optional
+    ('dask', '2023.9.2'),  # optional
+    ('scikit-learn', '1.3.1'),  # optional
+]
+
+# example files are not distributed with the sources
+_test_repo_url = "https://raw.githubusercontent.com/microsoft/LightGBM/refs/tags/v%(version)s/examples"
+_test_cmds_pre = " && ".join([
+    "mkdir regression",
+    "wget -P regression %s/regression/regression.test" % _test_repo_url,
+    "wget -P regression %s/regression/regression.train" % _test_repo_url,
+    "mkdir test",
+    "cd test",
+    "wget %s/python-guide/simple_example.py" % _test_repo_url,
+    "",
+])
+
+# Hard set the CUDA architectures to the ones EasyBuild expects
+_set_cuda_archs_cmake = (
+    "sed -i 's|EASYBUILD_CUDA_CCS|%(cuda_cc_space_sep_no_period)s|' CMakeLists.txt &&"
+)
+exts_list = [
+    ('lightgbm', version, {
+        'patches': [
+            'lightgbm_v4.5.0_fix_cuda_cmake.patch',
+            'lightgbm_v4.5.0_allow_eb_cuda_ccs.patch',
+        ],
+        'checksums': [
+            'e1cd7baf0318d4e308a26575a63a4635f08df866ad3622a9d8e3d71d9637a1ba',
+            'a265135da8e81165021277e4981998b96a99c1cdf96082969f3534011b62cdbd',
+            'e7b4a38e71cb15659227387d2b4472f04ab3fded8959a0528e5f146a552f46e5',
+        ],
+        'preinstallopts': _set_cuda_archs_cmake,
+        'installopts': "--config-settings=cmake.define.USE_CUDA=ON",
+        'use_pip_extras': "arrow,dask,pandas,scikit-learn",
+        'pretestopts': _test_cmds_pre,
+        'runtest': 'python',
+        'testopts': "simple_example.py",
+        'testinstall': True,
+    }),
+]
+
+moduleclass = 'ai'

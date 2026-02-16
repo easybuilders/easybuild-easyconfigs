@@ -9,7 +9,6 @@ description = """The Ncurses (new curses) library is a free software emulation o
  function-key mapping, and has all the other SYSV-curses enhancements over BSD Curses."""
 
 toolchain = SYSTEM
-toolchainopts = {'optarch': True, 'pic': True}
 
 source_urls = [GNU_SOURCE]
 sources = [SOURCE_TAR_GZ]
@@ -27,6 +26,7 @@ checksums = [
 preconfigopts = "export CPPFLAGS='-P' && "
 
 local_common_configopts = "--with-shared --enable-overwrite --without-ada --enable-symlinks "
+local_common_configopts += 'CFLAGS="-O2 -std=c99" CXXFLAGS="-O2 -std=c++11" '
 configopts = [
     # build ncurses: serial build in default paths with shared libraries
     local_common_configopts,
@@ -36,11 +36,11 @@ configopts = [
 
 # need to take care of $CFLAGS ourselves with SYSTEM toolchain
 # we need to add -fPIC, but should also include -O* option to avoid compiling with -O0 (default for GCC)
-buildopts = 'CFLAGS="-O2 -fPIC"'
+buildopts = 'CFLAGS="-O2 -fPIC -std=c99" CXXFLAGS="-O2 -std=c++11" '
 
 # Symlink libtinfo to libncurses
 # libncurses with this configopts has all the symbols from libtinfo, but some packages look for libtinfo specifically
-postinstallcmds = ['cd %(installdir)s/lib && for l in libncurses{.,_,w}*; do ln -s "${l}" "${l/ncurses/tinfo}"; done']
+postinstallcmds = ['cd %(installdir)s/lib && for x in libncurses{.,_,w}*; do ln -s "${x}" "${x/ncurses/tinfo}"; done']
 
 _target_suffix = ['', 'w']  # '': ncurses, 'w': ncursesw
 _lib_suffix = ['%s%s' % (x, y) for x in _target_suffix for y in ['.a', '_g.a', '.' + SHLIB_EXT]]

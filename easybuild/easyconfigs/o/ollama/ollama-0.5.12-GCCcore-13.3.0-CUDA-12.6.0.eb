@@ -1,0 +1,55 @@
+easyblock = 'Bundle'
+
+name = 'ollama'
+version = '0.5.12'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://ollama.com/'
+description = "Get up and running with large language models."
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+builddependencies = [
+    ('Go', '1.23.6', '', SYSTEM),
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['6.0', '7.0', '7.5', '8.0', '8.6', '9.0']
+
+default_component_specs = {
+    'source_urls': ['https://github.com/ollama/ollama/archive'],
+    'sources': ['v%(version)s.tar.gz'],
+    'checksums': ['a38d5e3ce4ee13d237ef670231016d02ee81cb880f38d58795e989c73b5b7523'],
+    'start_dir': 'ollama-%(version)s',
+}
+components = [
+    ('ggml-cpu-cuda', version, {
+        # CPU and CUDA12 presets
+        'easyblock': 'CMakeMake',
+        'buildopts': 'ggml-cpu ggml-cuda',
+    }),
+    ('ollama', version, {
+        'easyblock': 'GoPackage',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ollama', f'lib/ollama/libggml-base.{SHLIB_EXT}', f'lib/ollama/cuda_v12/libggml-cuda.{SHLIB_EXT}'],
+    'dirs': ['lib/ollama', 'lib/ollama/cuda_v12'],
+}
+
+sanity_check_commands = [
+    "ollama -v",
+]
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': ['lib/ollama', 'lib/ollama/cuda_v12'],
+}
+
+moduleclass = 'ai'
