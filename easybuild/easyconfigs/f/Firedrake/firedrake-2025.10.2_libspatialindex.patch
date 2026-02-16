@@ -1,0 +1,64 @@
+libspatialindex.so seems to be installed in rtree in the way it is installed following the 
+Firedrake installation guide: https://www.firedrakeproject.org/install.html
+As we are using libspatialindex from a module, this patch deals with it.
+Author: J. Saßmannshausen (Imperial College London/UK)
+diff --git a/firedrake-2025.10.2.orig/firedrake/function.py b/firedrake-2025.10.2/firedrake/function.py
+index fea630f..9e78198 100644
+--- a/firedrake-2025.10.2.orig/firedrake/function.py
++++ b/firedrake-2025.10.2/firedrake/function.py
+@@ -858,8 +858,9 @@ def make_c_evaluate(function, c_name="evaluate", ldargs=None, tolerance=None):
+ 
+     if ldargs is None:
+         ldargs = []
+-    libspatialindex_so = Path(rtree.core.rt._name).absolute()
+-    lsi_runpath = f"-Wl,-rpath,{libspatialindex_so.parent}"
++    libspatialindex = os.environ.get('EBROOTLIBSPATIALINDEX')
++    libspatialindex_so = libspatialindex + '/' + 'lib' + '/' + 'libspatialindex.so.8'
++    lsi_runpath = f"-Wl,-rpath,{libspatialindex_so}"
+     ldargs += [str(libspatialindex_so), lsi_runpath]
+     dll = compilation.load(
+         src, "c",
+diff --git a/firedrake-2025.10.2.orig/firedrake/mesh.py b/firedrake-2025.10.2/firedrake/mesh.py
+index 87757a2..47369fa 100644
+--- a/firedrake-2025.10.2.orig/firedrake/mesh.py
++++ b/firedrake-2025.10.2/firedrake/mesh.py
+@@ -2695,8 +2695,9 @@ values from f.)"""
+                 }}
+             """)
+ 
+-            libspatialindex_so = Path(rtree.core.rt._name).absolute()
+-            lsi_runpath = f"-Wl,-rpath,{libspatialindex_so.parent}"
++            libspatialindex = os.environ.get('EBROOTLIBSPATIALINDEX')
++            libspatialindex_so = libspatialindex + '/' + 'lib' + '/' + 'libspatialindex.so.8' 
++            lsi_runpath = f"-Wl,-rpath,{libspatialindex_so}"
+             dll = compilation.load(
+                 src, "c",
+                 cppargs=[
+diff --git a/firedrake-2025.10.2.orig/setup.py b/firedrake-2025.10.2/setup.py
+index d601613..796b2f4 100644
+--- a/firedrake-2025.10.2.orig/setup.py
++++ b/firedrake-2025.10.2/setup.py
+@@ -117,18 +117,19 @@ else:
+ # current paths as they will not be valid once the installation is complete.
+ # Therefore we set the runtime library search path to all the different
+ # possible site package locations we can think of.
+-sitepackage_dirs = site.getsitepackages() + [site.getusersitepackages()]
++sitepackage_dirs = site.getsitepackages()
+ 
+ # libspatialindex
+ # example:
+ # gcc -I/rtree/include
+ # gcc /rtree.libs/libspatialindex.so -Wl,-rpath,$ORIGIN/../../Rtree.libs
+-libspatialindex_so = Path(rtree.core.rt._name).absolute()
++libspatialindex = os.environ.get('EBROOTLIBSPATIALINDEX')
++libspatialindex_so = libspatialindex + '/' + 'lib' + '/' + 'libspatialindex.so.8'
+ spatialindex_ = ExternalDependency(
+-    include_dirs=[rtree.finder.get_include()],
++    include_dirs=[str(libspatialindex + '/' + 'include')],
+     extra_link_args=[str(libspatialindex_so)],
+     runtime_library_dirs=[
+-        os.path.join(dir, "Rtree.libs") for dir in sitepackage_dirs
++        os.path.join(dir, libspatialindex_so) for dir in sitepackage_dirs
+     ],
+ )
+ 
