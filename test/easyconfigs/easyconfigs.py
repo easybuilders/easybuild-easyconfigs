@@ -593,9 +593,9 @@ class EasyConfigTest(TestCase):
             'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
-            # Java 21 is used as dep for Octave 9.2.0 (other 2023b easyconfigs use Java 11)
-            # and MDSplus
-            'Java': [(r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1'])],
+            # Java 21 is used as dep for Octave 9.2.0, MDSplus 7.1 and JPype 1.5.0
+            # (other 2023b easyconfigs use Java 11)
+            'Java': [(r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0'])],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
             'libxc': [
