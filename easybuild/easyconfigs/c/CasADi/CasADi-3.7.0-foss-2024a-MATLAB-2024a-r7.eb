@@ -1,0 +1,46 @@
+easyblock = 'CMakeMake'
+
+name = 'CasADi'
+version = '3.7.0'
+versionsuffix = '-MATLAB-2024a-r7'
+
+homepage = 'https://web.casadi.org/'
+description = """CasADi is an open-source tool for nonlinear optimization and algorithmic differentiation."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+github_account = 'casadi'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['946b1e5d4360715d5972ac4fcbc0e5375f934f412a670b402359ee2e1ea7bb3a']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('SWIG', '20180415', '-MATLAB'),
+]
+
+dependencies = [
+    ('Ipopt', '3.14.17'),
+    ('MATLAB', '2024a-r7', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('HiGHS', '1.11.0'),
+]
+
+
+sanity_check_paths = {
+    'files': ['lib/libcasadi.%s' % SHLIB_EXT],
+    'dirs': ['include', 'python/casadi'],
+}
+
+sanity_check_commands = [
+    'python -c "import casadi"',
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'python',
+}
+
+configopts = "-DWITH_IPOPT=ON -DWITH_MATLAB=ON -DWITH_THREAD=ON"
+configopts += " -DWITH_PYTHON=ON -DPYTHON_PREFIX=%(installdir)s/python"
+
+moduleclass = 'tools'
