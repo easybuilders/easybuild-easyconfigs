@@ -1,0 +1,20 @@
+We need to patch the CMakeList file in order to have nanobind found
+see here:
+https://nanobind.readthedocs.io/en/latest/building.html#finding-nanobind
+Author: J. Sassmannshausen (Imperial College London/UK)
+diff --git a/soxr-0.5.0.post1.orig/CMakeLists.txt b/soxr-0.5.0.post1/CMakeLists.txt
+index eb701aa..f40df39 100644
+--- a/soxr-0.5.0.post1.orig/CMakeLists.txt
++++ b/soxr-0.5.0.post1/CMakeLists.txt
+@@ -32,6 +32,11 @@ find_package(Python 3.9
+     REQUIRED COMPONENTS Interpreter Development.Module
+     OPTIONAL_COMPONENTS Development.SABIModule)
+ 
++# Detect the installed nanobind package and import it into CMake
++# The normal find_package command does not seem to work
++execute_process(
++  COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
++  OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
+ find_package(nanobind CONFIG REQUIRED)
+ 
+ if (USE_SYSTEM_LIBSOXR)

@@ -1,0 +1,71 @@
+easyblock = 'CMakeMake'
+
+name = 'EveryBeam'
+version = "0.6.1"
+
+homepage = 'https://everybeam.readthedocs.io/'
+description = """Library that provides the antenna response pattern for several instruments,
+such as LOFAR (and LOBES), SKA (OSKAR), MWA, JVLA, etc."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+sources = [
+    {
+        'filename': SOURCE_TAR_XZ,
+        # Repo uses git submodules, which are not included in the release tarballs.
+        # Thus, we let EasyBuild download directly from the git repository.
+        'git_config': {
+            'url': 'https://git.astron.nl/RD',
+            'repo_name': '%(name)s',
+            'tag': 'v%(version)s',
+            'clone_into': '%(name)s',
+            'recursive': True
+        }
+    },
+]
+patches = [
+    'EveryBeam-0.5.4_python_metadata.patch'
+]
+checksums = [
+    {'EveryBeam-0.6.1.tar.xz':
+     '441190d4c08dae5082c8bdf6acace6bb4c16aef0653e0729bedc6a4b08a4ef04'},
+    {'EveryBeam-0.5.4_python_metadata.patch':
+     '63c42e85d1b63cbf5887d10ec158be9b69e2c63cf3b209e9c1944f46c01810ac'},
+]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('wget', '1.21.4'),
+]
+dependencies = [
+    ('casacore', '3.5.0'),
+    ('Boost', '1.83.0'),
+    ('CFITSIO', '4.3.1'),
+    ('WCSLIB', '7.11'),
+    ('GSL', '2.7'),
+    ('HDF5', '1.14.3'),
+    ('Python', '3.11.5'),
+    ('libxml2', '2.11.5'),
+]
+
+configopts = "-DBUILD_WITH_PYTHON=ON "
+
+# Note: we need to create a dir %(builddir)s/EveryBeam/everybeam for the pip install to complete successfully
+postinstallcmds = [
+    "mkdir -p %(builddir)s/EveryBeam/everybeam && pip install %(builddir)s/EveryBeam --prefix=%(installdir)s"
+]
+
+modextravars = {'EVERYBEAM_DATADIR': '%(installdir)s/share/everybeam'}
+
+sanity_check_paths = {
+    'files': ['include/%(name)s/beamformer.h', 'lib/libeverybeam.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+# Check if Python support was built correctly, and can be found by pip
+sanity_check_commands = [
+    'python3 -c "import everybeam"',
+    'pip list | grep everybeam'
+]
+
+moduleclass = 'lib'

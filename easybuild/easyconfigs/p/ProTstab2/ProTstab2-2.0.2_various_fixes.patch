@@ -1,0 +1,101 @@
+- remove version restrictions on dependencies
+- use joblib directly instead of from sklearn.externals, which was removed from more recent version of sklearn
+- monkeypatch sklearn.feature_selection.rfe for more recent version of sklearn
+- fix usage of more recent version of rpy2
+Author: Samuel Moors (Vrije Universiteit Brussel)
+diff -ur ProTstab2-2.0.2.orig/ProTstab2/__init__.py ProTstab2-2.0.2/ProTstab2/__init__.py
+--- ProTstab2-2.0.2.orig/ProTstab2/__init__.py	2023-06-15 17:06:45.000000000 +0200
++++ ProTstab2-2.0.2/ProTstab2/__init__.py	2025-02-13 10:39:31.378212000 +0100
+@@ -5,10 +5,15 @@
+ 
+ import numpy as np
+ import requests
+-from sklearn.externals import joblib
++import joblib
+ 
+ from ProTstab2.utils import A_LIST, get_all_features_from_protstab
+ 
++# monkeypatch to avoid failure for pickle.load(f)
++import sys
++import sklearn.feature_selection._rfe
++sys.modules["sklearn.feature_selection.rfe"] = sklearn.feature_selection._rfe
++
+ 
+ class ProTstab2:
+     def __init__(self):
+diff -ur ProTstab2-2.0.2.orig/ProTstab2/utils.py ProTstab2-2.0.2/ProTstab2/utils.py
+--- ProTstab2-2.0.2.orig/ProTstab2/utils.py	2023-06-15 17:56:36.000000000 +0200
++++ ProTstab2-2.0.2/ProTstab2/utils.py	2025-02-13 10:35:34.282431000 +0100
+@@ -7,6 +7,8 @@
+ import numpy as np
+ import requests
+ import rpy2.robjects as robjects
++from rpy2.robjects import default_converter
++from rpy2.robjects.conversion import localconverter
+ from bs4 import BeautifulSoup
+ from rpy2.robjects import pandas2ri
+ from tensorflow.python.keras import backend as K
+@@ -338,7 +340,8 @@
+ """
+     robjects.r(s)
+ 
+-    r = robjects.r["fs"](text)
++    with localconverter(default_converter):
++        r = robjects.r["fs"](text)
+ 
+     # print(r)
+     # print(type(r))
+@@ -374,7 +377,8 @@
+     for index, p in enumerate(var_list):
+         print(f"now = {p}")
+         try:
+-            ret = robjects.r["fs"](text, p)
++            with localconverter(default_converter):
++                ret = robjects.r["fs"](text, p)
+             # print("=== 上面自动打印，下面ret内容 ===")
+             rr = pandas2ri.rpy2py_floatvector(ret)
+             rr_len = len(rr)
+@@ -413,7 +417,8 @@
+     }
+     """
+     robjects.r(s)
+-    r = robjects.r["fs"](text)
++    with localconverter(default_converter):
++        r = robjects.r["fs"](text)
+     rr = pandas2ri.rpy2py_floatvector(r)
+     return rr
+ 
+@@ -430,7 +435,8 @@
+     }
+     """
+     robjects.r(s)
+-    r = robjects.r["fs"](text)
++    with localconverter(default_converter):
++        r = robjects.r["fs"](text)
+     rr = pandas2ri.rpy2py_floatvector(r)
+     return rr
+ 
+diff -ur ProTstab2-2.0.2.orig/setup.py ProTstab2-2.0.2/setup.py
+--- ProTstab2-2.0.2.orig/setup.py	2023-06-15 17:57:12.000000000 +0200
++++ ProTstab2-2.0.2/setup.py	2025-02-13 10:37:12.160833303 +0100
+@@ -18,13 +18,13 @@
+     author_email='20204227057@stu.suda.edu.cn',
+     url='http://8.133.174.28:8000',
+     install_requires=[
+-        'rpy2==3.4.5',
+-        'scikit-learn==0.22.2',
+-        'tensorflow==2.4.0',
+-        'pandas==1.1.5',
+-        'lightgbm==2.3.1',
+-        'requests==2.24.0',
+-        'bs4',
++        'rpy2',
++        'scikit-learn',
++        'tensorflow',
++        'pandas',
++        'lightgbm',
++        'requests',
++        'beautifulsoup4',
+     ],
+     license='MIT',
+     packages=find_packages(include=["ProTstab2", "ProTstab2/models/*", "ProTstab2/ProtDCal/*"]),

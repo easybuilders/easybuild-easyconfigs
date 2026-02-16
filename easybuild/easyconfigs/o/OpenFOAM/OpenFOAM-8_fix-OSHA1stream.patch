@@ -1,0 +1,227 @@
+From b0c15bebd37142f3902901ed5e9a60e33ed456eb Mon Sep 17 00:00:00 2001
+From: Henry Weller <http://cfd.direct>
+Date: Wed, 6 Jul 2022 21:12:23 +0100
+Subject: [PATCH] OSHA1stream: Updated to C++11
+
+According to the C++11 standard the xsputn might call an overload function which
+must be provided for correct operation and is required by gcc-12.1 but not
+earlier releases.
+
+See
+
+https://cplusplus.com/reference/streambuf/streambuf/xsputn/
+
+    Its default behavior in streambuf is to retrieve n characters, as if calling
+    sputc for each, stopping if any call would return EOF. Except it is
+    unspecified whether member overflow is called or whether other means are
+    used in case of overflows.
+
+https://cplusplus.com/reference/streambuf/streambuf/overflow/
+
+    int overflow (int c = EOF);
+
+        Put character on overflow
+
+        Virtual function called by other member functions to put a character
+        into the controlled output sequence without changing the current
+        position.
+
+        It is called by public member functions such as sputc to write a
+        character when there are no writing positions available at the put
+        pointer (pptr).
+
+        Its default behavior in streambuf is to always return EOF (indicating
+        failure), but derived classes can override this behavior to attempt to
+        write the character directly and/or to alter pptr and other internal
+        pointers so that more storage is provided, potentially writing unwritten
+        characters to the controlled output sequence. Both filebuf and stringbuf
+        override this virtual member function.
+
+    Parameters c
+        Character to be put.
+
+        If this is the end-of-file value (EOF), no character is put, but the
+        other effects of calling this function are attempted.
+
+    Return Value
+        In case of success, the character put is returned, converted to a value
+        of type int_type using member traits_type::to_int_type.
+
+        Otherwise, it returns the end-of-file value (EOF) either if called with
+        this value as argument c or to signal a failure (some implementations
+        may throw an exception instead).
+
+Resolves bug-report https://bugs.openfoam.org/view.php?id=3856
+---
+ .../db/IOstreams/hashes/OSHA1stream.H         | 74 +++++++++++--------
+ 1 file changed, 45 insertions(+), 29 deletions(-)
+
+diff --git a/src/OpenFOAM/db/IOstreams/hashes/OSHA1stream.H b/src/OpenFOAM/db/IOstreams/hashes/OSHA1stream.H
+index f10f86b3a5..f7466d49fd 100644
+--- a/src/OpenFOAM/db/IOstreams/hashes/OSHA1stream.H
++++ b/src/OpenFOAM/db/IOstreams/hashes/OSHA1stream.H
+@@ -2,7 +2,7 @@
+   =========                 |
+   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+    \\    /   O peration     | Website:  https://openfoam.org
+-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
++    \\  /    A nd           | Copyright (C) 2011-2022 OpenFOAM Foundation
+      \\/     M anipulation  |
+ -------------------------------------------------------------------------------
+ License
+@@ -25,7 +25,7 @@ Class
+     Foam::OSHA1stream
+ 
+ Description
+-    An output stream for calculating SHA1 digests.
++    A Foam::OSstream for calculating SHA-1 digests
+ 
+ SourceFiles
+     OSHA1stream.C
+@@ -43,24 +43,19 @@ SourceFiles
+ namespace Foam
+ {
+ 
+-class osha1stream;
+-class OSHA1stream;
+-
+ /*---------------------------------------------------------------------------*\
+                         Class sha1streambuf Declaration
+ \*---------------------------------------------------------------------------*/
+ 
+-//- A streambuf class for calculating SHA1 digests
+ class sha1streambuf
+ :
+     public std::streambuf
+ {
+     // Private Data
+ 
+-    //- This does all the work and has its own buffering
+-    SHA1 sha1_;
++        //- The SHA-1 class which processes the strings
++        SHA1 sha1_;
+ 
+-    friend class osha1stream;
+ 
+ public:
+ 
+@@ -70,16 +65,39 @@ public:
+         sha1streambuf()
+         {}
+ 
++
+     // Member Functions
+ 
+-    // Write
++        //- Return the SHA-1
++        SHA1& sha1()
++        {
++            return sha1_;
++        }
+ 
+-        //- Process unbuffered
+-        virtual std::streamsize xsputn(const char* str, std::streamsize n)
++        //- Writes characters from the array pointed to by s
++        //  into the controlled output sequence, until either n characters
++        //  have been written or the end of the output sequence is reached
++        virtual std::streamsize xsputn(const char* s, std::streamsize n)
+         {
+-            sha1_.append(str, n);
++            sha1_.append(s, n);
+             return n;
+         }
++
++        //- Writes c to the current position of the put pointer (pptr),
++        //  and advances that pointer one position forward.
++        //  If c is EOF, no characters are written and the put pointer
++        //  (pptr) is not advanced.
++        //  Maybe used by xsputn (C++11).
++        virtual int overflow(int c = EOF)
++        {
++            if (c != EOF)
++            {
++                const char cc = c;
++                sha1_.append(&cc, 1);
++            }
++
++            return c;
++        }
+ };
+ 
+ 
+@@ -87,7 +105,6 @@ public:
+                          Class osha1stream Declaration
+ \*---------------------------------------------------------------------------*/
+ 
+-//- A basic output stream for calculating SHA1 digests
+ class osha1stream
+ :
+     virtual public std::ios,
+@@ -95,7 +112,9 @@ class osha1stream
+ {
+     // Private Data
+ 
+-    sha1streambuf sbuf_;
++        // SHA-1 stream buffer
++        sha1streambuf sbuf_;
++
+ 
+ public:
+ 
+@@ -107,22 +126,20 @@ public:
+             std::ostream(&sbuf_)
+         {}
+ 
+-    // Member Functions
+ 
+-    // Access
++    // Member Functions
+ 
+-        //- This hides both signatures of std::basic_ios::rdbuf()
+-        sha1streambuf* rdbuf()
++        //- Return the SHA-1
++        SHA1& sha1()
+         {
+-            return &sbuf_;
++            return sbuf_.sha1();
+         }
+ 
+-        //- Full access to the sha1
+-        SHA1& sha1()
++        //- Return the stream buffer
++        sha1streambuf* rdbuf()
+         {
+-            return sbuf_.sha1_;
++            return &sbuf_;
+         }
+-
+ };
+ 
+ 
+@@ -130,7 +147,6 @@ public:
+                          Class OSHA1stream Declaration
+ \*---------------------------------------------------------------------------*/
+ 
+-//- The output stream for calculating SHA1 digests
+ class OSHA1stream
+ :
+     public OSstream
+@@ -169,14 +185,14 @@ public:
+ 
+     // Member Functions
+ 
+-        //- Full access to the sha1
+-        Foam::SHA1& sha1()
++        //- Return the SHA-1
++        SHA1& sha1()
+         {
+             return dynamic_cast<osha1stream&>(stdStream()).sha1();
+         }
+ 
+-        //- Return SHA1::Digest for the data processed until now
+-        Foam::SHA1Digest digest()
++        //- Return the SHA-1 digest for the data processed until now
++        SHA1Digest digest()
+         {
+             return sha1().digest();
+         }
