@@ -1,4 +1,4 @@
-easyblock = 'ConfigureMake'
+easyblock = 'CmdCp'
 
 name = 'libcerf-Fortran'
 version = '2.4'
@@ -21,19 +21,17 @@ dependencies = [
     ('libcerf', version),
 ]
 
-skipsteps = ['configure']
 start_dir = 'fortran/ccerflib_f95_interface'
-build_cmd = (
-    '$FC $FFLAGS -c use_libcerf_mod.f90 && '
-    '$FC -shared use_libcerf_mod.o -o libcerf-Fortran.so && '
-    'ar rc use_libcerf_mod.a use_libcerf_mod.o && '
-    'echo ""'
-)
-install_cmd = (
-    'mkdir -p %(installdir)s/{include,lib} && '
-    'cp %(name)s.so use_libcerf_mod.o use_libcerf_mod.a %(installdir)s/lib && '
-    'cp use_libcerf.mod %(installdir)s/include'
-)
+cmds_map = [('.*', ' '.join([
+    '$FC $FFLAGS -c use_libcerf_mod.f90 &&'
+    '$FC -shared use_libcerf_mod.o -o libcerf-Fortran.so &&'
+    'ar rc use_libcerf_mod.a use_libcerf_mod.o'
+]))]
+
+files_to_copy = [
+    (['%(name)s.so', 'use_libcerf_mod.o', 'use_libcerf_mod.a'], 'lib'),
+    (['use_libcerf.mod'], 'include'),
+]
 
 sanity_check_paths = {
     'files': ['include/use_libcerf.mod', 'lib/libcerf-Fortran.so', 'lib/use_libcerf_mod.a'],
