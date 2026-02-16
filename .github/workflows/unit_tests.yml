@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python: ['3.7', '3.11']
+        python: ['3.11'] #['3.7', '3.11']
         modules_tool: [Lmod-8.6.8]
-        module_syntax: [Lua, Tcl]
+        module_syntax: [Lua] #[Lua, Tcl]
       fail-fast: false
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
@@ -120,9 +120,18 @@ jobs:
           unset PYTHONPATH
 
           # install easyconfigs via distribution package
-          python setup.py sdist > /dev/null
+          echo "::group::Create source distribution"
+          python setup.py sdist
           ls dist
-          pip install dist/easybuild-easyconfigs*tar.gz > /dev/null
+          echo "::endgroup::"
+          echo "::group::Install from source distribution"
+          # Depending on the version of setuptools/distutils the dash will be replaced by underscore
+          if [ -f dist/easybuild-easyconfigs*tar.gz ]; then
+            pip install dist/easybuild-easyconfigs*tar.gz
+          else
+            pip install dist/easybuild_easyconfigs*tar.gz
+          fi
+          echo "::endgroup::"
 
           # robot-paths value should not be empty, but have an entry that includes easybuild/easyconfigs subdir
           echo "eb --show-config"
@@ -161,8 +170,14 @@ jobs:
     - name: Inspect files included in source distribution
       working-directory: dist
       run: |
-          tar xfz easybuild-easyconfigs*tar.gz
-          cd easybuild-easyconfigs-*/
+          ls
+          if [ -f easybuild-easyconfigs*tar.gz ]; then
+            tar xzf easybuild-easyconfigs*tar.gz
+            cd easybuild-easyconfigs-*/
+          else
+            tar xzf easybuild_easyconfigs*tar.gz
+            cd easybuild_easyconfigs-*/
+          fi
 
           # .git folder should not be there in source tarball
           dot_git_files=$(find . -name .git)

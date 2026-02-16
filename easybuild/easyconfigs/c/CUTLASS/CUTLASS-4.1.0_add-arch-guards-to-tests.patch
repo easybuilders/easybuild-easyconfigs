@@ -1,0 +1,211 @@
+Various tests fail to compile if the CUDA compute architecture is too low.
+E.g.
+> /build/CUTLASS/4.1.0/foss-2024a-CUDA-12.6.0/cutlass-4.1.0/examples/common/dist_gemm_helpers.h(63): error: identifier "__nanosleep" is undefined
+>      __nanosleep(40);
+
+Take patch from https://github.com/NVIDIA/cutlass/pull/2567 to avoid that.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/examples/65_distributed_gemm/65_distributed_gemm.cu b/examples/65_distributed_gemm/65_distributed_gemm.cu
+index 9a7a4c30..bdd7b7e6 100644
+--- a/examples/65_distributed_gemm/65_distributed_gemm.cu
++++ b/examples/65_distributed_gemm/65_distributed_gemm.cu
+@@ -119,9 +119,6 @@
+ 
+ #include "helper.h"
+ 
+-// Distributed GEMM helpers
+-#include "dist_gemm_helpers.h"
+-
+ using namespace cute;
+ 
+ /////////////////////////////////////////////////////////////////////////////////////////////////
+@@ -135,6 +132,9 @@ static constexpr int TP_ = TP{};
+ #if defined(CUTLASS_ARCH_MMA_SM90A_ENABLED) && \
+   (__CUDACC_VER_MAJOR__ > 12 || (__CUDACC_VER_MAJOR__ == 12 && __CUDACC_VER_MINOR__ >= 6))
+ 
++// Distributed GEMM helpers
++#include "dist_gemm_helpers.h"
++
+ // Distributed GEMM tiling/sharding schedule
+ // Choices:
+ //
+diff --git a/examples/77_blackwell_fmha/kernel/sm100_fmha_bwd_kernel_tma_warpspecialized.hpp b/examples/77_blackwell_fmha/kernel/sm100_fmha_bwd_kernel_tma_warpspecialized.hpp
+index fce00fd9..a1c5c9b5 100644
+--- a/examples/77_blackwell_fmha/kernel/sm100_fmha_bwd_kernel_tma_warpspecialized.hpp
++++ b/examples/77_blackwell_fmha/kernel/sm100_fmha_bwd_kernel_tma_warpspecialized.hpp
+@@ -1486,6 +1486,9 @@ struct Sm100FmhaBwdKernelTmaWarpSpecialized {
+ 
+ 
+   CUTLASS_DEVICE void operator()(Params const& params, char* smem) {
++#if ! defined(__CUDA_ARCH_FEAT_SM100_ALL)
++    printf("ERROR : Arch conditional MMA instruction used without targeting appropriate compute capability. Aborting.\n");
++#else
+     int warp_idx = cutlass::canonical_warp_idx_sync();
+     auto role = warp_idx_to_role(warp_idx);
+     uint32_t lane_predicate = cute::elect_one_sync();
+@@ -1810,6 +1813,7 @@ struct Sm100FmhaBwdKernelTmaWarpSpecialized {
+       /* no-op */
+ 
+     }
++#endif
+   }
+ 
+   static dim3 get_block_shape() {
+diff --git a/examples/77_blackwell_fmha/kernel/sm100_fmha_bwd_mla_kernel_tma_warpspecialized.hpp b/examples/77_blackwell_fmha/kernel/sm100_fmha_bwd_mla_kernel_tma_warpspecialized.hpp
+index 976e1f26..706ea634 100644
+--- a/examples/77_blackwell_fmha/kernel/sm100_fmha_bwd_mla_kernel_tma_warpspecialized.hpp
++++ b/examples/77_blackwell_fmha/kernel/sm100_fmha_bwd_mla_kernel_tma_warpspecialized.hpp
+@@ -1480,6 +1480,9 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
+ 
+ 
+   CUTLASS_DEVICE void operator()(Params const& params, char* smem) {
++#if ! defined(__CUDA_ARCH_FEAT_SM100_ALL)
++    printf("ERROR : Arch conditional MMA instruction used without targeting appropriate compute capability. Aborting.\n");
++#else
+     int warp_idx = cutlass::canonical_warp_idx_sync();
+     auto role = warp_idx_to_role(warp_idx);
+     uint32_t lane_predicate = cute::elect_one_sync();
+@@ -1804,6 +1807,7 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
+       /* no-op */
+ 
+     }
++#endif
+   }
+ 
+   static dim3 get_block_shape() {
+diff --git a/examples/77_blackwell_fmha/kernel/sm100_fmha_fwd_kernel_tma_warpspecialized.hpp b/examples/77_blackwell_fmha/kernel/sm100_fmha_fwd_kernel_tma_warpspecialized.hpp
+index 8fe503b4..50541959 100644
+--- a/examples/77_blackwell_fmha/kernel/sm100_fmha_fwd_kernel_tma_warpspecialized.hpp
++++ b/examples/77_blackwell_fmha/kernel/sm100_fmha_fwd_kernel_tma_warpspecialized.hpp
+@@ -251,6 +251,9 @@ struct Sm100FmhaFwdKernelTmaWarpspecialized {
+   }
+ 
+   CUTLASS_DEVICE void operator()(const Params &params, char* smem) {
++#if ! defined(__CUDA_ARCH_FEAT_SM100_ALL)
++    printf("ERROR : Arch conditional MMA instruction used without targeting appropriate compute capability. Aborting.\n");
++#else
+ 
+     TileScheduler tile_scheduler{params.tile_scheduler};
+ 
+@@ -612,6 +615,7 @@ struct Sm100FmhaFwdKernelTmaWarpspecialized {
+ 
+       /* no-op, donate regs and exit */
+     }
++#endif
+   }
+ 
+ };
+diff --git a/examples/77_blackwell_fmha/kernel/sm100_fmha_gen_kernel_warpspecialized.hpp b/examples/77_blackwell_fmha/kernel/sm100_fmha_gen_kernel_warpspecialized.hpp
+index 92c7d371..ccaa01be 100644
+--- a/examples/77_blackwell_fmha/kernel/sm100_fmha_gen_kernel_warpspecialized.hpp
++++ b/examples/77_blackwell_fmha/kernel/sm100_fmha_gen_kernel_warpspecialized.hpp
+@@ -247,6 +247,9 @@ struct Sm100FmhaGenKernelWarpspecialized {
+   }
+ 
+   CUTLASS_DEVICE void operator()(const Params &params, char* smem) {
++#if ! defined(__CUDA_ARCH_FEAT_SM100_ALL)
++    printf("ERROR : Arch conditional MMA instruction used without targeting appropriate compute capability. Aborting.\n");
++#else
+ 
+     TileScheduler tile_scheduler{params.tile_scheduler};
+ 
+@@ -569,6 +572,7 @@ struct Sm100FmhaGenKernelWarpspecialized {
+ 
+       /* no-op, donate regs and exit */
+     }
++#endif
+   }
+ 
+ };
+diff --git a/examples/77_blackwell_fmha/kernel/sm100_fmha_mla_tma_warpspecialized.hpp b/examples/77_blackwell_fmha/kernel/sm100_fmha_mla_tma_warpspecialized.hpp
+index 5eb8e20b..56d19b9c 100644
+--- a/examples/77_blackwell_fmha/kernel/sm100_fmha_mla_tma_warpspecialized.hpp
++++ b/examples/77_blackwell_fmha/kernel/sm100_fmha_mla_tma_warpspecialized.hpp
+@@ -507,6 +507,9 @@ struct Sm100FmhaMlaKernelTmaWarpspecialized {
+ 
+ 
+   CUTLASS_DEVICE void operator()(Params const& params, char* smem_raw) {
++#if ! defined(__CUDA_ARCH_FEAT_SM100_ALL)
++    printf("ERROR : Arch conditional MMA instruction used without targeting appropriate compute capability. Aborting.\n");
++#else
+ 
+     TileScheduler tile_scheduler(params.tile_scheduler);
+ 
+@@ -814,6 +817,7 @@ struct Sm100FmhaMlaKernelTmaWarpspecialized {
+       uint32_t free_stage_ptr = shared_storage.tmem_base_ptr;
+       tmem_allocator.free(free_stage_ptr, TmemAllocator::Sm100TmemCapacityColumns);
+     }
++#endif
+   }
+ 
+   template<class BlkCoord>
+diff --git a/examples/82_blackwell_distributed_gemm/82_blackwell_distributed_gemm.cu b/examples/82_blackwell_distributed_gemm/82_blackwell_distributed_gemm.cu
+index acac2576..329ec710 100644
+--- a/examples/82_blackwell_distributed_gemm/82_blackwell_distributed_gemm.cu
++++ b/examples/82_blackwell_distributed_gemm/82_blackwell_distributed_gemm.cu
+@@ -119,9 +119,6 @@
+ 
+ #include "helper.h"
+ 
+-// Distributed GEMM helpers
+-#include "dist_gemm_helpers.h"
+-
+ using namespace cute;
+ 
+ /////////////////////////////////////////////////////////////////////////////////////////////////
+@@ -135,6 +132,9 @@ static constexpr int TP_ = TP{};
+ #if defined(CUTLASS_ARCH_MMA_SM100A_ENABLED) && \
+   (__CUDACC_VER_MAJOR__ > 12 || (__CUDACC_VER_MAJOR__ == 12 && __CUDACC_VER_MINOR__ >= 8))
+ 
++// Distributed GEMM helpers
++#include "dist_gemm_helpers.h"
++
+ // Distributed GEMM tiling/sharding schedule
+ // Choices:
+ //
+diff --git a/examples/88_hopper_fmha/kernel/fmha_kernel_tma.hpp b/examples/88_hopper_fmha/kernel/fmha_kernel_tma.hpp
+index 528e83cb..8c68fcae 100644
+--- a/examples/88_hopper_fmha/kernel/fmha_kernel_tma.hpp
++++ b/examples/88_hopper_fmha/kernel/fmha_kernel_tma.hpp
+@@ -137,6 +137,9 @@ struct FmhaKernelTma {
+   }
+ 
+   CUTLASS_DEVICE void operator()(const Params &params, char* smem) {
++#if ! defined(__CUDA_ARCH_FEAT_SM90_ALL)
++    printf("ERROR : Arch conditional MMA instruction used without targeting appropriate compute capability. Aborting.\n");
++#else
+     TileScheduler tile_scheduler{params.tile_scheduler};
+ 
+     // Shared memory.
+@@ -216,6 +219,7 @@ struct FmhaKernelTma {
+       result, typename CollectiveMainloop::TiledMmaPV{},
+       params.problem_size, params.epilogue,
+       epi_load_pipeline, storage.epilogue);
++#endif
+   }
+ };
+ 
+diff --git a/examples/88_hopper_fmha/kernel/fmha_kernel_tma_warpspecialized.hpp b/examples/88_hopper_fmha/kernel/fmha_kernel_tma_warpspecialized.hpp
+index 1e760a3e..d5c7b05e 100644
+--- a/examples/88_hopper_fmha/kernel/fmha_kernel_tma_warpspecialized.hpp
++++ b/examples/88_hopper_fmha/kernel/fmha_kernel_tma_warpspecialized.hpp
+@@ -161,6 +161,9 @@ struct FmhaKernelTmaWarpSpecialized {
+ 
+   CUTLASS_DEVICE void operator()(const Params &params, char* smem) {
+ 
++#if ! defined(__CUDA_ARCH_FEAT_SM90_ALL)
++    printf("ERROR : Arch conditional MMA instruction used without targeting appropriate compute capability. Aborting.\n");
++#else
+     enum class WarpGroupRole {
+       Producer = 0,
+       Consumer0 = 1,
+@@ -412,6 +415,7 @@ struct FmhaKernelTmaWarpSpecialized {
+         if constexpr (kIsEpilogueLocked) ; math_wg_order_barrier.arrive();
+       }
+     }
++#endif
+   }
+ };
+ 

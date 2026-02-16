@@ -1,0 +1,78 @@
+From 42770597191c18ddd6db0f91c7edf048bd6aee4c Mon Sep 17 00:00:00 2001
+From: David Boehme <boehme3@llnl.gov>
+Date: Thu, 17 Jul 2025 10:33:07 -0700
+Subject: [PATCH 1/2] Update nvtx headers in Cupti.cpp
+
+---
+ src/services/cupti/Cupti.cpp | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+diff --git a/src/services/cupti/Cupti.cpp b/src/services/cupti/Cupti.cpp
+index 8c49ff9e..98a257fe 100644
+--- a/src/services/cupti/Cupti.cpp
++++ b/src/services/cupti/Cupti.cpp
+@@ -19,10 +19,8 @@
+ 
+ #include <cuda_runtime_api.h>
+ 
+-#include <nvToolsExt.h>
+-#if CUDART_VERSION >= 9000
+-#include <nvToolsExtSync.h>
+-#endif
++#include <nvtx3/nvToolsExt.h>
++#include <nvtx3/nvToolsExtSync.h>
+ #include <generated_nvtx_meta.h>
+ 
+ #include <vector>
+@@ -228,14 +226,12 @@ class CuptiService
+         case CUPTI_CBID_NVTX_nvtxRangePushA:
+             {
+                 const char* msg = static_cast<const nvtxRangePushA_params*>(p)->message;
+-
+                 c.begin(cupti_info.nvtx_range_attr, Variant(msg));
+             }
+             break;
+         case CUPTI_CBID_NVTX_nvtxRangePushEx:
+             {
+                 const char* msg = static_cast<const nvtxRangePushEx_params*>(p)->eventAttrib->message.ascii;
+-
+                 c.begin(cupti_info.nvtx_range_attr, Variant(msg));
+             }
+             break;
+@@ -245,9 +241,7 @@ class CuptiService
+         case CUPTI_CBID_NVTX_nvtxDomainRangePushEx:
+             {
+                 // TODO: Use domain-specific attribute
+-
+                 const char* msg = static_cast<const nvtxDomainRangePushEx_params*>(p)->core.eventAttrib->message.ascii;
+-
+                 c.begin(cupti_info.nvtx_range_attr, Variant(msg));
+             }
+             break;
+
+From 9f5e47a343c2cf0dd6bc32e0017601d3188fa9ce Mon Sep 17 00:00:00 2001
+From: David Boehme <boehme3@llnl.gov>
+Date: Wed, 23 Jul 2025 13:10:45 -0700
+Subject: [PATCH 2/2] Also fix nvtx header path in CuptiTrace.cpp
+
+---
+ src/services/cupti/CuptiTrace.cpp | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/src/services/cupti/CuptiTrace.cpp b/src/services/cupti/CuptiTrace.cpp
+index 76d3ac7d..32d53650 100644
+--- a/src/services/cupti/CuptiTrace.cpp
++++ b/src/services/cupti/CuptiTrace.cpp
+@@ -19,10 +19,8 @@
+ 
+ #include <cuda_runtime_api.h>
+ 
+-#include <nvToolsExt.h>
+-#if CUDART_VERSION >= 9000
+-#include <nvToolsExtSync.h>
+-#endif
++#include <nvtx3/nvToolsExt.h>
++#include <nvtx3/nvToolsExtSync.h>
+ #include <generated_nvtx_meta.h>
+ 
+ #include <iomanip>
