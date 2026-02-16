@@ -1,0 +1,3646 @@
+easyblock = 'Bundle'
+
+name = 'R-bundle-CRAN'
+version = '2025.10'
+
+homepage = 'https://www.r-project.org/'
+description = "Bundle of R packages from CRAN"
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('pkgconf', '2.3.0'),
+    ('Xvfb', '21.1.18'),
+    ('Autotools', '20240712'),
+    ('CMake', '3.31.3'),
+]
+
+dependencies = [
+    ('R', '4.5.1'),
+    ('libxml2', '2.13.4'),  # for XML
+    ('GMP', '6.3.0'),  # for igraph
+    ('NLopt', '2.10.0'),  # for nlopt
+    ('FFTW', '3.3.10'),  # for fftw
+    ('libsndfile', '1.2.2'),  # for seewave
+    ('ICU', '76.1'),  # for rJava & gdsfmt
+    ('HDF5', '1.14.6'),  # for hdf5r
+    ('UDUNITS', '2.2.28'),  # for units
+    ('GSL', '2.8'),  # for RcppGSL
+    ('ImageMagick', '7.1.1-47'),
+    ('GLPK', '5.0'),  # for Rglpk
+    ('nodejs', '22.16.0'),  # for V8 (required by rstan)
+    ('GDAL', '3.11.1'),  # for sf
+    ('MPFR', '4.2.2'),  # for Rmpfr
+    ('PostgreSQL', '17.5'),  # for RPostgreSQL
+]
+
+# Some R extensions (mclust, quantreg, waveslim for example) require the math library (-lm) to avoid undefined symbols.
+# Adding it to FLIBS makes sure it is present when needed.
+preconfigopts = 'export FLIBS="$FLIBS -lm" && '
+
+configopts = "--with-pic --enable-threads --enable-R-shlib"
+# some recommended packages may fail in a parallel build (e.g. Matrix), and
+# we're installing them anyway below
+configopts += " --with-recommended-packages=no"
+
+exts_defaultclass = 'RPackage'
+
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+# check whether correct version is installed in extension filter
+# (some versions in this bundle may be newer than the ones provided by R)
+local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver != '%(ext_version)s') "
+local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
+exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
+
+# the dbarts extension needs an additional compiler flag on Arm systems to prevent "incompatible types" errors
+# cfr. https://github.com/vdorie/dbarts/issues/66
+if ARCH == 'aarch64':
+    local_dbarts_preinstallopts = 'sed -i "s|-c partition_neon.c|-flax-vector-conversions -c partition_neon.c|"'
+    local_dbarts_preinstallopts += ' src/misc/Makefile && '
+else:
+    local_dbarts_preinstallopts = ''
+
+# !! order of packages is important !!
+# packages updated on 27 Oct 2025
+exts_list = [
+    ('abind', '1.4-8', {
+        'checksums': ['264a051b523ceae1795a0879e7768949ea55c586ac8db0adf1f5ebeddd2623e1'],
+    }),
+    ('magic', '1.6-1', {
+        'checksums': ['ca79ec7ae92b736cb128556c081abf547f49956c326e053a76579889cbcb7976'],
+    }),
+    ('RcppProgress', '0.4.2', {
+        'checksums': ['b1624b21b7aeb1dafb30f092b2a4bef4c3504efd2d6b00b2cdf55dc9df194b48'],
+    }),
+    ('lpSolve', '5.6.23', {
+        'checksums': ['46c39607d3f256e40174c9c81fb476280291c1bcd894d99f9789a3a3d52ca2d7'],
+    }),
+    ('linprog', '0.9-4', {
+        'checksums': ['81a6aa2fdc075f12dc912794d0554f87705a8b872b99c89a90a69ee9ada864b4'],
+    }),
+    ('geometry', '0.5.2', {
+        'checksums': ['c83a1e17ada83112a10ed99d4ddb80e0f1fd1aa70989a4d805480780ed9b46a5'],
+    }),
+    ('bit', '4.6.0', {
+        'checksums': ['48fe21c5d04c7b724d695eeb60074395c0c631a7fb234e2075de92471445de08'],
+    }),
+    ('filehash', '2.4-6', {
+        'checksums': ['558b446ba354c6fa88f694e8d6d068f999d1e7b626164eb2aeacccbb0dee81b1'],
+    }),
+    ('ff', '4.5.2', {
+        'checksums': ['0551f57cfcc7b05f3ed85b4b9570b3a96597e687db0c67fb3f26e38d92c6352c'],
+    }),
+    ('bnlearn', '5.1', {
+        'checksums': ['625568dc7e7773934867ffd36b1898bfb56b80937736b81a00479920616fdb96'],
+    }),
+    ('bootstrap', '2019.6', {
+        'checksums': ['5252fdfeb944cf1fae35016d35f9333b1bd1fc8c6d4a14e33901160e21968694'],
+    }),
+    ('combinat', '0.0-8', {
+        'checksums': ['1513cf6b6ed74865bfdd9f8ca58feae12b62f38965d1a32c6130bef810ca30c1'],
+    }),
+    ('deal', '1.2-42', {
+        'checksums': ['a17f452a94fc3964c939c5b147ad6d4f326a0990493519d376d6700cf733a134'],
+    }),
+    ('fdrtool', '1.2.18', {
+        'checksums': ['649966996bfaa71932eddfb8ab371187377d8b0212548305dd7b18664ae6baef'],
+    }),
+    ('formatR', '1.14', {
+        'checksums': ['4ebaab2c3f8527871655246b62abd060bc75dae1cec7f962ca4752b8080f474c'],
+    }),
+    ('gtools', '3.9.5', {
+        'checksums': ['dee9b6c1152db1a5dc427d074b32bbbb738708683f17a95e0e95e4d79fdf174b'],
+    }),
+    ('gdata', '3.0.1', {
+        'checksums': ['db3a96dd2ba3c0ef6fc6b5176eba7b4d3eaa06b96fba3d8d0b13450c66763862'],
+    }),
+    ('GSA', '1.03.3', {
+        'checksums': ['5459786190f40339addc45e7bb58c6a983548aa8feac7277ea7ec0662c5a282c'],
+    }),
+    ('infotheo', '1.2.0.1', {
+        'checksums': ['c0fb8ec97ad3a49f231c4c993b5eee70c6a61c8c30dc4a46197867e4763a29d4'],
+    }),
+    ('lars', '1.3', {
+        'checksums': ['c69e6a8da6a3344c0915dd1fd4c78fec5cdf50c62cf6297476e9bb7dc10b549d'],
+    }),
+    ('lazy', '1.2-18', {
+        'checksums': ['99441bcae2dfbf450eee91f3ec969d416c225f671ac54459c50536916890f00a'],
+    }),
+    ('kernlab', '0.9-33', {
+        'checksums': ['70c0787d6d3762c89bb68218fbee19e861fcb5d4c05b787a9692055d95dd3061'],
+    }),
+    ('litedown', '0.7', {
+        'checksums': ['e72cb4729df269d221e83bc9863e6f2e1932d78cb04e36c8580e701e39bdb471'],
+    }),
+    ('markdown', '2.0', {
+        'checksums': ['a560de75fb6878901e38febfef3ea8d21cb63af63de0e583019867d189bf9541'],
+    }),
+    ('mlbench', '2.1-6', {
+        'checksums': ['ea2ccf508594f935661e29854496f350f0b83680dd9a4d630dd3e3e03652951e'],
+    }),
+    ('NLP', '0.3-2', {
+        'checksums': ['c59e8bc6485336bc076e7c37129814fa8ef558ce711fa493510206e6a9254225'],
+    }),
+    ('mclust', '6.1.1', {
+        'checksums': ['ddd7018e5e6ea7f92c7fc9872b391491b7e91c2cd89ef1dcaf4408afb5116775'],
+    }),
+    ('RANN', '2.6.2', {
+        'checksums': ['6ef7d5b555ab6b051da86896aeb4d18e8174b22dbe2fc1543888d3b88d9b9772'],
+    }),
+    ('rmeta', '3.0', {
+        'checksums': ['b9f9d405935cffcd7a5697ff13b033f9725de45f4dc7b059fd68a7536eb76b6e'],
+    }),
+    ('MASS', '7.3-65', {
+        'checksums': ['b07ef1e3c364ce56269b4a8a7759cc9f87c876554f91293437bb578cfe38172f'],
+    }),
+    ('lattice', '0.22-7', {
+        'checksums': ['400fa62b95e90410d52a36cee2ddeb025dd49695e55fe3db709fe60886bff9f7'],
+    }),
+    ('nlme', '3.1-168', {
+        'checksums': ['23b78468344cb6775dee5e0d9c8133032d64f08ebaba20776508a0443a897362'],
+    }),
+    ('segmented', '2.1-4', {
+        'checksums': ['abd2e7c81a0ccdf59d98aeaae464b4791ed622a1b26fae666dca10cd4694f1eb'],
+    }),
+    ('som', '0.3-5.2', {
+        'checksums': ['76abbb0516ccd02ea0e123557266e8638aa44eb410e92dcb1d293e279b627045'],
+    }),
+    ('SuppDists', '1.1-9.9', {
+        'checksums': ['7fbc0881948841bed1915cd5b998164167b1a265da6d955a8e85a1fcb3dea926'],
+    }),
+    ('stabledist', '0.7-2', {
+        'checksums': ['26671710c0d8e3c815b56e6e4f6bc9ea0509db47c0ef5b8acfbfa16095a16fd5'],
+    }),
+    ('survivalROC', '1.0.3.1', {
+        'checksums': ['8174afebaf239dfda979c8c7e1e219624576d577c983ae787fbd2785b4ccd15c'],
+    }),
+    ('pspline', '1.0-21', {
+        'checksums': ['7f5739b9cf378dda6cd33d152b5f84ae2afa728f7dac0729dab565264138abca'],
+    }),
+    ('timeDate', '4051.111', {
+        'checksums': ['fb9513f6049effed47e9e97804e96f27d38a6935fc8bb59a9d68bf2aac9021d5'],
+    }),
+    ('longmemo', '1.1-4', {
+        'checksums': ['390849c9c3ff648a9fb6f7b3610d58fc9081aadf5ca7793359678efc8934a0f9'],
+    }),
+    ('ADGofTest', '0.3', {
+        'checksums': ['9cd9313954f6ecd82480d373f6c5371ca84ab33e3f5c39d972d35cfcf1096846'],
+    }),
+    ('pixmap', '0.4-14', {
+        'checksums': ['26710c931f95b89b66b50e3ee1c4b6e1ba383b8067f80b3d7de2f0d58cb9fa9e'],
+    }),
+    ('sp', '2.2-0', {
+        'checksums': ['b57be793a96bec568bed5b619e62ec1f4efaf879adc0e57e486b891768148b98'],
+    }),
+    ('hms', '1.1.4', {
+        'checksums': ['efc525f797b62b3740d06c6fa8202593ab5aa4fc1edeefb76b6eb9be89e87b94'],
+    }),
+    ('progress', '1.2.3', {
+        'checksums': ['ea2b079b894de85c3ab12088c9c52aec06432245047a961d5b4b8aa6889f9276'],
+    }),
+    ('RcppArmadillo', '15.0.2-2', {
+        'checksums': ['f8895e85d70ddeabb1d4ec7567f81ed6fd95f9e8715d0791afd07c8382315f4e'],
+    }),
+    ('ade4', '1.7-23', {
+        'checksums': ['3092c5a68f68f24fc28387407f43b939862a460635250609f2409e359476677f'],
+    }),
+    ('AlgDesign', '1.2.1.2', {
+        'checksums': ['692dc7a02a6c5eb2421a7398488e9fb8700174187bda37ff820548654d0b7625'],
+    }),
+    ('BH', '1.87.0-1', {
+        'checksums': ['59829ae635f42a23289a1c51617f5f972704e1b243b604dad20ef5a812e60393'],
+    }),
+    ('Matrix', '1.7-4', {
+        'checksums': ['7b131ecb6a21ff09a33691dac7bf8a7bc2eab9fd1dd09ef14856d74346eb4779'],
+    }),
+    ('Brobdingnag', '1.2-9', {
+        'checksums': ['f9012d250bc2a0f47815d6a7c06df2d4ddf3d8bab2d3b75e8cdefd964d20e91e'],
+    }),
+    ('corpcor', '1.6.10', {
+        'checksums': ['71a04c503c93ec95ddde09abe8c7ddeb36175b7da76365a14b27066383e10e09'],
+    }),
+    ('longitudinal', '1.1.13', {
+        'checksums': ['57f04a0f387c1cc30d2feb945dc3ed35d2a304d94d21d3bc2cac8c92571fdc10'],
+    }),
+    ('backports', '1.5.0', {
+        'checksums': ['0d3ed9db8f1505e88967f48d669b2a257e0c6b7e6320ea64b946c1bd40897ca2'],
+    }),
+    ('checkmate', '2.3.3', {
+        'checksums': ['f7af5c701b85505141f68ea3d35e01034752bb22bc0578fc72bd58c0043ae57f'],
+    }),
+    ('cubature', '2.1.4', {
+        'checksums': ['01c74480f9023d7e9690a33b68c381ac2109cd24522d72c07a3f01c98d822da1'],
+    }),
+    ('DEoptimR', '1.1-4', {
+        'checksums': ['5a1bdd10d6f75e77e91bed0568e7be9f08dd2996a0b2ca2b3c80a71626e602a2'],
+    }),
+    ('fastmatch', '1.1-6', {
+        'checksums': ['10b147ff26df1bda6f41e13ffc8b5740309a01838c78e1902404832da64f4d66'],
+    }),
+    ('iterators', '1.0.14', {
+        'checksums': ['cef3075a0930e1408c764e4da56bbadd4f7d14315809df8f38dd51f80ccc677b'],
+    }),
+    ('maps', '3.4.3', {
+        'checksums': ['3b6d4945330041280ddb3f89fbe0d7dbcf124befef94e8d77e809122d8d588b8'],
+    }),
+    ('nnls', '1.6', {
+        'checksums': ['272f6174cfbab744486f7ec44a516cb5845663b28d38fe0b4d2a924673117fda'],
+    }),
+    ('sendmailR', '1.4-0', {
+        'checksums': ['5b8b91fc13f6b07b9fc5a2cf7591cf760fad47c5ea17d87a2891898c506454ad'],
+    }),
+    ('dotCall64', '1.2', {
+        'checksums': ['aad6ab571f30d4d191a9454cee278d57b478fb49d3f7b190593f317a0e4408aa'],
+    }),
+    ('spam', '2.11-1', {
+        'checksums': ['5c4cc53b81ea61d198c174a1342d14ea4af83b2936d384f46682965e352ff865'],
+    }),
+    ('subplex', '1.9', {
+        'checksums': ['07a9ea8cba46a6eec037f8c6e87279c122479ccc560a96bd3086d653f95d69b7'],
+    }),
+    ('logspline', '2.1.22', {
+        'checksums': ['773af7a2f12bce0eac30a036bd61bafd9a2b0eb083e377f4ef4e5518a463ed02'],
+    }),
+    ('ncbit', '2013.03.29.1', {
+        'checksums': ['847f570c035d849e775c1cb922d2775e6c535971eb4429cf62904319fd126504'],
+    }),
+    ('permute', '0.9-8', {
+        'checksums': ['f2c838526046925c6e7495784846139bb6f0ac6712abf0335096a473dc29e34b'],
+    }),
+    ('plotrix', '3.8-4', {
+        'checksums': ['e6a22d93ab61c67af21cbbe1fe333c06934cf576a44745bf2beee59bceaae8d6'],
+    }),
+    ('randomForest', '4.7-1.2', {
+        'checksums': ['aad33227b648bad50412849d7e0fed00fd07f1d1d4a14fa015b4b9f939b04a11'],
+    }),
+    ('scatterplot3d', '0.3-44', {
+        'checksums': ['1c9c08348c3ed925f59df40cb73accc9e1a169ccfb1e8571f105f40fa98e6ec2'],
+    }),
+    ('SparseM', '1.84-2', {
+        'checksums': ['2580fdbb8679e76c92b9f0c5bd9bb503c4cb6a750ef6ae96595441690ce98665'],
+    }),
+    ('tripack', '1.3-9.3', {
+        'checksums': ['40ea209cdc8be3806722935e877ade4c9c1605fccf07c785b78dbe6c69563576'],
+    }),
+    ('codetools', '0.2-20', {
+        'checksums': ['3be6f375ec178723ddfd559d1e8e85bfeee04a5fbaf9f53f2f844e1669fea863'],
+    }),
+    ('data.table', '1.17.8', {
+        'checksums': ['17f24496d548914fdac2b8ed00c7272f2e191ee32eb6bb8336f9beb6691330e0'],
+    }),
+    ('matrixStats', '1.5.0', {
+        'checksums': ['12996c5f3e6fc202a43e1087f16a71b7fa93d7e908f512542c7ee89cf95dcc15'],
+    }),
+    ('spacefillr', '0.4.0', {
+        'checksums': ['5d8ba53dd5ef32d11c42b5ea4e956f0ab5799e6000cf38e36307225a5fe268b6'],
+    }),
+    ('irace', '4.3', {
+        'checksums': ['4c5821cdf58661c55f6d4c98fa95c188622bd71da78a4d2de5ca4bc27c532ef7'],
+    }),
+    ('rJava', '1.0-11', {
+        'checksums': ['9ea0ccf5553d86f7de8649a8324766c4f0810f35b7be561640dd87fd37986417'],
+    }),
+    ('RColorBrewer', '1.1-3', {
+        'checksums': ['4f42f5423c45688b39f492c7892d93f37b4541831c8ffb140364d2bd89031ac0'],
+    }),
+    ('png', '0.1-8', {
+        'checksums': ['5a36fabb6d62ba2533d3fc4cececd07891942cfb76fe689ec0d550d08762f61c'],
+    }),
+    ('jpeg', '0.1-11', {
+        'checksums': ['2139efbd48fbcc590a401e40215573f4a214432536bc8967caa163a833b03729'],
+    }),
+    ('deldir', '2.0-4', {
+        'checksums': ['d418acb28ec3707b6d64c7466d0cefbb49b098537f37558d8f7a5befd34a4653'],
+    }),
+    ('RcppEigen', '0.3.4.0.2', {
+        'checksums': ['ecad7ba2129fd48b7ebb825558d38492ed1f3a8934959e27fcd6688175e542bb'],
+    }),
+    ('interp', '1.1-6', {
+        'checksums': ['3674044e5334ecdf124054303929c084fc0797d3123e28576a230492ea6ecd34'],
+    }),
+    ('latticeExtra', '0.6-31', {
+        'checksums': ['be69d8014bf722fab00d1afc7a8b515fdba65b25c7700ef44d76f092c5b6e66e'],
+    }),
+    ('plyr', '1.8.9', {
+        'checksums': ['15b5e7f711d53bf41b8687923983b8ef424563aa2f74c5195feb5b1df1aee103'],
+    }),
+    ('gtable', '0.3.6', {
+        'checksums': ['d305a5fa11278b649d2d8edc5288bf28009be888a42be58ff8714018e49de0ef'],
+    }),
+    ('reshape2', '1.4.4', {
+        'checksums': ['d88dcf9e2530fa9695fc57d0c78adfc5e361305fe8919fe09410b17da5ca12d8'],
+    }),
+    ('dichromat', '2.0-0.1', {
+        'checksums': ['a10578e9ad8a581bd8fe0d8a8370051f3cdcf12c7d282f3af2a18dacda566081'],
+    }),
+    ('colorspace', '2.1-2', {
+        'checksums': ['ec71499d33ef5d72b7fb3359b8320639e06e413abad61a070201178a254b153e'],
+    }),
+    ('munsell', '0.5.1', {
+        'checksums': ['03a2fd9ac40766cded96dfe33b143d872d0aaa262a25482ce19161ca959429a6'],
+    }),
+    ('labeling', '0.4.3', {
+        'checksums': ['c62f4fc2cc74377d7055903c5f1913b7295f7587456fe468592738a483e264f2'],
+    }),
+    ('viridisLite', '0.4.2', {
+        'checksums': ['893f111d31deccd2cc959bc9db7ba2ce9020a2dd1b9c1c009587e449c4cce1a1'],
+    }),
+    ('farver', '2.1.2', {
+        'checksums': ['528823b95daab4566137711f1c842027a952bea1b2ae6ff098e2ca512b17fe25'],
+    }),
+    ('scales', '1.4.0', {
+        'checksums': ['d55ef5f08c92652d7a95cfa27584024723ab17873f1b2577dd488cb7c883ceee'],
+    }),
+    ('zeallot', '0.2.0', {
+        'checksums': ['7f6b97dbb7cd762f76f7319b3e2b38f3d4206fe625d363da1b5f96c928da92bb'],
+    }),
+    ('assertthat', '0.2.1', {
+        'checksums': ['85cf7fcc4753a8c86da9a6f454e46c2a58ffc70c4f47cac4d3e3bcefda2a9e9f'],
+    }),
+    ('lazyeval', '0.2.2', {
+        'checksums': ['d6904112a21056222cfcd5eb8175a78aa063afe648a562d9c42c6b960a8820d4'],
+    }),
+    ('mgcv', '1.9-3', {
+        'checksums': ['43f0ccdba176890a1d7bbe9a0a0859222e1fbcc97064c6e6ad7a3f545fd82f1d'],
+    }),
+    ('isoband', '0.2.7', {
+        'checksums': ['7693223343b45b86de2b5b638ff148f0dafa6d7b1237e822c5272902f79cdf61'],
+    }),
+    ('S7', '0.2.0', {
+        'checksums': ['b8675a7fac7a396e524b21cd353ef0823d2acf76088b5f229d2a55a182a4d49b'],
+    }),
+    ('ggplot2', '4.0.0', {
+        'checksums': ['0f9fe288b5d9c2e23253427af9a707a3b2334a7706ad13752eccedf623871a7d'],
+    }),
+    ('pROC', '1.19.0.1', {
+        'checksums': ['f161ed071a3c45192f0faf4ab37237f12bed9334e954e5e041ba98078c70e619'],
+    }),
+    ('quadprog', '1.5-8', {
+        'checksums': ['22128dd6b08d3516c44ff89276719ad4fe46b36b23fdd585274fa3a93e7a49cd'],
+    }),
+    ('BB', '2019.10-1', {
+        'checksums': ['04d0b6ce6e5f070b109478a6005653dbe78613bb4e3ea4903203d851b5d3c94d'],
+    }),
+    ('BBmisc', '1.13', {
+        'checksums': ['1145dcf9fed15e7beeaa4a5c7075d8a8badd17c8246838cd63e40cd9551e4405'],
+    }),
+    ('fail', '1.3', {
+        'checksums': ['ede8aa2a9f2371aff5874cd030ac625adb35c33954835b54ab4abf7aeb34d56d'],
+    }),
+    ('rlecuyer', '0.3-8', {
+        'checksums': ['66bed3543337535fe2cf2d3eee4165472599c14d3c5e4402f7a1ebf5112c75c9'],
+    }),
+    ('snow', '0.4-4', {
+        'checksums': ['84587f46f222a96f3e2fde10ad6ec6ddbd878f4e917cd926d632f61a87db13c9'],
+    }),
+    ('tree', '1.0-45', {
+        'checksums': ['b397f593fbd7c063bc17ca1b6601088d01297d443d865bd8ea6ff9d3641c0697'],
+    }),
+    ('pls', '2.8-5', {
+        'checksums': ['8029018d4c8921fa4c7ec5081551afdcc55d53271d9920db828483b442a033cf'],
+    }),
+    ('class', '7.3-23', {
+        'checksums': ['4d1adb12eae045f15641516d795177dd1d3074c0a86ac633000507c4822891f1'],
+    }),
+    ('proxy', '0.4-27', {
+        'checksums': ['249991a4c4d70ad139e93f3a24e17f161ad1ec854951813ea192daf79478563f'],
+    }),
+    ('e1071', '1.7-16', {
+        'checksums': ['12d565e3033fdb94c96c1e49f1a08202fcfb9e2a804a2e6b8fd204bdd97c3a4f'],
+    }),
+    ('nnet', '7.3-20', {
+        'checksums': ['8f33e17e0eb161cfbc1bfee4875baa23c66fcdba8215a64a63402b099db2b555'],
+    }),
+    ('minqa', '1.2.8', {
+        'checksums': ['5941e4b9b01978fc6d9fe24e6ca60cca66883fe9fa6ff3cbfa32aa1ac9db5467'],
+    }),
+    ('MatrixModels', '0.5-4', {
+        'checksums': ['f57af9e0a35a3fea77790e46846482c6c7de0d0ea1996a995a5924f2d41cf33c'],
+    }),
+    ('foreach', '1.5.2', {
+        'checksums': ['56338d8753f9f68f262cf532fd8a6d0fe25a71a2ff0107f3ce378feb926bafe4'],
+    }),
+    ('ModelMetrics', '1.2.2.2', {
+        'checksums': ['5e06f1926aebca5654e1329c66ef19b04058376b2277ebb16e3bf8c208d73457'],
+    }),
+    ('generics', '0.1.4', {
+        'checksums': ['bbe95a097792d38fc3b7e677738af1b95b66ea5e5017e33b8beac6a6088d0801'],
+    }),
+    ('tidyselect', '1.2.1', {
+        'checksums': ['169e97ba0bbfbcdf4a80534322751f87a04370310c40e27f04aac6525d45903c'],
+    }),
+    ('dplyr', '1.1.4', {
+        'checksums': ['cf730414d5d4ab387b4e9890a4b1df9d17a3903488e8da8df1cf2e11e44558cb'],
+    }),
+    ('gower', '1.0.2', {
+        'checksums': ['4fd569a50326133bd5629647ad0581340c9b9f8cd7f95572315f206f78185751'],
+    }),
+    ('rpart', '4.1.24', {
+        'checksums': ['4ab169a764d9857d299313aae0e7764bcea9220576e537cf165d4f8117e72f29'],
+    }),
+    ('survival', '3.8-3', {
+        'checksums': ['dcab05a57d37a561c7426f6213d49852dc4f462180dd28b5325ff4b6a5e59915'],
+    }),
+    ('KernSmooth', '2.23-26', {
+        'checksums': ['b465bdac197f7faa787e625412ae03d1b7c2c134b1c924cfeb775faf9c4da73e'],
+    }),
+    ('globals', '0.18.0', {
+        'checksums': ['8fa3bdafff38cc5997f9e7235c8f8359825ed8f9a0ec06c6fe75c9f798ed9fec'],
+    }),
+    ('listenv', '0.9.1', {
+        'checksums': ['422aaf487b91c6512b83c05536f8dac255db79b16ee85254acc59a3fda8c1c3b'],
+    }),
+    ('parallelly', '1.45.1', {
+        'checksums': ['6b5d3c0487fd8f9b05d98077c08919dc282bc9046c305efe49b34487ffbf485d'],
+    }),
+    ('future', '1.67.0', {
+        'checksums': ['f8cb84095c5b5eaf0d2e33ba513982ba3d4b3a95928c3b353bd3be00ef569497'],
+    }),
+    ('future.apply', '1.20.0', {
+        'checksums': ['f8cee7e7a7d61aaad9cfecc12a38e8673b1899cd789f274224f2d40c3fbfaa1e'],
+    }),
+    ('progressr', '0.17.0', {
+        'checksums': ['971a91d13a07e7f06c2a99074028660e14468c9f6f2eb56965a226b6cf9235e1'],
+    }),
+    ('numDeriv', '2016.8-1.1', {
+        'checksums': ['d8c4d19ff9aeb31b0c628bd4a16378e51c1c9a3813b525469a31fe89af00b345'],
+    }),
+    ('SQUAREM', '2021.1', {
+        'checksums': ['66e5e18ca29903e4950750bbd810f0f9df85811ee4195ce0a86d939ba8183a58'],
+    }),
+    ('lava', '1.8.1', {
+        'checksums': ['189f6648dad03d18c12202ef19fec3a133e159740fcfc6389383015d4d821382'],
+    }),
+    ('shape', '1.4.6.1', {
+        'checksums': ['43f9bd0f997fd6cf1838efd8b2509c9a6396513f4e54a20360481634affd22a4'],
+    }),
+    ('diagram', '1.6.5', {
+        'checksums': ['e9c03e7712e0282c5d9f2b760bafe2aac9e99a9723578d9e6369d60301f574e4'],
+    }),
+    ('prodlim', '2025.04.28', {
+        'checksums': ['62b7049aeb947dd54f1ccb210c111ae50eb7461b8c9942601e09a1a10721fc3a'],
+    }),
+    ('ipred', '0.9-15', {
+        'checksums': ['a4752de11121262f3f4c43163efa34e05e42cdf4f8496d8897be6f410dc0ee4b'],
+    }),
+    ('timechange', '0.3.0', {
+        'checksums': ['d85c0b5514ab9578d16032e703c33f197feaed1a424c834ebfcbf0ad46ae46b4'],
+    }),
+    ('lubridate', '1.9.4', {
+        'checksums': ['864b7ee223d622d41214c6aacc7d68d8984090a8e1e823c729983d33624646c1'],
+    }),
+    ('tidyr', '1.3.1', {
+        'checksums': ['e820c261cb5543f572f49276a7bdc7302aa4215da4bf850b1b939a315353835d'],
+    }),
+    ('sparsevctrs', '0.3.4', {
+        'checksums': ['69c6fbf404ed22232a162baac4702795dbb099f2540f3f5bb77cf4c93cebf272'],
+    }),
+    ('hardhat', '1.4.2', {
+        'checksums': ['62f5f9e882a87ee0914438298ef27f89ded94568c5b1aed54c5189eeab186020'],
+    }),
+    ('tzdb', '0.5.0', {
+        'checksums': ['380d5237dbfa722fddb7d1d9ad8520a2b26331dbbb77d51850ded332fcf347db'],
+    }),
+    ('clock', '0.7.3', {
+        'checksums': ['5aa09e27b8786c6647ae50e1ccfbb5bae98c5b516c6502028caa7814198a566e'],
+    }),
+    ('recipes', '1.3.1', {
+        'checksums': ['ceba6fb1ffcde9e7952792c2ca148711761bf4c8017a18f71915d606bd99dcc4'],
+    }),
+    ('caret', '7.0-1', {
+        'checksums': ['d1ea51a8ce1948718b424bacda84428bd397d8b7869310a96311553d329a815c'],
+    }),
+    ('conquer', '1.3.3', {
+        'checksums': ['a2c6155ed74af0e2a279145843ec5229ae2f3707aa25169ae030c520aa97deba'],
+    }),
+    ('quantreg', '6.1', {
+        'checksums': ['f42292c5ab25a15f39295b93391deafef192fe09eefde563399a64eba7e0169a'],
+    }),
+    ('robustbase', '0.99-6', {
+        'checksums': ['fa08c42c2cba521210725fd57bd1d456ced68e3da7569cffe38be24a4cf31a1d'],
+    }),
+    ('zoo', '1.8-14', {
+        'checksums': ['a82bb6535c42ab48b125c878f924febfac800003592e00a800b5b4c528412796'],
+    }),
+    ('lmtest', '0.9-40', {
+        'checksums': ['64400d4d6cc635316531042971f1783539686e9015c76f5741c07304fa14d997'],
+    }),
+    ('vcd', '1.4-13', {
+        'checksums': ['9dac62ace393ef6e56a1f5fa8909081350d2f9f46e47ea6f78759d41a81df8cc'],
+    }),
+    ('snowfall', '1.84-6.3', {
+        'checksums': ['2641932b01041e34b7afb1261f649755b4c8d6560080e0e2ee549ffdf3b8b143'],
+    }),
+    ('bindr', '0.1.2', {
+        'checksums': ['521f6c60183c8c0c9a4e27a3e923349d17cbd9638dc6ba29bf803c8e840f2698'],
+    }),
+    ('plogr', '0.2.0', {
+        'checksums': ['0e63ba2e1f624005fe25c67cdd403636a912e063d682eca07f2f1d65e9870d29'],
+    }),
+    ('bindrcpp', '0.2.3', {
+        'checksums': ['662dae785aee715855415f4e743281ccbf0832e426084dc2f0ca9c9c908ec9fa'],
+    }),
+    ('tmvnsim', '1.0-2', {
+        'checksums': ['97f63d0bab3b240cc7bdbe6e6e74e90ad25a4382a345ee51a26fe3959edeba0f'],
+    }),
+    ('mnormt', '2.1.1', {
+        'checksums': ['95fca70378af0afd5a388982ba5528f5b27e02157eeb9940a0a9762d11511308'],
+    }),
+    ('foreign', '0.8-90', {
+        'checksums': ['1dc6798002a50b9014227a2d20c0c2450fe6feb991a4a0b3bee36c0ee779a196'],
+    }),
+    ('GPArotation', '2025.3-1', {
+        'checksums': ['bf2bd7ee40069abd343e1ab3598a7dcf6ef01d051271a5687569524a0123828b'],
+    }),
+    ('psych', '2.5.6', {
+        'checksums': ['ced7eb0ef4e6be7ddab22b0b3f934d3dbd25eefc394067ff9fa1a916ec315110'],
+    }),
+    ('broom', '1.0.10', {
+        'checksums': ['5ffabd4890dbe133c20f19feba6c687bcadb878c7a5404e0d088d87710630031'],
+    }),
+    ('nloptr', '2.2.1', {
+        'checksums': ['76ba40750b475c8b1ad6a86c9e05f0c1746af16d965235ff9293953920aed7f4'],
+    }),
+    ('boot', '1.3-32', {
+        'checksums': ['3a05aced6fea42a5c310c5c6ab7a2019f69f757f5e77c4961183977747136c97'],
+    }),
+    ('statmod', '1.5.1', {
+        'checksums': ['8f04388117352a75e55d72f320ca12c32bca484d640216885eff378df2291397'],
+    }),
+    ('rbibutils', '2.3', {
+        'checksums': ['0c35ad62219bbdaa9b6d9be892a1aeb02e7faa05ca9a6fb15a3129d3d250777f'],
+    }),
+    ('Rdpack', '2.6.4', {
+        'checksums': ['0151647fd45eebd5c1f0e1897d096d4dc359a06b046a4feb75bb4e1f41f09513'],
+    }),
+    ('reformulas', '0.4.1', {
+        'checksums': ['60c585ef8791d3f3f8d0c6eeac83fabcf1f21960a6ad1abd2b756603c603f0de'],
+    }),
+    ('lme4', '1.1-37', {
+        'checksums': ['cfdb756c445fdda069307945798dae1646557df2ed417ac06572eab47fbef00c'],
+    }),
+    ('ucminf', '1.2.2', {
+        'checksums': ['4bdb6ae769fa49a167cfdc92dc544ba3b6f34df6c08810cfb0c55613aff5bd29'],
+    }),
+    ('ordinal', '2023.12-4.1', {
+        'checksums': ['2c9dcfa438c964ff1825033d0759d25f404a2a4c5252b81e40f19cffc18e38b1'],
+    }),
+    ('jomo', '2.7-6', {
+        'checksums': ['3ffa2a5521d4969fe77b23cd3ab201afdf8db3f8f708b1276c33083c01d7e2da'],
+    }),
+    ('bit64', '4.6.0-1', {
+        'checksums': ['fbc0ce142fc22c9a9fdcbac930a814dfb648563d4b6a77dff739c23cc81319b7'],
+    }),
+    ('vroom', '1.6.6', {
+        'checksums': ['855b7ef11ba8b41624064d7b0327b4bd6a02024fb9c4801a09d38224a10980de'],
+    }),
+    ('readr', '2.1.5', {
+        'checksums': ['0fa65a5fe0a46cffe221b7696b52adb82dd4d7a692a895484e438e439594e10a'],
+    }),
+    ('forcats', '1.0.1', {
+        'checksums': ['1de46b83b7038a293e612775197b7ffe47bd079cd2385aa7c65e98171bbd3605'],
+    }),
+    ('haven', '2.5.5', {
+        'checksums': ['9482cd9c3760e1838acf687235317fed97fa6bf79219d3216f0ea447d4b1c9a5'],
+    }),
+    ('pan', '1.9', {
+        'checksums': [
+            ('e37e184c3c1b7a34f54dd95335e6bc730fd5716d2d2dc20c24279401aa673c52',
+             'cd91232d653783ea7f34c0eebaa80c472b5501b21eea500c4c1a8e57116c6eea'),
+        ],
+    }),
+    ('mitml', '0.4-5', {
+        'checksums': ['056aec823187cc3793640d8a5e74d74093bae74260a975ceb098a83a52e2eeeb'],
+    }),
+    ('glmnet', '4.1-10', {
+        'checksums': ['89a4b5844850b27e87e879a19bd20ed7f1d9f555adc94a8e88935c52677f2e9c'],
+    }),
+    ('mice', '3.18.0', {
+        'checksums': ['c0ce097a7f68edd2f4d6a3e6bfb133886e709513299dafdac79ec549c93edfa2'],
+    }),
+    ('urca', '1.3-4', {
+        'checksums': ['fe3d6ce5041f1e7caaf3137dfb6187640bcd2d208e19c59ee1202355ac0acb16'],
+    }),
+    ('fracdiff', '1.5-3', {
+        'checksums': ['0f90946b4092feff93fad094a2c91bb47c8051595210e86c029c70238dbf7fc0'],
+    }),
+    ('operator.tools', '1.6.3', {
+        'checksums': ['e5b74018fb75bfa02820dec4b822312f1640422f01d9fec1b58d880ffb798dec'],
+    }),
+    ('formula.tools', '1.7.1', {
+        'checksums': ['4fe0e72d9d96f2398e86cbd8536d0c84de38e5583d4ff7dcd73f415ddd8ca395'],
+    }),
+    ('logistf', '1.26.1', {
+        'checksums': ['351e0ffca232c0ffe29cbda53a3f5770dab30fb72b8223d782ee1ae5f37e8592'],
+    }),
+    ('akima', '0.6-3.6', {
+        'checksums': ['c8447c47c4c7d43e50807d637b49efa8aa9dff5919915b61fcf61950859db6c8'],
+    }),
+    ('bitops', '1.0-9', {
+        'checksums': ['cff3a5b77b72bb3b8fde92b690d0f803466d218a3ead6b731ae7c77ac1740d08'],
+    }),
+    ('crosstalk', '1.2.2', {
+        'checksums': ['804def71ea7508cada0eec7aa6d35b487db17a8f9e38dca34fffc236691e36fc'],
+    }),
+    ('plotly', '4.11.0', {
+        'checksums': ['ba9009cd7e913590872aa153b13be719e4dfcee8cd24f8631bd35c99044bceb3'],
+    }),
+    ('mixtools', '2.0.0.1', {
+        'checksums': ['9aa341d85e418d481105da267f92a3def4504f7c143583617770c5d6aa8c97c1'],
+    }),
+    ('cluster', '2.1.8.1', {
+        'checksums': ['4b95b78e09b17ddca72edc0bb180c753c004ed2f61c3eb12e0451ac77f441e57'],
+    }),
+    ('gclus', '1.3.3', {
+        'checksums': ['6668521a618c4f5c4780004088cd1744c37f5d0a79caa85b2074a4fdd2f68214'],
+    }),
+    ('coda', '0.19-4.1', {
+        'checksums': ['f4b451d86fbb56ff9ade043ddd6b0944368c37d0dad12d02837750ecdc708ad6'],
+    }),
+    ('doMC', '1.3.8', {
+        'checksums': ['b2186f851448251ae6af5d14b9e3e7f9221f90887e5f8de6a68c91caf16619a3'],
+    }),
+    ('DBI', '1.2.3', {
+        'checksums': ['cf6708a7566a80929f06575aa345fae354714159ed5fab5db14306fc5d0d2dbe'],
+    }),
+    ('gam', '1.22-6', {
+        'checksums': ['249afaa3497ba1279ff5d7f61e0e46c56becff72db42cdb464867563937351d5'],
+    }),
+    ('gamlss.data', '6.0-7', {
+        'checksums': ['8028c2453541a6dea92d587ca23cf7f79bae8fc9f3588bbff6ff7eea71d86771'],
+    }),
+    ('gamlss.dist', '6.1-1', {
+        'checksums': ['d2db3a7658799c2ef212aa18cb75a3ecf4f73faf8c13dfdc3c14b21ae0129069'],
+    }),
+    ('gamlss', '5.5-0', {
+        'checksums': ['a0b7cde5ca377d4725e5568e32944693b3c4bfd30214f1fe90e80395d5a95976'],
+    }),
+    ('gamlss.tr', '5.1-9', {
+        'checksums': ['e90ce51be60bd00c00d8463912d26f40080bbd8f24c4254fc77d59925368b7e4'],
+    }),
+    ('hwriter', '1.3.2.1', {
+        'checksums': ['ed2fa254ab27cf65d397e181339976fc3261dfb4f6b600fea8c5689620dab6f3'],
+    }),
+    ('xts', '0.14.1', {
+        'checksums': ['5da96bb32f80744cc9a1893d1ae1f3de4c6750dfe8eb2ea38f39e4e75b397f4f'],
+    }),
+    ('TTR', '0.24.4', {
+        'checksums': ['89732b9c359bae2f41cd23db649f0897c10fab0702d780c4c25a997322710284'],
+    }),
+    ('quantmod', '0.4.28', {
+        'checksums': ['d1d4215ae0caba96ecf16e5ff8bbef047e88d1b1e60bb3e9e42e7c26b26ed338'],
+    }),
+    ('mvtnorm', '1.3-3', {
+        'checksums': ['e20e7f534bc89b9258ad63d508aabed60f3bd504a7532a33e6ea230ca8fa4171'],
+    }),
+    ('pcaPP', '2.0-5', {
+        'checksums': ['674faed967016a19f9d927506d6b3f4fc7ff2b2ab5679b2368429ee2c61b7c10'],
+    }),
+    ('pscl', '1.5.9', {
+        'checksums': ['8085ffd1987804793ba44637165fba3e6805aa2f6457f0692b6e641658fe6efe'],
+    }),
+    ('blob', '1.2.4', {
+        'checksums': ['d08922ebc4147d930fe4762b1b289935217308c6d3fcaa5ae028ce3f5cf2728f'],
+    }),
+    ('RSQLite', '2.4.3', {
+        'checksums': ['3a35b4fff52741f1f1032602efd741611f264215e60a8b787407650328593fb4'],
+    }),
+    ('BatchJobs', '1.10', {
+        'checksums': ['1ecb3e0955d693d923a699579a7a751305e06188ca041735a1195cb7d0a2fef5'],
+    }),
+    ('sandwich', '3.1-1', {
+        'checksums': ['ece51efa4283a98b3b4b4b9317fce4928b227942115dd84452b481fd6e9d9119'],
+    }),
+    ('sfsmisc', '1.1-22', {
+        'checksums': ['b2e900b2603d96ab01faf76ccf4ef22775a6f6f5549513f3c5343097b71efa80'],
+    }),
+    ('spatial', '7.3-18', {
+        'checksums': ['cc46693d69745af8ec95b557e7a8ee4e1865df69dc0d25723629fd8e9ea43055'],
+    }),
+    ('VGAM', '1.1-13', {
+        'checksums': ['be388d62db6974fae5bb428af5fdf2b51d9aae9cd5e6f7b4d5401937b35a119f'],
+    }),
+    ('multitaper', '1.0-17', {
+        'checksums': ['3430ca62be2ee491d29b05e461647327a8977743241af2d3c39277c920170af3'],
+    }),
+    ('waveslim', '1.8.5', {
+        'checksums': ['1e98a823075e34fd80a3613ae62e731915bdb45bb8cf4b249f5be7a90d00a775'],
+    }),
+    ('profileModel', '0.6.1', {
+        'checksums': ['91dc25e81f52506593f5c8d80a6131510b14525262f65b4ac10ae0cad0b2a506'],
+    }),
+    ('brglm', '0.7.3', {
+        'checksums': ['18c049b04670219db17b347c7e65271d599804991cfb51a840b9f81604ea03dc'],
+    }),
+    ('deSolve', '1.40', {
+        'checksums': ['8c09ae6bb6875b569b9844eede30b790f39fc227f5c9d045fa63ce1b22f500ef'],
+    }),
+    ('tseriesChaos', '0.1-13.1', {
+        'checksums': ['23cb5fea56409a305e02a523ff8b7642ec383942d415c9cffdc92208dacfd961'],
+    }),
+    ('tseries', '0.10-58', {
+        'checksums': ['0edee71941bb8ea3d5ecad6b6a84d8019081f862138433b3c5e6fa5a4cbca724'],
+    }),
+    ('fastICA', '1.2-7', {
+        'checksums': ['bcb76972e070e3892472b5d9163c280f1cca8df9deffecb4429144fdb50a9c21'],
+    }),
+    ('R.methodsS3', '1.8.2', {
+        'checksums': ['822d5e61dad4c91e8883be2b38d7b89f87492046d0fe345704eb5d2658927c2e'],
+    }),
+    ('R.oo', '1.27.1', {
+        'checksums': ['5faf599cc1f027d8b80e1270aa6a43e29dccd6fee8287953f13e7ab3d94270f5'],
+    }),
+    ('cgdsr', '1.3.0', {
+        'checksums': ['4aa2a3564cee2449c3ff39ab2ad631deb165d4c78b8107e0ff77a9095340cc1f'],
+    }),
+    ('R.utils', '2.13.0', {
+        'checksums': ['ab2043c34e129928ff85a037ce7a3f7791f245f49a55ee9a95bd7df0813bcf25'],
+    }),
+    ('R.matlab', '3.7.0', {
+        'checksums': ['d713522268a1206555610938350137ea022e07e27fa9cdd73c02fae8d1a43dda'],
+    }),
+    ('gridExtra', '2.3', {
+        'checksums': ['81b60ce6f237ec308555471ae0119158b115463df696d2eca9b177ded8988e3b'],
+    }),
+    ('gbm', '2.2.2', {
+        'checksums': ['029ad2bac10c98979cf69206e94f2cc51a50667ec035f2474c44fb841950c4f4'],
+    }),
+    ('Formula', '1.2-5', {
+        'checksums': ['86254674600d64e18b65d52f42d7ebfc217c8e1945cb63ac06da22cbf04d355c'],
+    }),
+    ('acepack', '1.6.3', {
+        'checksums': ['653093e308f0dea5ec2719985a01aff700d5795074b3f5239b34632bf45ebadf'],
+    }),
+    ('proto', '1.0.0', {
+        'checksums': ['9294d9a3b2b680bb6fac17000bfc97453d77c87ef68cfd609b4c4eb6d11d04d1'],
+    }),
+    ('chron', '2.3-62', {
+        'checksums': ['07ad2c77243dbbc9fa3bf4934466a0bc26bfe157172ffcd5a9a421621df1bea1'],
+    }),
+    ('viridis', '0.6.5', {
+        'checksums': ['862b5cb6be115deea0207cdd3c8bb33de28552cfdc29900777512fd488d0005c'],
+    }),
+    ('htmlTable', '2.4.3', {
+        'checksums': ['3739d01bff313ccd206b63940a8252b037f0521d041c721a4e0d195abd6ef6dd'],
+    }),
+    ('Hmisc', '5.2-4', {
+        'checksums': ['4f5df39146aa235195ae684dedf874e593df16134447a8fe7875d2231930e213'],
+    }),
+    ('fastcluster', '1.3.0', {
+        'checksums': ['fc214913eb804d05af7fdce53be30632220859203b6bb227be85b8a451b363fb'],
+    }),
+    ('registry', '0.5-1', {
+        'checksums': ['dfea36edb0a703ec57e111016789b47a1ba21d9c8ff30672555c81327a3372cc'],
+    }),
+    ('bibtex', '0.5.1', {
+        'checksums': ['f3c1a0a4e666c4addd73ff13ce8ce073d73d10ebca36d333328ade8a0b493ed1'],
+    }),
+    ('pkgmaker', '0.32.10', {
+        'checksums': ['972b0473a64408ccc4841fa3f09a567cc32811e69c3c7e42a2f391a5eb2e2933'],
+    }),
+    ('rngtools', '1.5.2', {
+        'checksums': ['7f8c76ca4c7851b69a86e27be09b02ddc86357f0388659ef8787634682e8a74d'],
+    }),
+    ('doParallel', '1.0.17', {
+        'checksums': ['b96a25ad105a654d70c7b4ca27290dc9967bc47f4668b2763927a886b178abd7'],
+    }),
+    ('gridBase', '0.4-7', {
+        'checksums': ['be8718d24cd10f6e323dce91b15fc40ed88bccaa26acf3192d5e38fe33e15f26'],
+    }),
+    ('irlba', '2.3.5.1', {
+        'checksums': ['2cfe6384fef91c223a9920895ce89496f990d1450d731e44309fdbec2bb5c5cf'],
+    }),
+    ('igraph', '2.2.1', {
+        'checksums': ['14ab70a615b6cd9b75a67560ed3d36fc4d1ab635765530cd9cf80e39a0c14996'],
+    }),
+    ('GeneNet', '1.2.17', {
+        'checksums': ['a8083790de1914f7845c7e6a463dc7651ab46f92e996ff096e12d0adb4d07c5f'],
+    }),
+    ('ape', '5.8-1', {
+        'checksums': ['d6cde3dda751597ad741f634f143a3eb521b957fd1a23ceefba78a2716422d8e'],
+    }),
+    ('RJSONIO', '2.0.0', {
+        'checksums': ['e9c7f8220478b8d659507909968517c129088b42fd1afb60319fc8af9f7b202a'],
+    }),
+    ('caTools', '1.18.3', {
+        'checksums': ['e71b3942a7a239779028b1104c262ec5f70183128638ac7fb649c8d62c0468d8'],
+    }),
+    ('gplots', '3.2.0', {
+        'checksums': ['12e31c69b487471ca334cd55b6d91da36670d8b4e4b3fdcbfd6b7e20f55f4f47'],
+    }),
+    ('ROCR', '1.0-11', {
+        'checksums': ['57385a773220a3aaef5b221a68b2d9c2a94794d4f9e9fc3c1eb9521767debb2a'],
+    }),
+    ('rjson', '0.2.23', {
+        'checksums': ['55034575c854ed657e6701da278c0fdea251479624d06a963b2e58461a5f0f48'],
+    }),
+    ('seqinr', '4.2-36', {
+        'checksums': ['931a62a091a7aaaa5efadb1fe85f29e861e2506b75710ba3a6be9b58cb14b225'],
+    }),
+    ('LearnBayes', '2.15.1', {
+        'checksums': ['9b110858456523ca0b2a63f22013c4e1fbda6674b9d84dc1f4de8bffc5260532'],
+    }),
+    ('gmodels', '2.19.1', {
+        'checksums': ['bb57b83274dcc6c62eeb0d0b041d81ed19daca927bcd3872c4667ccfe3e9888d'],
+    }),
+    ('expm', '1.0-0', {
+        'checksums': ['02c536f8f6af55b132210a50b1e9694a3549806bf97c49e0fe03595945aab254'],
+    }),
+    ('terra', '1.8-70', {
+        'checksums': ['94e163d237d021727aeeeea7303a6845268db4e8910e65738350ceae9f979903'],
+    }),
+    ('raster', '3.6-32', {
+        'checksums': ['300aaaee8c9f31ab2edaed8d560dd993e2c691876d086097bb5b6a49700d0692'],
+    }),
+    ('spData', '2.3.4', {
+        'checksums': ['7094318e47e1f00c98712def5c8f42d8f0cdf48a97a0ec421aec8880ca78fa33'],
+    }),
+    ('units', '1.0-0', {
+        'checksums': ['fc673560595ebe4687d314934be2810b7ac5167742a80659246149791abb59ba'],
+    }),
+    ('classInt', '0.4-11', {
+        'checksums': ['8d366844cf7f951cc5b65423c3ccf50ebc3c11cf9d1fc90f8208e7d869c5d0a6'],
+    }),
+    ('vegan', '2.7-2', {
+        'checksums': ['3d10da841d36c2eb5570da1837cfa45b7627921006ca245d1360c8d9f2645cb4'],
+    }),
+    ('rncl', '0.8.7', {
+        'checksums': ['1d876e4f5f2b8a24cc3ea1002c29eedbc0ca96011b0fa15b085e5b75cfc7993a'],
+    }),
+    ('XML', '3.99-0.19', {
+        'checksums': ['476437c1e4cdbbb3a938437e9a19b13ca9beac8de930dec5210fc1dfd3da4c6d'],
+    }),
+    ('reshape', '0.8.10', {
+        'checksums': ['35ef6e8956520279f44d538c613ff9605bc594fed46133200d61937828fc6b64'],
+    }),
+    ('triebeard', '0.4.1', {
+        'checksums': ['192f2fef6341e43bd56ef4f9841e813e07be990f4ffcf38c5606259630efe0f7'],
+    }),
+    ('urltools', '1.7.3.1', {
+        'checksums': ['f85bb761bb85beef98d34cef0030b589bb71c24cfebc1959b5954fb0676c8772'],
+    }),
+    ('httpcode', '0.3.0', {
+        'checksums': ['593a030a4f94c3df8c15576837c17344701bac023ae108783d0f06c476062f76'],
+    }),
+    ('crul', '1.6.0', {
+        'checksums': ['c58f77ea1b5aae7ad2c10d598d50b1269596d2d78ce1ee9a80e1aca2485c5c09'],
+    }),
+    ('bold', '1.3.0', {
+        'checksums': [
+            ('0ead11d4386c4c0cd578d3a956f809db2001e387e449a431b4ad503f3da38f5f',
+             '4920fbebd22fb1d0f1a31ccc09c98aec446bb6cb5f65a2610437e405c0512c68'),
+        ],
+    }),
+    ('rredlist', '1.1.1', {
+        'checksums': ['1c91521c1c98996f8d6987930eb1291d9c7a131a6def9b4bac1469f1343645bf'],
+    }),
+    ('rentrez', '1.2.4', {
+        'checksums': ['22dda569f264128b5e86aa0ed6e9a5a11e489bbc01ac55300a272c8cd233e180'],
+    }),
+    ('rotl', '3.1.0', {
+        'checksums': ['12baeef897c835d20a4d84cf058a3d3d09b89202f7ec0325140cb7754ab5635c'],
+    }),
+    ('solrium', '1.2.0', {
+        'checksums': ['7ec64199497cc69f542fded955b709fc548cf8e2734c9db0f4a99a0ea67ca49b'],
+    }),
+    ('ritis', '1.0.0', {
+        'checksums': ['327b221872408b1f0fe0cce953685535b66d2fa5d6cac628e1142a26e4856136'],
+    }),
+    ('worrms', '0.4.3', {
+        'checksums': ['32b918f921a318078712ce6647e1b19cd7a9c550df8c37cb3d839277431fb9ad'],
+    }),
+    ('natserv', '1.0.0', {
+        'checksums': ['30f90f938e963191ef19b1433db1e265f67d8efe29c92a1d3603c3dc9a03d5c8'],
+    }),
+    ('WikipediR', '1.7.1', {
+        'checksums': ['6ee69561f304edf13c67b4cabca3688eaf1b8b10acf82257c39b351aa91bb222'],
+    }),
+    ('ratelimitr', '0.4.2', {
+        'checksums': ['924e71b950828229498e64a93614c71e5a1c16f83cddfa5c084f3f1990aa5f53'],
+    }),
+    ('rex', '1.2.1', {
+        'checksums': ['af42e649c06e4bbdba94d5a1870a7e8347903571c90cd5e5ca40f52307a3bfd6'],
+    }),
+    ('WikidataQueryServiceR', '1.0.0', {
+        'checksums': ['0e14eec8471a72227f800b41b331cfc49a94b4d4f49e68936448ebbae0b281ae'],
+    }),
+    ('pbapply', '1.7-4', {
+        'checksums': ['6a5c7110a6bf13735374d3b2e75b32ec0e0f0276ad95e928d2c802b53ff1302d'],
+    }),
+    ('WikidataR', '2.3.3', {
+        'checksums': ['3da74b0584b8141a1b61b4d8f58e53c0e46524d811b1642bcc01fb7fd6180888'],
+    }),
+    ('wikitaxa', '0.4.0', {
+        'checksums': ['ba872853af59fdc8f1121d6e205f15e5bf4f2ec5ad68cd5755a423fa783bf7fc'],
+    }),
+    ('phangorn', '2.12.1', {
+        'checksums': ['9dc59c7806b4ba5d2d168d0504fdd5a10778aa24ef2c7014af92c3a2f1fe9ee7'],
+    }),
+    ('uuid', '1.2-1', {
+        'checksums': ['f90e49733d7d6ea7cf91abdc07b7d0e9a34a4b993e6914d754f0621281fc4b96'],
+    }),
+    ('conditionz', '0.1.0', {
+        'checksums': ['ccd81e4f2534d29cddf44cf697f76ff01417cbeb22001a93477edc61cdd35646'],
+    }),
+    ('taxize', '0.10.0', {
+        'checksums': ['64b744004564607249781c0ab8149fbf29a0b83ea4ec2ee9449a8dd41efba247'],
+    }),
+    ('RNeXML', '2.4.11', {
+        'checksums': ['246913cbb0e816401bb8e37dda20646202547f5cc8379c9dadf832f61d6cfd46'],
+    }),
+    ('phylobase', '0.8.12', {
+        'checksums': ['9b81ca60dc6215e74b720880cc2db3abc1f7e6d8785ea7d7df95a950f0778f20'],
+    }),
+    ('magick', '2.9.0', {
+        'checksums': ['477d717075651d2d508a66c313fd82b5e530b5ba7603b4a6cafa8c8e8cb6dfba'],
+    }),
+    ('animation', '2.8', {
+        'checksums': ['cb4f6fdd4481aefecec14530cc0d3e8e44d50740a1d3d513ae95fcdb900258da'],
+    }),
+    ('bigmemory.sri', '0.1.8', {
+        'checksums': ['029a4ed24aa17636a20b83857d55fe6a9283acb8b647cbc75280dea8ec987771'],
+    }),
+    ('bigmemory', '4.6.4', {
+        'checksums': ['fe3f576c0d87fd2820c0f436a202261dff353e50e5b86dd9c80fdea7ad60002d'],
+    }),
+    ('calibrate', '1.7.7', {
+        'checksums': ['713b09b415c954e1ef5216088acd40621b0546c45afbb8c2c6f118ecb5cd6fa6'],
+    }),
+    ('clusterGeneration', '1.3.8', {
+        'checksums': ['0f842256582ab41bcd00ee08ea6d7e231ff362fe0156a53347873e9636f73a70'],
+    }),
+    ('dismo', '1.3-16', {
+        'checksums': ['e79623a75514a54a6f4328a7939e1828c6fcd7d13d87e82ec030362af4632053'],
+    }),
+    ('extrafontdb', '1.1', {
+        'checksums': ['81d8394172978ee1e3ddc6124bbc480d52ec0f9423ddf19ecd915da2adabc3ef'],
+    }),
+    ('Rttf2pt1', '1.3.14', {
+        'checksums': ['ab7d35a3be376a09e1459b2735ec3000b694f84c4e2687aa1e00c43d860f0ad7'],
+    }),
+    ('extrafont', '0.20', {
+        'checksums': ['9425e529d7569ad630eedb1508a8e1efa2c3a8b7218840e12aee2f017756690f'],
+    }),
+    ('fields', '17.1', {
+        'checksums': ['36c5d0c2e47a71380082923a4c6abaa5b73f445147f5999a9147c9fb575ab17e'],
+    }),
+    ('shapefiles', '0.7.2', {
+        'checksums': ['4bfa4094c1052c1b1918b1670798f8b4e53f771cfdf9cb8c04bd00a856674d0f'],
+    }),
+    ('fossil', '0.4.0', {
+        'checksums': ['37c082fa15ebae89db99d6071b2bb2cad6a97a0405e9b4ef77f62a8f6ad274c1'],
+    }),
+    ('optimParallel', '1.0-2', {
+        'checksums': ['0f9bc62c23d9005130f2892bf5eaecf308fa48a727bdd5e19b7dcd1d95f30a9d'],
+    }),
+    ('DEoptim', '2.2-8', {
+        'checksums': ['631eabdcf26ec25a759651f699db1971beca3ae193c7fbd1c63a78248fdbf54c'],
+    }),
+    ('phytools', '2.5-2', {
+        'checksums': ['3c4facf55d3fffe97b9453bac3f6d398abed8b5896bc2b83bf6811957be27f01'],
+    }),
+    ('geiger', '2.0.11', {
+        'checksums': ['dcc5a0a988439110078867e0aaf09b048e27db7f02e4cbdfe35783611fde3f69'],
+    }),
+    ('webshot', '0.5.5', {
+        'checksums': ['d675913ccac80e0af8ee396f95a24124eae6c42d80aed9f47f7a88218ecbb913'],
+    }),
+    ('shinyjs', '2.1.0', {
+        'checksums': ['7ec20cbf1b1fd7a32d85a56dfc0df8b5f67c828d241da400a21d893cb37ea9c5'],
+    }),
+    ('manipulateWidget', '0.11.1', {
+        'checksums': ['5b73728d7d6dcc32f32d861375074cd65112c03a01e4ee4fa94e21b063fdefb6'],
+    }),
+    ('rgl', '1.3.24', {
+        'checksums': ['9f580a97c56eaf28344da83a2309e35cd665fa77ba07a324d9c4789bdc03ee49'],
+    }),
+    ('Rtsne', '0.17', {
+        'checksums': ['3aae6814d6c6d406785145f07374135652f2b26a58690dfd4bfbc8365dc5590b'],
+    }),
+    ('labdsv', '2.1-2', {
+        'checksums': ['31322f5e820cc0bfcc7b87cc1835a265dfc9bbfe4b3f420e427889856469fa58'],
+    }),
+    ('stabs', '0.6-4', {
+        'checksums': ['f8507337789f668e421a6ee7b11dd5ea331bf8bff0f9702dd1b93f46c2f3c1d9'],
+    }),
+    ('modeltools', '0.2-24', {
+        'checksums': ['f8b285897c535526f2c37b70bf66f182e12dd02a7ec8261f52d28caca8ce1eaf'],
+    }),
+    ('strucchange', '1.5-4', {
+        'checksums': ['789bc64d36a79539d17db5e3d50a3f32cf709a42177ffd336c10a8201b5dd718'],
+    }),
+    ('TH.data', '1.1-4', {
+        'checksums': ['8d0867582d9352bbf197c7c531dedc4aaa88fff90055ff8a5218f147028b8ea9'],
+    }),
+    ('multcomp', '1.4-29', {
+        'checksums': ['c803125c935b2ddcaa2eadfd38b6b7aca8ddcf5db783a6d37390adbf396dda91'],
+    }),
+    ('libcoin', '1.0-10', {
+        'checksums': ['3023e0495d0789765bdf04c0ef0990a57b48fefa322c55f20e250d2d70d67eaf'],
+    }),
+    ('coin', '1.4-3', {
+        'checksums': ['8a6302dbf3ef570cd9f69ce7b6cd3d3b928dc776f840bbd767af132e0080b974'],
+    }),
+    ('party', '1.3-18', {
+        'checksums': ['1ef77413a27897f8f884ea5d87cb87a0ce8f3169c2baaabde03aace0409956a7'],
+    }),
+    ('inum', '1.0-5', {
+        'checksums': ['e696b7e0b31b3bbf405112e60691b6a72fedcaa02e08ee517c59f6bf9cd36bbd'],
+    }),
+    ('partykit', '1.2-24', {
+        'checksums': ['40c06b75458f100f3e203fb47f80d5be6f632628bfafa2704d27250a7914c9ff'],
+    }),
+    ('mboost', '2.9-11', {
+        'checksums': ['9f37a50c7ff594b8332a31725ae144c48f50c1c9891d44b721cd37e895bfbc58'],
+    }),
+    ('msm', '1.8.2', {
+        'checksums': ['5b97353978b54d7315bc9690dbfdea0062cc2823d001dbcc035c3420df1ebe26'],
+    }),
+    ('nor1mix', '1.3-3', {
+        'checksums': ['97bfd0f8c847fa68bf607aaa465845a34ac8a7a262315073026a6a1937dd076e'],
+    }),
+    ('np', '0.60-18', {
+        'checksums': ['b21c54c1ac2cb2105087b8af012e0444b2a53b47965f42e776c094b85a7c2a9b'],
+    }),
+    ('polynom', '1.4-1', {
+        'checksums': ['bc1edb7bb16c8b299103f80a52ab8c5fc200cd07a9056578c1f672e9f5019278'],
+    }),
+    ('polspline', '1.1.25', {
+        'checksums': ['2943fc4cd922300afeaa58e6a0e4c21e5a0f7255e6367c7ea6ad136fce1e9ba3'],
+    }),
+    ('rms', '8.1-0', {
+        'checksums': ['eb7b1feb72e08477e31e508c924ae35bd378718210fa83a2cc4092442304b901'],
+    }),
+    ('RWekajars', '3.9.3-2', {
+        'checksums': ['16e6b019aab1646f89c5203f0d6fc1cb800129e5169b15aaef30fd6236f5da1a'],
+    }),
+    ('RWeka', '0.4-46', {
+        'checksums': ['660555781703c19b994c9dcfc9e7d8312c30b02539f38cd3948bfc33d9f94b67'],
+    }),
+    ('slam', '0.1-55', {
+        'checksums': ['0fb8450d002ba79855063300941e830133a1880011d926e644aa639dbde91c03'],
+    }),
+    ('tm', '0.7-16', {
+        'checksums': ['08860c858a447a36f39fb67fb74f1bc601d167c5346d3bfcd17cd9a8ee839688'],
+    }),
+    ('leaps', '3.2', {
+        'checksums': ['a0d6bebb676e5cdc0ecf3e3a07163ce0d60b6fe72a083d91f0413e11a8a96fad'],
+    }),
+    ('cNORM', '3.5.1', {
+        'checksums': ['c5cb905cae4cb54e73993b80ed4358f9c8ee0d8f2bda8ccfc00deaf5e44f733b'],
+    }),
+    ('weights', '1.1.2', {
+        'checksums': ['6cc1c5020aad9d86cd38e65cad07958220f2f3e35e0e4bf81110c384be1599ea'],
+    }),
+    ('TraMineR', '2.2-12', {
+        'checksums': ['6463d32c937af84413a01d77140d3961c69ad03383ebc90c0058609b85297a30'],
+    }),
+    ('chemometrics', '1.4.4', {
+        'checksums': ['fd0edb1ebe321ff7677d0a668d7dfc79a7cd55f408a53d1f13db4cf6347aa881'],
+    }),
+    ('FNN', '1.1.4.1', {
+        'checksums': ['73d97487fd3eac8ae90f32fd439f1689b1923b5688d83fd57fd2faeea70cb854'],
+    }),
+    ('miscTools', '0.6-28', {
+        'checksums': ['bd4c2f2120948af538f9874df1ac745ff162817d0e53756f52f863eb4f593b21'],
+    }),
+    ('maxLik', '1.5-2.1', {
+        'checksums': ['d054c7626d0b4e03a5d5beecb7a39e60785322a146c34b2e1ee9f7939183925d'],
+    }),
+    ('gbRd', '0.4.12', {
+        'checksums': ['48cd1d2a845f4b54c307473d2fa07a4ef6a644272f91c6a953844e66cd832338'],
+    }),
+    ('dfidx', '0.2-0', {
+        'checksums': ['65ba5e54515154a77410b65788f7e741bb706812d21acf2b20411c7d0e645ae0'],
+    }),
+    ('mlogit', '1.1-3', {
+        'checksums': ['f40df38533ce29ad06e57fd754edd3c107c84ebd7d7384acf6ef321c50c058fd'],
+    }),
+    ('getopt', '1.20.4', {
+        'checksums': ['87d36cbe6dba41dbc1d78d845210266cdd08c7440d977d738a6e45db14221e8b'],
+    }),
+    ('gsalib', '2.2.1', {
+        'checksums': ['3da3a4b959142a0d694a843e39143bfce82a6de197c6cc92650a28ac05f3bf90'],
+    }),
+    ('optparse', '1.7.5', {
+        'checksums': ['0cc917505780786e69b8ceca4b3840ed7b0c011495108ec05af3871965415712'],
+    }),
+    ('labelled', '2.16.0', {
+        'checksums': ['ba374fb513990e811bf438a7625ce44c3cee2df677c5888b678b387ef3e41fac'],
+    }),
+    ('R.cache', '0.17.0', {
+        'checksums': ['e265953212edd15be12cdfcc4fa8829cc0dcf3b06ab3e0aa1758108544822d21'],
+    }),
+    ('styler', '1.11.0', {
+        'checksums': ['f08760782b2ead047dd8f166a7cd5e01ace8d713087712bf61d193f610fbfe18'],
+    }),
+    ('questionr', '0.8.1', {
+        'checksums': ['a6db0e55fa88139dbb12b6dff4c31c71a4f85b64b1d588252bfa6f8a3a9787d7'],
+    }),
+    ('klaR', '1.7-3', {
+        'checksums': ['d36c041c017cdb5ba3dbf7fb61d5ce3908d8e780eb2912fc99471394fcb8e3e5'],
+    }),
+    ('neuRosim', '0.2-14', {
+        'checksums': ['7fc264bb86f1edd7b39a2472330bbabb34eb6dfb722db016a6ee60444ebfafd9'],
+    }),
+    ('locfit', '1.5-9.12', {
+        'checksums': ['fa31b9d407f3557a6fcb7105cbd7b16a32a6fb868a7c60bc38a3e33cb7a39343'],
+    }),
+    ('patchwork', '1.3.2', {
+        'checksums': ['0ec469acfd69d1a4f1a6317c861e6bf000f768c2d5047e3aed6713df9afe27eb'],
+    }),
+    ('cards', '0.7.0', {
+        'checksums': ['b19239dadea2e32a40ac415b5e090a02d57413d1516771fdad74a805e1109c6f'],
+    }),
+    ('broom.helpers', '1.22.0', {
+        'checksums': ['16245642d70558a726bd2433d99d89996b9d230272d5042e816e14c1b1831f15'],
+    }),
+    ('ggstats', '0.11.0', {
+        'checksums': ['6e5246e95611606ba334769cf58267a92fa36104f8af74005be0b5602501b708'],
+    }),
+    ('GGally', '2.4.0', {
+        'checksums': ['c8d458160e0c220bfeae49ceacd7762534a9ade7e75dfcd974c88c79aa8f7382'],
+    }),
+    ('beanplot', '1.3.1', {
+        'checksums': ['49158aee3449108fd857ef43fb777f55a2b975b350a4a710788996ad19dd15ad'],
+    }),
+    ('clValid', '0.7', {
+        'checksums': ['037da469891462021eb177f9c9e18caefa8532f08c68fb576fae1668a1f451a1'],
+    }),
+    ('DiscriMiner', '0.1-29', {
+        'checksums': ['5aab7671086ef9940e030324651976456f0e84dab35edb7048693ade885228c6'],
+    }),
+    ('ellipse', '0.5.0', {
+        'checksums': ['cde8553973ce2cc04324318b3df13890d585987171fedfe2efbf1430f82cc2f3'],
+    }),
+    ('cowplot', '1.2.0', {
+        'checksums': ['431d582a4fb68f005f45e0d963c19daad826289374b429b05fe168ef6f231aa1'],
+    }),
+    ('Deriv', '4.2.0', {
+        'checksums': ['210394e7f90fe6fd943d37e8b1953c5a3c10c96fbdc5bbac7660aa9d112a1f63'],
+    }),
+    ('modelr', '0.1.11', {
+        'checksums': ['94ebd506e9ccf3bf25318be6a182f8f89c3669a77b41864a0b9dbcc1d4337bd3'],
+    }),
+    ('microbenchmark', '1.5.0', {
+        'checksums': ['3d1e92a9206811ad128b28795d20a0d31da5f0c29ea7f1caaf1194ed3e49765f'],
+    }),
+    ('doBy', '4.7.0', {
+        'checksums': ['aa706dc5747ded642a6d70ec7b8369317d7cb7c4b50d885ec54e31ced9fa2788'],
+    }),
+    ('pbkrtest', '0.5.5', {
+        'checksums': ['d26c8ef0a6fd73bba184bde8e3434439d62539d93aef0a0b5b480a0f309bc51b'],
+    }),
+    ('carData', '3.0-5', {
+        'checksums': ['02e77159b33e3afb8cd9cfab11cf5a996a93175f924b07d991ce44bc6e16451a'],
+    }),
+    ('openxlsx', '4.2.8', {
+        'checksums': ['8a0861ab8b677f6cd5f582f7c6721c0451cd04d65c6e9cc6ebdb7fbc6597e4d8'],
+    }),
+    ('rematch', '2.0.0', {
+        'checksums': ['15daf7bf2907aef8503635bc8631fce9fd75248a1fc2496825588c4bdf785c26'],
+    }),
+    ('cellranger', '1.1.0', {
+        'checksums': ['5d38f288c752bbb9cea6ff830b8388bdd65a8571fd82d8d96064586bd588cf99'],
+    }),
+    ('readxl', '1.4.5', {
+        'checksums': ['09d70d7bbafbe129ce687b8743dbf6b9d0f201205b30dc515a00b35fcc1bdedf'],
+    }),
+    ('writexl', '1.5.4', {
+        'checksums': ['d0574a29ea22bd78785f50c7cd23c6e10036f65321e26d55a694e931467660d3'],
+    }),
+    ('rio', '1.2.4', {
+        'checksums': ['bbc46e204fa3401e785e93b4dd55ab460d63df67b91a6e86d24aa84947dd43e2'],
+    }),
+    ('car', '3.1-3', {
+        'checksums': ['59f2c024395995f662a8f64fe807765fc8507f1d2f7a8ab8a1c4f66a63be49bf'],
+    }),
+    ('flashClust', '1.01-2', {
+        'checksums': ['48a7849bb86530465ff3fbfac1c273f0df4b846e67d5eee87187d250c8bf9450'],
+    }),
+    ('ggrepel', '0.9.6', {
+        'checksums': ['268a6eda6377d27b403af40423cdf6dce30b2fe1460f771377dc68ce3e4e7212'],
+    }),
+    ('DT', '0.34.0', {
+        'checksums': ['8862025ef26af65b53f072adb1d133c25c5f96a812e7ae0aa822baa71249f1f2'],
+    }),
+    ('estimability', '1.5.1', {
+        'checksums': ['3ca6b96a39fd8877e8636f94d20f34308b7296c1376c646703d27df8591644e9'],
+    }),
+    ('emmeans', '1.11.2-8', {
+        'checksums': ['538c3d3b73852dfdc21a6da3d19020dfd06d4c3408c528aa96563edcef599b4f'],
+    }),
+    ('multcompView', '0.1-10', {
+        'checksums': ['38f249b22758c9f727b1656d1a08c6022a06a1ea319364ff680147d64598ad8a'],
+    }),
+    ('FactoMineR', '2.12', {
+        'checksums': ['c064aee58cc485017b2d860616f13529ca1791ef14094d21643a0e6d62f2b6a2'],
+    }),
+    ('flexclust', '1.5.0', {
+        'checksums': ['f0fb5f2c338b5b4d310cdbe6b55b7e49d3ffc625002390a145dd5abd2f495fa3'],
+    }),
+    ('flexmix', '2.3-20', {
+        'checksums': ['4198437d875fbabbfa52e23612e617448638171b0a3880b798bce985e20726e8'],
+    }),
+    ('prabclus', '2.3-4', {
+        'checksums': ['cd7623572648a43d22321b8537f8659f1db3d06ed48c3d50079828f023e0ac72'],
+    }),
+    ('diptest', '0.77-2', {
+        'checksums': ['3babf6964be9865a3d872c95c8c8ed49953240e7db5717718893a110d3ebcb3f'],
+    }),
+    ('tclust', '2.1-2', {
+        'checksums': ['0531bb2e379b53bf11d4439240c1ca8080b36b2a4ea6b2962825514a657fb974'],
+    }),
+    ('trimcluster', '0.2-0', {
+        'checksums': ['d0592832430db5774c7cf5df3f7a1af9e1e3d5c0d2a8e334692c8fca331cb26e'],
+    }),
+    ('fpc', '2.2-13', {
+        'checksums': ['4f543df847bc0fee60b97416484f00dbafb433d893ce8c019de787f302d53f47'],
+    }),
+    ('BiasedUrn', '2.0.12', {
+        'checksums': ['29b3b596431c5364e3be9aae2068adb44a205de31c66ec3fa1ef06a4ab8c5792'],
+    }),
+    ('TeachingDemos', '2.13', {
+        'checksums': ['f80eb952b7d1a0cde3bed8152f9c4e9eceaa3f635209b2af9a11e785e8c0fbcc'],
+    }),
+    ('kohonen', '3.0.12', {
+        'checksums': ['40944b916aa228d90862301beb9d93a521e6d98ba23c147d1bd9dded04ef0ca1'],
+    }),
+    ('base64', '2.0.2', {
+        'checksums': ['b1e87be296145efd887c8272996111d1b190c88485348420f358a847ad470e0c'],
+    }),
+    ('doRNG', '1.8.6.2', {
+        'checksums': ['6683baec10cf8f6a44620d95ef06fec60b3f7911100827e392774a2ebdad7e8c'],
+    }),
+    ('nleqslv', '3.3.5', {
+        'checksums': ['1298172d2fe67d8d6b742ce7e792f6b897f081da5c94d34f14970ab531f04b3a'],
+    }),
+    ('RGCCA', '3.0.3', {
+        'checksums': ['48c327f99bae71050acb30b217720d73bf5c40f35af1a3b3b5e4ed118b315701'],
+    }),
+    ('pheatmap', '1.0.13', {
+        'checksums': ['4ac34d4c5f787624f45cc98a97b8c28295c57eb635d1523554252c5a583142f7'],
+    }),
+    ('pvclust', '2.2-0', {
+        'checksums': ['7892853bacd413b5a921006429641ad308a344ca171b3081c15e4c522a8b0201'],
+    }),
+    ('RCircos', '1.2.2', {
+        'checksums': ['5bbdc3baff2d22a8922685af02b2af07541a1bcf1914abd9c166850b4c550afc'],
+    }),
+    ('lambda.r', '1.2.4', {
+        'checksums': ['d252fee39065326c6d9f45ad798076522cec05e73b8905c1b30f95a61f7801d6'],
+    }),
+    ('futile.options', '1.0.1', {
+        'checksums': ['7a9cc974e09598077b242a1069f7fbf4fa7f85ffe25067f6c4c32314ef532570'],
+    }),
+    ('futile.logger', '1.4.3', {
+        'checksums': ['5e8b32d65f77a86d17d90fd8690fc085aa0612df8018e4d6d6c1a60fa65776e4'],
+    }),
+    ('VennDiagram', '1.7.3', {
+        'checksums': ['e7c2475f7613241787e6c85bd03315e4fd88413ccbbb735959756a8c2eeb8c46'],
+    }),
+    ('xlsxjars', '0.9.0', {
+        'checksums': ['4840093e9faf78b60540153ca9284a55e325bd0c7842aa66b6572af423eeebc0'],
+    }),
+    ('xlsx', '0.6.5', {
+        'checksums': ['378c5ed475a3d7631ea1ea13e0a69d619c1a52260922abda42818752dbb32107'],
+    }),
+    ('uroot', '2.1-3', {
+        'checksums': ['30f623d119299c8020c81c577d83e825811e96ec694ee1e2522fcbe02fed4c2f'],
+    }),
+    ('forecast', '8.24.0', {
+        'checksums': ['fb0bf1f1bfa3e3df379d6a1ebce9e64d92829eefedde5400d13578f37bd61646'],
+    }),
+    ('fma', '2.5', {
+        'checksums': ['400dea4d2b6e73ed686d901fbab1b4f930dfcdd67fbd0bb3abc34a707656cf78'],
+    }),
+    ('expsmooth', '2.3', {
+        'checksums': ['ac7da36347f983d6ec71715daefd2797fe2fc505c019f4965cff9f77ce79982a'],
+    }),
+    ('fpp', '0.5', {
+        'checksums': ['9c87dd8591b8a87327cae7a03fd362a5492495a96609e5845ccbeefb96e916cb'],
+    }),
+    ('tensor', '1.5.1', {
+        'checksums': ['6edb07024eaaadec1f83694f5012c2355aced3e589c2c3c659021b5f03168b58'],
+    }),
+    ('polyclip', '1.10-7', {
+        'checksums': ['f58eaac3a5b2f6711c0c5f12fff91cf80a245ae45878f7217880ab062b5550d3'],
+    }),
+    ('goftest', '1.2-3', {
+        'checksums': ['3a5f74b6ae7ece5b294781ae57782abe12375d61789c55ff5e92e4aacf347f19'],
+    }),
+    ('spatstat.utils', '3.2-0', {
+        'checksums': ['cbdf51390582bc561ba63af7735fbd3364a62bc915d4e60dd43f16365102acc4'],
+    }),
+    ('spatstat.data', '3.1-9', {
+        'checksums': ['e57b48fecad1ec72508f1485eee2c80de2de83ea72af29b2e98ef3bcf8f3246f'],
+    }),
+    ('spatstat.univar', '3.1-4', {
+        'checksums': ['884a7775567be58815f6de32c2bbd62bd554cde4542538ef420034a4c7022479'],
+    }),
+    ('spatstat.geom', '3.6-0', {
+        'checksums': ['ac0b24f5603d2e5ee360669a61ee25aabd79de74aeb99eb3aeec34b4f8284519'],
+    }),
+    ('spatstat.sparse', '3.1-0', {
+        'checksums': ['63be5dc5818339b878a14a39815dab730b28029d51bac5233e88f5e2464bbbe9'],
+    }),
+    ('spatstat.random', '3.4-2', {
+        'checksums': ['bd4c056c033f1a51d5c6cc3631b22e77d06cc6629071012c203ce7d836459fe4'],
+    }),
+    ('spatstat.explore', '3.5-3', {
+        'checksums': ['73ec7573911d03373e3bc0698b6db41509433a18c762c994f63bd0ec3404a365'],
+    }),
+    ('spatstat.model', '3.4-2', {
+        'checksums': ['5434d3a257cee4cf5c32f0f3007e6f2ac8aebbcd030524e67f1684778bb0ce97'],
+    }),
+    ('spatstat.linnet', '3.3-2', {
+        'checksums': ['de7b9489699c69086b6d6100b5c044efb179e793ae1ca606b58311c7c968c655'],
+    }),
+    ('spatstat', '3.4-1', {
+        'checksums': ['4a5889d798792fa218b1e5fe8cfec9074116f394554d40a29090fba43fcf79e6'],
+    }),
+    ('pracma', '2.4.6', {
+        'checksums': ['1857b831ec7da6eb651574ccdb12e1baef4c7150cbdc6380cf9fd70e60ae4552'],
+    }),
+    ('RCurl', '1.98-1.17', {
+        'checksums': ['c71874a6c116169e18bf12f023fdb79d63e92177aa7ae3858b30b60be5bc6030'],
+    }),
+    ('bio3d', '2.4-5', {
+        'checksums': ['3d27e7a64d64db103ab6c9bd25664c77d697c656a28f6e63de6bae0b6c8ad24c'],
+    }),
+    ('AUC', '0.3.2', {
+        'checksums': ['836b25b654a82f6ab69b86be95acc22a214da0ad06d71eab787ae1ebe721ae1f'],
+    }),
+    ('interpretR', '0.2.5', {
+        'checksums': ['dd8fa4a6b07d8a43b980e1df2f112c1915f93ca9d53cae0f0307a8ce00946c23'],
+    }),
+    ('cvAUC', '1.1.4', {
+        'checksums': ['48b4a3c34e9beb63239e9c7372dd125fe87648262ad5490e0bee2a1f14285ed4'],
+    }),
+    ('SuperLearner', '2.0-29', {
+        'checksums': ['236b03f969f4880680abb7f818bbbd92926ac3cb30b55560e3ee4d25d1572b3c'],
+    }),
+    ('mediation', '4.5.1', {
+        'checksums': ['a18dde0aeb1341798c876abed469e05c40b47f2ab6afa08bb7ed2e4ed1063a5c'],
+    }),
+    ('CVST', '0.2-3', {
+        'checksums': ['efa296230395f323c2a398a7b386e3a88e75a5b9b645307459d0b7c14d03f32d'],
+    }),
+    ('DRR', '0.0.4', {
+        'checksums': ['93e365a4907e301ae01f7d943e6bdcda71ef23c51a4759ba3c94bcf842d4e0f8'],
+    }),
+    ('dimRed', '0.2.7', {
+        'checksums': ['aa6bb45d3a89112d8935563b0209bb5a8c45da55b1e933d9daaf178b99007dc7'],
+    }),
+    ('ddalpha', '1.3.16', {
+        'checksums': ['3990f8649ffae227233bc0156d43b727486197eeb73a3200019c441a41516984'],
+    }),
+    ('RcppRoll', '0.3.1', {
+        'checksums': ['d2f5d978b6feb8510ec1a1a50ba0e8bf9002bb77bfad7d120f5b30b8f56036df'],
+    }),
+    ('rlist', '0.4.6.2', {
+        'checksums': ['ebde658d897c8a27a90ebb892b9e2bad15e2ad75557a7352fb08cbb5604e0997'],
+    }),
+    ('ConsRank', '2.1.5', {
+        'checksums': ['62f468f6b29f50822d9747ed0473f39223a154b55ef71dc2cc51202106724c1a'],
+    }),
+    ('adabag', '5.1', {
+        'checksums': ['68d56ec46840b262557a45b4c1850a9683a185bd712aa14f48ec95f84455bb28'],
+    }),
+    ('parallelMap', '1.5.1', {
+        'checksums': ['c108a634a335ed47b0018f532a52b032487e239c5061f939ba32355dfefde7e1'],
+    }),
+    ('ParamHelpers', '1.14.2', {
+        'checksums': ['ab6859b2d12fc10b09f316ea673b781c5f167eda86b19e423dd6fd4f97462375'],
+    }),
+    ('ggvis', '0.4.9', {
+        'checksums': ['69b9d184789c90aedd2f336d43033a8b710a16b052580bf9e7ce229ac25ba12f'],
+    }),
+    ('mlr', '2.19.3', {
+        'checksums': ['49d785160fa0d93be317573eb28b7926df1dc79991f58777b026b25bfb485c44'],
+    }),
+    ('unbalanced', '2.0', {
+        'checksums': ['9be32b1ce9d972f1abfff2fbe18f5bb5ba9c3f4fb1282063dc410b82ad4d1ea2'],
+    }),
+    ('RSNNS', '0.4-17', {
+        'checksums': ['424557d7326889e09e31e04d2a9b7224bed0bb4aa6f9e5433d7ce4fe04a35afc'],
+    }),
+    ('abc.data', '1.1', {
+        'checksums': ['48d685cf81a6053cce981791570abd27773454d7ff7586c2a563dab7a1cdb07d'],
+    }),
+    ('abc', '2.2.2', {
+        'checksums': ['bc9419f41cb70e6e7eec3f53a17810dd89ff78c0792b2dd769e2e57d852f4195'],
+    }),
+    ('lhs', '1.2.0', {
+        'checksums': ['6b4b773c6b322f1ffb3e2ef49c244ec8a3958a0346a1cc8f42f0d0951e8b0724'],
+    }),
+    ('tensorA', '0.36.2.1', {
+        'checksums': ['06588261fe7dff6a8edafe2b9d436b39a3b46c754f2ed327ae6322561a617db7'],
+    }),
+    ('EasyABC', '1.5.2', {
+        'checksums': ['326c92e003866728729dc61473f168c3663106b1229e8513abd7ce520c18689c'],
+    }),
+    ('git2r', '0.36.2', {
+        'checksums': ['8cd4f00555c4058836275b31f3be82034c27cad05f4b0296dfc32ca5b666ccac'],
+    }),
+    ('clisymbols', '1.2.0', {
+        'checksums': ['0649f2ce39541820daee3ed408d765eddf83db5db639b493561f4e5fbf88efe0'],
+    }),
+    ('covr', '3.6.4', {
+        'checksums': ['2b6204036510c629d0b1d58daaee34d4e38baf54164f8d4c9afd6d6b1fb1862a'],
+    }),
+    ('Rook', '1.2', {
+        'checksums': ['c79ae4b5164daffd4e7cf74bd23c1b08a3948bf343dfe9570d57f39cbf8e5f62'],
+    }),
+    ('Cairo', '1.6-5', {
+        'checksums': ['8778a2fd7c8b8b3167282e59c05c8d66892bea9e3b1b13abbb47b72c9d75892a'],
+    }),
+    ('RMTstat', '0.3.1', {
+        'checksums': ['bb4827d76106f5377044cd2b230208881eb714cae65f512f4b95988d9b162ae4'],
+    }),
+    ('Lmoments', '1.3-2', {
+        'checksums': ['ccb07c7cf9bc969d0a79c4e4182ab8846619bb51669e335d32170111741d05a4'],
+    }),
+    ('distillery', '1.2-2', {
+        'checksums': ['990d504f544c3a01050030001079664946f6e2d1f6d0233222f3ff220bce5de7'],
+    }),
+    ('extRemes', '2.2-1', {
+        'checksums': ['268f5d2b607437c49fd63f17978763bea6bfbc85c062ca3975e5550ce162e969'],
+    }),
+    ('tkrplot', '0.0-30', {
+        'checksums': ['cc6c997a1f4102fed2ce75d4c6dd057c4017c2ae1c930c8b37ca51a9a22ccbe1'],
+    }),
+    ('misc3d', '0.9-1', {
+        'checksums': ['a07bbb0de153e806cd79675ed478d2d9221cff825654f59a71a9cf61f4293d65'],
+    }),
+    ('multicool', '1.0.1', {
+        'checksums': ['bd72de1fbd7ea32018d6af09ac2af80871ebe26bf9dfdf1ba53f87e6cff56c1f'],
+    }),
+    ('plot3D', '1.4.2', {
+        'checksums': ['88b17af8b0eeb16e0ab69378c800eb843f5834acc100eb79e54338b9f1a5fd75'],
+    }),
+    ('plot3Drgl', '1.0.5', {
+        'checksums': ['75ceeaef9b369f6b7bc8408dc9dcfff232ac127591b7d729b7bb6075cd01dc74'],
+    }),
+    ('OceanView', '1.0.8', {
+        'checksums': ['75d6b0666b8a43fc6eea7870b65153d1b13c81425680234d53592a8f2f9b4ca9'],
+    }),
+    ('ks', '1.15.1', {
+        'checksums': ['7bd7f4f5ba42e8c6414920e58409bcf636709a91caa18bef0aadd6ac31835e73'],
+    }),
+    ('logcondens', '2.1.8', {
+        'checksums': ['f139206e47d1077ffcb39248450c1d7ce2ac892cb9264dd0e1ace92532162a00'],
+    }),
+    ('Iso', '0.0-21', {
+        'checksums': ['b6842ae1c7b629ebb63355f50bb2e5d96e5696fa59590807ac6028b6dce28fa6'],
+    }),
+    ('penalized', '0.9-53', {
+        'checksums': ['bf346aff13c3bf8ca1c30181570e7186728aceb939824a3650b4102e3355d9dc'],
+    }),
+    ('clusterRepro', '0.9', {
+        'checksums': ['940d84529ff429b315cf4ad25700f93e1156ccacee7b6c38e4bdfbe2d4c6f868'],
+    }),
+    ('data.tree', '1.2.0', {
+        'checksums': ['febb39f5878ad0d64b243d08d596116389ba1bc7a35807b2e851fda48e554f22'],
+    }),
+    ('influenceR', '0.1.5', {
+        'checksums': ['8164e4820f769032fab97c9ca486d33e83309641fcc4875065d8f5a43b20f58c'],
+    }),
+    ('visNetwork', '2.1.4', {
+        'checksums': ['483794988dd808424f5457e510e3de212519b690da281f70b14aaf63038963da'],
+    }),
+    ('downloader', '0.4.1', {
+        'checksums': ['74595ff67e9600e3bbe25fa2daf2eec770fab9eaaea12e63b61a32086e035175'],
+    }),
+    ('DiagrammeR', '1.0.11', {
+        'checksums': ['e873e3d6e198232408161661001ddcb04c9a56065bb4703c925e538462f4c4df'],
+    }),
+    ('randomForestSRC', '3.4.3', {
+        'checksums': ['c8cde29e7411427a6cfabd96df3a4d4005214192b11953afbc507c8a6e009fb6'],
+    }),
+    ('sm', '2.2-6.0', {
+        'checksums': ['27a6e3291a572c3d30f25982902ccde5299230061e5dc1a38fb52aaac2561d61'],
+    }),
+    ('pbivnorm', '0.6.0', {
+        'checksums': ['07c37d507cb8f8d2d9ae51a9a6d44dfbebd8a53e93c242c4378eaddfb1cc5f16'],
+    }),
+    ('lavaan', '0.6-20', {
+        'checksums': ['c3df7b2ceb5b0c23c685beaad112e8160c0466c48518b8a83974ca025dc1c1c6'],
+    }),
+    ('matrixcalc', '1.0-6', {
+        'checksums': ['0bc7d2f11f62d8b1969474defe27c924a243ccba0c856d585f317f6caa07f326'],
+    }),
+    ('arm', '1.14-4', {
+        'checksums': ['425bcb0afea2efb668d15ed8daa430bb356c62587eba806fd91e37afac1807bd'],
+    }),
+    ('mi', '1.2', {
+        'checksums': ['06d209b4e031ee0431421041f698804006f86eefff10779bc246e3fd22dc6d8c'],
+    }),
+    ('servr', '0.32', {
+        'checksums': ['672aca913087c5164020fe3e79bbfee47fbc4fedd5e2cc824ee91fb48ef03da6'],
+    }),
+    ('rgexf', '0.16.3', {
+        'checksums': ['cddcc58a10092cfea32999d7baaf6eae9b34e649a16627ee0b466a7cf2c339b0'],
+    }),
+    ('sem', '3.1-16', {
+        'checksums': ['a39f3ebf9dd7b08e3142ad1d1fcddfd79f7f260e08255e3d8b960e5ed085c94b'],
+    }),
+    ('statnet.common', '4.12.0', {
+        'checksums': ['45c6c9c1c30bd8abc3362fe7d6cdd5d53c3a9283630097d3d96e1258094584fc'],
+    }),
+    ('network', '1.19.0', {
+        'checksums': ['fd12a007fb16411ef386102f3ebb582ffc5b6798a7eb83858cb8601e1a152012'],
+    }),
+    ('rle', '0.10.0', {
+        'checksums': ['191799a80f3a833dcad0ffe0e6ea73bfce3c1a7cd4c6e00839687a0e695834ab'],
+    }),
+    ('sna', '2.8', {
+        'checksums': ['f20adb8e505cd56ae9ed0d9675337b4fab15d5dbad1bff3562edd971872a994c'],
+    }),
+    ('glasso', '1.11', {
+        'checksums': ['4c37844b26f55985184a734e16b8fe880b192e3d2763614b0ab3f99b4530e30a'],
+    }),
+    ('huge', '1.3.5', {
+        'checksums': ['9240866e2f773cd0ac8a02514871149d2babaa162a49e151eab9591ad42984ea'],
+    }),
+    ('d3Network', '0.5.2.1', {
+        'checksums': ['5c798dc0c87c6d574abb7c1f1903346e6b0fec8adfd1df7aef5e4f9e7e3a09be'],
+    }),
+    ('BDgraph', '2.74', {
+        'checksums': ['af78a936a8887c4e5521e35356700b903f466ee1796464a2361585efb07814aa'],
+    }),
+    ('graphlayouts', '1.2.2', {
+        'checksums': ['4848f108fe53ba898217ccf24328d626d75620f97020a467f07b7f69afc1e82f'],
+    }),
+    ('tweenr', '2.0.3', {
+        'checksums': ['efabe512a45d653787ba40f87f3e23add4037f88573a102fa9ac7a5ff43c8cbe'],
+    }),
+    ('ggforce', '0.5.0', {
+        'checksums': ['41b3ea33dc4da774a0047a446676e7c4d6c41592ad9cdb21db8d4efebcfb5d53'],
+    }),
+    ('tidygraph', '1.3.1', {
+        'checksums': ['aac1d4bb9396081bbeecbde11a3cd1a26a56bd6b1f608a628b359cb37c18ac1a'],
+    }),
+    ('ggraph', '2.2.2', {
+        'checksums': ['a9414ba2f359f9263e5e49ccfe42b3fc4682958c17c826037beef3498f2f822c'],
+    }),
+    ('qgraph', '1.9.8', {
+        'checksums': ['14a81d64f37614a05445408babbb2da5bc53886def8b0c2e4101b06e8b4c01d4'],
+    }),
+    ('diveRsity', '1.9.90', {
+        'checksums': ['b8f49cdbfbd82805206ad293fcb2dad65b962fb5523059a3e3aecaedf5c0ee86'],
+    }),
+    ('doSNOW', '1.0.20', {
+        'checksums': ['917cabed166aa2d1ec291691c17e1e3d344e858543e1682e3a442cc0c504bbb8'],
+    }),
+    ('geepack', '1.3.13', {
+        'checksums': ['6ef0ee6876fbbed01ecf5c6150ad2d38709fcb83560b7acd5860e381371ae1d6'],
+    }),
+    ('biom', '0.3.12', {
+        'checksums': ['4ad17f7811c7346dc4923bd6596a007c177eebb1944a9f46e5674afcc5fdd5a1'],
+    }),
+    ('pim', '2.0.4', {
+        'checksums': ['77d65935aba664a949d661af5be5a5eed6e0b460eeed6a1376b5e3c55e178de4'],
+    }),
+    ('minpack.lm', '1.2-4', {
+        'checksums': ['e30fa4fe353cf00d266839d3c5db83ec9548a660f31d447ad9a69f556d56e731'],
+    }),
+    ('rootSolve', '1.8.2.4', {
+        'checksums': ['e16a317ea494192e0a5668a18f7eb99675f8edf3b3095861d213bc2590ad385d'],
+    }),
+    ('FME', '1.3.6.4', {
+        'checksums': ['4b6d39dc8df646d862d661014ea7d71e29b768943c13a5483788a46c67baeae9'],
+    }),
+    ('bmp', '0.3.1', {
+        'checksums': ['9e6c630e1bf9f516ea380a8da13de4c323c0dbfba48c59ad76b2d518e1c2b364'],
+    }),
+    ('tiff', '0.1-12', {
+        'checksums': ['df10ce719f92597572763182f7cb03686b8d7fb9123d036a4daf5b10738e815c'],
+    }),
+    ('readbitmap', '0.1.5', {
+        'checksums': ['737d7d585eb33de2c200da64d16781e3c9522400fe2af352e1460c6a402a0291'],
+    }),
+    ('imager', '1.0.5', {
+        'checksums': ['66919076fcc1211b1da4e20d934037c420c63c8a098c0b322cf3e398d3c20455'],
+    }),
+    ('signal', '1.8-1', {
+        'checksums': ['a322bc13c2d3ff43a7f24970e52277d3d8ebc47fdaa9f63e210ed53655e1eeb0'],
+    }),
+    ('tuneR', '1.4.7', {
+        'checksums': ['364154a0440953327eeefd2f3c72c9f819944cbb52b6e7497958882ca0b6960a'],
+    }),
+    ('pastecs', '1.4.2', {
+        'checksums': ['43b656809f601be7b2f98187b0b71d3fdd2b515f5658a0690e7a515ddbb376f8'],
+    }),
+    ('audio', '0.1-11', {
+        'checksums': ['1052f6335be4df4b2e145c077d82e781eaf6658f3ed4821033b07e57bb4ce17c'],
+    }),
+    ('fftw', '1.0-9', {
+        'checksums': ['3ef4d87c17031d14ca071ec8ab4d052f3fcb2c1132544ccb192344e5a047f698'],
+    }),
+    ('seewave', '2.2.4', {
+        'checksums': ['a0618b5f2cb8862cc7b1b5336d6f55f25ed0c05803da269d83b8491daf235ebd'],
+    }),
+    ('gsw', '1.2-0', {
+        'checksums': ['9f9ca4891dbb178c1d6dbffc0f83429d9a0a971b9ea0811e79bfc19ac2e19522'],
+    }),
+    ('wk', '0.9.4', {
+        'checksums': ['b973dd5fa9aed94efc7ea4027146e804ba54df818a71278d6a5b7df0ae9e348b'],
+    }),
+    ('s2', '1.1.9', {
+        'checksums': ['4dcd2bff738be5a89b925fed29acb6e224e0f514b4530dc9987a0a72c5a99b55'],
+    }),
+    ('sf', '1.0-21', {
+        'checksums': ['70c28a826387a56b5f270d48cbb42999f6fb59ec0e6984c84df920dbe0206e99'],
+    }),
+    ('oce', '1.8-3', {
+        'checksums': ['f1f129ef263f71cae726df0a60e38bfd33e179c5642c5d96ac75057bc70b6f8f'],
+    }),
+    ('ineq', '0.2-13', {
+        'checksums': ['e0876403f59a3dfc2ea7ffc0d965416e1ecfdecf154e5856e5f54800b3efda25'],
+    }),
+    ('soundecology', '1.3.3', {
+        'checksums': ['276164d5eb92c78726c647be16232d2443acbf7061371ddde2672b4fdb7a069a'],
+    }),
+    ('memuse', '4.2-3', {
+        'checksums': ['906fdff665e2aed0e98ee3181233a5c62bd521abfce6ab1cb215c71c95d12620'],
+    }),
+    ('pinfsc50', '1.3.0', {
+        'checksums': ['971627cf4567fdb34db26010f2db44cfac5ff07f327d3247e778638cc4e849bf'],
+    }),
+    ('vcfR', '1.15.0', {
+        'checksums': ['df17e48b961d96f2a78a1a15037df674f57d0445f2669e401543d8082f0b49fa'],
+    }),
+    ('glmmML', '1.1.7', {
+        'checksums': ['b2e469154d6f94f426ff4c92367cce79697f900bc8cf5d596f684f976258861f'],
+    }),
+    ('tsne', '0.1-3.1', {
+        'checksums': ['14abc65bc0a3f3ed63c04dda19620e483a21d1f5f33feb74aba9f3221434d888'],
+    }),
+    ('sn', '2.1.1', {
+        'checksums': ['f9f6b56d91dc7cb18dc8308d0875b9648c90b268d1aaf8f4c5164ff016df22bd'],
+    }),
+    ('ranger', '0.17.0', {
+        'checksums': ['d48cdf4ce4917af93d9fe221c25d11089f5139ed765bbbff43e7b4fe58a09d36'],
+    }),
+    ('hexbin', '1.28.5', {
+        'checksums': ['2ed087d6399f247d44e555b69d785b48362445c4c8c77330bbd57d282b49d3e6'],
+    }),
+    ('lobstr', '1.1.2', {
+        'checksums': ['9bc533ed7e8f816097a03acfbca33308c9940ba26d02674f4ba06311cf3a1718'],
+    }),
+    ('pryr', '0.1.6', {
+        'checksums': ['68c1a30a42808eb01a64d31e521d21f2fd5a88dd2c14d05b4b7986d27a177704'],
+    }),
+    ('moments', '0.14.1', {
+        'checksums': ['2ed2b84802da132ae0cf826a65de5bfa85042b82e086be844002fe1ce270d864'],
+    }),
+    ('laeken', '0.5.3', {
+        'checksums': ['60495f494f2a41b2ca94e11e3d0224843b7282cf8b2a859dbf6077a3bc97e80b'],
+    }),
+    ('xgboost', '1.7.11.1', {
+        'checksums': ['c15b631be77ae17fef46166abffb3336738a812c219d82c601bc70664a88d7c5'],
+    }),
+    ('VIM', '6.2.6', {
+        'checksums': ['56a855285b816748c3a5893220e55a00b8573eb649eca5db79c99f11035ff0f6'],
+    }),
+    ('smoother', '1.3', {
+        'checksums': ['e8df4bc88e9d95c30c66fc10e6b1b485626828b6d28ad1a52a20168736468277'],
+    }),
+    ('dynamicTreeCut', '1.63-1', {
+        'checksums': ['831307f64eddd68dcf01bbe2963be99e5cde65a636a13ce9de229777285e4db9'],
+    }),
+    ('beeswarm', '0.4.0', {
+        'checksums': ['51f4339bf4080a2be84bb49a844c636625657fbed994abeaa42aead916c3d504'],
+    }),
+    ('vipor', '0.4.7', {
+        'checksums': ['baad41e9ddaa13b5a1db1abab34253b27d5b99e5a6a649b2036aaf1483370b9e'],
+    }),
+    ('ggbeeswarm', '0.7.2', {
+        'checksums': ['fd7ca265bb892dde514d5f8d6a853fb8b32d7a673b05e9c8b50544a523299ce5'],
+    }),
+    ('shinydashboard', '0.7.3', {
+        'checksums': ['641ce851846a58ecfe3b126b401f8e59d80f578451dd33f6cf1868bffea5144c'],
+    }),
+    ('rrcov', '1.7-7', {
+        'checksums': ['0b2f5a047903db0ace8f260d97e5aba56790619524883c0782c4aeb1eacd70f5'],
+    }),
+    ('WriteXLS', '6.8.0', {
+        'checksums': ['0bd6b892815eb54f506583cf16bec951c7722db0ad99bffe5a681bc57b1f09f6'],
+    }),
+    ('bst', '0.3-24', {
+        'checksums': ['64d96e13551d35ec32aabaa733bec86dbe8c9ca3f976a34ebbf1f49bb63e49f4'],
+    }),
+    ('pamr', '1.57', {
+        'checksums': ['01968f7620f1a5e4be1ce666f7ff52211b9dcf6cf5948112c7441aabae56af3d'],
+    }),
+    ('WeightSVM', '1.7-16', {
+        'checksums': ['5c2dd5d296646b0cdc6094b690cbca67adf9519475359c74260533736c736c31'],
+    }),
+    ('mpath', '0.4-2.26', {
+        'checksums': ['795f03c8a8f586e69ecd3540b1d67f7c28ca237b97dd0317886eda3fc765f5df'],
+    }),
+    ('timereg', '2.0.7', {
+        'checksums': ['dc87ff3785507c2f759cf876ba978f4795b3836d407be18b0630f2a451489b5f'],
+    }),
+    ('peperr', '1.6', {
+        'checksums': ['f29baa9c41fec89dc104d884f7db2b09e80d12945e81653b485271cfee96d1dc'],
+    }),
+    ('heatmap3', '1.1.9', {
+        'checksums': ['594c33947b2be2cc8a592075f41a0df2398c892add7d63a15c613a5eeb8fdb69'],
+    }),
+    ('GlobalOptions', '0.1.2', {
+        'checksums': ['47890699668cfa9900a829c51f8a32e02a7a7764ad07cfac972aad66f839753e'],
+    }),
+    ('circlize', '0.4.16', {
+        'checksums': ['16dc32c7704906d13a9e5281bb396e92fb89a6b17fa5e201953240726b650b67'],
+    }),
+    ('GetoptLong', '1.0.5', {
+        'checksums': ['8c237986ed3dfb72d956ad865ef7768644eebf144675ad66140acfd1aca9d701'],
+    }),
+    ('dendextend', '1.19.1', {
+        'checksums': ['be3c150c0ca460bb9181a906215244da92fe556e6bbfe1a6841398b45b5d2701'],
+    }),
+    ('RInside', '0.2.19', {
+        'checksums': ['0703843a3f1460c571650138e5846d96552d6541766c7df72c609cd3aaca1f24'],
+    }),
+    ('limSolve', '2.0.1', {
+        'checksums': ['299450f8268c9834280a032039b071039cb780ebd87fc5a3d7923fa8e72af938'],
+    }),
+    ('dbplyr', '2.5.1', {
+        'checksums': ['95d54c6a29b17eb11e3939a1b96b821b083a74290c95e2d2ccc8b45e0cfb3d3d'],
+    }),
+    ('debugme', '1.2.0', {
+        'checksums': ['b22605ad3b20d460308d8c9c18116e56c4d6ff10577608eaf58802998171f099'],
+    }),
+    ('reprex', '2.1.1', {
+        'checksums': ['c860368cbc7ef90ea786fb61ab6fa42cd89b5258be48652abc20ad414001879c'],
+    }),
+    ('selectr', '0.4-2', {
+        'checksums': ['5588aed05f3f5ee63c0d29953ef53da5dac7afccfdd04b7b22ef24e1e3b0c127'],
+    }),
+    ('rvest', '1.0.5', {
+        'checksums': ['1e7c34a0b4467887195b1cd66388919989e82ca096d08df283c675d87e53bc00'],
+    }),
+    ('dtplyr', '1.3.2', {
+        'checksums': ['766003e3cbad4e5d03cfdf240a25e49a813d96ecdbef0cd74ffaf4298182216e'],
+    }),
+    ('gargle', '1.6.0', {
+        'checksums': ['e4a33f23c2ad917782fff1902e23f2a4c6c333c6389f6bfe8350577ddb6af6e6'],
+    }),
+    ('googledrive', '2.1.2', {
+        'checksums': ['3809ea4d8333eb80e6ca4e780f198014f65b21c3cf4ec95a63aeb6772c8d94aa'],
+    }),
+    ('ids', '1.0.1', {
+        'checksums': ['b6212a186063c23116c5cbd3cca65dbb8977dd737261e4526ebee8f64852cfe8'],
+    }),
+    ('googlesheets4', '1.1.2', {
+        'checksums': ['7ba9d5dd051a405a7af6d41d5fc12bdec8474f9fb1482ef32eb79aa6914fadd9'],
+    }),
+    ('conflicted', '1.2.0', {
+        'checksums': ['c99b86bb52da3e7d1f4d96d70c77304d0434db5bd906edd8d743e89ac9223088'],
+    }),
+    ('tidyverse', '2.0.0', {
+        'checksums': ['3d3c2d135056333247d309d1c2cc98cc0d87e2c781f4c6fbceab28d28c0728e5'],
+    }),
+    ('R.rsp', '0.46.0', {
+        'checksums': ['1a9f680ffe563abdaa91add6ebf5e6c0ecbe57f0d39687bcb272ff2a987c33bb'],
+    }),
+    ('gdistance', '1.6.5', {
+        'checksums': ['cac066b941eb128e06156274dcbd5db1167b5867aa66954df8525c335ab07e1d'],
+    }),
+    ('vioplot', '0.5.1', {
+        'checksums': ['c3b910327fa9c07194400439817b87192ae16e997cbf5eccb8f001d966478f00'],
+    }),
+    ('emulator', '1.2-24', {
+        'checksums': ['91dc91eea7df9bf243d45db1bbf98aa72a1dafef789a6091f41180d5242fa469'],
+    }),
+    ('gmm', '1.9-1', {
+        'checksums': ['9290674d09403f401718dd9c2131a425dba5727b9dcd6698d2f68a9f5ab83c1f'],
+    }),
+    ('tmvtnorm', '1.7', {
+        'checksums': ['4b180b31e3bc4eb5009f5d7d83b7f2dd377989341ef27502113127d60f531bd8'],
+    }),
+    ('IDPmisc', '1.1.21', {
+        'checksums': ['478b95ae7e73df78e0728d37281b9af6b4f152a8d54bf9811121d32722f9088c'],
+    }),
+    ('gap.datasets', '0.0.6', {
+        'checksums': ['1e14b06fac203016555ddca323225ccf18d784609dbf9bdfff423e6dccd297cb'],
+    }),
+    ('gap', '1.6', {
+        'checksums': ['9cff9b6f5c83a15fdf49b9bc0e165a596d54f0e246d27447e59931faf690e0df'],
+    }),
+    ('qrnn', '2.1.1', {
+        'checksums': ['14f7ab438349dd9a9deb8bcdc1bf6734872a018061f46d0ba5d02db63c904cc9'],
+    }),
+    ('TMB', '1.9.18', {
+        'checksums': ['a1306bed1118377f090108b3ee7ced18b2201a96842926927b0f8a252bf4c46a'],
+    }),
+    ('glmmTMB', '1.1.13', {
+        'checksums': ['2a94095ef4235b371978b78ef25c9338b8523e3c2cc49eaf5bd0a48ff31cde0b'],
+    }),
+    ('gmp', '0.7-5', {
+        'checksums': ['f5cdaf9afb4cd921924f16682a6d6097ff372c95b697f363704c367f9b13ce78'],
+    }),
+    ('ROI', '1.0-1', {
+        'checksums': ['d4ff143304f1422ecc455eb1a00896530193c1a227ed7f3e9da2baa95d921616'],
+    }),
+    ('Rglpk', '0.6-5.1', {
+        'checksums': ['e528b8c487e9dfef16ade3b834a17fc93cc898869978a5dd79bee2c5bf9cb6c9'],
+    }),
+    ('ROI.plugin.glpk', '1.0-0', {
+        'checksums': ['b361b0d4222d74b21432cdc6990762affecdbcec8fd6bbdb13b78b59cb04b444'],
+    }),
+    ('spaMM', '4.6.1', {
+        'checksums': ['abf4017dccc13e560c4791d0dd53360d017027c615fa1f0cfd9848fde3a0e4d9'],
+    }),
+    ('qgam', '2.0.0', {
+        'checksums': ['4e1a4845dfbda675e32ae4f9a6dfc6f7b8f20f56036272951135642aa579ace8'],
+    }),
+    ('DHARMa', '0.4.7', {
+        'checksums': ['ca3fc3ea53e1d14c9187b21c2055c783b0b53b6ab07da1fb08cd427d49e6de55'],
+    }),
+    ('mvnfast', '0.2.8', {
+        'checksums': ['8871e0ce54b87afc556fd94ca77c3db72dcbb8c245558287e0fe342e30eec9a0'],
+    }),
+    ('bridgesampling', '1.1-2', {
+        'checksums': ['54ecd39aa2e36d4d521d3d36425f9fe56a3f8547df6048c814c5931d790f3e6b'],
+    }),
+    ('BayesianTools', '0.1.8', {
+        'checksums': ['f543bdd6b61ec7fd31a7e4040bd7835341d9079243fa4eb0cd5e684e5e39bdd1'],
+    }),
+    ('gomms', '1.0', {
+        'checksums': ['52828c6fe9b78d66bde5474e45ff153efdb153f2bd9f0e52a20a668e842f2dc5'],
+    }),
+    ('feather', '0.3.5', {
+        'checksums': ['50ff06d5e24d38b5d5d62f84582861bd353b82363e37623f95529b520504adbf'],
+    }),
+    ('dummies', '1.5.6', {
+        'checksums': ['7551bc2df0830b98c53582cac32145d5ce21f5a61d97e2bb69fd848e3323c805'],
+    }),
+    ('SimSeq', '1.4.0', {
+        'checksums': ['5ab9d4fe2cb1b7634432ff125a9e04d2f574fed06246a93859f8004e10790f19'],
+    }),
+    ('uniqueAtomMat', '0.1-3-2', {
+        'checksums': ['f7024e73274e1e76a870ce5e26bd58f76e8f6df0aa9775c631b861d83f4f53d7'],
+    }),
+    ('PoissonSeq', '1.1.2', {
+        'checksums': ['6f3dc30ad22e33e4fcfa37b3427c093d591c02f1b89a014d85e63203f6031dc2'],
+    }),
+    ('aod', '1.3.3', {
+        'checksums': ['b7245e8abf7d78cdfa7f74f6d90f79a418b883058aa3edd5977a60bdbed4087e'],
+    }),
+    ('cghFLasso', '0.2-1', {
+        'checksums': ['6e697959b35a3ceb2baa1542ef81f0335006a5a9c937f0173c6483979cb4302c'],
+    }),
+    ('svd', '0.5.8', {
+        'checksums': ['c8f99c62ada68fbb1b40ca5d20775d5177478598416a200f421003e6b21f6543'],
+    }),
+    ('Rssa', '1.1', {
+        'checksums': ['d99116cec090cb3ccb7716fabaceb53aacf13a7e966850bdc27b4f43a0b7c399'],
+    }),
+    ('JBTools', '0.7.2.9', {
+        'checksums': ['b33cfa17339df7113176ad1832cbb0533acf5d25c36b95e888f561d586c5d62f'],
+    }),
+    ('RUnit', '0.4.33.1', {
+        'checksums': ['8528fa3ba8d04a6e71783f01ba3e1163b5900c6b3c2bc81bad2349e220197f05'],
+    }),
+    ('DistributionUtils', '0.6-2', {
+        'checksums': ['808e1525c9efd501d1069a4ff9a81cdca35462cc8d2a9b42d9dafe504eb3ca05'],
+    }),
+    ('gapfill', '0.9.6-1', {
+        'checksums': ['22f04755873e34a9077bb1b1de8d16f5bc56cb8c395c4f797f9ad0b209b1b996'],
+    }),
+    ('gee', '4.13-29', {
+        'checksums': ['e083efb0c1f7293a79d8fe35f90630fa34c8752d5a835cf0ea70560bf5c2ff94'],
+    }),
+    ('Matching', '4.10-15', {
+        'checksums': ['30ed8f5b903c3b1248ca521df709ac2190d3e012401ed48d25fc2c2c8d7cded0'],
+    }),
+    ('chk', '0.10.0', {
+        'checksums': ['5b08cdfa691f65febbc939fc1f45a2b6ffbb446c6b554732a1cd7214fdabd384'],
+    }),
+    ('MatchIt', '4.7.2', {
+        'checksums': ['f1b5ea251d1095c40afbd3c7d6af2922e2fd3c76885dfd4441459c4a158178ad'],
+    }),
+    ('RItools', '0.3-5', {
+        'checksums': ['608fc3f5df6670211b32bf59348294f338491cce692ba12fef3d55f14a38fcf8'],
+    }),
+    ('mitools', '2.4', {
+        'checksums': ['f204f3774e29d79810f579f128de892539518f2cbe6ed237e08c8e7283155d30'],
+    }),
+    ('survey', '4.4-8', {
+        'checksums': ['79893762d70f4ac7db634e991827afadcdbebe22728e4c3a65b22a5fb1707982'],
+    }),
+    ('rlemon', '0.2.1', {
+        'checksums': ['4a18fa034f197c68daf48daf25c0e41f1b8acbe71d030c6bc1f55e3062a10375'],
+    }),
+    ('optmatch', '0.10.8', {
+        'checksums': ['5130abea0a162ab0e4045ea4bb2748b134f649829b634613007254e8e91d4991'],
+    }),
+    ('SPAtest', '3.1.2', {
+        'checksums': ['b3d74ed2b0a6475a9966dd50eb5d363d0b2985636271dfbf82f0472b8d22b9f4'],
+    }),
+    ('RSpectra', '0.16-2', {
+        'checksums': ['a2f149d79519fee79dabe1b174dfb847a916045315d5927a93cc6b005522aa7e'],
+    }),
+    ('SKAT', '2.2.5', {
+        'checksums': ['1441fa46b6a78a060007442fb8cb8c87753bdc2b1ea2dc24ff951ac3fef651f4'],
+    }),
+    ('GillespieSSA', '0.6.2', {
+        'checksums': ['f4233b4a44c7d4b9e3459b1efa9a8087a602ef93806b4d70eadbb537b67567c2'],
+    }),
+    ('startupmsg', '1.0.0', {
+        'checksums': ['7bd62011f4f94f46c33f219b584ce7baa9c6b00e3a40f18e042b18ca5d7edc1b'],
+    }),
+    ('distr', '2.9.7', {
+        'checksums': ['33fbcdeebbd4504f0c7a945969d1fefdf46521d75c90b458ef95cda0a59b234c'],
+    }),
+    ('distrEx', '2.9.6', {
+        'checksums': ['e4f0f245ebbe19f5c98cc7a562d1facad455ccd7c4f260281c36cc800b67a061'],
+    }),
+    ('minerva', '1.5.10', {
+        'checksums': ['2f26353d8fcc989ac698c4e45bb683801b1a7bb60b14903d05a4d73c629c590f'],
+    }),
+    ('RcppTOML', '0.2.3', {
+        'checksums': ['2ed594253c562bef7065e67d791197f61b221e545206a1b3598d46868cf5926f'],
+    }),
+    ('here', '1.0.2', {
+        'checksums': ['71980aa294314d6e032e680dfd2a59f792cab6f8d414cce03f2e823819190c3d'],
+    }),
+    ('reticulate', '1.44.0', {
+        'checksums': ['13dc9cb66f7bb852583d3f283d727b740a5bc5bd209c0bf8d817dac143b71d62'],
+    }),
+    ('umap', '0.2.10.0', {
+        'checksums': ['8d4786929345e8980bb8be8bb4b6300a679bba03a5984eed59e5e00c626b6ea9'],
+    }),
+    ('Rnanoflann', '0.0.3', {
+        'checksums': ['46fcf84c640f8fb71d8fa397b6c441af95b6a0dadc168ecac214074b8ef57211'],
+    }),
+    ('KODAMA', '3.0', {
+        'checksums': ['ec62d7c237b0cf6509e266671e4620c272a7837431793d6b9833e3262987dcbc'],
+    }),
+    ('locfdr', '1.1-8', {
+        'checksums': ['42d6e12593ae6d541e6813a140b92591dabeb1df94432a515507fc2eee9a54b9'],
+    }),
+    ('ica', '1.0-3', {
+        'checksums': ['474d3530b16b76a1bf1a1114d24092678ea7215fa57c6fdcee6333f1e768b865'],
+    }),
+    ('dtw', '1.23-1', {
+        'checksums': ['6ed6a3b52be673ce2617b8d48723c7c488c95aab88fe2912d7e00507838e826d'],
+    }),
+    ('ggridges', '0.5.7', {
+        'checksums': ['fcba89ffa3a31edfb3eeea249a78997150d9e01888dbe2015fec310709681133'],
+    }),
+    ('TFisher', '0.2.0', {
+        'checksums': ['bd9b7484d6fba0165841596275b446f85ba446d40e92f3b9cb37381a3827e76f'],
+    }),
+    ('lsei', '1.3-0', {
+        'checksums': ['6289058f652989ca8a5ad6fa324ce1762cc9e36c42559c00929b70f762066ab6'],
+    }),
+    ('npsurv', '0.5-0', {
+        'checksums': ['bc87db76e7017e178c2832a684fcd49c42e20054644b21b586413d26c8821dc6'],
+    }),
+    ('fitdistrplus', '1.2-4', {
+        'checksums': ['b2341b06747a3b9739e749d9570cc531366ba4b78c727d39c55b618d9ee3128f'],
+    }),
+    ('hdf5r', '1.3.12', {
+        'installopts': '--configure-args="--with-hdf5=$EBROOTHDF5/bin/h5pcc"',
+        'preinstallopts': "unset LIBS && ",
+        'checksums': ['e2e736b66837f516ac3e31e7bbf41c2a0e37431757df983442ce0062dc13ff64'],
+    }),
+    ('DTRreg', '2.3', {
+        'checksums': ['4c9864689437b74d84c536642b84d1100651919f8a6db94c430a7ab9fdf0f58d'],
+    }),
+    ('pulsar', '0.3.11', {
+        'checksums': ['ee82ef25b2be4bbac713c34bca85d8ea1fa0e32eb8c800dad7256e145fc79393'],
+    }),
+    ('bayesm', '3.1-6', {
+        'checksums': ['17d72b9cdc090845f98e7a04640380d0baef8bc23d1487c8f64dc192fdb93cb5'],
+    }),
+    ('gsl', '2.1-8', {
+        'checksums': ['f33609bf485abd190e65ff5d0fdab438b759294c47b921d983d89d6f053a2d95'],
+    }),
+    ('energy', '1.7-12', {
+        'checksums': ['ac2224befa4c6ab62f99816ff670b1ee35288cabb7db362257e9af21c87e6f72'],
+    }),
+    ('compositions', '2.0-9', {
+        'checksums': ['eda5f23c1ca20d3df454881e3dc45db87a4f408be6cdef2aee51dbed0ae297ff'],
+    }),
+    ('clustree', '0.5.1', {
+        'checksums': ['b5f2496e596e3fd140ace69c4837085e13f3abb850f5eb57d496380691fdd117'],
+    }),
+    ('tweedie', '2.3.5', {
+        'checksums': ['983c745fee5a780d46e8dd04c2eb1c10cb2e222d3679654f0d6934d3db7b1c3e'],
+    }),
+    ('RcppGSL', '0.3.13', {
+        'checksums': ['fe5e73bc119c6424e1a40b6fea17417a7bba93e81dbe9b7cf86dde9b8e8d93e7'],
+    }),
+    ('mvabund', '4.2.1', {
+        'checksums': ['ed6946c95609443584081100cd38624d2309f7f5d210fd4b8ec12ad25bd27a06'],
+    }),
+    ('fishMod', '0.29.2', {
+        'checksums': ['6cd0feedebbaa68f841a4e5ee82cc7f2a048c30e5632184921acb06824a72f5a'],
+    }),
+    ('alabama', '2023.1.0', {
+        'checksums': ['925f67c72d9cdb677105377777bd09e9b56a61573bea7e3f69e0a49595c7bf1c'],
+    }),
+    ('gllvm', '2.0.5', {
+        'checksums': ['d77114375fec2a2e506f05bcf3d5a9b0066235ba552f56dbf9e658b33753502b'],
+    }),
+    ('grpreg', '3.5.0', {
+        'checksums': ['160b321aee0bb911cc9cdf50f1a9b3884ecfab2b77e200aef38b18df0f98840c'],
+    }),
+    ('trust', '0.1-8', {
+        'checksums': ['952e348b62aec35988b103fd152329662cb6a451538f184549252fbf49d7dcac'],
+    }),
+    ('lpSolveAPI', '5.5.2.0-17.14', {
+        'checksums': ['56405bc6695259f414a5d9cae332f67ec975ea9161cf34efc15885c563c4bd4f'],
+    }),
+    ('ergm', '4.10.1', {
+        'checksums': ['93f30ef0dfd19c1bafc2b2e8fd0bc7782ba7d0edcccf7ac9f21a0b01fdb4293d'],
+    }),
+    ('networkLite', '1.1.0', {
+        'checksums': ['73ce2ae3f57c49b8c08bd86baf305da2d00986cd31198a28454c7404cde7aeeb'],
+    }),
+    ('networkDynamic', '0.11.5', {
+        'checksums': ['a33ff40ca8d7f923915219793eb6b5acfa9a2c888e3dacc031210f414bf2a5c0'],
+    }),
+    ('ergm.multi', '0.3.0', {
+        'checksums': ['f4e2e799cbbad330e642a35ff05b46df4e280efeaf4de08cafd8081ef1c7682a'],
+    }),
+    ('tergm', '4.2.2', {
+        'checksums': ['6cd5f8ea0e1c5b08e2eec245342be5b652d9991d98af8df07dffac18a9d45f4f'],
+    }),
+    ('ergm.count', '4.1.3', {
+        'checksums': ['3747681137dcdb7303ff690c2fc3e2e01a1f70c64d73b8540747cd7d810617f0'],
+    }),
+    ('tsna', '0.3.6', {
+        'checksums': ['c1dd9e5596f42ba742a40ec8fff8d820d9c75674c1976401aee18356a2109074'],
+    }),
+    ('statnet', '2019.6', {
+        'checksums': ['0903e1a81ed1b6289359cefd12da1424c92456d19e062c3f74197b69e536b29d'],
+    }),
+    ('aggregation', '1.0.1', {
+        'checksums': ['86f88a02479ddc8506bafb154117ebc3b1a4a44fa308e0193c8c315109302f49'],
+    }),
+    ('ComICS', '1.0.4', {
+        'checksums': ['0af7901215876f95f309d7da6e633c38e4d7faf04112dd6fd343bc15fc593a2f'],
+    }),
+    ('dtangle', '2.0.9', {
+        'checksums': ['c375068c1877c2e8cdc5601cfd5a9c821645c3dff90ddef64817f788f372e179'],
+    }),
+    ('mcmc', '0.9-8', {
+        'checksums': ['6a06440d4b58e8a7f122747d92046ff40da4bb58a20bf642228a648a0c826ea7'],
+    }),
+    ('MCMCpack', '1.7-1', {
+        'checksums': ['3b0b46746324197c38826cde06729f031311c3520d9d42815b7b356d29b58529'],
+    }),
+    ('shinythemes', '1.2.0', {
+        'checksums': ['37d68569ce838c7da9f0ea7e2b162ecf38fba2ae448a4888b6dd29c4bb5b2963'],
+    }),
+    ('csSAM', '1.2.4', {
+        'checksums': ['3d6442ad8c41fa84633cbbc275cd67e88490a160927a5c55d29da55a36e148d7'],
+    }),
+    ('bridgedist', '0.1.3', {
+        'checksums': ['62b4e24e82e702537c907522e73b3f7381a6aa274e97ac7d1ab01d513d61c41b'],
+    }),
+    ('asnipe', '1.1.17', {
+        'checksums': ['e7b4010fa1adf27534420db2971dae3c63190920a4323c86fd586842e22d9b07'],
+    }),
+    ('liquidSVM', '1.2.4', {
+        'patches': ['liquidSVM-1.2.4-fix_ppc_aarch64_and_riscv_build.patch'],
+        # Don't add optimization flags by liquidSVM which may not be known e.g. on PPC
+        'preinstallopts': 'LIQUIDSVM_TARGET="empty"',
+        'checksums': [
+            {'liquidSVM_1.2.4.tar.gz': '15a9c7f2930e2ed3f4c5bcd9b042884ea580d2b2e52e1c68041600c196046aba'},
+            {'liquidSVM-1.2.4-fix_ppc_aarch64_and_riscv_build.patch':
+             '523e458061c4b61f1a6e921d72f13926844dac155c2ba1b6ebc92359e2b3e24c'},
+        ],
+    }),
+    ('oddsratio', '2.0.2', {
+        'checksums': ['eb2cfbeede48a6e1c27b4937df0650576add65833ffd50e6831296fcc5527726'],
+    }),
+    ('mltools', '0.3.5', {
+        'checksums': ['7093ffceccdf5d4c3f045d8c8143deaa8ab79935cc6d5463973ffc7d3812bb10'],
+    }),
+    ('h2o', '3.44.0.3', {
+        'checksums': ['61a85f6c2f15e8e96839f8a4fd3a45eaa6bca90517bb20a4dd36e951d6fd0c82'],
+    }),
+    ('mlegp', '3.1.9', {
+        'checksums': ['63296d17a162fdce0958b10f45cb7d5dab4b3ee29340528d33cedcae08a040b3'],
+    }),
+    ('itertools', '0.1-3', {
+        'checksums': ['b69b0781318e175532ad2d4f2840553bade9637e04de215b581704b5635c45d3'],
+    }),
+    ('missForest', '1.6.1', {
+        'checksums': ['895a13c10c694f3de3347d56988d8c69abe527e55cff2f83ebf128369de0739f'],
+    }),
+    ('bartMachineJARs', '1.2.1', {
+        'checksums': ['9f7a20acf4aec249e16f83d81f5ec796aa718deb1b8bc24393fc0421eb8ce1c0'],
+    }),
+    ('bartMachine', '1.3.4.1', {
+        'checksums': ['3b0a5250f5425a8efe460adcb58ea1342f1d845ae3a8db29dbf4806653884b89'],
+    }),
+    ('lqa', '1.0-3', {
+        'checksums': ['3889675dc4c8cbafeefe118f4f20c3bd3789d4875bb725933571f9991a133990'],
+    }),
+    ('PresenceAbsence', '1.1.11', {
+        'checksums': ['c63a6453783865b7c69c580a09a769e99390dd8b2e0f63e48fbfc86da3bee4b7'],
+    }),
+    ('GUTS', '1.2.6', {
+        'checksums': ['0d3ebf3d846a08046eca96d18c62f82ca5bb77b49124d098b147eb3492e4888d'],
+    }),
+    ('GenSA', '1.1.14.1', {
+        'checksums': ['2fdd54cbd670c9eaba304547d8c44fc51578cb317adb9788a0fc82f58ace377f'],
+    }),
+    ('parsedate', '1.3.2', {
+        'checksums': ['e9b4dc74406f6eb8af447f22f5dbaabed6a94301e91e50142501c22c89871770'],
+    }),
+    ('circular', '0.5-2', {
+        'checksums': ['3925622cd99d902d2c0e11b85127873f3d301f2b9db05edf722a9c10731f7ddc'],
+    }),
+    ('cobs', '1.3-9-1', {
+        'checksums': ['f3615093eda3f5ef8e6537357b30ec790eb0a4c64e43175b8244ec8f431533ea'],
+    }),
+    ('resample', '0.6', {
+        'checksums': ['1b958009b18c92a47971847c782af76952ea4e85d5f1e3e1e70fa35c67b95265'],
+    }),
+    ('MIIVsem', '0.5.8', {
+        'checksums': ['a908f51e1598290d25864c358d57201bd50c1c40775d4d0405cbc8077bee61e1'],
+    }),
+    ('medflex', '0.6-11', {
+        'checksums': ['b6a1c6ae0794c4259bcd60291d45fac37a18e50115f987554242049fa58dc71f'],
+    }),
+    ('Rserve', '1.8-15', {
+        'checksums': ['15645f7e3be8239643c6cdb1148648ab0a02cb3a42a2937a97626ed90b9e65b0'],
+    }),
+    ('spls', '2.3-2', {
+        'checksums': ['16c045555fa0cc27b3cc29a2c72310dc24b6ab5b26953ea7706fa1d675051184'],
+    }),
+    ('Boruta', '9.0.0', {
+        'checksums': ['7deeee7ae76a96cb3a51b977379c0d66963a8e7b8a69af5cac73ad5b9965bfe5'],
+    }),
+    ('dr', '3.0.11', {
+        'checksums': ['3ed0c27540dd34248c15a31b3250364de1669ec8ce9e1b282ee6d2ff1b824ff7'],
+    }),
+    ('CovSel', '1.2.2', {
+        'checksums': ['b32240aa57780b398fe1ac998bc46230358a024af7aec82095536a1727eed530'],
+    }),
+    ('tmle', '2.1.1', {
+        'checksums': ['5e1fccaea7bf923456b8197d3eca5314db074dcbec8ca0510a15cb837883b133'],
+    }),
+    ('ctmle', '0.1.2', {
+        'checksums': ['e3fa0722cd87aa0e0b209c2dddf3fc44c6d09993f1e66a6c43285fe950948161'],
+    }),
+    ('BayesPen', '1.0', {
+        'checksums': ['772df9ae12cd8a3da1d5b7d1f1629602c7693f0eb03945784df2809e2bb061b0'],
+    }),
+    ('inline', '0.3.21', {
+        'checksums': ['7ef9410a933a47f6a346bc8c0e55b62931379b464b92696aee9865ec6378bc98'],
+    }),
+    ('BMA', '3.18.20', {
+        'checksums': ['2d72a96cbf2cbfa8b38453adc309e9e0596270e923c9c991bb8fb4e909f830a3'],
+    }),
+    ('BCEE', '1.3.2', {
+        'checksums': ['f0e0a6a4eb11213073aa2f0cd6c76d87e8b3965124d8ca509538eb3c128533a0'],
+    }),
+    ('bacr', '1.0.1', {
+        'checksums': ['c847272e2c03fd08ed79b3b739f57fe881af77404b6fd087caa0c398c90ef993'],
+    }),
+    ('clue', '0.3-66', {
+        'checksums': ['aa86dd58c05635eb394c9ede0dd15a4f24af4815f299451bbc7895c0f737c2fb'],
+    }),
+    ('bdsmatrix', '1.3-7', {
+        'checksums': ['c3505e5ac06d5e01b3a6bad94177f8375cd9867bb0146cc9c63d92424ecb7922'],
+    }),
+    ('fftwtools', '0.9-11', {
+        'checksums': ['f1f0c9a9086c7b2f72c5fb0334717cc917213a004eaef8448eab4940c9852c7f'],
+    }),
+    ('imagerExtra', '1.3.2', {
+        'checksums': ['0ebfa1eabb89459d774630ab73c7a97a93b9481ea5afc55482975475acebd5b8'],
+    }),
+    ('MALDIquant', '1.22.3', {
+        'checksums': ['fd094f0ea1a163ad1bd290e789ad827a76075d82ae5ce8a8e53a7095a7479383'],
+    }),
+    ('threejs', '0.3.4', {
+        'checksums': ['1c6ba5d78702051ee1dbbcff2866074ddc8ac49f2f3abd4418e608d7c86eb484'],
+    }),
+    ('LaplacesDemon', '16.1.6', {
+        'checksums': ['57b53882fd7a195b38bbdbbf0b17745405eb3159b1b42f7f11ce80c78ab94eb7'],
+    }),
+    ('rda', '1.2-1', {
+        'checksums': ['37038a9131c9133519f5e64fa1a86dbe28b21f519cf6528503234648a139ae9a'],
+    }),
+    ('sampling', '2.11', {
+        'checksums': ['941a3f9439873e2433613108cd769139c75ea5278d0e5aef14ebf61427816422'],
+    }),
+    ('lda', '1.5.2', {
+        'checksums': ['95d354786e002352a973052df993b9d3acfc9f9598a053afb95ac27c7e150fd4'],
+    }),
+    ('jiebaRD', '0.1', {
+        'checksums': ['045ee670f5378fe325a45b40fd55136b355cbb225e088cb229f512c51abb4df1'],
+    }),
+    ('jiebaR', '0.11.1', {
+        'checksums': ['b52a896c59e5443fc16b9501ef5a6454fb60f9b7690dca012f06f58bed8d33b7'],
+    }),
+    ('hdm', '0.3.2', {
+        'checksums': ['3354b22752f0aa0c0d9c8c12b38810202b6380f2587e539be11d9a358412fe6a'],
+    }),
+    ('janeaustenr', '1.0.0', {
+        'checksums': ['b4c32ee1395ee4a8efe714c535c0fe578b0dbf5f3bb85b41fa5cc87569b8e8aa'],
+    }),
+    ('SnowballC', '0.7.1', {
+        'checksums': ['753cf13f3206751662c03b1cf39bce9e680024f6d9f8503b836a83797181c034'],
+    }),
+    ('tokenizers', '0.3.0', {
+        'checksums': ['24571e4642a1a2d9f4f4c7a363b514eece74788d59c09012a5190ee718a91c29'],
+    }),
+    ('tidytext', '0.4.3', {
+        'checksums': ['993be302d9c9a668e364669b62a50b756e92290d063c816298d67c25f1e597d9'],
+    }),
+    ('abe', '5.1.2', {
+        'checksums': ['c283c23c2336f8e566ff5b7c77311472d7d8d928b1e2c1447ebba8dabc8f3f44'],
+    }),
+    ('SignifReg', '4.3', {
+        'checksums': ['f755808fcb618582acb862729b20e267d9c2214f22e6e7a0c8d29073d8faa7b8'],
+    }),
+    ('bbmle', '1.0.25.1', {
+        'checksums': ['d92a0cf819fe4c08b8eb17f5e03275c8accde7f3b54f990cbba5ab926575b60b'],
+    }),
+    ('emdbook', '1.3.14', {
+        'checksums': ['afca37687ff6ce9d93812ced12b3cd7627635a8654e2ee52ab7082e82cb0a0a2'],
+    }),
+    ('SOAR', '0.99-11', {
+        'checksums': ['d5a0fba3664087308ce5295a1d57d10bad149eb9771b4fe67478deae4b7f68d8'],
+    }),
+    ('rasterVis', '0.51.7', {
+        'checksums': ['ae945534aa52e5783b8f17119d5d168948f0c86fde914e18bc507ef30e01dabd'],
+    }),
+    ('tictoc', '1.2.1', {
+        'checksums': ['8fcdb7c9a1e4b4817bcab654effd64dea6ec749a7901d4060d5b5c625fc88833'],
+    }),
+    ('ISOcodes', '2025.05.18', {
+        'checksums': ['dbda7193bdaf3b09bb584b749f10a021454daf1717d6792e4befeb4247385b0d'],
+    }),
+    ('stopwords', '2.3', {
+        'checksums': ['c5ec1c6ab1bad1786d87d7823d4b63abc94d2fd84ed7d8e985906e96fb6321b2'],
+    }),
+    ('hunspell', '3.0.6', {
+        'checksums': ['4023df2eef4e081eac52efa1ecccc4b31f7941439ce276f4094b9d5a02787535'],
+    }),
+    ('topicmodels', '0.2-17', {
+        'checksums': ['3867e15ff5d318307695c1aa196b8fe405ee4cbd4f7574e298d78ef778d5168d'],
+    }),
+    ('splitstackshape', '1.4.8', {
+        'checksums': ['656032c3f1e3dd5b8a3ee19ffcae617e07104c0e342fc3da4d863637a770fe56'],
+    }),
+    ('grImport2', '0.3-3', {
+        'checksums': ['f612289f8da9894aaaee843125c2d491390bbcb527a7d8462f4398137df8f485'],
+    }),
+    ('preseqR', '4.0.0', {
+        'checksums': ['0143db473fb9a811f9cf582a348226a5763e62d9857ce3ef4ec41412abb559bc'],
+    }),
+    ('idr', '1.3', {
+        'checksums': ['6b3910dc48495439cd01828f8999823864a6712f73560ee3e6c903065c67d1e4'],
+    }),
+    ('entropy', '1.3.2', {
+        'checksums': ['901a2ade8f99b0c45c948cbc2fc792beef7346bc81de33987bb754da12ad76a5'],
+    }),
+    ('kedd', '1.0.4', {
+        'checksums': ['bb944389a61cff22bb3bdde938a0ff6c16700a1ca725ef36b391b97812c45b26'],
+    }),
+    ('HiddenMarkov', '1.8-14', {
+        'checksums': ['250b22c19e358eb9b602dc07b894ad30ca18c2670dd80afccb9ccd7d23cf6025'],
+    }),
+    ('lmerTest', '3.1-3', {
+        'checksums': ['35aa75e9f5f2871398ff56a482b013e6828135ef04916ced7d1d7e35257ea8fd'],
+    }),
+    ('distributional', '0.5.0', {
+        'checksums': ['345cde8a5479b4783a7bee47196b360303901a03e2e72e36ca4c5e49df2e71ac'],
+    }),
+    ('posterior', '1.6.1', {
+        'checksums': ['e507d7bd3f4c9f542cb2ec89bc38d01bd05f9864461533fe4ba8bb8a9e7ba799'],
+    }),
+    ('loo', '2.8.0', {
+        'checksums': ['aab727a95a2e1c0e5005188e7daa6eba52455fa0c5869130d53cee5a8963244c'],
+    }),
+    ('RcppParallel', '5.1.11-1', {
+        'checksums': ['e18c83548212cbd52f6629131564a392b870399343a5867d512dbca2a27a6362'],
+    }),
+    ('StanHeaders', '2.32.10', {
+        'checksums': ['c3125b8d7dc4c6b7082258b2fa6c9530c2e4714c89ffd08b8e72f4c9f4108582'],
+    }),
+    ('V8', '8.0.1', {
+        'installopts': '--configure-vars="INCLUDE_DIR=$CPATH LIB_DIR=$LIBRARY_PATH"',
+        'preinstallopts': "export CPATH=$EBROOTNODEJS/include/node:$CPATH && ",
+        'checksums': ['d5d7da5f367e6d5dde34df73d927bad6d8b36623416c920f2570fe52b589d7ae'],
+    }),
+    ('QuickJSR', '1.8.1', {
+        'checksums': ['dd4cf107016d659991cdbd313908209e3998ea8b093f3632d8b3a84dea435e0f'],
+    }),
+    ('rstan', '2.32.7', {
+        'checksums': ['5931cf77fb01672f962c203c49bb4508f86f55553cac97f58ff0c7a55b72174a'],
+    }),
+    ('Rborist', '0.3-11', {
+        'checksums': ['53db5641283bd61259b5726abd369686c48dec8f8fc4b7f49b8e26802211091c'],
+    }),
+    ('VSURF', '1.2.1', {
+        'checksums': ['a36cadd51cc167e68adacd1bc049c1332a5702aa262a8d1603673cd3c069748f'],
+    }),
+    ('mRMRe', '2.1.2.2', {
+        'checksums': ['1d2c3b53a6ecfa61f4891e08114d6951ebb7a9830c934515406e180277339209'],
+    }),
+    ('dHSIC', '2.1', {
+        'checksums': ['94c86473790cf69f11c68ed8ba9d6ae98218c7c69b7a9a093f235d175cf83db0'],
+    }),
+    ('ggsci', '4.1.0', {
+        'checksums': ['19473aa97011b342a574947350fb29d130a96807ad6641aa82862b2964653855'],
+    }),
+    ('ggsignif', '0.6.4', {
+        'checksums': ['112051af425a0c0f2998ce187dacad066bc16f55af01e3e7b76d62ff6954b20a'],
+    }),
+    ('corrplot', '0.95', {
+        'checksums': ['84a31f675041e589201b4d640753302abc10ccc2c0ca0a409b5153861989d776'],
+    }),
+    ('rstatix', '0.7.3', {
+        'checksums': ['bca8906478582edb3eafa9e94f8f97df37178469bfedf163780489f99ec80e0f'],
+    }),
+    ('ggfan', '0.1.3', {
+        'checksums': ['5c888b203ecf5e3dc7a317a790ca059c733002fbca4b4bc1a4f62b7ded5f70dc'],
+    }),
+    ('ggpubr', '0.6.2', {
+        'checksums': ['c9e8772b5323a1bcd049a3c4838592e665b5379f05583ac3fda37e3167b04f75'],
+    }),
+    ('yaImpute', '1.0-34.1', {
+        'checksums': ['679919d887682ddcdb89f8fda8828c88f67fed47afb5f497cc62b73bc46308de'],
+    }),
+    ('intrinsicDimension', '1.2.0', {
+        'checksums': ['6cc9180a83aa0d123f1e420136bb959c0d5877867fa170b79536f5ee22106a32'],
+    }),
+    ('leiden', '0.4.3.1', {
+        'checksums': ['a9ecbbcfa2724d8fdd0133af569278e036b25b6e2cbb23d453092cc6b3fc30e2'],
+    }),
+    ('sctransform', '0.4.2', {
+        'checksums': ['56180aebc7f91345e63210df76541681d3673a59d1a388523dc7ba69886ba0d0'],
+    }),
+    ('packrat', '0.9.3', {
+        'checksums': ['db73e62a5c536fd16b6549a61d0dd109eff4f94ac6236c52de53bde2230f81d6'],
+    }),
+    ('colourpicker', '1.3.0', {
+        'checksums': ['c7f2618cd1ae1f7ac15aee072c648e6494dfff6714e13dc7cd1da993d1102510'],
+    }),
+    ('ggExtra', '0.11.0', {
+        'checksums': ['040c0b763df4aaa5e63be1ab5c76e046e23e1c8ccb8924b6e300482ed5be0ca1'],
+    }),
+    ('findpython', '1.0.9', {
+        'checksums': ['b6a15e0cdfcdd4b1cfc76f7e4eaad0125d4d52889711200075280e9b2a2cb7cb'],
+    }),
+    ('argparse', '2.3.1', {
+        'checksums': ['1985a84f196b8f96393a771fa57ddde2ef65734fb677932df8ccd624359d90b2'],
+    }),
+    ('intergraph', '2.0-4', {
+        'checksums': ['585f2f9fa92aa52022dfdcbe597a3654099ca63c1d4110a0f8e895fa32fc59c9'],
+    }),
+    ('ggnetwork', '0.5.14', {
+        'checksums': ['caab79d85a817608e9a9d827783f157393fc3f2b9de8c20669699175a19f3ff0'],
+    }),
+    ('qqman', '0.1.9', {
+        'checksums': ['3f6a931771d375174b78f220471ddd601def9b5c69631931b0992ebbc8c5bc13'],
+    }),
+    ('rstantools', '2.5.0', {
+        'checksums': ['3801b785b958c2dbeb34405cc75c7acc0ab07110c0c94a75746630f3dcc372be'],
+    }),
+    ('bayesplot', '1.14.0', {
+        'checksums': ['37d657a39d7115c76d7a86b8daca6160bc5caaa988dd9f9cfe1f51873b09724a'],
+    }),
+    ('dygraphs', '1.1.1.6', {
+        'checksums': ['c3d331f30012e721a048e04639f60ea738cd7e54e4f930ac9849b95f0f005208'],
+    }),
+    ('renv', '1.1.5', {
+        'checksums': ['3ee996c65989bc5ea3914fbceb3794b00c7daab7eda49dce64048012ea0406b2'],
+    }),
+    ('PKI', '0.1-15', {
+        'checksums': ['8d0d27054e45930a6e4ec9998ef111a4bde6c02c2c066ef0f1b15b7aeff1e7b0'],
+    }),
+    ('jose', '1.2.1', {
+        'checksums': ['7894d420afff2e12e73e8fb1386c2d345fb313bf1aaf26df4f9dbb22c6ab216a'],
+    }),
+    ('snowflakeauth', '0.2.0', {
+        'checksums': ['880d90a6dfc2638f3800a5316624b93748905002822cb45d8e45c290d4e06b08'],
+    }),
+    ('rsconnect', '1.5.1', {
+        'checksums': ['80833241c4f6e7d51bb1b92d0b3dfd69171bc275b1eca31354bccf8ae8598243'],
+    }),
+    ('shinystan', '2.6.0', {
+        'checksums': ['a084856a2d66d8744f2c72e3e19ca35e600a508ed7ef1f7ebed8c7fc0738d529'],
+    }),
+    ('optimx', '2025-4.9', {
+        'checksums': ['10b68ab371e3f29fd0c2f4c3b8569ce1f10a99a6bef84a7c4161431c631d1854'],
+    }),
+    ('gamm4', '0.2-7', {
+        'checksums': ['bacc343c19395f54e45f2a5344a2ee2dd2d8e8ce022eaf2b5eff6ea1e4acaedf'],
+    }),
+    ('memisc', '0.99.31.8.3', {
+        'checksums': ['0dd517df7dc41e9d96dd857ddac8195141e09949dff91ebe688273b85400ae92'],
+    }),
+    ('mclogit', '0.9.6', {
+        'checksums': ['9adc5f6d8649960abe009c30d9b4c448ff7d174c455a594cbf104a33d5a36f69'],
+    }),
+    ('projpred', '2.9.0', {
+        'checksums': ['e78109337aa4050d1f6737bf01956371383704fb4fbb5bcdab5eb9c0f8c10606'],
+    }),
+    ('brms', '2.23.0', {
+        'checksums': ['b5f5bb5604ec3f87b3ad99f0da4e6a37d8c5488221e8abe459171340992c37a5'],
+    }),
+    ('drgee', '1.1.10-3', {
+        'checksums': ['fee541e0a3127e06335b09458fffc5b3735126881a25d27a8fe808d3e5fea070'],
+    }),
+    ('stdReg', '3.4.2', {
+        'checksums': ['d203ac8d1fe21c09808e4b3cd45833607505f6e0bc022a3abd8c56b134cd07bc'],
+    }),
+    ('mcmcse', '1.5-1', {
+        'checksums': ['55374e9a3a19ca637eabac85c016d4c277596407a6703a2ce9b1805c69f56623'],
+    }),
+    ('copCAR', '2.0-4', {
+        'checksums': ['8b4ed53c58a665f70e48bdca689a992a81d5ecb5a6051ca7361d3870e13c77f3'],
+    }),
+    ('batchmeans', '1.0-4', {
+        'checksums': ['8694573009d9070a76007281407d3314da78902e122a9d8aec1f819d3bbe562c'],
+    }),
+    ('ngspatial', '1.2-2', {
+        'checksums': ['3fa79e45d3a502a58c1454593ec83dfc73144e92b34c14f617a6126557dd0d26'],
+    }),
+    ('BIGL', '1.9.3', {
+        'checksums': ['5224d3691f96ce6254253aa55acb4b4172aa734d4d471bf174cc1b370077539f'],
+    }),
+    ('drugCombo', '1.2.1', {
+        'checksums': ['9a605c655c159604033558d757711e6d83d33dfc286c1280f722d4cb7d130f80'],
+    }),
+    ('betareg', '3.2-4', {
+        'checksums': ['5ba44d30d45eb3b5bd93ca13c03b596558576a77e61a99aa9b7e00c0b6a6abfd'],
+    }),
+    ('unmarked', '1.5.1', {
+        'checksums': ['1a26aac5c876d99aa6a0b2d82e03ad6f563ff9333befd56bc8d06b3d18a2a13f'],
+    }),
+    ('maxlike', '0.1-12', {
+        'checksums': ['041556f4de7b4d071cbffa20e30246ace894b4c0f7831881ae669060aef4ff19'],
+    }),
+    ('coxme', '2.2-22', {
+        'checksums': ['1bb492ea8cd5273a0361a0ec5525e799f33d9aa09e6dfd2a365a38a4673ae126'],
+    }),
+    ('AICcmodavg', '2.3-4', {
+        'checksums': ['6898ab8503ea9d9d0b3273d8138d1e46610d4279db1659dfcb521878b95b571f'],
+    }),
+    ('pacman', '0.5.1', {
+        'checksums': ['9ec9a72a15eda5b8f727adc877a07c4b36f8372fe7ed80a1bc6c2068dab3ef7c'],
+    }),
+    ('spaa', '0.2.5', {
+        'checksums': ['b5ca6d528be2647ebc1456c736bcf23dd6fe82ad851f44660675d6b4b5336cc7'],
+    }),
+    ('maxnet', '0.1.4', {
+        'checksums': ['fd21e5ecf3c1ac00ef1bbe79fab4cdd62789e0c4c45f126f1b64bda667238216'],
+    }),
+    ('oai', '0.4.0', {
+        'checksums': ['f540de066de5538e303cd535cbd2e771b40474bc2c6e8d08a4894a868543ee33'],
+    }),
+    ('wellknown', '0.7.4', {
+        'checksums': ['483e6fc43edf09ed583e74ce5ca7e2d7838ef8a32291e06d774c37546eed1a34'],
+    }),
+    ('rgbif', '3.8.3', {
+        'checksums': ['b4f42397bb855aa10348f5980e25b6a478105f76fb39fb7cab17078a369705e1'],
+    }),
+    ('mapproj', '1.2.12', {
+        'checksums': ['1210b12d17c9884935a49e8aa5b6963fe1ef67e74d9f7081ffdeb2a6d71d6077'],
+    }),
+    ('rbison', '1.0.0', {
+        'checksums': ['9957e5f85ce68f5dd0ddc3c4b2b3c9d2f52d6f37587e1022ab8a44863534a83c'],
+    }),
+    ('rebird', '1.3.0', {
+        'checksums': ['b238d3f246aa0249145894e1f3a90f46902f6615fc2f23b24c99bb5feecc55d3'],
+    }),
+    ('rvertnet', '0.8.4', {
+        'checksums': ['b1826899f33640541752f2b68ed4d23530fe62744ac4714adf79ff748fc6701a'],
+    }),
+    ('leaflet.providers', '2.0.0', {
+        'checksums': ['c5ceeadc8088c9840a8249f0347501cdba0119be97219a01ea2050d1dd4a8666'],
+    }),
+    ('leaflet', '2.2.3', {
+        'checksums': ['af9fe3979806745f366da9e9178379dbeb46d3a2b7f224f1fc1506a3eea51ad0'],
+    }),
+    ('svglite', '2.2.2', {
+        'checksums': ['5bf884ee031fbf3f5c60bcedc0532e4b77763e924a1508f584329aae9686187c'],
+    }),
+    ('kableExtra', '1.4.0', {
+        'checksums': ['8fe2cc9fc2e8991685c4dc9e4904459e6f572c945319befde36d76f3ab527409'],
+    }),
+    ('ridigbio', '0.4.1', {
+        'checksums': ['ef1e4d9c842875150cb28f3199a658abab56d9e9d11c774be34d7e45dd883d73'],
+    }),
+    ('spocc', '1.2.3', {
+        'checksums': ['ee14de78a9a91bf4220b3317d724f9e4953fda8b5478b2083690c984903db951'],
+    }),
+    ('spThin', '0.2.0', {
+        'checksums': ['2e997afb79a2a990eded34c71afaac83986669cfa9ac51b15ae3f2b558902048'],
+    }),
+    ('RPostgreSQL', '0.7-8', {
+        'checksums': ['f215ab6ffe2533e56018f07cbb42014e1430b84bf56e9bd2cc8fd066e8f0963c'],
+    }),
+    ('fasterize', '1.1.0', {
+        'checksums': ['231aa04f505ec08162edfc3f3a410205a2bfde6c3261415ef7258f1ddab2375f'],
+    }),
+    ('BIEN', '1.2.7', {
+        'checksums': ['37184f0c717f137e2047f28d2d385b23360c606c90384d810dea6c78680b8c61'],
+    }),
+    ('rangeModelMetadata', '0.1.5', {
+        'checksums': ['289620500522d489aafbb03c85f68182ef0a6701fed5f9d09b55fae337e2647b'],
+    }),
+    ('predicts', '0.1-19', {
+        'checksums': ['f5eb79cb5b7cfc885c3f31952b1d40c3e7b927d5ce5784ff235622e1651d4afc'],
+    }),
+    ('ENMeval', '2.0.5.2', {
+        'checksums': ['931a783fcf58bf10e7432b5204e97925538ba057d8ac1c3390b59d4e43e147c7'],
+    }),
+    ('plotmo', '3.6.4', {
+        'checksums': ['c8b23f608307917619d09df6c1fc7d8ac69872b3bfe0502d2999acd822ed8272'],
+    }),
+    ('earth', '5.3.4', {
+        'checksums': ['3af94f925598fa2be7d320ad5365e285c008933cc0198a33b8149fdbaae6debc'],
+    }),
+    ('mda', '0.5-5', {
+        'checksums': ['3351047bc55e678ba3cfb4590d1c253885c8cbcd4e3411582b9bde0a8a4062ce'],
+    }),
+    ('biomod2', '4.2-6-2', {
+        'checksums': ['1c4ebf1588dd6d8077e33198b8d896ab4cc75c7614d6afbfe3cff72381dc845c'],
+    }),
+    ('poLCA', '1.6.0.1', {
+        'checksums': ['ed8c60a42bff0402c9ba2f9ce1422dd171e711c1a64498c4d96010ddb29f6b16'],
+    }),
+    ('PermAlgo', '1.2', {
+        'checksums': ['aa2c774d6c6dcfeec882c1936e8723ef49bd36030fb10c17ca60bb9d4a519443'],
+    }),
+    ('coxed', '0.3.3', {
+        'checksums': ['d0d6cb8fea9516b3c63b34d0d81f3804c18a07f97a83e51555575c8ed4c75626'],
+    }),
+    ('testit', '0.13', {
+        'checksums': ['90d47168ab6bdbd1274b600b457626ac07697ce09792c92b2043be5f5b678d80'],
+    }),
+    ('NISTunits', '1.0.1', {
+        'checksums': ['eaccd68db5c73d6a089ce5b323cdd51bc6a6a58ce467987158ba8c9be6a0a94e'],
+    }),
+    ('celestial', '1.5.8', {
+        'checksums': ['2c6fc002e0313658a970873461846e11bdc205038e120b4b27f305ca2996d2f4'],
+    }),
+    ('RPMM', '1.25', {
+        'checksums': ['f04a524b13918062616beda50c4e759ce2719ce14150a0e677d07132086c88c8'],
+    }),
+    ('RefFreeEWAS', '2.2', {
+        'checksums': ['de2812f166caabf6ea01c0533402e5cd9d8a525a2a7583e4757decf22319caab'],
+    }),
+    ('wordcloud', '2.6', {
+        'checksums': ['53716954430acd4f164bfd8eacd7068a908ee3358293ded6cd992d53b7f72649'],
+    }),
+    ('JADE', '2.0-4', {
+        'checksums': ['d4b3d65a33cae454d3ab13343bceabfb3f6b8004ac64ae7bd86dee92a1cd2055'],
+    }),
+    ('awsMethods', '1.1-1', {
+        'checksums': ['50934dc20cf4e015f1304a89de6703fed27e7bd54c6b9fc9fb253cdf2ecb7541'],
+    }),
+    ('aws', '2.5-6', {
+        'checksums': ['9ab2c58290be25dbe00e5edc32406f92cc1663745ea5f12224c33a32678f392c'],
+    }),
+    ('ruv', '0.9.7.1', {
+        'checksums': ['a0c54e56ba3d8f6ae178ae4d0e417a79295abf5dcb68bbae26c4b874734d98d8'],
+    }),
+    ('mhsmm', '0.4.21', {
+        'checksums': ['293544afb194934b1d58cf88c6f8c372f537745514b6e428cf83ae62e87d2bba'],
+    }),
+    ('dbarts', '0.9-32', {
+        'preinstallopts': local_dbarts_preinstallopts,
+        'checksums': ['ce8eed27c7ffa72548e08e6221c4ecee0ce32b33c4bcc67d278acf23d9f4a2f9'],
+    }),
+    ('proftools', '0.99-3', {
+        'checksums': ['e034eb1531af54013143da3e15229e1d4c2260f8eb79c93846014db3bdefb724'],
+    }),
+    ('NCmisc', '1.2.0', {
+        'checksums': ['26fcfbc79810f23a28389a5ce5519e6ddc2470c5e924ba8cf4dd19a1b0fd9f83'],
+    }),
+    ('reader', '1.0.6', {
+        'checksums': ['905c7c5a1b035ac8213fc533fa26e511abfeea40bd22e3edfde42a49074e88f4'],
+    }),
+    ('gnumeric', '0.7-10', {
+        'checksums': ['f6fcd9012f2fa777127c86ba520d8dc834f4ea746a6e29623edd072479191c75'],
+    }),
+    ('tcltk2', '1.6.1', {
+        # need to run installation via xvfb-run to avoid problems on headless systems:
+        # no DISPLAY variable so Tk is not available
+        'preinstallopts': "xvfb-run ",
+        'checksums': ['dc1cc00ce973df1ce98b830aa70998e455119d89961ce9a368e8a688e6845c6a'],
+    }),
+    ('minty', '0.0.5', {
+        'checksums': ['47db58bed029538664b0d34b3798f1ca52153d385702c40ade10803dd02f226b'],
+    }),
+    ('readODS', '2.3.2', {
+        'checksums': ['2e67997806d71cc37401975dbdf1e1f0c04140afe218d03637dd6172b54f3476'],
+    }),
+    ('nortest', '1.0-4', {
+        'checksums': ['a3850a048181d5d059c1e74903437569873b430c915b709808237d71fee5209f'],
+    }),
+    ('EnvStats', '3.1.0', {
+        'checksums': ['c743b833242193d8893d1d6d0d45af091e3c12354e6ab44a787530e83858cd02'],
+    }),
+    ('outliers', '0.15', {
+        'checksums': ['cc31d7f2faefd2c3a27f8ce78c7e67d3b321dcd6690292fad2468125e5e635fb'],
+    }),
+    ('gWidgets2', '1.0-10', {
+        'checksums': ['66979027be333b3c10bbcc336d69546c5f586bd65b1854064000497ea6f79813'],
+    }),
+    ('gWidgets2tcltk', '1.0-9', {
+        # need to run installation via xvfb-run to avoid problems on headless systems:
+        # no DISPLAY variable so Tk is not available
+        # [tcl] invalid command name "font"
+        'preinstallopts': "xvfb-run ",
+        'checksums': ['5939ab6b0b40fa7dd55f190f8706f5b0d1d68bda411e4f90cd78004e470056ca'],
+        # skip 'import' check with library(gWidgets2tcltk), since it also fails on headless systems...
+        'modulename': False,
+    }),
+    ('mgsub', '1.7.3', {
+        'checksums': ['c9ae2560fe2690bedc5248af3fc89e7ef2bc6c147d46ced28f9824584c3791d5'],
+    }),
+    ('ie2misc', '0.9.2', {
+        'checksums': ['3a5f6f85a560618c38218bc989532a88021e1eafb9cf022d778d988dce1f4e22'],
+    }),
+    ('assertive.base', '0.0-9', {
+        'checksums': ['4bf0910b0eaa507e0e11c3c43c316b524500c548d307eb045d6f89047e6ba01e'],
+    }),
+    ('assertive.properties', '0.0-5', {
+        'checksums': ['b68954f53082561f0242682611bf3373e0bf30d8ac2256d82474edc5f992f4dd'],
+    }),
+    ('assertive.types', '0.0-3', {
+        'checksums': ['ab6db2eb926e7bc885f2043fab679330aa336d07755375282d89bf9f9d0cb87f'],
+    }),
+    ('assertive.numbers', '0.0-2', {
+        'checksums': ['bae18c0b9e5b960a20636e127eb738ecd8a266e5fc29d8bc5ca712498cd68349'],
+    }),
+    ('assertive.strings', '0.0-3', {
+        'checksums': ['d541d608a01640347d661cc9a67af8202904142031a20caa270f1c83d0ccd258'],
+    }),
+    ('assertive.datetimes', '0.0-3', {
+        'checksums': ['014e2162f5a8d95138ed8330f7477e71c908a29341697c09a1b7198b7e012d94'],
+    }),
+    ('assertive.files', '0.0-2', {
+        'checksums': ['be6adda6f18a0427449249e44c2deff4444a123244b16fe82c92f15d24faee0a'],
+    }),
+    ('assertive.sets', '0.0-3', {
+        'checksums': ['876975a16ed911ea1ad12da284111c6eada6abfc0118585033abc0edb5801bb3'],
+    }),
+    ('assertive.matrices', '0.0-2', {
+        'checksums': ['3462a7a7e11d7cc24180330d48cc3067cf92eab1699b3e4813deec66d99f5e9b'],
+    }),
+    ('assertive.models', '0.0-2', {
+        'checksums': ['b9a6d8786f352d53371dbe8c5f2f2a62a7866e30313f268e69626d5c3691c42e'],
+    }),
+    ('assertive.data', '0.0-3', {
+        'checksums': ['5a00fb48ad870d9b3c872ce3d6aa20a7948687a980f49fe945b455339e789b01'],
+    }),
+    ('assertive.data.uk', '0.0-2', {
+        'checksums': ['ab48dab6977e8f43d6fffb33228d158865f68dde7026d123c693d77339dcf2bb'],
+    }),
+    ('assertive.data.us', '0.0-2', {
+        'checksums': ['180e64dfe6339d25dd27d7fe9e77619ef697ef6e5bb6a3cf4fb732a681bdfaad'],
+    }),
+    ('assertive.reflection', '0.0-5', {
+        'checksums': ['c2ca9b27cdddb9b9876351afd2ebfaf0fbe72c636cd12aa2af5d64e33fbf34bd'],
+    }),
+    ('assertive.code', '0.0-4', {
+        'checksums': ['2f820474ed20e06f65b284962c87cd1e85220a11cc7fcde09716f0eee5821387'],
+    }),
+    ('assertive', '0.3-6', {
+        'checksums': ['c403169e83c433b65e911f7fd640b378e2a4a4765a36063584b8458168a4ea0a'],
+    }),
+    ('rdrop2', '0.8.2.1', {
+        'checksums': ['b9add765fe8e7c966f0d36eef939a9e38f253958bd2a3c656b890cbb0366300b'],
+    }),
+    ('Exact', '3.3', {
+        'checksums': ['fbd0d09ba1a28265f3c6c5043ebcded1f33c89fb46766374e79eae141cfa3342'],
+    }),
+    ('lmom', '3.2', {
+        'checksums': ['da3c7bedb0f1b70423f0deba03cb936632d615fa509791ce998a8fedd1c7ad98'],
+    }),
+    ('gld', '2.6.8', {
+        'checksums': ['aeb2bb7342ec2d425397c8d391be3c399fe897b3992eba42b54cbaf16789768e'],
+    }),
+    ('DescTools', '0.99.60', {
+        'checksums': ['2c20d8579ddc6278e1069ad6d546a760f62d9e8dcc956ce09f58afadb573bcbc'],
+    }),
+    ('orthopolynom', '1.0-6.1', {
+        'checksums': ['ec4a6ed266532f2f6d37a4ca6bd1b74c1df28a8c2caeab60e5d6af15bdbfe2c5'],
+    }),
+    ('gaussquad', '1.0-3', {
+        'checksums': ['a3337ce52bc53435cb4565a38bf48b72b384be397d2e86bb66f62973004dc810'],
+    }),
+    ('nlsem', '0.8-1', {
+        'checksums': ['0674ec2a1ae7e50b08ee1b156674c2f2100258b14d6a9068f7dd6ad1ee128377'],
+    }),
+    ('tableone', '0.13.2', {
+        'checksums': ['b1cf15579abd4240e24435d2d9aad255c839d2a0293e28cb2eef0c808c4727af'],
+    }),
+    ('jstable', '1.3.19', {
+        'checksums': ['33f1ad9cb36fa715b2c578c48f90f068831d19eb84ef8bade72e6db9b6dbd88e'],
+    }),
+    ('RCAL', '2.0', {
+        'checksums': ['10f5f938a8322d8737159e1e49ce9d12419a5130699b8a19c6ca53d6508da8cc'],
+    }),
+    ('stargazer', '5.2.3', {
+        'checksums': ['208e9b48a11cf56ce142731c204f3d2bcb5b68719f84309a36362cd925414265'],
+    }),
+    ('sensemakr', '0.1.6', {
+        'checksums': ['bf27b92781f4746cdc7b2401d592c674baf0b05286573a936a2b24ccf3ad9be4'],
+    }),
+    ('CompQuadForm', '1.4.4', {
+        'checksums': ['84af2087bf7cd6dfb7aa9468fd88939267559f46c0dc7bea9d010314f42fa143'],
+    }),
+    ('nonnest2', '0.5-8', {
+        'checksums': ['19a5acd430a5b24e4ef72624ef065d0395b7fbedfeee4d09e3eb5e86c142dc82'],
+    }),
+    ('blavaan', '0.5-9', {
+        'checksums': ['96e51f410d15cf54f169ec0ce77aa52eceb3b7d64eb4c913f522d675f269d74e'],
+    }),
+    ('mathjaxr', '1.8-0', {
+        'checksums': ['eb2197c51c01c75654f7b0c755de1f14f8cbdda16945cb259cc2c5f60d321034'],
+    }),
+    ('metadat', '1.4-0', {
+        'checksums': ['2a5d6dee053cc329bc5c03fb6058ed99312f8f56c15028fabcbfa21170ef3f05'],
+    }),
+    ('metafor', '4.8-0', {
+        'checksums': ['2b710674b15fe3e79474b5c3e779038a614eba9e61b2249532c86dc155f00644'],
+    }),
+    ('RNifti', '1.8.0', {
+        'checksums': ['322b51ff2f8c93ad726bfc5bbd923fc1ceb1dd027f0cdd042b636a278f781792'],
+    }),
+    ('oro.nifti', '0.11.4', {
+        'checksums': ['efe4f5d2c2e37ff6c3e9250f54ef775e4d452c1334f781f22f219ed53148b606'],
+    }),
+    ('fmri', '1.9.12.1', {
+        'checksums': ['4497b5a29d936552e1d2c07e2ea71d3b446f2e35dc8a21527bbc289a06b3db3b'],
+    }),
+    ('linkcomm', '1.0-14', {
+        'checksums': ['36f1557c65d862fc87635eedfad77f18a5deb66da00895e50e2d5eac0f23b597'],
+    }),
+    ('rnetcarto', '0.2.6', {
+        'checksums': ['4f28ae62748654cb6f90e1ffa17b05bb8b89eb6a20262d9c5d39cb862f71dc91'],
+    }),
+    ('optextras', '2019-12.4', {
+        'checksums': ['59006383860826be502ea8757e39ed94338f04d246c4fc398a088e004d8b13eb'],
+    }),
+    ('setRNG', '2024.2-1', {
+        'checksums': ['e3b21b08b7db3c2c06543a21718e1c18a2b2d2ddf4c92f0e44841d10f55d5c40'],
+    }),
+    ('Rvmmin', '2018-4.17.1', {
+        'checksums': ['55000ac4ff57d42f172c46c7d6b0a603da3b65866d6440d6b32bac4d2b81814e'],
+    }),
+    ('Rcgmin', '2022-4.30', {
+        'checksums': ['2684b8e7fb970da2afbc00e482031cf4447416249d04c4c1740400ad112fb911'],
+    }),
+    ('optimr', '2019-12.16', {
+        'checksums': ['73b1ed560ffd74599517e8baa4c5b293aa062e9c8d50219a3a24b63e72fa7c00'],
+    }),
+    ('DMCfun', '4.0.1', {
+        'checksums': ['e648bb8d364847448ef54e953d9c089c4aedb638aed9e2394723b0e85157c864'],
+    }),
+    ('miceadds', '3.18-36', {
+        'checksums': ['3bca36fea6aeabb78f9edffd47d2733a35fdf9f9dfddd9bb002aa4c1532cea2d'],
+    }),
+    ('visdat', '0.6.0', {
+        'checksums': ['104acdbb9d41167b861ab24de0e1e1e14f61c1b476bac112fcbc6e47c157e598'],
+    }),
+    ('UpSetR', '1.4.0', {
+        'checksums': ['351e5fee64204cf77fd378cf2a2c0456cc19d4d98a2fd5f3dac74b69a505f100'],
+    }),
+    ('norm', '1.0-11.1', {
+        'checksums': ['c2ffe6c30fc203337bde49ef630a740141604d8e648c558e58c20116c47963bc'],
+    }),
+    ('naniar', '1.1.0', {
+        'checksums': ['a94c46c3a78893bd935a0a51adb6a523915afb35427a56ce650b1e1ab28c6f44'],
+    }),
+    ('stringdist', '0.9.15', {
+        'checksums': ['44cfbe4ae531ec52edee9593185fe104192871660b0311f78b2aa2afa70c2518'],
+    }),
+    ('image.binarization', '0.1.3', {
+        'checksums': ['ecc844bdd9bf15b88ce1e1afc8321c177bdc8ec32618c22102b1e8b02b36e00e'],
+    }),
+    ('lassosum', '0.4.5', {
+        'source_urls': ['https://github.com/tshmak/%(name)s/releases/download/v%(version)s/'],
+        'sources': ['%(name)s_%(version)s.tar.gz'],
+        'checksums': ['18c0d0b5022bcf81a9bf1b3b6647da3e080f221828b473ea2a45a9bf98474fbc'],
+    }),
+    ('lslx', '0.6.11', {
+        'checksums': ['373cfb1e79174b568dac254fab02d99bf79b830218bf18f0cc592af6fef853d6'],
+    }),
+    ('truncnorm', '1.0-9', {
+        'checksums': ['5156acc4d63243bf95326d6285b0ba3cdf710697d67c233a12ae56f3d87ec708'],
+    }),
+    ('Rsolnp', '2.0.1', {
+        'checksums': ['3b221100abdd1dd5b8d2df9325cc4e28b2ad2a6bd5069594c83f04f331c36792'],
+    }),
+    ('regsem', '1.9.5', {
+        'checksums': ['7392bd644efe82f96da0df470a962de398f1d0162273cba1ff31c2ecd7f17a53'],
+    }),
+    ('semPLS', '1.0-10', {
+        'checksums': ['cb587ccfdaf970f426dc7146035c7e010b1c51c17bf4fc089fd796eda58db460'],
+    }),
+    ('GxEScanR', '2.0.2', {
+        'checksums': ['6d42fd15d83dd1491405b282d26fa472f9f9902a9dc68836d6a48b459ada6a4c'],
+    }),
+    ('admisc', '0.38', {
+        'checksums': ['c827a97677fdae37da13698c7d7674f60bf894b8ba7729d6a3f594765605bc53'],
+    }),
+    ('polycor', '0.8-1', {
+        'checksums': ['f05f53e0b5c992de0e5b4c6b2e998148cf83310358821e1bba180d81face0509'],
+    }),
+    ('multipol', '1.0-9', {
+        'checksums': ['4ec305565c214872705f7d5ea4928c8761750663d664a77f1676d81a1ca0c632'],
+    }),
+    ('symmoments', '1.2.1', {
+        'checksums': ['9a6be1f8fe44f6ab5a1790e870fd8b18de1686a48a14a9fca2d035bfb5458672'],
+    }),
+    ('rngWELL', '0.10-10', {
+        'checksums': ['844499ce38622955a1d428a0ef62abe192bb2151a928c5bd933f34c062fd576f'],
+    }),
+    ('randtoolbox', '2.0.5', {
+        'checksums': ['ab6eb953feb928e205a1d21dd577bef2b71d2108a61c4ce5e3879d7b53fed61f'],
+    }),
+    ('qrng', '0.0-10', {
+        'checksums': ['51ee4eb9bf66fd125db8e5ed750edbc09e41a220994d06c3111f2ae73bcd8648'],
+    }),
+    ('TruncatedNormal', '2.3', {
+        'checksums': ['efb77996e2d263cc239d74658ce6cfb89822b7143b16fd5d0598ccc36ca08064'],
+    }),
+    ('cSEM', '0.6.1', {
+        'checksums': ['f660989fbfabe5fc07e29c20a5f8366e99c547825df1ac16daa1836bbbc4765a'],
+    }),
+    ('cubelyr', '1.0.2', {
+        'checksums': ['18b10f1fe561305a1e115a438460264b88b301b3e8c086b931500a798be39b94'],
+    }),
+    ('furrr', '0.3.1', {
+        'checksums': ['0d91735e2e9be759b1ab148d115c2c7429b79740514778828e5dab631dc0e48b'],
+    }),
+    ('broom.mixed', '0.2.9.6', {
+        'checksums': ['f06bfd7ddec2db64ef53cfb02bcb2c0dc90ec3c27e41236c2930820a79e3988c'],
+    }),
+    ('DiceKriging', '1.6.1', {
+        'checksums': ['4c65dc2abd006fc3d3e07f97f4fe6571ff822f4e4ecce00e769fc9c0651c1ad2'],
+    }),
+    ('grf', '2.5.0', {
+        'checksums': ['29828dff1a8d2acacf4560daacf179a612407dac224e129f0349d67355c5957d'],
+    }),
+    ('twang', '2.6.1', {
+        'checksums': ['0bb87dcd8f9b0628d96c50b565e9aa6222dfeb446165e12f52e4ee9b2e4e9179'],
+    }),
+    ('neuralnet', '1.44.2', {
+        'checksums': ['5f66cd255db633322c0bd158b9320cac5ceff2d56f93e4864a0540f936028826'],
+    }),
+    ('PCAmatchR', '0.3.3', {
+        'checksums': ['5dc9d8bb4c0020b5e51a53a4fa71afa9adc6b907ea618b231f5cfc2877a49779'],
+    }),
+    ('origami', '1.0.7', {
+        'checksums': ['b44034541ac358e0686682684c40e9a1de8d78c7913e56e4d3dbe41a2a55c62c'],
+    }),
+    ('hal9001', '0.4.6', {
+        'checksums': ['1123288b603f97de98b42178ab5b4809536f64d7884a46b829795245eacd08dd'],
+    }),
+    ('cobalt', '4.6.1', {
+        'checksums': ['1baa284b8c01d4062b1f565f999be3ea69ca6373717aa8860e817ad96a15e89a'],
+    }),
+    ('CBPS', '0.23', {
+        'checksums': ['ed8fe09b642db459a516bdeb03a49e718a7d5ad915cbf82400029508efe9b32d'],
+    }),
+    ('SBdecomp', '1.2', {
+        'checksums': ['0be4e1c9e8bed87fd1712e62346a97148a1a295ff56981e832921cc390006e5c'],
+    }),
+    ('naturalsort', '0.1.3', {
+        'checksums': ['cd38a9c5f323f61459e6096cdbf4493851d40497baf671af4f8dfe9a7c00e857'],
+    }),
+    ('lwgeom', '0.2-14', {
+        'checksums': ['26db6cf7dbc8cf43a70e5e2a34941a1c4b65e182f86f58d64ff9f614b3be929c'],
+    }),
+    ('finalfit', '1.1.0', {
+        'checksums': ['480bf93724b66a1565699c4c6411a2b509ef740984f8ba8320621784181dd3a2'],
+    }),
+    ('bigD', '0.3.1', {
+        'checksums': ['86b1b0cf1849f6b1418c3178ab5d7b04682652375c6e90ebac636921de6088d1'],
+    }),
+    ('juicyjuice', '0.1.0', {
+        'checksums': ['64f5418b2a4794b47f0525baaf101beb4f1374ea22f38d7d604f5118bdb6e12a'],
+    }),
+    ('reactR', '0.6.1', {
+        'checksums': ['9b690d7d4de54cbecca16deea9684f1d4aba91b2b280b38ea13c63eb5e57d892'],
+    }),
+    ('reactable', '0.4.4', {
+        'checksums': ['b4aae6be2dd85aaa5226067415e501abc139e99499bc62c539630eeafdaf6af2'],
+    }),
+    ('gt', '1.1.0', {
+        'checksums': ['1c52da763d97814b6d2bd93eb4395945a38f152b95d8183cf11a47c6b2b3c56d'],
+    }),
+    ('cardx', '0.3.0', {
+        'checksums': ['78c0d8896b05170020bcd3b808dd1631fe4f56a5cc22c7f37800af4dfa7987da'],
+    }),
+    ('gtsummary', '2.4.0', {
+        'checksums': ['20d96849cfff27a69c9bfe1b2b5d4664c334aeba6889d6fe9beca78b3a9080cf'],
+    }),
+    ('ncdf4', '1.24', {
+        'checksums': ['6cba9907b093bf48e0239a903c64938a57d142e4fd5364eb1ee5e5eb97d959e0'],
+    }),
+    ('geex', '1.1.1', {
+        'checksums': ['a1aebb9f73ba8dfe26ee3dc7b0725ccb814b3db5358ba17e417bdfc7eb3e4143'],
+    }),
+    ('momentfit', '1.0', {
+        'checksums': ['ae8ee3e39c7618ab1a743b738e8c96a22b8a9073f8a68e94515862ce5957e603'],
+    }),
+    ('StatMatch', '1.4.3', {
+        'checksums': ['66bc9b4066dd49414f090f10a7812ff7e10f69b52eef7ffb3612ed3a512dc7fe'],
+    }),
+    ('stars', '0.6-8', {
+        'checksums': ['14f3a07570fffb5e826d3db63cc0c02d1faebdda48ef8011d6434e7d351cd38c'],
+    }),
+    ('rapidjsonr', '1.2.0', {
+        'checksums': ['62c94fcdcf5d0fbdfa2f6168affe526bf547c37c16d94e2e1b78d7bf608eed1f'],
+    }),
+    ('jsonify', '1.2.2', {
+        'checksums': ['3745e962592f021a3deaed8b2f6b99c4f7181f28e095300a96d1c2b08af4af2f'],
+    }),
+    ('geometries', '0.2.4', {
+        'checksums': ['c6292acc336bb8520b8cb3672566f993fd077cb1f6f980ae39b9c9f56b971410'],
+    }),
+    ('sfheaders', '0.4.4', {
+        'checksums': ['f65ffe67b1d07beb6904b8960c66be684f5526b4d6450ab46c630c77e9b9bd07'],
+    }),
+    ('geojsonsf', '2.0.3', {
+        'checksums': ['275ca14672d982e6a95884515f49d8a0aad14f3be62ea01b675a91b0bffb46d1'],
+    }),
+    ('leafsync', '0.1.0', {
+        'checksums': ['7d8fd8dbbbf66417cf32575f14c0fe68199762ecf1c036c7905c7c5ff859d75c'],
+    }),
+    ('leafem', '0.2.5', {
+        'checksums': ['6cab254e0c987495b517e550fa22b20128218195a87e98822a7750297f705246'],
+    }),
+    ('widgetframe', '0.3.1', {
+        'checksums': ['44089a2cf8b0941a6f3da55da36353e2f44653ca58bfec7960ee5b71ea380d48'],
+    }),
+    ('tmaptools', '3.3', {
+        'checksums': ['cadb9918a463ca7e4f4d13f964f9fde25436958a56dd9ec6a2be5f609c804c56'],
+    }),
+    ('logger', '0.4.1', {
+        'checksums': ['3419a2669e30888e7a6e5d7484514713c2653e226a6d290a6873df0031d0daa3'],
+    }),
+    ('spacesXYZ', '1.6-0', {
+        'checksums': ['72ea0abdd79af95939209060e30017744a2586bb387b4d10e3e3af11f2b67bb7'],
+    }),
+    ('cols4all', '0.10', {
+        'checksums': ['8059526db7f4b29bf99460f674f1815b97f6a4614e28f426be9218a9080a62b8'],
+    }),
+    ('leafgl', '0.2.2', {
+        'checksums': ['29e83db299e441212d43079145460656f482d407e09c6b1d86305c799252898a'],
+    }),
+    ('leaflegend', '1.2.1', {
+        'checksums': ['625664d4e1933d0669cb0d700bb8c1948f377c7ceb3fc79fc74a1533366006d2'],
+    }),
+    ('slippymath', '0.3.1', {
+        'checksums': ['2f6b4a7061776759ced79edd9e8a3da79a1ae9aaa7dfc0f4ddddb19a10d81637'],
+    }),
+    ('maptiles', '0.10.0', {
+        'checksums': ['24282f2041a451010ac3fd5ba9e43dbc083702f2c1843985480d6ee8025adf5a'],
+    }),
+    ('tmap', '4.2', {
+        'checksums': ['8d72ad4245c5f4a0bbd75d1c9b2e45ab61b0d867ad4aef9b4368440add31dda8'],
+    }),
+    ('collapse', '2.1.4', {
+        'checksums': ['16c6e8ad10973636c0a118f435e76ef4518738f0fc16ed90e573c247e4c75fdc'],
+    }),
+    ('genoPlotR', '0.8.11', {
+        'checksums': ['f127f7fe8b19c899ecfdf98bf69d2e18926afb593a72fc40097acca66d401607'],
+    }),
+    ('VineCopula', '2.6.1', {
+        'checksums': ['2209905ebe87aec0a2b631b03cb0ec6db0b1a11b7ad42e77deec0d78d7c67cc3'],
+    }),
+    ('Rmpfr', '1.1-2', {
+        'checksums': ['d9f6caa4511afbf1465fee5edd2ae56869e496229dabd9f6e1a7e122e55ed5b4'],
+    }),
+    ('scam', '1.2-20', {
+        'checksums': ['e19c7ca73aee544445ff0ccbc91a33af68be3a60a89ea41e676fbcceacc399f5'],
+    }),
+    ('copula', '1.1-6', {
+        'checksums': ['e87be43a822c4e595fdbe545bfe20a3ba52151fe93a98f5d996b2dbbac2ba3c5'],
+    }),
+    ('evd', '2.3-7.1', {
+        'checksums': ['1ad134cc33b53d1240d0fdec771dbfb1dd29e329ca535c2a9f03cb35b0681b78'],
+    }),
+    ('ismev', '1.43', {
+        'checksums': ['b2b7ddaed7994a4efd92a215ba90da7bdb63ccdcc3ebd26ffd4f476211e9c336'],
+    }),
+    ('GJRM', '0.2-6.8', {
+        'checksums': ['a9702d8fc8f0866c0626d2816211abd61af54a637b57fc7dc1fe8177e6b3569d'],
+    }),
+    ('penfa', '0.1.1', {
+        'checksums': ['a22a8ac3d4a040c77e50ddc92328c1989eae536d79fe56013e9372ba27c114e5'],
+    }),
+    ('kde1d', '1.1.1', {
+        'checksums': ['70283d5e593b64d2e257c6c72aac5208f2eee5b221b3f3e4761268ce99c3221c'],
+    }),
+    ('RcppThread', '2.2.0', {
+        'checksums': ['44835bae083ff89924e27856674868901c895537b24c4f7c11850defa8058d37'],
+    }),
+    ('wdm', '0.2.6', {
+        'checksums': ['9f2e68308be2cab11f03020d55660d091f7d6d55209eb826d3e38d6d530f7b12'],
+    }),
+    ('rvinecopulib', '0.7.3.1.0', {
+        'checksums': ['ce0e2d34f49c0dca82f91eb5f31b5d62a818d7ac06708af34724ed66399317b8'],
+    }),
+    ('PearsonDS', '1.3.2', {
+        'checksums': ['23b405b2d208d5391cec1ea2660809edba83d39ecd1913c7738a9b025e798154'],
+    }),
+    ('covsim', '1.1.0', {
+        'checksums': ['30de5b5711d7608796479c3a2adb9c9cbf8659f833d3f687a9f8b275a093665e'],
+    }),
+    ('semTools', '0.5-7', {
+        'checksums': ['39cb5e04ee3f479bfdf57669b9c599ae4775412a4d8991a9855bc06e7753e6b0'],
+    }),
+    ('dcurver', '0.9.3', {
+        'checksums': ['963a0e9af1c250a7e43e386823cc2d793c467c91a686c30df8058319e97355fc'],
+    }),
+    ('beepr', '2.0', {
+        'checksums': ['620e5ec93c1a0991a9c8f60868153fee1e3918b1a784f50c0e35186780c60477'],
+    }),
+    ('RPushbullet', '0.3.5', {
+        'checksums': ['b07f919aa6bcdbbca2182f00e0434ebd76f23f4b71fd1c2321a117f81188e676'],
+    }),
+    ('SimDesign', '2.21', {
+        'checksums': ['fba1ca9c6356060d89ff19efbfdac738c188f919d3b3b996244dd334f4e407fc'],
+    }),
+    ('mirt', '1.45.1', {
+        'checksums': ['0529c5369f5d50f99d6625ac2186b2d2095f29be15dfe4d6c7b7a3650b24c28a'],
+    }),
+    ('rpf', '1.0.15', {
+        'checksums': ['5fc12eabfe0025dfe99eee1b694a5d4a25f6e70109d7cd3c40ba421a7efbbcde'],
+    }),
+    ('OpenMx', '2.22.9', {
+        'checksums': ['a29e679f2dd82e101fac45907258b5f3ff320d8da176c1b5a874a3121157de1e'],
+    }),
+    ('matlab', '1.0.4.1', {
+        'checksums': ['fc3fba560b73a9bf0a4f317340856c91af2c9dcc80f5df291f3f7e6d6ac4fd50'],
+    }),
+    ('FactorCopula', '0.9.3', {
+        'checksums': ['df1675bb96431417cdbb9000ab80e15e12d82c8ed9809eeb3d7fe7b4855178d3'],
+    }),
+    ('rpact', '4.2.1', {
+        'checksums': ['f5a1813cf242ea554d9c239a7a319d4f9e52cb858ee04f271d2301009d20ce51'],
+    }),
+    ('ldbounds', '2.0.2', {
+        'checksums': ['a98d8498e46fd814957e7d47a6bf3d27649885ed840c0753469f268b8942bda7'],
+    }),
+    ('catlearn', '1.1', {
+        'checksums': ['6ba6593d615586d3341088f1482d1d0fc3f1eb5f24ebcdb5885cb3f755efdcb6'],
+    }),
+    ('MetaUtility', '2.1.2', {
+        'checksums': ['e38c21588c239aa8926e64d916aa0f3b04108c2992f0e801095e4c7920b9ad5d'],
+    }),
+    ('EValue', '4.1.4', {
+        'checksums': ['4b93a82c591b9ee8c2a19a31a9d8bfecaecb4644111e27ec5acb7bceaa5b1773'],
+    }),
+    ('dagitty', '0.3-4', {
+        'checksums': ['796f1424fc75800f1818f427809730f43eb798614ac570af1c301e951b2d3c82'],
+    }),
+    ('ggdag', '0.2.13', {
+        'checksums': ['ae9dc0057dc4aa3a16f4cb25e83cb8f9383e26b94ede6bcf31bdfeb7034f961c'],
+    }),
+    ('simex', '1.8', {
+        'checksums': ['80c7841196b9377a9367eb6960ad80ca0bf8de511b8b18a0031bfbe7bde289a0'],
+    }),
+    ('hash', '2.2.6.3', {
+        'checksums': ['8a030b5be9c6494b44af9d8cd7a966cc94a41ae0aaecb553fc36de4762749110'],
+    }),
+    ('nabor', '0.5.0', {
+        'checksums': ['47938dcc987279281c13abfd667660bf1b3b76af116136a27eb066ee1a4b43da'],
+    }),
+    ('RhpcBLASctl', '0.23-42', {
+        'checksums': ['5c889d5b69e264060b9f1f0383c447f594855b8afc15b7d76d39e4d62b946615'],
+    }),
+    ('harmony', '1.2.4', {
+        'checksums': ['9adcb7156830e6716a7ced1a4cff91dbf2748be3ee9d60c4cc6ff787b991f346'],
+    }),
+    ('apcluster', '1.4.14', {
+        'checksums': ['dac14db3b5d2d165537b14d4082cb004563474d406d13abd2ac0fbcac4063942'],
+    }),
+    ('DataCombine', '0.2.21', {
+        'checksums': ['352b235612e2cf8234b3ab5f9aa6f7a394b006b98d24e315940ccc65c4218b47'],
+    }),
+    ('docstring', '1.0.0', {
+        'checksums': ['14528bc85bbb299fb8fe1a7116034f8df49ae0c26fb299376185b5d56176e5a7'],
+    }),
+    ('openair', '2.19.0', {
+        'checksums': ['fc3e09fee3a1c21ddb5bd3394ff54edb258946eae0a684912a78106cfd5c4332'],
+    }),
+    ('pdp', '0.8.2', {
+        'checksums': ['143afd7340f7b1fb38753d485371e7c590593530d9d43e33bb6e2bebd194ab1b'],
+    }),
+    ('date', '1.2-42', {
+        'checksums': ['5a913f960a0071cf9db05df4de03055a21a1c243b3bdbf846375537a664bcb74'],
+    }),
+    ('cmprsk', '2.2-12', {
+        'checksums': ['773ecb93be0eac7bb5dfe9ea1480380da89ea95497b7b2febb08fd7c5104acdc'],
+    }),
+    ('mets', '1.3.8', {
+        'checksums': ['733ce39743148082b0fe7aa7158d213c3bea2689a8d0eb452bb409dc39cb3591'],
+    }),
+    ('Publish', '2025.07.24', {
+        'checksums': ['fe141fffb13c74b4657e4e373d794862c4e598e40a5edad2ddcaf646014bc8ab'],
+    }),
+    ('riskRegression', '2025.09.17', {
+        'checksums': ['9e4fb6e0dd774008e4a52cdc2706ce73f46a041682fa572802e39c827f455a00'],
+    }),
+    ('pec', '2025.06.24', {
+        'checksums': ['8ebb7aced702812f182c963661d1fe11bd81c6a92c56071aafbc109dbf58ca1f'],
+    }),
+    ('pammtools', '0.7.3', {
+        'checksums': ['aa58cad6ec8298a4166c449ebf9d66ec0c6044a089bc2bca9a75a4679571ea73'],
+    }),
+    ('relsurv', '2.3-3', {
+        'checksums': ['78adc5b6a79f2d046f23ff53b728b4990c124b43ee26f24e070e9781da80ec1e'],
+    }),
+    ('mstate', '0.3.3', {
+        'checksums': ['8533da39c3ebfe6878e18bb30a3ade0f9be309b06e8d95617c308896ae57ae6f'],
+    }),
+    ('prettyGraphs', '2.2.0', {
+        'checksums': ['26a80afa54c1dc62800b9ba7a3c3fa05f7b0b1aa7fb652e9ef0ed9f5304e466d'],
+    }),
+    ('ExPosition', '2.11.0', {
+        'checksums': ['f9c9f49ab94b0b5700e9db5a456ef279544c75e1d92ba55cebd4f8ff17de0bd3'],
+    }),
+    ('alluvial', '0.1-2', {
+        'checksums': ['77b6dc4651b33b03aaaf1e09a35f9c3536e5fddac2eda34f5a34e0ae33cf2e0d'],
+    }),
+    ('SNFtool', '2.3.1', {
+        'checksums': ['982fe7c57f52c0c272b8cb5863dc5d50623b368e24ff6e27fc8b17acc0101f16'],
+    }),
+    ('BayesLogit', '2.1', {
+        'checksums': ['3a423f68339ed1bf25e21be53b1fd68452ed7807b17c36239fba759dc6fc6b70'],
+    }),
+    ('Hmsc', '3.3-7', {
+        'checksums': ['74ffe55dc809e473371c2dd8c8f797a4562edafa9f58d6bb4c843cda2911a699'],
+    }),
+    ('MonteCarlo', '1.0.6', {
+        'checksums': ['f21aecfba957bbea9576b09f75b1f7c7621637a04532a8fed2c6bb8ffc1a98cb'],
+    }),
+    ('chkptstanr', '0.1.1', {
+        'checksums': ['433b29d597d7ea6c21ed652782a7bf2d766f9223a3b7bfed235c8fe7fffd175c'],
+    }),
+    ('MLmetrics', '1.1.3', {
+        'checksums': ['2c5735fc2a2728a71272aaf0d559bc7bc09b45476ea63d94cb7be84f0dbfaf85'],
+    }),
+    ('elliptic', '1.5-0', {
+        'checksums': ['c52583a115ec298dee59e201e734513b94e54bee3798e74ca1a7a38f89599495'],
+    }),
+    ('contfrac', '1.1-12', {
+        'checksums': ['95bfc5e970513416c080486a1cd8dfd9f8d59fb691b02ef6ccbe0ce1ed61056b'],
+    }),
+    ('hypergeo', '1.2-14', {
+        'checksums': ['bf379a5d5543ca20b7ac779555f504a3b98f421abadf782676c161426e6570e4'],
+    }),
+    ('rtdists', '0.11-5', {
+        'checksums': ['97cf2ea758aa02b1dfaeef5032c6e50570777552aa771ed9a86df048b7871eed'],
+    }),
+    ('AMAPVox', '2.2.1', {
+        'checksums': ['9fe36614bc1bc0f74dec4dbfe4e2b13a3b33cca90ed02670ae52705dc704eb81'],
+    }),
+    ('LCFdata', '2.0', {
+        'checksums': ['b58f4d93b9023dd1ba2db96a59ddfc058397085933d8de4cdb38ee064d5e7bf4'],
+    }),
+    ('LMERConvenienceFunctions', '3.0', {
+        'checksums': ['eb430de9fbf836173f716960d60afc2de91de7f986471f406c3ca9027142e849'],
+    }),
+    ('HGNChelper', '0.8.15', {
+        'checksums': ['76f8a15bc2d7d70059d0fabdd51e92c917c9a238e7d3ba6cb7ebbb66fd467518'],
+    }),
+    ('parallelDist', '0.2.7', {
+        'checksums': ['b38bb8f4bbad025686a1b8d9fde4aa439f8012d39aab1048adc95ae27485196f'],
+    }),
+    ('roptim', '0.1.7', {
+        'checksums': ['3dc9d3a7066ec6c263daf5d92488e46b2b0e62671c94a66d54059957d79bba35'],
+    }),
+    ('yulab.utils', '0.2.1', {
+        'checksums': ['87c6995e1d30c239ff9278e4490b3a4ac23f81633206d5d586d79206747fc118'],
+    }),
+    ('ggfun', '0.2.0', {
+        'checksums': ['c5d267d3152771842ac1fdd819ecb442670946b75d10e0b4866e342d441a1711'],
+    }),
+    ('gridGraphics', '0.5-1', {
+        'checksums': ['29086e94e63891884c933b186b35511aac2a2f9c56967a72e4050e2980e7da8b'],
+    }),
+    ('ggplotify', '0.1.3', {
+        'checksums': ['87111c6dfcc34b1bce4df75d9d05e6e0f370e589e2fd92fe074161e474c10b7f'],
+    }),
+    ('aplot', '0.2.9', {
+        'checksums': ['ab0c78b25319324bc9bdbdcd7c165c0f040767c8eccca059571008128af3e57b'],
+    }),
+    ('tidytree', '0.4.6', {
+        'checksums': ['dba909ba767283fa76795a67e048ff1c8cd339c7e44f64c9698c70ecb3d92292'],
+    }),
+    ('ggvenn', '0.1.19', {
+        'checksums': ['5258cd7e704448fa6b0b9e789ee0dbad8cd3020d1162545edf08958d0c5aeec2'],
+    }),
+    ('scatterpie', '0.2.6', {
+        'checksums': ['bbb93441b98dc8c2af0131c1ed578be4b89563c12e14a7643c411e82a018d994'],
+    }),
+    ('fontBitstreamVera', '0.1.1', {
+        'checksums': ['3298b3dd95605bdda0c5fce5594c9bedde6aa63d89b216d5c83c6c092b6d375a'],
+    }),
+    ('fontLiberation', '0.1.0', {
+        'checksums': ['acdea423e005873aa509e280074a3cef4796e4f7e9d77b3945d77b451ea039f0'],
+    }),
+    ('fontquiver', '0.2.1', {
+        'checksums': ['95871814c2d55c03ee15a54e29aadfb840c791e1430f94127d9e1dc8608a6363'],
+    }),
+    ('gdtools', '0.4.4', {
+        'checksums': ['6d13032caa3ba7879bfeae48505def9815fd339444edbeae21233b04a9401ed2'],
+    }),
+    ('ggiraph', '0.9.2', {
+        'checksums': ['efff3199d1407941b20b5e8e1e8ed1b65df4b3a0f517a6f0ade28eaa5050b4a2'],
+    }),
+    ('shadowtext', '0.1.6', {
+        'checksums': ['aa9b9b3d4e11f6cd57476b798fa61780bb89a6bf5baac8be3707d87507ead870'],
+    }),
+    ('random', '0.2.6', {
+        'checksums': ['2b59f9bce0c3ebf8215ab42dffaf9a1c7eea7468964063215a8d422af953b069'],
+    }),
+    ('R2WinBUGS', '2.1-23', {
+        'checksums': ['eaebaeaecdf030cd0bf73721d743c664d39f6cb7083c8da6830e7f77714effb3'],
+    }),
+    ('aricode', '1.0.3', {
+        'checksums': ['10a739353feb4f552496d3a51d436088c92edbd241f80f7c33ee5f278de1d90a'],
+    }),
+    ('DepthProc', '2.1.6', {
+        'checksums': ['7eb9a6598a3212f848bfbfc315dc2ea12d4b462b6a74f88a38b9d75064aebb20'],
+    }),
+    ('dbscan', '1.2.3', {
+        'checksums': ['629a85cc0763ed743d1610d4184425f78d5fbc198f535a8c9a309f9d9838a6af'],
+    }),
+    ('ggh4x', '0.3.1', {
+        'checksums': ['d8fcc030ee7508126c22ad846228e49067c4764293bb12cc606b08c665705f87'],
+    }),
+    ('ComplexUpset', '1.3.3', {
+        'checksums': ['5b2f99b4a38648641c7d31fc57f201a93e5bc1b85442a0b9726f72c166d964ea'],
+    }),
+    ('proxyC', '0.5.2', {
+        'checksums': ['7251540e4db04e4fc4a89acc73c88f2c2396d5af19354df4b895bc4bca8f87a0'],
+    }),
+    ('changepoint', '2.3', {
+        'checksums': ['19a8b009d807c6be3f124b336a10e9d1e81077682abe63cfab72a3c51dbb682d'],
+    }),
+    ('geeM', '0.10.1', {
+        'checksums': ['fe76a32981b55835095041e777d1cf2e9ce43edb8d9488db56279f7cb6f43fe5'],
+    }),
+    ('ggstance', '0.3.7', {
+        'checksums': ['5a2647b4d130d3b76dc08a2fe568e1e8eb2c8a69a4fb831032b7614446d4456c'],
+    }),
+    ('mosaicCore', '0.9.5', {
+        'checksums': ['ff4b503bff84a005a05d66a0d3cbb7ad8964fcbb8627cd34e32fa353462c0a48'],
+    }),
+    ('ggformula', '1.0.0', {
+        'checksums': ['cb838218894dfdfb08f62cf944634fc89c711ea08652fe536e416cfd130b2761'],
+    }),
+    ('kinship2', '1.9.6.2', {
+        'checksums': ['85b628c95b8b077e8ff329e5b84d7bc7ab48063f5f0f3da3300b886ab90aea4e'],
+    }),
+    ('MESS', '0.6.0', {
+        'checksums': ['f907763a0ca67f3a59bc3d51ab1cbdde78a4599ab7612a61e2e50cda282eb1e4'],
+    }),
+    ('smoof', '1.6.0.3', {
+        'checksums': ['af8664b152876c545f6545528de6e05a289d0714103fac7afc52960a9a855fb1'],
+    }),
+    ('mlrMBO', '1.1.5.1', {
+        'checksums': ['0cf26e5e9b180d15b932541cf081a552703a60edf762aafca9933c24ea91dc99'],
+    }),
+    ('emoa', '0.5-3', {
+        'checksums': ['4dbc707a1f3cd2f82318965dcb9a9fc1cd0ff7f2e0f723b067f841f9ca3c48f0'],
+    }),
+    ('webutils', '1.2.2', {
+        'checksums': ['a534a225bfd08dc6ad61480f177eda97fadc3fc8fd66f23ad6cb327dcf68661e'],
+    }),
+    ('swagger', '5.17.14.1', {
+        'checksums': ['a8a8d64eda2bbb0c4aaae44892b68f7ca7b3fb58935a266d0cdc001be4f8757a'],
+    }),
+    ('varhandle', '2.0.6', {
+        'checksums': ['4e7afd3ef77343c61508b0465b588751dc089c264faabf7bed60e9f4d9e1c577'],
+    }),
+    ('dlm', '1.1-6.1', {
+        'checksums': ['73e371de6e0849f943198da3c142248fe08a19551f0336c6c2d4afbf550f5f43'],
+    }),
+    ('PMA', '1.2-4', {
+        'checksums': ['3e9bf312d14077558ce0696e2c5587943850192bff60fb7490f413ba21ab0057'],
+    }),
+    ('unikn', '1.0.0', {
+        'checksums': ['6edd5d420175a4691066b5c695d2a96f706d225a62473c85be62b2dd42350dc1'],
+    }),
+    ('ppcor', '1.1', {
+        'checksums': ['6a78f0c4d9caa17ab0252c5d351c2371e4ffb9047ebd13964877018dd6142bf5'],
+    }),
+    ('berryFunctions', '1.22.13', {
+        'checksums': ['a0f1d191622cc14c68e65100ed0e276975eb9960c8cdd4db18f18d167235df51'],
+    }),
+    ('cld2', '1.2.6', {
+        'checksums': ['cff551bce849e44a83c2013bcdbfb2e53c6b46dd32f7eb9764fd86b3af06e4fd'],
+    }),
+    ('crfsuite', '0.4.2', {
+        'checksums': ['d5f6379a2bb7fd585fde5945189a6a69e1ef33664fe86828d646f5f4505f8d96'],
+    }),
+    ('doc2vec', '0.2.0', {
+        'checksums': ['db3853685072554402434ea699d703e01ac7818044cf47a2ee7d0e1040858908'],
+    }),
+    ('fastDummies', '1.7.5', {
+        'checksums': ['b87a1986af37ed10016cef267650e01f518836c427a5e39c2d987b46645abb4a'],
+    }),
+    ('quanteda', '4.3.1', {
+        'checksums': ['100d20bc47cf056bf2ca030eb9ae91c376cf575063d76126563acd3b1b6699f3'],
+    }),
+    ('ISOweek', '0.6-2', {
+        'checksums': ['b58a37b61ee772ea2704d510e9fce69dea4dd641b45124d566242825df4530b8'],
+    }),
+    ('sentometrics', '1.0.1', {
+        'checksums': ['3d651f449d79075aea499a8033444480cd883255114c84967803488467df373b'],
+    }),
+    ('tau', '0.0-26', {
+        'checksums': ['db88cf396de4d56c27501ff65a47a6951429f6f72be08e3765a021950e61fc02'],
+    }),
+    ('textcat', '1.0-9', {
+        'checksums': ['dcf6f82de0efb9f1e13daa108818ed630d9cc7bca845fc26f6c4cdc7a17725df'],
+    }),
+    ('textplot', '0.2.2', {
+        'checksums': ['6e99a204b4be2ccd317978eda900b923e0e0a0f34217405777a0eb5fcc80e2a9'],
+    }),
+    ('udpipe', '0.8.12', {
+        'checksums': ['b2e30eaec0b7d7d5c205fc2d61b1b5ef218fb9e772c828f1192fb2a87bf0143b'],
+    }),
+    ('word2vec', '0.4.0', {
+        'checksums': ['38c6934ad7c601d6de7fa44a1ecf911ef34609b5c32b67da12a0814124036a91'],
+    }),
+    ('epitools', '0.5-10.1', {
+        'checksums': ['b418854de1fcedd126f3bf19dc27e8a71ee6efae5371098ab64a53a2d51d164b'],
+    }),
+    ('RBesT', '1.8-2', {
+        'checksums': ['246950672dd7c5453c94ba1619f2ac93fa648c7e9608b6f802a396bcbac41156'],
+    }),
+    ('rARPACK', '0.11-0', {
+        'checksums': ['c33401e2e31d272d485ce2ed22e7fe43ac641fd7c0a45a9b848d3ad60df1028a'],
+    }),
+    ('FKSUM', '1.0.1', {
+        'checksums': ['6de23f5b7692f627b0b8e9575a612e77e166c16c28acab31d5ea0a27d7afe829'],
+    }),
+    ('warp', '0.2.1', {
+        'checksums': ['020ad590de099661aa62b4d5e51499a2ac91c41c61db2dbc71c3f4a3df2c46be'],
+    }),
+    ('slider', '0.3.2', {
+        'checksums': ['c9304db3f964475053c5795f160c1e278fa572b114f4e7ecf1686a5899dc3619'],
+    }),
+    ('rsample', '1.3.1', {
+        'checksums': ['6b31fbd90350a809c7ee673d406e19d720becb456ac5146e8b05171171f06430'],
+    }),
+    ('haldensify', '0.2.8', {
+        'checksums': ['7117277ebe60448b3a02321b355ac5db4dfe31af6b4895333791bca9c5f7be46'],
+    }),
+    ('Polychrome', '1.5.4', {
+        'checksums': ['3cf73d06faa1937b6b940fa12ca01f96c353f23cca73408107919dc15d9b9da2'],
+    }),
+    ('shinycssloaders', '1.1.0', {
+        'checksums': ['038ad76024e6b38dcc9bbe22aa07a58034bc8410ad25329bdc4db42203e2ef70'],
+    }),
+    ('princurve', '2.1.6', {
+        'checksums': ['0216332390eb27013b6ba62232782156dfc99ca640087fcaff53d2be9218f373'],
+    }),
+    ('ECOSolveR', '0.5.5', {
+        'checksums': ['2594ed1602b2fe159cc9aff3475e9cba7c1927b496c3daeabc1c0d227943ecc7'],
+    }),
+    ('scs', '3.2.7', {
+        'checksums': ['f84004f95365f713e22e78b9c5a0a05670f5c5d17640b3dfa6e7ed747479aaca'],
+    }),
+    ('osqp', '0.6.3.3', {
+        'checksums': ['ff3d8e4ec7764333144d461eb5ea7a4adbf5b5f29f84c3ec3e60a93802e2f5bb'],
+    }),
+    ('CVXR', '1.0-15', {
+        'checksums': ['c13b192a3793103880b43fb4d213a7928b0fc24db3a8df7b3f5cb587f92b838c'],
+    }),
+    ('tabletools', '0.1.0', {
+        'source_urls': ['https://github.com/JMLuther/%(name)s/archive/'],
+        'sources': [{'download_filename': 'cc961c5.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['667a4270456d28188734ce31411326130a94e085490ced84096c984789bb174a'],
+    }),
+    ('officer', '0.7.0', {
+        'checksums': ['baf7a7b880d79ef9769b1b3e013a53ec777ee871d9e148d0ec7eb1a19ed6c8a6'],
+    }),
+    ('gfonts', '0.2.0', {
+        'checksums': ['72e2eead5280b45aadbbd9385971d65e9866fd659270b1c3c1eb98330f024aa6'],
+    }),
+    ('flextable', '0.9.10', {
+        'checksums': ['14badace422635892a76f9bb43709f1cddf33afea1053bc88563c8fd2ee8f850'],
+    }),
+    ('ridge', '3.3', {
+        'checksums': ['5c2daecf6f97aa099ef5fa54f8448518c4f2ed6e44dd29fc60621a70721c60f5'],
+    }),
+    ('ggdist', '3.3.3', {
+        'checksums': ['f35563b2ab9799f47db9ae90da3434cc0fa436426e979d0f143308510dfd3673'],
+    }),
+    ('svUnit', '1.0.8', {
+        'checksums': ['2aafcba0f4dcb9f4cb16c4af4d77b786a3f4b87c6b79537a1d4969e0c6576fd2'],
+    }),
+    ('arrayhelpers', '1.1-0', {
+        'checksums': ['5fddd5dd4fb8237bcb24465ef823bc8715ba53e6e5fd7a716c31c48ec128340b'],
+    }),
+    ('tidybayes', '3.0.7', {
+        'checksums': ['1ccc481a430547f0134d32595d59c252a9469a2202cc5300306aa3bb4708290a'],
+    }),
+    ('spdep', '1.4-1', {
+        'checksums': ['4d0beca3b8b696373a74670f916cca3e77cbe97d002f3be62f172815774f5588'],
+    }),
+    ('stringmagic', '1.2.0', {
+        'checksums': ['a60281ff987d0db25c87f32303a7aa5ba3733d4e1915c877ca92d0f552fd13a0'],
+    }),
+    ('dreamerr', '1.5.0', {
+        'checksums': ['590b609009bac8d04ad363b0c067806f5c13870aaef2b42aa8764f74e2040178'],
+    }),
+    ('fixest', '0.13.2', {
+        'checksums': ['d409e25fdf5dcf2d98c503cc02968add35ac181b82e5f1a96739e3393ccaec21'],
+    }),
+    ('cmna', '1.0.5', {
+        'checksums': ['7cf99880cb70e8fd0b022184167888b1ad32dca503e0250c1d552a84f0613898'],
+    }),
+    ('XBRL', '0.99.19.1', {
+        'checksums': ['ad9ebb5431bdfecc38b8bf3b2552f1a048878a9ac02f5a9d71279b3b099a9757'],
+    }),
+    ('rhandsontable', '0.3.8', {
+        'checksums': ['901ed9c59936f7fa52ad8db3111c8904ab962f9c74f1b6cd40f81683af35d21d'],
+    }),
+    ('missMDA', '1.20', {
+        'checksums': ['f90110e5530ed0c0f2703c405d689f574637623c547cd4e8c3366e7f846ffd30'],
+    }),
+    ('insight', '1.4.2', {
+        'checksums': ['825c049f4618daa5ea67beb954dacb40191e747873c992e23e9f0a4642b4bd8b'],
+    }),
+    ('datawizard', '1.3.0', {
+        'checksums': ['b7670e1efec02ab1832f4a61a4fc6d4b84cee948fb4e558984932d201613d7d6'],
+    }),
+    ('bayestestR', '0.17.0', {
+        'checksums': ['28722fa8d91f714ac961b9fc6106916406d4f7b84e9c9babb475ba3bd69a115a'],
+    }),
+    ('performance', '0.15.2', {
+        'checksums': ['62076961300e52b1aea849c385efeb4be6431c1ca7f8387034640feb41b53155'],
+    }),
+    ('fastlogranktest', '0.2.1', {
+        'preinstallopts': 'sed -i "s/CXX11/CXX14/" src/Makevars &&',
+        'checksums': ['457c411240b5ee73108042370ccea0f8fa1999e876b2306456d4723be27eb5c8'],
+    }),
+    ('pbmcapply', '1.5.1', {
+        'checksums': ['7ffc2854a384962f0dd523aa9ef33ce8fc290997206b71b840a49049d87112dd'],
+    }),
+    ('PWEALL', '1.3.0.1', {
+        'checksums': ['6fb7eaf557f9bd17bcb94945814dbd77a081d709976bc8046746ff0be7c1dcdc'],
+    }),
+    ('goldilocks', '0.4.0', {
+        'checksums': ['8f98de6950844e96c933b41b305d7f3e0d34fdab0dd99a05b1ee12cb8f2076fd'],
+    }),
+    ('r2rtf', '1.2.0', {
+        'checksums': ['f0c15dbf066b76ef245834a0e180bb20c04a91e9afc583be8189225bc14eea84'],
+    }),
+    ('gsDesign', '3.7.0', {
+        'checksums': ['e27b1cdd0d940432142c4b350f0a071c592e7d54de340af889fa6318c1be57fc'],
+    }),
+    ('gcmr', '1.0.4', {
+        'checksums': ['63cc0796f333f398ea229de9290aac45f8a0c8318c3f0133952fbfbe180348eb'],
+    }),
+    ('frbs', '3.2-0', {
+        'checksums': ['48505d415e3687afcb837e162b63b74173b3cd5df5f96140240e441c86343b2e'],
+    }),
+    ('pander', '0.6.6', {
+        'checksums': ['8041e6b40c0212286f35020a11db180823fe1cb709f1d88ad657f28455692ade'],
+    }),
+    ('texreg', '1.39.4', {
+        'checksums': ['3eb2dd3962652bd1b31389355cc2ecae680ae4fde91c7156454a6614e43983c0'],
+    }),
+    ('gsubfn', '0.7', {
+        'checksums': ['89351df9e65722d2862f26a0a3985666de3c86e8400808ced8a6eb6e165a4602'],
+    }),
+    ('fastGHQuad', '1.0.1', {
+        'checksums': ['5cdc491b59176a628d9e814bde63e65d8ef947dce9df36ea28e2916e97b647fe'],
+    }),
+    ('MplusAutomation', '1.2', {
+        'checksums': ['f0ce291b01a9966760863a1ef24c72629d99c96eced5162253704d6e1c83a3fe'],
+    }),
+    ('Amelia', '1.8.3', {
+        'checksums': ['7699455ca3e9dabd60ad0ec69185ece3f24a597ef8da18033ea0b7a32356967f'],
+    }),
+    ('modsem', '1.0.13', {
+        'checksums': ['c04cb4f459ae6198195373fb1b1a8eb584097c2e1e36986066d840d827cf174f'],
+    }),
+    ('sgdGMF', '1.0.1', {
+        'checksums': ['b4a0313c20610afa29b85281aa80b79a05a3b269e691a8f8a171a3096c079d7b'],
+    }),
+    ('statip', '0.2.3', {
+        'checksums': ['56a81a1882856cd1c5711ba133417b64f09071dda356e74280a0dba0db60d54f'],
+    }),
+    ('gss', '2.2-9', {
+        'checksums': ['6ea16559c1507511a496dc4200e5b67c882017f5d230d681467b668405e80e47'],
+    }),
+    ('timeSeries', '4041.111', {
+        'checksums': ['053d24772c0298e5979e3757c3fd7285fe6c10f31c1ead5a639dd190f6fa8a43'],
+    }),
+    ('fBasics', '4041.97', {
+        'checksums': ['9942055e06e892e00616fa96255977c8bd7622666d4890b259e89f3ac74915ab'],
+    }),
+    ('rmutil', '1.1.10', {
+        'checksums': ['819fd7ce695cc742b4594705986eb06764460fc88521ea32de793c49de7ca5f9'],
+    }),
+    ('stable', '1.1.6', {
+        'checksums': ['2238788a35b5aa9e175ad7b92348640c3dcad68b6ab0a0bc04aeec9084d29da4'],
+    }),
+    ('modeest', '2.4.0', {
+        'checksums': ['1a949409bf64679d32400d20aa3d53e65a9a20f5bd1a40993b95f81100e0ed20'],
+    }),
+    ('MicrobiomeStat', '1.2', {
+        'checksums': ['f851d71a008a768457a3c8ea797406dd03abfa1bcee4e33b01610e433532ecce'],
+    }),
+    ('ggprism', '1.0.7', {
+        'checksums': ['98175b1a845d22617171476dd6f785e3843e9173e1b7517de2ce00d1506375dc'],
+    }),
+    ('logging', '0.10-108', {
+        'checksums': ['85c91aa5a313f5f9fbb0394cda3f924a2495cca3cc5cd68dde0695fe3c20ed8d'],
+    }),
+    ('biglm', '0.9-3', {
+        'checksums': ['805d483dc58c041f1616267abeb39cecaaf7271a34e90668a5439383bf9a0d58'],
+    }),
+    ('cplm', '0.7-12.1', {
+        'checksums': ['8e95c1610aa76ca8a3bf3645ab7eeffadde1af6fe5941b483bfdcaa6aa75297d'],
+    }),
+    ('configr', '0.3.5', {
+        'checksums': ['43a19fa4920f2265ac4b2e03de36c5e135d1c97dfdc1fecee0b061ee92fa8ee2'],
+    }),
+    ('concaveman', '1.2.0', {
+        'checksums': ['48653df177d5f1573dcfdf49438fb7d418e7668f1c66713b4fed153fa51ff2b2'],
+    }),
+    ('sftime', '0.3.1', {
+        'checksums': ['d1df6a2f611059e1949a3b2ef75ec5310e7cca4289dcf7af369197f4d5c68874'],
+    }),
+    ('intervals', '0.15.5', {
+        'checksums': ['11907be2c47ee4f6359055113dc0dab9ba2c35fbc743c2d52fd1ba1006c7ce5c'],
+    }),
+    ('spacetime', '1.3-3', {
+        'checksums': ['215ec4276e10c067e51221760e0d98d5e785bc39172e00ebdb0b269cefa581ae'],
+    }),
+    ('gstat', '2.1-4', {
+        'checksums': ['fafcbd6c480f4e996a904f54b8efa64af2fad8fef2ec0f706e058ada4618c630'],
+    }),
+    ('fastmatrix', '0.6-6', {
+        'checksums': ['4998e19d2ac48537d22058d5ca6a21c380f80f336f2807c28d791b0b154416f3'],
+    }),
+    ('SpatialPack', '0.4-1', {
+        'checksums': ['6ea970976bb4c0b1519e0482cf8342367b7fe297bc0ba09bf37634a17989e6b3'],
+    }),
+    ('GET', '1.0-7', {
+        'checksums': ['b9ce49c6940d62675c42a833ee2cd23037e4ac13cbb58aa154416db0b3642958'],
+    }),
+    ('splancs', '2.01-45', {
+        'checksums': ['8bccf1d61d7feaab52da07a9c95aa66bcd3986a6b214f13b232c1e2bea4b76d3'],
+    }),
+    ('geoR', '1.9-6', {
+        'checksums': ['9baaf9180b5d7fabc25ad09c7b2bd0d3e629b6f07f144a1c3198b24e6b2f66b2'],
+    }),
+    ('NTSS', '0.1.3', {
+        'checksums': ['ec2a448b1392a29a3e13a7e38369891bd5f3b399411f5980d540467352c147a2'],
+    }),
+    ('spatialreg', '1.4-2', {
+        'checksums': ['368d6d5fb67621248256e23603b752d35f5c15b625053e798ad9687aa5aad39f'],
+    }),
+    ('bispdep', '1.0-2', {
+        'checksums': ['9ca4d48adec1926b8cac9303132a6c4205db1ee525f28cd9a2ab68f8085714b5'],
+    }),
+    ('svMisc', '1.4.3', {
+        'checksums': ['737cf33092eb4027884c3e5e7835fef74b7d97bd4051afeb072a40d5d760586a'],
+    }),
+    ('latex2exp', '0.9.8', {
+        'checksums': ['8dd641f263989515d0c327550934e4954dc582230ca2bb9f280b6b28a46510a5'],
+    }),
+]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['abind', 'base64', 'calibrate'],
+}
+
+moduleclass = 'lang'
