@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'rocminfo'
+version = '1.0.0'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/RadeonOpenCompute/rocminfo'
+description = """ROCm Application for Reporting System Info"""
+docurls = ['https://rocm.docs.amd.com/projects/rocminfo/']
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f"rocm-{_rocm_version}.tar.gz"]
+checksums = ['eabbe4bfb29152900bbde812c6fffd5555b45842259242d85f29e449c00f3249']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),  # Needed for 'rocm_agent_enumerator' which is a Python script
+    ('glog', '0.7.1'),
+]
+
+configopts = "-DCMAKE_EXE_LINKER_FLAGS='-Wl,--disable-new-dtags'"
+configopts += " -DROCRTST_BLD_TYPE=Release"
+configopts += " -DROCM_DIR=%(installdir)s"
+
+sanity_check_paths = {
+    'files': ['bin/rocminfo', 'bin/rocm_agent_enumerator'],
+    'dirs': [],
+}
+sanity_check_commands = [
+    # Requires having access to GPUs to work correctly.
+    # Otherwise will fail with 'ROCk module is NOT loaded, possibly no GPU devices'
+    # 'rocminfo --help',
+    'rocm_agent_enumerator'
+]
+
+moduleclass = 'tools'
