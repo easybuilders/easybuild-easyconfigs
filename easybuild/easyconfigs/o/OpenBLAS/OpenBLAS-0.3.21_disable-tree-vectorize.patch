@@ -1,0 +1,54 @@
+From 32566bfb44067e0c0459e94b53c9457613539eeb Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Thu, 13 Oct 2022 14:04:25 +0200
+Subject: [PATCH] Disable the gfortran tree vectorizer for netlib LAPACK
+
+---
+ cmake/lapack.cmake | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/cmake/lapack.cmake b/cmake/lapack.cmake
+index f8a27f5d4..3b221d420 100644
+--- a/cmake/lapack.cmake
++++ b/cmake/lapack.cmake
+@@ -999,6 +999,9 @@ endforeach ()
+ 
+ if (NOT C_LAPACK)
+   set_source_files_properties(${LA_SOURCES} PROPERTIES COMPILE_FLAGS "${LAPACK_FFLAGS}")
++  if (${F_COMPILER} STREQUAL "GFORTRAN")
++    set_source_files_properties(${LA_SOURCES} PROPERTIES COMPILE_FLAGS "${LAPACK_FFLAGS} -fno-tree-vectorize")
++  endif()
+ else ()
+   set_source_files_properties(${LA_SOURCES} PROPERTIES COMPILE_FLAGS "${LAPACK_CFLAGS}")
+ endif ()
+-- 
+2.25.1
+
+From 57809526c430ef0a07f5c5c39dce20c6d73a1f35 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Thu, 13 Oct 2022 09:12:23 +0200
+Subject: [PATCH] Disable the gfortran tree vectorizer for lapack-netlib
+
+---
+ Makefile | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/Makefile b/Makefile
+index 289f0eca5..56af9847e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -278,7 +278,11 @@ prof_lapack : lapack_prebuild
+ lapack_prebuild :
+ ifeq ($(NO_LAPACK), $(filter 0,$(NO_LAPACK)))
+ 	-@echo "FC          = $(FC)" > $(NETLIB_LAPACK_DIR)/make.inc
++ifeq ($(F_COMPILER), GFORTRAN)
++	-@echo "override FFLAGS      = $(LAPACK_FFLAGS) -fno-tree-vectorize" >> $(NETLIB_LAPACK_DIR)/make.inc
++else
+ 	-@echo "override FFLAGS      = $(LAPACK_FFLAGS)" >> $(NETLIB_LAPACK_DIR)/make.inc
++endif
+ 	-@echo "FFLAGS_DRV  = $(LAPACK_FFLAGS)" >> $(NETLIB_LAPACK_DIR)/make.inc
+ 	-@echo "POPTS       = $(LAPACK_FPFLAGS)" >> $(NETLIB_LAPACK_DIR)/make.inc
+ 	-@echo "FFLAGS_NOOPT       = -O0 $(LAPACK_NOOPT)" >> $(NETLIB_LAPACK_DIR)/make.inc
+-- 
+2.25.1
+

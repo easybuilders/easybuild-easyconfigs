@@ -1,5 +1,5 @@
 ##
-# Copyright 2012-2023 Ghent University
+# Copyright 2012-2025 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -44,7 +44,7 @@ from distutils.core import setup
 # recent setuptools versions will *TRANSFORM* something like 'X.Y.Zdev' into 'X.Y.Z.dev0', with a warning like
 #   UserWarning: Normalizing '2.4.0dev' to '2.4.0.dev0'
 # This causes problems further up the dependency chain...
-VERSION = '4.8.1.dev0'
+VERSION = '5.2.1.dev0'
 
 MAJ_VER = VERSION.split('.')[0]
 MAJMIN_VER = '.'.join(VERSION.split('.')[0:2])
@@ -65,10 +65,14 @@ def get_data_files():
     Return list of data files, i.e. easyconfigs, patches, etc.,
     and retain directory structure.
     """
-    data_files = []
-    for dirname, dirs, files in os.walk(os.path.join('easybuild', 'easyconfigs')):
-        if files:
-            data_files.append((dirname, [os.path.join(dirname, f) for f in files]))
+    data_dirs = [
+        os.path.join('easybuild', 'easyconfigs'),
+        os.path.join('contrib', 'easyconfig-templates'),
+    ]
+    data_files = [
+        (parent, [os.path.join(parent, file) for file in files])
+        for data_dir in data_dirs for parent, _, files in os.walk(data_dir) if files
+    ]
     return data_files
 
 
@@ -91,16 +95,16 @@ versions, etc.).""",
         "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
         "Intended Audience :: System Administrators",
-        "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
         "Operating System :: POSIX :: Linux",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Topic :: Software Development :: Build Tools",
     ],
     packages=[],
@@ -109,6 +113,9 @@ versions, etc.).""",
         "easybuild_framework(>=%s.0)" % MAJ_VER,
         "easybuild_easyblocks(>=%s)" % MAJMIN_VER,
     ],
+    extras_require={
+        "archive": ["easybuild-easyconfigs-archive>=%s" % MAJ_VER],
+    },
     # not known by distutils, but required to avoid that easy_install installs easyconfigs package as a zipped egg
     zip_safe=False,
 )

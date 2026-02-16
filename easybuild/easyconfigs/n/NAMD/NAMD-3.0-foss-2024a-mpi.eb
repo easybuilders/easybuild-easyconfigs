@@ -1,0 +1,38 @@
+name = 'NAMD'
+version = '3.0'
+versionsuffix = '-mpi'
+
+homepage = 'https://www.ks.uiuc.edu/Research/namd/'
+description = """NAMD is a parallel molecular dynamics code designed for high-performance simulation of
+ large biomolecular systems."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'usempi': True, 'openmp': False, 'pic': True}
+
+source_urls = [
+    'https://www.ks.uiuc.edu/Research/%(namelower)s/%(version)s/download/946183/',
+    'https://www.ks.uiuc.edu/Research/%(namelower)s/%(version)s/download/342056/',
+]
+sources = ['NAMD_%(version)s_Source.tar.gz']
+
+patches = ['NAMD-3.0_fix_hwloc_build.patch']
+
+checksums = [
+    '301c64f0f1db860f7336efdb26223ccf66b5ab42bfc9141df8d81ec1e20bf472',  # NAMD_3.0_Source.tar.gz
+    '03f7caa4027604e0483a9b149ebb5de310653a2aad99403faf3359ccc0015f02',  # NAMD-3.0_fix_hwloc_build.patch
+]
+
+# /bin/csh is required by 'config' script
+builddependencies = [
+    ('tcsh', '6.24.13'),
+    ('Autotools', '20231222'),
+]
+dependencies = [
+    ('Tcl', '8.6.14'),
+]
+
+# Hard to make charm build the mpi version with gcc on POWER, so we don't currently try
+charm_arch = 'mpi-linux-%(arch)s'
+charm_extra_cxxflags = '-fpermissive'
+
+moduleclass = 'chem'

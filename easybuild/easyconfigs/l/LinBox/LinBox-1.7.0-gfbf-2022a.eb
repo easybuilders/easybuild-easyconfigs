@@ -1,0 +1,38 @@
+# Copyright:: Copyright (c) 2016 Riccardo Murri <riccardo.murri@gmail.com>
+# License::   GPL
+
+easyblock = 'ConfigureMake'
+
+name = 'LinBox'
+version = '1.7.0'
+
+homepage = 'https://linalg.org/'
+description = "C++ library for exact, high-performance linear algebra"
+
+toolchain = {'name': 'gfbf', 'version': '2022a'}
+
+source_urls = ['https://github.com/linbox-team/linbox/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['6d2159fd395be0298362dd37f6c696676237bc8e2757341fbc46520e3b466bcc']
+
+dependencies = [
+    ('FFLAS-FFPACK', '2.5.0'),
+    ('FLINT', '2.9.0'),
+    ('IML', '1.0.5'),
+    ('NTL', '11.5.1'),
+]
+builddependencies = [('pkgconf', '1.8.0')]
+
+configopts = "--with-flint=$EBROOTFLINT "
+configopts += "--with-iml=$EBROOTIML --with-ntl=$EBROOTNTL "
+configopts += "--enable-shared "
+
+sanity_check_paths = {
+    'files': ['bin/linbox-config', 'include/linbox/linbox-config.h'] +
+             ['lib/liblinbox.%s' % e for e in ['a', SHLIB_EXT]],
+    'dirs': ['bin', 'include', 'lib'],
+}
+
+sanity_check_commands = ["linbox-config --help"]
+
+moduleclass = 'math'

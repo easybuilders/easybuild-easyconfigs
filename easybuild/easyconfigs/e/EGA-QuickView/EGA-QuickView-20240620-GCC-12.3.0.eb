@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'EGA-QuickView'
+version = '20240620'
+local_commit = 'fe2034d'
+
+homepage = 'https://github.com/EGA-archive/ega-quickview'
+description = """EGA-QuickView is a FUSE file system to access EGA files remotely."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+github_account = 'EGA-archive'
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': '%(name)s-%(version)s.tar.gz',
+}]
+checksums = ['90836e42009736a8e20a2569918638f3cb2b53574265ca4f4bed7abd81a5e887']
+
+builddependencies = [
+    ('make', '4.4.1'),
+    ('Autotools', '20220317'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('libsodium', '1.0.18'),
+    ('FUSE', '3.16.2'),
+    ('GLib', '2.77.1'),
+]
+
+preconfigopts = "autoreconf -i && "
+# fix Makefile to create /bin in installdir
+preinstallopts = "sed -i 's/install: $(TARGET)/install: $(TARGET) $(bindir)/' Makefile && "
+
+sanity_check_paths = {
+    'files': ['bin/ega-qv'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['ega-qv -h']
+
+moduleclass = 'tools'

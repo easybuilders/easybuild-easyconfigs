@@ -1,0 +1,38 @@
+easyblock = 'MakeCp'
+
+name = 'Philosopher'
+version = '5.0.0'
+
+homepage = 'https://philosopher.nesvilab.org/'
+description = """Philosopher is a fast, easy-to-use, scalable, and versatile
+ data analysis software for mass spectrometry-based proteomics. Philosopher
+ is dependency-free and can analyze both traditional database searches and
+ open searches for post-translational modification (PTM) discovery."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/Nesvilab/philosopher/archive/']
+sources = [{'download_filename': 'v%s.tar.gz' % version, 'filename': SOURCE_TAR_GZ}]
+checksums = ['0c6895c60c1c2543f7b0ad7f8baae4be39c9c519d6035c8fdd2ad8a2f83a99cc']
+
+builddependencies = [
+    ('Go', '1.21.2', '', SYSTEM),
+]
+
+prebuildopts = 'export CC="$CC" CFLAGS="$CFLAGS" && '
+# we want to make sure we get a static binary,
+# see also https://mt165.co.uk/blog/static-link-go
+buildopts = "deploy && export CGO_ENABLED=0 && make philosopher"
+
+files_to_copy = [
+    (['%(namelower)s'], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': []
+}
+
+sanity_check_commands = ['%(namelower)s --help']
+
+moduleclass = 'bio'

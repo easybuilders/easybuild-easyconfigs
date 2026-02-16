@@ -19,20 +19,19 @@ toolchain = SYSTEM
 
 source_urls = ['https://julialang-s3.julialang.org/bin/linux/x64/%(version_major_minor)s/']
 sources = ['%(namelower)s-%(version)s%(versionsuffix)s.tar.gz']
-checksums = ['a75244724f3b2de0e7249c861fbf64078257c16fb4203be78f1cf4dd5973ba95']
+patches = [('julia.wrapper', 'bin/')]
+checksums = [
+    {'julia-1.7.2-linux-x86_64.tar.gz': 'a75244724f3b2de0e7249c861fbf64078257c16fb4203be78f1cf4dd5973ba95'},
+    {'julia.wrapper': 'd10aeaff53cca9875f7b0ce9218eae3bd21870b654e26c4c52aa8bfcc9da702d'},
+]
+
+# install wrapper with linking safeguards for Julia libraries
+postinstallcmds = ["cd %(installdir)s/bin && mv julia julia.bin && mv julia.wrapper julia"]
 
 sanity_check_paths = {
-    'files': ['bin/julia', 'include/julia/julia.h', 'lib/libjulia.%s' % SHLIB_EXT],
-    'dirs': ['bin', 'etc', 'include', 'lib', 'share']
+    'files': ['bin/julia', 'bin/julia.bin', 'include/julia/julia.h', 'lib/libjulia.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'etc', 'include', 'lib', 'lib/julia', 'share']
 }
-
 sanity_check_commands = ['julia --help']
-
-modextravars = {
-    # Use default DEPOT_PATH where first entry is user's depot
-    # JULIA_DEPOT_PATH must be set to be able to load other JuliaPackage modules and have
-    # those installations appended to DEPOT_PATH without disabling any of the default paths
-    'JULIA_DEPOT_PATH': ':',
-}
 
 moduleclass = 'lang'

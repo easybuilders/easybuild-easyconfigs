@@ -1,0 +1,34 @@
+Casting negative floats to unsigned integers is undefined behavior so results vary between
+different invocations and platforms.
+This causes failures on e.g. PPC with test_comprehensive_byte in inductor/test_torchinductor_opinfo
+See https://github.com/pytorch/pytorch/issues/110077
+
+Fix by using `c10::convert` which handles that case.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/_inductor/codegen/cpp.py b/torch/_inductor/codegen/cpp.py
+index de6a32421c1..d16ae4cd91c 100644
+--- a/torch/_inductor/codegen/cpp.py
++++ b/torch/_inductor/codegen/cpp.py
+@@ -577,7 +577,7 @@ class CppOverrides(OpOverrides):
+     @staticmethod
+     def to_dtype(x, dtype):
+         assert dtype in DTYPE_TO_CPP, f"{dtype} missing from {__name__}.DTYPE_TO_CPP"
+-        return f"static_cast<{DTYPE_TO_CPP[dtype]}>({x})"
++        return f"c10::convert<{DTYPE_TO_CPP[dtype]}>({x})"
+ 
+     @staticmethod
+     def abs(x):
+diff --git a/torch/_inductor/codegen/cpp_prefix.h b/torch/_inductor/codegen/cpp_prefix.h
+index e0dba663144..9e17e481a89 100644
+--- a/torch/_inductor/codegen/cpp_prefix.h
++++ b/torch/_inductor/codegen/cpp_prefix.h
+@@ -12,6 +12,7 @@
+ #endif
+ #include <c10/util/BFloat16.h>
+ #include <c10/util/Half.h>
++#include <c10/util/TypeCast.h>
+ 
+ typedef at::Half half;
+ typedef at::BFloat16 bfloat16;

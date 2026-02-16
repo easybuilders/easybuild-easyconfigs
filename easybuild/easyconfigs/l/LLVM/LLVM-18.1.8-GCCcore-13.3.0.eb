@@ -1,0 +1,84 @@
+name = 'LLVM'
+version = '18.1.8'
+
+local_gcc_version = '13.3.0'
+
+homepage = "https://llvm.org/"
+description = """The LLVM Core libraries provide a modern source- and target-independent
+ optimizer, along with code generation support for many popular CPUs
+ (as well as some less common ones!) These libraries are built around a well
+ specified code representation known as the LLVM intermediate representation
+ ("LLVM IR"). The LLVM Core libraries are well documented, and it is
+ particularly easy to invent your own language (or port an existing compiler)
+ to use LLVM as an optimizer and code generator."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+toolchainopts = {
+    'pic': True,
+}
+
+source_urls = ['https://github.com/llvm/llvm-project/releases/download/llvmorg-%(version)s/']
+sources = [
+    'llvm-project-%(version)s.src.tar.xz',
+]
+patches = [
+    'LLVM-18.1.8_add-support-for-AVX512-SH-broadcast.patch',
+    'LLVM-18.1.8_envintest.patch',
+    'LLVM-18.1.8_libomptarget_tests.patch',
+    'LLVM-19.1.7_clang_rpathwrap_test.patch',
+]
+checksums = [
+    {'llvm-project-18.1.8.src.tar.xz': '0b58557a6d32ceee97c8d533a59b9212d87e0fc4d2833924eb6c611247db2f2a'},
+    {'LLVM-18.1.8_add-support-for-AVX512-SH-broadcast.patch':
+     '1fec664a54863f3c5afa06561781e545e66b46ecb1731e33abde76bf37cfd3b0'},
+    {'LLVM-18.1.8_envintest.patch': '8e25dfab8a29a860717b4bd2d8cdd0e795433766d7fffbda32d06a2bde47058d'},
+    {'LLVM-18.1.8_libomptarget_tests.patch': '858669446358d24936e2c85fa2bdc0b9e77427dc4a6f2aaa9c6d8e28638041c8'},
+    {'LLVM-19.1.7_clang_rpathwrap_test.patch': '5ee6a87ec8ff1c8b736ffe0513aa2098bd2b83a1ffc647a1ad2cf966f567e8a1'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Python', '3.12.3'),
+    ('CMake', '3.29.3'),
+    ('psutil', '6.0.0'),  # Needed to enable test timeout in lit
+    ('lit', '18.1.8'),
+    ('git', '2.45.1'),
+]
+
+dependencies = [
+    ('libffi', '3.4.5'),
+    ('libxml2', '2.12.7'),
+    ('ncurses', '6.5'),
+    ('zlib', '1.3.1'),
+    ('Z3', '4.13.0'),
+    ('zstd', '1.5.6'),
+]
+
+build_shared_libs = True
+
+minimal = False
+
+bootstrap = True
+full_llvm = False
+build_clang_extras = True
+build_runtimes = True
+build_lld = True
+build_lldb = True
+build_bolt = True
+build_openmp = True
+build_openmp_offload = True
+build_openmp_tools = True
+use_polly = True
+
+python_bindings = True
+
+# build_targets = ['all']
+# disable_werror = True
+
+skip_all_tests = False
+skip_sanitizer_tests = True
+test_suite_max_failed = 150  # Could increase depending on build targets
+test_suite_timeout_single = 5 * 60
+# test_suite_timeout_total = 10*3600
+
+moduleclass = 'compiler'

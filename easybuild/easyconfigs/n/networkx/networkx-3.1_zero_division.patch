@@ -1,0 +1,42 @@
+Fixes the zero division bug `ZeroDivisionError: division by zero`
+patch source: https://github.com/networkx/networkx/pull/6791
+
+From 6e47bef10ba7c17514b0cbd2ec27c1f58ca21200 Mon Sep 17 00:00:00 2001
+From: juanis2112 <juanitagomezr2112@gmail.com>
+Date: Sat, 15 Jul 2023 14:22:02 -0500
+Subject: [PATCH] Fix empty graph zero division error  for louvain
+
+---
+ networkx/algorithms/community/louvain.py            | 3 +++
+ networkx/algorithms/community/tests/test_louvain.py | 7 +++++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/networkx/algorithms/community/louvain.py b/networkx/algorithms/community/louvain.py
+index ca71c0c30cb..94a8f7c98b9 100644
+--- a/networkx/algorithms/community/louvain.py
++++ b/networkx/algorithms/community/louvain.py
+@@ -163,6 +163,9 @@ def louvain_partitions(
+     """
+ 
+     partition = [{u} for u in G.nodes()]
++    if nx.is_empty(G):
++        yield partition
++        return
+     mod = modularity(G, partition, resolution=resolution, weight=weight)
+     is_directed = G.is_directed()
+     if G.is_multigraph():
+diff --git a/networkx/algorithms/community/tests/test_louvain.py b/networkx/algorithms/community/tests/test_louvain.py
+index ed5c2a38db6..e4942dfeb58 100644
+--- a/networkx/algorithms/community/tests/test_louvain.py
++++ b/networkx/algorithms/community/tests/test_louvain.py
+@@ -185,3 +185,10 @@ def test_threshold():
+     mod2 = nx.community.modularity(G, partition2)
+ 
+     assert mod1 < mod2
++
++
++def test_empty_graph():
++    G = nx.Graph()
++    G.add_nodes_from(range(5))
++    expected = [{0}, {1}, {2}, {3}, {4}]
++    assert nx.community.louvain_communities(G) == expected

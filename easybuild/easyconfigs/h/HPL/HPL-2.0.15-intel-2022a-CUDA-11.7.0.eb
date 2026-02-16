@@ -1,0 +1,42 @@
+easyblock = 'MakeCp'
+
+name = 'HPL'
+local_patch_version = '15'
+version = '2.0.%s' % local_patch_version
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://www.netlib.org/benchmark/hpl/'
+description = """HPL is a software package that solves a (random) dense linear system in double precision (64 bits)
+ arithmetic on distributed-memory computers. It can thus be regarded as a portable as well as freely available
+ implementation of the High Performance Computing Linpack Benchmark."""
+
+toolchain = {'name': 'intel', 'version': '2022a'}
+toolchainopts = {'usempi': True}
+
+download_instructions = """Download CUDA Accelerated Linpack from
+https://developer.nvidia.com/computeworks-developer-exclusive-downloads"""
+sources = ['hpl-%%(version_major_minor)s_FERMI_v%s.tgz' % local_patch_version]
+# fix Make dependencies, so parallel build also works
+patches = ['HPL_parallel-make.patch']
+checksums = [
+    {'hpl-2.0_FERMI_v15.tgz': '16dd21af22fced613923a6cb09805d63952fc9c9f278cb7582061a43fe39a408'},
+    {'HPL_parallel-make.patch': '2a5bf9c4f328049828ddecec7ba3f05a9e25d236f4212747c53bd22fea80c5e6'},
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+]
+
+buildopts = "TOPdir=${PWD}"
+
+files_to_copy = [
+    (['bin/CUDA/HPL.dat', 'bin/CUDA/xhpl'], 'bin'),
+    (['src/cuda/libdgemm.so*'], 'lib'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/HPL.dat', 'bin/xhpl', 'lib/libdgemm.so'],
+    'dirs': [],
+}
+
+moduleclass = 'tools'

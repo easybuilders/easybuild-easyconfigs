@@ -1,0 +1,178 @@
+Use our libraries instead of the ones in git submodules
+Install libvcflib.a to lib directory instead of bin
+Author: Petr Král (INUITS)
+diff -u vcflib-1.0.9/CMakeLists.txt.orig vcflib-1.0.9/CMakeLists.txt
+--- vcflib-1.0.9/CMakeLists.txt.orig	2023-02-11 17:41:26.000000000 +0100
++++ vcflib-1.0.9/CMakeLists.txt	2023-08-17 13:59:24.793435374 +0200
+@@ -58,8 +58,8 @@
+ find_package(Threads)
+ set_package_properties(Threads PROPERTIES TYPE REQUIRED)
+ 
+-pkg_check_modules(HTSLIB htslib)   # Optionally builds from contrib/
+-pkg_check_modules(TABIXPP tabixpp) # Optionally builds from contrib/
++# pkg_check_modules(HTSLIB htslib)   # Optionally builds from contrib/
++# pkg_check_modules(TABIXPP tabixpp) # Optionally builds from contrib/
+ 
+ # ---- Build switches
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+@@ -109,25 +109,25 @@
+ # ---- Include files
+ 
+ include_directories(include)
+-include_directories(contrib/fastahack)
+-include_directories(contrib/intervaltree)
+-include_directories(contrib/smithwaterman)
+-include_directories(contrib/multichoose)
+-include_directories(contrib/filevercmp)
++# include_directories(contrib/fastahack)
++# include_directories(contrib/intervaltree)
++# include_directories(contrib/smithwaterman)
++# include_directories(contrib/multichoose)
++# include_directories(contrib/filevercmp)
+ include_directories(contrib/c-progress-bar)
+ 
+-if(NOT HTSLIB_FOUND)
+-  set(HTSLIB_LOCAL contrib/tabixpp/htslib)
+-  set(TABIX_FOUND OFF) # also build tabixpp if htslib is missing
+-endif()
+-
+-if (NOT TABIX_FOUND)
+-  set(TABIXPP_LOCAL contrib/tabixpp)
+-  include_directories(contrib/tabixpp)
+-  set(tabixpp_SOURCE
+-    contrib/tabixpp/tabix.cpp
+-  )
+-endif()
++# if(NOT HTSLIB_FOUND)
++#   set(HTSLIB_LOCAL contrib/tabixpp/htslib)
++#   set(TABIX_FOUND OFF) # also build tabixpp if htslib is missing
++# endif()
++#
++# if (NOT TABIX_FOUND)
++#   set(TABIXPP_LOCAL contrib/tabixpp)
++#   include_directories(contrib/tabixpp)
++#   set(tabixpp_SOURCE
++#     contrib/tabixpp/tabix.cpp
++#   )
++# endif()
+ 
+ if(WFA_GITMODULE)
+   set(WFA_LOCAL contrib/WFA2-lib)
+@@ -135,12 +135,12 @@
+ 
+ file(GLOB INCLUDES
+   src/*.h*
+-  contrib/multichoose/*.h*
+-  contrib/intervaltree/*.h*
+-  contrib/smithwaterman/*.h*
+-  contrib/fastahack/*.h*
+-  contrib/filevercmp/*.h*
+-  )
++  # contrib/multichoose/*.h*
++  # contrib/intervaltree/*.h*
++  # contrib/smithwaterman/*.h*
++  # contrib/fastahack/*.h*
++  # contrib/filevercmp/*.h*
++)
+ 
+ set(vcflib_SOURCE
+     src/vcf-c-api.cpp
+@@ -158,14 +158,14 @@
+     src/LeftAlign.cpp
+     src/cigar.cpp
+     src/allele.cpp
+-    contrib/fastahack/Fasta.cpp
+-    contrib/smithwaterman/SmithWatermanGotoh.cpp
+-    contrib/smithwaterman/Repeats.cpp
+-    contrib/smithwaterman/IndelAllele.cpp
+-    contrib/smithwaterman/disorder.cpp
+-    contrib/smithwaterman/LeftAlign.cpp
+-    contrib/fsom/fsom.c
+-    contrib/filevercmp/filevercmp.c
++    # contrib/fastahack/Fasta.cpp
++    # contrib/smithwaterman/SmithWatermanGotoh.cpp
++    # contrib/smithwaterman/Repeats.cpp
++    # contrib/smithwaterman/IndelAllele.cpp
++    # contrib/smithwaterman/disorder.cpp
++    # contrib/smithwaterman/LeftAlign.cpp
++    # contrib/fsom/fsom.c
++    # contrib/filevercmp/filevercmp.c
+     contrib/c-progress-bar/progress.c
+ )
+ 
+@@ -175,7 +175,7 @@
+ 
+ add_library(vcflib STATIC
+     ${vcflib_SOURCE}
+-    )
++)
+ 
+ set(BINS
+     vcfecho
+@@ -302,7 +302,7 @@
+     vcfsort
+     vcf_strip_extra_headers
+     vcfvarstats
+-    )
++)
+ 
+ # ---- Get version
+ 
+@@ -363,7 +363,7 @@
+   add_subdirectory(${WFA_LOCAL} EXCLUDE_FROM_ALL)
+   set(WFALIB wfa2) # pick up the wfa2 lib target from the included CMakeLists.txt
+ else(WFA_GITMODULE)
+-  set(WFA_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/wfa2lib)
++  # set(WFA_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/wfa2lib)
+   find_library(WFALIB wfa2 wfa) # distro search for shared lib
+   if(NOT WFALIB)
+     message(STATUS "ERROR: Can not find libfwa! Make sure it is installed or use the git submodule instead")
+@@ -403,7 +403,7 @@
+ 
+ set(vcflib_DEPS
+   CURL::libcurl
+-  )
++)
+ 
+ if (ZIG)
+   list(APPEND vcflib_DEPS ZIG-EXT)
+@@ -414,15 +414,18 @@
+ endif()
+ 
+ set(vcflib_LIBS
+-  ${HTSLIB_LIBRARIES}
+   ${CURL_LIBRARIES}
+   ${ZLIB_LIBRARIES}
+   ${LIBLZMA_LIBRARIES}
+   ${BZIP2_LIBRARIES}
+-  ${TABIXPP_LIBRARIES}
+   ${CMAKE_THREAD_LIBS_INIT}
+   ${WFA_LINK_LIBRARIES}
+-  ${HTSLIB_LINK_LIBRARIES}
++  hts
++  tabixpp
++  fastahack
++  sw
++  fsom
++  filevercmp
+ )
+ 
+ if (ZIG)
+@@ -510,7 +513,7 @@
+     NAME zigvcf
+     COMMAND zig build test
+     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/zig
+-    )
++  )
+ endfunction()
+ 
+   add_zigtest()
+@@ -576,7 +579,7 @@
+ 
+ # ---- Install
+ 
+-install(TARGETS vcflib ARCHIVE DESTINATION ${CMAKE_INSTALL_BINDIR})
++install(TARGETS vcflib ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ install(FILES ${INCLUDES} DESTINATION include)
+ 
