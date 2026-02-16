@@ -42,6 +42,12 @@ _jaxlib_buildopts += '--wheels=jaxlib '
 _jaxlib_buildopts += '--use_clang=false --gcc_path=$CC '
 # fix jaxlib version
 _jaxlib_buildopts += "--bazel_options='--action_env=JAXLIB_RELEASE' "
+# Workaround warning-turned-error in boringSSL, with -O3:
+# https://boringssl.googlesource.com/boringssl/+/5555991d3729d4231671214f0b9ba4858a5a8a81
+_jaxlib_buildopts += '--bazel_options="--copt=-Wno-dangling-pointer" '
+# False positive in boringSSL writing to a buffer
+_jaxlib_buildopts += '--bazel_options="--copt=-Wno-stringop-overflow" '
+
 
 components = [
     ('jaxlib', version, {
