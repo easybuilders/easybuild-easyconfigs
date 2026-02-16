@@ -1,0 +1,51 @@
+name = 'Trilinos'
+version = '16.2.0'
+
+homepage = 'https://trilinos.org'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = ['https://github.com/trilinos/Trilinos/archive/refs/tags/']
+sources = ['trilinos-release-%s.tar.gz' % '-'.join(version.split('.'))]
+checksums = ['543aa56232d7c0cbe73705fab2d3b5524f11b15fef8917aa14de02d23a5ca418']
+
+# patches = ['Trilinos-16.1.0_fix-missing-tuple.patch']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('SWIG', '4.3.1'),
+    ('Perl', '5.40.2'),
+]
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('Boost.Python', '1.88.0'),
+    ('Boost', '1.88.0'),
+    ('SCOTCH', '7.0.10'),
+    ('SuiteSparse', '7.11.0'),
+    ('METIS', '5.1.0'),
+    ('HDF5', '1.14.6'),
+    ('netCDF', '4.9.3'),
+    ('MATIO', '1.5.28'),
+    ('GLM', '1.0.1'),
+    ('ParMETIS', '4.0.3'),
+    ('X11', '20250608'),
+]
+
+forward_deps = False
+build_tests = False
+build_shared_libs = True
+
+configopts = '-DTrilinos_ENABLE_EXPLICIT_INSTANTIATION=ON '
+configopts += '-DKokkos_ENABLE_AGGRESSIVE_VECTORIZATION=ON '
+configopts += '-DTPL_SCALAPACK_LIBRARIES="-lscalapack" '
+# This seems to be needed so the correct compilers are being picked up as elst
+# /usr/bin/mpicc will be used
+configopts += '-DMPI_C_COMPILER=$(which mpicc) -DMPI_Fortran_COMPILER=$(which mpif90) '
+configopts += '-DMPI_EXEC=$(which mpiexec) -DMPI_CXX_COMPILER=$(which mpic++) '
+
+moduleclass = 'numlib'
