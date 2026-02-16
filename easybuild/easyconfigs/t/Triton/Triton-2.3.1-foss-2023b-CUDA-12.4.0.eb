@@ -33,7 +33,31 @@ dependencies = [
     ('zlib', '1.2.13'),
 ]
 
+local_arch = {"arm64": "sbsa", "aarch64": "sbsa"}.get(ARCH, ARCH)
+
 components = [
+    # Use same major.minor version as Triton, see this file using the right tag instead of 'main':
+    # https://github.com/triton-lang/triton/blob/main/cmake/nvidia-toolchain-version.json
+    # Check https://developer.download.nvidia.com/compute/cuda/redist for the latest version of redistrib_*.json.
+    # Generate checksums with:
+    #   wget -O- https://developer.download.nvidia.com/compute/cuda/redist/redistrib_12.3.0.json | \
+    #     jq -r '.cuda_nvcc | to_entries[] | select(.value | type=="object") | "'\
+    #     \''" + (.value.relative_path | split("/")[-1]) + "'\'': '\''" + .value.sha256 + "'\'',"'
+    ('CUDA-NVCC', '12.3.52', {
+        'easyblock': 'MakeCp',
+        'source_urls': [f'https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvcc/linux-{local_arch}'],
+        'sources': [f'cuda_nvcc-linux-{local_arch}-%(version)s-archive.tar.xz'],
+        'checksums': [{
+            'cuda_nvcc-linux-x86_64-12.3.52-archive.tar.xz':
+            '32302154a7ec122defdbb49f1c7cc8777f204c3199d9222f013046be256f72d6',
+            'cuda_nvcc-linux-ppc64le-12.3.52-archive.tar.xz':
+            'f7c647b74f2f85f5d9c42d951d810cb7130288b11d25ef7308fb489e1150232f',
+            'cuda_nvcc-linux-sbsa-12.3.52-archive.tar.xz':
+            '98940f1719b2ab1af943293601307b9e87ea71e30809d429fd7dc2e59b294c68',
+        }],
+        'skipsteps': ['build'],
+        'files_to_copy': [(['cuda_nvcc-linux*/bin/ptxas'], 'tools')],
+    }),
     # Hash from cmake/llvm-hash.txt
     ('LLVM', '5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372', {
         'easyblock': 'CMakeNinja',
@@ -68,7 +92,7 @@ components = [
 local_preinstallopts = ' '.join([
     'TRITON_BUILD_WITH_CLANG_LLD=0',
     "TRITON_HOME='%(builddir)s/triton_home'",
-    'TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas"',
+    'TRITON_PTXAS_PATH="%(installdir)s/tools/ptxas"',
     'TRITON_CUOBJDUMP_PATH="$CUDA_HOME/bin/cubjdump"',
     'TRITON_NVDISASM_PATH="$CUDA_HOME/bin/nvdisasm"',
     'LLVM_SYSPATH="%(builddir)s/llvm_build_dir"',
@@ -104,9 +128,12 @@ exts_list = [
     }),
 ]
 
+modextrapaths = {
+    'TRITON_PTXAS_PATH': 'tools/ptxas',
+}
 modextravars = {
-    'TRITON_PTXAS_PATH': '$CUDA_HOME/bin/ptxas',
-    # ensure that libdevice.10.bc from $EBROOTCUDA/nvvm/libdevice is used:
+    # Search for "_path_to_binary" in Triton sources
+    'TRITON_CUOBJDUMP_PATH': '$CUDA_HOME/bin/cubjdump',
     'TRITON_LIBDEVICE_PATH': '$CUDA_HOME/nvvm/libdevice/libdevice.10.bc'
 }
 moduleclass = 'devel'
