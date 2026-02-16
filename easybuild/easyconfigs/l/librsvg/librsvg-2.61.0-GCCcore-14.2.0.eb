@@ -1,0 +1,47 @@
+easyblock = 'MesonNinja'
+
+name = 'librsvg'
+version = '2.61.0'
+
+homepage = 'https://wiki.gnome.org/Projects/LibRsvg'
+description = "Librsvg is a library to render SVG files using cairo."
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ['https://download.gnome.org/sources/%(name)s/%(version_major_minor)s/']
+sources = [SOURCE_TAR_XZ]
+checksums = ['dbd0db40a1179a382fbb8cc930837671b973d722ba106a3dee2aad0fd858e2c4']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Meson', '1.6.1'),
+    ('Ninja', '1.12.1'),
+    ('pkgconf', '2.3.0'),
+    ('Rust', '1.85.1'),
+    ('cargo-c', '0.10.13'),
+]
+dependencies = [
+    ('cairo', '1.18.4'),
+    ('freetype', '2.13.3'),
+    ('Gdk-Pixbuf', '2.42.12'),
+    ('HarfBuzz', '11.2.1'),
+    ('Pango', '1.56.3'),
+    ('GObject-Introspection', '1.84.0'),
+]
+
+# disable the GDK-Pixbuf SVG loader (requires gdk-pixbuf-query-loaders)
+configopts = "-Dpixbuf-loader=disabled "
+# build both static and dynamic libraries
+configopts += "-Ddefault_library=both "
+
+sanity_check_paths = {
+    'files': ['bin/rsvg-convert', 'lib/%(name)s-%(version_major)s.a', f'lib/%(name)s-%(version_major)s.{SHLIB_EXT}',
+              'lib/pkgconfig/%(name)s-%(version_major)s.0.pc'],
+    'dirs': ['include/%(name)s-%(version_major)s.0/%(name)s', 'share'],
+}
+
+prebuildopts = 'CARGO_HOME=%(builddir)s/.cargohome '
+
+sanity_check_commands = ['rsvg-convert --help']
+
+moduleclass = 'lib'
