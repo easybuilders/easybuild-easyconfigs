@@ -1,0 +1,42 @@
+name = 'Extrae'
+version = '5.0.0'
+
+homepage = 'https://tools.bsc.es/extrae'
+description = """Extrae is the package devoted to generate Paraver trace-files for a post-mortem analysis.
+Extrae is a tool that uses different interposition mechanisms to inject probes into the target application
+so as to gather information regarding the application performance."""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'extra_cflags':
+                 # Extrae doesn't implement fixes for the stricter GCC 14.x handling of warnings
+                 '-Wno-incompatible-pointer-types -Wno-int-conversion -Wno-implicit-function-declaration'}
+
+source_urls = ['https://ftp.tools.bsc.es/%(namelower)s']
+sources = ['%(namelower)s-%(version)s-src.tar.bz2']
+checksums = ['dedaa8c92a1e2025ac4e68a9accd0dd8ebca2df14085c935dbb5743424008042']
+
+builddependencies = [
+    ('Autotools', '20250527'),
+]
+
+dependencies = [
+    ('Boost', '1.88.0'),
+    ('Dyninst', '13.0.0'),
+    # SIONlib support is broken in v5.0.0
+    # ('SIONlib', '1.7.7', '-tools'),
+    ('PAPI', '7.2.0'),
+    ('binutils', '2.44'),
+    ('elfutils', '0.193'),
+    ('libunwind', '1.8.2'),
+    ('libxml2', '2.14.3'),
+    ('tbb', '2022.2.0'),
+    ('zlib', '1.3.1'),
+]
+
+# Extrae expects `make install` before running the checks, yet, DESTDIR is broken.
+# Therefore, tests cannot be executed in a sensible manner. Even if it would,
+# tests for PAPI could still fail depending on the platform, since it is not checked
+# if checked metrics even work without Extrae.
+runtest = False
+
+moduleclass = 'perf'
