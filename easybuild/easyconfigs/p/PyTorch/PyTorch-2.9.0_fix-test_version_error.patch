@@ -1,0 +1,27 @@
+TestSaveLoad.test_version_error causes a failure due to TEMPDIR being set by EasyBuild:
+
+> Ran into the following error when deserializing: [enforce fail at inline_container.cc:332] . file in archive is not in a subdirectory tmpi40i4vmn/: easybuild-tmp/archive_version
+
+Fix the code to handle that, see https://github.com/pytorch/pytorch/pull/169936
+
+diff --git a/test/export/test_serialize.py b/test/export/test_serialize.py
+index faef9b455a0..e3a463014fb 100644
+--- a/test/export/test_serialize.py
++++ b/test/export/test_serialize.py
+@@ -7,6 +7,7 @@ with test_sym_bool)
+ import copy
+ import io
+ import math
++import os
+ import tempfile
+ import unittest
+ import zipfile
+@@ -1915,7 +1916,7 @@ class TestSaveLoad(TestCase):
+             with tempfile.NamedTemporaryFile(suffix=".pt2") as f:
+                 save(ep, f.name)
+                 f.seek(0)
+-                file_prefix = f.name.split("/")[2].split(".")[0]
++                file_prefix = os.path.splitext(os.path.basename(f.name))[0]
+ 
+                 # Create a new file and copy things over, but modify the
+                 # archive version
