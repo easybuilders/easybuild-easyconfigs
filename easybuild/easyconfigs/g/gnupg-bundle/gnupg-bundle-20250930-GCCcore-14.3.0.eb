@@ -1,0 +1,66 @@
+name = 'gnupg-bundle'
+version = '20250930'
+
+homepage = 'https://www.gnupg.org/software/index.html'
+description = """GnuPG — The Universal Crypto Engine"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+builddependencies = [('binutils', '2.44')]
+
+default_easyblock = 'ConfigureMake'
+
+default_component_specs = {
+    'source_urls': ['https://www.gnupg.org/ftp/gcrypt/%(name)s/'],
+    'sources': [SOURCE_TAR_BZ2],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('libgpg-error', '1.55', {  # 2025-04-24
+        'checksums': ['95b178148863f07d45df0cea67e880a79b9ef71f5d230baddc0071128516ef78'],
+    }),
+    ('libassuan', '3.0.2', {  # 2025-02-18
+        'checksums': ['d2931cdad266e633510f9970e1a2f346055e351bb19f9b78912475b8074c36f6'],
+    }),
+    ('libgcrypt', '1.11.2', {  # 2025-08-04
+        'checksums': ['6ba59dd192270e8c1d22ddb41a07d95dcdbc1f0fb02d03c4b54b235814330aac'],
+    }),
+    ('libksba', '1.6.7', {  # 2024-06-21
+        'checksums': ['cf72510b8ebb4eb6693eef765749d83677a03c79291a311040a5bfd79baab763'],
+    }),
+    ('npth', '1.8', {  # 2024-11-12
+        'checksums': ['8bd24b4f23a3065d6e5b26e98aba9ce783ea4fd781069c1b35d149694e90ca3e'],
+    }),
+    ('gnupg', '2.4.8', {  # 2025-05-14
+        'checksums': ['b58c80d79b04d3243ff49c1c3fc6b5f83138eb3784689563bcdd060595318616'],
+    }),
+    ('gpgme', '2.0.1', {  # 2025-09-23
+        'checksums': ['821ab0695c842eab51752a81980c92b0410c7eadd04103f791d5d2a526784966'],
+        # Building "tests/gpg" in gpgme needs launching a gpg-agent
+        # Runtime dir of gpg-agent goes to "/run/user/$(id -u)/gnupg" or fallbacks to $GNUPGHOME
+        # Falling back to $GNUPGHOME can cause trouble if it is longer than PATH_MAX bytes,
+        # by default $GNUPGHOME is the absolute path to "%(builddir)/gpgme-%(version)s/tests/gpg"
+        'prebuildopts': "mkdir ${TMPDIR:-/tmp}/eb_gnupghome &&",
+        'buildopts': "GNUPGHOME=${TMPDIR:-/tmp}/eb_gnupghome && rm -rf ${TMPDIR:-/tmp}/eb_gnupghome",
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/gpg',
+        'bin/gpg-agent',
+        'bin/gpg-error',
+        'bin/gpgconf',
+        'bin/gpgrt-config',
+        'include/gpg-error.h',
+        'include/gcrypt.h',
+        'include/gpgrt.h',
+        'include/gpgme.h',
+        'include/npth.h',
+        'include/assuan.h',
+    ],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'system'

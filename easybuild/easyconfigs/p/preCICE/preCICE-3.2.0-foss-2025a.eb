@@ -1,0 +1,63 @@
+easyblock = 'CMakeMake'
+
+name = 'preCICE'
+version = '3.2.0'
+
+homepage = 'https://www.precice.org/'
+description = """preCICE (Precise Code Interaction Coupling Environment)
+is a coupling library for partitioned multi-physics simulations,
+including, but not restricted to fluid-structure interaction and
+conjugate heat transfer simulations. Partitioned means that preCICE
+couples existing programs (solvers) capable of simulating a subpart of
+the complete physics involved in a simulation. This allows for the high
+flexibility that is needed to keep a decent time-to-solution for complex
+multi-physics scenarios."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/precice/precice/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['93523f1a56e0cfd338d8e190baa06129ee811acdb1c697468a3c85c516d63464']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('pkgconf', '2.3.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('Boost', '1.88.0'),
+    ('Eigen', '3.4.0'),
+    ('libxml2', '2.13.4'),
+    ('PETSc', '3.23.5'),
+    ('SciPy-bundle', '2025.06'),
+]
+
+build_shared_libs = True
+
+# Tell pkg-config to keep flags available in CPATH and others because it prevents CMake from finding PETSc correctly
+preconfigopts = 'PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1 '
+# Make sure MPI support is enabled
+configopts = '-DPRECICE_FEATURE_MPI_COMMUNICATION=ON '
+# Make sure PETSc support is enabled
+configopts += '-DPRECICE_FEATURE_PETSC_MAPPING=ON '
+# Make sure PythonActions support is enabled
+configopts += '-DPRECICE_FEATURE_PYTHON_ACTIONS=ON '
+# force Eigen include directory which is not found correctly otherwise
+configopts += '-DEIGEN3_INCLUDE_DIR="$EBROOTEIGEN/include"'
+
+# Run basic tests
+pretestopts = 'unset VIRTUAL_ENV &&'
+runtest = ' test_base'
+
+sanity_check_paths = {
+    'files': ['bin/precice-tools', 'bin/precice-profiling'] +
+             ['include/precice/%s' % x for x in ['export.h', 'preciceC.h', 'precice.hpp',
+                                                 'Tooling.hpp', 'Version.h', 'Participant.hpp',
+                                                 'preciceFortran.hpp', 'span.hpp', 'Types.hpp']] +
+             ['lib/libprecice.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'

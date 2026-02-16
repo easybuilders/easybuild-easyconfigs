@@ -1,0 +1,246 @@
+Fixes handling support for PAC and BTI on aarch64 and ensures that builds on
+systems where these features are disabled also run on those where these are
+enabled. For example, see issue https://gitlab.com/eessi/support/-/issues/197
+(reported for NVIDIA Grace in EESSI)
+The patch is based on the PR
+https://github.com/ruby/ruby/pull/10944
+Patch by Thomas Roeblitz (University of Bergen)
+diff --git a/configure.ac b/configure.ac
+index 9286946fc1..89e111bdd9 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -351,7 +351,7 @@ test -z "$warnflags" ||
+ AS_IF([test -z "${CFLAGS+set}"], [
+     cflags=`echo " $cflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
+     orig_cflags="$cflags"
+-    cflags="$cflags "'${optflags} ${debugflags} ${warnflags}'
++    cflags='${hardenflags} '"$cflags "'${optflags} ${debugflags} ${warnflags}'
+ ])
+ dnl AS_IF([test -z "${CXXFLAGS+set}"], [
+ dnl     cxxflags=`echo " $cxxflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
+@@ -799,7 +799,7 @@ AS_IF([test "$GCC" = yes], [
+ 		  [fortify_source=$enableval])
+     AS_IF([test "x$fortify_source" != xno], [
+         RUBY_TRY_CFLAGS([$optflags -D_FORTIFY_SOURCE=2],
+-                        [RUBY_APPEND_OPTION(XCFLAGS, -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2)], [],
++                        [RUBY_PREPEND_OPTION(hardenflags, -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2)], [],
+                         [@%:@include <stdio.h>])
+     ])
+ 
+@@ -820,7 +820,7 @@ AS_IF([test "$GCC" = yes], [
+     AC_MSG_CHECKING([for -fstack-protector])
+     AC_MSG_RESULT(["$stack_protector"])
+     AS_CASE(["$stack_protector"], [-*], [
+-	RUBY_APPEND_OPTION(XCFLAGS, $stack_protector)
++	RUBY_PREPEND_OPTION(hardenflags, $stack_protector)
+ 	RUBY_APPEND_OPTION(XLDFLAGS, $stack_protector)
+ 	RUBY_APPEND_OPTION(LDFLAGS, $stack_protector)
+     ])
+@@ -828,9 +828,16 @@ AS_IF([test "$GCC" = yes], [
+     # aarch64 branch protection
+     AS_CASE(["$target_cpu"], [aarch64], [
+ 	AS_FOR(option, opt, [-mbranch-protection=pac-ret -msign-return-address=all], [
+-            RUBY_TRY_CFLAGS(option, [branch_protection=yes], [branch_protection=no])
++            # Try these flags in the _prepended_ position - i.e. we want to try building a program
++            # with CFLAGS="-mbranch-protection=pac-ret $CFLAGS". If the builder has provided different
++            # branch protection flags in CFLAGS, we don't want to overwrite those. We just want to
++            # find some branch protection flags which work if none were provided.
++            RUBY_TRY_CFLAGS_PREPEND(option, [branch_protection=yes], [branch_protection=no])
+             AS_IF([test "x$branch_protection" = xyes], [
+-                RUBY_APPEND_OPTION(XCFLAGS, option)
++                # _prepend_ the options to CFLAGS, so that user-provided flags will overwrite them.
++                # These CFLAGS are used during the configure script to compile further test programs;
++                # however, $harden_flags is prepended separately to CFLAGS at the end of the script.
++                RUBY_PREPEND_OPTION(hardenflags, $opt)
+                 break
+             ])
+         ])
+@@ -979,6 +986,59 @@ test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $
+ test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
+ }
+ 
++# The lines above expand out the $cflags/$optflags/$debugflags/$hardenflags variables into the
++# CFLAGS variable. So, at this point, we have a $CFLAGS var with the actual compiler flags we're
++# going to use.
++# That means this is the right time to check what branch protection flags are going to be in use
++# and define appropriate macros for use in Context.S based on this
++AS_CASE(["$target_cpu"], [aarch64], [
++    AC_CACHE_CHECK([whether __ARM_FEATURE_BTI_DEFAULT is defined],
++        rb_cv_aarch64_bti_enabled,
++        AC_COMPILE_IFELSE(
++            [AC_LANG_PROGRAM([[
++                @%:@ifndef __ARM_FEATURE_BTI_DEFAULT
++                @%:@error "__ARM_FEATURE_BTI_DEFAULT not defined"
++                @%:@endif
++            ]])],
++        [rb_cv_aarch64_bti_enabled=yes],
++        [rb_cv_aarch64_bti_enabled=no])
++    )
++    AS_IF([test "$rb_cv_aarch64_bti_enabled" = yes],
++          AC_DEFINE(RUBY_AARCH64_BTI_ENABLED, 1))
++    AC_CACHE_CHECK([whether __ARM_FEATURE_PAC_DEFAULT is defined],
++        rb_cv_aarch64_pac_enabled,
++        AC_COMPILE_IFELSE(
++            [AC_LANG_PROGRAM([[
++                @%:@ifndef __ARM_FEATURE_PAC_DEFAULT
++                @%:@error "__ARM_FEATURE_PAC_DEFAULT not defined"
++                @%:@endif
++            ]])],
++        [rb_cv_aarch64_pac_enabled=yes],
++        [rb_cv_aarch64_pac_enabled=no])
++    )
++    AS_IF([test "$rb_cv_aarch64_pac_enabled" = yes],
++          AC_DEFINE(RUBY_AARCH64_PAC_ENABLED, 1))
++    # Context.S will only ever sign its return address with the A-key; it doesn't support
++    # the B-key at the moment.
++    AS_IF([test "$rb_cv_aarch64_pac_enabled" = yes], [
++        AC_CACHE_CHECK([whether __ARM_FEATURE_PAC_DEFAULT specifies the b-key bit 0x02],
++            rb_cv_aarch64_pac_b_key,
++            AC_COMPILE_IFELSE(
++                [AC_LANG_PROGRAM([[
++                    @%:@ifdef __ARM_FEATURE_PAC_DEFAULT
++                    @%:@if __ARM_FEATURE_PAC_DEFAULT & 0x02
++                    @%:@error "__ARM_FEATURE_PAC_DEFAULT specifies B key"
++                    @%:@endif
++                    @%:@endif
++                ]])],
++            [rb_cv_aarch64_pac_b_key=no],
++            [rb_cv_aarch64_pac_b_key=yes])
++        )
++        AS_IF([test "$rb_cv_aarch64_pac_b_key" = yes],
++            AC_MSG_ERROR(-mbranch-protection flag specified b-key but Ruby's Context.S does not support this yet.))
++    ])
++])
++
+ AC_CACHE_CHECK([whether compiler has statement and declarations in expressions],
+   rb_cv_have_stmt_and_decl_in_expr,
+   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]],[[ __extension__ ({ int a = 0; a; }); ]])],
+@@ -4198,12 +4258,13 @@ AS_IF([test "${ARCH_FLAG}"], [
+ rb_cv_warnflags=`echo "$rb_cv_warnflags" | sed 's/^ *//;s/ *$//'`
+ warnflags="$rb_cv_warnflags"
+ AC_SUBST(cppflags)dnl
+-AC_SUBST(cflags, ["${orig_cflags:+$orig_cflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
++AC_SUBST(cflags, ['${hardenflags} '"${orig_cflags:+$orig_cflags }"' ${optflags} ${debugflags} ${warnflags}'])dnl
+ AC_SUBST(cxxflags)dnl
+ AC_SUBST(optflags)dnl
+ AC_SUBST(debugflags)dnl
+ AC_SUBST(warnflags)dnl
+ AC_SUBST(strict_warnflags)dnl
++AC_SUBST(hardenflags)dnl
+ AC_SUBST(XCFLAGS)dnl
+ AC_SUBST(XLDFLAGS)dnl
+ AC_SUBST(EXTLDFLAGS)dnl
+@@ -4659,6 +4720,7 @@ config_summary "DLDFLAGS"            "$DLDFLAGS"
+ config_summary "optflags"            "$optflags"
+ config_summary "debugflags"          "$debugflags"
+ config_summary "warnflags"           "$warnflags"
++config_summary "hardenflags"         "$hardenflags"
+ config_summary "strip command"       "$STRIP"
+ config_summary "install doc"         "$DOCTARGETS"
+ config_summary "YJIT support"        "$YJIT_SUPPORT"
+diff --git a/coroutine/arm64/Context.S b/coroutine/arm64/Context.S
+index eeb0f774a3..ebf18d4a60 100644
+--- a/coroutine/arm64/Context.S
++++ b/coroutine/arm64/Context.S
+@@ -5,6 +5,8 @@
+ ##  Copyright, 2018, by Samuel Williams.
+ ##
+ 
++#include "ruby/config.h"
++
+ #define TOKEN_PASTE(x,y) x##y
+ #define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
+ 
+@@ -27,10 +29,10 @@
+ .global PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
+ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
+ 
+-#if defined(__ARM_FEATURE_PAC_DEFAULT) && (__ARM_FEATURE_PAC_DEFAULT != 0)
++#if defined(RUBY_AARCH64_PAC_ENABLED)
+ 	# paciasp (it also acts as BTI landing pad, so no need to insert BTI also)
+ 	hint #25
+-#elif defined(__ARM_FEATURE_BTI_DEFAULT) && (__ARM_FEATURE_BTI_DEFAULT != 0)
++#elif defined(RUBY_AARCH64_BTI_ENABLED)
+ 	# For the the case PAC is not enabled but BTI is.
+ 	# bti c
+ 	hint #34
+@@ -73,7 +75,7 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
+ 	# Pop stack frame
+ 	add sp, sp, 0xa0
+ 
+-#if defined(__ARM_FEATURE_PAC_DEFAULT) && (__ARM_FEATURE_PAC_DEFAULT != 0)
++#if defined(RUBY_AARCH64_PAC_ENABLED)
+ 	# autiasp: Authenticate x30 (LR) with SP and key A
+ 	hint #29
+ #endif
+@@ -85,18 +87,18 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
+ .section .note.GNU-stack,"",%progbits
+ #endif
+ 
+-#if __ARM_FEATURE_BTI_DEFAULT != 0 || __ARM_FEATURE_PAC_DEFAULT != 0
++#if defined(RUBY_AARCH64_BTI_ENABLED) || defined(RUBY_AARCH64_PAC_ENABLED)
+ /*  See "ELF for the Arm 64-bit Architecture (AArch64)"
+     https://github.com/ARM-software/abi-aa/blob/2023Q3/aaelf64/aaelf64.rst#program-property */
+ #  define GNU_PROPERTY_AARCH64_FEATURE_1_BTI (1<<0)
+ #  define GNU_PROPERTY_AARCH64_FEATURE_1_PAC (1<<1)
+ 
+-#  if __ARM_FEATURE_BTI_DEFAULT != 0
++#  if defined(RUBY_AARCH64_BTI_ENABLED)
+ #    define BTI_FLAG GNU_PROPERTY_AARCH64_FEATURE_1_BTI
+ #  else
+ #    define BTI_FLAG 0
+ #  endif
+-#  if __ARM_FEATURE_PAC_DEFAULT != 0
++#  if defined(RUBY_AARCH64_PAC_ENABLED)
+ #    define PAC_FLAG GNU_PROPERTY_AARCH64_FEATURE_1_PAC
+ #  else
+ #    define PAC_FLAG 0
+diff --git a/template/Makefile.in b/template/Makefile.in
+index 8c462f20fb..74d43a2863 100644
+--- a/template/Makefile.in
++++ b/template/Makefile.in
+@@ -89,6 +89,7 @@ cflags = @cflags@
+ optflags = @optflags@
+ debugflags = @debugflags@
+ warnflags = @warnflags@ @strict_warnflags@
++hardenflags = @hardenflags@
+ cppflags = @cppflags@
+ incflags = @incflags@
+ RUBY_DEVEL = @RUBY_DEVEL@ # "yes" or empty
+diff --git a/tool/m4/ruby_append_option.m4 b/tool/m4/ruby_append_option.m4
+index ff828d2162..98359fa1f9 100644
+--- a/tool/m4/ruby_append_option.m4
++++ b/tool/m4/ruby_append_option.m4
+@@ -3,3 +3,7 @@ AC_DEFUN([RUBY_APPEND_OPTION],
+ 	[# RUBY_APPEND_OPTION($1)
+ 	AS_CASE([" [$]{$1-} "],
+ 	[*" $2 "*], [], ['  '], [ $1="$2"], [ $1="[$]$1 $2"])])dnl
++AC_DEFUN([RUBY_PREPEND_OPTION],
++	[# RUBY_APPEND_OPTION($1)
++	AS_CASE([" [$]{$1-} "],
++	[*" $2 "*], [], ['  '], [ $1="$2"], [ $1="$2 [$]$1"])])dnl
+diff --git a/tool/m4/ruby_try_cflags.m4 b/tool/m4/ruby_try_cflags.m4
+index 672f4f8e51..89847c1b78 100644
+--- a/tool/m4/ruby_try_cflags.m4
++++ b/tool/m4/ruby_try_cflags.m4
+@@ -17,3 +17,20 @@ AC_DEFUN([RUBY_TRY_CFLAGS], [
+ 	AC_MSG_RESULT(no)])
+     ])
+ ])dnl
++
++AC_DEFUN([_RUBY_TRY_CFLAGS_PREPEND], [
++    RUBY_WERROR_FLAG([
++    CFLAGS="$1 [$]CFLAGS"
++    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[$4]], [[$5]])],
++	[$2], [$3])
++    ])dnl
++])dnl
++AC_DEFUN([RUBY_TRY_CFLAGS_PREPEND], [
++    AC_MSG_CHECKING([whether ]$1[ is accepted as CFLAGS])dnl
++    _RUBY_TRY_CFLAGS_PREPEND([$1],
++	[$2
++	AC_MSG_RESULT(yes)],
++	[$3
++	AC_MSG_RESULT(no)],
++	[$4], [$5])
++])dnl
