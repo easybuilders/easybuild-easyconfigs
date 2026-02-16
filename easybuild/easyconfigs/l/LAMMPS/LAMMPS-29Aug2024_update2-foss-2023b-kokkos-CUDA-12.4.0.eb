@@ -29,11 +29,16 @@ source_urls = [GITHUB_LOWER_SOURCE]
 sources = ['stable_%(version)s.tar.gz']
 patches = [
     'LAMMPS-2Aug2023_install_lammps_python_package_in_eb_software_module.patch',
+    'LAMMPS-2Aug2023_python_venv.patch',
+    'LAMMPS-2Aug2023_python_wheel_requirements.patch',
 ]
 checksums = [
     {'stable_29Aug2024_update2.tar.gz': 'f8ca3f021a819ced8658055f7750e235c51b4937ddb621cf1bd7bee08e0b6266'},
     {'LAMMPS-2Aug2023_install_lammps_python_package_in_eb_software_module.patch':
-     '723c944b62b9d28427d25e80a7a67049631702d344df49268a6846aa0cd0fe04'},
+     '314ab1064af74ddfcf4091dfe9f90fa32cfa4100e8d01fea7b59b019575a7c51'},
+    {'LAMMPS-2Aug2023_python_venv.patch': '87fd13b0c66f0886877885412ff13dfd092782e2237ba1fae157f803437828d6'},
+    {'LAMMPS-2Aug2023_python_wheel_requirements.patch':
+     'fa2b615d3cbab6f886e5aaee39cb46b5bf9a542291b919fe0b2f734ab79eeed0'},
 ]
 
 builddependencies = [
@@ -66,13 +71,10 @@ dependencies = [
     ('VTK', '9.3.0'),
     # We use a custom build of MDI
     ('MDI', '1.4.29'),
+    ('mpi4py', '3.1.5'),
+    ('tbb', '2021.13.0'),
+    ('ScaFaCoS', '1.0.4'),
 ]
-if ARCH == 'x86_64':
-    # TBB and ScaFaCos are an optional dependency when building on Intel arch
-    dependencies += [
-        ('tbb', '2021.13.0'),
-        ('ScaFaCoS', '1.0.4'),
-    ]
 
 # To use additional custom configuration options, use the 'configopts' easyconfig parameter
 # See docs and lammps easyblock for more information.
@@ -182,11 +184,9 @@ general_packages = [
 
 # Excluded packages due to requiring additional (non-trivial) deps
 # - ADIOS
-# - LATTE
 # - MESONT (requires very large files downloaded during build)
 # - ML-HDNNP (requires N2P2)
-# - ML-QUIP
-# - MSCG
+# - ML-QUIP (requires QUIP)
 # - QMMM (setup seems complex)
 
 # hardware-specific option
