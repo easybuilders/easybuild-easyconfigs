@@ -1,0 +1,40 @@
+easyblock = "Tarball"
+
+name = 'nvidia-hpc-benchmarks'
+version = '25.09.06'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://docs.nvidia.com/nvidia-hpc-benchmarks'
+description = """The NVIDIA HPC-Benchmarks collection provides four benchmarks (HPL, HPL-MxP, HPCG, and STREAM) widely
+used in the HPC community optimized for performance on NVIDIA accelerated HPC systems."""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+
+local_dirname = 'nvidia_hpc_benchmarks_openmpi-linux-%(cudaarch)s-%(version)s-archive'
+source_urls = ['https://developer.download.nvidia.com/compute/nvidia-hpc-benchmarks/redist/nvidia_hpc_benchmarks_openmpi/linux-x86_64/']
+sources = [{
+    'filename': f'{local_dirname}.tar.xz',
+    'extract_cmd': f'tar xvf %s {local_dirname}/cuda%(cudamajver)s --strip-components=1',
+}]
+
+checksums = [{
+    'nvidia_hpc_benchmarks_openmpi-linux-sbsa-%(version)s-archive.tar.xz':
+        'db1f5d7d3f32963c29365ebd745dc478419c07027cec09337a70309a52d4deaa',
+    'nvidia_hpc_benchmarks_openmpi-linux-x86_64-%(version)s-archive.tar.xz':
+        '2f24d1fc1d5952eedd865ad2f34c75f8e5117e451d83be6be33ad1182f588b55',
+}]
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('UCX-CUDA', '1.19.0', versionsuffix),
+    ('UCC-CUDA', '1.4.4', versionsuffix),
+]
+
+modextrapaths = {'PATH': '.'}
+
+sanity_check_paths = {
+    'files': ['hpcg.sh', 'hpl.sh', 'hpl-mxp.sh', 'stream-gpu-test.sh'],
+    'dirs': []
+}
+
+moduleclass = 'tools'
