@@ -1,0 +1,142 @@
+# Fix XML discovery
+# S.D. Pinches, P. Sawantdesai, ITER Organization, 2025
+diff -Nru -x .git IMAS-Core/CMakeLists.txt IMAS-Core2/CMakeLists.txt
+--- IMAS-Core/CMakeLists.txt	2025-12-03 16:55:40.178262000 +0100
++++ IMAS-Core2/CMakeLists.txt	2025-12-03 16:55:04.093325000 +0100
+@@ -133,7 +133,13 @@
+ set( EXE_FLAG  )
+ set( EXE_EXT  )
+ add_executable( imas_print_version ${EXE_FLAG} tests/imas_print_version.cpp )
+-target_link_libraries( imas_print_version PRIVATE al stdc++fs )
++target_link_libraries( imas_print_version PRIVATE al )
++if(NOT WIN32 AND NOT APPLE)
++  # stdc++fs is only needed on Linux with older GCC
++  # On macOS, filesystem is part of libc++
++  # On Windows, filesystem is part of the standard library
++  target_link_libraries( imas_print_version PRIVATE stdc++fs )
++endif()
+ add_dependencies( imas_print_version al )
+ 
+ # Install
+diff -Nru -x .git IMAS-Core/common/cmake/ALBuildDataDictionary.cmake IMAS-Core2/common/cmake/ALBuildDataDictionary.cmake
+--- IMAS-Core/common/cmake/ALBuildDataDictionary.cmake	2025-12-03 16:55:40.198459000 +0100
++++ IMAS-Core2/common/cmake/ALBuildDataDictionary.cmake	2025-12-03 16:55:04.095191000 +0100
+@@ -20,21 +20,44 @@
+ 
+ if( NOT AL_DOWNLOAD_DEPENDENCIES AND NOT AL_DEVELOPMENT_LAYOUT )
+   # The DD easybuild module should be loaded, use that module:
+-  if( "$ENV{IMAS_PREFIX}" STREQUAL "" OR "$ENV{IMAS_VERSION}" STREQUAL "" )
+-    message( FATAL_ERROR
+-      "Environment variables IMAS_PREFIX ('$ENV{IMAS_PREFIX}') or "
+-      "IMAS_VERSION ('$ENV{IMAS_VERSION}') not set."
++  # Use idsinfo idspath command to get the path to IDSDef.xml or data_dictionary.xml
++  execute_process(
++    COMMAND idsinfo idspath
++    OUTPUT_VARIABLE IDSDEF
++    OUTPUT_STRIP_TRAILING_WHITESPACE
++    RESULT_VARIABLE _IDSINFO_EXITCODE
++  )
++  
++  if( _IDSINFO_EXITCODE )
++    message( FATAL_ERROR 
++      "Failed to run 'idsinfo idspath' command. "
++      "Please ensure IMAS-Data-Dictionary module is loaded."
+     )
+   endif()
+-
+-  # Populate IDSDEF filename
+-  set( IDSDEF "$ENV{IMAS_PREFIX}/include/IDSDef.xml" )
++  
+   if( NOT EXISTS "${IDSDEF}" )
+-    message( FATAL_ERROR "Could not find IDSDef.xml at '${IDSDEF}'." )
++    message( FATAL_ERROR 
++      "idsinfo idspath returned '${IDSDEF}' but file does not exist. "
++      "Please ensure IMAS-Data-Dictionary module is properly loaded."
++    )
+   endif()
++  
++  message( STATUS "Found Data Dictionary: ${IDSDEF}" )
+ 
+-  # Populate identifier source xmls
+-  file( GLOB DD_IDENTIFIER_FILES "$ENV{IMAS_PREFIX}/include/*/*_identifier.xml" )
++  # Populate identifier source xmls based on the IDSDEF location 
++  get_filename_component( DD_BASE_DIR "${IDSDEF}" DIRECTORY )
++  
++  if( DD_BASE_DIR MATCHES "schemas$" )
++    # DD 4.1.0+ layout: resources/schemas/<ids_name>/*_identifier.xml
++    file( GLOB DD_IDENTIFIER_FILES "${DD_BASE_DIR}/*/*_identifier.xml" )
++  else()
++    # DD 3.x/4.0.0 layout: dd_x.y.z/include/<ids_name>/*_identifier.xml
++    file( GLOB DD_IDENTIFIER_FILES "${DD_BASE_DIR}/*/*_identifier.xml" )
++  endif()
++  
++  if( NOT DD_IDENTIFIER_FILES )
++    message( WARNING "No identifier XML files found in Data Dictionary at: ${IDSDEF}" )
++  endif()
+ else()
+   # Build the DD from source:
+   include(FetchContent)
+diff -Nru -x .git IMAS-Core/models/mdsplus/CMakeLists.txt IMAS-Core2/models/mdsplus/CMakeLists.txt
+--- IMAS-Core/models/mdsplus/CMakeLists.txt	2025-12-03 16:55:40.225071000 +0100
++++ IMAS-Core2/models/mdsplus/CMakeLists.txt	2025-12-03 16:55:04.096388000 +0100
+@@ -9,6 +9,10 @@
+ 
+ # Load common assets
+ ################################################################################
++# Set al-core_SOURCE_DIR to the root of the repository if not already set
++if( NOT DEFINED al-core_SOURCE_DIR )
++  set( al-core_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.." )
++endif()
+ add_subdirectory( "${CMAKE_CURRENT_SOURCE_DIR}/../../common" _common )
+ 
+ project( al-models-mdsplus )
+diff -Nru -x .git IMAS-Core/python/CMakeLists.txt IMAS-Core2/python/CMakeLists.txt
+--- IMAS-Core/python/CMakeLists.txt	2025-12-03 16:55:40.231694264 +0100
++++ IMAS-Core2/python/CMakeLists.txt	2025-12-03 16:55:04.097390366 +0100
+@@ -17,6 +17,27 @@
+ else()
+   set(LIBRARY_DIRS)
+ endif()
++
++# Build POST_EXCLUDE_REGEXES list based on platform
++set(POST_EXCLUDE_PATTERNS
++  ".*system32/.*\\.dll" # Windows system DLLs
++  "^/(lib|usr/lib|usr/local/lib)" # Unix system libraries
++  "iccifort/.*/lib/intel64/lib" # Redundant iccifort
++)
++
++# Add Linux-specific exclusions
++if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
++  list(APPEND POST_EXCLUDE_PATTERNS
++    ".*/imkl/.*/compiler/.*/linux/compiler/lib" # Intel MKL compiler libraries
++    ".*/intel-compilers/.*/compiler/.*/linux/compiler/lib" # Intel compilers libraries
++    "^libomp\\.so" # OpenMP libraries
++    "^libsvml\\.so" # Intel SVML math library
++    "^libirng\\.so" # Intel RNG library
++    "^libintlc\\.so" # Intel intlc library
++    "^libimf\\.so" # Intel IMF library (math functions)
++  )
++endif()
++
+ install(
+   TARGETS al
+   DESTINATION imas_core.libs
+@@ -25,16 +46,6 @@
+     PRE_EXCLUDE_REGEXES   
+       "api-ms-" # VC Redistibutable DLLs
+       "ext-ms-" # Windows extension DLLs
+-    POST_EXCLUDE_REGEXES 
+-      ".*system32/.*\\.dll" # Windows system DLLs
+-      "^/(lib|usr/lib|usr/local/lib)" # Unix system libraries
+-      "iccifort/.*/lib/intel64/lib" # Redundant iccifort
+-      ".*/imkl/.*/compiler/.*/linux/compiler/lib" # Intel MKL compiler libraries
+-      ".*/intel-compilers/.*/compiler/.*/linux/compiler/lib" # Intel compilers libraries
+-      "^libomp\\.so" # OpenMP libraries
+-      "^libsvml\\.so" # Intel SVML math library
+-      "^libirng\\.so" # Intel RNG library
+-      "^libintlc\\.so" # Intel intlc library
+-      "^libimf\\.so" # Intel IMF library (math functions)
++    POST_EXCLUDE_REGEXES ${POST_EXCLUDE_PATTERNS}
+ )
+ install(TARGETS _al_lowlevel al_defs DESTINATION imas_core)
+\ No newline at end of file

@@ -1,0 +1,55 @@
+easyblock = 'CMakeMake'
+
+name = 'IMAS-MDSplus-models'
+version = '5.5.2'
+local_dd_version = '4.1.0'
+versionsuffix = f'-DD-{local_dd_version}'
+github_account = 'iterorganization'
+
+description = 'IMAS MDSplus models'
+homepage = 'https://github.com/iterorganization/IMAS-Core'
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.27.6'),
+    ('MDSplus', '7.153.3'),
+    ('IMAS-Data-Dictionary', local_dd_version),
+]
+
+source_urls = ['https://github.com/%(github_account)s/IMAS-Core/archive']
+sources = [{'download_filename': '%s.tar.gz' % version, 'filename': SOURCE_TAR_GZ}]
+patches = ['imas-mdsplus-models-5.5.2_xml-discovery.patch']
+checksums = [
+    {'IMAS-MDSplus-models-5.5.2.tar.gz': '847b8c92b4d90014e78587f9ef0191456621badee864dad63377201e87c93e07'},
+    {'imas-mdsplus-models-5.5.2_xml-discovery.patch':
+     '7a847ef83c28d69940317f2ef50982d4c36c29dfaa3b020237eaf7de01d3874a'},
+]
+
+build_type = 'RelWithDebInfo'
+srcdir = 'models/mdsplus'
+configopts = (
+    # Don't download dependencies
+    '-D AL_DOWNLOAD_DEPENDENCIES=OFF '
+    # Enable MDSplus backend
+    '-D AL_BACKEND_MDSPLUS=ON '
+    '-D AL_BUILD_MDSPLUS_MODELS=ON '
+)
+
+sanity_check_paths = {
+    'dirs': ['models/mdsplus'],
+    'files': [],
+}
+
+modextrapaths = {
+    'IDS_PATH': 'models/mdsplus',
+}
+modextravars = {
+    'ids_path': '%(installdir)s/models/mdsplus',
+}
+
+moduleclass = 'tools'
+
+modluafooter = 'conflict("IMAS-AL-MDSplus-models")'
+modtclfooter = 'conflict IMAS-AL-MDSplus-models'
