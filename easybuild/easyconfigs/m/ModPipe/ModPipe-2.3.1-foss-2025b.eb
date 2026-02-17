@@ -3,6 +3,7 @@ easyblock = 'Bundle'
 name = 'ModPipe'
 version = '2.3.1'
 _modeller_version = '10.7'
+_blast_version = '2.2.26'
 
 homepage = 'https://salilab.org/modpipe'
 description = """
@@ -38,8 +39,9 @@ _modeller_install_cmd = 'cd %(builddir)s/%(namelower)s-%(version)s && '
 _modeller_install_cmd += f'MODINSTALL=%(builddir)s/modpipe-{version}/ext/mod ./Install'
 
 components = [
-    ('BLAST', '2.2.26', {
+    ('BLAST', _blast_version, {
         'easyblock': 'Tarball',
+        'install_type': 'subdir',
         'source_urls': ['https://ftp.ncbi.nlm.nih.gov/blast/executables/legacy.NOTSUPPORTED/%(version)s/'],
         'sources': ['%(namelower)s-%(version)s-x64-linux.tar.gz'],
         'checksums': ['8a2f986cf47f0f7cbdb3478c4fc7e25c7198941d2262264d0b6b86194b3d063d'],
@@ -64,13 +66,16 @@ components = [
         'use_pip': False,
         'skipsteps': ['install'],
         'prebuildopts': _mp_prebuildopts,
-        'buildcmd': '--with-blast=$EBROOTBLAST/bin --with-hhsuite=$EBROOTHHMINSUITE',
+        'buildcmd': f'--with-blast=%(installdir)s/blast-{_blast_version}/bin --with-hhsuite=$EBROOTHHMINSUITE',
         'checksums': ['a006f436305d5f582f9ce461c73f8f02e1eb6fd416705276373697715209a4a6'],
     })
 ]
 
 # paths in scripts are changed during the installation based on cwd
 buildininstalldir = True
+
+# cleanup duplicated blast dir
+postinstallcmds = ['rm -r %(installdir)s/blast']
 
 fix_perl_shebang_for = ['*.pl']
 fix_python_shebang_for = ['*.py']
