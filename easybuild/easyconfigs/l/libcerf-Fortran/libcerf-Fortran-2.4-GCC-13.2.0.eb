@@ -1,0 +1,41 @@
+easyblock = 'CmdCp'
+
+name = 'libcerf-Fortran'
+version = '2.4'
+
+homepage = 'https://jugit.fz-juelich.de/mlz/libcerf'
+description = '''
+ libcerf is a self-contained numeric library that provides an efficient and
+ accurate implementation of complex error functions, along with Dawson,
+ Faddeeva, and Voigt functions.
+'''
+
+toolchain = {'name': 'GCC', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://jugit.fz-juelich.de/mlz/libcerf/-/archive/v%(version)s/']
+sources = ['libcerf-v%(version)s.tar.gz']
+checksums = ['080b30ae564c3dabe3b89264522adaf5647ec754021572bee54929697b276cdc']
+
+dependencies = [
+    ('libcerf', version),
+]
+
+start_dir = 'fortran/ccerflib_f95_interface'
+cmds_map = [('.*', ' '.join([
+    '$FC $FFLAGS -c use_libcerf_mod.f90 &&'
+    '$FC -shared use_libcerf_mod.o -o libcerf-Fortran.so &&'
+    'ar rc use_libcerf_mod.a use_libcerf_mod.o'
+]))]
+
+files_to_copy = [
+    (['%(name)s.so', 'use_libcerf_mod.o', 'use_libcerf_mod.a'], 'lib'),
+    (['use_libcerf.mod'], 'include'),
+]
+
+sanity_check_paths = {
+    'files': ['include/use_libcerf.mod', 'lib/libcerf-Fortran.so', 'lib/use_libcerf_mod.a'],
+    'dirs': ['include']
+}
+
+moduleclass = 'math'
