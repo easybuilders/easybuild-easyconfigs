@@ -1,0 +1,68 @@
+Revert https://github.com/pytorch/pytorch/pull/161063
+
+The PR introduced changes required for the pybind11 3.x API which makes it incompatible with pybind11 2.x
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_cpu_cpp_wrapper.py b/test/inductor/test_cpu_cpp_wrapper.py
+index 47a8f3aa063..4b4daaef5c4 100644
+--- a/test/inductor/test_cpu_cpp_wrapper.py
++++ b/test/inductor/test_cpu_cpp_wrapper.py
+@@ -268,7 +268,7 @@ if RUN_CPU:
+             "test_multi_threading",
+             condition=not IS_WINDOWS,
+             # Two threads compile, so we expect the output code to be printed twice.
+-            code_string_count={"py::gil_scoped_release_simple release;": 2},
++            code_string_count={"py::gil_scoped_release release;": 2},
+         ),
+         BaseTest("test_profiler_mark_wrapper_call"),
+         BaseTest(
+diff --git a/torch/_inductor/codegen/cpp_wrapper_cpu.py b/torch/_inductor/codegen/cpp_wrapper_cpu.py
+index 83d1d061467..77f9c368ed3 100644
+--- a/torch/_inductor/codegen/cpp_wrapper_cpu.py
++++ b/torch/_inductor/codegen/cpp_wrapper_cpu.py
+@@ -585,7 +585,7 @@ class CppWrapperCpu(PythonWrapperCodegen):
+                     # Weights are promoted in the JIT mode
+                     num_args = len(V.graph.graph_inputs) + len(V.graph.constants)
+                     # release GIL to support multiple instances inference (in different threads of the same process)
+-                    self.prefix.splice("py::gil_scoped_release_simple release;")
++                    self.prefix.splice("py::gil_scoped_release release;")
+ 
+                 self.prefix.splice(
+                     f"""
+@@ -2310,7 +2310,7 @@ class CppWrapperCpu(PythonWrapperCodegen):
+ 
+         scoped_lines.writeline("{")
+         with scoped_lines.indent():
+-            scoped_lines.writeline("py::gil_scoped_acquire_simple acquire;")
++            scoped_lines.writeline("py::gil_scoped_acquire acquire;")
+             scoped_lines.writelines(lines_in_scope.split("\n"))
+         scoped_lines.writelines("}")
+         return scoped_lines._lines
+diff --git a/torch/_inductor/codegen/cpp_wrapper_cpu_array_ref.py b/torch/_inductor/codegen/cpp_wrapper_cpu_array_ref.py
+index 63c5bc2debe..fd145ece606 100644
+--- a/torch/_inductor/codegen/cpp_wrapper_cpu_array_ref.py
++++ b/torch/_inductor/codegen/cpp_wrapper_cpu_array_ref.py
+@@ -297,7 +297,7 @@ class CppWrapperCpuArrayRef(CppWrapperCpu):
+                         # Weights are promoted in the JIT mode
+                         num_args = len(V.graph.graph_inputs) + len(V.graph.constants)
+                         # release GIL to support multiple instances inference (in different threads of the same process)
+-                        self.prefix.splice("py::gil_scoped_release_simple release;")
++                        self.prefix.splice("py::gil_scoped_release release;")
+ 
+                     self.prefix.splice(
+                         f"""
+diff --git a/torch/csrc/inductor/cpp_wrapper/common.h b/torch/csrc/inductor/cpp_wrapper/common.h
+index a2eebfcc860..9d9ae16462c 100644
+--- a/torch/csrc/inductor/cpp_wrapper/common.h
++++ b/torch/csrc/inductor/cpp_wrapper/common.h
+@@ -6,7 +6,8 @@
+ #include <utility>
+ 
+ #include <Python.h>
+-#include <pybind11/gil_simple.h>
++#define PYBIND11_SIMPLE_GIL_MANAGEMENT
++#include <pybind11/gil.h>
+ 
+ // Include some often-used cpp_wrapper headers, for precompiling.
+ #include <c10/util/BFloat16.h>
