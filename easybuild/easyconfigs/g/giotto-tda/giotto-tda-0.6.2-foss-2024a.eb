@@ -32,28 +32,41 @@ default_component_specs = {
     'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
     'start_dir': '%(name)s-%(version)s',
 }
+_flagser_commit = '7ffe92782ae639b4265a52403d2d90d3151bb67b'
+_junction_commit = '5ad3be7ce1d3f16b9f7ed6065bbfeacd2d629a08'
+_turf_commit = '9ae0d4b984fa95ed5f823274b39c87ee742f6650'
+_hera_commit = '2c5e6c606ee37cd68bbe9f9915dba99f7677dd87'
+_gudhi_devel_commit = 'a265b030effa9b34a99a09b0e1b5073e8bb50cb6'
 components = [
-    ('flagser', '7ffe92782ae639b4265a52403d2d90d3151bb67b', {
+    ('flagser', _flagser_commit, {
         'easyblock': 'CMakeMake',
         'source_urls': ['https://github.com/luetge/flagser/archive/'],
-        'checksums': ['cec7012e8bf5490b3efca12a9d1be658375159091b7458ecb447b968c36723a8'],
+        'patches': [
+            'flagser-7ffe927_remove_custom_algs.patch',
+            'flagser-7ffe927_fix_includes.patch',
+        ],
+        'checksums': [
+            'cec7012e8bf5490b3efca12a9d1be658375159091b7458ecb447b968c36723a8',
+            '2cf2370c7041d1851efa0152933c4fb28794b57b5bc531d2b302cf291cd341a5',
+            'fea80e1b6515a96fb47df68bb45e000be6dcdbcde68aa8724bf53423fb6f62fd',
+        ],
     }),
-    ('junction', '5ad3be7ce1d3f16b9f7ed6065bbfeacd2d629a08', {
+    ('junction', _junction_commit, {
         'easyblock': 'PackedBinary',
         'source_urls': ['https://github.com/preshing/junction/archive/'],
         'checksums': ['1655d9756b1f7a52a090cc8cd82509105513c8ceb0059acc607a00921d217d32'],
     }),
-    ('turf', '9ae0d4b984fa95ed5f823274b39c87ee742f6650', {
+    ('turf', _turf_commit, {
         'easyblock': 'PackedBinary',
         'source_urls': ['https://github.com/preshing/turf/archive/'],
         'checksums': ['4f192a92d52c4d2f94b70ba83bfd3e6a31ddc50e23c94e40c358da2b4032d11c'],
     }),
-    ('hera', '2c5e6c606ee37cd68bbe9f9915dba99f7677dd87', {
+    ('hera', _hera_commit, {
         'easyblock': 'PackedBinary',
         'source_urls': ['https://github.com/anigmetov/hera/archive/'],
         'checksums': ['81ec8065587edac9ff5831f9a56a2deb0aaf1626c8358b1553df0e5029edd91f'],
     }),
-    ('gudhi-devel', 'a265b030effa9b34a99a09b0e1b5073e8bb50cb6', {
+    ('gudhi-devel', _gudhi_devel_commit, {
         'easyblock': 'PackedBinary',
         'source_urls': ['https://github.com/giotto-ai/gudhi-devel/archive/'],
         'checksums': ['61aec3fa7ecf7e121a32d621077fe261eb436b205954ad26b6f61027064f2cc9'],
@@ -66,8 +79,8 @@ exts_list = [
     ('pyflagser', '0.4.7', {
         'preinstallopts': (
             "sed -i 's| self.install_dependencies()||' setup.py && "
-            "sed -i '1 i\\#include <cstdint>' ../../flagser/include/definitions.h && "
-            "sed -i 's|flagser/src/|../../flagser/src/|' src/flagser*.cpp && "
+            "rmdir flagser && "
+            f"ln -s %(builddir)s/flagser-{_flagser_commit} flagser && "
             "sed -i 's|add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/pybind11)|find_package(pybind11 REQUIRED)|' "
             "CMakeLists.txt && "
         ),
@@ -82,9 +95,9 @@ exts_list = [
             "sed -i '1 i\\#include <cstdint>' gph/src/Flag_complex_edge_collapser.h && "
             "sed -i 's|add_subdirectory(${EXT_DIR}/pybind11)|find_package(pybind11 REQUIRED)|' "
             "CMakeLists.txt && "
-            "sed -i 's|add_subdirectory(${EXT_DIR}/junction)|add_subdirectory(../../junction junction)|' "
-            "CMakeLists.txt && "
-            "sed -i 's|add_subdirectory(${EXT_DIR}/turf)|add_subdirectory(../../turf turf)|' CMakeLists.txt && "
+            "rmdir gph/ext/junction gph/ext/turf && "
+            f"ln -s %(builddir)s/junction-{_junction_commit} gph/ext/junction && "
+            f"ln -s %(builddir)s/turf-{_turf_commit} gph/ext/turf && "
         ),
         'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
         'sources': ['v%(version)s.tar.gz'],
@@ -96,9 +109,9 @@ exts_list = [
             "sed -i 's| self.install_dependencies()||' setup.py && "
             "sed -i 's|add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/gtda/externals/pybind11)| "
             "find_package(pybind11 REQUIRED)|' CMakeLists.txt && "
-            "sed -i 's|set(HERA_DIR \"gtda/externals/hera\")|set(HERA_DIR \"%(builddir)s/hera\")|' CMakeLists.txt && "
-            "sed -i 's|set(GUDHI_SRC_DIR \"gtda/externals/gudhi-devel/src\")|"
-            "set(GUDHI_SRC_DIR \"%(builddir)s/gudhi-devel/src\")|' CMakeLists.txt && "
+            "rmdir gtda/externals/hera gtda/externals/gudhi-devel && "
+            f"ln -s %(builddir)s/hera-{_hera_commit} gtda/externals/hera && "
+            f"ln -s %(builddir)s/gudhi-devel-{_gudhi_devel_commit} gtda/externals/gudhi-devel && "
             "sed -i 's|scikit-learn ==|scikit-learn >=|' requirements.txt && "
         ),
         'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
