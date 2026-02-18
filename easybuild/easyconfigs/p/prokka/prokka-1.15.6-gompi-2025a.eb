@@ -1,0 +1,60 @@
+# EasyBuild easyconfig
+#
+# John Dey jfdey@fredhutch.org
+# Fred Hutchenson Cancer Research Center
+#
+# Updated: Pavel Grochal (INUITS)
+
+easyblock = 'Tarball'
+
+name = 'prokka'
+version = '1.15.6'
+
+homepage = 'https://www.vicbioinformatics.com/software.prokka.shtml'
+description = "Prokka is a software tool for the rapid annotation of prokaryotic genomes."
+
+toolchain = {'name': 'gompi', 'version': '2025a'}
+
+source_urls = ['https://github.com/tseemann/prokka/archive/']
+sources = ['v%(version)s.zip']
+patches = ['prokka-1.15.6_use-table2asn.patch']
+checksums = [
+    {'v1.15.6.zip': 'ce19753bac4ba6ade0b217e1c051a176340f442ed0efa54a4c6f8c2468c30485'},
+    {'prokka-1.15.6_use-table2asn.patch': '635619d61f44222655122642c4e865ae2a74a1b06f1c66c7bd98a356c17cf1a9'},
+]
+
+dependencies = [
+    ('BioPerl', '1.7.8'),
+    ('BLAST+', '2.17.0'),
+    ('Java', '21', '', SYSTEM),
+    ('Bio-SearchIO-hmmer', '1.7.3'),
+    ('HMMER', '3.4'),
+    ('Infernal', '1.1.5'),
+    ('ARAGORN', '1.2.41'),
+    ('barrnap', '0.9'),
+    ('MinCED', '0.4.2'),
+    ('prodigal', '2.6.3'),
+    ('parallel', '20250722'),
+    ('table2asn', '20250916'),
+]
+
+local_bin_files = ['prokka', 'prokka-cdd_to_hmm', 'prokka-genpept_to_fasta_db', 'prokka-tigrfams_to_hmm',
+                   'prokka-biocyc_to_fasta_db', 'prokka-clusters_to_hmm', 'prokka-hamap_to_hmm',
+                   'prokka-uniprot_to_fasta_db', 'prokka-build_kingdom_dbs', 'prokka-genbank_to_fasta_db',
+                   'prokka-make_tarball']
+
+postinstallcmds = ["%(installdir)s/bin/prokka --setupdb"]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bin_files] + ['db/cm/Bacteria', 'doc/ToDoList.txt'],
+    'dirs': ['bin', 'db',  'db/cm', 'db/genus', 'db/hmm', 'db/kingdom', 'doc'],
+}
+
+sanity_check_commands = [
+    "prokka --version",
+    "prokka --listdb",
+]
+
+modloadmsg = "prokka scripts are located in $EBROOTPROKKA/bin; databases are located in $EBROOTPROKKA/db\n"
+
+moduleclass = 'bio'

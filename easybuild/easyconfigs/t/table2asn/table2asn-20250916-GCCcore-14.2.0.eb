@@ -1,0 +1,50 @@
+easyblock = 'CmdCp'
+
+name = 'table2asn'
+version = '20250916'
+
+homepage = 'https://www.ncbi.nlm.nih.gov/genbank/table2asn/'
+description = """
+table2asn is a command-line program that creates sequence records for submission to GenBank.
+This is the successor to tbl2asn.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+builddependencies = [
+    ('binutils', '2.42'),
+    ('patchelf', '0.18.0'),
+]
+
+# libraries that are copied to installdir need to be patched to have an RPATH section
+# when EasyBuild is configured to use RPATH linking (required to pass RPATH sanity check);
+
+source_urls = [
+    'https://ftp.ncbi.nih.gov/toolbox/ncbi_tools/converters/versions/%s/all/' %
+    (version[:4] + '-' + version[4:6] + '-' + version[6:])
+]
+sources = [{
+    'download_filename': 'table2asn.linux64.gz',
+    'filename': '%(name)s-%(version)s%(versionsuffix)s.gz',
+}]
+checksums = ['785bed9880856b208ed84d9765ca094b7c7d12d2225781c2a1854b650d3984bf']
+
+cmds_map = [('.*', "cp %(name)s-%(version)s%(versionsuffix)s table2asn")]
+files_to_copy = [(['table2asn'], 'bin')]
+
+postinstallcmds = [
+    # "if %(rpath_enabled)s; then "
+    # "  patchelf --force-rpath --set-rpath %(installdir)s/lib %(installdir)s/bin/table2asn;"
+    # "fi",
+    "chmod +x %(installdir)s/bin/table2asn",
+]
+
+check_readelf_rpath = False
+
+sanity_check_paths = {
+    'files': ['bin/table2asn'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['table2asn -help']
+
+moduleclass = 'bio'
