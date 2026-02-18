@@ -10,11 +10,11 @@ toolchain = {'name': 'lompi', 'version': '2025b'}
 toolchainopts = {'pic': True, 'usempi': True}
 
 source_urls = ['https://github.com/Unidata/%(namelower)s-c/archive/']
-sources = [V_VERSION_TAR_GZ]
+sources = ['v%(version)s.tar.gz']
 patches = ['%(name)s-%(version_major_minor)s.0_skip-nasa-test.patch']
 checksums = [
-    {'v4.%(version_minor_patch)s.tar.gz': '990f46d49525d6ab5dc4249f8684c6deeaf54de6fec63a187e9fb382cc0ffdff'},
-    {'%(name)s-%(version_major_minor)s.0_skip-nasa-test.patch': '19d99e03c048b037dc01f03f5b8ddc910ebaceb076d0f050540d348f26dfcd2a'},
+    {'v4.9.3.tar.gz': '990f46d49525d6ab5dc4249f8684c6deeaf54de6fec63a187e9fb382cc0ffdff'},
+    {'netCDF-4.9.0_skip-nasa-test.patch': '19d99e03c048b037dc01f03f5b8ddc910ebaceb076d0f050540d348f26dfcd2a'},
 ]
 
 builddependencies = [
@@ -33,7 +33,16 @@ dependencies = [
 # disable Szip, zlib parallel I/O tests, since these can hang on some systems, e.g. generoso
 # see: https://github.com/easybuilders/easybuild-easyconfigs/pull/16834
 # and  https://github.com/easybuilders/easybuild-easyconfigs/pull/17107#issuecomment-1432947172
-preconfigopts = """sed -i -e 's|@MPIEXEC@ -n 4 ./tst_parallel5|echo "skipped by EasyBuild"|g' -e 's|@MPIEXEC@ -n 4 ./tst_parallel_zlib|echo "skipped by EasyBuild"|g' -e 's|@MPIEXEC@ -n 4 ./tst_parallel_compress|echo "skipped by EasyBuild"|g' -e '10,23d' %(builddir)s/%(namelower)s-c-%(version)s/nc_test4/run_par_test.sh.in &&"""
+preconfigopts = (
+    "sed -i"
+    " -e 's|@MPIEXEC@ -n 4 ./tst_parallel5|echo \"skipped by EasyBuild\"|g'"
+    " -e 's|@MPIEXEC@ -n 4 ./tst_parallel_zlib|echo \"skipped by EasyBuild\"|g'"
+    " -e 's|@MPIEXEC@ -n 4 ./tst_parallel_compress|echo \"skipped by EasyBuild\"|g'"
+    # disable check for H5 plugins
+    " -e '10,23d'"
+    " %(builddir)s/%(namelower)s-c-%(version)s/nc_test4/run_par_test.sh.in &&"
+)
+
 # make sure both static and shared libs are built
 # and disable "remote" tests that access a unreliable external test server over internet
 configopts = [
