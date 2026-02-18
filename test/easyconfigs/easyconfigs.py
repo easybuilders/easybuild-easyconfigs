@@ -1326,6 +1326,8 @@ class EasyConfigTest(TestCase):
             r'ReFrame.*',
         ]
 
+        pythonpackage_easyblocks = ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']
+
         failing_checks = []
 
         python_default_urls = PythonPackage.extra_options()['source_urls'][0]
@@ -1367,7 +1369,7 @@ class EasyConfigTest(TestCase):
 
             # use_pip should be set when using PythonPackage or PythonBundle,
             # or an easyblock that derives from it (except for whitelisted easyconfigs)
-            if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
+            if easyblock in pythonpackage_easyblocks:
                 if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("'use_pip' should be set in %s" % ec_fn)
 
@@ -1399,11 +1401,16 @@ class EasyConfigTest(TestCase):
                     msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
                     failing_checks.append(msg)
 
-            # require that running of "pip check" during sanity check is enabled via sanity_pip_check
-            if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
+            if easyblock in pythonpackage_easyblocks:
+                # require that running "pip check" during sanity check is enabled via sanity_pip_check
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
                     failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
+
+                # require that running "pip list" during sanity check is enabled via sanity_pip_list
+                sanity_pip_list = ec.get('sanity_pip_list') or exts_default_options.get('sanity_pip_list')
+                if not sanity_pip_list and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
+                    failing_checks.append("sanity_pip_list should be enabled in %s" % ec_fn)
             else:
                 # Make sure the user packages in $HOME/.local/lib/python*/ are ignored when running python commands
                 # For the EasyBlocks above this is handled automatically by setting $PYTHONNOUSERSITE
