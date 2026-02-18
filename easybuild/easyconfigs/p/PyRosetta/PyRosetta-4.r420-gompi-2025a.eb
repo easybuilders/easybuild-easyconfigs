@@ -1,0 +1,73 @@
+easyblock = 'Bundle'
+
+name = 'PyRosetta'
+version = '4.r420'
+local_release = '420'
+
+homepage = 'https://www.pyrosetta.org/'
+description = """
+PyRosetta is an interactive Python-based interface to the powerful Rosetta molecular modeling
+suite. It enables users to design their own custom molecular modeling algorithms using Rosetta
+sampling methods and energy functions.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2025a'}
+toolchainopts = {'usempi': True}
+
+builddependencies = [
+    ('binutils', '2.42'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+]
+
+# RosettaCommons stopped creating general linux releases and instead installs the Ubuntu release on
+# non-arm Linux systems.
+local_source_tmpl = (
+    '%(name)s%(version_major)s.Release.python%(pymajver)s%(pyminver)s.ubuntu.cxx11thread.'
+    f'serialization.release-{local_release}.tar.bz2'
+)
+local_source_urls = (
+    'https://graylab.jhu.edu/download/%(name)s%(version_major)s/archive/release/%(name)s'
+    '%(version_major)s.Release.python%(pymajver)s%(pyminver)s.ubuntu.cxx11thread.serialization/'
+)
+
+github_account = 'RosettaCommons'
+local_rosetta_ver = '3.15'
+
+components = [
+    (name, version, {
+        'easyblock': 'PythonPackage',
+        'sources': [{
+            'download_filename': local_source_tmpl,
+            'filename': 'PyRosetta%(version)s.tar.bz2',
+        }],
+        'source_urls': [local_source_urls],
+        'checksums':  ['54b216f05036b381a1209ad5f7f0d196b1dcf5241f7aa77afea192b10a6f675f'],
+        'start_dir': local_source_tmpl[:-8] + '/setup',
+    }),
+    # Include python scripts that are present in the (Py)Rosetta sources.
+    ('PyRosetta-Scripts', local_rosetta_ver, {
+        'easyblock': 'Tarball',
+        'install_type': 'subdir',
+        'sources': ['v%(version)s.tar.gz'],
+        'source_urls': ['https://github.com/%(github_account)s/rosetta/archive'],
+        'checksums': ['60909faa2c185e5704de7a8dac1a9ca67c3f82a4570cdecde29770e1117f937c'],
+        'start_dir': 'rosetta-%(version)s/source/scripts',
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': {
+        'paths': ['pyrosetta-scripts/' + x for x in ['python/public', 'PyRosetta/public', 'rosie']],
+        'delimiter': ':',
+    },
+}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['pyrosetta-scripts/' + x for x in ['python', 'PyRosetta', 'rosie']],
+}
+
+moduleclass = 'bio'
