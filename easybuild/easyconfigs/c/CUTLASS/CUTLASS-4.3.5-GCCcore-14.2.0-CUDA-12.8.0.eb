@@ -1,0 +1,56 @@
+easyblock = 'CMakeNinja'
+
+name = 'CUTLASS'
+version = '4.3.5'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/NVIDIA/cutlass'
+description = """CUTLASS is a collection of CUDA C++ template
+abstractions for implementing high-performance matrix-matrix
+multiplication (GEMM) and related computations at all levels and scales
+within CUDA. It incorporates strategies for hierarchical decomposition
+and data movement similar to those used to implement cuBLAS and cuDNN.
+CUTLASS decomposes these "moving parts" into reusable, modular software
+components abstracted by C++ template classes. Primitives for different
+levels of a conceptual parallelization hierarchy can be specialized and
+tuned via custom tiling sizes, data types, and other algorithmic policy.
+The resulting flexibility simplifies their use as building blocks within
+custom kernels and applications."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'cstd': 'c++20'}
+
+github_account = 'NVIDIA'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['73d8c3914a6049ff5c43b7dfb9d70f26e44dc9e10e36049db5a999b9faf6dbf0']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Ninja', '1.12.1'),
+    ('Python', '3.13.1'),
+]
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('cuDNN', '9.10.1.4', versionsuffix, SYSTEM),
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['6.0', '7.0', '7.5', '8.0', '8.6', '9.0']
+
+# fix C++ standard for nvcc
+preconfigopts = "sed -i 's/CUDA_STANDARD 17/CUDA_STANDARD 20/' ../%(namelower)s-%(version)s/CMakeLists.txt && "
+
+configopts = ' '.join([
+    '-DCUTLASS_NVCC_ARCHS="%(cuda_cc_cmake)s"',
+    '-DCUTLASS_ENABLE_CUBLAS=1',
+    '-DCUTLASS_ENABLE_CUDNN=1',
+])
+
+sanity_check_paths = {
+    'files': ['include/cutlass/cutlass.h', 'lib/libcutlass.%s' % SHLIB_EXT],
+    'dirs': ['lib/cmake'],
+}
+
+moduleclass = 'lib'
