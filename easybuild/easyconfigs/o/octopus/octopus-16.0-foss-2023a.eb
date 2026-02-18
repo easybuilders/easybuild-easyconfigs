@@ -1,0 +1,83 @@
+# Updated to 16.0
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeNinja'
+
+name = 'octopus'
+version = '16.0'
+
+homepage = 'https://octopus-code.org/wiki/Main_Page'
+description = """Octopus is a scientific program aimed at the ab initio
+virtual experimentation on a hopefully ever-increasing range of system
+types. Electrons are described quantum-mechanically within
+density-functional theory (DFT), in its time-dependent form (TDDFT) when
+doing simulations in time. Nuclei are described classically as point
+particles. Electron-nucleus interaction is described within the
+pseudopotential approximation."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = ['https://gitlab.com/octopus-code/octopus/-/archive/%(version)s']
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['b44067fc96d27891aab331df36ceebde8f7b628b1dca8a967ce9aec5e0543917']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Perl', '5.36.1'),
+    ('Ninja', '1.11.1'),
+    ('pkgconf', '1.9.5'),
+    ('Boost', '1.82.0'),
+    ('git', '2.41.0', '-nodocs'),
+]
+
+dependencies = [
+    ('libxc', '6.2.2'),
+    ('GSL', '2.7'),
+    ('netCDF', '4.9.2'),
+    ('netCDF-Fortran', '4.6.1'),
+    ('CGAL', '5.6'),
+    ('likwid', '5.2.2'),
+    ('DFTB+', '24.1'),
+    ('libvdwxc', '0.4.0'),
+    ('NLopt', '2.7.1'),
+    ('libyaml', '0.2.5'),
+    ('ELPA', '2023.05.001'),
+    ('ParMETIS', '4.0.3'),
+    ('GMP', '6.2.1'),
+    ('MPFR', '4.2.0'),
+    # ('BerkeleyGW', '3.0.1'),  # Problems with output/output.F90, keep disabled
+    ('libgd', '2.3.3'),
+    ('libpspio', '0.2.4'),
+    ('libetsf_io', '1.0.4'),
+]
+
+preconfigopts = 'export FCCPP=cpp FCFLAGS="$FCFLAGS -fallow-argument-mismatch" && '
+
+configopts = '-DOCTOPUS_MPI=ON -DOCTOPUS_SHARED_LIBS=ON -DOCTOPUS_ScaLAPACK=ON '
+configopts += '-DCMAKE_DISABLE_FIND_PACKAGE_METIS=OFF -DOCTOPUS_UNIT_TESTS=ON -DOCTOPUS_DEBUG=OFF '
+
+postinstallcmds = [
+    ('cp -a %(builddir)s/easybuild_obj/_deps/spglib-build/libsymspg.so* %(installdir)s/lib/ ; '),
+    ('cp -a %(builddir)s/easybuild_obj/_deps/spglib-build/fortran/libspglib_f08.so* %(installdir)s/lib/ ; '),
+]
+# postinstallcmds += [
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['oct-conductivity', 'oct-vibrational_spectrum',
+                                     'oct-oscillator-strength', 'oct-casida_spectrum', 'octopus']] +
+             ['include/liboct_parser.h', 'include/string_f.h'] +
+             ['lib/liboctopus.so', 'lib/liboct_parser.so'] +
+             ['share/octopus/pseudopotentials/PSF/T.psf'],
+    'dirs': [],
+}
+# Test-suite requires minimum number of cores
+pre_test_opts = "OMPI_MCA_rmaps_base_oversubscribe=1 "
+# We want to run the parallel tests too
+runtest = '-j 4 test'
+
+sanity_check_commands = [
+    'octopus --version',
+]
+
+moduleclass = 'phys'
