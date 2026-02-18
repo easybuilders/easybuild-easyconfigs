@@ -651,6 +651,8 @@ class EasyConfigTest(TestCase):
             # UShER requires tbb-2020.3 as newer versions will not build
             # orthagogue requires tbb-2020.3 as 2021 versions are not backward compatible with the previous releases
             'tbb': [('2020.3', ['UShER-0.5.0-', 'orthAgogue-20141105-'])],
+            # TensorFlow 2.15.1 depends on tensorboard 2.15.1
+            'tensorboard': [('2.15.1', ['TensorFlow-2.15.1-'])],
             'TensorFlow': [
                 # medaka 1.5.0 (foss/2021a) depends on TensorFlow >=2.5.2, <2.6.0
                 ('2.5.3;', ['medaka-1.5.0-']),
@@ -674,6 +676,8 @@ class EasyConfigTest(TestCase):
             'VTK': [('9.2.6;', ['Visit-3.4.1-'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
             'wxWidgets': [(r'3\.2\.0', [r'wxPython-4\.2\.0', r'GRASS-8\.2\.0', r'QGIS-3\.28\.1'])],
+            # allow hatch-* build tools to depend on whichever hatchling they wish (as they are just build deps)
+            'hatchling': [(r'.*', [r'hatch-.*'])]
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
