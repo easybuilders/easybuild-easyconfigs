@@ -1,4 +1,11 @@
-Allow encoder sample_fmt fallback (e.g. s16 -> fltp for libvorbis)
+Allow encoder sample_fmt fallback (e.g. s16 -> fltp for libvorbis):
+get_enc_fmt() fall back to the codec's first supported sample_fmt when the requested encoder_format isn't supported.
+This fixes OGG/Vorbis saves with FFmpeg+libvorbis where only fltp is accepted and s16 (or others) causes encoder open to fail.
+A TORCH_WARN_ONCE is emitted and the filter graph performs the conversion.
+Default behavior remains: prefer src_fmt if supported, else use the codec's first supported format.
+Errors without this patch:
+[libvorbis] Specified sample format s16 is not supported by the libvorbis encoder (supported: fltp)
+Error while opening encoder / Conversion failed
 Author: Pavel Tomanek (Inuits/Ugent)
 ------------------------------------------------------------------
 diff -Nru audio-2.6.0.p1/src/libtorio/ffmpeg/stream_writer/encode_process.cpp audio-2.6.0/src/libtorio/ffmpeg/stream_writer/encode_process.cpp
