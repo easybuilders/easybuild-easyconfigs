@@ -1,0 +1,48 @@
+name = 'CP2K'
+version = '2025.2'
+
+homepage = 'https://www.cp2k.org/'
+description = """CP2K is a freely available (GPL) program, written in Fortran 95, to perform atomistic and molecular
+ simulations of solid state, liquid, molecular and biological systems. It provides a general framework for different
+ methods such as e.g. density functional theory (DFT) using a mixed Gaussian and plane waves approach (GPW), and
+ classical pair and many-body potentials. """
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = ['https://github.com/%(namelower)s/%(namelower)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['c8392a4e123304644ec8d241443796277c6ed7ae977452317e779f3c387c2e19']
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+]
+
+dependencies = [
+    ('Libint', '2.11.1', '-lmax-6-cp2k'),
+    ('libxc', '7.0.0'),
+    ('libvori', '220621'),
+    ('FFTW', '3.3.10'),
+    ('HDF5', '1.14.6'),
+    ('PLUMED', '2.9.4'),
+    ('SIRIUS', '7.8.0'),
+]
+
+if ARCH == 'x86_64':
+    # LIBXSMM is not supported supported on ARM with GCC 12.2.0 and 12.3.0
+    # see https://www.cp2k.org/dev:compiler_support
+    dependencies += [
+        ('libxsmm', '1.17'),
+    ]
+
+type = 'psmp'
+
+# ignore_regtest_fails = True
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s.psmp'],
+    'dirs': ['data', 'tests'],
+}
+
+moduleclass = 'chem'
