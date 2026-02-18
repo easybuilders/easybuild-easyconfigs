@@ -1,0 +1,109 @@
+Make CUDA/ROCm/Ze plugins link against the existing ucs/ucm/uct libraries.
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -31,13 +31,13 @@ valgrind_libpath=""
+ AC_USE_SYSTEM_EXTENSIONS
+ AC_CONFIG_HEADERS([config.h])
+ 
+-AC_CHECK_PROG(GITBIN, git, yes)
+-AS_IF([test x"${GITBIN}" = x"yes"],
+-      [# remove preceding "refs/heads/" (11 characters) for symbolic ref
+-       AC_SUBST(SCM_BRANCH,  esyscmd([sh -c 'git symbolic-ref --quiet   HEAD | sed "s/^.\{11\}//"']))
+-       AC_SUBST(SCM_VERSION, esyscmd([sh -c 'git rev-parse    --short=7 HEAD']))],
+-      [AC_SUBST(SCM_BRANCH,  "<unknown>")
+-       AC_SUBST(SCM_VERSION, "0000000")])
++#AC_CHECK_PROG(GITBIN, git, yes)
++#AS_IF([test x"${GITBIN}" = x"yes"],
++#      [# remove preceding "refs/heads/" (11 characters) for symbolic ref
++#       AC_SUBST(SCM_BRANCH,  esyscmd([sh -c 'git symbolic-ref --quiet   HEAD | sed "s/^.\{11\}//"']))
++#       AC_SUBST(SCM_VERSION, esyscmd([sh -c 'git rev-parse    --short=7 HEAD']))],
++#      [AC_SUBST(SCM_BRANCH,  "<unknown>")
++#       AC_SUBST(SCM_VERSION, "0000000")])
+ 
+ AH_TOP([
+ #ifndef UCX_CONFIG_H
+diff --git a/src/ucm/cuda/Makefile.am b/src/ucm/cuda/Makefile.am
+index e8eda0f..31a6d54 100644
+--- a/src/ucm/cuda/Makefile.am
++++ b/src/ucm/cuda/Makefile.am
+@@ -9,7 +9,7 @@ if HAVE_CUDA
+ module_LTLIBRARIES      = libucm_cuda.la
+ libucm_cuda_la_CPPFLAGS = $(BASE_CPPFLAGS) $(CUDA_CPPFLAGS)
+ libucm_cuda_la_CFLAGS   = $(BASE_CFLAGS) $(CUDA_CFLAGS) $(LT_CFLAGS)
+-libucm_cuda_la_LIBADD   = ../libucm.la $(CUDA_LIBS) $(CUDART_LIBS)
++libucm_cuda_la_LIBADD   = -lucm $(CUDA_LIBS) $(CUDART_LIBS)
+ libucm_cuda_la_LDFLAGS  = $(UCM_MODULE_LDFLAGS) \
+                           $(patsubst %, -Xlinker %, $(CUDA_LDFLAGS)) \
+                           -version-info $(SOVERSION)
+diff --git a/src/ucm/rocm/Makefile.am b/src/ucm/rocm/Makefile.am
+index 57545b3..9c86ee3 100644
+--- a/src/ucm/rocm/Makefile.am
++++ b/src/ucm/rocm/Makefile.am
+@@ -10,7 +10,7 @@ if HAVE_ROCM
+ module_LTLIBRARIES      = libucm_rocm.la
+ libucm_rocm_la_CPPFLAGS = $(BASE_CPPFLAGS) $(ROCM_CPPFLAGS)
+ libucm_rocm_la_CFLAGS   = $(BASE_CFLAGS) $(ROCM_CFLAGS) $(LT_CFLAGS)
+-libucm_rocm_la_LIBADD   = ../libucm.la
++libucm_rocm_la_LIBADD   = -lucm
+ libucm_rocm_la_LDFLAGS  = $(UCM_MODULE_LDFLAGS) \
+                           $(ROCM_LDFLAGS) $(ROCM_LIBS) -version-info $(SOVERSION) \
+                           $(patsubst %, -Xlinker %, -L$(ROCM_ROOT)/lib -rpath $(ROCM_ROOT)/hip/lib -rpath $(ROCM_ROOT)/lib) \
+diff --git a/src/uct/cuda/Makefile.am b/src/uct/cuda/Makefile.am
+index 8c76de0..e804cc5 100644
+--- a/src/uct/cuda/Makefile.am
++++ b/src/uct/cuda/Makefile.am
+@@ -11,8 +11,8 @@ module_LTLIBRARIES      = libuct_cuda.la
+ libuct_cuda_la_CPPFLAGS = $(BASE_CPPFLAGS) $(CUDA_CPPFLAGS)
+ libuct_cuda_la_CFLAGS   = $(BASE_CFLAGS) $(CUDA_CFLAGS) $(LT_CFLAGS)
+ libuct_cuda_la_LDFLAGS  = $(CUDA_LDFLAGS) -version-info $(SOVERSION)
+-libuct_cuda_la_LIBADD   = $(top_builddir)/src/ucs/libucs.la \
+-                          $(top_builddir)/src/uct/libuct.la \
++libuct_cuda_la_LIBADD   = -lucs \
++                          -luct \
+                           $(CUDA_LIBS) $(NVML_LIBS)
+ 
+ noinst_HEADERS = \
+diff --git a/src/uct/cuda/gdr_copy/Makefile.am b/src/uct/cuda/gdr_copy/Makefile.am
+index 06ad3df..a1a9757 100644
+--- a/src/uct/cuda/gdr_copy/Makefile.am
++++ b/src/uct/cuda/gdr_copy/Makefile.am
+@@ -9,7 +9,7 @@ module_LTLIBRARIES              = libuct_cuda_gdrcopy.la
+ libuct_cuda_gdrcopy_la_CPPFLAGS = $(BASE_CPPFLAGS) $(GDR_COPY_CPPFLAGS)
+ libuct_cuda_gdrcopy_la_CFLAGS   = $(BASE_CFLAGS) $(LT_CFLAGS)
+ libuct_cuda_gdrcopy_la_LDFLAGS  = $(GDR_COPY_LDFLAGS) -version-info $(SOVERSION)
+-libuct_cuda_gdrcopy_la_LIBADD   = $(top_builddir)/src/ucs/libucs.la \
++libuct_cuda_gdrcopy_la_LIBADD   = -lucs \
+                                   $(top_builddir)/src/uct/cuda/libuct_cuda.la \
+                                   $(GDR_COPY_LIBS)
+ 
+diff --git a/src/uct/rocm/Makefile.am b/src/uct/rocm/Makefile.am
+index 310ca2e..5caf702 100644
+--- a/src/uct/rocm/Makefile.am
++++ b/src/uct/rocm/Makefile.am
+@@ -8,8 +8,8 @@ if HAVE_ROCM
+ module_LTLIBRARIES      = libuct_rocm.la
+ libuct_rocm_la_CPPFLAGS = $(BASE_CPPFLAGS) $(ROCM_CPPFLAGS)
+ libuct_rocm_la_CFLAGS   = $(BASE_CFLAGS) $(LT_CFLAGS)
+-libuct_rocm_la_LIBADD   = $(top_builddir)/src/ucs/libucs.la \
+-                          $(top_builddir)/src/uct/libuct.la
++libuct_rocm_la_LIBADD   = -lucs \
++                          -luct
+ libuct_rocm_la_LDFLAGS  = $(ROCM_LDFLAGS) $(ROCM_LIBS) -version-info $(SOVERSION) \
+                           $(patsubst %, -Xlinker %, -L$(ROCM_ROOT)/lib -rpath $(ROCM_ROOT)/hip/lib -rpath $(ROCM_ROOT)/lib) \
+                           $(patsubst %, -Xlinker %, --enable-new-dtags) \
+diff --git a/src/uct/ze/Makefile.am b/src/uct/ze/Makefile.am
+index c2ef39c..0993647 100644
+--- a/src/uct/ze/Makefile.am
++++ b/src/uct/ze/Makefile.am
+@@ -10,8 +10,8 @@ SUBDIRS = .
+ module_LTLIBRARIES    = libuct_ze.la
+ libuct_ze_la_CPPFLAGS = $(BASE_CPPFLAGS) $(ZE_CPPFLAGS)
+ libuct_ze_la_CFLAGS   = $(BASE_CFLAGS) $(LT_CFLAGS)
+-libuct_ze_la_LIBADD   = $(top_builddir)/src/ucs/libucs.la \
+-                          $(top_builddir)/src/uct/libuct.la
++libuct_ze_la_LIBADD   = -lucs \
++                        -luct
+ libuct_ze_la_LDFLAGS  = $(ZE_LDFLAGS) $(ZE_LIBS) -version-info $(SOVERSION) \
+                           $(patsubst %, -Xlinker %, -L$(ZE_ROOT)/lib -rpath $(ZE_ROOT)/hip/lib -rpath $(ZE_ROOT)/lib) \
+                           $(patsubst %, -Xlinker %, --enable-new-dtags) \

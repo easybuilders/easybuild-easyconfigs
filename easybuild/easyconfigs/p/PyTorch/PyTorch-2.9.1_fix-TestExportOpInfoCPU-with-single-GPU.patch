@@ -1,0 +1,20 @@
+Fixes a failure on systems with a single GPU.
+Error in `init_gpu_context` (fake_tensor.py:744):
+> E           torch.AcceleratorError: CUDA error: invalid device ordinal
+
+See: https://github.com/pytorch/pytorch/pull/164184
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/export/test_export_opinfo.py b/test/export/test_export_opinfo.py
+--- a/test/export/test_export_opinfo.py
++++ b/test/export/test_export_opinfo.py
+@@ -79,7 +79,7 @@ def _test_export_helper(self, dtype, op):
+     mode = FakeTensorMode(allow_non_fake_inputs=True)
+     converter = mode.fake_tensor_converter
+     # intentionally avoid cuda:0 to flush out some bugs
+-    target_device = "cuda:1"
++    target_device = "cuda:0"
+ 
+     def to_fake_device(x):
+         x = converter.from_real_tensor(mode, x)

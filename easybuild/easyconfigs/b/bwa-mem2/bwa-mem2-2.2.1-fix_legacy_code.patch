@@ -1,0 +1,75 @@
+Fix old legacy code that new compilers complains about
+
+Åke Sandgren, 20250317
+diff -ru bwa-mem2-2.2.1.orig/src/ksort.h bwa-mem2-2.2.1/src/ksort.h
+--- bwa-mem2-2.2.1.orig/src/ksort.h	2021-03-17 06:38:02.000000000 +0100
++++ bwa-mem2-2.2.1/src/ksort.h	2022-09-28 15:46:20.000000000 +0200
+@@ -75,7 +75,7 @@
+ 	int depth;
+ } ks_isort_stack_t;
+ 
+-#define KSORT_SWAP(type_t, a, b) { register type_t t=(a); (a)=(b); (b)=t; }
++#define KSORT_SWAP(type_t, a, b) { type_t t=(a); (a)=(b); (b)=t; }
+ 
+ #define KSORT_INIT(name, type_t, __sort_lt)								\
+ 	void ks_mergesort_##name(size_t n, type_t array[], type_t temp[])	\
+diff -ru bwa-mem2-2.2.1.orig/src/memcpy_bwamem.cpp bwa-mem2-2.2.1/src/memcpy_bwamem.cpp
+--- bwa-mem2-2.2.1.orig/src/memcpy_bwamem.cpp	2021-03-17 06:38:02.000000000 +0100
++++ bwa-mem2-2.2.1/src/memcpy_bwamem.cpp	2022-09-28 15:50:39.000000000 +0200
+@@ -29,7 +29,7 @@
+ 
+ #include "memcpy_bwamem.h"
+ 
+-errno_t memcpy_bwamem(void *dest, rsize_t dmax, const void *src, rsize_t smax, char *file_name, int line_num)
++errno_t memcpy_bwamem(void *dest, rsize_t dmax, const void *src, rsize_t smax, const char *file_name, int line_num)
+ {
+     errno_t ret;
+     int64_t bytes_copied;
+diff -ru bwa-mem2-2.2.1.orig/src/memcpy_bwamem.h bwa-mem2-2.2.1/src/memcpy_bwamem.h
+--- bwa-mem2-2.2.1.orig/src/memcpy_bwamem.h	2021-03-17 06:38:02.000000000 +0100
++++ bwa-mem2-2.2.1/src/memcpy_bwamem.h	2022-09-28 15:50:19.000000000 +0200
+@@ -40,6 +40,6 @@
+ }
+ #endif
+ 
+-errno_t memcpy_bwamem(void *dest, rsize_t dmax, const void *src, rsize_t smax, char *file_name, int line_num);
++errno_t memcpy_bwamem(void *dest, rsize_t dmax, const void *src, rsize_t smax, const char *file_name, int line_num);
+ 
+ #endif
+diff -ru bwa-mem2-2.2.1.orig/src/utils.h bwa-mem2-2.2.1/src/utils.h
+--- bwa-mem2-2.2.1.orig/src/utils.h	2021-03-17 06:38:02.000000000 +0100
++++ bwa-mem2-2.2.1/src/utils.h	2022-09-29 16:40:00.000000000 +0200
+@@ -32,6 +32,8 @@
+ #include <stdio.h>
+ #include <zlib.h>
+ 
++#include <x86intrin.h>
++
+ #ifdef __GNUC__
+ // Tell GCC to validate printf format string and args
+ #define ATTRIBUTE(list) __attribute__ (list)
+@@ -48,24 +50,6 @@
+ 
+ #define xassert(cond, msg) if ((cond) == 0) _err_fatal_simple_core(__func__, msg)
+ 
+-#if defined(__GNUC__) && !defined(__clang__)
+-#if defined(__i386__)
+-static inline unsigned long long __rdtsc(void)
+-{
+-    unsigned long long int x;
+-    __asm__ volatile (".byte 0x0f, 0x31" : "=A" (x));
+-    return x;
+-}
+-#elif defined(__x86_64__)
+-static inline unsigned long long __rdtsc(void)
+-{
+-    unsigned hi, lo;
+-    __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+-    return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
+-}
+-#endif
+-#endif
+-
+ typedef struct {
+ 	uint64_t x, y;
+ } pair64_t;

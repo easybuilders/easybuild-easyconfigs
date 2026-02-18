@@ -1,0 +1,20 @@
+commit 8839fc56214ff6154ae181fb8122989752f270b3
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Thu Mar 13 07:22:52 2025 +0100
+
+    Skip test_sdpa_nn_functional_scaled_dot_product_attention_cpu_half/bfloat16
+    It fails consistently on Rapids and Rome
+
+diff --git a/test/test_decomp.py b/test/test_decomp.py
+index 4361895e15a..d18c201c360 100644
+--- a/test/test_decomp.py
++++ b/test/test_decomp.py
+@@ -932,7 +932,7 @@ class DecompOneOffTests(TestCase):
+     @onlyCPU
+     @skipIfCrossRef
+     @skipOps('DecompOneOffTests', 'test_sdpa', [
+-        xfail("nn.functional.scaled_dot_product_attention", dtypes=[torch.half] + ([torch.bfloat16] if IS_MACOS else [])),
++        skip("nn.functional.scaled_dot_product_attention", dtypes=[torch.half, torch.bfloat16]),
+     ])
+     @ops(_sdpa_op_info)
+     def test_sdpa(self, device, dtype, op):
