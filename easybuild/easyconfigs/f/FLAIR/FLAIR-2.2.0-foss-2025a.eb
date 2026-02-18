@@ -1,0 +1,76 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+# Updated: John Dey (Fred Hutch), Emik Lin (HKUMed CPOS)
+
+easyblock = 'PythonBundle'
+
+name = 'FLAIR'
+version = '2.2.0'
+local_commit = '8f10068'
+
+homepage = 'https://github.com/BrooksLabUCSC/flair'
+description = """FLAIR (Full-Length Alternative Isoform analysis of RNA)
+for the correction, isoform definition, and alternative splicing analysis of noisy reads.
+FLAIR has primarily been used for nanopore cDNA, native RNA, and PacBio sequencing reads."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('poetry', '2.1.2'),
+    ('Cython', '3.1.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('R', '4.5.1'),  # provides ggplot2, qqman
+    ('SciPy-bundle', '2025.06'),  # provides numpy, pandas
+    ('rpy2', '3.6.4'),
+    ('tqdm', '4.67.1'),
+    ('SAMtools', '1.22.1'),
+    ('BEDTools', '2.31.1'),
+    ('pybedtools', '0.12.0'),
+    ('minimap2', '2.30'),
+    ('Pysam', '0.23.3'),
+    ('R-bundle-Bioconductor', '3.22', '-R-%(rver)s'),  # provides DESeq2, DRIMSeq, stageR
+    ('matplotlib', '3.10.3'),
+    ('Seaborn', '0.13.2'),
+    ('Kent_tools', '487'),  # required for bedPartition command
+]
+
+# newer setuptools is required for FLAIR-2.2.0
+exts_list = [
+    ('setuptools', '80.10.1', {
+        'checksums': ['bf2e513eb8144c3298a3bd28ab1a5edb739131ec5c22e045ff93cd7f5319703a'],
+    }),
+    ('mappy', '2.30', {
+        'checksums': ['a25448004558a28cb0d74fb1e55b6ffe9a78aa15dd6b2763630fbbabbaa97a27'],
+    }),
+    ('pipettor', '1.2.1', {
+        'checksums': ['5d92c3868a8f4c3c2c75801b0cc797863c476ef802e077416f322361a4b72f95'],
+    }),
+    ('ncls', '0.0.68', {
+        'checksums': ['81aaa5abb123bb21797ed2f8ef921e20222db14a3ecbc61ccf447532f2b7ba93'],
+    }),
+    (name, version, {
+        'modulename': 'flair',
+        'source_urls': ['https://github.com/BrooksLabUCSC/flair/archive/'],
+        'sources': [{'download_filename': "%s.tar.gz" % local_commit, 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'patches': ['FLAIR-2.2.0_python313.patch'],
+        'checksums': [
+            '3b5ebab781e1c4fc43e7d2f2670a2dd735b6050bdd5d22a98db789b32369fbff',  # FLAIR-2.2.0.tar.gz
+            '935d298ad80dc8893fc6813d0da7d9b927bf319a37932116e44db651c94a0e21',  # FLAIR-2.2.0_python313.patch
+        ],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages/%(namelower)s']}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+local_subcommands = ['align', 'correct', 'collapse', 'quantify']
+sanity_check_commands = ["%%(namelower)s %s --help" % c for c in local_subcommands] + ["%(namelower)s --version"]
+
+moduleclass = 'bio'
