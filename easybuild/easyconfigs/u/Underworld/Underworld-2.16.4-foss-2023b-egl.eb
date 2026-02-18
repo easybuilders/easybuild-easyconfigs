@@ -1,0 +1,84 @@
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'PythonBundle'
+
+name = 'Underworld'
+version = '2.16.4'
+versionsuffix = '-egl'
+
+homepage = 'https://www.underworldcode.'
+description = """
+Underworld is a Python API (Application Programming Interface) which provides
+functionality for the modelling of geodynamics processes, and is designed to
+work (almost) seamlessly across PC, cloud and HPC infrastructure. Primarily
+the API consists of a set of Python classes from which numerical geodynamics
+models may be constructed. The API also provides the tools required for inline
+analysis and data management. For scalability across multiprocessor platforms,
+MPI (Message Passing Interface) is leveraged, and for performant operation all
+heavy computations are executed within a statically typed layer.
+Note: This version does not come with badlands.
+"""
+
+citing = """
+Mansour, J., Giordani, J., Moresi, L., Beucher, R., Kaluza, O., Velic, M.,
+Farrington, R., Quenette, S., Beall, A., 2020, Underworld2:
+Python Geodynamics Modelling for Desktop, HPC and Cloud,
+Journal of Open Source Software, 5(47), 1797,
+https://doi.org/10.21105/joss.01797
+
+Beucher et al., (2019). UWGeodynamics: A teaching and research tool for
+numerical geodynamic modelling.
+Journal of Open Source Software, 4(36), 1136,
+https://doi.org/10.21105/joss.01136
+
+Zenodo: https://doi.org/10.5281/zenodo.1436039
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('Ninja', '1.11.1'),
+    ('SWIG', '4.1.1'),
+    ('pkgconf', '2.0.3'),
+    ('Xvfb', '21.1.9'),  # for virtual display during tests
+    ('hatchling', '1.18.0'),
+    ('pytest', '8.2.2'),  # required for testing, must be after hatchling to work
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('Python-bundle-PyPI', '2023.10'),
+    ('PETSc', '3.22.5'),
+    ('HDF5', '1.14.3'),
+    ('libxml2', '2.11.5'),
+    ('LavaVu', '1.9.9', '-egl'),  # more suited for graphical installations
+    ('h5py', '3.11.0'),
+    ('mpi4py', '3.1.5'),
+    ('Pint', '0.24'),
+]
+
+exts_list = [
+    ('nbmake', '1.5.5', {
+        'checksums': ['239dc868ea13a7c049746e2aba2c229bd0f6cdbc6bfa1d22f4c88638aa4c5f5c'],
+    }),
+    ('underworld', version, {
+        'patches': ['Underworld-2.16.4_ninja-job.patch'],
+        'preinstallopts': "export UNDERWORLD_BUILD_PARALLEL=%(parallel)s && ",
+        'source_urls': ['https://github.com/underworldcode/underworld2/archive'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': [
+            {'v2.16.4.tar.gz': '70b2ccadc4917b82cf64819956acf2a0c8b69fcb3117188e801ef435da2c2f28'},
+            {'Underworld-2.16.4_ninja-job.patch': 'e2bc7ce830b55ed88ff0ac58373b3b973e86a38f01809f54968ce4794c10bc1a'},
+        ],
+        'testinstall': True,
+        'runtest': 'xvfb-run pytest -vvv docs/pytests/tests.py '
+                   'docs/pytests/test_examples.py docs/pytests/test_user_guide.py '
+
+    }),
+]
+
+postinstallcmds = ['cp -R docs %(installdir)s/']
+
+moduleclass = 'geo'

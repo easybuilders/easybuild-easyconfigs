@@ -36,6 +36,14 @@ dependencies = [
 # build both static and dynamic libraries
 configopts = "-Ddefault_library=both "
 
+# If using a sysroot, Rust explicitly adds the sysroot lib path to the link
+# command which gives the sysroot libraries priority over things
+# in LIBRARY_PATH. The flag belows forces Rust to give higher priority to the
+# locations in LIBRARY_PATH (ensuring EasyBuild dependencies are preferred)
+prebuildopts = "export RUSTFLAGS=\"$(printf -- '-L native=%s ' $(echo $LIBRARY_PATH | tr ':' ' ')) $RUSTFLAGS\" && "
+# Don't let Rust write in our home directory
+prebuildopts += 'CARGO_HOME=%(builddir)s/.cargohome '
+
 modextrapaths = {
     'EB_GDK_PIXBUF_EXTRA_MODULE_FILES': 'lib/gdk-pixbuf-2.0/2.10.0/loaders.cache'
 }
