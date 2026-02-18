@@ -10,11 +10,7 @@ toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
 
 source_urls = ['https://download.gnome.org/sources/%(name)s/%(version_major_minor)s/']
 sources = [SOURCE_TAR_XZ]
-patches = ['%(name)s-%(version)s_gdk_pixbuf_loader.patch']
-checksums = [
-    {'librsvg-2.61.0.tar.xz': 'dbd0db40a1179a382fbb8cc930837671b973d722ba106a3dee2aad0fd858e2c4'},
-    {'librsvg-2.61.0_gdk_pixbuf_loader.patch': 'b87669e28092ea4cadd0da1cf82fa99d82474fd091d927220fcae15302f89b59'},
-]
+checksums = ['dbd0db40a1179a382fbb8cc930837671b973d722ba106a3dee2aad0fd858e2c4']
 
 builddependencies = [
     ('binutils', '2.44'),
@@ -33,20 +29,22 @@ dependencies = [
     ('GObject-Introspection', '1.84.0'),
 ]
 
+# disable the GDK-Pixbuf SVG loader (requires gdk-pixbuf-query-loaders)
+configopts = "-Dpixbuf-loader=disabled "
 # build both static and dynamic libraries
-configopts = "-Ddefault_library=both "
+configopts += "-Ddefault_library=both  "
 
-modextrapaths = {
-    'EB_GDK_PIXBUF_EXTRA_MODULE_FILES': 'lib/gdk-pixbuf-2.0/2.10.0/loaders.cache'
-}
+# If using a sysroot, Rust explicitly adds the sysroot lib path to the link
+# command which gives the sysroot libraries priority over things
+# in LIBRARY_PATH. The flag belows forces Rust to give higher priority to the
+# locations in LIBRARY_PATH (ensuring EasyBuild dependencies are preferred)
+prebuildopts = "export RUSTFLAGS=\"$(printf -- '-L native=%s ' $(echo $LIBRARY_PATH | tr ':' ' ')) $RUSTFLAGS\" && "
 
 sanity_check_paths = {
     'files': ['bin/rsvg-convert', 'lib/%(name)s-%(version_major)s.a', f'lib/%(name)s-%(version_major)s.{SHLIB_EXT}',
               'lib/pkgconfig/%(name)s-%(version_major)s.0.pc'],
     'dirs': ['include/%(name)s-%(version_major)s.0/%(name)s', 'share'],
 }
-
-prebuildopts = 'CARGO_HOME=%(builddir)s/.cargohome '
 
 sanity_check_commands = ['rsvg-convert --help']
 
