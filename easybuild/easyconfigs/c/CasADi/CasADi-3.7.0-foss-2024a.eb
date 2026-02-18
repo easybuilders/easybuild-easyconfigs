@@ -1,0 +1,63 @@
+easyblock = 'CMakeMake'
+
+name = 'CasADi'
+version = '3.7.0'
+
+homepage = 'http://casadi.org/'
+description = """CasADi is a symbolic framework for numeric optimization implementing automatic
+differentiation in forward and reverse modes on sparse matrix-valued
+computational graphs. It supports self-contained C-code generation and
+interfaces state-of-the-art codes such as SUNDIALS, IPOPT etc.
+
+This module of CasADi provides the following solvers:
+ * LP solvers: CLP, CBC
+ * NLP solver: Ipopt
+ * MILP / QP solver: HiGHS
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+github_account = 'casadi'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['946b1e5d4360715d5972ac4fcbc0e5375f934f412a670b402359ee2e1ea7bb3a']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('pkgconf', '2.2.0'),
+    ('SWIG', '4.2.1'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Clp', '1.17.10'),
+    ('Cbc', '2.10.12'),
+    ('Ipopt', '3.14.17'),
+    ('HiGHS', '1.11.0'),
+    ('zlib', '1.3.1'),
+]
+
+configopts = "-DWITH_LAPACK=ON "
+configopts += "-DWITH_ZLIB=ON "
+configopts += "-DWITH_CLP=ON "
+configopts += "-DWITH_CBC=ON "
+configopts += "-DWITH_IPOPT=ON "
+configopts += "-DWITH_HIGHS=ON "
+configopts += "-DWITH_PYTHON=ON -DPYTHON_PREFIX=%(installdir)s/python"
+
+sanity_check_paths = {
+    'files': ['bin/casadi-cli', f'lib/libcasadi.{SHLIB_EXT}', f'lib/libcasadi_conic_cbc.{SHLIB_EXT}',
+              f'lib/libcasadi_conic_clp.{SHLIB_EXT}', f'lib/libcasadi_conic_highs.{SHLIB_EXT}',
+              f'lib/libcasadi_nlpsol_ipopt.{SHLIB_EXT}'],
+    'dirs': ['include/casadi', 'lib/cmake', 'lib/pkgconfig', 'python/casadi'],
+}
+
+sanity_check_commands = [
+    'python -c "import casadi"',
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'python',
+}
+
+moduleclass = 'math'
