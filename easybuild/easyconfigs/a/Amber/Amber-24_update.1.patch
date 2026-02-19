@@ -1,0 +1,34 @@
+*******> update.1:
+ 
+Author: Daniel R. Roe 
+
+Date: June 3, 2024
+
+Programs: pmemd
+
+Description: Fix H-REMD hanging for PMEMD
+--------------------------------------------------------------------------------
+ src/pmemd/src/remd_exchg.F90 | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git src/pmemd/src/remd_exchg.F90 src/pmemd/src/remd_exchg.F90
+index 7f9f1a5..853be79 100644
+--- src/pmemd/src/remd_exchg.F90
++++ src/pmemd/src/remd_exchg.F90
+@@ -1000,7 +1000,15 @@ subroutine hamiltonian_exchange(atm_cnt, my_atm_lst, crd, vel, frc, &
+     end if
+ 
+     silent=(neighbor_rank .lt. 0)
+-    if (silent) i_do_exchg = .false.
++  endif ! master
++
++  ! Make sure non-master processes know about silent
++  call mpi_bcast(silent, 1, mpi_logical, 0, pmemd_comm, err_code_mpi)
++  if (silent) i_do_exchg = .false.
++  call mpi_bcast(i_do_exchg, 1, mpi_logical, 0, pmemd_comm, err_code_mpi)
++
++  ! Back to master-only stuff
++  if (master) then
+     
+     ! Exchange coordinates with your neighbor. crd_temp must be a backup since
+     ! the reciprocal space sum needs the global array to be updated with the new

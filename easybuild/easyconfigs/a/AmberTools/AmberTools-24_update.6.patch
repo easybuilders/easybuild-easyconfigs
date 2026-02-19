@@ -1,0 +1,2798 @@
+*******> update.6
+
+Author: Tim Giese
+
+Date: November 5, 2024
+
+Programs: nlopt
+
+Description: update nlopt to version 2.8; use installed version if it is found
+
+--------------------------------------------------------------------------------
+ AmberTools/src/nlopt/CITATION.bib                  | 215 +++++++++++++++++++++
+ AmberTools/src/nlopt/CMakeLists.txt                | 151 ++++++++-------
+ AmberTools/src/nlopt/NEWS.md                       |  27 +++
+ AmberTools/src/nlopt/cmake/FindGuile.cmake         |   4 +-
+ AmberTools/src/nlopt/cmake/FindNumPy.cmake         |  10 +-
+ .../TargetLinkLibrariesWithDynamicLookup.cmake     |   1 +
+ AmberTools/src/nlopt/cmake/generate-cpp.cmake      |   2 +-
+ AmberTools/src/nlopt/cmake/generate-fortran.cmake  |  10 +-
+ AmberTools/src/nlopt/doc/docs/Citing_NLopt.md      |   2 +-
+ AmberTools/src/nlopt/doc/docs/NLopt_Algorithms.md  |  13 +-
+ .../nlopt/doc/docs/NLopt_C-plus-plus_Reference.md  |  11 +-
+ .../doc/docs/NLopt_Deprecated_API_Reference.md     |   6 +-
+ AmberTools/src/nlopt/doc/docs/NLopt_FAQ.md         |   2 +-
+ .../src/nlopt/doc/docs/NLopt_Guile_Reference.md    |   2 +-
+ .../src/nlopt/doc/docs/NLopt_Installation.md       |   6 +-
+ .../src/nlopt/doc/docs/NLopt_Introduction.md       |   4 +-
+ .../src/nlopt/doc/docs/NLopt_Python_Reference.md   |   8 +-
+ AmberTools/src/nlopt/doc/docs/NLopt_Reference.md   |  13 +-
+ AmberTools/src/nlopt/doc/docs/NLopt_on_Windows.md  |   6 +-
+ AmberTools/src/nlopt/doc/docs/index.md             |   6 +-
+ AmberTools/src/nlopt/mkdocs.yml                    |   2 +-
+ AmberTools/src/nlopt/nlopt.pc.in                   |   7 +-
+ AmberTools/src/nlopt/nlopt_config.h.in             |   5 +-
+ .../src/nlopt/src/algs/ags/local_optimizer.cc      |   2 +-
+ AmberTools/src/nlopt/src/algs/ags/solver.cc        |   5 +-
+ AmberTools/src/nlopt/src/algs/bobyqa/README        |   2 +-
+ AmberTools/src/nlopt/src/algs/bobyqa/bobyqa.c      |   4 +-
+ AmberTools/src/nlopt/src/algs/direct/DIRect.c      |   6 +-
+ AmberTools/src/nlopt/src/algs/esch/esch.c          |   4 +-
+ AmberTools/src/nlopt/src/algs/esch/esch.h          |   2 +-
+ AmberTools/src/nlopt/src/algs/isres/README         |   2 +-
+ AmberTools/src/nlopt/src/algs/isres/isres.c        |   2 +-
+ AmberTools/src/nlopt/src/algs/luksan/mssubs.c      |   2 +-
+ AmberTools/src/nlopt/src/algs/mlsl/mlsl.c          |   2 +-
+ AmberTools/src/nlopt/src/algs/mma/ccsa_quadratic.c |  11 +-
+ AmberTools/src/nlopt/src/algs/mma/mma.c            |  11 +-
+ AmberTools/src/nlopt/src/algs/mma/mma.h            |   7 +-
+ AmberTools/src/nlopt/src/algs/neldermead/nldrmd.c  |   2 +-
+ AmberTools/src/nlopt/src/algs/newuoa/README        |   2 +-
+ AmberTools/src/nlopt/src/algs/newuoa/newuoa.c      |   2 +-
+ AmberTools/src/nlopt/src/algs/slsqp/README         |   4 +-
+ AmberTools/src/nlopt/src/algs/slsqp/slsqp.c        |   8 +-
+ AmberTools/src/nlopt/src/algs/stogo/local.cc       |   4 +-
+ AmberTools/src/nlopt/src/algs/stogo/stogo.cc       |   2 +
+ AmberTools/src/nlopt/src/api/general.c             |   6 +-
+ AmberTools/src/nlopt/src/api/nlopt-in.hpp          | 209 +++++++++++++-------
+ AmberTools/src/nlopt/src/api/nlopt-internal.h      |   2 +-
+ AmberTools/src/nlopt/src/api/optimize.c            |  65 +++++--
+ AmberTools/src/nlopt/src/api/options.c             |  14 +-
+ AmberTools/src/nlopt/src/octave/CMakeLists.txt     |   6 +-
+ AmberTools/src/nlopt/src/octave/NLOPT_GN_AGS.m     |   6 +
+ AmberTools/src/nlopt/src/swig/CMakeLists.txt       |  60 +++---
+ AmberTools/src/nlopt/src/swig/nlopt-python.i       |  29 ++-
+ AmberTools/src/nlopt/test/CMakeLists.txt           |  36 ++--
+ AmberTools/src/nlopt/test/cpp_functor.cxx          | 209 ++++++++++++++++++++
+ AmberTools/src/nlopt/test/t_octave.m               |  14 +-
+ AmberTools/src/nlopt/test/t_python.py              |   7 +-
+ AmberTools/src/nlopt/test/t_tutorial.cxx           |   4 +
+ AmberTools/src/nlopt/test/testopt.c                |   9 +-
+ cmake/3rdPartyTools.cmake                          |  30 +--
+ cmake/Findnlopt.cmake                              |  50 +++++
+ 61 files changed, 1021 insertions(+), 358 deletions(-)
+
+diff --git AmberTools/src/nlopt/CITATION.bib AmberTools/src/nlopt/CITATION.bib
+new file mode 100644
+index 0000000000..ea8177a6a4
+--- /dev/null
++++ AmberTools/src/nlopt/CITATION.bib
+@@ -0,0 +1,215 @@
++% the software:
++
++@misc{NLopt,
++  title = {The {NLopt} nonlinear-optimization package},
++  author = {Steven G. Johnson},
++  year = {2007},
++  howpublished = {\url{https://github.com/stevengj/nlopt}}
++}
++
++%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
++% optimization algorithms (cite as needed):
++
++@article{DIRECT,
++  title = {{L}ipschitzian optimization without the {L}ipschitz constant},
++  author = {D. R. Jones and C. D. Perttunen and B. E. Stuckman},
++  doi = {10.1007/bf00941892},
++  year = {1993},
++  volume = {79},
++  pages = {157--181},
++  journal = {Journal of Optimization Theory and Applications}
++}
++@article{DIRECT_L,
++  title = {A locally-biased form of the {DIRECT} algorithm},
++  author = {J. M. Gablonsky and C. T. Kelley},
++  doi = {10.1023/a:1017930332101},
++  year = {2001},
++  volume = {21},
++  pages = {27--37},
++  journal = {Journal of Global Optimization}
++}
++
++@article{CRS2,
++  title = {Some variants of the controlled random search algorithm for global optimization},
++  author = {P. Kaelo and M. M. Ali},
++  doi = {10.1007/s10957-006-9101-0},
++  year = {2006},
++  volume = {130},
++  pages = {253--264},
++  journal = {Journal of Optimization Theory and Applications}
++}
++
++@article{MLSL,
++  title = {Stochastic global optimization methods part {II}: Multi level methods},
++  author = {A. H. G. Rinnooy Kan and G. T. Timmer},
++  doi = {10.1007/bf02592071},
++  year = {1987},
++  volume = {39},
++  pages = {57--78},
++  journal = {Mathematical Programming}
++}
++
++@misc{StoGO,
++  title = {{StoGO}: A program for global optimization},
++  author = {K. Madsen and S. Zertchaninov and A. Zilinskas},
++  year = {1998},
++  howpublished = {\url{http://www.imm.dtu.dk/projects/scicomp/GlobOpt/opt.html}}
++}
++
++@book{AGS,
++  title = {Global Optimization with Non-Convex Constraints},
++  author = {Roman G. Strongin and Yaroslav D. Sergeyev},
++  doi = {10.1007/978-1-4615-4677-1},
++  year = {2000},
++  publisher = {Springer}
++}
++
++@article{ISRES,
++  title = {Search biases in constrained evolutionary optimization},
++  author = {T. P. Runarsson and X. Yao},
++  doi = {10.1109/tsmcc.2004.841906},
++  year = {2005},
++  volume = {35},
++  pages = {233--243},
++  journal = {{IEEE} Transactions on Systems, Man, and Cybernetics, Part C (Applications and Reviews)}
++}
++
++@article{ESCH,
++  title = {Designing novel photonic devices by bio-inspired computing},
++  author = {da Silva Santos, Carlos Henrique and Marcos Sergio Gon{\c{c}}alves and Hugo Enrique Hern{\'{a}}ndez-Figueroa},
++  doi = {10.1109/lpt.2010.2051222},
++  year = {2010},
++  volume = {22},
++  pages = {1177--1179},
++  journal = {{IEEE} Photonics Technology Letters}
++}
++
++@incollection{COBYLA,
++  title = {A direct search optimization method that models the objective and constraint functions by linear interpolation},
++  author = {M. J. D. Powell},
++  doi = {10.1007/978-94-015-8330-5_4},
++  year = {1994},
++  publisher = {Springer},
++  pages = {51--67},
++  editor = {S. Gomez and J.-P. Hennart},
++  series = {Mathematics and Its Applications},
++  volume = {275},
++  booktitle = {Advances in Optimization and Numerical Analysis}
++}
++
++@techreport{BOBYQA,
++  author      = {M. J. D. Powell},
++  title       = {The {BOBYQA} algorithm for bound constrained optimization without derivatives},
++  institution = {Department of Applied Mathematics and Theoretical Physics, Cambridge University},
++  year        = {2009},
++  number      = {NA2009/06},
++  address     = {Cambridge, UK}
++}
++
++@incollection{NEWUOA,
++  author = {M. J. D. Powell},
++  title = {The {NEWUOA} software for unconstrained optimization without derivatives},
++  doi = {10.1007/0-387-30065-1_16},
++  year = {2006},
++  publisher = {Springer},
++  pages = {255--297},
++  editor = {G. Di Pillo and M. Roma}
++  series = {Nonconvex Optimization and Its Applications},
++  volume = {83},
++  booktitle = {Large-Scale Nonlinear Optimization}
++}
++
++@Book{PRAXIS,
++  author    = {Richard Brent},
++  title     = {Algorithms for Minimization without Derivatives},
++  publisher = {Prentice-Hall},
++  year      = {1972},
++}
++
++@article{NELDERMEAD,
++  author = {J. A. Nelder and R. Mead},
++  title = {A simplex method for function minimization},
++  doi = {10.1093/comjnl/7.4.308},
++  year = {1965},
++  volume = {7},
++  pages = {308--313},
++  journal = {The Computer Journal}
++}
++
++@phdthesis{SUBPLEX,
++  author  = {Thomas Harvey Rowan},
++  title   = {Functional stability analysis of numerical algorithms},
++  school  = {Department of Computer Science, University of Texas at Austin},
++  year    = {1990},
++  address = {Austin, TX}
++}
++
++% CCSA: MMA and CCSAQ
++@article{CCSA,
++  author = {Krister Svanberg},
++  title = {A class of globally convergent optimization methods based on conservative convex separable approximations},
++  doi = {10.1137/s1052623499362822},
++  year = {2002},
++  volume = {12},
++  pages = {555--573},
++  journal = {{SIAM} Journal on Optimization}
++}
++
++@article{SLSQP,
++  author = {Dieter Kraft},
++  title = {Algorithm 733: {TOMP}--Fortran modules for optimal control calculations},
++  doi = {10.1145/192115.192124},
++  year = {1994},
++  volume = {20},
++  pages = {262--281},
++  journal = {{ACM} Transactions on Mathematical Software}
++}
++
++@article{LBFGS,
++  author = {Dong C. Liu and Jorge Nocedal},
++  title = {On the limited memory {BFGS} method for large scale optimization},
++  doi = {10.1007/bf01589116},
++  year = {1989},
++  volume = {45},
++  pages = {503--528},
++  journal = {Mathematical Programming}
++}
++
++@article{TNEWTON,
++  author = {Ron S. Dembo and Trond Steihaug},
++  title = {Truncated-{N}ewton algorithms for large-scale unconstrained optimization},
++  doi = {10.1007/bf02592055},
++  year = {1983},
++  volume = {26},
++  pages = {190--212},
++  journal = {Mathematical Programming}
++}
++
++@article{VAR,
++  author = {Jan Vl{\v{c}}ek and Ladislav Luk{\v{s}}an},
++  title = {Shifted limited-memory variable metric methods for large-scale unconstrained optimization},
++  doi = {10.1016/j.cam.2005.02.010},
++  year = {2006},
++  volume = {186},
++  pages = {365--390},
++  journal = {Journal of Computational and Applied Mathematics}
++}
++
++@article{AUGLAG,
++  author = {Andrew R. Conn and Nicholas I. M. Gould and Philippe Toint},
++  title = {A globally convergent augmented {Lagrangian} algorithm for optimization with general constraints and simple bounds},
++  doi = {10.1137/0728030},
++  year = {1991},
++  volume = {28},
++  pages = {545--572},
++  journal = {{SIAM} Journal on Numerical Analysis}
++}
++@article{AUGLAG2,
++  author = {E.G. Birgin and J.M. Mart{\'{\i}}nez},
++  title = {Improving ultimate convergence of an augmented {Lagrangian} method},
++  doi = {10.1080/10556780701577730},
++  year = {2008},
++  volume = {23},
++  pages = {177--195},
++  journal = {Optimization Methods and Software}
++}
+diff --git AmberTools/src/nlopt/CMakeLists.txt AmberTools/src/nlopt/CMakeLists.txt
+index fadecb8711..6b3dc79e79 100644
+--- AmberTools/src/nlopt/CMakeLists.txt
++++ AmberTools/src/nlopt/CMakeLists.txt
+@@ -12,46 +12,40 @@
+ # Benoit Scherrer, 2010 CRL, Harvard Medical School
+ # Copyright (c) 2008-2009 Children's Hospital Boston
+ #==============================================================================
+-cmake_minimum_required (VERSION 3.2)
+-#set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+-if(POLICY CMP0077)
+-  cmake_policy(SET CMP0077 NEW)
+-endif()
++cmake_minimum_required (VERSION 3.13)
+ 
+-if (NOT DEFINED CMAKE_BUILD_TYPE)
+-  set (CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
+-endif ()
++set (CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
+ 
+ project (nlopt)
+ 
+ #==============================================================================
+ # version
+ set (NLOPT_MAJOR_VERSION "2")
+-set (NLOPT_MINOR_VERSION "7")
+-set (NLOPT_BUGFIX_VERSION "1")
++set (NLOPT_MINOR_VERSION "8")
++set (NLOPT_BUGFIX_VERSION "0")
+ set (NLOPT_VERSION_STRING ${NLOPT_MAJOR_VERSION}.${NLOPT_MINOR_VERSION}.${NLOPT_BUGFIX_VERSION})
+ message (STATUS "NLopt version ${NLOPT_VERSION_STRING}")
+ 
+ # This is the ABI version number, which differes from the API version above
+ # (it indicates ABI compatibility), but they are typically incremented together.
+ set(SO_MAJOR 0)
+-set(SO_MINOR 11)
+-set(SO_PATCH 1)
++set(SO_MINOR 12)
++set(SO_PATCH 0)
+ #==============================================================================
+ 
+ list (APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+ 
+ option (NLOPT_CXX "enable cxx routines" ON)
+-option (NLOPT_FORTRAN "enable fortran tests" OFF)
++option (NLOPT_FORTRAN "enable fortran" OFF)
+ option (BUILD_SHARED_LIBS "Build NLopt as a shared library" ON)
+-option (NLOPT_PYTHON "build python bindings" ON)
+-option (NLOPT_OCTAVE "build octave bindings" ON)
+-option (NLOPT_MATLAB "build matlab bindings" ON)
+-option (NLOPT_GUILE "build guile bindings" ON)
+-option (NLOPT_SWIG "use SWIG to build bindings" ON)
++option (NLOPT_PYTHON "build python bindings" OFF)
++option (NLOPT_OCTAVE "build octave bindings" OFF)
++option (NLOPT_MATLAB "build matlab bindings" OFF)
++option (NLOPT_GUILE "build guile bindings" OFF)
++option (NLOPT_SWIG "use SWIG to build bindings" OFF)
+ 
+ if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+-  option (NLOPT_TESTS "build unit tests" ON)
++  option (NLOPT_TESTS "build unit tests" OFF)
+ else ()
+   option (NLOPT_TESTS "build unit tests" OFF)
+ endif ()
+@@ -80,8 +74,8 @@ foreach (p LIB BIN INCLUDE DATA CMAKE)
+ endforeach ()
+ 
+ 
+-set (CMAKE_INSTALL_RPATH ${INSTALL_LIB_DIR})
+-set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
++set (CMAKE_INSTALL_RPATH ${INSTALL_LIB_DIR} CACHE PATH "rpath")
++set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE CACHE BOOL "use link path")
+ if(POLICY CMP0042)
+   # Set MACOSX_RPATH to ON
+   cmake_policy(SET CMP0042 NEW)
+@@ -96,6 +90,7 @@ include (CheckFunctionExists)
+ include (CheckTypeSize)
+ include (CheckCCompilerFlag)
+ include (CheckCXXSymbolExists)
++include (CheckCSourceCompiles)
+ include (CheckCXXCompilerFlag)
+ include (CheckLibraryExists)
+ 
+@@ -127,6 +122,7 @@ check_type_size ("unsigned long" SIZEOF_UNSIGNED_LONG)
+ check_library_exists ("m" sqrt "" HAVE_LIBM)
+ if (HAVE_LIBM)
+   set (M_LIBRARY m)
++  set (LIBS_PRIVATE "-l${M_LIBRARY}")
+ endif()
+ 
+ if (NOT DEFINED HAVE_FPCLASSIFY)
+@@ -162,12 +158,10 @@ endif ()
+ if (NLOPT_CXX OR NLOPT_PYTHON OR NLOPT_GUILE OR NLOPT_OCTAVE)
+   check_cxx_symbol_exists (__cplusplus ciso646 SYSTEM_HAS_CXX)
+   if (SYSTEM_HAS_CXX)
+-    check_cxx_compiler_flag ("-std=c++11" SUPPORTS_STDCXX11)
+-    if (SUPPORTS_STDCXX11)
+-      set (CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+-      if (NLOPT_CXX)
+-        set (NLOPT_CXX11 ON)
+-      endif ()
++    set (CMAKE_CXX_STANDARD 11) # set the standard to C++11 but do not require it
++
++    if (NLOPT_CXX)
++      set (CMAKE_CXX_STANDARD_REQUIRED ON) # if we build C++ API, we do need C++11
+     endif ()
+   else()
+     message (FATAL_ERROR "The compiler doesn't support CXX.")
+@@ -181,17 +175,15 @@ endif ()
+ configure_file (${CMAKE_CURRENT_SOURCE_DIR}/nlopt_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/nlopt_config.h IMMEDIATE)
+ 
+ # pkgconfig file
+-if (UNIX OR MINGW)
+-  configure_file (${CMAKE_CURRENT_SOURCE_DIR}/nlopt.pc.in ${CMAKE_CURRENT_BINARY_DIR}/nlopt.pc @ONLY)
+-  install (FILES ${CMAKE_CURRENT_BINARY_DIR}/nlopt.pc DESTINATION ${RELATIVE_INSTALL_LIB_DIR}/pkgconfig)
+-endif ()
++configure_file (${CMAKE_CURRENT_SOURCE_DIR}/nlopt.pc.in ${CMAKE_CURRENT_BINARY_DIR}/nlopt.pc @ONLY)
++install (FILES ${CMAKE_CURRENT_BINARY_DIR}/nlopt.pc DESTINATION ${RELATIVE_INSTALL_LIB_DIR}/pkgconfig)
+ 
+ #==============================================================================
+ # nlopt LIBRARY TARGET (SHARED OR STATIC)
+ #==============================================================================
+ 
+ set (NLOPT_HEADERS
+-  src/api/nlopt.h ${PROJECT_BINARY_DIR}/nlopt.hpp ${PROJECT_BINARY_DIR}/nlopt.f
++  src/api/nlopt.h ${PROJECT_BINARY_DIR}/nlopt.hpp
+ )
+ 
+ add_custom_command (OUTPUT nlopt.hpp
+@@ -199,10 +191,13 @@ add_custom_command (OUTPUT nlopt.hpp
+   MAIN_DEPENDENCY src/api/nlopt-in.hpp)
+ add_custom_target (generate-cpp ALL DEPENDS nlopt.hpp)
+ 
+-add_custom_command (OUTPUT nlopt.f
+-  COMMAND ${CMAKE_COMMAND} -DAPI_SOURCE_DIR=${PROJECT_SOURCE_DIR}/src/api -P ${PROJECT_SOURCE_DIR}/cmake/generate-fortran.cmake
+-  MAIN_DEPENDENCY src/api/nlopt.h)
+-add_custom_target (generate-fortran ALL DEPENDS nlopt.f)
++if (NLOPT_FORTRAN)
++  add_custom_command (OUTPUT nlopt.f
++    COMMAND ${CMAKE_COMMAND} -DAPI_SOURCE_DIR=${PROJECT_SOURCE_DIR}/src/api -P ${PROJECT_SOURCE_DIR}/cmake/generate-fortran.cmake
++    MAIN_DEPENDENCY src/api/nlopt.h)
++  add_custom_target (generate-fortran ALL DEPENDS nlopt.f)
++  list (APPEND NLOPT_HEADERS ${PROJECT_BINARY_DIR}/nlopt.f)
++endif()
+ 
+ set (NLOPT_SOURCES
+   src/algs/direct/DIRect.c src/algs/direct/direct_wrap.c src/algs/direct/DIRserial.c src/algs/direct/DIRsubrout.c src/algs/direct/direct-internal.h src/algs/direct/direct.h
+@@ -224,13 +219,35 @@ set (NLOPT_SOURCES
+   src/util/mt19937ar.c src/util/sobolseq.c src/util/soboldata.h src/util/timer.c src/util/stop.c src/util/nlopt-util.h src/util/redblack.c src/util/redblack.h src/util/qsort_r.c src/util/rescale.c
+ )
+ 
++set_property(SOURCE src/algs/bobyqa/bobyqa.c src/algs/cdirect/hybrid.c src/algs/mma/ccsa_quadratic.c src/algs/cobyla/cobyla.c
++                    src/util/redblack.c src/algs/neldermead/nldrmd.c src/algs/newuoa/newuoa.c src/util/qsort_r.c
++	     PROPERTY SKIP_UNITY_BUILD_INCLUSION ON)
++
+ if (NLOPT_CXX)
+-  list (APPEND NLOPT_SOURCES src/algs/stogo/global.cc src/algs/stogo/linalg.cc src/algs/stogo/local.cc src/algs/stogo/stogo.cc src/algs/stogo/tools.cc
+-        src/algs/stogo/global.h src/algs/stogo/linalg.h src/algs/stogo/local.h src/algs/stogo/stogo_config.h src/algs/stogo/stogo.h src/algs/stogo/tools.h)
+-endif ()
+-if (NLOPT_CXX11)
+-  list (APPEND NLOPT_SOURCES src/algs/ags/data_types.hpp src/algs/ags/evolvent.hpp src/algs/ags/evolvent.cc src/algs/ags/solver.hpp src/algs/ags/solver.cc
+-  src/algs/ags/local_optimizer.hpp src/algs/ags/local_optimizer.cc src/algs/ags/ags.h src/algs/ags/ags.cc)
++  list (APPEND NLOPT_SOURCES
++    src/algs/stogo/global.cc
++    src/algs/stogo/linalg.cc
++    src/algs/stogo/local.cc
++    src/algs/stogo/stogo.cc
++    src/algs/stogo/tools.cc
++    src/algs/stogo/global.h
++    src/algs/stogo/linalg.h
++    src/algs/stogo/local.h
++    src/algs/stogo/stogo_config.h
++    src/algs/stogo/stogo.h
++    src/algs/stogo/tools.h
++    src/algs/ags/data_types.hpp
++    src/algs/ags/evolvent.hpp
++    src/algs/ags/evolvent.cc
++    src/algs/ags/solver.hpp
++    src/algs/ags/solver.cc
++    src/algs/ags/local_optimizer.hpp
++    src/algs/ags/local_optimizer.cc
++    src/algs/ags/ags.h
++    src/algs/ags/ags.cc)
++
++set_property(SOURCE src/algs/ags/solver.cc src/algs/ags/local_optimizer.cc src/algs/ags/ags.cc src/algs/slsqp/slsqp.c
++             PROPERTY SKIP_UNITY_BUILD_INCLUSION ON)
+ endif ()
+ 
+ install (FILES ${NLOPT_HEADERS} DESTINATION ${RELATIVE_INSTALL_INCLUDE_DIR})
+@@ -277,32 +294,20 @@ if (BUILD_SHARED_LIBS)
+   target_compile_definitions (${nlopt_lib} PRIVATE NLOPT_DLL_EXPORT)
+ endif ()
+ 
+-# pass -fPIC in case swig module is built with static library
+-if (NOT BUILD_SHARED_LIBS)
+-  check_c_compiler_flag (-fPIC HAS_FPIC)
+-  if (HAS_FPIC)
+-    set (CMAKE_C_FLAGS "-fPIC ${CMAKE_C_FLAGS}")
+-    set (CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
+-  endif ()
+-endif ()
+-
+-#message(STATUS "RELATIVE_INSTALL_LIB_DIR: ${RELATIVE_INSTALL_LIB_DIR}")
+-#message(STATUS "CMAKE_INSTALL_LIBDIR: ${CMAKE_INSTALL_LIBDIR}")
++set_target_properties (${nlopt_lib} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+ 
+-#install ( TARGETS ${nlopt_lib}
+-#          EXPORT  NLoptLibraryDepends
+-#          RUNTIME DESTINATION ${RELATIVE_INSTALL_BIN_DIR}
+-#          LIBRARY DESTINATION ${RELATIVE_INSTALL_LIB_DIR}
+-#          ARCHIVE DESTINATION ${RELATIVE_INSTALL_LIB_DIR}
+-#          )
++# for consistent floating-point operations across architectures
++option (DISABLE_FP_CONTRACT "Disable floating-point contractions" ON)
++if (DISABLE_FP_CONTRACT AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
++  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffp-contract=off")
++endif ()
+ 
+ install ( TARGETS ${nlopt_lib}
+           EXPORT  NLoptLibraryDepends
+-          RUNTIME DESTINATION "${BINDIR}"
+-          LIBRARY DESTINATION "${LIBDIR}"
+-          ARCHIVE DESTINATION "${LIBDIR}"
+-          )
+-	
++          RUNTIME DESTINATION ${RELATIVE_INSTALL_BIN_DIR}
++          LIBRARY DESTINATION ${RELATIVE_INSTALL_LIB_DIR}
++          ARCHIVE DESTINATION ${RELATIVE_INSTALL_LIB_DIR}
++        )
+ 
+ if (MSVC AND BUILD_SHARED_LIBS)
+   install (FILES $<TARGET_PDB_FILE:${nlopt_lib}> DESTINATION ${RELATIVE_INSTALL_BIN_DIR} CONFIGURATIONS Debug RelWithDebInfo COMPONENT Debug)
+@@ -311,16 +316,26 @@ endif ()
+ add_subdirectory (src/api)
+ 
+ if (NLOPT_PYTHON)
+-  find_package (PythonInterp)
+-  find_package (PythonLibs ${PYTHON_VERSION_STRING} EXACT)
++  if (CMAKE_VERSION VERSION_LESS 3.24)
++    find_package (Python COMPONENTS Interpreter Development)
++  else ()
++    find_package (Python COMPONENTS Interpreter Development.Module)
++  endif ()
++
+   find_package (NumPy)
+ endif ()
+ 
++if (NOT DEFINED INSTALL_PYTHON_DIR AND NOT CMAKE_CROSSCOMPILING)
++  execute_process (COMMAND ${Python_EXECUTABLE} -c "import sysconfig, os; print(sysconfig.get_path('platlib').replace(sysconfig.get_path('data'), '').lstrip(os.path.sep))"
++                    OUTPUT_VARIABLE INSTALL_PYTHON_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
++  file (TO_CMAKE_PATH "${INSTALL_PYTHON_DIR}" INSTALL_PYTHON_DIR)
++endif ()
++
+ if (NOT DEFINED INSTALL_PYTHON_DIR)
+   if (WIN32)
+     set (INSTALL_PYTHON_DIR Lib/site-packages)
+   else ()
+-    set (INSTALL_PYTHON_DIR ${INSTALL_LIB_DIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages)
++    set (INSTALL_PYTHON_DIR ${INSTALL_LIB_DIR}/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages)
+   endif ()
+ endif ()
+ 
+@@ -329,7 +344,7 @@ if (NLOPT_GUILE)
+ endif ()
+ 
+ if (NLOPT_SWIG)
+-  find_package (SWIG)
++  find_package (SWIG 3)
+   if (SWIG_FOUND)
+     add_subdirectory (src/swig)
+   endif ()
+diff --git AmberTools/src/nlopt/NEWS.md AmberTools/src/nlopt/NEWS.md
+index 568b599ae9..be8bbf632d 100644
+--- AmberTools/src/nlopt/NEWS.md
++++ AmberTools/src/nlopt/NEWS.md
+@@ -1,5 +1,20 @@
+ # NLopt Release Notes
+ 
++## NLopt 2.8
++
++9 August 2024
++
++* Support C++ functors for objective functions ([#457]).
++
++* CCSA/MMA an now use the `initial_step` parameter to bound their initial stepsize,
++  and also expose a new internal parameter `rho_init` ([#561]).
++
++* Install `pkg-config` file on Windows ([#534]).
++
++* Allow having more equality constraints than there are variables ([#509]).
++
++* Bugfixes to `nlopt_algorithm_name` ([#558]), Matlab `NLOPT_GN_AGS` ([#533]), forced stop for empty dimensions ([#473]), SLSQP ([#465]), and build improvements ([#551], [#535],[#510], [#445]…).
++
+ ## NLopt 2.7.1
+ 
+ 3 December 2021
+@@ -474,3 +489,15 @@
+ [#365]: https://github.com/stevengj/nlopt/issues/365
+ [#409]: https://github.com/stevengj/nlopt/issues/409
+ [#420]: https://github.com/stevengj/nlopt/issues/420
++[#445]: https://github.com/stevengj/nlopt/issues/445
++[#457]: https://github.com/stevengj/nlopt/issues/457
++[#465]: https://github.com/stevengj/nlopt/issues/465
++[#473]: https://github.com/stevengj/nlopt/issues/473
++[#509]: https://github.com/stevengj/nlopt/issues/509
++[#510]: https://github.com/stevengj/nlopt/issues/510
++[#533]: https://github.com/stevengj/nlopt/issues/533
++[#534]: https://github.com/stevengj/nlopt/issues/534
++[#535]: https://github.com/stevengj/nlopt/issues/535
++[#551]: https://github.com/stevengj/nlopt/issues/551
++[#558]: https://github.com/stevengj/nlopt/issues/558
++[#561]: https://github.com/stevengj/nlopt/issues/561
+diff --git AmberTools/src/nlopt/cmake/FindGuile.cmake AmberTools/src/nlopt/cmake/FindGuile.cmake
+index d28b9fdf11..026c25ccef 100644
+--- AmberTools/src/nlopt/cmake/FindGuile.cmake
++++ AmberTools/src/nlopt/cmake/FindGuile.cmake
+@@ -64,11 +64,11 @@ if (GUILE_INCLUDE_DIR)
+ endif ()
+ 
+ find_program(GUILE_EXECUTABLE
+-              NAMES guile
++              NAMES guile3.0 guile2.2 guile2.0 guile
+            )
+ 
+ find_program(GUILE_CONFIG_EXECUTABLE
+-              NAMES guile-config
++              NAMES guile-config3.0 guile-config2.2 guile-config2.0 guile-config
+            )
+ 
+ 
+diff --git AmberTools/src/nlopt/cmake/FindNumPy.cmake AmberTools/src/nlopt/cmake/FindNumPy.cmake
+index c8f5a66053..db9f51d753 100644
+--- AmberTools/src/nlopt/cmake/FindNumPy.cmake
++++ AmberTools/src/nlopt/cmake/FindNumPy.cmake
+@@ -39,13 +39,11 @@
+ #============================================================================
+ 
+ # Finding NumPy involves calling the Python interpreter
+-if(NumPy_FIND_REQUIRED)
+-    find_package(PythonInterp REQUIRED)
+-else()
+-    find_package(PythonInterp)
+-endif()
++if (NOT Python_EXECUTABLE)
++  message (SEND_ERROR "Python interpreter not found")
++endif ()
+ 
+-execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
++execute_process(COMMAND "${Python_EXECUTABLE}" "-c"
+     "import numpy as np; print(np.__version__); print(np.get_include());"
+     RESULT_VARIABLE _NUMPY_SEARCH_SUCCESS
+     OUTPUT_VARIABLE _NUMPY_VALUES_OUTPUT
+diff --git AmberTools/src/nlopt/cmake/TargetLinkLibrariesWithDynamicLookup.cmake AmberTools/src/nlopt/cmake/TargetLinkLibrariesWithDynamicLookup.cmake
+index 6d2be1ff7b..68c0aeb19e 100644
+--- AmberTools/src/nlopt/cmake/TargetLinkLibrariesWithDynamicLookup.cmake
++++ AmberTools/src/nlopt/cmake/TargetLinkLibrariesWithDynamicLookup.cmake
+@@ -48,6 +48,7 @@ function(_CheckUndefinedSymbolsAllowed)
+ 
+     file(WRITE "${test_project_dir}/CMakeLists.txt"
+ "
++cmake_minimum_required(VERSION 3.13)
+ project(undefined C)
+ add_library(foo SHARED \"foo.c\")
+ ")
+diff --git AmberTools/src/nlopt/cmake/generate-cpp.cmake AmberTools/src/nlopt/cmake/generate-cpp.cmake
+index ed78d912ce..c7e0c9ea36 100644
+--- AmberTools/src/nlopt/cmake/generate-cpp.cmake
++++ AmberTools/src/nlopt/cmake/generate-cpp.cmake
+@@ -1,4 +1,4 @@
+-cmake_minimum_required (VERSION 3.2)
++cmake_minimum_required (VERSION 3.13)
+ 
+ # generate nlopt.hpp from nlopt-in.hpp
+ file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/nlopt.hpp "")
+diff --git AmberTools/src/nlopt/cmake/generate-fortran.cmake AmberTools/src/nlopt/cmake/generate-fortran.cmake
+index 48663ae2a1..d059ed0067 100644
+--- AmberTools/src/nlopt/cmake/generate-fortran.cmake
++++ AmberTools/src/nlopt/cmake/generate-fortran.cmake
+@@ -1,4 +1,4 @@
+-cmake_minimum_required (VERSION 3.2)
++cmake_minimum_required (VERSION 3.13)
+ 
+ # generate nlopt.f from nlopt.h enums
+ file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/nlopt.f "")
+@@ -13,12 +13,6 @@ foreach (NLOPT_H_LINE ${NLOPT_H_LINES})
+     endif ()
+     set (ENUM_LINE "      integer NLOPT_${ENUM_STRING}\n      parameter (NLOPT_${ENUM_STRING}=${i})\n")
+     file (APPEND ${CMAKE_CURRENT_BINARY_DIR}/nlopt.f "${ENUM_LINE}")
+-
+-    # https://public.kitware.com/Bug/print_bug_page.php?bug_id=8996
+-    if (i MATCHES "^-")
+-      math (EXPR i "1 ${i}")
+-    else ()
+-      math (EXPR i "${i} + 1")
+-    endif ()
++    math (EXPR i "${i} + 1")
+   endif ()
+ endforeach ()
+diff --git AmberTools/src/nlopt/doc/docs/Citing_NLopt.md AmberTools/src/nlopt/doc/docs/Citing_NLopt.md
+index 1f0de418a6..ae2af29877 100644
+--- AmberTools/src/nlopt/doc/docs/Citing_NLopt.md
++++ AmberTools/src/nlopt/doc/docs/Citing_NLopt.md
+@@ -8,4 +8,4 @@ If you use NLopt in work that leads to a publication, we would appreciate it if
+ 
+ The authors and appropriate citations for the specific optimization algorithms in NLopt are listed in the [NLopt Algorithms](NLopt_Algorithms.md) page.
+ 
+-
++See also the [NLopt `CITATION.bib` file](https://github.com/stevengj/nlopt/blob/master/CITATION.bib) for citations in BibTeX format.
+diff --git AmberTools/src/nlopt/doc/docs/NLopt_Algorithms.md AmberTools/src/nlopt/doc/docs/NLopt_Algorithms.md
+index 0630d8d9fa..477748d179 100644
+--- AmberTools/src/nlopt/doc/docs/NLopt_Algorithms.md
++++ AmberTools/src/nlopt/doc/docs/NLopt_Algorithms.md
+@@ -51,7 +51,7 @@ First, it contains a from-scratch re-implementation of both algorithms, specifie
+ 
+ Second, there is a slightly randomized variant of DIRECT-L, specified by `NLOPT_GN_DIRECT_L_RAND`, which uses some randomization to help decide which dimension to halve next in the case of near-ties.
+ 
+-The DIRECT and DIRECT-L algorithms start by rescaling the bound constraints to a hypercube, which gives all dimensions equal weight in the search procedure. If your dimensions do *not* have equal weight, e.g. if you have a "long and skinny" search space and your function varies at about the same speed in all directions, it may be better to use unscaled variants of these algorthms, which are specified as `NLOPT_GNL_DIRECT_NOSCAL`, `NLOPT_GN_DIRECT_L_NOSCAL`, and `NLOPT_GN_DIRECT_L_RAND_NOSCAL`, respectively. However, the unscaled variations make the most sense (if any) with the original DIRECT algorithm, since the design of DIRECT-L to some extent relies on the search region being a hypercube (which causes the subdivided hyperrectangles to have only a small set of side lengths).
++The DIRECT and DIRECT-L algorithms start by rescaling the bound constraints to a hypercube, which gives all dimensions equal weight in the search procedure. If your dimensions do *not* have equal weight, e.g. if you have a "long and skinny" search space and your function varies at about the same speed in all directions, it may be better to use unscaled variants of these algorthms, which are specified as `NLOPT_GN_DIRECT_NOSCAL`, `NLOPT_GN_DIRECT_L_NOSCAL`, and `NLOPT_GN_DIRECT_L_RAND_NOSCAL`, respectively. However, the unscaled variations make the most sense (if any) with the original DIRECT algorithm, since the design of DIRECT-L to some extent relies on the search region being a hypercube (which causes the subdivided hyperrectangles to have only a small set of side lengths).
+ 
+ Finally, NLopt also includes separate implementations based on the [original Fortran code](http://www4.ncsu.edu/~ctk/SOFTWARE/DIRECTv204.tar.gz) by Gablonsky et al. (1998-2001), which are specified as `NLOPT_GN_ORIG_DIRECT` and `NLOPT_GN_ORIG_DIRECT_L`. These implementations have a number of hard-coded limitations on things like the number of function evaluations; I removed several of these limitations, but some remain. On the other hand, there seem to be slight differences between these implementations and mine; most of the time, the performance is roughly similar, but occasionally Gablonsky's implementation will do significantly better than mine or vice versa.
+ 
+@@ -305,11 +305,13 @@ My implementation of the globally-convergent method-of-moving-asymptotes (MMA) a
+ 
+ This is an improved CCSA ("conservative convex separable approximation") variant of the original MMA algorithm published by Svanberg in 1987, which has become popular for topology optimization. (*Note:* "globally convergent" does *not* mean that this algorithm converges to the global optimum; it means that it is guaranteed to converge to *some* local minimum from any feasible starting point.)
+ 
+-At each point **x**, MMA forms a local approximation using the gradient of *f* and the constraint functions, plus a quadratic "penalty" term to make the approximations "conservative" (upper bounds for the exact functions). The precise approximation MMA forms is difficult to describe in a few words, because it includes nonlinear terms consisting of a poles at some distance from *x* (outside of the current trust region), almost a kind of Padé approximant. The main point is that the approximation is both convex and separable, making it trivial to solve the approximate optimization by a dual method. Optimizing the approximation leads to a new candidate point **x**. The objective and constraints are evaluated at the candidate point. If the approximations were indeed conservative (upper bounds for the actual functions at the candidate point), then the process is restarted at the new **x**. Otherwise, the approximations are made more conservative (by increasing the penalty term) and re-optimized.
++At each point **x**, CCSA forms a local approximation using the gradient of *f* and the constraint functions, plus a quadratic "penalty" term to make the approximations "conservative" (upper bounds for the exact functions). The precise approximation MMA forms is difficult to describe in a few words, because it includes nonlinear terms consisting of a poles at some distance from *x* (outside of the current trust region), almost a kind of Padé approximant. The main point is that the approximation is both convex and separable, making it trivial to solve the approximate optimization by a dual method. Optimizing the approximation leads to a new candidate point **x**. The objective and constraints are evaluated at the candidate point. If the approximations were indeed conservative (upper bounds for the actual functions at the candidate point), then the process is restarted at the new **x**. Otherwise, the approximations are made more conservative (by increasing the penalty term) and re-optimized.
+ 
+-(If you contact [Professor Svanberg](http://researchprojects.kth.se/index.php/kb_7902/pb_2085/pb.html), he has been willing in the past to graciously provide you with his original code, albeit under restrictions on commercial use or redistribution. The MMA implementation in NLopt, however, is completely independent of Svanberg's, whose code we have not examined; any bugs are my own, of course.)
++(If you contact [Professor Svanberg](https://people.kth.se/~krille/), he has been willing in the past to graciously provide you with his original code, albeit under restrictions on commercial use or redistribution. The MMA implementation in NLopt, however, is completely independent of Svanberg's, whose code we have not examined; any bugs are my own, of course.)
+ 
+-I also implemented another CCSA algorithm from the same paper, `NLOPT_LD_CCSAQ`: instead of constructing local MMA approximations, it constructs simple quadratic approximations (or rather, affine approximations plus a quadratic penalty term to stay conservative). This is the ccsa_quadratic code. It seems to have similar convergence rates to MMA for most problems, which is not surprising as they are both essentially similar. However, for the quadratic variant I implemented the possibility of [preconditioning](NLopt_Reference.md#preconditioning-with-approximate-hessians): including a user-supplied Hessian approximation in the local model. It is easy to incorporate this into the proof in Svanberg's paper, and to show that global convergence is still guaranteed as long as the user's "Hessian" is positive semidefinite, and it practice it can greatly improve convergence if the preconditioner is a good approximation for the real Hessian (at least for the eigenvectors of the largest eigenvalues).
++I also implemented another CCSA algorithm from the same paper, `NLOPT_LD_CCSAQ`: instead of constructing local MMA approximations, it constructs simple quadratic approximations (or rather, affine approximations plus a quadratic penalty term to stay conservative). It seems to have similar convergence rates to MMA for most problems, which is not surprising as they are both essentially similar.  My CCSAQ implementation seems to behave better in some ways that the MMA variant, in fact, so I generally recommend trying `NLOPT_LD_CCSAQ` first rather than `NLOPT_LD_MMA`.
++
++For the quadratic variant I also implemented the possibility of [preconditioning](NLopt_Reference.md#preconditioning-with-approximate-hessians): including a user-supplied Hessian approximation in the local model. It is easy to incorporate this into the proof in Svanberg's paper, and to show that global convergence is still guaranteed as long as the user's "Hessian" is positive semidefinite, and in practice it can greatly improve convergence if the preconditioner is a good approximation for the real Hessian (at least for the eigenvectors of the largest eigenvalues).
+ 
+ The `NLOPT_LD_MMA` and `NLOPT_LD_CCSAQ` algorithms support the following internal parameters, which can be
+ specified using the [`nlopt_set_param` API](NLopt_Reference#algorithm-specific-parameters):
+@@ -317,6 +319,7 @@ specified using the [`nlopt_set_param` API](NLopt_Reference#algorithm-specific-p
+ * `inner_maxeval`: If ≥ 0, gives maximum number of "inner" iterations of the algorithm where it tries to ensure that its approximatations are "conservative"; defaults to `0` (no limit).   It can be useful to specify a finite number (e.g. `5` or `10`) for this parameter if inaccuracies in your gradient or objective function are preventing the algorithm from making progress.
+ * `dual_algorithm` (defaults to `NLOPT_LD_MMA`), `dual_ftol_rel` (defaults to `1e-14`), `dual_ftol_abs` (defaults to `0`), `dual_xtol_rel` (defaults to `0`), `dual_xtol_abs` (defaults to `0`), `dual_maxeval` (defaults to `100000`): These specify how the algorithm internally solves the "dual" optimization problem for its approximate objective.   Because this subsidiary solve requires no evaluations of the user's objective function, it is typically fast enough that we can solve it to high precision without worrying too much about the details.  Howeve,r in high-dimensional problems you may notice that MMA/CCSA is taking a long time between optimization steps, in which case you may want to increase `dual_ftol_rel` or make other changes.   If these parameters are not specified, NLopt takes them from the [subsidiary-optimizer algorithm](NLopt_Reference#localsubsidiary-optimization-algorithm) if that has been specified, and otherwise uses the defaults indicated here.
+ * `verbosity`: If > 0, causes the algorithm to print internal status information on each iteration.
++* `rho_init`: if specified, should be a rough upper bound for the second derivative (the biggest eigenvalue of the Hessian of the objective or constraints); defaults to `1.0`.   CCSA/MMA will adaptively adjust this as the optimization progresses, so even it if `rho_init` is completely wrong the algorithm will still converge.  A `rho_init` that is too large will cause the algorithm to take overly small steps at the beginning, while a `rho_init` that is too small will cause it to take overly large steps (and have to backtrack) at the beginning.   Similarly, you can also use the "initial stepsize" option ([NLopt reference](NLopt_Reference.md#initial-step-size)) to control the maximum size of the initial steps (half the diameter of the trust region).
+ 
+ ### SLSQP
+ 
+@@ -396,5 +399,3 @@ The subsidiary optimization algorithm is specified by the `nlopt_set_local_optim
+ The augmented Lagrangian method is specified in NLopt as `NLOPT_AUGLAG`. We also provide a variant, `NLOPT_AUGLAG_EQ`, that only uses penalty functions for equality constraints, while inequality constraints are passed through to the subsidiary algorithm to be handled directly; in this case, the subsidiary algorithm must handle inequality constraints (e.g. MMA or COBYLA).
+ 
+ While NLopt uses an independent re-implementation of the Birgin and Martínez algorithm, those authors provide their own free-software implementation of the method as part of the [TANGO](http://www.ime.usp.br/~egbirgin/tango/) project, and implementations can also be found in [semi-free](http://www.gnu.org/philosophy/categories.html#semi-freeSoftware) packages like [LANCELOT](http://www.numerical.rl.ac.uk/lancelot/blurb.html).
+-
+-
+diff --git AmberTools/src/nlopt/doc/docs/NLopt_C-plus-plus_Reference.md AmberTools/src/nlopt/doc/docs/NLopt_C-plus-plus_Reference.md
+index 28bce5579a..968c212723 100644
+--- AmberTools/src/nlopt/doc/docs/NLopt_C-plus-plus_Reference.md
++++ AmberTools/src/nlopt/doc/docs/NLopt_C-plus-plus_Reference.md
+@@ -21,7 +21,7 @@ Compiling and linking your program to NLopt
+ 
+ An NLopt program in C++ should include the NLopt C++ header file:
+ 
+-`#include `<nlopt.hpp>
++`#include <nlopt.hpp>`
+ 
+ On Unix, you would normally link your program exactly as for the C API, with a command something like:
+ 
+@@ -256,13 +256,13 @@ Algorithm-specific parameters
+ 
+ Certain NLopt optimization algorithms allow you to specify additional parameters by calling
+ ```
+-nlopt_result nlopt::opt::set_param(const char *name, double val);
++void nlopt::opt::set_param(const char *name, double val);
+ bool nlopt::opt::has_param(const char *name);
+ double nlopt::opt::get_param(const char *name, double defaultval);
+ unsigned nlopt::opt::num_params();
+ const char *nlopt::opt::nth_param(unsigned n);
+ ```
+-where the string `name` is the name of an algorithm-specific parameter and `val` is the value you are setting the parameter to.   These functions are equivalent to the [C API](NLopt_Reference#algorithm-specific-parameters) functions of the corresponding names.
++where the string `name` is the name of an algorithm-specific parameter and `val` is the value you are setting the parameter to. These functions are equivalent to the [C API](NLopt_Reference#algorithm-specific-parameters) functions of the corresponding names.
+ 
+ 
+ Performing the optimization
+@@ -342,10 +342,9 @@ Initial step size
+ Just as in the C API, you can [get and set the initial step sizes](NLopt_Reference#initial-step-size) for derivative-free optimization algorithms. The C++ equivalents of the C functions are the following methods:
+ 
+ ```
+-void nlopt::opt::set_initial_step(const std::vector`<double>` &dx);
++void nlopt::opt::set_initial_step(const std::vector<double> &dx);
+ void nlopt::opt::set_initial_step(double dx);
+-void nlopt::opt::get_initial_step(const std::vector`<double>` &x, std::vector`<double>` &dx) const;
+-std::vector`<double>` nlopt::opt::get_initial_step(const std::vector`<double>` &x) const;
++void nlopt::opt::get_initial_step(const std::vector<double> &x, std::vector<double> &dx) const;
+ ```
+ 
+ 
+diff --git AmberTools/src/nlopt/doc/docs/NLopt_Deprecated_API_Reference.md AmberTools/src/nlopt/doc/docs/NLopt_Deprecated_API_Reference.md
+index c56fb5ba4c..83132b232a 100644
+--- AmberTools/src/nlopt/doc/docs/NLopt_Deprecated_API_Reference.md
++++ AmberTools/src/nlopt/doc/docs/NLopt_Deprecated_API_Reference.md
+@@ -11,7 +11,7 @@ Other sources of information include the Unix [man pages](https://en.wikipedia.o
+ Linking your program to NLopt
+ -----------------------------
+ 
+-For programs in compiled languages like C or Fortran, when you compile your program you will have to link it to the NLopt library. This is *in addition* to including the header file (`#include` <nlopt.h> in C/C++). On Unix, you would normally link with a command something like:
++For programs in compiled languages like C or Fortran, when you compile your program you will have to link it to the NLopt library. This is *in addition* to including the header file (`#include <nlopt.h>` in C/C++). On Unix, you would normally link with a command something like:
+ 
+ *`compiler`*` `*`...source/object` `files...`*` -lnlopt -lm -o myprogram`
+ 
+@@ -57,7 +57,7 @@ The parameters specifying the optimization problem are:
+ -   `algorithm` — which optimization algorithm to use; its values are one of a set of predefined constants like`NLOPT_LD_MMA`, `NLOPT_GN_DIRECT`, etcetera, as described on the [NLopt Algorithms](NLopt_Algorithms.md) page.
+ -   `n` — the dimension *n* ≥ 0 of the optimization problem, the number of optimization parameters.
+ -   `f` — the objective function (see below)
+--   `f_data` — a pointer to any data you want to pass to the the objective function (see below)
++-   `f_data` — a pointer to any data you want to pass to the objective function (see below)
+ -   `m` — the number of nonlinear inequality constraints (zero for no such constraints).
+ -   `fc` — the nonlinear inequality constraint function (see below). Ignored if `m` = 0.
+ -   `fc_data`, `fc_datum_size` — `fc_data` is a pointer to an array of data to pass to the constraint function `fc`. The array should of length `m`, and each element of the array should have size `fc_datum_size` bytes. (See below for more information on constraint functions.) Ignored if `m` = 0.
+@@ -404,7 +404,7 @@ Some of the algorithms (currently `NLOPT_LD_MMA` and `NLOPT_LN_COBYLA`) support
+ 
+ (where the `gradient` return value is only used for gradient-based algorithms), and the `...` arguments are given by `fc_data{i}{:}`.
+ 
+-If you have no nonlinear constraints, i.e. `fc` = `fc_data` = `{}`, then it is equivalent to calling the the `nlopt_minimize` function below, which omits the `fc` and `fc_data` arguments.
++If you have no nonlinear constraints, i.e. `fc` = `fc_data` = `{}`, then it is equivalent to calling the `nlopt_minimize` function below, which omits the `fc` and `fc_data` arguments.
+ 
+ #### Matlab termination conditions
+ 
+diff --git AmberTools/src/nlopt/doc/docs/NLopt_FAQ.md AmberTools/src/nlopt/doc/docs/NLopt_FAQ.md
+index 1d0594199b..1e87aabf9b 100644
+--- AmberTools/src/nlopt/doc/docs/NLopt_FAQ.md
++++ AmberTools/src/nlopt/doc/docs/NLopt_FAQ.md
+@@ -29,7 +29,7 @@ Usage
+ 
+ ### I included your header file, but the compiler still complains
+ 
+-You need to link to the NLopt library in addition to doing `#include` <nlopt.h>. On Unix, this means adding `-lnlopt` `-lm` at the *end* of your link command.
++You need to link to the NLopt library in addition to doing `#include <nlopt.h>`. On Unix, this means adding `-lnlopt` `-lm` at the *end* of your link command.
+ 
+ ### It's not converging
+ 
+diff --git AmberTools/src/nlopt/doc/docs/NLopt_Guile_Reference.md AmberTools/src/nlopt/doc/docs/NLopt_Guile_Reference.md
+index 1282481e8b..baf67cd76d 100644
+--- AmberTools/src/nlopt/doc/docs/NLopt_Guile_Reference.md
++++ AmberTools/src/nlopt/doc/docs/NLopt_Guile_Reference.md
+@@ -9,7 +9,7 @@ The main purpose of this section is to document the syntax and unique features o
+ Using the NLopt Guile API
+ -------------------------
+ 
+-To use NLopt in Python, your Python program should include the lines:
++To use NLopt in GNU Guile, your Guile program should include the lines:
+ 
+ ```
+ (use-modules (nlopt))
+diff --git AmberTools/src/nlopt/doc/docs/NLopt_Installation.md AmberTools/src/nlopt/doc/docs/NLopt_Installation.md
+index a638efa6bb..028f5740ee 100644
+--- AmberTools/src/nlopt/doc/docs/NLopt_Installation.md
++++ AmberTools/src/nlopt/doc/docs/NLopt_Installation.md
+@@ -109,7 +109,7 @@ cmake -DNLOPT_CXX=OFF ..
+ 
+ For the Octave plugins to be installed, you need to have the Octave `mkoctfile` program in your PATH. `mkoctfile` is Octave's equivalent of `mex`. If you are using a GNU/Linux system, and you installed Octave using one of the precompiled packages for your distribution, then you probably need to install a *separate package* to get `mkoctfile`. For example, on Debian you need to install the `octave-headers` package, and on Redhat you need the `octave-devel` package.
+ 
+-By default, the compiled Octave plugins (`.oct` files) are installed into the octave extension binary directory relatively to the installation prefix (usually something like `/usr/local/lib/octave/2.1.73/site/oct/i486-pc-linux-gnu`), and the .m script files are installed into the site extension directory relatively the the installation prefix (usually something like `/usr/local/share/octave/2.1.73/site/m/`). You can change these defaults by passing `INSTALL_OCT_DIR` and `INSTALL_M_DIR`, respectively, to the cmake script, via:
++By default, the compiled Octave plugins (`.oct` files) are installed into the octave extension binary directory relatively to the installation prefix (usually something like `/usr/local/lib/octave/2.1.73/site/oct/i486-pc-linux-gnu`), and the .m script files are installed into the site extension directory relatively to the installation prefix (usually something like `/usr/local/share/octave/2.1.73/site/m/`). You can change these defaults by passing `INSTALL_OCT_DIR` and `INSTALL_M_DIR`, respectively, to the cmake script, via:
+ 
+ ```sh
+ cmake -DINSTALL_OCT_DIR=octdir -DINSTALL_M_DIR=mdir ..
+@@ -120,10 +120,10 @@ Python plugins
+ 
+ If [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) is installed on your machine, and you configured NLopt as a shared library (see above), then NLopt will automatically compile and install a Python `nlopt` module. You also need [NumPy](https://en.wikipedia.org/wiki/NumPy) to be installed, as NLopt's Python interface uses NumPy array types.
+ 
+-To specify a particular version or location of Python, use the `PYTHON_EXECUTABLE` variable to set the full path to the `python` executable:
++To specify a particular version or location of Python, use the `Python_EXECUTABLE` variable to set the full path to the `python` executable:
+ 
+ ```sh
+-cmake -DPYTHON_EXECUTABLE=/usr/bin/python ..
++cmake -DPython_EXECUTABLE=/usr/bin/python ..
+ ```
+ 
+ GNU Guile plugins
+diff --git AmberTools/src/nlopt/doc/docs/NLopt_Introduction.md AmberTools/src/nlopt/doc/docs/NLopt_Introduction.md
+index 4b98a4eb05..aaf0d6ee3d 100644
+--- AmberTools/src/nlopt/doc/docs/NLopt_Introduction.md
++++ AmberTools/src/nlopt/doc/docs/NLopt_Introduction.md
+@@ -100,7 +100,7 @@ for unknown vectors **z**. You could then pass **z** as the optimization paramet
+ 
+ #### Penalty functions
+ 
+-Another popular approach to equality constraints (and inequality constraints, for that matter) is to include some sort of **penalty function** in the objective function, which penalizes **x** values that violate the constraints. A standard technique of this sort is known as the **augmented Lagrangian** approach, and a variant of this approach is implemented in NLopt's [AUGLAG algorithm](NLopt_Algorithms#augmented-lagrangian-algorithm).
++Another popular approach to equality constraints (and inequality constraints, for that matter) is to include some sort of **penalty function** in the objective function, which penalizes **x** values that violate the constraints. A standard technique of this sort is known as the **augmented Lagrangian** approach, and a variant of this approach is implemented in NLopt's [AUGLAG algorithm](NLopt_Algorithms.md#augmented-lagrangian-algorithm).
+ 
+ (For inequality constraints, a variant of the penalty idea is a **barrier method**: this is simply a penalty that diverges as you approach the constraint, which forces the optimization to stay within the feasible region.)
+ 
+@@ -129,7 +129,7 @@ If you don't want to use a particular tolerance termination, you can just set th
+ 
+ Another termination test that NLopt supports is that you can tell the optimization to stop when the objective function value *f*(**x**) reaches some specified value, `stopval`, for any feasible point **x**.
+ 
+-This termination test is especially useful when [comparing algorithms](NLopt_Algorithms#comparing-algorithms) for a given problem. After running one algorithm for a long time to find the minimum to the desired accuracy, you can ask how many iterations algorithms require to obtain the optimum to the same accuracy or to some better accuracy.
++This termination test is especially useful when [comparing algorithms](NLopt_Algorithms.md#comparing-algorithms) for a given problem. After running one algorithm for a long time to find the minimum to the desired accuracy, you can ask how many iterations algorithms require to obtain the optimum to the same accuracy or to some better accuracy.
+ 
+ ### Bounds on function evaluations and wall-clock time
+ 
+diff --git AmberTools/src/nlopt/doc/docs/NLopt_Python_Reference.md AmberTools/src/nlopt/doc/docs/NLopt_Python_Reference.md
+index eb3b1da9f2..b9b0355fcc 100644
+--- AmberTools/src/nlopt/doc/docs/NLopt_Python_Reference.md
++++ AmberTools/src/nlopt/doc/docs/NLopt_Python_Reference.md
+@@ -65,7 +65,7 @@ depending on whether one wishes to minimize or maximize the objective function `
+ def f(x, grad):
+     if grad.size > 0:
+        ...set grad to gradient, in-place...
+-       return ...value of f(x)...
++    return ...value of f(x)...
+ ```
+ 
+ The return value should be the value of the function at the point `x`, where `x` is a NumPy array of length `n` of the optimization parameters (the same as the dimension passed to the constructor).
+@@ -150,9 +150,9 @@ Here, `tol` is an array (NumPy array or Python list) of the tolerances in each c
+ def c(result, x, grad):
+     if grad.size > 0:
+        ...set grad to gradient, in-place...
+-       result[0] = ...value of c_0(x)...
+-       result[1] = ...value of c_1(x)...
+-       ...
++    result[0] = ...value of c_0(x)...
++    result[1] = ...value of c_1(x)...
++    ...
+ ```
+ 
+ `result` is a NumPy array whose length equals the dimensionality *m* of the constraint (same as the length of `tol` above), which upon return should be set *in-place* ([see above](#assigning-results-in-place)) to the constraint results at the point `x` (a NumPy array whose length *n* is the same as the dimension passed to the constructor). Any return value of the function is ignored.
+diff --git AmberTools/src/nlopt/doc/docs/NLopt_Reference.md AmberTools/src/nlopt/doc/docs/NLopt_Reference.md
+index 3feef92a4f..238b14871e 100644
+--- AmberTools/src/nlopt/doc/docs/NLopt_Reference.md
++++ AmberTools/src/nlopt/doc/docs/NLopt_Reference.md
+@@ -243,7 +243,7 @@ nlopt_result nlopt_set_x_weights1(nlopt_opt opt, const double w);
+ nlopt_result nlopt_get_x_weights(const nlopt_opt opt, double *w);
+ ```
+ 
+-Set/get the weights used when the computing L₁ norm for the `xtol_rel` stopping criterion above, where `*w` must point to an array of length equal to the number of optimization parameters in `opt`.   `nlopt_set_x_weights1` can be used to set all of the weights to the same value `w`.   The weights default to `1`, but non-constant weights can be used to handle situations where the different parameters `x` have different units or importance, for example.
++Set/get the weights used when the computing L₁ norm for the `xtol_rel` stopping criterion above, where `*w` must point to an array of length equal to the number of optimization parameters in `opt`.   `nlopt_set_x_weights1` can be used to set all of the weights to the same value `w`. Also passing NULL to `nlopt_set_x_weights` allows to unset all the weights. The weights default to `1`, but non-constant weights can be used to handle situations where the different parameters `x` have different units or importance, for example.
+ 
+ ```c
+ nlopt_result nlopt_set_xtol_abs(nlopt_opt opt, const double *tol);
+@@ -252,7 +252,7 @@ nlopt_result nlopt_get_xtol_abs(const nlopt_opt opt, double *tol);
+ ```
+ 
+ 
+-Set absolute tolerances on optimization parameters. `tol` is a pointer to an array of length `n` (the dimension from `nlopt_create`) giving the tolerances: stop when an optimization step (or an estimate of the optimum) changes every parameter `x[i]` by less than `tol[i]`. (Note that `nlopt_set_xtol_abs` makes a copy of the `tol` array, so subsequent changes to the caller's `tol` have no effect on `opt`.) In `nlopt_get_xtol_abs`, `tol` must be an array of length `n`, which upon successful return contains a copy of the current tolerances.  For convenience, the `nlopt_set_xtol_abs1` may be used to set the absolute tolerances in all `n` optimization parameters to the same value.  Criterion is disabled if `tol` is non-positive.
++Set absolute tolerances on optimization parameters. `tol` is a pointer to an array of length `n` (the dimension from `nlopt_create`) giving the tolerances: stop when an optimization step (or an estimate of the optimum) changes every parameter `x[i]` by less than `tol[i]`. (Note that `nlopt_set_xtol_abs` makes a copy of the `tol` array, so subsequent changes to the caller's `tol` have no effect on `opt`.) In `nlopt_get_xtol_abs`, `tol` must be an array of length `n`, which upon successful return contains a copy of the current tolerances.  For convenience, the `nlopt_set_xtol_abs1` may be used to set the absolute tolerances in all `n` optimization parameters to the same value.  Also passing NULL to `nlopt_set_xtol_abs` allows to unset the tolerances.  Criterion is disabled if `tol` is non-positive.
+ 
+ ```c
+ nlopt_result nlopt_set_maxeval(nlopt_opt opt, int maxeval);
+@@ -310,11 +310,11 @@ Certain NLopt optimization algorithms allow you to specify additional parameters
+ nlopt_result nlopt_set_param(nlopt_opt opt, const char *name, double val);
+ ```
+ 
+-where the string `name` is the name of an algorithm-specific parameter and `val` is the value you are setting the parameter to.   For example, the MMA algorithm has a parameter `"inner_maxeval"`, an upper bound on the number of "inner" iterations of the algorithm, which you can set via `nlopt_set_param(opt, "inner_maxeval", 100)`.
++where the string `name` is the name of an algorithm-specific parameter and `val` is the value you are setting the parameter to. For example, the MMA algorithm has a parameter `"inner_maxeval"`, an upper bound on the number of "inner" iterations of the algorithm, which you can set via `nlopt_set_param(opt, "inner_maxeval", 100)`.
+ 
+ You can also check whether a parameter is set or get the current value of a parameter with
+ ```c
+-double nlopt_has_param(const nlopt_opt opt, const char *name);
++int nlopt_has_param(const nlopt_opt opt, const char *name);
+ double nlopt_get_param(const nlopt_opt opt, const char *name, double defaultval);
+ ```
+ where `defaultval` is returned by `nlopt_get_param` if the parameter `name` has not been set.
+@@ -414,6 +414,11 @@ NLOPT_FORCED_STOP = -5
+ 
+ Halted because of a [forced termination](#forced-termination): the user called `nlopt_force_stop(opt)` on the optimization’s `nlopt_opt` object `opt` from the user’s objective function or constraints.
+ 
++A string with further details about the error is available through `nlopt_get_errmsg` if an error is set:
++```c
++const char * nlopt_get_errmsg(nlopt_opt opt);
++```
++
+ You can convert an `nlopt_result` to/from a string identifier (`NLOPT_FOO` converts to/from `"FOO"`) by calling:
+ 
+ ```c
+diff --git AmberTools/src/nlopt/doc/docs/NLopt_on_Windows.md AmberTools/src/nlopt/doc/docs/NLopt_on_Windows.md
+index 03823dcf59..b8495cf2b0 100644
+--- AmberTools/src/nlopt/doc/docs/NLopt_on_Windows.md
++++ AmberTools/src/nlopt/doc/docs/NLopt_on_Windows.md
+@@ -12,7 +12,9 @@ To simplify installation, there are also precompiled 32-bit and 64-bit Windows [
+ -  [NLopt.v2.6.2.i686-w64-mingw32.tar.gz](https://github.com/stevengj/NLoptBuilder/releases/download/v2.6.2/NLopt.v2.6.2.i686-w64-mingw32.tar.gz) (32-bit)
+ -  [NLopt.v2.6.2.x86_64-w64-mingw32.tar.gz](https://github.com/stevengj/NLoptBuilder/releases/download/v2.6.2/NLopt.v2.6.2.x86_64-w64-mingw32.tar.gz) (64-bit)
+ 
+-These `.tar.gz` files unpack (with a variety of Windows software, e.g. 7-zip) into a folder with a `bin` subdirectory that contains `libnlopt.dll`.  To link with this in your compiler, you will typically also want the [import library](https://stackoverflow.com/questions/3573475/how-does-the-import-library-work-details) for the DLL, which can be found in the `lib` subdirectory and is called `libnlopt.dll.a` (this can be used similarly to the `.lib` files you may be used to).
++These `.tar.gz` files unpack (with a variety of Windows software, e.g. 7-zip) into a folder with a `bin` subdirectory that contains `libnlopt.dll`.  To link with this in your compiler, you will typically also want the [import library](https://stackoverflow.com/questions/3573475/how-does-the-import-library-work-details) for the DLL, which can be found in the `lib` subdirectory and is called `libnlopt.dll.a` (this can be used similarly to the `.lib` files you may be used to).   See, in particular, [these instructions for nlopt](https://www.mathworks.com/matlabcentral/answers/380072-mex-error-undefined-reference#answer_356517).
++
++If you need a step-by-step guide on how to install NLopt and run the [tutorial](https://nlopt.readthedocs.io/en/latest/NLopt_Tutorial/) you might be interested in [this blog post](https://medium.com/@gabrielr.domingos/installing-nlopt-on-windows-and-using-it-with-c-3e84d91c8960).
+ 
+ Unofficial Python binaries for Windows are available from Christoph Gohike:
+ 
+@@ -20,7 +22,7 @@ Unofficial Python binaries for Windows are available from Christoph Gohike:
+ 
+ ### NLopt with MinGW
+ 
+-If you want to compile NLopt on Windows with [MinGW](http://www.mingw.org/), be sure to install the MinGW version of `cmake` (e.g. with `pacman -S mingw-w64-x86_64-cmake`) and then build via `cmake -G"MSYS Makefiles" . && make` in order to ensure that `cmake` produces the correct type of makefile.
++If you want to compile NLopt on Windows with [MinGW](https://www.mingw-w64.org/), be sure to install the MinGW version of `cmake` (e.g. with `pacman -S mingw-w64-x86_64-cmake`) and then build via `cmake -G"MSYS Makefiles" . && make` in order to ensure that `cmake` produces the correct type of makefile.
+ 
+ ### Octave plugin
+ 
+diff --git AmberTools/src/nlopt/doc/docs/index.md AmberTools/src/nlopt/doc/docs/index.md
+index ac104905a1..4e95f45fc8 100644
+--- AmberTools/src/nlopt/doc/docs/index.md
++++ AmberTools/src/nlopt/doc/docs/index.md
+@@ -10,7 +10,7 @@ NLopt
+ 
+ **NLopt** is a free/open-source library for **nonlinear optimization**, providing a common interface for a number of different free optimization routines available online as well as original implementations of various other algorithms. Its features include:
+ 
+--   Callable from [C](NLopt_Reference.md), [C++](NLopt_C-plus-plus_Reference.md), [Fortran](NLopt_Fortran_Reference.md), [Matlab or GNU Octave](NLopt_Matlab_Reference.md), [Python](NLopt_Python_Reference.md), [GNU Guile](NLopt_Guile_Reference.md), [Julia](https://github.com/stevengj/NLopt.jl), [GNU R](NLopt_R_Reference.md), [Lua](https://github.com/rochus-keller/LuaNLopt), [OCaml](https://bitbucket.org/mkur/nlopt-ocaml) and [Rust](https://github.com/jesskfullwood/rust-nlopt).
++-   Callable from [C](NLopt_Reference.md), [C++](NLopt_C-plus-plus_Reference.md), [Fortran](NLopt_Fortran_Reference.md), [Matlab or GNU Octave](NLopt_Matlab_Reference.md), [Python](NLopt_Python_Reference.md), [GNU Guile](NLopt_Guile_Reference.md), [Julia](https://github.com/stevengj/NLopt.jl), [GNU R](NLopt_R_Reference.md), [Lua](https://github.com/rochus-keller/LuaNLopt), [OCaml](https://bitbucket.org/mkur/nlopt-ocaml), [Rust](https://github.com/adwhit/rust-nlopt) and [Crystal](https://github.com/konovod/nlopt.cr).
+ -   A common interface for [many different algorithms](NLopt_Algorithms.md)—try a different algorithm just by changing one parameter.
+ -   Support for large-scale optimization (some algorithms scalable to millions of parameters and thousands of constraints).
+ -   Both global and local optimization algorithms.
+@@ -23,9 +23,9 @@ See the [NLopt Introduction](NLopt_Introduction.md) for a further overview of th
+ Download and installation
+ -------------------------
+ 
+-Version 2.6.2 of NLopt is the latest version available from GitHub:
++Version 2.7.1 of NLopt is the latest version available from GitHub:
+ 
+--   [v2.6.2.tar.gz](https://github.com/stevengj/nlopt/archive/v2.6.2.tar.gz)
++-   [v2.7.1.tar.gz](https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz)
+ 
+ See the [NLopt release notes](https://github.com/stevengj/nlopt/blob/master/NEWS.md) for the release history. NLopt is designed to be installed on any Unix-like system (GNU/Linux is fine) with a C compiler, using the standard
+ 
+diff --git AmberTools/src/nlopt/mkdocs.yml AmberTools/src/nlopt/mkdocs.yml
+index 8f3b6b99bb..f6ad464a22 100644
+--- AmberTools/src/nlopt/mkdocs.yml
++++ AmberTools/src/nlopt/mkdocs.yml
+@@ -23,7 +23,7 @@ markdown_extensions:
+ 
+ extra_javascript: ['https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML','mathjaxhelper.js']
+ 
+-pages:
++nav:
+  - NLopt:
+     - Overview: index.md
+     - FAQ: NLopt_FAQ.md
+diff --git AmberTools/src/nlopt/nlopt.pc.in AmberTools/src/nlopt/nlopt.pc.in
+index 8d46f071fd..b5e5c183fa 100644
+--- AmberTools/src/nlopt/nlopt.pc.in
++++ AmberTools/src/nlopt/nlopt.pc.in
+@@ -1,11 +1,12 @@
+ prefix=@CMAKE_INSTALL_PREFIX@
+ exec_prefix=${prefix}
+-libdir=${exec_prefix}/lib
++libdir=${exec_prefix}/@RELATIVE_INSTALL_LIB_DIR@
+ includedir=${prefix}/include
+ 
+ Name: NLopt
+-Description: nonlinear optimization libary
++Description: nonlinear optimization library
+ Version: @NLOPT_VERSION_STRING@
+ Libs: -L${libdir} -lnlopt
+-Libs.private: -lm
++Libs.private: @LIBS_PRIVATE@
+ Cflags: -I${includedir}
++
+diff --git AmberTools/src/nlopt/nlopt_config.h.in AmberTools/src/nlopt/nlopt_config.h.in
+index 7a67d7fe9c..6a93853719 100644
+--- AmberTools/src/nlopt/nlopt_config.h.in
++++ AmberTools/src/nlopt/nlopt_config.h.in
+@@ -34,7 +34,7 @@
+ /* Define to 1 if you have the <getopt.h> header file. */
+ #cmakedefine HAVE_GETOPT_H
+ 
+-/* Define to 1 if you have the getopt function in your standard libary. */
++/* Define to 1 if you have the getopt function in your standard library. */
+ #cmakedefine HAVE_GETOPT
+ 
+ /* Define to 1 if you have the `getpid' function. */
+@@ -129,9 +129,6 @@
+ /* Define if compiled including C++-based routines */
+ #cmakedefine NLOPT_CXX
+ 
+-/* Define if compiled including C++11-based routines */
+-#cmakedefine NLOPT_CXX11
+-
+ /* Define to empty if `const' does not conform to ANSI C. */
+ #undef const
+ 
+diff --git AmberTools/src/nlopt/src/algs/ags/local_optimizer.cc AmberTools/src/nlopt/src/algs/ags/local_optimizer.cc
+index b96c5a608d..a4d6000e45 100644
+--- AmberTools/src/nlopt/src/algs/ags/local_optimizer.cc
++++ AmberTools/src/nlopt/src/algs/ags/local_optimizer.cc
+@@ -83,7 +83,7 @@ Trial HookeJeevesOptimizer::Optimize(std::shared_ptr<IGOProblem<double>> problem
+     mTrialsCounters[mPreviousResearchDirection.idx]++;
+   }
+ 
+-  for(size_t i = 0; i < mTrialsCounters.size(); i++)
++  for(size_t j = 0; j < mTrialsCounters.size(); ++ j)
+     trialsCounters[i] += mTrialsCounters[i];
+ 
+   return mPreviousResearchDirection;
+diff --git AmberTools/src/nlopt/src/algs/ags/solver.cc AmberTools/src/nlopt/src/algs/ags/solver.cc
+index f57f605ade..7ef2495391 100644
+--- AmberTools/src/nlopt/src/algs/ags/solver.cc
++++ AmberTools/src/nlopt/src/algs/ags/solver.cc
+@@ -38,6 +38,7 @@ namespace
+         mRightBound = rightBound;
+       }
+ 
++      virtual ~ProblemInternal() {}
+       double Calculate(const double* y, int fNumber) const
+       {
+         return mFunctions[fNumber](y);
+@@ -238,8 +239,8 @@ void NLPSolver::MakeTrials()
+     if(idx > mMaxIdx)
+     {
+       mMaxIdx = idx;
+-      for(int i = 0; i < mMaxIdx; i++)
+-        mZEstimations[i] = -mParameters.epsR*mHEstimations[i];
++      for(int j = 0; j < mMaxIdx; ++ j)
++        mZEstimations[j] = -mParameters.epsR*mHEstimations[j];
+       mNeedRefillQueue = true;
+     }
+     if (idx == mProblem->GetConstraintsNumber())
+diff --git AmberTools/src/nlopt/src/algs/bobyqa/README AmberTools/src/nlopt/src/algs/bobyqa/README
+index c87ce6114d..98101f4e88 100644
+--- AmberTools/src/nlopt/src/algs/bobyqa/README
++++ AmberTools/src/nlopt/src/algs/bobyqa/README
+@@ -1,6 +1,6 @@
+ This is the BOBYQA software by M. J. D. Powell, which performs
+ derivative-free unconstrained optimization using an iteratively
+-constructred quadratic approximation for the objective function.  See:
++constructed quadratic approximation for the objective function.  See:
+ 
+         M. J. D. Powell, "The BOBYQA algorithm for bound constrained
+         optimization without derivatives," Department of Applied
+diff --git AmberTools/src/nlopt/src/algs/bobyqa/bobyqa.c AmberTools/src/nlopt/src/algs/bobyqa/bobyqa.c
+index 32204210ab..b82501948a 100644
+--- AmberTools/src/nlopt/src/algs/bobyqa/bobyqa.c
++++ AmberTools/src/nlopt/src/algs/bobyqa/bobyqa.c
+@@ -1318,7 +1318,7 @@ L30:
+ 
+ /*     Multiply the search direction by the second derivative matrix of Q and */
+ /*     calculate some scalars for the choice of steplength. Then set BLEN to */
+-/*     the length of the the step to the trust region boundary and STPLEN to */
++/*     the length of the step to the trust region boundary and STPLEN to */
+ /*     the steplength, ignoring the simple bounds. */
+ 
+     goto L210;
+@@ -2754,7 +2754,7 @@ L360:
+ 	    suma += zmat[knew + jj * zmat_dim1] * zmat[k + jj * zmat_dim1];
+ 	}
+ 	if (nlopt_isinf(suma)) {
+-	  /* SGJ: detect singularity here (happend if we run
++	  /* SGJ: detect singularity here (happens if we run
+ 	     for too many iterations) ... is there another way to recover? */
+ 	  rc = NLOPT_ROUNDOFF_LIMITED;
+ 	  goto L720;
+diff --git AmberTools/src/nlopt/src/algs/direct/DIRect.c AmberTools/src/nlopt/src/algs/direct/DIRect.c
+index 5b340d7aa0..22c04030be 100644
+--- AmberTools/src/nlopt/src/algs/direct/DIRect.c
++++ AmberTools/src/nlopt/src/algs/direct/DIRect.c
+@@ -19,7 +19,7 @@
+ /* | DIRECT is a method to solve problems of the form:                     | */
+ /* |              min f: Q --> R,                                          | */
+ /* | where f is the function to be minimized and Q is an n-dimensional     | */
+-/* | hyperrectangle given by the the following equation:                   | */
++/* | hyperrectangle given by the following equation:                       | */
+ /* |                                                                       | */
+ /* |       Q={ x : l(i) <= x(i) <= u(i), i = 1,...,n }.                    | */
+ /* | Note: This version of DIRECT can also handle hidden constraints. By   | */
+@@ -249,7 +249,7 @@
+ /* |  maxpos -- The number of intervalls, which are truncated.             | */
+ /* |    help -- A help variable.                                           | */
+ /* | numfunc -- The actual number of function evaluations.                 | */
+-/* |   file2 -- The filehandle for an other datafile.                      | */
++/* |   file2 -- The filehandle for another datafile.                       | */
+ /* |  ArrayI -- Array with the indexes of the sides with maximum length.   | */
+ /* |    maxi -- Number of directions with maximal side length.             | */
+ /* |    oops -- Flag which shows if anything went wrong in the             | */
+@@ -262,7 +262,7 @@
+ /* |  oldpos -- The old index of the minimum. Used to print only, if there | */
+ /* |            is a new minimum found.                                    | */
+ /* |  tstart -- The start of the outer loop.                               | */
+-/* |   start -- The postion of the starting point in the inner loop.       | */
++/* |   start -- The position of the starting point in the inner loop.      | */
+ /* | Newtosample -- The total number of points to sample in the inner loop.| */
+ /* |       w -- Array used to divide the intervalls                        | */
+ /* |    kmax -- Obsolete. If cheat = 1, Ktilde was not allowed to be larger| */
+diff --git AmberTools/src/nlopt/src/algs/esch/esch.c AmberTools/src/nlopt/src/algs/esch/esch.c
+index 3228fde6e6..85871ea6e7 100644
+--- AmberTools/src/nlopt/src/algs/esch/esch.c
++++ AmberTools/src/nlopt/src/algs/esch/esch.c
+@@ -65,7 +65,7 @@ static int CompareIndividuals(void *unused, const void *a_, const void *b_) {
+ 
+ nlopt_result chevolutionarystrategy(
+      unsigned nparameters, /* Number of input parameters */
+-     nlopt_func f,	/* Recursive Objective Funtion Call */
++     nlopt_func f,	/* Recursive Objective Function Call */
+      void * data_f,	/* Data to Objective Function */
+      const double* lb,			/* Lower bound values */
+      const double* ub,			/* Upper bound values */
+@@ -91,7 +91,7 @@ nlopt_result chevolutionarystrategy(
+       * is achieved, they are ranked and updated. */
+ 
+      /*********************************
+-      * controling the population size
++      * controlling the population size
+       *********************************/
+      if (!np) np = 40;
+      if (!no) no = 60;
+diff --git AmberTools/src/nlopt/src/algs/esch/esch.h AmberTools/src/nlopt/src/algs/esch/esch.h
+index 2908b35a61..dcaf036831 100644
+--- AmberTools/src/nlopt/src/algs/esch/esch.h
++++ AmberTools/src/nlopt/src/algs/esch/esch.h
+@@ -32,7 +32,7 @@ extern "C"
+ 
+ nlopt_result chevolutionarystrategy(
+      unsigned, /* Number of input parameters */
+-     nlopt_func, /* Recursive Objective Funtion Call */
++     nlopt_func, /* Recursive Objective Function Call */
+      void *,	/* Data to Objective Function */
+      const double*,				/* Lower bound values */
+      const double*,				/* Upper bound values */
+diff --git AmberTools/src/nlopt/src/algs/isres/README AmberTools/src/nlopt/src/algs/isres/README
+index c3962131a7..f62aa0c2ac 100644
+--- AmberTools/src/nlopt/src/algs/isres/README
++++ AmberTools/src/nlopt/src/algs/isres/README
+@@ -13,7 +13,7 @@ It is a refinement of an earlier method described in:
+    vol. 4 (no. 3), pp. 284-294 (2000).
+ 
+ This is an independent implementation by S. G. Johnson (2009) based
+-on the papers above.  Runarsson also has his own Matlab implemention
++on the papers above.  Runarsson also has his own Matlab implementation
+ available from his web page: http://www3.hi.is/~tpr
+ 
+ It is under the same MIT license as the rest of my code in NLopt (see
+diff --git AmberTools/src/nlopt/src/algs/isres/isres.c AmberTools/src/nlopt/src/algs/isres/isres.c
+index ad5fc25dbf..196dfc4e7f 100644
+--- AmberTools/src/nlopt/src/algs/isres/isres.c
++++ AmberTools/src/nlopt/src/algs/isres/isres.c
+@@ -41,7 +41,7 @@
+    vol. 4 (no. 3), pp. 284-294 (2000).
+ 
+    This is an independent implementation by S. G. Johnson (2009) based
+-   on the papers above.  Runarsson also has his own Matlab implemention
++   on the papers above.  Runarsson also has his own Matlab implementation
+    available from his web page: http://www3.hi.is/~tpr
+ */
+ 
+diff --git AmberTools/src/nlopt/src/algs/luksan/mssubs.c AmberTools/src/nlopt/src/algs/luksan/mssubs.c
+index aa464afb48..bfd0221431 100644
+--- AmberTools/src/nlopt/src/algs/luksan/mssubs.c
++++ AmberTools/src/nlopt/src/algs/luksan/mssubs.c
+@@ -129,7 +129,7 @@ void luksan_mxdcmv__(int *n, int *m, double *a,
+ /* 91/12/01 LU : ORIGINAL VERSION */
+ 
+ /* PURPOSE : */
+-/* DIFFERENCE OF TWO VECTORS RETURNED IN THE SUBSTRACTED ONE. */
++/* DIFFERENCE OF TWO VECTORS RETURNED IN THE SUBTRACTED ONE. */
+ 
+ /* PARAMETERS : */
+ /*  II  N  VECTOR DIMENSION. */
+diff --git AmberTools/src/nlopt/src/algs/mlsl/mlsl.c AmberTools/src/nlopt/src/algs/mlsl/mlsl.c
+index da87def99c..7d7a749225 100644
+--- AmberTools/src/nlopt/src/algs/mlsl/mlsl.c
++++ AmberTools/src/nlopt/src/algs/mlsl/mlsl.c
+@@ -373,7 +373,7 @@ nlopt_result mlsl_minimize(int n, nlopt_func f, void *f_data,
+ 	       }
+ 	  }
+ 
+-	  /* distance threshhold parameter R in MLSL */
++	  /* distance threshold parameter R in MLSL */
+ 	  R = d.R_prefactor 
+ 	       * pow(log((double) d.pts.N) / d.pts.N, 1.0 / n);
+ 
+diff --git AmberTools/src/nlopt/src/algs/mma/ccsa_quadratic.c AmberTools/src/nlopt/src/algs/mma/ccsa_quadratic.c
+index ca39d7a2ed..f89fc78e9b 100644
+--- AmberTools/src/nlopt/src/algs/mma/ccsa_quadratic.c
++++ AmberTools/src/nlopt/src/algs/mma/ccsa_quadratic.c
+@@ -218,7 +218,8 @@ nlopt_result ccsa_quadratic_minimize(
+      double *x, /* in: initial guess, out: minimizer */
+      double *minf,
+      nlopt_stopping *stop,
+-     nlopt_opt dual_opt, int inner_maxeval, unsigned verbose)
++     nlopt_opt dual_opt, int inner_maxeval, unsigned verbose, double rho_init,
++	 const double *sigma_init)
+ {
+      nlopt_result ret = NLOPT_SUCCESS;
+      double *xcur, rho, *sigma, *dfdx, *dfdx_cur, *xprev, *xprevprev, fcur;
+@@ -322,14 +323,16 @@ nlopt_result ccsa_quadratic_minimize(
+      }
+ 
+      for (j = 0; j < n; ++j) {
+-	  if (nlopt_isinf(ub[j]) || nlopt_isinf(lb[j]))
++	  if (sigma_init && sigma_init[j] > 0)
++	  	   sigma[j] = sigma_init[j];
++	  else if (nlopt_isinf(ub[j]) || nlopt_isinf(lb[j]))
+ 	       sigma[j] = 1.0; /* arbitrary default */
+ 	  else
+ 	       sigma[j] = 0.5 * (ub[j] - lb[j]);
+      }
+-     rho = 1.0;
++     rho = rho_init;
+      for (i = 0; i < m; ++i) {
+-	  rhoc[i] = 1.0;
++	  rhoc[i] = rho_init;
+ 	  dual_lb[i] = y[i] = 0.0;
+ 	  dual_ub[i] = HUGE_VAL;
+      }
+diff --git AmberTools/src/nlopt/src/algs/mma/mma.c AmberTools/src/nlopt/src/algs/mma/mma.c
+index f3dd17469b..3236099c84 100644
+--- AmberTools/src/nlopt/src/algs/mma/mma.c
++++ AmberTools/src/nlopt/src/algs/mma/mma.c
+@@ -148,7 +148,8 @@ nlopt_result mma_minimize(unsigned n, nlopt_func f, void *f_data,
+ 			  double *x, /* in: initial guess, out: minimizer */
+ 			  double *minf,
+ 			  nlopt_stopping *stop,
+-			  nlopt_opt dual_opt, int inner_maxeval, unsigned verbose)
++			  nlopt_opt dual_opt, int inner_maxeval, unsigned verbose, double rho_init,
++			  const double *sigma_init)
+ {
+      nlopt_result ret = NLOPT_SUCCESS;
+      double *xcur, rho, *sigma, *dfdx, *dfdx_cur, *xprev, *xprevprev, fcur;
+@@ -198,14 +199,16 @@ nlopt_result mma_minimize(unsigned n, nlopt_func f, void *f_data,
+      dd.gcval = gcval;
+ 
+      for (j = 0; j < n; ++j) {
+-	  if (nlopt_isinf(ub[j]) || nlopt_isinf(lb[j]))
++	  if (sigma_init && sigma_init[j] > 0)
++	  	   sigma[j] = sigma_init[j];
++	  else if (nlopt_isinf(ub[j]) || nlopt_isinf(lb[j]))
+ 	       sigma[j] = 1.0; /* arbitrary default */
+ 	  else
+ 	       sigma[j] = 0.5 * (ub[j] - lb[j]);
+      }
+-     rho = 1.0;
++     rho = rho_init;
+      for (i = 0; i < m; ++i) {
+-	  rhoc[i] = 1.0;
++	  rhoc[i] = rho_init;
+ 	  dual_lb[i] = y[i] = 0.0;
+ 	  dual_ub[i] = HUGE_VAL;
+      }
+diff --git AmberTools/src/nlopt/src/algs/mma/mma.h AmberTools/src/nlopt/src/algs/mma/mma.h
+index d935177fd5..ca2131c434 100644
+--- AmberTools/src/nlopt/src/algs/mma/mma.h
++++ AmberTools/src/nlopt/src/algs/mma/mma.h
+@@ -40,7 +40,8 @@ nlopt_result mma_minimize(unsigned n, nlopt_func f, void *f_data,
+ 			  double *x, /* in: initial guess, out: minimizer */
+ 			  double *minf,
+ 			  nlopt_stopping *stop,
+-			  nlopt_opt dual_opt, int inner_maxeval, unsigned verbose);
++			  nlopt_opt dual_opt, int inner_maxeval, unsigned verbose, double rho_init,
++                 const double *sigma_init);
+ 
+ nlopt_result ccsa_quadratic_minimize(
+      unsigned n, nlopt_func f, void *f_data,
+@@ -52,11 +53,11 @@ nlopt_result ccsa_quadratic_minimize(
+      double *x, /* in: initial guess, out: minimizer */
+      double *minf,
+      nlopt_stopping *stop,
+-     nlopt_opt dual_opt, int inner_maxeval, unsigned verbose);
++     nlopt_opt dual_opt, int inner_maxeval, unsigned verbose, double rho_init,
++     const double *sigma_init);
+ 
+ #ifdef __cplusplus
+ }  /* extern "C" */
+ #endif /* __cplusplus */
+ 
+ #endif
+-
+diff --git AmberTools/src/nlopt/src/algs/neldermead/nldrmd.c AmberTools/src/nlopt/src/algs/neldermead/nldrmd.c
+index d275461e17..ca868cce6c 100644
+--- AmberTools/src/nlopt/src/algs/neldermead/nldrmd.c
++++ AmberTools/src/nlopt/src/algs/neldermead/nldrmd.c
+@@ -187,7 +187,7 @@ nlopt_result nldrmd_minimize_(int n, nlopt_func f, void *f_data,
+ 	       goto done;
+ 	  }
+ 
+-	  /* compute centroid ... if we cared about the perfomance of this,
++	  /* compute centroid ... if we cared about the performance of this,
+ 	     we could do it iteratively by updating the centroid on
+ 	     each step, but then we would have to be more careful about
+ 	     accumulation of rounding errors... anyway n is unlikely to
+diff --git AmberTools/src/nlopt/src/algs/newuoa/README AmberTools/src/nlopt/src/algs/newuoa/README
+index 8055e8c6dd..eae1feb665 100644
+--- AmberTools/src/nlopt/src/algs/newuoa/README
++++ AmberTools/src/nlopt/src/algs/newuoa/README
+@@ -1,6 +1,6 @@
+ This is the NEWUOA software by M. J. D. Powell, which performs
+ derivative-free unconstrained optimization using an iteratively
+-constructred quadratic approximation for the objective function.  See:
++constructed quadratic approximation for the objective function.  See:
+ 
+ 	M. J. D. Powell, "The NEWUOA software for unconstrained
+ 	optimization without derivatives," Proc. 40th Workshop
+diff --git AmberTools/src/nlopt/src/algs/newuoa/newuoa.c AmberTools/src/nlopt/src/algs/newuoa/newuoa.c
+index c53cdccfef..a3428a6eaf 100644
+--- AmberTools/src/nlopt/src/algs/newuoa/newuoa.c
++++ AmberTools/src/nlopt/src/algs/newuoa/newuoa.c
+@@ -724,7 +724,7 @@ L70:
+ 	wvec[ip + wvec_dim1 * 5] = zero;
+     }
+ 
+-/* Put the coefficents of THETA*Wcheck in PROD. */
++/* Put the coefficients of THETA*Wcheck in PROD. */
+ 
+     for (jc = 1; jc <= 5; ++jc) {
+ 	nw = *npt;
+diff --git AmberTools/src/nlopt/src/algs/slsqp/README AmberTools/src/nlopt/src/algs/slsqp/README
+index 6da5fe43de..d51fafdfd9 100644
+--- AmberTools/src/nlopt/src/algs/slsqp/README
++++ AmberTools/src/nlopt/src/algs/slsqp/README
+@@ -25,7 +25,7 @@ with the following changes.  The code was converted to C and manually
+ cleaned up.  It was modified to be re-entrant, preserving the
+ reverse-communication interface but explicitly saving the state in a
+ data structure.  The reverse-communication interface was wrapped with
+-an NLopt-style inteface, with NLopt stopping conditions.  The inexact
++an NLopt-style interface, with NLopt stopping conditions.  The inexact
+ line search was modified to evaluate the functions including gradients
+ for the first step, since this removes the need to evaluate the
+ function+gradient a second time for the same point in the common case
+@@ -44,4 +44,4 @@ re-enable this (although exact line-search is usually overkill in
+ these kinds of algorithms), we plan to do so using a recursive call to
+ NLopt.  (This will allow a user-specified line-search algorithm to be
+ used, and will allow the gradient to be exploited in the exact line
+-search, in contrast to the routine provided with SLSQP.)
+\ No newline at end of file
++search, in contrast to the routine provided with SLSQP.)
+diff --git AmberTools/src/nlopt/src/algs/slsqp/slsqp.c AmberTools/src/nlopt/src/algs/slsqp/slsqp.c
+index 1da2742584..635a855860 100644
+--- AmberTools/src/nlopt/src/algs/slsqp/slsqp.c
++++ AmberTools/src/nlopt/src/algs/slsqp/slsqp.c
+@@ -2235,7 +2235,7 @@ static void slsqp(int *m, int *meq, int *la, int *n,
+ /* *    M              IS THE TOTAL NUMBER OF CONSTRAINTS, M .GE. 0      * */
+ /* *    MEQ            IS THE NUMBER OF EQUALITY CONSTRAINTS, MEQ .GE. 0 * */
+ /* *    LA             SEE A, LA .GE. MAX(M,1)                           * */
+-/* *    N              IS THE NUMBER OF VARIBLES, N .GE. 1               * */
++/* *    N              IS THE NUMBER OF VARIABLES, N .GE. 1              * */
+ /* *  * X()            X() STORES THE CURRENT ITERATE OF THE N VECTOR X  * */
+ /* *                   ON ENTRY X() MUST BE INITIALIZED. ON EXIT X()     * */
+ /* *                   STORES THE SOLUTION VECTOR X IF MODE = 0.         * */
+@@ -2275,7 +2275,7 @@ static void slsqp(int *m, int *meq, int *la, int *n,
+ /* *                1: FUNCTION EVALUATION, (F&C)                        * */
+ /* *                                                                     * */
+ /* *                   FAILURE MODES:                                    * */
+-/* *                2: NUMBER OF EQUALITY CONTRAINTS LARGER THAN N       * */
++/* *                2: NUMBER OF EQUALITY CONSTRAINTS LARGER THAN N      * */
+ /* *                3: MORE THAN 3*N ITERATIONS IN LSQ SUBPROBLEM        * */
+ /* *                4: INEQUALITY CONSTRAINTS INCOMPATIBLE               * */
+ /* *                5: SINGULAR MATRIX E IN LSQ SUBPROBLEM               * */
+@@ -2361,7 +2361,7 @@ static void slsqp(int *m, int *meq, int *la, int *n,
+ /* *                                                                     * */
+ /* *  DATE:           APRIL - OCTOBER, 1981.                             * */
+ /* *  STATUS:         DECEMBER, 31-ST, 1984.                             * */
+-/* *  STATUS:         MARCH   , 21-ST, 1987, REVISED TO FORTAN 77        * */
++/* *  STATUS:         MARCH   , 21-ST, 1987, REVISED TO FORTRAN 77       * */
+ /* *  STATUS:         MARCH   , 20-th, 1989, REVISED TO MS-FORTRAN       * */
+ /* *  STATUS:         APRIL   , 14-th, 1989, HESSE   in-line coded       * */
+ /* *  STATUS:         FEBRUARY, 28-th, 1991, FORTRAN/2 Version 1.04      * */
+@@ -2605,7 +2605,7 @@ nlopt_result nlopt_slsqp(unsigned n, nlopt_func f, void *f_data,
+ 	  /* note: mode == -1 corresponds to the completion of a line search,
+ 	     and is the only time we should check convergence (as in original slsqp code) */
+ 	  if (mode == -1) {
+-	       if (!nlopt_isinf(fprev)) {
++	       if (!nlopt_isinf(fprev) && feasible) {
+ 		    if (nlopt_stop_ftol(stop, fcur, fprev))
+ 			 ret = NLOPT_FTOL_REACHED;
+ 		    else if (nlopt_stop_x(stop, xcur, xprev))
+diff --git AmberTools/src/nlopt/src/algs/stogo/local.cc AmberTools/src/nlopt/src/algs/stogo/local.cc
+index 20a207cb08..ba8e244671 100644
+--- AmberTools/src/nlopt/src/algs/stogo/local.cc
++++ AmberTools/src/nlopt/src/algs/stogo/local.cc
+@@ -139,7 +139,7 @@ int local(Trial &T, TBox &box, TBox &domain, double eps_cl, double *mgr,
+   if (axis == -1) {
+     // Skipping AV
+ #ifdef INI3
+-    // Elaborate scheme to initalize delta
++    // Elaborate scheme to initialize delta
+     delta=delta_coef*norm2(g) ;
+     copy(g,z) ;
+     axpy(1.0,x,z) ;
+@@ -191,7 +191,7 @@ int local(Trial &T, TBox &box, TBox &domain, double eps_cl, double *mgr,
+     nrm_sd=norm2(h_sd) ;
+ 
+     if (nrm_sd < epsilon) {
+-      // Stop criterion (gradient) fullfilled
++      // Stop criterion (gradient) fulfilled
+ #ifdef LS_DEBUG
+       cout << "Gradient small enough" << endl ;
+ #endif
+diff --git AmberTools/src/nlopt/src/algs/stogo/stogo.cc AmberTools/src/nlopt/src/algs/stogo/stogo.cc
+index 9017242e37..b6463b2f7d 100644
+--- AmberTools/src/nlopt/src/algs/stogo/stogo.cc
++++ AmberTools/src/nlopt/src/algs/stogo/stogo.cc
+@@ -4,6 +4,7 @@
+ #include "stogo.h"
+ #include "global.h"
+ 
++namespace {
+ class MyGlobal : public Global {
+ protected:
+   objective_func my_func;
+@@ -25,6 +26,7 @@ public:
+     return 0.0;
+   }
+ };
++}  // namespace
+ 
+ int stogo_minimize(int n,
+ 		   objective_func fgrad, void *data,
+diff --git AmberTools/src/nlopt/src/api/general.c AmberTools/src/nlopt/src/api/general.c
+index 066e1d3b1d..c4ca27ebf2 100644
+--- AmberTools/src/nlopt/src/api/general.c
++++ AmberTools/src/nlopt/src/api/general.c
+@@ -83,10 +83,10 @@ static const char nlopt_algorithm_names[NLOPT_NUM_ALGORITHMS][256] = {
+     "Sequential Quadratic Programming (SQP) (local, derivative)",
+     "CCSA (Conservative Convex Separable Approximations) with simple quadratic approximations (local, derivative)",
+     "ESCH evolutionary strategy",
+-#ifdef NLOPT_CXX11
+-    "AGS (global, no-derivative)"
++#ifdef NLOPT_CXX
++    "AGS (global, no-derivative)",
+ #else
+-    "AGS (NOT COMPILED)"
++    "AGS (NOT COMPILED)",
+ #endif
+ };
+ 
+diff --git AmberTools/src/nlopt/src/api/nlopt-in.hpp AmberTools/src/nlopt/src/api/nlopt-in.hpp
+index e341bd8445..2ee15df38a 100644
+--- AmberTools/src/nlopt/src/api/nlopt-in.hpp
++++ AmberTools/src/nlopt/src/api/nlopt-in.hpp
+@@ -34,6 +34,8 @@
+ #include <cstdlib>
+ #include <cstring>
+ #include <cmath>
++#include <utility> // std::move
++#include <functional> // std::function
+ 
+ // convenience overloading for below (not in nlopt:: since has nlopt_ prefix)
+ inline nlopt_result nlopt_get_initial_step(const nlopt_opt opt, double *dx) {
+@@ -56,6 +58,13 @@ namespace nlopt {
+   typedef double (*vfunc)(const std::vector<double> &x,
+ 			  std::vector<double> &grad, void *data);
+ 
++  // OOP alternative to nlopt_func that stores the data inside,
++  // hence no need to pass (void*) data
++  // functor can be a regular function, C++ lambda, a class with `operator()`
++  // defined with the following signature:
++  //    double operator()(unsigned, const double*, double*);
++  typedef std::function<double(unsigned, const double*, double*)> functor_type;
++
+   //////////////////////////////////////////////////////////////////////
+ 
+   // NLopt-specific exceptions (corresponding to error codes):
+@@ -89,10 +98,26 @@ namespace nlopt {
+     typedef struct {
+       opt *o;
+       mfunc mf; func f; void *f_data;
++      functor_type functor;
+       vfunc vf;
+       nlopt_munge munge_destroy, munge_copy; // non-NULL for SWIG wrappers
+     } myfunc_data;
+ 
++    static myfunc_data* alloc_myfunc_data_with_nulls() {
++      myfunc_data *d = new myfunc_data(); // zero-initialize all pointers
++      if (!d) throw std::bad_alloc();
++
++      return d;
++    }
++
++    myfunc_data* alloc_and_init_myfunc_data() {
++      myfunc_data *d = alloc_myfunc_data_with_nulls();
++
++      d->o = this;
++      return d;
++    }
++
++
+     // free/destroy f_data in nlopt_destroy and nlopt_copy, respectively
+     static void *free_myfunc_data(void *p) {
+       myfunc_data *d = (myfunc_data *) p;
+@@ -112,11 +137,9 @@ namespace nlopt {
+ 	}
+ 	else
+ 	  f_data = d->f_data;
+-	myfunc_data *dnew = new myfunc_data;
+-	if (dnew) {
+-	  *dnew = *d;
+-	  dnew->f_data = f_data;
+-	}
++        myfunc_data *dnew = alloc_myfunc_data_with_nulls();
++        *dnew = *d;
++        dnew->f_data = f_data;
+ 	return (void*) dnew;
+       }
+       else return NULL;
+@@ -193,6 +216,29 @@ namespace nlopt {
+       return HUGE_VAL;
+     }
+ 
++    // nlopt_func wrapper, using std::function object
++    static double functor_wrapper(unsigned n, const double *x,
++                                  double *grad, void *d_) {
++      myfunc_data *d = reinterpret_cast<myfunc_data*>(d_);
++      try {
++        // since functor can be a callable object and contain its own data,
++        // passing data as (void*) is not needed
++        return d->functor(n, x, grad);
++      }
++      catch (std::bad_alloc&)
++	{ d->o->forced_stop_reason = NLOPT_OUT_OF_MEMORY; }
++      catch (std::invalid_argument&)
++	{ d->o->forced_stop_reason = NLOPT_INVALID_ARGS; }
++      catch (roundoff_limited&)
++	{ d->o->forced_stop_reason = NLOPT_ROUNDOFF_LIMITED; }
++      catch (forced_stop&)
++	{ d->o->forced_stop_reason = NLOPT_FORCED_STOP; }
++      catch (...)
++	{ d->o->forced_stop_reason = NLOPT_FAILURE; }
++      d->o->force_stop(); // stop gracefully, opt::optimize will re-throw
++      return HUGE_VAL;
++    }
++
+     void alloc_tmp() {
+       if (xtmp.size() != nlopt_get_dimension(o)) {
+ 	xtmp = std::vector<double>(nlopt_get_dimension(o));
+@@ -285,52 +331,69 @@ namespace nlopt {
+ 
+     // Set the objective function
+     void set_min_objective(func f, void *f_data) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = f; d->f_data = f_data; d->mf = NULL; d->vf = NULL;
+-      d->munge_destroy = d->munge_copy = NULL;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->f      = f;
++      d->f_data = f_data;
++
+       mythrow(nlopt_set_min_objective(o, myfunc, d)); // d freed via o
+     }
+     void set_min_objective(vfunc vf, void *f_data) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = NULL; d->f_data = f_data; d->mf = NULL; d->vf = vf;
+-      d->munge_destroy = d->munge_copy = NULL;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->vf     = vf;
++      d->f_data = f_data;
++
+       mythrow(nlopt_set_min_objective(o, myvfunc, d)); // d freed via o
+       alloc_tmp();
+     }
++    void set_min_objective(functor_type functor) {
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->functor = std::move(functor);
++
++      mythrow(nlopt_set_min_objective(o, functor_wrapper, d)); // d freed via o
++    }
++
+     void set_max_objective(func f, void *f_data) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = f; d->f_data = f_data; d->mf = NULL; d->vf = NULL;
+-      d->munge_destroy = d->munge_copy = NULL;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->f      = f;
++      d->f_data = f_data;
++
+       mythrow(nlopt_set_max_objective(o, myfunc, d)); // d freed via o
+     }
+     void set_max_objective(vfunc vf, void *f_data) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = NULL; d->f_data = f_data; d->mf = NULL; d->vf = vf;
+-      d->munge_destroy = d->munge_copy = NULL;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->vf     = vf;
++      d->f_data = f_data;
++
+       mythrow(nlopt_set_max_objective(o, myvfunc, d)); // d freed via o
+       alloc_tmp();
+     }
++    void set_max_objective(functor_type functor) {
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->functor = std::move(functor);
++
++      mythrow(nlopt_set_max_objective(o, functor_wrapper, d)); // d freed via o
++    }
+ 
+     // for internal use in SWIG wrappers -- variant that
+     // takes ownership of f_data, with munging for destroy/copy
+     void set_min_objective(func f, void *f_data,
+ 			   nlopt_munge md, nlopt_munge mc) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = f; d->f_data = f_data; d->mf = NULL; d->vf = NULL;
+-      d->munge_destroy = md; d->munge_copy = mc;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->f             = f;
++      d->f_data        = f_data;
++      d->munge_destroy = md;
++      d->munge_copy    = mc;
++
+       mythrow(nlopt_set_min_objective(o, myfunc, d)); // d freed via o
+     }
+     void set_max_objective(func f, void *f_data,
+ 			   nlopt_munge md, nlopt_munge mc) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = f; d->f_data = f_data; d->mf = NULL; d->vf = NULL;
+-      d->munge_destroy = md; d->munge_copy = mc;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->f             = f;
++      d->f_data        = f_data;
++      d->munge_destroy = md;
++      d->munge_copy    = mc;
++
+       mythrow(nlopt_set_max_objective(o, myfunc, d)); // d freed via o
+     }
+ 
+@@ -341,26 +404,26 @@ namespace nlopt {
+       mythrow(ret);
+     }
+     void add_inequality_constraint(func f, void *f_data, double tol=0) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = f; d->f_data = f_data; d->mf = NULL; d->vf = NULL;
+-      d->munge_destroy = d->munge_copy = NULL;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->f      = f;
++      d->f_data = f_data;
++
+       mythrow(nlopt_add_inequality_constraint(o, myfunc, d, tol));
+     }
+     void add_inequality_constraint(vfunc vf, void *f_data, double tol=0) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = NULL; d->f_data = f_data; d->mf = NULL; d->vf = vf;
+-      d->munge_destroy = d->munge_copy = NULL;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->vf     = vf;
++      d->f_data = f_data;
++
+       mythrow(nlopt_add_inequality_constraint(o, myvfunc, d, tol));
+       alloc_tmp();
+     }
+     void add_inequality_mconstraint(mfunc mf, void *f_data,
+ 				    const std::vector<double> &tol) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->mf = mf; d->f_data = f_data; d->f = NULL; d->vf = NULL;
+-      d->munge_destroy = d->munge_copy = NULL;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->mf     = mf;
++      d->f_data = f_data;
++
+       mythrow(nlopt_add_inequality_mconstraint(o, tol.size(), mymfunc, d,
+ 					       tol.empty() ? NULL : &tol[0]));
+     }
+@@ -370,26 +433,26 @@ namespace nlopt {
+       mythrow(ret);
+     }
+     void add_equality_constraint(func f, void *f_data, double tol=0) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = f; d->f_data = f_data; d->mf = NULL; d->vf = NULL;
+-      d->munge_destroy = d->munge_copy = NULL;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->f      = f;
++      d->f_data = f_data;
++
+       mythrow(nlopt_add_equality_constraint(o, myfunc, d, tol));
+     }
+     void add_equality_constraint(vfunc vf, void *f_data, double tol=0) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = NULL; d->f_data = f_data; d->mf = NULL; d->vf = vf;
+-      d->munge_destroy = d->munge_copy = NULL;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->vf     = vf;
++      d->f_data = f_data;
++
+       mythrow(nlopt_add_equality_constraint(o, myvfunc, d, tol));
+       alloc_tmp();
+     }
+     void add_equality_mconstraint(mfunc mf, void *f_data,
+ 				  const std::vector<double> &tol) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->mf = mf; d->f_data = f_data; d->f = NULL; d->vf = NULL;
+-      d->munge_destroy = d->munge_copy = NULL;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->mf     = mf;
++      d->f_data = f_data;
++
+       mythrow(nlopt_add_equality_mconstraint(o, tol.size(), mymfunc, d,
+ 					     tol.empty() ? NULL : &tol[0]));
+     }
+@@ -398,38 +461,46 @@ namespace nlopt {
+     void add_inequality_constraint(func f, void *f_data,
+ 				   nlopt_munge md, nlopt_munge mc,
+ 				   double tol=0) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = f; d->f_data = f_data; d->mf = NULL; d->vf = NULL;
+-      d->munge_destroy = md; d->munge_copy = mc;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->f             = f;
++      d->f_data        = f_data;
++      d->munge_destroy = md;
++      d->munge_copy    = mc;
++
+       mythrow(nlopt_add_inequality_constraint(o, myfunc, d, tol));
+     }
+     void add_equality_constraint(func f, void *f_data,
+ 				 nlopt_munge md, nlopt_munge mc,
+ 				 double tol=0) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->f = f; d->f_data = f_data; d->mf = NULL; d->vf = NULL;
+-      d->munge_destroy = md; d->munge_copy = mc;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->f             = f;
++      d->f_data        = f_data;
++      d->munge_destroy = md;
++      d->munge_copy    = mc;
++
+       mythrow(nlopt_add_equality_constraint(o, myfunc, d, tol));
+     }
+     void add_inequality_mconstraint(mfunc mf, void *f_data,
+ 				    nlopt_munge md, nlopt_munge mc,
+ 				    const std::vector<double> &tol) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->mf = mf; d->f_data = f_data; d->f = NULL; d->vf = NULL;
+-      d->munge_destroy = md; d->munge_copy = mc;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->mf            = mf;
++      d->f_data        = f_data;
++      d->munge_destroy = md;
++      d->munge_copy    = mc;
++
+       mythrow(nlopt_add_inequality_mconstraint(o, tol.size(), mymfunc, d,
+ 					       tol.empty() ? NULL : &tol[0]));
+     }
+     void add_equality_mconstraint(mfunc mf, void *f_data,
+ 				  nlopt_munge md, nlopt_munge mc,
+ 				  const std::vector<double> &tol) {
+-      myfunc_data *d = new myfunc_data;
+-      if (!d) throw std::bad_alloc();
+-      d->o = this; d->mf = mf; d->f_data = f_data; d->f = NULL; d->vf = NULL;
+-      d->munge_destroy = md; d->munge_copy = mc;
++      myfunc_data *d = alloc_and_init_myfunc_data();
++      d->mf            = mf;
++      d->f_data        = f_data;
++      d->munge_destroy = md;
++      d->munge_copy    = mc;
++
+       mythrow(nlopt_add_equality_mconstraint(o, tol.size(), mymfunc, d,
+ 					     tol.empty() ? NULL : &tol[0]));
+     }
+diff --git AmberTools/src/nlopt/src/api/nlopt-internal.h AmberTools/src/nlopt/src/api/nlopt-internal.h
+index 0cca0662e9..e191f153a3 100644
+--- AmberTools/src/nlopt/src/api/nlopt-internal.h
++++ AmberTools/src/nlopt/src/api/nlopt-internal.h
+@@ -96,7 +96,7 @@ extern "C" {
+     extern nlopt_algorithm nlopt_local_search_alg_deriv;
+     extern nlopt_algorithm nlopt_local_search_alg_nonderiv;
+     extern int nlopt_local_search_maxeval;
+-    extern unsigned nlopt_stochastic_population;
++    extern int nlopt_stochastic_population;
+ 
+ /*********************************************************************/
+ 
+diff --git AmberTools/src/nlopt/src/api/optimize.c AmberTools/src/nlopt/src/api/optimize.c
+index 00f117ada7..fe037bc8ac 100644
+--- AmberTools/src/nlopt/src/api/optimize.c
++++ AmberTools/src/nlopt/src/api/optimize.c
+@@ -33,8 +33,6 @@
+ 
+ #ifdef NLOPT_CXX
+ #include "stogo.h"
+-#endif
+-#ifdef NLOPT_CXX11
+ #include "ags.h"
+ #endif
+ 
+@@ -138,6 +136,28 @@ static int finite_domain(unsigned n, const double *lb, const double *ub)
+     return 1;
+ }
+ 
++/*********************************************************************/
++/* when we nest optimization objects, we need to connect them
++   in a stack of force_stop_child nodes, so that if the user
++   calls nlopt_set_force_stop on the original nlopt_opt object
++   it will force all of the subsidiary optimization algorithms to stop. */
++
++static void push_force_stop_child(nlopt_opt opt, nlopt_opt newchild)
++{
++    /* assert: newchild != NULL && newchild->force_stop_child == NULL */
++    newchild->force_stop_child = opt->force_stop_child;
++    opt->force_stop_child = newchild;
++}
++
++static nlopt_opt pop_force_stop_child(nlopt_opt opt)
++{
++    /* assert: opt->force_stop_child != NULL */
++    nlopt_opt oldchild = opt->force_stop_child;
++    opt->force_stop_child = oldchild->force_stop_child;
++    oldchild->force_stop_child = NULL;
++    return oldchild;
++}
++
+ /*********************************************************************/
+ /* wrapper functions, only for derivative-free methods, that
+    eliminate dimensions with lb == ub.   (The gradient-based methods
+@@ -390,10 +410,6 @@ static nlopt_result nlopt_optimize_(nlopt_opt opt, double *x, double *minf)
+     if (!opt || !x || !minf || !opt->f || opt->maximize)
+         RETURN_ERR(NLOPT_INVALID_ARGS, opt, "NULL args to nlopt_optimize_");
+ 
+-    /* reset stopping flag */
+-    nlopt_set_force_stop(opt, 0);
+-    opt->force_stop_child = NULL;
+-
+     /* copy a few params to local vars for convenience */
+     n = opt->n;
+     ni = (int) n;               /* most of the subroutines take "int" arg */
+@@ -502,7 +518,7 @@ static nlopt_result nlopt_optimize_(nlopt_opt opt, double *x, double *minf)
+         }
+ 
+     case NLOPT_GN_AGS:
+-#ifdef NLOPT_CXX11
++#ifdef NLOPT_CXX
+         if (!finite_domain(n, lb, ub))
+             RETURN_ERR(NLOPT_INVALID_ARGS, opt, "finite domain required for global algorithm");
+         return ags_minimize(ni, f, f_data, opt->m, opt->fc, x, minf, lb, ub, &stop);
+@@ -629,9 +645,9 @@ static nlopt_result nlopt_optimize_(nlopt_opt opt, double *x, double *minf)
+                 nlopt_set_ftol_rel(local_opt, 1e-15);
+                 nlopt_set_xtol_rel(local_opt, 1e-7);
+             }
+-            opt->force_stop_child = local_opt;
++            push_force_stop_child(opt, local_opt);
+             ret = mlsl_minimize(ni, f, f_data, lb, ub, x, minf, &stop, local_opt, (int) POP(0), algorithm >= NLOPT_GN_MLSL_LDS && algorithm != NLOPT_G_MLSL);
+-            opt->force_stop_child = NULL;
++            pop_force_stop_child(opt);
+             if (!opt->local_opt)
+                 nlopt_destroy(local_opt);
+             return ret;
+@@ -640,8 +656,16 @@ static nlopt_result nlopt_optimize_(nlopt_opt opt, double *x, double *minf)
+     case NLOPT_LD_MMA:
+     case NLOPT_LD_CCSAQ:
+         {
++            int inner_maxeval = (int)nlopt_get_param(opt, "inner_maxeval",0);
++            int verbosity = (int)nlopt_get_param(opt, "verbosity",0);
++            double rho_init = nlopt_get_param(opt, "rho_init",1.0);
+             nlopt_opt dual_opt;
+             nlopt_result ret;
++
++            if (!(rho_init > 0) && !nlopt_isinf(rho_init))
++                RETURN_ERR(NLOPT_INVALID_ARGS, opt, "rho_init must be positive and finite");
++            verbosity = verbosity < 0 ? 0 : verbosity;
++
+ #define LO(param, def) (opt->local_opt ? opt->local_opt->param : (def))
+             dual_opt = nlopt_create((nlopt_algorithm)nlopt_get_param(opt, "dual_algorithm", LO(algorithm, nlopt_local_search_alg_deriv)),
+                                     nlopt_count_constraints(opt->m, opt->fc));
+@@ -653,11 +677,10 @@ static nlopt_result nlopt_optimize_(nlopt_opt opt, double *x, double *minf)
+             nlopt_set_xtol_abs1(dual_opt, nlopt_get_param(opt, "dual_xtol_abs", 0.0));
+             nlopt_set_maxeval(dual_opt, nlopt_get_param(opt, "dual_maxeval", LO(maxeval, 100000)));
+ #undef LO
+-
+             if (algorithm == NLOPT_LD_MMA)
+-                ret = mma_minimize(n, f, f_data, opt->m, opt->fc, lb, ub, x, minf, &stop, dual_opt, (int)nlopt_get_param(opt, "inner_maxeval",0), (unsigned)nlopt_get_param(opt, "verbosity",0));
++                ret = mma_minimize(n, f, f_data, opt->m, opt->fc, lb, ub, x, minf, &stop, dual_opt, inner_maxeval, (unsigned)verbosity, rho_init, opt->dx);
+             else
+-                ret = ccsa_quadratic_minimize(n, f, f_data, opt->m, opt->fc, opt->pre, lb, ub, x, minf, &stop, dual_opt, (int)nlopt_get_param(opt, "inner_maxeval",0), (unsigned)nlopt_get_param(opt, "verbosity",0));
++                ret = ccsa_quadratic_minimize(n, f, f_data, opt->m, opt->fc, opt->pre, lb, ub, x, minf, &stop, dual_opt, inner_maxeval, (unsigned)verbosity, rho_init, opt->dx);
+             nlopt_destroy(dual_opt);
+             return ret;
+         }
+@@ -757,11 +780,11 @@ static nlopt_result nlopt_optimize_(nlopt_opt opt, double *x, double *minf)
+             }
+             if (opt->dx)
+                 nlopt_set_initial_step(local_opt, opt->dx);
+-            opt->force_stop_child = local_opt;
++            push_force_stop_child(opt, local_opt);
+             ret = auglag_minimize(ni, f, f_data,
+                                   opt->m, opt->fc,
+                                   opt->p, opt->h, lb, ub, x, minf, &stop, local_opt, algorithm == NLOPT_AUGLAG_EQ || algorithm == NLOPT_LN_AUGLAG_EQ || algorithm == NLOPT_LD_AUGLAG_EQ);
+-            opt->force_stop_child = NULL;
++            pop_force_stop_child(opt);
+             if (!opt->local_opt)
+                 nlopt_destroy(local_opt);
+             return ret;
+@@ -833,6 +856,10 @@ nlopt_result NLOPT_STDCALL nlopt_optimize(nlopt_opt opt, double *x, double *opt_
+     f_data = opt->f_data;
+     pre = opt->pre;
+ 
++    /* reset stopping flag */
++    nlopt_set_force_stop(opt, 0);
++    opt->force_stop_child = NULL;
++
+     /* for maximizing, just minimize the f_max wrapper, which
+        flips the sign of everything */
+     if ((maximize = opt->maximize)) {
+@@ -847,7 +874,7 @@ nlopt_result NLOPT_STDCALL nlopt_optimize(nlopt_opt opt, double *x, double *opt_
+         opt->maximize = 0;
+     }
+ 
+-    {                           /* possibly eliminate lb == ub dimensions for some algorithms */
++    { /* possibly eliminate lb == ub dimensions for some algorithms */
+         nlopt_opt elim_opt = opt;
+         if (elimdim_wrapcheck(opt)) {
+             elim_opt = elimdim_create(opt);
+@@ -857,7 +884,7 @@ nlopt_result NLOPT_STDCALL nlopt_optimize(nlopt_opt opt, double *x, double *opt_
+                 goto done;
+             }
+             elimdim_shrink(opt->n, x, opt->lb, opt->ub);
+-            opt->force_stop_child = elim_opt;
++            push_force_stop_child(opt, elim_opt);
+         }
+ 
+         ret = nlopt_optimize_(elim_opt, x, opt_f);
+@@ -865,14 +892,14 @@ nlopt_result NLOPT_STDCALL nlopt_optimize(nlopt_opt opt, double *x, double *opt_
+         if (elim_opt != opt) {
+             opt->numevals = elim_opt->numevals;
+             opt->errmsg = elim_opt->errmsg; elim_opt->errmsg = NULL;
+-            elimdim_destroy(elim_opt);
++            pop_force_stop_child(opt);
+             elimdim_expand(opt->n, x, opt->lb, opt->ub);
+-            opt->force_stop_child = NULL;
++            elimdim_destroy(elim_opt);
+         }
+     }
+ 
+   done:
+-    if (maximize) {             /* restore original signs */
++    if (maximize) { /* restore original signs */
+         opt->maximize = maximize;
+         opt->stopval = -opt->stopval;
+         opt->f = f;
+diff --git AmberTools/src/nlopt/src/api/options.c AmberTools/src/nlopt/src/api/options.c
+index 853a5d671e..ccfea934f9 100644
+--- AmberTools/src/nlopt/src/api/options.c
++++ AmberTools/src/nlopt/src/api/options.c
+@@ -632,8 +632,6 @@ nlopt_result NLOPT_STDCALL nlopt_add_equality_mconstraint(nlopt_opt opt, unsigne
+         ret = NLOPT_INVALID_ARGS;
+     else if (!equality_ok(opt->algorithm))
+         ret = ERR(NLOPT_INVALID_ARGS, opt, "invalid algorithm for constraints");
+-    else if (nlopt_count_constraints(opt->p, opt->h) + m > opt->n)
+-        ret = ERR(NLOPT_INVALID_ARGS, opt, "too many equality constraints");
+     else
+         ret = add_constraint(opt, &opt->p, &opt->p_alloc, &opt->h, m, NULL, fc, NULL, fc_data, tol);
+     if (ret < 0 && opt && opt->munge_on_destroy)
+@@ -649,8 +647,6 @@ nlopt_result NLOPT_STDCALL nlopt_add_precond_equality_constraint(nlopt_opt opt,
+         ret = NLOPT_INVALID_ARGS;
+     else if (!equality_ok(opt->algorithm))
+         ret = ERR(NLOPT_INVALID_ARGS, opt, "invalid algorithm for constraints");
+-    else if (nlopt_count_constraints(opt->p, opt->h) + 1 > opt->n)
+-        ret = ERR(NLOPT_INVALID_ARGS, opt, "too many equality constraints");
+     else
+         ret = add_constraint(opt, &opt->p, &opt->p_alloc, &opt->h, 1, fc, NULL, pre, fc_data, &tol);
+     if (ret < 0 && opt && opt->munge_on_destroy)
+@@ -691,6 +687,11 @@ GETSET(ftol_rel, double, ftol_rel) GETSET(ftol_abs, double, ftol_abs) GETSET(xto
+ {
+     if (opt) {
+         nlopt_unset_errmsg(opt);
++	if (!xtol_abs) {
++	    free(opt->xtol_abs);
++	    opt->xtol_abs = NULL;
++	    return NLOPT_SUCCESS;
++	}
+         if (!opt->xtol_abs && opt->n > 0) {
+             opt->xtol_abs = (double *) calloc(opt->n, sizeof(double));
+             if (!opt->xtol_abs) return NLOPT_OUT_OF_MEMORY;
+@@ -738,6 +739,11 @@ nlopt_result NLOPT_STDCALL nlopt_set_x_weights(nlopt_opt opt, const double *x_we
+     if (opt) {
+         unsigned i;
+         nlopt_unset_errmsg(opt);
++	if (!x_weights) {
++	  free(opt->x_weights);
++	  opt->x_weights = NULL;
++	  return NLOPT_SUCCESS;
++	}
+         for (i = 0; i < opt->n; i++)
+             if (x_weights[i] < 0)
+                 return ERR(NLOPT_INVALID_ARGS, opt, "invalid negative weight");
+diff --git AmberTools/src/nlopt/src/octave/CMakeLists.txt AmberTools/src/nlopt/src/octave/CMakeLists.txt
+index fdc5c6814f..a79c9581da 100644
+--- AmberTools/src/nlopt/src/octave/CMakeLists.txt
++++ AmberTools/src/nlopt/src/octave/CMakeLists.txt
+@@ -1,10 +1,8 @@
+-set (MFILES NLOPT_GN_DIRECT.m NLOPT_GN_DIRECT_L.m NLOPT_GN_DIRECT_L_RAND.m NLOPT_GN_DIRECT_NOSCAL.m NLOPT_GN_DIRECT_L_NOSCAL.m NLOPT_GN_DIRECT_L_RAND_NOSCAL.m NLOPT_GN_ORIG_DIRECT.m NLOPT_GN_ORIG_DIRECT_L.m NLOPT_GD_STOGO.m NLOPT_GD_STOGO_RAND.m NLOPT_LD_LBFGS_NOCEDAL.m NLOPT_LD_LBFGS.m NLOPT_LN_PRAXIS.m NLOPT_LD_VAR1.m NLOPT_LD_VAR2.m NLOPT_LD_TNEWTON.m NLOPT_LD_TNEWTON_RESTART.m NLOPT_LD_TNEWTON_PRECOND.m NLOPT_LD_TNEWTON_PRECOND_RESTART.m NLOPT_GN_CRS2_LM.m NLOPT_GN_MLSL.m NLOPT_GD_MLSL.m NLOPT_GN_MLSL_LDS.m NLOPT_GD_MLSL_LDS.m NLOPT_LD_MMA.m NLOPT_LN_COBYLA.m NLOPT_LN_NEWUOA.m NLOPT_LN_NEWUOA_BOUND.m NLOPT_LN_NELDERMEAD.m NLOPT_LN_SBPLX.m NLOPT_LN_AUGLAG.m NLOPT_LD_AUGLAG.m NLOPT_LN_AUGLAG_EQ.m NLOPT_LD_AUGLAG_EQ.m NLOPT_LN_BOBYQA.m NLOPT_GN_ISRES.m NLOPT_AUGLAG.m NLOPT_AUGLAG_EQ.m NLOPT_G_MLSL.m NLOPT_G_MLSL_LDS.m NLOPT_LD_SLSQP.m NLOPT_LD_CCSAQ.m NLOPT_GN_ESCH.m)
++set (MFILES NLOPT_GN_DIRECT.m NLOPT_GN_DIRECT_L.m NLOPT_GN_DIRECT_L_RAND.m NLOPT_GN_DIRECT_NOSCAL.m NLOPT_GN_DIRECT_L_NOSCAL.m NLOPT_GN_DIRECT_L_RAND_NOSCAL.m NLOPT_GN_ORIG_DIRECT.m NLOPT_GN_ORIG_DIRECT_L.m NLOPT_GD_STOGO.m NLOPT_GD_STOGO_RAND.m NLOPT_LD_LBFGS_NOCEDAL.m NLOPT_LD_LBFGS.m NLOPT_LN_PRAXIS.m NLOPT_LD_VAR1.m NLOPT_LD_VAR2.m NLOPT_LD_TNEWTON.m NLOPT_LD_TNEWTON_RESTART.m NLOPT_LD_TNEWTON_PRECOND.m NLOPT_LD_TNEWTON_PRECOND_RESTART.m NLOPT_GN_CRS2_LM.m NLOPT_GN_MLSL.m NLOPT_GD_MLSL.m NLOPT_GN_MLSL_LDS.m NLOPT_GD_MLSL_LDS.m NLOPT_LD_MMA.m NLOPT_LN_COBYLA.m NLOPT_LN_NEWUOA.m NLOPT_LN_NEWUOA_BOUND.m NLOPT_LN_NELDERMEAD.m NLOPT_LN_SBPLX.m NLOPT_LN_AUGLAG.m NLOPT_LD_AUGLAG.m NLOPT_LN_AUGLAG_EQ.m NLOPT_LD_AUGLAG_EQ.m NLOPT_LN_BOBYQA.m NLOPT_GN_ISRES.m NLOPT_AUGLAG.m NLOPT_AUGLAG_EQ.m NLOPT_G_MLSL.m NLOPT_G_MLSL_LDS.m NLOPT_LD_SLSQP.m NLOPT_LD_CCSAQ.m NLOPT_GN_ESCH.m NLOPT_GN_AGS.m)
+ set (M_DATA ${MFILES} nlopt_minimize.m nlopt_minimize_constrained.m)
+ 
+ 
+ if (Matlab_FOUND AND Matlab_MX_LIBRARY)
+-  cmake_minimum_required (VERSION 3.3) # for the matlab_add_mex macro
+-
+   matlab_add_mex (NAME nlopt_optimize-mex SRC nlopt_optimize-mex.c OUTPUT_NAME nlopt_optimize LINK_TO ${nlopt_lib})
+   target_include_directories (nlopt_optimize-mex PRIVATE ${PROJECT_SOURCE_DIR}/src/api)
+ 
+@@ -14,7 +12,7 @@ if (Matlab_FOUND AND Matlab_MX_LIBRARY)
+       set_target_properties(nlopt_optimize-mex PROPERTIES COMPILE_FLAGS "-fvisibility=default")
+     endif()
+   endif()
+-  
++
+   if (NLOPT_CXX)
+     set_target_properties (nlopt_optimize-mex PROPERTIES LINKER_LANGUAGE CXX)
+   endif ()
+diff --git AmberTools/src/nlopt/src/octave/NLOPT_GN_AGS.m AmberTools/src/nlopt/src/octave/NLOPT_GN_AGS.m
+new file mode 100644
+index 0000000000..d2e696e87f
+--- /dev/null
++++ AmberTools/src/nlopt/src/octave/NLOPT_GN_AGS.m
+@@ -0,0 +1,6 @@
++% NLOPT_GN_AGS: global derivative-free optimization
++% with nonlinear inequality constraints.
++%
++% See nlopt_minimize for more information.
++function val = NLOPT_GN_AGS
++  val = 43;
+diff --git AmberTools/src/nlopt/src/swig/CMakeLists.txt AmberTools/src/nlopt/src/swig/CMakeLists.txt
+index 78e2533301..b676530618 100644
+--- AmberTools/src/nlopt/src/swig/CMakeLists.txt
++++ AmberTools/src/nlopt/src/swig/CMakeLists.txt
+@@ -3,7 +3,6 @@ if (POLICY CMP0078)
+   cmake_policy(SET CMP0078 NEW)
+ endif ()
+ include (UseSWIG)
+-include (TargetLinkLibrariesWithDynamicLookup)
+ 
+ if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/nlopt-enum-renames.i)
+   file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/nlopt-enum-renames.i "// AUTOMATICALLY GENERATED -- DO NOT EDIT\n")
+@@ -17,64 +16,51 @@ endif ()
+ include_directories (${NLOPT_PRIVATE_INCLUDE_DIRS})
+ set_source_files_properties (nlopt.i PROPERTIES CPLUSPLUS ON)
+ 
+-if (NUMPY_FOUND AND PYTHONLIBS_FOUND)
++if (NUMPY_FOUND AND Python_FOUND)
+ 
+   set (SWIG_MODULE_nlopt_python_EXTRA_DEPS nlopt-python.i numpy.i generate-cpp)
+ 
+   # swig_add_module is deprecated
+-  if (CMAKE_VERSION VERSION_LESS 3.8)
+-    swig_add_module (nlopt_python python nlopt.i)
+-  else ()
+-    swig_add_library (nlopt_python LANGUAGE python SOURCES nlopt.i)
+-  endif ()
++  swig_add_library (nlopt_python LANGUAGE python SOURCES nlopt.i)
++
++  target_include_directories (nlopt_python PRIVATE ${Python_INCLUDE_DIRS})
++  target_include_directories (nlopt_python PRIVATE ${NUMPY_INCLUDE_DIRS})
+ 
+-  # UseSWIG generates now standard target names
+-  if (CMAKE_VERSION VERSION_LESS 3.13)
+-    set (nlopt_python ${SWIG_MODULE_nlopt_python_REAL_NAME})
++  swig_link_libraries (nlopt_python ${nlopt_lib})
++  if (TARGET Python::Module)
++    target_link_libraries (nlopt_python Python::Module)
+   else ()
+-    set (nlopt_python "nlopt_python")
++    include (TargetLinkLibrariesWithDynamicLookup)
++    target_link_libraries_with_dynamic_lookup (${nlopt_python} ${Python_LIBRARIES})
+   endif ()
+ 
+-  target_include_directories (${nlopt_python} PRIVATE ${PYTHON_INCLUDE_DIRS})
+-  target_include_directories (${nlopt_python} PRIVATE ${NUMPY_INCLUDE_DIRS})
+-
+-  swig_link_libraries (nlopt_python ${nlopt_lib})
+-  target_link_libraries_with_dynamic_lookup (${nlopt_python} ${PYTHON_LIBRARIES})
++  set_target_properties (nlopt_python PROPERTIES OUTPUT_NAME nlopt)
+ 
+-  set_target_properties (${nlopt_python} PROPERTIES OUTPUT_NAME nlopt)
+-  if (CMAKE_VERSION VERSION_LESS 3.13)
+-    set_target_properties (${nlopt_python} PROPERTIES PREFIX "_")
++  if (NOT DEFINED PYTHON_EXTENSION_MODULE_SUFFIX AND NOT CMAKE_CROSSCOMPILING)
++    execute_process (COMMAND ${Python_EXECUTABLE} -c "import importlib.machinery; print(importlib.machinery.EXTENSION_SUFFIXES[0])"
++                    OUTPUT_VARIABLE PYTHON_EXTENSION_MODULE_SUFFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
++  endif ()
++  if (DEFINED PYTHON_EXTENSION_MODULE_SUFFIX)
++    set_target_properties (nlopt_python PROPERTIES SUFFIX "${PYTHON_EXTENSION_MODULE_SUFFIX}")
+   endif ()
+ 
+   install (FILES ${CMAKE_CURRENT_BINARY_DIR}/nlopt.py DESTINATION ${INSTALL_PYTHON_DIR})
+-  install (TARGETS ${nlopt_python} LIBRARY DESTINATION ${INSTALL_PYTHON_DIR})
++  install (TARGETS nlopt_python DESTINATION ${INSTALL_PYTHON_DIR})
+ endif ()
+ 
+ 
+-# guile bindings with gcc only ok with swig >= 2.0.10
+-if (GUILE_FOUND AND (SWIG_VERSION VERSION_GREATER 2.0.9))
++if (GUILE_FOUND)
+ 
+   set_source_files_properties (nlopt.i PROPERTIES SWIG_FLAGS "-scmstub")
+   set (SWIG_MODULE_nlopt_guile_EXTRA_DEPS nlopt-guile.i generate-cpp)
+ 
+   # swig_add_module is deprecated
+-  if (CMAKE_VERSION VERSION_LESS 3.8)
+-    swig_add_module (nlopt_guile guile nlopt.i)
+-  else ()
+-    swig_add_library (nlopt_guile LANGUAGE guile SOURCES nlopt.i)
+-  endif ()
+-
+-  # UseSWIG generates now standard target names
+-  if (CMAKE_VERSION VERSION_LESS 3.13)
+-    set (nlopt_guile ${SWIG_MODULE_nlopt_guile_REAL_NAME})
+-  else ()
+-    set (nlopt_guile "nlopt_guile")
+-  endif ()
++  swig_add_library (nlopt_guile LANGUAGE guile SOURCES nlopt.i)
+ 
+-  target_include_directories (${nlopt_guile} PRIVATE ${GUILE_INCLUDE_DIRS})
++  target_include_directories (nlopt_guile PRIVATE ${GUILE_INCLUDE_DIRS})
+ 
+   swig_link_libraries (nlopt_guile ${nlopt_lib})
+-  target_link_libraries_with_dynamic_lookup (${nlopt_guile} ${GUILE_LIBRARIES})
++  target_link_libraries (nlopt_guile ${GUILE_LIBRARIES})
+ 
+   file (RELATIVE_PATH _REL_GUILE_SITE_PATH ${GUILE_ROOT_DIR} ${GUILE_SITE_DIR})
+   set (GUILE_SITE_PATH ${_REL_GUILE_SITE_PATH})
+@@ -82,5 +68,5 @@ if (GUILE_FOUND AND (SWIG_VERSION VERSION_GREATER 2.0.9))
+ 
+   file (RELATIVE_PATH _REL_GUILE_EXTENSION_PATH ${GUILE_ROOT_DIR} ${GUILE_EXTENSION_DIR})
+   set (GUILE_EXTENSION_PATH ${_REL_GUILE_EXTENSION_PATH})
+-  install (TARGETS ${nlopt_guile} LIBRARY DESTINATION ${GUILE_EXTENSION_PATH})
++  install (TARGETS nlopt_guile LIBRARY DESTINATION ${GUILE_EXTENSION_PATH})
+ endif ()
+diff --git AmberTools/src/nlopt/src/swig/nlopt-python.i AmberTools/src/nlopt/src/swig/nlopt-python.i
+index 185507b4a6..41531faa7d 100644
+--- AmberTools/src/nlopt/src/swig/nlopt-python.i
++++ AmberTools/src/nlopt/src/swig/nlopt-python.i
+@@ -4,6 +4,7 @@
+ // Converting NLopt/C++ exceptions to Python exceptions
+ 
+ %{
++#ifndef Py_LIMITED_API
+ 
+ #define ExceptionSubclass(EXCNAME, EXCDOC)				\
+   static PyTypeObject MyExc_ ## EXCNAME = {				\
+@@ -28,16 +29,23 @@ ExceptionSubclass(ForcedStop,
+ ExceptionSubclass(RoundoffLimited,
+ 		  "Python version of nlopt::roundoff_limited exception.")
+ 
++#endif
+ %}
+ 
+ %init %{
++#ifndef Py_LIMITED_API
+   init_ForcedStop(m);
+   init_RoundoffLimited(m);
++#endif
+ %}
+ %pythoncode %{
+-  ForcedStop = _nlopt.ForcedStop
+-  RoundoffLimited = _nlopt.RoundoffLimited
+-  __version__ = str(_nlopt.version_major())+'.'+str(_nlopt.version_minor())+'.'+str(_nlopt.version_bugfix())
++try:
++    ForcedStop = _nlopt.ForcedStop
++    RoundoffLimited = _nlopt.RoundoffLimited
++except AttributeError:
++    ForcedStop = RuntimeError
++    RoundoffLimited = RuntimeError
++__version__ = str(_nlopt.version_major())+'.'+str(_nlopt.version_minor())+'.'+str(_nlopt.version_bugfix())
+ %}
+ 
+ %typemap(throws) std::bad_alloc %{
+@@ -47,12 +55,21 @@ ExceptionSubclass(RoundoffLimited,
+ 
+ %typemap(throws) nlopt::forced_stop %{
+   if (!PyErr_Occurred())
++#ifndef Py_LIMITED_API
+     PyErr_SetString((PyObject*)&MyExc_ForcedStop, "NLopt forced stop");
++#else
++    PyErr_SetString(PyExc_RuntimeError, "NLopt forced stop");
++#endif
+   SWIG_fail;
+ %}
+ 
+ %typemap(throws) nlopt::roundoff_limited %{
+-  PyErr_SetString((PyObject*)&MyExc_RoundoffLimited, "NLopt roundoff-limited");
++  if (!PyErr_Occurred())
++#ifndef Py_LIMITED_API
++    PyErr_SetString((PyObject*)&MyExc_RoundoffLimited, "NLopt roundoff-limited");
++#else
++    PyErr_SetString(PyExc_RuntimeError, "NLopt roundoff-limited");
++#endif
+   SWIG_fail;
+ %}
+ 
+@@ -149,6 +166,10 @@ static double func_python(unsigned n, const double *x, double *grad, void *f)
+     val = PyFloat_AsDouble(result);
+     Py_DECREF(result);
+   }
++  else if (result && PyLong_Check(result)) {
++    val = PyLong_AsUnsignedLong(result);
++    Py_DECREF(result);
++  }
+   else {
+     Py_XDECREF(result);
+     throw std::invalid_argument("invalid result passed to nlopt");
+diff --git AmberTools/src/nlopt/test/CMakeLists.txt AmberTools/src/nlopt/test/CMakeLists.txt
+index a1eef41544..d030ca4ad7 100644
+--- AmberTools/src/nlopt/test/CMakeLists.txt
++++ AmberTools/src/nlopt/test/CMakeLists.txt
+@@ -1,13 +1,19 @@
+ add_custom_target (tests)
+ 
+-add_executable (t_tutorial t_tutorial.cxx)
+-target_link_libraries (t_tutorial ${nlopt_lib})
+-add_dependencies (tests t_tutorial)
+-target_include_directories (t_tutorial PRIVATE ${NLOPT_PRIVATE_INCLUDE_DIRS})
+-add_test (NAME check_tutorial COMMAND t_tutorial)
+-if (CMAKE_HOST_SYSTEM_NAME MATCHES Windows)
+-  set_tests_properties (check_tutorial PROPERTIES ENVIRONMENT "PATH=${PROJECT_BINARY_DIR}\\${CMAKE_BUILD_TYPE};$ENV{PATH}")  # to load dll
+-endif ()
++macro(NLOPT_add_cpp_test test_name)
++  add_executable (${test_name} ${test_name}.cxx)
++  target_link_libraries (${test_name} ${nlopt_lib})
++  add_dependencies (tests ${test_name})
++  target_include_directories (${test_name} PRIVATE ${NLOPT_PRIVATE_INCLUDE_DIRS})
++  add_test (NAME check_${test_name} COMMAND ${test_name})
++  if (CMAKE_HOST_SYSTEM_NAME MATCHES Windows)
++    set_tests_properties (check_${test_name}
++      PROPERTIES ENVIRONMENT "PATH=${PROJECT_BINARY_DIR}\\${CMAKE_BUILD_TYPE};$ENV{PATH}")  # to load dll
++  endif ()
++endmacro()
++
++NLOPT_add_cpp_test(t_tutorial)
++NLOPT_add_cpp_test(cpp_functor)
+ 
+ # have to add timer.c and mt19937ar.c as symbols are declared extern
+ set (testopt_sources testfuncs.c testfuncs.h testopt.c ${PROJECT_SOURCE_DIR}/src/util/timer.c ${PROJECT_SOURCE_DIR}/src/util/mt19937ar.c)
+@@ -32,18 +38,14 @@ foreach (algo_index RANGE 29)# 43
+         set (enable_ FALSE)
+       endif ()
+     endif ()
+-    # cxx11 ags
+-    if (NOT NLOPT_CXX11 AND algo_index STREQUAL 43)
++    # cxx ags
++    if (NOT NLOPT_CXX AND algo_index STREQUAL 43)
+       set (enable_ FALSE)
+     endif ()
+     # L-BFGS
+     if (algo_index STREQUAL 10)
+       set (enable_ FALSE)
+     endif ()
+-    # LN_NEWUOA_BOUND timeouts on msvc
+-    if (algo_index STREQUAL 27)
+-      set (enable_ FALSE)
+-    endif ()
+     if (enable_)
+       add_test (NAME testopt_algo${algo_index}_obj${obj_index} COMMAND testopt -r 0 -a ${algo_index} -o ${obj_index})
+       if (CMAKE_HOST_SYSTEM_NAME MATCHES Windows)
+@@ -53,11 +55,11 @@ foreach (algo_index RANGE 29)# 43
+   endforeach ()
+ endforeach ()
+ 
+-if (NUMPY_FOUND AND PYTHONLIBS_FOUND AND (SWIG_FOUND OR (EXISTS ${PROJECT_SOURCE_DIR}/src/swig/nlopt-python.cpp)))
++if (Python_FOUND AND NUMPY_FOUND AND (SWIG_FOUND OR (EXISTS ${PROJECT_SOURCE_DIR}/src/swig/nlopt-python.cpp)))
+   set (PYINSTALLCHECK_ENVIRONMENT "LD_LIBRARY_PATH=${PROJECT_BINARY_DIR}/src/swig"
+                                   "PYTHONPATH=${PROJECT_BINARY_DIR}/src/swig"
+     )
+-  add_test (NAME test_python COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/t_python.py)
++  add_test (NAME test_python COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/t_python.py)
+   set_tests_properties (test_python PROPERTIES ENVIRONMENT "${PYINSTALLCHECK_ENVIRONMENT}")
+ endif ()
+ 
+@@ -69,7 +71,7 @@ if (MATLAB_FOUND)
+   add_test (NAME test_matlab COMMAND ${Matlab_MAIN_PROGRAM} -nodesktop -nosplash  -r "addpath('${PROJECT_SOURCE_DIR}/src/octave'); addpath('${PROJECT_BINARY_DIR}/src/octave'); try; run('${CMAKE_CURRENT_SOURCE_DIR}/t_matlab.m'); catch; exit(1); end; quit")
+ endif ()
+ 
+-if (GUILE_FOUND AND ((SWIG_FOUND AND SWIG_VERSION VERSION_GREATER 2.0.9) OR (EXISTS ${PROJECT_SOURCE_DIR}/src/swig/nlopt-guile.cpp)))
++if (GUILE_FOUND AND (SWIG_FOUND OR (EXISTS ${PROJECT_SOURCE_DIR}/src/swig/nlopt-guile.cpp)))
+   set (GUILECHECK_ENVIRONMENT "LD_LIBRARY_PATH=${PROJECT_BINARY_DIR}/src/swig"
+                               "GUILE_LOAD_PATH=${PROJECT_BINARY_DIR}/src/swig"
+     )
+diff --git AmberTools/src/nlopt/test/cpp_functor.cxx AmberTools/src/nlopt/test/cpp_functor.cxx
+new file mode 100644
+index 0000000000..47168368e6
+--- /dev/null
++++ AmberTools/src/nlopt/test/cpp_functor.cxx
+@@ -0,0 +1,209 @@
++#include <iostream>
++#include <vector>
++#include <iomanip> // setprecision
++#include <string> // to_string
++#include <numeric> // inner_product
++#include <utility> // move
++#include <algorithm> // copy
++#include <cassert> // assert
++#include <cmath> // sin, cos
++
++#include <nlopt.hpp>
++
++typedef std::vector<double> Vector;
++
++class QuadraticForm {
++  /*
++   * This class represents a quadratic form (½ xᵀAx + bᵀx) and provides two
++   * methods to compute itself and its gradient.
++   *
++   * Input is always a (const double*) which has appropriate dimension.
++   */
++  private:
++    Vector A; // symmetric matrix
++    Vector b; // bias
++    size_t dimension;
++
++    Vector compute_A_times_x(const double* x) const
++    {
++      Vector A_times_x(dimension);
++      for (size_t row = 0; row < dimension; ++row) {
++        A_times_x[row] = dot(x, A, row * dimension);
++      }
++      return A_times_x;
++    }
++
++    double compute_quadratic_term(const double* x) const
++    {
++      auto A_times_x = compute_A_times_x(x);
++      return 0.5 * dot(x, A_times_x);
++    }
++
++    double compute_linear_term(const double* x) const
++    {
++      return dot(x, b);
++    }
++
++    double dot(const double* x, const Vector& y, const size_t offset = 0) const
++    {
++      return std::inner_product(
++          x,
++          x + dimension,
++          std::begin(y) + offset,
++          double(0));
++    }
++
++  public:
++    QuadraticForm() = delete;
++    QuadraticForm(Vector A_, Vector b_) :
++      A(std::move(A_)),
++      b(std::move(b_))
++    {
++      if (A.size() != b.size() * b.size()) {
++        throw std::runtime_error(
++            "[QuadraticForm] matrix and bias dimension mismatch: " +
++            std::to_string(A.size()) +
++            " != " +
++            std::to_string(b.size() * b.size()));
++      }
++      dimension = b.size();
++    }
++
++    double compute_form(const double* x) const
++    {
++      // ½ xᵀAx + bᵀx
++      return compute_quadratic_term(x) + compute_linear_term(x);
++    }
++
++    void compute_gradient_in_place(const double* x, double* grad_array) const
++    {
++      // matrix is assumed symmetric, hence gradient is (Ax + b)
++      Vector grad_vec = compute_A_times_x(x);
++
++      auto b_iterator = std::begin(b);
++      for (auto it = std::begin(grad_vec); it != std::end(grad_vec); ) {
++        *it++ += *b_iterator++;
++      }
++
++      std::copy(std::begin(grad_vec), std::end(grad_vec), grad_array);
++    }
++
++}; // QuadraticForm
++
++
++class LinearRegression {
++  private:
++    QuadraticForm quadratic_form;
++
++  public:
++    LinearRegression() = delete;
++    LinearRegression(QuadraticForm quadratic_form_) :
++      quadratic_form(std::move(quadratic_form_)) {}
++
++    double operator()(unsigned n, const double* x, double* grad) const
++    {
++      const double result = quadratic_form.compute_form(x);
++      if (!!grad) {
++        quadratic_form.compute_gradient_in_place(x, grad);
++      }
++
++      return result;
++    }
++}; // LinearRegression
++
++
++class SineRegression {
++  private:
++    QuadraticForm quadratic_form;
++
++  public:
++    SineRegression() = delete;
++    SineRegression(QuadraticForm quadratic_form_) :
++      quadratic_form(std::move(quadratic_form_)) {}
++
++    double operator()(unsigned n, const double* x, double* grad) const
++    {
++      const double form_result = quadratic_form.compute_form(x);
++      const double result = sin(form_result);
++
++      if (!!grad) {
++        const double grad_coefficient = cos(form_result);
++        quadratic_form.compute_gradient_in_place(x, grad);
++
++        for (size_t i = 0; i < n; ++i) {
++          grad[i] *= grad_coefficient;
++        }
++      }
++
++      return result;
++    }
++}; // SineRegression
++
++
++
++int main()
++{
++  // quadratic form is positive-definite for tau ∈ [-1, 2]
++  constexpr double tau = 1.5;
++  constexpr size_t dimension = 3;
++
++  Vector A = {
++      2,   -1,   tau,
++     -1,    2,    -1,
++    tau,   -1,     2 };
++  Vector b = { -3, 8, 1 };
++
++  assert(b.size() == dimension);
++  assert(A.size() == dimension * dimension);
++
++  QuadraticForm    form(std::move(A), std::move(b));
++  LinearRegression objective_1(form);
++  SineRegression   objective_2(std::move(form));
++
++  nlopt::opt optimizer("LD_MMA", dimension);
++  optimizer.set_xtol_rel(1e-4);
++  optimizer.set_maxeval(1000);
++
++
++  // linear regression optimization
++  optimizer.set_min_objective(std::move(objective_1));
++  double minimum = 0.0;
++  Vector x0 = {-1.0, 0.0, 0.1};
++
++  try {
++    optimizer.optimize(x0, minimum);
++  } catch (const std::exception& e) {
++    std::cerr << "NLopt failed: " << e.what() << std::endl;
++    return EXIT_FAILURE;
++  }
++
++  std::cout << "-- Linear regression --" << std::endl;
++  std::cout << "found minimum at f("
++    << x0[0] << ","
++    << x0[1] << ","
++    << x0[2] << ") = "
++    << std::setprecision(10) << minimum << std::endl << std::endl;
++
++
++  // sine regression optimization
++  optimizer.set_min_objective(std::move(objective_2));
++  minimum = 0.0;
++  x0 = {-1.0, 0.0, 0.1};
++
++  try {
++    optimizer.optimize(x0, minimum);
++  } catch (const std::exception& e) {
++    std::cerr << "NLopt failed: " << e.what() << std::endl;
++    return EXIT_FAILURE;
++  }
++
++  std::cout << "-- Sine regression --" << std::endl;
++  std::cout << "found minimum at f("
++    << x0[0] << ","
++    << x0[1] << ","
++    << x0[2] << ") = "
++    << std::setprecision(10) << minimum << std::endl;
++
++  return 0;
++}
++
+diff --git AmberTools/src/nlopt/test/t_octave.m AmberTools/src/nlopt/test/t_octave.m
+index f9d863b819..5d1de0c192 100644
+--- AmberTools/src/nlopt/test/t_octave.m
++++ AmberTools/src/nlopt/test/t_octave.m
+@@ -21,11 +21,15 @@ function [val, gradient] = myconstraint(x,a,b)
+ endfunction
+ 
+ 
+-opt.algorithm = NLOPT_LD_MMA
++opt.algorithm = NLOPT_LD_MMA;
+ %  opt.algorithm = NLOPT_LN_COBYLA
+-opt.lower_bounds = [-inf, 0]
+-opt.min_objective = @myfunc
+-opt.fc = { (@(x) myconstraint(x,2,0)), (@(x) myconstraint(x,-1,1)) }
++opt.lower_bounds = [-inf, 0];
++opt.min_objective = @myfunc;
++opt.fc = { (@(x) myconstraint(x,2,0)), (@(x) myconstraint(x,-1,1)) };
+ opt.fc_tol = [1e-8, 1e-8];
+-opt.xtol_rel = 1e-4
++opt.xtol_rel = 1e-4;
+ [xopt, fmin, retcode] = nlopt_optimize(opt, [1.234 5.678])
++
++assert (retcode, 4);
++assert (fmin, 0.5443, 1e-4);
++assert (xopt, [0.3333, 0.2963], 1e-4);
+diff --git AmberTools/src/nlopt/test/t_python.py AmberTools/src/nlopt/test/t_python.py
+index e6a69bad6b..91d2560a41 100644
+--- AmberTools/src/nlopt/test/t_python.py
++++ AmberTools/src/nlopt/test/t_python.py
+@@ -1,15 +1,14 @@
+ #!/usr/bin/env python
+ 
+-from __future__ import print_function
+ import nlopt
+-import numpy as np
++import math as m
+ 
+ 
+ def myfunc(x, grad):
+     if grad.size > 0:
+         grad[0] = 0.0
+-        grad[1] = 0.5 / np.sqrt(x[1])
+-    return np.sqrt(x[1])
++        grad[1] = 0.5 / m.sqrt(x[1])
++    return m.sqrt(x[1])
+ 
+ def myconstraint(x, grad, a, b):
+     if grad.size > 0:
+diff --git AmberTools/src/nlopt/test/t_tutorial.cxx AmberTools/src/nlopt/test/t_tutorial.cxx
+index 3594fc5560..c49532e564 100644
+--- AmberTools/src/nlopt/test/t_tutorial.cxx
++++ AmberTools/src/nlopt/test/t_tutorial.cxx
+@@ -51,6 +51,10 @@ int main() {
+     return EXIT_FAILURE;
+   }
+ 
++  // set a couple of other parameters
++  opt.set_param("rho_init", 0.5);
++  opt.set_initial_step(0.1);
++
+   std::vector<double> x(2);
+   x[0] = 1.234; x[1] = 5.678;
+   double minf;
+diff --git AmberTools/src/nlopt/test/testopt.c AmberTools/src/nlopt/test/testopt.c
+index 3e0864939f..07c098b963 100644
+--- AmberTools/src/nlopt/test/testopt.c
++++ AmberTools/src/nlopt/test/testopt.c
+@@ -49,6 +49,7 @@ extern "C" int feenableexcept(int EXCEPTS);
+ 
+ static nlopt_algorithm algorithm = NLOPT_GN_DIRECT_L;
+ static double ftol_rel = 0, ftol_abs = 0, xtol_rel = 0, xtol_abs = 0, minf_max_delta;
++static double initial_step = 0;
+ static int maxeval = 1000, iterations = 1, center_start = 0;
+ static double maxtime = 0.0;
+ static double xinit_tol = -1;
+@@ -235,6 +236,8 @@ static int test_function(int ifunc)
+         nlopt_set_xtol_abs(opt, xtabs);
+         nlopt_set_maxeval(opt, maxeval);
+         nlopt_set_maxtime(opt, maxtime);
++        if (initial_step != 0)
++            nlopt_set_initial_step1(opt, initial_step);
+         ret = nlopt_optimize(opt, x, &minf);
+         printf("finished after %g seconds.\n", nlopt_seconds() - start);
+         printf("return code %d from nlopt_minimize\n", ret);
+@@ -290,6 +293,7 @@ static void usage(FILE * f)
+             " -a <n> : use optimization algorithm <n>\n"
+             " -o <n> : use objective function <n>\n"
+             " -0 <x> : starting guess within <x> + (1+<x>) * optimum\n"
++            " -S <dx>: initial step size dx (default: none)\n"
+             " -b <dim0,dim1,...>: eliminate given dims by equating bounds\n");
+     fprintf(f,
+             "     -c : starting guess at center of cell\n"
+@@ -321,7 +325,7 @@ int main(int argc, char **argv)
+     feenableexcept(FE_INVALID);
+ #endif
+ 
+-    while ((c = getopt(argc, argv, "hLvVCc0:r:a:o:i:e:t:x:X:f:F:m:b:")) != -1)
++    while ((c = getopt(argc, argv, "hLvVCc0:r:a:o:i:e:t:x:X:f:F:m:b:S:")) != -1)
+         switch (c) {
+         case 'h':
+             usage(stdout);
+@@ -389,6 +393,9 @@ int main(int argc, char **argv)
+             center_start = 0;
+             xinit_tol = atof(optarg);
+             break;
++        case 'S':
++            initial_step = atof(optarg);
++            break;
+         case 'b':{
+                 const char *s = optarg;
+                 while (s && *s) {
+diff --git cmake/3rdPartyTools.cmake cmake/3rdPartyTools.cmake
+index ba961c93b5..4fbd87d234 100644
+--- cmake/3rdPartyTools.cmake
++++ cmake/3rdPartyTools.cmake
+@@ -705,20 +705,23 @@ if(NEED_nlopt)
+ 	# because we are relying on the internal headers, our
+ 	# only option is to use the internal nlopt
+ 	#
+-	set_3rdparty(nlopt INTERNAL)
++	#set_3rdparty(nlopt INTERNAL)
+ 
+ 	#
+ 	# In principle, we could search for external or use internal
+ 	#
+-	#find_package(nlopt CONFIG)
+-	#if(NOT nlopt_FOUND)
+-	#	message(STATUS "Could not find nlopt.  To locate it, add its install dir to the prefix path.")
+-	#endif()
+-	#if(nlopt_FOUND)
+-	#	set_3rdparty(nlopt EXTERNAL)
+-	#else()
+-	#	set_3rdparty(nlopt INTERNAL)
+-	#endif() 
++	find_package(nlopt)
++
++	if(NOT nlopt_FOUND)
++	  message(STATUS "Could not find nlopt.  To locate it, add its install dir to the prefix path.")
++	endif()
++	if(nlopt_FOUND)
++	  set_3rdparty(nlopt EXTERNAL)
++	  message("-- Found external nlopt")
++	else()
++	  set_3rdparty(nlopt INTERNAL)
++	  message("-- Did not find external nlopt")
++	endif()
+ endif()
+ 
+ 
+@@ -1273,5 +1276,10 @@ elseif(nlopt_EXTERNAL)
+     message(FATAL_ERROR "You requested to use an external nlopt, but no installation was found.")
+   endif()
+   
+-  using_library_targets(nlopt LIBRARIES nlopt::nlopt)
++  #using_library_targets(nlopt LIBRARIES nlopt::nlopt)
++  #using_library_targets(nlopt::nlopt)
++  #import_libraries(nlopt LIBRARIES nlopt::nlopt INCLUDES nlopt::nlopt)
++  #using_library_targets(nlopt LIBRARIES nlopt::nlopt INCLUDES nlopt::nlopt)
++  using_library_targets(nlopt::nlopt)
++  import_libraries(nlopt LIBRARIES nlopt::nlopt)
+ endif()
+diff --git cmake/Findnlopt.cmake cmake/Findnlopt.cmake
+new file mode 100644
+index 0000000000..1c771f49ea
+--- /dev/null
++++ cmake/Findnlopt.cmake
+@@ -0,0 +1,50 @@
++# - Find nlopt
++# 
++# This module finds the NLOPT library on your system.
++#
++# Variables: 
++#  nlopt_LIBRARIES - Libraries to link to use nlopt as a shared library
++#  nlopt_INCLUDES - Path where nlopt's headers can be found
++#  nlopt_FOUND - Whether nlopt was found
++#  
++# If nlopt was found, this module also creates the following imported target:
++#  nlopt::nlopt - Target for nlopt's libraries
++
++
++# if(DEFINED MINICONDA_INSTALL_DIR)
++#   find_library(nlopt_LIBRARY
++#     NAMES nlopt
++#     PATHS ${MINICONDA_INSTALL_DIR}/lib
++#     DOC "Path to nlopt library")
++  
++#   find_path(nlopt_INCLUDE_DIR
++#     NAMES nlopt.h nlopt.hpp
++#     PATHS ${MINICONDA_INSTALL_DIR}/include
++#     DOC "Path to nlopt's includes.  Should contain nlopt.h and nlopt.hpp")
++# else()
++
++  find_library(nlopt_LIBRARY
++    NAMES nlopt
++    DOC "Path to nlopt library")
++  
++  find_path(nlopt_INCLUDE_DIR
++    NAMES nlopt.h nlopt.hpp
++    DOC "Path to nlopt's includes.  Should contain nlopt.h and nlopt.hpp")
++  
++# endif()
++
++
++
++find_package_handle_standard_args(nlopt
++    REQUIRED_VARS nlopt_LIBRARY nlopt_INCLUDE_DIR)
++
++  
++# create imported target
++if(nlopt_FOUND)
++    message("-- Found external nlopt library ${nlopt_LIBRARY}")
++    message("-- Found external nlopt include directory ${nlopt_INCLUDE_DIR}")
++
++    add_library(nlopt::nlopt UNKNOWN IMPORTED)
++    set_property(TARGET nlopt::nlopt PROPERTY IMPORTED_LOCATION ${nlopt_LIBRARY})
++    set_property(TARGET nlopt::nlopt PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${nlopt_INCLUDE_DIR})
++endif()

@@ -1,0 +1,30 @@
+*******> update.3
+
+Author: Ryan Snyder, Zeke Piskulich, Patricio Barletta
+
+Date: June 18, 2024
+
+Programs: pmemd.cuda
+
+Description: Fixes usage of softcore potentials when gti_add_sc=25 
+--------------------------------------------------------------------------------
+ src/pmemd/src/cuda/gti_nonBond_kernels.cu | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git src/pmemd/src/cuda/gti_nonBond_kernels.cu src/pmemd/src/cuda/gti_nonBond_kernels.cu
+index 36c2e4fb7e..e6f7bfbae4 100644
+--- src/pmemd/src/cuda/gti_nonBond_kernels.cu
++++ src/pmemd/src/cuda/gti_nonBond_kernels.cu
+@@ -893,9 +893,10 @@ _kPlainHead_ kgCalculateTI14NB_kernel(bool needEnergy, bool needVirial) {
+     switch (cSim.addSC) {
+       case 0: addToDVDL_ele = (!hasSC); addToDVDL_vdw = (!hasSC); break;   // only non-SC part
+       case 1: default:  addToDVDL_ele = (!isIntSC); addToDVDL_vdw = (!isIntSC); break; // add common-SC (ele+vdw) boundary
+-	    case 2: addToDVDL_ele = true; addToDVDL_vdw = (!isIntSC); break;  // add SC internal terms (ele only)
++      case 2: addToDVDL_ele = true; addToDVDL_vdw = (!isIntSC); break;  // add SC internal terms (ele only)
++      case 25: addToDVDL_ele = true; addToDVDL_vdw = true;  useSC14 = hasSC; break;
+       case 3: case 4: case 5: case 6:addToDVDL_ele = true; addToDVDL_vdw = true; useSC14 = hasSC;  break;  //  add all NB SC terms
+-	    case -1: addToDVDL_ele = (!isIntSC); addToDVDL_vdw = (!hasSC); break; // add common-SC (ele only) boundary
++      case -1: addToDVDL_ele = (!isIntSC); addToDVDL_vdw = (!hasSC); break; // add common-SC (ele only) boundary
+      }
+ 
+     // EED: note that 1:4 electrostatics are double-counted

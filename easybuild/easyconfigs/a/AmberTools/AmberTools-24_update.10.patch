@@ -1,0 +1,937 @@
+*******> update.10
+
+ Author: Daniel R. Roe
+
+ Date: March 31, 2025
+
+ Program: cpptraj
+
+ Description: Fix detection of NAMD-style unit cell parameters for NAMD DCD. Fix handling of system readline libraries. 
+
+--------------------------------------------------------------------------------
+
+diff --git AmberTools/src/cpptraj/src/EnsembleOut_Multi.cpp AmberTools/src/cpptraj/src/EnsembleOut_Multi.cpp
+index a460cbb76..b6390c933 100644
+--- AmberTools/src/cpptraj/src/EnsembleOut_Multi.cpp
++++ AmberTools/src/cpptraj/src/EnsembleOut_Multi.cpp
+@@ -121,12 +121,15 @@ int EnsembleOut_Multi::InitEnsembleWrite(std::string const& tnameIn,
+ void EnsembleOut_Multi::EndEnsemble() {
+   //if (TrajIsOpen()) {
+     for (IOarrayType::const_iterator tio = ioarray_.begin(); tio != ioarray_.end(); ++tio)
++    {
+ #     ifdef MPI
+       if (trajComm_.Size() > 1)
+         (*tio)->parallelCloseTraj();
+       else
+ #     endif
+         (*tio)->closeTraj();
++      (*tio)->PrintWarnings( fileNames_[tio-ioarray_.begin()] );
++    }
+   //  SetTrajIsOpen( false );
+   //}
+ }
+diff --git AmberTools/src/cpptraj/src/EnsembleOut_Single.cpp AmberTools/src/cpptraj/src/EnsembleOut_Single.cpp
+index b031bd2f7..c0cd30699 100644
+--- AmberTools/src/cpptraj/src/EnsembleOut_Single.cpp
++++ AmberTools/src/cpptraj/src/EnsembleOut_Single.cpp
+@@ -25,6 +25,7 @@ int EnsembleOut_Single::InitEnsembleWrite(std::string const& tnameIn,
+     mprinterr("Internal Error: InitTrajWrite: No filename given.\n");
+     return 1;
+   }
++  fname_ = tnameIn;
+   // Require that ensemble size is set.
+   ensembleSize_ = ensembleSizeIn; 
+   if (ensembleSize_ < 1) {
+@@ -74,7 +75,10 @@ int EnsembleOut_Single::InitEnsembleWrite(std::string const& tnameIn,
+ // EnsembleOut_Single::EndEnsemble()
+ void EnsembleOut_Single::EndEnsemble() {
+   //if (TrajIsOpen()) {
+-  if (eio_ != 0) eio_->closeTraj(); // Handle no init case
++  if (eio_ != 0) {
++    eio_->closeTraj(); // Handle no init case
++    eio_->PrintWarnings(fname_);
++  }
+   //  SetTrajIsOpen(false);
+   //}
+ }
+diff --git AmberTools/src/cpptraj/src/EnsembleOut_Single.h AmberTools/src/cpptraj/src/EnsembleOut_Single.h
+index 90be4146e..c4a35ef10 100644
+--- AmberTools/src/cpptraj/src/EnsembleOut_Single.h
++++ AmberTools/src/cpptraj/src/EnsembleOut_Single.h
+@@ -19,6 +19,7 @@ class EnsembleOut_Single : public EnsembleOut {
+   private:
+     TrajectoryIO* eio_; // TODO Make EnsembleIO
+     int ensembleSize_;
++    std::string fname_;
+ };
+ #endif
+ #endif
+diff --git AmberTools/src/cpptraj/src/Traj_AmberCoord.cpp AmberTools/src/cpptraj/src/Traj_AmberCoord.cpp
+index c780d46d9..2fa5e3c86 100644
+--- AmberTools/src/cpptraj/src/Traj_AmberCoord.cpp
++++ AmberTools/src/cpptraj/src/Traj_AmberCoord.cpp
+@@ -168,7 +168,7 @@ int Traj_AmberCoord::writeFrame(int set, Frame const& frameOut) {
+   
+   if (numBoxCoords_ != 0) {
+     if (!frameOut.BoxCrd().Is_X_Aligned())
+-      mprintf("Warning: Set %i; unit cell is not X-aligned. Box cannot be properly stored as Amber ASCII trajectory.\n", set+1);
++      incrementXalignWarnCount(set, "Amber ASCII trajectory");
+     file_.DoubleToBuffer(frameOut.BoxCrd().XyzPtr(), numBoxCoords_, outfmt_);
+   }
+ 
+diff --git AmberTools/src/cpptraj/src/Traj_AmberNetcdf.cpp AmberTools/src/cpptraj/src/Traj_AmberNetcdf.cpp
+index 5716939f6..41466afda 100644
+--- AmberTools/src/cpptraj/src/Traj_AmberNetcdf.cpp
++++ AmberTools/src/cpptraj/src/Traj_AmberNetcdf.cpp
+@@ -447,7 +447,7 @@ int Traj_AmberNetcdf::writeFrame(int set, Frame const& frameOut) {
+   // Write box
+   if (cellLengthVID_ != -1) {
+     if (!frameOut.BoxCrd().Is_X_Aligned())
+-      mprintf("Warning: Set %i; unit cell is not X-aligned. Box cannot be properly stored as Amber NetCDF trajectory.\n", set+1);
++      incrementXalignWarnCount(set, "Amber NetCDF trajectory");
+     count_[1] = 3;
+     count_[2] = 0;
+     if (NC::CheckErr(nc_put_vara_double(ncid_, cellLengthVID_, start_, count_,
+diff --git AmberTools/src/cpptraj/src/Traj_AmberRestart.cpp AmberTools/src/cpptraj/src/Traj_AmberRestart.cpp
+index febe546f1..e4660b271 100644
+--- AmberTools/src/cpptraj/src/Traj_AmberRestart.cpp
++++ AmberTools/src/cpptraj/src/Traj_AmberRestart.cpp
+@@ -344,7 +344,7 @@ int Traj_AmberRestart::writeFrame(int set, Frame const& frameOut) {
+   // Write box to buffer
+   if (numBoxCoords_!=0) {
+     if (!frameOut.BoxCrd().Is_X_Aligned())
+-      mprintf("Warning: Set %i; unit cell is not X-aligned. Box cannot be properly stored as Amber ASCII restart.\n", set+1);
++      incrementXalignWarnCount(set, "Amber ASCII restart");
+     file_.DoubleToBuffer(frameOut.BoxCrd().XyzPtr(), numBoxCoords_, "%12.7f");
+   }
+ 
+diff --git AmberTools/src/cpptraj/src/Traj_AmberRestartNC.cpp AmberTools/src/cpptraj/src/Traj_AmberRestartNC.cpp
+index 02c7a8fe8..71cb71960 100644
+--- AmberTools/src/cpptraj/src/Traj_AmberRestartNC.cpp
++++ AmberTools/src/cpptraj/src/Traj_AmberRestartNC.cpp
+@@ -294,7 +294,7 @@ int Traj_AmberRestartNC::writeFrame(int set, Frame const& frameOut) {
+   // write box
+   if (cellLengthVID_ != -1) {
+     if (!frameOut.BoxCrd().Is_X_Aligned())
+-      mprintf("Warning: Set %i; unit cell is not X-aligned. Box cannot be properly stored as Amber NetCDF restart.\n", set+1);
++      incrementXalignWarnCount(set, "Amber NetCDF restart");
+     count_[0] = 3;
+     count_[1] = 0;
+     if (NC::CheckErr(nc_put_vara_double(ncid_,cellLengthVID_,start_,count_,frameOut.BoxCrd().XyzPtr())))
+diff --git AmberTools/src/cpptraj/src/Traj_CharmmDcd.cpp AmberTools/src/cpptraj/src/Traj_CharmmDcd.cpp
+index 2607f7a0f..bcb3fb0f4 100644
+--- AmberTools/src/cpptraj/src/Traj_CharmmDcd.cpp
++++ AmberTools/src/cpptraj/src/Traj_CharmmDcd.cpp
+@@ -375,8 +375,7 @@ int Traj_CharmmDcd::readDcdHeader() {
+     if (charmmCellType_ != UNKNOWN) {
+       // Box info type was specified by option.
+       if (buffer.i[19] >= 22 && charmmCellType_ != SHAPE)
+-        mprintf("Warning: CHARMM version is >= 22 but 'shape' not specified.\n"
+-                "Warning: Assuming box info is stored as unit cell and not shape matrix.\n");
++        mprintf("Warning: CHARMM version is >= 22 but an option other than 'shape' was specified.\n");
+     }
+   } else
+     boxBytes_ = 0;
+@@ -470,6 +469,7 @@ int Traj_CharmmDcd::setupBox(double* boxtmp) {
+   file_.Read(boxtmp, sizeof(double)*6);
+   if (isBigEndian_) endian_swap8(boxtmp,6);
+   if ( ReadBlock(-1) < 0) return 1;
++  if (debug_ > 0) mprintf("DEBUG: Raw box values: %g %g %g %g %g %g\n", boxtmp[0], boxtmp[1], boxtmp[2], boxtmp[3], boxtmp[4], boxtmp[5]);
+   // Test shape matrix
+   if (charmmCellType_ == UNKNOWN || charmmCellType_ == SHAPE) {
+     int nIssues = 0;
+@@ -478,6 +478,31 @@ int Traj_CharmmDcd::setupBox(double* boxtmp) {
+     for (int i = 0; i < 6; i++) shape[i] = 0;
+     Box::CheckType check;
+     testBox.SetupFromShapeMatrix( boxtmp, check );
++    // NAMD stores a pseudo-shape matrix that fails for non-orthogonal cells.
++    // Check if a non-orthogonal cell has angles close to but not quite 90 deg.
++    Box::CellShapeType boxShape = testBox.CellShape();
++    if (boxShape != Box::CUBIC && boxShape != Box::TETRAGONAL && boxShape != Box::ORTHORHOMBIC) {
++      if (debug_ > 0) testBox.PrintDebug("DCD Shape Matrix Check"); // DEBUG
++      double deltaA = fabs( 90.0 - testBox.Param(Box::ALPHA) );
++      double deltaB = fabs( 90.0 - testBox.Param(Box::BETA) );
++      double deltaG = fabs( 90.0 - testBox.Param(Box::GAMMA) );
++      if ( deltaA > Constants::SMALL && deltaA < 1.0 &&
++           deltaB > Constants::SMALL && deltaB < 1.0 &&
++           deltaG > Constants::SMALL && deltaG < 1.0 )
++      {
++        if (charmmCellType_ != UNKNOWN) {
++          mprintf("Warning: Cell is non-orthogonal but all angles from the symmetric shape\n"
++                  "Warning: matrix are close to 90 deg (%g %g %g).\n",
++                  testBox.Param(Box::ALPHA), testBox.Param(Box::BETA), testBox.Param(Box::GAMMA));
++          mprintf("Warning: If this trajectory is from NAMD with a non-orthogonal cell\n"
++                  "Warning: the 'namdcell' option must be used since NAMD does not store\n"
++                  "Warning: the actual symmetric shape matrix.\n");
++        } else {
++          // User has not specified box; this is likely a NAMD DCD with non-orthogonal cell
++          check = Box::BOX_IS_SKEWED;
++        }
++      }
++    }
+     if (check != Box::BOX_OK) {
+       nIssues = 1;
+     } else {
+@@ -513,6 +538,14 @@ int Traj_CharmmDcd::setupBox(double* boxtmp) {
+   }
+   // Test NAMD unit cell
+   if (charmmCellType_ == UNKNOWN || charmmCellType_ == NAMD) {
++    //mprintf("DEBUG: NAMD unit cell test, celltype %i\n", (int)charmmCellType_);
++    // Expect that values are stored as X, gamma, Y, beta, alpha, Z
++    //                                  0  1      2  3     4      5
++    // Will need to resort them as expected by Box (X Y Z alpha beta gamma)
++    double newbox[6];
++    newbox[0] = boxtmp[0];
++    newbox[1] = boxtmp[2];
++    newbox[2] = boxtmp[5];
+     // Since NAMD stores the box angles as cos(angle), determine if the angle values are bounded between -1 and 1.
+     if ( boxtmp[4] >= -1 && boxtmp[4] <= 1 &&
+          boxtmp[3] >= -1 && boxtmp[3] <= 1 &&
+@@ -521,9 +554,23 @@ int Traj_CharmmDcd::setupBox(double* boxtmp) {
+       if (charmmCellType_ == UNKNOWN)
+         mprintf("\tNAMD unit cell detected.\n");
+       charmmCellType_ = NAMD;
++      // Convert the angles back to degrees
++      newbox[3] = CosRadToDeg( boxtmp[4] );
++      newbox[4] = CosRadToDeg( boxtmp[3] );
++      newbox[5] = CosRadToDeg( boxtmp[1] );
++      if (debug_ > 0) mprintf("DEBUG: angles in degrees: %g %g %g\n", newbox[3], newbox[4], newbox[5]);
+     } else if (charmmCellType_ == NAMD) {
+       mprintf("Warning: NAMD unit cell specified but cos(angle) values not bounded by -1, 1\n",
+               "Warning: Values: %g %g %g\n", boxtmp[4], boxtmp[3], boxtmp[1]);
++      // Assume the angles are already in degrees
++      newbox[3] = boxtmp[4];
++      newbox[4] = boxtmp[3];
++      newbox[5] = boxtmp[1];
++    }
++    if (charmmCellType_ == NAMD) {
++      // Set with re-ordered (and possibly converted) values
++      for (int i = 0; i < 6; i++)
++        boxtmp[i] = newbox[i];
+     }
+   }
+   // Test CHARMM unit cell
+@@ -539,7 +586,7 @@ int Traj_CharmmDcd::setupBox(double* boxtmp) {
+       charmmCellType_ = CHARMM;
+     } else if (charmmCellType_ == CHARMM) {
+       mprintf("Warning: CHARMM unit cell specified but bad box values detected.\n"
+-              "Warning: Box values : %g %g %g %g %g %g\n",
++              "Warning: Box values (XYZ, ABG) : %g %g %g Ang., %g %g %g deg.\n",
+               boxtmp[0], boxtmp[1], boxtmp[2], boxtmp[3], boxtmp[4], boxtmp[5]);
+     }
+   }
+@@ -565,6 +612,7 @@ int Traj_CharmmDcd::ReadBox(double* boxtmp) {
+   if (isBigEndian_) endian_swap8(boxtmp,6);
+   if ( ReadBlock(-1) < 0) return 1;
+   if (charmmCellType_ == NAMD) {
++    // Expect that values are stored as X, gamma, Y, beta, alpha, Z
+     // Box lengths
+     double box[6];
+     box[0] = boxtmp[0];
+@@ -870,7 +918,7 @@ int Traj_CharmmDcd::writeFrame(int set, Frame const& frameOut) {
+     double boxtmp[6];
+     if (charmmCellType_ == SHAPE) {
+       if (!frameOut.BoxCrd().Is_Symmetric())
+-        mprintf("Warning: Set %i; unit cell is not symmetric. Box cannot be properly stored as Charmm DCD.\n", set+1);
++        incrementSymmetricWarnCount(set, "Charmm DCD");
+       //frameOut.BoxCrd().GetSymmetricShapeMatrix( boxtmp );
+       Matrix_3x3 const& ucell = frameOut.BoxCrd().UnitCell();
+       boxtmp[0] = ucell[0]; // XX
+@@ -881,7 +929,7 @@ int Traj_CharmmDcd::writeFrame(int set, Frame const& frameOut) {
+       boxtmp[5] = ucell[8]; // ZZ
+     } else {
+       if (!frameOut.BoxCrd().Is_X_Aligned())
+-        mprintf("Warning: Set %i; unit cell is not X-aligned. Box cannot be properly stored as Charmm DCD.\n", set+1);
++        incrementXalignWarnCount(set, "Charmm DCD");
+       if (charmmCellType_ == NAMD) {
+         /* The format for the 'box' array used in cpptraj is not the same as the
+          * one used for NAMD dcd files.  Refer to the reading routine above
+diff --git AmberTools/src/cpptraj/src/Traj_NcEnsemble.cpp AmberTools/src/cpptraj/src/Traj_NcEnsemble.cpp
+index cd35c30ad..07aaeedaf 100644
+--- AmberTools/src/cpptraj/src/Traj_NcEnsemble.cpp
++++ AmberTools/src/cpptraj/src/Traj_NcEnsemble.cpp
+@@ -388,7 +388,7 @@ int Traj_NcEnsemble::writeArray(int set, FramePtrArray const& Farray) {
+     // Write box
+     if (cellLengthVID_ != -1) {
+       if (!frm->BoxCrd().Is_X_Aligned())
+-      mprintf("Warning: Set %i; unit cell is not X-aligned. Box cannot be properly stored as Amber NetCDF ensemble.\n", set+1);
++        incrementXalignWarnCount(set,"Amber NetCDF ensemble");
+       count_[2] = 3;
+ #     ifdef HAS_PNETCDF
+       if (ncmpi_put_vara_double_all(ncid_,cellLengthVID_,start_,count_,frm->BoxCrd().XyzPtr()))
+diff --git AmberTools/src/cpptraj/src/Traj_PDBfile.cpp AmberTools/src/cpptraj/src/Traj_PDBfile.cpp
+index 7c5092e01..4ca55da02 100644
+--- AmberTools/src/cpptraj/src/Traj_PDBfile.cpp
++++ AmberTools/src/cpptraj/src/Traj_PDBfile.cpp
+@@ -837,7 +837,7 @@ void Traj_PDBfile::WriteBonds() {
+ void Traj_PDBfile::writeBox(int set, Box const& box) {
+   if (write_cryst1_) {
+     if (!box.Is_X_Aligned())
+-      mprintf("Warning: Set %i; unit cell is not X-aligned. Box cannot be properly stored in PDB CRYST1.\n", set+1);
++      incrementXalignWarnCount(set, "PDB CRYST1");
+     file_.WriteCRYST1( box.XyzPtr(), space_group_.c_str() );
+   }
+ }
+diff --git AmberTools/src/cpptraj/src/TrajectoryIO.cpp AmberTools/src/cpptraj/src/TrajectoryIO.cpp
+index 866452ca5..beec301a5 100644
+--- AmberTools/src/cpptraj/src/TrajectoryIO.cpp
++++ AmberTools/src/cpptraj/src/TrajectoryIO.cpp
+@@ -1,4 +1,49 @@
+ #include "TrajectoryIO.h"
++#include "CpptrajStdio.h"
++
++/** CONSTRUCTOR */
++TrajectoryIO::TrajectoryIO() :
++  debug_(0),
++  nwarn_cell_not_xaligned_(0),
++  nwarn_cell_not_symmetric_(0)
++{}
++
++/** Increment count of frames where it is an issue that the
++  * unit cell is not X-aligned. Print a warning only the 
++  * first time.
++  */
++void TrajectoryIO::incrementXalignWarnCount(int set, const char* desc) {
++  if (nwarn_cell_not_xaligned_ == 0 || debug_ > 0)
++    mprintf("Warning: Set %i; unit cell is not X-aligned. Box cannot be properly stored as %s.\n", set+1, desc);
++  nwarn_cell_not_xaligned_++;
++}
++
++/** Increment count of frames where it is an issue that the
++  * unit cell is not symmetric. Print a warning only the 
++  * first time.
++  */
++void TrajectoryIO::incrementSymmetricWarnCount(int set, const char* desc) {
++  if (nwarn_cell_not_symmetric_ == 0 || debug_ > 0)
++    mprintf("Warning: Set %i; unit cell is not symmetric. Box cannot be properly stored as %s.\n", set+1, desc);
++  nwarn_cell_not_symmetric_++;
++}
++
++/** Print any warnings. Ideally called just before or just after closeTraj() */
++void TrajectoryIO::PrintWarnings(std::string const& fname) {
++  if (nwarn_cell_not_xaligned_ > 0) {
++    mprintf("Warning: %s: unit cell was not X-aligned for %u frames.\n", fname.c_str(), nwarn_cell_not_xaligned_);
++    mprintf("Warning: This trajectory format expects unit cells to be X-aligned,\n"
++            "Warning: so the unit cell orientation may not be correct.\n");
++  }
++  if (nwarn_cell_not_symmetric_ > 0) {
++    mprintf("Warning: %s: unit cell axes were not symmetric for %u frames.\n", fname.c_str(), nwarn_cell_not_symmetric_);
++    mprintf("Warning: This trajectory format expects unit cell info to be symmetric,\n"
++            "Warning: so the unit cell orientation may not be correct.\n");
++  }
++  nwarn_cell_not_xaligned_ = 0;
++  nwarn_cell_not_symmetric_ = 0;
++}
++
+ #ifdef MPI
+ /** Broadcast trajectory IO info from master. */
+ int TrajectoryIO::BroadcastTrajIO(Parallel::Comm const& commIn) {
+diff --git AmberTools/src/cpptraj/src/TrajectoryIO.h AmberTools/src/cpptraj/src/TrajectoryIO.h
+index 03d337fe5..ce3c0fc06 100644
+--- AmberTools/src/cpptraj/src/TrajectoryIO.h
++++ AmberTools/src/cpptraj/src/TrajectoryIO.h
+@@ -26,8 +26,10 @@ class FrameArray;
+   */
+ class TrajectoryIO : public BaseIOtype {
+   public:
+-    TrajectoryIO() : debug_(0) {}
+-    virtual ~TrajectoryIO() {} // virtual since this class is inherited.
++    /// CONSTRUCTOR
++    TrajectoryIO();
++    /// DESTRUCTOR - virtual since this class is inherited.
++    virtual ~TrajectoryIO() {}
+     // -----------===== Inherited functions =====-----------
+     /// \return true if file format matches trajectory type.
+     virtual bool ID_TrajFormat(CpptrajFile&) = 0;
+@@ -105,6 +107,9 @@ class TrajectoryIO : public BaseIOtype {
+     virtual void parallelCloseTraj() { return ; }
+ #   endif
+     // -----------------------------------------------------
++    /// Print any warnings. Resets warning counts.
++    void PrintWarnings(std::string const&);
++
+     CoordinateInfo const& CoordInfo() const { return coordInfo_; }
+     std::string const& Title()        const { return title_;     }
+ 
+@@ -112,6 +117,11 @@ class TrajectoryIO : public BaseIOtype {
+     void SetTitle(std::string const& tIn)        { title_ = tIn;     }
+   protected:
+     void SetCoordInfo(CoordinateInfo const& cIn) { coordInfo_ = cIn; }
++    /// Increment X-align warn count
++    void incrementXalignWarnCount(int, const char*);
++    /// Increment symmetric warn count
++    void incrementSymmetricWarnCount(int, const char*);
++
+     int debug_;               ///< Trajectory debug level.
+ #   ifdef MPI
+     /// Broadcast coordinate info etc. to non-master processes
+@@ -120,5 +130,7 @@ class TrajectoryIO : public BaseIOtype {
+   private:
+     CoordinateInfo coordInfo_; ///< Metadata associated with coordinate Frame
+     std::string title_;        ///< Set to trajectory title.
++    unsigned int nwarn_cell_not_xaligned_; ///< Count of frames where unit cell is not X-aligned
++    unsigned int nwarn_cell_not_symmetric_; ///< Count of frames where unit cell is not symmetric
+ }; 
+ #endif
+diff --git AmberTools/src/cpptraj/src/Trajout_Single.cpp AmberTools/src/cpptraj/src/Trajout_Single.cpp
+index d845a9ff9..f796975c0 100644
+--- AmberTools/src/cpptraj/src/Trajout_Single.cpp
++++ AmberTools/src/cpptraj/src/Trajout_Single.cpp
+@@ -103,6 +103,7 @@ void Trajout_Single::EndTraj() {
+     else
+ #   endif
+       trajio_->closeTraj();
++    trajio_->PrintWarnings(traj_.Filename().Base());
+   }
+   //  SetTrajIsOpen(false);
+   //}
+diff --git AmberTools/src/cpptraj/src/cpptrajdepend AmberTools/src/cpptraj/src/cpptrajdepend
+index 3b4437d1a..c7a8ebf68 100644
+--- AmberTools/src/cpptraj/src/cpptrajdepend
++++ AmberTools/src/cpptraj/src/cpptrajdepend
+@@ -495,7 +495,7 @@ Traj_SQM.o : Traj_SQM.cpp ArgList.h Atom.h AtomMask.h AtomType.h BaseIOtype.h Bo
+ Traj_Tinker.o : Traj_Tinker.cpp Atom.h AtomMask.h AtomType.h BaseIOtype.h Box.h BufferedLine.h Constants.h CoordinateInfo.h CpptrajFile.h CpptrajStdio.h FileIO.h FileName.h Frame.h FramePtrArray.h MaskToken.h Matrix_3x3.h Molecule.h NameType.h Parallel.h ParameterHolders.h ParameterSet.h ParameterTypes.h Range.h ReplicaDimArray.h Residue.h Segment.h SymbolExporting.h TinkerFile.h Topology.h Traj_Tinker.h TrajectoryIO.h TypeNameHolder.h Unit.h Vec3.h
+ Traj_XYZ.o : Traj_XYZ.cpp ArgList.h Atom.h AtomMask.h AtomType.h BaseIOtype.h Box.h BufferedLine.h Constants.h CoordinateInfo.h CpptrajFile.h CpptrajStdio.h FileIO.h FileName.h Frame.h FramePtrArray.h MaskToken.h Matrix_3x3.h Molecule.h NameType.h Parallel.h ParameterHolders.h ParameterSet.h ParameterTypes.h Range.h ReplicaDimArray.h Residue.h Segment.h StringRoutines.h SymbolExporting.h TextFormat.h Topology.h Traj_XYZ.h TrajectoryIO.h TypeNameHolder.h Unit.h Vec3.h
+ TrajectoryFile.o : TrajectoryFile.cpp Atom.h BaseIOtype.h Box.h BufferedFrame.h BufferedLine.h CIFfile.h CoordinateInfo.h CpptrajFile.h CpptrajStdio.h FileIO.h FileName.h FileTypes.h FramePtrArray.h Matrix_3x3.h Mol2File.h NC_Routines.h NameType.h NetcdfFile.h PDBfile.h Parallel.h ReplicaDimArray.h Residue.h SDFfile.h SymbolExporting.h TextFormat.h TinkerFile.h Traj_AmberCoord.h Traj_AmberNetcdf.h Traj_AmberRestart.h Traj_AmberRestartNC.h Traj_Binpos.h Traj_CIF.h Traj_CharmmCor.h Traj_CharmmDcd.h Traj_CharmmRestart.h Traj_Conflib.h Traj_DTR.h Traj_GmxDump.h Traj_GmxTng.h Traj_GmxTrX.h Traj_GmxXtc.h Traj_Gro.h Traj_H5.h Traj_H5MD.h Traj_Mol2File.h Traj_NcEnsemble.h Traj_PDBfile.h Traj_SDF.h Traj_SQM.h Traj_Tinker.h Traj_XYZ.h TrajectoryFile.h TrajectoryIO.h Vec3.h
+-TrajectoryIO.o : TrajectoryIO.cpp BaseIOtype.h Box.h CoordinateInfo.h FramePtrArray.h Matrix_3x3.h Parallel.h ReplicaDimArray.h TrajectoryIO.h Vec3.h
++TrajectoryIO.o : TrajectoryIO.cpp BaseIOtype.h Box.h CoordinateInfo.h CpptrajStdio.h FramePtrArray.h Matrix_3x3.h Parallel.h ReplicaDimArray.h TrajectoryIO.h Vec3.h
+ TrajinList.o : TrajinList.cpp ArgList.h AssociatedData.h Atom.h AtomMask.h AtomType.h BaseIOtype.h Box.h Constants.h CoordinateInfo.h CpptrajFile.h CpptrajStdio.h DataSet.h DataSet_RemLog.h Dimension.h EnsembleIn.h EnsembleIn_Multi.h EnsembleIn_Single.h FileIO.h FileName.h FileTypes.h Frame.h FramePtrArray.h InputTrajCommon.h MaskToken.h Matrix_3x3.h MetaData.h Molecule.h NameType.h Parallel.h ParameterHolders.h ParameterSet.h ParameterTypes.h Range.h ReplicaDimArray.h ReplicaInfo.h Residue.h Segment.h StringRoutines.h SymbolExporting.h TextFormat.h Timer.h Topology.h TrajFrameCounter.h TrajIOarray.h TrajectoryFile.h TrajectoryIO.h Trajin.h TrajinList.h Trajin_Multi.h Trajin_Single.h TypeNameHolder.h Unit.h Vec3.h
+ Trajin_Multi.o : Trajin_Multi.cpp ArgList.h Atom.h AtomMask.h AtomType.h BaseIOtype.h Box.h Constants.h CoordinateInfo.h CpptrajStdio.h FileName.h Frame.h FramePtrArray.h InputTrajCommon.h MaskToken.h Matrix_3x3.h Molecule.h NameType.h Parallel.h ParameterHolders.h ParameterSet.h ParameterTypes.h Range.h ReplicaDimArray.h ReplicaInfo.h Residue.h Segment.h StringRoutines.h SymbolExporting.h Topology.h TrajFrameCounter.h TrajIOarray.h TrajectoryIO.h Trajin.h Trajin_Multi.h TypeNameHolder.h Unit.h Vec3.h
+ Trajin_Single.o : Trajin_Single.cpp ArgList.h Atom.h AtomMask.h AtomType.h BaseIOtype.h Box.h Constants.h CoordinateInfo.h CpptrajStdio.h FileName.h FileTypes.h Frame.h FramePtrArray.h InputTrajCommon.h MaskToken.h Matrix_3x3.h Molecule.h NameType.h Parallel.h ParameterHolders.h ParameterSet.h ParameterTypes.h Range.h ReplicaDimArray.h Residue.h Segment.h SymbolExporting.h Topology.h TrajFrameCounter.h TrajectoryFile.h TrajectoryIO.h Trajin.h Trajin_Single.h TypeNameHolder.h Unit.h Vec3.h
+diff --git AmberTools/src/cpptraj/configure AmberTools/src/cpptraj/configure
+index 00109048b..959699c40 100755
+--- AmberTools/src/cpptraj/configure
++++ AmberTools/src/cpptraj/configure
+@@ -41,7 +41,7 @@ UsageFull() {
+   echo "    -debugon   : Add -DDEBUG flag to activate additional internal debugging."
+   echo "    -nolfs     : Do not enable large file support."
+   echo "    -shared    : Configure for generating libcpptraj (implies -nosanderlib)."
+-  echo "    -fftw3     : Use FFTW instead of pubfft for FFT."
++  echo "    -pubfft    : Use pubfft instead of FFTW for FFT (disables PME functionality)."
+   echo "    -windows   : Set up for use with MinGW compilers for a native Windows build."
+   echo "  LIBRARY OPTIONS"
+   echo "    -<lib>             : Enable library."
+@@ -52,6 +52,7 @@ UsageFull() {
+   echo "    --nobuildlibs      : Do not asking about building enabled libraries."
+   echo "    -makenetcdf        : Have cpptraj build its own NetCDF."
+   echo "    -makeblas          : Have cpptraj build its own LAPACK/BLAS."
++  echo "    --libdir=<dir>     : Look for libraries in <dir> (useful to point to e.g. a previous CPPTRAJ install."
+   echo "    Libraries: netcdf pnetcdf zlib bzlib blas lapack arpack fftw3 readline sanderlib xdrfile tng openmm"
+   echo "    Note: pnetcdf is needed for writing NetCDF trajectories with MPI."
+   echo "  LINKING OPTIONS"
+@@ -125,6 +126,7 @@ EXE=''                    # Binary executable suffix
+ REBUILDOPT=''             # Can be set to --rebuild and passed to get_library.sh
+ BUILDTESTOPT='silent'     # Set to blank to avoid asking about building libraries
+ INSTALL_DAT='install_dat' # Target for installing data directory
++SPECIFIED_LIB_DIR=''      # Specified library directory
+ #CPPTRAJSRC=''             # CPPTRAJ source directory
+ COMPERR='cpptrajcfg.compile.err'
+ COMPOUT='cpptrajcfg.compile.out'
+@@ -146,8 +148,8 @@ BZIP2_SRCDIR=''
+ BZIP2_URL="https://www.sourceware.org/pub/bzip2/$BZIP2_SRCTAR"
+ BZIP2_OPTS=''
+ 
+-ZLIB_SRCTAR='zlib-1.2.11.tar.gz'
+-ZLIB_SRCDIR='zlib-1.2.11'
++ZLIB_SRCTAR='zlib-1.3.1.tar.gz'
++ZLIB_SRCDIR='zlib-1.3.1'
+ ZLIB_URL="https://zlib.net/$ZLIB_SRCTAR"
+ ZLIB_OPTS=''
+ 
+@@ -168,7 +170,7 @@ PNETCDF_OPTS='--disable-fortran --disable-cxx'
+ 
+ FFTW_SRCTAR='fftw-3.3.9.tar.gz'
+ FFTW_SRCDIR='fftw-3.3.9'
+-FFTW_URL="ftp://ftp.fftw.org/pub/fftw/$FFTW_SRCTAR"
++FFTW_URL="https://fftw.org/pub/fftw/$FFTW_SRCTAR"
+ FFTW_OPTS='--enable-threads --with-combined-threads --with-pic --disable-fortran'
+ 
+ # ----- Variables for downloading MPI ------------
+@@ -195,6 +197,7 @@ USE_PROFILE=0     # 0 = no profiling, 1 = C++ profiling, 2 = GLIBC profiling, 3
+ USE_AMBERLIB=0    # 1 = Use AMBERHOME to fill in NetCDF/BLAS/LAPACK/ARPACK as needed
+ BUILD_LIBS=0      # 1 = Means automatically say yes to building enabled libs when not present.
+ BUILD_MPI=''      # If not empty, attempt to download and build specified mpi dist.
++icpp=0            # Used to count cmake_prefix_paths
+ 
+ USE_SINGLEENSEMBLE=0 # Enable support for single ensemble trajectories
+ USE_CPPTRAJDEBUG=0   # Enable internal cpptraj debug flags
+@@ -318,9 +321,9 @@ LIB_D_ON[$LFFTW3]='-DFFTW_FFT'
+ LIB_DOFF[$LFFTW3]=''
+ LIB_TYPE[$LFFTW3]='cpp'
+ 
+-LIB_STAT[$LREADLINE]='bundled'
++LIB_STAT[$LREADLINE]='enabled'
+ LIB_CKEY[$LREADLINE]='readline'
+-LIB_HOME[$LREADLINE]='readline'
++LIB_HOME[$LREADLINE]=''
+ LIB_FLAG[$LREADLINE]='-lreadline'
+ LIB_STTC[$LREADLINE]='libreadline.a'
+ LIB_D_ON[$LREADLINE]=''
+@@ -678,13 +681,36 @@ void unused() {
+ }
+ int main() { printf("Testing\n"); printf("%s\n",nc_strerror(0)); return 0; }
+ EOF
+-  TestProgram silent "  Checking NetCDF4/HDF5" "$CXX" "$CXXFLAGS ${LIB_INCL[$LNETCDF]}" testp.cpp "${LIB_FLAG[$LNETCDF]}"
++  # If netcdf was specified and only the static library is available, need
++  # to add extra flags for hdf5.
++  nc_requires_hdf5_flags=0
++  lhdf5_hl='-lhdf5_hl'
++  lhdf5='-lhdf5'
++  if [ ! -z "${LIB_HOME[$LHDF5]}" ] ; then
++    if [ -f "${LIB_HOME[$LHDF5]}/lib/libhdf5_hl.a" ] ; then
++      lhdf5_hl=${LIB_HOME[$LHDF5]}/lib/libhdf5_hl.a
++    fi
++    if [ -f "${LIB_HOME[$LHDF5]}/lib/libhdf5.a" ] ; then
++      lhdf5=${LIB_HOME[$LHDF5]}/lib/libhdf5.a
++    fi
++  fi
++  if [ "${LIB_STAT[$LNETCDF]}" = 'specified' ] ; then
++    export LD_LIBRARY_PATH="${LIB_HOME[$LNETCDF]}/lib:$LD_LIBRARY_PATH"
++    if [ ! -f "${LIB_HOME[$LNETCDF]}/lib/libnetcdf.so" -a -f "${LIB_HOME[$LNETCDF]}/lib/libnetcdf.a" ] ; then
++      #echo "DEBUG: Only static NetCDF library is present."
++      nc_requires_hdf5_flags=1
++      hdf5_flags="$lhdf5_hl $lhdf5 -ldl ${LIB_FLAG[$LZIP]}"
++    fi
++  fi
++  TestProgram silent "  Checking NetCDF4/HDF5" "$CXX" "$CXXFLAGS ${LIB_INCL[$LNETCDF]}" testp.cpp "${LIB_FLAG[$LNETCDF]} $hdf5_flags"
+   if [ $? -eq 0 ] ; then
+     # HDF5 support is present.
+     # If we are going to build our own netcdf, it needs to know how to link
+     # HDF5.
+     if [ "${LIB_MAKE[$LNETCDF]}" = 'yes' ] ; then
+-      LIB_FLAG[$LHDF5]="-lhdf5_hl -lhdf5 -ldl ${LIB_FLAG[$LZIP]}"
++      LIB_FLAG[$LHDF5]="$ldhf5_hl $lhdf5 -ldl ${LIB_FLAG[$LZIP]}"
++    elif [ $nc_requires_hdf5_flags -eq 1 ] ; then
++      LIB_FLAG[$LNETCDF]="${LIB_FLAG[$LNETCDF]} $hdf5_flags"
+     fi
+     return 0
+   fi
+@@ -719,9 +745,15 @@ EOF
+       TestProgram $BUILDTESTOPT "  Checking for bundled HDF5" "$CXX" "$CXXFLAGS ${LIB_INCL[$LHDF5]}" testp.cpp "${LIB_FLAG[$LHDF5]}"
+       if [ $? -ne 0 ] ; then
+         CheckRebuild "HDF5" "${LIB_FLAG[$LHDF5]}"
++	# If zlib was specified, pass that to hdf5
++        if [ "${LIB_STAT[$LZIP]}" = 'specified' ] ; then
++          hdf5zlib="--with-zlib=${LIB_HOME[$LZIP]}"
++	else
++          hdf5zlib=''
++	fi
+         # See if user would like to get HDF5 
+         PREFIX=$CPPTRAJHOME CC=$CC CFLAGS=$CFLAGS LIBNAME='hdf5' \
+-            SRCDIR=$HDF5_SRCDIR SRCTAR=$HDF5_SRCTAR URL=$HDF5_URL ./get_library.sh $REBUILDOPT $HDF5_OPTS
++            SRCDIR=$HDF5_SRCDIR SRCTAR=$HDF5_SRCTAR URL=$HDF5_URL ./get_library.sh $REBUILDOPT $HDF5_OPTS $hdf5zlib
+         if [ $? -ne 0 ] ; then
+           ErrMsg "No HDF5 available. To build without HDF5 specify '-nohdf5'."
+           exit 1
+@@ -1038,7 +1070,7 @@ EOF
+       if [ "${LIB_STAT[$LFFTW3]}" = 'optional' ] ; then
+         WrnMsg "FFTW test failed. CPPTRAJ will use the built-in PubFFT routines."
+         if [ $BUILD_LIBS -eq 1 ] ; then
+-          echo "To force CPPTRAJ to build its own FFTW, reconfigure and specify '-fftw3'."
++          echo "To force CPPTRAJ to build its own FFTW, reconfigure and specify '--buildlibs'."
+         fi
+         LIB_STAT[$LFFTW3]='off'
+       elif [ "${LIB_STAT[$LFFTW3]}" = 'enabled' ] ; then
+@@ -1073,13 +1105,42 @@ EOF
+ TestReadline() {
+   cat > testp.cpp <<EOF
+ #include <cstdio>
+-#include <readline.h>
++#include <readline/readline.h>
+ static char *line_read = (char *)NULL;
+ // Do not want to actually run this so leave outside main
+ void Unused() { line_read = readline(""); }
+ int main() { return 0; }
+ EOF
+-  TestProgram "  Checking Readline" "$CXX" "$CXXFLAGS ${LIB_INCL[$LREADLINE]}" testp.cpp "${LIB_FLAG[$LREADLINE]}"
++
++  if [ "${LIB_STAT[$LREADLINE]}" = 'specified' ] ; then
++    TestProgram "  Checking Readline" "$CXX" "$CXXFLAGS ${LIB_INCL[$LREADLINE]}" testp.cpp "${LIB_FLAG[$LREADLINE]}"
++  else
++    # Test with just -lreadline
++    TestProgram silent "  Checking Readline" "$CXX" "$CXXFLAGS ${LIB_INCL[$LREADLINE]}" testp.cpp "${LIB_FLAG[$LREADLINE]}"
++    lreadline_err=$?
++    if [ $lreadline_err -ne 0 ] ; then
++      # Try -ltermcap
++      TestProgram silent "  Checking Readline with termcap" "$CXX" "$CXXFLAGS ${LIB_INCL[$LREADLINE]}" testp.cpp "${LIB_FLAG[$LREADLINE]} -ltermcap"
++      lreadline_err=$?
++      if [ $lreadline_err -eq 0 ] ; then
++        LIB_FLAG[$LREADLINE]="${LIB_FLAG[$LREADLINE]} -ltermcap"
++      fi
++    fi
++    if [ $lreadline_err -ne 0 ] ; then
++      # Try -lncurses
++      TestProgram silent "  Checking Readline with ncurses" "$CXX" "$CXXFLAGS ${LIB_INCL[$LREADLINE]}" testp.cpp "${LIB_FLAG[$LREADLINE]} -lncurses"
++      lreadline_err=$?
++      if [ $lreadline_err -eq 0 ] ; then
++        LIB_FLAG[$LREADLINE]="${LIB_FLAG[$LREADLINE]} -lncurses"
++      fi
++    fi
++    if [ $lreadline_err -ne 0 ] ; then
++      echo "No readline available; using bundled readline."
++      LIB_STAT[$LREADLINE]='bundled'
++      LIB_FLAG[$LREADLINE]='readline/libreadline.a'
++      LIB_INCL[$LREADLINE]='-I.'
++    fi
++  fi
+ }
+ 
+ TestXdrfile() {
+@@ -1424,6 +1485,7 @@ SetupLibraries() {
+       LIB_STAT[$LFFTW3]='amberopt'
+       LIB_LINK[$LFFTW3]='static'
+     elif [ "${LIB_STAT[$LFFTW3]}" == 'enabled' ] ; then
++      echo "  Using fftw from $AMBERHOME"
+       LIB_STAT[$LFFTW3]='specified'
+       LIB_HOME[$LFFTW3]=$AMBERHOME
+       LIB_LINK[$LFFTW3]='static'
+@@ -1441,6 +1503,66 @@ SetupLibraries() {
+       fi
+     fi
+   done
++  # Use specified directory to fill in libraries if needed
++  if [ ! -z "$SPECIFIED_LIB_DIR" ] ; then
++    if [ ! -d "$SPECIFIED_LIB_DIR" ] ; then
++      Err "Specified library directory $SPECIFIED_LIB_DIR not found."
++    fi
++    if [ "${LIB_STAT[$LNETCDF]}" == 'enabled' ] ; then
++      echo "  Using netcdf from $SPECIFIED_LIB_DIR"
++      LIB_STAT[$LNETCDF]='specified'
++      LIB_HOME[$LNETCDF]=$SPECIFIED_LIB_DIR
++      #LIB_LINK[$LNETCDF]='static'
++    fi
++    if [ "${LIB_STAT[$LHDF5]}" == 'enabled' ] ; then
++      echo "  Using hdf5 from $SPECIFIED_LIB_DIR"
++      LIB_STAT[$LHDF5]='specified'
++      LIB_HOME[$LHDF5]=$SPECIFIED_LIB_DIR
++      #LIB_LINK[$LHDF5]='static'
++    fi
++    if [ "${LIB_STAT[$LARPACK]}" == 'enabled' -a "$BLAS_TYPE" != 'openblas' ] ; then
++      echo "  Using arpack from $SPECIFIED_LIB_DIR"
++      LIB_STAT[$LARPACK]='specified'
++      LIB_HOME[$LARPACK]=$SPECIFIED_LIB_DIR
++      #LIB_LINK[$LARPACK]='static'
++    fi
++    if [ "${LIB_STAT[$LFFTW3]}" == 'enabled' ] ; then
++      echo "  Using fftw from $SPECIFIED_LIB_DIR"
++      LIB_STAT[$LFFTW3]='specified'
++      LIB_HOME[$LFFTW3]=$SPECIFIED_LIB_DIR
++      #LIB_LINK[$LFFTW3]='static'
++    fi
++    if [ "${LIB_STAT[$LBZIP]}" == 'enabled' ] ; then
++      echo "  Using bzip from $SPECIFIED_LIB_DIR"
++      LIB_STAT[$LBZIP]='specified'
++      LIB_HOME[$LBZIP]=$SPECIFIED_LIB_DIR
++      #LIB_LINK[$LBZIP]='static'
++    fi
++    if [ "${LIB_STAT[$LZIP]}" == 'enabled' ] ; then
++      echo "  Using zlib from $SPECIFIED_LIB_DIR"
++      LIB_STAT[$LZIP]='specified'
++      LIB_HOME[$LZIP]=$SPECIFIED_LIB_DIR
++      #LIB_LINK[$LZIP]='static'
++    fi
++    if [ "${LIB_STAT[$LZIP]}" == 'enabled' ] ; then
++      echo "  Using zlib from $SPECIFIED_LIB_DIR"
++      LIB_STAT[$LZIP]='specified'
++      LIB_HOME[$LZIP]=$SPECIFIED_LIB_DIR
++      #LIB_LINK[$LZIP]='static'
++    fi
++    if [ "${LIB_STAT[$LLAPACK]}" == 'enabled' ] ; then
++      echo "  Using lapack from $SPECIFIED_LIB_DIR"
++      LIB_STAT[$LLAPACK]='specified'
++      LIB_HOME[$LLAPACK]=$SPECIFIED_LIB_DIR
++      #LIB_LINK[$LLAPACK]='static'
++    fi
++    if [ "${LIB_STAT[$LBLAS]}" == 'enabled' ] ; then
++      echo "  Using blas from $SPECIFIED_LIB_DIR"
++      LIB_STAT[$LBLAS]='specified'
++      LIB_HOME[$LBLAS]=$SPECIFIED_LIB_DIR
++      #LIB_LINK[$LBLAS]='static'
++    fi
++  fi
+   # Set up library paths
+   for ((i=0; i < $NLIB; i++)) ; do
+     lhome=''
+@@ -1503,23 +1625,24 @@ SetupLibraries() {
+             lflag="-L$lhdir ${LIB_FLAG[$i]}"
+           fi
+           # Library-specific CPPTRAJ_INC fixes when home specified.
+-          if [ $i -eq $LREADLINE ] ; then
+-            linc="$linc/readline"
+-          fi
++          #if [ $i -eq $LREADLINE ] ; then
++          #  linc="$linc/readline"
++          #fi
+           if [ $i -eq $LXDRFILE ] ; then
+             linc="$linc/xdrfile"
+           fi
+         fi
+         # Library-specific flag fixes
+-        if [ $i -eq $LREADLINE ] ; then
++#        if [ $i -eq $LREADLINE ] ; then
+           # For external readline, we need to link libtermcap for windows
+           # and libncurses for Linux
+           #if [ $USE_WINDOWS -eq 1 ]; then
+-            lflag="$lflag -ltermcap"
++#            lflag="$lflag -ltermcap"
+           #else
+           #  lflag="$lflag -lncurses"
+           #fi
+-        elif [ $i -eq $LSANDER ] ; then
++#        elif [ $i -eq $LSANDER ] ; then
++        if [ $i -eq $LSANDER ] ; then
+           # Always specify libsander location to prevent pulling in
+           # other amber libraries.
+           if [ ! -f "${LIB_FLAG[$LSANDER]}" ] ; then
+@@ -1560,6 +1683,29 @@ SetupLibraries() {
+ }
+ 
+ #-------------------------------------------------------------------------------
++# Check compiler version.
++CheckCompilerVersion() {
++  c_compiler=$1
++  basecc=`basename $c_compiler`
++  # Use -v
++  cc_version=`$c_compiler -v 2>&1 | grep -E "$basecc |[vV]ersion " \
++                  | sed -e 's/Open64//' -e 's/(.*)//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//'`
++  if [ -z "$cc_version" ] ; then
++     echo "Error: $c_compiler is not well formed or produces unusual version details!"
++     echo "       Check for a CC environment variable."
++     exit 1
++  else
++     echo "  The version of $c_compiler is $cc_version"
++  fi
++  # use '.' as only field delimiter.
++  cc_version=`echo $cc_version | sed -e 's/-/./'`
++  cc_version_major=`echo $cc_version | cut -d'.' -f1`
++  cc_version_minor=`echo $cc_version | cut -d'.' -f2`
++  cc_version_patch=`echo $cc_version | cut -d'.' -f3`
++  #echo "DEBUG: $cc_version $cc_version_major $cc_version_minor $cc_version_patch"
++  #exit 1 # DEBUG
++}
++
+ # Set up compiler commands and compiler options
+ SetupCompilers() {
+   if [ ! -z "$CXX" ] ; then echo "C++ compiler (CXX) set to $CXX" ; fi
+@@ -1625,6 +1771,13 @@ SetupCompilers() {
+       picflag='-fPIC'
+       C11FLAG='-std=gnu++11'
+       staticlink='-lquadmath'
++      # Check compiler version
++      CheckCompilerVersion $CC 
++      # Set version-specific flags
++      if [ $cc_version_major -ge 14 ] ; then
++        # Needed for readline with gcc >= 14
++        CFLAGS="$CFLAGS -D_DEFAULT_SOURCE -D_XOPEN_SOURCE"
++      fi
+       ;;
+    'clang' )
+       if [ -z "$CC" ]; then CC=clang; fi
+@@ -1638,6 +1791,13 @@ SetupCompilers() {
+       FLINK='-lgfortran'
+       picflag='-fPIC'
+       C11FLAG='-std=c++11'
++      # Check the GNU compiler version
++      CheckCompilerVersion gcc
++      # Set version-specific flags
++      if [ $cc_version_major -ge 13 ] ; then
++        # Needed for readline with gcc >= 13
++        CFLAGS="$CFLAGS -D_DEFAULT_SOURCE -D_XOPEN_SOURCE"
++      fi
+       ;;
+    'oneapi' )
+       if [ -z "$CC" ]; then CC=icx; fi
+@@ -2048,8 +2208,12 @@ SetupMKL() {
+ #  8.X        .....................................................................
+ #  9.X                    .....................................................................
+ # 10.X                    ...........................................................................
+-# 11.X                                ...........................................................................
+-CUDA_SM_LIST='sm_20 sm_21 sm_30 sm_32 sm_35 sm_37 sm_50 sm_52 sm_53 sm_60 sm_61 sm_62 sm_70 sm_72 sm_75 sm_80 sm_86 sm_87'
++# 11.0                                .......................................................................
++# 11.1-11.4                           .............................................................................
++# 11.5-11.7.1                         ..................................................................................
++# 11.8                                .........................................................................................
++# 12.0-12.5                                       ..................................................................................
++CUDA_SM_LIST='sm_20 sm_21 sm_30 sm_32 sm_35 sm_37 sm_50 sm_52 sm_53 sm_60 sm_61 sm_62 sm_70 sm_72 sm_75 sm_80 sm_86 sm_87 sm_89 sm_90'
+ 
+ # SetSupportedSM <major v> <minor v>
+ # Set Shader models supported by current cuda version
+@@ -2084,11 +2248,19 @@ SetSupportedSM() {
+   elif [ $1 -eq 11 ] ; then
+     if [ $2 -lt 1 ] ; then
+       CUDA_SM_LIST='sm_35 sm_37 sm_50 sm_52 sm_53 sm_60 sm_61 sm_62 sm_70 sm_72 sm_75 sm_80'
++    elif [ $2 -gt 7 ] ; then
++      CUDA_SM_LIST='sm_35 sm_37 sm_50 sm_52 sm_53 sm_60 sm_61 sm_62 sm_70 sm_72 sm_75 sm_80 sm_86 sm_87 sm_89'
+     elif [ $2 -gt 4 ] ; then
+       CUDA_SM_LIST='sm_35 sm_37 sm_50 sm_52 sm_53 sm_60 sm_61 sm_62 sm_70 sm_72 sm_75 sm_80 sm_86 sm_87'
+     else
+       CUDA_SM_LIST='sm_35 sm_37 sm_50 sm_52 sm_53 sm_60 sm_61 sm_62 sm_70 sm_72 sm_75 sm_80 sm_86'
+     fi
++  elif [ $1 -eq 12 ] ; then
++    if [ $2 -gt 5 ] ; then
++      echo "CUDA > 12.5 has not been tested yet. Set SHADER_MODEL manually."
++      exit 1
++    fi
++    CUDA_SM_LIST='sm_50 sm_52 sm_53 sm_60 sm_61 sm_62 sm_70 sm_72 sm_75 sm_80 sm_86 sm_87 sm_89 sm_90'
+   else
+     echo "Automatic support for CUDA $1.$2 is currently unsupported. Set SHADER_MODEL manually."
+     exit 1
+@@ -2425,6 +2597,20 @@ EOF
+ }
+ 
+ #-------------------------------------------------------------------------------
++# Add cmake prefix path
++AddCmakePrefixPath() {
++  # Search for existing
++  for ((idx1=0; idx1 < $icpp; idx1++)) ; do
++    if [ "$1" = "${cmake_prefix_paths[$idx1]}" ] ; then
++      #echo DEBUG duplicate path $1
++      return 0
++    fi
++  done
++  #echo DEBUG add cmake prefix path $icpp $1
++  cmake_prefix_paths[$icpp]=$1
++  ((icpp++))
++}
++
+ # Use cmake to configure build.
+ SetupCmake() {
+   CMAKE=`which cmake`
+@@ -2499,6 +2685,35 @@ SetupCmake() {
+   if [ $COMPILE_VERBOSE -eq 1 ] ; then
+     cmake_options="$cmake_options -DCMAKE_VERBOSE_MAKEFILE=TRUE"
+   fi
++  # Libraries
++  icpp=0
++  for ((idx=0; idx < $NLIB; idx++)) ; do
++    if [ "${LIB_STAT[$idx]}" = 'specified' ] ; then
++      #echo Lib $idx # DEBUG
++      AddCmakePrefixPath "${LIB_HOME[$idx]}"
++    fi
++  done
++  #if [ "${LIB_STAT[$LNETCDF]}" = 'specified' ] ; then
++  #  AddCmakePrefixPath "${LIB_HOME[$LNETCDF]}"
++  #fi
++  #if [ "${LIB_STAT[$LZIP]}" = 'specified' ] ; then
++  #  AddCmakePrefixPath "${LIB_HOME[$LZIP]}"
++  #fi
++  #if [ "${LIB_STAT[$LBZIP]}" = 'specified' ] ; then
++  #  AddCmakePrefixPath "${LIB_HOME[$LBZIP]}"
++  #fi
++
++  if [ $icpp -gt 0 ] ; then
++    cmppstring=""
++    for ((idx=0; idx < $icpp; idx++)) ; do
++      if [ ! -z "$cmppstring" ] ; then
++        cmppstring="$cmppstring;${cmake_prefix_paths[$idx]}"
++      else
++        cmppstring="${cmake_prefix_paths[$idx]}"
++      fi
++    done
++    cmake_options="$cmake_options -DCMAKE_PREFIX_PATH=$cmppstring"
++  fi  
+   echo "  Cmake options: $WORKDIR $cmake_options"
+   # Run cmake
+   $CMAKE $WORKDIR $cmake_options
+@@ -2516,6 +2731,12 @@ if [ -z "`which grep`" ] ; then
+   Err "CPPTRAJ configure requires 'grep'."
+ fi
+ 
++# Check for the 'install/ binary
++INSTALL=`which install`
++if [ -z "$INSTALL" ] ; then
++  Err "CPPTRAJ configure requires 'install'."
++fi
++
+ #echo "Path to configure: $WORKDIR"
+ #echo "Current dir      : $CURRENTDIR"
+ 
+@@ -2593,6 +2814,7 @@ while [ ! -z "$1" ] ; do
+     '-tune'          ) USE_OPT=2 ;;
+     '-noc++11'       ) C11_SUPPORT='no' ;;
+     '-windows'       ) PLATFORM='windows' ;;
++    '-pubfft'        ) LIB_STAT[$LFFTW3]='off' ;;
+     # Cpptraj options
+     '-nolfs'           ) LFS='' ;;
+     '-single-ensemble' ) USE_SINGLEENSEMBLE=1 ;;
+@@ -2619,6 +2841,7 @@ while [ ! -z "$1" ] ; do
+     '--requires-pthread') REQUIRES_PTHREAD=1 ;;
+     '--buildlibs'       ) BUILD_LIBS=1 ;;
+     '--nobuildlibs'     ) BUILD_LIBS=0 ; BUILDTESTOPT='' ;;
++    '--libdir'          ) SPECIFIED_LIB_DIR=$VALUE ;;
+     # Install options
+     '--compile-verbose' ) COMPILE_VERBOSE=1 ;;
+     '-noclean'          ) CLEAN='no' ;;
+@@ -2645,6 +2868,12 @@ while [ ! -z "$1" ] ; do
+   shift
+ done
+ 
++# If CUDA is no longer off, turn it on.
++if [ "${LIB_STAT[$LCUDA]}" != 'off' -a $USE_CUDA -eq 0 ] ; then
++  echo '  Enabling CUDA.'
++  USE_CUDA=1
++fi
++
+ # Determine platform if not already specified
+ if [ -z "$PLATFORM" ] ; then
+   PLATFORM=`uname -s | awk '{print $1}'`
+@@ -2897,6 +3126,10 @@ CPPTRAJDAT="$CPPTRAJDAT"
+ 
+ INSTALL_TARGETS=$INSTALL_TARGETS
+ 
++INSTALL=$INSTALL
++INSTALL_PROGRAM=$INSTALL
++INSTALL_DATA=$INSTALL -m 644
++
+ EOF
+ if [ ! -z "$DBGFLAGS" ] ; then
+   echo "DBGFLAGS=$DBGFLAGS" >> config.h
+diff --git AmberTools/src/cpptraj/get_library.sh AmberTools/src/cpptraj/get_library.sh
+index 250b04f6d..d387f6d4c 100755
+--- AmberTools/src/cpptraj/get_library.sh
++++ AmberTools/src/cpptraj/get_library.sh
+@@ -196,7 +196,7 @@ if [ -z "$MAKE_COMMAND" ] ; then
+   elif [ $NPROC -le 2 ] ; then
+     MAKE_COMMAND='make'
+   else
+-    HALF=`echo "$NPROC / 2" | bc`
++    ((HALF = $NPROC / 2))
+     MAKE_COMMAND="make -j$HALF"
+   fi
+   echo "    MAKE_COMMAND is not set; set to '$MAKE_COMMAND'"
+diff --git AmberTools/src/cpptraj/src/ReadLine.cpp AmberTools/src/cpptraj/src/ReadLine.cpp
+index 73e11a74e..04d62a8a4 100644
+--- AmberTools/src/cpptraj/src/ReadLine.cpp
++++ AmberTools/src/cpptraj/src/ReadLine.cpp
+@@ -8,8 +8,8 @@
+ #   include <iostream>
+ #else
+ #   define READLINE_LIBRARY
+-#   include <readline.h>
+-#   include <history.h>
++#   include <readline/readline.h>
++#   include <readline/history.h>
+ #endif
+ #include "ReadLine.h"
+ #include "Command.h"
+diff --git AmberTools/src/cpptraj/src/readline/CMakeLists.txt AmberTools/src/cpptraj/src/readline/CMakeLists.txt
+index 556e6f6be..d4de3f58e 100644
+--- AmberTools/src/cpptraj/src/readline/CMakeLists.txt
++++ AmberTools/src/cpptraj/src/readline/CMakeLists.txt
+@@ -44,3 +44,4 @@ add_library(readline STATIC ${CPPTRAJ_READLINE_SOURCES})
+ target_compile_definitions(readline PRIVATE HAVE_CONFIG_H=1) # make sure the code uses the premade config.h
+ make_pic_if_needed(readline)
+ target_include_directories(readline PUBLIC .)
++target_include_directories(readline PUBLIC ../)
+diff --git AmberTools/src/cpptraj/src/cpptrajfiles AmberTools/src/cpptraj/src/cpptrajfiles
+index 816fc0592..8edfb5731 100644
+--- AmberTools/src/cpptraj/src/cpptrajfiles
++++ AmberTools/src/cpptraj/src/cpptrajfiles
+@@ -568,6 +568,7 @@ VMDPLUGIN_OBJECTS= \
+ # These objects contain trajectory file functionality. Requires core and file libraries.
+ LIBCPPTRAJ_TRAJ_OBJECTS= \
+   TrajectoryFile.o \
++  TrajectoryIO.o \
+   Trajin_Single.o \
+   Trajout_Single.o \
+   InputTrajCommon.o \
