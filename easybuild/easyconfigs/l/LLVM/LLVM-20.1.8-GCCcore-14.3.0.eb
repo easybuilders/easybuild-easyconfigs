@@ -43,6 +43,44 @@ checksums = [
      '7ee0152efafdfebfeff01487e85d2aecd38d3c4e892e5ab91a21db02cdc6a3c6'},
 ]
 
+# riscv_MLIR.patch: Disable problematic MLIR Runner tests on RISC-V.
+# Failures on RISC-V are due to missing soft-float helper symbols (like __addsf3),
+# which is a known issue when running LLVM's JIT on platforms like RISC-V.
+
+# riscv_execution_engine.patch: Skip the test on RISC-V, which is appropriate since JIT execution via MLIR's
+# ExecutionEngine is not reliably supported on this architecture in this LLVM version.
+
+# riscv_xray_check.patch: RISC-V has looser execution ordering; relax CHECK-NEXT to CHECK
+
+# riscv_fuzzer.patch: Mark as UNSUPPORTED for RISC-V tests that use libFuzzer + -fsanitize=address,fuzzer
+
+# riscv_ompt.patch: Mark as UNSUPPORTED for RISC-V some ompt tests that are known to be fragile
+# see (https://github.com/llvm/llvm-project/issues/35661#issuecomment-980993177)
+
+if ARCH == 'riscv64':
+    patches += [
+        'LLVM-20.1.5_riscv_optimization_remark.patch',
+        'LLVM-20.1.5_riscv_MLIR.patch',
+        'LLVM-20.1.5_riscv_execution_engine.patch',
+        'LLVM-20.1.5_riscv_xray_check.patch',
+        'LLVM-20.1.5_riscv_fuzzer.patch',
+        'LLVM-20.1.5_riscv_ompt.patch',
+    ]
+    checksums += [
+        {'LLVM-20.1.5_riscv_optimization_remark.patch':
+         'e414a15e0fc48049a6ec75835cd032c8db6fb5c6d2825f0c604969c192aa60e0'},
+        {'LLVM-20.1.5_riscv_MLIR.patch':
+         '2348ee5db243f94d7a8877aee1a4332585e3bd58976af76c4bed01972d7793ca'},
+        {'LLVM-20.1.5_riscv_execution_engine.patch':
+         '7d795920e98c2c65df30ed01cc7e9251d69ae25e2674c251bc283ed44b53d02f'},
+        {'LLVM-20.1.5_riscv_xray_check.patch':
+         '5ca1e5730a3ee7cc1914959d64330f213a58f9818d91dbba346db63c77b47606'},
+        {'LLVM-20.1.5_riscv_fuzzer.patch':
+         '0d28e1acc96ab10daa2f696db01163c81f8a027a6ab8ccd5a770c6b7e91a4c34'},
+        {'LLVM-20.1.5_riscv_ompt.patch':
+         '9ed82093831777cee08629cb68b7e47d2cace3e0b950381b002f9bfd01bae1f6'},
+    ]
+
 builddependencies = [
     ('binutils', '2.44'),
     ('Python', '3.13.5'),
@@ -73,6 +111,13 @@ build_bolt = True
 build_openmp = True
 build_openmp_tools = True
 build_openmp_offload = True
+
+# openmp offload is not supported for riscv64 (https://clang.llvm.org/docs/OffloadingDesign.html)
+# There is a Bug in (at least) testing phase of BOLT for RISC-V. See https://github.com/llvm/llvm-project/issues/134245
+if ARCH == 'riscv64':
+    build_bolt = False
+    build_openmp_offload = False
+
 use_polly = True
 
 python_bindings = True
