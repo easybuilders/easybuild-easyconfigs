@@ -1,0 +1,52 @@
+easyblock = 'PythonBundle'
+
+name = 'flash-attention'
+version = '2.8.3'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/Dao-AILab/flash-attention'
+description = """Fast and memory-efficient exact attention."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('ninja-python', '1.11.1.4'),
+]
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('PyTorch-bundle', '2.9.1', f"{versionsuffix}-whl"),
+    ('CUTLASS', '4.3.5', versionsuffix),
+    ('einops', '0.8.1'),
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['6.0', '7.0', '7.5', '8.0', '8.6', '9.0']
+
+# solves "invalid cross-device link" error
+# see https://github.com/Dao-AILab/flash-attention/issues/875
+_fa_fix_linking = "sed -i 's/os.rename/shutil.move/' setup.py && "
+# use CUTLASS from EB
+_fa_fix_cutlass_src = "ln -s $EBROOTCUTLASS/include csrc/cutlass/include && "
+# avoid using pre-built wheels
+_fa_build_env = "export FLASH_ATTENTION_FORCE_BUILD=TRUE && "
+# adjust CUDA compute capabilities
+_fa_build_env += " export FLASH_ATTN_CUDA_ARCHS='%(cuda_cc_cmake)s' && "
+# adjust parallelization
+_fa_build_env += "export NVCC_THREADS=1 MAX_JOBS=%(parallel)s && "
+
+exts_list = [
+    (name, version, {
+        'modulename': 'flash_attn',
+        'source_urls': ['https://github.com/Dao-AILab/flash-attention/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['61cd5e91507ad7f04dc7c207d8bc8bfb1e43b56b806e51febbc27faeaee208ba'],
+        'preinstallopts': _fa_fix_linking + _fa_fix_cutlass_src + _fa_build_env,
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'from flash_attn import flash_attn_qkvpacked_func, flash_attn_func'",
+]
+
+moduleclass = 'ai'
