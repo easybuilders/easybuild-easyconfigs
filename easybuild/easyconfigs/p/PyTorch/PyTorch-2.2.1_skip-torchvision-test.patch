@@ -1,0 +1,23 @@
+The test unconditionally imports torchvision and fails if the isn't
+installed.
+Skip it in this case.
+See https://github.com/pytorch/pytorch/pull/149494
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_benchmark_fusion.py b/test/inductor/test_benchmark_fusion.py
+index 6eafc0c7266..09c3a4cc441 100644
+--- a/test/inductor/test_benchmark_fusion.py
++++ b/test/inductor/test_benchmark_fusion.py
+@@ -58,7 +58,10 @@ class BenchmarkFusionTestTemplate:
+ 
+     @slowTest
+     def test_resnet18(self):
+-        import torchvision
++        try:
++            import torchvision
++        except ImportError:
++            self.skipTest("TorchVision not available")
+ 
+         model = torchvision.models.resnet18()
+         model.eval()
