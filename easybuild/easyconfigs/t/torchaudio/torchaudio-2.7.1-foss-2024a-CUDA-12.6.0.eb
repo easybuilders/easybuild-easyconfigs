@@ -1,0 +1,76 @@
+easyblock = 'PythonBundle'
+
+name = 'torchaudio'
+version = '2.7.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/pytorch/audio'
+description = """Data manipulation and transformation for audio signal
+processing, powered by PyTorch."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('Ninja', '1.12.1'),
+    ('parameterized', '0.9.0'),  # for tests
+    ('scikit-learn', '1.5.2'),  # for tests
+    ('librosa', '0.10.2.post1'),  # for tests
+]
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('PyTorch', version, versionsuffix),
+    ('FFmpeg', '7.0.2'),
+    ('SoX', '14.4.2'),
+]
+
+local_preinstall_opts = ' '.join([
+    'USE_SYSTEM_LIBS=1',
+    'USE_OPENMP=1',
+    'USE_CUDA=1',
+    'USE_CUDNN=1',
+    'TORCH_CUDA_ARCH_LIST="%(cuda_cc_semicolon_sep)s"',
+    'USE_FFMPEG=1', 'FFMPEG_ROOT="$EBROOTFFMPEG"',
+    'CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s',
+])
+
+exts_list = [
+    (name, version, {
+        'installopts': '-v',
+        'patches': [
+            'torchaudio-2.6.0_use_ffmpeg7.patch',
+            'torchaudio-2.6.0_fix-encode-process.patch',
+            'torchaudio-2.6.0_fix_tests_gpu.patch',
+        ],
+        'preinstallopts': (
+            'unset BUILD_VERSION && rm -r third_party/{sox,ffmpeg/multi}; '  # runs twice when testinstall
+            'BUILD_SOX=0 '
+        ) + local_preinstall_opts,
+        'source_urls': ['https://github.com/pytorch/audio/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'runtest': (
+            'export OMP_NUM_THREADS=%(parallel)s && '
+            'export NVIDIA_TF32_OVERRIDE=0 && '
+            'pytest test/torchaudio_unittest/'
+            ' -k "not TestProcessPoolExecutor"'  # hang maybe related https://github.com/pytorch/audio/issues/1021
+            '" and not FilterGraphWithCudaAccel"'  # requires FFmpeg with CUDA support
+            '" and not kaldi_io_test"'  # requires kaldi_io
+            '" and not test_dup_hw_acel"'  # requires special render device permissions
+            '" and not test_h264_cuvid"'  # requires special render device permissions
+            '" and not test_hevc_cuvid"'  # requires special render device permissions
+            '" and not TestAutogradLfilterCUDA"'  # requires PyTorch’s nondeterministic algorithms mode
+        ),
+        'testinstall': True,
+        'checksums': [
+            {'torchaudio-2.7.1.tar.gz': 'fc8159476d1b3b5978d5e66746fc34be168170800ff4c5e356433d8c9c57cbea'},
+            {'torchaudio-2.6.0_use_ffmpeg7.patch': '1a2f7505efee9852ef393e6f4583cef209ad302db241171bf41be8d4a88920bd'},
+            {'torchaudio-2.6.0_fix-encode-process.patch':
+             '58247612801daf6fa49bbbb1d9e24c1c502a91c00100f219fd60ea11c2302e28'},
+            {'torchaudio-2.6.0_fix_tests_gpu.patch':
+             '42368cef5e9953e5e4fbb84dac7012d5b2797b4e7bd1493a44f9a7144d001587'},
+        ],
+    }),
+]
+
+moduleclass = 'ai'
