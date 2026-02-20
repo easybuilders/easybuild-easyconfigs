@@ -1,0 +1,57 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2017 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+#                                 Ghent University / The Francis Crick Institute
+#
+# Authors::
+# * Kenneth Hoste <kenneth.hoste@ugent.be>
+# * Ward Poelmans <wpoely86@gmail.com>
+# * Oliver Stueker <oliver.stueker@ace-net.ca>
+# * Sven Hansen <s.hansen@itc.rwth-aachen.de>
+# License::   MIT/GPL
+##
+name = 'GAMESS-US'
+version = '20240715-R2'
+
+maxcpus = '1024'
+maxnodes = '1024'
+hyperthreading = False
+
+homepage = 'https://www.msg.chem.iastate.edu/gamess/'
+description = """The General Atomic and Molecular Electronic Structure System (GAMESS)
+is a general ab initio quantum chemistry package.
+This module can be used on a maximum of %s nodes and %s CPUs per node.
+ """ % (maxnodes, maxcpus)
+
+toolchain = {'name': 'gompi', 'version': '2024a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+dependencies = [
+    ('libxc', '6.2.2'),
+    ('OpenBLAS', '0.3.27'), # we specifically need 64-bit OpenBLAS
+]
+
+download_instructions = """
+1. Manually download via http://www.msg.chem.iastate.edu/gamess/download.html (requires registration)
+2. Rename gamess-current.tar.gz to gamess-%(version)s.tar.gz
+"""
+sources = ['gamess-%(version)s.tar.gz']
+patches = [
+    'GAMESS-US-20240715-R2_use_external_libxc.patch',
+    'GAMESS-US-20240715-R2_libxc_disable_deprecated_gga.patch',
+    'GAMESS-US-20240715-R2_fix_rungms.patch',
+]
+checksums = [
+    {'gamess-20240715-R2.tar.gz': '452284f5387785c51696ebd4f5e99d5d7179c5bf8c391b758f33d9ed2c1c5ec4'},
+    {'GAMESS-US-20240715-R2_use_external_libxc.patch':
+     '0e72d291878fd02b99643ac113828905926643fe4a7eada3bd7e3a0ecba6d159'},
+    {'GAMESS-US-20240715-R2_libxc_disable_deprecated_gga.patch':
+     'd117aa289f8ecbb74aefd8e836cbca8b4032f3a24df1f8f24be908aee53b9bff'},
+    {'GAMESS-US-20240715-R2_fix_rungms.patch': '0ecddd39d7d5b4630ef6bed91d73533253e9d606a7a0941b2a17e9506c583e4e'},
+]
+
+# custom location of gamess workdir
+# scratch_dir = '/path/to/fast/storage'
+# user_scratch_dir = '/path/to/fast/storage'
+
+moduleclass = 'chem'
