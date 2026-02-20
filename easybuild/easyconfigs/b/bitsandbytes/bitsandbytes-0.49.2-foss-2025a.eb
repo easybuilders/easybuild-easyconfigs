@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'bitsandbytes'
+version = '0.49.2'
+
+homepage = 'https://huggingface.co/docs/bitsandbytes/main/en/index'
+description = "bitsandbytes enables accessible large language models via k-bit quantization for PyTorch."
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+github_account = '%(name)s-foundation'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['96aa206fbc94bf383e1aee0dbcd4909d1759afb57f425250ca5cec699671da86']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('pkgconf', '2.3.0'),
+    ('scikit-build-core', '0.11.1'),
+    ('setuptools', '80.9.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('PyTorch', '2.9.1', '-whl'),
+    ('SciPy-bundle', '2025.06'),
+]
+
+configopts = "-DCOMPUTE_BACKEND=cpu"
+
+# skip install step in CMakeMake
+skipsteps = ['install']
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    (name, version, {
+        'source_urls': source_urls,
+        'sources': sources,
+        'start_dir': '%(builddir)s/bitsandbytes-%(version)s/',
+        'checksums': ['96aa206fbc94bf383e1aee0dbcd4909d1759afb57f425250ca5cec699671da86'],
+    }),
+]
+
+local_python_package_path = 'lib/python%(pyshortver)s/site-packages/%(name)s'
+sanity_check_paths = {
+    'files': [f'{local_python_package_path}/lib%(name)s_cpu.{SHLIB_EXT}'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -s -c 'import %(name)s'",
+]
+
+moduleclass = 'ai'
