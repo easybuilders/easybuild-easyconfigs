@@ -1,0 +1,96 @@
+easyblock = 'Bundle'
+
+name = 'ModPipe'
+version = '2.3.1'
+_modeller_version = '10.7'
+_blast_version = '2.2.26'
+
+homepage = 'https://salilab.org/modpipe'
+description = """
+ModPipe is a completely automated software pipeline that can calculate protein structure models for a large number
+of sequences with almost no manual intervention. In the simplest case, it takes as input a sequence identifier and
+a configuration file and produces one or more comparative models for that sequence.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+build_info_msg = """
+Set KEY_MODELLER environment variable to the MODELLER key before running the
+installer. The key can be obtained from the MODELLER website:
+https://salilab.org/modeller/registration.html
+"""
+
+dependencies = [
+    ('Perl', '5.40.2'),
+    ('Python', '3.13.5'),
+    ('GLib', '2.85.3'),
+    ('HH-suite', '3.3.0-20250812'),
+    ('PyYAML', '6.0.2'),
+]
+
+# fix path of HHPaths.pm from HH-suite
+_mp_prebuildopts = (
+    "sed -i 's|lib/hh/scripts/HHPaths.pm|scripts/HHPaths.pm|' %(builddir)s/%(namelower)s-%(version)s/setup.py && "
+)
+
+# run Install script to install Modeller into ModPipe
+# https://salilab.org/modpipe/doc/install-ext.html#modeller
+_modeller_install_cmd = 'cd %(builddir)s/%(namelower)s-%(version)s && '
+_modeller_install_cmd += f'MODINSTALL=%(builddir)s/modpipe-{version}/ext/mod ./Install'
+
+components = [
+    ('BLAST', _blast_version, {
+        'easyblock': 'Tarball',
+        'install_type': 'subdir',
+        'source_urls': ['https://ftp.ncbi.nlm.nih.gov/blast/executables/legacy.NOTSUPPORTED/%(version)s/'],
+        'sources': ['%(namelower)s-%(version)s-x64-linux.tar.gz'],
+        'checksums': ['8a2f986cf47f0f7cbdb3478c4fc7e25c7198941d2262264d0b6b86194b3d063d'],
+    }),
+    ('Modeller', _modeller_version, {
+        'easyblock': 'Binary',
+        'source_urls': [f'https://salilab.org/modeller/{_modeller_version}/'],
+        'sources': [f'modeller-{_modeller_version}.tar.gz'],
+        'patches': ['Modeller-10.7_install-to-modpipe.patch'],
+        'install_cmd': _modeller_install_cmd,
+        'checksums': [
+            'b81ffee26841ef96470341889fa4af560f968cf35ef990d95480c7eb7a5b5c8f',  # modeller-10.7.tar.gz
+            '5d50805f40436dcdec879b088bf5654b288c9a7d593b74df70792e46acfd903f',  # install-to-modpipe.patch
+        ],
+    }),
+    (name, version, {
+        'easyblock': 'PythonPackage',
+        'source_urls': ['https://salilab.org/modpipe/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'start_dir': '%(namelower)s-%(version)s',
+        # install by 'python setup.py --with-blast=... --with-hhsuite=...'
+        'use_pip': False,
+        'skipsteps': ['install'],
+        'prebuildopts': _mp_prebuildopts,
+        'buildcmd': f'--with-blast=%(installdir)s/blast-{_blast_version}/bin --with-hhsuite=$EBROOTHHMINSUITE',
+        'checksums': ['a006f436305d5f582f9ce461c73f8f02e1eb6fd416705276373697715209a4a6'],
+    })
+]
+
+# paths in scripts are changed during the installation based on cwd
+buildininstalldir = True
+
+# cleanup duplicated blast dir
+postinstallcmds = ['rm -r %(installdir)s/blast']
+
+fix_perl_shebang_for = ['*.pl']
+fix_python_shebang_for = ['*.py']
+
+sanity_check_paths = {
+    'files': ['%(namelower)s-%(version)s/bin/%(namelower)s'],
+    'dirs': ['%(namelower)s-%(version)s/bin', '%(namelower)s-%(version)s/lib'],
+}
+
+sanity_check_commands = ['%(namelower)s help']
+
+modextrapaths = {
+    'PATH': '%(namelower)s-%(version)s/bin',
+    'PERL5LIB': '%(namelower)s-%(version)s/lib/perl',
+    'PYTHONPATH': '%(namelower)s-%(version)s/lib/python'
+}
+
+moduleclass = 'tools'
