@@ -34,6 +34,7 @@ import shutil
 import stat
 import tempfile
 from collections import defaultdict
+from typing import List
 from unittest import TestCase, TestLoader, main, skip
 from urllib.request import Request, urlopen
 
@@ -46,7 +47,7 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
-from easybuild.framework.easyconfig.easyconfig import resolve_template
+from easybuild.framework.easyconfig.easyconfig import EasyConfig, resolve_template
 from easybuild.framework.easyconfig.parser import (
     EasyConfigParser, fetch_parameters_from_easyconfig,
     DEPRECATED_EASYCONFIG_PARAMETERS,
@@ -252,7 +253,7 @@ class EasyConfigTest(TestCase):
                     EasyConfigTest._parsed_easyconfigs.extend(ec)
                 changed_ecs.append(ec[0]['ec'])
             else:
-                raise RuntimeError("Failed to find parsed easyconfig for %s" % os.path.basename(ec_file))
+                raise RuntimeError("Failed to find parsed easyconfig for " + os.path.basename(ec_file))
         EasyConfigTest._changed_ecs = changed_ecs
 
     def _get_changed_patches(self):
@@ -270,38 +271,38 @@ class EasyConfigTest(TestCase):
         EasyConfigTest._changed_patches = changed_patches + added_patches
 
     @property
-    def parsed_easyconfigs(self):
+    def parsed_easyconfigs(self) -> List[EasyConfig]:
         # parse all easyconfigs if they haven't been already
         EasyConfigTest.parse_all_easyconfigs()
         return EasyConfigTest._parsed_easyconfigs
 
     @property
-    def ordered_specs(self):
+    def ordered_specs(self) -> List[dict]:
         # Resolve dependencies if not done
         if EasyConfigTest._ordered_specs is None:
             EasyConfigTest.resolve_all_dependencies()
         return EasyConfigTest._ordered_specs
 
     @property
-    def changed_ecs_filenames(self):
+    def changed_ecs_filenames(self) -> List[str]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs_filenames
 
     @property
-    def added_ecs_filenames(self):
+    def added_ecs_filenames(self) -> List[str]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._added_ecs_filenames
 
     @property
-    def changed_ecs(self):
+    def changed_ecs(self) -> List[EasyConfig]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs
 
     @property
-    def changed_patches(self):
+    def changed_patches(self) -> List[str]:
         if EasyConfigTest._changed_patches is None:
             self._get_changed_patches()
         return EasyConfigTest._changed_patches
@@ -683,7 +684,7 @@ class EasyConfigTest(TestCase):
             for key in list(dep_vars):
                 for version_pattern, parents in alt_dep_versions[dep]:
                     # filter out known alternative dependency versions
-                    if re.search('^version: %s' % version_pattern, key):
+                    if re.search(f'^version: {version_pattern}', key):
                         # only filter if the easyconfig using this dep variants is known
                         if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
                             dep_vars.pop(key)
@@ -921,7 +922,7 @@ class EasyConfigTest(TestCase):
                 if res:
                     tc_gen = res.group('tc_gen')
                     all_deps_tc_gen = all_deps.setdefault(tc_gen, {})
-                    for dep_name, dep_ver, dep_versuff, dep_mod_name in get_deps_for(ec):
+                    for dep_name, dep_ver, dep_versuff, _dep_mod_name in get_deps_for(ec):
                         dep_variants = all_deps_tc_gen.setdefault(dep_name, {})
                         # a variant is defined by version + versionsuffix
                         variant = "version: %s; versionsuffix: %s" % (dep_ver, dep_versuff)
@@ -1494,7 +1495,8 @@ class EasyConfigTest(TestCase):
                 https_url = http_url.replace('http://', 'https://')
                 try:
                     req = Request(https_url, None, {'User-Agent': 'EasyBuild', 'Accept': '*/*'})
-                    https_url_works = bool(urlopen(req, timeout=5))
+                    with urlopen(req, timeout=5) as u:
+                        https_url_works = bool(u)
                 except Exception:
                     https_url_works = False
             checked_urls[http_url] = https_url_works
@@ -1743,14 +1745,10 @@ def template_easyconfig_test(self, spec):
         """["']sanity_pip_check["']: True""",
         """["']use_pip["']: True""",
     ]
-    hits = []
-    for pattern in patterns:
-        regex = re.compile(pattern, re.M)
-        hits += regex.findall(ec.rawtxt)
 
-    error_msg = "download_dep_fail, sanity_pip_check, use_pip should not be set to True "
-    error_msg += "(already enabled by default in PythonPackage easyblock)"
-    self.assertFalse(hits, error_msg)
+    if any(re.search(pattern, ec.rawtxt, re.M) for pattern in patterns):
+        failing_checks.append("download_dep_fail, sanity_pip_check, use_pip should not be set to True " +
+                              "(already enabled by default in PythonPackage easyblock)")
 
     # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
     old_urls = [
@@ -1777,7 +1775,7 @@ def template_easyconfig_test(self, spec):
         # exception to the dependencies of binutils (since we should eventually build a new binutils with GCCcore)
         if ec['toolchain']['version'] == 'system':
             binutils_complete_dependencies = ['M4', 'Bison', 'flex', 'help2man', 'zlib', 'binutils']
-            requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
+            requires_binutils &= ec['name'] not in binutils_complete_dependencies
 
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
         requires_binutils &= bool(sources or ec.get_ref('exts_list') or ec.get_ref('components'))
