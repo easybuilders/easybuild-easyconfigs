@@ -1,0 +1,279 @@
+name = 'PyTorch'
+version = '2.9.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pytorch.org/'
+description = """Tensors and Dynamic neural networks in Python with strong GPU acceleration.
+PyTorch is a deep learning framework that puts Python first."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+local_six_version = '1.11.0'
+# This is specific to a (tagged) release.
+# Extract from `get_disabled_tests` in tools/stats/import_test_stats.py
+local_disabled_tests_S3_ID = 'UsscdNP.2GMOzUxAvqIx8GAj4MuhX1Xi'
+source_urls = [GITHUB_RELEASE]
+sources = [
+    '%(namelower)s-v%(version)s.tar.gz',
+    {
+        'filename': '%(name)s-%(version)s-disabled-tests.json',
+        'download_filename': f'disabled-tests-condensed.json?versionId={local_disabled_tests_S3_ID}',
+        'source_urls': ['https://ossci-metrics.s3.amazonaws.com'],
+        # See `DEFAULT_DISABLED_TESTS_FILE` in torch/testing/_internal/common_utils.py
+        'extract_cmd': 'cp %s %(builddir)s/pytorch-v%(version)s/test/.pytorch-disabled-tests.json',
+    },
+    {
+        # Avoid downloading this during the build, see third_party/NNPACK/cmake/DownloadSix.cmake for the version
+        'filename': f'six-{local_six_version}.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/s/six'],
+    }
+]
+patches = [
+    'PyTorch-1.12.1_add-hypothesis-suppression.patch',
+    'PyTorch-1.7.0_disable-dev-shm-test.patch',
+    'PyTorch-2.0.1_skip-tests-skipped-in-subprocess.patch',
+    'PyTorch-2.1.0_remove-test-requiring-online-access.patch',
+    'PyTorch-2.6.0_fix-server-in-test_control_plane.patch',
+    'PyTorch-2.6.0_show-test-duration.patch',
+    'PyTorch-2.6.0_skip-test_segfault.patch',
+    'PyTorch-2.7.0_avoid_caffe2_test_cpp_jit.patch',
+    'PyTorch-2.7.1_avoid-caffe2-sandcastle-test-lib.patch',
+    'PyTorch-2.7.1_skip-test_data_parallel_rnn.patch',
+    'PyTorch-2.7.1_skip-test_gds_fails_in_ci.patch',
+    'PyTorch-2.7.1_skip-test_mixed_mm_exhaustive_dtypes.patch',
+    'PyTorch-2.7.1_skip-test_outside_linear_module_free.patch',
+    'PyTorch-2.7.1_suport-64bit-BARs.patch',
+    'PyTorch-2.7.1_tolerance-test_partial_flat_weights.patch',
+    'PyTorch-2.9.0_disable-test_nan_assert.patch',
+    'PyTorch-2.9.0_enable-symbolizer-in-test_workspace_allocation_error.patch',
+    'PyTorch-2.9.0_fix-attention-squeeze.patch',
+    'PyTorch-2.9.0_fix-FP16-CPU-tests-in-test_torchinductor_opinfo.patch',
+    'PyTorch-2.9.0_fix-nccl-test-env.patch',
+    'PyTorch-2.9.0_fix-test_exclude_padding.patch',
+    'PyTorch-2.9.0_fix-test_version_error.patch',
+    'PyTorch-2.9.0_honor-XDG_CACHE_HOME.patch',
+    'PyTorch-2.9.0_increase-tolerance-in-test_transformers.patch',
+    'PyTorch-2.9.0_remove-faulty-close.patch',
+    'PyTorch-2.9.0_revert-pybind11-3-change.patch',
+    'PyTorch-2.9.0_skip-test_benchmark_on_non_zero_device.patch',
+    'PyTorch-2.9.0_skip-test_convolution1-on-H100.patch',
+    'PyTorch-2.9.0_skip-test_inductor_all_gather_into_tensor_coalesced.patch',
+    'PyTorch-2.9.0_skip-test_original_aten_preserved_pad_mm.patch',
+    'PyTorch-2.9.0_skip-test_override-without-CUDA.patch',
+    'PyTorch-2.9.0_skip-tests-requiring-CUDA-12.8.patch',
+    'PyTorch-2.9.0_skip-test_unbacked_reduction.patch',
+    'PyTorch-2.9.0_skip-unexpected-success-in-test_fake_export.patch',
+    'PyTorch-2.9.0_update-exptected-output-for-z3-4.13.0.patch',
+    'PyTorch-2.9.1_avoid-multiprocess-tests-hanging-forever.patch',
+    'PyTorch-2.9.1_check-device-avail-test_schedule.patch',
+    'PyTorch-2.9.1_disable-slow-tests.patch',
+    'PyTorch-2.9.1_fix-hypothesis-deadline.patch',
+    'PyTorch-2.9.1_fix-iteration-in-fligh-reporter.patch',
+    'PyTorch-2.9.1_fix-test_dist2-decorators.patch',
+    'PyTorch-2.9.1_fix-TestExportOpInfoCPU-with-single-GPU.patch',
+    'PyTorch-2.9.1_GCC14-ARM-workaround.patch',
+    'PyTorch-2.9.1_ignore-warning-incompatible-pointer-types.patch',
+    'PyTorch-2.9.1_normalize_tree_output.patch',
+    'PyTorch-2.9.1_set-test-timeout.patch',
+    'PyTorch-2.9.1_skip-flex-attention-test_block_mask_non_divisible.patch',
+    'PyTorch-2.9.1_skip-flex-attention-tests-on-unsupported-cpus.patch',
+    'PyTorch-2.9.1_skip-RingFlexAttentionTest.patch',
+    'PyTorch-2.9.1_skip-test_dtensor_op_db_nn_functional_multi_head_attention_forward_cpu_float32.patch',
+    'PyTorch-2.9.1_skip-tests-requiring-SM90.patch',
+]
+checksums = [
+    {'pytorch-v2.9.1.tar.gz': 'e17504700ebc4c87f9b57059df1c4d790b769458c04db144c7a92aea90f2c92b'},
+    {'PyTorch-2.9.1-disabled-tests.json': '471f8aa36e056173d09ffd421ead45539a8d35fec6e61a8a0050d92a5fcd9f04'},
+    {'six-1.11.0.tar.gz': '70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9'},
+    {'PyTorch-1.12.1_add-hypothesis-suppression.patch':
+     'e71ffb94ebe69f580fa70e0de84017058325fdff944866d6bd03463626edc32c'},
+    {'PyTorch-1.7.0_disable-dev-shm-test.patch': '622cb1eaeadc06e13128a862d9946bcc1f1edd3d02b259c56a9aecc4d5406b8a'},
+    {'PyTorch-2.0.1_skip-tests-skipped-in-subprocess.patch':
+     '166c134573a95230e39b9ea09ece3ad8072f39d370c9a88fb2a1e24f6aaac2b5'},
+    {'PyTorch-2.1.0_remove-test-requiring-online-access.patch':
+     '35184b8c5a1b10f79e511cc25db3b8a5585a5d58b5d1aa25dd3d250200b14fd7'},
+    {'PyTorch-2.6.0_fix-server-in-test_control_plane.patch':
+     '1337689ff28ecaa8d1d0edf60d322bcdd7846fec040925325d357b19eb6e4342'},
+    {'PyTorch-2.6.0_show-test-duration.patch': '5508f2f9619204d9f3c356dbd4000a00d58f452ab2d64ae920eb8bc8b5484d75'},
+    {'PyTorch-2.6.0_skip-test_segfault.patch': '26806bd62e6b61b56ebaa52d68ca44c415a28124f684bd2fb373557ada68ef52'},
+    {'PyTorch-2.7.0_avoid_caffe2_test_cpp_jit.patch':
+     '2f3255e067f5c6f0d78b4fbce94784c41bddf3d01bab9673856b0d0bbc4e3fec'},
+    {'PyTorch-2.7.1_avoid-caffe2-sandcastle-test-lib.patch':
+     'aaf22cb431357dc78e4db895d64febf1c7ee187e8ad27bd13544d011127354d4'},
+    {'PyTorch-2.7.1_skip-test_data_parallel_rnn.patch':
+     'aa85b678e89db4bb41d2c5f4990f0d05959be92e61918291cb5609685b7f1841'},
+    {'PyTorch-2.7.1_skip-test_gds_fails_in_ci.patch':
+     '503030c3591196510a3c2d95db30b28a0b396adb8b50ff0d221f6bdb1f939935'},
+    {'PyTorch-2.7.1_skip-test_mixed_mm_exhaustive_dtypes.patch':
+     '709288abc802c9eb687c15f2677ebaf408d8325a4cb470d23cb72447ee0b8e13'},
+    {'PyTorch-2.7.1_skip-test_outside_linear_module_free.patch':
+     '4916a256b2b9914e4fdb930681b80df93ea561ddee2fc9978c4973a5650be5e9'},
+    {'PyTorch-2.7.1_suport-64bit-BARs.patch': '317c3d220aa87426d86e137a6c1a8f910adf9580ca0848371e0f6800c05dbde1'},
+    {'PyTorch-2.7.1_tolerance-test_partial_flat_weights.patch':
+     'f304440a57e00b8052a5ffbf285adad8d0fdc5a812a659420b59a20deb5a9942'},
+    {'PyTorch-2.9.0_disable-test_nan_assert.patch': '98e9f98ce8fb89ae368739bc039be69040ed446a1c74ee5c2a1ef8ba60986c7d'},
+    {'PyTorch-2.9.0_enable-symbolizer-in-test_workspace_allocation_error.patch':
+     'ba4032b967c0393c916a26fb2b117ba40670ae8e809cb34399a6379b4e523d72'},
+    {'PyTorch-2.9.0_fix-attention-squeeze.patch': '8f040e74780cab391bb4c84f86390a13230e1a309ddf65db9900d9a1c66e1288'},
+    {'PyTorch-2.9.0_fix-FP16-CPU-tests-in-test_torchinductor_opinfo.patch':
+     'b696d7be8c55ff1ccf8731dccf119b8792cd9593eaff457f37e76114e52346d2'},
+    {'PyTorch-2.9.0_fix-nccl-test-env.patch': '9326223c400262788734ec608f6134c5d240f4d5315a8d294179a28f885d6845'},
+    {'PyTorch-2.9.0_fix-test_exclude_padding.patch':
+     '349850874fb75d57a24437d871a4994a773e501632ce66a2adca613380a152dc'},
+    {'PyTorch-2.9.0_fix-test_version_error.patch': 'b10bb10d0a353e4ba7dbef28ca5fef03a8ba552896e1982708aa90ab6f24f34f'},
+    {'PyTorch-2.9.0_honor-XDG_CACHE_HOME.patch': '239631258431174e4aed8947ae6096e003a3213bfbfa112cd0cdebae89469164'},
+    {'PyTorch-2.9.0_increase-tolerance-in-test_transformers.patch':
+     'c27ab34900835c2a15edc26d481343a16433bfa52f635a80cbab252c1320a545'},
+    {'PyTorch-2.9.0_remove-faulty-close.patch': '32ca744d68dcfa669e46ced9d2776af3dcc380dd9c3458ba7c1c432e5c5295b3'},
+    {'PyTorch-2.9.0_revert-pybind11-3-change.patch':
+     '5289894011fefc67482b1e19c9d1c502e94a943fc7a2d5ed5a6a1eaf444570a0'},
+    {'PyTorch-2.9.0_skip-test_benchmark_on_non_zero_device.patch':
+     '85e236431d1a5da3fb7fccc2554640898c29f5fab46a41d15b3ab61dd1f924fc'},
+    {'PyTorch-2.9.0_skip-test_convolution1-on-H100.patch':
+     '704750c7cc08b58779907d608cd4b7505043e394fb27530b16d72a0dc27c277e'},
+    {'PyTorch-2.9.0_skip-test_inductor_all_gather_into_tensor_coalesced.patch':
+     '644153d4c1d8267c0631df2902a6dfe8ec2a197f3374f2a2f5654e6bd0edc05e'},
+    {'PyTorch-2.9.0_skip-test_original_aten_preserved_pad_mm.patch':
+     'ac9e05d296cd5ff938a44662cd022efcc8133c744ca82b045c6a15bc64f67cf4'},
+    {'PyTorch-2.9.0_skip-test_override-without-CUDA.patch':
+     '967512d1487bf1ad06982cc5b976c0b38ba062c3f3473cb4542c4b9ac0740662'},
+    {'PyTorch-2.9.0_skip-tests-requiring-CUDA-12.8.patch':
+     '6d79aff5291627b86d8fea025bf2379e4065c7d9cbef5cf83452c35922848728'},
+    {'PyTorch-2.9.0_skip-test_unbacked_reduction.patch':
+     'b51dd5d7c9cfeed946cbc5c7fc22f2e78e1fa52dda55569b957c20ca4ed01fe8'},
+    {'PyTorch-2.9.0_skip-unexpected-success-in-test_fake_export.patch':
+     '2e73f71ea0f09e613cc4a108893e7948b6daf239e3fe42fd2d3ae5d43c3cf9de'},
+    {'PyTorch-2.9.0_update-exptected-output-for-z3-4.13.0.patch':
+     '5c68e0de73212ed266879f4528a6041ef7ab2f1ac83c6cf7142c4baa78e7664c'},
+    {'PyTorch-2.9.1_avoid-multiprocess-tests-hanging-forever.patch':
+     '86ce380e69b3b20e010d817889cb1b825b05b4054a045b00f2ac12161b77d7e4'},
+    {'PyTorch-2.9.1_check-device-avail-test_schedule.patch':
+     '64c28d38ce69147565509add36d310473ce46f14a0a876d38b5049cb7fce9817'},
+    {'PyTorch-2.9.1_disable-slow-tests.patch': '76e6d8f7366b91a0ddc65f73685f2b09988bb5537d10d294f9bb6a48c7fec3d0'},
+    {'PyTorch-2.9.1_fix-hypothesis-deadline.patch': 'f7a130669eee9924a303df9e2bd5743ff023a7d994b7a3e43c86dcccf0206c49'},
+    {'PyTorch-2.9.1_fix-iteration-in-fligh-reporter.patch':
+     'ab408275ec66e836112a50054acc4e789ef38196efeb6137c6061d60d9ac9ead'},
+    {'PyTorch-2.9.1_fix-test_dist2-decorators.patch':
+     'bf4ed805f00775ed33351de7bce40ebf4eac16aff6c61d2e91790982bc43d73b'},
+    {'PyTorch-2.9.1_fix-TestExportOpInfoCPU-with-single-GPU.patch':
+     'bdddf5a9ba47d57ec96f4bbefc3b85c4904e44de93dc5c7a65bc03e343035ae9'},
+    {'PyTorch-2.9.1_GCC14-ARM-workaround.patch': 'ea8a8662e20fae2fb3a74c7f8bf390aba80a598ab37f9131c720d25ebb14965d'},
+    {'PyTorch-2.9.1_ignore-warning-incompatible-pointer-types.patch':
+     'c4dad43a5d76e292bb0cada56ea05e8cbd522e3e83749cf3b2c15cd1e4ff6d7b'},
+    {'PyTorch-2.9.1_normalize_tree_output.patch': '7d5994580339b73c28de595d9e5a0448db97b7d284f17efd18909e4613d170df'},
+    {'PyTorch-2.9.1_set-test-timeout.patch': '15fa1149c250b1333b0bc491f659aaf89d5d6eaf6df5ebc81eea545478c1239c'},
+    {'PyTorch-2.9.1_skip-flex-attention-test_block_mask_non_divisible.patch':
+     'd8489c192da549083569e09e5f94d2a83c9e41e111b1322f86512a9c5a58c0d9'},
+    {'PyTorch-2.9.1_skip-flex-attention-tests-on-unsupported-cpus.patch':
+     'e544f765beac7bdb3fc0ada98a3f92fd7e511ed8874de085aa2f213cca769d40'},
+    {'PyTorch-2.9.1_skip-RingFlexAttentionTest.patch':
+     '3cf0b11136fb18c45072687eafd3024d91b504d231a4fa40e04bc62d8d6019c7'},
+    {'PyTorch-2.9.1_skip-test_dtensor_op_db_nn_functional_multi_head_attention_forward_cpu_float32.patch':
+     'e57486cc42f3dbcae29753168febc251d070a283229e2d76ccbdf19fee53f06e'},
+    {'PyTorch-2.9.1_skip-tests-requiring-SM90.patch':
+     '7db02152db2ae70c0fd4c4602fe381e26a74b8e4f7b16b1a3554b2353d761b10'},
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('hypothesis', '6.103.1'),
+    ('setuptools', '80.9.0'),
+    # For tests
+    ('parameterized', '0.9.0'),
+    ('pytest-flakefinder', '1.1.0'),
+    ('pytest-rerunfailures', '15.0'),
+    ('pytest-shard', '0.1.2'),
+    ('pytest-subtests', '0.13.1'),
+    ('tlparse', '0.4.0'),
+    ('optree', '0.14.1'),
+    ('unittest-xml-reporting', '3.1.0'),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    # PyTorch is very sensitive to the NCCL & cuDNN versions. (Maybe the same for cuSPARSELt)
+    # Prefer those (listed per CUDA version) in
+    # https://github.com/pytorch/pytorch/blob/main/.github/scripts/generate_binary_build_matrix.py
+    # or https://github.com/pytorch/pytorch/blob/main/.ci/docker/common/install_cuda.sh
+    ('NCCL', '2.27.5', versionsuffix),
+    ('cuDNN', '9.10.2.21', versionsuffix, SYSTEM),
+    ('magma', '2.9.0', versionsuffix),
+    ('cuSPARSELt', '0.6.3.2', versionsuffix, SYSTEM),
+    # Version from .ci/docker/triton_version.txt
+    ('Triton', '3.5.0', versionsuffix),
+    ('Ninja', '1.12.1'),  # Required for JIT compilation of C++ extensions
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('expecttest', '0.2.1'),
+    ('GMP', '6.3.0'),
+    ('MPFR', '4.2.1'),
+    ('networkx', '3.4.2'),
+    ('numactl', '2.0.18'),
+    ('Pillow', '10.4.0'),
+    ('protobuf-python', '5.28.0'),
+    ('protobuf', '28.0'),
+    ('pybind11', '2.12.0'),
+    ('PuLP', '2.8.0'),
+    ('PyYAML', '6.0.2'),
+    ('pyzstd', '0.16.2'),
+    ('SciPy-bundle', '2024.05'),
+    ('sympy', '1.13.3'),
+    ('Z3', '4.13.0',),
+]
+
+prebuildopts = (f"""sed -i '1i set(PYTHON_SIX_SOURCE_DIR "%(builddir)s/six-{local_six_version}")' """
+                "cmake/Dependencies.cmake && ")
+buildcmd = '%(python)s setup.py build'  # Run the (long) build in the build step
+
+excluded_tests = {
+    '': [
+        # This test seems to take too long on NVIDIA Ampere at least.
+        'distributed/test_distributed_spawn',
+        # no xdoctest
+        'doctests',
+        # intermittent failures on various systems
+        # See https://github.com/easybuilders/easybuild-easyconfigs/issues/17712
+        'distributed/rpc/test_tensorpipe_agent',
+        # This test is expected to fail when run in their CI, but won't in our case.
+        # It just checks for a "CI" env variable
+        'test_ci_sanity_check_fail',
+        # Requires pwlf Python package
+        'distributed/_tools/test_sac_ilp', 'distributed/_tools/test_sac_estimator',
+        # 9 failures in H100, 7 are present in PYPI package, 2 are related to GC in Python < 3.12.4
+        'dynamo/test_dynamic_shapes',
+        # Broken test: https://github.com/pytorch/pytorch/issues/162179
+        'distributed/_composable/fsdp/test_fully_shard_logging',
+        # Broken: https://github.com/pytorch/pytorch/issues/137027
+        'inductor/test_extension_backend',
+        # Requires optional Python packages
+        'test_public_bindings',
+        # 1 Failure and not important
+        'dynamo/test_utils',
+        # Packaging test only, not important for us
+        'test_license',
+    ]
+}
+
+runtest = (
+    # Disable symbol resolution in stack traces that can cause hangs and slowdowns
+    ' TORCH_DISABLE_ADDR2LINE=1'
+    ' TORCHINDUCTOR_CUTLASS_DIR=%(start_dir)s/third_party/cutlass'
+    ' PYTEST_ADDOPTS=--full-trace'
+    ' PYTHONUNBUFFERED=1'
+    ' %(python)s test/run_test.py'
+    ' --continue-through-error --pipe-logs --verbose'
+    ' %(excluded_tests)s'
+)
+
+postinstallcmds = [
+    "mkdir %(installdir)s/extra",
+    "cp -r third_party/cutlass %(installdir)s/extra/",
+]
+
+modextrapaths = {'TORCHINDUCTOR_CUTLASS_DIR': 'extra/cutlass'}
+
+tests = ['PyTorch-check-cpp-extension.py', 'PyTorch-check-cutlass.py']
+
+moduleclass = 'ai'
