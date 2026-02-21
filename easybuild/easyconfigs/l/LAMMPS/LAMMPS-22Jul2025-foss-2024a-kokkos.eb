@@ -31,6 +31,17 @@ checksums = [
     {'LAMMPS-2Aug2023_python_venv.patch': '87fd13b0c66f0886877885412ff13dfd092782e2237ba1fae157f803437828d6'},
 ]
 
+if ARCH == 'aarch64':
+    # reported a bug upstream in kim-api on Aarch64.
+    # As long as this is not resolved we need to disable one unittest on Aarch64
+    patches += [
+        'LAMMPS-29Aug2024_update2-disable_test_on_ARM_with_kim-api_2.4.patch',
+    ]
+    checksums += [
+        {'LAMMPS-29Aug2024_update2-disable_test_on_ARM_with_kim-api_2.4.patch':
+         '01eb1e96b9529e40aeaf15283e182f5869961af8e0d2c70ce9fc640208ac64fb'},
+    ]
+
 builddependencies = [
     ('CMake', '3.29.3'),
     ('pkgconf', '2.2.0'),
@@ -61,8 +72,13 @@ dependencies = [
     ('MDI', '1.4.26'),
     ('mpi4py', '4.0.1'),
     ('tbb', '2021.13.0'),
-    ('ScaFaCoS', '1.0.4'),
 ]
+if ARCH == 'x86_64':
+    # ScaFaCos causes problems on ARM
+    # See https://github.com/scafacos/scafacos/issues/42
+    dependencies += [
+        ('ScaFaCoS', '1.0.4'),
+    ]
 
 # To use additional custom configuration options, use the 'configopts' easyconfig parameter
 # See docs and lammps easyblock for more information.
