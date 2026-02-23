@@ -1,0 +1,57 @@
+# John Dey Fred Hutch
+easyblock = 'CMakeMakeCp'
+
+name = 'svaba'
+version = '1.3.0'
+local_commit = '4edce7e2074942105612d8993c5f7c610442ad95'
+# local_commit = '442ad95'
+
+homepage = 'https://github.com/walaj/svaba'
+description = """SvABA - Structural variation and indel analysis by assembly"""
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+
+sources = [
+    {
+        'filename': f"{name}-{version}-{local_commit}.tar.xz",
+        'git_config': {
+            'url': 'https://github.com/walaj',
+            'repo_name': f"{name}",
+            'commit': local_commit,
+            'recursive': True
+        }
+    },
+]
+checksums = ['5ef48e3ab0140526a7955beabfe53cc47f7b466c4d3a894d2ea780e25e86ee1a']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('binutils', '2.42'),
+]
+
+dependencies = [
+    ('HTSlib', '1.22.1'),
+    ('XZ', '5.6.3'),
+    ('bzip2', '1.0.8'),
+]
+
+separate_build_dir = True
+
+configopts = "-DHTSLIB_DIR=$EBROOTHTSLIB/lib "
+
+files_to_copy = [
+    (['svaba'], 'bin'),
+    (['SeqLib/libseqlib.a'], 'lib'),
+    (['%(builddir)s/%(name)s/R'], ''),
+]
+
+modextrapaths = {'R_LIBS_SITE': 'R'}
+
+sanity_check_commands = ['svaba --version']
+
+sanity_check_paths = {
+    'files': ['bin/svaba', 'R/svaba-annotate.R'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
