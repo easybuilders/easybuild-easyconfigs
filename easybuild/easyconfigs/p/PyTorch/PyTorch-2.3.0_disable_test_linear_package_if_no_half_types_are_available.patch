@@ -1,0 +1,15 @@
+Disable test_linear_package if neither bf16 nor fp16 are available on the CPU
+
+Åke Sandgren, 2024-05-06
+diff --git a/test/inductor/test_cpu_repro.py b/test/inductor/test_cpu_repro.py
+index dfc453220a9..ae1613ad62e 100644
+--- a/test/inductor/test_cpu_repro.py
++++ b/test/inductor/test_cpu_repro.py
+@@ -362,6 +362,7 @@ class CPUReproTests(TestCase):
+             self.common(Model(), example_inputs)
+ 
+     @unittest.skipIf(not torch.backends.mkldnn.is_available(), "MKLDNN is not enabled")
++    @unittest.skipIf(not (torch.ops.mkldnn._is_mkldnn_bf16_supported() or torch.ops.mkldnn._is_mkldnn_fp16_supported()), "MKLDNN neither fp16 nor bf16 are available")
+     @patch("torch.cuda.is_available", lambda: False)
+     def test_linear_packed(self):
+         dtypes = []

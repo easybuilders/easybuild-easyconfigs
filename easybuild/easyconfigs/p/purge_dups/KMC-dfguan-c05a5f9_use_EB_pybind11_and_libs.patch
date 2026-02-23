@@ -1,0 +1,39 @@
+Use pybind11 from EasyBuild install
+Required to use Python != 3.10
+Also use zlib and bzip2 from EB install
+
+Åke Sandgren, 2024-12-09
+diff --git a/makefile b/makefile
+index 09f4de3..918dcae 100644
+--- a/makefile
++++ b/makefile
+@@ -36,9 +36,7 @@ $(KMC_MAIN_DIR)/raduls_sse41.o \
+ $(KMC_MAIN_DIR)/raduls_avx2.o \
+ $(KMC_MAIN_DIR)/raduls_avx.o
+ 
+-KMC_LIBS = \
+-$(KMC_MAIN_DIR)/libs/libz.a \
+-$(KMC_MAIN_DIR)/libs/libbz2.a
++KMC_LIBS = -lz -lbz2
+ 
+ KMC_DUMP_OBJS = \
+ $(KMC_DUMP_DIR)/nc_utils.o \
+@@ -64,9 +62,7 @@ $(KMC_TOOLS_DIR)/fastq_reader.o \
+ $(KMC_TOOLS_DIR)/fastq_writer.o \
+ $(KMC_TOOLS_DIR)/percent_progress.o
+ 
+-KMC_TOOLS_LIBS = \
+-$(KMC_TOOLS_DIR)/libs/libz.a \
+-$(KMC_TOOLS_DIR)/libs/libbz2.a
++KMC_TOOLS_LIBS = -lz -lbz2
+ 
+ $(KMC_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
+ 	$(CC) $(CFLAGS) -c $< -o $@
+@@ -102,7 +98,6 @@ py_kmc_api: $(PY_KMC_API_OBJS) $(PY_KMC_API_OBJS)
+ 	-mkdir -p $(KMC_BIN_DIR)
+ 	$(CC) -fPIC -Wall -shared -std=c++11 -O3 $(PY_KMC_API_DIR)/py_kmc_api.cpp $(PY_KMC_API_OBJS) \
+ 	-I $(KMC_API_DIR) \
+-	-I $(PY_KMC_API_DIR)/libs/pybind11/include \
+ 	-I `python3 -c "import sysconfig;print(sysconfig.get_paths()['include'])"` \
+ 	-o $(KMC_BIN_DIR)/$@`python3-config --extension-suffix`
+ 

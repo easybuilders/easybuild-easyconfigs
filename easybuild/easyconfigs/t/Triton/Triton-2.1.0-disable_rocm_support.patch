@@ -1,0 +1,88 @@
+Disable experimental support for AMD GPUs
+author: Alex Domingo (Vrije Universiteit Brussel)
+author: Samuel Moors (Vrije Universiteit Brussel)
+diff -ur triton-2.1.0.orig/CMakeLists.txt triton-2.1.0/CMakeLists.txt
+--- triton-2.1.0.orig/CMakeLists.txt	2023-09-01 08:28:27.000000000 +0200
++++ triton-2.1.0/CMakeLists.txt	2024-09-01 10:40:17.863374000 +0200
+@@ -70,7 +70,7 @@
+         AMDGPUInfo AMDGPUcodegen
+       )
+     else()
+-      find_package(LLVM 11 REQUIRED COMPONENTS "nvptx;amdgpu")
++      find_package(LLVM 11 REQUIRED COMPONENTS "nvptx")
+     endif()
+ 
+     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+@@ -89,9 +89,7 @@
+       LLVMNVPTXCodeGen
+       LLVMNVPTXDesc
+       LLVMNVPTXInfo
+-      LLVMAMDGPUDisassembler
+       LLVMMCDisassembler
+-      LLVMAMDGPUCodeGen
+       LLVMMIRParser
+       LLVMGlobalISel
+       LLVMSelectionDAG
+@@ -116,10 +114,7 @@
+       LLVMObject
+       LLVMTextAPI
+       LLVMBitReader
+-      LLVMAMDGPUAsmParser
+       LLVMMCParser
+-      LLVMAMDGPUDesc
+-      LLVMAMDGPUUtils
+       LLVMMC
+       LLVMDebugInfoCodeView
+       LLVMDebugInfoMSF
+@@ -127,7 +122,6 @@
+       LLVMRemarks
+       LLVMBitstreamReader
+       LLVMBinaryFormat
+-      LLVMAMDGPUInfo
+       LLVMSupport
+       LLVMDemangle
+       LLVMPasses
+diff -ur triton-2.1.0.orig/lib/Target/HSACO/HSACOTranslation.cpp triton-2.1.0/lib/Target/HSACO/HSACOTranslation.cpp
+--- triton-2.1.0.orig/lib/Target/HSACO/HSACOTranslation.cpp	2023-09-01 08:28:27.000000000 +0200
++++ triton-2.1.0/lib/Target/HSACO/HSACOTranslation.cpp	2024-09-02 21:27:09.233712000 +0200
+@@ -37,13 +37,6 @@
+ 
+ namespace {
+ 
+-void init_llvm() {
+-  LLVMInitializeAMDGPUTarget();
+-  LLVMInitializeAMDGPUTargetInfo();
+-  LLVMInitializeAMDGPUTargetMC();
+-  LLVMInitializeAMDGPUAsmParser();
+-  LLVMInitializeAMDGPUAsmPrinter();
+-}
+ 
+ std::unique_ptr<llvm::TargetMachine>
+ initialize_module(llvm::Module *module, const std::string &triple,
+@@ -155,7 +148,6 @@
+ llir_to_amdgcn_and_hsaco(llvm::Module *module, std::string gfx_arch,
+                          std::string gfx_triple, std::string gfx_features) {
+ 
+-  init_llvm();
+ 
+   // verify and store llvm
+   auto module_obj = llvm::CloneModule(*module);
+diff -ur triton-2.1.0.orig/python/src/triton.cc triton-2.1.0/python/src/triton.cc
+--- triton-2.1.0.orig/python/src/triton.cc	2023-09-01 08:28:27.000000000 +0200
++++ triton-2.1.0/python/src/triton.cc	2024-09-01 10:41:29.146862440 +0200
+@@ -60,7 +60,6 @@
+ enum backend_t {
+   HOST,
+   CUDA,
+-  ROCM,
+ };
+ 
+ void init_triton_runtime(py::module &&m) {
+@@ -68,7 +67,6 @@
+   py::enum_<backend_t>(m, "backend", py::module_local())
+       .value("HOST", HOST)
+       .value("CUDA", CUDA)
+-      .value("ROCM", ROCM)
+       .export_values();
+ }
+ 
