@@ -11,17 +11,17 @@ sources = [SOURCELOWER_TAR_BZ2]
 patches = [
     'OpenMPI-5.0.3_fix_hle_make_errors.patch',
     'OpenMPI-5.0.3_disable_opal_path_nfs_test.patch',
-    ('OpenMPI-5.0.2_build-with-internal-cuda-header.patch', 1)
+    ('OpenMPI-5.0.2_build-with-internal-cuda-header.patch', 1),
+    'OpenMPI-5.0.7_fix_gpfs_compatibility.patch',
 ]
 checksums = [
-    {'openmpi-5.0.3.tar.bz2':
-     '990582f206b3ab32e938aa31bbf07c639368e4405dca196fabe7f0f76eeda90b'},
-    {'OpenMPI-5.0.3_fix_hle_make_errors.patch':
-     '881c907a9f5901d5d6af41cd33dffdcecba4a67a9e5123e602542aea57a80895'},
+    {'openmpi-5.0.3.tar.bz2': '990582f206b3ab32e938aa31bbf07c639368e4405dca196fabe7f0f76eeda90b'},
+    {'OpenMPI-5.0.3_fix_hle_make_errors.patch': '881c907a9f5901d5d6af41cd33dffdcecba4a67a9e5123e602542aea57a80895'},
     {'OpenMPI-5.0.3_disable_opal_path_nfs_test.patch':
      '75d4417e35252ea3a19b2792f1b06e9aeb408c253aa4921d77226d57b71dee45'},
     {'OpenMPI-5.0.2_build-with-internal-cuda-header.patch':
      'f52dc470543f35efef10d651dd159c771ae25f8f76a420d20d87abf4dc769ed7'},
+    {'OpenMPI-5.0.7_fix_gpfs_compatibility.patch': '9739134ce273a691c9deac6e410510653a88c1542b60dbf8789e4a423447d4f6'},
 ]
 
 builddependencies = [
@@ -50,14 +50,16 @@ preconfigopts += './autogen.pl --force && '
 
 configopts = '--with-cuda=%(start_dir)s/opal/mca/cuda '
 # Required to prevent internal compiler error in opal.
-configopts += '--enable-alt-short-float=no '
+configopts += ' --enable-alt-short-float=no'
+# Do not pick up the system library automatically
+configopts += ' --without-xpmem'
 # Set PGI compilers manually, as NVHPC compilers are not correctly detected
-configopts += 'CC=pgcc CXX=pgc++ FC=pgfortran '
+configopts += ' CC=pgcc CXX=pgc++ FC=pgfortran'
 
 # site specific options
-# configopts += '--without-psm2 '
-# configopts += '--disable-oshmem '
-# configopts += '--with-gpfs '
-configopts += '--with-slurm '
+# configopts += ' --without-psm2 '
+# configopts += ' --disable-oshmem '
+# configopts += ' --with-gpfs '
+# configopts += ' --with-slurm '
 
 moduleclass = 'mpi'

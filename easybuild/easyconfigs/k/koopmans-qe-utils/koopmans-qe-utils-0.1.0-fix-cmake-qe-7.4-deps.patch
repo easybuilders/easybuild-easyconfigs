@@ -1,0 +1,86 @@
+Taken from: https://github.com/epfl-theos/koopmans-qe-utils/commit/30b8dad05753e7c41e22338a8ec59a2009d0ac40
+
+Original subject: [PATCH] Update utils cmake: Remove FoX and add new dependences
+
+---
+ CMakeLists.txt           | 19 -------------------
+ cmake/FindEspresso.cmake |  2 +-
+ src/CMakeLists.txt       |  6 +++---
+ 3 files changed, 4 insertions(+), 23 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 130a12e..7e509cb 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -116,11 +116,6 @@ set(QE_FFTW_VENDOR "AUTO" CACHE
+ set(QE_ENABLE_SANITIZER "none" CACHE STRING "none,asan,ubsan,tsan,msan")
+ set(QE_ENABLE_PLUGINS "" CACHE STRING "Semicolon-separated list of plugins")
+ set(QE_LIBRARY_PATH "" CACHE STRING "Location of QE libraries")
+-if(FoX_ROOT)
+-    set(QE_FoX_INTERNAL OFF)
+-endif()
+-option(QE_FoX_INTERNAL
+-    "enable FoX intenal library" ON)
+ if(WANNIER90_ROOT)
+     set(QE_WANNIER90_INTERNAL OFF)
+ endif()
+@@ -538,20 +533,6 @@ if(QE_ENABLE_HDF5)
+             ${HDF5_C_DEFINITIONS})
+ endif(QE_ENABLE_HDF5)
+ 
+-###########################################################
+-# FoX
+-###########################################################
+-if(NOT FoX_ROOT)
+-    set(FoX_ROOT "${QE_ROOT}/build/lib/")
+-endif()
+-add_library(qe_fox INTERFACE)
+-find_package(FoX REQUIRED)
+-target_link_libraries(qe_fox INTERFACE FoX::FoX)
+-if(NOT FoX_FOUND)
+-    message(FATAL_ERROR "Failed to find FoX")
+-endif()
+-###########################################################
+-
+ ###########################################################
+ # External FFT library
+ ###########################################################
+diff --git a/cmake/FindEspresso.cmake b/cmake/FindEspresso.cmake
+index 7cd0b0f..f4d3078 100644
+--- a/cmake/FindEspresso.cmake
++++ b/cmake/FindEspresso.cmake
+@@ -53,7 +53,7 @@ endif()
+ 
+ # Construct a list of Quantum ESPRESSO static libraries
+ set(QE_LIBRARIES "")
+-foreach(libname qe_pw qe_pp qe_kssolver_dense qe_modules qe_modules_c qe_xclib qe_libbeef qe_lax qe_upflib qe_xml qe_utilx qe_utilx_c qe_fftx qe_dftd3 qe_devxlib mbd)
++foreach(libname qe_pw qe_pp qe_kssolver_dense qe_modules qe_modules_c qe_xclib qe_libbeef qe_lax qe_device_lapack qe_upflib qe_xml qe_utilx qe_utilx_c qe_fftx qe_fftx_c qe_dftd3 qe_devxlib mbd)
+     set(libvar "lib${libname}")
+     find_library(${libvar} NAMES ${libname}
+         PATHS ${QE_ROOT}
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 9847408..3d4c242 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -27,7 +27,7 @@ target_link_libraries(qe_merge_evc_exe)
+ set(src_wann2kcp_x wann2kcp.f90)
+ qe_add_executable(qe_wann2kcp_exe ${src_wann2kcp_x})
+ set_target_properties(qe_wann2kcp_exe PROPERTIES OUTPUT_NAME wann2kcp.x)
+-target_link_libraries(qe_wann2kcp_exe PRIVATE qe_koopmans_utils ${QE_LIBRARIES} qe_fox qe_lapack qe_mpi_fortran qe_openmp_fortran qe_hdf5_fortran qe_ext_fft)
++target_link_libraries(qe_wann2kcp_exe PRIVATE qe_koopmans_utils ${QE_LIBRARIES} qe_lapack qe_mpi_fortran qe_openmp_fortran qe_hdf5_fortran qe_ext_fft)
+ 
+ ###########################################################
+ # epsilon.x
+@@ -35,6 +35,6 @@ target_link_libraries(qe_wann2kcp_exe PRIVATE qe_koopmans_utils ${QE_LIBRARIES}
+ set(src_epsilon_x epsilon.f90)
+ qe_add_executable(qe_epsilon_exe ${src_epsilon_x})
+ set_target_properties(qe_epsilon_exe PROPERTIES OUTPUT_NAME epsilon.x)
+-target_link_libraries(qe_epsilon_exe PRIVATE qe_koopmans_utils ${QE_LIBRARIES} qe_fox qe_lapack qe_mpi_fortran qe_openmp_fortran qe_hdf5_fortran qe_ext_fft)
++target_link_libraries(qe_epsilon_exe PRIVATE qe_koopmans_utils ${QE_LIBRARIES} qe_lapack qe_mpi_fortran qe_openmp_fortran qe_hdf5_fortran qe_ext_fft)
+ 
+-qe_install_targets(qe_merge_evc_exe qe_wann2kcp_exe qe_epsilon_exe)
+\ No newline at end of file
++qe_install_targets(qe_merge_evc_exe qe_wann2kcp_exe qe_epsilon_exe)
+-- 
+2.43.5
+
