@@ -1,0 +1,153 @@
+easyblock = 'PythonBundle'
+
+name = 'TensorFlow'
+version = '2.18.1'
+
+homepage = 'https://www.tensorflow.org/'
+description = "An open-source software library for Machine Intelligence"
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('hatchling', '1.24.2'),
+    ('Bazel', '6.5.0', '-Java-11'),
+    # git 2.x required, see also https://github.com/tensorflow/tensorflow/issues/29053
+    ('git', '2.45.1'),
+    ('pybind11', '2.12.0'),
+    ('UnZip', '6.0'),
+    ('NASM', '2.16.03'),
+    # Required to build some of the extensions
+    ('poetry', '1.8.3'),
+    ('Cython', '3.0.10'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('h5py', '3.12.1'),
+    ('cURL', '8.7.1'),
+    ('dill', '0.3.9'),
+    ('double-conversion', '3.3.0'),
+    ('flatbuffers', '24.3.25'),
+    ('flatbuffers-python', '24.3.25'),
+    ('giflib', '5.2.1'),
+    ('hwloc', '2.10.0'),
+    ('ICU', '75.1'),
+    ('JsonCpp', '1.9.5'),
+    ('libjpeg-turbo', '3.0.1'),
+    ('ml_dtypes', '0.5.0'),
+    ('nsync', '1.29.2'),
+    ('SQLite', '3.45.3'),
+    ('patchelf', '0.18.0'),
+    ('libpng', '1.6.43'),
+    ('snappy', '1.2.1'),
+    ('zlib', '1.3.1'),
+    ('grpcio', '1.70.0'),
+    ('wrapt', '1.16.0'),
+    ('Markdown', '3.7'),
+    ('absl-py', '2.1.0'),
+    ('tensorboard', '2.18.0'),
+    ('optree', '0.14.1'),
+    ('typing-extensions', '4.11.0'),
+]
+
+exts_list = [
+    ('astor', '0.8.1', {
+        'checksums': ['6a6effda93f4e1ce9f618779b2dd1d9d84f1e32812c23a29b3fff6fd7f63fa5e'],
+    }),
+    ('termcolor', '2.5.0', {
+        'checksums': ['998d8d27da6d48442e8e1f016119076b690d962507531df4890fcd2db2ef8a6f'],
+    }),
+    ('Werkzeug', '3.1.3', {
+        'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
+        'checksums': ['60723ce945c19328679790e3282cc758aa4a6040e4bb330f53d30fa546d44746'],
+    }),
+    ('namex', '0.0.8', {
+        'checksums': ['32a50f6c565c0bb10aa76298c959507abdc0e850efe085dc38f3440fcb3aa90b'],
+    }),
+    ('keras', '3.9.2', {
+        'checksums': ['322aab6418ee3de1e2bd0871b60a07f0e444e744a7e8cba79af8b42408879ecf'],
+    }),
+    ('google-pasta', '0.2.0', {
+        'modulename': 'pasta',
+        'checksums': ['c9f2c8dfc8f96d0d5808299920721be30c9eec37f2389f28904f454565c8a16e'],
+    }),
+    ('astunparse', '1.6.3', {
+        'checksums': ['5ad93a8456f0d084c3456d059fd9a92cce667963232cbf763eac3bc5b7940872'],
+    }),
+    ('tblib', '3.0.0', {
+        'checksums': ['93622790a0a29e04f0346458face1e144dc4d32f493714c6c3dff82a4adb77e6'],
+    }),
+    (name, version, {
+        'patches': [
+            'TensorFlow-2.13.0_add-missing-system-protobuf-targets.patch',
+            'TensorFlow-2.15.1_fix-flatbuffer-license.patch',
+            'TensorFlow-2.15.1_fix-pybind11-build.patch',
+            'TensorFlow-2.15.1_add-default-shell-env.patch',
+            'TensorFlow-2.4.0_dont-use-var-lock.patch',
+            'TensorFlow-2.18.1_disable-tf32-in-fused-matmul-tests.patch',
+            'TensorFlow-2.18.1_fix-patchelf.patch',
+            'TensorFlow-2.18.1_fix-xnnpack.patch',
+            'TensorFlow-2.18.1_fixedpoint.patch',
+            'TensorFlow-2.18.1_fix-setup.py.patch',
+            'TensorFlow-2.18.1_fix-AVX512-eigen-compilation-gcc13.patch',
+        ],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
+        'test_script': 'TensorFlow-2.x_mnist-test.py',
+        'test_tag_filters_cpu': '-gpu,-tpu,-no_cuda_on_cpu_tap,-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
+        'test_tag_filters_gpu': (
+            'gpu,-no_gpu,-nogpu,-gpu_cupti,-no_cuda11,'
+            '-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only'
+        ),
+        'test_targets': [
+            '//tensorflow/core/...',
+            '-//tensorflow/core:example_java_proto',
+            '-//tensorflow/core/example:example_protos_closure',
+            '//tensorflow/cc/...',
+            '//tensorflow/c/...',
+            '//tensorflow/python/...',
+            '-//tensorflow/c/eager:c_api_test_gpu',
+            '-//tensorflow/c/eager:c_api_distributed_test',
+            '-//tensorflow/c/eager:c_api_distributed_test_gpu',
+            '-//tensorflow/c/eager:c_api_cluster_test_gpu',
+            '-//tensorflow/c/eager:c_api_remote_function_test_gpu',
+            '-//tensorflow/c/eager:c_api_remote_test_gpu',
+            '-//tensorflow/core/common_runtime:collective_param_resolver_local_test',
+            '-//tensorflow/core/kernels/mkl:mkl_fused_ops_test',
+            '-//tensorflow/core/kernels/mkl:mkl_fused_batch_norm_op_test',
+            '-//tensorflow/core/ir/importexport/tests/roundtrip/...',
+        ],
+        'testopts': "--test_env=HOME=/tmp --test_timeout=3600 --test_size_filters=small ",
+        'testopts_gpu': (
+            '--test_env=HOME=/tmp --test_timeout=3600 --test_size_filters=small '
+            '--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute '
+        ),
+        'with_xla': True,
+        'checksums': [
+            {'v2.18.1.tar.gz': '467c512b631e72ad5c9d5c16b23669bcf89675de630cfbb58f9dde746d34afa8'},
+            {'TensorFlow-2.13.0_add-missing-system-protobuf-targets.patch':
+             '77d8c8a5627493fc7c38b4de79d49e60ff6628b05ff969f4cd3ff9857176c459'},
+            {'TensorFlow-2.15.1_fix-flatbuffer-license.patch':
+             '2c04d5095977a628a238dbf93c5fada7159c86752a7183e64e0cf7c7ab00caf4'},
+            {'TensorFlow-2.15.1_fix-pybind11-build.patch':
+             '3bb350ac92ab99c63c951c96b3b0160699f5f16822b64f72111ebfd2275cafce'},
+            {'TensorFlow-2.15.1_add-default-shell-env.patch':
+             '3d5196b4bf2e91048dc8a18f9e8f487a223fcd973d6302e80b0d4000ea3d652b'},
+            {'TensorFlow-2.4.0_dont-use-var-lock.patch':
+             'b14f2493fd2edf79abd1c4f2dde6c98a3e7d5cb9c25ab9386df874d5f072d6b5'},
+            {'TensorFlow-2.18.1_disable-tf32-in-fused-matmul-tests.patch':
+             '97ec29666f3449f2249b121d3c88a374d888732c978c8f2aa74aa5243c7088cc'},
+            {'TensorFlow-2.18.1_fix-patchelf.patch':
+             '6c9a4d8484868b68aad99527420f22ff09528db588cdb11926ec9340f0c4a816'},
+            {'TensorFlow-2.18.1_fix-xnnpack.patch': 'baf81d7b2b61b5a923cf1f171d5e2400df6b8bd9073d3afa7a356e3bbe11984c'},
+            {'TensorFlow-2.18.1_fixedpoint.patch': '5ea1eb3b32e7df5f9ae711a71778b4cae544b3380f18882186eea035873fb640'},
+            {'TensorFlow-2.18.1_fix-setup.py.patch':
+             '6a30d61fd47b773d5e3a40ba3d02288df16321ffc45500f91b666437d8ec3343'},
+            {'TensorFlow-2.18.1_fix-AVX512-eigen-compilation-gcc13.patch':
+             '976d4be56144060f2ac4351db8341c6dd72376b0d871d5fddd986548ad03c873'},
+        ],
+    }),
+]
+
+moduleclass = 'lib'

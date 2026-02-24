@@ -1,0 +1,38 @@
+From 9e07673deb212c87b1c6fea23799a97474c476ed Mon Sep 17 00:00:00 2001
+From: Kanya-Mo <167922169+Kanya-Mo@users.noreply.github.com>
+Date: Fri, 8 Aug 2025 22:36:42 +0000
+Subject: [PATCH] Fix test_fsdp_ep.py due to _MeshEnv API change (#158695)
+
+#132339 changed parent/child mesh related APIs from _MeshEnv. UT TestFSDPWithEP.test_e2e still uses old APIs and will fail:
+```
+File "/home/kanya/pytorch/test/distributed/checkpoint/e2e/test_fsdp_ep.py", line 77, in test_e2e
+    mesh_fsdp_ep = _mesh_resources.create_child_mesh(mesh_fsdp_tp, ("dp",))
+AttributeError: '_MeshEnv' object has no attribute 'create_child_mesh'
+
+To execute this test, run the following from the base repo dir:
+    python test/distributed/checkpoint/e2e/test_fsdp_ep.py TestFSDPWithEP.test_e2e
+
+This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0. Did you mean: 'create_sub_mesh'?
+```
+
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/158695
+Approved by: https://github.com/Skylion007, https://github.com/nWEIdia
+---
+ test/distributed/checkpoint/e2e/test_fsdp_ep.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/test/distributed/checkpoint/e2e/test_fsdp_ep.py b/test/distributed/checkpoint/e2e/test_fsdp_ep.py
+index 7489317035b9..51d4b3e99537 100644
+--- a/test/distributed/checkpoint/e2e/test_fsdp_ep.py
++++ b/test/distributed/checkpoint/e2e/test_fsdp_ep.py
+@@ -73,8 +73,8 @@ def test_e2e(self):
+             self.device_type, (2, 4), mesh_dim_names=("dp", "tp")
+         )
+         # TODO: we are using an internal API atm. Change to a publich API once it is ready.
+-        mesh_fsdp_ep = _mesh_resources.create_child_mesh(mesh_fsdp_tp, ("dp",))
+-        del _mesh_resources.child_to_parent_mapping[mesh_fsdp_ep]
++        mesh_fsdp_ep = _mesh_resources.create_sub_mesh(mesh_fsdp_tp, ("dp",), [(0,)])
++        del _mesh_resources.child_to_root_mapping[mesh_fsdp_ep]
+ 
+         mesh_fsdp = init_device_mesh(self.device_type, (8,))
+         for i, l in enumerate(model.second.ep_layers):

@@ -9,7 +9,7 @@ description = """SIESTA is both a method and its computer program implementation
 structure calculations and ab initio molecular dynamics simulations of molecules and solids."""
 
 toolchain = {'name': 'foss', 'version': '2023a'}
-toolchainopts = {'usempi': True, 'openmp': True}
+toolchainopts = {'usempi': True, 'openmp': True, 'opt': True}
 
 source_urls = [
     'https://gitlab.com/siesta-project/siesta/-/releases/%(version)s/downloads/',
@@ -25,13 +25,17 @@ sources = [
      'filename': 'elsi_interface_512532a42c5e.tar.gz',
      'extract_cmd': "tar xzf %s -C %(builddir)s/siesta-%(version)s/External/ELSI-project"},
 ]
-patches = ['Siesta-5.2.2-no_write_in_test.patch']
+patches = [
+    'Siesta-5.2.2-no_write_in_test.patch',
+    'Siesta-5.2.2-no-opt-flags.patch',
+]
 
 checksums = [
     {'siesta-5.2.2.tar.gz': '4efc58fd5adb9b8f55234f47d11f89d268524b0d4c003d145d89d803da94a58c'},
     {'wannier90-3.1.0.tar.gz': '40651a9832eb93dec20a8360dd535262c261c34e13c41b6755fa6915c936b254'},
     {'elsi_interface_512532a42c5e.tar.gz': None},
     {'Siesta-5.2.2-no_write_in_test.patch': '56c0f87dcb43144cfa328c800262634200dd960c79a85eb8c627f640cfc5686b'},
+    {'Siesta-5.2.2-no-opt-flags.patch': 'be9ecf9ebd3435f53a4d107cd44b50e191caca5d642bb86358258ecad951fc07'},
 ]
 
 builddependencies = [
@@ -55,27 +59,18 @@ dependencies = [
     ('netCDF-Fortran', '4.6.1'),
 ]
 
-# tests to skip (out of ~300) because of small differences, Siesta developers say it's ok
+# skip 8 (out of ~300) tests that are failing with small numerical differences
+# TODO: relax tolerance of these individual tests instead of skipping them
 local_failing_tests = [
-    'newcomm_mpi_np_1',
-    'pi3_Runs_Singleton',
-    'SpinPolarization-fe_noncol_gga',
-    'SpinOrbit-FePt-X-X',
-    'SpinOrbit-FePt-offsite',
-    'Bands-ge_bands_so',
-    'Bands-ge_bands_so_bpoints',
-    'Bands-ge_bands_so_fatbands',
-    'DensityOfStates-pdos_kp_soc',
-    'Functionals-dftu_soc',
-    'MiscOptions-bulk_bias',
-    'MiscOptions-bulk_bias',
-    # openmp
+    'pi3_Runs_Singleton',  # can fail depending on build environment
     'SpinPolarization-fe_spin_mpi4_omp',
     'SpinPolarization-fe_spin_directphi_mpi4_omp1',
+    'SpinPolarization-fe_noncol_gga_mpi4_omp1',
     'SpinPolarization-fe_noncol_kp_mpi4_omp1',
     'SpinPolarization-fe_noncol_sp_mpi4_omp1',
+    'SpinOrbit-FePt-X-X_mpi4_omp1',
     'SCFMixing-chargemix_mpi4_omp1',
-    'TDDFT-TDDFT_h2o1_omp1',
+    'SCFMixing-pulay_mpi4_omp1',
 ]
 
 # enable OpenMP
@@ -84,16 +79,20 @@ configopts = "-DSIESTA_WITH_OPENMP=ON "
 # enable Flook
 configopts += "-DSIESTA_WITH_FLOOK=ON -DFLOOK_ROOT=$EBROOTFLOOK -DFLOOK_INCLUDE_DIRS=$EBROOTFLOOK/include "
 
-# enable ELSE and PEXSI
+# enable ELSI and PEXSI
 configopts += "-DSIESTA_WITH_ELSI=ON -DSIESTA_WITH_ELSI_PEXSI=ON "
 
 # enable Wannier90 (Siesta patches and builds it itself)
 preconfigopts = "export WANNIER90_PACKAGE=%(builddir)s/wannier90-3.1.0.tar.gz && "
 configopts += "-DSIESTA_WITH_WANNIER90=ON "
 
+# make sure tests can be run with 4 processes
+configopts += "-DMPIEXEC_MAX_NUMPROCS=4 "
+
 # tests
-buildopts = " && export OMP_NUM_THREADS=2 && "
-buildopts += "SIESTA_TESTS_VERIFY=1 ctest --output-on-failure -E '%s'" % '|'.join(local_failing_tests)
+pretestopts = 'SIESTA_TESTS_VERIFY=1'
+runtest = True  # defaults to ctest
+testopts = "--output-on-failure -E '%s'" % '|'.join(local_failing_tests)
 
 sanity_check_paths = {
     'files': ['bin/siesta', 'lib/libsiesta.a'],

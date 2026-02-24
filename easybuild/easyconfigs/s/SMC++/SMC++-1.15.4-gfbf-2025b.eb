@@ -1,0 +1,71 @@
+easyblock = 'PythonBundle'
+
+name = 'SMC++'
+version = '1.15.4'
+
+homepage = 'https://github.com/popgenmethods/smcpp'
+description = "SMC++ is a program for estimating the size history of populations from whole genome sequence data."
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+
+builddependencies = [
+    ('Cython', '3.1.2'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('matplotlib', '3.10.5'),
+    ('tqdm', '4.67.1'),
+    ('Pysam', '0.23.3'),
+    ('scikit-learn', '1.7.1'),
+    ('GMP', '6.3.0'),
+    ('MPFR', '4.2.2'),
+    ('GSL', '2.8'),
+    ('mpreal', '3.7.2', '', SYSTEM),
+]
+
+exts_list = [
+    (name, version, {
+        # git metadata is required by setup.py, so obtain source tarball via 'git clone'
+        'sources': [{
+            'filename': SOURCE_TAR_XZ,
+            'git_config': {
+                'url': 'https://github.com/popgenmethods',
+                'repo_name': 'smcpp',
+                'tag': 'v%(version)s',
+                'keep_git_dir': True,
+            },
+        }],
+        'patches': [
+            'SMC++-1.15.4_delete_bad_asserts.patch',
+            'SMC++-1.15.4_make_compat_with_newer_numpy+matplotlib.patch',
+            'SMC++-1.15.4_make_cython_part_cython3_compat.patch',
+            'SMC++-1.15.4_run_cython.patch',
+        ],
+        'checksums': [
+            {'SMC++-1.15.4.tar.xz': None},
+            {'SMC++-1.15.4_delete_bad_asserts.patch':
+             'f8dffda49ecd5db3167341b28086d815f52b9e2b7beee60188efc96531e80a44'},
+            {'SMC++-1.15.4_make_compat_with_newer_numpy+matplotlib.patch':
+             'd3ee7497350a8170f6dceba90fbde47660263b7da1cfbde2f0ce0c92c8bcce42'},
+            {'SMC++-1.15.4_make_cython_part_cython3_compat.patch':
+             'a0c119166bcc9eb74b38ec0c349c3d56be8fd801c7f8051ec17293366a5c801d'},
+            {'SMC++-1.15.4_run_cython.patch': '586ae1e9b90c9e1a8507d5f692222731cebeb7a41a0defde45e9c59b360e5b65'},
+        ],
+        'preinstallopts': 'rm include/mpreal.h && ',  # We need to use a newer mpreal.h to be compatible with MPFR
+        'modulename': 'smcpp',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/smc++'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "smc++ version",
+    "smc++ -h",
+]
+
+moduleclass = 'bio'
