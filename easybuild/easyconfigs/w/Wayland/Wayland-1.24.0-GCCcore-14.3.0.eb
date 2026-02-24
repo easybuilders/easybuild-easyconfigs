@@ -1,0 +1,70 @@
+# Author: Jasper Grimm (UoY)
+# URL of Wayland download changed to GitLab due to changes upstream
+# Author: J. Sassmannshausen (Imperial College London/UK)
+easyblock = 'Bundle'
+
+name = 'Wayland'
+version = '1.24.0'
+
+homepage = 'https://wayland.freedesktop.org/'
+description = """
+Wayland is a project to define a protocol for a compositor to talk to
+ its clients as well as a library implementation of the protocol.  The
+ compositor can be a standalone display server running on Linux kernel
+ modesetting and evdev input devices, an X application, or a wayland
+ client itself.  The clients can be traditional applications, X servers
+ (rootless or fullscreen) or other display servers.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('Meson', '1.8.2'),
+    ('Ninja', '1.13.0'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('libffi', '3.5.1'),
+    ('expat', '2.7.1'),
+    ('libxml2', '2.14.3'),
+]
+
+default_easyblock = 'MesonNinja'
+default_component_specs = {
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    ('wayland', version, {
+        'source_urls': ['https://gitlab.freedesktop.org/wayland/%(namelower)s/-/releases/%(version)s/downloads'],
+        'checksums': ['82892487a01ad67b334eca83b54317a7c86a03a89cfadacfef5211f11a5d0536'],
+        'sources': [SOURCE_TAR_XZ],
+        'configopts': "-Ddocumentation=false",
+        'ndebug': False,  # required for tests
+    }),
+    ('wayland-protocols', '1.45', {
+        'source_urls': ['https://gitlab.freedesktop.org/wayland/%(namelower)s/-/releases/%(version)s/downloads'],
+        'checksums': ['4d2b2a9e3e099d017dc8107bf1c334d27bb87d9e4aff19a0c8d856d17cd41ef0'],
+        'sources': [SOURCE_TAR_XZ],
+        'preconfigopts': "PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH "
+    }),
+    ('wayland-utils', '1.2.0', {
+        'source_urls': ['https://gitlab.freedesktop.org/wayland/wayland-utils/-/releases/%(version)s/downloads'],
+        'sources': [SOURCE_TAR_XZ],
+        'checksums': ['d9278c22554586881802540751bcc42569262bf80cd9ac9b0fd12ff4bd09a9e4'],
+        'preconfigopts': "PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH "
+    }),
+]
+
+_libs = ['lib/libwayland-%s.%s' % (x, SHLIB_EXT) for x in ['client', 'cursor', 'egl', 'server']]
+sanity_check_paths = {
+    'files': ['bin/wayland-scanner'] + _libs,
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = ["wayland-scanner --help", "wayland-scanner --version"]
+
+moduleclass = 'vis'
