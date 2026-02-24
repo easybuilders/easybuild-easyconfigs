@@ -1,0 +1,52 @@
+easyblock = 'Binary'
+
+name = 'ProLaTherm'
+version = '20240613'
+versionsuffix = '-CUDA-%(cudaver)s'
+_commit = '390a737'
+
+homepage = 'https://github.com/grimmlab/ProLaTherm'
+description = """
+Protein Language Model-based Protein Thermophilicity Prediction"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+sources = [{
+    'source_urls': ['https://github.com/grimmlab/ProLaTherm/archive/'],
+    'download_filename': '%s.tar.gz' % _commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = ['%(name)s-%(version)s_fix_path.patch']
+checksums = [
+    {'ProLaTherm-20240613.tar.gz': '2f5485dc2e0583aae9237dc5812721125f15faee9b2689a93701b83ae24868b0'},
+    {'ProLaTherm-20240613_fix_path.patch': '738e2ed619840774d039e81e1bda4f62ee7bd350ab35f4b9b222af53ab92057f'},
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('Transformers', '4.29.2'),
+    ('SentencePiece', '0.1.97'),
+]
+
+extract_sources = True
+
+install_cmds = [
+    'mkdir -p %(installdir)s/bin',
+    'cp -r prolatherm/*.py prolatherm/assets %(installdir)s/bin',
+    'chmod +x %(installdir)s/bin/run_prolatherm.py',
+]
+
+fix_python_shebang_for = 'bin/run_prolatherm.py'
+
+sanity_check_paths = {
+    'files': ['bin/run_prolatherm.py', 'bin/assets/head_state_dict'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "run_prolatherm.py --help",
+]
+
+moduleclass = 'bio'

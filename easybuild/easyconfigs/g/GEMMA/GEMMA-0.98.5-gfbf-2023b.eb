@@ -1,0 +1,52 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+# Updated to 0.98.5
+# J Sassmannshausen NHS/GSTT
+
+easyblock = 'MakeCp'
+
+name = 'GEMMA'
+version = '0.98.5'
+
+homepage = 'https://github.com/genetics-statistics/GEMMA'
+description = "Genome-wide Efficient Mixed Model Association"
+
+toolchain = {'name': 'gfbf', 'version': '2023b'}
+
+source_urls = ['https://github.com/genetics-statistics/GEMMA/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'GEMMA-0.98.5_use_external_Catch2.patch',
+]
+checksums = [
+    {'v0.98.5.tar.gz': '3ed336deee29e370f96ec8f1a240f7b62550e57dcd1694245ce7ec8f42241677'},
+    {'GEMMA-0.98.5_use_external_Catch2.patch': '8fa0ed8fb9294a03f537d423352c2ceb53b52e558f9a4bfd428bb2e5764b2968'},
+]
+
+builddependencies = [
+    ('Perl', '5.38.0'),
+    ('Catch2', '2.13.9'),
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('GSL', '2.7'),
+]
+
+buildopts = 'WITH_OPENBLAS="" LIBS="$LIBS $LIBBLAS -lgsl -lz "'  # Needed for FlexiBLAS
+testopts = 'WITH_OPENBLAS="" LIBS="$LIBS $LIBBLAS -lgsl -lz"'  # Needed for the make check below
+
+files_to_copy = ["bin", "doc", "example", "LICENSE", "README.md", "RELEASE-NOTES.md", "scripts", "VERSION"]
+
+runtest = 'check'
+
+sanity_check_commands = ["gemma -h", "gemma -license"]
+
+sanity_check_paths = {
+    'files': ["bin/gemma"],
+    'dirs': []
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,17 @@
+Properly building the runtimes with rpath wrappers causes the test suite to also use the wrappers.
+In clang this will cause a bunch of warning due to linking flags used at compile time (-Wl,rpath=...)
+that are turned into errors by `-Werror`.
+`-Wno-unused-command-line-argument` also needs to be added in order to avoid the error.
+diff --git a/libcxx/utils/libcxx/test/dsl.py b/libcxx/utils/libcxx/test/dsl.py
+index 7ff4be0ee7cf..0788eada1dfa 100644
+--- a/libcxx/utils/libcxx/test/dsl.py
++++ b/libcxx/utils/libcxx/test/dsl.py
+@@ -214,7 +214,7 @@ def tryCompileFlag(config, flag):
+     # fmt: off
+     with _makeConfigTest(config) as test:
+         out, err, exitCode, timeoutInfo, _ = _executeWithFakeConfig(test, [
+-            "%{{cxx}} -xc++ {} -Werror -fsyntax-only %{{flags}} %{{compile_flags}} {}".format(os.devnull, flag)
++            "%{{cxx}} -xc++ {} -Werror -Wno-unused-command-line-argument -fsyntax-only %{{flags}} %{{compile_flags}} {}".format(os.devnull, flag)
+         ])
+         return exitCode, out, err
+     # fmt: on

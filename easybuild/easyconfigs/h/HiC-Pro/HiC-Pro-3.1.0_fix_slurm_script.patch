@@ -1,0 +1,67 @@
+Don't use "torque" in the Slurm script generator.
+Also clarify from where one should run the "sbatch" command
+diff -ru HiC-Pro-3.1.0.orig/scripts/make_slurm_script.sh HiC-Pro-3.1.0/scripts/make_slurm_script.sh
+--- HiC-Pro-3.1.0.orig/scripts/make_slurm_script.sh	2021-08-27 20:04:54.000000000 +0200
++++ HiC-Pro-3.1.0/scripts/make_slurm_script.sh	2025-03-10 08:48:41.011494047 +0100
+@@ -66,9 +66,9 @@
+     fi
+  
+     ## step 1 - parallel
+-    torque_script=HiCPro_step1_${JOB_NAME}.sh
++    slurm_script=HiCPro_step1_${JOB_NAME}.sh
+  
+-    cat > ${torque_script} <<EOF
++    cat > ${slurm_script} <<EOF
+ #!/bin/bash
+ #SBATCH -N 1
+ #SBATCH -n ${N_CPU}
+@@ -83,18 +83,19 @@
+ EOF
+     
+     if [[ $count -gt 1 ]]; then
+-	echo -e "#SBATCH --array=1-$count" >> ${torque_script}
++	echo -e "#SBATCH --array=1-$count" >> ${slurm_script}
+     fi
+-    cat >> ${torque_script} <<EOF
++    cat >> ${slurm_script} <<EOF
+ FASTQFILE=\$SLURM_SUBMIT_DIR/$inputfile; export FASTQFILE
+ make --file ${SCRIPTS}/Makefile CONFIG_FILE=${conf_file} CONFIG_SYS=${INSTALL_PATH}/config-system.txt $make_target 2>&1
+ EOF
+     
+-    chmod +x ${torque_script}
++    chmod +x ${slurm_script}
+ 
+     ## User message
+-    echo "The following command will launch the parallel workflow through $count torque jobs:"
+-    echo sbatch ${torque_script}
++    echo "The following command will launch the parallel workflow through $count Slurm jobs:"
++    echo sbatch ${slurm_script}
++    echo "Execute the displayed command from the output folder"
+ fi    
+ 
+ 
+@@ -110,8 +111,8 @@
+ 	make_target=$(echo $make_target | sed -e 's/proc_hic//g');
+     fi
+ 
+-    torque_script_s2=HiCPro_step2_${JOB_NAME}.sh
+-    cat > ${torque_script_s2} <<EOF
++    slurm_script_s2=HiCPro_step2_${JOB_NAME}.sh
++    cat > ${slurm_script_s2} <<EOF
+ #!/bin/bash
+ 
+ #SBATCH -N 1
+@@ -130,10 +131,11 @@
+ make --file ${SCRIPTS}/Makefile CONFIG_FILE=${conf_file} CONFIG_SYS=${INSTALL_PATH}/config-system.txt $make_target 2>&1
+ EOF
+     
+-    chmod +x ${torque_script_s2}
++    chmod +x ${slurm_script_s2}
+ 
+     ## User message
+     echo "The following command will merge the processed data and run the remaining steps per sample:"
+-    echo sbatch ${torque_script_s2}
++    echo sbatch ${slurm_script_s2}
++    echo "Execute the displayed command from the output folder"
+ fi
+ 

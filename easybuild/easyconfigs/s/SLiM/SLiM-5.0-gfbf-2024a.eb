@@ -1,0 +1,56 @@
+# Update to version 5.0 with test-jobs enabled.
+# Based of previous 4.x build as template
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'SLiM'
+version = '5.0'
+
+homepage = 'https://messerlab.org/slim'
+description = """SLiM is an evolutionary simulation framework that combines
+a powerful engine for population genetic simulations with the capability of
+modeling arbitrarily complex evolutionary scenarios."""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+source_urls = ['https://github.com/MesserLab/%(name)s/archive']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    f'{name}-{version}_cmake_use_external_zlib_gsl.patch',
+]
+checksums = [
+    {'v5.0.tar.gz': '8a5ed1f30a434730fee1446fae554523051d8429532a51946a7a1da812e52b4a'},
+    {'SLiM-5.0_cmake_use_external_zlib_gsl.patch':
+     '95676d73c3f89f6ca23fb8b385d337093255fcb5d755fef16b29db3f24d5e1e2'},
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+]
+
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('GSL', '2.8'),
+    ('Mesa', '24.1.3'),
+    ('libglvnd', '1.7.0'),
+    ('Qt6', '6.7.2'),
+]
+
+configopts = '-DBUILD_SLIMGUI=ON '
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/eidos', 'bin/slim'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "eidos -usage",
+    "eidos -testEidos",
+    "slim -usage",
+    "slim -testSLiM",
+]
+
+moduleclass = 'tools'
