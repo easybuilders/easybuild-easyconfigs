@@ -1,0 +1,48 @@
+easyblock = "PythonBundle"
+
+name = 'matlab-proxy'
+version = '0.25.1'
+
+homepage = 'https://github.com/mathworks/matlab-proxy'
+description = "A Python package which enables you to launch MATLAB and access it from a web browser."
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('nodejs', '20.13.1'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('aiohttp', '3.10.10'),
+    ('Xvfb', '21.1.14'),
+]
+
+exts_list = [
+    ('aiohttp-session', '2.12.1', {
+        'source_tmpl': 'aiohttp_session-%(version)s.tar.gz',
+        'checksums': ['15e6e0288e9bcccd4b1d0c28aae9c20e19a252b12d0cb682223ca9c83180e899'],
+    }),
+    ('watchdog', '6.0.0', {
+        'checksums': ['9ddf7c82fda3ae8e24decda1338ede66e1c99883db93711d8fb941eaa2d8c282'],
+    }),
+    (name, version, {
+        'patches': ['%(name)s-%(version)s_use_lic_from_eb_installed_matlab.patch'],
+        'source_tmpl': 'matlab_proxy-%(version)s.tar.gz',
+        'checksums': [
+            {'matlab_proxy-0.25.1.tar.gz': '047aeb2147a44b0c82be9a7be64a4947dfe17caa0bc4c562ed5614507cce57de'},
+            {'matlab-proxy-0.25.1_use_lic_from_eb_installed_matlab.patch':
+             '279c8c883c0ff105183c6bec55bb4870741e3137224d483d79c814a102052d36'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/matlab-proxy-app'],
+    'dirs': ['lib64/python%(pyshortver)s/site-packages']
+}
+
+modloadmsg = 'matlab-proxy requires MATLAB to be loaded separately and BEFORE this module (2020b or later)'
+
+moduleclass = 'math'

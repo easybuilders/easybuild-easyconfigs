@@ -1,0 +1,53 @@
+Fix a compilation error in Eigen when compiled for hardware supporting Float16.
+That causes:
+> third_party/eigen/Eigen/src/Core/arch/AVX512/PacketMathFP16.h:116:25: error: invalid 'static_cast' from type 'const Eigen::half' to type '_Float16'
+>   123 |   return _mm512_set1_ph(static_cast<_Float16>(from));
+>       |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+> third_party/eigen/Eigen/src/Core/arch/AVX512/PacketMathFP16.h:216:39: error: invalid user-defined conversion from 'const Eigen::half' to '_Float16' [-fpermissive]
+>   216 |   return _mm512_add_ph(_mm512_set1_ph(a),
+>       |                                       ^
+
+See https://gitlab.com/libeigen/eigen/-/issues/2835
+
+Author: Alexander Grund (TU Dresden)
+
+diff -ur a/third_party/eigen/Eigen/src/Core/arch/AVX512/PacketMathFP16.h b/third_party/eigen/Eigen/src/Core/arch/AVX512/PacketMathFP16.h
+--- a/third_party/eigen/Eigen/src/Core/arch/AVX512/PacketMathFP16.h	2025-05-20 14:25:44.582173849 +0200
++++ b/third_party/eigen/Eigen/src/Core/arch/AVX512/PacketMathFP16.h	2025-05-20 14:26:29.139613400 +0200
+@@ -113,7 +113,13 @@
+ 
+ template <>
+ EIGEN_STRONG_INLINE Packet32h pset1<Packet32h>(const Eigen::half& from) {
+-  return _mm512_set1_ph(static_cast<_Float16>(from));
++  // half/half_raw is bit compatible
++  return _mm512_set1_ph(numext::bit_cast<_Float16>(from));
++}
++
++template <>
++EIGEN_STRONG_INLINE Packet32h pzero(const Packet32h& /*a*/) {
++  return _mm512_setzero_ph();
+ }
+ 
+ // pset1frombits
+@@ -213,10 +219,8 @@
+ // plset
+ template <>
+ EIGEN_STRONG_INLINE Packet32h plset<Packet32h>(const half& a) {
+-  return _mm512_add_ph(_mm512_set1_ph(a),
+-                       _mm512_set_ph(31.0f, 30.0f, 29.0f, 28.0f, 27.0f, 26.0f, 25.0f, 24.0f, 23.0f, 22.0f, 21.0f, 20.0f,
+-                                     19.0f, 18.0f, 17.0f, 16.0f, 15.0f, 14.0f, 13.0f, 12.0f, 11.0f, 10.0f, 9.0f, 8.0f,
+-                                     7.0f, 6.0f, 5.0f, 4.0f, 3.0f, 2.0f, 1.0f, 0.0f));
++  return _mm512_add_ph(pset1<Packet32h>(a), _mm512_set_ph(31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17,
++                                                          16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+ }
+ 
+ // por
+@@ -507,7 +511,7 @@
+ 
+ template <>
+ EIGEN_STRONG_INLINE Packet32h pnegate<Packet32h>(const Packet32h& a) {
+-  return _mm512_sub_ph(_mm512_set1_ph(0.0), a);
++  return psub(pzero(a), a);
+ }
+ 
+ // pconj
