@@ -58,6 +58,12 @@ preconfigopts = " && ".join([
     ""
 ])
 
+# Inject resolutions block into generated package.json for quarto
+# we fix them to versions compatible with nodejs 18.17.1 used as dep on this ec
+local_srcdir = 'rstudio-%s' % version.replace('+', '-')
+prebuildopts = r"""sed -i '/"name": "quarto"/a\  "resolutions": { "mocha": "10.1.0", "glob": "10.4.5" },' """
+prebuildopts += '%(builddir)s/{}/src/gwt/lib/quarto/package.json && '.format(local_srcdir)
+
 configopts = " ".join([
     "-DRSTUDIO_TOOLS_ROOT='%(builddir)s'",
     "-DRSTUDIO_TARGET=Server",

@@ -1,0 +1,16 @@
+Force setting OMP and MPI backends for FFTW
+The check used in several places expects a single FFTWROOT, but we have FFTW and FFTW.MPI separated.
+Since we know we always have them, I take a shortcut and simply set them as enabled.
+
+author: micketeer@gmail.com
+--- siteconfig_lapw.orig	2026-01-07 17:55:14.619418385 +0100
++++ siteconfig_lapw	2026-01-07 17:56:32.354946527 +0100
+@@ -52,7 +52,7 @@
+ # usage: check_for_lib library_to_look_for label_to_be_set_if_missing
+ alias check_for_lib ' unset \!:2; ( ls \!:1.so > .libcheck.so ) >& /dev/null; ( ls \!:1.a > .libcheck.a ) >& /dev/null;set check_so=`wc -l .libcheck.so | cut -d " " -f 1` ;set check_a=`wc -l .libcheck.a | cut -d " " -f 1` ;if ($check_so == 0 && $check_a == 0) set \!:2 ; rm -f .libcheck.so; rm -f .libcheck.a '
+ 
+-alias check_for_omp_mpi ' unset no_omp; unset no_mpi; ( ls \!:1\!:2 > .ompcheck ) >& /dev/null; ( ls \!:1\!:3 > .mpicheck ) >& /dev/null; set omp_check=`wc -l .ompcheck | cut -d " " -f 1` ;set mpi_check=`wc -l .mpicheck | cut -d " " -f 1` ;if ($omp_check == 0) set no_omp; if ($mpi_check == 0) set no_mpi; rm -f .mpicheck; rm -f .ompcheck '
++alias check_for_omp_mpi ' unset no_omp; unset no_mpi; true'
+ 
+ # usage: write_so_warning "specified_directory" "commentary_to_.so_or_.a" (usually a blank)
+ alias write_so_warning 'echo "   WARNING:";\\
