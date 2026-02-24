@@ -1,0 +1,114 @@
+easyblock = 'PythonBundle'
+
+name = 'SciPy-bundle'
+version = '2025.07'
+
+homepage = 'https://python.org/'
+description = "Bundle of Python packages for scientific software"
+
+toolchain = {'name': 'lfbf', 'version': '2025b'}
+toolchainopts = {'pic': True, 'lowopt': True}
+
+builddependencies = [
+    ('hypothesis', '6.136.6'),
+    ('UnZip', '6.0'),
+    # scipy >= 1.9.0 uses Meson/Ninja
+    ('Meson', '1.8.2'),
+    ('meson-python', '0.18.0'),
+    ('Ninja', '1.13.0'),
+    ('pkgconf', '2.4.3'),  # required by scipy
+    ('Cython', '3.1.2'),  # required by numpy and scipy
+    ('pybind11', '3.0.0'),  # required by scipy
+    ('spin', '0.14'),  # required for testing numpy
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+]
+
+# order is important!
+exts_list = [
+    ('numpy', '2.3.2', {
+        'patches': [
+            'numpy-1.22.3_disable-broken-override-test.patch',
+            'numpy-2.3.2_fix-llvm-tests.patch',
+            'numpy-2.3.2_fix-selected-real-kind-for-flang.patch',
+            # Adds proper processing of object files for f2py
+            # Fixed in 2.4.0, see https://github.com/numpy/numpy/pull/29572
+            'numpy-2.3.1_fix_f2py_object_files.patch',
+        ],
+        'checksums': [
+            {'numpy-2.3.2.tar.gz': 'e0486a11ec30cdecb53f184d496d1c6a20786c81e55e41640270130056f8ee48'},
+            {'numpy-1.22.3_disable-broken-override-test.patch':
+             '9c589bb073b28b25ff45eb3c63c57966aa508dd8b318d0b885b6295271e4983c'},
+            {'numpy-2.3.2_fix-llvm-tests.patch': 'dac856f521e2b5175f0edb09ee65ba9246af2a7d52d36dfb2dbb1b516b8cfaff'},
+            {'numpy-2.3.2_fix-selected-real-kind-for-flang.patch':
+             '0e947fc7730bc87d10279c4393db9b1585e7f1ae6932c989f37c1080479d7cb7'},
+            {'numpy-2.3.1_fix_f2py_object_files.patch':
+             'b586083c384becc9ef7908af171c9034473514f8c8741d15b8bda23da503718f'},
+        ],
+    }),
+    ('ply', '3.11', {
+        'checksums': ['00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3'],
+    }),
+    ('gast', '0.6.0', {
+        'checksums': ['88fc5300d32c7ac6ca7b515310862f71e6fdf2c029bbec7c66c0f5dd47b6b1fb'],
+    }),
+    ('beniget', '0.4.2.post1', {
+        'checksums': ['a0258537e65e7e14ec33a86802f865a667f949bb6c73646d55e42f7c45a052ae'],
+    }),
+    ('pythran', '0.18.0', {
+        'checksums': ['5c003e8cbedf6dbb68c2869c49fc110ce8b5e8982993078a4a819f1dadc4fc6a'],
+    }),
+    ('versioneer', '0.29', {
+        'checksums': ['5ab283b9857211d61b53318b7c792cf68e798e765ee17c27ade9f6c924235731'],
+    }),
+    ('scipy', '1.16.1', {
+        'enable_slow_tests': True,
+        'ignore_test_result': False,
+        'patches': [
+            'scipy-1.11.1_disable-tests.patch',
+            'scipy-1.16.0_skip-tests-broken-grace.patch',
+            'scipy-1.16.0_relax-tests-broken-neoverse-v1.patch',
+            'scipy-1.16.0_remove-float16-differentiate-test.patch',
+            'scipy-1.16.1_bump-orth-memory-efficiency-tolerance.patch',
+        ],
+        'checksums': [
+            {'scipy-1.16.1.tar.gz': '44c76f9e8b6e8e488a586190ab38016e4ed2f8a038af7cd3defa903c0a2238b3'},
+            {'scipy-1.11.1_disable-tests.patch': '906bfb03397d94882ccdc1b93bc2c8e854e0e060c2d107c83042992394e6a4af'},
+            {'scipy-1.16.0_skip-tests-broken-grace.patch':
+             '33885518a572f843a0edeb7a58aa938202aae70267f6de1ce60acef97f393126'},
+            {'scipy-1.16.0_relax-tests-broken-neoverse-v1.patch':
+             'a72d794b95dc437c03b323f86392b264c7ecfdbfa19e3bc01fba8d5d3ab2f21a'},
+            {'scipy-1.16.0_remove-float16-differentiate-test.patch':
+             'f857fc1e941c196285f2e871e803cf463fc59c040dd2955deda1dd277d4b00db'},
+            {'scipy-1.16.1_bump-orth-memory-efficiency-tolerance.patch':
+             '1eb58b162d04cbf957979897966bfcf318f05a2bdbb61f0b47c0b3881910b354'},
+        ],
+    }),
+    ('numexpr', '2.11.0', {
+        # workaround for: ValueError: invalid pyproject.toml config: project.license
+        'preinstallopts': "sed -i '/^license =/d' pyproject.toml && ",
+        'checksums': ['75b2c01a4eda2e7c357bc67a3f5c3dd76506c15b5fd4dc42845ef2e182181bad'],
+    }),
+    ('bottleneck', '1.5.0', {
+        'checksums': ['c860242cf20e69d5aab2ec3c5d6c8c2a15f19e4b25b28b8fca2c2a12cefae9d8'],
+    }),
+    ('tzdata', '2025.2', {
+        'checksums': ['b60a638fcc0daffadf82fe0f57e53d06bdec2f36c4df66280ae79bce6bd6f2b9'],
+    }),
+    ('pandas', '2.3.1', {
+        'preinstallopts': "export PANDAS_CI=0 && ",
+        'checksums': ['0a95b9ac964fe83ce317827f80304d37388ea77616b1425f0ae41c9d2d0d7bb2'],
+    }),
+    ('mpmath', '1.3.0', {
+        'checksums': ['7a28eb2a9774d00c7bc92411c19a89209d5da7c4c9a9e227be8330a23a25b91f'],
+    }),
+    ('deap', '1.4.3', {
+        'modulename': 'deap.base',
+        'checksums': ['7c97088fb05835bdc255bec475cb0e778de2b43e44cbefbf2bcd655aeec865fd'],
+    }),
+]
+
+moduleclass = 'lang'
