@@ -1,0 +1,36 @@
+Fix paths to avoid having to run from the source dir
+Author: Samuel Moors (Vrije Universiteit Brussel)
+diff -ur ProLaTherm-390a73751dbb83cc5c2e19bc61c62499ca2882be.orig/prolatherm/prolatherm.py ProLaTherm-390a73751dbb83cc5c2e19bc61c62499ca2882be/prolatherm/prolatherm.py
+--- ProLaTherm-390a73751dbb83cc5c2e19bc61c62499ca2882be.orig/prolatherm/prolatherm.py	2024-06-13 12:41:28.000000000 +0200
++++ ProLaTherm-390a73751dbb83cc5c2e19bc61c62499ca2882be/prolatherm/prolatherm.py	2025-01-22 10:12:19.821857000 +0100
+@@ -94,7 +94,7 @@
+     def __init__(self, dropout_rate: float = 0.2):
+         super().__init__()
+         self.model = self.define_model(dropout_rate=0.2)
+-        self.reorder_load_state_dict(pathlib.Path().absolute().joinpath('assets/head_state_dict'))
++        self.reorder_load_state_dict(pathlib.Path(__file__).parent.joinpath('assets/head_state_dict'))
+ 
+     @staticmethod
+     def define_model(dropout_rate: float):
+diff -ur ProLaTherm-390a73751dbb83cc5c2e19bc61c62499ca2882be.orig/prolatherm/run_prolatherm.py ProLaTherm-390a73751dbb83cc5c2e19bc61c62499ca2882be/prolatherm/run_prolatherm.py
+--- ProLaTherm-390a73751dbb83cc5c2e19bc61c62499ca2882be.orig/prolatherm/run_prolatherm.py	2024-06-13 12:41:28.000000000 +0200
++++ ProLaTherm-390a73751dbb83cc5c2e19bc61c62499ca2882be/prolatherm/run_prolatherm.py	2025-01-22 10:56:53.631665539 +0100
+@@ -10,15 +10,15 @@
+ if __name__ == '__main__':
+ 
+     parser = argparse.ArgumentParser()
+-    base_path = pathlib.Path().absolute()
++    base_path = pathlib.Path(__file__).parent
+     # Input Params #
+     parser.add_argument("-df", "--data_dir_fasta", type=str,
+                         default=base_path.joinpath('assets', 'dummy_data.fasta'),
+                         help="Provide the full path to the fasta file you want to get predictions for."
+                              "Default is the dummy_data.fasta we provide in prolatherm/assets")
+-    parser.add_argument("-sd", "--save_dir", type=str, default=base_path.parent,
++    parser.add_argument("-sd", "--save_dir", type=str, default=pathlib.Path(),
+                         help="Provide the full path of the directory in which you want to save your results. "
+-                             "Default is in the root directory of your repository.")
++                             "Default is the current working directory.")
+     parser.add_argument("-ng", "--no_gpu", type=lambda x: (str(x).lower() in ['true', '1', 'yes']),
+                         default=False, help="Do not use GPU if set True. Default: False")
+     args = vars(parser.parse_args())
