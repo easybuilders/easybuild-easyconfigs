@@ -1,0 +1,102 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+# Updated by: Alex Domingo (Vrije Universiteit Brussel)
+# Updated by: Thomas Hoffmann (EMBL Heidelberg)
+# Updated by: Pavel Tománek (INUITS)
+
+easyblock = 'PythonBundle'
+
+name = 'jax'
+version = '0.8.1'
+
+homepage = 'https://jax.readthedocs.io/'
+description = """Composable transformations of Python+NumPy programs:
+differentiate, vectorize, JIT to GPU/TPU, and more"""
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+
+builddependencies = [
+    ('Bazel', '7.7.0', '-Java-21'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('absl-py', '2.3.1'),
+    ('flatbuffers-python', '25.2.10'),
+    ('ml_dtypes', '0.5.3'),
+    ('hypothesis', '6.136.6'),
+    ('zlib', '1.3.1'),
+]
+
+# downloading xla  tarball to avoid that Bazel downloads it during the build
+# note: following commits *must* be the exact same ones used upstream
+# XLA_COMMIT from jax-jaxlib: third_party/xla/workspace.bzl
+_xla_commit = 'a7e58876b73dfa9bb6bc785f6981a332c133bb55'
+
+# Use sources downloaded by EasyBuild
+_jaxlib_buildopts = '--bazel_options="--distdir=%(builddir)s/archives " '
+
+if ARCH == 'aarch64':
+    _jaxlib_buildopts += ' --bazel_options="--@compute_library//:arch=armv8.2-a+fp16" '
+
+# create wheels for jaxlib and install it
+_jaxlib_buildopts += '--wheels=jaxlib '
+# use GCC instead of default Clang
+_jaxlib_buildopts += '--use_clang=false --gcc_path=$EBROOTGCCCORE '
+# fix jaxlib version
+_jaxlib_buildopts += '--bazel_options="--action_env=JAXLIB_RELEASE" '
+_jaxlib_buildopts += '--bazel_options="--repo_env=ML_WHEEL_TYPE=release" '
+
+_local_prebuildopts = 'export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1; '
+
+components = [
+    ('jaxlib', version, {
+        'sources': [
+            {
+                'source_urls': ['https://github.com/google/jax/archive/'],
+                'filename': 'jax-v%(version)s.tar.gz',
+            },
+            {
+                'source_urls': ['https://github.com/openxla/xla/archive'],
+                'download_filename': f'{_xla_commit}.tar.gz',
+                'filename': f'xla-{_xla_commit[:8]}.tar.gz',
+                'extract_cmd': 'mkdir -p %(builddir)s/archives && cp %s %(builddir)s/archives',
+            },
+        ],
+        'checksums': [
+            {'jax-v0.8.1.tar.gz':
+             '38882602112dadfd49a2c74868a0722574ae88e04646a96f32f8c36a7893c548'},
+            {'xla-a7e58876.tar.gz':
+             '736cdc2171fb51660d174def653691835237d5822e3070bb8cfa3fc6beda421b'},
+        ],
+        'start_dir': f'jax-jax-v{version}',
+        # fix jaxlib version - removes .dev suffix
+        'prebuildopts': ' '.join(['export JAXLIB_RELEASE=%(version)s && ', _local_prebuildopts]),
+        'buildopts': _jaxlib_buildopts,
+    }),
+]
+
+# BackendsTest is failing on systems with GPU detected when cpu version is built
+_failing_backend_test = 'tests/api_test.py::BackendsTest::test_no_backend_warning_on_cpu_if_platform_specified'
+# Failing after fix jaxlib version by JAXLIB_RELEASE
+_failing_version_tests = 'tests/version_test.py'
+_runtest_cmd1 = f"pytest -n %(parallel)s tests --deselect={_failing_backend_test} --deselect={_failing_version_tests}"
+# retry randomly failing tests
+_runtest_cmd = ' '.join([_runtest_cmd1, '||', _runtest_cmd1, '--last-failed']),
+
+exts_list = [
+    (name, version, {
+        'prebuildopts':  _local_prebuildopts,
+        'testinstall': True,
+        "runtest": _runtest_cmd,
+        'sources': [
+            {'source_urls': ['https://github.com/google/jax/archive/'], 'filename': '%(name)s-v%(version)s.tar.gz'}
+        ],
+        'checksums': [
+            {'jax-v0.8.1.tar.gz': '38882602112dadfd49a2c74868a0722574ae88e04646a96f32f8c36a7893c548'},
+        ],
+    }),
+]
+
+moduleclass = 'ai'

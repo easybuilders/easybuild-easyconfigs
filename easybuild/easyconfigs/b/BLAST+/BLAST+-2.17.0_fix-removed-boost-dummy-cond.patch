@@ -1,0 +1,142 @@
+Fix build failure of tests due to removal of dummy_cond in recent Boost versions.
+See: https://github.com/boostorg/test/pull/348
+
+Author: Jan Reuter (j.reuter@fz-juelich.de)
+
+diff --color -Naur ncbi-blast-2.17.0+-src.orig/c++/include/corelib/test_boost.hpp ncbi-blast-2.17.0+-src/c++/include/corelib/test_boost.hpp
+--- ncbi-blast-2.17.0+-src.orig/c++/include/corelib/test_boost.hpp	2021-08-17 17:13:26.000000000 +0200
++++ ncbi-blast-2.17.0+-src/c++/include/corelib/test_boost.hpp	2025-10-01 12:21:16.972331432 +0200
+@@ -139,7 +139,7 @@
+                               BOOST_STRINGIZE( S ),                     \
+                               TL, CHECK_MSG, _ );                       \
+     }                                                                   \
+-} while( ::boost::test_tools::tt_detail::dummy_cond() )                 \
++} while( 0 )                 \
+ /**/
+ 
+ #    define BOOST_THROW_AFFIX ""
+@@ -169,7 +169,7 @@
+                               BOOST_STRINGIZE( S ),                     \
+                               TL, CHECK_MSG, _ );                       \
+     }                                                                   \
+-} while( ::boost::test_tools::tt_detail::dummy_cond() )                 \
++} while( 0 )                 \
+ /**/
+ #  endif
+ 
+@@ -192,7 +192,7 @@
+                               BOOST_STRINGIZE( S ),                     \
+                               TL, CHECK_MSG, _ );                       \
+     }                                                                   \
+-} while( ::boost::test_tools::tt_detail::dummy_cond() )                 \
++} while( 0 )                 \
+ /**/
+ #else
+ #  define BOOST_CHECK_THROW_IMPL_EX( S, E, P, prefix, TL, guard )        \
+@@ -459,7 +459,7 @@
+         BOOST_CHECK_NO_THROW_IMPL_EX(_ncbitest_value = (P);, TL,          \
+             _ncbitest_guard.Guard(NCBI_NS_NCBI::g_NcbiTestMutex));        \
+         BOOST_TEST_TOOL_IMPL(2, _ncbitest_value, check_descr, TL, CT, _); \
+-    } while( ::boost::test_tools::tt_detail::dummy_cond() )
++    } while( 0 )
+ 
+ #  define BOOST_PP_BOOL_00 0
+ 
+@@ -481,7 +481,7 @@
+                              descr, TL, CT,                                 \
+                              (_ncbitest_value1)(BOOST_STRINGIZE(A1))        \
+                              (_ncbitest_value2)(BOOST_STRINGIZE(A2)));      \
+-    } while( ::boost::test_tools::tt_detail::dummy_cond() )
++    } while( 0 )
+ 
+ #  define BOOST_CHECK_IMPL_MT_SAFE( P, check_descr, TL, CT )                \
+     do {                                                                    \
+@@ -489,7 +489,7 @@
+         NCBI_NS_NCBI::CFastMutexGuard _ncbitest_guard                       \
+             (NCBI_NS_NCBI::g_NcbiTestMutex);                                \
+         BOOST_TEST_TOOL_IMPL( 2, _ncbitest_value, check_descr, TL, CT, _ ); \
+-    } while( ::boost::test_tools::tt_detail::dummy_cond() )
++    } while( 0 )
+ 
+ #  define BOOST_CHECK_WITH_2_ARGS_IMPL_MT_SAFE(P, descr, TL, CT, A1, A2) \
+     do {                                                                 \
+@@ -501,7 +501,7 @@
+                              descr, TL, CT,                              \
+                              (_ncbitest_value1)(BOOST_STRINGIZE(A1))     \
+                              (_ncbitest_value2)(BOOST_STRINGIZE(A2)));   \
+-    } while( ::boost::test_tools::tt_detail::dummy_cond() )
++    } while( 0 )
+ 
+ #  define BOOST_CLOSE_IMPL_MT_SAFE( L, R, T, TL )                             \
+     do {                                                                      \
+@@ -514,7 +514,7 @@
+             00, ::boost::test_tools::check_is_close_t(), "", TL, CHECK_CLOSE, \
+             (_ncbitest_l)(BOOST_STRINGIZE(L))(_ncbitest_r)(BOOST_STRINGIZE(R))\
+             (_ncbitest_t)(""));  \
+-    } while ( ::boost::test_tools::tt_detail::dummy_cond() )
++    } while ( 0 )
+ 
+ #  define BOOST_EQUAL_COLLECTIONS_IMPL_MT_SAFE( LB, LE, RB, RE, TL ) \
+     do {                                                             \
+@@ -523,7 +523,7 @@
+         BOOST_TEST_TOOL_IMPL(                                        \
+             1, ::boost::test_tools::tt_detail::equal_coll_impl(),    \
+             "", TL, CHECK_EQUAL_COLL, (LB)(LE)(RB)(RE) );            \
+-    } while( ::boost::test_tools::tt_detail::dummy_cond() )
++    } while( 0 )
+ 
+ #else
+ 
+@@ -542,7 +542,7 @@
+         BOOST_CHECK_NO_THROW_IMPL_EX(_ncbitest_value = (P), TL,         \
+             _ncbitest_guard.Guard(NCBI_NS_NCBI::g_NcbiTestMutex));      \
+         BOOST_CHECK_IMPL(_ncbitest_value, check_descr, TL, CT);         \
+-    } while ( ::boost::test_tools::dummy_cond )
++    } while ( 0 )
+ 
+ #  define NCBITEST_CHECK_WITH_2_ARGS_IMPL_MT_SAFE(P, descr, TL, CT, A1, A2)   \
+     do {                                                                      \
+@@ -560,7 +560,7 @@
+             BOOST_PP_SEQ_FOR_EACH( BOOST_TEST_TOOL_PASS_ARG_ONLY, '_',        \
+                                    (_ncbitest_value1)(BOOST_STRINGIZE(A1))    \
+                                    (_ncbitest_value2)(BOOST_STRINGIZE(A2)))); \
+-    } while ( ::boost::test_tools::dummy_cond )
++    } while ( 0 )
+ 
+ #  define BOOST_CHECK_IMPL_MT_SAFE( P, check_descr, TL, CT )      \
+     do {                                                          \
+@@ -568,7 +568,7 @@
+         NCBI_NS_NCBI::CFastMutexGuard _ncbitest_guard             \
+             (NCBI_NS_NCBI::g_NcbiTestMutex);                      \
+         BOOST_CHECK_IMPL( _ncbitest_value, check_descr, TL, CT ); \
+-    } while ( ::boost::test_tools::dummy_cond )
++    } while ( 0 )
+ 
+ #  define BOOST_CHECK_WITH_2_ARGS_IMPL_MT_SAFE(P, descr, TL, CT, A1, A2)      \
+     do {                                                                      \
+@@ -583,7 +583,7 @@
+             BOOST_PP_SEQ_FOR_EACH( BOOST_TEST_TOOL_PASS_ARG_ONLY, '_',        \
+                                    (_ncbitest_value1)(BOOST_STRINGIZE(A1))    \
+                                    (_ncbitest_value2)(BOOST_STRINGIZE(A2)))); \
+-    } while ( ::boost::test_tools::dummy_cond )
++    } while ( 0 )
+ 
+ #  define BOOST_CLOSE_IMPL_MT_SAFE( L, R, T, TL )                             \
+     do {                                                                      \
+@@ -599,14 +599,14 @@
+                                   (_ncbitest_l)(BOOST_STRINGIZE(L))           \
+                                   (_ncbitest_r)(BOOST_STRINGIZE(R))           \
+                                   (_ncbitest_t)("")));                        \
+-    } while ( ::boost::test_tools::dummy_cond )
++    } while ( 0 )
+ 
+ #  define BOOST_EQUAL_COLLECTIONS_IMPL_MT_SAFE( LB, LE, RB, RE, TL ) \
+     do {                                                             \
+         NCBI_NS_NCBI::CFastMutexGuard _ncbitest_guard                \
+             (NCBI_NS_NCBI::g_NcbiTestMutex);                         \
+         BOOST_EQUAL_COLLECTIONS_IMPL( LB, LE, RB, RE, TL );          \
+-    } while( ::boost::test_tools::dummy_cond )
++    } while( 0 )
+ 
+ #endif
+ 

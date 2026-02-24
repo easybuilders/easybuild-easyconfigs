@@ -12,20 +12,33 @@ description = """PARI/GP is a widely used computer algebra system designed for f
 
 toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
 
-source_urls = ['https://pari.math.u-bordeaux.fr/pub/pari/unix/']
-sources = ['pari-%(version)s.tar.gz']
-checksums = ['c3545bfee0c6dfb40b77fb4bbabaf999d82e60069b9f6d28bcb6cf004c8c5c0f']
+# The PARI/GP developers have the habit of removing tarballs for older versions. Fetch source from Git repo.
+sources = [
+    {
+        'filename': 'pari-%(version)s.tar.xz',
+        'git_config': {
+            'url': 'https://pari.math.u-bordeaux.fr/git',
+            'repo_name': 'pari',
+            'tag': 'pari-%(version)s',
+            'keep_git_dir': False,
+        },
+    }
+]
+checksums = ['dd2d49338ffbaf61d98cc720ca19c5d73d1efa722fa8f4ca7a2edc4f0e8acb08']
 
-builddependencies = [('binutils', '2.38')]
+builddependencies = [
+    ('binutils', '2.38'),
+    ('Bison', '3.8.2'),
+]
 
 dependencies = [
     ('libreadline', '8.1.2'),
     ('ncurses', '6.3'),
 ]
 
-skipsteps = ['configure']
+configure_cmd = './Configure'
 
-prebuildopts = './Configure --prefix=%(installdir)s &&'
+build_cmd_targets = 'all'
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ['gp', 'gp-2.15', 'gphelp', 'tex2mail']] +
