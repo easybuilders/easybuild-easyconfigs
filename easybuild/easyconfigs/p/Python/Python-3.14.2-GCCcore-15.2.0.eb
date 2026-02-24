@@ -1,0 +1,83 @@
+name = 'Python'
+version = '3.14.2'
+
+homepage = 'https://python.org/'
+description = """Python is a programming language that lets you work more quickly and integrate your systems
+ more effectively."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.python.org/ftp/%(namelower)s/%(version)s/']
+sources = [SOURCE_TGZ]
+patches = [
+    'Python-3.12.3_avoid-tkinter-build.patch',
+    'Python-3.13.1_runshared-ld-preload.patch',
+    'Python-3.14.2_skip-inf-recursion-tests.patch',
+]
+
+# Like patches, but these will only be applied if EasyBuild is configured to filter $LD_LIBRARY_PATH
+# In that scenario, ctypes needs to be patched since it heavily relies on $LD_LIBRARY_PATH to find libraries
+patch_ctypes_ld_library_path = 'Python-3.14.2-custom-ctypes.patch'
+
+checksums = [
+    {'Python-3.14.2.tgz': 'c609e078adab90e2c6bacb6afafacd5eaf60cd94cf670f1e159565725fcd448d'},
+    {'Python-3.12.3_avoid-tkinter-build.patch': '34fa44ca67fc08d41c58db2e289317f12f32777a352a982dca2e63459fc089e3'},
+    {'Python-3.13.1_runshared-ld-preload.patch': 'ca9ec56c71aafa881e7ddf6fba23fbecc016be48c2d912e5ccd92962ddd38edf'},
+    {'Python-3.14.2_skip-inf-recursion-tests.patch':
+     'ff9d0951f169fa5c34f883093d7688b1823693e2950b6c4cfb21682ece33646a'},
+    {'Python-3.14.2-custom-ctypes.patch': '4c7659026a88961330c9629b0a1c23e9a8ed38108af765bfc0f537f55b7d610f'},
+]
+
+builddependencies = [
+    ('UnZip', '6.0'),
+    ('pkgconf', '2.5.1'),
+]
+
+dependencies = [
+    ('binutils', '2.45'),
+    ('bzip2', '1.0.8'),  # required for bz2 package in Python stdlib
+    ('zlib', '2.3.2'),
+    ('libreadline', '8.3'),
+    ('ncurses', '6.6'),
+    ('SQLite', '3.51.1'),
+    ('XZ', '5.8.2'),
+    ('libffi', '3.5.2'),
+    ('OpenSSL', '3', '', SYSTEM),
+    ('zstd', '1.5.7'),
+]
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+# order is important!
+# package versions updated 2026-01-05
+exts_list = [
+    ('flit_core', '3.12.0', {
+        'checksums': ['18f63100d6f94385c6ed57a72073443e1a71a4acb4339491615d0f16d6ff01b2'],
+    }),
+    ('wheel', '0.45.1', {
+        'checksums': ['661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729'],
+    }),
+    ('tomli', '2.3.0', {
+        'checksums': ['64be704a875d2a59753d80ee8a533c3fe183e3f06807ff7dc2232938ccb01549'],
+    }),
+    ('packaging', '25.0', {
+        'checksums': ['d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f'],
+    }),
+    ('typing_extensions', '4.15.0', {
+        'checksums': ['0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466'],
+    }),
+    ('setuptools', '80.9.0', {
+        'checksums': ['f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c'],
+    }),
+    ('setuptools_scm', '9.2.2', {
+        'checksums': ['1c674ab4665686a0887d7e24c03ab25f24201c213e82ea689d2f3e169ef7ef57'],
+    }),
+    ('pip', '25.3', {
+        'checksums': ['8d0538dbbd7babbd207f261ed969c65de439f6bc9e5dbd3b3b9a77f25d95f343'],
+    }),
+]
+
+moduleclass = 'lang'
