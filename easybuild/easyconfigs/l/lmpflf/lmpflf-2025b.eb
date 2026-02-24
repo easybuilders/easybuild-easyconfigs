@@ -1,0 +1,28 @@
+easyblock = 'Toolchain'
+
+name = 'lmpflf'
+version = '2025b'
+
+homepage = 'https://docs.easybuild.io/common-toolchains/'
+description = """LLVM based compiler toolchain, including MPICH for MPI support,
+OpenBLAS (BLAS and LAPACK support), FFTW and ScaLAPACK."""
+
+toolchain = SYSTEM
+
+local_llvmver = '20.1.8'
+
+# toolchain used to build foss dependencies
+local_comp_mpi_tc = ('lmpich', version)
+
+# we need LLVM and OpenMPI as explicit dependencies instead of lompi toolchain
+# because of toolchain preparation functions
+dependencies = [
+    ('llvm-compilers', local_llvmver),
+    ('MPICH', '4.3.2', '', ('llvm-compilers', local_llvmver)),
+    ('FlexiBLAS', '3.4.5', '', ('llvm-compilers', local_llvmver)),
+    ('FFTW', '3.3.10', '', ('llvm-compilers', local_llvmver)),
+    ('FFTW.MPI', '3.3.10', '', local_comp_mpi_tc),
+    ('ScaLAPACK', '2.2.2', '-fb', local_comp_mpi_tc),
+]
+
+moduleclass = 'toolchain'

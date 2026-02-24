@@ -1,0 +1,35 @@
+easyblock = 'PythonPackage'
+
+name = 'XGBoost'
+version = '3.0.4'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/dmlc/xgboost'
+description = """
+XGBoost is an optimized distributed gradient boosting library designed to be
+highly efficient, flexible and portable."""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['498e79e545a9f85f372c03cdaf55357ddeec88d67a9b0c0608696ce05c681268']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('hatchling', '1.24.2'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('NCCL', '2.22.3', versionsuffix),
+    # required to avoid bug in CUDA-12.6.0, see https://github.com/NVIDIA/cccl/issues/1956
+    ('CCCL', '3.0.2', versionsuffix),
+]
+
+preinstallopts = "sed -i -e '/nvidia-nccl-cu12/d' pyproject.toml && "
+
+installopts = "--config-settings use_cuda=True --config-settings use_nccl=True"
+
+moduleclass = 'ai'

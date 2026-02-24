@@ -1,0 +1,82 @@
+# Patch to fix bug in new offload testing.
+# Related to:
+# - https://github.com/easybuilders/easybuild-easyblocks/pull/3373#issuecomment-2404623211
+# - https://github.com/llvm/llvm-project/issues/90333
+diff --git a/offload/CMakeLists.txt b/offload/CMakeLists.txt
+index 4cd97a6a5ff6..7369cdd0163d 100644
+--- a/offload/CMakeLists.txt
++++ b/offload/CMakeLists.txt
+@@ -127,6 +127,11 @@ include(LibomptargetGetDependencies)
+ # Set up testing infrastructure.
+ include(OpenMPTesting)
+ 
++set(OPENMP_TEST_FLAGS "" CACHE STRING
++  "Extra compiler flags to send to the test compiler.")
++set(OPENMP_TEST_OPENMP_FLAGS ${OPENMP_TEST_COMPILER_OPENMP_FLAGS} CACHE STRING
++  "OpenMP compiler flag to use for testing OpenMP runtime libraries.")
++
+ include(CheckCXXCompilerFlag)
+ check_cxx_compiler_flag(-Werror=global-constructors OFFLOAD_HAVE_WERROR_CTOR)
+ 
+diff --git a/offload/test/lit.cfg b/offload/test/lit.cfg
+index 99d7defdb9e1..40ed3f5928cf 100644
+--- a/offload/test/lit.cfg
++++ b/offload/test/lit.cfg
+@@ -82,7 +82,7 @@ config.test_format = lit.formats.ShTest()
+ 
+ # compiler flags
+ config.test_flags = " -I " + config.test_source_root + \
+-    " -I " + config.omp_header_directory + \
++    " -I " + config.llvm_lib_directory + "/../projects/openmp/runtime/src" + \
+     " -L " + config.library_dir + \
+     " -L " + config.llvm_lib_directory
+ 
+@@ -156,7 +156,6 @@ else: # Unices
+     if config.libomptarget_current_target != "nvptx64-nvidia-cuda":
+         config.test_flags += " -nogpulib"
+     config.test_flags += " -Wl,-rpath," + config.library_dir
+-    config.test_flags += " -Wl,-rpath," + config.omp_host_rtl_directory
+     config.test_flags += " -Wl,-rpath," + config.llvm_lib_directory
+     if config.cuda_libdir:
+         config.test_flags += " -Wl,-rpath," + config.cuda_libdir
+@@ -324,18 +323,24 @@ for libomptarget_target in config.libomptarget_all_targets:
+         config.substitutions.append(("%libomptarget-run-fail-" + \
+             libomptarget_target, \
+             "%not --crash %t"))
++        
++        if '-unknown-' in config.host_triple and '-pc-' in libomptarget_target:
++            _libomptarget_target = libomptarget_target.replace('-pc-', '-unknown-')
++        else:
++            _libomptarget_target = libomptarget_target
++
+         config.substitutions.append(("%clangxx-" + libomptarget_target, \
+                                      "%clangxx %openmp_flags %cuda_flags %flags %flags_clang -fopenmp-targets=" +\
+-                                     remove_suffix_if_present(libomptarget_target)))
++                                     remove_suffix_if_present(_libomptarget_target)))
+         config.substitutions.append(("%clangxxx-force-usm-" + libomptarget_target, \
+                                      "%clangxx %openmp_flags -fopenmp-force-usm  %cuda_flags %flags %flags_clang -fopenmp-targets=" +\
+-                                     remove_suffix_if_present(libomptarget_target)))
++                                     remove_suffix_if_present(_libomptarget_target)))
+         config.substitutions.append(("%clang-" + libomptarget_target, \
+                                      "%clang %openmp_flags %cuda_flags %flags %flags_clang -fopenmp-targets=" +\
+-                                     remove_suffix_if_present(libomptarget_target)))
++                                     remove_suffix_if_present(_libomptarget_target)))
+         config.substitutions.append(("%flang-" + libomptarget_target, \
+                                      "%flang %openmp_flags %flags %flags_flang -fopenmp-targets=" +\
+-                                     remove_suffix_if_present(libomptarget_target)))
++                                     remove_suffix_if_present(_libomptarget_target)))
+         config.substitutions.append(("%fcheck-" + libomptarget_target, \
+             config.libomptarget_filecheck + " %s"))
+     else:
+diff --git a/offload/test/lit.site.cfg.in b/offload/test/lit.site.cfg.in
+index 43751970cac2..149fcf0aea92 100644
+--- a/offload/test/lit.site.cfg.in
++++ b/offload/test/lit.site.cfg.in
+@@ -20,6 +20,7 @@ config.omp_host_rtl_directory = "@LIBOMPTARGET_OPENMP_HOST_RTL_FOLDER@"
+ config.llvm_lib_directory = "@LIBOMPTARGET_LLVM_LIBRARY_DIR@"
+ config.operating_system = "@CMAKE_SYSTEM_NAME@"
+ config.libomptarget_all_targets = "@LIBOMPTARGET_ALL_TARGETS@".split()
++config.host_triple = "@LLVM_HOST_TRIPLE@"
+ config.libomptarget_current_target = "@CURRENT_TARGET@"
+ config.libomptarget_filecheck = "@OPENMP_FILECHECK_EXECUTABLE@"
+ config.libomptarget_not = "@OPENMP_NOT_EXECUTABLE@"
