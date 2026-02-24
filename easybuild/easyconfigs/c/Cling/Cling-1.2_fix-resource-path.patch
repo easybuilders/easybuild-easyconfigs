@@ -1,0 +1,28 @@
+Fix Cling trying to use the build-dir instead of the install-dir
+for the resource path, causing almost all includes to fail when
+running Cling
+
+Author: Jan Andre Reuter (JSC)
+
+diff --color -Naur cling-1.2.orig/lib/Interpreter/CIFactory.cpp cling-1.2/lib/Interpreter/CIFactory.cpp
+--- cling-1.2.orig/lib/Interpreter/CIFactory.cpp	2024-12-10 17:14:05.000000000 +0100
++++ cling-1.2/lib/Interpreter/CIFactory.cpp	2025-07-11 10:59:04.306971776 +0200
+@@ -178,7 +178,7 @@
+ #endif
+ 
+   static std::string getResourceDir(const char* llvmdir) {
+-    if (!llvmdir) {
++    if (!llvmdir || llvmdir == "") {
+       // FIXME: The first arg really does need to be argv[0] on FreeBSD.
+       //
+       // Note: The second arg is not used for Apple, FreeBSD, Linux,
+diff --color -Naur cling-1.2.orig/lib/Interpreter/CMakeLists.txt cling-1.2/lib/Interpreter/CMakeLists.txt
+--- cling-1.2.orig/lib/Interpreter/CMakeLists.txt	2024-12-10 17:14:05.000000000 +0100
++++ cling-1.2/lib/Interpreter/CMakeLists.txt	2025-07-11 11:38:27.428615709 +0200
+@@ -378,5 +378,5 @@
+ # If both LLVM and Clang are external, we need to define LLVM_PATH in order for
+ # cling to use the correct (external) LLVM/Clang directories.
+ if ((NOT builtin_llvm) AND (NOT builtin_clang))
+-  target_compile_definitions(clingInterpreter PUBLIC "LLVM_PATH=\"${LLVM_BINARY_DIR}\"")
++  target_compile_definitions(clingInterpreter PUBLIC "LLVM_PATH=\"${CMAKE_PREFIX_PATH}\"")
+ endif()

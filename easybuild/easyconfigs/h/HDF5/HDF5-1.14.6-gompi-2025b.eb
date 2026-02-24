@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'HDF5'
+# Note: Odd minor releases are only RCs and should not be used.
+version = '1.14.6'
+
+homepage = 'https://portal.hdfgroup.org/display/support'
+description = """HDF5 is a data model, library, and file format for storing and managing data.
+ It supports an unlimited variety of datatypes, and is designed for flexible
+ and efficient I/O and for high volume and complex data."""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/HDFGroup/hdf5/archive']
+sources = ['hdf5_%(version)s.tar.gz']
+checksums = ['09ee1c671a87401a5201c06106650f62badeea5a3b3941e9b1e2e1e08317357f']
+
+builddependencies = [('CMake', '4.0.3')]
+
+dependencies = [
+    ('libaec', '1.1.4'),
+    ('Perl', '5.40.2'),
+    ('zlib', '1.3.1'),
+]
+
+preconfigopts = 'export LDFLAGS="$LDFLAGS -pthread" && '
+preconfigopts += 'export RUNPARALLEL="mpirun -np $${NPROCS:=3}" && '
+configopts = ' '.join([
+    '-DHDF5_BUILD_CPP_LIB=ON',
+    '-DHDF5_BUILD_FORTRAN=ON',
+    '-DHDF5_ENABLE_THREADSAFE=ON',
+    '-DALLOW_UNSUPPORTED=ON',  # fortran+threadsafe requires unsupported
+    '-DHDF5_ENABLE_PARALLEL=ON',
+])
+# h5redeploy is shipped in 1.14.6 but not installed by CMake. This will be removed in a future HDF5 release.
+postinstallcmds = [
+    "cp ../hdf5*/bin/h5redeploy.in %(installdir)s/bin/h5redeploy && chmod +x %(installdir)s/bin/h5redeploy",
+]
+
+_extra_binaries = ["h5perf", "h5pcc", "h5pfc", "ph5diff"]
+_h5binaries = ["c++", "copy", "debug", "diff", "dump", "import", "jam", "ls", "mkgrp", "perf_serial", "redeploy",
+               "repack", "repart", "stat", "unjam"]
+_binaries = ["h5%s" % x for x in _h5binaries] + _extra_binaries
+_libs = ["libhdf5%s.%s" % (lib, SHLIB_EXT) for lib in ['', '_cpp', '_fortran', '_hl_cpp', '_hl', '_hl_fortran']]
+
+sanity_check_paths = {
+    'files': [f"bin/{x}" for x in _binaries] + [f"lib/{lib}" for lib in _libs],
+    'dirs': ['include'],
+}
+
+modextravars = {'HDF5_DIR': '%(installdir)s'}
+
+moduleclass = 'data'

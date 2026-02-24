@@ -1,0 +1,63 @@
+name = 'ROOT'
+version = '6.36.02'
+
+homepage = 'https://root.cern.ch'
+description = """The ROOT system provides a set of OO frameworks with all the functionality
+    needed to handle and analyze large amounts of data in a very efficient way."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://root.cern.ch/download/']
+sources = ['%(namelower)s_v%(version)s.source.tar.gz']
+patches = [
+    'ROOT-6.12.06_cling-runtime-sysroot.patch',
+]
+checksums = [
+    {'root_v6.36.02.source.tar.gz': '510d677b33ac7ca48aa0d712bdb88d835a1ff6a374ef86f1a1e168fa279eb470'},
+    {'ROOT-6.12.06_cling-runtime-sysroot.patch': '63db7cb8371408dfa35dc58a500cd1de70d06db6b87674d5694b02e4092b6bd0'},
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('pkgconf', '2.2.0'),
+]
+
+dependencies = [
+    ('GSL', '2.8'),
+    ('libxml2', '2.12.7'),
+    ('PCRE', '8.45'),
+    ('CFITSIO', '4.4.1'),
+    ('freetype', '2.13.2'),
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('zlib', '1.3.1'),
+    ('X11', '20240607'),
+    ('Mesa', '24.1.3'),
+    ('libGLU', '9.0.3'),
+    ('GL2PS', '1.4.2'),
+    ('FFTW', '3.3.10'),
+    ('SQLite', '3.45.3'),
+    ('XZ', '5.4.5'),
+    ('libpng', '1.6.43'),
+    ('tbb', '2021.13.0'),
+]
+
+# NOTE: Ensure that each configopts string begins with a blank
+# disable some components
+configopts = " -Dxrootd=OFF -Dmysql=OFF -Dkrb5=OFF -Dodbc=OFF -Doracle=OFF -Dpgsql=OFF -Dqt=OFF"
+
+# make sure some components are enabled
+configopts += " -Dpcre=ON -Dzlib=ON -Dpyroot=ON"
+configopts += " -Dunuran=ON -Dexplicitlink=ON -Droofit=ON "
+
+# use newer external tbb due to compilation problems with bundled version
+configopts += " -Dbuiltin_tbb=OFF"
+
+# Add component-specific settings based on dependencies
+configopts += ' -Dfftw3=ON -Dgsl=ON -DOpenGL_GL_PREFERENCE=GLVND'
+
+# Set C++ standard to C++17 for better stability
+configopts += ' -DCMAKE_CXX_STANDARD=17'
+
+moduleclass = 'data'

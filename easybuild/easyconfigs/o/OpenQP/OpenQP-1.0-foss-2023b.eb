@@ -1,0 +1,71 @@
+easyblock = 'CMakeNinja'
+
+name = 'OpenQP'
+version = '1.0'
+
+homepage = 'https://github.com/Open-Quantum-Platform/openqp/'
+description = """Open Quantum Platform (OpenQP) is a quantum chemical platform featuring
+ cutting-edge capabilities like Mixed-Reference Spin-Flip (MRSF)-TDDFT with an
+ emphasis on open-source ecosystem."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = ['https://github.com/Open-Quantum-Platform/openqp/archive/refs/tags/']
+sources = [{'filename': SOURCE_TAR_GZ, 'download_filename': 'v%(version)s.tar.gz'}]
+
+checksums = ['8101db14f30511bd9c7dc99133ee0cb2a2b0b11afe2bc9ef6cc1be4cf043635e']
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('Ninja', '1.11.1'),
+    ('scikit-build', '0.17.6'),
+    ('meson-python', '0.15.0'),
+]
+
+dependencies = [
+    ('cffi', '1.15.1'),
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('mpi4py', '4.0.1'),
+    ('dftd4', '3.7.0'),
+]
+
+configopts = ' '.join([
+    '-DUSE_LIBINT=OFF',
+    '-DENABLE_OPENMP=ON',
+    '-DLINALG_LIB_INT64=OFF',
+    '-DENABLE_MPI=ON',
+])
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+exts_list = [
+    ('oqp', version, {
+        'nosource': True,
+        'start_dir': 'pyoqp',
+    }),
+    ('libdlfind', '0.0.3', {
+        'patches': ['OpenQP-1.0-foss-2023b_fix-libdlfind.patch'],
+        'checksums': [
+            # libdlfind-0.0.3.tar.gz
+            '1f74754183432b06c5ada827f2cbf6f9d453c16a7638872db85fae164e88d128',
+            # OpenQP-1.0-foss-2023b_fix-libdlfind.patch
+            '95ec32b23d36522ad4db29f9f61ba9f5636cd49196956aeecba31378a22afdca',
+        ],
+    }),
+    ('dftd4', '3.7.0', {
+        'checksums': ['2e0d3504038358b8a82fdd21912b7765d416a58ebedbdd44f2ca8d2e88339ad7'],
+    }),
+]
+
+sanity_check_commands = ['openqp --help']
+
+sanity_check_paths = {
+    'files': ['bin/openqp'],
+    'dirs': [],
+}
+
+modextravars = {'OPENQP_ROOT': '%(installdir)s'}
+
+moduleclass = 'chem'

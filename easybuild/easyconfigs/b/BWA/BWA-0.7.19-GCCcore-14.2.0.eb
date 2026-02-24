@@ -1,0 +1,53 @@
+# #
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Cyprus Institute / CaSToRC, Uni.Lu/LCSB, NTUA
+# Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# https://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+#
+# Version >= 0.7.15
+# Author: Adam Huffman
+# The Francis Crick Institute
+#
+# Note that upstream development is mainly at: https://github.com/lh3/bwa
+#
+# 0.7.18
+# Erica Bianco (HPCNow!)
+# #
+
+name = 'BWA'
+version = '0.7.19'
+
+homepage = 'https://bio-bwa.sourceforge.net/'
+description = """
+ Burrows-Wheeler Aligner (BWA) is an efficient program that aligns relatively
+ short nucleotide sequences against a long reference sequence such as the human
+ genome.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/lh3/%(name)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['cdff5db67652c5b805a3df08c4e813a822c65791913eccfb3cf7d528588f37bc']
+
+builddependencies = [
+    ('binutils', '2.42'),
+]
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('Perl', '5.40.0'),
+]
+
+# Allow use of x86 intrinsics on PPC
+prebuildopts = 'export CFLAGS="$CFLAGS -fcommon -DNO_WARN_X86_INTRINSICS" && '
+prebuildopts += "sed -i 's|^CC=|#CC=|g' Makefile && "
+prebuildopts += "sed -i 's|^CFLAGS=|#CFLAGS=|g' Makefile && "
+prebuildopts += "sed -i 's|^LIBS=|LIBS= $(LDFLAGS) |g' Makefile && "
+
+moduleclass = 'bio'
