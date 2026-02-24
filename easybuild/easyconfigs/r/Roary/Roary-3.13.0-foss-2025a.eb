@@ -1,0 +1,71 @@
+easyblock = 'Bundle'
+
+name = 'Roary'
+version = '3.13.0'
+
+homepage = 'https://github.com/sanger-pathogens/Roary'
+description = "Rapid large-scale prokaryote pan genome analysis"
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+
+dependencies = [
+    ('Perl', '5.40.0'),
+    ('CD-HIT', '4.8.1'),
+    ('BLAST+', '2.17.0'),
+    ('MCL', '22.282'),
+    ('BEDTools', '2.31.1'),
+    ('PRANK', '251117'),
+    ('parallel', '20250722'),
+    ('FastTree', '2.2'),
+    ('Kraken', '1.1.1'),
+    ('BioPerl', '1.7.8'),
+    ('R', '4.5.1'),
+]
+
+components = [
+    (name, version, {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://github.com/sanger-pathogens/Roary/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'patches': ['Roary-3.13.0_fix-CD-HIT-regexp.patch'],
+        'checksums': [
+            '375f83c8750b0f4dea5b676471e73e94f3710bc3a327ec88b59f25eae1c3a1e8',  # v3.13.0.tar.gz
+            '28b4176ebf20c7bc6f38fdf1cf7e71cae8bd823297543f93fbc28a0c1c3cf791',  # Roary-3.13.0_fix-CD-HIT-regexp.patch
+        ],
+    }),
+    # mcxdeblast is needed, but was (temporarily) removed from MCL. Bundle it here.
+    # See https://github.com/micans/mcl/discussions/25.
+    ('mcl', '14-137', {
+        'easyblock': 'Tarball',
+        'install_type': 'subdir',
+        'source_urls': ['https://micans.org/%(name)s/src/'],
+        'sources': ['%(name)s-%(version)s.tar.gz'],
+        'start_dir': '%(name)s-%(version)s/src/alien/oxygen/src/',
+        'preinstallopts': """sed -i "s|/usr/local/bin/perl|$EBROOTPERL/bin/perl|" mcxdeblast && """,
+        'checksums': ['b5786897a8a8ca119eb355a5630806a4da72ea84243dba85b19a86f14757b497'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['%(name)s-%(version)s/bin/roary', '%(name)s-%(version)s/lib/Bio/Roary.pm'],
+    'dirs': ['%(name)s-%(version)s/lib/Bio/Roary'],
+}
+
+modextrapaths = {
+    'PATH': {
+        'paths': ['%(name)s-%(version)s/bin', 'mcl'],
+    },
+    'PERL5LIB': '%(name)s-%(version)s/lib',
+}
+
+sanity_check_commands = [
+    "perldoc -lm Bio::Roary",
+    "roary -a",
+    # make sure all (optional) dependencies are found
+    # grep exits with '1' if no matches are found, hence we need to test the exit code ($?)
+    "roary -a 2>&1 | grep 'not found'; test $? -eq 1",
+    "mcxdeblast --help",
+]
+
+moduleclass = 'bio'

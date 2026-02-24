@@ -1,0 +1,159 @@
+easyblock = 'Bundle'
+
+name = 'ROCm-LLVM'
+_llvm_version = '19.0.0'
+version = _llvm_version
+_rocm_version = '6.4.1'
+versionsuffix = f'-ROCm-{_rocm_version}'
+
+homepage = 'https://github.com/ROCm/llvm-project'
+description = """ROCm-LLVM is an open source Clang/LLVM based compiler.
+It is an AMD Fork of The LLVM Compiler Infrastructure, and aims to contain all of upstream LLVM.
+It also includes several AMD-specific additions in the llvm-project/amd directory."""
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Perl', '5.40.0'),
+    ('Python', '3.13.1'),
+    ('pkgconf', '2.3.0'),
+    ('xxd', '9.1.1457'),  # required for ROCr-Runtime
+]
+
+dependencies = [
+    ('binutils', '2.42'),
+    ('elfutils', '0.193'),
+    ('zlib', '1.3.1'),
+    ('hwloc', '2.11.2'),
+    ('GMP', '6.3.0'),
+    ('libxml2', '2.13.4'),
+    ('ncurses', '6.5'),
+    ('libffi', '3.4.5'),
+    ('libdrm', '2.4.125'),
+    ('numactl', '2.0.19'),
+    ('Z3', '4.13.4'),
+]
+
+local_rocm_llvm_source = 'llvm-project-rocm-%s.tar.gz' % _rocm_version
+local_common_cmake_configopts = ' '.join([
+    '-DCMAKE_C_COMPILER=%(installdir)s/bin/clang',
+    '-DCMAKE_CXX_COMPILER=%(installdir)s/bin/clang++',
+    '-DLLVM_INSTALL_PREFIX=%(installdir)s',
+    '-DLLVM_DIR=%(installdir)s/lib/cmake/llvm',
+])
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'source_urls': ['https://github.com/ROCm/%(name)s/archive/'],
+    'sources': [{
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-%(version)s.tar.gz',
+    }],
+    'srcdir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('llvm-project', '%s-rocm-%s' % (_llvm_version, _rocm_version), {
+        'easyblock': 'EB_ROCm_minus_LLVM',
+        'sources': [{
+            'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
+            'filename': local_rocm_llvm_source,
+            # rename the extracted directory to the one that the LLVM easyblock expects
+            'extract_cmd': 'tar xfz %%s && mv %%(name)s-rocm-%s %%(name)s-%%(version)s.src' % _rocm_version,
+        }],
+        'patches': [
+            'ROCm-LLVM-19.0.0_fix-offload-build.patch',
+            'ROCm-LLVM-19.0.0_fix-ConstantFoldFP128-conversion-issue.patch'
+        ],
+        'checksums': [
+            {local_rocm_llvm_source:
+                '460ad28677092b9eb86ffdc49bcb4d01035e32b4f05161d85f90c9fa80239f50'},
+            {'ROCm-LLVM-19.0.0_fix-offload-build.patch':
+                '2ce1454aa3d2f50795bbc331c239f44be07f8ec836978cad130406af4340e30d'},
+            {'ROCm-LLVM-19.0.0_fix-ConstantFoldFP128-conversion-issue.patch':
+                '76fc2b0209c9e6a2d13f138b40acdab41313e979104bb66e4b1ac1aa7b4b5d03'},
+        ],
+        'start_dir': f'llvm-project-{_llvm_version}-rocm-{_rocm_version}.src',
+        'bootstrap': True,
+        'build_lld': True,
+        'build_clang_extras': True,
+        'build_openmp_offload': False,
+        'build_openmp_tools': True,
+        'build_runtimes': True,
+        'full_llvm': False,
+        'skip_all_tests': True,
+    }),
+    ('ROCm-comgr', 'rocm-%s' % _rocm_version, {
+        # sources are located in amd/comgr subdir of llvm-project component
+        'sources': [{'filename': local_rocm_llvm_source, 'extract_cmd': 'echo %s'}],
+        'checksums': [
+            {local_rocm_llvm_source:
+                '460ad28677092b9eb86ffdc49bcb4d01035e32b4f05161d85f90c9fa80239f50'},
+        ],
+        'srcdir': 'llvm-project-%s-%%(version)s.src/amd/comgr' % _llvm_version,
+        'prebuildopts': 'export ROCM_PATH=%(installdir)s && ',
+        'configopts': local_common_cmake_configopts + ' -DROCM_DIR=%(installdir)s/share/rocm/cmake'
+    }),
+    ('ROCR-Runtime', 'rocm-%s' % _rocm_version, {
+        'srcdir': '%(name)s-%(version)s',
+        'checksums': [
+            {'ROCR-Runtime-rocm-6.4.1.tar.gz':
+                'f72d100a46a2dd9f4c870cef156604777f1bdb1841df039d14bf37b19814b9da'},
+        ],
+        'configopts': local_common_cmake_configopts + ' -DBUILD_SHARED_LIBS=ON',
+    }),
+    ('llvm-project-openmp', '%s-rocm-%s' % (_llvm_version, _rocm_version), {
+        'easyblock': 'EB_ROCm_minus_LLVM',
+        'sources': [{
+            'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
+            'filename': local_rocm_llvm_source,
+            # rename the extracted directory to the one that the LLVM easyblock expects
+            # we need to extract the sources again so that potential source changes done by easyblocks
+            # do not cause unintended behaviour in the second build
+            'extract_cmd': 'tar xfz %%s && mv llvm-project-rocm-%s %%(name)s-%%(version)s.src' % _rocm_version,
+        }],
+        'patches': [
+            'ROCm-LLVM-19.0.0_fix-offload-build.patch',
+            'ROCm-LLVM-19.0.0_fix-ConstantFoldFP128-conversion-issue.patch',
+        ],
+        'checksums': [
+            {local_rocm_llvm_source:
+                '460ad28677092b9eb86ffdc49bcb4d01035e32b4f05161d85f90c9fa80239f50'},
+            {'ROCm-LLVM-19.0.0_fix-offload-build.patch':
+                '2ce1454aa3d2f50795bbc331c239f44be07f8ec836978cad130406af4340e30d'},
+            {'ROCm-LLVM-19.0.0_fix-ConstantFoldFP128-conversion-issue.patch':
+                '76fc2b0209c9e6a2d13f138b40acdab41313e979104bb66e4b1ac1aa7b4b5d03'},
+        ],
+        'start_dir': f'llvm-project-openmp-{_llvm_version}-rocm-{_rocm_version}.src',
+        'bootstrap': True,
+        'build_lld': True,
+        'build_clang_extras': True,
+        'build_openmp_offload': True,
+        'build_openmp_tools': True,
+        'build_runtimes': True,
+        'full_llvm': False,
+        'skip_all_tests': True,
+    }),
+    ('aomp-extras', 'rocm-%s' % _rocm_version, {
+        'configopts':
+            local_common_cmake_configopts +
+            ' -DAOMP_STANDALONE_BUILD=0 '
+            '-DAOMP_VERSION_STRING=%s ' % _rocm_version,
+        'checksums': [
+            {'aomp-extras-rocm-6.4.1.tar.gz':
+                'cf20b02b1f99f506c198866ef03f2265dc355627760f82cda3878d5bc6486afc'},
+        ],
+    }),
+
+]
+
+sanity_check_components = ['llvm-project']
+
+modextravars = {
+    'HIP_DEVICE_LIB_PATH': '%(installdir)s/amdgcn/bitcode',
+}
+
+moduleclass = 'tools'
