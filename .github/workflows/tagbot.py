@@ -82,7 +82,7 @@ print("Modified workflow:", modified_workflow)
 # to make review easier.
 new_software = 0
 updated_software = 0
-to_diff = dict()
+to_diff = {}
 for new_file in new_ecs:
     neighbours = similar_easyconfigs(gitrepo, new_file, new_ecs)
     print(f"Found {len(neighbours)} neighbours for {new_file}")
@@ -159,7 +159,13 @@ ic_tc_gen_map = {
     '2025.2.0': '2025b',
 }
 
-toolchain_names = ['foss', 'gompi', 'gfbf', 'iimpi', 'iimkl', 'intel']
+llvm_tc_gen_map = {
+    '20.1.5': '2023b',
+    '20.1.8': '2025b',
+}
+
+toolchain_names = ['foss', 'gompi', 'gfbf', 'iimpi', 'iimkl', 'intel', 'llvm-compilers', 'lfbf',
+                   'lompi', 'lmpich', 'lfoss', 'lmpflf']
 toolchain_present = {}
 for toolchain_ver in gcc_tc_gen_map.values():
     toolchain_present[toolchain_ver] = False
@@ -174,6 +180,10 @@ for file in new_ecs + changed_ecs:
     # Check for intel-compilers
     for intel_version, toolchain_version in ic_tc_gen_map.items():
         if f"-intel-compilers-{intel_version}" in file_path:
+            toolchain_present[toolchain_version] = True
+            continue
+    for llvm_version, toolchain_version in llvm_tc_gen_map.items():
+        if f"-llvm-compilers-{llvm_version}" in file_path:
             toolchain_present[toolchain_version] = True
             continue
     # Check for common toolchains with our toolchain naming
@@ -234,6 +244,11 @@ if updated_software:
     for existing_comment in response.json():
         if existing_comment["user"]["login"] == "github-actions[bot]":  # Bot username in GitHub Actions
             comment_id = existing_comment["id"]
+
+    if len(comment) >= 65536:
+        # Comment is too long to post, so post a message saying that
+        comment = "Diff of new easyconfig(s) against existing ones is too long for a GitHub comment. "
+        comment += "Use `--review-pr` (and `--review-pr-filter` / `--review-pr-max`) locally."
 
     if comment_id:
         # Update existing comment
