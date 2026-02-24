@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2025 Ghent University
+# Copyright 2013-2026 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -651,6 +651,8 @@ class EasyConfigTest(TestCase):
             # UShER requires tbb-2020.3 as newer versions will not build
             # orthagogue requires tbb-2020.3 as 2021 versions are not backward compatible with the previous releases
             'tbb': [('2020.3', ['UShER-0.5.0-', 'orthAgogue-20141105-'])],
+            # TensorFlow 2.15.1 depends on tensorboard 2.15.1
+            'tensorboard': [('2.15.1', ['TensorFlow-2.15.1-'])],
             'TensorFlow': [
                 # medaka 1.5.0 (foss/2021a) depends on TensorFlow >=2.5.2, <2.6.0
                 ('2.5.3;', ['medaka-1.5.0-']),
@@ -674,6 +676,8 @@ class EasyConfigTest(TestCase):
             'VTK': [('9.2.6;', ['Visit-3.4.1-'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
             'wxWidgets': [(r'3\.2\.0', [r'wxPython-4\.2\.0', r'GRASS-8\.2\.0', r'QGIS-3\.28\.1'])],
+            # allow hatch-* build tools to depend on whichever hatchling they wish (as they are just build deps)
+            'hatchling': [(r'.*', [r'hatch-.*'])]
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -1210,8 +1214,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.2.0'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.2.0.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.2.1'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.2.1.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
