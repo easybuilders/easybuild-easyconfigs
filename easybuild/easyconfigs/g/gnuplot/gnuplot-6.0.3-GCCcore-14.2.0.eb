@@ -1,0 +1,51 @@
+easyblock = 'ConfigureMake'
+
+name = 'gnuplot'
+version = '6.0.3'
+
+homepage = 'http://gnuplot.sourceforge.net'
+description = "Portable interactive, function plotting utility"
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = [('https://sourceforge.net/projects/%(name)s/files/%(name)s/%(version)s', 'download')]
+sources = [SOURCE_TAR_GZ]
+checksums = ['ec52e3af8c4083d4538152b3f13db47f6d29929a3f6ecec5365c834e77f251ab']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('pkgconf', '2.3.0'),
+    ('Autotools', '20240712'),
+]
+dependencies = [
+    ('ncurses', '6.5'),
+    ('cairo', '1.18.4'),
+    ('libjpeg-turbo', '3.1.0'),
+    ('libpng', '1.6.48'),
+    ('libgd', '2.3.3'),
+    ('Pango', '1.56.3'),
+    ('libcerf', '3.0'),
+    ('X11', '20250521'),
+    ('Qt6', '6.9.3'),
+    ('Lua', '5.4.8'),
+]
+
+preconfigopts = 'autoreconf && '
+
+# make sure that right Lua library is used (bypassing pkg-config)
+preconfigopts += 'export LUA_CFLAGS="-I$EBROOTLUA/include" && export LUA_LIBS="$EBROOTLUA/lib/liblua.a" && '
+
+# fix undefined reference to symbol 'libiconv_open'
+preconfigopts += ' export LDFLAGS="-Wl,--copy-dt-needed-entries" && '
+
+configopts = "--without-latex --disable-wxwidgets"
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': [],
+}
+
+# make sure that pdf terminal type is available
+sanity_check_commands = ["%(name)s -e 'set terminal pdf'"]
+
+moduleclass = 'vis'
