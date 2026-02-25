@@ -1,0 +1,109 @@
+easyblock = 'CMakeMake'
+
+name = 'pod5-file-format'
+version = '0.3.23'
+
+homepage = 'https://github.com/nanoporetech/pod5-file-format'
+description = """POD5 is a file format for storing nanopore dna data in an easily accessible way.
+ The format is able to be written in a streaming manner which allows a sequencing
+ instrument to directly write the format."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = ['https://github.com/nanoporetech/%(name)s/archive/']
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+patches = [
+           'pod5-file-format-0.3.23-use-eb-pybind11.patch',
+           'pod5-file-format-0.3.23-gcc13-includes.patch',
+]
+checksums = [
+    {'pod5-file-format-0.3.23.tar.gz': '870f5b0ca5f05dc19a6eb3cfeaf0755f5c21ac261621556bb5306fa9ef8ac438'},
+    {'pod5-file-format-0.3.23-use-eb-pybind11.patch':
+     '09aa3926bb39aee8d40519e1ecc6ec7d5aba5f64cd40178a5493d394aff8f09d'},
+    {'pod5-file-format-0.3.23-gcc13-includes.patch':
+     '38bc961a2e6df3bde174344f3bd75cf3a25ecac5ac9067207bf655dc909fff4b'},
+]
+
+builddependencies = [
+    ('poetry', '1.8.3'),
+    ('CMake', '3.29.3'),
+    ('pkgconf', '2.2.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('Arrow', '17.0.0'),
+    ('SciPy-bundle', '2024.05'),
+    ('zstd', '1.5.6'),
+    ('flatbuffers', '24.3.25'),
+    ('Boost', '1.85.0'),
+    ('build', '1.2.2.post1'),
+    ('HDF5', '1.14.5'),
+    ('h5py', '3.12.1'),
+    ('pybind11', '2.13.6'),
+    ('tqdm', '4.66.5'),
+    ('polars', '1.28.1'),
+]
+
+# unpin polars and h5py versions in pod5
+# also pyarrow
+local_preinstallopts = (
+    "sed -i"
+    " -e 's/polars~=0.19/polars/'"
+    " -e 's/h5py~=3.10.0/h5py/'"
+    " -e 's/18.0.0/17.0.0/g'"
+    " pyproject.toml && "
+    "grep pyarrow pyproject.toml && "
+)
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+exts_list = [
+    ('lib-pod5', version, {
+        'install_src': '%(installdir)s/lib_pod5-%(version)s-*.whl',
+        'modulename': 'lib_pod5',
+        'nosource': True,
+    }),
+    ('vbz_h5py_plugin', '1.0.1', {
+        'checksums': ['c784458bb0aad6303474cb2f10956179116b35555803fd1154eb4ef362519341'],
+    }),
+    ('iso8601', '2.1.0', {
+        'checksums': ['6b1d3829ee8921c4301998c909f7829fa9ed3cbdac0d3b16af2d743aed1ba8df'],
+    }),
+    ('pod5', version, {
+        'preinstallopts': local_preinstallopts,
+        'checksums': ['4d400545ac09cf2b62ba3ef107e80f5a9f75ee6433a1b521bbfad48af1072b4d'],
+    }),
+]
+
+# create POD5Version.cmake
+# python -m setuptools_scm && python -m pod5_make_version shows wrong version
+separate_build_dir = '__build'
+preconfigopts = (
+    'cd %(start_dir)s/cmake && '
+    'touch POD5Version.cmake && '
+    'echo "set(POD5_VERSION_MAJOR %(version_major)s)">POD5Version.cmake && '
+    'echo "set(POD5_VERSION_MINOR %(version_minor)s)">>POD5Version.cmake && '
+    f'echo "set(POD5_VERSION_REV {version.split(".")[2]})">>POD5Version.cmake && '
+    'echo "set(POD5_NUMERIC_VERSION %(version)s)">>POD5Version.cmake && '
+    'echo "set(POD5_FULL_VERSION %(version)s)">>POD5Version.cmake && '
+    f'cd %(builddir)s/{separate_build_dir} && '
+)
+
+configopts = ' -DBUILD_PYTHON_WHEEL=ON -DZSTD_LIB="$EBROOTZSTD/lib" -DZSTD_INCLUDE_DIR="$EBROOTZSTD/include"'
+
+postinstallcmds = ['rm %(installdir)s/lib_pod5-%(version)s-*.whl']
+
+sanity_check_paths = {
+    'files': ['bin/pod5', 'lib/libpod5_format.a'],
+    'dirs': ['include/pod5_format', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "pod5 subset --help",
+]
+
+moduleclass = 'bio'
