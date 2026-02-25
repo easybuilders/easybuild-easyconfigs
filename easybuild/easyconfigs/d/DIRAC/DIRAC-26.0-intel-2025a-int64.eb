@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'DIRAC'
+version = '26.0'
+versionsuffix = '-int64'
+
+homepage = 'http://www.diracprogram.org'
+description = "DIRAC: Program for Atomic and Molecular Direct Iterative Relativistic All-electron Calculations"
+
+toolchain = {'name': 'intel', 'version': '2025a'}
+toolchainopts = {'usempi': True, 'i8': True, 'oneapi': True}
+
+source_urls = ['https://zenodo.org/records/18662050/files/']
+sources = ['DIRAC-%(version)s-Source.tar.xz']
+checksums = ['efd5b918fd0cb821d142643d4b534b3077a31824bd3a485fef50d5019bfd01c4']
+
+builddependencies = [('CMake', '3.31.3')]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('HDF5', '1.14.6')
+]
+
+configopts = '-DMKL_FLAG=parallel '
+configopts += '-DENABLE_MPI=True '
+configopts += '-DENABLE_64BIT_INTEGERS=True '
+configopts += '-DENABLE_PELIB=False '
+
+pretestopts = 'export DIRAC_TMPDIR=%(builddir)s/scratch && '
+pretestopts += 'export DIRAC_MPI_COMMAND="%(mpi_cmd_prefix)s " && '
+
+runtest = 'test ARGS="-R pam_test" '
+
+sanity_check_paths = {
+    'files': ['bin/pam-dirac', 'share/dirac/dirac.x'],
+    'dirs': ['share/dirac/basis'],
+}
+
+sanity_check_commands = ["pam-dirac --help"]
+
+moduleclass = 'chem'
