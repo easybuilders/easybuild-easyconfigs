@@ -18,17 +18,36 @@ toolchainopts = {'openmp': True, 'usempi': True}
 github_account = 'ginkgo-project'
 source_urls = [GITHUB_LOWER_SOURCE]
 sources = ['v%(version)s.tar.gz']
-checksums = ['18271e99f81a89cf27102f9d4e84653ae7a0cc745fcda9a7ed486c455553780b']
+patches = [
+    'ginkgo_1.9.0_increase_test_tolerance.patch',
+    'ginkgo_1.9.0_remove_matrix_statistics_benchmark.patch',
+]
+checksums = [
+    '18271e99f81a89cf27102f9d4e84653ae7a0cc745fcda9a7ed486c455553780b',
+    'f3684662f3fabd382680e7fdd14420b78ba781676a6c0c6071c7daaa27c24b59',
+    '74bddcbc2bf554b8a8d72e67eb1b9e7e16585a11e43e01c8e7e8281338ede59c',
+]
 
 builddependencies = [
     ('CMake', '3.27.6')
 ]
 
-configopts = '-DGINKGO_BUILD_MPI=ON -DGINKGO_BUILD_OMP=ON -DGINKGO_FAST_TESTS=ON'
+# Compilation process can be memory hungry
+max_parallel = 8
+
+configopts = '-DGINKGO_BUILD_MPI=ON -DGINKGO_BUILD_OMP=ON -DGINKGO_FAST_TESTS=ON '
+# Ginkgo wants to run some MPI tests with up to 8 ranks, if it doesn't
+# have that many ranks it filters tests, but the filtering is buggy (v1.9.0) and causes
+# CMake failures. Hard set the number of MPI processes to 8 and allow oversubscription
+# during the test step.
+configopts += '-DMPIEXEC_MAX_NUMPROCS=8'
 
 build_shared_libs = True
 
-pretestopts = "export OMP_NUM_THREADS=1 && "
+# Ginkgo runs some MPI tests that require a certain number of cores (see above),
+# in certain contexts that number of slots may not be available so allow oversubscription
+pretestopts = 'export OMPI_MCA_rmaps_base_oversubscribe=1 && '
+pretestopts += "export OMP_NUM_THREADS=1 && "
 runtest = True
 
 sanity_check_paths = {

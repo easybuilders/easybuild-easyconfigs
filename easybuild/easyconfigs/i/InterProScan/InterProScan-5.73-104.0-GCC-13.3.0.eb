@@ -1,4 +1,4 @@
-easyblock = 'Binary'
+easyblock = 'Tarball'
 
 name = 'InterProScan'
 version = '5.73-104.0'
@@ -13,8 +13,13 @@ description = """InterProScan is a sequence analysis application (nucleotide and
 toolchain = {'name': 'GCC', 'version': '13.3.0'}
 
 source_urls = ['https://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/alt/']
-sources = ['interproscan-core-%(version)s.tar.gz']
-checksums = ['c659e92132fac59af8bcf198e1f27481506733e27420231a6b92380b1ee1e803']
+sources = ['%(namelower)s-core-%(version)s.tar.gz']
+patches = ['InterProScan-5.73-104.0_external-data-defines.patch']
+checksums = [
+    {'interproscan-core-5.73-104.0.tar.gz': 'c659e92132fac59af8bcf198e1f27481506733e27420231a6b92380b1ee1e803'},
+    {'InterProScan-5.73-104.0_external-data-defines.patch':
+     '60844e93e468b5fcc8b0b8e55e8df2e6f467dbcbb799d896d4c43f423bf7ef20'},
+]
 
 dependencies = [
     ('Java', '17', '', SYSTEM),
@@ -22,27 +27,34 @@ dependencies = [
     ('libgd', '2.3.3'),
     ('Python', '3.12.3'),
     ('PCRE', '8.45'),
+    ('InterProScan_data', '5.73-104.0', '', SYSTEM),
 ]
-# NOTE some analyses done by InterProScan require extra tools not included in the interproscan
-# distribution because of license issues.
-# Those tools are SignalP, TMHMM and Phobius.
-# To allow InterProScan to use them you have to copy or symlink their executable in the
-# corresponding %(installdir)s/bin/TOOL/VERSION/ folder.
 
-extract_sources = False
+build_info_msg = """
+Some analyses done by InterProScan require extra tools not included in the interproscan
+distribution because of license issues.
+Those tools are SignalP, TMHMM and Phobius.
+To allow InterProScan to use them you have to copy or symlink their executable in the
+corresponding $EBROOTINTERPROSCAN/bin/TOOL/VERSION/ folder.
 
-# NOTE The data can be added manually afterwards with for example a symlink called *data*
-# in %(installdir)s/
-# But simpler to use the InterProScan_data-*.eb file. The regular InterProScan data package
-# does not contain the lookup_service data way too large!
-install_cmd = 'tar xfz %(namelower)s-core-%(version)s.tar.gz && '
-install_cmd += 'cd %(namelower)s-%(version)s/ && '
-install_cmd += 'find . -type d -name bin32 | xargs rm -Rf && '
+The data can be added manually afterwards with for example a symlink called *data*
+in $EBROOTINTERPROSCAN/
+But simpler to use the InterProScan_data-*.eb file. The regular InterProScan data package
+does not contain the lookup_service data way too large!
+"""
+
+# get rid of bin32 subdirectories
+preinstall_cmd = "find . -type d -name bin32 | xargs rm -Rf && "
 # remove sources but keep test files that can be used to validate the installation
-install_cmd += 'rm -Rf src/ && '
-install_cmd += 'chmod -x *.jar && '
-install_cmd += 'cp -r * %(installdir)s/ && cd .. && '
-install_cmd += 'rm -Rf %(namelower)s-%(version)s/'
+preinstall_cmd += "rm -Rf src/ && "
+
+# replace hard-coded data versions in interproscan.properties with references to *.signature.library.release
+# this means we can swap out dataset versions without needing to re-run the setup script (by instead passing
+# -D<dataset>.signature.library.release=<ver> defines to Java to override default versions)
+preinstall_cmd += (r"sed -E -i 's#\$\{data\.directory\}/([a-zA-Z0-9]+)/[0-9a-zA-Z_\.]+/"
+                   r"#\$\{data\.directory\}/\1/\$\{\1\.signature\.library\.release\}/"
+                   r"#g' interproscan.properties")
+
 
 sanity_check_paths = {
     'files': ['interproscan-%(version_major)s.jar', 'interproscan.sh', 'interproscan.properties'],
@@ -50,5 +62,7 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = ["interproscan.sh 2>&1 | grep 'Welcome to InterProScan-%(version)s'"]
+
+modextrapaths = {'PATH': ''}
 
 moduleclass = 'bio'

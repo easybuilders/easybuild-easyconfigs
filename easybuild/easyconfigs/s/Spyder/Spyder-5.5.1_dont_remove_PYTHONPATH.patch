@@ -1,0 +1,47 @@
+We don't want to remove $PYTHONPATH entries set by modules.
+Hence remove the code that seemingly was added to workaround user mistakes.
+
+See https://github.com/spyder-ide/spyder/issues/22681
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/spyder/app/start.py b/spyder/app/start.py
+index 97b08a600..47873cab2 100644
+--- a/spyder/app/start.py
++++ b/spyder/app/start.py
+@@ -6,21 +6,8 @@
+ # (see spyder/__init__.py for details)
+ # -----------------------------------------------------------------------------
+ 
+-# Remove PYTHONPATH paths from sys.path before other imports to protect against
+-# shadowed standard libraries.
+ import os
+ import sys
+-if os.environ.get('PYTHONPATH'):
+-    for path in os.environ['PYTHONPATH'].split(os.pathsep):
+-        if os.name == 'nt' and 'pkgs' in path:
+-            # Don't remove pynsist installer entry for 'pkgs' directory
+-            continue
+-        else:
+-            try:
+-                sys.path.remove(path.rstrip(os.sep))
+-            except ValueError:
+-                pass
+-
+ # Standard library imports
+ import ctypes
+ import logging
+
+diff --git a/spyder/plugins/ipythonconsole/utils/kernelspec.py b/spyder/plugins/ipythonconsole/utils/kernelspec.py
+index 5141015bf..dc0760b27 100644
+--- a/spyder/plugins/ipythonconsole/utils/kernelspec.py
++++ b/spyder/plugins/ipythonconsole/utils/kernelspec.py
+@@ -135,9 +135,6 @@ def env(self):
+         # to the kernel sys.path
+         env_vars.pop('VIRTUAL_ENV', None)
+ 
+-        # Do not pass PYTHONPATH to kernels directly, spyder-ide/spyder#13519
+-        env_vars.pop('PYTHONPATH', None)
+-
+         # List of paths declared by the user, plus project's path, to
+         # add to PYTHONPATH
+         pathlist = self.get_conf(
