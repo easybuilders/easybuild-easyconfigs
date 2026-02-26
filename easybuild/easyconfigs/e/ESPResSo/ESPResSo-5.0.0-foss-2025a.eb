@@ -1,0 +1,100 @@
+easyblock = 'EB_ESPResSo'
+
+name = 'ESPResSo'
+version = '5.0.0'
+
+homepage = 'https://espressomd.org/wordpress'
+description = """A software package for Molecular Dynamics and Monte Carlo
+simulations of bead-spring models, with electrostatics, magnetostatics,
+hydrodynamics and reaction-diffusion-advection solvers."""
+
+source_urls = ['https://github.com/espressomd/espresso/archive/%(version)s.tar.gz']
+sources = [SOURCELOWER_TAR_GZ]
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'openmp': True, 'usempi': True, 'pic': True}
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Ninja', '1.12.1'),
+    ('Cython', '3.1.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('Boost.MPI', '1.88.0'),
+    ('HeFFTe', '2.4.1'),
+    ('Kokkos', '4.7.01'),
+    ('Cabana', '0.7.0'),
+    ('Mesa', '25.1.3'),
+    ('GSL', '2.8'),
+    ('NLopt', '2.10.0'),
+    ('IPython', '9.3.0'),
+    ('Pint', '0.24.4'),
+    ('HDF5', '1.14.6'),
+    ('h5py', '3.14.0'),
+    ('HighFive', '3.3.0'),
+    ('VTK', '9.5.0'),
+]
+
+sources = [
+    {
+        'source_urls': ['https://github.com/espressomd/espresso/archive/'],
+        'filename': 'espresso-%(version)s.tar.gz',
+        'download_filename': '%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://i10git.cs.fau.de/walberla/walberla/-/archive/'],
+        'filename': 'walberla-3247aa73.tar.gz',
+        'download_filename': '3247aa73.tar.gz',
+    },
+]
+checksums = [{
+    'espresso-%(version)s.tar.gz': '8b6a6ce62fa9358464c789ed200f72e19b6687f999dc95b20b407ee1274cdf4e',
+    'walberla-3247aa73.tar.gz': 'd297b462e9ad2107ee968439266855b97aafaef39ef0b82f72129630116db059',
+}]
+
+configopts = ' -DESPRESSO_BUILD_TESTS=ON '
+# make sure the right Python is used (note: -DPython3_EXECUTABLE or -DPython_EXECUTABLE does not work!)
+configopts += ' -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python '
+
+# build_cmd_targets does not work with CMakeNinja, use buildopts instead
+buildopts = 'espresso_packaging_dependencies'
+
+test_cmd = 'ctest'
+runtest = '-L "unit_test|python_test"'
+testopts = '--output-on-failure --no-tests=error'
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+_binaries = ['ipypresso',  'pypresso']
+_libs = [
+    'espresso_core', 'espresso_shapes', 'espresso_walberla',
+    'espresso_script_interface', 'script_interface', 'utils', '_init',
+]
+_python_modules = [
+    '__init__.py', 'system.py', 'version.py', 'collision_detection.py', 'lb.py',
+    'accumulators.py', 'constraints.py', 'observables.py', 'particle_data.py',
+]
+if any(x[0] == 'HDF5' for x in dependencies):
+    _libs.append('espresso_hdf5')
+    _python_modules.append('io/writer/h5md.py')
+if any(x[0] == 'CUDA' for x in dependencies):
+    _python_modules.append('cuda_init.py')
+
+_lib_path = 'lib/python%(pyshortver)s/site-packages/espressomd'
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in _binaries] +
+             [f'{_lib_path}/{x}.{SHLIB_EXT}' for x in _libs] +
+             [f'{_lib_path}/{x}' for x in _python_modules],
+    'dirs': ['bin', 'lib']
+}
+
+sanity_check_commands = [
+    'pypresso -h', 'ipypresso -h',
+    'pypresso -c "import espressomd.version;print(espressomd.version.friendly())"',
+    'python3 -c "import espressomd.version;print(espressomd.version.friendly())"',
+]
+
+moduleclass = 'chem'
