@@ -1,0 +1,102 @@
+easyblock = 'PythonBundle'
+
+name = 'DeepSpeed'
+version = '0.14.5'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'http://www.deepspeed.ai/'
+description = """
+DeepSpeed is a deep learning optimization library that makes distributed training easy, efficient, and effective.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+builddependencies = [
+    ('Ninja', '1.11.1'),
+    ('Transformers', '4.44.0'),
+]
+local_pytorch_version = '2.3.0'
+dependencies = [
+    ('Python', '3.11.5'),
+    ('CUDA', '12.4.0', '', SYSTEM),
+    ('NCCL', '2.20.5', '-CUDA-%(cudaver)s'),
+    ('CUTLASS', '4.1.0', '-CUDA-%(cudaver)s'),
+    ('CuPy', '13.6.0', '-CUDA-%(cudaver)s'),
+    ('Triton', '2.3.1', '-CUDA-%(cudaver)s'),
+    ('accelerate', '1.10.0', '-CUDA-%(cudaver)s'),
+    ('PyTorch', local_pytorch_version, '-CUDA-%(cudaver)s'),
+    ('PyTorch-bundle', local_pytorch_version, '-CUDA-%(cudaver)s'),
+    ('mpi4py', '3.1.5'),
+    ('DLPack', '1.2'),
+    ('py-cpuinfo', '9.0.0'),
+    ('pydantic', '2.7.4'),
+    ('tqdm', '4.66.2'),
+    ('pdsh', '2.36'),
+    ('Seaborn', '0.13.2'),  # dependency for mup
+    ('libaio', '0.3.113'),  # for async_io (builddep only?)
+]
+
+local_excluded_ds_tests = (
+    'TestTensorBoard',
+    'TestWandb',
+    'TestCometMonitor',
+    'TestQuantizedInt',  # Downloads model from internet
+    'test_fp_quant[256-qbits8-bf16]',  # Error of 0.00909423828125 > 0.004
+)
+
+github_account = 'microsoft'
+exts_list = [
+    ('hjson', '3.1.0', {
+        'checksums': ['55af475a27cf83a7969c808399d7bccdec8fb836a07ddbd574587593b9cdcf75'],
+    }),
+    ('nvidia-ml-py', '12.535.161', {
+        'checksums': ['2bcc31ff7a0ea291ed8d7fc39b149391a42c2fb1cb4256c935e692de488b4d17'],
+        'modulename': 'pynvml',
+    }),
+    ('mup', '1.0.0', {
+        'checksums': ['9639e3d19f90e754f985ed444542ed2f8a049f3c0488fcb6efe150f30922cf74'],
+    }),
+    ('qtorch', '0.3.0', {
+        'checksums': ['3fc2e9b27d58d18304ac46511ea03a3eb20f852944f6a5b6ef71b974c2da20bf'],
+        'preinstallopts': "TORCH_CUDA_ARCH_LIST='%(cuda_cc_semicolon_sep)s' ",
+    }),
+    ('DeepSpeed', '0.14.5', {
+        'source_urls': [GITHUB_SOURCE],
+        # Test suite not available on pypi
+        'sources': [{'download_filename': V_VERSION_TAR_GZ, 'filename': SOURCE_TAR_GZ}],
+        'patches': [
+            'DeepSpeed-0.14.2_no-ninja-dep.patch',
+            'DeepSpeed-0.14.5_avoid-access-to-home.patch',
+            'DeepSpeed-0.14.5_pdsh-env-vars.patch',
+            'DeepSpeed-0.14.5_pic-compile.patch',
+            'DeepSpeed-0.14.5_test-nvme-offload.patch',
+            'DeepSpeed-0.14.5_use-eb-cutlass.patch',
+        ],
+        'checksums': [
+            {'DeepSpeed-0.14.5.tar.gz': '9f5622715cbd89c7382bfecf7fb188419ad3f2af7764dc6de35917abc6390cce'},
+            {'DeepSpeed-0.14.2_no-ninja-dep.patch': '03ab528096387e7f18d2a5a6f5fc20ed86d1ca8f63f0e65f266f4dda30e11776'},
+            {'DeepSpeed-0.14.5_avoid-access-to-home.patch':
+             '36fe0c66b2692995d47de77c54192fb504a97b0a129959b2165dcbb8072ac07c'},
+            {'DeepSpeed-0.14.5_pdsh-env-vars.patch':
+             '02f053d8de17e4e607b223e836658d8223cb26a3a7d8c9135e67b69aaa7f83a9'},
+            {'DeepSpeed-0.14.5_pic-compile.patch': '1b9c070b77cf24351bff29bab7d23baacde31c7ea211a4bc75732ac38a99d6b0'},
+            {'DeepSpeed-0.14.5_test-nvme-offload.patch':
+             '1592097867c5d4594a434cca727df134fcaa0e3ea8c595eb5951856a501cf422'},
+            {'DeepSpeed-0.14.5_use-eb-cutlass.patch':
+             '43675f7c84fd0b0cea1050a4419020b377de414fc7f83d69b8010ab368964d8d'},
+        ],
+        'jit_only_ops': [
+            'SPARSE_ATTN', 'FP_QUANTIZER', 'CUTLASS_OPS', 'RAGGED_DEVICE_OPS',
+            # Cannot prebuild with transformer OP: https://github.com/deepspeedai/DeepSpeed/issues/949
+            # 'STOCHASTIC_TRANSFORMER',
+        ],
+        'testinstall': True,
+        'runtest': ' && '.join((
+            'ln -s $PWD/tests/ ../tests',
+            'cd ..',
+            f"pytest tests/unit/ -k 'not {' and not '.join(local_excluded_ds_tests)}'",
+        )),
+    }),
+]
+
+moduleclass = 'ai'
