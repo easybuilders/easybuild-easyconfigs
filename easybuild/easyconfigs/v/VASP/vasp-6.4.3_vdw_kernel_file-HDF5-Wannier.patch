@@ -1,0 +1,79 @@
+Enables HDF5 and Wannier, sets up MKL root, switch to icx and icpx 
+Author: J. Saßmannshausen (Imperial College London)
+Makes VDW_kernel.bindat loadable externally (courtesy of Mikael Öhman)
+diff --git a/vasp.6.4.3.org/arch/makefile.include.intel b/vasp.6.4.3/arch/makefile.include.intel
+index 1d18232..2b8696e 100644
+--- a/vasp.6.4.3.org/arch/makefile.include.intel
++++ b/vasp.6.4.3/arch/makefile.include.intel
+@@ -29,7 +29,7 @@ OBJECTS_O2 += fft3dlib.o
+ # For what used to be vasp.5.lib
+ CPP_LIB     = $(CPP)
+ FC_LIB      = $(FC)
+-CC_LIB      = icc
++CC_LIB      = icx
+ CFLAGS_LIB  = -O
+ FFLAGS_LIB  = -O1
+ FREE_LIB    = $(FREE)
+@@ -37,7 +37,7 @@ FREE_LIB    = $(FREE)
+ OBJECTS_LIB = linpack_double.o
+ 
+ # For the parser library
+-CXX_PARS    = icpc
++CXX_PARS    = icpx
+ LLIBS       = -lstdc++
+ 
+ ##
+@@ -54,17 +54,17 @@ FFLAGS     += $(VASP_TARGET_CPU)
+ # Intel MKL (FFTW, BLAS, LAPACK, and scaLAPACK)
+ # (Note: for Intel Parallel Studio's MKL use -mkl instead of -qmkl)
+ FCL        += -qmkl=sequential
+-MKLROOT    ?= /path/to/your/mkl/installation
+-LLIBS      += -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+-INCS        =-I$(MKLROOT)/include/fftw
++# MKLROOT    += ${EBROOTIMKL}
++LLIBS      += -L$(MKLROOT)/mkl/latest/lib -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
++INCS        = -I$(MKLROOT)/include/fftw
+ 
+ # HDF5-support (optional but strongly recommended)
+-#CPP_OPTIONS+= -DVASP_HDF5
+-#HDF5_ROOT  ?= /path/to/your/hdf5/installation
+-#LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
+-#INCS       += -I$(HDF5_ROOT)/include
++CPP_OPTIONS += -DVASP_HDF5
++HDF5_ROOT  += ${EBROOTHDF5}
++LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
++INCS       += -I$(HDF5_ROOT)/include
+ 
+ # For the VASP-2-Wannier90 interface (optional)
+-#CPP_OPTIONS    += -DVASP2WANNIER90
+-#WANNIER90_ROOT ?= /path/to/your/wannier90/installation
+-#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
++CPP_OPTIONS    += -DVASP2WANNIER90
++WANNIER90_ROOT += ${EBROOTWANNIER90}
++LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
+diff --git a/vasp.6.4.3.org/src/vdw_nl.F b/vasp.6.4.3/src/vdw_nl.F
+index 1f1f11c..4c1ec83 100644
+--- a/vasp.6.4.3.org/src/vdw_nl.F
++++ b/vasp.6.4.3/src/vdw_nl.F
+@@ -449,13 +449,19 @@ CONTAINS
+   SUBROUTINE PHI_GENERATE(GRIDC,IVDW_NL,GAMMA_VDW,ALPHA_VDW)
+     logical :: lkern,lkern_new
+     integer :: IVDW_NL,IVDW_NL_TMP,NINTG_TMP,nmesh,IOstatus
++    character(len=255) :: vdwkernel
+     real(q) :: GAMMA_VDW,GAMMA_VDW_TMP,ALPHA_VDW,ALPHA_VDW_TMP
+     TYPE (grid_3d) GRIDC
+ 
+     !ok if the kernel table is here read it
+-    inquire( file='vdw_kernel.bindat', exist=lkern)
++    vdwkernel = 'vdw_kernel.bindat'
++    inquire( file=vdwkernel, exist=lkern)
++    IF (.NOT. lkern) then
++      call get_environment_variable("VDW_KERNEL", vdwkernel)
++      inquire( file=trim(vdwkernel), exist=lkern)
++    ENDIF
+     IF (lkern) then
+-       open (unit=10, file='vdw_kernel.bindat', form='unformatted')
++       open (unit=10, file=trim(vdwkernel), form='unformatted', action='READ')
+        read(10,IOSTAT=IOstatus) IVDW_NL_TMP,GAMMA_VDW_TMP,ALPHA_VDW_TMP,NINTG_TMP,nmesh
+        IF (IOstatus.EQ.0) THEN
+           lkern_new=.true.
