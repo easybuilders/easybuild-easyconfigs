@@ -21,6 +21,7 @@ dependencies = [
     ('Python', '3.12.3'),
     ('SciPy-bundle', '2024.05'),
     ('PyTorch-Geometric', '2.6.1'),
+    ('ColabFold', '1.5.5'),
     ('Biopython', '1.84'),
     ('dm-tree', '0.1.9'),
     ('MDTraj', '1.10.3'),
@@ -55,19 +56,34 @@ exts_list = [
         'checksums': ['be516bd9fe4dfee562a521d22ffa4b94ee662b9f2a53a4dd52a0a00d93521354'],
     }),
     ('bioemu', version, {
-        # uv only needed for a setup script in bioemu that installs colabfold
+        'source_urls': ['https://github.com/microsoft/bioemu/archive'],
+        'sources': [{'download_filename': 'v.%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['c9eee5bdaccaf11ad82d99e0f6af06cb1733186ccac7e9dc14ad43e88a472bb3'],
+        # remove uv, needed for a setup script that installs colabfold (we provide it)
         'preinstallopts': "sed -i '/.uv.,/d' pyproject.toml &&",
-        'checksums': ['be262f913ab700d43da743f2e8ea171e70b293fcceefbaac5e2b4d5e904fa6cf'],
     }),
+]
+
+postinstallcmds = [
+    # copy notebooks to installation directory
+    "cp -r notebooks %(installdir)s/",
 ]
 
 sanity_check_paths = {
     'files': ['bin/bio', 'bin/typer'],
-    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/', 'notebooks'],
 }
 
 sanity_check_commands = [
     "python -m bioemu.sample --help",
 ]
+
+modextravars = {
+    'BIOEMU_COLABFOLD_DIR': '$EBROOTCOLABFOLD',
+}
+
+modloadmsg = """
+%(name)s notebooks are located in $EBROOTBIOEMU/notebooks
+"""
 
 moduleclass = 'bio'
