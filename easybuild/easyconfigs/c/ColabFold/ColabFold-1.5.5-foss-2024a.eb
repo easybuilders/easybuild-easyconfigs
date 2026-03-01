@@ -1,0 +1,95 @@
+easyblock = 'PythonBundle'
+
+name = 'ColabFold'
+version = '1.5.5'
+
+homepage = 'https://github.com/sokrypton/ColabFold'
+description = """Making protein folding accessible to all. Predict proteins structures both in
+google colab and on your machine."""
+github_account = 'sokrypton'
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('poetry', '1.8.3'),
+    ('pytest', '8.3.3'),
+]
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('Biopython', '1.84'),
+    ('matplotlib', '3.9.2'),
+    ('py3Dmol', '2.5.0'),
+    ('TensorFlow', '2.18.1'),
+    ('jax', '0.6.2'),
+    ('dm-haiku', '0.0.16'),
+    ('dm-tree', '0.1.9'),
+    ('ml-collections', '1.1.0'),
+    ('tqdm', '4.66.5'),
+    ('OpenMM', '8.3.0'),  # for pdbfixer
+]
+
+# relax requirements of versions arbitrarily pinned long ago
+# fix name of tensorflow package
+_relax_req = """sed -i '/^python =.*/d;s/ = "[=<^]/ = ">=/g;s/tensorflow-cpu/tensorflow/g' pyproject.toml &&"""
+
+exts_default_options = {
+    'sources': [SOURCE_PY3_WHL],
+}
+exts_list = [
+    ('toolz', '1.1.0', {
+        'checksums': ['15ccc861ac51c53696de0a5d6d4607f99c210739caf987b5d2054f3efed429d8'],
+    }),
+    ('chex', '0.1.90', {
+        'checksums': ['fce3de82588f72d4796e545e574a433aa29229cbdcf792555e41bead24b704ae'],
+    }),
+    ('immutabledict', '4.2.2', {
+        'checksums': ['97c31d098a2c850e93a958badeef765e4736ed7942ec73e439facd764a3a7217'],
+    }),
+    ('PDBFixer', '1.12', {
+        'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+    }),
+    ('alphafold-colabfold', '2.3.12', {
+        'modulename': 'alphafold',
+        'sources': ['alphafold_colabfold-%(version)s-py3-none-any.whl'],
+        'checksums': ['40301c48582be6f30952680b1c4a576534854efc0f30fbf7c438fd8304db8af4'],
+    }),
+    ('colabfold', version, {
+        'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['7fb0ad263c24ec00d46f2dff1611989234bc1351d71653dd06006f2c88f83dcb'],
+        'use_pip_extras': 'alphafold',
+        'preinstallopts': _relax_req,
+        'testinstall': True,
+        'runtest': 'pytest',
+    }),
+]
+
+postinstallpatches = [
+    # apply minor modifications needed by BioEmu
+    ('ColabFold-1.5.5_bioemu-mods.patch', 'lib/python%(pyshortver)s/site-packages'),
+]
+
+postinstallcmds = [
+    # copy notebooks to installation directory
+    "mkdir %(installdir)s/notebooks",
+    "cp AlphaFold2.ipynb ESMFold.ipynb RoseTTAFold.ipynb %(installdir)s/notebooks/",
+    # add file for BioEmu check
+    "touch %(installdir)s/.COLABFOLD_PATCHED",
+]
+
+sanity_check_paths = {
+    'files': ['bin/colabfold_batch', 'bin/colabfold_search', 'bin/colabfold_split_msas', 'bin/pdbfixer'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'notebooks'],
+}
+
+sanity_check_commands = [
+    "colabfold_batch --help",
+]
+
+modloadmsg = """
+%(name)s notebooks are located in $EBROOTCOLABFOLD/notebooks
+"""
+
+moduleclass = 'bio'
