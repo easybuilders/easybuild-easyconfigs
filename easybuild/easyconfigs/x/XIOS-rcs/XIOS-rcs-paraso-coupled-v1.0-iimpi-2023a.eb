@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name='XIOS-rcs'
+version='paraso-coupled-v1.0'
+
+homepage = 'https://forge.ipsl.jussieu.fr/ioserver'
+description = """XIOS is an 'I/O server' that can run alongside
+OpenIFS and handle all of the output from the model (apart from log files). 
+"""
+
+toolchain = {'name': 'iimpi', 'version': '2023a'}
+toolchainopts = {'optarch': False, # Disable automatic architecture optimization
+                 'usempi': True,
+}
+
+sources = [{
+             'filename': 'xios_rcs_%(version)s.tar.gz',
+             'git_config': {
+                 'url': 'git@gitlab.kuleuven.be:rcs/cclm/software',
+                 'repo_name': 'xios_rcs',
+                 'tag': '%(version)s',
+    },
+}]
+
+builddependencies = [('CMake', '3.26.3'),]
+
+dependencies = [('netCDF-Fortran', '4.6.1'),
+                ('PAPI', '5.6.0'),
+                ('Perl-bundle-CPAN', '5.36.1'),
+                ('OASIS3-MCT-rcs', '%(version)s')]
+
+sanity_check_paths = {
+    'files': ['bin/xios_server.exe',
+              'bin/parse_xml.exe',
+              'lib/libxios.a',
+             ],
+    'dirs': ['bin',
+             'inc',
+             'lib'],
+}
+
+modextrapaths = {
+    'PATH': ['bin'],
+}
+
+postinstallcmds = [
+    "chmod 750 %(installdir)s/bin/xios_server.exe",
+    "chmod 750 %(installdir)s/bin/parse_xml.exe",
+]
+
+moduleclass = 'geo'
