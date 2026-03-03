@@ -1,0 +1,35 @@
+Fix the readonly flags of python packages that first are copied but deleted during install
+author: Satish Kumar (SURF)
+diff -ruN EnergyPlus-25.1.0/cmake/PythonCopyStandardLib.py EnergyPlus-25.1.0_mod/cmake/PythonCopyStandardLib.py
+--- EnergyPlus-25.1.0/cmake/PythonCopyStandardLib.py	2025-03-26 19:26:24.000000000 +0100
++++ EnergyPlus-25.1.0_mod/cmake/PythonCopyStandardLib.py	2025-09-30 17:31:36.303799000 +0200
+@@ -129,8 +129,26 @@
+ for root, dirs, _ in os.walk(target_dir):
+     for this_dir in dirs:
+         if this_dir == "__pycache__":
+-            shutil.rmtree(os.path.join(root, this_dir))
++            print("Changing permissions for " + os.path.join(root, this_dir))
++            os.chmod(os.path.join(root, this_dir), 0o777)  # rwxrwxrwx
++            for dirpath, dirnames, filenames in os.walk(os.path.join(root, this_dir)):
++                for filename in filenames:
++                    filepath = os.path.join(dirpath, filename)
++                    os.chmod(filepath, 0o777)  # rwxrwxrwx
++                for subdirnames in dirnames:
++                    subdirpath = os.path.join(dirpath, subdirnames)
++                    os.chmod(subdirpath, 0o777)  # rwxrwxrwx
++            shutil.rmtree(os.path.join(root, this_dir), ignore_errors=True)
+ 
+ # on Windows the site_packages folder is inside the standard lib folder, so we need to delete that too
+ if os.path.exists(os.path.join(target_dir, 'site-packages')):
+-    shutil.rmtree(os.path.join(target_dir, 'site-packages'))
++    print("Changing permissions for " + os.path.join(target_dir, 'site-packages'))
++    os.chmod(os.path.join(target_dir, 'site-packages'), 0o777)  # rwxrwxrwx
++    for dirpath, dirnames, filenames in os.walk(os.path.join(target_dir, 'site-packages')):
++        for filename in filenames:
++            filepath = os.path.join(dirpath, filename)
++            os.chmod(filepath, 0o777)  # rwxrwxrwx
++        for subdirnames in dirnames:
++            subdirpath = os.path.join(dirpath, subdirnames)
++            os.chmod(subdirpath, 0o777)  # rwxrwxrwx
++    shutil.rmtree(os.path.join(target_dir, 'site-packages'), ignore_errors=True)
+
