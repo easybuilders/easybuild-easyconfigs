@@ -1,0 +1,74 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'IMAS-Core'
+version = '5.5.2'
+github_account = 'iterorganization'
+
+description = 'IMAS Access Layer core library'
+homepage = 'https://github.com/iterorganization/IMAS-Core'
+
+toolchain = {'name': 'intel', 'version': '2023b'}
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('Ninja', '1.11.1'),
+    ('scikit-build-core', '0.9.3'),
+    ('Cython', '3.0.10'),
+    ('cython-cmake', '0.2.0'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.3'),
+    ('MDSplus', '7.153.3'),
+    ('UDA', '2.9.3'),
+    ('Boost', '1.83.0'),
+    ('SciPy-bundle', '2023.12'),
+]
+
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % version, 'filename': SOURCE_TAR_GZ}]
+patches = ['%(namelower)s-%(version)s_xml-discovery.patch']
+checksums = [
+    {'IMAS-Core-5.5.2.tar.gz': '847b8c92b4d90014e78587f9ef0191456621badee864dad63377201e87c93e07'},
+    {'imas-core-5.5.2_xml-discovery.patch': '7a847ef83c28d69940317f2ef50982d4c36c29dfaa3b020237eaf7de01d3874a'},
+]
+
+build_type = 'RelWithDebInfo'
+configopts = (
+    # Don't download dependencies
+    '-D AL_DOWNLOAD_DEPENDENCIES=OFF '
+    # Enable all backends
+    '-D AL_BACKEND_HDF5=ON '
+    '-D AL_BACKEND_MDSPLUS=ON '
+    '-D AL_BACKEND_UDA=ON '
+    # Don't build MDSplus models
+    '-D AL_BUILD_MDSPLUS_MODELS=OFF '
+    # Build Python bindings
+    '-D AL_PYTHON_BINDINGS=ON '
+    # Don't build tests and examples
+    '-D AL_EXAMPLES=OFF '
+    '-D AL_TESTS=OFF '
+    '-D AL_PYTHON_BINDINGS=no-build-isolation '
+)
+
+options = {'modulename': 'imas_core'}
+sanity_check_paths = {
+    'dirs': ['lib', 'include'],
+    'files': [],
+}
+
+modextrapaths = {
+    'AL_COMMON_PATH': 'share/common',
+}
+
+modextravars = {
+    # 'IMAS_HOME': '/path/to/local/public/data',  # Uncomment to set path to locally stored public IMAS data
+    'AL_VERSION': '%(version)s',
+    'HDF5_USE_FILE_LOCKING': 'FALSE',
+    # 'IMAS_LOCAL_HOSTS': 'uda.iter.org',
+}
+
+moduleclass = 'tools'
+
+modluafooter = 'conflict("IMAS-AL-Core")'
+modtclfooter = 'conflict IMAS-AL-Core'
