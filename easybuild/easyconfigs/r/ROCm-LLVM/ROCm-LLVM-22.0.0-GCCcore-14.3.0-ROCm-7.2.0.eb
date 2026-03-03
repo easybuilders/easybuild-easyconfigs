@@ -45,6 +45,14 @@ local_common_cmake_configopts = ' '.join([
 ])
 
 default_easyblock = 'CMakeMake'
+default_component_specs = {
+    'source_urls': ['https://github.com/ROCm/%(name)s/archive/'],
+    'sources': [{
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-%(version)s.tar.gz',
+    }],
+    'srcdir': '%(name)s-%(version)s',
+}
 
 components = [
     ('llvm-project', '%s-rocm-%s' % (_llvm_version, _rocm_version), {
@@ -99,6 +107,27 @@ components = [
             '-DLLVM_EXTERNAL_SPIRV_LLVM_TRANSLATOR_SOURCE_DIR=$(pwd)/../SPIRV-LLVM-Translator-rocm-7.2.0/',
             '-DLLVM_EXTERNAL_PROJECTS="rocm-device-libs;spirv-llvm-translator"',
         ]),
+    }),
+    ('ROCm-comgr', 'rocm-%s' % _rocm_version, {
+        # sources are located in amd/comgr subdir of llvm-project component
+        'sources': [{'filename': local_rocm_llvm_source, 'extract_cmd': 'echo %s'}],
+        'checksums': [
+            {local_rocm_llvm_source:
+                'e86138d2a63fbcbdf64668d55573b26ae944d0f0ae5a3f5bb59bf7bdb3124d3f'},
+        ],
+        'srcdir': 'llvm-project-%s-%%(version)s.src/amd/comgr' % _llvm_version,
+        'prebuildopts': 'export ROCM_PATH=%(installdir)s && ',
+        'configopts': local_common_cmake_configopts + ' -DROCM_DIR=%(installdir)s/share/rocm/cmake'
+    }),
+    ('aomp-extras', 'rocm-%s' % _rocm_version, {
+        'configopts':
+            local_common_cmake_configopts +
+            ' -DAOMP_STANDALONE_BUILD=0 '
+            '-DAOMP_VERSION_STRING=%s ' % _rocm_version,
+        'checksums': [
+            {'aomp-extras-rocm-6.4.1.tar.gz':
+                'cf20b02b1f99f506c198866ef03f2265dc355627760f82cda3878d5bc6486afc'},
+        ],
     }),
 ]
 
