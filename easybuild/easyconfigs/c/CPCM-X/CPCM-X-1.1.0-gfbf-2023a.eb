@@ -1,0 +1,50 @@
+# Author: J. Saßmannshausen (Imperial College London/UK)
+# Modified by: Nicolas Potvin (Universite Libre de Bruxelles)
+
+easyblock = 'MesonNinja'
+
+name = 'CPCM-X'
+version = '1.1.0'
+
+homepage = 'https://github.com/grimme-lab/CPCM-X'
+description = """This is an fully open source solvation model, based on the
+original conductor like screening model for realistic solvation (COSMO-RS)
+model by Klamt et al. in combination with the universal solvation model
+based on solute electron density (SMD) by Marenich, Cramer and Truhlar."""
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+
+github_account = 'grimme-lab'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['4544cfec39f2294f7cd4ab5de3e72a6ddf09a976b25fa99fc8339cce7ee2933c']
+
+builddependencies = [
+    ('Meson', '1.1.1'),
+    ('Ninja', '1.11.1'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('mctc-lib', '0.3.1'),
+    ('mstore', '0.3.0'),
+    ('numsa', '0.2.0'),
+    ('TOML-Fortran', '0.4.2'),
+]
+
+_base_configopts = "-Dlapack='custom' -Dcustom_libraries='flexiblas' "
+configopts = [f'{_base_configopts} -Ddefault_library={x}' for x in ('static', 'shared')]
+
+runtest = 'meson'
+pretestopts = 'export OMP_NUM_THREADS=2 && '
+testopts = 'test -C %(builddir)s/easybuild_obj -t 60'  # Ensure test don't timeout
+
+sanity_check_paths = {
+    'files': ['bin/cpx'] +
+             ['lib/libcpx.%s' % e for e in ('a', SHLIB_EXT)],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ["cpx --help"]
+
+moduleclass = 'chem'
