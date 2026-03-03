@@ -1,0 +1,123 @@
+easyblock = 'PythonBundle'
+
+name = 'aiida-core'
+version = '2.7.2'
+
+homepage = 'https://www.aiida.net/'
+description = """Bundle of Python packages required to run AiiDA.
+An open-source Python infrastructure to help researchers with automating, managing, persisting,
+sharing and reproducing the complex workflows associated with modern computational science and all associated data.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'pic': True}
+
+# The comments  after a dependency represent a list of extension or packages brought in by the dependency that are
+# required for aiida-core.
+builddependencies = [
+    ('poetry', '2.1.2'),  # Poetry, importlib-metadata
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('Python-bundle-PyPI', '2025.04'),
+    ('SciPy-bundle', '2025.06'),
+    # fixes `project.license` must be valid exactly by one definition (2 matches found)
+    # Also needed as a runtime dep for `packaging`
+    ('setuptools', '80.9.0'),
+    ('pydantic', '2.11.7'),  # pydantic_core, pydantic
+    ('paramiko', '4.0.0'),  # paramiko
+    ('SQLAlchemy', '2.0.41'),  # greenlet, alembic, SQLAlchemy
+    ('graphviz-python', '0.21'),  # graphviz
+    ('matplotlib', '3.10.3'),
+    ('jupyter-server', '2.16.0'),  # PyYAML, tornado, ipython, ipywidgets, jupyter_server
+    ('jedi', '0.19.1'),  # jedi
+    ('wrapt', '1.17.2'),  # wrapt
+    ('aiohttp', '3.12.13'),  # multidict, yarl
+    ('psycopg', '3.2.9'),  # PostgreSQL, psycopg2
+    ('plumpy', '0.25.0'),  # plumpy kiwipy aio-pika
+    ('ASE', '3.25.0'),  # Needed for spglib -> seekpath -> [rest]
+    ('pymatgen', '2025.10.7'),  # pymatgen
+    ('Flask', '3.1.1'),  # Used to enable the `verdi restapi` command
+]
+
+# order is important!
+exts_list = [
+    ('asyncssh', '2.19.0', {
+        'checksums': ['723dead4d068b558708dc66a4ca7e7a93a813aa9416036eccb9af4c03ae2cf30'],
+    }),
+    ('disk_objectstore', '1.3.0', {
+        'checksums': ['f0653574990402fd91a5d91b0a64ea541fb349baed02edfe7e90cf7bf3d5270c'],
+    }),
+    ('tqdm', '4.67.1', {
+        'checksums': ['f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2'],
+    }),
+    ('docstring_parser', '0.17.0', {
+        'checksums': ['583de4a309722b3315439bb31d64ba3eebada841f2e2cee23b99df001434c912'],
+    }),
+    ('upf-to-json', '0.9.5', {
+        'checksums': ['57614c4c8677f04f161679ce4eddb2f55b87984605b8a5253d3d288235f56e4a'],
+    }),
+    ('circus', '0.19.0', {
+        'checksums': ['fbe6a5029998ac1239b17ebdd38251ac8b22627d30e4ec6f68cb10233911b0f4'],
+    }),
+    ('click-spinner', '0.1.10', {
+        'preinstallopts': ' && '.join([
+            # Fix error similar to https://github.com/pydata/pandas-datareader/issues/969
+            "sed -i 's/SafeConfigParser/ConfigParser/g' versioneer.py",
+            "sed -i 's/readfp/read_file/g' versioneer.py",
+            ""  # Trailing &&
+        ]),
+        'checksums': ['87eacf9d7298973a25d7615ef57d4782aebf913a532bba4b28a37e366e975daf'],
+    }),
+    ('pytray', '0.3.4', {
+        'checksums': ['55f9a858da4f4eb9b17f5f8cd3ad844f0d8d45a7c932e940bc28c4ef1da49cbc'],
+    }),
+    ('pgsu', '0.3.0', {
+        'checksums': ['51dbb8f2272deacc28f546af442a1411eb260b1da53e11d4f93ea90f2b1acf50'],
+    }),
+    ('archive-path', '0.4.2', {
+        'checksums': ['75279003ea986a4f6748e299ba74d95e74ad75f1bd3ae02d35c125c749633a51'],
+    }),
+    # [rest] specific optional deps
+    ('aniso8601', '10.0.1', {
+        'checksums': ['25488f8663dd1528ae1f54f94ac1ea51ae25b4d531539b8bc707fed184d16845'],
+    }),
+    ('Flask-RESTful', '0.3.10', {
+        'checksums': ['fe4af2ef0027df8f9b4f797aba20c5566801b6ade995ac63b588abf1a59cec37'],
+    }),
+    ('pyparsing', '3.3.0', {
+        'checksums': ['0de16f2661afbab11fe6645d9472c3b96968d2fffea5b0cc9da88f5be286f039'],
+    }),
+    ('python-memcached', '1.62', {
+        'modulename': 'memcache',
+        'checksums': ['0285470599b7f593fbf3bec084daa1f483221e68c1db2cf1d846a9f7c2655103'],
+    }),
+    # [atomic_tools] specific optional deps
+    ('PyMySQL', '0.9.3', {
+        'checksums': ['d8c059dcd81dedb85a9f034d5e22dcb4442c0b201908bede99e306d65ea7c8e7'],
+    }),
+    ('PyCifRW', '4.4.6', {
+        'modulename': 'CifFile',
+        'checksums': ['02bf5975e70ab71540bff62fbef3e8354ac707a0f0ab914a152047962891ef15'],
+    }),
+    ('seekpath', '2.1.0', {
+        'checksums': ['31cec579628262e6d4a4c3693fefa70d6ccae1ceeef7c9d10ea3cd48988452c4'],
+    }),
+    (name, version, {
+        'modulename': 'aiida',
+        'patches': ['aiida_core-2.7.2-unfix_deps.patch'],
+        'sources': ['aiida_core-%(version)s.tar.gz'],
+        'checksums': [
+            {'aiida_core-2.7.2.tar.gz': 'bd3c2734affb3a41832d5bafaca0775732e302ff7353259aa0049a42781acc96'},
+            {'aiida_core-2.7.2-unfix_deps.patch': 'c26e6441a269a1cb944bcbe42b38bb5dff4057d2312f6fcfcae153afdffcc953'},
+        ],
+        'click_autocomplete_bins': ['verdi'],
+    }),
+]
+
+sanity_check_commands = [
+    'verdi --help',
+]
+
+moduleclass = 'tools'
