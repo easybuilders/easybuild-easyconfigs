@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'rocprofiler-register'
+version = '0.6.0'
+_rocm_version = '7.2.0'
+versionsuffix = f'-ROCm-{_rocm_version}'
+
+homepage = 'https://github.com/ROCm/rocprofiler-register'
+description = """The rocprofiler-register library is a helper library that coordinates the
+modification of the intercept API table(s) of the HSA/HIP/ROCTx runtime libraries by the
+ROCprofiler (v2) library. The purpose of this library is to provide a consistent and automated
+mechanism of enabling performance analysis in the ROCm runtimes which does not rely on
+environment variables or unique methods for each runtime library."""
+docurls = ['https://rocm.docs.amd.com/projects/rocprofiler-register/']
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f"rocm-{_rocm_version}.tar.gz"]
+patches = ['rocprofiler-register-0.4.0_disable_packaging_external.patch']
+checksums = [
+    {'rocm-7.2.0.tar.gz': '5823b92129d20c1b187afd25466d1ea4dbd3beb08608dfc790c48e37123e8822'},
+    {'rocprofiler-register-0.4.0_disable_packaging_external.patch':
+     '2ef7373721a907ad133a8b21e1a77e3009937b21865d2f49b7362bfbb864695d'},
+]
+
+configopts = '-DROCPROFILER_REGISTER_BUILD_GLOG=OFF '
+configopts += '-DROCPROFILER_REGISTER_BUILD_FMT=OFF '
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('git', '2.50.1'),
+]
+
+dependencies = [
+    ('fmt', '11.2.0'),
+    ('glog', '0.7.1'),
+]
+
+sanity_check_paths = {
+    'files': ['lib/librocprofiler-register.so',
+              'include/rocprofiler-register/rocprofiler-register.h'],
+    'dirs': ['lib/cmake/rocprofiler-register',
+             'include/rocprofiler-register/',],
+}
+
+moduleclass = 'lib'
