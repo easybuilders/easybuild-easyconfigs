@@ -15,28 +15,29 @@ docurls = ['https://rocm.docs.amd.com/projects/rocprofiler-register/']
 
 toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
 
-github_account = 'ROCm'
-source_urls = [GITHUB_SOURCE]
-sources = [f"rocm-{_rocm_version}.tar.gz"]
-patches = ['rocprofiler-register-0.4.0_disable_packaging_external.patch']
-checksums = [
-    {'rocm-7.2.0.tar.gz': '5823b92129d20c1b187afd25466d1ea4dbd3beb08608dfc790c48e37123e8822'},
-    {'rocprofiler-register-0.4.0_disable_packaging_external.patch':
-     '2ef7373721a907ad133a8b21e1a77e3009937b21865d2f49b7362bfbb864695d'},
+# To avoid name-clashing with libunwind provided by ROCm-LLVM or GNU due to our glog module, we need to
+# use the dependencies internally provided in rocprofiler-register. To do this, use the actual tag
+# commit and initialize the submodules of glog and fmt. This builds both projects with the 'intended'
+# options.
+sources = [
+    {
+        'filename': SOURCE_TAR_XZ,
+        'git_config': {
+            'url': 'https://github.com/ROCm/',
+            'repo_name': '%(name)s',
+            'tag': f'rocm-{_rocm_version}',
+            'clone_into': '%(name)s',
+            'recursive': True,
+            'keep_git_dir': False,
+        },
+    }
 ]
-
-configopts = '-DROCPROFILER_REGISTER_BUILD_GLOG=OFF '
-configopts += '-DROCPROFILER_REGISTER_BUILD_FMT=OFF '
+checksums = ['482897b5b91a13485e0fe43e5d74e24a8aefa89fc4f3e4f0c1a92cc69f0e2d8a']
 
 builddependencies = [
     ('binutils', '2.44'),
     ('CMake', '4.0.3'),
     ('git', '2.50.1'),
-]
-
-dependencies = [
-    ('fmt', '11.2.0'),
-    ('glog', '0.7.1'),
 ]
 
 sanity_check_paths = {
