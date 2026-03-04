@@ -34,6 +34,7 @@ dependencies = [
     ('libdrm', '2.4.125'),
     ('numactl', '2.0.19'),
     ('Z3', '4.15.1'),
+    ('rocprofiler-register', '0.6.0', f'-ROCm-{_rocm_version}'),
 ]
 
 local_rocm_llvm_source = 'llvm-project-rocm-%s.tar.gz' % _rocm_version
@@ -110,12 +111,22 @@ components = [
             '-DCMAKE_PREFIX_PATH=$(pwd)/lib/cmake',
         ]),
     }),
+    ('ROCR-Runtime', 'rocm-%s' % _rocm_version, {
+        # sources included in llvm-project above
+        'sources': [{'filename': 'rocr-runtime-%s.tar.gz' % _rocm_version, 'extract_cmd': 'echo %s'}],
+        'srcdir': '%(name)s-%(version)s',
+        'checksums': [
+            {'rocr-runtime-rocm-7.2.0.tar.gz':
+             '9fefc26e3ccca1b6916ff12e1546ced1e8813963f6dfe39341453e5d3c0161fc'},
+        ],
+        'configopts': local_common_cmake_configopts + ' -DBUILD_SHARED_LIBS=ON',
+    }),
     ('ROCm-comgr', 'rocm-%s' % _rocm_version, {
         # sources are located in amd/comgr subdir of llvm-project component
         'sources': [{'filename': local_rocm_llvm_source, 'extract_cmd': 'echo %s'}],
         'checksums': [
             {local_rocm_llvm_source:
-                'e86138d2a63fbcbdf64668d55573b26ae944d0f0ae5a3f5bb59bf7bdb3124d3f'},
+             'e86138d2a63fbcbdf64668d55573b26ae944d0f0ae5a3f5bb59bf7bdb3124d3f'},
         ],
         'srcdir': 'llvm-project-%s-%%(version)s.src/amd/comgr' % _llvm_version,
         'prebuildopts': 'export ROCM_PATH=%(installdir)s && ',
@@ -128,7 +139,7 @@ components = [
             '-DAOMP_VERSION_STRING=%s ' % _rocm_version,
         'checksums': [
             {'aomp-extras-rocm-7.2.0.tar.gz':
-                '8b56639b4ba9f791b873da20dbc552e4678acd69f9b256177e9a1d44c8361fdd'},
+             '8b56639b4ba9f791b873da20dbc552e4678acd69f9b256177e9a1d44c8361fdd'},
         ],
     }),
 ]
