@@ -1,0 +1,22 @@
+// GCC 13+ (incl. GCC 14) enforces stricter C++20 constexpr rules.
+// __BIGGEST_ALIGNMENT__ is a compile-time constant, but wrapping it
+// in uint_c() makes SIMDAlignment() non-usable in constant expressions
+// because uint_c() is not constexpr. This leads to a compilation error
+// when SIMDAlignment() is used to initialize a constexpr variable.
+// Replace the uint_c() call with a static_cast to preserve constexpr
+// evaluation without changing semantics.
+
+author: julianmorillo
+ 
+diff --git a/src/field/allocation/FieldAllocator.h b/src/field/allocation/FieldAllocator.h
+index XXXXX..YYYYY 100644
+--- a/src/field/allocation/FieldAllocator.h
++++ b/src/field/allocation/FieldAllocator.h
+@@ -365,7 +365,7 @@ namespace field {
+
+ constexpr uint_t SIMDAlignment() {
+-   return uint_c(__BIGGEST_ALIGNMENT__);
++   return static_cast<uint_t>(__BIGGEST_ALIGNMENT__);
+ }
+
+ } // namespace field
