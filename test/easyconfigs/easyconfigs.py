@@ -554,14 +554,8 @@ class EasyConfigTest(TestCase):
         # some software packages require a specific (older/newer) version of a particular dependency
         alt_dep_versions = {
             'aiida-core': [(r'2\.7\.2', [r'aiida-shell-', r'AITW-viscosity-'])],
-            'anndata': [
-                (r'0\.11\.4', [
-                    r'scvi-tools-1.4.1-',
-                    r'scanpy-1.10.4-',
-                    r'scVelo-0.3.4-',
-                    r'epiScanpy-0.4.0-'
-                ]),
-            ],
+            # SnapATAC2-2.9.0-dev0-20250630 requires anndata == 0.10.9
+            'anndata': [(r'0\.10\.9', [r'SnapATAC2-2.9.0-dev0-20250630-'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
