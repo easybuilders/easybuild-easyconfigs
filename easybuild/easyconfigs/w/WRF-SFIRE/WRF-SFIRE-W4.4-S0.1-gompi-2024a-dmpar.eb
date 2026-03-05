@@ -1,0 +1,72 @@
+easyblock = 'EB_WRF'
+
+name = 'WRF-SFIRE'
+version = 'W4.4-S0.1'
+buildtype = "dmpar"
+runtest = False  # The default EB_WRF tests are not all compatible with SFIRE
+versionsuffix = '-%s' % buildtype
+
+homepage = 'https://wiki.openwfm.org/'
+description = """WRF-SFIRE is a coupled atmosphere-fire model based on the Weather Research and
+Forecasting (WRF) model. It simulates the spread of wildland fire and its complex
+interactions with the atmosphere, including fire-atmosphere feedbacks."""
+
+toolchain = {'name': 'gompi', 'version': '2024a'}
+
+# Using git to download with submodules
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/openwfm',
+        'repo_name': 'WRF-SFIRE',
+        'tag': '%(version)s',
+        'recursive': True,
+        'keep_git_dir': True,
+    }
+}]
+
+dependencies = [
+    ('netCDF', '4.9.2'),
+    ('HDF5', '1.14.5'),
+    ('netCDF-Fortran', '4.6.1'),
+    ('JasPer', '4.2.4'),
+    ('libpng', '1.6.43'),
+    ('zlib', '1.3.1'),
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('tcsh', '6.24.13'), 
+]
+
+# Configuration for the WRF configure script
+preconfigopts = """export NETCDF=$EBROOTNETCDFMINFORTRAN && 
+export NETCDF_FORTRAN=$EBROOTNETCDFMINFORTRAN && 
+export C_INCLUDE_PATH=$EBROOTNETCDF/include:$EBROOTNETCDFMINFORTRAN/include:$C_INCLUDE_PATH &&
+export LDFLAGS="-L$EBROOTNETCDF/lib -L$EBROOTNETCDFMINFORTRAN/lib" &&
+export HDF5=$EBROOTHDF5 && 
+export PHDF5=$EBROOTHDF5 && """
+preconfigopts += "export WRFIO_GRIB2=1 && export JASPERLIB=$EBROOTJASPER/lib && export JASPERINC=$EBROOTJASPER/include && "
+
+# Selecting option 35 (GNU with DM-parallel) and 1 (basic nesting) in configure
+configopts = "<<<$'35\\n1\\n' && sed -i 's/^FC[[:space:]]*=[[:space:]]*time/FC = /' configure.wrf"
+
+# The default EB_WRF tests are not all compatible with SFIRE
+skipsteps = ['test']
+
+maxparallel = 16 # 20 is max allowed
+
+modextravars = {
+    'NETCDF': '$EBROOTNETCDF',
+    'NETCDF_FORTRAN': '$EBROOTNETCDFMINFORTRAN',
+    'HDF5': '$EBROOTHDF5',
+    'PHDF5': '$EBROOTHDF5',
+}
+
+
+sanity_check_paths = {
+    'files': ['WRF-SFIRE/main/%s' % x for x in ['wrf.exe', 'real.exe', 'ideal.exe', 'ndown.exe', 'libwrflib.a']],
+    'dirs': ['WRF-SFIRE/main', 'WRF-SFIRE/run']
+}
+moduleclass = 'geo'
+
