@@ -1,0 +1,16 @@
+This test fails when FlexiBLAS is used instead of MKL.
+Adjust the expected count.
+See https://github.com/pytorch/pytorch/pull/151548
+
+Author: Alexander Grund (TU Dresden)
+--- a/test/inductor/test_cpu_select_algorithm.py
++++ b/test/inductor/test_cpu_select_algorithm.py
+@@ -1301,7 +1301,7 @@ def forward(self, arg152_1):
+                 rtol=rtol,
+             )
+         self.assertEqual(counters["inductor"]["select_algorithm_autotune"], 2)
+-        self.assertEqual(counters["inductor"]["cpp_epilogue_fusion_counter"], 2)
++        self.assertEqual(counters["inductor"]["cpp_epilogue_fusion_counter"], 2 if TEST_MKL else 1)
+ 
+     @inductor_config.patch({"freezing": True})
+     @patches

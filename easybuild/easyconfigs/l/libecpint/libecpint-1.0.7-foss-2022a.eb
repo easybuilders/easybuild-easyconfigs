@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'libecpint'
+version = '1.0.7'
+
+homepage = 'https://github.com/robashaw/libecpint'
+description = """Libecpint is a C++ library for the efficient evaluation of integrals
+ over ab initio effective core potentials, using a mixture of generated, recursive code
+ and Gauss-Chebyshev quadrature."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://github.com/robashaw/libecpint/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['e9c60fddb2614f113ab59ec620799d961db73979845e6e637c4a6fb72aee51cc']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('googletest', '1.11.0'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('pugixml', '1.12.1')
+]
+
+configopts = ['', '-DBUILD_SHARED_LIBS=ON']
+
+# Make sure that libecpint.so.1 and libFaddeeva.so.1 can be found during the tests
+pretestopts = 'export LD_LIBRARY_PATH="%(builddir)s/easybuild_obj/src:$LD_LIBRARY_PATH" && '
+pretestopts += 'export LD_LIBRARY_PATH="%(builddir)s/easybuild_obj/external/Faddeeva:$LD_LIBRARY_PATH" && '
+
+runtest = "test && make StressTest"
+
+sanity_check_paths = {
+    'dirs': ["include/libecpint", "share/libecpint"],
+    'files': ["lib/libecpint.a", "lib/libecpint.%s" % SHLIB_EXT, "include/libecpint.hpp"],
+}
+
+moduleclass = 'chem'
