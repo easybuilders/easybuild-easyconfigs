@@ -19,11 +19,18 @@ builddependencies = [
     ('pkgconf', '2.2.0'),
 ]
 
-configopts = "-DSPDLOG_BUILD_TESTS=OFF"
+_base_configopts = ' -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_PIC=ON '
+
+configopts = [f'{_base_configopts} -DSPDLOG_BUILD_SHARED={x}' for x in ('OFF', 'ON')]
+
+postinstallcmds = [
+    "mv %(installdir)s/lib/spdlog/* %(installdir)s/lib/",
+    "rmdir %(installdir)s/lib/spdlog",
+]
 
 sanity_check_paths = {
-    'files': ['include/spdlog/spdlog.h'],
-    'dirs': ['lib64/pkgconfig'],
+    'files': ['include/%(name)s/%(name)s.h', 'lib/lib%(name)s.a', f'lib/lib%(name)s.{SHLIB_EXT}'],
+    'dirs': ['lib64/cmake', 'lib64/pkgconfig'],
 }
 
 moduleclass = 'lib'
