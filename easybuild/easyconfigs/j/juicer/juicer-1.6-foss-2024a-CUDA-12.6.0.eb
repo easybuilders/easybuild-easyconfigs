@@ -1,0 +1,118 @@
+easyblock = 'Binary'
+
+name = 'juicer'
+version = '1.6'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/aidenlab/juicer'
+description = """Juicer is a platform for analyzing kilobase resolution Hi-C data.
+This installation uses a hybrid setup:
+- Juicer Tools v2.20.00 (Standard) for CPU processing (pre, stats, pipeline).
+- Juicer Tools v3.0.0 (GPU) for accelerated Loop Calling (hiccups)."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = [
+    'https://github.com/aidenlab/juicer/archive/',
+    'https://github.com/aidenlab/JuicerTools/releases/download/v3.0.0/',
+    'https://github.com/aidenlab/Juicebox/releases/download/v2.20.00/',
+]
+
+sources = [
+    {
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-%(version)s.tar.gz',
+    },
+    # GPU Tools (v3.0.0)
+    {
+        'filename': 'juicer_tools.3.0.0.jar',
+        'extract_cmd': 'cp %s %(builddir)s/%(name)s-%(version)s/SLURM/scripts/juicer_tools_gpu.jar',
+    },
+    # Standard Tools (v2.20.00)
+    {
+        'filename': 'juicer_tools.2.20.00.jar',
+        'extract_cmd': 'cp %s %(builddir)s/%(name)s-%(version)s/SLURM/scripts/juicer_tools.jar',
+    },
+]
+
+checksums = [
+    {'juicer-1.6.tar.gz': 'cef7783a2ddfbacbf4b229f6a4e236c534780b6bb4ec7f84fe8497cd6e57d3b0'},
+    {'juicer_tools.3.0.0.jar': 'fa5ad7f76681de79b010901c545a0307cf3fd951d7d30af22a51800e0bafe792'},
+    {'juicer_tools.2.20.00.jar': '5de743337191a1b6b5bbc41daae4599766d4bf7073410ca2e1aa29376b306545'},
+]
+
+extract_sources = True
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('JCuda', '12.6.0', versionsuffix, SYSTEM),
+    ('Java', '17', '', SYSTEM),
+    ('BWA', '0.7.18'),
+    ('SAMtools', '1.21'),
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+]
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin',
+    'ln -s %(installdir)s/SLURM/scripts/juicer_arrowhead.sh %(installdir)s/bin/juicer_arrowhead',
+    'ln -s %(installdir)s/SLURM/scripts/juicer_hiccups.sh %(installdir)s/bin/juicer_hiccups',
+    'ln -sfn %(installdir)s/SLURM/scripts %(installdir)s/scripts',
+    # Wrapper: juicer_tools (CPU)
+    'cat > %(installdir)s/bin/juicer_tools << \'EOF\'\n'
+    '#!/bin/bash\n'
+    'exec "%(installdir)s/SLURM/scripts/juicer_tools" "$@"\n'
+    'EOF',
+    'chmod +x %(installdir)s/bin/juicer_tools',
+    # Wrapper: juicer_hiccups_gpu
+    'cat > %(installdir)s/bin/juicer_hiccups_gpu << \'EOF\'\n'
+    '#!/bin/bash\n'
+    'set -euo pipefail\n'
+    'JAR="%(installdir)s/scripts/juicer_tools_gpu.jar"\n'
+    ': "${JCUDA_CLASSPATH:?Load JCuda module first}"\n'
+    'JAVA_OPTS="${JUICER_JAVA_OPTS:- -Xmx48g}"\n'
+    'exec java $JAVA_OPTS -cp "$JAR:$JCUDA_CLASSPATH" juicebox.HiCTools hiccups "$@"\n'
+    'EOF',
+    'chmod +x %(installdir)s/bin/juicer_hiccups_gpu',
+    # Wrapper: juicer_hiccups_slurm_gpu
+    'cat > %(installdir)s/bin/juicer_hiccups_slurm_gpu << \'EOF\'\n'
+    '#!/bin/bash\n'
+    'set -euo pipefail\n'
+    'exec "%(installdir)s/SLURM/scripts/juicer_hiccups.sh" -j "%(installdir)s/bin/juicer_hiccups_gpu" "$@"\n'
+    'EOF',
+    'chmod +x %(installdir)s/bin/juicer_hiccups_slurm_gpu',
+    # Wrapper: juicer (Pipeline)
+    'cat > %(installdir)s/bin/juicer << \'EOF\'\n'
+    '#!/bin/bash\n'
+    'set -euo pipefail\n'
+    'RUNTIME_DIR="${JUICER_RUNTIME:-$HOME/.juicer}"\n'
+    'mkdir -p "$RUNTIME_DIR/references" "$RUNTIME_DIR/restriction_sites"\n'
+    'if [[ ! -e "$RUNTIME_DIR/scripts" ]]; then ln -s "%(installdir)s/scripts" "$RUNTIME_DIR/scripts"; fi\n'
+    'exec "%(installdir)s/SLURM/scripts/juicer.sh" -D "$RUNTIME_DIR" "$@"\n'
+    'EOF',
+    'chmod +x %(installdir)s/bin/juicer',
+]
+
+sanity_check_paths = {
+    'files': ['scripts/juicer_tools.jar', 'scripts/juicer_tools_gpu.jar', 'bin/juicer', 'bin/juicer_hiccups_gpu'],
+    'dirs': ['SLURM'],
+}
+
+sanity_check_commands = [
+    'juicer_tools --version',
+    'test -x %(installdir)s/bin/juicer_hiccups_gpu',
+]
+
+modextravars = {
+    'JUICER_HOME': '%(installdir)s',
+    'JUICERTOOLS_JAR': '%(installdir)s/scripts/juicer_tools.jar',
+    'JUICER_RUNTIME': '$HOME/.juicer',
+}
+
+modloadmsg = """
+The installation directory of Juicer is immutable.
+Use the created $HOME/.juicer directory instead to add the files used by Juicer.
+GPU Support: Use 'juicer_hiccups_gpu' for accelerated loop calling.
+"""
+
+moduleclass = 'tools'
