@@ -1,7 +1,7 @@
 # This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
 # updated: Denis Kristak (INUITS)
 # Update: Petr Král (INUITS)
-# Update: Danish National Genome Center (Ander Pedersen and Nicolas Rapin)
+# Update: Danish National Genome Center (Anders Pedersen and Nicolas Rapin)
 
 easyblock = 'MakeCp'
 
@@ -10,9 +10,9 @@ version = '2.4.42'
 
 homepage = 'http://%(namelower)s.readthedocs.io/en/latest/index.html'
 description = """BEDOPS is an open-source command-line toolkit that performs highly efficient and
- scalable Boolean and other set operations, statistical calculations, archiving, conversion and
- other management of genomic data of arbitrary scale. Tasks can be easily split by chromosome for
- distributing whole-genome analyses across a computational cluster."""
+scalable Boolean and other set operations, statistical calculations, archiving, conversion and
+other management of genomic data of arbitrary scale. Tasks can be easily split by chromosome for
+distributing whole-genome analyses across a computational cluster."""
 
 toolchain = {'name': 'foss', 'version': '2024a'}
 toolchainopts = {'pic': True}
@@ -21,28 +21,26 @@ source_urls = ['https://github.com/%(namelower)s/%(namelower)s/archive/']
 sources = ['v%(version)s.tar.gz']
 checksums = ['9daa0c098e37490a07f84664d2c61ff8909689995cf7e1673d259ccd4f1c453c']
 
-# else build of jansson library fails with: 'configure: error: C compiler cannot create executables'
+# Else build of jansson library fails with: 'configure: error: C compiler cannot create executables'
 prebuildopts = (
     "unset LIBS && "
-    # show what we're about to change (optional but useful)
     "grep -R --line-number -E '^[[:space:]]*SFLAGS[[:space:]]*=.*-static' applications/bed || true && "
-    # edit every Makefile that matches */src/Makefile under applications/bed
     r"find applications/bed -type f -path '*/src/Makefile' -exec sed -i -E "
     r"'s/^[[:space:]]*SFLAGS[[:space:]]*=[[:space:]]*-static[[:space:]]*$/SFLAGS =/g' {} \; && "
     r"find applications/bed -type f -path '*/src/Makefile' -exec sed -i -E "
-    r"'s/^[[:space:]]*SFLAGS[[:space:]]*=[[:space:]]*-static[[:space:]]*\$\{?MEGAFLAGS\}?[[:space:]]*$/SFLAGS = ${MEGAFLAGS}/g' {} \; && "
-    # confirm
+    r"'s/^[[:space:]]*SFLAGS[[:space:]]*=[[:space:]]*-static[[:space:]]*\$\{?MEGAFLAGS\}?[[:space:]]*$/"
+    r"SFLAGS = ${MEGAFLAGS}/g' {} \; && "
     "grep -R --line-number -E '^[[:space:]]*SFLAGS[[:space:]]*=' applications/bed || true && "
 )
 
-# builds all variants and copies executables to bin directory
+# Builds all variants and copies executables to bin directory
 buildopts = ' all && make install'
 
 files_to_copy = ['bin']
 
 sanity_check_paths = {
     'files': [
-        'bin/%s' % x for x in ['bam2bed', '%(namelower)s', 'convert2bed', 'unstarch']
+        'bin/%s' % x for x in ['bam2bed', '%(namelower)s', 'convert2bed', 'unstarch'],
     ],
     'dirs': [],
 }
