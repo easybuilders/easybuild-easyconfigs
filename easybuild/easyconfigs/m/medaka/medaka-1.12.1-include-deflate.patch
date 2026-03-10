@@ -1,0 +1,46 @@
+# Author: Ehsan Moravveji
+# Purpose: Making sure that libmedaka.abi3.so is linked against libdeflate
+
+diff -ruN medaka-orig/Makefile medaka/Makefile
+--- medaka-orig/Makefile	2026-01-05 11:30:22.867115000 +0100
++++ medaka/Makefile	2026-01-05 11:33:54.892672000 +0100
+@@ -44,7 +44,7 @@
+ # require setting LD_LIBRARY_PATH=submodules/libdeflate-<ver>/
+ # at runtime. This doesn't apply to wheel which will bundle
+ # the library (as curl, crypto, lzma, etc)
+-WITHDEFLATE ?= 
++WITHDEFLATE ?= 1
+ DEFLATEVER=$(shell sed -n 's/deflatever = "\(.*\)"/\1/p' build.py)
+ DEFLATE = $(PWD)/submodules/libdeflate-${DEFLATEVER}
+ DEFLATEREQ =
+@@ -53,7 +53,7 @@
+ LIBS += -ldeflate
+ HTS_CONF_ARGS += --with-libdeflate
+ HTS_CONF_ENV += LDFLAGS="-L$(DEFLATE)"
+-DEFLATEREQ = submodules/libdeflate-${DEFLATEVER}/libdeflate.so.0
++DEFLATEREQ = ${EBROOTLIBDEFLATE}/lib/libdeflate.so.0
+ endif
+ 
+ submodules/libdeflate-$(DEFLATEVER)/libdeflate.so.0:
+diff -ruN medaka-orig/build.py medaka/build.py
+--- medaka-orig/build.py	2026-01-05 11:30:22.871112000 +0100
++++ medaka/build.py	2026-01-05 13:59:22.955519000 +0100
+@@ -9,15 +9,10 @@
+ #samver is pulled from this file in the Makefile
+ samver = "1.14"
+ htslib_dir = os.path.join(dir_path, 'submodules', 'samtools-{}'.format(samver), 'htslib-{}'.format(samver))
+-deflatever = "1.10"
+-deflate_dir = os.path.join(dir_path, 'submodules', 'libdeflate-{}'.format(deflatever))
++deflate_dir = os.environ['EBROOTLIBDEFLATE']
+ 
+-libraries=['m', 'z', 'lzma', 'bz2', 'pthread', 'curl', 'crypto']
+-library_dirs=[htslib_dir]
+-if os.getenv('WITHDEFLATE') == "1":
+-    print("Using deflate")
+-    libraries.append('deflate')
+-    library_dirs.append(deflate_dir)
++libraries=['m', 'z', 'lzma', 'bz2', 'pthread', 'curl', 'crypto', 'deflate']
++library_dirs=[htslib_dir, deflate_dir]
+ src_dir='src'
+ 
+ extra_compile_args = ['-std=c99', '-O3']
