@@ -1,3 +1,5 @@
+easyblock = 'CMakeMake'
+
 name = 'ParMETIS'
 version = '4.0.3'
 
@@ -9,18 +11,24 @@ description = """ParMETIS is an MPI-based parallel library that implements a var
  graph-partitioning, adaptive repartitioning, and parallel multi-constrained partitioning schemes."""
 
 toolchain = {'name': 'gompi', 'version': '2024a'}
-toolchainopts = {'usempi': True, 'pic': True}
+toolchainopts = {'usempi': True, 'openmp': True, 'pic': True}
 
 source_urls = [
     'https://karypis.github.io/glaros/files/sw/parmetis',
     'https://karypis.github.io/glaros/files/sw/parmetis/OLD',
 ]
 sources = [SOURCELOWER_TAR_GZ]
-checksums = ['f2d9a231b7cf97f1fee6e8c9663113ebf6c240d407d3c118c55b3633d6be6e5f']
+patches = ['ParMETIS-%(version)s_fix_cmake_files.patch']
+checksums = [
+    {'parmetis-4.0.3.tar.gz': 'f2d9a231b7cf97f1fee6e8c9663113ebf6c240d407d3c118c55b3633d6be6e5f'},
+    {'ParMETIS-4.0.3_fix_cmake_files.patch': 'b313b48b6705ec3a41baa31f266abf9f0f5184bf99a8725369894bb94c5a2f87'},
+]
 
-builddependencies = [('CMake', '3.29.3')]
+builddependencies = [
+    ('CMake', '3.29.3'),
+]
 
 # Build static and shared libraries
-configopts = ['', '-DSHARED=1']
+configopts = ['-DOPENMP=1', '-DBUILD_SHARED_LIBS=1 -DOPENMP=1']
 
 moduleclass = 'math'
