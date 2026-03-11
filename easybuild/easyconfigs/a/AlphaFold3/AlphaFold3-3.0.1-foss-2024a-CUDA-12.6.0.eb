@@ -1,0 +1,119 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2025/02
+#
+# DRAFT!
+easyblock = 'PythonBundle'
+
+name = 'AlphaFold3'
+version = '3.0.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://deepmind.google/technologies/alphafold'
+description = """This package provides an implementation of the inference pipeline of AlphaFold3.
+See below for how to access the model parameters. You may only use AlphaFold3
+model parameters if received directly from Google. Use is subject to these
+terms of use:
+https://github.com/google-deepmind/alphafold3/blob/main/WEIGHTS_TERMS_OF_USE.md"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+github_account = 'google-deepmind'
+
+builddependencies = [
+    ('scikit-build', '0.17.6'),
+    ('poetry', '1.8.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('scikit-build-core', '0.10.6'),
+    ('pybind11', '2.13.6'),
+    ('pybind11_abseil', '202402.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('tqdm', '4.66.5'),
+    ('jax', '0.4.35', versionsuffix),
+    ('dm-tree', '0.1.9'),
+    ('dm-haiku', '0.0.13', versionsuffix),
+    ('RDKit', '2024.09.5'),
+    ('jax-triton', '0.2.0', versionsuffix),
+    ('jaxtyping', '0.2.38', versionsuffix),
+    ('dssp', '4.4.10'),
+    ('Abseil', '20240722.0'),
+    ('HMMER', '3.4')
+]
+exts_list = [
+    ('zstandard', '0.23.0', {
+        'checksums': ['b2d8c62d08e7255f68f7a740bae85b3c9b8e5466baa9cbf7f57f1cde0ac6bc09'],
+    }),
+    ('typeguard', '2.13.3', {
+        'checksums': ['00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4'],
+    }),
+    (name, version, {
+        'patches': [
+            '%(name)s-3.0.0.20250109_relax_requirements.patch',
+            '%(name)s-3.0.0_disable_fetch.patch',
+            '%(name)s-3.0.0.20250109_data_path.patch',
+        ],
+        'postinstallcmds': [
+            'cp run_alphafold.py %(installdir)s/bin',
+            'chmod +x %(installdir)s/bin/run_alphafold.py',
+            '%(installdir)s/bin/build_data',
+        ],
+        'source_urls': [GITHUB_LOWER_SOURCE],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': [
+            {'AlphaFold3-3.0.1.tar.gz':
+             'cfe1ae5f6e5c0d7e64570255d296a440955beaf4a8b9f05aaf142f36478a4503'},
+            {'AlphaFold3-3.0.0.20250109_relax_requirements.patch':
+             '4c96c6d35542953d7dbae5cc43e0273c653430c472ffd4f5444d9096d83f00a2'},
+            {'AlphaFold3-3.0.0_disable_fetch.patch':
+             'e26da6d3a244ebf4185b7c8833326a5011a8af6f449eb6535c4147416336dd27'},
+            {'AlphaFold3-3.0.0.20250109_data_path.patch':
+             '00a71f24f430429bb8d432ee67253d29858c30fc7925e174fcb7e862285c8528'},
+        ],
+        'testinstall': True,
+        'runtest': 'python run_alphafold_test.py',
+    }),
+]
+
+fix_python_shebang_for = ['bin/run_alphafold.py']
+
+sanity_check_paths = {
+    'files': ['bin/run_alphafold.py'],
+    'dirs': ['lib'],
+}
+sanity_check_commands = [
+    ('run_alphafold.py --help|grep "AlphaFold 3 structure prediction script"')
+]
+
+modextravars = {
+    'DB_DIR': '/scratch/AlphaFold_DBs/%s/' % version,   # adapt
+    # acc. to:
+    # https://github.com/google-deepmind/alphafold3/
+    #  blob/main/docs/performance.md#compilation-time-workaround-with-xla-flags
+    'XLA_FLAGS': '--xla_gpu_enable_triton_gemm=false ',
+    # https://github.com/google-deepmind/alphafold3/blob/main/docs/performance.md#cuda-capability-7x-gpus:
+    # 'XLA_FLAGS': '"--xla_gpu_enable_triton_gemm=false --xla_disable_hlo_passes=custom-kernel-fusion-rewriter"',
+    # Unified memory:
+    'XLA_PYTHON_CLIENT_PREALLOCATE': 'false',
+    'TF_FORCE_UNIFIED_MEMORY': 'true',
+    'XLA_CLIENT_MEM_FRACTION': '3.2',
+}
+
+modluafooter = """
+setenv("AF3_MODEL_DIR", os.getenv("HOME") .. "/.alphafold3/models");
+eb_tmpdir = os.getenv("TMPDIR")
+if not eb_tmpdir then eb_tmpdir='/tmp' end
+setenv("TRITON_HOME", eb_tmpdir .. "/" .. os.getenv("USER") .. "/triton_home")
+"""
+
+modtclfooter = """
+setenv AF3_MODEL_DIR $::env(HOME)/.alphafold3/models
+if { [info exists ::env(TMPDIR)] } {
+  setenv AF3_MODEL_DIR $::env(TMPDIR)/$::env(USER)/triton_home
+} else {
+  setenv AF3_MODEL_DIR /tmp/$::env(USER)/triton_home
+}
+"""
+
+moduleclass = 'bio'
