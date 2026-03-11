@@ -1,0 +1,61 @@
+easyblock = 'PythonBundle'
+
+name = 'MorphoSONIC'
+version = '1.0-20240110'
+local_commit = '64a0a23'
+
+homepage = 'https://github.com/tjjlemaire/MorphoSONIC'
+description = """
+MorphoSONIC is a Python+NEURON implementation of spatially extended representations of the multi-Scale Optimized
+Neuronal Intramembrane Cavitation (SONIC) model. It enables the simulation of the distributed electrical
+response of morphologically realistic neuron representations to acoustic stimuli, as predicted by the intramembrane
+cavitation hypothesis. The details of the MorphoSONIC framework and of its application to study ultrasound
+neuromodulation in peripheral nerve fibers are described in.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('NEURON', '8.2.6'),
+    ('Seaborn', '0.13.2'),
+    ('PySONIC', '1.0-20250519'),
+]
+
+exts_list = [
+    ('MarkdownPP', '1.5.1', {
+        'modulename': '%(name)s',
+        'checksums': ['a70babf819a6cf7f1035400ffa5763799fa67f2efcb5e701a59fc5ff79dd9696'],
+    }),
+    ('watchdog', '6.0.0', {
+        'checksums': ['9ddf7c82fda3ae8e24decda1338ede66e1c99883db93711d8fb941eaa2d8c282'],
+    }),
+    (name, version, {
+        'patches': ['%(name)s-%(version)s_fix-setup.py.patch'],
+        'source_urls': ['https://github.com/tjjlemaire/MorphoSONIC/archive/'],
+        'sources': [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}],
+        'preinstallopts': "sed -i '/neuron/d' requirements.txt && ",
+        'modulename': name,
+        'checksums': [
+            {'MorphoSONIC-1.0-20240110.tar.gz': 'd264f0af5471bfccac09b7eb1ffa340bcb70192e2c73ff37ae58bfee2c9ddfef'},
+            {'MorphoSONIC-1.0-20240110_fix-setup.py.patch':
+             '240c74a5ca911b9dcdf8a321ddc914c5295510c8a55c8fe19f460e7417a5449d'},
+        ],
+    }),
+]
+
+# generate libs from mod files by neuron's nrnivmodl
+postinstallcmds = [f'cd %(installdir)s/lib/python%(pyshortver)s/site-packages/{name}/nmodl  && nrnivmodl']
+
+sanity_check_commands = [
+    "python -c 'from MorphoSONIC.core import ExtracellularCurrent'",
+    "python -c 'from MorphoSONIC.parsers import IextraFiberParser'",
+    "python -c 'from MorphoSONIC.models import Node'",
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [f'lib/python%(pyshortver)s/site-packages/{name}/nmodl'],
+}
+
+moduleclass = 'lib'
