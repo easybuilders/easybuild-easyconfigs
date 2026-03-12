@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'libgcrypt'
+version = '1.11.2'
+
+homepage = 'https://gnupg.org/related_software/libgcrypt/index.html'
+description = """Libgcrypt is a general purpose cryptographic library
+originally based on code from GnuPG"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ['https://gnupg.org/ftp/gcrypt/%(name)s/']
+sources = [SOURCE_TAR_BZ2]
+checksums = ['6ba59dd192270e8c1d22ddb41a07d95dcdbc1f0fb02d03c4b54b235814330aac']
+
+builddependencies = [('binutils', '2.42')]
+
+dependencies = [('libgpg-error', '1.56')]
+
+# without that, the libgcrypt-config file will not be installed
+postinstallcmds = ['cp %(builddir)s/%(name)s-%(version)s/src/libgcrypt-config %(installdir)s/bin ']
+
+sanity_check_paths = {
+    'files': ['bin/libgcrypt-config', 'include/gcrypt.h', 'lib/libgcrypt.%s' % SHLIB_EXT],
+    'dirs': ['share']
+}
+
+sanity_check_commands = [
+    'dumpsexp --version',
+    'hmac256 --version',
+    'mpicalc --version',
+    'libgcrypt-config --version | grep "%(version)s"',
+    'libgcrypt-config --algorithms',
+]
+
+moduleclass = 'system'
