@@ -1,0 +1,111 @@
+# Author: Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2025/02
+# Update: Pavel Tomanek (Inuits)
+easyblock = 'PythonBundle'
+
+name = 'AlphaFold3'
+version = '3.0.1-20250908'
+versionsuffix = '-CUDA-%(cudaver)s'
+local_commit = 'a8ecdb2'
+
+homepage = 'https://deepmind.google/technologies/alphafold'
+description = """This package provides an implementation of the inference pipeline of AlphaFold3.
+See below for how to access the model parameters. You may only use AlphaFold3
+model parameters if received directly from Google. Use is subject to these
+terms of use:
+https://github.com/google-deepmind/alphafold3/blob/main/WEIGHTS_TERMS_OF_USE.md"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+github_account = 'google-deepmind'
+
+builddependencies = [
+    ('scikit-build', '0.17.6'),
+    ('poetry', '1.8.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('scikit-build-core', '0.10.6'),
+    ('pybind11', '2.12.0'),
+    ('pybind11_abseil', '202402.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('jax', '0.6.2', versionsuffix),
+    ('jax-triton', '0.3.0', versionsuffix),
+    ('jaxtyping', '0.2.38', versionsuffix),
+    ('dm-haiku', '0.0.14', versionsuffix),
+    ('dm-tree', '0.1.9'),
+    ('RDKit', '2025.03.3'),
+    ('tqdm', '4.66.5'),
+    ('dssp', '4.4.10'),
+    ('Abseil', '20240722.0'),
+    ('HMMER', '3.4'),
+]
+
+exts_list = [
+    ('zstandard', '0.23.0', {
+        'checksums': ['b2d8c62d08e7255f68f7a740bae85b3c9b8e5466baa9cbf7f57f1cde0ac6bc09'],
+    }),
+    ('typeguard', '2.13.3', {
+        'checksums': ['00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4'],
+    }),
+    (name, version, {
+        # unpin dependencies versions
+        'preinstallopts': """sed -i 's/==.*/",/g' %(start_dir)s/pyproject.toml && """,
+        'patches': [
+            '%(name)s-3.0.0_disable_fetch.patch',
+            '%(name)s-3.0.0.20250109_data_path.patch',
+        ],
+        'postinstallcmds': [
+            'cp run_alphafold.py %(installdir)s/bin',
+            'cp run_alphafold_data_test.py %(installdir)s/bin',
+            'cp run_alphafold_test.py %(installdir)s/bin',
+            'cp fetch_databases.sh %(installdir)s',
+            'chmod +x %(installdir)s/bin/run_alphafold.py',
+            '%(installdir)s/bin/build_data',
+        ],
+        'source_urls': ['https://github.com/%(github_account)s/%(namelower)s/archive'],
+        'sources': [{'download_filename': 'a8ecdb2.tar.gz', 'filename': '%(name)s-%(version)s-a8ecdb2.tar.gz'}],
+        'checksums': [
+            {'AlphaFold3-3.0.1-20250908-a8ecdb2.tar.gz':
+             '77cc1ee5e9d111bafd4cd6af01d43eee01059cb3f7fd2d19fd6c38d81082246d'},
+            {'AlphaFold3-3.0.0_disable_fetch.patch':
+             '041a35a09f783405f40e3ba47566ad6d063a10cfd98f0efd2e2a04c78e2c155e'},
+            {'AlphaFold3-3.0.0.20250109_data_path.patch':
+             'a06a971460df5e4cbe7a59042100512d2f96755d6dcdef01d4bc4e8c55122287'},
+        ],
+    }),
+]
+
+fix_python_shebang_for = ['bin/run_alphafold.py']
+
+sanity_check_paths = {
+    'files': ['bin/run_alphafold.py'],
+    'dirs': ['lib'],
+}
+sanity_check_commands = [
+    ('run_alphafold.py --help|grep "AlphaFold 3 structure prediction script"')
+]
+
+modextravars = {
+    # Compilation Time Workaround with XLA Flags
+    'XLA_FLAGS': '--xla_gpu_enable_triton_gemm=false ',
+    # Unified memory:
+    'XLA_PYTHON_CLIENT_PREALLOCATE': 'false',
+    'TF_FORCE_UNIFIED_MEMORY': 'true',
+    'XLA_CLIENT_MEM_FRACTION': '3.2',
+}
+
+modextrapaths = {'PYTHONPATH': 'bin'}  # to be able 'import run_alphafold'
+
+modloadmsg = """
+To let AF3 works properly you need to have Google models parameters (weights), then set:
+export AF3_MODEL_DIR="/path/to/the/dir/with/models"
+Also you should have databases dowloaded - use fetch_databases.sh to download them and set:
+export DB_DIR="/path/to/fetched/databases"
+You can test your installation by:
+1) python bin/run_alphafold_data_test.py (works without models)
+2) python bin/run_alphafold_test.py --model_dir="$AF3_MODEL_DIR" (only with models)
+"""
+
+moduleclass = 'bio'
