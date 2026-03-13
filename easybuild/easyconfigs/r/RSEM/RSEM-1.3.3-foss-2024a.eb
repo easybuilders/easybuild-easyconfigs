@@ -21,10 +21,16 @@ toolchainopts = {'openmp': True}
 
 source_urls = ['https://github.com/deweylab/RSEM/archive/']
 sources = ['v%(version)s.tar.gz']
-patches = ['RSEM-1.3.0_makefiles.patch']
+patches = [
+    'RSEM-1.3.0_makefiles.patch',
+    'RSEM-1.3.3_ebseq_makefiles.patch',
+    'RSEM-1.3.3_fix_version.patch',
+]
 checksums = [
     '90e784dd9df8346caa2a7e3ad2ad07649608a51df1c69bfb6e16f45e611a40dc',  # v1.3.3.tar.gz
     '2d244659206c78655b92f1bd519ee65f28a6b5f9418dfad04e887b64eca6641b',  # RSEM-1.3.0_makefiles.patch
+    '083cb8276b10b033ea9e50d551797811c7b6c218d9df33d0e69d4d90c11892ce',  # RSEM-1.3.3_ebseq_makefiles.patch
+    '53b933d32b02bc66bb97fc40190563eb487582f284bf93338318e69c8c0eaea1',  # RSEM-1.3.3_fix_version.patch
 ]
 
 skipsteps = ['configure']
@@ -43,6 +49,16 @@ dependencies = [
     ('STAR', '2.7.11b'),
     ('Bowtie2', '2.5.4'),
     ('Bowtie', '1.3.1'),
+]
+
+local_rsem_builddir = '%(builddir)s/%(name)s-%(version)s'
+postinstallcmds = [
+    # Build and install EBSeq related binaries/scripts
+    'make -C EBSeq -f Makefile rsem-for-ebseq-calculate-clustering-info',
+    'cp -a %s/EBSeq/rsem-for-ebseq-calculate-clustering-info %%(installdir)s/bin' % local_rsem_builddir,
+    'cp -a %s/EBSeq/rsem-for-ebseq-find-DE %%(installdir)s/bin' % local_rsem_builddir,
+    'cp -a %s/EBSeq/rsem-for-ebseq-generate-ngvector-from-clustering-info %%(installdir)s/bin' % local_rsem_builddir,
+    'cp -a %s/{rsem-generate-ngvector,rsem-run-ebseq,rsem-control-fdr} %%(installdir)s/bin' % local_rsem_builddir,
 ]
 
 sanity_check_paths = {
