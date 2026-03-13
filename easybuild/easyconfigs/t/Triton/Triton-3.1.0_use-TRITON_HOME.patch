@@ -1,0 +1,56 @@
+From f962f4be780b8d8c8a0b687ca4f29bfb783cc804 Mon Sep 17 00:00:00 2001
+From: Keren Zhou <kerenzhou@openai.com>
+Date: Mon, 17 Jun 2024 18:55:12 -0400
+Subject: [PATCH] [BUILD] Add the `TRITON_HOME` env var (#4152)
+
+It's useful to have two or more Triton home directories on
+supercomputing clusters with more than one type of CPU but a single file
+system
+---
+ python/setup.py                |  4 +++-
+ python/triton/runtime/cache.py | 10 +++++++---
+ 2 files changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/python/setup.py b/python/setup.py
+index 34732e92a94f..e108c8721bbc 100644
+--- a/python/setup.py
++++ b/python/setup.py
+@@ -203,7 +203,9 @@ def open_url(url):
+ 
+ 
+ def get_triton_cache_path():
+-    user_home = os.getenv("HOME") or os.getenv("USERPROFILE") or os.getenv("HOMEPATH") or None
++    user_home = os.getenv("TRITON_HOME")
++    if not user_home:
++        user_home = os.getenv("HOME") or os.getenv("USERPROFILE") or os.getenv("HOMEPATH") or None
+     if not user_home:
+         raise RuntimeError("Could not find user home directory")
+     return os.path.join(user_home, ".triton")
+diff --git a/python/triton/runtime/cache.py b/python/triton/runtime/cache.py
+index bd3c29b9964c..04d49284459c 100644
+--- a/python/triton/runtime/cache.py
++++ b/python/triton/runtime/cache.py
+@@ -8,16 +8,20 @@
+ import hashlib
+ 
+ 
++def get_home_dir():
++    return os.getenv("TRITON_HOME", Path.home())
++
++
+ def default_cache_dir():
+-    return os.path.join(Path.home(), ".triton", "cache")
++    return os.path.join(get_home_dir(), ".triton", "cache")
+ 
+ 
+ def default_override_dir():
+-    return os.path.join(Path.home(), ".triton", "override")
++    return os.path.join(get_home_dir(), ".triton", "override")
+ 
+ 
+ def default_dump_dir():
+-    return os.path.join(Path.home(), ".triton", "dump")
++    return os.path.join(get_home_dir(), ".triton", "dump")
+ 
+ 
+ class CacheManager(ABC):
