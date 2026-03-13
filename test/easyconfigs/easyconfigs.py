@@ -84,9 +84,9 @@ def get_target_branch():
     """Return the target branch of a pull request"""
     # target branch should be anything other than 'master';
     # usually is 'develop', but could also be a release branch like '3.7.x'
-    target_branch = os.environ.get('GITHUB_BASE_REF', None)
+    target_branch = os.environ.get('GITHUB_BASE_REF')
     if not target_branch:
-        target_branch = os.environ.get('TRAVIS_BRANCH', None)
+        target_branch = os.environ.get('TRAVIS_BRANCH')
     if not target_branch:
         raise RuntimeError("Did not find a target branch")
     return target_branch
@@ -984,7 +984,6 @@ class EasyConfigTest(TestCase):
             '12.2': '2022b',
             '12.3': '2023a',
             '13.1': None,
-            '13.1': None,
             '13.2': '2023b',
             '13.3': '2024a',
             '14.1': None,
@@ -1331,6 +1330,7 @@ class EasyConfigTest(TestCase):
         python_default_urls = PythonPackage.extra_options()['source_urls'][0]
 
         for ec in self.changed_ecs:
+            failing_checks_ec = []
 
             with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
@@ -1350,11 +1350,10 @@ class EasyConfigTest(TestCase):
             # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
                 if download_dep_fail is None:
-                    failing_checks.append("'download_dep_fail' should be set in %s" % ec_fn)
+                    failing_checks_ec.append("'download_dep_fail' should be set")
 
                 if pure_ec.get('source_urls') == python_default_urls:
-                    failing_checks.append("'source_urls' should not be defined when using the default value "
-                                          "in %s" % ec_fn)
+                    failing_checks_ec.append("'source_urls' should not be defined when using the default value")
 
             # --no-build-isolation option for 'pip install' should be enabled
             pip_no_build_isolation = ec.get('pip_no_build_isolation', True)
@@ -1363,19 +1362,19 @@ class EasyConfigTest(TestCase):
                     ext_opts = ext[2]
                     pip_no_build_isolation &= ext_opts.get('pip_no_build_isolation', True)
             if not pip_no_build_isolation:
-                failing_checks.append(f"pip_no_build_isolation should not be disabled in {ec_fn}")
+                failing_checks_ec.append("pip_no_build_isolation should not be disabled")
 
             # use_pip should be set when using PythonPackage or PythonBundle,
             # or an easyblock that derives from it (except for whitelisted easyconfigs)
             if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
                 if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
-                    failing_checks.append("'use_pip' should be set in %s" % ec_fn)
+                    failing_checks_ec.append("'use_pip' should be set")
 
             if exts_defaultclass == 'PythonPackage':
                 # bundle of Python packages should use PythonBundle
                 if easyblock == 'Bundle':
-                    fail = "'PythonBundle' easyblock should be used for bundle of Python packages in %s" % ec_fn
-                    failing_checks.append(fail)
+                    fail = "'PythonBundle' easyblock should be used for bundle of Python packages"
+                    failing_checks_ec.append(fail)
 
             # if Python is a dependency, that should be reflected in the versionsuffix since v3.8.6
             has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
@@ -1388,22 +1387,22 @@ class EasyConfigTest(TestCase):
 
             if ec.name not in exception_python_suffix:
                 if has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
+                    msg = "'-Python-%(pyver)s' should be included in versionsuffix"
                     # This is only a failure for newly added ECs, not for existing ECS
                     # As that would probably break many ECs
                     if ec_fn in self.added_ecs_filenames:
-                        failing_checks.append(msg)
+                        failing_checks_ec.append(msg)
                     else:
-                        print('\nNote: Failed non-critical check: ' + msg)
+                        print('\nNote: Failed non-critical check for %s: %s' % (ec_fn, msg))
                 elif has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
-                    failing_checks.append(msg)
+                    msg = "'-Python-%(pyver)s' should no longer be included in versionsuffix"
+                    failing_checks_ec.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
             if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
-                    failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
+                    failing_checks_ec.append("sanity_pip_check should be enabled")
             else:
                 # Make sure the user packages in $HOME/.local/lib/python*/ are ignored when running python commands
                 # For the EasyBlocks above this is handled automatically by setting $PYTHONNOUSERSITE
@@ -1418,14 +1417,37 @@ class EasyConfigTest(TestCase):
                     # Strip comment if present to avoid flagging e.g. "sed '/.../' # Fix 'python -c foo' failure"
                     line = comment_re.sub('', line)
                     if python_re.search(line) and not ignore_user_switch_re.search(line):
-                        failing_checks.append("Python invocation in '%s' (line #%s) should use the '-s' parameter in %s"
-                                              % (line, line_nr + 1, ec_fn))
+                        failing_checks_ec.append("Python invocation in '%s' (line #%s) should use the '-s' parameter"
+                                                 % (line, line_nr + 1))
 
             # When using Rust it should use CargoPython*
             if easyblock in ('PythonBundle', 'PythonPackage'):
                 if any(dep['name'] == 'Rust' or '-Rust-' in dep['versionsuffix'] for dep in ec.dependencies()):
-                    failing_checks.append('Use Cargo%s instead of %s when Rust is used in %s'
-                                          % (easyblock, easyblock, ec_fn))
+                    failing_checks_ec.append('Use Cargo%s instead of %s when Rust is used' % (easyblock, easyblock))
+
+            # Avoid duplicated PYTHONPATH entries and checks (set by EasyBlock in framework)
+            default_dirs = [
+                'lib/python%(pyshortver)s/site-packages',
+            ]
+            with ec.allow_unresolved_templates():
+                default_dirs += [ec.resolve_template(d) for d in default_dirs]
+            extra_python_path = ec.get('modextrapaths', {}).get('PYTHONPATH')
+            failing_checks_ec.extend(f"modextrapaths should not contain {d} (automatically added by EasyBlock)"
+                                     for d in default_dirs if d in extra_python_path)
+            if easyblock == 'PythonBundle' or easyblock.endswith('PythonPackage'):
+                sanity_check_dirs = ec.get('sanity_check_paths', {}).get('dirs') or []
+                default_dirs = [
+                    'lib/python%(pyshortver)s/site-packages',
+                    'lib/python%(pyshortver)s/site-packages/%(name)s',
+                    'lib64/python%(pyshortver)s/site-packages',
+                    'lib64/python%(pyshortver)s/site-packages/%(name)s',
+                ]
+                with ec.allow_unresolved_templates():
+                    default_dirs += [ec.resolve_template(d) for d in default_dirs]
+                failing_checks_ec.extend(f"sanity_check_paths['dirs'] should not contain {d} "
+                                         "(automatically added by easyblock)"
+                                         for d in default_dirs if d in sanity_check_dirs)
+            failing_checks.extend(f"{ec_fn}: {fail}" for fail in failing_checks_ec)
 
         if failing_checks:
             self.fail('\n'.join(failing_checks))
@@ -1653,13 +1675,12 @@ def template_easyconfig_test(self, spec):
 
     # parse easyconfig
     ecs = process_easyconfig(spec)
-    if len(ecs) == 1:
-        ec = ecs[0]['ec']
+    if len(ecs) != 1:
+        self.fail(f"easyconfig {spec} should not contain blocks and yield only one parsed easyconfig")
 
-        # cache the parsed easyconfig, to avoid that it is parsed again
-        EasyConfigTest._parsed_easyconfigs.append(ecs[0])
-    else:
-        self.fail("easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
+    ec = ecs[0]['ec']
+    # cache the parsed easyconfig, to avoid that it is parsed again
+    EasyConfigTest._parsed_easyconfigs.append(ecs[0])
 
     # check easyconfig file name
     expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))
@@ -1777,7 +1798,7 @@ def template_easyconfig_test(self, spec):
         # exception to the dependencies of binutils (since we should eventually build a new binutils with GCCcore)
         if ec['toolchain']['version'] == 'system':
             binutils_complete_dependencies = ['M4', 'Bison', 'flex', 'help2man', 'zlib', 'binutils']
-            requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
+            requires_binutils &= ec['name'] not in binutils_complete_dependencies
 
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
         requires_binutils &= bool(sources or ec.get_ref('exts_list') or ec.get_ref('components'))
