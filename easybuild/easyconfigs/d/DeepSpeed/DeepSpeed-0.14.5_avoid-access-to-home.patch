@@ -1,0 +1,60 @@
+From 9d17116fcdb44b81eb00d3bce91431dc35cd69b1 Mon Sep 17 00:00:00 2001
+From: "Joshua C. Randall" <jcrandall@alum.mit.edu>
+Date: Wed, 4 Sep 2024 19:22:07 +0100
+Subject: [PATCH] print warning if actual triton cache dir is on NFS, not just
+ for default (#6487)
+
+move the logic that prints a warning when triton cache dir is on NFS to
+act on the actual calculated cache_dir rather than on the default.
+
+this means that:
+- when the default directory (in the user's home directory) is on NFS
+but `TRITON_CACHE_DIR` is set to a non-NFS directory, no warning will be
+printed whereas prior to this change a spurious and confusing warning
+was printed
+- when the user's home directory is not on NFS but `TRITON_CACHE_DIR` is
+set to an NFS directory, a warning will be printed whereas prior to this
+change no warning would be printed
+
+fixes #6486
+---
+ .../ops/transformer/inference/triton/matmul_ext.py | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/deepspeed/ops/transformer/inference/triton/matmul_ext.py b/deepspeed/ops/transformer/inference/triton/matmul_ext.py
+index c77d8a8e11c0..412c8740a216 100644
+--- a/deepspeed/ops/transformer/inference/triton/matmul_ext.py
++++ b/deepspeed/ops/transformer/inference/triton/matmul_ext.py
+@@ -40,13 +40,17 @@ class TritonCacheDir:
+     _warning_printed = False
+ 
+     @staticmethod
+-    def default_cache_dir():
+-        tmp_path = os.path.join(Path.home(), ".triton", "autotune")
+-        if is_nfs_path(tmp_path) and not TritonCacheDir._warning_printed:
++    def warn_if_nfs(cache_dir):
++        if is_nfs_path(cache_dir) and not TritonCacheDir._warning_printed:
+             print(
+-                f"Warning: The default cache directory for DeepSpeed Triton autotune, {tmp_path}, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path."
++                f"Warning: The cache directory for DeepSpeed Triton autotune, {cache_dir}, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path."
+             )
+             TritonCacheDir._warning_printed = True
++        return
++
++    @staticmethod
++    def default_cache_dir():
++        tmp_path = os.path.join(Path.home(), ".triton", "autotune")
+         return tmp_path
+ 
+ 
+@@ -80,9 +84,9 @@ def __init__(self, key):
+         self.lock_path = None
+         # if caching is enabled, get the lock and bin path
+         self.cache_dir = os.environ.get('TRITON_CACHE_DIR', TritonCacheDir.default_cache_dir())
++        TritonCacheDir.warn_if_nfs(self.cache_dir)
+         if self.cache_dir:
+             os.makedirs(self.cache_dir, exist_ok=True)
+-        if self.cache_dir:
+             self.file_path = os.path.join(self.cache_dir, self.key + ".pickle")
+             self.lock_path = self.file_path + ".lock"
+ 
