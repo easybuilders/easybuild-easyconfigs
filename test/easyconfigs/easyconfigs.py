@@ -27,6 +27,7 @@ Unit tests for easyconfig files.
 
 @author: Kenneth Hoste (Ghent University)
 """
+import collections
 import glob
 import os
 import re
@@ -1431,6 +1432,46 @@ class EasyConfigTest(TestCase):
             self.fail('\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
+    def test_pr_Perl_modules(self):
+        """Several checks for easyconfigs that install (bundles of) Perl modules."""
+        failing_checks = []
+
+        for ec in self.changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            exts_defaultclass = ec.get('exts_defaultclass')
+            if exts_defaultclass == 'PerlModule' or ec.name == 'Perl':
+                seen_exts = set()
+                seen_checksums = collections.defaultdict(list)
+                for ext in ec['exts_list']:
+                    ext_checksum = None
+                    if isinstance(ext, (tuple, list)):
+                        ext_name = ext[0]
+                        if len(ext) == 3:
+                            # Get first checksum if any
+                            checksums = ext[2].get('checksums')
+                            if checksums:
+                                ext_checksum = checksums[0]
+                    else:
+                        ext_name = ext
+
+                    if ext_name in seen_exts:
+                        failing_checks.append('%s was added multiple times to exts_list in %s' % (ext_name, ec_fn))
+                    else:
+                        seen_exts.add(ext_name)
+                    if ext_checksum:
+                        seen_checksums[ext_checksum].append(ext_name)
+
+                for ext_names in seen_checksums.values():
+                    if len(ext_names) > 1:
+                        failing_checks.append((
+                            'The following sources have the same checksum and are hence assumed to be duplicates: %s\n'
+                            'Please use the name of the repeated modules as a plain string in `exts_list` of %s '
+                            'to avoid reinstalling the same module.') % (', '.join(ext_names), ec_fn)
+                        )
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
     def test_pr_sanity_check_paths(self):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
@@ -1472,7 +1513,8 @@ class EasyConfigTest(TestCase):
                     ec_fn = os.path.basename(ec.path)
                     failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
 
-        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
     def test_pr_https(self):
