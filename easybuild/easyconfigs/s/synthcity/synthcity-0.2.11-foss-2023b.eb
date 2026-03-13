@@ -1,0 +1,243 @@
+easyblock = 'PythonBundle'
+
+name = 'synthcity'
+version = '0.2.11'
+
+local_pytorch_version = '2.1.2'
+
+homepage = 'https://github.com/vanderschaarlab/synthcity'
+description = """A library for generating and evaluating synthetic tabular data."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+builddependencies = [('poetry', '1.6.1')]
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Python-bundle-PyPI', '2023.10'),
+    ('SciPy-bundle', '2023.11'),
+    ('PyTorch', local_pytorch_version),
+    ('lifelines', '0.29.0'),
+    ('Redis', '7.2.4'),
+    ('scikit-learn', '1.4.0'),
+    ('SHAP', '0.46.0'),
+    ('XGBoost', '2.1.1'),
+    ('tqdm', '4.66.2'),
+    ('HF-Datasets', '3.1.0'),
+    ('Transformers', '4.44.0'),
+    ('fastai', '2.7.18'),
+    ('h5py', '3.11.0'),
+    ('Brotli-python', '1.1.0'),
+    ('statsmodels', '0.14.1'),
+    ('imbalanced-learn', '0.12.4'),
+    ('Optuna', '3.6.1'),
+    ('MONAI', '1.4.0'),
+    ('DECAF-synthetic-data', '0.1.6'),
+    ('PyTorch-Lightning', '1.9.5'),
+    ('accelerate', '1.0.1'),
+    ('tsai', '0.3.9'),
+    ('tensorboard', '2.18.0'),
+    # TESTS deps:
+    ('Jupyter-bundle', '20240522'),
+    ('black', '24.10.0'),
+    ('python-igraph', '0.11.5'),
+    ('coverage', '7.4.4'),
+    ('py-cpuinfo', '9.0.0'),
+    ('pycodestyle', '2.11.1'),
+]
+
+# update xgbse dependencies versions
+local_xgbse_preinstallopts = (
+    "sed -i "
+    " -e 's/1.26.4/1.26.2/'"  # numpy
+    " -e 's/1.5.0/1.4.0/'"  # scikit-learn
+    " -e 's/2.2.0/2.1.3/'"  # pandas
+    " -e 's/1.4.2/1.3.2/'"  # joblib
+    " pyproject.toml && "
+)
+
+# fix test_decaf.py slurm problem
+local_pretestopts = "export SLURM_NTASKS_PER_NODE=$SLURM_NTASKS && "
+
+exts_list = [
+    # tests exts:
+    ('stevedore', '5.3.0', {
+        'checksums': ['9a64265f4060312828151c204efbe9b7a9852a0d9228756344dbc7e4023e375a'],
+    }),
+    ('restructuredtext_lint', '1.4.0', {
+        'checksums': ['1b235c0c922341ab6c530390892eb9e92f90b9b75046063e047cacfb0f050c45'],
+    }),
+    ('pyflakes', '3.2.0', {
+        'checksums': ['1c61603ff154621fb2a9172037d84dca3500def8c8b630657d1701f026f8af3f'],
+    }),
+    ('mccabe', '0.7.0', {
+        'checksums': ['348e0240c33b60bbdf4e523192ef919f28cb2c3d7d5c7794f74009290f236325'],
+    }),
+    ('nodeenv', '1.9.1', {
+        'checksums': ['6ec12890a2dab7946721edbfbcd91f3319c6ccc9aec47be7c7e6b7011ee6645f'],
+    }),
+    ('identify', '2.6.0', {
+        'checksums': ['cb171c685bdc31bcc4c1734698736a7d5b6c8bf2e0c15117f4d469c8640ae5cf'],
+    }),
+    ('cfgv', '3.4.0', {
+        'checksums': ['e52591d4c5f5dead8e0f673fb16db7949d2cfb3f7da4582893288f0ded8fe560'],
+    }),
+    ('bandit', '1.7.9', {
+        'checksums': ['7c395a436743018f7be0a4cbb0a4ea9b902b6d87264ddecf8cfdc73b4f78ff61'],
+    }),
+    ('darglint', '1.8.1', {
+        'checksums': ['080d5106df149b199822e7ee7deb9c012b49891538f14a11be681044f0bb20da'],
+    }),
+    ('doc8', '1.1.1', {
+        'checksums': ['d97a93e8f5a2efc4713a0804657dedad83745cca4cd1d88de9186f77f9776004'],
+    }),
+    ('flake8', '7.0.0', {
+        'checksums': ['33f96621059e65eec474169085dc92bf26e7b2d47366b70be2f67ab80dc25132'],
+    }),
+    ('isort', '5.13.2', {
+        'checksums': ['48fdfcb9face5d58a4f6dde2e72a1fb8dcaf8ab26f95ab49fab84c2ddefb0109'],
+    }),
+    ('pytest-benchmark', '5.0.1', {
+        'checksums': ['8138178618c85586ce056c70cc5e92f4283c2e6198e8422c2c825aeb3ace6afd'],
+    }),
+    ('pytest-xprocess', '1.0.2', {
+        'modulename': 'xprocess',
+        'checksums': ['15e270637586eabc56755ee5fcc81c48bdb46ba7ef7c0d5b1b64302d080cc60f'],
+    }),
+    ('pytest-cov', '5.0.0', {
+        'checksums': ['5837b58e9f6ebd335b0f8060eecce69b662415b16dc503883a02f45dfeb14857'],
+    }),
+    ('pre_commit', '4.0.1', {
+        'checksums': ['80905ac375958c0444c65e9cebebd948b3cdb518f335a091a670a89d652139d2'],
+    }),
+    # runtime exts:
+    ('arfpy', '0.1.1', {
+        'checksums': ['88170d5e72638b0dbfec28cfbdfee02e97bd6a06d5a636e960acd5d90d480707'],
+    }),
+    ('be_great', '0.0.8', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['68e515b388254ef930bca272b929156fb901873fcdbcfeef56d7ad3d78d4c2b0'],
+    }),
+    ('feather-format', '0.4.1', {
+        'modulename': 'feather',
+        'checksums': ['45f67e3745d394d4f160ca6d636bbfd4f8b68d01199dc1649b6e487d3e878903'],
+    }),
+    ('fflows', '0.0.3', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['18de7a7b98e3708ff2d5ae9f10fad625740230c4de6447906b7ca477667b78fb'],
+    }),
+    ('geomloss', '0.2.6', {
+        'checksums': ['491c47085c5001b2cb6128ea541fd2d0a8808ae50e88a0798c7853c9d995faeb'],
+    }),
+    ('inflate64', '1.0.0', {
+        'checksums': ['3278827b803cf006a1df251f3e13374c7d26db779e5a33329cc11789b804bc2d'],
+    }),
+    ('keopscore', '2.2.3', {
+        'checksums': ['64d5dad1e8c806d7070cdc60e48fd5bbf006f2bf1afd39ad3fa5e9fb213517d2'],
+    }),
+    ('multivolumefile', '0.2.3', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['237f4353b60af1703087cf7725755a1f6fcaeeea48421e1896940cd1c920d678'],
+    }),
+    ('nflows', '0.14', {
+        'checksums': ['6299844a62f9999fcdf2d95cb2d01c091a50136bd17826e303aba646b2d11b55'],
+    }),
+    ('opacus', '1.5.2', {
+        'checksums': ['167b66a5f7d5313df396dda143f21d2303b82e554b6798b30675a04103afaeb6'],
+    }),
+    ('opt_einsum', '3.4.0', {
+        'checksums': ['96ca72f1b886d148241348783498194c577fa30a8faac108586b14f1ba4473ac'],
+    }),
+    ('pgmpy', '0.1.26', {
+        'checksums': ['de8096175a8417f6bbac4e6ddb4a253c824947697d7beed93266d6e4163d039e'],
+    }),
+    ('texttable', '1.7.0', {
+        'checksums': ['2d2068fb55115807d3ac77a4ca68fa48803e84ebb0ee2340f858107a36522638'],
+    }),
+    ('py7zr', '0.22.0', {
+        'checksums': ['c6c7aea5913535184003b73938490f9a4d8418598e533f9ca991d3b8e45a139e'],
+    }),
+    ('pybcj', '1.0.2', {
+        'modulename': 'bcj',
+        'checksums': ['c7f5bef7f47723c53420e377bc64d2553843bee8bcac5f0ad076ab1524780018'],
+    }),
+    ('torchtuples', '0.2.2', {
+        'checksums': ['e0c7fe69977eb594fd9e81015821bb62c849be94d378bd072bdcb08cd68fffc3'],
+    }),
+    ('pycox', '0.3.0', {
+        'checksums': ['745859ecfa4097cf8e8aef06f08048a41b7b2254fcffb9fc9f8926b1f38b6b1b'],
+    }),
+    ('pycryptodomex', '3.21.0', {
+        'modulename': 'Crypto',
+        'checksums': ['222d0bd05381dd25c32dd6065c071ebf084212ab79bab4599ba9e6a3e0009e6c'],
+    }),
+    ('pykeops', '2.2.3', {
+        'checksums': ['2e2cba1de5e05c35559957a14f41cb5165dc667cc51b3b2118d7e0027eb435a1'],
+    }),
+    ('pyppmd', '1.1.0', {
+        'checksums': ['1d38ce2e4b7eb84b53bc8a52380b94f66ba6c39328b8800b30c2b5bf31693973'],
+    }),
+    ('pyzstd', '0.16.2', {
+        'checksums': ['179c1a2ea1565abf09c5f2fd72f9ce7c54b2764cf7369e05c0bfd8f1f67f63d2'],
+    }),
+    ('xgbse', '0.3.1', {
+        'preinstallopts': local_xgbse_preinstallopts,
+        'checksums': ['39f7a4a897e085fcfb5c926503a5155d77fd5c9d8d8a621fa4f1b0a49115c098'],
+    }),
+    ('uritemplate', '4.1.1', {
+        'checksums': ['4346edfc5c3b79f694bccd6d6099a322bbeb628dbf2cd86eea55a456ce5124f0'],
+    }),
+    ('httplib2', '0.22.0', {
+        'checksums': ['d7a10bc5ef5ab08322488bde8c726eeee5c8618723fdb399597ec58f3d82df81'],
+    }),
+    ('proto_plus', '1.25.0', {
+        'modulename': 'proto',
+        'checksums': ['fbb17f57f7bd05a68b7707e745e26528b0b3c34e378db91eef93912c54982d91'],
+    }),
+    ('google-auth', '2.35.0', {
+        'modulename': 'google.auth',
+        'source_tmpl': 'google_auth-%(version)s.tar.gz',
+        'checksums': ['f4c64ed4e01e8e8b646ef34c018f8bf3338df0c8e37d8b3bba40e7f574a3278a'],
+    }),
+    ('google-auth-httplib2', '0.2.0', {
+        'checksums': ['38aa7badf48f974f1eb9861794e9c0cb2a0511a4ec0679b1f886d108f5640e05'],
+    }),
+    ('google-api-python-client', '2.151.0', {
+        'modulename': 'googleapiclient',
+        'source_tmpl': 'google_api_python_client-%(version)s.tar.gz',
+        'checksums': ['a9d26d630810ed4631aea21d1de3e42072f98240aaf184a8a1a874a371115034'],
+    }),
+    ('googleapis-common-protos', '1.65.0', {
+        'modulename': 'google.api',
+        'source_tmpl': 'googleapis_common_protos-%(version)s.tar.gz',
+        'checksums': ['334a29d07cddc3aa01dee4988f9afd9b2916ee2ff49d6b757155dc0d197852c0'],
+    }),
+    ('google-api-core', '2.22.0', {
+        'modulename': 'google.api_core',
+        'source_tmpl': 'google_api_core-%(version)s.tar.gz',
+        'checksums': ['26f8d76b96477db42b55fd02a33aae4a42ec8b86b98b94969b7333a2c828bf35'],
+    }),
+    ('google-ai-generativelanguage', '0.6.10', {
+        'modulename': 'google.ai',
+        'source_tmpl': 'google_ai_generativelanguage-%(version)s.tar.gz',
+        'checksums': ['6fa642c964d8728006fe7e8771026fc0b599ae0ebeaf83caf550941e8e693455'],
+    }),
+    ('google_generativeai', '0.8.3', {
+        'modulename': 'google.generativeai',
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['1108ff89d5b8e59f51e63d1a8bf84701cd84656e17ca28d73aeed745e736d9b7'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/vanderschaarlab/synthcity/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'runtest': local_pretestopts + 'cd tests && pytest -vvvs -m "not slow" --ignore=plugins/generic/test_great.py',
+        'testinstall': True,
+        'checksums': ['5926d2e869e1528e556fb794d5f7e914c635113f9cc58034612fa067cdbf84d4'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'from synthcity.plugins import Plugins'",
+    "python -c 'from decaf import DECAF, DataModule'"
+]
+
+moduleclass = 'lib'

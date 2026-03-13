@@ -1,0 +1,23 @@
+# Pacth for OpenMPI with iomkl toolchain
+# January 21 2025 by B. Hajgato (UGent)
+--- Build/makefile.orig	2024-04-07 23:05:06.000000000 +0200
++++ Build/makefile	2025-01-21 10:17:43.969175149 +0100
+@@ -74,7 +74,7 @@
+ # Use cluster_sparse_solver with intelmpi blacs
+   FFLAGSMKL_INTEL = -DWITH_MKL -I"${MKLROOT}/include"
+   LFLAGSMKL_INTEL = -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -Wl,--end-group -lpthread -lm -ldl
+-  LFLAGSMKL_INTEL_OPENMP = -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -Wl,--end-group -liomp5 -lpthread -lm -ldl
++  LFLAGSMKL_INTEL_OPENMP = -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_blacs_openmpi_lp64.a -Wl,--end-group -liomp5 -lpthread -lm -ldl
+ endif
+ ifneq ("$(wildcard ${MKLROOT}/lib/intel64/libmkl_blacs_openmpi_lp64.a)","")
+ # Use cluster_sparse_solver with openmpi blacs
+@@ -216,7 +216,7 @@
+ 
+-impi_intel_linux_openmp : FFLAGS = -m64 -fc=$(I_IFORT) -O2 -ipo -no-wrap-margin $(GITINFO) $(FFLAGSMKL_INTEL) -DUSE_IFPORT
++impi_intel_linux_openmp : FFLAGS = -m64 -O2 -ipo -no-wrap-margin $(GITINFO) $(FFLAGSMKL_INTEL) -DUSE_IFPORT
+ impi_intel_linux_openmp : LFLAGSMKL = $(LFLAGSMKL_INTEL_OPENMP)
+-impi_intel_linux_openmp : FCOMPL = mpiifort
++impi_intel_linux_openmp : FCOMPL = mpifort
+ impi_intel_linux_openmp : FOPENMPFLAGS = -qopenmp
+ impi_intel_linux_openmp : obj = fds_impi_intel_linux_openmp
+ impi_intel_linux_openmp : setup $(obj_mpi)

@@ -1,0 +1,46 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonPackage'
+
+name = 'CRISPResso2'
+version = '2.3.1'
+
+homepage = 'https://github.com/pinellolab/CRISPResso2/'
+description = """CRISPResso2 is a software pipeline designed to enable rapid and
+intuitive interpretation of genome editing experiments."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+sources = [
+    {'source_urls': ['https://github.com/pinellolab/%(name)s/archive/'], 'filename': 'v%(version)s.tar.gz'},
+]
+patches = ['CRISPResso2-2.3.1_fix_tests.patch']
+checksums = [
+    {'v2.3.1.tar.gz': 'e1f3f87e392529d441f0b3b6983600d643fbcdf40cde621eb24f40b3f7195fa4'},
+    {'CRISPResso2-2.3.1_fix_tests.patch': 'c63f403e438e3e2b1c2cdfd41ce3ab8f9f38c9204b27d234f54ce33230818292'},
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('matplotlib', '3.8.2'),
+    ('fastp', '0.23.4'),
+    ('SAMtools', '1.19.2'),
+    ('Bowtie2', '2.5.4'),
+    ('Seaborn', '0.13.2'),
+]
+
+# strip out too strict version requirements for dependencies
+preinstallopts = "sed -i 's/,<=[0-9]*//g' setup.py && sed -i 's/==/>=/g' setup.py && "
+postinstallcmds = [' cp -r tests %(installdir)s', 'cp -r scripts %(installdir)s']
+
+options = {'modulename': '%(name)s'}
+
+sanity_check_commands = [
+    'CRISPResso -h',
+    'cd %(builddir)s/%(name)s-%(version)s/tests && ./testRelease.sh',
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages/%(name)s']}
+
+moduleclass = 'bio'

@@ -1,0 +1,73 @@
+easyblock = 'CMakeMakeCp'
+
+name = 'CUDA-Samples'
+version = '12.9'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/NVIDIA/cuda-samples'
+description = "Samples for CUDA Developers which demonstrates features in CUDA Toolkit"
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+source_urls = ['https://github.com/NVIDIA/cuda-samples/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['2e67e1f6bdb15bf11b21e07e988e2f9f60fb054eff51ef01cebdd47229788015']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+]
+
+# CUDA Samples hard-code all supported GPU architectures. That requires us to remove
+# all the occurrences to use our own ones specified via the CMake EasyBlock
+preconfigopts = [
+    'find %(start_dir)s -name "CMakeLists.txt" -exec sed -i "/set(CMAKE_CUDA_ARCHITECTURES/d" {} \\; && '
+]
+
+# Filter out building samples that require lots of additional dependencies.
+# Due to CMake, use CMAKE_DISABLE_FIND_PACKAGE_<PackageName>.
+configopts = "-DCMAKE_DISABLE_FIND_PACKAGE_EGL=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_OpenGL=TRUE "
+configopts += "-DCMAKE_DISABLE_FIND_PACKAGE_GLUT=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_NVSCI=TRUE "
+configopts += "-DCMAKE_DISABLE_FIND_PACKAGE_FreeImage=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Vulkan=TRUE "
+configopts += "-DCMAKE_DISABLE_FIND_PACKAGE_X11=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_MPI=TRUE "
+
+# Files are scattered through all CMake directories. This significantly complicates using
+# CMakeMakeCp. Therefore, use `find` to search for the respective executables.
+# Headers, data and source files can be found with patterns instead.
+files_to_copy = [
+    (["Samples/*/*/*.cu"], "bin"),
+    (["Samples/*/*/*.fatbin"], "bin"),
+    (["Samples/*/*/*.ptx"], "bin"),
+    # Data required to run the examples
+    (["Samples/*/*/data/*"], "bin/data"),
+    (["Samples/*/*/*.ppm"], "bin/data"),
+    (["Samples/*/*/*.dat"], "bin/data"),
+    (["Samples/*/*/*.pgm"], "bin/data"),
+    (["Samples/*/*/*.mtx"], "bin/data"),
+    # Headers need to be put in the same directory as binaries, or else they're not
+    # correctly picked up by CUDA samples
+    (["Samples/*/*/*.cuh"], "bin"),
+    (["Samples/*/*/*.h"], "bin"),
+]
+
+# Use `find` to search for the respective executables.
+postinstallcmds = [
+    # Copy non installed executables
+    'find "./Samples" -executable -type f -exec cp {} "%(installdir)s/bin" \\;',
+]
+
+local_binaries = ['deviceQuery', 'matrixMul', 'cudaOpenMP']
+
+# Only paths are used for sanity checks.
+# Commands may fail due to missing compatibility libraries that might be needed
+# to be able to use this specific CUDA version in combination with the available
+# NVIDIA drivers.
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': [],
+}
+
+moduleclass = 'lang'

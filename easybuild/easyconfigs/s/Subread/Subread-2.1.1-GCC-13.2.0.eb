@@ -1,0 +1,40 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+# Update: Petr Král (INUITS)
+
+easyblock = 'MakeCp'
+
+name = 'Subread'
+version = '2.1.1'
+
+homepage = 'https://subread.sourceforge.net/'
+description = """High performance read alignment, quantification and mutation discovery"""
+
+toolchain = {'name': 'GCC', 'version': '13.2.0'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%(namelower)s-%(version)s-source.tar.gz']
+checksums = ['6392d7c66831cdd767e58251892a79a51b6fab8ed0ba9671ad5e85ff1ab01eaa']
+
+start_dir = 'src'
+
+prebuildopts = "sed -i 's/-mtune=core2//g' Makefile.Linux && "
+prebuildopts += "sed -i 's/-mtune=core2//g' longread-one/Makefile && "
+
+buildopts = " -f Makefile.Linux"
+
+files_to_copy = ['bin']
+
+local_binaries_list = [
+    'exactSNP', 'featureCounts', 'subindel', 'subjunc', 'sublong', '%(namelower)s-align', '%(namelower)s-buildindex',
+]
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_binaries_list],
+    'dirs': ['bin/utilities'],
+}
+
+sanity_check_commands = [
+    'cd %(builddir)s/%(namelower)s-%(version)s-source/test && bash test_all.sh'
+]
+
+moduleclass = 'bio'

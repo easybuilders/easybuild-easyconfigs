@@ -18,20 +18,23 @@ sources = [{
         'tag': 'v%(version)s',
         'recursive': True,
     },
-    'filename': SOURCE_TAR_GZ,
+    'filename': SOURCE_TAR_XZ,
 }]
 patches = [
     '%(name)s-%(version)s_dont_install_external_libraries.patch',
 ]
 
 checksums = [
-    None,
-    '28942b7057af00c574a5e70d33a58b4036fd09ae0b041f45b67581c8dda832b1',
+    {'dorado-0.8.0.tar.xz':
+     '8d44463853d6c06506011ec26eaea68b708be903ab3b31779b4dc2454247c6b3'},
+    {'dorado-0.8.0_dont_install_external_libraries.patch':
+     '28942b7057af00c574a5e70d33a58b4036fd09ae0b041f45b67581c8dda832b1'},
 ]
 
 builddependencies = [
     ('binutils', '2.40'),
     ('CMake', '3.26.3'),
+    ('patchelf', '0.18.0'),
 ]
 
 dependencies = [
@@ -76,7 +79,23 @@ _copts = [
     '-DCMAKE_C_FLAGS="$CFLAGS -pthread"',
 ]
 
-configopts = ' '.join(_copts)
+configopts = ' '.join(_copts) + ' '
+
+# disable CMake fiddling with RPATH when EasyBuild is configured to use RPATH linking
+configopts += "$(if %(rpath_enabled)s; then "
+configopts += "echo '-DCMAKE_SKIP_INSTALL_RPATH=YES -DCMAKE_SKIP_RPATH=YES'; fi) "
+
+# CUDA libraries that are copied to installdir need to be patched to have an RPATH section
+# when EasyBuild is configured to use RPATH linking (required to pass RPATH sanity check);
+# by default, CMake sets RUNPATH to '$ORIGIN' rather than RPATH (but that's disabled above)
+postinstallcmds = [
+    "if %(rpath_enabled)s; then "
+    "  for lib in $(ls %(installdir)s/lib/lib{cu,nv}*.so*); do "
+    "    echo setting RPATH in $lib;"
+    "    patchelf --force-rpath --set-rpath '$ORIGIN' $lib;"
+    "  done;"
+    "fi",
+]
 
 sanity_check_paths = {
     'files': ['bin/dorado'],
