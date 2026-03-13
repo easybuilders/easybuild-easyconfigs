@@ -1,0 +1,50 @@
+easyblock = 'MakeCp'
+
+name = 'RepeatAfterMe'
+version = '0.0.7'
+
+homepage = 'https://github.com/Dfam-consortium/RepeatAfterMe'
+description = "A package for the extension of repetitive DNA cores"
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = ['https://github.com/Dfam-consortium/%(name)s/archive/refs/tags/']
+sources = ['%(name)s_V%(version)s.tar.gz']
+checksums = ['8a4c96be6c0fcedf24ee28796fea3bffef022c7479d8f49fbd2f83e56d697f26']
+
+dependencies = [('Perl', '5.38.2')]
+
+start_dir = '%(name)s-%(name)s_V%(version)s'
+
+buildopts = 'CC="$CC"'
+
+files_to_copy = [
+    (['RAMExtend'], 'bin'),
+    (['README.md'], ''),
+    (['util/extend-stk.pl'], 'util'),
+]
+
+postinstallcmds = [
+    "sed -i '1s|^#!.*perl|#!/usr/bin/env perl|' %(installdir)s/util/extend-stk.pl",
+    "chmod 755 %(installdir)s/bin/RAMExtend",
+    "chmod 755 %(installdir)s/util/extend-stk.pl",
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/RAMExtend',
+        'util/extend-stk.pl',
+        'README.md',
+    ],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "RAMExtend -h 2>&1 | grep -q 'RAMExtend Version'",
+]
+
+modextrapaths = {
+    'PATH': ['bin'],
+}
+
+moduleclass = 'bio'
