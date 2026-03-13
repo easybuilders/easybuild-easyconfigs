@@ -1,0 +1,88 @@
+# Author: Pavel Grochal (INUITS)
+# Update to 3.40.2: Pavel Tománek (INUITS)
+# License: GPLv2
+
+easyblock = 'CMakeNinja'
+
+name = 'QGIS'
+version = '3.40.2'
+
+homepage = 'http://www.qgis.org/'
+description = "QGIS is a user friendly Open Source Geographic Information System (GIS)."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['http://qgis.org/downloads/']
+sources = [SOURCELOWER_TAR_BZ2]
+patches = ['QGIS-3.40.2_fix-SIP-macro.patch']
+checksums = [
+    {'qgis-3.40.2.tar.bz2': '3eddc2cb93f339dabb4c90d94ea31d5d1845c21542e8317ec2cbe3e95d124b9a'},
+    {'QGIS-3.40.2_fix-SIP-macro.patch': 'd8094ff803a6918843568d9561610f770ebd159b1d63b27ec863ce698857410f'},
+]
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('CMake', '3.26.3'),
+    ('pkgconf', '1.9.5'),
+    ('PyQt-builder', '1.15.4'),
+    ('Ninja', '1.11.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Qt5', '5.15.10'),
+    ('Qt5Webkit', '5.212.0-alpha4'),
+    ('PyQt5', '5.15.10'),
+    ('PROJ', '9.2.0'),
+    ('GEOS', '3.12.0'),
+    ('PDAL', '2.8.2'),
+    ('zstd', '1.5.5'),
+    ('SQLite', '3.42.0'),
+    ('libspatialite', '5.1.0'),
+    ('libspatialindex', '1.9.3'),
+    ('PyYAML', '6.0'),
+    ('Cartopy', '0.22.0'),
+    ('psycopg2', '2.9.9'),
+    ('GDAL', '3.7.1'),
+    ('Qwt', '6.3.0'),
+    ('expat', '2.5.0'),
+    ('QCA', '2.3.9'),
+    # QScintilla must be listed after PyQt5 due to Python bindings 'overriding' those of PyQt5
+    ('QScintilla', '2.14.1'),
+    ('GSL', '2.7'),
+    ('libzip', '1.10.1'),
+    ('QtKeychain', '0.14.3'),
+    ('ICU', '73.2'),
+    ('PostgreSQL', '16.1'),
+    ('GRASS', '8.4.0'),
+    ('protobuf-python', '4.24.0'),
+    ('exiv2', '0.28.0'),
+    ('draco', '1.5.7'),
+    ('HDF5', '1.14.0'),
+    ('netCDF', '4.9.2'),
+    ('libxml2', '2.11.4'),
+]
+
+# specify locations that CMake can't figure out correctly
+_copts = [
+    "-DCMAKE_PREFIX_PATH=$EBROOTQT",
+    "-DQSCINTILLA_LIBRARY=$EBROOTQSCINTILLA/lib/libqscintilla2_qt5.%s" % SHLIB_EXT,
+    "-DQt5WebKit_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKit",
+    "-DQt5WebKitWidgets_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKitWidgets",
+    "-DPYQT5_SIP_DIR=$EBROOTPYQT5/share/sip",
+    "-DQSCI_SIP_DIR=$EBROOTQSCINTILLA/share/sip",
+    "-DGRASS_PREFIX8=$EBROOTGRASS/grass8",
+]
+configopts = ' '.join(_copts)
+
+sanity_check_paths = {
+    'files': [
+        'bin/%(namelower)s', 'bin/%(namelower)s_bench', 'bin/%(namelower)s_process',
+        ['lib/libqgis_%s.so' % x for x in ['3d', 'analysis', 'app', 'core', 'gui', 'native']],
+        'lib/libqgispython.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['include/qgis', 'man', 'share/qgis', 'lib/%(namelower)s'],
+}
+
+moduleclass = 'geo'
