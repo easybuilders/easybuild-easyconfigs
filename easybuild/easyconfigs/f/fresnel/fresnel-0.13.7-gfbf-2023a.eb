@@ -1,0 +1,57 @@
+# Part of the Glotzerlab-Github suite.
+# This module is required for the post-analysis of HOOMD-blue and
+# thus it does make sense to put it into the same toolchain
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'fresnel'
+version = '0.13.7'
+
+homepage = 'https://github.com/glotzerlab/fresnel'
+description = """
+fresnel is a python library for path tracing publication quality images
+of soft matter simulations in real time. The fastest render performance
+is possible on NVIDIA GPUs using their OptiX ray tracing engine. fresnel
+also supports multi-core CPUs using Intel's Embree ray tracing kernels.
+Path tracing enables high quality global illumination and advanced rendering
+effects controlled by intuitive parameters (like roughness, specular, and metal).
+"""
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+
+github_account = 'glotzerlab'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_cmake.patch']
+checksums = [
+    {'v0.13.7.tar.gz': '39ff09ddba621a25c426d95ff22864c2e862f4c7979e735635fb97e8a52e9308'},
+    {'fresnel-0.13.7_cmake.patch': 'bca8fdce71f3db6ea9763933d824fdc8ff3879358809251e5c24754427b80a60'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('pybind11', '2.11.1'),
+    ('random123', '20250304', '', SYSTEM),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('tbb', '2021.11.0'),
+    ('SciPy-bundle', '2023.07'),
+    ('Embree', '4.3.3'),
+    ('Qhull', '2020.2'),
+    ('Pillow', '10.0.0'),  # required for testing
+    ('pytest', '7.4.2'),  # required for testing
+]
+
+configopts = '--install-prefix=%(installdir)s/lib/python%(pyshortver)s/site-packages '
+
+sanity_check_commands = ['python3 -m pytest %(installdir)s/lib/python%(pyshortver)s/site-packages/fresnel']
+
+sanity_check_paths = {
+    'files': ['lib/python%(pyshortver)s/site-packages/fresnel/geometry.py'],
+    'dirs': [''],
+}
+
+moduleclass = 'vis'
