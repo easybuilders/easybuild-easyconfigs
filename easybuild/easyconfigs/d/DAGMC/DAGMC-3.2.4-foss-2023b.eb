@@ -1,0 +1,59 @@
+# Template for a mixed bundle of components using different easyblocks on GCCcore 12.3.0
+easyblock = 'Bundle'
+
+name = 'DAGMC'
+version = '3.2.4'
+
+homepage = 'https://svalinn.github.io/DAGMC/'
+
+description = """
+DAGMC is a library developed for allowing particle transport using surface mesh-based geometries.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('make', '4.4.1'),
+    ('MOAB', '5.6.0'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.3'),
+    ('h5py', '3.11.0'),
+    ('lxml', '4.9.3'),
+    ('Cython', '3.0.10'),
+    ('Eigen', '3.4.0'),
+    ('netCDF', '4.9.2'),
+    ('Embree', '4.4.0', '', SYSTEM),
+    ('tbb', '2021.13.0'),
+]
+
+local_moabdir = '$EBROOTMOAB'
+
+components = [
+    ('double-down', '1.1.0', {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/pshriwise/%(namelower)s/archive'],
+        'sources': ['v%(version)s.tar.gz'],
+        'start_dir': '%(namelower)s-%(version)s',
+    }),
+    ('DAGMC', '3.2.4', {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/svalinn/DAGMC/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'start_dir': '%(name)s-%(version)s',
+        'configopts': f"-DMOAB_DIR={local_moabdir} -DBUILDTALLY=ON -DDOUBLE_DOWN=ON -DBUILD_STATIC_EXE=OFF -DBUILD_STATIC_LIBS=OFF -DDOUBLE_DOWN_DIR=%(installdir)s -DBUILD_UWUW=OFF -DGIT_SUBMODULE=off"
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libdagmc.so', 'lib/libdd.so'],
+    'dirs': ['lib', 'bin'],
+}
+
+sanity_check_commands = [
+    'build_obb -h',
+]
+
+moduleclass = 'phys'
