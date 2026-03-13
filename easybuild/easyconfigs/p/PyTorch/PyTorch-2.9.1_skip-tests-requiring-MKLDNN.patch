@@ -1,0 +1,38 @@
+test_int8_woq_mm fail without MKLDDN at
+> self.assertEqual(counters["inductor"]["cpp_templated_kernel_counter"], 1)
+
+See https://github.com/pytorch/pytorch/pull/177387
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_cpu_select_algorithm.py b/test/inductor/test_cpu_select_algorithm.py
+--- a/test/inductor/test_cpu_select_algorithm.py
++++ b/test/inductor/test_cpu_select_algorithm.py
+@@ -50,6 +50,11 @@ run_and_get_cpp_code = test_torchinductor.run_and_get_cpp_code
+ 
+ aten = torch.ops.aten
+ 
++skipIfNoMkldnn = unittest.skipIf(
++    not (torch.backends.mkldnn.enabled and torch.backends.mkldnn.is_available()),
++    "no MKLDNN",
++)
++
+ 
+ def patches(fn):
+     def skip_cache(self, choices, name, key, benchmark, hint_override=None):
+@@ -1374,6 +1379,7 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
+     @inductor_config.patch({"freezing": True})
+     @patches
+     @torch.no_grad
++    @skipIfNoMkldnn
+     @dtypes(torch.bfloat16)
+     @parametrize(
+         "batch_size",
+@@ -1437,6 +1443,7 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
+     @inductor_config.patch({"freezing": True, "cpp.enable_concat_linear": True})
+     @patches
+     @torch.no_grad
++    @skipIfNoMkldnn
+     @dtypes(torch.bfloat16)
+     @parametrize(
+         "batch_size",
