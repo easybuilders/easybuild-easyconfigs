@@ -1,0 +1,41 @@
+easyblock = 'ROCmComponent'
+
+name = 'rocThrust'
+version = '3.3.0'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/ROCm/rocThrust'
+description = """Thrust is a parallel algorithm library. It has been ported to HIP and ROCm,
+which use the rocPRIM library. The HIP-ported library works on HIP and ROCm software.
+Currently there is no CUDA backend in place."""
+docurls = ['https://rocm.docs.amd.com/projects/rocThrust/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f'rocm-{_rocm_version}.tar.gz']
+checksums = ['1b50e504b81ddadc4cf086aa48e4dbff26e6e0051fc48bf3b0438308890114d6']
+
+local_gcc_version = '14.2.0'
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+]
+dependencies = [
+    ('ROCm-LLVM', '19.0.0', f'-ROCm-{_rocm_version}', ('GCCcore', local_gcc_version)),
+    ('HIP', _rocm_version),
+    ('rocPRIM', '3.4.0'),
+    ('rocRAND', '3.3.0'),
+    # Tests will require SQLite, and a patch to remove the forced download of it
+]
+
+sanity_check_paths = {
+    'files': ['lib/cmake/rocthrust/rocthrust-config.cmake',
+              'include/thrust/rocthrust_version.hpp'],
+    'dirs': ['lib/cmake/rocthrust',
+             'share/doc/rocthrust',
+             'include/thrust'],
+}
+
+moduleclass = 'lib'
