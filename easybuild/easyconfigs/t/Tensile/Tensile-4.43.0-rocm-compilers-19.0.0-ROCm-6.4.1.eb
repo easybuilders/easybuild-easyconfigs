@@ -1,0 +1,58 @@
+easyblock = 'PythonBundle'
+
+name = 'Tensile'
+version = '4.43.0'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/ROCm/Tensile'
+description = """Tensile is a tool for creating benchmark-driven backend libraries for
+GEMMs, GEMM-like problems (such as batched GEMM), and general N-dimensional tensor
+contractions on a GPU. The Tensile library is mainly used as a backend library for rocBLAS.
+Tensile acts as the performance backbone for a wide variety of 'compute' applications
+running on AMD GPUs."""
+docurls = ['https://rocm.docs.amd.com/projects/Tensile/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('poetry', '2.1.2'),
+    ('Cython', '3.1.1')
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('PyYAML', '6.0.2'),
+    # Tensile uses both msgpack Python bindings and C++ header files when actually using Tensile
+    # Therefore, add msgpack-cxx as a dependency and msgpack as a Python package, even though
+    # its messy. Also bumps this EasyConfig to GCC from GCCcore, due to msgpack-cxx relying on Boost...
+    ('msgpack-cxx', '7.0.0'),
+]
+
+github_account = 'ROCm'
+exts_list = [
+    ('joblib', '1.5.1', {
+        'checksums': ['f4f86e351f39fe3d0d32a9f2c3d8af1ee4cec285aafcb27003dda5205576b444'],
+    }),
+    ('msgpack', '1.1.1', {
+        'buildcmd': 'make ',
+        'source_urls': ['https://github.com/msgpack/msgpack-python/archive/refs/tags'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['49f941903f385f1cd178f1b4c6c57e12e4f5539037b523be083178578ad6df49'],
+    }),
+    ('rich', '14.0.0', {
+        'checksums': ['82f1bc23a6a21ebca4ae0c45af9bdbc492ed20231dcb63f297d6d1021a9d5725'],
+    }),
+    (name, version, {
+        'modulename': 'Tensile',
+        'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
+        'sources': ['rocm-6.4.1.tar.gz'],
+        'checksums': ['f96fe39fbb0d43e39b258b21d66234abf3248f8cfa6954f922618d4bb7d04c74'],
+    }),
+]
+
+sanity_check_commands = [
+    'Tensile --version',
+]
+
+moduleclass = 'lib'
