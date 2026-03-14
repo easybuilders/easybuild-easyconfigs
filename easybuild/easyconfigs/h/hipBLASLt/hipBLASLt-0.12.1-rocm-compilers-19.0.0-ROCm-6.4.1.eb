@@ -1,0 +1,76 @@
+easyblock = 'ROCmComponent'
+
+name = 'hipBLASLt'
+version = '0.12.1'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/ROCm/hipBLASLt'
+description = """hipBLASLt is a library that provides general matrix-matrix operations.
+It has a flexible API that extends functionalities beyond a traditional BLAS library,
+such as adding flexibility to matrix data layouts, input types, compute types, and
+algorithmic implementations and heuristics."""
+docurls = ['https://rocm.docs.amd.com/projects/hipBLASLt/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f'rocm-{_rocm_version}.tar.gz']
+patches = [
+    'hipBLASLt-0.12.1_use-correct-msgpack.patch',
+    'hipBLASLt-0.12.1_handle-clang-correctly.patch',
+    'hipBLASLt-0.12.1_use-easybuild-paths.patch',
+]
+checksums = [
+    # rocm-6.4.1.tar.gz
+    '929f781f86df40143c3ab98df2d746170dedb6788e368335e24c84796285a8a4',
+    # hipBLASLt-0.12.1_use-correct-msgpack.patch
+    '64350b428f24e39758de5e004210028637c6a781a24d5b25a92abbc82da3881c',
+    # hipBLASLt-0.12.1_handle-clang-correctly.patch
+    '36b6e295919e3a82c96526ef0cc3a0f4ba6fa61f1689dc3328c59d09f0778d22',
+    # hipBLASLt-0.12.1_use-easybuild-paths.patch
+    'a7e341bb68e0854b5b3bae68c6a0927d30a768986f5fc904b6ff736daacb3389',
+]
+
+local_gcc_version = '14.2.0'
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+    ('git', '2.49.0'),
+    ('msgpack-cxx', '7.0.0'),
+    ('Python', '3.13.1'),
+    ('ROCm-LLVM', '19.0.0', f'-ROCm-{_rocm_version}', ('GCCcore', local_gcc_version)),
+]
+dependencies = [
+    ('HIP', _rocm_version),
+    ('hipBLAS-common', '1.2.0'),
+    ('rocTracer', '4.1.0'),
+]
+
+# Build options as specified in AMD build scripts and TheRock monobuild repo
+configopts = '-DHIPBLASLT_ENABLE_BLIS=OFF '
+# rocRoller has no release yet, and is not supported for RHEL < 9.5.
+# Therefore, disable to to be safe.
+configopts += '-DHIPBLASLT_USE_ROCROLLER=OFF '
+# We need to build the internal Tensile, even though we have our own module.
+# This requires passing the correct python
+configopts += '-DPython_ROOT=$EBROOTPYTHON '
+# Limit the number of threads Tensile can use to generate code.
+# Note that each thread consumes MASSIVE amounts of memory once
+# building multiple GPUs (32GB RAM + 32GB Swap ran OOM for 4 threads)
+# for default values. See:
+# https://github.com/ROCm/hipBLASLt/issues/1834
+# We also use the internal Tensile instead of the EasyBuild one, as
+# hipBLASLt requires a different version, and fails when using ours
+# due to files not being created as expected. 
+configopts += '-DTensile_CPU_THREADS=%(parallel)s '
+
+sanity_check_paths = {
+    'files': ['lib/cmake/hipblaslt/hipblaslt-config.cmake',
+              'include/hipblaslt/hipblaslt.h'],
+    'dirs': ['lib/cmake/hipblaslt',
+             'share/doc/hipblaslt',
+             'include/hipblaslt'],
+}
+
+moduleclass = 'lib'
