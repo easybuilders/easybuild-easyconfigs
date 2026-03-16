@@ -6,28 +6,9 @@ Subject: [PATCH] [BUILD] Add the `TRITON_HOME` env var (#4152)
 It's useful to have two or more Triton home directories on
 supercomputing clusters with more than one type of CPU but a single file
 system
----
- python/setup.py                |  4 +++-
- python/triton/runtime/cache.py | 10 +++++++---
- 2 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/python/setup.py b/python/setup.py
-index 34732e92a94f..e108c8721bbc 100644
---- a/python/setup.py
-+++ b/python/setup.py
-@@ -203,7 +203,9 @@ def open_url(url):
- 
- 
- def get_triton_cache_path():
--    user_home = os.getenv("HOME") or os.getenv("USERPROFILE") or os.getenv("HOMEPATH") or None
-+    user_home = os.getenv("TRITON_HOME")
-+    if not user_home:
-+        user_home = os.getenv("HOME") or os.getenv("USERPROFILE") or os.getenv("HOMEPATH") or None
-     if not user_home:
-         raise RuntimeError("Could not find user home directory")
-     return os.path.join(user_home, ".triton")
+Note (Alexander Grund): Modification to setup.py included in Triton-3.1.0_5fe38ff_eb_env_python_build.patch
 diff --git a/python/triton/runtime/cache.py b/python/triton/runtime/cache.py
-index bd3c29b9964c..04d49284459c 100644
 --- a/python/triton/runtime/cache.py
 +++ b/python/triton/runtime/cache.py
 @@ -8,16 +8,20 @@
