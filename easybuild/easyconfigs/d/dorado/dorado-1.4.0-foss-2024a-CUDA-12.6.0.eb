@@ -1,0 +1,108 @@
+easyblock = 'CMakeMake'
+
+name = 'dorado'
+version = '1.4.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/nanoporetech/dorado'
+description = """Dorado is a high-performance, easy-to-use, open source basecaller for Oxford Nanopore reads."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/nanoporetech/dorado/archive/']
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/nanoporetech',
+        'repo_name': name,
+        'tag': 'v%(version)s',
+        'recursive': True,
+    },
+    'filename': SOURCE_TAR_XZ,
+}]
+
+checksums = ['b65aaaeacd9169ecf3722b4e37956f74ae4ac9ce09827d3bb4cdef1ec82e6965']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('git', '2.45.1'),
+]
+_htslib_version = '1.21'
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('OpenSSL', '3', '', SYSTEM),
+    ('PyTorch', '2.7.1', versionsuffix),
+    ('HDF5', '1.14.5'),
+    ('zstd', '1.5.6'),
+    ('HTSlib', _htslib_version),
+    ('kineto', '20250715', versionsuffix),
+    ('libaec', '1.1.3'),
+]
+
+# don't link to OpenSSL static libraries
+# fix for CMake Error "missing: OPENSSL_CRYPTO_LIBRARY" (if only shared OpenSSL libraries are available)
+preconfigopts = "sed -i '/OPENSSL_USE_STATIC_LIBS TRUE/d' ../dorado/cmake/OpenSSL.cmake && "
+# link in the ssl and crypto libs, to fix:
+# undefined reference to symbol 'SSL_get_peer_certificate@@OPENSSL_1_1_0'
+preconfigopts += r"sed -i 's/OpenSSL::SSL/ssl\n    crypto/g' ../dorado/dorado/utils/CMakeLists.txt && "
+
+# replace dont_install_external_libraries.patch by sed cmd - use system CUDA
+preconfigopts += "sed -i '/install(FILES ${NATIVE_CUDA_LIBS} DESTINATION lib COMPONENT redist_libs)/d' "
+preconfigopts += "../dorado/cmake/InstallRedistLibs.cmake && "
+
+# don't use vendored HTSlib, use provided HTSlib dependency
+preconfigopts += "rm -r ../dorado/dorado/3rdparty/htslib/ && "
+preconfigopts += "sed -i '/Htslib.cmake/d' ../dorado/CMakeLists.txt && "
+# rename link target 'htslib' -> 'hts' only in CMake files, excluding kadayashi's cmake dir
+preconfigopts += r"find ../dorado -type f \( -name CMakeLists.txt -o -name '*.cmake' \) "
+preconfigopts += "-not -path '../dorado/dorado/3rdparty/kadayashi/cmake/*' -print0 | "
+preconfigopts += r"xargs -0 sed -i -E 's/\<htslib\>/hts/g' && "
+# keep kadayashi's find_package on 'htslib' and make it return -lhts via its finder
+preconfigopts += r"sed -i -E 's/find_package\(\s*hts\b/find_package(htslib/' "
+preconfigopts += "../dorado/dorado/3rdparty/kadayashi/CMakeLists.txt && "
+preconfigopts += r"sed -i -E 's/\bset\(HTSLIB_LIBRARIES\s+htslib(::hts)?\)/set(HTSLIB_LIBRARIES hts)/' "
+preconfigopts += "../dorado/dorado/3rdparty/kadayashi/cmake/Findhtslib.cmake && "
+# fix software_versions.yml - license and version of htslib
+_htslib_block = r"/^htslib:$/,/^[^[:space:]].*:$/ s#^\([[:space:]]*"
+preconfigopts += (
+    "sed -i "
+    rf"""-e '{_htslib_block}license:\).*#\1 PATH_NOT_AVAILABLE#' """
+    rf"""-e '{_htslib_block}version:\).*#\1 "{_htslib_version}"#' """
+    "../dorado/dorado/3rdparty/software_versions.yml && "
+)
+# disable treating warnings like errors by stripping out -Werror
+# cfr. https://github.com/nanoporetech/dorado/issues/779
+preconfigopts += "sed -i 's/-Werror//g' ../dorado/cmake/Warnings.cmake && "
+
+_copts = [
+    "-DCUDA_TOOLKIT_ROOT_DIR=$EBROOTCUDA",
+    "-DCMAKE_CUDA_COMPILER=$EBROOTCUDA/bin/nvcc",
+    '-DOPENSSL_ROOT_DIR=$EBROOTOPENSSL',
+    "-DDORADO_LIBTORCH_DIR=$EBROOTPYTORCH/lib",
+    # add -pthread flag (in addition to -lpthread) to avoid linking error:
+    # in function `_GLOBAL__sub_I_mutex.cc': mutex.cc:(.text.startup+0x17): undefined reference to `pthread_atfork'
+    '-DCMAKE_C_FLAGS="$CFLAGS -pthread"',
+    '-DCMAKE_CXX_FLAGS="$CXXFLAGS -pthread"',
+]
+
+configopts = ' '.join(_copts) + ' '
+
+# fix FASTQ tag tests: fastq_with_us_and_tags.fq corrupted (contains U bases)
+# reported: https://github.com/nanoporetech/dorado/issues/1581
+pretestopts = (
+    "tr 'Uu' 'Tt' < ../dorado/tests/data/bam_reader/fastq_with_us_and_tags.fq "
+    "> ../dorado/tests/data/bam_reader/fastq_with_us_and_tags.fq.tmp && "
+    "mv ../dorado/tests/data/bam_reader/fastq_with_us_and_tags.fq.tmp "
+    "../dorado/tests/data/bam_reader/fastq_with_us_and_tags.fq && "
+)
+
+runtest = True
+
+sanity_check_paths = {
+    'files': ['bin/dorado'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["dorado basecaller --help"]
+
+moduleclass = 'bio'
