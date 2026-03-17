@@ -1,0 +1,24 @@
+diff --git a/Tensile/TensileCreateLibrary.py b/Tensile/TensileCreateLibrary.py
+index 527e14b7..a47c5c27 100644
+--- a/Tensile/TensileCreateLibrary.py
++++ b/Tensile/TensileCreateLibrary.py
+@@ -1787,7 +1787,18 @@ def TensileCreateLibrary():
+ 
+     # Make sure to copy the library static files.
+     for fileName in staticFiles:
+-        shutil.copy(os.path.join(globalParameters["SourcePath"], fileName), outputPath)
++        src_file = os.path.join(globalParameters["SourcePath"], fileName)
++        
++        # Figure out the exact destination file path
++        dest_file = outputPath
++        if os.path.isdir(outputPath):
++            dest_file = os.path.join(outputPath, os.path.basename(src_file))
++            
++        # Only remove it if the actual file exists
++        if os.path.exists(dest_file):
++            os.remove(dest_file)
++            
++        shutil.copy(src_file, dest_file)
+ 
+     codeObjectFiles, kernels, solutions = writeKernels(
+         outputPath,
