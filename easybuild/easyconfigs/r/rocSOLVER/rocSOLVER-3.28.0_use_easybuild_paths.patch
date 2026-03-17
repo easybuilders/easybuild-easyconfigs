@@ -1,0 +1,36 @@
+Convince rocSolver to not use hard-coded `/opt/rocm` or ROCM_PATH, as EasyBuild splits
+ROCm components into separate modules
+
+Author: Jan Andre Reuter (jan@zyten.de)
+
+--- rocSOLVER-rocm-6.4.1.orig/CMakeLists.txt    2025-02-06 00:47:47.000000000 +0100
++++ rocSOLVER-rocm-6.4.1/CMakeLists.txt 2025-06-16 11:41:22.584423522 +0200
+@@ -199,9 +199,9 @@
+   CACHE STRING "List of specific machine types for library to target")
+
+ # Find HIP dependencies
+-find_package(hip REQUIRED CONFIG PATHS ${ROCM_PATH} /opt/rocm)
++find_package(hip REQUIRED CONFIG PATHS ENV{EBROOTHIP})
+
+-find_package(rocblas REQUIRED CONFIG PATHS ${ROCM_PATH})
++find_package(rocblas REQUIRED CONFIG PATHS ENV{EBROOTROCBLAS})
+ get_imported_target_location(location roc::rocblas)
+ message(STATUS "Found rocBLAS: ${location}")
+ set(rocblas_minimum 4.4)
+@@ -210,7 +210,7 @@
+ rocm_package_add_deb_dependencies(STATIC_DEPENDS "rocblas-static-dev >= ${rocblas_minimum}")
+
+ if(BUILD_WITH_SPARSE)
+-  find_package(rocsparse REQUIRED CONFIG PATHS ${ROCM_PATH})
++  find_package(rocsparse REQUIRED CONFIG PATHS ENV{EBROOTROCSPARSE})
+   get_imported_target_location(location roc::rocsparse)
+   message(STATUS "Found rocSPARSE: ${location}")
+   set(rocsparse_minimum 2.2)
+@@ -222,7 +222,7 @@
+   list(APPEND CPACK_RPM_RUNTIME_PACKAGE_SUGGESTS "rocsparse")
+ endif()
+
+-find_package(rocprim REQUIRED CONFIG PATHS ${ROCM_PATH})
++find_package(rocprim REQUIRED CONFIG PATHS ENV{EBROOTROCPRIM})
+ rocm_package_add_rpm_dependencies(STATIC_DEPENDS "rocprim-static-devel")
+ rocm_package_add_deb_dependencies(STATIC_DEPENDS "rocprim-static-dev")
