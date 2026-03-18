@@ -17,15 +17,14 @@ set to an NFS directory, a warning will be printed whereas prior to this
 change no warning would be printed
 
 fixes #6486
----
- .../ops/transformer/inference/triton/matmul_ext.py | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+
+Adapted to use $TRITON_HOME by Alexander Grund (TU Dresden)
 
 diff --git a/deepspeed/ops/transformer/inference/triton/matmul_ext.py b/deepspeed/ops/transformer/inference/triton/matmul_ext.py
 index c77d8a8e11c0..412c8740a216 100644
 --- a/deepspeed/ops/transformer/inference/triton/matmul_ext.py
 +++ b/deepspeed/ops/transformer/inference/triton/matmul_ext.py
-@@ -40,13 +40,17 @@ class TritonCacheDir:
+@@ -40,13 +40,18 @@ class TritonCacheDir:
      _warning_printed = False
  
      @staticmethod
@@ -43,7 +42,8 @@ index c77d8a8e11c0..412c8740a216 100644
 +
 +    @staticmethod
 +    def default_cache_dir():
-+        tmp_path = os.path.join(Path.home(), ".triton", "autotune")
++        tt_home = os.environ.get('TRITON_HOME') or os.path.join(Path.home(), ".triton")
++        tmp_path = os.path.join(tt_home, "autotune")
          return tmp_path
  
  
