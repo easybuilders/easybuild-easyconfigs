@@ -1,0 +1,39 @@
+easyblock = 'PythonBundle'
+
+name = 'Transformers'
+version = '5.0.0'
+
+homepage = 'https://github.com/huggingface/transformers'
+description = """State-of-the-art Natural Language Processing for PyTorch and TensorFlow 2.0"""
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('tokenizers', '0.22.2'),
+    ('Safetensors', '0.7.0'),
+]
+
+exts_list = [
+    ('regex', '2026.1.15', {
+        # fix configuration error: `project.license` must be valid exactly by one definition (2 matches found)
+        'preinstallopts': "sed -i '/^license/d' pyproject.toml && ",
+        'checksums': ['164759aa25575cbc0651bef59a0b18353e54300d79ace8084c818ad8ac72b7d5'],
+    }),
+    ('transformers', version, {
+        'patches': ['Transformers-5.0.0_revert-check-cli-update.patch'],
+        'checksums': [
+            {'transformers-5.0.0.tar.gz':
+             '5f5634efed6cf76ad068cc5834c7adbc32db78bbd6211fb70df2325a9c37dec8'},
+            {'Transformers-5.0.0_revert-check-cli-update.patch':
+             'c9f87055b45e685d440c430be1c08dc3c7324be5fb2391a853e2b84734e12b93'},
+        ],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'from transformers import AutoTokenizer'",
+]
+
+moduleclass = 'math'
