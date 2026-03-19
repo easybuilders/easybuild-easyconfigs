@@ -1,0 +1,42 @@
+easyblock = 'Binary'
+
+name = 'DuckDB'
+version = '1.5.0'
+
+homepage = 'https://duckdb.org'
+description = """DuckDB is a fast in-process database system."""
+
+toolchain = SYSTEM
+
+local_archs = {'aarch64': 'arm64', 'x86_64': 'amd64'}
+source_urls = ['https://install.duckdb.org/v%(version)s/']
+sources = [{
+    'download_filename': '%%(namelower)s_cli-linux-%s.zip' % local_archs[ARCH],
+    'filename': '%%(namelower)s_cli-%%(version)s-linux-%s.zip' % local_archs[ARCH],
+    'extract_cmd': 'unzip -p %s > %(namelower)s'
+}]
+
+checksums = [{
+    '%(namelower)s_cli-%(version)s-linux-amd64.zip': '179a481edf048dd1fef0f097d66933b4b5f5a5737d4034c645e415ec722c0292',
+    '%(namelower)s_cli-%(version)s-linux-arm64.zip': '31a541e71fc8426fb54f9f7996052cd13552bf3256855533966b318623fcf66d',
+}]
+
+extract_sources = True
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin',
+    'mv %(installdir)s/%(namelower)s %(installdir)s/bin/',
+    'chmod 755 %(installdir)s/bin/%(namelower)s',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "duckdb -version",
+    "duckdb -help || true",
+]
+
+moduleclass = 'data'
