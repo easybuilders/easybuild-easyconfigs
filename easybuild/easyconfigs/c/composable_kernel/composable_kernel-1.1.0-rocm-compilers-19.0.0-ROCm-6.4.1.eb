@@ -1,0 +1,51 @@
+easyblock = 'ROCmComponent'
+
+
+name = 'composable_kernel'
+version = '1.1.0'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/ROCm/composable_kernel'
+description = """The Composable Kernel (CK) library provides a programming model for
+writing performance-critical kernels for machine learning workloads across multiple
+architectures (GPUs, CPUs, etc.). The CK library uses general purpose kernel languages, such as HIP C++."""
+docurls = ['https://rocm.docs.amd.com/projects/composable_kernel/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f'rocm-{_rocm_version}.tar.gz']
+patches = [
+    'composable_kernel-1.1.0_fix-hardcoded-paths.patch',
+    'composable_kernel-1.1.0_disable-warnings.patch',
+]
+checksums = [
+    {'rocm-6.4.1.tar.gz': '6db4d36673da6506ca52625b3bd40c29d3b376d31a224fd221ffe60cf97564bf'},
+    {'composable_kernel-1.1.0_fix-hardcoded-paths.patch':
+     'f523ead386c4a392195a8a2f048dd6ae6b35d1c39343d1c880d646ea9f6dd776'},
+    {'composable_kernel-1.1.0_disable-warnings.patch':
+     '5f3d4b8d64374b850b73a00c12c30772b9b9abd1fbd12a8fa130e32165945956'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('git', '2.49.0'),
+]
+
+configopts = "-DCMAKE_IGNORE_PATH='/opt/rocm' "
+configopts += "-DBUILD_TESTING=OFF "
+
+# Disable Legacy/Fallback Kernels
+configopts += "-DDL_KERNELS=OFF -DDPP_KERNELS=OFF "
+
+# Disable Developer Bloat & Strict Warnings
+configopts += "-DBUILD_DEV=OFF -DCK_TIME_KERNEL=OFF -DCK_USE_CODEGEN=OFF -DUSE_BITINT_EXTENSION_INT4=OFF -DUSE_OPT_GFX11=OFF "
+
+moduleclass = 'lib'

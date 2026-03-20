@@ -1,0 +1,31 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1fe1bc91d..bb8f6170f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -121,7 +121,7 @@ execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse HEAD OUTPUT_VARIABLE COMMI
+ configure_file(include/ck/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/ck/version.h)
+ 
+ set(ROCM_SYMLINK_LIBS OFF)
+-find_package(ROCM REQUIRED PATHS /opt/rocm)
++find_package(ROCM REQUIRED PATHS $ENV{EBROOTROCMMINCMAKE} $ENV{EBROOTROCMMINLLVM})
+ 
+ include(ROCMInstallTargets)
+ include(ROCMPackageConfigHelpers)
+@@ -134,7 +134,7 @@ include(TargetFlags)
+ 
+ rocm_setup_version(VERSION ${version})
+ 
+-list(APPEND CMAKE_PREFIX_PATH ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_PREFIX}/llvm ${CMAKE_INSTALL_PREFIX}/hip /opt/rocm /opt/rocm/llvm /opt/rocm/hip "$ENV{ROCM_PATH}" "$ENV{HIP_PATH}")
++list(APPEND CMAKE_PREFIX_PATH $ENV{EBROOTROCMMINLLVM} $ENV{EBROOTHIP} ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_PREFIX}/llvm ${CMAKE_INSTALL_PREFIX}/hip "$ENV{ROCM_PATH}" "$ENV{HIP_PATH}")
+ 
+ message("GPU_TARGETS= ${GPU_TARGETS}")
+ message("GPU_ARCHS= ${GPU_ARCHS}")
+@@ -148,7 +148,7 @@ if(GPU_TARGETS)
+ else()
+     set(USER_GPU_TARGETS 0)
+ endif()
+-find_package(hip REQUIRED)
++find_package(hip REQUIRED PATHS $ENV{EBROOTHIP})
+ # No assumption that HIP kernels are launched with uniform block size for backward compatibility
+ # SWDEV-413293 and https://reviews.llvm.org/D155213
+ math(EXPR hip_VERSION_FLAT "(${hip_VERSION_MAJOR} * 1000 + ${hip_VERSION_MINOR}) * 100000 + ${hip_VERSION_PATCH}")
