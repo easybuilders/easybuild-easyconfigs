@@ -1,0 +1,44 @@
+easyblock = 'ROCmComponent'
+
+name = 'rocWMMA'
+version = '1.7.0'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/ROCm/rocWMMA'
+description = """rocWMMA is a C++ library for accelerating mixed-precision matrix multiply-accumulate (MMA)
+operations leveraging AMD GPU hardware. rocWMMA makes it easier to break down MMA problems into fragments
+and distribute block-wise MMA operations in parallel across GPU wavefronts. The API consists of a header
+library, that can be used to compile MMA acceleration directly into GPU kernel device code. This
+can benefit from compiler optimization in the generation of kernel assembly, and doesn't incur
+additional overhead costs of linking to external runtime libraries or having to launch separate kernels."""
+docurls = ['https://rocm.docs.amd.com/projects/rocWMMA/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f'rocm-{_rocm_version}.tar.gz']
+checksums = ['888e9794adff06ca1be811d80018e761b9a9cf84cb88dec9e51bc3a6db7a359a']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocBLAS', '4.4.0'),
+    ('googletest', '1.17.0'),
+    ('rocm-smi', '7.6.0', '-ROCm-6.4.1', ('GCCcore', '14.2.0')),
+]
+
+configopts = '-DROCWMMA_USE_SYSTEM_GOOGLETEST=ON '
+
+sanity_check_paths = {
+    'files': ['include/rocwmma/rocwmma.hpp',
+              'bin/hipRTC_gemm'],
+    'dirs': ['share/doc/rocwmma',
+             'include/rocwmma'],
+}
+
+moduleclass = 'lib'
