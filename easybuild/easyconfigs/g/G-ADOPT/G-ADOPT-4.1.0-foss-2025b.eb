@@ -33,10 +33,18 @@ dependencies = [
     ('Pillow', '11.3.0'),
     ('VTK', '9.5.2'),
     ('Firedrake', '2025.10.2'),
+    ('gmsh', '4.14.1'),
 ]
 
+# for pyrpltrilinos:
 local_preinstallopts = 'export CMAKE_ARGS="-DTPL_BLAS_LIBRARIES=$EBROOTFLEXIBLAS/lib/libflexiblas.so '
 local_preinstallopts += '-DTPL_LAPACK_LIBRARIES=$EBROOTFLEXIBLAS/lib/libflexiblas.so"; '
+
+# for testing
+local_testing = 'export OMP_NUM_THREADS=1 && '
+local_testing += 'cd %(builddir)s/gadopt/gadopt-%(version)s/tests/unit && '
+local_testing += 'pytest --ignore=test_limiters.py --ignore=test_gplates.py '
+local_testing += ' --ignore=test_extrusion_tools.py '
 
 exts_list = [
     ('pyroltrilinos', '0.5.6', {
@@ -44,8 +52,19 @@ exts_list = [
         'preinstallopts': local_preinstallopts,
         'checksums': ['b8c6cd1fc55c21497357eeed0613e81e6b6990d13a3e3e02d795cc23874b8328'],
     }),
+    ('pygplates', '1.0.0', {
+        'source_tmpl': '%(name)s-%(version)s-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['dfb26f5e23230cc8e2e17b6794ce5637d9034f3124e15917f351f3195cd36385'],
+    }),
     ('gadopt', version, {
-        'checksums': ['989183871b8ea3c05deb25d4774b810b873da9c4c259bca7f4c80320d03ef7eb'],
+        'patches': ['g-adopt-4.1.0_firedrakeversion.patch'],
+        'runtest': local_testing,
+        'testinstall': True,
+        'checksums': [
+            {'gadopt-4.1.0.tar.gz': '989183871b8ea3c05deb25d4774b810b873da9c4c259bca7f4c80320d03ef7eb'},
+            {'g-adopt-4.1.0_firedrakeversion.patch':
+             'c3e59d3ccd80f60573a723f393593c69821c8541bbf9e9c1b7fb04d89989499e'},
+        ],
     }),
 ]
 
