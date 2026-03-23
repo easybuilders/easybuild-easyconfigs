@@ -1,5 +1,9 @@
+Changes to enable Firedrake-2025.10.2
+Help from the maintainers is greatly appreciated
+see here: https://github.com/g-adopt/g-adopt/issues/482
+Author: J. Saßmannshausen (Imperial College London/UK)
 diff --git a/gadopt-4.1.0.orig/gadopt/utility.py b/gadopt-4.1.0/gadopt/utility.py
-index 51030c8..fa44aef 100644
+index 51030c8..4845e53 100644
 --- a/gadopt-4.1.0.orig/gadopt/utility.py
 +++ b/gadopt-4.1.0/gadopt/utility.py
 @@ -8,7 +8,7 @@ from firedrake import outer, ds_v, ds_t, ds_b, CellDiameter, CellVolume, dot, Ja
@@ -20,6 +24,15 @@ index 51030c8..fa44aef 100644
  
      def compute_timestep(self):
          max_ts = float(self.dt_const)*self.increase_tolerance
+@@ -79,7 +79,7 @@ class TimestepAdaptor:
+             max_ts = min(max_ts, self.maximum_timestep)
+ 
+         # need to reset ref_vel to avoid taking max with previous values
+-        ref_vel = assemble(self.ref_vel_interpolator.interpolate())
++        ref_vel = assemble(self.ref_vel_interpolate)
+         local_maxrefvel = ref_vel.dat.data.max()
+         max_refvel = self.mesh.comm.allreduce(local_maxrefvel, MPI.MAX)
+         # NOTE; we're incorparating max_ts here before dividing by max. ref. vel. as it may be zero
 diff --git a/gadopt-4.1.0.orig/pyproject.toml b/gadopt-4.1.0/pyproject.toml
 index b73143a..6cd834c 100644
 --- a/gadopt-4.1.0.orig/pyproject.toml
