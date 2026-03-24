@@ -12,7 +12,10 @@ toolchain = {'name': 'foss', 'version': '2023a'}
 
 source_urls = ['https://github.com/nanoporetech/%(name)s/archive/']
 sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
-patches = ['pod5-file-format-0.3.10_dep_fix.patch']
+patches = [
+    'pod5-file-format-0.3.10_dep_fix.patch',
+    'pod5-file-format-0.3.10_python_wheel_no_isolation.patch',
+]
 checksums = [
     {'pod5-file-format-0.3.10.tar.gz': 'eb177018b310e508f7ad6b5d486cc29166404dd5f82879d0c26aceaff51d3768'},
     {'pod5-file-format-0.3.10_dep_fix.patch': '20dc87ab82d4b52ff7fb769d17c2478daf95f787b2a184c9d985e33e03038e31'},
@@ -48,6 +51,13 @@ local_preinstallopts = (
     " pyproject.toml && "
 )
 
+
+local_lib_pod5_preinstall = (
+    "sed -i '/pbr/d' setup.cfg 2>/dev/null || true && "
+    "sed -i '/pbr/d' setup.py 2>/dev/null || true && "
+)
+
+
 exts_defaultclass = 'PythonPackage'
 exts_default_options = {
     'source_urls': [PYPI_SOURCE],
@@ -55,6 +65,7 @@ exts_default_options = {
 exts_list = [
     ('lib-pod5', version, {
         'nosource': True,
+        'preinstallopts': local_lib_pod5_preinstall,
         # Build and installed by CMake
         'install_src': '%(installdir)s/lib_pod5-%(version)s-*.whl',
         'modulename': 'lib_pod5',
