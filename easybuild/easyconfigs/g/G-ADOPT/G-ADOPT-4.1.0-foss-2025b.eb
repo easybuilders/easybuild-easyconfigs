@@ -40,31 +40,37 @@ dependencies = [
 local_preinstallopts = 'export CMAKE_ARGS="-DTPL_BLAS_LIBRARIES=$EBROOTFLEXIBLAS/lib/libflexiblas.so '
 local_preinstallopts += '-DTPL_LAPACK_LIBRARIES=$EBROOTFLEXIBLAS/lib/libflexiblas.so"; '
 
-# for testing
+# for testing, we need to download a zip-file so we first define that, and then simply use it:
+local_zipfile = 'Muller_etal_2022_SE_1Ga_Opt_PlateMotionModel_v1.2.zip && '
 local_testing = 'export OMP_NUM_THREADS=1 && '
+local_testing += 'cd %(builddir)s/gadopt/gadopt-%(version)s/demos/mantle_convection/gplates_global && '
+local_testing += 'wget https://data.gadopt.org/github-actions/' + local_zipfile
+local_testing += 'unzip ' + local_zipfile
 local_testing += 'cd %(builddir)s/gadopt/gadopt-%(version)s/tests/unit && '
-local_testing += 'pytest --ignore=test_limiters.py --ignore=test_gplates.py '
-local_testing += ' --ignore=test_extrusion_tools.py && cd - && '
+local_testing += 'pytest && cd - && '
 local_testing += 'make  -C %(builddir)s/gadopt/gadopt-4.1.0/demos/mantle_convection/base_case check '
 
 exts_list = [
     ('pyroltrilinos', '0.5.6', {
         'modulename': 'ROL',
-        'preinstallopts': local_preinstallopts, 
+        'preinstallopts': local_preinstallopts,
         'checksums': ['b8c6cd1fc55c21497357eeed0613e81e6b6990d13a3e3e02d795cc23874b8328'],
     }),
+    # we only need this for testing, and the source code required Qt5:
     ('pygplates', '1.0.0', {
         'source_tmpl': '%(name)s-%(version)s-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
         'checksums': ['dfb26f5e23230cc8e2e17b6794ce5637d9034f3124e15917f351f3195cd36385'],
     }),
     ('gadopt', version, {
-        'patches': ['g-adopt-4.1.0_firedrakeversion.patch'],
-        'runtest': local_testing, 
+        'patches': ['g-adopt-4.1.0_firedrakeversion.patch', 'g-adopt-4.1.0_interpolate.patch'],
+        'runtest': local_testing,
         'testinstall': True,
         'checksums': [
             {'gadopt-4.1.0.tar.gz': '989183871b8ea3c05deb25d4774b810b873da9c4c259bca7f4c80320d03ef7eb'},
             {'g-adopt-4.1.0_firedrakeversion.patch':
              '61b1d4344c2687116b6db228647281c1c0edc8746b82dd5c730878c86bff227b'},
+            {'g-adopt-4.1.0_interpolate.patch':
+             'ac541f39a612050b0bed8d854d97c5ad8a121e3dde3867812899fae88fa95076'},
         ],
     }),
 ]
