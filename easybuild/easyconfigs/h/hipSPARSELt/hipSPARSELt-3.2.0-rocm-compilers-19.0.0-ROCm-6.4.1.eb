@@ -26,17 +26,29 @@ builddependencies = [
     ('CMake', '3.31.3'),
     ('Python', '3.13.1'),
     ('rocm-cmake', '0.14.0'),
-    ('ROCm-LLVM', '19.0.0', f'-ROCm-{_rocm_version}', ('GCCcore', local_gcc_version)),
 ]
 
 dependencies = [
     ('HIP', _rocm_version),
     ('rocSPARSE', '3.4.0'),
+    ('msgpack-cxx', '7.0.0'),
+    ('hipSPARSE', '3.2.0'),
 ]
+
+# The internal Tensile build looks for msgpack module, the following config directs it to msgpack-cxx dependency
+# Create a fake msgpack CMake directory to intercept the broken find_package() call
+preconfigopts = "mkdir -p $PWD/fake_msgpack && "
+# Redirect it to the msgpack-cxx
+preconfigopts += "echo 'find_package(msgpack-cxx REQUIRED)' > $PWD/fake_msgpack/msgpackConfig.cmake && "
+# Alias the old target name to the new target name so the C++ linker doesn't crash
+preconfigopts += "echo 'if(NOT TARGET msgpackc-cxx)' >> $PWD/fake_msgpack/msgpackConfig.cmake && "
+preconfigopts += "echo '  add_library(msgpackc-cxx ALIAS msgpack-cxx)' >> $PWD/fake_msgpack/msgpackConfig.cmake && "
+preconfigopts += "echo 'endif()' >> $PWD/fake_msgpack/msgpackConfig.cmake && "
+configopts = "-Dmsgpack_DIR=$PWD/fake_msgpack "
 
 # We need to build the internal Tensile, even though we have our own module.
 # This requires passing the correct python
-configopts = '-DPython_ROOT=$EBROOTPYTHON '
+configopts += '-DPython_ROOT=$EBROOTPYTHON '
 # Limit the number of threads Tensile can use to generate code.
 # Note that each thread consumes MASSIVE amounts of memory once
 # building multiple GPUs (32GB RAM + 32GB Swap ran OOM for 4 threads)
@@ -48,11 +60,11 @@ configopts = '-DPython_ROOT=$EBROOTPYTHON '
 configopts += '-DTensile_CPU_THREADS=%(parallel)s '
 
 sanity_check_paths = {
-    'files': ['include/hipSPARSELt/hipSPARSELt.h',
-              f'lib/libhipSPARSELt.{SHLIB_EXT}',
-              'lib/cmake/hipSPARSELt/hipSPARSELt-config.cmake'],
-    'dirs': ['share/doc/hipSPARSELt',
-             'include/hipSPARSELt'],
+    'files': ['include/hipsparselt/hipsparselt.h',
+              f'lib/libhipsparselt.{SHLIB_EXT}',
+              'lib/cmake/hipsparselt/hipsparselt-config.cmake'],
+    'dirs': ['share/doc/hipsparselt',
+             'include/hipsparselt'],
 }
 
 moduleclass = 'lib'
