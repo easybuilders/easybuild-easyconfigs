@@ -1,0 +1,70 @@
+easyblock = 'PythonBundle'
+
+name = 'scib-metrics'
+version = '0.5.9'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://scib-metrics.readthedocs.io'
+description = "Accelerated and Python-only metrics for benchmarking single-cell integration outputs"
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('hatchling', '1.24.2'),
+    ('scib', '1.1.7'),
+    ('coverage', '7.6.12'),
+]
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('matplotlib', '3.9.2'),
+    ('anndata', '0.11.4'),
+    ('jax', '0.6.2', versionsuffix),
+    ('scikit-learn', '1.5.2'),
+    ('scanpy', '1.10.4'),
+    ('python-igraph', '0.11.9'),
+    ('tqdm', '4.66.5'),
+    ('umap-learn', '0.5.7'),
+]
+
+# some PCA tests failing on precision without JAX float64
+_float64_tests_types = ['100-1000', '1000-100', '1000-1000']
+_float64_tests_list = [
+    f'tests/utils/test_pca.py::test_pca[{x}]'
+    for x in _float64_tests_types
+]
+_float64_tests = ' '.join(x for x in _float64_tests_list)
+_deselected_tests = ' '.join(
+    f'--deselect {x}'
+    for x in _float64_tests_list
+)
+local_test_cmd = (
+    'pytest -v tests '
+    f'{_deselected_tests} && '
+    'JAX_ENABLE_X64=1 pytest -v '
+    f'{_float64_tests}'
+)
+
+exts_list = [
+    ('harmonypy', '0.1.0', {
+        'checksums': ['fed68f5f6a1e370f87078ba7e7e297ac37971338eee4efa85c12614defe6b12c'],
+    }),
+    ('toolz', '1.0.0', {
+        'checksums': ['2c86e3d9a04798ac556793bced838816296a2f085017664e4995cb40a1047a02'],
+    }),
+    ('plottable', '0.1.5', {
+        'checksums': ['235d762a31c82129dc5bf74205c103a14b1e4393d0f921cc0231be5de884041d'],
+    }),
+    ('chex', '0.1.90', {
+        'checksums': ['d3c375aeb6154b08f1cccd2bee4ed83659ee2198a6acf1160d2fe2e4a6c87b5c'],
+    }),
+    (name, version, {
+        'runtest': local_test_cmd,
+        'testinstall': True,
+        'sources': ['scib_metrics-%(version)s.tar.gz'],
+        'checksums': ['60458403fac9b09b1f678d19b1663df118867d9d8a28bf31f657b604811f2591'],
+    }),
+]
+
+moduleclass = 'bio'
