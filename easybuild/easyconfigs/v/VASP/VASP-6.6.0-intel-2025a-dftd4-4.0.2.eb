@@ -1,0 +1,69 @@
+# Author: Ine Arts (Universiteit Antwerpen)
+
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.6.0'
+versionsuffix = '-dftd4-4.0.2'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'intel', 'version': '2025a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = ['%(namelower)s.%(version)s.tgz']
+patches = [
+    ('VASP-6.6.0_enable_hdf5_wannier90.patch', 1),
+    ('VASP-6.6.0_enable_dftd4.patch', 1),
+    'VASP-6.4.3_POTCAR_readonly.patch',
+]
+
+checksums = [
+    {'vasp.6.6.0.tgz': '9566f59b0ae2fc60f670a91153655d09dba13fe6cc6c54e9ca6bd03bbcd86384'},
+    {'VASP-6.6.0_enable_hdf5_wannier90.patch':
+     'e66fda022414e666688d6a8f529bb8204f868e24cbdebbd576313c2fbd44a0e2'},
+    {'VASP-6.6.0_enable_dftd4.patch':
+     'de860ccc2d8bb937de757912d84090cf2c72c03fe7c098aa1b4fa8ece068d77e'},
+    {'VASP-6.4.3_POTCAR_readonly.patch':
+     '292427bf1dfe741493688b0913400226cbb4f27ecbdde09bf5989d6104c7ce8c'},
+]
+
+dependencies = [
+    ('HDF5', '1.14.6'),
+    ('Wannier90', '3.1.0'),
+    ('dftd4', '4.0.2'),
+]
+
+prebuildopts = 'cp -v arch/makefile.include.oneapi_omp ./makefile.include &&'
+
+# Makefile uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+_targets = ['std', 'gam', 'ncl']
+
+# https://www.vasp.at/wiki/index.php/Validation_tests
+pretestopts = 'export OMP_STACKSIZE=512m && export OMP_NUM_THREADS=4 && '
+runtest = 'test'
+
+buildopts = 'DEPS=1 '
+
+files_to_copy = [
+    (['bin/vasp_' + x for x in _targets], 'bin'),
+    (['testsuite'], ''),
+]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_' + x for x in _targets],
+    'dirs': []
+}
+
+modextravars = {
+    'I_MPI_ADJUST_REDUCE': "3",
+    'OMP_STACKSIZE': "512m"
+}
+
+moduleclass = 'phys'
