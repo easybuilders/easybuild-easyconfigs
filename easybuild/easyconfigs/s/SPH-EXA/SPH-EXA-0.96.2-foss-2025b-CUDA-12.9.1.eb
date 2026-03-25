@@ -1,0 +1,47 @@
+# This file is an EasyBuild reciPY as per https://easybuild.io/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'CMakeMake'
+
+name = 'SPH-EXA'
+version = '0.96.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/sphexa-org/sphexa'
+description = """ SPH-EXA is a C++20 simulation code for hydrodynamics simulations
+(with gravity and other physics), parallelized with MPI, OpenMP, CUDA, and HIP."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/sphexa-org/sphexa/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['2ff6edb422eadf47634f98d20258458c82374efe617de0d0c3d5bb3d7945be23']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.6'),
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('UCX-CUDA', '1.19.0', versionsuffix),
+    ('UCC-CUDA', '1.4.4', versionsuffix),
+]
+
+cuda_compute_capabilities = ['8.0', '8.6', '8.9', '9.0']
+
+configopts = "-DCSTONE_WITH_GPU_AWARE_MPI=ON"
+
+buildopts = "sphexa-cuda"
+
+sanity_check_paths = {
+    'files': ['bin/sphexa', 'bin/sphexa-cuda'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["sphexa --help"]
+
+moduleclass = 'phys'
