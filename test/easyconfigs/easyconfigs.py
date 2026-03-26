@@ -1031,7 +1031,9 @@ class EasyConfigTest(TestCase):
             r'intel-compilers-202(3\.2|[4-9]\.[0-9])\.[0-9]',  # intel-compilers from 2023.2
             # full toolchains, like foss/2022b or intel/2023a
             r'20(23b|(2[4-9]|[3-9][0-9])[ab])',  # 2023b and newer
-            r'20(2[6-9]\.[12]|[3-9][0-9]\.[12])',  # 2026.1 and newer (only <year>.1 or <year>.2)
+            # recent common toolchain like version 2026.1 and newer (only <year>.1 or <year>.2),
+            # along with derivatives like lfoss
+            r'(foss|gompi|gfbf|intel|iimpi|iimkl|lfoss|lfbf|lompi)20(2[6-9]\.[12]|[3-9][0-9]\.[12])',
         ]
 
         all_deps = {}
