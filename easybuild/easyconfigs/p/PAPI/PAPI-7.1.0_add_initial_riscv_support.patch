@@ -1,0 +1,64 @@
+From b464420f3a2855b2c800413a4c5767b69e088087 Mon Sep 17 00:00:00 2001
+From: Vince Weaver <vincent.weaver@maine.edu>
+Date: Tue, 9 Jan 2024 21:50:26 +0000
+Subject: [PATCH] add initial riscv support
+
+This adds basic support for the RISC-V architecture
+
+After this PAPI will compile and the tools will run, however no events will
+work because of missing libpfm4 support.
+
+Tested on a BeagleV-Ahead board
+---
+ src/linux-context.h |  2 ++
+ src/linux-timer.c   |  2 +-
+ src/mb.h            | 10 ++++++++++
+ 3 files changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/src/linux-context.h b/src/linux-context.h
+index f46e5577b..394a4804d 100644
+--- a/src/linux-context.h
++++ b/src/linux-context.h
+@@ -39,6 +39,8 @@ typedef ucontext_t hwd_ucontext_t;
+ #define OVERFLOW_ADDRESS(ctx) ctx.ucontext->uc_mcontext.pc
+ #elif defined(__hppa__)
+ #define OVERFLOW_ADDRESS(ctx) ctx.ucontext->uc_mcontext.sc_iaoq[0]
++#elif defined(__riscv)
++#define OVERFLOW_ADDRESS(ctx) ctx.ucontext->uc_mcontext.__gregs[REG_PC]
+ #else
+ #error "OVERFLOW_ADDRESS() undefined!"
+ #endif
+diff --git a/src/linux-timer.c b/src/linux-timer.c
+index 0eaa79c66..be489f325 100644
+--- a/src/linux-timer.c
++++ b/src/linux-timer.c
+@@ -281,7 +281,7 @@ static inline long long get_cycles()
+     return retval;
+ }
+ 
+-#elif (defined(__arm__) || defined(__mips__) || defined(__hppa__))
++#elif (defined(__arm__) || defined(__mips__) || defined(__hppa__)) || defined(__riscv)
+ static inline long long
+ get_cycles( void )
+ {
+diff --git a/src/mb.h b/src/mb.h
+index 81797c553..56d980410 100644
+--- a/src/mb.h
++++ b/src/mb.h
+@@ -63,6 +63,16 @@
+ #define rmb() asm volatile("lfence":::"memory")
+ #endif
+ 
++
++#elif defined (__riscv)
++#define RISCV_FENCE(p, s) \
++	__asm__ __volatile__ ("fence " #p "," #s : : : "memory")
++
++/* These barriers need to enforce ordering on both devices or memory. */
++#define mb()		RISCV_FENCE(iorw,iorw)
++#define rmb()		RISCV_FENCE(ir,ir)
++#define wmb()		RISCV_FENCE(ow,ow)
++
+ #else
+ #error Need to define rmb for this architecture!
+ #error See the kernel source directory: tools/perf/perf.h file

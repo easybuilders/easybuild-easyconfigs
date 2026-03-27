@@ -1,0 +1,62 @@
+easyblock = 'PythonBundle'
+
+name = 'VeloxChem'
+version = '1.0-rc4'
+
+homepage = 'https://veloxchem.org/docs/intro.html'
+description = """VeloxChem [RLV+20] is a Python-based open source quantum chemistry software for
+contemporary and future hardware architectures. It features interactive program access through
+Jupyter notebooks as well as massively parallel calculations in high-performance
+computing (HPC) environments."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Ninja', '1.11.1'),
+]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('mpi4py', '3.1.4'),
+    ('pybind11', '2.11.1'),
+    ('h5py', '3.9.0'),
+    ('networkx', '3.1'),  # Required by geometric
+    ('scikit-build', '0.17.6'),
+    ('Eigen', '3.4.0'),
+    ('libxc', '6.2.2'),
+]
+
+exts_list = [
+    ('geometric', '1.1', {
+        'checksums': ['ed7bd2ed67a2f15d442ccc6ce628fdfe682bc3f11ee0566d2edde4830877ed2b'],
+    }),
+    (name, version, {
+        'modulename': 'veloxchem',
+        'source_urls': ['https://gitlab.com/veloxchem/veloxchem/-/archive/v%(version)s/'],
+        'sources': ['%(name_lower)s_v%(version)s.tar.gz'],
+        'patches': ['VeloxChem-1.0_fixflexiblas.patch'],
+        'checksums': [
+            {'veloxchem_v1.0-rc4.tar.gz': 'acc2acace6c0f9b52a07b4bcf9b65abb864272dc841e86ae119e58c5f4f8ecf2'},
+            {'VeloxChem-1.0_fixflexiblas.patch': 'de7904cded32d3b64c2d9b17e11ca0a5bd6b4582dda8aa04d9a120c2481d124d'},
+        ],
+        'preinstallopts': ' '.join([
+            'export EIGEN_INCLUDE_DIR="$EBROOTEIGEN/include/Eigen" &&',
+            'VLX_NUM_BUILD_JOBS=%(parallel)s',
+            # Only use needed entries to avoid picking up the flexiblas include path as an `-isystem`
+            'CPATH="$EBROOTLIBXC/include"',
+            'SKBUILD_CONFIGURE_OPTIONS="-DVLX_LA_VENDOR=FlexiBLAS"',
+        ])
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/vlx'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'vlx --help',
+]
+
+moduleclass = 'chem'

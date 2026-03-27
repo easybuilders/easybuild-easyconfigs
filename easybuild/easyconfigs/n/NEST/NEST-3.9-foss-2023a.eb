@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'NEST'
+version = '3.9'
+
+homepage = 'https://www.nest-simulator.org/'
+description = """NEST is a simulator for spiking neural network models that focuses on the
+ dynamics, size and structure of neural systems rather than on the exact morphology of individual neurons."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True, 'openmp': True}
+
+source_urls = ['https://github.com/nest/nest-simulator/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['8e67b9dcb72b029f24f3d70ff6d3dd64776dc21bf3e458c822c862677d67d076']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Python-bundle-PyPI', '2023.06'),  # to provide pytest
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('GSL', '2.7'),
+    ('libtool', '2.4.7'),
+    ('libreadline', '8.2'),
+    ('Boost', '1.82.0'),
+]
+
+configopts = '-Dwith-mpi-executable=ON '
+configopts += '-Dwith-mpi=ON '
+configopts += '-Dwith-openmp=ON '
+configopts += '-Dwith-gsl=ON '
+configopts += '-Dwith-ltdl=ON '
+configopts += '-Dwith-readline=ON '
+configopts += '-Dwith-python=ON '
+configopts += '-Dwith-boost=ON '
+
+
+sanity_check_paths = {
+    'files': ['bin/nest', 'lib/nest/libnest.%s' % SHLIB_EXT],
+    'dirs': ['include/nest', 'lib/python%(pyshortver)s/site-packages/nest'],
+}
+
+sanity_check_commands = [
+    "nest --version | grep 'NEST version %(version)s'",
+    "python -sc 'import nest'",
+]
+
+moduleclass = 'bio'

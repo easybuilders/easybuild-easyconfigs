@@ -1,0 +1,49 @@
+easyblock = 'EB_GROMACS'
+
+name = 'GROMACS-LS'
+version = '2016.3'
+
+homepage = 'https://vanegaslab.org/software'
+description = """
+GROMACS-LS and the MDStress library enable the calculation of local
+stress fields from molecular dynamics simulations.
+
+This is a double precision only CPU only build.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = ['https://vanegaslab.org/files']
+sources = ['gromacs-ls-2016.3-12282019.tar.gz']
+patches = [
+    'GROMACS-LS-2016.3_fix_typo.patch',
+]
+checksums = [
+    {'gromacs-ls-2016.3-12282019.tar.gz': '20f4d4f255800432be188abe41b7fec923cacc5fc895914b3beac0808ddf1919'},
+    {'GROMACS-LS-2016.3_fix_typo.patch': '4b9945476405a358bc64784984c51f08ab1aa3a598fb981b2dad8e0c61665fe0'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('MDStress', '20191228'),
+]
+
+# GROMACS-LS can only be built with double precision
+single_precision = False
+
+# GROMACS-LS can only handle hwloc version < 2
+configopts = '-DGMX_HWLOC=OFF'
+
+# The tests have not been rewritten to handle the mdstress changes
+skipsteps = ['test']
+
+sanity_check_paths = {
+    'files': ['bin/gmx_LS', 'lib/libgromacs_LS.a'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

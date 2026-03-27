@@ -10,9 +10,19 @@ description = """HDF5 is a data model, library, and file format for storing and 
 toolchain = {'name': 'iimpi', 'version': '2023b'}
 toolchainopts = {'pic': True, 'usempi': True}
 
-source_urls = ['https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%(version_major_minor)s/hdf5-%(version)s/src']
+local_ver = version.split('.')
+local_dl_folder = f"v{'_'.join(local_ver[:2])}/v{'_'.join(local_ver)}"
+source_urls = [f'https://support.hdfgroup.org/releases/hdf5/{local_dl_folder}/downloads']
 sources = [SOURCELOWER_TAR_GZ]
-checksums = ['09cdb287aa7a89148c1638dd20891fdbae08102cf433ef128fd345338aa237c7']
+patches = ['HDF5-1.14.3_suppress_fp_exceptions.patch']
+checksums = [
+    {'hdf5-1.14.3.tar.gz': (
+        # Folder name changed from hdf5-1.14.3 to hdfsrc and Makefile got deleted
+        '09cdb287aa7a89148c1638dd20891fdbae08102cf433ef128fd345338aa237c7',
+        '126b800e9b87f65e7e7ffa58ee006607bab03a8e11e5209ea3d5c0c331321d43',
+    )},
+    {'HDF5-1.14.3_suppress_fp_exceptions.patch': 'bf33e579c93a16043c54b266321bbe95e4a8797f7fe6d096a13ce905ed2ffde7'},
+]
 
 # replace src include path with installation dir for $H5BLD_CPPFLAGS
 _regex = 's, -I[^[:space:]]+H5FDsubfiling , -I%(installdir)s/include ,g'

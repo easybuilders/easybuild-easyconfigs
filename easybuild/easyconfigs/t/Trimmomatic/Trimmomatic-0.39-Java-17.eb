@@ -10,8 +10,8 @@ version = '0.39'
 versionsuffix = '-Java-%(javaver)s'
 
 homepage = 'http://www.usadellab.org/cms/?page=trimmomatic'
-description = """Trimmomatic performs a variety of useful trimming tasks for illumina 
- paired-end and single ended data.The selection of trimming steps and their associated 
+description = """Trimmomatic performs a variety of useful trimming tasks for illumina
+ paired-end and single ended data.The selection of trimming steps and their associated
  parameters are supplied on the command line. """
 
 toolchain = SYSTEM
@@ -22,11 +22,18 @@ checksums = ['2f97e3a237378d55c221abfc38e4b11ea232c8a41d511b8b4871f00c0476abca']
 
 dependencies = [('Java', '17')]
 
-modloadmsg = """To execute Trimmomatic run: java -jar $EBROOTTRIMMOMATIC/trimmomatic-%(version)s.jar\n"""
+postinstallcmds = [
+    "mkdir %(installdir)s/bin",
+    """echo -e '#!/bin/bash\nexec java -jar "$EBROOTTRIMMOMATIC"/trimmomatic-*.jar "$@"' """
+    """> %(installdir)s/bin/trimmomatic""",
+    "chmod a+rx %(installdir)s/bin/trimmomatic",
+]
 
 sanity_check_paths = {
-    'files': ["trimmomatic-%(version)s.jar"],
+    'files': ["trimmomatic-%(version)s.jar", 'bin/trimmomatic'],
     'dirs': [""],
 }
+
+sanity_check_commands = ['trimmomatic -version']
 
 moduleclass = 'bio'
