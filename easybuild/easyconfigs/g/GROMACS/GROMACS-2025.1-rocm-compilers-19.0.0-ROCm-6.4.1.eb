@@ -1,0 +1,44 @@
+easyblock = 'CMakeMake'
+
+name = 'GROMACS'
+version = '2025.1'
+_rocm_version = '6.4.1'
+
+homepage = 'https://www.gromacs.org'
+description = """GROMACS is a versatile package to perform molecular dynamics, i.e. simulate the 
+Newtonian equations of motion for systems with hundreds to millions of particles."""
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+source_urls = ['https://ftp.gromacs.org/pub/gromacs/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['0adf621a80fd8043f8defec84ce02811c0cdf42a052232890932d81f25c4d28a']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocFFT', '1.0.32'),
+    ('rocBLAS', '4.4.0'),
+    ('hwloc', '2.11.2'),
+    ('FFTW', '3.3.10', '', ('GCC', '14.2.0')),
+    ('rocPRIM', '3.4.0'),
+]
+
+configopts = "-DGMX_GPU=HIP "
+configopts += "-DGMX_HIP_TARGET_ARCH=gfx90a "
+configopts += "-DGMX_GPU_FFT_LIBRARY=rocFFT "
+configopts += "-DROCFFT_ROOT=$EBROOTROCFFT "
+configopts += "-DGMX_MPI=OFF "
+configopts += "-DGMX_THREAD_MPI=ON "
+configopts += "-DGMX_OPENMP=ON "
+configopts += "-DGMX_HWLOC=ON "
+
+sanity_check_paths = {
+    'dirs': ['bin', 'share/gromacs'],
+    'files': ['bin/gmx'],
+}
+
+moduleclass = 'bio'
