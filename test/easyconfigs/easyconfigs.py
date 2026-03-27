@@ -1085,7 +1085,7 @@ class EasyConfigTest(TestCase):
                             tc_gen = llvm_tc_gen_map[llvm_ver]
                         elif llvm_ver not in llvm_tc_gen_map:
                             # for recent llvm-compilers versions, we really want to have a mapping in place...
-                            self.fail("No mapping for llvm-compilers %s to toolchain generation!" % ic_ver)
+                            self.fail("No mapping for llvm-compilers %s to toolchain generation!" % llvm_ver)
 
                     if ec_deps is None:
                         ec_deps = get_deps_for(ec)
