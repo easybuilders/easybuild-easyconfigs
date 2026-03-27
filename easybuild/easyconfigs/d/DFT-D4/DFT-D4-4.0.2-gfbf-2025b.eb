@@ -10,10 +10,10 @@ toolchain = {'name': 'gfbf', 'version': '2025b'}
 
 source_urls = ['https://github.com/dftd4/dftd4/archive/refs/tags/']
 sources = ['v%(version)s.tar.gz']
-patches = ['DFT-D4-3.2.0-remove_module_id.patch']
+patches = ['DFT-D4-4.0.2_remove_module_id.patch']
 checksums = [
     {'v4.0.2.tar.gz': '4a90fb8020d0980c6b87c9fa7bf2a1bf1fb1e62145f1e063f698940430f4db89'},
-    {'DFT-D4-3.2.0-remove_module_id.patch': '8c3c81338cb57972580e4cf3db307aa2e44b8b3f6d1ba7ae24fa9d807490a93b'},
+    {'DFT-D4-4.0.2_remove_module_id.patch': 'fc0209b9a219cce963f98c369894019899bd0cb23ad90e13e52a92f84fe2adbc'},
 ]
 
 builddependencies = [
@@ -26,13 +26,17 @@ builddependencies = [
 dependencies = [
     ('Python', '3.13.5'),
     ('cffi', '1.17.1'),
-    ('mstore', '0.3.0'),
-    ('mctc-lib', '0.5.0'),
-    ('multicharge', '0.4.0'),
+    # depends on mctc-lib
+    ('mstore', '0.3.0', '-%(namelower)s'),
+    # 4.0.2 reuqires mctc-lib 0.5.1
+    ('mctc-lib', '0.5.1', '-%(namelower)s'),
+    # depends on mctc-lib
+    ('multicharge', '0.5.0', '-%(namelower)s'),
 ]
 
 configopts = '-Dpython=true -Dapi_v2=true '
-# if not intel compiler used, lapack mkl is not found.
+# meson rpathing does not like openblas
+configopts += '-Dlapack=custom -Dcustom_libraries=flexiblas '
 
 sanity_check_paths = {
     'files': ['bin/dftd4', 'lib/libdftd4.a', 'lib/libdftd4.%s' % SHLIB_EXT, 'include/dftd4.mod'],
