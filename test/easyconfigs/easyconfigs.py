@@ -553,9 +553,9 @@ class EasyConfigTest(TestCase):
 
         # some software packages require a specific (older/newer) version of a particular dependency
         alt_dep_versions = {
-            # scanpy-1.10.4 and scvi-tools-1.4.1 requires anndata >= 0.11
             'aiida-core': [(r'2\.7\.2', [r'aiida-shell-', r'AITW-viscosity-'])],
-            'anndata': [(r'0\.11\.4', [r'scvi-tools-1.4.1-', r'scanpy-1.10.4-'])],
+            # SnapATAC2-2.9.0-dev0-20250630 requires anndata == 0.10.9
+            'anndata': [(r'0\.10\.9', [r'SnapATAC2-2.9.0-dev0-20250630-'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
@@ -644,8 +644,9 @@ class EasyConfigTest(TestCase):
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1', r'OPERA-MS-0\.9\.0-20240703'])],
-            # Ceres-Solver-2.2.0 needs SuiteSparse-7.8.2-METIS-5.1.0 from the used toolchain version
-            'SuiteSparse': [(r'7\.8\.2; versionsuffix: -METIS-5.1.0', [r'Ceres-Solver-2\.2\.0-foss-2024a'])],
+            # Ceres-Solver-2.2.0 and COLMAP need SuiteSparse-7.8.2-METIS-5.1.0 from the used toolchain version
+            'SuiteSparse': [(r'7\.8\.2; versionsuffix: -METIS-5.1.0', [r'Ceres-Solver-2\.2\.0-foss-2024a',
+                                                                       r'COLMAP-3\.12\.6-foss-2024a'])],
             # CheckM2 and its dep LightGBM requires scikit-learn-1.6.1
             'scikit-learn': [(r'1\.6\.1', [r'CheckM2-1\.1\.0-', r'LightGBM-4\.6\.0-'])],
             # UShER requires tbb-2020.3 as newer versions will not build
@@ -1016,6 +1017,7 @@ class EasyConfigTest(TestCase):
             '2025.1.0': None,
             '2025.1.1': '2025a',
             '2025.2.0': '2025b',
+            '2025.3.3': '2026.1',
         }
 
         multi_dep_vars_msg = ''
@@ -1029,6 +1031,9 @@ class EasyConfigTest(TestCase):
             r'intel-compilers-202(3\.2|[4-9]\.[0-9])\.[0-9]',  # intel-compilers from 2023.2
             # full toolchains, like foss/2022b or intel/2023a
             r'20(23b|(2[4-9]|[3-9][0-9])[ab])',  # 2023b and newer
+            # recent common toolchain like version 2026.1 and newer (only <year>.1 or <year>.2),
+            # along with derivatives like lfoss
+            r'(foss|gompi|gfbf|intel|iimpi|iimkl|lfoss|lfbf|lompi)20(2[6-9]\.[12]|[3-9][0-9]\.[12])',
         ]
 
         all_deps = {}
@@ -1214,8 +1219,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.2.0'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.2.0.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.2.1'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.2.1.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1767,7 +1772,7 @@ def template_easyconfig_test(self, spec):
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # easyblocks without a build step
-        non_build_blocks = ['Binary', 'JAR', 'PackedBinary', 'Tarball', 'EB_VSCode']
+        non_build_blocks = ['Binary', 'JAR', 'PackedBinary', 'BinariesTarball', 'Tarball', 'EB_VSCode']
         # some software packages do not have a build step
         non_build_soft = ['ANIcalculator', 'Eigen']
 
