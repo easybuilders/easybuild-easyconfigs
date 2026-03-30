@@ -1017,6 +1017,17 @@ class EasyConfigTest(TestCase):
             '2025.1.0': None,
             '2025.1.1': '2025a',
             '2025.2.0': '2025b',
+            '2025.3.3': '2026.1',
+        }
+
+        # map llvm-compilers to toolchain generations
+        # only for recent generations, where we want to limit dependency variants as much as possible
+        # across all easyconfigs of that generation (regardless of whether a full toolchain or subtoolchain is used);
+        # see https://docs.easybuild.io/common-toolchains/#common_toolchains_overview
+        llvm_tc_gen_map = {
+            '20.1.5': '2023b',
+            '20.1.8': '2025b',
+            '21.1.8': '2026.1',
         }
 
         multi_dep_vars_msg = ''
@@ -1030,6 +1041,9 @@ class EasyConfigTest(TestCase):
             r'intel-compilers-202(3\.2|[4-9]\.[0-9])\.[0-9]',  # intel-compilers from 2023.2
             # full toolchains, like foss/2022b or intel/2023a
             r'20(23b|(2[4-9]|[3-9][0-9])[ab])',  # 2023b and newer
+            # recent common toolchain like version 2026.1 and newer (only <year>.1 or <year>.2),
+            # along with derivatives like lfoss
+            r'(foss|gompi|gfbf|intel|iimpi|iimkl|lfoss|lfbf|lompi)20(2[6-9]\.[12]|[3-9][0-9]\.[12])',
         ]
 
         all_deps = {}
@@ -1064,6 +1078,14 @@ class EasyConfigTest(TestCase):
                         elif ic_ver not in ic_tc_gen_map:
                             # for recent intel-compilers versions, we really want to have a mapping in place...
                             self.fail("No mapping for intel-compilers %s to toolchain generation!" % ic_ver)
+
+                    if tc_gen.startswith('llvm-compilers'):
+                        llvm_ver = tc_gen.split('-')[2]
+                        if llvm_ver in llvm_tc_gen_map and llvm_tc_gen_map[llvm_ver] is not None:
+                            tc_gen = llvm_tc_gen_map[llvm_ver]
+                        elif llvm_ver not in llvm_tc_gen_map:
+                            # for recent llvm-compilers versions, we really want to have a mapping in place...
+                            self.fail("No mapping for llvm-compilers %s to toolchain generation!" % llvm_ver)
 
                     if ec_deps is None:
                         ec_deps = get_deps_for(ec)
