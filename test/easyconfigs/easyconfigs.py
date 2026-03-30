@@ -1020,6 +1020,16 @@ class EasyConfigTest(TestCase):
             '2025.3.3': '2026.1',
         }
 
+        # map llvm-compilers to toolchain generations
+        # only for recent generations, where we want to limit dependency variants as much as possible
+        # across all easyconfigs of that generation (regardless of whether a full toolchain or subtoolchain is used);
+        # see https://docs.easybuild.io/common-toolchains/#common_toolchains_overview
+        llvm_tc_gen_map = {
+            '20.1.5': '2023b',
+            '20.1.8': '2025b',
+            '21.1.8': '2026.1',
+        }
+
         multi_dep_vars_msg = ''
         # restrict to checking dependencies of easyconfigs using common toolchains,
         # and GCCcore subtoolchain for common toolchains;
@@ -1068,6 +1078,14 @@ class EasyConfigTest(TestCase):
                         elif ic_ver not in ic_tc_gen_map:
                             # for recent intel-compilers versions, we really want to have a mapping in place...
                             self.fail("No mapping for intel-compilers %s to toolchain generation!" % ic_ver)
+
+                    if tc_gen.startswith('llvm-compilers'):
+                        llvm_ver = tc_gen.split('-')[2]
+                        if llvm_ver in llvm_tc_gen_map and llvm_tc_gen_map[llvm_ver] is not None:
+                            tc_gen = llvm_tc_gen_map[llvm_ver]
+                        elif llvm_ver not in llvm_tc_gen_map:
+                            # for recent llvm-compilers versions, we really want to have a mapping in place...
+                            self.fail("No mapping for llvm-compilers %s to toolchain generation!" % llvm_ver)
 
                     if ec_deps is None:
                         ec_deps = get_deps_for(ec)
