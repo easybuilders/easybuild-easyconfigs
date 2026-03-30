@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'Ipopt'
+version = '3.14.17'
+
+homepage = 'https://coin-or.github.io/Ipopt'
+description = """Ipopt (Interior Point OPTimizer, pronounced eye-pea-Opt) is a software package
+for large-scale nonlinear optimization."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/coin-or/Ipopt/archive/refs/tags/releases']
+sources = ['%(version)s.tar.gz']
+checksums = ['17ab8e9a6059ab11172c184e5947e7a7dda9fed0764764779c27e5b8e46f3d75']
+
+builddependencies = [
+    ('Autotools', '20231222'),
+    ('Doxygen', '1.11.0'),
+    ('pkgconf', '2.2.0'),
+]
+dependencies = [
+    ('MUMPS', '5.7.2', '-metis'),
+    ('zlib', '1.3.1'),
+]
+
+# Ensure MPI initialization in tests (needed in systems without sane MPI environment)
+preconfigopts = "sed -i 's|checkrun ./|checkrun %(mpi_cmd_prefix)s ./|' test/run_unitTests.in && "
+preconfigopts += "sed -i '59 a hostname' test/run_unitTests.in && "
+preconfigopts += "sed -i '60 a mpirun hostname' test/run_unitTests.in && "
+preconfigopts += "sed -i '61 a mpirun -n 1 ./hs071_cpp' test/run_unitTests.in && "
+# Use BLAS/LAPACK from toolchain
+configopts = '--with-lapack-lflags="$LIBLAPACK $LIBSCALAPACK" '
+# Use MUMPS from EB (link to MUMPS static library)
+_mumps_linker_flags = "-lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord "
+_mumps_linker_flags += "-lptscotch -lscotch -lscotcherr -lesmumps -lmetis"
+configopts += '--with-mumps-cflags="-I$EBROOTMUMPS/include" '
+configopts += f'--with-mumps-lflags="{_mumps_linker_flags}" '
+buildopts = 'V=1'
+runtest = 'test V=1'
+
+sanity_check_paths = {
+    'files': [f'lib/libipopt.{SHLIB_EXT}', f'lib/libsipopt.{SHLIB_EXT}'],
+    'dirs': ['include/coin-or', 'lib/pkgconfig']
+}
+
+moduleclass = 'math'
