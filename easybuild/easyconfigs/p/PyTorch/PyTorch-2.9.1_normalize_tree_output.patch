@@ -1,0 +1,24 @@
+Avoid failure in TestProfilerTree.test_profiler_experimental_tree_with_stack_and_modules
+with diff:
+> - <built-in method _get_tracing_state of PyCapsule object at 0xXXXXXXXXXXXX>
+> + <built-in method _get_tracing_state of pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1 object at 0xXXXXXXXXXXXX>
+
+See https://github.com/pytorch/pytorch/pull/174768
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/profiler/test_profiler_tree.py b/test/profiler/test_profiler_tree.py
+index 670e639c98e..e53fd93b273 100644
+--- a/test/profiler/test_profiler_tree.py
++++ b/test/profiler/test_profiler_tree.py
+@@ -240,6 +240,11 @@ class TestProfilerTree(TestCase):
+         # simply coerce them into a platform independent form. If you made a
+         # change in the codebase which changes the trace produced, simply use
+         # EXPECTTEST_ACCEPT=1 to update the tests to reflect the new structure.
++        def normalize(tree):
++            return re.sub(r'of pybind11\w+ object at', 'of PyCapsule object at', tree)
++
++        actual = normalize(actual)
++        expected = normalize(expected)
+ 
+         # expecttest will not show the diff view if `len(actual) < len(expected)`
+         if not expecttest.ACCEPT:
