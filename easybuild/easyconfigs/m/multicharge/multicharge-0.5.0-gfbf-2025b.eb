@@ -1,0 +1,69 @@
+easyblock = 'Bundle'
+easyblock = 'CMakeNinja'
+
+name = 'multicharge'
+version = '0.5.0'
+
+homepage = 'https://github.com/grimme-lab/multicharge'
+description = """Electronegativity equilibration model for atomic partial charges."""
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('Ninja', '1.13.0'),
+]
+
+dependencies = [
+    ('json-fortran', '9.0.5'),
+]
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'source_urls': ['https://github.com/grimme-lab/%(name)s/archive'],
+    'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+    'start_dir': '%(name)s-%(version)s',
+    'runtest': True,
+}
+
+components = [
+    ('mctc-lib', '0.5.1', {
+        'patches': [{'name': 'mctc-lib-0.5.0_fix-install-template.patch', 'alt_location': 'mctc-lib'}],
+        'checksums': [
+            {'mctc-lib-0.5.1.tar.gz': 'c0b3ed75546ca6382f18b5569ce3f80c916537aaf02b208662bce6eb53338350'},
+            {'mctc-lib-0.5.0_fix-install-template.patch': '647c77ba4bd4ce78090c7f3dd60ccbc7d4263320ac53572e98fef7bc46135a20'},
+        ],
+        'configopts': '-DBUILD_SHARED_LIBS=ON',
+    }),
+    # 2nd entry to mctc-lib, to also build static librarY
+    ('mctc-lib', '0.5.1', {
+        'checksums': ['c0b3ed75546ca6382f18b5569ce3f80c916537aaf02b208662bce6eb53338350'],
+        'configopts': '-DBUILD_SHARED_LIBS=OFF',
+    }),
+    ('mstore', '0.3.0', {
+        'checksums': ['56b3d778629eb74b8a515cd53c727d04609f858a07f8d3555fd5fd392a206dcc'],
+        'configopts': '-DBUILD_SHARED_LIBS=ON',
+        # no tests available for mstore
+        'runtest': False,
+    }),
+    (name, version, {
+        'easyblock': 'CMakeNinja',
+        'checksums': ['6b137db34c89ab73f8cc8f2849db1679b2efa1fdec255cd77fca672d7fc8ea5c'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/mctc-convert', 'bin/mstore-fortranize', 'bin/mstore-info', 'bin/multicharge',
+              'lib/libmctc-lib.%s' % SHLIB_EXT, 'lib/libmstore.%s' % SHLIB_EXT, 'lib/libmulticharge.a'],
+    'dirs': ['include/mctc-lib', 'include/mstore', 'include/multicharge', 'lib/cmake', 'lib/pkgconfig'],
+}
+
+sanity_check_commands = [
+    "mctc-convert --help",
+    "mstore-info --help",
+    "multicharge --help",
+]
+
+moduleclass = 'chem'
