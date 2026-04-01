@@ -20,15 +20,19 @@ checksums = [
     'dd7217d8bf12ac4161fd0b6504f7c085ebcc69b23ab2ac4abcf9251f34b8bc30',  # Wannier90_3.1.0_fix_mpi_include.patch
 ]
 
+# first build serial library, and rename it to libwannier-serial.a
+prebuildopts = 'make lib F90=$F90_SEQ FCOPTS="$FFLAGS -fallow-argument-mismatch" LDOPTS="$FFLAGS" && '
+prebuildopts += 'mv libwannier.a libwannier-serial.a && '
+
 buildopts = 'all F90=$F90 MPIF90=$MPIF90 FCOPTS="$FFLAGS -fallow-argument-mismatch" LDOPTS="$FFLAGS" '
 buildopts += 'LIBDIR="$LAPACK_LIB_DIR" LIBS="$LIBLAPACK" '
 buildopts += 'COMMS=mpi'
 
 local_executables = ['wannier90.x', 'postw90.x', 'w90chk2chk.x', 'w90spn2spn.x']
-files_to_copy = [(local_executables, 'bin'), (['libwannier.a'], 'lib')]
+files_to_copy = [(local_executables, 'bin'), (['libwannier.a', 'libwannier-serial.a'], 'lib')]
 
 sanity_check_paths = {
-    'files': ['bin/%s' % x for x in local_executables] + ['lib/libwannier.a'],
+    'files': ['bin/%s' % x for x in local_executables] + ['lib/libwannier.a', 'lib/libwannier-serial.a'],
     'dirs': []
 }
 
