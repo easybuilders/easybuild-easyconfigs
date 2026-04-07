@@ -330,7 +330,7 @@ class EasyConfigTest(TestCase):
 
         self.assertEqual(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False,
                                          return_conflicts=True),
-                         "")
+                         [])
 
     def test_deps(self):
         """Perform checks on dependencies in easyconfig files"""
