@@ -1,3 +1,16 @@
+Bypasses hardcoded host-system hardware checks and monolithic ROCm version parsing.
+
+Original issue: RCCL attempts to read `${ROCM_PATH}/.info/version` to determine the ROCm version. 
+In EasyBuild environment, there is no centralized ROCm installation path, causing this version parsing to fail.
+Second, it uses raw bash commands to check host RAM and dynamically calculate the number of parallel linker jobs.
+In EasyBuild environment, these commands often fail or miscalculate, leading to CMake errors or OOM crashes during the linking phase.
+
+This patch hardcodes the ROCm version check to `6.4.1` and explicitly limits `num_linker_jobs` to `4`
+to ensure stable compilation. It should be re-evaluated for future releases to see if upstream introduces
+standard CMake flags to override these dynamic host checks.
+
+Author: Aayush Joglekar (aayush.joglekar@surf.nl)
+
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 45ba954f..0d631a2a 100644
 --- a/CMakeLists.txt
