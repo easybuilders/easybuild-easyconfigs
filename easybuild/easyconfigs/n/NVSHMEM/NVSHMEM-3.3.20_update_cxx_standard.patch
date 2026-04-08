@@ -1,0 +1,70 @@
+Avoid build failures due to GCC 14.3.0 type_traits header.
+
+Author: Jan Andre Reuter (JSC)
+
+diff --color -Naur nvshmem_src.orig/examples/CMakeLists.txt nvshmem_src/examples/CMakeLists.txt
+--- nvshmem_src.orig/examples/CMakeLists.txt	2025-07-28 01:43:56.000000000 +0200
++++ nvshmem_src/examples/CMakeLists.txt	2025-08-17 23:48:23.020761995 +0200
+@@ -118,7 +118,7 @@
+ endif()
+ 
+ if(CUDAToolkit_VERSION_MAJOR LESS 13)
+-  set(EXAMPLES_CXX_STANDARD 11)
++  set(EXAMPLES_CXX_STANDARD 17) # Updated from 11 due to GCC 14 issues
+ else()
+   set(EXAMPLES_CXX_STANDARD 17)
+ endif()
+diff --color -Naur nvshmem_src.orig/perftest/CMakeLists.txt nvshmem_src/perftest/CMakeLists.txt
+--- nvshmem_src.orig/perftest/CMakeLists.txt	2025-07-28 01:43:56.000000000 +0200
++++ nvshmem_src/perftest/CMakeLists.txt	2025-08-17 23:48:23.020761995 +0200
+@@ -130,7 +130,7 @@
+ endif()
+ 
+ if(CUDAToolkit_VERSION_MAJOR LESS 13)
+-  set(PERFTEST_CXX_STANDARD 11)
++  set(PERFTEST_CXX_STANDARD 17)
+ else()
+   set(PERFTEST_CXX_STANDARD 17)
+ endif()
+@@ -149,7 +149,7 @@
+ endif()
+ 
+ if(CUDAToolkit_VERSION_MAJOR LESS 13)
+-  set(BITCODE_CXX_STD "c++11")
++  set(BITCODE_CXX_STD "c++17")
+ else()
+   set(BITCODE_CXX_STD "c++17")
+ endif()
+diff --color -Naur nvshmem_src.orig/src/CMakeLists.txt nvshmem_src/src/CMakeLists.txt
+--- nvshmem_src.orig/src/CMakeLists.txt	2025-07-28 01:43:56.000000000 +0200
++++ nvshmem_src/src/CMakeLists.txt	2025-08-17 23:48:58.943787791 +0200
+@@ -44,7 +44,7 @@
+ ## Start bitcode library configurations
+ 
+ if(CUDAToolkit_VERSION_MAJOR LESS 13)
+-  set(LIB_CXX_STANDARD 11)
++  set(LIB_CXX_STANDARD 17)
+ else()
+   set(LIB_CXX_STANDARD 17)
+ endif()
+diff --color -Naur nvshmem_src.orig/src/device/CMakeLists.txt nvshmem_src/src/device/CMakeLists.txt
+--- nvshmem_src.orig/src/device/CMakeLists.txt	2025-07-28 01:43:56.000000000 +0200
++++ nvshmem_src/src/device/CMakeLists.txt	2025-08-17 23:48:41.941775581 +0200
+@@ -67,7 +67,7 @@
+ message(STATUS "NVSHMEM_DEBUG: ${NVSHMEM_DEBUG}")
+ 
+ if(CUDAToolkit_VERSION_MAJOR LESS 13)
+-  set(LIB_CXX_STANDARD 11)
++  set(LIB_CXX_STANDARD 17) # Updated from 11 due to GCC 14 header issues
+ else()
+   set(LIB_CXX_STANDARD 17)
+ endif()
+@@ -98,7 +98,7 @@
+                       CXX_STANDARD_REQUIRED ON
+                       CUDA_STANDARD_REQUIRED ON
+                       CXX_STANDARD "${LIB_CXX_STANDARD}"
+-                      CUDA_STANDARD 11
++                      CUDA_STANDARD 17
+                       CUDA_SEPARABLE_COMPILATION ON
+                       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/../lib"
+                       ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/../lib"

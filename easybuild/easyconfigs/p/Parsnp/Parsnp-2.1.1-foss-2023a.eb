@@ -1,0 +1,84 @@
+easyblock = 'ConfigureMake'
+
+name = 'Parsnp'
+version = '2.1.1'
+
+homepage = 'https://harvest.readthedocs.io/en/latest/content/parsnp.html'
+description = """Parsnp was designed to align the core genome of
+hundreds to thousands of bacterial genomes within a few minutes to few
+hours. Input can be both draft assemblies and finished genomes, and
+output includes variant (SNP) calls, core genome phylogeny and
+multi-alignments. Parsnp leverages contextual information provided by
+multi-alignments surrounding SNP sites for filtration/cleaning, in
+addition to existing tools for recombination detection/filtration and
+phylogenetic reconstruction."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'openmp': True}
+
+github_account = 'marbl'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'Parsnp-2.1.1_fix_configure_search_for_libMUSCLE.patch',
+]
+checksums = [
+    {'v2.1.1.tar.gz': '7887ee4030dad6f30a4b735f1ee463024204030adbdcb0fa96562e6e8664474e'},
+    {'Parsnp-2.1.1_fix_configure_search_for_libMUSCLE.patch':
+     '7b601c442ed4f64b53195b9adefafbb0d9639296513e22961a8e0de672dbb3fb'},
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('tqdm', '4.66.1'),
+    ('Biopython', '1.83'),
+    ('FastTree', '2.1.11'),
+    ('harvest-tools', '1.3'),
+    ('RAxML', '8.2.13'),
+    ('pyspoa', '0.2.1'),
+    ('Mash', '2.3'),
+    ('FastANI', '1.34'),
+    ('PhiPack', '2016.06.14'),
+]
+
+preconfigopts = ' && '.join([
+    'cd muscle',
+    './autogen.sh',
+    './configure --prefix=%(installdir)s',
+    'make install',
+    'cd ..',
+    './autogen.sh',
+    '',
+])
+
+configopts = '--with-libmuscle=%(installdir)s'
+
+preinstallopts = ' && '.join([
+    'cd muscle',
+    'make install',
+    'cd ..',
+    '',
+])
+
+postinstallcmds = [
+    'cp parsnp %(installdir)s/bin',
+    'cp template.ini %(installdir)s',
+    'mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages',
+    'cp partition.py extend.py logger.py %(installdir)s/lib/python%(pyshortver)s/site-packages',
+]
+
+sanity_check_paths = {
+    'files': ['bin/parsnp_core', 'bin/parsnp', 'template.ini'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextravars = {
+    'PARSNPDIR': '',
+}
+
+moduleclass = 'bio'

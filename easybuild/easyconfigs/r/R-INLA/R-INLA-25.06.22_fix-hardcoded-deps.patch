@@ -1,0 +1,49 @@
+use dependencies provided by EasyBuild
+authors: Denis Kristak (INUITS), Kenneth Hoste (HPC-UGent)
+Update: Petr Král (INUITS)
+diff -u r-inla-Version_25.06.22/inlaprog/Makefile.orig r-inla-Version_25.06.22/inlaprog/Makefile
+--- r-inla-Version_25.06.22/inlaprog/Makefile.orig
++++ r-inla-Version_25.06.22/inlaprog/Makefile
+@@ -2,8 +2,8 @@
+ 
+ PREFIX = /usr/local
+ 
+-RLIB_INC = -DINLA_WITH_LIBR -I/usr/include/R -I/usr/share/R/include
+-RLIB_LIB = -L/usr/lib -lRmath -L/usr/lib/R/lib -lR
++RLIB_INC = -DINLA_WITH_LIBR
++RLIB_LIB = -lRmath -lR
+ 
+ # select compilers and optimized compiler-options, add -fopenmp or similar to use OpenMP
+ CC = gcc
+@@ -19,7 +19,7 @@ LEXTPREFIX = $(PREFIX)
+ 
+ # The external libraries to link with
+ EXTLIBS1 = -L$(PREFIX)/lib -lGMRFLib -ltaucs -L$(LEXTPREFIX)/lib 
+-EXTLIBS2 = -lgsl -lmetis -llapack -lblas -lgslcblas -lmuparser -lz -lgfortran -lcrypto
++EXTLIBS2 = -lgsl -lmetis -lscalapack -lflexiblas -lgslcblas -lmuparser -lz -lgfortran -lcrypto
+ EXTLIBS3 = -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -lm
+ 
+ ################################################################################
+@@ -53,8 +53,8 @@ install: $(INLA)
+ 	 done; \
+ 	 install -m755 $(INLA) $(PREFIX)/bin/$(INLA);\
+ 	 install -m755 $(INLA) $(PREFIX)/bin/$(INLA);\
+-	 rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete doc/* $(PREFIX)/doc/inla; \
+-	 rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete examples/* $(PREFIX)/doc/inla/examples; 
++# 	 rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete doc/* $(PREFIX)/doc/inla; \
++# 	 rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete examples/* $(PREFIX)/doc/inla/examples;
+ 
+ clean:; -$(RM) $(OBJ) $(INLA)
+ 
+diff -u r-inla-Version_25.06.22/inlaprog/src/eval.c.orig r-inla-Version_25.06.22/inlaprog/src/eval.c
+--- r-inla-Version_25.06.22/inlaprog/src/eval.c.orig
++++ r-inla-Version_25.06.22/inlaprog/src/eval.c
+@@ -8,7 +8,7 @@
+ #include <strings.h>
+ 
+ #if defined(INLA_WITH_MUPARSER)
+-#include <muParser/muParserDLL.h>
++#include <muParserDLL.h>
+ #endif
+ 
+ #include "GMRFLib/GMRFLib.h"

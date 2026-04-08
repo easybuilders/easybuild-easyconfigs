@@ -1,0 +1,52 @@
+From: John Dey 
+fix invalid Python2 escape sequence '\.' errors 
+
+diff -ruN shapemapper2-2.3.orig/internals/python/cli.py shapemapper2-2.3/internals/python/cli.py
+--- shapemapper2-2.3.orig/internals/python/cli.py	2024-11-22 13:54:45.000000000 -0800
++++ shapemapper2-2.3/internals/python/cli.py	2025-05-20 14:33:43.102406000 -0700
+@@ -222,7 +222,7 @@
+             sub_name=arg_dict['name']
+             try:
+                files = os.listdir(pipeline.out)
+-               n7_message_file_regex =  "\." + sub_name + ".*_n7message.txt" 
++               n7_message_file_regex =  r"\." + sub_name + ".*_n7message.txt" 
+                for f in files:
+                   if re.findall(n7_message_file_regex, f) != []:
+                      n7_message_file = pipeline.out + "/" + f
+@@ -231,9 +231,9 @@
+                   if "low N7" in warnings:
+                      to_remove = []
+ 
+-                     mod_ga_regex = sub_name + "_Modified.*\.mutga"
+-                     unt_ga_regex = sub_name + "_Untreated.*\.mutga"
+-                     txt_ga_regex =   "^[^.]*" + sub_name + ".*" + "profile\.txtga"
++                     mod_ga_regex = sub_name + r"_Modified.*\.mutga"
++                     unt_ga_regex = sub_name + r"_Untreated.*\.mutga"
++                     txt_ga_regex =   "^[^.]*" + sub_name + ".*" + r"profile\.txtga"
+                      for f in files:
+                         #if f.find(".mutga") != -1:
+                         if re.findall(mod_ga_regex, f) != []:
+diff -ruN shapemapper2-2.3.orig/internals/python/pyshapemap/nodes.py shapemapper2-2.3/internals/python/pyshapemap/nodes.py
+--- shapemapper2-2.3.orig/internals/python/pyshapemap/nodes.py	2024-11-22 13:54:45.000000000 -0800
++++ shapemapper2-2.3/internals/python/pyshapemap/nodes.py	2025-05-20 14:34:11.002789000 -0700
+@@ -165,7 +165,7 @@
+         assert isinstance(self.filename, str)
+         try:
+             if dms:
+-               if re.search("\.sam", self.filename):
++               if re.search(r"\.sam", self.filename):
+                   os.mkfifo(self.filename + "N1")
+                   if N7:
+                      os.mkfifo(self.filename + "N7")
+diff -ruN shapemapper2-2.3.orig/internals/python/pyshapemap/util.py shapemapper2-2.3/internals/python/pyshapemap/util.py
+--- shapemapper2-2.3.orig/internals/python/pyshapemap/util.py	2024-11-22 13:54:45.000000000 -0800
++++ shapemapper2-2.3/internals/python/pyshapemap/util.py	2025-05-20 14:32:14.953957000 -0700
+@@ -45,7 +45,7 @@
+ def version():
+     this_dir = os.path.dirname(os.path.realpath(__file__))
+     release_dir = os.path.join(this_dir, "../../release")
+-    f = open(os.path.join(release_dir, "version.txt"), "rU")
++    f = open(os.path.join(release_dir, "version.txt"), "r")
+     return f.readline().strip()
+ 
+ 

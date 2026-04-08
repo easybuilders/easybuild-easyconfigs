@@ -31,11 +31,17 @@ toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
 
 source_urls = ['https://apps.fz-juelich.de/jsc/%(namelower)s/download.php?version=%(version)sl']
 sources = ['%(namelower)s-%(version)sl.tar.gz']
-checksums = ['3b5072d8a32a9e9858d85dfe4dc01e7cfdbf54cdaa60660e760b634ee08d8a4c']
+# 1.7.7 was rereleased with code changes. Old checksum was:
+# 3b5072d8a32a9e9858d85dfe4dc01e7cfdbf54cdaa60660e760b634ee08d8a4c
+checksums = ['e37c42975b47dead4649d34fbcaf5a95d2257240039756a0d7f3c1ff312aebcc']
 
 builddependencies = [
     ('binutils', '2.40'),
 ]
+
+# remove -m64 flag from PFLAG variable in Makefiles for CPU architectures that don't support it
+if ARCH != 'x86_64':
+    preconfigopts = 'sed -i "s|PFLAG  = -m\\$(PREC)|PFLAG  = |" mf/Makefile.defs.linux-gomp* && '
 
 configopts = '--disable-cxx --disable-fortran --disable-ompi '
 

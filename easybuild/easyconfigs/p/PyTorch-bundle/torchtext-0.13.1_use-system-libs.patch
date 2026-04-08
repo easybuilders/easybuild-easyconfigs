@@ -4,16 +4,27 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 1ead15d46..21f85e555 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -63,5 +63,9 @@ endif()
+@@ -63,5 +63,20 @@ endif()
  # TORCH_CXX_FLAGS contains the same -D_GLIBCXX_USE_CXX11_ABI value as PyTorch
  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ${TORCH_CXX_FLAGS}")
  
 -add_subdirectory(third_party)
 +find_package(double-conversion)
++add_library(double-conversion ALIAS double-conversion::double-conversion)
 +find_package(re2)
++add_library(re2 ALIAS re2::re2)
 +find_library(SENTENCEPIECE_LIBRARY sentencepiece PATHS $ENV{EBROOTSENTENCEPIECE}/lib64)
 +find_library(SENTENCEPIECE_TRAIN_LIBRARY sentencepiece_train PATHS $ENV{EBROOTSENTENCEPIECE}/lib64)
-+find_library(UTF8PROC_LIBRARY utf8proc PATHS $ENV{UTF8PROC}/lib64)
++add_library(sentencepiece UNKNOWN IMPORTED)
++set_target_properties(sentencepiece PROPERTIES
++    IMPORTED_LOCATION "${SENTENCEPIECE_LIBRARY}"
++)
++target_compile_features(sentencepiece INTERFACE cxx_std_17)
++add_library(sentencepiece_train UNKNOWN IMPORTED)
++set_target_properties(sentencepiece_train PROPERTIES
++    IMPORTED_LOCATION "${SENTENCEPIECE_TRAIN_LIBRARY}"
++    INTERFACE_LINK_LIBRARIES "sentencepiece"
++)
  add_subdirectory(torchtext/csrc)
 diff --git a/packaging/build_wheel.sh b/packaging/build_wheel.sh
 index 9882cb1b2..43e2a05d8 100755

@@ -1,0 +1,31 @@
+Replace the hardcoded internal lib/ path in BamQuery.py with a runtime-resolved path from BAMQUERY_LIB
+Author: Pavel Tomanek (Inuits/Ugent) with help of ChatGPT5.4
+--- BamQuery/BamQuery.py.orig	2026-03-30 14:58:22.892264000 +0200
++++ BamQuery/BamQuery.py	2026-03-30 14:59:06.792016000 +0200
+@@ -20,7 +20,25 @@
+ __author__ = "Maria Virginia Ruiz Cuevas"
+ __email__ = "maria.virginia.ruiz.cuevas@umontreal.ca"
+ 
+-path_to_lib = '/'.join(os.path.abspath(__file__).split('/')[:-2])+'/lib/'
++# path_to_lib = '/'.join(os.path.abspath(__file__).split('/')[:-2])+'/lib/'
++def get_path_to_lib():
++    path = os.environ.get('BAMQUERY_LIB')
++    if not path:
++        raise RuntimeError(
++            'You have to set BAMQUERY_LIB to the BamQuery library directory '
++            '(for example: export BAMQUERY_LIB="$HOME/bamquery_lib")'
++        )
++    path = os.path.expandvars(os.path.expanduser(path))
++    path = os.path.abspath(path)
++    if not os.path.isdir(path):
++        raise RuntimeError(
++            f'BAMQUERY_LIB points to a non-existing directory: {path}'
++        )
++    if not path.endswith(os.sep):
++        path += os.sep
++    return path
++
++path_to_lib = get_path_to_lib()
+ 
+ class BamQuery:
+ 
