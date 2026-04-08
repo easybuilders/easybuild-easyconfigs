@@ -158,11 +158,13 @@ ic_tc_gen_map = {
     '2024.2.0': '2024a',
     '2025.1.1': '2025a',
     '2025.2.0': '2025b',
+    '2025.3.3': '2026.1',
 }
 
 llvm_tc_gen_map = {
     '20.1.5': '2023b',
     '20.1.8': '2025b',
+    '21.1.8': '2026.1',
 }
 
 toolchain_names = ['foss', 'gompi', 'gfbf', 'iimpi', 'iimkl', 'intel', 'llvm-compilers', 'lfbf',
