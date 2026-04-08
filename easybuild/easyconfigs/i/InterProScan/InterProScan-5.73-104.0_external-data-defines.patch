@@ -1,0 +1,28 @@
+Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+Patch the interproscan.sh script to listen to INTERPROSCAN_DATA_DIR and INTERPROSCAN_{data}
+environment variables, and add corresponding defines to the java invocation
+Update: Petr Král (INUITS)
+--- interproscan.sh.orig	2025-01-29 18:26:14.000000000 +0100
++++ interproscan.sh	2025-06-13 12:51:55.525440650 +0200
+@@ -49,8 +49,21 @@
+     exit 1
+ fi
+ 
++EB_DEFINES=""
++if [[ ! -z "${INTERPROSCAN_DATA_DIR}" ]];
++then
++    EB_DEFINES="${EB_DEFINES} -Ddata.directory=\"${INTERPROSCAN_DATA_DIR}\""
++    for var in $(env | grep -P '^INTERPROSCAN_(?!DATA_DIR)[a-z0-9_]+');
++    do
++       var_name="${var#INTERPROSCAN_}"; var_name="${var_name%=*}"
++    var_val="${var#*=}"
++    EB_DEFINES="${EB_DEFINES} -D${var_name,,}.signature.libary.release=\"${var_val}\""
++    done
++fi
++
+ "$JAVA" \
+  -XX:ParallelGCThreads=8 \
+  -Xms2028M -Xmx9216M \
+  $PROPERTY \
++ $(echo "${EB_DEFINES}") \
+  -jar interproscan-5.jar $@ -u $USER_DIR
