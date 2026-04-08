@@ -9,19 +9,25 @@ toolchain = {'name': 'GCC', 'version': '14.2.0'}
 source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
 sources = [SOURCELOWER_TAR_BZ2]
 patches = [
-    ('OpenMPI-5.0.6_build-with-internal-cuda-header.patch', 1),
+    ('OpenMPI-5.0.7_build-with-internal-cuda-header.patch', 1),
     ('OpenMPI-5.0.7_fix-sshmem-build-failure.patch'),
+    'OpenMPI-5.0.7_fix_gpfs_compatibility.patch',
+    'OpenMPI-5.0.3_disable_opal_path_nfs_test.patch',
 ]
 checksums = [
     {'openmpi-5.0.7.tar.bz2': '119f2009936a403334d0df3c0d74d5595a32d99497f9b1d41e90019fee2fc2dd'},
-    {'OpenMPI-5.0.6_build-with-internal-cuda-header.patch':
-     '4821f0740ae4b97f3ff5259f7bac67a11d8cdeede3b1425825c241cf6a2864bb'},
+    {'OpenMPI-5.0.7_build-with-internal-cuda-header.patch':
+     '14ffaf02a9c675ac66a2a9af727295179d4ce097174c88db59669d460d8c4da1'},
     {'OpenMPI-5.0.7_fix-sshmem-build-failure.patch':
      '7382a5bbe44c6eff9ab05c8f315a8911d529749655126d4375e44e809bfedec7'},
+    {'OpenMPI-5.0.7_fix_gpfs_compatibility.patch': '9739134ce273a691c9deac6e410510653a88c1542b60dbf8789e4a423447d4f6'},
+    {'OpenMPI-5.0.3_disable_opal_path_nfs_test.patch':
+     '75d4417e35252ea3a19b2792f1b06e9aeb408c253aa4921d77226d57b71dee45'},
 ]
 
 builddependencies = [
     ('pkgconf', '2.3.0'),
+    ('Perl', '5.40.0'),
     ('Autotools', '20240712'),
 ]
 
@@ -38,6 +44,14 @@ dependencies = [
 
 # CUDA related patches and custom configure option can be removed if CUDA support isn't wanted.
 preconfigopts = 'gcc -Iopal/mca/cuda/include -shared opal/mca/cuda/lib/cuda.c -o opal/mca/cuda/lib/libcuda.so && '
-configopts = '--with-cuda=%(start_dir)s/opal/mca/cuda --with-show-load-errors=no '
+# Update configure to include changes from the "disable_opal_path_nfs_test" patch
+preconfigopts += './autogen.pl --force && '
+configopts = '--with-cuda=%(start_dir)s/opal/mca/cuda --with-show-load-errors=no'
+# Disable building Level Zero components of romio if system dependencies are picked up. Sources are not based on
+# recent Level Zero interface anyway, so there's a high chance that builds fail.
+# See https://github.com/open-mpi/ompi/issues/10235
+preconfigopts += 'sed -i "s/have_ze=yes/have_ze=no/" %(start_dir)s/3rd-party/romio341/mpl/configure && '
+# Do not pick up the system library automatically
+configopts += ' --without-xpmem'
 
 moduleclass = 'mpi'

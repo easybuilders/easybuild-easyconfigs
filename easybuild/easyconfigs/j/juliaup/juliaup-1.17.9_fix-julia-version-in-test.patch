@@ -1,0 +1,22 @@
+Make a test more Julia version agnostic to avoid it failing:
+
+> Unexpected stderr, failed (var.starts_with("Installing Julia 1.11") && ((! var.contains(apple.darwin14)) || (var.contains(Checking standard library notarization) && var.ends_with("done.\n"))))
+> ├── var as str: Installing Julia 1.12.0+0.x64.linux.gnu
+> └── var.starts_with("Installing Julia 1.11")
+
+Based on https://github.com/JuliaLang/juliaup/pull/1131/commits/8afc99c5f9a7da6b84068f1dcf47e7270f462587
+
+Author: Alexander Grund (TU Dresden)
+
+diff -ur a/tests/command_initial_setup_from_launcher_test.rs b/tests/command_initial_setup_from_launcher_test.rs
+--- a/tests/command_initial_setup_from_launcher_test.rs
++++ b/tests/command_initial_setup_from_launcher_test.rs
+@@ -20,7 +20,7 @@
+         .success()
+         .stdout(predicate::str::is_empty())
+         .stderr(
+-            predicate::str::starts_with("Installing Julia 1.11.1").and(
++            predicate::str::starts_with("Installing Julia 1.").and(
+                 predicate::str::contains("apple.darwin14")
+                     .not()
+                     .or(

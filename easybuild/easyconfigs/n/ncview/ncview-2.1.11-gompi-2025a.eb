@@ -1,0 +1,46 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+##
+easyblock = 'ConfigureMake'
+
+name = 'ncview'
+version = '2.1.11'
+
+homepage = 'http://meteora.ucsd.edu/~pierce/ncview_home_page.html'
+description = """Ncview is a visual browser for netCDF format files.
+Typically you would use ncview to get a quick and easy, push-button
+look at your netCDF files. You can view simple movies of the data,
+view along various dimensions, take a look at the actual data values,
+change color maps, invert the data, etc."""
+
+toolchain = {'name': 'gompi', 'version': '2025a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://cirrus.ucsd.edu/~pierce/ncview/']
+sources = [SOURCE_TAR_GZ]
+patches = ['ncview-2.1.11_fix_data_cast_error.patch']
+checksums = [
+    '597cfddf9c2d7993e9b0b86bca1b73839567ee9116ee33f6d750a449b5033d91',  # ncview-2.1.11.tar.gz
+    'a2b8346600da7dfe3326cf1ff4f95e474a0878ab7ae326a623ba5f491ee37387',  # ncview-2.1.11_fix_data_cast_error.patch
+]
+
+# specified compiler is hard checked against (full path to) compiler used for netCDF...
+preconfigopts = "CC=$(nc-config --cc) "
+configopts = "--with-udunits2_incdir=$EBROOTUDUNITS/include --with-udunits2_libdir=$EBROOTUDUNITS/lib "
+configopts += "--with-nc-config=$EBROOTNETCDF/bin/nc-config"
+
+dependencies = [
+    ('netCDF', '4.9.3'),
+    ('netCDF-Fortran', '4.6.2'),
+    ('UDUNITS', '2.2.28'),
+    ('X11', '20250521'),
+    ('libpng', '1.6.48'),
+    ('zlib', '1.3.1'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ncview'],
+    'dirs': [],
+}
+
+moduleclass = 'vis'

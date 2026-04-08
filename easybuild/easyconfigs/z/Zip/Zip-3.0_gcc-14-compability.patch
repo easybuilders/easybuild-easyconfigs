@@ -1,0 +1,111 @@
+Fix build of Zip 3.0 on modern Linux systems with GCC 14+
+- Remove legacy memset, memcpy, memcmp from fileio.c
+- Add missing <time.h> include to timezone.c for struct tm/localtime
+- Remove legacy ZMEM redeclarations from zip.h, include <string.h>
+Author: Pavel Tomanek (Inuits)
+--- zip.h.orig	2025-07-01 18:19:39.457327000 +0200
++++ zip.h	2025-07-01 18:21:12.657206000 +0200
+@@ -87,6 +87,8 @@
+ /* Set up portability */
+ #include "tailor.h"
+ 
++#include <string.h>
++
+ #ifdef USE_ZLIB
+ #  include "zlib.h"
+ #endif
+@@ -722,12 +724,6 @@
+ 
+ int fcopy OF((FILE *, FILE *, uzoff_t));
+ 
+-#ifdef ZMEM
+-   char *memset OF((char *, int, unsigned int));
+-   char *memcpy OF((char *, char *, unsigned int));
+-   int memcmp OF((char *, char *, unsigned int));
+-#endif /* ZMEM */
+-
+         /* in system dependent fileio code (<system>.c) */
+ #ifndef UTIL
+ # ifdef PROCNAME
+--- fileio.c.orig	2025-07-01 18:41:04.603858000 +0200
++++ fileio.c	2025-07-01 18:41:12.394749000 +0200
+@@ -1944,69 +1944,6 @@
+ #endif /* NO_RENAME */
+ 
+ 
+-#ifdef ZMEM
+-
+-/************************/
+-/*  Function memset()   */
+-/************************/
+-
+-/*
+- * memset - for systems without it
+- *  bill davidsen - March 1990
+- */
+-
+-char *
+-memset(buf, init, len)
+-register char *buf;     /* buffer loc */
+-register int init;      /* initializer */
+-register unsigned int len;   /* length of the buffer */
+-{
+-    char *start;
+-
+-    start = buf;
+-    while (len--) *(buf++) = init;
+-    return(start);
+-}
+-
+-
+-/************************/
+-/*  Function memcpy()   */
+-/************************/
+-
+-char *
+-memcpy(dst,src,len)             /* v2.0f */
+-register char *dst, *src;
+-register unsigned int len;
+-{
+-    char *start;
+-
+-    start = dst;
+-    while (len--)
+-        *dst++ = *src++;
+-    return(start);
+-}
+-
+-
+-/************************/
+-/*  Function memcmp()   */
+-/************************/
+-
+-int
+-memcmp(b1,b2,len)                     /* jpd@usl.edu -- 11/16/90 */
+-register char *b1, *b2;
+-register unsigned int len;
+-{
+-
+-    if (len) do {       /* examine each byte (if any) */
+-      if (*b1++ != *b2++)
+-        return (*((uch *)b1-1) - *((uch *)b2-1));  /* exit when miscompare */
+-    } while (--len);
+-
+-    return(0);          /* no miscompares, yield 0 result */
+-}
+-
+-#endif  /* ZMEM */
+-
+ 
+ /*------------------------------------------------------------------
+  * Split archives
+--- timezone.c.orig	2025-07-01 18:30:30.464756000 +0200
++++ timezone.c	2025-07-01 18:30:46.550872000 +0200
+@@ -41,6 +41,7 @@
+ #include "timezone.h"
+ #include <ctype.h>
+ #include <errno.h>
++#include <time.h>
+ 
+ #ifdef IZTZ_DEFINESTDGLOBALS
+ long timezone = 0;
