@@ -1,0 +1,36 @@
+name = 'HDF5'
+# Note: Odd minor releases are only RCs and should not be used.
+version = '1.14.3'
+
+homepage = 'https://portal.hdfgroup.org/display/support'
+description = """HDF5 is a data model, library, and file format for storing and managing data.
+ It supports an unlimited variety of datatypes, and is designed for flexible
+ and efficient I/O and for high volume and complex data."""
+
+toolchain = {'name': 'gompi', 'version': '2023b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+local_ver = version.split('.')
+local_dl_folder = f"v{'_'.join(local_ver[:2])}/v{'_'.join(local_ver)}"
+source_urls = [f'https://support.hdfgroup.org/releases/hdf5/{local_dl_folder}/downloads']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['HDF5-1.14.3_suppress_fp_exceptions.patch']
+checksums = [
+    {'hdf5-1.14.3.tar.gz': (
+        # Folder name changed from hdf5-1.14.3 to hdfsrc and Makefile got deleted
+        '09cdb287aa7a89148c1638dd20891fdbae08102cf433ef128fd345338aa237c7',
+        '126b800e9b87f65e7e7ffa58ee006607bab03a8e11e5209ea3d5c0c331321d43',
+    )},
+    {'HDF5-1.14.3_suppress_fp_exceptions.patch': 'bf33e579c93a16043c54b266321bbe95e4a8797f7fe6d096a13ce905ed2ffde7'},
+]
+
+# replace src include path with installation dir for $H5BLD_CPPFLAGS
+_regex = 's, -I[^[:space:]]+H5FDsubfiling , -I%(installdir)s/include ,g'
+postinstallcmds = ['sed -i -r "%s" %%(installdir)s/bin/%s' % (_regex, x) for x in ['h5c++', 'h5pcc']]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('Szip', '2.1.1'),
+]
+
+moduleclass = 'data'

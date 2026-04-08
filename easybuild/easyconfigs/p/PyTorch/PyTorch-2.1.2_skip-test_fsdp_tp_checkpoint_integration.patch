@@ -1,0 +1,33 @@
+test_fsdp_tp_checkpoint_integration in distributed/fsdp/test_fsdp_tp_integration.py
+fails due to a regression. See https://github.com/pytorch/pytorch/issues/101162
+
+> RuntimeError: Error(s) in loading state_dict for FullyShardedDataParallel:
+>	size mismatch for _fsdp_wrapped_module.net1.weight: copying a param with shape torch.Size([4, 5]) from checkpoint, the shape in current model is torch.Size([8, 5]).
+>	size mismatch for _fsdp_wrapped_module.net1.bias: copying a param with shape torch.Size([4]) from checkpoint, the shape in current model is torch.Size([8]).
+>	size mismatch for _fsdp_wrapped_module.net2.weight: copying a param with shape torch.Size([4, 4]) from checkpoint, the shape in current model is torch.Size([4, 8]).
+
+Skip the test. This should be fixed already for 2.2.x
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/fsdp/test_fsdp_tp_integration.py b/test/distributed/fsdp/test_fsdp_tp_integration.py
+index bc7a4aef4a3..aea16a1f1fb 100644
+--- a/test/distributed/fsdp/test_fsdp_tp_integration.py
++++ b/test/distributed/fsdp/test_fsdp_tp_integration.py
+@@ -3,6 +3,7 @@ import copy
+ import sys
+ from collections import OrderedDict
+ from typing import Any, Dict, List, Optional, Tuple
++import unittest
+ 
+ import torch
+ from torch import distributed as dist
+@@ -306,7 +307,7 @@ class TestTPFSDPIntegration(FSDPTest):
+         tp_fsdp_out = tp_fsdp_model(inp)
+         self.assertEqual(fsdp_out, tp_fsdp_out)
+ 
+-    @skip_if_lt_x_gpu(4)
++    @unittest.skip("Known failure: #101162")
+     def test_fsdp_tp_checkpoint_integration(self):
+         """Tests checkpointing for TP + FSDP integration."""
+         self.assertTrue(

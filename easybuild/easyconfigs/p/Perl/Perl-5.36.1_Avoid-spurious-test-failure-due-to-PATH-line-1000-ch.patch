@@ -1,0 +1,27 @@
+From https://github.com/perl/perl5/issues/15544#issuecomment-544083477
+
+From b197f9a55e2ae877b3089282cfe07f3647d240f9 Mon Sep 17 00:00:00 2001
+From: James E Keenan <jkeenan@cpan.org>
+Date: Mon, 22 Aug 2016 09:25:08 -0400
+Subject: [PATCH] Avoid spurious test failure due to PATH line > 1000
+ characters.
+
+---
+ lib/perlbug.t | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/perlbug.t b/lib/perlbug.t
+index ed32c04..8ff8991 100644
+--- a/lib/perlbug.t
++++ b/lib/perlbug.t
+@@ -148,7 +148,7 @@ my $maxlen1 = 0; # body
+ my $maxlen2 = 0; # attachment
+ for (split(/\n/, $contents)) {
+         my $len = length;
+-        $maxlen1 = $len if $len > $maxlen1 and !/$B/;
++        $maxlen1 = $len if $len > $maxlen1 and ! (/(?:$B|PATH)/);
+         $maxlen2 = $len if $len > $maxlen2 and  /$B/;
+ }
+ ok($maxlen1 < 1000, "[perl #128020] long body lines are wrapped: maxlen $maxlen1");
+-- 
+2.7.4

@@ -1,0 +1,47 @@
+VSX: Fix vectorized abs function for complex tensors
+
+Use a similar approach with Sleef as in #99550
+to improve the precision and extremal value handling of the `abs`
+function for complex tensors.
+
+This fixes
+- test_reference_numerics_extremal__refs_abs_cpu_float64
+- test_reference_numerics_extremal__refs_abs_cpu_float128
+which failed on PPC.
+
+See https://github.com/pytorch/pytorch/pull/116859
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h
+index b80f7b79fca..382f32c0305 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h
+@@ -226,8 +226,9 @@ class Vectorized<ComplexDbl> {
+   }
+ 
+   Vectorized<ComplexDbl> abs_() const {
+-    auto ret = abs_2_();
+-    return ret.elwise_sqrt();
++    auto vi = el_mergeo();
++    auto vr = el_mergee();
++    return {Sleef_hypotd2_u05vsx(vr._vec0, vi._vec0), Sleef_hypotd2_u05vsx(vr._vec1, vi._vec1)};
+   }
+ 
+   Vectorized<ComplexDbl> abs() const {
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h
+index 7efffa76c3a..0e30742eb9b 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h
+@@ -274,8 +274,9 @@ class Vectorized<ComplexFlt> {
+   }
+ 
+   Vectorized<ComplexFlt> abs_() const {
+-    auto ret = abs_2_();
+-    return ret.elwise_sqrt();
++    auto vi = el_mergeo();
++    auto vr = el_mergee();
++    return {Sleef_hypotf4_u05vsx(vr._vec0, vi._vec0), Sleef_hypotf4_u05vsx(vr._vec1, vi._vec1)};
+   }
+ 
+   Vectorized<ComplexFlt> abs() const {

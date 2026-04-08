@@ -1,0 +1,75 @@
+easyblock = 'CMakeMake'
+
+name = 'glslang-SPIRV'
+version = '15.4.0'
+
+homepage = 'https://www.khronos.org/opengles/sdk/tools/Reference-Compiler/'
+description = """Glslang is the official reference compiler front end for the OpenGL ES and OpenGL shading languages.
+It implements a strict interpretation of the specifications for these languages. It is open and free for anyone to use,
+either from a command line or programmatically. The OpenGL and OpenGL ES working groups are committed to maintaining
+consistency between the reference compiler and the corresponding shading language specifications."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+toolchainopts = {'pic': True}
+
+# From https://github.com/KhronosGroup/glslang/blob/15.4.0/known_good.json
+local_spirv_tools_commit = '33e02568181e3312f49a3cf33df470bf96ef293a'  # equivalent to v2025.3.0.rc1
+local_spirv_headers_commit = '2a611a970fdbc41ac2e3e328802aed9985352dca'  # equivalent to v1.4.321.0
+local_googletest_commit = 'f8d7d77c06936315286eb55f8de22cd23c188571'  # equivalent to tag v1.14.0
+
+local_github_repos = [
+    ("KhronosGroup", "SPIRV-Tools", local_spirv_tools_commit, 'spirv-tools'),
+    ("KhronosGroup", "SPIRV-Headers", local_spirv_headers_commit, 'spirv-tools/external/spirv-headers'),
+    ("google", "googletest", local_googletest_commit, 'googletest'),
+]
+
+sources = ['https://github.com/KhronosGroup/glslang/archive/%(version)s.tar.gz']
+
+# Extend the sources by adding external components from their respective GitHub repos at the known good commits
+local_ext_dir = "%(builddir)s/glslang-%(version)s/External"  # Where the external components are expected to be
+local_ext_cmd = "tar xvf %s --strip-components=1 -C $_"
+for local_owner, local_repo, local_commit, local_dir in local_github_repos:
+    sources.append({
+        "filename": f"{local_repo}-{local_commit[:8]}.tar.xz",
+        "extract_cmd": f"mkdir -p {local_ext_dir}/{local_dir} && {local_ext_cmd}",
+        "git_config": {
+            "url": f"https://github.com/{local_owner}",
+            "repo_name": local_repo,
+            "commit": local_commit,
+        },
+    })
+
+checksums = [
+    {'15.4.0.tar.gz': 'b16c78e7604b9be9f546ee35ad8b6db6f39bbbbfb19e8d038b6fe2ea5bba4ff4'},
+    {'SPIRV-Tools-33e02568.tar.xz': '57cc1a374b2d4829a3165b586f287d33e6beb4ee69d49e42c80a2cd2e8983c1d'},
+    {'SPIRV-Headers-2a611a97.tar.xz': '0333b5d2c63b95be3771a3146b3692e7a6720889187275669119c14a48e3fd6e'},
+    {'googletest-f8d7d77c.tar.xz': '8dd1ff67f8abca903d3f03c78eaae7b2076a73f465cb1f369f3698bfbd6f4aad'},
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('Bison', '3.8.2'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),  # Only needed with SPIRV
+]
+
+configopts = "-DENABLE_OPT=ON"  # Needed if SPIRV is used
+
+runtest = True
+
+sanity_check_paths = {
+    'files': [
+        'bin/glslang',
+        'lib/libglslang.a', 'lib/libGenericCodeGen.a', 'lib/libSPIRV.a',
+    ],
+    'dirs': ['include/glslang'],
+}
+
+sanity_check_commands = [
+    'glslang --version',
+]
+
+moduleclass = 'compiler'

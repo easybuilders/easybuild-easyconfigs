@@ -1,0 +1,68 @@
+easyblock = 'ConfigureMake'
+
+name = 'RabbitMQ'
+version = '3.13.1'
+
+homepage = 'https://www.rabbitmq.com/'
+description = """RabbitMQ is a reliable and mature messaging and streaming broker, which is easy to deploy on cloud
+environments, on-premises, and on your local machine. It is currently used by millions worldwide."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/rabbitmq/rabbitmq-server/archive/refs/tags/']
+
+checksums = ['62ecd9567935413283700e9ed11c1aae98846e3d9ba4d9ef68b8bbc0e96c6296']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('libxslt', '1.1.38'),
+    ('xmlto', '0.0.28'),
+    ('Python', '3.11.3'),
+]
+dependencies = [
+    ('ErlangOTP', '26.2.4'),
+    ('Elixir', '1.16.2'),
+]
+
+local_project_version_cmd = "export PROJECT_VERSION='%(version)s' && "
+
+max_parallel = 1  # Parallel builds can fail
+
+configure_without_installdir = True
+configure_cmd = "sed -i 's|^PREFIX *?=.*$|PREFIX ?= %(installdir)s|' Makefile"
+
+prebuildopts = local_project_version_cmd
+
+preinstallopts = local_project_version_cmd
+installopts = 'install install-bin'
+postinstallcmds = ['cd %(installdir)s && ln -s lib/erlang/bin bin']
+
+runtest = "tests"
+
+local_executables_test = [
+    'rabbitmqctl',
+    'rabbitmq-diagnostics',
+    'rabbitmq-plugins',
+]
+
+local_executables_notest = [
+    'rabbitmq-server',
+    'rabbitmq-upgrade',
+    'rabbitmq-defaults',
+    'rabbitmq-env',
+    'rabbitmq-queues',
+    'rabbitmq-streams',
+    'vmware-rabbitmq',
+]
+
+sanity_check_paths = {
+    'files': [f'bin/{exe}' for exe in local_executables_test + local_executables_notest],
+    'dirs': [
+        'lib/erlang/bin', 'lib/erlang/lib',
+    ]
+}
+
+sanity_check_commands = [f'{exe} --version' for exe in local_executables_test]
+
+moduleclass = 'tools'

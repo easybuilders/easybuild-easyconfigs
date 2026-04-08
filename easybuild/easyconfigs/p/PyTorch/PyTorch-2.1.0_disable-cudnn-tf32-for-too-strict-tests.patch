@@ -1,0 +1,41 @@
+Disallow TF32 on tests with thresholds too strict for this data type. Nvidia
+GPUs with TF32 support default to this data type instead of regular FP32 to
+improve performance at the expense of precision.
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- test/test_nn.py.orig	2024-01-15 14:07:35.421908795 +0100
++++ test/test_nn.py	2024-01-15 14:54:00.867537101 +0100
+@@ -3762,6 +3761,7 @@
+             self.assertEqual(weight_data, all_vars[4].data)
+ 
+     @unittest.skipIf(not TEST_CUDNN, 'CUDNN not available')
++    @torch.backends.cudnn.flags(enabled=True, allow_tf32=False)
+     def test_cudnn_weight_tying(self):
+         rnns = [
+             nn.LSTM(10, 20, batch_first=True, bidirectional=True),
+@@ -4461,6 +4461,7 @@
+         self._test_RNN_cpu_vs_cudnn(1)
+ 
+     @unittest.skipIf(not TEST_CUDNN, "needs cudnn")
++    @torch.backends.cudnn.flags(enabled=True, allow_tf32=False)
+     def test_RNN_cudnn_weight_norm(self):
+         input_size = 10
+         hidden_size = 6
+@@ -4492,6 +4493,7 @@
+         check_weight_norm(nn.LSTM(input_size, hidden_size, num_layers, proj_size=3), 'weight_hr_l0')
+ 
+     @unittest.skipIf(not TEST_CUDA, 'CUDA not available')
++    @torch.backends.cudnn.flags(enabled=True, allow_tf32=False)
+     def test_partial_flat_weights(self):
+         input_size = 10
+         hidden_size = 6
+--- ../PyTorch/2.1.2/foss-2023a-CUDA-12.1.1/pytorch-v2.1.2/test/nn/test_convolution.py	2023-12-15 03:03:27.000000000 +0100
++++ test/nn/test_convolution.py	2024-01-15 15:03:15.606208376 +0100
+@@ -518,7 +518,7 @@
+     # Covering special case when group > 1, input-channel / group < 16 and output-channel is multiple of 16
+     # See also https://github.com/pytorch/pytorch/pull/18463#issuecomment-476563686
+     # and https://github.com/pytorch/pytorch/pull/18463#issuecomment-477001024
+-    @torch.backends.cudnn.flags(enabled=True, benchmark=False)
++    @torch.backends.cudnn.flags(enabled=True, benchmark=False, allow_tf32=False)
+     def test_Conv2d_groups_nobias_v2(self):
+         torch.manual_seed(123)
+         dev_dtypes = [("cpu", torch.float)]

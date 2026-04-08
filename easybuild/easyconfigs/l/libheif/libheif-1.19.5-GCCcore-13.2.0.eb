@@ -1,0 +1,44 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'CMakeMake'
+
+name = 'libheif'
+version = '1.19.5'
+
+homepage = 'https://github.com/strukturag/libheif'
+description = "libheif is an HEIF and AVIF file format decoder and encoder"
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ['https://github.com/strukturag/libheif/releases/download/v%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['d3cf0a76076115a070f9bc87cf5259b333a1f05806500045338798486d0afbaf']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.27.6'),
+    ('Doxygen', '1.9.8'),
+]
+
+dependencies = [
+    ('libpng', '1.6.40'),
+    ('libjpeg-turbo', '3.0.1'),
+    ('libde265', '1.0.15'),
+    ('x265', '3.5'),
+    ('Gdk-Pixbuf', '2.42.10'),
+]
+
+# build both static and shared libraries
+configopts = [
+    "-DBUILD_SHARED_LIBS=OFF",
+    "-DBUILD_SHARED_LIBS=ON",
+]
+
+sanity_check_paths = {
+    'files': ['bin/heif-info', 'lib/libheif.a', 'lib/libheif.%s' % SHLIB_EXT, 'lib/pkgconfig/libheif.pc'],
+    'dirs': ['include/libheif'],
+}
+
+sanity_check_commands = ["heif-info --help"]
+
+moduleclass = 'tools'

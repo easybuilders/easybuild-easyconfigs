@@ -1,0 +1,110 @@
+Backported test from main branch of scipy on Github, relaxing the
+tolerances of a few tests.  Some of these fail with the Intel
+compiler.
+
+The patch has been edited directly to backport it (np.double had been replaced
+by np.float64 in the main branch), and one patch was to code that is not in
+scipy-1.11.1.
+
+Backported by: Jakob Schiotz (Techn. Univ. Denmark) <schiotz@fysik.dtu.dk>
+
+Original description:
+
+From a4fba82078d2e95005343150d821ccd33cb5de20 Mon Sep 17 00:00:00 2001
+From: Ralf Gommers <ralf.gommers@gmail.com>
+Date: Wed, 6 Sep 2023 15:08:59 +0200
+Subject: [PATCH] TST: test tolerance bumps to fix reported failures
+
+Closes gh-19117
+
+The `test_sygst` one was reported in gh-19153.
+---
+ scipy/fft/_pocketfft/tests/test_real_transforms.py | 2 +-
+ scipy/linalg/tests/test_lapack.py                  | 2 +-
+ scipy/ndimage/tests/test_datatypes.py              | 4 +++-
+ scipy/spatial/transform/tests/test_rotation.py     | 8 ++++----
+ scipy/special/tests/test_hyp2f1.py                 | 6 +++---
+ 5 files changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/scipy/fft/_pocketfft/tests/test_real_transforms.py b/scipy/fft/_pocketfft/tests/test_real_transforms.py
+index d1f4e1d..a217e75 100644
+--- a/scipy/fft/_pocketfft/tests/test_real_transforms.py
++++ b/scipy/fft/_pocketfft/tests/test_real_transforms.py
+@@ -239,7 +239,7 @@ dec_map: DecMapType = {
+     (dst, np.float32, 3): 7,
+ 
+     (dst, np.double, 4): 13,
+-    (dst, np.float32, 4): 6,
++    (dst, np.float32, 4): 5,
+ 
+     # IDST
+     (idst, np.double, 1): 14,
+diff --git a/scipy/linalg/tests/test_lapack.py b/scipy/linalg/tests/test_lapack.py
+index 6c64a2a..2c994f6 100644
+--- a/scipy/linalg/tests/test_lapack.py
++++ b/scipy/linalg/tests/test_lapack.py
+@@ -1031,7 +1031,7 @@ def test_sygst():
+ 
+         eig, _, info = syevd(a)
+         assert_(info == 0)
+-        assert_allclose(eig, eig_gvd, rtol=1e-4)
++        assert_allclose(eig, eig_gvd, rtol=1.2e-4)
+ 
+ 
+ def test_hegst():
+diff --git a/scipy/ndimage/tests/test_datatypes.py b/scipy/ndimage/tests/test_datatypes.py
+index 327cc5a..1eb056b 100644
+--- a/scipy/ndimage/tests/test_datatypes.py
++++ b/scipy/ndimage/tests/test_datatypes.py
+@@ -45,7 +45,7 @@ def test_map_coordinates_dts():
+             assert_array_almost_equal(these_data, out)
+ 
+ 
+-@pytest.mark.xfail(not sys.platform == 'darwin', reason="runs only on darwin")
++@pytest.mark.xfail(True, reason="Broken on many platforms")
+ def test_uint64_max():
+     # Test interpolation respects uint64 max.  Reported to fail at least on
+     # win32 (due to the 32 bit visual C compiler using signed int64 when
+@@ -53,6 +53,8 @@ def test_uint64_max():
+     # Interpolation is always done in double precision floating point, so
+     # we use the largest uint64 value for which int(float(big)) still fits
+     # in a uint64.
++    # This test was last enabled on macOS only, and there it started failing
++    # on arm64 as well (see gh-19117).
+     big = 2**64 - 1025
+     arr = np.array([big, big, big], dtype=np.uint64)
+     # Tests geometric transform (map_coordinates, affine_transform)
+diff --git a/scipy/special/tests/test_hyp2f1.py b/scipy/special/tests/test_hyp2f1.py
+index 2fe732f..200d4bb 100644
+--- a/scipy/special/tests/test_hyp2f1.py
++++ b/scipy/special/tests/test_hyp2f1.py
+@@ -474,7 +474,7 @@ class TestHyp2f1:
+                     c=-15.5,
+                     z=(1.1578947368421053-1.1578947368421053j),
+                     expected=(0.9778506962676361+0.044083801141231616j),
+-                    rtol=1e-12,
++                    rtol=3e-12,
+                 ),
+             ),
+             pytest.param(
+@@ -1378,7 +1378,7 @@ class TestHyp2f1:
+                     c=-7.949900487447654,
+                     z=(0.4172413793103451-0.8724137931034484j),
+                     expected=(-2258.1590330318213+8860.193389158803j),
+-                    rtol=1e-10,
++                    rtol=1.4e-10,
+                 ),
+             ),
+         ]
+@@ -1433,7 +1433,7 @@ class TestHyp2f1:
+                     c=-15.964218273004214,
+                     z=(0.6448275862068968+0.8724137931034486j),
+                     expected=(85592537010.05054-8061416766688.324j),
+-                    rtol=1e-14,
++                    rtol=2e-14,
+                 ),
+             ),
+             pytest.param(
+-- 
+1.8.3.1
+
