@@ -1,0 +1,40 @@
+easyblock = 'Binary'
+
+name = 'Wengan'
+version = '0.2'
+
+homepage = 'https://github.com/adigenova/wengan/'
+description = 'An accurate and ultra-fast genome assembler.'
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/adigenova/wengan/releases/download/v%(version)s/']
+sources = [{'download_filename': '%(namelower)s-v%(version)s-bin-Linux.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['754848566611c599c62886455cc88451a56c99e7102d71f28c283b6b851d2b27']
+
+dependencies = [
+    ('Perl', '5.36.1'),
+]
+
+extract_sources = True
+
+# create 'wengan' script and make it executable
+postinstallcmds = [
+    'cd %(installdir)s/bin && touch wengan && '
+    'echo "#!/bin/bash" >> wengan && '
+    'echo "export LC_ALL=C" >> wengan && '
+    r'echo "exec perl \$EBROOTWENGAN/wengan.pl \$*" >> wengan && '
+    'chmod +x %(installdir)s/bin/wengan'
+]
+
+sanity_check_paths = {
+    'files': ['wengan.pl', 'bin/wengan'],
+    'dirs': ['bin'],
+}
+sanity_check_commands = [
+    'wengan 2>&1 | grep "Usage"'
+]
+
+modloadmsg = r"Run 'wengan' instead of 'perl ${WG}' to run Wengan."
+
+moduleclass = 'bio'

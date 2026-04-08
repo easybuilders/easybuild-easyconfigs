@@ -40,13 +40,14 @@ dependencies = [
 exts_defaultclass = 'PythonPackage'
 exts_default_options = {
     'source_urls': [PYPI_SOURCE],
-    'download_dep_fail': True,
-    'use_pip': True,
-    'sanity_pip_check': True,
-    'installopts': '',
 }
-
 exts_list = [
+    ('lib-pod5', version, {
+        'nosource': True,
+        # Build and installed by CMake
+        'install_src': '%(installdir)s/lib_pod5-%(version)s-*.whl',
+        'modulename': 'lib_pod5',
+    }),
     ('attrs', '22.2.0', {
         'checksums': ['c9227bfc2f01993c03f68db37d1d15c9690188323c067c641f1a35ca58185f99'],
     }),
@@ -66,9 +67,6 @@ exts_list = [
 
 configopts = ' -DBUILD_PYTHON_WHEEL=ON -DZSTD_LIB="$EBROOTZSTD/lib/libzstd.a" '
 
-installopts = ' && export XDG_CACHE_HOME=%(builddir)s && cd %(installdir)s'
-installopts += ' && pip install --no-deps --ignore-installed --prefix %(installdir)s lib_pod5-%(version)s-*.whl'
-
 postinstallcmds = ['rm %(installdir)s/lib_pod5-%(version)s-*.whl']
 
 sanity_check_paths = {
@@ -78,9 +76,6 @@ sanity_check_paths = {
 
 sanity_check_commands = [
     "pod5 subset --help",
-    "python -c 'import lib_pod5'",
 ]
-
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 moduleclass = 'bio'

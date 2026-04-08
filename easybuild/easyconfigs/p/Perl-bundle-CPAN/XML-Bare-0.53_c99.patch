@@ -1,0 +1,61 @@
+From
+* https://rt.cpan.org/Public/Bug/Display.html?id=145653
+* https://rt.cpan.org/Public/Bug/Display.html?id=151041
+
+diff --git a/parser.c b/parser.c
+index 4d770e0efba0e336..26fbd4127fa64753 100644
+--- a/parser.c
++++ b/parser.c
+@@ -1,8 +1,6 @@
+ #include "parser.h"
+-#include<stdio.h>
+-#ifdef DARWIN
+-  #include "stdlib.h"
+-#endif
++#include <stdio.h>
++#include <stdlib.h>
+ #ifdef NOSTRING
+   void memset(char *s, int c, int n) {
+     char *se = s + n;
+
+diff --git a/parser.c b/parser.c
+index 26fbd4127fa64753..e6cea50335b28eb5 100644
+--- a/parser.c
++++ b/parser.c
+@@ -417,7 +417,7 @@ int parserc_parse( struct parserc *self, char *xmlin ) {
+         case 0: last_state = ST_att_name; goto done;
+         case '/': // self closing     !! /> is assumed !!
+           curatt = nodec_addattr( curnode, attname, attname_len );
+-          if( !att_has_val ) { curatt->value = -1; curatt->vallen = 0; }
++          if( !att_has_val ) { curatt->value = (char *) -1; curatt->vallen = 0; }
+           attname_len            = 0;
+           
+           curnode->z = cpos+1-xmlin;
+@@ -436,7 +436,7 @@ int parserc_parse( struct parserc *self, char *xmlin ) {
+           goto att_space;
+         case '>':
+           curatt = nodec_addattr( curnode, attname, attname_len );
+-          if( !att_has_val ) { curatt->value = -1; curatt->vallen = 0; }
++          if( !att_has_val ) { curatt->value = (char *) -1; curatt->vallen = 0; }
+           attname_len = 0;
+           cpos++;
+           goto val_1;
+@@ -832,7 +832,7 @@ int parserc_parse_unsafely( struct parserc *self, char *xmlin ) {
+       switch( let ) {
+         case '/': // self closing     !! /> is assumed !!
+           curatt = nodec_addattr( curnode, attname, attname_len );
+-          if( !att_has_val ) { curatt->value = -1; curatt->vallen = 0; }
++          if( !att_has_val ) { curatt->value = (char *) -1; curatt->vallen = 0; }
+           attname_len = 0;
+           
+           curnode = curnode->parent;
+@@ -850,7 +850,7 @@ int parserc_parse_unsafely( struct parserc *self, char *xmlin ) {
+           goto u_att_space;
+         case '>':
+           curatt = nodec_addattr( curnode, attname, attname_len );
+-          if( !att_has_val ) { curatt->value = -1; curatt->vallen = 0; }
++          if( !att_has_val ) { curatt->value = (char *) -1; curatt->vallen = 0; }
+           attname_len = 0;
+           cpos++;
+           goto u_val_1;
+
