@@ -561,6 +561,8 @@ class EasyConfigTest(TestCase):
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
             'AUGUSTUS': [(r'3\.5\.0-20240612', [r'BRAKER-3\.0\.8'])],
+            # OpenSim-4.5.2-MATLAB-2024a-r7 needs CasADi-3.7.0-MATLAB-2024a-r7 as dependency
+            'CasADi': [(r'3\.7\.0; versionsuffix: -MATLAB-2024a-r7', [r'OpenSim-4\.5\.2-foss-2024a-MATLAB-2024a-r7'])],
             # HOOMD-blue v4.9.1 requires Clang 16.x built with the shared libLLVM.so library
             'Clang': [(r'16\.0\.6; versionsuffix: -shared', [r'HOOMD-blue-4\.9\.1-foss-2023a-llvm'])],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
