@@ -1,0 +1,26 @@
+On ARM those tests fail with
+> torch._C._LinAlgError: linalg.svd: The algorithm failed to converge because the input matrix contained non-finite values.
+
+Traced to OpenBLAS with a fix in OpenBLAS 0.3.30, see https://github.com/pytorch/pytorch/issues/142131
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_linalg.py b/test/test_linalg.py
+--- a/test/test_linalg.py
++++ b/test/test_linalg.py
+@@ -2674,6 +2674,7 @@ class TestLinalg(TestCase):
+         self.assertRaisesRegex(RuntimeError, "must be different", torch.norm, x, "nuc", (0, 0))
+         self.assertRaisesRegex(IndexError, "Dimension out of range", torch.norm, x, "nuc", (0, 2))
+ 
++    @onlyCUDA
+     @skipCUDAIfNoCusolver
+     @skipCPUIfNoLapack
+     @dtypes(torch.double, torch.cdouble)
+@@ -9383,6 +9384,7 @@ scipy_lobpcg  | {eq_err_scipy:10.2e}  | {eq_err_general_scipy:10.2e}  | {iters2:
+ 
+         run_test((1, 1), (1, 1, 1025))
+ 
++    @onlyCUDA
+     @skipCUDAIfNoCusolver
+     @skipCPUIfNoLapack
+     def test_pca_lowrank(self, device):
