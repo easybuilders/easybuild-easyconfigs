@@ -1,0 +1,39 @@
+easyblock = 'CMakeMake'
+
+name = 'TINKER'
+version = '8.11.3'
+
+homepage = 'https://dasher.wustl.edu/tinker'
+description = """The Tinker molecular modeling software is a complete and general package for molecular mechanics
+ and dynamics, with some special features for biopolymers."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://dasher.wustl.edu/tinker/downloads/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['8dfbc9fb8f26742d91139187657e2c905744b0243538f81b75bc04cdc2606ff7']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+srcdir = 'cmake'
+
+test_cmd = 'cd ../tinker/test/ && '
+# fix path to executables in .run test scripts
+test_cmd += r"sed -i 's|\.\./bin|../../easybuild_obj|g' *.run && "
+# run all .run scripts
+# manually compare test results with .log files in test dir
+# (ifabp succeeds but exits with a memory error)
+test_cmd += 'for x in *.run; do echo "START TEST: $x" && ./$x; done'
+
+postinstallcmds = ['cd %(start_dir)s && cp -a params perl python %(installdir)s']
+
+sanity_check_paths = {
+    'files': ['lib/libtinker.a'],
+    'dirs': ['bin', 'params', 'perl', 'python'],
+}
+
+# (no sanity_check_commands since all programs require multiple other inputs)
+
+moduleclass = 'chem'

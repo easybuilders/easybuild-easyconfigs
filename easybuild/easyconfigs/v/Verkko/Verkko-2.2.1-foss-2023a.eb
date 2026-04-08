@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'Verkko'
+version = '2.2.1'
+
+homepage = 'https://github.com/marbl/verkko'
+description = """Telomere-to-telomere assembly of accurate long reads (PacBio HiFi, Oxford Nanopore Duplex,
+HERRO corrected Oxford Nanopore Simplex) and Oxford Nanopore ultra-long reads."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/marbl/%(namelower)s/releases/download/v%(version)s/']
+sources = [{'download_filename': '%(namelower)s-v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['4ab40961352cac22eebfb37606c82bb5a589f9361c36430e7278227e62db3860']
+
+builddependencies = [('Rust', '1.75.0')]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('Biopython', '1.83'),
+    ('parasail', '2.6.2'),
+    ('networkx', '3.1'),
+    ('snakemake', '8.4.2'),
+    ('MashMap', '3.1.3'),
+    ('GraphAligner', '1.0.20'),
+    ('Winnowmap', '2.03'),
+    ('BWA', '0.7.17'),
+    ('minimap2', '2.26'),
+    ('SAMtools', '1.18'),
+    ('seqtk', '1.4'),
+]
+# do not use start_dir = 'src' - /lib and /bin are not created there + rm run_test broken link
+prebuildopts = 'cd src && rm run_test.sh && '
+
+files_to_copy = ['bin', 'lib']
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['bin', 'lib'],
+}
+
+sanity_check_commands = ['%(namelower)s --help']
+
+moduleclass = 'bio'

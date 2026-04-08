@@ -1,0 +1,81 @@
+easyblock = 'PythonBundle'
+
+name = 'purge_dups'
+version = '1.2.6'
+
+homepage = 'https://github.com/dfguan/purge_dups'
+description = "purge haplotigs and overlaps in an assembly based on read depth"
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+builddependencies = [
+    ('pybind11', '2.11.1'),
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('bzip2', '1.0.8'),
+    ('Python', '3.11.5'),
+    ('matplotlib', '3.8.2'),
+    ('minimap2', '2.28'),
+]
+
+default_easyblock = 'MakeCp'
+
+components = [
+    (name, version, {
+        'source_urls': ['https://github.com/dfguan/purge_dups/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['75b20df834d28410858ccd4e2d65b6c70849f3cbe5fc05959f38bfc2d041c704'],
+        'start_dir': 'purge_dups-%(version)s',
+        'prebuildopts': "cd src && ",
+        'buildopts': 'CC="$CC" CFLAGS="$CFLAGS"',
+        'files_to_copy': ['bin', 'scripts'],
+    }),
+    ('KMC', '20190629', {
+        'source_urls': ['https://github.com/dfguan/KMC/archive'],
+        'sources': [{'download_filename': 'c05a5f9.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'patches': [{
+            'name': 'KMC-dfguan-c05a5f9_use_EB_pybind11_and_libs.patch',
+            'sourcepath': 'KMC-c05a5f9fd94683248ebe04484a60f86792cf328f',
+        }],
+        'checksums': [
+            '7251941f4b1913bfdd68759d9292b419d95fe7c63815056e15ecb097a12a0bc4',
+            '2f54971aae26787777d0e4b638a9682bd4bc22cbf3fda170c7baf4c610808ac9',
+        ],
+        'prebuildopts': 'cd KMC-* && ',
+        'buildopts': 'CC="$CXX"',
+        'files_to_copy': [(['KMC-*/bin/*kmc*'], 'bin'), 'KMC-*/spectra.py'],
+    }),
+]
+
+exts_list = [
+    ('runner', '20191220', {
+        'preinstallopts': "sed -i 's/0.0.0/%(version)s/g' setup.py && ",
+        'sources': [{
+            'git_config': {
+                'url': 'https://github.com/dfguan/',
+                'repo_name': 'runner',
+                'commit': '73a4d11',
+            },
+            'filename': SOURCE_TAR_XZ,
+        }],
+        'checksums': ['f1b51cafac42f09490f542987a6f6194b1f4f155bca2858bfd21c3b00bd903b9'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/kmc', 'bin/purge_dups'],
+    'dirs': ['scripts'],
+}
+
+sanity_check_commands = [
+    "purge_dups -h 2>&1 | grep 'Program: purge_dups'",
+    "kmc --help",
+    "run_purge_dups.py -h",
+    "hist_plot.py -h",
+]
+
+modextrapaths = {'PATH': 'scripts'}
+
+moduleclass = 'bio'

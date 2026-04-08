@@ -1,0 +1,45 @@
+easyblock = 'Binary'
+
+name = 'Solids4foam'
+version = '2.1'
+
+homepage = 'https://www.solids4foam.com/'
+description = 'A toolbox for performing solid mechanics and fluid-solid interactions in OpenFOAM.'
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/solids4foam/solids4foam/archive/']
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}]
+checksums = ['354dad483f8b086d64bf294829cf6fdf1e5784fd615578acff753791f2f391ca']
+
+builddependencies = [('Eigen', '3.4.0')]
+dependencies = [
+    ('OpenFOAM', 'v2312'),
+    ('gnuplot', '5.4.8'),
+    ('M4', '1.4.19'),
+]
+
+extract_sources = True
+
+# build + install cmds:
+install_cmd = 'source $FOAM_BASH && '
+install_cmd += 'export WM_PROJECT_USER_DIR=%(installdir)s && '
+install_cmd += 'export FOAM_USER_APPBIN=%(installdir)s/bin && '
+install_cmd += 'export FOAM_USER_LIBBIN=%(installdir)s/lib && '
+install_cmd += 'export LD_LIBRARY_PATH=%(installdir)s/lib:$LD_LIBRARY_PATH && '
+install_cmd += 'export EIGEN_DIR=$EBROOTEIGEN && '
+install_cmd += 'export S4F_NO_FILE_FIXES=1 && ./Allwmake -j %(parallel)s'
+# copy tests
+install_cmd += ' && cp -av tutorials %(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/solids4Foam'],
+    'dirs': ['lib'],
+}
+sanity_check_commands = [
+    'source $FOAM_BASH && cd %(installdir)s/tutorials && ./Alltest'
+]
+
+modloadmsg = "Please run 'source $FOAM_BASH' before using Solids4foam."
+
+moduleclass = 'chem'

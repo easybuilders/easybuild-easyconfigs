@@ -1,0 +1,43 @@
+easyblock = 'MakeCp'
+
+name = 'SYMMETRICA'
+version = '2.0'
+
+homepage = 'https://www.algorithm.uni-bayreuth.de/en/research/SYMMETRICA'
+description = "Symmetrica is a Collection of C routines for representation theory."
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [homepage]
+sources = [{'download_filename': 'SYM2_0_tar.gz', 'filename': SOURCE_TAR_GZ}]
+patches = ['SYMMETRICA-2.0_makefile.patch']
+checksums = [
+    {'SYMMETRICA-2.0.tar.gz': 'bf52788dedc14c482e89f5e7efe8c60864a633314ddd446dd4602d5fdaca0ee2'},
+    {'SYMMETRICA-2.0_makefile.patch': 'd38a8935a3c1e7d9fbafd941e43f933b241fbe8bc012ef8b3a32610ab3be25df'},
+]
+
+builddependencies = [('binutils', '2.40')]
+
+local_sharedlib = 'libsymmetrica.%s' % SHLIB_EXT
+
+buildopts = 'test && $CC -shared $CFLAGS $LDFLAGS -o %s *.o' % local_sharedlib
+
+files_to_copy = [
+    (['factorial'], 'bin'),
+    (['*.doc'], 'share/doc'),
+    ([local_sharedlib], 'lib'),
+    (['def.h', 'macro.h'], 'include/symmetrica'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/factorial',
+              'share/doc/intro.doc',
+              'lib/%s' % local_sharedlib,
+              'include/symmetrica/def.h', 'include/symmetrica/macro.h'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["echo 5 | %(installdir)s/bin/factorial | grep 120"]
+
+moduleclass = 'math'

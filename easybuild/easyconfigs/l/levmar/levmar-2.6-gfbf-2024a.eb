@@ -1,0 +1,39 @@
+easyblock = 'CMakeMake'
+
+name = 'levmar'
+version = '2.6'
+
+homepage = 'https://users.ics.forth.gr/~lourakis/levmar/index.html'
+description = """
+This is levmar, a copylefted C/C++ implementation of the Levenberg-Marquardt non-linear
+least squares algorithm. levmar includes double and single precision LM versions, both
+with analytic and finite difference approximated Jacobians. levmar also has some support
+for constrained non-linear least squares, allowing linear equation, box and linear
+inequality constraints."""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+source_urls = ['https://users.ics.forth.gr/~lourakis/levmar/']
+sources = ['%(name)s-%(version)s.tgz']
+checksums = ['3bf4ef1ea4475ded5315e8d8fc992a725f2e7940a74ca3b0f9029d9e6e94bad7']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+]
+
+configopts = "-DLAPACKBLAS_LIB_NAMES='flexiblas;gfortran;m' -DNEED_F2C=0 "
+# ensure position independent code generation for static libs
+configopts += '-DCMAKE_C_FLAGS="-fPIC ${CMAKE_C_FLAGS}" '
+
+install_cmd = ' && '.join([
+    'mkdir %(installdir)s/{lib,include}',
+    'cp liblevmar.a  %(installdir)s/lib/',
+    'cp %(start_dir)s/%(name)s.h %(installdir)s/include/',
+])
+
+sanity_check_paths = {
+    'files': ['lib/liblevmar.a', 'include/levmar.h'],
+    'dirs': [],
+}
+
+moduleclass = 'math'

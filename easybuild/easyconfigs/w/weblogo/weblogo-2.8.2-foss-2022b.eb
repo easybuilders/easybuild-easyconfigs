@@ -1,0 +1,45 @@
+easyblock = 'Tarball'
+
+name = 'weblogo'
+version = '2.8.2'
+
+homepage = "https://weblogo.berkeley.edu"
+description = """WebLogo is a web based application designed to make the generation of sequence logos as easy
+and painless as possible."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+source_urls = ['https://weblogo.berkeley.edu/release']
+sources = ['weblogo.%(version)s.tar.gz']
+checksums = ['2d3e0040c0c1e363c1dfd57f8b585387eb682ed08b2cc2fe2e4cc2a33ac52266']
+
+dependencies = [
+    ('Perl', '5.36.0'),
+    ('Ghostscript', '10.0.0'),
+    ('ImageMagick', '7.1.0-53'),
+]
+
+postinstallcmds = [
+    'mkdir %(installdir)s/bin',
+    'mkdir -p %(installdir)s/lib',
+    'mv %(installdir)s/seqlogo %(installdir)s/bin/',
+    'cp %(installdir)s/template.eps %(installdir)s/bin/',
+    'mv %(installdir)s/*.pm %(installdir)s/lib/',  # Move all Perl modules to the lib directory
+    'mv %(installdir)s/logo.cgi %(installdir)s/lib/',
+    'chmod +x %(installdir)s/bin/seqlogo',
+]
+
+modextrapaths = {
+    'PERL5LIB': 'lib',  # Use relative path
+}
+
+sanity_check_paths = {
+    'files': ['bin/seqlogo', 'lib/logo.pm', 'lib/template.pm'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "seqlogo -f %(installdir)s/globin.fasta"
+]
+
+moduleclass = 'bio'
