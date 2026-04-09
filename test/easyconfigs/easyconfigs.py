@@ -306,7 +306,9 @@ class EasyConfigTest(TestCase):
             self._get_changed_patches()
         return EasyConfigTest._changed_patches
 
-    def test_dep_graph(self):
+    # dep_graph takes an excessive long time,
+    # due to changes in https://github.com/easybuilders/easybuild-framework/pull/5128
+    def _DISABLED_TOO_SLOW_test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
 
         if not single_tests_ok:
