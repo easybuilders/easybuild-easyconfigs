@@ -8,7 +8,11 @@ description = """MDSplus is a set of software tools for data acquisition
   and storage and a methodology for management of complex scientific data."""
 
 toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
-toolchainopts = {'pic': True}
+toolchainopts = {
+    'pic': True, 'cstd': 'c++14',
+    'extra_cflags': '-I$EBROOTLIBXML2/include/libxml2',
+    'extra_fcflags': '-std=legacy -fallow-invalid-boz',
+}
 
 sources = [{
     'filename': SOURCELOWER_TAR_XZ,
@@ -45,8 +49,6 @@ dependencies = [
 
 preconfigopts = 'find . -type f -regex .*Makefile.* -maxdepth 12 -exec '
 preconfigopts += 'sed -i "s/JAVASOURCE = 6/JAVASOURCE = 8/g" {} + && '
-preconfigopts += 'export CFLAGS="$CFLAGS -I$EBROOTLIBXML2/include/libxml2 -std=c++14" && '
-preconfigopts += 'export FCFLAGS="$FCFLAGS -std=legacy -fallow-invalid-boz" && '
 preconfigopts += 'export MDSPLUS_DIR=$EBROOTMDSPLUS && '
 preconfigopts += 'cd %(builddir)s/mdsplus && ./bootstrap && '
 
@@ -74,7 +76,7 @@ sanity_check_paths = {
         ['include/mdslib.h', 'include/mdsobjects.h'],
         ['bin/jTraverser', 'bin/jScope', 'bin/jServer', 'lib/libJavaMds.%s' % SHLIB_EXT]
     ],
-    'dirs': ['bin', 'etc', 'include', 'java/classes', 'lib', 'tdi'],
+    'dirs': ['etc', 'java/classes', 'tdi'],
 }
 
 moduleclass = 'data'
