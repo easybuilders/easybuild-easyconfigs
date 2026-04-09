@@ -1,0 +1,24 @@
+Test fails with output mismatch:
+> -   Explanation: Dynamo cannot trace optree C/C++ function optree._C.PyCapsule.flatten.
+> +   Explanation: Dynamo cannot trace optree C/C++ function optree._C.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.flatten.
+>     Hint: Consider using torch.utils._pytree - https://github.com/pytorch/pytorch/blob/main/torch/utils/_pytree.py
+>   
+> -   Developer debug context: module: optree._C, qualname: PyCapsule.flatten, skip reason: <missing reason>
+> +   Developer debug context: module: optree._C, qualname: pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.flatten, skip reason: <missing reason>
+
+Seems to be related to pybind11 version, GCC version, ...
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/dynamo/test_error_messages.py b/test/dynamo/test_error_messages.py
+--- a/test/dynamo/test_error_messages.py
++++ b/test/dynamo/test_error_messages.py
+@@ -461,7 +461,7 @@ from user code:
+     warnings.warn("test")""",
+         )
+ 
+-    @unittest.skipIf(not python_pytree._cxx_pytree_exists, "missing optree package")
++    @unittest.skip("Failes depending on Pybind11/GCC versions")
+     def test_optree_graph_break_message(self):
+         import optree
+ 
