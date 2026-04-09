@@ -1,0 +1,30 @@
+add missing include statement for for "../filesys.h" in compressed boost archive
+author: sxpl-DavidSchmidt
+--- a/src/cmake/bootstrap/installBoost.sh
++++ b/src/cmake/bootstrap/installBoost.sh
+@@ -44,11 +44,20 @@ if [[ $CLEAN ]] ; then
+ fi
+ 
+ common_create_source
+-cd ${SOURCE_DIR} \
+-    && ./bootstrap.sh ${BOOTSTRAP_OPTIONS} --prefix=${INSTALL_DIR} --with-libraries=`echo ${BCL2FASTQ_BOOST_COMPONENTS} | sed "s/;/,/g"` \
+-    && echo "using gcc : : ${CXX} ;" >${SOURCE_DIR}/tools/build/v2/user-config.jam \
+-    && echo "modules.poke : NO_BZIP2 : 1 ;" >>${SOURCE_DIR}/tools/build/v2/user-config.jam \
+-    && ./bjam -j$PARALLEL ${BJAM_OPTIONS} --libdir=${INSTALL_DIR}/lib --layout=system link=static threading=multi install
++cd "${SOURCE_DIR}" && {
++    patch -p0 -N --batch <<'EOF'
++--- tools/build/v2/engine/modules/path.c
+++++ tools/build/v2/engine/modules/path.c
++@@ -11,2 +11,3 @@
++ #include "../timestamp.h"
+++#include "../filesys.h"
++EOF
++
++    ./bootstrap.sh ${BOOTSTRAP_OPTIONS} --prefix="${INSTALL_DIR}" --with-libraries="$(echo "${BCL2FASTQ_BOOST_COMPONENTS}" | sed 's/;/,/g')" &&
++    echo "using gcc : : ${CXX} ;" > "${SOURCE_DIR}/tools/build/v2/user-config.jam" &&
++    echo "modules.poke : NO_BZIP2 : 1 ;" >> "${SOURCE_DIR}/tools/build/v2/user-config.jam" &&
++    ./bjam -j"$PARALLEL" ${BJAM_OPTIONS} --libdir="${INSTALL_DIR}/lib" --layout=system link=static threading=multi install
++}
+ 
+ if [ $? != 0 ] ; then echo "$SCRIPT: build failed: Terminating..." >&2 ; exit 1 ; fi
+ 

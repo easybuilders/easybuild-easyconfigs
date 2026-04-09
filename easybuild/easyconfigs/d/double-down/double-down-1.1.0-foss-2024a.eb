@@ -1,0 +1,47 @@
+# Based on the EasyConfig templates provided my Alex Domingo
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'double-down'
+version = '1.1.0'
+
+homepage = 'https://github.com/pshriwise/double-down'
+description = """
+double-down : A double precision interface to Embree
+
+double-down is a double precision interface to Embree via the
+Mesh Oriented dAtaBase (MOAB).
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+github_account = 'pshriwise'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['427e5e4ba59c53bddb1991cb34d86a52c11162175bfc6f802abccb5745cea3ba']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+]
+
+dependencies = [
+    ('Embree', '4.4.0', '', SYSTEM),
+    ('MOAB', '5.5.0'),
+]
+
+post_install_cmds = ['cd %(installdir)s && ln -s tools bin && cd -']
+post_install_msgs = ['Linking tools to bin']
+
+sanity_check_paths = {
+    'files': ['tools/closest_to_location', 'tools/ray_fire',
+              'lib/libdd.so'],
+    'dirs': ['include', 'tools'],
+}
+
+sanity_check_commands = [
+    "ray_fire --help",
+]
+
+moduleclass = 'vis'

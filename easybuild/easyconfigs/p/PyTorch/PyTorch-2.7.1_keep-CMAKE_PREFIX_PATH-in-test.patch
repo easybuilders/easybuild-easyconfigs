@@ -1,0 +1,27 @@
+> pytorch-v2.7.1/test/inductor/test_aot_inductor_package.py", line 242, in test_compile_after_package
+>    self.assertTrue(so_path.exists())
+> AssertionError: False is not true
+
+Caused by:
+```
+/software/binutils/2.42-GCCcore-13.3.0/bin/ld: cannot find -labsl::utility: No such file or directory
+/software/binutils/2.42-GCCcore-13.3.0/bin/ld: cannot find -labsl::variant: No such file or directory
+collect2: error: ld returned 1 exit status
+```
+See https://github.com/pytorch/pytorch/pull/161907
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_aot_inductor_package.py b/test/inductor/test_aot_inductor_package.py
+index 28e01a40e9d..f281f2de938 100644
+--- a/test/inductor/test_aot_inductor_package.py
++++ b/test/inductor/test_aot_inductor_package.py
+@@ -229,7 +229,7 @@ class TestAOTInductorPackage(TestCase):
+                 # Create a build directory to run cmake
+                 build_path.mkdir()
+                 custom_env = os.environ.copy()
+-                custom_env["CMAKE_PREFIX_PATH"] = str(Path(torch.__file__).parent)
++                custom_env["CMAKE_PREFIX_PATH"] = ":".join([str(Path(torch.__file__).parent)] + os.environ.get("CMAKE_PREFIX_PATH", "").split(":"))
+                 subprocess.run(
+                     ["cmake", ".."],
+                     cwd=build_path,
