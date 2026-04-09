@@ -1,0 +1,73 @@
+easyblock = 'CMakeMake'
+
+name = 'amdsmi'
+version = '26.2.1'
+_rocm_version = '7.2.0'
+# amdsmi includes esmi as a component, which needs to be copied into the amdsmi sources.
+# Required version can be found in amdsmi/CMakeLists.txt by searching for current_esmi_tag.
+_esmi_version = '4.2'
+versionsuffix = f'-ROCm-{_rocm_version}'
+
+homepage = 'https://github.com/ROCm/amdsmi'
+description = """
+The AMD System Management Interface (AMD SMI) library offers a unified tool for managing and monitoring
+GPUs, particularly in high-performance computing environments. It provides a user-space interface that
+allows applications to control GPU operations, monitor performance, and retrieve information about the
+system's drivers and GPUs."""
+docurls = ['https://rocm.docs.amd.com/projects/amdsmi/en/latest/']
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = [
+    'https://github.com/ROCm/amdsmi/archive/refs/tags/',
+    'https://github.com/amd/esmi_ib_library/archive/refs/tags/',
+]
+sources = [
+    f'rocm-{_rocm_version}.tar.gz',
+    f'esmi_pkg_ver-{_esmi_version}.tar.gz',
+]
+patches = ['amdsmi-26.2.1_handle-non-standard-rocm-paths.patch']
+checksums = [
+    {'rocm-7.2.0.tar.gz': '164253e3e0fdf2c26200dfd623b2e156015f1168f47504c060006dc8ffda4898'},
+    {'esmi_pkg_ver-4.2.tar.gz': 'de19d222d09e2171f47f8bbd6608e5648bd547c82543379bb8fb5ed2e379e141'},
+    {'amdsmi-26.2.1_handle-non-standard-rocm-paths.patch':
+     'e42be377493ec4ce85774e910677087b58211856c35f1d7e01bf383f36937c84'},
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('pkgconf', '2.4.3'),
+    # Needed as amdsmi tries to find git to determine commit hash it was built from
+    ('git', '2.50.1'),
+]
+
+dependencies = [
+    # Needed as amdsmi is a python script
+    ('Python', '3.13.5'),
+    ('libdrm', '2.4.125'),
+]
+
+preconfigopts = (f"cp -r %(builddir)s/esmi_ib_library-esmi_pkg_ver-{_esmi_version} "
+                 f"%(builddir)s/amdsmi-rocm-{_rocm_version}/esmi_ib_library && ")
+
+sanity_check_paths = {
+    'files': [f'lib/libamd_smi.{SHLIB_EXT}',
+              'include/amd_smi/amdsmi.h'],
+    'dirs': ['lib/cmake/amd_smi',
+             'share/doc/amd-smi-lib']
+}
+
+# Sanity check commands require kernel drivers to be loaded.
+# The command itself will result in an exit code of non-zero, therefore try to grep
+# the tool version, which is always present.
+# Trying any amd-smi command without the correct kernel drivers loaded will fail with:
+# ERROR:root:Unable to get devices, driver not initialized (amdgpu not found in modules)
+# ERROR:root:Unable to detect any GPU devices, check amdgpu version and module status (sudo modprobe amdgpu)
+# ERROR:root:Unable to detect any CPU devices, check amd_hsmp version and module status (sudo modprobe amd_hsmp)
+# AMDSMI Tool: 26.2.1+unknown | AMDSMI Library version: 26.2.1 | ROCm version: N/A
+sanity_check_commands = [
+    f'amd-smi version | grep "AMDSMI Tool: {version}"',
+]
+
+moduleclass = 'lib'
