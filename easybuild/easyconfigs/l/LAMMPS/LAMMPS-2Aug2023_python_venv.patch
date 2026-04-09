@@ -1,0 +1,29 @@
+Patch Python installation to ensure system packages are used and not updated.
+diff --git a/python/install.py b/python/install.py
+index fd9f95f1bf..42f404224a 100644
+--- a/python/install.py
++++ b/python/install.py
+@@ -97,7 +97,7 @@ shutil.copy(args.lib,'lammps')
+ # create a virtual environment for building the wheel
+ shutil.rmtree('buildwheel', True)
+ try:
+-  txt = subprocess.check_output([sys.executable, '-m', 'venv', 'buildwheel'], stderr=subprocess.STDOUT, shell=False)
++  txt = subprocess.check_output([sys.executable, '-m', 'venv', '--system-site-packages', 'buildwheel'], stderr=subprocess.STDOUT, shell=False)
+   print(txt.decode('UTF-8'))
+ except subprocess.CalledProcessError as err:
+   sys.exit("Failed to create a virtual environment: {0}".format(err.output.decode('UTF-8')))
+diff --git a/python/makewheel.py b/python/makewheel.py
+index f13ad110ce..014756ddbd 100644
+--- a/python/makewheel.py
++++ b/python/makewheel.py
+@@ -23,8 +23,8 @@ sys.real_prefix = sys.prefix
+ sys.prefix = base
+ 
+ # update pip and install all requirements to build the wheel
+-os.system('python -m pip install --upgrade pip')
+-os.system('python -m pip install --upgrade -r wheel_requirements.txt')
++os.system('python -m pip install pip')
++os.system('python -m pip install -r wheel_requirements.txt')
+ 
+ print("Building new binary wheel")
+ os.system('python -m build -n --wheel -o .')
