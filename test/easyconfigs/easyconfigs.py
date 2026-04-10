@@ -58,9 +58,10 @@ from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_fil
 from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
+from easybuild.tools.options import set_tmpdir
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_shell_cmd
-from easybuild.tools.options import set_tmpdir
+from easybuild.tools.systemtools import pick_dep_version
 from easybuild.tools.utilities import nub
 
 
@@ -1920,11 +1921,14 @@ def template_easyconfig_test(self, spec):
         # if no easyconfig was found for the dependency with the 'parent' toolchain,
         # if may get resolved using a subtoolchain, which is then hardcoded in the dumped easyconfig
         if key in DEPENDENCY_PARAMETERS:
-            # number of dependencies should remain the same
-            if len(orig_val) != len(dumped_val):
+            # dumped_val has no dependencies where the version resolves to None
+            # which can make the lists have different lengths
+            cleaned_orig_val = [val for val in orig_val if pick_dep_version(val[1]) is not False]
+            # number of dependencies should only be reduced and equal to the filtered ones
+            if len(orig_val) < len(dumped_val) or len(cleaned_orig_val) != len(dumped_val):
                 failing_checks.append("Length difference for %s: %s vs %s" % (key, orig_val, dumped_val))
                 continue
-            for orig_dep, dumped_dep in zip(orig_val, dumped_val):
+            for orig_dep, dumped_dep in zip(cleaned_orig_val, dumped_val):
                 # name should always match
                 if orig_dep[0] != dumped_dep[0]:
                     failing_checks.append("Different name in %s: %s vs %s" % (key, orig_dep[0], dumped_dep[0]))
