@@ -20,8 +20,12 @@ source_urls = ['https://github.com/%(namelower)s/%(namelower)s/archive/']
 sources = ['v%(version)s.tar.gz']
 checksums = ['3b868c820d59dd38372417efc31e9be3fbdca8cf0a6b39f13fb2b822607d6194']
 
+# remove -static flag from Makefiles to avoid requiring glibc-static,
+# see also https://github.com/easybuilders/easybuild-easyconfigs/issues/24101
+prebuildopts = "cd %(builddir)s/%(namelower)s-%(version)s && "
+prebuildopts += "find applications/bed -name 'Makefile' -exec sed -i 's/-static//g' {} + && "
 # else build of jansson library fails with: 'configure: error: C compiler cannot create executables'
-prebuildopts = 'unset LIBS && '
+prebuildopts += 'unset LIBS && '
 # builds all variants and copies executables to bin directory
 buildopts = ' all && make install'
 
