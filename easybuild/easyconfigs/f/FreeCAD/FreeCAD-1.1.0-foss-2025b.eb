@@ -1,0 +1,129 @@
+easyblock = 'CMakeNinja'
+
+name = 'FreeCAD'
+version = '1.1.0'
+
+homepage = 'https://www.freecad.org'
+description = """FreeCAD is a general-purpose parametric 3D computer-aided design (CAD) modeler and a
+building information modeling (BIM) software application with finite element method (FEM) support."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+# Submodule commits pinned to the 1.1.0 tag
+local_GSL_commit = '543d0dd3fe966ddf20e884b44e5fdbf12cb43784'
+local_OndselSolver_commit = '30e9b64e8bf881d438d4b88834f9ba3674865418'
+local_AddonManager_commit = '937b6877239dc78ef59eeefe8099e5f14243eda1'
+
+sources = [
+    {
+        'source_urls': ['https://github.com/FreeCAD/FreeCAD/archive/refs/tags/'],
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-%(version)s.tar.gz',
+        'extract_cmd': 'tar -xzf %s -C %(builddir)s --strip-components=1',
+    },
+    {
+        'source_urls': ['https://github.com/microsoft/GSL/archive'],
+        'download_filename': '%s.tar.gz' % local_GSL_commit,
+        'filename': '%(name)s-%(version)s-GSL.tar.gz',
+        'extract_cmd': 'tar -xzf %s -C %(builddir)s/src/3rdParty/GSL --strip-components=1',
+    },
+    {
+        'source_urls': ['https://github.com/FreeCAD/OndselSolver/archive'],
+        'download_filename': '%s.tar.gz' % local_OndselSolver_commit,
+        'filename': '%(name)s-%(version)s-OndselSolver.tar.gz',
+        'extract_cmd': 'tar -xzf %s -C %(builddir)s/src/3rdParty/OndselSolver --strip-components=1',
+    },
+    {
+        'source_urls': ['https://github.com/FreeCAD/AddonManager/archive'],
+        'download_filename': '%s.tar.gz' % local_AddonManager_commit,
+        'filename': '%(name)s-%(version)s-AddonManager.tar.gz',
+        'extract_cmd': 'tar -xzf %s -C %(builddir)s/src/Mod/AddonManager --strip-components=1',
+    },
+]
+patches = ['FreeCAD-1.1.0_boost-1.84-intrusive-ptr.patch']
+checksums = [
+    {'FreeCAD-1.1.0.tar.gz': 'b99b932037eb801a66b5f66ac46968a0da3654a1774ee12f28781b43de34daf6'},
+    {'FreeCAD-1.1.0-GSL.tar.gz': 'dd06a9190c02f6c04d008366faabc8947c817f33cbc6a838c5bfc9ad79652410'},
+    {'FreeCAD-1.1.0-OndselSolver.tar.gz': '77646ca7d8cbc6dc4e8304439be2ff2b9aecf397e6349e63b3b06e65dfed79c3'},
+    {'FreeCAD-1.1.0-AddonManager.tar.gz': '70b2fa7f3c58c0ea5be830de90d33369670ee6658f13aeb7684f1ea478528178'},
+    {'FreeCAD-1.1.0_boost-1.84-intrusive-ptr.patch':
+     'b87e54f551e9753a23f9b36f7148060c38acc974710df067680d6c560f68b3e6'},
+]
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('Doxygen', '1.14.0'),
+    ('Eigen', '3.4.0'),
+    ('Ninja', '1.13.0'),
+    ('pybind11', '3.0.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Boost', '1.88.0'),
+    ('Boost.Python', '1.88.0'),
+    ('fmt', '11.2.0'),
+    ('yaml-cpp', '0.8.0'),
+    ('Xerces-C++', '3.3.0'),
+    ('Qt6', '6.9.3'),
+    ('PySide6', '6.9.3'),
+    ('X11', '20250608'),
+    ('OpenGL', '2025.09'),
+    ('Coin', '4.0.8'),
+    ('Quarter', '1.2.3'),
+    ('pivy', '0.6.11'),
+    ('occt', '7.9.3'),
+    ('VTK', '9.5.2'),
+    ('matplotlib', '3.10.5'),
+    ('med', '6.0.1'),
+]
+
+# Skip HDF5's broken cmake config (references libaec::sz-shared without loading libaec targets);
+# use CMake's built-in FindHDF5 module instead
+configopts = '-DHDF5_NO_FIND_PACKAGE_CONFIG_FILE=TRUE '
+configopts += '-DENABLE_DEVELOPER_TESTS=OFF '
+configopts += '-DBUILD_TEST=OFF '
+configopts += '-DBUILD_FLAT_MESH=ON '
+configopts += '-DBUILD_DESIGNER_PLUGIN=ON '
+configopts += '-DBUILD_DRAWING=ON '
+configopts += '-DFREECAD_QT_MAJOR_VERSION=6 '
+configopts += '-DFREECAD_USE_QT_FILEDIALOG=ON '
+configopts += '-DFREECAD_USE_PYBIND11=ON '
+configopts += '-DFREECAD_USE_EXTERNAL_FMT=ON '
+configopts += '-DFREECAD_USE_EXTERNAL_PIVY=ON '
+configopts += '-DFREECAD_USE_OCC_VARIANT="Official Version" '
+configopts += '-DINSTALL_TO_SITEPACKAGES=OFF '
+configopts += '-DDESIGNER_PLUGIN_LOCATION=%(installdir)s/plugins '
+configopts += '-Wno-dev '
+
+sanity_check_paths = {
+    'files': [
+        'bin/FreeCADCmd',
+        'bin/FreeCAD',
+        'lib64/Points.so',
+        'lib64/libSMESH.so',
+        'lib64/FreeCAD.so',
+    ],
+    'dirs': [
+        'bin',
+        'share/pkgconfig',
+        'lib64',
+    ],
+}
+
+postinstallcmds = [
+    'ln -s FreeCAD %(installdir)s/bin/freecad',
+    'ln -s FreeCADCmd %(installdir)s/bin/freecadcmd',
+]
+
+modextrapaths = {
+    'QT_PLUGIN_PATH': 'plugins',
+    'PYTHONPATH': 'lib',
+}
+
+sanity_check_commands = [
+    'FreeCADCmd -c "print(2+2)"',
+    'python -c "import FreeCAD; vec = FreeCAD.Base.Vector(0, 0, 0); print(vec);"',
+]
+
+moduleclass = 'vis'

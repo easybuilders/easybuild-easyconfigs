@@ -1,0 +1,47 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'pivy'
+version = '0.6.11'
+
+homepage = 'https://coin3d.github.io'
+description = """Python binding for Coin."""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+source_urls = ['https://github.com/coin3d/%(name)s/archive/refs/tags/']
+sources = ['%(version)s.tar.gz']
+checksums = ['78f79bd7d1ce7e8140ceba4b1220136ea1f14b4403b1e463c59fa892feed961e']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SWIG', '4.3.1'),
+    ('SoQt', '1.6.4'),
+]
+
+separate_build_dir = False
+
+configopts = ' '.join([
+    '-DPIVY_USE_QT6=ON',
+    '-DPython_EXECUTABLE="${EBROOTPYTHON}/bin/python"',
+    '-DPIVY_Python_SITEARCH="%(installdir)s/lib/python%(pyshortver)s/site-packages"',
+    '-DDISABLE_SWIG_WARNINGS=ON',
+    '-DCMAKE_VERBOSE_MAKEFILE=ON',
+])
+
+sanity_check_paths = {
+    'files': [
+        'lib/python%(pyshortver)s/site-packages/%(name)s/coin.py',
+        'lib/python%(pyshortver)s/site-packages/%(name)s/_coin.so',
+    ],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(name)s'],
+}
+
+sanity_check_commands = [
+    "python -c 'from pivy import coin; va = coin.SbVec3f([0, 0, 0]);'"
+]
+
+moduleclass = 'vis'

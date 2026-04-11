@@ -1,0 +1,30 @@
+diff -ruN freecad-orig/src/Gui/ViewProvider.cpp freecad-mod/src/Gui/ViewProvider.cpp
+--- freecad-orig/src/Gui/ViewProvider.cpp	2026-03-25 03:17:53.000000000 +0100
++++ freecad-mod/src/Gui/ViewProvider.cpp	2026-04-09 21:31:48.302303657 +0200
+@@ -65,6 +65,10 @@
+ using namespace std;
+ using namespace Gui;
+ 
++// Boost >= 1.84: intrusive_ptr hooks for Coin3D types (see ViewProvider.h)
++void intrusive_ptr_add_ref(SoBase* obj) { obj->ref(); }
++void intrusive_ptr_release(SoBase* obj) { obj->unref(); }
++
+ 
+ namespace Gui
+ {
+diff -ruN freecad-orig/src/Gui/ViewProvider.h freecad-mod/src/Gui/ViewProvider.h
+--- freecad-orig/src/Gui/ViewProvider.h	2026-03-25 03:17:53.000000000 +0100
++++ freecad-mod/src/Gui/ViewProvider.h	2026-04-09 21:31:48.302303657 +0200
+@@ -63,6 +63,12 @@
+ }  // namespace Base
+ 
+ class SoGroup;
++class SoBase;
++
++// Boost >= 1.84 requires intrusive_ptr_add_ref/release visible via ADL.
++// All Coin3D types derive from SoBase, so these cover every CoinPtr<T>.
++void intrusive_ptr_add_ref(SoBase* obj);
++void intrusive_ptr_release(SoBase* obj);
+ 
+ 
+ namespace Gui
