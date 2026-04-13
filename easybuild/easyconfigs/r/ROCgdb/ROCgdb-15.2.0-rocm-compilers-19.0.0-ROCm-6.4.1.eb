@@ -34,9 +34,20 @@ dependencies = [
     ('ROCdbgapi', '0.77.2')
 ]
 
-preconfigopts = "mkdir obj && cd obj && "
+# Make sure to strip $EBROOTBINUTILS/lib and $EBROOTBINUTILS/lib64 from LIBRARY_PATH to avoid 'duplicate symbol' errors
+# from libiberty (ROCgdb builds an internal libiberty, which conflicts with the one provided by binutils)
+# To do so, first add leading and training colons, so all entries in LIBRARY_PATH start and end with colons
+local_strip_binutils_library_path = 'tmp_lp=":${LIBRARY_PATH}:" && '
+# Replace :${EBROOTBINUTILS/lib64}: with : on the tmp_lp
+# By starting/ending with a colon, we make sure it only gets removed if it matches a full entry
+local_strip_binutils_library_path += 'tmp_lp=${tmp_lp//:${EBROOTBINUTILS}\/lib:/:} && '
+local_strip_binutils_library_path += 'tmp_lp=${tmp_lp//:${EBROOTBINUTILS}\/lib64:/:} && '
+local_strip_binutils_library_path += 'tmp_lp=${tmp_lp#:} && '  # Strip leading colon
+local_strip_binutils_library_path += 'LIBRARY_PATH=${tmp_lp%:} && '  # Strip training colon and overwrite LIBRARY_PATH
+
+preconfigopts = local_strip_binutils_library_path + "mkdir obj && cd obj && "
 configure_cmd_prefix = '../'
-prebuildopts = "cd obj && "
+prebuildopts = local_strip_binutils_library_path + "cd obj && "
 preinstallopts = prebuildopts
 
 configopts = '--with-system-zlib --with-system-readline --with-expat=$EBROOTEXPAT '
