@@ -1,0 +1,86 @@
+easyblock = 'CmdCp'
+
+name = 'NONMEM'
+version = '7.6.0'
+
+local_mpichver = '4.2.2'
+versionsuffix = '-MPICH-%s' % local_mpichver
+
+homepage = 'https://www.iconplc.com/innovation/nonmem/'
+description = """NONMEM is a non-linear mixed-effects modeling software package."""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+local_majminver = '%(version_major)s%(version_minor)s'
+local_nmbin = 'nmfe%s' % local_majminver
+
+download_instructions = """
+You'll need to download the (password-protected) NONMEMXXX.zip file first from
+https://nonmem.iconplc.com/#/nonmemXXX and then recompress to
+%(name)s-%(version)s.tar.gz
+"""
+sources = [SOURCE_TAR_GZ]
+
+patches = ['NONMEM-7.6.0-std-legacy-gfortran.patch']
+
+checksums = [
+    None,
+    '80c62d6df55ac97d9558a1fa492db7e983a1f16a224ed0fd0b8fedecdd4009f5',  # NONMEM-7.6.0-std-legacy-gfortran.patch
+]
+
+dependencies = [
+    ('MPICH', local_mpichver),
+]
+
+# We need to build in the installdir because of non-relative paths in the build artifacts
+local_build_cmd = './SETUP{0} {1} %(installdir)s gfortran y ar same rec q unzip {2}{0}e.zip {2}{0}r.zip && '.format(
+                  local_majminver, '${PWD}', '%(namelower)s')
+
+# For MPI support, additional files need to be copied and (re)compiled:
+local_build_cmd += 'cp ${EBROOTMPICH}/include/mpi.mod %(installdir)s/mpi/mpi_ling && '
+local_build_cmd += 'cp ${EBROOTMPICH}/include/mpi.mod %(installdir)s/resource && '
+local_build_cmd += 'cp ${EBROOTMPICH}/lib/libmpi.a %(installdir)s/mpi/mpi_ling/libmpich.a && '
+local_build_cmd += 'cd %(installdir)s/mpi/mpi_ling && '
+local_fflags = '-w -O3 -ffast-math -std=legacy -ffpe-summary=none -xf95'
+local_build_cmd += 'mpif90 {0} -I../../resource -c PNM_MPI.f90 && '.format(local_fflags)
+local_build_cmd += 'mpif90 {0} -I../../resource -c PNM_MPID.f90 && '.format(local_fflags)
+local_build_cmd += 'mpif90 {0} -fno-range-check  -I../../resource -c MPI.f90 && '.format(local_fflags)
+
+# Modifying the mpif90 and mpirun calls in the runscripts so that NONMEM can be used
+# together with modules which load different MPI modules (e.g. PsN)
+local_build_cmd += 'cd %(installdir)s && '
+local_build_cmd += 'sed -i "s@mpif90@$(which mpif90)@g" '
+local_build_cmd += 'util/{0} util/{0}original util/nmfePDx run/{0} run/nmfePDx && '.format(local_nmbin)
+local_build_cmd += 'sed -i "s@mpirun@mpiexec.hydra@g" '
+local_build_cmd += 'runfiles/mpilinux8.pnm runfiles/mpilinux_onecomputer.pnm runfiles/mpilinux_twocomputers.pnm '
+local_build_cmd += 'run/mpilinux8.pnm run/mpilinux_onecomputer.pnm run/mpilinux_twocomputers.pnm '
+
+cmds_map = [('.*', local_build_cmd)]
+
+modextrapaths = {
+    'PATH': 'run',
+}
+
+# No files to copy since the build needed to be done in the installdir
+# The install step then needs to be skipped to keep the installdir contents
+files_to_copy = []
+skipsteps = ['install']
+
+sanity_check_paths = {
+    'files': [
+        'run/%s' % local_nmbin,
+        'run/%(namelower)s',
+        'tr/NMTRAN.exe',
+    ],
+    'dirs': ['help', 'mpi', 'util'],
+}
+
+sanity_check_commands = [
+    '%s | grep Usage' % local_nmbin,
+]
+
+modloadmsg = """
+A license file needs to be copied to ${EBROOTNONMEM}/license/nonmem.lic
+"""
+
+moduleclass = 'bio'
