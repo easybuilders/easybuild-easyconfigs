@@ -87,14 +87,18 @@ _runtest_cmd = ' '.join([_runtest_cmd1, '||', _runtest_cmd1, '--last-failed']),
 
 exts_list = [
     (name, version, {
-        'prebuildopts':  _local_prebuildopts,
-        'testinstall': True,
-        "runtest": _runtest_cmd,
-        'sources': [
-            {'source_urls': ['https://github.com/google/jax/archive/'], 'filename': '%(name)s-v%(version)s.tar.gz'}
+        'patches': [
+            'jax-0.8.1_jax-version-fix.patch',
+            'jax-0.6.2_fix-slurm-vars.patch',
         ],
+        'prebuildopts': "export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1; ",
+        'runtest': ('pytest -n %(parallel)s tests --deselect=tests/api_test.py::BackendsTest::test_no_backend_warning_on_cpu_if_platform_specified --deselect=tests/version_test.py || pytest -n %(parallel)s tests --deselect=tests/api_test.py::BackendsTest::test_no_backend_warning_on_cpu_if_platform_specified --deselect=tests/version_test.py --last-failed',),
+        'sources': [{'source_urls': ['https://github.com/google/jax/archive/'], 'filename': '%(name)s-v%(version)s.tar.gz'}],
+        'testinstall': True,
         'checksums': [
             {'jax-v0.8.1.tar.gz': '38882602112dadfd49a2c74868a0722574ae88e04646a96f32f8c36a7893c548'},
+            {'jax-0.8.1_jax-version-fix.patch': '0feae9caa48e758eb3605bf432c837ec4c72afb25a7e565ee272c0d9c805f75e'},
+            {'jax-0.6.2_fix-slurm-vars.patch': 'a551deb1723c091ad9c29ada7b9e52dcfaaff4098e03d4e1c7a3d1e75f129f42'},
         ],
     }),
 ]
