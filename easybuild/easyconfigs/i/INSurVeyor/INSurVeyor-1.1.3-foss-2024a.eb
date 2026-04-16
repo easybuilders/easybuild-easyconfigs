@@ -1,0 +1,58 @@
+easyblock = 'CMakeMake'
+
+name = 'INSurVeyor'
+version = '1.1.3'
+
+homepage = 'https://github.com/kensung-lab/INSurVeyor'
+description = """
+An insertion caller for Illumina paired-end WGS data.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = ['https://github.com/kensung-lab/INSurVeyor/archive/refs/tags']
+sources = ['%(version)s.tar.gz']
+checksums = ['0099ce859dd1b61b726b87ca26d7b89dabb34cab27afc97a5696780260b27304']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Cython', '3.0.10'),
+    ('Autotools', '20231222'),
+]
+
+dependencies = [
+    ('HTSlib', '1.21'),
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('SciPy-bundle', '2024.05'),  # for numpy
+    ('pyfaidx', '0.8.1.2'),
+    ('Pysam', '0.22.1'),
+]
+
+configopts = "-DCMAKE_BUILD_TYPE=Release "
+
+local_bins = ['reads_categorizer', 'clip_consensus_builder', 'call_insertions', 
+         'dc_remapper', 'add_filtering_info', 'filter', 'normalise']
+
+install_cmd = ' && '.join([
+    'mkdir -p %(installdir)s/bin',
+    'cp %s %%(installdir)s/bin/' % ' '.join(local_bins),
+])
+
+postinstallcmds = [
+    'cp %(start_dir)s/%(namelower)s.py %(installdir)s/bin/',
+    'cp %(start_dir)s/random_pos_generator.py %(installdir)s/bin/',
+    'chmod a+x %(installdir)s/bin/%(namelower)s.py',
+    'chmod a+x %(installdir)s/bin/random_pos_generator.py',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % bin for bin in local_bins + ['%(namelower)s.py', 'random_pos_generator.py']],
+    'dirs': [''],
+}
+
+sanity_check_commands = [
+    "%(namelower)s.py --version",
+]
+
+moduleclass = 'bio'
