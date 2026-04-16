@@ -1,0 +1,43 @@
+easyblock = 'Tarball'
+
+name = 'ProteinMPNN'
+version = '1.0.1-20230627'
+local_commit = '8907e6671bfbfc92303b5f79c4b5e6ce47cdef57'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/dauparas/ProteinMPNN'
+description = """A deep learning based protein sequence design method is
+described that is widely applicable to current design challenges and shows
+outstanding performance in both in silico and experimental tests.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+github_account = 'dauparas'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': f'{local_commit}.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['2e11f385074facb06e12496acde80756b34504f0f70bf78714fb07fe9244f398']
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('PyTorch', '2.9.1', f'{versionsuffix}'),
+    ('PyTorch-bundle', '2.9.1', f'{versionsuffix}'),  # torchaudio, torchvision
+]
+
+postinstallcmds = [
+    'chmod a+x %(installdir)s/protein_mpnn_run.py',
+    'chmod a+x %(installdir)s/helper_scripts/*.py'
+]
+
+sanity_check_paths = {
+    'files': ['protein_mpnn_run.py'],
+    'dirs': ['examples'],
+}
+
+fix_python_shebang_for = ['protein_mpnn_run.py', 'helper_scripts/*.py']
+
+sanity_check_commands = ['protein_mpnn_run.py --help']
+
+modextrapaths = {'PATH': ['', 'helper_scripts']}
+
+moduleclass = 'bio'
