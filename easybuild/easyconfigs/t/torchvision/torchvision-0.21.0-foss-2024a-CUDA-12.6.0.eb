@@ -1,0 +1,57 @@
+easyblock = 'PythonBundle'
+
+name = 'torchvision'
+version = '0.21.0'
+versionsuffix = '-CUDA-12.6.0'
+
+homepage = 'https://github.com/pytorch/vision'
+description = " Datasets, Transforms and Models specific to Computer Vision"
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'cstd': 'c++17'}
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('SciPy-bundle', '2024.05'),
+    ('FFmpeg', '7.0.2'),
+    ('Pillow', '10.4.0'),
+    ('PyTorch', '2.6.0', versionsuffix),
+    ('libwebp', '1.4.0'),
+]
+
+exts_list = [
+    ('pytest-mock', '3.14.1', {
+        'source_tmpl': 'pytest_mock-%(version)s.tar.gz',
+        'checksums': ['159e9edac4c451ce77a5cdb9fc5d1100708d2dd4ba3c3df572f14097351af80e'],
+    }),
+    ('torchvision', '0.21.0', {
+        'source_urls': ['https://github.com/pytorch/vision/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'patches': [
+            'torchvision-0.17.0_quantized_tol.patch',
+        ],
+        'installopts': '-v',
+        'runtest': (
+            'pytest'
+            ' -m "not xfail"'  # don't run tests that are expected that they might fail
+            ' -k "not test_frame_reading_mem_vs_file"'  # this one hangs
+            '" and not test_antialias_default_warning"'  # flaky test which is removed in later versions
+            '" and not test_videoapi"'  # video support is unstable
+            '" and not avif and not heic"'  # requires torchvision-extra-decoders, libavif PyTorch support, libheic
+            '" and not test_pretrained_pos and not test_equivalent_behavior_weights"'  # tests out of date?
+        ),
+        'testinstall': True,
+        'checksums': [
+            {'torchvision-0.21.0.tar.gz': '0a4a967bbb7f9810f792cd0289a07fb98c8fb5d1303fae8b63e3a6b05d720058'},
+            {'torchvision-0.17.0_quantized_tol.patch':
+             '991b959f7d5e0fd418a163fa3ad828a2b60a64d0ce894cf579847138b13b62af'},
+        ],
+    }),
+]
+
+moduleclass = 'vis'
