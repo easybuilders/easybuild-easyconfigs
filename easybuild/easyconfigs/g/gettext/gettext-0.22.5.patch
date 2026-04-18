@@ -1,0 +1,172 @@
+This patch will cause -std=gnu++11 to be ignored when compiling on CentOS7 and equivalent OS. This fixes a bug reported
+at https://savannah.gnu.org/bugs/?65811. The link to the commit implementing this patch can be found that thread. The
+patch is applied to each copy of verify.h in the gettext 0.22.5 tarball
+author: Matthew Defenderfer (University of Alabama at Birmingham)
+diff -ruN gettext-0.22.5/gettext-runtime/gnulib-lib/verify.h gettext-0.22.5.patched/gettext-runtime/gnulib-lib/verify.h
+--- gettext-0.22.5/gettext-runtime/gnulib-lib/verify.h	2024-02-21 04:43:41.000000000 -0600
++++ gettext-0.22.5.patched/gettext-runtime/gnulib-lib/verify.h	2025-03-11 15:05:13.225322253 -0500
+@@ -259,11 +259,22 @@
+       && (!defined __cplusplus \
+           || (__cpp_static_assert < 201411 \
+               && __GNUG__ < 6 && __clang_major__ < 6 && _MSC_VER < 1910)))
+-#  if defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
++#  if (defined __cplusplus && defined __GNUG__ && __GNUG__ < 6 \
++       && __cplusplus == 201103L && !defined __clang__)
++/* g++ >= 4.7, < 6 with option -std=c++11 or -std=gnu++11 supports the
++   two-arguments static_assert but not the one-argument static_assert, and
++   it does not support _Static_assert.
++   We have to play preprocessor tricks to distinguish the two cases.  */
++#   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
++#   define _GL_SA2 static_assert
++#   define _GL_SA3 static_assert
++#   define _GL_SA_PICK(x1,x2,x3,x4,...) x4
++#   define static_assert(...) _GL_SA_PICK(__VA_ARGS__,_GL_SA3,_GL_SA2,_GL_SA1) (__VA_ARGS__)
++#  elif defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
+ /* MSVC 14 in C++ mode supports the two-arguments static_assert but not
+    the one-argument static_assert, and it does not support _Static_assert.
+    We have to play preprocessor tricks to distinguish the two cases.
+-   Since the MSVC preprocessor is not ISO C compliant (see above),.
++   Since the MSVC preprocessor is not ISO C compliant (see above),
+    the solution is specific to MSVC.  */
+ #   define _GL_EXPAND(x) x
+ #   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
+diff -ruN gettext-0.22.5/gettext-runtime/intl/gnulib-lib/verify.h gettext-0.22.5.patched/gettext-runtime/intl/gnulib-lib/verify.h
+--- gettext-0.22.5/gettext-runtime/intl/gnulib-lib/verify.h	2024-02-21 04:43:51.000000000 -0600
++++ gettext-0.22.5.patched/gettext-runtime/intl/gnulib-lib/verify.h	2025-03-11 15:05:13.229322281 -0500
+@@ -259,11 +259,22 @@
+       && (!defined __cplusplus \
+           || (__cpp_static_assert < 201411 \
+               && __GNUG__ < 6 && __clang_major__ < 6 && _MSC_VER < 1910)))
+-#  if defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
++#  if (defined __cplusplus && defined __GNUG__ && __GNUG__ < 6 \
++       && __cplusplus == 201103L && !defined __clang__)
++/* g++ >= 4.7, < 6 with option -std=c++11 or -std=gnu++11 supports the
++   two-arguments static_assert but not the one-argument static_assert, and
++   it does not support _Static_assert.
++   We have to play preprocessor tricks to distinguish the two cases.  */
++#   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
++#   define _GL_SA2 static_assert
++#   define _GL_SA3 static_assert
++#   define _GL_SA_PICK(x1,x2,x3,x4,...) x4
++#   define static_assert(...) _GL_SA_PICK(__VA_ARGS__,_GL_SA3,_GL_SA2,_GL_SA1) (__VA_ARGS__)
++#  elif defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
+ /* MSVC 14 in C++ mode supports the two-arguments static_assert but not
+    the one-argument static_assert, and it does not support _Static_assert.
+    We have to play preprocessor tricks to distinguish the two cases.
+-   Since the MSVC preprocessor is not ISO C compliant (see above),.
++   Since the MSVC preprocessor is not ISO C compliant (see above),
+    the solution is specific to MSVC.  */
+ #   define _GL_EXPAND(x) x
+ #   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
+diff -ruN gettext-0.22.5/gettext-runtime/libasprintf/gnulib-lib/verify.h gettext-0.22.5.patched/gettext-runtime/libasprintf/gnulib-lib/verify.h
+--- gettext-0.22.5/gettext-runtime/libasprintf/gnulib-lib/verify.h	2024-02-21 04:43:55.000000000 -0600
++++ gettext-0.22.5.patched/gettext-runtime/libasprintf/gnulib-lib/verify.h	2025-03-11 15:05:13.227322267 -0500
+@@ -259,11 +259,22 @@
+       && (!defined __cplusplus \
+           || (__cpp_static_assert < 201411 \
+               && __GNUG__ < 6 && __clang_major__ < 6 && _MSC_VER < 1910)))
+-#  if defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
++#  if (defined __cplusplus && defined __GNUG__ && __GNUG__ < 6 \
++       && __cplusplus == 201103L && !defined __clang__)
++/* g++ >= 4.7, < 6 with option -std=c++11 or -std=gnu++11 supports the
++   two-arguments static_assert but not the one-argument static_assert, and
++   it does not support _Static_assert.
++   We have to play preprocessor tricks to distinguish the two cases.  */
++#   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
++#   define _GL_SA2 static_assert
++#   define _GL_SA3 static_assert
++#   define _GL_SA_PICK(x1,x2,x3,x4,...) x4
++#   define static_assert(...) _GL_SA_PICK(__VA_ARGS__,_GL_SA3,_GL_SA2,_GL_SA1) (__VA_ARGS__)
++#  elif defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
+ /* MSVC 14 in C++ mode supports the two-arguments static_assert but not
+    the one-argument static_assert, and it does not support _Static_assert.
+    We have to play preprocessor tricks to distinguish the two cases.
+-   Since the MSVC preprocessor is not ISO C compliant (see above),.
++   Since the MSVC preprocessor is not ISO C compliant (see above),
+    the solution is specific to MSVC.  */
+ #   define _GL_EXPAND(x) x
+ #   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
+diff -ruN gettext-0.22.5/gettext-tools/gnulib-lib/verify.h gettext-0.22.5.patched/gettext-tools/gnulib-lib/verify.h
+--- gettext-0.22.5/gettext-tools/gnulib-lib/verify.h	2024-02-21 04:44:25.000000000 -0600
++++ gettext-0.22.5.patched/gettext-tools/gnulib-lib/verify.h	2025-03-11 15:05:13.239322352 -0500
+@@ -259,11 +259,22 @@
+       && (!defined __cplusplus \
+           || (__cpp_static_assert < 201411 \
+               && __GNUG__ < 6 && __clang_major__ < 6 && _MSC_VER < 1910)))
+-#  if defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
++#  if (defined __cplusplus && defined __GNUG__ && __GNUG__ < 6 \
++       && __cplusplus == 201103L && !defined __clang__)
++/* g++ >= 4.7, < 6 with option -std=c++11 or -std=gnu++11 supports the
++   two-arguments static_assert but not the one-argument static_assert, and
++   it does not support _Static_assert.
++   We have to play preprocessor tricks to distinguish the two cases.  */
++#   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
++#   define _GL_SA2 static_assert
++#   define _GL_SA3 static_assert
++#   define _GL_SA_PICK(x1,x2,x3,x4,...) x4
++#   define static_assert(...) _GL_SA_PICK(__VA_ARGS__,_GL_SA3,_GL_SA2,_GL_SA1) (__VA_ARGS__)
++#  elif defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
+ /* MSVC 14 in C++ mode supports the two-arguments static_assert but not
+    the one-argument static_assert, and it does not support _Static_assert.
+    We have to play preprocessor tricks to distinguish the two cases.
+-   Since the MSVC preprocessor is not ISO C compliant (see above),.
++   Since the MSVC preprocessor is not ISO C compliant (see above),
+    the solution is specific to MSVC.  */
+ #   define _GL_EXPAND(x) x
+ #   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
+diff -ruN gettext-0.22.5/gettext-tools/libgettextpo/verify.h gettext-0.22.5.patched/gettext-tools/libgettextpo/verify.h
+--- gettext-0.22.5/gettext-tools/libgettextpo/verify.h	2024-02-21 04:45:01.000000000 -0600
++++ gettext-0.22.5.patched/gettext-tools/libgettextpo/verify.h	2025-03-11 15:05:13.232322303 -0500
+@@ -259,11 +259,22 @@
+       && (!defined __cplusplus \
+           || (__cpp_static_assert < 201411 \
+               && __GNUG__ < 6 && __clang_major__ < 6 && _MSC_VER < 1910)))
+-#  if defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
++#  if (defined __cplusplus && defined __GNUG__ && __GNUG__ < 6 \
++       && __cplusplus == 201103L && !defined __clang__)
++/* g++ >= 4.7, < 6 with option -std=c++11 or -std=gnu++11 supports the
++   two-arguments static_assert but not the one-argument static_assert, and
++   it does not support _Static_assert.
++   We have to play preprocessor tricks to distinguish the two cases.  */
++#   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
++#   define _GL_SA2 static_assert
++#   define _GL_SA3 static_assert
++#   define _GL_SA_PICK(x1,x2,x3,x4,...) x4
++#   define static_assert(...) _GL_SA_PICK(__VA_ARGS__,_GL_SA3,_GL_SA2,_GL_SA1) (__VA_ARGS__)
++#  elif defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
+ /* MSVC 14 in C++ mode supports the two-arguments static_assert but not
+    the one-argument static_assert, and it does not support _Static_assert.
+    We have to play preprocessor tricks to distinguish the two cases.
+-   Since the MSVC preprocessor is not ISO C compliant (see above),.
++   Since the MSVC preprocessor is not ISO C compliant (see above),
+    the solution is specific to MSVC.  */
+ #   define _GL_EXPAND(x) x
+ #   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
+diff -ruN gettext-0.22.5/libtextstyle/lib/verify.h gettext-0.22.5.patched/libtextstyle/lib/verify.h
+--- gettext-0.22.5/libtextstyle/lib/verify.h	2024-02-21 04:45:24.000000000 -0600
++++ gettext-0.22.5.patched/libtextstyle/lib/verify.h	2025-03-11 15:05:13.222322232 -0500
+@@ -259,11 +259,22 @@
+       && (!defined __cplusplus \
+           || (__cpp_static_assert < 201411 \
+               && __GNUG__ < 6 && __clang_major__ < 6 && _MSC_VER < 1910)))
+-#  if defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
++#  if (defined __cplusplus && defined __GNUG__ && __GNUG__ < 6 \
++       && __cplusplus == 201103L && !defined __clang__)
++/* g++ >= 4.7, < 6 with option -std=c++11 or -std=gnu++11 supports the
++   two-arguments static_assert but not the one-argument static_assert, and
++   it does not support _Static_assert.
++   We have to play preprocessor tricks to distinguish the two cases.  */
++#   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
++#   define _GL_SA2 static_assert
++#   define _GL_SA3 static_assert
++#   define _GL_SA_PICK(x1,x2,x3,x4,...) x4
++#   define static_assert(...) _GL_SA_PICK(__VA_ARGS__,_GL_SA3,_GL_SA2,_GL_SA1) (__VA_ARGS__)
++#  elif defined __cplusplus && _MSC_VER >= 1900 && !defined __clang__
+ /* MSVC 14 in C++ mode supports the two-arguments static_assert but not
+    the one-argument static_assert, and it does not support _Static_assert.
+    We have to play preprocessor tricks to distinguish the two cases.
+-   Since the MSVC preprocessor is not ISO C compliant (see above),.
++   Since the MSVC preprocessor is not ISO C compliant (see above),
+    the solution is specific to MSVC.  */
+ #   define _GL_EXPAND(x) x
+ #   define _GL_SA1(a1) static_assert ((a1), "static assertion failed")
