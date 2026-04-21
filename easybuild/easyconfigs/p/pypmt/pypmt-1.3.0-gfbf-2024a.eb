@@ -1,0 +1,39 @@
+easyblock = 'CMakeMake'
+
+name = 'pypmt'
+version = '1.3.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://git.astron.nl/RD/pmt'
+description = """PMT is a high-level software library capable of 
+    collecting power consumption measurements on various hardware."""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+builddependencies = [('CMake', '3.29.3')]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('CUDA', '12.6.0', '', SYSTEM),
+]
+
+source_urls = ['https://git.astron.nl/RD/pmt/-/archive/%(version)s']
+sources = ['pmt-%(version)s.tar.gz']
+checksums = ['90c6c114d931dc1cdc046f544dabf3b547562e18ffd503bcd3b9de2b4fd4c734']
+
+configopts = '-DPMT_BUILD_PYTHON=1 -DPMT_BUILD_RAPL=1 -DPMT_BUILD_NVML=1 -DPMT_BUILD_NVIDIA=1'
+
+sanity_check_paths = {
+    'files': ["lib/libpmt.so", "include/pmt/NVIDIA.h", "include/pmt/Rapl.h", "include/pmt/NVML.h"],
+    'dirs': [
+        "lib",
+        "lib/python",
+        "include"],
+}
+sanity_check_commands = [('python', "-c 'import pmt'")]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python']
+}
+
+moduleclass = 'lib'
