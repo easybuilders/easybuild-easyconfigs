@@ -1,0 +1,32 @@
+Replace deprecated io_service by io_context
+author: Jarne Renders (Vrije Universiteit Brussel)
+diff -ruN LDhelmet.orig/src/rjmcmc/rjmcmc_component.cc LDhelmet/src/rjmcmc/rjmcmc_component.cc
+--- LDhelmet.orig/src/rjmcmc/rjmcmc_component.cc	2026-03-05 13:17:29.227752000 +0100
++++ LDhelmet/src/rjmcmc/rjmcmc_component.cc	2026-03-05 14:07:17.702307000 +0100
+@@ -122,13 +122,14 @@
+     RTaskCounter r_task_counter(fp, snp_partitions_overlap.size(), samples);
+     RanNumGen seed_generator(cmd_line_options.seed_);
+     boost::thread_group threads;
+-    boost::asio::io_service io_service;
++    boost::asio::io_context io_context;
+ 
+     {
+-      boost::asio::io_service::work work(io_service);
++      boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work
++       = boost::asio::make_work_guard(io_context);
+       for (size_t i = 0; i < cmd_line_options.num_threads_; ++i) {
+         threads.create_thread(
+-            boost::bind(&boost::asio::io_service::run, &io_service));
++            boost::bind(&boost::asio::io_context::run, &io_context));
+       }
+ 
+       for (size_t partition_id = 0;
+@@ -163,7 +164,7 @@
+                          snp_partitions_overlap[partition_id],
+                          snp_partitions[partition_id]);
+ 
+-        io_service.post(model_task);
++        boost::asio::post(io_context, model_task);
+       }
+     }
+ 
