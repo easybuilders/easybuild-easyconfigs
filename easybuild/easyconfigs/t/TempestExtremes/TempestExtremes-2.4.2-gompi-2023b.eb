@@ -1,0 +1,38 @@
+## Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+## Barcelona Supercomputing Center 2026
+
+easyblock = 'CMakeMake'
+
+name = 'TempestExtremes'
+version = '2.4.2'
+
+homepage = 'https://climate.ucdavis.edu/tempestextremes.php'
+description = """TempestExtremes is a growing collection of detection and characterization algorithms for large climate datasets, leveraging C++ for rapid throughput and a command line interface that maximizes flexibility of each kernel. The tracking kernels in this package have been already used for tracking and characterizing tropical cyclones (TCs), extratropical cyclones (ETCs), monsoonal depressions, atmospheric blocks, atmospheric rivers, and mesoscale convective systems (MCSs). By considering multiple extremes within the same framework, we can study the joint characteristics of extremes while minimizing the total data burden."""
+
+toolchain = {'name': 'gompi', 'version': '2023b'}
+
+source_urls = ['https://github.com/ClimateGlobalChange/tempestextremes/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['a370faadfe3958ed0db7bfab8ca0fcd50bbc91b11aeba3dff8728d0fb0f94267']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.27.6'),
+]
+
+dependencies = [
+    ('netCDF', '4.9.3'),
+]
+
+configopts = '-DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX=%(installdir)s '
+configopts += '-DENABLE_MPI="ON" -DMPI_ROOT=$EBROOTOPENMPI '
+configopts += '-DOPTIMIZATION_LEVEL="-O3" -DDEBUG_SYMBOLS="OFF" '
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['BlobStats', 'Climatology', 'DetectBlobs', 'DetectNodes',
+                                     'NodeFileCompose', 'NodeFileEditor', 'NodeFileFilter',
+                                     'StitchBlobs', 'StitchNodes', 'VariableProcessor']],
+    'dirs': ['lib'],
+}
+
+moduleclass = 'lib'
