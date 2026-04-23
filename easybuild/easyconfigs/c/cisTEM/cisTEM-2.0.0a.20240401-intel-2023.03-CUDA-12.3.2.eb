@@ -1,0 +1,142 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/05
+#
+easyblock = 'Bundle'
+
+name = 'cisTEM'
+local_commit = 'b7cf5feaaf7ce081d8dec438e4c2060a1ecadb03'
+local_commit_date = '20240401'
+local_ver = '2.0.0a'
+version = '%s.%s' % (local_ver, local_commit_date)
+
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://cistem.org/'
+description = """cisTEM is user-friendly software to process cryo-EM images of macromolecular com
+plexes and obtain high-resolution 3D reconstructions from them. It was          
+originally developed by Tim Grant, Alexis Rohou and Nikolaus Grigorieff and     
+comprises a number of tools to process image data including movies, micrographs 
+and stacks of single-particle images, implementing a complete “pipeline” of     
+processing steps to obtain high-resolution single-particle reconstructions.     
+cisTEM is distributed under the Janelia Research Campus Software License License
+and pre-compiled binaries can be downloaded from cistem.org. For best           
+performance, we recommend downloading and using the pre-compiled binaries,      
+rather than compiling the source code. New users are encouraged to follow the   
+tutorial, which provides a quick way to become familiar with the most important 
+functions of cisTEM."""
+
+
+toolchain = {'name': 'intel', 'version': '2023.03'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/timothygrant80/cisTEM/archive/']
+
+local_src = '%%(name)s-%s' % local_commit
+
+# usd the same compiler for cisTEM and wxWidgets in order to guarantee ABI compatibility.
+#   cisTEM requires icc and icpc rather than icx and icpx 
+local_env_compiler = 'export CXX=icpc && export CC=icc&&'  # TODO: patch configure.ac for ispx/icx
+local_cistem_env = 'export CFLAGS="$CFLAGS -Wno-error=c++11-narrowing -diag-disable=10441 " '
+local_cistem_env += '&& export CXXFLAGS=$CFLAGS && %s' % local_env_compiler
+
+# configure options adpted from 
+# https://github.com/timothygrant80/cisTEM/blob/b7cf5feaaf7ce081d8dec438e4c2060a1ecadb03/.cicontainer/gcc/Dockerfile and 
+# https://github.com/timothygrant80/cisTEM/blob/b7cf5feaaf7ce081d8dec438e4c2060a1ecadb03/.github/workflows/ci.yml
+local_configureopts = [
+    # '--enable-latest-instruction-set',  # managed by CFLAGS
+    '--disable-silent-rules',
+    '--enable-staticmode',
+    '--enable-openmp',
+    '--enable-experimental',
+    '--enable-samples',
+    '--with-wx-config=%(builddir)s/wx/bin/wx-config',
+    '--with-cuda',
+    # from patch inject_cudacc; with-target-gpu-archS!=with-target-gpu-arch:
+    """--with-target-gpu-archs="%(cuda_cc_cmake)s" """,
+    # '--enable-FastFFT' ?
+]
+
+local_wx_configopts = [
+    '--prefix=%(builddir)s/wx',
+    '--enable-intl',
+    '--disable-precomp-headers',
+    '--disable-shared --disable-sys-libs',
+    '--with-gtk=2',
+    '--with-gtk-prefix=$EBROOTGTK2',
+    '--disable-sys-libs',
+    '--without-gtkprint',
+    '--disable-compat28',
+    '--with-libjpeg=builtin',
+    '--with-libpng=builtin',
+    '--with-expat=builtin',
+    '--with-libtiff=builtin',
+    '--with-zlib=builtin',
+    '--with-libnotify=no',
+    '--without-liblzma',
+    '--without-libjbig'
+]
+local_wx_cpath_ext = '$EBROOTGLIB/include/glib-2.0:$EBROOTGLIB/lib/glib-2.0/include'
+local_wx_env = 'export CPATH=$CPATH:%s &&' % local_wx_cpath_ext
+local_wx_env += local_env_compiler
+
+components = [
+    # wxWidgets 3.2 available for GCCcore 12.3.0 does not work. Since cisTEM is preferred to be linked statically,
+    # we build the required wxWidgets v3.0.5 as a bundle component.
+    ('wxWidgets', '3.0.5', {
+        'easyblock': 'ConfigureMake',
+        'configure_without_installdir': True,
+        'source_urls': ['https://github.com/wxWidgets/wxWidgets/archive'],
+        'sources': [{
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'download_filename': 'v%(version)s.tar.gz'
+        }],
+        'configure_cmd_prefix': local_wx_env,
+        'prebuildopts': local_wx_env,
+        'start_dir': '%(name)s-%(version)s',
+        'configopts': ' '.join(local_wx_configopts),
+        'checksums': [{'wxWidgets-3.0.5.tar.gz': '107c29f93d84e7b7731e96a6ce9344226ae4fb4ea3c3ad33aa71da58ac64a116'}],
+    }),
+    (name, version, {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['https://github.com/timothygrant80/cisTEM/archive/'],
+        'sources': [{
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'download_filename': '%s.tar.gz' % local_commit
+        }],
+        'patches': [
+            # provide configure option --with-target-gpu-archs and remove --with-target-gpu-arch
+            # in order to allow setting cuda compute capabilities with %(cuda_cc_cmake)
+            'cisTEM-2.0.0.b7cf5fe_inject_cudacc.patch'
+        ],
+        'configopts': ' '.join(local_configureopts),
+        'configure_cmd_prefix': local_cistem_env + './regenerate_project.b &&',
+        'prebuildopts': local_cistem_env,
+        'start_dir': local_src,
+        'checksums': [
+            {'cisTEM-2.0.0a.20240401.tar.gz': '090e28bd9312f2ed99cafbd38975d677da0e5f15b7aa4768d659016ec64a1f5b'},
+            {'cisTEM-2.0.0.b7cf5fe_inject_cudacc.patch':
+             '970845e02d75801d54cc7d3d73745b916a6310e964d62ec1fd275c4e24057109'},
+        ]
+    })
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('CUDA', '12.3.2', '', SYSTEM),  # > 12.1.1 due to CUDART_ZERO_{FP,BF}16 in
+    #                                  src/gpu/template_matching_empirical_distribution.cu
+    ('GTK2', '2.24.33'),  # loads jbigkit and therfore wxWidgets' libtiff is linked againste libjbig
+]
+
+sanity_check_commands = [
+    # '%(name)s -h',  # does not work, due to gui.
+    # 'unit_test_runner',
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['bin'],
+}
+
+moduleclass = 'bio'
