@@ -1,0 +1,62 @@
+From dd2a11b5fc671523628783b63220c29621f8063c Mon Sep 17 00:00:00 2001
+From: Jeremy Reizenstein <reizenstein@meta.com>
+Date: Wed, 6 Nov 2024 11:13:59 -0800
+Subject: [PATCH] Fix OFF for new numpy errors
+
+Summary: Error messages have changed around numpy version 2, making existing code fail.
+
+Reviewed By: MichaelRamamonjisoa
+
+Differential Revision: D65280674
+
+fbshipit-source-id: b3ae613ea8f0f4ae20fb6e5e816314b8c10e6c65
+---
+ pytorch3d/io/off_io.py | 2 +-
+ tests/test_io_off.py   | 8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/pytorch3d/io/off_io.py b/pytorch3d/io/off_io.py
+index 78b4390d4..421816101 100644
+--- a/pytorch3d/io/off_io.py
++++ b/pytorch3d/io/off_io.py
+@@ -84,7 +84,7 @@ def _read_faces_lump(
+             )
+             data = np.loadtxt(file, dtype=np.float32, ndmin=2, max_rows=n_faces)
+     except ValueError as e:
+-        if n_faces > 1 and "Wrong number of columns" in e.args[0]:
++        if n_faces > 1 and "number of columns" in e.args[0]:
+             file.seek(old_offset)
+             return None
+         raise ValueError("Not enough face data.") from None
+diff --git a/tests/test_io_off.py b/tests/test_io_off.py
+index 6a5dc669a..c92f65de1 100644
+--- a/tests/test_io_off.py
++++ b/tests/test_io_off.py
+@@ -286,15 +286,15 @@ def load(lines):
+ 
+         lines2 = lines.copy()
+         lines2[0] = "6 2 0"
+-        with self.assertRaisesRegex(ValueError, "Wrong number of columns at line 5"):
++        with self.assertRaisesRegex(ValueError, "number of columns"):
+             load(lines2)
+ 
+         lines2[0] = "5 1 0"
+-        with self.assertRaisesRegex(ValueError, "Wrong number of columns at line 5"):
++        with self.assertRaisesRegex(ValueError, "number of columns"):
+             load(lines2)
+ 
+         lines2[0] = "16 2 0"
+-        with self.assertRaisesRegex(ValueError, "Wrong number of columns at line 5"):
++        with self.assertRaisesRegex(ValueError, "number of columns"):
+             load(lines2)
+ 
+         lines2[0] = "3 3 0"
+@@ -312,7 +312,7 @@ def load(lines):
+ 
+         lines2 = lines.copy()
+         lines2[2] = "7.3 4.2 8.3 932"
+-        with self.assertRaisesRegex(ValueError, "Wrong number of columns at line 2"):
++        with self.assertRaisesRegex(ValueError, "number of columns"):
+             load(lines2)
+ 
+         lines2[1] = "7.3 4.2 8.3 932"

@@ -1,0 +1,108 @@
+From 3da5408763fc84d60dfcdf39bcb32c93010e2748 Mon Sep 17 00:00:00 2001
+From: Viktor Rehnberg <viktor.rehnberg@gmail.com>
+Date: Fri, 1 Nov 2024 14:56:59 +0000
+Subject: [PATCH] Squeeze channel dimension just in case
+
+imsave only works with 3 channels, in case of 1 channel, squeeze will
+get rid of the channel dimension.
+---
+ tests/pulsar/test_forward.py | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/tests/pulsar/test_forward.py b/tests/pulsar/test_forward.py
+index da79028..e4f7158 100644
+--- a/tests/pulsar/test_forward.py
++++ b/tests/pulsar/test_forward.py
+@@ -68,7 +68,7 @@ class TestForward(unittest.TestCase):
+                         "test_out",
+                         "test_forward_TestForward_test_bg_weight.png",
+                     ),
+-                    (result * 255.0).cpu().to(torch.uint8).numpy(),
++                    (result * 255.0).cpu().to(torch.uint8).squeeze(2).numpy(),
+                 )
+                 imageio.imsave(
+                     path.join(
+@@ -76,7 +76,7 @@ class TestForward(unittest.TestCase):
+                         "test_out",
+                         "test_forward_TestForward_test_bg_weight_hits.png",
+                     ),
+-                    (hits * 255.0).cpu().to(torch.uint8).numpy(),
++                    (hits * 255.0).cpu().to(torch.uint8).squeeze(2).numpy(),
+                 )
+             self.assertEqual(hits[500, 500, 0].item(), 1.0)
+             self.assertTrue(
+@@ -131,7 +131,7 @@ class TestForward(unittest.TestCase):
+                         "test_out",
+                         "test_forward_TestForward_test_basic_3chan.png",
+                     ),
+-                    (result * 255.0).cpu().to(torch.uint8).numpy(),
++                    (result * 255.0).cpu().to(torch.uint8).squeeze(2).numpy(),
+                 )
+                 imageio.imsave(
+                     path.join(
+@@ -139,7 +139,7 @@ class TestForward(unittest.TestCase):
+                         "test_out",
+                         "test_forward_TestForward_test_basic_3chan_hits.png",
+                     ),
+-                    (hits * 255.0).cpu().to(torch.uint8).numpy(),
++                    (hits * 255.0).cpu().to(torch.uint8).squeeze(2).numpy(),
+                 )
+             self.assertEqual(hits[500, 500, 0].item(), 1.0)
+             self.assertTrue(
+@@ -194,7 +194,7 @@ class TestForward(unittest.TestCase):
+                         "test_out",
+                         "test_forward_TestForward_test_basic_1chan.png",
+                     ),
+-                    (result * 255.0).cpu().to(torch.uint8).numpy(),
++                    (result * 255.0).cpu().to(torch.uint8).squeeze(2).numpy(),
+                 )
+                 imageio.imsave(
+                     path.join(
+@@ -202,7 +202,7 @@ class TestForward(unittest.TestCase):
+                         "test_out",
+                         "test_forward_TestForward_test_basic_1chan_hits.png",
+                     ),
+-                    (hits * 255.0).cpu().to(torch.uint8).numpy(),
++                    (hits * 255.0).cpu().to(torch.uint8).squeeze(2).numpy(),
+                 )
+             self.assertEqual(hits[500, 500, 0].item(), 1.0)
+             self.assertTrue(
+@@ -256,7 +256,7 @@ class TestForward(unittest.TestCase):
+                         "test_out",
+                         "test_forward_TestForward_test_basic_8chan.png",
+                     ),
+-                    (result[:, :, 5:8] * 255.0).cpu().to(torch.uint8).numpy(),
++                    (result[:, :, 5:8] * 255.0).cpu().to(torch.uint8).squeeze(2).numpy(),
+                 )
+                 imageio.imsave(
+                     path.join(
+@@ -264,7 +264,7 @@ class TestForward(unittest.TestCase):
+                         "test_out",
+                         "test_forward_TestForward_test_basic_8chan_hits.png",
+                     ),
+-                    (hits * 255.0).cpu().to(torch.uint8).numpy(),
++                    (hits * 255.0).cpu().to(torch.uint8).squeeze(2).numpy(),
+                 )
+             self.assertEqual(hits[500, 500, 0].item(), 1.0)
+             self.assertTrue(
+@@ -316,7 +316,7 @@ class TestForward(unittest.TestCase):
+                         "test_out",
+                         "test_forward_TestForward_test_principal_point.png",
+                     ),
+-                    (result * 255.0).cpu().to(torch.uint8).numpy(),
++                    (result * 255.0).cpu().to(torch.uint8).squeeze(2).numpy(),
+                 )
+             self.assertTrue(
+                 np.allclose(
+@@ -343,7 +343,7 @@ class TestForward(unittest.TestCase):
+                         "test_out",
+                         "test_forward_TestForward_test_principal_point.png",
+                     ),
+-                    (result * 255.0).cpu().to(torch.uint8).numpy(),
++                    (result * 255.0).cpu().to(torch.uint8).squeeze(2).numpy(),
+                 )
+             self.assertTrue(
+                 np.allclose(
+-- 
+2.39.3
+
