@@ -1,0 +1,53 @@
+easyblock = 'MakeCp'
+
+name = 'NCIPLOT'
+_formal_version = '4.4'
+version = f'{_formal_version}-e7a113c'
+_commit = 'e7a113c35ffdedb4d61479365642643f49580e29'
+
+
+homepage = 'https://www.lct.jussieu.fr/pagesperso/contrera/index-nci.html'
+description = """
+Nciplot4.4 2025 release including NCIENERGY and NCICLUSTER NCIPLOT is a program for revealing non
+covalent interactions based on the reduced density gradient.
+"""
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+toolchainopts = {'openmp': True}
+
+dependencies = [
+    ('SciPy-bundle', '2025.06'),
+    ('scikit-learn', '1.7.0'),
+]
+
+github_account = 'juliacontrerasgarcia'
+source_urls = [f'https://github.com/%(github_account)s/%(name)s-{_formal_version}/archive']
+sources = [f'{_commit}.tar.gz']
+checksums = ['52aeeefc64d88f9fb179b7fb6be5ca0c290a12c9978cc37ff075ee534dc0a74c']
+
+start_dir = f'src_{_formal_version}'
+
+prebuildopts = "sed -i 's/include Makefile.inc//;s/nciplot: $(OBJS) $(LIBS)/nciplot: $(OBJS)/g' Makefile && "
+prebuildopts += "make clean && "
+buildopts = 'LIBS="$LIBS" LDFLAGS="-fopenmp"'
+
+files_to_copy = [
+    'dat',
+    'scripts',
+    (['nciplot'], 'bin'),
+    (['LICENSE', 'README.md', 'NCIPLOT4_4_MANUAL.pdf'], 'share'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/nciplot'],
+    'dirs': ['dat', 'share'],
+}
+
+modextrapaths = {'NCIPLOT_HOME': ''}
+
+modloadmsg = """
+Set environment variable OMP_NUM_THREADS equal to the number of available cores before running this program.
+Extra scripts can be found in $EBROOTNCIPLOT/scripts.
+"""
+
+moduleclass = 'chem'
