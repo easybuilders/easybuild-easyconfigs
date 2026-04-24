@@ -1,0 +1,65 @@
+easyblock = 'Bundle'
+
+name = 'AOCL-LAPACK'
+version = '5.2'
+
+homepage = 'https://github.com/amd/libflame'
+description = """AOCL-LAPACK is AMD's optimized version of
+                 LAPACK targeted for AMD EPYC and Ryzen CPUs."""
+
+toolchain = {'name': 'GCC', 'version': '15.2.0'}
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('Python', '3.14.2'),
+    ('Perl', '5.42.0'),
+]
+
+dependencies = [
+    ('AOCL-BLAS', '%(version)s'),
+]
+
+default_component_specs = {'sources': [{'download_filename': '%(version)s.tar.gz',
+                                        'filename': SOURCELOWER_TAR_GZ}]}
+sanity_check_all_components = True
+
+components = [
+    ('AOCL-Utils', version, {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/amd/aocl-utils/archive/refs/tags'],
+        'checksums': ['db0d807170a6eb73fcccd720a65a3e3aa8a787ae656c46479f7d9b4e1f9ed08a'],
+        'start_dir': '%(namelower)s-%(version)s',
+        'sanity_check_paths': {
+            'files': ['lib/libaoclutils.%s' % SHLIB_EXT, 'include/Capi/au/cpuid/cpuid.h'],
+            'dirs': [],
+        },
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/amd/libflame/archive/refs/tags'],
+        'patches': [
+            'AOCL-LAPACK-5.1_support-shlib-netlib-tests.patch',
+            'AOCL-LAPACK-5.2_zen4_conditional_compilation.patch',
+            'AOCL-LAPACK-5.2_no-shlibs-with-pie.patch',
+        ],
+        'checksums': [
+            {SOURCELOWER_TAR_GZ: 'fb5fe5128f718050c9911443fcf7ed91b60538a40d57084ed0124bb91afabb9b'},
+            {'AOCL-LAPACK-5.1_support-shlib-netlib-tests.patch':
+             '8a5ab79f9120511e93708919050a1cc575fc6df9fa9cff994ecbe068955958fe'},
+            {'AOCL-LAPACK-5.2_zen4_conditional_compilation.patch':
+             '2eb8b5ce4b7f054d9d86295030c0aedda3269e0e4390b6d132fa970511b2a26c'},
+            {'AOCL-LAPACK-5.2_no-shlibs-with-pie.patch':
+             'fb164626d8e1bde278c2adb952a3c42752bd8f789b1acf11a8eea124193bbc5f'},
+        ],
+        'start_dir': 'libflame-%(version)s',
+        'runtest': True,
+        'run_lapack_tests': True,
+        'max_failing_lapack_tests_num_errors': 250,
+    }),
+]
+
+sanity_check_paths = {
+    'dirs': ['include', 'lib'],
+    'files': [],
+}
+
+moduleclass = 'numlib'

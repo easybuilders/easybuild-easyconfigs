@@ -1,0 +1,61 @@
+# Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ROCmComponent'
+
+name = 'RCCL'
+version = '2.22.3'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/ROCm/RCCL'
+description = """RCCL (pronounced "Rickle") is a stand-alone library of standard collective communication
+routines for GPUs, implementing all-reduce, all-gather, reduce, broadcast, reduce-scatter, gather, scatter,
+and all-to-all. There is also initial support for direct GPU-to-GPU send and receive operations. It has been
+optimized to achieve high bandwidth on platforms using PCIe, xGMI as well as networking using InfiniBand Verbs
+or TCP/IP sockets. RCCL supports an arbitrary number of GPUs installed in a single node or multiple nodes, and
+can be used in either single- or multi-process (e.g., MPI) applications."""
+docurls = ['https://rocm.docs.amd.com/projects/RCCL/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f'rocm-{_rocm_version}.tar.gz']
+patches = [
+    'RCCL-2.22.3_fix-hardcoded_paths.patch',
+    'RCCL-2.22.3_fix-host-checks.patch'
+]
+checksums = [
+    {'rocm-6.4.1.tar.gz': '82b7e79e1bc3a1b16214a8758ed90d8cbf7f25f524169a85f64d070cf26742e9'},
+    {'RCCL-2.22.3_fix-hardcoded_paths.patch': '98ebde2d6bd3be854bce9f2384fa639dd0f34aa39cff439ea30abd70aaf61f44'},
+    {'RCCL-2.22.3_fix-host-checks.patch': '531da0d875fe75c8c5932ee94d65b41e83dad25621fa2b0ba29db555ea4f6b23'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+    ('HIPIFY', '19.0.0'),
+]
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocTracer', '4.1.0'),
+    ('googletest', '1.17.0'),
+    ('rocm-smi', '7.6.0', f'-ROCm-{_rocm_version}'),
+    ('rocprofiler-register', '0.4.0', f'-ROCm-{_rocm_version}'),
+    ('rocm-core', '6.4.0', f'-ROCm-{_rocm_version}'),
+]
+
+# Ensure that full path of compilers is picked up, as rpath wrappers are not correctly used otherwise.
+abs_path_compilers = True
+
+configopts = f'-DEXPLICIT_ROCM_VERSION={_rocm_version} '
+configopts += "-DROCM_PATH=$EBROOTHIP "
+
+sanity_check_paths = {
+    'files': ['include/rccl/rccl.h',
+              f'lib/librccl.{SHLIB_EXT}',
+              'lib/cmake/rccl/rccl-config.cmake'],
+    'dirs': ['share/doc/rccl',
+             'include/rccl'],
+}
+
+moduleclass = 'lib'
