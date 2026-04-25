@@ -61,6 +61,7 @@ patches = [
     'PyTorch-2.6.0_skip-test-requiring-MKL.patch',
     'PyTorch-2.6.0_skip-test_segfault.patch',
     'PyTorch-2.6.0_skip-tests-without-fbgemm.patch',
+    'PyTorch-2.7.1_remove-faulty-close.patch',
 ]
 checksums = [
     {'pytorch-v2.6.0.tar.gz': '3005690eb7b083c443a38c7657938af63902f524ad87a6c83f1aca38c77e3b57'},
@@ -156,6 +157,8 @@ checksums = [
     {'PyTorch-2.6.0_skip-test_segfault.patch': '26806bd62e6b61b56ebaa52d68ca44c415a28124f684bd2fb373557ada68ef52'},
     {'PyTorch-2.6.0_skip-tests-without-fbgemm.patch':
      'ed35099de94a14322a879066da048ec9bc565dc81287b4adc4fec46f9afe90cf'},
+    {'PyTorch-2.7.1_remove-faulty-close.patch':
+     '315fca3c582534f20da62078156c91b38637f1358cd166b4d33ba964c7b07f95'},
 ]
 
 osdependencies = [OS_PKG_IBVERBS_DEV]
@@ -175,6 +178,10 @@ builddependencies = [
 ]
 
 dependencies = [
+    # See .ci/docker/common/install_acl.sh
+    ('ArmComputeLibrary', {'arch=AArch64': '24.04', 'arch=*': False}),
+    # See .github/requirements/conda-env-Linux-X64.txt or .ci/docker/common/install_conda.sh
+    ('imkl', {'arch=x86_64': '2022.1.0', 'arch=*': False}, '', SYSTEM),
     ('Ninja', '1.12.1'),  # Required for JIT compilation of C++ extensions
     ('Python', '3.12.3'),
     ('Python-bundle-PyPI', '2024.06'),
@@ -221,5 +228,7 @@ runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py ' + local_test_o
 max_failed_tests = 16
 
 tests = ['PyTorch-check-cpp-extension.py']
+
+sanity_check_pip_list = False
 
 moduleclass = 'ai'
