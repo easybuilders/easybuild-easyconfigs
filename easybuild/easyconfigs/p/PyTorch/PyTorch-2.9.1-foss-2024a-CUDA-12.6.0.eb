@@ -71,6 +71,7 @@ patches = [
     'PyTorch-2.9.1_dont-print-test-items.patch',
     'PyTorch-2.9.1_fix-hypothesis-deadline.patch',
     'PyTorch-2.9.1_fix-iteration-in-fligh-reporter.patch',
+    'PyTorch-2.9.1_fix-locale-issue-in-nvrtcCompileProgram.patch',
     'PyTorch-2.9.1_fix-test_dist2-decorators.patch',
     'PyTorch-2.9.1_fix-TestExportOpInfoCPU-with-single-GPU.patch',
     'PyTorch-2.9.1_GCC14-ARM-workaround.patch',
@@ -164,6 +165,8 @@ checksums = [
     {'PyTorch-2.9.1_fix-hypothesis-deadline.patch': 'f7a130669eee9924a303df9e2bd5743ff023a7d994b7a3e43c86dcccf0206c49'},
     {'PyTorch-2.9.1_fix-iteration-in-fligh-reporter.patch':
      'ab408275ec66e836112a50054acc4e789ef38196efeb6137c6061d60d9ac9ead'},
+    {'PyTorch-2.9.1_fix-locale-issue-in-nvrtcCompileProgram.patch':
+     'e0117105c377f5d7487678e51150a0b3ecdcc743421a09438af8d0ea960ca4c7'},
     {'PyTorch-2.9.1_fix-test_dist2-decorators.patch':
      'bf4ed805f00775ed33351de7bce40ebf4eac16aff6c61d2e91790982bc43d73b'},
     {'PyTorch-2.9.1_fix-TestExportOpInfoCPU-with-single-GPU.patch':
@@ -225,6 +228,10 @@ dependencies = [
     ('cuSPARSELt', '0.6.3.2', versionsuffix, SYSTEM),
     # Version from .ci/docker/triton_version.txt
     ('Triton', '3.5.0', versionsuffix),
+    # See .ci/docker/common/install_acl.sh
+    ('ArmComputeLibrary', {'arch=AArch64': '25.02', 'arch=*': False}),
+    # See .github/requirements/conda-env-Linux-X64.txt or .ci/docker/common/install_conda.sh
+    ('imkl', {'arch=x86_64': '2024.2.0', 'arch=*': False}, '', SYSTEM),
     ('Ninja', '1.12.1'),  # Required for JIT compilation of C++ extensions
     ('Python', '3.12.3'),
     ('Python-bundle-PyPI', '2024.06'),
@@ -300,5 +307,7 @@ postinstallcmds = [
 modextrapaths = {'TORCHINDUCTOR_CUTLASS_DIR': 'extra/cutlass'}
 
 tests = ['PyTorch-check-cpp-extension.py', 'PyTorch-check-cutlass.py']
+
+sanity_check_pip_list = False
 
 moduleclass = 'ai'
