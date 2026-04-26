@@ -1,7 +1,5 @@
 # Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
 
-easyblock = 'ROCmComponent'
-
 name = 'OpenMPI'
 version = '5.0.7'
 
@@ -46,16 +44,17 @@ dependencies = [
     ('UCC', '1.3.0'),
 ]
 
-# CUDA related patches and custom configure option can be removed if CUDA support isn't wanted.
-preconfigopts = 'gcc -Iopal/mca/cuda/include -shared opal/mca/cuda/lib/cuda.c -o opal/mca/cuda/lib/libcuda.so && '
-# Update configure to include changes from the "disable_opal_path_nfs_test" patch
-preconfigopts += './autogen.pl --force && '
-configopts = '--with-cuda=%(start_dir)s/opal/mca/cuda --with-show-load-errors=no'
 # Disable building Level Zero components of romio if system dependencies are picked up. Sources are not based on
 # recent Level Zero interface anyway, so there's a high chance that builds fail.
 # See https://github.com/open-mpi/ompi/issues/10235
-preconfigopts += 'sed -i "s/have_ze=yes/have_ze=no/" %(start_dir)s/3rd-party/romio341/mpl/configure && '
+preconfigopts = 'sed -i "s/have_ze=yes/have_ze=no/" %(start_dir)s/3rd-party/romio341/mpl/configure && '
+
+# Update configure to include changes from the "disable_opal_path_nfs_test" patch
+preconfigopts += './autogen.pl --force && '
+
 # Do not pick up the system library automatically
-configopts += ' --without-xpmem'
+configopts = ' --without-xpmem '
+configopts += ' --with-rocm=$EBROOTROCMMINLLVM --with-show-load-errors=no '
+configopts += 'CC=amdclang CXX=amdclang++ FC=amdflang '
 
 moduleclass = 'mpi'
