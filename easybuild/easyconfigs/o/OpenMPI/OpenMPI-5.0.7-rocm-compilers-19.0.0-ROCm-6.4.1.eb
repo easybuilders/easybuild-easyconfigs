@@ -50,11 +50,14 @@ dependencies = [
 # See https://github.com/open-mpi/ompi/issues/10235
 preconfigopts = 'sed -i "s/have_ze=yes/have_ze=no/" %(start_dir)s/3rd-party/romio341/mpl/configure && '
 
-# Base config options
-configopts = '--without-xpmem --with-show-load-errors=no '
+# Regenerate the Autotools build files because of our patches
+preconfigopts += './autogen.pl --force && '
 
 # Pass both paths to the compiler so it finds all necessary ROCm and HIP headers
 preconfigopts += 'CPPFLAGS="-I$EBROOTHIP/include -I$EBROOTROCMMINLLVM/include" LDFLAGS="-L$EBROOTHIP/lib -L$EBROOTROCMMINLLVM/lib" '
+
+# Base config options
+configopts = '--without-xpmem --with-show-load-errors=no '
 
 # Point the ROCm flag to the HIP installation
 configopts += '--with-rocm=$EBROOTHIP '
