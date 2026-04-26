@@ -42,6 +42,7 @@ dependencies = [
     ('PMIx', '5.0.6'),
     ('PRRTE', '3.0.8'),
     ('UCC', '1.3.0'),
+    ('HIP', '6.4.1'),
 ]
 
 # Disable building Level Zero components of romio if system dependencies are picked up. Sources are not based on
@@ -49,12 +50,19 @@ dependencies = [
 # See https://github.com/open-mpi/ompi/issues/10235
 preconfigopts = 'sed -i "s/have_ze=yes/have_ze=no/" %(start_dir)s/3rd-party/romio341/mpl/configure && '
 
-# Update configure to include changes from the "disable_opal_path_nfs_test" patch
-preconfigopts += './autogen.pl --force && '
+# Base config options
+configopts = '--without-xpmem --with-show-load-errors=no '
 
-# Do not pick up the system library automatically
-configopts = ' --without-xpmem '
-configopts += ' --with-rocm=$EBROOTROCMMINLLVM --with-show-load-errors=no '
+# Pass both paths to the compiler so it finds all necessary ROCm and HIP headers
+preconfigopts += 'CPPFLAGS="-I$EBROOTHIP/include -I$EBROOTROCMMINLLVM/include" LDFLAGS="-L$EBROOTHIP/lib -L$EBROOTROCMMINLLVM/lib" '
+
+# Point the ROCm flag to the HIP installation
+configopts += '--with-rocm=$EBROOTHIP '
+
+# Explicitly link UCX and UCC
+configopts += '--with-ucx=$EBROOTUCX --with-ucc=$EBROOTUCC '
+
+# Explicitly bind OpenMPI to the ROCm compilers
 configopts += 'CC=amdclang CXX=amdclang++ FC=amdflang '
 
 moduleclass = 'mpi'
