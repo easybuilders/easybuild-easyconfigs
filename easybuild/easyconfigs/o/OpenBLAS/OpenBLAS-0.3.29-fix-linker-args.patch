@@ -1,0 +1,31 @@
+From 91eb0a638c68ba7f268a895f4ede5c4f2bfcafd4 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Thu, 5 Mar 2026 10:09:29 +0100
+Subject: [PATCH] Avoid splitting linker args on dashes not preceded by a space
+
+---
+ f_check | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/f_check b/f_check
+index 156f0e5621..1501a4986e 100755
+--- a/f_check
++++ b/f_check
+@@ -343,13 +343,13 @@ linker_a=""
+ 
+ if [ -n "$link" ]; then
+ 
+-    link=`echo "$link" | sed 's/\-Y[[:space:]]P\,/\-Y/g'`
++    link=`echo " $link" | sed 's/ \-Y[[:space:]]P\,/ \-Y/g'`
+ 
+-    link=`echo "$link" | sed 's/\-R[[:space:]]*/\-rpath\%/g'`
++    link=`echo "$link" | sed 's/ \-R[[:space:]]*/ \-rpath\%/g'`
+ 
+-    link=`echo "$link" | sed 's/\-rpath[[:space:]]+/\-rpath\%/g'`
++    link=`echo "$link" | sed 's/ \-rpath[[:space:]]+/ \-rpath\%/g'`
+ 
+-    link=`echo "$link" | sed 's/\-rpath-link[[:space:]]+/\-rpath-link\%/g'`
++    link=`echo "$link" | sed 's/ \-rpath-link[[:space:]]+/ \-rpath-link\%/g'`
+ 
+     flags=`echo "$link" | tr "',\n" " "`
+     # remove leading and trailing quotes from each flag.
