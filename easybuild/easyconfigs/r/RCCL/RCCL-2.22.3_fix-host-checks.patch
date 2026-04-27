@@ -1,0 +1,54 @@
+Bypasses hardcoded host-system hardware checks and monolithic ROCm version parsing.
+
+Original issue: RCCL attempts to read `${ROCM_PATH}/.info/version` to determine the ROCm version. 
+In EasyBuild environment, there is no centralized ROCm installation path, causing this version parsing to fail.
+Second, it uses raw bash commands to check host RAM and dynamically calculate the number of parallel linker jobs.
+In EasyBuild environment, these commands often fail or miscalculate, leading to CMake errors or OOM crashes during the linking phase.
+
+This patch hardcodes the ROCm version check to `6.4.1` and explicitly limits `num_linker_jobs` to `4`
+to ensure stable compilation. It should be re-evaluated for future releases to see if upstream introduces
+standard CMake flags to override these dynamic host checks.
+
+Author: Aayush Joglekar (aayush.joglekar@surf.nl)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 45ba954f..0d631a2a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -173,7 +173,7 @@ message(STATUS "${COMPILER_EXE_NAME} HIP version:    ${hip_version_string}")
+ 
+ ## Check for ROCm version
+ execute_process(
+-  COMMAND         bash "-c" "cat ${ROCM_PATH}/.info/version"
++  COMMAND  bash "-c" "echo 6.4.1"
+   OUTPUT_VARIABLE rocm_version_string
+ )
+ string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" rocm_version_matches ${rocm_version_string})
+@@ -830,26 +830,9 @@ endif()
+ 
+ ## Set RCCL link options
+ ## Find out available memory
+-execute_process(
+-  COMMAND bash "-c" "cat /sys/fs/cgroup/memory.max"
+-  OUTPUT_VARIABLE memory_max_string)
+-if (${memory_max_string} MATCHES "^[0-9]+")
+-  math(EXPR memory_in_gb "${memory_max_string} / (1024 * 1024 * 1024)")
+-else()
+-  execute_process(
+-    COMMAND bash "-c" "free | grep -o '[[:digit:]]*' | head -1"
+-    OUTPUT_VARIABLE memory_max_string)
+-  ## memory_max_string holds the free memory in KB  
+-  if (${memory_max_string} MATCHES "^[0-9]+")
+-    math(EXPR memory_in_gb "${memory_max_string} / (1024 * 1024)") ## KB to GB conversion
+-  else()
+-    cmake_host_system_information(RESULT memory_max_string QUERY AVAILABLE_PHYSICAL_MEMORY )
+-    math(EXPR memory_in_gb "${memory_max_string} / 1024")
+-  endif()
+-endif()
++set(num_linker_jobs "4")
+ ## Reserve 16GB for each linker job. Limit max number of linker jobs to 16
+ if (HAVE_PARALLEL_JOBS)
+-  math(EXPR num_linker_jobs "(${memory_in_gb} + 15) / 16")
+   if (${num_linker_jobs} GREATER_EQUAL "16")
+     set(num_linker_jobs "16")
+   endif()
