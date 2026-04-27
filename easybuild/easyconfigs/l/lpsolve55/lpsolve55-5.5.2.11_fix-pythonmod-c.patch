@@ -1,0 +1,354 @@
+diff -ruBbw a/extra/Python/pythonmod.c b/extra/Python/pythonmod.c
+--- a/extra/Python/pythonmod.c	2010-09-26 19:07:33.000000000 +0200
++++ b/extra/Python/pythonmod.c	2025-08-06 19:55:04.439662122 +0200
+@@ -33,6 +33,7 @@
+ 
+ /* This information is shown in Python via the command help(lpsolve) */
+ 
++static char lpsolve_name[] = "lpsolve";
+ static char lpsolve_doc[] =
+ "lpsolve('functionname', arg1, arg2, ...) ->  execute lpsolve functionname with args";
+ 
+@@ -41,16 +42,21 @@
+     {NULL,              NULL}           /* sentinel */
+ };
+ 
++static PyModuleDef lpsolve_module = { .m_base = PyModuleDef_HEAD_INIT,
++    .m_name = lpsolve_name,
++    .m_doc = lpsolve_doc,
++    .m_methods = lpsolve_methods
++};
+ 
+ /* Initialization function for the module (*must* be called initxx) */
+ 
+-DL_EXPORT(void)
+-    initlpsolve55(void)
++PyMODINIT_FUNC
++PyInit_lpsolve55(void)
+ {
+     PyObject *m, *d;
+ 
+     /* Create the module and add the functions */
+-    m = Py_InitModule("lpsolve55", lpsolve_methods);
++    m = PyModule_Create(&lpsolve_module);
+ #if defined NUMPY
+ 
+ #if 0
+@@ -82,135 +88,136 @@
+     Lprec_ErrorObject = Py_BuildValue("s", "lpsolve.error");
+ #endif
+     PyDict_SetItemString(d, "error", Lprec_ErrorObject);
+-    PyDict_SetItemString(d, "LE", PyInt_FromLong(LE));
+-    PyDict_SetItemString(d, "EQ", PyInt_FromLong(EQ));
+-    PyDict_SetItemString(d, "GE", PyInt_FromLong(GE));
+-    PyDict_SetItemString(d, "FR", PyInt_FromLong(FR));
+-    PyDict_SetItemString(d, "SCALE_NONE", PyInt_FromLong(SCALE_NONE));
+-    PyDict_SetItemString(d, "SCALE_EXTREME", PyInt_FromLong(SCALE_EXTREME));
+-    PyDict_SetItemString(d, "SCALE_RANGE", PyInt_FromLong(SCALE_RANGE));
+-    PyDict_SetItemString(d, "SCALE_MEAN", PyInt_FromLong(SCALE_MEAN));
+-    PyDict_SetItemString(d, "SCALE_GEOMETRIC", PyInt_FromLong(SCALE_GEOMETRIC));
+-    PyDict_SetItemString(d, "SCALE_CURTISREID", PyInt_FromLong(SCALE_CURTISREID));
+-    PyDict_SetItemString(d, "SCALE_QUADRATIC", PyInt_FromLong(SCALE_QUADRATIC));
+-    PyDict_SetItemString(d, "SCALE_LOGARITHMIC", PyInt_FromLong(SCALE_LOGARITHMIC));
+-    PyDict_SetItemString(d, "SCALE_USERWEIGHT", PyInt_FromLong(SCALE_USERWEIGHT));
+-    PyDict_SetItemString(d, "SCALE_POWER2", PyInt_FromLong(SCALE_POWER2));
+-    PyDict_SetItemString(d, "SCALE_EQUILIBRATE", PyInt_FromLong(SCALE_EQUILIBRATE));
+-    PyDict_SetItemString(d, "SCALE_INTEGERS", PyInt_FromLong(SCALE_INTEGERS));
+-    PyDict_SetItemString(d, "SCALE_DYNUPDATE", PyInt_FromLong(SCALE_DYNUPDATE));
+-    PyDict_SetItemString(d, "SCALE_ROWSONLY", PyInt_FromLong(SCALE_ROWSONLY));
+-    PyDict_SetItemString(d, "SCALE_COLSONLY", PyInt_FromLong(SCALE_COLSONLY));
+-    PyDict_SetItemString(d, "IMPROVE_NONE", PyInt_FromLong(IMPROVE_NONE));
+-    PyDict_SetItemString(d, "IMPROVE_SOLUTION", PyInt_FromLong(IMPROVE_SOLUTION));
+-    PyDict_SetItemString(d, "IMPROVE_DUALFEAS", PyInt_FromLong(IMPROVE_DUALFEAS));
+-    PyDict_SetItemString(d, "IMPROVE_THETAGAP", PyInt_FromLong(IMPROVE_THETAGAP));
+-    PyDict_SetItemString(d, "IMPROVE_BBSIMPLEX", PyInt_FromLong(IMPROVE_BBSIMPLEX));
+-    PyDict_SetItemString(d, "PRICER_FIRSTINDEX", PyInt_FromLong(PRICER_FIRSTINDEX));
+-    PyDict_SetItemString(d, "PRICER_DANTZIG", PyInt_FromLong(PRICER_DANTZIG));
+-    PyDict_SetItemString(d, "PRICER_DEVEX", PyInt_FromLong(PRICER_DEVEX));
+-    PyDict_SetItemString(d, "PRICER_STEEPESTEDGE", PyInt_FromLong(PRICER_STEEPESTEDGE));
+-    PyDict_SetItemString(d, "PRICE_PRIMALFALLBACK", PyInt_FromLong(PRICE_PRIMALFALLBACK));
+-    PyDict_SetItemString(d, "PRICE_MULTIPLE", PyInt_FromLong(PRICE_MULTIPLE));
+-    PyDict_SetItemString(d, "PRICE_PARTIAL", PyInt_FromLong(PRICE_PARTIAL));
+-    PyDict_SetItemString(d, "PRICE_ADAPTIVE", PyInt_FromLong(PRICE_ADAPTIVE));
+-    PyDict_SetItemString(d, "PRICE_RANDOMIZE", PyInt_FromLong(PRICE_RANDOMIZE));
+-    PyDict_SetItemString(d, "PRICE_AUTOPARTIAL", PyInt_FromLong(PRICE_AUTOPARTIAL));
+-    PyDict_SetItemString(d, "PRICE_LOOPLEFT", PyInt_FromLong(PRICE_LOOPLEFT));
+-    PyDict_SetItemString(d, "PRICE_LOOPALTERNATE", PyInt_FromLong(PRICE_LOOPALTERNATE));
+-    PyDict_SetItemString(d, "PRICE_HARRISTWOPASS", PyInt_FromLong(PRICE_HARRISTWOPASS));
+-    PyDict_SetItemString(d, "PRICE_TRUENORMINIT", PyInt_FromLong(PRICE_TRUENORMINIT));
+-    PyDict_SetItemString(d, "PRESOLVE_NONE", PyInt_FromLong(PRESOLVE_NONE));
+-    PyDict_SetItemString(d, "PRESOLVE_ROWS", PyInt_FromLong(PRESOLVE_ROWS));
+-    PyDict_SetItemString(d, "PRESOLVE_COLS", PyInt_FromLong(PRESOLVE_COLS));
+-    PyDict_SetItemString(d, "PRESOLVE_LINDEP", PyInt_FromLong(PRESOLVE_LINDEP));
+-    PyDict_SetItemString(d, "PRESOLVE_SOS", PyInt_FromLong(PRESOLVE_SOS));
+-    PyDict_SetItemString(d, "PRESOLVE_REDUCEMIP", PyInt_FromLong(PRESOLVE_REDUCEMIP));
+-    PyDict_SetItemString(d, "PRESOLVE_KNAPSACK", PyInt_FromLong(PRESOLVE_KNAPSACK));
+-    PyDict_SetItemString(d, "PRESOLVE_ELIMEQ2", PyInt_FromLong(PRESOLVE_ELIMEQ2));
+-    PyDict_SetItemString(d, "PRESOLVE_IMPLIEDFREE", PyInt_FromLong(PRESOLVE_IMPLIEDFREE));
+-    PyDict_SetItemString(d, "PRESOLVE_REDUCEGCD", PyInt_FromLong(PRESOLVE_REDUCEGCD));
+-    PyDict_SetItemString(d, "PRESOLVE_PROBEFIX", PyInt_FromLong(PRESOLVE_PROBEFIX));
+-    PyDict_SetItemString(d, "PRESOLVE_PROBEREDUCE", PyInt_FromLong(PRESOLVE_PROBEREDUCE));
+-    PyDict_SetItemString(d, "PRESOLVE_ROWDOMINATE", PyInt_FromLong(PRESOLVE_ROWDOMINATE));
+-    PyDict_SetItemString(d, "PRESOLVE_COLDOMINATE", PyInt_FromLong(PRESOLVE_COLDOMINATE));
+-    PyDict_SetItemString(d, "PRESOLVE_MERGEROWS", PyInt_FromLong(PRESOLVE_MERGEROWS));
+-    PyDict_SetItemString(d, "PRESOLVE_IMPLIEDSLK", PyInt_FromLong(PRESOLVE_IMPLIEDSLK));
+-    PyDict_SetItemString(d, "PRESOLVE_COLFIXDUAL", PyInt_FromLong(PRESOLVE_COLFIXDUAL));
+-    PyDict_SetItemString(d, "PRESOLVE_BOUNDS", PyInt_FromLong(PRESOLVE_BOUNDS));
+-    PyDict_SetItemString(d, "PRESOLVE_DUALS", PyInt_FromLong(PRESOLVE_DUALS));
+-    PyDict_SetItemString(d, "PRESOLVE_SENSDUALS", PyInt_FromLong(PRESOLVE_SENSDUALS));
+-    PyDict_SetItemString(d, "ANTIDEGEN_NONE", PyInt_FromLong(ANTIDEGEN_NONE));
+-    PyDict_SetItemString(d, "ANTIDEGEN_FIXEDVARS", PyInt_FromLong(ANTIDEGEN_FIXEDVARS));
+-    PyDict_SetItemString(d, "ANTIDEGEN_COLUMNCHECK", PyInt_FromLong(ANTIDEGEN_COLUMNCHECK));
+-    PyDict_SetItemString(d, "ANTIDEGEN_STALLING", PyInt_FromLong(ANTIDEGEN_STALLING));
+-    PyDict_SetItemString(d, "ANTIDEGEN_NUMFAILURE", PyInt_FromLong(ANTIDEGEN_NUMFAILURE));
+-    PyDict_SetItemString(d, "ANTIDEGEN_LOSTFEAS", PyInt_FromLong(ANTIDEGEN_LOSTFEAS));
+-    PyDict_SetItemString(d, "ANTIDEGEN_INFEASIBLE", PyInt_FromLong(ANTIDEGEN_INFEASIBLE));
+-    PyDict_SetItemString(d, "ANTIDEGEN_DYNAMIC", PyInt_FromLong(ANTIDEGEN_DYNAMIC));
+-    PyDict_SetItemString(d, "ANTIDEGEN_DURINGBB", PyInt_FromLong(ANTIDEGEN_DURINGBB));
+-    PyDict_SetItemString(d, "ANTIDEGEN_RHSPERTURB", PyInt_FromLong(ANTIDEGEN_RHSPERTURB));
+-    PyDict_SetItemString(d, "ANTIDEGEN_BOUNDFLIP", PyInt_FromLong(ANTIDEGEN_BOUNDFLIP));
+-    PyDict_SetItemString(d, "CRASH_NONE", PyInt_FromLong(CRASH_NONE));
+-    PyDict_SetItemString(d, "CRASH_MOSTFEASIBLE", PyInt_FromLong(CRASH_MOSTFEASIBLE));
+-    PyDict_SetItemString(d, "CRASH_LEASTDEGENERATE", PyInt_FromLong(CRASH_LEASTDEGENERATE));
+-    PyDict_SetItemString(d, "SIMPLEX_PRIMAL_PRIMAL", PyInt_FromLong(SIMPLEX_PRIMAL_PRIMAL));
+-    PyDict_SetItemString(d, "SIMPLEX_DUAL_PRIMAL", PyInt_FromLong(SIMPLEX_DUAL_PRIMAL));
+-    PyDict_SetItemString(d, "SIMPLEX_PRIMAL_DUAL", PyInt_FromLong(SIMPLEX_PRIMAL_DUAL));
+-    PyDict_SetItemString(d, "SIMPLEX_DUAL_DUAL", PyInt_FromLong(SIMPLEX_DUAL_DUAL));
+-    PyDict_SetItemString(d, "NODE_FIRSTSELECT", PyInt_FromLong(NODE_FIRSTSELECT));
+-    PyDict_SetItemString(d, "NODE_GAPSELECT", PyInt_FromLong(NODE_GAPSELECT));
+-    PyDict_SetItemString(d, "NODE_RANGESELECT", PyInt_FromLong(NODE_RANGESELECT));
+-    PyDict_SetItemString(d, "NODE_FRACTIONSELECT", PyInt_FromLong(NODE_FRACTIONSELECT));
+-    PyDict_SetItemString(d, "NODE_PSEUDOCOSTSELECT", PyInt_FromLong(NODE_PSEUDOCOSTSELECT));
+-    PyDict_SetItemString(d, "NODE_PSEUDONONINTSELECT", PyInt_FromLong(NODE_PSEUDONONINTSELECT));
+-    PyDict_SetItemString(d, "NODE_PSEUDORATIOSELECT", PyInt_FromLong(NODE_PSEUDORATIOSELECT));
+-    PyDict_SetItemString(d, "NODE_USERSELECT", PyInt_FromLong(NODE_USERSELECT));
+-    PyDict_SetItemString(d, "NODE_WEIGHTREVERSEMODE", PyInt_FromLong(NODE_WEIGHTREVERSEMODE));
+-    PyDict_SetItemString(d, "NODE_BRANCHREVERSEMODE", PyInt_FromLong(NODE_BRANCHREVERSEMODE));
+-    PyDict_SetItemString(d, "NODE_GREEDYMODE", PyInt_FromLong(NODE_GREEDYMODE));
+-    PyDict_SetItemString(d, "NODE_PSEUDOCOSTMODE", PyInt_FromLong(NODE_PSEUDOCOSTMODE));
+-    PyDict_SetItemString(d, "NODE_DEPTHFIRSTMODE", PyInt_FromLong(NODE_DEPTHFIRSTMODE));
+-    PyDict_SetItemString(d, "NODE_RANDOMIZEMODE", PyInt_FromLong(NODE_RANDOMIZEMODE));
+-    PyDict_SetItemString(d, "NODE_GUBMODE", PyInt_FromLong(NODE_GUBMODE));
+-    PyDict_SetItemString(d, "NODE_DYNAMICMODE", PyInt_FromLong(NODE_DYNAMICMODE));
+-    PyDict_SetItemString(d, "NODE_RESTARTMODE", PyInt_FromLong(NODE_RESTARTMODE));
+-    PyDict_SetItemString(d, "NODE_BREADTHFIRSTMODE", PyInt_FromLong(NODE_BREADTHFIRSTMODE));
+-    PyDict_SetItemString(d, "NODE_AUTOORDER", PyInt_FromLong(NODE_AUTOORDER));
+-    PyDict_SetItemString(d, "NODE_RCOSTFIXING", PyInt_FromLong(NODE_RCOSTFIXING));
+-    PyDict_SetItemString(d, "NODE_STRONGINIT", PyInt_FromLong(NODE_STRONGINIT));
+-    PyDict_SetItemString(d, "NOMEMORY", PyInt_FromLong(NOMEMORY));
+-    PyDict_SetItemString(d, "OPTIMAL", PyInt_FromLong(OPTIMAL));
+-    PyDict_SetItemString(d, "SUBOPTIMAL", PyInt_FromLong(SUBOPTIMAL));
+-    PyDict_SetItemString(d, "INFEASIBLE", PyInt_FromLong(INFEASIBLE));
+-    PyDict_SetItemString(d, "UNBOUNDED", PyInt_FromLong(UNBOUNDED));
+-    PyDict_SetItemString(d, "DEGENERATE", PyInt_FromLong(DEGENERATE));
+-    PyDict_SetItemString(d, "NUMFAILURE", PyInt_FromLong(NUMFAILURE));
+-    PyDict_SetItemString(d, "USERABORT", PyInt_FromLong(USERABORT));
+-    PyDict_SetItemString(d, "TIMEOUT", PyInt_FromLong(TIMEOUT));
+-    PyDict_SetItemString(d, "PRESOLVED", PyInt_FromLong(PRESOLVED));
+-    PyDict_SetItemString(d, "PROCFAIL", PyInt_FromLong(PROCFAIL));
+-    PyDict_SetItemString(d, "PROCBREAK", PyInt_FromLong(PROCBREAK));
+-    PyDict_SetItemString(d, "FEASFOUND", PyInt_FromLong(FEASFOUND));
+-    PyDict_SetItemString(d, "NOFEASFOUND", PyInt_FromLong(NOFEASFOUND));
+-    PyDict_SetItemString(d, "BRANCH_CEILING", PyInt_FromLong(BRANCH_CEILING));
+-    PyDict_SetItemString(d, "BRANCH_FLOOR", PyInt_FromLong(BRANCH_FLOOR));
+-    PyDict_SetItemString(d, "BRANCH_AUTOMATIC", PyInt_FromLong(BRANCH_AUTOMATIC));
+-    PyDict_SetItemString(d, "BRANCH_DEFAULT", PyInt_FromLong(BRANCH_DEFAULT));
+-    PyDict_SetItemString(d, "MSG_PRESOLVE", PyInt_FromLong(MSG_PRESOLVE));
+-    PyDict_SetItemString(d, "MSG_LPFEASIBLE", PyInt_FromLong(MSG_LPFEASIBLE));
+-    PyDict_SetItemString(d, "MSG_LPOPTIMAL", PyInt_FromLong(MSG_LPOPTIMAL));
+-    PyDict_SetItemString(d, "MSG_MILPEQUAL", PyInt_FromLong(MSG_MILPEQUAL));
+-    PyDict_SetItemString(d, "MSG_MILPFEASIBLE", PyInt_FromLong(MSG_MILPFEASIBLE));
+-    PyDict_SetItemString(d, "MSG_MILPBETTER", PyInt_FromLong(MSG_MILPBETTER));
+-    PyDict_SetItemString(d, "NEUTRAL", PyInt_FromLong(NEUTRAL));
+-    PyDict_SetItemString(d, "CRITICAL", PyInt_FromLong(CRITICAL));
+-    PyDict_SetItemString(d, "SEVERE", PyInt_FromLong(SEVERE));
+-    PyDict_SetItemString(d, "IMPORTANT", PyInt_FromLong(IMPORTANT));
+-    PyDict_SetItemString(d, "NORMAL", PyInt_FromLong(NORMAL));
+-    PyDict_SetItemString(d, "DETAILED", PyInt_FromLong(DETAILED));
+-    PyDict_SetItemString(d, "FULL", PyInt_FromLong(FULL));
++    PyDict_SetItemString(d, "LE", PyLong_FromLong(LE));
++    PyDict_SetItemString(d, "EQ", PyLong_FromLong(EQ));
++    PyDict_SetItemString(d, "GE", PyLong_FromLong(GE));
++    PyDict_SetItemString(d, "FR", PyLong_FromLong(FR));
++    PyDict_SetItemString(d, "SCALE_NONE", PyLong_FromLong(SCALE_NONE));
++    PyDict_SetItemString(d, "SCALE_EXTREME", PyLong_FromLong(SCALE_EXTREME));
++    PyDict_SetItemString(d, "SCALE_RANGE", PyLong_FromLong(SCALE_RANGE));
++    PyDict_SetItemString(d, "SCALE_MEAN", PyLong_FromLong(SCALE_MEAN));
++    PyDict_SetItemString(d, "SCALE_GEOMETRIC", PyLong_FromLong(SCALE_GEOMETRIC));
++    PyDict_SetItemString(d, "SCALE_CURTISREID", PyLong_FromLong(SCALE_CURTISREID));
++    PyDict_SetItemString(d, "SCALE_QUADRATIC", PyLong_FromLong(SCALE_QUADRATIC));
++    PyDict_SetItemString(d, "SCALE_LOGARITHMIC", PyLong_FromLong(SCALE_LOGARITHMIC));
++    PyDict_SetItemString(d, "SCALE_USERWEIGHT", PyLong_FromLong(SCALE_USERWEIGHT));
++    PyDict_SetItemString(d, "SCALE_POWER2", PyLong_FromLong(SCALE_POWER2));
++    PyDict_SetItemString(d, "SCALE_EQUILIBRATE", PyLong_FromLong(SCALE_EQUILIBRATE));
++    PyDict_SetItemString(d, "SCALE_INTEGERS", PyLong_FromLong(SCALE_INTEGERS));
++    PyDict_SetItemString(d, "SCALE_DYNUPDATE", PyLong_FromLong(SCALE_DYNUPDATE));
++    PyDict_SetItemString(d, "SCALE_ROWSONLY", PyLong_FromLong(SCALE_ROWSONLY));
++    PyDict_SetItemString(d, "SCALE_COLSONLY", PyLong_FromLong(SCALE_COLSONLY));
++    PyDict_SetItemString(d, "IMPROVE_NONE", PyLong_FromLong(IMPROVE_NONE));
++    PyDict_SetItemString(d, "IMPROVE_SOLUTION", PyLong_FromLong(IMPROVE_SOLUTION));
++    PyDict_SetItemString(d, "IMPROVE_DUALFEAS", PyLong_FromLong(IMPROVE_DUALFEAS));
++    PyDict_SetItemString(d, "IMPROVE_THETAGAP", PyLong_FromLong(IMPROVE_THETAGAP));
++    PyDict_SetItemString(d, "IMPROVE_BBSIMPLEX", PyLong_FromLong(IMPROVE_BBSIMPLEX));
++    PyDict_SetItemString(d, "PRICER_FIRSTINDEX", PyLong_FromLong(PRICER_FIRSTINDEX));
++    PyDict_SetItemString(d, "PRICER_DANTZIG", PyLong_FromLong(PRICER_DANTZIG));
++    PyDict_SetItemString(d, "PRICER_DEVEX", PyLong_FromLong(PRICER_DEVEX));
++    PyDict_SetItemString(d, "PRICER_STEEPESTEDGE", PyLong_FromLong(PRICER_STEEPESTEDGE));
++    PyDict_SetItemString(d, "PRICE_PRIMALFALLBACK", PyLong_FromLong(PRICE_PRIMALFALLBACK));
++    PyDict_SetItemString(d, "PRICE_MULTIPLE", PyLong_FromLong(PRICE_MULTIPLE));
++    PyDict_SetItemString(d, "PRICE_PARTIAL", PyLong_FromLong(PRICE_PARTIAL));
++    PyDict_SetItemString(d, "PRICE_ADAPTIVE", PyLong_FromLong(PRICE_ADAPTIVE));
++    PyDict_SetItemString(d, "PRICE_RANDOMIZE", PyLong_FromLong(PRICE_RANDOMIZE));
++    PyDict_SetItemString(d, "PRICE_AUTOPARTIAL", PyLong_FromLong(PRICE_AUTOPARTIAL));
++    PyDict_SetItemString(d, "PRICE_LOOPLEFT", PyLong_FromLong(PRICE_LOOPLEFT));
++    PyDict_SetItemString(d, "PRICE_LOOPALTERNATE", PyLong_FromLong(PRICE_LOOPALTERNATE));
++    PyDict_SetItemString(d, "PRICE_HARRISTWOPASS", PyLong_FromLong(PRICE_HARRISTWOPASS));
++    PyDict_SetItemString(d, "PRICE_TRUENORMINIT", PyLong_FromLong(PRICE_TRUENORMINIT));
++    PyDict_SetItemString(d, "PRESOLVE_NONE", PyLong_FromLong(PRESOLVE_NONE));
++    PyDict_SetItemString(d, "PRESOLVE_ROWS", PyLong_FromLong(PRESOLVE_ROWS));
++    PyDict_SetItemString(d, "PRESOLVE_COLS", PyLong_FromLong(PRESOLVE_COLS));
++    PyDict_SetItemString(d, "PRESOLVE_LINDEP", PyLong_FromLong(PRESOLVE_LINDEP));
++    PyDict_SetItemString(d, "PRESOLVE_SOS", PyLong_FromLong(PRESOLVE_SOS));
++    PyDict_SetItemString(d, "PRESOLVE_REDUCEMIP", PyLong_FromLong(PRESOLVE_REDUCEMIP));
++    PyDict_SetItemString(d, "PRESOLVE_KNAPSACK", PyLong_FromLong(PRESOLVE_KNAPSACK));
++    PyDict_SetItemString(d, "PRESOLVE_ELIMEQ2", PyLong_FromLong(PRESOLVE_ELIMEQ2));
++    PyDict_SetItemString(d, "PRESOLVE_IMPLIEDFREE", PyLong_FromLong(PRESOLVE_IMPLIEDFREE));
++    PyDict_SetItemString(d, "PRESOLVE_REDUCEGCD", PyLong_FromLong(PRESOLVE_REDUCEGCD));
++    PyDict_SetItemString(d, "PRESOLVE_PROBEFIX", PyLong_FromLong(PRESOLVE_PROBEFIX));
++    PyDict_SetItemString(d, "PRESOLVE_PROBEREDUCE", PyLong_FromLong(PRESOLVE_PROBEREDUCE));
++    PyDict_SetItemString(d, "PRESOLVE_ROWDOMINATE", PyLong_FromLong(PRESOLVE_ROWDOMINATE));
++    PyDict_SetItemString(d, "PRESOLVE_COLDOMINATE", PyLong_FromLong(PRESOLVE_COLDOMINATE));
++    PyDict_SetItemString(d, "PRESOLVE_MERGEROWS", PyLong_FromLong(PRESOLVE_MERGEROWS));
++    PyDict_SetItemString(d, "PRESOLVE_IMPLIEDSLK", PyLong_FromLong(PRESOLVE_IMPLIEDSLK));
++    PyDict_SetItemString(d, "PRESOLVE_COLFIXDUAL", PyLong_FromLong(PRESOLVE_COLFIXDUAL));
++    PyDict_SetItemString(d, "PRESOLVE_BOUNDS", PyLong_FromLong(PRESOLVE_BOUNDS));
++    PyDict_SetItemString(d, "PRESOLVE_DUALS", PyLong_FromLong(PRESOLVE_DUALS));
++    PyDict_SetItemString(d, "PRESOLVE_SENSDUALS", PyLong_FromLong(PRESOLVE_SENSDUALS));
++    PyDict_SetItemString(d, "ANTIDEGEN_NONE", PyLong_FromLong(ANTIDEGEN_NONE));
++    PyDict_SetItemString(d, "ANTIDEGEN_FIXEDVARS", PyLong_FromLong(ANTIDEGEN_FIXEDVARS));
++    PyDict_SetItemString(d, "ANTIDEGEN_COLUMNCHECK", PyLong_FromLong(ANTIDEGEN_COLUMNCHECK));
++    PyDict_SetItemString(d, "ANTIDEGEN_STALLING", PyLong_FromLong(ANTIDEGEN_STALLING));
++    PyDict_SetItemString(d, "ANTIDEGEN_NUMFAILURE", PyLong_FromLong(ANTIDEGEN_NUMFAILURE));
++    PyDict_SetItemString(d, "ANTIDEGEN_LOSTFEAS", PyLong_FromLong(ANTIDEGEN_LOSTFEAS));
++    PyDict_SetItemString(d, "ANTIDEGEN_INFEASIBLE", PyLong_FromLong(ANTIDEGEN_INFEASIBLE));
++    PyDict_SetItemString(d, "ANTIDEGEN_DYNAMIC", PyLong_FromLong(ANTIDEGEN_DYNAMIC));
++    PyDict_SetItemString(d, "ANTIDEGEN_DURINGBB", PyLong_FromLong(ANTIDEGEN_DURINGBB));
++    PyDict_SetItemString(d, "ANTIDEGEN_RHSPERTURB", PyLong_FromLong(ANTIDEGEN_RHSPERTURB));
++    PyDict_SetItemString(d, "ANTIDEGEN_BOUNDFLIP", PyLong_FromLong(ANTIDEGEN_BOUNDFLIP));
++    PyDict_SetItemString(d, "CRASH_NONE", PyLong_FromLong(CRASH_NONE));
++    PyDict_SetItemString(d, "CRASH_MOSTFEASIBLE", PyLong_FromLong(CRASH_MOSTFEASIBLE));
++    PyDict_SetItemString(d, "CRASH_LEASTDEGENERATE", PyLong_FromLong(CRASH_LEASTDEGENERATE));
++    PyDict_SetItemString(d, "SIMPLEX_PRIMAL_PRIMAL", PyLong_FromLong(SIMPLEX_PRIMAL_PRIMAL));
++    PyDict_SetItemString(d, "SIMPLEX_DUAL_PRIMAL", PyLong_FromLong(SIMPLEX_DUAL_PRIMAL));
++    PyDict_SetItemString(d, "SIMPLEX_PRIMAL_DUAL", PyLong_FromLong(SIMPLEX_PRIMAL_DUAL));
++    PyDict_SetItemString(d, "SIMPLEX_DUAL_DUAL", PyLong_FromLong(SIMPLEX_DUAL_DUAL));
++    PyDict_SetItemString(d, "NODE_FIRSTSELECT", PyLong_FromLong(NODE_FIRSTSELECT));
++    PyDict_SetItemString(d, "NODE_GAPSELECT", PyLong_FromLong(NODE_GAPSELECT));
++    PyDict_SetItemString(d, "NODE_RANGESELECT", PyLong_FromLong(NODE_RANGESELECT));
++    PyDict_SetItemString(d, "NODE_FRACTIONSELECT", PyLong_FromLong(NODE_FRACTIONSELECT));
++    PyDict_SetItemString(d, "NODE_PSEUDOCOSTSELECT", PyLong_FromLong(NODE_PSEUDOCOSTSELECT));
++    PyDict_SetItemString(d, "NODE_PSEUDONONINTSELECT", PyLong_FromLong(NODE_PSEUDONONINTSELECT));
++    PyDict_SetItemString(d, "NODE_PSEUDORATIOSELECT", PyLong_FromLong(NODE_PSEUDORATIOSELECT));
++    PyDict_SetItemString(d, "NODE_USERSELECT", PyLong_FromLong(NODE_USERSELECT));
++    PyDict_SetItemString(d, "NODE_WEIGHTREVERSEMODE", PyLong_FromLong(NODE_WEIGHTREVERSEMODE));
++    PyDict_SetItemString(d, "NODE_BRANCHREVERSEMODE", PyLong_FromLong(NODE_BRANCHREVERSEMODE));
++    PyDict_SetItemString(d, "NODE_GREEDYMODE", PyLong_FromLong(NODE_GREEDYMODE));
++    PyDict_SetItemString(d, "NODE_PSEUDOCOSTMODE", PyLong_FromLong(NODE_PSEUDOCOSTMODE));
++    PyDict_SetItemString(d, "NODE_DEPTHFIRSTMODE", PyLong_FromLong(NODE_DEPTHFIRSTMODE));
++    PyDict_SetItemString(d, "NODE_RANDOMIZEMODE", PyLong_FromLong(NODE_RANDOMIZEMODE));
++    PyDict_SetItemString(d, "NODE_GUBMODE", PyLong_FromLong(NODE_GUBMODE));
++    PyDict_SetItemString(d, "NODE_DYNAMICMODE", PyLong_FromLong(NODE_DYNAMICMODE));
++    PyDict_SetItemString(d, "NODE_RESTARTMODE", PyLong_FromLong(NODE_RESTARTMODE));
++    PyDict_SetItemString(d, "NODE_BREADTHFIRSTMODE", PyLong_FromLong(NODE_BREADTHFIRSTMODE));
++    PyDict_SetItemString(d, "NODE_AUTOORDER", PyLong_FromLong(NODE_AUTOORDER));
++    PyDict_SetItemString(d, "NODE_RCOSTFIXING", PyLong_FromLong(NODE_RCOSTFIXING));
++    PyDict_SetItemString(d, "NODE_STRONGINIT", PyLong_FromLong(NODE_STRONGINIT));
++    PyDict_SetItemString(d, "NOMEMORY", PyLong_FromLong(NOMEMORY));
++    PyDict_SetItemString(d, "OPTIMAL", PyLong_FromLong(OPTIMAL));
++    PyDict_SetItemString(d, "SUBOPTIMAL", PyLong_FromLong(SUBOPTIMAL));
++    PyDict_SetItemString(d, "INFEASIBLE", PyLong_FromLong(INFEASIBLE));
++    PyDict_SetItemString(d, "UNBOUNDED", PyLong_FromLong(UNBOUNDED));
++    PyDict_SetItemString(d, "DEGENERATE", PyLong_FromLong(DEGENERATE));
++    PyDict_SetItemString(d, "NUMFAILURE", PyLong_FromLong(NUMFAILURE));
++    PyDict_SetItemString(d, "USERABORT", PyLong_FromLong(USERABORT));
++    PyDict_SetItemString(d, "TIMEOUT", PyLong_FromLong(TIMEOUT));
++    PyDict_SetItemString(d, "PRESOLVED", PyLong_FromLong(PRESOLVED));
++    PyDict_SetItemString(d, "PROCFAIL", PyLong_FromLong(PROCFAIL));
++    PyDict_SetItemString(d, "PROCBREAK", PyLong_FromLong(PROCBREAK));
++    PyDict_SetItemString(d, "FEASFOUND", PyLong_FromLong(FEASFOUND));
++    PyDict_SetItemString(d, "NOFEASFOUND", PyLong_FromLong(NOFEASFOUND));
++    PyDict_SetItemString(d, "BRANCH_CEILING", PyLong_FromLong(BRANCH_CEILING));
++    PyDict_SetItemString(d, "BRANCH_FLOOR", PyLong_FromLong(BRANCH_FLOOR));
++    PyDict_SetItemString(d, "BRANCH_AUTOMATIC", PyLong_FromLong(BRANCH_AUTOMATIC));
++    PyDict_SetItemString(d, "BRANCH_DEFAULT", PyLong_FromLong(BRANCH_DEFAULT));
++    PyDict_SetItemString(d, "MSG_PRESOLVE", PyLong_FromLong(MSG_PRESOLVE));
++    PyDict_SetItemString(d, "MSG_LPFEASIBLE", PyLong_FromLong(MSG_LPFEASIBLE));
++    PyDict_SetItemString(d, "MSG_LPOPTIMAL", PyLong_FromLong(MSG_LPOPTIMAL));
++    PyDict_SetItemString(d, "MSG_MILPEQUAL", PyLong_FromLong(MSG_MILPEQUAL));
++    PyDict_SetItemString(d, "MSG_MILPFEASIBLE", PyLong_FromLong(MSG_MILPFEASIBLE));
++    PyDict_SetItemString(d, "MSG_MILPBETTER", PyLong_FromLong(MSG_MILPBETTER));
++    PyDict_SetItemString(d, "NEUTRAL", PyLong_FromLong(NEUTRAL));
++    PyDict_SetItemString(d, "CRITICAL", PyLong_FromLong(CRITICAL));
++    PyDict_SetItemString(d, "SEVERE", PyLong_FromLong(SEVERE));
++    PyDict_SetItemString(d, "IMPORTANT", PyLong_FromLong(IMPORTANT));
++    PyDict_SetItemString(d, "NORMAL", PyLong_FromLong(NORMAL));
++    PyDict_SetItemString(d, "DETAILED", PyLong_FromLong(DETAILED));
++    PyDict_SetItemString(d, "FULL", PyLong_FromLong(FULL));
+     PyDict_SetItemString(d, "Infinite", PyFloat_FromDouble(DEF_INFINITE));
++    return m;
+ }
+ 
+ void Printf(char *format, ...)
+@@ -768,7 +775,7 @@
+         }
+         item = GetpMatrix(lpsolvecaller, element);
+         if((item == NULL) ||
+-           (PyString_AsStringAndSize(item, &ptr, &size1) != 0) ||
++           (PyBytes_AsStringAndSize(item, &ptr, &size1) != 0) ||
+            (ptr == NULL)) {
+                 PyErr_Clear();
+                 if(ShowError)
+@@ -796,7 +803,7 @@
+                         ErrMsgTxt(lpsolvecaller, "Expecting a character array.");
+                 return(NULL);
+         }
+-        if (PyString_Check(vector)) {
++        if (PyUnicode_Check(vector)) {
+                 m = 1;
+                 isvector = FALSE;
+         }
+@@ -821,7 +828,7 @@
+     		    item = PySequence_GetItem(vector, i);
+                 else
+                     item = vector;
+-    		if ((item == NULL) || (!PyString_Check(item))) {
++    		if ((item == NULL) || (!PyUnicode_Check(item))) {
+                     PyErr_Clear();
+                     if ((isvector) && (item != NULL)) {
+         		    Py_DECREF(item);
+@@ -829,7 +836,7 @@
+                     FreeCellCharItems(pa, i);
+                     ErrMsgTxt(lpsolvecaller, "invalid vector (non-string item).");
+     		}
+-           	if ((PyString_AsStringAndSize(item, &ptr, &size1) != 0) ||
++           	if ((PyBytes_AsStringAndSize(item, &ptr, &size1) != 0) ||
+                     (ptr == NULL)) {
+                 	PyErr_Clear();
+                         if (isvector) {
+@@ -1025,14 +1032,14 @@
+ void CreateString(structlpsolvecaller *lpsolvecaller, char **str, int m, int element)
+ {
+         if(m == 1)
+-                setlhs(lpsolvecaller, element, PyString_FromString(*str));
++                setlhs(lpsolvecaller, element, PyUnicode_FromString(*str));
+         else {
+                 PyObject *PyObject1;
+                 int i, len = m;
+ 
+                 PyObject1 = MyPyArray_New(len);
+                 for (i = 0; i < len; i++)
+-            		MyPyArray_SET_ITEM(PyObject1, i, PyString_FromString(*(str++)));
++            		MyPyArray_SET_ITEM(PyObject1, i, PyUnicode_FromString(*(str++)));
+                 setlhs(lpsolvecaller, element, PyObject1);
+         }
+ }
