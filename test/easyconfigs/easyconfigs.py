@@ -29,12 +29,13 @@ Unit tests for easyconfig files.
 """
 import glob
 import os
+import random
 import re
 import shutil
 import stat
 import tempfile
 from collections import defaultdict
-from unittest import TestCase, TestLoader, main, skip
+from unittest import TestCase, TestLoader, main, mock, skip
 from urllib.request import Request, urlopen
 
 import easybuild.main as eb_main
@@ -58,9 +59,10 @@ from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_fil
 from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
+from easybuild.tools.options import set_tmpdir
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_shell_cmd
-from easybuild.tools.options import set_tmpdir
+from easybuild.tools.systemtools import pick_dep_version
 from easybuild.tools.utilities import nub
 
 
@@ -2010,11 +2012,29 @@ def template_easyconfig_test(self, spec):
     single_tests_ok = prev_single_tests_ok
 
 
+def _mocked_pick_dep_version(version):
+    """Ensure we do not remove dependencies on the current architecture, to e.g. check that easyconfigs are available"""
+    result = _mocked_pick_dep_version.orig(version)  # Call always to make sure version is valid
+    # If there are multiple version, pick a random one instead
+    if isinstance(version, dict):
+        # Exclude `False` values which would remove the dependency
+        values = [value for value in version.values() if value is not False]
+        if values:
+            result = random.choice(values) if len(values) > 1 else values[0]
+    return result
+
+
+_mocked_pick_dep_version.orig = pick_dep_version
+
+
 def suite(loader=None):
     """Return all easyblock initialisation tests."""
     def make_inner_test(spec_path):
         def innertest(self):
-            template_easyconfig_test(self, spec_path)
+            # Need to patch the easyconfig module too as the method was already imported
+            with mock.patch('easybuild.tools.systemtools.pick_dep_version', _mocked_pick_dep_version), \
+              mock.patch('easybuild.framework.easyconfig.easyconfig.pick_dep_version', _mocked_pick_dep_version):
+                template_easyconfig_test(self, spec_path)
         return innertest
 
     # dynamically generate a separate test for each of the available easyconfigs
