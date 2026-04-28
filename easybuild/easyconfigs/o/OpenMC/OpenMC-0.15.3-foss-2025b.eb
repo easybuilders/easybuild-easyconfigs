@@ -1,0 +1,101 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'OpenMC'
+version = '0.15.3'
+
+homepage = 'https://openmc.org'
+description = """OpenMC is a community-developed Monte Carlo neutron and photon transport simulation code.
+ It is capable of performing fixed source, k-eigenvalue, and subcritical multiplication calculations on
+ models built using either a constructive solid geometry or CAD representation. OpenMC supports both
+ continuous-energy and multigroup transport."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True}
+
+local_xtl_version = '0.7.7'
+local_xtensor_version = '0.25.0'
+
+source_urls = ['https://github.com/openmc-dev/openmc/archive/refs/tags']
+sources = [
+    {
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    # xtl and xtensor vendored headers (no 2025b easyconfigs available)
+    {
+        'source_urls': ['https://github.com/xtensor-stack/xtl/archive/refs/tags'],
+        'download_filename': '%s.tar.gz' % local_xtl_version,
+        'filename': 'xtl-%s.tar.gz' % local_xtl_version,
+        'extract_cmd': "mkdir -p openmc-%s/vendor/xtl && "
+                       "tar -xzf %%s -C openmc-%s/vendor/xtl --strip-components=1" % (version, version),
+    },
+    {
+        'source_urls': ['https://github.com/xtensor-stack/xtensor/archive/refs/tags'],
+        'download_filename': '%s.tar.gz' % local_xtensor_version,
+        'filename': 'xtensor-%s.tar.gz' % local_xtensor_version,
+        'extract_cmd': "mkdir -p openmc-%s/vendor/xtensor && "
+                       "tar -xzf %%s -C openmc-%s/vendor/xtensor --strip-components=1" % (version, version),
+    },
+]
+checksums = [
+    '7019d3325cf59b1d1d3176ac85a247e75a1b9efa6ed40bdf0e7178ed4d03b83a',  # OpenMC-0.15.3.tar.gz
+    '44fb99fbf5e56af5c43619fc8c29aa58e5fad18f3ba6e7d9c55c111b62df1fbb',  # xtl-0.7.7.tar.gz
+    '32d5d9fd23998c57e746c375a544edf544b74f0a18ad6bc3c38cbba968d5e6c7',  # xtensor-0.25.0.tar.gz
+]
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('pkgconf', '2.4.3'),
+    ('pybind11', '3.0.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('matplotlib', '3.10.5'),
+    ('h5py', '3.14.0'),
+    ('HDF5', '1.14.6'),
+    ('lxml', '6.0.0'),
+    ('IPython', '9.4.0'),
+    ('uncertainties', '3.2.3'),
+    ('mpi4py', '4.1.0'),
+    ('libpng', '1.6.50'),
+    ('fmt', '11.2.0'),
+    ('pugixml', '1.15'),
+]
+
+# Create dummy vendor/pugixml/CMakeLists.txt to pass submodule existence check
+# (pugixml is provided as an external dependency via find_package)
+preconfigopts = 'mkdir -p %(builddir)s/openmc-%(version)s/vendor/pugixml && '
+preconfigopts += 'touch %(builddir)s/openmc-%(version)s/vendor/pugixml/CMakeLists.txt && '
+
+configopts = '-DOPENMC_USE_MPI=ON '
+configopts += '-DOPENMC_USE_OPENMP=ON '
+configopts += '-DHDF5_PREFER_PARALLEL=ON '
+configopts += '-DOPENMC_BUILD_TESTS=OFF '
+configopts += '-DGIT_SUBMODULE=OFF '
+
+# Install Python dependencies and bindings via extensions
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('endf', '0.1.12', {
+        'source_urls': [PYPI_SOURCE],
+        'checksums': ['97ca1b7a248fcc26c58a9f6a825e48b6643c8a6e111733440ada0ae425d45a68'],
+    }),
+    ('openmc', version, {
+        'nosource': True,
+        'preinstallopts': 'SETUPTOOLS_SCM_PRETEND_VERSION=%(version)s ',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/openmc', 'lib/libopenmc.%s' % SHLIB_EXT],
+    'dirs': ['include/openmc', 'lib/python%(pyshortver)s/site-packages/openmc'],
+}
+
+sanity_check_commands = [
+    'openmc --version',
+    "python -s -c 'import openmc'",
+]
+
+moduleclass = 'phys'
