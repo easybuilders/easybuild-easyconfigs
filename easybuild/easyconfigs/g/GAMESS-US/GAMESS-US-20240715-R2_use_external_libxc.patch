@@ -1,0 +1,46 @@
+# What: Remove targets for the shipped libxc in favor of an external libxc provided as a dependency
+#
+# Author: Sven Hansen
+
+diff -ruN gamess.orig/Makefile gamess/Makefile
+--- gamess.orig/Makefile	2024-07-23 08:20:27.000000000 +0200
++++ gamess/Makefile	2025-11-13 18:01:48.191865776 +0100
+@@ -602,22 +602,22 @@
+ 
+ .PHONY: libxc libmdi
+ 
+-ifeq ($(GMS_LIBXC),true)
+-gamess : | $(GMS_3RD_PATH)/lib/libxc.a
+-endif
+-
+-libxc: $(GMS_3RD_PATH)/lib/libxc.a
+-
+-$(OBJ_DIR)/functionals.o : $(OBJ_DIR)/xc_f03_lib_m.mod
+-
+-$(OBJ_DIR)/xc_f03_lib_m.mod : $(GMS_3RD_PATH)/include/xc_f03_lib_m.mod
+-	cp $(GMS_3RD_PATH)/include/xc_f03_lib_m.mod $(OBJ_DIR)
+-
+-$(GMS_3RD_PATH)/include/xc_f03_lib_m.mod : $(GMS_3RD_PATH)/lib/libxc.a
+-
+-$(GMS_3RD_PATH)/lib/libxc.a :
+-	cd $(GMS_3RD_PATH)/libxc && $(CMAKE) -H. -Bobjdir -DCMAKE_C_COMPILER=$(GMS_CC) -DCMAKE_Fortran_COMPILER=$(GMS_FC) -DCMAKE_INSTALL_PREFIX=$(GMS_3RD_PATH) $(LIBXC_FLAGS) --debug-output && cd objdir && $(MAKE) VERBOSE=1 && $(MAKE) test && $(MAKE) install
+-	if [[ ! -d $(GMS_3RD_PATH)/lib ]]; then ln -s $(GMS_3RD_PATH)/lib64 $(GMS_3RD_PATH)/lib; fi
++#ifeq ($(GMS_LIBXC),true)
++#gamess : | $(GMS_3RD_PATH)/lib/libxc.a
++#endif
++#
++#libxc: $(GMS_3RD_PATH)/lib/libxc.a
++#
++#$(OBJ_DIR)/functionals.o : $(OBJ_DIR)/xc_f03_lib_m.mod
++#
++#$(OBJ_DIR)/xc_f03_lib_m.mod : $(GMS_3RD_PATH)/include/xc_f03_lib_m.mod
++#	cp $(GMS_3RD_PATH)/include/xc_f03_lib_m.mod $(OBJ_DIR)
++#
++#$(GMS_3RD_PATH)/include/xc_f03_lib_m.mod : $(GMS_3RD_PATH)/lib/libxc.a
++#
++#$(GMS_3RD_PATH)/lib/libxc.a :
++#	cd $(GMS_3RD_PATH)/libxc && $(CMAKE) -H. -Bobjdir -DCMAKE_C_COMPILER=$(GMS_CC) -DCMAKE_Fortran_COMPILER=$(GMS_FC) -DCMAKE_INSTALL_PREFIX=$(GMS_3RD_PATH) $(LIBXC_FLAGS) --debug-output && cd objdir && $(MAKE) VERBOSE=1 && $(MAKE) test && $(MAKE) install
++#	if [[ ! -d $(GMS_3RD_PATH)/lib ]]; then ln -s $(GMS_3RD_PATH)/lib64 $(GMS_3RD_PATH)/lib; fi
+ 
+ libmdi : | $(OBJ_DIR)
+ 	cd $(GMS_3RD_PATH)/mdi && $(CMAKE) -H. -Bobjdir -DCMAKE_C_COMPILER=$(GMS_CC) -DCMAKE_Fortran_COMPILER=$(GMS_FC) -DCMAKE_INSTALL_PREFIX=$(MDI_INSTALL) $(MDI_FLAGS) && cd objdir && $(MAKE) install
