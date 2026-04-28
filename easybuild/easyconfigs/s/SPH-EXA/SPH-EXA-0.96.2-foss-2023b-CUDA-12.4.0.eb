@@ -1,0 +1,55 @@
+# This file is an EasyBuild reciPY as per https://easybuild.io/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'CMakeMake'
+
+name = 'SPH-EXA'
+version = '0.96.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/sphexa-org/sphexa'
+description = """ SPH-EXA is a C++20 simulation code for hydrodynamics simulations
+(with gravity and other physics), parallelized with MPI, OpenMP, CUDA, and HIP."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/sphexa-org/sphexa/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+patches = ['sph-exa-0.96.2-h5hut-version.patch']
+checksums = [
+    {'v0.96.2.tar.gz': '2ff6edb422eadf47634f98d20258458c82374efe617de0d0c3d5bb3d7945be23'},
+    {'sph-exa-0.96.2-h5hut-version.patch': '7cd814d6e81a3ae906941137bb22e5a27d536ad9bbe9eadc4ae6083b63cba615'},
+]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.3'),
+    ('CUDA', '12.4.0', '', SYSTEM),
+    ('UCX-CUDA', '1.15.0', versionsuffix),
+    ('UCC-CUDA', '1.2.0', versionsuffix),
+]
+
+cuda_compute_capabilities = ['8.0', '8.6', '8.9', '9.0']
+
+# Cmake downloads branch https://github.com/eth-cscs/h5hut/tree/cmake but commit
+# 0269c70 in that branch doesn't build so we have to download previous commit 30ff892
+# See https://github.com/sphexa-org/sphexa/issues/587
+# Patch "sph-exa-0.96.2-h5hut-version.patch" is required for this to work
+configopts = "-DCSTONE_WITH_GPU_AWARE_MPI=ON -DH5hut_VERSION=git.30ff892"
+
+buildopts = "sphexa-cuda"
+
+sanity_check_paths = {
+    'files': ['bin/sphexa', 'bin/sphexa-cuda'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["sphexa --help"]
+
+moduleclass = 'phys'
