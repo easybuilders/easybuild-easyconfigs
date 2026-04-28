@@ -1,0 +1,111 @@
+# Authors: Ehsan Moravveji (VSC, KU Leuven)
+#          Steven Vandenbrande (VSC, KU Leuven)
+# Inspired by: https://github.com/easybuilders/easybuild-easyconfigs/pull/15537
+
+easyblock = 'ConfigureMake'
+
+name = 'FreeFEM'
+version = '4.14'
+
+homepage = 'https://freefem.org'
+description = """FreeFEM offers a fast interpolation algorithm and a language for the manipulation
+ of data on multiple meshes."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://github.com/FreeFem/FreeFem-sources/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'FreeFEM-4.14_fix-header-paths-in-config.patch',
+    'FreeFEM-4.14_skip-failing-tests.patch',
+]
+checksums = [
+    {'v4.14.tar.gz': '931cbfe9ef6f6530756c300c5ae47bfdaca21c560a5407cb33325a376a3b6af8'},
+    {'FreeFEM-4.14_fix-header-paths-in-config.patch':
+     'f39d970ece5e5fa5a8f4e51f686d9fcf1171ae56abc84d554f9632a615ccf4c7'},
+    {'FreeFEM-4.14_skip-failing-tests.patch': '487c82da88f8d8bb28f69b22036876b586878352c47d504ababbc266a91d91ec'},
+]
+
+builddependencies = [
+    ('Autotools', '20231222'),
+    ('binutils', '2.42'),
+    ('pkgconf', '2.2.0'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('make', '4.4.1'),
+    ('git', '2.45.1')
+]
+
+dependencies = [
+    ('Boost', '1.85.0'),
+    ('GSL', '2.8'),
+    ('freeglut', '3.6.0'),
+    ('arpack-ng', '3.9.1'),
+    ('TetGen', '1.6.0'),
+    ('HDF5', '1.14.5'),
+    ('Mmg', '5.8.0'),
+    ('ParMmg', '1.5.0'),
+    ('SCOTCH', '7.0.6'),
+    ('SuiteSparse', '7.10.1'),
+    ('PETSc', '3.23.5'),
+    ('SLEPc', '3.23.2'),
+    ('METIS', '5.1.0'),
+    ('ParMETIS', '4.0.3'),
+    ('MUMPS', '5.7.2', '-metis'),
+    ('NLopt', '2.7.1'),
+    ('SuperLU_DIST', '9.1.0'),
+    ('Ipopt', '3.14.17'),
+]
+
+preconfigopts = ' && '.join([
+    "sed -i 's|FLAGS_FFPP=-nw|FLAGS_FFPP=\"-g -O0 -nw\"|g' %(start_dir)s/examples/3d/Makefile.am",
+    "autoreconf -fiv",
+    ""
+])
+
+configopts = ' '.join([
+    '--enable-optim',
+    '--enable-summary',
+    '--with-mpi=$(which mpic++)',
+    '--with-petsc="$EBROOTPETSC/lib/petsc/conf/petscvariables"',
+    '--with-petsc_complex="$EBROOTPETSC/lib/petsc/conf/petscvariables"',
+    '--with-slepc-include="-I$EBROOTSLEPC/include"',
+    '--with-slepccomplex-include="-I$EBROOTSLEPC/include"',
+    '--without-cadna',
+    '--with-blas="$EBROOTOPENBLAS/lib"',
+    '--with-lapack="$EBROOTFLEXIBLAS/lib"',
+    '--with-umfpack="-L$EBROOTSUITESPARSE/lib -lcholmod -lumfpack"',
+    '--with-gsl-prefix="$EBROOTGSL"',
+    '--with-tetgen-include="-I$EBROOTTETGEN/include"',
+    '--with-metis-include="-I$EBROOTMETIS/include"',
+    '--with-parmetis-include="-I$EBROOTPARMETIS/include"',
+    '--with-ipopt-include="-I$EBROOTIPOPT/include"',
+    '--with-scalapack-include="-I$EBROOTSCALAPACK/include"',
+    '--with-mumps-include="-I$EBROOTMUMPS/include"',
+    '--with-nlopt-include="-I$EBROOTNLOPT/include"',
+    '--with-scotch-include="-I$EBROOTSCOTCH/include"',
+    '--with-superlu-include="-I$EBROOTSUPERLU_DIST/include"',
+    '--with-superlu-ldflags="-L$EBROOTSUPERLU_DIST/lib -lsuperlu"',
+    '--with-parmmg-include="-I$EBROOTPARMMG/include"',
+    '--with-parmmg-ldflags="-L$EBROOTPARMMG/lib -lparmmg"',
+    '--with-mmg-include="-I$EBROOTMMG/include"',
+    '--with-mmg3d-include="-I$EBROOTMMG/include"',
+])
+
+maxparallel = 8
+
+pretestopts = "find %(builddir)s -name Makefile | xargs sed -i 's/FLAGS_FFPP=\"-g -O0 -nw\"/FLAGS_FFPP=\"-nw\"/g' && "
+runtest = 'check'
+
+postinstallcmds = ['cp %(start_dir)s/bin/test-driver-ff %(installdir)s/bin']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['test-driver-ff', 'bamg', 'cvmsh2', 'ffglut', 'ffmedit', 'ffmaster']] +
+             ['bin/ff-%s' % x for x in ['c++', 'get-dep', 'mpirun', 'pkg-download']] +
+             ['bin/FreeFem++%s' % x for x in ['', '-mpi', '-nw']],
+    'dirs': ['share/FreeFEM/%(version)s/'] +
+            ['lib/ff++/%%(version)s/%s' % x for x in ['bin', 'etc', 'idp', 'include', 'lib']]
+}
+
+moduleclass = 'math'
