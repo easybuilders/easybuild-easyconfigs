@@ -1,0 +1,43 @@
+easyblock = "ConfigureMake"
+
+name = "Fundamental-Constants"
+version = "0.2.0"
+
+homepage = "https://git.iter.org/projects/IMAS/repos/fundamental-constants"
+description = """Header files for universal physical and mathematical constants."""
+
+toolchain = SYSTEM
+
+github_account = 'iterorganization'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % version, 'filename': SOURCE_TAR_GZ}]
+checksums = ['ba0a6109e352c532582c1ff88fdb852f6215c8dd0e05050891695da563b44b6b']
+
+# Just run make install to copy files to given installation prefix
+skipsteps = ["configure", "build"]
+
+installopts = "prefix=%(installdir)s"
+postinstallcmds = ["cp -r %(builddir)s/%(name)s-%(version)s/examples %(installdir)s"]
+
+docpaths = ["share/doc"]
+
+# These are literally all the files...
+sanity_check_paths = {
+    "files":
+        ["lib/pkgconfig/%(namelower)s.pc"] +
+        ["share/doc/%(namelower)s/README.md"] +
+        ["include/%(namelower)s/mathematical_constants.f90"] +
+        [
+            "include/%(namelower)s/codata_" + year + ext
+            for ext in [".f90", ".h", ".hpp"]
+            for year in ["2002", "2006", "2010", "2014", "2018", "2022"]
+        ],
+    "dirs": ["include/%(namelower)s", "lib/pkgconfig"],
+}
+
+# The sanity check is the compilation of the examples
+sanity_check_commands = [
+    "cd %(installdir)s/examples && make clean check",
+]
+
+moduleclass = "phys"
