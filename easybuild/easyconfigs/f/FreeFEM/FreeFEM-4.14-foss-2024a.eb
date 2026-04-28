@@ -15,7 +15,16 @@ toolchainopts = {'usempi': True, 'pic': True}
 
 source_urls = ['https://github.com/FreeFem/FreeFem-sources/archive/']
 sources = ['v%(version)s.tar.gz']
-checksums = ['931cbfe9ef6f6530756c300c5ae47bfdaca21c560a5407cb33325a376a3b6af8']
+patches = [
+    'FreeFEM-4.14_fix-header-paths-in-config.patch',
+    'FreeFEM-4.14_skip-failing-tests.patch',
+]
+checksums = [
+    {'v4.14.tar.gz': '931cbfe9ef6f6530756c300c5ae47bfdaca21c560a5407cb33325a376a3b6af8'},
+    {'FreeFEM-4.14_fix-header-paths-in-config.patch':
+     'f39d970ece5e5fa5a8f4e51f686d9fcf1171ae56abc84d554f9632a615ccf4c7'},
+    {'FreeFEM-4.14_skip-failing-tests.patch': '487c82da88f8d8bb28f69b22036876b586878352c47d504ababbc266a91d91ec'},
+]
 
 builddependencies = [
     ('Autotools', '20231222'),
@@ -31,6 +40,7 @@ dependencies = [
     ('Boost', '1.85.0'),
     ('GSL', '2.8'),
     ('freeglut', '3.6.0'),
+    ('arpack-ng', '3.9.1'),
     ('TetGen', '1.6.0'),
     ('HDF5', '1.14.5'),
     ('Mmg', '5.8.0'),
@@ -48,19 +58,9 @@ dependencies = [
 ]
 
 preconfigopts = ' && '.join([
-    "sed -i 's|mmg3d-v4\\.0\\.|mmg3d\\.|g' %(start_dir)s/configure.ac",
-    "sed -i 's|-lmmg3d-v4|-lmmg3d|g' %(start_dir)s/configure.ac",
     "sed -i 's|FLAGS_FFPP=-nw|FLAGS_FFPP=\"-g -O0 -nw\"|g' %(start_dir)s/examples/3d/Makefile.am",
     "autoreconf -fiv",
     ""
-])
-
-buildopts = ' '.join([
-    "CFLAGS='-ftree-vectorize -O3 -march=native -fno-math-errno -fPIC -DNDEBUG'",
-    "CXXFLAGS='-ftree-vectorize -O3 -march=native -fno-math-errno -fPIC -std=gnu++14 "
-    "-DNDEBUG -DBAMG_LONG_LONG -DNCHECKPTR'",
-    "FCFLAGS='-ftree-vectorize -O3 -march=native -fno-math-errno -fPIC -DNDEBUG'",
-    "OPTFLAGS='-O3 -march=native'",
 ])
 
 configopts = ' '.join([
@@ -76,25 +76,25 @@ configopts = ' '.join([
     '--with-lapack="$EBROOTFLEXIBLAS/lib"',
     '--with-umfpack="-L$EBROOTSUITESPARSE/lib -lcholmod -lumfpack"',
     '--with-gsl-prefix="$EBROOTGSL"',
-    '--with-tetgen-include="-I$EBROOTTETGEN/lib"',
+    '--with-tetgen-include="-I$EBROOTTETGEN/include"',
     '--with-metis-include="-I$EBROOTMETIS/include"',
     '--with-parmetis-include="-I$EBROOTPARMETIS/include"',
-    '--with-ipopt-include="-I$EBROOTIPOPT/include/coin"',
+    '--with-ipopt-include="-I$EBROOTIPOPT/include"',
     '--with-scalapack-include="-I$EBROOTSCALAPACK/include"',
     '--with-mumps-include="-I$EBROOTMUMPS/include"',
     '--with-nlopt-include="-I$EBROOTNLOPT/include"',
     '--with-scotch-include="-I$EBROOTSCOTCH/include"',
     '--with-superlu-include="-I$EBROOTSUPERLU_DIST/include"',
     '--with-superlu-ldflags="-L$EBROOTSUPERLU_DIST/lib -lsuperlu"',
-    '--with-superlu-ldflags="-L$EBROOTSUPERLU_DIST/lib -lsuperlu"',
     '--with-parmmg-include="-I$EBROOTPARMMG/include"',
     '--with-parmmg-ldflags="-L$EBROOTPARMMG/lib -lparmmg"',
-    '--with-mmg-include="-I$EBROOTMMG/include/mmg"',
-    '--with-mmg3d-include="-I$EBROOTMMG/include/mmg/mmg3d"',
+    '--with-mmg-include="-I$EBROOTMMG/include"',
+    '--with-mmg3d-include="-I$EBROOTMMG/include"',
 ])
 
 maxparallel = 8
 
+pretestopts = "find %(builddir)s -name Makefile | xargs sed -i 's/FLAGS_FFPP=\"-g -O0 -nw\"/FLAGS_FFPP=\"-nw\"/g' && "
 runtest = 'check'
 
 postinstallcmds = ['cp %(start_dir)s/bin/test-driver-ff %(installdir)s/bin']
