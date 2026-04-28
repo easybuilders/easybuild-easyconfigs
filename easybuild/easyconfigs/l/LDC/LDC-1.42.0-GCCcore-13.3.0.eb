@@ -1,0 +1,42 @@
+easyblock = 'CMakeNinja'
+
+name = 'LDC'
+version = '1.42.0'
+
+homepage = 'https://wiki.dlang.org/LDC'
+description = "The LLVM-based D Compiler"
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/ldc-developers/ldc/releases/download/v%(version)s']
+sources = ['ldc-%(version)s-src.tar.gz']
+checksums = ['9bb0f628f869f7fc7b53c381a79742d29c17552c6f1a56b0a02aa289e65a0e3b']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+    ('Ninja', '1.12.1'),
+    # building LDC from source requires LDC
+    ('LDC', '1.24.0', '-%(arch)s', SYSTEM),
+]
+
+dependencies = [
+    ('LLVM', '20.1.5'),
+    ('zstd', '1.5.6'),
+]
+
+configopts = "-DLLVM_ROOT_DIR=$EBROOTLLVM "
+# explicitly add zstd to the linker flags to prevent build failure
+configopts += '-DCMAKE_EXE_LINKER_FLAGS="-lzstd" '
+
+sanity_check_paths = {
+    'files': ['bin/ldc2', 'bin/ldmd2'],
+    'dirs': ['include/d', 'lib'],
+}
+
+sanity_check_commands = [
+    "ldc2 --help",
+    "ldmd2 --help",
+]
+
+moduleclass = 'lang'
