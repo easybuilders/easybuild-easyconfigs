@@ -1,0 +1,66 @@
+# Updated as PythonPackage easyblock to avoid issues with the variables (ESMFMKFILE,...)
+# Stamen Miroslavov Minkov <stamen.miroslavov@bsc.es>, BSC 2025
+# Patch needs to be updated for every different version
+
+easyblock = 'PythonPackage'
+
+name = 'ESMPy'
+version = '8.6.1'
+
+homepage = 'https://earthsystemmodeling.org/esmpy'
+description = "Earth System Modeling Framework (ESMF) Python Interface"
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://github.com/esmf-org/esmf/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['ESMPy-8.6.1_use-static-version.patch']
+checksums = [
+    'dc270dcba1c0b317f5c9c6a32ab334cb79468dda283d1e395d98ed2a22866364',  # ESMPy source
+    'c8b1e547ac06260b36c34839d58976d094dd5ccffa2caf545d5397d5a0b54da2',  # Patch file
+]
+
+builddependencies = [
+    ('pytest', '8.2.2'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('ESMF', version),
+    ('mpi4py', '3.1.5'),
+    ('netcdf4-python', '1.7.1.post2'),
+]
+
+# downloads of data files from data.earthsystemmodeling.org are failing at the
+# time of writting, switch to github.com:
+_switch_data_url_regex = r"s/^\(DATA_URL.*earthsystemmodeling.org\)/# \1/;s/# \(DATA_URL.*github.com\)/\1/"
+
+pretestopts = " && ".join([
+    "sed -i '%s' src/esmpy/util/cache_data.py" % _switch_data_url_regex,
+    "unset ESMPY_DATA_DIR",
+    "export ESMPY_DATA_NEW_DIR=/scratch/tmp",  # For MN5 it's /scratch/tmp
+])
+
+testinstall = True
+runtest = 'pytest'
+start_dir = 'src/addon/%(namelower)s'
+preinstallopts = "sed -i 's/EB_ESMPY_VERSION/%(version)s/' pyproject.toml && "
+buildopts = "--ESMFMKFILE=$EBROOTESMF/lib/esmf.mk"  # Fix ESMFMKFILE path issue
+
+# set data directory to a user-writable directory
+# default: %(installdir)s/lib/python%(pyshortver)s/site-packages/esmpy/data
+modextravars = {
+    'ESMPY_DATA_DIR': '/scratch/tmp',
+}
+
+# Fix ESMFMKFILE path issue for sanity check
+modluafooter = """
+setenv("ESMFMKFILE", pathJoin(os.getenv("EBROOTESMF"), "lib/esmf.mk"))
+"""
+
+sanity_check_commands = [
+    "python -c 'import esmpy'",
+]
+
+moduleclass = 'geo'
