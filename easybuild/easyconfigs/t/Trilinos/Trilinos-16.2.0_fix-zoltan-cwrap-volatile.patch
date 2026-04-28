@@ -1,0 +1,18 @@
+Fix incompatible pointer type in Zoltan Fortran C wrapper.
+
+GCC 14 promotes -Wincompatible-pointer-types to error; passing a
+'volatile struct Zoltan_Struct **' where 'struct Zoltan_Struct **'
+is expected fails. Cast away the volatile qualifier explicitly.
+
+Author: ITER (Copilot)
+--- a/packages/zoltan/src/fort/cwrap.c
++++ b/packages/zoltan/src/fort/cwrap.c
+@@ -820,7 +820,7 @@
+ {
+    volatile struct Zoltan_Struct *lb;
+    ADDR_TO_LB(addr_lb, lb);
+-   Zoltan_Destroy(&lb);
++   Zoltan_Destroy((struct Zoltan_Struct **)&lb);
+ }
+ 
+ /*****************************************************************************/
