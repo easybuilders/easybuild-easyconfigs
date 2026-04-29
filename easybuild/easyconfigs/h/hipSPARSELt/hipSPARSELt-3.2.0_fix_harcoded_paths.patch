@@ -1,0 +1,183 @@
+Removes hardcoded system paths and injects EasyBuild environment variables.
+
+Author: Aayush Joglekar (aayush.joglekar@surf.nl)
+
+diff --git a/.githooks/pre-commit b/.githooks/pre-commit
+index 04dabeb..388e493 100755
+--- a/.githooks/pre-commit
++++ b/.githooks/pre-commit
+@@ -8,7 +8,7 @@ export PATH=/usr/bin:/bin
+ 
+ set -x
+ 
+-format=/opt/rocm/llvm/bin/clang-format
++format="${EBROOTROCMMINLLVM}/bin/clang-format"
+ 
+ # Redirect stdout to stderr.
+ exec >&2
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5904f78..bd83015 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -52,23 +52,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ if(WIN32)
+   set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/package" CACHE PATH "Install path prefix, prepended onto install directories")
+ else()
+-  set(CMAKE_INSTALL_PREFIX "/opt/rocm" CACHE PATH "Install path prefix, prepended onto install directories")
++  set(CMAKE_INSTALL_PREFIX "${EBROOTROCMMINLLVM}" CACHE PATH "Install path prefix, prepended onto install directories")
+ endif()
+ 
+ if(NOT BUILD_CUDA)
+ # Adding CMAKE_PREFIX_PATH, needed for static builds
+-list( APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/llvm ${ROCM_PATH} ${ROCM_PATH}/hip /opt/rocm/llvm /opt/rocm /opt/rocm/hip )
++list( APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/llvm ${ROCM_PATH} ${ROCM_PATH}/hip ${EBROOTROCMMINLLVM} ${EBROOTHIP} )
+ endif()
+ 
+-if( NOT DEFINED ENV{HIP_PATH})
+-    set( HIP_PATH "/opt/rocm/hip" )
+-else( )
+-    set (HIP_PATH $ENV{HIP_PATH} )
+-endif( )
++set ( HIP_PATH $ENV{EBROOTHIP} )
+ 
+ # Append our library helper cmake path and the cmake path for hip (for convenience)
+ # Users may override HIP path by specifying their own in CMAKE_MODULE_PATH
+-list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake  ${ROCM_PATH}/lib/cmake/hip /opt/rocm/lib/cmake/hip ${HIP_PATH}/cmake )
++list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake  ${ROCM_PATH}/lib/cmake/hip ${EBROOTROCMMINLLVM}/lib/cmake/hip ${HIP_PATH}/cmake )
+ 
+ # Set a default build type if none was specified
+ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+@@ -153,7 +149,7 @@ else()
+     message(STATUS "AMDGPU_TARGETS: ${AMDGPU_TARGETS}")
+ 
+     if( CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
+-        find_package( hip REQUIRED CONFIG PATHS ${HIP_DIR} ${ROCM_PATH} /opt/rocm )
++        find_package( hip REQUIRED CONFIG PATHS ${EBROOTHIP} ${HIP_DIR} ${ROCM_PATH} )
+     endif( )
+ 
+     option( BUILD_WITH_TENSILE "Build full functionality which requires tensile?" ON )
+@@ -218,7 +214,7 @@ else()
+     endif()
+ endif()
+ 
+-find_package( hipsparse REQUIRED CONFIG PATHS ${HIP_DIR} ${ROCM_PATH} /opt/rocm)
++find_package( hipsparse REQUIRED CONFIG PATHS ${EBROOTHIPSPARSE} ${HIP_DIR} ${ROCM_PATH})
+ 
+ # rocm-cmake helpers
+ include( ROCMSetupVersion )
+@@ -402,7 +398,7 @@ if(BUILD_CODE_COVERAGE)
+     COMMAND mkdir -p lcoverage
+     COMMAND echo "\\#!/bin/bash" > llvm-gcov.sh
+     COMMAND echo "\\# THIS FILE HAS BEEN GENERATED" >> llvm-gcov.sh
+-    COMMAND printf "exec /opt/rocm/llvm/bin/llvm-cov gcov $$\\@" >> llvm-gcov.sh
++    COMMAND printf "exec ${EBROOTROCMMINLLVM}/bin/llvm-cov gcov $$\\@" >> llvm-gcov.sh
+     COMMAND chmod +x llvm-gcov.sh
+     )
+ 
+diff --git a/clients/CMakeLists.txt b/clients/CMakeLists.txt
+index 83832c3..1dcaa71 100755
+--- a/clients/CMakeLists.txt
++++ b/clients/CMakeLists.txt
+@@ -66,11 +66,11 @@ list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
+ set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+ 
+ if( NOT TARGET hipsparselt )
+-  find_package( hipsparselt REQUIRED CONFIG PATHS ${ROCM_PATH}/hipsparselt /opt/rocm/hipsparselt ${HIPSPARSELT_LIBRARY_DIR})
++  find_package( hipsparselt REQUIRED CONFIG PATHS ${ROCM_PATH}/hipsparselt ${EBROOTROCMMINLLVM}/hipsparselt ${HIPSPARSELT_LIBRARY_DIR})
+ endif( )
+ 
+ # Hip headers required of all clients; clients use hip to allocate device memory
+-list( APPEND CMAKE_PREFIX_PATH ${ROCM_PATH} /opt/rocm )
++list( APPEND CMAKE_PREFIX_PATH ${ROCM_PATH} ${EBROOTROCMMINLLVM} )
+ if ( NOT hip_FOUND )
+   find_package( hip REQUIRED CONFIG PATHS ${ROCM_PATH} )
+ endif( )
+diff --git a/cmake/Dependencies.cmake b/cmake/Dependencies.cmake
+index a339b8d..dc4c5e9 100644
+--- a/cmake/Dependencies.cmake
++++ b/cmake/Dependencies.cmake
+@@ -28,7 +28,7 @@ find_package(Git REQUIRED)
+ 
+ # Workaround until hcc & hip cmake modules fixes symlink logic in their config files.
+ # (Thanks to rocBLAS devs for finding workaround for this problem!)
+-list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
++list(APPEND CMAKE_PREFIX_PATH ${EBROOTHIP} ${EBROOTROCMMINLLVM})
+ 
+ # ROCm cmake package
+ find_package(ROCM 0.6 QUIET CONFIG PATHS ${CMAKE_PREFIX_PATH})
+diff --git a/install.sh b/install.sh
+index 9c876b9..e54007c 100755
+--- a/install.sh
++++ b/install.sh
+@@ -315,7 +315,6 @@ build_static=false
+ build_release_debug=false
+ build_codecoverage=false
+ install_prefix=hipsparselt-install
+-rocm_path=/opt/rocm
+ build_relocatable=false
+ build_address_sanitizer=false
+ gpu_architecture=all
+@@ -330,9 +329,7 @@ build_tensile=true
+ tensile_msgpack_backend=true
+ build_dir_user=build
+ 
+-if ! [ -z ${ROCM_PATH+x} ]; then
+-    rocm_path=${ROCM_PATH}
+-fi
++rocm_path=${EBROOTROCMMINLLVM}
+ 
+ # #################################################
+ # Parameter parsing
+@@ -535,23 +532,11 @@ if [[ "${install_dependencies}" == true ]]; then
+ fi
+ 
+ if [[ "${build_relocatable}" == true ]]; then
+-    if ! [ -z ${ROCM_PATH+x} ]; then
+-        rocm_path=${ROCM_PATH}
+-    fi
+-
+-    rocm_rpath=" -Wl,--enable-new-dtags -Wl,--rpath,/opt/rocm/lib:/opt/rocm/lib64"
+-    if ! [ -z ${ROCM_RPATH+x} ]; then
+-        rocm_rpath=" -Wl,--enable-new-dtags -Wl,--rpath,${ROCM_RPATH}"
+-    fi
++    rocm_path=${EBROOTROCMMINLLVM}
++    rocm_rpath=" -Wl,--enable-new-dtags -Wl,--rpath,${EBROOTROCMMINLLVM}/lib:${EBROOTROCMMINLLVM}/lib64"
+ fi
+ 
+-# We append customary rocm path; if user provides custom rocm path in ${path}, our
+-# hard-coded path has lesser priority
+-if [[ "${build_relocatable}" == true ]]; then
+-    export PATH=${rocm_path}/bin:${PATH}
+-else
+-    export PATH=${PATH}:/opt/rocm/bin
+-fi
++export PATH=${EBROOTROCMMINLLVM}/bin:${PATH}
+ 
+ pushd .
+   # #################################################
+diff --git a/library/src/hcc_detail/rocsparselt/src/spmm/hip/kernel_launcher.cpp b/library/src/hcc_detail/rocsparselt/src/spmm/hip/kernel_launcher.cpp
+index 52b6db6..e2ab159 100644
+--- a/library/src/hcc_detail/rocsparselt/src/spmm/hip/kernel_launcher.cpp
++++ b/library/src/hcc_detail/rocsparselt/src/spmm/hip/kernel_launcher.cpp
+@@ -49,7 +49,7 @@
+ #include <link.h>
+ #include <unistd.h>
+ 
+-#define ROCSPARSELT_LIB_PATH "/opt/rocm/hipsparselt/lib"
++#define ROCSPARSELT_LIB_PATH "${EBROOTROCMMINLLVM}/hipsparselt/lib"
+ 
+ namespace
+ {
+diff --git a/library/src/hcc_detail/rocsparselt/src/tensile_host.cpp b/library/src/hcc_detail/rocsparselt/src/tensile_host.cpp
+index 9d9c6e8..eda14a6 100644
+--- a/library/src/hcc_detail/rocsparselt/src/tensile_host.cpp
++++ b/library/src/hcc_detail/rocsparselt/src/tensile_host.cpp
+@@ -63,7 +63,7 @@
+ #include <link.h>
+ #include <unistd.h>
+ 
+-#define ROCSPARSELT_LIB_PATH "/opt/rocm/hipsparselt/lib"
++#define ROCSPARSELT_LIB_PATH "${EBROOTROCMMINLLVM}/hipsparselt/lib"
+ 
+ namespace
+ {
