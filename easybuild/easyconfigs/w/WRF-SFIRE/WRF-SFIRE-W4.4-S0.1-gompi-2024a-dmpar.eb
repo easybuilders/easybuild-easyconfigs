@@ -21,10 +21,14 @@ sources = [{
         'repo_name': 'WRF-SFIRE',
         'tag': '%(version)s',
         'recursive': True,
-    }
-}]
+    }}, 
+]
+#patches = ["gromacs-fix-time.patch"]
 
-checksums = {"35d8135b132163001828668ae0692415ad33cb05377b0b42317db4c224126857"}
+checksums = [{
+      'WRF-SFIRE-W4.4-S0.1.tar.xz':"35d8135b132163001828668ae0692415ad33cb05377b0b42317db4c224126857", 
+#      'gromacs-fix-time.patch':"fe79fb5185a2612437f011cd9c4abfbb3f966f4342cd48043d409fbcd90e7628"
+}]
 
 dependencies = [
     ('netCDF', '4.9.2'),
@@ -51,12 +55,17 @@ preconfigopts += """export WRFIO_GRIB2=1 &&
 export JASPERLIB=$EBROOTJASPER/lib &&
 export JASPERINC=$EBROOTJASPER/include && """
 
-# Selecting option 35 (GNU with DM-parallel) and 1 (basic nesting) in configure
-configopts = "<<<$'35\\n1\\n' && sed -i 's/^FC[[:space:]]*=[[:space:]]*time/FC = /' configure.wrf"
+# Selecting option 35 (GNU with DM-parallel) and 1 (basic nesting) in configure, for aarch64 architectures this is option 3+1
+# Define the interactive inputs
+local_inputs = "3\n1\n" if ARCH == 'aarch64' else "35\n1\n"
 
-# The configure file for aarch architectures has much less options
-if ARCH == 'aarch64':
-    configopts = "<<<$'3\\n1\\n' && sed -i 's/^FC[[:space:]]*=[[:space:]]*time/FC = /' configure.wrf"
+# Run configuration, then apply the sed command to remove the "time" measuring, as "time" doesn't exist in all systems and makes the build to crash
+configopts = (
+    f"<<< $'{local_inputs}' && "
+    "sed -i 's/^FC[[:space:]]*=[[:space:]]*time/FC = /' configure.wrf"
+)
+
+#configopts = f"<<< $'{inputs}' && patch configure.wrf fix-fc-time.patch"
 
 # The default EB_WRF tests are not all compatible with SFIRE
 skipsteps = ['test']
