@@ -3,24 +3,6 @@ See issue: https://github.com/EESSI/software-layer/pull/1473#issuecomment-430263
 
 Author: Aayush Joglekar (aayush.joglekar@surf.nl)
 
-diff --git a/ROCm-LLVM-19.0.0_fix-aarch64-missing-decl.patch b/ROCm-LLVM-19.0.0_fix-aarch64-missing-decl.patch
-index 3982d4244f0b..e69de29bb2d1 100644
---- a/ROCm-LLVM-19.0.0_fix-aarch64-missing-decl.patch
-+++ b/ROCm-LLVM-19.0.0_fix-aarch64-missing-decl.patch
-@@ -1,13 +0,0 @@
--diff --git a/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp b/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp
--index 2af71623e856..3d401aafbcc7 100644
----- a/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp
--+++ b/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp
--@@ -224,6 +224,8 @@ private:
--   bool selectJumpTable(MachineInstr &I, MachineRegisterInfo &MRI);
--   bool selectBrJT(MachineInstr &I, MachineRegisterInfo &MRI);
--   bool selectTLSGlobalValue(MachineInstr &I, MachineRegisterInfo &MRI);
--+  bool selectPtrAuthGlobalValue(MachineInstr &I,
--+                                MachineRegisterInfo &MRI) const;
--   bool selectReduction(MachineInstr &I, MachineRegisterInfo &MRI);
--   bool selectMOPS(MachineInstr &I, MachineRegisterInfo &MRI);
--   bool selectUSMovFromExtend(MachineInstr &I, MachineRegisterInfo &MRI);
 diff --git a/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp b/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
 index b99e27bc816f..f17707eaaffb 100644
 --- a/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
@@ -250,3 +232,124 @@ index b99e27bc816f..f17707eaaffb 100644
  // Simple pseudo-instructions have their lowering (with expansion to real
  // instructions) auto-generated.
  #include "AArch64GenMCPseudoLowering.inc"
+diff --git a/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp b/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp
+index 2af71623e856..df4375c0c258 100644
+--- a/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp
++++ b/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp
+@@ -6625,116 +6625,6 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
+ // Thus, it's only used for ptrauth references to extern_weak to avoid null
+ // checks.
+ 
+-bool AArch64InstructionSelector::selectPtrAuthGlobalValue(
+-    MachineInstr &I, MachineRegisterInfo &MRI) const {
+-  Register DefReg = I.getOperand(0).getReg();
+-  Register Addr = I.getOperand(1).getReg();
+-  uint64_t Key = I.getOperand(2).getImm();
+-  Register AddrDisc = I.getOperand(3).getReg();
+-  uint64_t Disc = I.getOperand(4).getImm();
+-  int64_t Offset = 0;
+-
+-  if (Key > AArch64PACKey::LAST)
+-    report_fatal_error("key in ptrauth global out of range [0, " +
+-                       Twine((int)AArch64PACKey::LAST) + "]");
+-
+-  // Blend only works if the integer discriminator is 16-bit wide.
+-  if (!isUInt<16>(Disc))
+-    report_fatal_error(
+-        "constant discriminator in ptrauth global out of range [0, 0xffff]");
+-
+-  // Choosing between 3 lowering alternatives is target-specific.
+-  if (!STI.isTargetELF() && !STI.isTargetMachO())
+-    report_fatal_error("ptrauth global lowering only supported on MachO/ELF");
+-
+-  if (!MRI.hasOneDef(Addr))
+-    return false;
+-
+-  // First match any offset we take from the real global.
+-  const MachineInstr *DefMI = &*MRI.def_instr_begin(Addr);
+-  if (DefMI->getOpcode() == TargetOpcode::G_PTR_ADD) {
+-    Register OffsetReg = DefMI->getOperand(2).getReg();
+-    if (!MRI.hasOneDef(OffsetReg))
+-      return false;
+-    const MachineInstr &OffsetMI = *MRI.def_instr_begin(OffsetReg);
+-    if (OffsetMI.getOpcode() != TargetOpcode::G_CONSTANT)
+-      return false;
+-
+-    Addr = DefMI->getOperand(1).getReg();
+-    if (!MRI.hasOneDef(Addr))
+-      return false;
+-
+-    DefMI = &*MRI.def_instr_begin(Addr);
+-    Offset = OffsetMI.getOperand(1).getCImm()->getSExtValue();
+-  }
+-
+-  // We should be left with a genuine unauthenticated GlobalValue.
+-  const GlobalValue *GV;
+-  if (DefMI->getOpcode() == TargetOpcode::G_GLOBAL_VALUE) {
+-    GV = DefMI->getOperand(1).getGlobal();
+-    Offset += DefMI->getOperand(1).getOffset();
+-  } else if (DefMI->getOpcode() == AArch64::G_ADD_LOW) {
+-    GV = DefMI->getOperand(2).getGlobal();
+-    Offset += DefMI->getOperand(2).getOffset();
+-  } else {
+-    return false;
+-  }
+-
+-  MachineIRBuilder MIB(I);
+-
+-  // Classify the reference to determine whether it needs a GOT load.
+-  unsigned OpFlags = STI.ClassifyGlobalReference(GV, TM);
+-  const bool NeedsGOTLoad = ((OpFlags & AArch64II::MO_GOT) != 0);
+-  assert(((OpFlags & (~AArch64II::MO_GOT)) == 0) &&
+-         "unsupported non-GOT op flags on ptrauth global reference");
+-  assert((!GV->hasExternalWeakLinkage() || NeedsGOTLoad) &&
+-         "unsupported non-GOT reference to weak ptrauth global");
+-
+-  std::optional<APInt> AddrDiscVal = getIConstantVRegVal(AddrDisc, MRI);
+-  bool HasAddrDisc = !AddrDiscVal || *AddrDiscVal != 0;
+-
+-  // Non-extern_weak:
+-  // - No GOT load needed -> MOVaddrPAC
+-  // - GOT load for non-extern_weak -> LOADgotPAC
+-  //   Note that we disallow extern_weak refs to avoid null checks later.
+-  if (!GV->hasExternalWeakLinkage()) {
+-    MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X16}, {});
+-    MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X17}, {});
+-    MIB.buildInstr(NeedsGOTLoad ? AArch64::LOADgotPAC : AArch64::MOVaddrPAC)
+-        .addGlobalAddress(GV, Offset)
+-        .addImm(Key)
+-        .addReg(HasAddrDisc ? AddrDisc : AArch64::XZR)
+-        .addImm(Disc)
+-        .constrainAllUses(TII, TRI, RBI);
+-    MIB.buildCopy(DefReg, Register(AArch64::X16));
+-    RBI.constrainGenericRegister(DefReg, AArch64::GPR64RegClass, MRI);
+-    I.eraseFromParent();
+-    return true;
+-  }
+-
+-  // extern_weak -> LOADauthptrstatic
+-
+-  // Offsets and extern_weak don't mix well: ptrauth aside, you'd get the
+-  // offset alone as a pointer if the symbol wasn't available, which would
+-  // probably break null checks in users. Ptrauth complicates things further:
+-  // error out.
+-  if (Offset != 0)
+-    report_fatal_error(
+-        "unsupported non-zero offset in weak ptrauth global reference");
+-
+-  if (HasAddrDisc)
+-    report_fatal_error("unsupported weak addr-div ptrauth global");
+-
+-  MIB.buildInstr(AArch64::LOADauthptrstatic, {DefReg}, {})
+-      .addGlobalAddress(GV, Offset)
+-      .addImm(Key)
+-      .addImm(Disc);
+-  RBI.constrainGenericRegister(DefReg, AArch64::GPR64RegClass, MRI);
+-
+-  I.eraseFromParent();
+-  return true;
+-}
+-
+ void AArch64InstructionSelector::SelectTable(MachineInstr &I,
+                                              MachineRegisterInfo &MRI,
+                                              unsigned NumVec, unsigned Opc1,
