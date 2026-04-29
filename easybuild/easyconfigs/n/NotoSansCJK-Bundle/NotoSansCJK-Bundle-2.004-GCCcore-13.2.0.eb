@@ -1,0 +1,79 @@
+# Author: Stamen Miroslavov, BSC 2025
+# Barcelona Supercomputing Center - Spain
+
+easyblock = 'Binary'
+
+name = 'NotoSansCJK-Bundle'
+version = '2.004'
+
+homepage = 'https://github.com/notofonts/noto-cjk'
+description = """Full bundle of Noto Sans CJK fonts (Simplified, Traditional, JP, KR, HK) from
+ Google, packaged for HPC use. Includes Mono."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ['https://github.com/notofonts/noto-cjk/releases/download/Sans2.004/']
+sources = [
+    '04_NotoSansCJK-OTF.zip',
+    '11_NotoSansMonoCJKjp.zip',
+    '12_NotoSansMonoCJKkr.zip',
+    '13_NotoSansMonoCJKsc.zip',
+    '14_NotoSansMonoCJKtc.zip',
+    '15_NotoSansMonoCJKhk.zip',
+]
+checksums = [
+    '8516970d4ff5f9d1f8bdd4ad5b9d6b5e1d292c816303e288c4933390b0e8abdb',  # 04_NotoSansCJK-OTF.zip
+    '6c8faf475ce78fa37486dd5d8920e4bb4450b1b0f3c497edf3ba2d25cf52ab78',  # 11_NotoSansMonoCJKjp.zip
+    '8c1368d3faac3c43991a91392fb73d985409ffe078cb731c7e303e226e4fd619',  # 12_NotoSansMonoCJKkr.zip
+    'e252c39994f8a278676507600a955663c23c24a7827dc63a4300b2f7b427cd5d',  # 13_NotoSansMonoCJKsc.zip
+    '0126cbeef724edf21fbaeb113739adf392679fd90a2897c76159d1141df9e8c6',  # 14_NotoSansMonoCJKtc.zip
+    '09a4df63660eee4ef0d1841566d9b4d63142f570847b965101d06ed8d67ded41',  # 15_NotoSansMonoCJKhk.zip
+]
+
+builddependencies = [('matplotlib', '3.8.2')]  # for sanity testing purposes
+
+dependencies = [('fontconfig', '2.14.2')]
+
+install_cmds = [
+    'mkdir -p %(installdir)s/fonts',
+    'mkdir -p %(installdir)s/etc/fonts/conf.d',
+    'for zip in *.zip; do unzip -nq "$zip"; done',
+    'find . -type f -name "*.otf" -exec mv {} %(installdir)s/fonts/ \\;',
+    'rm -rf OTF NotoSansMonoCJK*',
+
+    # Create fontconfig cache
+    'mkfontscale %(installdir)s/fonts',
+    'mkfontdir %(installdir)s/fonts',
+
+    # Create minimal fontconfig configuration
+    'printf "<?xml version=\\"1.0\\"?>\\n<!DOCTYPE fontconfig SYSTEM \\"fonts.dtd\\">\\n'
+    '<fontconfig>\\n  <dir>%(installdir)s/fonts</dir>\\n</fontconfig>\\n" > %(installdir)s/etc/fonts/fonts.conf',
+    '$(which fc-cache) -v -r -f %(installdir)s/fonts',
+]
+
+_region_codes = ['sc', 'tc', 'jp', 'kr', 'hk']
+sanity_check_paths = {
+    'files': [
+        f'fonts/NotoSansCJK{region}-Regular.otf' for region in _region_codes
+    ] + [
+        f'fonts/NotoSansMonoCJK{region}-Regular.otf' for region in _region_codes
+    ] + ['etc/fonts/fonts.conf'],
+    'dirs': ['fonts'],
+}
+
+# Check if the fonts are discoverable
+# Also test that fontconfig can find the fonts via matplotlib (if installed)
+sanity_check_commands = [
+    'xmllint --noout %(installdir)s/etc/fonts/fonts.conf',
+    'fc-list | grep "NotoSansCJK" || (echo "No fonts found" && false)',
+    'python3 -c "import matplotlib.font_manager as fm; '
+    'matches = [f.name for f in fm.fontManager.ttflist if \'Noto Sans CJK\' in f.name]; '
+    'print(matches); import sys; sys.exit(0 if matches else 1)"',
+]
+
+modextravars = {
+    'FONT_PATH': '%(installdir)s/fonts',
+    'FONTCONFIG_PATH': '%(installdir)s/etc/fonts',
+}
+
+moduleclass = 'system'
