@@ -29,8 +29,8 @@ dependencies = [
     ('dask', '2024.9.1'),
 ]
 
-exts_default_options = {'source_urls': [PYPI_SOURCE, 'https://pypi.nvidia.com/%(name)s-cu%(cudamajver)s']}
-_rapids_whl_name = '%(name)s_cu%(cudamajver)s-%(version)s-'
+exts_default_options = {'source_urls': [PYPI_SOURCE, 'https://pypi.nvidia.com/%(name)s']}
+_rapids_whl_name = '%(name)s-%(version)s-'
 _rapids_whl_cp_version = 'cp%(pymajver)s%(pyminver)s-cp%(pymajver)s%(pyminver)s'
 _rapids_tmpl = _rapids_whl_name + _rapids_whl_cp_version
 
@@ -59,36 +59,40 @@ exts_list = [
         'source_tmpl': f'%(name)s-%(version)s-{_rapids_whl_cp_version}-manylinux2014_%(arch)s.whl',
         'checksums': ['79b0cacb5e8b190ef409f9e03f06ac8de1b021b0c0dda47674d446f5557e0eb1'],
     }),
-    ('libucxx', '0.40.0', {
+    ('libucxx-cu%(cudamajver)s', '0.40.0', {
         'modulename': False,
-        'source_tmpl': f'{_rapids_whl_name}py3-none-manylinux_2_24_%(arch)s.manylinux_2_28_%(arch)s.whl',
+        'source_tmpl': (
+            'libucxx_cu%(cudamajver)s-%(version)s-py3-none-manylinux_2_24_%(arch)s.manylinux_2_28_%(arch)s.whl'
+        ),
         'checksums': ['eb00c16bea61814456a92307f36e7b8b6746c4a04b31a3f28d89bbb4025bc120'],
     }),
-    ('ucxx', '0.40.0', {
-        'source_tmpl': f'{_rapids_tmpl}-manylinux_2_27_%(arch)s.manylinux_2_28_%(arch)s.whl',
+    ('ucxx-cu%(cudamajver)s', '0.40.0', {
+        'source_tmpl': (
+            f'ucxx_cu%(cudamajver)s-%(version)s-{_rapids_whl_cp_version}'
+            '-manylinux_2_27_%(arch)s.manylinux_2_28_%(arch)s.whl'
+        ),
         'modulename': 'ucxx',
         'checksums': ['8d12a50952027e609a952f12153e794cd4cb636b7cbde211047ad5f3e8eff801'],
     }),
-    ('distributed-ucxx', '0.40.0', {
+    ('distributed-ucxx-cu%(cudamajver)s', '0.40.0', {
         'modulename': False,
         'source_tmpl': 'distributed_ucxx_cu%(cudamajver)s-%(version)s-py3-none-any.whl',
         'checksums': ['07d05b85e8449840e157c35b25131f6b7678ff33c5294d2cafbf7fc9968750be'],
     }),
     ('nvtx', '0.2.14', {
-        'source_tmpl': (
-            f'%(name)s-%(version)s-{_rapids_whl_cp_version}-manylinux_2_17_%(arch)s.manylinux2014_%(arch)s.whl'
-        ),
+        'source_tmpl': f'{_rapids_tmpl}-manylinux_2_17_%(arch)s.manylinux2014_%(arch)s.whl',
         'checksums': ['17efe5d903996bceb0c8a12cae80fa9b66bee7ee895923bd9d8ec2a5af1aabd8'],
     }),
     ('pynvjitlink_cu12', '0.4.0', {
-        'source_tmpl': (
-            f'%(name)s-%(version)s-{_rapids_whl_cp_version}-manylinux_2_27_%(arch)s.manylinux_2_28_%(arch)s.whl'
-        ),
+        'source_tmpl': f'{_rapids_tmpl}-manylinux_2_27_%(arch)s.manylinux_2_28_%(arch)s.whl',
         'modulename': 'pynvjitlink',
         'checksums': ['8f6834d84e0fba15b8c0ee39d8c4397e631708f97a8196c2f7b3082f2f35f465'],
     }),
-    ('rmm', version, {
-        'source_tmpl': f'{_rapids_tmpl}-manylinux_2_24_%(arch)s.manylinux_2_28_%(arch)s.whl',
+    ('rmm-cu%(cudamajver)s', version, {
+        'source_tmpl': (
+            f'rmm_cu%(cudamajver)s-%(version)s-{_rapids_whl_cp_version}'
+            '-manylinux_2_24_%(arch)s.manylinux_2_28_%(arch)s.whl'
+        ),
         'modulename': 'rmm',
         'checksums': ['e6141f0356afdd2a422da4b8e48a44c929928c78f7e005c648df02d6ef9c7740'],
     }),
@@ -96,7 +100,7 @@ exts_list = [
         'source_tmpl': SOURCE_PY3_WHL,
         'checksums': ['3666ba38169c6c4448c698c0fe05d3fe5bb9b1c13b6de86030c7e6ad3e2dc2be'],
     }),
-    ('dask-cudf', '24.10.1', {
+    ('dask-cudf-cu%(cudamajver)s', '24.10.1', {
         'source_tmpl': 'dask_cudf_cu%(cudamajver)s-%(version)s-py3-none-any.whl',
         'modulename': False,
         'checksums': ['9f04be126ffc5921298c51d2888572ac0e31ac77a9dd67920ecec1a1b40978e8'],
@@ -110,46 +114,57 @@ exts_list = [
         'modulename': False,
         'checksums': ['25242e0b1264e18e97d53b3fa96256d1e75f13865b84ea989f730b54c86d9023'],
     }),
-    ('raft-dask', version, {
+    ('raft-dask-cu%(cudamajver)s', version, {
         'source_tmpl': f'raft_dask_cu%(cudamajver)s-%(version)s-{_rapids_whl_cp_version}-manylinux_2_28_%(arch)s.whl',
         'modulename': False,
         'checksums': ['bdc1fecf821b6b77e2692b2504bad0c9a3b4d75596732c53d454345941927779'],
     }),
-    ('pylibraft', version, {
-        'source_tmpl': f'{_rapids_tmpl}-manylinux_2_28_%(arch)s.whl',
+    ('pylibraft-cu%(cudamajver)s', version, {
+        'source_tmpl': f'pylibraft_cu%(cudamajver)s-%(version)s-{_rapids_whl_cp_version}-manylinux_2_28_%(arch)s.whl',
         'modulename': 'pylibraft',
         'checksums': ['88014c4ad7cf49b8ae5979051b571f838621954460c7898c4ef49488d446fffc'],
     }),
-    ('libcudf', '24.10.1', {
+    ('libcudf-cu%(cudamajver)s', '24.10.1', {
         'modulename': False,
-        'source_tmpl': f'{_rapids_whl_name}py3-none-manylinux_2_28_%(arch)s.whl',
+        'source_tmpl': f'libcudf_cu%(cudamajver)s-%(version)s-py3-none-manylinux_2_28_%(arch)s.whl',
         'checksums': ['59eaabf315efb7da8e3d6add14806d4f41b4fd664a9d636d72c1638c9574882a'],
     }),
-    ('pylibcudf', '24.10.1', {
+    ('pylibcudf-cu%(cudamajver)s', '24.10.1', {
         'modulename': 'pylibcudf',
-        'source_tmpl': f'{_rapids_tmpl}-manylinux_2_24_%(arch)s.manylinux_2_28_%(arch)s.whl',
+        'source_tmpl': (
+            f'pylibcudf_cu%(cudamajver)s-%(version)s-{_rapids_whl_cp_version}'
+            '-manylinux_2_24_%(arch)s.manylinux_2_28_%(arch)s.whl'
+        ),
         'checksums': ['717987c16cc8774c8326fc3c94bd2ad1c58acf41e52586052e38dd00ba1bc7e4'],
     }),
-    ('pylibcugraph', version, {
-        'source_tmpl': f'{_rapids_tmpl}-manylinux_2_28_%(arch)s.whl',
+    ('pylibcugraph-cu%(cudamajver)s', version, {
+        'source_tmpl': (
+            f'pylibcugraph_cu%(cudamajver)s-%(version)s-{_rapids_whl_cp_version}-manylinux_2_28_%(arch)s.whl'
+        ),
         'modulename': 'pylibcugraph',
         'checksums': ['fa2b2c2b03322afa21bf9160ac0ed185ca258486f39a6a20d7714041ba3b4cc8'],
     }),
-    ('cuvs', version, {
+    ('cuvs-cu%(cudamajver)s', version, {
         'modulename': 'cuvs',
-        'source_tmpl': f'{_rapids_tmpl}-manylinux_2_28_%(arch)s.whl',
+        'source_tmpl': f'cuvs_cu%(cudamajver)s-%(version)s-{_rapids_whl_cp_version}-manylinux_2_28_%(arch)s.whl',
         'checksums': ['730fe5c9fc8ea9b3a985101ccab51707c94ddd2e4358f6e9178c01c728f09eea'],
     }),
-    ('cudf', '24.10.1', {
-        'source_tmpl': f'{_rapids_tmpl}-manylinux_2_24_%(arch)s.manylinux_2_28_%(arch)s.whl',
+    ('cudf-cu%(cudamajver)s', '24.10.1', {
+        'modulename': 'cudf',
+        'source_tmpl': (
+            f'cudf_cu%(cudamajver)s-%(version)s-{_rapids_whl_cp_version}'
+            '-manylinux_2_24_%(arch)s.manylinux_2_28_%(arch)s.whl'
+        ),
         'checksums': ['fb1934d908e33b61a4ded6c33f8305b78947d01149ed5c37b07e0c581ebbc136'],
     }),
-    ('cuml', version, {
-        'source_tmpl': f'{_rapids_tmpl}-manylinux_2_28_%(arch)s.whl',
+    ('cuml-cu%(cudamajver)s', version, {
+        'modulename': 'cuml',
+        'source_tmpl': f'cuml_cu%(cudamajver)s-%(version)s-{_rapids_whl_cp_version}-manylinux_2_28_%(arch)s.whl',
         'checksums': ['47647af4bc997cb2bc8f5713b2c4187f7b427c5d2bc745468697711544c26e76'],
     }),
-    ('cugraph', version, {
-        'source_tmpl': f'{_rapids_tmpl}-manylinux_2_28_%(arch)s.whl',
+    ('cugraph-cu%(cudamajver)s', version, {
+        'modulename': 'cugraph',
+        'source_tmpl': f'cugraph_cu%(cudamajver)s-%(version)s-{_rapids_whl_cp_version}-manylinux_2_28_%(arch)s.whl',
         'checksums': ['64f7c683d186066726ebdd5e061fcc7e6cb739c6d3dce1accdda46265d7b92c7'],
     }),
 ]
