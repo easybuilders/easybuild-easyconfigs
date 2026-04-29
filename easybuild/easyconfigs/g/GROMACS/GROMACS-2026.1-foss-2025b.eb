@@ -1,0 +1,89 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2016 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+#                                 Ghent University / The Francis Crick Institute
+# Authors::
+# * Wiktor Jurkowski <wiktor.jurkowski@gmail.com>
+# * Fotis Georgatos <fotis@cern.ch>
+# * George Tsouloupas <g.tsouloupas@cyi.ac.cy>
+# * Kenneth Hoste <kenneth.hoste@ugent.be>
+# * Adam Huffman <adam.huffman@crick.ac.uk>
+# * Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+# * J. Sassmannshausen <Crick HPC team>
+# * Dugan Witherick <dugan.witherick@warwick.ac.uk>
+# * Christoph Siegert <christoph.siegert@uni-leipzig.de>
+# License::   MIT/GPL
+
+name = 'GROMACS'
+version = '2026.1'
+
+homepage = 'https://www.gromacs.org'
+description = """
+GROMACS is a versatile package to perform molecular dynamics, i.e. simulate the
+Newtonian equations of motion for systems with hundreds to millions of
+particles.
+
+This is a CPU only build, containing both MPI and threadMPI binaries
+for both single and double precision.
+
+It also contains the gmxapi extension for the single precision MPI build.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = [
+    'https://ftp.gromacs.org/pub/gromacs/',
+    'ftp://ftp.gromacs.org/pub/gromacs/',
+]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'GROMACS-2023.1_set_omp_num_threads_env_for_ntomp_tests.patch',
+    'GROMACS-2023.1_fix_tests_for_gmx_thread_mpi.patch',
+]
+checksums = [
+    {'gromacs-2026.1.tar.gz': 'd95a313f56db7e05ee3a21e50f582fdee5176c2f60b900bab2461fd95c5e81be'},
+    {'GROMACS-2023.1_set_omp_num_threads_env_for_ntomp_tests.patch':
+     '7f41bda16c9c2837624265dda4be252f655d1288ddc4486b1a2422af30d5d199'},
+    {'GROMACS-2023.1_fix_tests_for_gmx_thread_mpi.patch':
+     '6df844bb3bbc51180446a3595c61a4ef195e5f975533a04cef76841aa763aec1'},
+]
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('scikit-build-core', '0.11.5'),
+    ('pybind11', '3.0.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('networkx', '3.5'),
+    ('mpi4py', '4.1.0'),
+]
+
+# be a bit more forgiving w.r.t. timeouts for GROMACS test suite,
+# see also https://gitlab.com/gromacs/gromacs/-/issues/5062
+configopts = "-DGMX_TEST_TIMEOUT_FACTOR=3"
+
+exts_defaultclass = 'PythonPackage'
+
+_gmxapi_source_version = version
+
+exts_list = [
+    # gmxapi version can be found in python_packaging/gmxapi/src/gmxapi/version.py
+    ('gmxapi', '0.5.0a1', {
+        'patches': ['GROMACS-2024.1-fix-gmxapi-version.patch'],
+        'preinstallopts': 'export CMAKE_ARGS="-Dgmxapi_ROOT=%(installdir)s ' +
+                          '-C %(installdir)s/share/cmake/gromacs_mpi/gromacs-hints_mpi.cmake" && ',
+        'source_tmpl': 'gromacs-%s.tar.gz' % _gmxapi_source_version,
+        'start_dir': 'python_packaging/gmxapi',
+        'checksums': [
+            {'gromacs-2026.1.tar.gz': 'd95a313f56db7e05ee3a21e50f582fdee5176c2f60b900bab2461fd95c5e81be'},
+            {'GROMACS-2024.1-fix-gmxapi-version.patch':
+                'df30b21352a26d8e01d693e2822db0ea45015c23f900a6ceb68522d44e6e790c'},
+        ],
+    }),
+]
+
+moduleclass = 'bio'
