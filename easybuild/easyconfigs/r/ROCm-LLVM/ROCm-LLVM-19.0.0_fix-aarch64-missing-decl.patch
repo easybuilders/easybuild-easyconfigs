@@ -1,463 +1,444 @@
 This patch removes the definition for selectPtrAuthGlobalValue in the AArch64InstructionSelector class.
 See issue: https://github.com/EESSI/software-layer/pull/1473#issuecomment-4302630567
 
-Author: Aayush Joglekar (aayush.joglekar@surf.nl)
+From c38cda946b2b327da9a992f5caba0ff182a9223b Mon Sep 17 00:00:00 2001
+From: Yichao Yu <yyc1992@gmail.com>
+Date: Fri, 15 Aug 2025 20:11:55 -0400
+Subject: [PATCH] Fix merge error for ptrauth support
 
-diff --git a/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp b/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
-index b99e27bc816f..f17707eaaffb 100644
---- a/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
-+++ b/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
-@@ -1697,224 +1697,6 @@ AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
-                                    CPA.hasAddressDiscriminator(), Ctx);
+Merge error in 6510e754a5b16ab835e0e1eb3dd56049ed7777e8
+---
+ llvm/docs/GlobalISel/GenericOpcode.rst        | 11 +++++++
+ .../CodeGen/GlobalISel/MachineIRBuilder.h     |  7 ++++
+ llvm/include/llvm/CodeGen/ISDOpcodes.h        |  6 ++++
+ llvm/include/llvm/Support/TargetOpcodes.def   |  3 ++
+ llvm/include/llvm/Target/GenericOpcodes.td    |  6 ++++
+ llvm/lib/CodeGen/GlobalISel/IRTranslator.cpp  |  6 +++-
+ .../CodeGen/GlobalISel/MachineIRBuilder.cpp   | 13 ++++++++
+ llvm/lib/CodeGen/MachineModuleInfoImpls.cpp   |  1 +
+ llvm/lib/CodeGen/MachineVerifier.cpp          |  6 ++++
+ .../SelectionDAG/SelectionDAGBuilder.cpp      |  7 ++++
+ .../SelectionDAG/SelectionDAGDumper.cpp       |  4 +--
+ llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp | 16 ++++++++++
+ .../Target/AArch64/AArch64ISelLowering.cpp    |  4 +++
+ llvm/lib/Target/AArch64/AArch64ISelLowering.h |  6 ++++
+ llvm/lib/Target/AArch64/AArch64InstrInfo.td   | 32 +++++++++++++++++++
+ .../AArch64/AArch64TargetObjectFile.cpp       |  3 ++
+ .../Target/AArch64/AArch64TargetObjectFile.h  |  6 ++++
+ .../GISel/AArch64InstructionSelector.cpp      |  5 +++
+ .../AArch64/GISel/AArch64LegalizerInfo.cpp    |  3 ++
+ .../GlobalISel/legalizer-info-validation.mir  |  4 +++
+ 20 files changed, 146 insertions(+), 3 deletions(-)
+
+diff --git a/llvm/docs/GlobalISel/GenericOpcode.rst b/llvm/docs/GlobalISel/GenericOpcode.rst
+index b66a857d5c0c6..d32aeff5a69bb 100644
+--- a/llvm/docs/GlobalISel/GenericOpcode.rst
++++ b/llvm/docs/GlobalISel/GenericOpcode.rst
+@@ -60,6 +60,17 @@ The address of a global value.
+ 
+   %0(p0) = G_GLOBAL_VALUE @var_local
+ 
++G_PTRAUTH_GLOBAL_VALUE
++^^^^^^^^^^^^^^^^^^^^^^
++
++The signed address of a global value. Operands: address to be signed (pointer),
++key (32-bit imm), address for address discrimination (zero if not needed) and
++an extra discriminator (64-bit imm).
++
++.. code-block:: none
++
++  %0:_(p0) = G_PTRAUTH_GLOBAL_VALUE %1:_(p0), s32, %2:_(p0), s64
++
+ G_BLOCK_ADDR
+ ^^^^^^^^^^^^
+ 
+diff --git a/llvm/include/llvm/CodeGen/GlobalISel/MachineIRBuilder.h b/llvm/include/llvm/CodeGen/GlobalISel/MachineIRBuilder.h
+index 3c8088349b1b7..56a77b8596a18 100644
+--- a/llvm/include/llvm/CodeGen/GlobalISel/MachineIRBuilder.h
++++ b/llvm/include/llvm/CodeGen/GlobalISel/MachineIRBuilder.h
+@@ -886,6 +886,13 @@ class MachineIRBuilder {
+   MachineInstrBuilder buildFConstant(const DstOp &Res, double Val);
+   MachineInstrBuilder buildFConstant(const DstOp &Res, const APFloat &Val);
+ 
++  /// Build and insert G_PTRAUTH_GLOBAL_VALUE
++  ///
++  /// \return a MachineInstrBuilder for the newly created instruction.
++  MachineInstrBuilder buildConstantPtrAuth(const DstOp &Res,
++                                           const ConstantPtrAuth *CPA,
++                                           Register Addr, Register AddrDisc);
++
+   /// Build and insert \p Res = COPY Op
+   ///
+   /// Register-to-register COPY sets \p Res to \p Op.
+diff --git a/llvm/include/llvm/CodeGen/ISDOpcodes.h b/llvm/include/llvm/CodeGen/ISDOpcodes.h
+index f744fe746b4e4..daceaf98583bd 100644
+--- a/llvm/include/llvm/CodeGen/ISDOpcodes.h
++++ b/llvm/include/llvm/CodeGen/ISDOpcodes.h
+@@ -83,6 +83,12 @@ enum NodeType {
+   ExternalSymbol,
+   BlockAddress,
+ 
++  /// A ptrauth constant.
++  /// ptr, key, addr-disc, disc
++  /// Note that the addr-disc can be a non-constant value, to allow representing
++  /// a constant global address signed using address-diversification, in code.
++  PtrAuthGlobalAddress,
++
+   /// The address of the GOT
+   GLOBAL_OFFSET_TABLE,
+ 
+diff --git a/llvm/include/llvm/Support/TargetOpcodes.def b/llvm/include/llvm/Support/TargetOpcodes.def
+index a633eaa516072..176f285d24eec 100644
+--- a/llvm/include/llvm/Support/TargetOpcodes.def
++++ b/llvm/include/llvm/Support/TargetOpcodes.def
+@@ -300,6 +300,9 @@ HANDLE_TARGET_OPCODE(G_FRAME_INDEX)
+ /// Generic reference to global value.
+ HANDLE_TARGET_OPCODE(G_GLOBAL_VALUE)
+ 
++/// Generic ptrauth-signed reference to global value.
++HANDLE_TARGET_OPCODE(G_PTRAUTH_GLOBAL_VALUE)
++
+ /// Generic instruction to materialize the address of an object in the constant
+ /// pool.
+ HANDLE_TARGET_OPCODE(G_CONSTANT_POOL)
+diff --git a/llvm/include/llvm/Target/GenericOpcodes.td b/llvm/include/llvm/Target/GenericOpcodes.td
+index f5106d7331af6..36a0a087ba457 100644
+--- a/llvm/include/llvm/Target/GenericOpcodes.td
++++ b/llvm/include/llvm/Target/GenericOpcodes.td
+@@ -110,6 +110,12 @@ def G_GLOBAL_VALUE : GenericInstruction {
+   let hasSideEffects = false;
  }
  
--void AArch64AsmPrinter::LowerLOADauthptrstatic(const MachineInstr &MI) {
--  unsigned DstReg = MI.getOperand(0).getReg();
--  const MachineOperand &GAOp = MI.getOperand(1);
--  const uint64_t KeyC = MI.getOperand(2).getImm();
--  assert(KeyC <= AArch64PACKey::LAST &&
--         "key is out of range [0, AArch64PACKey::LAST]");
--  const auto Key = (AArch64PACKey::ID)KeyC;
--  const uint64_t Disc = MI.getOperand(3).getImm();
--  assert(isUInt<16>(Disc) &&
--         "constant discriminator is out of range [0, 0xffff]");
++def G_PTRAUTH_GLOBAL_VALUE : GenericInstruction {
++  let OutOperandList = (outs type0:$dst);
++  let InOperandList = (ins unknown:$addr, i32imm:$key, type1:$addrdisc, i64imm:$disc);
++  let hasSideEffects = 0;
++}
++
+ def G_CONSTANT_POOL : GenericInstruction {
+   let OutOperandList = (outs type0:$dst);
+   let InOperandList = (ins unknown:$src);
+diff --git a/llvm/lib/CodeGen/GlobalISel/IRTranslator.cpp b/llvm/lib/CodeGen/GlobalISel/IRTranslator.cpp
+index 0ba8c66f96f7f..3990ec38f751c 100644
+--- a/llvm/lib/CodeGen/GlobalISel/IRTranslator.cpp
++++ b/llvm/lib/CodeGen/GlobalISel/IRTranslator.cpp
+@@ -3542,7 +3542,11 @@ bool IRTranslator::translate(const Constant &C, Register Reg) {
+     EntryBuilder->buildConstant(Reg, 0);
+   else if (auto GV = dyn_cast<GlobalValue>(&C))
+     EntryBuilder->buildGlobalValue(Reg, GV);
+-  else if (auto CAZ = dyn_cast<ConstantAggregateZero>(&C)) {
++  else if (auto CPA = dyn_cast<ConstantPtrAuth>(&C)) {
++    Register Addr = getOrCreateVReg(*CPA->getPointer());
++    Register AddrDisc = getOrCreateVReg(*CPA->getAddrDiscriminator());
++    EntryBuilder->buildConstantPtrAuth(Reg, CPA, Addr, AddrDisc);
++  } else if (auto CAZ = dyn_cast<ConstantAggregateZero>(&C)) {
+     if (!isa<FixedVectorType>(CAZ->getType()))
+       return false;
+     // Return the scalar if it is a <1 x Ty> vector.
+diff --git a/llvm/lib/CodeGen/GlobalISel/MachineIRBuilder.cpp b/llvm/lib/CodeGen/GlobalISel/MachineIRBuilder.cpp
+index 96a7a5c5b652a..7eb6cd4e0d798 100644
+--- a/llvm/lib/CodeGen/GlobalISel/MachineIRBuilder.cpp
++++ b/llvm/lib/CodeGen/GlobalISel/MachineIRBuilder.cpp
+@@ -397,6 +397,19 @@ MachineInstrBuilder MachineIRBuilder::buildFConstant(const DstOp &Res,
+   return buildFConstant(Res, *CFP);
+ }
+ 
++MachineInstrBuilder
++MachineIRBuilder::buildConstantPtrAuth(const DstOp &Res,
++                                       const ConstantPtrAuth *CPA,
++                                       Register Addr, Register AddrDisc) {
++  auto MIB = buildInstr(TargetOpcode::G_PTRAUTH_GLOBAL_VALUE);
++  Res.addDefToMIB(*getMRI(), MIB);
++  MIB.addUse(Addr);
++  MIB.addImm(CPA->getKey()->getZExtValue());
++  MIB.addUse(AddrDisc);
++  MIB.addImm(CPA->getDiscriminator()->getZExtValue());
++  return MIB;
++}
++
+ MachineInstrBuilder MachineIRBuilder::buildBrCond(const SrcOp &Tst,
+                                                   MachineBasicBlock &Dest) {
+   assert(Tst.getLLTTy(*getMRI()).isScalar() && "invalid operand type");
+diff --git a/llvm/lib/CodeGen/MachineModuleInfoImpls.cpp b/llvm/lib/CodeGen/MachineModuleInfoImpls.cpp
+index 51398ca07d42e..956317510dc73 100644
+--- a/llvm/lib/CodeGen/MachineModuleInfoImpls.cpp
++++ b/llvm/lib/CodeGen/MachineModuleInfoImpls.cpp
+@@ -13,6 +13,7 @@
+ 
+ #include "llvm/CodeGen/MachineModuleInfoImpls.h"
+ #include "llvm/ADT/DenseMap.h"
++#include "llvm/ADT/STLExtras.h"
+ #include "llvm/MC/MCSymbol.h"
+ 
+ using namespace llvm;
+diff --git a/llvm/lib/CodeGen/MachineVerifier.cpp b/llvm/lib/CodeGen/MachineVerifier.cpp
+index 1f808ca5e8c3f..5e9bb4c27ffbd 100644
+--- a/llvm/lib/CodeGen/MachineVerifier.cpp
++++ b/llvm/lib/CodeGen/MachineVerifier.cpp
+@@ -2140,6 +2140,12 @@ void MachineVerifier::verifyPreISelGenericInstruction(const MachineInstr *MI) {
+       report("Dst operand 0 must be a pointer", MI);
+     break;
+   }
++  case TargetOpcode::G_PTRAUTH_GLOBAL_VALUE: {
++    const MachineOperand &AddrOp = MI->getOperand(1);
++    if (!AddrOp.isReg() || !MRI->getType(AddrOp.getReg()).isPointer())
++      report("addr operand must be a pointer", &AddrOp, 1);
++    break;
++  }
+   default:
+     break;
+   }
+diff --git a/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp b/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp
+index bf34f1188421c..11acf3850d03f 100644
+--- a/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp
++++ b/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp
+@@ -1803,6 +1803,13 @@ SDValue SelectionDAGBuilder::getValueImpl(const Value *V) {
+     if (const GlobalValue *GV = dyn_cast<GlobalValue>(C))
+       return DAG.getGlobalAddress(GV, getCurSDLoc(), VT);
+ 
++    if (const ConstantPtrAuth *CPA = dyn_cast<ConstantPtrAuth>(C)) {
++      return DAG.getNode(ISD::PtrAuthGlobalAddress, getCurSDLoc(), VT,
++                         getValue(CPA->getPointer()), getValue(CPA->getKey()),
++                         getValue(CPA->getAddrDiscriminator()),
++                         getValue(CPA->getDiscriminator()));
++    }
++
+     if (isa<ConstantPointerNull>(C)) {
+       unsigned AS = V->getType()->getPointerAddressSpace();
+       return DAG.getConstant(0, getCurSDLoc(),
+diff --git a/llvm/lib/CodeGen/SelectionDAG/SelectionDAGDumper.cpp b/llvm/lib/CodeGen/SelectionDAG/SelectionDAGDumper.cpp
+index 90b926bc86f4d..16fc52caebb75 100644
+--- a/llvm/lib/CodeGen/SelectionDAG/SelectionDAGDumper.cpp
++++ b/llvm/lib/CodeGen/SelectionDAG/SelectionDAGDumper.cpp
+@@ -75,6 +75,7 @@ std::string SDNode::getOperationName(const SelectionDAG *G) const {
+     }
+     return "<<Unknown Node #" + utostr(getOpcode()) + ">>";
+ 
++    // clang-format off
+ #ifndef NDEBUG
+   case ISD::DELETED_NODE:               return "<<Deleted Node!>>";
+ #endif
+@@ -126,6 +127,7 @@ std::string SDNode::getOperationName(const SelectionDAG *G) const {
+   case ISD::ConstantFP:                 return "ConstantFP";
+   case ISD::GlobalAddress:              return "GlobalAddress";
+   case ISD::GlobalTLSAddress:           return "GlobalTLSAddress";
++  case ISD::PtrAuthGlobalAddress:       return "PtrAuthGlobalAddress";
+   case ISD::FrameIndex:                 return "FrameIndex";
+   case ISD::JumpTable:                  return "JumpTable";
+   case ISD::JUMP_TABLE_DEBUG_INFO:
+@@ -168,8 +170,6 @@ std::string SDNode::getOperationName(const SelectionDAG *G) const {
+       return "OpaqueTargetConstant";
+     return "TargetConstant";
+ 
+-    // clang-format off
 -
--  // Emit instruction sequence like the following:
--  //   ADRP x16, symbol$auth_ptr$key$disc
--  //   LDR x16, [x16, :lo12:symbol$auth_ptr$key$disc]
--  //
--  // Where the $auth_ptr$ symbol is the stub slot containing the signed pointer
--  // to symbol.
--  MCSymbol *AuthPtrStubSym;
--  if (TM.getTargetTriple().isOSBinFormatELF()) {
--    const auto &TLOF =
--        static_cast<const AArch64_ELFTargetObjectFile &>(getObjFileLowering());
--
--    assert(GAOp.getOffset() == 0 &&
--           "non-zero offset for $auth_ptr$ stub slots is not supported");
--    const MCSymbol *GASym = TM.getSymbol(GAOp.getGlobal());
--    AuthPtrStubSym = TLOF.getAuthPtrSlotSymbol(TM, MMI, GASym, Key, Disc);
--  } else {
--    assert(TM.getTargetTriple().isOSBinFormatMachO() &&
--           "LOADauthptrstatic is implemented only for MachO/ELF");
--
--    const auto &TLOF = static_cast<const AArch64_MachoTargetObjectFile &>(
--        getObjFileLowering());
--
--    assert(GAOp.getOffset() == 0 &&
--           "non-zero offset for $auth_ptr$ stub slots is not supported");
--    const MCSymbol *GASym = TM.getSymbol(GAOp.getGlobal());
--    AuthPtrStubSym = TLOF.getAuthPtrSlotSymbol(TM, MMI, GASym, Key, Disc);
--  }
--
--  MachineOperand StubMOHi =
--      MachineOperand::CreateMCSymbol(AuthPtrStubSym, AArch64II::MO_PAGE);
--  MachineOperand StubMOLo = MachineOperand::CreateMCSymbol(
--      AuthPtrStubSym, AArch64II::MO_PAGEOFF | AArch64II::MO_NC);
--  MCOperand StubMCHi, StubMCLo;
--
--  MCInstLowering.lowerOperand(StubMOHi, StubMCHi);
--  MCInstLowering.lowerOperand(StubMOLo, StubMCLo);
--
--  EmitToStreamer(
--      *OutStreamer,
--      MCInstBuilder(AArch64::ADRP).addReg(DstReg).addOperand(StubMCHi));
--
--  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::LDRXui)
--                                   .addReg(DstReg)
--                                   .addReg(DstReg)
--                                   .addOperand(StubMCLo));
--}
--
--void AArch64AsmPrinter::LowerMOVaddrPAC(const MachineInstr &MI) {
--  unsigned InstsEmitted = 0;
--  auto EmitAndIncrement = [this, &InstsEmitted](const MCInst &Inst) {
--    EmitToStreamer(*OutStreamer, Inst);
--    ++InstsEmitted;
--  };
--
--  const bool IsGOTLoad = MI.getOpcode() == AArch64::LOADgotPAC;
--  MachineOperand GAOp = MI.getOperand(0);
--  const uint64_t KeyC = MI.getOperand(1).getImm();
--  assert(KeyC <= AArch64PACKey::LAST &&
--         "key is out of range [0, AArch64PACKey::LAST]");
--  const auto Key = (AArch64PACKey::ID)KeyC;
--  const unsigned AddrDisc = MI.getOperand(2).getReg();
--  const uint64_t Disc = MI.getOperand(3).getImm();
--  assert(isUInt<16>(Disc) &&
--         "constant discriminator is out of range [0, 0xffff]");
--
--  const int64_t Offset = GAOp.getOffset();
--  GAOp.setOffset(0);
--
--  // Emit:
--  // target materialization:
--  // - via GOT:
--  //     adrp x16, :got:target
--  //     ldr x16, [x16, :got_lo12:target]
--  //     add offset to x16 if offset != 0
--  //
--  // - direct:
--  //     adrp x16, target
--  //     add x16, x16, :lo12:target
--  //     add offset to x16 if offset != 0
--  //
--  // add offset to x16:
--  // - abs(offset) fits 24 bits:
--  //     add/sub x16, x16, #<offset>[, #lsl 12] (up to 2 instructions)
--  // - abs(offset) does not fit 24 bits:
--  //   - offset < 0:
--  //       movn+movk sequence filling x17 register with the offset (up to 4
--  //       instructions)
--  //       add x16, x16, x17
--  //   - offset > 0:
--  //       movz+movk sequence filling x17 register with the offset (up to 4
--  //       instructions)
--  //       add x16, x16, x17
--  //
--  // signing:
--  // - 0 discriminator:
--  //     paciza x16
--  // - Non-0 discriminator, no address discriminator:
--  //     mov x17, #Disc
--  //     pacia x16, x17
--  // - address discriminator (with potentially folded immediate discriminator):
--  //     pacia x16, xAddrDisc
--
--  MachineOperand GAMOHi(GAOp), GAMOLo(GAOp);
--  MCOperand GAMCHi, GAMCLo;
--
--  GAMOHi.setTargetFlags(AArch64II::MO_PAGE);
--  GAMOLo.setTargetFlags(AArch64II::MO_PAGEOFF | AArch64II::MO_NC);
--  if (IsGOTLoad) {
--    GAMOHi.addTargetFlag(AArch64II::MO_GOT);
--    GAMOLo.addTargetFlag(AArch64II::MO_GOT);
--  }
--
--  MCInstLowering.lowerOperand(GAMOHi, GAMCHi);
--  MCInstLowering.lowerOperand(GAMOLo, GAMCLo);
--
--  EmitAndIncrement(
--      MCInstBuilder(AArch64::ADRP).addReg(AArch64::X16).addOperand(GAMCHi));
--
--  if (IsGOTLoad) {
--    EmitAndIncrement(MCInstBuilder(AArch64::LDRXui)
--                         .addReg(AArch64::X16)
--                         .addReg(AArch64::X16)
--                         .addOperand(GAMCLo));
--  } else {
--    EmitAndIncrement(MCInstBuilder(AArch64::ADDXri)
--                         .addReg(AArch64::X16)
--                         .addReg(AArch64::X16)
--                         .addOperand(GAMCLo)
--                         .addImm(0));
--  }
--
--  if (Offset != 0) {
--    const uint64_t AbsOffset = (Offset > 0 ? Offset : -((uint64_t)Offset));
--    const bool IsNeg = Offset < 0;
--    if (isUInt<24>(AbsOffset)) {
--      for (int BitPos = 0; BitPos != 24 && (AbsOffset >> BitPos);
--           BitPos += 12) {
--        EmitAndIncrement(
--            MCInstBuilder(IsNeg ? AArch64::SUBXri : AArch64::ADDXri)
--                .addReg(AArch64::X16)
--                .addReg(AArch64::X16)
--                .addImm((AbsOffset >> BitPos) & 0xfff)
--                .addImm(AArch64_AM::getShifterImm(AArch64_AM::LSL, BitPos)));
--      }
--    } else {
--      const uint64_t UOffset = Offset;
--      EmitAndIncrement(MCInstBuilder(IsNeg ? AArch64::MOVNXi : AArch64::MOVZXi)
--                           .addReg(AArch64::X17)
--                           .addImm((IsNeg ? ~UOffset : UOffset) & 0xffff)
--                           .addImm(/*shift=*/0));
--      auto NeedMovk = [IsNeg, UOffset](int BitPos) -> bool {
--        assert(BitPos == 16 || BitPos == 32 || BitPos == 48);
--        uint64_t Shifted = UOffset >> BitPos;
--        if (!IsNeg)
--          return Shifted != 0;
--        for (int I = 0; I != 64 - BitPos; I += 16)
--          if (((Shifted >> I) & 0xffff) != 0xffff)
--            return true;
--        return false;
--      };
--      for (int BitPos = 16; BitPos != 64 && NeedMovk(BitPos); BitPos += 16) {
--        EmitAndIncrement(MCInstBuilder(AArch64::MOVKXi)
--                             .addReg(AArch64::X17)
--                             .addReg(AArch64::X17)
--                             .addImm((UOffset >> BitPos) & 0xffff)
--                             .addImm(/*shift=*/BitPos));
--      }
--      EmitAndIncrement(MCInstBuilder(AArch64::ADDXrs)
--                           .addReg(AArch64::X16)
--                           .addReg(AArch64::X16)
--                           .addReg(AArch64::X17)
--                           .addImm(/*shift=*/0));
--    }
--  }
--
--  unsigned DiscReg = AddrDisc;
--  if (Disc != 0) {
--    if (AddrDisc != AArch64::XZR) {
--      EmitAndIncrement(MCInstBuilder(AArch64::ORRXrs)
--                           .addReg(AArch64::X17)
--                           .addReg(AArch64::XZR)
--                           .addReg(AddrDisc)
--                           .addImm(0));
--      EmitAndIncrement(MCInstBuilder(AArch64::MOVKXi)
--                           .addReg(AArch64::X17)
--                           .addReg(AArch64::X17)
--                           .addImm(Disc)
--                           .addImm(/*shift=*/48));
--    } else {
--      EmitAndIncrement(MCInstBuilder(AArch64::MOVZXi)
--                           .addReg(AArch64::X17)
--                           .addImm(Disc)
--                           .addImm(/*shift=*/0));
--    }
--    DiscReg = AArch64::X17;
--  }
--
--  auto MIB = MCInstBuilder(getPACOpcodeForKey(Key, DiscReg == AArch64::XZR))
--                 .addReg(AArch64::X16)
--                 .addReg(AArch64::X16);
--  if (DiscReg != AArch64::XZR)
--    MIB.addReg(DiscReg);
--  EmitAndIncrement(MIB);
--
--  assert(STI->getInstrInfo()->getInstSizeInBytes(MI) >= InstsEmitted * 4);
--}
--
- // Simple pseudo-instructions have their lowering (with expansion to real
- // instructions) auto-generated.
- #include "AArch64GenMCPseudoLowering.inc"
+   case ISD::TargetConstantFP:           return "TargetConstantFP";
+   case ISD::TargetGlobalAddress:        return "TargetGlobalAddress";
+   case ISD::TargetGlobalTLSAddress:     return "TargetGlobalTLSAddress";
+diff --git a/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp b/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
+index b99e27bc816f1..b003c0938e2e4 100644
+--- a/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
++++ b/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
+@@ -134,6 +134,13 @@ class AArch64AsmPrinter : public AsmPrinter {
+   unsigned emitPtrauthDiscriminator(uint16_t Disc, unsigned AddrDisc,
+                                     unsigned &InstsEmitted);
+ 
++  // Emit the sequence for LOADauthptrstatic
++  void LowerLOADauthptrstatic(const MachineInstr &MI);
++
++  // Emit the sequence for LOADgotPAC/MOVaddrPAC (either GOT adrp-ldr or
++  // adrp-add followed by PAC sign)
++  void LowerMOVaddrPAC(const MachineInstr &MI);
++
+   /// tblgen'erated driver function for lowering simple MI->MC
+   /// pseudo instructions.
+   bool emitPseudoExpansionLowering(MCStreamer &OutStreamer,
+@@ -2050,6 +2057,15 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
+     return;
+   }
+ 
++  case AArch64::LOADauthptrstatic:
++    LowerLOADauthptrstatic(*MI);
++    return;
++
++  case AArch64::LOADgotPAC:
++  case AArch64::MOVaddrPAC:
++    LowerMOVaddrPAC(*MI);
++    return;
++
+   case AArch64::BLRA:
+     emitPtrauthBranch(MI);
+     return;
 diff --git a/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp b/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
-index e8735b907a34..a2ed72c0d59e 100644
+index e8735b907a343..d7bc1d5490604 100644
 --- a/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
 +++ b/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
-@@ -9617,103 +9617,6 @@ SDValue AArch64TargetLowering::LowerGlobalTLSAddress(SDValue Op,
- // Thus, it's only used for ptrauth references to extern_weak to avoid null
- // checks.
+@@ -511,6 +511,8 @@ AArch64TargetLowering::AArch64TargetLowering(const TargetMachine &TM,
+   setOperationAction(ISD::JumpTable, MVT::i64, Custom);
+   setOperationAction(ISD::SETCCCARRY, MVT::i64, Custom);
  
--SDValue AArch64TargetLowering::LowerPtrAuthGlobalAddressStatically(
--    SDValue TGA, SDLoc DL, EVT VT, AArch64PACKey::ID KeyC,
--    SDValue Discriminator, SDValue AddrDiscriminator, SelectionDAG &DAG) const {
--  const auto *TGN = cast<GlobalAddressSDNode>(TGA.getNode());
--  assert(TGN->getGlobal()->hasExternalWeakLinkage());
--
--  // Offsets and extern_weak don't mix well: ptrauth aside, you'd get the
--  // offset alone as a pointer if the symbol wasn't available, which would
--  // probably break null checks in users. Ptrauth complicates things further:
--  // error out.
--  if (TGN->getOffset() != 0)
--    report_fatal_error(
--        "unsupported non-zero offset in weak ptrauth global reference");
--
--  if (!isNullConstant(AddrDiscriminator))
--    report_fatal_error("unsupported weak addr-div ptrauth global");
--
--  SDValue Key = DAG.getTargetConstant(KeyC, DL, MVT::i32);
--  return SDValue(DAG.getMachineNode(AArch64::LOADauthptrstatic, DL, MVT::i64,
--                                    {TGA, Key, Discriminator}),
--                 0);
--}
--
--SDValue
--AArch64TargetLowering::LowerPtrAuthGlobalAddress(SDValue Op,
--                                                 SelectionDAG &DAG) const {
--  SDValue Ptr = Op.getOperand(0);
--  uint64_t KeyC = Op.getConstantOperandVal(1);
--  SDValue AddrDiscriminator = Op.getOperand(2);
--  uint64_t DiscriminatorC = Op.getConstantOperandVal(3);
--  EVT VT = Op.getValueType();
--  SDLoc DL(Op);
--
--  if (KeyC > AArch64PACKey::LAST)
--    report_fatal_error("key in ptrauth global out of range [0, " +
--                       Twine((int)AArch64PACKey::LAST) + "]");
--
--  // Blend only works if the integer discriminator is 16-bit wide.
--  if (!isUInt<16>(DiscriminatorC))
--    report_fatal_error(
--        "constant discriminator in ptrauth global out of range [0, 0xffff]");
--
--  // Choosing between 3 lowering alternatives is target-specific.
--  if (!Subtarget->isTargetELF() && !Subtarget->isTargetMachO())
--    report_fatal_error("ptrauth global lowering only supported on MachO/ELF");
--
--  int64_t PtrOffsetC = 0;
--  if (Ptr.getOpcode() == ISD::ADD) {
--    PtrOffsetC = Ptr.getConstantOperandVal(1);
--    Ptr = Ptr.getOperand(0);
--  }
--  const auto *PtrN = cast<GlobalAddressSDNode>(Ptr.getNode());
--  const GlobalValue *PtrGV = PtrN->getGlobal();
--
--  // Classify the reference to determine whether it needs a GOT load.
--  const unsigned OpFlags =
--      Subtarget->ClassifyGlobalReference(PtrGV, getTargetMachine());
--  const bool NeedsGOTLoad = ((OpFlags & AArch64II::MO_GOT) != 0);
--  assert(((OpFlags & (~AArch64II::MO_GOT)) == 0) &&
--         "unsupported non-GOT op flags on ptrauth global reference");
--
--  // Fold any offset into the GV; our pseudos expect it there.
--  PtrOffsetC += PtrN->getOffset();
--  SDValue TPtr = DAG.getTargetGlobalAddress(PtrGV, DL, VT, PtrOffsetC,
--                                            /*TargetFlags=*/0);
--  assert(PtrN->getTargetFlags() == 0 &&
--         "unsupported target flags on ptrauth global");
--
--  SDValue Key = DAG.getTargetConstant(KeyC, DL, MVT::i32);
--  SDValue Discriminator = DAG.getTargetConstant(DiscriminatorC, DL, MVT::i64);
--  SDValue TAddrDiscriminator = !isNullConstant(AddrDiscriminator)
--                                   ? AddrDiscriminator
--                                   : DAG.getRegister(AArch64::XZR, MVT::i64);
--
--  // No GOT load needed -> MOVaddrPAC
--  if (!NeedsGOTLoad) {
--    assert(!PtrGV->hasExternalWeakLinkage() && "extern_weak should use GOT");
--    return SDValue(
--        DAG.getMachineNode(AArch64::MOVaddrPAC, DL, MVT::i64,
--                           {TPtr, Key, TAddrDiscriminator, Discriminator}),
--        0);
--  }
--
--  // GOT load -> LOADgotPAC
--  // Note that we disallow extern_weak refs to avoid null checks later.
--  if (!PtrGV->hasExternalWeakLinkage())
--    return SDValue(
--        DAG.getMachineNode(AArch64::LOADgotPAC, DL, MVT::i64,
--                           {TPtr, Key, TAddrDiscriminator, Discriminator}),
--        0);
--
--  // extern_weak ref -> LOADauthptrstatic
--  return LowerPtrAuthGlobalAddressStatically(
--      TPtr, DL, VT, (AArch64PACKey::ID)KeyC, Discriminator, AddrDiscriminator,
--      DAG);
--}
--
- // Looks through \param Val to determine the bit that can be used to
- // check the sign of the value. It returns the unextended value and
- // the sign bit position.
++  setOperationAction(ISD::PtrAuthGlobalAddress, MVT::i64, Custom);
++
+   setOperationAction(ISD::SHL_PARTS, MVT::i64, Custom);
+   setOperationAction(ISD::SRA_PARTS, MVT::i64, Custom);
+   setOperationAction(ISD::SRL_PARTS, MVT::i64, Custom);
+@@ -6699,6 +6701,8 @@ SDValue AArch64TargetLowering::LowerOperation(SDValue Op,
+     return LowerGlobalAddress(Op, DAG);
+   case ISD::GlobalTLSAddress:
+     return LowerGlobalTLSAddress(Op, DAG);
++  case ISD::PtrAuthGlobalAddress:
++    return LowerPtrAuthGlobalAddress(Op, DAG);
+   case ISD::SETCC:
+   case ISD::STRICT_FSETCC:
+   case ISD::STRICT_FSETCCS:
+diff --git a/llvm/lib/Target/AArch64/AArch64ISelLowering.h b/llvm/lib/Target/AArch64/AArch64ISelLowering.h
+index fb0aff1f9bc73..fcdd47541be82 100644
+--- a/llvm/lib/Target/AArch64/AArch64ISelLowering.h
++++ b/llvm/lib/Target/AArch64/AArch64ISelLowering.h
+@@ -1129,6 +1129,12 @@ class AArch64TargetLowering : public TargetLowering {
+   SDValue LowerELFTLSDescCallSeq(SDValue SymAddr, const SDLoc &DL,
+                                  SelectionDAG &DAG) const;
+   SDValue LowerWindowsGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const;
++  SDValue LowerPtrAuthGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
++  SDValue LowerPtrAuthGlobalAddressStatically(SDValue TGA, SDLoc DL, EVT VT,
++                                              AArch64PACKey::ID Key,
++                                              SDValue Discriminator,
++                                              SDValue AddrDiscriminator,
++                                              SelectionDAG &DAG) const;
+   SDValue LowerSETCC(SDValue Op, SelectionDAG &DAG) const;
+   SDValue LowerSETCCCARRY(SDValue Op, SelectionDAG &DAG) const;
+   SDValue LowerBR_CC(SDValue Op, SelectionDAG &DAG) const;
+diff --git a/llvm/lib/Target/AArch64/AArch64InstrInfo.td b/llvm/lib/Target/AArch64/AArch64InstrInfo.td
+index e426499229578..643bcc33f9201 100644
+--- a/llvm/lib/Target/AArch64/AArch64InstrInfo.td
++++ b/llvm/lib/Target/AArch64/AArch64InstrInfo.td
+@@ -1776,6 +1776,38 @@ let Predicates = [HasPAuth] in {
+   defm LDRAA  : AuthLoad<0, "ldraa", simm10Scaled>;
+   defm LDRAB  : AuthLoad<1, "ldrab", simm10Scaled>;
+ 
++  // Materialize a signed global address, with adrp+add and PAC.
++  def MOVaddrPAC : Pseudo<(outs),
++                          (ins i64imm:$Addr, i32imm:$Key,
++                               GPR64noip:$AddrDisc, i64imm:$Disc), []>,
++               Sched<[WriteI, ReadI]> {
++    let isReMaterializable = 1;
++    let isCodeGenOnly = 1;
++    let Size = 40; // 12 fixed + 28 variable, for pointer offset, and discriminator
++    let Defs = [X16,X17];
++  }
++
++  // Materialize a signed global address, using a GOT load and PAC.
++  def LOADgotPAC : Pseudo<(outs),
++                          (ins i64imm:$Addr, i32imm:$Key,
++                               GPR64noip:$AddrDisc, i64imm:$Disc), []>,
++               Sched<[WriteI, ReadI]> {
++    let isReMaterializable = 1;
++    let isCodeGenOnly = 1;
++    let Size = 40; // 12 fixed + 28 variable, for pointer offset, and discriminator
++    let Defs = [X16,X17];
++  }
++
++  // Load a signed global address from a special $auth_ptr$ stub slot.
++  def LOADauthptrstatic : Pseudo<(outs GPR64:$dst),
++                              (ins i64imm:$Addr, i32imm:$Key,
++                                   i64imm:$Disc), []>,
++               Sched<[WriteI, ReadI]> {
++    let isReMaterializable = 1;
++    let isCodeGenOnly = 1;
++    let Size = 8;
++  }
++
+   // Size 16: 4 fixed + 8 variable, to compute discriminator.
+   let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1, Size = 16,
+       Uses = [SP] in {
+diff --git a/llvm/lib/Target/AArch64/AArch64TargetObjectFile.cpp b/llvm/lib/Target/AArch64/AArch64TargetObjectFile.cpp
+index 4bcb006e5e2fd..d916f644de9b5 100644
+--- a/llvm/lib/Target/AArch64/AArch64TargetObjectFile.cpp
++++ b/llvm/lib/Target/AArch64/AArch64TargetObjectFile.cpp
+@@ -8,7 +8,10 @@
+ 
+ #include "AArch64TargetObjectFile.h"
+ #include "AArch64TargetMachine.h"
++#include "MCTargetDesc/AArch64MCExpr.h"
++#include "llvm/ADT/StringExtras.h"
+ #include "llvm/BinaryFormat/Dwarf.h"
++#include "llvm/CodeGen/MachineModuleInfoImpls.h"
+ #include "llvm/IR/Mangler.h"
+ #include "llvm/IR/Module.h"
+ #include "llvm/MC/MCContext.h"
+diff --git a/llvm/lib/Target/AArch64/AArch64TargetObjectFile.h b/llvm/lib/Target/AArch64/AArch64TargetObjectFile.h
+index fe7d5ecadc3ce..2ef8bda2988d4 100644
+--- a/llvm/lib/Target/AArch64/AArch64TargetObjectFile.h
++++ b/llvm/lib/Target/AArch64/AArch64TargetObjectFile.h
+@@ -9,6 +9,7 @@
+ #ifndef LLVM_LIB_TARGET_AARCH64_AARCH64TARGETOBJECTFILE_H
+ #define LLVM_LIB_TARGET_AARCH64_AARCH64TARGETOBJECTFILE_H
+ 
++#include "Utils/AArch64BaseInfo.h"
+ #include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
+ #include "llvm/Target/TargetLoweringObjectFile.h"
+ 
+@@ -29,6 +30,11 @@ class AArch64_ELFTargetObjectFile : public TargetLoweringObjectFileELF {
+                                           const MCValue &MV, int64_t Offset,
+                                           MachineModuleInfo *MMI,
+                                           MCStreamer &Streamer) const override;
++
++  MCSymbol *getAuthPtrSlotSymbol(const TargetMachine &TM,
++                                 MachineModuleInfo *MMI, const MCSymbol *RawSym,
++                                 AArch64PACKey::ID Key,
++                                 uint16_t Discriminator) const;
+ };
+ 
+ /// AArch64_MachoTargetObjectFile - This TLOF implementation is used for Darwin.
 diff --git a/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp b/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp
-index 2af71623e856..df4375c0c258 100644
+index 2af71623e856e..009928a8a7488 100644
 --- a/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp
 +++ b/llvm/lib/Target/AArch64/GISel/AArch64InstructionSelector.cpp
-@@ -6625,116 +6625,6 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
- // Thus, it's only used for ptrauth references to extern_weak to avoid null
- // checks.
+@@ -224,6 +224,8 @@ class AArch64InstructionSelector : public InstructionSelector {
+   bool selectJumpTable(MachineInstr &I, MachineRegisterInfo &MRI);
+   bool selectBrJT(MachineInstr &I, MachineRegisterInfo &MRI);
+   bool selectTLSGlobalValue(MachineInstr &I, MachineRegisterInfo &MRI);
++  bool selectPtrAuthGlobalValue(MachineInstr &I,
++                                MachineRegisterInfo &MRI) const;
+   bool selectReduction(MachineInstr &I, MachineRegisterInfo &MRI);
+   bool selectMOPS(MachineInstr &I, MachineRegisterInfo &MRI);
+   bool selectUSMovFromExtend(MachineInstr &I, MachineRegisterInfo &MRI);
+@@ -2853,6 +2855,9 @@ bool AArch64InstructionSelector::select(MachineInstr &I) {
+     return constrainSelectedInstRegOperands(I, TII, TRI, RBI);
+   }
  
--bool AArch64InstructionSelector::selectPtrAuthGlobalValue(
--    MachineInstr &I, MachineRegisterInfo &MRI) const {
--  Register DefReg = I.getOperand(0).getReg();
--  Register Addr = I.getOperand(1).getReg();
--  uint64_t Key = I.getOperand(2).getImm();
--  Register AddrDisc = I.getOperand(3).getReg();
--  uint64_t Disc = I.getOperand(4).getImm();
--  int64_t Offset = 0;
--
--  if (Key > AArch64PACKey::LAST)
--    report_fatal_error("key in ptrauth global out of range [0, " +
--                       Twine((int)AArch64PACKey::LAST) + "]");
--
--  // Blend only works if the integer discriminator is 16-bit wide.
--  if (!isUInt<16>(Disc))
--    report_fatal_error(
--        "constant discriminator in ptrauth global out of range [0, 0xffff]");
--
--  // Choosing between 3 lowering alternatives is target-specific.
--  if (!STI.isTargetELF() && !STI.isTargetMachO())
--    report_fatal_error("ptrauth global lowering only supported on MachO/ELF");
--
--  if (!MRI.hasOneDef(Addr))
--    return false;
--
--  // First match any offset we take from the real global.
--  const MachineInstr *DefMI = &*MRI.def_instr_begin(Addr);
--  if (DefMI->getOpcode() == TargetOpcode::G_PTR_ADD) {
--    Register OffsetReg = DefMI->getOperand(2).getReg();
--    if (!MRI.hasOneDef(OffsetReg))
--      return false;
--    const MachineInstr &OffsetMI = *MRI.def_instr_begin(OffsetReg);
--    if (OffsetMI.getOpcode() != TargetOpcode::G_CONSTANT)
--      return false;
--
--    Addr = DefMI->getOperand(1).getReg();
--    if (!MRI.hasOneDef(Addr))
--      return false;
--
--    DefMI = &*MRI.def_instr_begin(Addr);
--    Offset = OffsetMI.getOperand(1).getCImm()->getSExtValue();
--  }
--
--  // We should be left with a genuine unauthenticated GlobalValue.
--  const GlobalValue *GV;
--  if (DefMI->getOpcode() == TargetOpcode::G_GLOBAL_VALUE) {
--    GV = DefMI->getOperand(1).getGlobal();
--    Offset += DefMI->getOperand(1).getOffset();
--  } else if (DefMI->getOpcode() == AArch64::G_ADD_LOW) {
--    GV = DefMI->getOperand(2).getGlobal();
--    Offset += DefMI->getOperand(2).getOffset();
--  } else {
--    return false;
--  }
--
--  MachineIRBuilder MIB(I);
--
--  // Classify the reference to determine whether it needs a GOT load.
--  unsigned OpFlags = STI.ClassifyGlobalReference(GV, TM);
--  const bool NeedsGOTLoad = ((OpFlags & AArch64II::MO_GOT) != 0);
--  assert(((OpFlags & (~AArch64II::MO_GOT)) == 0) &&
--         "unsupported non-GOT op flags on ptrauth global reference");
--  assert((!GV->hasExternalWeakLinkage() || NeedsGOTLoad) &&
--         "unsupported non-GOT reference to weak ptrauth global");
--
--  std::optional<APInt> AddrDiscVal = getIConstantVRegVal(AddrDisc, MRI);
--  bool HasAddrDisc = !AddrDiscVal || *AddrDiscVal != 0;
--
--  // Non-extern_weak:
--  // - No GOT load needed -> MOVaddrPAC
--  // - GOT load for non-extern_weak -> LOADgotPAC
--  //   Note that we disallow extern_weak refs to avoid null checks later.
--  if (!GV->hasExternalWeakLinkage()) {
--    MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X16}, {});
--    MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X17}, {});
--    MIB.buildInstr(NeedsGOTLoad ? AArch64::LOADgotPAC : AArch64::MOVaddrPAC)
--        .addGlobalAddress(GV, Offset)
--        .addImm(Key)
--        .addReg(HasAddrDisc ? AddrDisc : AArch64::XZR)
--        .addImm(Disc)
--        .constrainAllUses(TII, TRI, RBI);
--    MIB.buildCopy(DefReg, Register(AArch64::X16));
--    RBI.constrainGenericRegister(DefReg, AArch64::GPR64RegClass, MRI);
--    I.eraseFromParent();
--    return true;
--  }
--
--  // extern_weak -> LOADauthptrstatic
--
--  // Offsets and extern_weak don't mix well: ptrauth aside, you'd get the
--  // offset alone as a pointer if the symbol wasn't available, which would
--  // probably break null checks in users. Ptrauth complicates things further:
--  // error out.
--  if (Offset != 0)
--    report_fatal_error(
--        "unsupported non-zero offset in weak ptrauth global reference");
--
--  if (HasAddrDisc)
--    report_fatal_error("unsupported weak addr-div ptrauth global");
--
--  MIB.buildInstr(AArch64::LOADauthptrstatic, {DefReg}, {})
--      .addGlobalAddress(GV, Offset)
--      .addImm(Key)
--      .addImm(Disc);
--  RBI.constrainGenericRegister(DefReg, AArch64::GPR64RegClass, MRI);
--
--  I.eraseFromParent();
--  return true;
--}
--
- void AArch64InstructionSelector::SelectTable(MachineInstr &I,
-                                              MachineRegisterInfo &MRI,
-                                              unsigned NumVec, unsigned Opc1,
++  case TargetOpcode::G_PTRAUTH_GLOBAL_VALUE:
++    return selectPtrAuthGlobalValue(I, MRI);
++
+   case TargetOpcode::G_ZEXTLOAD:
+   case TargetOpcode::G_LOAD:
+   case TargetOpcode::G_STORE: {
+diff --git a/llvm/lib/Target/AArch64/GISel/AArch64LegalizerInfo.cpp b/llvm/lib/Target/AArch64/GISel/AArch64LegalizerInfo.cpp
+index 914f79181a2ec..3f8641945bcd7 100644
+--- a/llvm/lib/Target/AArch64/GISel/AArch64LegalizerInfo.cpp
++++ b/llvm/lib/Target/AArch64/GISel/AArch64LegalizerInfo.cpp
+@@ -778,6 +778,9 @@ AArch64LegalizerInfo::AArch64LegalizerInfo(const AArch64Subtarget &ST)
+   else
+     getActionDefinitionsBuilder(G_GLOBAL_VALUE).legalFor({p0});
+ 
++  getActionDefinitionsBuilder(G_PTRAUTH_GLOBAL_VALUE)
++      .legalIf(all(typeIs(0, p0), typeIs(1, p0)));
++
+   getActionDefinitionsBuilder(G_PTRTOINT)
+       .legalFor({{s64, p0}, {v2s64, v2p0}})
+       .widenScalarToNextPow2(0, 64)
+diff --git a/llvm/test/CodeGen/AArch64/GlobalISel/legalizer-info-validation.mir b/llvm/test/CodeGen/AArch64/GlobalISel/legalizer-info-validation.mir
+index 0f06cfc8505c9..0e7804e98ae6d 100644
+--- a/llvm/test/CodeGen/AArch64/GlobalISel/legalizer-info-validation.mir
++++ b/llvm/test/CodeGen/AArch64/GlobalISel/legalizer-info-validation.mir
+@@ -86,6 +86,10 @@
+ # DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
+ # DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
+ #
++# DEBUG-NEXT: G_PTRAUTH_GLOBAL_VALUE (opcode {{[0-9]+}}): 2 type indices, 0 imm indices
++# DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
++# DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
++#
+ # DEBUG-NEXT: G_CONSTANT_POOL (opcode {{[0-9]+}}): 1 type index, 0 imm indices
+ # DEBUG-NEXT: .. type index coverage check SKIPPED: no rules defined
+ # DEBUG-NEXT: .. imm index coverage check SKIPPED: no rules defined
