@@ -1,0 +1,66 @@
+# Author: Ine Arts (Universiteit Antwerpen)
+
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.6.0'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles.
+
+This is a GPU-enabled build.
+"""
+
+toolchain = {'name': 'NVHPC', 'version': '25.3-CUDA-12.8.0'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = ['%(namelower)s.%(version)s.tgz']
+patches = [('VASP-6.6.0_enable_hdf5_wannier90_nvhpc.patch', 1)]
+checksums = [
+    {'vasp.6.6.0.tgz': '9566f59b0ae2fc60f670a91153655d09dba13fe6cc6c54e9ca6bd03bbcd86384'},
+    {'VASP-6.6.0_enable_hdf5_wannier90_nvhpc.patch':
+     '539483a2dcfeaff70e4f28e352ef316fa4069292475b107fbdf5eb001a19bcd9'},
+]
+
+dependencies = [
+    ('FFTW', '3.3.10'),
+    ('HDF5', '1.14.6'),
+    ('Wannier90', '3.1.0'),
+]
+
+prebuildopts = 'cp -v arch/makefile.include.nvhpc_omp_acc ./makefile.include && '
+prebuildopts += "sed -i '0,/^GPU/s/^GPU.*/GPU        ?= -gpu=%(cuda_cc_nvhpc)s/' makefile.include && "
+
+# Makefile uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+_targets = ['std', 'gam', 'ncl']
+
+# https://www.vasp.at/wiki/index.php/Validation_tests
+pretestopts = 'export OMP_STACKSIZE=512m && '
+pretestopts += 'export VASP_TESTSUITE_EXE_STD="mpirun -np 2 %(builddir)s/%(namelower)s.%(version)s/bin/vasp_std" && '
+pretestopts += 'export VASP_TESTSUITE_EXE_GAM="mpirun -np 2 %(builddir)s/%(namelower)s.%(version)s/bin/vasp_gam" && '
+pretestopts += 'export VASP_TESTSUITE_EXE_NCL="mpirun -np 2 %(builddir)s/%(namelower)s.%(version)s/bin/vasp_ncl" && '
+pretestopts += 'export VASP_TESTSUITE_CUDA=Y && export VASP_TESTSUITE_SKIP_NOCUDA=Y && '
+runtest = 'test'
+
+buildopts = 'DEPS=1 '
+
+files_to_copy = [
+    (['bin/vasp_' + x for x in _targets], 'bin'),
+    (['testsuite'], ''),
+]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_' + x for x in _targets],
+    'dirs': []
+}
+
+modextravars = {
+    'OMP_STACKSIZE': "512m"
+}
+
+moduleclass = 'phys'
