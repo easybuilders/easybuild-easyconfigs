@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'libjxl'
+version = '0.9.5'
+
+homepage = 'https://github.com/libjxl/libjxl'
+description = "JPEG XL image format reference implementation"
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+github_account = 'libjxl'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['87e110c64d70d5beae8bb3bc219c23a18ff14b957a0bcde1462730b24cd3dbbb']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+    ('googletest', '1.17.0'),
+    ('pkgconf', '2.3.0'),
+    ('Highway', '1.3.0'),  # Highway only has a static library
+]
+
+dependencies = [
+    ('LittleCMS', '2.17'),
+    ('Brotli', '1.1.0'),
+    ('libjpeg-turbo', '3.1.0'),
+    ('libpng', '1.6.48'),
+    ('zlib', '1.3.1'),
+    ('giflib', '5.2.2'),
+    ('libwebp', '1.5.0'),
+    ('OpenEXR', '3.3.4'),
+    ('gperftools', '2.16'),
+]
+
+configopts = '-DJPEGXL_WARNINGS_AS_ERRORS=OFF -DJPEGXL_ENABLE_SJPEG=OFF -DJPEGXL_ENABLE_SKCMS=OFF '
+# building man pages requires/uses asciidoc (which may be installed in OS, and may fail)
+configopts += '-DJPEGXL_ENABLE_MANPAGES=OFF '
+configopts += '-DJPEGXL_FORCE_SYSTEM_BROTLI=ON -DJPEGXL_FORCE_SYSTEM_HWY=ON '
+configopts += '-DJPEGXL_FORCE_SYSTEM_GTEST=ON -DJPEGXL_FORCE_SYSTEM_LCMS2=ON '
+
+sanity_check_paths = {
+    'files': ['bin/cjxl', 'bin/djxl', 'lib/libjxl.%s' % SHLIB_EXT],
+    'dirs': ['include/jxl'],
+}
+
+sanity_check_commands = [
+    "cjxl --help",
+    "djxl --help",
+]
+
+moduleclass = 'lib'
