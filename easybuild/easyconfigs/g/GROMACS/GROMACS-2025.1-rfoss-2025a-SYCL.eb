@@ -29,19 +29,19 @@ dependencies = [
     ('hwloc', '2.11.2'),
 ]
 
-# 1. Compilers explicitly set to your custom LLVM
-configopts = "-DCMAKE_C_COMPILER=$EBROOTROCMMINLLVM/bin/clang "
-configopts += "-DCMAKE_CXX_COMPILER=$EBROOTROCMMINLLVM/bin/clang++ "
+rocm_paths = "--rocm-path=$EBROOTROCMMINLLVM --rocm-device-lib-path=$EBROOTROCMMINLLVM/amdgcn/bitcode"
+hip_fixes = "-D__HIP_PLATFORM_AMD__=1 -I$EBROOTHIP/include -include hip/hip_runtime.h"
+_acpp_flags = "%s %s" % (rocm_paths, hip_fixes)
 
-# 2. The Golden Ticket: Paths + Header overrides (This is what made your standalone test work!)
-configopts += "-DCMAKE_CXX_FLAGS='--rocm-path=$EBROOTROCMMINLLVM --rocm-device-lib-path=$EBROOTROCMMINLLVM/amdgcn/bitcode -D__HIP_PLATFORM_AMD__=1 -I$EBROOTHIP/include -include hip/hip_runtime.h' "
+preconfigopts = f'export ACPP_CLANG_FLAGS="{_acpp_flags}" && '
+preconfigopts += f'export HIPSYCL_CLANG_FLAGS="{_acpp_flags}" && '
+preconfigopts += f'export CXXFLAGS="$CXXFLAGS {_acpp_flags}" && '
 
-# 3. SYCL and Target Architecture
-configopts += "-DGMX_GPU=SYCL "
+preconfigopts += "clang_bin=$(which clang++) && export HIP_CLANG_PATH=${clang_bin%/clang++} && "
+
+configopts = "-DGMX_GPU=SYCL "
 configopts += "-DGMX_SYCL=ACPP "
 configopts += "-DACPP_TARGETS='hip:%(amdgcn_cc_semicolon_sep)s' "
-
-# 4. HPC Paths and Features
 configopts += "-DAdaptiveCpp_DIR=$EBROOTADAPTIVECPP/lib/cmake/AdaptiveCpp "
 configopts += "-DGMX_MPI=ON "
 configopts += "-DGMX_THREAD_MPI=OFF "
