@@ -30,22 +30,26 @@ dependencies = [
     ('hwloc', '2.11.2'),
 ]
 
-preconfigopts = 'export OMPI_CXX=acpp && '
-preconfigopts += 'export HIP_PATH=$EBROOTROCMMINLLVM && '
+preconfigopts = 'export HIP_PATH=$EBROOTROCMMINLLVM && '
 preconfigopts += 'export HIP_DEVICE_LIB_PATH=$EBROOTROCMMINLLVM/amdgcn/bitcode && '
-
 
 configopts = '-DGMX_GPU=SYCL '
 configopts += '-DGMX_SYCL=ACPP '
-configopts += '-DCMAKE_CXX_COMPILER=mpicxx '
+
+# Use the AdaptiveCpp wrapper directly as the CXX compiler. 
+configopts += '-DCMAKE_CXX_COMPILER=$EBROOTADAPTIVECPP/bin/acpp '
+configopts += '-DCMAKE_C_COMPILER=$EBROOTROCMMINLLVM/bin/amdclang '
+
+# Pass the ROCm paths specifically to the ACPP driver
 configopts += '-DACPP_TARGETS="hip:%(amdgcn_cc_semicolon_sep)s" '
+configopts += '--rocm-path=$EBROOTROCMMINLLVM --rocm-device-lib-path=$EBROOTROCMMINLLVM/amdgcn/bitcode" '
+
+# Required for GROMACS to find the AdaptiveCpp headers/cmake
 configopts += '-DAdaptiveCpp_DIR=$EBROOTADAPTIVECPP/lib/cmake/AdaptiveCpp '
-configopts += '-DACPP_FLAGS="--rocm-path=$EBROOTROCMMINLLVM --rocm-device-lib-path=$EBROOTROCMMINLLVM/amdgcn/bitcode" '
-configopts += '-DROCM_DEVICE_LIBS_PATH=$EBROOTROCMMINLLVM/amdgcn/bitcode '
+
 configopts += '-DGMX_MPI=ON '
 configopts += '-DGMX_THREAD_MPI=OFF '
 configopts += '-DGMX_OPENMP=ON '
-configopts += '-DGMX_HWLOC=ON '
 
 sanity_check_paths = {
     'dirs': ['bin', 'share/gromacs'],
