@@ -1,0 +1,54 @@
+# Author: Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ConfigureMake'
+
+name = 'UCC-ROCm'
+version = '1.3.0'
+
+homepage = 'https://www.openucx.org/'
+description = """UCC (Unified Collective Communication) is a collective
+communication operations API and library. This module adds the UCC ROCm 
+support (ROCm memory components and RCCL transport)."""
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openucx/ucc/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+
+patches = [
+    'UCC-ROCm-1.3.0_use_rocm_eessi_paths.patch',
+]
+
+builddependencies = [
+    ('Autotools', '20240712'),
+    ('pkgconf', '2.3.0'),
+]
+
+dependencies = [
+    ('UCC', version),
+    ('hwloc', '2.11.2'),
+    ('UCX-ROCm', '1.18.0'),
+    ('HIP', '6.4.1'),
+    ('RCCL', '2.22.3'),
+]
+
+preconfigopts = './autogen.sh && '
+
+configopts = '--with-rccl=$EBROOTRCCL --with-rocm=$EBROOTHIP '
+
+sanity_check_paths = {
+    'files': [
+        'lib/ucc/libucc_mc_rocm.%s' % SHLIB_EXT, 
+        'lib/ucc/libucc_tl_rccl.%s' % SHLIB_EXT
+    ],
+    'dirs': ['lib/ucc']
+}
+
+# Verify that ucc_info can see the new components
+sanity_check_commands = ["ucc_info -c | grep -p 'rocm'"]
+
+# Ensure UCC knows where to find these external plugins at runtime
+modextrapaths = {'EB_UCC_EXTRA_COMPONENT_PATH': 'lib/ucc'}
+
+moduleclass = 'lib'
