@@ -1,0 +1,73 @@
+
+
+easyblock = 'ConfigureMake'
+
+name = 'hwloc'
+version = '2.11.2'
+_rocm_version = '6.4.1'
+
+homepage = 'https://www.open-mpi.org/projects/hwloc/'
+
+description = """
+ The Portable Hardware Locality (hwloc) software package provides a portable
+ abstraction (across OS, versions, architectures, ...) of the hierarchical
+ topology of modern architectures, including NUMA memory nodes, sockets, shared
+ caches, cores and simultaneous multithreading. It also gathers various system
+ attributes such as cache and memory information as well as the locality of I/O
+ devices such as network interfaces, InfiniBand HCAs or GPUs. It primarily
+ aims at helping applications with gathering information about modern computing
+ hardware so as to exploit it accordingly and efficiently.
+
+ This provides the ROCm and RSMI plugins for hwloc to discover AMD GPUs.
+"""
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+source_urls = ['https://www.open-mpi.org/software/hwloc/v%(version_major_minor)s/downloads/']
+sources = ['hwloc-%(version)s.tar.gz']
+checksums = ['866ac8ef07b350a6a2ba0c6826c37d78e8994dcbcd443bdd2b436350de19d540']
+
+builddependencies = [
+    ('pkgconf', '2.3.0'),
+]
+
+dependencies = [
+    ('HIP', '6.4.1'),
+    ('rocm-smi', '7.6.0', f'-ROCm-{_rocm_version}'),
+    ('numactl', '2.0.19'),
+]
+
+configopts = ' '.join([
+    '--enable-plugins',
+    '--disable-cuda',
+    '--disable-nvml',
+    '--with-rocm=$EBROOTHIP',
+    '--enable-rsmi',
+    '--disable-cairo',
+    '--disable-opencl',
+    '--disable-levelzero',
+    '--disable-gl',
+    '--disable-libxml2',
+    '--disable-pci',
+    '--disable-libudev',
+])
+
+# Build ONLY the AMD RSMI plugin
+build_cmd = 'cd hwloc && make hwloc_rsmi.la'
+install_cmd = f'cp hwloc/.libs/hwloc_rsmi.{SHLIB_EXT} %(installdir)s'
+
+modextrapaths = {
+    'HWLOC_PLUGINS_PATH': '.',
+}
+
+sanity_check_paths = {
+    'files': [f'hwloc_rsmi.{SHLIB_EXT}'],
+    'dirs': [],
+}
+
+# Verify that hwloc can successfully load the new AMD plugins
+sanity_check_commands = [
+    'HWLOC_COMPONENTS_VERBOSE=1 lstopo 2>&1 | grep %(installdir)s'
+]
+
+moduleclass = 'system'
