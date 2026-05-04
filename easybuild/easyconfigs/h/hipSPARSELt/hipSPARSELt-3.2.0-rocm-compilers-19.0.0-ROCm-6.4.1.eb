@@ -20,7 +20,11 @@ toolchainopts = {'pic': True}
 github_account = 'ROCm'
 source_urls = [GITHUB_SOURCE]
 sources = [f'rocm-{_rocm_version}.tar.gz']
-checksums = ['74836c789e912e61532aacf275efb053ac6d0818b3da360e7b236e1b82b3152b']
+patches = ['hipSPARSELt-3.2.0_fix_harcoded_paths.patch']
+checksums = [
+    {'rocm-6.4.1.tar.gz': '74836c789e912e61532aacf275efb053ac6d0818b3da360e7b236e1b82b3152b'},
+    {'hipSPARSELt-3.2.0_fix_harcoded_paths.patch': '984c4d0163452f41cac03b6255767bceca8f5e7d77bf5900f5c37e9f87581ff8'},
+]
 
 builddependencies = [
     ('CMake', '3.31.3'),
@@ -58,6 +62,23 @@ configopts += '-DPython_ROOT=$EBROOTPYTHON '
 # hipBLASLt requires a different version, and fails when using ours
 # due to files not being created as expected.
 configopts += '-DTensile_CPU_THREADS=%(parallel)s '
+
+# Tensile is downloaded into a virtualenv during the CMake configure phase.
+# Before the make/ninja build phase actually executes this downloaded code,
+# we must scrub the hardcoded /opt/rocm paths from the Python scripts.
+prebuildopts = (
+    "find %(builddir)s -path '*/virtualenv/*/Tensile/*' -type f -name '*.py' "
+    "-exec sed -i 's|/opt/rocm/llvm/bin|'\"$EBROOTROCMMINCOMPILERS\"'/bin|g' {} + && "
+)
+prebuildopts += (
+    "find %(builddir)s -path '*/virtualenv/*/Tensile/*' -type f -name '*.py' "
+    "-exec sed -i 's|/opt/rocm|'\"$EBROOTROCMMINCOMPILERS\"'|g' {} + && "
+)
+
+# Additionally, force the environment variables just in case Tensile tries to read them
+prebuildopts += "export ROCM_PATH=$EBROOTROCMMINCOMPILERS && "
+prebuildopts += "export TENSILE_ROCM_ASSEMBLER_DIR=$EBROOTROCMMINCOMPILERS/bin && "
+prebuildopts += "export TENSILE_ROCM_COMPILER_DIR=$EBROOTROCMMINCOMPILERS/bin && "
 
 sanity_check_paths = {
     'files': ['include/hipsparselt/hipsparselt.h',
