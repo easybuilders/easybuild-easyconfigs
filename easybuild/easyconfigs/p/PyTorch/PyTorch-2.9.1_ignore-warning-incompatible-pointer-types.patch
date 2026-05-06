@@ -1,0 +1,22 @@
+Silence a warning that fails builds with GCC 14, especially in XNNPACK.
+See https://github.com/pytorch/pytorch/pull/166873
+
+Applied more broadly as we don't care about warnings anyway.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -852,6 +852,11 @@ if(MSVC)
+   append_cxx_flag_if_supported("/utf-8" CMAKE_CXX_FLAGS)
+ endif()
+ 
++if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "14")
++  string(APPEND CMAKE_C_FLAGS " -Wno-incompatible-pointer-types")
++endif()
++
++
+ # Note for ROCM platform: 1. USE_ROCM is always ON until
+ # include(cmake/Dependencies.cmake) 2. USE_CUDA will become OFF during
+ # re-configuration Truth Table: CUDA 1st pass: USE_CUDA=True;USE_ROCM=True,
