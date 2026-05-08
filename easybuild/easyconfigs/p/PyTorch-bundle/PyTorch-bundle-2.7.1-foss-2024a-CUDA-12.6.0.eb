@@ -124,8 +124,8 @@ exts_list = [
             " -k 'not " + " and not ".join((
                 'TestProcessPoolExecutor',  # hang maybe related https://github.com/pytorch/audio/issues/1021
                 'FilterGraphWithCudaAccel',  # requires FFmpeg with CUDA support
-                # Large difference, maybe due to librosa version
-                '(TestFunctionalComplexCPU and test_phase_vocoder_0_5)',
+                # Large difference, caused by numba<0.62.0, torchaudio 2.9 uses mocks instead avoiding this
+                '(TestFunctionalComplexCPU and test_phase_vocoder)',
                 'kaldi_io_test',  # requires kaldi_io
                 'test_dup_hw_acel',  # requires special render device permissions
                 'test_h264_cuvid',  # requires special render device permissions
@@ -159,31 +159,27 @@ exts_list = [
         'runtest': (
             'pytest'
             ' -m "not distributed"'
-            ' --ignore=tests/ignite/contrib/handlers/test_clearml_logger.py'  # requires clearml
-            ' --ignore=tests/ignite/contrib/handlers/test_mlflow_logger.py'  # requires mlflow
-            ' --ignore=tests/ignite/contrib/handlers/test_neptune_logger.py'  # requires neptune
-            ' --ignore=tests/ignite/contrib/handlers/test_polyaxon_logger.py'  # requires polyaxon
-            ' --ignore=tests/ignite/contrib/handlers/test_tensorboard_logger.py'  # requires tensorboardX
-            ' --ignore=tests/ignite/contrib/handlers/test_wandb_logger.py'  # requires wandb
-            ' --ignore=tests/ignite/metrics/gan/test_fid.py'  # requires pytorch_fid
-            ' --ignore=tests/ignite/metrics/nlp/test_rouge.py'  # requires rouge
-            ' --ignore=tests/ignite/metrics/vision/test_object_detection_map.py'  # requires pycocotools
-            ' --ignore=tests/ignite/handlers/test_checkpoint.py'  # fails by comparing tensors on different devices
-            ' --ignore=tests/ignite/handlers/test_clearml_logger.py'  # requires clearml
-            ' --ignore=tests/ignite/handlers/test_mlflow_logger.py'  # requires mlflow
-            ' --ignore=tests/ignite/handlers/test_neptune_logger.py'  # requires neptune
-            ' --ignore=tests/ignite/handlers/test_polyaxon_logger.py'  # requires polyaxon
-            ' --ignore=tests/ignite/handlers/test_tensorboard_logger.py'  # requires tensorboardX
-            ' --ignore=tests/ignite/handlers/test_wandb_logger.py'  # requires wandb
-            ' --ignore=tests/ignite/contrib/handlers/test_tqdm_logger.py'  # fragile tests on some platforms
-            ' -k "not test_setup_plx_logging"'  # requires polyaxon
-            '" and not test_setup_mlflow_logging"'  # requires mlflow
-            '" and not test_setup_clearml_logging"'  # requires clearml
-            '" and not test_setup_neptune_logging"'  # requires neptune
-            '" and not test_setup_tb_logging"'  # requires tesorboardX
-            '" and not test__setup_ddp_vars_from_slurm_env_bad_configs"'  # fails sometimes
-            '" and not test__native_dist_model_create_from_backend_bad_config"'  # fails sometimes
-            '" and not test_inception_score"'  # fails sometimes due to connection problem with download.pytorch.org
+            ' --ignore='.join((
+                '',  # Empty for join()
+                'tests/ignite/handlers/test_checkpoint.py'  # fails by comparing tensors on different devices
+                'tests/ignite/handlers/test_clearml_logger.py'  # requires clearml
+                'tests/ignite/handlers/test_mlflow_logger.py'  # requires mlflow
+                'tests/ignite/handlers/test_neptune_logger.py'  # requires neptune
+                'tests/ignite/handlers/test_polyaxon_logger.py'  # requires polyaxon
+                'tests/ignite/handlers/test_tensorboard_logger.py'  # requires tensorboardX
+                'tests/ignite/handlers/test_visdom_logger.py'  # Spins up local server which may fail
+                'tests/ignite/handlers/test_wandb_logger.py'  # requires wandb
+            )) +
+            " -k 'not " + " and not ".join((
+                'test_setup_plx_logging'  # requires polyaxon
+                'test_setup_mlflow_logging'  # requires mlflow
+                'test_setup_clearml_logging'  # requires clearml
+                'test_setup_neptune_logging'  # requires neptune
+                'test_setup_tb_logging'  # requires tesorboardX
+                'test__setup_ddp_vars_from_slurm_env_bad_configs'  # fails sometimes
+                'test__native_dist_model_create_from_backend_bad_config'  # fails sometimes
+                'test_inception_score'  # fails sometimes due to connection problem with download.pytorch.org
+            )) + "'"
         ),
         'testinstall': True,
     }),
