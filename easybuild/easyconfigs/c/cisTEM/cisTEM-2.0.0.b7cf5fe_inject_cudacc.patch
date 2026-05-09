@@ -1,0 +1,96 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/05
+# allow to inject cuda compute capabilities by configure option 
+# --with-target-gpu-archs="%(cuda_cc_cmake)s"
+# Remove configure option: --with-target-gpu-arch 
+diff -ru cisTEM-b7cf5feaaf7ce081d8dec438e4c2060a1ecadb03/ax_cuda.m4 cisTEM-b7cf5feaaf7ce081d8dec438e4c2060a1ecadb03_inject_cudacc/ax_cuda.m4
+--- cisTEM-b7cf5feaaf7ce081d8dec438e4c2060a1ecadb03/ax_cuda.m4	2024-04-01 23:20:42.000000000 +0200
++++ cisTEM-b7cf5feaaf7ce081d8dec438e4c2060a1ecadb03_inject_cudacc/ax_cuda.m4	2024-05-16 13:20:52.665376382 +0200
+@@ -123,73 +123,27 @@
+ 
+ fi
+ 
+-# This is the code that will be generated at compile time and should be specified for the most used gpu 
+-target_arch=""
+-AC_ARG_WITH([target-gpu-arch], AS_HELP_STRING([--with-target-gpu-arch@<:@=60,61,70,75,80,86@:>@], [Primary architecture to compile for (default=86)]),
+-[
+-	if test "$withval" = "86" ; then target_arch=86 
+-	elif  test "$withval" = "80" ; then target_arch=80
+-	elif  test "$withval" = "75" ; then target_arch=75
+-	elif  test "$withval" = "70" ; then target_arch=70
+-	elif  test "$withval" = "61" ; then target_arch=61
+-	elif  test "$withval" = "60" ; then target_arch=60
+-	else
+-		AC_MSG_ERROR([Requested target-gpu-arch must be in 60,61,70,75,80,86, not $withval])
+-	fi
+-	
+-], [ target_arch="86"] )
+-AC_MSG_NOTICE([target gpu architecture is sm$target_arch])
+-
+-# Default nvcc flags
+-NVCCFLAGS=" -ccbin $CXX"
+-NVCCFLAGS+=" --gpu-architecture=sm_$target_arch -gencode=arch=compute_$target_arch,code=compute_$target_arch"
+-
+ # This is the oldest arch that will have JIT-able code g
+ oldest_arch=""
+-AC_ARG_WITH([oldest-gpu-arch], AS_HELP_STRING([--with-oldest-gpu-arch@<:@=60,61,70,75,80,86:>@], [Oldest architecture make compatible for (default=70)]),
++AC_ARG_WITH([oldest-gpu-arch], AS_HELP_STRING([--with-oldest-gpu-arch@<:@=60,61,70,75,80,86,90:>@], [Oldest architecture make compatible for (default=70)]),
+ [
+-	if test "$withval" = "86" ; then oldest_arch=86 
+-	elif  test "$withval" = "80" ; then oldest_arch=80
+-	elif  test "$withval" = "75" ; then oldest_arch=75
+-	elif  test "$withval" = "70" ; then oldest_arch=70
+-	elif  test "$withval" = "61" ; then oldest_arch=61
+-	elif  test "$withval" = "60" ; then oldest_arch=60
+-	else
+-		AC_MSG_ERROR([Requested target-oldest_arch must be in 60,61,70,75,80,86, not $withval])
+-	fi
+-	
+ ], [ oldest_arch="70"] )
+ AC_MSG_NOTICE([oldest gpu architecture is sm$oldest_arch])
+ 
+-if test "$oldest_arch" -gt "$target_arch" ; then 
+-	AC_MSG_ERROR([Requested target-oldest_arch is greater than the target arch.]) 
+-else
+-	current_arch="60"
+-	if test "$current_arch" -ge $oldest_arch && test "$current_arch" -lt "$target_arch" ; then
+-		NVCCFLAGS+=" -gencode=arch=compute_$current_arch,code=sm_$current_arch"
+-	fi
+-	
+-	current_arch="61"
+-	if test "$current_arch" -ge $oldest_arch && test "$current_arch" -lt "$target_arch" ; then
+-		NVCCFLAGS+=" -gencode=arch=compute_$current_arch,code=sm_$current_arch"
+-	fi
+-	
+-	current_arch="70"
+-	if test "$current_arch" -ge $oldest_arch && test "$current_arch" -lt "$target_arch" ; then
+-		NVCCFLAGS+=" -gencode=arch=compute_$current_arch,code=sm_$current_arch"
+-	fi	
+-	
+-	current_arch="75"
+-	if test "$current_arch" -ge $oldest_arch && test "$current_arch" -lt "$target_arch" ; then
+-		NVCCFLAGS+=" -gencode=arch=compute_$current_arch,code=sm_$current_arch"
+-	fi	
+-	
+-	current_arch="80"
+-	if test "$current_arch" -ge $oldest_arch && test "$current_arch" -lt "$target_arch" ; then
+-		NVCCFLAGS+=" -gencode=arch=compute_$current_arch,code=sm_$current_arch"
+-	fi		
+-		
+-fi
++target_arch=""
++AC_ARG_WITH([target-gpu-archs], AS_HELP_STRING([--with-target-gpu-archs@<:@=60,61,70,75,80,86,90@:>@], [Primary architectures to compile for (default=70;75;80;86;90)]),
++[
++target_arch=$(echo $withval|tr ';' '\n'|sort -n|tail -1)
++target_gpu_archs=$(echo $withval|tr ';' ' ')
++], [ target_arch="86"; target_gpu_archs="70 75 80 86"] )
++
++# Default nvcc flags
++NVCCFLAGS=" -ccbin $CXX"
++NVCCFLAGS+=" --gpu-architecture=sm_$target_arch " 
++#-gencode=arch=compute_$target_arch,code=compute_$target_arch"
++for current_arch in $target_gpu_archs; do if [[ "$current_arch" -ge "$oldest_arch" ]]; then NVCCFLAGS+=" -gencode=arch=compute_$current_arch,code=compute_$current_arch"; else AC_MSG_NOTICE([IGNORING  sm_$current_arch]); fi; done
++AC_MSG_NOTICE([NVCCFLAGS: $NVCCFLAGS])
++
+ 
+ if test "x$is_cuda_ge_11" == "x1" ; then
+   AC_MSG_NOTICE([CUDA >= 11.0, enabling --extra-device-vectorization])
