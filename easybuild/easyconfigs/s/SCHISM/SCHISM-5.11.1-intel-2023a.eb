@@ -1,0 +1,57 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Leah Han <leah.han@hpcnow.com>; María José Benitez <majo.benitez@hpcnow.com>;
+# License::     GPL-v3.0
+# #
+
+easyblock = 'CMakeMakeCp'
+
+name = 'SCHISM'
+version = '5.11.1'
+
+local_cluster_name = 'anvil.intel'
+
+homepage = 'https://schism-dev.github.io/schism/master/index.html'
+
+description = """The Semi-implicit Cross-scale Hydroscience Integrated System Model (SCHISM)
+ is an open-source community-supported modeling system based on unstructured grids and designed
+ for the seamless simulation of 3D baroclinic circulation across creek-lake-river-estuary-shelf-ocean
+ scales."""
+
+toolchain = {'name': 'intel', 'version': '2023a'}
+
+source_urls = ['https://github.com/schism-dev/schism/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['146d26b2f5f7a570159ddebdeeb521c0cc7c33391f96086450d3bdd3157fcac7']
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('netCDF', '4.9.2'),
+    ('netCDF-Fortran', '4.6.1'),
+]
+
+preconfigopts = 'cd ../schism-%(version)s/ && mkdir -p build && cd build && rm -rf * && '
+preconfigopts += 'cp -L ../cmake/SCHISM.local.{} ../cmake/SCHISM.local.myown && '.format(local_cluster_name)
+preconfigopts += "sed -i 's/NETCDF_FORTRAN_HOME/EBROOTNETCDFMINFORTRAN/g'" \
+    " ../cmake/SCHISM.local.{} && ".format(local_cluster_name)
+preconfigopts += "sed -i 's/NETCDF_C_HOME/EBROOTNETCDF/g' ../cmake/SCHISM.local.{} && ".format(local_cluster_name)
+preconfigopts += "sed -i 's/^set(CMAKE_Fortran_FLAGS_RELEASE/#set(CMAKE_Fortran_FLAGS_RELEASE/g'" \
+    " ../cmake/SCHISM.local.{} && ".format(local_cluster_name)
+configopts = ' -C ../cmake/SCHISM.local.build -C ../cmake/SCHISM.local.myown ../src/ '
+configopts += ' -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc'
+
+prebuildopts = 'cd ../schism-%(version)s/build && '
+buildopts = ' pschism'
+
+files_to_copy = [(['../schism-%(version)s/build/bin/*', '../schism-%(version)s/build/lib/*'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/pschism_ANVIL_INTEL_TVD-VL'],
+    'dirs': [],
+}
+
+sanity_check_commands = [('pschism_ANVIL_INTEL_TVD-VL', '-v')]
+
+moduleclass = 'geo'
