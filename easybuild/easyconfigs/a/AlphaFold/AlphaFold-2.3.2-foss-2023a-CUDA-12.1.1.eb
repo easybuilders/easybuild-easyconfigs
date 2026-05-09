@@ -105,22 +105,26 @@ exts_list = [
             {'AlphaFold-2.3.2_BioPythonPDBData.patch':
              'e4483a525ae5c4dc5a5f633bed8cf5337c329e64b603ab7b684a9d18cd26a22f'},
         ],
+        'testinstall': True,
+        'preinstallopts': "echo include alphafold/common/stereo_chemical_props.txt > MANIFEST.in &&" +
+                          "sed -i 's/^)$/include_package_data=True&/g' setup.py &&" +
+                          " cp %%(builddir)s/stereo_chemical_props.txt alphafold/common/ &&",
+        'runtest': "python ./run_alphafold_test.py",
     }),
 ]
-
-local_pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
-local_link_scp = 'ln -s %%(installdir)s/stereo_chemical_props.txt %s/alphafold/common' % local_pylibdir
 
 postinstallcmds = [
     'cp %(builddir)s/AlphaFold/alphafold-%(version)s/run_alphafold*.py %(installdir)s/bin',
     'cp -rpP %(builddir)s/AlphaFold/alphafold-%(version)s/scripts %(installdir)s',
     'cd %(installdir)s/bin && ln -s run_alphafold.py alphafold',
     'chmod a+x %(installdir)s/bin/run_alphafold.py',
-    local_link_scp,
 ]
 
 sanity_check_paths = {
-    'files': ['bin/alphafold', 'bin/pdbfixer', 'bin/run_alphafold.py', 'stereo_chemical_props.txt'],
+    'files': [
+        'bin/alphafold', 'bin/pdbfixer', 'bin/run_alphafold.py',
+        'lib/python%(pyshortver)s/site-packages/alphafold/common/stereo_chemical_props.txt'
+    ],
     'dirs': ['lib/python%(pyshortver)s/site-packages', 'scripts'],
 }
 
@@ -129,7 +133,6 @@ sanity_check_commands = [
     "python -m openmm.testInstallation",
     "python -c 'import alphafold'",
     "alphafold --help 2>&1 | grep 'Full AlphaFold protein structure prediction script'",
-    "python %(installdir)s/bin/run_alphafold_test.py",
 ]
 
 # these allow to make predictions on proteins that would typically be too long to fit into GPU memory;
