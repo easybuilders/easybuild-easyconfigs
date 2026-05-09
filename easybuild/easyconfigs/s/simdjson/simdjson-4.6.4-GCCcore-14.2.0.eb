@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'simdjson'
+version = '4.6.4'
+
+homepage = 'https://simdjson.org/'
+description = """The simdjson library uses commonly available SIMD instructions and microparallel algorithms to parse
+JSON 4x faster than RapidJSON and 25x faster than JSON for Modern C++."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ['https://github.com/simdjson/simdjson/archive/refs/tags/']
+sources = [V_VERSION_TAR_GZ]
+patches = [
+    'add_static_library_pgkconf.patch'
+]
+checksums = [
+    {'v4.6.4.tar.gz': 'b091107844fe928158c5c2265c20360fff312889ddf7ebc4528a0f0f8f2ff9cd'},
+    {'add_static_library_pgkconf.patch': '3c8353d7d2a49b8a07b7bb35b4c7c3e1bd4148e5f1e325db50f3c9b3dd816478'},
+]
+
+builddependencies = [
+    ('make', '4.4.1'),
+    ('CMake', '3.31.3'),
+    ('binutils', '2.42'),
+]
+
+configopts = [
+    '-DBUILD_SHARED_LIBS:BOOL=ON -DSIMDJSON_BUILD_STATIC_LIB:BOOL=ON',
+]
+
+sanity_check_paths = {
+    'files': [
+        'include/simdjson.h',
+        'lib/libsimdjson_static.a',
+        'lib/libsimdjson.%s' % SHLIB_EXT,
+        'lib/pkgconfig/simdjson.pc',
+        'lib/pkgconfig/simdjson_static.pc',
+    ],
+    'dirs': ['lib/cmake/simdjson'],
+}
+
+moduleclass = 'lib'
