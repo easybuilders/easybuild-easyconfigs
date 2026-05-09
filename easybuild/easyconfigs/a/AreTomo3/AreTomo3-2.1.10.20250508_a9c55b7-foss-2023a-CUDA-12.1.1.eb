@@ -1,0 +1,106 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2025/06
+easyblock = 'MakeCp'
+
+name = 'AreTomo3'
+local_version = '2.1.10'
+versionsuffix = '-CUDA-%(cudaver)s'
+local_commit_date = '20250508'
+local_commit = 'a9c55b79ba6112eb60925890ecba04475974875f'
+version = '%s.%s_%s' % (local_version, local_commit_date, local_commit[:7])
+
+homepage = 'https://github.com/czimaginginstitute/AreTomo3'
+
+description = """AreTomo3 is a multi-GPU accelerated software package that enables real-time
+fully automated reconstruction of cryoET tomograms in parallel with cryoET data
+collection. Integrating MotionCor3, AreTomo2, and GCtfFind in a single
+application, AreTomo3 has established an autonomous preprocessing pipeline that,
+whenever a new tilt series is collected, can activate and repeat itself from
+correction of beam induced motion and assembling tilt series to CTF estimation
+and correction, tomographic alignment, and 3D reconstruction throughout entire
+session of data collection without human intervention. The end results include
+not only tomograms but also a rich set of alignment parameters to bootstrap
+subtomogram averaging. Our test shows that AreTomo3 can catch up to 9-target
+PACE Tomo data collection with 4 NVidia RTX A6000 GPUs when it was configured to
+perform 2D local motion correction on movies and 3D local motion correction on
+tilt series. The offline testing shows that AreTomo3 runs faster than the data
+collection. As a result, GPU resources can be shared with other tasks to expand
+the preprocessing capacity. Tomogram denoising and particle picking now can run
+concurrently with AreTomo3 to maximize the preprocessing workflow."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://github.com/czimaginginstitute/AreTomo3/archive/']
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': SOURCE_TAR_GZ
+}]
+patches = ['AreTomo3-2.0.0_makefile_lib.patch']
+checksums = [
+    {'AreTomo3-2.1.10.20250508_a9c55b7.tar.gz': '0c987e6bcb6978b29223c2548ba10841f449d5073b1341c8368effcfaeb7cb06'},
+    {'AreTomo3-2.0.0_makefile_lib.patch': '740390e0e9aa9454ed17e6531b795ed23f8b5dbb8617089330ffbb3dafb9694e'},
+]
+
+github_account = 'czimaginginstitute'
+
+prebuildopts = 'rm -rf LibSrc/Lib/*.a && '
+build_cmd = 'make clean -f makefile11 && make exe -f makefile11 CUDAHOME=$CUDA_HOME CUDACC="%(cuda_cc_cmake)s"'
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('LibTIFF', '4.5.0'),
+    # for KmeanMetrics.py:
+    ('PyTorch', '2.1.2', versionsuffix),
+    # for remap3D.py:
+    ('Python', '3.11.3'),
+    ('starfile', '0.5.12', '-pandas-2.1.4'),
+]
+
+files_to_copy = [(['%(name)s'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['bin'],
+}
+
+# Add Remap3D- and KmeanMetrics scripts to bin and Remap3D's readme to doc:
+postinstallcmds = [
+    'cp %(builddir)s/AreTomo3*/tools/KmeanMetrics.py %(installdir)s/bin',
+    'cp %(builddir)s/AreTomo3*/tools/Remap3D*/*.py %(installdir)s/bin',
+    'chmod +x %(installdir)s/bin/{remap3D,KmeanMetrics}.py',
+    'mkdir %(installdir)s/doc',
+    'cp %(builddir)s/AreTomo3*/tools/Remap3D*/Readme.txt '
+    '%(installdir)s/Remap3D-readme.txt'
+]
+
+fix_python_shebang_for = [
+    'bin/remap3D.py',
+    'bin/KmeanMetrics.py',
+]
+
+sanity_check_commands = [
+    '%(name)s -h',
+    'remap3D.py -h',
+    'KmeanMetrics.py -h'
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'download_dep_fail': True,
+    'sanity_pip_check': True,
+}
+
+exts_list = [
+    ('torch_kmeans', '0.2.0', {
+        'checksums': ['1a07614ca499147110a58135155ab27b06f1ee9b0bb32d0f74ddadf03788da29'],
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'
+}
+
+moduleclass = 'bio'
