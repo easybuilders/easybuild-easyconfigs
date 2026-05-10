@@ -1,6 +1,6 @@
 # Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
 
-easyblock = 'EB_UCX_Plugins'
+easyblock = 'ConfigureMake'
 
 name = 'UCX-ROCm'
 version = '1.18.0'
@@ -20,13 +20,18 @@ source_urls = ['https://github.com/openucx/ucx/releases/download/v%(version)s']
 sources = [{'filename': 'ucx-%(version)s.tar.gz', 'alt_location': 'UCX'}]
 patches = [
     'UCX-ROCm-1.18.0_link_against_existing_UCX_libs.patch',
-    'UCX-ROCm-1.18.0_use_rocm_eessi_paths.patch'
+    'UCX-1.13.1-dynamic_modules.patch',
+    'UCX-1.18.0_fix_bistro_hooks.patch',
+    'UCX-1.18.0_fix-glibc-2.43-compile-failure.patch',
 ]
 checksums = [
     {'ucx-1.18.0.tar.gz': 'fa75070f5fa7442731b4ef5fc9549391e147ed3d859afeb1dad2d4513b39dc33'},
     {'UCX-ROCm-1.18.0_link_against_existing_UCX_libs.patch':
      '5aa85e428f62a168f2d4e75197c41c6835ed5a9893696cedaf1021858678f08c'},
-    {'UCX-ROCm-1.18.0_use_rocm_eessi_paths.patch': 'a36e344d313772e38bb3a5a03959bb63d142964b34695dbf07a40405e6dc1cbd'},
+    {'UCX-1.13.1-dynamic_modules.patch': '00874687bd90b795fff61aaa183f6c6bea2210aa1003b28f23d9ebf7066f8782'},
+    {'UCX-1.18.0_fix_bistro_hooks.patch': '6357f1ebb1569e30d0855e48404fdf38a5a7060a87789f54d7bb751f957be20c'},
+    {'UCX-1.18.0_fix-glibc-2.43-compile-failure.patch':
+     'c67b2070a65e8217b7c6f9d9a6a13ff11141bacfed395d551376432428348a9c'},
 ]
 
 builddependencies = [
@@ -35,9 +40,39 @@ builddependencies = [
 ]
 
 dependencies = [
-    ('UCX', version),
     ('zlib', '1.3.1'),
-    ('HIP', '6.4.1'),
+    ('numactl', '2.0.19'),
+    ('xpmem', '2.7.4'),
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+# Base options matching the GCCcore UCX build
+configopts  = '--enable-optimizations --enable-cma --enable-mt --with-verbs '
+configopts += '--without-java --without-go --disable-doxygen-doc '
+configopts += '--disable-logging --disable-debug --disable-assertions --disable-params-check '
+
+# xpmem — same library works regardless of which compiler built UCX
+configopts += '--with-xpmem=$EBROOTXPMEM '
+
+# ROCm — this is what UCX-ROCm adds over the base UCX build
+configopts += '--with-rocm=$EBROOTROCMMINLLVM '
+
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': [
+        'bin/ucx_perftest', 
+        'bin/ucx_read_profile', 
+        'bin/ucx_info', 
+        'lib/ucx/libuct_rocm.so'],  # the ROCm transport plugin
+    'dirs': ['include', 'lib', 'share'],
+}
+
+sanity_check_commands = [
+    "ucx_info -d",
+    "ucx_info -d 2>&1 | grep -q 'rocm'",    # fails if ROCm transport not compiled in
+    "ucx_info -d 2>&1 | grep -q 'xpmem'",   # fails if xpmem not compiled in
 ]
 
 moduleclass = 'lib'
