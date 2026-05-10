@@ -8,7 +8,15 @@ description = """PLplot is a cross-platform software package for creating scient
  and text are limited in practice only by what Unicode-aware system fonts are installed on a user's computer."""
 
 toolchain = {'name': 'iimkl', 'version': '2025b'}
-toolchainopts = {'pic': True}
+# NumPy 2.x headers reference 'numpy/_public_dtype_api_table.h', so the parent
+# of numpy.get_include() must be on the C/C++ include path in addition to PLplot's
+# own '-I.../numpy/_core/include/numpy' (which it adds to find <arrayobject.h>).
+local_numpy_inc = '-I${EBROOTSCIPYMINBUNDLE}/lib/python%(pyshortver)s/site-packages/numpy/_core/include'
+toolchainopts = {
+    'pic': True,
+    'extra_cflags': local_numpy_inc,
+    'extra_cxxflags': local_numpy_inc,
+}
 
 # Source fetched directly from upstream git mirror (master branch).
 # A specific commit is pinned for reproducibility; this is post-5.15.0 master HEAD,
@@ -52,8 +60,9 @@ dependencies = [
     ('freetype', '2.13.3'),
 ]
 
-# Backends enabled (broadly-used): C, C++, Fortran, Python, Java, cairo (PNG/PDF/PS/SVG),
-# X11/xwin, ps, svg, mem.
+# Backends enabled:
+#   - C, C++, Fortran, Python, Java, cairo (PNG/PDF/PS/SVG),
+#   - X11/xwin, ps, svg, mem.
 # Disabled:
 #   - Tcl/Tk (Tcl 9 ABI changes break PLplot 5.15)
 #   - Qt (Qt5 unavailable; Qt6 not supported by PLplot 5.15)
@@ -73,17 +82,6 @@ configopts = (
 )
 
 separate_build_dir = True
-
-# NumPy 2.x: headers reference 'numpy/_public_dtype_api_table.h', so the parent
-# of numpy.get_include() must be on the C/C++ include path in addition to PLplot's
-# own '-I.../numpy/_core/include/numpy' (which it adds to find <arrayobject.h>).
-preconfigopts = (
-    'export _NUMPY_INC=$(python -c "import numpy; print(numpy.get_include())") && '
-    'export CFLAGS="-I${_NUMPY_INC} $CFLAGS" && '
-    'export CXXFLAGS="-I${_NUMPY_INC} $CXXFLAGS" && '
-)
-
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 sanity_check_paths = {
     'files': [
