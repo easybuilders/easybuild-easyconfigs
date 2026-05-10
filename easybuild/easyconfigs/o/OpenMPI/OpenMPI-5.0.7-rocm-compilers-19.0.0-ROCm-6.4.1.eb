@@ -35,7 +35,6 @@ dependencies = [
     ('hwloc', '2.11.2'),
     ('hwloc-ROCm', '2.11.2'),
     ('libevent', '2.1.12'),
-    ('UCX', '1.18.0'),
     ('UCX-ROCm', '1.18.0'),
     ('libfabric', '2.0.0'),
     ('PMIx', '5.0.6'),
@@ -43,6 +42,7 @@ dependencies = [
     ('UCC', '1.3.0'),
     ('UCC-ROCm', '1.3.0'),
     ('HIP', '6.4.1'),
+    ('xpmem', '2.7.4'),
 ]
 
 # Disable building Level Zero components of romio if system dependencies are picked up. Sources are not based on
@@ -54,14 +54,20 @@ preconfigopts = 'sed -i "s/have_ze=yes/have_ze=no/" %(start_dir)s/3rd-party/romi
 preconfigopts += './autogen.pl --force && '
 
 # Base config options
-configopts = '--without-xpmem --with-show-load-errors=no '
+configopts = '--with-show-load-errors=no '
+configopts += '--with-xpmem=$EBROOTXPMEM '
+configopts += '--with-cray-xpmem=no '
 configopts += '--with-pmix=$EBROOTPMIX '
 configopts += '--with-prrte=$EBROOTPRRTE '
 configopts += '--with-libevent=$EBROOTLIBEVENT '
 configopts += '--with-hwloc=$EBROOTHWLOC '
-configopts += '--with-ucx=$EBROOTUCX '
+configopts += '--with-ofi=$EBROOTLIBFABRIC '
+configopts += '--with-ucx=$EBROOTUCXMINROCM '
 configopts += '--with-ucc=$EBROOTUCC '
 configopts += '--with-rocm=$EBROOTHIP '
-configopts += '--enable-mpi1-compatibility '
+
+modextravars = {
+    'OMPI_MCA_opal_common_ucx_devices': 'any',
+}
 
 moduleclass = 'mpi'
