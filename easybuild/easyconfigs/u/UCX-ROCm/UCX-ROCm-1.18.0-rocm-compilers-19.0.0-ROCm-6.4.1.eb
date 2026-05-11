@@ -6,11 +6,10 @@ name = 'UCX-ROCm'
 version = '1.18.0'
 
 homepage = 'http://www.openucx.org/'
-description = """Unified Communication X
-An open-source production grade communication framework for data centric
-and high-performance applications
-
-This module adds the UCX ROCm support.
+description = """Unified Communication X (UCX) is an open-source, production-grade
+communication framework for data-centric and high-performance applications. 
+This module provides the complete UCX library explicitly configured with AMD ROCm
+support to enable ROCm memory domains and transports.
 """
 
 toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
@@ -19,16 +18,11 @@ toolchainopts = {'pic': True}
 source_urls = ['https://github.com/openucx/ucx/releases/download/v%(version)s']
 sources = [{'filename': 'ucx-%(version)s.tar.gz', 'alt_location': 'UCX'}]
 patches = [
-    'UCX-ROCm-1.18.0_link_against_existing_UCX_libs.patch',
-    'UCX-1.13.1-dynamic_modules.patch',
     'UCX-1.18.0_fix_bistro_hooks.patch',
     'UCX-1.18.0_fix-glibc-2.43-compile-failure.patch',
 ]
 checksums = [
     {'ucx-1.18.0.tar.gz': 'fa75070f5fa7442731b4ef5fc9549391e147ed3d859afeb1dad2d4513b39dc33'},
-    {'UCX-ROCm-1.18.0_link_against_existing_UCX_libs.patch':
-     '5aa85e428f62a168f2d4e75197c41c6835ed5a9893696cedaf1021858678f08c'},
-    {'UCX-1.13.1-dynamic_modules.patch': '00874687bd90b795fff61aaa183f6c6bea2210aa1003b28f23d9ebf7066f8782'},
     {'UCX-1.18.0_fix_bistro_hooks.patch': '6357f1ebb1569e30d0855e48404fdf38a5a7060a87789f54d7bb751f957be20c'},
     {'UCX-1.18.0_fix-glibc-2.43-compile-failure.patch':
      'c67b2070a65e8217b7c6f9d9a6a13ff11141bacfed395d551376432428348a9c'},
@@ -48,31 +42,27 @@ dependencies = [
 osdependencies = [OS_PKG_IBVERBS_DEV]
 
 # Base options matching the GCCcore UCX build
-configopts  = '--enable-optimizations --enable-cma --enable-mt --with-verbs '
+configopts = '--enable-optimizations --enable-cma --enable-mt --with-verbs '
 configopts += '--without-java --without-go --disable-doxygen-doc '
 configopts += '--disable-logging --disable-debug --disable-assertions --disable-params-check '
 
-# xpmem — same library works regardless of which compiler built UCX
-configopts += '--with-xpmem=$EBROOTXPMEM '
-
-# ROCm — this is what UCX-ROCm adds over the base UCX build
 configopts += '--with-rocm=$EBROOTROCMMINLLVM '
+configopts += '--with-xpmem=$EBROOTXPMEM '
 
 buildopts = 'V=1'
 
 sanity_check_paths = {
     'files': [
-        'bin/ucx_perftest', 
-        'bin/ucx_read_profile', 
-        'bin/ucx_info', 
-        'lib/ucx/libuct_rocm.so'],  # the ROCm transport plugin
+        'bin/ucx_perftest',
+        'bin/ucx_read_profile',
+        'bin/ucx_info',
+        'lib/ucx/libuct_rocm.so'],
     'dirs': ['include', 'lib', 'share'],
 }
 
 sanity_check_commands = [
-    "ucx_info -d",
-    "ucx_info -d 2>&1 | grep -q 'rocm'",    # fails if ROCm transport not compiled in
-    "ucx_info -d 2>&1 | grep -q 'xpmem'",   # fails if xpmem not compiled in
+    "ucx_info -d 2>&1 | grep -i rocm",
+    "ucx_info -d 2>&1 | grep -i xpmem",
 ]
 
 moduleclass = 'lib'
