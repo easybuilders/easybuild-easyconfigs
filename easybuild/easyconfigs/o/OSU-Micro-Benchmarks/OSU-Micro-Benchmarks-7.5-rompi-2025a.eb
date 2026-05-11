@@ -19,14 +19,7 @@ checksums = ['1cf84ac5419456202757a757c5f9a4f5c6ecd05c65783c7976421cfd6020b3b3']
 dependencies = [
     ('HIP', _rocm_version),
     ('RCCL', '2.22.3'),
-    ('UCX-ROCm', '1.18.0'),
 ]
-
-preconfigopts = (
-    'export CPPFLAGS="-I$EBROOTHIP/include -I$EBROOTROCMMINLLVM/include $CPPFLAGS" && '
-    'export LDFLAGS="-L$EBROOTHIP/lib -L$EBROOTROCMMINLLVM/lib '
-    '-Wl,-rpath,$EBROOTHIP/lib -Wl,-rpath,$EBROOTROCMMINLLVM/lib $LDFLAGS" && '
-)
 
 configopts = '--enable-rocm --with-rocm=$EBROOTHIP '
 configopts += '--enable-rcclomb --with-rccl=$EBROOTRCCL '
@@ -40,8 +33,16 @@ local_benchmark_dirs = [
 modextrapaths = {'PATH': local_benchmark_dirs}
 
 sanity_check_paths = {
-    'files': [],
+    'files': [
+        'libexec/osu-micro-benchmarks/mpi/pt2pt/osu_bw',
+        'libexec/osu-micro-benchmarks/mpi/collective/osu_allreduce',
+        'libexec/osu-micro-benchmarks/xccl/collective/osu_xccl_allreduce',
+    ],
     'dirs': local_benchmark_dirs,
 }
+
+sanity_check_commands = [
+    "osu_bw --help | grep -i rocm",
+]
 
 moduleclass = 'perf'
