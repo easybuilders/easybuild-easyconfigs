@@ -125,31 +125,3 @@ index 587d0eb6ed..6f89d1d73c 100644
      # ARPACK supports only dtype float, complex, or np.float32
      @pytest.mark.filterwarnings("ignore:The problem size")
      @pytest.mark.parametrize("dtype", (float, complex, np.float32))
-diff --git a/scipy/sparse/linalg/tests/test_propack.py b/scipy/sparse/linalg/tests/test_propack.py
-index 64eb888fd9..879a26f34b 100644
---- a/scipy/sparse/linalg/tests/test_propack.py
-+++ b/scipy/sparse/linalg/tests/test_propack.py
-@@ -2,6 +2,7 @@ import os
- import pytest
- 
- import numpy as np
-+import scipy
- from numpy.testing import assert_allclose
- from pytest import raises as assert_raises
- from scipy.sparse.linalg._svdp import _svdp
-@@ -74,6 +75,7 @@ def check_svdp(n, m, constructor, dtype, k, irl_mode, which, f=0.8):
-     assert_orthogonal(vt1.T, vt2.T, rtol=tol, atol=tol)
- 
- 
-+@pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
- @pytest.mark.parametrize('ctor', (np.array, csr_matrix, csc_matrix))
- @pytest.mark.parametrize('dtype', _dtypes)
- @pytest.mark.parametrize('irl', (True, False))
-@@ -89,6 +91,7 @@ def test_svdp(ctor, dtype, irl, which):
-         check_svdp(n, m, ctor, dtype, k, irl, which)
- 
- 
-+@pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
- @pytest.mark.parametrize('dtype', _dtypes)
- @pytest.mark.parametrize('irl', (False, True))
- @pytest.mark.timeout(120)  # True, complex64 > 60 s: prerel deps cov 64bit blas
