@@ -1,0 +1,46 @@
+# Author: Stamen Miroslavov Minkov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center 2026
+# GPU version of the software
+
+easyblock = 'Conda'
+
+name = 'deep4downscaling-GPU'
+version = '1.1.0'
+versionsuffix = '-conda'
+
+homepage = 'https://github.com/SantanderMetGroup/deep4downscaling'
+description = """deep4downscaling is a Python library designed for developing deep learning models
+ for statistical downscaling. The library focuses on two main objectives: Ease of Research and
+ Established Deep Learning Models. In addition to these main goals, deep4downscaling includes:
+ Comprehensive Evaluation Metrics and eXplainable Artificial Intelligence (XAI) Techniques Tailored
+ for Downscaling."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/SantanderMetGroup/deep4downscaling/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+patches = ['deep4downscaling-GPU-1.1.0_remove-yaml-prefix.patch']
+checksums = [
+    # v1.1.0.tar.gz:
+    '4e94bf20988fe4da7e7278c161a3f586a586e80f363ce5280b2cda99b4fe6f27',
+    # deep4downscaling-GPU-1.1.0_remove-yaml-prefix.patch
+    '799d918c3f13e42dbf07944768f98878a9aa02c0f555866d287744d25618e7ec',
+]
+
+extract_sources = True
+
+builddependencies = [('Miniconda3', '23.9.0-0')]
+
+environment_file = 'requirements/deep4downscaling-gpu.yml'
+
+postinstallcmds = [
+    'cp -r %(builddir)s/deep4downscaling-%(version)s/deep4downscaling/* %(installdir)s/bin',
+    'cp -r %(builddir)s/deep4downscaling-%(version)s/notebooks %(installdir)s',
+]
+
+sanity_check_paths = {
+    'files': ['bin/viz.py'],
+    'dirs': ['lib', 'include', 'bin/deep', 'notebooks'],
+}
+
+moduleclass = 'ai'
