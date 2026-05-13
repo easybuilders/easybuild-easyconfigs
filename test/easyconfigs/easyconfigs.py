@@ -1241,8 +1241,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.2.1'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.2.1.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.3.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.3.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1477,7 +1477,7 @@ class EasyConfigTest(TestCase):
         # + jupyterlmod + jupyter-resource-usage
         # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
         bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'ESL-Bundle', 'FEniCS', 'GCC', 'Jupyter-bundle',
-                             'Python-bundle', 'ROCm', 'llvm-compilers']
+                             'Python-bundle', 'ROCm', 'llvm-compilers', 'rocm-compilers']
 
         failing_checks = []
 
