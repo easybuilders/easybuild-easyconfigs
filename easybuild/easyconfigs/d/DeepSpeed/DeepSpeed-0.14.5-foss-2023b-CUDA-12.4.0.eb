@@ -85,7 +85,6 @@ exts_list = [
             'DeepSpeed-0.14.5_pdsh-env-vars.patch',
             'DeepSpeed-0.14.5_pic-compile.patch',
             'DeepSpeed-0.14.5_test-nvme-offload.patch',
-            'debug14.patch',
         ],
         'checksums': [
             {'DeepSpeed-0.14.5.tar.gz': '9f5622715cbd89c7382bfecf7fb188419ad3f2af7764dc6de35917abc6390cce'},
@@ -108,7 +107,14 @@ exts_list = [
             # See https://github.com/deepspeedai/DeepSpeed/pull/7760
             'EVOFORMER_ATTN',
         ],
-        'preinstallopts': local_cutlass_opt,
+        'preinstallopts': ' && '.join((
+            # Use this version and no suffix
+            'echo "%(version)s" > version.txt',
+            'echo "" > build.txt',
+            # Disable use of git during build
+            'sed -i "s/command_exists(\'git\')/False/" setup.py',
+            local_cutlass_opt,
+        )),
         'pretestopts': local_cutlass_opt,
         'testinstall': True,
         'runtest': ' && '.join((
