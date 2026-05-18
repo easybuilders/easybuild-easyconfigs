@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'PRRTE'
+version = '4.1.0'
+
+homepage = 'https://docs.prrte.org/'
+description = """PRRTE is the PMIx Reference RunTime Environment"""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openpmix/prrte/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.bz2']
+checksums = ['285ad62b670075708b9fcfe14c54baa599733bc274d10502a82e8eebba0b7c70']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('pkgconf', '2.5.1'),
+]
+
+dependencies = [
+    ('libevent', '2.1.12'),
+    ('hwloc', '2.13.0'),
+    ('PMIx', '6.1.0'),
+]
+
+configopts = ' --with-libevent=$EBROOTLIBEVENT'
+configopts += ' --with-hwloc=$EBROOTHWLOC --with-pmix=$EBROOTPMIX'
+
+buildopts = 'V=1'
+
+local_binaries = ['prte', 'prte_info', 'prterun', 'prun', 'pterm']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries] + ['lib/libprrte.%s' % SHLIB_EXT],
+    'dirs': ['etc', 'include', 'share']
+}
+
+sanity_check_commands = ['%s --version' % x for x in local_binaries]
+
+moduleclass = 'lib'

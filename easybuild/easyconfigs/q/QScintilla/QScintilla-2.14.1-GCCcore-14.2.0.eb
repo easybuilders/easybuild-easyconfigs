@@ -1,0 +1,78 @@
+# Author: Pavel Grochal (INUITS)
+# Update v2.14.1: Pavel Tománek (INUITS)
+# License: GPLv2
+
+easyblock = 'ConfigureMake'
+
+name = 'QScintilla'
+version = '2.14.1'
+
+homepage = 'https://www.riverbankcomputing.com/software/qscintilla'
+description = "QScintilla is a port to Qt of Neil Hodgson's Scintilla C++ editor control"
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ['https://www.riverbankcomputing.com/static/Downloads/QScintilla/%(version)s/']
+sources = ['QScintilla_src-%(version)s.tar.gz']
+checksums = ['dfe13c6acc9d85dfcba76ccc8061e71a223957a6c02f3c343b30a9d43a4cdd4d']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('PyQt-builder', '1.19.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('PyQt6', '6.9.1'),
+]
+
+# run qmake instead of configure
+skipsteps = ['configure']
+
+start_dir = 'src'
+
+prebuildopts = 'export CPATH=$EBROOTQT6/include/QtWidgets:$EBROOTQT6/include/QtPrintSupport:$CPATH && '
+# do not install to Qt dirs but to QScintilla dirs
+prebuildopts += (
+    "sed -i "
+    r"-e 's|\$\$\[QT_INSTALL_HEADERS\]|%(installdir)s/include|g' "
+    r"-e 's|\$\$\[QT_INSTALL_LIBS\]|%(installdir)s/lib|g' "
+    "%(start_dir)s/features/%(namelower)s2.prf && "
+)
+prebuildopts += (
+    "sed -i "
+    r"-e 's|\$\$\[QT_HOST_DATA\]|%(installdir)s/data|g' "
+    r"-e 's|\$\$\[QT_INSTALL_DATA\]|%(installdir)s/data|g' "
+    r"-e 's|\$\$\[QT_INSTALL_HEADERS\]|%(installdir)s/include|g' "
+    r"-e 's|\$\$\[QT_INSTALL_LIBS\]|%(installdir)s/lib|g' "
+    r"-e 's|\$\$\[QT_INSTALL_TRANSLATIONS\]|%(installdir)s/trans|g' "
+    "%(start_dir)s/%(namelower)s.pro && "
+)
+prebuildopts += 'qmake %(namelower)s.pro && '
+
+# install python bindings to let `import PyQt5.Qsci` works
+postinstallcmds = [
+    'export LD_LIBRARY_PATH=%(installdir)s/lib:$LD_LIBRARY_PATH && '
+    'export LDFLAGS="$LDFLAGS -L%(installdir)s/lib" && '
+    'export CPATH=$EBROOTQT6/include/QtWidgets:$EBROOTQT6/include/QtPrintSupport:$CPATH && '
+    # link PyQt5 sip files to QScintilla src
+    'cd %(builddir)s/QScintilla_src-%(version)s/Python && ln -s $EBROOTPYQT6/share/sip/* sip && '
+    # use pyproject-qt5.toml as main pyproject.toml
+    'cp pyproject-qt6.toml pyproject.toml && '
+    # run sip-install to install python bindings
+    'sip-install --target=%(installdir)s/lib/python%(pyshortver)s/site-packages --verbose '
+    '--qsci-include-dir=%(installdir)s/include --qsci-library-dir=%(installdir)s/lib '
+    "--qmake-setting 'LIBS += -lqscintilla2_qt6' --qmake-setting 'INCLUDEPATH += %(installdir)s/include' && "
+    # create share dir with sip files
+    'cd %(installdir)s && mkdir -p share/sip && cd share/sip && '
+    'ln -s ../../lib/python%(pyshortver)s/site-packages/PyQt6/bindings/Qsci'
+]
+
+sanity_check_paths = {
+    'files': ['lib/lib%%(namelower)s%%(version_major)s_qt6.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['python -s -c "import PyQt6.Qsci"']
+
+moduleclass = 'vis'

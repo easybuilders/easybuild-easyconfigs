@@ -1,0 +1,37 @@
+From f962f4be780b8d8c8a0b687ca4f29bfb783cc804 Mon Sep 17 00:00:00 2001
+From: Keren Zhou <kerenzhou@openai.com>
+Date: Mon, 17 Jun 2024 18:55:12 -0400
+Subject: [PATCH] [BUILD] Add the `TRITON_HOME` env var (#4152)
+
+It's useful to have two or more Triton home directories on
+supercomputing clusters with more than one type of CPU but a single file
+system
+
+Note (Alexander Grund): Modification to setup.py included in Triton-3.1.0_5fe38ff_eb_env_python_build.patch
+diff --git a/python/triton/runtime/cache.py b/python/triton/runtime/cache.py
+--- a/python/triton/runtime/cache.py
++++ b/python/triton/runtime/cache.py
+@@ -8,16 +8,20 @@
+ import hashlib
+ 
+ 
++def get_home_dir():
++    return os.getenv("TRITON_HOME", Path.home())
++
++
+ def default_cache_dir():
+-    return os.path.join(Path.home(), ".triton", "cache")
++    return os.path.join(get_home_dir(), ".triton", "cache")
+ 
+ 
+ def default_override_dir():
+-    return os.path.join(Path.home(), ".triton", "override")
++    return os.path.join(get_home_dir(), ".triton", "override")
+ 
+ 
+ def default_dump_dir():
+-    return os.path.join(Path.home(), ".triton", "dump")
++    return os.path.join(get_home_dir(), ".triton", "dump")
+ 
+ 
+ class CacheManager(ABC):

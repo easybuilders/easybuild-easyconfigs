@@ -1,0 +1,28 @@
+author: Davide Grassano (CECAM)
+
+Fixes an issure related to casting the result of an istream.get() to a char before checking for EOF causing an
+infinite loop and/or a std::bad_alloc crashes in the test_suite.
+Similar error to the C equivalent https://bugs.webkit.org/show_bug.cgi?id=144439
+
+See https://github.com/easybuilders/easybuild-easyconfigs/pull/25222#issuecomment-3859867392 for more details.
+
+diff --git a/src/formats/getinchi.cpp b/src/formats/getinchi.cpp
+index abda0a244..d26672bbe 100644
+--- a/src/formats/getinchi.cpp
++++ b/src/formats/getinchi.cpp
+@@ -159,12 +159,14 @@ string GetInChI(istream& is)
+   string result;
+   enum statetype {before_inchi, match_inchi, unquoted, quoted};
+   statetype state = before_inchi;
++  int ch_int;
+   char ch, lastch=0, qch=0;
+   size_t split_pos = 0;
+   bool inelement=false, afterelement=false;
+ 
+-  while((ch=is.get())!=EOF)
++  while((ch_int=is.get())!=EOF)
+   {
++    ch = (char)ch_int;
+     if(state==before_inchi)
+     {
+       if(ch>=0 && !isspace(ch))

@@ -1,0 +1,108 @@
+easyblock = 'Bundle'
+
+name = 'sway'
+version = '1.11'
+
+homepage = 'https://github.com/swaywm/sway'
+description = 'The Sway i3-compatible Wayland compositor and related projects'
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+toolchainopts = {'extra_cflags': '-Wno-error=unused-variable -Wno-error=unused-but-set-variable -Wno-error=return-type'}
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Meson', '1.8.2'),
+    ('Ninja', '1.13.0'),
+    ('expat', '2.7.1'),
+    ('hwdata', '0.403'),
+    ('Catch2', '3.11.0'),
+    ('pkgconf', '2.4.3'),
+    ('tllist', '1.1.0'),
+]
+
+dependencies = [
+    ('libxml2', '2.14.3'),
+    ('Wayland', '1.24.0'),
+    ('Xwayland', '24.1.9'),
+    ('librsvg', '2.61.0'),
+    ('OpenGL', '2025.09'),
+    ('Vulkan', '1.4.328'),
+    ('glslang-SPIRV', '15.4.0'),
+    ('cairo', '1.18.4'),
+    ('pixman', '0.46.4'),
+    ('LittleCMS', '2.17'),
+    # for DRM, session, input support
+    ('libdrm', '2.4.125'),
+    ('libdisplay-info', '0.3.0'),
+    ('libliftoff', '0.5.0'),
+    ('seatd', '0.9.2'),
+    ('libinput', '1.30.1'),
+    # main package
+    ('PCRE2', '10.45'),
+    ('json-c', '0.18'),
+    ('Pango', '1.57.0'),
+    ('Gdk-Pixbuf', '2.42.12'),
+    # foot
+    ('utf8proc', '2.10.0'),
+    ('HarfBuzz', '11.4.1'),
+]
+
+default_easyblock = 'MesonNinja'
+
+default_component_specs = {
+    'sources': [SOURCE_TAR_GZ],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('wlroots', '0.19.2', {
+        'source_urls': ['https://gitlab.freedesktop.org/wlroots/wlroots/-/releases/%(version)s/downloads/'],
+        'checksums': ['09a0a8d60104c8b0772fee4f60ba76a89aed7e59dff7659d00960fba06bdf267'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/swaywm/sway/releases/download/%(version)s'],
+        'checksums': ['0e37a55b7c3379230e97e1ad982542b75016a0c7d6676198604e557f9b373dae'],
+    }),
+    ('swaybg', '1.2.1', {
+        'source_urls': ['https://github.com/swaywm/swaybg/releases/download/v%(version)s/'],
+        'checksums': ['6af1fdf0e57b1cc5345febed786b761fea0e170943a82639f94cfaed7df84f8f'],
+    }),
+    ('swaylock', '1.8.4', {
+        'source_urls': ['https://github.com/swaywm/swaylock/releases/download/v%(version)s/'],
+        'checksums': ['aa251d5a8f335fe2ac9ec3cc2a6ac8772aa4dba2ec710ccd415956c6e89b11d3'],
+    }),
+    ('swayidle', '1.9.0', {
+        'source_urls': ['https://github.com/swaywm/swayidle/releases/download/v%(version)s/'],
+        'checksums': ['6c1b769038b60250c88e47380cbb021cfa57a65f872bf4d6c340b5e3057096ac'],
+    }),
+    ('wmenu', '0.2.0', {  # required for swaybar to function
+        'source_urls': ['https://codeberg.org/adnano/wmenu/archive/'],
+        'sources': [{'download_filename': VERSION_TAR_GZ, 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['4e6aea3f8975fec720f6eb87aad620d5297a8a5a137615e4cf047e95d2b9d308'],
+        'start_dir': '%(name)s',
+    }),
+    ('fcft', '3.3.3', {  # this is only used by foot
+        'source_urls': ['https://codeberg.org/dnkl/fcft/archive/'],
+        'sources': [{'download_filename': VERSION_TAR_GZ, 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['c0d8d485b45b1af829f73101d6588f404a32bf3c7543236b1a4707d44be81b60'],
+        'start_dir': '%(name)s',
+    }),
+    ('foot', '1.25.0', {  # default terminal for sway
+        'source_urls': ['https://codeberg.org/dnkl/foot/releases/download/%(version)s/'],
+        'checksums': ['6572595658c81dde9dd1697a475fceaa2e46fbe8989bed989822643578a2ebe2'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in ['sway', 'swaybg', 'swaylock', 'swayidle']],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'sway --version',
+    'swaybg --version',
+    'swaylock --version',
+    'foot --version',
+]
+
+moduleclass = 'vis'
