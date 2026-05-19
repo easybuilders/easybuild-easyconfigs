@@ -1,0 +1,58 @@
+commit 43113b4542e1ab8f3e6a198b48e90611391d5476
+Author: Louwrens van Dellen <lthvd@protonmail.com>
+Date:   Sat Sep 7 15:17:53 2024 +0200
+
+    add verbosity to cmake build
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 786eeab..651d9ea 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -21,6 +21,20 @@ endif()
+ 
+ find_package(Python REQUIRED COMPONENTS Interpreter Development)
+ 
++if (Coin_FOUND)
++	MESSAGE(STATUS "COIN_FOUND: TRUE")
++	MESSAGE(STATUS "COIN_INCLUDE_DIR: ${Coin_INCLUDE_DIR}")
++	MESSAGE(STATUS "COIN_LIB_DIR: ${Coin_LIB_DIR}")
++	MESSAGE(STATUS "COIN_VERSION: ${Coin_VERSION}")
++endif()
++
++if (SoQt_FOUND)
++	MESSAGE(STATUS "SOQT_FOUND: True")
++	MESSAGE(STATUS "SOQT_INCLUDE_DIRS: ${SoQt_INCLUDE_DIRS}")
++	MESSAGE(STATUS "SOQT_LIB_DIRS: ${SoQt_LIBRARY_DIRS}")
++	MESSAGE(STATUS "SOQT_VERSION: ${SoQt_VERSION}")
++endif()
++
+ # SWIGIFY HEADERS
+ # doing this with the origin python functions
+ 
+
+commit 7d37be9e5efce925c96a14a71eca78966bad5b0c
+Author: Louwrens van Dellen <lthvd@protonmail.com>
+Date:   Sat Sep 7 15:16:46 2024 +0200
+
+    bugfix build failure
+
+diff --git a/interfaces/CMakeLists.txt b/interfaces/CMakeLists.txt
+index 92f9af6..168fb2e 100644
+--- a/interfaces/CMakeLists.txt
++++ b/interfaces/CMakeLists.txt
+@@ -52,6 +52,7 @@ if (SoQt_FOUND)
+     set_property(SOURCE soqt.i PROPERTY INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}")
+     set_property(SOURCE soqt.i APPEND PROPERTY INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/fake_headers")
+     set_property(SOURCE soqt.i APPEND PROPERTY INCLUDE_DIRECTORIES "${SoQt_INCLUDE_DIRS}")
++    set_property(SOURCE soqt.i APPEND PROPERTY INCLUDE_DIRECTORIES "${Coin_INCLUDE_DIR}")
+ 
+ 
+     swig_add_library(soqt
+@@ -68,6 +69,7 @@ if (SoQt_FOUND)
+ 
+     target_include_directories(soqt
+         PUBLIC
++        ${Coin_INCLUDE_DIR}
+         ${SoQt_INCLUDE_DIRS}
+         ${Qt5Gui_INCLUDE_DIRS}
+         ${Qt5Widgets_INCLUDE_DIRS}
