@@ -17,7 +17,10 @@ source_urls = [
 sources = [
     SOURCELOWER_TAR_GZ,
     {'download_filename': 'v3.1.0.tar.gz', 'filename': 'wannier90-3.1.0.tar.gz', 'extract_cmd': 'cp %s %(builddir)s'},
-    {'git_config': {'url': 'https://gitlab.com/%(namelower)s-project/ecosystem/', 'repo_name': 'elsi_interface', 'commit': '512532a42c5e'}, 'filename': 'elsi_interface_512532a42c5e.tar.gz', 'extract_cmd': 'tar xzf %s -C %(builddir)s/%(namelower)s-%(version)s/External/ELSI-project'},
+    {'git_config': {'url': 'https://gitlab.com/%(namelower)s-project/ecosystem/', 
+    'repo_name': 'elsi_interface', 'commit': '512532a42c5e'}, 
+    'filename': 'elsi_interface_512532a42c5e.tar.gz', 
+    'extract_cmd': 'tar xzf %s -C %(builddir)s/%(namelower)s-%(version)s/External/ELSI-project'},
 ]
 checksums = [
     {SOURCELOWER_TAR_GZ: '9cd855bd2702b69785588931aa06e4c1b1036f11b5ef7b01ecc29a7218a38d3f'},
@@ -45,16 +48,33 @@ dependencies = [
     ('netCDF-Fortran', '4.6.1'),
 ]
 
-# enable OpenMP
-configopts = "-DSIESTA_WITH_OPENMP=ON -DSIESTA_WITH_FLOOK=ON -DFLOOK_ROOT=$EBROOTFLOOK -DFLOOK_INCLUDE_DIRS=$EBROOTFLOOK/include -DSIESTA_WITH_ELSI=ON -DSIESTA_WITH_ELSI_PEXSI=ON -DSIESTA_WITH_WANNIER90=ON -DMPIEXEC_MAX_NUMPROCS=4 "
-configopts += "-DSCALAPACK_LIBRARY=\"$EBROOTIMKL/mkl/2024.2/lib/intel64/libmkl_scalapack_lp64.so;$EBROOTIMKL/mkl/2024.2/lib/intel64/libmkl_blacs_intelmpi_lp64.so\" "
+# skip 8 tests that are failing with small numerical differences
+local_failing_tests = [
+    'pi3_Runs_Singleton',  # can fail depending on build environment
+    'SpinPolarization-fe_spin_mpi4_omp',
+    'SpinPolarization-fe_spin_directphi_mpi4_omp1',
+    'SpinPolarization-fe_noncol_gga_mpi4_omp1',
+    'SpinPolarization-fe_noncol_kp_mpi4_omp1',
+    'SpinPolarization-fe_noncol_sp_mpi4_omp1',
+    'SpinOrbit-FePt-X-X_mpi4_omp1',
+    'SCFMixing-chargemix_mpi4_omp1',
+    'SCFMixing-pulay_mpi4_omp1',
+]
+
+# enable OpenMP, Flook, ELSI, PEXSI and Wannier90
+configopts = "-DSIESTA_WITH_OPENMP=ON -DSIESTA_WITH_FLOOK=ON -DFLOOK_ROOT=$EBROOTFLOOK "
+configopts += "-DFLOOK_INCLUDE_DIRS=$EBROOTFLOOK/include -DSIESTA_WITH_ELSI=ON -DSIESTA_WITH_ELSI_PEXSI=ON "
+configopts += "-DSIESTA_WITH_WANNIER90=ON -DMPIEXEC_MAX_NUMPROCS=4 "
+configopts += "-DSCALAPACK_LIBRARY=\"$EBROOTIMKL/mkl/2024.2/lib/intel64/libmkl_scalapack_lp64.so;"
+configopts += "$EBROOTIMKL/mkl/2024.2/lib/intel64/libmkl_blacs_intelmpi_lp64.so\" "
+
+#Siesta patches and builds it itself
+preconfigopts = "export WANNIER90_PACKAGE=%(builddir)s/wannier90-3.1.0.tar.gz && "
 
 # tests
 pretestopts = 'OMP_NUM_THREADS=4'
-preconfigopts = "export WANNIER90_PACKAGE=%(builddir)s/wannier90-3.1.0.tar.gz && "
-
 runtest = True  # defaults to ctest
-testopts = "--output-on-failure -E 'pi3_Runs_Singleton|SpinPolarization-fe_spin_mpi4_omp|SpinPolarization-fe_spin_directphi_mpi4_omp1|SpinPolarization-fe_noncol_gga_mpi4_omp1|SpinPolarization-fe_noncol_kp_mpi4_omp1|SpinPolarization-fe_noncol_sp_mpi4_omp1|SpinOrbit-FePt-X-X_mpi4_omp1|SCFMixing-chargemix_mpi4_omp1|SCFMixing-pulay_mpi4_omp1'"
+testopts = "--output-on-failure -E '%s'" % '|'.join(local_failing_tests)
 
 sanity_check_paths = {
     'files': ['bin/%(namelower)s', 'lib/libsiesta.a'],
