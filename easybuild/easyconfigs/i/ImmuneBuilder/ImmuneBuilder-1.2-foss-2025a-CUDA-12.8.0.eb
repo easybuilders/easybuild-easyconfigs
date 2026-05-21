@@ -1,0 +1,97 @@
+easyblock = 'PythonBundle'
+
+name = 'ImmuneBuilder'
+version = '1.2'
+
+homepage = 'https://github.com/brennanaba/ImmuneBuilder'
+description = """Deep-learning models for predicting immune receptor protein structures
+(ABodyBuilder2, NanoBodyBuilder2, TCRBuilder2)."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+versionsuffix = '-CUDA-12.8.0'
+
+# Public EasyBuild 2025a work is on PyTorch 2.9.1; there is no upstream/public
+# easyconfig or PR for PyTorch 2.6.0 on foss/2025a.
+# If your site only provides a module for PyTorch/OpenMM, switch those entries
+# to EXTERNAL_MODULE dependencies using the exact module names from `module avail`.
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('Python-bundle-PyPI', '2025.04'),
+    ('SciPy-bundle', '2025.06'),
+    ('Biopython', '1.85'),  # Required by anarci for Bio.SearchIO.HmmerIO
+    ('einops', '0.8.1'),
+    ('gemmi', '0.7.4'),
+    ('PyTorch', '2.9.1', '-CUDA-12.8.0'),
+    ('OpenMM', '8.4.0'),
+]
+
+builddependencies = [
+    # ANARCI setup.py runs build_pipeline/RUN_pipeline.sh and requires these tools in PATH.
+    ('HMMER', '3.4'),
+    ('MUSCLE', '5.1.0'),
+]
+
+exts_list = [
+    # cgi was removed in Python 3.13; pdbfixer requires the compatibility package.
+    ('legacy-cgi', '2.6.4', {
+        'modulename': 'cgi',
+        'source_tmpl': 'legacy_cgi-%(version)s-py3-none-any.whl',
+        'checksums': ['7e235ce58bf1e25d1fc9b2d299015e4e2cd37305eccafec1e6bac3fc04b878cd'],
+    }),
+    ('PDBFixer', '1.12', {
+        'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'modulename': 'pdbfixer',
+        'checksums': ['a5c0b05dfaf2cdcad3b8ffc9ee1e6a955628aade0dda653da04d4a12ba4fe3ec'],
+    }),
+    # ANARCI uses a custom install command (CustomInstallCommand) that:
+    # - runs build_pipeline/RUN_pipeline.sh (downloads IMGT germlines, builds HMMs with HMMER/MUSCLE)
+    # - copies generated HMMs into the package directory
+    # The patch (ANARCI-79f6c57-muscle5-compat.patch) fixes:
+    # (1) MUSCLE v5 CLI flags (setup.py originally used v3 args)
+    # (2) ANARCI_LOC uses self.install_lib instead of site.getsitepackages()[0]
+    # (3) adds finally: os.chdir("..") after the pipeline to restore CWD
+    # (4) adds package_data so pip includes germlines.py and HMMs in the wheel
+    # preinstallopts pre-runs the pipeline and stages files in the source tree
+    # so that pip's bdist_wheel picks them up before CustomInstallCommand runs.
+    ('anarci', '79f6c57', {
+        'source_urls': ['https://github.com/oxpig/ANARCI/archive/'],
+        'sources': ['79f6c575056dedef86cb8f405ebb039197923eec.zip'],
+        'patches': ['ANARCI-79f6c57-muscle5-compat.patch'],
+        'preinstallopts': (
+            'cd build_pipeline && bash RUN_pipeline.sh && '
+            'cp curated_alignments/germlines.py ../lib/python/anarci/ && '
+            'mkdir -p ../lib/python/anarci/dat && cp -r HMMs ../lib/python/anarci/dat/ && '
+            'cd .. && '
+        ),
+        'modulename': 'anarci',
+        'checksums': ['805f227cd165dd1930871ef98de48c30eaa24b4597be501a26d69e4d09a2d54e'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/brennanaba/ImmuneBuilder/archive/refs/tags/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['1f5d4952d8a558366ff27e0c05c19e858b2a19a0f802708345c8ecbdc7e252c6'],
+        'modulename': 'ImmuneBuilder',
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/ABodyBuilder2',
+        'bin/NanoBodyBuilder2',
+        'bin/TCRBuilder2',
+    ],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/ImmuneBuilder'],
+}
+
+# Sanity checks: verify binaries and import, which confirms anarci is available
+sanity_check_commands = [
+    'ABodyBuilder2 --help',
+    'NanoBodyBuilder2 --help',
+    'TCRBuilder2 --help',
+]
+
+moduleclass = 'bio'
+
