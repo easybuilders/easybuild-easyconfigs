@@ -61,16 +61,18 @@ local_failing_tests = [
     'SCFMixing-pulay_mpi4_omp1',
 ]
 
+# Siesta patches and builds it itself
+preconfigopts = "export WANNIER90_PACKAGE=%(builddir)s/wannier90-3.1.0.tar.gz && "
+
+# avoid that Siesta is built with -xHost, rely on compiler option used by EasyBuild based on optarch configuration
+preconfigopts += """sed -i 's/"-xHost"/""/g' ../siesta-%(version)s/cmake/toolchains/intel.cmake && """
+
 # enable OpenMP, Flook, ELSI, PEXSI and Wannier90
 configopts = "-DSIESTA_WITH_OPENMP=ON -DSIESTA_WITH_FLOOK=ON -DFLOOK_ROOT=$EBROOTFLOOK "
 configopts += "-DFLOOK_INCLUDE_DIRS=$EBROOTFLOOK/include -DSIESTA_WITH_ELSI=ON -DSIESTA_WITH_ELSI_PEXSI=ON "
 configopts += "-DSIESTA_WITH_WANNIER90=ON -DMPIEXEC_MAX_NUMPROCS=4 "
 configopts += "-DSCALAPACK_LIBRARY=\"$EBROOTIMKL/mkl/2024.2/lib/intel64/libmkl_scalapack_lp64.so;"
 configopts += "$EBROOTIMKL/mkl/2024.2/lib/intel64/libmkl_blacs_intelmpi_lp64.so\" "
-
-#Siesta patches and builds it itself
-preconfigopts = "export WANNIER90_PACKAGE=%(builddir)s/wannier90-3.1.0.tar.gz && "
-buildopts = "V=1 VERBOSE=1"
 
 # tests
 pretestopts = 'OMP_NUM_THREADS=4'
