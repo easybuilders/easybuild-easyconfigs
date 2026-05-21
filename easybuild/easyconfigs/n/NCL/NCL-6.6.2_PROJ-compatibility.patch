@@ -1,0 +1,93 @@
+This ports NCL to the Proj 6 API. This new API was introduced in Proj 6 (2018).
+At the same time, the old API, which is used in NCL, was deprecated. With the release of Proj 8 (2021),
+the deprecated API was removed. Consequently, the highest supported version of Proj for NCL is Proj 7.2.0.
+This PR removes this upper limit and introduces effectively a lower limit, i.e. the oldest version of Proj that is supported is Proj 6.0.0.
+Author: Klaus Zimmermann (zklaus) in https://github.com/NCAR/ncl/pull/173
+Added to EB by Pavel Tomanek (Inuits)
+diff --git a/ni/src/lib/nfp/TransformCoordinate.c b/ni/src/lib/nfp/TransformCoordinate.c
+index 89d8164..c0877ee 100644
+--- a/ni/src/lib/nfp/TransformCoordinate.c
++++ b/ni/src/lib/nfp/TransformCoordinate.c
+@@ -1,47 +1,39 @@
+ #include <stdio.h>
+-#include <proj_api.h>
++#include <proj.h>
+ #include "TransformCoordinate.h"
+ 
+ int TransformCoordinate(char * SrcProjStr, char * DstProjStr,
+-        double * x, double * y, double * z,
+-        unsigned int nPoint) {
+-    projPJ SrcProj, DstProj;
+-    int Err, i;
+-
+-    /* Constructing the projections */
+-    if (!(SrcProj = pj_init_plus(SrcProjStr))) {
+-        printf("FATAL ERROR: Can not make a projection out of <%s>\n", SrcProjStr);
+-        return (1);
+-    }
+-    if (!(DstProj = pj_init_plus(DstProjStr))) {
+-        printf("FATAL ERROR: Can not make a projection out of <%s>\n", DstProjStr);
+-        return (2);
+-    }
+-
+-    /* Converting to radian if needed */
+-    if (pj_is_latlong(SrcProj)) {
+-        for (i = 0; i < nPoint; i++) {
+-            x[i] *= DEG_TO_RAD;
+-            y[i] *= DEG_TO_RAD;
+-        }
+-    }
+-
+-    /* Transforming the coordinates */
+-    if ((Err = pj_transform(SrcProj, DstProj, nPoint, 1, x, y, z)) != 0) {
+-        printf("FATAL ERROR: %s\n", pj_strerrno(Err));
+-        return (3);
+-    }
+-
+-    /* converting to degree if needed */
+-    if (pj_is_latlong(DstProj)) {
+-        for (i = 0; i < nPoint; i++) {
+-            x[i] *= RAD_TO_DEG;
+-            y[i] *= RAD_TO_DEG;
+-        }
+-    }
+-
+-    /* freeing the projection */
+-    pj_free(DstProj);
+-    pj_free(SrcProj);
+-    return (0);
+-}
++                        double * x, double * y, double * z,
++                        unsigned int nPoint) {
++    PJ_CONTEXT *CTX;
++    PJ *P;
++    size_t stride = sizeof(double);
++    size_t Err;
++
++    CTX = proj_context_create();
++    P = proj_create_crs_to_crs(CTX, SrcProjStr, DstProjStr, NULL);
++
++    /* Constructing the projections */
++    if (P == 0) {
++        printf("FATAL ERROR: Can not make a transform out of <%s> and <%s>\n",
++               SrcProjStr, DstProjStr);
++        return (1);
++    }
++
++    /* Transforming the coordinates */
++    Err = proj_trans_generic(P, PJ_FWD,
++                             x, stride, nPoint,
++                             y, stride, nPoint,
++                             z, stride, nPoint,
++                             0, 0, 0);
++    if (Err < nPoint) {
++        printf("FATAL ERROR: Could convert only %lu out of %u points\n",
++               (unsigned long)Err, nPoint);
++        return (3);
++    }
++
++    /* freeing the projection */
++    proj_destroy(P);
++    proj_context_destroy(CTX);
++    return (0);
++}

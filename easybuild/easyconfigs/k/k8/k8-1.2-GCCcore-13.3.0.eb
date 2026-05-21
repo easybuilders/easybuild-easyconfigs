@@ -1,0 +1,46 @@
+easyblock = 'MakeCp'
+
+name = 'k8'
+version = '1.2'
+
+homepage = 'https://github.com/attractivechaos/k8'
+description = """K8 is a JavaScript runtime built on top of Google's v8
+JavaScript engine. It provides a resizable binary buffer and synchronous
+APIs for plain file writing and gzip'd file reading."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+toolchainopts = {'opt': True}
+
+github_account = 'attractivechaos'
+source_urls = [GITHUB_RELEASE]
+sources = [SOURCE_TAR_BZ2]
+patches = ['%(name)s-%(version)s_adapt_to_EB.patch']
+checksums = [
+    {'k8-1.2.tar.bz2': 'a86b160a82f3233a21235d21170f3719a600dbd96bf1ec705a6eb57d770953c9'},
+    {'k8-1.2_adapt_to_EB.patch': '55c7a181fd9e036b81b0bef718e066fd7d1b324d0430ac8c52b9cf8ce974087c'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+]
+
+dependencies = [
+    ('nodejs', '20.13.1'),
+]
+
+_scripts = ['bedcov', 'fqcnt', 'getopt', 'k8', 'lc', 'regex', 'sudoku']
+files_to_copy = [
+    (['k8'], 'bin'),
+    (['scripts/%s.js' % x for x in _scripts], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/k8'] + ['bin/%s.js' % x for x in _scripts],
+    'dirs': [],
+}
+
+sanity_check_cmds = [
+    'k8 --help',
+]
+
+moduleclass = 'tools'

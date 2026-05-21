@@ -1,0 +1,202 @@
+This patch makes the NCL-6.6.2 compatible with OneAPI compilers from latests Intel toolchains.
+Author: Pavel Tomanek (Inuits)
+--- ni/src/ncl/NclNetCdf.c.orig	2025-11-26 14:18:53.679177000 +0100
++++ ni/src/ncl/NclNetCdf.c	2025-11-26 14:20:38.004171000 +0100
+@@ -251,7 +251,7 @@
+ 			*(nc_type*)out_type = NC_LONG;
+ 		} else {
+ 			NhlPError(NhlWARNING,NhlEUNKNOWN,"Classic NetCDF does not support 8-byte longs; convert to a supported data type or use the NetCDF4 format");
+-			*(nc_type*)out_type = NULL;
++			*(nc_type*)out_type = NC_NAT;
+ 		}
+ 		break;
+ 	case NCL_float:
+--- ni/src/lib/hlu/TextItem.c.orig	2025-11-26 14:22:08.380801000 +0100
++++ ni/src/lib/hlu/TextItem.c	2025-11-26 14:22:52.913093000 +0100
+@@ -63,7 +63,7 @@
+ 		NhlTProcedure,_NhlUSET((NhlPointer)_NhlResUnset),0,NULL },
+ 	{ NhlNtxFont, NhlCFont, NhlTFont, sizeof(NhlFont),
+ 		NhlOffset(NhlTextItemLayerRec, text.font),
+-		NhlTImmediate,_NhlUSET(21),0,NULL },
++		NhlTImmediate,_NhlUSET((NhlPointer)21),0,NULL },
+ 	{ "no.res", "No.res", NhlTBoolean, sizeof(NhlBoolean),
+ 		NhlOffset(NhlTextItemLayerRec,text.just_set),
+ 		NhlTImmediate,_NhlUSET((NhlPointer)True),_NhlRES_PRIVATE,NULL},
+--- ni/src/lib/hlu/SubStyles.c.orig	2025-11-27 13:58:16.310957000 +0100
++++ ni/src/lib/hlu/SubStyles.c	2025-11-27 13:58:45.770992000 +0100
+@@ -24,6 +24,8 @@
+ #include <math.h>
+ #include <ncarg/hlu/FortranP.h>
+ #include <ncarg/hlu/SubStylesP.h>
++#include <inttypes.h>
++#include <stdint.h>
+ 
+ #define Oset(field)     NhlOffset(NhlLineStyleLayerRec,linestyle.ls.field)
+ static NhlResource lineresources[] = {
+@@ -752,7 +754,7 @@
+ 		NhlTString,_NhlUSET("0.0"),0,NULL },
+ 	{NhlNgsFont, NhlCFont, NhlTFont, sizeof(NhlFont),
+ 		Oset(font),
+-		NhlTImmediate,_NhlUSET(21),0,NULL },
++		NhlTImmediate,_NhlUSET((NhlPointer)(intptr_t)21),0,NULL },
+ 	{NhlNgsTextJustification, NhlCTextJustification,
+ 		 NhlTJustification, sizeof(int),Oset(just),
+ 		NhlTImmediate,_NhlUSET((NhlPointer)NhlCENTERCENTER),0,NULL},
+--- ni/src/ncl/NclHDF5.c.orig	2025-11-27 14:44:44.163841000 +0100
++++ ni/src/ncl/NclHDF5.c	2025-11-27 14:45:12.666608000 +0100
+@@ -5698,53 +5698,59 @@
+ }
+ 
+ NclFormatFunctionRec HDF5Rec = {
+-/* NclInitializeFileRecFunc initialize_file_rec */ HDF5InitializeFileRec,
+-/* NclCreateFileFunc        create_file; */        HDF5CreateFile,
+-/* NclOpenFileFunc          open_file; */          HDF5OpenFile,
+-/* NclFreeFileRecFunc       free_file_rec; */      HDF5FreeRec,
+-/* NclGetVarNamesFunc       get_var_names; */      HDF5GetVarNames,
+-/* NclGetVarInfoFunc        get_var_info; */       HDF5GetVarInfo,
+-/* NclGetDimNamesFunc       get_dim_names; */      HDF5GetDimNames,
+-/* NclGetDimInfoFunc        get_dim_info; */       HDF5GetDimInfo,
+-/* NclGetAttNamesFunc       get_att_names; */      HDF5GetAttNames,
+-/* NclGetAttInfoFunc        get_att_info; */       HDF5GetAttInfo,
+-/* NclGetVarAttNamesFunc    get_var_att_names; */  HDF5GetVarAttNames,
+-/* NclGetVarAttInfoFunc     get_var_att_info; */   HDF5GetVarAttInfo,
+-/* NclGetCoordInfoFunc      get_coord_info; */     HDF5GetCoordInfo,
+-/* NclReadCoordFunc         read_coord; */         HDF5ReadCoord,
+-/* NclReadCoordFunc         read_coord; */         NULL,
+-/* NclReadVarFunc           read_var; */           HDF5ReadVar,
+-/* NclReadVarFunc           read_var; */           NULL,
+-/* NclReadAttFunc           read_att; */           HDF5ReadAtt,
+-/* NclReadVarAttFunc        read_var_att; */       HDF5ReadVarAtt,
+-/* NclWriteCoordFunc        write_coord; */        HDF5WriteCoord,
+-/* NclWriteCoordFunc        write_coord_ns; */     NULL,
+-/* NclWriteVarFunc          write_var; */          HDF5WriteVar,
+-/* NclWriteVarFunc          write_var_ns; */       NULL,
+-/* NclWriteAttFunc          write_att; */          HDF5WriteAtt,
+-/* NclWriteVarAttFunc       write_var_att; */      HDF5WriteVarAtt,
+-/* NclAddDimFunc            add_dim; */            HDF5AddDim,
+-/* NclAddChunkDimFunc       add_chunk_dim; */      HDF5AddChunkDim,
+-/* NclRenameDimFunc         rename_dim; */         NULL,
+-/* NclAddVarFunc            add_var; */            HDF5AddVar,
+-/* NclAddVarChunkFunc       add_var_chunk; */      HDF5AddVarChunk,
+-/* NclAddVarChunkCacheFunc  add_var_chunk_cache; */ HDF5AddVarChunkCache,
+-/* NclSetVarCompressLevelFunc set_var_compress_level; */ HDF5SetVarCompressLevel,
+-/* NclAddVarFunc            add_coord_var; */      HDF5AddCoordVar,
+-/* NclAddAttFunc            add_att; */            HDF5AddAtt,
+-/* NclAddVarAttFunc         add_var_att; */        HDF5AddVarAtt,
+-/* NclMapFormatTypeToNcl    map_format_type_to_ncl; */    NULL,
+-/* NclMapNclTypeToFormat    map_ncl_type_to_format; */    _Ncl2H5type,
+-/* NclDelAttFunc            del_att; */            HDF5DelAtt,
+-/* NclDelVarAttFunc         del_var_att; */        NULL,
+-/* NclGetGrpNamesFunc       get_grp_names; */      HDF5GetGrpNames,
+-/* NclGetGrpInfoFunc        get_grp_info; */       HDF5GetGrpInfo,
+-/* NclGetGrpAttNamesFunc    get_grp_att_names; */  HDF5GetGrpAttNames,
+-/* NclGetGrpAttInfoFunc     get_grp_att_info; */   HDF5GetGrpAttInfo,
+-/* NclAddGrpFunc           add_grp; */                  NULL,
+-/* NclSetOptionFunc         set_option;  */        HDF5SetOption
++    /* NclInitializeFileRecFunc initialize_file_rec */ HDF5InitializeFileRec,
++    /* NclCreateFileFunc        create_file; */        HDF5CreateFile,
++    /* NclOpenFileFunc          open_file; */          HDF5OpenFile,
++    /* NclFreeFileRecFunc       free_file_rec; */      HDF5FreeRec,
++    /* NclGetVarNamesFunc       get_var_names; */      HDF5GetVarNames,
++    /* NclGetVarInfoFunc        get_var_info; */       HDF5GetVarInfo,
++    /* NclGetDimNamesFunc       get_dim_names; */      HDF5GetDimNames,
++    /* NclGetDimInfoFunc        get_dim_info; */       HDF5GetDimInfo,
++    /* NclGetAttNamesFunc       get_att_names; */      HDF5GetAttNames,
++    /* NclGetAttInfoFunc        get_att_info; */       HDF5GetAttInfo,
++    /* NclGetVarAttNamesFunc    get_var_att_names; */  HDF5GetVarAttNames,
++    /* NclGetVarAttInfoFunc     get_var_att_info; */   HDF5GetVarAttInfo,
++    /* NclGetCoordInfoFunc      get_coord_info; */     HDF5GetCoordInfo,
++    /* NclReadCoordFunc         read_coord; */         HDF5ReadCoord,
++    /* NclReadCoordFunc         read_coord_ns; */      NULL,
++    /* NclReadVarFunc           read_var; */           HDF5ReadVar,
++    /* NclReadVarFunc           read_var_ns; */        NULL,
++    /* NclReadAttFunc           read_att; */           HDF5ReadAtt,
++    /* NclReadVarAttFunc        read_var_att; */       HDF5ReadVarAtt,
++    /* NclWriteCoordFunc        write_coord; */        HDF5WriteCoord,
++    /* NclWriteCoordFunc        write_coord_ns; */     NULL,
++    /* NclWriteVarFunc          write_var; */          HDF5WriteVar,
++    /* NclWriteVarFunc          write_var_ns; */       NULL,
++    /* NclWriteAttFunc          write_att; */          HDF5WriteAtt,
++    /* NclWriteVarAttFunc       write_var_att; */      HDF5WriteVarAtt,
++    /* NclAddDimFunc            add_dim; */            HDF5AddDim,
++    /* NclAddChunkDimFunc       add_chunk_dim; */      HDF5AddChunkDim,
++    /* NclRenameDimFunc         rename_dim; */         NULL,
++    /* NclAddVarFunc            add_var; */            HDF5AddVar,
++    /* NclAddVarChunkFunc       add_var_chunk; */      HDF5AddVarChunk,
++    /* NclAddVarChunkCacheFunc  add_var_chunk_cache; */ HDF5AddVarChunkCache,
++    /* NclSetVarCompressLevelFunc set_var_compress_level; */ HDF5SetVarCompressLevel,
++    /* NclAddVarFunc            add_coord_var; */      HDF5AddCoordVar,
++    /* NclAddAttFunc            add_att; */            HDF5AddAtt,
++    /* NclAddVarAttFunc         add_var_att; */        HDF5AddVarAtt,
++    /* NclMapFormatTypeToNcl    map_format_type_to_ncl; */    NULL,
++    /* NclMapNclTypeToFormat    map_ncl_type_to_format; */    _Ncl2H5type,
++    /* NclDelAttFunc            del_att; */            HDF5DelAtt,
++    /* NclDelVarAttFunc         del_var_att; */        NULL,
++    /* NclGetGrpNamesFunc       get_grp_names; */      HDF5GetGrpNames,
++    /* NclGetGrpInfoFunc        get_grp_info; */       HDF5GetGrpInfo,
++    /* NclGetGrpAttNamesFunc    get_grp_att_names; */  HDF5GetGrpAttNames,
++    /* NclGetGrpAttInfoFunc     get_grp_att_info; */   HDF5GetGrpAttInfo,
++    /* NclAddGrpFunc            add_grp; */            NULL,
++    /* NclAddVlenFunc           add_vlen; */           NULL,
++    /* NclAddEnumFunc           add_enum; */           NULL,
++    /* NclAddOpaqueFunc         add_opaque; */         NULL,
++    /* NclAddCompoundFunc       add_compound; */       NULL,
++    /* NclWriteCompoundFunc     write_compound; */     NULL,
++    /* NclSetOptionFunc         set_option;  */        HDF5SetOption
+ };
+ 
++
+ NclFormatFunctionRecPtr H5AddFileFormat 
+ #if    NhlNeedProto
+ (void)
+
+--- ni/src/lib/nio/nioNclHLUStub.c.orig	2025-12-04 14:06:58.452910000 +0100
++++ ni/src/lib/nio/nioNclHLUStub.c	2025-12-04 14:07:24.039244000 +0100
+@@ -202,10 +202,10 @@
+ 
+ 	},
+ 	{	
+-		NULL
++		0
+ 	},
+ 	{		
+-		NULL
++		0
+ 	}
+ };
+ 
+--- ni/src/ncl/NclMultiDValHLUObjData.c.orig	2025-12-04 14:10:14.413913000 +0100
++++ ni/src/ncl/NclMultiDValHLUObjData.c	2025-12-04 14:10:33.305152000 +0100
+@@ -2046,10 +2046,10 @@
+ 
+ 	},
+ 	{	
+-		NULL
++		0
+ 	},
+ 	{		
+-		NULL
++		0
+ 	}
+ };
+ 
+--- ni/src/ncl/BuiltInFuncs.c.orig	2025-12-05 14:19:14.752125121 +0100
++++ ni/src/ncl/BuiltInFuncs.c	2025-12-05 14:37:24.557839431 +0100
+@@ -4069,7 +4069,7 @@
+ 	}
+ 	if (ind1 <= 0) {
+ 		NhlPError(NhlFATAL,NhlEUNKNOWN,"fbinread: 0 or less than zero fortran control word, FILE NOT SEQUENTIAL ACCESS!");
+-		close(fd);
++		fclose(fd);
+ 		return(NhlFATAL);
+ 	}
+ 	if(tmp_size == -1) {
+@@ -4083,7 +4083,7 @@
+ 		if (totalsize > ind1) {
+ 			NhlPError(NhlFATAL,NhlEUNKNOWN,
+ 				  "fbinread: requested variable size exceeds record size");
+-			close(fd);
++			fclose(fd);
+ 			return(NhlFATAL);
+ 		}
+ 	}

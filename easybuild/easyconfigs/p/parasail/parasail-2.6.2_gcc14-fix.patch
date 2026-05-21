@@ -1,0 +1,24 @@
+Cast some int* variables to int8_t* in a test file to adhere to gcc14's stricter type checking
+on pointer types.
+Author: Jarne Renders (Vrije Universiteit Brussel)
+diff -ruN parasail.orig/tests/test_verify_traces.c parasail/tests/test_verify_traces.c
+--- parasail.orig/tests/test_verify_traces.c	2026-04-29 13:32:35.683169000 +0200
++++ parasail/tests/test_verify_traces.c	2026-04-29 13:42:28.296520180 +0200
+@@ -177,7 +177,7 @@
+                         saturated += 1;
+                         continue;
+                     }
+-                    ref_trace_table = parasail_result_get_trace_table(reference_result);
++                    ref_trace_table = (int8_t*) parasail_result_get_trace_table(reference_result);
+                     trace_table = parasail_result_get_trace_table(result);
+                     if (reference_result->score != result->score) {
+ #pragma omp critical(printer)
+@@ -190,7 +190,7 @@
+                             if (exit_on_mismatch) exit(EXIT_FAILURE);
+                         }
+                     }
+-                    if (diff_array(size_a, size_b, ref_trace_table, trace_table, result)) {
++                    if (diff_array(size_a, size_b, ref_trace_table, (int8_t*) trace_table, result)) {
+ #pragma omp critical(printer)
+                         {
+                             printf("%s(%lu,%lu,%d,%d,%s) bad trace table\n",

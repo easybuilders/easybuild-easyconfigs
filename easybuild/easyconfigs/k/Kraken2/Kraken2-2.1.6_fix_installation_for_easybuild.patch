@@ -1,0 +1,30 @@
+Fix install script and src/Makefile for EasyBuild.
+Åke Sandgren, 2021-04-30
+Update: Petr Král (INUITS)
+Update: J. Saßmannshausen (Imperial College London/UK)
+Update: Emik Lin (HKUMed CPOS)
+diff -u kraken2-2.1.6.orig/install_kraken2.sh kraken2-2.1.6/install_kraken2.sh
+--- kraken2-2.1.6.orig/install_kraken2.sh       2025-07-08 23:03:01.000000000 +0800
++++ kraken2-2.1.6/install_kraken2.sh    2025-10-16 12:34:07.820458453 +0800
+@@ -27,8 +27,9 @@
+
+ # Perl cmd used to canonicalize dirname - "readlink -f" doesn't work
+ # on OS X.
+-export KRAKEN2_DIR
+-KRAKEN2_DIR=$(perl -MCwd=abs_path -le 'print abs_path(shift)' "$1")
++#export KRAKEN2_DIR
++#KRAKEN2_DIR=$(perl -MCwd=abs_path -le 'print abs_path(shift)' "$1")
++export KRAKEN2_DIR=$1
+
+ mkdir -p "$KRAKEN2_DIR"
+ make -C src install
+diff -u kraken2-2.1.6.orig/src/Makefile kraken2-2.1.6/src/Makefile
+--- kraken2-2.1.6.orig/src/Makefile     2025-07-08 23:03:01.000000000 +0800
++++ kraken2-2.1.6/src/Makefile  2025-10-16 12:35:39.466759876 +0800
+@@ -1,6 +1,6 @@
+ CXX ?= g++
+ KRAKEN2_SKIP_FOPENMP ?= -fopenmp
+-CXXFLAGS = $(KRAKEN2_SKIP_FOPENMP) -Wall -std=c++11 -O3
++CXXFLAGS ?= $(KRAKEN2_SKIP_FOPENMP) -Wall -std=c++11 -O3
+ CXXFLAGS += -DLINEAR_PROBING
+ CFLAGS = -Wall -std=c99 -O2 -g3

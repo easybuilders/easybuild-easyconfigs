@@ -1,0 +1,29 @@
+Avoid closing random file handles in Inductor
+
+The `close` call closes random file handles.
+In some tests this seems to close "fd=1", i.e. stdout.
+Sebsequent writes/print then fails with
+> OSError: [Errno 9] Bad file descriptor
+
+See https://github.com/pytorch/pytorch/pull/169065
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/_inductor/autotune_process.py b/torch/_inductor/autotune_process.py
+--- a/torch/_inductor/autotune_process.py
++++ b/torch/_inductor/autotune_process.py
+@@ -926,14 +926,6 @@ class CppBenchmarkRequest(CPUDeviceBenchmarkMixin, BenchmarkRequest):
+             *self.extra_args,
+         )
+ 
+-    def cleanup_run_fn(self) -> None:
+-        if self.DLL is not None:
+-            """
+-            Check close attr due to it crash on Windows.
+-            """
+-            if hasattr(self.DLL, "close"):
+-                self.DLL.close()
+-
+     def __str__(self) -> str:
+         return f"{self.kernel_name=}"
+ 

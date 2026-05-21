@@ -1,0 +1,57 @@
+easyblock = 'MakeCp'
+
+name = 'VCF2Dis'
+version = '1.55'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://github.com/hewm2008/VCF2Dis'
+description = """An an ultra-fast and efficient tool to calculate pairwise
+genetic distance and construct population phylogeny from VCF files."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+github_account = 'hewm2008'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['f27c0f6aa3d8a4713ce93db86c1ed073cf7f4293e8b097477646b13a1dd2a738']
+
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('Perl', '5.38.2'),
+    ('R', '4.4.2'),
+    ('R-bundle-CRAN', '2024.11'),
+    ('R-bundle-Bioconductor', '3.20', versionsuffix),
+]
+
+# Fix make.sh build script: use EB $CXX and EB zlib (drop src/zlib, add -I/-L and rpath)
+prebuildopts = (
+    'sed -i "s#g++#${CXX}#g" make.sh && '
+    'sed -i "s#-L src/zlib/##g; s#-lz#-I$EBROOTZLIB/include '
+    '-L$EBROOTZLIB/lib -Wl,-rpath,$EBROOTZLIB/lib -lz#g" make.sh && '
+)
+
+build_cmd = 'sh'
+build_cmd_targets = 'make.sh'
+
+max_parallel = 1
+
+files_to_copy = [
+    (['bin/*'], 'bin'),
+    (['example'], 'share/%(name)s'),
+]
+
+fix_perl_shebang_for = ['bin/*.pl']
+
+sanity_check_paths = {
+    'files': [
+        'bin/VCF2Dis',
+        'bin/VCF2Dis_single',
+        'bin/VCF2Dis_multi',
+        'bin/percentageboostrapTree.pl',
+    ],
+    'dirs': [],
+}
+
+sanity_check_commands = ['VCF2Dis -help']
+
+moduleclass = 'bio'

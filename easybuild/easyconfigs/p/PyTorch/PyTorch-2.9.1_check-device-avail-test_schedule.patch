@@ -1,0 +1,19 @@
+Some tests fail if no accelerator is available.
+> RuntimeError: Found no NVIDIA driver on your system. Please check that you have an NVIDIA GPU [...]
+
+Check for availability to trigger CPU fallback.
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/distributed/pipelining/test_schedule.py b/test/distributed/pipelining/test_schedule.py
+index dabf3d78a6f..d3b8bf13168 100644
+--- a/test/distributed/pipelining/test_schedule.py
++++ b/test/distributed/pipelining/test_schedule.py
+@@ -53,7 +53,7 @@ from torch.testing._internal.distributed.fake_pg import FakeStore
+ 
+ ARTIFACTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "artifacts")
+ 
+-device = acc.type if (acc := torch.accelerator.current_accelerator()) else "cpu"
++device = acc.type if (acc := torch.accelerator.current_accelerator(check_available=True)) else "cpu"
+ logger = logging.getLogger(__name__)
+ torch.manual_seed(0)
+ 

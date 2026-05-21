@@ -40,12 +40,6 @@ dependencies = [
     ('polars', '0.20.2'),
 ]
 
-exts_defaultclass = 'PythonPackage'
-exts_default_options = {
-    'source_urls': [PYPI_SOURCE],
-    'installopts': '',
-}
-
 # unpin polars and h5py versions in pod5
 local_preinstallopts = (
     "sed -i"
@@ -54,7 +48,17 @@ local_preinstallopts = (
     " pyproject.toml && "
 )
 
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
 exts_list = [
+    ('lib-pod5', version, {
+        'nosource': True,
+        # Build and installed by CMake
+        'install_src': '%(installdir)s/lib_pod5-%(version)s-*.whl',
+        'modulename': 'lib_pod5',
+    }),
     ('vbz_h5py_plugin', '1.0.1', {
         'checksums': ['c784458bb0aad6303474cb2f10956179116b35555803fd1154eb4ef362519341'],
     }),
@@ -69,26 +73,22 @@ exts_list = [
 
 # create POD5Version.cmake
 # python -m setuptools_scm && python -m pod5_make_version shows wrong version
-local_ver_sub_minor = version.split('.')[2]
+separate_build_dir = '__build'
 preconfigopts = (
-    'cd %%(builddir)s/%%(name)s-%%(version)s/cmake && '
+    'cd %(start_dir)s/cmake && '
     'touch POD5Version.cmake && '
-    'echo "set(POD5_VERSION_MAJOR %%(version_major)s)">POD5Version.cmake && '
-    'echo "set(POD5_VERSION_MINOR %%(version_minor)s)">>POD5Version.cmake && '
-    'echo "set(POD5_VERSION_REV %s)">>POD5Version.cmake && '
-    'echo "set(POD5_NUMERIC_VERSION %%(version)s)">>POD5Version.cmake && '
-    'echo "set(POD5_FULL_VERSION %%(version)s)">>POD5Version.cmake && ' % local_ver_sub_minor
+    'echo "set(POD5_VERSION_MAJOR %(version_major)s)">POD5Version.cmake && '
+    'echo "set(POD5_VERSION_MINOR %(version_minor)s)">>POD5Version.cmake && '
+    f'echo "set(POD5_VERSION_REV {version.split(".")[2]})">>POD5Version.cmake && '
+    'echo "set(POD5_NUMERIC_VERSION %(version)s)">>POD5Version.cmake && '
+    'echo "set(POD5_FULL_VERSION %(version)s)">>POD5Version.cmake && '
+    f'cd %(builddir)s/{separate_build_dir} && '
 )
 
 # delete add_subdirectory(third_party/pybind11) from CMakeLists.txt
-preconfigopts += "cd %(builddir)s/%(name)s-%(version)s && sed -i '/add_subdirectory(third_party/d' CMakeLists.txt && "
-preconfigopts += 'cd %(builddir)s/easybuild_obj && '
+preconfigopts += "sed -i '/add_subdirectory(third_party/d' '%(start_dir)s/CMakeLists.txt' && "
 
 configopts = ' -DBUILD_PYTHON_WHEEL=ON -DZSTD_LIB="$EBROOTZSTD/lib" -DZSTD_INCLUDE_DIR="$EBROOTZSTD/include"'
-
-# install lib_pod5 from wheel - dependency of pod5
-installopts = ' && export XDG_CACHE_HOME=%(builddir)s && cd %(installdir)s'
-installopts += ' && pip install --no-deps --ignore-installed --prefix %(installdir)s lib_pod5-%(version)s-*.whl'
 
 postinstallcmds = ['rm %(installdir)s/lib_pod5-%(version)s-*.whl']
 
@@ -99,7 +99,6 @@ sanity_check_paths = {
 
 sanity_check_commands = [
     "pod5 subset --help",
-    "python -c 'import lib_pod5'",
 ]
 
 moduleclass = 'bio'

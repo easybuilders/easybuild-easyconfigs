@@ -1,0 +1,100 @@
+easyblock = 'PythonBundle'
+
+name = 'funannotate'
+version = '1.8.17'
+
+homepage = 'https://funannotate.readthedocs.io'
+description = """funannotate is a pipeline for genome annotation (built specifically for fungi, but will also work
+ with higher eukaryotes)"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+# see also https://github.com/nextgenusfs/funannotate/blob/master/docs/dependencies.rst
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('Biopython', '1.84'),
+    ('GOATOOLS', '1.4.12'),
+    ('matplotlib', '3.9.2'),
+    ('scikit-learn', '1.5.2'),
+    ('Seaborn', '0.13.2'),
+    ('tbl2asn', '20230713'),
+    ('DBD-mysql', '4.051'),
+    ('CodingQuarry', '2.0'),
+    ('Trinity', '2.15.2', '-Java-17'),
+    ('AUGUSTUS', '3.5.0'),
+    ('BamTools', '2.5.2'),
+    ('BEDTools', '2.31.1'),
+    ('BLAST+', '2.16.0'),  # provides makeblastdb, tblastn
+    ('BLAT', '3.7'),
+    ('DIAMOND', '2.1.11'),
+    ('eggnog-mapper', '2.1.12'),
+    ('ETE', '3.1.3'),
+    ('Exonerate', '2.4.0'),
+    ('FASTA', '36.3.8i-may-2023'),
+    ('GlimmerHMM', '3.0.4c'),
+    ('GMAP-GSNAP', '2024-09-18'),  # provides gmap
+    ('GeneMark-ET', '4.72'),  # provides gmes_petap.pl
+    ('HISAT2', '2.2.1'),
+    ('HMMER', '3.4'),  # provides hmmscan, hmmsearch
+    ('kallisto', '0.51.1'),
+    ('MAFFT', '7.526', '-with-extensions'),
+    ('minimap2', '2.29'),
+    ('pigz', '2.8'),
+    ('Proteinortho', '6.3.4'),
+    ('Kent_tools', '479'),  # provides pslCDnaFilter
+    ('Salmon', '1.10.3'),
+    ('SAMtools', '1.21'),
+    ('SignalP', '6.0h', '-fast'),
+    ('SNAP-HMM', '20221022'),
+    ('StringTie', '3.0.0'),
+    ('tRNAscan-SE', '2.0.12'),
+    ('tantan', '51'),
+    ('trimAl', '1.5.0'),
+    ('Trimmomatic', '0.39', '-Java-17', SYSTEM),
+    ('BioPerl', '1.7.8'),
+    ('EVidenceModeler', '2.1.0'),
+]
+
+local_preinstallopts = (
+    """sed -i"""
+    """ 's|REQUIRES_PYTHON = ">=3.6.0, <3.10"|REQUIRES_PYTHON = ">=3.6.0"|'"""
+    """ setup.py &&"""
+    """ sed -i"""
+    """ 's|"biopython<1.80",|"biopython",|'"""
+    """ setup.py && """
+)
+
+exts_list = [
+    ('distro', '1.9.0', {
+        'checksums': ['2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed'],
+    }),
+    ('natsort', '8.4.0', {
+        'checksums': ['45312c4a0e5507593da193dedd04abb1469253b601ecaf63445ad80f0a1ea581'],
+    }),
+    (name, version, {
+        'patches': ['funannotate-1.8.17_fix-python-3.12.patch'],
+        'preinstallopts': local_preinstallopts,
+        'checksums': [
+            {'funannotate-1.8.17.tar.gz': 'bdadfd7a5636383c1c40c26dab37c5908a77e8c4064adced84f1ba9e86187a04'},
+            {'funannotate-1.8.17_fix-python-3.12.patch':
+             'cb3639779f85bcae0d7e8fc24365c3bed01be5b330ee629827886c14970e086d'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/funannotate'],
+    'dirs': [],
+}
+
+modextravars = {
+    'GENEMARK_PATH': '$EBROOTGENEMARKMINET',
+}
+
+sanity_check_commands = [
+    "funannotate --help 2>&1 | grep 'Usage:[ ]*funannotate'",
+    "funannotate check --show-versions",
+]
+
+moduleclass = 'bio'

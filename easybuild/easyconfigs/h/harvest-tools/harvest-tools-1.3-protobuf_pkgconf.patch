@@ -1,0 +1,17 @@
+# Force harvest-tools to link Abseil explicitly, as used by protobuf
+--- harvest-tools-1.3/Makefile.in	2025-10-10 14:50:05.343329569 +0000
++++ harvest-tools-1.3.new/Makefile.in	2025-10-10 14:51:46.705481429 +0000
+@@ -23,10 +23,12 @@
+ 
+ OBJECTS=$(SOURCES:.cpp=.o) src/harvest/pb/harvest.pb.o src/harvest/capnp/harvest.capnp.o
+ 
++PROTOBUF_LIBS   ?= $(shell pkgconf --libs protobuf)
++
+ all : harvesttools libharvest.a libharvest.so
+ 
+ harvesttools : libharvest.so src/harvest/memcpyWrap.o
+-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o harvesttools src/harvest/memcpyWrap.o -L. -lharvest -lprotobuf -lcapnp -lkj -lstdc++ -lz -lm -lpthread
++	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o harvesttools src/harvest/memcpyWrap.o -L. -lharvest $(PROTOBUF_LIBS) -lcapnp -lkj -lstdc++ -lz -lm -lpthread
+ 
+ libharvest.so : $(OBJECTS)
+ 	g++ -shared -o libharvest.so $(OBJECTS)

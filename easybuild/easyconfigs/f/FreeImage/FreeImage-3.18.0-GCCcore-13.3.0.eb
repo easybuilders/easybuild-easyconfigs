@@ -9,33 +9,52 @@ image formats like PNG, BMP, JPEG, TIFF and others as needed by today's multimed
 use, fast, multithreading safe."""
 
 toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
-toolchainopts = {'cstd': 'c++14'}
+toolchainopts = {'cstd': 'c++14', 'pic': True}
 
 source_urls = [SOURCEFORGE_SOURCE]
-sources = ['%(name)s3180.zip']
+sources = [{
+    'filename': '%(name)s3180.zip',
+    # remove carriage return characters before applying the patches, otherwise they may fail
+    'extract_cmd': 'unzip -qq %s && find . -type f -print0 | xargs -0 sed -i "s/\\r$//g"',
+}]
 patches = [
-    '%(name)s-%(version)s-fix-makefile.patch',
-    '%(name)s-%(version)s-fix-makefile-riscv.patch',
-    '%(name)s-%(version)s-fix-makefile-gnu.patch',
+    'FreeImage-3.18.0_unbundle.patch',
+    'FreeImage-3.18.0_fix-CVE-2019-12211-CVE-2019-12213.patch',
+    'FreeImage-3.18.0_use_LibTIFF_4.4.0.patch',
 ]
-
 checksums = [
-    'f41379682f9ada94ea7b34fe86bf9ee00935a3147be41b6569c9605a53e438fd',  # FreeImage3180.zip
-    '3eaa1eb9562ccfd0cb95a37879bb7e3e8c745166596d75af529478181ef006a0',  # %(name)s-%(version)s-fix-makefile.patch
-    'e845d53bfd829d771638b9952d3632010c7f19c88d761a786754453827bd7e9b',  # %(name)s-%(version)s-fix-makefile-riscv.patch
-    'b636012988e1b88609fbd2c130e2b4e6fa8c488cb07578e0353baf8e5aa52413',  # %(name)s-%(version)s-fix-makefile-gnu.patch
+    {'FreeImage3180.zip': 'f41379682f9ada94ea7b34fe86bf9ee00935a3147be41b6569c9605a53e438fd'},
+    {'FreeImage-3.18.0_unbundle.patch': '9d0bdf9a197a9f779bb56440dec11b3beaa29bf404f051a7923239bc0f11b58f'},
+    {'FreeImage-3.18.0_fix-CVE-2019-12211-CVE-2019-12213.patch':
+     'aa417916dc29455c2a4bb9e71d4e2e543d1fe28d57c921998ef3dc84a427953e'},
+    {'FreeImage-3.18.0_use_LibTIFF_4.4.0.patch': '85a8e1c814306d121ddcb902918b67609f4e4f667d8d8cb4430beb0e57b6eca9'},
 ]
 
 builddependencies = [('binutils', '2.42')]
 
-dependencies = [('zlib', '1.3.1')]
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('Imath', '3.1.11'),
+    ('libjpeg-turbo', '3.0.1'),
+    ('OpenJPEG', '2.5.2'),
+    ('OpenEXR', '3.2.4'),
+    ('LibTIFF', '4.6.0'),
+    ('libwebp', '1.4.0'),
+    ('LibRaw', '0.21.3'),
+    ('jxrlib', '2019.10.9'),
+]
 
 skipsteps = ['configure']
 
-buildopts = ['', '-f Makefile.fip']
+prebuildopts = "cp ./Source/LibJPEG/{transupp.h,jinclude.h} ./Source/ && "
+prebuildopts += "cp ./Source/LibTIFF4/{tiffiop,tif_dir}.h ./Source/ && "
+prebuildopts += "rm -rf Source/{LibPNG,LibOpenJPEG,ZLib,OpenEXR,LibRawLite,LibTIFF4,LibJPEG,LibWebP,LibJXR} && "
+prebuildopts += "sh ./gensrclist.sh && sh ./genfipsrclist.sh && "
+
+buildopts = ['-f Makefile.gnu', '-f Makefile.fip']
 
 installopts = [
-    "INCDIR=%(installdir)s/include INSTALLDIR=%(installdir)s/lib",
+    "-f Makefile.gnu INCDIR=%(installdir)s/include INSTALLDIR=%(installdir)s/lib",
     "-f Makefile.fip INCDIR=%(installdir)s/include INSTALLDIR=%(installdir)s/lib",
 ]
 

@@ -1,0 +1,18 @@
+see https://github.com/open-mpi/ompi/issues/13313 + https://github.com/open-mpi/ompi/pull/13333
+
+diff -ru openmpi-4.1.5.orig/ompi/mca/fs/gpfs/fs_gpfs_file_set_info.c openmpi-4.1.5/ompi/mca/fs/gpfs/fs_gpfs_file_set_info.c
+--- openmpi-4.1.5.orig/ompi/mca/fs/gpfs/fs_gpfs_file_set_info.c	2023-02-23 05:25:04.000000000 +0100
++++ openmpi-4.1.5/ompi/mca/fs/gpfs/fs_gpfs_file_set_info.c	2025-09-18 14:15:47.025560547 +0200
+@@ -305,7 +305,11 @@
+         gpfs_hint_SetReplication.gpfsSetReplication.maxMetadataReplicas = atoi(token);
+         gpfs_hint_SetReplication.gpfsSetReplication.dataReplicas = atoi(token);
+         gpfs_hint_SetReplication.gpfsSetReplication.maxDataReplicas = atoi(token);
+-        gpfs_hint_SetReplication.gpfsSetReplication.reserved = 0;
++#ifdef GPFS_FCNTL_SET_REPLICATIONX /* GPFS >= 5.2.3-0, see #13313 */
++	gpfs_hint_SetReplication.gpfsSetReplication.perfReplicas = 0;
++#else
++	gpfs_hint_SetReplication.gpfsSetReplication.reserved = 0;
++#endif
+ 
+         rc = gpfs_fcntl(gpfs_file_handle, &gpfs_hint_SetReplication);
+         if (rc != 0) {

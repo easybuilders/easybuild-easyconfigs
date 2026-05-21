@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'antiword'
+version = '0.37'
+
+homepage = 'https://en.wikipedia.org/wiki/Antiword'
+
+description = """Antiword is a free MS-Word reader - converts the documents
+from Word 6, 7, 97 and 2000 to ASCII and Postscript"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/rsdoiel/antiword/archive/refs/tags']
+sources = ['%(version)s.tar.gz']
+patches = ['%(namelower)s-%(version)s_fix-installdir.patch',
+           '%(namelower)s-%(version)s_allow-custom-antiworddir.patch']
+checksums = [
+    {'0.37.tar.gz': '9cdb4845d119a407bd59f53a355d70b195d08da09e32d07b950c644864348619'},
+    {'antiword-0.37_fix-installdir.patch': 'afcb05f8e09686a4568e8f3f5ee3838603f1e59f1d669dc9d9df350f19566a9e'},
+    {'antiword-0.37_allow-custom-antiworddir.patch':
+     'ca2e4840ec5ef751d9007a158ccd8c79420a42def30b503a371de31a1ce97ff4'},
+]
+
+builddependencies = [('binutils', '2.42')]
+
+dependencies = [('Ghostscript', '10.03.1')]
+
+skipsteps = ['configure']
+
+buildopts = 'CFLAGS="$CFLAGS -DNDEBUG -UANTIWORD_DIR -DANTIWORD_DIR=\\\\\\"%(installdir)s/.antiword\\\\\\""'
+
+preinstallopts = 'INSTALLDIR=%(installdir)s '
+
+# Executables are missing execute permission for others
+postinstallcmds = ['chmod o+x %(installdir)s/bin/antiword',
+                   'chmod o+x %(installdir)s/bin/kantiword',]
+
+sanity_check_paths = {
+    'files': ['bin/antiword'],
+    'dirs': ['.antiword'],
+}
+
+sanity_check_commands = ["antiword -h"]
+
+moduleclass = 'tools'

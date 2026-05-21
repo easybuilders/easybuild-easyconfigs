@@ -1,0 +1,36 @@
+TestSelectAlgorithmCPU.test_linear_with_embedding fails when the CPU does not support BF16:
+> torch._inductor.exc.InductorError: LoweringException: RuntimeError: self and mat2 must have the same dtype, but got Float and BFloat16
+See https://github.com/pytorch/pytorch/issues/147104
+
+Convert the embedding layer to avoid it using "Float" and adapt the check for this change.
+
+Author: Alexander Grund (TU Dresden)
+--- a/test/inductor/test_cpu_select_algorithm.py
++++ b/test/inductor/test_cpu_select_algorithm.py
+@@ -932,6 +932,7 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
+     def test_linear_with_embedding(
+         self, batch_size, in_features, out_features, bias, dtype
+     ):
++        has_bf16 = torch.ops.mkldnn._is_mkldnn_bf16_supported()
+         class M(torch.nn.Module):
+             def __init__(self, bias):
+                 super().__init__()
+@@ -939,6 +940,9 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
+                     dtype=dtype
+                 )
+                 self.emb = torch.nn.Embedding(64, out_features)
++                if not has_bf16:
++                    self.emb = self.emb.to(dtype=dtype)
++
+ 
+             def forward(self, idx, x):
+                 return self.emb(idx) + self.linear(x)
+@@ -953,7 +957,7 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
+         with verify(dtype) as (atol, rtol):
+             self.common(mod, (idx, x), atol=atol, rtol=rtol)
+         self.assertEqual(counters["inductor"]["cpp_templated_kernel_counter"], 1)
+-        self.assertEqual(counters["inductor"]["cpp_epilogue_fusion_counter"], 1)
++        self.assertEqual(counters["inductor"]["cpp_epilogue_fusion_counter"], 1 if has_bf16 else 0)
+ 
+     @inductor_config.patch({"freezing": True})
+     @patches

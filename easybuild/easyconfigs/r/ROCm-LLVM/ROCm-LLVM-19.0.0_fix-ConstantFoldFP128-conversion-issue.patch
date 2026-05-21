@@ -1,0 +1,30 @@
+From 6ee49080e4bb43efe7ede10bed15935853bbd434 Mon Sep 17 00:00:00 2001
+From: Chen Zheng <czhengsz@cn.ibm.com>
+Date: Tue, 30 Jul 2024 09:02:07 +0800
+Subject: [PATCH] [NFC] fix build failure (#100993)
+
+Fix the build failure caused by
+https://github.com/llvm/llvm-project/pull/94944
+
+Fixes https://github.com/llvm/llvm-project/issues/100296
+
+(cherry picked from commit 40b4fd7a3e81d32b29364a1b15337bcf817659c0)
+---
+ llvm/lib/Analysis/ConstantFolding.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/llvm/lib/Analysis/ConstantFolding.cpp b/llvm/lib/Analysis/ConstantFolding.cpp
+index df75745645e04..ff30fece5fce9 100644
+--- a/llvm/lib/Analysis/ConstantFolding.cpp
++++ b/llvm/lib/Analysis/ConstantFolding.cpp
+@@ -1784,8 +1784,8 @@ Constant *ConstantFoldFP(double (*NativeFP)(double), const APFloat &V,
+ }
+ 
+ #if defined(HAS_IEE754_FLOAT128) && defined(HAS_LOGF128)
+-Constant *ConstantFoldFP128(long double (*NativeFP)(long double),
+-                            const APFloat &V, Type *Ty) {
++Constant *ConstantFoldFP128(float128 (*NativeFP)(float128), const APFloat &V,
++                            Type *Ty) {
+   llvm_fenv_clearexcept();
+   float128 Result = NativeFP(V.convertToQuad());
+   if (llvm_fenv_testexcept()) {

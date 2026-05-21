@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'QCMaquis'
+version = '4.0.0'
+
+homepage = "https://github.com/qcscine/qcmaquis"
+description = """QCMaquis parallelizes the computationally heavy steps of
+a DMRG simulation with shared-memory parallelism (OpenMP)."""
+
+toolchain = {'name': 'iomkl', 'version': '2023a'}
+
+source_urls = ['https://github.com/qcscine/qcmaquis/archive']
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['47278e6af537cbd244d6284f7f5164b8169d8d76c0e150aca4774571dde5cda3']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Eigen', '3.4.0'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.0', '-serial'),
+    ('GSL', '2.7'),
+    ('Boost', '1.82.0'),
+]
+
+# preprocess fortran sources by -fpp
+configopts = '-DBUILD_OPENMOLCAS_INTERFACE=ON -DCMAKE_Fortran_FLAGS="$FFLAGS -fpp" -DQCMAQUIS_TESTS=ON'
+
+runtest = True
+
+# Fix OpenMolcas 25.06 installation with DMRG
+# https://github.com/qcscine/qcmaquis/issues/33
+# https://github.com/qcscine/qcmaquis/issues/34
+_cfg_path = '%(installdir)s/share/cmake/MAQUIS_DMRGConfig.cmake'
+_solib_path = '%(installdir)s/lib/libmaquis_dmrg.so'
+postinstallcmds = [
+    # make GSL a proper dependency
+    f"sed -i -e '1i include(CMakeFindDependencyMacro)' -e '2i find_dependency(GSL REQUIRED)' {_cfg_path} && "
+    # ensure variable includes the core first (helps non-target consumers)
+    f"sed -i 's|^set(MAQUIS_DMRG_LIBRARIES |set(MAQUIS_DMRG_LIBRARIES {_solib_path} |' {_cfg_path} && "
+    # ensure the imported target pulls core + C++ runtime transitively
+    r'printf "\n# EB patch: ensure maquis core + libstdc++ are propagated\nif(TARGET qcmaquis-driver)\n  '
+    fr'target_link_libraries(qcmaquis-driver INTERFACE {_solib_path} stdc++)\nendif()\n" >> {_cfg_path}'
+]
+
+sanity_check_paths = {
+    'files': ['bin/dmrg_meas', 'include/maquis_dmrg.h', 'lib/libmaquis_dmrg.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share/%(namelower)s'],
+}
+
+sanity_check_commands = ['dmrg_meas --help']
+
+moduleclass = 'chem'

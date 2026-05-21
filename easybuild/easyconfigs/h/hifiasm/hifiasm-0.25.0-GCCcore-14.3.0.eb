@@ -1,0 +1,42 @@
+easyblock = 'MakeCp'
+
+name = 'hifiasm'
+version = '0.25.0'
+
+homepage = 'https://github.com/chhylp123/hifiasm'
+description = """Hifiasm: a haplotype-resolved assembler for accurate Hifi reads."""
+# software_license = 'LicenseMIT'
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+toolchainopts = {'opt': True}
+
+github_account = 'chhylp123'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['51633138865207a9d41630da9377d46e4921ad4fc5facaa1740ceccae8611f1f']
+
+builddependencies = [
+    ('binutils', '2.44'),
+]
+
+dependencies = [
+    ('zlib', '1.3.1'),
+]
+
+# include guard name __ASSEMBLY__ interferes with pthread.h
+prebuildopts = 'sed -i "s/__ASSEMBLY__/__ASSEMBLY_H__/" Assembly.h && '
+buildopts = 'CC="$CC" CXX="$CXX" CXXFLAGS="$CXXFLAGS" CPPFLAGS="$CPPFLAGS"'
+
+files_to_copy = [
+    ([name], 'bin'),
+    (['*.h'], 'include/hifiasm'),
+    'LICENSE', 'README.md',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': [],
+}
+sanity_check_commands = ["%(name)s -h"]
+
+moduleclass = 'bio'

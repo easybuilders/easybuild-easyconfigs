@@ -1,0 +1,81 @@
+easyblock = 'PythonBundle'
+
+name = 'vsc-mympirun'
+version = '5.5.0'
+
+homepage = 'https://github.com/hpcugent/vsc-mympirun'
+description = """mympirun is a tool to make it easier for users of HPC clusters to
+run MPI programs with good performance."""
+
+# we build this to work with every python version
+toolchain = SYSTEM
+
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+# require Python >= 3.9 (because some extensions require Python > 3.6)
+req_py_majver = 3
+req_py_minver = 9
+
+# don't fix Python shebang for mympirun script (default is to patch files matching 'bin/*'),
+# it must be run with the system Python, even if another Python module is loaded
+fix_python_shebang_for = []
+
+exts_list = [
+    # must be setuptools < 42.0 (required by vsc-install)
+    ('setuptools', '41.6.0', {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'checksums': ['6afa61b391dcd16cb8890ec9f66cc4015a8a31a6e1c2b4e0c464514be1a3d722'],
+    }),
+    ('flit_core', '3.12.0', {
+        'checksums': ['18f63100d6f94385c6ed57a72073443e1a71a4acb4339491615d0f16d6ff01b2'],
+    }),
+    # provides bdist_wheel, required for 'future' extension
+    ('wheel', '0.45.1', {
+        'checksums': ['661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729'],
+    }),
+    ('future', '1.0.0', {
+        'checksums': ['bd2968309307861edae1458a4f8a4f3598c03be43b97521076aebf5d94c07b05'],
+    }),
+    ('pbr', '6.1.1', {
+        'checksums': ['93ea72ce6989eb2eed99d0f75721474f69ad88128afdef5ac377eb797c4bf76b'],
+    }),
+    ('funcsigs', '1.0.2', {
+        'checksums': ['a7bb0f2cf3a3fd1ab2732cb49eba4252c2af4240442415b4abce3b87022a8f50'],
+    }),
+    ('mock', '5.2.0', {
+        'checksums': ['4e460e818629b4b173f32d08bf30d3af8123afbb8e04bb5707a1fd4799e503f0'],
+    }),
+    ('IPy', '1.01', {
+        'modulename': 'IPy',
+        'checksums': ['edeca741dea2d54aca568fa23740288c3fe86c0f3ea700344571e9ef14a7cc1a'],
+    }),
+    ('vsc-install', '0.23.0', {
+        'sources': ['vsc_install-%(version)s.tar.gz'],
+        'modulename': 'vsc.install',
+        'checksums': ['849b4377c2428421119e7d6996a670d831fbb430051d80ed898e14c3504f702c'],
+    }),
+    ('vsc-base', '3.6.1', {
+        'modulename': 'vsc.utils',
+        'checksums': ['8e6a14431d3ebd19c4746a77398510fa8bdd985db5d192cc50785995b72e656e'],
+    }),
+    (name, version, {
+        'sources': ['vsc_mympirun-%(version)s.tar.gz'],
+        'modulename': False,
+        'checksums': ['d2cdf09c0fdb643db2589407eec92d5f17c41aaccb47a20b2c1e75ad50c5e5f9'],
+    }),
+]
+
+# we ship something in bin/fake
+modextrapaths = {'PATH': 'bin/fake'}
+
+sanity_check_paths = {
+    'files': ['bin/mympirun', 'bin/mypmirun', 'bin/mympisanity', 'bin/mytasks'],
+    'dirs': ['bin/fake'],
+}
+sanity_check_commands = ["mympirun --help"]
+
+# can't enable 'pip check' since pip may not be installed in OS,
+# and if it is, system-wide 'pip check' may not pass
+sanity_pip_check = False
+
+moduleclass = 'tools'

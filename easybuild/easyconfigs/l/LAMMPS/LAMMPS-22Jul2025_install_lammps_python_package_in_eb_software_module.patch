@@ -1,0 +1,42 @@
+Add option in install.py to install lammps python packages in a configurable location
+diff --git a/python/install.py b/python/install.py
+index 352225e49d..ee9f2be068 100644
+--- a/python/install.py
++++ b/python/install.py
+@@ -29,6 +29,8 @@ parser.add_argument("-v", "--versionfile", required=True,
+                     help="path to the LAMMPS version.h source file")
+ parser.add_argument("-f", "--force", action="store_true", required=False, default=False,
+                     help="force installation of LAMMPS Python package")
++parser.add_argument("-i", "--installdir", required=True,
++                    help= "path to site-packages in lammps module")
+ 
+ args = parser.parse_args()
+ 
+@@ -72,6 +74,14 @@ if args.versionfile:
+   else:
+     args.versionfile = os.path.abspath(args.versionfile)
+ 
++if args.installdir:
++  if not os.path.exists(args.installdir):
++    print("\nERROR: LAMMPS site-packages file at %s does not exist\n" % args.installdir)
++    parser.print_help()
++    sys.exit(1)
++  else:
++    args.installdir = os.path.abspath(args.installdir)
++
+ olddir = os.path.abspath('.')
+ pythondir = os.path.abspath(os.path.join(args.package,'..'))
+ os.putenv('LAMMPS_VERSION_FILE',os.path.abspath(args.versionfile))
+@@ -146,6 +156,12 @@ else:
+   print("Installing wheel into system site-packages folder")
+   py_exe = sys.executable
+ 
++try:
++  txt = subprocess.check_output([py_exe, '-m', 'pip', 'install', '--force-reinstall', wheel, '--target', args.installdir], stderr=subprocess.STDOUT, shell=False)
++  print(txt)
++  sys.exit(0)
++except subprocess.CalledProcessError as err:
++  sys.exit(err.output.decode('UTF-8'))
+ try:
+   if args.force:
+     txt = subprocess.check_output([py_exe, '-m', 'pip', 'install', '--force-reinstall', '--break-system-packages', wheel], stderr=subprocess.STDOUT, shell=False)

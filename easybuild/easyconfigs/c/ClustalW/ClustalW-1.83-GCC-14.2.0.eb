@@ -1,0 +1,60 @@
+easyblock = 'Bundle'
+
+name = 'ClustalW'
+version = '1.83'
+
+homepage = 'http://www.clustal.org'
+description = """Third generation of Clustal, released in 1994. It improves upon the progressive
+alignment algorithm, including sequence weighting options based on similarity
+and divergence.
+Includes the ClustalW interface for Perl."""
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+toolchainopts = {'cstd': 'c90'}
+
+builddependencies = [
+    ('make', '4.4.1'),
+]
+
+dependencies = [
+    ('Perl', '5.40.0'),
+]
+
+components = [
+    (name, version, {
+        'easyblock': 'MakeCp',
+        'source_urls': ['http://www.clustal.org/download/1.X/ftp-igbmc.u-strasbg.fr/pub/%(name)s/'],
+        'sources': ['%(namelower)s%(version)s.linux.tar.gz'],
+        'checksums': ['f1b082b8e6b8104b45ed8bf8fbbc38663f0752ed48ec0d767e34ab31b4748588'],
+        'start_dir': "%(namelower)s%(version)s.linux",
+        'buildopts': '-f makefile.linux CFLAGS="${CFLAGS} -c -O" LFLAGS="${LDFLAGS} -O -lm"',
+        'files_to_copy': [(['%(namelower)s'], 'bin'), 'clustalw_help', 'README_W'],
+    }),
+]
+
+# bindings for Perl installed as extension
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+exts_list = [
+    ('Devel::CheckBin', '0.04', {
+        'source_tmpl': 'Devel-CheckBin-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/T/TO/TOKUHIROM/'],
+        'checksums': ['157f3db59c29ed1d49133a469cee772c885ad4ee64e8692a91b3ebfdbe2fe3e4'],
+    }),
+    ('Bio::Tools::Run::Alignment::Clustalw', '1.7.4', {
+        'source_tmpl': 'Bio-Tools-Run-Alignment-Clustalw-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/C/CD/CDRAUG/'],
+        'checksums': ['4e322d50fd945257f61609ed6e59c3e6817948166a6230d24d5ca23b507e331e'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'clustalw_help', 'README_W'],
+    'dirs': ['lib/perl5/site_perl/%(perlver)s/Bio/Tools/Run/Alignment'],
+}
+
+modextrapaths = {
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/',
+}
+
+moduleclass = 'bio'

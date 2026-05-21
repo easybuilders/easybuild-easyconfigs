@@ -1,0 +1,47 @@
+# Contributors:
+# Franky Backeljauw (franky.backeljauw@uantwerpen.be) - Universiteit Antwerpen
+# Robin Verschoren (robin.verschoren@uantwerpen.be) - Universiteit Antwerpen
+
+easyblock = 'CMakeMake'
+
+name = 'ANTs'
+version = '2.6.2'
+
+homepage = 'https://stnava.github.io/ANTs/'
+description = """ANTs extracts information from complex datasets that include imaging. ANTs is useful for managing,
+ interpreting and visualizing multidimensional data."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/ANTsX/ANTs/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['ANTs-2.6.2-fix-examples.patch']
+checksums = [
+    {'v2.6.2.tar.gz': 'b38bc5438a7bef0c460dc7014320fee58dd1439e2397876645ad9269f52d9451'},
+    {'ANTs-2.6.2-fix-examples.patch': 'cb68a7593ac567edc2592033241e080bfc558e5854b8b441f0e4345664b045da'},
+]
+
+builddependencies = [('CMake', '3.29.3')]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('ITK', '5.4.4'),
+    ('VTK', '9.3.1'),
+]
+
+configopts = '-DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF '
+configopts += '-DUSE_VTK=ON -DUSE_SYSTEM_VTK=ON '
+configopts += '-DSuperBuild_ANTS_USE_GIT_PROTOCOL=OFF '
+configopts += '-DUSE_ITK=ON -DUSE_SYSTEM_ITK=ON '
+
+preinstallopts = "cd ANTS-build && "
+
+sanity_check_paths = {
+    'files': ['bin/ANTS', 'bin/antsBrainExtraction.sh'],
+    'dirs': ['lib'],
+}
+
+modextravars = {'ANTSPATH': '%(installdir)s/bin'}
+
+moduleclass = 'data'

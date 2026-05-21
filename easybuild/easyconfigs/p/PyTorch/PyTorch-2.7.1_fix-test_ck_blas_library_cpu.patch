@@ -1,0 +1,58 @@
+From 8cdb9adc05d77bb1d65fc233b780860b893c8d17 Mon Sep 17 00:00:00 2001
+From: Yichen Yan <oraluben@outlook.com>
+Date: Mon, 17 Mar 2025 17:45:45 +0000
+Subject: [PATCH] do not run `test_ck_blas_library` on cpu (#148316)
+
+Fix on non-rocm:
+
+```
+root@e01-tw-ue5g2g3sap6:~/pytorch/test# python test_linalg.py TestLinalgCPU.test_ck_blas_library_cpu
+E
+======================================================================
+ERROR: test_ck_blas_library_cpu (__main__.TestLinalgCPU)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/root/pytorch/torch/testing/_internal/common_utils.py", line 3108, in wrapper
+    method(*args, **kwargs)
+  File "/root/pytorch/torch/testing/_internal/common_device_type.py", line 480, in instantiated_test
+    raise rte
+  File "/root/pytorch/torch/testing/_internal/common_device_type.py", line 460, in instantiated_test
+    result = test(self, **param_kwargs)
+  File "/root/pytorch/torch/testing/_internal/common_device_type.py", line 1242, in dep_fn
+    return fn(slf, *args, **kwargs)
+  File "/root/pytorch/torch/testing/_internal/common_utils.py", line 1981, in _fn
+    fn(*args, **kwargs)
+  File "/root/pytorch/test/test_linalg.py", line 8621, in test_ck_blas_library
+    torch.backends.cuda.preferred_blas_library('ck')
+  File "/root/pytorch/torch/backends/cuda/__init__.py", line 258, in preferred_blas_library
+    torch._C._set_blas_preferred_backend(_BlasBackends[backend])
+RuntimeError: Cannot set preferred backend to Ck if PyTorch has not been compiled for ROCm.
+
+To execute this test, run the following from the base repo dir:
+    python test/test_linalg.py TestLinalgCPU.test_ck_blas_library_cpu
+
+This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+
+----------------------------------------------------------------------
+Ran 1 test in 0.346s
+
+FAILED (errors=1)
+```
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/148316
+Approved by: https://github.com/jeffdaily
+---
+ test/test_linalg.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/test/test_linalg.py b/test/test_linalg.py
+index caa25cb13dde..0cece1a1e1a6 100644
+--- a/test/test_linalg.py
++++ b/test/test_linalg.py
+@@ -9127,6 +9127,7 @@ def test_preferred_blas_library(self):
+         self.assertEqual(out1, out2)
+         self.assertEqual(out_ref, out2.cpu())
+ 
++    @onlyCUDA
+     @skipCUDAIfNotRocm
+     @unittest.skipIf(not blaslt_supported_device(), "blasLt not supported on current device")
+     @setBlasBackendsToDefaultFinally

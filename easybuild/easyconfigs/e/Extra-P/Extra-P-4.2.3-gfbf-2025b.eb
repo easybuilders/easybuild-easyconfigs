@@ -1,0 +1,59 @@
+easyblock = "PythonBundle"
+
+name = "Extra-P"
+version = "4.2.3"
+
+homepage = "https://github.com/extra-p/extrap"
+description = """
+Extra-P is an automatic performance-modeling tool that supports the user in the identification of scalability bugs.
+Extra-P uses measurements of various performance metrics at different execution configurations as input to generate
+performance models of code regions (including their calling context) as a function of the execution parameters.
+All it takes to search for scalability issues even in full-blown codes is to run a manageable number of small-scale
+performance experiments, launch Extra-P, and compare the asymptotic or extrapolated performance of the worst
+instances to the expectations.
+"""
+
+toolchain = {"name": "gfbf", "version": "2025b"}
+
+dependencies = [
+    ("Python", "3.13.5"),
+    ("PySide6", "6.9.3"),
+    ("SciPy-bundle", "2025.07"),
+    ("tqdm", "4.67.1"),
+    ("matplotlib", "3.10.5"),
+    ("scikit-learn", "1.7.1"),
+]
+
+exts_list = [
+    ('pycubexr', '2.1.0', {
+        'checksums': ['c09ea0d3a13465f38ce1302eb980f8e0cd1293f9d1dc5d21eb5bd47c19f8fe0d'],
+    }),
+    ('marshmallow', '3.26.2', {
+        'checksums': ['bbe2adb5a03e6e3571b573f42527c6fe926e17467833660bebd11593ab8dfd57'],
+    }),
+    ('extrap', version, {
+        'patches': [
+            'Extra-P-4.2.3_use_PySide6.patch',
+            'Extra-P-4.2.3_fix-py-13-enum-incompatibility.patch',
+        ],
+        # setup.py is very restrictive regarding the NumPy version, yet, NumPy 2.x works just fine.
+        # pycubexr was already updated for this, but Extra-P lacks behind. So bump this manually.
+        'preinstallopts': 'sed -i "s|numpy~=1.18|numpy>=1.18,<3|g" setup.py && ',
+        'checksums': [
+            {'extrap-4.2.3.tar.gz': 'd88d69b48b75bca1ce7b10d892e15f21ac98ec1ddd7f670f949e5d2089353afd'},
+            {'Extra-P-4.2.3_use_PySide6.patch': '1af7d90b76b7a9deb555d07633381082a442be5d3fd1358a767eca96d5703ebd'},
+            {'Extra-P-4.2.3_fix-py-13-enum-incompatibility.patch':
+             'adca8af953f35e3954d153c82eb82a8fd95d20203eb61b8247c58abe857acd4a'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    "files": [
+        "bin/extrap",
+        "bin/extrap-gui",
+    ],
+    "dirs": [""],
+}
+
+moduleclass = "perf"

@@ -1,0 +1,66 @@
+easyblock = 'PythonBundle'
+
+name = 'nvidia-cutlass'
+version = '3.8.0.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pypi.org/project/nvidia-cutlass'
+description = """
+CUTLASS is a collection of CUDA C++ template abstractions for implementing high-performance
+matrix-matrix multiplication (GEMM) and related computations at all levels and scales within CUDA.
+It incorporates strategies for hierarchical decomposition and data movement similar to those used
+to implement cuBLAS and cuDNN.
+CUTLASS decomposes these "moving parts" into reusable, modular software components abstracted by C++ template classes.
+Primitives for different levels of a conceptual parallelization hierarchy can be specialized and tuned
+via custom tiling sizes, data types, and other algorithmic policy.
+The resulting flexibility simplifies their use as building blocks within custom kernels and applications.
+"""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+builddependencies = [
+    ('poetry', '1.8.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('CUDA-Python', '12.6.2.post1', versionsuffix),
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('SciPy-bundle', '2024.05'),
+    ('networkx', '3.4.2'),
+    ('pydot', '3.0.3'),
+]
+
+exts_list = [
+    ('treelib', '1.8.0', {
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['e1be2c6b66ffbfae85079fc4c76fb4909946d01d915ee29ff6795de53aed5d55'],
+    }),
+    (name, version, {
+        'source_tmpl': 'nvidia_cutlass-%(version)s-py3-none-any.whl',
+        'post_install_patches': [{
+            'name': 'nvidia-cutlass-3.8.0.0_fix-BytesWarning.patch',
+            'sourcepath': 'lib/python%(pyshortver)s/site-packages/cutlass',
+            'level': 3,
+        }],
+        'checksums': [
+            '013147221a63500205da233ae02e6262463917f3fe39cb09efbca37bfd1c39f9',
+            {'nvidia-cutlass-3.8.0.0_fix-BytesWarning.patch':
+             '63eb47894340c0ea03d0d2faaa49c1979915f903b5bc2ced17f8e0dd5ab854ed'},
+        ],
+        'modulename': 'cutlass',
+    }),
+]
+
+sanity_check_commands = [
+    'python -sc "import cutlass_library"',
+    'python -bb -sc "' + '; '.join((
+        'import cutlass',
+        # These serves as a smoke test, e.g. nvcc_version() was incompatible with -bb
+        "assert cutlass.nvcc_version().startswith('%(cudamajver)s')",
+        "assert cutlass.cuda_install_path() == '$EBROOTCUDA'",
+    )) + '"',
+]
+
+moduleclass = 'lib'

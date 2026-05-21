@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'SimpleITK'
+version = '2.5.3'
+
+homepage = 'https://www.simpleitk.org'
+description = """SimpleITK is a simplified programming interface to the algorithms and data structures of
+ the Insight Toolkit (ITK)."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+source_urls = ['https://github.com/%(name)s/%(name)s/releases/download/v%(version)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['1ef3642b0695c8eb0a0193fefe7677c57bce94a86d6b01f48f58b2291b4ca935']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('SWIG', '4.3.1'),
+    ('Lua', '5.4.8'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('ITK', '5.4.5'),
+    ('scikit-build', '0.18.1'),
+]
+
+# Enable Python bindings
+configopts = "-DWRAP_DEFAULT:BOOL=OFF -DWRAP_PYTHON=BOOL:ON -DSimpleITK_LUA_EXECUTABLE=$EBROOTLUA/bin/lua "
+
+# Install Python module as extension
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    (name, version, {
+        'modulename': '%(name)s',
+        'source_urls': ['https://github.com/%(name)s/%(name)s/releases/download/v%(version)s'],
+        'start_dir': '%(builddir)s/easybuild_obj/Wrapping/Python',
+        'checksums': ['1ef3642b0695c8eb0a0193fefe7677c57bce94a86d6b01f48f58b2291b4ca935'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libSimpleITK_ITKBiasCorrection-%(version_major_minor)s.a'],
+    'dirs': ['include/%(name)s-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'tools'
