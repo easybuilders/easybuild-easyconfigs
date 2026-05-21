@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'libwebp'
+version = '1.6.0'
+
+homepage = 'https://libwebp.com/'
+description = """WebP is a modern image format that provides superior
+lossless and lossy compression for images on the web. Using WebP,
+webmasters and web developers can create smaller, richer images that
+make the web faster."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://storage.googleapis.com/downloads.webmproject.org/releases/webp']
+sources = [V_VERSION_TAR_GZ]
+checksums = ['93a852c2b3efafee3723efd4636de855b46f9fe1efddd607e1f42f60fc8f2136']
+
+builddependencies = [
+    ('binutils', '2.45'),
+]
+dependencies = [
+    ('libjpeg-turbo', '3.1.4.1'),
+    ('libpng', '1.6.56'),
+    ('LibTIFF', '4.7.1'),
+    ('giflib', '6.1.3'),
+]
+
+configopts = '--enable-libwebpmux'
+
+local_headers, local_libs = (
+    ['decode.h', 'demux.h', 'encode.h', 'mux.h', 'mux_types.h', 'types.h'],
+    ['webp', 'webpdemux', 'webpmux']
+)
+
+sanity_check_paths = {
+    'files': (
+        ['include/webp/%s' % h for h in local_headers] +
+        ['lib/lib%s.a' % s for s in local_libs] +
+        ['lib/lib%s.%s' % (s, SHLIB_EXT) for s in local_libs]
+    ),
+    'dirs': ['lib/']
+}
+
+moduleclass = 'lib'
