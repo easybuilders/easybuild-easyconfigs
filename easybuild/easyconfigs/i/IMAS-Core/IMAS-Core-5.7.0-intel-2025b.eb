@@ -1,0 +1,70 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'IMAS-Core'
+version = '5.7.0'
+
+homepage = 'https://github.com/iterorganization/IMAS-Core'
+description = "IMAS Access Layer core library"
+
+toolchain = {'name': 'intel', 'version': '2025b'}
+
+github_account = 'iterorganization'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['fa03a56cef4a5c62a2b18e0eacd379a138b8fc33d8b0ef1b63248ae13caa602b']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('scikit-build-core', '0.11.5'),
+    ('Cython', '3.1.2'),
+    ('cython-cmake', '0.2.2'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('Boost', '1.88.0'),
+    ('HDF5', '1.14.6'),
+    ('MDSplus', '7.153.3'),
+    ('UDA', '2.9.3'),
+]
+
+# scikit-build-core probes for 'cmake3' before 'cmake'; expose a shim to the module-provided CMake.
+# Applied in all phases to also cover nested wheel builds triggered during make.
+local_cmake_shim = (
+    'mkdir -p %(builddir)s/cmake-shim && '
+    'ln -sf $EBROOTCMAKE/bin/cmake %(builddir)s/cmake-shim/cmake3 && '
+    'export PATH=%(builddir)s/cmake-shim:$PATH && '
+)
+preconfigopts = local_cmake_shim
+prebuildopts = local_cmake_shim
+preinstallopts = local_cmake_shim
+
+build_type = 'RelWithDebInfo'
+
+configopts = ' '.join([
+    '-D AL_DOWNLOAD_DEPENDENCIES=OFF',  # use module-provided dependencies
+    '-D AL_BACKEND_HDF5=ON',
+    '-D AL_BACKEND_MDSPLUS=ON',
+    '-D AL_BACKEND_UDA=ON',
+    '-D AL_BUILD_MDSPLUS_MODELS=OFF',   # provided by IMAS-MDSplus-models
+    '-D AL_PYTHON_BINDINGS=ON',
+    '-D AL_EXAMPLES=OFF',
+    '-D AL_TESTS=OFF',
+])
+
+options = {'modulename': 'imas_core'}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['include', 'lib'],
+}
+
+modextrapaths = {'AL_COMMON_PATH': 'share/common'}
+
+modextravars = {
+    'AL_VERSION': '%(version)s',
+    'HDF5_USE_FILE_LOCKING': 'FALSE',
+}
+
+moduleclass = 'tools'
