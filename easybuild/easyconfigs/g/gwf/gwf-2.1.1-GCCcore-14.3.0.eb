@@ -1,0 +1,61 @@
+# gwf-2.1.1-GCCcore-14.3.0.eb
+# Author: Nicolas Rapin
+# Danish National Genome Center
+
+
+easyblock = 'PythonBundle'
+
+name = 'gwf'
+version = '2.1.1'
+
+homepage = 'https://github.com/gwforg/gwf'
+description = """
+gwf is a flexible, pragmatic workflow tool for building and running large
+scientific workflows. This EasyBuild module installs gwf 2.x with its built-in
+PBS backend, intended for testing on PBS/Torque-based HPC systems.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+
+builddependencies = [
+    ('binutils', '2.44'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('click-plugins', '1.1.1.2', {
+        'modulename': 'click_plugins',
+        'checksums': ['d7af3984a99d243c131aa1a828331e7630f4a88a9741fd05c927b204bcf92261'],
+    }),
+    ('colorful', '0.5.7', {
+        'checksums': ['c5452179b56601c178b03d468a5326cc1fe37d9be81d24d0d6bdab36c4b93ad8'],
+    }),
+    ('prettyprinter', '0.18.0', {
+        'checksums': ['9fe5da7ec53510881dd35d7a5c677ba45f34cfe6a8e78d1abd20652cf82139a8'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/gwforg/gwf/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['06304564f538d84bdf858593f7a3676571ea56382acf50d21eb7e6be242713a4'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/gwf'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/gwf'],
+}
+
+sanity_check_commands = [
+    'gwf --help',
+    'python -c "import gwf; print(gwf.__version__)"',
+]
+
+moduleclass = 'tools'
