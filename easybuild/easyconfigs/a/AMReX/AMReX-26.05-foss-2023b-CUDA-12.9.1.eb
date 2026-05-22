@@ -1,0 +1,55 @@
+easyblock = 'CMakeMake'
+
+name = 'AMReX'
+version = '26.05'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://amrex-codes.github.io/amrex/'
+description = """AMReX is a software framework for massively parallel,
+block-structured adaptive mesh refinement (AMR) applications."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/AMReX-Codes/amrex/archive/refs/tags/']
+sources = ['%(version)s.tar.gz']
+checksums = ['66415ed3f6f02af53ff2007424fc15a758165b92f4b556092e3e53e5582889a8']
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+]
+
+dependencies = [
+    # CUDA must be >= 12.4 when paired with GCC 13 (foss/2023b); earlier
+    # 12.x releases ship headers that fail to parse with GCC 13. CUDA 12.9.1
+    # is the last 12.x release, and the last that supports Pascal (sm_60);
+    # CUDA 13.0 dropped Maxwell/Pascal/Volta.
+    ('CUDA', '12.9.1', '', SYSTEM),
+]
+
+# Override CUDA compute capabilities on the command line with
+# --cuda-compute-capabilities=...  or set them site-wide in your EasyBuild
+# config; the value below is used only if neither is provided.
+cuda_compute_capabilities = ['6.0', '7.5', '9.0']
+
+configopts = '-DAMReX_GPU_BACKEND=CUDA '
+configopts += '-DAMReX_CUDA_ARCH="%(cuda_cc_space_sep)s" '
+configopts += '-DAMReX_MPI=YES '
+configopts += '-DAMReX_OMP=YES '
+configopts += '-DAMReX_FORTRAN=YES '
+configopts += '-DAMReX_PRECISION=DOUBLE '
+configopts += '-DAMReX_LINEAR_SOLVERS=YES '
+configopts += '-DAMReX_PARTICLES=YES '
+configopts += '-DAMReX_EB=YES '
+configopts += '-DAMReX_PLOTFILE_TOOLS=YES '
+configopts += '-DAMReX_TINY_PROFILE=YES '
+configopts += '-DAMReX_INSTALL=YES '
+configopts += '-DCMAKE_INSTALL_LIBDIR=lib '
+
+sanity_check_paths = {
+    'files': ['lib/libamrex.a', 'include/AMReX.H',
+              'bin/amrex_fcompare', 'bin/amrex_fextrema'],
+    'dirs': ['include', 'lib/cmake/AMReX'],
+}
+
+moduleclass = 'phys'
