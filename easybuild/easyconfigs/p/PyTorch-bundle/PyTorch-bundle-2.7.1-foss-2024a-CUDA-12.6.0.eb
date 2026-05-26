@@ -100,7 +100,7 @@ exts_list = [
             {'name': 'torchaudio-2.7.0_fix_tests_gpu.patch', 'alt_location': 'torchaudio'},
         ],
         'preinstallopts': ('unset BUILD_VERSION && '
-                           'rm -r third_party/{sox,ffmpeg/multi}; '  # runs twice when testinstall
+                           'rm -r third_party/{sox,ffmpeg/multi}; '  # Don't fail because it runs twice (testinstall)
                            + local_preinstall_opts),
         'source_urls': ['https://github.com/pytorch/audio/archive'],
         'sources': [local_gh_source],
@@ -235,8 +235,9 @@ exts_list = [
         'sources': [local_gh_source],
         'checksums': ['c477d78ca5268187979934d3eb38590758adc5415526b3705a9a85099e40ad21'],
         # Need path to installed cutlass, as third_party folder is not populated
-        'preinstallopts': (f"CPATH='$CPATH:{local_cutlass_path}/include:{local_cutlass_path}/tools/util/include'"
-                           + local_preinstall_opts),
+        'preinstallopts': (
+            f"export CPATH='$CPATH:{local_cutlass_path}/include:{local_cutlass_path}/tools/util/include' && "
+            + local_preinstall_opts),
     }),
     ('torchdata', '0.11.0', {
         'source_urls': ['https://github.com/pytorch/data/archive'],
