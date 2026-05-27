@@ -1,0 +1,49 @@
+name = 'Extrae'
+version = '5.0.6'
+
+homepage = 'https://tools.bsc.es/extrae'
+description = """Extrae is the package devoted to generate Paraver trace-files for a post-mortem analysis.
+Extrae is a tool that uses different interposition mechanisms to inject probes into the target application
+so as to gather information regarding the application performance."""
+
+toolchain = {'name': 'gompi', 'version': '2026.1'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://ftp.tools.bsc.es/%(namelower)s']
+sources = ['%(namelower)s-%(version)s-src.tar.bz2']
+checksums = ['174ea64a87d6153ac6bcfed919521f9a07d45bb8bc4e023252c51c7459a11b0b']
+
+builddependencies = [
+    ('Autotools', '20250626'),
+]
+
+dependencies = [
+    ('Boost', '1.90.0'),
+    # SIONlib support is broken in v5.0.6
+    # ('SIONlib', '1.7.7', '-tools'),
+    ('PAPI', '7.2.0'),
+    ('binutils', '2.45'),
+    ('elfutils', '0.195'),
+    ('libunwind', '1.8.3'),
+    ('libxml2', '2.15.1'),
+    ('tbb', '2022.3.0'),
+    ('zlib', '2.3.2'),
+]
+
+# Dyninst lacks support for RISC-V
+if ARCH != 'riscv64':
+    dependencies.append(
+        ('Dyninst', '13.0.0'),
+    )
+
+# Extrae expects `make install` before running the checks, yet, DESTDIR is broken.
+# Therefore, tests cannot be executed in a sensible manner. Even if it would,
+# tests for PAPI could still fail depending on the platform, since it is not checked
+# if checked metrics even work without Extrae.
+runtest = False
+
+modextravars = {
+    'EXTRAE_HOME': '%(installdir)s',
+}
+
+moduleclass = 'perf'
