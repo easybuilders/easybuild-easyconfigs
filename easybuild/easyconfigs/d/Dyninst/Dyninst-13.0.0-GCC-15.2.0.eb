@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'Dyninst'
+version = '13.0.0'
+
+homepage = 'https://github.com/dyninst/dyninst'
+description = 'DyninstAPI: Tools for binary instrumentation, analysis, and modification'
+
+toolchain = {'name': 'GCC', 'version': '15.2.0'}
+
+source_urls = ['https://github.com/dyninst/dyninst/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'Dyninst-13.0.0-cstdint-header.patch',
+    'Dyninst-13.0.0-fix-more-cstdint-includes.patch',
+    'Dyninst-13.0.0-tbb-header.patch',
+]
+checksums = [
+    {'v13.0.0.tar.gz': '1bc48d26478b677a6c090c25586a447507bd1b4cf88d369bd61820005ce1be39'},
+    {'Dyninst-13.0.0-cstdint-header.patch': 'ac2812c48b9236f4c8467fd44d3bf6599f9c00916619401e85a45bd64ac0a06b'},
+    {'Dyninst-13.0.0-fix-more-cstdint-includes.patch':
+     '3c24351ae3aab9d86f51e58d890972e0e43999be600b58a895d7c67b5a22c309'},
+    {'Dyninst-13.0.0-tbb-header.patch': 'd1a41fc41abf8cb9034c6e9d9fcacbd5a435b22677cbfdef54bb36bc08d1b4c5'},
+]
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('CMake', '4.2.1'),
+]
+
+dependencies = [
+    ('Boost', '1.90.0'),
+    ('tbb', '2022.3.0'),
+    ('elfutils', '0.195'),
+]
+
+# Flags are causing problems with duplicate command line options inside quotes
+preconfigopts = 'unset CXXFLAGS && unset CFLAGS && '
+
+sanity_check_paths = {
+    'files': ['bin/parseThat'] + [f'lib/lib{x}.{SHLIB_EXT}' for x in ['common', 'dynC_API', 'dynDwarf', 'dynElf',
+                                                                      'dyninstAPI', 'dyninstAPI_RT', 'instructionAPI',
+                                                                      'parseAPI', 'patchAPI', 'pcontrol', 'stackwalk',
+                                                                      'symtabAPI']],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ['parseThat --help']
+
+moduleclass = 'tools'

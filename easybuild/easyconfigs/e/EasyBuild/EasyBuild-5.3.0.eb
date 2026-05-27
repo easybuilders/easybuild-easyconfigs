@@ -1,0 +1,55 @@
+easyblock = 'EB_EasyBuildMeta'
+
+name = 'EasyBuild'
+version = '5.3.0'
+
+homepage = 'https://easybuilders.github.io/easybuild'
+description = """EasyBuild is a software build and installation framework
+ written in Python that allows you to install software in a structured,
+ repeatable and robust way."""
+
+toolchain = SYSTEM
+
+source_urls = [
+    # easybuild-framework
+    'https://files.pythonhosted.org/packages/2b/3c/eb0f99e92ccd99da73410cfd1e342b9d03a09727dd5e97ad528b945ef13a/',
+    # easybuild-easyblocks
+    'https://files.pythonhosted.org/packages/af/5d/c838ad165c932303624080e7d06fad94f7a7b8f16b105d36bdfd35a29968/',
+    # easybuild-easyconfigs
+    'https://files.pythonhosted.org/packages/4b/f4/3589ad57c539012074af3ed849a4c709fc8f38cbf00fb66e9f63c073ca93/',
+]
+# note: subdirectory for each unpacked source tarball is renamed because custom easyblock in older EasyBuild version
+# that is used for installing EasyBuild with EasyBuild expects subdirectories with '-' rather than '_';
+# see also https://github.com/easybuilders/easybuild-easyblocks/pull/3358
+sources = [
+    {
+        'filename': 'easybuild_framework-%(version)s.tar.gz',
+        'extract_cmd': "tar xfvz %s && mv easybuild_framework-%(version)s easybuild-framework-%(version)s",
+    },
+    {
+        'filename': 'easybuild_easyblocks-%(version)s.tar.gz',
+        'extract_cmd': "tar xfvz %s && mv easybuild_easyblocks-%(version)s easybuild-easyblocks-%(version)s",
+    },
+    {
+        'filename': 'easybuild_easyconfigs-%(version)s.tar.gz',
+        'extract_cmd': "tar xfvz %s && mv easybuild_easyconfigs-%(version)s easybuild-easyconfigs-%(version)s",
+    },
+]
+checksums = [
+    {'easybuild_framework-5.3.0.tar.gz': 'a39f896037b73c533c96ce4aca5d03ba1adce776b72a8de530c1daca94203aba'},
+    {'easybuild_easyblocks-5.3.0.tar.gz': 'baf0790a27ed73bcdf6854bf0a052cb352fb9ad8b65460d5c1d9b8eef417dc93'},
+    {'easybuild_easyconfigs-5.3.0.tar.gz': '5f1ca00be3d03f44a1842186ee63328b08b27d7be5932a8872acb00a6a07d424'},
+]
+
+# EasyBuild is a (set of) Python packages, so it depends on Python
+# usually, we want to use the system Python, so no actual Python dependency is listed
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+local_pyshortver = '.'.join(SYS_PYTHON_VERSION.split('.')[:2])
+
+sanity_check_paths = {
+    'files': ['bin/eb'],
+    'dirs': ['lib/python%s/site-packages' % local_pyshortver],
+}
+
+moduleclass = 'tools'
