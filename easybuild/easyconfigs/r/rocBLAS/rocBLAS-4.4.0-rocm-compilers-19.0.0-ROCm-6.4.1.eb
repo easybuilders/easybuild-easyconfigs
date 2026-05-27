@@ -1,0 +1,53 @@
+# Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ROCmComponent'
+
+name = 'rocBLAS'
+version = '4.4.0'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/ROCm/rocBLAS'
+description = """rocBLAS is the ROCm Basic Linear Algebra Subprograms (BLAS) library.
+rocBLAS is implemented in the HIP programming language and optimized for AMD GPUs."""
+docurls = ['https://rocm.docs.amd.com/projects/rocBLAS/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f'rocm-{_rocm_version}.tar.gz']
+patches = [
+    'rocBLAS-4.4.0_fix-hardcoded-paths.patch',
+]
+checksums = [
+    {'rocm-6.4.1.tar.gz': '517950ff6b3715dee8b2bcfbdd3968c65e1910e4b8e353e148574ae08aa6dc73'},
+    {'rocBLAS-4.4.0_fix-hardcoded-paths.patch': '58e223b620a771c6b282ae1daaf7a672e31b94824c7e2d6d9edf5ed1fbf61ff7'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+    ('Tensile', '4.43.0'),
+]
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocTracer', '4.1.0'),
+    ('hipBLASLt', '0.12.1'),
+]
+
+configopts = '-DBUILD_WITH_PIP=OFF '
+configopts += '-DBUILD_CLIENTS_TESTS=OFF '
+configopts += '-DBUILD_CLIENTS_BENCHMARKS=OFF '
+configopts += '-DBUILD_CLIENTS_SAMPLES=OFF '
+configopts += '-DBUILD_CLIENTS=OFF '
+
+sanity_check_paths = {
+    'files': ['lib/librocblas.so',
+              'lib/cmake/rocblas/rocblas-config.cmake',
+              'include/rocblas/rocblas.h'],
+    'dirs': ['lib/cmake/rocblas',
+             'share/doc/rocblas',
+             'include/rocblas'],
+}
+
+moduleclass = 'lib'
