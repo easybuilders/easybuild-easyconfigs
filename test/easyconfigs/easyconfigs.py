@@ -610,7 +610,7 @@ class EasyConfigTest(TestCase):
                 (r'5\.', [r'Elk-']),
             ],
             # OpenQP requires mpi4py>=4.0.0
-            'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0', r'SimNIBS-4\.6\.0']),
+            'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0', r'SimNIBS-4\.6\.0'])],
             # FDMNES requires sequential variant of MUMPS
             # SimNIBS requires sequential variant of MUMPS
             'MUMPS': [
