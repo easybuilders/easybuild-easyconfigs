@@ -1,0 +1,63 @@
+Use NVHPC and QD, FFTW and cusolvermp
+Enable HDF5 and Wannier90
+--- vasp.6.6.0_orig/arch/makefile.include.nvhpc_omp_acc	2026-03-16 11:01:39.034483732 +0100
++++ vasp.6.6.0/arch/makefile.include.nvhpc_omp_acc	2026-03-16 11:09:15.840879920 +0100
+@@ -9,6 +9,7 @@
+               -Dqd_emulate \
+               -Dfock_dblbuf \
+               -D_OPENMP \
++              -D_LONGCHAR \
+               -DACC_OFFLOAD \
+               -DNVCUDA \
+               -DUSENCCL
+@@ -78,11 +79,11 @@
+ #NVROOT      = $(NVHPC)/Linux_x86_64/$(NVVERSION)
+ 
+ ## Improves performance when using NV HPC-SDK >=21.11 and CUDA >11.2
+-#OFLAG_IN   = -fast -Mwarperf
+-#SOURCE_IN  := nonlr.o
++OFLAG_IN   = -fast -Mwarperf
++SOURCE_IN  := nonlr.o
+ 
+ # Software emulation of quadruple precsion (mandatory)
+-QD         ?= $(NVROOT)/compilers/extras/qd
++QD         ?= $(EBROOTNVHPC)/Linux_x86_64/25.3/compilers/extras/qd
+ LLIBS      += -L$(QD)/lib -lqdmod -lqd
+ INCS       += -I$(QD)/include/qd
+ 
+@@ -98,25 +99,25 @@
+ LLIBS      += $(SCALAPACK) $(LAPACK) $(BLAS)
+ 
+ # FFTW (mandatory)
+-FFTW_ROOT  ?= /path/to/your/fftw/installation
++FFTW_ROOT  ?= $(EBROOTFFTW)
+ LLIBS      += -L$(FFTW_ROOT)/lib -lfftw3 -lfftw3_omp
+ INCS       += -I$(FFTW_ROOT)/include
+ 
+ # Use cusolvermp (optional)
+ # supported as of NVHPC-SDK 24.1 (and needs CUDA-11.8)
+-#CPP_OPTIONS+= -DCUSOLVERMP -DCUBLASMP
+-#LLIBS      += -cudalib=cusolvermp,cublasmp -lnvhpcwrapcal
++CPP_OPTIONS+= -DCUSOLVERMP -DCUBLASMP
++LLIBS      += -cudalib=cusolvermp,cublasmp -lnvhpcwrapcal
+ 
+ # HDF5-support (optional but strongly recommended, and mandatory for some features)
+-#CPP_OPTIONS+= -DVASP_HDF5
+-#HDF5_ROOT  ?= /path/to/your/hdf5/installation
+-#LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
+-#INCS       += -I$(HDF5_ROOT)/include
++CPP_OPTIONS+= -DVASP_HDF5
++HDF5_ROOT  ?= $(EBROOTHDF5)
++LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
++INCS       += -I$(HDF5_ROOT)/include
+ 
+ # For the VASP-2-Wannier90 interface (optional)
+-#CPP_OPTIONS    += -DVASP2WANNIER90
+-#WANNIER90_ROOT ?= /path/to/your/wannier90/installation
+-#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
++CPP_OPTIONS    += -DVASP2WANNIER90
++WANNIER90_ROOT ?= $(EBROOTWANNIER90)
++LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
+ 
+ # For the fftlib library (hardly any benefit for the OpenACC GPU port)
+ #CPP_OPTIONS+= -Dsysv
