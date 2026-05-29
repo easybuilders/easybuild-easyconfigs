@@ -1,0 +1,61 @@
+easyblock = 'PythonBundle'
+
+name = 'RFdiffusion'
+version = '1.1.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/RosettaCommons/RFdiffusion'
+description = """
+RFdiffusion is an open source method for structure generation, with or without conditional information
+(a motif, target etc). It can perform a whole range of protein design challenges as we have outlined
+in the RFdiffusion paper.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('wandb', '0.25.1'),
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('PyTorch', '2.9.1', f'{versionsuffix}-whl'),
+    ('e3nn', '0.6.0', versionsuffix),
+    ('Hydra', '1.3.2', '-with-plugins'),
+    ('DGL', '2.4.0', versionsuffix),
+    ('SciPy-bundle', '2025.06'),
+]
+
+exts_list = [
+    ('nvidia-ml-py', '13.595.45', {
+        'modulename': 'pynvml',
+        'checksums': ['c9f34897fe0441ff35bc8f35baf80f830a20b0f4e6ce71e0a325bc0e66acf079'],
+    }),
+    ('dllogger', version, {
+        'source_urls': ['https://github.com/NVIDIA/dllogger/archive/refs/tags'],
+        'sources': ['v%(version)s.zip'],
+        'checksums': ['cab059d7aaf3f6ed4d7321bfdfec80b411e21ee0462cb840df83a5e07fc6c3e9'],
+    }),
+    ('decorator', '5.2.1', {
+        'checksums': ['65f266143752f734b0a7cc83c46f4618af75b8c5911b00ccb61d0ac9b6da0360'],
+    }),
+    ('se3-transformer', version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/RosettaCommons/RFdiffusion/archive/refs/tags'],
+        'start_dir': 'env/SE3Transformer',
+        'checksums': ['57d82f0d43540c2912eda3f1d34ad90b13db14966ee069c427e217fe78f0297f'],
+    }),
+    (name, version, {
+        'patches': ['%(name)s-%(version)s_fix-find-packages.patch'],
+        'sources': {
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'download_filename': 'v%(version)s.tar.gz',
+            'source_urls': ['https://github.com/RosettaCommons/RFdiffusion/archive/refs/tags'],
+        },
+        'checksums': [
+            {'RFdiffusion-1.1.0.tar.gz': '57d82f0d43540c2912eda3f1d34ad90b13db14966ee069c427e217fe78f0297f'},
+            {'RFdiffusion-1.1.0_fix-find-packages.patch':
+             'e25da7f476acacb6af58bd84f40aca712538900b0b48532b22f9a133d6886da2'},
+        ],
+    }),
+]
+
+moduleclass = 'bio'
