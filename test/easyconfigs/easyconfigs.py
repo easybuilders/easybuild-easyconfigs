@@ -353,10 +353,12 @@ class EasyConfigTest(TestCase):
             # make sure that no odd versions (like 1.13) of HDF5 are used as a dependency,
             # since those are released candidates - only even versions (like 1.12) are stable releases;
             # see https://docs.hdfgroup.org/archive/support/HDF5/doc/TechNotes/Version.html
+            # With release 2.0.0 they switched to semver, with no indication that there are release candidates
+            # based on minor versions, so only do this check for major version 1
             for dep in ec['ec'].dependencies():
                 if dep['name'] == 'HDF5':
                     ver = dep['version']
-                    if int(ver.split('.')[1]) % 2 == 1:
+                    if int(ver.split('.')[0]) == 1 and int(ver.split('.')[1]) % 2 == 1:
                         fail = "Odd minor versions of HDF5 should not be used as a dependency: "
                         fail += "found HDF5 v%s as dependency in %s" % (ver, os.path.basename(ec['spec']))
                         fails.append(fail)
