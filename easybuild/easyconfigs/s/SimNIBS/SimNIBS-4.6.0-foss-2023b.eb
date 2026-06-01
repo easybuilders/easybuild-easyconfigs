@@ -1,0 +1,297 @@
+easyblock = 'PythonBundle'
+
+name = 'SimNIBS'
+version = '4.6.0'
+
+homepage = 'https://simnibs.github.io/simnibs'
+description = "SimNIBS is a free and open source software package for the Simulation of Non-invasive Brain Stimulation"
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'pic': True, 'lowopt': True}
+
+modloadmsg = """
+WARNING: This SimNIBS module is a standalone compatibility build.
+
+Although the module is installed under the foss/2023b toolchain, it contains a
+customized Python/runtime stack for SimNIBS, including locally provided or
+overridden packages such as NumPy/SciPy, PyTorch, PETSc/petsc4py-related
+components, and selected binary wheels/runtime libraries.
+
+Do not combine this module with other Python foss/2023b modules
+such as SciPy-bundle, NumPy, SciPy, PyTorch, PETSc, petsc4py, h5py, numba,
+matplotlib, or similar packages, unless you know exactly what you are doing.
+
+Recommended usage: load SimNIBS as a standalone application module in a clean
+software environment.
+"""
+
+builddependencies = [
+    ('pkgconf', '2.0.3'),
+    ('Meson', '1.2.3'),  # overrided by meson-1.6.1 from exts (here only for scipy check)
+    ('Ninja', '1.11.1'),
+    ('CMake', '3.27.6'),  # pybind11
+    ('Eigen', '3.4.0'),  # pybind11
+    ('Catch2', '2.13.9'),  # pybind11
+    ('hypothesis', '6.90.0'),  # numpy tests
+    ('hatchling', '1.18.0'),  # nibabel
+    ('patchelf', '0.18.0'),
+]
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Python-bundle-PyPI', '2023.10'),
+    ('tbb', '2021.13.0'),
+    ('PyOpenGL', '3.1.9'),
+    ('freeglut', '3.4.0'),
+    ('libwebp', '1.3.2'),
+    ('MUMPS', '5.7.3', '-metis-seq'),
+    ('zlib', '1.2.13'),
+    ('PyQt5', '5.15.10'),
+    ('imkl', '2023.2.0'),
+    ('Cython', '3.0.10'),
+    ('Boost', '1.83.0'),  # pybind11
+    ('HDF5', '1.14.3'),  # h5py
+    ('mpi4py', '4.0.1'),  # h5py
+    ('pydicom', '3.0.1'),  # nibabel
+    ('libjpeg-turbo', '3.0.1'),  # Pillow
+    ('libpng', '1.6.40'),  # Pillow
+    ('LibTIFF', '4.6.0'),  # Pillow
+    ('freetype', '2.13.2'),  # Pillow
+    ('OpenJPEG', '2.5.0'),  # Pillow
+    ('LittleCMS', '2.15'),  # Pillow
+]
+
+exts_list = [
+    ('typing_extensions', '4.12.2', {
+        'checksums': ['1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8'],
+    }),
+    ('setuptools', '75.6.0', {
+        'checksums': ['8199222558df7c86216af4f84c30e9b34a61d8ba19366cc914424cdbd28252f6'],
+    }),
+    ('zipp', '3.23.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['071652d6115ed432f5ce1d34c336c0adfd6a884660d1e9712a256d3d3bd4b14e'],
+    }),
+    ('importlib-metadata', '8.7.0', {
+        'checksums': ['d13b81ad223b890aa16c5471f2ac3056cf76c5f10f82d6f9292f0b415f389000'],
+    }),
+    ('pyproject-metadata', '0.9.1', {
+        'checksums': ['b8b2253dd1b7062b78cf949a115f02ba7fa4114aabe63fa10528e9e1a954a816'],
+    }),
+    ('pybind11', '2.13.6', {
+        'patches': [{'name': 'pybind11-2.10.3_require-catch.patch', 'alt_location': 'pybind11'}],
+        'source_urls': ['https://github.com/pybind/%(name)s/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': [
+            {'v2.13.6.tar.gz': 'e08cb87f4773da97fa7b5f035de8763abc656d87d5773e62f6da0587d1f0ec20'},
+            {'pybind11-2.10.3_require-catch.patch':
+             '4a27ba3ef1d5c535d120d6178a6e876ae678e4899a07500aab37908357b0b60b'},
+        ],
+    }),
+    ('meson', '1.6.1', {
+        'modulename': 'mesonbuild',
+        'checksums': ['1eca49eb6c26d58bbee67fd3337d8ef557c0804e30a6d16bfdf269db997464de'],
+    }),
+    ('meson-python', '0.18.0', {
+        'modulename': 'mesonpy',
+        'checksums': ['c56a99ec9df669a40662fe46960321af6e4b14106c14db228709c1628e23848d'],
+    }),
+    ('spin', '0.14', {
+        'checksums': ['1a5f6ce53699ef58bf893970ecb9d7f8814a8ca08da5d26e1391fe2a9fa04bcc'],
+    }),
+    ('ply', '3.11', {
+        'checksums': ['00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3'],
+    }),
+    ('gast', '0.6.0', {
+        'checksums': ['88fc5300d32c7ac6ca7b515310862f71e6fdf2c029bbec7c66c0f5dd47b6b1fb'],
+    }),
+    ('beniget', '0.4.2.post1', {
+        'checksums': ['a0258537e65e7e14ec33a86802f865a667f949bb6c73646d55e42f7c45a052ae'],
+    }),
+    ('pythran', '0.18.0', {
+        'checksums': ['5c003e8cbedf6dbb68c2869c49fc110ce8b5e8982993078a4a819f1dadc4fc6a'],
+    }),
+    ('versioneer', '0.29', {
+        'checksums': ['5ab283b9857211d61b53318b7c792cf68e798e765ee17c27ade9f6c924235731'],
+    }),
+    ('numpy', '2.3.1', {
+        'ignore_test_result': True,
+        # only one test failed: numpy/tests/test_public_api.py::test_api_importable with:
+        #   AssertionError: Modules that are not really public but looked public and can not be imported:
+        #       ['numpy.distutils.msvccompiler']
+        'testopts': '-- -k "not test_public_api"',
+        'patches': [
+            {'name': 'numpy-1.22.3_disable-broken-override-test.patch', 'alt_location': 'SciPy-bundle'},
+            {'name': 'numpy-2.3.1_fix_f2py_object_files.patch', 'alt_location': 'SciPy-bundle'},
+        ],
+        'checksums': [
+            {'numpy-2.3.1.tar.gz': '1ec9ae20a4226da374362cca3c62cd753faf2f951440b0e3b98e93c235441d2b'},
+            {'numpy-1.22.3_disable-broken-override-test.patch':
+             '9c589bb073b28b25ff45eb3c63c57966aa508dd8b318d0b885b6295271e4983c'},
+            {'numpy-2.3.1_fix_f2py_object_files.patch':
+             'b586083c384becc9ef7908af171c9034473514f8c8741d15b8bda23da503718f'},
+        ],
+    }),
+    ('scipy', '1.16.0', {
+        'enable_slow_tests': False,
+        'ignore_test_result': True,
+        'patches': [
+            {'name': 'scipy-1.11.1_disable-tests.patch', 'alt_location': 'SciPy-bundle'},
+            {'name': 'scipy-1.16.0_skip-tests-broken-grace.patch', 'alt_location': 'SciPy-bundle'},
+            {'name': 'scipy-1.16.0_relax-tests-broken-neoverse-v1.patch', 'alt_location': 'SciPy-bundle'},
+            {'name': 'scipy-1.16.0_remove-float16-differentiate-test.patch', 'alt_location': 'SciPy-bundle'},
+        ],
+        'checksums': [
+            {'scipy-1.16.0.tar.gz': 'b5ef54021e832869c8cfb03bc3bf20366cbcd426e02a58e8a58d7584dfbb8f62'},
+            {'scipy-1.11.1_disable-tests.patch': '906bfb03397d94882ccdc1b93bc2c8e854e0e060c2d107c83042992394e6a4af'},
+            {'scipy-1.16.0_skip-tests-broken-grace.patch':
+             '33885518a572f843a0edeb7a58aa938202aae70267f6de1ce60acef97f393126'},
+            {'scipy-1.16.0_relax-tests-broken-neoverse-v1.patch':
+             'a72d794b95dc437c03b323f86392b264c7ecfdbfa19e3bc01fba8d5d3ab2f21a'},
+            {'scipy-1.16.0_remove-float16-differentiate-test.patch':
+             'f857fc1e941c196285f2e871e803cf463fc59c040dd2955deda1dd277d4b00db'},
+        ],
+    }),
+    ('h5py', '3.14.0', {
+        'source_tmpl': '%(name)s-%(version)s-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['723a40ee6505bd354bfd26385f2dae7bbfa87655f4e61bab175a49d72ebfc06b'],
+    }),
+    ('Pillow', '11.3.0', {
+        'modulename': 'PIL',
+        'sources': [SOURCELOWER_TAR_GZ],
+        'patches': [{'name': '%(name)s-%(version)s_old-license-syntax.patch', 'alt_location': 'Pillow'}],
+        'checksums': [
+            {'pillow-11.3.0.tar.gz': '3828ee7586cd0b2091b6209e5ad53e20d0649bbe87164a459d0676e035e8f523'},
+            {'Pillow-11.3.0_old-license-syntax.patch':
+             'ccdae6569850dc8959d68862ad81f1f84dcd82925d16b4da3606b31a6c8b56ba'},
+        ],
+    }),
+    ('nibabel', '5.3.2', {
+        'checksums': ['0bdca6503b1c784b446c745a4542367de7756cfba0d72143b91f9ffb78be569b'],
+    }),
+    ('gmsh', '4.14.0', {
+        'source_tmpl': '%(name)s-%(version)s-py2.py3-none-manylinux_2_24_x86_64.whl',
+        'checksums': ['aa39fe49bfea01cd753f5e30d679a5fbfa7315c9297e716393fc0fdc7977e609'],
+    }),
+    ('llvmlite', '0.45.1', {
+        'source_tmpl': '%(name)s-%(version)s-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl',
+        'checksums': ['3adc2355694d6a6fbcc024d59bb756677e7de506037c878022d7b877e7613a36'],
+    }),
+    ('numba', '0.62.1', {
+        'checksums': ['7b774242aa890e34c21200a1fc62e5b5757d5286267e71103257f4e2af0d5161'],
+    }),
+    ('xxhash', '3.5.0', {
+        'checksums': ['84f2caddf951c9cbf8dc2e22a89d4ccf5d86391ac6418fe81e3c67d0cf60b45f'],
+    }),
+    ('python-mumps', '0.0.2', {
+        'modulename': 'mumps',
+        'checksums': ['ae19e9242ca1827f10e7e57021a4be0207b8b9c563472752ca7a0edd7700b223'],
+    }),
+    ('scikit-learn', '1.7.0', {
+        'modulename': 'sklearn',
+        'checksums': ['c01e869b15aec88e2cdb73d27f15bdbe03bce8e2fb43afbe77c45d399e73a5a3'],
+    }),
+    ('sklearn', '0.0', {
+        'checksums': ['e23001573aa194b834122d2b9562459bf5ae494a2d59ca6b8aa22c85a44c0e31'],
+    }),
+    ('mpmath', '1.3.0', {
+        'checksums': ['7a28eb2a9774d00c7bc92411c19a89209d5da7c4c9a9e227be8330a23a25b91f'],
+    }),
+    ('ml-dtypes', '0.4.1', {
+        'patches': [
+            {'name': 'ml_dtypes-0.3.2_EigenAvx512.patch', 'level': 1, 'alt_location': 'ml_dtypes'},
+        ],
+        'checksums': [
+            {'ml-dtypes-0.4.1.tar.gz': 'fad5f2de464fd09127e49b7fd1252b9006fb43d2edc1ff112d390c324af5ca7a'},
+            {'ml_dtypes-0.3.2_EigenAvx512.patch': '197b05b0b7f611749824369f026099f6a172f9e8eab6ebb6504a16573746c892'},
+        ],
+    }),
+    ('tqdm', '4.67.1', {
+        'checksums': ['f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2'],
+    }),
+    ('networkx', '3.4.2', {
+        'checksums': ['307c3669428c5362aab27c8a1260aa8f47c4e91d3891f48be0141738d8d053e1'],
+    }),
+    ('sympy', '1.13.1', {
+        'source_urls': ['https://download.pytorch.org/whl'],
+        'sources': [SOURCE_PY3_WHL],
+        'checksums': ['db36cdc64bf61b9b24578b6f7bab1ecdd2452cf008f34faa33776680c26d66f8'],
+    }),
+    ('torch', '2.6.0+cpu', {
+        'source_urls': ['https://download.pytorch.org/whl/cpu/'],
+        'sources': ['%(name)s-2.6.0%2Bcpu-cp311-cp311-linux_x86_64.whl'],
+        'modulename': 'torch',
+        'checksums': ['5b6ae523bfb67088a17ca7734d131548a2e60346c622621e4248ed09dd0790cc'],
+    }),
+    ('pytorch-ignite', '0.5.2', {
+        'modulename': 'ignite',
+        'checksums': ['63bdbafe3fb76bf243e4c7fa4b71c89a652fece6c4c2f6e3c5b448ac74447d98'],
+    }),
+    ('fmm3dpy', '1.0.4', {
+        'source_urls': ['https://github.com/simnibs/%(name)s/releases/download/v%(version)s/'],
+        'sources': ['%(name)s-%(version)s-cp311-cp311-manylinux_2_28_x86_64.whl'],
+        'checksums': ['9b52bb4d5477e83155df8cf17d9d5fb36752318ef3e437d0d36a10f708cd52bb'],
+    }),
+    ('petsc4py', '3.22.2', {
+        'source_urls': ['https://github.com/simnibs/%(name)s/releases/download/v%(version)s/'],
+        'sources': ['%(name)s-%(version)s-cp311-cp311-manylinux_2_28_x86_64.whl'],
+        'checksums': ['090d97b198ced7ab98c9a9b471d17c140c245df4a56b9934275e006619ab0981'],
+    }),
+    ('tzdata', '2024.1', {
+        'checksums': ['2674120f8d891909751c38abcdfd386ac0a5a1127954fbc332af6b5ceae07efd'],
+    }),
+    ('pandas', '2.3.0', {
+        'preinstallopts': "export PANDAS_CI=0 && ",
+        'checksums': ['34600ab34ebf1131a7613a260a61dbe8b62c188ec0ea4c296da7c9a06b004133'],
+    }),
+    ('pygpc', '0.4.1', {
+        'source_tmpl': '%(name)s-%(version)s-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['6eaae5b33b99d1cc176265f65ef0347b144def1961b9d62f878ca83035a14ee3'],
+    }),
+    ('surfa', '0.6.3', {
+        'checksums': ['fbf687487bd7ea3a9fc924cd4bfc620960d6bf3e277d3680faf25e67bf6eca27'],
+    }),
+    ('samseg', '0.5a0', {
+        'source_urls': ['https://github.com/oulap/samseg_wheels/releases/download/dev/'],
+        'sources': ['%(name)s-%(version)s-cp311-cp311-manylinux_2_28_x86_64.whl'],
+        'checksums': ['ce1abb7d437c702949b5cfb2f0c72c9724cff94ec9d18129a4074639600766d0'],
+    }),
+    ('cortech', '0.1', {
+        'source_urls': ['https://github.com/simnibs/%(name)s/releases/download/v%(version)s/'],
+        'sources': ['%(name)s-%(version)s-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl'],
+        'checksums': ['7f4260989f14c22b8f735172ab91f6c939991491a91796e6acefc6726bddb0f8'],
+    }),
+    ('brainsynth', '0.1', {
+        'source_urls': ['https://github.com/simnibs/%(name)s/releases/download/v%(version)s/'],
+        'sources': [SOURCE_PY3_WHL],
+        'checksums': ['d43f5c13d7939f8ded05f5624541b9220bef2a3e2343183f2b18ed5121ed41f9'],
+    }),
+    ('brainnet', '0.2', {
+        'source_urls': ['https://github.com/simnibs/%(name)s/releases/download/v%(version)s/'],
+        'sources': [SOURCE_PY3_WHL],
+        'checksums': ['f8d5385ee3a54e1ed36797c2099c188fe5afe822f13de2e63e84344d1bce4a1b'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/simnibs/%(namelower)s/releases/download/v%(version)s/'],
+        'sources': ['%(namelower)s-%(version)s-cp311-cp311-linux_x86_64.whl'],
+        'checksums': ['53440de4747128b3afec06731f4228242673faf6ac0834e0ac01939e016b6354'],
+    }),
+]
+
+postinstallcmds = [
+    # mkl is provided by imkl module and tbb also by tbb module
+    "sed -i -e '/^Requires-Dist: mkl[ ;]/d' "
+    "-e '/^Requires-Dist: tbb[ ;]/d' "
+    "%(installdir)s/lib/python%(pyshortver)s/site-packages/%(namelower)s-%(version)s.dist-info/METADATA",
+    # fix RPATH in libgmsh.so.4.14
+    "patchelf --force-rpath --set-rpath '$ORIGIN:$ORIGIN/../lib' "
+    "%(installdir)s/lib/libgmsh.so.4.14",
+]
+
+sanity_check_commands = [
+    'numba --help',
+    'simnibs --help',
+    'python -c "from petsc4py import PETSc"',
+    'python -c "import simnibs; from simnibs.mesh_tools import cgal"',
+]
+
+moduleclass = 'bio'
