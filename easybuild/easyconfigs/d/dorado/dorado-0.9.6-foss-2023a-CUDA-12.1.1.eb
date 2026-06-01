@@ -22,12 +22,15 @@ sources = [{
 }]
 patches = [
     '%(name)s-0.9.6_dont_install_external_libraries.patch',
+    'dorado-0.9.6_allow_openssl_1.1.patch',
+    'dorado-0.9.6_torch_version_correction.patch',
 ]
 checksums = [
-    {'dorado-0.9.6.tar.xz':
-     '1d52fd06188780a4171521f32bbef68ad4ea195d49fc330d4ec8de7ebf12309e'},
+    {'dorado-0.9.6.tar.xz': '1d52fd06188780a4171521f32bbef68ad4ea195d49fc330d4ec8de7ebf12309e'},
     {'dorado-0.9.6_dont_install_external_libraries.patch':
-     '219ad4f23c0f80b46370088625157ebe2c56ccd1c4bf347d5f9c39c94d42ceba'},
+     '768831a1f72c39f06cb8298385609aead707fbfb35995eb31ad082d58b4096af'},
+    {'dorado-0.9.6_allow_openssl_1.1.patch': '409def57d17ed0b7f8f18ed0e4a99337c6b4e2f1f96a8e53031f59f6a1e16d68'},
+    {'dorado-0.9.6_torch_version_correction.patch': 'b1ce78f59c487d4baea7e577e3d87dc2b2734a14dd713d4f3ed401b1ad16b993'},
 ]
 
 builddependencies = [
@@ -50,23 +53,34 @@ dependencies = [
 # don't link to OpenSSL static libraries
 # fix for CMake Error "missing: OPENSSL_CRYPTO_LIBRARY" (if only shared OpenSSL libraries are available)
 preconfigopts = "sed -i '/OPENSSL_USE_STATIC_LIBS TRUE/d' ../dorado/cmake/OpenSSL.cmake && "
-# link in the ssl and crypto libs, to fix:
+# link in the ssl and crypto libs, to fix:  --> not necessary anymore?
 # undefined reference to symbol 'SSL_get_peer_certificate@@OPENSSL_1_1_0'
-preconfigopts += "sed -i 's/OpenSSL::SSL/ssl\\n    crypto/g' ../dorado/dorado/utils/CMakeLists.txt && "
+#preconfigopts += "sed -i 's/OpenSSL::SSL/ssl\\n    crypto/g' ../dorado/dorado/utils/CMakeLists.txt && "
 
 # don't use vendored HTSlib, use provided HTSlib dependency
-preconfigopts += "rm -rf ../dorado/dorado/3rdparty/htslib/ && "
+preconfigopts += "rm -r ../dorado/dorado/3rdparty/htslib/ && "
 preconfigopts += "sed -i '/add_dependencies.*htslib_project/d' ../dorado/CMakeLists.txt && "
 preconfigopts += "sed -i '/add_dependencies.*htslib_project/d' ../dorado/dorado/utils/CMakeLists.txt && "
+preconfigopts += "sed -i '/add_dependencies.*htslib_project/d' ../dorado/dorado/secondary/CMakeLists.txt && "
 preconfigopts += "sed -i '/Htslib.cmake/d' ../dorado/CMakeLists.txt && "
+
 # link with -lhts, not -lhtslib
 preconfigopts += "sed -i 's/htslib/hts/g' ../dorado/CMakeLists.txt && "
 preconfigopts += "sed -i 's/htslib/hts/g' ../dorado/dorado/utils/CMakeLists.txt && "
 preconfigopts += "sed -i 's/htslib/hts/g' ../dorado/dorado/torch_utils/CMakeLists.txt && "
+preconfigopts += "sed -i 's/htslib/hts/g' ../dorado/dorado/secondary/CMakeLists.txt && "
 
 # disable treating warnings like errors by stripping out -Werror
 # cfr. https://github.com/nanoporetech/dorado/issues/779
 preconfigopts += "sed -i 's/-Werror//g' ../dorado/cmake/Warnings.cmake && "
+
+
+# skip including a nonexistant file ${TORCH_LIB}/lib/libcublas-3b81d170.so.11
+preconfigopts += "TMPDIR=$(mktemp -d) && "
+preconfigopts += "head -437 ../dorado/cmake/Torch.cmake > $TMPDIR/cmake && "
+preconfigopts += "tail -31 ../dorado/cmake/Torch.cmake >> $TMPDIR/cmake && "
+preconfigopts += "mv $TMPDIR/cmake ../dorado/cmake/Torch.cmake && "
+#preconfigopts += "sed -i '/.*libcublas-3b81d170.so.11.*/d' ../dorado/cmake/Torch.cmake && " # alternative way
 
 _copts = [
     "-DCUDA_TOOLKIT_ROOT_DIR=$EBROOTCUDA",
@@ -76,6 +90,11 @@ _copts = [
     # add -pthread flag (in addition to -lpthread) to avoid linking error:
     # in function `_GLOBAL__sub_I_mutex.cc': mutex.cc:(.text.startup+0x17): undefined reference to `pthread_atfork'
     '-DCMAKE_C_FLAGS="$CFLAGS -pthread"',
+    '-DCMAKE_CXX_FLAGS="$CXXFLAGS -pthread"',
+    # "-DHTSLIB_INCLUDE_DIR=$EBROOTHTSLIB/include",
+    # "-DHTSLIB_LIBRARIES=$EBROOTHTSLIB/lib/libhts.so",
+    '-DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -lcublas"',
+    '-DCMAKE_SHARED_LINKER_FLAGS="$LDFLAGS -lcublas"',
 ]
 
 configopts = ' '.join(_copts) + ' '
