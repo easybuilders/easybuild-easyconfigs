@@ -1,0 +1,128 @@
+easyblock = 'Binary'
+
+name = 'PharmCAT'
+version = '3.1.1'
+
+homepage = 'https://pharmcat.clinpgx.org'
+description = """Pharmacogenomics Clinical Annotation Tool (PharmCAT): core Java CLI plus VCF preprocessor & optional pipeline."""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+source_urls = [f'https://github.com/PharmGKB/PharmCAT/releases/download/v{version}']
+sources = [
+    f'pharmcat-{version}-all.jar',
+    f'pharmcat-preprocessor-{version}.tar.gz',
+    f'pharmcat-pipeline-{version}.tar.gz',
+]
+
+checksums = []
+
+dependencies = [
+    ('Java', '17', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05', '', ('gfbf', '2024a')),
+    ('HTSlib', '1.21'),
+    ('BCFtools', '1.21'),
+]
+
+postinstallcmds = [
+    # Layout
+    'mkdir -p %(installdir)s/bin %(installdir)s/lib',
+    'mkdir -p %(installdir)s/share/pharmcat/data %(installdir)s/share/pharmcat/examples',
+    'mkdir -p %(installdir)s/.stage',
+
+    # Core jar
+    'install -m 0644 pharmcat-%(version)s-all.jar %(installdir)s/lib/pharmcat.jar',
+
+    # Unpack preprocessor and optional pipeline
+    'tar -xf pharmcat-preprocessor-%(version)s.tar.gz -C %(installdir)s/.stage',
+    'tar -xf pharmcat-pipeline-%(version)s.tar.gz -C %(installdir)s/.stage || true',
+
+    # Move executable scripts
+    'find %(installdir)s/.stage -maxdepth 4 -type f -name "pharmcat_vcf_preprocessor" -exec mv -t %(installdir)s/bin {} + || true',
+    'find %(installdir)s/.stage -maxdepth 4 -type f -name "pharmcat_pipeline" -exec mv -t %(installdir)s/bin {} + || true',
+    'find %(installdir)s/.stage -maxdepth 4 -type f -name "calc_allele_freqs" -exec mv -t %(installdir)s/bin {} + || true',
+
+    # Copy pcat package into install root so "import pcat" works via PYTHONPATH
+    '(PCATDIR=$(find %(installdir)s/.stage -type d -name pcat | head -n1); [ -n "$PCATDIR" ] && cp -r "$PCATDIR" %(installdir)s/) || true',
+
+    # Copy shipped data into install root and share/pharmcat/data
+    'find %(installdir)s/.stage -maxdepth 4 -type f -name "pharmcat_positions.vcf*" -exec cp -t %(installdir)s {} + || true',
+    'find %(installdir)s/.stage -maxdepth 4 -type f -name "pharmcat_regions.bed" -exec cp -t %(installdir)s {} + || true',
+    'cp -r %(installdir)s/pharmcat_positions.vcf* %(installdir)s/share/pharmcat/data/ 2>/dev/null || true',
+    'cp -r %(installdir)s/pharmcat_regions.bed %(installdir)s/share/pharmcat/data/ 2>/dev/null || true',
+
+    # Show which Python EasyBuild is actually using
+    'which python',
+    'python --version',
+
+    # Create venv with EasyBuild-loaded Python, not system Python
+    'python -m venv %(installdir)s/venv',
+
+    # Install Python requirements
+    'bash -lc "source %(installdir)s/venv/bin/activate && '
+              'which python && python --version && '
+              'python -m pip install --upgrade pip setuptools wheel && '
+              'REQ=$(find %(installdir)s/.stage -maxdepth 4 -type f -name requirements.txt | head -n1); '
+              'if [ -n \\"$REQ\\" ]; then pip install -r \\"$REQ\\"; fi; '
+              'pip install \\"pandas>=2.1,<3.0\\" \\"colorama>=0.4\\" \\"packaging>=23.0\\""',
+
+    # Run pcat index prep step
+    'bash -lc "cd %(installdir)s && '
+              'source %(installdir)s/venv/bin/activate && '
+              'PYTHONPATH=%(installdir)s:$PYTHONPATH '
+              'python -c \'import pcat; pcat.prep_pharmcat_positions()\'"',
+
+    # PharmCAT Java wrapper
+    "printf '%s\\n' '#!/usr/bin/env bash' "
+    "'JAR=${PHARMCAT_JAR:-%(installdir)s/lib/pharmcat.jar}' "
+    "'exec java -jar \"$JAR\" \"$@\"' > %(installdir)s/bin/pharmcat",
+    'chmod 755 %(installdir)s/bin/pharmcat',
+
+    # Fix Python shebangs for bundled scripts
+    'for X in pharmcat_vcf_preprocessor pharmcat_pipeline calc_allele_freqs; do '
+    '  if [ -f "%(installdir)s/bin/$X" ]; then '
+    '    if head -n1 "%(installdir)s/bin/$X" | grep -q "python"; then '
+    '      sed -i "1s|^#!.*python.*$|#!%(installdir)s/venv/bin/python|" "%(installdir)s/bin/$X" || true; '
+    '    fi; '
+    '    chmod 755 "%(installdir)s/bin/$X"; '
+    '  fi; '
+    'done',
+
+    # Clean staging area
+    'rm -rf %(installdir)s/.stage',
+]
+
+modextrapaths = {
+    'PATH': ['bin'],
+    'PYTHONPATH': [''],
+}
+
+modextravars = {
+    'PHARMCAT_JAR': '%(installdir)s/lib/pharmcat.jar',
+    'PHARMCAT_DATA_DIR': '%(installdir)s/share/pharmcat/data',
+    'PHARMCAT_VENV': '%(installdir)s/venv',
+}
+
+sanity_check_paths = {
+    'files': [
+        'lib/pharmcat.jar',
+        'bin/pharmcat',
+        'bin/pharmcat_vcf_preprocessor',
+        'pcat/__init__.py',
+        'pharmcat_positions.vcf.bgz',
+    ],
+    'dirs': [
+        'share/pharmcat/data',
+        'venv',
+    ],
+}
+
+sanity_check_commands = [
+    'pharmcat --help',
+    'source %(installdir)s/venv/bin/activate && python -c "import sys; print(sys.version); assert sys.version_info >= (3, 10)"',
+    'source %(installdir)s/venv/bin/activate && PYTHONPATH=%(installdir)s:$PYTHONPATH python -c "import pcat; print(pcat.__file__)"',
+]
+
+moduleclass = 'bio'
+
