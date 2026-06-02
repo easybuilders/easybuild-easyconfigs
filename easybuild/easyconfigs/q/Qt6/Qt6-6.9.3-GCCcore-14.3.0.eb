@@ -106,10 +106,19 @@ if ARCH == 'riscv64':
     configopts += "-DQT_FEATURE_webengine_system_ffmpeg=ON "
     configopts += "-DBUILD_qtwebengine=OFF "
 
-sanity_check_paths = {
-    'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT, 'lib/libQt6WebEngineCore.%s' % SHLIB_EXT],
-    'dirs': ['include/QtCore', 'include/QtWebEngineCore'],
-}
+# As qtwebengine is disabled for RISC-V, these files can not be expected to exist:
+# - lib/Qt6WebEngineCore.so
+# - include/QtWebEngineCore
+if ARCH == 'riscv64':
+    sanity_check_paths = {
+        'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT],
+        'dirs': ['include/QtCore'],
+    }
+else:
+    sanity_check_paths = {
+        'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT, 'lib/libQt6WebEngineCore.%s' % SHLIB_EXT],
+        'dirs': ['include/QtCore', 'include/QtWebEngineCore'],
+    }
 
 sanity_check_commands = ['qmake6 --help']
 
