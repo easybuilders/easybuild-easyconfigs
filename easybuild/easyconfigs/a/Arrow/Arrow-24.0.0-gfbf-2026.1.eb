@@ -53,8 +53,15 @@ configopts += "-DARROW_MIMALLOC=ON -DARROW_JEMALLOC=OFF "
 exts_defaultclass = 'PythonPackage'
 exts_list = [
     ('pyarrow', version, {
+        'preinstallopts': (
+            "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH"
+            " && export Arrow_DIR=%(installdir)s && export ArrowDataset_DIR=%(installdir)s"
+            " && export ArrowAcero_DIR=%(installdir)s && export Parquet_DIR=%(installdir)s"
+            " && sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml"
+            ' && PYARROW_CMAKE_OPTIONS="-DZSTD_ROOT=$EBROOTZSTD"'
+            " PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 PYARROW_WITH_ORC=1 "
+        ),
         'nosource': True,
-        'preinstallopts': """export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && export Arrow_DIR=%(installdir)s && export ArrowDataset_DIR=%(installdir)s && export ArrowAcero_DIR=%(installdir)s && export Parquet_DIR=%(installdir)s && sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml && PYARROW_CMAKE_OPTIONS="-DZSTD_ROOT=$EBROOTZSTD" PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 PYARROW_WITH_ORC=1 """,
         'start_dir': '../python',
     }),
 ]
