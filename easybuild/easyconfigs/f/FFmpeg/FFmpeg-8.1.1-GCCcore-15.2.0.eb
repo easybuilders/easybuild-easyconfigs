@@ -1,0 +1,56 @@
+easyblock = 'ConfigureMake'
+
+name = 'FFmpeg'
+version = '8.1.1'
+
+homepage = 'https://www.ffmpeg.org/'
+description = "A complete, cross-platform solution to record, convert and stream audio and video."
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = ['https://%(namelower)s.org/releases/']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['5eb62f529114778333b7eb0381cb16e2b8725ce2ae081d07b1082effe22b12e9']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('pkgconf', '2.5.1'),
+    ('ffnvcodec', '13.0.19.0', '', SYSTEM),  # optional nvenc/dec support
+    ('NASM', '3.01'),
+]
+dependencies = [
+    ('zlib', '2.3.2'),
+    ('bzip2', '1.0.8'),
+    ('x264', '20250831'),
+    ('LAME', '3.100'),
+    ('x265', '4.2'),
+    ('dav1d', '1.5.3'),
+    ('SVT-AV1', '4.1.0'),
+    ('libaom', '3.14.0'),
+    ('libvpx', '1.16.0'),
+    ('libwebp', '1.6.0'),
+    ('libvorbis', '1.3.7'),
+    ('libopus', '1.6.1'),
+    ('X11', '20260518'),
+    ('freetype', '2.14.3'),
+    ('fontconfig', '2.17.1'),
+    ('FriBidi', '1.0.16'),
+    ('SDL2', '2.32.10'),
+]
+
+configopts = ' '.join([
+    '--enable-pic --enable-shared --enable-gpl --enable-version3 --cc="$CC" --cxx="$CXX"',
+    '--enable-nonfree --enable-libx264 --enable-libx265 --enable-libmp3lame',
+    '--enable-libvpx --enable-libwebp --enable-libvorbis --enable-libopus',
+    '--enable-libdav1d --enable-libaom --enable-libsvtav1',
+    '--enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-sdl2 --disable-htmlpages',
+])
+
+sanity_check_paths = {
+    'files': [f'bin/ff{x}' for x in ['mpeg', 'probe', 'play']] +
+             [f'lib/lib{x}.{y}' for x in ['avdevice', 'avfilter', 'avformat', 'avcodec', 'postproc',
+                                          'swresample', 'swscale', 'avutil'] for y in [SHLIB_EXT, 'a']],
+    'dirs': ['include']
+}
+
+moduleclass = 'vis'
