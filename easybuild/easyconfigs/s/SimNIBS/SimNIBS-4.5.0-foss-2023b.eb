@@ -1,0 +1,85 @@
+easyblock = 'PythonBundle'
+
+name = 'SimNIBS'
+version = '4.5.0'
+
+homepage = 'https://simnibs.github.io/simnibs'
+description = "SimNIBS is a free and open source software package for the Simulation of Non-invasive Brain Stimulation"
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+builddependencies = [('meson-python', '0.15.0')]
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('tbb', '2021.13.0'),
+    ('matplotlib', '3.8.2'),
+    ('Pillow', '10.2.0'),
+    ('h5py', '3.11.0'),
+    ('PyOpenGL', '3.1.9'),
+    ('freeglut', '3.4.0'),
+    ('libwebp', '1.3.2'),
+    ('NiBabel', '5.3.2'),
+    ('numba', '0.60.0'),
+    ('MUMPS', '5.7.3', '-metis-seq'),
+    ('zlib', '1.2.13'),
+    ('JupyterLab', '4.2.0'),
+    ('PyQt5', '5.15.10'),
+    ('scikit-learn', '1.4.0'),
+    ('tqdm', '4.66.2'),
+    ('imkl', '2023.2.0'),
+]
+
+# Some SimNIBS dependencies are installed from upstream pre-built wheels to match
+# the binary stack tested by SimNIBS. In particular, the SimNIBS-provided petsc4py
+# wheel is tied to the PETSc/MKL/MUMPS solver stack expected by this release;
+# replacing it with the EB petsc4py/PETSc stack would change that runtime stack.
+exts_list = [
+    ('xxhash', '3.5.0', {
+        'checksums': ['84f2caddf951c9cbf8dc2e22a89d4ccf5d86391ac6418fe81e3c67d0cf60b45f'],
+    }),
+    ('python-mumps', '0.0.2', {
+        'modulename': 'mumps',
+        'checksums': ['ae19e9242ca1827f10e7e57021a4be0207b8b9c563472752ca7a0edd7700b223'],
+    }),
+    ('fmm3dpy', '1.0.0', {
+        'source_tmpl': '%(name)s-%(version)s-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['41f0341a44503d3a13fea3ee39a9ec6f7a1d3eaeea5db505566ef5b8ad2fddec'],
+    }),
+    ('petsc4py', '3.21.5', {
+        'source_urls': ['https://github.com/simnibs/petsc4py/releases/download/v%(version)s/'],
+        'sources': ['%(name)s-%(version)s-cp311-cp311-manylinux_2_28_x86_64.whl'],
+        'checksums': ['66fadefd94dff9a46905119398c8e2f75e92465ce1950239cc9b0cb2307a6551'],
+    }),
+    ('pygpc', '0.4.1', {
+        'source_tmpl': '%(name)s-%(version)s-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['6eaae5b33b99d1cc176265f65ef0347b144def1961b9d62f878ca83035a14ee3'],
+    }),
+    ('surfa', '0.6.1', {
+        'checksums': ['edb4293ca393ad5d68547d3522765b4ee24c76d47f11e646e8adbab93b7f5ebe'],
+    }),
+    ('samseg', '0.4a0', {
+        'source_tmpl': '%(name)s-%(version)s-cp311-cp311-manylinux_2_28_x86_64.whl',
+        'checksums': ['b3a569ae6350a4116559600466137b76a10f9bd934d4a7affefbb0f9a707c910'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/simnibs/simnibs/releases/download/v%(version)s/'],
+        'sources': ['%(namelower)s-%(version)s-cp311-cp311-linux_x86_64.whl'],
+        'checksums': ['513642dbd0091affc5c76c204ff18a23c5bd84cbe7a6089e3c6b1eaee2d99e65'],
+    }),
+]
+
+# mkl is provided by imkl module and tbb also by tbb module
+postinstallcmds = [
+    "sed -i -e '/^Requires-Dist: mkl[ ;]/d' "
+    "-e '/^Requires-Dist: tbb[ ;]/d' "
+    "%(installdir)s/lib/python%(pyshortver)s/site-packages/%(namelower)s-%(version)s.dist-info/METADATA",
+]
+
+sanity_check_commands = [
+    'simnibs --help',
+    'python -c "from petsc4py import PETSc"',
+    'python -c "import simnibs; from simnibs.mesh_tools import cgal"',
+]
+
+moduleclass = 'bio'
