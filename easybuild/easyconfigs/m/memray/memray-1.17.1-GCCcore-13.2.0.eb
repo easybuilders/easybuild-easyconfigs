@@ -1,0 +1,40 @@
+# Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center 2025
+
+easyblock = 'PythonBundle'
+
+name = 'memray'
+version = '1.17.1'
+
+homepage = 'https://github.com/bloomberg/memray'
+description = """Memray is a memory profiler for Python. It can track memory allocations in Python
+ code, in native extension modules, and in the Python interpreter itself. It can generate several
+ different types of reports to help you analyze the captured memory usage data. While commonly used
+ as a CLI tool, it can also be used as a library to perform more fine-grained profiling tasks."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('poetry', '1.7.1'),
+    ('elfutils', '0.191', '-debuginfod'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Python-bundle-PyPI', '2023.10'),
+    ('pkgconfig', '1.5.5', '-python'),
+]
+
+exts_list = [
+    ('textual', '3.1.0', {
+        'checksums': ['6bcab6581e9753d2a2043caf49f43c5818feb35f8049ed185bd38982bfb310ca'],
+    }),
+    (name, version, {
+        'checksums': ['99f6672d435878e3251a9c4600bb8f14cf205d2d6da3d6f0e6b309e535f9fc4a'],
+        # Ensuring libdebuginfod is found:
+        'buildopts': 'LDFLAGS="-L$EBROOTELFUTILS/lib -ldebuginfod" CPPFLAGS="-I$EBROOTELFUTILS/include"'
+    }),
+]
+
+moduleclass = 'tools'
