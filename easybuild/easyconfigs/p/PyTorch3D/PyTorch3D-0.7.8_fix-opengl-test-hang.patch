@@ -1,0 +1,53 @@
+From 81d82980bc82fd605f27cca87f89ba08af94db3d Mon Sep 17 00:00:00 2001
+From: Jeremy Reizenstein <reizenstein@meta.com>
+Date: Wed, 6 Nov 2024 11:40:42 -0800
+Subject: [PATCH] Fix ogl test hang
+
+Summary: See https://github.com/facebookresearch/pytorch3d/issues/1908
+
+Reviewed By: MichaelRamamonjisoa
+
+Differential Revision: D65280253
+
+fbshipit-source-id: ec05902c5f2f7eb9ddd92bda0045cc3564b8c091
+---
+ pytorch3d/renderer/opengl/opengl_utils.py | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/pytorch3d/renderer/opengl/opengl_utils.py b/pytorch3d/renderer/opengl/opengl_utils.py
+index 8201b307..73b1800c 100755
+--- a/pytorch3d/renderer/opengl/opengl_utils.py
++++ b/pytorch3d/renderer/opengl/opengl_utils.py
+@@ -184,7 +184,7 @@ def __init__(self, width: int, height: int, cuda_device_id: int = 0) -> None:
+         """
+         # Lock used to prevent multiple threads from rendering on the same device
+         # at the same time, creating/destroying contexts at the same time, etc.
+-        self.lock = threading.Lock()
++        self.lock = threading.RLock()
+         self.cuda_device_id = cuda_device_id
+         self.device = _get_cuda_device(self.cuda_device_id)
+         self.width = width
+@@ -224,15 +224,14 @@ def active_and_locked(self):
+         Throws:
+             EGLError when the context cannot be made current or make non-current.
+         """
+-        self.lock.acquire()
+-        egl.eglMakeCurrent(self.dpy, self.surface, self.surface, self.context)
+-        try:
+-            yield
+-        finally:
+-            egl.eglMakeCurrent(
+-                self.dpy, egl.EGL_NO_SURFACE, egl.EGL_NO_SURFACE, egl.EGL_NO_CONTEXT
+-            )
+-            self.lock.release()
++        with self.lock:
++            egl.eglMakeCurrent(self.dpy, self.surface, self.surface, self.context)
++            try:
++                yield
++            finally:
++                egl.eglMakeCurrent(
++                    self.dpy, egl.EGL_NO_SURFACE, egl.EGL_NO_SURFACE, egl.EGL_NO_CONTEXT
++                )
+ 
+     def get_context_info(self) -> Dict[str, Any]:
+         """
