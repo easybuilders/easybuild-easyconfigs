@@ -1,0 +1,55 @@
+# Author: Stamen Miroslavov, BSC 2025
+# Barcelona Supercomputing Center - Spain
+
+easyblock = 'PythonPackage'
+
+name = 'MDTF-diagnostics'
+version = '4.2'
+
+homepage = 'https://github.com/NOAA-GFDL/MDTF-diagnostics'
+description = """The MDTF-diagnostics package is a portable framework for running process-oriented
+ diagnostics (PODs) on weather and climate model data. Each process-oriented diagnostic [POD;
+ Maloney et al.(2019)] targets a specific physical process or emergent behavior to determine how
+ well one or more models represent the process, ensure that models produce the right answers for
+ the right reasons, and identify gaps in the understanding of phenomena. Each POD is independent
+ of other PODs. PODs generate diagnostic figures that can be viewed as an html file using a web
+ browser."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://github.com/NOAA-GFDL/%(name)s/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['6d01efaf7b430361aff43c74a6a66830aa5444117751b5be94f28d80ea76916e']
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Python-bundle-PyPI', '2023.10'),
+    ('SciPy-bundle', '2023.11'),
+    ('xarray', '2024.5.0'),
+    ('netcdf4-python', '1.7.1.post2'),  # for cftime
+]
+
+postinstallcmds = [
+    # Create a shim package directory so 'mdtf_diagnostics' resolves to the installed 'src' package
+    "mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages/mdtf_diagnostics && "
+    "cat > %(installdir)s/lib/python%(pyshortver)s/site-packages/mdtf_diagnostics/__init__.py <<'PY'\n"
+    "# Shim to alias 'mdtf_diagnostics' to the installed 'src' package\n"
+    "try:\n"
+    "    import importlib, sys\n"
+    "    _src = importlib.import_module('src')\n"
+    "    __path__ = _src.__path__\n"
+    "    # Ensure both casing variants point to the same module object\n"
+    "    sys.modules.setdefault('mdtf_diagnostics', _src)\n"
+    "    sys.modules.setdefault('MDTF_diagnostics', _src)\n"
+    "except Exception:\n"
+    "    # if src isn't importable at the moment, leave shim harmless\n"
+    "    pass\n"
+    "PY\n",
+    "cat > %(installdir)s/lib/python%(pyshortver)s/site-packages/mdtf_diagnostics.py <<'PY'\n"
+    "from src import *\n"
+    "PY\n"
+]
+
+options = {'modulename': 'mdtf_diagnostics'}
+
+moduleclass = 'geo'
