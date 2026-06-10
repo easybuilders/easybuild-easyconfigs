@@ -28,7 +28,19 @@ exts_list = [
     (name, version, {
         'modulename': 'grpc',
         'patches': ['grpcio-1.67.1_use-ebroot.patch'],
-        'preinstallopts': """sed -i 's@/usr@%(sysroot)s/usr@g' setup.py && export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && export GRPC_PYTHON_CFLAGS="-fvisibility=hidden -fno-wrapv -fno-exceptions" && GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=True GRPC_PYTHON_BUILD_SYSTEM_ZLIB=True GRPC_PYTHON_BUILD_SYSTEM_RE2=True GRPC_PYTHON_BUILD_SYSTEM_ABSL=True GRPC_PYTHON_BUILD_WITH_CYTHON=True """,
+        'preinstallopts': (
+            # patch hardcoded /usr paths to prefix them with alternate sysroot path (if defined)
+            "sed -i 's@/usr@%(sysroot)s/usr@g' setup.py && "
+            "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && "
+            # Required to avoid building with non-default C++ standard but keep other flags,
+            # see https://github.com/grpc/grpc/issues/34256
+            'export GRPC_PYTHON_CFLAGS="-fvisibility=hidden -fno-wrapv -fno-exceptions" && '
+            "GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=True "
+            "GRPC_PYTHON_BUILD_SYSTEM_ZLIB=True "
+            "GRPC_PYTHON_BUILD_SYSTEM_RE2=True "
+            "GRPC_PYTHON_BUILD_SYSTEM_ABSL=True "
+            "GRPC_PYTHON_BUILD_WITH_CYTHON=True "
+        ),
         'checksums': [
             {'grpcio-1.81.0.tar.gz': 'a5acd7efd3b1fe9b4eb0bcaaa1507eed68a0ad0678b654c3f7b464df9ba9dca5'},
             {'grpcio-1.67.1_use-ebroot.patch': '8606002b8689d9ffde1c7aa097f0fd430430b42f2230ea427b73525de69c568b'},
