@@ -1,0 +1,62 @@
+easyblock = "PythonBundle"
+
+name = 'zarr'
+version = '3.2.1'
+
+homepage = 'https://zarr.readthedocs.io/en/stable/'
+description = """Zarr is a Python package providing an implementation of compressed,
+chunked, N-dimensional arrays, designed for use in parallel computing."""
+
+toolchain = {'name': 'gfbf', 'version': '2026.1'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('hatchling', '1.29.0'),
+    ('Cython', '3.2.4'),
+    ('CMake', '4.2.1'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+    ('py-cpuinfo', '9.0.0'),
+    ('PyYAML', '6.0.3'),
+    ('Deprecated', '1.3.1'),
+]
+
+components = [
+    ('google-crc32c-c', '1.1.2', {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/google/crc32c/archive/refs/tags/'],
+        'sources': [VERSION_TAR_GZ],
+        'checksums': ['ac07840513072b7fcebda6e821068aa04889018f24e10e46181068fb214d7e56'],
+        'start_dir': 'crc32c-%(version)s',
+        # Avoid hard-coded internal dependencies, missing in the source tarballs
+        'configopts': ' '.join(['-DCRC32C_USE_GLOG=OFF',
+                                '-DCRC32C_BUILD_TESTS=OFF',
+                                '-DCRC32C_BUILD_BENCHMARKS=OFF',
+                                '-DBUILD_SHARED_LIBS=ON']),
+    }),
+]
+
+exts_list = [
+    ('donfig', '0.8.1.post1', {
+        'checksums': ['3bef3413a4c1c601b585e8d297256d0c1470ea012afa6e8461dc28bfb7c23f52'],
+    }),
+    ('crc32c', '2.8', {
+        'checksums': ['578728964e59c47c356aeeedee6220e021e124b9d3e8631d95d9a5e5f06e261c'],
+    }),
+    ('google-crc32c', '1.8.0', {
+        'preinstallopts': "export CRC32C_PURE_PYTHON=0 && ",
+        'checksums': ['a428e25fb7691024de47fecfbff7ff957214da51eddded0da0ae0e0f03a2cf79'],
+    }),
+    ('numcodecs', '0.16.5', {
+        'use_pip_extras': 'crc32c',
+        'checksums': ['0d0fb60852f84c0bd9543cc4d2ab9eefd37fc8efcc410acd4777e62a1d300318'],
+    }),
+    (name, version, {
+        'checksums': ['71565b738a0e7e8ed226f0516eba8c6bb53440ad7669a8c48ebb3534a161d035'],
+    }),
+]
+
+moduleclass = 'data'
