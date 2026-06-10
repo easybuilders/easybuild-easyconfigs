@@ -1,0 +1,40 @@
+easyblock = 'Tarball'
+
+name = 'bcgTree'
+version = '1.2.1'
+
+homepage = 'https://github.com/molbiodiv/bcgTree'
+description = "Automatized phylogenetic tree building from bacterial core genomes."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/molbiodiv/bcgTree/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['bcgTree-1.2.1-compatible_with_MUSCLE_5.patch']
+checksums = [
+    {'v1.2.1.tar.gz': '7739da7bf8e36933a45ee62e72cdf5988626595223baab96ec24a657a814b4a2'},
+    {'bcgTree-1.2.1-compatible_with_MUSCLE_5.patch':
+     '24328e9a2d9e269939bd4b758a38d4dfdd40b915efcc8a4e7719049efaa2972a'},
+]
+
+dependencies = [
+    ('Perl', '5.36.1'),
+    ('HMMER', '3.4'),
+    ('MUSCLE', '5.1.0'),
+    ('Gblocks', '0.91b', '', SYSTEM),
+    ('RAxML', '8.2.13'),
+]
+
+postinstallcmds = [
+    r"sed -i -e 's|/usr/bin/perl|/usr/bin/env\ perl|' %(installdir)s/bin/bcgTree.pl",
+    "chmod a+rx %(installdir)s/bin/bcgTree.pl",
+]
+
+sanity_check_paths = {
+    'files': ['bin/bcgTree.pl', 'bcgTreeGUI/bcgTree.jar'],
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = ["bcgTree.pl --help | grep '^Usage'"]
+
+moduleclass = 'bio'

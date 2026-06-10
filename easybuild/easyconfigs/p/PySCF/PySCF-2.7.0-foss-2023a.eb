@@ -1,0 +1,152 @@
+easyblock = 'CMakeMakeCp'
+name = 'PySCF'
+version = '2.7.0'
+
+homepage = 'http://www.pyscf.org'
+description = "PySCF is an open-source collection of electronic structure modules powered by Python."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/pyscf/pyscf/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [('pyscf-version.egg-info', '.')]
+checksums = [
+    {'v2.7.0.tar.gz': 'f2f94e6dae8556085bb765eb5250f61589e977b4f12540c748241101d40da241'},
+    {'pyscf-version.egg-info': '159e017963beeec9e490992773cb1d9f9e975e819d93e67f40f0fbb16635b4a7'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('pybind11', '2.11.1'),  # needed by zquatev
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),  # for numpy, scipy
+    ('h5py', '3.9.0'),
+    ('libcint', '5.4.0'),
+    ('libxc', '6.2.2'),
+    ('XCFun', '2.1.1'),
+    ('CPPE', '0.3.1'),  # extra
+    ('PyBerny', '0.6.3'),  # extra
+    ('PyCheMPS2', '1.8.12'),  # needed by dmrgscf
+    ('Block', '1.5.3-20200525'),  # needed by dmrgscf
+    ('NECI', '20230620'),  # needed by fciqmc
+    ('Dice', '20240702'),  # needed by icmpspt
+    ('tblis', '20230422'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'modulename': 'pyscf.%(name)s',
+    'source_urls': ['https://github.com/pyscf/%(name)s/archive/'],
+    'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+}
+
+# The following list of extensions is equivalent to installing PySCF with extras:
+# all + dmrgscf + fciqmcscf + hci + mbd + tblis + zquatev
+exts_list = [
+    ('dftd3', '94091d8', {
+        'checksums': ['a69ae44b3d02d2c06fd531373f20ee1251ef27fc932d40a7cafea6c09d8784fc'],
+    }),
+    ('doci', '08079a9', {
+        'checksums': ['f492ba45dfe50c9b459e53a946a677528af0dc2097ff77ea3767aa4f46c5d9ba'],
+    }),
+    ('icmpspt', '50c386e', {
+        'patches': [('PySCF-2.1.1_icmpspt-exe-path.patch', 0)],
+        'checksums': [
+            {'icmpspt-50c386e.tar.gz': '08029863ae8740939a730fe5e104661c67d8dd0b8a8555b603fc8a0777096d48'},
+            {'PySCF-2.1.1_icmpspt-exe-path.patch': 'e972e377b34b964c48a99909301bf21a9c73d8eb9ecb96a889621d71471c56c9'},
+        ],
+    }),
+    ('properties', '8b94d8d', {
+        'modulename': 'pyscf.prop',
+        'checksums': ['b40e071472a6bdfcaec8cd358c7c58c58748c59d8b188fdca09d6eca63329914'],
+    }),
+    ('qsdopt', '3ad2c02', {
+        'checksums': ['cc639150e5f9efad8ffe496b3dccd2952a1f60fdad51f611cffba701892b384e'],
+    }),
+    ('semiempirical', '470d716', {
+        'checksums': ['0bbe304867fd053ed647445ac84c4c76787ad23def9f72415aec297740121eef'],
+    }),
+    ('shciscf', '7edb54d', {
+        'checksums': ['ae54265f6600b73a350b00274c95bb0de940ddcd6e1b47b434594e18136b1bed'],
+    }),
+    ('nptyping', '2.5.0', {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['e3d35b53af967e6fb407c3016ff9abae954d3a0568f7cc13a461084224e8e20a'],
+        'modulename': 'nptyping',
+    }),
+    ('MCfun', '0.2.3', {
+        'source_urls': ['https://github.com/Multi-collinear/%(name)s/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['3741b49b839df0fde891d51292520ed9094fa1d3c9b5d9c042d4f26087cf6a13'],
+        'modulename': 'mcfun',
+        'preinstallopts': """sed -i "s/'typing', //" setup.py &&""",
+    }),
+    ('pyqmc', '0.6.0', {
+        'modulename': 'pyqmc',
+        'source_urls': ['https://github.com/WagnerGroup/%(name)s/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['6e9f612c2d0bf2198154520e01dce57cf3a6e474840c1892466de3171eaeb7db'],
+    }),
+    ('dmrgscf', 'a03f7b6', {
+        'patches': [('PySCF-2.1.1_dmrgscf-settings.patch', 0)],
+        'checksums': [
+            {'dmrgscf-a03f7b6.tar.gz': 'dee40abe3d2aebab7a2d0eade4e464a6ae851b4c2b49a2cde4c3aa88f0651b04'},
+            {'PySCF-2.1.1_dmrgscf-settings.patch': 'a0310a2a90e96bd64d1560b2cc73a805717e129d2921e91cc5e6038b9f153677'},
+        ],
+    }),
+    ('fciqmc', 'ee98fb4', {
+        'modulename': 'pyscf.fciqmcscf',
+        'checksums': ['b2f081ac295df0e622c6d1b3bff6d7834f97131f1f0fc87ec8bcff2137ef4199'],
+    }),
+    ('mbd', '485c18c', {
+        'patches': [('PySCF-2.1.1_mbd-fix-init.patch', 0)],
+        'checksums': [
+            {'mbd-485c18c.tar.gz': 'de1fb14650fcb87909cae33dc318d2e213653ac4393ced7e070dfa6308d95846'},
+            {'PySCF-2.1.1_mbd-fix-init.patch': '4f8e4b2e39b77428187851c4b6ced39401561bc81f4f3a4605da5d5c7b798cbc'},
+        ],
+    }),
+    ('naive-hci', '0c28d6e', {
+        'modulename': 'pyscf.hci',
+        'checksums': ['de247d17b80133655df5966341e5adb691b0df150cd9b0f1980cf62ec55229d5'],
+    }),
+    ('tblis', 'c67c8af', {
+        'modulename': 'pyscf.tblis_einsum',
+        # Use our `tblis`.
+        'preinstallopts': 'CMAKE_CONFIGURE_ARGS="-DVENDOR_TBLIS=off" ',
+        'source_urls': ['https://github.com/pyscf/pyscf-tblis/archive/'],
+        'checksums': ['9a40a760e3be1d0b7f49faab5897388dcdf75094f75e06b4c344b3642a0401d6'],
+    }),
+    ('zquatev', '4eb41b1', {
+        'modulename': 'zquatev',
+        'preinstallopts': "sed -i 's/add_subdirectory(pybind11)/find_package(pybind11 REQUIRED)/' CMakeLists.txt && ",
+        'source_urls': ['https://github.com/sunqm/%(name)s/archive/'],
+        'checksums': ['4caf08e3831a5d86e6bc22f3b4028cc159101cb9658d09de16e382e268a5a2e9'],
+    }),
+]
+
+start_dir = 'pyscf/lib'
+configopts = "-DBUILD_LIBCINT=OFF -DBUILD_LIBXC=OFF -DBUILD_XCFUN=OFF"
+prebuildopts = "export PYSCF_INC_DIR=$EBROOTLIBCINT/include:$EBROOTLIBXC/lib && "
+
+_py_site_packages = 'lib/python%(pyshortver)s/site-packages'
+files_to_copy = [(['pyscf'], _py_site_packages)]
+
+# Install a egg-info file so PySCF is more python friendly
+local_egg_info_src = '%(builddir)s/pyscf-%(version)s/pyscf-version.egg-info'
+local_egg_info_dest = f'%(installdir)s/{_py_site_packages}/pyscf-%(version)s.egg-info'
+postinstallcmds = [
+    f'sed "s/#PySCF_VERSION#/%(version)s/" {local_egg_info_src} > {local_egg_info_dest}',
+]
+
+sanity_check_paths = {
+    'files': [_py_site_packages + '/pyscf/__init__.py'],
+    'dirs': [_py_site_packages + d for d in ['/pyscf/data', '/pyscf/lib']],
+}
+
+sanity_check_commands = ["python -c 'import pyscf'"]
+
+moduleclass = 'chem'

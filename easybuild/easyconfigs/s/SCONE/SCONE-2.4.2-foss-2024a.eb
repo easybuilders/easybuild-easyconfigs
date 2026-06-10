@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'SCONE'
+version = '2.4.2'
+# SCONE has no tags or releases
+# use commit where version is changed
+_scone_core_commit = '7c451e8b3f1e0267f64da65c8eb6c976ca8b732d'
+
+homepage = 'https://scone.software/'
+description = "SCONE is open source software for predictive simulation of biological motion."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+sources = [{
+    'filename': SOURCE_TAR_XZ,
+    'git_config': {
+        'url': 'https://github.com/tgeijten',
+        'repo_name': 'scone-core',
+        'commit': _scone_core_commit,
+        'recursive': True,
+    }
+}]
+patches = ['SCONE-%(version)s_fix-opensim4-integration.patch']
+checksums = [
+    {'SCONE-2.4.2.tar.xz': '5884089caef525f1f5e63b3a1ad76780dbe35980ab25bf56833fc1beb8bf59c0'},
+    {'SCONE-2.4.2_fix-opensim4-integration.patch': 'd9460c46ef09d3b74f0ff81f0f43c3d7e9bcfedf00855b5fc5defbf33813cfcb'},
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('spdlog', '1.4.1'),
+]
+
+dependencies = [
+    ('OpenSim', '4.5.2'),
+]
+
+configopts = "-DSCONE_OPENSIM_4=ON"
+
+sanity_check_paths = {
+    'files': ['bin/sconecmd', f'lib/libsconelib.{SHLIB_EXT}', f'lib/libsconeopensim4.{SHLIB_EXT}'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "sconecmd --help",
+]
+
+moduleclass = 'vis'

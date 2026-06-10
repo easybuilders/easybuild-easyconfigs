@@ -1,0 +1,26 @@
+Patch disabling unified-runtime tracing and its dependency on a specific
+version of CUDA CUPTI library which would reduce portability, as well as
+fixing an issue with finding libcuda.so
+author: Rafal Bielski (Codeplay Software Ltd)
+diff -ruN llvm-6.0.0.orig/sycl/cmake/modules/FetchUnifiedRuntime.cmake llvm-6.0.0/sycl/cmake/modules/FetchUnifiedRuntime.cmake
+--- llvm-6.0.0.orig/sycl/cmake/modules/FetchUnifiedRuntime.cmake	2025-03-03 16:23:34.086679669 +0000
++++ llvm-6.0.0/sycl/cmake/modules/FetchUnifiedRuntime.cmake	2025-03-03 16:20:58.822687086 +0000
+@@ -31,13 +31,17 @@
+ set(UR_BUILD_TESTS OFF CACHE BOOL "Build unit tests." FORCE)
+ set(UR_BUILD_XPTI_LIBS OFF)
+ set(UR_ENABLE_SYMBOLIZER ON CACHE BOOL "Enable symbolizer for sanitizer layer.")
+-set(UR_ENABLE_TRACING ON)
++set(UR_ENABLE_TRACING OFF)
+ 
+ if("level_zero" IN_LIST SYCL_ENABLE_PLUGINS)
+   set(UR_BUILD_ADAPTER_L0 ON)
+ endif()
+ if("cuda" IN_LIST SYCL_ENABLE_PLUGINS)
+   set(UR_BUILD_ADAPTER_CUDA ON)
++  find_package(CUDA 10.1 REQUIRED)
++  unset(CUDA_cupti_LIBRARY CACHE)
++  set(_FindCUDA_testing TRUE)
++  find_library(CUDA_CUDA_LIBRARY NAMES cuda HINTS ${CUDA_TOOLKIT_ROOT_DIR} PATH_SUFFIXES compat stubs lib/stubs lib64/stubs)
+ endif()
+ if("hip" IN_LIST SYCL_ENABLE_PLUGINS)
+   set(UR_BUILD_ADAPTER_HIP ON)

@@ -1,0 +1,258 @@
+Fix OSHA1stream.H file to work with newer GCC. From the patch https://github.com/OpenFOAM/OpenFOAM-9/commit/b0c15bebd37142f3902901ed5e9a60e33ed456eb.
+Discussion about the patch: https://github.com/OpenFOAM/OpenFOAM-9/issues/12.
+Author: Pavel Tomanek (Inuits)
+--- src/OpenFOAM/db/IOstreams/hashes/OSHA1stream.H.orig	2025-03-14 13:22:08.992178000 +0100
++++ src/OpenFOAM/db/IOstreams/hashes/OSHA1stream.H	2025-03-14 13:24:06.907200000 +0100
+@@ -2,7 +2,7 @@
+   =========                 |
+   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+    \\    /   O peration     | Website:  https://openfoam.org
+-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
++    \\  /    A nd           | Copyright (C) 2011-2022 OpenFOAM Foundation
+      \\/     M anipulation  |
+ -------------------------------------------------------------------------------
+ License
+@@ -25,7 +25,7 @@
+     Foam::OSHA1stream
+ 
+ Description
+-    An output stream for calculating SHA1 digests.
++    A Foam::OSstream for calculating SHA-1 digests
+ 
+ SourceFiles
+     OSHA1stream.C
+@@ -43,43 +43,51 @@
+ namespace Foam
+ {
+ 
+-class osha1stream;
+-class OSHA1stream;
+-
+ /*---------------------------------------------------------------------------*\
+                         Class sha1streambuf Declaration
+ \*---------------------------------------------------------------------------*/
+ 
+-//- A streambuf class for calculating SHA1 digests
+ class sha1streambuf
+ :
+     public std::streambuf
+ {
+-    // Private data
+-
+-    //- This does all the work and has its own buffering
++    // Private Data
+     SHA1 sha1_;
+ 
+-    friend class osha1stream;
+-
+ public:
+ 
+     // Constructors
+ 
+-        //- Construct null
+-        sha1streambuf()
+-        {}
++    //- Construct null
++    sha1streambuf()
++    {}
+ 
+     // Member Functions
+ 
+-    // Write
++    //- Return the SHA-1 via public accessor
++    SHA1& sha1()
++    {
++        return sha1_;
++    }
++
++    //- Writes characters from the array pointed to by s into the
++    //  controlled output sequence.
++    virtual std::streamsize xsputn(const char* s, std::streamsize n)
++    {
++        sha1_.append(s, n);
++        return n;
++    }
+ 
+-        //- Process unbuffered
+-        virtual std::streamsize xsputn(const char* str, std::streamsize n)
++    //- Writes character c to the output sequence.
++    virtual int overflow(int c = EOF)
++    {
++        if (c != EOF)
+         {
+-            sha1_.append(str, n);
+-            return n;
++            const char cc = c;
++            sha1_.append(&cc, 1);
+         }
++        return c;
++    }
+ };
+ 
+ 
+@@ -87,42 +95,37 @@
+                          Class osha1stream Declaration
+ \*---------------------------------------------------------------------------*/
+ 
+-//- A basic output stream for calculating SHA1 digests
+ class osha1stream
+ :
+     virtual public std::ios,
+     public std::ostream
+ {
+-    // Private data
+-
++    // Private Data
+     sha1streambuf sbuf_;
+ 
+ public:
+ 
+     // Constructors
+ 
+-        //- Construct null
+-        osha1stream()
+-        :
+-            std::ostream(&sbuf_)
+-        {}
++    //- Construct null
++    osha1stream()
++    :
++        std::ostream(&sbuf_)
++    {}
+ 
+     // Member Functions
+ 
+-    // Access
+-
+-        //- This hides both signatures of std::basic_ios::rdbuf()
+-        sha1streambuf* rdbuf()
+-        {
+-            return &sbuf_;
+-        }
+-
+-        //- Full access to the sha1
+-        SHA1& sha1()
+-        {
+-            return sbuf_.sha1_;
+-        }
++    //- Return the SHA-1 using the accessor in sha1streambuf
++    SHA1& sha1()
++    {
++        return sbuf_.sha1();
++    }
+ 
++    //- Return the stream buffer
++    sha1streambuf* rdbuf()
++    {
++        return &sbuf_;
++    }
+ };
+ 
+ 
+@@ -130,40 +133,33 @@
+                          Class OSHA1stream Declaration
+ \*---------------------------------------------------------------------------*/
+ 
+-//- The output stream for calculating SHA1 digests
+ class OSHA1stream
+ :
+     public OSstream
+ {
+ 
+-    // Private Member Functions
+-
+-        //- Disallow default bitwise copy construct
+-        OSHA1stream(const OSHA1stream&);
+-
+-        //- Disallow default bitwise assignment
+-        void operator=(const OSHA1stream&);
+-
+ public:
+ 
+     // Constructors
+ 
+-        //- Construct and set stream status
+-        OSHA1stream
++    //- Construct and set stream status
++    OSHA1stream
++    (
++        streamFormat format = ASCII,
++        versionNumber version = currentVersion
++    )
++    :
++        OSstream
+         (
+-            streamFormat format=ASCII,
+-            versionNumber version=currentVersion
++            *(new osha1stream),
++            "OSHA1stream.sinkFile_",
++            format,
++            version
+         )
+-        :
+-            OSstream
+-            (
+-                *(new osha1stream),
+-                "OSHA1stream.sinkFile_",
+-                format,
+-                version
+-            )
+-        {}
++    {}
+ 
++    //- Disallow default bitwise copy construction
++    OSHA1stream(const OSHA1stream&) = delete;
+ 
+     //- Destructor
+     ~OSHA1stream()
+@@ -171,31 +167,30 @@
+         delete &dynamic_cast<osha1stream&>(stdStream());
+     }
+ 
++    // Member Functions
+ 
+-    // Member functions
+-
+-    // Access
+-
+-        //- Full access to the sha1
+-        Foam::SHA1& sha1()
+-        {
+-            return dynamic_cast<osha1stream&>(stdStream()).sha1();
+-        }
++    //- Return the SHA-1 using the public accessor in osha1stream
++    SHA1& sha1()
++    {
++        return dynamic_cast<osha1stream&>(stdStream()).sha1();
++    }
+ 
+-        //- Return SHA1::Digest for the data processed until now
+-        Foam::SHA1Digest digest()
+-        {
+-            return sha1().digest();
+-        }
++    //- Return the SHA-1 digest for the data processed until now
++    SHA1Digest digest()
++    {
++        return sha1().digest();
++    }
+ 
+-    // Edit
++    //- Clear the SHA1 calculation
++    void rewind()
++    {
++        sha1().clear();
++    }
+ 
+-        //- Clear the SHA1 calculation
+-        void rewind()
+-        {
+-            sha1().clear();
+-        }
++    // Member Operators
+ 
++    //- Disallow default bitwise assignment
++    void operator=(const OSHA1stream&) = delete;
+ };
+ 
+ 

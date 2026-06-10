@@ -1,0 +1,43 @@
+Avoid this error in a function called by those tests:
+> RuntimeError: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/test_symmetric_memory.py b/test/distributed/test_symmetric_memory.py
+index 34b8ed5a7b1..04d3bb7a959 100644
+--- a/test/distributed/test_symmetric_memory.py
++++ b/test/distributed/test_symmetric_memory.py
+@@ -1,7 +1,7 @@
+ # Owner(s): ["module: c10d"]
+ 
+ import os
+-from unittest import skipIf, skip
++from unittest import skipIf, skip, skipUnless
+ 
+ import torch
+ import torch.distributed as dist
+@@ -19,7 +19,7 @@ from torch.distributed._symmetric_memory import (
+     restride_A_for_fused_matmul_reduce_scatter,
+     restride_A_shard_for_fused_all_gather_matmul,
+ )
+-from torch.testing._internal.common_cuda import _get_torch_cuda_version, SM90OrLater
++from torch.testing._internal.common_cuda import _get_torch_cuda_version, SM89OrLater, SM90OrLater
+ from torch.testing._internal.common_distributed import (
+     MultiProcessTestCase,
+     requires_multicast_support,
+@@ -458,6 +458,7 @@ class SymmetricMemoryTest(MultiProcessTestCase):
+ 
+     @skipIfRocm
+     @skip_if_lt_x_gpu(2)
++    @skipUnless(SM89OrLater, "compute capability >= 8.9")
+     @parametrize("gather_dim", [0, 1])
+     @parametrize(
+         "scale_mode", ["tensor-wise", "row-wise-replicated", "row-wise-sharded"]
+@@ -576,6 +577,7 @@ class SymmetricMemoryTest(MultiProcessTestCase):
+ 
+     @skipIfRocm
+     @skip_if_lt_x_gpu(2)
++    @skipUnless(SM89OrLater, "compute capability >= 8.9")
+     @parametrize("scatter_dim", [0, 1])
+     @parametrize("rowwise", [True, False])
+     def test_fused_scaled_matmul_reduce_scatter(

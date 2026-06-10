@@ -1,0 +1,35 @@
+easyblock = 'ConfigureMake'
+
+name = 'SPRNG'
+version = '5.0'
+
+homepage = 'http://www.sprng.org/'
+description = "Scalable Parallel Pseudo Random Number Generators Library"
+
+toolchain = {'name': 'gompi', 'version': '2023b'}
+toolchainopts = {'pic': True, 'opt': True, 'usempi': True, 'cstd': 'c++14'}
+
+source_urls = ['http://www.sprng.org/Version%(version)s/']
+sources = ['%(namelower)s%(version_major)s.tar.bz2']
+patches = ['%(name)s-%(version)s_MPI-lmpi.patch']
+checksums = [
+    {'sprng5.tar.bz2': '696ef452bdd998d2e66586e73d81dac875082e35d08de419cede1a1bb2555b59'},
+    {'SPRNG-5.0_MPI-lmpi.patch': 'a6bb936b2e7cf9efd74e0bf06702bf444c98ecb11877492308a3551c5b9dff5c'},
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('TestU01', '1.2.3'),
+]
+
+preconfigopts = 'autoreconf -f -i && '
+configopts = '--with-fortran=yes --with-mpi=yes --with-testu01=$EBROOTTESTU01'
+
+sanity_check_paths = {
+    'files': ['bin/checksprng', 'include/sprng.h', 'include/sprng_f.h', 'lib/libsprng.a'],
+    'dirs': ['bin', 'include', 'lib', 'share'],
+}
+
+sanity_check_commands = ['cd %(builddir)s/sprng5/check && checksprng']
+
+moduleclass = 'lib'

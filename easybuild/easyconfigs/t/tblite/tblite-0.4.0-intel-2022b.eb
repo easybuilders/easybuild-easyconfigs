@@ -1,0 +1,51 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'tblite'
+version = '0.4.0'
+
+homepage = 'https://github.com/tblite/tblite'
+description = """Light-weight tight-binding framework"""
+
+toolchain = {'name': 'intel', 'version': '2022b'}
+
+github_account = 'tblite'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [f'{name}-{version}_failed-test.patch']
+checksums = [
+    {'v0.4.0.tar.gz': 'c4a67dfbe04827095fd7598183e076fa3017a5a475c4f90fd28e78992dc19ea7'},
+    {'tblite-0.4.0_failed-test.patch': 'e2c4bd428ed8f264f992db17cf1bc6e6ae1642aaaa8c112bae134c9021fc886d'},
+]
+
+builddependencies = [
+    ('binutils', '2.39'),
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('mctc-lib', '0.3.1'),
+    ('mstore', '0.2.0'),
+    ('Simple-DFTD3', '0.7.0'),
+    ('dftd4', '3.4.0'),
+]
+
+build_shared_libs = True
+
+configopts = '-DWITH_OpenMP=FALSE '
+
+# run suite of tests with ctest
+test_cmd = 'ctest --parallel 1'
+runtest = ''
+
+sanity_check_paths = {
+    'files': ['bin/tblite',
+              'lib/libtblite.%s' % SHLIB_EXT],
+    'dirs': ['include/%(name)s', 'lib/cmake', 'lib/pkgconfig'],
+}
+
+sanity_check_commands = ["mctc-convert --help"]
+
+moduleclass = 'chem'

@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'Tcl'
+version = '8.6.16'
+
+homepage = 'https://www.tcl.tk/'
+description = """
+ Tcl (Tool Command Language) is a very powerful but easy to learn dynamic
+ programming language, suitable for a very wide range of uses, including web
+ and desktop applications, networking, administration, testing and many more.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ['http://prdownloads.sourceforge.net/%(namelower)s']
+sources = ['%(namelower)s%(version)s-src.tar.gz']
+checksums = ['91cb8fa61771c63c262efb553059b7c7ad6757afa5857af6265e4b0bdc2a14a5']
+
+builddependencies = [
+    ('binutils', '2.42'),
+]
+dependencies = [
+    ('zlib', '1.3.1'),
+]
+
+configopts = '--enable-threads EXTRA_INSTALL="install-private-headers"'
+
+runtest = 'test'
+
+start_dir = 'unix'
+
+postinstallcmds = [
+    'ln -s %(installdir)s/bin/tclsh%(version_major)s.%(version_minor)s %(installdir)s/bin/tclsh',
+] + [
+    # Avoid that installations on top of Tcl try to access the (no longer existing) source directory
+    # See https://core.tcl-lang.org/tk/tktview/b900dc755201139b5a7cecada73405c7681b7c03
+    f"""echo "{d}='%(installdir)s'" >> '%(installdir)s/lib/tclConfig.sh'"""
+    for d in ('TCL_SRC_DIR', 'itcl_SRC_DIR', 'ITCL_SRC_DIR', 'tdbc_SRC_DIR', 'TDBC_SRC_DIR')
+]
+
+sanity_check_paths = {
+    'files': ['bin/tclsh%(version_major)s.%(version_minor)s', 'bin/tclsh',
+              'include/tcl.h', 'lib/libtcl%%(version_major)s.%%(version_minor)s.%s' % SHLIB_EXT,
+              'lib/tclConfig.sh', 'man/man1/tclsh.1'],
+    'dirs': ['share'],
+}
+
+moduleclass = 'lang'

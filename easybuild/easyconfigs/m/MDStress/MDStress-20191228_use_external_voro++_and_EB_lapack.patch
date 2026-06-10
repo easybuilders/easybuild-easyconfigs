@@ -1,0 +1,80 @@
+use external EB Voro++ and flexi/openblas as needed
+
+Åke Sandgren, 2024-11-07
+diff -ru mdstress-library.orig/CMakeLists.txt mdstress-library/CMakeLists.txt
+--- mdstress-library.orig/CMakeLists.txt	2019-12-28 15:48:10.000000000 +0100
++++ mdstress-library/CMakeLists.txt	2024-11-07 11:19:48.125912695 +0100
+@@ -1,4 +1,5 @@
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 3.0)
++project('MDStress')
+ 
+ enable_language(C)
+ enable_language(CXX)
+@@ -27,42 +28,28 @@
+ #        COMMAND tar xaf voro++-0.4.6.tar.gz
+ #        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/contrib)
+ #endif()
+-FILE(GLOB VORO_SOURCES_HH include/voro++/*.hh)
+-FILE(GLOB VORO_SOURCES_CC contrib/voro++/src/*.cc)
+-#FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/voro++)
+-#FILE(COPY ${VORO_SOURCES_HH} DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/include/voro++)
+-LIST(REMOVE_ITEM VORO_SOURCES_CC ${CMAKE_CURRENT_SOURCE_DIR}/contrib/voro++/src/voro++.cc)
+-LIST(REMOVE_ITEM VORO_SOURCES_CC ${CMAKE_CURRENT_SOURCE_DIR}/contrib/voro++/src/v_base_wl.cc)
++#FILE(GLOB VORO_SOURCES_HH include/voro++/*.hh)
++#FILE(GLOB VORO_SOURCES_CC contrib/voro++/src/*.cc)
++##FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/voro++)
++##FILE(COPY ${VORO_SOURCES_HH} DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/include/voro++)
++#LIST(REMOVE_ITEM VORO_SOURCES_CC ${CMAKE_CURRENT_SOURCE_DIR}/contrib/voro++/src/voro++.cc)
++#LIST(REMOVE_ITEM VORO_SOURCES_CC ${CMAKE_CURRENT_SOURCE_DIR}/contrib/voro++/src/v_base_wl.cc)
+ 
+-SET(MDSTRESS_SOURCES ${MDSTRESS_SOURCES_CPP} ${MDSTRESS_SOURCES_H} ${VORO_SOURCES_CC} ${VORO_SOURCES_HH})
++SET(MDSTRESS_SOURCES ${MDSTRESS_SOURCES_CPP} ${MDSTRESS_SOURCES_H})
+ 
+ INCLUDE_DIRECTORIES(include/mdstress)
+-INCLUDE_DIRECTORIES(include/voro++)
++#INCLUDE_DIRECTORIES(include/voro++)
+ 
+ # attempt to find LAPACK library
+-FIND_LIBRARY(LAPACK_LIBRARY_SYS NAMES lapack liblapack HINTS /usr/lib REQUIRED)
+-if (NOT LAPACK_LIBRARY_SYS)
+-    UNSET(LAPACK_LIBRARY_SYS-NOTFOUND)
+-    UNSET(LAPACK_LIBRARY_SYS)
+-    # check to see if we need to download LAPACK
+-    SET(LAPACK_URL http://www.netlib.org/lapack/lapack-3.8.0.tar.gz)
+-    SET(LAPACK_DOWNLOAD_PATH ${CMAKE_CURRENT_SOURCE_DIR}/contrib/lapack-3.8.0.tar.gz)
+-    FILE(DOWNLOAD ${LAPACK_URL} ${LAPACK_DOWNLOAD_PATH})
+-    EXECUTE_PROCESS(
+-        COMMAND tar xaf lapack-3.8.0.tar.gz
+-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/contrib)
+-    ADD_SUBDIRECTORY(contrib/lapack-3.8.0)
+-else()
+-    FIND_LIBRARY(LAPACK_LIBRARY NAMES lapack liblapack HINTS /usr/lib REQUIRED)
+-endif()
++FIND_LIBRARY(LAPACK_LIBRARY NAMES flexiblas openblas lapack liblapack REQUIRED)
+ 
+ ADD_LIBRARY(mdstress SHARED ${MDSTRESS_SOURCES})
+-TARGET_LINK_LIBRARIES(mdstress ${LAPACK_LIBRARY} ${PYTHON_LIBRARIES})
++TARGET_LINK_LIBRARIES(mdstress ${LAPACK_LIBRARY} ${PYTHON_LIBRARIES} voro++)
+ 
+-INSTALL(TARGETS mdstress RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib/static)
++INSTALL(TARGETS mdstress RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+ 
+ INSTALL(FILES ${MDSTRESS_SOURCES_H} DESTINATION include/mdstress)
+-INSTALL(FILES ${VORO_SOURCES_HH} DESTINATION include/voro++)
++#INSTALL(FILES ${VORO_SOURCES_HH} DESTINATION include/voro++)
+ 
+ # only process python bindings if requested
+ if(MDS_BOOSTPYTHON)
+diff -ru mdstress-library.orig/src/mds_stressgrid.cpp mdstress-library/src/mds_stressgrid.cpp
+--- mdstress-library.orig/src/mds_stressgrid.cpp	2019-12-28 15:48:10.000000000 +0100
++++ mdstress-library/src/mds_stressgrid.cpp	2024-11-07 09:08:35.761694010 +0100
+@@ -21,7 +21,7 @@
+ =========================================================================*/
+ 
+ #include "mds_stressgrid.h"
+-#include "voro++.hh"
++#include "voro++/voro++.hh"
+ 
+ using namespace mds;
+ 

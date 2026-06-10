@@ -1,0 +1,53 @@
+easyblock = 'PythonBundle'
+
+name = 'modin'
+version = '0.37.1'
+
+homepage = 'https://github.com/modin-project/modin'
+description = """Modin uses Ray, Dask or Unidist to provide an effortless way to speed up your pandas notebooks,
+scripts, and libraries. """
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [
+    ('Cython', '3.1.2'),
+    # Needed for tests
+    ('boto3', '1.39.8'),
+    ('s3fs', '2025.10.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('SciPy-bundle', '2025.07'),
+    ('dask', '2025.9.1'),
+    ('OpenMPI', '5.0.8'),
+    ('Ray-project', '2.47.1'),
+    ('Arrow', '22.0.0'),
+]
+
+exts_list = [
+    ('unidist', '0.7.2', {
+        'checksums': ['6386e1ad5143fe132b9f96e232fe85fc39830ed2886515440e4ba1473255e4a0'],
+    }),
+    # The oversubscription is done in their own CI as well.
+    # Ray has limitations on unix socket path length, so it is not tested here.
+    (name, version, {
+        'patches': ['modin-0.32.0_fix-pytest-config.patch'],
+        'runtest': (
+            "MODIN_ENGINE=unidist UNIDIST_ENGINE=mpi "
+            "mpiexec -n=1 --map-by :OVERSUBSCRIBE pytest modin/tests/pandas/test_general.py &&"
+            "MODIN_ENGINE=dask pytest modin/tests/pandas/test_general.py"
+        ),
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/modin-project/%(name)s/archive/refs/tags'],
+        'testinstall': True,
+        'checksums': [
+            {'0.37.1.tar.gz': 'da7f313a8a7ba5453d195b98ce7be2b25e66099693c117904aa2865606233702'},
+            {'modin-0.32.0_fix-pytest-config.patch':
+             'c49bd5c072a87321760c7c5eebc957f4f6962763a3526a500fe6330cf3f2b765'},
+        ],
+    }),
+]
+
+moduleclass = 'tools'

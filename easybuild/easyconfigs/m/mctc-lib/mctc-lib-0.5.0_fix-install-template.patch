@@ -1,0 +1,38 @@
+Fix error in installed CMake file, which leads to config failures later on
+when trying to use the package:
+
+```
+The link interface of target "mctc-lib::mctc-lib-lib" contains:
+
+    OpenMP::OpenMP_Fortran
+
+  but the target was not found.  Possible reasons include:
+```
+
+Instead of using a string, we should use the actual value.
+Tested manually with enabling and disabling OpenMP, which results in the
+desired effect.
+
+Author: Jan Andre Reuter (JSC)
+
+diff --color -Naur mctc-lib-0.5.0.orig/config/template.cmake mctc-lib-0.5.0/config/template.cmake
+--- mctc-lib-0.5.0.orig/config/template.cmake	2025-09-04 09:48:19.000000000 +0200
++++ mctc-lib-0.5.0/config/template.cmake	2025-10-30 09:59:50.463210351 +0100
+@@ -8,14 +8,14 @@
+ 
+   include(CMakeFindDependencyMacro)
+ 
+-  if(NOT TARGET "OpenMP::OpenMP_Fortran" AND "@PROJECT_NAME@_WITH_OpenMP")
++  if(NOT TARGET "OpenMP::OpenMP_Fortran" AND @PROJECT_NAME@_WITH_OpenMP)
+     find_dependency("OpenMP")
+   endif()
+ 
+-  if(NOT TARGET "toml-f::toml-f" AND "@PROJECT_NAME@_WITH_JSON")
++  if(NOT TARGET "toml-f::toml-f" AND @PROJECT_NAME@_WITH_JSON)
+     find_dependency("toml-f")
+   endif()
+-  if(NOT TARGET "jonquil::jonquil" AND "@PROJECT_NAME@_WITH_JSON")
++  if(NOT TARGET "jonquil::jonquil" AND @PROJECT_NAME@_WITH_JSON)
+     find_dependency("jonquil")
+   endif()
+ endif()
