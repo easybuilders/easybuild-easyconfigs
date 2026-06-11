@@ -9,9 +9,11 @@ description = """RepeatMasker is a program that screens DNA sequences for inters
 
 toolchain = {'name': 'foss', 'version': '2025a'}
 
-source_urls = ['https://www.repeatmasker.org/%(name)s']
 sources = [
-    SOURCE_TAR_GZ,
+    {
+        'source_urls': ['https://www.repeatmasker.org/%(name)s'],
+        'filename': SOURCE_TAR_GZ,
+    },
     # optional but recommended: RepBase RepeatMasker Edition
     # requires subscription and academic license, download from here: https://www.girinst.org/server/RepBase/index.php
     # {
@@ -29,11 +31,14 @@ dependencies = [
     # At least one search engine of: RMBlast, HMMER, ABBlast/WUBlast, Cross_Match
     ('HMMER', '3.4'),
     ('RMBlast', '2.17.1'),
+    ('Dfam-database', '3.9', '', SYSTEM),
 ]
 
 local_default_search_engine = 'RMBlast'
 
-local_config_command = 'cd %(installdir)s &&'
+local_config_command = 'cd %(installdir)s && '
+# create symlinks to Dfam database files
+local_config_command += 'for x in $EBROOTDFAMMINDATABASE/*.h5; do ln -s $x Libraries/famdb/; done && '
 local_config_command += './configure -perlbin "$EBROOTPERL/bin/perl" -trf_prgm "$EBROOTTRF/bin/trf" '
 local_config_command += '-hmmer_dir "$EBROOTHMMER/bin" -rmblast_dir "$EBROOTRMBLAST/bin" '
 local_config_command += '-default_search_engine %s' % local_default_search_engine.lower()
