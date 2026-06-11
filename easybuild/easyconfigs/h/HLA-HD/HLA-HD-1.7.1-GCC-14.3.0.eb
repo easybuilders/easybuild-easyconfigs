@@ -1,0 +1,161 @@
+easyblock = 'CmdCp'
+
+name = 'HLA-HD'
+version = '1.7.1'
+
+homepage = 'https://w3.genome.med.kyoto-u.ac.jp/HLA-HD/'
+
+description = """HLA-HD, HLA typing from High-quality Dictionary, determines
+HLA alleles from NGS FASTQ data. RNA-Seq data can also be used."""
+
+modwhatis = [
+    'Description: HLA-HD performs HLA typing from paired-end NGS FASTQ data using a high-quality HLA dictionary.',
+    'Homepage: https://w3.genome.med.kyoto-u.ac.jp/HLA-HD/',
+    'Main executable: hlahd.sh',
+    'Runtime dependency: Bowtie2',
+    'Environment variables: HLAHD_ROOT, HLAHD_FREQ_DATA, HLAHD_DICTIONARY, HLAHD_GENE_SPLIT',
+]
+
+modhelp = """HLA-HD - HLA typing from High-quality Dictionary
+
+HLA-HD determines HLA alleles from NGS paired-end FASTQ data.
+
+Useful commands:
+
+    which hlahd.sh
+    which bowtie2
+
+Environment variables provided by this module:
+
+    HLAHD_ROOT
+        Installation directory for HLA-HD.
+
+        Test:
+            ls -lh "$HLAHD_ROOT"
+
+    HLAHD_FREQ_DATA
+        Directory containing HLA-HD frequency data.
+        This is passed to hlahd.sh using the -f option.
+
+        Test:
+            ls -lh "$HLAHD_FREQ_DATA"
+
+    HLAHD_DICTIONARY
+        Directory containing the HLA-HD dictionary.
+
+        Test:
+            ls -lh "$HLAHD_DICTIONARY"
+
+    HLAHD_GENE_SPLIT
+        Path to the HLA_gene.split.txt file.
+
+        Test:
+            test -f "$HLAHD_GENE_SPLIT" && echo "HLA gene split file found"
+
+Typical command:
+
+    hlahd.sh \\
+        -t 8 \\
+        -m 100 \\
+        -c 0.95 \\
+        -f "$HLAHD_FREQ_DATA" \\
+        sample_R1.fastq.gz sample_R2.fastq.gz \\
+        "$HLAHD_GENE_SPLIT" \\
+        "$HLAHD_DICTIONARY" \\
+        sample_id \\
+        output_dir
+
+Minimal module test:
+
+    module purge
+    module load HLA-HD/%(version)s-%(toolchain_name)s-%(toolchain_version)s
+
+    which hlahd.sh
+    which bowtie2
+    echo "$HLAHD_ROOT"
+    echo "$HLAHD_FREQ_DATA"
+    echo "$HLAHD_DICTIONARY"
+    echo "$HLAHD_GENE_SPLIT"
+
+    test -x "$(which hlahd.sh)" && echo "hlahd.sh executable found"
+    test -d "$HLAHD_FREQ_DATA" && echo "frequency data directory found"
+    test -d "$HLAHD_DICTIONARY" && echo "dictionary directory found"
+    test -f "$HLAHD_GENE_SPLIT" && echo "gene split file found"
+
+Notes:
+
+    HLA-HD expects paired FASTQ input and uses Bowtie2 internally.
+    The frequency data directory is supplied with -f.
+    The gene split file and dictionary directory are positional arguments.
+"""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+sources = ['hlahd.%(version)s.tar.gz']
+checksums = ['05c982617e2fb3f8bdc2079f0829278811ba6c6bb3eed4d4e260550e397f5abb']
+
+# Replace after downloading:
+#   sha256sum hlahd.1.7.1.tar.gz
+
+dependencies = [
+    ('Bowtie2', '2.5.4'),
+]
+
+cmds_map = [
+    (
+        '.*',
+        'bash ./install.sh && '
+        'bash ./update.dictionary.sh && '
+        'chmod -R u+rwX,go+rX . && '
+        'chmod 0755 ./bin/hlahd.sh'
+    )
+]
+
+files_to_copy = [
+    'bin',
+    'dictionary',
+    'freq_data',
+    'HLA_gene.split.txt',
+    'Readme.txt',
+    'update.dictionary.sh',
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/hlahd.sh',
+        'bin/split_shell',
+        'bin/get_diff_fasta',
+        'bin/stfr',
+        'bin/pick_up_allele',
+        'bin/pm_extract',
+        'bin/hla_est',
+        'bin/create_fasta_from_dat',
+        'HLA_gene.split.txt',
+        'update.dictionary.sh',
+    ],
+    'dirs': [
+        'bin',
+        'dictionary',
+        'freq_data',
+    ],
+}
+
+sanity_check_commands = [
+    'which bowtie2',
+    'which hlahd.sh',
+    'test -x %(installdir)s/bin/hlahd.sh',
+    'test -d %(installdir)s/dictionary',
+]
+
+modextrapaths = {
+    'PATH': ['bin'],
+}
+
+modextravars = {
+    'HLAHD_ROOT': '%(installdir)s',
+    'HLAHD_FREQ_DATA': '%(installdir)s/freq_data',
+    'HLAHD_DICTIONARY': '%(installdir)s/dictionary',
+    'HLAHD_GENE_SPLIT': '%(installdir)s/HLA_gene.split.txt',
+}
+
+moduleclass = 'bio'
