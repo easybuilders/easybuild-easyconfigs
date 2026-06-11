@@ -1,0 +1,62 @@
+easyblock = 'PythonBundle'
+
+name = 'ratarmount'
+version = '1.3.0'
+
+homepage = 'https://github.com/mxmlnkn/ratarmount'
+description = """Ratarmount collects all file positions inside a TAR so that it can easily jump to and read from any
+file without extracting it. It, then, mounts the TAR using mfusepy, a fork of fusepy, for read access just like
+archivemount. In contrast to libarchive, on which archivemount is based, random access and true seeking is supported.
+And in contrast to tarindexer, which also collects file positions for random access, ratarmount offers easy access via
+FUSE and support for compressed TARs."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+builddependencies = [
+    ('binutils', '2.44'),
+#    ('setuptools', '80.9.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('bzip2', '1.0.8'),
+    ('gzip', '1.14'),
+    ('XZ', '5.8.1'),
+    ('Zip', '3.0'),
+    ('zstd', '1.5.7'),
+]
+
+exts_list = [
+    ('mfusepy', '3.1.1', {
+        'osdependencies': [('fuse', 'fuse3')],
+        'sources': ['https://github.com/mxmlnkn/mfusepy/archive/refs/tags/v3.0.0.tar.gz'],
+        'checksums': ['1a04a22b9c7790a8759f5ca7da52b9e4e6a91898079c41714aa3b5a24071c81d'],
+    }),
+    ('ratarmountcore', '0.11.1', {
+        'sources': ['https://github.com/mxmlnkn/ratarmount/archive/refs/tags/v1.3.0.tar.gz'],
+        'start_dir': 'core',
+        'use_pip_extras': 'bzip2,gzip,xz,zip,zstd',
+        'checksums': ['5cd10d88a4841ca2a0a4f1e075afc46659859251ef9aa9a47d270a88023f8930'],
+    }),
+    (name, version, {
+        'sources': ['https://github.com/mxmlnkn/ratarmount/archive/refs/tags/v1.3.0.tar.gz'],
+        'checksums': ['5cd10d88a4841ca2a0a4f1e075afc46659859251ef9aa9a47d270a88023f8930'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/ratarmount',
+        'lib/python%(pyshortver)s/site-packages/mfusepy.py',
+    ],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages/ratarmountcore',
+        'lib/python%(pyshortver)s/site-packages/ratarmount',
+    ],
+}
+
+sanity_check_commands = [
+    'ratarmount --help',
+]
+
+moduleclass = 'tools'
