@@ -1,0 +1,51 @@
+easyblock = 'Binary'
+
+name = 'JCuda'
+version = '12.0.0'
+versionsuffix = '-CUDA-12.1.1'
+
+homepage = 'https://www.jcuda.org'
+description = 'JCuda: Java bindings for NVIDIA CUDA (core API + natives for linux-x86_64).'
+
+toolchain = SYSTEM
+
+source_urls = [
+    'https://repo1.maven.org/maven2/org/jcuda/jcuda/%(version)s/',
+    'https://repo1.maven.org/maven2/org/jcuda/jcuda-natives/%(version)s/'
+]
+sources = [
+    'jcuda-%(version)s.jar',
+    'jcuda-natives-%(version)s-linux-x86_64.jar',
+]
+checksums = [
+    {'jcuda-12.0.0.jar': '7f2d1ff416fe1286d124623de7b603409fe7b77938a8e26ec2e3330f709a5dd4'},
+    {'jcuda-natives-12.0.0-linux-x86_64.jar': 'dcb3b590daad915a4f4a87d32ee3e092fb8fede4b447913ac006026b150a9333'},
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Java', '11', '', SYSTEM),
+]
+
+install_cmd = 'install -d %(installdir)s/share/java && '
+install_cmd += 'install -m 0644 %(builddir)s/jcuda-%(version)s.jar %(installdir)s/share/java/ && '
+install_cmd += 'install -m 0644 %(builddir)s/jcuda-natives-%(version)s-linux-x86_64.jar %(installdir)s/share/java/'
+
+sanity_check_paths = {
+    'files': [
+        'share/java/jcuda-%(version)s.jar',
+        'share/java/jcuda-natives-%(version)s-linux-x86_64.jar',
+    ],
+    'dirs': [],
+}
+
+_jcuda_jar = '%(installdir)s/share/java/jcuda-%(version)s.jar'
+_jcuda_natives_jar = '%(installdir)s/share/java/jcuda-natives-%(version)s-linux-x86_64.jar'
+modextravars = {
+    'JCUDA_HOME': '%(installdir)s',
+    'JCUDA_JAR': _jcuda_jar,
+    'JCUDA_NATIVES_JAR': _jcuda_natives_jar,
+    'JCUDA_CLASSPATH': f'{_jcuda_jar}:{_jcuda_natives_jar}',
+}
+
+moduleclass = 'lib'
