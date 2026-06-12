@@ -1,0 +1,58 @@
+Fix for setup.py to use EB dependecies CGAL and allow building outside of CONDA
+--- setup.py.orig	2025-08-27 09:28:29.000000000 +0200
++++ setup.py	2025-08-27 09:41:42.000000000 +0200
+@@ -9,28 +9,6 @@
+ from setuptools_scm import ScmVersion
+ 
+ 
+-''' C extensions
+-
+-CGAL Compilation
+------------------
+-
+-CGAL >= 5 is a header-only library, so we download it right before compiling.
+-
+-Compilation requires:
+-GCC >= 6.3 or Apple Clang == 10.0.1 or MSVC >= 14.0
+-    conda install gcc_linux-64 gxx_linux-64 gfortran_linux-64
+-Boost >= 1.57
+-
+-Boost can be instaled with
+-    Ubuntu: sudo apt install libboost-all-dev
+-    MacOS: brew install boost
+-    Windows: conda install boost
+-    Boost is also header-only, so we only need it during compile time
+-
+-For more info, refer to https://doc.cgal.org/latest/Manual/thirdparty.html
+-
+-'''
+-
+ cgal_mesh_macros = [
+     ('CGAL_MESH_3_NO_DEPRECATED_SURFACE_INDEX', None),
+     ('CGAL_MESH_3_NO_DEPRECATED_C3T3_ITERATORS', None),
+@@ -38,11 +16,6 @@
+     ('CGAL_USE_ZLIB', 1),
+ ]
+ 
+-is_conda = 'CONDA_PREFIX' in os.environ
+-# No conda, no setup
+-if not is_conda:
+-    raise Exception("Cannot run setup without conda")
+-
+ #### Setup compilation arguments
+ 
+ if sys.platform == 'win32':
+@@ -74,11 +47,11 @@
+ 
+ elif sys.platform == 'linux':
+     # CGAL
+-    cgal_dirs = [os.path.join(os.environ['CONDA_PREFIX'], 'lib')]
++    cgal_dirs = [os.path.join(os.environ['EBROOTCGAL'], 'lib')]
+     cgal_libs = ['mpfr', 'gmp', 'z', 'tbb', 'tbbmalloc', 'pthread']
+     cgal_include = [
+         np.get_include(),
+-        os.path.join(os.environ['CONDA_PREFIX'], 'include','eigen3'),
++        os.path.join('EBROOTCGAL', 'include','eigen3'),
+     ]
+     cgal_runtime = None
+     # Add -Os -flto for much smaller binaries
