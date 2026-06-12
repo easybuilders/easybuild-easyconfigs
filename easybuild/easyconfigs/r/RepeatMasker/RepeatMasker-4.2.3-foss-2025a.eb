@@ -2,6 +2,11 @@ easyblock = 'Tarball'
 
 name = 'RepeatMasker'
 version = '4.2.3'
+# optional: Dfam database partitions
+# specify the indices of the Dfam database partitions you need (e.g. [1, 12] for partitions 1 and 12)
+# see: https://www.dfam.org/releases/Dfam_3.9/families/FamDB/README.txt
+_dfam_partitions = []
+_dfam_ver = '3.9'
 
 homepage = 'https://www.repeatmasker.org/'
 description = """RepeatMasker is a program that screens DNA sequences for interspersed repeats
@@ -9,17 +14,26 @@ description = """RepeatMasker is a program that screens DNA sequences for inters
 
 toolchain = {'name': 'foss', 'version': '2025a'}
 
-source_urls = ['https://www.repeatmasker.org/%(name)s']
 sources = [
-    SOURCE_TAR_GZ,
+    {
+        'source_urls': ['https://www.repeatmasker.org/%(name)s'],
+        'filename': SOURCE_TAR_GZ,
+    },
     # optional but recommended: RepBase RepeatMasker Edition
     # requires subscription and academic license, download from here: https://www.girinst.org/server/RepBase/index.php
     # {
     #     'filename': 'RepBaseRepeatMaskerEdition-20181026.tar.gz',
     #     'extract_cmd': "tar -xzf %s -C %(builddir)s/%(name)s/Libraries --strip-components 1",
     # },
+] + [
+    {
+        'source_urls': [f'https://www.dfam.org/releases/Dfam_{_dfam_ver}/families/FamDB'],
+        'filename': f'dfam{_dfam_ver.replace(".", "")}_full.{x}.h5.gz',
+    } for x in _dfam_partitions
 ]
-checksums = ['832e2b22aef6763ef7d5dd2771eef22f7dd8b9738bea0e1d81295aa511b61e6a']
+checksums = [
+    {'RepeatMasker-4.2.3.tar.gz': '832e2b22aef6763ef7d5dd2771eef22f7dd8b9738bea0e1d81295aa511b61e6a'},
+]
 
 dependencies = [
     ('Python', '3.13.1'),
@@ -33,7 +47,8 @@ dependencies = [
 
 local_default_search_engine = 'RMBlast'
 
-local_config_command = 'cd %(installdir)s &&'
+local_config_command = 'mv ../dfam*.h5 %(installdir)s/Libraries/famdb/ && '
+local_config_command += 'cd %(installdir)s && '
 local_config_command += './configure -perlbin "$EBROOTPERL/bin/perl" -trf_prgm "$EBROOTTRF/bin/trf" '
 local_config_command += '-hmmer_dir "$EBROOTHMMER/bin" -rmblast_dir "$EBROOTRMBLAST/bin" '
 local_config_command += '-default_search_engine %s' % local_default_search_engine.lower()
