@@ -35,8 +35,10 @@ configopts += '--with-gs=${EBROOTGHOSTSCRIPT}/bin/gs '
 # config.log should indicate that all required/optional dependencies were found (see scripts/dependencies.pl)
 configopts += " && grep 'All required and optional Perl modules were found' config.log"
 
-pretestopts = "OMPI_MCA_rmaps_base_oversubscribe=1 "
+# avoid that *all* cores on system are used to run tests
+pretestopts = "sed -i 's/cores = \$cpu->count/cores = %(parallel)s/g' tests/scripts/test_driver && "
 # test xstreme4 fails on Ubuntu 20.04, see: https://groups.google.com/g/meme-suite/c/GlfpGwApz1Y
+# With limited memory tests xstreme2 and xstreme4 might fail
 runtest = 'test'
 
 fix_perl_shebang_for = ['bin/*', 'libexec/meme-%(version)s/*']
