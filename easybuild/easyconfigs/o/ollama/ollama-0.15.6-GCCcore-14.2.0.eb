@@ -1,0 +1,56 @@
+easyblock = 'Bundle'
+
+name = 'ollama'
+version = '0.15.6'
+
+homepage = 'https://ollama.com/'
+description = """Get up and running with large language models.
+
+This version of ollama is patched to support OLLAMA_NUM_THREADS environment
+variable to override the default inference CPU thread count.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+builddependencies = [
+    ('Go', '1.25.0', '', SYSTEM),
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+]
+
+default_component_specs = {
+    'source_urls': ['https://github.com/ollama/ollama/archive'],
+    'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+    'start_dir': 'ollama-%(version)s',
+}
+components = [
+    ('ggml-cpu', version, {
+        'easyblock': 'CMakeMake',
+        'checksums': ['c5628fd19cd987f94f5ad7ea1df0aa312c8185677e6d88fadd08e5f650586371'],
+        'configopts': '-DGGML_BACKEND_DIR="%(installdir)s/lib/ollama"',
+        'buildopts': '%(name)s',
+    }),
+    ('ollama', version, {
+        'easyblock': 'GoPackage',
+        'patches': ['ollama-0.15.6_expose-num-thread.patch'],
+        'checksums': [
+            'c5628fd19cd987f94f5ad7ea1df0aa312c8185677e6d88fadd08e5f650586371',
+            '4785b5a9c1c1bb55204e6810dbdbe20b296568b076552167464ffb9d8edc31cb',
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ollama', f'lib/ollama/libggml-base.{SHLIB_EXT}'],
+    'dirs': ['lib/ollama'],
+}
+
+sanity_check_commands = [
+    "ollama -v",
+]
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': 'lib/ollama',
+}
+
+moduleclass = 'ai'

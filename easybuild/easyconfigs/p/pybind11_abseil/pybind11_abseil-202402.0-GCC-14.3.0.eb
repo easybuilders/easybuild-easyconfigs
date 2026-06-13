@@ -1,0 +1,52 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2025/01
+easyblock = 'CMakePythonPackage'
+
+name = 'pybind11_abseil'
+version = '202402.0'
+
+homepage = 'https://github.com/pybind/pybind11_abseil'
+description = """Pybind11 bindings for the Abseil C++ Common Libraries"""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    # disable FetchContent for abseil-cpp and pybind11, use find_package for abseil-cpp and pybind11,
+    # install header, and create cmake package config:
+    'pybind11_abseil-202402.0_cmake.patch'
+]
+checksums = [
+    {'v202402.0.tar.gz': '1496b112e86416e2dcf288569a3e7b64f3537f0b18132224f492266e9ff76c44'},
+    {'pybind11_abseil-202402.0_cmake.patch': '06ac281d0bad44a72479dcaa6be51a5062d1503b35c849e1c825926da0823f2f'},
+]
+
+github_account = 'pybind'
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('pybind11', '3.0.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Abseil', '20250512.1'),
+]
+
+_confopts = [
+    '-DCMAKE_INSTALL_PYDIR="%(installdir)s/lib/python%(pyshortver)s/site-packages"',
+    '-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python',
+    '-DFETCHCONTENT_FULLY_DISCONNECTED=ON',
+]
+
+configopts = ' '.join(_confopts)
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/cmake/pybind11_abseil', 'include/pybind11_abseil'],
+}
+
+sanity_check_commands = [
+    "python -c 'from pybind11_abseil import status'"
+]
+moduleclass = 'lib'

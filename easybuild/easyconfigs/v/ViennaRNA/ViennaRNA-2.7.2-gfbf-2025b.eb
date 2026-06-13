@@ -1,0 +1,64 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'ConfigureMake'
+
+name = 'ViennaRNA'
+version = '2.7.2'
+
+homepage = 'https://www.tbi.univie.ac.at/RNA/'
+description = """The Vienna RNA Package consists of a C code library and several
+stand-alone programs for the prediction and comparison of RNA secondary structures."""
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.tbi.univie.ac.at/RNA/download/sourcecode/%(version_major)s_%(version_minor)s_x/']
+sources = [SOURCE_TAR_GZ]
+patches = ['ViennaRNA-2.7.0-flexiblas-for-RNAxplorer.patch']
+checksums = [
+    {'ViennaRNA-2.7.2.tar.gz': '1ab5f4a4f76fc85a2243546088e45f5d85f2d7a56cc656e969b005cce9bfab5f'},
+    {'ViennaRNA-2.7.0-flexiblas-for-RNAxplorer.patch':
+     'a5c71e67193d489b9c4f2be6467da5d760f15ad562bb29c5c57f5ae38b3c51b3'},
+]
+
+builddependencies = [
+    ('Autotools', '20250527'),
+    ('flex', '2.6.4'),
+    ('pkgconf', '2.4.3'),
+    ('Bison', '3.8.2'),
+    ('SWIG', '4.3.1'),
+    ('Check', '0.15.2'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Perl', '5.40.2'),
+    ('GSL', '2.8'),
+    ('MPFR', '4.2.2'),
+    ('libgd', '2.3.3'),
+    ('X11', '20250608'),
+]
+
+configopts = ' '.join([
+    '--with-python3',
+    '--with-cluster',
+    '--with-kinwalker',
+])
+
+buildopts = "V=1"
+
+sanity_check_paths = {
+    'files': ['bin/RNA%s' % x for x in ['fold', 'eval', 'heat', 'pdist', 'distance',
+                                        'inverse', 'plot', 'subopt', 'Lfold', 'cofold',
+                                        'paln', 'duplex', 'alifold', 'plfold', 'up',
+                                        'aliduplex', 'Lalifold', '2Dfold', 'parconv',
+                                        'PKplex', 'plex', 'snoop', 'forester']] +
+    ['bin/Kinfold'],
+    'dirs': ['lib/perl5/site_perl/%(perlver)s/', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/',
+}
+
+moduleclass = 'bio'

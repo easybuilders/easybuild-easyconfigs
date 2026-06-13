@@ -1,0 +1,46 @@
+easyblock = 'CMakeMake'
+
+name = 'safestringlib'
+version = '20241021'
+_commit = 'e99c03c'
+
+homepage = 'https://github.com/intel/safestringlib'
+description = """
+The Secure Development Lifecycle (SDL) recommends banning certain C Library
+functions because they directly contribute to security vulnerabilities such as
+buffer overflows. However routines for the manipulation of strings and memory
+buffers are common in software and firmware, and are essential to accomplish
+certain programming tasks. Safer replacements for these functions that avoid or
+prevent serious security vulnerabilities (e.g. buffer overflows, string format
+attacks, conversion overflows/underflows, etc.) are available in the SafeString
+Library."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'intel'
+sources = [{
+    'source_urls': [GITHUB_SOURCE],
+    'download_filename': '%s.tar.gz' % _commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = ['%(name)s-%(version)s_fix_incorrect_placement_of_includes_in_cmake.patch']
+checksums = [
+    {'safestringlib-20241021.tar.gz': '94c7bb7baf5e38f99b970c90267287d9622d468eef38d8304bcae38432576bc7'},
+    {'safestringlib-20241021_fix_incorrect_placement_of_includes_in_cmake.patch':
+     '9f11536520dc8ce0fad5e858fa1242537e08ab65d0ea6b216654382444a19eda'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+]
+
+postinstallcmds = ['cp libsafestring_static.a %(installdir)s/lib/']
+
+sanity_check_paths = {
+    'files': ['lib/libsafestring_shared.%s' % SHLIB_EXT, 'lib/libsafestring_static.a'],
+    'dirs': ['include', 'share/safestring/cmake'],
+}
+
+moduleclass = 'lib'

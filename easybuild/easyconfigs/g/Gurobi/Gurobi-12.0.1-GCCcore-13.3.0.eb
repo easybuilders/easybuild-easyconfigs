@@ -1,0 +1,59 @@
+name = 'Gurobi'
+version = '12.0.1'
+
+homepage = 'https://www.gurobi.com'
+description = """The Gurobi Optimizer is a state-of-the-art solver for mathematical programming.
+The solvers in the Gurobi Optimizer were designed from the ground up to exploit modern
+architectures and multi-core processors, using the most advanced implementations of the
+latest algorithms."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://packages.gurobi.com/%(version_major_minor)s/']
+local_archs = {'aarch64': 'armlinux64', 'x86_64': 'linux64'}
+sources = [f'gurobi%(version)s_{local_archs[ARCH]}.tar.gz']
+patches = ['Gurobi-11.0.0_use-eb-python-gurobi-shell.patch']
+checksums = [
+    {f'gurobi12.0.1_{local_archs[ARCH]}.tar.gz': (
+        '9172093e65de04fc14c6c5d235768eea3fe15c8a9cb6ea92e6806ebb852e9d86',
+        '8503ea759554e46d648ffb11f23d9063578b327dc955a86759f5a756b9343fba',)},
+    {'Gurobi-11.0.0_use-eb-python-gurobi-shell.patch':
+     '566473a3ba4e35b0e74595368f9f4133fc4a3c97cca84154c4b938645786e663'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+
+exts_list = [
+    ('gurobipy', version, {
+        'sources': ['gurobipy-%(version)s-cp312-cp312-manylinux2014_%(arch)s.manylinux_2_17_%(arch)s.whl'],
+        'checksums': [{
+            'gurobipy-12.0.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl':
+                'e36c57df0330c4277294d090565a56c56a083d83d70c30af8e9c444d80a854a5',
+            'gurobipy-12.0.1-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl':
+                '45ff1dce01f785b2fb5cf7ea62da904a44920bb26e9480fbfedf1d2f67dac1ae',
+        }],
+    }),
+]
+
+# remove bundled Python interpreter in favour of the dependency in EB
+postinstallcmds = ['rm %(installdir)s/bin/python*']
+
+# license is mandatory for installation
+# use EB_GUROBI_LICENSE_FILE environment variable, or
+# uncomment and modify the following variable:
+# license_file = '/path/to/my-license-file'
+
+modloadmsg = """Gurobi shell based on Python %(pyver)s can be launched with command `gurobi.sh`
+Gurobi Python Interface can be loaded in Python %(pyver)s with 'import gurobipy'
+"""
+
+moduleclass = 'math'

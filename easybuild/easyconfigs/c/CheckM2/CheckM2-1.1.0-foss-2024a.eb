@@ -1,0 +1,56 @@
+easyblock = 'PythonPackage'
+
+name = 'CheckM2'
+version = '1.1.0'
+
+homepage = 'https://github.com/chklovski/CheckM2/'
+description = "Assessing the quality of metagenome-derived genome bins using machine learning"
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = ['https://github.com/chklovski/CheckM2/archive/']
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['7978e4ca08ae8ea3285931b955d1a4818684f9f955995837e98e6ab7ff90674f']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('scikit-build-core', '0.10.6'),
+]
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('SciPy-bundle', '2024.05'),
+    ('DIAMOND', '2.1.11'),
+    ('TensorFlow', '2.18.1'),
+    ('prodigal', '2.6.3'),
+    ('tqdm', '4.66.5'),
+    ('scikit-learn', '1.6.1'),
+    ('LightGBM', '4.6.0'),
+]
+
+# Fix undefined variable from https://github.com/chklovski/CheckM2/commit/6144f70
+postinstallcmds = [
+    "cd %(installdir)s/lib/python%(pyshortver)s/site-packages/checkm2 && "
+    "sed -i 's/format(f)/format(bin)/' main.py",
+]
+
+modloadmsg = """
+You need to download a Diamond database and setup a path to this db now:
+
+1) Download the database (/CheckM2_database/uniref100.KO.1.dmnd will be created):
+$ checkm2 database --download --path /path/to/database --no_write_json_db
+- for example: $ checkm2 database --download --path $HOME/DB_CHECKM2 --no_write_json_db
+
+2) Setup $CHECKM2DB:
+$ export CHECKM2DB="/path/to/database/CheckM2_database/uniref100.KO.1.dmnd"
+- for example: $ export CHECKM2DB="$HOME/DB_CHECKM2/CheckM2_database/uniref100.KO.1.dmnd"
+Unset it by: $ unset CHECKM2DB
+
+You can check the path to the database:
+$ checkm2 database --current
+
+You can test if everything is setup properly:
+$ checkm2 testrun
+"""
+
+moduleclass = 'bio'

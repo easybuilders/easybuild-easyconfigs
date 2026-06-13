@@ -1,0 +1,144 @@
+add missing stdint includes required when building with GCC 13.x
+See also:
+* https://github.com/easybuilders/easybuild-easyconfigs/blob/develop/easybuild/easyconfigs/q/Qt5/Qt5-5.15.13_fix-includes.patch#L7
+* https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/effadce6c756247ea8bae32dc13bb3e6f464f0eb
+* https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/x86/mathops.h
+* https://github.com/microsoft/vcpkg/pull/43524/files
+Author: Lara Peeters
+diff -ruN qt-everywhere-src-5.15.16.orig/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp qt-everywhere-src-5.15.16/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp
+--- qt-everywhere-src-5.15.16.orig/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp	2024-11-08 14:36:17.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp	2025-03-18 17:26:32.628647120 +0100
+@@ -3,6 +3,7 @@
+ #include <mapbox/geometry/geometry.hpp>
+ #include <mapbox/geometry/point_arithmetic.hpp>
+ #include <mapbox/geometry/for_each_point.hpp>
++#include <cstdint>
+ 
+ namespace mbgl {
+ 
+diff -ruN qt-everywhere-src-5.15.16.orig/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp qt-everywhere-src-5.15.16/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp
+--- qt-everywhere-src-5.15.16.orig/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp	2024-11-08 14:36:17.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp	2025-03-18 17:27:20.989863649 +0100
+@@ -5,6 +5,7 @@
+ #include <cassert>
+ #include <cstdlib>
+ #include <exception>
++#include <cstdint>
+ 
+ // Polyfill needed by Qt when building for Android with GCC
+ #if defined(__ANDROID__) && defined(__GLIBCXX__)
+diff -ruN qt-everywhere-src-5.15.16.orig/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro qt-everywhere-src-5.15.16/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro
+--- qt-everywhere-src-5.15.16.orig/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro	2024-11-08 14:36:17.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro	2025-03-19 10:27:48.004873000 +0100
+@@ -2,7 +2,7 @@
+ 
+ load(qt_helper_lib)
+ 
+-CONFIG += qt c++14 exceptions warn_off staticlib object_parallel_to_source
++CONFIG += qt c++17 exceptions warn_off staticlib object_parallel_to_source
+ CONFIG -= c++1z
+ 
+ QT += network-private \
+diff -ruN qt-everywhere-src-5.15.16.orig/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp qt-everywhere-src-5.15.16/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp
+--- qt-everywhere-src-5.15.16.orig/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp	2024-11-08 14:36:17.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp	2025-03-18 17:28:08.237257105 +0100
+@@ -1,6 +1,7 @@
+ #pragma once
+ 
+ #include <mbgl/util/variant.hpp>
++#include <cstdint>
+ 
+ namespace mbgl {
+ namespace gl {
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/content/browser/BUILD.gn qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/content/browser/BUILD.gn
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/content/browser/BUILD.gn	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/content/browser/BUILD.gn	2025-03-25 14:10:13.656800000 +0100
+@@ -40,6 +40,7 @@
+     "//content/browser/devtools:protocol_sources",
+     "//content/common:buildflags",
+     "//third_party/inspector_protocol:crdtp",
++    "//components/spellcheck:buildflags",
+   ]
+ 
+   sources = [
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/extensions/browser/api/audio/audio_device_id_calculator.h qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/extensions/browser/api/audio/audio_device_id_calculator.h
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/extensions/browser/api/audio/audio_device_id_calculator.h	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/extensions/browser/api/audio/audio_device_id_calculator.h	2025-03-18 17:30:58.592651884 +0100
+@@ -9,6 +9,7 @@
+ #include <map>
+ #include <string>
+ 
++#include <cstdint>
+ #include "base/macros.h"
+ 
+ namespace content {
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/third_party/ffmpeg/libavcodec/x86/mathops.h qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/third_party/ffmpeg/libavcodec/x86/mathops.h
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/third_party/ffmpeg/libavcodec/x86/mathops.h	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/third_party/ffmpeg/libavcodec/x86/mathops.h	2025-03-25 10:29:52.781659618 +0100
+@@ -35,12 +35,20 @@
+ static av_always_inline av_const int MULL(int a, int b, unsigned shift)
+ {
+     int rt, dummy;
++    if (__builtin_constant_p(shift))
+     __asm__ (
+         "imull %3               \n\t"
+         "shrdl %4, %%edx, %%eax \n\t"
+         :"=a"(rt), "=d"(dummy)
+-        :"a"(a), "rm"(b), "ci"((uint8_t)shift)
++        :"a"(a), "rm"(b), "i"(shift & 0x1F)
+     );
++    else
++        __asm__ (
++            "imull %3               \n\t"
++            "shrdl %4, %%edx, %%eax \n\t"
++            :"=a"(rt), "=d"(dummy)
++            :"a"(a), "rm"(b), "c"((uint8_t)shift)
++        );
+     return rt;
+ }
+ 
+@@ -113,19 +121,31 @@
+ // avoid +32 for shift optimization (gcc should do that ...)
+ #define NEG_SSR32 NEG_SSR32
+ static inline  int32_t NEG_SSR32( int32_t a, int8_t s){
++    if (__builtin_constant_p(s))
+     __asm__ ("sarl %1, %0\n\t"
+          : "+r" (a)
+-         : "ic" ((uint8_t)(-s))
++         : "i" (-s & 0x1F)
+     );
++    else
++        __asm__ ("sarl %1, %0\n\t"
++               : "+r" (a)
++               : "c" ((uint8_t)(-s))
++        );
+     return a;
+ }
+ 
+ #define NEG_USR32 NEG_USR32
+ static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
++    if (__builtin_constant_p(s))
+     __asm__ ("shrl %1, %0\n\t"
+          : "+r" (a)
+-         : "ic" ((uint8_t)(-s))
++         : "i" (-s & 0x1F)
+     );
++    else
++        __asm__ ("shrl %1, %0\n\t"
++               : "+r" (a)
++               : "c" ((uint8_t)(-s))
++        );
+     return a;
+ }
+ 
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/ui/events/gesture_event_details.cc qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/ui/events/gesture_event_details.cc
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/ui/events/gesture_event_details.cc	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/ui/events/gesture_event_details.cc	2025-03-18 17:28:46.131368493 +0100
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include <cstdint>
+ #include "ui/events/gesture_event_details.h"
+ #include "base/check_op.h"
+ #include "base/notreached.h"

@@ -1,0 +1,26 @@
+author: Davide Grassano (CECAM-EPFL)
+Ensure headers from FlexiBLAS can be picked up correctly
+Requires the extra `/flexiblas/` to find the `cblas.h` from FlexiBLAS instead of OpenBLAS
+Including the `cblas.h` location as a SYSTEM was causing the FlexiBLAS entry in CPATH to be
+ignored by g++ and the OpenBLAS one taking precedence as CPATH is searched before the -isystem locations
+diff --git a/cmake/custom/math.cmake b/cmake/custom/math.cmake
+index fa5f81ea8..4225ec568 100644
+--- a/cmake/custom/math.cmake
++++ b/cmake/custom/math.cmake
+@@ -231,6 +231,8 @@ if(_check_cblas_and_lapacke)
+     PATHS
+       ${BLAS_ROOT}/include
+       ${LAPACK_ROOT}/include
++    PATH_SUFFIXES
++      flexiblas
+     )
+   list(APPEND _la_include_dirs ${_include_dirs})
+ 
+@@ -365,7 +367,6 @@ if(BLAS_FOUND AND LAPACK_FOUND AND NOT TARGET Math::LA)
+     message(STATUS "BLAS/LAPACK include directories: ${_la_include_dirs}")
+ 
+     target_include_directories(Math::LA
+-      SYSTEM
+       INTERFACE
+         "${_la_include_dirs}"
+       )
