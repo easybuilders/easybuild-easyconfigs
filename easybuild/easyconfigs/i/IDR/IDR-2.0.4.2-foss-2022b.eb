@@ -1,0 +1,45 @@
+# Author: Emik Lin (HKUMed CPOS)
+
+easyblock = 'PythonBundle'
+
+name = 'IDR'
+version = '2.0.4.2'
+local_commit = '9452def'
+
+homepage = 'https://github.com/kundajelab/idr'
+description = """
+  The IDR (Irreproducible Discovery Rate) framework is a uniﬁed approach
+  to measure the reproducibility of ﬁndings identiﬁed from replicate
+  experiments and provide highly stable thresholds based on reproducibility.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('SciPy-bundle', '2023.02'),
+    ('matplotlib', '3.7.0'),
+]
+
+exts_list = [
+    ('idr', version, {
+        'source_urls': ['https://github.com/kundajelab/idr/archive/'],
+        'sources': [{'download_filename': "%s.tar.gz" % local_commit, 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['c6c10ec0ec007d8121e384bde84b1ff8a74c9cadfb252475834531774e25d2b3'],
+    }),
+]
+
+# Fix for NumPy 1.24: change deprecated numpy.int to int
+preinstallopts = "sed -i 's/numpy.int/int/g' idr/idr.py && "
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "%(namelower)s --help",
+    "%(namelower)s --version",
+]
+
+moduleclass = 'bio'

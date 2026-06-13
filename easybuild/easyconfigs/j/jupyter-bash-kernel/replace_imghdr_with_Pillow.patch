@@ -1,0 +1,47 @@
+# Author: Ehsan Moravveji (VSC - KU Leuven)
+# Purpose: The 'imghdr' package is removed from Python 3.13 standard library.
+#          This patch mimics the original call to 'imghdr.what()' by using Pillow.
+
+diff -ruN bash_kernel-0.9.3-orig/bash_kernel/display.py bash_kernel-0.9.3/bash_kernel/display.py
+--- bash_kernel-0.9.3-orig/bash_kernel/display.py	2022-12-17 20:08:58.839088400 +0100
++++ bash_kernel-0.9.3/bash_kernel/display.py	2026-02-27 17:30:42.570783000 +0100
+@@ -52,11 +52,13 @@
+ is your friend to debug the format of the content message.
+ """
+ import base64
+-import imghdr
+ import json
+ import os
+ import re
+ 
++from PIL import Image   # replacement for imghdr (removed in Python >3.13)
++import io
++
+ 
+ _TEXT_SAVED_IMAGE = "bash_kernel: saved image data to: "
+ _TEXT_SAVED_HTML = "bash_kernel: saved html data to: "
+@@ -97,12 +99,23 @@
+         os.unlink(filename)
+ 
+ 
++def imghdr_what_bytes(data: bytes):
++    try:
++        with Image.open(io.BytesIO(data)) as img:
++            fmt = img.format
++            if fmt is None:
++                return None
++            return fmt.lower()
++    except Exception:
++        return None
++
++
+ def display_data_for_image(filename):
+     with open(filename, 'rb') as f:
+         image = f.read()
+     _unlink_if_temporary(filename)
+ 
+-    image_type = imghdr.what(None, image)
++    image_type = imghdr_what_bytes(image) 
+     if image_type is None:
+         raise ValueError("Not a valid image: %s" % image)
+ 

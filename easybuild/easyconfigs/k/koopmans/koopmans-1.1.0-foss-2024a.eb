@@ -1,0 +1,71 @@
+easyblock = 'PythonBundle'
+
+name = 'koopmans'
+version = '1.1.0'
+
+homepage = 'https://koopmans-functionals.org'
+description = """
+koopmans is a package for performing Koopmans spectral functional
+calculations with Quantum ESPRESSO, developed by researchers in the
+THEOS research group at EPFL.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('matplotlib', '3.9.2'),
+    ('pydantic', '2.9.1'),
+    ('PyYAML', '6.0.2'),
+    ('scikit-learn', '1.5.2'),
+    ('SciPy-bundle', '2024.05'),
+    ('spglib-python', '2.5.0'),
+    ('typing-extensions', '4.11.0'),
+    ('QuantumESPRESSO', '7.4', '-minimal'),
+    # Order matter here:
+    # kcp and qe-utils are binaries that overrides the base QE
+    ('koopmans-kcp', '0.2.0'),
+    ('koopmans-qe-utils', '0.1.0'),
+]
+
+exts_list = [
+    ('ase_koopmans', '0.1.6', {
+        'modulename': 'ase',
+        'checksums': ['4e57a7c9b35f4e9aae0cfb343d1f156d10b710c60e2fc5b2c991c75c25914930'],
+    }),
+    ('deepdiff', '8.2.0', {
+        'checksums': ['6ec78f65031485735545ffbe7a61e716c3c2d12ca6416886d5e9291fc76c46c3'],
+    }),
+    ('dill', '0.3.9', {
+        'checksums': ['81aa267dddf68cbfe8029c42ca9ec6a4ab3b22371d1c450abc54422577b4512c'],
+    }),
+    ('latexcodec', '3.0.0', {
+        'checksums': ['917dc5fe242762cc19d963e6548b42d63a118028cdd3361d62397e3b638b6bc5'],
+    }),
+    ('orderly_set', '5.3.0', {
+        'checksums': ['80b3d8fdd3d39004d9aad389eaa0eab02c71f0a0511ba3a6d54a935a6c6a0acc'],
+    }),
+    ('pybtex', '0.24.0', {
+        'checksums': ['818eae35b61733e5c007c3fcd2cfb75ed1bc8b4173c1f70b56cc4c0802d34755'],
+    }),
+    ('upf_to_json', '0.9.5', {
+        'checksums': ['57614c4c8677f04f161679ce4eddb2f55b87984605b8a5253d3d288235f56e4a'],
+    }),
+    (name, version, {
+        # remove argparse and typing from dependencies, as they are available within
+        # Python standard library since python 3.2 and 3.5;
+        'preinstallopts': r"sed -i -e '/\(argparse\|typing\)/d' pyproject.toml && ",
+        'source_urls': ['https://github.com/epfl-theos/koopmans/archive'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['640a6a23eea4b44e89ed0de1b46be7a76e1052da040523f018d473813b5b3ed5'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/koopmans'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'chem'

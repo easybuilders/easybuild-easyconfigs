@@ -1,0 +1,41 @@
+From 38b46203cf42e97971d065950180dfb00a779eca Mon Sep 17 00:00:00 2001
+From: "Victor A. P. Magri" <paludettomag1@llnl.gov>
+Date: Sun, 7 Sep 2025 19:25:57 -0400
+Subject: [PATCH] Set memory clock rate based on the cuda runtime version
+
+---
+ tests/smoke/blt_cuda_runtime_smoke.cpp | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/tests/smoke/blt_cuda_runtime_smoke.cpp b/tests/smoke/blt_cuda_runtime_smoke.cpp
+index ab505ca22..13af67068 100644
+--- a/tests/smoke/blt_cuda_runtime_smoke.cpp
++++ b/tests/smoke/blt_cuda_runtime_smoke.cpp
+@@ -27,17 +27,24 @@ int main()
+   for (int i = 0; i < nDevices; i++)
+   {
+     cudaDeviceProp prop;
++    int memoryClockRate;
+     cudaGetDeviceProperties(&prop, i);
++
++#if CUDART_VERSION >= 13000
++    cudaDeviceGetAttribute(&memoryClockRate, cudaDevAttrMemoryClockRate, i);
++#else
++    memoryClockRate = prop.memoryClockRate;
++#endif
++
+     printf("Device Number: %d\n", i);
+     printf("  Device name: %s\n", prop.name);
+     printf("  Memory Clock Rate (KHz): %d\n",
+-           prop.memoryClockRate);
++           memoryClockRate);
+     printf("  Memory Bus Width (bits): %d\n",
+            prop.memoryBusWidth);
+     printf("  Peak Memory Bandwidth (GB/s): %f\n\n",
+-           2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
++           2.0*memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
+   }
+ 
+   return 0;
+ }
+-

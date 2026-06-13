@@ -1,0 +1,125 @@
+easyblock = 'PythonBundle'
+
+name = 'GATE'
+version = '10.0.2'
+
+homepage = 'http://www.opengatecollaboration.org/'
+description = """GATE is an advanced opensource software developed by the international OpenGATE collaboration and
+ dedicated to the numerical simulations in medical imaging. It currently supports simulations of Emission Tomography
+(Positron Emission Tomography - PET and Single Photon Emission Computed Tomography - SPECT), and Computed Tomography.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+builddependencies = [
+    ('pybind11', '2.11.1'),
+    ('CMake', '3.27.6'),
+    ('hatchling', '1.18.0'),
+    ('poetry', '1.6.1'),
+    ('scikit-build-core', '0.10.7'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Python-bundle-PyPI', '2023.10'),
+    ('SciPy-bundle', '2023.11'),
+    ('Geant4', '11.3.0', '-Qt5'),
+    ('ITK', '5.4.0'),
+    ('wget', '1.24.5'),
+    ('fmt', '10.2.1'),
+    ('GitPython', '3.1.42'),
+    ('matplotlib', '3.8.2'),
+    ('PyYAML', '6.0.1'),
+    ('SimpleITK', '2.5.2'),
+    ('lz4', '1.9.4'),
+    ('pydicom', '3.0.1'),
+    ('tqdm', '4.66.2'),
+    ('xxHash', '0.8.2'),
+    ('networkx', '3.2.1'),
+    ('sympy', '1.12'),
+]
+
+# replace pybind11 and ftm by local modules in opengate_core
+_core_preinstallopts = (
+    "sed -i "
+    "-e 's|add_subdirectory(external/pybind11)|find_package(pybind11 REQUIRED)|' "
+    "-e 's|add_subdirectory(external/fmt EXCLUDE_FROM_ALL)|find_package(fmt)|' "
+    "CMakeLists.txt && "
+)
+exts_list = [
+    ('python_utils', '3.9.1', {
+        'checksums': ['eb574b4292415eb230f094cbf50ab5ef36e3579b8f09e9f2ba74af70891449a0'],
+    }),
+    ('awkward_cpp', '44', {
+        'checksums': ['8dc499288d6d16b2ea20b51a27d5047e51a247b6aacfcbcb3b302cad6d3c87d8'],
+    }),
+    ('awkward', '2.7.4', {
+        'checksums': ['e79b4bfd68b2030123b4bb67d5179f92c7e9bede1dadc5a1416fce0acb6cc975'],
+    }),
+    ('wget', '3.2', {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'checksums': ['35e630eca2aa50ce998b9b1a127bb26b30dfee573702782aa982f875e3f16061'],
+    }),
+    ('uproot', '5.2.2', {
+        'checksums': ['ce6abba7efaae35d891f15ad1757ece63620f0db12260403fbd0339e41951fc1'],
+    }),
+    ('spekpy', '2.0.13', {
+        'checksums': ['052501606cd6a7dfe83c4a4067ad1c3b50532f43e11a71b4909fd583c1f49b68'],
+    }),
+    ('radioactivedecay', '0.6.1', {
+        'checksums': ['a5c32ffd397edbb829f959e7ce941ce95e9d8168b539853f1541ff02ddd603eb'],
+    }),
+    ('python-box', '6.1.0', {
+        'modulename': 'box',
+        'checksums': ['6e7c243b356cb36e2c0f0e5ed7850969fede6aa812a7f501de7768996c7744d7'],
+    }),
+    ('numpy_stl', '3.2.0', {
+        'modulename': 'stl',
+        'checksums': ['5a20c3f79cddaa0abc6a4b99f5486aceed4f88152f29b19a57acc844e183fd4d'],
+    }),
+    ('jsonpickle', '4.1.1', {
+        'checksums': ['f86e18f13e2b96c1c1eede0b7b90095bbb61d99fedc14813c44dc2f361dbbae1'],
+    }),
+    ('icrp107_database', '0.0.2', {
+        'checksums': ['82c98e6d612141bba73083187a23cf8bd8b69d875dab0718130d683e14c82217'],
+    }),
+    ('colorlog', '6.9.0', {
+        'checksums': ['bfba54a1b93b94f54e1f4fe48395725a3d92fd2a4af702f6bd70946bdc0c6ac2'],
+    }),
+    ('anytree', '2.12.1', {
+        'checksums': ['244def434ccf31b668ed282954e5d315b4e066c4940b94aff4a7962d85947830'],
+    }),
+    ('colored', '2.3.0', {
+        'checksums': ['4daf9b3ed687a01d59005e1bd03f354475226b933abb9a01836d6dde926d4c6f'],
+    }),
+    ('gatetools', '0.12.7', {
+        # skip pip check for failing local installations
+        'preinstallopts': "sed -i -e '/itk>=/d' -e '/lz4/d' -e '/xxhash/d' pyproject.toml && ",
+        'checksums': ['15e275871dc52d5d3d7410120cdf589def5f5daebe26e5fe94b5369d45c04677'],
+    }),
+    ('opengate_core', version, {
+        'preinstallopts': _core_preinstallopts,
+        'source_urls': ['https://github.com/OpenGATE/opengate/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': 'opengate-%(version)s.tar.gz'}],
+        'start_dir': 'core',
+        'checksums': ['91551b9275c1793b61ec0b68b9ca9b4aa5e81fc16731d6ec5b4bf8f19d52c010'],
+    }),
+    ('opengate', version, {
+        # skip pip check for failing local installations
+        'preinstallopts': "sed -i '/itk/d' setup.py && ",
+        'source_urls': ['https://github.com/OpenGATE/opengate/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['91551b9275c1793b61ec0b68b9ca9b4aa5e81fc16731d6ec5b4bf8f19d52c010'],
+    }),
+]
+
+# link geant4-data to opengate_core dir
+postinstallcmds = [
+    "mkdir %(installdir)s/lib/python%(pyshortver)s/site-packages/opengate_core/geant4_data",
+    "ln -s $EBROOTGEANT4MINDATA/* %(installdir)s/lib/python%(pyshortver)s/site-packages/opengate_core/geant4_data",
+    "rm %(installdir)s/lib/python%(pyshortver)s/site-packages/opengate_core/geant4_data/easybuild",
+]
+
+sanity_check_commands = ["opengate_info"]
+
+moduleclass = 'cae'

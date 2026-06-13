@@ -1,0 +1,43 @@
+easyblock = 'PythonBundle'
+
+name = 'rmats2sashimiplot'
+version = '3.0.0'
+
+homepage = 'https://github.com/Xinglab/rmats2sashimiplot'
+description = """
+rmats2sashimiplot produces a sashimiplot visualization of rMATS output.
+rmats2sashimiplot can also produce plots using an annotation file and genomic
+coordinates. The plotting backend is MISO.
+"""
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('matplotlib', '3.7.2'),
+    ('Pysam', '0.22.0'),
+    ('SAMtools', '1.18'),
+    ('BEDTools', '2.31.0'),
+]
+
+exts_list = [
+    (name, version, {
+        'checksums': ['5d8e0fa3e7c5db2e595dc08e4cdb652385c18d7f2b70468d81a0fb3d957d03ce'],
+    }),
+]
+
+_misopath = '%(installdir)s/lib/python%(pyshortver)s/site-packages/MISO/'
+
+postinstallcmds = [
+    "find %s -name '*.py' | xargs 2to3 -w" % _misopath,
+    """sed -i 's/strand_rule is "fr-unstranded"/strand_rule == "fr-unstranded"/g' %s/misopy/sam_utils.py""" % _misopath,
+]
+
+sanity_check_commands = [
+    'index_gff --help',
+    'rmats2sashimiplot --help',
+    'sashimi_plot --help',
+]
+
+moduleclass = 'bio'

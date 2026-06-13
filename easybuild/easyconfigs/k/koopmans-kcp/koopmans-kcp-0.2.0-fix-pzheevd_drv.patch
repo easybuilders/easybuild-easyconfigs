@@ -1,0 +1,26 @@
+This fixes linking against scalapack, the patch was taken from:
+
+https://github.com/epfl-theos/koopmans-kcp/issues/19
+
+---
+
+--- CPV/ortho_base.f90.orig	2025-02-22 21:42:02.623615990 +0100
++++ CPV/ortho_base.f90	2025-02-22 21:42:28.673838126 +0100
+@@ -12,7 +12,7 @@
+
+       USE kinds
+       USE dspev_module, ONLY: pdspev_drv, dspev_drv
+-      USE zhpev_module, ONLY: pzhpev_drv, zhpev_drv
++      USE zhpev_module, ONLY: pzhpev_drv, zhpev_drv, pzheevd_drv
+ 
+       IMPLICIT NONE
+ 
+@@ -238,7 +238,7 @@
+          s = rhos
+          !
+ #ifdef __SCALAPACK
+-         CALL pzheevd_drv( .true. , n, desc( nlax_ ), s, SIZE(s,1), rhod, ortho_cntx )
++         CALL pzheevd_drv( .true. , n, desc( nlax_ ), s, rhod, ortho_cntx )
+ #else
+          CALL qe_pzheevd( .true., n, desc, s, SIZE(s,1), rhod )
+ #endif

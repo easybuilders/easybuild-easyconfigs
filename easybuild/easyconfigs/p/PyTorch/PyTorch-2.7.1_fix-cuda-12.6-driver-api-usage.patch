@@ -1,0 +1,133 @@
+Avoid "RuntimeError: CUDA driver error: operation not supported" due to use of CUDA 12.6 in e.g. 
+> python distributed/test_symmetric_memory.py SymmMemSingleProcTest.test_stream_write_value32
+
+Backport of https://github.com/pytorch/pytorch/commit/cf90c9f8d1632777ec5f4b6ccaa14bc5bf259e9c
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/c10/cuda/driver_api.cpp b/c10/cuda/driver_api.cpp
+index bb201b5c039..56e3ffb02ab 100644
+--- a/c10/cuda/driver_api.cpp
++++ b/c10/cuda/driver_api.cpp
+@@ -2,6 +2,7 @@
+ #include <c10/cuda/driver_api.h>
+ #include <c10/util/CallOnce.h>
+ #include <c10/util/Exception.h>
++#include <cuda_runtime.h>
+ #include <dlfcn.h>
+ 
+ namespace c10::cuda {
+@@ -9,20 +10,13 @@ namespace c10::cuda {
+ namespace {
+ 
+ DriverAPI create_driver_api() {
+-  void* handle_0 = dlopen("libcuda.so.1", RTLD_LAZY | RTLD_NOLOAD);
+-  TORCH_CHECK(handle_0, "Can't open libcuda.so.1: ", dlerror());
+   void* handle_1 = DriverAPI::get_nvml_handle();
+   DriverAPI r{};
+ 
+-#define LOOKUP_LIBCUDA_ENTRY(name)                       \
+-  r.name##_ = ((decltype(&name))dlsym(handle_0, #name)); \
+-  TORCH_INTERNAL_ASSERT(r.name##_, "Can't find ", #name, ": ", dlerror())
++#define LOOKUP_LIBCUDA_ENTRY(name)                                  \
++  r.name##_ = reinterpret_cast<decltype(&name)>(get_symbol(#name)); \
++  TORCH_INTERNAL_ASSERT(r.name##_, "Can't find ", #name)
+   C10_LIBCUDA_DRIVER_API(LOOKUP_LIBCUDA_ENTRY)
+-#undef LOOKUP_LIBCUDA_ENTRY
+-
+-#define LOOKUP_LIBCUDA_ENTRY(name)                       \
+-  r.name##_ = ((decltype(&name))dlsym(handle_0, #name)); \
+-  dlerror();
+   C10_LIBCUDA_DRIVER_API_12030(LOOKUP_LIBCUDA_ENTRY)
+ #undef LOOKUP_LIBCUDA_ENTRY
+ 
+@@ -47,6 +41,52 @@ C10_EXPORT DriverAPI* DriverAPI::get() {
+   return &singleton;
+ }
+ 
++typedef cudaError_t (*VersionedGetEntryPoint)(
++    const char*,
++    void**,
++    unsigned int,
++    unsigned long long, // NOLINT(*)
++    cudaDriverEntryPointQueryResult*);
++typedef cudaError_t (*GetEntryPoint)(
++    const char*,
++    void**,
++    unsigned long long, // NOLINT(*)
++    cudaDriverEntryPointQueryResult*);
++
++void* get_symbol(const char* symbol, int cuda_version) {
++  // We link to the libcudart.so already, so can search for it in the current
++  // context
++  static GetEntryPoint driver_entrypoint_fun = reinterpret_cast<GetEntryPoint>(
++      dlsym(RTLD_DEFAULT, "cudaGetDriverEntryPoint"));
++  static VersionedGetEntryPoint driver_entrypoint_versioned_fun =
++      reinterpret_cast<VersionedGetEntryPoint>(
++          dlsym(RTLD_DEFAULT, "cudaGetDriverEntryPointByVersion"));
++
++  cudaDriverEntryPointQueryResult driver_result{};
++  void* entry_point = nullptr;
++  if (driver_entrypoint_versioned_fun != nullptr) {
++    // Found versioned entrypoint function
++    cudaError_t result = driver_entrypoint_versioned_fun(
++        symbol, &entry_point, cuda_version, cudaEnableDefault, &driver_result);
++    TORCH_CHECK(
++        result == cudaSuccess,
++        "Error calling cudaGetDriverEntryPointByVersion");
++  } else {
++    TORCH_CHECK(
++        driver_entrypoint_fun != nullptr,
++        "Error finding the CUDA Runtime-Driver interop.");
++    // Versioned entrypoint function not found
++    cudaError_t result = driver_entrypoint_fun(
++        symbol, &entry_point, cudaEnableDefault, &driver_result);
++    TORCH_CHECK(result == cudaSuccess, "Error calling cudaGetDriverEntryPoint");
++  }
++  TORCH_CHECK(
++      driver_result == cudaDriverEntryPointSuccess,
++      "Could not find CUDA driver entry point for ",
++      symbol);
++  return entry_point;
++}
++
+ } // namespace c10::cuda
+ 
+ #endif
+diff --git a/c10/cuda/driver_api.h b/c10/cuda/driver_api.h
+index 65cbdfe878d..1a1f0108e69 100644
+--- a/c10/cuda/driver_api.h
++++ b/c10/cuda/driver_api.h
+@@ -3,6 +3,12 @@
+ #define NVML_NO_UNVERSIONED_FUNC_DEFS
+ #include <nvml.h>
+ 
++#if defined(CUDA_VERSION)
++#define DEFAULT_CUDA_VERSION CUDA_VERSION
++#else
++#define DEFAULT_CUDA_VERSION 11080
++#endif
++
+ #define C10_CUDA_DRIVER_CHECK(EXPR)                                        \
+   do {                                                                     \
+     CUresult __err = EXPR;                                                 \
+@@ -62,4 +68,7 @@ struct DriverAPI {
+   static void* get_nvml_handle();
+ };
+ 
++/*! \brief Get pointer corresponding to symbol in CUDA driver library */
++void* get_symbol(const char* symbol, int cuda_version = DEFAULT_CUDA_VERSION);
++
+ } // namespace c10::cuda
+diff --git a/torch/csrc/distributed/c10d/CUDASymmetricMemoryOps.cu b/torch/csrc/distributed/c10d/CUDASymmetricMemoryOps.cu
+index 438624f4bc0..992e415db1b 100644
+--- a/torch/csrc/distributed/c10d/CUDASymmetricMemoryOps.cu
++++ b/torch/csrc/distributed/c10d/CUDASymmetricMemoryOps.cu
+@@ -6,6 +6,7 @@
+ 
+ #if !defined(USE_ROCM) && defined(PYTORCH_C10_DRIVER_API_SUPPORTED)
+ #include <c10/cuda/driver_api.h>
++#include <cudaTypedefs.h>
+ #endif
+ 
+ #if defined(CUDART_VERSION) && CUDART_VERSION >= 12030

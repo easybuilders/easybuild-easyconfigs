@@ -1,0 +1,28 @@
+Failing upstream too: https://github.com/pytorch/pytorch/issues/162745
+> /PyTorch/2.7.1/foss-2024a-CUDA-12.6.0/pytorch-v2.7.1/test/distributed/test_data_parallel.py", line 99, in test_data_parallel_rnn
+>     self.assertTrue(p1.allclose(p2))
+> AssertionError: False is not true
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/test_data_parallel.py b/test/distributed/test_data_parallel.py
+index 26f64df90d9..c25cc6673c3 100644
+--- a/test/distributed/test_data_parallel.py
++++ b/test/distributed/test_data_parallel.py
+@@ -6,6 +6,7 @@ import io
+ from collections import OrderedDict
+ from copy import deepcopy
+ from itertools import product
++import unittest
+ 
+ import torch
+ import torch.nn.functional as F
+@@ -63,7 +64,7 @@ class TestDataParallel(TestCase):
+ 
+         gradcheck(fn, (m.t_rg,))
+ 
+-    @skip_but_pass_in_sandcastle_if(not TEST_MULTIGPU, "multi-GPU not supported")
++    @unittest.skip("Fails")
+     def test_data_parallel_rnn(self):
+         class TestModule(torch.nn.Module):
+             def __init__(self) -> None:

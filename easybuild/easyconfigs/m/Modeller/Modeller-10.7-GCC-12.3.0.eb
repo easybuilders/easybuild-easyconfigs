@@ -1,0 +1,49 @@
+easyblock = 'Binary'
+
+name = 'Modeller'
+version = '10.7'
+
+homepage = 'https://salilab.org/modeller/'
+description = """  MODELLER is used for homology or comparative modeling of protein
+ three-dimensional structures (1,2). The user provides an alignment of a sequence to
+ be modeled with known related structures and MODELLER automatically calculates
+ a model containing all non-hydrogen atoms."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://salilab.org/modeller/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-%(version)s_no-qa.patch']
+checksums = [
+    {'modeller-10.7.tar.gz': 'b81ffee26841ef96470341889fa4af560f968cf35ef990d95480c7eb7a5b5c8f'},
+    {'Modeller-10.7_no-qa.patch': '0413cf8ac33a73eb1b577e6f2f6528861c264e35abf5c347967da2a9623d4efe'},
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+]
+
+build_info_msg = """
+Set KEY_MODELLER environment variable to the MODELLER key before running the
+installer. The key can be obtained from the MODELLER website"""
+
+extract_sources = True
+
+install_cmd = 'MODINSTALL=%(installdir)s ./Install'
+
+sanity_check_paths = {
+    'files': ['bin/mod%(version)s', 'bin/modpy.sh'],
+    'dirs': ['doc', 'lib', 'examples'],
+}
+
+sanity_check_commands = [
+    "modpy.sh --help | grep 'Returns success'",
+    "python -c 'import modeller'",
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/*/python3.3', 'modlib'],
+    'LD_LIBRARY_PATH': 'lib/*',
+}
+
+moduleclass = 'bio'

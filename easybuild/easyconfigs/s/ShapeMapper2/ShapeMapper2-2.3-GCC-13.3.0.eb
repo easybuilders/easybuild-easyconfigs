@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'ShapeMapper2'
+version = '2.3'
+
+homepage = 'https://github.com/Weeks-UNC/shapemapper2'
+description = """
+ShapeMapper automates the calculation of RNA chemical probing reactivities
+ from mutational profiling (MaP) experiments, in which chemical adducts on RNA
+ are detected as internal mutations in cDNA through reverse transcription and
+ read out by massively parallel sequencing.
+"""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/Weeks-UNC/shapemapper2/archive']
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+patches = [
+    '%(namelower)s-%(version)s_boost.patch',
+    '%(namelower)s-%(version)s_python.patch',
+]
+checksums = [
+    {'ShapeMapper2-2.3.tar.gz': '1c1fb1e6e03249715eedb822217c8c3b5d18a0d60724ca4d403d88f29f866b6f'},
+    {'shapemapper2-2.3_boost.patch': 'e59ee7c3bef25c3e2608f18472960b094a5952d411ff43fc74b6d9d34e70ae09'},
+    {'shapemapper2-2.3_python.patch': '0829112a84060405e2fa52957422c9a1df10cf3d0dba7cf57edef3079766f2b9'},
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Doxygen', '1.11.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Boost', '1.85.0'),
+]
+
+install_cmd = ':'
+postinstallcmds = [
+    "mkdir %(installdir)s/bin",
+    "cp %(builddir)s/%(namelower)s-%(version)s/shapemapper  %(installdir)s/bin/",
+    "cp -r %(builddir)s/%(namelower)s-%(version)s/internals %(installdir)s/bin/",
+    "cp %(builddir)s/%(namelower)s-%(version)s/README.md %(installdir)s/bin/",
+]
+
+sanity_check_paths = {
+    'files': ['bin/shapemapper'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "shapemapper -v",
+    "shapemapper -help",
+]
+
+moduleclass = 'bio'

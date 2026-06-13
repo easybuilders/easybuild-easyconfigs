@@ -1,0 +1,74 @@
+see https://github.com/radiator-software/p5-net-ssleay/issues/464 + https://github.com/radiator-software/p5-net-ssleay/commit/87e8d288e4ab42e0b9e934850195a3498e4de4be
+
+From 87e8d288e4ab42e0b9e934850195a3498e4de4be Mon Sep 17 00:00:00 2001
+From: Heikki Vatiainen <hvn@radiatorsoftware.com>
+Date: Wed, 6 Dec 2023 23:19:45 +0200
+Subject: [PATCH] GH-449 Use constants X509_VERSION_3 and X509_REQ_VERSION_1
+ when available.
+
+OpenSSL 3.2.0 no longer allows setting certificate version field value to 3
+because the highest current value is 2. The confusion likely arises from the
+definition of version field values in ASN.1 definitions where value 2 means
+version 3, value 1 is version 2, and so forth for certificate request and CRLs.
+
+Test 33_x509_create_cert.t was directly setting certificate version to integer
+3 which no longer worked. Using a valid value allows all tests to pass with
+OpenSSL 3.2.0.
+---
+ t/local/33_x509_create_cert.t | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/t/local/33_x509_create_cert.t b/t/local/33_x509_create_cert.t
+index 14820b06..433035a2 100755
+--- a/t/local/33_x509_create_cert.t
++++ b/t/local/33_x509_create_cert.t
+@@ -58,7 +58,8 @@ is(Net::SSLeay::X509_NAME_cmp($ca_issuer, $ca_subject), 0, "X509_NAME_cmp");
+   #set organizationName via add_entry_by_txt
+   ok(Net::SSLeay::X509_NAME_add_entry_by_txt($name, "organizationName", MBSTRING_UTF8, "Company Name"), "X509_NAME_add_entry_by_txt");
+   
+-  ok(Net::SSLeay::X509_set_version($x509, 3), "X509_set_version");
++  my $x509_version_3 = (defined &Net::SSLeay::X509_VERSION_3) ? Net::SSLeay::X509_VERSION_3() : 2; # Note: X509_VERSION_3 is 2
++  ok(Net::SSLeay::X509_set_version($x509, $x509_version_3), "X509_set_version");
+   ok(my $sn = Net::SSLeay::X509_get_serialNumber($x509), "X509_get_serialNumber");
+   
+   my $pubkey = Net::SSLeay::X509_get_X509_PUBKEY($x509);
+@@ -101,7 +102,7 @@ is(Net::SSLeay::X509_NAME_cmp($ca_issuer, $ca_subject), 0, "X509_NAME_cmp");
+   ok(my $sha256_digest = Net::SSLeay::EVP_get_digestbyname("sha256"), "EVP_get_digestbyname");
+   ok(Net::SSLeay::X509_sign($x509, $ca_pk, $sha256_digest), "X509_sign");
+   
+-  is(Net::SSLeay::X509_get_version($x509), 3, "X509_get_version");  
++  is(Net::SSLeay::X509_get_version($x509), $x509_version_3, "X509_get_version");
+   is(Net::SSLeay::X509_verify($x509, Net::SSLeay::X509_get_pubkey($ca_cert)), 1, "X509_verify");
+   
+   like(my $crt_pem = Net::SSLeay::PEM_get_string_X509($x509), qr/-----BEGIN CERTIFICATE-----/, "PEM_get_string_X509");
+@@ -205,8 +206,9 @@ is(Net::SSLeay::X509_NAME_cmp($ca_issuer, $ca_subject), 0, "X509_NAME_cmp");
+   ok(Net::SSLeay::X509_REQ_add1_attr_by_NID($req, 54, MBSTRING_ASC, 'password xyz'), "X509_REQ_add1_attr_by_NID");
+   #49 = NID_pkcs9_unstructuredName - XXX-TODO add new constant
+   ok(Net::SSLeay::X509_REQ_add1_attr_by_NID($req, 49, MBSTRING_ASC, 'Any Uns.name'), "X509_REQ_add1_attr_by_NID");
+-   
+-  ok(Net::SSLeay::X509_REQ_set_version($req, 2), "X509_REQ_set_version");
++
++  my $x509_req_version_1 = (defined &Net::SSLeay::X509_REQ_VERSION_1) ? Net::SSLeay::X509_REQ_VERSION_1() : 0; # Note: X509_REQ_VERSION_1 is 0
++  ok(Net::SSLeay::X509_REQ_set_version($req, $x509_req_version_1), "X509_REQ_set_version");
+ 
+   ok(my $sha256_digest = Net::SSLeay::EVP_get_digestbyname("sha256"), "EVP_get_digestbyname");
+   ok(Net::SSLeay::X509_REQ_sign($req, $pk, $sha256_digest), "X509_REQ_sign");
+@@ -214,7 +216,7 @@ is(Net::SSLeay::X509_NAME_cmp($ca_issuer, $ca_subject), 0, "X509_NAME_cmp");
+   ok(my $req_pubkey = Net::SSLeay::X509_REQ_get_pubkey($req), "X509_REQ_get_pubkey");
+   is(Net::SSLeay::X509_REQ_verify($req, $req_pubkey), 1, "X509_REQ_verify");
+   
+-  is(Net::SSLeay::X509_REQ_get_version($req), 2, "X509_REQ_get_version");
++  is(Net::SSLeay::X509_REQ_get_version($req), $x509_req_version_1, "X509_REQ_get_version");
+   ok(my $obj_challengePassword = Net::SSLeay::OBJ_txt2obj('1.2.840.113549.1.9.7'), "OBJ_txt2obj");
+   ok(my $nid_challengePassword = Net::SSLeay::OBJ_obj2nid($obj_challengePassword), "OBJ_obj2nid");  
+   is(Net::SSLeay::X509_REQ_get_attr_count($req), 3, "X509_REQ_get_attr_count");
+@@ -236,7 +238,8 @@ is(Net::SSLeay::X509_NAME_cmp($ca_issuer, $ca_subject), 0, "X509_NAME_cmp");
+   
+   ## PHASE2 - turn X509_REQ into X509 cert + sign with CA key
+   ok(my $x509ss = Net::SSLeay::X509_new(), "X509_new");
+-  ok(Net::SSLeay::X509_set_version($x509ss, 2), "X509_set_version");
++  my $x509_version_3 = (defined &Net::SSLeay::X509_VERSION_3) ? Net::SSLeay::X509_VERSION_3() : 2; # Note: X509_VERSION_3 is 2
++  ok(Net::SSLeay::X509_set_version($x509ss, $x509_version_3), "X509_set_version");
+   ok(my $sn = Net::SSLeay::X509_get_serialNumber($x509ss), "X509_get_serialNumber");
+   Net::SSLeay::P_ASN1_INTEGER_set_hex($sn, 'ABCDEF');
+   Net::SSLeay::X509_set_issuer_name($x509ss, Net::SSLeay::X509_get_subject_name($ca_cert));

@@ -1,0 +1,55 @@
+easyblock = 'ConfigureMake'
+
+name = 'UCC-CUDA'
+version = '1.4.4'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://www.openucx.org/'
+description = """UCC (Unified Collective Communication) is a collective
+communication operations API and library that is flexible, complete, and
+feature-rich for current and emerging programming models and runtimes.
+
+This module adds the UCC CUDA support.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openucx/ucc/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'UCC-CUDA-1.3.0_link_against_existing_UCC_libs.patch',
+]
+checksums = [
+    {'v1.4.4.tar.gz': 'e098e427c7b72b5434ae1e0da2258ab3bc271142c136b0bf4cf40ef9948b70d0'},
+    {'UCC-CUDA-1.3.0_link_against_existing_UCC_libs.patch':
+     '758228357ce2a6ae50fb26a0b43e9176feaf379e266365f38205ce679267fc0d'},
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Autotools', '20250527'),
+]
+
+dependencies = [
+    ('UCC', version),
+    ('CUDA',  '12.9.1', '', SYSTEM),
+    ('UCX-CUDA', '1.19.0', '-CUDA-%(cudaver)s'),
+    ('NCCL', '2.27.7', '-CUDA-%(cudaver)s'),
+]
+
+preconfigopts = "./autogen.sh && "
+
+buildopts = '-C src/components/mc/cuda V=1 && make -C src/components/tl/nccl V=1'
+installopts = '-C src/components/mc/cuda && make -C src/components/tl/nccl install'
+
+sanity_check_paths = {
+    'files': ['lib/ucc/libucc_mc_cuda.%s' % SHLIB_EXT, 'lib/ucc/libucc_tl_nccl.%s' % SHLIB_EXT],
+    'dirs': ['lib']
+}
+
+sanity_check_commands = ["ucc_info -c"]
+
+modextrapaths = {'EB_UCC_EXTRA_COMPONENT_PATH': 'lib/ucc'}
+
+moduleclass = 'lib'
