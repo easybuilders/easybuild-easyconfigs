@@ -1,0 +1,55 @@
+name = 'Trilinos'
+version = '16.2.0'
+versionsuffix = '-zoltan'
+
+homepage = 'https://trilinos.org'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = ['https://github.com/trilinos/Trilinos/archive/refs/tags/']
+sources = ['trilinos-release-%s.tar.gz' % '-'.join(version.split('.'))]
+patches = ['Trilinos-16.2.0_fix-zoltan-cwrap-volatile.patch']
+checksums = [
+    {'trilinos-release-16-2-0.tar.gz': '543aa56232d7c0cbe73705fab2d3b5524f11b15fef8917aa14de02d23a5ca418'},
+    {'Trilinos-16.2.0_fix-zoltan-cwrap-volatile.patch':
+     '6d3f7d05662177361010589ca19d5ad0c95eb893ba38b4d5dffdf70e20a7cb5b'},
+]
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('SWIG', '4.3.1'),
+    ('Perl', '5.40.2'),
+]
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('Boost.Python', '1.88.0'),
+    ('Boost', '1.88.0'),
+    ('SCOTCH', '7.0.10'),
+    ('SuiteSparse', '7.11.0', '-METIS-5.1.0'),
+    ('METIS', '5.1.0'),
+    ('HDF5', '1.14.6'),
+    ('netCDF', '4.9.3'),
+    ('MATIO', '1.5.28'),
+    ('GLM', '1.0.1'),
+    ('ParMETIS', '4.0.3'),
+    ('X11', '20250608'),
+]
+
+forward_deps = False
+build_tests = False
+build_shared_libs = True
+
+preconfigopts = 'export CMAKE_INCLUDE_PATH=$EBROOTSUITESPARSE/include/suitesparse:$CMAKE_INCLUDE_PATH &&'
+
+configopts = '-DTrilinos_ENABLE_EXPLICIT_INSTANTIATION=ON '
+configopts += '-DKokkos_ENABLE_AGGRESSIVE_VECTORIZATION=ON '
+configopts += '-DTPL_SCALAPACK_LIBRARIES="-lscalapack" '
+configopts += '-DZoltan_ENABLE_F90INTERFACE=ON -DZoltan_ENABLE_ParMETIS=ON -DZoltan_ENABLE_Scotch=ON '
+configopts += '-DTPL_Cholmod_INCLUDE_DIRS=$EBROOTSUITESPARSE/include/suitesparse/ '
+
+moduleclass = 'numlib'
