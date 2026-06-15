@@ -1,48 +1,25 @@
-Fix NetCDF iterload with libnetcdf >= 4.10.0: clamp frame slices so
-netCDF4-python does not request frames beyond the dataset bounds.
 Upstream issue: https://github.com/mdtraj/mdtraj/issues/2142
-Author: Pavel Tomanek (Inuits/Ugent) with help of ChatGPT5.5
+Upstream fix: https://github.com/mdtraj/mdtraj/pull/2143
+
+diff --git a/mdtraj/formats/netcdf.py b/mdtraj/formats/netcdf.py
+index 56fc31eb4..4b818c4db 100644
 --- a/mdtraj/formats/netcdf.py
 +++ b/mdtraj/formats/netcdf.py
-@@ -305,16 +305,24 @@
+@@ -305,11 +305,16 @@ def read(self, n_frames=None, stride=None, atom_indices=None):
              n_frames *= stride
  
          total_n_frames = self.n_frames
--        frame_slice = slice(
--            self._frame_index,
--            self._frame_index + min(n_frames, total_n_frames),
--            stride,
--        )
-         if self._frame_index >= total_n_frames:
-             # just return something that'll look like len(xyz) == 0
-             # this is basically just an alternative to throwing an indexerror
-             return np.array([]), None, None, None
- 
 +        stop_frame_index = self._frame_index + min(n_frames, total_n_frames)
 +        stop_stride = 1 if stride is None else stride
 +
-+        # Guard against counting past the total number of frames. With
-+        # libnetcdf >= 4.10.0, netCDF4 raises IndexError for such slices.
-+        frame_slice = slice(
-+            self._frame_index,
-+            stop_frame_index
-+            if stop_frame_index <= (total_n_frames + stop_stride)
-+            else total_n_frames,
-+            stride,
-+        )
++        # New guard to prevent us counting past total number of frames.
+         frame_slice = slice(
+             self._frame_index,
+-            self._frame_index + min(n_frames, total_n_frames),
++            stop_frame_index if stop_frame_index <= (total_n_frames + stop_stride) else total_n_frames,
+             stride,
+         )
 +
-         if atom_indices is None:
-             # get all of the atoms
-             atom_slice = slice(None)
-@@ -369,7 +377,10 @@
-         if cell_lengths is not None and cell_angles is None:
-             warnings.warn("cell_angles were found, but no cell_lengths")
- 
--        self._frame_index = self._frame_index + min(n_frames, total_n_frames)
-+        self._frame_index = min(
-+            self._frame_index + min(n_frames, total_n_frames),
-+            total_n_frames,
-+        )
- 
-         # scipy.io.netcdf variables are mem-mapped, and are only backed
-         # by valid memory while the file handle is open. This is _bad_.
+         if self._frame_index >= total_n_frames:
+             # just return something that'll look like len(xyz) == 0
+             # this is basically just an alternative to throwing an indexerror
