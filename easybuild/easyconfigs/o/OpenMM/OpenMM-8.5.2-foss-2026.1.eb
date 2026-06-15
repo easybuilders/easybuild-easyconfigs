@@ -1,0 +1,63 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+# Update: Pavel Tománek (Inuits)
+
+easyblock = 'CMakeMake'
+
+name = 'OpenMM'
+version = '8.5.2'
+
+homepage = 'https://openmm.org'
+description = "OpenMM is a toolkit for molecular simulation."
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/openmm/openmm/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['c059133288e2d747ad12b7e265aad1636190e3b6cf858fb0637fe703b556ccb8']
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('Doxygen', '1.17.0'),
+    ('Cython', '3.2.4'),
+    ('SWIG', '4.4.1'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+]
+
+pretestopts = " CTEST_OUTPUT_ON_FAILURE=1"
+local_ignore_pattern = "(Integrator)|(Thermostat)|(Barostat)|(Rpmd)|(Amoeba)"
+runtest = """test -e ARGS="-E \'%s\'" """ % local_ignore_pattern
+
+preinstallopts = ' export OPENMM_INCLUDE_PATH=%(installdir)s/include && '
+preinstallopts += ' export OPENMM_LIB_PATH=%(installdir)s/lib && '
+
+# required to install the python API
+postinstallcmds = [
+    'make PythonBdistWheel',
+    'pip install python/dist/%(namelower)s-%(version)s-*.whl --prefix=%(installdir)s'
+]
+
+sanity_check_paths = {
+    'files': [f'lib/libOpenMM.{SHLIB_EXT}'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = [
+    "python -s -c 'import openmm'",
+    "python -s -c 'import simtk.openmm'",
+    "python -s -m openmm.testInstallation",
+]
+
+modextrapaths = {
+    'OPENMM_INCLUDE_PATH': 'include',
+    'OPENMM_LIB_PATH': 'lib',
+}
+
+moduleclass = 'bio'

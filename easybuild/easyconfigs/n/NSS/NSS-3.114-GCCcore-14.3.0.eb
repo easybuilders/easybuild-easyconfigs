@@ -25,16 +25,21 @@ checksums = [
 builddependencies = [
     ('binutils', '2.44'),
     ('Perl', '5.40.2'),
+    ('pkgconf', '2.4.3'),
 ]
 dependencies = [
     ('NSPR', '4.37'),
     ('zlib', '1.3.1'),
+    ('SQLite', '3.50.1'),
 ]
 
 # disable use of -Werror to work around compilation errors with newer glibc versions,
 # see also https://sourceware.org/bugzilla/show_bug.cgi?id=27476
 buildopts = 'NSS_ENABLE_WERROR=0 BUILD_OPT=1 USE_64=1 '
-buildopts += 'CPATH="$EBROOTNSPR/include/nspr:$CPATH" OS_REL_CFLAGS="-D_XOPEN_SOURCE "'
+buildopts += 'CPATH="$EBROOTNSPR/include/nspr:$CPATH" OS_REL_CFLAGS="-D_XOPEN_SOURCE " '
+# ensure picking up our EasyBuild dependencies instead of building them from internal versions
+# especially important for SQLite
+buildopts += 'NSS_USE_SYSTEM_SQLITE=1 PKG_CONFIG_ALLOW_SYSTEM_LIBS=1'
 buildopts += ' && cd config && make PREFIX=%(installdir)s BUILD_OPT=1 USE_64=1 && cd -'
 
 # building in parallel fails
