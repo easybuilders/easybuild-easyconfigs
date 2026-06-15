@@ -1,0 +1,57 @@
+From a86b8152e0f37c0c117ba7acd2a940e3ba5f07d9 Mon Sep 17 00:00:00 2001
+From: Daniel Hiltgen <daniel@ollama.com>
+Date: Mon, 17 Nov 2025 15:18:36 -0800
+Subject: [PATCH] env: expose user visible num_thread override
+
+Our default algorithm is based on the number of performance cores detected in
+the system, which works well in most cases, but for some systems and environments
+this default underperforms.  In some cases more threads are better, and in others fewer is better.
+---
+ discover/gpu.go     | 5 +++++
+ envconfig/config.go | 3 +++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/discover/gpu.go b/discover/gpu.go
+index 4a7d552d0f5..4128427ca70 100644
+--- a/discover/gpu.go
++++ b/discover/gpu.go
+@@ -9,6 +9,7 @@ import (
+ 	"strings"
+ 	"time"
+ 
++	"github.com/ollama/ollama/envconfig"
+ 	"github.com/ollama/ollama/logutil"
+ 	"github.com/ollama/ollama/ml"
+ )
+@@ -39,6 +40,10 @@ func GetSystemInfo() ml.SystemInfo {
+ 		// Fall back to Go's num CPU
+ 		threadCount = runtime.NumCPU()
+ 	}
++	if userThreadCount := envconfig.NumThreads(); userThreadCount > 0 {
++		slog.Info("user override thread count", "override", userThreadCount, "default", threadCount)
++		threadCount = int(userThreadCount)
++	}
+ 
+ 	return ml.SystemInfo{
+ 		ThreadCount: threadCount,
+diff --git a/envconfig/config.go b/envconfig/config.go
+index 238e5e6e17c..466230e935e 100644
+--- a/envconfig/config.go
++++ b/envconfig/config.go
+@@ -246,6 +246,8 @@ var (
+ 	MaxRunners = Uint("OLLAMA_MAX_LOADED_MODELS", 0)
+ 	// MaxQueue sets the maximum number of queued requests. MaxQueue can be configured via the OLLAMA_MAX_QUEUE environment variable.
+ 	MaxQueue = Uint("OLLAMA_MAX_QUEUE", 512)
++	// NumThreads overrides the default inference thread count
++	NumThreads = Uint("OLLAMA_NUM_THREADS", 0)
+ )
+ 
+ func Uint64(key string, defaultValue uint64) func() uint64 {
+@@ -287,6 +289,7 @@ func AsMap() map[string]EnvVar {
+ 		"OLLAMA_NOHISTORY":         {"OLLAMA_NOHISTORY", NoHistory(), "Do not preserve readline history"},
+ 		"OLLAMA_NOPRUNE":           {"OLLAMA_NOPRUNE", NoPrune(), "Do not prune model blobs on startup"},
+ 		"OLLAMA_NUM_PARALLEL":      {"OLLAMA_NUM_PARALLEL", NumParallel(), "Maximum number of parallel requests"},
++		"OLLAMA_NUM_THREADS":       {"OLLAMA_NUM_THREADS", NumThreads(), "Override the default inference CPU thread count"},
+ 		"OLLAMA_ORIGINS":           {"OLLAMA_ORIGINS", AllowedOrigins(), "A comma separated list of allowed origins"},
+ 		"OLLAMA_SCHED_SPREAD":      {"OLLAMA_SCHED_SPREAD", SchedSpread(), "Always schedule model across all GPUs"},
+ 		"OLLAMA_MULTIUSER_CACHE":   {"OLLAMA_MULTIUSER_CACHE", MultiUserCache(), "Optimize prompt caching for multi-user scenarios"},
