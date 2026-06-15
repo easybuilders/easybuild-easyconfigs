@@ -1,0 +1,81 @@
+Fix integration of classes from OpenSIM4
+author: Alex Domingo (Vrije Universiteit Brussel)
+diff -Nru src/sconelib.orig/sconeopensim4/ConstantForce.h src/sconelib/sconeopensim4/ConstantForce.h
+--- src/sconelib.orig/sconeopensim4/ConstantForce.h	1970-01-01 01:00:00.000000000 +0100
++++ src/sconelib/sconeopensim4/ConstantForce.h	2025-07-23 02:59:35.849968000 +0200
+@@ -8,6 +8,7 @@
+ 
+ #pragma once
+ 
++#include <OpenSim/Simulation/SimbodyEngine/Body.h>
+ #include <OpenSim/Simulation/Model/Force.h>
+ #include <OpenSim/Common/Property.h>
+ 
+@@ -69,7 +70,7 @@
+ 		void updateFromXMLNode( SimTK::Xml::Element& node, int versionNumber = -1 ) override;
+ 
+ 		// Corresponding Body to which the point actuator is applied.
+-		SimTK::ReferencePtr<Body> body_;
++		SimTK::ReferencePtr<OpenSim::Body> body_;
+ 		SimTK::Vec3 force_;
+ 		SimTK::Vec3 point_;
+ 		SimTK::Vec3 torque_;
+diff -Nru src/sconelib.orig/sconeopensim4/ContactForceOpenSim4.cpp src/sconelib/sconeopensim4/ContactForceOpenSim4.cpp
+--- src/sconelib.orig/sconeopensim4/ContactForceOpenSim4.cpp	1970-01-01 01:00:00.000000000 +0100
++++ src/sconelib/sconeopensim4/ContactForceOpenSim4.cpp	2025-07-23 02:59:36.073609000 +0200
+@@ -10,6 +10,8 @@
+ #include "xo/geometry/quat.h"
+ #include "scone/core/Log.h"
+ 
++#include "OpenSim/Simulation/Model/SmoothSphereHalfSpaceForce.h"
++
+ namespace scone
+ {
+ 	std::vector<std::string> make_string_list( const OpenSim::Property<std::string>& osList ) {
+diff -Nru src/sconelib.orig/sconeopensim4/LigamentOpenSim4.h src/sconelib/sconeopensim4/LigamentOpenSim4.h
+--- src/sconelib.orig/sconeopensim4/LigamentOpenSim4.h	1970-01-01 01:00:00.000000000 +0100
++++ src/sconelib/sconeopensim4/LigamentOpenSim4.h	2025-07-23 02:59:35.890746000 +0200
+@@ -8,14 +8,16 @@
+ 
+ #pragma once
+ 
+-#include "platform.h"
+-#include "scone/model/Ligament.h"
++#include "OpenSim/Simulation/Model/Ligament.h"
+ 
+ namespace OpenSim
+ {
+ 	class Ligament;
+ }
+ 
++#include "platform.h"
++#include "scone/model/Ligament.h"
++
+ namespace scone
+ {
+ 	class ModelOpenSim4;
+diff -Nru src/sconelib.orig/sconeopensim4/ModelOpenSim4.h src/sconelib/sconeopensim4/ModelOpenSim4.h
+--- src/sconelib.orig/sconeopensim4/ModelOpenSim4.h	1970-01-01 01:00:00.000000000 +0100
++++ src/sconelib/sconeopensim4/ModelOpenSim4.h	2025-07-23 02:59:35.901614000 +0200
+@@ -16,6 +16,8 @@
+ 
+ #include <memory>
+ 
++#include "OpenSim/Simulation/Model/Model.h"
++
+ namespace OpenSim
+ {
+ 	class Object;
+diff -Nru src/sconelib.orig/sconeopensim4/simbody_tools.h src/sconelib/sconeopensim4/simbody_tools.h
+--- src/sconelib.orig/sconeopensim4/simbody_tools.h	1970-01-01 01:00:00.000000000 +0100
++++ src/sconelib/sconeopensim4/simbody_tools.h	2025-07-23 02:59:36.068561000 +0200
+@@ -13,6 +13,9 @@
+ #include "scone/core/Angle.h"
+ #include "xo/geometry/quat.h"
+ 
++#include "simbody/SimTKcommon/SmallMatrix.h"
++#include "simbody/SimTKcommon/internal/Quaternion.h"
++
+ namespace scone
+ {
+ 	inline Vec3 from_osim( const SimTK::Vec3& vec ) { return Vec3( vec[0], vec[1], vec[2] ); }
