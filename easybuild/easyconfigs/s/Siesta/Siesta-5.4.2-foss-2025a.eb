@@ -11,25 +11,26 @@ structure calculations and ab initio molecular dynamics simulations of molecules
 toolchain = {'name': 'foss', 'version': '2025a'}
 toolchainopts = {'usempi': True, 'openmp': True, 'opt': True}
 
-source_urls = [
-    'https://gitlab.com/siesta-project/siesta/-/releases/%(version)s/downloads/',
-    'https://github.com/wannier-developers/wannier90/archive/refs/tags/',
-]
-
-local_tar_transform = "--transform='s|^elsi_interface-[^/]*/|elsi_interface/|'"
 sources = [
-    'siesta-%(version)s.tar.gz',
-    {'download_filename': 'v3.1.0.tar.gz', 'filename': 'wannier90-3.1.0.tar.gz', 'extract_cmd': "cp %s %(builddir)s"},
-    {'git_config': {'url': 'https://gitlab.com/siesta-project/ecosystem/',
-                    'repo_name': 'elsi_interface',
-                    'commit': '512532a42c5e'},
-     'filename': 'elsi_interface_512532a42c5e.tar.xz',
-     'extract_cmd': "tar -xJf %s -C %(builddir)s/siesta-%(version)s/External/ELSI-project %(local_tar_transform)s"},
+    {
+        'filename': SOURCE_TAR_XZ,
+        'git_config': {
+            'url': 'https://gitlab.com/siesta-project/',
+            'repo_name': 'siesta',
+            'commit': version,
+            'recursive': True,
+        },
+    },
+    {
+        'download_filename': 'v3.1.0.tar.gz',
+        'filename': 'wannier90-3.1.0.tar.gz',
+        'source_urls': ['https://github.com/wannier-developers/wannier90/archive/refs/tags/'],
+        'extract_cmd': 'cp %s %(builddir)s',
+    },
 ]
 checksums = [
-    {'siesta-5.4.2.tar.gz': '9cd855bd2702b69785588931aa06e4c1b1036f11b5ef7b01ecc29a7218a38d3f'},
+    {'Siesta-5.4.2.tar.xz': '8699f5e1d86d6c8a940534b10ff7a7e767312508031b536156e3b8f581a4da92'},
     {'wannier90-3.1.0.tar.gz': '40651a9832eb93dec20a8360dd535262c261c34e13c41b6755fa6915c936b254'},
-    {'elsi_interface_512532a42c5e.tar.xz': '28ed82d467c6c6f52ce7cd7940861d64f75dc9c47cecb88d9386b66aa71598b0'},
 ]
 
 builddependencies = [
@@ -54,6 +55,24 @@ dependencies = [
     ('netCDF-Fortran', '4.6.2'),
 ]
 
+# create version file which is missing tarball
+# enable Wannier90 (Siesta patches and builds it itself)
+preconfigopts = 'echo "%(version)s" > %(builddir)s/siesta/SIESTA.release && '
+preconfigopts += 'export WANNIER90_PACKAGE=%(builddir)s/wannier90-3.1.0.tar.gz && '
+
+# enable OpenMP
+configopts = "-DSIESTA_WITH_OPENMP=ON "
+
+# enable Flook
+configopts += "-DSIESTA_WITH_FLOOK=ON -DFLOOK_ROOT=$EBROOTFLOOK -DFLOOK_INCLUDE_DIRS=$EBROOTFLOOK/include "
+
+# enable ELSI, PEXSI and Wannier90
+configopts += "-DSIESTA_WITH_ELSI=ON -DSIESTA_WITH_ELSI_PEXSI=ON "
+configopts += "-DSIESTA_WITH_WANNIER90=ON "
+
+# make sure tests can be run with 4 processes
+configopts += "-DMPIEXEC_MAX_NUMPROCS=4 "
+
 # skip 8 (out of ~300) tests that are failing with small numerical differences
 # TODO: relax tolerance of these individual tests instead of skipping them
 local_failing_tests = [
@@ -67,22 +86,6 @@ local_failing_tests = [
     'SCFMixing-chargemix_mpi4_omp1',
     'SCFMixing-pulay_mpi4_omp1',
 ]
-
-# enable OpenMP
-configopts = "-DSIESTA_WITH_OPENMP=ON "
-
-# enable Flook
-configopts += "-DSIESTA_WITH_FLOOK=ON -DFLOOK_ROOT=$EBROOTFLOOK -DFLOOK_INCLUDE_DIRS=$EBROOTFLOOK/include "
-
-# enable ELSI and PEXSI
-configopts += "-DSIESTA_WITH_ELSI=ON -DSIESTA_WITH_ELSI_PEXSI=ON "
-
-# enable Wannier90 (Siesta patches and builds it itself)
-preconfigopts = "export WANNIER90_PACKAGE=%(builddir)s/wannier90-3.1.0.tar.gz && "
-configopts += "-DSIESTA_WITH_WANNIER90=ON "
-
-# make sure tests can be run with 4 processes
-configopts += "-DMPIEXEC_MAX_NUMPROCS=4 "
 
 # tests
 pretestopts = 'OMP_NUM_THREADS=4'
