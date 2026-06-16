@@ -1,0 +1,63 @@
+easyblock = 'CMakeMake'
+
+name = 'ESPResSo'
+version = '4.2.2'
+
+homepage = 'https://espressomd.org/wordpress'
+description = """A software package for performing and analyzing scientific Molecular Dynamics simulations."""
+
+source_urls = ['https://github.com/espressomd/espresso/releases/download/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['ESPResSo-4.2.2_fix_unit_test_packaging_specifiers.patch',
+           'ESPResSo-4.2.2_fix_numpy.patch']
+checksums = ['2bc02f91632b0030f1203759768bd718bd8a0005f72696980b12331b4bfa0d76',
+             {'ESPResSo-4.2.2_fix_unit_test_packaging_specifiers.patch':
+              '6fdb9a61812b7a1178804c82254e837bc69552cfc3d40011de3686ea1a6ff527'},
+             {'ESPResSo-4.2.2_fix_numpy.patch':
+              '1365be456d7d0c7c7243faee4a365a4d448e68ed1c044362a0b7be4d8c4b7dd7'},
+             ]
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Cython', '3.1.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('Boost.MPI', '1.88.0'),
+    ('HDF5', '1.14.6'),
+    ('Mesa', '25.1.3'),
+    ('GSL', '2.8'),
+    ('IPython', '9.3.0'),
+    ('Pint', '0.24.4'),
+]
+
+configopts = ' -DCMAKE_SKIP_RPATH=OFF -DWITH_TESTS=ON -DWITH_CUDA=OFF'
+# make sure the right Python is used (note: -DPython3_EXECUTABLE or -DPython_EXECUTABLE does not work!)
+configopts += ' -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python '
+
+runtest = 'check_unit_tests && make check_python'
+
+_binaries = ['ipypresso',  'pypresso']
+_libs = [
+    'Espresso_config', 'Espresso_core', 'Espresso_script_interface', 'Espresso_shapes',
+    '_init', 'analyze', 'code_info', 'electrokinetics', 'galilei',
+    'integrate', 'interactions', 'lb', 'particle_data', 'polymer', 'profiler',
+    'script_interface', 'system', 'thermostat', 'utils', 'version',
+]
+
+_lib_path = 'lib/python%(pyshortver)s/site-packages/espressomd'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _binaries] +
+             [_lib_path + '/%s.' % x + SHLIB_EXT for x in _libs],
+    'dirs': ['bin', 'lib']
+}
+
+sanity_check_commands = ['pypresso -h', 'ipypresso -h']
+
+moduleclass = 'chem'

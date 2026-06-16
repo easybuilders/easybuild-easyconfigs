@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenSim'
+version = '4.5.2'
+
+homepage = 'https://opensim.stanford.edu'
+description = """OpenSim is an open source software system for biomechanical modeling,
+simulation and analysis."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = ['https://github.com/opensim-org/opensim-core/archive/refs/tags']
+sources = ['%(version)s.tar.gz']
+patches = ['OpenSim-%(version)s_fix-docopt-includes-link.patch']
+checksums = [
+    {'4.5.2.tar.gz': '53c7c477aeef334109d7ea991251c1f680777d42e59d878fef808ad6d28a98f2'},
+    {'OpenSim-4.5.2_fix-docopt-includes-link.patch':
+     '089ee46e786e71b78f4a2c99190364831f986f24da5e7f2d6c8ee7c6ef5bf1db'},
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('pkgconf', '2.2.0'),
+    ('Doxygen', '1.11.0'),
+    ('git', '2.45.1'),
+    ('spdlog', '1.4.1'),  # OpenSim needs this very old version
+    ('Catch2', '3.8.0'),
+]
+
+dependencies = [
+    ('CasADi', '3.7.0'),
+    ('Simbody', '3.8'),
+    ('docopt.cpp', '0.6.3-400e6dd'),
+]
+
+# avoid duplicating installation files from dependencies
+configopts = "-DOPENSIM_COPY_DEPENDENCIES=off"
+
+sanity_check_paths = {
+    'files': ['bin/opensense', 'bin/opensim-cmd', f'lib/libosimCommon.{SHLIB_EXT}', f'lib/libosimMoco.{SHLIB_EXT}'],
+    'dirs': ['include/OpenSim', 'lib/cmake'],
+}
+
+sanity_check_commands = [
+    'opensim-cmd --help',
+]
+
+moduleclass = 'vis'
