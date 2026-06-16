@@ -1,0 +1,50 @@
+easyblock = 'Binary'
+
+name = 'JMAG-Designer'
+version = '25.0.01zzp'
+
+homepage = 'https://www.jmag-international.com/products/jmag-designer/'
+description = "JMAG is simulation software for electric device design and development."
+
+toolchain = SYSTEM
+
+sources = ['jd25001zzp.tar.gz']
+checksums = ['1e4a83cc9fcbcdc196e5447c01d8eb43a1bbb816bca11100c92460718c295f71']
+download_instructions = 'Manually obtain tarball from JMAG'
+
+extract_sources = True
+
+local_variables = '\\\n'.join([
+    'WORK_DIR="%(installdir)s"',
+    'INS_DIR=$WORK_DIR/$DESIGNER',
+    'JAC_STR="install"',
+    'SAMPLE_STR="install"',
+    'SLS_STR="install"',
+    'INTEROP_STR="intall"',
+])
+
+install_cmds = [
+    f'sed -i "s/^\t*read/#\ read/" JMAGINST', # remove all qa
+    f'sed -i \'/echo " Start."/a\{local_variables}\' JMAGINST', # inject variables
+    f'sed -i \'/SOURCE_DIR*/a\SOURCE_DIR=`dirname $(realpath $0)`\' JMAGINST',
+    f'./JMAGINST'
+]
+
+sanity_check_paths = {
+    'files': ['JMAG-Designer%(version_major_minor)s/designer'],
+    'dirs': ['JMAG-Designer%(version_major_minor)s/solver/bin']
+}
+
+modextrapaths = {
+    'PATH': ['JMAG-Designer%(version_major_minor)s', 'JMAG-Designer%(version_major_minor)s/solver/bin'],
+    'LD_LIBRARY_PATH': [
+        'JMAG-Designer%(version_major_minor)s',
+        'JMAG-Designer%(version_major_minor)s/solver/mod/lib/linux64/'
+    ],
+}
+
+# NOTE: JSOL_LICENSE_PATH=<port>@<host> is required to launch application
+
+sanity_check_commands = ['designer --date']
+
+moduleclass = 'cae'
