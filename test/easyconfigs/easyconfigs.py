@@ -308,9 +308,7 @@ class EasyConfigTest(TestCase):
             self._get_changed_patches()
         return EasyConfigTest._changed_patches
 
-    # dep_graph takes an excessive long time,
-    # due to changes in https://github.com/easybuilders/easybuild-framework/pull/5128
-    def _DISABLED_TOO_SLOW_test_dep_graph(self):
+    def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
 
         if not single_tests_ok:
@@ -353,10 +351,12 @@ class EasyConfigTest(TestCase):
             # make sure that no odd versions (like 1.13) of HDF5 are used as a dependency,
             # since those are released candidates - only even versions (like 1.12) are stable releases;
             # see https://docs.hdfgroup.org/archive/support/HDF5/doc/TechNotes/Version.html
+            # With release 2.0.0 they switched to semver, with no indication that there are release candidates
+            # based on minor versions, so only do this check for major version 1
             for dep in ec['ec'].dependencies():
                 if dep['name'] == 'HDF5':
                     ver = dep['version']
-                    if int(ver.split('.')[1]) % 2 == 1:
+                    if int(ver.split('.')[0]) == 1 and int(ver.split('.')[1]) % 2 == 1:
                         fail = "Odd minor versions of HDF5 should not be used as a dependency: "
                         fail += "found HDF5 v%s as dependency in %s" % (ver, os.path.basename(ec['spec']))
                         fails.append(fail)
@@ -610,7 +610,7 @@ class EasyConfigTest(TestCase):
                 (r'5\.', [r'Elk-']),
             ],
             # OpenQP requires mpi4py>=4.0.0
-            'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0'])],
+            'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0', r'SimNIBS-4\.6\.0'])],
             # FDMNES requires sequential variant of MUMPS
             # SimNIBS requires sequential variant of MUMPS
             'MUMPS': [
@@ -1002,7 +1002,9 @@ class EasyConfigTest(TestCase):
             '14.2': '2025a',
             '14.3': '2025b',
             '15.1': None,
-            '15.2': None,  # maybe 2026a?
+            '15.2': '2026.1',
+            '15.3': None,
+            '16.1': None,
         }
 
         # map intel-compilers to toolchain generations
