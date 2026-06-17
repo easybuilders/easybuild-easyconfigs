@@ -1,0 +1,62 @@
+easyblock = 'PythonBundle'
+
+name = 'CLEAN'
+version = '1.0.1-20250406'
+local_commit = 'f2bf2a4f497fa2cc87dac2a1bb314fee587c0a15'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/tttianhao/CLEAN'
+description = """
+CLEAN, Contrastive Learning enabled Enzyme ANnotation, is a machine learning algorithm to assign
+Enzyme Commission (EC) number with better accuracy, reliability, and sensitivity than all existing
+computational tools.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+github_account = 'tttianhao'
+
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('PyTorch', '2.9.1', f'{versionsuffix}-whl'),
+    ('tqdm', '4.67.1'),
+    ('scikit-learn', '1.7.0'),
+    ('SciPy-bundle', '2025.06'),
+    ('matplotlib', '3.10.3'),
+]
+
+_scripts = [
+    'CLEAN_infer_fasta.py', 'CLEAN_inference.py', 'gmm.py',
+    'inference.py', 'train-supconH.py', 'train-triplet.py',
+]
+
+exts_list = [
+    ('fair-esm', '2.0.0', {
+        'modulename': 'esm',
+        'checksums': ['4ed34d4598ec75ed6550a4e581d023bf8d4a8375317ecba6269bb68135f80c85'],
+    }),
+    (name, version, {
+        'install_src': 'app/.',
+        'modulename': 'CLEAN',
+        'preinstallopts': """mv app/build.py app/setup.py && sed -i "/version/a scripts=['CLEAN_infer_fasta.py','CLEAN_inference.py','gmm.py','inference.py','train-supconH.py','train-triplet.py']," app/setup.py && sed -i "s/src.//" app/gmm.py && sed -i "s/src.//" app/inference.py && """,
+        'source_urls': ['https://github.com/%(github_account)s/%(namelower)s/archive'],
+        'sources': [{'download_filename': 'f2bf2a4f497fa2cc87dac2a1bb314fee587c0a15.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['75c6ba715ba2e86296cce25b8e294836f8ceeb8c2bdc67350f0b647eb2e06f25'],
+    }),
+]
+
+modloadmsg = """
+Scripts are present at $EBROOTCLEAN/bin.
+Usage of this software requires setting up a directory named 'data' in your working dir
+and setting it up according to
+https://github.com/tttianhao/CLEAN/tree/f2bf2a4f497fa2cc87dac2a1bb314fee587c0a15?tab=readme-ov-file#1-install
+No extra conda or pip packages need to be installed.
+"""
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in _scripts],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
