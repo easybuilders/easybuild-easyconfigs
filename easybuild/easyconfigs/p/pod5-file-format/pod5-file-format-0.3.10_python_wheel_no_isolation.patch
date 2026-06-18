@@ -1,0 +1,27 @@
+Patch pod5 wheel build to use system site packages instead of an isolated build environment.
+Author: Steven Vandenbrande (steven.vandenbrande@kuleuven.be)
+diff --git a/c++/pod5_format_pybind/build_wheel.cmake b/c++/pod5_format_pybind/build_wheel.cmake
+--- a/c++/pod5_format_pybind/build_wheel.cmake
++++ b/c++/pod5_format_pybind/build_wheel.cmake
+@@ -10,10 +10,10 @@
+
+ file(COPY "${PYBIND_INPUT_LIB}" DESTINATION "${PYTHON_PROJECT_DIR}/src/lib_pod5")
+
+-message("  using: ${PYTHON_EXECUTABLE} -m build --outdir ${WHEEL_OUTPUT_DIR}")
++message("  using: ${PYTHON_EXECUTABLE} -m build --no-isolation --outdir ${WHEEL_OUTPUT_DIR}")
+
+ execute_process(
+-    COMMAND ${PYTHON_EXECUTABLE} -m build --outdir ${WHEEL_OUTPUT_DIR}
++    COMMAND ${PYTHON_EXECUTABLE} -m build --no-isolation --outdir ${WHEEL_OUTPUT_DIR}
+     WORKING_DIRECTORY "${PYTHON_PROJECT_DIR}/"
+     RESULT_VARIABLE exit_code
+     OUTPUT_VARIABLE output
+--- a/python/lib_pod5/pyproject.toml	2026-03-24 08:32:14.511418000 +0100
++++ b/python/lib_pod5/pyproject.toml	2026-03-24 08:32:41.485544000 +0100
+@@ -1,5 +1,5 @@
+ [build-system]
+-requires = ["setuptools >= 61.0", "wheel", "pybind11~=2.10.0"]
++requires = ["setuptools >= 61.0", "wheel", "pybind11~=2.11.1"]
+ build-backend = "setuptools.build_meta"
+ 
+ 
