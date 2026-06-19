@@ -1,54 +1,43 @@
 name: Tagbot
-on: [pull_request_target]
+on: [pull_request]
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.event.pull_request.number }}"
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  tagbot:
-    # Note: can't rely on github.event.pull_request.merge_commit_sha because pull_request_target
-    # does not wait for github mergability check, and the value is outdated.
-    # Instead we merge manually in a temporary subdir "pr"
+  analyze:
+    # Analyze PR with tagbot.py that outputs a json file with results of tags and PR diff.
     runs-on: ubuntu-24.04
-    permissions:
-      pull-requests: write
     steps:
-    - name: Checkout base branch for workflow scripts
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
+      - name: Checkout merged PR state
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
 
-    - name: Checkout PR for computing diff into "pr" subdirectory
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
-      with:
-        ref: "${{ github.event.pull_request.head.sha }}"
-        path: 'pr'
-        fetch-depth: 0
-        
-    - name: Attempt test merge
-      id: merge
-      run: |
-        git config user.name "github-workflow"
-        git config user.email "github-workflow@github.com"
-        git merge --no-edit --no-ff origin/${{ github.event.pull_request.base.ref }}
-      continue-on-error: true
-      working-directory: pr
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: "3.12"
 
-    - name: Abort if merge failed
-      if: steps.merge.outcome == 'failure'
-      run: |
-        echo "Merge conflict detected, failing job."
-        exit 1
+      - name: Install dependencies
+        run: |
+          pip install gitpython requests
 
-    - name: set up Python
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-      with:
-        python-version: 3.12
+      - name: Run analysis
+        run: |
+          python .github/workflows/tagbot.py --output tagbot-result.json
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
-    - name: Get packages
-      run: pip install gitpython requests
-
-    - name: Tag and comment
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: python .github/workflows/tagbot.py
-
+      - name: Upload analysis artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tagbot-result
+          path: tagbot-result.json
+          retention-days: 1
