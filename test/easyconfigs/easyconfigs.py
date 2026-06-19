@@ -29,12 +29,13 @@ Unit tests for easyconfig files.
 """
 import glob
 import os
+import random
 import re
 import shutil
 import stat
 import tempfile
 from collections import defaultdict
-from unittest import TestCase, TestLoader, main, skip
+from unittest import TestCase, TestLoader, main, mock, skip
 from urllib.request import Request, urlopen
 
 import easybuild.main as eb_main
@@ -58,9 +59,10 @@ from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_fil
 from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
+from easybuild.tools.options import set_tmpdir
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_shell_cmd
-from easybuild.tools.options import set_tmpdir
+from easybuild.tools.systemtools import pick_dep_version
 from easybuild.tools.utilities import nub
 
 
@@ -306,9 +308,7 @@ class EasyConfigTest(TestCase):
             self._get_changed_patches()
         return EasyConfigTest._changed_patches
 
-    # dep_graph takes an excessive long time,
-    # due to changes in https://github.com/easybuilders/easybuild-framework/pull/5128
-    def _DISABLED_TOO_SLOW_test_dep_graph(self):
+    def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
 
         if not single_tests_ok:
@@ -351,10 +351,12 @@ class EasyConfigTest(TestCase):
             # make sure that no odd versions (like 1.13) of HDF5 are used as a dependency,
             # since those are released candidates - only even versions (like 1.12) are stable releases;
             # see https://docs.hdfgroup.org/archive/support/HDF5/doc/TechNotes/Version.html
+            # With release 2.0.0 they switched to semver, with no indication that there are release candidates
+            # based on minor versions, so only do this check for major version 1
             for dep in ec['ec'].dependencies():
                 if dep['name'] == 'HDF5':
                     ver = dep['version']
-                    if int(ver.split('.')[1]) % 2 == 1:
+                    if int(ver.split('.')[0]) == 1 and int(ver.split('.')[1]) % 2 == 1:
                         fail = "Odd minor versions of HDF5 should not be used as a dependency: "
                         fail += "found HDF5 v%s as dependency in %s" % (ver, os.path.basename(ec['spec']))
                         fails.append(fail)
@@ -608,9 +610,13 @@ class EasyConfigTest(TestCase):
                 (r'5\.', [r'Elk-']),
             ],
             # OpenQP requires mpi4py>=4.0.0
-            'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0'])],
+            'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0', r'SimNIBS-4\.6\.0'])],
             # FDMNES requires sequential variant of MUMPS
-            'MUMPS': [(r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES'])],
+            # SimNIBS requires sequential variant of MUMPS
+            'MUMPS': [
+                (r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES']),
+                (r'5\.7\.3; versionsuffix: -metis-seq', [r'SimNIBS']),
+            ],
             # RELION 5.0.0 requires fixes only in napari 0.4.19 and newer
             'napari': [(r'0\.4\.19\.post1;', [r'RELION-5\.0\.0'])],
             # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0, Finder requires SRA-Toolkit 3.0.0
@@ -996,7 +1002,9 @@ class EasyConfigTest(TestCase):
             '14.2': '2025a',
             '14.3': '2025b',
             '15.1': None,
-            '15.2': None,  # maybe 2026a?
+            '15.2': '2026.1',
+            '15.3': None,
+            '16.1': None,
         }
 
         # map intel-compilers to toolchain generations
@@ -1241,8 +1249,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.2.1'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.2.1.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.3.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.3.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1477,7 +1485,7 @@ class EasyConfigTest(TestCase):
         # + jupyterlmod + jupyter-resource-usage
         # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
         bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'ESL-Bundle', 'FEniCS', 'GCC', 'Jupyter-bundle',
-                             'Python-bundle', 'ROCm', 'llvm-compilers']
+                             'Python-bundle', 'ROCm', 'llvm-compilers', 'rocm-compilers']
 
         failing_checks = []
 
@@ -2010,11 +2018,29 @@ def template_easyconfig_test(self, spec):
     single_tests_ok = prev_single_tests_ok
 
 
+def _mocked_pick_dep_version(version):
+    """Ensure we do not remove dependencies on the current architecture, to e.g. check that easyconfigs are available"""
+    result = _mocked_pick_dep_version.orig(version)  # Call always to make sure version is valid
+    # If there are multiple version, pick a random one instead
+    if isinstance(version, dict):
+        # Exclude `False` values which would remove the dependency
+        values = [value for value in version.values() if value is not False]
+        if values:
+            result = random.choice(values) if len(values) > 1 else values[0]
+    return result
+
+
+_mocked_pick_dep_version.orig = pick_dep_version
+
+
 def suite(loader=None):
     """Return all easyblock initialisation tests."""
     def make_inner_test(spec_path):
         def innertest(self):
-            template_easyconfig_test(self, spec_path)
+            # Need to patch the easyconfig module too as the method was already imported
+            with mock.patch('easybuild.tools.systemtools.pick_dep_version', _mocked_pick_dep_version), \
+              mock.patch('easybuild.framework.easyconfig.easyconfig.pick_dep_version', _mocked_pick_dep_version):
+                template_easyconfig_test(self, spec_path)
         return innertest
 
     # dynamically generate a separate test for each of the available easyconfigs
