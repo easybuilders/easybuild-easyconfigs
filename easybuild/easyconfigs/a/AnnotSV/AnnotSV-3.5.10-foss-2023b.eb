@@ -1,5 +1,5 @@
 # Author: Emik Lin (HKUMed CPOS)
-easyblock = 'MakeCp'
+easyblock = 'ConfigureMake'
 
 name = 'AnnotSV'
 version = '3.5.10'
@@ -23,7 +23,13 @@ dependencies = [
     ('pyfaidx','0.8.1.1'),
 ]
 
-files_to_copy = ['bin', 'etc', 'share', 'changeLog.txt', 'commandLineOptions.txt', 'License.txt']
+skipsteps = ['configure', 'build']
+preinstallopts = "sed -i 's|^PREFIX\s*?=.*$|PREFIX ?= %(installdir)s|' Makefile && "
+postinstallcmds = [
+    "cp -a %(start_dir)s/bin/INSTALL_annotations.sh %(installdir)s/bin/INSTALL_annotations.sh",
+    "cp -a %(start_dir)s/Makefile %(installdir)s/Makefile",
+    "chmod a+x %(installdir)s/bin/INSTALL_annotations.sh",
+]
 
 modextravars = {
     'ANNOTSV': '%(installdir)s',
@@ -33,9 +39,10 @@ modextravars = {
 # Users can download them with:
 #   INSTALL_annotations.sh 3.5 2406
 # and then pass the directory via AnnotSV -annotationsDir.
+
 sanity_check_paths = {
-    'files': ['bin/%(name)s'],
-    'dirs': [],
+    'files': ['bin/%(name)s', 'bin/INSTALL_annotations.sh'],
+    'dirs': ['share'],
 }
 
 sanity_check_commands = [
