@@ -34,26 +34,46 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GH_REPO: ${{ github.repository }}
         PR: ${{ github.event.workflow_run.pull_requests[0].number }}
-      run: |
+      run: | \
         # labels
         gh pr edit "$PR" --add-label    "$(jq -r '.labels     | join(",")' analysis.json)"
         gh pr edit "$PR" --remove-label "$(jq -r '.not_labels | join(",")' analysis.json)"
 
         # comment
         MARKER="<!-- tagbot -->"
-        # TODO:
+        COMMENT=$(jq -r '.comment // empty' analysis.json)
+
         COMMENT_ID=$(
-          gh pr view "$PR" --json comments | jq -r '.comments[] | select(.body | contains("MARKER")) | .id'
+          gh pr view "$PR" --json comments \
+            | jq -r '.comments[] | select(.body | startswith(env.MARKER)) | .id' \
+            | head -n1
         )
-        echo "Found $COMMENT_ID altering it"
+        echo "COMMENT_ID = $COMMENT_ID"
 
-        #jq -r '.comments[]? // empty' analysis.json | while read -r BODY; do
-        #  gh pr comment "$PR" --body "$BODY"
-        #  if [ -n "$COMMENT_ID" ]; then
-        #    gh api -X PATCH repos/:owner/:repo/issues/comments/$COMMENT_ID -f body="$BODY"
-        #  else
-        #    gh api -X POST repos/:owner/:repo/issues/$PR/comments -f body="$BODY"
-        #  fi
-        #done
+        if [ -z "$COMMENT" ]; then
+          if [ -n "$COMMENT_ID" ]; then
+            echo "Delete comment"
+            gh api -X DELETE "repos/$GH_REPO/issues/comments/$COMMENT_ID"
+          fi
+          exit 0
+        fi
+        
+        BODY="${MARKER}"$'\n'"${COMMENT}"
 
+        # GitHub comment body hard limit ~= 65536 chars
+        if [ "${#BODY}" -gt 65000 ]; then
+          echo "Comment too long (${#BODY} chars)"
+          BODY="${MARKER}"$'\n'"Comment too long (${#BODY} chars)"
+        fi
 
+        if [ -n "$COMMENT_ID" ]; then
+          echo "Update existing comment"
+          jq -n --arg body "$BODY" '{body:$body}' \
+            | gh api \
+              --method PATCH \
+              --input - \
+              "repos/$GH_REPO/issues/comments/$COMMENT_ID"
+        else
+          echo "Create new comment"
+          gh pr comment "$PR" --body "$BODY"
+        fi
