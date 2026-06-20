@@ -4,7 +4,6 @@
 
 import json
 import os
-from pathlib import Path
 
 import requests
 import argparse
@@ -13,10 +12,16 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--input', required=True)
 args = parser.parse_args()
 
-
+GITHUB_API_URL = 'https://api.github.com'
 event_path = os.getenv('GITHUB_EVENT_PATH')
+token = os.getenv('GH_TOKEN')
 repo = os.getenv('GITHUB_REPOSITORY')
 base_branch_name = os.getenv('GITHUB_BASE_REF')
+
+with open(event_path) as f:
+    data = json.load(f)
+
+pr_number = data['pull_request']['number']
 
 with open(args.input, 'w') as f:
     analysis = json.load(f)

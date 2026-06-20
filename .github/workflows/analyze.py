@@ -43,19 +43,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--output', required=True)
 args = parser.parse_args()
 
-
-event_path = os.getenv('GITHUB_EVENT_PATH')
 repo = os.getenv('GITHUB_REPOSITORY')
 base_branch_name = os.getenv('GITHUB_BASE_REF')
 
-with open(event_path) as f:
-    data = json.load(f)
-
-pr_number = data['pull_request']['number']
-# Can't rely on merge_commit_sha for pull_request_target as it might be outdated
-# merge_commit_sha = data['pull_request']['merge_commit_sha']
-
-print('PR number:', pr_number)
 print('Base branch name:', base_branch_name)
 
 # Change into checkout directory
@@ -202,12 +192,13 @@ label_checks = [(changed_ecs, 'change'),
                 (modified_workflow, 'workflow'),
                 (manual_download, 'manual_download')]
 
-result['labels'] = [label for condition, label in label_checks if condition]
-result['not_labels'] = [label for condition, label in label_checks if not condition]
+result {
+    'labels': [label for condition, label in label_checks if condition],
+    'not_labels': [label for condition, label in label_checks if not condition],
+}
 
 if updated_software:
-    results['comment'] = comment
+    result['comment'] = comment
 
 with open(args.output, 'w') as f:
     json.dump(result, f)
-
