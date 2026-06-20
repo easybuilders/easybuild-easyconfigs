@@ -199,7 +199,7 @@ result = {
 }
 
 if updated_software:
-    result['comment'] = comment
+    result['diff'] = comment
 
 with open(args.output, 'w') as f:
     json.dump(result, f)
