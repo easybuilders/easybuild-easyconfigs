@@ -192,7 +192,7 @@ label_checks = [(changed_ecs, 'change'),
                 (modified_workflow, 'workflow'),
                 (manual_download, 'manual_download')]
 
-result {
+result = {
     'labels': [label for condition, label in label_checks if condition],
     'not_labels': [label for condition, label in label_checks if not condition],
 }
