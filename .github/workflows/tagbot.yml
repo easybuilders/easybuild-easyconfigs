@@ -1,0 +1,49 @@
+# Never check out the PR code here. This workflow has write permissions.
+# Always review any changes to this PR or the accompanying tagbot.py script critically
+
+name: Tagbot
+on:
+  workflow_run:
+    workflows: ['analyze']
+    types: [completed]
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+jobs:
+  tagbot:
+    if: >
+      github.event.workflow_run.conclusion == 'success'
+
+    runs-on: ubuntu-24.04
+
+    permissions:
+      pull-requests: write
+
+    steps:
+    - name: Checkout base branch for workflow scripts
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      with: 
+        ref: develop
+        fetch-depth: 0
+
+    - name: Download analysis artifact
+      uses: actions/download-artifact@v4
+      with:
+          name: analysis
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          
+    - name: set up Python
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+      with:
+        python-version: 3.12
+
+    - name: Get packages
+      run: pip install requests
+
+    - name: Tag and comment
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: python .github/workflows/tagbot.py --input analysis.json
