@@ -48,8 +48,6 @@ base_branch_name = os.getenv('GITHUB_BASE_REF')
 
 print('Base branch name:', base_branch_name)
 
-# Change into checkout directory
-os.chdir('easybuild-easyconfigs')
 gitrepo = git.Repo('.')
 
 target_commit = gitrepo.commit('origin/' + base_branch_name)
