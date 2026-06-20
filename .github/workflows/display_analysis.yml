@@ -41,12 +41,12 @@ jobs:
         gh pr edit "$PR" --remove-label "$(jq -r '.not_labels | join(",")' analysis.json)" || true
 
         # diff comment
-        MARKER="<!-- diff -->"
+        export MARKER="<!-- diff -->"
         COMMENT=$(jq -r '.diff // empty' analysis.json)
 
         COMMENT_ID=$(
           gh pr view "$PR" --json comments \
-            | jq -r ".comments[] | select(.body | startswith($MARKER)) | .id" \
+            | jq -r ".comments[] | select(.body | startswith(env.MARKER)) | .id" \
             | head -n1
         )
         echo "COMMENT_ID = $COMMENT_ID"
