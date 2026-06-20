@@ -190,6 +190,9 @@ label_checks = [(changed_ecs, 'change'),
                 (modified_workflow, 'workflow'),
                 (manual_download, 'manual_download')]
 
+# This covers all the toolchain labels we may be able to add
+label_checks += [(val, key) for key, val in toolchain_present.items()]
+
 result = {
     'labels': [label for condition, label in label_checks if condition],
     'not_labels': [label for condition, label in label_checks if not condition],
