@@ -45,8 +45,8 @@ jobs:
         COMMENT=$(jq -r '.diff // empty' analysis.json)
 
         COMMENT_ID=$(
-          gh pr view "$PR" --json comments \
-            | jq -r ".comments[] | select(.body | startswith(env.MARKER)) | .id" \
+          gh api "repos/$GH_REPO/issues/$PR/comments" \
+            | jq -r '.[] | select(.body | startswith(env.MARKER)) | .id' \
             | head -n1
         )
         echo "COMMENT_ID = $COMMENT_ID"
