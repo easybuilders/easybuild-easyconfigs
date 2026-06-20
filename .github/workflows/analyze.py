@@ -121,7 +121,7 @@ for file in new_ecs + changed_ecs:
             break
 
 # Add toolchain labels based on matching new added / changed filenames againt our toolchain policy
-# This doesn't include LLVM or NVHPC yet, and needs to be adapted together with the test suite
+# This doesn't include NVHPC yet, and needs to be adapted together with the test suite
 # when adding new toolchains and their respective labels.
 # We are only checking the file names here and will not read the actual file.
 gcc_tc_gen_map = {
