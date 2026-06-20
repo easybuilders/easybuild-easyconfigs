@@ -20,12 +20,14 @@ patches = [
     'Qt6-6.6.3_fix_OF-Gentoo.patch',
     'Qt6-6.7.2_fix_cpu_features.patch',
     'Qt6-6.5.2_fix_too_long_filenames.patch',
+    'Qt6-6.9.3_add_riscv_arch.patch',
 ]
 checksums = [
     {'qt-everywhere-src-6.9.3.tar.xz': '59d4fbf50d2524a9082f85d565f0197316cde89c26e97cfc6c157cb255b7ea18'},
     {'Qt6-6.6.3_fix_OF-Gentoo.patch': 'd4d4878ac76cb985e45eb3b6e90ba2233f65807d6bd9bbe2b71365b181347b7b'},
     {'Qt6-6.7.2_fix_cpu_features.patch': '3f37e7a4e4ed38cc82037be9504bc644e48bf258555ffff848183142725c9dc8'},
     {'Qt6-6.5.2_fix_too_long_filenames.patch': 'b4a2aa3c72fe01d8b9cbab6da43cdbd968bd139f5dd9daba83181eb5d6125dac'},
+    {'Qt6-6.9.3_add_riscv_arch.patch': '3e0236b2f845835913396b57806d9e090056ce3fd0b8588762b2ed2fc1716fa5'},
 ]
 
 builddependencies = [
@@ -96,10 +98,27 @@ configopts += "-DPython3_ROOT_DIR=$EBROOTPYTHON "
 # (and seems to work without it using rpath wrappers)
 configopts += "-DCMAKE_SYSROOT='' "
 
-sanity_check_paths = {
-    'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT, 'lib/libQt6WebEngineCore.%s' % SHLIB_EXT],
-    'dirs': ['include/QtCore', 'include/QtWebEngineCore'],
-}
+# disable building the Qt Quick 3D Physics submodule for RISC-V
+# avoid using the bundled FFmpeg
+# disable building QtWebEngine
+if ARCH == 'riscv64':
+    configopts += "-DBUILD_qtquick3dphysics=OFF "
+    configopts += "-DQT_FEATURE_webengine_system_ffmpeg=ON "
+    configopts += "-DBUILD_qtwebengine=OFF "
+
+# As qtwebengine is disabled for RISC-V, these files can not be expected to exist:
+# - lib/Qt6WebEngineCore.so
+# - include/QtWebEngineCore
+if ARCH == 'riscv64':
+    sanity_check_paths = {
+        'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT],
+        'dirs': ['include/QtCore'],
+    }
+else:
+    sanity_check_paths = {
+        'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT, 'lib/libQt6WebEngineCore.%s' % SHLIB_EXT],
+        'dirs': ['include/QtCore', 'include/QtWebEngineCore'],
+    }
 
 sanity_check_commands = ['qmake6 --help']
 
