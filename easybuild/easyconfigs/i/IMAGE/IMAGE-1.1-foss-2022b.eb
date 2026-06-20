@@ -1,0 +1,57 @@
+easyblock = 'Tarball'
+
+name = 'IMAGE'
+version = '1.1'
+
+homepage = 'https://github.com/JesperGrud/IMAGE'
+description = """IMAGE (Motif  Activity and  Gene  Expression changes of transcription factors) is software for
+integrated analysis of motif activity and gene expression changes of transcription factors. IMAGE makes prediction
+of causal transcription factors based on transcriptome profiling and genome-wide maps of enhancer activity."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+source_urls = ['https://github.com/JesperGrud/IMAGE/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['e286cd5e7eb5aaaf9e103a9651ece39ff4ce260c463facdf1758b6d72a285062']
+
+dependencies = [
+    ('Perl', '5.36.0'),
+    ('HOMER', '4.11.1'),
+    ('R', '4.2.2'),
+    ('R-bundle-Bioconductor', '3.16', '-R-4.2.2'),
+]
+
+postinstallcmds = [
+    'mkdir %(installdir)s/bin',
+    'mv %(installdir)s/IMAGE.pl %(installdir)s/bin/',
+    'chmod +x %(installdir)s/bin/IMAGE.pl',
+    (
+        'sed -i "s|my \\$TMPDIR = \\$INSTALLDIR . \\$TMP;|my \\$TMPDIR = \\$TMP;|g" '
+        '%(installdir)s/bin/IMAGE.pl'
+    ),
+    (
+        'sed -i "s|my \\$UTILDIR = \\$INSTALLDIR . \\$UTIL;|my \\$UTILDIR = \'%(installdir)s\' . \\$UTIL;|g" '
+        '%(installdir)s/bin/IMAGE.pl'
+    ),
+]
+
+fix_perl_shebang_for = ['bin/*.pl']
+
+sanity_check_paths = {
+    'dirs': ['bin', 'utils', 'tmp'],
+    'files': [
+        'utils/Collection.motif',
+        'utils/extractSequence',
+        'utils/Genename_Motif.txt',
+        'utils/Parallel.sh',
+        'utils/Regression.R',
+        'utils/SplitMotifLibrary.sh',
+        'bin/IMAGE.pl',
+    ]
+}
+
+sanity_check_commands = [
+    "IMAGE.pl",
+]
+
+moduleclass = 'bio'

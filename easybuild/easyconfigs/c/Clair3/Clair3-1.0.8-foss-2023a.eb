@@ -1,0 +1,63 @@
+easyblock = 'MakeCp'
+
+name = 'Clair3'
+version = '1.0.8'
+
+homepage = 'https://github.com/HKU-BAL/Clair3'
+description = """Clair3 is a germline small variant caller for long-reads.
+Clair3 makes the best of two major method categories: pileup calling handles
+most variant candidates with speed, and full-alignment tackles complicated candidates
+to maximize precision and recall. Clair3 runs fast and has superior performance,
+especially at lower coverage. Clair3 is simple and modular for easy deployment and
+integration."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-remove_htslib.patch']
+checksums = [
+    {'v1.0.8.tar.gz': '94426ddf9445a9a724f13977b2baeebdd63f6a4fd6c81f49073dabb6428fff75'},
+    {'Clair3-1.0.8-remove_htslib.patch': '02bd374e06d087cacd53116bc44588084417b8b3faab1c1de4b60d50f0c2a451'},
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('mpath', '1.1.3'),
+    ('TensorFlow', '2.15.1'),
+    ('PyTables', '3.8.0'),
+    ('pigz', '2.8'),
+    ('cffi', '1.15.1'),
+    ('parallel', '20230722'),
+    ('SAMtools', '1.18'),
+    ('WhatsHap', '2.2'),
+    ('zlib', '1.2.13'),
+    ('bzip2', '1.0.8'),
+    ('Automake', '1.16.5'),
+    ('cURL', '8.0.1'),
+    ('zstd', '1.5.5'),
+    ('HTSlib', '1.18'),
+    ('libdeflate', '1.18'),
+    ('PyPy', '7.3.12', '-3.10', SYSTEM),
+]
+
+github_account = 'HKU-BAL'
+files_to_copy = [
+    (['%(namelower)s', '%(namelower)s.py', 'longphase', 'preprocess', 'run_clair3.sh', 'scripts', 'shared'], 'bin'),
+    (['libclair3.*'], 'lib'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/run_clair3.sh', 'bin/%(namelower)s.py', 'bin/longphase', 'lib/libclair3.%s' % SHLIB_EXT],
+    'dirs': ['bin/%(namelower)s', 'bin/preprocess', 'bin/scripts', 'bin/shared'],
+}
+
+sanity_check_commands = [
+    "longphase --help",
+    "run_clair3.sh --help",
+    "python -s -c 'import libclair3'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib'}
+
+moduleclass = 'bio'

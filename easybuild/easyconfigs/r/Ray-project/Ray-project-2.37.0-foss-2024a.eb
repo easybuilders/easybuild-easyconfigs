@@ -1,0 +1,63 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'Ray-project'
+version = '2.37.0'
+
+homepage = "https://docs.ray.io/en/latest/"
+description = "Ray is a fast and simple framework for building and running distributed applications."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'usempi': True}
+
+builddependencies = [
+    ('redis-py', '5.1.1'),
+    ('hatchling', '1.24.2'),
+    ('Cython', '3.0.10')
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('protobuf-python', '5.28.0'),
+    ('PyYAML', '6.0.2'),
+    ('lz4', '1.9.4'),
+    ('mpi4py', '4.0.1'),
+]
+
+exts_list = [
+    ('grpcio', '1.62.1', {
+        'modulename': 'grpc',
+        'preinstallopts': "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && ",
+        'checksums': ['6c455e008fa86d9e9a9d85bb76da4277c0d7d9668a3bfa70dbe86e9f3c759947'],
+    }),
+    ('aiosignal', '1.3.1', {
+        'checksums': ['54cd96e15e1649b75d6c87526a6ff0b6c1b0dd3459f43d9ca11d48c339b68cfc'],
+    }),
+    ('expandvars', '0.12.0', {
+        'checksums': ['7d1adfa55728cf4b5d812ece3d087703faea953e0c0a1a78415de9df5024d844'],
+    }),
+    ('frozenlist', '1.4.1', {
+        'checksums': ['c037a86e8513059a2613aaba4d817bb90b9d9b6b69aace3ce9c877e8c8ed402b'],
+    }),
+    ('lz4', '4.3.3', {
+        'checksums': ['01fe674ef2889dbb9899d8a67361e0c4a2c833af5aeb37dd505727cf5d2a131e'],
+    }),
+    ('Ray', version, {
+        'source_tmpl': '%(namelower)s-%(version)s-cp312-cp312-manylinux2014_%(arch)s.whl',
+        'checksums': ['0268c7bc2e8bb6ef9bb8969299deb5857bf672bfcb59da95db7495a8a502f8ba'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ray'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'ray --help'
+]
+
+moduleclass = 'tools'

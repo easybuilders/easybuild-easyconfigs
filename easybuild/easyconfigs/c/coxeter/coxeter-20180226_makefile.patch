@@ -1,0 +1,101 @@
+Allows installation of files needed for Sagemath
+Source: https://gitlab.archlinux.org/archlinux/packaging/packages/coxeter/-/blob/main/coxeter-makefile.patch
+diff -u makefile.orig makefile
+--- makefile.orig	2018-02-26 13:57:36.000000000 +0100
++++ makefile	2024-08-16 14:15:51.889503570 +0200
+@@ -12,6 +12,7 @@
+ gflags = -c $(includedirs) -g
+ 
+ cflags = $(gflags) # the default setting
++cflags = -c $(includedirs) $(CPPFLAGS) $(CXXFLAGS) -fPIC
+ 
+ ifdef optimize
+ 	NDEBUG = true
+@@ -22,18 +23,74 @@
+ 	cflags = $(pflags)
+ endif
+ 
+-cc = g++
++EXENAME = coxeter
++LIBNAME = coxeter3
++ifeq ($(UNAME),Darwin)
++	EXEEXT = 
++	LIBPREFIX = lib
++	LIBEXT = .dylib
++	LIBDIR = lib
++	LINKFLAGS = -dynamiclib -Wl,-headerpad_max_install_names,-undefined,dynamic_lookup,-compatibility_version,3.0,-current_version,3.0,-install_name,$(SAGE_LOCAL)/lib/$(LIBPREFIX)$(LIBNAME)$(LIBEXT)
++	LINKLIBS = 
++else
++ifeq ($(UNAME),CYGWIN)
++	EXEEXT = .exe
++	LIBPREFIX = cyg
++	LIBEXT = .dll
++	LIBDIR = bin
++	IMPLIB = lib$(LIBNAME).dll.a
++	LINKFLAGS = -shared -Wl,--out-implib=$(IMPLIB) -Wl,--export-all-symbols
++	LINKLIBS = -lc
++else
++	EXEEXT = 
++	LIBPREFIX = lib
++	LIBEXT = .so
++	LIBDIR = lib
++	LINKFLAGS = $(LDFLAGS) -shared -Wl,-soname,libcoxeter3.so
++	LINKLIBS = -lc
++endif
++endif
++LIBRARY = $(LIBPREFIX)$(LIBNAME)$(LIBEXT)
+ 
+-all: coxeter #clean
++all: coxeter executable
+ 
+ coxeter: $(objects)
+-	$(cc) -o coxeter $(objects)
++	$(CXX) $(LINKFLAGS) -o $(LIBRARY) $(objects) $(LINKLIBS)
++
++executable: $(objects)
++	$(CXX) $(LDFLAGS) -o $(EXENAME)$(EXEEXT) $(objects)
++
++DATADIR="$$SAGE_LOCAL/share/coxeter/"
++INCLUDEDIR="$$SAGE_LOCAL/include/coxeter/"
++LIBRARYDIR="$$SAGE_LOCAL/$(LIBDIR)"
++
++install: coxeter executable
++	cp $(EXENAME)$(EXEEXT) "$$SAGE_LOCAL/bin/"
++	cp $(LIBRARY) $(LIBRARYDIR)
++	if [ $(UNAME) = "CYGWIN" ]; then                 \
++	    cp $(IMPLIB) "$$SAGE_LOCAL/lib/";  \
++	fi
++
++	mkdir -p $(DATADIR)
++	cp -r coxeter_matrices headers messages $(DATADIR)
++	mkdir -p $(INCLUDEDIR)
++	cp -r *.h *.hpp $(INCLUDEDIR)
++
++check: coxeter executable
++	$(EXENAME)$(EXEEXT) < test.input > test.output
++
++	if ! diff test.output.expected test.output > /dev/null; then \
++	   echo >&2 "Error testing coxeter on test.input:"; \
++	   diff test.output.expected test.output; \
++	   exit 1; \
++	fi
++	rm -f test.output
+ 
+ clean:
+ 	rm -f $(objects)
+ 
+ %.o:%.cpp
+-	$(cc) $(cflags) $*.cpp
++	$(CXX) $(cflags) $*.cpp
+ 
+ # dependencies --- these were generated automatically by make depend on my
+ # system; they are explicitly copied for portability. Only local dependencies
+@@ -43,7 +100,7 @@
+ # contents of tmp in lieu of the dependencies listed here.
+ 
+ %.d:%.cpp
+-	@$(cc) -MM $*.cpp
++	@$(CXX) -MM $*.cpp
+ depend: $(dependencies)
+ 
+ affine.o: affine.cpp affine.h globals.h coxgroup.h coxtypes.h io.h list.h \

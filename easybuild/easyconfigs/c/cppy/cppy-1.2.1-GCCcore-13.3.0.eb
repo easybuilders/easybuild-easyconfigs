@@ -1,0 +1,33 @@
+easyblock = 'PythonPackage'
+
+name = 'cppy'
+version = '1.2.1'
+
+homepage = "https://github.com/nucleic/cppy"
+description = """A small C++ header library which makes it easier to write
+Python extension modules. The primary feature is a PyObject smart pointer
+which automatically handles reference counting and provides convenience
+methods for performing common object operations."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+builddependencies = [('binutils', '2.42')]
+
+dependencies = [
+    ('Python', '3.12.3'),
+]
+
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['83b43bf17b1085ac15c5debdb42154f138b928234b21447358981f69d0d6fe1b']
+
+# version is incorrect in defines.h and this is used to generate the python package version
+# see https://github.com/nucleic/cppy/pull/39
+_ver_parts = version.split('.')
+preinstallopts = ' && '.join([
+    f"sed -i 's/#define CPPY_MINOR_VERSION 1/#define CPPY_MINOR_VERSION {_ver_parts[1]}/' cppy/include/cppy/defines.h",
+    f"sed -i 's/#define CPPY_PATCH_VERSION 0/#define CPPY_PATCH_VERSION {_ver_parts[2]}/' cppy/include/cppy/defines.h",
+    """sed -i 's/#define CPPY_VERSION "1.1.0"/#define CPPY_VERSION "%(version)s"/' cppy/include/cppy/defines.h""",
+    ""
+])
+
+moduleclass = 'tools'

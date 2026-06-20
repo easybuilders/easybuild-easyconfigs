@@ -1,0 +1,49 @@
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+
+easyblock = 'CMakeNinja'
+
+name = 'ccache'
+version = '4.10.2'
+
+homepage = 'https://ccache.dev/'
+description = """Ccache (or “ccache”) is a compiler cache. It speeds up recompilation by
+caching previous compilations and detecting when the same compilation is being done again"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = [GITHUB_RELEASE]
+sources = [SOURCE_TAR_GZ]
+checksums = ['108100960bb7e64573ea925af2ee7611701241abb36ce0aae3354528403a7d87']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+    ('Ninja', '1.12.1'),
+    ('zstd', '1.5.6'),
+    ('pkgconf', '2.2.0'),
+]
+
+dependencies = [
+    ('hiredis', '1.2.0'),
+]
+
+# use BFD linker rather than default ld.gold (required on CentOS 8)
+preconfigopts = 'LDFLAGS="-fuse-ld=bfd"'
+configopts = ' '.join([
+    '-DENABLE_DOCUMENTATION=OFF',
+    '-DENABLE_IPO=ON',
+    # Link most libraries statically
+    '-DSTATIC_LINK=ON',
+    # Disable downloading dependencies
+    '-DZSTD_FROM_INTERNET=OFF -DHIREDIS_FROM_INTERNET=OFF',
+])
+
+sanity_check_paths = {
+    'files': ['bin/ccache'],
+    'dirs': []
+}
+sanity_check_commands = ['ccache --help']
+
+moduleclass = 'tools'

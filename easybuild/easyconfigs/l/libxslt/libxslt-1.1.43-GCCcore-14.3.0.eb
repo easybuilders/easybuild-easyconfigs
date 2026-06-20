@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'libxslt'
+version = '1.1.43'
+
+homepage = 'https://gitlab.gnome.org/GNOME/libxslt/-/wikis'
+description = """Libxslt is the XSLT C library developed for the GNOME project
+ (but usable outside of the Gnome platform)."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://download.gnome.org/sources/libxslt/%(version_major_minor)s/']
+sources = [SOURCE_TAR_XZ]
+checksums = ['5a3d6b383ca5afc235b171118e90f5ff6aa27e9fea3303065231a6d403f0183a']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('libxml2', '2.14.3'),
+]
+
+# Make sure it doesn't pick up OS installed libgcrypt or Python
+# enable building static libs
+configopts = '--with-crypto=no --with-python=no --enable-static=yes '
+
+sanity_check_paths = {
+    'files': ['bin/xsltproc', 'include/libxslt/xslt.h', 'lib/%%(name)s.%s' % SHLIB_EXT, 'lib/%(name)s.a',
+              'lib/libexslt.%s' % SHLIB_EXT, 'lib/libexslt.a'],
+    'dirs': ['include/libxslt', 'include/libexslt'],
+}
+
+moduleclass = 'lib'

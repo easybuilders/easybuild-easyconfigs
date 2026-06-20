@@ -9,7 +9,7 @@ description = "RDKit is a collection of cheminformatics and machine-learning sof
 toolchain = {'name': 'foss', 'version': '2022a'}
 # avoid failing tests on skylake CPUs. comment out this line when building on CPUs that don't support AVX2
 # see also: https://github.com/rdkit/rdkit/issues/1674
-toolchainopts = {'optarch': 'mavx2', 'cstd': 'c++11'}
+toolchainopts = {'optarch': '-mavx2', 'cstd': 'c++11'}
 
 source_urls = ['https://github.com/rdkit/rdkit/archive/']
 sources = ['Release_%s.tar.gz' % version.replace('.', '_')]
@@ -38,11 +38,11 @@ dependencies = [
     ('cairo', '1.17.4'),
 ]
 
-separate_build_dir = True
-
 configopts = "-DPy_ENABLE_SHARED=1 -DRDK_INSTALL_STATIC_LIBS=OFF -DRDK_INSTALL_INTREE=OFF "
-configopts += "-DRDK_BUILD_INCHI_SUPPORT=ON "
+configopts += "-DRDK_BUILD_INCHI_SUPPORT=ON -DRDK_INSTALL_COMIC_FONTS=OFF "
 configopts += "-DBoost_INCLUDE_DIR=$EBROOTBOOST/include -DBoost_LIBRARY_DIR_RELEASE=$EBROOTBOOST/lib "
+configopts += f"-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%(pyshortver)s.{SHLIB_EXT} "
+configopts += "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s "
 
 # merge source directory into build directory in order to run the tests
 buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./ && '
@@ -69,9 +69,7 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = [
-    "python -c 'import rdkit.rdBase'",
+    "python -s -c 'import rdkit.rdBase'",
 ]
-
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 moduleclass = 'chem'

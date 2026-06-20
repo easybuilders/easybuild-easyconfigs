@@ -1,0 +1,52 @@
+This reverts a commit from upstream
+>  build: Do not install generated GLib GIR files
+>
+> GLib 2.79 ships its own introspection data.
+
+However GObject-Introspection requires (optionally) Cairo, which requires GLib
+which requires GLib-Introspection for generating the introspection data.
+
+So there is a cyclic dependency, see https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/517
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/gir/meson.build b/gir/meson.build
+index 3a016831..312aa886 100644
+--- a/gir/meson.build
++++ b/gir/meson.build
+@@ -241,6 +241,8 @@ glib_gir = custom_target('gir-glib',
+   output: 'GLib-2.0.gir',
+   depends: [gir_giscanner_pymod, glib_gir_dep, gdump],
+   depend_files: gir_giscanner_built_files,
++  install: true,
++  install_dir: girdir,
+   env: g_ir_scanner_env,
+   command: glib_command + [
+     '--cflags-begin'] + glib_includes + extra_giscanner_cflags + [
+@@ -308,6 +310,8 @@ gobject_gir = custom_target('gir-gobject',
+   output: 'GObject-2.0.gir',
+   depends: [glib_gir, gir_giscanner_pymod, gobject_gir_dep, gdump],
+   depend_files: gir_giscanner_built_files,
++  install: true,
++  install_dir: girdir,
+   env: g_ir_scanner_env,
+   command: gobject_command + [
+     '--include-uninstalled=' + glib_gir.full_path(),
+@@ -360,6 +364,8 @@ uninstalled_gir_files += custom_target('gir-gmodule',
+   output: 'GModule-2.0.gir',
+   depends: [glib_gir, gir_giscanner_pymod, gmodule_gir_dep, gdump],
+   depend_files: gir_giscanner_built_files,
++  install: true,
++  install_dir: girdir,
+   env: g_ir_scanner_env,
+   command: gmodule_command + [
+     '--include-uninstalled=' + glib_gir.full_path(),
+@@ -455,6 +461,8 @@ gio_gir = custom_target('gir-gio',
+   output: 'Gio-2.0.gir',
+   depends: [gobject_gir, gir_giscanner_pymod, gio_gir_dep, gdump],
+   depend_files: gir_giscanner_built_files,
++  install: true,
++  install_dir: girdir,
+   env: g_ir_scanner_env,
+   command: gio_command + [
+     '--include-uninstalled=' + gobject_gir.full_path(),

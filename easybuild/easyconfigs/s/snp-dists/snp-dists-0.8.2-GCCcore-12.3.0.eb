@@ -1,0 +1,44 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'ConfigureMake'
+
+name = 'snp-dists'
+version = '0.8.2'
+
+homepage = 'https://github.com/tseemann/snp-dists'
+description = """Pairwise SNP distance matrix from a FASTA sequence alignment."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'openmp': True, 'cstd': 'c99'}
+
+github_account = 'tseemann'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.zip']
+patches = ['%(name)s-%(version)s-fix_cflags.patch']
+checksums = [
+    {'v0.8.2.zip': '80ebf704f1c66672f89aa03e07e861798e7b2a805cf0921958f6aafb9be031d7'},
+    {'snp-dists-0.8.2-fix_cflags.patch': 'da8c847727559ede87d7e108f1dd38c4c1efa1774236e19effacdb1c7a586fa6'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [('zlib', '1.2.13')]
+
+skipsteps = ['configure']
+
+# TODO: handle this path mess better
+preinstallopts = ['mkdir %(installdir)s/bin && ']
+installopts = ['PREFIX=%(installdir)s']
+
+postinstallcmds = ['mv snp-dists %(installdir)s/bin']
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['bin/snp-dists'],
+    'dirs': [],
+}
+sanity_check_commands = ["snp-dists -v"]
+
+moduleclass = 'bio'

@@ -1,0 +1,53 @@
+From ad1f48997377c31dd1dd45015a2eb13b62f764f1 Mon Sep 17 00:00:00 2001
+From: Daniel Richard G <iskunk@gmail.com>
+Date: Tue, 15 Apr 2025 01:13:20 -0700
+Subject: [PATCH] [Backport] Don't apply /*FALLTHROUGH*/ edit to gperf 3.2
+ output
+
+The gperf issue at https://savannah.gnu.org/bugs/index.php?53029
+has been resolved as of the 3.2 release, and not only is the
+/*FALLTHROUGH*/ comment replacement no longer needed, it now
+breaks the build with "error: fallthrough annotation does not
+directly precede switch label". Only do the edit for 3.1.
+
+Fixes: QTBUG-137278
+Pick-to: 122-based
+Bug: 40209959
+Change-Id: I1f12a2a685b62d0dedb4298bc171ab4c94ec6b47
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6445471
+Reviewed-by: Yuki Shiino <yukishiino@chromium.org>
+Commit-Queue: Roland Bock <rbock@google.com>
+Reviewed-by: Roland Bock <rbock@google.com>
+Auto-Submit: Daniel Richard G. <iskunk@gmail.com>
+Cr-Commit-Position: refs/heads/main@{#1446962}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/649663
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+(cherry picked from commit d234cda911fedfc3bad5212d9275745b58fd8161)
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/656175
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../qtwebengine/src/3rdparty/chromium/third_party/blink/renderer/build/scripts/gperf.py | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/qtwebengine/src/3rdparty/chromium/third_party/blink/renderer/build/scripts/gperf.py b/qtwebengine/src/3rdparty/chromium/third_party/blink/renderer/build/scripts/gperf.py
+index 42630d37c5d8..bc9cc70faa27 100644
+--- a/qtwebengine/src/3rdparty/chromium/third_party/blink/renderer/build/scripts/gperf.py
++++ b/qtwebengine/src/3rdparty/chromium/third_party/blink/renderer/build/scripts/gperf.py
+@@ -35,10 +35,13 @@ def generate_gperf(gperf_path, gperf_input, gperf_args):
+         # https://savannah.gnu.org/bugs/index.php?53028
+         gperf_output = re.sub(r'\bregister ', '', gperf_output)
+         # -Wimplicit-fallthrough needs an explicit fallthrough statement,
+-        # so replace gperf's /*FALLTHROUGH*/ comment with the statement.
+-        # https://savannah.gnu.org/bugs/index.php?53029
+-        gperf_output = gperf_output.replace('/*FALLTHROUGH*/',
+-                                            '  [[fallthrough]];')
++        # so replace gperf 3.1's /*FALLTHROUGH*/ comment with the statement.
++        # https://savannah.gnu.org/bugs/index.php?53029 (fixed in 3.2)
++        if re.search(
++                r'/\* C\+\+ code produced by gperf version 3\.[01](\.\d+)? \*/',
++                gperf_output):
++            gperf_output = gperf_output.replace('/*FALLTHROUGH*/',
++                                                '  [[fallthrough]];')
+         # -Wpointer-to-int-cast warns about casting pointers to smaller ints
+         # Replace {(int)(long)&(foo), bar} with
+         # {static_cast<int>(reinterpret_cast<uintptr_t>(&(foo)), bar}

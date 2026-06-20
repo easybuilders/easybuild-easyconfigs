@@ -1,0 +1,32 @@
+Fix bug in symmetry determination of the routine that applies spin-orbit symmetry breaking to a crystal.
+For some crystal symmetries, the symmetry operations were not properly counted, which messes up many things downstream.
+
+see https://www.mail-archive.com/wien@zeus.theochem.tuwien.ac.at/msg23543.html
+
+--- SRC_symmetso/angle.f.bk	2025-01-28 11:09:34.418359468 +0100
++++ SRC_symmetso/angle.f	2025-01-28 11:10:00.459924000 +0100
+@@ -172,7 +172,8 @@
+ !                                                                       
+       cosgam=cos(alpha(3)/180.d0*pi)
+       singam=sin(alpha(3)/180.d0*pi)           
+-!!      IF (.not.ortho) THEN                                       
++
++      IF (.not.ortho) THEN                                       
+         help(1)=dif(1)  
+         help(2)=dif(2)  
+         help(3)=dif(3)  
+@@ -192,7 +193,13 @@
+         dif(3)=(help(1)*BR2(1,3)*alat(1)+help(2)*BR2(2,3)*alat(2)+   &
+                 help(3)*BR2(3,3)*alat(3)) ! /alat(3)           
+       endif
+-!!      endif
++
++      else
++      dif(1)=xms(1)*alat(1)
++      dif(2)=xms(2)*alat(2)
++      dif(3)=xms(3)*alat(3)
++      endif
++
+       dist=0.d0                                                             
+       DO  L=1,3                                                      
+       DIST=DIST+dif(L)*dif(L)                                 

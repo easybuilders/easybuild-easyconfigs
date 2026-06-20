@@ -1,0 +1,83 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/05
+easyblock = 'ConfigureMake'
+
+name = 'ctffind5'
+version = '5.0.2'
+
+local_commit = 'b21db55a91366fe4f75301c56091d213bbd326eb'
+local_branch = 'ctffind5_merge'
+
+homepage = 'https://grigoriefflab.umassmed.edu/ctf_estimation_ctffind_ctftilt'
+description = """Program for finding CTFs of electron micrographs."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+# Use git_config in order to allow setting CISTEM_CURRENT_BRANCH and CISTEM_VERSION_TEXT by configure
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': 'cisTEM-ctffind5-%s.tar.gz' % local_commit[:7],
+    'git_config': {
+        'url': 'https://github.com/timothygrant80',
+        'repo_name': 'cisTEM',
+        'commit': local_commit,
+        'keep_git_dir': True,
+    }
+}]
+
+# no checksume, due to git_config
+checksums = [None]
+
+# Alternative source:
+# https://grigoriefflab.umassmed.edu/sites/default/files/cisTEM-ctffind5-b21db55.tar.gz
+
+# switch branch in order to inject proper branch name into binary:
+preconfigopts = 'git switch --create %s &&' % local_branch
+
+# disable all targets except for ctffind and applyctf (do not build any other cisTEM tool):
+local_remove_targets = """sed -i "s/^bin_PROGRAMS/"""
+local_remove_targets += """bin_PROGRAMS=ctffind applyctf\\nnoinst_PROGRAMS/g" """
+local_remove_targets += """ src/Makefile.am &&"""
+preconfigopts += local_remove_targets
+
+# run autotools
+preconfigopts += './regenerate_project.b &&'
+
+
+local_configureopts = [
+    # '--enable-latest-instruction-set',  # don't use; managed by CFLAGS
+    '--enable-shared',
+    '--with-gnu-ld',
+    '--with-wx-config=$EBROOTWXWIDGETS/bin/wx-config',
+    '--disable-silent-rules',
+    '--enable-openmp',
+    '--disable-debugmode'
+    '--disable-staticmode',
+    '--enable-experimental',
+    '--without-cuda',
+]
+
+configopts = ' '.join(local_configureopts)
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('git', '2.41.0', '-nodocs')
+]
+
+dependencies = [
+    ('wxWidgets', '3.2.2.1')
+]
+
+sanity_check_paths = {
+    'files': ['bin/ctffind', 'bin/applyctf'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = [
+    # ctffind command expects filename of input image via stdin,
+    # so we pipe in a newline via 'echo' to make it exit
+    'echo | ctffind | grep Version | grep %(version)s',
+    'echo | ctffind | grep "Library Version" | grep %s' % local_commit[:7],
+    'echo | ctffind | grep "Branch" | grep %s' % local_branch,
+]
+
+moduleclass = 'bio'

@@ -1,0 +1,58 @@
+From 39d5e44723bec02262caabbc33182df62029af7e Mon Sep 17 00:00:00 2001
+From: mayeut <mayeut@users.noreply.github.com>
+Date: Sun, 16 Nov 2025 00:41:43 +0100
+Subject: [PATCH] fix: dot_kernel_sve "n" usage & clobber list
+
+diff --git a/kernel/arm64/dot_kernel_sve.c b/kernel/arm64/dot_kernel_sve.c
+index bc9975214b..96485184c1 100644
+--- a/kernel/arm64/dot_kernel_sve.c
++++ b/kernel/arm64/dot_kernel_sve.c
+@@ -48,7 +48,7 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ "        add     x12, %[X_], x9, lsl #"SHIFT"               \n" \
+ "        add     x13, %[Y_], x9, lsl #"SHIFT"               \n"
+ #define TAIL_WHILE                                        \
+-"        whilelo p1."DTYPE", x8, x0                         \n"
++"        whilelo p1."DTYPE", x8, %[N_]                         \n"
+ #define UPDATE(pg, x,y,out)                               \
+ "        ld1"WIDTH"    { z2."DTYPE" }, "pg"/z, ["x", x8, lsl #"SHIFT"]  \n" \
+ "        ld1"WIDTH"    { z3."DTYPE" }, "pg"/z, ["y", x8, lsl #"SHIFT"]  \n" \
+@@ -66,7 +66,7 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ "        movi    d1, #0x0                             \n" \
+         SETUP_TRUE                                        \
+ "        neg     x10, x9, lsl #1                      \n" \
+-"        ands    x11, x10, x0                         \n" \
++"        ands    x11, x10, %[N_]                      \n" \
+ "        b.eq    2f // skip_2x                        \n" \
+         OFFSET_INPUTS                                     \
+ "1: // vector_2x                                      \n" \
+@@ -78,7 +78,7 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+         SUM_VECTOR("1") \
+ "2: // skip_2x                                        \n" \
+ "        neg     x10, x9                              \n" \
+-"        and     x10, x10, x0                         \n" \
++"        and     x10, x10, %[N_]                      \n" \
+ "        cmp     x8, x10                              \n" \
+ "        b.hs    4f // tail                           \n" \
+ "3: // vector_1x                                      \n" \
+@@ -87,7 +87,7 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ "        cmp     x8, x10                              \n" \
+ "        b.lo    3b // vector_1x                      \n" \
+ "4: // tail                                           \n" \
+-"        cmp     x10, x0                              \n" \
++"        cmp     x10, %[N_]                           \n" \
+ "        b.eq    5f // end                            \n" \
+         TAIL_WHILE                                        \
+         UPDATE("p1", "%[X_]", "%[Y_]", "z0")              \
+@@ -110,9 +110,9 @@ dot_kernel_sve(BLASLONG n, FLOAT* x, FLOAT* y)
+         [Y_] "r" (y)
+       : "cc",
+         "memory",
+-        "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7",
+-        "x8", "x9", "x10", "x11", "x12", "x13", "d1", 
+-        "z0", "z1"
++        "x8", "x9", "x10", "x11", "x12", "x13",
++        "v0", "v1",
++        "z0", "z1", "z2", "z3"
+   );
+ 
+   return ret;

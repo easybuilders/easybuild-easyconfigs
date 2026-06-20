@@ -1,0 +1,41 @@
+easyblock = 'PythonBundle'
+
+name = 'CUDA-Python'
+# Warning: major and minor versions of CUDA and CUDA-Python are tied
+version = '12.6.2.post1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://nvidia.github.io/cuda-python/'
+description = "Python bindings for CUDA"
+github_account = 'NVIDIA'
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+builddependencies = [
+    ('Cython', '3.0.10'),
+]
+dependencies = [
+    ('CUDA', '%(version_major)s.%(version_minor)s.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+]
+
+exts_list = [
+    ('pyclibrary', '0.2.2', {
+        'checksums': ['9902fffe361bb86f57ab62aa4195ec4dd382b63c5c6892be6d9784ec0a3575f7'],
+    }),
+    ('cuda-python', version, {
+        'modulename': 'cuda',
+        'source_urls': [GITHUB_LOWER_SOURCE],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['abbfad534cb51d79f748cc5dfdc761fa6bb2c7a2b59e64b1d03608e7b0f64b1b'],
+        'start_dir': 'cuda_bindings',
+    }),
+]
+
+sanity_check_commands = [
+    "python -sc 'from cuda import cuda, nvrtc'",
+    "python -sc 'from cuda.bindings import driver, nvrtc'",
+]
+
+moduleclass = 'lib'

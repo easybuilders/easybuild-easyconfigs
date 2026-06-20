@@ -1,0 +1,53 @@
+# Author: Ehsan Moravveji (VSC - KU Leuven)
+
+easyblock = 'PythonBundle'
+
+name = 'EasyOCR'
+version = '1.7.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/JaidedAI/EasyOCR'
+description = """
+EasyOCR is a ready-to-use OCR with 80+ supported languages and all popular
+writing scripts including: Latin, Chinese, Arabic, Devanagari, Cyrillic, etc.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Ninja', '1.11.1'),
+    ('scikit-build-core', '0.5.0'),
+    ('scikit-build', '0.17.6'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('python-bidi', '0.6.0', '', ('GCCcore', '12.3.0')),
+    ('PyTorch', '2.1.2', '-CUDA-%(cudaver)s'),
+    ('PyTorch-bundle', '2.1.2', '-CUDA-%(cudaver)s'),
+    ('torchvision', '0.16.0', '-CUDA-%(cudaver)s'),
+    ('OpenCV', '4.8.1', '-CUDA-%(cudaver)s-contrib'),
+    ('scikit-image', '0.22.0'),
+    ('Shapely', '2.0.1'),
+]
+
+exts_list = [
+    ('ninja', '1.11.1', {
+        'checksums': ['c833a47d39b2d1eee3f9ca886fa1581efd5be6068b82734ac229961ee8748f90'],
+    }),
+    ('pyclipper', '1.4.0', {
+        'checksums': ['9882bd889f27da78add4dd6f881d25697efc740bf840274e749988d25496c8e1'],
+    }),
+    (name, version, {
+        'modulename': 'easyocr',
+        # OpenCV dependency provides opencv-contrib-python (equivalent to opencv-python-headless)
+        'preinstallopts': "sed -i 's/opencv-python-headless/opencv-contrib-python/g' requirements.txt && ",
+        'source_urls': ['https://github.com/JaidedAI/EasyOCR/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['1c20356483964c7c80ccf86f2a0957cfed47768e9bbc99b9ff2eb47cb9cb1448'],
+    }),
+]
+
+moduleclass = 'ai'

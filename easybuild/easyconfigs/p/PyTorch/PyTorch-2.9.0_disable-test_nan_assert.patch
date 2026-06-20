@@ -1,0 +1,57 @@
+Disable a test that has incomplete skip condition.
+See https://github.com/pytorch/pytorch/pull/167971
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/test_c10d_nccl.py b/test/distributed/test_c10d_nccl.py
+index 0a0f3ee4ca2..aff8ba0156f 100644
+--- a/test/distributed/test_c10d_nccl.py
++++ b/test/distributed/test_c10d_nccl.py
+@@ -11,6 +11,7 @@ import sys
+ import tempfile
+ import threading
+ import time
++import unittest
+ import warnings
+ from contextlib import contextmanager
+ from datetime import datetime, timedelta
+@@ -295,12 +296,7 @@ class ProcessGroupNCCLGroupTest(MultiProcessTestCase):
+         # But if we are in Sandcastle, `skip_but_pass_in_sandcastle` would return 0.
+         TEST_NAN_ASSERT_RETURN = 0 if IS_SANDCASTLE else signal.SIGABRT
+         self.special_return_code_checks = {
+-            self.test_nan_assert_float16.__wrapped__: TEST_NAN_ASSERT_RETURN,
+-            self.test_nan_assert_float32.__wrapped__: TEST_NAN_ASSERT_RETURN,
+-            self.test_nan_assert_float64.__wrapped__: TEST_NAN_ASSERT_RETURN,
+-            self.test_nan_assert_bfloat16.__wrapped__: TEST_NAN_ASSERT_RETURN,
+-            self.test_nan_assert_float8_e4m3fn.__wrapped__: TEST_NAN_ASSERT_RETURN,
+-            self.test_nan_assert_float8_e5m2.__wrapped__: TEST_NAN_ASSERT_RETURN,
++
+         }
+ 
+         # TORCH_NCCL_BLOCKING_WAIT overrides TORCH_NCCL_ASYNC_ERROR_HANDLING hence tests
+@@ -489,24 +485,7 @@ class ProcessGroupNCCLGroupTest(MultiProcessTestCase):
+         torch.version.cuda is not None and int(torch.version.cuda.split(".")[0]) >= 12
+     )
+ 
+-    @requires_nccl()
+-    @skip_but_pass_in_sandcastle_if(
+-        # skip for cu126 as well due to https://github.com/pytorch/pytorch/issues/153479
+-        not (TEST_MULTIGPU and CUDA_12_AND_ABOVE),
+-        "NCCL test requires 2+ GPUs and Device side assert could cause unexpected errors in lower versions of CUDA",
+-    )
+-    @parametrize(
+-        "type",
+-        [
+-            torch.float16,
+-            torch.float32,
+-            torch.float64,
+-            torch.bfloat16,
+-            torch.float8_e4m3fn,
+-            torch.float8_e5m2,
+-        ],
+-    )
+-    @skip_if_rocm_multiprocess
++    @unittest.skip("Wrong conditions")
+     def test_nan_assert(self, type):
+         # Expecting a device-side error when NaN is detected
+         os.environ["TORCH_NCCL_NAN_CHECK"] = "1"

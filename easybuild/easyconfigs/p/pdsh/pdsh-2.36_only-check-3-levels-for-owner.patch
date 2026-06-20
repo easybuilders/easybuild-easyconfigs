@@ -1,0 +1,30 @@
+PDSH checks the ownership of ALL parent directories which might fail if the software folder is not owned by `root`
+but e.g. a functional account:
+> pdcp@c128: module path "/data/software/pdsh/2.36-GCCcore-13.2.0/lib/pdsh" insecure.
+> pdcp@c128: "/data/software": Owner not root, current uid, or pdsh executable owner
+> pdcp@c128: Couldn't load any pdsh modules
+
+Limit to 3 levels which should be inside the software installation folder.
+
+Author: Alexander Grund (TU Dresden)
+
+diff -ur pdsh-2.36-orig/src/pdsh/mod.c pdsh-2.36/src/pdsh/mod.c
+--- pdsh-2.36-orig/src/pdsh/mod.c	2026-02-10 13:11:06.233292795 +0100
++++ pdsh-2.36/src/pdsh/mod.c	2026-02-10 13:13:00.230910508 +0100
+@@ -1034,6 +1034,7 @@
+     ino_t rootino;
+     perm_error_t error;
+     int pos = 0;
++    int lvl = 1;
+ 
+     assert(dir != NULL);
+ 
+@@ -1076,6 +1077,8 @@
+          */
+         strncpy(&dirbuf[pos],  "/..", 4);
+         pos+=3;
++        if(++lvl >= 3)
++            break;
+ 
+     } while ( !((st.st_ino == rootino) && (st.st_dev == rootdev)) );
+ 

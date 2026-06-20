@@ -1,0 +1,73 @@
+easyblock = 'MakeCp'
+
+name = 'MOLGW'
+version = '3.3'
+
+homepage = 'https://www.molgw.org'
+description = """MOLGW is a code that implements the many-body perturbation theory (MBPT) to
+describe the excited electronic states in finite systems (atoms, molecules,
+clusters). It most importantly implements the approximation for the self-energy
+and the Bethe-Salpeter equation for the optical excitations.
+
+MOLGW comes with a fully functional density-functional theory (DFT) code to
+prepare the subsequent MBPT runs. Standard local and semi-local approximations
+to DFT are available, as well as several hybrid functionals and range-separated
+hybrid functionals. MOLGW uses a Gaussian-type orbitals basis set so to reuse
+all the standard quantum-chemistry tools."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+github_account = 'molgw'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['ff1c8eb736049e52608d4554a2d435ee9d15e47c4a9934d41712962748929e81']
+
+dependencies = [
+    ('libxc', '6.2.2'),
+    ('libcint', '5.4.0', '-pypzpx'),
+    # Python utilities
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('matplotlib', '3.7.2'),
+    ('PyYAML', '6.0'),
+]
+
+_config_arch_params = {
+    'FCFLAGS': '-cpp $FFLAGS',
+    'CXXFLAGS': '-cpp $CXXFLAGS',
+    'LAPACK': '$LIBLAPACK',
+    'SCALAPACK': '$LIBSCALAPACK',
+    'LIBXC_ROOT': '$EBROOTLIBXC',
+}
+_config_arch_sed = ';'.join(["s|^%s=.*|%s=%s|" % (k, k, v) for (k, v) in _config_arch_params.items()])
+
+prebuildopts = 'cp config/my_machine_gfortran_mpi.arch src/my_machine.arch && '
+prebuildopts += 'sed "%s" -i src/my_machine.arch && ' % _config_arch_sed
+
+buildopts = 'molgw'
+
+runtest = 'test'
+
+files_to_copy = [
+    (['molgw'], 'bin'),
+    (['basis', 'utils'], ''),
+]
+
+fix_python_shebang_for = ['utils/*.py', 'utils/molgw/*.py']
+
+postinstallcmds = ["cd %(installdir)s/bin && for pyfile in ../utils/*.py; do ln -s $pyfile; done"]
+
+sanity_check_paths = {
+    'files': ['bin/molgw', 'bin/run_molgw.py'],
+    'dirs': ['basis', 'utils']
+}
+
+sanity_check_commands = ["python -s -c 'import molgw'"]
+
+modextrapaths = {
+    'PYTHONPATH': 'utils',
+    'MOLGW_BASIS_PATH': 'basis',
+}
+
+moduleclass = 'chem'

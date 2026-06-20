@@ -1,0 +1,90 @@
+easyblock = 'MakeCp'
+
+name = 'NextPolish'
+version = '1.4.1'
+
+homepage = 'https://github.com/Nextomics/NextPolish'
+description = 'NextDenovo is a string graph-based de novo assembler for long reads.'
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/Nextomics/NextPolish/releases/download/']
+sources = [{
+    'download_filename': 'v%(version)s/%(name)s.tgz',
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['2a5f66f3db7f76e583a6b6e28f9c1f3c392258b8d755050d7abe129a2fbb48c4']
+
+builddependencies = [('patchelf', '0.18.0')]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('BWA', '0.7.17'),
+    ('SAMtools', '1.18'),
+    ('minimap2', '2.26'),
+    ('bzip2', '1.0.8'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'preinstallopts': '',
+    'installopts': '',
+}
+
+exts_list = [
+    ('Paralleltask', '0.2.3', {
+        'modulename': 'paralleltask',
+        'checksums': ['8015a8311d5021bc44edbfbf45ff2557a529999e235d25190bac62993fdf7b66'],
+    }),
+]
+
+# fix make -C util - warning: jobserver unavailable
+maxparallel = 1
+
+# fix bwa bug - https://github.com/Nextomics/NextPolish/issues/83
+# + use SAMtools and minimap2 from EB
+prebuildopts = "sed -i 's/seq_count bwa samtools minimap2/seq_count/' Makefile && "
+prebuildopts += "rm -rf util/bwa && rm -fr util/minimap2 && rm -rf util/samtools && "
+prebuildopts += (
+    "sed -i"
+    " -e 's/seq_split seq_count bwa_ samtools_ minimap2_/seq_split seq_count/'"
+    " -e '/BWADIR/d'"
+    " -e '/bwa_:/d'"
+    " -e '/SAMTOOLSDIR/d'"
+    " -e '/MINIMAP2DIR/d'"
+    " -e '/samtools_:/d'"
+    " -e '/minimap2_:/d'"
+    " util/Makefile && "
+)
+postinstallcmds = [
+    # links to binaries
+    "cd %(installdir)s/bin && ln -s $EBROOTBWA/bin/bwa && "
+    "ln -s $EBROOTSAMTOOLS/bin/samtools && ln -s $EBROOTMINIMAP2/bin/minimap2",
+    # set RPATH to calgs.so, nextpolish1.so and nextpolish2.so
+    "if %(rpath_enabled)s; then "
+    "patchelf --force-rpath --set-rpath '$ORIGIN:$ORIGIN/../lib'"
+    '":$EBROOTZLIB/lib" %(installdir)s/lib/calgs.so && '
+    "patchelf --force-rpath --set-rpath '$ORIGIN:$ORIGIN/../lib'"
+    '"$EBROOTZLIB/lib:$EBROOTBZIP2/lib:$EBROOTXZ/lib" %(installdir)s/lib/nextpolish1.so && '
+    "patchelf --force-rpath --set-rpath '$ORIGIN:$ORIGIN/../lib'"
+    '"$EBROOTZLIB/lib:$EBROOTBZIP2/lib:$EBROOTXZ/lib" %(installdir)s/lib/nextpolish2.so; fi',
+]
+
+files_to_copy = ['bin', 'lib', 'test_data', 'LICENSE', 'nextPolish']
+
+sanity_check_paths = {
+    'files': ['nextPolish', 'bin/minimap2', 'bin/paralleltask', 'bin/bwa', 'bin/samtools'],
+    'dirs': ['test_data', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'nextPolish --help',
+    'nextPolish %(installdir)s/test_data/run.cfg'
+]
+
+modextrapaths = {
+    'PATH': '',
+}
+
+moduleclass = 'bio'

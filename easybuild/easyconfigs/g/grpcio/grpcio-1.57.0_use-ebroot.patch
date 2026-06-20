@@ -1,0 +1,51 @@
+diff --git a/setup.py b/setup.py
+index 97c1dcec54..cc7bc8552e 100644
+--- a/setup.py
++++ b/setup.py
+@@ -313,29 +313,33 @@ if "win32" in sys.platform:
+     CORE_C_FILES = filter(lambda x: "third_party/cares" not in x, CORE_C_FILES)
+ 
+ if BUILD_WITH_SYSTEM_OPENSSL:
++    EBROOTOPENSSL = os.environ.get('EBROOTOPENSSL')
+     CORE_C_FILES = filter(
+         lambda x: "third_party/boringssl" not in x, CORE_C_FILES
+     )
+     CORE_C_FILES = filter(lambda x: "src/boringssl" not in x, CORE_C_FILES)
+-    SSL_INCLUDE = (os.path.join("/usr", "include", "openssl"),)
++    SSL_INCLUDE = (os.path.join(EBROOTOPENSSL, "include", "openssl"),)
+ 
+ if BUILD_WITH_SYSTEM_ZLIB:
++    EBROOTZLIB = os.environ.get('EBROOTZLIB')
+     CORE_C_FILES = filter(lambda x: "third_party/zlib" not in x, CORE_C_FILES)
+-    ZLIB_INCLUDE = (os.path.join("/usr", "include"),)
++    ZLIB_INCLUDE = (os.path.join(EBROOTZLIB, "include"),)
+ 
+ if BUILD_WITH_SYSTEM_CARES:
+     CORE_C_FILES = filter(lambda x: "third_party/cares" not in x, CORE_C_FILES)
+     CARES_INCLUDE = (os.path.join("/usr", "include"),)
+ 
+ if BUILD_WITH_SYSTEM_RE2:
++    EBROOTRE2 = os.environ.get('EBROOTRE2')
+     CORE_C_FILES = filter(lambda x: "third_party/re2" not in x, CORE_C_FILES)
+-    RE2_INCLUDE = (os.path.join("/usr", "include", "re2"),)
++    RE2_INCLUDE = (os.path.join(EBROOTRE2, "include", "re2"),)
+ 
+ if BUILD_WITH_SYSTEM_ABSL:
++    EBROOTABSEIL = os.environ.get('EBROOTABSEIL')
+     CORE_C_FILES = filter(
+         lambda x: "third_party/abseil-cpp" not in x, CORE_C_FILES
+     )
+-    ABSL_INCLUDE = (os.path.join("/usr", "include"),)
++    ABSL_INCLUDE = (os.path.join(EBROOTABSEIL, "include"),)
+ 
+ EXTENSION_INCLUDE_DIRECTORIES = (
+     (PYTHON_STEM,)
+@@ -378,7 +382,7 @@ if BUILD_WITH_SYSTEM_RE2:
+     EXTENSION_LIBRARIES += ("re2",)
+ if BUILD_WITH_SYSTEM_ABSL:
+     EXTENSION_LIBRARIES += tuple(
+-        lib.stem[3:] for lib in pathlib.Path("/usr").glob("lib*/libabsl_*.so")
++        lib.stem[3:] for lib in pathlib.Path(EBROOTABSEIL).glob("lib*/libabsl_*.so")
+     )
+ 
+ DEFINE_MACROS = (("_WIN32_WINNT", 0x600),)

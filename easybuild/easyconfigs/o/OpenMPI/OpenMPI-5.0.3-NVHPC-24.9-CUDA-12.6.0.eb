@@ -1,0 +1,65 @@
+name = 'OpenMPI'
+version = '5.0.3'
+
+homepage = 'https://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-3 implementation."""
+
+toolchain = {'name': 'NVHPC', 'version': '24.9-CUDA-12.6.0'}
+
+source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+sources = [SOURCELOWER_TAR_BZ2]
+patches = [
+    'OpenMPI-5.0.3_fix_hle_make_errors.patch',
+    'OpenMPI-5.0.3_disable_opal_path_nfs_test.patch',
+    ('OpenMPI-5.0.2_build-with-internal-cuda-header.patch', 1),
+    'OpenMPI-5.0.7_fix_gpfs_compatibility.patch',
+]
+checksums = [
+    {'openmpi-5.0.3.tar.bz2': '990582f206b3ab32e938aa31bbf07c639368e4405dca196fabe7f0f76eeda90b'},
+    {'OpenMPI-5.0.3_fix_hle_make_errors.patch': '881c907a9f5901d5d6af41cd33dffdcecba4a67a9e5123e602542aea57a80895'},
+    {'OpenMPI-5.0.3_disable_opal_path_nfs_test.patch':
+     '75d4417e35252ea3a19b2792f1b06e9aeb408c253aa4921d77226d57b71dee45'},
+    {'OpenMPI-5.0.2_build-with-internal-cuda-header.patch':
+     'f52dc470543f35efef10d651dd159c771ae25f8f76a420d20d87abf4dc769ed7'},
+    {'OpenMPI-5.0.7_fix_gpfs_compatibility.patch': '9739134ce273a691c9deac6e410510653a88c1542b60dbf8789e4a423447d4f6'},
+]
+
+builddependencies = [
+    ('pkgconf', '2.2.0'),
+    ('Perl', '5.38.2'),
+    ('Autotools', '20231222'),
+]
+
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('hwloc', '2.10.0'),
+    ('libevent', '2.1.12'),
+    ('UCX', '1.16.0'),
+    ('UCX-CUDA', '1.16.0', '-CUDA-%(cudaver)s'),
+    ('libfabric', '1.21.0'),
+    ('PMIx', '5.0.2'),
+    ('PRRTE', '3.0.5'),
+    ('UCC', '1.3.0'),
+    ('UCC-CUDA', '1.3.0', '-CUDA-%(cudaver)s'),
+]
+
+# CUDA related patches and custom configure option can be removed if CUDA support isn't wanted.
+preconfigopts = 'nvc -Iopal/mca/cuda/include -shared opal/mca/cuda/lib/cuda.c -o opal/mca/cuda/lib/libcuda.so && '
+# Update configure to include changes from the "disable_opal_path_nfs_test" patch
+preconfigopts += './autogen.pl --force && '
+
+configopts = '--with-cuda=%(start_dir)s/opal/mca/cuda '
+# Required to prevent internal compiler error in opal.
+configopts += ' --enable-alt-short-float=no'
+# Do not pick up the system library automatically
+configopts += ' --without-xpmem'
+# Set PGI compilers manually, as NVHPC compilers are not correctly detected
+configopts += ' CC=pgcc CXX=pgc++ FC=pgfortran'
+
+# site specific options
+# configopts += ' --without-psm2 '
+# configopts += ' --disable-oshmem '
+# configopts += ' --with-gpfs '
+# configopts += ' --with-slurm '
+
+moduleclass = 'mpi'

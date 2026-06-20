@@ -1,0 +1,48 @@
+easyblock = 'Tarball'
+
+name = 'snpEff'
+version = '5.2c'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://pcingola.github.io/SnpEff/'
+description = """SnpEff is a variant annotation and effect prediction tool.
+ It annotates and predicts the effects of genetic variants (such as amino acid changes)."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://snpeff.blob.core.windows.net/versions/']
+sources = ['%%(name)s_v%s_core.zip' % version.replace('.', '_')]
+checksums = ['9926f600662707e85478940abc283ef120a909f1d41c32a036f01d958cd51232']
+
+dependencies = [
+    # ignore website claim that Java 12+ is required, nothing is compiled for
+    # anything newer than Java 11
+    ('Java', '11', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('Perl', '5.36.1'),
+]
+
+fix_perl_shebang_for = ['scripts/*.pl']
+fix_python_shebang_for = ['scripts/*.py']
+
+_snpeff_data_dir = "~/.%(namelower)s_data"
+postinstallcmds = [
+    # default location of downloaded DBs is in installation directory, change to custom writable folder per user
+    "sed -i 's|^data.dir = ./data|data.dir = %s|' %%(installdir)s/snpEff.config" % _snpeff_data_dir,
+]
+
+sanity_check_paths = {
+    'files': ['%(name)s.jar', 'SnpSift.jar', 'scripts/%(name)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%(name)s -version"]
+
+modextrapaths = {'PATH': 'scripts'}
+
+modloadmsg = """This installation of %%(name)s is configured to automatically download DBs into the folder: %s
+Make sure enough space is available in it. You can link this folder to any other folder with the command:
+ln -sf /path/to/data/folder %s
+""" % (_snpeff_data_dir, _snpeff_data_dir)
+
+moduleclass = 'bio'

@@ -1,0 +1,44 @@
+easyblock = 'ConfigureMake'
+
+name = 'FastK'
+version = '1.1.0'
+
+homepage = 'https://github.com/thegenemyers/FASTK'
+description = """FastK is a k‑mer counter that is optimized for processing high quality DNA assembly data sets
+ such as those produced with an Illumina instrument or a PacBio run in HiFi mode. For example it is about 2 times
+ faster than KMC3 when counting 40-mers in a 50X HiFi data set. Its relative speedup decreases with increasing error
+ rate or increasing values of k, but regardless is a general program that works for any DNA sequence data set
+ and choice of k. It is further designed to handle data sets of arbitrarily large size, e.g. a 100X data
+ set of a 32GB Axolotl genome (3.2Tbp) can be performed on a machine with just 12GB of memory provided it
+ has ~6.5TB of disk space available."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/thegenemyers/FASTK/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['28a2de98ede77d4b4476596851f92413a9d99a1d3341afc6682d5333ac797f07']
+
+dependencies = [
+    ('cURL', '8.0.1'),
+    ('bzip2', '1.0.8'),
+    ('XZ', '5.4.2'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'cd %(builddir)s/FASTK-%(version)s/HTSLIB/ && make CC="$CC" CFLAGS="$CFLAGS" && cd - && '
+prebuildopts += 'cd %(builddir)s/FASTK-%(version)s/LIBDEFLATE/ && make CC="$CC" CFLAGS="$CFLAGS" && cd - && '
+
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS -fno-strict-aliasing" '
+
+preinstallopts = "mkdir -p %(installdir)s/bin && "
+installopts = "DEST_DIR=%(installdir)s/bin"
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["command -v %(name)s"]
+
+moduleclass = 'bio'

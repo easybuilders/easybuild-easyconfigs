@@ -18,13 +18,15 @@ builddependencies = [
     ('binutils', '2.39')
 ]
 
-# -Dutils=True only works as root 
-configopts = '-Dutils=False'
+# avoid that root permissions are required when installing utils (like fusermount)
+configopts = "-Dinitscriptdir=%(installdir)s/etc/init.d -Dudevrulesdir=%(installdir)s/udev/rules.d -Duseroot=false"
 
 sanity_check_paths = {
-    'files': ['lib64/libfuse%%(version_major)s.%s' % SHLIB_EXT,
-              'lib64/pkgconfig/fuse%(version_major)s.pc'],
-    'dirs': ['include/fuse%(version_major)s'],
+    'files': ['bin/fusermount3', 'etc/fuse.conf', 'lib/libfuse%%(version_major)s.%s' % SHLIB_EXT,
+              'lib/pkgconfig/fuse%(version_major)s.pc'],
+    'dirs': ['include/fuse%(version_major)s', 'share/man'],
 }
+
+sanity_check_commands = ["fusermount3 -h | grep '^fusermount3'"]
 
 moduleclass = 'lib'
