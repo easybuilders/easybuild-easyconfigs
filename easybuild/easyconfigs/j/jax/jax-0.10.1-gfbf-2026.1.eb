@@ -54,7 +54,7 @@ _jaxlib_buildopts += '--bazel_options="--action_env=JAXLIB_RELEASE" '
 
 _jaxlib_buildopts += '--bazel_options="--repo_env=ML_WHEEL_TYPE=release" '
 
-_local_prebuildopts = 'export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1; '
+_prebuildopts = 'export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1; '
 
 components = [
     ('jaxlib', version, {
@@ -69,22 +69,15 @@ components = [
                 'filename': f'xla-{_xla_commit[:8]}.tar.gz',
             },
         ],
-        'patches': [
-            # Apply in the extracted XLA tree. This adds an LLVM patch to XLA's
-            # third_party/llvm/workspace.bzl patch_file list
-            ('jax-0.10.1_xla-clang21-bytecode.patch', f'../xla-{_xla_commit}'),
-        ],
         'checksums': [
             {'jax-v0.10.1.tar.gz':
              '15983d01b0c858738b16b19b773459d22449992ce1ee97688cc532ea0047de9e'},
             {'xla-9b635916.tar.gz':
              '4ab4f271ca09fa9e431b9af5ded823fcf03932d94ad98f6957f13523f53ba070'},
-            {'jax-0.10.1_xla-clang21-bytecode.patch':
-             '190a9d61e1a1efe03214f7ad09930dfe021906b35a7d9614eb6e43c1e6051117'},
         ],
         'start_dir': f'jax-jax-v{version}',
         # fix jaxlib version - removes .dev suffix
-        'prebuildopts': ' '.join(['export JAXLIB_RELEASE=%(version)s && ', _local_prebuildopts]),
+        'prebuildopts': ' '.join(['export JAXLIB_RELEASE=%(version)s && ', _prebuildopts]),
         'buildopts': _jaxlib_buildopts,
     }),
 ]
@@ -126,7 +119,7 @@ _runtest_cmd = ' '.join([_runtest_cmd1, '||', _runtest_cmd1, '--last-failed'])
 
 exts_list = [
     (name, version, {
-        'prebuildopts': _local_prebuildopts + 'export JAX_PLATFORMS=cpu; ',
+        'prebuildopts': _prebuildopts + 'export JAX_PLATFORMS=cpu; ',
         # JAX_RELEASE makes jax/version.py report the clean version
         # ("0.10.1") instead of "0.10.1.dev<date>", which would otherwise
         # fail downstream `jax>=0.10.1` pip checks. Must be in preinstallopts
