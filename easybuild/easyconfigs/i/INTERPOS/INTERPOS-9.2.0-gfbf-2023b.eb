@@ -1,0 +1,37 @@
+easyblock = 'ConfigureMake'
+
+name = 'INTERPOS'
+version = '9.2.0'
+
+homepage = 'https://gitlab.epfl.ch/spc/interpos'
+description = """Interpolation routines"""
+
+toolchain = {'name': 'gfbf', 'version': '2023b'}
+
+source_urls = ['https://gitlab.epfl.ch/spc/%(namelower)s/-/archive/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-9.1.0_flexiblas.patch']
+checksums = [
+    {'interpos-9.2.0.tar.gz': 'd2dde797ed4f2fe9b7451bbb727e2faa12a0346b738303ab9393cd5297c2d164'},
+    {'INTERPOS-9.1.0_flexiblas.patch': '523f2c22fd06b290261e142bc552426557653228af89e701d457b0f9615e21db'},
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('X11', '20231019'),
+]
+
+preconfigopts = 'echo "%s" > .tarball-version && ./bootstrap &&' % (version)
+configopts = '--enable-tests'
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/interpos_module.mod', 'include/interpos_source.f90', 'include/prec_rkind.mod',
+              'lib/libinterpos.a', 'lib/libinterpos.%s' % SHLIB_EXT, 'lib/pkgconfig/interpos.pc'],
+    'dirs':  ['include', 'lib', 'lib/pkgconfig']
+}
+
+moduleclass = 'lib'

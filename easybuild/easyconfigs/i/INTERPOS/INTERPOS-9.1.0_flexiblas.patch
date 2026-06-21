@@ -1,0 +1,82 @@
+diff -Nru interpos-9.1.0-orig/configure.ac interpos-9.1.0/configure.ac
+--- interpos-9.1.0-orig/configure.ac	2020-04-30 09:29:54.000000000 +0200
++++ interpos-9.1.0/configure.ac	2024-02-15 14:02:10.669050364 +0100
+@@ -140,20 +140,20 @@
+   with_blas="no"
+   with_lapack="no"
+   ])
+-## Looks like openblas has pkg-config file, so use it
++## Looks like flexiblas has pkg-config file, so use it
+ ## and intel mkl has them too, but hidden, so don't expect them.
+ AS_CASE([$with_blas],
+-    [no],[AM_CONDITIONAL([HAVE_openblas],[false])],
+-    [PKG_HAVE_WITH_MODULES([openblas],[openblas >= 0.2])])
++    [no],[AM_CONDITIONAL([HAVE_flexiblas],[false])],
++    [PKG_HAVE_WITH_MODULES([flexiblas],[flexiblas >= 0.2])])
+ ##PKG_HAVE_WITH_MODULES([mkl-dynamic-lp64-seq],[mkl-dynamic-lp64-seq >= 2018], [])
+-AS_IF([test "x$with_openblas" = "xyes"],[
+-       ax_package_requires="openblas >= 0.2" # have pkg-config support
++AS_IF([test "x$with_flexiblas" = "xyes"],[
++       ax_package_requires="flexiblas >= 0.2" # have pkg-config support
+        ax_blas_ok=yes # disables testing later
+        ax_lapack_ok=yes # disables testing later
+       ])
+-## If pkg-config openblas failed, discover BLAS/LAPACK
+-AS_IF([test "x$with_openblas" = "xno"],[AX_BLAS()])
+-AS_IF([test "x$with_openblas" = "xno"],[AX_LAPACK()])
++## If pkg-config flexiblas failed, discover BLAS/LAPACK
++AS_IF([test "x$with_flexiblas" = "xno"],[AX_BLAS()])
++AS_IF([test "x$with_flexiblas" = "xno"],[AX_LAPACK()])
+ ## Add whatever AX_BLAS discovered to pc file
+ ## and what the Intel MKL Link Line Advisor says (for a few cases)
+ AS_CASE([$BLAS_LIBS],
+diff -Nru interpos-9.1.0-orig/m4/ax_blas.m4 interpos-9.1.0/m4/ax_blas.m4
+--- interpos-9.1.0-orig/m4/ax_blas.m4	2020-04-30 09:29:54.000000000 +0200
++++ interpos-9.1.0/m4/ax_blas.m4	2024-02-15 14:02:10.673589289 +0100
+@@ -114,8 +114,8 @@
+ 
+ # BLAS in OpenBLAS library? (http://xianyi.github.com/OpenBLAS/)
+ if test $ax_blas_ok = no; then
+-	AC_CHECK_LIB(openblas, $sgemm, [ax_blas_ok=yes
+-			                BLAS_LIBS="-lopenblas"])
++	AC_CHECK_LIB(flexiblas, $sgemm, [ax_blas_ok=yes
++			                BLAS_LIBS="-lflexiblas"])
+ fi
+ 
+ # BLAS in ATLAS library? (http://math-atlas.sourceforge.net/)
+diff -Nru interpos-9.1.0-orig/src/f90/Makefile.am interpos-9.1.0/src/f90/Makefile.am
+--- interpos-9.1.0-orig/src/f90/Makefile.am	2020-04-30 09:29:54.000000000 +0200
++++ interpos-9.1.0/src/f90/Makefile.am	2024-02-15 14:02:10.677403138 +0100
+@@ -19,10 +19,10 @@
+ libinterpos_la_SOURCES=$(MODS_for_interpos_source)
+ libinterpos_la_SOURCES+=$(SRCS)
+ 
+-if HAVE_openblas
+-# Library may depend on openblas via pkg-config
+-AM_FCFLAGS+=$(openblas_CFLAGS)
+-libinterpos_la_LIBADD=$(openblas_LIBS) $(LIBS) $(FCLIBS)
++if HAVE_flexiblas
++# Library may depend on flexiblas via pkg-config
++AM_FCFLAGS+=$(flexiblas_CFLAGS)
++libinterpos_la_LIBADD=$(flexiblas_LIBS) $(LIBS) $(FCLIBS)
+ else
+ if HAVE_BLAS
+ # or some other lapack/blas lib.
+diff -Nru interpos-9.1.0-orig/tests/f90/Makefile.am interpos-9.1.0/tests/f90/Makefile.am
+--- interpos-9.1.0-orig/tests/f90/Makefile.am	2020-04-30 09:29:54.000000000 +0200
++++ interpos-9.1.0/tests/f90/Makefile.am	2024-02-15 14:02:10.678444654 +0100
+@@ -7,10 +7,10 @@
+ # Add library requirement
+ AM_LDFLAGS+=$(top_builddir)/src/f90/libinterpos.la
+ 
+-if HAVE_openblas
+-# Program may depend on openblas via pkg-config
+-AM_FCFLAGS+=$(openblas_CFLAGS)
+-AM_LDFLAGS+=$(openblas_LIBS)
++if HAVE_flexiblas
++# Program may depend on flexiblas via pkg-config
++AM_FCFLAGS+=$(flexiblas_CFLAGS)
++AM_LDFLAGS+=$(flexiblas_LIBS)
+ else
+ if HAVE_BLAS
+ # or some other lapack/blas lib.
