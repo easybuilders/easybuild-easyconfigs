@@ -194,6 +194,7 @@ label_checks = [(changed_ecs, 'change'),
 label_checks += [(val, key) for key, val in toolchain_present.items()]
 
 result = {
+    'pr': os.getenv('PR_NUMBER'),
     'labels': [label for condition, label in label_checks if condition],
     'not_labels': [label for condition, label in label_checks if not condition],
 }
