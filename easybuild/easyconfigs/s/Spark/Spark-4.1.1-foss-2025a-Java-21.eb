@@ -1,0 +1,74 @@
+easyblock = 'Tarball'
+
+name = 'Spark'
+version = '4.1.1'
+versionsuffix = '-Java-%(javaver)s'
+homepage = 'https://spark.apache.org'
+description = """Spark is Hadoop MapReduce done in memory"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+sources = [{
+    'source_urls': [
+        'https://archive.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s/',
+        'https://downloads.apache.org/%(namelower)s/%(namelower)s-%(version)s/',
+    ],
+    'filename': '%(namelower)s-%(version)s-bin-hadoop3.tgz',
+}]
+checksums = ['f5874d9d6a4935f26bc9f761467971d26812a17d94c6493b8eb4b810e7db31ae']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('setuptools', '80.9.0'),
+]
+
+_grpcio_version = '1.76.0'
+dependencies = [
+    ('Python', '3.13.1'),
+    ('Java', '21', '', SYSTEM),  # Requires Java 21/17: https://spark.apache.org/docs/4.1.1/#downloading
+    ('Arrow', '22.0.0'),
+    ('PyYAML', '6.0.2'),
+    ('grpcio', _grpcio_version),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+exts_list = [
+    ('py4j', '0.10.9.9', {
+        'checksums': ['f694cad19efa5bd1dee4f3e5270eb406613c974394035e5bfc4ec1aba870b879'],
+    }),
+    ('grpcio-status', _grpcio_version, {
+        'modulename': 'grpc_status',
+        'source_urls': ['https://pypi.python.org/packages/source/%(name)s'],
+        'sources': ['grpcio_status-%(version)s.tar.gz'],
+        'checksums': ['25fcbfec74c15d1a1cb5da3fab8ee9672852dc16a5a9eeb5baf7d7a9952943cd'],
+    }),
+    ('googleapis-common-protos', '1.74.0', {
+        'modulename': 'google',
+        'source_urls': ['https://pypi.python.org/packages/source/%(name)s'],
+        'sources': ['googleapis_common_protos-%(version)s.tar.gz'],
+        'checksums': ['57971e4eeeba6aad1163c1f0fc88543f965bb49129b8bb55b2b7b26ecab084f1'],
+    }),
+    ('zstandard', '0.25.0', {
+        'checksums': ['7713e1179d162cf5c7906da876ec2ccb9c3a9dcbdffef0cc7f70c3667a205f0b'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/pyspark', 'bin/spark-shell'],
+    'dirs': ['python']
+}
+
+sanity_check_commands = [
+    "pyspark -h",
+    "python -s -c 'import pyspark'",
+]
+
+modextrapaths = {'PYTHONPATH': 'python'}
+
+modextravars = {'SPARK_HOME': '%(installdir)s'}
+
+moduleclass = 'devel'
