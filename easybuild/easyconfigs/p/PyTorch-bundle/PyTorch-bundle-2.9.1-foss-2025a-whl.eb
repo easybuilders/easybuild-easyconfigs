@@ -1,0 +1,121 @@
+easyblock = 'PythonBundle'
+
+name = 'PyTorch-bundle'
+version = '2.9.1'
+versionsuffix = '-whl'
+
+homepage = 'https://pytorch.org/'
+description = """PyTorch with compatible versions of official Torch extensions.
+This module provides the official binaries of from pytorch.org"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('PyTorch', version, versionsuffix),
+    ('Pillow', '11.3.0'),  # for torchvision
+    ('aiohttp', '3.12.13'),  # for torchtune
+    ('HF-Datasets', '4.5.0'),  # for torchtune
+    ('PyCryptodome', '3.23.0'),  # for torchtune
+    ('Safetensors', '0.7.0'),  # for torchtune
+    ('SentencePiece', '0.2.1'),  # for torchtune
+    ('tiktoken', '0.12.0'),  # for torchtune
+    ('tokenizers', '0.22.2'),  # for torchtune
+    ('lxml', '5.3.0'),  # for blobfile and torchtune
+]
+
+_whl_abi = 'manylinux_2_28'
+_whl_pyver = 'cp%(pymajver)s%(pyminver)s-cp%(pymajver)s%(pyminver)s'
+_pytorch_whl_source = {
+    'aarch64': f'%(name)s-%(version)s-{_whl_pyver}-{_whl_abi}_aarch64.whl',
+    'x86_64': f'%(name)s-%(version)s%2Bcpu-{_whl_pyver}-{_whl_abi}_x86_64.whl'
+}
+_pypi_whl_source = {
+    'aarch64': f'%(name)s-%(version)s-{_whl_pyver}-{_whl_abi}_aarch64.whl',
+    'x86_64': f'%(name)s-%(version)s-{_whl_pyver}-{_whl_abi}_x86_64.whl'
+}
+
+exts_default_options = {
+    'sources': [SOURCE_PY3_WHL],
+}
+
+exts_list = [
+    ('torchaudio', version, {
+        'source_urls': ['https://download.pytorch.org/whl/cpu'],
+        'sources': [_pytorch_whl_source[ARCH]],
+        'checksums': [{
+            'torchaudio-2.9.1-cp313-cp313-manylinux_2_28_aarch64.whl':
+                'd0080abd534063af32cf69523bd8410491b56c9f7f27ed644edeb97e1eb24a33',
+            'torchaudio-2.9.1%2Bcpu-cp313-cp313-manylinux_2_28_x86_64.whl':
+                'c3cb189e9b30ff639535c1152056cc2523aecf139978f2b9b89109e2d376909e',
+        }],
+    }),
+    ('torchvision', '0.24.1', {
+        'source_urls': ['https://download.pytorch.org/whl/cpu'],
+        'sources': [_pytorch_whl_source[ARCH]],
+        'checksums': [{
+            'torchvision-0.24.1-cp313-cp313-manylinux_2_28_aarch64.whl':
+                '59ddbe5779943af99a897fcd5894757ae7cffeb1c25a519b79cd9338188a8664',
+            'torchvision-0.24.1%2Bcpu-cp313-cp313-manylinux_2_28_x86_64.whl':
+                '19eb1744686a992522bf9ab8bf4b3245c2202e93a39b1fe1fcb2b8d2ca982048',
+        }],
+    }),
+    ('torchao', '0.15.0', {
+        'source_urls': ['https://download.pytorch.org/whl/cpu'],
+        'sources': ['%(name)s-%(version)s%2Bcpu-py3-none-any.whl'],
+        'checksums': ['72372b607f353aa1891ea7733c7b3488a33011e82c0356c404b66fd37ae57fc3'],
+    }),
+    ('pytorch-ignite', '0.5.2', {
+        'modulename': 'ignite',
+        'sources': ['pytorch_ignite-%(version)s-py3-none-any.whl'],
+        'checksums': ['ae0843e7b45416041cc57700dcbdfae30ae6432f2dc5bc20dfbfe1dae3414c91'],
+    }),
+    # requirements for torchrl
+    ('packaging', '25.0', {
+        'checksums': ['29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484'],
+    }),
+    ('pyvers', '0.1.0', {
+        'checksums': ['065249805ae537ddf9a2d1a8dffc6d0a12474a347d2eaa2f35ebdae92c0c8199'],
+    }),
+    ('tensordict', '0.10.0', {
+        'sources': [_pypi_whl_source[ARCH]],
+        'checksums': [{
+            'tensordict-0.10.0-cp313-cp313-manylinux_2_28_aarch64.whl':
+                'c3c9c16f6601b396155701b05ce40f328edae4a7d4d3069240fbee66a3645fc3',
+            'tensordict-0.10.0-cp313-cp313-manylinux_2_28_x86_64.whl':
+                '102776f9e3ea17bcc17fd45896f22c5b045fb61b6b502a1a6a6ff627eacb9b68',
+        }],
+    }),
+    ('torchrl', '0.10.1', {
+        'sources': [_pypi_whl_source[ARCH]],
+        'checksums': [{
+            'torchrl-0.10.1-cp313-cp313-manylinux_2_28_aarch64.whl':
+                'e0165c83b3d7eb18fb8d1866ca71cfa57e7a2fdad6860c353a28bfa65338c7b2',
+            'torchrl-0.10.1-cp313-cp313-manylinux_2_28_x86_64.whl':
+                '23e4f86d18e243457aa6e3fd3e6fd66bf4366c4f65372dbd6c8f6387bbd94d36',
+        }],
+    }),
+    # requirements for torchtune
+    ('antlr4-python3-runtime', '4.9.3', {
+        'modulename': 'antlr4',
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b'],
+    }),
+    ('omegaconf', '2.3.0', {
+        'checksums': ['7b4df175cdb08ba400f45cae3bdcae7ba8365db4d165fc65fd04b050ab63b46b'],
+    }),
+    ('blobfile', '3.2.0', {
+        'checksums': ['e5e4095477da9f09e2077f41320c006001b2102a61f07d41ceaaecdf5d9741d8'],
+    }),
+    ('kagglehub', '0.3.13', {
+        'checksums': ['e00dec8b81396cbad9c7b5eb62a33cf8ae27da26227abd196ed8f054c845ca00'],
+    }),
+    ('torchdata', '0.11.0', {
+        'checksums': ['52b940fbbe0e00fb21cabddf528449d1bec5bfb0d0823b7487b15f951658ee33'],
+    }),
+    ('torchtune', '0.6.1', {
+        'checksums': ['bcbc4ee9774b5c5829a5ff13df851e0b0e32416c018af8db53faa3472ac256e7'],
+    }),
+]
+
+moduleclass = 'ai'
