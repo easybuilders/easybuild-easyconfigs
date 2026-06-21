@@ -1,13 +1,11 @@
-# NOTE: In order to write comment and edit labels, this script requires workflows with write permissions.
-# It should not use any untrusted third party code, or any code checked into the repository itself
-# as that could indirectly grant PRs the ability to edit labels and comments on PRs.
+# script analyzes the PR, writes a json with tags and comment into a json file
 
 import json
 import os
 from pathlib import Path
 
 import git
-import requests
+import argparse
 
 
 def get_first_commit_date(repo, file_path):
@@ -41,39 +39,30 @@ def pr_ecs(pr_diff):
     return new_ecs, changed_ecs
 
 
-GITHUB_API_URL = 'https://api.github.com'
-event_path = os.getenv('GITHUB_EVENT_PATH')
-token = os.getenv('GH_TOKEN')
+parser = argparse.ArgumentParser()
+parser.add_argument('--output', required=True)
+args = parser.parse_args()
+
 repo = os.getenv('GITHUB_REPOSITORY')
 base_branch_name = os.getenv('GITHUB_BASE_REF')
 
-with open(event_path) as f:
-    data = json.load(f)
+print('Base branch name:', base_branch_name)
 
-pr_number = data['pull_request']['number']
-# Can't rely on merge_commit_sha for pull_request_target as it might be outdated
-# merge_commit_sha = data['pull_request']['merge_commit_sha']
-
-print("PR number:", pr_number)
-print("Base branch name:", base_branch_name)
-
-# Change into "pr" checkout directory to allow diffs and glob to work on the same content
-os.chdir('pr')
 gitrepo = git.Repo('.')
 
 target_commit = gitrepo.commit('origin/' + base_branch_name)
-print("Target commit ref:", target_commit)
+print('Target commit ref:', target_commit)
 merge_commit = gitrepo.head.commit
-print("Merge commit:", merge_commit)
+print('Merge commit:', merge_commit)
 pr_diff = target_commit.diff(merge_commit)
 
 new_ecs, changed_ecs = pr_ecs(pr_diff)
 modified_workflow = any(item.a_path.startswith('.github/workflows/') for item in pr_diff)
 
 
-print("Changed ECs:", ', '.join(str(p) for p in changed_ecs))
-print("Newly added ECs:", ', '.join(str(p) for p in new_ecs))
-print("Modified workflow:", modified_workflow)
+print('Changed ECs:', ', '.join(str(p) for p in changed_ecs))
+print('Newly added ECs:', ', '.join(str(p) for p in new_ecs))
+print('Modified workflow:', modified_workflow)
 
 
 # Check for new and updated software.
@@ -85,14 +74,14 @@ updated_software = 0
 to_diff = {}
 for new_file in new_ecs:
     neighbours = similar_easyconfigs(gitrepo, new_file, new_ecs)
-    print(f"Found {len(neighbours)} neighbours for {new_file}")
+    print(f'Found {len(neighbours)} neighbours for {new_file}')
     if neighbours:
         updated_software += 1
         to_diff[new_file] = neighbours
     else:
         new_software += 1
 
-print(f"Generating comment for {len(to_diff)} updates softwares")
+print(f'Generating comment for {len(to_diff)} updates softwares')
 # Limit comment size for large PRs:
 if len(to_diff) > 20:  # Too much, either bad PR or some broad change. Not diffing.
     max_diffs_per_software = 0
@@ -108,11 +97,11 @@ if max_diffs_per_software > 0:
     for new_file, neighbours in to_diff.items():
         compare_neighbours = neighbours[:max_diffs_per_software]
         if compare_neighbours:
-            print(f"Diffs for {new_file}")
+            print(f'Diffs for {new_file}')
             comment += f'#### Updated software `{new_file.name}`\n\n'
 
         for neighbour in compare_neighbours:
-            print(f"against {neighbour}")
+            print(f'against {neighbour}')
             comment += '<details>\n'
             comment += f'<summary>Diff against <code>{neighbour.name}</code></summary>\n\n'
             comment += f'[{neighbour}](https://github.com/{repo}/blob/{base_branch_name}/{neighbour})\n\n'
@@ -132,7 +121,7 @@ for file in new_ecs + changed_ecs:
             break
 
 # Add toolchain labels based on matching new added / changed filenames againt our toolchain policy
-# This doesn't include LLVM or NVHPC yet, and needs to be adapted together with the test suite
+# This doesn't include NVHPC yet, and needs to be adapted together with the test suite
 # when adding new toolchains and their respective labels.
 # We are only checking the file names here and will not read the actual file.
 gcc_tc_gen_map = {
@@ -177,95 +166,40 @@ for file in new_ecs + changed_ecs:
     file_path = str(file)
     # Check for GCCcore / GCC
     for gcc_version, toolchain_version in gcc_tc_gen_map.items():
-        if f"-GCCcore-{gcc_version}" in file_path or f"-GCC-{gcc_version}" in file_path:
+        if f'-GCCcore-{gcc_version}' in file_path or f'-GCC-{gcc_version}' in file_path:
             toolchain_present[toolchain_version] = True
             continue
     # Check for intel-compilers
     for intel_version, toolchain_version in ic_tc_gen_map.items():
-        if f"-intel-compilers-{intel_version}" in file_path:
+        if f'-intel-compilers-{intel_version}' in file_path:
             toolchain_present[toolchain_version] = True
             continue
     for llvm_version, toolchain_version in llvm_tc_gen_map.items():
-        if f"-llvm-compilers-{llvm_version}" in file_path:
+        if f'-llvm-compilers-{llvm_version}' in file_path:
             toolchain_present[toolchain_version] = True
             continue
     # Check for common toolchains with our toolchain naming
     for toolchain_version in gcc_tc_gen_map.values():
-        if any(f"-{toolchain_name}-{toolchain_version}" in file_path for toolchain_name in toolchain_names):
+        if any(f'-{toolchain_name}-{toolchain_version}' in file_path for toolchain_name in toolchain_names):
             toolchain_present[toolchain_version] = True
             continue
-
-print("Adjusting labels")
-current_labels = [label['name'] for label in data['pull_request']['labels']]
 
 label_checks = [(changed_ecs, 'change'),
                 (new_software, 'new'),
                 (updated_software, 'update'),
                 (modified_workflow, 'workflow'),
                 (manual_download, 'manual_download')]
+
 # This covers all the toolchain labels we may be able to add
 label_checks += [(val, key) for key, val in toolchain_present.items()]
 
-labels_add = []
-labels_del = []
-for condition, label in label_checks:
-    if condition and label not in current_labels:
-        labels_add.append(label)
-    elif not condition and label in current_labels:
-        labels_del.append(label)
-
-url = f"{GITHUB_API_URL}/repos/{repo}/issues/{pr_number}/labels"
-
-headers = {
-    "Accept": "application/vnd.github+json",
-    "Authorization": f"Bearer {token}",
-    "X-GitHub-Api-Version": "2022-11-28",
+result = {
+    'labels': [label for condition, label in label_checks if condition],
+    'not_labels': [label for condition, label in label_checks if not condition],
 }
 
-if labels_add:
-    print(f"Setting labels: {labels_add} at {url}")
-    response = requests.post(url, headers=headers, json={"labels": labels_add})
-    if response.status_code == 200:
-        print(f"Labels {labels_add} added successfully.")
-    else:
-        print(f"Failed to add labels: {response.status_code}, {response.text}")
-
-for label in labels_del:
-    print(f"Removing label: {label} at {url}")
-    response = requests.delete(f'{url}/{label}', headers=headers)
-    if response.status_code == 200:
-        print(f"Label {label} removed successfully.")
-    else:
-        print(f"Failed to delete label: {response.status_code}, {response.text}")
-
-# Write comment with diff
 if updated_software:
-    # Search for comment by bot to potentially replace
-    url = f"{GITHUB_API_URL}/repos/{repo}/issues/{pr_number}/comments"
-    response = requests.get(url, headers=headers)
-    comment_id = None
-    for existing_comment in response.json():
-        if existing_comment["user"]["login"] == "github-actions[bot]":  # Bot username in GitHub Actions
-            comment_id = existing_comment["id"]
+    result['diff'] = comment
 
-    if len(comment) >= 65536:
-        # Comment is too long to post, so post a message saying that
-        comment = "Diff of new easyconfig(s) against existing ones is too long for a GitHub comment. "
-        comment += "Use `--review-pr` (and `--review-pr-filter` / `--review-pr-max`) locally."
-
-    if comment_id:
-        # Update existing comment
-        url = f"{GITHUB_API_URL}/repos/{repo}/issues/comments/{comment_id}"
-        response = requests.patch(url, headers=headers, json={"body": comment})
-        if response.status_code == 200:
-            print("Comment updated successfully.")
-        else:
-            print(f"Failed to update comment: {response.status_code}, {response.text}")
-    else:
-        # Post a new comment
-        url = f"{GITHUB_API_URL}/repos/{repo}/issues/{pr_number}/comments"
-        response = requests.post(url, headers=headers, json={"body": comment})
-        if response.status_code == 201:
-            print("Comment posted successfully.")
-        else:
-            print(f"Failed to post comment: {response.status_code}, {response.text}")
+with open(args.output, 'w') as f:
+    json.dump(result, f)
