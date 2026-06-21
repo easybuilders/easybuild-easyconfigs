@@ -1,0 +1,521 @@
+Patching various files to allow fluidity-4.1.20 to work with newer VTK and
+PETSc, compilers and also using dynamic libraries. Help from fluidity developers
+is greatly appreciated.
+See also: https://github.com/FluidityProject/fluidity/pull/390/files
+Author: J. Saßmannshausen (Imperial College London/UK)
+
+diff --git a/fluidity-4.1.20.orig/configure b/fluidity-4.1.20/configure
+index f254dad..47c330a 100755
+--- a/fluidity-4.1.20.orig/configure
++++ b/fluidity-4.1.20/configure
+@@ -14501,11 +14501,11 @@ else
+ fi
+ 
+ if test -n "$with_spatialindex_root"; then
+-   LIBSPATIALINDEX="${with_spatialindex_root}/lib/libspatialindex.a"
++   LIBSPATIALINDEX="${with_spatialindex_root}/lib/libspatialindex.so"
+    CPPFLAGS="$CPPFLAGS -I${with_spatialindex_root}/include/spatialindex/"
+ else
+ 
+-LIBSPATIALINDEX="${PWD}/lib/libspatialindex.a"
++LIBSPATIALINDEX="${PWD}/lib/libspatialindex.so"
+ 
+ 
+ 
+@@ -15188,8 +15188,8 @@ if test "$enable_VTK" = no ; then enable_vtk=no; fi
+ if test "$enable_vtk" != "no" ; then
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking for VTK automagic." >&5
+ printf "%s\n" "$as_me: Checking for VTK automagic." >&6;}
+-    VTK_FLAGS=`cmake --find-package -DNAME=VTK -DCOMPILER_ID=gcc -DLANGUAGE=Fortran -DMODE=COMPILE`
+-    VTK_LIBS=`cmake --find-package -DNAME=VTK -DCOMPILER_ID=gcc -DLANGUAGE=Fortran -DMODE=LINK`
++    VTK_FLAGS="-I${EBROOTVTK}/include/vtk-9.3"
++    VTK_LIBS="-L${EBROOTVTK}/lib64 -lvtkCommonCore-9.3 -lvtkCommonDataModel-9.3 -lvtkIOXML-9.3 -lvtkIOCore-9.3 -lvtkCommonExecutionModel-9.3 -lvtkParallelMPI-9.3 -lvtkIOLegacy-9.3 -lvtkFiltersVerdict-9.3 -lvtkIOParallelXML-9.3 -lvtkFiltersGeneral-9.3 -lvtksys-9.3 -lvtkloguru-9.3 -lvtkCommonTransforms-9.3 -lvtkCommonMisc-9.3 -lvtkCommonSystem-9.3 -lvtkCommonMath-9.3 -lvtkIOXMLParser-9.3 -lvtkdoubleconversion-9.3 -lvtklz4-9.3 -lvtklzma-9.3 -lvtkzlib-9.3 -lvtkParallelCore-9.3 -lvtkverdict-9.3 -lvtkFiltersCore-9.3 -lvtkCommonComputationalGeometry-9.3 -lvtkexpat-9.3"
+ 
+     OLD_CPPFLAGS="$CPPFLAGS"
+     CPPFLAGS="$CPPFLAGS $VTK_FLAGS"
+@@ -15255,7 +15255,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
+         # User may set the install directory for VTK but use
+         # the default sensible location if not.
+         if test "x$VTK_INSTALL_PREFIX" == "x"; then
+-            VTK_INSTALL_PREFIX=/usr/include
++            VTK_INSTALL_PREFIX=${EBROOTVTK}/include
+         fi
+ 
+         # Loop through potential vtk installations and get the highest version number
+@@ -15724,7 +15724,7 @@ fi
+ 
+ 
+             # check at the usual places:
+-            for i in $(ls -d /usr/include/vtk*) $VTK_INCLUDE; do
++            for i in $(ls -d  ${EBROOTVTK}/include/vtk*) $VTK_INCLUDE; do
+                 if test -r $i/vtkCellData.h; then
+                     CPPFLAGS="-I$i $CPPFLAGS"
+                 fi
+diff --git a/fluidity-4.1.20.orig/femtools/Mesh_Quality_C.cpp b/fluidity-4.1.20/femtools/Mesh_Quality_C.cpp
+index 27b7810..fe15d79 100644
+--- a/fluidity-4.1.20.orig/femtools/Mesh_Quality_C.cpp
++++ b/fluidity-4.1.20/femtools/Mesh_Quality_C.cpp
+@@ -77,13 +77,14 @@ void mesh_quality_c(int* dim, int* n_nodes, int* n_elements, int* connectivity_l
+ #else
+   filter->SetInputData(ugrid);
+ #endif
+-
++  using QualityMeasureTypes = vtkMeshQuality::QualityMeasureTypes;
+   filter->SetTriangleQualityMeasure(*measure);
+-  if (*measure == VTK_QUALITY_AREA) {
+-    filter->SetTetQualityMeasure(VTK_QUALITY_VOLUME);
++  if (filter->GetTriangleQualityMeasure() == QualityMeasureTypes::AREA) {
++    filter->SetTetQualityMeasure(QualityMeasureTypes::VOLUME);
+   } else {
+     filter->SetTetQualityMeasure(*measure);
+   }
++
+   filter->Update();
+   vtkDataSet* vgrid=filter->GetOutput();
+   vtkDataArray* data = vgrid->GetCellData()->GetArray(0);
+diff --git a/fluidity-4.1.20.orig/femtools/Multigrid.F90 b/fluidity-4.1.20/femtools/Multigrid.F90
+index 3f32e5d..7016a9e 100644
+--- a/fluidity-4.1.20.orig/femtools/Multigrid.F90
++++ b/fluidity-4.1.20/femtools/Multigrid.F90
+@@ -707,7 +707,11 @@ integer, optional, dimension(:), intent(out):: cluster
+   PetscInt:: diagminloc
+   PetscReal:: diagmin
+   Vec:: sqrt_diag, inv_sqrt_diag, diag, one
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
+   double precision, dimension(MAT_INFO_SIZE):: matrixinfo
++#else
++    MatInfo :: matrixinfo
++#endif
+   integer, dimension(:), allocatable:: findN, N, R
+   integer:: nrows, nentries, ncols
+   integer:: jc, ccnt, base, end_of_range
+@@ -716,7 +720,11 @@ integer, optional, dimension(:), intent(out):: cluster
+   call MatGetLocalSize(A, nrows, ncols, ierr)
+   ! use Petsc_Tools's MatGetInfo because of bug in earlier patch levels of petsc 3.0
+   call MatGetInfo(A, MAT_LOCAL, matrixinfo, ierr)
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
+   nentries=matrixinfo(MAT_INFO_NZ_USED)
++#else
++  nentries=int(matrixinfo%nz_used)
++#endif
+   call MatGetOwnerShipRange(A, base, end_of_range, ierr)
+   ! we decrease by 1, so base+i gives 0-based petsc index if i is the local fortran index:
+   base=base-1
+@@ -858,7 +866,7 @@ subroutine create_prolongator(P, nrows, ncols, findN, N, R, A, base, omega)
+     coarse_base=coarse_base-1
+   else
+     call MatCreateAIJ(MPI_COMM_SELF, nrows, ncols, nrows, ncols, &
+-      0, dnnz, 0, PETSC_NULL_INTEGER, P, ierr)
++      0, dnnz, 0, PETSC_NULL_INTEGER_ARRAY, P, ierr)
+     call MatSetOption(P, MAT_USE_INODES, PETSC_FALSE, ierr)
+     ! subtract 1 from each cluster no to get petsc 0-based numbering
+     coarse_base=-1
+@@ -905,13 +913,20 @@ integer, intent(in):: base
+ PetscReal, intent(in):: epsilon
+ 
+   PetscErrorCode:: ierr
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
+   PetscReal, dimension(:), allocatable:: vals(:)
+   integer, dimension(:), allocatable:: cols(:)
++#else
++  PetscReal, dimension(:), pointer:: vals(:)
++  integer, dimension(:), pointer:: cols(:)
++#endif
+   PetscReal aij, eps_sqrt
+   integer i, j, k, p, ncols
+ 
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
+   ! workspace for MatGetRow
+   allocate( vals(1:size(N)), cols(1:size(n)) )
++#endif
+ 
+   eps_sqrt=sqrt(epsilon)
+ 
+diff --git a/fluidity-4.1.20.orig/femtools/Petsc_Tools.F90 b/fluidity-4.1.20/femtools/Petsc_Tools.F90
+index e3d8fac..3b44863 100644
+--- a/fluidity-4.1.20.orig/femtools/Petsc_Tools.F90
++++ b/fluidity-4.1.20/femtools/Petsc_Tools.F90
+@@ -1113,7 +1113,7 @@ contains
+     end do
+ 
+     call MatCreateAIJ(MPI_COMM_SELF, nprows, npcols, nprows, npcols, &
+-      0, nnz, 0, PETSC_NULL_INTEGER, M, ierr)
++      0, nnz, 0, PETSC_NULL_INTEGER_ARRAY, M, ierr)
+     call MatSetup(M, ierr)
+ 
+     call MatSetOption(M, MAT_USE_INODES, PETSC_FALSE, ierr)
+@@ -1325,16 +1325,27 @@ contains
+ 
+     PetscErrorCode ierr
+     type(csr_sparsity) :: sparsity
+-    double precision, dimension(MAT_INFO_SIZE):: matrixinfo
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
+     PetscScalar, dimension(:), allocatable:: row_vals
+-    integer, dimension(:), allocatable:: row_cols, unn2gnn
++    integer, dimension(:), allocatable:: row_cols
++    MatInfo, dimension(MAT_INFO_SIZE):: matrixinfo
++#else
++    PetscScalar, dimension(:), pointer:: row_vals
++    integer, dimension(:), pointer :: row_cols
++    MatInfo :: matrixinfo
++#endif
++    integer, dimension(:), allocatable:: unn2gnn
+     integer private_columns
+     integer i, j, k, ui, rows, columns, entries, ncols, offset, end_of_range
+     logical parallel
+ 
+     ! get the necessary info about the matrix:
+     call MatGetInfo(matrix, MAT_LOCAL, matrixinfo, ierr)
+-    entries=matrixinfo(MAT_INFO_NZ_USED)
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
++    entries = matrixinfo(MAT_INFO_NZ_USED)
++#else
++    entries = int(matrixinfo%nz_used)
++#endif
+     ! note we're no longer using MAT_INFO for getting local n/o rows and cols
+     ! as it's bugged in Petsc < 3.0 and obsoloted thereafter:
+     call MatGetLocalSize(matrix, rows, columns, ierr)
+@@ -1375,10 +1386,10 @@ contains
+     end if
+     call allocate(A, sparsity)
+ 
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
++    allocate(row_cols(1:entries), row_vals(1:entries))
++#endif
+     if (parallel) then
+-      ! in the parallel case we first copy in a temp. buffer
+-      ! and only insert the entries A_ij with both i *and* j local
+-      allocate(row_cols(1:entries), row_vals(1:entries))
+       j=1
+       do i=0, rows-1
+         sparsity%findrm(i+1)=j
+@@ -1397,34 +1408,20 @@ contains
+             j=j+1
+           end if
+         end do
+-        ! This is stupid, we were given copies in MatGetRow so it could
+-        ! have restored its internal tmp arrays straight away, anyway:
+         call MatRestoreRow(matrix, offset+i, ncols, row_cols, row_vals, ierr)
+       end do
+       A%sparsity%findrm(i+1)=j
+ 
+-      deallocate(row_cols, row_vals)
+     else
+       ! Serial case:
+       j=1
+       do i=0, rows-1
+         sparsity%findrm(i+1)=j
+-#ifdef DOUBLEP
+-        call MatGetRow(matrix, offset+i, ncols, sparsity%colm(j:), A%val(j:), ierr)
+-        j=j+ncols
+-        ! This is stupid, we were given copies in MatGetRow so it could
+-        ! have restored its internal tmp arrays straight away, anyway:
+-        call MatRestoreRow(matrix, offset+i, ncols, sparsity%colm(j:), A%val(j:), ierr)
+-#else
+-        allocate(row_vals(size(A%val) - j + 1))
+-        call MatGetRow(matrix, offset+i, ncols, sparsity%colm(j:), row_vals, ierr)
+-        A%val(j:) = row_vals
++        call MatGetRow(matrix, offset+i, ncols, row_cols, row_vals, ierr)
++        sparsity%colm(j:j+ncols-1) = row_cols(1:ncols)
++        A%val(j:j+ncols-1) = row_vals(1:ncols)
+         j=j+ncols
+-        ! This is stupid, we were given copies in MatGetRow so it could
+-        ! have restored its internal tmp arrays straight away, anyway:
+-        call MatRestoreRow(matrix, offset+i, ncols, sparsity%colm(j:), row_vals, ierr)
+-        deallocate(row_vals)
+-#endif
++        call MatRestoreRow(matrix, offset+i, ncols, row_cols, row_vals, ierr)
+       end do
+       A%sparsity%findrm(i+1)=j
+ 
+@@ -1432,6 +1429,9 @@ contains
+       sparsity%colm=sparsity%colm-offset+1
+ 
+     end if
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
++    deallocate(row_cols, row_vals)
++#endif
+     call deallocate(sparsity)
+ 
+     if (present(column_numbering)) then
+@@ -1535,7 +1535,7 @@ function IsNullMatNullSpace(nullsp)
+     ! MatNullSpace(0) is what is returned by MatGetNullspace if no nullspace is present
+     ! (because a wrapper on the output is missing, and there isn't a PETSC_NULL_MATNULLSPACE
+     ! in the first place)
+-    IsNullMatNullSpace = nullsp%v==-1 .or. nullsp%v==0
++    IsNullMatNullSpace = nullsp%v<= 0
+ 
+ end function IsNullMatNullSpace
+ 
+diff --git a/fluidity-4.1.20.orig/femtools/Solvers.F90 b/fluidity-4.1.20/femtools/Solvers.F90
+index 1b5453e..88f11fc 100644
+--- a/fluidity-4.1.20.orig/femtools/Solvers.F90
++++ b/fluidity-4.1.20/femtools/Solvers.F90
+@@ -1366,7 +1366,7 @@ character(len=*), intent(in):: solver_option_path
+ 
+ end subroutine petsc_solve_destroy_petsc_csr
+ 
+-subroutine ConvergenceCheck(reason, iterations, name, solver_option_path, &
++subroutine ConvergenceCheck(converged_reason, iterations, name, solver_option_path, &
+   startfromzero, A, b, petsc_numbering, x0, vector_x0, checkconvergence, nomatrixdump)
+   !!< Checks reason of convergence. If negative (not converged)
+   !!< writes out a scary warning and dumps matrix (if first time),
+@@ -1374,7 +1374,8 @@ subroutine ConvergenceCheck(reason, iterations, name, solver_option_path, &
+   !!< (i.e. not converged due to other reasons than reaching max_its)
+   !!< it sets sig_int to .true. causing the run to halt and dump
+   !!< at the end of the time step.
+-  integer, intent(in):: reason, iterations
++  KSPConvergedReason, intent(in):: converged_reason
++  integer, intent(in):: iterations
+   !! name of the thing we're solving for, used in log output:
+   character(len=*), intent(in):: name
+   !! for new options path to solver options
+@@ -1398,6 +1399,7 @@ subroutine ConvergenceCheck(reason, iterations, name, solver_option_path, &
+   PetscErrorCode ierr
+   character(len=30) reasons(10)
+   real spin_up_time, current_time
++  integer reason
+ 
+   reasons(1)  = "Undefined"
+   reasons(2)  = "KSP_DIVERGED_NULL"
+@@ -1410,6 +1412,11 @@ subroutine ConvergenceCheck(reason, iterations, name, solver_option_path, &
+   reasons(9)  = "KSP_DIVERGED_NAN"
+   reasons(10) = "KSP_DIVERGED_INDEFINITE_MAT"
+ 
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
++  reason = converged_reason
++#else
++  reason = converged_reason%v  ! recover the (old style) numerical version (probably a bad idea)
++#endif
+   if (reason<=0) then
+      if(present_and_true(nomatrixdump)) matrixdumped = .true.
+      if (present(checkconvergence)) then
+@@ -1815,6 +1822,11 @@ subroutine create_ksp_from_options(ksp, mat, pmat, solver_option_path, parallel,
+   logical, optional, intent(in) :: is_subpc
+ 
+     KSP:: subksp
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
++    KSP:: subksps
++#else
++    KSP, dimension(:), pointer :: subksps
++#endif
+     PC:: subpc
+     MatNullSpace:: nullsp
+     PCType:: pctype, hypretype
+@@ -1882,11 +1894,19 @@ subroutine create_ksp_from_options(ksp, mat, pmat, solver_option_path, parallel,
+       ! need to call this before the subpc can be retrieved:
+       call PCSetup(pc, ierr)
+ 
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR>=23)
++      nullify(subksps)
++#endif
+       if (pctype==PCBJACOBI) then
+-        call PCBJACOBIGetSubKSP(pc, n_local, first_local, subksp, ierr)
++        call PCBJACOBIGetSubKSP(pc, n_local, first_local, subksps, ierr)
+       else
+-        call PCASMGetSubKSP(pc, n_local, first_local, subksp, ierr)
++        call PCASMGetSubKSP(pc, n_local, first_local, subksps, ierr)
+       end if
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR>=23)
++      subksp = subksps(1)
++#else
++      subksp = subksps
++#endif
+ 
+       call KSPGetPC(subksp, subpc, ierr)
+       ! recursively call to setup the subpc
+@@ -1908,7 +1928,15 @@ subroutine create_ksp_from_options(ksp, mat, pmat, solver_option_path, parallel,
+        call PCSetType(pc, PCBJACOBI, ierr)
+        ! need to call this before the subpc can be retrieved:
+        call PCSetup(pc, ierr)
+-       call PCBJACOBIGetSubKSP(pc, n_local, first_local, subksp, ierr)
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR>=23)
++       nullify(subksps)
++#endif
++       call PCBJACOBIGetSubKSP(pc, n_local, first_local, subksps, ierr)
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR>=23)
++       subksp = subksps(1)
++#else
++       subksp = subksps
++#endif
+        call KSPGetPC(subksp, subpc, ierr)
+        call PCSetType(subpc, pctype, ierr)
+ 
+@@ -1984,7 +2012,11 @@ subroutine create_ksp_from_options(ksp, mat, pmat, solver_option_path, parallel,
+   type(petsc_numbering_type), intent(in):: petsc_numbering
+ 
+     character(len=128):: fieldsplit_type
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
+     KSP, dimension(size(petsc_numbering%gnn2unn,2)):: subksps
++#else
++    KSP, dimension(:), pointer:: subksps => null()
++#endif
+     Mat :: mat, pmat
+     MatNullSpace :: null_space
+     IS:: index_set
+diff --git a/fluidity-4.1.20.orig/femtools/Sparse_Tools_Petsc.F90 b/fluidity-4.1.20/femtools/Sparse_Tools_Petsc.F90
+index de1a55a..7f615f5 100644
+--- a/fluidity-4.1.20.orig/femtools/Sparse_Tools_Petsc.F90
++++ b/fluidity-4.1.20/femtools/Sparse_Tools_Petsc.F90
+@@ -411,7 +411,7 @@ contains
+       ! Create serial block matrix:
+       call MatCreateBAIJ(MPI_COMM_SELF, element_size, &
+          urows, ucols, urows, ucols, &
+-         0, dnnz, 0, PETSC_NULL_INTEGER, matrix%M, ierr)
++         0, dnnz, 0, PETSC_NULL_INTEGER_ARRAY, matrix%M, ierr)
+ 
+     elseif (use_element_blocks) then
+ 
+@@ -429,7 +429,7 @@ contains
+ 
+       ! Create serial matrix:
+       call MatCreateAIJ(MPI_COMM_SELF, urows, ucols, urows, ucols, &
+-         0, dnnz, 0, PETSC_NULL_INTEGER, matrix%M, ierr)
++         0, dnnz, 0, PETSC_NULL_INTEGER_ARRAY, matrix%M, ierr)
+       call MatSetBlockSizes(matrix%M, lgroup_size(1), lgroup_size(2), ierr)
+ 
+     else
+@@ -735,12 +735,20 @@ contains
+     integer :: entries
+     type(petsc_csr_matrix), intent(in) :: matrix
+ 
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
+     double precision, dimension(MAT_INFO_SIZE):: matrixinfo
++#else
++    MatInfo :: matrixinfo
++#endif
+     PetscErrorCode:: ierr
+ 
+     ! get the necessary info about the matrix:
+     call MatGetInfo(matrix%M, MAT_LOCAL, matrixinfo, ierr)
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
+     entries=matrixinfo(MAT_INFO_NZ_USED)
++#else
++    entries=int(matrixinfo%nz_used)
++#endif
+ 
+   end function petsc_csr_entries
+ 
+@@ -786,7 +794,8 @@ contains
+     idxm=matrix%row_numbering%gnn2unn(i,blocki)
+     idxn=matrix%column_numbering%gnn2unn(j,blockj)
+ 
+-    call MatSetValues(matrix%M, size(i), idxm, size(j), idxn, real(val, kind=PetscScalar_kind), &
++    call MatSetValues(matrix%M, size(i), idxm, size(j), idxn, &
++        real(reshape(val, (/ size(val) /)), kind=PetscScalar_kind), &
+         ADD_VALUES, ierr)
+ 
+     matrix%is_assembled=.false.
+@@ -809,7 +818,7 @@ contains
+     idxn=matrix%column_numbering%gnn2unn(j,:)
+ 
+     call MatSetValues(matrix%M, size(idxm), idxm, size(idxn), idxn, &
+-                  real(val, kind=PetscScalar_kind), ADD_VALUES, ierr)
++                  real(reshape(val, (/ size(val) /)), kind=PetscScalar_kind), ADD_VALUES, ierr)
+ 
+     matrix%is_assembled=.false.
+ 
+@@ -824,7 +833,7 @@ contains
+     integer, dimension(:), intent(in) :: j
+     real, dimension(:,:,:,:), intent(in) :: val
+ 
+-    PetscScalar, dimension(size(i), size(j)):: value
++    PetscScalar, dimension(size(i)*size(j)):: value
+     PetscInt, dimension(size(i)):: idxm
+     PetscInt, dimension(size(j)):: idxn
+     PetscErrorCode:: ierr
+@@ -835,7 +844,7 @@ contains
+       do blockj=1, size(matrix%column_numbering%gnn2unn,2)
+         idxn=matrix%column_numbering%gnn2unn(j,blockj)
+         ! unfortunately we need a copy here to pass contiguous memory
+-        value=val(blocki, blockj, :, :)
++        value=reshape(val(blocki, blockj, :, :), (/ size(value) /))
+         call MatSetValues(matrix%M, size(i), idxm, size(j), idxn, &
+               value, ADD_VALUES, ierr)
+       end do
+@@ -855,7 +864,7 @@ contains
+     real, dimension(:,:,:,:), intent(in) :: val
+     logical, dimension(:,:), intent(in) :: block_mask
+ 
+-    PetscScalar, dimension(size(i), size(j)):: value
++    PetscScalar, dimension(size(i)*size(j)):: value
+     PetscInt, dimension(size(i)):: idxm
+     PetscInt, dimension(size(j)):: idxn
+     PetscErrorCode:: ierr
+@@ -867,7 +876,7 @@ contains
+         if (block_mask(blocki,blockj)) then
+           idxn=matrix%column_numbering%gnn2unn(j,blockj)
+           ! unfortunately we need a copy here to pass contiguous memory
+-          value=val(blocki, blockj, :, :)
++          value=reshape(val(blocki, blockj, :, :), (/ size(value) /))
+           call MatSetValues(matrix%M, size(i), idxm, size(j), idxn, &
+                 value, ADD_VALUES, ierr)
+         end if
+diff --git a/fluidity-4.1.20.orig/include/petsc_legacy.h b/fluidity-4.1.20/include/petsc_legacy.h
+index c960e2a..2dbf438 100644
+--- a/fluidity-4.1.20.orig/include/petsc_legacy.h
++++ b/fluidity-4.1.20/include/petsc_legacy.h
+@@ -7,18 +7,23 @@
+ #include "petscversion.h"
+ #include "petsc/finclude/petsc.h"
+ 
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
+ #define PetscObjectReferenceWrapper(x, ierr) PetscObjectReference(x%v, ierr)
+-#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<9)
+-#define MatSolverType MatSolverPackage
+-#define PCFactorSetMatSolverType PCFactorSetMatSolverPackage
++#else
++#define PetscObjectReferenceWrapper(x, ierr) PetscObjectReference(x, ierr)
+ #endif
+ 
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<23)
++! from 3.23 this is a parameter, so the following won't work (but is also not required)
+ #ifndef PC_COMPOSITE_SYMMETRIC_MULTIPLICATIVE
+ #define PC_COMPOSITE_SYMMETRIC_MULTIPLICATIVE PC_COMPOSITE_SYM_MULTIPLICATIVE
+ #endif
++#endif
++
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<22)
++#define PETSC_NULL_INTEGER_ARRAY PETSC_NULL_INTEGER
++#endif
+ 
+-#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<15)
+-#define PCCompositeAddPCType PCCompositeAddPC
+-#define KSPMonitorResidual KSPMonitorDefault
+-#define KSPMonitorTrueResidual KSPMonitorTrueResidualNorm
++#if (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR<19)
++#define PETSC_NULLPTR PETSC_NULL
+ #endif
+diff --git a/fluidity-4.1.20.orig/libadaptivity/configure b/fluidity-4.1.20/libadaptivity/configure
+index 14a87c4..dfadf5e 100755
+--- a/fluidity-4.1.20.orig/libadaptivity/configure
++++ b/fluidity-4.1.20/libadaptivity/configure
+@@ -9664,8 +9664,8 @@ fi
+ if test "x$enable_vtk" != "xno" ; then
+     { $as_echo "$as_me:${as_lineno-$LINENO}: Checking for VTK automagic." >&5
+ $as_echo "$as_me: Checking for VTK automagic." >&6;}
+-    VTK_FLAGS=`cmake --find-package -DNAME=VTK -DCOMPILER_ID=gcc -DLANGUAGE=Fortran -DMODE=COMPILE`
+-    VTK_LIBS=`cmake --find-package -DNAME=VTK -DCOMPILER_ID=gcc -DLANGUAGE=Fortran -DMODE=LINK`
++    VTK_FLAGS="-I${EBROOTVTK}/include/vtk-9.3"
++    VTK_LIBS="-L${EBROOTVTK}/lib64 -lvtkCommonCore-9.3 -lvtkCommonDataModel-9.3 -lvtkIOXML-9.3 -lvtkIOCore-9.3 -lvtkCommonExecutionModel-9.3 -lvtkParallelMPI-9.3 -lvtkIOLegacy-9.3 -lvtkFiltersVerdict-9.3 -lvtkIOParallelXML-9.3 -lvtkFiltersGeneral-9.3 -lvtksys-9.3 -lvtkloguru-9.3 -lvtkCommonTransforms-9.3 -lvtkCommonMisc-9.3 -lvtkCommonSystem-9.3 -lvtkCommonMath-9.3 -lvtkIOXMLParser-9.3 -lvtkdoubleconversion-9.3 -lvtklz4-9.3 -lvtklzma-9.3 -lvtkzlib-9.3 -lvtkParallelCore-9.3 -lvtkverdict-9.3 -lvtkFiltersCore-9.3 -lvtkCommonComputationalGeometry-9.3 -lvtkexpat-9.3"
+     OLD_CPPFLAGS="$CPPFLAGS"
+     CPPFLAGS="$CPPFLAGS $VTK_FLAGS"
+     OLD_LIBS="$LIBS"
+@@ -9731,7 +9731,7 @@ rm -f core conftest.err conftest.$ac_objext \
+         # User may set the install directory for VTK but use
+         # the default sensible location if not.
+         if test "x$VTK_INSTALL_PREFIX" == "x"; then
+-            VTK_INSTALL_PREFIX=/usr/include
++            VTK_INSTALL_PREFIX=${EBROOTVTK}/include
+         fi
+ 
+         # Loop through potential vtk installations and get the highest version number
+@@ -10240,7 +10240,7 @@ fi
+ 
+ 
+             # check at the usual places:
+-            for i in $(ls -d /usr/include/vtk*) $VTK_INCLUDE; do
++            for i in $(ls -d  ${EBROOTVTK}/include/vtk*) $VTK_INCLUDE; do
+                 if test -r $i/vtkCellData.h; then
+                     CPPFLAGS="-I$i $CPPFLAGS"
+                 fi
