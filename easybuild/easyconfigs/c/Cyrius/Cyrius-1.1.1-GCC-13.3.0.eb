@@ -1,0 +1,47 @@
+easyblock = 'PythonBundle'
+
+name = 'Cyrius'
+version = '1.1.1'
+
+homepage = 'https://github.com/Illumina/Cyrius'
+description = """Cyrius is a WGS-based CYP2D6 genotyper from Illumina."""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('HTSlib', '1.21'),
+    ('SAMtools', '1.21'),
+    ('Pysam', '0.22.1'),
+    ('statsmodels', '0.14.4', '', ('gfbf', '2024a')),
+    ('SciPy-bundle', '2024.05', '', ('gfbf', '2024a')),
+]
+
+exts_list = [
+    ('cyrius', version, {
+        'checksums': ['18fe5ac94f0cbf0641ca76f40439d7186542bef1e9e10f0530d43c7e7fd9bb94'],
+    }),
+]
+
+# star_caller.py is the upstream entry point; wrap cyrius binary to preserve the name
+postinstallcmds = [
+    "printf '%s\\n' '#!/usr/bin/env bash' "
+    "'exec cyrius \"$@\"' "
+    "> %(installdir)s/bin/star_caller.py",
+    'chmod 755 %(installdir)s/bin/star_caller.py',
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/cyrius',
+        'bin/star_caller.py',
+    ],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'cyrius -h',
+    'star_caller.py -h',
+]
+
+moduleclass = 'bio'
