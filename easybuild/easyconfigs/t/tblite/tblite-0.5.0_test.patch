@@ -1,0 +1,75 @@
+This patch addresses the issue here:
+https://github.com/tblite/tblite/issues/288
+Author: J. Saßmannshausen (Imperial College London/UK)
+diff --git a/tblite-0.5.0.orig/src/tblite/api/table.f90 b/tblite-0.5.0/src/tblite/api/table.f90
+index 0c3741e..1509ee9 100644
+--- a/tblite-0.5.0.orig/src/tblite/api/table.f90
++++ b/tblite-0.5.0/src/tblite/api/table.f90
+@@ -244,7 +244,7 @@ subroutine table_set_char_api(verror, vtable, ckey, cval, n) &
+ 
+    call c_f_pointer(vtable, table)
+    call c_f_character(ckey, key)
+-   call c_f_pointer(cval, carr, [strlen(cval)+1, min(n, 1)])
++   call c_f_pointer(cval, carr, [strlen(cval)+1, max(n, 1)])
+ 
+    if (table%ptr%has_key(key)) call table%ptr%delete(key)
+ 
+diff --git a/tblite-0.5.0.orig/src/tblite/io/numpy/utils.f90 b/tblite-0.5.0/src/tblite/io/numpy/utils.f90
+index 22c5a49..68f5ecc 100644
+--- a/tblite-0.5.0.orig/src/tblite/io/numpy/utils.f90
++++ b/tblite-0.5.0/src/tblite/io/numpy/utils.f90
+@@ -80,6 +80,7 @@ subroutine read_char_r0(reader, var, stat)
+    character(len=*), intent(out) :: var
+    integer, intent(out) :: stat
+ 
++   stat = 0
+    if (allocated(reader%buffer)) then
+       if (reader%pos + len(var) > size(reader%buffer)) then
+          stat = iostat_end
+@@ -110,6 +111,7 @@ subroutine read_char_r1(reader, var, stat)
+    character(len=1), intent(out) :: var(:)
+    integer, intent(out) :: stat
+ 
++   stat = 0
+    if (allocated(reader%buffer)) then
+       if (reader%pos + size(var) > size(reader%buffer)) then
+          stat = iostat_end
+@@ -127,6 +129,7 @@ subroutine read_i4_r1(reader, var, stat)
+    integer(i4), intent(out) :: var(:)
+    integer, intent(out) :: stat
+ 
++   stat = 0
+    if (allocated(reader%buffer)) then
+       if (reader%pos + size(var) * 4 > size(reader%buffer)) then
+          stat = iostat_end
+@@ -144,6 +147,7 @@ subroutine read_rdp_r1(reader, var, stat)
+    real(dp), intent(out) :: var(:)
+    integer, intent(out) :: stat
+ 
++   stat = 0
+    if (allocated(reader%buffer)) then
+       if (reader%pos + size(var) * 8 > size(reader%buffer)) then
+          stat = iostat_end
+@@ -161,6 +165,7 @@ subroutine read_rdp_r2(reader, var, stat)
+    real(dp), intent(out) :: var(:, :)
+    integer, intent(out) :: stat
+ 
++   stat = 0
+    if (allocated(reader%buffer)) then
+       if (reader%pos + size(var) * 8 > size(reader%buffer)) then
+          stat = iostat_end
+@@ -178,6 +183,7 @@ subroutine read_rdp_r3(reader, var, stat)
+    real(dp), intent(out) :: var(:, :, :)
+    integer, intent(out) :: stat
+ 
++   stat = 0
+    if (allocated(reader%buffer)) then
+       if (reader%pos + size(var) * 8 > size(reader%buffer)) then
+          stat = iostat_end
+@@ -190,4 +196,4 @@ subroutine read_rdp_r3(reader, var, stat)
+    end if
+ end subroutine read_rdp_r3
+ 
+-end module tblite_io_numpy_utils
+\ No newline at end of file
++end module tblite_io_numpy_utils

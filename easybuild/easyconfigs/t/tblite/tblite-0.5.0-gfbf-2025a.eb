@@ -1,0 +1,66 @@
+# This version is patching the previously failing tests correctly
+# see: https://github.com/tblite/tblite/issues/288
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'tblite'
+version = '0.5.0'
+
+homepage = 'https://github.com/tblite/tblite'
+description = """Light-weight tight-binding framework"""
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+github_account = 'tblite'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [f'{name}-{version}_test.patch']
+checksums = [
+    {'v0.5.0.tar.gz': '65ede0d66ad38f7748cb1c93367db3bd9b67f6439d8e45539bcf55182489c287'},
+    {'tblite-0.5.0_test.patch': 'f8038b698e1aa926177f3be7d9b7a3f2b21046d7304ea44637a0ed0789c43020'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+    ('meson-python', '0.18.0'),
+]
+
+dependencies = [
+    ('mctc-lib', '0.5.0'),
+    ('mstore', '0.3.0'),
+    ('Simple-DFTD3', '1.2.1'),
+    ('dftd4', '3.7.0'),
+    # for tblite Python bindings
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+]
+
+build_shared_libs = True
+
+# run suite of tests with ctest, repeat once if a test fails
+test_cmd = 'ctest --parallel 1  --repeat until-pass:2'
+runtest = ''
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+exts_list = [
+    (name, version, {
+        'checksums': ['5dae9e7f559a2602c361acf3817c987501f5b13eaf2072b5f81bb8ae071fc7cb'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/tblite',
+              'lib/libtblite.%s' % SHLIB_EXT],
+    'dirs': ['include/%(name)s', 'lib/cmake', 'lib/pkgconfig',
+             'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["mctc-convert --help"]
+
+moduleclass = 'chem'
