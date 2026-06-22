@@ -52,7 +52,7 @@ _jaxlib_buildopts += '--clang_path=$EBROOTLLVM/bin/clang '
 _jaxlib_buildopts += '--bazel_options="--action_env=JAXLIB_RELEASE" '
 _jaxlib_buildopts += '--bazel_options="--repo_env=ML_WHEEL_TYPE=release" '
 
-_local_prebuildopts = 'export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1; '
+_prebuildopts = 'export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1; '
 
 components = [
     ('jaxlib', version, {
@@ -76,7 +76,7 @@ components = [
         ],
         'start_dir': f'jax-jax-v{version}',
         # fix jaxlib version - removes .dev suffix
-        'prebuildopts': ' '.join(['export JAXLIB_RELEASE=%(version)s && ', _local_prebuildopts]),
+        'prebuildopts': ' '.join(['export JAXLIB_RELEASE=%(version)s && ', _prebuildopts]),
         'buildopts': _jaxlib_buildopts,
     }),
 ]
@@ -118,7 +118,7 @@ _runtest_cmd = ' '.join([_runtest_cmd1, '||', _runtest_cmd1, '--last-failed'])
 
 exts_list = [
     (name, version, {
-        'prebuildopts': _local_prebuildopts + 'export JAX_PLATFORMS=cpu; ',
+        'prebuildopts': _prebuildopts + 'export JAX_PLATFORMS=cpu; ',
         # JAX_RELEASE makes jax/version.py report the clean version
         # ("0.10.1") instead of "0.10.1.dev<date>", which would otherwise
         # fail downstream `jax>=0.10.1` pip checks. Must be in preinstallopts
