@@ -57,7 +57,7 @@ testopts = (
     "-j %(parallel)s -E "
     "'pythonSourceTests|distGeomHelpersCatch|"  # skip tests with known issues
     "testGaussianShape|"  # shows platform-sensitive numerical differences in the "Fragment Mode" Catch2 test
-    "testCIPLabeler|"  # can fail intermittently with interrupted CIP label calculation, verified separately
+    "testCIPLabeler|"  # can fail intermittently with interrupted CIP label calculation
     "moldraw2DTestCatch'"  # strict MolDraw2D SVG/PNG rendering-regression checks that are sensitive to font/rendering
 )
 
@@ -89,6 +89,24 @@ sanity_check_paths = {
 
 sanity_check_commands = [
     "python -s -c 'import rdkit.rdBase'",
+    # pythonSourceTests smoke check
+    "python -s -c 'from rdkit import Chem, rdBase; from rdkit.Chem import AllChem; "
+    "print(rdBase.rdkitVersion); assert Chem.MolFromSmiles(\"CCO\") is not None'",
+    # distGeomHelpersCatch smoke check
+    "python -s -c 'from rdkit import Chem; from rdkit.Chem import AllChem; m=Chem.AddHs(Chem.MolFromSmiles(\"CCO\")); "
+    "assert AllChem.EmbedMolecule(m, AllChem.ETKDG()) == 0; assert m.GetNumConformers() == 1'",
+    # testGaussianShape smoke check
+    "python -s -c 'from rdkit import Chem; from rdkit.Chem import AllChem, rdShapeHelpers; "
+    "m=Chem.AddHs(Chem.MolFromSmiles(\"CCO\")); AllChem.EmbedMolecule(m); "
+    "d=rdShapeHelpers.ShapeTanimotoDist(m,m); assert abs(d) < 1e-12'",
+    # moldraw2DTestCatch smoke check
+    "python -s -c 'from rdkit import Chem; from rdkit.Chem.Draw import rdMolDraw2D; m=Chem.MolFromSmiles(\"CCO\"); "
+    "d=rdMolDraw2D.MolDraw2DSVG(250,200); d.DrawMolecule(m); d.FinishDrawing(); assert \"<svg\" in d.GetDrawingText();"
+    " assert hasattr(rdMolDraw2D,\"MolDraw2DCairo\")'",
+    # testCIPLabeler smoke check
+    "python -s -c 'from rdkit import Chem; from rdkit.Chem import rdCIPLabeler; "
+    "m=Chem.MolFromSmiles(\"C[C@H](O)C(=O)O\"); rdCIPLabeler.AssignCIPLabels(m); "
+    "assert m.GetAtomWithIdx(1).GetProp(\"_CIPCode\") == \"S\"'",
 ]
 
 moduleclass = 'chem'
