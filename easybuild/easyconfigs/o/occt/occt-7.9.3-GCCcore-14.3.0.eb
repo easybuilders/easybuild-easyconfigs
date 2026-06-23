@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'occt'
+version = '7.9.3'
+
+homepage = 'https://www.opencascade.com/'
+description = """Open CASCADE Technology (OCCT) is an object-oriented C++
+class library designed for rapid production of sophisticated domain-specific
+CAD/CAM/CAE applications."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags']
+sources = ['V{}.tar.gz'.format(version.replace('.', '_'))]
+checksums = ['5ecf094ec6b12d5413dfb851d8c3590c354058aee556e32e408bdfbf8c357d57']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('Doxygen', '1.14.0'),
+]
+dependencies = [
+    ('OpenGL', '2025.09'),
+    ('freetype', '2.13.3'),
+    ('Tcl', '9.0.1'),
+    ('Tk', '9.0.1'),
+    ('FreeImage', '3.18.0'),
+    ('tbb', '2022.2.0'),
+    ('FFmpeg', '7.1.2'),
+]
+
+# CMake's FindTCL doesn't recognise Tcl 9 library naming (libtcl9.0.so),
+# so we pass the library path explicitly.
+configopts = "-DUSE_FREEIMAGE=ON -D3RDPARTY_FREEIMAGE_DIR=$EBROOTFREEIMAGE "
+configopts += "-D3RDPARTY_TBB_DIR=$EBROOTTBB "
+configopts += "-D3RDPARTY_TCL_DIR=$EBROOTTCL "
+configopts += "-D3RDPARTY_TCL_LIBRARY=$EBROOTTCL/lib/libtcl9.0.so "
+configopts += "-D3RDPARTY_TCL_LIBRARY_DIR=$EBROOTTCL/lib "
+configopts += "-D3RDPARTY_TK_DIR=$EBROOTTK "
+configopts += "-D3RDPARTY_FREETYPE_DIR=$EBROOTFREETYPE "
+
+sanity_check_paths = {
+    'files': ['bin/DRAWEXE', 'bin/env.sh'],
+    'dirs': ['lib/cmake/opencascade'],
+}
+
+sanity_check_commands = ['DRAWEXE -h']
+
+moduleclass = 'cae'
