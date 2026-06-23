@@ -1,0 +1,129 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Adam Huffman
+# The Francis Crick Institute
+# Elements derived from work by Pablo Escobar
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+# Update: Petr Král (INUITS)
+
+# Note that Click in Python 3 requires that you change your locale to unicode before invoking your Python script.
+# See: https://click.palletsprojects.com/en/7.x/python3/
+easyblock = 'PythonBundle'
+
+name = 'MultiQC'
+version = '1.33'
+
+homepage = 'https://multiqc.info'
+description = """Aggregate results from bioinformatics analyses across many samples into a single report.
+
+ MultiQC searches a given directory for analysis logs and compiles an HTML report. It's a general
+ use tool, perfect for summarising the output from numerous bioinformatics tools."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [('hatchling', '1.27.0'), ('Cython', '3.1.2')]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('Kaleido', '0.2.1'),
+    ('matplotlib', '3.10.5'),
+    ('plotly.py', '6.5.0'),
+    ('pydantic', '2.11.9'),
+    ('tqdm', '4.67.1'),
+    ('Pillow', '11.3.0'),
+    ('PyYAML', '6.0.2'),
+    ('networkx', '3.5'),
+    ('tiktoken', '0.12.0'),
+]
+
+if ARCH == 'x86_64':
+    _pyarrow_tmpl = 'pyarrow-%(version)s-cp313-cp313-manylinux_2_28_x86_64.whl'
+    _pyarrow_sha = 'e0a15757fccb38c410947df156f9749ae4a3c89b2393741a50521f39a8cf202a'
+    _polars_tmpl = 'polars_lts_cpu-%(version)s-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl'
+    _polars_sha = '656b530a672fe8fbd4c212b2a8481099e5cef63e84970975619ea7c25faeb833'
+elif ARCH == 'aarch64':
+    _pyarrow_tmpl = 'pyarrow-%(version)s-cp313-cp313-manylinux_2_28_aarch64.whl'
+    _pyarrow_sha = 'ce20fe000754f477c8a9125543f1936ea5b8867c5406757c224d745ed033e691'
+    _polars_tmpl = 'polars_lts_cpu-%(version)s-cp39-abi3-manylinux_2_24_aarch64.whl'
+    _polars_sha = '64574c784380b37167b3db3a7cfdb9839cd308e89b8818859d2ffb34a9c896b2'
+else:
+    raise RuntimeError("Unsupported architecture for wheel selection: %s" % ARCH)
+
+exts_list = [
+    ('colormath2', '3.0.3', {
+        'checksums': ['e797613f4f0b86c6c218a1c7dc50f1259e6934e391581969b689ae27379c2ffa'],
+    }),
+    ('humanfriendly', '10.0', {
+        'checksums': ['6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc'],
+    }),
+    ('markdown', '3.7', {
+        'checksums': ['2ae2471477cfd02dbbf038d5d9bc226d40def84b4fe2986e49b59b6b472bbed2'],
+    }),
+    ('coloredlogs', '15.0.1', {
+        'checksums': ['7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0'],
+    }),
+    ('humanize', '4.12.2', {
+        # Use wheel as source to avoid "TypeError: Field `project.license-files` must be a table"
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['e4e44dced598b7e03487f3b1c6fd5b1146c30ea55a110e71d5d4bca3e094259e'],
+    }),
+    ('pyaml_env', '1.2.2', {
+        'checksums': ['f83502516b6f1561ba7c2db9ced939a7a9933a66702d8071e98ad07da49a4bb4'],
+    }),
+    ('spectra', '0.1.0', {
+        'checksums': ['6a30e33241cb18256020395181cb4cc029dcac6de6f8d78cecbed81c14226a3f'],
+    }),
+    ('typeguard', '4.4.2', {
+        'checksums': ['a6f1065813e32ef365bc3b3f503af8a96f9dd4e0033a02c28c4a4983de8c6c49'],
+    }),
+    ('multiqc', version, {
+        'checksums': ['06e2b82fd9bfa458a79d8da869cb7d88260f624c03297120a70446a49ce852ed'],
+    }),
+    ('natsort', '8.4.0', {
+        'checksums': ['45312c4a0e5507593da193dedd04abb1469253b601ecaf63445ad80f0a1ea581'],
+    }),
+    ('python_dotenv', '1.1.0', {
+        'modulename': 'dotenv',
+        'checksums': ['41f90bc6f5f177fb41f53e87666db362025010eb28f60a01c9143bfa33a2b2d5'],
+    }),
+    ('jmespath', '1.0.1', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980'],
+    }),
+    ('botocore', '1.42.11', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['73b0796870f16ccd44729c767ade20e8ed62b31b3aa2be07b35377338dcf6d7c'],
+    }),
+    ('s3transfer', '0.16.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['18e25d66fed509e3868dc1572b3f427ff947dd2c56f844a5bf09481ad3f3b2fe'],
+    }),
+    ('boto3', '1.42.11', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['54939f7fc1b2777771c2a66ecc77025b2af86e567b5cf68d30dc3838205f0a4a'],
+    }),
+
+    ('boto3', '1.42.11', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['54939f7fc1b2777771c2a66ecc77025b2af86e567b5cf68d30dc3838205f0a4a'],
+    }),
+    ('pyarrow', '22.0.0', {
+        'source_tmpl': _pyarrow_tmpl,
+        'checksums': [_pyarrow_sha],
+    }),
+    ('polars-lts-cpu', '1.33.1', {
+        'modulename': 'polars',
+        'source_tmpl': _polars_tmpl,
+        'checksums': [_polars_sha],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/multiqc'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["multiqc --help"]
+
+moduleclass = 'bio'
