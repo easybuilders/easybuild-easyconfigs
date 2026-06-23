@@ -1,6 +1,6 @@
 # Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
 
-easyblock = 'ConfigureMake'
+easyblock = 'EB_UCX_Plugins'
 
 name = 'UCX-ROCm'
 version = '1.18.0'
@@ -18,14 +18,20 @@ toolchainopts = {'pic': True}
 source_urls = ['https://github.com/openucx/ucx/releases/download/v%(version)s']
 sources = [{'filename': 'ucx-%(version)s.tar.gz', 'alt_location': 'UCX'}]
 patches = [
-    'UCX-1.18.0_fix_bistro_hooks.patch',
-    'UCX-1.18.0_fix-glibc-2.43-compile-failure.patch',
+#    'UCX-1.18.0_fix_bistro_hooks.patch',
+#    'UCX-1.18.0_fix-glibc-2.43-compile-failure.patch',
+    'UCX-ROCm-1.18.0_use_rocm_easybuild_paths.patch',
+    'UCX-CUDA-1.18.0_link_against_existing_UCX_libs.patch',
 ]
 checksums = [
     {'ucx-1.18.0.tar.gz': 'fa75070f5fa7442731b4ef5fc9549391e147ed3d859afeb1dad2d4513b39dc33'},
-    {'UCX-1.18.0_fix_bistro_hooks.patch': '6357f1ebb1569e30d0855e48404fdf38a5a7060a87789f54d7bb751f957be20c'},
-    {'UCX-1.18.0_fix-glibc-2.43-compile-failure.patch':
-     'c67b2070a65e8217b7c6f9d9a6a13ff11141bacfed395d551376432428348a9c'},
+#    {'UCX-1.18.0_fix_bistro_hooks.patch': '6357f1ebb1569e30d0855e48404fdf38a5a7060a87789f54d7bb751f957be20c'},
+#    {'UCX-1.18.0_fix-glibc-2.43-compile-failure.patch':
+#     'c67b2070a65e8217b7c6f9d9a6a13ff11141bacfed395d551376432428348a9c'},
+    {'UCX-ROCm-1.18.0_use_rocm_easybuild_paths.patch':
+     'dbf3a57a39752a1bef3f32f045cb3655f48ebec7544120c2874412710368d90a'},
+    {'UCX-CUDA-1.18.0_link_against_existing_UCX_libs.patch':
+     '5aa85e428f62a168f2d4e75197c41c6835ed5a9893696cedaf1021858678f08c'},
 ]
 
 builddependencies = [
@@ -37,27 +43,11 @@ dependencies = [
     ('zlib', '1.3.1'),
     ('numactl', '2.0.19'),
     ('xpmem', '2.7.4'),
+    ('UCX', '1.18.0'),
+    ('HIP', '6.4.1'),
 ]
 
 osdependencies = [OS_PKG_IBVERBS_DEV]
 
-# Base options matching the GCCcore UCX build
-configopts = '--enable-optimizations --enable-cma --enable-mt --with-verbs '
-configopts += '--without-java --without-go --disable-doxygen-doc '
-configopts += '--disable-logging --disable-debug --disable-assertions --disable-params-check '
-
-configopts += '--with-rocm=$EBROOTROCMMINLLVM '
-configopts += '--with-xpmem=$EBROOTXPMEM '
-
-buildopts = 'V=1'
-
-sanity_check_paths = {
-    'files': [
-        'bin/ucx_perftest',
-        'bin/ucx_read_profile',
-        'bin/ucx_info',
-        'lib/ucx/libuct_rocm.so'],
-    'dirs': ['include', 'lib', 'share'],
-}
 
 moduleclass = 'lib'
