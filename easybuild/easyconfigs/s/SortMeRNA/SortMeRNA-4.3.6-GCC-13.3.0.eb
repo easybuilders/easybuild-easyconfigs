@@ -1,0 +1,58 @@
+#
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+# #
+# updated: John Dey Fred Hutch
+easyblock = 'CMakeMake'
+
+name = 'SortMeRNA'
+version = '4.3.6'
+
+homepage = 'https://bioinfo.lifl.fr/RNA/sortmerna/'
+description = """SortMeRNA is a biological sequence analysis tool for filtering, mapping and OTU-picking
+ NGS reads."""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+toolchainopts = {'cstd': 'c++20', 'optarch': True, 'pic': True}
+
+source_urls = ['https://github.com/sortmerna/sortmerna/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_cpp20-fixes.patch']
+checksums = [
+    '1ddb7a9f50b63ab5b87c15855a4080949fb0ee0f33ecf0ea8dfb1c1c44cbe9da',  # v4.3.6.tar.gz
+    '75e9e248b77eeb61eef3087de2b4a035b614db19967bc9d75a016cf751916369',  # SortMeRNA-4.3.6_cpp20-fixes.patch
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('binutils', '2.42'),
+]
+
+dependencies = [
+    ('RocksDB', '10.10.1'),
+    ('RapidJSON', '1.1.0-20240815'),
+    ('concurrentqueue', '1.0.4'),
+    ('zlib', '1.3.1'),
+]
+
+configopts = '-DPORTABLE=OFF '
+configopts += '-DROCKSDB_HOME=$EBROOTROCKSDB '
+configopts += '-DRAPIDJSON_HOME=$EBROOTRAPIDJSON '
+
+check_readelf_rpath = False
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['cmake'],
+}
+
+sanity_check_commands = ['%(namelower)s -h']
+
+moduleclass = 'bio'
