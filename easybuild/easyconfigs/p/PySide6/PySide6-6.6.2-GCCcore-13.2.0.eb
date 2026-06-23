@@ -28,30 +28,36 @@ dependencies = [
 ]
 
 use_pip = False
-sanity_pip_check = True
-download_dep_fail = True
 
 preconfigopts = 'export CLANG_INSTALL_DIR=$EBROOTCLANG && '
 
-prebuildopts = 'export CLANG_INSTALL_DIR=$EBROOTCLANG && '
-buildcmd = 'build --parallel=%(parallel)s'
+prebuildopts = preconfigopts
+buildopts = '--qtpaths=$EBROOTQT6/bin/qtpaths6 --cmake=$EBROOTCMAKE/bin/cmake --parallel=%(parallel)s'
 
-preinstallopts = 'export CLANG_INSTALL_DIR=$EBROOTCLANG && '
-install_target = 'install --parallel=%(parallel)s'
+preinstallopts = preconfigopts
+install_target = 'install --qtpaths=$EBROOTQT6/bin/qtpaths6 --cmake=$EBROOTCMAKE/bin/cmake --parallel=%(parallel)s'
 
-postinstallcmds = [  # Required for pyside-designer plugin to be installed
-    'cp %(start_dir)s/build/*/install/plugins/designer/libPySidePlugin.so  %(installdir)s',
-    'ln -sf %(installdir)s/libPySidePlugin.so ${EBROOTQT6}/plugins/designer/',
+# Install the pyside-designer plugin under the PySide6 prefix; it is picked up
+# via $QT_PLUGIN_PATH (see modextrapaths)
+postinstallcmds = [
+    'mkdir -p %(installdir)s/plugins/designer',
+    'cp %(start_dir)s/build/*/install/plugins/designer/libPySidePlugin.so %(installdir)s/plugins/designer/',
 ]
 
 sanity_check_paths = {
-    'files': ['lib/python%(pyshortver)s/site-packages/%(name)s/libpyside6.abi3.so.6.6'],
+    'files': [
+        'lib/python%(pyshortver)s/site-packages/%(name)s/libpyside6.abi3.so.6.6',
+        'plugins/designer/libPySidePlugin.%s' % SHLIB_EXT,
+    ],
     'dirs': ['lib/python%(pyshortver)s/site-packages/%(name)s'],
 }
-sanity_check_commands = ["python -c 'import %(name)s as s; assert s.__version__ == \"%(version)s\"'"]
+sanity_check_commands = ["python -s -c 'import %(name)s as s; assert s.__version__ == \"%(version)s\"'"]
 
 options = {'modulename': 'PySide6'}
 
-modextrapaths = {'LD_LIBRARY_PATH': 'lib/python%(pyshortver)s/site-packages/%(name)s'}
+modextrapaths = {
+    'LD_LIBRARY_PATH': 'lib/python%(pyshortver)s/site-packages/%(name)s',
+    'QT_PLUGIN_PATH': 'plugins',
+}
 
 moduleclass = 'devel'
