@@ -1,0 +1,131 @@
+easyblock = 'PythonBundle'
+
+name = 'Boltz'
+version = '2.2.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/jwohlwend/boltz'
+description = """
+Boltz is a family of models for biomolecular interaction prediction.
+Boltz-1 was the first fully open source model to approach AlphaFold3
+accuracy. Our latest work Boltz-2 is a new biomolecular foundation model
+that goes beyond AlphaFold3 and Boltz-1 by jointly modeling complex
+structures and binding affinities, a critical component towards accurate
+molecular design. Boltz-2 is the first deep learning model to approach
+the accuracy of physics-based free-energy perturbation (FEP) methods,
+while running 1000x faster — making accurate in silico screening
+practical for early-stage drug discovery.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('hatchling', '1.24.2'),
+    ('Triton', '3.3.1', versionsuffix),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('SciPy-bundle', '2024.05'),
+    ('Biopython', '1.84'),
+    ('PyYAML', '6.0.2'),
+    ('PyTorch', '2.7.1', versionsuffix),
+    ('PyTorch-Lightning', '2.5.6', versionsuffix),
+    ('scikit-learn', '1.6.1'),
+    ('Hydra', '1.3.2'),
+    ('RDKit', '2025.03.3'),
+    ('dm-tree', '0.1.9'),
+    ('einops', '0.8.1'),
+    ('wandb', '0.20.1'),
+    ('numba', '0.60.0'),
+    ('ml_dtypes', '0.5.0'),
+    ('gemmi', '0.7.1'),
+    ('CUDA-wheel-bundle', '12.6.0', versionsuffix),
+]
+
+# unpin strict dependencies versions
+local_preinstallopts = (
+    "sed -i -e "
+    r"'s/==.*/\",/g' -e "
+    "'s/torch>=2.2/torch/g' -e "
+    "'s/pandas>=2.2.2/pandas/g' "
+    "pyproject.toml && "
+)
+
+local_cueq_ops_torch_tmpl_suffix = 'cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl'
+local_cueq_ops_torch_tmpl = f'cuequivariance_ops_torch_cu%(cudamajver)s-%(version)s-{local_cueq_ops_torch_tmpl_suffix}'
+
+exts_list = [
+    ('urllib3', '2.0.7', {
+        'checksums': ['c97dfde1f7bd43a71c8d2a58e369e9b2bf692d1334ea9f9cae55add7d0dd0f84'],
+    }),
+    ('ihm', '1.7', {
+        'checksums': ['f7d3b9a76d9652f7091bbd1c6bea044a1d40b35bcba9b64c8e51a061fc2463de'],
+    }),
+    ('frozendict', '2.4.5', {
+        'checksums': ['fd7add309789595c044c0155a0bddfa9d20c77f65de1e33a14aa3033b936ef63'],
+    }),
+    ('types-requests', '2.32.0.20240914', {
+        'modulename': False,
+        'checksums': ['2850e178db3919d9bf809e434eef65ba49d0e7e33ac92d588f4a5e295fffd405'],
+    }),
+    ('einx', '0.3.0', {
+        'checksums': ['17ff87c6a0f68ab358c1da489f00e95f1de106fd12ff17d0fb3e210aaa1e5f8c'],
+    }),
+    ('fairscale', '0.4.13', {
+        'checksums': ['1b797825c427f5dba92253fd0d8daa574e8bd651a2423497775fab1b30cfb768'],
+    }),
+    ('mashumaro', '3.14', {
+        'checksums': ['5ef6f2b963892cbe9a4ceb3441dfbea37f8c3412523f25d42e9b3a7186555f1d'],
+    }),
+    ('modelcif', '1.2', {
+        'checksums': ['517d2a7be67c96fd56dcc3b50cf7bb0b130958c325653d9925f9a5dbfe151d78'],
+    }),
+    ('nvidia-ml-py', '13.595.45', {
+        'modulename': False,
+        'checksums': ['c9f34897fe0441ff35bc8f35baf80f830a20b0f4e6ce71e0a325bc0e66acf079'],
+    }),
+    ('cuequivariance', '0.10.0', {
+        'checksums': ['8be785f84a0c25b6b3e927e551078be261f0900c583a7c8c95744bcd5fa1967d'],
+    }),
+    ('cuequivariance-ops-cu%(cudamajver)s', '0.10.0', {
+        'modulename': 'cuequivariance_ops',
+        'source_tmpl':
+            'cuequivariance_ops_cu%(cudamajver)s-%(version)s-py3-none-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl',
+        'checksums': ['ca09836949cd86dd64fe7ef224b6212531049b94b9b5b4c1d928985eff0cf0b3'],
+    }),
+    ('cuequivariance-ops_torch-cu%(cudamajver)s', '0.10.0', {
+        'modulename': 'cuequivariance_ops_torch',
+        'source_tmpl': local_cueq_ops_torch_tmpl,
+        'checksums': ['36c24d187f456f36e25cdbba475fb08297652f43415e6c183fea1af4074de652'],
+    }),
+    ('cuequivariance-torch', '0.10.0', {
+        'checksums': ['90af8143f3b8f6e97beeca2853a31fd67f1de9c1820a0547465f82d78b423df8'],
+    }),
+    ('chembl_structure_pipeline', '1.2.2', {
+        'checksums': ['625ffc25f86d7d6fe1b459a381b2a52fb1df5fe0c8bbfe9c615e8b7f75c301c8'],
+    }),
+    ('boltz', version, {
+        'patches': [
+            {'name': 'Boltz-2.2.1_add_missing_test_files.patch', 'level': 1},
+            'Boltz-2.2.1_skip_regressiontest.patch',
+        ],
+        'preinstallopts': local_preinstallopts,
+        # export HOME to avoid saving large test caches to the user's /home/.boltz
+        'runtest': "export HOME=%(builddir)s && cd %(start_dir)s && pytest -svv tests/",
+        'testinstall': True,
+        'checksums': [
+            {'boltz-2.2.1.tar.gz': '355a033ce2b49543a927470d585136794521d8639b2eeb5a1818d74dc3e513c3'},
+            {'Boltz-2.2.1_add_missing_test_files.patch':
+             'e57746d0e834d234b28a6054379b9006f9ae98b4f3fcd5c2e2e47f860bbfa51d'},
+            {'Boltz-2.2.1_skip_regressiontest.patch':
+             '5ebe1f3b70894f4e2fe82957f2600aee5c23f2114a7a1245cd1659dd8086feef'},
+        ],
+    }),
+]
+
+sanity_check_commands = ["boltz 2>&1 | grep 'Usage: boltz'"]
+
+moduleclass = 'bio'
