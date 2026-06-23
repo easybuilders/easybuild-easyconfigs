@@ -1,0 +1,84 @@
+easyblock = 'CMakeMake'
+
+name = 'GDAL'
+version = '3.13.0'
+
+homepage = 'https://www.gdal.org'
+description = """GDAL is a translator library for raster geospatial data formats that is released under an X/MIT style
+ Open Source license by the Open Source Geospatial Foundation. As a library, it presents a single abstract data model
+ to the calling application for all supported formats. It also comes with a variety of useful commandline utilities for
+ data translation and processing."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://download.osgeo.org/%(namelower)s/%(version)s/']
+sources = [SOURCELOWER_TAR_XZ]
+patches = ['%(name)s-3.6.2_fix-python-CC-CXX.patch']
+checksums = [
+    {'gdal-3.13.0.tar.xz': '1c537dd2f4d66f05534ae419bc2af495c2204ce13bb266c8cbd867dd6705f0c7'},
+    {'GDAL-3.6.2_fix-python-CC-CXX.patch': '859b874b0c8ff7626a76d51f008bf05b7f89a35b325bdd1d126d2364154acc63'},
+]
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('pkgconf', '2.5.1'),
+    ('Bison', '3.8.2'),
+]
+dependencies = [
+    ('Python', '3.14.2'),
+    ('Python-bundle-PyPI', '2026.04'),
+    ('SciPy-bundle', '2026.05'),
+    ('expat', '2.7.3'),
+    ('GEOS', '3.14.1'),
+    ('SQLite', '3.51.1'),
+    ('libarchive', '3.8.5'),
+    ('libxml2', '2.15.1'),
+    ('libpng', '1.6.56'),
+    ('libjpeg-turbo', '3.1.4.1'),
+    ('LibTIFF', '4.7.1'),
+    ('zlib', '2.3.2'),
+    ('cURL', '8.17.0'),
+    ('PCRE', '8.45'),
+    ('PROJ', '9.8.1'),
+    ('libgeotiff', '1.7.4'),
+    ('netCDF', '4.10.0'),
+    ('HDF5', '2.1.1'),
+    ('HDF', '4.3.1'),
+    ('Armadillo', '15.2.7'),
+    ('CFITSIO', '4.6.4'),
+    ('zstd', '1.5.7'),
+    ('giflib', '6.1.3'),
+    ('json-c', '0.18'),
+    ('Xerces-C++', '3.3.0'),
+    ('PCRE2', '10.47'),
+    ('OpenEXR', '3.4.12'),
+    ('Brunsli', '0.1'),
+    ('Qhull', '2020.2'),
+    ('LERC', '4.1.0'),
+    ('OpenJPEG', '2.5.4'),
+    ('SWIG', '4.4.1'),
+]
+
+# Iterative build for both static and shared libraries
+local_configopts_common = "-DGDAL_USE_INTERNAL_LIBS=OFF -DGDAL_USE_MYSQL=OFF -DGDAL_USE_POPPLER=OFF "
+local_configopts_common += "-DGEOTIFF_INCLUDE_DIR=$EBROOTLIBGEOTIFF/include -DPython_ROOT=$EBROOTPYTHON "
+
+# Avoid treating include directories from imported CMake targets as system
+# includes. This keeps the real netCDF include path before HDF4's legacy
+# netcdf.h compatibility header in the compiler search order.
+local_configopts_common += "-DCMAKE_NO_SYSTEM_FROM_IMPORTED=ON "
+
+configopts = [
+    local_configopts_common + "-DBUILD_SHARED_LIBS=OFF",
+    local_configopts_common
+]
+
+sanity_check_paths = {
+    'files': ['lib/libgdal.a', f'lib/libgdal.{SHLIB_EXT}'],
+    'dirs': ['bin', 'include', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -s -c 'import osgeo.%(namelower)s'"]
+
+moduleclass = 'data'
