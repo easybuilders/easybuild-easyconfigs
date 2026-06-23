@@ -1,0 +1,104 @@
+# MOLCAS build from source code
+# This is a threaded version only as we encountered problems with the MPI build
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'Molcas'
+version = '86'
+
+homepage = 'https://www.molcas.org/'
+description = """
+Molcas is an ab initio quantum chemistry software package developed by scientists
+to be used by scientists. The basic philosophy is is to be able to treat general
+electronic structures for molecules consisting of atoms from most of the periodic
+table. As such, the primary focus of the package is on multiconfigurational methods
+with applications typically connected to the treatment of highly degenerate states.
+"""
+
+toolchain = {'name': 'intel', 'version': '2023a'}
+toolchainopts = {
+    'usempi': False, 'openmp': True,
+}
+
+download_instructions = '''
+MOLCAS is proprietary software and requires a licence.
+See here:
+https://www.molcas.org/order.html
+how to order and here:
+https://www.molcas.org/documentation/manual/node14.html#SECTION03114000000000000000
+how to download the source code.
+Once downloaded by running the 'init' script, remove the directories 'bin' + 'otherversions',
+and the files 'install.sh' + 'molcas.alt' and create molcas86.tar.gz.
+The checksum will vary as some .git directories will get downloaded as well.
+The full path to the licence.dat file needs to be set:
+export MOLCAS_LICENSE=/path/to/file
+to work!
+'''
+
+sources = ['%(namelower)s%(version)s.tar.gz']
+
+checksums = [None]
+
+builddependencies = [
+    ('M4', '1.4.19'),
+    ('cURL', '8.0.1'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.0'),
+    ('Perl', '5.36.1'),
+]
+
+# Setting up the environment:
+# Path to the licence.dat file. We set that here and re-use it
+local_molcaslicense = 'path/to/licencefile/'
+preconfigopts = 'export MOLCAS_LICENSE=' + local_molcaslicense + ' && '
+# We need to remove the --prefix=/foo/baa bit EasyBuild uses automatically
+prefix_opt = ''
+configure_without_installdir = True
+# We build in the installation directory (messy)
+buildininstalldir = True
+# There is no install command, hence building in the installation directory
+install_cmd = ''
+# Exporting these flags helps to find the right libraries
+preconfigopts += 'export XLIB="-Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_core -lmkl_sequential -lpthread -lm " && '
+# We need to remove the CFLAGS EasyBuild sets to avoid -xHost for the Intel compiler. Using avx2 might lead
+# to numerically wrong results. So we use the flags MOLCAS is providing
+preconfigopts += 'unset CFLAGS && '
+# Change -openmp to -qopenmp
+preconfigopts += "sed -i '0,/openmp/s//qopenmp/' cfg/intel.comp && "
+# Although that is done later by the script, there were some warning which can be prevented doing this manually
+preconfigopts += 'sbin/molcas.driver getemil && '
+
+# We had problems to get MPI working but that may be a site-specific thing. Threaded works well though
+configopts = '-64 -compiler intel -serial -OMP -blas MKL -shared '
+configopts += '-hdf5_inc $EBROOTHDF5/include -hdf5_lib $EBROOTHDF5/lib '
+
+#
+prebuildopts = 'export MOLCAS_LICENSE=' + local_molcaslicense + ' && '
+# There is no installation process, hence all the dancing above
+skipsteps = ['install']
+
+# parallel build fail
+max_parallel = 1
+
+# we are only using the standard test.
+# the 16 threads might be needed to be adjusted
+pretestopts = 'export MOLCAS_LICENSE=' + local_molcaslicense + ' && '
+test_cmd = 'OMP_NUM_THREADS=4 molcas verify standard --tmp %(builddir)s/molcas-tests --parallel 1'
+
+postinstallcmds = ['mkdir %(builddir)s/bin && mv $(which molcas) %(builddir)s/bin/molcas']
+
+sanity_check_paths = {
+    'files': ['%(namelower)s%(version)s/bin/caspt2.exe', '%(namelower)s%(version)s/bin/alaska.exe',
+              'bin/molcas'],
+    'dirs': ['%(namelower)s%(version)s/basis_library'],
+}
+
+modextravars = {
+    'MOLCAS': '%(installdir)s/%(namelower)s%(version)s',
+    'MOLCAS_LICENSE': local_molcaslicense,
+}
+
+moduleclass = 'chem'
