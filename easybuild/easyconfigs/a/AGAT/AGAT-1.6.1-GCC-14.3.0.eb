@@ -1,0 +1,75 @@
+# easybuild easyconfig
+#
+# John Dey <jfdey@fredhutch.org> Fred Hutchinson Cancer Center
+# Thomas Eylenbosch - Gluo NV
+# Update: Petr Král (INUITS)
+#
+easyblock = 'Bundle'
+
+name = 'AGAT'
+version = '1.6.1'
+
+homepage = 'https://agat.readthedocs.io/en/latest/'
+description = """AGAT: Another GTF/GFF Analysis Toolkit. Suite of tools to handle gene annotations
+ in any GTF/GFF format."""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+builddependencies = [('binutils', '2.44')]
+
+dependencies = [
+    ('Perl', '5.40.2'),
+    ('BioPerl', '1.7.8'),
+]
+
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perl -e 'require %(ext_name)s'", '')
+
+exts_list = [
+    ('Set::Object', '1.43', {
+        'source_tmpl': 'Set-Object-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RU/RURBAN'],
+        'checksums': ['e3b3c7c7ecb91ef6d20eb06bf6bff74e41c40b75bd234e107d2ecf78d3dea9d1'],
+    }),
+    ('File::Share', '0.27', {
+        'source_tmpl': 'File-Share-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/I/IN/INGY'],
+        'checksums': ['d6e8f4b55ebd38e0bb45e44392e3fa27dc1fde16abc5d1ff53e157e19a5755be'],
+    }),
+    ('Sort::Naturally', '1.03', {
+        'source_tmpl': 'Sort-Naturally-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/B/BI/BINGOS'],
+        'checksums': ['eaab1c5c87575a7826089304ab1f8ffa7f18e6cd8b3937623e998e865ec1e746'],
+    }),
+    ('Class::MethodMaker', '2.25', {
+        'source_tmpl': 'Class-MethodMaker-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/S/SC/SCHWIGON/class-methodmaker'],
+        'checksums': ['70bd3a6595cc40e54a9521eae3247e7d69166e6783ea5faebd59b84537e1b588'],
+    }),
+    ('Term::ProgressBar', '2.23', {
+        'source_tmpl': 'Term-ProgressBar-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MANWAR'],
+        'checksums': ['defc03fb9f4ac1c9df1359d312bff3c0865ddefbf3aba64cd42a69a86215d49d'],
+    }),
+    ('IPC::ShareLite', '0.17', {
+        'source_tmpl': 'IPC-ShareLite-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/A/AN/ANDYA/'],
+        'checksums': ['14d406b91da96d6521d0d1a82d22a306274765226b86b0a56e7ffddcf96ae7bf'],
+    }),
+    (name, version, {
+        'modulename': 'AGAT::Utilities',
+        'source_urls': ['https://github.com/NBISweden/AGAT/archive/refs/tags'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['c475a45e48c2a4eb70e345ee8f9e788552ed7dfd134ea42a4fa8ed4bdf05568f'],
+    }),
+]
+
+modextrapaths = {'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/'}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['bin', 'lib/perl5/site_perl/%(perlver)s/%(name)s'],
+}
+
+sanity_check_commands = ['agat_convert_bed2gff.pl --help']
+moduleclass = 'bio'
