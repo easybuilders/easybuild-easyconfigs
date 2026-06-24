@@ -1,0 +1,57 @@
+easyblock = 'Bundle'
+
+name = 'PLINK'
+version = '2.0.0-a.6.32'
+
+homepage = 'https://www.cog-genomics.org/plink/2.0/'
+description = """PLINK is a free, open-source whole genome association analysis toolset,
+designed to perform a range of basic, large-scale analyses in a computationally
+efficient manner."""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('zstd', '1.5.6'),
+    ('libdeflate', '1.20'),
+]
+
+default_easyblock = 'MakeCp'
+
+default_component_specs = {
+    'source_urls': ['https://github.com/chrchang/plink-ng/archive/refs/tags/'],
+    'sources': ['v%s.tar.gz' % version],
+    'skipsteps': ['configure'],
+}
+
+components = [
+    ('PLINK1', '1.90', {
+        'checksums': ['9d529d6fd5d1cf2893e36920db0b1ff4e6bad96fb9fa60a2ceee7b1e94dd8aab'],
+        'start_dir': '%s-ng-%s/1.9' % (name.lower(), version),
+        'buildopts': (
+            'CFLAGS="${CFLAGS} -DDYNAMIC_ZLIB" CXXFLAGS="${CXXFLAGS} -DDYNAMIC_ZLIB" '
+            'LDFLAGS="${LDFLAGS} -lm -lpthread -ldl" BLASFLAGS="${LIBBLAS}" ZLIB="-L$EBROOTZLIB/lib -lz"'
+        ),
+        'files_to_copy': [(['plink'], 'bin')],
+    }),
+    ('PLINK2', version, {
+        'checksums': ['9d529d6fd5d1cf2893e36920db0b1ff4e6bad96fb9fa60a2ceee7b1e94dd8aab'],
+        'start_dir': '%s-ng-%s/2.0' % (name.lower(), version),
+        'prebuildopts': "sed -i 's/(OBJ)/(OBJ_NO_ZSTD)/g' Makefile && sed -i '9,19d' Makefile.src && ",
+        'buildopts': (
+            'BASEFLAGS="-g -DNDEBUG -DZSTD_MULTITHREAD" BLASFLAGS64="$LIBBLAS" ZSTD="-lzstd -ldeflate" '
+            'CINCLUDE="-Isimde" CINCLUDE2="-I../simde"'
+        ),
+        'files_to_copy': [(['bin/*'], 'bin')],
+    }),
+]
+
+# run tests (<1h)
+postinstallcmds = ["cd Tests && bash run_tests.sh %(installdir)s/bin"]
+
+sanity_check_paths = {
+    'files': ['bin/plink', 'bin/plink2', 'bin/pgen_compress'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
