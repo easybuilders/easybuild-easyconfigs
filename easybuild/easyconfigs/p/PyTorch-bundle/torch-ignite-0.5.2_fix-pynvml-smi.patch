@@ -1,0 +1,49 @@
+Fix usage of deprecated pynvml.smi
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- ignite/metrics/gpu_info.py	2025-12-08 14:25:21.848280000 +0100
++++ ignite/metrics/gpu_info.py	2025-12-08 14:27:53.822231000 +0100
+@@ -35,7 +35,7 @@
+ 
+     def __init__(self) -> None:
+         try:
+-            from pynvml.smi import nvidia_smi
++            from pynvml_utils import nvidia_smi
+         except ImportError:
+             raise ModuleNotFoundError(
+                 "This contrib module requires pynvml to be installed. "
+--- tests/ignite/metrics/test_gpu_info.py	2025-12-08 14:25:22.177996000 +0100
++++ tests/ignite/metrics/test_gpu_info.py	2025-12-08 14:27:53.824915000 +0100
+@@ -9,7 +9,7 @@
+ 
+ 
+ def test_no_pynvml_package():
+-    with patch.dict("sys.modules", {"pynvml.smi": None}):
++    with patch.dict("sys.modules", {"pynvml_utils": None}):
+         with pytest.raises(ModuleNotFoundError, match="This contrib module requires pynvml to be installed."):
+             GpuInfo()
+ 
+@@ -73,12 +73,12 @@
+         "sys.modules",
+         {
+             "pynvml": Mock(name="pynvml"),
+-            "pynvml.smi": Mock(name="pynvml.smi"),
+-            "pynvml.smi.nvidia_smi": Mock(name="pynvml.smi.nvidia_smi"),
++            "pynvml_utils": Mock(name="pynvml.smi"),
++            "pynvml_utils.nvidia_smi": Mock(name="pynvml.smi.nvidia_smi"),
+         },
+     ):
+         import pynvml
+-        from pynvml.smi import nvidia_smi
++        from pynvml_utils import nvidia_smi
+ 
+         def query(*args, **kwargs):
+             return query_resp
+@@ -113,7 +113,7 @@
+     _test_gpu_info()
+ 
+     def _test_with_custom_query(resp, warn_msg, check_compute=False):
+-        from pynvml.smi import nvidia_smi
++        from pynvml_utils import nvidia_smi
+ 
+         def query(*args, **kwargs):
+             return resp

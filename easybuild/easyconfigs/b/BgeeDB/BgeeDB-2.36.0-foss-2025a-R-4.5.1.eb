@@ -1,0 +1,71 @@
+easyblock = 'Bundle'
+
+name = 'BgeeDB'
+version = '2.36.0'
+versionsuffix = '-R-%(rver)s'
+
+# While BgeeDB does not require the latest Bioconductor dependencies
+# we search the latest Bioconductor release archive for them
+local_bioc_version = '3.22'
+
+homepage = 'https://github.com/BgeeDB/BgeeDB_R'
+description = """Annotation and gene expression data retrieval from Bgee database.
+TopAnat, an anatomical entities Enrichment Analysis tool for UBERON ontology."""
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('R', '4.5.1'),
+]
+
+dependencies = [
+    ('R-bundle-Bioconductor', local_bioc_version, versionsuffix),
+]
+
+exts_default_options = {
+    'source_urls': [
+        'https://bioconductor.org/packages/%s/bioc/src/contrib/' % local_bioc_version,
+        'https://bioconductor.org/packages/%s/bioc/src/contrib/Archive/%%(name)s' % local_bioc_version,
+        'https://bioconductor.org/packages/%s/data/annotation/src/contrib/' % local_bioc_version,
+        'https://bioconductor.org/packages/%s/data/experiment/src/contrib/' % local_bioc_version,
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz'
+}
+
+exts_defaultclass = 'RPackage'
+
+# check whether correct version is installed in extension filter
+# (some versions in this bundle may be newer than the ones provided by R)
+local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver != '%(ext_version)s') "
+local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
+exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
+
+# CRAN packages on which these Bioconductor packages depend are available in R module on which this depends
+# !! order of packages is important !!
+exts_list = [
+    ('topGO', '2.62.0', {
+        'checksums': ['6bca31c56f2e71b763f7540a1b5b0ab197d36fd876b5f3f8d37e3b9bc928e9e1'],
+    }),
+    ('bread', '0.4.1', {
+        'checksums': ['19a40d55b8be57be80d1fe4e4cba2a58cb3bf17fe6b777db65d28bf82eae5d6f'],
+    }),
+    ('anndata', '0.8.0', {
+        'checksums': ['4656521ae59ddad1387a2ffdcf5f37091d7c401603fcbc7b453b5517da392f35'],
+    }),
+    (name, version, {
+        'checksums': ['4cafe51f4207d07512995a43b6498c4c0df54b81c8436f6f8c48b115d56c1428'],
+    }),
+]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [name],
+}
+
+moduleclass = 'bio'

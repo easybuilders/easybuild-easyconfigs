@@ -1,0 +1,70 @@
+easyblock = 'PythonPackage'
+
+name = 'python-mujoco'
+version = '3.3.0'
+
+homepage = 'https://www.mujoco.org'
+description = """
+This package is the canonical Python bindings for the MuJoCo physics engine.
+The mujoco package provides direct access to raw MuJoCo C API functions, structs,
+constants, and enumerations. Structs are provided as Python classes, with
+Pythonic initialization and deletion semantics.
+"""
+
+toolchain = {'name': 'gfbf', 'version': '2023b'}
+
+builddependencies = [
+    ('Eigen', '3.4.0'),
+    ('pybind11', '2.11.1'),
+    ('CMake', '3.27.6'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('absl-py', '2.1.0'),
+    ('etils', '1.12.2'),
+    ('python-glfw', '2.8.0'),
+    ('MuJoCo', '3.3.0'),
+    ('PyOpenGL', '3.1.9'),
+    ('SciPy-bundle', '2023.11'),
+]
+
+
+options = {'modulename': 'mujoco'}
+source_urls = ['https://pypi.python.org/packages/source/m/mujoco']
+local_extract_cmd_tmpl = "mkdir -p %(builddir)s/_deps/{0} && tar --strip-components=1 -C %(builddir)s/_deps/{0} -xf %s"
+sources = [
+    'mujoco-%(version)s.tar.gz',
+    # Hashes from MUJOCO_DEP_VERSION_* in mujoco/simulate/CMakeLists.txt
+    {
+        'source_urls': ['https://github.com/lvandeve/lodepng/archive'],
+        'filename': 'b4ed2cd7ecf61d29076169b49199371456d4f90b.tar.gz',
+        'extract_cmd': local_extract_cmd_tmpl.format('lodepng-src'),
+    },
+]
+patches = [
+    'python-mujoco-3.3.0_fix-ogl-use-after-free.patch',
+    'python-mujoco-3.3.0_use_eb_deps.patch',
+]
+checksums = [
+    {'mujoco-3.3.0.tar.gz': '0fb12ab715bc2b6d2394a6330b8c3a1dd95b0f3ba812bfe4f6c91e0a1ca3ad0f'},
+    {'b4ed2cd7ecf61d29076169b49199371456d4f90b.tar.gz':
+     'b67e466ba659c07ac775d07dbd97af319cde449ce14abed9ae596df29d888603'},
+    {'python-mujoco-3.3.0_fix-ogl-use-after-free.patch':
+     'a0098aa9633ec3849ded3d886c957c5802a872f74970bdc5456020cd6ccc86d9'},
+    {'python-mujoco-3.3.0_use_eb_deps.patch': 'bed192acb9aab3d9dbd674c0faafc981a92791385dac300cca5ca80d7ca04991'},
+]
+
+local_cmake_opts = ' '.join([
+    '-DFETCHCONTENT_FULLY_DISCONNECTED=ON',
+    '-DFETCHCONTENT_BASE_DIR=%(builddir)s/_deps',
+    '-DMUJOCO_PYTHON_USE_SYSTEM_PYBIND11=ON',
+    '-DMUJOCO_SIMULATE_USE_SYSTEM_MUJOCO=ON',
+    '-DMUJOCO_SIMULATE_USE_SYSTEM_GLFW=ON',
+])
+
+prebuildopts = 'MUJOCO_PATH="$EBROOTMUJOCO" MUJOCO_PLUGIN_PATH="$EBROOTMUJOCO/bin/mujoco_plugin"'
+prebuildopts += f' MUJOCO_CMAKE_ARGS="{local_cmake_opts}"'
+preinstallopts = prebuildopts
+
+moduleclass = 'lib'

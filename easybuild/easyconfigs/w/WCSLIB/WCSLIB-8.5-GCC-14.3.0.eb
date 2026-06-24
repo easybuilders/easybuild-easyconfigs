@@ -1,0 +1,39 @@
+easyblock = 'ConfigureMake'
+
+name = 'WCSLIB'
+version = '8.5'
+
+homepage = 'https://www.atnf.csiro.au/people/mcalabre/WCS/'
+description = """The FITS "World Coordinate System" (WCS) standard defines keywords
+and usage that provide for the description of astronomical coordinate systems in a
+FITS image header."""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://src.rrz.uni-hamburg.de/files/src/wcslib/']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['f1fd1b78fbfdbabda363f8045e0c59e32735eca45482a5302191e56fe062eace']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('M4', '1.4.20'),
+    ('flex', '2.6.4'),
+]
+dependencies = [
+    ('CFITSIO', '4.6.2'),
+    ('PGPLOT', '5.2.2'),
+    ('X11', '20250608'),
+]
+
+configopts = "--with-cfitsiolib=$EBROOTCFITSIO/lib --with-cfitsioinc=$EBROOTCFITSIO/include "
+configopts += "--with-pgplotlib=$EBROOTPGPLOT/lib --with-pgplotinc=$EBROOTPGPLOT/include "
+
+sanity_check_paths = {
+    'files': ['bin/wcsgrid', 'bin/wcsware', 'lib/libpgsbox-%(version)s.a', 'lib/libpgsbox.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ["wcsgrid --help 2>&1 | grep '^Usage: wcsgrid'"]
+
+moduleclass = 'geo'
