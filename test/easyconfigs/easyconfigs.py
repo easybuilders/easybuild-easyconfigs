@@ -308,9 +308,7 @@ class EasyConfigTest(TestCase):
             self._get_changed_patches()
         return EasyConfigTest._changed_patches
 
-    # dep_graph takes an excessive long time,
-    # due to changes in https://github.com/easybuilders/easybuild-framework/pull/5128
-    def _DISABLED_TOO_SLOW_test_dep_graph(self):
+    def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
 
         if not single_tests_ok:
@@ -1251,8 +1249,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.3.0'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.3.0.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.3.1'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.3.1.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
