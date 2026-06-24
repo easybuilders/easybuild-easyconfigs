@@ -1,0 +1,25 @@
+Fix PlumedMDTests in double-precision builds with native PLUMED support.
+
+The PlumedMDTests compare coordinates written by PLUMED via DUMPATOMS against
+GROMACS reference coordinates using double-precision tolerances. The original
+test used DUMPATOMS PRECISION=10, which truncates the textual coordinate output
+too aggressively for double-precision builds and causes differences around
+1e-11, far above the strict ULP-based tolerance.
+
+Increase the DUMPATOMS output precision to 17 digits so the PLUMED-generated
+coordinates round-trip accurately enough for the existing double-precision
+comparison. This only affects the test input and does not change installed
+GROMACS functionality.
+
+Author: Pavel Tomanek (Inuits/Ugent) with help of ChatGPT5.5
+--- src/gromacs/applied_forces/plumed/tests/plumed_md_test.cpp.orig	2026-05-11 16:19:14.452680000 +0200
++++ src/gromacs/applied_forces/plumed/tests/plumed_md_test.cpp	2026-05-11 16:19:37.868289000 +0200
+@@ -124,7 +124,7 @@
+     {
+         std::string plumed_string;
+ 
+-        plumed_string += "DUMPATOMS PRECISION=10  ATOMS=@mdatoms FILE=" + plumedxyz.string() + "\n";
++        plumed_string += "DUMPATOMS PRECISION=17  ATOMS=@mdatoms FILE=" + plumedxyz.string() + "\n";
+         plumed_string += "c: CELL\n";
+         plumed_string += "PRINT ARG=c.* FILE=" + cell_data.string() + "\n";
+         plumed_string += "t1: TIME\n";
