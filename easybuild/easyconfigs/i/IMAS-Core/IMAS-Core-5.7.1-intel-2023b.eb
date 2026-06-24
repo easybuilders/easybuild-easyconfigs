@@ -1,0 +1,74 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'IMAS-Core'
+version = '5.7.1'
+
+homepage = 'https://github.com/iterorganization/IMAS-Core'
+description = 'IMAS Access Layer core library'
+
+toolchain = {'name': 'intel', 'version': '2023b'}
+
+github_account = 'iterorganization'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['eec5fdd4b9db219f05d54025776a3ce57a32c65cced463ab499de1c04a6f02d9']
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('Ninja', '1.11.1'),
+    ('scikit-build-core', '0.10.7'),
+    ('Cython', '3.0.10'),
+    ('cython-cmake', '0.2.0'),
+    ('setuptools-scm', '8.1.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.12'),
+    ('Boost', '1.83.0'),
+    ('HDF5', '1.14.3'),
+    ('MDSplus', '7.153.3'),
+    ('UDA', '2.9.3'),
+]
+
+# scikit-build-core probes for 'cmake3' before 'cmake'; expose a shim to the module-provided CMake.
+# Applied in all phases to also cover nested wheel builds triggered during make.
+local_cmake_shim = (
+    'mkdir -p %(builddir)s/cmake-shim && '
+    'ln -sf $EBROOTCMAKE/bin/cmake %(builddir)s/cmake-shim/cmake3 && '
+    'export PATH=%(builddir)s/cmake-shim:$PATH && '
+)
+preconfigopts = local_cmake_shim
+prebuildopts = local_cmake_shim
+preinstallopts = local_cmake_shim
+
+build_type = 'RelWithDebInfo'
+
+configopts = ' '.join([
+    '-D AL_DOWNLOAD_DEPENDENCIES=OFF',  # use module-provided dependencies
+    '-D AL_BACKEND_HDF5=ON',
+    '-D AL_BACKEND_MDSPLUS=ON',
+    '-D AL_BACKEND_UDA=ON',
+    '-D AL_BUILD_MDSPLUS_MODELS=OFF',   # provided by IMAS-MDSplus-models
+    # Build Python bindings without pip build isolation, so the nested wheel build
+    # uses the module-provided NumPy (1.26.2) for both Cython codegen and compilation.
+    # With isolation, pip pulls NumPy 2.x and generates NumPy 2.0 C-API calls
+    # (PyDataType_ELSIZE, ...) that fail to compile against the 1.26 headers.
+    '-D AL_PYTHON_BINDINGS=no-build-isolation',
+    '-D AL_EXAMPLES=OFF',
+    '-D AL_TESTS=OFF',
+])
+
+options = {'modulename': 'imas_core'}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['include', 'lib'],
+}
+
+modextravars = {
+    'AL_VERSION': '%(version)s',
+    'HDF5_USE_FILE_LOCKING': 'FALSE',
+}
+
+moduleclass = 'tools'
