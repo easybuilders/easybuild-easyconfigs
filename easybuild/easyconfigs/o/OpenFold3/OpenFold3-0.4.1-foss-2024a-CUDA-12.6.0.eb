@@ -1,0 +1,117 @@
+easyblock = 'PythonBundle'
+
+name = 'OpenFold3'
+version = '0.4.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/aqlaboratory/openfold-3'
+description = """
+A fully open source biomolecular structure prediction model based on AlphaFold3
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('Ninja', '1.12.1'),
+    ('poetry', '1.8.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('PyTorch', '2.7.1', versionsuffix),
+    ('PyTorch-Lightning', '2.5.6', versionsuffix),
+    ('SciPy-bundle', '2024.05'),
+    ('PyYAML', '6.0.2'),
+    ('tqdm', '4.66.5'),
+    ('typing-extensions', '4.11.0'),
+    ('wandb', '0.20.1'),
+    ('ml-collections', '1.1.0'),
+    ('gemmi', '0.7.1'),
+    ('aria2', '1.37.0'),
+    ('awscli', '2.32.16'),
+    ('Biotite', '1.6.0'),
+    ('RDKit', '2025.03.3'),
+    ('boto3', '1.35.36'),
+    ('LMDB', '0.9.31'),
+    ('Kalign', '3.5.1'),
+    ('scikit-build-core', '0.10.6'),
+    ('einops', '0.8.1'),
+    ('py-cpuinfo', '9.0.0'),
+]
+
+exts_list = [
+    ('kalign-python', '3.6.0', {
+        'modulename': False,
+        'preinstallopts': "sed -i '/^license/d' pyproject.toml && ",
+        'checksums': ['9fd4b07525ca40988ec66936aedcad799f9d89ae234fded18d2dd00cc68e9669'],
+    }),
+    ('memory-profiler', '0.61.0', {
+        'checksums': ['4e5b73d7864a1d1292fb76a03e82a3e78ef934d06828a698d9dada76da2067b0'],
+    }),
+    ('func-timeout', '4.3.5', {
+        'checksums': ['74cd3c428ec94f4edfba81f9b2f14904846d5ffccc27c92433b8b5939b5575dd'],
+    }),
+    ('ijson', '3.5.0', {
+        # fix configuration error: `project.license` must be valid exactly by one definition (2 matches found)
+        'preinstallopts': "sed -i '/^license/d' pyproject.toml && ",
+        'checksums': ['94688760720e3f5212731b3cb8d30267f9a045fb38fb3870254e7b9504246f31'],
+    }),
+    ('lmdb', '2.2.1', {
+        'checksums': ['b201b416f7d6cea9bd2f977277a5f51d6e52a434d6ec511a8b34990df2b1a9c5'],
+    }),
+    ('deepspeed', '0.19.1', {
+        'preinstallopts': ' && '.join([
+            "sed -i 's/^triton=.*$/triton/' requirements/requirements-sparse_attn.txt",
+            "sed -i '/^ninja/d' requirements/requirements.txt",
+            "",
+        ]),
+        'checksums': ['75013c83cf0032046b34c5c9e1dfd02a5a32bfad41919e199fa30ba6fb950d4d'],
+    }),
+    ('pdbeccdutils', '0.8.5', {
+        'checksums': ['1c8dd4168123f4808e6ae1621e146d0afa26ad9ecd5ec07285921e0a56fb274d'],
+    }),
+    ('hjson', '3.1.0', {
+        'checksums': ['55af475a27cf83a7969c808399d7bccdec8fb836a07ddbd574587593b9cdcf75'],
+    }),
+    ('nvidia-ml-py', '13.610.43', {
+        'modulename': 'pynvml',
+        'checksums': ['65437eb73d68d0c62c931ca4d45038472faff03bd0b8729abba4b899f70d60f2'],
+    }),
+    (name, version, {
+        'preinstallopts': ' && '.join([
+            "sed -i '/mkl/d' pyproject.toml",
+            "sed -i '/aria2/d' pyproject.toml",
+            "",
+        ]),
+        'source_urls': ['https://github.com/aqlaboratory/openfold-3/archive/refs/tags/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['c671d6f29a63c19f846a93170c8a65986c6c010eb0180483919fb6dd08397f04'],
+    }),
+]
+
+postinstallcmds = [
+    'cp -a scripts %(installdir)s/bin',
+    'chmod -R a+x %(installdir)s/bin',
+]
+
+fix_python_shebang_for = ['lib/python%(pyshortver)s/site-packages/openfold3/*.py', 'bin/*.py', 'bin/scripts/*.py']
+
+modextrapaths = {
+    'PATH': ['bin', 'bin/scripts']
+}
+
+sanity_check_paths = {
+    'files': [
+        'lib/python%(pyshortver)s/site-packages/openfold3/run_openfold.py',
+    ],
+    'dirs': ['bin/scripts', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "run_openfold --help",
+    "setup_openfold --help",
+    "python -c 'import openfold3'",
+]
+
+moduleclass = 'bio'
