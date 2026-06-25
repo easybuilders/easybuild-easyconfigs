@@ -1,38 +1,33 @@
-easyblock = 'ConfigureMake'
+easyblock = 'CMakeMake'
 
 name = 'SLATEC'
 version = '4.1'
 
-homepage = 'https://www.netlib.org/slatec/'
+homepage = 'https://github.com/MehdiChinoune/SLATEC'
 description = """SLATEC Common Mathematical Library, a comprehensive software library containing
-    over 1400 general purpose mathematical and statistical routines written in Fortran 77."""
+    over 1400 general purpose mathematical and statistical routines written in Fortran 77.
+
+    netlib.org no longer distributes the complete set of routines (over 700 files that overlap
+    with BLAS/LINPACK/EISPACK and many special functions were removed from the tarball), so the
+    sources are taken from a GitHub mirror (Mehdi Chinoune) of the full SLATEC 4.1 library. This
+    mirror is verified identical to the historical release and adds a CMake build system. The
+    BLAS/LINPACK routines remain bundled, so libslatec is self-contained."""
 
 toolchain = {'name': 'intel-compilers', 'version': '2023.2.1'}
+toolchainopts = {'pic': True}
 
-sources = [{
-    'source_urls': ['https://www.netlib.org/%(namelower)s'],
-    'filename': '%(namelower)s_src.tgz',
-    'extract_cmd': 'tar xfvz %s',
-}, {
-    'source_urls': ['http://www.netlib.org/%(namelower)s'],
-    'filename': '%(namelower)s4linux.tgz',
-    'extract_cmd': 'tar xfvz %s -C src',
-}]
-patches = ['%(name)s-%(version)s-slatec4linux-fPIC.patch']
-checksums = [
-    {'slatec_src.tgz': '4c8c02fee905325ee4906bf8f7ece5593d895da3e5f208322f8aacea6d0eb9dc'},
-    {'slatec4linux.tgz': 'eef9234f8fcb49e7f4905a11eda8f453ec2ca314029a9ce303fdbc99cff42bf3'},
-    {'SLATEC-4.1-slatec4linux-fPIC.patch': '676f35ae77c8c0b3cf04c1dc1440d68f6f82b6702f92cf5ca69fe59baf086cec'},
+github_account = 'MehdiChinoune'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['c028f6f5fb867b0e16d5f9f3868ef37398cfb45998c7bcd8c20d9d1199a64a51']
+
+builddependencies = [
+    ('CMake', '3.27.6'),
 ]
 
-skipsteps = ['configure']
-
-preinstallopts = "sed -i 's+/usr/local+%(installdir)s+; s+ldconfig;++' makefile &&"
-preinstallopts += "mkdir -p %(installdir)s/lib %(installdir)s/man/man1 &&"
-
 sanity_check_paths = {
-    'files': ['lib/libslatec.a', 'lib/libslatec.%s' % SHLIB_EXT],
-    'dirs': ['lib', 'man/man1']
+    'files': ['lib/libslatec.%s' % SHLIB_EXT],
+    'dirs': ['lib'],
 }
 
 moduleclass = 'math'
