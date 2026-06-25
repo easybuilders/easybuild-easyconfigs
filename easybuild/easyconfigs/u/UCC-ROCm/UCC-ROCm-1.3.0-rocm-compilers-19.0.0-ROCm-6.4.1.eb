@@ -7,9 +7,9 @@ version = '1.3.0'
 
 homepage = 'https://www.openucx.org/'
 description = """UCC (Unified Collective Communication) is a collective
-communication operations API and library. This module provides the complete
-UCC library explicitly configured with AMD ROCm support to enable ROCm
-memory components and RCCL transport capabilities."""
+communication operations API and library. This module adds the UCC ROCm
+support (the ROCm memory and execution components and the RCCL transport
+layer) as plugins on top of an existing UCC installation."""
 
 toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
 toolchainopts = {'pic': True}
@@ -17,11 +17,18 @@ toolchainopts = {'pic': True}
 source_urls = ['https://github.com/openucx/ucc/archive/refs/tags']
 sources = ['v%(version)s.tar.gz']
 patches = [
-    'UCC-ROCm-1.3.0_use_rocm_eessi_paths.patch',
+    'UCC-ROCm-1.3.0_use_rocm_easybuild_paths.patch',
+    'UCC-ROCm-1.3.0_link_against_existing_UCC_libs.patch',
+    'UCC-ROCm-1.3.0_rocm_arch_from_env.patch',
 ]
 checksums = [
     {'v1.3.0.tar.gz': 'b56379abe5f1c125bfa83be305d78d81a64aa271b7b5fff0ac17b86725ff3acf'},
-    {'UCC-ROCm-1.3.0_use_rocm_eessi_paths.patch': 'd8919a7074cd32042345382d63c2e9ca4eb132927c84b156c26f57aadaa3b74f'},
+    {'UCC-ROCm-1.3.0_use_rocm_easybuild_paths.patch':
+     '5dffe88d76d8e839eec95b46c8ad9021fa2ccc649fae1213f79054f239bd959d'},
+    {'UCC-ROCm-1.3.0_link_against_existing_UCC_libs.patch':
+     '20191679acf361a45b89b8c454acefa56a5ad5f531ddc5cc45f4659c6ccc5ea6'},
+    {'UCC-ROCm-1.3.0_rocm_arch_from_env.patch':
+     'b5f9ba374c3f511b1fb7cc7097079a6afab315b64ea7bfc9d2497e9653362735'},
 ]
 
 builddependencies = [
@@ -30,6 +37,7 @@ builddependencies = [
 ]
 
 dependencies = [
+    ('UCC', '1.3.0'),
     ('HIP', '6.4.1'),
     ('UCX-ROCm', '1.18.0'),
     ('RCCL', '2.22.3'),
@@ -37,26 +45,40 @@ dependencies = [
 
 preconfigopts = './autogen.sh && '
 
-
+# configure runs over the full tree (to generate the component Makefiles), so it
+# still needs the ROCm/RCCL/UCX paths even though we only build a few components
 configopts = '--with-rocm=$EBROOTHIP '
-# It builds for ROCM_ARCH_NATIVE if no --with-rocm-arch is passed, and fails on machines without AMD GPUs
-# See: https://github.com/openucx/ucc/blob/6d5451174c29b5d9528cd3b142d3634a7d124ff2/config/m4/rocm.m4#L140-L148
-configopts += '--with-rocm-arch="--offload-arch=%(amdgcn_cc_semicolon_sep)s" '
 configopts += '--with-ucx=$EBROOTUCXMINROCM '
 configopts += '--with-rccl=$EBROOTRCCL '
 
+# The rocm_arch_from_env patch makes cuda_lt.sh read $ROCM_ARCH instead of its
+# hardcoded --offload-arch list (which included 'native' and thus required an AMD
+# GPU at build time). Compile the ec/rocm kernels only for the target arch.
+prebuildopts = 'export ROCM_ARCH="--offload-arch=%(amdgcn_cc_semicolon_sep)s" && '
+
+# Only build/install the ROCm memory + execution components and the RCCL transport
+# layer, linking against the existing libucc (see link_against_existing_UCC_libs patch)
+buildopts = ('-C src/components/mc/rocm V=1 && '
+             'make -C src/components/ec/rocm V=1 && '
+             'make -C src/components/tl/rccl V=1')
+installopts = ('-C src/components/mc/rocm && '
+               'make -C src/components/ec/rocm install && '
+               'make -C src/components/tl/rccl install')
+
 sanity_check_paths = {
     'files': [
-        'bin/ucc_info',
         'lib/ucc/libucc_mc_rocm.%s' % SHLIB_EXT,
-        'lib/ucc/libucc_tl_rccl.%s' % SHLIB_EXT
+        'lib/ucc/libucc_ec_rocm.%s' % SHLIB_EXT,
+        'lib/ucc/libucc_tl_rccl.%s' % SHLIB_EXT,
     ],
-    'dirs': ['include', 'lib']
+    'dirs': ['lib'],
 }
 
 sanity_check_commands = [
     "ucc_info -c | grep -i rocm",
     "ucc_info -c | grep -i rccl",
 ]
+
+modextrapaths = {'EB_UCC_EXTRA_COMPONENT_PATH': 'lib/ucc'}
 
 moduleclass = 'lib'
