@@ -10,6 +10,11 @@ description = "NCL is an interpreted language designed specifically for scientif
 toolchain = {'name': 'foss', 'version': '2023b'}
 toolchainopts = {
     'cstd': 'c99', 'openmp': True, 'pic': True,
+    'extra_cflags': (
+        '-Wno-error=implicit-int -Wno-error=implicit-function-declaration '
+        '-Wno-error=incompatible-pointer-types -Wno-error=int-conversion '
+        '-Wno-error=return-type'
+    ),
     'extra_fflags': '-fallow-invalid-boz -fallow-argument-mismatch',
 }
 
@@ -22,31 +27,27 @@ patches = [
     'NCL-6.6.2_HDF5-110-API.patch',
     'NCL-6.6.2_g2clib-link.patch',
     'NCL-6.6.2_fix-missing-Copyright.patch',
+    'NCL-6.6.2_fix-NetCDF4-log-level.patch',
     'NCL-6.6.2_PROJ-compatibility.patch',
+    'NCL-6.6.2_hdf5-fix.patch',
+    'NCL-6.6.2_fix-tcsh-invocation.patch',
+    'NCL-6.6.2_prevent-ymake-macros-from-affecting-installpath.patch',
 ]
 checksums = [
     {'6.6.2.tar.gz': 'cad4ee47fbb744269146e64298f9efa206bc03e7b86671e9729d8986bb4bc30e'},
-    {'NCL-6.4.0_fix-types.patch': 'f6dfaf95e5de9045745e122cb44f9c035f81fab92f5892991ddfe93945891c8f'},
-    {'NCL-6.6.2_header_and_operands.patch': '5cb62d9a37de8af485b94487692f7e739ca5eb103a6b447e0290a68a6c094808'},
-    {'NCL-6.6.2_multiple_definitions.patch': 'e21503dc46fe6fd360ba7ca4897aa93bf9ec2961bc48634ca46de582710448f7'},
-    {'NCL-6.6.2_HDF5-110-API.patch': 'aaa3086411d40594db04f6c1800b89372d22e7bce0fb9bc1b8414f035158fe17'},
-    {'NCL-6.6.2_g2clib-link.patch': '9eb7ee9ea314721e0ced93470b26cf7114cca2b3557d02fd1c34f8a9474a0d68'},
-    {'NCL-6.6.2_fix-missing-Copyright.patch': 'e125f3af1a9a78388127215078538551b52153e564e2d316f815c6debf257248'},
-    {'NCL-6.6.2_PROJ-compatibility.patch': '5ce206e5b9edab082a8e192f081faa82e4812ca2ba5ff065b72624be04bb5b83'},
+    {'NCL-6.4.0_fix-types.patch':    'f6dfaf95e5de9045745e122cb44f9c035f81fab92f5892991ddfe93945891c8f'},
+    {'NCL-6.6.2_header_and_operands.patch':    '5cb62d9a37de8af485b94487692f7e739ca5eb103a6b447e0290a68a6c094808'},
+    {'NCL-6.6.2_multiple_definitions.patch':    'e21503dc46fe6fd360ba7ca4897aa93bf9ec2961bc48634ca46de582710448f7'},
+    {'NCL-6.6.2_HDF5-110-API.patch':    'aaa3086411d40594db04f6c1800b89372d22e7bce0fb9bc1b8414f035158fe17'},
+    {'NCL-6.6.2_g2clib-link.patch':    '9eb7ee9ea314721e0ced93470b26cf7114cca2b3557d02fd1c34f8a9474a0d68'},
+    {'NCL-6.6.2_fix-missing-Copyright.patch':    'e125f3af1a9a78388127215078538551b52153e564e2d316f815c6debf257248'},
+    {'NCL-6.6.2_fix-NetCDF4-log-level.patch': '6bfbfcc9898730f66b6a22f44112a210aef72ba091af4fa222675cd8d1af8e8a'},
+    {'NCL-6.6.2_PROJ-compatibility.patch':    '5ce206e5b9edab082a8e192f081faa82e4812ca2ba5ff065b72624be04bb5b83'},
+    {'NCL-6.6.2_hdf5-fix.patch': '63fcfb938a345edd5b23cf1e0b026fc095394d63a5818a194b52df9abeaddb69'},
+    {'NCL-6.6.2_fix-tcsh-invocation.patch': '7f4c6083419720f6cbefb32f1dbe3196ca91dede8b37c99d646805ebf56adda4'},
+    {'NCL-6.6.2_prevent-ymake-macros-from-affecting-installpath.patch':
+    'de0a505da09090a227b64af8b1ae8e3434ea168df24016191d5a06b495fbda42'},
 ]
-
-preconfigopts = (
-    "export NCARG_ROOT=%(installdir)s && "
-    "export NCARG=%(installdir)s && "
-    "export YMAKEROOT=%(installdir)s && "
-)
-
-buildopts = 'CFLAGS=-DH5O_INFO_BASIC'
-
-preinstallopts = (
-    "LIBRARY_PATH=$LIBRARY_PATH:%(installdir)s/lib "
-    "CPATH=$CPATH:%(installdir)s/include "
-)
 
 builddependencies = [
     ('makedepend', '1.0.9'),
@@ -75,6 +76,7 @@ dependencies = [
     ('GSL', '2.7'),
     ('libpng', '1.6.40'),
     ('libjpeg-turbo', '3.0.1'),
+    ('tcsh', '6.24.13'),
 ]
 
 moduleclass = 'data'
