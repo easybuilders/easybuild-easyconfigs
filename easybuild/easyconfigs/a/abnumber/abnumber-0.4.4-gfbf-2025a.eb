@@ -1,0 +1,75 @@
+easyblock = 'PythonBundle'
+
+name = 'abnumber'
+version = '0.4.4'
+
+homepage = 'https://github.com/prihoda/AbNumber'
+description = "Antibody sequence numbering and alignment toolkit"
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('Python-bundle-PyPI', '2025.04'),
+    ('SciPy-bundle', '2025.06'),
+    ('gemmi', '0.7.4'),
+]
+
+builddependencies = [
+    ('Rust', '1.91.1'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('tzdata', '2026.2', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'checksums': ['9173fde7d80d9018e02a662e168e5a2d04f87c41ea174b139fbef642eda62d10'],
+    }),
+    ('Biopython', '1.85', {
+        'source_tmpl': 'biopython-%(version)s.tar.gz',
+        'checksums': ['5dafab74059de4e78f49f6b5684eddae6e7ce46f09cfa059c1d1339e8b1ea0a6'],
+        'modulename': 'Bio',
+    }),
+    ('maturin', '1.8.3', {
+        'source_tmpl': (
+            'maturin-%(version)s-py3-none-manylinux_2_12_x86_64.manylinux2010_x86_64.musllinux_1_1_x86_64.whl'
+            if ARCH == 'x86_64' else
+            'maturin-%(version)s-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl'
+        ),
+        'modulename': 'maturin',
+        'checksums': [{
+            'maturin-1.8.3-py3-none-manylinux_2_12_x86_64.manylinux2010_x86_64.musllinux_1_1_x86_64.whl':
+                '11564fac7486313b7baf3aa4e82c20e1b20364aad3fde2ccbc4c07693c0b7e16',
+            'maturin-1.8.3-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl':
+                '8555d8701cdba6c19c4705a22ce4d2a1814ef792f55dc5873262ff903317540',
+        }],
+    }),
+    ('uv-build', '0.7.22', {
+        # PyPI sdist filename uses underscore for this project: uv_build-0.7.22.tar.gz.
+        # Keep explicit source to avoid EasyBuild generating a non-existent uv-build URL.
+        'source_urls': [PYPI_SOURCE],
+        'sources': ['uv_build-0.7.22.tar.gz'],
+        'modulename': 'uv_build',
+        'checksums': ['e7575036f987080a25a473971c0e6795c79e0b7bd04b95e5a35d5d51e19f3a6c'],
+    }),
+    ('anarcii', '2.0.5', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'checksums': ['6f526b8fef981f24361d7f94e99c13a97388a63c1ce6ba098cacdf21e1755213'],
+        'modulename': False,
+    }),
+    ('abnumber', version, {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['4c5fd9d33087dea23088bd2de08937aa66a561f2fd34cd420ce48e16512a0131'],
+        'modulename': False,
+    }),
+]
+
+sanity_pip_check = False
+
+# uv-build installs a Rust binary that bypasses EB's RPATH linker wrapper.
+# It is only needed as a build backend, not at runtime. Remove to avoid RPATH sanity check failure.
+postinstallcmds = ['rm -f %(installdir)s/bin/uv-build']
+
+moduleclass = 'bio'
