@@ -1,0 +1,73 @@
+Dealing with interpolate problem, see here for details:
+https://github.com/g-adopt/g-adopt/issues/482#issuecomment-4114532035
+Patch courtesy of dsroberts
+
+diff -Naur -x .git a/gadopt/limiter.py b/gadopt/limiter.py
+--- a/gadopt/limiter.py 2026-03-24 11:02:32.862023000 +1100
++++ b/gadopt/limiter.py 2026-03-24 11:01:36.215436000 +1100
+@@ -43,7 +43,7 @@
+         ufl_elem = ufl_elem.sub_elements[0]
+
+     if ufl_elem.family() == 'TensorProductElement':  # extruded mesh
+-        A, B = ufl_elem.sub_elements
++        A, B = ufl_elem.factor_elements
+         assert A.family() in fam_list, 'horizontal space must be one of {0:s}'.format(fam_list)
+         assert B.family() in fam_list, 'vertical space must be {0:s}'.format(fam_list)
+         assert A.degree() == degree, 'degree of horizontal space must be {0:d}'.format(degree)
+@@ -140,8 +140,6 @@
+         self.mesh = self.P0.mesh()
+         self.dim = self.mesh.geometric_dimension()
+         self.extruded = hasattr(self.mesh.ufl_cell(), 'sub_cells')
+-        assert not self.extruded or len(p1dg_space.ufl_element().sub_elements) > 0, \
+-            "Extruded mesh requires extruded function space"
+         assert not self.extruded or all(e.variant() == 'equispaced' for e in p1dg_space.ufl_element().sub_elements), \
+             "Extruded function space must be equivariant"
+
+diff -Naur -x .git a/tests/unit/test_extrusion_tools.py b/tests/unit/test_extrusion_tools.py
+--- a/tests/unit/test_extrusion_tools.py        2026-03-24 11:02:33.167696000 +1100
++++ b/tests/unit/test_extrusion_tools.py        2026-03-24 10:50:04.848493000 +1100
+@@ -7,7 +7,6 @@
+     mesh2d = fd.UnitSquareMesh(5, 5)
+     mesh3d = fd.ExtrudedMesh(mesh2d, 5, layer_height=1.)
+     V2d = fd.FunctionSpace(mesh2d, "CG", 1)
+-    x, y = fd.SpatialCoordinate(mesh2d)
+-    u2d = fd.interpolate(x, V2d)
++    u2d = fd.Function(V2d).interpolate(fd.SpatialCoordinate(mesh2d)[0])
+     u3d = extend_function_to_3d(u2d, mesh3d)
+     np.testing.assert_allclose(fd.assemble(u3d * fd.dx), 2.5)
+diff -Naur -x .git a/tests/unit/test_limiters.py b/tests/unit/test_limiters.py
+--- a/tests/unit/test_limiters.py       2026-03-24 11:02:33.219637000 +1100
++++ b/tests/unit/test_limiters.py       2026-03-24 10:55:24.197685000 +1100
+@@ -18,19 +18,19 @@
+         limiter = gadopt.VertexBasedP1DGLimiter(P1DG)
+
+         # test that linear function is not flattened at boundaries (fails with firedrake's VertexBasedLimiter)
+-        u = fd.interpolate(x, P1DG)
++        u = fd.Function(P1DG).interpolate(x)
+         v = u.copy(deepcopy=True)
+         limiter.apply(u)
+         np.testing.assert_allclose(u.dat.data, v.dat.data)
+
+         # same thing in y-direction to test bottom/top boundaries for extruded case
+-        u = fd.interpolate(y, P1DG)
++        u.interpolate(y)
+         v = u.copy(deepcopy=True)
+         limiter.apply(u)
+         np.testing.assert_allclose(u.dat.data, v.dat.data)
+
+         # test hat function
+-        u = fd.interpolate(0.5-abs(x-0.5), P1DG)
++        u.interpolate(0.5-abs(x-0.5))
+         vol0 = fd.assemble(u*fd.dx)
+         np.testing.assert_allclose(vol0, 0.25)
+         np.testing.assert_allclose(u.dat.data[:].max(), 0.5)
+@@ -50,7 +50,7 @@
+         # repeat for vector functionspace
+         P1DG = fd.VectorFunctionSpace(mesh, elt)
+         limiter = gadopt.VertexBasedP1DGLimiter(P1DG)
+-        u = fd.interpolate(fd.as_vector((0.5-abs(x-0.5), 0)), P1DG)
++        u = fd.Function(P1DG).interpolate(fd.as_vector((0.5 - abs(x - 0.5), 0)))
+         vol0 = fd.assemble(u[0]*fd.dx)
+         np.testing.assert_allclose(vol0, 0.25)
+         np.testing.assert_allclose(u.dat.data[:].max(), 0.5)
+
