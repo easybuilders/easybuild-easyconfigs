@@ -1,0 +1,30 @@
+This test seems to expect at most 4 GPUs.
+Especially when the number of GPUs is not a power of 2 (e.g. 6) test_fsdp_tp_integration_tensor_parallel_size_2_cpu_offload_CPUOffload(offload_params=False) fails:
+
+torch.testing._internal.common_distributed: [ERROR]   File "/dev/shm//pytorch/test/distributed/fsdp/test_fsdp_tp_integration.py", line 157, in _sync_tp_grads
+torch.testing._internal.common_distributed: [ERROR]     per_param_masks = unsharded_zeros.split(splits)
+torch.testing._internal.common_distributed: [ERROR]   File "/tmp/easybuild-install/lib/python3.10/site-packages/torch/_tensor.py", line 864, in split
+torch.testing._internal.common_distributed: [ERROR]     return torch._VF.split_with_sizes(self, split_size, dim)
+torch.testing._internal.common_distributed: [ERROR] RuntimeError: split_with_sizes expects split_sizes to sum exactly to 105 (input tensor's size at dimension 0), but got split_sizes=[20, 4, 16, 4, 48, 12]
+
+See https://github.com/pytorch/pytorch/issues/141237
+
+Limitting to 4 GPUs seems to work.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/fsdp/test_fsdp_tp_integration.py b/test/distributed/fsdp/test_fsdp_tp_integration.py
+index bc7a4aef4a3..61eb13162f2 100644
+--- a/test/distributed/fsdp/test_fsdp_tp_integration.py
++++ b/test/distributed/fsdp/test_fsdp_tp_integration.py
+@@ -71,6 +71,10 @@ class SimpleModel(torch.nn.Module):
+ 
+ 
+ class TestTPFSDPIntegration(FSDPTest):
++    @property
++    def world_size(self):
++        return min(4, super().world_size)
++
+     def _get_params_and_sharding_info(
+         self,
+         model: SimpleModel,

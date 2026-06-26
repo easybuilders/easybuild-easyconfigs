@@ -34,11 +34,12 @@ builddependencies = [('binutils', '2.38')]
 buildopts = ' '.join([
     'CXXFLAGS="$CXXFLAGS $CPPFLAGS -DTIXML_USE_STL" CXX="$CXX" LDFLAGS="$LDFLAGS" LD="$LD"',
     # build a shared library
-    '&& $CXX -shared -Wl,-soname,lib%(namelower)s.so.%(version)s -o lib%(namelower)s.so.%(version)s $LDFLAGS *.o',
+    f'&& $CXX -shared -Wl,-soname,lib%(namelower)s.{SHLIB_EXT}.%(version)s -o lib%(namelower)s.{SHLIB_EXT}.%(version)s '
+    '$LDFLAGS *.o',
 ])
 
 _incs = ['tinystr.h', 'tinyxml.h']
-_libs = ['lib%(namelower)s.so.%(version)s']
+_libs = [f'lib%(namelower)s.{SHLIB_EXT}.%(version)s']
 
 files_to_copy = [
     (_incs, 'include'),
@@ -47,13 +48,13 @@ files_to_copy = [
 
 postinstallcmds = [' && '.join([
     "cd %(installdir)s/lib",
-    "ln -s lib%(namelower)s.so.%(version)s lib%(namelower)s.so.%(version_major)s",
-    "ln -s lib%(namelower)s.so.%(version)s lib%(namelower)s.so.%(version_major_minor)s",
-    "ln -s lib%(namelower)s.so.%(version)s lib%(namelower)s.so",
+    f"ln -s lib%(namelower)s.{SHLIB_EXT}.%(version)s lib%(namelower)s.{SHLIB_EXT}.%(version_major)s",
+    f"ln -s lib%(namelower)s.{SHLIB_EXT}.%(version)s lib%(namelower)s.{SHLIB_EXT}.%(version_major_minor)s",
+    f"ln -s lib%(namelower)s.{SHLIB_EXT}.%(version)s lib%(namelower)s.{SHLIB_EXT}",
 ])]
 
 sanity_check_paths = {
-    'files': ['include/%s' % i for i in _incs] + ['lib/%s' % l for l in _libs],
+    'files': ['include/%s' % i for i in _incs] + ['lib/%s' % x for x in _libs],
     'dirs': [],
 }
 

@@ -1,0 +1,55 @@
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'MakeCp'
+
+name = 'REEF3D'
+version = '25.05_v2'
+
+homepage = 'https://reef3d.wordpress.com/'
+description = """
+REEF3D and its dependency DIVEMesh are hydrodynamics frameworks that offers
+open-source CFD and wave models.  The software is efficiently parallelized,
+designed to run on a large number of processors. High-order spatial and
+temporal discretization schemes result in accurate and stable numerical
+behavior. The modular programming approach allows the framework to incorporate
+a range of different flow solvers which together represent all relevant length
+scales. With a focus on coastal, marine and hydraulic engineering flows,
+tailor-made multiphysics solvers are available for a range of relevant
+problems (e.g. sediment transport or floating body dynamics).
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'usempi': True, 'cstd': 'c++11'}
+
+github_account = 'REEF3D'
+source_urls = [GITHUB_SOURCE]
+sources = [f'{version}.tar.gz']
+patches = [f'{name}-{version}-makefile.patch']
+checksums = [
+    {'25.05_v2.tar.gz': '4e1ce7e6f64fe62cbf277d08490a195cb3f2d51fe2ca4fca682f9ccbf3111cd1'},
+    {'REEF3D-25.05_v2-makefile.patch': '195405a665e504e1ba3e55fe1e930b676add6597bdf0bc91ef8570334846323c'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('make', '4.4.1'),
+    ('Eigen', '3.4.0'),
+]
+
+dependencies = [
+    ('Hypre', '2.32.0'),
+]
+
+_executables = ['bin/%(name)s']
+files_to_copy = [(_executables, 'bin'), 'LICENSE']
+
+sanity_check_paths = {
+    'files': [f'{x}' for x in _executables],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "%(name)s -h 2>&1 | grep 'Open-Source Hydrodynamics'",
+]
+
+moduleclass = 'geo'

@@ -1,0 +1,38 @@
+easyblock = 'MakeCp'
+
+name = 'FUNAERO'
+version = '1.1'
+
+homepage = 'https://www.inm.cnr.it'
+description = """Free-wake UNsteady AEROdynamics (FUNAERO) code features an aerodynamic
+formulation based on the Boundary Element Method (BEM) to predict the behaviour
+of a wind turbine operating in a spatially uniform/nonuniform inflow.
+"""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+toolchainopts = {'openmp': True}
+
+download_instructions = "Contact the developers of FUNAERO at INSEAN"
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['2f68e5b23b11cd49610f780239f0cb2f9b0ace9c5f2e3deb1b6a0209bb2f5a73']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('make', '4.4.1'),
+]
+
+start_dir = 'src_%(version)s'
+max_parallel = 1
+
+# fix linking of numeric libraries and OpenMP
+prebuildopts = 'sed -i "s/-llapack -lblas/$LIBLAPACK -lgomp/g" Makefile && '
+buildopts = 'clean %(namelower)s F90="$F90" F77FLAGS="$FFLAGS"'
+
+files_to_copy = [(['funaero'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/funaero'],
+    'dirs': [],
+}
+
+moduleclass = 'cae'

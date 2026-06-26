@@ -1,0 +1,75 @@
+# Update to version 2.1.4 means the tarballs is version 2.14.tar.gz!
+# Hence all that string substitution. Hopefully that will be changed
+# back with a newer update.
+# Author: J. Saßmannshausen (Imperial College London/UK) + Alexander Grund
+
+easyblock = 'PackedBinary'
+
+name = 'Kraken2'
+version = '2.1.4'
+
+homepage = 'https://github.com/DerrickWood/kraken2/wiki'
+description = """Kraken is a system for assigning taxonomic labels to short DNA sequences,
+ usually obtained through metagenomic studies. Previous attempts by other
+ bioinformatics software to accomplish this task have often used sequence
+ alignment or machine learning techniques that were quite slow, leading to
+ the development of less sensitive but much faster abundance estimation
+ programs. Kraken aims to achieve high sensitivity and high speed by
+ utilizing exact alignments of k-mers and a novel classification algorithm."""
+
+# part is compiled with $CXX, the rest is in Perl
+toolchain = {'name': 'gompi', 'version': '2024a'}
+toolchainopts = {'openmp': True, 'cstd': 'c++11'}
+
+github_account = 'DerrickWood'
+source_urls = [GITHUB_LOWER_SOURCE]
+# The version is 2.1.4 but the tarball is 2.14, hence we need to do this:
+sources = [f'v{version.replace("2.1.4", "2.14")}.tar.gz']
+patches = [
+    '%(name)s-%(version)s_fix_installation_for_easybuild.patch',
+]
+checksums = [
+    {'v2.14.tar.gz': '75ffbf82bd13232ec8d39990f48454c6f7d98ceb589af80a60c7e9ed046e7f18'},
+    {'Kraken2-2.1.4_fix_installation_for_easybuild.patch':
+     '21751e1c931f8d49c4aec226eea83a39583e283be679517264cbf2aabbbe2267'},
+]
+
+dependencies = [
+    ('Perl', '5.38.2'),
+    ('BLAST+', '2.16.0'),
+    ('wget', '1.25.0'),
+]
+
+# This is a better option, thanks to Alexander for that:
+preinstallopts = 'cd %(start_dir)s && '
+install_cmd = './install_kraken2.sh %(installdir)s/bin'
+
+# Kraken2 databases can be downloaded from https://benlangmead.github.io/aws-indexes/k2
+# or built as described in https://github.com/DerrickWood/kraken2/wiki/Manual#kraken-2-databases
+# The following commands will build and install the standard databases (100GB) in local_db_path
+# local_db_path = '%(installdir)s/db'
+# postinstallcmds = [
+#     'mkdir %s' % local_db_path,
+#     'cd %%(installdir)s/bin && ./kraken2-build --standard --threads %%(parallel)s --db %s' % local_db_path,
+# ]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in [
+        '16S_gg_installation.sh', '16S_rdp_installation.sh', '16S_silva_installation.sh', 'add_to_library.sh',
+        'build_db', 'build_gg_taxonomy.pl', 'build_kraken2_db.sh', 'build_rdp_taxonomy.pl', 'build_silva_taxonomy.pl',
+        'classify', 'clean_db.sh', 'cp_into_tempfile.pl', 'download_genomic_library.sh', 'download_taxonomy.sh',
+        'dump_table', 'estimate_capacity', 'kraken2', 'kraken2-build', 'kraken2-inspect', 'kraken2lib.pm',
+        'lookup_accession_numbers.pl', 'make_seqid2taxid_map.pl', 'mask_low_complexity.sh', 'rsync_from_ncbi.pl',
+        'scan_fasta_file.pl']],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'kraken2 --help',
+    'kraken2-build --help',
+    'kraken2-inspect --help',
+    'build_db -h',
+    'classify -h',
+]
+
+moduleclass = 'bio'

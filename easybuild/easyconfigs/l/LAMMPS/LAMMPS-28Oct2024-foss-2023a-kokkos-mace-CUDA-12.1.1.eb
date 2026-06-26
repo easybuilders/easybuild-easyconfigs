@@ -1,0 +1,192 @@
+name = 'LAMMPS'
+version = '28Oct2024'
+_cuda_suffix = '-CUDA-%(cudaver)s'
+versionsuffix = '-kokkos-mace%s' % _cuda_suffix
+_commit = 'f51963a'
+
+homepage = 'https://mace-docs.readthedocs.io/en/latest/guide/lammps.html'
+description = """ACEsuit fork of LAMMPS for using MACE in LAMMPS"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+sources = [{
+    'source_urls': ['https://github.com/ACEsuit/lammps/archive'],
+    'download_filename': '%s.tar.gz' % _commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = [
+    'LAMMPS-2Aug2023_install_lammps_python_package_in_eb_software_module.patch',
+    'LAMMPS-2Aug2023_python_venv.patch',
+    'LAMMPS-2Aug2023_python_wheel_requirements.patch',
+]
+checksums = [
+    {'LAMMPS-28Oct2024.tar.gz': '43d1432782806ddae40a9f8fd3a7c7c0dc2fad0c74c440e1b189f42b33da2777'},
+    {'LAMMPS-2Aug2023_install_lammps_python_package_in_eb_software_module.patch':
+     '314ab1064af74ddfcf4091dfe9f90fa32cfa4100e8d01fea7b59b019575a7c51'},
+    {'LAMMPS-2Aug2023_python_venv.patch': '87fd13b0c66f0886877885412ff13dfd092782e2237ba1fae157f803437828d6'},
+    {'LAMMPS-2Aug2023_python_wheel_requirements.patch':
+     'fa2b615d3cbab6f886e5aaee39cb46b5bf9a542291b919fe0b2f734ab79eeed0'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('pkgconf', '1.9.5'),
+    ('archspec', '0.2.5'),
+]
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('UCX-CUDA', '1.14.1', _cuda_suffix),
+    ('NCCL', '2.18.3', _cuda_suffix),
+    ('Python', '3.11.3'),
+    ('libpng', '1.6.39'),
+    ('libjpeg-turbo', '2.1.5.1'),
+    ('netCDF', '4.9.2'),
+    ('GSL', '2.7'),
+    ('zlib', '1.2.13'),
+    ('gzip', '1.12'),
+    ('cURL', '8.0.1'),
+    ('HDF5', '1.14.0'),
+    ('PCRE', '8.45'),
+    ('libxml2', '2.11.4'),
+    ('FFmpeg', '6.0'),
+    ('Voro++', '0.4.6'),
+    ('kim-api', '2.3.0'),
+    ('Eigen', '3.4.0'),
+    ('PLUMED', '2.9.0'),
+    ('SciPy-bundle', '2023.07'),
+    # VTK package is auto-disabled if this dep is not available
+    ('VTK', '9.3.0'),
+    # We use a custom build of MDI
+    ('MDI', '1.4.26'),
+    ('PyTorch', '2.1.2', _cuda_suffix),
+]
+if ARCH == 'x86_64':
+    # TBB and ScaFaCos are an optional dependency when building on Intel arch
+    dependencies += [
+        ('tbb', '2021.11.0'),
+        ('ScaFaCoS', '1.0.4'),
+    ]
+
+# To use additional custom configuration options, use the 'configopts' easyconfig parameter
+# See docs and lammps easyblock for more information.
+# https://github.com/lammps/lammps/blob/master/cmake/README.md#lammps-configuration-options
+
+# OpenMP-Kokkos build is default in the current easyblock. One can switch to serial backend of Kokkos,
+# which is claimed to be faster in pure MPI calculations
+# configopts = "-DKokkos_ENABLE_SERIAL=yes "
+
+# packages auto-enabled by easyblock
+# 'GPU'    - if cuda package is present and kokkos is disabled
+# 'KOKKOS' - if kokkos is enabled (by default)
+# 'INTEL'  - if builing on Intel CPU
+# 'OPENMP' - if OpenMP swithed on in 'toolchainopts'
+
+# include the following extra packages into the build
+general_packages = [
+    'AMOEBA',
+    'ASPHERE',
+    'ATC',
+    'AWPMD',
+    'BOCS',
+    'BODY',
+    'BPM',
+    'BROWNIAN',
+    'CG-DNA',
+    'CG-SPICA',
+    'CLASS2',
+    'COLLOID',
+    'COLVARS',
+    'COMPRESS',
+    'CORESHELL',
+    'DIELECTRIC',
+    'DIFFRACTION',
+    'DIPOLE',
+    'DPD-BASIC',
+    'DPD-MESO',
+    'DPD-REACT',
+    'DPD-SMOOTH',
+    'DRUDE',
+    'EFF',
+    'ELECTRODE',
+    'EXTRA-COMPUTE',
+    'EXTRA-DUMP',
+    'EXTRA-FIX',
+    'EXTRA-MOLECULE',
+    'EXTRA-PAIR',
+    'FEP',
+    'GRANULAR',
+    'H5MD',
+    'INTERLAYER',
+    'KIM',
+    'KSPACE',
+    'LATBOLTZ',
+    'LEPTON',
+    # installation fails with MACHDYN on zen2
+    # 'MACHDYN',
+    'MANIFOLD',
+    'MANYBODY',
+    'MC',
+    'MDI',
+    'MEAM',
+    'MGPT',
+    'MISC',
+    'ML-IAP',
+    'ML-PACE',
+    'ML-POD',
+    'ML-RANN',
+    'ML-SNAP',
+    'ML-MACE',
+    'MOFFF',
+    'MOLECULE',
+    'MOLFILE',
+    'MPIIO',
+    'NETCDF',
+    'OPT',
+    'ORIENT',
+    'PERI',
+    'PHONON',
+    'PLUGIN',
+    'PLUMED',
+    'POEMS',
+    'PTM',
+    'PYTHON',
+    'QEQ',
+    'QTB',
+    'REACTION',
+    'REAXFF',
+    'REPLICA',
+    'RIGID',
+    'SCAFACOS',
+    'SHOCK',
+    'SMTBQ',
+    'SPH',
+    'SPIN',
+    'SRD',
+    'TALLY',
+    'UEF',
+    'VORONOI',
+    'VTK',
+    'YAFF',
+]
+
+# Excluded packages due to requiring additional (non-trivial) deps
+# - ADIOS
+# - LATTE
+# - MESONT (requires very large files downloaded during build)
+# - ML-HDNNP (requires N2P2)
+# - ML-QUIP
+# - MSCG
+# - QMMM (setup seems complex)
+
+# hardware-specific option
+# note: only the highest capability will be used
+# cuda_compute_capabilities = ['9.0']
+
+configopts = ' '.join([
+    '-D CMAKE_CXX_STANDARD=17',
+    '-D CMAKE_CXX_STANDARD_REQUIRED=ON',
+    '-D CMAKE_PREFIX_PATH=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch',
+])
+
+moduleclass = 'chem'

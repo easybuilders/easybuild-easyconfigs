@@ -1,0 +1,53 @@
+Set pybind to version 2.11, deal with the script finding the right LLVM and Clang libraries.
+The way it is done is spitting out a bit more information which hopefully makes any further 
+debugging easier. 
+Help from Jan André Reuter (JSC) and Davide Grassano is greatly appreciated
+Author: J. Sassmannshausen (Imperial College London/UK)
+diff --git a/hoomd-4.9.1.orig/CMake/hoomd/HOOMDPythonSetup.cmake b/hoomd-4.9.1/CMake/hoomd/HOOMDPythonSetup.cmake
+index 780344e..7d9e544 100644
+--- a/hoomd-4.9.1.orig/CMake/hoomd/HOOMDPythonSetup.cmake
++++ b/hoomd-4.9.1/CMake/hoomd/HOOMDPythonSetup.cmake
+@@ -12,7 +12,7 @@ if (Python_FOUND)
+     endif()
+ endif()
+ 
+-find_package(pybind11 2.12 CONFIG REQUIRED)
++find_package(pybind11 2.11 CONFIG REQUIRED)
+ 
+ if (pybind11_FOUND)
+     find_package_message(pybind11 "Found pybind11: ${pybind11_DIR} ${pybind11_INCLUDE_DIR} (version ${pybind11_VERSION})" "[${pybind11_DIR}][${pybind11_INCLUDE_DIR}]")
+diff --git a/hoomd-4.9.1.orig/hoomd/hpmc/CMakeLists.txt b/hoomd-4.9.1/hoomd/hpmc/CMakeLists.txt
+index 0174fb0..ae1f149 100644
+--- a/hoomd-4.9.1.orig/hoomd/hpmc/CMakeLists.txt
++++ b/hoomd-4.9.1/hoomd/hpmc/CMakeLists.txt
+@@ -220,16 +220,24 @@ if (BUILD_TESTING)
+ endif()
+ 
+ if (ENABLE_LLVM)
+-    set(PACKAGE_NAME jit)
++    find_package(LLVM REQUIRED CONFIG)
++
++    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
++    message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
++    include_directories(${LLVM_INCLUDE_DIRS})
++    separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
++    add_definitions(${LLVM_DEFINITIONS_LIST})
++
++    # Find the libraries that correspond to the LLVM components
++    # that we wish to use
++    llvm_map_components_to_libnames(llvm_library JITLink)
++
++    set(PACKAGE_NAME jit)
+ 
+     # find and configure LLVM
+-    find_package(LLVM REQUIRED CONFIG)
++    #    find_package(LLVM REQUIRED CONFIG)
+ 
+     if (LLVM_FOUND)
+-        find_library(llvm_library LLVM
+-                     HINTS ${LLVM_LIBRARY_DIRS}
+-                     NO_DEFAULT_PATH)
+-
+         find_library(clang_library clang-cpp
+                      HINTS ${LLVM_LIBRARY_DIRS}
+                      NO_DEFAULT_PATH)

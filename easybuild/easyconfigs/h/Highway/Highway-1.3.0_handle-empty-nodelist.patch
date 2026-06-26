@@ -1,0 +1,32 @@
+From b5bb951eecb3d2c2bc20a8bfe16d774fdd0cb842 Mon Sep 17 00:00:00 2001
+From: Jan Wassenberg <janwas@google.com>
+Date: Fri, 15 Aug 2025 01:22:38 -0700
+Subject: [PATCH] handle empty Node cpulist for GH200. fixes #2668
+
+PiperOrigin-RevId: 795384678
+---
+ hwy/contrib/thread_pool/topology.cc | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/hwy/contrib/thread_pool/topology.cc b/hwy/contrib/thread_pool/topology.cc
+index ff47fa9014..d524120344 100644
+--- a/hwy/contrib/thread_pool/topology.cc
++++ b/hwy/contrib/thread_pool/topology.cc
+@@ -15,6 +15,7 @@
+ 
+ #include "hwy/contrib/thread_pool/topology.h"
+ 
++#include <ctype.h>  // isspace
+ #include <stddef.h>
+ #include <stdint.h>
+ #include <stdio.h>
+@@ -560,6 +561,9 @@ std::vector<size_t> ExpandList(const char* list, size_t list_end,
+   constexpr size_t kNotFound = ~size_t{0};
+   size_t pos = 0;
+ 
++  // Gracefully handle empty lists, happens on GH200 systems (#2668).
++  if (isspace(list[0]) && list_end <= 2) return expanded;
++
+   // Returns first `found_pos >= pos` where `list[found_pos] == c`, or
+   // `kNotFound`.
+   const auto find = [list, list_end, &pos](char c) -> size_t {
