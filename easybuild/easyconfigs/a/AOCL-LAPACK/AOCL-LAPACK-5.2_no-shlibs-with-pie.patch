@@ -1,0 +1,31 @@
+From 1466c4192f5ec9eb9d464f271a14d0d27371028b Mon Sep 17 00:00:00 2001
+From: Alexander Grund <Flamefire@users.noreply.github.com>
+Date: Fri, 6 Feb 2026 09:52:43 +0100
+Subject: [PATCH] Do not build shared libraries with `-pie`
+
+`-pie` builds an executable and when passed after `-shared` won't create a shared library anymore.
+
+CMake 4.1.0 changed the order of `CMAKE_SHARED_LINKER_FLAGS` to be passed after the shared-library-creation-flags and the build now fails.
+
+However it was wrong to pass this flag to the shared library linking anyway, so remove it from there.
+---
+ CMakeLists.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 962ef4d76..eb649b5a0 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -217,10 +217,10 @@ elseif(UNIX)
+ 		message(STATUS "No ISA flag set")
+ 	endif()
+ 	set(COMPILE_FLAGS "-fstack-protector-strong -fpie -Wformat -Wformat-security")
+-	set(LINKER_FLAGS "-pie -Wl,-z,relro -Wl,-z,now")
++	set(LINKER_FLAGS "-Wl,-z,relro -Wl,-z,now")
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILER_OPTIMIZATION_FLAGS} ${COMPILE_FLAGS}")
+ 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILER_OPTIMIZATION_FLAGS} ${COMPILE_FLAGS}")
+-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAGS}")
++	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie ${LINKER_FLAGS}")
+ 	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAGS}")
+ else()
+ 	message(STATUS "OS UNKNOWN CANNOT SET SIMD")

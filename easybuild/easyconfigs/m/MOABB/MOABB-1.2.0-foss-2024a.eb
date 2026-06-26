@@ -1,0 +1,69 @@
+easyblock = 'PythonBundle'
+
+name = 'MOABB'
+version = '1.2.0'
+
+homepage = 'https://neurotechx.github.io/moabb/'
+description = """Build a comprehensive benchmark of popular Brain-Computer Interface (BCI)
+algorithms applied on an extensive list of freely available EEG datasets."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('poetry', '1.8.3'),
+]
+
+# MOABB optionally interfaces with the following ML frameworks:
+# TensorFlow, Keras, scikeras, Braindecode, PyTorch
+# These can be manually loaded by the users depending on their needs
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('MNE-Python', '1.10.2'),
+    ('h5py', '3.12.1'),
+    ('scikit-learn', '1.5.2'),
+    ('matplotlib', '3.9.2'),
+    ('Seaborn', '0.13.2'),
+    ('PyYAML', '6.0.2'),
+    ('tqdm', '4.66.5'),
+    ('coverage', '7.9.2'),
+]
+
+_preinstallopts = (
+    """sed -i -e 's/^urllib3.*/urllib3 = "*"/' """
+    """-e 's/^seaborn.*/seaborn = "*"/' """
+    "-e 's/^tdlda.*//' pyproject.toml && "
+)
+
+_runtest = ' && '.join([
+    "sed -i 's/def setup/def setup_method/' moabb/tests/test_classification.py",
+    'mkdir -p %(builddir)s/{mne_data,results,bnci}',
+    'export MNE_DATA=%(builddir)s/mne_data',
+    'export MOABB_RESULTS=%(builddir)s/results',
+    'export MNE_DATASETS_BNCI_PATH=%(builddir)s/bnci',
+    'pytest moabb/tests'
+])
+
+exts_list = [
+    ('edfio', '0.4.11', {
+        'checksums': ['0eafa01d3058a2feafc95aaca6e1d667a22d6f53fd3d89650034741b8e7b74bc'],
+    }),
+    ('memory-profiler', '0.61.0', {
+        'checksums': ['4e5b73d7864a1d1292fb76a03e82a3e78ef934d06828a698d9dada76da2067b0'],
+    }),
+    ('EDFlib-Python', '1.0.8', {
+        'modulename': 'EDFlib',
+        'checksums': ['42de3b7980809f37fcc44e3cddc837a3237b69b937a81335dd1f9ffaaf3f2e19'],
+    }),
+    ('pyriemann', '0.7', {
+        'checksums': ['f1889f3aec02c4148dec5458299ade2b4a0f28063312c00180a8dfeeea9d9b8e'],
+    }),
+    ('moabb', version, {
+        'preinstallopts': _preinstallopts,
+        'runtest': _runtest,
+        'checksums': ['076e63ee33aa228c8efc6c37e1c68756834c796b9922be6dc22611ac241d1137'],
+    }),
+]
+
+moduleclass = 'tools'

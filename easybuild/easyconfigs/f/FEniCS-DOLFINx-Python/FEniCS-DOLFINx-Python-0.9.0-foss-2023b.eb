@@ -1,0 +1,50 @@
+easyblock = 'PythonPackage'
+
+name = 'FEniCS-DOLFINx-Python'
+version = '0.9.0'
+
+homepage = 'https://github.com/FEniCS/dolfinx'
+description = "DOLFINx is the computational environment of FEniCSx - Python binding "
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://github.com/FEniCS/dolfinx/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['b266c74360c2590c5745d74768c04568c965b44739becca4cd6b5aa58cdbbbd1']
+
+builddependencies = [
+    ('make', '4.4.1'),
+    ('CMake', '3.27.6'),
+    ('nanobind', '2.5.0'),
+    ('pkgconfig', '1.5.5', '-python'),
+    ('scikit-build-core', '0.10.7'),
+    ('setuptools', '80.9.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('FEniCS-Basix-Python', '0.9.0'),
+    ('FEniCS-FFCx', '0.9.0'),
+    ('FEniCS-UFL', '2024.2.0'),
+    ('mpi4py', '3.1.5'),
+    ('petsc4py', '3.22.5'),
+    ('slepc4py', '3.22.2'),
+    ('FEniCS-DOLFINx', '%(version)s'),
+]
+
+install_src = './python'
+
+# Disable built-in check for module extension: need to initialize MPI from mpi4py first
+options = {'modulename': False}
+
+sanity_check_paths = {
+    'files': ['lib/python%(pyshortver)s/site-packages/dolfinx/__init__.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'mpiexec -N 1 python -c "from mpi4py import MPI; import dolfinx"',
+]
+
+moduleclass = 'cae'
