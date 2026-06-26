@@ -226,6 +226,17 @@ exts_list = [
     }),
 ]
 
+_python_bin = "${EBROOTPYTHON}/bin/python"
+_kernel_json = "%(installdir)s/share/jupyter/kernels/python3/kernel.json"
+_kernel_desc = "EasyBuild Python %(pyver)s (ipykernel)"
+
+postinstallcmds = [
+    # Hardcode the path to the python executable in the kernel.json file, so that it works even if another python
+    # takes precedence in the PATH
+    f'sed -i "/^ *\\\"python/ s|\\\"python\\\"|\\\"{_python_bin}\\\"|" {_kernel_json}',
+    f"sed -i 's|\"display_name\": .*|\"display_name\": \"{_kernel_desc}\",|' {_kernel_json}",
+]
+
 sanity_check_paths = {
     'files': ['bin/jupyter'],
     'dirs': ['share/jupyter', 'etc/jupyter'],
@@ -233,6 +244,11 @@ sanity_check_paths = {
 
 sanity_check_commands = ['jupyter --help']
 
-modextrapaths = {'EB_ENV_JUPYTER_ROOT': ''}
+modextrapaths = {
+    'EB_ENV_JUPYTER_ROOT': '',
+    # needed for kernelspecs to be dynamically found by jupyter, EG in a non-easybuild juypyter server loading EB
+    # modules through `jupyterlmod`
+    'JUPYTER_PATH': 'share/jupyter',
+}
 
 moduleclass = 'tools'
