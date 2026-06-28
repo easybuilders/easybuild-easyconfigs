@@ -1,0 +1,32 @@
+when nvcc calls the c++ preprocessor for .cu files, arm_neon.h gets included and that brings along definitions of types that only the respective c++ compiler will understand.
+nvcc then calls cudafe++ on the resultant file and errors out.
+see: https://github.com/abseil/abseil-cpp/issues/1665#issuecomment-2090693277
+
+Author: Richard Top
+diff -ruN a/tensorflow-2.15.1/third_party/absl/absl_combined_fix.patch b/tensorflow-2.15.1/third_party/absl/absl_combined_fix.patch
+--- a/tensorflow-2.15.1/third_party/absl/absl_combined_fix.patch	1970-01-01 01:00:00.000000000 +0100
++++ b/tensorflow-2.15.1/third_party/absl/absl_combined_fix.patch	2025-05-22 09:43:35.000000000 +0200
+@@ -0,0 +1,11 @@
++--- a/absl/base/config.h	2023-03-27 16:58:21.000000000 +0200
+++++ b/absl/base/config.h	2025-05-21 11:31:45.501755010 +0200
++@@ -936,7 +936,7 @@
++ // https://llvm.org/docs/CompileCudaWithLLVM.html#detecting-clang-vs-nvcc-from-code
++ #ifdef ABSL_INTERNAL_HAVE_ARM_NEON
++ #error ABSL_INTERNAL_HAVE_ARM_NEON cannot be directly set
++-#elif defined(__ARM_NEON) && !defined(__CUDA_ARCH__)
+++#elif defined(__ARM_NEON) && !(defined(__NVCC__) && defined(__CUDACC__))
++ #define ABSL_INTERNAL_HAVE_ARM_NEON 1
++ #endif
++
+diff -ruN a/tensorflow-2.15.1/third_party/absl/workspace.bzl b/tensorflow-2.15.1/third_party/absl/workspace.bzl
+--- a/tensorflow-2.15.1/third_party/absl/workspace.bzl	2024-03-08 03:19:10.000000000 +0100
++++ b/tensorflow-2.15.1/third_party/absl/workspace.bzl	2025-05-22 09:08:29.000000000 +0200
+@@ -44,7 +44,7 @@
+         system_link_files = SYS_LINKS,
+         # This patch pulls in a fix for designated initializers that MSVC
+         # complains about. It shouldn't be necessary at the next LTS release.
+-        patch_file = ["//third_party/absl:absl_designated_initializers.patch"],
++        patch_file = ["//third_party/absl:absl_designated_initializers.patch", "//third_party/absl:absl_combined_fix.patch"],
+         strip_prefix = "abseil-cpp-{commit}".format(commit = ABSL_COMMIT),
+         urls = tf_mirror_urls("https://github.com/abseil/abseil-cpp/archive/{commit}.tar.gz".format(commit = ABSL_COMMIT)),
+     )
