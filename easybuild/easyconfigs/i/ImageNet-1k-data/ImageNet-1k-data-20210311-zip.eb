@@ -2,7 +2,7 @@ easyblock = 'Dataset'
 
 name = 'ImageNet-1k-data'
 version = '20210311'
-versionsuffix = '-face-blurred-zip'
+versionsuffix = f'-zip'
 
 homepage = 'https://image-net.org'
 description = """ImageNet is an image database organized according to the WordNet hierarchy
@@ -11,19 +11,18 @@ hundreds and thousands of images. The project has been instrumental in
 advancing computer vision and deep learning research. The data is available for
 free to researchers for non-commercial use."""
 
-# IMPORTANT! This should be built with --umask=077 and to give access to some users
-# create a hook to set-facl for the group controlling the license
+# IMPORTANT! This should be built with --umask=007 and to give access to some users
+# create a hook to setfacl for the group controlling the license
 
 toolchain = SYSTEM
 
-builddependencies = [('tar2zip', '0.1.0', '', ('GCCcore', '14.2.0'))]
+builddependencies = [
+    ('GCCcore', '14.3.0'),
+    ('tar2zip', '0.1.0', '', ('GCCcore', '14.3.0')),
+]
 
 download_instructions = 'Manually obtain sources from ImageNet'
 data_sources = [
-    {
-        'filename': 'ILSVRC2017_devkit.tar.gz',
-        'extract_cmd': 'tar -xzf %s --strip-components=1',
-    },
     {
         'filename': 'face_annotations_ILSVRC.json',
         'extract_cmd': 'cp %s .',
@@ -36,24 +35,31 @@ data_sources = [
         'filename': 'val_blurred.tar.gz',
         'extract_cmd': 'ln -s %s',  # temporary symlink
     },
+    {
+        'filename': 'ILSVRC2017_devkit.tar.gz',
+        'extract_cmd': 'tar -xzf %s --strip-components=1',
+    },
 ]
 checksums = [
-    {'ILSVRC2017_devkit.tar.gz': '67a0570d422981cad77ceb6d1d3683e6810bf4efe61be9cf1e591a8cf5c7ad81'},
     {'face_annotations_ILSVRC.json': 'a49243e25df4863bf2d89f15c3beb80159718a65be85c1938756d6ec6382fadf'},
     {'train_blurred.tar.gz': 'fb7c7ae19d543c30a94f3a7f2eec5c703b0d0b612f32e461767f9f9790762712'},
     {'val_blurred.tar.gz': '1f0eedd33ec0030be2d8fef8ac61b04b9178b008a853794cd9767c2ee9be080a'},
+    {'ILSVRC2017_devkit.tar.gz': '67a0570d422981cad77ceb6d1d3683e6810bf4efe61be9cf1e591a8cf5c7ad81'},
 ]
 
+#local_imagenet_license_group = ...
 postinstallcmds = [
-    'tar2zip train_blurred_tar.gz train.zip && rm train_blurred_tar.gz',
-    'tar2zip val_blurred_tar.gz val.zip && rm val_blurred_tar.gz',
+    'tar2zip train_blurred.tar.gz train.zip && rm train_blurred.tar.gz',  # extract_cmd
+    'tar2zip val_blurred.tar.gz val.zip && rm val_blurred.tar.gz',  # extract_cmd
+    #f'setfacl -m g:{local_imagenet_license_group}:r-- -R %(installdir)s',
+    #f'setfacl -m g:{local_imagenet_license_group}:r-x %(installdir)s',
 ]
 
 sanity_check_paths = {
     'files': [
         'devkit/data/map_clsloc.txt',
         'face_annotations_ILSVRC.json',
-        'train.zip'
+        'train.zip',
         'val.zip',
     ],
     'dirs': ['devkit'],
