@@ -35,6 +35,7 @@ import shutil
 import stat
 import tempfile
 from collections import defaultdict
+from typing import Any, Dict, List, Set, Tuple
 from unittest import TestCase, TestLoader, main, mock, skip
 from urllib.request import Request, urlopen
 
@@ -46,7 +47,7 @@ from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
+from easybuild.framework.easyconfig.easyconfig import EasyConfig, get_easyblock_class, letter_dir_for
 from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import (
     EasyConfigParser, fetch_parameters_from_easyconfig,
@@ -278,32 +279,32 @@ class EasyConfigTest(TestCase):
         return EasyConfigTest._parsed_easyconfigs
 
     @property
-    def ordered_specs(self):
+    def ordered_specs(self) -> List[Dict[str, Any]]:
         # Resolve dependencies if not done
         if EasyConfigTest._ordered_specs is None:
             EasyConfigTest.resolve_all_dependencies()
         return EasyConfigTest._ordered_specs
 
     @property
-    def changed_ecs_filenames(self):
+    def changed_ecs_filenames(self) -> List[str]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs_filenames
 
     @property
-    def added_ecs_filenames(self):
+    def added_ecs_filenames(self) -> List[str]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._added_ecs_filenames
 
     @property
-    def changed_ecs(self):
+    def changed_ecs(self) -> List[EasyConfig]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs
 
     @property
-    def changed_patches(self):
+    def changed_patches(self) -> List[str]:
         if EasyConfigTest._changed_patches is None:
             self._get_changed_patches()
         return EasyConfigTest._changed_patches
@@ -363,8 +364,14 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(len(fails), '\n'.join(sorted(fails)))
 
-    def check_dep_vars(self, gen, dep, dep_vars):
-        """Check whether available variants of a particular dependency are acceptable or not."""
+    def check_dep_vars(self, gen: str, dep: str, dep_vars: Dict[str, Set[str]]) -> bool:
+        """Check whether available variants of a particular dependency are acceptable or not.
+
+        gen: toolchain generation (e.g. '2021a')
+        dep: name of the dependency (e.g. 'HDF5')
+        dep_vars: Map variant (e.g. 'version: 1.12; versionsuffix: -serial')
+                  to easyconfigs using that variant as a dependency
+        """
 
         # short-circuit in case there's only one dependency variant, or none at all
         if len(dep_vars) <= 1:
@@ -890,16 +897,16 @@ class EasyConfigTest(TestCase):
             self.fail('Easyconfigs with duplicate full_mod_name found')
 
         # Cache already determined dependencies
-        ec_to_deps = {}
+        ec_to_deps: Dict[str, List[str]] = {}
 
-        def get_deps_for(ec):
+        def get_deps_for(ec) -> List[Tuple[str, str, str, str]]:
             """Get list of (direct) dependencies for specified easyconfig."""
-            ec_mod_name = ec['full_mod_name']
+            ec_mod_name: str = ec['full_mod_name']
             deps = ec_to_deps.get(ec_mod_name)
             if deps is None:
                 deps = []
                 for dep in ec['ec']['dependencies']:
-                    dep_mod_name = dep['full_mod_name']
+                    dep_mod_name: str = dep['full_mod_name']
                     deps.append((dep['name'], dep['version'], dep['versionsuffix'], dep_mod_name))
                     # Note: Raises KeyError if dep not found
                     res = ecs_by_full_mod_name[dep_mod_name]
@@ -920,22 +927,23 @@ class EasyConfigTest(TestCase):
             r'202([12][ab]|3a)',  # 2021a to 2023a
         ]
         for pattern in patterns:
-            all_deps = {}
+            # {tc_gen: {dep_name: {variant: set(easyconfigs using this variant)}}}}
+            all_deps: Dict[str, Dict[str, Dict[str, Set[str]]]] = {}
             regex = re.compile(r'^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
             # collect variants for all dependencies of easyconfigs that use a toolchain that matches
             for ec in self.ordered_specs:
-                ec_file = os.path.basename(ec['spec'])
+                ec_file: str = os.path.basename(ec['spec'])
 
                 # take into account software which also follows a <year>{a,b} versioning scheme
                 ec_file = self.multideps_false_positives_regex.sub('', ec_file)
 
                 res = regex.match(ec_file)
                 if res:
-                    tc_gen = res.group('tc_gen')
-                    all_deps_tc_gen = all_deps.setdefault(tc_gen, {})
-                    for dep_name, dep_ver, dep_versuff, dep_mod_name in get_deps_for(ec):
-                        dep_variants = all_deps_tc_gen.setdefault(dep_name, {})
+                    tc_gen: str = res.group('tc_gen')
+                    all_deps_tc_gen: Dict[str, Dict[str, Set[str]]] = all_deps.setdefault(tc_gen, {})
+                    for dep_name, dep_ver, dep_versuff, _dep_mod_name in get_deps_for(ec):
+                        dep_variants: Dict[str, Set[str]] = all_deps_tc_gen.setdefault(dep_name, {})
                         # a variant is defined by version + versionsuffix
                         variant = "version: %s; versionsuffix: %s" % (dep_ver, dep_versuff)
                         # keep track of which easyconfig this is a dependency
