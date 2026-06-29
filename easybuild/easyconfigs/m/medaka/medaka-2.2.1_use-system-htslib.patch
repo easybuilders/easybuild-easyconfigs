@@ -1,0 +1,34 @@
+Do not build HTSlib during medaka build.
+This avoids issues with missing libdeflate symbols.
+https://github.com/nanoporetech/medaka/pull/342
+Author: Jarne Renders (Vrije Universiteit Brussel)
+diff -ruN medaka.orig/build.py medaka/build.py
+--- medaka.orig/build.py	2026-04-30 09:46:48.665923516 +0200
++++ medaka/build.py	2026-04-30 09:47:44.706227272 +0200
+@@ -12,7 +12,7 @@
+ deflatever = "1.10"
+ deflate_dir = os.path.join(dir_path, 'submodules', 'libdeflate-{}'.format(deflatever))
+ 
+-libraries=['m', 'z', 'lzma', 'bz2', 'pthread', 'curl', 'crypto']
++libraries=['hts', 'm', 'z', 'lzma', 'bz2', 'pthread', 'curl', 'crypto']
+ library_dirs=[htslib_dir]
+ if os.getenv('WITHDEFLATE') == "1":
+     print("Using deflate")
+@@ -64,7 +64,6 @@
+             'medaka_read_matrix.c',
+             'medaka_rnn_variants.c')],
+     extra_compile_args=extra_compile_args,
+-    extra_objects=['libhts.a'],
+     extra_link_args=extra_link_args,
+ )
+ 
+diff -ruN medaka.orig/setup.py medaka/setup.py
+--- medaka.orig/setup.py	2026-04-30 09:46:50.241928000 +0200
++++ medaka/setup.py	2026-04-30 09:48:12.935305000 +0200
+@@ -150,6 +150,5 @@
+             'scripts/mini_align'],
+         zip_safe=False,
+         cmdclass={
+-            'build_ext': HTSBuild
+         },
+     )
