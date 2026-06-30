@@ -7,7 +7,7 @@
 easyblock = 'PythonBundle'
 
 name = 'jax'
-version = '0.8.1'
+version = '0.10.0'
 
 homepage = 'https://jax.readthedocs.io/'
 description = """Composable transformations of Python+NumPy programs:
@@ -31,8 +31,8 @@ dependencies = [
 
 # downloading xla  tarball to avoid that Bazel downloads it during the build
 # note: following commits *must* be the exact same ones used upstream
-# XLA_COMMIT from jax-jaxlib: third_party/xla/workspace.bzl
-_xla_commit = 'a7e58876b73dfa9bb6bc785f6981a332c133bb55'
+# XLA_COMMIT from jax-jaxlib: third_party/xla/revision.bzl
+_xla_commit = 'b6f37ab7767f428fd6f993de5e211643d47d4deb'
 
 # Use sources downloaded by EasyBuild
 _jaxlib_buildopts = '--bazel_options="--distdir=%(builddir)s/archives " '
@@ -65,10 +65,10 @@ components = [
             },
         ],
         'checksums': [
-            {'jax-v0.8.1.tar.gz':
-             '38882602112dadfd49a2c74868a0722574ae88e04646a96f32f8c36a7893c548'},
-            {'xla-a7e58876.tar.gz':
-             '736cdc2171fb51660d174def653691835237d5822e3070bb8cfa3fc6beda421b'},
+            {'jax-v0.10.0.tar.gz':
+             '12ae17617d1346e2f98cfc48c1a000adc7389784eb119e8108a22dfd57cbb8c3'},
+            {'xla-b6f37ab7.tar.gz':
+             '6a25ffe712c27468fe642c8d07f4de5601092bf31f4d1edd483eeef96b39e2d9'},
         ],
         'start_dir': f'jax-jax-v{version}',
         # fix jaxlib version - removes .dev suffix
@@ -83,18 +83,23 @@ _failing_backend_test = 'tests/api_test.py::BackendsTest::test_no_backend_warnin
 _failing_version_tests = 'tests/version_test.py'
 _runtest_cmd1 = f"pytest -n %(parallel)s tests --deselect={_failing_backend_test} --deselect={_failing_version_tests}"
 # retry randomly failing tests
-_runtest_cmd = ' '.join([_runtest_cmd1, '||', _runtest_cmd1, '--last-failed']),
+_runtest_cmd = ' '.join([_runtest_cmd1, '||', _runtest_cmd1, '--last-failed'])
 
 exts_list = [
     (name, version, {
         'prebuildopts':  _local_prebuildopts,
+        # JAX_RELEASE makes jax/version.py report the clean version
+        # ("0.10.0") instead of "0.10.0.dev<date>", which would otherwise
+        # fail downstream `jax>=0.10.0` pip checks. Must be in preinstallopts
+        # since PythonPackage runs `pip install .` at the install step.
+        'preinstallopts': 'export JAX_RELEASE=%(version)s && ',
         'testinstall': True,
         "runtest": _runtest_cmd,
         'sources': [
             {'source_urls': ['https://github.com/google/jax/archive/'], 'filename': '%(name)s-v%(version)s.tar.gz'}
         ],
         'checksums': [
-            {'jax-v0.8.1.tar.gz': '38882602112dadfd49a2c74868a0722574ae88e04646a96f32f8c36a7893c548'},
+            {'jax-v0.10.0.tar.gz': '12ae17617d1346e2f98cfc48c1a000adc7389784eb119e8108a22dfd57cbb8c3'},
         ],
     }),
 ]
