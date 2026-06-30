@@ -10,7 +10,11 @@ toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
 
 source_urls = [('https://sourceforge.net/projects/%(name)s/files/%(name)s/%(version)s', 'download')]
 sources = [SOURCE_TAR_GZ]
-checksums = ['e85a660c1a2a1808ff24f7e69981ffcbac66a45c9dcf711b65610b26ea71379a']
+patches = ['gnuplot-6.0.x_fix-configure-iconv.patch']
+checksums = [
+    {'gnuplot-6.0.1.tar.gz': 'e85a660c1a2a1808ff24f7e69981ffcbac66a45c9dcf711b65610b26ea71379a'},
+    {'gnuplot-6.0.x_fix-configure-iconv.patch': 'f8226bd5ad8aee7e13bc7a31c826be42c6e263eac1afe46c418ae05940728cec'},
+]
 
 builddependencies = [
     ('binutils', '2.40'),
@@ -29,6 +33,7 @@ dependencies = [
     ('X11', '20231019'),
     ('Qt6', '6.6.3'),
     ('Lua', '5.4.6'),
+    ('libiconv', '1.17'),
 ]
 
 preconfigopts = 'autoreconf && '
@@ -36,8 +41,9 @@ preconfigopts = 'autoreconf && '
 # make sure that right Lua library is used (bypassing pkg-config)
 preconfigopts += 'export LUA_CFLAGS="-I$EBROOTLUA/include" && export LUA_LIBS="$EBROOTLUA/lib/liblua.a" && '
 
-# fix undefined reference to symbol 'libiconv_open'
-preconfigopts += 'export LDFLAGS="-Wl,--copy-dt-needed-entries" && '
+# avoid that -L options get omitted that specify correct path for libraries being linked,
+# setting $PKG_CONFIG_ALLOW_SYSTEM_LIBS is equivalent to making pkgconf use --keep-system-libs
+preconfigopts += 'export PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 && '
 
 configopts = '--with-qt=qt6 --without-latex --disable-wxwidgets'
 
