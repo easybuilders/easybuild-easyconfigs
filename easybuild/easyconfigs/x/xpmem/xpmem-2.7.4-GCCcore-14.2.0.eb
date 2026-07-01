@@ -1,0 +1,46 @@
+# Author: Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ConfigureMake'
+
+name = 'xpmem'
+version = '2.7.4'
+
+homepage = 'https://github.com/openucx/xpmem'
+description = """XPMEM is a Linux kernel module that enables a process to map the
+memory of another process into its virtual address space. Source-to-source copy
+operations between cooperating processes can then be performed at memory speed.
+This is the userspace library; it requires the xpmem kernel module to be loaded
+on the host (provided as 'cray-xpmem' on LUMI; verifiable via 'lsmod | grep xpmem'
+and the existence of /dev/xpmem).
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openucx/xpmem/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['738c70041ce09dcc66b64d80aebc1479e779efe12a9c02217fba610e2ae61f18']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Autotools', '20240712'),
+]
+
+# xpmem ships only autogen.sh; we must run it before configure.
+preconfigopts = './autogen.sh && '
+
+# Build only the userspace library + headers; explicitly skip kernel module
+# (it's already provided by the host).
+configopts = '--disable-kernel-module '
+configopts += '--enable-shared --enable-static '
+
+sanity_check_paths = {
+    'files': ['include/xpmem.h', 'lib/libxpmem.%s' % SHLIB_EXT, 'lib/libxpmem.a'],
+    'dirs': ['include', 'lib'],
+}
+
+sanity_check_commands = [
+    "grep -i 'xpmem_make' %(installdir)s/include/xpmem.h",
+]
+
+moduleclass = 'system'
