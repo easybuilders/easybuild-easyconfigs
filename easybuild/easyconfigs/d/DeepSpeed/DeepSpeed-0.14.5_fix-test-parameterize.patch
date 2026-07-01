@@ -1,0 +1,82 @@
+Avoid this failure during tests:
+>  assert not 'unit/runtime/half_precision/onebit/test_onebit.py::TestOneBitLambFP16Pipeline::test[topo_config0]'
+
+Reason is that pytest-xdist doesn't seem to work well with having a dict in `pytest.mark.parameterize`
+See https://github.com/pytest-dev/pytest-xdist/issues/922
+
+It is not required at all here
+diff --git a/tests/unit/runtime/half_precision/onebit/test_onebit.py b/tests/unit/runtime/half_precision/onebit/test_onebit.py
+--- a/tests/unit/runtime/half_precision/onebit/test_onebit.py
++++ b/tests/unit/runtime/half_precision/onebit/test_onebit.py
+@@ -37,6 +37,8 @@ if get_accelerator().device_name() == 'hpu':
+     pytest.skip("1-bit compression is not supported by HPU.", allow_module_level=True)
+ 
+ 
++topo_config = {"num_pp": 2, "num_dp": 2}
++
+ @pytest.mark.parametrize("dtype", [torch.float32, torch.float16], ids=["fp32", "fp16"])
+ class TestOneBitAdamBasic(DistributedTest):
+     world_size = 2
+@@ -342,19 +344,10 @@ class TestOneBitAdamCheckpointing(DistributedTest):
+             model.save_checkpoint(save_folder, tag=None)
+ 
+ 
+-@pytest.mark.parametrize(
+-    "topo_config",
+-    [
+-        {
+-            "num_pp": 2,
+-            "num_dp": 2
+-        },
+-    ],
+-)
+ class TestOneBitAdamFP16Pipeline(DistributedTest):
+     world_size = 4
+ 
+-    def test(self, topo_config):
++    def test(self):
+         if not get_accelerator().is_fp16_supported():
+             pytest.skip("fp16 is not supported")
+         config_dict = {
+@@ -709,19 +702,10 @@ class TestZeroOneAdamCheckpointing(DistributedTest):
+             model.save_checkpoint(save_folder, tag=None)
+ 
+ 
+-@pytest.mark.parametrize(
+-    "topo_config",
+-    [
+-        {
+-            "num_pp": 2,
+-            "num_dp": 2
+-        },
+-    ],
+-)
+ class TestZeroOneAdamFP16Pipeline(DistributedTest):
+     world_size = 4
+ 
+-    def test(self, topo_config):
++    def test(self):
+         if not get_accelerator().is_fp16_supported():
+             pytest.skip("fp16 is not supported")
+         config_dict = {
+@@ -1105,19 +1089,10 @@ class TestOneBitLambCheckpointing(DistributedTest):
+             model.save_checkpoint(save_folder, tag=None)
+ 
+ 
+-@pytest.mark.parametrize(
+-    "topo_config",
+-    [
+-        {
+-            "num_pp": 2,
+-            "num_dp": 2
+-        },
+-    ],
+-)
+ class TestOneBitLambFP16Pipeline(DistributedTest):
+     world_size = 4
+ 
+-    def test(self, topo_config):
++    def test(self):
+         if not get_accelerator().is_fp16_supported():
+             pytest.skip("fp16 is not supported")
+         config_dict = {
