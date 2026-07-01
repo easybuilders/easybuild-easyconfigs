@@ -1,0 +1,132 @@
+name = 'LLVM'
+version = '23.0.0git'
+versionsuffix = '-EPI-20260515'
+local_commit = '0fe97981aa3ceb69aee0498885f6a2650a6d0059'
+
+
+homepage = "https://repo.hca.bsc.es/gitlab/rferrer/llvm-epi"
+description = """
+This is a publicly accessible version of the EPI project LLVM-based compiler developed at the
+Barcelona Supercomputing Center.
+The main goal of this development is to foster a co-design cycle in the development of the
+RISC-V Vector Extension (RVV).
+"""
+
+toolchain = {'name': 'llvm-compilers', 'version': '20.1.8'}
+toolchainopts = {
+    # 'cstd': 'gnu++11',
+    'pic': True
+}
+
+sources = [{
+    'filename': SOURCE_TAR_XZ,
+    'git_config': {
+        'url': 'https://repo.hca.bsc.es/gitlab/rferrer',
+        'repo_name': 'llvm-epi',
+        'commit': local_commit,
+        'recursive': True,
+    },
+}]
+patches = [
+    'LLVM-18.1.8_envintest.patch',
+    'LLVM-23.0.0_libomptarget_tests.patch',
+]
+checksums = [
+    {'LLVM-23.0.0git.tar.xz': '8f106b6fa063ecea309736946f6e8dc9bb7bca25ded129f923af1e43dec9f0c3'},
+    {'LLVM-18.1.8_envintest.patch': '8e25dfab8a29a860717b4bd2d8cdd0e795433766d7fffbda32d06a2bde47058d'},
+    {'LLVM-23.0.0_libomptarget_tests.patch': '99c6503633d4f177c82ac2c99552004497ea05da922cec2293a84286c4e20174'},
+]
+
+# riscv_MLIR.patch: Disable problematic MLIR Runner tests on RISC-V.
+# Failures on RISC-V are due to missing soft-float helper symbols (like __addsf3),
+# which is a known issue when running LLVM's JIT on platforms like RISC-V.
+
+# riscv_execution_engine.patch: Skip the test on RISC-V, which is appropriate since JIT execution via MLIR's
+# ExecutionEngine is not reliably supported on this architecture in this LLVM version.
+
+# riscv_xray_check.patch: RISC-V has looser execution ordering; relax CHECK-NEXT to CHECK
+
+# riscv_fuzzer.patch: Mark as UNSUPPORTED for RISC-V tests that use libFuzzer + -fsanitize=address,fuzzer
+
+# riscv_ompt.patch: Mark as UNSUPPORTED for RISC-V some ompt tests that are known to be fragile
+# see (https://github.com/llvm/llvm-project/issues/35661#issuecomment-980993177)
+
+if ARCH == 'riscv64':
+    patches += [
+        'LLVM-20.1.5_riscv_execution_engine.patch',
+        'LLVM-20.1.5_riscv_xray_check.patch',
+    ]
+    checksums += [
+        {'LLVM-20.1.5_riscv_execution_engine.patch':
+         '7d795920e98c2c65df30ed01cc7e9251d69ae25e2674c251bc283ed44b53d02f'},
+        {'LLVM-20.1.5_riscv_xray_check.patch':
+         '5ca1e5730a3ee7cc1914959d64330f213a58f9818d91dbba346db63c77b47606'},
+    ]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Python', '3.13.5'),
+    ('CMake', '4.0.3'),
+    ('psutil', '7.0.0'),  # Needed to enable test timeout in lit
+    ('lit', '18.1.8'),
+    ('git', '2.50.1'),
+]
+
+dependencies = [
+    ('libffi', '3.5.1'),
+    ('libxml2', '2.14.3'),
+    ('ncurses', '6.5'),
+    ('zlib', '1.3.1'),
+    ('Z3', '4.15.1'),
+    ('zstd', '1.5.7'),
+]
+
+# EPI developers always compile with assertions enabled
+configopts = '-DLLVM_ENABLE_ASSERTIONS=ON '
+
+build_shared_libs = True
+
+bootstrap = True
+full_llvm = False
+build_clang_extras = True
+build_runtimes = True
+build_lld = True
+build_lldb = True
+build_bolt = True
+build_openmp = True
+build_openmp_tools = True
+build_openmp_offload = True
+
+# openmp offload is not supported for riscv64 (https://clang.llvm.org/docs/OffloadingDesign.html)
+# There is a Bug in (at least) testing phase of BOLT for RISC-V. See https://github.com/llvm/llvm-project/issues/134245
+if ARCH == 'riscv64':
+    build_bolt = False
+    build_openmp_offload = False
+
+use_polly = True
+
+python_bindings = True
+
+build_targets = ['all']
+# disable_werror = True
+
+skip_all_tests = False
+skip_sanitizer_tests = True
+test_suite_max_failed = 10
+test_suite_timeout_single = 5 * 60
+test_suite_ignore_patterns = [
+    "X86/register-fragments-bolt-symbols.s",
+    "modularize/ProblemsCoverage.modularize",
+    "Driver/atomic.f90",
+    "Driver/gcc-toolchain-install-dir.f90",
+    "api_tests/test_ompd_get_icv_from_scope.c",
+    "std/time/time.syn/formatter",
+    # Those 2 might fail with "tzdb: the path '/etc/localtime' is not a symlink"
+    "std/time/time.zone/time.zone.db/time.zone.db.tzdb",
+    "std/time/time.zone/time.zone.db/time.zone.db.access",
+    # libFuzzer tests massively fail in RISC-V due to slightly different
+    # behaviour of signal handling and stack unwinding
+    "libFuzzer-riscv64",
+]
+
+moduleclass = 'compiler'
