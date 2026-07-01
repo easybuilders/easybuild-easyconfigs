@@ -98,7 +98,7 @@ local_preinstallopts = ' '.join([
     "TRITON_HOME='%(builddir)s/triton_home'",
     'TRITON_OFFLINE_BUILD=1',
     'TRITON_PTXAS_PATH="%(installdir)s/tools/ptxas"',
-    'TRITON_CUOBJDUMP_PATH="$CUDA_HOME/bin/cubjdump"',
+    'TRITON_CUOBJDUMP_PATH="$CUDA_HOME/bin/cuobjdump"',
     'TRITON_NVDISASM_PATH="$CUDA_HOME/bin/nvdisasm"',
     'LLVM_SYSPATH="%(builddir)s/llvm_build_dir"',
     'JSON_SYSPATH="$EBROOTNLOHMANN_JSON"',
@@ -147,10 +147,14 @@ sanity_check_commands = ['TRITON_HOME=$TMPDIR/eb-triton_home '
 modextrapaths = {
     'TRITON_PTXAS_PATH': 'tools/ptxas',
 }
-modextravars = {
-    # Search for "_path_to_binary" in Triton sources
-    'TRITON_CUOBJDUMP_PATH': '$CUDA_HOME/bin/cubjdump',
-    'TRITON_LIBDEVICE_PATH': '$CUDA_HOME/nvvm/libdevice/libdevice.10.bc',
-}
 
+# Use modluafooter instead of modextravars for CUDA-dependent paths.
+# $CUDA_HOME may not be available yet when the Lua modulefile is evaluated.
+modluafooter = """
+local cuda_root = os.getenv("CUDA_HOME") or os.getenv("EBROOTCUDA")
+if cuda_root then
+setenv("TRITON_CUOBJDUMP_PATH", pathJoin(cuda_root, "bin", "cuobjdump"))
+setenv("TRITON_LIBDEVICE_PATH", pathJoin(cuda_root, "nvvm", "libdevice", "libdevice.10.bc"))
+end
+"""
 moduleclass = 'devel'
