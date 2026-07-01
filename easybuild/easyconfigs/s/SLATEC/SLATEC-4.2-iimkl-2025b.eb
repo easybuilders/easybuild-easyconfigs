@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'SLATEC'
+version = '4.2'
+
+local_commit = '43ff98105b4598c1f90136e3fffb3ca307a71eec'
+
+homepage = 'https://github.com/MehdiChinoune/SLATEC'
+description = """SLATEC Common Mathematical Library, a comprehensive software library containing
+    over 1400 general purpose mathematical and statistical routines written in Fortran.
+
+    This is a modernised, CMake-based fork (Mehdi Chinoune, version 4.2) of the original
+    netlib SLATEC 4.1 distribution. BLAS and LAPACK are provided by the toolchain instead
+    of being bundled in the library."""
+
+toolchain = {'name': 'iimkl', 'version': '2025b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/MehdiChinoune/SLATEC/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': '%(name)s-%(version)s.tar.gz'}]
+checksums = ['2fc4f13abfcc058177b0ad71d8b565f78c7aa1af30903588652d8028a523909b']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+]
+
+# Upstream installs only the top-level libslatec.so but it has DT_NEEDED entries for
+# the per-subdirectory component libraries (libapproximation.so, libservice.so, ...).
+# Without installing those alongside it, libslatec.so cannot be loaded at runtime.
+local_subdirs = ('approximation data_handling diff_integ diff_integ_eq integ_trans '
+                 'interpolation linear nonlin_eq optimization service special_functions')
+preconfigopts = (
+    "sed -i '/install( TARGETS %%(namelower)s/i install( TARGETS %s LIBRARY DESTINATION lib )' "
+    "%%(start_dir)s/src/CMakeLists.txt && "
+) % local_subdirs
+
+# CMake's FindBLAS only searches for the MKL libraries when BLA_VENDOR is set to an
+# Intel value; without it, find_package(BLAS REQUIRED) either fails ("Could NOT find
+# BLAS") on a clean system or silently falls back to a stray system /usr/lib64/libblas.
+# Intel10_64_dyn links the single libmkl_rt.so (lp64 + threading resolved at runtime).
+configopts = '-DBLA_VENDOR=Intel10_64_dyn'
+
+sanity_check_paths = {
+    'files': ['lib/libslatec.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'
