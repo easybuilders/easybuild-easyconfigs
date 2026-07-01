@@ -1,0 +1,49 @@
+don't hardcode number of cores to use by HHBlits and Jackhmmer scripts;
+see https://github.com/deepmind/alphafold/issues/110
+author: Kenneth Hoste (HPC-UGent)
+
+diff --git a/alphafold/data/tools/hhblits.py b/alphafold/data/tools/hhblits.py
+index e0aa098..e624f3a 100644
+--- a/alphafold/data/tools/hhblits.py
++++ b/alphafold/data/tools/hhblits.py
+@@ -27,6 +27,8 @@ from alphafold.data.tools import utils
+ _HHBLITS_DEFAULT_P = 20
+ _HHBLITS_DEFAULT_Z = 500
+ 
++HHBLITS_N_CPU = os.getenv('ALPHAFOLD_HHBLITS_N_CPU', 4)
++
+ 
+ class HHBlits:
+   """Python wrapper of the HHblits binary."""
+@@ -35,7 +37,7 @@ class HHBlits:
+                *,
+                binary_path: str,
+                databases: Sequence[str],
+-               n_cpu: int = 4,
++               n_cpu: int = HHBLITS_N_CPU,
+                n_iter: int = 3,
+                e_value: float = 0.001,
+                maxseq: int = 1_000_000,
+diff --git a/alphafold/data/tools/jackhmmer.py b/alphafold/data/tools/jackhmmer.py
+index ae53df9..800bf99 100644
+--- a/alphafold/data/tools/jackhmmer.py
++++ b/alphafold/data/tools/jackhmmer.py
+@@ -24,6 +24,9 @@ from alphafold.data.tools import utils
+ # Internal import (7716).
+ 
+ 
++JACKHMMER_N_CPU = os.getenv('ALPHAFOLD_JACKHMMER_N_CPU', 8)
++
++
+ class Jackhmmer:
+   """Python wrapper of the Jackhmmer binary."""
+ 
+@@ -31,7 +34,7 @@ class Jackhmmer:
+                *,
+                binary_path: str,
+                database_path: str,
+-               n_cpu: int = 8,
++               n_cpu: int = JACKHMMER_N_CPU,
+                n_iter: int = 1,
+                e_value: float = 0.0001,
+                z_value: Optional[int] = None,
