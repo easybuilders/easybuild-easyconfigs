@@ -1888,7 +1888,7 @@ def template_easyconfig_test(self, spec):
         patch_checksums = checksums[src_cnt:]
 
         for idx, ext_patch in enumerate(ext.get('patches', [])):
-            failing_checks.extend(verify_patch(specdir, ext_patch, idx, patch_checksums, extension_name=ext_name))
+            failing_checks.extend(verify_patch(specdir, ext_patch, idx, patch_checksums, extension_name=ext['name']))
 
     # check whether all extra_options defined for used easyblock are defined
     extra_opts = app.extra_options()
