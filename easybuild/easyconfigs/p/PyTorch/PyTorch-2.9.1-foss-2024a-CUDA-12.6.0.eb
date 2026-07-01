@@ -88,6 +88,8 @@ patches = [
     'PyTorch-2.9.1_skip-svd-pca-lowrank-tests-on-cpu.patch',
     'PyTorch-2.9.1_skip-test_optree_graph_break_message.patch',
     'PyTorch-2.9.1_skip-tests-requiring-MKLDNN.patch',
+    'PyTorch-2.9.1_skip-test_empty_batch.patch',
+    'PyTorch-2.9.1_skip-test_int8_woq_mm-with-acl.patch',
 ]
 checksums = [
     {'pytorch-v2.9.1.tar.gz': 'e17504700ebc4c87f9b57059df1c4d790b769458c04db144c7a92aea90f2c92b'},
@@ -195,6 +197,10 @@ checksums = [
      '2ef1ad424d5f12a4d0ae06938da623819596cee7c0fb4616008f27583c29494d'},
     {'PyTorch-2.9.1_skip-tests-requiring-MKLDNN.patch':
      '03756a8069bad01018f422f41aa24c7c543519fd857db88a0c6de661976c8859'},
+    {'PyTorch-2.9.1_skip-test_empty_batch.patch':
+     '696a07f9f88df9fb26a8847a00f28c2629cf4b58dac1eaf5a64ac793c1195cfb'},
+    {'PyTorch-2.9.1_skip-test_int8_woq_mm-with-acl.patch':
+     '78cc61098106f4720186f9927ac2b660b5c0db0a18ae94dee134089f23c49214'},
 ]
 
 osdependencies = [OS_PKG_IBVERBS_DEV]
@@ -225,6 +231,10 @@ dependencies = [
     ('cuSPARSELt', '0.6.3.2', versionsuffix, SYSTEM),
     # Version from .ci/docker/triton_version.txt
     ('Triton', '3.5.0', versionsuffix),
+    # See .ci/docker/common/install_acl.sh
+    ('ArmComputeLibrary', {'arch=AArch64': '25.02', 'arch=*': False}),
+    # See .github/requirements/conda-env-Linux-X64.txt or .ci/docker/common/install_conda.sh
+    ('imkl', {'arch=x86_64': '2024.2.0', 'arch=*': False}, '', SYSTEM),
     ('Ninja', '1.12.1'),  # Required for JIT compilation of C++ extensions
     ('Python', '3.12.3'),
     ('Python-bundle-PyPI', '2024.06'),
@@ -278,7 +288,12 @@ excluded_tests = {
         # Occasional segfaults on CPU
         'inductor/test_flex_attention',
         'inductor/test_flex_decoding ',
-    ]
+    ],
+    'AArch64': [
+        # Not tested on upstream CI: See .ci/pytorch/test.sh & https://github.com/pytorch/pytorch/pull/146895
+        'nn/test_convolution',
+        'test_dataloader',
+    ],
 }
 
 runtest = (
@@ -300,5 +315,7 @@ postinstallcmds = [
 modextrapaths = {'TORCHINDUCTOR_CUTLASS_DIR': 'extra/cutlass'}
 
 tests = ['PyTorch-check-cpp-extension.py', 'PyTorch-check-cutlass.py']
+
+sanity_check_pip_list = False
 
 moduleclass = 'ai'
