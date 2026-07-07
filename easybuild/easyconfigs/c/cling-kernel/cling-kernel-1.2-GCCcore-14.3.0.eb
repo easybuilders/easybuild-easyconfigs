@@ -1,0 +1,49 @@
+easyblock = "PythonBundle"
+
+name = 'cling-kernel'
+version = '1.2'
+
+
+homepage = "https://root.cern/cling/"
+description = """Installs of the jupyter kernel provided by Cling."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+dependencies = [
+    ('Cling', version),
+    ('jupyter-server', '2.17.0'),
+]
+
+exts_list = [
+    ('clingkernel', version, {
+        'checksums': ['beee8e461424d267ee2dec88b3de57326bc8e3470b4ceae2744de7d3d3aba1eb'],
+        'sources': [{
+            'source_urls': 'https://github.com/root-project/cling/archive/',
+            'filename': f'v{version}.tar.gz',
+            'alt_location': 'Cling',
+        }],
+        'start_dir': 'tools/Jupyter/kernel',
+    }),
+]
+
+_kernels = ['cling-cpp20', 'cling-cpp2b', 'cling-cpp17', 'cling-cpp11', 'cling-cpp14', 'cling-cpp1z']
+_kernel_dir = '$EBROOTCLING/share/cling/Jupyter/kernel'
+_kernel_install_cmd = 'jupyter kernelspec install --prefix=%(installdir)s'
+
+postinstallcmds = [f'cd {_kernel_dir} && {_kernel_install_cmd} {kernel}' for kernel in _kernels]
+
+sanity_check_commands = [
+    # Check that jupyter can find the kernels
+    f'jupyter kernelspec list 2>/dev/null | grep {kernel}' for kernel in _kernels
+]
+
+sanity_check_paths = {
+    'files': ['bin/jupyter-cling-kernel'],
+    'dirs': [f'share/jupyter/kernels/{kernel}' for kernel in _kernels],
+}
+
+modextrapaths = {
+    'JUPYTER_PATH': 'share/jupyter/',
+}
+
+moduleclass = 'tools'
