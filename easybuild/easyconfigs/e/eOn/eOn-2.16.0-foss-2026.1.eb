@@ -78,7 +78,9 @@ dependencies = [
     # develop has no gfbf-2026.1 xtb yet
     ('xtb', '6.7.1', '', ('gfbf', '2024a')),
     ('CapnProto', '1.4.0'),
-    # develop has no foss-2026.1 PyTorch yet
+    # develop has no foss-2026.1 PyTorch yet (foss-2024a ships Python 3.12.3).
+    # Hardcode python3.12 for ALL paths under EBROOTPYTORCH — do not use
+    # %(pyshortver)s here (this recipe's Python is 3.14.2).
     ('PyTorch', '2.9.1', '', ('foss', '2024a')),
     ('metatensor', '0.2.2', '', ('GCCcore', '15.2.0')),
     ('metatensor-torch', '0.10.0'),
@@ -92,10 +94,10 @@ preconfigopts += 'export PKG_CONFIG_PATH=%(builddir)s/readcon-stage/lib/pkgconfi
 preconfigopts += 'export LIBRARY_PATH=%(builddir)s/readcon-stage/lib${LIBRARY_PATH:+:$LIBRARY_PATH} && '
 preconfigopts += 'export LD_LIBRARY_PATH=%(builddir)s/readcon-stage/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} && '
 preconfigopts += 'export CMAKE_PREFIX_PATH=%(builddir)s/readcon-stage:$EBROOTPYTORCH:$EBROOTMETATENSOR:$EBROOTMETATENSORMINTORCH:$EBROOTMETATOMICMINTORCH:$EBROOTXTB:$EBROOTCAPNPROTO:$EBROOTQUILL:$EBROOTEIGEN:$EBROOTHIGHWAY:$EBROOTINIH${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH} && '
-preconfigopts += 'export PYTHONPATH=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages${PYTHONPATH:+:$PYTHONPATH} && '
-preconfigopts += 'export LDFLAGS="-L%(builddir)s/readcon-stage/lib $LDFLAGS -Wl,--no-as-needed,$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch/lib/libtorch.so -Wl,--as-needed" && '
+preconfigopts += 'export PYTHONPATH=$EBROOTPYTORCH/lib/python3.12/site-packages${PYTHONPATH:+:$PYTHONPATH} && '
+preconfigopts += 'export LDFLAGS="-L%(builddir)s/readcon-stage/lib $LDFLAGS -Wl,--no-as-needed,$EBROOTPYTORCH/lib/python3.12/site-packages/torch/lib/libtorch.so -Wl,--as-needed" && '
 
-configopts = "-Dbuildtype=release -Dwith_tests=false -Dwith_fortran=true -Dwith_cuh2=true -Dwith_metatomic=true -Dwith_xtb=true -Dwith_serve=true -Dwith_rgpot=true -Dpip_metatomic=false -Dtorch_path=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch -Dwith_artn=false -Dwith_ira=false -Dwith_parallel_neb=false -Dwith_catlearn=false -Dwith_ase=false -Dwith_ase_orca=false -Dwith_ase_nwchem=false -Dwith_gp_surrogate=false -Dwith_gprd=false -Dwith_vasp=false -Dwith_ams=false -Dwith_mpi=false -Dwith_qsc=false -Dwith_water=false -Dwith_newpot=false -Dnative_arch=false -Dfast_math=false -Duse_mkl=false"
+configopts = "-Dbuildtype=release -Dwith_tests=false -Dwith_fortran=true -Dwith_cuh2=true -Dwith_metatomic=true -Dwith_xtb=true -Dwith_serve=true -Dwith_rgpot=true -Dpip_metatomic=false -Dtorch_path=$EBROOTPYTORCH/lib/python3.12/site-packages/torch -Dwith_artn=false -Dwith_ira=false -Dwith_parallel_neb=false -Dwith_catlearn=false -Dwith_ase=false -Dwith_ase_orca=false -Dwith_ase_nwchem=false -Dwith_gp_surrogate=false -Dwith_gprd=false -Dwith_vasp=false -Dwith_ams=false -Dwith_mpi=false -Dwith_qsc=false -Dwith_water=false -Dwith_newpot=false -Dnative_arch=false -Dfast_math=false -Duse_mkl=false"
 
 postinstallcmds = [
     'mkdir -p %(installdir)s/lib %(installdir)s/include %(installdir)s/lib/pkgconfig',
