@@ -1,8 +1,5 @@
-# EasyBuild recipe for eOn 2.16.0 — full default product (conda-forge parity).
-# Upstream target: foss-2026.1 (current EasyBuild common toolchain, GCCcore 15.2.0).
-# Site validation of recipe mechanics was on EESSI foss-2024a (rg.terra); logic
-# (MesonNinja, readcon cargo-c stage with subshell CWD fix, feedstock surface)
-# is retargeted here. PyTorch/xtb still only on 2024a on develop — explicit pins.
+# eOn full default product (metatomic + xTB + Cap'n Proto serve + rgpot).
+# Feature surface matches conda-forge eon-feedstock.
 
 easyblock = 'MesonNinja'
 
@@ -57,14 +54,12 @@ checksums = [
 ]
 
 builddependencies = [
-    # develop: Meson-1.10.2-GCCcore-15.2.0 (eOn needs meson >= 1.8.0)
-    ('Meson', '1.10.2'),
+    ('Meson', '1.10.2'),  # >= 1.8 required
     ('Ninja', '1.13.2'),
     ('pkgconf', '2.5.1'),
     ('CMake', '4.2.1'),
-    # develop: Rust-1.94.1-GCCcore-15.2.0 + cargo-c-0.10.23-GCCcore-15.2.0
     ('Rust', '1.94.1'),
-    ('cargo-c', '0.10.23'),
+    ('cargo-c', '0.10.23'),  # readcon-core needs >= 0.10.17
 ]
 
 dependencies = [
@@ -75,20 +70,19 @@ dependencies = [
     ('Highway', '1.4.0'),
     ('inih', '62'),
     ('quill', '11.1.0', '', ('GCCcore', '15.2.0')),
-    # develop has no gfbf-2026.1 xtb yet
+    # no gfbf-2026.1 recipe on develop yet
     ('xtb', '6.7.1', '', ('gfbf', '2024a')),
     ('CapnProto', '1.4.0'),
-    # develop has no foss-2026.1 PyTorch yet (foss-2024a ships Python 3.12.3).
-    # Hardcode python3.12 for ALL paths under EBROOTPYTORCH — do not use
-    # %(pyshortver)s here (this recipe's Python is 3.14.2).
+    # no foss-2026.1 PyTorch on develop; foss-2024a uses Python 3.12
     ('PyTorch', '2.9.1', '', ('foss', '2024a')),
     ('metatensor', '0.2.2', '', ('GCCcore', '15.2.0')),
     ('metatensor-torch', '0.10.0'),
     ('metatomic-torch', '0.1.15'),
 ]
 
-# Subshell around readcon cargo-c stage so Meson CWD is not left in source
-# (EESSI green install fix). PATH prioritises companion Rust for edition2024.
+# Subshell: cargo cinstall must not leave CWD in the source tree for Meson.
+# Prefer builddep Rust on PATH (edition2024). PyTorch paths use python3.12
+# (foss-2024a layout); do not use %(pyshortver)s for EBROOTPYTORCH.
 preconfigopts = 'export PATH=$EBROOTRUST/bin:$PATH && unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS RUSTC_WRAPPER CARGO_BUILD_RUSTC_WRAPPER && mkdir -p %(builddir)s/readcon-stage && ( cd %(builddir)s/eOn-%(version)s/subprojects/readcon-core && cargo --version && rustc --version && cargo cinstall --locked --release --prefix %(builddir)s/readcon-stage --libdir lib --includedir include --pkgconfigdir lib/pkgconfig && cd %(builddir)s/eOn-%(version)s && rm -f subprojects/xtb.wrap subprojects/vesin.wrap subprojects/rgpot.wrap subprojects/readcon-core.wrap && rm -rf subprojects/readcon-core ) && '
 preconfigopts += 'export PKG_CONFIG_PATH=%(builddir)s/readcon-stage/lib/pkgconfig:$EBROOTXTB/lib/pkgconfig:$EBROOTCAPNPROTO/lib/pkgconfig:$EBROOTQUILL/lib/pkgconfig:$EBROOTMETATENSOR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH} && '
 preconfigopts += 'export LIBRARY_PATH=%(builddir)s/readcon-stage/lib${LIBRARY_PATH:+:$LIBRARY_PATH} && '
