@@ -1,13 +1,8 @@
 # EasyBuild recipe for eOn 2.16.0 — full default product (conda-forge parity).
-# Style model: GROMACS / LAMMPS / Siesta (foss, fat deps, multi-source
-# staged subprojects, configopts encode scientific surface). CUDA torch is a
-# versionsuffix sibling when needed (GROMACS -CUDA-… / LAMMPS -kokkos-CUDA-…),
-# not option-off stubs per meson flag.
-#
-# Feature surface matches conda-forge eon-feedstock recipe/build.sh:
-#   -Dwith_metatomic=true -Dwith_xtb=true -Dwith_serve=true -Dwith_rgpot=true
-#   -Dpip_metatomic=false  (system metatomic stack from companion modules)
-# plus Fortran pots / CuH2.
+# Upstream target: foss-2026.1 (current EasyBuild common toolchain, GCCcore 15.2.0).
+# Site validation of recipe mechanics was on EESSI foss-2024a (rg.terra); logic
+# (MesonNinja, readcon cargo-c stage with subshell CWD fix, feedstock surface)
+# is retargeted here. PyTorch/xtb still only on 2024a on develop — explicit pins.
 
 easyblock = 'MesonNinja'
 
@@ -24,7 +19,7 @@ Cap'n Proto serve, and rgpot, plus the Python AKMC package (import eon). Feature
 surface matches the conda-forge eon feedstock for HPC module stacks.
 """
 
-toolchain = {'name': 'foss', 'version': '2024a'}
+toolchain = {'name': 'foss', 'version': '2026.1'}
 toolchainopts = {'pic': True, 'openmp': True}
 
 github_account = 'TheochemUI'
@@ -34,7 +29,6 @@ sources = [
         'download_filename': 'v%(version)s.tar.gz',
         'filename': SOURCE_TAR_GZ,
     },
-    # Stage rgpot into subprojects/ (same as feedstock target_directory).
     {
         'source_urls': ['https://github.com/OmniPotentRPC/rgpot/archive/refs/tags/'],
         'download_filename': 'v2.2.1.tar.gz',
@@ -45,8 +39,6 @@ sources = [
                        "mv %(builddir)s/eOn-%(version)s/subprojects/rgpot-* "
                        "%(builddir)s/eOn-%(version)s/subprojects/rgpot",
     },
-    # Stage readcon-core into subprojects/ (feedstock builds via cargo-c into
-    # prefix; meson subproject builds the same crate with cargo).
     {
         'source_urls': ['https://github.com/lode-org/readcon-core/archive/refs/tags/'],
         'download_filename': 'v0.13.1.tar.gz',
@@ -65,65 +57,46 @@ checksums = [
 ]
 
 builddependencies = [
-    # eOn requires meson >= 1.8.0; 2024a robot only has Meson-1.4.0 on GCCcore-13.3.0.
-    ('Meson', '1.8.2', '', ('GCCcore', '13.3.0')),
-    ('Ninja', '1.12.1'),
-    ('pkgconf', '2.2.0'),
-    ('CMake', '3.29.3'),
-    # readcon-core v0.13.1: rust-version = 1.88; robot max on GCCcore-13.3.0 is 1.86.0
-    # without a companion (Rust-1.88.0-GCCcore-13.3.0.eb under easyconfigs/r/Rust/).
-    ('Rust', '1.88.0', '', ('GCCcore', '13.3.0')),
-    # Feedstock-style C-API install of staged readcon-core. readcon-core requires
-    # cargo-c >= 0.10.17 (job 490: 0.10.15 rejected). Build with Rust 1.88 companion.
-    ('cargo-c', '0.10.23', '', ('GCCcore', '13.3.0')),
+    # develop: Meson-1.10.2-GCCcore-15.2.0 (eOn needs meson >= 1.8.0)
+    ('Meson', '1.10.2'),
+    ('Ninja', '1.13.2'),
+    ('pkgconf', '2.5.1'),
+    ('CMake', '4.2.1'),
+    # develop: Rust-1.94.1-GCCcore-15.2.0 + cargo-c-0.10.23-GCCcore-15.2.0
+    ('Rust', '1.94.1'),
+    ('cargo-c', '0.10.23'),
 ]
 
 dependencies = [
-    ('Python', '3.12.3'),
-    ('SciPy-bundle', '2024.05'),
-    ('PyYAML', '6.0.2'),
-    # Client stack (robot resolves GCCcore-13.3.0 under foss-2024a)
-    ('Eigen', '3.4.0'),
-    ('Highway', '1.2.0'),
-    ('inih', '58'),
-    # Companion (not yet upstream): easyconfigs/q/quill/
-    ('quill', '11.1.0', '', ('GCCcore', '13.3.0')),
-    # xTB pot — only gfbf-2024a in robot
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+    ('PyYAML', '6.0.3'),
+    ('Eigen', '5.0.0'),
+    ('Highway', '1.4.0'),
+    ('inih', '62'),
+    ('quill', '11.1.0', '', ('GCCcore', '15.2.0')),
+    # develop has no gfbf-2026.1 xtb yet
     ('xtb', '6.7.1', '', ('gfbf', '2024a')),
-    # Cap'n Proto serve / rgpot RPC
-    ('CapnProto', '1.1.0'),
-    # metatomic stack (companions under easyconfigs/m/)
-    ('PyTorch', '2.6.0'),
-    ('metatensor', '0.2.2', '', ('GCCcore', '13.3.0')),
+    ('CapnProto', '1.4.0'),
+    # develop has no foss-2026.1 PyTorch yet
+    ('PyTorch', '2.9.1', '', ('foss', '2024a')),
+    ('metatensor', '0.2.2', '', ('GCCcore', '15.2.0')),
     ('metatensor-torch', '0.10.0'),
     ('metatomic-torch', '0.1.15'),
 ]
 
-# EasyBuild lifecycle (cleanupoldinstall=True):
-#   preconfig → configure/build → make_installdir WIPES %(installdir)s → ninja install
-#   → postinstallcmds → sanity.
-# cargo-c stages into %(builddir)s/readcon-stage for meson link; postinstallcmds
-# re-populate %(installdir)s after the wipe. (conda $PREFIX is one stable prefix;
-# EB installdir is not — preconfig-only cinstall into installdir is wiped.)
-# Multi-source stages readcon under subprojects/; after cinstall remove the
-# source tree so meson uses pkg-config (not subproject/cbindgen path).
-# Force companion Rust 1.88 on PATH: cargo-c from the robot may otherwise pick
-# toolchain cargo 1.78, which rejects readcon-core's edition2024 (job 488).
+# Subshell around readcon cargo-c stage so Meson CWD is not left in source
+# (EESSI green install fix). PATH prioritises companion Rust for edition2024.
 preconfigopts = 'export PATH=$EBROOTRUST/bin:$PATH && unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS RUSTC_WRAPPER CARGO_BUILD_RUSTC_WRAPPER && mkdir -p %(builddir)s/readcon-stage && ( cd %(builddir)s/eOn-%(version)s/subprojects/readcon-core && cargo --version && rustc --version && cargo cinstall --locked --release --prefix %(builddir)s/readcon-stage --libdir lib --includedir include --pkgconfigdir lib/pkgconfig && cd %(builddir)s/eOn-%(version)s && rm -f subprojects/xtb.wrap subprojects/vesin.wrap subprojects/rgpot.wrap subprojects/readcon-core.wrap && rm -rf subprojects/readcon-core ) && '
 preconfigopts += 'export PKG_CONFIG_PATH=%(builddir)s/readcon-stage/lib/pkgconfig:$EBROOTXTB/lib/pkgconfig:$EBROOTCAPNPROTO/lib/pkgconfig:$EBROOTQUILL/lib/pkgconfig:$EBROOTMETATENSOR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH} && '
 preconfigopts += 'export LIBRARY_PATH=%(builddir)s/readcon-stage/lib${LIBRARY_PATH:+:$LIBRARY_PATH} && '
 preconfigopts += 'export LD_LIBRARY_PATH=%(builddir)s/readcon-stage/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} && '
-# EasyBuild convert_name: '-' → 'min' → EBROOTMETATENSORMINTORCH / EBROOTMETATOMICMINTORCH.
 preconfigopts += 'export CMAKE_PREFIX_PATH=%(builddir)s/readcon-stage:$EBROOTPYTORCH:$EBROOTMETATENSOR:$EBROOTMETATENSORMINTORCH:$EBROOTMETATOMICMINTORCH:$EBROOTXTB:$EBROOTCAPNPROTO:$EBROOTQUILL:$EBROOTEIGEN:$EBROOTHIGHWAY:$EBROOTINIH${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH} && '
 preconfigopts += 'export PYTHONPATH=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages${PYTHONPATH:+:$PYTHONPATH} && '
-# feedstock: force generic libtorch.so; stage path for link only (runtime uses installdir after postinstall).
 preconfigopts += 'export LDFLAGS="-L%(builddir)s/readcon-stage/lib $LDFLAGS -Wl,--no-as-needed,$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch/lib/libtorch.so -Wl,--as-needed" && '
 
-# Scientific surface. torch_path: EB PyTorch lays out libtorch under site-packages/torch.
-# Keep as one plain assignment for packaging tools that only scrape configopts = '...'.
 configopts = "-Dbuildtype=release -Dwith_tests=false -Dwith_fortran=true -Dwith_cuh2=true -Dwith_metatomic=true -Dwith_xtb=true -Dwith_serve=true -Dwith_rgpot=true -Dpip_metatomic=false -Dtorch_path=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch -Dwith_artn=false -Dwith_ira=false -Dwith_parallel_neb=false -Dwith_catlearn=false -Dwith_ase=false -Dwith_ase_orca=false -Dwith_ase_nwchem=false -Dwith_gp_surrogate=false -Dwith_gprd=false -Dwith_vasp=false -Dwith_ams=false -Dwith_mpi=false -Dwith_qsc=false -Dwith_water=false -Dwith_newpot=false -Dnative_arch=false -Dfast_math=false -Duse_mkl=false"
 
-# After make_installdir wipe + ninja install: ship staged readcon into the module.
 postinstallcmds = [
     'mkdir -p %(installdir)s/lib %(installdir)s/include %(installdir)s/lib/pkgconfig',
     'cp -a %(builddir)s/readcon-stage/lib/libreadcon_core* %(installdir)s/lib/',
@@ -134,7 +107,6 @@ postinstallcmds = [
 sanity_check_paths = {
     'files': [
         'bin/eonclient',
-        # postinstallcmds re-stage after make_installdir wipe
         'include/readcon-core.h',
         'lib/libreadcon_core.%s' % SHLIB_EXT,
         'lib/python%(pyshortver)s/site-packages/eon/__init__.py',
@@ -149,9 +121,6 @@ sanity_check_paths = {
 sanity_check_commands = [
     "eonclient --help",
     "eonclient --version",
-    # FEATURES_STRING is generated before -DWITH_* in client/meson.build, so
-    # --features can lie. Require AND evidence for the feedstock surface:
-    # xTB + metatomic + Cap'n Proto serve + torch.
     "bash -c \"ldd $(which eonclient) | grep -Ei 'libxtb'\"",
     "bash -c \"ldd $(which eonclient) | grep -Ei 'metatomic'\"",
     "bash -c \"ldd $(which eonclient) | grep -Ei 'capnp'\"",
