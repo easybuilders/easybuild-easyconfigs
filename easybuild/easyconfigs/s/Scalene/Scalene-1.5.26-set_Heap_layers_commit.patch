@@ -3,14 +3,16 @@
 #   - https://github.com/emeryberger/Heap-Layers/pull/71
 #   - https://github.com/emeryberger/Heap-Layers/pull/70
 # The introduction of free_aligened_sized and free_sized caused issues for Scalene 1.5.26.
-# Last verified commit before these changes is:
+# Should set this also for printf so that this does not pick up unsuported features at some point.
+# Last verified working commits:
 #   - https://github.com/emeryberger/Heap-Layers/commit/89b9c6d0aa28773ccb187804b6f699824bdf7bb7
+#   - https://github.com/mpaland/printf/commit/bf72dfb8dee9ee57463c7082aca520004cb7cb7c
 #
 # author: Lara Peeters (UGent)
 diff -ruN scalene-1.5.26.orig/GNUmakefile scalene-1.5.26/GNUmakefile
 --- scalene-1.5.26.orig/GNUmakefile	2023-08-22 23:29:45.000000000 +0200
-+++ scalene-1.5.26/GNUmakefile	2026-07-08 19:44:20.424408411 +0200
-@@ -55,6 +55,7 @@
++++ scalene-1.5.26/GNUmakefile	2026-07-09 10:52:20.880240115 +0200
+@@ -55,9 +55,11 @@
  
  vendor/Heap-Layers:
  	mkdir -p vendor && cd vendor && git clone https://github.com/emeryberger/Heap-Layers
@@ -18,14 +20,22 @@ diff -ruN scalene-1.5.26.orig/GNUmakefile scalene-1.5.26/GNUmakefile
  
  vendor/printf/printf.cpp:
  	mkdir -p vendor && cd vendor && git clone https://github.com/mpaland/printf
++	cd vendor/printf && git checkout bf72dfb8dee9ee57463c7082aca520004cb7cb7c
+ 	cd vendor/printf && ln -s printf.c printf.cpp
+ 	sed -e 's/^#define printf printf_/\/\/&/' vendor/printf/printf.h > /tmp/printf.h.$$ && mv /tmp/printf.h.$$ vendor/printf/printf.h
+ 	sed -e 's/^#define vsnprintf vsnprintf_/\/\/&/' vendor/printf/printf.h > /tmp/printf.h.$$ && mv /tmp/printf.h.$$ vendor/printf/printf.h
 diff -ruN scalene-1.5.26.orig/Makefile scalene-1.5.26/Makefile
 --- scalene-1.5.26.orig/Makefile	2023-08-22 23:29:45.000000000 +0200
-+++ scalene-1.5.26/Makefile	2026-07-08 19:45:19.122031571 +0200
-@@ -33,6 +33,7 @@
++++ scalene-1.5.26/Makefile	2026-07-09 10:53:28.549872424 +0200
+@@ -33,9 +33,11 @@
  
  vendor/Heap-Layers:
  	cd vendor && git clone https://github.com/emeryberger/Heap-Layers
-+	cd vendor/Heap-Layers && git checkout 89b9c6d0aa28773ccb187804b6f699824bdf7bb7
++	cd vendor\Heap-Layers && git checkout 89b9c6d0aa28773ccb187804b6f699824bdf7bb7
  
  vendor/printf/printf.cpp:
  	cd vendor && git clone https://github.com/mpaland/printf
++	cd vendor\printf && git checkout bf72dfb8dee9ee57463c7082aca520004cb7cb7c
+ 	cd vendor\printf && copy printf.c printf.cpp
+ 
+ vendor-deps: clear-vendor-dirs vendor/Heap-Layers vendor/printf/printf.cpp
