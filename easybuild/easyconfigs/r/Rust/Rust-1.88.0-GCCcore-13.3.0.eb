@@ -1,0 +1,43 @@
+# Companion: Rust 1.88.0 on GCCcore-13.3.0 (foss-2024a).
+# Upstream easyconfigs only ship Rust-1.88.0 on GCCcore-14.3.0+; eOn/readcon-core
+# v0.13.1 requires rust-version = 1.88 (meson enforces >= 1.88.0). Adapted from
+# Rust-1.86.0-GCCcore-13.3.0.eb + Rust-1.88.0 sources.
+name = 'Rust'
+version = '1.88.0'
+
+homepage = 'https://www.rust-lang.org'
+description = """Rust is a systems programming language that runs blazingly fast, prevents segfaults,
+ and guarantees thread safety.
+
+Companion pin for eOn 2.16.0 / readcon-core 0.13.1 on foss-2024a (GCCcore-13.3.0)."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://static.rust-lang.org/dist/']
+sources = ['rustc-%(version)s-src.tar.gz']
+patches = ['Rust-1.70_sysroot-fix-interpreter.patch']
+checksums = [
+    {'rustc-1.88.0-src.tar.gz': '3a97544434848ae3d193d1d6bc83d6f24cb85c261ad95f955fde47ec64cfcfbe'},
+    {'Rust-1.70_sysroot-fix-interpreter.patch': 'aa7a7fe784e463b297c640edfe88b8d96acbee0c173251575cef0426baccc57e'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+    ('Python', '3.12.3'),
+    ('Ninja', '1.12.1'),
+    ('pkgconf', '2.2.0'),
+    ('patchelf', '0.18.0'),
+]
+
+dependencies = [
+    ('OpenSSL', '3', '', SYSTEM),
+]
+
+moduleclass = 'lang'
+
+# Host may set RUSTFLAGS=-C link-arg=-fuse-ld=mold / RUSTC_WRAPPER=sccache;
+# scrub with shell unset (must not use bare 'env -u' as prebuildopts — EB prepends
+# it to 'export CARGO_HOME=... && ./x.py', which would make env treat export as argv0).
+preconfigopts = 'unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS RUSTC_WRAPPER CARGO_BUILD_RUSTC_WRAPPER; '
+prebuildopts = preconfigopts

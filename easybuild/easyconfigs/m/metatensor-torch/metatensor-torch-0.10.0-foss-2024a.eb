@@ -1,0 +1,51 @@
+# Companion: TorchScript C++ bindings for metatensor (libmetatensor_torch).
+# Co-built against EasyBuild PyTorch on foss-2024a.
+# Requires metatensor-core 0.2.2 (CMakeLists REQUIRED_METATENSOR_VERSION).
+# CMakeNinja: -GNinja + make leaves no Makefile (job 483: "No targets... no makefile").
+easyblock = 'CMakeNinja'
+
+name = 'metatensor-torch'
+version = '0.10.0'
+
+homepage = 'https://docs.metatensor.org/'
+description = """TorchScript C++ bindings for metatensor (libmetatensor_torch).
+Required by metatomic-torch and eOn metatomic potentials."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+# Official CXX release asset: ships cmake/git_version_info + a baked VERSION,
+# extracts to a single self-named top dir. No git checkout, no start_dir or
+# git_version_info printf hack (the archive/refs/tags tarball needs both and
+# still breaks dev-versions.cmake for 0.10.0).
+source_urls = ['https://github.com/metatensor/metatensor/releases/download/metatensor-torch-v%(version)s/']
+sources = ['metatensor-torch-cxx-%(version)s.tar.gz']
+checksums = ['a0a25e061ae4fbf2a563e9fcceed68ac79b4d857e4c9803a1614d301dc3fdfcd']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('pkgconf', '2.2.0'),
+    ('Ninja', '1.12.1'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('PyTorch', '2.6.0'),
+    ('metatensor', '0.2.2', '', ('GCCcore', '13.3.0')),
+]
+
+# EB PyTorch lives under site-packages/torch; expose Torch + metatensor to CMake.
+preconfigopts = (
+    "export CMAKE_PREFIX_PATH=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch:$EBROOTMETATENSOR${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH} && "
+)
+configopts = (
+    '-DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release '
+    '-DTorch_DIR=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch/share/cmake/Torch '
+)
+
+sanity_check_paths = {
+    'files': ['lib/libmetatensor_torch.%s' % SHLIB_EXT],
+    'dirs': ['include', 'lib', 'lib/cmake'],
+}
+
+moduleclass = 'lib'

@@ -1,0 +1,49 @@
+# Companion: metatomic Torch C++ library (libmetatomic_torch).
+# Required by eOn with_metatomic / feedstock libmetatomic-torch pin.
+# CMakeNinja: match -GNinja-style builds; CMakeMake + ninja generator has no Makefile.
+easyblock = 'CMakeNinja'
+
+name = 'metatomic-torch'
+version = '0.1.15'
+
+homepage = 'https://docs.metatensor.org/metatomic/'
+description = """Metatomic Torch C++ library for running metatomic models via
+TorchScript. Requires metatensor-torch and PyTorch (foss-2024a)."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+# Official CXX release asset (metatensor/metatomic repo): ships
+# cmake/git_version_info + a baked VERSION, single self-named top dir.
+source_urls = ['https://github.com/metatensor/metatomic/releases/download/metatomic-torch-v%(version)s/']
+sources = ['metatomic-torch-cxx-%(version)s.tar.gz']
+checksums = ['2fa4c94144164168834a90ff195ed7d788959c9d9ffd3ea4a85e2f470925c708']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('pkgconf', '2.2.0'),
+    ('Ninja', '1.12.1'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('PyTorch', '2.6.0'),
+    ('metatensor', '0.2.2', '', ('GCCcore', '13.3.0')),
+    ('metatensor-torch', '0.10.0'),
+]
+
+# EBROOTMETATENSORMINTORCH = metatensor-torch prefix (EB name mangling).
+preconfigopts = (
+    "export CMAKE_PREFIX_PATH=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch:$EBROOTMETATENSOR:$EBROOTMETATENSORMINTORCH${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH} && "
+)
+configopts = (
+    '-DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DMETATOMIC_TORCH_TESTS=OFF '
+    '-DTorch_DIR=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch/share/cmake/Torch '
+)
+
+sanity_check_paths = {
+    'files': ['lib/libmetatomic_torch.%s' % SHLIB_EXT],
+    'dirs': ['include', 'lib', 'lib/cmake'],
+}
+
+moduleclass = 'lib'
