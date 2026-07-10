@@ -1,0 +1,1491 @@
+diff --git a/Makefile.prebuild b/Makefile.prebuild
+index b7d695a75..6b2567cb9 100644
+--- a/Makefile.prebuild
++++ b/Makefile.prebuild
+@@ -75,6 +75,10 @@ ifeq ($(TARGET), RISCV64_GENERIC)
+ TARGET_FLAGS = -march=rv64imafdc -mabi=lp64d
+ endif
+ 
++ifeq ($(TARGET), U74)
++TARGET_FLAGS = -march=rv64imafdc_zba_zbb -mabi=lp64d
++endif
++
+ all: getarch_2nd
+ 	./getarch_2nd  0 >> $(TARGET_MAKE)
+ 	./getarch_2nd  1 >> $(TARGET_CONF)
+diff --git a/Makefile.riscv64 b/Makefile.riscv64
+index 0ee26c1b5..f83dd80f8 100644
+--- a/Makefile.riscv64
++++ b/Makefile.riscv64
+@@ -18,3 +18,7 @@ ifeq ($(CORE), RISCV64_GENERIC)
+ CCOMMON_OPT += -march=rv64imafdc -mabi=lp64d
+ FCOMMON_OPT += -march=rv64imafdc -mabi=lp64d
+ endif
++ifeq ($(CORE), U74)
++CCOMMON_OPT += -march=rv64imafdc_zba_zbb -mabi=lp64d -mtune=sifive-u74
++FCOMMON_OPT += -march=rv64imafdc_zba_zbb -mabi=lp64d -mtune=sifive-u74
++endif
+diff --git a/TargetList.txt b/TargetList.txt
+index 232e12ffa..e1a96a8cb 100644
+--- a/TargetList.txt
++++ b/TargetList.txt
+@@ -125,6 +125,7 @@ RISCV64_ZVL128B
+ C910V
+ x280
+ RISCV64_ZVL256B
++U74 (e.g. SiFive U74 / StarFive JH7110 / VisionFive 2)
+ 
+ 11.LOONGARCH64:
+ // LOONGSONGENERIC/LOONGSON2K1000/LOONGSON3R5 are legacy names,
+diff --git a/cpuid_riscv64.c b/cpuid_riscv64.c
+index ff7ba2aad..69adff718 100644
+--- a/cpuid_riscv64.c
++++ b/cpuid_riscv64.c
+@@ -75,13 +75,15 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #define CPU_x280            2
+ #define CPU_RISCV64_ZVL256B 3
+ #define CPU_RISCV64_ZVL128B 4
++#define CPU_U74             5
+ 
+ static char *cpuname[] = {
+   "RISCV64_GENERIC",
+   "C910V",
+   "x280",
+   "CPU_RISCV64_ZVL256B",
+-  "CPU_RISCV64_ZVL128B"
++  "CPU_RISCV64_ZVL128B",
++  "U74"
+ };
+ 
+ static char *cpuname_lower[] = {
+@@ -89,7 +91,8 @@ static char *cpuname_lower[] = {
+   "c910v",
+   "x280",
+   "riscv64_zvl256b",
+-  "riscv64_zvl128b"
++  "riscv64_zvl128b",
++  "u74"
+ };
+ 
+ int detect(void){
+diff --git a/getarch.c b/getarch.c
+index b51c3ed64..69edd725e 100644
+--- a/getarch.c
++++ b/getarch.c
+@@ -1231,6 +1231,20 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #else
+ #endif
+ 
++#ifdef FORCE_U74
++#define FORCE
++#define ARCHITECTURE    "RISCV64"
++#define SUBARCHITECTURE "U74"
++#define SUBDIRNAME      "riscv64"
++#define ARCHCONFIG   "-DU74 " \
++       "-DL1_DATA_SIZE=32768 -DL1_DATA_LINESIZE=64 " \
++       "-DL2_SIZE=2097152 -DL2_LINESIZE=64 " \
++       "-DDTB_DEFAULT_ENTRIES=128 -DDTB_SIZE=4096 -DL2_ASSOCIATIVE=16 "
++#define LIBNAME   "u74"
++#define CORENAME  "U74"
++#else
++#endif
++
+ #ifdef FORCE_CORTEXA15
+ #define FORCE
+ #define ARCHITECTURE    "ARM"
+diff --git a/kernel/generic/conversion_macros.h b/kernel/generic/conversion_macros.h
+new file mode 100644
+index 000000000..69f852012
+--- /dev/null
++++ b/kernel/generic/conversion_macros.h
+@@ -0,0 +1,82 @@
++/***************************************************************************
++ * Copyright (c) 2025, The OpenBLAS Project
++ * All rights reserved.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are
++ * met:
++ * 1. Redistributions of source code must retain the above copyright
++ * notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ * notice, this list of conditions and the following disclaimer in
++ * the documentation and/or other materials provided with the
++ * distribution.
++ * 3. Neither the name of the OpenBLAS project nor the names of
++ * its contributors may be used to endorse or promote products
++ * derived from this software without specific prior written permission.
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ * *****************************************************************************/
++
++#if defined(BFLOAT16) && defined(BFLOAT16CONVERSION)
++
++static float
++bfloat16tof32 (bfloat16 value)
++{
++  blasint one = 1;
++  float result;
++  sbf16tos_(&one, &value, &one, &result, &one);
++  return result;
++}
++
++#ifdef BGEMM
++static bfloat16 f32tobfloat16(float value) {
++  blasint one = 1;
++  bfloat16 result;
++  sbstobf16_(&one, &value, &one, &result, &one);
++  return result;
++}
++#endif
++
++#ifdef BGEMM
++#define ALPHA bfloat16tof32(alpha)
++#define BETA bfloat16tof32(beta)
++#define TO_F32(x) (bfloat16tof32(x))
++#define TO_OUTPUT(x) (f32tobfloat16(x))
++#else
++#define ALPHA alpha
++#define BETA beta
++#define TO_F32(x) (bfloat16tof32(x))
++#define TO_OUTPUT(x) x
++#endif
++
++#elif defined(HFLOAT16)
++
++#ifdef HGEMM
++#define ALPHA (float)(alpha)
++#define BETA (float)(beta)
++#define TO_F32(x) ((float)(x))
++#define TO_OUTPUT(x) ((_Float16)(x))
++#else
++#define ALPHA alpha
++#define BETA beta
++#define TO_F32(x) ((float)(x))
++#define TO_OUTPUT(x) x
++#endif
++
++#else
++
++#define ALPHA alpha
++#define BETA beta
++#define TO_F32(x) x
++#define TO_OUTPUT(x) x
++
++#endif
+diff --git a/kernel/generic/gemmkernel_4x4.c b/kernel/generic/gemmkernel_4x4.c
+new file mode 100644
+index 000000000..b78eb76ea
+--- /dev/null
++++ b/kernel/generic/gemmkernel_4x4.c
+@@ -0,0 +1,264 @@
++/***************************************************************************
++ * Copyright (c) 2026, The OpenBLAS Project
++ * All rights reserved.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are
++ * met:
++ * 1. Redistributions of source code must retain the above copyright
++ * notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ * notice, this list of conditions and the following disclaimer in
++ * the documentation and/or other materials provided with the
++ * distribution.
++ * 3. Neither the name of the OpenBLAS project nor the names of
++ * its contributors may be used to endorse or promote products
++ * derived from this software without specific prior written permission.
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ * *****************************************************************************/
++
++/*
++ * Portable C GEMM micro-kernel with a 4x4 register tile (16 accumulators).
++ *
++ * This is a wider companion to gemmkernel_2x2.c intended for in-order scalar
++ * cores whose FP FMA has a multi-cycle latency but 1/cycle throughput (e.g.
++ * SiFive U74: fmadd.d latency 7, repeat rate 1).  A 2x2 tile exposes only 4
++ * independent accumulator chains, which is fewer than the FMA latency and
++ * leaves the FP pipe stalled on the accumulator dependency.  A 4x4 tile keeps
++ * 16 independent chains -- comfortably above the latency -- and lowers the
++ * load:FMA ratio from 1:1 to 1:2, so the single load/store pipe stops being
++ * the bottleneck.  RV64G has 32 FP registers, so 16 accumulators + 4 A + 4 B
++ * fit without spilling.
++ *
++ * Packed-data contract (identical to the 2x2 kernel, verified against the
++ * generic tcopy_4 / ncopy_4 copy routines): the A operand is packed by
++ * tcopy_<UNROLL_M> into MR-row micro-panels [A(r0,k)..A(r3,k)] per k, and the
++ * B operand by ncopy_<UNROLL_N> into NR-col micro-panels [B(k,c0)..B(k,c3)]
++ * per k.  Both dimensions are decomposed as 4 / 2 / 1 sub-blocks at the edges.
++ */
++
++#include "common.h"
++
++#include "conversion_macros.h"
++
++#ifdef BGEMM
++#define C_TO_F32 TO_F32
++#else
++#define C_TO_F32
++#endif
++
++int CNAME(BLASLONG bm,BLASLONG bn,BLASLONG bk,FLOAT alpha,IFLOAT* ba,IFLOAT* bb,FLOAT* C,BLASLONG ldc
++#ifdef TRMMKERNEL
++		,BLASLONG offset
++#endif
++		)
++{
++   BLASLONG i,j,k;
++   FLOAT *C0,*C1,*C2,*C3;
++   IFLOAT *ptrba,*ptrbb;
++   FLOAT r0c0,r1c0,r2c0,r3c0;
++   FLOAT r0c1,r1c1,r2c1,r3c1;
++   FLOAT r0c2,r1c2,r2c2,r3c2;
++   FLOAT r0c3,r1c3,r2c3,r3c3;
++   IFLOAT a0,a1,a2,a3,b0,b1,b2,b3;
++
++   /* ==================== N panels of 4 ==================== */
++   for (j=0; j<bn/4; j+=1)
++     {
++        C0 = C;
++        C1 = C0+ldc;
++        C2 = C1+ldc;
++        C3 = C2+ldc;
++        ptrba = ba;
++
++        /* ---- 4x4 : 4 rows x 4 cols, 16 accumulators ---- */
++        for (i=0; i<bm/4; i+=1)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=r2c0=r3c0=0;
++             r0c1=r1c1=r2c1=r3c1=0;
++             r0c2=r1c2=r2c2=r3c2=0;
++             r0c3=r1c3=r2c3=r3c3=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1]; b2=ptrbb[2]; b3=ptrbb[3];
++                  a0=ptrba[0]; a1=ptrba[1]; a2=ptrba[2]; a3=ptrba[3];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0); r2c0+=TO_F32(a2)*TO_F32(b0); r3c0+=TO_F32(a3)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1); r1c1+=TO_F32(a1)*TO_F32(b1); r2c1+=TO_F32(a2)*TO_F32(b1); r3c1+=TO_F32(a3)*TO_F32(b1);
++                  r0c2+=TO_F32(a0)*TO_F32(b2); r1c2+=TO_F32(a1)*TO_F32(b2); r2c2+=TO_F32(a2)*TO_F32(b2); r3c2+=TO_F32(a3)*TO_F32(b2);
++                  r0c3+=TO_F32(a0)*TO_F32(b3); r1c3+=TO_F32(a1)*TO_F32(b3); r2c3+=TO_F32(a2)*TO_F32(b3); r3c3+=TO_F32(a3)*TO_F32(b3);
++                  ptrba+=4; ptrbb+=4;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA); C0[2]=TO_OUTPUT(C_TO_F32(C0[2])+r2c0*ALPHA); C0[3]=TO_OUTPUT(C_TO_F32(C0[3])+r3c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA); C1[1]=TO_OUTPUT(C_TO_F32(C1[1])+r1c1*ALPHA); C1[2]=TO_OUTPUT(C_TO_F32(C1[2])+r2c1*ALPHA); C1[3]=TO_OUTPUT(C_TO_F32(C1[3])+r3c1*ALPHA);
++             C2[0]=TO_OUTPUT(C_TO_F32(C2[0])+r0c2*ALPHA); C2[1]=TO_OUTPUT(C_TO_F32(C2[1])+r1c2*ALPHA); C2[2]=TO_OUTPUT(C_TO_F32(C2[2])+r2c2*ALPHA); C2[3]=TO_OUTPUT(C_TO_F32(C2[3])+r3c2*ALPHA);
++             C3[0]=TO_OUTPUT(C_TO_F32(C3[0])+r0c3*ALPHA); C3[1]=TO_OUTPUT(C_TO_F32(C3[1])+r1c3*ALPHA); C3[2]=TO_OUTPUT(C_TO_F32(C3[2])+r2c3*ALPHA); C3[3]=TO_OUTPUT(C_TO_F32(C3[3])+r3c3*ALPHA);
++             C0+=4; C1+=4; C2+=4; C3+=4;
++          }
++        /* ---- 2x4 : 2 rows x 4 cols ---- */
++        if (bm & 2)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=0; r0c1=r1c1=0; r0c2=r1c2=0; r0c3=r1c3=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1]; b2=ptrbb[2]; b3=ptrbb[3];
++                  a0=ptrba[0]; a1=ptrba[1];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1); r1c1+=TO_F32(a1)*TO_F32(b1);
++                  r0c2+=TO_F32(a0)*TO_F32(b2); r1c2+=TO_F32(a1)*TO_F32(b2);
++                  r0c3+=TO_F32(a0)*TO_F32(b3); r1c3+=TO_F32(a1)*TO_F32(b3);
++                  ptrba+=2; ptrbb+=4;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA); C1[1]=TO_OUTPUT(C_TO_F32(C1[1])+r1c1*ALPHA);
++             C2[0]=TO_OUTPUT(C_TO_F32(C2[0])+r0c2*ALPHA); C2[1]=TO_OUTPUT(C_TO_F32(C2[1])+r1c2*ALPHA);
++             C3[0]=TO_OUTPUT(C_TO_F32(C3[0])+r0c3*ALPHA); C3[1]=TO_OUTPUT(C_TO_F32(C3[1])+r1c3*ALPHA);
++             C0+=2; C1+=2; C2+=2; C3+=2;
++          }
++        /* ---- 1x4 : 1 row x 4 cols ---- */
++        if (bm & 1)
++          {
++             ptrbb = bb;
++             r0c0=0; r0c1=0; r0c2=0; r0c3=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1]; b2=ptrbb[2]; b3=ptrbb[3];
++                  a0=ptrba[0];
++                  r0c0+=TO_F32(a0)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1);
++                  r0c2+=TO_F32(a0)*TO_F32(b2);
++                  r0c3+=TO_F32(a0)*TO_F32(b3);
++                  ptrba+=1; ptrbb+=4;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA);
++             C2[0]=TO_OUTPUT(C_TO_F32(C2[0])+r0c2*ALPHA);
++             C3[0]=TO_OUTPUT(C_TO_F32(C3[0])+r0c3*ALPHA);
++             C0+=1; C1+=1; C2+=1; C3+=1;
++          }
++        bb = bb + bk*4;
++        C  = C  + ldc*4;
++     }
++
++   /* ==================== N panel of 2 ==================== */
++   if (bn & 2)
++     {
++        C0 = C;
++        C1 = C0+ldc;
++        ptrba = ba;
++
++        for (i=0; i<bm/4; i+=1)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=r2c0=r3c0=0;
++             r0c1=r1c1=r2c1=r3c1=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1];
++                  a0=ptrba[0]; a1=ptrba[1]; a2=ptrba[2]; a3=ptrba[3];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0); r2c0+=TO_F32(a2)*TO_F32(b0); r3c0+=TO_F32(a3)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1); r1c1+=TO_F32(a1)*TO_F32(b1); r2c1+=TO_F32(a2)*TO_F32(b1); r3c1+=TO_F32(a3)*TO_F32(b1);
++                  ptrba+=4; ptrbb+=2;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA); C0[2]=TO_OUTPUT(C_TO_F32(C0[2])+r2c0*ALPHA); C0[3]=TO_OUTPUT(C_TO_F32(C0[3])+r3c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA); C1[1]=TO_OUTPUT(C_TO_F32(C1[1])+r1c1*ALPHA); C1[2]=TO_OUTPUT(C_TO_F32(C1[2])+r2c1*ALPHA); C1[3]=TO_OUTPUT(C_TO_F32(C1[3])+r3c1*ALPHA);
++             C0+=4; C1+=4;
++          }
++        if (bm & 2)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=0; r0c1=r1c1=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1];
++                  a0=ptrba[0]; a1=ptrba[1];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1); r1c1+=TO_F32(a1)*TO_F32(b1);
++                  ptrba+=2; ptrbb+=2;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA); C1[1]=TO_OUTPUT(C_TO_F32(C1[1])+r1c1*ALPHA);
++             C0+=2; C1+=2;
++          }
++        if (bm & 1)
++          {
++             ptrbb = bb;
++             r0c0=0; r0c1=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1];
++                  a0=ptrba[0];
++                  r0c0+=TO_F32(a0)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1);
++                  ptrba+=1; ptrbb+=2;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA);
++             C0+=1; C1+=1;
++          }
++        bb = bb + bk*2;
++        C  = C  + ldc*2;
++     }
++
++   /* ==================== N panel of 1 ==================== */
++   if (bn & 1)
++     {
++        C0 = C;
++        ptrba = ba;
++
++        for (i=0; i<bm/4; i+=1)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=r2c0=r3c0=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0];
++                  a0=ptrba[0]; a1=ptrba[1]; a2=ptrba[2]; a3=ptrba[3];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0); r2c0+=TO_F32(a2)*TO_F32(b0); r3c0+=TO_F32(a3)*TO_F32(b0);
++                  ptrba+=4; ptrbb+=1;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA); C0[2]=TO_OUTPUT(C_TO_F32(C0[2])+r2c0*ALPHA); C0[3]=TO_OUTPUT(C_TO_F32(C0[3])+r3c0*ALPHA);
++             C0+=4;
++          }
++        if (bm & 2)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0];
++                  a0=ptrba[0]; a1=ptrba[1];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0);
++                  ptrba+=2; ptrbb+=1;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA);
++             C0+=2;
++          }
++        if (bm & 1)
++          {
++             ptrbb = bb;
++             r0c0=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  r0c0+=TO_F32(ptrba[0])*TO_F32(ptrbb[0]);
++                  ptrba+=1; ptrbb+=1;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA);
++             C0+=1;
++          }
++        bb = bb + bk;
++        C  = C  + ldc;
++     }
++
++   return 0;
++}
+diff --git a/kernel/generic/gemmkernel_4x4_u74.c b/kernel/generic/gemmkernel_4x4_u74.c
+new file mode 100644
+index 000000000..73eed1a57
+--- /dev/null
++++ b/kernel/generic/gemmkernel_4x4_u74.c
+@@ -0,0 +1,526 @@
++/***************************************************************************
++ * Copyright (c) 2026, The OpenBLAS Project
++ * All rights reserved.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are
++ * met:
++ * 1. Redistributions of source code must retain the above copyright
++ * notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ * notice, this list of conditions and the following disclaimer in
++ * the documentation and/or other materials provided with the
++ * distribution.
++ * 3. Neither the name of the OpenBLAS project nor the names of
++ * its contributors may be used to endorse or promote products
++ * derived from this software without specific prior written permission.
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ * *****************************************************************************/
++
++/*
++ * Portable C GEMM micro-kernel with a 4x4 register tile (16 accumulators).
++ *
++ * This is a wider companion to gemmkernel_2x2.c intended for in-order scalar
++ * cores whose FP FMA has a multi-cycle latency but 1/cycle throughput (e.g.
++ * SiFive U74: fmadd.d latency 7, repeat rate 1).  A 2x2 tile exposes only 4
++ * independent accumulator chains, which is fewer than the FMA latency and
++ * leaves the FP pipe stalled on the accumulator dependency.  A 4x4 tile keeps
++ * 16 independent chains -- comfortably above the latency -- and lowers the
++ * load:FMA ratio from 1:1 to 1:2, so the single load/store pipe stops being
++ * the bottleneck.  RV64G has 32 FP registers, so 16 accumulators + 4 A + 4 B
++ * fit without spilling.
++ *
++ * Packed-data contract (identical to the 2x2 kernel, verified against the
++ * generic tcopy_4 / ncopy_4 copy routines): the A operand is packed by
++ * tcopy_<UNROLL_M> into MR-row micro-panels [A(r0,k)..A(r3,k)] per k, and the
++ * B operand by ncopy_<UNROLL_N> into NR-col micro-panels [B(k,c0)..B(k,c3)]
++ * per k.  Both dimensions are decomposed as 4 / 2 / 1 sub-blocks at the edges.
++ */
++
++/*
++ * U74 hybrid variant.  The DGEMM fast path (bm, bn multiples of 4, even bk,
++ * non-TRMM) is served by a hand-scheduled scalar assembly micro-kernel,
++ * dgemm_u74_asm, embedded below via a top-level __asm__ (readable source in
++ * kern_u74.S in this directory): a 4x4 register tile with full operand
++ * double-buffering (P/Q ping-pong) and load-before-FMA issue ordering that
++ * reaches the U74 FP-pipe peak (~16.5 cycles per 16 fmadd.d).  All other
++ * shapes, odd bk, and the TRMM builds fall back to the portable C 4x4 code
++ * below.  Measured ~+20% single-core DGEMM over the C kernel; four-core HPL vs
++ * the tuned C kernel is +4% at N=10000 and +10.7% at N=27456 (5.99 GFLOPS,
++ * ~50% of the 12 GF peak - the best clean figure).  Validated against the full
++ * BLAS Level-3 suite (DGEMM 17,496 calls, 0 failures) and HPL (residual PASSED).
++ */
++
++#include "common.h"
++
++#include "conversion_macros.h"
++
++#ifdef BGEMM
++#define C_TO_F32 TO_F32
++#else
++#define C_TO_F32
++#endif
++
++
++extern int dgemm_u74_asm(BLASLONG,BLASLONG,BLASLONG,FLOAT,IFLOAT*,IFLOAT*,FLOAT*,BLASLONG);
++
++__asm__(
++	"	.text\n"
++	"	.p2align 4\n"
++	"	.type	dgemm_u74_asm,@function\n"
++	"dgemm_u74_asm:\n"
++	"	addi	sp, sp, -112\n"
++	"	fsd	fs0, 0(sp)\n"
++	"	fsd	fs1, 8(sp)\n"
++	"	fsd	fs2, 16(sp)\n"
++	"	fsd	fs3, 24(sp)\n"
++	"	fsd	fs4, 32(sp)\n"
++	"	fsd	fs5, 40(sp)\n"
++	"	fsd	fs6, 48(sp)\n"
++	"	fsd	fs7, 56(sp)\n"
++	"	fsd	fs8, 64(sp)\n"
++	"	fsd	fs9, 72(sp)\n"
++	"	fsd	fs10, 80(sp)\n"
++	"	fsd	fs11, 88(sp)\n"
++	"	fsd	fa0, 96(sp)\n"
++	"	slli	t0, a6, 3\n"
++	"	srli	t1, a0, 2\n"
++	"	srli	t2, a1, 2\n"
++	"	beqz	t2, .Lk4done\n"
++	".Lk4j:\n"
++	"	mv	a0, a5\n"
++	"	add	a1, a0, t0\n"
++	"	add	a6, a1, t0\n"
++	"	add	a7, a6, t0\n"
++	"	mv	t3, a3\n"
++	"	mv	t5, t1\n"
++	".Lk4i:\n"
++	"	mv	t4, a4\n"
++	"	fmv.d.x	ft0, zero\n"
++	"	fmv.d.x	ft1, zero\n"
++	"	fmv.d.x	ft2, zero\n"
++	"	fmv.d.x	ft3, zero\n"
++	"	fmv.d.x	ft4, zero\n"
++	"	fmv.d.x	ft5, zero\n"
++	"	fmv.d.x	ft6, zero\n"
++	"	fmv.d.x	ft7, zero\n"
++	"	fmv.d.x	ft8, zero\n"
++	"	fmv.d.x	ft9, zero\n"
++	"	fmv.d.x	ft10, zero\n"
++	"	fmv.d.x	ft11, zero\n"
++	"	fmv.d.x	fa2, zero\n"
++	"	fmv.d.x	fa3, zero\n"
++	"	fmv.d.x	fa4, zero\n"
++	"	fmv.d.x	fa5, zero\n"
++	"	fld	fa0, 0(t3)\n"
++	"	fld	fa1, 8(t3)\n"
++	"	fld	fa6, 16(t3)\n"
++	"	fld	fa7, 24(t3)\n"
++	"	fld	fs0, 0(t4)\n"
++	"	fld	fs1, 8(t4)\n"
++	"	fld	fs2, 16(t4)\n"
++	"	fld	fs3, 24(t4)\n"
++	"	addi	t3, t3, 32\n"
++	"	addi	t4, t4, 32\n"
++	"	srli	t6, a2, 1\n"
++	"	addi	t6, t6, -1\n"
++	"	beqz	t6, .Lk4epi\n"
++	"	.p2align 4\n"
++	".Lk4body:\n"
++	"	fld	fs4, 0(t3)\n"
++	"	fmadd.d	ft0, fa0, fs0, ft0\n"
++	"	fld	fs5, 8(t3)\n"
++	"	fmadd.d	ft1, fa1, fs0, ft1\n"
++	"	fld	fs6, 16(t3)\n"
++	"	fmadd.d	ft2, fa6, fs0, ft2\n"
++	"	fld	fs7, 24(t3)\n"
++	"	fmadd.d	ft3, fa7, fs0, ft3\n"
++	"	fld	fs8, 0(t4)\n"
++	"	fmadd.d	ft4, fa0, fs1, ft4\n"
++	"	fld	fs9, 8(t4)\n"
++	"	fmadd.d	ft5, fa1, fs1, ft5\n"
++	"	fld	fs10, 16(t4)\n"
++	"	fmadd.d	ft6, fa6, fs1, ft6\n"
++	"	fld	fs11, 24(t4)\n"
++	"	fmadd.d	ft7, fa7, fs1, ft7\n"
++	"	addi	t3, t3, 32\n"
++	"	fmadd.d	ft8, fa0, fs2, ft8\n"
++	"	addi	t4, t4, 32\n"
++	"	fmadd.d	ft9, fa1, fs2, ft9\n"
++	"	fmadd.d	ft10, fa6, fs2, ft10\n"
++	"	fmadd.d	ft11, fa7, fs2, ft11\n"
++	"	fmadd.d	fa2, fa0, fs3, fa2\n"
++	"	fmadd.d	fa3, fa1, fs3, fa3\n"
++	"	fmadd.d	fa4, fa6, fs3, fa4\n"
++	"	fmadd.d	fa5, fa7, fs3, fa5\n"
++	"	fld	fa0, 0(t3)\n"
++	"	fmadd.d	ft0, fs4, fs8, ft0\n"
++	"	fld	fa1, 8(t3)\n"
++	"	fmadd.d	ft1, fs5, fs8, ft1\n"
++	"	fld	fa6, 16(t3)\n"
++	"	fmadd.d	ft2, fs6, fs8, ft2\n"
++	"	fld	fa7, 24(t3)\n"
++	"	fmadd.d	ft3, fs7, fs8, ft3\n"
++	"	fld	fs0, 0(t4)\n"
++	"	fmadd.d	ft4, fs4, fs9, ft4\n"
++	"	fld	fs1, 8(t4)\n"
++	"	fmadd.d	ft5, fs5, fs9, ft5\n"
++	"	fld	fs2, 16(t4)\n"
++	"	fmadd.d	ft6, fs6, fs9, ft6\n"
++	"	fld	fs3, 24(t4)\n"
++	"	fmadd.d	ft7, fs7, fs9, ft7\n"
++	"	addi	t3, t3, 32\n"
++	"	fmadd.d	ft8, fs4, fs10, ft8\n"
++	"	addi	t4, t4, 32\n"
++	"	fmadd.d	ft9, fs5, fs10, ft9\n"
++	"	fmadd.d	ft10, fs6, fs10, ft10\n"
++	"	fmadd.d	ft11, fs7, fs10, ft11\n"
++	"	fmadd.d	fa2, fs4, fs11, fa2\n"
++	"	fmadd.d	fa3, fs5, fs11, fa3\n"
++	"	fmadd.d	fa4, fs6, fs11, fa4\n"
++	"	fmadd.d	fa5, fs7, fs11, fa5\n"
++	"	addi	t6, t6, -1\n"
++	"	bnez	t6, .Lk4body\n"
++	".Lk4epi:\n"
++	"	fld	fs4, 0(t3)\n"
++	"	fmadd.d	ft0, fa0, fs0, ft0\n"
++	"	fld	fs5, 8(t3)\n"
++	"	fmadd.d	ft1, fa1, fs0, ft1\n"
++	"	fld	fs6, 16(t3)\n"
++	"	fmadd.d	ft2, fa6, fs0, ft2\n"
++	"	fld	fs7, 24(t3)\n"
++	"	fmadd.d	ft3, fa7, fs0, ft3\n"
++	"	fld	fs8, 0(t4)\n"
++	"	fmadd.d	ft4, fa0, fs1, ft4\n"
++	"	fld	fs9, 8(t4)\n"
++	"	fmadd.d	ft5, fa1, fs1, ft5\n"
++	"	fld	fs10, 16(t4)\n"
++	"	fmadd.d	ft6, fa6, fs1, ft6\n"
++	"	fld	fs11, 24(t4)\n"
++	"	fmadd.d	ft7, fa7, fs1, ft7\n"
++	"	addi	t3, t3, 32\n"
++	"	fmadd.d	ft8, fa0, fs2, ft8\n"
++	"	addi	t4, t4, 32\n"
++	"	fmadd.d	ft9, fa1, fs2, ft9\n"
++	"	fmadd.d	ft10, fa6, fs2, ft10\n"
++	"	fmadd.d	ft11, fa7, fs2, ft11\n"
++	"	fmadd.d	fa2, fa0, fs3, fa2\n"
++	"	fmadd.d	fa3, fa1, fs3, fa3\n"
++	"	fmadd.d	fa4, fa6, fs3, fa4\n"
++	"	fmadd.d	fa5, fa7, fs3, fa5\n"
++	"	fmadd.d	ft0, fs4, fs8, ft0\n"
++	"	fmadd.d	ft1, fs5, fs8, ft1\n"
++	"	fmadd.d	ft2, fs6, fs8, ft2\n"
++	"	fmadd.d	ft3, fs7, fs8, ft3\n"
++	"	fmadd.d	ft4, fs4, fs9, ft4\n"
++	"	fmadd.d	ft5, fs5, fs9, ft5\n"
++	"	fmadd.d	ft6, fs6, fs9, ft6\n"
++	"	fmadd.d	ft7, fs7, fs9, ft7\n"
++	"	fmadd.d	ft8, fs4, fs10, ft8\n"
++	"	fmadd.d	ft9, fs5, fs10, ft9\n"
++	"	fmadd.d	ft10, fs6, fs10, ft10\n"
++	"	fmadd.d	ft11, fs7, fs10, ft11\n"
++	"	fmadd.d	fa2, fs4, fs11, fa2\n"
++	"	fmadd.d	fa3, fs5, fs11, fa3\n"
++	"	fmadd.d	fa4, fs6, fs11, fa4\n"
++	"	fmadd.d	fa5, fs7, fs11, fa5\n"
++	"	fld	fs4, 96(sp)\n"
++	"	fld	fs0, 0(a0)\n"
++	"	fmadd.d	fs0, ft0, fs4, fs0\n"
++	"	fsd	fs0, 0(a0)\n"
++	"	fld	fs1, 8(a0)\n"
++	"	fmadd.d	fs1, ft1, fs4, fs1\n"
++	"	fsd	fs1, 8(a0)\n"
++	"	fld	fs0, 16(a0)\n"
++	"	fmadd.d	fs0, ft2, fs4, fs0\n"
++	"	fsd	fs0, 16(a0)\n"
++	"	fld	fs1, 24(a0)\n"
++	"	fmadd.d	fs1, ft3, fs4, fs1\n"
++	"	fsd	fs1, 24(a0)\n"
++	"	fld	fs0, 0(a1)\n"
++	"	fmadd.d	fs0, ft4, fs4, fs0\n"
++	"	fsd	fs0, 0(a1)\n"
++	"	fld	fs1, 8(a1)\n"
++	"	fmadd.d	fs1, ft5, fs4, fs1\n"
++	"	fsd	fs1, 8(a1)\n"
++	"	fld	fs0, 16(a1)\n"
++	"	fmadd.d	fs0, ft6, fs4, fs0\n"
++	"	fsd	fs0, 16(a1)\n"
++	"	fld	fs1, 24(a1)\n"
++	"	fmadd.d	fs1, ft7, fs4, fs1\n"
++	"	fsd	fs1, 24(a1)\n"
++	"	fld	fs0, 0(a6)\n"
++	"	fmadd.d	fs0, ft8, fs4, fs0\n"
++	"	fsd	fs0, 0(a6)\n"
++	"	fld	fs1, 8(a6)\n"
++	"	fmadd.d	fs1, ft9, fs4, fs1\n"
++	"	fsd	fs1, 8(a6)\n"
++	"	fld	fs0, 16(a6)\n"
++	"	fmadd.d	fs0, ft10, fs4, fs0\n"
++	"	fsd	fs0, 16(a6)\n"
++	"	fld	fs1, 24(a6)\n"
++	"	fmadd.d	fs1, ft11, fs4, fs1\n"
++	"	fsd	fs1, 24(a6)\n"
++	"	fld	fs0, 0(a7)\n"
++	"	fmadd.d	fs0, fa2, fs4, fs0\n"
++	"	fsd	fs0, 0(a7)\n"
++	"	fld	fs1, 8(a7)\n"
++	"	fmadd.d	fs1, fa3, fs4, fs1\n"
++	"	fsd	fs1, 8(a7)\n"
++	"	fld	fs0, 16(a7)\n"
++	"	fmadd.d	fs0, fa4, fs4, fs0\n"
++	"	fsd	fs0, 16(a7)\n"
++	"	fld	fs1, 24(a7)\n"
++	"	fmadd.d	fs1, fa5, fs4, fs1\n"
++	"	fsd	fs1, 24(a7)\n"
++	"	addi	a0, a0, 32\n"
++	"	addi	a1, a1, 32\n"
++	"	addi	a6, a6, 32\n"
++	"	addi	a7, a7, 32\n"
++	"	addi	t5, t5, -1\n"
++	"	bnez	t5, .Lk4i\n"
++	"	slli	t6, a2, 5\n"
++	"	add	a4, a4, t6\n"
++	"	slli	t6, t0, 2\n"
++	"	add	a5, a5, t6\n"
++	"	addi	t2, t2, -1\n"
++	"	bnez	t2, .Lk4j\n"
++	".Lk4done:\n"
++	"	fld	fs0, 0(sp)\n"
++	"	fld	fs1, 8(sp)\n"
++	"	fld	fs2, 16(sp)\n"
++	"	fld	fs3, 24(sp)\n"
++	"	fld	fs4, 32(sp)\n"
++	"	fld	fs5, 40(sp)\n"
++	"	fld	fs6, 48(sp)\n"
++	"	fld	fs7, 56(sp)\n"
++	"	fld	fs8, 64(sp)\n"
++	"	fld	fs9, 72(sp)\n"
++	"	fld	fs10, 80(sp)\n"
++	"	fld	fs11, 88(sp)\n"
++	"	addi	sp, sp, 112\n"
++	"	li	a0, 0\n"
++	"	ret\n"
++	"	.size	dgemm_u74_asm, .-dgemm_u74_asm\n"
++);
++
++int CNAME(BLASLONG bm,BLASLONG bn,BLASLONG bk,FLOAT alpha,IFLOAT* ba,IFLOAT* bb,FLOAT* C,BLASLONG ldc
++#ifdef TRMMKERNEL
++		,BLASLONG offset
++#endif
++		)
++{
++   BLASLONG i,j,k;
++   FLOAT *C0,*C1,*C2,*C3;
++   IFLOAT *ptrba,*ptrbb;
++   FLOAT r0c0,r1c0,r2c0,r3c0;
++   FLOAT r0c1,r1c1,r2c1,r3c1;
++   FLOAT r0c2,r1c2,r2c2,r3c2;
++   FLOAT r0c3,r1c3,r2c3,r3c3;
++   IFLOAT a0,a1,a2,a3,b0,b1,b2,b3;
++
++   #if defined(DOUBLE) && !defined(TRMMKERNEL)
++   if (bm > 0 && bn > 0 && bk > 0 && ((bm & 3) == 0) && ((bn & 3) == 0) && ((bk & 1) == 0))
++      return dgemm_u74_asm(bm, bn, bk, alpha, ba, bb, C, ldc);
++#endif
++
++   /* ==================== N panels of 4 ==================== */
++   for (j=0; j<bn/4; j+=1)
++     {
++        C0 = C;
++        C1 = C0+ldc;
++        C2 = C1+ldc;
++        C3 = C2+ldc;
++        ptrba = ba;
++
++        /* ---- 4x4 : 4 rows x 4 cols, 16 accumulators ---- */
++        for (i=0; i<bm/4; i+=1)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=r2c0=r3c0=0;
++             r0c1=r1c1=r2c1=r3c1=0;
++             r0c2=r1c2=r2c2=r3c2=0;
++             r0c3=r1c3=r2c3=r3c3=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1]; b2=ptrbb[2]; b3=ptrbb[3];
++                  a0=ptrba[0]; a1=ptrba[1]; a2=ptrba[2]; a3=ptrba[3];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0); r2c0+=TO_F32(a2)*TO_F32(b0); r3c0+=TO_F32(a3)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1); r1c1+=TO_F32(a1)*TO_F32(b1); r2c1+=TO_F32(a2)*TO_F32(b1); r3c1+=TO_F32(a3)*TO_F32(b1);
++                  r0c2+=TO_F32(a0)*TO_F32(b2); r1c2+=TO_F32(a1)*TO_F32(b2); r2c2+=TO_F32(a2)*TO_F32(b2); r3c2+=TO_F32(a3)*TO_F32(b2);
++                  r0c3+=TO_F32(a0)*TO_F32(b3); r1c3+=TO_F32(a1)*TO_F32(b3); r2c3+=TO_F32(a2)*TO_F32(b3); r3c3+=TO_F32(a3)*TO_F32(b3);
++                  ptrba+=4; ptrbb+=4;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA); C0[2]=TO_OUTPUT(C_TO_F32(C0[2])+r2c0*ALPHA); C0[3]=TO_OUTPUT(C_TO_F32(C0[3])+r3c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA); C1[1]=TO_OUTPUT(C_TO_F32(C1[1])+r1c1*ALPHA); C1[2]=TO_OUTPUT(C_TO_F32(C1[2])+r2c1*ALPHA); C1[3]=TO_OUTPUT(C_TO_F32(C1[3])+r3c1*ALPHA);
++             C2[0]=TO_OUTPUT(C_TO_F32(C2[0])+r0c2*ALPHA); C2[1]=TO_OUTPUT(C_TO_F32(C2[1])+r1c2*ALPHA); C2[2]=TO_OUTPUT(C_TO_F32(C2[2])+r2c2*ALPHA); C2[3]=TO_OUTPUT(C_TO_F32(C2[3])+r3c2*ALPHA);
++             C3[0]=TO_OUTPUT(C_TO_F32(C3[0])+r0c3*ALPHA); C3[1]=TO_OUTPUT(C_TO_F32(C3[1])+r1c3*ALPHA); C3[2]=TO_OUTPUT(C_TO_F32(C3[2])+r2c3*ALPHA); C3[3]=TO_OUTPUT(C_TO_F32(C3[3])+r3c3*ALPHA);
++             C0+=4; C1+=4; C2+=4; C3+=4;
++          }
++        /* ---- 2x4 : 2 rows x 4 cols ---- */
++        if (bm & 2)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=0; r0c1=r1c1=0; r0c2=r1c2=0; r0c3=r1c3=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1]; b2=ptrbb[2]; b3=ptrbb[3];
++                  a0=ptrba[0]; a1=ptrba[1];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1); r1c1+=TO_F32(a1)*TO_F32(b1);
++                  r0c2+=TO_F32(a0)*TO_F32(b2); r1c2+=TO_F32(a1)*TO_F32(b2);
++                  r0c3+=TO_F32(a0)*TO_F32(b3); r1c3+=TO_F32(a1)*TO_F32(b3);
++                  ptrba+=2; ptrbb+=4;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA); C1[1]=TO_OUTPUT(C_TO_F32(C1[1])+r1c1*ALPHA);
++             C2[0]=TO_OUTPUT(C_TO_F32(C2[0])+r0c2*ALPHA); C2[1]=TO_OUTPUT(C_TO_F32(C2[1])+r1c2*ALPHA);
++             C3[0]=TO_OUTPUT(C_TO_F32(C3[0])+r0c3*ALPHA); C3[1]=TO_OUTPUT(C_TO_F32(C3[1])+r1c3*ALPHA);
++             C0+=2; C1+=2; C2+=2; C3+=2;
++          }
++        /* ---- 1x4 : 1 row x 4 cols ---- */
++        if (bm & 1)
++          {
++             ptrbb = bb;
++             r0c0=0; r0c1=0; r0c2=0; r0c3=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1]; b2=ptrbb[2]; b3=ptrbb[3];
++                  a0=ptrba[0];
++                  r0c0+=TO_F32(a0)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1);
++                  r0c2+=TO_F32(a0)*TO_F32(b2);
++                  r0c3+=TO_F32(a0)*TO_F32(b3);
++                  ptrba+=1; ptrbb+=4;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA);
++             C2[0]=TO_OUTPUT(C_TO_F32(C2[0])+r0c2*ALPHA);
++             C3[0]=TO_OUTPUT(C_TO_F32(C3[0])+r0c3*ALPHA);
++             C0+=1; C1+=1; C2+=1; C3+=1;
++          }
++        bb = bb + bk*4;
++        C  = C  + ldc*4;
++     }
++
++   /* ==================== N panel of 2 ==================== */
++   if (bn & 2)
++     {
++        C0 = C;
++        C1 = C0+ldc;
++        ptrba = ba;
++
++        for (i=0; i<bm/4; i+=1)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=r2c0=r3c0=0;
++             r0c1=r1c1=r2c1=r3c1=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1];
++                  a0=ptrba[0]; a1=ptrba[1]; a2=ptrba[2]; a3=ptrba[3];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0); r2c0+=TO_F32(a2)*TO_F32(b0); r3c0+=TO_F32(a3)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1); r1c1+=TO_F32(a1)*TO_F32(b1); r2c1+=TO_F32(a2)*TO_F32(b1); r3c1+=TO_F32(a3)*TO_F32(b1);
++                  ptrba+=4; ptrbb+=2;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA); C0[2]=TO_OUTPUT(C_TO_F32(C0[2])+r2c0*ALPHA); C0[3]=TO_OUTPUT(C_TO_F32(C0[3])+r3c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA); C1[1]=TO_OUTPUT(C_TO_F32(C1[1])+r1c1*ALPHA); C1[2]=TO_OUTPUT(C_TO_F32(C1[2])+r2c1*ALPHA); C1[3]=TO_OUTPUT(C_TO_F32(C1[3])+r3c1*ALPHA);
++             C0+=4; C1+=4;
++          }
++        if (bm & 2)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=0; r0c1=r1c1=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1];
++                  a0=ptrba[0]; a1=ptrba[1];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1); r1c1+=TO_F32(a1)*TO_F32(b1);
++                  ptrba+=2; ptrbb+=2;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA); C1[1]=TO_OUTPUT(C_TO_F32(C1[1])+r1c1*ALPHA);
++             C0+=2; C1+=2;
++          }
++        if (bm & 1)
++          {
++             ptrbb = bb;
++             r0c0=0; r0c1=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0]; b1=ptrbb[1];
++                  a0=ptrba[0];
++                  r0c0+=TO_F32(a0)*TO_F32(b0);
++                  r0c1+=TO_F32(a0)*TO_F32(b1);
++                  ptrba+=1; ptrbb+=2;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA);
++             C1[0]=TO_OUTPUT(C_TO_F32(C1[0])+r0c1*ALPHA);
++             C0+=1; C1+=1;
++          }
++        bb = bb + bk*2;
++        C  = C  + ldc*2;
++     }
++
++   /* ==================== N panel of 1 ==================== */
++   if (bn & 1)
++     {
++        C0 = C;
++        ptrba = ba;
++
++        for (i=0; i<bm/4; i+=1)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=r2c0=r3c0=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0];
++                  a0=ptrba[0]; a1=ptrba[1]; a2=ptrba[2]; a3=ptrba[3];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0); r2c0+=TO_F32(a2)*TO_F32(b0); r3c0+=TO_F32(a3)*TO_F32(b0);
++                  ptrba+=4; ptrbb+=1;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA); C0[2]=TO_OUTPUT(C_TO_F32(C0[2])+r2c0*ALPHA); C0[3]=TO_OUTPUT(C_TO_F32(C0[3])+r3c0*ALPHA);
++             C0+=4;
++          }
++        if (bm & 2)
++          {
++             ptrbb = bb;
++             r0c0=r1c0=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  b0=ptrbb[0];
++                  a0=ptrba[0]; a1=ptrba[1];
++                  r0c0+=TO_F32(a0)*TO_F32(b0); r1c0+=TO_F32(a1)*TO_F32(b0);
++                  ptrba+=2; ptrbb+=1;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA); C0[1]=TO_OUTPUT(C_TO_F32(C0[1])+r1c0*ALPHA);
++             C0+=2;
++          }
++        if (bm & 1)
++          {
++             ptrbb = bb;
++             r0c0=0;
++             for (k=0; k<bk; k+=1)
++               {
++                  r0c0+=TO_F32(ptrba[0])*TO_F32(ptrbb[0]);
++                  ptrba+=1; ptrbb+=1;
++               }
++             C0[0]=TO_OUTPUT(C_TO_F32(C0[0])+r0c0*ALPHA);
++             C0+=1;
++          }
++        bb = bb + bk;
++        C  = C  + ldc;
++     }
++
++   return 0;
++}
+diff --git a/kernel/generic/kern_u74.S b/kernel/generic/kern_u74.S
+new file mode 100644
+index 000000000..a6fbcbdf6
+--- /dev/null
++++ b/kernel/generic/kern_u74.S
+@@ -0,0 +1,267 @@
++/*
++ * dgemm 4x4 scalar micro-kernel for SiFive U74 (RV64GC, lp64d).  v3:
++ * software-pipelined, full operand double-buffering (P/Q ping-pong), one-
++ * iteration lookahead, LOAD-BEFORE-FMA issue ordering (the U74 dual-issue
++ * pairs a load/int in slot0 with an FP op in slot1, so each fld is emitted
++ * immediately before the fmadd it co-issues with).  16 FP accumulators + 16 FP
++ * operand regs = all 32 FP regs; alpha spilled for the k-loop.  Handles the
++ * bm%4==0 && bn%4==0 grid with EVEN bk (bk>=2); ragged edges + odd bk later.
++ *
++ * int kern_asm(long bm,long bn,long bk,double alpha,double* A,double* B,double* C,long ldc)
++ *   a0=bm a1=bn a2=bk fa0=alpha a3=A a4=B a5=C a6=ldc
++ * acc: col0 ft0..ft3  col1 ft4..ft7  col2 ft8..ft11  col3 fa2..fa5
++ * P: A=fa0,fa1,fa6,fa7  B=fs0,fs1,fs2,fs3    Q: A=fs4,fs5,fs6,fs7  B=fs8,fs9,fs10,fs11
++ * int: t0=ldc*8 t1=bm/4 t2=j t3=ptrA t4=ptrB t5=i t6=pair-cnt  C0..3=a0,a1,a6,a7
++ */
++	.text
++	.p2align 4
++	.globl	kern_asm
++	.type	kern_asm,@function
++kern_asm:
++	addi	sp, sp, -112
++	fsd	fs0, 0(sp)
++	fsd	fs1, 8(sp)
++	fsd	fs2, 16(sp)
++	fsd	fs3, 24(sp)
++	fsd	fs4, 32(sp)
++	fsd	fs5, 40(sp)
++	fsd	fs6, 48(sp)
++	fsd	fs7, 56(sp)
++	fsd	fs8, 64(sp)
++	fsd	fs9, 72(sp)
++	fsd	fs10, 80(sp)
++	fsd	fs11, 88(sp)
++	fsd	fa0, 96(sp)		# spill alpha
++
++	slli	t0, a6, 3		# ldc*8
++	srli	t1, a0, 2		# bm/4
++	srli	t2, a1, 2		# bn/4 (j)
++	beqz	t2, .Ldone
++
++.Lj:
++	mv	a0, a5			# C0 = Crun
++	add	a1, a0, t0		# C1
++	add	a6, a1, t0		# C2
++	add	a7, a6, t0		# C3
++	mv	t3, a3			# ptrA = ba
++	mv	t5, t1			# i = bm/4
++
++.Li:
++	mv	t4, a4			# ptrB = bb(run)
++	fmv.d.x	ft0, zero
++	fmv.d.x	ft1, zero
++	fmv.d.x	ft2, zero
++	fmv.d.x	ft3, zero
++	fmv.d.x	ft4, zero
++	fmv.d.x	ft5, zero
++	fmv.d.x	ft6, zero
++	fmv.d.x	ft7, zero
++	fmv.d.x	ft8, zero
++	fmv.d.x	ft9, zero
++	fmv.d.x	ft10, zero
++	fmv.d.x	ft11, zero
++	fmv.d.x	fa2, zero
++	fmv.d.x	fa3, zero
++	fmv.d.x	fa4, zero
++	fmv.d.x	fa5, zero
++
++	# preload P from k=0, advance to k=1
++	fld	fa0, 0(t3)
++	fld	fa1, 8(t3)
++	fld	fa6, 16(t3)
++	fld	fa7, 24(t3)
++	fld	fs0, 0(t4)
++	fld	fs1, 8(t4)
++	fld	fs2, 16(t4)
++	fld	fs3, 24(t4)
++	addi	t3, t3, 32
++	addi	t4, t4, 32
++	srli	t6, a2, 1		# bk/2
++	addi	t6, t6, -1		# pair-cnt = bk/2 - 1
++	beqz	t6, .Lepi
++
++	.p2align 4
++.Lbody:				# --- P current, load Q (load before paired fmadd) ---
++	fld	fs4, 0(t3)
++	fmadd.d	ft0, fa0, fs0, ft0
++	fld	fs5, 8(t3)
++	fmadd.d	ft1, fa1, fs0, ft1
++	fld	fs6, 16(t3)
++	fmadd.d	ft2, fa6, fs0, ft2
++	fld	fs7, 24(t3)
++	fmadd.d	ft3, fa7, fs0, ft3
++	fld	fs8, 0(t4)
++	fmadd.d	ft4, fa0, fs1, ft4
++	fld	fs9, 8(t4)
++	fmadd.d	ft5, fa1, fs1, ft5
++	fld	fs10, 16(t4)
++	fmadd.d	ft6, fa6, fs1, ft6
++	fld	fs11, 24(t4)
++	fmadd.d	ft7, fa7, fs1, ft7
++	addi	t3, t3, 32
++	fmadd.d	ft8, fa0, fs2, ft8
++	addi	t4, t4, 32
++	fmadd.d	ft9, fa1, fs2, ft9
++	fmadd.d	ft10, fa6, fs2, ft10
++	fmadd.d	ft11, fa7, fs2, ft11
++	fmadd.d	fa2, fa0, fs3, fa2
++	fmadd.d	fa3, fa1, fs3, fa3
++	fmadd.d	fa4, fa6, fs3, fa4
++	fmadd.d	fa5, fa7, fs3, fa5
++				# --- Q current, load P ---
++	fld	fa0, 0(t3)
++	fmadd.d	ft0, fs4, fs8, ft0
++	fld	fa1, 8(t3)
++	fmadd.d	ft1, fs5, fs8, ft1
++	fld	fa6, 16(t3)
++	fmadd.d	ft2, fs6, fs8, ft2
++	fld	fa7, 24(t3)
++	fmadd.d	ft3, fs7, fs8, ft3
++	fld	fs0, 0(t4)
++	fmadd.d	ft4, fs4, fs9, ft4
++	fld	fs1, 8(t4)
++	fmadd.d	ft5, fs5, fs9, ft5
++	fld	fs2, 16(t4)
++	fmadd.d	ft6, fs6, fs9, ft6
++	fld	fs3, 24(t4)
++	fmadd.d	ft7, fs7, fs9, ft7
++	addi	t3, t3, 32
++	fmadd.d	ft8, fs4, fs10, ft8
++	addi	t4, t4, 32
++	fmadd.d	ft9, fs5, fs10, ft9
++	fmadd.d	ft10, fs6, fs10, ft10
++	fmadd.d	ft11, fs7, fs10, ft11
++	fmadd.d	fa2, fs4, fs11, fa2
++	fmadd.d	fa3, fs5, fs11, fa3
++	fmadd.d	fa4, fs6, fs11, fa4
++	fmadd.d	fa5, fs7, fs11, fa5
++	addi	t6, t6, -1
++	bnez	t6, .Lbody
++
++.Lepi:				# --- P current, load last Q ---
++	fld	fs4, 0(t3)
++	fmadd.d	ft0, fa0, fs0, ft0
++	fld	fs5, 8(t3)
++	fmadd.d	ft1, fa1, fs0, ft1
++	fld	fs6, 16(t3)
++	fmadd.d	ft2, fa6, fs0, ft2
++	fld	fs7, 24(t3)
++	fmadd.d	ft3, fa7, fs0, ft3
++	fld	fs8, 0(t4)
++	fmadd.d	ft4, fa0, fs1, ft4
++	fld	fs9, 8(t4)
++	fmadd.d	ft5, fa1, fs1, ft5
++	fld	fs10, 16(t4)
++	fmadd.d	ft6, fa6, fs1, ft6
++	fld	fs11, 24(t4)
++	fmadd.d	ft7, fa7, fs1, ft7
++	addi	t3, t3, 32
++	fmadd.d	ft8, fa0, fs2, ft8
++	addi	t4, t4, 32
++	fmadd.d	ft9, fa1, fs2, ft9
++	fmadd.d	ft10, fa6, fs2, ft10
++	fmadd.d	ft11, fa7, fs2, ft11
++	fmadd.d	fa2, fa0, fs3, fa2
++	fmadd.d	fa3, fa1, fs3, fa3
++	fmadd.d	fa4, fa6, fs3, fa4
++	fmadd.d	fa5, fa7, fs3, fa5
++				# --- Q current, compute only ---
++	fmadd.d	ft0, fs4, fs8, ft0
++	fmadd.d	ft1, fs5, fs8, ft1
++	fmadd.d	ft2, fs6, fs8, ft2
++	fmadd.d	ft3, fs7, fs8, ft3
++	fmadd.d	ft4, fs4, fs9, ft4
++	fmadd.d	ft5, fs5, fs9, ft5
++	fmadd.d	ft6, fs6, fs9, ft6
++	fmadd.d	ft7, fs7, fs9, ft7
++	fmadd.d	ft8, fs4, fs10, ft8
++	fmadd.d	ft9, fs5, fs10, ft9
++	fmadd.d	ft10, fs6, fs10, ft10
++	fmadd.d	ft11, fs7, fs10, ft11
++	fmadd.d	fa2, fs4, fs11, fa2
++	fmadd.d	fa3, fs5, fs11, fa3
++	fmadd.d	fa4, fs6, fs11, fa4
++	fmadd.d	fa5, fs7, fs11, fa5
++
++	# ---- C += acc*alpha ; alpha->fs4, temps fs0/fs1 ----
++	fld	fs4, 96(sp)
++	fld	fs0, 0(a0)
++	fmadd.d	fs0, ft0, fs4, fs0
++	fsd	fs0, 0(a0)
++	fld	fs1, 8(a0)
++	fmadd.d	fs1, ft1, fs4, fs1
++	fsd	fs1, 8(a0)
++	fld	fs0, 16(a0)
++	fmadd.d	fs0, ft2, fs4, fs0
++	fsd	fs0, 16(a0)
++	fld	fs1, 24(a0)
++	fmadd.d	fs1, ft3, fs4, fs1
++	fsd	fs1, 24(a0)
++	fld	fs0, 0(a1)
++	fmadd.d	fs0, ft4, fs4, fs0
++	fsd	fs0, 0(a1)
++	fld	fs1, 8(a1)
++	fmadd.d	fs1, ft5, fs4, fs1
++	fsd	fs1, 8(a1)
++	fld	fs0, 16(a1)
++	fmadd.d	fs0, ft6, fs4, fs0
++	fsd	fs0, 16(a1)
++	fld	fs1, 24(a1)
++	fmadd.d	fs1, ft7, fs4, fs1
++	fsd	fs1, 24(a1)
++	fld	fs0, 0(a6)
++	fmadd.d	fs0, ft8, fs4, fs0
++	fsd	fs0, 0(a6)
++	fld	fs1, 8(a6)
++	fmadd.d	fs1, ft9, fs4, fs1
++	fsd	fs1, 8(a6)
++	fld	fs0, 16(a6)
++	fmadd.d	fs0, ft10, fs4, fs0
++	fsd	fs0, 16(a6)
++	fld	fs1, 24(a6)
++	fmadd.d	fs1, ft11, fs4, fs1
++	fsd	fs1, 24(a6)
++	fld	fs0, 0(a7)
++	fmadd.d	fs0, fa2, fs4, fs0
++	fsd	fs0, 0(a7)
++	fld	fs1, 8(a7)
++	fmadd.d	fs1, fa3, fs4, fs1
++	fsd	fs1, 8(a7)
++	fld	fs0, 16(a7)
++	fmadd.d	fs0, fa4, fs4, fs0
++	fsd	fs0, 16(a7)
++	fld	fs1, 24(a7)
++	fmadd.d	fs1, fa5, fs4, fs1
++	fsd	fs1, 24(a7)
++
++	addi	a0, a0, 32
++	addi	a1, a1, 32
++	addi	a6, a6, 32
++	addi	a7, a7, 32
++	addi	t5, t5, -1
++	bnez	t5, .Li
++
++	slli	t6, a2, 5		# bb(run) += bk*4
++	add	a4, a4, t6
++	slli	t6, t0, 2		# C(run) += 4*ldc
++	add	a5, a5, t6
++	addi	t2, t2, -1
++	bnez	t2, .Lj
++
++.Ldone:
++	fld	fs0, 0(sp)
++	fld	fs1, 8(sp)
++	fld	fs2, 16(sp)
++	fld	fs3, 24(sp)
++	fld	fs4, 32(sp)
++	fld	fs5, 40(sp)
++	fld	fs6, 48(sp)
++	fld	fs7, 56(sp)
++	fld	fs8, 64(sp)
++	fld	fs9, 72(sp)
++	fld	fs10, 80(sp)
++	fld	fs11, 88(sp)
++	addi	sp, sp, 112
++	li	a0, 0
++	ret
++	.size	kern_asm, .-kern_asm
+diff --git a/kernel/riscv64/KERNEL.U74 b/kernel/riscv64/KERNEL.U74
+new file mode 100644
+index 000000000..c6cac398e
+--- /dev/null
++++ b/kernel/riscv64/KERNEL.U74
+@@ -0,0 +1,177 @@
++SAMAXKERNEL  = ../riscv64/amax.c
++DAMAXKERNEL  = ../riscv64/amax.c
++CAMAXKERNEL  = ../riscv64/zamax.c
++ZAMAXKERNEL  = ../riscv64/zamax.c
++
++SAMINKERNEL  = ../riscv64/amin.c
++DAMINKERNEL  = ../riscv64/amin.c
++CAMINKERNEL  = ../riscv64/zamin.c
++ZAMINKERNEL  = ../riscv64/zamin.c
++
++SMAXKERNEL   = ../riscv64/max.c
++DMAXKERNEL   = ../riscv64/max.c
++
++SMINKERNEL   = ../riscv64/min.c
++DMINKERNEL   = ../riscv64/min.c
++
++ISAMAXKERNEL = ../riscv64/iamax.c
++IDAMAXKERNEL = ../riscv64/iamax.c
++ICAMAXKERNEL = ../riscv64/izamax.c
++IZAMAXKERNEL = ../riscv64/izamax.c
++
++ISAMINKERNEL = ../riscv64/iamin.c
++IDAMINKERNEL = ../riscv64/iamin.c
++ICAMINKERNEL = ../riscv64/izamin.c
++IZAMINKERNEL = ../riscv64/izamin.c
++
++ISMAXKERNEL  = ../riscv64/imax.c
++IDMAXKERNEL  = ../riscv64/imax.c
++
++ISMINKERNEL  = ../riscv64/imin.c
++IDMINKERNEL  = ../riscv64/imin.c
++
++SASUMKERNEL  = ../riscv64/asum.c
++DASUMKERNEL  = ../riscv64/asum.c
++CASUMKERNEL  = ../riscv64/zasum.c
++ZASUMKERNEL  = ../riscv64/zasum.c
++
++SSUMKERNEL  = ../arm/sum.c
++DSUMKERNEL  = ../arm/sum.c
++CSUMKERNEL  = ../arm/zsum.c
++ZSUMKERNEL  = ../arm/zsum.c
++
++SAXPYKERNEL  = ../riscv64/axpy.c
++DAXPYKERNEL  = ../riscv64/axpy.c
++CAXPYKERNEL  = ../riscv64/zaxpy.c
++ZAXPYKERNEL  = ../riscv64/zaxpy.c
++
++SAXPBYKERNEL  = ../riscv64/axpby.c
++DAXPBYKERNEL  = ../riscv64/axpby.c
++CAXPBYKERNEL  = ../riscv64/zaxpby.c
++ZAXPBYKERNEL  = ../riscv64/zaxpby.c
++
++SCOPYKERNEL  = ../riscv64/copy.c
++DCOPYKERNEL  = ../riscv64/copy.c
++CCOPYKERNEL  = ../riscv64/zcopy.c
++ZCOPYKERNEL  = ../riscv64/zcopy.c
++
++SDOTKERNEL   = ../riscv64/dot.c
++DDOTKERNEL   = ../riscv64/dot.c
++CDOTKERNEL   = ../riscv64/zdot.c
++ZDOTKERNEL   = ../riscv64/zdot.c
++DSDOTKERNEL  = ../generic/dot.c
++
++SNRM2KERNEL  = ../riscv64/nrm2.c
++DNRM2KERNEL  = ../riscv64/nrm2.c
++CNRM2KERNEL  = ../riscv64/znrm2.c
++ZNRM2KERNEL  = ../riscv64/znrm2.c
++
++SROTKERNEL   = ../riscv64/rot.c
++DROTKERNEL   = ../riscv64/rot.c
++CROTKERNEL   = ../riscv64/zrot.c
++ZROTKERNEL   = ../riscv64/zrot.c
++
++SROTMKERNEL  = ../generic/rotm.c
++DROTMKERNEL  = ../generic/rotm.c
++QROTMKERNEL = ../generic/rotm.c
++
++SSCALKERNEL  = ../riscv64/scal.c
++DSCALKERNEL  = ../riscv64/scal.c
++CSCALKERNEL  = ../riscv64/zscal.c
++ZSCALKERNEL  = ../riscv64/zscal.c
++
++SSWAPKERNEL  = ../riscv64/swap.c
++DSWAPKERNEL  = ../riscv64/swap.c
++CSWAPKERNEL  = ../riscv64/zswap.c
++ZSWAPKERNEL  = ../riscv64/zswap.c
++
++SGEMVNKERNEL = ../riscv64/gemv_n.c
++DGEMVNKERNEL = ../riscv64/gemv_n.c
++CGEMVNKERNEL = ../riscv64/zgemv_n.c
++ZGEMVNKERNEL = ../riscv64/zgemv_n.c
++
++SGEMVTKERNEL = ../riscv64/gemv_t.c
++DGEMVTKERNEL = ../riscv64/gemv_t.c
++CGEMVTKERNEL = ../riscv64/zgemv_t.c
++ZGEMVTKERNEL = ../riscv64/zgemv_t.c
++
++# Real S/D TRMM use the generic 4x4 kernel to match the 4x4 GEMM unroll.
++STRMMKERNEL	= ../generic/trmmkernel_4x4.c
++DTRMMKERNEL	= ../generic/trmmkernel_4x4.c
++CTRMMKERNEL	= ../generic/ztrmmkernel_2x2.c
++ZTRMMKERNEL	= ../generic/ztrmmkernel_2x2.c
++
++# Real S/D GEMM use the 4x4 register-tiled kernel (16 accumulators) with the
++# matching width-4 packing routines.  UNROLL_M == UNROLL_N == 4.
++SGEMMKERNEL    =  ../generic/gemmkernel_4x4.c
++SGEMMONCOPY    =  ../generic/gemm_ncopy_4.c
++SGEMMOTCOPY    =  ../generic/gemm_tcopy_4.c
++SGEMMONCOPYOBJ =  sgemm_oncopy$(TSUFFIX).$(SUFFIX)
++SGEMMOTCOPYOBJ =  sgemm_otcopy$(TSUFFIX).$(SUFFIX)
++
++DGEMMKERNEL    =  ../generic/gemmkernel_4x4_u74.c
++DGEMMONCOPY    = ../generic/gemm_ncopy_4.c
++DGEMMOTCOPY    = ../generic/gemm_tcopy_4.c
++DGEMMONCOPYOBJ = dgemm_oncopy$(TSUFFIX).$(SUFFIX)
++DGEMMOTCOPYOBJ = dgemm_otcopy$(TSUFFIX).$(SUFFIX)
++
++CGEMMKERNEL    = ../generic/zgemmkernel_2x2.c
++CGEMMONCOPY    = ../generic/zgemm_ncopy_2.c
++CGEMMOTCOPY    = ../generic/zgemm_tcopy_2.c
++CGEMMONCOPYOBJ =  cgemm_oncopy$(TSUFFIX).$(SUFFIX)
++CGEMMOTCOPYOBJ =  cgemm_otcopy$(TSUFFIX).$(SUFFIX)
++
++ZGEMMKERNEL    = ../generic/zgemmkernel_2x2.c
++ZGEMMONCOPY    = ../generic/zgemm_ncopy_2.c
++ZGEMMOTCOPY    = ../generic/zgemm_tcopy_2.c
++ZGEMMONCOPYOBJ =  zgemm_oncopy$(TSUFFIX).$(SUFFIX)
++ZGEMMOTCOPYOBJ =  zgemm_otcopy$(TSUFFIX).$(SUFFIX)
++
++STRSMKERNEL_LN	=  ../generic/trsm_kernel_LN.c
++STRSMKERNEL_LT	=  ../generic/trsm_kernel_LT.c
++STRSMKERNEL_RN	=  ../generic/trsm_kernel_RN.c
++STRSMKERNEL_RT	=  ../generic/trsm_kernel_RT.c
++
++DTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
++DTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
++DTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
++DTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++
++CTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
++CTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
++CTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
++CTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++
++ZTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
++ZTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
++ZTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
++ZTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++
++SSYMV_U_KERNEL =  ../generic/symv_k.c
++SSYMV_L_KERNEL =  ../generic/symv_k.c
++DSYMV_U_KERNEL =  ../generic/symv_k.c
++DSYMV_L_KERNEL =  ../generic/symv_k.c
++CSYMV_U_KERNEL =  ../generic/zsymv_k.c
++CSYMV_L_KERNEL =  ../generic/zsymv_k.c
++ZSYMV_U_KERNEL =  ../generic/zsymv_k.c
++ZSYMV_L_KERNEL =  ../generic/zsymv_k.c
++
++
++LSAME_KERNEL = ../generic/lsame.c
++
++SCABS_KERNEL	= ../generic/cabs.c
++DCABS_KERNEL	= ../generic/cabs.c
++QCABS_KERNEL	= ../generic/cabs.c
++
++ifndef SGEMM_BETA
++SGEMM_BETA = ../generic/gemm_beta.c
++endif
++ifndef DGEMM_BETA
++DGEMM_BETA = ../generic/gemm_beta.c
++endif
++ifndef CGEMM_BETA
++CGEMM_BETA = ../generic/zgemm_beta.c
++endif
++ifndef ZGEMM_BETA
++ZGEMM_BETA = ../generic/zgemm_beta.c
++endif
+diff --git a/param.h b/param.h
+index 48b64fd2a..23eca5be3 100644
+--- a/param.h
++++ b/param.h
+@@ -3052,6 +3052,45 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+ #endif
+ 
++#if defined(U74)
++#define GEMM_DEFAULT_OFFSET_A 0
++#define GEMM_DEFAULT_OFFSET_B 0
++#define GEMM_DEFAULT_ALIGN (BLASLONG)0x03fffUL
++
++/* 4x4 register tile: 16 independent FMA accumulator chains hide the U74's
++ * 7-cycle fmadd.d latency (repeat rate 1); load:FMA ratio drops to 1:2. */
++#define SGEMM_DEFAULT_UNROLL_M  4
++#define SGEMM_DEFAULT_UNROLL_N  4
++
++#define DGEMM_DEFAULT_UNROLL_M  4
++#define DGEMM_DEFAULT_UNROLL_N  4
++
++/* complex GEMM keeps the generic 2x2 kernel */
++#define CGEMM_DEFAULT_UNROLL_M  2
++#define CGEMM_DEFAULT_UNROLL_N  2
++
++#define ZGEMM_DEFAULT_UNROLL_M  2
++#define ZGEMM_DEFAULT_UNROLL_N  2
++
++#define SGEMM_DEFAULT_P	128
++#define DGEMM_DEFAULT_P	128
++#define CGEMM_DEFAULT_P 96
++#define ZGEMM_DEFAULT_P 64
++
++#define SGEMM_DEFAULT_Q 240
++#define DGEMM_DEFAULT_Q 256
++#define CGEMM_DEFAULT_Q 120
++#define ZGEMM_DEFAULT_Q 120
++
++#define SGEMM_DEFAULT_R 12288
++#define DGEMM_DEFAULT_R 8192
++#define CGEMM_DEFAULT_R 4096
++#define ZGEMM_DEFAULT_R 4096
++
++#define SYMV_P	16
++
++#endif
++
+ #if defined(x280)
+ #define GEMM_DEFAULT_OFFSET_A 0
+ #define GEMM_DEFAULT_OFFSET_B 0
