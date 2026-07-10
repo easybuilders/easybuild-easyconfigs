@@ -1,7 +1,3 @@
-# EasyBuild recipe for QMCPACK 4.3.0 — CPU real (MPI+OpenMP), double precision.
-# Greenfield: no upstream QMCPACK easyconfig existed as of 2026-07-10.
-# Variant matrix note: GPU / complex / mixed-precision are separate recipes later.
-
 easyblock = 'CMakeNinja'
 
 name = 'QMCPACK'
@@ -10,9 +6,11 @@ version = '4.3.0'
 homepage = 'https://qmcpack.org'
 description = """
 QMCPACK is an open-source production-level many-body ab initio Quantum Monte
-Carlo code for electronic structure of atoms, molecules, 2D nanomaterials and
-solids. This recipe builds the CPU real reference: MPI+OpenMP, mixed precision
-OFF (full double), no GPU offload.
+Carlo code for computing the electronic structure of atoms, molecules, 2D
+nanomaterials and solids.
+
+This easyconfig builds the CPU real reference: MPI + OpenMP, full double
+precision (mixed precision off), no GPU offload.
 """
 
 toolchain = {'name': 'foss', 'version': '2026.1'}
@@ -20,15 +18,13 @@ toolchainopts = {'usempi': True, 'openmp': True}
 
 github_account = 'QMCPACK'
 source_urls = [GITHUB_SOURCE]
-sources = [
-    {
-        'download_filename': 'v%(version)s.tar.gz',
-        'filename': SOURCELOWER_TAR_GZ,
-    },
-]
+sources = [{
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': SOURCELOWER_TAR_GZ,
+}]
 checksums = ['511d5f368db002f2f77504619e1ada8d4a3034200d25feef6773d12a6ed6d18e']
 
-# GitHub archive unpacks to qmcpack-<ver>/ (repo name), not QMCPACK-<ver>/.
+# GitHub archive top-level is qmcpack-<ver>/ (repo name), not QMCPACK-<ver>/.
 start_dir = '%(namelower)s-%(version)s'
 
 builddependencies = [
@@ -38,17 +34,15 @@ builddependencies = [
 ]
 
 dependencies = [
-    # Parallel HDF5 under gompi (foss subtoolchain); robot has HDF5-2.1.1-gompi-2026.1
-    ('HDF5', '2.1.1'),
+    ('HDF5', '2.1.1'),  # parallel (gompi) preferred with MPI builds
     ('Boost', '1.90.0'),
     ('libxml2', '2.15.1'),
+    # Runtime for Nexus workflow package + converter scripts under bin/
     ('Python', '3.14.2'),
-    # FFTW / BLAS / LAPACK / OpenMPI come from the foss toolchain
+    # FFTW / BLAS / LAPACK / MPI come from the foss toolchain
 ]
 
-# Out-of-source is the CMake default. Explicit CPU-real reference flags.
-# Defaults already match (QMC_MPI=ON, QMC_OMP=ON, MIXED_PRECISION=OFF) but
-# pin them so a future upstream default flip cannot silently change the product.
+# Pin the CPU-real product; defaults match today but must not drift silently.
 configopts = ' '.join([
     '-DCMAKE_BUILD_TYPE=Release',
     '-DQMC_MPI=ON',
@@ -58,18 +52,30 @@ configopts = ' '.join([
     '-DBUILD_AFQMC=OFF',
 ])
 
-# CMakeNinja: runtest=True uses ctest via the ninja/ctest integration.
-runtest = True
+# CMakeNinja defaults test_cmd to 'ninja', so runtest=True alone only re-invokes
+# ninja (no-op after a successful build). Drive ctest explicitly. Performance
+# suites need external QMC_DATA and are excluded; they skip cleanly without it
+# but still cost configure-time registration noise.
+test_cmd = 'ctest'
+testopts = '-j %(parallel)s --output-on-failure -E performance'
 
 sanity_check_paths = {
-    'files': ['bin/qmcpack'],
-    'dirs': [],
+    'files': [
+        'bin/qmcpack',
+        'bin/convert4qmc',
+        'bin/ppconvert',
+        'bin/qmcpack.settings',
+    ],
+    'dirs': ['lib/nexus'],
 }
 
-# qmcpack --version prints the banner then exits 1 (upstream behaviour).
-# Grep for the banner so the sanity command returns 0.
+# Upstream qmcpack --version prints the banner then exits 1.
 sanity_check_commands = [
     "qmcpack --version 2>&1 | grep -q 'QMCPACK version'",
+    "convert4qmc --help 2>&1 | grep -qi convert",
 ]
+
+# Nexus lives under lib/nexus; put lib on PYTHONPATH for `import nexus`.
+modextrapaths = {'PYTHONPATH': 'lib'}
 
 moduleclass = 'chem'
