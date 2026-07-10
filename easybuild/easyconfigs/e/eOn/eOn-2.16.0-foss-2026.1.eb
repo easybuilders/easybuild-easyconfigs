@@ -47,10 +47,16 @@ sources = [
                        "%(builddir)s/eOn-%(version)s/subprojects/readcon-core",
     },
 ]
+patches = [
+    'eOn-%(version)s_safemath-eigen5-core-guard.patch',
+]
+
 checksums = [
     {'eOn-2.16.0.tar.gz': 'bdb2edd169fb7162bbddbc2742db3215ccbf58206923782c98e0c549fd0614dd'},
     {'rgpot-2.2.1.tar.gz': 'd4687bc719e19174e89288dd16dd45d7a8645d7205c7f8d8fc4d677266055918'},
     {'readcon-core-0.13.1.tar.gz': 'a261e69b87228dcc8f161eef800590b0395b4c93605b838c6216d40a1780f0bf'},
+    {'eOn-2.16.0_safemath-eigen5-core-guard.patch':
+     '34fd1abc414cccbfc2d454880f6df3136af2aa68c0bd65dc45c8894480a98e11'},
 ]
 
 builddependencies = [
@@ -60,6 +66,7 @@ builddependencies = [
     ('CMake', '4.2.1'),
     ('Rust', '1.94.1'),
     ('cargo-c', '0.10.23'),  # readcon-core needs >= 0.10.17
+    ('patchelf', '0.18.0'),
 ]
 
 dependencies = [
@@ -96,6 +103,9 @@ configopts = "-Dbuildtype=release -Dwith_tests=false -Dwith_fortran=true -Dwith_
 postinstallcmds = [
     'mkdir -p %(installdir)s/lib %(installdir)s/include %(installdir)s/lib/pkgconfig',
     'cp -a %(builddir)s/readcon-stage/lib/libreadcon_core* %(installdir)s/lib/',
+    # cargo-built cdylib bypasses the RPATH compiler wrappers; give it a real
+    # RPATH so rpath-mode sanity checks pass.
+    "patchelf --force-rpath --set-rpath '$ORIGIN' %(installdir)s/lib/libreadcon_core.so.0.13.1",
     'cp -a %(builddir)s/readcon-stage/include/readcon-core.h %(installdir)s/include/',
     "sed 's|^prefix=.*|prefix=%(installdir)s|' %(builddir)s/readcon-stage/lib/pkgconfig/readcon-core.pc > %(installdir)s/lib/pkgconfig/readcon-core.pc",
 ]
