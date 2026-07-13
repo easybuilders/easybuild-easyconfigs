@@ -1,0 +1,76 @@
+easyblock = 'CMakeMake'
+
+name = 'llama.cpp'
+version = 'ad8d821'
+versionsuffix = '-x60-ime'
+
+homepage = 'https://github.com/ggml-org/llama.cpp'
+description = """Inference of Meta's LLaMA model (and others) in pure C/C++, built for the
+SpaceMiT X60 (K1 SoC, e.g. Orange Pi RV2) with the SpaceMiT IME int8-matrix backend
+(GGML_CPU_RISCV64_SPACEMIT) enabled in addition to RVV."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}  # GCCcore-14.3.0 stays UNCHANGED
+
+# Pin a commit/tag that ships ggml's spacemit/ IME backend + cmake/FindSMTIME.cmake.
+# ad8d821 is the commit validated on the Orange Pi RV2 (llama-bench "build: ad8d821 (1)").
+source_urls = ['https://github.com/ggml-org/llama.cpp/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['llama.cpp-x60-ime-upstream-binutils.patch']
+checksums = [
+    'b72e328f83fe9c363529a3fea5e4f6b25e65645cf13e6ecfc95e61db585a2779',  # ad8d821.tar.gz
+    'ea476d588f940103d287f57e8bedbb2d7ae7bb431e4a8674eb5367eb301e4326',  # llama.cpp-x60-ime-upstream-binutils.patch
+]
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    # Newer assembler ONLY. binutils 2.46 adds the RISC-V `xsmtvdot` vendor extension
+    # (the `smt.vmadot*` opcodes) that the SpaceMiT IME backend emits as inline asm.
+    # GCCcore-14.3.0 is NOT rebuilt: GCC invokes `as` from PATH, and the binutils module
+    # prepends its bin/ so the 2.46.1 assembler wins. binutils-2.46.1.eb already exists
+    # upstream (standalone, SYSTEM toolchain). See the accompanying patch for why GCC 14.3
+    # suffices (the patch injects `.option arch,+xsmtvdot`, so no GCC>=15 / `-march` support
+    # is required).
+    ('binutils', '2.46.1'),
+]
+
+dependencies = [
+    ('cURL', '8.14.1'),
+]
+
+# SpaceMiT X60 (K1): RVV (rv64gcv + Zfh/Zvfh) + IME1 int8 matrix extension.
+#
+# The patch makes the IME1 backend build against UPSTREAM binutils 2.46 + GCC 14.3:
+#   (a) renames ggml's SpaceMiT-vendor mnemonic `vmadot` -> upstream `smt.vmadot`
+#       (identical encoding 0xe210312b; verified),
+#   (b) injects `.option arch,+xsmtvdot` into the IME1 inline asm so a plain -march works
+#       (drops the GCC>=15-only `_xsmtvdotii` requirement),
+#   (c) compiles ime2_kernels.cpp only when IME2 is detected -- upstream binutils 2.46 is
+#       IME1-only (`xsmtvdot` v1.0), and the X60 is IME1-only at runtime (use_ime2=0) anyway.
+#
+# Perf note (measured, Qwen2.5-0.5B Q4_0): IME gives ~1.56x prompt-processing at t=4, but
+# plain RVV at `-t 8` beats IME on BOTH pp512 and tg128 (IME is cluster-0-only and regresses
+# at t=8). Ship IME for the core-constrained / prompt-heavy case; default runs to `-t 8`.
+configopts = ' '.join([
+    '-DGGML_RVV=ON',
+    '-DGGML_RV_ZFH=ON',
+    '-DGGML_RV_ZVFH=ON',
+    '-DGGML_RV_ZBA=ON',
+    '-DGGML_RV_ZICBOP=ON',
+    '-DGGML_CPU_RISCV64_SPACEMIT=ON',      # enable the SpaceMiT IME backend
+    '-DGGML_BLAS=ON',
+    '-DGGML_BLAS_VENDOR=FlexiBLAS',
+    '-DLLAMA_CURL=ON',
+])
+
+sanity_check_paths = {
+    'files': ['bin/llama-cli', 'bin/llama-server', 'include/llama-cpp.h',
+              'lib/libllama.%s' % SHLIB_EXT],
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = [
+    "llama-cli --help",
+    "llama-server --help",
+]
+
+moduleclass = 'tools'
