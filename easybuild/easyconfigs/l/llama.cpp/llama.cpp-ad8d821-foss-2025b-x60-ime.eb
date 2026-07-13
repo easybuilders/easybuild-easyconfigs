@@ -23,18 +23,20 @@ checksums = [
 
 builddependencies = [
     ('CMake', '3.31.8'),
-    # Assembler with the SpaceMiT `xsmtvdot` extension (the `smt.vmadot*` opcodes the IME
-    # backend emits as inline asm). GCCcore-14.3.0 is NOT rebuilt: GCC invokes `as` from PATH
-    # and the binutils module prepends its bin/, so this `as` wins. The ggml patch injects
-    # `.option arch,+xsmtvdot`, so GCC 14.3 suffices (no GCC>=15 / `-march` support needed).
-    #
-    # NB (verified Jul 2026): STOCK binutils 2.46.1 does NOT contain xsmtvdot -- it is only an
-    # unmerged sourceware mailing-list patch (the support is merged in LLVM, and carried in
-    # SpaceMiT's downstream binutils). So this depends on a binutils built WITH the SpaceMiT
-    # xsmtvdot patch (a `binutils-2.46.1-xsmtvdot.eb` to be added alongside), NOT the stock
-    # binutils-2.46.1.eb. Until that patched binutils exists this easyconfig is BLOCKED (PR #26451).
-    ('binutils', '2.46.1', '-xsmtvdot', SYSTEM),
 ]
+
+# --- SpaceMiT IME assembler: deployed ON TOP of EESSI, deliberately NOT a dependency ---
+# The IME backend emits `smt.vmadot`, which needs an assembler that knows the `xsmtvdot` extension.
+# That lives in the STANDALONE `binutils-2.46.1-xsmtvdot` package -- deploy it once on top of EESSI
+# (`eb binutils-2.46.1-xsmtvdot.eb`). It is NOT declared as a (build)dependency on purpose: injecting a
+# newer binutils would conflict with the toolchain's own binutils-2.44-GCCcore-14.3.0 (EasyBuild permits
+# only ONE binutils per dependency graph -- see PR #26451). Instead, put its `as` on PATH for this build
+# by setting SMT_XSMTVDOT_BIN to its bin/ dir, e.g.:
+#   export SMT_XSMTVDOT_BIN="$EASYBUILD_INSTALLPATH/software/binutils/2.46.1-xsmtvdot/bin"
+# (EESSI sites may instead use a pre_configure/pre_build hook that does the same PATH prepend.)
+local_use_xsmtvdot_as = 'export PATH="${SMT_XSMTVDOT_BIN:?set to the bin/ of the deployed binutils-2.46.1-xsmtvdot}:$PATH" && '
+preconfigopts = local_use_xsmtvdot_as
+prebuildopts = local_use_xsmtvdot_as
 
 dependencies = [
     ('cURL', '8.14.1'),
@@ -43,7 +45,7 @@ dependencies = [
 # SpaceMiT X60 (K1): RVV (rv64gcv + Zfh/Zvfh) + IME1 int8 matrix extension.
 #
 # The patch makes the IME1 backend build against a binutils carrying the SpaceMiT `xsmtvdot`
-# patch (see the builddependency note above -- NO stock GNU binutils has it) + GCC 14.3:
+# patch (see the assembler note above -- NO stock GNU binutils has it) + GCC 14.3:
 #   (a) renames ggml's SpaceMiT-vendor mnemonic `vmadot` -> upstream `smt.vmadot`
 #       (identical encoding 0xe210312b; verified),
 #   (b) injects `.option arch,+xsmtvdot` into the IME1 inline asm so a plain -march works
