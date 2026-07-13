@@ -23,14 +23,17 @@ checksums = [
 
 builddependencies = [
     ('CMake', '3.31.8'),
-    # Newer assembler ONLY. binutils 2.46 adds the RISC-V `xsmtvdot` vendor extension
-    # (the `smt.vmadot*` opcodes) that the SpaceMiT IME backend emits as inline asm.
-    # GCCcore-14.3.0 is NOT rebuilt: GCC invokes `as` from PATH, and the binutils module
-    # prepends its bin/ so the 2.46.1 assembler wins. binutils-2.46.1.eb already exists
-    # upstream (standalone, SYSTEM toolchain). See the accompanying patch for why GCC 14.3
-    # suffices (the patch injects `.option arch,+xsmtvdot`, so no GCC>=15 / `-march` support
-    # is required).
-    ('binutils', '2.46.1', '', SYSTEM),
+    # Assembler with the SpaceMiT `xsmtvdot` extension (the `smt.vmadot*` opcodes the IME
+    # backend emits as inline asm). GCCcore-14.3.0 is NOT rebuilt: GCC invokes `as` from PATH
+    # and the binutils module prepends its bin/, so this `as` wins. The ggml patch injects
+    # `.option arch,+xsmtvdot`, so GCC 14.3 suffices (no GCC>=15 / `-march` support needed).
+    #
+    # NB (verified Jul 2026): STOCK binutils 2.46.1 does NOT contain xsmtvdot -- it is only an
+    # unmerged sourceware mailing-list patch (the support is merged in LLVM, and carried in
+    # SpaceMiT's downstream binutils). So this depends on a binutils built WITH the SpaceMiT
+    # xsmtvdot patch (a `binutils-2.46.1-xsmtvdot.eb` to be added alongside), NOT the stock
+    # binutils-2.46.1.eb. Until that patched binutils exists this easyconfig is BLOCKED (PR #26451).
+    ('binutils', '2.46.1', '-xsmtvdot', SYSTEM),
 ]
 
 dependencies = [
@@ -39,13 +42,14 @@ dependencies = [
 
 # SpaceMiT X60 (K1): RVV (rv64gcv + Zfh/Zvfh) + IME1 int8 matrix extension.
 #
-# The patch makes the IME1 backend build against UPSTREAM binutils 2.46 + GCC 14.3:
+# The patch makes the IME1 backend build against a binutils carrying the SpaceMiT `xsmtvdot`
+# patch (see the builddependency note above -- NO stock GNU binutils has it) + GCC 14.3:
 #   (a) renames ggml's SpaceMiT-vendor mnemonic `vmadot` -> upstream `smt.vmadot`
 #       (identical encoding 0xe210312b; verified),
 #   (b) injects `.option arch,+xsmtvdot` into the IME1 inline asm so a plain -march works
 #       (drops the GCC>=15-only `_xsmtvdotii` requirement),
-#   (c) compiles ime2_kernels.cpp only when IME2 is detected -- upstream binutils 2.46 is
-#       IME1-only (`xsmtvdot` v1.0), and the X60 is IME1-only at runtime (use_ime2=0) anyway.
+#   (c) compiles ime2_kernels.cpp only when IME2 is detected -- the `xsmtvdot` spec is
+#       IME1-only (v1.0), and the X60 is IME1-only at runtime (use_ime2=0) anyway.
 #
 # Perf note (measured, Qwen2.5-0.5B Q4_0): IME gives ~1.56x prompt-processing at t=4, but
 # plain RVV at `-t 8` beats IME on BOTH pp512 and tg128 (IME is cluster-0-only and regresses
