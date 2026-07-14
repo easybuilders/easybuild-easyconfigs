@@ -1,0 +1,95 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+# This build does not rely on anything WarpX needs to download with
+# the expception of Picsar, which requires an internal build
+
+easyblock = 'CMakeMake'
+
+name = 'WarpX'
+version = '26.06'
+
+homepage = 'https://github.com/ECP-WarpX/WarpX'
+description = """WarpX is an advanced electromagnetic & electrostatic Particle-In-Cell code.
+It supports many features including Perfectly-Matched Layers (PML), mesh refinement, and the
+boosted-frame technique."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/ECP-WarpX/WarpX/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['260869743fa5995fcdce964ebb3996efe5fd4126da753c6bdc645e2f9722364e']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('ccache', '4.11.3'),
+    ('git', '2.50.1'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('matplotlib', '3.10.5'),
+    ('HDF5', '1.14.6'),
+    ('pybind11', '3.0.0'),
+    ('Boost', '1.88.0'),
+    ('yt', '4.4.1'),
+    ('AMReX', '26.06'),
+    ('pyamrex', '26.06'),
+    ('conduit', '0.9.5'),
+    ('Ascent', '0.9.5'),
+    ('ADIOS2', '2.10.2'),
+    ('nlohmann_json', '3.12.0'),
+    ('dask', '2025.9.1'),
+    ('Catch2', '3.11.0'),
+    ('conduit', '0.9.5'),
+    ('openPMD-api', '0.17.1'),
+    ('toml11', '4.4.0'),
+    ('LAPACK++', '2025.05.28'),
+    ('openPMD-api', '0.17.1'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+exts_list = [
+    ('openpmd-viewer', '1.11.0', {
+        'checksums': ['875fa81acf96cef12410b38793d39c1e0270ce63a94295f40a65bc83d8bbb427'],
+    }),
+    # Version 2.x is only available as whl file:
+    ('periodictable', '2.1.0', {
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['e9155d2bf5ac10050abeff2f99096d4f04312c0c8a6bb432e28744367c5064b3'],
+    }),
+    ('picmistandard', '0.34.0', {
+        'checksums': ['28db66c652c7ce7bedf79ecf7e764a02fa5e51ac05a2fb1cf9433354ac056ec1'],
+    }),
+]
+
+configopts = '-DWarpX_PYTHON=ON -DWarpX_COMPUTE=OMP '
+configopts += '-DWarpX_DIMS="1;2;3;RZ" '
+configopts += '-DPYBIND11_INSTALL=OFF -DWarpX_LIB=ON -DWarpX_QED_TABLE_GEN=ON '
+configopts += '-DWarpX_FFT=ON -DWarpX_SIMD=OFF -DWarpX_PYTHON=ON -DWarpX_amrex_internal=OFF '
+configopts += '-DWarpX_OPENPMD=ON -DWarpX_openpmd_internal=OFF -DWarpX_PETSC=ON '
+configopts += '-DWarpX_ASCENT=ON -DWarpX_CATALYST=ON -DWarpX_pybind11_internal=OFF '
+configopts += '-DWarpX_pyamrex_internal=OFF '
+# Right now, we need to do an internal build here!
+configopts += '-DWarpX_picsar_internal=ON '
+
+postinstallcmds = [
+    "mv %(builddir)s/easybuild_obj/lib/site-packages/pywarpx %(installdir)s/lib/python%(pyshortver)s/site-packages ",
+    "mv %(start_dir)s/Examples/*.py %(installdir)s/lib/python%(pyshortver)s/site-packages ",
+    "mv %(start_dir)s/Examples %(installdir)s/ ",
+    "mv %(start_dir)s/Regression/Checksum  %(installdir)s/lib/python%(pyshortver)s/site-packages/checksumAPI ",
+    'for i in $(grep -R sys.path.insert %(installdir)s/ExampleS | grep -v Examples| cut -d ":" -f 1); '
+    ' do sed -i "/Checksum/d" $i; done',
+]
+
+sanity_check_paths = {
+    'files': ['bin/warpx.rz.MPI.OMP.DP.PDP.ASCENT.CATALYST.OPMD.FFT.EB.QED.GENQEDTABLES',
+              'lib/libwarpx.3d.a', 'lib/libwarpx.2d.a', 'lib/libwarpx.1d.a', 'lib/libwarpx.rz.a'],
+    'dirs': ['Examples'],
+}
+
+moduleclass = 'phys'
