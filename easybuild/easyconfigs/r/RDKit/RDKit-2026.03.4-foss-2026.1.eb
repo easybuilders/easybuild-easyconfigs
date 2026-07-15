@@ -1,7 +1,7 @@
 easyblock = 'CMakeMake'
 
 name = 'RDKit'
-version = '2026.03.3'
+version = '2026.03.4'
 _version = version.replace('.', '_')
 
 homepage = 'https://www.rdkit.org'
@@ -15,6 +15,7 @@ _ext_freesasa = f'{_src_dir}/External/FreeSASA'
 _ext_rdl = f'{_src_dir}/External/RingFamilies'
 _ext_pubchem = f'{_src_dir}/External/pubchem_shape'
 _ext_chemdraw = f'{_src_dir}/External/ChemDraw'
+_chemdraw_version = '1.0.14'
 
 source_urls = ['https://github.com/rdkit/rdkit/archive/']
 sources = [
@@ -57,30 +58,29 @@ sources = [
         ),
     },
     {
-        'source_urls': ['https://github.com/Glysade/chemdraw/archive/refs/tags/'],
-        'download_filename': 'v1.0.12.tar.gz',
-        'filename': 'chemdraw-1.0.12.tar.gz',
+        'source_urls': ['https://github.com/Glysade/chemdraw/archive/'],
+        'download_filename': f'v{_chemdraw_version}.tar.gz',
+        'filename': f'chemdraw-{_chemdraw_version}.tar.gz',
         'extract_cmd': (
             f'rm -rf {_ext_chemdraw}/chemdraw && mkdir -p {_ext_chemdraw}/chemdraw && '
             f'tar -C {_ext_chemdraw}/chemdraw --strip-components=1 -xzf %s'
         ),
     },
 ]
-
 checksums = [
-    {'Release_2026_03_3.tar.gz': '21e22e5e6b3a313527256fbde41c757f22d834b19caf2908e3c2dd11061e1fea'},
+    {'Release_2026_03_4.tar.gz': 'a8bff65bdf13dd47a01f707f7759dd59124a8742f8c50952c2ceae9523b4fd2b'},
     {'INCHI-1-SRC.zip': 'b42d828b5d645bd60bc43df7e0516215808d92e5a46c28e12b1f4f75dfaae333'},
     {'freesasa-2.0.3.tar.gz': 'ba1d4f7e9dd51ae2452b5c3a80ac34039d51da4826dae1dbe173cd7a1d6aca94'},
     {'RingDecomposerLib-1.1.3_rdkit.tar.gz': '944b5816712a48bbf88aa25d4300ce11871ddf6e971218eac08f90ed2192f715'},
     {'pubchem-align3d-daefab3.tar.gz': '4871a08104c660890015f27d32a0147fc32df69a8962ca5cd1fe54ef6319c779'},
-    {'chemdraw-1.0.12.tar.gz': 'c2fed7000b592f279773c5a35b0d08dfe93709fa352ab28c90b520dffb974c2b'},
+    {'chemdraw-1.0.14.tar.gz': 'bedd75643b9bfaee1663fc41814370ac9329c8d0934e970179929cb355a82aff'},
 ]
 
 _boost_version = '1.90.0'
 
 builddependencies = [
     ('CMake', '4.2.1'),
-    ('Eigen', '3.4.0'),
+    ('Eigen', '3.4.1'),
     ('pkgconf', '2.5.1'),
     ('Catch2', '3.14.0'),
     ('UnZip', '6.0'),
@@ -112,6 +112,11 @@ _config_opts = [
     '-DEIGEN3_INCLUDE_DIR="$EBROOTEIGEN/include"',
     # Avoid downloading/installing bundled ComicNeue fonts; MolDraw2D works with the EB font stack
     '-DRDK_INSTALL_COMIC_FONTS=OFF',
+    # Avoid CMake/RDKit's default -O3 Release flags; EB already provides -O2.
+    # This prevents numerical drift in tolerance-sensitive coordinate-regression tests such as
+    # distGeomHelpersCatch, testGaussianShape, testDistGeomHelpers.
+    '-DCMAKE_C_FLAGS_RELEASE="-DNDEBUG"',
+    '-DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG"',
 ]
 configopts = ' '.join(_config_opts)
 
@@ -127,10 +132,9 @@ runtest = True
 
 testopts = (
     "-j %(parallel)s -E "
-    "'pythonSourceTests|distGeomHelpersCatch|"  # skip tests with known issues
-    "testGaussianShape|"  # shows platform-sensitive numerical differences in the "Fragment Mode" Catch2 test
-    "testCIPLabeler|"  # can fail intermittently with interrupted CIP label calculation
+    "'pythonSourceTests|"  # skip test with known issues
     "moldraw2DTestCatch'"  # strict MolDraw2D SVG/PNG rendering-regression checks that are sensitive to font/rendering
+    " || ctest --rerun-failed --output-on-failure -j 1"  # rerun failed tests serially to catch flaky failures
 )
 
 # generate minimal dist-info:
