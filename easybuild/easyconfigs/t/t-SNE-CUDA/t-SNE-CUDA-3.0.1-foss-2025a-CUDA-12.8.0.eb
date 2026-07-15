@@ -1,0 +1,63 @@
+easyblock = 'CMakePythonPackage'
+
+name = 't-SNE-CUDA'
+version = '3.0.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/CannyLab/tsne-cuda'
+description = "GPU Accelerated t-SNE for CUDA with Python bindings"
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+source_urls = ['https://github.com/CannyLab/tsne-cuda/archive']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-3.0.1_use-external-cxxopts.patch',
+    '%(name)s-3.0.1_avoid-overriding-cuda-compute-capabilities.patch',
+]
+checksums = [
+    {'3.0.1.tar.gz': '0f778247191f483df22dc4dbed792c9a6a9152ee7404329c4d9da3fd9a8774d6'},
+    {'t-SNE-CUDA-3.0.1_use-external-cxxopts.patch': 'be278f6a122ac12b02e05faffd53f3bce3e58b1d6b40af5e6af6b4182c6a25f1'},
+    {'t-SNE-CUDA-3.0.1_avoid-overriding-cuda-compute-capabilities.patch':
+     '09a1ac23c8ca485478fdfccacfe7b04a5608530f3da33892f64c76064a834722'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('googletest', '1.17.0'),
+    ('cxxopts', '3.0.0', '', SYSTEM),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Faiss', '1.14.3', '-CUDA-12.8.0'),
+    ('gflags', '2.2.2'),
+]
+
+_copts = [
+    '-DBUILD_PYTHON=ON',
+    '-DWITH_ZMQ=FALSE',
+    '-DWITH_MKL=OFF',
+    '-DCMAKE_CXX_STANDARD=17',
+    '-DCMAKE_CUDA_STANDARD=17',
+    '-DCMAKE_CUDA_ARCHITECTURES="%(cuda_cc_cmake)s"',
+]
+
+preconfigopts = "sed -i 's/-std=c++14/-std=c++17/g' %(start_dir)s/CMakeLists.txt && "
+
+
+configopts = ' '.join(_copts)
+
+install_cmd = ('cd %(builddir)s/easybuild_obj/python &&'
+               ' ${EBROOTPYTHON}/bin/python -m pip install --prefix=%(installdir)s --no-build-isolation .')
+
+options = {'modulename': 'tsnecuda'}
+
+sanity_check_paths = {
+    'files': ['lib/python%%(pyshortver)s/site-packages/tsnecuda/libtsnecuda.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'tools'
+
