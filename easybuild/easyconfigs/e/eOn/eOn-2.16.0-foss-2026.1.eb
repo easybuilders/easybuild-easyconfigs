@@ -1,20 +1,11 @@
-# eOn full default product (metatomic + xTB + Cap'n Proto serve + rgpot).
-# Feature surface matches conda-forge eon-feedstock.
-
 easyblock = 'MesonNinja'
 
 name = 'eOn'
 version = '2.16.0'
 
 homepage = 'https://theochemuieon.readthedocs.io/'
-description = """
-eOn long-timescale atomistic simulation: adaptive kinetic Monte Carlo (AKMC),
-nudged elastic band (NEB), and saddle-point search (min-mode, dimer).
-
-This is the full default product: C++/Fortran eonclient with metatomic, xTB,
-Cap'n Proto serve, and rgpot, plus the Python AKMC package (import eon). Feature
-surface matches the conda-forge eon feedstock for HPC module stacks.
-"""
+description = """eOn contains algorithms used to model the evolution of
+atomic-scale systems over long time scales."""
 
 toolchain = {'name': 'foss', 'version': '2026.1'}
 toolchainopts = {'pic': True, 'openmp': True}
@@ -77,19 +68,17 @@ dependencies = [
     ('Highway', '1.4.0'),
     ('inih', '62'),
     ('quill', '11.1.0', '', ('GCCcore', '15.2.0')),
-    # no gfbf-2026.1 recipe on develop yet
     ('xtb', '6.7.1', '', ('gfbf', '2024a')),
     ('CapnProto', '1.4.0'),
-    # no foss-2026.1 PyTorch on develop; foss-2024a uses Python 3.12
+    # PyTorch 2.9.1 uses Python 3.12.
     ('PyTorch', '2.9.1', '', ('foss', '2024a')),
     ('metatensor', '0.2.2', '', ('GCCcore', '15.2.0')),
     ('metatensor-torch', '0.10.0'),
     ('metatomic-torch', '0.1.15'),
 ]
 
-# Subshell: cargo cinstall must not leave CWD in the source tree for Meson.
-# Prefer builddep Rust on PATH (edition2024). PyTorch paths use python3.12
-# (foss-2024a layout); do not use %(pyshortver)s for EBROOTPYTORCH.
+# Stage readcon-core before Meson configures eOn. The subshell restores the
+# source directory, and the PyTorch paths use its Python 3.12 layout.
 preconfigopts = 'export PATH=$EBROOTRUST/bin:$PATH && unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS RUSTC_WRAPPER CARGO_BUILD_RUSTC_WRAPPER && mkdir -p %(builddir)s/readcon-stage && ( cd %(builddir)s/eOn-%(version)s/subprojects/readcon-core && cargo --version && rustc --version && cargo cinstall --locked --release --prefix %(builddir)s/readcon-stage --libdir lib --includedir include --pkgconfigdir lib/pkgconfig && cd %(builddir)s/eOn-%(version)s && rm -f subprojects/xtb.wrap subprojects/vesin.wrap subprojects/rgpot.wrap subprojects/readcon-core.wrap && rm -rf subprojects/readcon-core ) && '
 preconfigopts += 'export PKG_CONFIG_PATH=%(builddir)s/readcon-stage/lib/pkgconfig:$EBROOTXTB/lib/pkgconfig:$EBROOTCAPNPROTO/lib/pkgconfig:$EBROOTQUILL/lib/pkgconfig:$EBROOTMETATENSOR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH} && '
 preconfigopts += 'export LIBRARY_PATH=%(builddir)s/readcon-stage/lib${LIBRARY_PATH:+:$LIBRARY_PATH} && '
@@ -103,8 +92,7 @@ configopts = "-Dbuildtype=release -Dwith_tests=false -Dwith_fortran=true -Dwith_
 postinstallcmds = [
     'mkdir -p %(installdir)s/lib %(installdir)s/include %(installdir)s/lib/pkgconfig',
     'cp -a %(builddir)s/readcon-stage/lib/libreadcon_core* %(installdir)s/lib/',
-    # cargo-built cdylib bypasses the RPATH compiler wrappers; give it a real
-    # RPATH so rpath-mode sanity checks pass.
+    # cargo-c does not use the EasyBuild RPATH compiler wrappers.
     "patchelf --force-rpath --set-rpath '$ORIGIN' %(installdir)s/lib/libreadcon_core.so.0.13.1",
     'cp -a %(builddir)s/readcon-stage/include/readcon-core.h %(installdir)s/include/',
     "sed 's|^prefix=.*|prefix=%(installdir)s|' %(builddir)s/readcon-stage/lib/pkgconfig/readcon-core.pc > %(installdir)s/lib/pkgconfig/readcon-core.pc",
