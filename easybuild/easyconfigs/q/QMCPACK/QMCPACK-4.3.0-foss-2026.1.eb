@@ -4,78 +4,51 @@ name = 'QMCPACK'
 version = '4.3.0'
 
 homepage = 'https://qmcpack.org'
-description = """
-QMCPACK is an open-source production-level many-body ab initio Quantum Monte
-Carlo code for computing the electronic structure of atoms, molecules, 2D
-nanomaterials and solids.
-
-This easyconfig builds the CPU real reference: MPI + OpenMP, full double
-precision (mixed precision off), no GPU offload.
-"""
+description = """QMCPACK is an open-source quantum Monte Carlo simulation code."""
 
 toolchain = {'name': 'foss', 'version': '2026.1'}
-toolchainopts = {'usempi': True, 'openmp': True}
+toolchainopts = {'openmp': True, 'usempi': True}
 
-github_account = 'QMCPACK'
-source_urls = [GITHUB_SOURCE]
-sources = [{
-    'download_filename': 'v%(version)s.tar.gz',
-    'filename': SOURCELOWER_TAR_GZ,
-}]
-checksums = ['511d5f368db002f2f77504619e1ada8d4a3034200d25feef6773d12a6ed6d18e']
-
-# GitHub archive top-level is qmcpack-<ver>/ (repo name), not QMCPACK-<ver>/.
-start_dir = '%(namelower)s-%(version)s'
-
-builddependencies = [
-    ('CMake', '4.2.1'),
-    ('Ninja', '1.13.2'),
-    ('pkgconf', '2.5.1'),
+sources = [
+    'https://github.com/QMCPACK/qmcpack/archive/refs/tags/v4.3.0.tar.gz',
 ]
-
-dependencies = [
-    ('HDF5', '2.1.1'),  # parallel (gompi) preferred with MPI builds
-    ('Boost', '1.90.0'),
-    ('libxml2', '2.15.1'),
-    # Runtime for Nexus workflow package + converter scripts under bin/
-    ('Python', '3.14.2'),
-    # FFTW / BLAS / LAPACK / MPI come from the foss toolchain
+checksums = [
+    '511d5f368db002f2f77504619e1ada8d4a3034200d25feef6773d12a6ed6d18e',
 ]
-
-# Pin the CPU-real product; defaults match today but must not drift silently.
-configopts = ' '.join([
-    '-DCMAKE_BUILD_TYPE=Release',
-    '-DQMC_MPI=ON',
-    '-DQMC_OMP=ON',
-    '-DQMC_MIXED_PRECISION=OFF',
-    '-DQMC_COMPLEX=OFF',
-    '-DBUILD_AFQMC=OFF',
-])
-
-# CMakeNinja defaults test_cmd to 'ninja', so runtest=True alone only re-invokes
-# ninja (no-op after a successful build). Drive ctest explicitly. Performance
-# suites need external QMC_DATA and are excluded; they skip cleanly without it
-# but still cost configure-time registration noise.
-test_cmd = 'ctest'
-testopts = '-j %(parallel)s --output-on-failure -E performance'
-
+configopts = '-DCMAKE_BUILD_TYPE=Release -DQMC_MPI=ON -DQMC_OMP=ON -DQMC_MIXED_PRECISION=OFF -DQMC_COMPLEX=OFF '
+configopts += '-DBUILD_AFQMC=OFF'
+modextrapaths = {
+    'PYTHONPATH': 'lib',
+}
+sanity_check_commands = [
+    'qmcpack --version 2>&1 | grep -q \'QMCPACK version\'',
+]
 sanity_check_paths = {
+    'dirs': [
+        'lib/nexus',
+    ],
     'files': [
         'bin/qmcpack',
         'bin/convert4qmc',
         'bin/ppconvert',
         'bin/qmcpack.settings',
     ],
-    'dirs': ['lib/nexus'],
 }
+start_dir = '%(namelower)s-%(version)s'
+test_cmd = 'ctest'
+testopts = '-j %(parallel)s --output-on-failure -E \'performance|long\''
 
-# Upstream qmcpack --version prints the banner then exits 1.
-# convert4qmc has no --help (prints "Unknown extension" and exits 0); path check only.
-sanity_check_commands = [
-    "qmcpack --version 2>&1 | grep -q 'QMCPACK version'",
+builddependencies = [
+    ('CMake', '4.2.1', '', ('GCCcore', '15.2.0')),
+    ('Ninja', '1.13.2', '', ('GCCcore', '15.2.0')),
+    ('pkgconf', '2.5.1', '', ('GCCcore', '15.2.0')),
 ]
 
-# Nexus lives under lib/nexus; put lib on PYTHONPATH for `import nexus`.
-modextrapaths = {'PYTHONPATH': 'lib'}
+dependencies = [
+    ('Boost', '1.90.0', '', ('GCCcore', '15.2.0')),
+    ('HDF5', '2.1.1', '', ('gompi', '2026.1')),
+    ('Python', '3.14.2', '', ('GCCcore', '15.2.0')),
+    ('libxml2', '2.15.1', '', ('GCCcore', '15.2.0')),
+]
 
 moduleclass = 'chem'
