@@ -1,0 +1,48 @@
+easyblock = 'MesonNinja'
+
+name = 'rgpot'
+version = '2.5.0'
+
+homepage = 'https://github.com/OmniPotentRPC/rgpot'
+description = """Potential frontends with Cap'n Proto RPC (NWChem/CPMD clients;
+engines are loaded at runtime via dlopen)."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++20'}
+
+github_account = 'OmniPotentRPC'
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['20fdbf88785fd89420500b83f3724ab20919bffb56d5e0708402c61f0a2a495e']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('Meson', '1.10.2'),
+    ('Ninja', '1.13.2'),
+    ('pkgconf', '2.5.1'),
+    ('CMake', '4.2.1'),
+]
+
+dependencies = [
+    ('CapnProto', '1.4.0'),
+]
+
+configopts = '-Dpure_lib=true -Dwith_rpc_client_only=true '
+configopts += '-Dwith_tests=false -Dwith_examples=false '
+
+sanity_check_paths = {
+    'files': [
+        'lib/libnwchempot.a',
+        'lib/libcpmdpot.a',
+        'lib/libptlrpc.%s' % SHLIB_EXT,
+        'lib/pkgconfig/rgpot.pc',
+    ],
+    'dirs': ['include/rgpot', 'lib'],
+}
+
+sanity_check_commands = ["pkg-config --exists rgpot"]
+
+moduleclass = 'lib'

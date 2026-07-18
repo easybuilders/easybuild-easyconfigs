@@ -1,0 +1,55 @@
+easyblock = 'ConfigureMake'
+
+name = 'readcon-core'
+version = '0.13.1'
+
+homepage = 'https://github.com/lode-org/readcon-core'
+description = "CON file reader/writer C library (libreadcon_core)."
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+github_account = 'lode-org'
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['a261e69b87228dcc8f161eef800590b0395b4c93605b838c6216d40a1780f0bf']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('Rust', '1.94.1'),
+    ('cargo-c', '0.10.23'),
+    ('pkgconf', '2.5.1'),
+    ('patchelf', '0.18.0'),
+]
+
+skipsteps = ['configure', 'build']
+
+# Prefer LIBRARY_PATH over the Rust sysroot on the link line (same pattern as
+# librsvg-2.61.0-GCCcore-14.3.0.eb with cargo-c). Keep cargo metadata out of $HOME.
+preinstallopts = "export RUSTFLAGS=\"$(printf -- '-L %s ' $(echo $LIBRARY_PATH | tr ':' ' ')) $RUSTFLAGS\" && "
+preinstallopts += 'export CARGO_HOME=%(builddir)s/.cargohome && '
+
+install_cmd = 'cargo cinstall --locked --release --prefix %(installdir)s '
+install_cmd += '--libdir lib --includedir include --pkgconfigdir lib/pkgconfig'
+
+postinstallcmds = [
+    "patchelf --force-rpath --set-rpath '$ORIGIN' %(installdir)s/lib/libreadcon_core.so.0.13.1",
+]
+
+sanity_check_paths = {
+    'files': [
+        'include/readcon-core.h',
+        'lib/libreadcon_core.%s' % SHLIB_EXT,
+        'lib/pkgconfig/readcon-core.pc',
+    ],
+    'dirs': ['include', 'lib'],
+}
+
+sanity_check_commands = [
+    "pkg-config --exists readcon-core",
+    "pkg-config --modversion readcon-core",
+]
+
+moduleclass = 'lib'
