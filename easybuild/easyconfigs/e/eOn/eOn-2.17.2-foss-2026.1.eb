@@ -24,6 +24,7 @@ builddependencies = [
     ('pkgconf', '2.5.1'),
 ]
 
+# Pure GCCcore libs: do not hard-code dep toolchain; robot walks foss subtoolchains.
 dependencies = [
     ('Python', '3.14.2'),
     ('SciPy-bundle', '2026.05'),
@@ -31,13 +32,22 @@ dependencies = [
     ('Eigen', '5.0.0'),
     ('Highway', '1.4.0'),
     ('inih', '62'),
-    ('nlohmann_json', '3.12.0', '', ('GCCcore', '15.2.0')),
-    ('quill', '11.1.0', '', ('GCCcore', '15.2.0')),
-    ('readcon-core', '0.13.1', '', ('GCCcore', '15.2.0')),
-    ('rgpot', '2.5.1', '', ('GCCcore', '15.2.0')),
+    ('nlohmann_json', '3.12.0'),
+    ('quill', '11.1.0'),
+    ('readcon-core', '0.13.1'),
+    ('rgpot', '2.5.3'),
 ]
 
-configopts = '-Dbuildtype=release -Dwith_tests=false -Dwith_rgpot=true'
+configopts = '-Dbuildtype=release -Dwith_tests=true -Dwith_rgpot=true'
+# 30/33 unit tests pass. Exclude 3 measured failures:
+# - test_si_pot / test_jobs: pot fixture paths (energy 0 / missing CWD data dirs)
+# - test_rgpot_pot: optional nwchemc/cpmdc engines not in this product (all SKIP)
+pretestopts = (
+    "list=$(meson test -C %(builddir)s/easybuild_obj --list | "
+    "grep -vE 'test_si_pot|test_jobs|test_rgpot_pot' | xargs) && "
+)
+runtest = 'meson'
+testopts = 'test -C %(builddir)s/easybuild_obj -- $list'
 
 sanity_check_paths = {
     'files': [

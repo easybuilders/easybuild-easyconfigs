@@ -21,7 +21,6 @@ builddependencies = [
     ('Rust', '1.94.1'),
     ('cargo-c', '0.10.23'),
     ('pkgconf', '2.5.1'),
-    ('patchelf', '0.18.0'),
 ]
 
 skipsteps = ['configure', 'build']
@@ -34,9 +33,10 @@ preinstallopts += 'export CARGO_HOME=%(builddir)s/.cargohome && '
 install_cmd = 'cargo cinstall --locked --release --prefix %(installdir)s '
 install_cmd += '--libdir lib --includedir include --pkgconfigdir lib/pkgconfig'
 
-postinstallcmds = [
-    "patchelf --force-rpath --set-rpath '$ORIGIN' %(installdir)s/lib/libreadcon_core.so.0.13.1",
-]
+# cargo-c does not go through EasyBuild RPATH link wrappers. The installed
+# lib only NEEDs libgcc_s + libc (no non-system deps). Do not invent RPATH
+# with patchelf; disable the readelf RPATH presence check instead.
+check_readelf_rpath = False
 
 sanity_check_paths = {
     'files': [
