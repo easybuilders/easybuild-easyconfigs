@@ -1,25 +1,30 @@
 easyblock = 'ConfigureMake'
 
-name = 'Verrou'
-version = '2.7.0'
+name = 'Valgrind'
+version = '3.26.0'
+_verrou_version = '2.7.0'
+versionsuffix = f'-Verrou-{_verrou_version}'
 
 homepage = 'https://github.com/edf-hpc/verrou'
 description = "Verrou helps you look for floating-point round-off errors in programs."
 
 toolchain = {'name': 'GCC', 'version': '14.3.0'}
 
-source_urls = ['https://github.com/edf-hpc/verrou/releases/download/v%(version)s/']
-sources = ['valgrind-3.26.0_verrou-%(version)s.tar.gz']
-
-checksums = [
-    {'valgrind-3.26.0_verrou-2.7.0.tar.gz': 'e5e9d8b24d324515417c2c134ae76d5dd566835219d64af0fa66f652c1d66af7'},
-]
+source_urls = [f'https://github.com/edf-hpc/verrou/releases/download/v{_verrou_version}/']
+sources = [f'valgrind-{version}_verrou-{_verrou_version}.tar.gz']
+checksums = ['e5e9d8b24d324515417c2c134ae76d5dd566835219d64af0fa66f652c1d66af7']
 
 builddependencies = [('Autotools', '20250527')]
 dependencies = [('Python', '3.13.5')]
 
 preconfigopts = './autogen.sh && '
 configopts = '--enable-only64bit '
+
+runtest = True
+test_cmd = ' && '.join([
+    'make -C tests check',
+    'make -C verrou check',
+])
 
 sanity_check_paths = {
     'files': ['include/valgrind/verrou.h', 'bin/valgrind', 'bin/verrou_dd_task'],
