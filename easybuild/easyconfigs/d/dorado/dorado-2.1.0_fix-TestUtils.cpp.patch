@@ -1,0 +1,18 @@
+Replace std::filesystem::remove_all with rm -rf in test temp-dir cleanup to avoid
+segfault with PyTorch 2.9.1-loaded filesystem symbols
+Author: Pavel Tomanek (Inuits/Ugent) with help of ChatGPT5.4
+In dorado v2.1.0 the TempDir destructor moved from tests/TestUtils.h into
+tests/TestUtils.cpp.
+Author: Jarne Renders (Vrije Universiteit Brussel)
+--- tests/TestUtils.cpp.orig
++++ tests/TestUtils.cpp
+@@ -56,7 +56,8 @@
+         while (!deleted && tries < 5) {
+             try {
+                 tries++;
+-                deleted = std::filesystem::remove_all(m_path);
++                std::string cmd = "rm -rf -- \"" + m_path.string() + "\"";
++                deleted = (std::system(cmd.c_str()) == 0);
+             } catch (const std::exception& e) {
+                 spdlog::warn("{}", e.what());
+             }
