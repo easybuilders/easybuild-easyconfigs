@@ -85,29 +85,43 @@ print(f'Generating comment for {len(to_diff)} updates softwares')
 # Limit comment size for large PRs:
 if len(to_diff) > 20:  # Too much, either bad PR or some broad change. Not diffing.
     max_diffs_per_software = 0
-elif len(to_diff) > 10:
-    max_diffs_per_software = 1
 elif len(to_diff) > 5:
+    max_diffs_per_software = 1
+elif len(to_diff) > 3:
     max_diffs_per_software = 2
 else:
     max_diffs_per_software = 3
 
-comment = ''
+# First compute all the diffs
+comment_diffs = []
 if max_diffs_per_software > 0:
     for new_file, neighbours in to_diff.items():
         compare_neighbours = neighbours[:max_diffs_per_software]
         if compare_neighbours:
             print(f'Diffs for {new_file}')
-            comment += f'#### Updated software `{new_file.name}`\n\n'
+            diff_title = f'#### Updated software `{new_file.name}`\n\n'
+            diff_content = ''
+            for neighbour in compare_neighbours:
+                print(f'against {neighbour}')
+                diff_content += '<details>\n'
+                diff_content += f'<summary>Diff against <code>{neighbour.name}</code></summary>\n\n'
+                diff_content += f'[{neighbour}](https://github.com/{repo}/blob/{base_branch_name}/{neighbour})\n\n'
+                diff_content += '```diff\n'
+                diff_content += gitrepo.git.diff(f'HEAD:{neighbour}', f'HEAD:{new_file}')
+                diff_content += '\n```\n</details>\n\n'
+            comment_diffs.append((diff_title, diff_content))
 
-        for neighbour in compare_neighbours:
-            print(f'against {neighbour}')
-            comment += '<details>\n'
-            comment += f'<summary>Diff against <code>{neighbour.name}</code></summary>\n\n'
-            comment += f'[{neighbour}](https://github.com/{repo}/blob/{base_branch_name}/{neighbour})\n\n'
-            comment += '```diff\n'
-            comment += gitrepo.git.diff(f'HEAD:{neighbour}', f'HEAD:{new_file}')
-            comment += '\n```\n</details>\n\n'
+# Drop largest diff until it fit in a github comment (about 65k)
+for _ in range(10):
+    comment = ''.join(f'{a}{b}' for a, b in comment_diffs)
+    if len(comment) > 65000:
+        break
+    # Find the index of the longest diff, just drop it.
+    max_index = max(enumerate(comment_diffs), key=lambda x: len(x[1][1]))[0]
+    comment_diffs[max_index] = (comment_diffs[max_index][0], 'diff too long')
+else:
+    comment = 'problem generating diff'
+
 
 # After that, try to add additional labels based on the PR contents.
 # Add manual_label if download_instructions is present. This reads the file.
