@@ -1,0 +1,119 @@
+Update dependency metadata and APIs for the Python packages provided by the
+2023b toolchain.
+
+Author: Emik Lin (HKUMed CPOS)
+--- a/setup.py
++++ b/setup.py
+@@ -57,10 +57,10 @@ setup(
+-        'snakemake>=3.11.2,<5.7',
+-        'pyyaml>=3.12,<4',
+-        'numpy>=1.13.1,<2',
+-        'biopython>=1.69,<2',
+-        'pandas>=0.20.3,<1',
++        'snakemake>=7.32.4,<8',
++        'pyyaml>=6,<7',
++        'numpy>=1.26,<2',
++        'biopython>=1.84,<2',
++        'pandas>=2.1,<3',
+         'interlap>=0.2.5',
+-        'pysam>=0.11.1,<0.14',  # pysam seem to have some issues in 0.14, so we force something in-between here
+-        'pyfaidx>=0.4.8.4',
++        'pysam>=0.22,<0.23',
++        'pyfaidx>=0.8,<1',
+         'distance>=0.1.3',
+-        'umi_tools>=0.5.0,<1',  # umi_tools 1 changed the API used in find_umi_groups
++        'umi_tools>=1.1.5,<2',
+--- a/amplimap/common.py
++++ b/amplimap/common.py
+@@ -34,7 +34,7 @@ def find_umi_groups(umi_counts: dict, id_offset = 0) -> dict:
+         assert isinstance(next(iter(umi_counts.keys())), (bytes, bytearray))
+
+         processor = umi_tools.network.UMIClusterer('directional')
+-        umi_groups = processor(umi_counts.keys(), umi_counts, threshold=1) #TODO: this should be --edit-distance-threshold, defaults to 1 in Utilities.py
++        umi_groups = processor(umi_counts, threshold=1)
+         for umi_group_id, umi_group_members in enumerate(umi_groups):
+             for raw_umi in umi_group_members:
+                 umi_to_group[raw_umi] = id_offset + umi_group_id
+--- a/amplimap/run.py
++++ b/amplimap/run.py
+@@ -371,7 +371,7 @@ def main(argv = None):
+
+         success = snakemake.snakemake(
+             snakefile = os.path.join(basedir, "Snakefile"),
+-            configfile = configfile,
++            configfiles = [configfile],
+             cores = args.ncores,  # ignored if cluster
+             nodes = args.njobs,  # ignored if not cluster
+             workdir = args.working_directory,
+--- a/amplimap/coverage.py
++++ b/amplimap/coverage.py
+@@ -73,7 +73,7 @@ def make_coverage_plots(files, sample_info_file, output, targets, probes, type,
+         if merged is None:
+             merged = df
+         else:
+-            merged = merged.append(df, ignore_index = True)
++            merged = pd.concat([merged, df], ignore_index = True)
+
+     assert merged is not None, \
+         '\n\nABORTED: Did not find any coverage data!\n\n'
+--- a/amplimap/stats_alignment.py
++++ b/amplimap/stats_alignment.py
+@@ -93,7 +93,7 @@ def aggregate_stats(input_files, output):
+             if agg is None:
+                 agg = df
+             else:
+-                agg = agg.append(df)
++                agg = pd.concat([agg, df])
+         except pd.errors.EmptyDataError:
+             log.exception("No data found: %s", file)
+
+--- a/amplimap/simulate.py
++++ b/amplimap/simulate.py
+@@ -118,7 +118,7 @@ def merge_files(files, output):
+             if merged is None:
+                 merged = df
+             else:
+-                merged = merged.append(df, ignore_index = True)
++                merged = pd.concat([merged, df], ignore_index = True)
+         except pd.errors.EmptyDataError:
+             print('No data for', file, ', skipping.')
+
+--- a/amplimap/variants.py
++++ b/amplimap/variants.py
+@@ -234,7 +234,7 @@ def merge_variants(input_files, output):
+                 if merged is None:
+                     merged = df
+                 else:
+-                    merged = merged.append(df, ignore_index = True)
++                    merged = pd.concat([merged, df], ignore_index = True)
+             else:
+                 print ('Ignoring - empty!')
+         except pd.errors.EmptyDataError:
+@@ -280,7 +280,7 @@ def merge_variants_unannotated(input_vcfs, output_file):
+                 if merged is None:
+                     merged = df
+                 else:
+-                    merged = merged.append(df, ignore_index = True)
++                    merged = pd.concat([merged, df], ignore_index = True)
+             else:
+                 print('Ignoring - empty!')
+
+--- a/amplimap/Snakefile
++++ b/amplimap/Snakefile
+@@ -831,7 +831,7 @@ rule stats_samples_agg:
+             if merged is None:
+                 merged = df
+             else:
+-                merged = merged.append(df, ignore_index = True)
++                merged = pd.concat([merged, df], ignore_index = True)
+
+         print('Merged data shape:', str(merged.shape))
+         merged.sort_values(['sample'], inplace=True)
+@@ -877,7 +877,7 @@ rule stats_reads_agg:
+                 if merged is None:
+                     merged = df
+                 else:
+-                    merged = merged.append(df, ignore_index = True)
++                    merged = pd.concat([merged, df], ignore_index = True)
+             except pd.errors.EmptyDataError:
+                 print('No data for', file, ', skipping.')
