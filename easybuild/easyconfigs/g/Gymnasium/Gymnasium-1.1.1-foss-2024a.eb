@@ -1,0 +1,64 @@
+easyblock = 'PythonBundle'
+
+name = 'Gymnasium'
+version = '1.1.1'
+
+homepage = 'https://gymnasium.farama.org/'
+description = """
+Gymnasium is an open source Python library for developing and comparing reinforcement learning
+algorithms by providing a standard API to communicate between learning algorithms and
+environments, as well as a standard set of environments compliant with that API.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('SWIG', '4.3.0'),
+    ('nanobind', '2.5.0'),  # for ale_py
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('OpenCV', '4.11.0', '-contrib'),  # other
+    ('pygame', '2.6.1'),  # classic-control, toy-text
+    ('python-mujoco', '3.3.5'),  # mujoco
+    ('imageio', '2.36.1'),  # mujoco
+    ('jax', '0.6.2'),  # jax
+    ('Flax', '0.11.2'),  # jax
+    ('PyTorch', '2.6.0'),  # torch
+    ('matplotlib', '3.9.2'),  # other
+    ('Seaborn', '0.13.2'),  # other
+    ('MoviePy', '2.2.1'),  # other
+]
+
+exts_list = [
+    ('cloudpickle', '3.1.2', {
+        'checksums': ['7fda9eb655c9c230dab534f1983763de5835249750e85fbcef43aaa30a9a2414'],
+    }),
+    ('Farama-Notifications', '0.0.6', {
+        'source_tmpl': 'farama_notifications-%(version)s.tar.gz',
+        'modulename': 'farama_notifications',
+        'checksums': ['b19acac4bb41d76e59e03394b5dd165f4761c86fa327f56307a35cbee3b60158'],
+    }),
+    ('box2d-py', '2.3.5', {  # box2d
+        'modulename': 'Box2D',
+        'checksums': ['b37dc38844bcd7def48a97111d2b082e4f81cca3cece7460feb3eacda0da2207'],
+    }),
+    ('ale-py', '0.12.0', {  # atari
+        'preinstallopts': "sed -i '/^license = /d' pyproject.toml && ",
+        'checksums': ['6030416b6a049d399bf95420ad2fdbf0ea8f83051b502774d27b477a06000dbc'],
+    }),
+    ('gymnasium', version, {
+        # all extras minus mujoco-py (which is removed in 1.2.0)
+        'use_pip_extras': 'atari,box2d,classic-control,mujoco,toy-text,jax,torch,other',
+        'runtest': "touch tests/__init__.py && python -m pytest tests/test_core.py",
+        'checksums': ['8bd9ea9bdef32c950a444ff36afc785e1d81051ec32d30435058953c20d2456d'],
+    }),
+]
+
+local_envs = ['box2d', 'classic_control', 'mujoco', 'toy_text']
+sanity_check_commands = ["python -c 'import gymnasium.envs.%s'" % e for e in local_envs]
+
+moduleclass = 'tools'
