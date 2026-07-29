@@ -112,9 +112,9 @@ if max_diffs_per_software > 0:
             comment_diffs.append((diff_title, diff_content))
 
 # Drop largest diff until it fit in a github comment (about 65k)
-for _ in range(10):
+for _ in range(10):  # Give up after 10 drops
     comment = ''.join(f'{a}{b}' for a, b in comment_diffs)
-    if len(comment) > 65000:
+    if len(comment) <= 65000:
         break
     # Find the index of the longest diff, just drop it.
     max_index = max(enumerate(comment_diffs), key=lambda x: len(x[1][1]))[0]
