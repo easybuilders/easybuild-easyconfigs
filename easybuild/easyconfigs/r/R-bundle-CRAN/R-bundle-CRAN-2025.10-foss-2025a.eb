@@ -32,6 +32,7 @@ dependencies = [
     ('GDAL', '3.11.1'),  # for sf
     ('MPFR', '4.2.2'),  # for Rmpfr
     ('PostgreSQL', '17.5'),  # for RPostgreSQL
+    ('libiconv', '1.18'),  # for haven
 ]
 
 # Some R extensions (mclust, quantreg, waveslim for example) require the math library (-lm) to avoid undefined symbols.
@@ -610,6 +611,13 @@ exts_list = [
     }),
     ('haven', '2.5.5', {
         'checksums': ['9482cd9c3760e1838acf687235317fed97fa6bf79219d3216f0ea447d4b1c9a5'],
+        # explicitly link to libiconv by adding -liconv to PKG_LIBS,
+	# to ensure that libiconv dependency is picked up;
+        # we do this via the configure script,
+        # which is used by haven to find zlib and generates src/Makevars;
+        # fixes problems like "undefined symbol: libiconv",
+        # see for example https://github.com/tidyverse/haven/issues/299
+        'preinstallopts': r"""sed -i 's/\(echo "Using PKG_LIBS\)/PKG_LIBS="$PKG_LIBS -liconv"; \1/g' configure && """,
     }),
     ('pan', '1.9', {
         'checksums': [
