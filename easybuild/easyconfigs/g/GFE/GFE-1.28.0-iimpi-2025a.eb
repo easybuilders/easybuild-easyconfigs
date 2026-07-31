@@ -1,0 +1,91 @@
+easyblock = 'Bundle'
+
+name = 'GFE'
+version = '1.28.0'
+
+homepage = 'https://github.com/Goddard-Fortran-Ecosystem/GFE'
+description = """The Goddard Fortran Ecosystem (GFE) SDK is a single fixture bundling the
+ Goddard Fortran Ecosystem libraries used throughout the GEOS-ESM software
+ stack: gFTL (generic Fortran containers), gFTL-shared (polymorphic/shared
+ variants of the gFTL containers), fArgParse (command-line argument
+ parsing), pFUnit (serial and MPI-parallel unit testing framework), yaFyaml
+ (YAML parser) and pFlogger (Python-logging-style logging library)."""
+
+toolchain = {'name': 'iimpi', 'version': '2025a'}
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('M4', '1.4.19'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+]
+
+github_account = 'Goddard-Fortran-Ecosystem'
+
+default_easyblock = 'Tarball'
+default_component_specs = {
+    'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive/refs/tags/'],
+    'sources': ['v%(version)s.tar.gz'],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+_libs = {
+    'gFTL': ('1.17.0', '2a86047d329297c1c6147b1619d1412259a21d9c2188e229ebf6c4e73ec51546'),
+    'gFTL-shared': ('1.12.0', '38f0353c4d53d474db9d6b301223c2848ac19e5e8c83b136d4c03605ac4bd768'),
+    'fArgParse': ('1.11.0', '867854b0d312ef22ba3938f5398727973942a31d75f4e1abd3cd9d35f0159691'),
+    'pFUnit': ('4.19.0', '20500a64b1dbf55ec6110055ca4c152f719d3fb77792d4fcd49aae4b85979e9a'),
+    'yaFyaml': ('1.6.0', '4eb4834c40e70eb1d81669e4397fe09e9f08dde292feb3a889362debdbf9d339'),
+    'pFlogger': ('1.18.1', 'e88bb22bc1212bdbfade87bc16ec3ba8306540ef66cd99f201633f86043c3f89'),
+}
+_gfe_checksum = '21371c28087bcc407d94560ea23244fd350827e00974dd9fde28254031b8e54d'
+
+# Pull in GFE's submodules as Tarball without installing,
+# then symlink the build directories
+components = [
+    (_name, _version, {
+        'checksums': [_checksum],
+        'skipsteps': ['install'],
+    }) for _name, (_version, _checksum) in _libs.items()
+]
+
+components += [
+    (name, version, {
+        'checksums': [_gfe_checksum],
+        'preconfigopts': ' && '.join(
+            [f'rmdir %(builddir)s/%(name)s-%(version)s/{_name} '
+                f'&& ln -fs %(builddir)s/{_name}-{_version} %(builddir)s/%(name)s-%(version)s/{_name}'
+                for _name, (_version, _) in _libs.items()]
+        ) + ' && ',
+        'easyblock': 'CMakeMake',
+        'runtest': 'tests',
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'GFTL-1.17/cmake/GFTLConfig.cmake',
+        'GFTL_SHARED-1.12/lib/libgftl-shared-v1.a',
+        'GFTL_SHARED-1.12/lib/libgftl-shared-v2.a',
+        'FARGPARSE-1.11/lib/libfargparse.a',
+        'PFUNIT-4.19/bin/funitproc',
+        'PFUNIT-4.19/lib/libpfunit.a',
+        'YAFYAML-1.6/lib/libyafyaml.a',
+        'PFLOGGER-1.18/lib/libpflogger.a',
+    ],
+    'dirs': [
+        'GFTL-1.17/include',
+        'GFTL_SHARED-1.12/include',
+        'FARGPARSE-1.11/include',
+        'PFUNIT-4.19/include',
+        'YAFYAML-1.6/include',
+        'PFLOGGER-1.18/include',
+    ],
+}
+
+modextrapaths = {
+    'PATH': ['PFUNIT-4.19/bin'],
+}
+
+moduleclass = 'lib'
