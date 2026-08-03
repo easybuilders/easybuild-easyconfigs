@@ -204,6 +204,16 @@ exts_list = [
             {'ml-dtypes-0.4.1.tar.gz': 'fad5f2de464fd09127e49b7fd1252b9006fb43d2edc1ff112d390c324af5ca7a'},
             {'ml_dtypes-0.3.2_EigenAvx512.patch': '197b05b0b7f611749824369f026099f6a172f9e8eab6ebb6504a16573746c892'},
         ],
+        # Prepend path to header files provided by Eigen build dependency to $CPLUS_INCLUDE_PATH,
+        # which is required to fix compiler errors like:
+        #   error: 'get_integer_by_size' in namespace 'Eigen::numext' does not name a template type
+        #
+        # This works because it effectively demotes the '-I $EBROOTEIGEN/include' compiler option
+        # as if it were using the -isystem option instead, which results in the third_party/eigen path getting
+        # (which is also specified via -I) to get preferenceas it should.
+        # This is necessary because since the Eigen vendored in the ml-dtypes source tarball is newer than
+        # the Eigen version we provide here as build dependency
+        'preinstallopts': "export CPLUS_INCLUDE_PATH=$EBROOTEIGEN/include:$CPLUS_INCLUDE_PATH && ",
     }),
     ('tqdm', '4.67.1', {
         'checksums': ['f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2'],
