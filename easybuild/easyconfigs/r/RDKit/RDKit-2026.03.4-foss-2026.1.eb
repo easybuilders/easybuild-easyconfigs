@@ -125,14 +125,19 @@ buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./'
 # Specify path for libraries so that they are found during the tests when the module is built with --rpath flag
 pretestopts = 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY_PATH} && '
 pretestopts += 'export RDBASE=$PWD && '
-pretestopts += 'export PYTHONPATH=$PWD:$PYTHONPATH &&'
+pretestopts += 'export PYTHONPATH=$PWD:$PYTHONPATH && '
+# Relax tolerance in RDKit DistGeomHelpers test
+# https://github.com/rdkit/rdkit/issues/9406
+pretestopts += (
+    r"sed -i 's/CHECK((pt1i - pt2i).length() < 0.05);/CHECK((pt1i - pt2i).length() < 0.1);/' "
+    "Code/GraphMol/DistGeomHelpers/testDgeomHelpers.cpp && "
+)
 
 runtest = True
 
 testopts = (
     "-j %(parallel)s -E "
     "'pythonSourceTests|"  # skip test with known issues
-    "testDistGeomHelpers|"  # platform-sensitive ETKDG/distance-geometry regression checks
     "moldraw2DTestCatch'"  # strict MolDraw2D SVG/PNG rendering-regression checks that are sensitive to font/rendering
     " || ctest --rerun-failed --output-on-failure -j 1"  # rerun failed tests serially to catch flaky failures
 )
