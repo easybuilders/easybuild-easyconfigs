@@ -1,0 +1,80 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'Bundle'
+
+name = 'FusionInspector'
+version = '2.11.4'
+
+homepage = 'https://github.com/FusionInspector/FusionInspector'
+description = """FusionInspector assists in fusion transcript discovery by performing a supervised analysis
+ of fusion predictions, attempting to recover and re-score evidence for such predictions."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+dependencies = [
+    ('Perl', '5.38.2'),
+    ('Perl-bundle-CPAN', '5.38.2'),
+    ('DB_File', '1.859'),
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('Pysam', '0.22.1'),
+    ('igv-reports', '1.8.0'),
+    ('STAR', '2.7.11b'),
+    ('SAMtools', '1.21'),
+    ('HTSlib', '1.21'),
+    ('R', '4.4.2'),
+    ('R-bundle-CRAN', '2024.11'),
+    ('Trinity', '2.15.2', '-Java-17'),
+    ('GMAP-GSNAP', '2024-09-18'),
+    ('minimap2', '2.29'),
+]
+
+default_easyblock = 'Tarball'
+default_component_specs = {
+    'source_urls': ['https://github.com/FusionInspector/FusionInspector/releases/download/%(name)s-v%(version)s'],
+    'sources': ['%(name)s-v%(version)s.FULL.tar.gz'],
+    'checksums': ['cc3e05a0c95d55353d45e8fc789acb6f9866622dc875007d870227fcb3adec40'],
+}
+
+components = [
+    (name, version, {
+        'start_dir': '%(name)s-v%(version)s',
+    }),
+]
+
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+exts_list = [
+    ('Carp::Assert', '0.22', {
+        'source_tmpl': 'Carp-Assert-0.22.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/Y/YV/YVES/'],
+        'checksums': ['807ea97c6bed76ac2e4969efba7dae48fefeb9f28797f112671b3ac8a49355f7'],
+    }),
+    ('PerlIO::gzip', '0.20', {
+        'source_tmpl': 'PerlIO-gzip-0.20.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/N/NW/NWCLARK/'],
+        'checksums': ['4848679a3f201e3f3b0c5f6f9526e602af52923ffa471a2a3657db786bd3bdc5'],
+    }),
+]
+
+postinstallcmds = ['cd %(installdir)s && make']
+
+sanity_check_paths = {
+    'files': [
+        'FusionInspector',
+        'LICENSE.txt',
+        'util/misc/data/ranger.rg_obj.rds',
+    ],
+    'dirs': ['PerlLib', 'PyLib', 'util'],
+}
+
+sanity_check_commands = [
+    '%(name)s --version',
+]
+
+modextrapaths = {
+    'PATH': [''],
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/',
+}
+
+moduleclass = 'bio'
