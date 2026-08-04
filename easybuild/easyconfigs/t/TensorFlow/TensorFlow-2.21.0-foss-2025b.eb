@@ -119,10 +119,25 @@ exts_list = [
             '-//tensorflow/core/kernels/mkl:mkl_fused_batch_norm_op_test',
             '-//tensorflow/core/ir/importexport/tests/roundtrip/...',
         ],
-        'testopts': "--test_env=HOME=/tmp --test_timeout=3600 --test_size_filters=small ",
+        'buildopts': '--action_env=CPATH= --host_action_env=CPATH=',
+        'testopts': (
+            '--action_env=CPATH= --host_action_env=CPATH= '
+            '--test_env=HOME=/tmp --test_timeout=3600 --test_size_filters=small '
+        ),
         'testopts_gpu': (
+            '--action_env=CPATH= --host_action_env=CPATH= '
             '--test_env=HOME=/tmp --test_timeout=3600 --test_size_filters=small '
             '--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute '
+        ),
+        # EasyBuild 5.3.0's TF_SYSTEM_LIBS mapping is incompatible with TensorFlow 2.21. The invalid
+        # entries are removed, as is absl_py (no usable system repository). Compiled C/C++ libraries
+        # must use their vendored repositories because TF 2.21's hermetic Clang rejects headers found
+        # only through EasyBuild's absolute CPATH entries as undeclared inclusions. CPATH is cleared for
+        # Bazel actions above so installed headers cannot shadow the matching vendored repository headers.
+        'prebuildopts': (
+            "sed -i 's/absl_py,//; s/boringssl,//; s/,curl//; s/,double_conversion//; s/,flatbuffers//; "
+            "s/,gif//; s/,hwloc//; s/,icu//; s/,jsoncpp_git//; s/,libjpeg_turbo//; s/,nsync//; "
+            "s/,org_sqlite//; s/,png//; s/,pybind11//; s/,snappy//; s/,zlib//' .tf_configure.bazelrc && "
         ),
         'with_xla': True,
         'checksums': [
@@ -132,7 +147,7 @@ exts_list = [
             {'TensorFlow-2.15.1_fix-flatbuffer-license.patch':
              '2c04d5095977a628a238dbf93c5fada7159c86752a7183e64e0cf7c7ab00caf4'},
             {'TensorFlow-2.21.0_fix-pybind11-build.patch':
-             '35c62874a12642967fdc7bf0a2d2ede426468bb1e2b8fd457766a40613af4762'},
+             'e56fac5452372b4e85a2c65e58e008e4d1aa2dce47e3c8f100cf138c31053bc1'},
             {'TensorFlow-2.4.0_dont-use-var-lock.patch':
              'b14f2493fd2edf79abd1c4f2dde6c98a3e7d5cb9c25ab9386df874d5f072d6b5'},
             {'TensorFlow-2.21.0_disable-tf32-in-fused-matmul-tests.patch':
