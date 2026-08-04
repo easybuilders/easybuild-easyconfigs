@@ -1,0 +1,79 @@
+easyblock = 'Bundle'
+
+name = 'PoPoolation2'
+version = '1201'
+
+homepage = 'https://sourceforge.net/projects/popoolation2/'
+description = """PoPoolation2 allows comparison of allele frequencies between populations and
+identification of significant differences using pooled next-generation sequencing data."""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+dependencies = [
+    ('Perl', '5.38.2'),
+    ('R', '4.4.2'),
+    ('Java', '17', '', SYSTEM),
+]
+
+exts_list = [
+    ('Text::NSP', '1.31', {
+        'easyblock': 'PerlModule',
+        'source_tmpl': 'Text-NSP-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/T/TP/TPEDERSE/'],
+        'checksums': ['a01201beb29636b3e41ecda2a6cf6522fd265416bd6d994fad02f59fb49cf595'],
+    }),
+    (name, version, {
+        'easyblock': 'Tarball',
+        'install_type': 'merge',
+        'source_tmpl': 'popoolation2_%(version)s.zip',
+        'source_urls': ['https://downloads.sourceforge.net/project/popoolation2/'],
+        'checksums': ['7f45353a211ec88d36fd1beed1d128673f3ff911b731211eb5a39f8602bddd42'],
+    }),
+]
+
+# Flatten the PoPoolation2 archive contents into the installation directory
+# and remove the redundant extracted source/build directories.
+postinstallcmds = [
+    'cp -a %(installdir)s/popoolation2_%(version)s/. %(installdir)s/',
+    'rm -rf %(installdir)s/popoolation2_%(version)s %(installdir)s/TextNSP',
+]
+
+postinstallpatches = ['PoPoolation2-1201_fix-fisher-test-window-summary-method.patch']
+checksums = ['a263af200a9f4504a3a299691c9f029707c1f538d7e2f59a3f9d45cf22c27114']
+
+local_perl_libdir = 'lib/perl5/site_perl/%(perlver)s'
+
+sanity_check_paths = {
+    'files': [
+        'cmh-test.pl',
+        'create-genewise-sync.pl',
+        'fisher-test.pl',
+        'fst-sliding.pl',
+        'mpileup2sync.jar',
+        'mpileup2sync.pl',
+        'snp-frequency-diff.pl',
+        'subsample-synchronized.pl',
+        'synchronize-pileup.pl',
+    ],
+    'dirs': ['Modules', 'export', 'indel_filtering'],
+}
+
+sanity_check_commands = [
+    'perl -MText::NSP::Measures::2D::Fisher::twotailed -e 1',
+    'perl %(installdir)s/mpileup2sync.pl --test',
+    'perl %(installdir)s/fisher-test.pl --test',
+    'perl %(installdir)s/fst-sliding.pl --test',
+    'perl %(installdir)s/cmh-test.pl --test',
+]
+
+modextrapaths = {'PERL5LIB': local_perl_libdir}
+
+modloadmsg = """
+PoPoolation2 scripts are installed in $EBROOTPOPOOLATION2 and can be run with Perl, for example:
+    perl $EBROOTPOPOOLATION2/fst-sliding.pl --help
+
+The multithreaded Java implementation of mpileup2sync can be run with:
+    java -jar $EBROOTPOPOOLATION2/mpileup2sync.jar --help
+"""
+
+moduleclass = 'bio'
