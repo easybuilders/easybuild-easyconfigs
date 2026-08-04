@@ -1,7 +1,9 @@
 # Author: OpenAI Codex
 # Avoid in-place zip deletion for Bazel's Netty tcnative jar. On some systems
 # Info-ZIP exits with "Interrupted (aborting)" while deleting from this jar, so
-# rebuild the filtered jar from extracted contents instead.
+# rebuild the filtered jar from extracted contents with the JDK's jar tool
+# instead. Avoid Info-ZIP entirely, since it can also be interrupted while
+# creating the replacement archive on lock-sensitive filesystems.
 diff --git a/third_party/BUILD b/third_party/BUILD
 index 1f35568..c8f1b35 100644
 --- a/third_party/BUILD
@@ -48,7 +50,7 @@ index 1f35568..c8f1b35 100644
 +          "unzip -q $< -d $$NETTY_JAR_TMPDIR && " +
 +          "find $$NETTY_JAR_TMPDIR -path '*/license/*' -delete && " +
 +          UNNECESSARY_DYNAMIC_LIBRARIES +
-+          "(cd $$NETTY_JAR_TMPDIR && find . -type f | LC_ALL=C sort | zip -qDX0r@ $$OUTPUT)",
++          "jar --create --no-manifest --file $$OUTPUT -C $$NETTY_JAR_TMPDIR .",
  )
  
  distrib_java_import(
