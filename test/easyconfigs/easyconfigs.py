@@ -1334,7 +1334,7 @@ class EasyConfigTest(TestCase):
                             idx_match = idx
                             break
                     if idx_match:
-                        del checksums[idx]
+                        del checksums[idx_match]
                     else:
                         self.fail(f"No checksum found for {patch_ctypes_ld_library_path} in {ec_fn}")
 
@@ -1463,6 +1463,70 @@ class EasyConfigTest(TestCase):
                 if any(dep['name'] == 'Rust' or '-Rust-' in dep['versionsuffix'] for dep in ec.dependencies()):
                     failing_checks.append('Use Cargo%s instead of %s when Rust is used in %s'
                                           % (easyblock, easyblock, ec_fn))
+
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_pythonbundle_exts_list(self):
+        """Check exts_list of PythonBundle/CargoPythonBundle easyconfigs."""
+
+        # Python packages that are known to be build dependencies only;
+        # these should not be in exts_list, but in a separate easyconfig (builddependencies)
+        build_only_deps = {
+            'meson-python', 'hatchling', 'flit-core',
+            'scikit-build-core', 'setuptools-scm', 'wheel', 'pyproject-metadata',
+            'setuptools', 'packaging', 'Cython', 'tomli', 'ninja',
+        }
+
+        # The following easyconfigs may have specific build dependencies in their exts_list,
+        # as they are strongly related
+        build_deps_exceptions = {
+            'setuptools': ('packaging', 'setuptools-scm'),
+        }
+
+        def normalize_name(name: str) -> str:
+            """Normalize a package name to allow for easier comparison."""
+            result = name.lower().replace('_', '-')
+            if result.endswith('-python'):
+                result = result[:-7]
+            return result
+
+        failing_checks = []
+        for ec in self.changed_ecs:
+            ec = ec['ec']
+            # Check PythonBundle and related easyblocks like CargoPythonBundle
+            easyblock = ec.get('easyblock')
+            if not easyblock or 'PythonBundle' not in easyblock:
+                continue
+
+            ec_fn = os.path.basename(ec.path)
+            exts_list = ec.get_ref('exts_list')
+
+            # Must have more than a single extension
+            if len(exts_list) <= 1:
+                failing_checks.append(
+                    "PythonPackage should be used instead of PythonBundle "
+                    "when exts_list contains only a single extension in %s" % ec_fn
+                )
+
+            # Packages used for building should be in their own easyconfig and included as builddependencies only
+            # Exceptions are explicit bundles of Python packages like Python itself or e.g. Python-bundle-PyPI
+            ec_name = ec['name']
+            normalized_ec_name = normalize_name(ec_name)
+            if not (re.match(r'.*-bundle(-.*)?$', ec_name) or ec_name == 'Python'):
+                for ext in exts_list:
+                    ext_name = ext[0]
+                    normalized_name = normalize_name(ext_name)
+                    # Allow if this is the actual package, e.g. meson Python package in a meson easyconfig
+                    if normalized_name == normalized_ec_name:
+                        continue
+                    if normalized_name in build_only_deps and \
+                       normalized_name not in build_deps_exceptions.get(normalized_ec_name, ()):
+                        failing_checks.append(
+                            "Build dependency package '%s' should be in a separate "
+                            "easyconfig, not in exts_list of %s" % (ext_name, ec_fn)
+                        )
 
         if failing_checks:
             self.fail('\n'.join(failing_checks))
