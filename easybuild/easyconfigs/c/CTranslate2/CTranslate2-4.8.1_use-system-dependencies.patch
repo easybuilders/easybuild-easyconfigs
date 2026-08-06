@@ -1,9 +1,8 @@
 Use installed third-party dependencies instead of Git submodules.
 
 GitHub-generated source archives do not include the contents of the spdlog,
-cpu_features, GoogleTest, CCCL, and CUTLASS submodules. Find the installed
-CMake packages for the compiled dependencies and allow externally supplied
-include directories for the header-only CUDA dependencies.
+cpu_features, and GoogleTest submodules. Find the corresponding installed
+CMake packages and link against their exported targets.
 
 Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
 --- orig/CMakeLists.txt	2026-08-05 10:22:04.559156598 +0000
@@ -32,29 +31,6 @@ Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
  endif()
  
  if(ENABLE_CPU_DISPATCH)
-@@ -551,14 +547,14 @@
-   message(STATUS "NVCC host compiler: ${CUDA_HOST_COMPILER}")
-   message(STATUS "NVCC compilation flags: ${CUDA_NVCC_FLAGS}")
- 
--  # We should ensure that the Thrust include directories appear before
--  # -I/usr/local/cuda/include for both GCC and NVCC, so that the headers
--  # are coming from the submodule and not the system.
--  set(THRUST_INCLUDE_DIRS
--    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/thrust/cub
--    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/thrust/thrust
--    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/thrust/libcudacxx/include
--    )
-+  # Prefer a user-provided CCCL installation, otherwise use the submodule.
-+  if(NOT THRUST_INCLUDE_DIRS)
-+    set(THRUST_INCLUDE_DIRS
-+      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/thrust/cub
-+      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/thrust/thrust
-+      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/thrust/libcudacxx/include
-+      )
-+  endif()
-   cuda_include_directories(${THRUST_INCLUDE_DIRS})
-   list(APPEND PRIVATE_INCLUDE_DIRECTORIES ${THRUST_INCLUDE_DIRS})
- 
 --- orig/tests/CMakeLists.txt	2026-08-05 10:22:04.566719694 +0000
 +++ new/tests/CMakeLists.txt	2026-08-05 10:22:05.850365573 +0000
 @@ -1,8 +1,6 @@
