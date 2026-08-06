@@ -102,24 +102,16 @@ exts_list = [
             '-//tensorflow/core/kernels/mkl:mkl_fused_batch_norm_op_test',
             '-//tensorflow/core/ir/importexport/tests/roundtrip/...',
         ],
-        'buildopts': '--action_env=CPATH= --host_action_env=CPATH=',
-        'testopts': (
-            '--action_env=CPATH= --host_action_env=CPATH= '
-            '--test_env=HOME=/tmp --test_timeout=3600 --test_size_filters=small '
-        ),
+        'testopts': '--test_timeout=3600 --test_size_filters=small ',
         'testopts_gpu': (
-            '--action_env=CPATH= --host_action_env=CPATH= '
-            '--test_env=HOME=/tmp --test_timeout=3600 --test_size_filters=small '
+            '--test_timeout=3600 --test_size_filters=small '
             '--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute '
         ),
-        # EasyBuild 5.3.0's TF_SYSTEM_LIBS mapping is incompatible with TensorFlow 2.21 for these entries:
-        # absl_py has no usable system repository, while boringssl is auto-enabled whenever OpenSSL is loaded.
-        # Run Bazel in batch mode to avoid Netty server startup crashes on filesystems without robust locking.
-        # CPATH is cleared for Bazel actions so installed headers cannot shadow vendored repository headers.
-        'prebuildopts': (
-            "printf 'startup --batch\\n' >> .bazelrc && "
-            "sed -i 's/absl_py,//; s/,absl_py//; s/boringssl,//; s/,boringssl//' .tf_configure.bazelrc && "
-        ),
+        # Run Bazel in batch mode to avoid server startup issues on filesystems without robust locking.
+        'bazel_startup_opts': ['--batch'],
+        # TensorFlow 2.21's system boringssl stub only links OpenSSL libraries; it does not expose headers
+        # to Bazel. Let TensorFlow use its bundled BoringSSL headers instead.
+        'tf_system_libs_exclude': ['boringssl'],
         'with_xla': True,
         'checksums': [
             {'v2.21.0.tar.gz': 'ef3568bb4865d6c1b2564fb5689c19b6b9a5311572cd1f2ff9198636a8520921'},
@@ -135,10 +127,6 @@ exts_list = [
              'c500796a1fe1f3de8322b1a1abeefbd3714fb255e6600d65e3815e20484c45ee'},
         ],
     }),
-]
-
-postinstallcmds = [
-    'mkdir -p %(installdir)s/bin && ln -sf "$EBROOTTENSORBOARD/bin/tensorboard" %(installdir)s/bin/tensorboard',
 ]
 
 moduleclass = 'lib'
