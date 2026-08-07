@@ -1,0 +1,38 @@
+see http://github.com/biopython/biopython/issues/5239 + https://github.com/biopython/biopython/pull/5265
+
+From bd1aed7b1e9f1b1fd0afaeb106a3536bc202b72f Mon Sep 17 00:00:00 2001
+From: Michiel de Hoon <mdehoon@tkx288.genome.gsc.riken.jp>
+Date: Tue, 28 Jul 2026 16:22:16 +0900
+Subject: [PATCH] Don't check the written data byte-by-bute, as the written
+ data may differ between different implementations of zlib
+
+---
+ Tests/test_Align_bigbed.py | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Tests/test_Align_bigbed.py b/Tests/test_Align_bigbed.py
+index 0a99d7fb1bd..9e598c6f1c0 100644
+--- a/Tests/test_Align_bigbed.py
++++ b/Tests/test_Align_bigbed.py
+@@ -6916,8 +6916,8 @@ def test_writing(self):
+             )
+             output.flush()
+             output.seek(0)
+-            data = output.read()
+-        self.assertEqual(correct, data)
++            alignments = Align.parse(output, "bigbed")
++            self.check_alignments(alignments)
+         alignments = Align.parse(path, "bigbed")
+         targets = alignments.targets
+         with tempfile.TemporaryFile() as output:
+@@ -6932,8 +6932,8 @@ def test_writing(self):
+             )
+             output.flush()
+             output.seek(0)
+-            data = output.read()
+-        self.assertEqual(correct, data)
++            alignments = Align.parse(output, "bigbed")
++            self.check_alignments(alignments)
+ 
+ 
+ class TestAlign_searching(unittest.TestCase):
