@@ -1007,6 +1007,7 @@ class EasyConfigTest(TestCase):
             '15.2': '2026.1',
             '15.3': None,
             '16.1': None,
+            '16.2': None,
         }
 
         # map intel-compilers to toolchain generations
