@@ -1,0 +1,58 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author:    Jiri Furst <jiri.furst@gmail.com>
+###
+
+easyblock = 'CMakeMake'
+
+name = 'OpenSceneGraph'
+version = '3.6.5'
+
+homepage = 'http://www.openscenegraph.org/'
+description = """The OpenSceneGraph is an open source high performance 3D graphics toolkit,
+used by application developers in fields such as visual simulation, games, virtual reality,
+scientific visualization and modelling. Written entirely in Standard C++ and OpenGL it runs
+on all Windows platforms, OSX, GNU/Linux, IRIX, Solaris, HP-Ux, AIX and FreeBSD operating
+systems. The OpenSceneGraph is now well established as the world leading scene graph
+technology, used widely in the vis-sim, space, scientific, oil-gas, games and virtual
+reality industries."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['OpenSceneGraph-%(version)s.tar.gz']
+patches = ['OpenSceneGraph-%(version)s_fix-support-ffmpeg-7.patch']
+checksums = [
+    {'OpenSceneGraph-3.6.5.tar.gz': 'aea196550f02974d6d09291c5d83b51ca6a03b3767e234a8c0e21322927d1e12'},
+    {'OpenSceneGraph-3.6.5_fix-support-ffmpeg-7.patch':
+     '3dc79d59130ec7e1fcfc2aab2b3b8af1f1fb50947b53a4706e9635843e90ab01'},
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('pkgconf', '2.2.0'),
+]
+
+dependencies = [
+    ('X11', '20240607'),
+    ('Mesa', '24.1.3'),
+    ('GDAL', '3.10.0'),
+    ('DCMTK', '3.6.9'),
+    ('FFmpeg', '7.0.2'),
+    ('SDL2', '2.30.6'),
+    ('poppler', '25.07.0'),
+    ('librsvg', '2.60.0'),
+    ('giflib', '5.2.1'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['osgarchive', 'osgconv', 'osgfilecache', 'osgversion', 'osgviewer', 'present3D']],
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = ['osgversion']
+
+modextravars = {'OSG_DIR': '%(installdir)s'}
+
+moduleclass = 'vis'

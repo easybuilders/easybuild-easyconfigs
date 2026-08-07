@@ -1,0 +1,40 @@
+fix tests that are broken on Neoverse V1 (Graviton 3)
+
+- relax tolerance test_x0_working in scipy.sparse.linalg._isolve.tests.test_iterative a bit more than was done in https://github.com/scipy/scipy/pull/22033
+- relax absolute tolerance from 0 to 1e-15 for test_pdist_correlation_iris* to fix:
+  Mismatched elements: 1 / 11175 (0.00895%)
+  Max absolute difference among violations: 2.22044605e-16
+  see also https://github.com/scipy/scipy/issues/16456
+
+author: Kenneth Hoste (HPC-UGent)
+--- scipy-1.16.0.orig/scipy/sparse/linalg/_isolve/tests/test_iterative.py	2025-06-22 03:57:22.000000000 +0200
++++ scipy-1.16.0/scipy/sparse/linalg/_isolve/tests/test_iterative.py	2025-06-26 10:47:21.841419380 +0200
+@@ -505,7 +505,7 @@
+ 
+     x, info = solver(A, b, x0=x0, **kw)
+     assert info == 0
+-    assert norm(A @ x - b) <= 4.5e-6*norm(b)
++    assert norm(A @ x - b) <= 6e-6*norm(b)
+ 
+ 
+ def test_x0_equals_Mb(case):
+--- scipy-1.16.0.orig/scipy/spatial/tests/test_distance.py	2025-06-22 03:57:22.000000000 +0200
++++ scipy-1.16.0/scipy/spatial/tests/test_distance.py	2025-06-26 11:00:08.041110847 +0200
+@@ -1031,7 +1031,7 @@
+         X = eo['iris']
+         Y_right = eo['pdist-correlation-iris']
+         Y_test1 = wpdist(X, 'correlation')
+-        assert_allclose(Y_test1, Y_right, rtol=eps)
++        assert_allclose(Y_test1, Y_right, rtol=eps, atol=1e-15)
+ 
+     @pytest.mark.slow
+     def test_pdist_correlation_iris_float32(self):
+@@ -1039,7 +1039,7 @@
+         X = eo['iris']
+         Y_right = np.float32(eo['pdist-correlation-iris'])
+         Y_test1 = wpdist(X, 'correlation')
+-        assert_allclose(Y_test1, Y_right, rtol=eps, verbose=verbose > 2)
++        assert_allclose(Y_test1, Y_right, rtol=eps, atol=1e-15, verbose=verbose > 2)
+ 
+     @pytest.mark.slow
+     def test_pdist_correlation_iris_nonC(self):

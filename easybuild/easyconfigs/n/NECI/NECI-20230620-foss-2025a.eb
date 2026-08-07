@@ -1,0 +1,62 @@
+easyblock = 'CMakeMakeCp'
+name = 'NECI'
+version = '20230620'
+_commit = '558e88c5ae6c30d0505a9badbc69111be0866ba1'
+
+homepage = 'https://github.com/ghb24/NECI_STABLE'
+description = """Standalone NECI codebase designed for FCIQMC and other stochastic quantum
+chemistry methods."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'usempi': True}
+
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/ghb24',
+        'repo_name': 'NECI_STABLE',
+        'recursive': True,
+        'commit': _commit,
+    },
+    'filename': SOURCE_TAR_XZ,
+}]
+patches = ['NECI-20230620_segfault.patch']
+checksums = [
+    {'NECI-20230620.tar.xz':
+     'b6f0e9a7cc0ce483f4fe60ae17a430288f4876832f861007b67c0a2a44cbaee9'},
+    {'NECI-20230620_segfault.patch':
+     'f0b5f62e115a1e07d6b90bc66ee9957a5f5d686bef65beba9c2be4bd8f29f0e4'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.6'),
+]
+
+# enable support for HDF5
+configopts = "-DENABLE_HDF5=ON"
+
+# readfp was removed in Python 3.12
+# https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.read_file
+prebuildopts = (
+    "sed -i 's/readfp/read_file/' ../NECI_STABLE/tools/*.py && "
+)
+
+test_cmd = 'ctest'
+runtest = '-j'
+
+files_to_copy = ['bin', 'lib', (['modules'], 'include')]
+
+_binaries = ['dneci', 'kdneci', 'kmneci', 'kneci', 'mneci', 'neci']
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in _binaries] + [f'lib/lib{x}.a' for x in _binaries],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ['(timeout --signal=SIGTERM 5s neci | grep "Started running")']
+
+moduleclass = 'chem'

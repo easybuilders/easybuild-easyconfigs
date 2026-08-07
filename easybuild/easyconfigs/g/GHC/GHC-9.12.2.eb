@@ -1,0 +1,89 @@
+# This is a binary install that requires a './configure' and 'make install' steps for GHC.
+# We pull the rhel8 binary tarball on x86, and the debian10 on aarch64 as they are the ones built
+# against oldest common system libs, making them upwards compatible with newer distros.
+#
+# To get a functional 'ghc' binary on the SYSTEM toolchain we need
+# gmp headers and ncurses libtinfo.so.5. To avoid system dependencies, we build them as part
+# of this bundle.
+#
+# Binaries obtained with ghc do not require them, so it should be possible to use this bundle
+# just as builddep among different toolchains.
+#
+# For details, see the PR discussion:
+# https://github.com/easybuilders/easybuild-easyconfigs/pull/11310
+
+easyblock = 'Bundle'
+
+name = 'GHC'
+version = '9.12.2'
+
+homepage = 'https://haskell.org/ghc/'
+description = """The Glorious/Glasgow Haskell Compiler"""
+
+toolchain = SYSTEM
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('M4', '1.4.20'),
+]
+
+default_easyblock = 'ConfigureMake'
+
+if ARCH == 'aarch64':
+    local_distro_tarball = 'deb10'
+else:
+    local_distro_tarball = 'rocky8'
+
+# Force C standard to be C99 to avoid build failure because of stdbool.h being obsolete in GCC 15 / gnu23.
+# This trips the configure check. See https://bugzilla.redhat.com/show_bug.cgi?id=2342514#c8
+# for more information. Copied from ncurses-6.5.eb.
+local_ncurses_configopts = "CFLAGS='-std=c99 -O2 -fPIC' --with-shared --enable-overwrite --with-versioned-syms "
+local_ncurses_configopts += "--without-ada --enable-symlinks --with-termlib=tinfo "
+# build ncurses: serial build in default paths with shared libraries
+local_ncurses_configopts += "--disable-widec"
+
+components = [
+    ('GMP', '6.3.0', {
+        'source_urls': [GNU_SOURCE],
+        'sources': [SOURCELOWER_TAR_BZ2],
+        'checksums': ['ac28211a7cfb609bae2e2c8d6058d66c8fe96434f740cf6fe2e47b000d1c20cb'],
+        'configopts': ' --enable-cxx CFLAGS="-std=c99" CXXFLAGS="-std=c++11"',
+        'start_dir': '%(namelower)s-%(version)s',
+    }),
+    ('ncurses', '6.5', {
+        'source_urls': [GNU_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['136d91bc269a9a5785e5f9e980bc76ab57428f604ce3e5a5a90cebc767971cc6'],
+        # Avoid ncurses trying to write to system paths if TERMINFO is set
+        'preconfigopts': "unset TERMINFO && ",
+        'configopts': local_ncurses_configopts,
+        'start_dir': '%(namelower)s-%(version)s',
+    }),
+    (name, version, {
+        'source_urls': ['https://downloads.haskell.org/~ghc/%(version)s/'],
+        'sources': ['%%(namelower)s-%%(version)s-%s-%s-linux.tar.xz' % (ARCH, local_distro_tarball)],
+        'checksums': [{'ghc-9.12.2-aarch64-deb10-linux.tar.xz':
+                       '6048eae62ede069459398fa6f2e92ab9719e1b83e93a9014e6a410c54ed2755f',
+                      'ghc-9.12.2-x86_64-rocky8-linux.tar.xz':
+                       'b708420f792dda86898e1ac649a77d8fc7b5e03b3e8da4e813d58acf1e7c943c'}],
+        'skipsteps': ['build'],
+        'preinstallopts': 'LD_LIBRARY_PATH="%(installdir)s/lib:$LD_LIBRARY_PATH" ',
+        'start_dir': f'%(namelower)s-%(version)s-{ARCH}-unknown-linux',
+    }),
+]
+
+
+local_ncurses_libs = ["form", "menu", "ncurses", "panel", "tinfo"]
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s' % (x, y) for x in ['gmp', 'gmpxx'] for y in [SHLIB_EXT, 'a']] +
+             ['include/gmp.h', 'include/gmpxx.h'] +
+             ['lib/lib%s%s.a' % (x, y) for x in local_ncurses_libs for y in ['', '_g']] +
+             ['lib/lib%s.%s' % (x, y) for x in local_ncurses_libs for y in [SHLIB_EXT]] +
+             ['bin/ghc', 'bin/ghci', 'bin/ghc-pkg', 'bin/runghc', 'bin/runhaskell'],
+    'dirs': ['bin', 'lib', 'share', 'include'],
+}
+
+sanity_check_commands = ['ghc --version']
+
+moduleclass = 'compiler'

@@ -1,0 +1,53 @@
+easyblock = 'Tarball'
+
+name = 'EntrezDirect'
+version = '24.4.20250710'
+
+homepage = 'https://www.ncbi.nlm.nih.gov/books/NBK179288'
+description = """
+Entrez Direct (EDirect) provides access to Entrez, the NCBI's suite of
+interconnected databases (publication, sequence, structure, gene, variation,
+expression, etc.) from a Unix terminal window. Search terms are entered as
+command-line arguments. Individual operations are connected with Unix pipes to
+construct multi-step queries. Selected records can then be retrieved in a
+variety of formats
+"""
+
+toolchain = SYSTEM
+
+source_urls = ['https://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/versions/%(version)s/']
+sources = [
+    {'download_filename': 'edirect.tar.gz', 'filename': SOURCE_TAR_GZ},
+]
+checksums = [
+    {'EntrezDirect-24.4.20250710.tar.gz': 'ee8139c16746fd3a02c77b259676bea7b5e970621f7abbcbc352320240c18b4c'},
+]
+
+builddependencies = {
+    ('Go', '1.23.6'),
+}
+
+postinstallcmds = [
+    # build rchive, transmute, xtract with Go
+    'cd %(installdir)s/cmd && ./build.sh %(installdir)s',
+]
+
+sanity_check_paths = {
+    'files': ['elink', 'efetch', 'efilter', 'esearch', 'nquire', 'rchive', 'transmute', 'xtract'],
+    'dirs': ['cmd', 'config', 'data', 'eutils', 'extern', 'help'],
+}
+
+sanity_check_commands = [
+    'elink --help',
+    'efetch --help',
+    'efilter --help',
+    'esearch --help',
+    'nquire --help',
+    'rchive --help | grep -zv "Unable to locate"',
+    'transmute --help | grep -zv "Unable to locate"',
+    'xtract --help | grep -zv "Unable to locate"',
+]
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'

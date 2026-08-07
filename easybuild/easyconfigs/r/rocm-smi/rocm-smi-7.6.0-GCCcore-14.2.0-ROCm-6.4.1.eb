@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'rocm-smi'
+_rocm_version = '6.4.1'
+version = '7.6.0'
+versionsuffix = f'-ROCm-{_rocm_version}'
+
+homepage = 'https://github.com/ROCm/rocm_smi_lib'
+description = """
+The ROCm System Management Interface Library, or ROCm SMI library, is part of the Radeon Open Compute ROCm software
+stack. It is a C library for Linux that provides a user space interface for applications to monitor and control
+GPU applications."""
+docurls = ['https://rocm.docs.amd.com/projects/rocm_smi_lib/en/latest/']
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ["https://github.com/ROCm/rocm_smi_lib/archive/"]
+sources = [f'rocm-{_rocm_version}.tar.gz']
+checksums = ['c82c8c9de89537b903d82711c531b4b1c6d104098b5370d049527d1f250944b7']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+    ('pkgconf', '2.3.0'),
+    # Needed as rocm-smi tries to find git to determine commit hash it was built from
+    ('git', '2.49.0'),
+    ('libdrm', '2.4.125'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),  # Needed as rocm-smi is a python script
+]
+
+sanity_check_paths = {
+    'files': [f'lib/librocm_smi64.{SHLIB_EXT}',
+              f'lib/liboam.{SHLIB_EXT}',
+              'include/rocm_smi/rocm_smi.h'],
+    'dirs': ['lib/cmake/rocm_smi',
+             'share/doc/rocm_smi']
+}
+
+modextravars = {
+    'ROCM_SMI_LIB_PATH': f'%(installdir)s/lib/librocm_smi64.{SHLIB_EXT}'
+}
+
+# Other commands also return exit code 0, but require kernel modules
+# to work correctly. So only check --help.
+sanity_check_commands = [
+    'rocm-smi --help',
+]
+
+moduleclass = 'lib'

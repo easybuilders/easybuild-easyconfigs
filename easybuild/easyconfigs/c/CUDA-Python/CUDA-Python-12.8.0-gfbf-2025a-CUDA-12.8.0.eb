@@ -1,0 +1,78 @@
+easyblock = 'PythonBundle'
+
+name = 'CUDA-Python'
+# Warning: major and minor versions of CUDA and CUDA-Python are tied
+version = '12.8.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://nvidia.github.io/cuda-python/'
+description = "Python bindings for CUDA"
+github_account = 'NVIDIA'
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+builddependencies = [
+    ('Cython', '3.1.1'),
+]
+dependencies = [
+    ('CUDA', '%(version_major)s.%(version_minor)s.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+]
+
+exts_default_options = {
+    'source_urls': ['https://github.com/%(github_account)s/cuda-python/archive'],
+    'sources': [{
+        'download_filename': f'v{version}.tar.gz',
+        'filename': '%(name)s-%(version)s.tar.gz'
+    }],
+}
+exts_list = [
+    ('pyclibrary', '0.2.2', {
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'sources': ['%(namelower)s-%(version)s.tar.gz'],
+        'checksums': ['9902fffe361bb86f57ab62aa4195ec4dd382b63c5c6892be6d9784ec0a3575f7'],
+    }),
+    ('cuda-bindings', version, {
+        'modulename': 'cuda.bindings',
+        'start_dir': 'cuda_bindings',
+        'checksums': ['9c3d6c9792e0c295d06bbc35b7ef91405dba465f78495e552223d2ddb9f61048'],
+    }),
+    ('cuda-core', '0.3.1', {
+        'modulename': 'cuda.core',
+        'patches': [
+            'cuda-core-%(version)s_old_license_syntax.patch',
+            'cuda-core-%(version)s_disable_nvjitlink.patch',
+        ],
+        'start_dir': 'cuda_core',
+        'checksums': [
+            {'cuda-core-0.3.1.tar.gz': '14ed346e848f796929516ebce1e3b33567c4f285abf44aa767ec8e9542ca6a68'},
+            {'cuda-core-0.3.1_old_license_syntax.patch':
+             '45569ff248af5a8da780d9a029e533dcd810b9c70528f08a423c8ca307342813'},
+            {'cuda-core-0.3.1_disable_nvjitlink.patch':
+             'b17e87b67afd16bf403cbbaccf75dc2a5af79eccd7b3cac56342e888c9f68664'},
+        ],
+    }),
+    ('cuda-pathfinder', '1.1.0', {
+        'modulename': 'cuda.pathfinder',
+        'patches': ['cuda-pathfinder-%(version)s_old_license_syntax.patch'],
+        'start_dir': 'cuda_pathfinder',
+        'checksums': [
+            {'cuda-pathfinder-1.1.0.tar.gz': '14ed346e848f796929516ebce1e3b33567c4f285abf44aa767ec8e9542ca6a68'},
+            {'cuda-pathfinder-1.1.0_old_license_syntax.patch':
+             'bd17d1b1fe7f8bce540e4e3a603320bdb6be166e339bfb9638c2f9663163f6e6'},
+        ],
+    }),
+    ('cuda-python', version, {
+        'modulename': 'cuda',
+        'start_dir': 'cuda_bindings',
+        'checksums': ['9c3d6c9792e0c295d06bbc35b7ef91405dba465f78495e552223d2ddb9f61048'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -sc 'from cuda import cuda, nvrtc'",
+    "python -sc 'from cuda.bindings import driver, nvrtc'",
+]
+
+moduleclass = 'lib'
