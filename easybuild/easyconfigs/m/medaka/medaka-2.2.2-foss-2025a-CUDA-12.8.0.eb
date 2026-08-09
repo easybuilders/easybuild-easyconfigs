@@ -1,0 +1,115 @@
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Danilo Gonzalez <danilo.gonzalez@hpcnow.com>
+# License::     GPL-v3.0
+# Updated to foss-2020b to use with artic tool
+# J. Sassmannshausen (GSTT/NHS UK)
+# Updated to 1.5.0
+# Jasper Grimm (UoY)
+# Updated: Petr Král (INUITS)
+# Updated: Emik Lin (HKUMed CPOS)
+
+easyblock = 'PythonBundle'
+
+name = 'medaka'
+version = '2.2.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/nanoporetech/medaka'
+description = "medaka is a tool to create a consensus sequence from nanopore sequencing data."
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('Autotools', '20240712'),
+    ('CMake', '3.31.3'),
+    ('Cython', '3.1.1'),
+    ('poetry', '2.1.2'),
+    ('pybind11', '2.13.6'),
+]
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('Python-bundle-PyPI', '2025.04'),  # provides cffi, cloudpickle, requests, and toml
+    ('SciPy-bundle', '2025.06'),  # provides numpy
+    ('PyTorch', '2.9.1', '-CUDA-%(cudaver)s-whl'),
+    ('h5py', '3.14.0'),
+    ('Pysam', '0.23.3'),
+    ('edlib', '1.3.9.post1'),
+    ('intervaltree-python', '3.2.1'),
+    ('ont-fast5-api', '4.1.3'),
+    ('python-parasail', '1.3.4'),
+    ('pyspoa', '0.2.1'),
+    ('tqdm', '4.67.1'),
+    ('SAMtools', '1.22.1'),
+    ('minimap2', '2.30'),
+    ('HTSlib', '1.22.1'),  # provides tabix and bgzip
+    ('BCFtools', '1.22'),
+]
+
+components = [
+    ('medaka-samtools-source', '1.20', {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://github.com/samtools/samtools/releases/download/1.20/'],
+        'sources': ['samtools-1.20.tar.bz2'],
+        'checksums': ['c71be865e241613c2ca99679c074f1a0daeb55288af577db945bdabe3eb2cf10'],
+        'install_type': 'subdir',
+    }),
+]
+
+exts_list = [
+    ('pyvers', '0.2.3', {
+        'checksums': ['c4b81c3a033963245e124cdecb052783c9c4cea3bb08c051833af1c44faa6283'],
+    }),
+    ('tensordict', '0.11.0', {
+        'source_urls': ['https://github.com/pytorch/%(name)s/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['d16daee34649f0a5056e3647ad3d36a9ae31f42f06d57ef46c6b8e119c749177'],
+    }),
+    ('ont-mappy', '2.28', {
+        'modulename': 'mappy',
+        'source_tmpl': 'ont_mappy-%(version)s.tar.gz',
+        'checksums': ['bce4dd39761b07c1d7e5c2b8f2fb0566efca2881bd0d23723510ecc0e326a654'],
+    }),
+    ('wurlitzer', '3.1.1', {
+        'checksums': ['bfb9144ab9f02487d802b9ff89dbd3fa382d08f73e12db8adc4c2fb00cd39bd9'],
+    }),
+    ('pyabpoa', '1.5.6', {
+        'checksums': ['265f638c7fed0cde78cf0593c9e36121c1e718de1c73d7fa527dd62a7f90f191'],
+        'preinstallopts': "sed -i 's/license = \"MIT\"/license = {text = \"MIT\"}/' pyproject.toml && SSE2=1 ",
+    }),
+    (name, version, {
+        'checksums': ['28ed7402af5c82aa5d62c28325c1b1d6961b69d3ee16b624f44a5dbc34edf44e'],
+        # ont-parasail only provides wheels; Pysam 0.23.1+ only breaks upstream's test coverage on Python 3.13
+        'preinstallopts': (
+            "cp -a %(installdir)s/medaka-samtools-source/samtools-1.20/. submodules/samtools-1.20/ && "
+            "sed -i 's/^ont-parasail$/parasail/;s/pysam>=0.16.0.1,<=0.23.0/pysam>=0.16.0.1,<=0.23.3/' "
+            "requirements.txt && "
+        ),
+        'postinstallcmds': ['rm -r %(installdir)s/medaka-samtools-source'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/medaka',
+        'bin/medaka_consensus',
+        'bin/medaka_consensus_joint',
+        'bin/medaka_counts',
+        'bin/medaka_data_path',
+        'bin/medaka_variant',
+        'bin/medaka_version_report',
+        'bin/mini_align',
+    ],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/medaka'],
+}
+
+sanity_check_commands = [
+    'medaka --help',
+    'medaka_version_report',
+    "python -c 'import torch; assert torch.version.cuda == \"12.8\"'",
+]
+
+moduleclass = 'bio'
