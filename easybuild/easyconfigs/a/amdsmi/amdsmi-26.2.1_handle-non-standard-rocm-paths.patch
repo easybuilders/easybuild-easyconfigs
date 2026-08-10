@@ -1,0 +1,112 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 444ec4e5..73ba5fa3 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -188,42 +188,7 @@ if(ENABLE_ESMI_LIB)
+     set(current_esmi_tag "esmi_pkg_ver-4.2")
+ 
+     if(NOT EXISTS ${PROJECT_SOURCE_DIR}/esmi_ib_library/src)
+-        # TODO: use ExternalProject_Add instead or a submodule
+-        message(STATUS "Adding esmi_ib_library...")
+-        execute_process(COMMAND git clone --depth=1 -b ${current_esmi_tag} https://github.com/amd/esmi_ib_library.git
+-                                ${PROJECT_SOURCE_DIR}/esmi_ib_library)
+-    else()
+-        message(STATUS "esmi_ib_library already installed, checking version...")
+-
+-        # Grab latest commit and get the tag
+-        execute_process(
+-            COMMAND git rev-list --tags --max-count=1
+-            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/esmi_ib_library
+-            OUTPUT_VARIABLE latest_commit
+-            OUTPUT_STRIP_TRAILING_WHITESPACE)
+-        execute_process(
+-            COMMAND git describe --tags ${latest_commit} --match "*pkg*"
+-            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/esmi_ib_library
+-            OUTPUT_VARIABLE latest_esmi_tag
+-            OUTPUT_STRIP_TRAILING_WHITESPACE)
+-
+-        # Update to latest tags if not matched
+-        if(NOT latest_esmi_tag STREQUAL current_esmi_tag)
+-            message(STATUS "Updating esmi_ib_library...")
+-            execute_process(
+-                COMMAND git clone --depth=1 -b ${current_esmi_tag} https://github.com/amd/esmi_ib_library.git
+-                        ${PROJECT_SOURCE_DIR}/esmi_ib_library_temp RESULT_VARIABLE clone_result)
+-            if(clone_result EQUAL 0)
+-                file(REMOVE_RECURSE ${PROJECT_SOURCE_DIR}/esmi_ib_library)
+-                file(RENAME ${PROJECT_SOURCE_DIR}/esmi_ib_library_temp ${PROJECT_SOURCE_DIR}/esmi_ib_library)
+-                message(STATUS "Successfully cloned updated esmi_ib_library")
+-            else()
+-                file(REMOVE_RECURSE ${PROJECT_SOURCE_DIR}/esmi_ib_library_temp)
+-                message(FATAL_ERROR "Failed to clone updated esmi_ib_library")
+-            endif()
+-        else()
+-            message(STATUS "esmi_ib_library is the latest version: ${current_esmi_tag}...")
+-        endif()
++        message(FATAL_ERROR "Expect esmi_ib_library_src to be present in sources. Please copy the required sources from esmi.")
+     endif()
+ 
+     # Make sure to update the amd_hsmp.h file with the corresponding esmi version
+diff --git a/goamdsmi_shim/smiwrapper/amdsmi_go_shim.c b/goamdsmi_shim/smiwrapper/amdsmi_go_shim.c
+index 1cd5174c..d29da9b6 100644
+--- a/goamdsmi_shim/smiwrapper/amdsmi_go_shim.c
++++ b/goamdsmi_shim/smiwrapper/amdsmi_go_shim.c
+@@ -24,7 +24,7 @@
+ #include <stdint.h>
+ #include <string.h>
+ #include "amdsmi_go_shim.h"
+-#include <amd_smi/amdsmi.h>
++#include "amd_smi/amdsmi.h"
+ #include <unistd.h>
+ #define nullptr ((void*)0)
+ 
+@@ -38,8 +38,6 @@
+ #define MAX_GPU_POWER_FROM_DRIVER      0xFFFF
+ 
+ #define AMDSMI_DRIVER_NAME     "AMDSMI"
+-#define AMDSMI_LIB_FILE        "/opt/rocm/lib/libamd_smi.so"
+-#define AMDSMI_LIB64_FILE      "/opt/rocm/lib64/libamd_smi.so"
+ 
+ #define AMDGPU_DRIVER_NAME     "AMDGPUDriver"
+ #define AMDGPU_INITSTATE_FILE  "/sys/module/amdgpu/initstate"
+diff --git a/py-interface/amdsmi_wrapper.py b/py-interface/amdsmi_wrapper.py
+index f464f8d0..f81d28e8 100644
+--- a/py-interface/amdsmi_wrapper.py
++++ b/py-interface/amdsmi_wrapper.py
+@@ -171,6 +171,7 @@ from pathlib import Path
+ #    `amdsmi_wrapper.py` is located in
+ #    `_rocm_sdk_core/share/amd_smi/amdsmi`, libraries are in
+ #    `_rocm_sdk_core/lib`.
++#    Also, try easybuild variables.
+ # 1. ROCM_HOME/ROCM_PATH environment variables
+ #    - ROCM_HOME/lib
+ #    - ROCM_PATH/lib (usually set to /opt/rocm/)
+@@ -186,6 +187,8 @@ def find_smi_library():
+     # 0.
+     libamd_smi_path = Path(__file__).resolve().parent.parent.parent.parent / "lib/libamd_smi.so.26"
+     possible_locations.append(libamd_smi_path)
++    # Also try EasyBuild variables
++    possible_locations.append(os.path.join(os.environ.get("EBROOTAMDSMI"), "lib/libamd_smi.so"))
+     # 1.
+     rocm_path = os.getenv("ROCM_HOME", os.getenv("ROCM_PATH"))
+     if rocm_path:
+diff --git a/tools/generator.py b/tools/generator.py
+index fbf29bfa..5d00b2db 100644
+--- a/tools/generator.py
++++ b/tools/generator.py
+@@ -186,6 +186,7 @@ def main():
+ #    `amdsmi_wrapper.py` is located in
+ #    `_rocm_sdk_core/share/amd_smi/amdsmi`, libraries are in
+ #    `_rocm_sdk_core/lib`.
++#    Also, try EasyBuild variables
+ # 1. ROCM_HOME/ROCM_PATH environment variables
+ #    - ROCM_HOME/lib
+ #    - ROCM_PATH/lib (usually set to /opt/rocm/)
+@@ -201,6 +202,8 @@ def find_smi_library():
+     # 0.
+     libamd_smi_path = Path(__file__).resolve().parent.parent.parent.parent / "lib/libamd_smi.so.26"
+     possible_locations.append(libamd_smi_path)
++    # Try EasyBuild variables
++    possible_locations.append(os.path.join(os.environ.get("EBROOTAMDSMI"), "lib/{library_name}"))
+     # 1.
+     rocm_path = os.getenv("ROCM_HOME", os.getenv("ROCM_PATH"))
+     if rocm_path:
