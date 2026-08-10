@@ -67,6 +67,7 @@ sources = [
         ),
     },
 ]
+patches = ['RDKit-2026.03.4_relax-DistGeomHelpers-tests.patch']
 checksums = [
     {'Release_2026_03_4.tar.gz': 'a8bff65bdf13dd47a01f707f7759dd59124a8742f8c50952c2ceae9523b4fd2b'},
     {'INCHI-1-SRC.zip': 'b42d828b5d645bd60bc43df7e0516215808d92e5a46c28e12b1f4f75dfaae333'},
@@ -74,6 +75,8 @@ checksums = [
     {'RingDecomposerLib-1.1.3_rdkit.tar.gz': '944b5816712a48bbf88aa25d4300ce11871ddf6e971218eac08f90ed2192f715'},
     {'pubchem-align3d-daefab3.tar.gz': '4871a08104c660890015f27d32a0147fc32df69a8962ca5cd1fe54ef6319c779'},
     {'chemdraw-1.0.14.tar.gz': 'bedd75643b9bfaee1663fc41814370ac9329c8d0934e970179929cb355a82aff'},
+    {'RDKit-2026.03.4_relax-DistGeomHelpers-tests.patch':
+     '9762a3a7f2c089aaf1e4d8de0ae327fde1618a54f8ad1838a277e08b48680284'},
 ]
 
 _boost_version = '1.90.0'
@@ -125,14 +128,13 @@ buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./'
 # Specify path for libraries so that they are found during the tests when the module is built with --rpath flag
 pretestopts = 'export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:${LD_LIBRARY_PATH} && '
 pretestopts += 'export RDBASE=$PWD && '
-pretestopts += 'export PYTHONPATH=$PWD:$PYTHONPATH &&'
+pretestopts += 'export PYTHONPATH=$PWD:$PYTHONPATH && '
 
 runtest = True
 
 testopts = (
     "-j %(parallel)s -E "
     "'pythonSourceTests|"  # skip test with known issues
-    "testDistGeomHelpers|"  # platform-sensitive ETKDG/distance-geometry regression checks
     "moldraw2DTestCatch'"  # strict MolDraw2D SVG/PNG rendering-regression checks that are sensitive to font/rendering
     " || ctest --rerun-failed --output-on-failure -j 1"  # rerun failed tests serially to catch flaky failures
 )
