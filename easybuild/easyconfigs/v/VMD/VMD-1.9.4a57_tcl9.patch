@@ -1,0 +1,872 @@
+Update to Tcl 9.0 API, using Tcl_Size instead of int.
+
+As of 9.0 the sizes are long int (Tcl_Size). As they are always fetched via reference, the type needs to be updated everywhere.
+Every patched occurence is due to this change.
+
+author: micketeeer@gmail.com
+diff -ru src.orig/TclCommands.C src/TclCommands.C
+--- src.orig/TclCommands.C	2026-06-09 13:51:27.532392703 +0200
++++ src/TclCommands.C	2026-06-09 14:08:06.647002432 +0200
+@@ -88,7 +88,7 @@
+ 
+   // make the list of attributes
+   const char **attribs;
+-  int num_attribs;
++  Tcl_Size num_attribs;
+   if (Tcl_SplitList(interp, opts, &num_attribs, &attribs) != TCL_OK) {
+     Tcl_AppendResult(interp, "cannot split attributes list", NULL);
+     return TCL_ERROR;
+@@ -362,7 +362,7 @@
+   }
+ 
+   // get the vector
+-  int num_vect;
++  Tcl_Size num_vect;
+   Tcl_Obj **vec;
+   Tcl_Obj *vecobj = Tcl_NewStringObj(vectxt, -1);
+   if (Tcl_ListObjGetElements(interp, vecobj, &num_vect, &vec) != TCL_OK) {
+@@ -442,14 +442,15 @@
+     return TCL_ERROR;
+   } 
+ 
+-  int i, num_mapping;
++  int i;
++  Tcl_Size num_mapping;
+   Tcl_Obj **attrs;
+   // Get the list of attributes we want to set
+   if (Tcl_ListObjGetElements(interp, objv[2], &num_mapping, &attrs))
+     return TCL_ERROR;
+ 
+   // Get the list of data elements
+-  int num_outerlist;
++  Tcl_Size num_outerlist;
+   Tcl_Obj **outerlist;
+   if (Tcl_ListObjGetElements(interp, objv[3], &num_outerlist, &outerlist))
+     return TCL_ERROR;
+@@ -583,7 +584,7 @@
+     if (num_outerlist != atomSel->selected) {
+       char tmpstring[1024];
+       sprintf(tmpstring, 
+-          "atomselect: set: %d data items doesn't match %d selected atoms.", 
++          "atomselect: set: %ld data items doesn't match %d selected atoms.", 
+           num_outerlist, atomSel->selected);
+       Tcl_SetResult(interp, tmpstring, TCL_VOLATILE);
+       delete [] elems;
+@@ -592,7 +593,7 @@
+     }
+     Tcl_Obj ***objdata = new Tcl_Obj **[num_outerlist];
+     for (i=0; i<num_outerlist; i++) {
+-      int itemsize;
++      Tcl_Size itemsize;
+       Tcl_Obj **itemobjs;
+       if (Tcl_ListObjGetElements(interp, outerlist[i], &itemsize, &itemobjs)
+           != TCL_OK) {
+@@ -607,7 +608,7 @@
+         delete [] atomon;
+         delete [] elems;
+         sprintf(tmpstring, 
+-            "atomselect: set: data element %d has %d terms (instead of %d)", 
++            "atomselect: set: data element %d has %ld terms (instead of %ld)", 
+             i, itemsize, num_mapping);
+         Tcl_SetResult(interp, tmpstring, TCL_VOLATILE);
+         return TCL_ERROR;
+@@ -955,7 +956,7 @@
+       } 
+       // Get the array of sublists for efficient access.
+       Tcl_Obj **arr;
+-      int dum;
++      Tcl_Size dum;
+       Tcl_ListObjGetElements(interp, result, &dum, &arr);
+ 
+       for (i=0; i<num_mapping; i++) {
+@@ -1128,7 +1129,7 @@
+         NULL);
+       return TCL_ERROR;
+     }
+-    int num;
++    Tcl_Size num;
+     const char **bondlists;
+     if (Tcl_SplitList(interp, argv[2], &num, &bondlists) != TCL_OK) {
+       Tcl_AppendResult(interp, "atomsel : setbonds: invalid bondlists", NULL);
+@@ -1148,7 +1149,7 @@
+     for (int i=atomSel->firstsel; i<=atomSel->lastsel; i++) {
+       if (!atomSel->on[i]) 
+         continue;
+-      int numbonds;
++      Tcl_Size numbonds;
+       const char **atomids;
+       if (Tcl_SplitList(interp, bondlists[ii], &numbonds, &atomids) != TCL_OK) {
+         Tcl_AppendResult(interp, "atomsel: setbonds: Unable to parse bondlist",
+@@ -1242,7 +1243,7 @@
+         NULL);
+       return TCL_ERROR;
+     }
+-    int num;
++    Tcl_Size num;
+     const char **bondlists;
+     if (Tcl_SplitList(interp, argv[2], &num, &bondlists) != TCL_OK) {
+       Tcl_AppendResult(interp, "atomsel : setbondorders: invalid bond order lists", NULL);
+@@ -1261,7 +1262,7 @@
+     for (int i=atomSel->firstsel; i<=atomSel->lastsel; i++) {
+       if (!atomSel->on[i]) 
+         continue;
+-      int numbonds;
++      Tcl_Size numbonds;
+       const char **atomids;
+       if (Tcl_SplitList(interp, bondlists[ii], &numbonds, &atomids) != TCL_OK) {
+         Tcl_AppendResult(interp, "atomsel: setbondorders: Unable to parse bond order list",
+@@ -1330,7 +1331,7 @@
+         NULL);
+       return TCL_ERROR;
+     }
+-    int num;
++    Tcl_Size num;
+     const char **bondlists;
+     if (Tcl_SplitList(interp, argv[2], &num, &bondlists) != TCL_OK) {
+       Tcl_AppendResult(interp, "atomsel : setbondtypes: invalid bond type lists", NULL);
+@@ -1348,7 +1349,7 @@
+     for (int i=atomSel->firstsel; i<=atomSel->lastsel; i++) {
+       if (!atomSel->on[i]) 
+         continue;
+-      int numbonds;
++      Tcl_Size numbonds;
+       const char **atomids;
+       if (Tcl_SplitList(interp, bondlists[ii], &numbonds, &atomids) != TCL_OK) {
+         Tcl_AppendResult(interp, "atomsel: setbondtypes: Unable to parse bond type list",
+diff -ru src.orig/TclCommands.h src/TclCommands.h
+--- src.orig/TclCommands.h	2026-06-09 13:51:27.526392795 +0200
++++ src/TclCommands.h	2026-06-09 14:38:48.781345423 +0200
+@@ -101,13 +101,13 @@
+ int tcl_get_vector(const char *s, float *val, Tcl_Interp *interp);
+ 
+ // Get an array of floating point vectors values from a string
+-int tcl_get_vecarray(const char *s, int &num, float *&val, Tcl_Interp *interp);
++int tcl_get_vecarray(const char *s, Tcl_Size &num, float *&val, Tcl_Interp *interp);
+ 
+ // Get an array of floating point values from a string
+-int tcl_get_array(const char *s, int &num, float *&val, Tcl_Interp *interp);
++int tcl_get_array(const char *s, Tcl_Size &num, float *&val, Tcl_Interp *interp);
+ 
+ // Get an array of floating point values from a string
+-int tcl_get_intarray(const char *s, int &num, int *&val, Tcl_Interp *interp);
++int tcl_get_intarray(const char *s, Tcl_Size &num, int *&val, Tcl_Interp *interp);
+ 
+ // append the matrix information to the interp->result field
+ void tcl_append_matrix(Tcl_Interp *interp, const float *mat);
+diff -ru src.orig/TclFastPBC.C src/TclFastPBC.C
+--- src.orig/TclFastPBC.C	2026-06-09 13:51:27.539392595 +0200
++++ src/TclFastPBC.C	2026-06-09 13:48:55.825729417 +0200
+@@ -180,7 +180,7 @@
+         return TCL_ERROR;
+       }
+     } else if (!strupncmp(argvcur, "center", CMDLEN)) {
+-      int num_vect;
++      Tcl_Size num_vect;
+       Tcl_Obj **vec;
+       Tcl_Obj *vecobj = objv[i+1];
+       if (Tcl_ListObjGetElements(interp, vecobj, &num_vect, &vec) != TCL_OK) {
+diff -ru src.orig/TclGraphLayout.C src/TclGraphLayout.C
+--- src.orig/TclGraphLayout.C	2026-06-09 13:51:27.521392872 +0200
++++ src/TclGraphLayout.C	2026-06-09 14:25:05.193163325 +0200
+@@ -76,7 +76,7 @@
+         return TCL_ERROR;
+       }
+ 
+-      int matlen = 0;
++      Tcl_Size matlen = 0;
+       Tcl_Obj **data;
+       if (Tcl_ListObjGetElements(interp, objv[i+1], &matlen, &data) != TCL_OK) {
+         return TCL_ERROR;
+diff -ru src.orig/TclGraphics.C src/TclGraphics.C
+--- src.orig/TclGraphics.C	2026-06-09 13:51:27.502393165 +0200
++++ src/TclGraphics.C	2026-06-09 14:42:05.191300920 +0200
+@@ -557,8 +557,9 @@
+   float radius = 0.0f;
+   float *rgb3fv = NULL;
+   int *colorids = NULL;
+-  int numcoords = 0, numcolors = 0, numcolorids = 0;
+-  int radset = 0, numradii = 0;
++  Tcl_Size numcoords = 0, numcolors = 0, numcolorids = 0;
++  int radset = 0;
++  Tcl_Size numradii = 0;
+   int drawtubes = 0;
+   int res = 8;
+   
+diff -ru src.orig/TclMeasure.C src/TclMeasure.C
+--- src.orig/TclMeasure.C	2026-06-09 13:51:27.539392595 +0200
++++ src/TclMeasure.C	2026-06-09 14:13:17.236201419 +0200
+@@ -102,7 +102,7 @@
+   }
+ 
+   // Determine if weights are a Tcl list with the right number of atoms
+-  int list_num;
++  Tcl_Size list_num;
+   Tcl_Obj **list_data;
+   if (Tcl_ListObjGetElements(interp, weight_obj, &list_num, &list_data) 
+       != TCL_OK) {
+@@ -148,7 +148,7 @@
+ 
+ int get_weights_from_tcl_list(Tcl_Interp *interp, VMDApp *app, AtomSel *sel,
+                               Tcl_Obj *weights_obj, float *weights) {
+-  int list_num = 0;
++  Tcl_Size list_num = 0;
+   Tcl_Obj **list_elems = NULL;
+   if (Tcl_ListObjGetElements(interp, weights_obj, &list_num, &list_elems)
+       != TCL_OK) {
+@@ -212,7 +212,7 @@
+ // get the  atom index re-ordering list for use by measure_fit
+ int tcl_get_orders(Tcl_Interp *interp, int selnum, 
+                        Tcl_Obj *order_obj, int *data) {
+-  int list_num;
++  Tcl_Size list_num;
+   Tcl_Obj **list_data;
+ 
+   if (Tcl_ListObjGetElements(interp, order_obj, &list_num, &list_data)
+@@ -554,7 +554,7 @@
+   char *geomname = Tcl_GetStringFromObj(objv[0],NULL);
+ 
+   // Read the atom list
+-  int numatms;
++  Tcl_Size numatms;
+   Tcl_Obj **data;
+   if (Tcl_ListObjGetElements(interp, objv[1], &numatms, &data) != TCL_OK) {
+     Tcl_AppendResult(interp, " measure ", geomname, ": bad syntax", NULL);
+@@ -614,7 +614,8 @@
+   if (defmolid<0) defmolid = app->molecule_top();
+ 
+   // Assign atom IDs and molecule IDs
+-  int i,numelem;
++  int i;
++  Tcl_Size numelem;
+   Tcl_Obj **atmmol;
+   for (i=0; i<numatms; i++) {
+     if (Tcl_ListObjGetElements(interp, data[i], &numelem, &atmmol) != TCL_OK) {
+@@ -675,7 +676,7 @@
+   bool allframes = false;
+ 
+   // Read the atom list
+-  int numatms;
++  Tcl_Size numatms;
+   Tcl_Obj **data;
+   if (Tcl_ListObjGetElements(interp, objv[1], &numatms, &data) != TCL_OK) {
+     Tcl_AppendResult(interp, " measure bond: bad syntax", NULL);
+@@ -734,7 +735,8 @@
+   if (defmolid<0) defmolid = app->molecule_top();
+ 
+   // Assign atom IDs and molecule IDs
+-  int i,numelem;
++  int i;
++  Tcl_Size numelem;
+   Tcl_Obj **atmmol;
+   for (i=0; i<numatms; i++) {
+     if (Tcl_ListObjGetElements(interp, data[i], &numelem, &atmmol) != TCL_OK) {
+@@ -795,7 +797,7 @@
+   bool allframes = false;
+ 
+   // Read the atom list
+-  int numatms=0;
++  Tcl_Size numatms=0;
+   Tcl_Obj **data;
+   if (Tcl_ListObjGetElements(interp, objv[1], &numatms, &data) != TCL_OK) {
+     Tcl_AppendResult(interp, " measure bond: bad syntax", NULL);
+@@ -854,7 +856,8 @@
+   if (defmolid<0) defmolid = app->molecule_top();
+ 
+   // Assign atom IDs and molecule IDs
+-  int i, numelem;
++  int i;
++  Tcl_Size numelem;
+   Tcl_Obj **atmmol;
+   for (i=0; i<numatms; i++) {
+     if (Tcl_ListObjGetElements(interp, data[i], &numelem, &atmmol) != TCL_OK) {
+@@ -1461,7 +1464,7 @@
+         return TCL_ERROR;
+       }
+     } else if (!strupncmp(argvcur, "files", CMDLEN)) {
+-      int list_num;
++      Tcl_Size list_num;
+       Tcl_Obj **list_data;
+       if (Tcl_ListObjGetElements(interp, objv[i+1], &list_num, &list_data) != TCL_OK) {
+         Tcl_AppendResult(interp, "measure rmsdmat_qcp_ooc: bad trajectory file list", NULL);
+@@ -2580,7 +2583,7 @@
+   if (Tcl_GetDoubleFromObj(interp, objv[1], &srad) != TCL_OK) 
+     return TCL_ERROR;
+ 
+-  int numsels;
++  Tcl_Size numsels;
+   Tcl_Obj **sel_list;
+   if (Tcl_ListObjGetElements(interp, objv[2], &numsels, &sel_list) != TCL_OK) {
+     Tcl_AppendResult(interp, "measure sasalist: bad selection list", NULL);
+@@ -2663,7 +2666,7 @@
+   char errstring[200];
+ 
+   // Read the atom list
+-  int numatms;
++  Tcl_Size numatms;
+   Tcl_Obj **data;
+   if (Tcl_ListObjGetElements(interp, objv[2], &numatms, &data) != TCL_OK) {
+     Tcl_AppendResult(interp, " measure energy: bad syntax", NULL);
+@@ -2798,7 +2801,8 @@
+   if (defmolid<0) defmolid = app->molecule_top();
+ 
+   // Assign atom IDs and molecule IDs
+-  int i,numelem;
++  int i;
++  Tcl_Size numelem;
+   Tcl_Obj **atmmol;
+   for (i=0; i<numatms; i++) {
+     if (Tcl_ListObjGetElements(interp, data[i], &numelem, &atmmol) != TCL_OK) {
+@@ -2904,7 +2908,7 @@
+   }
+ 
+   // Read the center
+-  int ndim;
++  Tcl_Size ndim;
+   Tcl_Obj **centerObj;
+   if (Tcl_ListObjGetElements(interp, objv[1], &ndim, &centerObj) != TCL_OK) {
+     Tcl_AppendResult(interp, " measure pbc2onc: bad syntax", NULL);
+@@ -3014,7 +3018,7 @@
+   }
+ 
+   // Read the center
+-  int ndim;
++  Tcl_Size ndim;
+   Tcl_Obj **centerObj;
+   if (Tcl_ListObjGetElements(interp, objv[1], &ndim, &centerObj) != TCL_OK) {
+     Tcl_AppendResult(interp, " measure pbcneighbors: bad syntax", NULL);
+@@ -3117,7 +3121,8 @@
+                             boxminmax, boxminmax+3);
+         } else {
+           // Read the bounding box
+-          int j, k, ncoor;
++          int j, k;
++          Tcl_Size ncoor;
+           Tcl_Obj **boxListObj;
+           if (Tcl_ListObjGetElements(interp, objv[i+1], &ncoor, &boxListObj) != TCL_OK) {
+             Tcl_AppendResult(interp, " measure pbcneighbors: invalid bounding box parameter", NULL);
+@@ -3127,7 +3132,7 @@
+             Tcl_AppendResult(interp, " measure pbcneighbors: need 2 points for bounding box", NULL);
+             return TCL_ERROR;
+           }
+-          int ndim = 0;
++          Tcl_Size ndim = 0;
+           double tmp;
+           Tcl_Obj **boxObj;
+           boxminmax = new float[6];
+@@ -3498,7 +3503,7 @@
+       }
+       else if (!strupncmp(argvcur, "imposeplanes", CMDLEN)) {
+         // Format: list of normal vectors {{x y z} {x y z} ...}
+-        int nelem;
++        Tcl_Size nelem;
+         Tcl_Obj **elemListObj;
+         if (i+1>=argc ||
+             Tcl_ListObjGetElements(interp, objv[i+1], &nelem, &elemListObj) != TCL_OK) {
+@@ -3508,7 +3513,7 @@
+         float *elem = new float[3L*nelem];
+         int k;
+         for (k=0; k<nelem; k++) {
+-          int nobj;
++          Tcl_Size nobj;
+           Tcl_Obj **vecObj;
+           if (Tcl_ListObjGetElements(interp, elemListObj[k], &nobj, &vecObj) != TCL_OK) {
+             delete [] elem;
+@@ -3540,7 +3545,7 @@
+       else if (!strupncmp(argvcur, "imposeaxes", CMDLEN) ||
+                !strupncmp(argvcur, "imposerotref", CMDLEN)) {
+         // Format: list of axes and orders {{x y z} 3 {x y z} 2 ...}
+-        int nelem;
++        Tcl_Size nelem;
+         Tcl_Obj **elemListObj;
+         if (i+1>=argc ||
+             Tcl_ListObjGetElements(interp, objv[i+1], &nelem, &elemListObj) != TCL_OK ||
+@@ -3558,7 +3563,7 @@
+         int *axorder = new int[nelem];
+         int k;
+         for (k=0; k<nelem; k++) {
+-          int nobj;
++          Tcl_Size nobj;
+           Tcl_Obj **vecObj;
+           if (Tcl_ListObjGetElements(interp, elemListObj[2L*k], &nobj, &vecObj) != TCL_OK) {
+             delete [] elem;
+diff -ru src.orig/TclMolInfo.C src/TclMolInfo.C
+--- src.orig/TclMolInfo.C	2026-06-09 13:51:27.539392595 +0200
++++ src/TclMolInfo.C	2026-06-09 13:45:41.299725671 +0200
+@@ -910,12 +910,12 @@
+       Tcl_SetStringObj(alist, data[term], -1);
+       Tcl_IncrRefCount(alist); 
+ 
+-      int numangles;
++      Tcl_Size numangles;
+       Tcl_Obj **adata;
+       Tcl_ListObjGetElements(interp, alist, &numangles, &adata);
+ 
+       for (int i=0; i < numangles; i++) {
+-        int numentries;
++        Tcl_Size numentries;
+         Tcl_Obj **a;
+ 
+         Tcl_ListObjGetElements(interp, adata[i], &numentries, &a);
+@@ -944,11 +944,11 @@
+       Tcl_SetStringObj(alist, data[term], -1);
+       Tcl_IncrRefCount(alist); 
+ 
+-      int numdihedrals;
++      Tcl_Size numdihedrals;
+       Tcl_Obj **adata;
+       Tcl_ListObjGetElements(interp, alist, &numdihedrals, &adata);
+       for (int i=0; i < numdihedrals; i++) {
+-        int numentries;
++        Tcl_Size numentries;
+         Tcl_Obj **a;
+         Tcl_ListObjGetElements(interp, adata[i], &numentries, &a);
+         if (numentries != 5) {
+@@ -977,11 +977,11 @@
+       Tcl_SetStringObj(alist, data[term], -1);
+       Tcl_IncrRefCount(alist); 
+ 
+-      int numimpropers;
++      Tcl_Size numimpropers;
+       Tcl_Obj **adata;
+       Tcl_ListObjGetElements(interp, alist, &numimpropers, &adata);
+       for (int i=0; i < numimpropers; i++) {
+-        int numentries;
++        Tcl_Size numentries;
+         Tcl_Obj **a;
+         Tcl_ListObjGetElements(interp, adata[i], &numentries, &a);
+         if (numentries != 5) {
+@@ -1008,11 +1008,11 @@
+       Tcl_SetStringObj(alist, data[term], -1);
+       Tcl_IncrRefCount(alist); 
+ 
+-      int numcterms;
++      Tcl_Size numcterms;
+       Tcl_Obj **adata;
+       Tcl_ListObjGetElements(interp, alist, &numcterms, &adata);
+       for (int i=0; i < numcterms; i++) {
+-        int numentries;
++        Tcl_Size numentries;
+         Tcl_Obj **a;
+         Tcl_ListObjGetElements(interp, adata[i], &numentries, &a);
+         if (numentries != 8) {
+@@ -1231,7 +1231,7 @@
+ 
+     // split the data into the various terms
+     const char **list;
+-    int num_list;
++    Tcl_Size num_list;
+     if (Tcl_SplitList(interp, argv[3], &num_list, &list) != TCL_OK) {
+       return TCL_ERROR;
+     }
+@@ -1274,7 +1274,7 @@
+ 
+     // make sure the two lists have the same number of terms
+     const char **list1, **list2;
+-    int num_list1, num_list2;
++    Tcl_Size num_list1, num_list2;
+     if (Tcl_SplitList(interp, argv[3], &num_list1, &list1) != TCL_OK) {
+       return TCL_ERROR;
+     }
+diff -ru src.orig/TclTextInterp.C src/TclTextInterp.C
+--- src.orig/TclTextInterp.C	2026-06-09 13:51:27.529392749 +0200
++++ src/TclTextInterp.C	2026-06-09 14:20:32.910430699 +0200
+@@ -425,7 +425,7 @@
+ //
+ int TclTextInterp::update_completion_list() {
+   int i;
+-  int num=completion_list.num();
++  Tcl_Size num=completion_list.num();
+   for (i=0; i<num; i++) {
+     delete [] completion_list[i];
+   }
+@@ -546,7 +546,7 @@
+ 
+ 
+ void TclTextInterp::doEvent() {
+-  int length = 0; // incoming command string length
++  Tcl_Size length = 0; // incoming command string length
+ 
+   if (!done_waiting())
+     return;
+@@ -760,7 +760,7 @@
+ 
+   Tcl_Obj *cmdPtr = Tcl_NewObj();
+   Tcl_IncrRefCount(cmdPtr);
+-  int length = 0;
++  Tcl_Size length = 0;
+   while ((length = Tcl_GetsObj(inchannel, cmdPtr)) >= 0) {
+     Tcl_AppendToObj(cmdPtr, "\n", 1);
+     char *stringrep = Tcl_GetStringFromObj(cmdPtr, NULL);
+diff -ru src.orig/TclVec.C src/TclVec.C
+--- src.orig/TclVec.C	2026-06-09 13:51:27.539392595 +0200
++++ src/TclVec.C	2026-06-09 14:38:05.715012983 +0200
+@@ -42,7 +42,7 @@
+     Tcl_WrongNumArgs(interp, 1, objv, (char *)"vec1 vec2 ?vec3? ?vec4? ...");
+     return TCL_ERROR;
+   }
+-  int num;
++  Tcl_Size num;
+   Tcl_Obj **data;
+   if (Tcl_ListObjGetElements(interp, objv[1], &num, &data) != TCL_OK) {
+     return TCL_ERROR;
+@@ -56,7 +56,7 @@
+     }
+   }
+   // do the sums on the rest
+-  int num2;
++  Tcl_Size num2;
+   for (int term=2; term < argc; term++) {
+     if (Tcl_ListObjGetElements(interp, objv[term], &num2, &data) != TCL_OK) {
+       delete [] sum;
+@@ -98,7 +98,7 @@
+     Tcl_WrongNumArgs(interp, 1, objv, (char *)"?x? ?y?");
+     return TCL_ERROR;
+   }
+-  int num1=0, num2=0;
++  Tcl_Size num1=0, num2=0;
+   Tcl_Obj **data1, **data2;
+   if (Tcl_ListObjGetElements(interp, objv[1], &num1, &data1) != TCL_OK)
+     return TCL_ERROR;
+@@ -138,7 +138,7 @@
+     return TCL_ERROR;
+   }
+     
+-  int num1, num2;
++  Tcl_Size num1, num2;
+   Tcl_Obj **data1, **data2;
+   if (Tcl_ListObjGetElements(interp, objv[1], &num1, &data1) != TCL_OK) {
+     return TCL_ERROR;
+@@ -154,7 +154,7 @@
+     return TCL_ERROR;
+   }
+   
+-  int num;
++  Tcl_Size num;
+   Tcl_Obj *scalarobj, **vector;
+   if (num1 == 1) {
+     scalarobj = data1[0];
+@@ -192,7 +192,7 @@
+ int tcl_get_matrix(const char *fctn, Tcl_Interp *interp, 
+ 			  Tcl_Obj *s, float *mat)
+ { 
+-  int num_rows;
++  Tcl_Size num_rows;
+   Tcl_Obj **data_rows;
+   if (Tcl_ListObjGetElements(interp, s, &num_rows, &data_rows) != TCL_OK) {
+     char tmpstring[1024];
+@@ -206,7 +206,7 @@
+     Tcl_SetResult(interp, tmpstring, TCL_VOLATILE);
+     return TCL_ERROR;
+   }
+-  int num_row[4];
++  Tcl_Size num_row[4];
+   Tcl_Obj **data_row[4];
+   if (Tcl_ListObjGetElements(interp, data_rows[0], num_row+0, data_row+0) != TCL_OK ||
+       num_row[0] != 4 ||
+@@ -238,7 +238,7 @@
+ 
+ 
+ int tcl_get_vector(const char *s, float *val, Tcl_Interp *interp) {
+-  int num;
++  Tcl_Size num;
+   const char **pos;
+   if (Tcl_SplitList(interp, s, &num, &pos) != TCL_OK) {
+     Tcl_SetResult(interp, (char *) "need three data elements for a vector", 
+@@ -264,9 +264,9 @@
+ }
+ 
+ 
+-int tcl_get_vecarray(const char *s, int &num, float *&val, Tcl_Interp *interp) {
++int tcl_get_vecarray(const char *s, Tcl_Size &num, float *&val, Tcl_Interp *interp) {
+   const char **pos;
+-  int cnt;
++  Tcl_Size cnt;
+   if (Tcl_SplitList(interp, s, &cnt, &pos) != TCL_OK) {
+     Tcl_SetResult(interp, (char *) "need numeric values", TCL_STATIC);
+     return TCL_ERROR;
+@@ -289,7 +289,7 @@
+ }
+ 
+ 
+-int tcl_get_array(const char *s, int &num, float *&val, Tcl_Interp *interp) {
++int tcl_get_array(const char *s, Tcl_Size &num, float *&val, Tcl_Interp *interp) {
+   const char **pos;
+   if (Tcl_SplitList(interp, s, &num, &pos) != TCL_OK) {
+     Tcl_SetResult(interp, (char *) "need numeric values", TCL_STATIC);
+@@ -314,7 +314,7 @@
+ }
+ 
+ 
+-int tcl_get_intarray(const char *s, int &num, int *&val, Tcl_Interp *interp) {
++int tcl_get_intarray(const char *s, Tcl_Size &num, int *&val, Tcl_Interp *interp) {
+   const char **pos;
+   if (Tcl_SplitList(interp, s, &num, &pos) != TCL_OK) {
+     Tcl_SetResult(interp, (char *) "need numeric values", TCL_STATIC);
+@@ -371,7 +371,7 @@
+   
+   // for the vector
+   Tcl_Obj **vec;
+-  int vec_size;
++  Tcl_Size vec_size;
+   if (Tcl_ListObjGetElements(interp, objv[2], &vec_size, &vec) != TCL_OK)
+     return TCL_ERROR;
+ 
+@@ -460,7 +460,7 @@
+     return TCL_ERROR;
+   }
+   
+-  int num;
++  Tcl_Size num;
+   Tcl_Obj **data;
+   if (Tcl_ListObjGetElements(interp, objv[1], &num, &data) != TCL_OK) 
+     return TCL_ERROR;
+@@ -488,7 +488,7 @@
+     return TCL_ERROR;
+   }
+   
+-  int num;
++  Tcl_Size num;
+   Tcl_Obj **data;
+   if (Tcl_ListObjGetElements(interp, objv[1], &num, &data) != TCL_OK) 
+     return TCL_ERROR;
+@@ -521,7 +521,7 @@
+     return TCL_ERROR;
+   }
+   
+-  int num;
++  Tcl_Size num;
+   Tcl_Obj **data;
+   // get the axis
+   if (Tcl_ListObjGetElements(interp, objv[1], &num, &data) != TCL_OK) 
+@@ -580,7 +580,7 @@
+     return TCL_ERROR;
+   }
+ 
+-  int num;
++  Tcl_Size num;
+   Tcl_Obj **data;
+   if (Tcl_ListObjGetElements(interp, objv[1], &num, &data) != TCL_OK) 
+     return TCL_ERROR;
+@@ -604,7 +604,7 @@
+ 
+ 
+ static double* obj_getdoublearray(Tcl_Interp *interp, Tcl_Obj *const objv[], int *len) {
+-  int num;
++  Tcl_Size num;
+ 
+   Tcl_Obj **data;
+   if (Tcl_ListObjGetElements(interp, objv[1], &num, &data) != TCL_OK)
+diff -ru src.orig/TclVolMap.C src/TclVolMap.C
+--- src.orig/TclVolMap.C	2026-06-09 13:51:27.525392810 +0200
++++ src/TclVolMap.C	2026-06-09 14:27:34.874827180 +0200
+@@ -51,7 +51,8 @@
+ 
+ static int parse_minmax_args(Tcl_Interp *interp, int arg_minmax,
+                              Tcl_Obj * const objv[], double *minmax) {
+-  int num, i;
++  int i;
++  Tcl_Size num;
+   Tcl_Obj **data, **vecmin, **vecmax;
+     
+   // get the list containing minmax
+@@ -116,9 +117,9 @@
+   char *filebase = NULL;
+   char *filename = NULL;
+ 
+-  int    nprobecoor   = 0;
+-  int    nprobevdw    = 0;
+-  int    nprobecharge = 0;
++  Tcl_Size nprobecoor = 0;
++  Tcl_Size nprobevdw = 0;
++  Tcl_Size nprobecharge = 0;
+   float *probe_vdwrmin = NULL;
+   float *probe_vdweps  = NULL;
+   float *probe_coords  = NULL;
+@@ -257,7 +258,8 @@
+ 
+       for (i=0; i<nprobecoor; i++) {
+         Tcl_Obj **coorObj;
+-        int j, ndim = 0;
++        int j;
++        Tcl_Size ndim = 0;
+         if (Tcl_ListObjGetElements(interp, listObj[i], &ndim, &coorObj) != TCL_OK) {
+           Tcl_AppendResult(interp, " volmap ils: bad syntax in probecoor!", NULL);
+           bailout = true; break;
+@@ -293,7 +295,7 @@
+       int i;
+       for (i=0; i<nprobevdw; i++) {
+         Tcl_Obj **vdwObj;
+-        int ndim = 0;
++        Tcl_Size ndim = 0;
+         if (Tcl_ListObjGetElements(interp, listObj[i], &ndim, &vdwObj) != TCL_OK) {
+           Tcl_AppendResult(interp, " volmap ils: bad syntax in probevdw", NULL);
+           bailout = true; break;
+@@ -399,7 +401,8 @@
+ 
+     else if (!strcmp(Tcl_GetStringFromObj(objv[arg], NULL), "-pbccenter")) {
+       if (arg+1>=argc) { bad_usage=true; break; }
+-      int i, ndim = 0;
++      int i;
++      Tcl_Size ndim = 0;
+       double tmp;
+       Tcl_Obj **centerObj;
+       if (Tcl_ListObjGetElements(interp, objv[arg+1], &ndim, &centerObj) != TCL_OK) {
+diff -ru src.orig/TclVoltool.C src/TclVoltool.C
+--- src.orig/TclVoltool.C	2026-06-09 13:51:27.539392595 +0200
++++ src/TclVoltool.C	2026-06-09 13:48:18.715301023 +0200
+@@ -571,7 +571,7 @@
+       }
+     }
+     
+-    int num1;
++    Tcl_Size num1;
+     Tcl_Obj **vector;
+     if (!strcmp(opt, "-pos")) {
+       if (i == argc-1){
+@@ -1096,7 +1096,7 @@
+       }
+     }
+     
+-    int num1;
++    Tcl_Size num1;
+     Tcl_Obj **vector;
+     if (!strcmp(opt, "-amt")) {
+       if (i == argc-1){
+@@ -1217,7 +1217,7 @@
+       }
+     }
+     
+-    int num1;
++    Tcl_Size num1;
+     Tcl_Obj **vector;
+     if (!strcmp(opt, "-amt")) {
+       if (i == argc-1){
+@@ -1783,7 +1783,7 @@
+       }
+     }
+     
+-    int num1;
++    Tcl_Size num1;
+     Tcl_Obj **vector;
+     if (!strcmp(opt, "-minmax")) {
+       if (i == argc-1){
+diff -ru src.orig/VMDTkMenu.C src/VMDTkMenu.C
+--- src.orig/VMDTkMenu.C	2026-06-09 13:51:27.501393180 +0200
++++ src/VMDTkMenu.C	2026-06-09 14:36:12.935761143 +0200
+@@ -117,7 +117,7 @@
+   buf += " loc";
+   Tcl_Eval(interp, (char *)(const char *)buf); 
+   Tcl_Obj *result = Tcl_GetObjResult(interp);
+-  int objc;
++  Tcl_Size objc;
+   Tcl_Obj **objv;
+   if (Tcl_ListObjGetElements(interp, result, &objc, &objv) != TCL_OK ||
+       objc != 2 || 
+diff -ru src.orig/cmd_animate.C src/cmd_animate.C
+--- src.orig/cmd_animate.C	2026-06-09 13:51:27.533392687 +0200
++++ src/cmd_animate.C	2026-06-09 14:28:33.177919033 +0200
+@@ -282,7 +282,7 @@
+                    !strupncmp(argv[currarg], "volsets", CMDLEN)) {
+           // interpret the next argument as a list of volsets
+           const char *volstr = argv[currarg+1];
+-          int nsets;
++          Tcl_Size nsets;
+           const char **setstrs;
+           if (Tcl_SplitList(interp, volstr, &nsets, &setstrs) != TCL_OK) {
+               Tcl_AppendResult(interp, "Invalid volset argument: ", volstr, NULL);
+@@ -372,7 +372,8 @@
+   VMDApp *app = (VMDApp *)cd;
+   Molecule *mol;
+   Timestep *ts;
+-  int molid=-1, start=0, frame=-1, length, neededLength;
++  int molid=-1, start=0, frame=-1, neededLength;
++  Tcl_Size length;
+   unsigned char *bytes;
+ 
+   if (argc != 3 && argc != 5 && argc != 7) {
+diff -ru src.orig/cmd_color.C src/cmd_color.C
+--- src.orig/cmd_color.C	2026-06-09 13:51:27.526392795 +0200
++++ src/cmd_color.C	2026-06-09 14:29:26.664085915 +0200
+@@ -89,7 +89,8 @@
+       }
+     } else if (!strupncmp(argv[2], "rgblist", CMDLEN)) {
+       const char **colcmds;
+-      int i, num_colcmds;
++      int i;
++      Tcl_Size num_colcmds;
+       if (Tcl_SplitList(interp, argv[3], &num_colcmds, &colcmds) != TCL_OK) {
+         Tcl_AppendResult(interp, "cannot split color command name list", NULL);
+         return TCL_ERROR;
+@@ -132,7 +133,8 @@
+       }
+     } else if (!strupncmp(argv[2], "namelist", CMDLEN)) {
+       const char **colcmds;
+-      int i, num_colcmds;
++      int i;
++      Tcl_Size num_colcmds;
+       if (Tcl_SplitList(interp, argv[3], &num_colcmds, &colcmds) != TCL_OK) {
+         Tcl_AppendResult(interp, "cannot split color command name list", NULL);
+         return TCL_ERROR;
+@@ -144,7 +146,7 @@
+ 
+       int fail=0;
+       for (i=0; i<num_colcmds; i++) {
+-        int cnt;
++        Tcl_Size cnt;
+         const char **cmdparts;
+         if (Tcl_SplitList(interp, colcmds[i], &cnt, &cmdparts) == TCL_OK) {
+           if (cnt == 3) {
+diff -ru src.orig/cmd_mol.C src/cmd_mol.C
+--- src.orig/cmd_mol.C	2026-06-09 13:51:27.540392580 +0200
++++ src/cmd_mol.C	2026-06-09 14:29:49.822725189 +0200
+@@ -571,7 +571,7 @@
+     long size = xsize*ysize*zsize;
+     data = new float[size];
+    
+-    int ndata;
++    Tcl_Size ndata;
+     const char **dataAsString;
+     if (Tcl_SplitList(interp, argv[11], &ndata, &dataAsString) != TCL_OK) {
+       Tcl_SetResult(interp, (char *) "mol volume: invalid data block", TCL_STATIC);
+@@ -810,7 +810,7 @@
+     int newmolid = -1;
+     if (argc == 3) {
+       // build selection list
+-      int numsels=0;
++      Tcl_Size numsels=0;
+ 
+       Tcl_Obj **sel_list = NULL;
+       Tcl_Obj *selparms = Tcl_NewStringObj(argv[2], -1);
+@@ -932,7 +932,7 @@
+             return TCL_ERROR;
+           }
+         } else if (!strupncmp(argv[a], "volsets", CMDLEN)) {
+-          int nsets;
++          Tcl_Size nsets;
+           const char **sets;
+ 
+           if ((a+1) >= argc) {
+diff -ru src.orig/cmd_render.C src/cmd_render.C
+--- src.orig/cmd_render.C	2026-06-09 13:51:27.512393011 +0200
++++ src/cmd_render.C	2026-06-09 14:30:17.062300899 +0200
+@@ -89,7 +89,7 @@
+       int w=0, h=0;
+       CHECK_RENDER(argv[2])
+       if (argc == 4) {
+-        int listn;
++        Tcl_Size listn;
+         const char **listelem;
+         if (Tcl_SplitList(interp, argv[3], &listn, &listelem) != TCL_OK) {
+           return TCL_ERROR;
+diff -ru src.orig/colvarproxy_tcl.C src/colvarproxy_tcl.C
+--- src.orig/colvarproxy_tcl.C	2026-06-09 13:51:27.538392610 +0200
++++ src/colvarproxy_tcl.C	2026-06-09 12:53:48.145626386 +0200
+@@ -194,7 +194,7 @@
+                       COLVARS_ERROR);
+   }
+   Tcl_Obj **list;
+-  int n;
++  Tcl_Size n;
+   Tcl_ListObjGetElements(interp, Tcl_GetObjResult(interp),
+                          &n, &list);
+   if (n != int(gradient.size())) {
