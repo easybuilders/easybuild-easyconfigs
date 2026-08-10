@@ -1,0 +1,35 @@
+Removes hardcoded system paths and injects EasyBuild environment variables.
+
+Author: Aayush Joglekar (aayush.joglekar@surf.nl)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 45ba954f..3e86a9a3 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -55,7 +55,7 @@ include(CheckSymbolExists)
+ include(cmake/Dependencies.cmake) # GTest, rocm-cmake, rocm_local_targets
+ include(cmake/CheckSymbolExistsNoWarn.cmake)
+ 
+-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
++list(APPEND CMAKE_MODULE_PATH $ENV{EBROOTHIP}/lib/cmake/hip "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+ 
+ # Build only for local GPU architecture
+ if (BUILD_LOCAL_GPU_TARGET_ONLY)
+@@ -137,6 +137,8 @@ set(CMAKE_INSTALL_PREFIX "${ROCM_PATH}" CACHE PATH "")
+ set(CMAKE_CXX_STANDARD   14)   # We use C++14 features, this will add compile option: -std=c++14
+ set(CMAKE_CXX_EXTENSIONS OFF)  # Without this line, it will add -std=gnu++14 instead, which has some issues.
+ list(APPEND CMAKE_PREFIX_PATH  # Add ROCM_PATH to CMake search paths (for finding HIP / HSA
++            $ENV{EBROOTROCMMINLLVM}
++            $ENV{EBROOTHIP}
+             ${ROCM_PATH}
+             ${ROCM_PATH}/hip
+             ${ROCM_PATH}/llvm)
+@@ -148,7 +150,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
+ find_package(Threads REQUIRED)
+ 
+ ## Check for HIP
+-find_package(hip REQUIRED)
++find_package(hip REQUIRED CONFIG PATHS $ENV{EBROOTHIP})
+ message(STATUS "HIP compiler:     ${HIP_COMPILER}")
+ message(STATUS "HIP runtime:      ${HIP_RUNTIME}")
+ if(NOT "${HIP_COMPILER}" MATCHES "clang")
