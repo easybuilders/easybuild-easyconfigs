@@ -1,0 +1,52 @@
+From 611127d338d95580b113d73931ea06939ea40b71 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Andr=C3=A9=20Reuter?= <j.reuter@fz-juelich.de>
+Date: Thu, 10 Jul 2025 13:44:04 +0200
+Subject: [PATCH] Revert "linkers: revert a binutils bug workaround, sort of"
+
+This reverts commit 8689c944515d4401b1bc4dbc75910288aed006c5.
+---
+ mesonbuild/linkers/linkers.py | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
+
+Reverted due to https://github.com/mesonbuild/meson/issues/14783, which
+broke e.g. building util-linux.
+
+Author: Jan Andre Reuter <j.reuter@fz-juelich.de>
+
+diff --git a/mesonbuild/linkers/linkers.py b/mesonbuild/linkers/linkers.py
+index 59f60e03a..dc8a90ee9 100644
+--- a/mesonbuild/linkers/linkers.py
++++ b/mesonbuild/linkers/linkers.py
+@@ -756,16 +756,11 @@ class GnuLikeDynamicLinkerMixin(DynamicLinkerBase):
+             return (args, rpath_dirs_to_remove)
+ 
+         # Rpaths to use while linking must be absolute. These are not
+-        # written to the binary. Needed only with GNU ld, and only for
+-        # versions before 2.28:
+-        # https://sourceware.org/bugzilla/show_bug.cgi?id=20535
++        # written to the binary. Needed only with GNU ld:
+         # https://sourceware.org/bugzilla/show_bug.cgi?id=16936
+         # Not needed on Windows or other platforms that don't use RPATH
+         # https://github.com/mesonbuild/meson/issues/1897
+         #
+-        # In 2.28 and on, $ORIGIN tokens inside of -rpath are respected,
+-        # so we do not need to duplicate it in -rpath-link.
+-        #
+         # In addition, this linker option tends to be quite long and some
+         # compilers have trouble dealing with it. That's why we will include
+         # one option per folder, like this:
+@@ -775,9 +770,8 @@ class GnuLikeDynamicLinkerMixin(DynamicLinkerBase):
+         # ...instead of just one single looooong option, like this:
+         #
+         #   -Wl,-rpath-link,/path/to/folder1:/path/to/folder2:...
+-        if self.id in {'ld.bfd', 'ld.gold'} and mesonlib.version_compare(self.version, '<2.28'):
+-            for p in rpath_paths:
+-                args.extend(self._apply_prefix('-rpath-link,' + os.path.join(build_dir, p)))
++        for p in rpath_paths:
++            args.extend(self._apply_prefix('-rpath-link,' + os.path.join(build_dir, p)))
+ 
+         return (args, rpath_dirs_to_remove)
+ 
+-- 
+2.34.1
+

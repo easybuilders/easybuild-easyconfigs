@@ -1,0 +1,29 @@
+Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+Patch metaBigBam.c to use bam_cigar_table instead of the deprecated cigar_tab (which
+causes errors due to modifying a read-only location)
+diff -Nru libbeato-0c30432af9c7e1e09ba065ad3b2bc042baa54dc2.orig/beato/metaBigBam.c libbeato-0c30432af9c7e1e09ba065ad3b2bc042baa54dc2/beato/metaBigBam.c
+--- libbeato-0c30432af9c7e1e09ba065ad3b2bc042baa54dc2.orig/beato/metaBigBam.c	2025-05-20 12:48:58.940600626 +0100
++++ libbeato-0c30432af9c7e1e09ba065ad3b2bc042baa54dc2/beato/metaBigBam.c	2025-05-20 12:49:41.303537740 +0100
+@@ -481,13 +481,6 @@
+     uint32_t *cigar;
+     if (!cig)
+ 	return 0;
+-    /* needed for parsing I guess... taken from sam_parse1() in sam.c */
+-    if (h->cigar_tab == 0) 
+-    {
+-	h->cigar_tab = (int8_t*)calloc(128, sizeof(int8_t));
+-	for (i = 0; BAM_CIGAR_STR[i]; ++i)
+-	    h->cigar_tab[(int)BAM_CIGAR_STR[i]] = i;
+-    }
+     cigar_s = bam_aux2Z(cig);
+     if (*cigar_s == '*')
+ 	return 0;
+@@ -499,7 +492,7 @@
+     for (i = 0, q = cigar_s; i < n_cigar; ++i, ++q) {
+ 	int op;
+ 	cigar[i] = strtol(q, &q, 10)<<BAM_CIGAR_SHIFT;
+-	op = (uint8_t)*q >= 128? -1 : h->cigar_tab[(int)*q];
++	op = (uint8_t)*q >= 128? -1 : bam_cigar_table[(int)*q];
+ 	if (op < 0)
+ 	    errAbort("unrecognized CIGAR operator");
+ 	cigar[i] |= op;

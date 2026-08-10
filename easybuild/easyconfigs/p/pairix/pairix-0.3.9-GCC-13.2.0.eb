@@ -1,0 +1,63 @@
+easyblock = 'MakeCp'
+
+name = 'pairix'
+version = '0.3.9'
+
+homepage = 'https://github.com/4dn-dcic/pairix'
+description = """1D/2D indexing and querying on bgzipped text file with
+a pair of genomic coordinates"""
+
+toolchain = {'name': 'GCC', 'version': '13.2.0'}
+
+github_account = '4dn-dcic'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+patches = [
+    'pairix-0.3.9_fix_Makefile.patch',
+]
+checksums = [
+    {'0.3.9.tar.gz': '84851aac4fe7aa74988a107ae7b93fbd4b191fd96459ca81fffbdbd39b041d2c'},
+    {'pairix-0.3.9_fix_Makefile.patch': '61e0e4490c1b2cb1911b468a5af88a0f6e5dcdf88f7054cadc3669dcb4cd57d8'},
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Perl', '5.38.0'),
+    ('SAMtools', '1.19.2'),
+]
+
+files_to_copy = [
+    (['bin/*', 'util/*.pl', 'util/*.sh', 'util/bam2pairs/bam2pairs'], 'bin'),
+]
+
+fix_perl_shebang_for = ['bin/*.pl']
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'github_account': '4dn-dcic',
+    'source_urls': [GITHUB_SOURCE],
+}
+
+exts_list = [
+    (name, version, {
+        'modulename': 'pypairix',
+        'patches': ['pairix-0.3.9_fix_Makefile.patch'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': [
+            {'0.3.9.tar.gz': '84851aac4fe7aa74988a107ae7b93fbd4b191fd96459ca81fffbdbd39b041d2c'},
+            {'pairix-0.3.9_fix_Makefile.patch': '61e0e4490c1b2cb1911b468a5af88a0f6e5dcdf88f7054cadc3669dcb4cd57d8'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['pairix', 'bgzip', 'bam2pairs', 'fragment_4dnpairs.pl']],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "python -c 'import pypairix'",
+]
+
+moduleclass = 'bio'

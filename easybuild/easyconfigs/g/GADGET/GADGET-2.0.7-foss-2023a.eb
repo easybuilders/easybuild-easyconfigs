@@ -1,0 +1,56 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'MakeCp'
+
+name = 'GADGET'
+version = '2.0.7'
+
+homepage = 'https://wwwmpa.mpa-garching.mpg.de/gadget/'
+description = """
+GADGET is a freely available code for cosmological N-body/SPH simulations on massively parallel computers with
+distributed memory. GADGET uses an explicit communication model that is implemented with the standardized MPI
+communication interface. The code can be run on essentially all supercomputer systems presently in use, including
+clusters of workstations or individual PCs.
+"""
+docurls = 'https://wwwmpa.mpa-garching.mpg.de/gadget/users-guide.pdf'
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'opt': True}
+
+# https://wwwmpa.mpa-garching.mpg.de/gadget/gadget-2.0.7.tar.gz
+source_urls = ['https://wwwmpa.mpa-garching.mpg.de/gadget']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['8e321110b9fb2d05819f9cfcbffda19f56bb77c7cdd1ca21139b81b1fca4e3ed']
+
+dependencies = [
+    ('GSL', '2.7'),
+    ('HDF5', '1.14.0'),
+]
+
+start_dir = 'Gadget2'
+
+_build_opts = [
+    'SYSTYPE=""',               # don't use preset cluster options
+    'CC="$MPICC"',
+    'OPTMIZE="$CFLAGS -Wall"',  # avoid overriding optarch
+    'MPICHLIB=""',
+    'OPT="-DH5_USE_16_API"',    # use legacy HDF5 API
+    'FFTW_INCL="-I$EBROOTFFTWMPI/include"',
+    'FFTW_LIB="-L$EBROOTFFTWMPI/lib -lfftw3_mpi"',
+]
+buildopts = ' '.join(_build_opts)
+
+files_to_copy = [
+    'AUTHORS', 'COPYING', 'COPYRIGHT', 'README',
+    'Documentation',
+    (['Gadget2/Gadget2'], 'bin'),
+    (['Gadget2/parameterfiles', 'ICs'], 'examples'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/Gadget2', 'COPYRIGHT', 'README'],
+    'dirs': ['Documentation', 'examples'],
+}
+
+sanity_check_commands = ["mpirun -n 2 Gadget2 | grep 'Call with <ParameterFile>'"]
+
+moduleclass = 'phys'

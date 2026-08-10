@@ -1,0 +1,88 @@
+Allow building PSM2 without a CUDA builddependency, by providing an
+internal minimal cuda.h header file.
+As long as the runtime CUDA version is 8.0+, libcuda.so will be dlopen'ed and
+used successfully.
+
+Author: Bart Oldeman <bart.oldeman@calculquebec.ca>
+diff -urN opa-psm2-PSM2_12.0.1.orig/include/cuda.h opa-psm2-PSM2_12.0.1/include/cuda.h
+--- opa-psm2-PSM2_12.0.1.orig/include/cuda.h	1970-01-01 00:00:00.000000000 +0000
++++ opa-psm2-PSM2_12.0.1/include/cuda.h	2024-06-11 18:39:38.242975935 +0000
+@@ -0,0 +1,73 @@
++/* This header provides minimal parts of the CUDA Driver API, without having to
++   rely on the proprietary CUDA toolkit.
++
++   References (to avoid copying from NVidia's proprietary cuda.h):
++   https://github.com/gcc-mirror/gcc/blob/master/include/cuda/cuda.h
++   https://github.com/Theano/libgpuarray/blob/master/src/loaders/libcuda.h
++   https://github.com/CPFL/gdev/blob/master/cuda/driver/cuda.h
++   https://github.com/CudaWrangler/cuew/blob/master/include/cuew.h
++*/
++
++#ifndef PSM2_CUDA_H
++#define PSM2_CUDA_H
++
++#include <stddef.h>
++
++#define CUDA_VERSION 8000
++
++typedef void *CUcontext;
++typedef int CUdevice;
++#if defined(__LP64__) || defined(_WIN64)
++typedef unsigned long long CUdeviceptr;
++#else
++typedef unsigned CUdeviceptr;
++#endif
++typedef void *CUevent;
++typedef void *CUstream;
++
++typedef enum {
++  CUDA_SUCCESS = 0,
++  CUDA_ERROR_ALREADY_MAPPED = 208,
++  CUDA_ERROR_NOT_READY = 600,
++} CUresult;
++
++enum {
++  CU_EVENT_DEFAULT = 0x0,
++};
++
++enum {
++  CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS = 0x1,
++};
++
++typedef enum {
++  CU_POINTER_ATTRIBUTE_MEMORY_TYPE = 2,
++  CU_POINTER_ATTRIBUTE_SYNC_MEMOPS = 6,
++  CU_POINTER_ATTRIBUTE_IS_MANAGED = 8,
++} CUpointer_attribute;
++
++
++typedef enum {
++  CU_MEMORYTYPE_HOST = 0x01,
++  CU_MEMORYTYPE_DEVICE = 0x02,
++} CUmemorytype;
++
++#define CU_IPC_HANDLE_SIZE 64
++
++typedef struct CUipcMemHandle_st {
++    char reserved[CU_IPC_HANDLE_SIZE];
++} CUipcMemHandle;
++
++typedef enum {
++  CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING = 41,
++  CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75,
++} CUdevice_attribute;
++
++enum {
++  CU_STREAM_NON_BLOCKING = 1
++};
++
++enum {
++  CU_MEMHOSTALLOC_PORTABLE = 0x01,
++};
++
++#endif
+diff -urN opa-psm2-PSM2_12.0.1.orig/include/driver_types.h opa-psm2-PSM2_12.0.1/include/driver_types.h
+--- opa-psm2-PSM2_12.0.1.orig/include/driver_types.h    1970-01-01 00:00:00.000000000 +0000
++++ opa-psm2-PSM2_12.0.1/include/driver_types.h 2024-06-12 13:46:04.123858352 +0000
+@@ -0,0 +1 @@
++/* this file is empty */

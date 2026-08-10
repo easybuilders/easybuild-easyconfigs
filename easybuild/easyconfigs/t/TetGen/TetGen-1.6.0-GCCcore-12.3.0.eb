@@ -1,0 +1,37 @@
+easyblock = 'CMakeMake'
+
+name = 'TetGen'
+version = '1.6.0'
+
+homepage = 'https://wias-berlin.de/software/index.jsp?id=TetGen'
+description = """ A Quality Tetrahedral Mesh Generator and a 3D Delaunay Triangulator """
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+sources = ['%(namelower)s%(version)s.tar.gz']
+download_instructions = f"""{name} requires manual download from {homepage}
+Required download: {' '.join(sources)}"""
+checksums = ['87b5e61ebd3a471fc4f2cdd7124c2b11dd6639f4feb1f941a5d2f5110d05ce39']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('binutils', '2.40'),
+]
+
+skipsteps = ['install']
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin/ && cp tetgen %(installdir)s/bin/',
+    'mkdir -p %(installdir)s/lib/ && cp libtet.a %(installdir)s/lib/',
+    'mkdir -p %(installdir)s/include/ && cp ../%(namelower)s%(version)s/tetgen.h %(installdir)s/include/',
+]
+
+sanity_check_paths = {
+    'files': ['bin/tetgen', 'lib/libtet.a', 'include/tetgen.h'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%(namelower)s -h"]
+
+moduleclass = 'numlib'

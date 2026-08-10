@@ -1,0 +1,20 @@
+determine installation prefix of Blosc2 dependency via $EBROOTBLOSC2, if defined,
+since mechanism to locate the library via blosc2-*.dist-info/RECORD doesn't work if blosc2 was not installed
+with vendored c-blosc2 library;
+author: Kenneth Hoste (HPC-UGent)
+--- tables-3.9.2/setup.py.orig	2024-03-14 19:17:54.100800849 +0100
++++ tables-3.9.2/setup.py	2024-03-14 19:22:04.099371064 +0100
+@@ -97,6 +97,13 @@
+ 
+ def get_blosc2_directories():
+     """Get Blosc2 directories for the C library"""
++    blosc2_root = os.getenv('EBROOTBLOSC2')
++    if blosc2_root:
++        library_path = Path(os.path.join(blosc2_root, 'lib'))
++        include_path = Path(os.path.join(blosc2_root, 'include'))
++        runtime_path = None
++        return include_path, library_path, runtime_path
++
+     try:
+         import blosc2
+     except ModuleNotFoundError:

@@ -1,0 +1,93 @@
+easyblock = 'Bundle'
+
+name = 'Flux'
+version = '0.80.0'
+
+homepage = 'https://flux-framework.org/'
+description = """
+ Flux is a flexible framework for resource management, built for your site. The
+ framework consists of a suite of projects, tools, and libraries which may be
+ used to build site-custom resource managers for High Performance Computing
+ centers. Unlike traditional resource managers, Flux can run as a parallel job
+ under most launchers that support MPI, including under Flux itself. This not
+ only makes batch scripts and workflows for Flux portable to other resource
+ managers (just launch Flux as a job), but it also means that batch jobs have
+ all the features of a full resource manager at their disposal, as if they have
+ an entire cluster to themselves.
+"""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+builddependencies = [
+    ('Autotools', '20250527'),
+    ('pkgconf', '2.4.3'),
+    ('make', '4.4.1'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('jq', '1.8.1'),
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('libarchive', '3.8.1'),
+    ('Python', '3.13.5'),
+    ('cffi', '1.17.1'),
+    ('PyYAML', '6.0.2'),
+    ('PLY', '3.11'),
+    ('Lua', '5.4.8'),
+    ('luaposix', '36.3'),
+    ('ZeroMQ', '4.3.5'),
+    ('Jansson', '2.14.1'),
+    ('hwloc', '2.12.1'),
+    ('lz4', '1.10.0'),
+    ('ncurses', '6.5'),
+    ('SQLite', '3.50.1'),
+    ('libedit', '20250104'),
+    ('Boost', '1.88.0'),
+    ('yaml-cpp', '0.8.0'),
+    ('PMIx', '5.0.8'),
+]
+
+github_account = 'flux-framework'
+default_component_specs = {
+    'source_urls': [GITHUB_LOWER_RELEASE],
+    'sources': [SOURCELOWER_TAR_GZ],
+    'start_dir': '%(namelower)s-%(version)s',
+    'testopts': '-j %(parallel)s',
+}
+
+# Tests have succeeded for many people but seem to be brittle in some setups
+# (see https://github.com/easybuilders/easybuild-easyconfigs/pull/24535)
+# Uncomment the 'runtest' lines to enable test steps after building
+components = [
+    ('flux-core', '0.80.0', {
+        'easyblock': 'ConfigureMake',
+        'checksums': ['d4e19e4454b6288be68dd53ad906065995ae3bb1f5453c55fef6f40122b081d3'],
+        # 'runtest': 'check',
+    }),
+    ('flux-sched', '0.48.0', {
+        'easyblock': 'CMakeMake',
+        'checksums': ['8f8de89e445303e07b27912d4044862a8594d46b68d20dbb28b1e20bef198efe'],
+        # 'runtest': True,
+    }),
+    ('flux-pmix', '0.7.0', {
+        'easyblock': 'ConfigureMake',
+        'checksums': ['0ad9fa0d76e8ffeaa4aa45bd39760b623219e8d3d2a66eb62e8832c2f7e3f47b'],
+        'configopts': '--without-openmpi',
+        # 'runtest': 'check',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/flux'],
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = ['flux -h']
+
+# Enable tab completion, and remove it upon unloading the module.
+modluafooter = """
+execute {cmd=\'source "$EBROOTFLUX/share/bash-completion/completions/flux"\',modeA={"load"}}
+execute {cmd=\'complete -r flux;unset -f $(declare -F | cut -d" " -f3 | grep -E "^_flux_")\',modeA={"unload"}}
+"""
+
+moduleclass = 'tools'

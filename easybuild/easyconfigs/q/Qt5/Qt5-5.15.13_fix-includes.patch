@@ -1,0 +1,286 @@
+add missing stdint includes required when building with GCC 13.x
+and replace variable Pixmap --> PresentPixmap in chromium/third_party/xcbproto/src/src/present.xml
+see also:
+* https://gcc.gnu.org/gcc-13/porting_to.html
+* https://bugreports.qt.io/browse/QTBUG-113111 and https://invent.kde.org/qt/qt/qtlocation-mapboxgl/-/merge_requests/1
+* https://github.com/abseil/abseil-cpp/pull/1187
+Author: Richard Top
+diff -ruN qt-everywhere-src-5.15.11.org/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp
+--- qt-everywhere-src-5.15.11.org/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp	2024-03-14 13:28:06.564124774 +0000
++++ qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp	2024-03-15 13:01:38.931471150 +0000
+@@ -3,6 +3,7 @@
+ #include <mapbox/geometry/geometry.hpp>
+ #include <mapbox/geometry/point_arithmetic.hpp>
+ #include <mapbox/geometry/for_each_point.hpp>
++#include <cstdint>
+ 
+ namespace mbgl {
+ 
+diff -ruN qt-everywhere-src-5.15.11.org/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp
+--- qt-everywhere-src-5.15.11.org/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp	2024-03-14 13:28:06.564124774 +0000
++++ qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp	2024-03-15 13:02:09.468570971 +0000
+@@ -5,6 +5,7 @@
+ #include <cassert>
+ #include <cstdlib>
+ #include <exception>
++#include <cstdint>
+ 
+ // Polyfill needed by Qt when building for Android with GCC
+ #if defined(__ANDROID__) && defined(__GLIBCXX__)
+diff -ruN qt-everywhere-src-5.15.11.org/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp
+--- qt-everywhere-src-5.15.11.org/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp	2024-03-14 13:28:06.573124804 +0000
++++ qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp	2024-03-15 13:02:53.996716526 +0000
+@@ -1,6 +1,7 @@
+ #pragma once
+ 
+ #include <mbgl/util/variant.hpp>
++#include <cstdint>
+ 
+ namespace mbgl {
+ namespace gl {
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/base/debug/profiler.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/base/debug/profiler.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/base/debug/profiler.h	2024-03-14 13:27:55.904088924 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/base/debug/profiler.h	2024-03-15 10:42:20.790168875 +0000
+@@ -5,6 +5,7 @@
+ #ifndef BASE_DEBUG_PROFILER_H_
+ #define BASE_DEBUG_PROFILER_H_
+ 
++#include <cstdint>
+ #include <stddef.h>
+ 
+ #include <string>
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/content/public/browser/browsing_data_remover_delegate.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/content/public/browser/browsing_data_remover_delegate.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/content/public/browser/browsing_data_remover_delegate.h	2024-03-14 13:27:42.056042352 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/content/public/browser/browsing_data_remover_delegate.h	2024-03-15 10:41:41.596041171 +0000
+@@ -5,6 +5,7 @@
+ #ifndef CONTENT_PUBLIC_BROWSER_BROWSING_DATA_REMOVER_DELEGATE_H_
+ #define CONTENT_PUBLIC_BROWSER_BROWSING_DATA_REMOVER_DELEGATE_H_
+ 
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ #include "base/callback_forward.h"
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/device/base/synchronization/one_writer_seqlock.cc qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/device/base/synchronization/one_writer_seqlock.cc
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/device/base/synchronization/one_writer_seqlock.cc	2024-03-14 13:27:43.805048234 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/device/base/synchronization/one_writer_seqlock.cc	2024-03-15 12:23:06.145909864 +0000
+@@ -2,6 +2,8 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include <cstdint>
++
+ #include "device/base/synchronization/one_writer_seqlock.h"
+ 
+ namespace device {
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/device/bluetooth/public/cpp/bluetooth_uuid.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/device/bluetooth/public/cpp/bluetooth_uuid.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/device/bluetooth/public/cpp/bluetooth_uuid.h	2024-03-14 13:27:43.809048247 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/device/bluetooth/public/cpp/bluetooth_uuid.h	2024-03-15 10:46:46.409034325 +0000
+@@ -5,6 +5,7 @@
+ #ifndef DEVICE_BLUETOOTH_PUBLIC_CPP_BLUETOOTH_UUID_H_
+ #define DEVICE_BLUETOOTH_PUBLIC_CPP_BLUETOOTH_UUID_H_
+ 
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ 
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/gpu/command_buffer/common/webgpu_cmd_enums.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/gpu/command_buffer/common/webgpu_cmd_enums.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/gpu/command_buffer/common/webgpu_cmd_enums.h	2024-03-14 13:27:45.052052428 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/gpu/command_buffer/common/webgpu_cmd_enums.h	2024-03-15 10:48:50.023437092 +0000
+@@ -5,6 +5,8 @@
+ #ifndef GPU_COMMAND_BUFFER_COMMON_WEBGPU_CMD_ENUMS_H_
+ #define GPU_COMMAND_BUFFER_COMMON_WEBGPU_CMD_ENUMS_H_
+ 
++#include <cstdint>
++
+ namespace gpu {
+ namespace webgpu {
+ 
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/gpu/config/device_perf_info.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/gpu/config/device_perf_info.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/gpu/config/device_perf_info.h	2024-03-14 13:27:45.065052471 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/gpu/config/device_perf_info.h	2024-03-15 10:49:57.512656983 +0000
+@@ -5,6 +5,7 @@
+ #ifndef GPU_CONFIG_DEVICE_PERF_INFO_H_
+ #define GPU_CONFIG_DEVICE_PERF_INFO_H_
+ 
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ 
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_feature_info.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_feature_info.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_feature_info.h	2024-03-14 13:27:45.067052478 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_feature_info.h	2024-03-15 10:50:20.183730854 +0000
+@@ -5,6 +5,7 @@
+ #ifndef GPU_CONFIG_GPU_FEATURE_INFO_H_
+ #define GPU_CONFIG_GPU_FEATURE_INFO_H_
+ 
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ 
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_preferences.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_preferences.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_preferences.h	2024-03-14 13:27:45.066052475 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_preferences.h	2024-03-15 10:50:38.542790675 +0000
+@@ -5,6 +5,7 @@
+ #ifndef GPU_CONFIG_GPU_PREFERENCES_H_
+ #define GPU_CONFIG_GPU_PREFERENCES_H_
+ 
++#include <cstdint>
+ #include <stddef.h>
+ #include <string>
+ #include <vector>
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/net/cookies/cookie_inclusion_status.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/net/cookies/cookie_inclusion_status.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/net/cookies/cookie_inclusion_status.h	2024-03-14 13:27:43.093045839 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/net/cookies/cookie_inclusion_status.h	2024-03-15 10:51:04.531875353 +0000
+@@ -5,6 +5,7 @@
+ #ifndef NET_COOKIES_COOKIE_INCLUSION_STATUS_H_
+ #define NET_COOKIES_COOKIE_INCLUSION_STATUS_H_
+ 
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ 
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/abseil-cpp/absl/strings/internal/str_format/extension.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/abseil-cpp/absl/strings/internal/str_format/extension.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/abseil-cpp/absl/strings/internal/str_format/extension.h	2024-03-14 13:27:46.683057913 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/abseil-cpp/absl/strings/internal/str_format/extension.h	2024-03-15 10:54:40.617579415 +0000
+@@ -18,6 +18,7 @@
+ 
+ #include <limits.h>
+ 
++#include <cstdint>
+ #include <cstddef>
+ #include <cstring>
+ #include <ostream>
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/angle/include/GLSLANG/ShaderVars.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/angle/include/GLSLANG/ShaderVars.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/angle/include/GLSLANG/ShaderVars.h	2024-03-14 13:27:52.447077298 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/angle/include/GLSLANG/ShaderVars.h	2024-03-15 10:55:28.931736832 +0000
+@@ -10,6 +10,7 @@
+ #ifndef GLSLANG_SHADERVARS_H_
+ #define GLSLANG_SHADERVARS_H_
+ 
++#include <cstdint>
+ #include <algorithm>
+ #include <array>
+ #include <string>
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/angle/src/common/angleutils.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/angle/src/common/angleutils.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/angle/src/common/angleutils.h	2024-03-14 13:27:52.545077627 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/angle/src/common/angleutils.h	2024-03-15 10:55:58.804834168 +0000
+@@ -15,6 +15,7 @@
+ #    include "absl/container/flat_hash_map.h"
+ #endif  // defined(ANGLE_USE_ABSEIL)
+ 
++#include <cstdint>
+ #include <climits>
+ #include <cstdarg>
+ #include <cstddef>
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/breakpad/breakpad/src/client/linux/handler/minidump_descriptor.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/breakpad/breakpad/src/client/linux/handler/minidump_descriptor.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/breakpad/breakpad/src/client/linux/handler/minidump_descriptor.h	2024-03-14 13:27:51.652074624 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/breakpad/breakpad/src/client/linux/handler/minidump_descriptor.h	2024-03-15 10:57:14.952082395 +0000
+@@ -30,6 +30,7 @@
+ #ifndef CLIENT_LINUX_HANDLER_MINIDUMP_DESCRIPTOR_H_
+ #define CLIENT_LINUX_HANDLER_MINIDUMP_DESCRIPTOR_H_
+ 
++#include <cstdint>
+ #include <assert.h>
+ #include <sys/types.h>
+ 
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/perfetto/include/perfetto/ext/base/uuid.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/perfetto/include/perfetto/ext/base/uuid.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/perfetto/include/perfetto/ext/base/uuid.h	2024-03-14 13:27:45.756054795 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/perfetto/include/perfetto/ext/base/uuid.h	2024-03-15 10:57:53.513208099 +0000
+@@ -17,6 +17,7 @@
+ #ifndef INCLUDE_PERFETTO_EXT_BASE_UUID_H_
+ #define INCLUDE_PERFETTO_EXT_BASE_UUID_H_
+ 
++#include <cstdint>
+ #include <array>
+ #include <string>
+ 
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/webrtc/call/rtp_demuxer.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/webrtc/call/rtp_demuxer.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/webrtc/call/rtp_demuxer.h	2024-03-14 13:27:46.287056581 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/webrtc/call/rtp_demuxer.h	2024-03-15 10:58:43.177369996 +0000
+@@ -11,6 +11,7 @@
+ #ifndef CALL_RTP_DEMUXER_H_
+ #define CALL_RTP_DEMUXER_H_
+ 
++#include <cstdint>
+ #include <map>
+ #include <set>
+ #include <string>
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/third_party/base64/base64.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/third_party/base64/base64.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/third_party/base64/base64.h	2024-03-14 13:27:46.005055632 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/third_party/base64/base64.h	2024-03-15 10:59:32.856531943 +0000
+@@ -12,6 +12,7 @@
+ #ifndef RTC_BASE_THIRD_PARTY_BASE64_BASE64_H_
+ #define RTC_BASE_THIRD_PARTY_BASE64_BASE64_H_
+ 
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ 
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/ui/events/gesture_event_details.cc qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/ui/events/gesture_event_details.cc
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/ui/events/gesture_event_details.cc	2024-03-14 13:27:43.604047558 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/ui/events/gesture_event_details.cc	2024-03-15 18:53:59.688584563 +0000
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include <cstdint>
+ #include "ui/events/gesture_event_details.h"
+ #include "base/check_op.h"
+ #include "base/notreached.h"
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/v8/src/base/logging.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/v8/src/base/logging.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/v8/src/base/logging.h	2024-03-14 13:27:56.087089539 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/v8/src/base/logging.h	2024-03-15 11:00:03.834632926 +0000
+@@ -5,6 +5,7 @@
+ #ifndef V8_BASE_LOGGING_H_
+ #define V8_BASE_LOGGING_H_
+ 
++#include <cstdint>
+ #include <cstring>
+ #include <sstream>
+ #include <string>
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/v8/src/base/macros.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/v8/src/base/macros.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/v8/src/base/macros.h	2024-03-14 13:27:56.086089536 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/v8/src/base/macros.h	2024-03-15 11:00:25.271702805 +0000
+@@ -5,6 +5,7 @@
+ #ifndef V8_BASE_MACROS_H_
+ #define V8_BASE_MACROS_H_
+ 
++#include <cstdint>
+ #include <limits>
+ #include <type_traits>
+ 
+diff -ruN qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/v8/src/inspector/v8-string-conversions.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/v8/src/inspector/v8-string-conversions.h
+--- qt-everywhere-src-5.15.11.org/qtwebengine/src/3rdparty/chromium/v8/src/inspector/v8-string-conversions.h	2024-03-14 13:27:56.046089401 +0000
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/v8/src/inspector/v8-string-conversions.h	2024-03-15 11:00:51.074786919 +0000
+@@ -5,6 +5,7 @@
+ #ifndef V8_INSPECTOR_V8_STRING_CONVERSIONS_H_
+ #define V8_INSPECTOR_V8_STRING_CONVERSIONS_H_
+ 
++#include <cstdint>
+ #include <string>
+ 
+ // Conversion routines between UT8 and UTF16, used by string-16.{h,cc}. You may
+diff -ruN qt-everywhere-src-5.15.13.org/qtwebengine/src/3rdparty/chromium/third_party/xcbproto/src/src/present.xml qt-everywhere-src-5.15.13/qtwebengine/src/3rdparty/chromium/third_party/xcbproto/src/src/present.xml
+--- qt-everywhere-src-5.15.13.org/qtwebengine/src/3rdparty/chromium/third_party/xcbproto/src/src/present.xml	2024-03-14 13:27:52.060075996 +0000
++++ qt-everywhere-src-5.15.13/qtwebengine/src/3rdparty/chromium/third_party/xcbproto/src/src/present.xml	2024-03-23 09:26:13.650758730 +0000
+@@ -89,7 +89,7 @@
+     </reply>
+   </request>
+ 
+-  <request name="Pixmap" opcode="1">
++  <request name="PresentPixmap" opcode="1">
+     <required_start_align align="8" />
+     <field type="WINDOW" name="window" />
+     <field type="PIXMAP" name="pixmap" />
+diff -ruN qt-everywhere-src-5.15.13.org/qtwebengine/src/3rdparty/chromium/extensions/browser/api/audio/audio_device_id_calculator.h qt-everywhere-src-5.15.13/qtwebengine/src/3rdparty/chromium/extensions/browser/api/audio/audio_device_id_calculator.h
+--- qt-everywhere-src-5.15.13.org/qtwebengine/src/3rdparty/chromium/extensions/browser/api/audio/audio_device_id_calculator.h	2024-03-14 13:27:55.702088244 +0000
++++ qt-everywhere-src-5.15.13/qtwebengine/src/3rdparty/chromium/extensions/browser/api/audio/audio_device_id_calculator.h	2024-03-23 20:30:28.015096733 +0000
+@@ -7,7 +7,7 @@
+ 
+ #include <map>
+ #include <string>
+-
++#include <cstdint>
+ #include "base/macros.h"
+ 
+ namespace content {
