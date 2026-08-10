@@ -31,11 +31,18 @@ exts_list = [
     }),
 ]
 
-# Flatten the PoPoolation2 archive contents into the installation directory
-# and remove the redundant extracted source/build directories.
+fix_perl_shebang_for = [
+    '*.pl',
+    'export/*.pl',
+    'indel_filtering/*.pl',
+]
+
+# Flatten the PoPoolation2 archive contents into the installation directory,
+# remove redundant source/build directories, and make Perl scripts executable.
 postinstallcmds = [
     'cp -a %(installdir)s/popoolation2_%(version)s/. %(installdir)s/',
     'rm -rf %(installdir)s/popoolation2_%(version)s %(installdir)s/TextNSP',
+    "find %(installdir)s -type f -name '*.pl' -exec chmod 755 {} +",
 ]
 
 postinstallpatches = ['PoPoolation2-1201_fix-fisher-test-window-summary-method.patch']
@@ -60,17 +67,25 @@ sanity_check_paths = {
 
 sanity_check_commands = [
     'perl -MText::NSP::Measures::2D::Fisher::twotailed -e 1',
-    'perl %(installdir)s/mpileup2sync.pl --test',
-    'perl %(installdir)s/fisher-test.pl --test',
-    'perl %(installdir)s/fst-sliding.pl --test',
-    'perl %(installdir)s/cmh-test.pl --test',
+    'mpileup2sync.pl --test',
+    'fisher-test.pl --test',
+    'fst-sliding.pl --test',
+    'cmh-test.pl --test',
 ]
 
-modextrapaths = {'PERL5LIB': local_perl_libdir}
+modextrapaths = {
+    'PATH': [
+        '',
+        'export',
+        'indel_filtering',
+    ],
+    'PERL5LIB': local_perl_libdir,
+}
 
 modloadmsg = """
-PoPoolation2 scripts are installed in $EBROOTPOPOOLATION2 and can be run with Perl, for example:
-    perl $EBROOTPOPOOLATION2/fst-sliding.pl --help
+PoPoolation2 Perl scripts can be run directly from the command line, for example:
+    fst-sliding.pl --help
+    fisher-test.pl --help
 
 The multithreaded Java implementation of mpileup2sync can be run with:
     java -jar $EBROOTPOPOOLATION2/mpileup2sync.jar --help
