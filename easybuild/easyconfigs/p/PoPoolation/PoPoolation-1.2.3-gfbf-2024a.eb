@@ -22,6 +22,17 @@ dependencies = [
 # debug/ contains old development/debugging fixtures
 postinstallcmds = ['rm -r %(installdir)s/.svn %(installdir)s/debug']
 
+fix_perl_shebang_for = [
+    '*.pl',
+    'basic-pipeline/*.pl',
+    'syn-nonsyn/*.pl',
+]
+
+postinstallcmds = [
+    'rm -rf %(installdir)s/.svn %(installdir)s/debug',
+    "find %(installdir)s -type f -name '*.pl' -exec chmod 755 {} +",
+]
+
 sanity_check_paths = {
     'files': [
         'Variance-at-position.pl',
@@ -42,16 +53,26 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = [
-    'perl %(installdir)s/Variance-sliding.pl --test',
-    'perl %(installdir)s/basic-pipeline/trim-fastq.pl --test',
+    'Variance-sliding.pl --test',
+    "Variance-at-position.pl --help 2>&1 | grep -q 'SYNOPSIS'",
+    'trim-fastq.pl --test',
     'perl -c %(installdir)s/Variance-at-position.pl',
     'perl -c %(installdir)s/calculate-dxy.pl',
     'perl -c %(installdir)s/mauve-parser.pl',
 ]
 
+modextrapaths = {
+    'PATH': [
+        '',
+        'basic-pipeline',
+        'syn-nonsyn',
+    ],
+}
+
 modloadmsg = """
-PoPoolation scripts are installed in $EBROOTPOPOOLATION and should be run with Perl, for example:
-    perl $EBROOTPOPOOLATION/Variance-sliding.pl --help
+PoPoolation Perl scripts can be run directly from the command line, for example:
+    Variance-sliding.pl --help
+    trim-fastq.pl --help
 """
 
 moduleclass = 'bio'
