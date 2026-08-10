@@ -1,0 +1,72 @@
+# Author: Jiri Furst <jiri.furst@gmail.com>
+# Based on Dakota 6.15 easyconfig by Sebastien Varrette (Falkor)
+easyblock = 'CMakeMake'
+
+name = 'Dakota'
+version = '6.22.0'
+
+homepage = "https://dakota.sandia.gov/"
+description = """
+ The Dakota project delivers both state-of-the-art research and robust, usable
+ software for optimization and UQ. Broadly, the Dakota software's advanced
+ parametric analyses enable design exploration, model calibration, risk
+ analysis, and quantification of margins and uncertainty with computational
+ models.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+# Disable architecture optimization, otherwise the basic tests may fail
+toolchainopts = {'pic': True, 'usempi': True, 'optarch': False}
+
+github_account = "snl-dakota"
+source_urls = [GITHUB_RELEASE]
+sources = ["%(namelower)s-%(version)s-public-src-cli.tar.gz"]
+checksums = ['31d76636e4d22e6e847de3ada8cbf35a6e6c2c805ccd8677c8c4210f0ff53e07']
+
+dependencies = [
+    ('Boost',    '1.82.0'),
+    ('Perl',     '5.36.1'),
+    ('Python',   '3.11.3'),
+    ('HDF5',     '1.14.0'),
+    ('GSL',      '2.7'),
+]
+
+builddependencies = [
+    ('CMake', '3.26.3')
+]
+
+build_shared_libs = True
+
+# disable GUI
+configopts = "-DHAVE_X_GRAPHICS=OFF "
+# set other dependencies
+configopts += "-DBLAS_LIBS=${EBROOTFLEXIBLAS}/lib/libflexiblas.%s " % SHLIB_EXT
+configopts += "-DLAPACK_LIBS=${EBROOTFLEXIBLAS}/lib/libflexiblas.%s " % SHLIB_EXT
+configopts += "-DDAKOTA_HAVE_MPI=ON "
+configopts += "-DBoost_NO_SYSTEM_PATHS=ON "
+configopts += "-DDAKOTA_HAVE_HDF5=ON "
+configopts += "-DDAKOTA_HAVE_GSL=ON "
+configopts += "-DPARALLEL_LEVEL=4 "
+
+# allow oversubscription of MPI ranks to cores
+pretestopts = "export OMPI_MCA_rmaps_base_oversubscribe=true && "
+runtest = ' test ARGS="-L AcceptanceTest -j %(parallel)s" '
+
+# Run install step in parallel
+installopts = ' -j %(parallel)s '
+
+# Dakota copies the realpath of all its `.so` dependencies next to the executables inside the $EBROOT/bin folder.
+# This can cause the sanity check to fail if this package is compiled with RPATH while some of the dependecies are
+# not (the `readelf` check would fail as it will not find the RPATH secion)
+check_readelf_rpath = False
+sanity_check_paths = {
+    'files': ["bin/dakota"],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "dakota -v",
+    "dakota -h",
+]
+
+moduleclass = 'math'

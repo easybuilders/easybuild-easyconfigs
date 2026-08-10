@@ -1,0 +1,162 @@
+Ctypes heavily relies on LD_LIBRARY_PATH in it's find_library, ctypes.CDLL, ctypes.cdll.LoadLibrary functions.
+This patch is meant for systems where LD_LIBRARY_PATH is filtered. It will rely on LIBRARY_PATH instead.
+It makes the following essential changes:
+- Whereever find_library searched LD_LIBRARY_PATH, LIBRARY_PATH will be searched instead
+- find_library is adapted so that it returns the full library path, not just the library name, which replaces
+  https://github.com/easybuilders/easybuild-easyblocks/pull/3352
+- The internal function _findLib_gcc, one of the functions called by find_library to locate libraries, is adapted
+  so that it also works when called by full library name (e.g. libfoo.so.1) instead of the short name (foo) only
+  This is necessary since CDLL is typically called by full name, and needs to be able to call find_library 9see below)
+- The initialization of CDLL is adapted so that it calls find_library. Then, it overwrites the name
+  with the full library path. This defers all the library localization issues to the (patched) find_library
+Authors: Danilo Gonzalez (DoItNow group), Caspar van Leeuwen (SURF) and Alan O'cais (CECAM)
+diff -Nru Python-3.11.5.orig/Lib/ctypes/__init__.py Python-3.11.5/Lib/ctypes/__init__.py
+--- Python-3.11.5.orig/Lib/ctypes/__init__.py	2025-10-13 15:58:38.405564000 +0200
++++ Python-3.11.5/Lib/ctypes/__init__.py	2025-10-13 16:01:08.717507706 +0200
+@@ -14,6 +14,9 @@
+ 
+ from struct import calcsize as _calcsize
+ 
++# Add util to use find_library capabilities
++from ctypes import util
++
+ if __version__ != _ctypes_version:
+     raise Exception("Version number mismatch", __version__, _ctypes_version)
+ 
+@@ -349,6 +352,12 @@
+             flags |= _FUNCFLAG_USE_ERRNO
+         if use_last_error:
+             flags |= _FUNCFLAG_USE_LASTERROR
++        # define CDLL instance name as fullpath
++        if _os.name == "posix":
++            if name:
++                fullpath = util.find_library(name)
++                if fullpath is not None:
++                    self._name = fullpath
+         if _sys.platform.startswith("aix"):
+             """When the name contains ".a(" and ends with ")",
+                e.g., "libFOO.a(libFOO.so)" - this is taken to be an
+diff -Nru Python-3.11.5.orig/Lib/ctypes/util.py Python-3.11.5/Lib/ctypes/util.py
+--- Python-3.11.5.orig/Lib/ctypes/util.py	2025-10-13 15:58:38.306949000 +0200
++++ Python-3.11.5/Lib/ctypes/util.py	2025-10-13 17:17:07.589997890 +0200
+@@ -99,12 +99,19 @@
+         with open(filename, 'br') as thefile:
+             return thefile.read(4) == elf_header
+ 
+-    def _findLib_gcc(name):
++    def _findLib_gcc(name, name_is_fullname=False):
+         # Run GCC's linker with the -t (aka --trace) option and examine the
+         # library name it prints out. The GCC command will fail because we
+         # haven't supplied a proper program with main(), but that does not
+         # matter.
+-        expr = os.fsencode(r'[^\(\)\s]*lib%s\.[^\(\)\s]*' % re.escape(name))
++        # If the name is a full library name (e.g. libfoo.so), this function calls gcc with -l:<name> instead of
++        # -l<name> and uses a slightly more strict regular expression to avoid matching the error
++        # '/path/to/ld: cannot find -l:libfoo.so: No such file or directory'
++        # since we only want a regex match if the library exists
++        if name_is_fullname:
++            expr = os.fsencode(r'^[^\(\)\s]*%s[^\(\)\s]*' % re.escape(name))
++        else:
++            expr = os.fsencode(r'[^\(\)\s]*lib%s\.[^\(\)\s]*' % re.escape(name))
+ 
+         c_compiler = shutil.which('gcc')
+         if not c_compiler:
+@@ -115,7 +122,10 @@
+ 
+         temp = tempfile.NamedTemporaryFile()
+         try:
+-            args = [c_compiler, '-Wl,-t', '-o', temp.name, '-l' + name]
++            if name_is_fullname:
++                args = [c_compiler, '-Wl,-t', '-o', temp.name, '-l:' + name]
++            else:
++                args = [c_compiler, '-Wl,-t', '-o', temp.name, '-l' + name]
+ 
+             env = dict(os.environ)
+             env['LC_ALL'] = 'C'
+@@ -136,7 +146,12 @@
+                 # Raised if the file was already removed, which is the normal
+                 # behaviour of GCC if linking fails
+                 pass
+-        res = re.findall(expr, trace)
++        # If name_is_fullname, the regex in expr starts wity ^.
++        # Use re.MULTILINE, to make surethat ^ matches the start of EACH line in trace
++        if name_is_fullname:
++            res = re.findall(expr, trace, re.MULTILINE)
++        else:
++            res = re.findall(expr, trace)
+         if not res:
+             return None
+ 
+@@ -146,8 +161,11 @@
+             # shared objects. See bpo-41976 for more details
+             if not _is_elf(file):
+                 continue
+-            return os.fsdecode(file)
+-
++            file = os.fsdecode(file)
++            # Avoid returning CUDA stubs libraries, as those are not intended for runtime use
++            if re.search(r'cuda.*stubs', file, re.IGNORECASE):
++                continue
++            return file
+ 
+     if sys.platform == "sunos5":
+         # use /usr/ccs/bin/dump on solaris
+@@ -283,7 +301,8 @@
+             abi_type = mach_map.get(machine, 'libc6')
+ 
+             # XXX assuming GLIBC's ldconfig (with option -p)
+-            regex = r'\s+(lib%s\.[^\s]+)\s+\(%s'
++            # Regular expresion that captures complete line of ldconfig -p output that matches with library name.
++            regex = r'\s+(lib%s\.[^\s]+)\s+\(%s\)\s+=>\s+(\S+)'
+             regex = os.fsencode(regex % (re.escape(name), abi_type))
+             try:
+                 with subprocess.Popen(['/sbin/ldconfig', '-p'],
+@@ -293,7 +312,8 @@
+                                       env={'LC_ALL': 'C', 'LANG': 'C'}) as p:
+                     res = re.search(regex, p.stdout.read())
+                     if res:
+-                        return os.fsdecode(res.group(1))
++                        # return the regex second group, that is the full path to the library
++                        return os.fsdecode(res.group(2))
+             except OSError:
+                 pass
+ 
+@@ -301,10 +321,17 @@
+             # See issue #9998 for why this is needed
+             expr = r'[^\(\)\s]*lib%s\.[^\(\)\s]*' % re.escape(name)
+             cmd = ['ld', '-t']
+-            libpath = os.environ.get('LD_LIBRARY_PATH')
++            # use LIBRARY_PATH instead of LD_LIBRARY_PATH to use EB provided shared libraries
++            libpath = os.environ.get('LIBRARY_PATH')
+             if libpath:
+                 for d in libpath.split(':'):
+-                    cmd.extend(['-L', d])
++                    # Avoid picking up CUDA stubs libraries, as those are not intended for runtime use
++                    parts = d.split('/')
++                    # We want to add 'd' in all cases EXCEPT if the path contains both CUDA (as partial
++                    # directory name) and stubs (as full directory name). I.e. /my/bar/stubs and /my/cudafoo
++                    # will be added to cmd, but /my/cudafoo/bar/stubs won't be
++                    if not (any('cuda' in p.lower() for p in parts) and 'stubs' in parts):
++                        cmd.extend(['-L', d])
+             cmd.extend(['-o', os.devnull, '-l%s' % name])
+             result = None
+             try:
+@@ -325,9 +352,15 @@
+             return result
+ 
+         def find_library(name):
+-            # See issue #9998
+-            return _findSoname_ldconfig(name) or \
+-                   _get_soname(_findLib_gcc(name)) or _get_soname(_findLib_ld(name))
++            # Redefine find_library function, it will return the provided name if
++            # path exist, else it will use the set of functions to find the full library path.
++            # it will return the one that has a match.
++            if os.path.isabs(name) and os.path.exists(name):
++                return name
++            else:
++                return _findSoname_ldconfig(name) or \
++                   _findLib_gcc(name) or _findLib_ld(name) or \
++                   _findLib_gcc(name, name_is_fullname=True)
+ 
+ ################################################################
+ # test code

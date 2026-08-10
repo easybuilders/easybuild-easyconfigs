@@ -1,0 +1,63 @@
+easyblock = 'MakeCp'
+
+name = 'MetaGeneMark-2'
+version = '1.06'
+
+homepage = 'https://github.com/gatech-genemark/MetaGeneMark-2'
+description = """MetaGeneMark-2 is an unsupervised metagenomic gene finder.
+It improves on MetaGeneMark by adding models for better gene start prediction,
+as well as automatic selection of genetic code (4 or 11). The models for gene
+start prediction are based in part on the work done for GeneMarkS-2; they include
+Shine-Dalgarno RBS, non-Shine-Dalgarno (or non-canonical) RBS, and bacterial and
+archaeal promoter models (for use in cases of leaderless transcription).
+"""
+
+toolchain = {'name': 'GCC', 'version': '13.2.0'}
+
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.xz',
+    'git_config': {
+        'url': 'https://github.com/gatech-genemark',
+        'repo_name': '%(name)s',
+        'commit': 'a455a8b48ebc6f681b81202c0760d7830f015fe5',
+    }
+}]
+patches = ['MetaGeneMark-2-fix_Makefile.patch']
+checksums = [
+    {'MetaGeneMark-2-1.06.tar.xz': '0098b905c1b96b2916abdfeb05702e3f7db35c45a4f92d623da295c9cbae3be8'},
+    {'MetaGeneMark-2-fix_Makefile.patch': '6f0fe0fefc053833f394e6ce47fe17596fda552a34e21901fd24d1f60a2d10d0'},
+]
+
+dependencies = [
+    ('Perl', '5.38.0'),
+    ('Boost', '1.83.0'),
+]
+
+build_cmd = ' && '.join([
+    'cd src',
+    'make -f Makefile.ubuntu'
+])
+
+fix_perl_shebang_for = ['bin/run_mgm.pl']
+
+files_to_copy = [
+    (['src/gmhmmp2', 'src/run_mgm.pl'], 'bin'),
+    (['src/*.h', 'src/*.hpp'], 'include'),
+    (['src/mgm2_11.mod', 'src/mgm2_4.mod'], 'lib'),
+]
+
+postinstallcmds = [
+    'chmod a+rx %(installdir)s/bin/run_mgm.pl',
+]
+
+sanity_check_paths = {
+    'files': ['bin/gmhmmp2'],
+    'dirs': ['include']
+}
+
+sanity_check_commands = [
+    'run_mgm.pl | grep seq',
+    'gmhmmp2 --help 2>&1 | grep seq',
+]
+
+moduleclass = 'bio'

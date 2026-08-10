@@ -1,0 +1,43 @@
+easyblock = 'Bundle'
+
+name = 'LAPACK++'
+version = '2025.05.28'
+
+homepage = 'https://github.com/icl-utk-edu/lapackpp'
+description = """LAPACK++ is a C++ wrapper around CPU and GPU LAPACK and LAPACK-like linear algebra libraries.
+BLAS++ is a C++ wrapper around CPU and GPU BLAS (basic linear algebra subroutines."""
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('testsweeper', '2025.05.28'),
+]
+
+components = [
+    ('BLAS++', version, {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/icl-utk-edu/blaspp/releases/download/v%(version)s/'],
+        'sources': ['blaspp-%(version)s.tar.gz'],
+        'checksums': ['c54a302c78676e611e18339cab388992ef02d3fb323a6bae7a0df54643245629'],
+        'start_dir': 'blaspp-%(version)s',
+        'configopts': '-Duse_cmake_find_blas=ON -Dgpu_backend=OFF',
+        'runtest': 'check',
+    }),
+    ('LAPACK++', version, {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/icl-utk-edu/lapackpp/releases/download/v%(version)s/'],
+        'sources': ['lapackpp-%(version)s.tar.gz'],
+        'checksums': ['cd436665cf6320ec3b1ef61d681a6d357e5b159db6d20171401d098c75fe9006'],
+        'start_dir': 'lapackpp-%(version)s',
+        'configopts': '-Duse_cmake_find_lapack=ON -Dgpu_backend=OFF',
+        'runtest': 'check',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['include/blas.hh', 'include/lapack.hh', f'lib/libblaspp.{SHLIB_EXT}', f'lib/liblapackpp.{SHLIB_EXT}'],
+    'dirs': [],
+}
+
+moduleclass = 'math'

@@ -1,0 +1,67 @@
+# Based on the EasyConfig templates provided my Alex Domingo
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'MOAB'
+version = '5.5.0'
+
+homepage = 'https://sigma.mcs.anl.gov/moab-library'
+description = """
+MOAB — The Mesh-Oriented datABase
+
+The Mesh-Oriented datABase (MOAB) is a component for representing and
+evaluating mesh data. MOAB can store and represent structured and
+unstructured meshes consisting of elements in the finite element “zoo”,
+including polygons and polyhedra.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+# This does not seem to work within EasyBuild, so we include download
+# instructions instead:
+# source_urls = ['https://web.cels.anl.gov/projects/sigma/downloads/moab/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['58969f8a1b209ec9036c08c53a6b7078b368eb3bf99d0368a4de5a2f2a8db678']
+
+download_instructions = """
+The automatic download does not work, so please manually download that file:
+https://web.cels.anl.gov/projects/sigma/downloads/moab/moab-5.5.0.tar.gz
+and place it in the correct folder.
+"""
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+    ('Eigen', '3.4.0'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.5'),
+    ('netCDF', '4.9.2'),
+    ('PnetCDF', '1.14.0'),
+    ('METIS', '5.1.0'),
+    ('ParMETIS', '4.0.3'),
+    ('SCOTCH', '7.0.6'),
+    ('Hypre', '2.32.0'),
+    ('Zoltan', '3.901'),
+]
+
+configopts = '-DENABLE_MPI=ON -DENABLE_HDF5=ON -DENABLE_ZLIB=ON '
+configopts += '-DENABLE_NETCDF=ON -DNETCDF_ROOT=$EBROOTNETCDF '
+configopts += '-DENABLE_PNETCDF=ON -DPNETCDF_ROOT=$EBROOTPNETCDF '
+configopts += '-DENABLE_METIS=ON -DENABLE_PARMETIS=ON '
+configopts += '-DENABLE_ZOLTAN=ON -DZOLTAN_DIR=$EBROOTZOLTAN '
+
+sanity_check_paths = {
+    'files': ['bin/mbpart', f'lib/lib%(name)s.{SHLIB_EXT}'],
+    'dirs': ['include'],
+}
+
+runtest = 'check'
+
+sanity_check_commands = [
+    "mbpart --help",
+]
+
+moduleclass = 'vis'
