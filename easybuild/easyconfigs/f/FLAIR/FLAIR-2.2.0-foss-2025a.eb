@@ -31,7 +31,7 @@ dependencies = [
     ('pybedtools', '0.12.0'),
     ('minimap2', '2.30'),
     ('Pysam', '0.23.3'),
-    ('R-bundle-Bioconductor', '3.22', '-R-%(rver)s'),  # provides DESeq2, DRIMSeq, stageR
+    ('R-bundle-Bioconductor', '3.22', '-R-%(rver)s'),  # provides DESeq2, DRIMSeq, stageR, apeglm
     ('matplotlib', '3.10.3'),
     ('Seaborn', '0.13.2'),
     ('Kent_tools', '487'),  # required for bedPartition command
@@ -55,10 +55,11 @@ exts_list = [
         'modulename': 'flair',
         'source_urls': ['https://github.com/BrooksLabUCSC/flair/archive/'],
         'sources': [{'download_filename': "%s.tar.gz" % local_commit, 'filename': '%(name)s-%(version)s.tar.gz'}],
-        'patches': ['FLAIR-2.2.0_python313.patch'],
+        'patches': ['FLAIR-2.2.0_python313.patch', 'FLAIR-2.2.0_fix-rpy2-3.6.patch'],
         'checksums': [
             '3b5ebab781e1c4fc43e7d2f2670a2dd735b6050bdd5d22a98db789b32369fbff',  # FLAIR-2.2.0.tar.gz
             '935d298ad80dc8893fc6813d0da7d9b927bf319a37932116e44db651c94a0e21',  # FLAIR-2.2.0_python313.patch
+            '3526d24e219e57a0bb350acceadcb09a4f50fb79ea12dff6e40537cd7c4be5be',  # FLAIR-2.2.0_fix-rpy2-3.6.patch
         ],
     }),
 ]
@@ -70,7 +71,17 @@ sanity_check_paths = {
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 
-local_subcommands = ['align', 'correct', 'collapse', 'quantify']
-sanity_check_commands = ["%%(namelower)s %s --help" % c for c in local_subcommands] + ["%(namelower)s --version"]
+sanity_check_commands = [
+    "flair --version",
+    "flair align --help",
+    "flair correct --help",
+    "flair collapse --help",
+    "flair quantify --help",
+    "flair combine --help",
+    "flair diffexp --help",
+    "flair diffsplice --help",
+    "python -c 'from flair import runDE, runDU, runDS'",
+    'Rscript -e "library(apeglm)"',
+]
 
 moduleclass = 'bio'
