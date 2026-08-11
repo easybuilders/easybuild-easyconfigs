@@ -5,10 +5,14 @@ Enable the default for non-CI environments to cut down testing time.
 Don't check for SANDCASTLE when determining whether to skip disabled tests.
 However, the disabled-tests JSON file needs to be downloaded from S3 and placed at "tests/.pytorch-disabled-tests.json".
 
+This file may be modified and/or redownloaded in import_test_stats.py
+Disable this by just returning it's content as-if it is always up to date.
+If it doesn't exist the failure will be handled by the calling function.
+This modification removes the PR number field, so make it optional in the tuple expansion to allow either format.
+
 Author: Alexander Grund (TU Dresden)
 
 diff --git a/test/run_test.py b/test/run_test.py
-index 44a15d4ab2c..269d4206f3e 100755
 --- a/test/run_test.py
 +++ b/test/run_test.py
 @@ -531,7 +531,7 @@ def run_test(
@@ -20,8 +24,19 @@ index 44a15d4ab2c..269d4206f3e 100755
          ci_args = ["--import-slow-tests", "--import-disabled-tests"]
          if RERUN_DISABLED_TESTS:
              ci_args.append("--rerun-disabled-tests")
+diff --git a/tools/stats/import_test_stats.py b/tools/stats/import_test_stats.py
+--- a/tools/stats/import_test_stats.py
++++ b/tools/stats/import_test_stats.py
+@@ -47,6 +47,8 @@ def fetch_and_cache(
+     Path(dirpath).mkdir(exist_ok=True)
+ 
+     path = os.path.join(dirpath, name)
++    with open(path) as f:
++        return cast(dict[str, Any], json.load(f))
+     print(f"Downloading {url} to {path}")
+ 
+     def is_cached_file_valid() -> bool:
 diff --git a/torch/testing/_internal/common_utils.py b/torch/testing/_internal/common_utils.py
-index bfc568bc146..7ef37cccccb 100644
 --- a/torch/testing/_internal/common_utils.py
 +++ b/torch/testing/_internal/common_utils.py
 @@ -2722,11 +2722,11 @@ def check_if_enable(test: unittest.TestCase):
@@ -32,9 +47,10 @@ index bfc568bc146..7ef37cccccb 100644
 +    if True:
          should_skip = False
          skip_msg = ""
- 
+-
 -        for disabled_test, (issue_url, platforms) in disabled_tests_dict.items():
-+        for disabled_test, (pr_num, issue_url, platforms) in disabled_tests_dict.items():
++        # Allow for a potentially existing PR number
++        for disabled_test, (*pr_num, issue_url, platforms) in disabled_tests_dict.items():
              if matches_test(disabled_test):
                  platform_to_conditional: dict = {
                      "mac": IS_MACOS,

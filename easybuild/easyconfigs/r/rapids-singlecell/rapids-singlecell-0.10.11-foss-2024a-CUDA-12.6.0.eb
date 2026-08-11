@@ -1,0 +1,57 @@
+easyblock = 'PythonBundle'
+
+name = 'rapids-singlecell'
+version = '0.10.11'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/scverse/rapids_singlecell'
+description = """rapids-singlecell provides GPU-accelerated single-cell analysis with an AnnData-first API.
+It is largely compatible with Scanpy and includes selected functionality from Squidpy, decoupler, and pertpy.
+Computations use CuPy and NVIDIA RAPIDS for performance on large datasets."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [('hatchling', '1.24.2')]
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('CUDA-Python', '12.6.2.post1', versionsuffix),
+    ('RAPIDS', '24.10.0', versionsuffix),
+    ('SciPy-bundle', '2024.05'),
+    ('anndata', '0.11.4'),
+    ('scanpy', '1.10.4'),
+    ('scikit-misc', '0.5.1'),
+    ('matplotlib', '3.9.2'),
+    ('tqdm', '4.66.5'),
+    ('statsmodels', '0.14.4'),
+    ('scikit-image', '0.25.0'),
+]
+
+local_test_cmd = (
+    'pytest -v tests '
+    # Dask tests spawn processes and open TCP ports
+    '--ignore=tests/dask '
+    # Multi-GPU neighbor tests
+    '--ignore=tests/test_mg_neighbors.py '
+    # Harmony tests download data at runtime
+    '--ignore=tests/test_harmony.py '
+    # Wrong API calls to scanpy from test_neighbors
+    # from scanpy.neighbors._connectivity import jaccard as scanpy_jaccard
+    '--ignore=tests/test_neighbors.py '
+)
+
+exts_list = [
+    ('natsort', '8.4.0', {
+        'checksums': ['45312c4a0e5507593da193dedd04abb1469253b601ecaf63445ad80f0a1ea581'],
+    }),
+    ('rapids-singlecell', version, {
+        'testinstall': True,
+        'runtest': local_test_cmd,
+        'preinstallopts': 'export SETUPTOOLS_SCM_PRETEND_VERSION=%(version)s && ',
+        'source_urls': ['https://github.com/scverse/%(name)s/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['8b6b7d9d145cf1e727adf01471e0e2a4227cc8384aaceb9266a9bb90c6cb6e98'],
+    }),
+]
+
+moduleclass = 'bio'
