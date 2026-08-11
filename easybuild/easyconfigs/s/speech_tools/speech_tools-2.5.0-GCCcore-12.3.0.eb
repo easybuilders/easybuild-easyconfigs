@@ -1,0 +1,63 @@
+easyblock = 'ConfigureMake'
+
+name = 'speech_tools'
+version = '2.5.0'
+
+homepage = ['http://festvox.org/festival/']
+
+description = """
+The Edinburgh Speech Tools Library is a collection of C++ class,
+functions and related programs for manipulating the sorts of objects
+used in speech processing. It includes support for reading and writing
+waveforms, parameter files (LPC, Ceptra, F0) in various formats
+and converting between them.
+It also includes support for linguistic type objects and support
+for various label files and ngrams (with smoothing).
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['http://festvox.org/packed/festival/%(version_major_minor)s']
+sources = ['%(name)s-%(version)s-release.tar.gz']
+patches = [
+    'speech_tools-2.5.0_easybuild.patch',
+    'speech_tools-2.5.0_siodeditline.patch',
+]
+checksums = [
+    'e4fd97ed78f14464358d09f36dfe91bc1721b7c0fa6503e04364fb5847805dcc',  # speech_tools-2.5.0-release.tar.gz
+    '192012d97a671b151f084e0423042e03446a6031a8d7718354f2a56022210921',  # speech_tools-2.5.0_easybuild.patch
+    'b65a91319dbfb11ffe839fb741be832ebe6cc00b820ab6a609c9603f073d8a07',  # speech_tools-2.5.0_siodeditline.patch
+]
+
+unpack_options = '--strip-components=1'
+
+builddependencies = [('binutils', '2.40')]
+
+dependencies = [
+    ('ncurses', '6.4'),
+    ('Perl', '5.36.1'),
+]
+
+# LIBS environmental variable interfers with libs/Makefile line 61: LIBS_ABS=$(subst $(TOP),$$(EST_HOME),$(LIBS))
+prebuildopts = 'unset LIBS &&'
+
+buildininstalldir = True
+
+maxparallel = 1
+
+local_sanity = [
+    'align', 'bcat', 'ch_lab', 'ch_track', 'ch_utt', 'ch_wave', 'design_filter', 'est_program', 'na_play',
+    'na_record', 'ngram_build', 'ols', 'pda', 'pitchmark', 'raw_to_xgraph', 'resynth', 'scfg_make', 'scfg_parse',
+    'scfg_train', 'sig2fv', 'sigfilter', 'siod', 'spectgen', 'tex_to_images', 'tilt_analysis', 'tilt_synthesis',
+    'viterbi', 'wagon', 'wfst_build', 'wfst_run', 'wfst_train', 'xml_parser',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_sanity + ['Makefile', 'pm']] +
+             ['lib/lib%s.a' % x for x in ['estbase', 'estools', 'eststring']],
+    'dirs': []
+}
+
+sanity_check_commands = ['%s -h' % x for x in local_sanity]
+
+moduleclass = 'tools'

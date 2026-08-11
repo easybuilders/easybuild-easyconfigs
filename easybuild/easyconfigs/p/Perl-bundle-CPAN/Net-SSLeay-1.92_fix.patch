@@ -1,0 +1,212 @@
+fix failing tests on RHEL 9.x
+see https://github.com/radiator-software/p5-net-ssleay/pull/433
+diff -ru Net-SSLeay-1.92.orig/t/local/33_x509_create_cert.t Net-SSLeay-1.92/t/local/33_x509_create_cert.t
+--- Net-SSLeay-1.92.orig/t/local/33_x509_create_cert.t	2021-09-29 00:15:32.000000000 +0200
++++ Net-SSLeay-1.92/t/local/33_x509_create_cert.t	2024-03-12 14:42:37.501231963 +0100
+@@ -93,8 +93,8 @@
+         &Net::SSLeay::NID_crl_distribution_points => 'URI:http://pki.dom.com/crl1.pem,URI:http://pki.dom.com/crl2.pem',
+     ), "P_X509_add_extensions");
+ 
+-  ok(my $sha1_digest = Net::SSLeay::EVP_get_digestbyname("sha1"), "EVP_get_digestbyname");
+-  ok(Net::SSLeay::X509_sign($x509, $ca_pk, $sha1_digest), "X509_sign");
++  ok(my $sha256_digest = Net::SSLeay::EVP_get_digestbyname("sha256"), "EVP_get_digestbyname");
++  ok(Net::SSLeay::X509_sign($x509, $ca_pk, $sha256_digest), "X509_sign");
+   
+   is(Net::SSLeay::X509_get_version($x509), 3, "X509_get_version");  
+   is(Net::SSLeay::X509_verify($x509, Net::SSLeay::X509_get_pubkey($ca_cert)), 1, "X509_verify");
+@@ -186,8 +186,8 @@
+    
+   ok(Net::SSLeay::X509_REQ_set_version($req, 2), "X509_REQ_set_version");
+ 
+-  ok(my $sha1_digest = Net::SSLeay::EVP_get_digestbyname("sha1"), "EVP_get_digestbyname");
+-  ok(Net::SSLeay::X509_REQ_sign($req, $pk, $sha1_digest), "X509_REQ_sign");
++  ok(my $sha256_digest = Net::SSLeay::EVP_get_digestbyname("sha256"), "EVP_get_digestbyname");
++  ok(Net::SSLeay::X509_REQ_sign($req, $pk, $sha256_digest), "X509_REQ_sign");
+   
+   ok(my $req_pubkey = Net::SSLeay::X509_REQ_get_pubkey($req), "X509_REQ_get_pubkey");
+   is(Net::SSLeay::X509_REQ_verify($req, $req_pubkey), 1, "X509_REQ_verify");
+@@ -228,7 +228,7 @@
+   ok(Net::SSLeay::X509_set_pubkey($x509ss,$tmppkey), "X509_set_pubkey");
+   Net::SSLeay::EVP_PKEY_free($tmppkey);
+   
+-  ok(Net::SSLeay::X509_sign($x509ss, $ca_pk, $sha1_digest), "X509_sign");
++  ok(Net::SSLeay::X509_sign($x509ss, $ca_pk, $sha256_digest), "X509_sign");
+   like(my $crt_pem = Net::SSLeay::PEM_get_string_X509($x509ss), qr/-----BEGIN CERTIFICATE-----/, "PEM_get_string_X509");
+ 
+   #write_file("tmp_cert2.crt.pem", $crt_pem);
+@@ -296,8 +296,8 @@
+     ok(Net::SSLeay::P_ASN1_TIME_set_isotime(Net::SSLeay::X509_get_notAfter($x509), "2038-01-01T00:00:00Z"), "P_ASN1_TIME_set_isotime+X509_get_notAfter");
+   }
+   
+-  ok(my $sha1_digest = Net::SSLeay::EVP_get_digestbyname("sha1"), "EVP_get_digestbyname");
+-  ok(Net::SSLeay::X509_sign($x509, $ca_pk, $sha1_digest), "X509_sign");
++  ok(my $sha256_digest = Net::SSLeay::EVP_get_digestbyname("sha256"), "EVP_get_digestbyname");
++  ok(Net::SSLeay::X509_sign($x509, $ca_pk, $sha256_digest), "X509_sign");
+   
+   like(my $crt_pem = Net::SSLeay::PEM_get_string_X509($x509), qr/-----BEGIN CERTIFICATE-----/, "PEM_get_string_X509");
+   like(my $key_pem = Net::SSLeay::PEM_get_string_PrivateKey($pk), qr/-----BEGIN (RSA )?PRIVATE KEY-----/, "PEM_get_string_PrivateKey");  
+@@ -311,8 +311,8 @@
+   ok(my $bio = Net::SSLeay::BIO_new_file($req_pem, 'r'), "BIO_new_file");
+   ok(my $req = Net::SSLeay::PEM_read_bio_X509_REQ($bio), "PEM_read_bio_X509");
+   
+-  ok(my $sha1_digest = Net::SSLeay::EVP_get_digestbyname("sha1"), "EVP_get_digestbyname");
+-  is(unpack("H*", Net::SSLeay::X509_REQ_digest($req, $sha1_digest)), "372c21a20a6d4e15bf8ecefb487cc604d9a10960", "X509_REQ_digest");
++  ok(my $sha256_digest = Net::SSLeay::EVP_get_digestbyname("sha256"), "EVP_get_digestbyname");
++  is(unpack("H*", Net::SSLeay::X509_REQ_digest($req, $sha256_digest)), "420e99da1e23e192409ab2a5f1a9b09ac03c52fa4b8bd0d19e561358f9880e88", "X509_REQ_digest");
+   
+   ok(my $req2  = Net::SSLeay::X509_REQ_new(), "X509_REQ_new");  
+   ok(my $name = Net::SSLeay::X509_REQ_get_subject_name($req), "X509_REQ_get_subject_name");
+Only in Net-SSLeay-1.92/t/local: 33_x509_create_cert.t.orig
+diff -ru Net-SSLeay-1.92.orig/t/local/34_x509_crl.t Net-SSLeay-1.92/t/local/34_x509_crl.t
+--- Net-SSLeay-1.92.orig/t/local/34_x509_crl.t	2020-11-18 10:12:44.000000000 +0100
++++ Net-SSLeay-1.92/t/local/34_x509_crl.t	2024-03-12 14:43:38.874896528 +0100
+@@ -39,8 +39,8 @@
+   }
+   
+   is(Net::SSLeay::X509_CRL_get_version($crl1), 1, "X509_CRL_get_version");
+-  ok(my $sha1_digest = Net::SSLeay::EVP_get_digestbyname("sha1"), "EVP_get_digestbyname");
+-  is(unpack("H*",Net::SSLeay::X509_CRL_digest($crl1, $sha1_digest)), 'f0e5c853477a206c03f7347aee09a01d91df0ac5', "X509_CRL_digest");
++  ok(my $sha256_digest = Net::SSLeay::EVP_get_digestbyname("sha256"), "EVP_get_digestbyname");
++  is(unpack("H*",Net::SSLeay::X509_CRL_digest($crl1, $sha256_digest)), '4edc18ec956e722cbcf96589a43535c2d1d557e3cec55b1e421897827c3bb8be', "X509_CRL_digest");
+ }
+ 
+ { ### X509_CRL create
+@@ -100,12 +100,12 @@
+         &Net::SSLeay::NID_authority_key_identifier => 'keyid:always,issuer:always',
+     ), "P_X509_CRL_add_extensions");
+ 
+-  ok(my $sha1_digest = Net::SSLeay::EVP_get_digestbyname("sha1"), "EVP_get_digestbyname");
++  ok(my $sha256_digest = Net::SSLeay::EVP_get_digestbyname("sha256"), "EVP_get_digestbyname");
+   SKIP: {
+     skip('requires openssl-0.9.7', 1) unless Net::SSLeay::SSLeay >= 0x0090700f;
+     ok(Net::SSLeay::X509_CRL_sort($crl), "X509_CRL_sort");
+   }
+-  ok(Net::SSLeay::X509_CRL_sign($crl, $ca_pk, $sha1_digest), "X509_CRL_sign");
++  ok(Net::SSLeay::X509_CRL_sign($crl, $ca_pk, $sha256_digest), "X509_CRL_sign");
+   
+   like(my $crl_pem = Net::SSLeay::PEM_get_string_X509_CRL($crl), qr/-----BEGIN X509 CRL-----/, "PEM_get_string_X509_CRL");
+     
+diff -ru Net-SSLeay-1.92.orig/t/local/44_sess.t Net-SSLeay-1.92/t/local/44_sess.t
+--- Net-SSLeay-1.92.orig/t/local/44_sess.t	2021-09-29 00:15:32.000000000 +0200
++++ Net-SSLeay-1.92/t/local/44_sess.t	2024-03-12 14:42:37.501231963 +0100
+@@ -2,7 +2,7 @@
+ 
+ use lib 'inc';
+ 
+-use Net::SSLeay;
++use Net::SSLeay qw( ERROR_SSL );
+ use Test::Net::SSLeay qw(
+     can_fork data_file_path initialise_libssl is_protocol_usable new_ctx
+     tcp_socket
+@@ -13,7 +13,7 @@
+ if (not can_fork()) {
+     plan skip_all => "fork() not supported on this system";
+ } else {
+-    plan tests => 58;
++    plan tests => 59;
+ }
+ 
+ initialise_libssl();
+@@ -142,6 +142,7 @@
+ my ($server_ctx, $client_ctx, $server_ssl, $client_ssl);
+ 
+ my $server = tcp_socket();
++my $proto_count = 0;
+ 
+ sub server
+ {
+@@ -256,6 +257,14 @@
+ 	Net::SSLeay::set_fd($ssl, $cl);
+ 	my $ret = Net::SSLeay::connect($ssl);
+ 	if ($ret <= 0) {
++	    # Connection might fail due to attempted use of algorithm in key
++	    # exchange that is forbidden by security policy, resulting in ERROR_SSL
++	    my $ssl_err = Net::SSLeay::get_error($ssl, $ret);
++	    if ($ssl_err == ERROR_SSL) {
++	        diag("Protocol $proto, connect() failed, maybe due to security policy");
++	        $usable{$round} = 0;
++	        next;
++	    }
+ 	    diag("Protocol $proto, connect() returns $ret, Error: ".Net::SSLeay::ERR_error_string(Net::SSLeay::ERR_get_error()));
+ 	}
+ 	my $msg = Net::SSLeay::read($ssl);
+@@ -275,6 +284,7 @@
+ 	Net::SSLeay::shutdown($ssl);
+ 	Net::SSLeay::free($ssl);
+ 	close($cl) || die("client close: $!");
++	$proto_count += 1;
+     }
+ 
+     $cl = $server->connect();
+@@ -359,6 +369,8 @@
+         }
+     }
+ 
++    cmp_ok($proto_count, '>=', 1, "At least one protocol fully testable");
++
+     #  use Data::Dumper; print "Server:\n" . Dumper(\%srv_stats);
+     #  use Data::Dumper; print "Client:\n" . Dumper(\%clt_stats);
+ }
+Only in Net-SSLeay-1.92/t/local: 44_sess.t.orig
+diff -ru Net-SSLeay-1.92.orig/t/local/45_exporter.t Net-SSLeay-1.92/t/local/45_exporter.t
+--- Net-SSLeay-1.92.orig/t/local/45_exporter.t	2021-09-29 00:15:32.000000000 +0200
++++ Net-SSLeay-1.92/t/local/45_exporter.t	2024-03-12 14:42:37.501231963 +0100
+@@ -2,7 +2,7 @@
+ 
+ use lib 'inc';
+ 
+-use Net::SSLeay;
++use Net::SSLeay qw( ERROR_SSL );
+ use Test::Net::SSLeay qw(
+     can_fork data_file_path initialise_libssl is_protocol_usable new_ctx
+     tcp_socket
+@@ -15,7 +15,7 @@
+ } elsif (!defined &Net::SSLeay::export_keying_material) {
+     plan skip_all => "No export_keying_material()";
+ } else {
+-    plan tests => 36;
++    plan tests => 37;
+ }
+ 
+ initialise_libssl();
+@@ -37,6 +37,7 @@
+ my ($server_ctx, $client_ctx, $server_ssl, $client_ssl);
+ 
+ my $server = tcp_socket();
++my $proto_count = 0;
+ 
+ sub server
+ {
+@@ -88,6 +89,16 @@
+             Net::SSLeay::set_fd( $ssl, $cl );
+             my $ret = Net::SSLeay::connect($ssl);
+             if ($ret <= 0) {
++                # Connection might fail due to attempted use of algorithm in key
++                # exchange that is forbidden by security policy, resulting in ERROR_SSL
++                my $ssl_err = Net::SSLeay::get_error($ssl, $ret);
++                if ($ssl_err == ERROR_SSL) {
++                    diag("Protocol $round, connect() failed, maybe due to security policy");
++                    SKIP: {
++                        skip( "$round not available in this enviornment", 9 );
++                    }
++                    next;
++                }
+                 diag("Protocol $round, connect() returns $ret, Error: ".Net::SSLeay::ERR_error_string(Net::SSLeay::ERR_get_error()));
+             }
+ 
+@@ -100,6 +111,7 @@
+             Net::SSLeay::shutdown($ssl);
+             Net::SSLeay::free($ssl);
+             close($cl) || die("client close: $!");
++            $proto_count += 1;
+         }
+         else {
+             SKIP: {
+@@ -168,4 +180,7 @@
+ server();
+ client();
+ waitpid $pid, 0;
++
++cmp_ok($proto_count, '>=', 1, "At least one protocol fully testable");
++
+ exit(0);

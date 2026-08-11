@@ -1,0 +1,17 @@
+Fix build failure of f2py tests because of them linking with the C compiler
+which fails when mixing with Fortran sources. Meson somehow doesn't
+provide mechanisms for this.
+
+Author: Jan Reuter (JSC)
+
+diff --color -Naur numpy-2.3.2.orig/numpy/f2py/_backends/meson.build.template numpy-2.3.2/numpy/f2py/_backends/meson.build.template
+--- numpy-2.3.2.orig/numpy/f2py/_backends/meson.build.template	2025-07-24 20:37:48.000000000 +0200
++++ numpy-2.3.2/numpy/f2py/_backends/meson.build.template	2025-11-06 11:27:40.412954518 +0100
+@@ -44,6 +44,7 @@
+                      inc_np,
+ ${inc_list}
+                      ],
++                     link_args: ['-lFortranRuntime', '-lFortranDecimal'],
+                      dependencies : [
+                      py_dep,
+                      quadmath_dep,

@@ -1,0 +1,45 @@
+From 16de3c26a54dced1d1ef548de7bd4aa45ea2a773 Mon Sep 17 00:00:00 2001
+From: Jan André Reuter <j.reuter@fz-juelich.de>
+Date: Wed, 3 Dec 2025 12:59:43 +0100
+Subject: Ignore target feature flags in _AC_FC_LIBRARY_LDFLAGS (#111353)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Ignore target specific feature flags passed via '-target-feature'.
+When encountered, ignore the flag passed after. These flags might
+contain a '-l', e.g. '-target-feature -lwp', causing non-existent
+libraries to be picked up, failing later checks, or the build of
+the application.
+
+This can e.g. be encountered when '-march=native' is passed to
+configure during a build with LLVM on Zen 4 machines.
+
+Reported by, and patch written by, Jan André Reuter <j.reuter@fz-juelich.de>.
+
+* lib/autoconf/fortran.m4 (_AC_FC_LIBRARY_LDFLAGS): Skip arguments
+  immediately following ‘-target-feature’.
+---
+ lib/autoconf/fortran.m4 | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/lib/autoconf/fortran.m4 b/lib/autoconf/fortran.m4
+index 87e00cc6..5d34f118 100644
+--- a/lib/autoconf/fortran.m4
++++ b/lib/autoconf/fortran.m4
+@@ -676,6 +676,12 @@ while test $[@%:@] != 1; do
+ 	    ;;
+ 	  esac
+ 	  ;;
++	-target-feature)
++	  # for target specific feature flags, ignore the next argument,
++	  # which may include a feature starting with -l
++	  # (e.g -target-feature -lwp)
++	  shift;
++	  ;;
+ 	-[[LRuYz]])
+ 	  # These flags, when seen by themselves, take an argument.
+ 	  # We remove the space between option and argument and re-iterate
+-- 
+cgit v1.2.3
+

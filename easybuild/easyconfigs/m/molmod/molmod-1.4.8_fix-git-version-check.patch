@@ -1,0 +1,44 @@
+From acbe7bade5c172f756d709e2a152822339f48f26 Mon Sep 17 00:00:00 2001
+From: Alexander Grund <Flamefire@users.noreply.github.com>
+Date: Wed, 21 Feb 2024 12:14:06 +0100
+Subject: [PATCH] setup.py: Only call git if inside a git repository
+
+Avoid error message:
+> fatal: not a git repository (or any parent up to mount point /dev)
+> Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+---
+ setup.py | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/setup.py b/setup.py
+index f531ab3..a3921f3 100755
+--- a/setup.py
++++ b/setup.py
+@@ -36,16 +36,17 @@
+ 
+ # Try to get the version from git describe
+ __version__ = None
+-try:
+-    print('Trying to get the version from git describe')
+-    git_describe = subprocess.check_output(["git", "describe", "--tags"])
+-    version_words = git_describe.decode('utf-8').strip().split('-')
+-    __version__ = version_words[0]
+-    if len(version_words) > 1:
+-        __version__ += '.post' + version_words[1]
+-    print('Version from git describe: {}'.format(__version__))
+-except (subprocess.CalledProcessError, OSError):
+-    pass
++if os.path.exists('.git'):
++    try:
++        print('Trying to get the version from git describe')
++        git_describe = subprocess.check_output(["git", "describe", "--tags"])
++        version_words = git_describe.decode('utf-8').strip().split('-')
++        __version__ = version_words[0]
++        if len(version_words) > 1:
++            __version__ += '.post' + version_words[1]
++        print('Version from git describe: {}'.format(__version__))
++    except (subprocess.CalledProcessError, OSError):
++        pass
+ 
+ # Interact with version.py
+ fn_version = os.path.join(os.path.dirname(__file__), 'molmod', 'version.py')

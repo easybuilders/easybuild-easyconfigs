@@ -1,19 +1,3 @@
-# Source preparation
-
-Download all ISO files from Mathworks.
-Newer easyconfigs use the ISO files directly and unpack them with the `7z` command.
-Older versions repackaged the ISOs as a tarball, e.g:
-```
-$ mkdir R2018a
-$ mount -o loop,ro R2018a_glnxa64_dvd1.iso /mnt/
-$ rsync -avHlP /mnt/ R2018a/
-$ umount /mnt
-$ mount -o loop,ro R2018a_glnxa64_dvd2.iso /mnt/
-$ rsync -avHlP /mnt/ R2018a/
-$ umount /mnt
-$ tar -zcvf /my/easybuild/download/path/matlab-2018a.tar.gz R2018a
-```
-
 # License
 
 * Your Matlab license should have a "`File Installation Key`" under "`Advanced Options`" in the "`Install and Activate`" tab of your "`License Center`".

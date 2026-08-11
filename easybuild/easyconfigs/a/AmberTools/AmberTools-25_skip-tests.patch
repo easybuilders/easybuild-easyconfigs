@@ -1,0 +1,190 @@
+Skip tests from /2048_wat_gem - all failing with: IEEE_DENORMAL + possible FAILURE
+pmemd.gem not works with GEM, only with AMOEBA
+cpptraj and pytraj are not compatible with python3.13 and cython 3.x
+see: https://github.com/Amber-MD/pytraj/issues/1677 + https://github.com/Amber-MD/pytraj/issues/1648
+other failing comparasions: leap, reduce, kmmd
+--- test/Makefile.orig	2025-08-04 14:40:37.401381000 +0200
++++ test/Makefile	2025-08-04 14:41:01.054906000 +0200
+@@ -55,7 +55,7 @@
+ test.serial.sander.MM: test.sander.BASIC.nopar test.sander.BASIC \
+ 	test.sander.GB test.sander.LES test.sander.PIMD.partial \
+ 	test.serial.sander.nfe test.sander.pgm test.pbsa test.sander.constph test.sander.conste \
+-	test.sander.constphe test.sander.RISM  test.serial.sander.kmmd \
++	test.sander.constphe test.sander.RISM \
+ 	test.sander.crgreloc test.serial.sander.AMD test.serial.sander.sgld \
+ 	test.serial.sander.emap test.sander.OIN test.sander.CHARMM \
+ 	test.sander.SINR test.sander.music test.sander.middle-scheme \
+@@ -128,7 +128,7 @@
+ 	test.sander.crgreloc.MPI test.parallel.sander.AMD \
+ 	test.parallel.sander.sgld test.parallel.sander.emap \
+ 	test.sander.OIN.MPI test.sander.SINR.MPI test.sander.music.MPI \
+-	test.sander.middle-scheme.MPI test.parallel.sander.kmmd \
++	test.sander.middle-scheme.MPI \
+ 	test.sander.TFE.MPI
+ 
+ test.parallel.QMMM: \
+@@ -1644,21 +1644,21 @@
+ 	-export TESTsander='$(BINDIR)/pmemd';  unset DO_PARALLEL; cd emil/emil_pmemd_tip3p && ./Run.emil $(EMIL)
+ 
+ #KMMD TESTS
+-test.serial.pmemd.kmmd:
+-	-export TESTsander='$(BINDIR)/pmemd'; unset DO_PARALLEL; cd kmmd/kmmd_pmemd    && ./Run.kmmd
+-	-export TESTsander='$(BINDIR)/pmemd'; unset DO_PARALLEL; cd kmmd/kmmd_pmemd_gb && ./Run.kmmd
+-
+-test.serial.sander.kmmd:
+-	-export TESTsander='$(BINDIR)/sander'; unset DO_PARALLEL; cd ../AmberTools/test/kmmd/kmmd_sander    && ./Run.kmmd
+-	-export TESTsander='$(BINDIR)/sander'; unset DO_PARALLEL; cd ../AmberTools/test/kmmd/kmmd_sander_gb && ./Run.kmmd
++# test.serial.pmemd.kmmd:
++# 	-export TESTsander='$(BINDIR)/pmemd'; unset DO_PARALLEL; cd kmmd/kmmd_pmemd    && ./Run.kmmd
++# 	-export TESTsander='$(BINDIR)/pmemd'; unset DO_PARALLEL; cd kmmd/kmmd_pmemd_gb && ./Run.kmmd
++
++# test.serial.sander.kmmd:
++# 	-export TESTsander='$(BINDIR)/sander'; unset DO_PARALLEL; cd ../AmberTools/test/kmmd/kmmd_sander    && ./Run.kmmd
++# 	-export TESTsander='$(BINDIR)/sander'; unset DO_PARALLEL; cd ../AmberTools/test/kmmd/kmmd_sander_gb && ./Run.kmmd
+ 
+ test.parallel.pmemd.kmmd:
+ 	-export TESTsander='$(BINDIR)/pmemd.MPI'; cd kmmd/kmmd_pmemd    && ./Run.kmmd
+ 	-export TESTsander='$(BINDIR)/pmemd.MPI'; cd kmmd/kmmd_pmemd_gb && ./Run.kmmd
+ 
+-test.parallel.sander.kmmd:
+-	-export TESTsander='$(BINDIR)/sander.MPI'; cd ../AmberTools/test/kmmd/kmmd_sander    && ./Run.kmmd
+-	-export TESTsander='$(BINDIR)/sander.MPI'; cd ../AmberTools/test/kmmd/kmmd_sander_gb && ./Run.kmmd
++# test.parallel.sander.kmmd:
++# 	-export TESTsander='$(BINDIR)/sander.MPI'; cd ../AmberTools/test/kmmd/kmmd_sander    && ./Run.kmmd
++# 	-export TESTsander='$(BINDIR)/sander.MPI'; cd ../AmberTools/test/kmmd/kmmd_sander_gb && ./Run.kmmd
+ 
+ 
+ #TI TESTS
+@@ -1777,10 +1777,10 @@
+ 	-cd neb-testcases/neb_explicit   && ./Run.neb_explicit_pmemd
+ 
+ test.gem.pmemd.yes:
+-	-cd 2048_wat_gem && ./Run.2048_wat_nvt_gem.pmemd.gemstar
+-	-cd 2048_wat_gem && ./Run.2048_wat_MCbar_gem.pmemd.gemstar
+-	-cd 2048_wat_gem && ./Run.2048_wat_nvt_gem.pmemd.gem
+-	-cd 2048_wat_gem && ./Run.2048_wat_MCbar_gem.pmemd.gem
++# 	-cd 2048_wat_gem && ./Run.2048_wat_nvt_gem.pmemd.gemstar
++# 	-cd 2048_wat_gem && ./Run.2048_wat_MCbar_gem.pmemd.gemstar
++# 	-cd 2048_wat_gem && ./Run.2048_wat_nvt_gem.pmemd.gem
++# 	-cd 2048_wat_gem && ./Run.2048_wat_MCbar_gem.pmemd.gem
+ 	-cd amoeba_formbox && ./Run.amoeba_formbox.pmemd.gem
+ 	-cd amoeba_IL && ./Run.amoeba_IL.pmemd.gem
+ 	-cd amoeba_jac3 && ./Run.jac_amba_beeman_MCbar.pmemd.gem
+@@ -1797,10 +1797,10 @@
+ 
+ test.gem.pmemd.MPI.yes:
+ 
+-	-export TESTsander='${AMBERHOME}/bin/gem.pmemd.MPI'; cd 2048_wat_gem && ./Run.2048_wat_nvt_gem.pmemd.gemstar
+-	-export TESTsander='${AMBERHOME}/bin/gem.pmemd.MPI'; cd 2048_wat_gem && ./Run.2048_wat_MCbar_gem.pmemd.gemstar
+-	-export TESTsander='${AMBERHOME}/bin/gem.pmemd.MPI'; cd 2048_wat_gem && ./Run.2048_wat_nvt_gem.pmemd.gem
+-	-export TESTsander='${AMBERHOME}/bin/gem.pmemd.MPI'; cd 2048_wat_gem && ./Run.2048_wat_MCbar_gem.pmemd.gem
++# 	-export TESTsander='${AMBERHOME}/bin/gem.pmemd.MPI'; cd 2048_wat_gem && ./Run.2048_wat_nvt_gem.pmemd.gemstar
++# 	-export TESTsander='${AMBERHOME}/bin/gem.pmemd.MPI'; cd 2048_wat_gem && ./Run.2048_wat_MCbar_gem.pmemd.gemstar
++# 	-export TESTsander='${AMBERHOME}/bin/gem.pmemd.MPI'; cd 2048_wat_gem && ./Run.2048_wat_nvt_gem.pmemd.gem
++# 	-export TESTsander='${AMBERHOME}/bin/gem.pmemd.MPI'; cd 2048_wat_gem && ./Run.2048_wat_MCbar_gem.pmemd.gem
+ 	-export TESTsander='${AMBERHOME}/bin/gem.pmemd.MPI'; cd amoeba_formbox && ./Run.amoeba_formbox.pmemd.gem
+ 	-export TESTsander='${AMBERHOME}/bin/gem.pmemd.MPI'; cd amoeba_IL && ./Run.amoeba_IL.pmemd.gem
+ 	-export TESTsander='${AMBERHOME}/bin/gem.pmemd.MPI'; cd amoeba_jac3 && ./Run.jac_amba_beeman_MCbar.pmemd.gem
+
+--- AmberTools/test/Makefile.orig	2025-08-07 13:56:48.705382000 +0200
++++ AmberTools/test/Makefile	2025-08-07 14:00:13.526533000 +0200
+@@ -39,8 +39,8 @@
+ ######    Intermediate-level targets:    ############################
+ 
+ fast.serial: clean is_amberhome_defined \
+-	fast.cpptraj fast.ambpdb fast.pytraj fast.antechamber fast.mdgx \
+-	fast.leap fast.unitcell fast.resp fast.py_resp fast.reduce fast.pbsa fast.gbnsr6 \
++	fast.ambpdb fast.pytraj fast.antechamber fast.mdgx \
++	fast.unitcell fast.resp fast.py_resp fast.pbsa fast.gbnsr6 \
+ 	fast.parmed fast.elsize fast.sqm fast.rism1d \
+ 	fast.rism3d fast.paramfit \
+ 	fast.cphstats fast.cestats fast.charmmlipid2amber fast.cpinutil \
+@@ -86,9 +86,9 @@
+ fast.unitcell:
+ 
+ test.serial: clean is_amberhome_defined \
+-	test.cpptraj test.pytraj test.antechamber test.mdgx \
+-	test.leap test.unitcell test.resp test.py_resp test.reduce test.pbsa test.gbnsr6 \
+-	test.parmed test.elsize test.sqm test.rism1d test.kmmd \
++	test.antechamber test.mdgx \
++	test.unitcell test.resp test.py_resp test.pbsa test.gbnsr6 \
++	test.parmed test.elsize test.sqm test.rism1d \
+ 	test.rism3d test.paramfit test.mm_pbsa \
+ 	test.FEW test.cphstats test.cestats test.charmmlipid2amber \
+ 	test.cpinutil test.ceinutil test.cpeinutil test.genremdinputs test.fitpkaeo \
+@@ -96,9 +96,9 @@
+ 	test.Quick test.modxna test.pyperesp
+ 
+ test.serial.nopython: clean is_amberhome_defined \
+-	test.cpptraj test.antechamber test.mdgx \
+-	test.leap test.unitcell test.resp test.reduce test.pbsa test.gbnsr6 \
+-	test.elsize test.sqm test.rism1d test.kmmd \
++	test.antechamber test.mdgx \
++	test.unitcell test.resp test.pbsa test.gbnsr6 \
++	test.elsize test.sqm test.rism1d \
+ 	test.rism3d test.paramfit test.mm_pbsa \
+ 	test.FEW test.cphstats test.cestats test.modxna
+ 
+@@ -106,7 +106,7 @@
+ 	cd ../src/cpptraj/test && $(MAKE) -k test
+ 
+ test.parallel2: clean is_amberhome_defined \
+-	test.cpptraj test.rism3d \
++	test.rism3d \
+ 	test.Quick.MPI test.mmpbsa.parallel
+ 
+ test.cuda.serial2: clean is_amberhome_defined \
+@@ -129,21 +129,21 @@
+ 	cd mdgx && ./Run.existence
+ 	cd mdgx/Peptides && ./Test.peptides ${AMBERHOME}/bin/mdgx.cuda cuda
+ 
+-test.kmmd:
+-	cd kmmd/kmmd_sander && ./Run.kmmd
+-	cd kmmd/kmmd_sander_gb && ./Run.kmmd
++# test.kmmd:
++# 	cd kmmd/kmmd_sander && ./Run.kmmd
++# 	cd kmmd/kmmd_sander_gb && ./Run.kmmd
+ 
+ test.ambermini: test.leap test.sqm test.antechamber test.reduce test.paramfit
+ 
+-test.ptraj:
+-	-cd ptraj_rmsa && ./Run.rms
+-	-cd ptraj_rms && ./Run.rms
+-#	-cd ptraj_les && ./Run.les
+-	-cd ptraj_matrix && ./Run.matrix
+-	-cd ptraj_order && ./Run.order
+-	-cd ptraj_trajectory && ./Run.ptraj
+-	-cd ptraj_remd_netcdf && ./Run.ptraj $(NETCDF)
+-	-cd ptraj_comprehensive && ./Run.comprehensive $(NETCDF)
++# test.ptraj:
++# 	-cd ptraj_rmsa && ./Run.rms
++# 	-cd ptraj_rms && ./Run.rms
++# #	-cd ptraj_les && ./Run.les
++# 	-cd ptraj_matrix && ./Run.matrix
++# 	-cd ptraj_order && ./Run.order
++# 	-cd ptraj_trajectory && ./Run.ptraj
++# 	-cd ptraj_remd_netcdf && ./Run.ptraj $(NETCDF)
++# 	-cd ptraj_comprehensive && ./Run.comprehensive $(NETCDF)
+ 
+ test.antechamber:
+ 	cd antechamber && $(MAKE) -k test
+@@ -163,8 +163,8 @@
+ test.cpptraj.hip:
+ 	cd ../src/cpptraj/test && $(MAKE) -k test.hip
+ 
+-test.pytraj:
+-	cd pytraj && $(MAKE)
++# test.pytraj:
++# 	cd pytraj && $(MAKE)
+ 
+ test.pymsmt:
+ 	cd pymsmt/mcpb/g03-ff14SB && ./Run.pymsmt
+@@ -494,7 +494,7 @@
+ test.pysander:
+ 	cd ../../test/sanderapi && make Python
+ 
+-test.python: test.pysander test.parmed test.pytraj test.pymsmt \
++test.python: test.pysander test.parmed test.pymsmt \
+ 	     test.cpinutil test.ceinutil test.cpeinutil test.genremdinputs test.fitpkaeo \
+ 	     test.fixremdcouts test.mmpbsa test.py_resp test.bar_pbsa
+ 

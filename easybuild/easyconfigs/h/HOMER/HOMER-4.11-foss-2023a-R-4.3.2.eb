@@ -1,0 +1,49 @@
+easyblock = 'Binary'
+
+name = 'HOMER'
+version = '4.11'
+versionsuffix = '-R-%(rver)s'
+
+homepage = "http://homer.ucsd.edu/homer/"
+description = """HOMER (Hypergeometric Optimization of Motif EnRichment) is a suite of tools for Motif Discovery and
+ next-gen sequencing analysis.  It is a collection of command line programs for unix-style operating systems written
+ in Perl and C++. HOMER was primarily written as a de novo motif discovery algorithm and is well suited for finding
+ 8-20 bp motifs in large scale genomics data.  HOMER contains many useful tools for analyzing ChIP-Seq, GRO-Seq,
+ RNA-Seq, DNase-Seq, Hi-C and numerous other types of functional genomics sequencing data sets."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['http://homer.ucsd.edu/homer']
+sources = ['configureHomer.pl']
+checksums = ['ccdaa3004a0e0df0882634671d4a1acc88364761e0e6c7ea329ebbf1eb729537']
+
+builddependencies = [
+    ('wget', '1.24.5'),
+    ('Zip', '3.0'),
+    ('UnZip', '6.0'),
+]
+
+dependencies = [
+    ('Perl', '5.36.1'),
+    ('R', '4.3.2'),
+    ('SAMtools', '1.18'),
+    ('R-bundle-Bioconductor', '3.18', versionsuffix)
+]
+
+postinstallcmds = ["cd %(installdir)s && perl ./configureHomer.pl -install homer -version v%(version)s"]
+
+sanity_check_paths = {
+    'files': [
+        'bin/homer',
+        'bin/getGenomeTilingPeaks',
+        'config.txt',
+        'DoughnutDocumentation.pdf',
+        'data/accession/homologene.data',
+        'motifs/hnf1b.motif',
+    ],
+    'dirs': ['bin', 'data', 'motifs', 'update'],
+}
+
+sanity_check_commands = ["%(namelower)s --help"]
+
+moduleclass = 'bio'

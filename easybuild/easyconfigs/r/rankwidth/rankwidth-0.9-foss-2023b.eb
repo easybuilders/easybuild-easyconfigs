@@ -1,0 +1,35 @@
+easyblock = 'ConfigureMake'
+
+name = 'rankwidth'
+version = '0.9'
+
+homepage = 'https://sourceforge.net/projects/rankwidth/'
+description = """rw calculates rank-width and rank-decompositions.
+It is based on ideas from "Computing rank-width exactly" by Sang-il Oum,
+"Sopra una formula numerica" by Ernesto Pascal, "Generation of a Vector
+from the Lexicographical Index" by B.P. Buckles and M. Lybanon and "Fast
+additions on masked integers" by Michael D. Adams and David S. Wise."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://master.dl.sourceforge.net/project/rankwidth']
+sources = ['rw-%(version)s.tar.gz']
+checksums = ['c1e03506fe25cdfcb428c051fc56b2d2affb5b06fba3f2ce756631466befb441']
+
+dependencies = [('igraph', '0.10.12')]
+
+# fix `too few arguments to function igraph_get_adjacency` error
+prebuildopts = 'sed -i "s/IGRAPH_GET_ADJACENCY_BOTH/IGRAPH_GET_ADJACENCY_BOTH, 0/g" simplerw.c && '
+
+sanity_check_paths = {
+    'files': [
+        'bin/rw',
+        'include/rw.h',
+        'lib/librw.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = ['rw --help | grep Usage:']
+
+moduleclass = 'math'

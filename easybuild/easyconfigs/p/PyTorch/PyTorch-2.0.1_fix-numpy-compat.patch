@@ -1,0 +1,237 @@
+From ae1ed277563a1ac887faef4370ad9933c883ab9e Mon Sep 17 00:00:00 2001
+From: Omkar Salpekar <osalpekar@fb.com>
+Date: Wed, 21 Jun 2023 18:16:40 +0000
+Subject: [PATCH] [codemod][numpy] replace np.str with str (#103931)
+
+Summary:
+`np.str` is removed from numpy 1.20.0. It was an alias to builtin `str` and it's safe to do the replacement.
+
+The whole changes is mechanical, generated using the following onliner:
+```
+fbgr -sl 'np\.str\b' | xargs perl -pi -e 's,\bnp\.str\b,str,g'
+```
+
+Test Plan: sandcastle
+
+Differential Revision: D46586144
+
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/103931
+Approved by: https://github.com/huydhn
+---
+ caffe2/python/core.py                                       | 2 +-
+ caffe2/python/hypothesis_test.py                            | 4 ++--
+ caffe2/python/layer_model_helper.py                         | 2 +-
+ caffe2/python/operator_test/adagrad_test_helper.py          | 2 +-
+ caffe2/python/operator_test/cast_op_test.py                 | 2 +-
+ caffe2/python/operator_test/detectron_keypoints.py          | 4 ++--
+ caffe2/python/operator_test/tile_op_test.py                 | 6 +++---
+ caffe2/python/schema.py                                     | 2 +-
+ caffe2/python/schema_test.py                                | 4 ++--
+ caffe2/python/utils.py                                      | 6 +++---
+ .../examples/maml_omniglot/support/omniglot_loaders.py      | 4 ++--
+ test/quantization/core/test_quantized_op.py                 | 4 ++--
+ 12 files changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/caffe2/python/core.py b/caffe2/python/core.py
+index d9f97b6121fdd2..e69af5c0a482b1 100644
+--- a/caffe2/python/core.py
++++ b/caffe2/python/core.py
+@@ -1636,7 +1636,7 @@ def do_set(operator):
+             return do_set(self.GivenTensorIntFill)
+         elif array.dtype == np.int64:
+             return do_set(self.GivenTensorInt64Fill)
+-        elif array.dtype == np.str:
++        elif array.dtype == str:
+             return do_set(self.GivenTensorStringFill)
+         elif array.dtype == np.bool:
+             return do_set(self.GivenTensorBoolFill)
+diff --git a/caffe2/python/hypothesis_test.py b/caffe2/python/hypothesis_test.py
+index 02200f8cf74f18..cb5d00064b6eda 100644
+--- a/caffe2/python/hypothesis_test.py
++++ b/caffe2/python/hypothesis_test.py
+@@ -1629,8 +1629,8 @@ def test_tt_sls_layer(self, gc, dc):
+         c0 = np.ones([10, 1, 2, 16]).astype(np.float32)
+         c1 = np.ones([10, 16, 2, 16]).astype(np.float32)
+         c2 = np.ones([10, 16, 2, 1]).astype(np.float32)
+-        # index = np.array([0, 1, 2, 1, 4], dtype=np.int)
+-        # lengths = np.array([3, 2], dtype=np.int)
++        # index = np.array([0, 1, 2, 1, 4], dtype=int)
++        # lengths = np.array([3, 2], dtype=int)
+         index = np.array([0, 1, 2, 1, 4], np.int64)
+         lengths = np.array([3, 2], np.int32)
+ 
+diff --git a/caffe2/python/layer_model_helper.py b/caffe2/python/layer_model_helper.py
+index 9a8e237e302143..f21b47e57c653a 100644
+--- a/caffe2/python/layer_model_helper.py
++++ b/caffe2/python/layer_model_helper.py
+@@ -148,7 +148,7 @@ def _get_global_constant_initializer_op(
+                 op_name = 'GivenTensorIntFill'
+             elif array.dtype == np.int64:
+                 op_name = 'GivenTensorInt64Fill'
+-            elif array.dtype == np.str:
++            elif array.dtype == str:
+                 op_name = 'GivenTensorStringFill'
+             elif array.dtype == np.bool:
+                 op_name = 'GivenTensorBoolFill'
+diff --git a/caffe2/python/operator_test/adagrad_test_helper.py b/caffe2/python/operator_test/adagrad_test_helper.py
+index 08caf22b266178..1fd017c4d2ac5c 100644
+--- a/caffe2/python/operator_test/adagrad_test_helper.py
++++ b/caffe2/python/operator_test/adagrad_test_helper.py
+@@ -98,7 +98,7 @@ def adagrad_sparse_test_helper(
+     # Create an indexing array containing values that are lists of indices,
+     # which index into grad
+     if grad.size == 0:
+-        indices = np.empty(shape=(0,), dtype=np.int)
++        indices = np.empty(shape=(0,), dtype=int)
+     else:
+         indices = np.random.choice(
+             np.arange(grad.shape[0]),
+diff --git a/caffe2/python/operator_test/cast_op_test.py b/caffe2/python/operator_test/cast_op_test.py
+index bf2a210086e691..95540a6121bcac 100644
+--- a/caffe2/python/operator_test/cast_op_test.py
++++ b/caffe2/python/operator_test/cast_op_test.py
+@@ -37,7 +37,7 @@ def test_cast_int_to_string(self, data, gc, dc):
+             'Cast', 'data', 'data_cast', to=core.DataType.STRING)
+ 
+         def ref(data):
+-            ret = data.astype(dtype=np.str)
++            ret = data.astype(dtype=str)
+             # the string blob will be fetched as object, we feed and re-fetch
+             # to mimic this.
+             with hu.temp_workspace('tmp_ref_int_to_string'):
+diff --git a/caffe2/python/operator_test/detectron_keypoints.py b/caffe2/python/operator_test/detectron_keypoints.py
+index 1abff0675993ff..319e8b5bbffd5e 100644
+--- a/caffe2/python/operator_test/detectron_keypoints.py
++++ b/caffe2/python/operator_test/detectron_keypoints.py
+@@ -32,8 +32,8 @@ def heatmaps_to_keypoints(maps, rois):
+     heights = rois[:, 3] - rois[:, 1]
+     widths = np.maximum(widths, 1)
+     heights = np.maximum(heights, 1)
+-    widths_ceil = np.ceil(widths).astype(np.int)
+-    heights_ceil = np.ceil(heights).astype(np.int)
++    widths_ceil = np.ceil(widths).astype(int)
++    heights_ceil = np.ceil(heights).astype(int)
+ 
+     num_keypoints = np.maximum(maps.shape[1], _NUM_KEYPOINTS)
+ 
+diff --git a/caffe2/python/operator_test/tile_op_test.py b/caffe2/python/operator_test/tile_op_test.py
+index d39dfeee0ad72a..fbb424fe058ccb 100644
+--- a/caffe2/python/operator_test/tile_op_test.py
++++ b/caffe2/python/operator_test/tile_op_test.py
+@@ -32,7 +32,7 @@ def test_tile(self, M, K, N, tiles, axis, gc, dc):
+         )
+ 
+         def tile_ref(X, tiles, axis):
+-            dims = np.asarray([1, 1, 1], dtype=np.int)
++            dims = np.asarray([1, 1, 1], dtype=int)
+             dims[axis] = tiles
+             tiled_data = np.tile(X, dims)
+             return (tiled_data,)
+@@ -61,7 +61,7 @@ def test_tile_grad(self, M, N, tiles, gc, dc):
+         )
+ 
+         def tile_ref(X, tiles, axis):
+-            dims = np.asarray([1, 1], dtype=np.int)
++            dims = np.asarray([1, 1], dtype=int)
+             dims[axis] = tiles
+             tiled_data = np.tile(X, dims)
+             return (tiled_data,)
+@@ -99,7 +99,7 @@ def test_tilewinput(self, M, K, N, tiles, axis, gc, dc):
+         )
+ 
+         def tile_ref(X, tiles, axis):
+-            dims = np.asarray([1, 1, 1], dtype=np.int)
++            dims = np.asarray([1, 1, 1], dtype=int)
+             dims[axis] = tiles
+             tiled_data = np.tile(X, dims)
+             return (tiled_data,)
+diff --git a/caffe2/python/schema.py b/caffe2/python/schema.py
+index ab6ec29372e2ff..ecbcb2287dddea 100644
+--- a/caffe2/python/schema.py
++++ b/caffe2/python/schema.py
+@@ -1252,7 +1252,7 @@ def InitEmptyRecord(net, schema_or_record, enforce_types=False):
+ 
+ 
+ _DATA_TYPE_FOR_DTYPE = [
+-    (np.str, core.DataType.STRING),
++    (str, core.DataType.STRING),
+     (np.float16, core.DataType.FLOAT16),
+     (np.float32, core.DataType.FLOAT),
+     (np.float64, core.DataType.DOUBLE),
+diff --git a/caffe2/python/schema_test.py b/caffe2/python/schema_test.py
+index 8f3ed4415fd4f5..2f3eaf38dc138d 100644
+--- a/caffe2/python/schema_test.py
++++ b/caffe2/python/schema_test.py
+@@ -94,12 +94,12 @@ def testTuple(self):
+         s = schema.Tuple(np.int32, str, np.float32)
+         s2 = schema.Struct(
+             ('field_0', schema.Scalar(dtype=np.int32)),
+-            ('field_1', schema.Scalar(dtype=np.str)),
++            ('field_1', schema.Scalar(dtype=str)),
+             ('field_2', schema.Scalar(dtype=np.float32))
+         )
+         self.assertEqual(s, s2)
+         self.assertEqual(s[0], schema.Scalar(dtype=np.int32))
+-        self.assertEqual(s[1], schema.Scalar(dtype=np.str))
++        self.assertEqual(s[1], schema.Scalar(dtype=str))
+         self.assertEqual(s[2], schema.Scalar(dtype=np.float32))
+         self.assertEqual(
+             s[2, 0],
+diff --git a/caffe2/python/utils.py b/caffe2/python/utils.py
+index 02a77e74681a93..8c82faee33a4c3 100644
+--- a/caffe2/python/utils.py
++++ b/caffe2/python/utils.py
+@@ -67,7 +67,7 @@ def Caffe2TensorToNumpyArray(tensor):
+             tensor.int64_data, dtype=np.int64).reshape(tensor.dims)
+     elif tensor.data_type == caffe2_pb2.TensorProto.INT32:
+         return np.asarray(
+-            tensor.int32_data, dtype=np.int).reshape(tensor.dims)   # pb.INT32=>np.int use int32_data
++            tensor.int32_data, dtype=int).reshape(tensor.dims)   # pb.INT32=>int use int32_data
+     elif tensor.data_type == caffe2_pb2.TensorProto.INT16:
+         return np.asarray(
+             tensor.int32_data, dtype=np.int16).reshape(tensor.dims)  # pb.INT16=>np.int16 use int32_data
+@@ -100,9 +100,9 @@ def NumpyArrayToCaffe2Tensor(arr, name=None):
+     elif arr.dtype == np.int64:
+         tensor.data_type = caffe2_pb2.TensorProto.INT64
+         tensor.int64_data.extend(list(arr.flatten().astype(np.int64)))
+-    elif arr.dtype == np.int or arr.dtype == np.int32:
++    elif arr.dtype == int or arr.dtype == np.int32:
+         tensor.data_type = caffe2_pb2.TensorProto.INT32
+-        tensor.int32_data.extend(arr.flatten().astype(np.int).tolist())
++        tensor.int32_data.extend(arr.flatten().astype(int).tolist())
+     elif arr.dtype == np.int16:
+         tensor.data_type = caffe2_pb2.TensorProto.INT16
+         tensor.int32_data.extend(list(arr.flatten().astype(np.int16)))  # np.int16=>pb.INT16 use int32_data
+diff --git a/functorch/examples/maml_omniglot/support/omniglot_loaders.py b/functorch/examples/maml_omniglot/support/omniglot_loaders.py
+index cac99b2dfbb2aa..ce636ecca0b1b2 100644
+--- a/functorch/examples/maml_omniglot/support/omniglot_loaders.py
++++ b/functorch/examples/maml_omniglot/support/omniglot_loaders.py
+@@ -271,10 +271,10 @@ def load_data_cache(self, data_pack):
+ 
+             # [b, setsz, 1, 84, 84]
+             x_spts = np.array(x_spts).astype(np.float32).reshape(self.batchsz, setsz, 1, self.resize, self.resize)
+-            y_spts = np.array(y_spts).astype(np.int).reshape(self.batchsz, setsz)
++            y_spts = np.array(y_spts).astype(int).reshape(self.batchsz, setsz)
+             # [b, qrysz, 1, 84, 84]
+             x_qrys = np.array(x_qrys).astype(np.float32).reshape(self.batchsz, querysz, 1, self.resize, self.resize)
+-            y_qrys = np.array(y_qrys).astype(np.int).reshape(self.batchsz, querysz)
++            y_qrys = np.array(y_qrys).astype(int).reshape(self.batchsz, querysz)
+ 
+             x_spts, y_spts, x_qrys, y_qrys = [
+                 torch.from_numpy(z).to(self.device) for z in
+diff --git a/test/quantization/core/test_quantized_op.py b/test/quantization/core/test_quantized_op.py
+index 252d7b92f77ebb..232150a0ba34a6 100644
+--- a/test/quantization/core/test_quantized_op.py
++++ b/test/quantization/core/test_quantized_op.py
+@@ -3840,9 +3840,9 @@ def test_qlinear_with_input_q_dq_qweight_dq_output_fp32(
+             # xnnpack forces W_zp to 0 when using symmetric quantization
+             # ONEDNN only supports symmetric quantization of weight
+             if dtype == torch.qint8 or qengine_is_onednn():
+-                W_zps = np.zeros(output_channels).astype(np.int)
++                W_zps = np.zeros(output_channels).astype(int)
+             else:
+-                W_zps = np.round(np.random.rand(output_channels) * 100 - 50).astype(np.int)
++                W_zps = np.round(np.random.rand(output_channels) * 100 - 50).astype(int)
+             # when using symmetric quantization
+             # special restriction for xnnpack fully connected op weight
+             # [-127, 127] instead of [-128, 127]

@@ -1,0 +1,41 @@
+easyblock = 'Binary'
+
+name = 'JACUSA2'
+version = '2.0.4'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://github.com/dieterich-lab/JACUSA2'
+description = """
+ JAVA framework for accurate Variant assessment (JACUSA2) is a one-stop solution
+ to detect single nucleotide variants (SNVs) and reverse transcriptase induced
+ arrest events in Next-generation sequencing (NGS) data.
+"""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/dieterich-lab/JACUSA2/releases/download/v%(version)s']
+sources = [{
+    'filename': '%(name)s-%(version)s.jar',
+    'download_filename': 'JACUSA_v%(version)s.jar',
+}]
+checksums = ['b2ab159fc66f950e8365d5f37527f635f431ee91297c71e730b55c0d7bf97358']
+
+postinstallcmds = [
+    "mv %(installdir)s/%(name)s-%(version)s.jar %(installdir)s/%(namelower)s.jar",
+    """echo 'java -jar $EBROOTJACUSA2/%(namelower)s.jar "$@"' > %(installdir)s/jacusa2""",
+    "chmod +x %(installdir)s/jacusa2",
+]
+
+dependencies = [('Java', '8')]
+
+sanity_check_commands = ['jacusa2 | grep usage']
+
+sanity_check_paths = {
+    'files': ['%(namelower)s.jar', 'jacusa2'],
+    'dirs': [],
+}
+
+modloadmsg = "To execute JACUSA2 run: jacusa2\n"
+modloadmsg += "Alternatively, run: java -jar $EBROOTJACUSA2/%(namelower)s.jar"
+
+moduleclass = 'bio'

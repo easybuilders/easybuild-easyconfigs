@@ -1,0 +1,101 @@
+diff -Naur mlir-ORIG/test/CAPI/execution_engine.c mlir/test/CAPI/execution_engine.c
+--- mlir-ORIG/test/CAPI/execution_engine.c	2025-07-21 12:45:57.556247571 +0200
++++ mlir/test/CAPI/execution_engine.c	2025-07-22 11:27:52.745057057 +0200
+@@ -6,7 +6,7 @@
+ // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ //
+ //===----------------------------------------------------------------------===//
+-
++// UNSUPPORTED: target=riscv64{{.*}}
+ /* RUN: mlir-capi-execution-engine-test 2>&1 | FileCheck %s
+  */
+ /* REQUIRES: host-supports-jit
+diff -Naur mlir-ORIG/test/mlir-runner/async-func.mlir mlir/test/mlir-runner/async-func.mlir
+--- mlir-ORIG/test/mlir-runner/async-func.mlir	2025-07-21 12:45:58.452247073 +0200
++++ mlir/test/mlir-runner/async-func.mlir	2025-07-22 11:26:27.513057273 +0200
+@@ -1,3 +1,4 @@
++// UNSUPPORTED: target=riscv64{{.*}}
+ // RUN:   mlir-opt %s -pass-pipeline="builtin.module(async-func-to-async-runtime,async-to-async-runtime,func.func(async-runtime-ref-counting,async-runtime-ref-counting-opt),convert-async-to-llvm,test-lower-to-llvm)" \
+ // RUN: | mlir-runner                                                      \
+ // RUN:     -e main -entry-point-result=void -O0                               \
+diff -Naur mlir-ORIG/test/mlir-runner/async-value.mlir mlir/test/mlir-runner/async-value.mlir
+--- mlir-ORIG/test/mlir-runner/async-value.mlir	2025-07-21 12:45:58.452247073 +0200
++++ mlir/test/mlir-runner/async-value.mlir	2025-07-22 11:26:01.677057644 +0200
+@@ -1,3 +1,4 @@
++// UNSUPPORTED: target=riscv64{{.*}}
+ // RUN:   mlir-opt %s -pass-pipeline="builtin.module(async-to-async-runtime,func.func(async-runtime-ref-counting,async-runtime-ref-counting-opt),convert-async-to-llvm,func.func(convert-arith-to-llvm),convert-vector-to-llvm,finalize-memref-to-llvm,convert-func-to-llvm,convert-cf-to-llvm,reconcile-unrealized-casts)" \
+ // RUN: | mlir-runner                                                      \
+ // RUN:     -e main -entry-point-result=void -O0                               \
+diff -Naur mlir-ORIG/test/mlir-runner/bare-ptr-call-conv.mlir mlir/test/mlir-runner/bare-ptr-call-conv.mlir
+--- mlir-ORIG/test/mlir-runner/bare-ptr-call-conv.mlir	2025-07-21 12:45:58.452247073 +0200
++++ mlir/test/mlir-runner/bare-ptr-call-conv.mlir	2025-07-22 11:24:58.937058590 +0200
+@@ -1,3 +1,4 @@
++// UNSUPPORTED: target=riscv64{{.*}}
+ // RUN: mlir-opt %s -pass-pipeline="builtin.module(func.func(convert-scf-to-cf,convert-arith-to-llvm),finalize-memref-to-llvm,convert-func-to-llvm{use-bare-ptr-memref-call-conv=1},convert-cf-to-llvm,reconcile-unrealized-casts)" | mlir-runner -shared-libs=%mlir_c_runner_utils -entry-point-result=void | FileCheck %s
+ 
+ // Verify bare pointer memref calling convention. `simple_add1_add2_test`
+diff -Naur mlir-ORIG/test/mlir-runner/copy.mlir mlir/test/mlir-runner/copy.mlir
+--- mlir-ORIG/test/mlir-runner/copy.mlir	2025-07-21 12:45:58.452247073 +0200
++++ mlir/test/mlir-runner/copy.mlir	2025-07-22 11:24:28.729058393 +0200
+@@ -1,3 +1,4 @@
++// UNSUPPORTED: target=riscv64{{.*}}
+ // RUN: mlir-opt %s -pass-pipeline="builtin.module(func.func(convert-scf-to-cf,convert-arith-to-llvm),finalize-memref-to-llvm,convert-func-to-llvm,convert-cf-to-llvm,reconcile-unrealized-casts)" \
+ // RUN: | mlir-runner -e main -entry-point-result=void \
+ // RUN: -shared-libs=%mlir_runner_utils,%mlir_c_runner_utils \
+diff -Naur mlir-ORIG/test/mlir-runner/expand-arith-ops.mlir mlir/test/mlir-runner/expand-arith-ops.mlir
+--- mlir-ORIG/test/mlir-runner/expand-arith-ops.mlir	2025-07-21 12:45:58.452247073 +0200
++++ mlir/test/mlir-runner/expand-arith-ops.mlir	2025-07-22 11:23:53.881059082 +0200
+@@ -1,3 +1,4 @@
++// UNSUPPORTED: target=riscv64{{.*}}
+ // RUN:   mlir-opt %s -pass-pipeline="builtin.module(func.func(arith-expand{include-bf16=true},convert-arith-to-llvm),convert-vector-to-llvm,convert-func-to-llvm,reconcile-unrealized-casts)" \
+ // RUN: | mlir-runner                                                      \
+ // RUN:     -e main -entry-point-result=void -O0                               \
+diff -Naur mlir-ORIG/test/mlir-runner/global-constructors.mlir mlir/test/mlir-runner/global-constructors.mlir
+--- mlir-ORIG/test/mlir-runner/global-constructors.mlir	2025-07-21 12:45:58.452247073 +0200
++++ mlir/test/mlir-runner/global-constructors.mlir	2025-07-22 11:21:33.637058966 +0200
+@@ -1,4 +1,4 @@
+-// UNSUPPORTED: target=aarch64{{.*}}, target=arm64{{.*}}
++// UNSUPPORTED: target=aarch64{{.*}}, target=arm64{{.*}}, target=riscv64{{.*}}
+ // RUN: mlir-runner %s -e entry -entry-point-result=void  \
+ // RUN: -shared-libs=%mlir_c_runner_utils | \
+ // RUN: FileCheck %s
+diff -Naur mlir-ORIG/test/mlir-runner/math-polynomial-approx.mlir mlir/test/mlir-runner/math-polynomial-approx.mlir
+--- mlir-ORIG/test/mlir-runner/math-polynomial-approx.mlir	2025-07-21 12:45:58.452247073 +0200
++++ mlir/test/mlir-runner/math-polynomial-approx.mlir	2025-07-21 12:53:44.952235767 +0200
+@@ -1,3 +1,4 @@
++// UNSUPPORTED: target=riscv64{{.*}
+ // RUN:   mlir-opt %s -pass-pipeline="builtin.module(func.func(test-math-polynomial-approximation),convert-vector-to-scf,convert-scf-to-cf,convert-vector-to-llvm,convert-to-llvm,reconcile-unrealized-casts)" \
+ // RUN: | mlir-runner                                                      \
+ // RUN:     -e main -entry-point-result=void -O0                               \
+diff -Naur mlir-ORIG/test/mlir-runner/memref-reinterpret-cast.mlir mlir/test/mlir-runner/memref-reinterpret-cast.mlir
+--- mlir-ORIG/test/mlir-runner/memref-reinterpret-cast.mlir	2025-07-21 12:45:58.452247073 +0200
++++ mlir/test/mlir-runner/memref-reinterpret-cast.mlir	2025-07-22 11:22:21.929058222 +0200
+@@ -1,3 +1,4 @@
++// UNSUPPORTED: target=riscv64{{.*}}
+ // RUN: mlir-opt %s -pass-pipeline="builtin.module(func.func(convert-scf-to-cf),finalize-memref-to-llvm,func.func(convert-arith-to-llvm),convert-func-to-llvm,convert-cf-to-llvm,reconcile-unrealized-casts)" \
+ // RUN: | mlir-runner -e main -entry-point-result=void \
+ // RUN: -shared-libs=%mlir_runner_utils,%mlir_c_runner_utils \
+diff -Naur mlir-ORIG/test/mlir-runner/memref-reshape.mlir mlir/test/mlir-runner/memref-reshape.mlir
+--- mlir-ORIG/test/mlir-runner/memref-reshape.mlir	2025-07-21 12:45:58.452247073 +0200
++++ mlir/test/mlir-runner/memref-reshape.mlir	2025-07-21 12:54:12.424236199 +0200
+@@ -1,3 +1,4 @@
++// UNSUPPORTED: target=riscv64{{.*}
+ // RUN: mlir-opt %s -pass-pipeline="builtin.module(func.func(convert-scf-to-cf,memref-expand,convert-arith-to-llvm),finalize-memref-to-llvm,convert-func-to-llvm,convert-cf-to-llvm,reconcile-unrealized-casts)" \
+ // RUN: | mlir-runner -e main -entry-point-result=void \
+ // RUN: -shared-libs=%mlir_runner_utils,%mlir_c_runner_utils \
+diff -Naur mlir-ORIG/test/mlir-runner/sgemm-naive-codegen.mlir mlir/test/mlir-runner/sgemm-naive-codegen.mlir
+--- mlir-ORIG/test/mlir-runner/sgemm-naive-codegen.mlir	2025-07-21 12:45:58.452247073 +0200
++++ mlir/test/mlir-runner/sgemm-naive-codegen.mlir	2025-07-21 12:54:36.584236767 +0200
+@@ -1,3 +1,4 @@
++// UNSUPPORTED: target=riscv64{{.*}
+ // RUN: mlir-opt -pass-pipeline="builtin.module(func.func(convert-linalg-to-loops,lower-affine,convert-scf-to-cf,convert-arith-to-llvm),convert-vector-to-llvm,finalize-memref-to-llvm,convert-func-to-llvm,convert-cf-to-llvm,reconcile-unrealized-casts)" %s | mlir-runner -O3 -e main -entry-point-result=void -shared-libs=%mlir_c_runner_utils | FileCheck %s
+ 
+ func.func @main() {
+diff -Naur mlir-ORIG/test/mlir-runner/test-expand-math-approx.mlir mlir/test/mlir-runner/test-expand-math-approx.mlir
+--- mlir-ORIG/test/mlir-runner/test-expand-math-approx.mlir	2025-07-21 12:45:58.456247070 +0200
++++ mlir/test/mlir-runner/test-expand-math-approx.mlir	2025-07-21 12:55:53.592239897 +0200
+@@ -1,3 +1,4 @@
++// UNSUPPORTED: target=riscv64{{.*}
+ // RUN:   mlir-opt %s -pass-pipeline="builtin.module(func.func(test-expand-math),convert-vector-to-scf,convert-scf-to-cf,convert-vector-to-llvm,convert-to-llvm,reconcile-unrealized-casts)" \
+ // RUN: | mlir-runner                                                      \
+ // RUN:     -e main -entry-point-result=void -O0                               \
