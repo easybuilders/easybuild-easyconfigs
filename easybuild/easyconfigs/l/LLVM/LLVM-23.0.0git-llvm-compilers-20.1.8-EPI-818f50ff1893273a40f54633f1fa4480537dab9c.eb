@@ -1,0 +1,160 @@
+name = 'LLVM'
+version = '23.0.0git'
+versionsuffix = '-EPI-818f50ff1893273a40f54633f1fa4480537dab9c'
+local_commit = '818f50ff1893273a40f54633f1fa4480537dab9c'
+
+
+homepage = "https://repo.hca.bsc.es/gitlab/rferrer/llvm-epi"
+description = """
+This is a publicly accessible version of the EPI project LLVM-based compiler developed at the
+Barcelona Supercomputing Center.
+The main goal of this development is to foster a co-design cycle in the development of the
+RISC-V Vector Extension (RVV).
+"""
+
+toolchain = {'name': 'llvm-compilers', 'version': '20.1.8'}
+toolchainopts = {
+    # 'cstd': 'gnu++11',
+    'pic': True
+}
+
+source_urls = ['https://repo.hca.bsc.es/gitlab/rferrer/llvm-epi/-/archive/%(local_commit)s/']
+sources = [
+    'llvm-epi-%(local_commit)s.tar.gz',
+]
+
+patches = [
+    'LLVM-18.1.8_envintest.patch',
+    'LLVM-23.0.0_libomptarget_tests.patch',
+    'LLVM-23.0.0_dsl_avoid_werror.patch',
+]
+checksums = [
+    {'llvm-epi-%(local_commit)s.tar.gz': '0f79afd46c90117b039e6bb087b2f2320f29ebc64b753be984873d0a4234e0be'},
+    {'LLVM-18.1.8_envintest.patch': '8e25dfab8a29a860717b4bd2d8cdd0e795433766d7fffbda32d06a2bde47058d'},
+    {'LLVM-23.0.0_libomptarget_tests.patch': '99c6503633d4f177c82ac2c99552004497ea05da922cec2293a84286c4e20174'},
+    {'LLVM-23.0.0_dsl_avoid_werror.patch': '30325d9cf783509edbe65f7f66c0c5523b27bfe596ed74e0ab0b039acd75cad5'},
+]
+
+# riscv_MLIR.patch: Disable problematic MLIR Runner tests on RISC-V.
+# Failures on RISC-V are due to missing soft-float helper symbols (like __addsf3),
+# which is a known issue when running LLVM's JIT on platforms like RISC-V.
+
+# riscv_execution_engine.patch: Skip the test on RISC-V, which is appropriate since JIT execution via MLIR's
+# ExecutionEngine is not reliably supported on this architecture in this LLVM version.
+
+# riscv_xray_check.patch: RISC-V has looser execution ordering; relax CHECK-NEXT to CHECK
+
+# riscv_fuzzer.patch: Mark as UNSUPPORTED for RISC-V tests that use libFuzzer + -fsanitize=address,fuzzer
+
+# riscv_ompt_test.patch: Fix some OMPT tests that fail on RISC-V
+# (see https://github.com/llvm/llvm-project/pull/156914)
+
+if ARCH == 'riscv64':
+    patches += [
+        'LLVM-23.0.0_riscv_MLIR.patch',
+        'LLVM-20.1.5_riscv_execution_engine.patch',
+        'LLVM-20.1.5_riscv_xray_check.patch',
+        'LLVM-23.0.0_riscv_fuzzer.patch',
+        'LLVM-23.0.0_riscv_ompt_test.patch',
+        'LLVM-23.0.0_force_real2and3.patch',
+    ]
+    checksums += [
+        {'LLVM-23.0.0_riscv_MLIR.patch':
+         'a206446a73d14b6ad1ffb320ec2c47daf8c822520141f6adb5e09cb98298e2ae'},
+        {'LLVM-20.1.5_riscv_execution_engine.patch':
+         '7d795920e98c2c65df30ed01cc7e9251d69ae25e2674c251bc283ed44b53d02f'},
+        {'LLVM-20.1.5_riscv_xray_check.patch':
+         '5ca1e5730a3ee7cc1914959d64330f213a58f9818d91dbba346db63c77b47606'},
+        {'LLVM-23.0.0_riscv_fuzzer.patch':
+         '76bc38ff2f7b1f78d62a6fb95225cd6f0da396f912679e7bc94b388b87ae6b1c'},
+        {'LLVM-23.0.0_riscv_ompt_test.patch':
+         'c040c9db520dc5ffcbc5464038087bf2b551407e3026d6da8fa2400a6a8bba43'},
+        {'LLVM-23.0.0_force_real2and3.patch':
+         '94f84b3cc0b4d268f86f7d9314918d05fefca289dc23412c07b0d900a4c2098d'},
+    ]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Python', '3.13.5'),
+    ('CMake', '4.0.3'),
+    ('psutil', '7.0.0'),  # Needed to enable test timeout in lit
+    ('lit', '18.1.8'),
+    ('git', '2.50.1'),
+]
+
+dependencies = [
+    ('libffi', '3.5.1'),
+    ('libxml2', '2.14.3'),
+    ('ncurses', '6.5'),
+    ('zlib', '1.3.1'),
+    ('Z3', '4.15.1'),
+    ('zstd', '1.5.7'),
+]
+
+# EPI developers always compile with assertions enabled
+configopts = '-DLLVM_ENABLE_ASSERTIONS=ON '
+
+build_shared_libs = True
+
+bootstrap = True
+full_llvm = False
+build_clang_extras = True
+build_runtimes = True
+build_lld = True
+build_lldb = True
+build_bolt = True
+build_openmp = True
+build_openmp_tools = True
+build_openmp_offload = True
+
+# openmp offload is not supported for riscv64 (https://clang.llvm.org/docs/OffloadingDesign.html)
+# There is a Bug in (at least) testing phase of BOLT for RISC-V. See https://github.com/llvm/llvm-project/issues/134245
+# LLVM-EPI developers do not build lldb when making their releases
+if ARCH == 'riscv64':
+    build_bolt = False
+    build_openmp_offload = False
+    build_lldb = False
+
+use_polly = True
+
+python_bindings = True
+
+build_targets = ['all']
+# Disable the use of -Werror flag to avoid that warnings from rpath linking translate into actual compilation errors
+disable_werror = True
+
+skip_all_tests = False
+skip_sanitizer_tests = True
+test_suite_max_failed = 10
+test_suite_timeout_single = 5 * 60
+test_suite_ignore_patterns = [
+    "X86/register-fragments-bolt-symbols.s",
+    "modularize/ProblemsCoverage.modularize",
+    "Driver/atomic.f90",
+    "Driver/gcc-toolchain-install-dir.f90",
+    "api_tests/test_ompd_get_icv_from_scope.c",
+    "std/time/time.syn/formatter",
+    # Those 2 might fail with "tzdb: the path '/etc/localtime' is not a symlink"
+    "std/time/time.zone/time.zone.db/time.zone.db.tzdb",
+    "std/time/time.zone/time.zone.db/time.zone.db.access",
+    # libFuzzer tests massively fail in RISC-V due to slightly different
+    # behaviour of signal handling and stack unwinding
+    "libFuzzer-riscv64",
+    # These tests use real(kind=2) which is disabled in llvm-epi and are not covered
+    # by LLVM-23.0.0_force_real2and3.patch
+    "Lower/HLFIR/array-ctor-as-inlined-temp.f90",
+    "Lower/Intrinsics/ieee_is_normal.f90",
+    "Lower/Intrinsics/ieee_next.f90",
+    "Lower/Intrinsics/ieee_real.f90",
+    "Lower/Intrinsics/ieee_rem.f90",
+    "Lower/Intrinsics/ieee_rint_int.f90",
+    "Lower/Intrinsics/nearest.f90",
+    "Lower/Intrinsics/reduce.f90",
+    "Lower/basic-function.f90",
+    "Lower/declare-with-storage.f90",
+    "Lower/global-initialization.f90",
+    "Lower/real-operations-1.f90",
+    "Lower/real-descriptors.f90",
+]
+
+moduleclass = 'compiler'
