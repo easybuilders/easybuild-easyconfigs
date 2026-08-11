@@ -32,12 +32,24 @@ configopts = ' '.join([
     '-DCMAKE_VERBOSE_MAKEFILE=ON',
 ])
 
+# CMake install does not register pip metadata; create a minimal dist-info
+# so pivy shows up in 'pip list' (required by the sanity check)
+local_distinfodir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/%(name)s-%(version)s.dist-info'
+postinstallcmds = [
+    'mkdir %s' % local_distinfodir,
+    'echo "Name: %%(name)s" > %s/METADATA' % local_distinfodir,
+    'echo "Version: %%(version)s" >> %s/METADATA' % local_distinfodir,
+]
+
 sanity_check_paths = {
     'files': [
         'lib/python%(pyshortver)s/site-packages/%(name)s/coin.py',
         f'lib/python%(pyshortver)s/site-packages/%(name)s/_coin.{SHLIB_EXT}',
     ],
-    'dirs': ['lib/python%(pyshortver)s/site-packages/%(name)s'],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages/%(name)s',
+        'lib/python%(pyshortver)s/site-packages/%(name)s-%(version)s.dist-info',
+    ],
 }
 
 sanity_check_commands = [
