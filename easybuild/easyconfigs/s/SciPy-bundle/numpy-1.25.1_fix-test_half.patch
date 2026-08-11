@@ -1,0 +1,69 @@
+test_half_conversions fails when there is hardware support for Float16 (e.g. AVX512) as NaNs are not kept the same.
+Error looks like:
+        # Convert from float64 back to float16
+        b = np.array(self.all_f64, dtype=float16)
+        bv = b.view(dtype=uint16)
+        fv = self.all_f16.view(dtype=uint16)
+>       assert_equal(self.all_f16.view(dtype=uint16),
+                     b.view(dtype=uint16))
+...
+E           AssertionError: 
+E           Arrays are not equal
+E           
+E           Mismatched elements: 1022 / 65536 (1.56%)
+E           Max absolute difference: 512
+E           Max relative difference: 0.01587252
+E            x: array([    0,     1,     2, ..., 65533, 65534, 65535], dtype=uint16)
+E            y: array([    0,     1,     2, ..., 65533, 65534, 65535], dtype=uint16)
+
+Deeper investigation shows a difference of exactly 512 in indices 31745-32255 & 64513-65023
+
+Fix using https://github.com/numpy/numpy/commit/7a84442b1caa4904a9b8e58bd6b93045b4ad350f
+from Sayed Adel <seiko@imavr.com>
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/numpy/core/tests/test_half.py b/numpy/core/tests/test_half.py
+index ca849ad52..3e72eba89 100644
+--- a/numpy/core/tests/test_half.py
++++ b/numpy/core/tests/test_half.py
+@@ -21,8 +21,11 @@ def setup_method(self):
+         # An array of all possible float16 values
+         self.all_f16 = np.arange(0x10000, dtype=uint16)
+         self.all_f16.dtype = float16
+-        self.all_f32 = np.array(self.all_f16, dtype=float32)
+-        self.all_f64 = np.array(self.all_f16, dtype=float64)
++
++        # NaN value can cause an invalid FP exception if HW is been used
++        with np.errstate(invalid='ignore'):
++            self.all_f32 = np.array(self.all_f16, dtype=float32)
++            self.all_f64 = np.array(self.all_f16, dtype=float64)
+ 
+         # An array of all non-NaN float16 values, in sorted order
+         self.nonan_f16 = np.concatenate(
+@@ -44,14 +47,19 @@ def test_half_conversions(self):
+         # value is preserved when converting to/from other floats.
+ 
+         # Convert from float32 back to float16
+-        b = np.array(self.all_f32, dtype=float16)
+-        assert_equal(self.all_f16.view(dtype=uint16),
+-                     b.view(dtype=uint16))
++        with np.errstate(invalid='ignore'):
++            b = np.array(self.all_f32, dtype=float16)
++        # avoid testing NaNs due to differ bits wither Q/SNaNs
++        b_nn = b == b
++        assert_equal(self.all_f16[b_nn].view(dtype=uint16),
++                     b[b_nn].view(dtype=uint16))
+ 
+         # Convert from float64 back to float16
+-        b = np.array(self.all_f64, dtype=float16)
+-        assert_equal(self.all_f16.view(dtype=uint16),
+-                     b.view(dtype=uint16))
++        with np.errstate(invalid='ignore'):
++            b = np.array(self.all_f64, dtype=float16)
++        b_nn = b == b
++        assert_equal(self.all_f16[b_nn].view(dtype=uint16),
++                     b[b_nn].view(dtype=uint16))
+ 
+         # Convert float16 to longdouble and back
+         # This doesn't necessarily preserve the extra NaN bits,

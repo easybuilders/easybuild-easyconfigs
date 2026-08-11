@@ -1,0 +1,30 @@
+The Makefile.orig lapw0 is not updated according to how the Makefile works.
+That causes a build failure for lapw0_mpi with libxc
+
+Åke Sandgren, 20210910
+diff -ru wien2k.orig/SRC_lapw0/Makefile.orig wien2k/SRC_lapw0/Makefile.orig
+--- wien2k.orig/SRC_lapw0/Makefile.orig	2021-03-13 09:40:10.023772496 +0100
++++ wien2k/SRC_lapw0/Makefile.orig	2021-09-10 14:53:07.875144996 +0200
+@@ -55,7 +55,9 @@
+ #-------------- loader options -------------
+ LDFLAGS = _LDFLAGS_
+ R_LIBS     = $(FFTW_LIBS) _R_LIBS_ $(LIBXC_LIBS) 
++RR_LIBS     = $(FFTW_LIBS) $(R_LIBS)  $(LIBXC_LIBS) 
+ RP_LIBS = $(FFTW_PLIBS) _RP_LIBS_
++RPP_LIBS =  $(FFTW_PLIBS) $(FFTW_LIBS) $(RP_LIBS)  $(LIBXC_LIBS)
+ 
+ ###############################################################################
+ #                       End of user defined variables                         #
+@@ -128,10 +130,10 @@
+ #..............................................................................
+ 
+ $(S_EXEC): $(OBJS)
+-	$(FORT) -o $(S_EXEC) $(OBJS) $(LDFLAGS) $(R_LIBS)
++	$(FORT) -o $(S_EXEC) $(OBJS) $(LDFLAGS) $(RR_LIBS)
+ 
+ $(P_EXEC): $(OBJS)
+-	$(FORT) -o $(P_EXEC) $(OBJS) $(LDFLAGS)  $(RP_LIBS) 
++	$(FORT) -o $(P_EXEC) $(OBJS) $(LDFLAGS)  $(RPP_LIBS) 
+ 
+ # sequential
+ keep_s_files:

@@ -1,0 +1,118 @@
+Use external EasyBuild versions of some submodules
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Updated and modified to version 1.1.3
+Author: J. Sassmannshausen (Imperial College London/UK)
+diff --git a/dgl-1.1.3.orig/CMakeLists.txt b/dgl-1.1.3/CMakeLists.txt
+index db39e48..58a1c90 100644
+--- a/dgl-1.1.3.orig/CMakeLists.txt
++++ b/dgl-1.1.3/CMakeLists.txt
+@@ -253,31 +253,31 @@ endif(USE_CUDA)
+ 
+ # include directories
+ target_include_directories(dgl PRIVATE "include")
+-target_include_directories(dgl PRIVATE "third_party/dlpack/include")
+-target_include_directories(dgl PRIVATE "third_party/dmlc-core/include")
+-target_include_directories(dgl PRIVATE "third_party/phmap/")
++# target_include_directories(dgl PRIVATE "third_party/dlpack/include")
++# target_include_directories(dgl PRIVATE "third_party/dmlc-core/include")
++# target_include_directories(dgl PRIVATE "third_party/phmap/")
+ target_include_directories(dgl PRIVATE "third_party/METIS/include/")
+ target_include_directories(dgl PRIVATE "tensoradapter/include")
+ target_include_directories(dgl PRIVATE "third_party/nanoflann/include")
+-target_include_directories(dgl PRIVATE "third_party/libxsmm/include")
++# target_include_directories(dgl PRIVATE "third_party/libxsmm/include")
+ target_include_directories(dgl PRIVATE "third_party/pcg/include")
+ 
+ # For serialization
+ if (USE_HDFS)
+   option(DMLC_HDFS_SHARED "dgl has to build with dynamic hdfs library" ON)
+ endif()
+-add_subdirectory("third_party/dmlc-core")
++# add_subdirectory("third_party/dmlc-core")
+ list(APPEND DGL_LINKER_LIBS dmlc)
+ set(GOOGLE_TEST 0) # Turn off dmlc-core test
+ 
+ # Compile METIS
+ if(NOT MSVC)
+-  set(GKLIB_PATH "${CMAKE_CURRENT_SOURCE_DIR}/third_party/METIS/GKlib")
+-  include(${GKLIB_PATH}/GKlibSystem.cmake)
+-  include_directories(${GKLIB_PATH})
++  set(GKLIB_PATH ${EBROOTGKLIBMINMETIS})
++  #  include(${GKLIB_PATH}/GKlibSystem.cmake)
++  include_directories("${GKLIB_PATH}/include")
+   include_directories("third_party/METIS/include/")
+   add_subdirectory("third_party/METIS/libmetis/")
+-  list(APPEND DGL_LINKER_LIBS metis)
++  list(APPEND DGL_LINKER_LIBS metis GKlib)
+ endif(NOT MSVC)
+ 
+ # Compile LIBXSMM
+@@ -296,7 +296,8 @@ if((NOT MSVC) AND USE_LIBXSMM)
+                       )
+   endif(REBUILD_LIBXSMM)
+   add_dependencies(dgl libxsmm)
+-  list(APPEND DGL_LINKER_LIBS -L${CMAKE_SOURCE_DIR}/third_party/libxsmm/lib/ xsmm.a)
++  list(APPEND DGL_LINKER_LIBS -L${CMAKE_SOURCE_DIR}/third_party/libxsmm/lib/ -lxsmm.a)
++  # list(APPEND DGL_LINKER_LIBS xsmm flexiblas)
+ endif((NOT MSVC) AND USE_LIBXSMM)
+ 
+ if(NOT MSVC)
+@@ -397,12 +398,16 @@ install(TARGETS dgl DESTINATION lib${LIB_SUFFIX})
+ # Testing
+ if(BUILD_CPP_TEST)
+   message(STATUS "Build with unittest")
+-  add_subdirectory(./third_party/googletest)
++  #  add_subdirectory(./third_party/googletest)
+   enable_testing()
+   include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+   include_directories("include")
+-  include_directories("third_party/dlpack/include")
+-  include_directories("third_party/dmlc-core/include")
++  # include_directories("third_party/dlpack/include")
++  if (USE_AVX)
++    include_directories("third_party/xbyak")
++  endif(USE_AVX)
++
++  # include_directories("third_party/dmlc-core/include")
+   include_directories("third_party/phmap")
+   include_directories("third_party/libxsmm/include")
+   include_directories("third_party/pcg/include")
+diff --git a/dgl-1.1.3.orig/include/dgl/zerocopy_serializer.h b/dgl-1.1.3/include/dgl/zerocopy_serializer.h
+index 0ba962f..78781f6 100644
+--- a/dgl-1.1.3.orig/include/dgl/zerocopy_serializer.h
++++ b/dgl-1.1.3/include/dgl/zerocopy_serializer.h
+@@ -19,7 +19,7 @@
+ #include <utility>
+ #include <vector>
+ 
+-#include "dmlc/logging.h"
++#include <dmlc/logging.h>
+ 
+ namespace dgl {
+ 
+diff --git a/dgl-1.1.3.orig/src/graph/serialize/heterograph_serialize.cc b/dgl-1.1.3/src/graph/serialize/heterograph_serialize.cc
+index 7872b93..79cc457 100644
+--- a/dgl-1.1.3.orig/src/graph/serialize/heterograph_serialize.cc
++++ b/dgl-1.1.3/src/graph/serialize/heterograph_serialize.cc
+@@ -50,7 +50,7 @@
+ #include "../heterograph.h"
+ #include "./dglstream.h"
+ #include "./graph_serialize.h"
+-#include "dmlc/memory_io.h"
++#include <dmlc/memory_io.h>
+ 
+ namespace dgl {
+ namespace serialize {
+diff --git a/dgl-1.1.3.orig/src/graph/serialize/zerocopy_serializer.cc b/dgl-1.1.3/src/graph/serialize/zerocopy_serializer.cc
+index 0cec855..58fc981 100644
+--- a/dgl-1.1.3.orig/src/graph/serialize/zerocopy_serializer.cc
++++ b/dgl-1.1.3/src/graph/serialize/zerocopy_serializer.cc
+@@ -7,7 +7,7 @@
+ #include <dgl/zerocopy_serializer.h>
+ 
+ #include "dgl/runtime/ndarray.h"
+-#include "dmlc/memory_io.h"
++#include <dmlc/memory_io.h>
+ 
+ namespace dgl {
+ 

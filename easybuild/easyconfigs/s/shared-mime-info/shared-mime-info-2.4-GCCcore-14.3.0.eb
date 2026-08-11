@@ -1,0 +1,41 @@
+easyblock = 'MesonNinja'
+
+name = 'shared-mime-info'
+version = '2.4'
+
+homepage = 'https://gitlab.freedesktop.org/xdg/shared-mime-info'
+description = """The shared-mime-info package contains:
+The core database of common MIME types, their file extensions and icon names.
+The update-mime-database command, used to extend the DB and install a new MIME data.
+The freedesktop.org shared MIME database spec.
+It is used by GLib, GNOME, KDE, XFCE and many others."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['531291d0387eb94e16e775d7e73788d06d2b2fdd8cd2ac6b6b15287593b6a2de']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Meson', '1.8.2'),
+    ('Ninja', '1.13.0'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('libxml2', '2.14.3'),
+    ('GLib', '2.85.3'),
+]
+
+# Do not convert xml file to html when xmlto is found on the system as it tries to load external docbook
+preconfigopts = """sed -i "s/xmlto.found()/false/" ../shared-mime-info-2.4/data/meson.build && """
+
+sanity_check_paths = {
+    'files': ['bin/update-mime-database'],
+    'dirs': ['share/mime'],
+}
+
+sanity_check_commands = ['update-mime-database -h']
+
+moduleclass = 'tools'

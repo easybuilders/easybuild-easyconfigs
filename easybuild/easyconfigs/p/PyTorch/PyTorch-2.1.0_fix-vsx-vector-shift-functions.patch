@@ -1,0 +1,172 @@
+The VSX vector shift operators don't handle out-of-bounds values correctly.
+See https://github.com/pytorch/pytorch/issues/109777
+Taken from https://github.com/pytorch/pytorch/pull/109886
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
+index a71f50fc7aa..84c84286740 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
+@@ -334,20 +334,6 @@ class Vectorized<int16_t> {
+   DEFINE_MEMBER_OP(operator^, int16_t, vec_xor)
+ };
+ 
+-template <>
+-Vectorized<int16_t> inline operator<<(const Vectorized<int16_t>& a, const Vectorized<int16_t>& b) {
+-               vuint16 shift_vec0 = reinterpret_cast<vuint16>(b.vec0());
+-               vuint16 shift_vec1 = reinterpret_cast<vuint16>(b.vec1());
+-         return Vectorized<int16_t>{vec_sl(a.vec0(), shift_vec0), vec_sl(a.vec1(), shift_vec1)};
+-}
+-
+-template <>
+-Vectorized<int16_t> inline operator>>(const Vectorized<int16_t>& a, const Vectorized<int16_t>& b) {
+-               vuint16 shift_vec0 = reinterpret_cast<vuint16>(b.vec0());
+-               vuint16 shift_vec1 = reinterpret_cast<vuint16>(b.vec1()) ;
+-         return Vectorized<int16_t>{vec_sr(a.vec0(), shift_vec0), vec_sr(a.vec1(), shift_vec1)};
+-}
+-
+ template <>
+ Vectorized<int16_t> inline maximum(
+     const Vectorized<int16_t>& a,
+@@ -362,6 +348,7 @@ Vectorized<int16_t> inline minimum(
+   return a.minimum(b);
+ }
+ 
++DEFINE_SHIFT_FUNCS(int16_t)
+ 
+ } // namespace
+ } // namespace vec
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h
+index 1b6a82df39b..e1e86d3b53a 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h
+@@ -265,20 +265,6 @@ class Vectorized<int32_t> {
+   DEFINE_MEMBER_OP(operator^, int32_t, vec_xor)
+ };
+ 
+-template <>
+-Vectorized<int32_t> inline operator<<(const Vectorized<int32_t>& a, const Vectorized<int32_t>& b) {
+-                vuint32 shift_vec0 = reinterpret_cast<vuint32>(b.vec0());
+-                vuint32 shift_vec1 = reinterpret_cast<vuint32>(b.vec1()) ;
+-          return Vectorized<int32_t>{vec_sl(a.vec0(), shift_vec0), vec_sl(a.vec1(), shift_vec1)};
+-}
+-
+-template <>
+-Vectorized<int32_t> inline operator>>(const Vectorized<int32_t>& a, const Vectorized<int32_t>& b) {
+-                vuint32 shift_vec0 = reinterpret_cast<vuint32>(b.vec0());
+-                vuint32 shift_vec1 = reinterpret_cast<vuint32>(b.vec1()) ;
+-          return Vectorized<int32_t>{vec_sr(a.vec0(), shift_vec0), vec_sr(a.vec1(), shift_vec1)};
+-}
+-
+ template <>
+ Vectorized<int32_t> inline maximum(
+     const Vectorized<int32_t>& a,
+@@ -293,6 +279,8 @@ Vectorized<int32_t> inline minimum(
+   return a.minimum(b);
+ }
+ 
++DEFINE_SHIFT_FUNCS(int32_t)
++
+ } // namespace
+ } // namespace vec
+ } // namespace at
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h
+index a7a376ee16e..70613d90443 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h
+@@ -217,20 +217,6 @@ class Vectorized<int64_t> {
+   DEFINE_MEMBER_OP(operator^, int64_t, vec_xor)
+ };
+ 
+-template <>
+-Vectorized<int64_t> inline operator<<(const Vectorized<int64_t>& a, const Vectorized<int64_t>& b) {
+-                vuint64 shift_vec0 = reinterpret_cast<vuint64>(b.vec0());
+-                vuint64 shift_vec1 = reinterpret_cast<vuint64>(b.vec1()) ;
+-          return Vectorized<int64_t>{vec_sl(a.vec0(), shift_vec0), vec_sl(a.vec1(), shift_vec1)};
+-}
+-
+-template <>
+-Vectorized<int64_t> inline operator>>(const Vectorized<int64_t>& a, const Vectorized<int64_t>& b) {
+-                vuint64 shift_vec0 = reinterpret_cast<vuint64>(b.vec0());
+-                vuint64 shift_vec1 = reinterpret_cast<vuint64>(b.vec1()) ;
+-          return Vectorized<int64_t>{vec_sr(a.vec0(), shift_vec0), vec_sr(a.vec1(), shift_vec1)};
+-}
+-
+ template <>
+ Vectorized<int64_t> inline maximum(
+     const Vectorized<int64_t>& a,
+@@ -245,6 +231,8 @@ Vectorized<int64_t> inline minimum(
+   return a.minimum(b);
+ }
+ 
++DEFINE_SHIFT_FUNCS(int64_t)
++
+ } // namespace
+ } // namespace vec
+ } // namespace at
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vsx_helpers.h b/aten/src/ATen/cpu/vec/vec256/vsx/vsx_helpers.h
+index dab38458184..52032cdd817 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vsx_helpers.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vsx_helpers.h
+@@ -2,6 +2,7 @@
+ #include <cstdint>
+ #include <c10/macros/Macros.h>
+ #include <ATen/cpu/vec/intrinsics.h>
++#include <ATen/cpu/vec/vec_base.h>
+ 
+ using vbool8   =  __attribute__((altivec(vector__))) __attribute__((altivec(bool__))) char;
+ using vbool16  =  __attribute__((altivec(vector__))) __attribute__((altivec(bool__))) short;
+@@ -18,6 +19,11 @@ using vuint64  =  __attribute__((altivec(vector__)))  unsigned long long;
+ using vfloat32 =  __attribute__((altivec(vector__)))  float;
+ using vfloat64 =  __attribute__((altivec(vector__)))  double;
+ 
++inline auto make_vuint(vint8 v){ return reinterpret_cast<vuint8>(v); }
++inline auto make_vuint(vint16 v){ return reinterpret_cast<vuint16>(v); }
++inline auto make_vuint(vint32 v){ return reinterpret_cast<vuint32>(v); }
++inline auto make_vuint(vint64 v){ return reinterpret_cast<vuint64>(v); }
++
+ #if !defined(vec_float)
+ C10_ALWAYS_INLINE vfloat32 vec_float(const vint32& vec_in) {
+   vfloat32 vec_out;
+@@ -448,6 +454,40 @@ const vfloat64 vd_imag_half = vfloat64{0.0, 0.5};
+ const vfloat64 vd_sqrt2_2 = vfloat64{0.70710678118654757, 0.70710678118654757};
+ const vfloat64 vd_pi_2 = vfloat64{M_PI / 2.0, 0.0};
+ 
++template<typename T>
++Vectorized<T> VsxShiftRightArith(const Vectorized<T>& a, const Vectorized<T>& b) {
++  const Vectorized<T> max_shift(sizeof(T) * CHAR_BIT - std::is_signed_v<T>);
++  const auto mask = (b < Vectorized<T>(0)) | (b >= max_shift);
++  const auto shift = Vectorized<T>::blendv(b, max_shift, mask);
++  return Vectorized<T>{
++    vec_sra(a.vec0(), make_vuint(shift.vec0())),
++    vec_sra(a.vec1(), make_vuint(shift.vec1()))};
++}
++
++template<typename T>
++Vectorized<T> VsxShiftLeftArith(const Vectorized<T>& a, const Vectorized<T>& b) {
++  const Vectorized<T> max_shift(sizeof(T) * CHAR_BIT);
++  const auto mask = (b < Vectorized<T>(0)) | (b >= max_shift);
++  Vectorized<T> ret(
++    vec_sl(a.vec0(), make_vuint(b.vec0())),
++    vec_sl(a.vec1(), make_vuint(b.vec1())));
++  return Vectorized<T>::blendv(ret, Vectorized<T>(0), mask);
++}
++
++#define DEFINE_SHIFT_FUNCS(operand_type)                 \
++  template <>                                            \
++  Vectorized<operand_type> C10_ALWAYS_INLINE operator>>( \
++      const Vectorized<operand_type>& a,                 \
++      const Vectorized<operand_type>& b) {               \
++    return VsxShiftRightArith(a, b);                     \
++  }                                                      \
++  template <>                                            \
++  Vectorized<operand_type> C10_ALWAYS_INLINE operator<<( \
++      const Vectorized<operand_type>& a,                 \
++      const Vectorized<operand_type>& b) {               \
++    return VsxShiftLeftArith(a, b);                      \
++  }                                                      \
++
+ } // namespace
+ } // namespace vec
+ } // namespace at

@@ -1,0 +1,42 @@
+easyblock = 'MakeCp'
+
+name = 'unimap'
+version = '0.1'
+
+homepage = 'https://github.com/lh3/unimap'
+description = """Unimap is a fork of minimap2 optimized for assembly-to-reference
+alignment. It integrates the minigraph chaining algorithm and can align through
+long INDELs (up to 100kb by default) much faster than minimap2. Unimap is a
+better fit for resolving segmental duplications and is recommended over minimap2
+for alignment between high-quality assemblies.
+
+Unimap does not replace minimap2 for other types of alignment. It drops the
+support of multi-part index and short-read mapping. Its long-read alignment is
+different from minimap2 but is not necessarily better. Unimap is more of a
+specialized minimap2 at the moment."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/lh3/unimap/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['d5d7831e1fa78c943a96ef78ba22ec88eebf39368bdb135c30554f052f0dbc5c']
+
+builddependencies = [('binutils', '2.38')]
+
+files_to_copy = [
+    (['%(name)s'], 'bin'),
+    (['lib%(name)s.a'], 'lib'),
+    (['*.h'], 'include'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'lib/lib%(name)s.a'],
+    'dirs': ['include']
+}
+
+sanity_check_commands = [
+    "unimap  --help",
+    "cd %(builddir)s/unimap-%(version)s  && unimap -a test/MT-human.fa test/MT-orang.fa > test.sam",
+]
+
+moduleclass = 'bio'

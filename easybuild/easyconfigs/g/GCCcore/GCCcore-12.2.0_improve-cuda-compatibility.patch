@@ -1,0 +1,20 @@
+The GCC stdlib uses a GCC feature not supported by nvcc until CUDA 12.
+I.e. CUDA 12 does not support GCC 12 (only GCC <= 11) erroring at
+> if ((void*)(this->*(&time_get::do_get)) == (void*)(&time_get::do_get))
+
+As the same isn't supported by clang use the same fix.
+See https://gcc.gnu.org/bugzilla//show_bug.cgi?id=104990
+
+Author: Alexander Grund (TU Dresden)
+
+--- gcc-12.2.0-orig/libstdc++-v3/include/bits/locale_facets_nonio.tcc
++++ gcc-12.2.0/libstdc++-v3/include/bits/locale_facets_nonio.tcc
+@@ -1465,7 +1465,7 @@
+       ctype<_CharT> const& __ctype = use_facet<ctype<_CharT> >(__loc);
+       __err = ios_base::goodbit;
+       bool __use_state = false;
+-#if __GNUC__ >= 5 && !defined(__clang__)
++#if __GNUC__ >= 5 && !defined(__clang__) && (!defined(__CUDACC__) || (__CUDACC_VER_MAJOR__ >= 12))
+ #pragma GCC diagnostic push
+ #pragma GCC diagnostic ignored "-Wpmf-conversions"
+       // Nasty hack.  The C++ standard mandates that get invokes the do_get

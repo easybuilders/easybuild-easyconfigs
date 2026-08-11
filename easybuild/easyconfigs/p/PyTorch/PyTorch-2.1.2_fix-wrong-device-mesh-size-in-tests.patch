@@ -1,0 +1,28 @@
+From 1d1308649298caf8884970fc57ed82a2d8ea6079 Mon Sep 17 00:00:00 2001
+From: Xilun Wu <12968408+XilunWu@users.noreply.github.com>
+Date: Tue, 26 Dec 2023 17:48:11 -0800
+Subject: [PATCH] [BE] force DTensorTestBase.build_device_mesh to use
+ world_size rather than NUM_DEVICES constant (#116439)
+
+**Test**:
+`python test/distributed/fsdp/test_shard_utils.py -k test_create_chunk_dtensor`
+
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/116439
+Approved by: https://github.com/wanchaol
+---
+ torch/testing/_internal/distributed/_tensor/common_dtensor.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/torch/testing/_internal/distributed/_tensor/common_dtensor.py b/torch/testing/_internal/distributed/_tensor/common_dtensor.py
+index ab86ecd1616a74f..05a3c0872878965 100644
+--- a/torch/testing/_internal/distributed/_tensor/common_dtensor.py
++++ b/torch/testing/_internal/distributed/_tensor/common_dtensor.py
+@@ -192,7 +192,7 @@ def backend(self) -> str:
+         return PG_BACKEND
+ 
+     def build_device_mesh(self) -> DeviceMesh:
+-        return DeviceMesh(DEVICE_TYPE, list(range(NUM_DEVICES)))
++        return DeviceMesh(DEVICE_TYPE, list(range(self.world_size)))
+ 
+     def init_pg(self) -> None:
+         if "nccl" in self.backend and torch.cuda.device_count() < self.world_size:

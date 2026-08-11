@@ -1,0 +1,32 @@
+# Patch jupyter_core to help jupyter find the correct installation path.
+#
+# If jupyter is installed by EasyBuild, jupyter is not in the same place as python.
+# `EB_ENV_JUPYTER_ROOT` is used to indicate where jupyter are and should be set to
+# the instllation path in easyconfigs.
+# Avoid using `ENV_JUPYTER_PATH` and `ENV_CONFIG_PATH`. Otherwise user configuration
+# has lower priority and cannot save their own settings.
+# Author: Chia-Jung Hsu, 2024-01-31
+--- a/jupyter_core/paths.py
++++ b/jupyter_core/paths.py
+@@ -228,6 +228,10 @@
+ 
+ ENV_JUPYTER_PATH: list[str] = [str(Path(sys.prefix, "share", "jupyter"))]
+ 
++if os.environ.get("EB_ENV_JUPYTER_ROOT"):
++    EB_ENV_JUPYTER_ROOT = [p.rstrip(os.sep) for p in os.environ["EB_ENV_JUPYTER_ROOT"].split(os.pathsep)]
++    ENV_JUPYTER_PATH = [str(Path(p, "share", "jupyter")) for p in EB_ENV_JUPYTER_ROOT]
++
+ 
+ def jupyter_path(*subdirs: str) -> list[str]:
+     """Return a list of directories to search for data files
+@@ -306,6 +310,10 @@
+         ]
+ ENV_CONFIG_PATH: list[str] = [str(Path(sys.prefix, "etc", "jupyter"))]
+ 
++if os.environ.get("EB_ENV_JUPYTER_ROOT"):
++    EB_ENV_JUPYTER_ROOT = [p.rstrip(os.sep) for p in os.environ["EB_ENV_JUPYTER_ROOT"].split(os.pathsep)]
++    ENV_CONFIG_PATH = [str(Path(p, "etc", "jupyter")) for p in EB_ENV_JUPYTER_ROOT]
++
+ 
+ def jupyter_config_path() -> list[str]:
+     """Return the search path for Jupyter config files as a list.

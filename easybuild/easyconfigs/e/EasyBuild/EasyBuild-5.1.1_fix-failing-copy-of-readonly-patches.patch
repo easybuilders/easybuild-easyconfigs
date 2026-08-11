@@ -1,0 +1,209 @@
+From 1a6453faebe060978161ab1ee1a145b9200a3808 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bob=20Dr=C3=B6ge?= <b.e.droge@rug.nl>
+Date: Fri, 11 Jul 2025 11:48:23 +0200
+Subject: [PATCH 1/5] store all patches in self.all_patches, use this for
+ copying patches to repo/reprod
+
+---
+ easybuild/framework/easyblock.py | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/easybuild/framework/easyblock.py b/easybuild/framework/easyblock.py
+index 21528abfde..53423c6045 100644
+--- a/easybuild/framework/easyblock.py
++++ b/easybuild/framework/easyblock.py
+@@ -188,6 +188,7 @@ def __init__(self, ec, logfile=None):
+ 
+         # list of patch/source files, along with checksums
+         self.patches = []
++        self.all_patches = [] # also includes patches of extensions
+         self.src = []
+         self.data_src = []
+         self.checksums = []
+@@ -601,6 +602,7 @@ def fetch_patches(self, patch_specs=None, extension=False, checksums=None):
+                 patch_info['path'] = path
+                 patch_info['checksum'] = self.get_checksum_for(checksums, filename=patch_info['name'], index=index)
+ 
++                self.all_patches.append(patch_info)
+                 if extension:
+                     patches.append(patch_info)
+                 else:
+@@ -5126,10 +5128,7 @@ def ensure_writable_log_dir(log_dir):
+                     block = det_full_ec_version(app.cfg) + ".block"
+                     repo.add_easyconfig(ecdict['original_spec'], app.name, block, buildstats, currentbuildstats)
+                 repo.add_easyconfig(spec, app.name, det_full_ec_version(app.cfg), buildstats, currentbuildstats)
+-                patches = app.patches
+-                for ext in app.exts:
+-                    patches += ext.get('patches', [])
+-                for patch in patches:
++                for patch in app.all_patches:
+                     if 'path' in patch:
+                         repo.add_patch(patch['path'], app.name)
+                 repo.commit("Built %s" % app.full_mod_name)
+@@ -5153,10 +5152,7 @@ def ensure_writable_log_dir(log_dir):
+                 _log.debug("Copied easyconfig file %s to %s", spec, newspec)
+ 
+                 # copy patches
+-                patches = app.patches
+-                for ext in app.exts:
+-                    patches += ext.get('patches', [])
+-                for patch in patches:
++                for patch in app.all_patches:
+                     if 'path' in patch:
+                         target = os.path.join(new_log_dir, os.path.basename(patch['path']))
+                         copy_file(patch['path'], target)
+
+From cc4eb8a8cca7fc8e46447bd56ef6f6bb2f7ef9ed Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bob=20Dr=C3=B6ge?= <b.e.droge@rug.nl>
+Date: Fri, 11 Jul 2025 11:58:42 +0200
+Subject: [PATCH 2/5] add space
+
+---
+ easybuild/framework/easyblock.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/easybuild/framework/easyblock.py b/easybuild/framework/easyblock.py
+index 53423c6045..9d269a0733 100644
+--- a/easybuild/framework/easyblock.py
++++ b/easybuild/framework/easyblock.py
+@@ -188,7 +188,7 @@ def __init__(self, ec, logfile=None):
+ 
+         # list of patch/source files, along with checksums
+         self.patches = []
+-        self.all_patches = [] # also includes patches of extensions
++        self.all_patches = []  # also includes patches of extensions
+         self.src = []
+         self.data_src = []
+         self.checksums = []
+
+From bca275f1519f5ff71e15620607301387f39a79ca Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bob=20Dr=C3=B6ge?= <b.e.droge@rug.nl>
+Date: Fri, 11 Jul 2025 13:25:49 +0200
+Subject: [PATCH 3/5] make all_patches a set, use FrozenDicts for the
+ patch_info dict
+
+---
+ easybuild/framework/easyblock.py | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/easybuild/framework/easyblock.py b/easybuild/framework/easyblock.py
+index 9d269a0733..7894daefb6 100644
+--- a/easybuild/framework/easyblock.py
++++ b/easybuild/framework/easyblock.py
+@@ -67,6 +67,7 @@
+ import easybuild.tools.environment as env
+ import easybuild.tools.toolchain as toolchain
+ from easybuild.base import fancylogger
++from easybuild.base.frozendict import FrozenDict
+ from easybuild.framework.easyconfig import EASYCONFIGS_PKG_SUBDIR
+ from easybuild.framework.easyconfig.easyconfig import ITERATE_OPTIONS, EasyConfig, ActiveMNS, get_easyblock_class
+ from easybuild.framework.easyconfig.easyconfig import get_module_path, letter_dir_for, resolve_template
+@@ -188,7 +189,7 @@ def __init__(self, ec, logfile=None):
+ 
+         # list of patch/source files, along with checksums
+         self.patches = []
+-        self.all_patches = []  # also includes patches of extensions
++        self.all_patches = set()  # set of all patches (including patches of extensions)
+         self.src = []
+         self.data_src = []
+         self.checksums = []
+@@ -602,7 +603,7 @@ def fetch_patches(self, patch_specs=None, extension=False, checksums=None):
+                 patch_info['path'] = path
+                 patch_info['checksum'] = self.get_checksum_for(checksums, filename=patch_info['name'], index=index)
+ 
+-                self.all_patches.append(patch_info)
++                self.all_patches.add(FrozenDict(patch_info))
+                 if extension:
+                     patches.append(patch_info)
+                 else:
+
+From 01be90f6e023725d224b30e6e5fce6cbd00f3c5f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bob=20Dr=C3=B6ge?= <b.e.droge@rug.nl>
+Date: Fri, 11 Jul 2025 13:26:54 +0200
+Subject: [PATCH 4/5] use self.items instead of iteritems, to fix error
+
+---
+ easybuild/base/frozendict.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/easybuild/base/frozendict.py b/easybuild/base/frozendict.py
+index 5e9312557f..06ad117c99 100644
+--- a/easybuild/base/frozendict.py
++++ b/easybuild/base/frozendict.py
+@@ -52,7 +52,7 @@ def __repr__(self):
+ 
+     def __hash__(self):
+         if self.__hash is None:
+-            self.__hash = reduce(operator.xor, map(hash, self.iteritems()), 0)
++            self.__hash = reduce(operator.xor, map(hash, self.items()), 0)
+ 
+         return self.__hash
+ 
+
+From fe3be821cf54fcf72b8b0690621162295c150da7 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bob=20Dr=C3=B6ge?= <b.e.droge@rug.nl>
+Date: Fri, 11 Jul 2025 14:02:27 +0200
+Subject: [PATCH 5/5] only store paths to patches
+
+---
+ easybuild/framework/easyblock.py | 19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
+
+diff --git a/easybuild/framework/easyblock.py b/easybuild/framework/easyblock.py
+index 7894daefb6..4c0a07423a 100644
+--- a/easybuild/framework/easyblock.py
++++ b/easybuild/framework/easyblock.py
+@@ -67,7 +67,6 @@
+ import easybuild.tools.environment as env
+ import easybuild.tools.toolchain as toolchain
+ from easybuild.base import fancylogger
+-from easybuild.base.frozendict import FrozenDict
+ from easybuild.framework.easyconfig import EASYCONFIGS_PKG_SUBDIR
+ from easybuild.framework.easyconfig.easyconfig import ITERATE_OPTIONS, EasyConfig, ActiveMNS, get_easyblock_class
+ from easybuild.framework.easyconfig.easyconfig import get_module_path, letter_dir_for, resolve_template
+@@ -189,7 +188,7 @@ def __init__(self, ec, logfile=None):
+ 
+         # list of patch/source files, along with checksums
+         self.patches = []
+-        self.all_patches = set()  # set of all patches (including patches of extensions)
++        self.all_patches_paths = set()  # set of paths to all patches (including patches of extensions)
+         self.src = []
+         self.data_src = []
+         self.checksums = []
+@@ -603,7 +602,7 @@ def fetch_patches(self, patch_specs=None, extension=False, checksums=None):
+                 patch_info['path'] = path
+                 patch_info['checksum'] = self.get_checksum_for(checksums, filename=patch_info['name'], index=index)
+ 
+-                self.all_patches.add(FrozenDict(patch_info))
++                self.all_patches_paths.add(path)
+                 if extension:
+                     patches.append(patch_info)
+                 else:
+@@ -5129,9 +5128,8 @@ def ensure_writable_log_dir(log_dir):
+                     block = det_full_ec_version(app.cfg) + ".block"
+                     repo.add_easyconfig(ecdict['original_spec'], app.name, block, buildstats, currentbuildstats)
+                 repo.add_easyconfig(spec, app.name, det_full_ec_version(app.cfg), buildstats, currentbuildstats)
+-                for patch in app.all_patches:
+-                    if 'path' in patch:
+-                        repo.add_patch(patch['path'], app.name)
++                for patch_path in app.all_patches_paths:
++                    repo.add_patch(patch_path, app.name)
+                 repo.commit("Built %s" % app.full_mod_name)
+                 del repo
+             except EasyBuildError as err:
+@@ -5153,11 +5151,10 @@ def ensure_writable_log_dir(log_dir):
+                 _log.debug("Copied easyconfig file %s to %s", spec, newspec)
+ 
+                 # copy patches
+-                for patch in app.all_patches:
+-                    if 'path' in patch:
+-                        target = os.path.join(new_log_dir, os.path.basename(patch['path']))
+-                        copy_file(patch['path'], target)
+-                        _log.debug("Copied patch %s to %s", patch['path'], target)
++                for patch_path in app.all_patches_paths:
++                    target = os.path.join(new_log_dir, os.path.basename(patch_path))
++                    copy_file(patch_path, target)
++                    _log.debug("Copied patch %s to %s", patch_path, target)
+ 
+                 if build_option('read_only_installdir') and not app.cfg['stop']:
+                     # take away user write permissions (again)

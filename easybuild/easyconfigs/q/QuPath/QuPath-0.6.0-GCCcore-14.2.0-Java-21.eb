@@ -1,0 +1,61 @@
+easyblock = 'CmdCp'
+
+name = 'QuPath'
+version = '0.6.0'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://qupath.github.io'
+description = """QuPath is open source software for bioimage analysis.
+QuPath is often used for digital pathology applications because it offers
+ a powerful set of tools for working with whole slide images - but it can
+ be applied to lots of other kinds of image as well."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ['https://github.com/qupath/qupath/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix_scijava_repo.patch']
+checksums = [
+    {'v0.6.0.tar.gz': 'bc208c6f50121e08744e01d926e679e2c997f3727cd13c36337974b35088783f'},
+    {'QuPath-0.6.0_fix_scijava_repo.patch': 'df24c384e40875a5e0827d067985af54a85ee40e0cb765adadd1b70caf57e78f'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Gradle', '8.14.3', versionsuffix, SYSTEM),
+    ('patchelf', '0.18.0'),
+]
+
+dependencies = [
+    ('OpenSlide-Java', '0.12.4', versionsuffix),
+    ('Java', '21', '', SYSTEM),
+]
+
+cmds_map = [('.*', 'export GRADLE_USER_HOME=%(builddir)s/gradle && '
+                   'gradle clean jpackage -P openslide=$EBROOTOPENSLIDEMINJAVA/lib/openslide-java/openslide.jar')]
+
+files_to_copy = [
+    'build/dist/%(name)s/bin',
+    'build/dist/%(name)s/lib',
+]
+
+_inject_rpath_cmd = (
+    f"if %(rpath_enabled)s; then "
+    f"  patchelf --set-rpath '$ORIGIN' --force-rpath %(installdir)s/lib/libapplauncher.{SHLIB_EXT}; "
+    f"  patchelf --set-rpath '$ORIGIN' --force-rpath %(installdir)s/bin/QuPath; "
+    f"fi"
+)
+
+# inject missing RPATH entries, if EasyBuild is configured to use it
+postinstallcmds = [_inject_rpath_cmd]
+
+modextrapaths = {'PATH': ['']}
+
+sanity_check_paths = {
+    'files': ['bin/QuPath', f'lib/libapplauncher.{SHLIB_EXT}'],
+    'dirs': ['lib/app', 'lib/runtime'],
+}
+
+sanity_check_commands = ["QuPath --help"]
+
+moduleclass = 'bio'

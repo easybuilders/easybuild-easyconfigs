@@ -24,15 +24,17 @@ dependencies = [
     ('GMP', '6.2.1'),
 ]
 
-use_pip = True
-
 _fix_parallelism = """sed -i 's/str(multiprocessing.cpu_count())/"%(parallel)s"/' setup.py &&"""
 _enable_gmp = """sed -i "s/Z3_USE_LIB_GMP.*/Z3_USE_LIB_GMP' : True,/" setup.py &&"""
 
 exts_list = [
     ('z3-solver', _z3_solver_version, {
         'modulename': 'z3',
-        'checksums': ['a861081c8f5710996f3f545f12c1137ab38ba4b5b02f0f15d59ba52f6f81d237'],
+        'patches': ['Z3-4.10.2_fix-float-coercion.patch'],
+        'checksums': [
+            'a861081c8f5710996f3f545f12c1137ab38ba4b5b02f0f15d59ba52f6f81d237',
+            '6d1d49431ec1920c642c20627eec0800b0cfda6c8fc0b7922875bfd30c95eda8',
+        ],
         'preinstallopts': _fix_parallelism + _enable_gmp,
     }),
 ]
@@ -43,8 +45,6 @@ postinstallcmds = [
     "cd %%(installdir)s && ln -s %s/include include" % _z3_site_path,
     "cd %%(installdir)s/lib && ln -s ../%s/lib/libz3.so libz3.so" % _z3_site_path,
 ]
-
-sanity_pip_check = True
 
 sanity_check_paths = {
     'files': ['bin/z3', 'include/z3_api.h', 'lib/libz3.%s' % SHLIB_EXT],

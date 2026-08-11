@@ -1,0 +1,42 @@
+easyblock = 'MakeCp'
+
+name = 'LIBSVM-MATLAB'
+version = '3.30'
+local_matlab_ver = '2022b-r5'
+versionsuffix = '-MATLAB-%s' % local_matlab_ver
+
+homepage = 'https://www.csie.ntu.edu.tw/~cjlin/libsvm/'
+description = """MATLAB interface of LIBSVM, an integrated software for support vector classification,
+ (C-SVC, nu-SVC), regression  (epsilon-SVR, nu-SVR) and distribution estimation (one-class SVM).
+ It supports multi-class classification."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/cjlin1/libsvm/archive']
+sources = ['v%s.tar.gz' % version.replace('.', '')]
+checksums = ['e4fe41308c87cc210aec73e4f5f0fb4da14234d90e7a131763fbad3788ca2d80']
+
+builddependencies = [
+    ('binutils', '2.38'),
+]
+dependencies = [
+    ('MATLAB', local_matlab_ver, '', SYSTEM),
+]
+
+start_dir = 'matlab'
+
+buildopts = "MATLABDIR=$EBROOTMATLAB"
+
+files_to_copy = [
+    (['matlab/*.mexa64'], ''),
+]
+
+sanity_check_paths = {
+    'files': ['libsvmwrite.mexa64', 'libsvmread.mexa64', 'svmpredict.mexa64', 'svmtrain.mexa64'],
+    'dirs': [],
+}
+
+modextrapaths = {'MATLABPATH': ''}
+
+moduleclass = 'lib'

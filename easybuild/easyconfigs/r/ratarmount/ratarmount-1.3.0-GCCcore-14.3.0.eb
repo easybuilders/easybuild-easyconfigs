@@ -1,0 +1,60 @@
+easyblock = 'PythonBundle'
+
+name = 'ratarmount'
+version = '1.3.0'
+
+homepage = 'https://github.com/mxmlnkn/ratarmount'
+description = """Ratarmount collects all file positions inside a TAR so that it can easily jump to and read from any
+file without extracting it. It, then, mounts the TAR using mfusepy, a fork of fusepy, for read access just like
+archivemount. In contrast to libarchive, on which archivemount is based, random access and true seeking is supported.
+And in contrast to tarindexer, which also collects file positions for random access, ratarmount offers easy access via
+FUSE and support for compressed TARs."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+builddependencies = [
+    ('binutils', '2.44'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('bzip2', '1.0.8'),
+    ('gzip', '1.14'),
+    ('XZ', '5.8.1'),
+    ('Zip', '3.0'),
+    ('zstd', '1.5.7'),
+    ('p7zip', '17.05'),
+]
+
+exts_list = [
+    ('mfusepy', '3.1.1', {
+        'osdependencies': [('fuse', 'fuse3')],
+        'source_urls': ['https://github.com/mxmlnkn/mfusepy/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['3d801dc4f44d84a87959874670b22c5d83f4c862d4bbf55a7eb711541745cf27'],
+    }),
+    ('ratarmountcore', '0.11.1', {
+        'use_pip_extras': '7z,bzip2,fat,gzip,rar,xz,zip,zstd',
+        'checksums': ['9b05690c6ac0e561e77c5cdbc1559447233b2fc6bd37ad1e9b29acc99dec509d'],
+    }),
+    (name, version, {
+        'checksums': ['9e96f0f887db67a3ea68c4ecc625c05a3636cd8f29d80491eb170d934d3caa00'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/ratarmount',
+        'lib/python%(pyshortver)s/site-packages/mfusepy.py',
+    ],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages/ratarmountcore',
+        'lib/python%(pyshortver)s/site-packages/ratarmount',
+    ],
+}
+
+sanity_check_commands = [
+    'ratarmount --help',
+]
+
+moduleclass = 'tools'

@@ -1,0 +1,40 @@
+name = 'ScaLAPACK'
+version = '2.2.0'
+versionsuffix = '-fb'
+
+homepage = 'https://www.netlib.org/scalapack/'
+description = """The ScaLAPACK (or Scalable LAPACK) library includes a subset of LAPACK routines
+ redesigned for distributed memory MIMD parallel computers."""
+
+toolchain = {'name': 'gompi', 'version': '2024.05'}
+toolchainopts = {'extra_fflags': '-lpthread', 'openmp': True, 'pic': True, 'usempi': True}
+
+source_urls = [homepage]
+sources = [SOURCELOWER_TGZ]
+patches = ['ScaLAPACK-%(version)s_fix-GCC-10.patch']
+checksums = [
+    '40b9406c20735a9a3009d863318cb8d3e496fb073d201c5463df810e01ab2a57',  # scalapack-2.2.0.tgz
+    'f6bc3c6dee012ba4a696548a2e12b6aae932ce4fd5a142153b338839f52b5906',  # ScaLAPACK-2.2.0_fix-GCC-10.patch
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+]
+
+dependencies = [
+    ('FlexiBLAS', '3.4.4'),
+]
+
+# Config Opts based on AOCL User Guide:
+# https://developer.amd.com/wp-content/resources/AOCL_User%20Guide_2.2.pdf
+
+configopts = '-DBUILD_SHARED_LIBS=ON '
+configopts += '-DBLAS_LIBRARIES="$EBROOTFLEXIBLAS/lib/libflexiblas.%s" ' % SHLIB_EXT
+configopts += '-DLAPACK_LIBRARIES="$EBROOTFLEXIBLAS/lib/libflexiblas.%s" ' % SHLIB_EXT
+
+sanity_check_paths = {
+    'files': ['lib/libscalapack.%s' % SHLIB_EXT, 'lib64/libscalapack.%s' % SHLIB_EXT],
+    'dirs': ["lib", "lib64"],
+}
+
+moduleclass = 'numlib'

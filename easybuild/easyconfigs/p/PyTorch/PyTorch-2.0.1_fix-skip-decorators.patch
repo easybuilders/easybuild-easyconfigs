@@ -1,0 +1,122 @@
+The decorators are implemented to run when the function is called which is after
+the test `setup` method spawned subprocesses which may use NCCL to sync failing when there are
+not enough GPUs available.
+So replace the custom code by calls to the `unittest` skip decorators.
+See hhttps://github.com/pytorch/pytorch/pull/109491
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/common_distributed.py b/torch/testing/_internal/common_distributed.py
+index 400aa80fdca..80a7375cfe1 100644
+--- a/torch/testing/_internal/common_distributed.py
++++ b/torch/testing/_internal/common_distributed.py
+@@ -134,17 +134,7 @@ def skip_if_odd_worldsize(func):
+ 
+ 
+ def require_n_gpus_for_nccl_backend(n, backend):
+-    def decorator(func):
+-        @wraps(func)
+-        def wrapper(*args, **kwargs):
+-            if backend == "nccl" and torch.cuda.device_count() < n:
+-                sys.exit(TEST_SKIPS[f"multi-gpu-{n}"].exit_code)
+-            else:
+-                return func(*args, **kwargs)
+-
+-        return wrapper
+-
+-    return decorator
++    return skip_if_lt_x_gpu(n) if backend == "nccl" else unittest.skipIf(False, None)
+ 
+ 
+ def import_transformers_or_skip():
+@@ -167,32 +157,7 @@ def import_transformers_or_skip():
+ 
+ 
+ def skip_if_lt_x_gpu(x):
+-    def decorator(func):
+-        @wraps(func)
+-        def wrapper(*args, **kwargs):
+-            if torch.cuda.is_available() and torch.cuda.device_count() >= x:
+-                return func(*args, **kwargs)
+-            sys.exit(TEST_SKIPS[f"multi-gpu-{x}"].exit_code)
+-
+-        return wrapper
+-
+-    return decorator
+-
+-
+-# This decorator helps avoiding initializing cuda while testing other backends
+-def nccl_skip_if_lt_x_gpu(backend, x):
+-    def decorator(func):
+-        @wraps(func)
+-        def wrapper(*args, **kwargs):
+-            if backend != "nccl":
+-                return func(*args, **kwargs)
+-            if torch.cuda.is_available() and torch.cuda.device_count() >= x:
+-                return func(*args, **kwargs)
+-            sys.exit(TEST_SKIPS[f"multi-gpu-{x}"].exit_code)
+-
+-        return wrapper
+-
+-    return decorator
++    return unittest.skipIf(torch.cuda.device_count() < x, TEST_SKIPS[f"multi-gpu-{x}"].message)
+ 
+ 
+ def verify_ddp_error_logged(model_DDP, err_substr):
+diff --git a/torch/testing/_internal/distributed/distributed_test.py b/torch/testing/_internal/distributed/distributed_test.py
+index eb5130f2963..25839618308 100644
+--- a/torch/testing/_internal/distributed/distributed_test.py
++++ b/torch/testing/_internal/distributed/distributed_test.py
+@@ -56,7 +56,6 @@ from torch.testing._internal.common_distributed import (
+     skip_if_small_worldsize,
+     skip_if_odd_worldsize,
+     skip_if_lt_x_gpu,
+-    nccl_skip_if_lt_x_gpu,
+     skip_if_no_gpu,
+     require_n_gpus_for_nccl_backend,
+     requires_nccl_version,
+@@ -4960,7 +4959,7 @@ class DistributedTest:
+             BACKEND != "mpi" and BACKEND != "nccl" and BACKEND != "gloo",
+             "get_future is only supported on mpi, nccl and gloo",
+         )
+-        @nccl_skip_if_lt_x_gpu(BACKEND, 2)
++        @require_n_gpus_for_nccl_backend(2, BACKEND)
+         def test_accumulate_gradients_no_sync(self):
+             """
+             Runs _test_accumulate_gradients_no_sync using default inputs
+@@ -4971,7 +4970,7 @@ class DistributedTest:
+             BACKEND != "mpi" and BACKEND != "nccl" and BACKEND != "gloo",
+             "get_future is only supported on mpi, nccl and gloo",
+         )
+-        @nccl_skip_if_lt_x_gpu(BACKEND, 2)
++        @require_n_gpus_for_nccl_backend(2, BACKEND)
+         def test_accumulate_gradients_no_sync_grad_is_view(self):
+             """
+             Runs _test_accumulate_gradients_no_sync using default inputs
+@@ -4982,7 +4981,7 @@ class DistributedTest:
+             BACKEND != "mpi" and BACKEND != "nccl" and BACKEND != "gloo",
+             "get_future is only supported on mpi, nccl and gloo",
+         )
+-        @nccl_skip_if_lt_x_gpu(BACKEND, 2)
++        @require_n_gpus_for_nccl_backend(2, BACKEND)
+         def test_accumulate_gradients_no_sync_allreduce_hook(self):
+             """
+             Runs multiple iterations on _test_accumulate_gradients_no_sync
+@@ -5010,7 +5009,7 @@ class DistributedTest:
+             BACKEND != "mpi" and BACKEND != "nccl" and BACKEND != "gloo",
+             "get_future is only supported on mpi, nccl and gloo",
+         )
+-        @nccl_skip_if_lt_x_gpu(BACKEND, 2)
++        @require_n_gpus_for_nccl_backend(2, BACKEND)
+         def test_accumulate_gradients_no_sync_allreduce_with_then_hook(self):
+             """
+             Runs multiple iterations on _test_accumulate_gradients_no_sync using allreduce
+@@ -5044,7 +5043,7 @@ class DistributedTest:
+             BACKEND != "mpi" and BACKEND != "nccl" and BACKEND != "gloo",
+             "get_future is only supported on mpi, nccl and gloo",
+         )
+-        @nccl_skip_if_lt_x_gpu(BACKEND, 2)
++        @require_n_gpus_for_nccl_backend(2, BACKEND)
+         def test_get_future(self):
+             def mult(fut):
+                 return [t * 3 for t in fut.wait()]

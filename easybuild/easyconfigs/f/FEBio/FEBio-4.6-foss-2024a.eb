@@ -1,0 +1,55 @@
+easyblock = 'CMakeMake'
+
+name = 'FEBio'
+version = '4.6'
+
+homepage = 'https://febio.org/'
+description = """
+FEBio is a nonlinear finite element (FE) solver that is specifically designed
+for biomechanical applications. It offers modeling scenarios, constitutive
+models and boundary conditions that are relevant to many research areas in
+biomechanics. All features can be used together seamlessly, giving the user a
+powerful tool for solving 3D problems in computational biomechanics."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/febiosoftware/FEBio/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fixes.patch']
+checksums = [
+    {'v4.6.tar.gz': 'b58d350d0d76e0132f5bfce287d1401bb47504af89f35696e76c608dc4efe073'},
+    {'FEBio-4.6_fixes.patch': '0686033fd47fb40cc7e6945851ac880b2d6192ba008fb678379985c88b69ac1c'},
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+]
+
+dependencies = [
+    ('levmar', '2.6'),
+    ('Mmg', '5.8.0'),
+    ('Hypre', '2.32.0'),
+    ('imkl', '2024.2.0', '', SYSTEM),
+    ('SCOTCH', '7.0.6'),
+]
+
+configopts = '-DUSE_MKL=ON -DMKL_INTERFACE=lp64 '
+configopts += '-DUSE_MMG=ON -DMMG_INC="$EBROOTMMG"/include -DMMG_LIB="$EBROOTMMG"/lib/libmmg3d.a '
+configopts += '-DUSE_HYPRE=ON -DHYPRE_INC="$EBROOTHYPRE"/include -DHYPRE_LIB="$EBROOTHYPRE"/lib/libHYPRE.a '
+configopts += '-DUSE_LEVMAR=ON -DLEVMAR_INC="$EBROOTLEVMAR"/include -DLEVMAR_LIB="$EBROOTLEVMAR"/lib/liblevmar.a '
+
+install_cmd = "cp -a lib bin %(installdir)s/ "
+
+_libs = [f'lib/lib{x}.{SHLIB_EXT}' for x in ['feamr', 'febiolib', 'febiomix', 'fecore', 'numcore', 'febiofluid',
+         'febiomech', 'febioopt', 'febiorve', 'feimglib']]
+
+sanity_check_paths = {
+    'files': _libs + ['bin/febio4'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['(echo help; echo quit) | febio4']
+
+moduleclass = 'math'

@@ -1,0 +1,34 @@
+easyblock = 'PythonPackage'
+
+name = 'phono3py'
+version = '2.7.0'
+
+homepage = 'http://phonopy.github.io/phono3py/'
+description = """A simulation package of phonon-phonon interaction related properties."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+github_account = 'phonopy'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+
+checksums = ['26c91740bac42e7f654f2929033efa82c3751c8bebd2d861cbe37a573be86e8c']
+
+builddependencies = [('CMake', '3.26.3')]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('phonopy', '2.20.0'),
+]
+
+# the project creates wrappers for LAPACKE but doesn't find/link against the math libraries by default
+preinstallopts = 'echo "extra_link_args =  $LIBBLAS_MT -llapacke" > site.cfg && '
+
+sanity_check_paths = {
+    'files': ['bin/phono3py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["phono3py --help"]
+
+moduleclass = 'lib'

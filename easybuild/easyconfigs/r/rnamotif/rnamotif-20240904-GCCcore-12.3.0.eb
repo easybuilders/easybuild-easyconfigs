@@ -1,0 +1,44 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'MakeCp'
+
+name = 'rnamotif'
+version = '20240904'
+_commit = '697ee7fda4ff2f5181a33c0c3eac54d7b97409fa'
+
+homepage = "https://github.com/dacase/rnamotif"
+description = """The rnamotif program searchs input sequences for portions that match a given descriptor or "motif".
+ Matching sequences can also be ranked by various scoring functions."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+github_account = 'dacase'
+source_urls = [GITHUB_SOURCE]
+sources = ['%s.tar.gz' % _commit]
+checksums = ['e9432e128ce7f1bfcf4898a36d56435272ad9b4e2d37f1866a95aa159c81fdfe']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+
+]
+
+prebuildopts = 'sed -i "s/CFLAGS= -O2 -Wall/CFLAGS=$CFLAGS/" config.h &&'
+pretestopts = 'EFNDATA=%%(builddir)s/%%(name)s-%s/efndata' % _commit
+runtest = 'test'
+
+files_to_copy = [
+    (['src/rnamotif', 'src/rmprune', 'src/rmfmt', 'src/rm2ct'], 'bin'),
+    'LICENSE', 'efndata', 'Ecoli.trna.example',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['efndata'],
+}
+
+sanity_check_commands = ['rnamotif -h 2>&1 | grep usage']
+
+modextravars = {'EFNDATA': 'efndata'}
+
+moduleclass = 'bio'

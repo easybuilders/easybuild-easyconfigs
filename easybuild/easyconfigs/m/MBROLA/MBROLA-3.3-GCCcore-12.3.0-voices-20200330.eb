@@ -1,0 +1,56 @@
+easyblock = 'MakeCp'
+
+name = 'MBROLA'
+version = '3.3'
+local_commit_voices = 'fe05a0c'
+local_version_voices = '20200330'
+versionsuffix = '-voices-%s' % local_version_voices
+
+homepage = ['https://github.com/numediart/MBROLA%s' % x for x in ['', '-voices']]
+
+description = """
+MBROLA is a speech synthesizer based on the concatenation of diphones.
+It takes a list of phonemes as input, together with prosodic information
+(duration of phonemes and a piecewise linear description of pitch),
+and produces speech samples on 16 bits (linear),
+at the sampling frequency of the diphone database.
+
+MBROLA voices project provides list of MBROLA speech synthesizer voices.
+It is intended to provide easier collaboration and
+automatic updates for individual users and packagers.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/numediart/MBROLA%s/archive' % x for x in ['', '-voices']]
+sources = [{
+    'download_filename': '%s.tar.gz' % version,
+    'filename': SOURCE_TAR_GZ
+}, {
+    'download_filename': '%s.tar.gz' % local_commit_voices,
+    'filename': '%%(name)s-voices-%s.tar.gz' % local_version_voices,
+}]
+patches = ['%(name)s-%(version)s_makefile.patch']
+checksums = [
+    'c01ded2c0a05667e6df2439c1c02b011a5df2bfdf49e24a524630686aea2b558',  # MBROLA-3.3.tar.gz
+    '0dee14739f82fa247204791248b2d98a87e3f86f8cbb3a5844950103a41d33ba',  # MBROLA-voices-20200330.tar.gz
+    '3f06bffdf900c51b531f473a760c50842ccf92a9d0598bd17fd556d049593a9e',  # MBROLA-3.3_makefile.patch
+]
+
+builddependencies = [('binutils', '2.40')]
+
+maxparallel = 1
+
+files_to_copy = [
+    (['Bin/mbrola'], 'bin'),
+    (['../MBROLA-voices*/data/*'], 'share/mbrola'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/mbrola'],
+    'dirs': ['share/mbrola']
+}
+
+sanity_check_commands = ['mbrola -h']
+
+moduleclass = 'tools'

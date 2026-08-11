@@ -1,0 +1,30 @@
+Fix install script and src/Makefile for EasyBuild.
+
+Åke Sandgren, 2021-04-30
+Update: Petr Král (INUITS)
+diff -u install_kraken2.sh.orig install_kraken2.sh
+--- install_kraken2.sh.orig     2023-06-07 02:25:37.000000000 +0200
++++ install_kraken2.sh  2024-11-12 11:34:20.122193572 +0100
+@@ -23,7 +23,9 @@
+ 
+ # Perl cmd used to canonicalize dirname - "readlink -f" doesn't work
+ # on OS X.
+-export KRAKEN2_DIR=$(perl -MCwd=abs_path -le 'print abs_path(shift)' "$1")
++# export KRAKEN2_DIR=$(perl -MCwd=abs_path -le 'print abs_path(shift)' "$1")
++
++export KRAKEN2_DIR=$1
+ 
+ mkdir -p "$KRAKEN2_DIR"
+ make -C src install
+diff -u src/Makefile.orig src/Makefile
+--- src/Makefile.orig   2023-06-07 02:25:37.000000000 +0200
++++ src/Makefile        2024-11-12 10:13:26.330138787 +0100
+@@ -1,6 +1,6 @@
+-CXX = g++
++CXX ?= g++
+ KRAKEN2_SKIP_FOPENMP ?= -fopenmp
+-CXXFLAGS = $(KRAKEN2_SKIP_FOPENMP) -Wall -std=c++11 -O3
++CXXFLAGS ?= $(KRAKEN2_SKIP_FOPENMP) -Wall -std=c++11 -O3
+ CXXFLAGS += -DLINEAR_PROBING
+ 
+ .PHONY: all clean install
