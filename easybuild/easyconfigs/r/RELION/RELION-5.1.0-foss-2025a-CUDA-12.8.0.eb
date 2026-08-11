@@ -1,0 +1,256 @@
+# Author: Jasper Grimm (UoY), adapted for 5.1.0 and foss-2025a
+easyblock = 'CMakeMake'
+
+name = 'RELION'
+version = '5.1.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page'
+description = """RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a stand-alone computer
+ program that employs an empirical Bayesian approach to refinement of (multiple) 3D reconstructions or 2D class
+ averages in electron cryo-microscopy (cryo-EM).
+
+This release includes:
+ • improved amyloid processing with new auto-picker (4.75A signal detection)
+ • amyprep and amyproc Schemes for automated amyloid data pre-processing
+ • retrained Blush regularisation network specific for amyloid filaments
+ • AreTomo2 tomogram reconstruction wrapper for tomography pipeline
+ • real 3D subtomogram extraction for classifications/refinements
+ """
+
+build_info_msg = """To install RELION 5.1.0, it's recommended to change the defaults in this easyconfig,
+ to something suitable for your site. Recommended changes:
+   * Set '_torch_home' to the location where the model weights are downloaded (~12GB). The weights
+     can be downloaded manually by setting 'TORCH_HOME' and running 'relion_python_fetch_weights'.
+
+   * RELION has various optional dependencies. The following have been enabled by default, since they
+     only add extra functionality, but can be commented out to build without:
+       - X11 and FLTK (GUI)
+       - Ghostscript (PDF)
+       - xpdf (PDF viewer)
+       - XZ, zstd, PBZIP2 (compression libraries)
+       - tcsh
+       - gnuplot
+     Other dependencies that are not enabled by default:
+       - evince (alternate PDF viewer)
+       - ctffind or GCTF
+       - MotionCor2/MotionCor3
+       - AreTomo2
+       - ResMap
+     these can be enabled by uncommenting the corresponding entry in the dependencies list.
+
+   * Set additional 'RELION_*' variables, such as 'RELION_SCRATCH_DIR'. See:
+     https://relion.readthedocs.io/en/release-5.1/Installation.html#edit-the-environment-set-up
+     These variables should be added to 'modextrapaths' or 'modextravars' as appropriate.
+
+   * Add a job submission template for queue submission. See:
+     https://relion.readthedocs.io/en/release-5.1/Installation.html#set-up-queue-job-submission
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/3dem/relion/archive/refs/tags']
+sources = ['%(version)s.tar.gz']
+checksums = [
+    {'5.1.0.tar.gz': '4767804dd8ba2198efd1e1082b4632bc36aeca0ad09d4d2f7de956f84bbbb429'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+]
+
+dependencies = [
+    # required dependencies #
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('LibTIFF', '4.7.0'),
+    ('libpng', '1.6.48'),
+    ('Python', '3.13.1'),  # inherits foss/2025a toolchain
+    ('SciPy-bundle', '2025.06'),  # provides pandas/numpy/scipy stack
+    ('Arrow', '22.0.0'),  # provides pyarrow required by starfile
+    ('hatchling', '1.27.0'),              # provides hatchling + hatch-vcs for starfile build backend
+    ('Python-bundle-PyPI', '2025.04'),  # provides packaging and build tools
+    ('morphosamplers', '0.0.16'),   # required for: src/tomography_python_programs/get_particle_poses/filaments.py
+
+    # deep-learning runtime stack for optional RELION tools
+    ('PyTorch', '2.9.1', '-CUDA-12.8.0'),
+    ('Biopython', '1.85'),
+    ('matplotlib', '3.10.3'),
+    ('mrcfile', '1.5.4'),
+    ('napari', '0.6.6'),
+    ('scikit-learn', '1.7.0'),
+    ('tensorboard', '2.20.0'),
+    ('tqdm', '4.67.1'),
+    ('torchvision', '0.24.0', '-CUDA-12.8.0'),
+    ('umap-learn', '0.5.9.post2'),
+    ('h5py', '3.14.0'),
+    ('Pillow', '11.3.0'),
+    ('PyQt5', '5.15.11'),
+    ('PyHMMER', '0.11.3', '', ('gompi', '2025a')),
+    ('ESM-2', '2.0.0'),
+    ('Faiss', '1.13.2', '-CUDA-12.8.0'),
+    ('t-SNE-CUDA', '3.0.1', '-CUDA-12.8.0'),
+
+    # optional dependencies #
+    ('tcsh', '6.24.16'),
+    ('gnuplot', '6.0.3'),
+    ('FLTK', '1.4.4'),            # for GUI
+    ('X11',  '20250521'),          # for GUI
+    ('PBZIP2', '1.1.13'),         # for compression
+    ('zstd', '1.5.6'),            # for compression
+    ('XZ', '5.6.3'),              # for compression
+    ('Ghostscript', '10.05.1'),   # for PDF files
+    ('xpdf', '4.06'),             # pdf viewer
+    # ('evince', '45.0'),         # pdf viewer
+    ('ctffind', '4.1.14'),        # lens defocus estimation
+    # ('AreTomo2', '1.0.0', versionsuffix),     # alternative movie alignment / tomography reconstruction
+    # ('MotionCor2', '1.5.0'),                  # alternative movie alignment
+    # ('MotionCor3', '1.0.1', versionsuffix),   # alternative movie alignment
+    # ('ResMap', '1.1.4'),        # alternative local resolution estimation
+
+]
+
+# set this to the path to the Blush model weight database
+# workaround until we merged the "Dataset" easyblock:
+#   https://github.com/easybuilders/easybuild-easyblocks/pull/3246
+#   https://github.com/easybuilders/easybuild-framework/pull/4474
+_torch_home = ''
+
+_copts = [
+    '-DCMAKE_SHARED_LINKER="$LIBS"',
+    '-DMPI_INCLUDE_PATH="$MPI_INC_DIR"',
+    '-DCUDA_NVCC_FLAGS="--std=c++17 --allow-unsupported-compiler"',
+    '-DCUDA_TEXTURE=ON',
+    '-DDoublePrec_CPU=OFF',
+    '-DFETCH_WEIGHTS=OFF',
+    '-DTORCH_HOME="%s"' % _torch_home,
+]
+
+preconfigopts = "sed -i 's/FIND_PACKAGE(OpenMP REQUIRED)/FIND_PACKAGE(OpenMP REQUIRED COMPONENTS CXX)/' %(start_dir)s/CMakeLists.txt && "
+
+configopts = ' '.join(_copts)
+
+install_cmd = 'make -j %(parallel)s install'
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+local_topaz_preinstallopts = (
+    """for ec_file in pyproject.toml setup.py setup.cfg PKG-INFO; do """
+    """if [ -f \"$ec_file\" ]; then sed -i 's/<=3\\.13/<3.14/g' \"$ec_file\"; fi; """
+    """done && """
+)
+
+exts_list = [
+    # pandas, numpy, scipy provided via SciPy-bundle dependency above.
+    # hatchling + hatch-vcs provided via hatchling dependency above.
+
+    # Required by setuptools.build_meta projects (e.g. topaz) when using --no-build-isolation.
+    ('wheel', '0.45.1', {
+        'checksums': ['661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729'],
+    }),
+
+    ('starfile', '0.5.6', {
+        'checksums': ['e6efe40a43ceae8ec6d85ec2fae62ae570cbadb981fdc76fe4a66a1b90c36631'],
+    }),
+
+    ('loguru', '0.7.0', {
+        'checksums': ['1612053ced6ae84d7959dd7d5e431a0532642237ec21f7fd83ac73fe539e03e1'],
+    }),
+
+    ('typer', '0.9.0', {
+        'checksums': ['50922fd79aea2f4751a8e0408ff10d2662bd0c8bbfa84755a699f3bada2978b2'],
+    }),
+
+    ('fastcluster', '1.3.0', {
+        'checksums': ['d5233aeba5c3faa949c7fa6a39345a09f716ccebbd748541e5735c866696df02'],
+    }),
+
+    # -------------------------
+    # RELION 5.1.0 deep-learning tools – build from vetted commits
+    # -------------------------
+
+    ('relion-classranker', '0.0.1_20250109', {
+        'sources': [{
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'git_config': {
+                'url': 'https://github.com/3dem',
+                'repo_name': '%(name)s',
+                'commit': '8727e78',
+                'keep_git_dir': True,
+            },
+        }],
+        'checksums': [None],
+    }),
+
+    ('relion-blush', '0.0.1_20240529', {
+        'sources': [{
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'git_config': {
+                'url': 'https://github.com/3dem',
+                'repo_name': '%(name)s',
+                'commit': '7889199',
+                'keep_git_dir': True,
+            },
+        }],
+        'checksums': [None],
+    }),
+
+    ('DynaMight', '0.0.1_20240319', {
+        'sources': [{
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'git_config': {
+                'url': 'https://github.com/3dem',
+                'repo_name': '%(name)s',
+                'commit': 'eef4aa673af6cc908042b38646ae489ee8f2fde9',
+                'keep_git_dir': True,
+            },
+        }],
+        'checksums': [None],
+    }),
+
+    ('model-angelo', '1.0.12_20240226', {
+        'sources': [{
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'git_config': {
+                'url': 'https://github.com/3dem',
+                'repo_name': '%(name)s',
+                'commit': '6fdad9b47a0a2abb86990803f243ef028197a04d',
+                'keep_git_dir': True,
+            },
+        }],
+        'checksums': [None],
+    }),
+
+    ('topaz', '0.3.18', {
+        'sources': [{
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'git_config': {
+                'url': 'https://github.com/tbepler',
+                'repo_name': '%(name)s',
+                'commit': '95abc95f7f13c4c0adfedf2f583f5c2967a80316',
+                'keep_git_dir': True,
+            },
+        }],
+        'preinstallopts': local_topaz_preinstallopts,
+        'checksums': [None],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/relion%s' % x for x in ['', '_autopick', '_batchrun', '_batchrun_mpi']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['relion --help', 'relion --version']
+
+modextravars = {
+    'TORCH_HOME': _torch_home,
+    'RELION_PDFVIEWER_EXECUTABLE': '$EBROOTXPDF/bin/xpdf',
+    # 'RELION_SHELL': '$EBROOTTCSH/bin/tcsh',
+}
+
+moduleclass = 'bio'
