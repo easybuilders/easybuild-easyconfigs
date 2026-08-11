@@ -1,0 +1,59 @@
+Backport minimal mpmath 1.4.x compatibility fixes for SymPy 1.14.0.
+Relevant compatibility changes from upstream SymPy PR #29250.
+Relaxes the mpmath upper bound to allow mpmath 1.4.x.
+Author: Pavel Tomanek (Inuits/Ugent) with help of ChatGPT5.5
+--- sympy.orig/setup.py	2025-04-27 11:39:59.000000000 +0000
++++ sympy/setup.py
+@@ -321,7 +321,7 @@
+           },
+           # Set upper bound when making the release branch.
+           install_requires=[
+-              'mpmath >= 1.1.0, < 1.4',
++              'mpmath >= 1.1.0, < 1.5',
+           ],
+           py_modules=['isympy'],
+           packages=['sympy'] + modules + tests,
+diff -Naur sympy.orig/sympy/core/evalf.py sympy/sympy/core/evalf.py
+--- sympy.orig/sympy/core/evalf.py
++++ sympy/sympy/core/evalf.py
+@@ -13,10 +13,13 @@
+ from mpmath import inf as mpmath_inf
+ from mpmath.libmp import (from_int, from_man_exp, from_rational, fhalf,
+                           fnan, finf, fninf, fnone, fone, fzero, mpf_abs, mpf_add,
+-                          mpf_atan, mpf_atan2, mpf_cmp, mpf_cos, mpf_e, mpf_exp, mpf_log, mpf_lt,
++                          mpf_atan, mpf_atan2, mpf_cmp, mpf_cos, mpf_e, mpf_exp, mpf_lt,
+                           mpf_mul, mpf_neg, mpf_pi, mpf_pow, mpf_pow_int, mpf_shift, mpf_sin,
+                           mpf_sqrt, normalize, round_nearest, to_int, to_str, mpf_tan)
+-from mpmath.libmp import bitcount as mpmath_bitcount
++try:
++    from mpmath.libmp import mpf_ln as mpf_log
++except ImportError:
++    from mpmath.libmp import mpf_log
+ from mpmath.libmp.backend import MPZ
+ from mpmath.libmp.libmpc import _infs_nan
+ from mpmath.libmp.libmpf import dps_to_prec, prec_to_dps
+@@ -54,7 +57,7 @@
+ def bitcount(n):
+     """Return smallest integer, b, such that |n|/2**b < 1.
+     """
+-    return mpmath_bitcount(abs(int(n)))
++    return abs(int(n)).bit_length()
+ 
+ 
+ # Used in a few places as placeholder values to denote exponents and
+diff -Naur sympy.orig/sympy/core/expr.py sympy/sympy/core/expr.py
+--- sympy.orig/sympy/core/expr.py
++++ sympy/sympy/core/expr.py
+@@ -18,7 +18,11 @@
+ from sympy.utilities.exceptions import sympy_deprecation_warning
+ from sympy.utilities.misc import as_int, func_name, filldedent
+ from sympy.utilities.iterables import has_variety, sift
+-from mpmath.libmp import mpf_log, prec_to_dps
++from mpmath.libmp import prec_to_dps
++try:
++    from mpmath.libmp import mpf_ln as mpf_log
++except ImportError:
++    from mpmath.libmp import mpf_log
+ from mpmath.libmp.libintmath import giant_steps
+ 
+ 

@@ -1,0 +1,35 @@
+From b6bfd8ef4ea52fb0257af8013b953f7942d06bae Mon Sep 17 00:00:00 2001
+From: Luke Robison <lrbison@amazon.com>
+Date: Wed, 14 Feb 2024 21:14:29 +0000
+Subject: [PATCH] btl/smcuda: Add atomic_wmb() before sm_fifo_write
+
+This change fixes https://github.com/open-mpi/ompi/issues/12270
+
+Testing on c7g instance type (arm64) confirms this change elminates
+hangs and crashes that were previously observed in 1 in 30 runs of
+IMB alltoall benchmark.  Tested with over 300 runs and no failures.
+
+The write memory barrier prevents other CPUs from observing the fifo
+get updated before they observe the updated contents of the header
+itself.  Without the barrier, uninitialized header contents caused
+the crashes and invalid data.
+
+Signed-off-by: Luke Robison <lrbison@amazon.com>
+(cherry picked from commit 71f378d28cb89dd80379dbad570849b297594cde)
+---
+ opal/mca/btl/smcuda/btl_smcuda_fifo.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/opal/mca/btl/smcuda/btl_smcuda_fifo.h b/opal/mca/btl/smcuda/btl_smcuda_fifo.h
+index c4db00d10a8..f1c222d7ae0 100644
+--- a/opal/mca/btl/smcuda/btl_smcuda_fifo.h
++++ b/opal/mca/btl/smcuda/btl_smcuda_fifo.h
+@@ -86,6 +86,8 @@ add_pending(struct mca_btl_base_endpoint_t *ep, void *data, bool resend)
+ #define MCA_BTL_SMCUDA_FIFO_WRITE(endpoint_peer, my_smp_rank,               \
+                               peer_smp_rank, hdr, resend, retry_pending_sends, rc)        \
+ do {                                                                    \
++    /* memory barrier: ensure writes to the hdr have completed */       \
++    opal_atomic_wmb();                                                  \
+     sm_fifo_t* fifo = &(mca_btl_smcuda_component.fifo[peer_smp_rank][FIFO_MAP(my_smp_rank)]); \
+                                                                         \
+     if ( retry_pending_sends ) {                                        \

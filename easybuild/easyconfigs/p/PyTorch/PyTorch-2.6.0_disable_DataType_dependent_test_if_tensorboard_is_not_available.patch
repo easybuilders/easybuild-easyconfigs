@@ -1,0 +1,127 @@
+Disable use of DataType in test when tensorboard module is not available
+The corresponding import is already protected
+
+Updated: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_tensorboard.py b/test/test_tensorboard.py
+index 24f2687c7dc..141d5941ff6 100644
+--- a/test/test_tensorboard.py
++++ b/test/test_tensorboard.py
+@@ -870,64 +870,65 @@ class TestTensorBoardNumpy(BaseTestCase):
+             res = make_np({"pytorch": 1.0})
+ 
+ 
+-class TestTensorProtoSummary(BaseTestCase):
+-    @parametrize(
+-        "tensor_type,proto_type",
+-        [
+-            (torch.float16, DataType.DT_HALF),
+-            (torch.bfloat16, DataType.DT_BFLOAT16),
+-        ],
+-    )
+-    @skipIfTorchDynamo("Unsuitable test for Dynamo, behavior changes with version")
+-    def test_half_tensor_proto(self, tensor_type, proto_type):
+-        float_values = [1.0, 2.0, 3.0]
+-        actual_proto = (
+-            tensor_proto(
+-                "dummy",
+-                torch.tensor(float_values, dtype=tensor_type),
+-            )
+-            .value[0]
+-            .tensor
+-        )
+-        self.assertSequenceEqual(
+-            [int_to_half(x) for x in actual_proto.half_val],
+-            float_values,
+-        )
+-        self.assertTrue(actual_proto.dtype == proto_type)
+-
+-    def test_float_tensor_proto(self):
+-        float_values = [1.0, 2.0, 3.0]
+-        actual_proto = tensor_proto("dummy", torch.tensor(float_values)).value[0].tensor
+-        self.assertEqual(actual_proto.float_val, float_values)
+-        self.assertTrue(actual_proto.dtype == DataType.DT_FLOAT)
+-
+-    def test_int_tensor_proto(self):
+-        int_values = [1, 2, 3]
+-        actual_proto = (
+-            tensor_proto("dummy", torch.tensor(int_values, dtype=torch.int32))
+-            .value[0]
+-            .tensor
++if TEST_TENSORBOARD:
++    class TestTensorProtoSummary(BaseTestCase):
++        @parametrize(
++            "tensor_type,proto_type",
++            [
++                (torch.float16, DataType.DT_HALF),
++                (torch.bfloat16, DataType.DT_BFLOAT16),
++            ],
+         )
+-        self.assertEqual(actual_proto.int_val, int_values)
+-        self.assertTrue(actual_proto.dtype == DataType.DT_INT32)
++        @skipIfTorchDynamo("Unsuitable test for Dynamo, behavior changes with version")
++        def test_half_tensor_proto(self, tensor_type, proto_type):
++            float_values = [1.0, 2.0, 3.0]
++            actual_proto = (
++                tensor_proto(
++                    "dummy",
++                    torch.tensor(float_values, dtype=tensor_type),
++                )
++                .value[0]
++                .tensor
++            )
++            self.assertSequenceEqual(
++                [int_to_half(x) for x in actual_proto.half_val],
++                float_values,
++            )
++            self.assertTrue(actual_proto.dtype == proto_type)
++
++        def test_float_tensor_proto(self):
++            float_values = [1.0, 2.0, 3.0]
++            actual_proto = tensor_proto("dummy", torch.tensor(float_values)).value[0].tensor
++            self.assertEqual(actual_proto.float_val, float_values)
++            self.assertTrue(actual_proto.dtype == DataType.DT_FLOAT)
++
++        def test_int_tensor_proto(self):
++            int_values = [1, 2, 3]
++            actual_proto = (
++                tensor_proto("dummy", torch.tensor(int_values, dtype=torch.int32))
++                .value[0]
++                .tensor
++            )
++            self.assertEqual(actual_proto.int_val, int_values)
++            self.assertTrue(actual_proto.dtype == DataType.DT_INT32)
+ 
+-    def test_scalar_tensor_proto(self):
+-        scalar_value = 0.1
+-        actual_proto = tensor_proto("dummy", torch.tensor(scalar_value)).value[0].tensor
+-        self.assertAlmostEqual(actual_proto.float_val[0], scalar_value)
++        def test_scalar_tensor_proto(self):
++            scalar_value = 0.1
++            actual_proto = tensor_proto("dummy", torch.tensor(scalar_value)).value[0].tensor
++            self.assertAlmostEqual(actual_proto.float_val[0], scalar_value)
+ 
+-    def test_complex_tensor_proto(self):
+-        real = torch.tensor([1.0, 2.0])
+-        imag = torch.tensor([3.0, 4.0])
+-        actual_proto = tensor_proto("dummy", torch.complex(real, imag)).value[0].tensor
+-        self.assertEqual(actual_proto.scomplex_val, [1.0, 3.0, 2.0, 4.0])
++        def test_complex_tensor_proto(self):
++            real = torch.tensor([1.0, 2.0])
++            imag = torch.tensor([3.0, 4.0])
++            actual_proto = tensor_proto("dummy", torch.complex(real, imag)).value[0].tensor
++            self.assertEqual(actual_proto.scomplex_val, [1.0, 3.0, 2.0, 4.0])
+ 
+-    def test_empty_tensor_proto(self):
+-        actual_proto = tensor_proto("dummy", torch.empty(0)).value[0].tensor
+-        self.assertEqual(actual_proto.float_val, [])
++        def test_empty_tensor_proto(self):
++            actual_proto = tensor_proto("dummy", torch.empty(0)).value[0].tensor
++            self.assertEqual(actual_proto.float_val, [])
+ 
+ 
+-instantiate_parametrized_tests(TestTensorProtoSummary)
++    instantiate_parametrized_tests(TestTensorProtoSummary)
+ 
+ if __name__ == "__main__":
+     run_tests()

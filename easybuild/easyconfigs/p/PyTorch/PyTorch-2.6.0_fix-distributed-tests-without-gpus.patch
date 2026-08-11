@@ -1,0 +1,37 @@
+If there are no GPUs there would be a WORLD_SIZE=0 which doesn't work.
+Use a positive number for the NCCL/GLOO tests in that case.
+
+See https://github.com/pytorch/pytorch/pull/150764
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/run_test.py b/test/run_test.py
+index a508d8db4d2..e7bbe6ea086 100755
+--- a/test/run_test.py
++++ b/test/run_test.py
+@@ -610,21 +610,22 @@ DISTRIBUTED_TESTS_CONFIG = {}
+ 
+ 
+ if dist.is_available():
++    num_gpus = torch.cuda.device_count()
+     DISTRIBUTED_TESTS_CONFIG["test"] = {"WORLD_SIZE": "1"}
+     if not TEST_WITH_ROCM and dist.is_mpi_available():
+         DISTRIBUTED_TESTS_CONFIG["mpi"] = {
+             "WORLD_SIZE": "3",
+             "TEST_REPORT_SOURCE_OVERRIDE": "dist-mpi",
+         }
+-    if dist.is_nccl_available():
++    if dist.is_nccl_available() and num_gpus > 0:
+         DISTRIBUTED_TESTS_CONFIG["nccl"] = {
+-            "WORLD_SIZE": f"{torch.cuda.device_count()}",
++            "WORLD_SIZE": f"{num_gpus}",
+             "TEST_REPORT_SOURCE_OVERRIDE": "dist-nccl",
+         }
+-    if dist.is_gloo_available():
++    if dist.is_gloo_available() and num_gpus > 0:
+         DISTRIBUTED_TESTS_CONFIG["gloo"] = {
+             # TODO: retire testing gloo with CUDA
+-            "WORLD_SIZE": f"{torch.cuda.device_count()}",
++            "WORLD_SIZE": f"{num_gpus}",
+             "TEST_REPORT_SOURCE_OVERRIDE": "dist-gloo",
+         }
+     # Test with UCC backend is deprecated.

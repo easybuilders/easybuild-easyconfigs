@@ -1,0 +1,51 @@
+easyblock = 'ConfigureMake'
+
+name = 'PARI-GP'
+version = '2.15.4'
+
+homepage = 'https://pari.math.u-bordeaux.fr'
+description = """PARI/GP is a widely used computer algebra system designed for fast computations in number theory
+ (factorizations, algebraic  number theory, elliptic curves...), but also contains a large number of other useful
+ functions to compute with mathematical entities such as matrices, polynomials, power series, algebraic numbers etc.,
+ and a lot of transcendental functions. PARI is  also available as a C library to allow for faster computations.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+# The PARI/GP developers have the habit of removing tarballs for older versions. Fetch source from Git repo.
+sources = [
+    {
+        'filename': 'pari-%(version)s.tar.xz',
+        'git_config': {
+            'url': 'https://pari.math.u-bordeaux.fr/git',
+            'repo_name': 'pari',
+            'tag': 'pari-%(version)s',
+            'keep_git_dir': False,
+        },
+    }
+]
+checksums = ['dd2d49338ffbaf61d98cc720ca19c5d73d1efa722fa8f4ca7a2edc4f0e8acb08']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('Bison', '3.8.2'),
+]
+
+dependencies = [
+    ('libreadline', '8.1.2'),
+    ('ncurses', '6.3'),
+]
+
+configure_cmd = './Configure'
+
+build_cmd_targets = 'all'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['gp', 'gp-2.15', 'gphelp', 'tex2mail']] +
+             ['include/pari/%s' % x for x in ['pari.h', 'genpari.h']],
+    'dirs': ['bin', 'include']
+}
+
+sanity_check_commands = ["gp --help"]
+
+moduleclass = 'math'

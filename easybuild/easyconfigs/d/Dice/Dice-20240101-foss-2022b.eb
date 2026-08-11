@@ -1,0 +1,52 @@
+easyblock = 'MakeCp'
+
+name = 'Dice'
+version = '20240101'
+_commit = '823f303719efaee441b8bea3e5f9d5a159b58939'
+
+homepage = 'https://github.com/sanshar/Dice'
+description = """Dice contains code for performing SHCI, VMC, GFMC, DMC, FCIQMC, stochastic MRCI
+and SC-NEVPT2, and AFQMC calculations with a focus on ab initio systems."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+toolchainopts = {'cstd': 'c++14'}
+
+github_account = 'sanshar'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % _commit, 'filename': SOURCE_TAR_GZ}]
+patches = ['Dice-20221025_icpt-mkl-to-flexiblas.patch', 'Dice-20240101_deprecated-global-placeholders.patch']
+checksums = [
+    {'Dice-20240101.tar.gz': 'f7a60c0df1ba1d27e60b478a15f9ef0e5282a030cc5acc520470eef4f55940b9'},
+    {'Dice-20221025_icpt-mkl-to-flexiblas.patch': 'a712913e5b372017be0ea7508479094e96f06c0cfd46d0bfe61d85ef42cd1386'},
+    {'Dice-20240101_deprecated-global-placeholders.patch':
+     'fbf4037e928a57e737faed95dc7d6e1e5cdb8cee8db48503268d250a34c12ccc'},
+]
+
+builddependencies = [
+    ('Eigen', '3.4.0'),
+    ('git', '2.38.1', '-nodocs'),
+]
+
+dependencies = [
+    ('Boost.MPI', '1.81.0'),
+    ('HDF5', '1.14.0'),
+]
+
+# Use build environment defined by EB
+prebuildopts = "sed -i 's/^FLAGS_BASE =.*/FLAGS_BASE=$(CXXFLAGS) -g -w -I. $(CPPFLAGS)/' Makefile && "
+buildopts = 'CXX="$MPICXX" USE_INTEL="no" HAS_AVX2="no" '  # avoid changes to -march
+buildopts += 'INCLUDE_MKL="-I${EBROOTFLEXIBLAS}/include" LIB_MKL="${LIBBLAS}" '  # use FlexiBLAS
+buildopts += 'GIT_BRANCH="master" GIT_HASH="%s"' % _commit
+buildopts += 'BOOST="${EBROOTBOOSTMPI}" '
+buildopts += 'EIGEN="${EBROOTEIGEN}/include" '
+buildopts += 'HDF5="${EBROOTHDF5}" '
+
+files_to_copy = ['bin']
+
+_binaries = ['Dice', 'DQMC', 'GFMC', 'ICPT', 'VMC', 'ZDice2', 'ZSHCI']
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _binaries],
+    'dirs': [],
+}
+
+moduleclass = 'chem'

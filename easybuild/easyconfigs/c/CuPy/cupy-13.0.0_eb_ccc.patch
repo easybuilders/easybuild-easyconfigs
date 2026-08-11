@@ -1,0 +1,16 @@
+Pick up which cuda compute capabilities to use from the environment variable
+EB_CCC in the standard format "70,75,80"
+author: micketeer@gmail.com
+--- install/cupy_builder/_compiler.py.orig	2024-03-24 01:09:26.501631534 +0000
++++ install/cupy_builder/_compiler.py	2024-03-24 01:10:28.550644001 +0000
+@@ -21,6 +21,10 @@
+     if sys.argv == ['setup.py', 'develop']:
+         return []
+ 
++    envcfg = os.getenv('EB_CCC', None)
++    if envcfg is not None:
++        return [f'--generate-code=arch=compute_{cc},code=sm_{cc}' for cc in envcfg.split(';')]
++
+     envcfg = os.getenv('CUPY_NVCC_GENERATE_CODE', None)
+     if envcfg is not None and envcfg != 'current':
+         return ['--generate-code={}'.format(arch)

@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'koopmans-kcp'
+version = '0.2.0'
+
+homepage = 'https://koopmans-functionals.org'
+description = """
+An implementation of Koopmans functionals in Quantum ESPRESSO v4.1
+with full orbital optimization.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {
+    # OpenMP doesn't seem to work:
+    # https://github.com/epfl-theos/koopmans-kcp/issues/11
+    'openmp': False,
+    'usempi': True,
+    'extra_fflags': '-fallow-argument-mismatch',
+    'extra_f90flags': '-fallow-argument-mismatch -cpp',
+}
+
+source_urls = ['https://github.com/epfl-theos/koopmans-kcp/archive']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'koopmans-kcp-0.2.0-fix-pzheevd_drv.patch'
+]
+checksums = [
+    {
+        'v0.2.0.tar.gz':
+        '34aabc9fc4b4787a5be61d25290310e14b11a5077d19b30a30c2ad720afbb607'
+    },
+    {
+        'koopmans-kcp-0.2.0-fix-pzheevd_drv.patch':
+        'c4251319f62c35e87c63ad8e981b75300a0b61ff545003c35c2e699618b5689e'
+    },
+]
+
+# kcp does support ScaLAPACK but SCALAPACK_LIBS doesn't exist yet
+configure_cmd_prefix = 'BLAS_LIBS=$LIBBLAS LAPACK_LIBS=$LIBSCALAPACK '
+
+build_cmd_targets = ['all']
+installopts = 'PREFIX=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/kcp.x'],
+    'dirs': ['bin']
+}
+
+moduleclass = 'chem'

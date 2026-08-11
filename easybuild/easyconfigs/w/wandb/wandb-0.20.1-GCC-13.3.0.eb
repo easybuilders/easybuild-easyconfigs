@@ -1,0 +1,58 @@
+easyblock = 'PythonBundle'
+
+name = 'wandb'
+version = '0.20.1'
+
+homepage = 'https://wandb.ai'
+description = """CLI and Python API for Weights and Biases (wandb), a tool for visualizing and
+tracking your machine learning experiments."""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+builddependencies = [
+    ('hatchling', '1.24.2'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('GitPython', '3.1.43'),
+    ('PyYAML', '6.0.2'),
+    ('protobuf-python', '5.28.0'),
+    ('pydantic', '2.9.1'),
+]
+
+_whl_tmpl = '%(name)s-%(version)s-py3-none-manylinux_2_17_{}.manylinux2014_{}.whl'
+
+exts_list = [
+    ('sentry-sdk', '2.30.0', {
+        'source_tmpl': 'sentry_sdk-%(version)s.tar.gz',
+        'checksums': ['436369b02afef7430efb10300a344fb61a11fe6db41c2b11f41ee037d2dd7f45'],
+    }),
+    ('setproctitle', '1.3.6', {
+        'checksums': ['c9f32b96c700bb384f33f7cf07954bb609d35dd82752cef57fb2ee0968409169'],
+    }),
+    (name, version, {
+        'source_tmpl': _whl_tmpl.format(ARCH, ARCH),
+        'checksums': [{
+            _whl_tmpl.format('x86_64', 'x86_64'):
+                '591506ecbdd396648cc323ba270f3ab4aed3158e1dbfa7636c09f9f7f0253e1c',
+            _whl_tmpl.format('aarch64', 'aarch64'):
+                '5e58ca32c7147161158f09b0fb5f5896876f8569d0d10ae7b64d0510c868ce33',
+        }],
+    }),
+]
+
+postinstallcmds = [
+    # protobuf !=5.28.0 version requirement is due to a Windows-only bug,
+    # see https://github.com/wandb/wandb/pull/8346
+    "sed -i '/Requires-Dist: protobuf/d' "
+    "%(installdir)s/lib/python%(pyshortver)s/site-packages/wandb-%(version)s.dist-info/METADATA",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['wandb', 'wb']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'ai'

@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'quaqc'
+version = '1.3d'
+
+homepage = 'https://github.com/bjmt/quaqc'
+description = """
+QUick ATAC-seq Quality Control
+Also works with any unspliced DNA-seq experiment! Compatible with plant genomes!!
+"""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/bjmt/quaqc/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['901f7f1df514f860685859cbaf4c4a0cc91c75dbaeeb6eb74f8f8b8db569e27e']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('make', '4.4.1'),
+]
+
+dependencies = [
+    ('HTSlib', '1.18'),
+    ('zlib', '1.2.13'),
+]
+
+# Do not build `HTSlib` and `zlib` and link our own as dependencies
+prebuildopts = "sed -i 's/$(HTSLIB) $(ZLIB) $(LDLIBS) /$(LDLIBS) -lz -lhts/g' Makefile && "
+
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS" release'
+
+files_to_copy = [(['%(namelower)s'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/quaqc'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "%(namelower)s -h",
+]
+
+moduleclass = 'bio'

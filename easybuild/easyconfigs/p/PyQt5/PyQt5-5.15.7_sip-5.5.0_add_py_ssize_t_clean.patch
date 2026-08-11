@@ -1,0 +1,44 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+# add py_ssize_t_clean to the sip4 parser
+# acc to https://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg1828544.html
+diff -ru sip-5.5.0/code_generator/metasrc/lexer.l sip-5.5.0_add_py_ssize_t_clean/code_generator/metasrc/lexer.l
+--- sip-5.5.0/code_generator/metasrc/lexer.l	2020-11-23 14:21:33.000000000 +0100
++++ sip-5.5.0_add_py_ssize_t_clean/code_generator/metasrc/lexer.l	2023-11-20 12:30:35.030063970 +0100
+@@ -167,6 +167,7 @@
+ <directive>timestamp        {return TK_TIMESTAMP;}
+ <directive>type             {return TK_TYPE;}
+ <directive>use_argument_names   {return TK_USEARGNAMES;}
++<directive>py_ssize_t_clean {return TK_PYSSIZETCLEAN;}
+ <directive>use_limited_api  {return TK_USELIMITEDAPI;}
+ <directive>all_raise_py_exception   {return TK_ALLRAISEPYEXC;}
+ <directive>call_super_init  {return TK_CALLSUPERINIT;}
+diff -ru sip-5.5.0/code_generator/metasrc/parser.y sip-5.5.0_add_py_ssize_t_clean/code_generator/metasrc/parser.y
+--- sip-5.5.0/code_generator/metasrc/parser.y	2020-11-23 14:21:33.000000000 +0100
++++ sip-5.5.0_add_py_ssize_t_clean/code_generator/metasrc/parser.y	2023-11-20 12:30:35.030063970 +0100
+@@ -373,6 +373,7 @@
+ %token          TK_TIMESTAMP
+ %token          TK_TYPE
+ %token          TK_USEARGNAMES
++%token          TK_PYSSIZETCLEAN
+ %token          TK_USELIMITEDAPI
+ %token          TK_ALLRAISEPYEXC
+ %token          TK_CALLSUPERINIT
+@@ -1843,6 +1844,18 @@
+             $$.use_limited_api = FALSE;
+             $$.all_raise_py_exc = FALSE;
+             $$.call_super_init = -1;
++            $$.def_error_handler = NULL;
++        }
++    |   TK_PYSSIZETCLEAN '=' bool_value {
++            $$.token = TK_PYSSIZETCLEAN;
++
++            $$.c_module = FALSE;
++            $$.kwargs = defaultKwArgs;
++            $$.name = NULL;
++            $$.use_arg_names = FALSE;
++            $$.use_limited_api = FALSE;
++            $$.all_raise_py_exc = FALSE;
++            $$.call_super_init = -1;
+             $$.def_error_handler = NULL;
+         }
+     |   TK_USELIMITEDAPI '=' bool_value {
