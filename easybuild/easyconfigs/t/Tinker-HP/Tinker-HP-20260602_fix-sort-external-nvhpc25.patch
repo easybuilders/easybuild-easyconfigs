@@ -1,0 +1,158 @@
+Newer NVHPC versions add conflict between sort functions. 
+https://github.com/TinkerTools/tinker-hp/issues/32
+Patch by louislagardere from the above issue.
+diff --git a/source/attach.f90 b/source/attach.f90
+index 749c9239..eaed0955 100644
+--- a/source/attach.f90
++++ b/source/attach.f90
+@@ -69,7 +69,7 @@ subroutine attach
+             &' Attached to Atom',i6)
+          call fatal
+       end if
+-      call sort (n13(i),i13(1,i))
++      call tsort(n13(i),i13(1,i))
+    end do
+ !
+ !     loop over all atoms finding all the 1-4 relationships
+@@ -98,7 +98,7 @@ subroutine attach
+             &' Attached to Atom',i6)
+          call fatal
+       end if
+-      call sort (n14(i),i14(1,i))
++      call tsort(n14(i),i14(1,i))
+    end do
+ !
+ !     loop over all atoms finding all the 1-5 relationships
+@@ -130,7 +130,7 @@ subroutine attach
+             &' Attached to Atom',i6)
+          call fatal
+       end if
+-      call sort (n15(i),i15(1,i))
++      call tsort(n15(i),i15(1,i))
+    end do
+ 70 continue
+ 
+diff --git a/source/cluster.f90 b/source/cluster.f90
+index 2cca758c..2a4fdcf6 100644
+--- a/source/cluster.f90
++++ b/source/cluster.f90
+@@ -856,7 +856,7 @@ subroutine cluster
+       do i = 0, ngrp
+          size = igrp(2,i) - igrp(1,i) + 1
+          if (igrp(1,i) .ne. 0)&
+-            &call sort (size,kgrp(igrp(1,i)))
++            &call tsort(size,kgrp(igrp(1,i)))
+       end do
+    end if
+ #ifdef _OPENACC
+diff --git a/source/domdecstuff.f90 b/source/domdecstuff.f90
+index b09c3bc8..b5eaa9ff 100644
+--- a/source/domdecstuff.f90
++++ b/source/domdecstuff.f90
+@@ -368,7 +368,7 @@ subroutine ddnumber(num,istep)
+       list2(1) = n1
+       list2(2) = n2
+       list2(3) = n3
+-      call sort(3,list2)
++      call tsort(3,list2)
+ !
+       if (list2(1).eq.1) then
+ !
+@@ -393,7 +393,7 @@ subroutine ddnumber(num,istep)
+          list2(1) = n1
+          list2(2) = n2
+          list2(3) = n3
+-         call sort(3,list2)
++         call tsort(3,list2)
+       end if
+ !
+ 70    if (key(3).eq.1) then
+diff --git a/source/kmlpot.f90 b/source/kmlpot.f90
+index c63bf27c..dea3b476 100644
+--- a/source/kmlpot.f90
++++ b/source/kmlpot.f90
+@@ -150,7 +150,7 @@ subroutine kmlpot(init,istep)
+             laml(iaml(i)) = .true.
+          enddo
+ 
+-         call sort (naml,iaml)
++         call tsort(naml,iaml)
+ 
+          if(ranktot==0) then
+             write(*,*) 'ML embedding attached to group 1'
+@@ -210,7 +210,7 @@ subroutine kmlpot(init,istep)
+             end do
+             naml = n
+          else
+-            call sort (naml,iaml)
++            call tsort(naml,iaml)
+          end if
+ 
+       endif
+diff --git a/source/kpolar.f90 b/source/kpolar.f90
+index a88c2d4c..85022976 100644
+--- a/source/kpolar.f90
++++ b/source/kpolar.f90
+@@ -1053,7 +1053,7 @@ subroutine polargrp
+             stop = np11(i)
+          end if
+       end do
+-      call sort (np11(i),ip11(1,i))
++      call tsort(np11(i),ip11(1,i))
+    end do
+ 50 continue
+ !
+diff --git a/source/molecule.f90 b/source/molecule.f90
+index a170d020..783b5e3d 100644
+--- a/source/molecule.f90
++++ b/source/molecule.f90
+@@ -129,7 +129,7 @@ subroutine molecule(init)
+ !
+       do i = 1, nmol
+          k = imol(2,i) - imol(1,i) + 1
+-         call sort (k,kmol(imol(1,i)))
++         call tsort(k,kmol(imol(1,i)))
+       end do
+ !
+ !       if all atomic masses are zero, set them all to unity
+diff --git a/source/readxyz.f90 b/source/readxyz.f90
+index 61a08c10..6d32f1db 100644
+--- a/source/readxyz.f90
++++ b/source/readxyz.f90
+@@ -258,7 +258,7 @@ subroutine readxyz (ixyz)
+          end if
+       end do
+ 100   continue
+-      call sort (n12(i),i12(1,i))
++      call tsort(n12(i),i12(1,i))
+    end do
+ !$acc update device(n12(:))
+ !
+@@ -289,7 +289,7 @@ subroutine readxyz (ixyz)
+          do j = 1, n12(i)
+             i12(j,i) = list(i12(j,i))
+          end do
+-         call sort (n12(i),i12(1,i))
++         call tsort(n12(i),i12(1,i))
+       end do
+    end if
+ !$acc update device(i12(:,:))
+diff --git a/source/sort.f90 b/source/sort.f90
+index 17566c8b..1adcf98e 100644
+--- a/source/sort.f90
++++ b/source/sort.f90
+@@ -10,12 +10,12 @@
+ !     #########################################################
+ !
+ !
+-!     "sort" takes an input list of integers and sorts it
++!     "tsort" takes an input list of integers and sorts it
+ !     into ascending order using the Heapsort algorithm
+ !
+ !
+ #include "tinker_precision.h"
+-subroutine sort (n,list)
++subroutine tsort (n,list)
+    implicit none
+    integer i,j,k,n
+    integer index,lists
