@@ -463,6 +463,8 @@ class EasyConfigTest(TestCase):
             (['BLIS', 'libFLAME'], '-amd'),
             # filter out libcint with -pypzpx versionsuffix, used by MOLGW
             ('libcint', '-pypzpx'),
+            # filter out libgeotiff with -PROJ-* versionsuffix, used by VAPOR
+            ('libgeotiff', ('-PROJ-', True)),
             # filter out OpenBLAS with -int8 versionsuffix, used by GAMESS-US
             ('OpenBLAS', '-int8'),
             # filter out ScaLAPACK with -BLIS-* versionsuffix, used in goblf toolchain
@@ -636,6 +638,9 @@ class EasyConfigTest(TestCase):
                 # PRRTE 4.0+ requires PMIx 6.0+ and vice-versa
                 (r'6\.0\.0', [r'PRRTE-4\.0\.0']),
             ],
+            'PROJ': [
+                # VAPOR 3.10.1 requites PROJ 7.2.1
+                ('7.2.1;', ['VAPOR-3.10.1-', 'libgeotiff-1.7.1-'])],
             'pydantic': [
                 # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
                 ('1.10.13;', ['GTDB-Tk-2.3.2-', 'GTDB-Tk-2.4.0-']),
