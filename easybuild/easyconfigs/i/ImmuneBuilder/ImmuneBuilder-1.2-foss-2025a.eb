@@ -21,29 +21,17 @@ dependencies = [
     ('Biopython', '1.85'),  # Required by anarci for Bio.SearchIO.HmmerIO
     ('einops', '0.8.1'),
     ('gemmi', '0.7.4'),
-    ('PyTorch', '2.9.1', '-CUDA-12.8.0'),
+    ('PyTorch', '2.9.1'),
     ('OpenMM', '8.4.0'),
 ]
 
 builddependencies = [
-    # uv-build 0.7.22 requires rustc >= 1.86.
-    ('Rust', '1.91.1'),
-    ('maturin', '1.8.3'),
     # ANARCI setup.py runs build_pipeline/RUN_pipeline.sh and requires these tools in PATH.
     ('HMMER', '3.4'),
-    # Exception: no MUSCLE easyconfig exists for foss-2025a; use local GCCcore-14.2.0 recipe.
-    ('MUSCLE', '5.1.0', '', ('GCCcore', '14.2.0')),
+    ('MUSCLE', '5.3'),
 ]
 
-use_pip = True
-
 exts_list = [
-    ('uv-build', '0.7.22', {
-        'source_urls': [PYPI_SOURCE],
-        'sources': ['uv_build-0.7.22.tar.gz'],
-        'modulename': 'uv_build',
-        'checksums': ['e7575036f987080a25a473971c0e6795c79e0b7bd04b95e5a35d5d51e19f3a6c'],
-    }),
     # cgi was removed in Python 3.13; pdbfixer requires the compatibility package.
     ('legacy-cgi', '2.6.4', {
         'modulename': 'cgi',
@@ -104,8 +92,4 @@ sanity_check_commands = [
 ]
 
 moduleclass = 'bio'
-
-# uv-build installs a Rust binary that bypasses EB's RPATH linker wrapper.
-# It is only needed as a build backend, not at runtime. Remove to avoid RPATH sanity check failure.
-postinstallcmds = ['rm -f %(installdir)s/bin/uv-build']
 
