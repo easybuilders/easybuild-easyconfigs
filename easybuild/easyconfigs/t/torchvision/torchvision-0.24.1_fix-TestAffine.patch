@@ -1,0 +1,19 @@
+Relax the CUDA-vs-CPU tolerance for affine transformations of bounding boxes.
+
+The torchvision test suite can fail for rotated float32 bounding boxes because
+CUDA and CPU calculations differ slightly in the resulting angle. Use the
+tolerance adopted upstream (atol=1e-5, rtol=1e-5), which is sufficient for the
+observed numerical difference without weakening the functional test.
+
+Backport of upstream commit:
+https://github.com/pytorch/vision/commit/ca2212438fdd8ce29b66999ed70ed54b0f9372d1
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- a/test/test_transforms_v2.py
++++ b/test/test_transforms_v2.py
+@@ -1439,6 +1439,7 @@ class TestAffine:
+             canvas_size=bounding_boxes.canvas_size,
+             **{param: value},
+             check_scripted_vs_eager=not (param == "shear" and isinstance(value, (int, float))),
++            check_cuda_vs_cpu=dict(atol=1e-5, rtol=1e-5),
+         )
