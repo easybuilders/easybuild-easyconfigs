@@ -39,6 +39,7 @@ dependencies = [
     ('opt-einsum', '3.4.0'),
     ('optree', '0.18.0'),
     ('typing-extensions', '4.14.1'),
+    ('cURL', '8.14.1'),
 ]
 
 exts_list = [
@@ -73,24 +74,48 @@ exts_list = [
         'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
         'patches': [
             'TensorFlow-2.4.0_dont-use-var-lock.patch',
-            'TensorFlow-2.21.0_disable-tf32-in-fused-matmul-tests.patch',
             'TensorFlow-2.18.1_fix-xnnpack.patch',
             'TensorFlow-2.18.1_fixedpoint.patch',
-            'TensorFlow-2.21.0_remove-libclang-dep.patch',
+            'TensorFlow-2.21.0_add-missing-namespaces.patch',
+            'TensorFlow-2.21.0_disable-tf32-in-fused-matmul-tests.patch',
+            'TensorFlow-2.21.0_fix-AVX512-eigen-compilation.patch',
+            'TensorFlow-2.21.0_fix-GCC-compat.patch',
+            'TensorFlow-2.21.0_fix-openssl-linking.patch',
+            'TensorFlow-2.21.0_fix-shell-env-for-grpc.patch',
+            'TensorFlow-2.21.0_fix-shell-env-for-protobuf.patch',
+            'TensorFlow-2.21.0_readd-system-absl_py.patch',
             'TensorFlow-2.21.0_relax-flatbuffers-requirement.patch',
+            'TensorFlow-2.21.0_remove-libclang-dep.patch',
+            'TensorFlow-2.21.0_remove-llvm-flag.patch',
         ],
         'checksums': [
             {'v2.21.0.tar.gz': 'ef3568bb4865d6c1b2564fb5689c19b6b9a5311572cd1f2ff9198636a8520921'},
             {'TensorFlow-2.4.0_dont-use-var-lock.patch':
              'b14f2493fd2edf79abd1c4f2dde6c98a3e7d5cb9c25ab9386df874d5f072d6b5'},
-            {'TensorFlow-2.21.0_disable-tf32-in-fused-matmul-tests.patch':
-             '2f605322c9694ccf6e013f06f403496320445a093ceca6625fec616343f5fd32'},
             {'TensorFlow-2.18.1_fix-xnnpack.patch': 'baf81d7b2b61b5a923cf1f171d5e2400df6b8bd9073d3afa7a356e3bbe11984c'},
             {'TensorFlow-2.18.1_fixedpoint.patch': '5ea1eb3b32e7df5f9ae711a71778b4cae544b3380f18882186eea035873fb640'},
-            {'TensorFlow-2.21.0_remove-libclang-dep.patch':
-             '4ee3773d07991c7f75d6dd4033ccf1bb9b017de478b39b4ffb6563a6bd66b981'},
+            {'TensorFlow-2.21.0_add-missing-namespaces.patch':
+             '0ddf31351c6f2eaee308f6ff11b0e1956e70f422f199d8c92909339fd3c822a3'},
+            {'TensorFlow-2.21.0_disable-tf32-in-fused-matmul-tests.patch':
+             '2f605322c9694ccf6e013f06f403496320445a093ceca6625fec616343f5fd32'},
+            {'TensorFlow-2.21.0_fix-AVX512-eigen-compilation.patch':
+             'f3833823b3c45df315390db08d248087282528ff00f93ed7a7e35812e5333320'},
+            {'TensorFlow-2.21.0_fix-GCC-compat.patch':
+             '35c5c88bb07a8a5f2d72770a7c47b47f7c2e0f86f77762080c0823c382b828c1'},
+            {'TensorFlow-2.21.0_fix-openssl-linking.patch':
+             '2b327f949f975d8f15fab30ee6c85b3218e03327fc848a5470aa51253971e475'},
+            {'TensorFlow-2.21.0_fix-shell-env-for-grpc.patch':
+             'be390a96472b9b91723bf27a4b59a362ab89cd24dfc873a81161ade0bbbd569e'},
+            {'TensorFlow-2.21.0_fix-shell-env-for-protobuf.patch':
+             '9910e0df3e225976873a36aa1f7d3ed9b1e29afc5bd8505d6985b93dce8b9853'},
+            {'TensorFlow-2.21.0_readd-system-absl_py.patch':
+             'de3ebde1a72612875661a1b8a07251b248a1242ac0a982f3fa4cc26f6fc77c93'},
             {'TensorFlow-2.21.0_relax-flatbuffers-requirement.patch':
              'c500796a1fe1f3de8322b1a1abeefbd3714fb255e6600d65e3815e20484c45ee'},
+            {'TensorFlow-2.21.0_remove-libclang-dep.patch':
+             '4ee3773d07991c7f75d6dd4033ccf1bb9b017de478b39b4ffb6563a6bd66b981'},
+            {'TensorFlow-2.21.0_remove-llvm-flag.patch':
+             '5909f2ba3dc8049ce65de771068fdc96330f25d113f8c20463eea831bfefa078'},
         ],
         'test_script': 'TensorFlow-2.x_mnist-test.py',
         'test_tag_filters_cpu': '-gpu,-tpu,-no_cuda_on_cpu_tap,-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
@@ -120,6 +145,10 @@ exts_list = [
                         '--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute ',
         'with_xla': True,
     }),
+]
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin && ln -sf "$EBROOTTENSORBOARD/bin/tensorboard" %(installdir)s/bin/tensorboard',
 ]
 
 moduleclass = 'lib'
