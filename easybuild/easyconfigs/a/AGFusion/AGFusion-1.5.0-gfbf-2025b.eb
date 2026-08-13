@@ -1,0 +1,71 @@
+# Author: Emik Lin (HKUMed CPOS)
+
+easyblock = 'PythonBundle'
+
+name = 'AGFusion'
+version = '1.5.0'
+
+homepage = 'https://github.com/murphycj/AGFusion'
+description = "AGFusion is a python package for annotating gene fusions from the human or mouse genomes."
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('SciPy-bundle', '2025.07'),  # provides numpy and pandas
+    ('polars', '1.41.2'),
+    ('matplotlib', '3.10.5'),
+    ('Biopython', '1.86'),
+    ('Arrow', '22.0.0'),  # provides pyarrow
+]
+
+exts_list = [
+    ('typechecks', '0.1.0', {
+        'checksums': ['7d801a6018f60d2a10aa3debc3af65f590c96c455de67159f39b9b183107c83b'],
+    }),
+    ('datacache', '1.7.0', {
+        'checksums': ['ecb50ee4b01b35f78568b10ede8e94617c193028010b9f716afb52d23429750d'],
+    }),
+    ('memoized-property', '1.0.3', {
+        'checksums': ['4be4d0209944b9b9b678dae9d7e312249fe2e6fb8bdc9bdaa1da4de324f0fcf5'],
+    }),
+    ('tinytimer', '0.0.0', {
+        'checksums': ['6ad13c8f01ab6094e58081a5367ffc4c5831f2d6b29034d2434d8ae106308fa5'],
+    }),
+    ('gtfparse', '2.6.2', {
+        'checksums': ['266438ad6baf2336fed0d121d2bc8811aa8db02783d8a3e6a3b50992ac79c5d1'],
+    }),
+    ('serializable', '0.4.1', {
+        'checksums': ['882098d79253d38591a3d4d7d5d78052fce3ba4d29d64c1704d73f1a19d066d8'],
+    }),
+    ('pyensembl', '2.6.2', {
+        'checksums': ['dd0cb9efdbad67178d635b5fcdea65450a5f8836ccc612bc0f149b31ba9b08cf'],
+    }),
+    (name, version, {
+        'modulename': 'agfusion',
+        'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
+        'checksums': ['2f3f10ad8b1a6d97db9cbc91a08e3ed4bb9f271630c52ddded270fe1c459868e'],
+    }),
+]
+
+# EasyBuild treats the legitimate tinytimer version 0.0.0 as missing version metadata
+unversioned_packages = ['tinytimer']
+
+sanity_check_paths = {
+    'files': ['bin/agfusion', 'bin/pyensembl'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    '%(namelower)s --version',
+    '%(namelower)s --help',
+    '%(namelower)s annotate --help',
+    '%(namelower)s batch --help',
+    '%(namelower)s download --help',
+    '%(namelower)s build --help',
+    'pyensembl --help',
+    "python -c 'import agfusion, pyensembl'",
+]
+
+moduleclass = 'bio'
