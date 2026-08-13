@@ -1,0 +1,40 @@
+# Author: Ehsan Moravveji (VSC - KU Leuven)
+
+from easybuild.tools.systemtools import get_cpu_architecture as local_get_arch
+
+easyblock = 'Tarball'
+
+name = 'copilot-cli'
+version = '1.0.79'
+
+homepage = 'https://github.com/github/copilot-cli'
+description = '''
+GitHub Copilot CLI brings AI-powered coding assistance directly
+to your command line, enabling you to build, debug, and understand
+code through natural language conversations.
+'''
+
+toolchain = SYSTEM
+
+# Upstream release assets use x64/arm64 rather than EasyBuild's
+# x86_64/aarch64 architecture names
+local_arch = {
+    'x86_64': 'x64',
+    'aarch64': 'arm64',
+}[local_get_arch()]
+local_source_suffix = f'-linux-{local_arch}'
+
+source_urls = ['https://github.com/github/%(name)s/releases/download']
+sources = [f'v%(version)s/copilot{local_source_suffix}.tar.gz']
+checksums = ['9248d81ead3055c51e90067ae7adf0cfb84b2f8b456d8580f18705ae181ca624']
+
+sanity_check_paths = {
+    'files': ['copilot'],
+    'dirs': []
+}
+
+sanity_check_commands = ['copilot --version']
+
+modextrapaths = {'PATH': '.'}
+
+moduleclass = 'ai'
