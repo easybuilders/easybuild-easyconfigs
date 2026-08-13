@@ -27,19 +27,22 @@ builddependencies = [
 # Upstream installs only the top-level libslatec.so but it has DT_NEEDED entries for
 # the per-subdirectory component libraries (libapproximation.so, libservice.so, ...).
 # Without installing those alongside it, libslatec.so cannot be loaded at runtime.
-local_subdirs = ('approximation data_handling diff_integ diff_integ_eq integ_trans '
-                 'interpolation linear nonlin_eq optimization service special_functions')
+local_subdirs = [
+    'approximation', 'data_handling', 'diff_integ', 'diff_integ_eq', 'integ_trans',
+    'interpolation', 'linear', 'nonlin_eq', 'optimization', 'service', 'special_functions',
+]
 preconfigopts = (
     "sed -i '/install( TARGETS %%(namelower)s/i install( TARGETS %s LIBRARY DESTINATION lib )' "
     "%%(start_dir)s/src/CMakeLists.txt && "
-) % local_subdirs
+) % ' '.join(local_subdirs)
 
 # Pin CMake's FindBLAS to FlexiBLAS so it cannot fall back to a stray system
 # /usr/lib64/libblas instead of the toolchain BLAS/LAPACK.
 configopts = '-DBLA_VENDOR=FlexiBLAS'
 
+# check the component libraries too, to catch the install-rule injection above silently failing
 sanity_check_paths = {
-    'files': ['lib/libslatec.%s' % SHLIB_EXT],
+    'files': ['lib/lib%s.%s' % (local_lib, SHLIB_EXT) for local_lib in ['slatec'] + local_subdirs],
     'dirs': ['include'],
 }
 
