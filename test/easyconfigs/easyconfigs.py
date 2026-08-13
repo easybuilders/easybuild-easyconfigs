@@ -606,7 +606,7 @@ class EasyConfigTest(TestCase):
                 (r'17', [r'AnnotSV-3\.5\.10-foss-2023b\.eb$']),
                 # Java 21 is used by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* modules
                 (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
-                          r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
+                         r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
             ],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
