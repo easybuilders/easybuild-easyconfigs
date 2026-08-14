@@ -1,0 +1,71 @@
+easyblock = 'PythonBundle'
+
+name = 'WhisperX'
+version = '3.8.6'
+versionsuffix = '-CUDA-%(cudaver)s'
+local_pytorch_version = '2.9.1'
+
+homepage = 'https://github.com/m-bain/whisperx'
+description = "Automatic Speech Recognition with Word-level Timestamps (& Diarization)."
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [('Cython', '3.1.1')]
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('PyTorch', local_pytorch_version, versionsuffix),
+    ('SciPy-bundle', '2025.06'),
+    ('CTranslate2', '4.8.1', versionsuffix),
+    ('NLTK', '3.9.4'),
+    ('Transformers', '5.0.0'),
+    ('ONNX-Runtime', '1.26.0', versionsuffix),
+    ('pyannote.audio', '4.0.7', versionsuffix),
+    ('huggingface-hub', '1.2.4'),
+    ('tokenizers', '0.22.2'),
+    ('tqdm', '4.67.1'),
+    ('torchvision', '0.24.1', versionsuffix),
+]
+
+# unpin versions of dependencies in WhisperX to be compatible with PyTorch-2.9.1 stack
+local_whisperx_preinstallopts = (
+    "sed -E -i "
+    r""" '/^[[:space:]]*dependencies[[:space:]]*=[[:space:]]*[[]/"""
+    r""",/^[[:space:]]*]/{s/"([^"<>!=~;[:space:]]+)[^"]*"/"\1"/g}' """
+    "pyproject.toml && "
+)
+
+exts_list = [
+    ('faster-whisper', '1.2.1', {
+        'source_urls': ['https://github.com/SYSTRAN/faster-whisper/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['ff0b5428b3a074cd63f580ae73fa21f7d9fd3bba28e0e2e097868d78d5b06f2f'],
+    }),
+    ('av', '15.1.0', {
+        'checksums': ['39cda2dc810e11c1938f8cb5759c41d6b630550236b3365790e67a313660ec85'],
+    }),
+    ('antlr4-python3-runtime', '4.9', {
+        'modulename': 'antlr4',
+        'checksums': ['02d9afb720c13c52b336234286966cdf5aff704f230a513e635adb0d94de97ae'],
+    }),
+    ('omegaconf', '2.3.0', {
+        'checksums': ['d5d4b6d29955cc50ad50c46dc269bcd92c6e00f5f90d23ab5fee7bfca4ba4cc7'],
+    }),
+    (name, version, {
+        'preinstallopts': local_whisperx_preinstallopts,
+        'source_urls': ['https://github.com/m-bain/whisperX/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'runtest': 'pytest -v tests',
+        'testinstall': True,
+        'checksums': ['fc0a7c2a72db1c0c280cf8bca75d266c25cd4ca9c44d4768f2f56a6b40d3d98b'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["%(namelower)s -h"]
+
+moduleclass = 'ai'
