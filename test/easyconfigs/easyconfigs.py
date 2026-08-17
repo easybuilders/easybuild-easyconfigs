@@ -603,10 +603,16 @@ class EasyConfigTest(TestCase):
             'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
-            # Java 21 is used as dep for Octave 9.2.0, MDSplus 7.1, JPype 1.5.0 and IMAS-* modules
-            # (other 2023b easyconfigs use Java 11)
-            'Java': [(r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
-                              r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0'])],
+            'Java': [
+                # AnnotSV 3.5.10 requires Java 17 (other 2023b easyconfigs use Java 11)
+                (r'17', [
+                    # EC's that requires Java 17 in 2023b easyconfigs, while others use Java 11
+                    r'AnnotSV-3\.5\.10-foss-2023b', r'GATK-4\.6\.0\.0-GCCcore-13\.2\.0', r'Spark-3\.5\.4-foss-2023b',
+                ]),
+                # Java 21 is used by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* modules
+                (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
+                         r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
+            ],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
             'libxc': [
