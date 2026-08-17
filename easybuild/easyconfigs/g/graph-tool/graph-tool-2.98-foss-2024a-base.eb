@@ -1,0 +1,69 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+# Update: Pavel Tománek (Inuits)
+
+easyblock = 'ConfigureMake'
+
+name = 'graph-tool'
+version = '2.98'
+versionsuffix = '-base'
+
+homepage = 'https://graph-tool.skewed.de/'
+description = """Graph-tool is an efficient Python module for manipulation and
+ statistical analysis of graphs (a.k.a. networks). Contrary to
+ most other python modules with similar functionality, the core
+ data structures and algorithms are implemented in C++, making
+ extensive use of template metaprogramming, based heavily on
+ the Boost Graph Library. This confers it a level of
+ performance that is comparable (both in memory usage and
+ computation time) to that of a pure C/C++ library."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'cstd': 'c++17', 'openmp': True}
+
+source_urls = ['https://downloads.skewed.de/%(name)s/']
+sources = [SOURCE_TAR_BZ2]
+patches = [
+    'graph-tool-2.98_fix-circular-inference-draw-import.patch',
+    'graph-tool-2.98_fix-NameError-cairo-draw.patch',
+]
+checksums = [
+    {'graph-tool-2.98.tar.bz2': 'eef1948b937f5f043749eee75fe0c6d7e8f036551d945e9d55e37870b06cc527'},
+    {'graph-tool-2.98_fix-circular-inference-draw-import.patch':
+     'a3ef419080ca10791f6d25688a4e8afa7cad6667a8ad96594e49569d05f375f4'},
+    {'graph-tool-2.98_fix-NameError-cairo-draw.patch':
+     'be5e63eb8ca3460f3660cce5579ff054b63900cd1f6bebc8ff6f145a1d69f6ff'},
+]
+
+builddependencies = [
+    ('gawk', '5.3.2'),
+    ('pkgconf', '2.2.0'),
+    ('CGAL', '5.6.1'),
+    ('sparsehash', '2.0.4'),
+]
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('Boost.Python', '1.85.0'),
+    ('expat', '2.6.2'),
+    ('GMP', '6.3.0'),
+]
+
+# build step has high memory usage, failing with:
+# g++: fatal error: Killed signal terminated program cc1plus
+max_parallel = 2
+
+configopts = '--enable-openmp --with-cgal=$EBROOTCGAL --with-boost=$EBROOTBOOST --disable-cairo '
+configopts += '--with-boost-python=boost_python312  '
+configopts += '--with-python-module-path=%(installdir)s/lib/python%(pyshortver)s/site-packages '
+
+sanity_check_paths = {
+    'files': ['lib/python%(pyshortver)s/site-packages/graph_tool/all.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/graph_tool/include', 'share'],
+}
+
+sanity_check_commands = [
+    "python -c 'from graph_tool.all import Graph, BlockState'",
+    "python -c 'import graph_tool.inference'",
+]
+
+moduleclass = 'math'

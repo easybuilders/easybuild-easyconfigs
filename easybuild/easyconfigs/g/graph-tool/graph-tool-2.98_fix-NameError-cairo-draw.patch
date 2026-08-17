@@ -1,0 +1,17 @@
+Fix graph-tool imports when built without Cairo support.
+
+When graph-tool is configured with --disable-cairo, importing graph_tool.draw.cairo_draw fails to import
+symbols from the unavailable Cairo drawing library. The ImportError is currently caught and converted to a warning,
+after which the module continues initialization and attempts to use undefined symbols such as vertex_attrs,
+resulting in a NameError.
+
+Re-raise the original ImportError after issuing the warning. This allows graph_tool.all to treat the drawing module as
+unavailable optional functionality and continue loading the remaining graph-tool functionality,
+as required for headless graph-tool-base installations.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- a/src/graph_tool/draw/cairo_draw.py
++++ b/src/graph_tool/draw/cairo_draw.py
+@@ -82,1 +82,2 @@
+     warnings.warn(msg, RuntimeWarning)
++    raise
