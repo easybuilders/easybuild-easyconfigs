@@ -457,7 +457,8 @@ class EasyConfigTest(TestCase):
             ('Perl', '-minimal'),
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             # Same for HDF5 with -serial versionsuffix which is used in HDF5 for Python (h5py)
-            (['FFTW', 'imkl', 'HDF5'], '-serial'),
+            # Also for h5py which is used in autoCAS
+            (['FFTW', 'imkl', 'HDF5', 'h5py'], '-serial'),
             # filter out BLIS and libFLAME with -amd versionsuffix
             # (AMD forks, used in gobff/*-amd toolchains)
             (['BLIS', 'libFLAME'], '-amd'),
@@ -601,10 +602,16 @@ class EasyConfigTest(TestCase):
             'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
-            # Java 21 is used as dep for Octave 9.2.0, MDSplus 7.1, JPype 1.5.0 and IMAS-* modules
-            # (other 2023b easyconfigs use Java 11)
-            'Java': [(r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
-                              r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0'])],
+            'Java': [
+                # AnnotSV 3.5.10 requires Java 17 (other 2023b easyconfigs use Java 11)
+                (r'17', [
+                    # EC's that requires Java 17 in 2023b easyconfigs, while others use Java 11
+                    r'AnnotSV-3\.5\.10-foss-2023b', r'GATK-4\.6\.0\.0-GCCcore-13\.2\.0', r'Spark-3\.5\.4-foss-2023b',
+                ]),
+                # Java 21 is used by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* modules
+                (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
+                         r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
+            ],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
             'libxc': [
@@ -1007,6 +1014,7 @@ class EasyConfigTest(TestCase):
             '15.2': '2026.1',
             '15.3': None,
             '16.1': None,
+            '16.2': None,
         }
 
         # map intel-compilers to toolchain generations
@@ -1251,8 +1259,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.3.1'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.3.1.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.4.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.4.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""

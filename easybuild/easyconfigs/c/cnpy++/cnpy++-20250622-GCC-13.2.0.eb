@@ -1,0 +1,49 @@
+# Author: Emik Lin (HKUMed CPOS)
+
+easyblock = 'CMakeMake'
+
+name = 'cnpy++'
+version = '20250622'
+local_commit = 'c6cd4e2078e4f39e862720b66fb211c45577c510'
+
+homepage = 'https://github.com/mreininghaus/cnpypp'
+description = "C++17 library to read and write NumPy .npy and .npz files"
+
+toolchain = {'name': 'GCC', 'version': '13.2.0'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/mreininghaus/cnpypp/archive/'],
+        'download_filename': '%s.tar.gz' % local_commit,
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://github.com/ericniebler/range-v3/archive/refs/tags/'],
+        'download_filename': '0.12.0.tar.gz',
+        'filename': 'range-v3-0.12.0.tar.gz',
+    },
+]
+checksums = [
+    '4fcfe8662364319bffa1f9fc951253f1ea3f5bb6b326114638b3fcbc682d4a0a',  # cnpy++-20250622.tar.gz
+    '015adb2300a98edfceaf0725beec3337f542af4915cec4d0b89fa0886f4ba9cb',  # range-v3-0.12.0.tar.gz
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.27.6'),
+]
+
+dependencies = [
+    ('Boost', '1.83.0'),
+    ('libzip', '1.10.1'),
+]
+
+configopts = '-DBUILD_SHARED_LIBS=ON -DCNPYPP_SPAN_IMPL=BOOST '
+configopts += '-DFETCHCONTENT_SOURCE_DIR_RANGE-V3=%(builddir)s/range-v3-0.12.0 '
+
+sanity_check_paths = {
+    'files': ['include/cnpy++.h', 'include/cnpy++.hpp', 'lib/libcnpy++.so'],
+    'dirs': ['include/cnpy++'],
+}
+
+moduleclass = 'lib'
