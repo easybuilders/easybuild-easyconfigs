@@ -457,7 +457,8 @@ class EasyConfigTest(TestCase):
             ('Perl', '-minimal'),
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             # Same for HDF5 with -serial versionsuffix which is used in HDF5 for Python (h5py)
-            (['FFTW', 'imkl', 'HDF5'], '-serial'),
+            # Also for h5py which is used in autoCAS
+            (['FFTW', 'imkl', 'HDF5', 'h5py'], '-serial'),
             # filter out BLIS and libFLAME with -amd versionsuffix
             # (AMD forks, used in gobff/*-amd toolchains)
             (['BLIS', 'libFLAME'], '-amd'),
