@@ -1,0 +1,30 @@
+Disable packaging settings to avoid CPack command error.
+Also explicitly search for required packages, as targets are
+not correctly exported from external subdirectory.
+
+Author: Jan Andre Reuter (jan@zyten.de)
+
+diff --color -Naur rocprofiler-register-rocm-6.4.1.orig/CMakeLists.txt rocprofiler-register-rocm-6.4.1/CMakeLists.txt
+--- rocprofiler-register-rocm-6.4.1.orig/CMakeLists.txt 2025-02-18 01:53:49.000000000 +0100
++++ rocprofiler-register-rocm-6.4.1/CMakeLists.txt      2025-06-16 17:27:10.986677141 +0200
+@@ -100,7 +100,9 @@
+ enable_testing()
+ include(CTest)
+ 
+-add_subdirectory(external)
++# add_subdirectory(external)
++find_package(fmt REQUIRED)
++find_package(glog REQUIRED)
+ add_subdirectory(source)
+ 
+ include(rocprofiler_register_config_install)
+@@ -113,6 +115,8 @@
+     add_subdirectory(samples)
+ endif()
+ 
+-include(rocprofiler_register_config_packaging)
++# Disable packaging for EasyBuild, as bugged (CPack is imported too late)
++# and since we will not build Debian or RHEL packages.
++# include(rocprofiler_register_config_packaging)
+ 
+ rocprofiler_register_print_features()
