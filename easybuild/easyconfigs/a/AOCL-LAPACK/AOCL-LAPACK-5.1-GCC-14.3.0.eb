@@ -1,0 +1,57 @@
+easyblock = 'Bundle'
+
+name = 'AOCL-LAPACK'
+version = '5.1'
+
+homepage = 'https://github.com/amd/libflame'
+description = """AOCL-LAPACK is AMD's optimized version of
+                 LAPACK targeted for AMD EPYC and Ryzen CPUs."""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('Python', '3.13.5'),
+    ('Perl', '5.40.2'),
+]
+
+dependencies = [
+    ('AOCL-BLAS', '%(version)s'),
+]
+
+default_component_specs = {'sources': [{'download_filename': '%(version)s.tar.gz',
+                                        'filename': SOURCELOWER_TAR_GZ}]}
+sanity_check_all_components = True
+
+components = [
+    ('AOCL-Utils', version, {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/amd/aocl-utils/archive/refs/tags'],
+        'checksums': ['68d75e04013abe90ea8308a9bc99b99532233b6c7f937f35381563f4124c20a5'],
+        'start_dir': '%(namelower)s-%(version)s',
+        'sanity_check_paths': {
+            'files': ['lib/libaoclutils.%s' % SHLIB_EXT, 'include/Capi/au/cpuid/cpuid.h'],
+            'dirs': [],
+        },
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/amd/libflame/archive/refs/tags'],
+        'patches': ['AOCL-LAPACK-5.1_support-shlib-netlib-tests.patch'],
+        'checksums': [
+            {SOURCELOWER_TAR_GZ: '25524ba78b5952303369fa0859d217e44071144fd122a9dc3f72ed0bd73e3b2d'},
+            {'AOCL-LAPACK-5.1_support-shlib-netlib-tests.patch':
+             '8a5ab79f9120511e93708919050a1cc575fc6df9fa9cff994ecbe068955958fe'},
+        ],
+        'start_dir': 'libflame-%(version)s',
+        'runtest': True,
+        'run_lapack_tests': True,
+        'max_failing_lapack_tests_num_errors': 250,
+    }),
+]
+
+sanity_check_paths = {
+    'dirs': ['include', 'lib'],
+    'files': [],
+}
+
+moduleclass = 'numlib'

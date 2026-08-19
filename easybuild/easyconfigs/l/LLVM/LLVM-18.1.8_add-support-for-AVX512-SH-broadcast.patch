@@ -1,0 +1,138 @@
+This avoids
+> UNREACHABLE executed at /dev/shm/Clang/18.1.8/GCCcore-13.3.0-CUDA-12.6.0/llvm-project-18.1.8.src/llvm/lib/Target/X86/X86InstrInfo.cpp:8220!
+
+when targetting e.g. Intel Sapphire Rapids
+
+From f28430d577276bf58d96945a6919399baa6c2527 Mon Sep 17 00:00:00 2001
+From: Shengchen Kan <shengchen.kan@intel.com>
+Date: Tue, 30 Jan 2024 01:01:33 +0800
+Subject: [PATCH] [X86][CodeGen] Add entries for TB_BCAST_W in
+ getBroadcastOpcode and fix typo
+
+---
+ .../include/llvm/Support/X86FoldTablesUtils.h |  2 +-
+ llvm/lib/Target/X86/X86InstrInfo.cpp          | 72 +++++++------------
+ 2 files changed, 25 insertions(+), 49 deletions(-)
+
+diff --git a/llvm/include/llvm/Support/X86FoldTablesUtils.h b/llvm/include/llvm/Support/X86FoldTablesUtils.h
+index 790cdce9039f5..bd50a0d6dd4aa 100644
+--- a/llvm/include/llvm/Support/X86FoldTablesUtils.h
++++ b/llvm/include/llvm/Support/X86FoldTablesUtils.h
+@@ -53,7 +53,7 @@ enum {
+   TB_BCAST_SH = 6 << TB_BCAST_TYPE_SHIFT,
+   TB_BCAST_MASK = 0x7 << TB_BCAST_TYPE_SHIFT,
+ 
+-  // Unused bits 15-16
++  // Unused bits 14-16
+ };
+ } // namespace llvm
+ #endif // LLVM_SUPPORT_X86FOLDTABLESUTILS_H
+diff --git a/llvm/lib/Target/X86/X86InstrInfo.cpp b/llvm/lib/Target/X86/X86InstrInfo.cpp
+index 13fe75fc9edd1..1adaf097bcbf7 100644
+--- a/llvm/lib/Target/X86/X86InstrInfo.cpp
++++ b/llvm/lib/Target/X86/X86InstrInfo.cpp
+@@ -8127,57 +8127,33 @@ static unsigned getBroadcastOpcode(const X86FoldTableEntry *I,
+   assert((SpillSize == 64 || STI.hasVLX()) &&
+          "Can't broadcast less than 64 bytes without AVX512VL!");
+ 
++#define CASE_BCAST_TYPE_OPC(TYPE, OP16, OP32, OP64)                            \
++  case TYPE:                                                                   \
++    switch (SpillSize) {                                                       \
++    default:                                                                   \
++      llvm_unreachable("Unknown spill size");                                  \
++    case 16:                                                                   \
++      return X86::OP16;                                                        \
++    case 32:                                                                   \
++      return X86::OP32;                                                        \
++    case 64:                                                                   \
++      return X86::OP64;                                                        \
++    }                                                                          \
++    break;
++
+   switch (I->Flags & TB_BCAST_MASK) {
+   default:
+     llvm_unreachable("Unexpected broadcast type!");
+-  case TB_BCAST_D:
+-    switch (SpillSize) {
+-    default:
+-      llvm_unreachable("Unknown spill size");
+-    case 16:
+-      return X86::VPBROADCASTDZ128rm;
+-    case 32:
+-      return X86::VPBROADCASTDZ256rm;
+-    case 64:
+-      return X86::VPBROADCASTDZrm;
+-    }
+-    break;
+-  case TB_BCAST_Q:
+-    switch (SpillSize) {
+-    default:
+-      llvm_unreachable("Unknown spill size");
+-    case 16:
+-      return X86::VPBROADCASTQZ128rm;
+-    case 32:
+-      return X86::VPBROADCASTQZ256rm;
+-    case 64:
+-      return X86::VPBROADCASTQZrm;
+-    }
+-    break;
+-  case TB_BCAST_SS:
+-    switch (SpillSize) {
+-    default:
+-      llvm_unreachable("Unknown spill size");
+-    case 16:
+-      return X86::VBROADCASTSSZ128rm;
+-    case 32:
+-      return X86::VBROADCASTSSZ256rm;
+-    case 64:
+-      return X86::VBROADCASTSSZrm;
+-    }
+-    break;
+-  case TB_BCAST_SD:
+-    switch (SpillSize) {
+-    default:
+-      llvm_unreachable("Unknown spill size");
+-    case 16:
+-      return X86::VMOVDDUPZ128rm;
+-    case 32:
+-      return X86::VBROADCASTSDZ256rm;
+-    case 64:
+-      return X86::VBROADCASTSDZrm;
+-    }
+-    break;
++    CASE_BCAST_TYPE_OPC(TB_BCAST_W, VPBROADCASTWZ128rm, VPBROADCASTWZ256rm,
++                        VPBROADCASTWZrm)
++    CASE_BCAST_TYPE_OPC(TB_BCAST_D, VPBROADCASTDZ128rm, VPBROADCASTDZ256rm,
++                        VPBROADCASTDZrm)
++    CASE_BCAST_TYPE_OPC(TB_BCAST_Q, VPBROADCASTQZ128rm, VPBROADCASTQZ256rm,
++                        VPBROADCASTQZrm)
++    CASE_BCAST_TYPE_OPC(TB_BCAST_SS, VBROADCASTSSZ128rm, VBROADCASTSSZ256rm,
++                        VBROADCASTSSZrm)
++    CASE_BCAST_TYPE_OPC(TB_BCAST_SD, VMOVDDUPZ128rm, VBROADCASTSDZ256rm,
++                        VBROADCASTSDZrm)
+   }
+ }
+ 
+From 02a275cca166546e32153997e4c800763ba7fc85 Mon Sep 17 00:00:00 2001
+From: Shengchen Kan <shengchen.kan@intel.com>
+Date: Tue, 30 Jan 2024 20:37:30 +0800
+Subject: [PATCH] [X86][CodeGen] Add entries for TB_BCAST_SH in
+ getBroadcastOpcode
+
+---
+ llvm/lib/Target/X86/X86InstrInfo.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/llvm/lib/Target/X86/X86InstrInfo.cpp b/llvm/lib/Target/X86/X86InstrInfo.cpp
+index 1adaf097bcbf7..99dba8d41ac88 100644
+--- a/llvm/lib/Target/X86/X86InstrInfo.cpp
++++ b/llvm/lib/Target/X86/X86InstrInfo.cpp
+@@ -8150,6 +8150,8 @@ static unsigned getBroadcastOpcode(const X86FoldTableEntry *I,
+                         VPBROADCASTDZrm)
+     CASE_BCAST_TYPE_OPC(TB_BCAST_Q, VPBROADCASTQZ128rm, VPBROADCASTQZ256rm,
+                         VPBROADCASTQZrm)
++    CASE_BCAST_TYPE_OPC(TB_BCAST_SH, VPBROADCASTWZ128rm, VPBROADCASTWZ256rm,
++                        VPBROADCASTWZrm)
+     CASE_BCAST_TYPE_OPC(TB_BCAST_SS, VBROADCASTSSZ128rm, VBROADCASTSSZ256rm,
+                         VBROADCASTSSZrm)
+     CASE_BCAST_TYPE_OPC(TB_BCAST_SD, VMOVDDUPZ128rm, VBROADCASTSDZ256rm,
