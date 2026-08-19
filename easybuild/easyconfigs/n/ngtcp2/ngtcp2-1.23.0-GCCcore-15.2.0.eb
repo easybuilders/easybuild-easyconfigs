@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'ngtcp2'
+version = '1.23.0'
+
+homepage = 'https://github.com/ngtcp2/ngtcp2'
+description = """
+'Call it TCP/2. One More Time.'
+
+ngtcp2 project is an effort to implement RFC9000 QUIC protocol."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+toolchainopts = {'pic': True}
+
+sources = [{
+    'filename': SOURCE_TAR_XZ,
+    'git_config': {
+        'url': 'https://github.com/ngtcp2',
+        'repo_name': name,
+        'tag': 'v%(version)s',
+        'recursive': True,
+    }
+}]
+checksums = ['a50faa760aa64a3701b04d7e956a36a80ae9afe9a359ca8f3ec42b5446e3844e']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('CMake', '4.2.1'),
+    ('CUnit', '2.1-3'),
+]
+
+dependencies = [
+    ('GnuTLS', '3.8.13'),
+    ('nghttp3', '1.16.0'),
+    ('libev', '4.33'),
+]
+
+configopts = ' '.join([
+    '-DENABLE_GNUTLS=True',
+    '-DENABLE_OPENSSL=False',  # Would need QUIC support
+])
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': [f'lib/libngtcp2.{SHLIB_EXT}'],
+    'dirs': ['share/doc/ngtcp2'],
+}
+
+moduleclass = 'lib'

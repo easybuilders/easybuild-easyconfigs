@@ -1,0 +1,38 @@
+easyblock = 'ConfigureMake'
+
+name = 'jemalloc'
+version = '5.3.1'
+
+homepage = 'https://jemalloc.net'
+description = """jemalloc is a general purpose malloc(3) implementation that emphasizes fragmentation avoidance and
+ scalable concurrency support."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = ['https://github.com/jemalloc/jemalloc/releases/download/%(version)s/']
+sources = [SOURCE_TAR_BZ2]
+checksums = ['3826bc80232f22ed5c4662f3034f799ca316e819103bdc7bb99018a421706f92']
+
+builddependencies = [
+    ('Autotools', '20250626'),
+    ('binutils', '2.45'),
+]
+
+preconfigopts = "./autogen.sh && "
+configopts = "--with-version=%(version)s-0-g0000 "  # build with version info
+# From version 5.2.1 (or maybe earlier) it does no longer build,
+# nor try to install, documentation if xsltproc is missing.
+# However, xsltproc may still be available in the system, so explicitly disable it
+configopts += "--disable-doc "
+
+sanity_check_paths = {
+    'files': ['bin/jeprof', 'lib/libjemalloc.a', 'lib/libjemalloc_pic.a', f'lib/libjemalloc.{SHLIB_EXT}',
+              'include/jemalloc/jemalloc.h'],
+    'dirs': [],
+}
+
+# jemalloc can be used via $LD_PRELOAD, but we don't enable this by
+# default, you need to opt-in to it
+# modextrapaths = {'LD_PRELOAD': ['lib/libjemalloc.%s' % SHLIB_EXT]}
+
+moduleclass = 'lib'
