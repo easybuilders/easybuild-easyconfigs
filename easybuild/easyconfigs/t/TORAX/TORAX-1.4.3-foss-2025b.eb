@@ -1,0 +1,95 @@
+easyblock = 'PythonBundle'
+
+name = 'TORAX'
+version = '1.4.3'
+
+homepage = 'https://github.com/google-deepmind/torax'
+description = """TORAX is a differentiable 1D tokamak plasma transport simulator
+ written in Python using JAX. It solves the coupled equations for ion heat
+ transport, electron heat transport, particle transport, and current diffusion,
+ with support for automatic differentiation and JIT compilation."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+github_account = 'google-deepmind'
+
+builddependencies = [
+    ('hatchling', '1.27.0'),
+    ('poetry', '2.1.3'),
+    ('flit', '3.12.0'),  # flit_core, for click
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('matplotlib', '3.10.5'),
+    ('jax', '0.10.0'),
+    ('Optax', '0.2.5'),
+    ('Flax', '0.10.4'),
+    ('h5py', '3.14.0'),
+    ('netcdf4-python', '1.7.2'),
+    ('xarray', '2025.10.0'),
+    ('PyYAML', '6.0.2'),
+    ('pydantic', '2.11.9'),
+    ('tqdm', '4.67.1'),
+    ('IMAS-Python', '2.3.0'),
+    ('plotly.py', '6.5.0'),
+]
+
+exts_list = [
+    # --- Indirect deps ---
+    ('equinox', '0.13.8', {
+        'checksums': ['dd075050018e2dd02e252e9d29d3060f7e67f085622d8d27a8e89e24bb8523db'],
+    }),
+    ('jaxopt', '0.8.5', {
+        'checksums': ['2790bd68ef132b216c083a8bc7a2704eceb35a92c0fc0a1e652e79dfb1e9e9ab'],
+    }),
+    ('immutabledict', '4.3.1', {
+        'checksums': ['f844a669106cfdc73f47b1a9da003782fb17dc955a54c80972e0d93d1c63c514'],
+    }),
+    # click is required by eqdsk
+    ('click', '8.4.2', {
+        'checksums': ['9a6cea6e60b17ebe0a44c5cc636d94f09bd66142c1cd7d8b4cd731c4917a15f6'],
+    }),
+    # --- TORAX direct deps ---
+    ('treelib', '1.8.0', {
+        'checksums': ['e1be2c6b66ffbfae85079fc4c76fb4909946d01d915ee29ff6795de53aed5d55'],
+    }),
+    ('typeguard', '2.13.3', {
+        'checksums': ['00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4'],
+    }),
+    ('h5netcdf', '1.8.1', {
+        'checksums': ['9b396a4cc346050fc1a4df8523bc1853681ec3544e0449027ae397cb953c7a16'],
+    }),
+    ('fortranformat', '2.0.3', {
+        'checksums': ['1e765c01a66208d54d75cae140ba9f1adda0548aaad8538cba8da39e69ac178c'],
+    }),
+    ('eqdsk', '0.9.0', {
+        'checksums': ['429c978a3f8f024adf2457285e730174e73efa7bbf847df0267b08258a8c13a5'],
+    }),
+    ('tglfnn_ukaea', '0.1.0', {
+        'checksums': ['1253b135301012af18a8acf30fcd73ffdafd4a63efcf26b9cda1a53a0d066a52'],
+    }),
+    ('fusion_surrogates', '0.4.6', {
+        'checksums': ['27efd8e3ae8ec9f1b6073d7ae6528110ff99ddf5d4e8bb52445add695b846e34'],
+    }),
+    # --- TORAX itself ---
+    (name, version, {
+        # Relax imas-python==2.1.0 pin (we have 2.3.0)
+        'preinstallopts': "sed -i 's/imas-python==2.1.0/imas-python>=2.1.0/' pyproject.toml && ",
+        'source_urls': ['https://github.com/%(github_account)s/%(namelower)s/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['4c3b599d5510a3a4f04d5e28c3807ab2aa8c4db50d715683411234e85083022e'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/run_torax', 'bin/plot_torax'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/torax'],
+}
+
+sanity_check_commands = [
+    "python -s -c 'import torax'",
+]
+
+moduleclass = 'phys'
