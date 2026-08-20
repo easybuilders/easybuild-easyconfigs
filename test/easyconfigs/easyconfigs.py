@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2025 Ghent University
+# Copyright 2013-2026 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,12 +29,14 @@ Unit tests for easyconfig files.
 """
 import glob
 import os
+import random
 import re
 import shutil
 import stat
 import tempfile
 from collections import defaultdict
-from unittest import TestCase, TestLoader, main, skip
+from typing import List
+from unittest import TestCase, TestLoader, main, mock, skip
 from urllib.request import Request, urlopen
 
 import easybuild.main as eb_main
@@ -46,7 +48,7 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
-from easybuild.framework.easyconfig.easyconfig import resolve_template
+from easybuild.framework.easyconfig.easyconfig import EasyConfig, resolve_template
 from easybuild.framework.easyconfig.parser import (
     EasyConfigParser, fetch_parameters_from_easyconfig,
     DEPRECATED_EASYCONFIG_PARAMETERS,
@@ -58,9 +60,10 @@ from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_fil
 from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
+from easybuild.tools.options import set_tmpdir
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_shell_cmd
-from easybuild.tools.options import set_tmpdir
+from easybuild.tools.systemtools import pick_dep_version
 from easybuild.tools.utilities import nub
 
 
@@ -252,7 +255,7 @@ class EasyConfigTest(TestCase):
                     EasyConfigTest._parsed_easyconfigs.extend(ec)
                 changed_ecs.append(ec[0]['ec'])
             else:
-                raise RuntimeError("Failed to find parsed easyconfig for %s" % os.path.basename(ec_file))
+                raise RuntimeError("Failed to find parsed easyconfig for " + os.path.basename(ec_file))
         EasyConfigTest._changed_ecs = changed_ecs
 
     def _get_changed_patches(self):
@@ -270,38 +273,38 @@ class EasyConfigTest(TestCase):
         EasyConfigTest._changed_patches = changed_patches + added_patches
 
     @property
-    def parsed_easyconfigs(self):
+    def parsed_easyconfigs(self) -> List[EasyConfig]:
         # parse all easyconfigs if they haven't been already
         EasyConfigTest.parse_all_easyconfigs()
         return EasyConfigTest._parsed_easyconfigs
 
     @property
-    def ordered_specs(self):
+    def ordered_specs(self) -> List[dict]:
         # Resolve dependencies if not done
         if EasyConfigTest._ordered_specs is None:
             EasyConfigTest.resolve_all_dependencies()
         return EasyConfigTest._ordered_specs
 
     @property
-    def changed_ecs_filenames(self):
+    def changed_ecs_filenames(self) -> List[str]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs_filenames
 
     @property
-    def added_ecs_filenames(self):
+    def added_ecs_filenames(self) -> List[str]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._added_ecs_filenames
 
     @property
-    def changed_ecs(self):
+    def changed_ecs(self) -> List[EasyConfig]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs
 
     @property
-    def changed_patches(self):
+    def changed_patches(self) -> List[str]:
         if EasyConfigTest._changed_patches is None:
             self._get_changed_patches()
         return EasyConfigTest._changed_patches
@@ -328,8 +331,9 @@ class EasyConfigTest(TestCase):
             print("(skipped conflicts test)")
             return
 
-        self.assertFalse(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
-                         "No conflicts detected")
+        self.assertEqual(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False,
+                                         return_conflicts=True),
+                         [])
 
     def test_deps(self):
         """Perform checks on dependencies in easyconfig files"""
@@ -348,10 +352,12 @@ class EasyConfigTest(TestCase):
             # make sure that no odd versions (like 1.13) of HDF5 are used as a dependency,
             # since those are released candidates - only even versions (like 1.12) are stable releases;
             # see https://docs.hdfgroup.org/archive/support/HDF5/doc/TechNotes/Version.html
+            # With release 2.0.0 they switched to semver, with no indication that there are release candidates
+            # based on minor versions, so only do this check for major version 1
             for dep in ec['ec'].dependencies():
                 if dep['name'] == 'HDF5':
                     ver = dep['version']
-                    if int(ver.split('.')[1]) % 2 == 1:
+                    if int(ver.split('.')[0]) == 1 and int(ver.split('.')[1]) % 2 == 1:
                         fail = "Odd minor versions of HDF5 should not be used as a dependency: "
                         fail += "found HDF5 v%s as dependency in %s" % (ver, os.path.basename(ec['spec']))
                         fails.append(fail)
@@ -451,7 +457,8 @@ class EasyConfigTest(TestCase):
             ('Perl', '-minimal'),
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             # Same for HDF5 with -serial versionsuffix which is used in HDF5 for Python (h5py)
-            (['FFTW', 'imkl', 'HDF5'], '-serial'),
+            # Also for h5py which is used in autoCAS
+            (['FFTW', 'imkl', 'HDF5', 'h5py'], '-serial'),
             # filter out BLIS and libFLAME with -amd versionsuffix
             # (AMD forks, used in gobff/*-amd toolchains)
             (['BLIS', 'libFLAME'], '-amd'),
@@ -553,13 +560,15 @@ class EasyConfigTest(TestCase):
 
         # some software packages require a specific (older/newer) version of a particular dependency
         alt_dep_versions = {
-            # scanpy-1.10.4 and scvi-tools-1.4.1 requires anndata >= 0.11
             'aiida-core': [(r'2\.7\.2', [r'aiida-shell-', r'AITW-viscosity-'])],
-            'anndata': [(r'0\.11\.4', [r'scvi-tools-1.4.1-', r'scanpy-1.10.4-'])],
+            # SnapATAC2-2.9.0-dev0-20250630 requires anndata == 0.10.9
+            'anndata': [(r'0\.10\.9', [r'SnapATAC2-2.9.0-dev0-20250630-'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # BRAKER 3.0.8 depends on AUGUSTUS 3.5.0-20240612
             'AUGUSTUS': [(r'3\.5\.0-20240612', [r'BRAKER-3\.0\.8'])],
+            # OpenSim-4.5.2-MATLAB-2024a-r7 needs CasADi-3.7.0-MATLAB-2024a-r7 as dependency
+            'CasADi': [(r'3\.7\.0; versionsuffix: -MATLAB-2024a-r7', [r'OpenSim-4\.5\.2-foss-2024a-MATLAB-2024a-r7'])],
             # HOOMD-blue v4.9.1 requires Clang 16.x built with the shared libLLVM.so library
             'Clang': [(r'16\.0\.6; versionsuffix: -shared', [r'HOOMD-blue-4\.9\.1-foss-2023a-llvm'])],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
@@ -593,9 +602,16 @@ class EasyConfigTest(TestCase):
             'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
-            # Java 21 is used as dep for Octave 9.2.0 (other 2023b easyconfigs use Java 11)
-            # and MDSplus
-            'Java': [(r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1'])],
+            'Java': [
+                # AnnotSV 3.5.10 requires Java 17 (other 2023b easyconfigs use Java 11)
+                (r'17', [
+                    # EC's that requires Java 17 in 2023b easyconfigs, while others use Java 11
+                    r'AnnotSV-3\.5\.10-foss-2023b', r'GATK-4\.6\.0\.0-GCCcore-13\.2\.0', r'Spark-3\.5\.4-foss-2023b',
+                ]),
+                # Java 21 is used by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* modules
+                (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
+                         r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
+            ],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
             'libxc': [
@@ -603,9 +619,13 @@ class EasyConfigTest(TestCase):
                 (r'5\.', [r'Elk-']),
             ],
             # OpenQP requires mpi4py>=4.0.0
-            'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0'])],
+            'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0', r'SimNIBS-4\.6\.0'])],
             # FDMNES requires sequential variant of MUMPS
-            'MUMPS': [(r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES'])],
+            # SimNIBS requires sequential variant of MUMPS
+            'MUMPS': [
+                (r'5\.6\.1; versionsuffix: -metis-seq', [r'FDMNES']),
+                (r'5\.7\.3; versionsuffix: -metis-seq', [r'SimNIBS']),
+            ],
             # RELION 5.0.0 requires fixes only in napari 0.4.19 and newer
             'napari': [(r'0\.4\.19\.post1;', [r'RELION-5\.0\.0'])],
             # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0, Finder requires SRA-Toolkit 3.0.0
@@ -644,13 +664,16 @@ class EasyConfigTest(TestCase):
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1', r'OPERA-MS-0\.9\.0-20240703'])],
-            # Ceres-Solver-2.2.0 needs SuiteSparse-7.8.2-METIS-5.1.0 from the used toolchain version
-            'SuiteSparse': [(r'7\.8\.2; versionsuffix: -METIS-5.1.0', [r'Ceres-Solver-2\.2\.0-foss-2024a'])],
+            # Ceres-Solver-2.2.0 and COLMAP need SuiteSparse-7.8.2-METIS-5.1.0 from the used toolchain version
+            'SuiteSparse': [(r'7\.8\.2; versionsuffix: -METIS-5.1.0', [r'Ceres-Solver-2\.2\.0-foss-2024a',
+                                                                       r'COLMAP-3\.12\.6-foss-2024a'])],
             # CheckM2 and its dep LightGBM requires scikit-learn-1.6.1
             'scikit-learn': [(r'1\.6\.1', [r'CheckM2-1\.1\.0-', r'LightGBM-4\.6\.0-'])],
             # UShER requires tbb-2020.3 as newer versions will not build
             # orthagogue requires tbb-2020.3 as 2021 versions are not backward compatible with the previous releases
             'tbb': [('2020.3', ['UShER-0.5.0-', 'orthAgogue-20141105-'])],
+            # TensorFlow 2.15.1 depends on tensorboard 2.15.1
+            'tensorboard': [('2.15.1', ['TensorFlow-2.15.1-'])],
             'TensorFlow': [
                 # medaka 1.5.0 (foss/2021a) depends on TensorFlow >=2.5.2, <2.6.0
                 ('2.5.3;', ['medaka-1.5.0-']),
@@ -674,12 +697,14 @@ class EasyConfigTest(TestCase):
             'VTK': [('9.2.6;', ['Visit-3.4.1-'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
             'wxWidgets': [(r'3\.2\.0', [r'wxPython-4\.2\.0', r'GRASS-8\.2\.0', r'QGIS-3\.28\.1'])],
+            # allow hatch-* build tools to depend on whichever hatchling they wish (as they are just build deps)
+            'hatchling': [(r'.*', [r'hatch-.*'])]
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
                 for version_pattern, parents in alt_dep_versions[dep]:
                     # filter out known alternative dependency versions
-                    if re.search('^version: %s' % version_pattern, key):
+                    if re.search(f'^version: {version_pattern}', key):
                         # only filter if the easyconfig using this dep variants is known
                         if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
                             dep_vars.pop(key)
@@ -917,7 +942,7 @@ class EasyConfigTest(TestCase):
                 if res:
                     tc_gen = res.group('tc_gen')
                     all_deps_tc_gen = all_deps.setdefault(tc_gen, {})
-                    for dep_name, dep_ver, dep_versuff, dep_mod_name in get_deps_for(ec):
+                    for dep_name, dep_ver, dep_versuff, _dep_mod_name in get_deps_for(ec):
                         dep_variants = all_deps_tc_gen.setdefault(dep_name, {})
                         # a variant is defined by version + versionsuffix
                         variant = "version: %s; versionsuffix: %s" % (dep_ver, dep_versuff)
@@ -980,14 +1005,16 @@ class EasyConfigTest(TestCase):
             '12.2': '2022b',
             '12.3': '2023a',
             '13.1': None,
-            '13.1': None,
             '13.2': '2023b',
             '13.3': '2024a',
             '14.1': None,
             '14.2': '2025a',
             '14.3': '2025b',
             '15.1': None,
-            '15.2': None,  # maybe 2026a?
+            '15.2': '2026.1',
+            '15.3': None,
+            '16.1': None,
+            '16.2': None,
         }
 
         # map intel-compilers to toolchain generations
@@ -1012,6 +1039,17 @@ class EasyConfigTest(TestCase):
             '2025.1.0': None,
             '2025.1.1': '2025a',
             '2025.2.0': '2025b',
+            '2025.3.3': '2026.1',
+        }
+
+        # map llvm-compilers to toolchain generations
+        # only for recent generations, where we want to limit dependency variants as much as possible
+        # across all easyconfigs of that generation (regardless of whether a full toolchain or subtoolchain is used);
+        # see https://docs.easybuild.io/common-toolchains/#common_toolchains_overview
+        llvm_tc_gen_map = {
+            '20.1.5': '2023b',
+            '20.1.8': '2025b',
+            '21.1.8': '2026.1',
         }
 
         multi_dep_vars_msg = ''
@@ -1025,6 +1063,9 @@ class EasyConfigTest(TestCase):
             r'intel-compilers-202(3\.2|[4-9]\.[0-9])\.[0-9]',  # intel-compilers from 2023.2
             # full toolchains, like foss/2022b or intel/2023a
             r'20(23b|(2[4-9]|[3-9][0-9])[ab])',  # 2023b and newer
+            # recent common toolchain like version 2026.1 and newer (only <year>.1 or <year>.2),
+            # along with derivatives like lfoss
+            r'(foss|gompi|gfbf|intel|iimpi|iimkl|lfoss|lfbf|lompi)20(2[6-9]\.[12]|[3-9][0-9]\.[12])',
         ]
 
         all_deps = {}
@@ -1059,6 +1100,14 @@ class EasyConfigTest(TestCase):
                         elif ic_ver not in ic_tc_gen_map:
                             # for recent intel-compilers versions, we really want to have a mapping in place...
                             self.fail("No mapping for intel-compilers %s to toolchain generation!" % ic_ver)
+
+                    if tc_gen.startswith('llvm-compilers'):
+                        llvm_ver = tc_gen.split('-')[2]
+                        if llvm_ver in llvm_tc_gen_map and llvm_tc_gen_map[llvm_ver] is not None:
+                            tc_gen = llvm_tc_gen_map[llvm_ver]
+                        elif llvm_ver not in llvm_tc_gen_map:
+                            # for recent llvm-compilers versions, we really want to have a mapping in place...
+                            self.fail("No mapping for llvm-compilers %s to toolchain generation!" % llvm_ver)
 
                     if ec_deps is None:
                         ec_deps = get_deps_for(ec)
@@ -1210,8 +1259,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.2.0'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.2.0.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.4.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.4.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1446,7 +1495,7 @@ class EasyConfigTest(TestCase):
         # + jupyterlmod + jupyter-resource-usage
         # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
         bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'ESL-Bundle', 'FEniCS', 'GCC', 'Jupyter-bundle',
-                             'Python-bundle', 'ROCm', 'llvm-compilers']
+                             'Python-bundle', 'ROCm', 'llvm-compilers', 'rocm-compilers']
 
         failing_checks = []
 
@@ -1490,8 +1539,9 @@ class EasyConfigTest(TestCase):
                 https_url = http_url.replace('http://', 'https://')
                 try:
                     req = Request(https_url, None, {'User-Agent': 'EasyBuild', 'Accept': '*/*'})
-                    https_url_works = bool(urlopen(req, timeout=5))
-                except Exception:
+                    with urlopen(req, timeout=5) as u:
+                        https_url_works = bool(u)
+                except Exception:  # pylint: disable=broad-exception-caught
                     https_url_works = False
             checked_urls[http_url] = https_url_works
 
@@ -1739,14 +1789,10 @@ def template_easyconfig_test(self, spec):
         """["']sanity_pip_check["']: True""",
         """["']use_pip["']: True""",
     ]
-    hits = []
-    for pattern in patterns:
-        regex = re.compile(pattern, re.M)
-        hits += regex.findall(ec.rawtxt)
 
-    error_msg = "download_dep_fail, sanity_pip_check, use_pip should not be set to True "
-    error_msg += "(already enabled by default in PythonPackage easyblock)"
-    self.assertFalse(hits, error_msg)
+    if any(re.search(pattern, ec.rawtxt, re.M) for pattern in patterns):
+        failing_checks.append("download_dep_fail, sanity_pip_check, use_pip should not be set to True " +
+                              "(already enabled by default in PythonPackage easyblock)")
 
     # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
     old_urls = [
@@ -1754,7 +1800,7 @@ def template_easyconfig_test(self, spec):
         'hpcugent.github.com/easybuild',
         'hpcugent.github.io/easybuild',
     ]
-    failing_checks.extend("Old URL '%s' found" % old_url for old_url in old_urls if old_url in ec.rawtxt)
+    failing_checks.extend("Old URL '%s' should not be used" % old_url for old_url in old_urls if old_url in ec.rawtxt)
 
     # Note the use of app.cfg which might contain sources populated by e.g. the Cargo easyblock
     sources, patches, checksums = app.cfg.get_ref('sources'), app.cfg['patches'], app.cfg['checksums']
@@ -1763,7 +1809,7 @@ def template_easyconfig_test(self, spec):
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # easyblocks without a build step
-        non_build_blocks = ['Binary', 'JAR', 'PackedBinary', 'Tarball', 'EB_VSCode']
+        non_build_blocks = ['Binary', 'JAR', 'PackedBinary', 'BinariesTarball', 'Tarball', 'EB_VSCode']
         # some software packages do not have a build step
         non_build_soft = ['ANIcalculator', 'Eigen']
 
@@ -1773,7 +1819,7 @@ def template_easyconfig_test(self, spec):
         # exception to the dependencies of binutils (since we should eventually build a new binutils with GCCcore)
         if ec['toolchain']['version'] == 'system':
             binutils_complete_dependencies = ['M4', 'Bison', 'flex', 'help2man', 'zlib', 'binutils']
-            requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
+            requires_binutils &= ec['name'] not in binutils_complete_dependencies
 
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
         requires_binutils &= bool(sources or ec.get_ref('exts_list') or ec.get_ref('components'))
@@ -1782,9 +1828,9 @@ def template_easyconfig_test(self, spec):
             # dependencies() returns both build and runtime dependencies
             # in some cases, binutils can also be a runtime dep (e.g. for Clang)
             # Also using GCC directly as a build dep is also allowed (it includes the correct binutils)
-            dep_names = [d['name'] for d in ec.dependencies()]
+            dep_names = ec.dependency_names()
             if 'binutils' not in dep_names and 'GCC' not in dep_names:
-                failing_checks.append("binutils or GCC is a build dep: " + str(dep_names))
+                failing_checks.append("binutils or GCC should be in build deps: " + str(dep_names))
 
     # make sure that OpenSSL wrapper is used rather than OS dependency,
     # for easyconfigs using a 2021a (sub)toolchain or more recent common toolchain version
@@ -1835,7 +1881,7 @@ def template_easyconfig_test(self, spec):
 
     # Need to check now as collect_exts_file_info relies on correct exts_list
     if failing_checks:
-        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(set(failing_checks)))
+        self.fail('Verification of %s failed:\n' % os.path.basename(spec) + '\n'.join(set(failing_checks)))
 
     # After the sanity check above, use collect_exts_file_info to resolve templates etc. correctly
     for ext in app.collect_exts_file_info(fetch_files=False, verify_checksums=False):
@@ -1923,7 +1969,7 @@ def template_easyconfig_test(self, spec):
                         # use of `True` is deprecated in favour of the more intuitive `SYSTEM` template
                         if orig_dep[3] is True:
                             failing_checks.append(
-                                "use of `True` to indicate the system toolchain for "
+                                "Use of `True` to indicate the system toolchain for "
                                 "%s is deprecated, use the `SYSTEM` template constant instead" % desc
                             )
                         elif orig_dep[3] != dumped_dep[3]:
@@ -1973,17 +2019,35 @@ def template_easyconfig_test(self, spec):
             failing_checks.append(fail_msg)
 
     if failing_checks:
-        self.fail('Verification for %s failed:\n' % os.path.basename(spec) + '\n'.join(failing_checks))
+        self.fail('Verification of %s failed:\n' % os.path.basename(spec) + '\n'.join(failing_checks))
 
     # test passed, so set back
     single_tests_ok = prev_single_tests_ok
+
+
+def _mocked_pick_dep_version(version):
+    """Ensure we do not remove dependencies on the current architecture, to e.g. check that easyconfigs are available"""
+    result = _mocked_pick_dep_version.orig(version)  # Call always to make sure version is valid
+    # If there are multiple version, pick a random one instead
+    if isinstance(version, dict):
+        # Exclude `False` values which would remove the dependency
+        values = [value for value in version.values() if value is not False]
+        if values:
+            result = random.choice(values) if len(values) > 1 else values[0]
+    return result
+
+
+_mocked_pick_dep_version.orig = pick_dep_version
 
 
 def suite(loader=None):
     """Return all easyblock initialisation tests."""
     def make_inner_test(spec_path):
         def innertest(self):
-            template_easyconfig_test(self, spec_path)
+            # Need to patch the easyconfig module too as the method was already imported
+            with mock.patch('easybuild.tools.systemtools.pick_dep_version', _mocked_pick_dep_version), \
+              mock.patch('easybuild.framework.easyconfig.easyconfig.pick_dep_version', _mocked_pick_dep_version):
+                template_easyconfig_test(self, spec_path)
         return innertest
 
     # dynamically generate a separate test for each of the available easyconfigs
