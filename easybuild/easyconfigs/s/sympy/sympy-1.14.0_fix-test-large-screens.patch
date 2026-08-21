@@ -1,0 +1,76 @@
+From 33c2e3c3f2741ae8ed46b5033013863b9005db48 Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Wed, 17 Sep 2025 13:02:25 +0200
+Subject: [PATCH 1/3] Avoid test_pretty_no_wrap_line failure on large screens
+
+20 expressions don't seem to be enough to ensure line wrapping happens reliably.
+
+Test fails on an 2560x1440 screen with a full screen console but succeeds when shrinking the console
+---
+ sympy/printing/pretty/tests/test_pretty.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sympy/printing/pretty/tests/test_pretty.py b/sympy/printing/pretty/tests/test_pretty.py
+index 4839b56a99ca..2f2335b701f4 100644
+--- a/sympy/printing/pretty/tests/test_pretty.py
++++ b/sympy/printing/pretty/tests/test_pretty.py
+@@ -5342,7 +5342,7 @@ class D:
+ 
+ def test_pretty_no_wrap_line():
+     huge_expr = 0
+-    for i in range(20):
++    for i in range(50):
+         huge_expr += i*sin(i + x)
+     assert xpretty(huge_expr            ).find('\n') != -1
+     assert xpretty(huge_expr, wrap_line=False).find('\n') == -1
+
+From 0f0367537a86ddca8215eb8539889314c1b06812 Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Wed, 17 Sep 2025 13:02:30 +0200
+Subject: [PATCH 2/3] Set number of columns instead of increasing expression
+ length
+
+---
+ sympy/printing/pretty/tests/test_pretty.py | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/sympy/printing/pretty/tests/test_pretty.py b/sympy/printing/pretty/tests/test_pretty.py
+index 2f2335b701f4..b92bade8873b 100644
+--- a/sympy/printing/pretty/tests/test_pretty.py
++++ b/sympy/printing/pretty/tests/test_pretty.py
+@@ -5342,10 +5342,10 @@ class D:
+ 
+ def test_pretty_no_wrap_line():
+     huge_expr = 0
+-    for i in range(50):
++    for i in range(20):
+         huge_expr += i*sin(i + x)
+-    assert xpretty(huge_expr            ).find('\n') != -1
+-    assert xpretty(huge_expr, wrap_line=False).find('\n') == -1
++    assert xpretty(huge_expr, num_columns=80            ).find('\n') != -1
++    assert xpretty(huge_expr, num_columns=80, wrap_line=False).find('\n') == -1
+ 
+ 
+ def test_settings():
+
+From 513f3c234b9acd66766a10b2d6f4b18f91e9d408 Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Wed, 17 Sep 2025 13:25:05 +0200
+Subject: [PATCH 3/3] author: Add Alexander Grund to .mailmap
+
+---
+ .mailmap | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/.mailmap b/.mailmap
+index 7ba7fb37e403..4320807197d1 100644
+--- a/.mailmap
++++ b/.mailmap
+@@ -277,6 +277,7 @@ Alexander Bentkamp <bentkamp@gmail.com>
+ Alexander Cockburn <alexander_cockburn12@hotmail.com>
+ Alexander Dunlap <alexander.dunlap@gmail.com>
+ Alexander Eberspächer <alex.eberspaecher@gmail.com>
++Alexander Grund <alexander.grund@tu-dresden.de> Alexander Grund <Flamefire@users.noreply.github.com>
+ Alexander Hirzel <alex@hirzel.us>
+ Alexander Pozdneev <pozdneev@users.noreply.github.com>
+ Alexander Puck Neuwirth <alexander@neuwirth-informatik.de> Alexander Puck Neuwirth <APN-Pucky@users.noreply.github.com>
