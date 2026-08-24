@@ -1,0 +1,134 @@
+easyblock = 'CMakeMake'
+
+name = 'FreeRDP-server3'
+version = '3.25.0'
+
+homepage = 'https://www.freerdp.com'
+description = """FreeRDP is a free implementation of the Remote Desktop Protocol (RDP), released under the Apache
+license. Enjoy the freedom of using your software wherever you want, the way you want it, in a world where
+interoperability can finally liberate your computing experience.
+
+This has just the server components.
+ABI version 3"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://pub.freerdp.com/releases/']
+sources = ['freerdp-%(version)s.tar.gz']
+checksums = ['2d8f8ef34f607f4c5b978e3d0d96d936d88099f4918d21ba84ac334a89219f7f']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('X11', '20250608'),
+    ('Wayland', '1.24.0'),
+    ('SDL3', '3.4.8'),
+    ('SDL3_image', '3.4.4'),
+    ('SDL3_ttf', '3.2.2'),
+    ('ICU', '77.1'),
+    ('alsa-lib', '1.2.14'),
+    ('LAME', '3.100'),
+    ('cairo', '1.18.4'),
+    ('OpenSSL', '3', '', SYSTEM),
+    ('uriparser', '1.0.2'),
+    ('Jansson', '2.14.1'),
+    ('libcbor', '0.13.0'),  # for RDPEWA
+    ('libfido2', '1.17.0'),  # for RDPEWA
+    ('zlib', '1.3.1'),
+    ('FUSE', '3.17.4'),
+    ('FFmpeg', '7.1.2'),
+    ('FAAC', '1.50'),
+    ('FAAD2', '2.11.2'),
+    ('OpenH264', '2.6.0'),
+    ('libjpeg-turbo', '3.1.1'),
+    ('libwebp', '1.5.0'),
+    ('libopus', '1.5.2'),
+    ('LAME', '3.100'),
+    ('libaom', '3.10.0'),
+]
+
+configopts = ' '.join([
+    '-DWITH_CLIENT=OFF',
+    '-DWITH_CLIENT_COMMON=OFF',
+    '-DWITH_CLIENT_CHANNELS=OFF',
+    '-DWITH_SYSTEMD=OFF',
+    '-DWITH_PROXY=OFF',  # requres client
+    '-DWITH_PROXY_APP=OFF',  # requres client
+    '-DWITH_PROXY_MODULES=OFF',  # requres client
+    '-DBUILD_TESTING=OFF',  # requires client
+    '-DCHANNEL_RDP2TCP=ON',
+    '-DCHANNEL_RDPEWA=ON',
+    '-DCHANNEL_URBDRC=OFF',
+    '-DWITH_AAD=ON',
+    '-DWITH_CAIRO=ON',
+    '-DWITH_CUPS=OFF',
+    '-DWITH_CHANNELS=ON',
+    '-DWITH_SDL_IMAGE_DIALOGS=ON',
+    '-DWITH_DSP_FFMPEG=ON',
+    '-DWITH_FFMPEG=ON',
+    '-DWITH_FUSE=ON',
+    '-DWITH_GSM=OFF',
+    '-DWITH_GFX_AV1=ON',
+    '-DWITH_IPP=OFF',
+    '-DWITH_JPEG=ON',
+    '-DWITH_JANSSON_REQUIRED=ON',
+    '-DWITH_KEYBOARD_LAYOUT_FROM_FILE=ON',
+    '-DWITH_KRB5=OFF',
+    '-DWITH_LAME=ON',
+    '-DWITH_MANPAGES=OFF',
+    '-DWITH_OPENCL=OFF',
+    '-DWITH_OPENH264=ON',
+    '-DWITH_OPENSSL=ON',
+    '-DWITH_OPUS=ON',
+    '-DWITH_PCSC=OFF',
+    '-DWITH_PKCS11=ON',
+    '-DWITH_RDTK=ON',
+    '-DWITH_SAMPLE=OFF',
+    '-DWITH_SERVER=ON',
+    '-DWITH_SERVER_INTERFACE=ON',
+    '-DWITH_SHADOW_X11=ON',
+    '-DWITH_SHADOW_MAC=ON',
+    '-DWITH_SSO_MIB=OFF',
+    '-DWITH_SWSCALE=ON',
+    '-DWITH_TIMEZONE_COMPILED=OFF',
+    '-DWITH_TIMEZONE_FROM_FILE=ON',
+    '-DWITH_URIPARSER=ON',
+    '-DWITH_VERBOSE_WINPR_ASSERT=OFF',
+    '-DWITH_VIDEO_FFMPEG=ON',
+    '-DWITH_WAYLAND=ON',
+    '-DWITH_X11=ON',
+    '-DWITH_XCURSOR=ON',
+    '-DWITH_XEXT=ON',
+    '-DWITH_XKBFILE=ON',
+    '-DWITH_XI=ON',
+    '-DWITH_XINERAMA=ON',
+    '-DWITH_XRENDER=ON',
+    '-DWITH_XTEST=ON',
+    '-DWITH_XV=ON',
+    '-DWITH_ZLIB=ON',
+    '-DWINPR_UTILS_IMAGE_PNG=ON',
+    '-DWINPR_UTILS_IMAGE_WEBP=ON',
+    '-DWINPR_UTILS_IMAGE_JPEG=ON',
+    '-DWITH_ALSA=ON',
+    '-DWITH_PULSE=OFF',
+    '-DWITH_SOXR=OFF',
+])
+
+if ARCH == 'x86_64':
+    configopts += ' -DWITH_SSE2=ON'
+elif ARCH == 'aarch64':
+    configopts += ' -DWITH_NEON=ON'
+
+_components = ['freerdp3', 'rdtk0', 'uwac0', 'winpr3']
+
+sanity_check_paths = {
+    'files': ['bin/freerdp-shadow-cli', f'lib/libfreerdp-server3.{SHLIB_EXT}'] +
+             [f'lib/lib{x}.{SHLIB_EXT}' for x in _components],
+    'dirs': [f'include/{x}/' for x in _components],
+}
+
+moduleclass = 'tools'
