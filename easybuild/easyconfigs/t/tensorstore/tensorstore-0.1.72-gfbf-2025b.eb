@@ -1,9 +1,8 @@
 # Thomas Hoffmann, EMBL Heidlelberg, structures-it@embl.de, 2025/03
-# ported to gfbf/2025b by Simon Pinches (ITER Organization), 2026/08
 easyblock = 'PythonBundle'
 
 name = 'tensorstore'
-version = '0.1.72'
+version = '0.1.76'
 
 homepage = 'https://github.com/google/tensorstore'
 description = """TensorStore is an open-source C++ and Python software library designed for
@@ -12,10 +11,10 @@ storage and manipulation of large multi-dimensional arrays."""
 toolchain = {'name': 'gfbf', 'version': '2025b'}
 
 builddependencies = [
-    ('Bazel', '7.7.0', '-Java-21'),  # .bazelversion has 7.4.0, but the bazelisk patch uses the module's bazel
-    ('PyYAML', '6.0.2'),
+    ('pybind11', '3.0.0'),
+    ('Bazel', '7.7.0', '-Java-21'),
     ('NASM', '2.16.03'),
-    ('snappy', '1.2.2'),
+    ('nlohmann_json', '3.11.3'),
 ]
 
 dependencies = [
@@ -33,40 +32,38 @@ dependencies = [
     ('Blosc', '1.21.6'),
     ('tinyxml2', '11.0.0'),
     ('c-ares', '1.34.5'),
+    ('snappy', '1.2.2'),
 ]
 
-# pybind11 and nlohmann_json are not used as system libs here: with GCC 14.3.0
-# only pybind11 3.x and nlohmann_json 3.12 are available, while tensorstore
-# 0.1.72 pins pybind11 2.13.6 and nlohmann_json 3.11.3 (3.12 breaks the build:
-# the binary_reader template signature changed); the pinned tarballs are
-# provided via Bazel's distdir instead (see components below)
 _systemlibs = [
-    'numpy',
-    'net_zlib',
-    'jpeg',
-    'png',
-    'org_lz4',
+    'com_github_pybind_pybind11',
+    'zlib',
+    'libjpeg_turbo',
+    'libpng',
+    'lz4',
     'libtiff',
-    'se_curl',
-    'net_zstd',
-    'org_tukaani_xz',
-    'com_google_brotli',
-    'org_sourceware_bzip2',
+    'curl',
+    'zstd',
+    'xz',
+    'brotli',
+    'bzip2',
     'org_nghttp2',
+    'nlohmann_json',
     'org_aomedia_avif',
-    'com_github_cares_cares',
+    'c-ares',
     'libwebp',
     'nasm',
-    'com_google_snappy',
+    'snappy',
     'tinyxml2',
     'org_blosc_cblosc',
-    'blake3'
+    'blake3',
 ]
 
 # Generate list of include paths and link paths for systemlibs to be passed to Bazel
 _bzl_syslib_opts = ' '.join(
     f'--copt=-I$EBROOT{x}/include --host_copt=-I$EBROOT{x}/include '
     f'--linkopt=-L$EBROOT{x}/lib  --host_linkopt=-L$EBROOT{x}/lib' for x in [
+        'PYBIND11',
         'LIBTIFF',
         'LIBJPEGMINTURBO',
         'ZLIB',
@@ -82,12 +79,17 @@ _bzl_syslib_opts = ' '.join(
         'SNAPPY',
         'BLOSC',
         'LIBWEBP',
+        'NLOHMANN_JSON',
         'BLAKE3MINC',
     ])
 
 # Download all bazel third_party artifacts by components and provide them in _dist_dir.
 _dist_dir = '%(builddir)s/dist/'
+_dist_dir_aws_c_cal = '%(builddir)s/dist/aws-c-cal/'
+
 _extract_cmd = 'mkdir -p ' + _dist_dir + ' && ln -s %s ' + _dist_dir
+_extract_cmd_aws_c_cal = 'mkdir -p ' + _dist_dir_aws_c_cal + ' && ln -s %s ' + _dist_dir_aws_c_cal
+
 default_easyblock = 'Binary'
 # templates for Bazel sources download:
 _sources_namedotversion = [{
@@ -110,7 +112,7 @@ _sources_nameminversionzip = [{
     'filename': '%(name)s-%(version)s.zip',
     'extract_cmd': _extract_cmd,
 }]
-#
+
 default_component_specs = {
     'runtest': None,  # workaround for https://github.com/easybuilders/easybuild-easyblocks/pull/3748
     'install_cmd': '#',
@@ -131,264 +133,407 @@ default_component_specs = {
     ],
     'sources': _sources_nameminversion,
 }
-#
-components = [
-    ('aws-c-auth', '0.8.4', {
-        'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v0.8.4.tar.gz',
-        }],
-        'checksums': [{'aws-c-auth-0.8.4.tar.gz':
-                       '5a49b43aba7d2be6217b73dc40256120d31a7d0ca2c3f96d06e5154beed5de7a'}],
-    }),
-    ('aws-c-io', '0.15.4', {
-        'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v0.15.4.tar.gz',
-        }],
-        'checksums': [{'aws-c-io-0.15.4.tar.gz':
-                       'e5202033b09df61ffb2a57284a04735ac013296decc107de1c4abd1ce7d5cfda'}],
-    }),
-    ('aws-c-http', '0.9.3', {
-        'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v0.9.3.tar.gz',
-        }],
-        'checksums': [{'aws-c-http-0.9.3.tar.gz':
-                       '63061321fd3234a4f8688cff1a6681089321519436a5f181e1bcb359204df7c8'}],
-    }),
-    ('aws-c-compression', '0.3.1', {
-        'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v0.3.1.tar.gz',
-        }],
-        'checksums': [{'aws-c-compression-0.3.1.tar.gz':
-                       'd89fca17a37de762dc34f332d2da402343078da8dbd2224c46a11a88adddf754'}],
-    }),
-    ('aws-c-common', '0.11.0', {
-        'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v0.11.0.tar.gz',
-        }],
-        'checksums': [{'aws-c-common-0.11.0.tar.gz':
-                       '88115d6f3e4f79d8b2544ed8a95d8a9699985aed38aeb4779d7c9fffde1fee58'}],
-    }),
-    ('aws-c-sdkutils', '0.2.3', {
-        'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v0.2.3.tar.gz',
-        }],
-        'checksums': [{'aws-c-sdkutils-0.2.3.tar.gz':
-                       '5a0489d508341b84eea556e351717bc33524d3dfd6207ee3aba6068994ea6018'}],
-    }),
-    ('aws-c-cal', '0.8.3', {
-        'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v0.8.3.tar.gz',
-        }],
-        'checksums': [{'%(name)s-%(version)s.tar.gz':
-                       '413a5226a881eb2d7c7b453707c90b6ad1c0f63edfc15e87087f56d7d10c2a1b'}],
-    }),
-    ('s2n-tls', '1.5.11', {
-        'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v1.5.11.tar.gz',
-        }],
-        'checksums': [{'%(name)s-%(version)s.tar.gz':
-                       '5690f030da35f86e3b5d61d1de150b5b52c84eef383799f7a706bdf21227417e'}],
-    }),
 
-    ('bazel_features', '1.17.0', {
+_aws_c_auth_version = '0.9.0'
+_aws_c_io_version = '0.18.1'
+_aws_c_http_version = '0.9.7'
+_aws_c_compression_version = '0.3.1'
+_aws_c_common_version = '0.12.2'
+_aws_c_sdkutils_version = '0.2.3'
+_aws_c_cal_version = '0.9.0'
+_s2n_tls_version = '1.5.17'
+_bazel_features_version = '1.17.0'
+_rules_proto_version = '7.1.0'
+_apple_support_version = '1.17.1'
+_toolchains_llvm_version = '1.2.0'
+_bazel_skylib_version = '1.7.1'
+_platforms_version = '0.0.10'
+_rules_cc_version = '0.1.1'
+_rules_license_version = '1.0.0'
+_protobuf_version = '30.2'
+_rules_python_version = '0.24.0'
+_googleapis_version = '20240910'
+_googleapis_commit = '32bc03653260356351854429bd7e2dfbf670d352'
+_abseil_cpp_version = '20250429'
+_abseil_cpp_commit = '5f3435aba00bcd7f12062d2e8e1839b4eaf1a575'
+_grpc_version = '1.72.0'
+_rules_pkg_version = '1.0.1'
+_boringssl_version = '0.20250415.0'
+_riegeli_version = '20250607'
+_riegeli_commit = 'c4d1f275ed44db839385e494c3a969ae232d6e10'
+_half_version = '2.2.1'
+_re2_version = '2024-07-02'
+_xds_version = '20250426'
+_xds_commit = 'ae57f3c0d45fc76d0b323b79e8299a83ccb37a49'
+_cel_spec_version = '0.16.2'
+_envoy_api_version = '20250426'
+_envoy_api_commit = 'd9c5e84658eef279e9a021ff0517f8f8ee35d79a'
+_rules_nasm_version = '0.3.1'
+_rules_shell_version = '0.4.0'
+
+components = [
+    ('aws-c-auth', _aws_c_auth_version, {
         'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v1.17.0.tar.gz',
+            'download_filename': f'v{_aws_c_auth_version}.tar.gz',
+            'filename': f'aws-c-auth-{_aws_c_auth_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'v{_aws_c_auth_version}.tar.gz',
         }],
-        'checksums': [{'bazel_features-1.17.0.tar.gz':
-                       'bdc12fcbe6076180d835c9dd5b3685d509966191760a0eb10b276025fcb76158'}],
-    }),
-    ('rules_proto', '6.0.2', {
-        'sources': [{
-            'download_filename': '%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + '6.0.2.tar.gz',
-        }],
-        'checksums': [{'rules_proto-6.0.2.tar.gz':
-                       '6fb6767d1bef535310547e03247f7518b03487740c11b6c6adb7952033fe1295'}],
-    }),
-    ('apple_support', '1.17.1', {
-        'sources': _sources_namedotversion,
-        'checksums': [{'apple_support.1.17.1.tar.gz':
-                       'b53f6491e742549f13866628ddffcc75d1f3b2d6987dc4f14a16b242113c890b'}],
-    }),
-    ('toolchains_llvm', '1.2.0', {
-        'sources': _sources_nameminvversion,
-        'checksums': [{'toolchains_llvm-v1.2.0.tar.gz':
-                       'e3fb6dc6b77eaf167cb2b0c410df95d09127cbe20547e5a329c771808a816ab4'}],
-    }),
-    ('bazel-skylib', '1.7.1', {
-        'sources': [{
-            'download_filename': '%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + '1.7.1.tar.gz',
-        }],
-        'checksums': [{'bazel-skylib-1.7.1.tar.gz':
-                       'e3fea03ff75a9821e84199466799ba560dbaebb299c655b5307f4df1e5970696'}],
-    }),
-    ('platforms', '0.0.10', {
-        'checksums': [{'platforms-0.0.10.tar.gz':
-                       '218efe8ee736d26a3572663b374a253c012b716d8af0c07e842e82f238a0a7ee'}],
-    }),
-    ('rules_cc', '0.0.13', {
-        'checksums': [{'rules_cc-0.0.13.tar.gz':
-                       'd9bdd3ec66b6871456ec9c965809f43a0901e692d754885e89293807762d3d80'}],
-    }),
-    ('protobuf', '28.2', {
-        'source_urls': [
-            "https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/protocolbuffers/protobuf/archive/"
-        ],
-        'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v28.2.tar.gz',
-        }],
-        'checksums': [{'protobuf-28.2.tar.gz':
-                       'b2340aa47faf7ef10a0328190319d3f3bee1b24f426d4ce8f4253b6f27ce16db'}],
-    }),
-    ('rules_python', '0.24.0', {
         'checksums': [{
-            'rules_python-0.24.0.tar.gz':
-            '0a8003b044294d7840ac7d9d73eef05d6ceb682d7516781a4ec62eeb34702578'
+            f'aws-c-auth-{_aws_c_auth_version}.tar.gz':
+            'aa6e98864fefb95c249c100da4ae7aed36ba13a8a91415791ec6fad20bec0427',
         }],
     }),
-    ('googleapis', '20240910', {
+    ('aws-c-io', _aws_c_io_version, {
         'sources': [{
-            'download_filename': '32bc03653260356351854429bd7e2dfbf670d352.tar.gz',
-            'filename': '%(name)s-%(version)s-32bc03653260356351854429bd7e2dfbf670d352.tar.gz',
-            'extract_cmd': _extract_cmd + '32bc03653260356351854429bd7e2dfbf670d352.tar.gz',
+            'download_filename': f'v{_aws_c_io_version}.tar.gz',
+            'filename': f'aws-c-io-{_aws_c_io_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'v{_aws_c_io_version}.tar.gz',
         }],
-        'checksums': [{'googleapis-20240910-32bc03653260356351854429bd7e2dfbf670d352.tar.gz':
-                       '46ca6d9a6349c3845334dde2d55d482a11e7c1072a9085b89b6c1e94cdeb2d3e'}],
+        'checksums': [{
+            f'aws-c-io-{_aws_c_io_version}.tar.gz':
+            '65d275bbde1a1d287cdcde62164dc015b9613a5525fe688e972111d8a3b568fb',
+        }],
     }),
-    ('abseil-cpp', '20240722.0', {
-        'source_urls': ['https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/abseil/abseil-cpp/archive'],
+    ('aws-c-http', _aws_c_http_version, {
         'sources': [{
-            'download_filename': '%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + '20240722.0.tar.gz',
+            'download_filename': f'v{_aws_c_http_version}.tar.gz',
+            'filename': f'aws-c-http-{_aws_c_http_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'v{_aws_c_http_version}.tar.gz',
         }],
-        'checksums': [{'abseil-cpp-20240722.0.tar.gz':
-                       'f50e5ac311a81382da7fa75b97310e4b9006474f9560ac46f54a9967f07d4ae3'}],
+        'checksums': [{
+            f'aws-c-http-{_aws_c_http_version}.tar.gz':
+            '18cb2a19a7cd80eafc4c29e6845ec97135a381a1e32fc848bdb8340cc747204a',
+        }],
     }),
-    ('grpc', '1.66.1', {
+    ('aws-c-compression', _aws_c_compression_version, {
         'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v1.66.1.tar.gz',
+            'download_filename': f'v{_aws_c_compression_version}.tar.gz',
+            'filename': f'aws-c-compression-{_aws_c_compression_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'v{_aws_c_compression_version}.tar.gz',
         }],
-        'checksums': [{'grpc-1.66.1.tar.gz': '79ed4ab72fa9589b20f8b0b76c16e353e4cfec1d773d33afad605d97b5682c61'}],
+        'checksums': [{
+            f'aws-c-compression-{_aws_c_compression_version}.tar.gz':
+            'd89fca17a37de762dc34f332d2da402343078da8dbd2224c46a11a88adddf754',
+        }],
     }),
-    ('rules_pkg', '1.0.1', {
+    ('aws-c-common', _aws_c_common_version, {
         'sources': [{
-            'download_filename': '%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + '1.0.1.tar.gz',
+            'download_filename': f'v{_aws_c_common_version}.tar.gz',
+            'filename': f'aws-c-common-{_aws_c_common_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'v{_aws_c_common_version}.tar.gz',
         }],
-        'checksums': [{'rules_pkg-1.0.1.tar.gz': '23005750a27aabfd5975a3d5aeac9542371cbfa24d3ad74e47f80b84547754da'}],
+        'checksums': [{
+            f'aws-c-common-{_aws_c_common_version}.tar.gz':
+            'ecea168ea974f2da73b5a0adc19d9c5ebca73ca4b9f733de7c37fc453ee7d1c2',
+        }],
     }),
-    ('boringssl', '20220720', {
+    ('aws-c-sdkutils', _aws_c_sdkutils_version, {
         'sources': [{
-            'download_filename': '098695591f3a2665fccef83a3732ecfc99acdcdd.tar.gz',
-            'filename': '%(name)s-%(version)s-098695591f3a2665fccef83a3732ecfc99acdcdd.tar.gz',
-            'extract_cmd': _extract_cmd + '098695591f3a2665fccef83a3732ecfc99acdcdd.tar.gz',
+            'download_filename': f'v{_aws_c_sdkutils_version}.tar.gz',
+            'filename': f'aws-c-sdkutils-{_aws_c_sdkutils_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'v{_aws_c_sdkutils_version}.tar.gz',
         }],
-        'checksums': [{'boringssl-20220720-098695591f3a2665fccef83a3732ecfc99acdcdd.tar.gz':
-                       'e141448cf6f686b6e9695f6b6459293fd602c8d51efe118a83106752cf7e1280'}],
+        'checksums': [{
+            f'aws-c-sdkutils-{_aws_c_sdkutils_version}.tar.gz':
+            '5a0489d508341b84eea556e351717bc33524d3dfd6207ee3aba6068994ea6018',
+        }],
     }),
-    ('riegeli', '20231212', {
+    ('aws-c-cal', _aws_c_cal_version, {
         'sources': [{
-            'download_filename': 'e54e4300f61cc113e5da816952d20ae070fe7219.tar.gz',
-            'filename': '%(name)s-%(version)s-e54e4300f61cc113e5da816952d20ae070fe7219.tar.gz',
-            'extract_cmd': _extract_cmd + 'e54e4300f61cc113e5da816952d20ae070fe7219.tar.gz',
+            'download_filename': f'v{_aws_c_cal_version}.tar.gz',
+            'filename': f'aws-c-cal-{_aws_c_cal_version}.tar.gz',
+            'extract_cmd': _extract_cmd_aws_c_cal + f'v{_aws_c_cal_version}.tar.gz',
         }],
-        'checksums': [{'riegeli-20231212-e54e4300f61cc113e5da816952d20ae070fe7219.tar.gz':
-                      'c2a40a1a422fe513faa198b325865022ccfbb1ca6317ef5f51a8b60d7c2bdc4c'}],
+        'checksums': [{
+            f'aws-c-cal-{_aws_c_cal_version}.tar.gz':
+            '516ff370a45bfc49fd6d34a9bd2b1b3e753221046a9e2fbd117341d6f9d39edc',
+        }],
     }),
-    ('half', '2.1.0', {
-        'sources': _sources_nameminversionzip,
-        'checksums': [{'half-2.1.0.zip': 'ad1788afe0300fa2b02b0d1df128d857f021f92ccf7c8bddd07812685fa07a25'}],
+    ('s2n-tls', _s2n_tls_version, {
+        'sources': [{
+            'download_filename': f'v{_s2n_tls_version}.tar.gz',
+            'filename': f's2n-tls-{_s2n_tls_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'v{_s2n_tls_version}.tar.gz',
+        }],
+        'checksums': [{
+            f's2n-tls-{_s2n_tls_version}.tar.gz':
+            '3ab786720ac23b35bcf6f4354659652e2ec8eb20b1a3989e7be93c3e7985ea5e',
+        }],
     }),
-    ('re2', '2024-07-02', {
-        'checksums': [{'re2-2024-07-02.tar.gz': 'eb2df807c781601c14a260a507a5bb4509be1ee626024cb45acbd57cb9d4032b'}],
+    ('bazel_features', _bazel_features_version, {
+        'sources': [{
+            'download_filename': f'v{_bazel_features_version}.tar.gz',
+            'filename': f'bazel_features-{_bazel_features_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'v{_bazel_features_version}.tar.gz',
+        }],
+        'checksums': [{
+            f'bazel_features-{_bazel_features_version}.tar.gz':
+            'bdc12fcbe6076180d835c9dd5b3685d509966191760a0eb10b276025fcb76158',
+        }],
     }),
-    ('data-plane-api', '20240911', {
+    ('rules_proto', _rules_proto_version, {
+        'sources': [{
+            'download_filename': f'{_rules_proto_version}.tar.gz',
+            'filename': f'rules_proto-{_rules_proto_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_rules_proto_version}.tar.gz',
+        }],
+        'checksums': [{
+            f'rules_proto-{_rules_proto_version}.tar.gz':
+            '14a225870ab4e91869652cfd69ef2028277fc1dc4910d65d353b62d6e0ae21f4',
+        }],
+    }),
+    ('apple_support', _apple_support_version, {
+        'sources': [{
+            'filename': f'apple_support.{_apple_support_version}.tar.gz',
+            'extract_cmd': _extract_cmd,
+        }],
+        'checksums': [{
+            f'apple_support.{_apple_support_version}.tar.gz':
+            'b53f6491e742549f13866628ddffcc75d1f3b2d6987dc4f14a16b242113c890b',
+        }],
+    }),
+    ('toolchains_llvm', _toolchains_llvm_version, {
+        'sources': [{
+            'filename': f'toolchains_llvm-v{_toolchains_llvm_version}.tar.gz',
+            'extract_cmd': _extract_cmd,
+        }],
+        'checksums': [{
+            f'toolchains_llvm-v{_toolchains_llvm_version}.tar.gz':
+            'e3fb6dc6b77eaf167cb2b0c410df95d09127cbe20547e5a329c771808a816ab4',
+        }],
+    }),
+    ('bazel-skylib', _bazel_skylib_version, {
+        'sources': [{
+            'download_filename': f'{_bazel_skylib_version}.tar.gz',
+            'filename': f'bazel-skylib-{_bazel_skylib_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_bazel_skylib_version}.tar.gz',
+        }],
+        'checksums': [{
+            f'bazel-skylib-{_bazel_skylib_version}.tar.gz':
+            'e3fea03ff75a9821e84199466799ba560dbaebb299c655b5307f4df1e5970696',
+        }],
+    }),
+    ('platforms', _platforms_version, {
+        'sources': [{
+            'filename': f'platforms-{_platforms_version}.tar.gz',
+            'extract_cmd': _extract_cmd,
+        }],
+        'checksums': [{
+            f'platforms-{_platforms_version}.tar.gz':
+            '218efe8ee736d26a3572663b374a253c012b716d8af0c07e842e82f238a0a7ee',
+        }],
+    }),
+    ('rules_cc', _rules_cc_version, {
         'source_urls': [
-            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/envoyproxy/data-plane-api/archive/'
+            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/bazelbuild/rules_cc/archive/',
         ],
         'sources': [{
-            'download_filename': '19420fea29dd86aa3b25172151f0311476a66599.tar.gz',
-            'filename': '%(name)s-%(version)s-19420fea29dd86aa3b25172151f0311476a66599.tar.gz',
-            'extract_cmd': _extract_cmd + '19420fea29dd86aa3b25172151f0311476a66599.tar.gz',
+            'download_filename': f'{_rules_cc_version}.tar.gz',
+            'filename': f'rules_cc-{_rules_cc_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_rules_cc_version}.tar.gz',
         }],
-        'checksums': [{'data-plane-api-20240911-19420fea29dd86aa3b25172151f0311476a66599.tar.gz':
-                       'd84dcb4d88a961fcf6aa5ea1ff479180bd9e58e41ad82d8dca3beacac2fb3bdc'}],
-    }),
-    ('xds', '20240911', {
-        'source_urls': ['https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/cncf/xds/archive/'],
-        'sources': [{
-            'download_filename': 'b4127c9b8d78b77423fd25169f05b7476b6ea932.tar.gz',
-            'filename': '%(name)s-%(version)s-b4127c9b8d78b77423fd25169f05b7476b6ea932.tar.gz',
-            'extract_cmd': _extract_cmd + 'b4127c9b8d78b77423fd25169f05b7476b6ea932.tar.gz',
+        'checksums': [{
+            f'rules_cc-{_rules_cc_version}.tar.gz':
+            '712d77868b3152dd618c4d64faaddefcc5965f90f5de6e6dd1d5ddcd0be82d42',
         }],
-        'checksums': [{'xds-20240911-b4127c9b8d78b77423fd25169f05b7476b6ea932.tar.gz':
-                       'aa5f1596bbef3f277dcf4700e4c1097b34301ae66f3b79cd731e3adfbaff2f8f'}],
     }),
-    ('cel-spec', '0.16.2', {
-        'sources': [{
-            'download_filename': 'v%(version)s.zip',
-            'filename': '%(name)s-%(version)s.zip',
-            'extract_cmd': _extract_cmd + 'v0.16.2.zip',
-        }],
-        'checksums': [{'cel-spec-0.16.2.zip': '13234d9622ef4b7660b6259498a6f02f001fd260d42fa21e67b28fd4c4e0d344'}],
-    }),
-    # nlohmann_json pinned by tensorstore (third_party/com_github_nlohmann_json)
-    ('json', '3.11.3', {
-        'easyblock': 'Binary',
+    ('rules_license', _rules_license_version, {
         'source_urls': [
-            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/nlohmann/json/archive/'
+            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/bazelbuild/rules_license/archive/',
         ],
         'sources': [{
-            'download_filename': 'v%(version)s.zip',
-            'filename': '%(name)s-%(version)s.zip',
-            'extract_cmd': _extract_cmd + 'v3.11.3.zip',
+            'download_filename': f'{_rules_license_version}.tar.gz',
+            'filename': f'rules_license-{_rules_license_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_rules_license_version}.tar.gz',
         }],
-        'checksums': [{'json-3.11.3.zip':
-                       '04022b05d806eb5ff73023c280b68697d12b93e1b7267a0b22a1a39ec7578069'}],
+        'checksums': [{
+            f'rules_license-{_rules_license_version}.tar.gz':
+            '75759939aef3aeb726e801417a883deefadadb7fea49946a1f5bb74a5162e81e',
+        }],
     }),
-    # pybind11 pinned by tensorstore (third_party/com_github_pybind_pybind11);
-    # provided via distdir since no matching pybind11 module exists for this toolchain
-    ('pybind11', '2.13.6', {
-        # explicit easyblock: default_easyblock is only a fallback, and the
-        # name-matched pybind11 easyblock would try to actually build it
-        'easyblock': 'Binary',
+    ('protobuf', _protobuf_version, {
         'source_urls': [
-            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/pybind/pybind11/archive/'
+            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/protocolbuffers/protobuf/archive/',
         ],
         'sources': [{
-            'download_filename': 'v%(version)s.tar.gz',
-            'filename': '%(name)s-%(version)s.tar.gz',
-            'extract_cmd': _extract_cmd + 'v2.13.6.tar.gz',
+            'download_filename': f'v{_protobuf_version}.tar.gz',
+            'filename': f'protobuf-{_protobuf_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'v{_protobuf_version}.tar.gz',
         }],
-        'checksums': [{'pybind11-2.13.6.tar.gz':
-                       'e08cb87f4773da97fa7b5f035de8763abc656d87d5773e62f6da0587d1f0ec20'}],
+        'checksums': [{
+            f'protobuf-{_protobuf_version}.tar.gz':
+            '07a43d88fe5a38e434c7f94129cad56a4c43a51f99336074d0799c2f7d4e44c5',
+        }],
+    }),
+    ('rules_python', _rules_python_version, {
+        'source_urls': [
+            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/bazelbuild/'
+            'rules_python/releases/download/%s/' % _rules_python_version,
+        ],
+        'sources': [{
+            'filename': f'rules_python-{_rules_python_version}.tar.gz',
+            'extract_cmd': _extract_cmd,
+        }],
+        'checksums': [{
+            f'rules_python-{_rules_python_version}.tar.gz':
+            '0a8003b044294d7840ac7d9d73eef05d6ceb682d7516781a4ec62eeb34702578',
+        }],
+    }),
+    ('googleapis', _googleapis_version, {
+        'sources': [{
+            'download_filename': f'{_googleapis_commit}.tar.gz',
+            'filename': f'googleapis-{_googleapis_version}-{_googleapis_commit}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_googleapis_commit}.tar.gz',
+        }],
+        'checksums': [{
+            f'googleapis-{_googleapis_version}-{_googleapis_commit}.tar.gz':
+            '46ca6d9a6349c3845334dde2d55d482a11e7c1072a9085b89b6c1e94cdeb2d3e',
+        }],
+    }),
+    ('abseil-cpp', _abseil_cpp_version, {
+        'source_urls': [
+            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/abseil/abseil-cpp/archive/',
+        ],
+        'sources': [{
+            'download_filename': f'{_abseil_cpp_commit}.tar.gz',
+            'filename': f'abseil-cpp-{_abseil_cpp_version}-{_abseil_cpp_commit}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_abseil_cpp_commit}.tar.gz',
+        }],
+        'checksums': [{
+            f'abseil-cpp-{_abseil_cpp_version}-{_abseil_cpp_commit}.tar.gz':
+            '7cef7cd3560de3a079caa84846127ed0fce6c6847734a10ac91ef66bc700235f',
+        }],
+    }),
+    ('grpc', _grpc_version, {
+        'sources': [{
+            'download_filename': f'v{_grpc_version}.tar.gz',
+            'filename': f'grpc-{_grpc_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'v{_grpc_version}.tar.gz',
+        }],
+        'checksums': [{
+            f'grpc-{_grpc_version}.tar.gz':
+            '4a8aa99d5e24f80ea6b7ec95463e16af5bd91aa805e26c661ef6491ae3d2d23c',
+        }],
+    }),
+    ('rules_pkg', _rules_pkg_version, {
+        'sources': [{
+            'download_filename': f'{_rules_pkg_version}.tar.gz',
+            'filename': f'rules_pkg-{_rules_pkg_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_rules_pkg_version}.tar.gz',
+        }],
+        'checksums': [{
+            f'rules_pkg-{_rules_pkg_version}.tar.gz':
+            '23005750a27aabfd5975a3d5aeac9542371cbfa24d3ad74e47f80b84547754da',
+        }],
+    }),
+    ('boringssl', _boringssl_version, {
+        'source_urls': [
+            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/google/boringssl/archive/refs/tags/',
+        ],
+        'sources': [{
+            'download_filename': f'{_boringssl_version}.tar.gz',
+            'filename': f'boringssl-{_boringssl_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_boringssl_version}.tar.gz',
+        }],
+        'checksums': [{
+            f'boringssl-{_boringssl_version}.tar.gz':
+            'b2d64c4d52c505d60b0fb86833568dc4762445910d7a7757ff9b172e5556cb01',
+        }],
+    }),
+    ('riegeli', _riegeli_version, {
+        'sources': [{
+            'download_filename': f'{_riegeli_commit}.tar.gz',
+            'filename': f'riegeli-{_riegeli_version}-{_riegeli_commit}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_riegeli_commit}.tar.gz',
+        }],
+        'checksums': [{
+            f'riegeli-{_riegeli_version}-{_riegeli_commit}.tar.gz':
+            '0ca5be90a2e184fc2a9590e804c476a004f04b48c40ca488a6b608fcd224b32f',
+        }],
+    }),
+    ('half', _half_version, {
+        'sources': [{
+            'filename': f'half-{_half_version}.zip',
+            'extract_cmd': _extract_cmd,
+        }],
+        'checksums': [{
+            f'half-{_half_version}.zip':
+            '76ddbf406e9d9b772ec73af2bf925b38b290b4390cc4064720a08d4b4bca0aa9',
+        }],
+    }),
+    ('re2', _re2_version, {
+        'sources': [{
+            'filename': f're2-{_re2_version}.tar.gz',
+            'extract_cmd': _extract_cmd,
+        }],
+        'checksums': [{
+            f're2-{_re2_version}.tar.gz':
+            'eb2df807c781601c14a260a507a5bb4509be1ee626024cb45acbd57cb9d4032b',
+        }],
+    }),
+    ('xds', _xds_version, {
+        'source_urls': [
+            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/cncf/xds/archive/',
+        ],
+        'sources': [{
+            'download_filename': f'{_xds_commit}.tar.gz',
+            'filename': f'xds-{_xds_version}-{_xds_commit}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_xds_commit}.tar.gz',
+        }],
+        'checksums': [{
+            f'xds-{_xds_version}-{_xds_commit}.tar.gz':
+            '557cb4aecb5dde1fee6a9eda2ce18704226d2b8aa279892dd1327526259e086a',
+        }],
+    }),
+    ('cel-spec', _cel_spec_version, {
+        'sources': [{
+            'download_filename': f'v{_cel_spec_version}.zip',
+            'filename': f'cel-spec-{_cel_spec_version}.zip',
+            'extract_cmd': _extract_cmd + f'v{_cel_spec_version}.zip',
+        }],
+        'checksums': [{
+            f'cel-spec-{_cel_spec_version}.zip':
+            '13234d9622ef4b7660b6259498a6f02f001fd260d42fa21e67b28fd4c4e0d344',
+        }],
+    }),
+    ('envoy_api', _envoy_api_version, {
+        'source_urls': [
+            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/envoyproxy/data-plane-api/archive/',
+        ],
+        'sources': [{
+            'download_filename': f'{_envoy_api_commit}.tar.gz',
+            'filename': f'envoy_api-{_envoy_api_version}-{_envoy_api_commit}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_envoy_api_commit}.tar.gz',
+        }],
+        'checksums': [{
+            f'envoy_api-{_envoy_api_version}-{_envoy_api_commit}.tar.gz':
+            'a9f1eb76c8e8153ec81ce04403c8829b42786060b7bb1dcc91b597220b71eaf6',
+        }],
+    }),
+    ('rules_nasm', _rules_nasm_version, {
+        'source_urls': [
+            'https://storage.googleapis.com/tensorstore-bazel-mirror/github.com/morganwl/rules_nasm/archive/',
+        ],
+        'sources': [{
+            'download_filename': f'{_rules_nasm_version}.tar.gz',
+            'filename': f'rules_nasm-{_rules_nasm_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'{_rules_nasm_version}.tar.gz',
+        }],
+        'checksums': [{
+            f'rules_nasm-{_rules_nasm_version}.tar.gz':
+            'cd79c1ccff2d290f91ea3d23b42df246865dc88e1247cf193999e3e1f4cd6886',
+        }],
+    }),
+    ('rules_shell', _rules_shell_version, {
+        'sources': [{
+            'download_filename': f'v{_rules_shell_version}.tar.gz',
+            'filename': f'rules_shell-{_rules_shell_version}.tar.gz',
+            'extract_cmd': _extract_cmd + f'v{_rules_shell_version}.tar.gz',
+        }],
+        'checksums': [{
+            f'rules_shell-{_rules_shell_version}.tar.gz':
+            '3e114424a5c7e4fd43e0133cc6ecdfe54e45ae8affa14fadd839f29901424043',
+        }],
     }),
 ]
 # make any bazel download fail:
@@ -403,6 +548,7 @@ _preinstall_bazel_exports_buildopts = 'export TENSORSTORE_BAZEL_BUILD_OPTIONS="'
 _preinstall_bazel_exports_buildopts += '$(for i in  $CFLAGS;do echo --copt=$i; done) '  # pass CFLAGS to Bazel as copts
 _preinstall_bazel_exports_buildopts += _bzl_syslib_opts
 _preinstall_bazel_exports_buildopts += ' --distdir=%s' % _dist_dir
+_preinstall_bazel_exports_buildopts += ' --distdir=%s' % _dist_dir_aws_c_cal
 # pass $TMPDIR from host into sandbox used by Bazel,
 # required when using RPATH linking because of RPATH wrapper scripts;
 # see also https://github.com/bazelbuild/bazel/issues/19915
@@ -419,12 +565,12 @@ _preinstall_opts += _preinstall_bazel_exports_syslibs + ' '
 exts_list = [
     (name, version, {
         'installopts': '-v',
-        'patches': [
-            'tensorstore-0.1.69_bazelisk.patch',
-        ],
+        'patches': ['tensorstore-0.1.69_bazelisk.patch'],
         'preinstallopts': _preinstall_opts,
+        'testinstall': True,
+        'runtest': 'python -s -m pytest -v python/tensorstore/tests',
         'checksums': [
-            {'tensorstore-0.1.72.tar.gz': '763d7f6898711783f199c8226a9c0b259546f5c6d9b4dc0ad3c9e39627060022'},
+            {'tensorstore-0.1.76.tar.gz': 'ed0d565e7a038a84b1b5b5d9f7397caec200b53941d8889f44b7f63dd6abffe7'},
             {'tensorstore-0.1.69_bazelisk.patch': 'f7bb3dc7265597c6ae999df8b17d6e7300c0c0ce307579909a2af8738d78026f'},
         ],
     }),
