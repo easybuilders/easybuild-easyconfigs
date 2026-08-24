@@ -12,7 +12,12 @@ toolchainopts = {'cstd': 'c++17'}
 
 source_urls = [GNU_SOURCE]
 sources = [SOURCELOWER_TAR_GZ]
-checksums = ['0636554b05996997e431caad4422c00386d2d7c68900472700fecf5ffeb7c991']
+patches = ['%(name)s-%(version)s_fix-single-prec-qr-test-tol.patch']
+checksums = [
+    {'octave-9.2.0.tar.gz': '0636554b05996997e431caad4422c00386d2d7c68900472700fecf5ffeb7c991'},
+    {'Octave-9.2.0_fix-single-prec-qr-test-tol.patch':
+     'bb1c14d26b3ebee3ae504155f4e7f0615a38323a1fd37f8389472edea4bf9a9d'},
+]
 
 builddependencies = [
     ('Bison', '3.8.2'),
@@ -43,7 +48,9 @@ dependencies = [
     ('Qhull', '2020.2'),
     ('Qt6', '6.6.3'),
     ('HDF5', '1.14.3'),
-    ('qrupdate', '1.1.2'),
+    # explicitly use the ifort-compiled qrupdate: the GCCcore (gfortran) build
+    # segfaults when its zdotc/cdotc calls resolve to MKL's Intel-convention BLAS
+    ('qrupdate', '1.1.2', '', ('intel-compilers', '2023.2.1')),
     ('SuiteSparse', '7.7.0'),
     ('makeinfo', '7.1'),
     ('libsndfile', '1.2.2'),
@@ -52,7 +59,6 @@ dependencies = [
     ('RapidJSON', '1.1.0-20240409'),
 ]
 
-preconfigopts = 'LDFLAGS="$LDFLAGS -lgfortran"'
 configopts = '--disable-docs '
 # correct for both GCC and Intel compilers
 configopts += '--enable-fortran-calling-convention=gfortran '
