@@ -1,0 +1,19 @@
+The test fails with
+> RuntimeError: Expected to find "buf0 = torch.ops._c10d_functional.all_gather_into_tensor_coalesced.default([arg3_1, arg2_1, arg1_1, arg0_1]" but did not find it
+
+Also upstream: https://github.com/pytorch/pytorch/issues/146806
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/distributed/test_c10d_functional_native.py b/test/distributed/test_c10d_functional_native.py
+index bafc781b591..60fc47f63e4 100644
+--- a/test/distributed/test_c10d_functional_native.py
++++ b/test/distributed/test_c10d_functional_native.py
+@@ -997,7 +997,7 @@ class CompileTest(TestCase):
+         AOTIRunnerUtil.run(func, (arg,))
+         torch.cuda.synchronize()
+ 
+-    @unittest.skipIf(not HAS_GPU, "Inductor+gpu needs triton and recent GPU arch")
++    @unittest.skip("Fails")
+     @fresh_cache()
+     def test_inductor_all_gather_into_tensor_coalesced(self):
+         def func(args: list[torch.Tensor]) -> torch.Tensor:
