@@ -36,6 +36,14 @@ dependencies = [
     ('plotly.py', '6.5.0'),
 ]
 
+_torax_test_opts = 'TORAX_JAXTYPING=True TORAX_ERRORS_ENABLED=True '
+_torax_runtest = (
+    _torax_test_opts
+    + 'pytest -vv -n %(parallel)s --ignore=torax/tests/sim_no_compile_test.py . && '
+    + _torax_test_opts
+    + 'JAX_DISABLE_JIT=True pytest -vv -n %(parallel)s torax/tests/sim_no_compile_test.py'
+)
+
 exts_list = [
     # --- Indirect deps ---
     # chex/jaxtyping and their deps no longer come via Optax (>= 0.2.6 dropped chex)
@@ -93,6 +101,8 @@ exts_list = [
         'preinstallopts': "sed -i 's/imas-python==2.1.0/imas-python>=2.1.0/' pyproject.toml && ",
         'source_urls': ['https://github.com/%(github_account)s/%(namelower)s/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
+        'runtest': _torax_runtest,
         'checksums': ['4c3b599d5510a3a4f04d5e28c3807ab2aa8c4db50d715683411234e85083022e'],
     }),
 ]
