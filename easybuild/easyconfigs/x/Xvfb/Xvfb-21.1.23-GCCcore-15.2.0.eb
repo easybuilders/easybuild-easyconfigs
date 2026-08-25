@@ -1,0 +1,126 @@
+easyblock = 'Bundle'
+
+name = 'Xvfb'
+version = '21.1.23'
+
+homepage = 'https://www.x.org/releases/X11R7.6/doc/man/man1/Xvfb.1.xhtml'
+description = """Xvfb is an X server that can run on machines with no display hardware and no physical input devices.
+ It emulates a dumb framebuffer using virtual memory."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('pkgconf', '2.5.1'),
+    ('Python', '3.14.2'),
+    ('Meson', '1.10.2'),
+    ('Ninja', '1.13.2'),
+    ('libxslt', '1.1.45'),
+    ('gettext', '0.26'),
+    ('Bison', '3.8.2'),
+]
+
+dependencies = [
+    ('X11', '20260518'),
+    ('pixman', '0.46.4'),
+    ('libdrm', '2.4.133'),
+    ('OpenGL', '2026.05'),
+    ('nettle', '4.0'),
+    ('libunwind', '1.8.3'),
+    ('XZ', '5.8.2'),
+]
+
+default_easyblock = 'ConfigureMake'
+
+local_xvfb_configopts = "--enable-xvfb --disable-xorg --disable-xnest --disable-xwin "
+local_xvfb_configopts += "--disable-dri --disable-dri2 --disable-dri3 --disable-libunwind "
+local_xvfb_configopts += "--with-fontrootdir=%(installdir)s/share/fonts/X11"
+
+# use 'make V=1' to see compiler commands
+local_xvfb_buildopts = "V=1 "
+
+# use static libraries for nettle & libunwind, so avoid errors like "No rule to make target '-lnettle'"
+local_xvfb_buildopts += 'SHA1_LIBS="$EBROOTNETTLE/lib*/libnettle.a" '
+local_xvfb_buildopts += 'LIBUNWIND_LIBS="$EBROOTLIBUNWIND/lib*/libunwind.a $EBROOTXZ/lib*/liblzma.a"'
+
+default_component_specs = {
+    'sources': [SOURCE_TAR_GZ],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+local_font_misc_preconfigopts = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
+local_font_misc_preconfigopts += "export PATH=%(installdir)s/bin:$PATH && "
+
+components = [
+    ('mkfontscale', '1.2.4', {
+        'source_urls': ['https://www.x.org/archive/individual/app/'],
+        'checksums': ['076cedba00195e81d055fb39eff94c057f97326ac2403cf71460fc613cd200bf'],
+    }),
+    ('mkfontdir', '1.0.7', {
+        'source_urls': ['https://www.x.org/archive/individual/app/'],
+        'checksums': ['bccc5fb7af1b614eabe4a22766758c87bfc36d66191d08c19d2fa97674b7b5b7'],
+    }),
+    ('bdftopcf', '1.1', {
+        'source_urls': ['https://www.x.org/archive/individual/app/'],
+        'checksums': ['699d1a62012035b1461c7f8e3f05a51c8bd6f28f348983249fb89bbff7309b47'],
+    }),
+    ('font-util', '1.4.2', {
+        'source_urls': ['https://www.x.org/archive/individual/font/'],
+        'checksums': ['6ccf9a65f4c229c611680251f1125f4c9a2071eeb13433c66ac146fe2d4c0d6c'],
+    }),
+    ('font-misc-misc', '1.1.3', {
+        'source_urls': ['https://www.x.org/archive/individual/font/'],
+        'checksums': ['bece4a9482b3cb6f7fad2164fd3b394d22dfe1ad2f96f60030a703bcff30f5a5'],
+        'preconfigopts': local_font_misc_preconfigopts,
+    }),
+    ('xkbcomp', '1.5.0', {
+        'source_urls': ['https://www.x.org/archive/individual/app/'],
+        'checksums': ['d070694dd8d94714aa1da3e3590b75084a4b183da3980866aedd68835954b97c'],
+    }),
+    ('xkeyboard-config', '2.48', {
+        'easyblock': 'MesonNinja',
+        'source_urls': ['https://www.x.org/archive/individual/data/xkeyboard-config/'],
+        'sources': [SOURCE_TAR_XZ],
+        'checksums': ['b77041324f0109f77161ee43743fe04baa485866af8460d31e476ad3f7648fd5'],
+        'configopts': '-Dxorg-rules-symlinks=true',
+    }),
+    ('xauth', '1.1.5', {
+        'source_urls': ['https://www.x.org/releases/individual/app/'],
+        'checksums': ['cf94d3ee1fac0b3d9f9fb8ec5f95bd5f82e7958f929f092ec98c00fc2b7aef68'],
+    }),
+    ('libxcvt', '0.1.3', {
+        'easyblock': 'MesonNinja',
+        'source_urls': ['https://www.x.org/archive/individual/lib/'],
+        'sources': [SOURCE_TAR_XZ],
+        'checksums': ['a929998a8767de7dfa36d6da4751cdbeef34ed630714f2f4a767b351f2442e01'],
+    }),
+    (name, version, {
+        'source_urls': ['https://www.x.org/releases/individual/xserver/'],
+        'sources': ['xorg-server-%(version)s.tar.gz'],
+        'patches': [('xvfb-run', '.')],
+        'checksums': [
+            'd81f4bea5eaf7e5c299bfeb52d54bab7e17ea72997b10fc9907712fccf9a64d5',  # xorg-server-21.1.23.tar.gz
+            'fd6d13182b77871d4f65fccdaebb8a72387a726426066d3f8e6aa26b010ea0e8',  # xvfb-run
+        ],
+        'start_dir': 'xorg-server-%(version)s',
+        'configopts': local_xvfb_configopts,
+        'buildopts': local_xvfb_buildopts,
+        'installopts': local_xvfb_buildopts,
+    }),
+]
+
+# enable exec permissions for xvfb-run after copying;
+# need to also enable user write permissions on xvfb-run to ensure that copying with preserved permissions works
+postinstallcmds = ["chmod u+w xvfb-run && cp -a xvfb-run %(installdir)s/bin/ && chmod a+x %(installdir)s/bin/xvfb-run"]
+
+sanity_check_paths = {
+    'files': ['bin/Xvfb', 'bin/xvfb-run'],
+    'dirs': ['lib/xorg', 'share/fonts/X11/misc', 'share/fonts/X11/util'],
+}
+
+sanity_check_commands = [
+    "xvfb-run --help",
+    "xvfb-run --error-file %(builddir)s/xvfb-run-test.err echo hello",
+]
+
+moduleclass = 'vis'
