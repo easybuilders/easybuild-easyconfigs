@@ -35,6 +35,7 @@ import shutil
 import stat
 import tempfile
 from collections import defaultdict
+from typing import List
 from unittest import TestCase, TestLoader, main, mock, skip
 from urllib.request import Request, urlopen
 
@@ -47,7 +48,7 @@ from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
-from easybuild.framework.easyconfig.easyconfig import resolve_template
+from easybuild.framework.easyconfig.easyconfig import EasyConfig, resolve_template
 from easybuild.framework.easyconfig.parser import (
     EasyConfigParser, fetch_parameters_from_easyconfig,
     DEPRECATED_EASYCONFIG_PARAMETERS,
@@ -254,7 +255,7 @@ class EasyConfigTest(TestCase):
                     EasyConfigTest._parsed_easyconfigs.extend(ec)
                 changed_ecs.append(ec[0]['ec'])
             else:
-                raise RuntimeError("Failed to find parsed easyconfig for %s" % os.path.basename(ec_file))
+                raise RuntimeError("Failed to find parsed easyconfig for " + os.path.basename(ec_file))
         EasyConfigTest._changed_ecs = changed_ecs
 
     def _get_changed_patches(self):
@@ -272,38 +273,38 @@ class EasyConfigTest(TestCase):
         EasyConfigTest._changed_patches = changed_patches + added_patches
 
     @property
-    def parsed_easyconfigs(self):
+    def parsed_easyconfigs(self) -> List[EasyConfig]:
         # parse all easyconfigs if they haven't been already
         EasyConfigTest.parse_all_easyconfigs()
         return EasyConfigTest._parsed_easyconfigs
 
     @property
-    def ordered_specs(self):
+    def ordered_specs(self) -> List[dict]:
         # Resolve dependencies if not done
         if EasyConfigTest._ordered_specs is None:
             EasyConfigTest.resolve_all_dependencies()
         return EasyConfigTest._ordered_specs
 
     @property
-    def changed_ecs_filenames(self):
+    def changed_ecs_filenames(self) -> List[str]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs_filenames
 
     @property
-    def added_ecs_filenames(self):
+    def added_ecs_filenames(self) -> List[str]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._added_ecs_filenames
 
     @property
-    def changed_ecs(self):
+    def changed_ecs(self) -> List[EasyConfig]:
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs
 
     @property
-    def changed_patches(self):
+    def changed_patches(self) -> List[str]:
         if EasyConfigTest._changed_patches is None:
             self._get_changed_patches()
         return EasyConfigTest._changed_patches
@@ -456,7 +457,8 @@ class EasyConfigTest(TestCase):
             ('Perl', '-minimal'),
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             # Same for HDF5 with -serial versionsuffix which is used in HDF5 for Python (h5py)
-            (['FFTW', 'imkl', 'HDF5'], '-serial'),
+            # Also for h5py which is used in autoCAS
+            (['FFTW', 'imkl', 'HDF5', 'h5py'], '-serial'),
             # filter out BLIS and libFLAME with -amd versionsuffix
             # (AMD forks, used in gobff/*-amd toolchains)
             (['BLIS', 'libFLAME'], '-amd'),
@@ -598,12 +600,21 @@ class EasyConfigTest(TestCase):
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
             # autoCAS requires serial h5py
             'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS'])],
+            # IMAS-Python 2.0.0 is still used by IMAS-ParaView 2.1.0
+            # (other 2023b easyconfigs use IMAS-Python 2.3.0)
+            'IMAS-Python': [(r'2\.0\.0', [r'IMAS-ParaView-2\.1\.0-foss-2023b'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
-            # Java 21 is used as dep for Octave 9.2.0, MDSplus 7.1, JPype 1.5.0 and IMAS-* modules
-            # (other 2023b easyconfigs use Java 11)
-            'Java': [(r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
-                              r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0'])],
+            'Java': [
+                # AnnotSV 3.5.10 requires Java 17 (other 2023b easyconfigs use Java 11)
+                (r'17', [
+                    # EC's that requires Java 17 in 2023b easyconfigs, while others use Java 11
+                    r'AnnotSV-3\.5\.10-foss-2023b', r'GATK-4\.6\.0\.0-GCCcore-13\.2\.0', r'Spark-3\.5\.4-foss-2023b',
+                ]),
+                # Java 21 is used by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* modules
+                (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
+                         r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
+            ],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
             'libxc': [
@@ -696,7 +707,7 @@ class EasyConfigTest(TestCase):
             for key in list(dep_vars):
                 for version_pattern, parents in alt_dep_versions[dep]:
                     # filter out known alternative dependency versions
-                    if re.search('^version: %s' % version_pattern, key):
+                    if re.search(f'^version: {version_pattern}', key):
                         # only filter if the easyconfig using this dep variants is known
                         if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
                             dep_vars.pop(key)
@@ -934,7 +945,7 @@ class EasyConfigTest(TestCase):
                 if res:
                     tc_gen = res.group('tc_gen')
                     all_deps_tc_gen = all_deps.setdefault(tc_gen, {})
-                    for dep_name, dep_ver, dep_versuff, dep_mod_name in get_deps_for(ec):
+                    for dep_name, dep_ver, dep_versuff, _dep_mod_name in get_deps_for(ec):
                         dep_variants = all_deps_tc_gen.setdefault(dep_name, {})
                         # a variant is defined by version + versionsuffix
                         variant = "version: %s; versionsuffix: %s" % (dep_ver, dep_versuff)
@@ -1006,6 +1017,7 @@ class EasyConfigTest(TestCase):
             '15.2': '2026.1',
             '15.3': None,
             '16.1': None,
+            '16.2': None,
         }
 
         # map intel-compilers to toolchain generations
@@ -1250,8 +1262,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.3.1'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.3.1.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.4.0'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.4.0.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1530,8 +1542,9 @@ class EasyConfigTest(TestCase):
                 https_url = http_url.replace('http://', 'https://')
                 try:
                     req = Request(https_url, None, {'User-Agent': 'EasyBuild', 'Accept': '*/*'})
-                    https_url_works = bool(urlopen(req, timeout=5))
-                except Exception:
+                    with urlopen(req, timeout=5) as u:
+                        https_url_works = bool(u)
+                except Exception:  # pylint: disable=broad-exception-caught
                     https_url_works = False
             checked_urls[http_url] = https_url_works
 
@@ -1779,14 +1792,10 @@ def template_easyconfig_test(self, spec):
         """["']sanity_pip_check["']: True""",
         """["']use_pip["']: True""",
     ]
-    hits = []
-    for pattern in patterns:
-        regex = re.compile(pattern, re.M)
-        hits += regex.findall(ec.rawtxt)
 
-    error_msg = "download_dep_fail, sanity_pip_check, use_pip should not be set to True "
-    error_msg += "(already enabled by default in PythonPackage easyblock)"
-    self.assertFalse(hits, error_msg)
+    if any(re.search(pattern, ec.rawtxt, re.M) for pattern in patterns):
+        failing_checks.append("download_dep_fail, sanity_pip_check, use_pip should not be set to True " +
+                              "(already enabled by default in PythonPackage easyblock)")
 
     # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
     old_urls = [
