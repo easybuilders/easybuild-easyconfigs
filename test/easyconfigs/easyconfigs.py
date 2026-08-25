@@ -611,9 +611,11 @@ class EasyConfigTest(TestCase):
                     # EC's that requires Java 17 in 2023b easyconfigs, while others use Java 11
                     r'AnnotSV-3\.5\.10-foss-2023b', r'GATK-4\.6\.0\.0-GCCcore-13\.2\.0', r'Spark-3\.5\.4-foss-2023b',
                 ]),
-                # Java 21 is used by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* modules
+                # Java 21 is used as dep by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* on 2023b
                 (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
                          r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
+                # Java 25 is used as dep for MDSplus 7.1 and IMAS-* on 2025b
+                (r'25', [r'MDSplus-7\.1.*-GCCcore-14\.3\.0', r'IMAS-.*-2025b', r'IMAS-.*-GCCcore-14\.3\.0']),
             ],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
