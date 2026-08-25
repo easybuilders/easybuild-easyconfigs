@@ -1,0 +1,137 @@
+easyblock = 'PythonBundle'
+
+name = 'OpenForceField-Toolkit'
+version = '0.18.1'
+
+homepage = 'https://github.com/openforcefield/openff-toolkit'
+description = """The Open Force Field Toolkit provides implementations of the SMIRNOFF format,
+parameterization engine, and other tools."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+_ambertools_version = '26.1'
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('Python-bundle-PyPI', '2026.04'),
+    ('SciPy-bundle', '2026.05'),
+    ('networkx', '3.6.1'),
+    ('pydantic', '2.13.4'),
+    ('tqdm', '4.67.3'),
+    ('OpenMM', '8.5.2'),
+    ('PyYAML', '6.0.3'),
+    ('RDKit', '2026.03.4'),
+    ('MDTraj', '1.11.1'),
+    ('JupyterNotebook', '7.5.7'),
+    ('AmberTools', _ambertools_version),
+    ('Pint', '0.25.3'),
+    ('nglview', '4.0.1'),
+]
+
+# fix version in OpenForceFields-Utilities
+_utilities_fix = (
+    r"""sed -i -e '/"versioningit",/d' -e 's/^dynamic = \["version"\]/version = "%(version)s"/' pyproject.toml && """
+)
+# fix version and license in OpenForceFields-Toolkit
+_toolkit_fix = (
+    "sed -i -e "
+    r"""'s/, "versioningit" //' -e """
+    r"""'s/^dynamic = \[ "version" \]/version = "%(version)s"/' """
+    "pyproject.toml && "
+)
+# fix AmberTools version in GLOBAL_TOOLKIT_REGISTRY
+_fix_ambertools_version = (
+    f"""sed -i 's/get_ambertools_version()/"{_ambertools_version}"/' openff/toolkit/utils/ambertools_wrapper.py && """
+)
+
+_bson_fix = (
+    "sed -i -e 's/import pkgutil/import importlib.util/' "
+    "-e 's/pkgutil[.]find_loader/importlib.util.find_spec/' setup.py && "
+)
+
+exts_list = [
+    ('cachetools', '7.1.4', {
+        'checksums': ['437f55a4e0c1b01a4f3077cc470e6991d47430970e36fbcb77e2be0df4fc1cd6'],
+    }),
+    ('python-constraint', '1.4.0', {
+        'modulename': 'constraint',
+        'source_tmpl': '%(name)s-%(version)s.tar.bz2',
+        'checksums': ['501d6f17afe0032dfc6ea6c0f8acc12e44f992733f00e8538961031ef27ccb8e'],
+    }),
+    ('bson', '0.5.10', {
+        'preinstallopts': _bson_fix,
+        'checksums': ['d6511b2ab051139a9123c184de1a04227262173ad593429d21e443d6462d6590'],
+    }),
+    ('xmltodict', '1.0.2', {
+        'checksums': ['54306780b7c2175a3967cad1db92f218207e5bc1aba697d887807c0fb68b7649'],
+    }),
+    ('mda-xdrlib', '0.2.0', {
+        'checksums': ['f26f7158a83c32b96d15b530fce2cbc1190c4b7024e41faa4ab3e3db74e272af'],
+    }),
+    ('pyedr', '0.8.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['3e61705d4460bae9fd1f4245a11bdd433ac7fc6084ebd0ab8b8f5b6bcfeb5ad0'],
+    }),
+    ('openff-packmol', '0.1', {
+        'modulename': 'openff.packmol',
+        'preinstallopts': 'export SETUPTOOLS_SCM_PRETEND_VERSION=%(version)s && ',
+        'source_urls': ['https://github.com/openforcefield/%(name)s/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['69e33df25ff4266a83dbb06de4dea6c8199e2e6e903823762ed77d85395bc53e'],
+    }),
+    ('openforcefields', '2026.1.0', {
+        'source_urls': ['https://github.com/openforcefield/openff-forcefields/archive/'],
+        'sources': [{'download_filename': '2026.01.0.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['5289bcfcd9371299152e3f8372447d4ca237d631d77326e85a1a814ebc8efdc5'],
+    }),
+    ('openff-amber-ff-ports', '2025.9.0', {
+        'modulename': 'openff.amber_ff_ports',
+        'source_urls': ['https://github.com/openforcefield/%(name)s/archive/'],
+        'sources': [{'download_filename': '2025.09.0.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['17a9f1674c3529742e8fc10c8ccdde375ba152c583a75d6d7a38a22c64ab58f3'],
+    }),
+    ('openff-utilities', '0.1.16', {
+        'modulename': 'openff.utilities',
+        'preinstallopts': _utilities_fix,
+        'source_urls': ['https://github.com/openforcefield/%(name)s/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['6036fd8efa1cc1aebe5e27b1b9ab5c80bfab770ad1d7bc78ee02c81697adfdae'],
+    }),
+    ('openff-units', '0.4.0', {
+        'modulename': 'openff.units',
+        'preinstallopts': 'export SETUPTOOLS_SCM_PRETEND_VERSION=%(version)s && ',
+        'source_urls': ['https://github.com/openforcefield/%(name)s/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['8df8ec4307769bc6473b87c0641a8eafb56eef4ff87cc10ba05eb6de362c26a6'],
+    }),
+    ('openff-interchange', '0.5.3', {
+        'modulename': 'openff.interchange',
+        'preinstallopts': 'export SETUPTOOLS_SCM_PRETEND_VERSION=%(version)s && ',
+        'patches': ['OpenFF-Interchange-0.5.3_pydantic-2.12.patch'],
+        'source_urls': ['https://github.com/openforcefield/%(name)s/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': [
+            {'openff-interchange-0.5.3.tar.gz': '78247c40e2ae6af6ad1cf8775f854e326fdd7513c9e783eee690f5fd1ef2c599'},
+            {'OpenFF-Interchange-0.5.3_pydantic-2.12.patch':
+             '7a58e737b589716ac6599955ce67e3d8c9f4319413078614ce7340e85dbfde32'},
+        ],
+    }),
+    ('openff-toolkit', version, {
+        'modulename': 'openff.toolkit',
+        'preinstallopts': f"{_toolkit_fix}{_fix_ambertools_version}",
+        'source_urls': ['https://github.com/openforcefield/%(name)s/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['710ea5d508bf27492ae57d8506f167fba20738afdff0e91eb9923e5291e615a9'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -s -c 'from openff.toolkit import Molecule, Topology, ForceField'",
+    "python -s -c 'from openff.interchange import Interchange'",
+    "python -s -c 'from openff.units import unit'",
+    "python -s -c 'from openff.interchange.components.mdconfig import MDConfig'",
+    "python -s -c 'from openff.interchange.models import TopologyKey'",
+    "python -s -c 'from openff.toolkit.typing.engines.smirnoff import ForceField'",
+]
+
+moduleclass = 'bio'
