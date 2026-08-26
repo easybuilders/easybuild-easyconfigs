@@ -32,7 +32,6 @@ dependencies = [
     ('VTK', '9.5.2'),
     ('tbb', '2022.2.0'),
     ('GLPK', '5.0'),
-    ('Trilinos', '16.2.0', '-zoltan'),
 ]
 
 configopts = ' '.join([
@@ -54,8 +53,10 @@ configopts = ' '.join([
     '--with-tbb=$EBROOTTBB',
     '--enable-glpk',
     '--with-glpk=$EBROOTGLPK',
-    '--enable-trilinos',
-    '--with-trilinos=$EBROOTTRILINOS',
+    # libMesh 1.7.9 cannot use Trilinos >= 15: its configure probe relies on the
+    # legacy Makefile.export files, which Trilinos no longer installs, so support
+    # is silently disabled even when Trilinos is provided
+    '--disable-trilinos',
     '--enable-fparser',
     '--disable-tecio',
     '--disable-tecplot',
@@ -66,8 +67,6 @@ configopts = ' '.join([
     '--disable-parmetis',
 ])
 
-# Allow long-running configure step via parallel make.
-buildopts = ''
 
 sanity_check_paths = {
     'files': ['lib/libmesh_opt.%s' % SHLIB_EXT, 'bin/libmesh-config',
