@@ -1,0 +1,92 @@
+diff -ruN Clair3-2.0.2/Makefile Clair3-2.0.2-patched/Makefile
+--- Clair3-2.0.2/Makefile	2026-06-25 06:12:03.000000000 +0200
++++ Clair3-2.0.2-patched/Makefile	2026-08-24 15:49:34.875918822 +0200
+@@ -3,7 +3,8 @@
+ 
+ PYTHON ?= python3
+ 
+-all : libhts.a longphase libclair3.so
++#all : libhts.a longphase libclair3.so
++all : libclair3.so
+ clean : clean_htslib clean_longphase clean_libclair3
+ 
+ SAMVER	=	1.15.1
+@@ -29,43 +30,45 @@
+ endif
+ 
+ 
+-samtools-$(SAMVER)/Makefile:
+-	curl -L -o samtools-${SAMVER}.tar.bz2 https://github.com/samtools/samtools/releases/download/${SAMVER}/samtools-${SAMVER}.tar.bz2
+-	tar -xjf samtools-${SAMVER}.tar.bz2
+-	rm samtools-${SAMVER}.tar.bz2
+-
+-libhts.a: samtools-$(SAMVER)/Makefile
+-	# this is required only to add in -fpic so we can build python module
+-	@echo "\x1b[1;33mMaking $(@F)\x1b[0m"
+-	cd samtools-${SAMVER}/htslib-${SAMVER}; \
+-	if [ "$(OS)" = "Darwin" ]; then \
+-		cp -f ${BUILD_PREFIX}/share/gnuconfig/config.* . && autoheader && autoconf -Wno-syntax && CC=${CC_PATH} CPPFLAGS="" CFLAGS="-O3 -fpic" LDFLAGS="" ./configure; \
+-	else \
+-		CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" ./configure; \
+-	fi; \
+-	make CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
+-	cp samtools-${SAMVER}/htslib-${SAMVER}/$@ $@
+-
+-
+-longphase:
+-	if [ "$(OS)" = "Darwin" ]; then \
+-		curl -L -o v${LPVER}.tar.gz https://github.com/twolinin/longphase/archive/refs/tags/v${LPVER}.tar.gz; \
+-		tar -zxf v${LPVER}.tar.gz; \
+-		cd longphase-${LPVER} && autoreconf -i && CC=${CC_PATH} CPPFLAGS="" CFLAGS="" LDFLAGS="" ./configure && make -j; \
+-		cd .. && rm v${LPVER}.tar.gz; \
+-		cp longphase-${LPVER}/longphase $@; \
+-	else \
+-		curl -L -o longphase-${LPVER}.tar.xz https://github.com/twolinin/longphase/releases/download/v${LPVER}/longphase_linux-x64.tar.xz; \
+-		tar -xJf longphase-${LPVER}.tar.xz; \
+-		mv longphase_linux-x64 $@; \
+-		rm longphase-${LPVER}.tar.xz; \
+-	fi
++#samtools-$(SAMVER)/Makefile:
++#	curl -L -o samtools-${SAMVER}.tar.bz2 https://github.com/samtools/samtools/releases/download/${SAMVER}/samtools-${SAMVER}.tar.bz2
++#	tar -xjf samtools-${SAMVER}.tar.bz2
++#	rm samtools-${SAMVER}.tar.bz2
++
++#libhts.a: samtools-$(SAMVER)/Makefile
++#	# this is required only to add in -fpic so we can build python module
++#	@echo "\x1b[1;33mMaking $(@F)\x1b[0m"
++#	cd samtools-${SAMVER}/htslib-${SAMVER}; \
++#	if [ "$(OS)" = "Darwin" ]; then \
++#		cp -f ${BUILD_PREFIX}/share/gnuconfig/config.* . && autoheader && autoconf -Wno-syntax && CC=${CC_PATH} CPPFLAGS="" CFLAGS="-O3 -fpic" LDFLAGS="" ./configure; \
++#	else \
++#		CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" ./configure; \
++#	fi; \
++#	make CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
++#	cp samtools-${SAMVER}/htslib-${SAMVER}/$@ $@
++
++
++#longphase:
++#	if [ "$(OS)" = "Darwin" ]; then \
++#		curl -L -o v${LPVER}.tar.gz https://github.com/twolinin/longphase/archive/refs/tags/v${LPVER}.tar.gz; \
++#		tar -zxf v${LPVER}.tar.gz; \
++#		cd longphase-${LPVER} && autoreconf -i && CC=${CC_PATH} CPPFLAGS="" CFLAGS="" LDFLAGS="" ./configure && make -j; \
++#		cd .. && rm v${LPVER}.tar.gz; \
++#		cp longphase-${LPVER}/longphase $@; \
++#	else \
++#		curl -L -o longphase-${LPVER}.tar.xz https://github.com/twolinin/longphase/releases/download/v${LPVER}/longphase_linux-x64.tar.xz; \
++#		tar -xJf longphase-${LPVER}.tar.xz; \
++#		mv longphase_linux-x64 $@; \
++#		rm longphase-${LPVER}.tar.xz; \
++#	fi
+ 
+-libclair3.so: samtools-${SAMVER}/htslib-${SAMVER} libhts.a
++libclair3.so: #samtools-${SAMVER}/htslib-${SAMVER} libhts.a
+ 	${PYTHON} build.py
+ 
+ src/%.o: src/%.c
+-	$(GCC) -g -Isrc -Isamtools-${SAMVER}/htslib-${SAMVER} -c -pthread -fstack-protector-strong -D_FORTIFY_SOURCE=2 \
++	#$(GCC) -g -Isrc -Isamtools-${SAMVER}/htslib-${SAMVER} -c -pthread -fstack-protector-strong -D_FORTIFY_SOURCE=2 \
++	#	$(CFLAGS) $^ -o $@
++	$(GCC) -g -Isrc -I$(EBROOTSAMTOOLS)/include -c -pthread -fstack-protector-strong -D_FORTIFY_SOURCE=2 \
+ 		$(CFLAGS) $^ -o $@
+ 
+ fa_test: src/fa_test.o src/levenshtein.o src/medaka_bamiter.o src/medaka_common.o src/medaka_khcounter.o src/clair3_pileup.o src/clair3_full_alignment.o src/csv.o
