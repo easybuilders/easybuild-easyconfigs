@@ -62,13 +62,15 @@ jobs:
           cd easybuild-easyblocks; git log -n 1; cd -
           pip install $PWD/easybuild-easyblocks
 
+          cp easybuild-easyblocks/easybuild/easyblocks/generic/configuremake.py $GITHUB_WORKSPACE/configuremake.check
+
     - name: Restore cache of source files in /tmp/sources
       id: restore-cache-sources
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # 6.1.0
       with:
         path: /tmp/sources
         # Ensure cache is invalidated when configuremake.py changes so we download latest version of config.guess
-        key: eb-sourcepath-${{ hashFiles('**/easyblocks/generic/configuremake.py') }}
+        key: eb-sourcepath-${{ matrix.python }}-${{ hashFiles('configuremake.check') }}
 
     - name: install modules tool
       run: |
@@ -121,7 +123,7 @@ jobs:
 
           # run test suite
           # if tests failed, print error message that is picked up by boegelbot to determine end of test output
-          # python -O -m test.easyconfigs.suite || (echo "ERROR: Not all tests were successful" && exit 1)
+          python -O -m test.easyconfigs.suite || (echo "ERROR: Not all tests were successful" && exit 1)
 
           unset PYTHONPATH
 
