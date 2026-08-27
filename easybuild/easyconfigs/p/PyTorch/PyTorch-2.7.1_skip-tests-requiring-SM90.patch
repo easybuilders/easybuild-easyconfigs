@@ -1,0 +1,34 @@
+Avoid it failing on e.g. A100:
+
+> [rank1]:E1022 09:55:08.823000 3580472 torch/testing/_internal/common_distributed.py:721] RuntimeError: CUDA error: device-side assert triggered...
+> [rank1]:E1022 09:55:08.823000 3580472 torch/testing/_internal/common_distributed.py:721]  exiting process 1 with exit code: 10
+> ...
+> :318: st_vec: block: [0,0,0], thread: [87,0,0] Assertion `false` failed.
+> /pytorch-v2.7.1/torch/csrc/distributed/c10d/CUDASymmetricMemory-inl.h:318: st_vec: block: [0,0,0], thread: [88,0,0] Assertion `false` failed.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/test_c10d_nccl.py b/test/distributed/test_c10d_nccl.py
+index 7410255d27a..603ea0b375b 100644
+--- a/test/distributed/test_c10d_nccl.py
++++ b/test/distributed/test_c10d_nccl.py
+@@ -3367,7 +3367,7 @@ class CommTest(test_c10d_common.AbstractCommTest, MultiProcessTestCase):
+     @skip_if_rocm_multiprocess
+     def test_intra_node_comm_all_reduce(self):
+         from torch._C._distributed_c10d import _get_intra_node_comm_usage_counter
+-        from torch.testing._internal.common_cuda import SM80OrLater
++        from torch.testing._internal.common_cuda import SM90OrLater
+ 
+         for peer in range(self.world_size):
+             if peer == self.rank:
+@@ -3375,8 +3375,8 @@ class CommTest(test_c10d_common.AbstractCommTest, MultiProcessTestCase):
+             if not torch._C._cuda_canDeviceAccessPeer(self.rank, peer):
+                 raise SkipTest("Test requires p2p access")
+ 
+-        if not SM80OrLater:
+-            raise SkipTest("Test requires sm>=80")
++        if not SM90OrLater:
++            raise SkipTest("Test requires sm>=90")
+ 
+         store = c10d.FileStore(self.file_name, self.world_size)
+         os.environ["ENABLE_INTRA_NODE_COMM"] = "1"

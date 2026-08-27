@@ -1,0 +1,68 @@
+easyblock = 'ConfigureMake'
+
+name = 'hwloc-CUDA'
+version = '2.12.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://www.open-mpi.org/projects/hwloc/'
+
+description = """
+ The Portable Hardware Locality (hwloc) software package provides a portable
+ abstraction (across OS, versions, architectures, ...) of the hierarchical
+ topology of modern architectures, including NUMA memory nodes, sockets, shared
+ caches, cores and simultaneous multithreading. It also gathers various system
+ attributes such as cache and memory information as well as the locality of I/O
+ devices such as network interfaces, InfiniBand HCAs or GPUs. It primarily
+ aims at helping applications with gathering information about modern computing
+ hardware so as to exploit it accordingly and efficiently.
+
+ This provides the CUDA and NVML plugins for hwloc
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://www.open-mpi.org/software/hwloc/v%(version_major_minor)s/downloads/']
+sources = ['hwloc-%(version)s.tar.gz']
+checksums = ['ffa02c3a308275a9339fbe92add054fac8e9a00cb8fe8c53340094012cb7c633']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('hwloc', version),
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('numactl', '2.0.19'),
+]
+
+configopts = ' '.join([
+    '--enable-plugins',
+    '--enable-cuda',
+    '--enable-nvml',
+    '--disable-cairo',
+    '--disable-opencl',
+    '--disable-rsmi',
+    '--disable-levelzero',
+    '--disable-gl',
+    '--disable-libxml2',
+    '--disable-pci',
+    '--disable-libudev',
+])
+
+build_cmd = 'cd hwloc && make hwloc_cuda.la hwloc_nvml.la'
+install_cmd = f'cp hwloc/.libs/hwloc_{{cuda,nvml}}.{SHLIB_EXT} %(installdir)s'
+
+modextrapaths = {
+    'HWLOC_PLUGINS_PATH': '.',
+}
+
+sanity_check_paths = {
+    'files': [f'hwloc_cuda.{SHLIB_EXT}', f'hwloc_nvml.{SHLIB_EXT}'],
+    'dirs': [],
+}
+sanity_check_commands = [
+    'HWLOC_COMPONENTS_VERBOSE=1 lstopo 2>&1 | grep %(installdir)s'
+]
+
+moduleclass = 'system'

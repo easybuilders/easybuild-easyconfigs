@@ -38,31 +38,28 @@ dependencies = [
 
 start_dir = 'cpp'
 
+# Avoid searching dependencies in an active conda environment
+preconfigopts = "unset CONDA_PREFIX; "
+
 # see https://arrow.apache.org/docs/developers/python.html
 configopts = "-DARROW_DATASET=on -DARROW_PYTHON=on -DARROW_PARQUET=ON -DARROW_ORC=ON "
-configopts += "-DPython3_ROOT_DIR=$EBROOTPYTHON "
 configopts += "-DARROW_WITH_ZLIB=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON -DARROW_WITH_SNAPPY=ON "
 configopts += "-DARROW_WITH_ZSTD=ON -DZSTD_ROOT=$EBROOTZSTD "
 
 # install Python bindings
-_pyarrow_preinstall_opts = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
-_pyarrow_preinstall_opts += "export Arrow_DIR=%(installdir)s && export ArrowDataset_DIR=%(installdir)s && "
-_pyarrow_preinstall_opts += "export ArrowAcero_DIR=%(installdir)s && export Parquet_DIR=%(installdir)s && "
-_pyarrow_preinstall_opts += "export XDG_CACHE_HOME=$TMPDIR && "
-_pyarrow_preinstall_opts += "sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml && "
-_pyarrow_preinstall_opts += "Python3_ROOT_DIR=$EBROOTPYTHON "
-_pyarrow_preinstall_opts += "PYARROW_CMAKE_OPTIONS='-DZSTD_LIB=$EBROOTZSTD/lib/libzstd.%s ' " % SHLIB_EXT
-_pyarrow_preinstall_opts += "PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 PYARROW_WITH_ORC=1 "
-
 exts_defaultclass = 'PythonPackage'
-exts_default_options = {
-}
 exts_list = [
     ('pyarrow', version, {
-        'sources': ['apache-arrow-%(version)s.tar.gz'],
-        'checksums': ['5c70eafb1011f9d124bafb328afe54f62cc5b9280b7080e1e3d668f78c0e407e'],
-        'start_dir': '%(builddir)s/apache-arrow-%(version)s/python',
-        'preinstallopts': _pyarrow_preinstall_opts,
+        'preinstallopts': (
+            "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH"
+            " && export Arrow_DIR=%(installdir)s && export ArrowDataset_DIR=%(installdir)s"
+            " && export ArrowAcero_DIR=%(installdir)s && export Parquet_DIR=%(installdir)s"
+            " && sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml"
+            ' && PYARROW_CMAKE_OPTIONS="-DZSTD_ROOT=$EBROOTZSTD"'
+            " PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 PYARROW_WITH_ORC=1 "
+        ),
+        'nosource': True,
+        'start_dir': '../python',
     }),
 ]
 
@@ -73,10 +70,9 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = [
-    "python -c 'import pyarrow'",
-    "python -c 'import pyarrow.dataset'",
-    "python -c 'import pyarrow.parquet'",
-    "python -c 'import pyarrow.orc'",
+    "python -s -c 'import pyarrow.dataset'",
+    "python -s -c 'import pyarrow.parquet'",
+    "python -s -c 'import pyarrow.orc'",
 ]
 
 moduleclass = 'data'
