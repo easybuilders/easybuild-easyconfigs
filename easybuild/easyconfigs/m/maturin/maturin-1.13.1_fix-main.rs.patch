@@ -1,0 +1,30 @@
+From 2fbaf82bf9e88e611a1b961d454ccff088addabd Mon Sep 17 00:00:00 2001
+From: Chris Burr <christopher.burr@cern.ch>
+Date: Fri, 10 Apr 2026 10:16:55 +0200
+Subject: [PATCH 2/2] fix: redirect tracing output to stderr instead of stdout
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+tracing_subscriber::fmt::layer() defaults to stdout, which corrupts
+the PEP 517 protocol when RUST_LOG is set — pip reads stdout to find
+metadata directory names and fails when tracing lines are mixed in.
+---
+ src/main.rs | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/main.rs b/src/main.rs
+index c834f27c1..9873f0402 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -320,6 +320,10 @@ fn setup_logging(verbose: u8) -> Result<()> {
+         .context("Invalid RUST_LOG directives")?;
+ 
+     let logger = tracing_subscriber::fmt::layer()
++        // fmt::layer() defaults to stdout; redirect to stderr so that
++        // structured stdout output (e.g. PEP 517 directory names) is not
++        // polluted by tracing spans.
++        .with_writer(std::io::stderr)
+         // Avoid showing all the details from the spans
+         .compact()
+         // Log the timing of each span
