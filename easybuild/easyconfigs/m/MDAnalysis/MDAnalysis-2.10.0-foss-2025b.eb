@@ -1,0 +1,73 @@
+easyblock = 'PythonBundle'
+
+name = 'MDAnalysis'
+version = '2.10.0'
+
+homepage = 'https://www.mdanalysis.org/'
+description = """MDAnalysis is an object-oriented Python library to analyze trajectories from molecular dynamics (MD)
+simulations in many popular formats."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [
+    ('Cython', '3.1.2'),
+]
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('SciPy-bundle', '2025.07'),
+    ('matplotlib', '3.10.5'),
+    ('tqdm', '4.67.1'),
+    ('mrcfile', '1.5.4'),  # needed by GridDataFormats
+    ('Biopython', '1.86'),  # optional
+    ('networkx', '3.5'),  # optional
+    ('Seaborn', '0.13.2'),  # optional
+    ('scikit-learn', '1.7.1'),  # optional
+    ('hypothesis', '6.136.6'),  # tests
+]
+
+exts_list = [
+    ('GridDataFormats', '1.0.2', {
+        'modulename': 'gridData',
+        'checksums': ['b93cf7f36fce33dbc428026f26dba560d5c7ba2387caca495bad920f90094502'],
+    }),
+    ('mmtf-python', '1.1.3', {
+        'modulename': 'mmtf',
+        'checksums': ['12a02fe1b7131f0a2b8ce45b46f1e0cdd28b9818fe4499554c26884987ea0c32'],
+    }),
+    ('mda_xdrlib', '0.2.0', {
+        'checksums': ['f26f7158a83c32b96d15b530fce2cbc1190c4b7024e41faa4ab3e3db74e272af'],
+    }),
+    ('tidynamics', '1.1.2', {
+        'checksums': ['103874edd79dc64a0c7b765f51200926822e74df63703acb6c630a8167dbcfa2'],
+    }),
+    ('waterdynamics', '1.2.0', {
+        'sources': ['%(name)s-%(version)s-py3-none-any.whl'],
+        'checksums': ['8a9eb7e7ad44e2abf9e2542661b2d7b371d8ab6474113a301968e4bf78d4432d'],
+    }),
+    ('pathsimanalysis', '1.2.0', {
+        'sources': ['%(name)s-%(version)s-py3-none-any.whl'],
+        'checksums': ['0edce2fd1a55a788ef80b3666f9704455c01f06719f516fec20215fb9e16e291'],
+    }),
+    ('mdahole2', '0.5.0', {
+        'sources': ['%(name)s-%(version)s-py3-none-any.whl'],
+        'checksums': ['6b7a9be247cd99331e8840c9012d0ed7a86874fe110983bbaed00eb39459e7a8'],
+    }),
+    ('mdanalysistests', version, {
+        'modulename': 'MDAnalysisTests',
+        'checksums': ['286b8678e19195093a19b57b26d76b8274415d33ac23fc872355639fcb49beef'],
+    }),
+    ('mdanalysis', version, {
+        'modulename': 'MDAnalysis',
+        'use_pip_extras': 'analysis',
+        'checksums': ['5cef1f1eba4b25cbf9dd4045f08eeab293bb9577b970aa96132f14491312d877'],
+    }),
+]
+
+sanity_check_commands = [
+    "export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 && "
+    "pytest --disable-pytest-warnings --numprocesses %(parallel)s "
+    "--pyargs MDAnalysisTests -p no:warnings --dist=loadscope"
+]
+
+moduleclass = 'bio'
