@@ -1,0 +1,43 @@
+easyblock = 'MakeCp'
+
+name = 'minibwa'
+version = '0.7'
+
+homepage = 'https://github.com/lh3/minibwa'
+description = "Aligning short and accurate long reads to a reference genome, the successor of bwa-mem."
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+github_account = 'lh3'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['8a1129bcba045e4af4b6fbf73b3fc6b42208afbab870c774c5f0cd2716d748ae']
+
+builddependencies = [('binutils', '2.45')]
+
+dependencies = [('zlib', '2.3.2')]
+
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS -std=c99" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS"'
+
+files_to_copy = [
+    (['%(name)s'], 'bin'),
+    (['lib%(name)s.a'], 'lib'),
+    (['%(name)s.h'], 'include'),
+    'LICENSE.txt', 'NEWS.md', 'README.md',
+    (['%(name)s.1'], 'share/man/man1'),
+    (['test/chrM-human.fa.gz', 'test/chrM-read_1.fa.gz', 'test/chrM-read_2.fa.gz'], 'test'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'lib/lib%(name)s.a', 'include/%(name)s.h', 'share/man/man1/%(name)s.1'],
+    'dirs': ['test'],
+}
+
+sanity_check_commands = [
+    'minibwa --help',
+    'cd %(installdir)s && minibwa index test/chrM-human.fa.gz test/chrM-human',
+    'cd %(installdir)s && minibwa map test/chrM-human test/chrM-read_1.fa.gz test/chrM-read_2.fa.gz > test/aln.sam',
+    'test -s %(installdir)s/test/aln.sam',
+]
+
+moduleclass = 'bio'
