@@ -1,0 +1,74 @@
+easyblock = 'CMakeMake'
+
+name = 'MOAB'
+version = '5.6.0'
+
+homepage = 'https://sigma.mcs.anl.gov/moab-library'
+description = """The Mesh-Oriented datABase (MOAB) is a component for representing and evaluating mesh
+data. MOAB can store and represent structured and unstructured meshes consisting of elements in the
+finite element zoo, including polygons and polyhedra."""
+
+toolchain = {'name': 'intel', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+# Bitbucket archive of the official 5.6.0 release commit
+local_commit = '3fa8ae9e8025e0c1349792dee1f39b82ad8c1a33'
+source_urls = ['https://bitbucket.org/fathomteam/%(namelower)s/get']
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': SOURCELOWER_TAR_GZ,
+}]
+checksums = ['db7ad8a2d0069b8446225ec7fb71e034a0e8698508680804965c95c3b1bb944e']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('Eigen', '3.4.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('Cython', '3.1.2'),
+    ('HDF5', '1.14.6'),
+    ('netCDF', '4.9.3'),
+    ('PnetCDF', '1.14.1'),
+    ('METIS', '5.1.0'),
+]
+
+# Enable all options whose dependencies are available with the intel toolchain.
+# ParMETIS, SCOTCH, Zoltan, CGNS and TempestRemap have no upstream
+# easyconfigs for intel-2025b, so the corresponding MOAB features are disabled.
+configopts = ' '.join([
+    '-DENABLE_MPI=ON',
+    '-DENABLE_HDF5=ON',
+    '-DENABLE_ZLIB=ON',
+    '-DENABLE_NETCDF=ON',
+    '-DENABLE_PNETCDF=ON',
+    '-DENABLE_METIS=ON',
+    '-DENABLE_PARMETIS=OFF',
+    '-DENABLE_ZOLTAN=OFF',
+    '-DENABLE_CGNS=OFF',
+    '-DENABLE_TEMPESTREMAP=OFF',
+    '-DENABLE_FORTRAN=ON',
+    '-DENABLE_PYMOAB=ON',
+    '-DENABLE_BLASLAPACK=ON',
+    '-DENABLE_EIGEN3=ON',
+    '-DBUILD_SHARED_LIBS=ON',
+    '-DENABLE_TESTING=ON',
+    '-DNETCDF_DIR=$EBROOTNETCDF',
+    '-DPNETCDF_DIR=$EBROOTPNETCDF',
+])
+
+sanity_check_paths = {
+    'files': ['bin/mbconvert', 'bin/mbsize',
+              'lib/libMOAB.%s' % SHLIB_EXT, 'lib/libmbcoupler.%s' % SHLIB_EXT],
+    'dirs': ['include', 'lib/cmake/MOAB', 'lib/pkgconfig',
+             'lib/python%(pyshortver)s/site-packages/pymoab'],
+}
+
+sanity_check_commands = [
+    'mbsize -h',
+    "python -s -c 'import pymoab'",
+]
+
+moduleclass = 'lib'
