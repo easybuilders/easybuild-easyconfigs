@@ -1,0 +1,64 @@
+Combination of the following to PRs to better support
+LLVM flang in OpenBLAS. The first patch prevents an
+error in `f_check` due to LLVM flang falsely being
+classified as GCC, whereas the second fixes a miscompilation
+due to `-fdefault-integer-8` not being used when
+building the `INTERFACE64` variant of OpenBLAS, hence
+crashing every single test.
+
+For more information, see:
+- https://github.com/OpenMathLib/OpenBLAS/pull/5540
+- https://github.com/OpenMathLib/OpenBLAS/pull/5534
+
+Author:
+- Jan Reuter (JSC)
+- Bart Oldeman (ComputeCanada)
+
+
+diff --git a/f_check b/f_check
+index 4b9f95b06e..156f0e5621 100755
+--- a/f_check
++++ b/f_check
+@@ -92,7 +92,7 @@ else
+ 		vendor=FLANG
+ 		openmp='-fopenmp'
+ 		;;	
+-            *GNU*|*GCC*)
++            *GCC*)
+ 
+                 v="${data#*GCC: *\) }"
+                 v="${v%%\"*}"
+diff --git a/Makefile.system b/Makefile.system
+index 6241006a8..9cfc98d48 100644
+--- a/Makefile.system
++++ b/Makefile.system
+@@ -887,7 +887,7 @@ NO_BINARY_MODE  = 1
+ BINARY_DEFINED  = 1
+ ifdef INTERFACE64
+ ifneq ($(INTERFACE64), 0)
+-ifeq ($(F_COMPILER), GFORTRAN)
++ifeq ($(F_COMPILER), $(filter $(F_COMPILER),GFORTRAN FLANGNEW))
+ FCOMMON_OPT +=  -fdefault-integer-8
+ endif
+ ifeq ($(F_COMPILER), FLANG)
+@@ -902,7 +902,7 @@ NO_BINARY_MODE  = 1
+ BINARY_DEFINED  = 1
+ ifdef INTERFACE64
+ ifneq ($(INTERFACE64), 0)
+-ifeq ($(F_COMPILER), GFORTRAN)
++ifeq ($(F_COMPILER), $(filter $(F_COMPILER),GFORTRAN FLANGNEW))
+ FCOMMON_OPT +=  -fdefault-integer-8
+ endif
+ ifeq ($(F_COMPILER), FLANG)
+@@ -917,7 +917,7 @@ NO_BINARY_MODE  = 1
+ BINARY_DEFINED  = 1
+ ifdef INTERFACE64
+ ifneq ($(INTERFACE64), 0)
+-ifeq ($(F_COMPILER), GFORTRAN)
++ifeq ($(F_COMPILER), $(filter $(F_COMPILER),GFORTRAN FLANGNEW))
+ FCOMMON_OPT +=  -fdefault-integer-8
+ endif
+ ifeq ($(F_COMPILER), FLANG)
+-- 
+2.51.2
+

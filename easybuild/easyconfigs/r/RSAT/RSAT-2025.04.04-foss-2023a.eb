@@ -1,0 +1,101 @@
+easyblock = 'Bundle'
+
+name = 'RSAT'
+version = '2025.04.04'
+
+homepage = 'https://github.com/rsa-tools/rsat-code/'
+description = """Regulatory Sequence Analysis Tools (RSAT)."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('R', '4.3.2'),
+    ('Perl', '5.36.1'),
+    ('Perl-bundle-CPAN', '%(perlver)s'),
+    ('zlib', '1.2.13'),  # for Net::SSLeay
+]
+
+default_component_specs = {
+    'source_urls': ['https://github.com/rsa-tools/rsat-code/archive/'],
+    'sources': ['%(version)s.tar.gz'],
+    'checksums': ['e1391de42c9115f1675f6399f02b5e364fc229d4ae185643a78ac75d1fe97c62'],
+}
+
+default_easyblock = 'MakeCp'
+
+local_bins = [
+    'compare-matrices-quick',
+    'count-words',
+    'info-gibbs',
+    'matrix-scan-quick',
+    'retrieve-variation-seq',
+    'variation-scan',
+]
+
+# see https://github.com/bioconda/bioconda-recipes/blob/master/recipes/rsat-core/build.sh
+components = [
+    (binary, version, {
+        'start_dir': 'rsat-code-%s/contrib/%s' % (version, binary),
+        'files_to_copy': [([binary], 'bin')]
+    }) for binary in local_bins
+] + [
+    ('rsat', version, {
+        'skipsteps': ['build'],
+        'start_dir': 'rsat-code-%s' % version,
+        'files_to_copy': [
+            ([
+                'version.txt',
+                'perl-scripts',
+                'python-scripts',
+                'makefiles',
+                'R-scripts',
+                'RSAT_config_default.mk',
+                'RSAT_config_default.bashrc',
+                'RSAT_config_default.props',
+                'RSAT_config_default.conf',
+                'share/rsat/rsat.yaml',
+            ], 'share/rsat'),
+            (['bin/rsat'], 'bin'),
+            (['version.txt'], ''),
+            (['public_html/publications.csv'], 'public_html'),
+        ],
+    })
+]
+
+exts_defaultclass = 'RPackage'
+exts_list = [
+    ('TFBMclust', version, {
+        'start_dir': 'R-scripts/TFBMclust',
+        'installopts': ' --no-multiarch --with-keep.source',
+        'source_urls': ['https://github.com/rsa-tools/rsat-code/archive/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['e1391de42c9115f1675f6399f02b5e364fc229d4ae185643a78ac75d1fe97c62'],
+    }),
+]
+
+local_configuration = 'perl-scripts/configure_rsat.pl -auto rsat_site=easybuild_rsat rsat_www=auto '
+local_configuration += 'ucsc_tools=0 ensembl_tools=0 mail_supported=no variations_tools=0 LOGO_PROGRAM=weblogo'
+
+postinstallcmds = ['cd %(installdir)s/share/rsat/ && ' + local_configuration]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins],
+    'dirs': ['share/%(namelower)s'],
+}
+
+sanity_check_commands = [
+    'rsat -h',
+    'rsat oligo-analysis -h',
+    'rsat random-seq -l 100 -n 2',
+    'rsat random-seq -l 100 -n 2 | rsat purge-sequence',  # Check pipe
+    'rsat random-motif -l 10',  # Test a subcommand running a python script
+    'rsat feature-map -h',  # check the GD dependency for feature-map
+    'rsat info-gibbs -h',
+    'rsat count-words -h',
+    'rsat matrix-scan-quick -h',
+    'rsat matrix-clustering -h',
+]
+
+moduleclass = 'bio'

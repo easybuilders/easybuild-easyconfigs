@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'Valgrind'
+version = '3.25.0'
+
+homepage = 'https://valgrind.org'
+description = "Valgrind: Debugging and profiling tools"
+
+toolchain = {'name': 'gompi', 'version': '2025a'}
+toolchainopts = {'optarch': True}
+
+source_urls = [
+    'https://sourceware.org/pub/valgrind/',
+    'https://www.mirrorservice.org/sites/sourceware.org/pub/valgrind/',
+]
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['295f60291d6b64c0d90c1ce645634bdc5361d39b0c50ecf9de6385ee77586ecc']
+
+dependencies = [
+    ('Perl', '5.40.0'),
+    ('Python', '3.13.1'),
+]
+
+configopts = ' --with-mpicc="$MPICC"'
+
+local_binaries = [
+    'callgrind_annotate', 'callgrind_control', 'cg_annotate', 'cg_diff',
+    'cg_merge', 'ms_print', 'valgrind', 'valgrind-listener', 'vgdb'
+]
+local_archs = ('amd64', 'arm64', 'ppc64le')
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries] +
+             [['lib/valgrind/libmpiwrap-%s-linux.%s' % (a, SHLIB_EXT) for a in local_archs]],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    'callgrind_annotate --version 2>&1 | grep "%(version)s"',
+    'cg_annotate --help',
+    'ms_print --version 2>&1 | grep "%(version)s"',
+    'valgrind --help',
+    'vgdb --help',
+]
+
+moduleclass = 'debugger'

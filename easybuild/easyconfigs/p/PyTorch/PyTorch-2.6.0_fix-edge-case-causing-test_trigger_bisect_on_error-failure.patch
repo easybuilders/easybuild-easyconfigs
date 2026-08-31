@@ -1,0 +1,34 @@
+This fixes a failure in test_trigger_bisect_on_error
+> torch/fx/experimental/validator.py", line 838
+> assert left in exception and isinstance(exception[left], ValidationException)
+>        ^^^^^^^^^^^^^^^^^
+> AssertionError: 
+
+From a86fa779ce3482324a0d1fbb12d87a95a981f0a3 Mon Sep 17 00:00:00 2001
+From: Ryan Guo <ryanguo99@meta.com>
+Date: Wed, 22 Jan 2025 14:23:11 -0800
+Subject: [PATCH] [BE] Fix edge case in translation validation bisector
+ (#145414)
+
+This patch fixes a small bug for the binary-search algorithm in
+translation validation bisector. Fixes #131303.
+
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/145414
+
+index 61a51b977311d..17a814b233c63 100644
+--- a/torch/fx/experimental/validator.py
++++ b/torch/fx/experimental/validator.py
+@@ -819,7 +819,13 @@ def check_node_fails(node: torch.fx.Node) -> Optional[ValidationException]:
+     ]
+ 
+     # Preparing the indices for binary search.
++    # The overall invariants are
++    # - for all i < left, assert_node[i] doesn't fail
++    # - for all i >= right, assert_node[i] fails
++    # - `right in exception` always holds
++    # - `left <= right` always holds
+     left, mid, right = 0, 0, len(assert_nodes) - 1
++    exception[right] = check_node_fails(assert_nodes[right])
+ 
+     while left < right:
+         mid = (left + right) // 2

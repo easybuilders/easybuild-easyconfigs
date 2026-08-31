@@ -1,0 +1,71 @@
+easyblock = 'MakeCp'
+
+name = 'HiC-Pro'
+version = '3.1.0'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://nservant.github.io/HiC-Pro'
+description = """HiC-Pro was designed to process Hi-C data, from raw
+fastq files (paired-end Illumina data) to the normalized contact maps."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/nservant/HiC-Pro/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'HiC-Pro-3.1.0_fix_paths.patch',
+    'HiC-Pro-3.1.0_fix_slurm_script.patch',
+]
+checksums = [
+    {'v3.1.0.tar.gz': '25a88d89813e8e9653f59ca0bd6eaad8b0c8dbb5e578e233f2b3db7b04256f2f'},
+    {'HiC-Pro-3.1.0_fix_paths.patch': '6a332e6cb89f922764c6c0c2598d791834b001954ee5e185c62358384fac77d1'},
+    {'HiC-Pro-3.1.0_fix_slurm_script.patch': '139d864a769137a3513ed3e73be4c063210bd6b39bcbf0b55ca79415ecf1ee8f'},
+]
+
+dependencies = [
+    ('R', '4.3.2'),
+    ('R-bundle-CRAN', '2023.12'),
+    ('Bowtie2', '2.5.1'),
+    ('Pysam', '0.22.0'),
+    ('SAMtools', '1.18'),
+    ('bx-python', '0.10.0'),
+    ('iced', '0.5.13'),
+]
+
+# there's no configure script, "configure" is a Makefile target
+skipsteps = ['configure']
+
+# "configure" target only takes prefix as argument, the rest is read from config-install.txt
+prebuildopts = 'sed -i "s|BOWTIE2_PATH = |BOWTIE2_PATH = $EBROOTBOWTIE2|" config-install.txt && '
+prebuildopts += 'sed -i "s|SAMTOOLS_PATH = |SAMTOOLS_PATH = $EBROOTSAMTOOLS|" config-install.txt && '
+prebuildopts += 'sed -i "s|R_PATH = |R_PATH = $EBROOTR|" config-install.txt && '
+prebuildopts += 'sed -i "s|PYTHON_PATH = |PYTHON_PATH = $EBROOTPYTHON|" config-install.txt && '
+
+# Choose cluster type
+prebuildopts += 'sed -i "s|CLUSTER_SYS = .*$|CLUSTER_SYS = SLURM|" config-install.txt && '
+
+# configure
+prebuildopts += 'make configure prefix=%(installdir)s && '
+
+# install
+files_to_copy = [
+    'annotation',
+    'doc',
+    'scripts',
+    (['bin/utils', 'bin/HiC-Pro'], 'bin'),
+    'config-system.txt',
+]
+
+modextrapaths = {
+    'PATH': ['bin/utils', 'scripts'],
+    'SCRIPTS': ['scripts']
+}
+
+sanity_check_paths = {
+    'files': ['config-system.txt', 'scripts/build_matrix', 'scripts/cutsite_trimming', 'bin/HiC-Pro'],
+    'dirs': ['annotation', 'bin/utils', 'doc'],
+}
+
+sanity_check_commands = ["HiC-Pro --help"]
+
+moduleclass = 'bio'

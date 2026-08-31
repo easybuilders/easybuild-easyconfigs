@@ -1,0 +1,64 @@
+easyblock = 'CMakeMake'
+
+name = 'AFNI'
+version = '25.1.01'
+
+homepage = 'http://afni.nimh.nih.gov/'
+description = """AFNI is a set of C programs for processing, analyzing, and displaying functional MRI (FMRI) data -
+ a technique for mapping human brain activity."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/afni/afni/archive/']
+sources = ['AFNI_%(version)s.tar.gz']
+checksums = ['4e1fdfd3445d87a238c93d6e953d1dddd0fa5b5e5cfafc4cbe1ae51ba8fba33d']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+]
+
+dependencies = [
+    ('tcsh', '6.24.13'),
+    ('Python', '3.12.3'),
+    ('X11', '20240607'),
+    ('motif', '2.3.8'),
+    ('R', '4.4.2'),
+    ('PyQt5', '5.15.11'),
+    ('expat', '2.6.2'),
+    ('libpng', '1.6.43'),
+    ('libjpeg-turbo', '3.0.1'),
+    ('GSL', '2.8'),
+    ('GLib', '2.80.4'),
+    ('zlib', '1.3.1'),
+    ('freeglut', '3.6.0'),
+    ('Pillow', '10.4.0'),
+    ('matplotlib', '3.9.2'),
+    ('SciPy-bundle', '2024.05'),
+    ('Xvfb', '21.1.14'),
+    ('FFmpeg', '7.0.2'),  # required for running the program
+]
+
+# Make sure stuff does not get installed in .local
+configopts = '-DSTANDARD_PYTHON_INSTALL=OFF '
+
+postinstallcmds = [
+    # Add executable permissions to some files
+    'chmod a+x %(installdir)s/bin/{afni_system_check,uber_subject,init_user_dotfiles}.py',
+    # Copying apparently missing files over
+    'cp -f %(start_dir)s/src/discoraj/ClusterExplorer/ClustExp_HistTable.py %(installdir)s/bin',
+    'cp -f %(start_dir)s/src/discoraj/ClusterExplorer/ClustExp_StatParse.py %(installdir)s/bin',
+    'cp -rf %(start_dir)s/src/scripts_for_r %(installdir)s/bin',
+    'cp -rf %(start_dir)s/src/R_scripts %(installdir)s/bin/scripts_for_r',
+]
+
+sanity_check_commands = ["afni -help"]
+
+sanity_check_paths = {
+    'files': ['bin/afni', 'lib/libgts.%s' % SHLIB_EXT, 'lib/libnifti2.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share'],
+}
+
+modextrapaths = {'PATH': ['bin/scripts_for_r']}
+
+moduleclass = 'bio'

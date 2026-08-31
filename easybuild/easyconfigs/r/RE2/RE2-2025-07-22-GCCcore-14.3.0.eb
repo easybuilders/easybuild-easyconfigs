@@ -1,0 +1,47 @@
+easyblock = "CMakeMake"
+
+name = 'RE2'
+version = '2025-07-22'
+
+homepage = 'https://github.com/google/re2'
+description = """
+RE2 is a fast, safe, thread-friendly alternative to backtracking regular
+expression engines like those used in PCRE, Perl, and Python. It is a C++
+library. """
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'google'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['f54c29f1c3e13e12693e3d6d1230554df3ab3a1066b2e1f28c5330bfbf6db1e3']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('googletest', '1.17.0'),
+    ('googlebenchmark', '1.9.4'),
+]
+
+dependencies = [
+    ('ICU', '77.1'),
+    ('Abseil', '20250512.1'),
+]
+
+_configopts = ' '.join([
+    '-DRE2_USE_ICU=ON',
+    '-DRE2_BUILD_TESTING=ON',
+])
+
+configopts = [_configopts + f' -DBUILD_SHARED_LIBS={x}' for x in ['ON', 'OFF']]
+
+runtest = True
+test_cmd = 'ctest -j %(parallel)s'
+
+sanity_check_paths = {
+    'files': ['lib/libre2.a', f'lib/libre2.{SHLIB_EXT}'],
+    'dirs': ['include/re2'],
+}
+
+moduleclass = 'lib'

@@ -1,0 +1,17 @@
+Fix integer overflow bug
+
+An integer overflow bug in Cython causes segmentation faults when building large
+interval trees. This bug is fixed upstream form v0.6.3 onwards. This patch
+applies the upstream fix (Commit 5e04026).
+diff -ruN scikit-bio-0.6.2.orig/skbio/metadata/_intersection.pyx scikit-bio-0.6.2/skbio/metadata/_intersection.pyx
+--- scikit-bio-0.6.2.orig/skbio/metadata/_intersection.pyx	2024-07-08 01:52:43.000000000 +0200
++++ scikit-bio-0.6.2/skbio/metadata/_intersection.pyx	2025-10-14 11:04:19.846626429 +0200
+@@ -94,7 +94,7 @@
+         # uniform into a binomial because it naturally scales with
+         # tree size.  Also, python's uniform is perfect since the
+         # upper limit is not inclusive, which gives us undefined here.
+-        self.priority = ceil(nlog * log(-1.0/(1.0 * rand()/(RAND_MAX + 1) - 1)))
++        self.priority = ceil(nlog * log(-1.0/(rand()/(RAND_MAX + 1.0) - 1)))
+         self.start    = start
+         self.end      = end
+         self.interval = interval

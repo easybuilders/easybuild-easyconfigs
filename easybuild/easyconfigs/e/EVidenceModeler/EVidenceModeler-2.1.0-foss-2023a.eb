@@ -1,0 +1,48 @@
+easyblock = 'Tarball'
+
+name = 'EVidenceModeler'
+version = '2.1.0'
+
+homepage = 'https://github.com/EVidenceModeler/EVidenceModeler'
+description = """ EVM provides a flexible and intuitive framework for
+combining diverse evidence types into a single automated gene structure annotation system."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+sources = [{
+    'filename': SOURCE_TAR_XZ,
+    'git_config': {
+        'url': 'https://github.com/EVidenceModeler',
+        'repo_name': '%(name)s',
+        'tag': '%(name)s-v%(version)s',
+        'recursive': True,
+    }
+}]
+patches = ['EVidenceModeler-2.0.0_set-correct-CFlags-for-ParaFly.patch']
+checksums = [
+    {'EVidenceModeler-2.1.0.tar.xz':
+     'a20ebcf82266fb9c75c9fae8d939f25441e39e0d3d7e2275e544cd27dd49c2bf'},
+    {'EVidenceModeler-2.0.0_set-correct-CFlags-for-ParaFly.patch':
+     '619fc54db10fad3638daa177373c19c9ba4b69dcb80585822bfa9b2500f57d13'},
+]
+
+dependencies = [
+    ('PASA', '2.5.3',),
+]
+
+# Install ParaFly
+postinstallcmds = ["cd %(installdir)s && rm plugins/ParaFly/bin/ParaFly && make"]
+
+sanity_check_paths = {
+    'files': ['EVidenceModeler', 'plugins/ParaFly/bin/ParaFly'],
+    'dirs': ['plugins/ParaFly', 'testing'],
+}
+
+modextrapaths = {
+    'EVM_HOME': '',
+    'PATH': '',
+}
+
+sanity_check_commands = ["EVidenceModeler -h 2>&1 | grep 'Evidence Modeler'"]
+
+moduleclass = 'bio'
