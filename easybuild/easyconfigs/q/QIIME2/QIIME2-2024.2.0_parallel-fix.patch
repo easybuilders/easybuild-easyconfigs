@@ -1,0 +1,23 @@
+Fix number of threads available on the system. First try SLURM_NTASKS_PER_NODE env.var.
+Author: Pavel Tomanek(Inuits)
+--- qiime2/sdk/parallel_config.py.orig	2025-03-17 19:09:34.193283000 +0100
++++ qiime2/sdk/parallel_config.py   2025-03-17 19:21:17.739245000 +0100
+@@ -28,15 +28,16 @@
+ # exist, so we will not write a default, we will just load it from memory
+ CONDA_PREFIX = os.environ.get('CONDA_PREFIX', '')
+ VENDORED_FP = os.path.join(CONDA_PREFIX, 'etc', 'qiime2_config.toml')
++CORE_NUM = (int(os.environ.get('SLURM_NTASKS_PER_NODE', max(psutil.cpu_count(), 2)))) - 1
+ 
+ VENDORED_CONFIG = {
+     'parsl': {
+         'strategy': 'None',
+         'executors': [
+             {'class': 'ThreadPoolExecutor', 'label': 'default',
+-                'max_threads': max(psutil.cpu_count() - 1, 1)},
++                'max_threads': CORE_NUM},
+             {'class': 'HighThroughputExecutor', 'label': 'htex',
+-                'max_workers': max(psutil.cpu_count() - 1, 1),
++                'max_workers': CORE_NUM,
+                 'provider': {'class': 'LocalProvider'}}
+             ]
+         }

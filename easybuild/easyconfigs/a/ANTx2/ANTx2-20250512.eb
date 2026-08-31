@@ -1,0 +1,50 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Jordi Blasco <jordi.blasco@hpcnow.com>
+# License::     GPL-v3.0
+# #
+
+easyblock = 'PackedBinary'
+
+name = 'ANTx2'
+local_commit = '1f36861'
+version = '20250512'
+
+homepage = 'https://github.com/ChariteExpMri/antx2'
+description = """ ANTx2 stands for A tlas N ormalization T oolbox using elasti x.
+It is a MATLAB toolbox for image registration of mouse magnetic resonance imaging data
+developed for research laboratories/departments. The pipeline works with invivo or
+exvivo (skull-stripped) MR-data for the following species: mouse, rat, Etruscan
+shrew and cat. """
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/ChariteExpMri/antx2/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['379f46b63ad7a7a1456873324e0fb055c2ac0a6a524e21239c669c1c035bac4b']
+
+postinstallcmds = [
+    'chmod +x %(installdir)s/mritools/elastix/elastix_linux64_v4.7/bin/elastix',
+    'chmod +x %(installdir)s/mritools/elastix/elastix_linux64_v4.7/bin/transformix',
+]
+
+modextrapaths = {
+    'PATH': ['', 'mritools/elastix/elastix_linux64_v4.7/bin'],
+    'LD_LIBRARY_PATH': 'mritools/elastix/elastix_linux64_v4.7/lib',
+    'LIBRARY_PATH': 'mritools/elastix/elastix_linux64_v4.7/lib',
+}
+
+sanity_check_paths = {
+    'files': ['__startup.m', 'antver.m', 'mritools/ant/ant.m', 'mritools/elastix/elastix_linux64_v4.7/bin/elastix',
+              'mritools/elastix/elastix_linux64_v4.7/bin/transformix',
+              'mritools/elastix/elastix_linux64_v4.7/lib/libANNlib.%s' % SHLIB_EXT],
+    'dirs': ['mritools', 'mricron', 'spm12']
+}
+
+sanity_check_commands = [
+    "elastix --help",
+    "transformix --help",
+]
+
+moduleclass = 'bio'

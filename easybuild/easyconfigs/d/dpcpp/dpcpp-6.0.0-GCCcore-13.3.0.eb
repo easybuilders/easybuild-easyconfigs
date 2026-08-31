@@ -1,0 +1,106 @@
+# Copyright:: Codeplay Software Ltd.
+# Authors::   Rafal Bielski <rafal.bielski@codeplay.com>
+# License::   GPLv2.0
+
+easyblock = 'CMakeNinja'
+
+name = 'dpcpp'
+version = '6.0.0'
+
+homepage = 'https://github.com/intel/llvm'
+description = '''The DPC++ is a LLVM-based compiler project that implements
+compiler and runtime support for the SYCL language. This build includes SYCL
+backends for Intel and NVIDIA devices.'''
+docurls = [
+    'https://github.com/intel/llvm/releases/tag/v%(version)s',
+    'https://intel.github.io/llvm/',
+    'https://developer.codeplay.com/products/oneapi/nvidia/latest/guides/'
+]
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/intel/llvm/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+
+# Patch disabling unified-runtime tracing and its dependency on a specific
+# version of CUDA CUPTI library which would reduce portability, as well as
+# fixing an issue with finding libcuda.so
+patches = ['dpcpp-6.0.0-cmake-cuda-deps.patch']
+
+checksums = [
+    {'v6.0.0.tar.gz': 'f7a30b3075e2690b207063bb66504ebcb466ddf10604f6467b5a1785eb022ce8'},
+    {'dpcpp-6.0.0-cmake-cuda-deps.patch': '6a57345b1d10a815fc1aec8ac42217f32ef3055565738602fde324a425b00cf4'},
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Ninja', '1.12.1'),
+    ('Python', '3.12.3'),
+    # CUDA >= 11.7 is recommended for the NVIDIA GPU backend in DPC++.
+    # Since CUDA is backwards compatible, any higher version will work
+    # at runtime with this build. DPC++ can also be used without CUDA
+    # to compile for other backends, hence no runtime dependency on CUDA.
+    ('CUDA', '11.7.0', '', SYSTEM),
+]
+dependencies = [
+    ('binutils', '2.42'),
+    ('hwloc', '2.10.0'),
+]
+
+configure_without_installdir = True
+configure_cmd = ' '.join([
+    # Use the configure script provided in the source
+    'python %(start_dir)s/buildbot/configure.py',
+    '-o %(builddir)s/build -t Release --cmake-gen Ninja',
+    '--cmake-opt="-DCMAKE_INSTALL_PREFIX=%(installdir)s"',
+    # Include OpenMP libraries in the build
+    '--llvm-external-projects "openmp"',
+    # Enable the SYCL CUDA backend
+    '--cuda --cmake-opt="-DCUDA_TOOLKIT_ROOT_DIR=$EBROOTCUDA"',
+    # Disable tracing which would otherwise introduce a dependency on a specific
+    # version of CUDA (CUPTI) and reduce portability
+    '--cmake-opt="-DSYCL_ENABLE_XPTI_TRACING=OFF"',
+    # Ensure build steps using the freshly-built compiler pick up libstdc++
+    # from the GCCcore module and not from system
+    '&& mkdir -p %(builddir)s/build/bin',
+    '&& echo "--gcc-toolchain=$EBROOTGCCCORE" > %(builddir)s/build/bin/clang++.cfg',
+    '&& echo "--gcc-toolchain=$EBROOTGCCCORE" > %(builddir)s/build/bin/clang.cfg',
+])
+
+build_cmd_targets = 'deploy-sycl-toolchain omp'
+build_dir = '%(builddir)s/build'
+buildopts = '-C ' + build_dir + ' ' + build_cmd_targets
+test_cmd = 'ninja'  # not needed after easybuild-easyblocks#3771
+runtest = '-C ' + build_dir
+
+install_target_subdir = '%(builddir)s/build/install'
+installopts = '-C ' + build_dir
+
+# Ensure DPC++ picks up libstdc++ from the GCCcore module and not from system
+postinstallcmds = [
+    'echo "--gcc-toolchain=$EBROOTGCCCORE" > %(installdir)s/bin/clang++.cfg',
+    'echo "--gcc-toolchain=$EBROOTGCCCORE" > %(installdir)s/bin/clang.cfg'
+]
+
+# OpenMP libs install in lib/<target-triple>
+modextrapaths = {
+    'LIBRARY_PATH': 'lib/%(arch)s-unknown-linux-gnu',
+    'LD_LIBRARY_PATH': 'lib/%(arch)s-unknown-linux-gnu',
+}
+
+sanity_check_paths = {
+    'files': ['bin/clang', 'bin/clang++', 'bin/sycl-ls',
+              'include/sycl/sycl.hpp', 'lib/libsycl.so', 'lib/libur_loader.so',
+              'lib/libur_adapter_cuda.so', 'lib/libur_adapter_level_zero.so',
+              'lib/libur_adapter_opencl.so', 'lib/libze_loader.so',
+              'lib/libOpenCL.so', 'lib/%(arch)s-unknown-linux-gnu/libomp.so'],
+    'dirs': ['bin', 'include', 'lib']
+}
+sanity_check_commands = [
+    'clang --version', 'clang++ --version', 'sycl-ls',
+    'echo "#include <sycl/sycl.hpp>" | clang++ -x c++ -fsycl ' +
+    '-fsycl-targets=spir64,spir64_x86_64,intel_gpu_pvc,nvidia_gpu_sm_60 ' +
+    '-nocudalib -o /dev/null -c -'
+]
+
+moduleclass = 'compiler'

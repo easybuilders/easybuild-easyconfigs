@@ -1,0 +1,57 @@
+Use pybind11 from EasyBuild install
+Required to use Python != 3.10
+Also use zlib from EB install
+
+Åke Sandgren, 2024-12-09
+diff --git a/Makefile b/Makefile
+index d5b9f21..e81661c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -115,7 +115,7 @@ else
+ endif
+ endif
+ 
+-LIB_ZLIB=3rd_party/cloudflare/libz.a
++LIB_ZLIB=-lz
+ LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.a
+ 
+ 
+@@ -144,8 +144,6 @@ $(KMC_TOOLS_DIR)/fastq_writer.o \
+ $(KMC_TOOLS_DIR)/percent_progress.o \
+ $(KMC_TOOLS_DIR)/kff_info_reader.o
+ 
+-$(LIB_ZLIB):
+-	cd 3rd_party/cloudflare; ./configure; make libz.a
+ 
+ $(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(KMC_TOOLS_OBJS): %.o: %.cpp
+ 	$(CC) $(CFLAGS) -I 3rd_party/cloudflare -c $< -o $@
+@@ -169,17 +167,17 @@ $(LIB_KMC_CORE): $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
+ 	-mkdir -p $(OUT_BIN_DIR)
+ 	ar rcs $@ $^
+ 
+-kmc: $(KMC_CLI_OBJS) $(LIB_KMC_CORE) $(LIB_ZLIB)
++kmc: $(KMC_CLI_OBJS) $(LIB_KMC_CORE)
+ 	-mkdir -p $(OUT_BIN_DIR)
+-	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^
++	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^ $(LIB_ZLIB)
+ 
+ kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
+ 	-mkdir -p $(OUT_BIN_DIR)
+ 	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^
+ 
+-kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(LIB_ZLIB)
++kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
+ 	-mkdir -p $(OUT_BIN_DIR)
+-	$(CC) $(CLINK) -I 3rd_party/cloudflare -o $(OUT_BIN_DIR)/$@ $^
++	$(CC) $(CLINK) -I 3rd_party/cloudflare -o $(OUT_BIN_DIR)/$@ $^ $(LIB_ZLIB)
+ 
+ $(PY_KMC_API_DIR)/%.o: $(KMC_API_DIR)/%.cpp
+ 	$(CC) -c -fPIC -Wall -O3 $(CPU_FLAGS) -std=c++14 $^ -o $@
+@@ -188,7 +186,6 @@ py_kmc_api: $(PY_KMC_API_OBJS) $(PY_KMC_API_OBJS)
+ 	-mkdir -p $(OUT_BIN_DIR)
+ 	$(CC) $(PY_KMC_API_CFLAGS) $(PY_KMC_API_DIR)/py_kmc_api.cpp $(PY_KMC_API_OBJS) \
+ 	-I $(KMC_API_DIR) \
+-	-I $(PY_KMC_API_DIR)/libs/pybind11/include \
+ 	-I `python3 -c "import sysconfig;print(sysconfig.get_paths()['include'])"` \
+ 	-o $(OUT_BIN_DIR)/$@`python3-config --extension-suffix`
+ 
