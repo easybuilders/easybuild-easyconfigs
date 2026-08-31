@@ -34,6 +34,7 @@ dependencies = [
 local_arch = {"arm64": "sbsa", "aarch64": "sbsa"}.get(ARCH, ARCH)
 
 components = [
+    # Hash from cmake/llvm-hash.txt
     ('LLVM', '7d5de3033187c8a3bb4d2e322f5462cdaf49808f', {
         'easyblock': 'CMakeNinja',
         'source_urls': ['https://github.com/llvm/llvm-project/archive/'],
@@ -45,8 +46,10 @@ components = [
         'start_dir': 'llvm-project-%(version)s',
         'separate_build_dir': 'llvm_build_dir',
         'configopts': ' '.join([
-            '-DLLVM_ENABLE_BINDINGS=OFF',
+            # Reduce dependencies
+            '-DLLVM_ENABLE_BINDINGS=OFF',  # Requires OCAML
             '-DLLVM_ENABLE_LIBEDIT=OFF',
+            # See https://github.com/triton-lang/triton/blob/develop/scripts/build-llvm-project.sh
             '-DCMAKE_BUILD_TYPE="Release"',
             '-DLLVM_CCACHE_BUILD=OFF',
             '-DLLVM_ENABLE_ASSERTIONS=ON',
@@ -57,6 +60,13 @@ components = [
         'srcdir': 'llvm',
         'skipsteps': ['install'],
     }),
+    # Use same major.minor version as Triton, see this file using the right tag instead of 'main':
+    # https://github.com/triton-lang/triton/blob/main/cmake/nvidia-toolchain-version.json
+    # Check https://developer.download.nvidia.com/compute/cuda/redist for the latest version of redistrib_*.json.
+    # Generate checksums with:
+    #   wget -O- https://developer.download.nvidia.com/compute/cuda/redist/redistrib_12.8.1.json | \
+    #     jq -r '.cuda_nvcc | to_entries[] | select(.value | type=="object") | "'\
+    #     \''" + (.value.relative_path | split("/")[-1]) + "'\'': '\''" + .value.sha256 + "'\'',"'
     ('CUDA-NVCC', '12.8.93', {
         'easyblock': 'MakeCp',
         'source_urls': [f'https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvcc/linux-{local_arch}'],
@@ -76,19 +86,22 @@ local_preinstallopts = ' '.join([
     "TRITON_HOME='%(builddir)s/triton_home'",
     'TRITON_OFFLINE_BUILD=1',
     'TRITON_PTXAS_PATH="%(installdir)s/tools/ptxas"',
-    'TRITON_CUOBJDUMP_PATH="$CUDA_HOME/bin/cubjdump"',
+    'TRITON_CUOBJDUMP_PATH="$CUDA_HOME/bin/cuobjdump"',
     'TRITON_NVDISASM_PATH="$CUDA_HOME/bin/nvdisasm"',
     'LLVM_SYSPATH="%(builddir)s/llvm_build_dir"',
     'JSON_SYSPATH="$EBROOTNLOHMANN_JSON"',
     'PYBIND11_SYSPATH="$EBROOTPYBIND11"',
     'MAX_JOBS=%(parallel)s',
+    # Build type
     'DEBUG=0 REL_WITH_DEB_INFO=0 TRITON_REL_BUILD_WITH_ASSERTS=1',
     "TRITON_APPEND_CMAKE_ARGS='-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON'",
 ]) + ' '
 
 exts_list = [
     (name, version, {
+        # make pip print output of cmake
         'installopts': "-v ",
+        # ensure that libdevice.10.bc from $EBROOTCUDA/nvvm/libdevice is used:
         'postinstallcmds': [
             'rm -rf %(installdir)s/lib/python%(pyshortver)s/site-packages/triton/backends/nvidia/lib/libdevice.10.bc'
         ],
@@ -106,4 +119,20 @@ exts_list = [
 
 postinstallpatches = [('triton_test.py', 'test/triton_test.py')]
 
-moduleclass = 'lang'
+checksums = [
+    {'triton_test.py': '0d8b4556a76268b000d6023a1abaee801d179db3aed51e781c06854858490cc8'},
+]
+
+sanity_check_commands = ['TRITON_HOME=$TMPDIR/eb-triton_home '
+                         'python %(installdir)s/test/triton_test.py %(cuda_compute_capabilities)s']
+
+modextrapaths = {
+    'TRITON_PTXAS_PATH': 'tools/ptxas',
+}
+modextravars = {
+    # Search for "_path_to_binary" in Triton sources
+    'TRITON_CUOBJDUMP_PATH': '$CUDA_HOME/bin/cuobjdump',
+    'TRITON_LIBDEVICE_PATH': '$CUDA_HOME/nvvm/libdevice/libdevice.10.bc',
+}
+
+moduleclass = 'devel'
