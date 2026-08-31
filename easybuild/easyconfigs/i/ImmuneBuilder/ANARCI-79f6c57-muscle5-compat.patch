@@ -1,0 +1,60 @@
+--- a/build_pipeline/FormatAlignments.py
++++ b/build_pipeline/FormatAlignments.py
+@@ -181,1 +181,1 @@
+-        pr = Popen( [ "muscle", "-in", ffile, "-gapopen", "-10", "-out", al_filename, ], stdout=PIPE, stderr=PIPE )
++        pr = Popen( [ "muscle", "-align", ffile, "-output", al_filename ], stdout=PIPE, stderr=PIPE )
+@@ -191,1 +191,11 @@
+-    start = ref_aligned.index( reference[0] )
++    # MUSCLE v5 may insert gap characters within a motif; search in degapped
++    # sequence and map the result back to the gapped alignment column index.
++    ref_degapped = ref_aligned.replace('-', '').replace('.', '')
++    motif_pos = ref_degapped.index(reference[0])
++    count, start = 0, 0
++    for i, c in enumerate(ref_aligned):
++        if count == motif_pos:
++            start = i
++            break
++        if c not in '-.':
++            count += 1
+--- a/setup.py
++++ b/setup.py
+@@ -10,3 +10,3 @@
+         # Post-installation routine
+-       ANARCI_LOC = os.path.join(site.getsitepackages()[0], 'anarci') # site-packages/ folder
++       ANARCI_LOC = os.path.join(self.install_lib, 'anarci')  # install target, not system site-packages
+         ANARCI_BIN = sys.executable.split('python')[0] # bin/ folder
+@@ -28,4 +28,21 @@
+         # Copy HMMs where ANARCI can find them
+-       shutil.copy( "curated_alignments/germlines.py", ANARCI_LOC )
+-       os.mkdir(os.path.join(ANARCI_LOC, "dat"))
+-       shutil.copytree( "HMMs", os.path.join(ANARCI_LOC, "dat/HMMs/") )
++       source_pkg_dir = os.path.join("..", "lib", "python", "anarci")
++       for package_dir in [source_pkg_dir, ANARCI_LOC]:
++           if os.path.isfile(package_dir):
++               os.remove(package_dir)
++           if not os.path.isdir(package_dir):
++               os.makedirs(package_dir)
++           shutil.copy("curated_alignments/germlines.py", os.path.join(package_dir, "germlines.py"))
++
++           dat_dir = os.path.join(package_dir, "dat")
++           hmms_dir = os.path.join(dat_dir, "HMMs")
++
++           if os.path.exists(dat_dir) and not os.path.isdir(dat_dir):
++               os.remove(dat_dir)
++           os.makedirs(dat_dir, exist_ok=True)
++
++           if os.path.isdir(hmms_dir):
++               shutil.rmtree(hmms_dir)
++           elif os.path.exists(hmms_dir):
++               os.remove(hmms_dir)
++           shutil.copytree("HMMs", hmms_dir)
+@@ -39,2 +57,4 @@
+         except OSError:
+             pass
++       finally:
++           os.chdir("..")
+@@ -50,1 +50,2 @@
+-     include_package_data = True,
++     include_package_data = True,
++     package_data={'anarci': ['germlines.py', 'dat/HMMs/**', 'dat/HMMs/**/**']},
+
