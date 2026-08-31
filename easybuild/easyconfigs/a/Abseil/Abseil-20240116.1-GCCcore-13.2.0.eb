@@ -21,12 +21,13 @@ builddependencies = [
     ('CMake', '3.27.6'),
 ]
 
-configopts = "-DABSL_PROPAGATE_CXX_STD=ON "
-
-build_shared_libs = True
+local_configopts = "-DABSL_PROPAGATE_CXX_STD=ON "
+# Build static and shared libraries, static last so they get preferred by CMake consumers
+# For backwards compatibility only. Future builds should only build static libs to avoid excessive linkage.
+configopts = [f'-DBUILD_SHARED_LIBS={shlib} {local_configopts}' for shlib in ['ON', 'OFF']]
 
 sanity_check_paths = {
-    'files': ['lib/libabsl_base.' + SHLIB_EXT],
+    'files': [f'lib/libabsl_base.{ext}' for ext in (SHLIB_EXT, 'a')],
     'dirs': ['include/absl'],
 }
 

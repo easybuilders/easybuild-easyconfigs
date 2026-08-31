@@ -1,0 +1,77 @@
+easyblock = 'Binary'
+
+name = 'hpc-container-wrapper'
+version = '0.4.2'
+_config_file = 'configs/local.yaml'
+
+homepage = 'https://github.com/CSCfi/hpc-container-wrapper'
+
+description = """hpc-container-wrapper (formerly known as Tykky) is a tool
+for wrapping a software environment in an Apptainer container."""
+
+docurls = ['https://docs.csc.fi/computing/containers/tykky/']
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+github_account = 'CSCfi'
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    # (_config_file, 'configs'),  # optionally add _config_file as patch
+    '%(name)s-%(version)s_no_pip_install.patch',
+]
+checksums = [
+    {'v0.4.2.tar.gz': '72a51c2a678cc88c62e415418dab122fa155140014896dc7622cb5c3450d9a44'},
+    {'hpc-container-wrapper-0.4.2_no_pip_install.patch':
+     '906a6e41a64c633308f1bdfcce3a4876120cf554b763a6f992975778f25e94c1'},
+]
+
+unpack_options = '--strip-components=1 '
+
+builddependencies = [('binutils', '2.42')]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('PyYAML', '6.0.2'),
+]
+
+build_info_msg = f"""This easyconfig uses '{_config_file}' file as default
+configuration.  Please check the contents of '{_config_file}'. You can provide
+a different file or link (default_config/config.yaml) to any other file after
+the installation."""
+
+usage = """
+Initialize new conda environment:
+
+  conda-containerize new --prefix /path/to_install conda_env.yaml
+
+Update already existing environment:
+
+  conda-containerize update --post-install post.sh /path/to_install
+
+Initialize new python environment with pip requirements to install:
+
+  pip-containerize new --prefix /path/to_install req.txt
+
+To start your environment simply run the program from bin/ subdirectory of the installation directory.
+"""
+
+extract_sources = 'True'
+
+buildininstalldir = 'True'
+
+install_cmd = ' && '.join([
+    'mkdir -p default_config',
+    f'ln -sfr configs/{_config_file} default_config/config.yaml',
+    'echo "export PY_EXE=$(which python3)" > frontends/inst_vars.sh',
+])
+
+sanity_check_paths = {
+    'files': ['bin/conda-containerize', 'bin/pip-containerize', 'default_config/config.yaml'],
+    'dirs': ['bin', 'frontends'],
+}
+
+sanity_check_commands = ['conda-containerize --help', 'pip-containerize --help']
+
+moduleclass = 'tools'

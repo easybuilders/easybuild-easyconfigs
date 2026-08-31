@@ -1,0 +1,53 @@
+# Author: Jasper Grimm (UoY)
+# Update: Petr Král (INUITS)
+
+easyblock = 'ConfigureMake'
+
+name = 'Mono'
+version = '6.12.0.199'
+
+homepage = 'https://www.mono-project.com/'
+description = """An open source, cross-platform, implementation of C# and the CLR that is
+ binary compatible with Microsoft.NET."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://download.mono-project.com/sources/mono']
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['c0850d545353a6ba2238d45f0914490c6a14a0017f151d3905b558f033478ef5']
+
+builddependencies = [
+    ('Autotools', '20231222'),
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+    ('gettext', '0.22.5'),
+    ('pkgconf', '2.2.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('zlib', '1.3.1'),
+    # optional:
+    ('jemalloc', '5.3.0'),
+    ('X11', '20240607'),
+]
+
+# autogen.sh also runs configure with supplied arguments
+configure_cmd = "./autogen.sh"
+configopts = "--with-tls=pthread --with-large-heap "
+# optionally build with libgdiplus, jemalloc and X11 support
+configopts += "--with-libgdiplus=$EBROOTLIBGDIPLUS/lib/libgdiplus.so "
+configopts += "--with-jemalloc=$EBROOTJEMALLOC/lib/libjemalloc.so "
+
+local_bins = ['bin/mono']
+local_libs = ['lib/libmono%s.%s' % (x, y) for x in ['-2.0', 'boehm-2.0', '-native', '-profiler-aot', 'sgen-2.0']
+              for y in ['a', 'la', SHLIB_EXT]]
+
+sanity_check_paths = {
+    'files': local_bins + local_libs,
+    'dirs': ['include', 'etc'],
+}
+
+sanity_check_commands = ["mono --help", "mono --version"]
+
+moduleclass = 'lang'

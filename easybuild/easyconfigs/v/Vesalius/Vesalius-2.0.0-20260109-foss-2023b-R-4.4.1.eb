@@ -1,0 +1,76 @@
+easyblock = 'Bundle'
+
+name = 'Vesalius'
+local_commit = '1788735'
+# see DESCRIPTION to determine version,
+# but add date stamp of commit since version is not always bumped
+version = '2.0.0-20260109'
+versionsuffix = '-R-%(rver)s'
+local_biocver = '3.19'
+
+homepage = 'https://wonlab-cs.github.io/Vesalius/'
+description = """
+ Vesalius is an R package to decipher tissue anatomy by embracing various image
+ analysis techniques for high-resolution ST data. Vesalius identifies spatially
+ expressed genes linked to the morphology of tissue structures.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+dependencies = [
+    ('R', '4.4.1'),
+    ('R-bundle-Bioconductor', local_biocver, versionsuffix),
+]
+
+exts_default_options = {
+    'source_urls': [
+        'https://bioconductor.org/packages/%s/bioc/src/contrib/' % local_biocver,
+        'https://bioconductor.org/packages/%s/bioc/src/contrib/Archive/%%(name)s' % local_biocver,
+        'https://bioconductor.org/packages/%s/data/annotation/src/contrib/' % local_biocver,
+        'https://bioconductor.org/packages/%s/data/experiment/src/contrib/' % local_biocver,
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz'
+}
+
+exts_defaultclass = 'RPackage'
+
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+
+exts_list = [
+    ('tvR', '0.3.3', {
+        'checksums': ['6f2bf849dbc21159da88351a7636699058a033f8db65fa8727e83da5eaedb863'],
+    }),
+    ('infix', '0.1.0', {
+        'checksums': ['33bf39f85720b42adb38354ad64761b39394e767d10e88dfddb7deb49043fefd'],
+    }),
+    ('pwr', '1.3-0', {
+        'checksums': ['5bb00747aa599b11f133e94c6e4999e592456e966cba3607bbd1fcb1c7f1dfcd'],
+    }),
+    ('PlotTools', '0.4.0', {
+        'checksums': ['1e66fd28f79b966751aa241e98a1a7eb4ebb1ade417f86eac14d79402b1fe58c'],
+    }),
+    ('TreeTools', '1.16.1', {
+        'checksums': ['e9162efae6d6f691ccee5f6dbb988fd45edcc4b017f1ba01e08163019d88a433'],
+    }),
+    ('TreeDist', '2.11.1', {
+        'checksums': ['6446a0c0cd68a774cd899c85e12feb22d73709287d6c353a7a93dfd79a1b99e9'],
+    }),
+    (name, version, {
+        'modulename': 'vesalius',
+        'source_urls': ['https://github.com/WonLab-CS/Vesalius/archive/'],
+        'sources': [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['aefac02327db10648555d9c07643f4cfb53f69c9e03663a1defb1deeb355ad78'],
+    }),
+]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['%(namelower)s'],
+}
+
+moduleclass = 'bio'

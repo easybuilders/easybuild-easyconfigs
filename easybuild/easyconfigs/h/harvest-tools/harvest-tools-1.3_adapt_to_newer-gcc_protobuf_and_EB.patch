@@ -1,0 +1,113 @@
+commit 845bb6e29bc12cf5f989c0c64fb98002cb57b343
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Mon Dec 16 18:10:22 2024 +0100
+
+    Adapt to newer compiler/protobuf and EasyBuild
+    And actually install the binary, library and include files
+
+diff --git a/Makefile.in b/Makefile.in
+index fdb2ce0..434ba0a 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -1,4 +1,4 @@
+-CXXFLAGS += -std=c++11 -Isrc -I@protobuf@/include -I@capnp@/include
++CXXFLAGS += -Isrc
+ 
+ UNAME_S=$(shell uname -s)
+ 
+@@ -23,10 +23,13 @@ SOURCES=\
+ 
+ OBJECTS=$(SOURCES:.cpp=.o) src/harvest/pb/harvest.pb.o src/harvest/capnp/harvest.capnp.o
+ 
+-all : harvesttools libharvest.a
++all : harvesttools libharvest.a libharvest.so
+ 
+-harvesttools : libharvest.a src/harvest/memcpyWrap.o
+-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o harvesttools src/harvest/memcpyWrap.o libharvest.a @protobuf@/lib/libprotobuf.a @capnp@/lib/libcapnp.a @capnp@/lib/libkj.a -lstdc++ -lz -lm -lpthread
++harvesttools : libharvest.so src/harvest/memcpyWrap.o
++	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o harvesttools src/harvest/memcpyWrap.o -L. -lharvest -lprotobuf -lcapnp -lkj -lstdc++ -lz -lm -lpthread
++
++libharvest.so : $(OBJECTS)
++	g++ -shared -o libharvest.so $(OBJECTS)
+ 
+ libharvest.a : $(OBJECTS)
+ 	ar -cr libharvest.a $(OBJECTS)
+@@ -52,27 +55,28 @@ src/harvest/pb/harvest.pb.cc src/harvest/pb/harvest.pb.h : src/harvest/pb/harves
+ src/harvest/capnp/harvest.capnp.c++ src/harvest/capnp/harvest.capnp.h : src/harvest/capnp/harvest.capnp
+ 	cd src/harvest/capnp;export PATH=@capnp@/bin/:${PATH};capnp compile -I @capnp@/include -oc++ harvest.capnp
+ 
+-install : libharvest.a
+-	mkdir -p @prefix@/bin/
+-	mkdir -p @prefix@/lib/
+-	mkdir -p @prefix@/include/
+-	mkdir -p @prefix@/include/harvest
+-	mkdir -p @prefix@/include/harvest/capnp
+-	mkdir -p @prefix@/include/harvest/pb
+-	ln -sf `pwd`/harvesttools @prefix@/bin/
+-	ln -sf `pwd`/libharvest.a @prefix@/lib/
+-	ln -sf `pwd`/src/harvest/exceptions.h @prefix@/include/harvest/
+-	ln -sf `pwd`/src/harvest/HarvestIO.h @prefix@/include/harvest/
+-	ln -sf `pwd`/src/harvest/capnp/harvest.capnp.h @prefix@/include/harvest/capnp/
+-	ln -sf `pwd`/src/harvest/pb/harvest.pb.h @prefix@/include/harvest/pb/
+-	ln -sf `pwd`/src/harvest/ReferenceList.h @prefix@/include/harvest/
+-	ln -sf `pwd`/src/harvest/AnnotationList.h @prefix@/include/harvest/
+-	ln -sf `pwd`/src/harvest/parse.h @prefix@/include/harvest/
+-	ln -sf `pwd`/src/harvest/PhylogenyTree.h @prefix@/include/harvest/
+-	ln -sf `pwd`/src/harvest/PhylogenyTreeNode.h @prefix@/include/harvest/
+-	ln -sf `pwd`/src/harvest/TrackList.h @prefix@/include/harvest/
+-	ln -sf `pwd`/src/harvest/LcbList.h @prefix@/include/harvest/
+-	ln -sf `pwd`/src/harvest/VariantList.h @prefix@/include/harvest/
++install : all
++	install -d @prefix@/bin/
++	install -d @prefix@/lib/
++	install -d @prefix@/include/
++	install -d @prefix@/include/harvest
++	install -d @prefix@/include/harvest/capnp
++	install -d @prefix@/include/harvest/pb
++	install harvesttools @prefix@/bin/
++	install libharvest.a @prefix@/lib/
++	install libharvest.so @prefix@/lib/
++	install src/harvest/exceptions.h @prefix@/include/harvest/
++	install src/harvest/HarvestIO.h @prefix@/include/harvest/
++	install src/harvest/capnp/harvest.capnp.h @prefix@/include/harvest/capnp/
++	install src/harvest/pb/harvest.pb.h @prefix@/include/harvest/pb/
++	install src/harvest/ReferenceList.h @prefix@/include/harvest/
++	install src/harvest/AnnotationList.h @prefix@/include/harvest/
++	install src/harvest/parse.h @prefix@/include/harvest/
++	install src/harvest/PhylogenyTree.h @prefix@/include/harvest/
++	install src/harvest/PhylogenyTreeNode.h @prefix@/include/harvest/
++	install src/harvest/TrackList.h @prefix@/include/harvest/
++	install src/harvest/LcbList.h @prefix@/include/harvest/
++	install src/harvest/VariantList.h @prefix@/include/harvest/
+ 
+ clean :
+ 	-rm harvesttools
+diff --git a/configure.ac b/configure.ac
+index fc8e61d..5e2fc22 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -29,8 +29,6 @@ then
+ 	AC_MSG_ERROR([Cap'n Proto compiler (capnp) not found.])
+ fi
+ 
+-CPPFLAGS="-I$with_protobuf/include -I$with_capnp/include -std=c++11"
+-
+ AC_CHECK_HEADER(google/protobuf/stubs/common.h, [result=1], [result=0])
+ 
+ if test $result == 0
+diff --git a/src/harvest/HarvestIO.cpp b/src/harvest/HarvestIO.cpp
+index c165dce..c1dbb7a 100755
+--- a/src/harvest/HarvestIO.cpp
++++ b/src/harvest/HarvestIO.cpp
+@@ -208,7 +208,11 @@ bool HarvestIO::loadHarvestProtocolBuffer(const char * file)
+ 	GzipInputStream gz(&raw_input);
+ 	CodedInputStream coded_input(&gz);
+ 	
++#if GOOGLE_PROTOBUF_VERSION >= 3002000
++	coded_input.SetTotalBytesLimit(INT_MAX);
++#else
+ 	coded_input.SetTotalBytesLimit(INT_MAX, INT_MAX);
++#endif
+ 	
+ 	if ( ! harvest.ParseFromCodedStream(&coded_input) )
+ 	{

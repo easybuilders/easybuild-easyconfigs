@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = 'FLINT'
+version = '3.1.2'
+
+homepage = 'https://www.flintlib.org/'
+
+description = """FLINT (Fast Library for Number Theory) is a C library in support of computations
+ in number theory. Operations that can be performed include conversions, arithmetic, computing GCDs,
+ factoring, solving linear systems, and evaluating special functions. In addition, FLINT provides
+ various low-level routines for fast arithmetic. FLINT is extensively documented and tested."""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.flintlib.org/download']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['fdb3a431a37464834acff3bdc145f4fe8d0f951dd5327c4c6f93f4cbac5c2700']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Python', '3.12.3'),
+]
+
+dependencies = [
+    ('GMP', '6.3.0'),
+    ('MPFR', '4.2.1'),
+    ('NTL', '11.5.1'),
+]
+
+# Make flexiblas the first to be found and used to avoid linking openblas.
+preconfigopts = 'sed -i "s/PATH_SUFFIXES openblas/PATH_SUFFIXES flexiblas openblas/g;'
+preconfigopts += 's/accelerate openblas/accelerate flexiblas openblas/g" '
+preconfigopts += '%(builddir)s/%(namelower)s-%(version)s/CMake/FindCBLAS.cmake && '
+
+configopts = '-DWITH_NTL=on -DBUILD_TESTING=yes'
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['lib/lib%%(namelower)s.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'
