@@ -1,0 +1,47 @@
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+
+easyblock = 'CMakeNinja'
+
+name = 'ccache'
+version = '4.13.6'
+
+homepage = 'https://ccache.dev/'
+description = """Ccache (or “ccache”) is a compiler cache. It speeds up recompilation by
+caching previous compilations and detecting when the same compilation is being done again"""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = [GITHUB_RELEASE]
+sources = [SOURCE_TAR_GZ]
+checksums = ['d42ace95dec14583fb8af19ed117919995bd910376f52d9b6f546046b792dfb7']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('CMake', '4.2.1'),
+    ('Ninja', '1.13.2'),
+    ('zstd', '1.5.7'),
+    ('pkgconf', '2.5.1'),
+]
+
+dependencies = [
+    ('hiredis', '1.4.0'),
+]
+
+configopts = ' '.join([
+    '-DENABLE_DOCUMENTATION=OFF',
+    '-DENABLE_IPO=ON',
+    # Link most libraries statically
+    '-DSTATIC_LINK=ON',
+    # Disable downloading dependencies
+    '-DZSTD_FROM_INTERNET=OFF -DHIREDIS_FROM_INTERNET=OFF',
+])
+
+sanity_check_paths = {
+    'files': ['bin/ccache'],
+    'dirs': []
+}
+sanity_check_commands = ['ccache --help']
+
+moduleclass = 'tools'
