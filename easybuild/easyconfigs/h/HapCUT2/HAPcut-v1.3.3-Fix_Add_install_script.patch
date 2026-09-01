@@ -1,0 +1,103 @@
+From c8fa7a482f8422aa7e3c03bf5a483bf3f485b7f0 Mon Sep 17 00:00:00 2001
+From: Vikas Bansal <vikas115@gmail.com>
+Date: Mon, 31 Jan 2022 13:46:05 -0800
+Subject: [PATCH] - added script install.sh to install htslib (from source) and
+ hapcut2 automatically
+
+- path to htslib changed to htslib
+---
+ Makefile                   |  4 ++--
+ hairs-src/readvariant.c    |  1 +
+ hapcut2-src/hic.c          |  6 +++++-
+ hapcut2-src/optionparser.c |  2 +-
+ install.sh                 | 10 ++++++++++
+ 5 files changed, 19 insertions(+), 4 deletions(-)
+ create mode 100644 install.sh
+
+diff --git a/Makefile b/Makefile
+index dd185cd..c473df9 100644
+--- a/Makefile
++++ b/Makefile
+@@ -9,7 +9,7 @@ CFLAGS=-Wall
+ B=build
+ H=hairs-src
+ X=hapcut2-src
+-HTSLIB=/usr/common/src/htslib #path/to/htslib/
++HTSLIB=htslib #/usr/common/src/htslib #path/to/htslib/
+ T=test
+ # below is the path to CUnit directory, change if need be
+ CUNIT=/usr/include/CUnit
+@@ -19,7 +19,7 @@ all: $(B)/extractHAIRS $(B)/HAPCUT2
+ 
+ #temporarily removed -O2 flag after -I$(HTSLIB)
+ $(B)/extractHAIRS: $(B)/bamread.o $(B)/hashtable.o $(B)/readvariant.o $(B)/readfasta.o $(B)/hapfragments.o $(H)/extracthairs.c $(H)/parsebamread.c $(H)/realignbamread.c $(H)/nw.c $(H)/realign_pairHMM.c $(H)/estimate_hmm_params.c | $(B)
+-	$(CC) $(CFLAGS) $(LDFLAGS) -I$(HTSLIB) -g $(B)/bamread.o $(B)/hapfragments.o $(B)/hashtable.o $(B)/readfasta.o $(B)/readvariant.o -o $(B)/extractHAIRS $(H)/extracthairs.c -pthread -lhts -lm -lz -lcurl -lcrypto -llzma -lbz2
++	$(CC) $(CFLAGS) $(LDFLAGS) -I$(HTSLIB) -g $(B)/bamread.o $(B)/hapfragments.o $(B)/hashtable.o $(B)/readfasta.o $(B)/readvariant.o -o $(B)/extractHAIRS $(H)/extracthairs.c -pthread -lhts -lm -lz -lcurl -llzma -lbz2
+ #temporarily removed -O2 flag after -I$(HTSLIB)
+ 
+ $(B)/hapfragments.o: $(H)/hapfragments.c $(H)/hapfragments.h $(H)/readvariant.h | $(B)
+diff --git a/hairs-src/readvariant.c b/hairs-src/readvariant.c
+index 04fe6ba..0a95d29 100644
+--- a/hairs-src/readvariant.c
++++ b/hairs-src/readvariant.c
+@@ -93,6 +93,7 @@ int parse_variant(VARIANT* variant, char* buffer, int samplecol)
+  //       int altalleles = splitString(variant->AA,',',alist);
+ 
+ 	int gl = strlen(variant->genotype);
++        //fprintf(stderr,"variant genotype %d %s \n",variant->position,variant->genotype);
+ 	// check that the genotype field is diploid
+ 	if ((gl >= 3 && (variant->genotype[1] == '/' || variant->genotype[1] == '|')) &&
+ 			(gl == 3 || variant->genotype[3] == ':') &&
+diff --git a/hapcut2-src/hic.c b/hapcut2-src/hic.c
+index fc85142..2036dde 100644
+--- a/hapcut2-src/hic.c
++++ b/hapcut2-src/hic.c
+@@ -3,6 +3,10 @@
+ float HIC_EM_THRESHOLD = 0.99; 
+ /*
+ functions that are specific to processing of Hi-C reads for phasing: estimating h-trans error rates and I/O
++HTRANS_BINSIZE = 5000;
++HTRANS_MAXBINS = 10000; // this value will be overwritten at startup
++HTRANS_READ_LOWBOUND = 500;
++HTRANS_MAX_WINDOW = 4000000; // maximum window size for h-trans estimation
+ */
+ 
+ int count_htrans_bins(char* htrans_file) {
+@@ -169,7 +173,7 @@ int estimate_htrans_probs(struct fragment* Flist, int fragments, char* HAP, stru
+         }
+     }
+ 
+-	// using neighboring bins to calculate mean htrans for each bin
++    // using neighboring bins to calculate mean htrans for each bin if the number of reads in bin is less < 500 (READ_LOWBOUND)
+     for (i = 0; i < HTRANS_MAXBINS; i++){
+         adj_MLE_count[i] = MLE_count[i];
+         adj_MLE_sum[i] = MLE_sum[i];
+diff --git a/hapcut2-src/optionparser.c b/hapcut2-src/optionparser.c
+index 8308ec3..6674956 100644
+--- a/hapcut2-src/optionparser.c
++++ b/hapcut2-src/optionparser.c
+@@ -200,7 +200,7 @@ void print_hapcut_options() {
+     //fprintf(stderr, "--split_threshold, --st <float>:    PHRED SCALED threshold for splitting blocks (range 0-100, larger values split more). default: 0\n");
+     fprintf(stderr, "--call_homozygous, --ch <0/1>:      call positions as homozygous if they appear to be false heterozygotes. default: 0\n");
+     fprintf(stderr, "--discrete_pruning, --dp <0/1>:     use discrete heuristic to prune SNPs. default: 0\n");
+-    fprintf(stderr, "--error_analysis_mode, --ea <0/1>:  compute switch confidence scores and print to haplotype file but don't split blocks or prune. default: 0\n");
++    //fprintf(stderr, "--error_analysis_mode, --ea <0/1>:  compute switch confidence scores and print to haplotype file but don't split blocks or prune. default: 0\n");
+ 
+     fprintf(stderr, "\nAdvanced Options:\n");
+     fprintf(stderr, "--new_format, --nf <0/1>:           use new Hi-C fragment matrix file format (but don't do h-trans error modeling). default: 0\n");
+diff --git a/install.sh b/install.sh
+new file mode 100644
+index 0000000..629ebad
+--- /dev/null
++++ b/install.sh
+@@ -0,0 +1,10 @@
++git clone https://github.com/vibansal/HapCUT2.git
++cd hapcut2
++git clone https://github.com/samtools/htslib.git
++cd htslib
++autoreconf -i
++./configure
++make
++cd ..
++export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$(pwd)/htslib"
++make
