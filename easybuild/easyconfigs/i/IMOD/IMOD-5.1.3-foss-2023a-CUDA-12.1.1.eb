@@ -1,0 +1,126 @@
+easyblock = 'ConfigureMake'
+
+name = 'IMOD'
+version = '5.1.3'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://bio3d.colorado.edu/imod/'
+description = """IMOD is a set of image processing, modeling and display
+programs used for tomographic reconstruction and for 3D reconstruction of EM
+serial sections and optical sections. The package contains tools for assembling
+and aligning data within multiple types and sizes of image stacks, viewing 3-D
+data from any orientation, and modeling and display of the image files. IMOD
+was developed primarily by David Mastronarde, Rick Gaudette, Sue Held, Jim
+Kremer, Quanren Xiong, and John Heumann at the University of Colorado."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True}  # openmp leads to segfault with xftoxg tool
+
+download_instructions = f"""
+To generate the source tarball for %(name)s:
+  hg clone --debug http://bio3d.colorado.edu/%(namelower)s/nightlyBuilds/%(name)s
+  echo get lunch
+  cd %(name)s
+  hg update -r %(name)s_{version.replace('.', '-')}
+  cd ..
+  tar czf %(name)s-%(version)s.tar.gz IMOD
+"""
+
+sources = [SOURCE_TAR_GZ]
+
+patches = [
+    'IMOD-4.11.12_hdf1.12.patch',
+    'IMOD-4.12.17_tiltalign_include.patch',
+    # replace hardcoded CUDA compute capabilitites in machines/rhlinux. set as CUDACC:
+    'IMOD-4.12.58_cudacc.patch',
+]
+checksums = [
+    # IMOD-5.1.0.tar.gz:
+    None,  # can't include a valid checksum for source tarball, since it has to be created manually
+    # IMOD-4.11.12_hdf1.12.patch:
+    '19e5bff97b997c600f157dd56eddae96a7f34fef528e7f40e76ea8e19144810e',
+    # IMOD-4.12.17_tiltalign_include.patch:
+    '998c01a4f78b0d48dbffc530fcb12faaa892b1d322bce4f1643df20799845ab7',
+    # IMOD-4.12.58_cudacc.patch:
+    '9563b1ac9ab1569689d7db4380301f330290d9695988f8b31e7ea08d2601ee25',
+]
+
+dependencies = [
+    ('LibTIFF', '4.5.0'),
+    ('Qt5', '5.15.10'),
+    ('Java', '11', '', SYSTEM),
+    ('HDF5', '1.14.0'),
+    ('Python', '3.11.3'),
+    ('libGLU', '9.0.3'),
+    ('tcsh', '6.24.10'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('UCX-CUDA', '1.14.1', versionsuffix),
+]
+
+# parallel build sometimes fails
+maxparallel = 1
+
+# modify all qmake pro files in order to pass CFLAGS
+_qmake_pass_cflags = "find -name *.pro -exec sed -i -e '$aQMAKE_CXXFLAGS += $$(CFLAGS)' {} \\;"
+
+# exports required for configure and build
+_exports = ' && '.join([
+    'export QTDIR=$EBROOTQT5',
+    'export CUDACC="%(cuda_cc_cmake)s"',
+    'export HDF5_DIR="$EBROOTHDF5"',
+    'export QMAKESPEC="$EBROOTQT5/mkspecs/`qmake -query QMAKE_SPEC`"',
+    'export CUDA_DIR="$CUDA_HOME"',
+    #  readw_or_imod.f and others with gfortran10:
+    #     Error: Type mismatch between actual argument at (1) and actual argument at (2) (INTEGER(4)/INTEGER(2))
+    #     => set -fallow-argument-mismatch. Runs through without this option with GCC 8.3.0.
+    'export CFLAGS="$CFLAGS -fallow-argument-mismatch"',  # required for gfortran10 and newer
+])
+
+# rename pysrc/pip.py to pysrc/PIP.py
+_renamePip = ' && '.join([
+    "sed -i 's/from pip/from PIP/g' pysrc/*",
+    "mv pysrc/pip.py pysrc/PIP.py",
+    "sed -i 's/pip.py/PIP.py/g' pysrc/Makefile",
+])
+
+_useTcsh = 'sed -i "s|#!/bin/csh -f|#!/usr/bin/env tcsh|g;s|#! /bin/csh -f|#!/usr/bin/env tcsh|g" '
+_useTcsh += ' %(builddir)s/IMOD/{manpages/convert,setup,setup2,machines/rhlinux,packMacApps}'
+
+preconfigopts = ' && '.join([_exports, _renamePip, _qmake_pass_cflags, _useTcsh, ''])
+
+# IMOD's configure script is named setup and does not know the parameter --prefix, but -i.
+# CFLAGs are passed with -flags.
+configure_cmd = './setup'
+configopts = '-c gnu -flags "$CFLAGS"'
+prefix_opt = '-i '
+
+prebuildopts = f'{_exports} && '
+
+# create some missing directories required for installation process:
+preinstallopts = 'mkdir %(installdir)s/{man/cat1,bin,autodoc,SystemTemplate,lib/imodplug,com,html,Plugins} -p && '
+
+# patch hardcoded /usr/bin/python to use Python included as dependency
+preinstallopts += "find pysrc -name '*.py' | xargs sed -i 's@^#!/usr/bin/python@#!/usr/bin/env python@g' && "
+preinstallopts += "export PYTHONPATH=%(builddir)s/IMOD/pysrc:$PYTHONPATH && "
+preinstallopts += "ls manpages/{csvtohtml,adocdefaults} | xargs sed -i 's@^#!.*/python -u@#!/usr/bin/env python@g' && "
+preinstallopts += "xargs sed -i 's@^#!.*/python -u@#!/usr/bin/env python@g' html/makeqhp && "
+
+modextrapaths = {'PYTHONPATH': 'pylib'}
+
+modextravars = {
+    'IMOD_DIR': "%(installdir)s",
+    'IMOD_PLUGIN_DIR': '%(installdir)s/lib/imodplug',
+    'IMOD_JAVADIR': '$JAVA_HOME',
+    'FOR_DISABLE_STACK_TRACE': '1',
+}
+
+sanity_check_paths = {
+    'files': ['VERSION', 'bin/subm'],
+    'dirs': ['lib', 'com', 'autodoc', 'pylib', 'Plugins', 'man', 'SystemTemplate'],
+}
+
+sanity_check_commands = [('xftoxg', '-h')]
+
+modloadmsg = 'Please set the environment variable $IMOD_CALIB_DIR if appropriate.'
+
+moduleclass = 'vis'
