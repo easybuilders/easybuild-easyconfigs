@@ -1,0 +1,118 @@
+easyblock = 'PythonBundle'
+
+name = 'PyTorch3D'
+version = '0.7.8'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = "https://pytorch3d.org/"
+description = """PyTorch3D is FAIR's library of reusable components for deep learning with 3D data."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    # Building
+    ('hatchling', '1.18.0'),
+    # Testing
+    ('Python-bundle-PyPI', '2023.06'),  # pytest
+    ('scikit-image', '0.22.0'),
+    ('OpenCV', '4.8.1', versionsuffix + '-contrib'),
+    ('plotly.py', '5.16.0'),
+    ('SQLAlchemy', '2.0.25'),
+    ('visdom', '0.2.4'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('tqdm', '4.66.1'),
+    ('PyTorch-bundle', '2.1.2', versionsuffix),  # for portalocker, torchvision
+    ('imageio', '2.33.1'),
+    ('IPython', '8.14.0'),
+    ('PyOpenGL', '3.1.7'),
+    ('PyCUDA', '2024.1', versionsuffix),
+]
+
+exts_list = [
+    ('termcolor', '2.3.0', {
+        'checksums': ['b5b08f68937f138fe92f6c089b99f1e2da0ae56c52b78bf7075fd95420fd9a5a'],
+    }),
+    ('yacs', '0.1.8', {
+        'checksums': ['efc4c732942b3103bea904ee89af98bcd27d01f0ac12d8d4d369f1e7a2914384'],
+    }),
+    ('iopath', '0.1.10', {
+        'checksums': ['3311c16a4d9137223e20f141655759933e1eda24f8bff166af834af3c645ef01'],
+    }),
+    ('antlr4-python3-runtime', '4.9.3', {
+        'modulename': 'antlr4',
+        'checksums': ['f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b'],
+    }),
+    ('omegaconf', '2.3.0', {
+        'checksums': ['d5d4b6d29955cc50ad50c46dc269bcd92c6e00f5f90d23ab5fee7bfca4ba4cc7'],
+    }),
+    ('lpips', '0.1.4', {
+        'checksums': ['3846331df6c69688aec3d300a5eeef6c529435bc8460bd58201c3d62e56188fa'],
+    }),
+    (name, version, {
+        'patches': [
+            'PyTorch3D-0.7.8_fix-opengl-test-hang.patch',
+            'PyTorch3D-0.7.8_use-installdir-in-test.patch',
+            'PyTorch3D-0.7.8_squeeze-1-channel-imgs-in-test.patch',
+            'PyTorch3D-0.7.8_bar-dataclass-immutable-in-test.patch',
+            'PyTorch3D-0.7.8_remove-relative-sys-path-insert.patch',
+            'PyTorch3D-0.7.8_fix-kwarg-only-in-test.patch',
+            'PyTorch3D-0.7.8_fix-test_io_off-np-error-msg.patch',
+            'PyTorch3D-0.7.8_fix-data_path-in-test-cow.patch',
+        ],
+        'source_tmpl': 'V%(version)s.tar.gz',
+        'source_urls': ['https://github.com/facebookresearch/%(namelower)s/archive'],
+        'checksums': [
+            {'V0.7.8.tar.gz': 'd91298b17ec203fbcea62587e4e9c36b1ef717f98114d6919ff9acece5ea0f99'},
+            {'PyTorch3D-0.7.8_fix-opengl-test-hang.patch':
+             'f23cac69535f4c72857688b9fcb8dbd1813a857653ea38e84d958e212b45d139'},
+            {'PyTorch3D-0.7.8_use-installdir-in-test.patch':
+             '02298334e742c6cf85c4656afe706530dad9bf91ff75cc39d221a8621bd398b2'},
+            {'PyTorch3D-0.7.8_squeeze-1-channel-imgs-in-test.patch':
+             'b0ae109c4cce9cfdb7eeab7155b826944a1ffdbd9613c3ba217d310614642d59'},
+            {'PyTorch3D-0.7.8_bar-dataclass-immutable-in-test.patch':
+             '82d1162410b8217557dffba9c1bbb21db3f9eaccaa1398cba4c0fa74ff50cf69'},
+            {'PyTorch3D-0.7.8_remove-relative-sys-path-insert.patch':
+             'b1f1da4a9b610a139c13efb733e564d17213daa714cbd83dcf3217ea68687936'},
+            {'PyTorch3D-0.7.8_fix-kwarg-only-in-test.patch':
+             '4a1036e9c3a51655155d88a86051f6469a10fbbb5d2dee57dc0fefba9b95e5bf'},
+            {'PyTorch3D-0.7.8_fix-test_io_off-np-error-msg.patch':
+             '72a2c811783bdb30615fbc25ae0c550718a5fa0c65d5eb6bfafa43330a770d96'},
+            {'PyTorch3D-0.7.8_fix-data_path-in-test-cow.patch':
+             'e08380207e4eb994cece7d3b052ecc21358695b267c0dd52b9c630830d3a66b8'}
+
+        ],
+        'testinstall': True,
+        'runtest': (
+            # Running in srcdir will make pytorch3d overshadow testinstall
+            'ln -s $PWD/tests/ ../tests'
+            ' && ln -s $PWD/docs ../docs'  # includes data used in tests
+            ' && ln -s $PWD/website ../website'  # used in test_build (consider skipping instead)
+            ' && cd ../'
+            # Run tests
+            ' && pytest -ra tests/'
+            # Flaky (see https://github.com/facebookresearch/pytorch3d/issues/1914)
+            ' --deselect=tests/test_knn.py::TestKNN::test_knn_vs_python_square_cuda'
+            ' --deselect=tests/test_points_alignment.py::TestICP::test_heterogeneous_inputs'
+            ' --deselect=tests/test_render_meshes.py::TestRenderMeshes::test_simple_sphere_elevated_camera'
+            # Requires multiple GPUs
+            # ' --deselect=tests/test_pointclouds.py::TestPointclouds::test_to_list'
+            # ' --deselect=tests/test_pointclouds.py::TestPointclouds::test_to_tensor'
+            # ' --deselect=tests/test_render_multigpu.py::TestRenderMeshesMultiGPU::test_mesh_renderer_opengl_to'
+            # ' --deselect=tests/test_render_multigpu.py::TestRenderMeshesMultiGPU::test_mesh_renderer_to'
+            # ' --deselect=tests/test_render_multigpu.py::TestRenderMeshesMultiGPU::test_render_meshes'
+            # ' --deselect=tests/test_render_multigpu.py::TestRenderMeshesMultiGPU::test_render_meshes_opengl'
+            # ' --deselect=tests/test_rendering_utils.py::TestTensorProperties::test_to'
+            # Something is wrong with test_opengl_utils.py, run separately
+            ' --ignore=tests/test_opengl_utils.py'
+            ' && pytest -ra tests/test_opengl_utils.py'
+            # Seems harmless, see https://github.com/facebookresearch/pytorch3d/issues/1759#issuecomment-2003868471
+            ' --deselect tests/test_opengl_utils.py::TestOpenGLUtils::test_no_egl_error'
+        ),
+    }),
+]
+
+moduleclass = 'tools'
