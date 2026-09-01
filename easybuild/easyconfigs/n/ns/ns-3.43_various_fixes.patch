@@ -1,0 +1,37 @@
+fix ns import:
+- if "test" is in the path
+- if the same library is listed twice but via different mounts
+fix PYTHONPATH for test.py
+Author: Samuel Moors (Vrije Universiteit Brussel)
+diff -ur ns-allinone-3.43.orig/ns-3.43/bindings/python/ns__init__.py ns-allinone-3.43/ns-3.43/bindings/python/ns__init__.py
+--- ns-allinone-3.43.orig/ns-3.43/bindings/python/ns__init__.py	2024-10-10 01:41:09.760655400 +0200
++++ ns-allinone-3.43/ns-3.43/bindings/python/ns__init__.py	2024-11-21 19:27:22.068342545 +0100
+@@ -357,7 +357,7 @@
+     prefix = os.path.dirname(os.path.dirname(libraries[0]))
+ 
+     # Remove test libraries
+-    libraries = list(filter(lambda x: "test" not in x, libraries))
++    libraries = list(filter(lambda x: "test" not in os.path.basename(x), libraries))
+ 
+     # Filter out module names
+     modules = set([filter_module_name(library) for library in libraries])
+@@ -370,6 +370,7 @@
+             conflicting_libraries = list(
+                 filter(lambda x: module == filter_module_name(x), libraries_to_filter)
+             )
++            conflicting_libraries = list({os.path.realpath(x) for x in conflicting_libraries})
+ 
+             # Extract versions from conflicting libraries
+             conflicting_libraries_versions = list(
+diff -ur ns-allinone-3.43.orig/ns-3.43/test.py ns-allinone-3.43/ns-3.43/test.py
+--- ns-allinone-3.43.orig/ns-3.43/test.py	2024-10-10 01:41:10.148656800 +0200
++++ ns-allinone-3.43/ns-3.43/test.py	2024-11-21 20:02:04.462386363 +0100
+@@ -720,7 +720,7 @@
+         if key == "PYTHONPATH":
+             have_PYTHONPATH = True
+ 
+-    pypath = os.environ["PYTHONPATH"] = os.path.join(NS3_BUILDDIR, "bindings", "python")
++    pypath = os.path.join(NS3_BUILDDIR, "bindings", "python")
+ 
+     if not have_PYTHONPATH:
+         os.environ["PYTHONPATH"] = pypath
