@@ -1,0 +1,33 @@
+From 367d7878df07a8f08d3595ea64ab5a74e3b44e4e Mon Sep 17 00:00:00 2001
+From: Ben Fulton <bfulton@imperial.ac.uk>
+Date: Tue, 3 Feb 2026 14:21:56 +0000
+Subject: [PATCH] Don't set NUM_GLOBAL_PARTS for Zoltan
+
+Setting both NUM_GLOBAL_PARTS and NUM_LOCAL_PARTS together has issues
+---
+ assemble/Zoltan_integration.F90 | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/assemble/Zoltan_integration.F90 b/assemble/Zoltan_integration.F90
+index d213821f16..8e5dac7704 100644
+--- a/assemble/Zoltan_integration.F90
++++ b/assemble/Zoltan_integration.F90
+@@ -580,7 +580,6 @@ subroutine set_zoltan_parameters(final_adapt_iteration, flredecomp, target_procs
+        else
+           ierr = Zoltan_Set_Param(zz, "NUM_LOCAL_PARTS", "1"); assert(ierr == ZOLTAN_OK)
+        end if
+-       ierr = Zoltan_set_Param(zz, "NUM_GLOBAL_PARTS", int2str(target_procs)); assert(ierr == ZOLTAN_OK)
+     end if
+ 
+     if (.NOT. final_adapt_iteration) then
+@@ -878,7 +877,9 @@ subroutine zoltan_load_balance(zz, changes, num_gid_entries, num_lid_entries, &
+        ierr = Zoltan_LB_Partition(zz, changes, num_gid_entries, num_lid_entries, p1_num_import, p1_import_global_ids, &
+           & p1_import_local_ids, p1_import_procs, import_to_part, p1_num_export, p1_export_global_ids,  &
+           & p1_export_local_ids, p1_export_procs, export_to_part)
+-       assert(ierr == ZOLTAN_OK)
++      if (ierr .ne. ZOLTAN_OK .and. ierr .ne. ZOLTAN_WARN) then
++         FLAbort("Zoltan_LB_Partition failed in zoltan_load_balance.")
++      end if
+ 
+        ! calculate how many owned nodes we'd have after doing the planned load balancing
+        num_nodes_after_balance = num_nodes + p1_num_import - p1_num_export
