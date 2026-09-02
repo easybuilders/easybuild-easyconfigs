@@ -1,0 +1,130 @@
+Fix TorchScript export for filtering, RNNT loss, and masking transforms.
+
+TorchAudio 2.9.1 cannot export several filtering functions, RNNT loss, and
+masking transforms through TorchScript. Add script/trace-safe wrappers around
+the custom autograd functions and normalize the masking value type before
+calling mask_along_axis.
+
+This backports the source changes from the following upstream commits while
+omitting their CI-only changes:
+https://github.com/pytorch/audio/commit/3fc07b5427031f58a8aabe0d44e8d0a3a50cc777
+https://github.com/pytorch/audio/commit/744912eee04c9ae5b336868b0ff02fced3843d0c
+
+diff --git a/src/torchaudio/functional/filtering.py b/src/torchaudio/functional/filtering.py
+--- a/src/torchaudio/functional/filtering.py
++++ b/src/torchaudio/functional/filtering.py
+@@ -19,7 +19,8 @@ class DifferentiableFIR(torch.autograd.Function):
+         b_coeff_flipped = b_coeffs.flip(1).contiguous()
+         padded_waveform = F.pad(waveform, (n_order - 1, 0))
+         output = F.conv1d(padded_waveform, b_coeff_flipped.unsqueeze(1), groups=n_channel)
+-        ctx.save_for_backward(waveform, b_coeffs, output)
++        if not torch.jit.is_scripting() and not torch.jit.is_tracing():
++            ctx.save_for_backward(waveform, b_coeffs, output)
+         return output
+     @staticmethod
+     def backward(ctx, dy):
+@@ -42,6 +43,13 @@ class DifferentiableFIR(torch.autograd.Function):
+         dx = F.conv1d(F.pad(dy, (0, n_order - 1)), b_coeffs.unsqueeze(1), groups=n_channel) if x.requires_grad else None
+         return (dx, db)
+ 
++    @staticmethod
++    def ts_apply(waveform, b_coeffs):
++        if torch.jit.is_scripting() or torch.jit.is_tracing():
++            return DifferentiableFIR.forward(torch.empty(0), waveform, b_coeffs)
++        else:
++            return DifferentiableFIR.apply(waveform, b_coeffs)
++
+ class DifferentiableIIR(torch.autograd.Function):
+     @staticmethod
+     def forward(ctx, waveform, a_coeffs_normalized):
+@@ -54,7 +62,8 @@ class DifferentiableIIR(torch.autograd.Function):
+         )
+         _lfilter_core_loop(waveform, a_coeff_flipped, padded_output_waveform)
+         output = padded_output_waveform[:, :, n_order - 1 :]
+-        ctx.save_for_backward(waveform, a_coeffs_normalized, output)
++        if not torch.jit.is_scripting() and not torch.jit.is_tracing():
++            ctx.save_for_backward(waveform, a_coeffs_normalized, output)
+         return output
+     @staticmethod
+     def backward(ctx, dy):
+@@ -75,9 +84,16 @@ class DifferentiableIIR(torch.autograd.Function):
+         )
+         return (dx, da)
+ 
++    @staticmethod
++    def ts_apply(waveform, a_coeffs_normalized):
++        if torch.jit.is_scripting() or torch.jit.is_tracing():
++            return DifferentiableIIR.forward(torch.empty(0), waveform, a_coeffs_normalized)
++        else:
++            return DifferentiableIIR.apply(waveform, a_coeffs_normalized)
++
+ def _lfilter(waveform, a_coeffs, b_coeffs):
+-    filtered_waveform = DifferentiableFIR.apply(waveform, b_coeffs / a_coeffs[:, 0:1])
+-    return DifferentiableIIR.apply(filtered_waveform, a_coeffs / a_coeffs[:, 0:1])
++    filtered_waveform = DifferentiableFIR.ts_apply(waveform, b_coeffs / a_coeffs[:, 0:1])
++    return DifferentiableIIR.ts_apply(filtered_waveform, a_coeffs / a_coeffs[:, 0:1])
+ 
+ def lfilter(waveform: Tensor, a_coeffs: Tensor, b_coeffs: Tensor, clamp: bool = True, batching: bool = True) -> Tensor:
+     pass
+diff --git a/src/torchaudio/functional/functional.py b/src/torchaudio/functional/functional.py
+--- a/src/torchaudio/functional/functional.py
++++ b/src/torchaudio/functional/functional.py
+@@ -5,7 +5,8 @@
+ 
+     if axis not in [dim - 2, dim - 1]:
+         raise ValueError(
+-            f"Only Frequency and Time masking are supported (axis {dim-2} and axis {dim-1} supported; {axis} given)."
++            "Only Frequency and Time masking are supported"
++            f" (axis {dim - 2} and axis {dim - 1} supported; {axis} given)."
+         )
+     if not 0.0 <= p <= 1.0:
+         raise ValueError(f"The value of p must be between 0.0 and 1.0 ({p} given).")
+@@ -21,7 +22,8 @@
+ 
+     if axis not in [dim - 2, dim - 1]:
+         raise ValueError(
+-            f"Only Frequency and Time masking are supported (axis {dim-2} and axis {dim-1} supported; {axis} given)."
++            "Only Frequency and Time masking are supported"
++            f" (axis {dim - 2} and axis {dim - 1} supported; {axis} given)."
+         )
+     if not 0.0 <= p <= 1.0:
+         raise ValueError(f"The value of p must be between 0.0 and 1.0 ({p} given).")
+@@ -44,6 +46,16 @@ class RnntLoss(torch.autograd.Function):
+         result = grad * grad_out
+         return (result, None, None, None, None, None, None, None)
+ 
++    @staticmethod
++    def ts_apply(logits, targets, logit_lengths, target_lengths, blank: int, clamp: float, fused_log_softmax: bool):
++        if torch.jit.is_scripting():
++            output, saved = torch.ops.torchaudio.rnnt_loss_forward(
++                logits, targets, logit_lengths, target_lengths, blank, clamp, fused_log_softmax
++            )
++            return output
++        else:
++            return RnntLoss.apply(logits, targets, logit_lengths, target_lengths, blank, clamp, fused_log_softmax)
++
+ def _rnnt_loss(
+     logits: Tensor,
+     targets: Tensor,
+@@ -59,7 +71,7 @@ def _rnnt_loss(
+     if blank < 0:  # reinterpret blank index if blank < 0.
+         blank = logits.shape[-1] + blank
+ 
+-    costs = RnntLoss.apply(logits, targets, logit_lengths, target_lengths, blank, clamp, fused_log_softmax)
++    costs = RnntLoss.ts_apply(logits, targets, logit_lengths, target_lengths, blank, clamp, fused_log_softmax)
+ 
+     if reduction == "mean":
+         return costs.mean()
+diff --git a/src/torchaudio/transforms/_transforms.py b/src/torchaudio/transforms/_transforms.py
+--- a/src/torchaudio/transforms/_transforms.py
++++ b/src/torchaudio/transforms/_transforms.py
+@@ -14,7 +14,8 @@
+                 specgram, self.mask_param, mask_value, self.axis + specgram.dim() - 3, p=self.p
+             )
+         else:
+-            return F.mask_along_axis(specgram, self.mask_param, mask_value, self.axis + specgram.dim() - 3, p=self.p)
++            mask_value_ = float(mask_value) if isinstance(mask_value, Tensor) else mask_value
++            return F.mask_along_axis(specgram, self.mask_param, mask_value_, self.axis + specgram.dim() - 3, p=self.p)
+ 
+ class FrequencyMasking(_AxisMasking):
+     pass
