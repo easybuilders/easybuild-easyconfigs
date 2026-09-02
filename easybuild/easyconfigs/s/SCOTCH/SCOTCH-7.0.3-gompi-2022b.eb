@@ -1,3 +1,5 @@
+easyblock = 'CMakeMake'
+
 name = 'SCOTCH'
 version = '7.0.3'
 
@@ -8,18 +10,55 @@ static mapping, and sparse matrix block ordering, and sequential mesh and hyperg
 toolchain = {'name': 'gompi', 'version': '2022b'}
 toolchainopts = {'pic': True}
 
-source_urls = ['https://gitlab.inria.fr/scotch/scotch/-/archive/v%(version)s/']
+source_urls = ['https://gitlab.inria.fr/%(namelower)s/%(namelower)s/-/archive/v%(version)s/']
 sources = ['%(namelower)s-v%(version)s.tar.gz']
-checksums = ['5b5351f0ffd6fcae9ae7eafeccaa5a25602845b9ffd1afb104db932dd4d4f3c5']
-threadedmpi = False
+patches = [
+    'SCOTCH-7.0.4_add_missing_executables_to_install_targets.patch',
+]
+checksums = [
+    {'scotch-v7.0.3.tar.gz': '5b5351f0ffd6fcae9ae7eafeccaa5a25602845b9ffd1afb104db932dd4d4f3c5'},
+    {'SCOTCH-7.0.4_add_missing_executables_to_install_targets.patch':
+     '416745b691d2711b0f08cfd61b0ea521580998722cba8adaf545742b5d2972b5'},
+]
 
 builddependencies = [
+    ('CMake', '3.24.3'),
     ('Bison', '3.8.2'),
     ('flex', '2.6.4'),
 ]
 
 dependencies = [
     ('zlib', '1.2.12'),
+    ('bzip2', '1.0.8'),
+    ('XZ', '5.2.7'),
+]
+
+build_shared_libs = True
+
+configopts = '-DINSTALL_METIS_HEADERS=OFF'
+
+runtest = True
+
+_binaries = ['acpl', 'amk_ccc', 'amk_fft2', 'amk_grf', 'amk_hy', 'amk_m2', 'amk_p2', 'atst',
+             'dggath', 'dgmap', 'dgord', 'dgpart', 'dgscat', 'dgtst', 'gbase', 'gcv', 'gmap',
+             'gmk_hy', 'gmk_m2', 'gmk_m3', 'gmk_msh', 'gmk_ub2', 'gmtst', 'gord', 'gotst',
+             'gout', 'gpart', 'gscat', 'gtst', 'mcv', 'mmk_m2', 'mmk_m3', 'mord', 'mtst']
+_files = ['bin/%s' % x for x in _binaries]
+
+_headers = ['esmumps', 'ptscotch', 'ptscotchf', 'scotch', 'scotchf']
+_files.extend(['include/%s.h' % x for x in _headers])
+
+_libraries = ['esmumps', 'ptesmumps', 'ptscotch', 'ptscotcherr', 'ptscotcherrexit',
+              'scotch', 'scotcherr', 'scotcherrexit']
+_files.extend([f'lib/lib%s.{SHLIB_EXT}' % x for x in _libraries])
+
+sanity_check_paths = {
+    'files': _files,
+    'dirs': ['lib/cmake/scotch'],
+}
+
+sanity_check_commands = [
+    "acpl -V 2>&1 | grep 'version %s'" % version,
 ]
 
 moduleclass = 'math'
