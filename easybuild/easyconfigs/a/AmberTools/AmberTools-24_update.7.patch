@@ -1,0 +1,57 @@
+ *******> update.7
+
+ Author: Stephan Schott-Verdugo
+
+ Date: January 29, 2025
+
+ Programs: packmol-memgen
+
+ Description: Add missing call to xyz_center, to ensure centering before volume calculations.
+
+ --------------------------------------------------------------------------------
+ AmberTools/src/packmol_memgen/README.rst                    | 2 ++
+ AmberTools/src/packmol_memgen/packmol_memgen/__version__.py | 2 +-
+ AmberTools/src/packmol_memgen/packmol_memgen/lib/utils.py   | 4 ++++
+ 3 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git AmberTools/src/packmol_memgen/README.rst AmberTools/src/packmol_memgen/README.rst
+index 4a8ebfb033..a03198371e 100644
+--- AmberTools/src/packmol_memgen/README.rst
++++ AmberTools/src/packmol_memgen/README.rst
+@@ -34,6 +34,8 @@ This folder can be easily cleaned by executing "./example.sh clean"
+ CHANGELOG 
+ ##############
+ 
++2025.1.29
++ - Bugfix calculating center of PDB. This could have caused issues in calculating volumes, mainly in solvated systems.
+ 2024.3.27
+  - Changed MEMEMBED to push TER to output file
+ 2024.3.18:
+diff --git AmberTools/src/packmol_memgen/packmol_memgen/__version__.py AmberTools/src/packmol_memgen/packmol_memgen/__version__.py
+index 1cef36b7f2..45fc3a9a31 100644
+--- AmberTools/src/packmol_memgen/packmol_memgen/__version__.py
++++ AmberTools/src/packmol_memgen/packmol_memgen/__version__.py
+@@ -10,7 +10,7 @@
+ #                / /\/\ \  __/ | | | | / /_ \  __/ | | |
+ #                \/    \/\___|_| |_| |_\____/\___|_| |_|
+ 
+-VERSION = (2024, 3, 27)
++VERSION = (2025, 1, 29)
+ 
+ __version__ = '.'.join(map(str, VERSION))
+ 
+diff --git AmberTools/src/packmol_memgen/packmol_memgen/lib/utils.py AmberTools/src/packmol_memgen/packmol_memgen/lib/utils.py
+index 779a608e07..0b3763036c 100755
+--- AmberTools/src/packmol_memgen/packmol_memgen/lib/utils.py
++++ AmberTools/src/packmol_memgen/packmol_memgen/lib/utils.py
+@@ -404,6 +404,10 @@ class MembraneParams(object):
+         chain_list   = list(string.ascii_uppercase)+list(string.ascii_lowercase)+list(map(str,range(0,10)))
+         resnum_index = 1
+         chain = self.chain
++
++        #Calcualte PDB center to be used later
++        self.xyz_center()
++
+         if chain == " ":
+             chain_index  = 0
+         else:
