@@ -1,0 +1,78 @@
+# Thanks to Mikael Öhman, Alexandre Strube and Alex Domingo for helping with
+# the original Python problem, fixed in this release.
+# Author: J. Saßmannshausen (Imperial College London / UK)
+# Use this version for any GUI installations you want to do
+
+easyblock = 'PythonBundle'
+
+name = 'LavaVu'
+version = '1.9.10'
+versionsuffix = '-egl'
+
+homepage = 'https://lavavu.github.io/Documentation/'
+description = """
+A lightweight scientific visualisation tool with a python interface for fast
+and flexible visual analysis.
+
+LavaVu provides access to OpenGL powered 3D rendering of point, line, surface
+and volume data with minimal setup and an interface focused on simple mapping
+of values to visual properties while abstracting all the intricacies of OpenGL.
+A scientific visualisation tool with a python interface for fast and flexible
+visual analysis.
+"""
+citing = """
+[1] Stegman, D.R., Moresi, L., Turnbull, R., Giordani, J., Sunter, P., Lo, A.
+and S. Quenette
+gLucifer: Next Generation Visualization Framework for High performance
+computational geodynamics, 2008, Visual Geosciences
+http://dx.doi.org/10.1007/s10069-008-0010-2
+[2] Ruijters, Daniel & ter Haar Romeny, Bart & Suetens, Paul. (2008).
+Efficient GPU-Based Texture Interpolation using Uniform B-Splines.
+J. Graphics Tools. 13. 61-69.
+http://dx.doi.org/10.1080/2151237X.2008.10129269
+
+Zenodo: https://doi.org/10.5281/zenodo.2585376
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('SWIG', '4.3.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('Python-bundle-PyPI', '2025.04'),
+    ('X11', '20250521'),
+    ('FFmpeg', '7.1.1'),
+    ('libglvnd', '1.7.0'),
+    ('aiohttp', '3.12.13'),
+    ('jupyter-server-proxy', '4.4.0'),
+    ('matplotlib', '3.10.3'),
+    ('Mesa', '25.1.3'),
+    ('Xvfb', '21.1.18'),  # for virtual display during tests
+]
+
+exts_list = [
+    ('numpy_quaternion', '2024.0.12', {
+        'modulename': 'quaternion',
+        'checksums': ['5ecb4e310e732bc21687474c1bc6cd6187d5c22da78d342379fe81f12f46037f'],
+    }),
+    ('lavavu', version, {
+        # Possible choices: EGL, OSMESA or X11
+        'prebuildopts': 'export LV_EGL=1 && ',
+        'checksums': ['8dbaf58ecaa293f62cefbb13c34cc07c8c13ae98b9c93ec5ece141b3d9c873d3'],
+        # The original symlink leads to problems, so we are doing this dance to get that fixed:
+        'postinstallcmds': [
+            'rm -f %(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/osmesa/LavaVuPython.py && '
+            'cp -f %(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/LavaVuPython.py '
+            '%(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/osmesa/ && '
+            'cd  %(installdir)s/lib/python%(pyshortver)s/site-packages/lavavu/osmesa/ && '
+            'sed -i "9,11d" LavaVuPython.py && sed -i "s/    import _LavaVuPython/import _LavaVuPython/" '
+            'LavaVuPython.py && cd - '
+        ],
+    }),
+]
+
+moduleclass = 'vis'
