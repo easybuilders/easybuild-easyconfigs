@@ -1,0 +1,80 @@
+name = 'ICON'
+version = '2026.04'
+
+local_tag = 'icon-%(version)s-public'
+
+homepage = "https://www.icon-model.org/"
+description = """
+ICON is a flexible, scalable, high-performance modelling framework for weather, climate and environmental prediction
+that provides actionable information for society and advances our understanding of the Earth's climate system.
+"""
+
+toolchain = {'name': 'NVHPC', 'version': '25.3-CUDA-12.8.0'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+# This tar.xz is the same one as the foss and Intel variants use
+# and therefore pulls in ecrad which is not used here.
+sources = [{
+    'filename': 'icon-model-%(version)s.tar.xz',
+    'git_config': {
+        'url': 'https://gitlab.dkrz.de/icon',
+        'repo_name': 'icon-model',
+        'tag': local_tag,
+        'recurse_submodules': [
+            'externals/mtime',
+            'externals/cdi',
+            'externals/fortran-support',
+            'externals/iconmath',
+            'externals/memman',
+            'externals/yaxt',
+            'externals/ppm',
+            'externals/yac',
+            'externals/ecrad',
+            'externals/rte-rrtmgp',
+            'externals/jsbach',
+            'externals/art',
+            'externals/tixi',
+            'externals/comin',
+        ],
+    },
+}]
+checksums = ['80d3baa7fc4bdfae0d72e27622d31ac15da1b8684ca8b029585438153d435ec0']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+    ('Perl', '5.40.0'),
+    ('pkgconf', '2.3.0'),
+]
+
+dependencies = [
+    ('libxml2', '2.13.4'),
+    ('libfyaml', '0.9'),
+    ('ecCodes', '2.43.0'),
+    ('netCDF', '4.9.3'),
+    ('netCDF-Fortran', '4.6.2'),
+]
+
+# NVHPCX bundles older Open MPI which is ORTE-based
+pretestopts = "OMPI_MCA_rmaps_base_oversubscribe=1 "
+# Tests need GPU
+runtest = 'check'
+
+postinstallcmds = [
+    # Transfer required data
+    '%(builddir)s/icon-model/utils/move_to_prefix.sh ',
+    # Generate the runscripts
+    (
+        'cd %(installdir)s && '
+        './make_runscripts --all '
+    ),
+]
+
+sanity_check_paths = {
+    'files': ['bin/icon'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = ['mpirun -n 1 icon --version']
+
+moduleclass = 'tools'
