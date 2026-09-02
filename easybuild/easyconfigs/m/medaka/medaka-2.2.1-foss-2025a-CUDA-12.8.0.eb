@@ -1,0 +1,93 @@
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Danilo Gonzalez <danilo.gonzalez@hpcnow.com>
+# License::     GPL-v3.0
+# Updated to foss-2020b to use with artic tool
+# J. Sassmannshausen (GSTT/NHS UK)
+# Updated to 1.5.0
+# Jasper Grimm (UoY)
+# Updated: Petr Král (INUITS)
+
+easyblock = 'PythonBundle'
+
+name = 'medaka'
+version = '2.2.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/nanoporetech/medaka'
+description = "medaka is a tool to create a consensus sequence from nanopore sequencing data."
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('Autotools', '20240712'),
+    ('Cython', '3.1.1'),
+    ('CMake', '3.31.3'),
+    ('setuptools', '80.9.0'),
+    ('poetry', '2.1.2'),
+]
+
+_minimap_ver = '2.30'
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('Python-bundle-PyPI', '2025.04'),  # includes cffi
+    ('Pysam', '0.23.3'),
+    ('SAMtools', '1.22.1'),
+    ('minimap2', _minimap_ver),
+    ('HTSlib', '1.22.1'),  # for tabix, bgzip
+    ('edlib', '1.3.9.post1'),
+    ('pyspoa', '0.2.1'),
+    ('python-parasail', '1.3.4'),
+    ('ont-fast5-api', '4.1.3'),
+    ('WhatsHap', '2.6'),
+    ('intervaltree-python', '3.2.1'),
+    ('BCFtools', '1.22'),
+    ('h5py', '3.14.0'),
+    ('PyTorch', '2.9.1', f'{versionsuffix}-whl'),
+    ('PyTorch-bundle', '2.9.1', f'{versionsuffix}-whl'),  # for tensordict
+    ('tqdm', '4.67.1'),
+    ('wurlitzer', '3.1.1'),
+]
+
+local_sed_commands = [
+    # ont-parasail on PyPI is just pre-built wheels for (python-)parasail
+    "sed -i 's/ont-parasail/parasail/g' requirements.txt",
+    # ont-parasail on PyPI is just pre-built wheels for mappy
+    "sed -i 's/ont-mappy/mappy/g' requirements.txt",
+    # pysam was only restricted to <=0.23.0 to work with test-coverage
+    # https://github.com/nanoporetech/medaka/blob/v2.2.1/requirements.txt#L14
+    "sed -i 's/pysam>=0.16.0.1,<=0.23.0/pysam>=0.16.0.1/g' requirements.txt",
+]
+
+exts_list = [
+    ('mappy', _minimap_ver, {
+        'checksums': ['a25448004558a28cb0d74fb1e55b6ffe9a78aa15dd6b2763630fbbabbaa97a27'],
+    }),
+    ('pyabpoa', '1.5.6', {
+        'checksums': ['265f638c7fed0cde78cf0593c9e36121c1e718de1c73d7fa527dd62a7f90f191'],
+    }),
+    (name, version, {
+        'patches': ['medaka-2.2.1_use-system-htslib.patch'],
+        'preinstallopts': " && ".join(local_sed_commands) + " && ",
+        'use_pip_extras': 'abpoa',
+        'checksums': [
+            {'medaka-2.2.1.tar.gz': 'c4a16872c8c1747f2329b931150e59016689366d0ca6d62ff98ad8707cd24cda'},
+            {'medaka-2.2.1_use-system-htslib.patch':
+             '2d3d43c912d4d238032781df2b4e30c8e7bbd09c05ac2fee3cdb96edb09f8419'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/medaka', 'bin/medaka_consensus', 'bin/medaka_version_report'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "medaka --help",
+    "medaka_version_report",
+]
+
+moduleclass = 'bio'
