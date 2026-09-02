@@ -1,0 +1,95 @@
+easyblock = 'PythonBundle'
+
+name = 'PyTorch-Geometric'
+version = '2.6.1'
+
+homepage = 'https://github.com/rusty1s/pytorch_geometric'
+description = "PyTorch Geometric (PyG) is a geometric deep learning extension library for PyTorch."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('Parallel-Hashmap', '2.0.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('PyTorch-bundle', '2.6.0'),
+    ('PyTorch-Lightning', '2.5.2'),
+    ('aiohttp', '3.10.10'),
+    ('tqdm', '4.66.5'),
+    ('ASE', '3.23.0'),
+    ('graphviz-python', '0.21'),
+    ('h5py', '3.12.1'),
+    ('numba', '0.60.0'),
+    ('RDFlib', '7.0.0'),
+    ('RDKit', '2025.03.3'),
+    ('scikit-learn', '1.5.2'),
+    ('scikit-image', '0.25.0'),
+    ('YACS', '0.1.8'),
+]
+
+exts_list = [
+    ('torch_scatter', '2.1.2', {
+        'source_urls': ['https://github.com/rusty1s/pytorch_scatter/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['6f375dbc9cfe03f330aa29ea553e9c7432e9b040d039b041f08bf05df1a8bf37'],
+        'runtest': 'pytest',
+        'testinstall': True,
+    }),
+    ('torch_sparse', '0.6.18', {
+        'source_urls': ['https://github.com/rusty1s/pytorch_sparse/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['a9e194cddc17481001ac4592a058450493ce13780e8ce3eb54d4f79706e69c91'],
+        'runtest': 'pytest -k "not test_spmm[dtype10-device10-sum] and not test_spmm[dtype16-device16-add]"',  # flaky
+        'testinstall': True,
+    }),
+    ('torch_cluster', '1.6.3', {
+        'source_urls': ['https://github.com/rusty1s/pytorch_cluster/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['0e2b08095e03cf87ce9b23b7a7352236a25d3ed92d92351dc020fd927ea8dbfe'],
+        'runtest': (
+            'pytest'
+            ' -k "not test_nearest[dtype0-device0]" '  # scipy.cluster.vq does not support float16, skip this param
+        ),
+        'testinstall': True,
+    }),
+    ('torch_spline_conv', '1.2.2', {
+        'source_urls': ['https://github.com/rusty1s/pytorch_spline_conv/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['258947394514ba487b2617268ae7102e9a06fd15d79f5d8239a96211a85adc3d'],
+        'runtest': 'pytest',
+        'testinstall': True,
+    }),
+    ('torch_geometric', version, {
+        'source_urls': ['https://github.com/pyg-team/pytorch_geometric/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'patches': ['PyTorch-Geometric-2.6.1_relax-tolerance-test-message-passing.patch'],
+        'checksums': [
+            {'torch_geometric-2.6.1.tar.gz': 'd0f1ced0bfc66fa187544332b21076d0ceedf4b989276cc220a8a857bdf0ae69'},
+            {'PyTorch-Geometric-2.6.1_relax-tolerance-test-message-passing.patch':
+             '9e3d5b477ee84fb7e1ce67370b195b2a1fe51a65238f37d4db649e47127fead8'},
+        ],
+        'runtest': (
+            'pytest'
+            ' --ignore=test/test_edge_index.py'  # many tests require PyTorch with MKL
+            ' --ignore=test/nn/models/test_graph_unet.py'  # requires PyTorch with MKL
+            ' --ignore=test/nn/pool/test_asap.py'  # requires PyTorch with MKL
+            ' --ignore=test/transforms/test_add_metapaths.py'  # requires PyTorch with MKL
+            ' --ignore=test/transforms/test_two_hop.py'  # requires PyTorch with MKL
+            ' --ignore=test/test_inspector.py'  # test failing due to typing change
+            ' --ignore=test/nn/conv/test_hetero_conv.py'  # unknown jit compilation issue
+            ' --ignore=test/nn/conv/test_sage_conv.py'  # unknown jit compilation issue
+            ' --ignore=test/graphgym/test_graphgym.py'  # torch-lightning can fail on site specific Slurm environment
+            ' -k "'
+            'not test_multithreading_neighbor_loader '  # picky about number of cores in the environment
+            # these tests feed all torch_geometric.datasets into a hydra config store
+            # new datasets in v2.6.1 (OPF) have incompatible types with omegaconf
+            'and not test_fill_config_store and not test_hydra_config_store '
+            '"'
+        ),
+        'testinstall': True,
+    }),
+]
+
+moduleclass = 'lib'
