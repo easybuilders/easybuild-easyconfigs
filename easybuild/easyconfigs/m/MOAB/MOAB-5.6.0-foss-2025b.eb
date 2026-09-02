@@ -1,0 +1,91 @@
+easyblock = 'CMakeMake'
+
+name = 'MOAB'
+version = '5.6.0'
+
+homepage = 'https://sigma.mcs.anl.gov/moab-library'
+description = """The Mesh-Oriented datABase (MOAB) is a component for representing and evaluating mesh
+data. MOAB can store and represent structured and unstructured meshes consisting of elements in the
+finite element zoo, including polygons and polyhedra."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+# Bitbucket archive of the official 5.6.0 release commit
+local_commit = '3fa8ae9e8025e0c1349792dee1f39b82ad8c1a33'
+source_urls = ['https://bitbucket.org/fathomteam/%(namelower)s/get']
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': SOURCELOWER_TAR_GZ,
+}]
+checksums = ['db7ad8a2d0069b8446225ec7fb71e034a0e8698508680804965c95c3b1bb944e']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('Eigen', '3.4.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('Cython', '3.1.2'),
+    ('HDF5', '1.14.6'),
+    ('netCDF', '4.9.3'),
+    ('PnetCDF', '1.14.1'),
+    ('METIS', '5.1.0'),
+    ('ParMETIS', '4.0.3'),
+    ('SCOTCH', '7.0.10'),
+    ('Hypre', '2.33.0'),
+    ('Zoltan', '3.901'),
+    ('CGNS', '4.5.0'),
+    ('TempestRemap', '2.2.0'),
+]
+
+# MOAB's CMake never adds CGNS_LIBRARIES to the libMOAB link line (only to MOABIO_LIBS),
+# so patch src/CMakeLists.txt to include it in MOAB_ALL_LIBS.
+preconfigopts = (
+    "sed -i 's|set(MOAB_ALL_LIBS \\${MOAB_LIBRARIES}|"
+    "set(MOAB_ALL_LIBS \\${CGNS_LIBRARIES} \\${MOAB_LIBRARIES}|' "
+    "%(start_dir)s/src/CMakeLists.txt && "
+)
+
+configopts = ' '.join([
+    '-DENABLE_MPI=ON',
+    '-DENABLE_HDF5=ON',
+    '-DENABLE_ZLIB=ON',
+    '-DENABLE_NETCDF=ON',
+    '-DENABLE_PNETCDF=ON',
+    '-DENABLE_METIS=ON',
+    '-DENABLE_PARMETIS=ON',
+    '-DENABLE_ZOLTAN=ON',
+    '-DENABLE_CGNS=ON',
+    '-DENABLE_TEMPESTREMAP=ON',
+    '-DENABLE_FORTRAN=ON',
+    '-DENABLE_PYMOAB=ON',
+    '-DENABLE_BLASLAPACK=ON',
+    '-DENABLE_EIGEN3=ON',
+    '-DBUILD_SHARED_LIBS=ON',
+    '-DENABLE_TESTING=ON',
+    '-DNETCDF_DIR=$EBROOTNETCDF',
+    '-DPNETCDF_DIR=$EBROOTPNETCDF',
+    '-DZOLTAN_DIR=$EBROOTZOLTAN',
+    '-DCGNS_DIR=$EBROOTCGNS',
+    '-DCGNS_INCLUDES=$EBROOTCGNS/include',
+    '-DCGNS_LIBRARIES=$EBROOTCGNS/lib/libcgns.%s' % SHLIB_EXT,
+    '-DTEMPESTREMAP_DIR=$EBROOTTEMPESTREMAP',
+])
+
+sanity_check_paths = {
+    'files': ['bin/mbconvert', 'bin/mbpart', 'bin/mbsize',
+              'lib/libMOAB.%s' % SHLIB_EXT, 'lib/libmbcoupler.%s' % SHLIB_EXT],
+    'dirs': ['include', 'lib/cmake/MOAB', 'lib/pkgconfig',
+             'lib/python%(pyshortver)s/site-packages/pymoab'],
+}
+
+sanity_check_commands = [
+    'mbsize -h',
+    'mbpart --help',
+    "python -s -c 'import pymoab'",
+]
+
+moduleclass = 'lib'

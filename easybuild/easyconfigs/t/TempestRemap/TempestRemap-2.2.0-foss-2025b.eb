@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'TempestRemap'
+version = '2.2.0'
+
+homepage = 'https://github.com/ClimateGlobalChange/tempestremap'
+description = """TempestRemap is a remapping tool for arbitrary order conservative and consistent
+remapping for finite volume and finite element data on the sphere."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://github.com/ClimateGlobalChange/tempestremap/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['548b902701ec7c3b6970e0c83c6b93bfb7fb38ecc30b6ef89de8182efd948fa3']
+
+builddependencies = [
+    ('Autotools', '20250527'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.6'),
+    ('netCDF', '4.9.3'),
+]
+
+# tarball ships only autotools sources; need to bootstrap.
+preconfigopts = 'autoreconf -fi && '
+
+configopts = ' '.join([
+    '--enable-shared',
+    '--with-netcdf=$EBROOTNETCDF',
+    '--with-hdf5=$EBROOTHDF5',
+    '--with-blas="$LIBBLAS"',
+    '--with-lapack="$LIBLAPACK"',
+])
+
+sanity_check_paths = {
+    'files': ['bin/GenerateOverlapMesh', 'bin/GenerateOfflineMap',
+              'lib/libTempestRemap.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'include', 'lib'],
+}
+
+sanity_check_commands = [
+    'GenerateOverlapMesh --help 2>&1 | head',
+]
+
+moduleclass = 'tools'
