@@ -1,0 +1,90 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.4.3'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a
+computer program for atomic scale materials modelling, e.g. electronic
+structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'gompi', 'version': '2024a'}
+toolchainopts = {'usempi': True}
+
+download_instructions = """VASP is proprietary software, see http://www.vasp.at/index.php/faqs
+on how to obtain a license for the software."""
+
+sources = [
+    '%(namelower)s.%(version)s.tgz',
+    'vdw_kernel.bindat.gz',
+]
+
+patches = [
+    'VASP-6.4.3_external_vdwkernel.patch',
+]
+
+checksums = [
+    {'vasp.6.4.3.tgz': 'fe30e773f2a3e909b5e0baa9654032dfbdeff7ec157bc348cee7681a7b6c24f4'},
+    {'vdw_kernel.bindat.gz': '650c6a194ab077676a834902ef68e2f4fe426be813ef12b3963c4198d3324f86'},
+    {'VASP-6.4.3_external_vdwkernel.patch': '587ec5e760300bce6357e83581e922382453e848574bf393f8867bfa4c607b4c'},
+]
+
+local_comp_mpi_tc = ('gompi', '2024a')
+dependencies = [
+    ('OpenBLAS', '0.3.27','', ('GCC', '13.3.0')),
+    ('ScaLAPACK', '2.2.0', '-fb', local_comp_mpi_tc),
+    ('FFTW', '3.3.10','',('GCC', '13.3.0')),
+    ('HDF5', '1.14.5', '', local_comp_mpi_tc),
+]
+
+# Preprocessing makefile.include
+prebuildopts = (
+    'cp arch/makefile.include.gnu_omp ./makefile.include && '
+    "sed -i 's|-march=native|-march=x86-64|g' makefile.include && "
+    "sed -i 's|-mtune=native||g' makefile.include && "
+    "sed -i 's|^OPENBLAS_ROOT.*|OPENBLAS_ROOT ?= $(EBROOTOPENBLAS)|' makefile.include && "
+    "sed -i 's|^SCALAPACK_ROOT.*|SCALAPACK_ROOT ?= $(EBROOTSCALAPACK)|' makefile.include && "
+    "sed -i 's|^#CPP_OPTIONS+= -DVASP_HDF5|CPP_OPTIONS+= -DVASP_HDF5|' makefile.include && "
+    "sed -i 's|^#HDF5_ROOT.*|HDF5_ROOT ?= $(EBROOTHDF5)|' makefile.include && "
+    "sed -i 's|^#LLIBS.*|LLIBS += -L$(HDF5_ROOT)/lib -lhdf5_fortran|' makefile.include && "
+    "sed -i 's|^#INCS.*|INCS += -I$(HDF5_ROOT)/include|' makefile.include && "
+    "sed -i 's|^FFTW_ROOT.*|FFTW_ROOT ?= $(EBROOTFFTW)|' makefile.include && "
+    "sed -i '/^LDFLAGS/ s|$| -L$(HDF5_ROOT)/lib -lhdf5_fortran -lhdf5|' makefile.include && "
+    'unset LIBS && '
+)
+
+buildopts = 'DEPS=1 all'
+
+_vasp_test_mpirun = "mpirun -np 4"
+_vasp_test_skip = 'HEG_333_LW '
+
+_vasp_test_env = [
+    "export OMP_NUM_THREADS=1",
+    "export OMP_STACKSIZE=512m",
+    "ulimit -s unlimited",
+    f"export VASP_TESTSUITE_EXE_STD='{_vasp_test_mpirun} %(builddir)s/vasp.%(version)s/bin/vasp_std'",
+    f"export VASP_TESTSUITE_EXE_NCL='{_vasp_test_mpirun} %(builddir)s/vasp.%(version)s/bin/vasp_ncl'",
+    f"export VASP_TESTSUITE_EXE_GAM='{_vasp_test_mpirun} %(builddir)s/vasp.%(version)s/bin/vasp_gam'",
+    f"export VASP_TESTSUITE_SKIP_TESTS='{_vasp_test_skip}'",
+    "",
+]
+
+pretestopts = " && ".join(_vasp_test_env)
+runtest = 'test'
+
+files_to_copy = [
+    (['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin'),
+    (['../vdw_kernel.bindat'], '.'),  
+]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'dirs': [],
+}
+
+modextravars = {
+    'VDW_KERNEL': '%(installdir)s/vdw_kernel.bindat',
+}
+
+moduleclass = 'phys'
