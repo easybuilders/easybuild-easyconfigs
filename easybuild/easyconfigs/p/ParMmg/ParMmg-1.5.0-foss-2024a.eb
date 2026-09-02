@@ -25,7 +25,7 @@ builddependencies = [
 ]
 
 dependencies = [
-    ('Mmg', '5.8.0'),
+    ('Mmg', '5.8.0', '', ('foss', '2024a')),
     ('SCOTCH', '7.0.6'),
     ('ParMETIS', '4.0.3'),
     ('VTK', '9.3.1'),
@@ -51,16 +51,18 @@ runtest = True
 
 local_example_basedir = '%(start_dir)s/libexamples/adaptation_example0'
 local_sequential_test = ' && '.join([
-    'cd %s/sequential_IO/automatic_IO' % local_example_basedir,
+    'mkdir -p %(builddir)s/tests',
+    f'cp -vr {local_example_basedir} %(builddir)s/tests',
+    'cd %(builddir)s/tests/adaptation_example0/sequential_IO/automatic_IO',
     'mpicc -I$EBROOTPARMMG/include/%(namelower)s -I$EBROOTMMG/include/mmg/mmg3d main.c '
     '-L$EBROOTPARMMG/lib -lparmmg -L$EBROOTMMG/lib -lmmg3d -lm -o serial.x',
-    './serial.x %s/cube.mesh out -met %s/cube-met.sol -field %s/cube-solphys.sol' % (3 * (local_example_basedir,)),
+    './serial.x ../../cube.mesh out -met ../../cube-met.sol -field ../../cube-solphys.sol',
 ])
 local_parallel_test = ' && '.join([
-    'cd %s/parallel_IO/automatic_IO' % local_example_basedir,
+    'cd %(builddir)s/tests/adaptation_example0/parallel_IO/automatic_IO',
     'mpicc -I$EBROOTPARMMG/include/%(namelower)s -I$EBROOTMMG/include/mmg/common -I$EBROOTMMG/include/mmg/mmg3d main.c '
     '-L$EBROOTPARMMG/lib -lparmmg -L$EBROOTMMG/lib -lmmg3d -lm -o parallel.x',
-    'mpirun -n 2 ./parallel.x ' + '%s/cube.mesh result.par 2 0' % local_example_basedir,
+    'mpirun -n 2 ./parallel.x ../../cube.mesh result.par 2 0',
 ])
 sanity_check_commands = [
     local_sequential_test,
