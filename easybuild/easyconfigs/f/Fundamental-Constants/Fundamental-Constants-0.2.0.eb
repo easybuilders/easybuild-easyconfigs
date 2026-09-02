@@ -1,0 +1,48 @@
+easyblock = "ConfigureMake"
+
+name = "Fundamental-Constants"
+version = "0.2.0"
+
+homepage = "https://github.com/iterorganization/fundamental-constants"
+description = """Header files for universal physical and mathematical constants."""
+
+toolchain = SYSTEM
+
+github_account = 'iterorganization'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % version, 'filename': SOURCE_TAR_GZ}]
+checksums = ['ba0a6109e352c532582c1ff88fdb852f6215c8dd0e05050891695da563b44b6b']
+
+# Header-only package: just run 'make install' to copy the files to the installation prefix
+skipsteps = ["configure", "build"]
+
+installopts = "prefix=%(installdir)s"
+
+# pkg-config is needed for the sanity check command; on some OSs the package providing it is called pkgconf
+osdependencies = [("pkg-config", "pkgconf")]
+
+# ship the examples as documentation, so users can compile them with a toolchain of their choice
+postinstallcmds = ["cp -r %(builddir)s/%(name)s-%(version)s/examples %(installdir)s/share/doc/%(namelower)s/"]
+
+docpaths = ["share/doc"]
+
+# These are literally all the files...
+sanity_check_paths = {
+    "files":
+        ["lib/pkgconfig/%(namelower)s.pc"] +
+        ["share/doc/%(namelower)s/README.md"] +
+        ["include/%(namelower)s/mathematical_constants.f90"] +
+        [
+            "include/%(namelower)s/codata_" + year + ext
+            for ext in [".f90", ".h", ".hpp"]
+            for year in ["2002", "2006", "2010", "2014", "2018", "2022"]
+        ],
+    "dirs": ["include/%(namelower)s", "lib/pkgconfig", "share/doc/%(namelower)s/examples"],
+}
+
+# With the system toolchain no compiler is guaranteed to be available at sanity-check time,
+# so rather than compiling the examples (which is covered by upstream's CI), just verify
+# that the module makes the package discoverable via pkg-config
+sanity_check_commands = ["pkg-config --exists --print-errors %(namelower)s"]
+
+moduleclass = "phys"
