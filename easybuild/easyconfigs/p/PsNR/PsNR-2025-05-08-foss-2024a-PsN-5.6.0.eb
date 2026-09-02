@@ -1,0 +1,80 @@
+easyblock = 'Bundle'
+
+name = 'PsNR'
+version = '2025-05-08'
+versionsuffix = '-PsN-5.6.0'
+local_commit = '9cc1f5c'
+
+homepage = 'https://github.com/UUPharmacometrics/PsNR'
+description = """R package for pharmacometric utilities used by PsN.
+This package is needed for using the -rplots functionality in PsN."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+dependencies = [
+    ('R', '4.4.2'),
+    ('R-bundle-CRAN', '2024.11'),
+    ('R-bundle-Bioconductor', '3.20', '-R-%(rver)s'),
+    ('GMP', '6.3.0'),
+    ('MPFR', '4.2.1'),
+    ('librsvg', '2.60.0'),
+    ('Pandoc', '3.8.2.1', '', SYSTEM)
+]
+
+exts_defaultclass = 'RPackage'
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+exts_list = [
+    ('vpc', '1.2.2', {
+        'checksums': ['33c2e034e9ac944a6682482a8caa0b958b872d4465e34e52119b2b5ca1714997'],
+    }),
+    ('xpose', '0.4.19', {
+        'checksums': ['450c2bd53a24cf577304e6da5bffa6e6f3df7dbf3082d2d507cec527d4167159'],
+    }),
+    ('xpose4', '4.7.3', {
+        'checksums': ['bfcbcbee73edc71e7e38418d5e16ec273b9f24ea976fdb1b934d5be4d303c770'],
+    }),
+    ('vegawidget', '0.5.0', {
+        'checksums': ['04983e916ed350f8bc6ed563df27d63ab3ba80c27dcbafd8c6837f9e891259e5'],
+    }),
+    ('PerformanceAnalytics', '2.0.8', {
+        'checksums': ['64e209808038e1037f01a6f4e1f9d6a6a852c886765c619d2b5a66c583675ec3'],
+    }),
+    ('vaplot', '0.0.0.9000', {
+        # Installing from the extension's directory leads to R CMD INSTALL to use renv
+        # which then fails because it is not finding packages included in the R installation
+        'preinstallopts': 'mkdir -p build && cd build && ',
+        'source_urls': ['https://github.com/rikardn/vaplot/archive/'],
+        'sources': [{
+            'download_filename': 'da3420d.tar.gz',
+            'filename': '%(name)s-%(version)s-da3420d.tar.gz',
+        }],
+        'checksums': ['9a030b44ff6841e219431ddcb0d6483bb659d6ec32cbb8f9fe756e13cddfd312'],
+    }),
+    (name, version, {
+        # prevent to use renv for installation
+        'preinstallopts': 'rm .Rprofile && ',
+        'source_urls': ['https://github.com/UUPharmacometrics/PsNR/archive/'],
+        'sources': [{
+            'download_filename': f'{local_commit}.tar.gz',
+            'filename': f'%(name)s-%(version)s-{local_commit}.tar.gz',
+        }],
+        'checksums': ['4b94bc4a5ba2fd6751ae75193fb6bfa72cbb9d5dae3c412beff3965e212fdac4'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [name, 'vpc', 'xpose', 'xpose4', 'vegawidget', 'PerformanceAnalytics', 'vaplot'],
+}
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+moduleclass = 'bio'

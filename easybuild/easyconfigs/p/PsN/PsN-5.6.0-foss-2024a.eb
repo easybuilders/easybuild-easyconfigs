@@ -1,0 +1,90 @@
+easyblock = 'Bundle'
+
+name = 'PsN'
+version = '5.6.0'
+
+homepage = 'https://uupharmacometrics.github.io/PsN/'
+description = """Perl-speaks-NONMEM (PsN) is a collection of Perl modules and programs
+aiding in the development of non-linear mixed effect models using NONMEM."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'openmp': False, 'pic': True}
+
+local_perl_ver = '5.38.2'
+local_perl_majver = local_perl_ver.split('.')[0]
+local_libdir = f'lib/perl{local_perl_majver}/site_perl/{local_perl_ver}'
+
+dependencies = [
+    ('Perl', local_perl_ver),
+    ('Perl-bundle-CPAN', local_perl_ver),
+    ('PsNR', '2025-05-08', f'-{name}-{version}'),
+    ('NONMEM', '7.6.0', '-MPICH-4.2.2'),
+]
+
+exts_defaultclass = 'PerlModule'
+exts_classmap = {name: 'PsN'}
+
+exts_list = [
+    ('Math::MatrixReal', '2.13', {
+        'source_tmpl': 'Math-MatrixReal-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/L/LE/LETO'],
+        'checksums': ['4f9fa1a46dd34d2225de461d9a4ed86932cdd821c121fa501a15a6d4302fb4b2'],
+    }),
+    ('Math::Random::Free', '0.2.0', {
+        'source_tmpl': 'Math-Random-Free-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/ME/MERKYS'],
+        'checksums': ['6dd10b241d08fded923359cf09f028d9ab6a8664f391740e90a7b0836d6548ed'],
+    }),
+    ('Math::SigFigs', '1.21', {
+        'source_tmpl': 'Math-SigFigs-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/S/SB/SBECK'],
+        'checksums': ['1c8302a9c5b231c8daf47b447664344ddb674ecd2a41402953290cd6d8716b6e'],
+    }),
+    ('MouseX::Params::Validate', '0.10', {
+        'source_tmpl': 'MouseX-Params-Validate-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MANWAR'],
+        'checksums': ['1a58de738b7050ab94549d9009e4e0f9e8129fb4f4c8e0954ae5b30540f665a2'],
+    }),
+    ('Archive::Zip', '1.68', {
+        'source_tmpl': 'Archive-Zip-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/P/PH/PHRED'],
+        'checksums': ['984e185d785baf6129c6e75f8eb44411745ac00bf6122fb1c8e822a3861ec650'],
+    }),
+    ('Statistics::Distributions', '1.02', {
+        'source_tmpl': 'Statistics-Distributions-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MI/MIKEK'],
+        'checksums': ['f99f396abf84ca37aa2cea31ad45d73aaee48752c999136c4b91389428d733c8'],
+    }),
+    ('Devel::Caller', '2.07', {
+        'source_tmpl': 'Devel-Caller-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RC/RCLAMP'],
+        'checksums': ['b679a2b18034b0b720de82c3708724c364b10a6ca164cbc67cdc3af283f3503f'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/UUPharmacometrics/PsN/releases/download/v%(version)s/'],
+        'sources': ['%(name)s-%(version)s.tar.gz'],
+        'checksums': ['72a1e32ffda1a50c3752f9919b8f568b5e1f5c19352c1b3f8840fa9938f3ae37'],
+        'perllib': local_libdir,
+    }),
+]
+
+modextrapaths = {
+    'PERL5LIB': [
+        local_libdir,
+        '%s/PsN_%s' % (local_libdir, version.replace('.', '_')),
+    ],
+}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['bin', local_libdir],
+}
+
+sanity_check_commands = [
+    'execute -h',
+    'psn -h',
+    'qa -h',
+    'Rscript -e "library(PsNR)"',
+]
+
+moduleclass = 'bio'
