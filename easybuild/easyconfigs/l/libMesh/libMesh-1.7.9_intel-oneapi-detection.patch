@@ -1,0 +1,75 @@
+Recognize Intel oneAPI compilers in libMesh's (and the bundled TIMPI's) compiler
+brand detection: the version-string patterns only matched classic icc releases up
+to "20.x", so oneAPI compilers (icx/icpx, versions 2021.x - 2026.x) were not
+identified as Intel and the Intel-specific configuration was not applied. Extend
+the case patterns in the generated configure scripts and their m4 sources.
+Author: Simon Pinches (ITER Organization)
+diff -ruN libmesh-1.7.9.orig/configure libmesh-1.7.9/configure
+--- libmesh-1.7.9.orig/configure	2026-02-07 00:07:18.000000000 +0100
++++ libmesh-1.7.9/configure	2026-04-23 12:01:36.054340187 +0200
+@@ -7078,7 +7078,7 @@
+ 
+                   GXX_VERSION_STRING="`($CXX -V 2>&1) | grep 'Version '`"
+                   case "$GXX_VERSION_STRING" in #(
+-  *20.*) :
++  *oneAPI*|*2021.*|*2022.*|*2023.*|*2024.*|*2025.*|*2026.*|*20.*) :
+     { $as_echo "$as_me:${as_lineno-$LINENO}: result: <<< C++ compiler is Intel(R) icc 20 >>>" >&5
+ $as_echo "<<< C++ compiler is Intel(R) icc 20 >>>" >&6; }
+                             GXX_VERSION=intel_icc_v20.x ;; #(
+diff -ruN libmesh-1.7.9.orig/contrib/timpi/configure libmesh-1.7.9/contrib/timpi/configure
+--- libmesh-1.7.9.orig/contrib/timpi/configure	2026-02-07 00:07:11.000000000 +0100
++++ libmesh-1.7.9/contrib/timpi/configure	2026-04-23 12:01:36.065340382 +0200
+@@ -4767,7 +4767,7 @@
+ 
+                   GXX_VERSION_STRING="`($CXX -V 2>&1) | grep 'Version '`"
+                   case "$GXX_VERSION_STRING" in #(
+-  *19.*) :
++  *oneAPI*|*2021.*|*2022.*|*2023.*|*2024.*|*2025.*|*2026.*|*19.*) :
+     { $as_echo "$as_me:${as_lineno-$LINENO}: result: <<< C++ compiler is Intel(R) icc 19 >>>" >&5
+ $as_echo "<<< C++ compiler is Intel(R) icc 19 >>>" >&6; }
+                             GXX_VERSION=intel_icc_v19.x ;; #(
+@@ -5213,7 +5213,7 @@
+ 
+                   ACSM_GXX_VERSION_STRING="`($CXX -V 2>&1) | grep 'Version '`"
+                   case "$ACSM_GXX_VERSION_STRING" in #(
+-  *20.*) :
++  *oneAPI*|*2021.*|*2022.*|*2023.*|*2024.*|*2025.*|*2026.*|*20.*) :
+     { $as_echo "$as_me:${as_lineno-$LINENO}: result: <<< C++ compiler is Intel(R) icc 20 >>>" >&5
+ $as_echo "<<< C++ compiler is Intel(R) icc 20 >>>" >&6; }
+                             ACSM_GXX_VERSION=intel_icc_v20.x ;; #(
+diff -ruN libmesh-1.7.9.orig/contrib/timpi/m4/autoconf-submodule/acsm_compiler_flags.m4 libmesh-1.7.9/contrib/timpi/m4/autoconf-submodule/acsm_compiler_flags.m4
+--- libmesh-1.7.9.orig/contrib/timpi/m4/autoconf-submodule/acsm_compiler_flags.m4	2026-02-07 00:03:36.000000000 +0100
++++ libmesh-1.7.9/contrib/timpi/m4/autoconf-submodule/acsm_compiler_flags.m4	2026-04-23 12:01:36.072340507 +0200
+@@ -88,7 +88,7 @@
+                 [
+                   ACSM_GXX_VERSION_STRING="`($CXX -V 2>&1) | grep 'Version '`"
+                   AS_CASE("$ACSM_GXX_VERSION_STRING",
+-                  [*20.*], [AC_MSG_RESULT(<<< C++ compiler is Intel(R) icc 20 >>>)
++                  [*oneAPI*|*2021.*|*2022.*|*2023.*|*2024.*|*2025.*|*2026.*|*20.*], [AC_MSG_RESULT(<<< C++ compiler is Intel(R) icc 20 >>>)
+                             ACSM_GXX_VERSION=intel_icc_v20.x],
+                   [*19.*], [AC_MSG_RESULT(<<< C++ compiler is Intel(R) icc 19 >>>)
+                             ACSM_GXX_VERSION=intel_icc_v19.x],
+diff -ruN libmesh-1.7.9.orig/contrib/timpi/m4/determine_cxx_brand.m4 libmesh-1.7.9/contrib/timpi/m4/determine_cxx_brand.m4
+--- libmesh-1.7.9.orig/contrib/timpi/m4/determine_cxx_brand.m4	2026-02-07 00:03:36.000000000 +0100
++++ libmesh-1.7.9/contrib/timpi/m4/determine_cxx_brand.m4	2026-04-23 12:01:36.072340507 +0200
+@@ -87,7 +87,7 @@
+                 [
+                   GXX_VERSION_STRING="`($CXX -V 2>&1) | grep 'Version '`"
+                   AS_CASE("$GXX_VERSION_STRING",
+-                  [*19.*], [AC_MSG_RESULT(<<< C++ compiler is Intel(R) icc 19 >>>)
++                  [*oneAPI*|*2021.*|*2022.*|*2023.*|*2024.*|*2025.*|*2026.*|*19.*], [AC_MSG_RESULT(<<< C++ compiler is Intel(R) icc 19 >>>)
+                             GXX_VERSION=intel_icc_v19.x],
+                   [*18.*], [AC_MSG_RESULT(<<< C++ compiler is Intel(R) icc 18 >>>)
+                             GXX_VERSION=intel_icc_v18.x],
+diff -ruN libmesh-1.7.9.orig/m4/compiler.m4 libmesh-1.7.9/m4/compiler.m4
+--- libmesh-1.7.9.orig/m4/compiler.m4	2026-02-07 00:03:30.000000000 +0100
++++ libmesh-1.7.9/m4/compiler.m4	2026-04-23 12:01:36.071340489 +0200
+@@ -242,7 +242,7 @@
+                 [
+                   GXX_VERSION_STRING="`($CXX -V 2>&1) | grep 'Version '`"
+                   AS_CASE("$GXX_VERSION_STRING",
+-                  [*20.*], [AC_MSG_RESULT(<<< C++ compiler is Intel(R) icc 20 >>>)
++                  [*oneAPI*|*2021.*|*2022.*|*2023.*|*2024.*|*2025.*|*2026.*|*20.*], [AC_MSG_RESULT(<<< C++ compiler is Intel(R) icc 20 >>>)
+                             GXX_VERSION=intel_icc_v20.x],
+                   [*19.*], [AC_MSG_RESULT(<<< C++ compiler is Intel(R) icc 19 >>>)
+                             GXX_VERSION=intel_icc_v19.x],
