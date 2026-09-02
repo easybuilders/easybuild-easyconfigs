@@ -1,0 +1,62 @@
+easyblock = 'PythonBundle'
+
+name = 'CNVkit'
+version = '0.9.13'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://github.com/etal/cnvkit'
+description = """A command-line toolkit and Python library for detecting copy
+ number variants and alterations genome-wide from high-throughput sequencing."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [('Cython', '3.1.1')]
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('scikit-learn', '1.7.0'),
+    ('Biopython', '1.85'),
+    ('matplotlib', '3.10.3'),
+    ('Pysam', '0.23.3'),
+    ('pyfaidx', '0.9.0.3'),
+    ('R', '4.5.1'),
+    ('R-bundle-Bioconductor', '3.22', versionsuffix),
+    ('PyTorch', '2.9.1', '-whl'),  # For pomegranate
+    ('numba', '0.62.0'),  # For apricot-select
+    ('tqdm', '4.67.1'),  # For apricot-select
+]
+
+exts_list = [
+    ('reportlab', '4.4.10', {
+        'checksums': ['5cbbb34ac3546039d0086deb2938cdec06b12da3cdb836e813258eb33cd28487'],
+    }),
+    ('apricot-select', '0.6.1', {  # Needed by pomegranate
+        'modulename': 'apricot',
+        # Only needed for tests. Nose is not compatible with newer Python
+        'preinstallopts': 'sed -i "/nose/d" setup.py && ',
+        'checksums': ['3bf872d43ee96af141c9e4c40e4359aa6ca5e3022ae43b2a8aa46b24947b8bd8'],
+    }),
+    ('pomegranate', '1.1.2', {  # Dependency will be removed in next version
+        'checksums': ['bffe01521e8783ef84cb60862ea60161c2130835868d8a37b7d79477b328ad8f'],
+    }),
+    (name, version, {
+        'modulename': 'cnvlib',
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/etal/cnvkit/archive/'],
+        'testinstall': True,
+        'runtest': "pytest -v test",
+        'checksums': ['a197acbfb4352fdb5f661adadc5c07f19eb4ede4c15fa50dde57aa52a8d91d67'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cnvkit.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'cnvkit.py --help',
+    "python -s -c 'from pomegranate.hmm import DenseHMM; from pomegranate.distributions import Normal'",
+]
+
+moduleclass = 'bio'
