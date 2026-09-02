@@ -1,0 +1,62 @@
+# Update by: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center 2025
+
+easyblock = 'PythonPackage'
+
+name = 'Meld'
+version = '3.22.2'
+
+homepage = 'https://meldmerge.org/'
+description = """
+  Meld is a visual diff and merge tool targeted at developers.
+  Meld helps you compare files, directories, and version controlled projects.
+  It provides two- and three-way comparison of both files and directories, and has support
+  for many popular version control systems.
+  """
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+sources = [SOURCELOWER_TAR_XZ]
+source_urls = [FTPGNOME_SOURCE]
+patches = ['Meld-3.22.2_honor-meld-install-prefix-for-datadir.patch']
+checksums = [
+    {'%(namelower)s-%(version)s.tar.xz':
+     '46a0a713fbcd1b153b377a1e0757c8ce255c9822467658eacfbd89b1e92316ef'},
+    {'Meld-3.22.2_honor-meld-install-prefix-for-datadir.patch':
+     '00128d6b3f6841ea305baf338d65982e3089c554dae39f25835971fc32c9f667'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('pkgconf', '2.0.3'),
+    ('intltool', '0.51.0'),
+    ('ITSTool', '2.0.7'),
+    ('libxml2', '2.11.5'),  # For xmllint
+]
+
+dependencies = [
+    ('GLib', '2.78.1'),
+    ('Python', '3.11.5'),
+    ('PyCairo', '1.25.1'),
+    ('PyGObject', '3.46.0'),
+    ('PyGObject-C', '3.46.0'),
+    ('gsettings-desktop-schemas', '46.0'),
+    ('Pango', '1.51.0'),
+    ('GTK3', '3.24.39'),
+    ('GtkSourceView4', '4.8.4'),
+]
+
+# Ensuring Meld install prefix for the Datadir from patch
+preinstallopts = 'export MELD_INSTALL_PREFIX=%(installdir)s && '
+
+sanity_check_commands = [
+    'python3 -c "import meld"',
+    'meld --version',
+]
+
+sanity_check_paths = {
+    'files': ['bin/meld'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'vis'

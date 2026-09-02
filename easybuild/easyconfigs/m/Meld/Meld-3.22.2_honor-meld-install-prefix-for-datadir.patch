@@ -1,0 +1,27 @@
+Allow overriding installation prefix for DATADIR at build time.
+Stamen Miroslavov <stamen.miroslavov@bsc.es>
+Barcelona Supercomputing Center 2025
+diff -ruNBbw a/meld/build_helpers.py b/meld/build_helpers.py
+--- a/meld/build_helpers.py	2024-03-24 02:06:00.000000000 +0100
++++ b/meld/build_helpers.py	2025-09-08 15:58:38.503389755 +0200
+@@ -426,10 +426,18 @@
+             try:
+                 options = self.distribution.get_option_dict('install')
+                 prefix = options['prefix'][1]
+-            except KeyError as e:
+-                print(e)
++            except KeyError:
+                 prefix = sys.prefix
+ 
++            # Allow overriding installation prefix for DATADIR at build time.
++            # When building with packaging systems (e.g., EasyBuild) the 'install'
++            # prefix may point at the Python installation, while meld's runtime
++            # data (share/meld) should live in the meld package prefix.
++            # Honor MELD_INSTALL_PREFIX environment variable if set to force
++            # DATADIR into the desired prefix.
++            # Prefer an explicit override, then EasyBuild's EBROOTMELD, then the original prefix
++            prefix = os.environ.get('MELD_INSTALL_PREFIX', prefix)
++
+             datadir = os.path.join(prefix, 'share', 'meld')
+             localedir = os.path.join(prefix, 'share', 'locale')
+ 
