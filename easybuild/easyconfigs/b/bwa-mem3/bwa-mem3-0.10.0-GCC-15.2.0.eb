@@ -1,0 +1,65 @@
+easyblock = 'MakeCp'
+
+name = 'bwa-mem3'
+version = '0.10.0'
+
+homepage = 'https://bwa-mem3.readthedocs.io/en/latest/'
+description = """Accelerated short-read alignment, derived from bwa-mem2 — drop-in replacement with
+correctness fixes, performance improvements, single-binary methylation, and shared-memory index."""
+
+toolchain = {'name': 'GCC', 'version': '15.2.0'}
+
+source_urls = ['https://github.com/fg-labs/bwa-mem3/releases/download/v%(version)s']
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'download_filename': 'Source_code_including_submodules.tar.gz',
+}]
+patches = ['%(name)s-%(version)s-use_external_deps.patch']
+checksums = [
+    {'bwa-mem3-0.10.0.tar.gz': 'fde8509711c9b18e5a5acfd008212ffd70e2286a53483d0c3f9c8c83600ec8db'},
+    {'bwa-mem3-0.10.0-use_external_deps.patch':
+     '3f03b1833ca0885402bcfec646525738d85354c42c09fd0b172b133f1021c80b'},
+]
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('CMake', '4.2.1'),
+    ('pkgconf', '2.5.1'),
+]
+
+dependencies = [
+    ('LLVM', '21.1.8'),
+    ('HTSlib', '1.23.1'),
+    ('libsais', '2.10.4'),
+    ('zlib', '2.3.2'),
+    ('zlib-ng', '2.3.2'),
+    ('libdeflate', '1.25'),
+]
+
+prebuildopts = 'export LDFLAGS="$LDFLAGS -fuse-ld=bfd" && '
+buildopts = 'CC=clang CXX=clang++ LIBS_EXTRA=-lrt ZLIBNG_USE_VENDORED=0'
+
+files_to_copy = [
+    (['bwa-mem3'], 'bin'),
+    (['test/fixtures/phix.fa', 'test/fixtures/reads.fa'], 'test'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/bwa-mem3'],
+    'dirs': ['test'],
+}
+
+_sanity_test_cmd = ' && '.join([
+    'tmpd=$(mktemp -d)',
+    'cd "${tmpd}"',
+    'bwa-mem3 index -p phix %(installdir)s/test/phix.fa',
+    'bwa-mem3 mem phix %(installdir)s/test/reads.fa > aln.sam',
+    'rm -r "${tmpd}"',
+])
+
+sanity_check_commands = [
+    'bwa-mem3 version',
+    _sanity_test_cmd,
+]
+
+moduleclass = 'bio'
