@@ -1,0 +1,56 @@
+easyblock = 'PythonBundle'
+
+name = 'CellBender'
+version = '0.4.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'http://github.com/broadinstitute/CellBender'
+description = """
+CellBender is a software package for eliminating technical artifacts from
+high-throughput single-cell RNA sequencing (scRNA-seq) data.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [
+    ('hatchling', '1.27.0'),
+    ('scikit-learn', '1.7.1'),  # tests
+]
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('PyTorch', '2.9.1', versionsuffix),
+    ('pyro-ppl', '1.9.1', versionsuffix),
+    ('matplotlib', '3.10.5'),
+    ('IPython', '9.4.0'),
+    ('anndata', '0.12.16'),
+    ('jupyter-server', '2.17.0'),
+    ('PyTables', '3.10.2'),
+    ('dill', '0.4.0'),
+    ('lxml', '6.0.0'),
+]
+
+exts_list = [
+    ('lxml_html_clean', '0.4.4', {
+        'checksums': ['58f39a9d632711202ed1d6d0b9b47a904e306c85de5761543b90e3e3f736acfb'],
+    }),
+    ('cellbender', version, {
+        'runtest': 'pytest -v tests',
+        'testinstall': True,
+        'source_urls': ['https://github.com/broadinstitute/%(name)s/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'patches': ['CellBender-0.4.0_fix-version.patch'],
+        'checksums': [
+            {'cellbender-0.4.0.tar.gz': '4e25735f04047fffee68e7082c0471f89ffe0ac28a9f2a90481098503e07b40a'},
+            {'CellBender-0.4.0_fix-version.patch': 'd19ed8202ebcde6a17f6b57da544d81aad24133b92c319b99b9247fa1ce6fdbd'},
+        ],
+    }),
+]
+
+sanity_check_commands = [
+    "cellbender --help",
+    "cellbender remove-background --help",
+]
+
+moduleclass = 'bio'
