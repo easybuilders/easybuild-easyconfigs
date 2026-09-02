@@ -1,0 +1,52 @@
+# Author: Ehsan Moravveji (VSC - KU Leuven)
+# Purpose: The 'make install' step implies passing the '--all-groups' argument
+#          which is compatible with uv >=0.9.5; for older 'uv', '--all-extras' is used.
+#          Also, uv version 0.9.4 does not recognize the 'require-version' token.
+#          The formatting of the 'license' token has to be compatible with
+#          what hatchling expects.
+#          The source folder has to be made explicit.
+
+diff -ruN typing_inspection-0.4.2-orig/Makefile typing_inspection-0.4.2/Makefile
+--- typing_inspection-0.4.2-orig/Makefile	2025-10-22 16:36:01.618057000 +0200
++++ typing_inspection-0.4.2/Makefile	2025-10-22 19:44:35.570588000 +0200
+@@ -6,8 +6,8 @@
+ 
+ .PHONY: install
+ install: .uv  ## Install package and dependencies for local development
+-	uv sync --frozen --all-groups
+-	uv run pre-commit install --install-hooks
++	uv sync --frozen --all-extras
++	# uv run pre-commit install --install-hooks
+ 
+ .PHONY: test
+ test:
+diff -ruN typing_inspection-0.4.2-orig/pyproject.toml typing_inspection-0.4.2/pyproject.toml
+--- typing_inspection-0.4.2-orig/pyproject.toml	2025-10-22 16:36:01.655044000 +0200
++++ typing_inspection-0.4.2/pyproject.toml	2025-10-22 20:10:02.428706000 +0200
+@@ -5,8 +5,7 @@
+ [project]
+ name = 'typing-inspection'
+ version = '0.4.2'
+-license = "MIT"
+-license-files = ['LICENSE']
++license = { text = "MIT" }
+ description = 'Runtime typing introspection tools'
+ authors = [
+     {name = 'Victorien Plot', email = 'contact@vctrn.dev'},
+@@ -59,9 +58,14 @@
+     'ruff>=0.9.6',
+ ]
+ 
++[tool.hatch.build]
++include = ['LICENSE']
+ 
+-[tool.uv]
+-required-version = '>=0.7.2'
++[tool.hatch.build.targets.wheel]
++packages = ["src/typing_inspection"]
++
++#[tool.uv]
++#required-version = '>=0.7.2'
+ 
+ [tool.ruff]
+ line-length = 120
