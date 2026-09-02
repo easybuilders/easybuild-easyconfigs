@@ -1,0 +1,51 @@
+# Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center 2026
+
+easyblock = 'ConfigureMake'
+
+name = 'psqlODBC'
+version = '17.00.0005'
+_low_version = version.replace(".", "_")
+
+homepage = 'https://odbc.postgresql.org/'
+description = """psqlODBC is the official PostgreSQL ODBC Driver. It is released under the
+ Library General Public Licence, or LGPL."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ['https://github.com/postgresql-interfaces/psqlodbc/archive/refs/tags']
+sources = [f'REL-{_low_version}.tar.gz']
+checksums = ['290a5bd5f01baf1a011da5ede15e829fc880bc2540d39b7bbf95face86722688']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Autotools', '20240712'),
+    ('libtool', '2.5.4'),
+]
+
+dependencies = [
+    ('unixODBC', '2.3.14'),
+    ('PostgreSQL', '17.5'),
+]
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/etc",
+    "printf '[PostgreSQL Unicode]\\nDescription=PostgreSQL ODBC driver (Unicode)\\n"
+    "Driver=%(installdir)s/lib/psqlodbcw.so\\nFileUsage=1\\n' "
+    "> %(installdir)s/etc/odbcinst.ini",
+]
+
+modextravars = {
+    'ODBCSYSINI': '%(installdir)s/etc',
+}
+
+sanity_check_paths = {
+    'files': ['lib/psqlodbca.so', 'lib/psqlodbcw.so', 'etc/odbcinst.ini'],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "odbcinst -q -d | grep -q 'PostgreSQL Unicode'",
+]
+
+moduleclass = 'lib'
