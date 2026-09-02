@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'GILDAS'
+version = 'jul25a'
+
+homepage = 'https://www.iram.fr/IRAMFR/GILDAS/'
+description = """GILDAS is a collection of state-of-the-art software oriented
+toward (sub-)millimeter radioastronomical applications (either single-dish or
+interferometer). It is daily used to reduce all data acquired with the IRAM
+30M telescope and the NOrthern Extended Millimeter Array NOEMA (except VLBI
+observations)."""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+source_urls = ['https://www.iram.fr/~gildas/dist', 'https://www.iram.fr/~gildas/dist/archive/gildas']
+sources = ['%(namelower)s-src-%(version)s.tar.xz']
+checksums = ['b7ae2571b76b3d7bb8208e481b277d527eb2246ac7fb0a8a46de639abfc5e72e']
+
+dependencies = [
+    ('GTK2', '2.24.33'),
+    ('CFITSIO', '4.4.1'),
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = "sed -i '1i export EB_GAGEXEDIR=%(installdir)s' admin/gildas-env.sh && "
+prebuildopts += "sed -i 's/export gagexedir/export gagexedir=$EB_GAGEXEDIR/g' admin/gildas-env.sh && "
+prebuildopts += "sed -i '/unset gagdefsys/aexport GAG_EXEC_SYSTEM=$(uname -m)' admin/gildas-env.sh && "
+prebuildopts += "source admin/gildas-env.sh && "
+
+preinstallopts = "source admin/gildas-env.sh && "
+
+local_binary = [
+    'astro', 'class', 'cube', 'flux', 'greg', 'hershey', 'hlp2tex', 'iram-planet',
+    'mapping', 'mira', 'mrtcal', 'orbit', 'point', 'sic', 'telcal', 'viewer'
+]
+
+sanity_check_paths = {
+    'files': ['%%(arch)s/bin/%s' % x for x in local_binary] + ['include/gildas_def.f90'],
+    'dirs': ['%%(arch)s/%s' % x for x in ['bin', 'data', 'include', 'lib', 'tasks']] +
+            ['include', 'etc'],
+}
+
+moduleclass = 'astro'
