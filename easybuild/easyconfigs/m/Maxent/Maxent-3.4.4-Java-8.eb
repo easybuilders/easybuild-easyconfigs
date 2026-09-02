@@ -1,0 +1,44 @@
+# Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center 2026
+
+easyblock = 'Binary'
+
+name = 'Maxent'
+version = '3.4.4'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://biodiversityinformatics.amnh.org/open_source/maxent/'
+description = """The Maxent software is based on the maximum-entropy approach for modeling
+ species niches and distributions"""
+
+toolchain = SYSTEM
+
+# !! The package has to be downloaded manually !!
+source_urls = ['https://biodiversityinformatics.amnh.org/open_source/maxent']
+sources = ['%(namelower)s.zip']
+checksums = ['b4bfbf45b705bb9304c1fd7b1fe912475c8136df2cae5ef54cb208a7e5b2df44']
+
+dependencies = [
+    ('Java', '8', '', SYSTEM),
+]
+
+extract_sources = True
+
+install_cmd = 'mkdir -p %(installdir)s/bin && cp maxent.jar maxent.sh %(installdir)s/bin'
+
+# Allow for more memory assignation when executing the .jar
+# It's controlled by the MAXENT_MEM variable
+postinstallcmds = [
+    r"""sed -i 's|java -mx512m -jar maxent.jar|DIR="$(cd "$(dirname "$0")" \&\& pwd)"; """
+    r"""MAXENT_MEM=${MAXENT_MEM:-4g}; """
+    r"""exec java -Xmx${MAXENT_MEM} -jar "$DIR/maxent.jar"|' """
+    r"""%(installdir)s/bin/maxent.sh""",
+    'chmod +x %(installdir)s/bin/maxent.sh',
+]
+
+sanity_check_paths = {
+    'files': ['bin/maxent.jar', 'bin/maxent.sh'],
+    'dirs': [],
+}
+
+moduleclass = 'geo'
