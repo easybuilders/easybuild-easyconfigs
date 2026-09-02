@@ -1,0 +1,75 @@
+# What: Fix multiple small issues with the Makefile:
+#       * Use mpirun instead of orterun to work with OpenMPI 5
+#       * Remove overly specific MPI arguments in favor of whatever is 
+#         configured by the site or user
+#       * Fix a syntax issue with the HPCCHEM check
+#
+# Author: Sven Hansen
+
+diff -ruN gamess.orig/rungms-dev gamess/rungms-dev
+--- gamess.orig/rungms-dev	2024-07-23 08:20:28.000000000 +0200
++++ gamess/rungms-dev	2025-11-13 20:01:39.796604134 +0100
+@@ -77,7 +77,9 @@
+   setenv LD_LIBRARY_PATH
+ endif
+ #
+-if ($GMS_HPCCHEM == true) setenv LD_LIBRARY_PATH $GMS_HPCCHEM_PATH/lib:$LD_LIBRARY_PATH
++if ($GMS_HPCCHEM == true) then
++  setenv LD_LIBRARY_PATH $GMS_HPCCHEM_PATH/lib:$LD_LIBRARY_PATH
++endif
+ #
+ # Check to see if $GMS_CUDA_PATH is even set.
+ #
+@@ -308,7 +310,7 @@
+ #
+ #  ---- the top third of the script is input and other file assignments ----
+ #
+-echo "----- GAMESS execution script 'rungms-dev' -----"
++echo "----- GAMESS execution script 'rungms' -----"
+ set parent=`hostname`
+ echo This job is running on host $parent
+ echo under operating system `uname` at `date` with $TARGET communication mode
+@@ -1096,18 +1098,14 @@
+ #     rm -r /dev/shm/*shm*
+       if ($GMS_OPENMP == true) then
+         if ($NNODES == 1) then
+-          orterun --mca orte_base_help_aggregate 0 \
+-            --mca orte_tmpdir_base /tmp \
+-            --mca btl vader,self,tcp \
++          mpirun --mca orte_base_help_aggregate 0 \
+           -np $NPROCS \
+           --bind-to none \
+-          -map-by ppr:${PPN2}:socket \
++          -map-by ppr:${PPN2}:package \
+           --report-bindings \
+           $GMSPATH/gamess.$VERNO.x < /dev/null
+         else
+-          orterun --mca orte_base_help_aggregate 0 \
+-            --mca orte_tmpdir_base /tmp \
+-            --mca btl vader,self,tcp \
++          mpirun --mca orte_base_help_aggregate 0 \
+           -np $NPROCS \
+           --bind-to none \
+           -map-by ppr:${PPN2}:node \
+@@ -1116,19 +1114,15 @@
+         endif
+       else
+         if ($GMS_TARGET == singularity) then
+-          orterun \
++          mpirun \
+             --mca orte_base_help_aggregate 0 \
+-            --mca orte_tmpdir_base /tmp \
+-            --mca btl vader,self,tcp \
+           -np $NPROCS \
+           --map-by ppr:${PPN2}:node:OVERSUBSCRIBE \
+           --report-bindings \
+           singularity exec --bind $SCR $GMS_CONTAINER_PATH/$GMS_CONTAINER /opt/gamess/gamess.00.x < /dev/null
+         else
+-          orterun \
++          mpirun \
+             --mca orte_base_help_aggregate 0 \
+-            --mca orte_tmpdir_base /tmp \
+-            --mca btl vader,self,tcp \
+           -np $NPROCS \
+           --map-by ppr:${PPN2}:node \
+           --report-bindings \
