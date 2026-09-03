@@ -1,0 +1,84 @@
+easyblock = 'CMakeMake'
+
+name = 'dorado'
+version = '1.4.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/nanoporetech/dorado'
+description = """Dorado is a high-performance, easy-to-use, open source basecaller for Oxford Nanopore reads."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'usempi': False}
+
+source_urls = ['https://github.com/nanoporetech/dorado/archive/']
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/nanoporetech',
+        'repo_name': name,
+        'tag': 'v%(version)s',
+        'recursive': True,
+    },
+    'filename': SOURCE_TAR_XZ,
+}]
+patches = [
+    'dorado-1.4.0_fix-hts-cmake.patch',
+    'dorado-1.4.0_fix-TestUtils.h.patch',
+]
+checksums = [
+    {'dorado-1.4.0.tar.xz': 'b65aaaeacd9169ecf3722b4e37956f74ae4ac9ce09827d3bb4cdef1ec82e6965'},
+    {'dorado-1.4.0_fix-hts-cmake.patch': 'b99f268086650462437cc252040bb8636dfe1e1bbb566e65590fd3401d63f2a0'},
+    {'dorado-1.4.0_fix-TestUtils.h.patch': 'f99f0de9506ad9e58be508ae353546e94eb77c6ae5b085637060ec83331ad5ed'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('git', '2.49.0'),
+]
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('OpenSSL', '3', '', SYSTEM),
+    ('PyTorch', '2.9.1', versionsuffix),
+    ('HDF5', '1.14.6'),
+    ('zstd', '1.5.6'),
+    ('HTSlib', '1.22.1'),
+    ('kineto', '20260317', versionsuffix),
+    ('libaec', '1.1.4'),
+]
+
+# don't link to OpenSSL static libraries
+# fix for CMake Error "missing: OPENSSL_CRYPTO_LIBRARY" (if only shared OpenSSL libraries are available)
+preconfigopts = "sed -i '/OPENSSL_USE_STATIC_LIBS TRUE/d' ../dorado/cmake/OpenSSL.cmake && "
+# link in the ssl and crypto libs, to fix:
+# undefined reference to symbol 'SSL_get_peer_certificate@@OPENSSL_1_1_0'
+preconfigopts += r"sed -i 's/OpenSSL::SSL/ssl\n    crypto/g' ../dorado/dorado/utils/CMakeLists.txt && "
+# replace dont_install_external_libraries.patch by sed cmd - use system CUDA
+preconfigopts += "sed -i '/install(FILES ${NATIVE_CUDA_LIBS} DESTINATION lib COMPONENT redist_libs)/d' "
+preconfigopts += "../dorado/cmake/InstallRedistLibs.cmake && "
+# disable treating warnings like errors by stripping out -Werror
+# cfr. https://github.com/nanoporetech/dorado/issues/779
+preconfigopts += "sed -i 's/-Werror//g' ../dorado/cmake/Warnings.cmake && "
+
+local_torch_root_py = 'import torch, pathlib; print(pathlib.Path(torch.__file__).resolve().parent)'
+configopts = ' '.join([
+    "-DCUDA_TOOLKIT_ROOT_DIR=$EBROOTCUDA",
+    "-DCMAKE_CUDA_COMPILER=$EBROOTCUDA/bin/nvcc",
+    '-DOPENSSL_ROOT_DIR=$EBROOTOPENSSL',
+    '-DCMAKE_C_FLAGS="$CFLAGS -pthread"',
+    '-DCMAKE_CXX_FLAGS="$CXXFLAGS -pthread"',
+    # let torch find its files - different paths for PyTorch from sources and wheels
+    rf'''-DDORADO_LIBTORCH_DIR="$(python -s -c '{local_torch_root_py}')"''',
+    r'''-DCMAKE_PREFIX_PATH="$(python -s -c 'import torch; print(torch.utils.cmake_prefix_path)')"''',
+]) + ' '
+
+runtest = True
+
+sanity_check_paths = {
+    'files': ['bin/dorado'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["dorado basecaller --help"]
+
+moduleclass = 'bio'
