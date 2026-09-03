@@ -37,11 +37,15 @@ dependencies = [
 ]
 
 _torax_test_opts = 'TORAX_JAXTYPING=True TORAX_ERRORS_ENABLED=True '
+# --dist loadfile keeps all tests from one file on the same pytest-xdist worker, in file order;
+# some upstream tests share in-process state (e.g. functools.lru_cache in
+# qlknn_transport_model.get_model, JAX compilation caches) and intermittently fail when tests from
+# one file are interleaved across workers (default --dist load hands out tests one-by-one)
 _torax_runtest = (
     _torax_test_opts
-    + 'pytest -vv -n %(parallel)s --ignore=torax/tests/sim_no_compile_test.py . && '
+    + 'pytest -vv -n %(parallel)s --dist loadfile --ignore=torax/tests/sim_no_compile_test.py . && '
     + _torax_test_opts
-    + 'JAX_DISABLE_JIT=True pytest -vv -n %(parallel)s torax/tests/sim_no_compile_test.py'
+    + 'JAX_DISABLE_JIT=True pytest -vv -n %(parallel)s --dist loadfile torax/tests/sim_no_compile_test.py'
 )
 
 exts_list = [
