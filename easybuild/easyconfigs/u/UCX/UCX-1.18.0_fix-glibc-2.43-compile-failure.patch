@@ -1,0 +1,85 @@
+From ad56fc5fa0884c1d8196a0673f8ef5497d9d55e8 Mon Sep 17 00:00:00 2001
+From: Yossi Itigin <yosefe@nvidia.com>
+Date: Sun, 15 Feb 2026 16:27:20 +0200
+Subject: [PATCH] UCT/IB/CONFIG: Fix const correctness when using strchr()
+
+---
+ src/tools/perf/mad/perftest_mad.c |  2 +-
+ src/tools/perf/perftest_params.c  |  2 +-
+ src/ucs/config/parser.c           |  2 +-
+ src/uct/ib/base/ib_device.c       | 13 +++++++------
+ 4 files changed, 10 insertions(+), 9 deletions(-)
+
+diff --git a/src/tools/perf/mad/perftest_mad.c b/src/tools/perf/mad/perftest_mad.c
+index ef7cad66770..645c082465c 100644
+--- a/src/tools/perf/mad/perftest_mad.c
++++ b/src/tools/perf/mad/perftest_mad.c
+@@ -601,7 +601,7 @@ static ucs_status_t perftest_mad_parse_ca_and_port(const char *mad_port,
+                                                    int *ca_port)
+ {
+     static const int default_port = 1;
+-    char *sep                     = strchr(mad_port, ':');
++    const char *sep               = strchr(mad_port, ':');
+     size_t len;
+ 
+     if (sep == NULL) {
+diff --git a/src/tools/perf/perftest_params.c b/src/tools/perf/perftest_params.c
+index 0786136c323..3c0dfd15c00 100644
+--- a/src/tools/perf/perftest_params.c
++++ b/src/tools/perf/perftest_params.c
+@@ -584,7 +584,7 @@ static ucs_status_t init_daemon_params(ucx_perf_params_t *params)
+ ucs_status_t parse_test_params(perftest_params_t *params, char opt,
+                                const char *opt_arg)
+ {
+-    char *optarg2 = NULL;
++    const char *optarg2 = NULL;
+     test_type_t *test;
+     unsigned i;
+ 
+diff --git a/src/ucs/config/parser.c b/src/ucs/config/parser.c
+index f60bbfa390b..755db2cfb58 100644
+--- a/src/ucs/config/parser.c
++++ b/src/ucs/config/parser.c
+@@ -644,7 +644,7 @@ int ucs_config_sprintf_bw(char *buf, size_t max, const void *src,
+ int ucs_config_sscanf_bw_spec(const char *buf, void *dest, const void *arg)
+ {
+     ucs_config_bw_spec_t *dst = (ucs_config_bw_spec_t*)dest;
+-    char                 *delim;
++    const char *delim;
+ 
+     delim = strchr(buf, ':');
+     if (!delim) {
+diff --git a/src/uct/ib/base/ib_device.c b/src/uct/ib/base/ib_device.c
+index 995e7e5538a..80a3c772dd4 100644
+--- a/src/uct/ib/base/ib_device.c
++++ b/src/uct/ib/base/ib_device.c
+@@ -1396,13 +1396,14 @@ ucs_status_t uct_ib_device_find_port(uct_ib_device_t *dev,
+     const char *ibdev_name;
+     unsigned port_num;
+     size_t devname_len;
+-    char *p;
++    const char *devname_str;
++    char *port_num_str;
+ 
+-    p = strrchr(resource_dev_name, ':');
+-    if (p == NULL) {
++    devname_str = strrchr(resource_dev_name, ':');
++    if (devname_str == NULL) {
+         goto err; /* Wrong device name format */
+     }
+-    devname_len = p - resource_dev_name;
++    devname_len = devname_str - resource_dev_name;
+ 
+     ibdev_name = uct_ib_device_name(dev);
+     if ((strlen(ibdev_name) != devname_len) ||
+@@ -1411,8 +1412,8 @@ ucs_status_t uct_ib_device_find_port(uct_ib_device_t *dev,
+         goto err; /* Device name is wrong */
+     }
+ 
+-    port_num = strtod(p + 1, &p);
+-    if (*p != '\0') {
++    port_num = strtod(devname_str + 1, &port_num_str);
++    if (*port_num_str != '\0') {
+         goto err; /* Failed to parse port number */
+     }
+     if ((port_num < dev->first_port) || (port_num >= dev->first_port + dev->num_ports)) {
