@@ -32,13 +32,16 @@ builddependencies = [
 
 dependencies = [
     ('zlib', '1.3.1'),
-    ('hwloc', '2.11.2'),
     ('libevent', '2.1.12'),
-    ('UCX', '1.18.0'),
     ('libfabric', '2.0.0'),
+    ('xpmem', '2.7.4'),
     ('PMIx', '5.0.6'),
     ('PRRTE', '3.0.8'),
+    ('hwloc-ROCm', '2.11.2'),
     ('UCC', '1.3.0'),
+    ('UCC-ROCm', '1.3.0'),
+    ('UCX', '1.18.0'),
+    ('UCX-ROCm', '1.18.0'),
     ('HIP', '6.4.1'),
 ]
 
@@ -50,10 +53,11 @@ preconfigopts = 'sed -i "s/have_ze=yes/have_ze=no/" %(start_dir)s/3rd-party/romi
 # Regenerate the Autotools build files because of our patches
 preconfigopts += './autogen.pl --force && '
 
-# Base config options
-configopts = '--without-xpmem --with-show-load-errors=no '
+configopts = '--with-show-load-errors=no '
+configopts += '--with-cray-xpmem=no '
 
-# Point the ROCm flag to the HIP installation
-configopts += '--with-rocm=$EBROOTHIP '
+modextravars = {
+    'OMPI_MCA_opal_common_ucx_devices': 'any',
+}
 
 moduleclass = 'mpi'

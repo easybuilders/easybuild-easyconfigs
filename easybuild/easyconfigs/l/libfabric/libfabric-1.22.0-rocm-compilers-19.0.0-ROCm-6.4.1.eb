@@ -1,0 +1,76 @@
+# Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ConfigureMake'
+
+name = 'libfabric'
+version = '1.22.0'
+
+homepage = 'https://ofiwg.github.io/libfabric/'
+description = """
+Libfabric is a core component of OFI. It is the library that defines and exports
+the user-space API of OFI, and is typically the only software that applications
+deal with directly. It works in conjunction with provider libraries, which are
+often integrated directly into libfabric.
+
+This build is HPE's shs-libfabric (SHS 12.0.2) and compiles the HPE Slingshot-11
+`cxi` provider, and enables the ROCr/HSA HMEM backend so GPU-resident
+(ROCm device) buffers can be sent directly over the fabric.
+"""
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+toolchainopts = {'pic': True}
+
+sources = [
+    {
+        'filename': '%(name)s-%(version)s-shs-12.0.2.tar.gz',
+        'git_config': {
+            'url': 'https://github.com/HewlettPackard',
+            'repo_name': 'shs-%(name)s',
+            'tag': 'release/shs-12.0.2',
+            'keep_git_dir': False,
+        },
+    },
+]
+checksums = [
+    None,  # .tgz not reproducible
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('pkgconf', '2.3.0', '', ('GCCcore', '14.2.0')),
+    ('Autotools', '20240712', '', ('GCCcore', '14.2.0')),
+]
+dependencies = [
+    ('numactl', '2.0.19', '', ('GCCcore', '14.2.0')),
+    ('libcxi', '1.0.2', '', ('GCCcore', '14.2.0')),
+    ('cassini-headers', '1.1.1', '', SYSTEM),
+    ('cxi-driver-headers', '1.0.0', '', SYSTEM),
+]
+
+preconfigopts = "./autogen.sh && "
+
+# configure auto-detects providers from the host and
+# would otherwise build verbs/efa/psm2 against /usr/lib64 and bake them into
+# libfabric.so's NEEDED list (a host pickup, and fatal at runtime on systems where
+# host libefa/libpsm2 are ABI-incompatible or absent). Disable every provider
+# that links an external library; keep only cxi plus the pure-software core.
+configopts = "--disable-verbs --disable-efa --disable-psm2 --disable-psm3 --disable-opx "
+configopts += "--disable-usnic --disable-sockets --disable-ucx --disable-xpmem "
+configopts += "--enable-cxi=yes "
+configopts += "--with-cassini-headers=$EBROOTCASSINIMINHEADERS "
+configopts += "--with-cxi-uapi-headers=$EBROOTCXIMINDRIVERMINHEADERS "
+configopts += "--with-rocr=$EBROOTROCMMINLLVM "
+
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': ['bin/fi_info', 'bin/fi_pingpong', 'bin/fi_strerror', 'lib/%(name)s.a', 'lib/%(name)s.so'],
+    'dirs': ['include/rdma', 'lib/pkgconfig', 'share'],
+}
+
+sanity_check_commands = [
+    'fi_info',
+    "fi_info -l | grep -i cxi",
+]
+
+moduleclass = 'lib'
