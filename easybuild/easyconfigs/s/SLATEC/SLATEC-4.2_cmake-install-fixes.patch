@@ -1,0 +1,186 @@
+Fix and extend the CMake install:
+* install the per-subdirectory component libraries alongside libslatec: as shipped,
+  the installed libslatec.so has DT_NEEDED entries on the eleven component libraries,
+  which are never installed, so it cannot be loaded from the install tree;
+* honour BUILD_SHARED_LIBS instead of hard-coding SHARED in every add_library call,
+  so that static libraries can be built as well; the option defaults to ON to
+  preserve upstream's shared-library behaviour;
+* generate and install pkg-config files (lib/pkgconfig/slatec.pc for shared linking,
+  slatec-static.pc for static linking). Both list all component libraries explicitly,
+  since ld does not resolve symbols through transitive DT_NEEDED entries and
+  libslatec.a is only a stub around slatec.f90. The static variant uses -l:lib*.a
+  syntax (plain -l would pick the shared libraries) and appends the BLAS/LAPACK link
+  flags detected by CMake.
+Note: the top-level CMakeLists.txt has CRLF line endings, the src/ ones are plain LF.
+author: Simon Pinches (ITER Organization)
+diff -ruN a/CMakeLists.txt c/CMakeLists.txt
+--- a/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/CMakeLists.txt	2026-08-15 14:25:37.996132589 +0200
+@@ -6,6 +6,8 @@
+   LANGUAGES Fortran
+ )
+ 
++option( BUILD_SHARED_LIBS "Build shared libraries" ON )
++
+ set( slatec_MAJOR_VERSION 4 )
+ set( slatec_MINOR_VERSION 2 )
+ set( slatec_VERSION  ${slatec_MAJOR_VERSION}.${slatec_MINOR_VERSION} )
+@@ -57,6 +59,13 @@
+ 
+ find_package( LAPACK REQUIRED )
+ 
++# generate and install pkg-config files
++string( REPLACE ";" " " SLATEC_LAPACK_LIBS "${LAPACK_LIBRARIES}" )
++configure_file( slatec.pc.in slatec.pc @ONLY )
++configure_file( slatec-static.pc.in slatec-static.pc @ONLY )
++install( FILES "${CMAKE_CURRENT_BINARY_DIR}/slatec.pc" "${CMAKE_CURRENT_BINARY_DIR}/slatec-static.pc"
++         DESTINATION lib/pkgconfig )
++
+ add_subdirectory( src )
+ 
+ enable_testing()
+diff -ruN a/slatec.pc.in c/slatec.pc.in
+--- a/slatec.pc.in	1970-01-01 01:00:00.000000000 +0100
++++ c/slatec.pc.in	2026-08-15 14:25:37.967132047 +0200
+@@ -0,0 +1,10 @@
++prefix=@CMAKE_INSTALL_PREFIX@
++libdir=${prefix}/lib
++includedir=${prefix}/include
++
++Name: SLATEC
++Description: SLATEC Common Mathematical Library (shared libraries)
++Version: @PROJECT_VERSION@
++Cflags: -I${includedir}
++Libs: -L${libdir} -lslatec -lapproximation -ldata_handling -ldiff_integ -ldiff_integ_eq -linteg_trans -linterpolation -llinear -lnonlin_eq -loptimization -lservice -lspecial_functions
++Libs.private: @SLATEC_LAPACK_LIBS@
+diff -ruN a/slatec-static.pc.in c/slatec-static.pc.in
+--- a/slatec-static.pc.in	1970-01-01 01:00:00.000000000 +0100
++++ c/slatec-static.pc.in	2026-08-15 14:25:37.970132103 +0200
+@@ -0,0 +1,9 @@
++prefix=@CMAKE_INSTALL_PREFIX@
++libdir=${prefix}/lib
++includedir=${prefix}/include
++
++Name: SLATEC
++Description: SLATEC Common Mathematical Library (static libraries)
++Version: @PROJECT_VERSION@
++Cflags: -I${includedir}
++Libs: -L${libdir} -Wl,--start-group -l:libslatec.a -l:libapproximation.a -l:libdata_handling.a -l:libdiff_integ.a -l:libdiff_integ_eq.a -l:libinteg_trans.a -l:libinterpolation.a -l:liblinear.a -l:libnonlin_eq.a -l:liboptimization.a -l:libservice.a -l:libspecial_functions.a -Wl,--end-group @SLATEC_LAPACK_LIBS@
+diff -ruN a/src/approximation/CMakeLists.txt c/src/approximation/CMakeLists.txt
+--- a/src/approximation/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/approximation/CMakeLists.txt	2026-08-15 14:25:37.932131393 +0200
+@@ -1,4 +1,4 @@
+ 
+-add_library( approximation SHARED approximation.f90 )
++add_library( approximation approximation.f90 )
+ 
+ target_link_libraries( approximation data_handling linear ${BLAS_LIBRARIES} service )
+diff -ruN a/src/CMakeLists.txt c/src/CMakeLists.txt
+--- a/src/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/CMakeLists.txt	2026-08-15 14:25:37.939131524 +0200
+@@ -1,7 +1,7 @@
+ 
+ set( CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules )
+ 
+-add_library( slatec SHARED slatec.f90 )
++add_library( slatec slatec.f90 )
+ 
+ file( GLOB_RECURSE srcs CONFIGURE_DEPENDS *.f90 )
+ list( FILTER srcs EXCLUDE REGEX "slatec.f90" )
+@@ -41,5 +41,6 @@
+ add_subdirectory( special_functions )
+ target_link_libraries( slatec special_functions )
+ 
++install( TARGETS approximation data_handling diff_integ diff_integ_eq integ_trans interpolation linear nonlin_eq optimization service special_functions LIBRARY DESTINATION lib )
+ install( TARGETS slatec LIBRARY DESTINATION lib RUNTIME DESTINATION bin )
+ install( DIRECTORY ${CMAKE_BINARY_DIR}/modules/ DESTINATION include )
+\ No newline at end of file
+diff -ruN a/src/data_handling/CMakeLists.txt c/src/data_handling/CMakeLists.txt
+--- a/src/data_handling/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/data_handling/CMakeLists.txt	2026-08-15 14:25:37.942131580 +0200
+@@ -1,4 +1,4 @@
+ 
+-add_library( data_handling SHARED data_handling.f90 )
++add_library( data_handling data_handling.f90 )
+ 
+ add_dependencies( data_handling service )
+diff -ruN a/src/diff_integ/CMakeLists.txt c/src/diff_integ/CMakeLists.txt
+--- a/src/diff_integ/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/diff_integ/CMakeLists.txt	2026-08-15 14:25:37.953131786 +0200
+@@ -1,4 +1,4 @@
+ 
+-add_library( diff_integ SHARED diff_integ.f90 )
++add_library( diff_integ diff_integ.f90 )
+ 
+ target_link_libraries( diff_integ linear interpolation ${LAPACK_LIBRARIES} )
+diff -ruN a/src/diff_integ_eq/CMakeLists.txt c/src/diff_integ_eq/CMakeLists.txt
+--- a/src/diff_integ_eq/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/diff_integ_eq/CMakeLists.txt	2026-08-15 14:25:37.934131431 +0200
+@@ -1,4 +1,4 @@
+ 
+-add_library( diff_integ_eq SHARED diff_integ_eq.f90 )
++add_library( diff_integ_eq diff_integ_eq.f90 )
+ 
+ target_link_libraries( diff_integ_eq data_handling linear integ_trans ${LAPACK_LIBRARIES} )
+diff -ruN a/src/integ_trans/CMakeLists.txt c/src/integ_trans/CMakeLists.txt
+--- a/src/integ_trans/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/integ_trans/CMakeLists.txt	2026-08-15 14:25:37.939131524 +0200
+@@ -1,4 +1,4 @@
+ 
+-add_library( integ_trans SHARED integ_trans.f90 )
++add_library( integ_trans integ_trans.f90 )
+ 
+ add_dependencies( integ_trans service )
+diff -ruN a/src/interpolation/CMakeLists.txt c/src/interpolation/CMakeLists.txt
+--- a/src/interpolation/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/interpolation/CMakeLists.txt	2026-08-15 14:25:37.950131730 +0200
+@@ -1,4 +1,4 @@
+ 
+-add_library( interpolation SHARED interpolation.f90 )
++add_library( interpolation interpolation.f90 )
+ 
+ add_dependencies( interpolation service )
+diff -ruN a/src/linear/CMakeLists.txt c/src/linear/CMakeLists.txt
+--- a/src/linear/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/linear/CMakeLists.txt	2026-08-15 14:25:37.948131692 +0200
+@@ -1,5 +1,5 @@
+ 
+-add_library( linear SHARED linear.f90 )
++add_library( linear linear.f90 )
+ 
+ target_link_libraries( linear ${LAPACK_LIBRARIES} )
+ 
+diff -ruN a/src/nonlin_eq/CMakeLists.txt c/src/nonlin_eq/CMakeLists.txt
+--- a/src/nonlin_eq/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/nonlin_eq/CMakeLists.txt	2026-08-15 14:25:37.948131692 +0200
+@@ -1,4 +1,4 @@
+ 
+-add_library( nonlin_eq SHARED nonlin_eq.f90 )
++add_library( nonlin_eq nonlin_eq.f90 )
+ 
+ target_link_libraries( nonlin_eq linear ${LAPACK_LIBRARIES} )
+diff -ruN a/src/optimization/CMakeLists.txt c/src/optimization/CMakeLists.txt
+--- a/src/optimization/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/optimization/CMakeLists.txt	2026-08-15 14:25:37.940131543 +0200
+@@ -1,4 +1,4 @@
+ 
+-add_library( optimization SHARED optimization.f90 )
++add_library( optimization optimization.f90 )
+ 
+ target_link_libraries( optimization service )
+diff -ruN a/src/service/CMakeLists.txt c/src/service/CMakeLists.txt
+--- a/src/service/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/service/CMakeLists.txt	2026-08-15 14:25:37.953131786 +0200
+@@ -1,2 +1,2 @@
+ 
+-add_library( service SHARED service.f90 )
++add_library( service service.f90 )
+diff -ruN a/src/special_functions/CMakeLists.txt c/src/special_functions/CMakeLists.txt
+--- a/src/special_functions/CMakeLists.txt	2025-11-14 08:00:11.000000000 +0100
++++ c/src/special_functions/CMakeLists.txt	2026-08-15 14:25:37.961131935 +0200
+@@ -1,4 +1,4 @@
+ 
+-add_library( special_functions SHARED special_functions.f90 )
++add_library( special_functions special_functions.f90 )
+ 
+ add_dependencies( special_functions service )
