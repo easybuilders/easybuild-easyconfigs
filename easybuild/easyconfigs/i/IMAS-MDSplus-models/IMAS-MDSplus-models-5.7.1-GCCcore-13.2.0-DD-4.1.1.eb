@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'IMAS-MDSplus-models'
+version = '5.7.1'
+local_dd_version = '4.1.1'
+versionsuffix = f'-DD-{local_dd_version}'
+
+description = 'IMAS MDSplus models'
+homepage = 'https://github.com/iterorganization/IMAS-Core'
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.27.6'),
+    ('MDSplus', '7.153.3'),
+    ('IMAS-Data-Dictionary', local_dd_version),
+]
+
+github_account = 'iterorganization'
+source_urls = ['https://github.com/%(github_account)s/IMAS-Core/archive']
+sources = [{'download_filename': '%s.tar.gz' % version, 'filename': SOURCE_TAR_GZ}]
+checksums = ['eec5fdd4b9db219f05d54025776a3ce57a32c65cced463ab499de1c04a6f02d9']
+
+srcdir = 'models/mdsplus'
+configopts = (
+    # Don't download dependencies
+    '-D AL_DOWNLOAD_DEPENDENCIES=OFF '
+    # Disable all backends except MDSplus
+    '-D AL_BACKEND_HDF5=OFF '
+    '-D AL_BACKEND_MDSPLUS=ON '
+    '-D AL_BACKEND_UDA=OFF '
+    # Build MDSplus models
+    '-D AL_BUILD_MDSPLUS_MODELS=ON '
+    # Don't build Python bindings
+    '-D AL_PYTHON_BINDINGS=OFF '
+    f'-D DD_VERSION={local_dd_version} '
+)
+
+sanity_check_paths = {
+    'dirs': ['models/mdsplus'],
+    'files': [],
+}
+
+modextrapaths = {
+    'IDS_PATH': 'models/mdsplus',
+}
+modextravars = {
+    'ids_path': '%(installdir)s/models/mdsplus',
+}
+
+moduleclass = 'tools'

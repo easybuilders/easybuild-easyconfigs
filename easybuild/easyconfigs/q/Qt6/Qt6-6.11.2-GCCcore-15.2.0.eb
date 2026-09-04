@@ -1,0 +1,112 @@
+easyblock = 'CMakeNinja'
+
+name = 'Qt6'
+version = '6.11.2'
+
+homepage = 'https://qt.io/'
+description = "Qt is a comprehensive cross-platform C++ application framework."
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+# disabling use of -ftree-vectorize is required to avoid compilation failures on some systems (e.g. Intel Skylake X)
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    'https://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/new_archive/qt/%(version_major_minor)s/%(version)s/single/',
+]
+sources = ['qt-everywhere-src-%(version)s.tar.xz']
+patches = [
+    'Qt6-6.6.3_fix_OF-Gentoo.patch',
+    'Qt6-6.7.2_fix_cpu_features.patch',
+    'Qt6-6.5.2_fix_too_long_filenames.patch',
+    'Qt6-6.11.2_gnu_source.patch'
+]
+checksums = [
+    {'qt-everywhere-src-6.11.2.tar.xz': '6dcfbca271d76a6502741a2c0dc6fc98ef7dd0b7b4cfd0abcebb285a86a26f33'},
+    {'Qt6-6.6.3_fix_OF-Gentoo.patch': 'd4d4878ac76cb985e45eb3b6e90ba2233f65807d6bd9bbe2b71365b181347b7b'},
+    {'Qt6-6.7.2_fix_cpu_features.patch': '3f37e7a4e4ed38cc82037be9504bc644e48bf258555ffff848183142725c9dc8'},
+    {'Qt6-6.5.2_fix_too_long_filenames.patch': 'b4a2aa3c72fe01d8b9cbab6da43cdbd968bd139f5dd9daba83181eb5d6125dac'},
+    {'Qt6-6.11.2_gnu_source.patch': '4e36e7c91f568ebde5a7a6d7c3a32c6b1ef679912b1f8b15ff5abbf753032a01'},
+]
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('pkgconf', '2.5.1'),
+    ('CMake', '4.2.1'),
+    ('Ninja', '1.13.2'),
+    # deps for QtWebEngine
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.3'),
+    ('re2c', '4.5.1'),
+]
+dependencies = [
+    ('double-conversion', '3.4.0'),
+    ('GLib', '2.89.0'),
+    ('PCRE2', '10.47'),
+    ('libpng', '1.6.56'),
+    ('JasPer', '4.2.9'),
+    ('HarfBuzz', '14.2.0'),
+    ('SQLite', '3.51.1'),
+    ('graphite2', '1.3.15'),
+    ('assimp', '6.0.5'),  # for Qt 3D
+    ('FFmpeg', '8.1.1'),
+    ('X11', '20260518'),
+    ('Wayland', '1.25.0'),
+    ('Vulkan', '1.4.352'),
+    # ('libinput', '1.31.3'),  # requires system-d so make it optional
+    ('fontconfig', '2.17.1'),
+    ('zlib', '2.3.2'),
+    ('Python', '3.14.2'),
+    ('Python-bundle-PyPI', '2026.04'),
+    ('html5lib', '1.1'),
+    ('freetype', '2.14.3'),  # WebEngine
+    ('DBus', '1.16.2'),
+    ('libevent', '2.1.12'),  # WebEngine
+    ('OpenGL', '2026.05'),
+    ('libjpeg-turbo', '3.1.4.1'),  # WebEngine
+    ('OpenJPEG', '2.5.4'),  # WebEngine
+    ('libwebp', '1.6.0'),
+    ('LibTIFF', '4.7.1'),
+    ('OpenH264', '2.6.0'),  # WebEngine
+    ('RE2', '2025-11-05'),  # WebEngine
+    ('NSS', '3.119'),  # WebEngine, required
+    ('snappy', '1.2.2'),  # WebEngine
+    ('OpenSSL', '3', '', SYSTEM),
+    ('ICU', '78.3'),
+    ('nodejs', '24.16.0'),
+    ('gRPC', '1.83.0'),
+    ('libdrm', '2.4.133'),
+    ('GTK3', '3.24.52'),
+    ('libiconv', '1.18'),
+]
+
+preconfigopts = 'sed -i "23i set(Python3_ROOT_DIR \\$ENV{EBROOTPYTHON})" '
+preconfigopts += '../qt-everywhere-src-%(version)s/qtwebengine/src/gn/CMakeLists.txt && '  # Typo
+
+# Ninja uses all visible cores by default, which can lead to lack of sufficient memory;
+# so $NINJAFLAGS is set to control number of parallel processes used by Ninja;
+# note that $NINJAFLAGS is not a generic thing for Ninja, it's very specific to the Qt6 build procedure
+preconfigopts += ' export NINJAFLAGS="-j%(parallel)s" && '
+prebuildopts = ' export NINJAFLAGS="-j%(parallel)s" && '
+
+configopts = "-Wno-dev -DFEATURE_qtpdf_build=OFF -DQT_AVOID_CMAKE_ARCHIVING_API=ON "
+# Use the bundled libxml2, Qt6 is not ready for libxml2 2.14+ (it's namespaced anyway)
+configopts += "-DQT_FEATURE_webengine_system_libxml=OFF "
+configopts += "-DPython3_ROOT_DIR=$EBROOTPYTHON "
+
+# explicitly disable sysroot as it causes problems for some third party libraries
+# (and seems to work without it using rpath wrappers)
+configopts += "-DCMAKE_SYSROOT='' "
+
+# configopts += "-D_GNU_SOURCE=1"
+
+sanity_check_paths = {
+    'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT, 'lib/libQt6WebEngineCore.%s' % SHLIB_EXT],
+    'dirs': ['include/QtCore', 'include/QtWebEngineCore'],
+}
+
+sanity_check_commands = ['qmake6 --help']
+
+moduleclass = 'devel'
