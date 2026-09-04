@@ -1,0 +1,48 @@
+Fix a compilation error for CPUs with AVX512 features where an issue in Eigen leads to
+> external/eigen_archive/Eigen/src/Core/arch/AVX512/PacketMathFP16.h:740:49: error: expected initializer before '<' token
+>  740 | EIGEN_STRONG_INLINE Packet16h predux_half_dowto4<Packet32h>(const Packet32h& a) {
+>      |                                                 ^
+
+Taken from https://gitlab.com/libeigen/eigen/-/merge_requests/2100
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/third_party/xla/third_party/eigen3/fix-avx512.patch b/third_party/xla/third_party/eigen3/fix-avx512.patch 
+--- /dev/null
++++ b/third_party/xla/third_party/eigen3/fix-avx512.patch
+@@ -0,0 +1,24 @@
++diff --git a/Eigen/src/Core/arch/AVX512/PacketMathFP16.h b/Eigen/src/Core/arch/AVX512/PacketMathFP16.h
++--- a/Eigen/src/Core/arch/AVX512/PacketMathFP16.h
+++++ b/Eigen/src/Core/arch/AVX512/PacketMathFP16.h
++@@ -735,9 +735,9 @@ EIGEN_STRONG_INLINE half predux<Packet8h>(const Packet8h& a) {
++   return half(_mm_reduce_add_ph(a));
++ }
++ 
++-// predux_half_dowto4
+++// predux_half
++ template <>
++-EIGEN_STRONG_INLINE Packet16h predux_half_dowto4<Packet32h>(const Packet32h& a) {
+++EIGEN_STRONG_INLINE Packet16h predux_half<Packet32h>(const Packet32h& a) {
++   const __m512i bits = _mm512_castph_si512(a);
++   Packet16h lo = _mm256_castsi256_ph(_mm512_castsi512_si256(bits));
++   Packet16h hi = _mm256_castsi256_ph(_mm512_extracti64x4_epi64(bits, 1));
++@@ -745,7 +745,7 @@ EIGEN_STRONG_INLINE Packet16h predux_half_dowto4<Packet32h>(const Packet32h& a)
++ }
++ 
++ template <>
++-EIGEN_STRONG_INLINE Packet8h predux_half_dowto4<Packet16h>(const Packet16h& a) {
+++EIGEN_STRONG_INLINE Packet8h predux_half<Packet16h>(const Packet16h& a) {
++   Packet8h lo = _mm_castsi128_ph(_mm256_castsi256_si128(_mm256_castph_si256(a)));
++   Packet8h hi = _mm_castps_ph(_mm256_extractf128_ps(_mm256_castph_ps(a), 1));
++   return padd(lo, hi);
+diff --git a/third_party/xla/third_party/eigen3/workspace.bzl b/third_party/xla/third_party/eigen3/workspace.bzl
+--- a/third_party/xla/third_party/eigen3/workspace.bzl
++++ b/third_party/xla/third_party/eigen3/workspace.bzl
+@@ -14,6 +14,7 @@ def repo():
+     tf_http_archive(
+         name = "eigen_archive",
+         build_file = "//third_party/eigen3:eigen_archive.BUILD",
++        patch_file = ["//third_party/eigen3:fix-avx512.patch"],
+         sha256 = EIGEN_SHA256,
+         strip_prefix = "eigen-{commit}".format(commit = EIGEN_COMMIT),
+         urls = tf_mirror_urls("https://gitlab.com/libeigen/eigen/-/archive/{commit}/eigen-{commit}.tar.gz".format(commit = EIGEN_COMMIT)),

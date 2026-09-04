@@ -1,0 +1,44 @@
+Fixes failing FusedMatMul test on certain GPU models
+--- tensorflow/core/kernels/matmul_op_test.cc.orig	2026-06-29 00:00:00.000000000 +0200
++++ tensorflow/core/kernels/matmul_op_test.cc	2026-06-29 00:00:00.000000000 +0200
+@@ -24,7 +24,8 @@
+ #include "tensorflow/core/framework/tensor.h"
+ #include "tensorflow/core/framework/types.h"
+ #include "tensorflow/core/kernels/ops_testutil.h"
+ #include "tensorflow/core/lib/core/status_test_util.h"
++#include "tensorflow/core/platform/tensor_float_32_utils.h"
+ #include "tensorflow/core/platform/test.h"
+ #include "tensorflow/core/platform/test_benchmark.h"
+ #include "tensorflow/core/protobuf/rewriter_config.pb.h"
+@@ -334,6 +335,7 @@
+ // -------------------------------------------------------------------------- //
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul256x128x64) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   this->VerifyMatMulWithBias(256, 128, 64, false, false);
+   this->VerifyMatMulWithBias(256, 128, 64, true, false);
+   this->VerifyMatMulWithBias(256, 128, 64, false, true);
+@@ -341,6 +343,7 @@
+ }
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul1x256x256) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   this->VerifyMatMulWithBias(1, 256, 256, false, false);
+   this->VerifyMatMulWithBias(1, 256, 256, true, false);
+   this->VerifyMatMulWithBias(1, 256, 256, false, true);
+@@ -348,6 +351,7 @@
+ }
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul256x256x1) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   this->VerifyMatMulWithBias(256, 256, 1, false, false);
+   this->VerifyMatMulWithBias(256, 256, 1, true, false);
+   this->VerifyMatMulWithBias(256, 256, 1, false, true);
+@@ -371,6 +375,7 @@
+ }
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul256x128x64WithActivation) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   for (const std::string& activation : GetActivations(this->kTValueType)) {
+     this->VerifyConv2DWithBiasAndActivation(256, 128, 64, false, false,
+                                             activation);
