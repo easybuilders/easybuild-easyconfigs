@@ -1,0 +1,32 @@
+easyblock = 'CMakeMake'
+
+name = 'spoa'
+version = '4.1.5'
+
+homepage = 'https://github.com/rvaser/spoa'
+description = """Spoa (SIMD POA) is a c++ implementation of the partial order alignment (POA) algorithm
+ which is used to generate consensus sequences"""
+
+toolchain = {'name': 'GCC', 'version': '15.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/rvaser/spoa/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['b5d323740b01255c55725e88db2548c666a05bc83b825c19cfac10586e21e7b3']
+
+builddependencies = [('CMake', '4.2.1')]
+
+configopts = "-Dspoa_build_executable=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5 "
+
+# 'uintptr_t' does not name a type in definition of macro ‘GTEST_DEATH_TEST_CHECK_', need to include <cstdint>
+prebuildopts = r"sed -i '48i\#include <cstdint>' _deps/googletest-src/googletest/src/gtest-death-test.cc && "
+
+sanity_check_paths = {
+    'files': ['bin/spoa'] + ['include/spoa/%s' % x for x in ['alignment_engine.hpp', 'graph.hpp', 'spoa.hpp']] +
+             ['lib/libspoa.a'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["spoa --help"]
+
+moduleclass = 'bio'
