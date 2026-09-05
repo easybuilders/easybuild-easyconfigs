@@ -1,0 +1,64 @@
+easyblock = 'PythonBundle'
+
+name = 'PySONIC'
+version = '1.0-20250519'
+local_commit = '10ed530'
+
+homepage = 'https://github.com/tjjlemaire/PySONIC'
+description = """
+Python implementation of the NICE & SONIC models, allowing for rapid
+simulations of ultrasound-evoked membrane dynamics in various point-neuron models.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('matplotlib', '3.7.2'),
+    ('tqdm', '4.66.1'),
+    ('multiprocess', '0.70.15'),
+    ('openpyxl', '3.1.2'),
+    ('JupyterLab', '4.0.5'),
+]
+
+exts_list = [
+    ('boltons', '23.0.0', {
+        'checksums': ['8c50a71829525835ca3c849c7ed2511610c972b4dddfcd41a4a5447222beb4b0'],
+    }),
+    ('colorlog', '6.9.0', {
+        'checksums': ['bfba54a1b93b94f54e1f4fe48395725a3d92fd2a4af702f6bd70946bdc0c6ac2'],
+    }),
+    (name, version, {
+        'patches': ['%(name)s-%(version)s_fix-setup.py.patch'],
+        'modulename': name,
+        # you need to have git-lfs installed or git-lfs module loaded to get full version of sources -
+        #  there are only templates in /lookups dir, if the sources are downloaded from GitHub
+        'sources': [{
+            'filename': f'%(name)s-%(version)s-{local_commit}.tar.xz',
+            'git_config': {
+                'url': 'https://github.com/tjjlemaire',
+                'repo_name': name,
+                'commit': local_commit,
+            },
+        }],
+        'checksums': [
+            {'PySONIC-1.0-20250519-10ed530.tar.xz':
+             '025d900480dd59bb7bc509e9fdfeb8a72ce4cec560713aff536d03e908b1d84c'},
+            {'PySONIC-1.0-20250519_fix-setup.py.patch':
+             '317e7e3c30df726d8aea206d1b373c1d9c9499c2877d86609dfb466844d3be6d'},
+        ],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'from PySONIC.core import NeuronalBilayerSonophore, AcousticDrive'",
+    "python -c 'from PySONIC.neurons import getPointNeuron'",
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [f'lib/python%(pyshortver)s/site-packages/{name}/lookups'],
+}
+
+moduleclass = 'lib'
