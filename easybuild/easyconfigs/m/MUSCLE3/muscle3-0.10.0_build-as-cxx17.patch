@@ -1,0 +1,32 @@
+Build libmuscle and ymmsl as C++17 rather than C++14.
+
+The unit tests are built with the same flags as the libraries, and googletest 1.16
+and newer refuse to compile as anything below C++17 ("C++ versions less than C++17
+are not supported"), so with a recent googletest the test suite cannot be built at
+all. MUSCLE3's own sources use no C++17 features and compile cleanly with -Wall
+-pedantic at this standard; the installed headers remain C++14 compatible, so code
+using libmuscle can still be built as C++14.
+
+Author: Simon Pinches (ITER Organization)
+--- muscle3-0.10.0/libmuscle/cpp/build/libmuscle/Makefile.orig
++++ muscle3-0.10.0/libmuscle/cpp/build/libmuscle/Makefile
+@@ -75,7 +75,7 @@
+ 
+ installed_pkg_config_files := $(pkg_config_files:%=$(PREFIX)/lib/pkgconfig/%)
+ 
+-CXXFLAGS += -Wall -pedantic -std=c++14 -pthread -O3 -DMSGPACK_NO_BOOST
++CXXFLAGS += -Wall -pedantic -std=c++17 -pthread -O3 -DMSGPACK_NO_BOOST
+ export CXXFLAGS
+ 
+ MPIFLAGS := -DMUSCLE_ENABLE_MPI
+--- muscle3-0.10.0/libmuscle/cpp/build/ymmsl/Makefile.orig
++++ muscle3-0.10.0/libmuscle/cpp/build/ymmsl/Makefile
+@@ -28,7 +28,7 @@
+ pkg_config_files := ymmsl.pc
+ installed_pkg_config_files := $(pkg_config_files:%=$(PREFIX)/lib/pkgconfig/%)
+ 
+-CXXFLAGS += -Wall -pedantic -std=c++14 -O3 -I$(hdrdir)
++CXXFLAGS += -Wall -pedantic -std=c++17 -O3 -I$(hdrdir)
+ export CXXFLAGS
+ DEBUGFLAGS += -g -O0
+ export DEBUGFLAGS
