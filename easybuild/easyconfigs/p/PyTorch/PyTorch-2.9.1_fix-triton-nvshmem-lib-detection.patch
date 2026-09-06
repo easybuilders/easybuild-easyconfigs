@@ -1,0 +1,38 @@
+fix detection mechanism of NVSHMEM libraries
+the file 'libnvshmem_device.bc' is only available on Python wheel 'nvidia-nvshmem-cu12'
+see https://docs.nvidia.com/nvshmem/release-notes-install-guide/install-guide/nvshmem-install-proc.html#nvshmem-llvm-bitcode-library-based-hello-world-example
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- a/torch/distributed/_symmetric_memory/_nvshmem_triton.py	2026-09-04 09:23:14.465618000 +0200
++++ b/torch/distributed/_symmetric_memory/_nvshmem_triton.py	2026-09-04 09:28:14.650793475 +0200
+@@ -32,7 +32,7 @@
+         Find the path to the NVSHMEM device library.
+ 
+         Returns:
+-            str: The path to libnvshmem_device.bc (included).
++            str: The path to libnvshmem_device (included).
+         """
+         if cls.found_device_lib_path is not None:
+             # Return the cached path if it exists
+@@ -42,12 +42,16 @@
+         user_lib_dir = os.environ.get("NVSHMEM_LIB_DIR", None)
+         if user_lib_dir is not None:
+             lib_path = os.path.join(user_lib_dir, "libnvshmem_device.bc")
+-            if not os.path.exists(lib_path):
+-                raise RuntimeError(
+-                    f"NVSHMEM device library not found at specified path: {user_lib_dir}"
+-                )
+-            cls.found_device_lib_path = lib_path
+-            return lib_path
++            if os.path.exists(lib_path):
++                cls.found_device_lib_path = lib_path
++                return lib_path
++            lib_path = os.path.join(user_lib_dir, "libnvshmem_device.a")
++            if os.path.exists(lib_path):
++                cls.found_device_lib_path = lib_path
++                return lib_path
++            raise RuntimeError(
++                f"NVSHMEM device library not found at specified path: {user_lib_dir}"
++            )
+ 
+         # Otherwise, search for the library in the default installation paths
+         paths = [
