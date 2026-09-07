@@ -1,0 +1,52 @@
+# Updated to include debuginfod by: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center - Spain 2025
+
+easyblock = 'ConfigureMake'
+
+name = 'elfutils'
+version = '0.191'
+versionsuffix = '-debuginfod'
+
+homepage = 'https://elfutils.org/'
+
+description = """
+ The elfutils project provides libraries and tools for ELF files
+ and DWARF data.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ['https://sourceware.org/elfutils/ftp/%(version)s']
+sources = [SOURCE_TAR_BZ2]
+checksums = ['df76db71366d1d708365fc7a6c60ca48398f14367eb2b8954efc8897147ad871']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('M4', '1.4.19'),
+    ('pkgconf', '2.0.3'),
+]
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('libarchive', '3.7.2'),
+    ('XZ', '5.4.4'),
+    ('zstd', '1.5.5'),
+    ('cURL', '8.3.0'),
+    ('SQLite', '3.43.1'),
+    ('libmicrohttpd', '1.0.1'),
+]
+
+configopts = '--enable-debuginfod --enable-libdebuginfod'
+
+sanity_check_paths = {
+    'files': [
+        'bin/eu-elfcmp', 'include/dwarf.h',
+        'lib/libelf.%s' % SHLIB_EXT,
+        'lib/libdebuginfod.%s' % SHLIB_EXT,
+    ],
+    'dirs': [],
+}
+
+sanity_check_commands = ['eu-elfcmp --help']
+
+moduleclass = 'lib'

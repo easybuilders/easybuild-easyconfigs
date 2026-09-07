@@ -1,0 +1,11 @@
+Fix GCC 15 compatibility in the bundled Boost by adding missing headers after extraction.
+Author: Emik Lin (HKUMed CPOS)
+--- a/src/cmake/bootstrap/installBoost.sh
++++ b/src/cmake/bootstrap/installBoost.sh
+@@ -46,3 +46,5 @@
+ common_create_source
+-cd ${SOURCE_DIR} \
++sed -i '/timestamp.h/i#include "../filesys.h"' "${SOURCE_DIR}/tools/build/v2/engine/modules/path.c" \
++    && sed -i '/#include <cstddef>/a#include <cstdint>' "${SOURCE_DIR}/boost/atomic/atomic.hpp" \
++    && cd ${SOURCE_DIR} \
+     && ./bootstrap.sh ${BOOTSTRAP_OPTIONS} --prefix=${INSTALL_DIR} --with-libraries=`echo ${BCL2FASTQ_BOOST_COMPONENTS} | sed "s/;/,/g"` \

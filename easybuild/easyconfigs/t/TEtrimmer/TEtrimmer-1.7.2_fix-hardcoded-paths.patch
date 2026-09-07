@@ -1,0 +1,117 @@
+At runtime some files need to be created in the installdir. This patch changes that. It chooses
+a default that can be written to and gives the option to specify it manually.
+Author: Jarne Renders (Vrije Universiteit Brussel)
+diff -ruN TEtrimmer.orig/tetrimmer/TE-Aid-master/TE-Aid TEtrimmer/tetrimmer/TE-Aid-master/TE-Aid
+--- TEtrimmer.orig/tetrimmer/TE-Aid-master/TE-Aid	2026-05-28 11:02:29.781677000 +0200
++++ TEtrimmer/tetrimmer/TE-Aid-master/TE-Aid	2026-05-29 11:25:49.085219048 +0200
+@@ -59,6 +59,7 @@
+     -h, --help                    show this help message and exit
+     
+     -o, --output                  output folder (default "./")
++    -d, --db                      location for RepeatPeps.lib db (default "<output_folder>/db")
+     -t, --tables                  write features coordinates in tables (self dot-plot, ORFs and protein hits coordinates)
+     -T, --all-Tables              same as -t plus write the genomic blastn table. 
+                                   Warning: can be very large if your TE is highly repetitive!
+@@ -161,6 +162,12 @@
+   	    shift 2  
+   	  fi
+       ;;
++    -d | --db)
++     if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
++  	DBDIR=$2
++  	shift 2  
++      fi
++      ;;
+     -v_x_line_1 | --vertical_x_line_1)
+       if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+         VERTICAL_X_1=$2
+@@ -220,6 +227,7 @@
+ FULL_ALPHA="${FULL_ALPHA:-0.9}"
+ AUTO_Y="${AUTO_Y:-TRUE}"
+ OUTPUT="${OUTPUT:-.}"
++DBDIR="${DBDIR:-$OUTPUT/db}"
+ MINORF="${MINORF:-400}"
+ TABLES="${TABLES:-FALSE}"
+ ALLTAB="${ALLTAB:-FALSE}"
+@@ -268,18 +276,18 @@
+ # run blastp orfs vs TE proteins
+ if [ -s $OUTPUT/TE.orfs ]
+   then
+-    if [ -e $DIR/db/RepeatPeps.lib.phr ]
++   if [ -e $DBDIR/RepeatPeps.lib.phr ]
+     then
+         echo "RepeatPeps is downloaded and formatted, blastp-ing..."
+-        blastp -query $OUTPUT/TE.orfs -evalue 5 -db $DIR/db/RepeatPeps.lib -outfmt 6 | sort -k1,1 -k12,12nr | sort -u -k1,1 | sed 's/#/--/g' | sed 's/,//g' > $OUTPUT/TE.blastp.out
++        blastp -query $OUTPUT/TE.orfs -evalue 5 -db $DBDIR/RepeatPeps.lib -outfmt 6 | sort -k1,1 -k12,12nr | sort -u -k1,1 | sed 's/#/--/g' | sed 's/,//g' > $OUTPUT/TE.blastp.out
+     else
+         echo "RepeatPeps.lib is not found, downloading..."
+-        mkdir -p $DIR/db
+-        curl -o $DIR/db/RepeatPeps.lib https://raw.githubusercontent.com/rmhubley/RepeatMasker/master/Libraries/RepeatPeps.lib
++        mkdir -p $DBDIR
++        curl -o $DBDIR/RepeatPeps.lib https://raw.githubusercontent.com/rmhubley/RepeatMasker/master/Libraries/RepeatPeps.lib
+         echo "Formating database"
+-        makeblastdb -in $DIR/db/RepeatPeps.lib -out $DIR/db/RepeatPeps.lib -dbtype 'prot' &>/dev/null
++        makeblastdb -in $DBDIR/RepeatPeps.lib -out $DBDIR/RepeatPeps.lib -dbtype 'prot' &>/dev/null
+         echo "Blastp-ing..."
+-        blastp -query $OUTPUT/TE.orfs -evalue 5 -db $DIR/db/RepeatPeps.lib -outfmt 6 | sort -k1,1 -k12,12nr | sort -u -k1,1 | sed 's/#/--/g' | sed 's/,//g' > $OUTPUT/TE.blastp.out
++        blastp -query $OUTPUT/TE.orfs -evalue 5 -db $DBDIR/RepeatPeps.lib -outfmt 6 | sort -k1,1 -k12,12nr | sort -u -k1,1 | sed 's/#/--/g' | sed 's/,//g' > $OUTPUT/TE.blastp.out
+     fi
+ 
+   #join orfs with their prot hit
+diff -ruN TEtrimmer.orig/tetrimmerGUI/TEtrimmerGUI.py TEtrimmer/tetrimmerGUI/TEtrimmerGUI.py
+--- TEtrimmer.orig/tetrimmerGUI/TEtrimmerGUI.py	2026-05-28 11:02:29.823961964 +0200
++++ TEtrimmer/tetrimmerGUI/TEtrimmerGUI.py	2026-05-29 13:15:08.697871765 +0200
+@@ -198,6 +198,13 @@
+     type=str,
+     help='Log level. [DEBUG, INFO, WARNING, ERROR, CRITICAL]',
+ )
++@click.option(
++    '--working_dir',
++    '-wd',
++    default='./',
++    type=str,
++    help='Working directory: default: ./',
++)
+ @click.version_option("1.7.2", prog_name='TEtrimmerGUI')
+ def proof_curation(
+     te_trimmer_proof_curation_dir,
+@@ -211,6 +218,7 @@
+     use_system_blast,
+     logfile,
+     loglevel,
++    working_dir,
+ ):
+     """
+     This GUI is designed to inspect and improve TEtrimmer outputs and any TE consensus libraries.
+@@ -224,11 +232,11 @@
+     # other consensus library means any TE consensus library. It could be the TE consensus library from TEtrimmer,
+     # or any other TE annotation software.
+     # Make directory for temporary files
+-    temp_folder = os.path.join(bin_py_path, 'temp_TEtrimmer_clustered')
++    temp_folder = os.path.join(working_dir, 'temp_TEtrimmer_clustered')
+     os.makedirs(temp_folder, exist_ok=True)
+ 
+     # Define directories for other consensus library checking
+-    other_cons_lib_folder = os.path.join(bin_py_path, 'temp_consensus_lib')
++    other_cons_lib_folder = os.path.join(working_dir, 'temp_consensus_lib')
+     os.makedirs(other_cons_lib_folder, exist_ok=True)
+ 
+     # TEtrimmerGUI separates each sequence in "--consensus_lib" into a single file.
+@@ -238,7 +246,7 @@
+ 
+     # Create cdd database directory when it is not given
+     # cdd_dir_default is the path to store cdd database when the database is not provided
+-    cdd_dir_default = os.path.join(bin_py_path, 'cdd_database')
++    cdd_dir_default = os.path.join(working_dir, 'cdd_database')
+ 
+     if cdd_dir is None:
+         cdd_dir = cdd_dir_default
+@@ -451,7 +459,7 @@
+     # Define genome length file name
+     def do_genome_length_calculation(genome_f):
+         genome_length_f = os.path.join(
+-            bin_py_path, f'{os.path.basename(genome_f)}.length'
++            working_dir, f'{os.path.basename(genome_f)}.length'
+         )
+         try:
+             # Check if genome file is provided by the user

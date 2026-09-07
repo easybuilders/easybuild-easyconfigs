@@ -1,0 +1,85 @@
+fix for flaky libint2/fortran_test/run,
+see https://github.com/evaleev/libint/issues/422
+and https://github.com/evaleev/libint/commit/66db17a17d25d4d5234614b1554b1df559169472
+
+diff --git a/export/fortran/test-eri.cc b/export/fortran/test-eri.cc
+index 7eb808583..07a7f625c 100644
+--- a/export/fortran/test-eri.cc
++++ b/export/fortran/test-eri.cc
+@@ -559,7 +559,7 @@ TEST_CASE("Fortran ERI", "[eri]") {
+   unsigned int veclen = 1;
+ 
+   unsigned int contrdepth_u = contrdepth;
+-  RandomShellSet<4u> rsqset(am, veclen, contrdepth_u);
++  RandomShellSet<4u> rsqset(am, veclen, contrdepth_u, 53754059);
+ 
+   double *A = &(rsqset.R[0][0]);
+   double *B = &(rsqset.R[1][0]);
+diff --git a/src/bin/test_eri/prep_libint2.h b/src/bin/test_eri/prep_libint2.h
+index b74d299b2..fa6b2ed3e 100644
+--- a/src/bin/test_eri/prep_libint2.h
++++ b/src/bin/test_eri/prep_libint2.h
+@@ -34,15 +34,15 @@ typedef unsigned int uint;
+ template <unsigned int N>
+ struct RandomShellSet {
+  public:
+-  RandomShellSet(uint* am, uint veclen, uint contrdepth) {
++  RandomShellSet(uint* am, uint veclen, uint contrdepth,
++                 unsigned int seed = std::random_device{}()) {
+     std::copy(am, am + N, l);
+ 
+-    std::random_device rd;
+-    std::mt19937 rng(rd());  // produces randomness out of thin air
++    std::mt19937 rng(seed);  // produces randomness out of thin air
+     std::uniform_real_distribution<> rdist(0.7,
+                                            1.3);  // distribution of coordinates
+     std::uniform_real_distribution<> ecdist(
+-        0.1, 3.0);  // distribution that exponents/coordinates
++        0.1, 3.0);  // distribution of exponents/coefficients
+     // glues source randomness with mapping
+     auto rdie = [&rng, &rdist]() -> double { return rdist(rng); };
+     auto ecdie = [&rng, &ecdist]() -> double { return ecdist(rng); };
+diff --git a/src/bin/test_eri/test_eri.cc b/src/bin/test_eri/test_eri.cc
+index 29a7220f7..db6fe3a6e 100644
+--- a/src/bin/test_eri/test_eri.cc
++++ b/src/bin/test_eri/test_eri.cc
+@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
+   const uint contrdepth = 1;
+ #endif
+   const uint contrdepth4 = contrdepth * contrdepth * contrdepth * contrdepth;
+-  RandomShellSet<4> rsqset(am, veclen, contrdepth);
++  RandomShellSet<4> rsqset(am, veclen, contrdepth, 235243466);
+ 
+   const unsigned int deriv_order = 0;
+   CartesianDerivIterator<4> diter(deriv_order);
+diff --git a/tests/eri/test.cc b/tests/eri/test.cc
+index 232622170..b57c69efd 100644
+--- a/tests/eri/test.cc
++++ b/tests/eri/test.cc
+@@ -267,7 +267,7 @@ bool test_4eri(unsigned int deriv_order, unsigned int lmax_max) {
+           am[1] = l1;
+           am[2] = l2;
+           am[3] = l3;
+-          RandomShellSet<4u> rsqset(am, veclen, contrdepth);
++          RandomShellSet<4u> rsqset(am, veclen, contrdepth, 172530558);
+ 
+           CartesianDerivIterator<4> diter(deriv_order);
+           const unsigned int nderiv = diter.range_size();
+@@ -626,7 +626,7 @@ bool test_3eri(unsigned int deriv_order, unsigned int lmax_max) {
+         am[0] = l0;
+         am[1] = l1;
+         am[2] = l2;
+-        RandomShellSet<3u> rsqset(am, veclen, contrdepth);
++        RandomShellSet<3u> rsqset(am, veclen, contrdepth, 201375807);
+ 
+         CartesianDerivIterator<3> diter(deriv_order);
+         const unsigned int nderiv = diter.range_size();
+@@ -927,7 +927,7 @@ bool test_2eri(unsigned int deriv_order, unsigned int lmax_max) {
+       unsigned int am[2];
+       am[0] = l0;
+       am[1] = l1;
+-      RandomShellSet<2u> rsqset(am, veclen, contrdepth);
++      RandomShellSet<2u> rsqset(am, veclen, contrdepth, 68441551);
+ 
+       CartesianDerivIterator<2> diter(deriv_order);
+       const unsigned int nderiv = diter.range_size();

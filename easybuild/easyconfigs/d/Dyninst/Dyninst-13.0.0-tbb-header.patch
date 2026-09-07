@@ -1,0 +1,45 @@
+From 9284601b14e204e137f8d2d656400fb0475901c2 Mon Sep 17 00:00:00 2001
+From: Tim Haines <thaines.astro@gmail.com>
+Date: Fri, 3 Apr 2026 22:13:02 -0500
+Subject: [PATCH] Add explicit include of TBB version header
+
+The latest version (2022.3.0, released 29-OCT-2025) doesn't have the implicit include anymore.
+---
+ cmake/tpls/DyninstTBB.cmake | 9 +++++++++
+ common/h/concurrent.h       | 5 +++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/cmake/tpls/DyninstTBB.cmake b/cmake/tpls/DyninstTBB.cmake
+index 6433967167..8bb69531c1 100644
+--- a/cmake/tpls/DyninstTBB.cmake
++++ b/cmake/tpls/DyninstTBB.cmake
+@@ -49,4 +49,13 @@ message(STATUS "Found TBB ${TBB_VERSION}")
+ get_target_property(_tmp TBB::tbb INTERFACE_INCLUDE_DIRECTORIES)
+ message(STATUS "TBB include directories: ${_tmp}")
+ 
++# Starting with 2021.2, the version macros were extracted into 'version.h'
++# To retain support for earlier versions, we conditionally include it
++foreach(_dir ${_tmp})
++  if(EXISTS "${_dir}/tbb/version.h")
++    target_compile_definitions(Dyninst::TBB INTERFACE "DYNINST_TBB_HAS_VERSION_H")
++    break()
++  endif()
++endforeach()
++
+ unset(_find_path_args)
+diff --git a/common/h/concurrent.h b/common/h/concurrent.h
+index fd7891d07e..a305ab0556 100644
+--- a/common/h/concurrent.h
++++ b/common/h/concurrent.h
+@@ -42,6 +42,11 @@
+ #include <tbb/concurrent_hash_map.h>
+ #include <tbb/concurrent_vector.h>
+ #include <tbb/concurrent_queue.h>
++
++#ifdef DYNINST_TBB_HAS_VERSION_H
++#include <tbb/version.h>
++#endif
++
+ #include <boost/functional/hash.hpp>
+ 
+ namespace Dyninst {

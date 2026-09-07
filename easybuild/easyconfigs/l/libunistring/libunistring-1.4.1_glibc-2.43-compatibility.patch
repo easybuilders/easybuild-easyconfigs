@@ -1,0 +1,55 @@
+This patch solves the following issue when building with glibc >= 2.43:
+
+gcc -DHAVE_CONFIG_H -DNO_XMALLOC -I. -I..  -I. -I. -I.. -I.. -DIN_LIBUNISTRING -DDEPENDS_ON_LIBICONV=1 -I/cvmfs/software.eessi.io/versions/2026.06/software/linux/x86_64/amd/zen3/software/libiconv/1.18-GCCcore-15.2.0/include  -O2 -ftree-vectorize -march=native -fno-math-errno -fPIC -c amemxfrm.c
+In file included from /cvmfs/software.eessi.io/versions/2026.06/compat/linux/x86_64/usr/include/features.h:540,
+                 from /cvmfs/software.eessi.io/versions/2026.06/compat/linux/x86_64/usr/include/errno.h:25,
+                 from amemxfrm.c:23:
+./stdlib.h:807:20: error: expected identifier or ‘(’ before ‘_Generic’
+  807 | _GL_EXTERN_C void *bsearch (const void *__key,
+      |                    ^~~~~~~
+make[2]: *** [Makefile:10166: config.h] Error 1
+
+Patch was created using:
+sed -r '/_GL_EXTERN_C/s/w?memchr|bsearch/(&)/' \
+    -i $(find -name \*.in.h)
+
+See: https://www.linuxfromscratch.org/glfs/view/stable/shareddeps/libunistring.html
+
+Bob Dröge, University of Groningen
+
+diff -ru libunistring-1.4.1.orig/lib/stdlib.in.h libunistring-1.4.1/lib/stdlib.in.h
+--- libunistring-1.4.1.orig/lib/stdlib.in.h	2025-09-24 01:01:31.000000000 +0200
++++ libunistring-1.4.1/lib/stdlib.in.h	2026-06-21 23:51:44.308003720 +0200
+@@ -224,7 +224,7 @@
+ 
+ /* Declarations for ISO C N3322.  */
+ #if defined __GNUC__ && __GNUC__ >= 15 && !defined __clang__
+-_GL_EXTERN_C void *bsearch (const void *__key,
++_GL_EXTERN_C void *(bsearch) (const void *__key,
+                             const void *__base, size_t __nmemb, size_t __size,
+                             int (*__compare) (const void *, const void *))
+   _GL_ATTRIBUTE_NONNULL_IF_NONZERO (2, 3) _GL_ARG_NONNULL ((5));
+diff -ru libunistring-1.4.1.orig/lib/string.in.h libunistring-1.4.1/lib/string.in.h
+--- libunistring-1.4.1.orig/lib/string.in.h	2025-09-24 01:01:31.000000000 +0200
++++ libunistring-1.4.1/lib/string.in.h	2026-06-21 23:51:44.341003725 +0200
+@@ -283,7 +283,7 @@
+   _GL_ATTRIBUTE_NONNULL_IF_NONZERO (2, 3);
+ # endif
+ # if !defined memchr && !defined __cplusplus
+-_GL_EXTERN_C void *memchr (const void *__s, int __c, size_t __n)
++_GL_EXTERN_C void *(memchr) (const void *__s, int __c, size_t __n)
+   _GL_ATTRIBUTE_NONNULL_IF_NONZERO (1, 3);
+ _GL_EXTERN_C void *memrchr (const void *__s, int __c, size_t __n)
+   _GL_ATTRIBUTE_NONNULL_IF_NONZERO (1, 3);
+diff -ru libunistring-1.4.1.orig/lib/wchar.in.h libunistring-1.4.1/lib/wchar.in.h
+--- libunistring-1.4.1.orig/lib/wchar.in.h	2025-09-24 01:01:32.000000000 +0200
++++ libunistring-1.4.1/lib/wchar.in.h	2026-06-21 23:51:44.330003724 +0200
+@@ -301,7 +301,7 @@
+   _GL_ATTRIBUTE_NONNULL_IF_NONZERO (1, 3)
+   _GL_ATTRIBUTE_NONNULL_IF_NONZERO (2, 3);
+ # ifndef __cplusplus
+-_GL_EXTERN_C wchar_t *wmemchr (const wchar_t *__s, wchar_t __wc, size_t __n)
++_GL_EXTERN_C wchar_t *(wmemchr) (const wchar_t *__s, wchar_t __wc, size_t __n)
+   _GL_ATTRIBUTE_NONNULL_IF_NONZERO (1, 3);
+ # endif
+ _GL_EXTERN_C wchar_t *wmemset (wchar_t *__s, wchar_t __wc, size_t __n)
