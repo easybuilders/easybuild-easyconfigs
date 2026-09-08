@@ -1,0 +1,37 @@
+easyblock = 'Tarball'
+
+name = 'Aspera-Transfer-SDK'
+version = '1.1.9'
+
+homepage = 'https://www.ibm.com/products/aspera'
+description = 'IBM Aspera Transfer SDK, including the ascp FASP transfer client.'
+
+toolchain = SYSTEM
+
+source_urls = ['https://production-transfer-sdk.s3.us-west-2.amazonaws.com/%(version)s']
+sources = ['ibm-aspera-transfer-sdk-linux-amd64-%(version)s.tar.gz']
+checksums = ['97ea42b564d4c4f09202fb2b6525b39d8d1f4f6e4a643671dec0d689bd2098d4']
+
+# Match the layout created by `ascli config transferd install`.
+postinstallcmds = [
+    'mv %(installdir)s/bin/* %(installdir)s',
+    'mv %(installdir)s/lib/* %(installdir)s',
+    'mv %(installdir)s/sbin/* %(installdir)s',
+]
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': [''],
+    'PATH': [''],
+}
+
+# Aspera CLI maps this environment variable to its `sdk_folder` setting.
+modextravars = {'ASCLI_SDK_FOLDER': '%(installdir)s'}
+
+sanity_check_paths = {
+    'files': ['ascp', 'async', 'transferd', 'libafwsfeed.so'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['ascp --version']
+
+moduleclass = 'tools'
