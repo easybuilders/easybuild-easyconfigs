@@ -1,0 +1,62 @@
+Relax the CUDA-vs-CPU tolerance for affine transformations of bounding boxes.
+Backport of upstream commit:
+https://github.com/pytorch/vision/commit/ca2212438fdd8ce29b66999ed70ed54b0f9372d1
+and
+Relax tolerances for CUDA float32 XYWHR bounding-box transform tests.
+With PyTorch 2.9.1 and CUDA 12.9.1, torchvision 0.24.1 shows small
+CPU-vs-CUDA numerical differences for rotated float32 XYWHR bounding boxes.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- test/test_transforms_v2.py.orig	2026-08-28 14:51:07.835019000 +0200
++++ test/test_transforms_v2.py	2026-08-28 14:58:59.087204000 +0200
+@@ -753,6 +753,15 @@
+             dtype=dtype,
+             device=device,
+         )
++        check_cuda_vs_cpu = (
++            dict(rtol=1.3e-6, atol=2e-5)
++            if (
++                device == "cuda"
++                and dtype is torch.float32
++                and format == tv_tensors.BoundingBoxFormat.XYWHR
++            )
++            else True
++        )
+         check_kernel(
+             F.resize_bounding_boxes,
+             bounding_boxes,
+@@ -760,6 +769,7 @@
+             canvas_size=bounding_boxes.canvas_size,
+             size=size,
+             **max_size_kwarg,
++            check_cuda_vs_cpu=check_cuda_vs_cpu,
+             check_scripted_vs_eager=not isinstance(size, int),
+         )
+ 
+@@ -1439,6 +1449,7 @@
+             canvas_size=bounding_boxes.canvas_size,
+             **{param: value},
+             check_scripted_vs_eager=not (param == "shear" and isinstance(value, (int, float))),
++            check_cuda_vs_cpu=dict(atol=1e-5, rtol=1e-5),
+         )
+ 
+     @param_value_parametrization(
+@@ -3627,8 +3638,16 @@
+             actual = transform(bounding_boxes)
+ 
+         expected = self._reference_crop_bounding_boxes(bounding_boxes, **params)
+-
+-        torch.testing.assert_close(actual, expected)
++        tolerances = (
++            dict(rtol=1.3e-6, atol=5e-4)
++            if (
++                device == "cuda"
++                and dtype is torch.float32
++                and format == tv_tensors.BoundingBoxFormat.XYWHR
++            )
++            else {}
++        )
++        torch.testing.assert_close(actual, expected, **tolerances)
+         assert_equal(F.get_size(actual), F.get_size(expected))
+ 
+     def _reference_crop_keypoints(self, keypoints, *, top, left, height, width):

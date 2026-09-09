@@ -1,0 +1,73 @@
+name = 'Slicer'
+version = '5.12.3'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://www.slicer.org'
+description = "Slicer, or 3D Slicer, is a free, open source software package for visualization and image analysis."
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+source_urls = ['https://github.com/Slicer/Slicer/archive/']
+sources = [{
+    'filename': SOURCE_TAR_XZ,
+    'git_config': {
+        'url': 'https://github.com/Slicer',
+        'repo_name': name,
+        'tag': 'v%(version)s',
+        'keep_git_dir': True,
+    },
+}]
+patches = ['Slicer-5.12.3_fix-Python-3.13.patch']
+checksums = [
+    {'Slicer-5.12.3.tar.xz': 'c2d36b592964a68f24caf567b16a417c32b31f8ddc030af3085dccd68da7aa7b'},
+    {'Slicer-5.12.3_fix-Python-3.13.patch': '388f957fc45d2dba51245b5dfc910a468365c71423a950da5e5d19092c4bb213'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('patchelf', '0.18.0'),
+]
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('Qt6', '6.9.3'),
+    ('Slicer-Python-deps', version),
+    ('Biomedisa', '26.7.3', versionsuffix),
+    ('OpenSSL', '3', '', SYSTEM),
+    ('cURL', '8.14.1'),
+]
+
+# Slicer still lists the obsolete 'nose' test framework as a NumPy Python dependency
+# It is not needed for the Slicer build, and legacy nose 1.3.7 is incompatible with Python 3.13
+preconfigopts = "sed -i '/^[[:space:]]*nose[[:space:]]*$/d' "
+preconfigopts += "%(builddir)s/Slicer/SuperBuild/External_python-numpy.cmake && "
+
+build_type = 'Release'
+
+configopts = '-DSlicer_RELEASE_TYPE=Stable '
+configopts += '-DBUILD_TESTING=OFF '
+# Slicer builds its own specially patched VTK and ITK versions, which differ from those in the EasyBuild repository
+configopts += '-DSlicer_USE_SYSTEM_VTK=OFF '
+configopts += '-DSlicer_USE_SYSTEM_ITK=OFF '
+# Use external EasyBuild-provided Python, Qt6, cURL, and OpenSSL libraries instead of Slicer's bundled copies
+configopts += '-DSlicer_USE_SYSTEM_python=ON '
+configopts += '-DSlicer_REQUIRED_PYTHON_VERSION=%(pyver)s '
+configopts += '-DSlicer_USE_SYSTEM_QT=ON '
+configopts += '-DQt6_DIR=$EBROOTQT6/lib/cmake/Qt6 '
+configopts += '-DSlicer_USE_SYSTEM_curl=ON '
+configopts += '-DCURL_USE_STATIC_LIBS=OFF '
+configopts += '-DOPENSSL_ROOT_DIR=$EBROOTOPENSSL '
+
+# Slicer's custom installation procedure is implemented in the EB_Slicer easyblock
+
+# Slicer uses CTK AppLauncher to configure runtime library paths for its internal executables and libraries.
+# Restrict EasyBuild's generic linkage checks to the top-level launcher and lib directory, and skip the
+# readelf RPATH check because launcher-managed binaries are not intended to resolve correctly when inspected
+# directly outside the AppLauncher-provided environment.
+check_readelf_rpath = False
+bin_lib_subdirs = ['.', 'lib']
+
+# Slicer's custom sanity checks are implemented in the EB_Slicer easyblock
+
+moduleclass = 'vis'

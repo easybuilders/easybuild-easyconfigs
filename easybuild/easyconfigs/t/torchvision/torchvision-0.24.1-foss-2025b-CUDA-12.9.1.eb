@@ -1,0 +1,43 @@
+easyblock = 'PythonBundle'
+
+name = 'torchvision'
+version = '0.24.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/pytorch/vision'
+description = " Datasets, Transforms and Models specific to Computer Vision"
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [('expecttest', '0.3.0')]
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('PyTorch', '2.9.1', versionsuffix),
+    ('libjpeg-turbo', '3.1.1'),
+    ('libpng', '1.6.50'),
+    ('libwebp', '1.5.0'),
+    ('Pillow', '11.3.0'),
+]
+
+exts_list = [
+    ('pytest-mock', '3.14.1', {
+        'checksums': ['159e9edac4c451ce77a5cdb9fc5d1100708d2dd4ba3c3df572f14097351af80e'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/pytorch/vision/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'patches': ['torchvision-0.24.1_fix-tests.patch'],
+        'preinstallopts': 'export FORCE_CUDA=1 && ',
+        'installopts': '-v',
+        'runtest': 'pytest -m "not xfail"',  # don't run tests that are expected that they might fail
+        'testinstall': True,
+        'checksums': [
+            {'torchvision-0.24.1.tar.gz': '071da2078600bfec4886efab77358c9329abfedcf1488b05879b556cb9b84ba7'},
+            {'torchvision-0.24.1_fix-tests.patch': '5b2c6b6cf2e224b38c3a586770247f2c7f6424df9c5bdb652e4e2e6bd4afcab1'},
+        ],
+    }),
+]
+
+moduleclass = 'vis'
