@@ -1,0 +1,17 @@
+Avoid the unstable slice_as_array standard-library API, which requires a
+nightly or newer Rust. Stable slice-pattern matching preserves the behavior.
+
+Author: Emik Lin (HKUMed CPOS)
+--- a/crates/polars-stream/src/physical_plan/lower_ir.rs
++++ b/crates/polars-stream/src/physical_plan/lower_ir.rs
+@@ -1741,7 +1741,9 @@ fn lower_ir(
+                         trans_schemas[input_idx].get_at_index(col_idx).unwrap()
+                     };
+                     let slice = {
+-                        let &[input, offset, length] = trans_inputs.as_array().unwrap();
++                        let &[input, offset, length] = trans_inputs.as_slice() else {
++                            unreachable!("dynamic slice expects three inputs")
++                        };
+                         phys_sm.insert(PhysNode::new(
+                             Arc::new(Schema::from_iter([(input_name.clone(), dtype.clone())])),
+                             PhysNodeKind::DynamicSlice {
