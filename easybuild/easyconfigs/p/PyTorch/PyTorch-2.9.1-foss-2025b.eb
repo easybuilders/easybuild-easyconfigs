@@ -324,6 +324,13 @@ excluded_tests = {
 }
 
 runtest = (
+    # PyTorch runs multiple test suites concurrently, while each test process may
+    # otherwise use all available CPUs through OpenMP. Limit OMP_NUM_THREADS to
+    # avoid severe CPU oversubscription; use ~1/4 of the available CPUs per test
+    # process and at least 1 thread for small allocations.
+    ' OMP_NUM_THREADS=$(( $(nproc) / 4 ));'
+    ' if [ "${OMP_NUM_THREADS}" -lt 1 ]; then OMP_NUM_THREADS=1; fi;'
+    ' export OMP_NUM_THREADS;'
     # Disable symbol resolution in stack traces that can cause hangs and slowdowns
     ' TORCH_DISABLE_ADDR2LINE=1'
     ' TORCHINDUCTOR_CUTLASS_DIR=%(start_dir)s/third_party/cutlass'
