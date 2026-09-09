@@ -1,0 +1,20 @@
+# Use the Boost module supplied by the EasyBuild toolchain instead of the
+# bundled Boost 1.55 archive. The bundled Boost.Build engine fails to compile
+# with GCC 14, while bam-readcount only requires the program_options and regex
+# components. The corresponding Boost dependency and CMake option are added
+# in the easyconfig.
+--- a/cmake/BuildBoost.cmake
++++ b/cmake/BuildBoost.cmake
+@@ -1,3 +1,12 @@
+ cmake_minimum_required(VERSION 2.8)
+
++option(USE_SYSTEM_BOOST "Use the Boost installation provided by the toolchain" OFF)
++if(USE_SYSTEM_BOOST)
++    set(Boost_NO_BOOST_CMAKE ON)
++    set(Boost_USE_STATIC_LIBS ON)
++    find_package(Boost REQUIRED COMPONENTS ${REQUIRED_BOOST_LIBS})
++    set(Boost_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
++    return()
++endif()
++
+ set(DEFAULT_BOOST_URL ${CMAKE_SOURCE_DIR}/vendor/boost-1.55-bamrc.tar.gz)

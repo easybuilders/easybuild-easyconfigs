@@ -1,0 +1,24 @@
+From b66aa1ade12fe3910d5fc4a3bba0cd6f27c587fd Mon Sep 17 00:00:00 2001
+From: Robert Hardwick <robert.hardwick@arm.com>
+Subject: [PATCH] [ARM] Add test_memory_profiler to aarch64 tests (#145260)
+
+TestMemoryProfilerE2E.test_memory_timeline is failing on AArch64, this fixes it and enables it in the opt-in list of tests for AArch64.
+
+Fixes #142371
+
+Avoids:
+> AttributeError: 'Key' object has no attribute 'storage'
+
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/145260
+diff --git a/test/profiler/test_memory_profiler.py b/test/profiler/test_memory_profiler.py
+--- a/test/profiler/test_memory_profiler.py
++++ b/test/profiler/test_memory_profiler.py
+@@ -1492,7 +1492,7 @@ def id_for_testing(key):
+             for _, action, (key, version), size in prof._memory_profile().timeline
+             # We generally don't care about tiny allocations during memory
+             # profiling and they add a lot of noise to the unit test.
+-            if size > 1024
++            if size > 1024 and isinstance(key, _memory_profiler.TensorKey)
+         ]
+ 
+         self.assertExpectedInline(
