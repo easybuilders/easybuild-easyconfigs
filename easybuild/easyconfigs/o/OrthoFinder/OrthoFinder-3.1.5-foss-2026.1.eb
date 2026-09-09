@@ -1,0 +1,58 @@
+easyblock = 'PythonBundle'
+
+name = 'OrthoFinder'
+version = '3.1.5'
+
+homepage = 'https://github.com/OrthoFinder/OrthoFinder'
+description = "OrthoFinder is a fast, accurate and comprehensive platform for comparative genomics"
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+builddependencies = [
+    ('Cython', '3.2.4'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+    ('scikit-learn', '1.8.0'),
+    ('Biopython', '1.87'),
+    ('BLAST+', '2.17.0'),
+    ('DIAMOND', '2.2.6'),
+    ('FastME', '2.1.6.4'),
+    ('MCL', '22.282'),
+    ('MMseqs2', '18-8cc5c'),
+    ('Brotli-python', '1.2.0'),
+]
+
+exts_list = [
+    ('bottle', '0.13.4', {
+        'checksums': ['787e78327e12b227938de02248333d788cfe45987edca735f8f88e03472c3f47'],
+    }),
+    ('cheroot', '11.1.2', {
+        'checksums': ['bfb70c49663f63b0440f2b54dbc6b0d1650e56dfe4e2641f59b2c6f727b44aca'],
+    }),
+    ('ete4', '4.4.0', {
+        'checksums': ['0306ab66c2a1685946f94a4912718a5812dfc3059070300fc25d0e2b881bb8d1'],
+    }),
+    (name, version, {
+        'modulename': 'orthofinder',
+        'source_urls': ['https://github.com/OrthoFinder/OrthoFinder/archive/refs/tags/'],
+        'sources': [V_VERSION_TAR_GZ],
+        'checksums': [
+            {'v3.1.5.tar.gz': '5723266c5a9a762631e7f28fbd9cc4f607e9aad6e5b490dcb7e4c5f128de94cb'},
+        ],
+        # outdated fallback version in pyproject.toml
+        'preinstallopts': f"""sed -i 's/fallback_version.*/fallback_version = "{version}"/g' pyproject.toml &&""",
+    }),
+]
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in ['orthofinder', 'convert_orthofinder_tree_ids', 'make_ultrametric',
+                                   'primary_transcript']],
+    'dirs': [],
+}
+
+sanity_check_commands = ['%(namelower)s --help']
+
+moduleclass = 'bio'
