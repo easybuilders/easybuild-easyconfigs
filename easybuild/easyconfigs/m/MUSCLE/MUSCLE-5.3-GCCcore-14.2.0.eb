@@ -1,0 +1,52 @@
+easyblock = 'MakeCp'
+
+name = 'MUSCLE'
+version = '5.3'
+
+homepage = 'https://drive5.com/muscle/'
+description = """MUSCLE is one of the best-performing multiple alignment programs
+ according to published benchmark tests, with accuracy and speed that are consistently
+ better than CLUSTALW. MUSCLE can align hundreds of sequences in seconds. Most users
+ learn everything they need to know about MUSCLE in a few minutes-only a handful of
+ command-line options are needed to perform common alignment tasks."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+github_account = 'rcedgar'
+source_urls = [GITHUB_LOWER_SOURCE]
+# GitHub release tag is v5.3, while version is kept as 5.3 for module naming consistency.
+sources = [
+    {'download_filename': 'v%(version)s.tar.gz', 'filename': '%(version)s.tar.gz'},
+    {
+        'filename': 'vcxproj_make.py',
+        'download_filename': 'vcxproj_make.py',
+        'source_urls': ['https://raw.githubusercontent.com/rcedgar/vcxproj_make/806d016'],
+        'extract_cmd': 'cp %s %(builddir)s/muscle-%(version)s/src/',
+    },
+]
+checksums = [
+    {'5.3.tar.gz': '74b22a94e630b16015c2bd9ae83aa2be2c2048d3e41f560b2d4a954725c81968'},
+    {'vcxproj_make.py': '902735703004c47705ffa389329378f237fecb154945b489edf6abe260c6694f'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+]
+
+# MUSCLE 5.3 uses vcxproj_make.py to generate Makefile/build rules.
+# Vendor the script as a source to avoid runtime network access.
+start_dir = '.'
+build_cmd = 'cd src && python3 vcxproj_make.py --openmp && sed -i "s/ -static//g" Makefile && make'
+
+
+files_to_copy = [(['bin/muscle'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/muscle'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["muscle -h"]
+
+moduleclass = 'bio'
+
