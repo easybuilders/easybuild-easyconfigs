@@ -1,0 +1,23 @@
+Replace std::filesystem::remove_all with rm -rf in test temp-dir cleanup to avoid
+segfault with PyTorch 2.9.1-loaded filesystem symbols
+Author: Pavel Tomanek (Inuits/Ugent) with help of ChatGPT5.4
+--- tests/TestUtils.h.orig	2026-03-27 16:30:29.957036727 +0100
++++ tests/TestUtils.h	2026-03-27 16:31:17.700602831 +0100
+@@ -2,6 +2,7 @@
+ 
+ #include <spdlog/spdlog.h>
+ 
++#include <cstdlib>
+ #include <cstring>
+ #include <filesystem>
+ #include <string>
+@@ -44,7 +45,8 @@
+             while (!deleted && tries < 5) {
+                 try {
+                     tries++;
+-                    deleted = std::filesystem::remove_all(m_path);
++                    std::string cmd = "rm -rf -- \"" + m_path.string() + "\"";
++                    deleted = (std::system(cmd.c_str()) == 0) ? 1 : 0;
+                 } catch (std::exception& e) {
+                     std::string what = e.what();
+                     spdlog::warn(what);
