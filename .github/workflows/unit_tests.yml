@@ -26,13 +26,6 @@ jobs:
       with:
         fetch-depth: 0 # Required for git merge-base to work
 
-    - name: Cache source files in /tmp/sources
-      id: cache-sources
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # 5.0.5
-      with:
-        path: /tmp/sources
-        key: eb-sourcepath
-
     - name: set up Python
       uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
@@ -68,6 +61,16 @@ jobs:
           git clone -b $BRANCH --depth 10 --single-branch https://github.com/easybuilders/easybuild-easyblocks.git
           cd easybuild-easyblocks; git log -n 1; cd -
           pip install $PWD/easybuild-easyblocks
+
+          cp easybuild-easyblocks/easybuild/easyblocks/generic/configuremake.py $GITHUB_WORKSPACE/configuremake.check
+
+    - name: Cache source files in /tmp/sources
+      id: restore-cache-sources
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # 6.1.0
+      with:
+        path: /tmp/sources
+        # Ensure cache is invalidated when configuremake.py changes so we download latest version of config.guess
+        key: eb-sourcepath-${{ matrix.python }}-${{ hashFiles('configuremake.check') }}
 
     - name: install modules tool
       run: |
