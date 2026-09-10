@@ -600,6 +600,9 @@ class EasyConfigTest(TestCase):
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
             # autoCAS requires serial h5py
             'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS'])],
+            # IMAS-Python 2.0.0 is still used by IMAS-ParaView 2.1.0
+            # (other 2023b easyconfigs use IMAS-Python 2.3.0)
+            'IMAS-Python': [(r'2\.0\.0', [r'IMAS-ParaView-2\.1\.0-foss-2023b'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             'Java': [
@@ -608,9 +611,12 @@ class EasyConfigTest(TestCase):
                     # EC's that requires Java 17 in 2023b easyconfigs, while others use Java 11
                     r'AnnotSV-3\.5\.10-foss-2023b', r'GATK-4\.6\.0\.0-GCCcore-13\.2\.0', r'Spark-3\.5\.4-foss-2023b',
                 ]),
-                # Java 21 is used by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* modules
+                # Java 21 is used as dep by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* on 2023b
                 (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
                          r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
+                # Java 25 is used as dep for MDSplus 7.1, IMAS-* and SimDB (via IMAS-Python) on 2025b
+                (r'25', [r'MDSplus-7\.1.*-GCCcore-14\.3\.0', r'IMAS-.*-2025b', r'IMAS-.*-GCCcore-14\.3\.0',
+                         r'SimDB-.*-2025b']),
             ],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
