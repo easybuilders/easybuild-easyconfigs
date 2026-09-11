@@ -10,11 +10,32 @@ description = """SLEPc (Scalable Library for Eigenvalue Problem Computations) is
 toolchain = {'name': 'foss', 'version': '2024a'}
 toolchainopts = {'usempi': True, 'openmp': True}
 
+local_hpddm_commit = 'f940190ed791984e5ca501a58eb8e6d112ac231d'
+local_hpddm_src = f'hpddm-{local_hpddm_commit}.tar.gz'
+
 source_urls = ['https://slepc.upv.es/download/distrib']
-sources = [SOURCELOWER_TAR_GZ]
-checksums = ['3060a95692151ef0f9ba4ca11da18d5dcd86697b59f6aeee723de92d7bd465a1']
+sources = [
+    SOURCELOWER_TAR_GZ,
+    {
+        'source_urls': ['https://github.com/hpddm/hpddm/archive/'],
+        'filename': local_hpddm_src,
+        'download_filename': f'{local_hpddm_commit}.tar.gz',
+        'extract_cmd': 'cp %s .',
+    },
+]
+patches = ['SLEPc-3.23.2_fix-HPDDM-install.patch']
+checksums = [
+    {'slepc-3.23.2.tar.gz': '3060a95692151ef0f9ba4ca11da18d5dcd86697b59f6aeee723de92d7bd465a1'},
+    {'hpddm-f940190ed791984e5ca501a58eb8e6d112ac231d.tar.gz':
+     'fd81431c3f82b60b19697283a1ab8481816f7e79a9fc912bc0382a236a8fc44d'},
+    {'SLEPc-3.23.2_fix-HPDDM-install.patch': '95fa0427908503e54555a1eeeaa89032e55ac2c75cc1e20cbaaa69d321ad117d'},
+]
 
 dependencies = [('PETSc', '3.23.5')]
+
+configopts = f'--download-hpddm=%(builddir)s/{local_hpddm_src} '
+
+postinstallcmds = ["cd %(installdir)s/lib && ln -sfn libhpddm_petsc.so.0 libhpddm_petsc.so"]
 
 petsc_arch = 'installed-arch-linux2-c-opt'
 
