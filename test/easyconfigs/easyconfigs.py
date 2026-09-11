@@ -1874,13 +1874,12 @@ def template_easyconfig_test(self, spec):
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
 
-    seen_patches: Set[str] = set()
+    seen_patches: Set[PatchSpec] = set()
     for idx, patch_spec in enumerate(patches + post_install_patches):
-        patch_name = get_patch_name(patch_spec)
-        if patch_name in seen_patches:
-            failing_checks.append(f'Duplicate patch {patch_name}')
+        if patch_spec in seen_patches:
+            failing_checks.append(f'Duplicate patch {get_patch_name(patch_spec)}')
         else:
-            seen_patches.add(patch_name)
+            seen_patches.add(patch_spec)
             failing_checks.extend(verify_patch(specdir, patch_spec, idx, patch_checksums))
 
     # make sure 'fetch' step is not being skipped, since that implies not verifying the checksum
