@@ -1,0 +1,80 @@
+easyblock = 'PythonBundle'
+
+name = 'pymatgen'
+version = '2026.5.4'
+
+homepage = 'https://pymatgen.org/'
+description = """Python Materials Genomics is a robust materials analysis code that defines core object
+ representations for structures and molecules with support for many electronic structure codes."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+builddependencies = [
+    ('poetry', '2.3.4'),
+    ('hatchling', '1.29.0'),
+    ('maturin', '1.13.1'),
+    ('Cython', '3.2.4'),
+    ('PDM', '2.28.0'),
+    ('hypothesis', '6.153.2'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('Python-bundle-PyPI', '2026.04'),
+    ('SciPy-bundle', '2026.05'),
+    ('matplotlib', '3.10.9'),
+    ('networkx', '3.6.1'),
+    ('plotly.py', '7.0.0'),
+    ('ruamel.yaml', '0.19.1'),
+    ('spglib-python', '2.7.0'),
+    ('sympy', '1.14.0'),
+    ('tqdm', '4.67.3'),
+    ('uncertainties', '3.2.3'),
+    ('orjson', '3.11.8'),
+    ('lxml', '6.1.1'),
+    # Optional
+    ('phonopy', '4.5.0'),
+    ('OpenBabel', '3.2.1'),
+]
+
+exts_list = [
+    ('cloudpickle', '3.1.2', {
+        'checksums': ['7fda9eb655c9c230dab534f1983763de5835249750e85fbcef43aaa30a9a2414'],
+    }),
+    ('joblib', '1.6.0', {
+        'checksums': ['2ccc96785b12046c08fd6d55839c12857831b54a3c1673ffadd2f04bfc4eda03'],
+    }),
+    ('palettable', '3.3.3', {
+        'checksums': ['094dd7d9a5fc1cca4854773e5c1fc6a315b33bd5b3a8f47064928facaf0490a8'],
+    }),
+    ('monty', '2026.7.16', {
+        'checksums': ['2c51224b6715794cfbbb8202b9749077fad8e67b238b0ab6f2abb9bde33c2f86'],
+    }),
+    ('bibtexparser', '1.4.3', {
+        'checksums': ['a9c7ded64bc137720e4df0b1b7f12734edc1361185f1c9097048ff7c35af2b8f'],
+    }),
+    ('pymatgen-core', '2026.8.30', {
+        'modulename': 'pymatgen.core',
+        'checksums': ['2a06e4361b9be37b54614ade9eb27786641dd294a0d8096c135a9bc73b0d7597'],
+    }),
+    (name, version, {
+        'patches': ['pymatgen-2026.5.4-fix_tests.patch'],
+        'runtest': "export MPLBACKEND=Agg && export PMG_TEST_FILES_DIR=%(builddir)s/pymatgen/pymatgen-%(version)s/test-files && pytest -vvvs tests",
+        'source_urls': ['https://github.com/materialsproject/pymatgen/archive/refs/tags'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
+        'checksums': [
+            {'pymatgen-2026.5.4.tar.gz': '38b88397a9ccd84e40c02e8a5c5109205b93e883bc254950579facd55d50d27c'},
+            {'pymatgen-2026.5.4-fix_tests.patch': 'ba2fb8668b146ce523e3c5b34c437b5725ec831813db53d682921b6b83eb4fb4'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/pmg'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["pmg --help"]
+
+moduleclass = 'chem'
