@@ -1,0 +1,51 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Jonney Huang <jonney.huang@hpcnow.com>
+# License::     GPL-v3.0
+# #
+
+easyblock = 'CMakeMake'
+
+name = 'easi'
+version = '1.7.0'
+
+homepage = 'https://github.com/SeisSol/easi/'
+description = """easi is a library for the Easy Initialization of models
+ in three (or less or more) dimensional domains.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'usempi': True}
+
+github_account = 'SeisSol'
+source_urls = ['https://github.com/%(github_account)s/%(name)s/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['c72239b714869437a6236f35c8d1ccee02978a558c5e9507df62b7811b4b1f1e']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('pkgconf', '2.3.0'),
+]
+
+dependencies = [
+    ('ASAGI', '1.0'),
+    ('HDF5', '1.14.6'),
+    ('Lua', '5.4.8'),
+    ('netCDF', '4.9.3'),
+    ('yaml-cpp', '0.8.0'),
+]
+
+# Lua 5.4.8 rather than 5.5: easi 1.7.0 ships lmathx only through 5.4
+# (external/CMakeLists.txt). ImpalaJIT is gone in 1.7.0; Lua is the only JIT.
+preconfigopts = "export MPI_HOME=$EBROOTOPENMPI && export MPI_ROOT=$EBROOTOPENMPI && "
+configopts = '-DASAGI=ON -DLUA=ON -DEASICUBE=ON -DTESTING=ON '
+
+runtest = True
+
+sanity_check_paths = {
+    'files': ['include/easi/YAMLParser.h', 'lib/libeasi.a', 'bin/easicube'],
+    'dirs': ['include/easi'],
+}
+
+moduleclass = 'geo'
