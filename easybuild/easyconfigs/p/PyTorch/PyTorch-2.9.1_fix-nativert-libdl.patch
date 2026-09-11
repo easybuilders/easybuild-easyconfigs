@@ -1,0 +1,19 @@
+Fix linking of the NativeRT test executable on Linux.
+
+CpuTritonKernelManager uses libdl; link test_nativert with CMAKE_DL_LIBS.
+See https://github.com/pytorch/pytorch/issues/162640.
+
+Author: Emik Lin (HKUMed CPOS)
+
+diff --git a/test/cpp/nativert/CMakeLists.txt b/test/cpp/nativert/CMakeLists.txt
+--- a/test/cpp/nativert/CMakeLists.txt
++++ b/test/cpp/nativert/CMakeLists.txt
+@@ -54,7 +54,7 @@ add_executable(test_nativert
+ # TODO temporary until we can delete the old gtest polyfills.
+ target_compile_definitions(test_nativert PRIVATE USE_GTEST)
+ 
+-set(NATIVERT_TEST_DEPENDENCIES torch gtest_main)
++set(NATIVERT_TEST_DEPENDENCIES torch gtest_main ${CMAKE_DL_LIBS})
+ 
+ target_link_libraries(test_nativert PRIVATE ${NATIVERT_TEST_DEPENDENCIES})
+ target_link_libraries(test_nativert PRIVATE fmt::fmt-header-only)
