@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'AITW-olb_permeability'
+version = '1.0.0'
+
+homepage = 'https://www.ai-transpwood-project.eu/'
+description = """AI-TranspWood - Calculates the permeability of wood microstructures
+and other porous materials using the Lattice Boltzmann Method (LBM).
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'cstd': 'c++20', 'openmp': True, 'usempi': True}
+
+source_urls = ['https://github.com/AI-TranspWood/olb_permeability/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['f8327795ae6f4e98889ab305cfd9a3dabeed4622e345a814cfc32580ac92d493']
+
+builddependencies = [
+    ('Autotools', '20220317'),
+]
+dependencies = [
+    ('OpenLB', '1.8.1'),
+]
+
+skipsteps = ['configure']
+
+test_cmd = 'chmod +x ./tests/test.sh && ./tests/test.sh'
+
+install_cmd = 'mkdir -p %(installdir)s/bin && cp PermPorousWood %(installdir)s/bin/'
+
+sanity_check_paths = {
+    'files': ['bin/PermPorousWood'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'mpirun -n 1 PermPorousWood 2>&1 | grep -q "Usage: PermPorousWood"',
+]
+
+# Only builds 1 file using the OpenLB header library
+max_parallel = 1
+
+moduleclass = 'chem'
