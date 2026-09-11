@@ -1,0 +1,38 @@
+Make the ROCm UCC components (mc/rocm, ec/rocm, tl/rccl) link against the existing
+installed libucc (-lucc) instead of the in-tree build product, so they can be built
+as plugins on top of an existing UCC installation.
+
+Author: Aayush Joglekar <aayush.joglekar@surf.nl>
+
+--- a/src/components/mc/rocm/Makefile.am
++++ b/src/components/mc/rocm/Makefile.am
+@@ -15,7 +15,7 @@
+ libucc_mc_rocm_la_CFLAGS   = $(BASE_CFLAGS)
+ libucc_mc_rocm_la_LDFLAGS  = -version-info $(SOVERSION) --as-needed $(HIP_LDFLAGS) $(ROCM_LDFLAGS)
+ libucc_mc_rocm_la_LIBADD   = $(HIP_LIBS) $(ROCM_LIBS) \
+-                             $(UCC_TOP_BUILDDIR)/src/libucc.la
++                             -lucc
+ 
+ include $(top_srcdir)/config/module.am
+ endif
+--- a/src/components/ec/rocm/Makefile.am
++++ b/src/components/ec/rocm/Makefile.am
+@@ -21,7 +21,7 @@
+ libucc_ec_rocm_la_LDFLAGS  = -version-info $(SOVERSION) --as-needed $(HIP_LDFLAGS) $(ROCM_LDFLAGS)
+ libucc_ec_rocm_la_LIBADD   = $(HIP_LIBS) $(ROCM_LIBS)          \
+ 			     kernel/libucc_ec_rocm_kernels.la  \
+-			     $(UCC_TOP_BUILDDIR)/src/libucc.la
++			     -lucc
+ 
+ include $(top_srcdir)/config/module.am
+ endif
+--- a/src/components/tl/rccl/Makefile.am
++++ b/src/components/tl/rccl/Makefile.am
+@@ -23,7 +23,7 @@
+ libucc_tl_rccl_la_CPPFLAGS = $(AM_CPPFLAGS) $(BASE_CPPFLAGS) $(ROCM_CPPFLAGS) $(HIP_CPPFLAGS) $(RCCL_CPPFLAGS)
+ libucc_tl_rccl_la_CFLAGS   = $(BASE_CFLAGS)
+ libucc_tl_rccl_la_LDFLAGS  = -version-info $(SOVERSION) --as-needed $(ROCM_LDFLAGS) $(HIP_LDFLAGS) $(RCCL_LDFLAGS)
+-libucc_tl_rccl_la_LIBADD   = $(ROCM_LIBS) $(HIP_LIBS) $(RCCL_LIBADD) $(UCC_TOP_BUILDDIR)/src/libucc.la
++libucc_tl_rccl_la_LIBADD   = $(ROCM_LIBS) $(HIP_LIBS) $(RCCL_LIBADD) -lucc
+ 
+ include $(top_srcdir)/config/module.am
