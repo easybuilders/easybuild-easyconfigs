@@ -1,0 +1,19 @@
+V4L2_MPEG_VIDEO_BITRATE_MODE_CQ is a newer addition used by neatvnc.
+This enhanced the meson.build check to wether the necessary symbol is there.
+author: micketeer@gmail.com
+--- meson.build.orig	2026-08-28 16:24:01.147614785 +0200
++++ meson.build	2026-08-28 16:27:00.027845728 +0200
+@@ -153,7 +153,12 @@
+ endif
+ 
+ have_ffmpeg = gbm.found() and libdrm.found() and libavcodec.found() and libavfilter.found() and libavutil.found()
+-have_v4l2 = gbm.found() and libdrm.found() and cc.check_header('linux/videodev2.h')
++have_v4l2 = (gbm.found() and libdrm.found() and cc.check_header('linux/videodev2.h') and
++  cc.has_header_symbol(
++    'linux/v4l2-controls.h',
++    'V4L2_MPEG_VIDEO_BITRATE_MODE_CQ',
++  )
++)
+ 
+ if have_ffmpeg
+ 	sources += [ 'src/enc/h264/ffmpeg-impl.c' ]
