@@ -1,0 +1,323 @@
+diff --git a/bfd/elfxx-riscv.c b/bfd/elfxx-riscv.c
+--- a/bfd/elfxx-riscv.c
++++ b/bfd/elfxx-riscv.c
+@@ -1229,6 +1229,8 @@ static const struct riscv_implicit_subset riscv_implicit_subsets[] =
+   {"xtheadvector", "+zicsr", check_implicit_always},
+   {"xtheadzvamo", "+zaamo", check_implicit_always},
+ 
++  {"xsmtvdot", "+zve32x", check_implicit_always},
++
+   {"v", "+zve64d,+zvl128b", check_implicit_always},
+   {"zvfh", "+zvfhmin,+zfhmin", check_implicit_always},
+   {"zvfhmin", "+zve32f", check_implicit_always},
+@@ -1644,6 +1646,7 @@ static const struct riscv_supported_ext riscv_supported_vendor_x_ext[] =
+   {"xmipscmov",		ISA_SPEC_CLASS_DRAFT,	1, 0, 0 },
+   {"xmipsexectl",	ISA_SPEC_CLASS_DRAFT,	1, 0, 0 },
+   {"xmipslsp",		ISA_SPEC_CLASS_DRAFT,	1, 0, 0 },
++  {"xsmtvdot",		ISA_SPEC_CLASS_DRAFT,	1, 0, 0 },
+   {NULL, 0, 0, 0, 0}
+ };
+ 
+@@ -3062,6 +3065,8 @@ riscv_multi_subset_supports (riscv_parse_subset_t *rps,
+       return riscv_subset_supports (rps, "xmipsexectl");
+     case INSN_CLASS_XMIPSLSP:
+       return riscv_subset_supports (rps, "xmipslsp");
++    case INSN_CLASS_XSMTVDOT:
++      return riscv_subset_supports (rps, "xsmtvdot");
+     default:
+       rps->error_handler
+         (_("internal: unreachable INSN_CLASS_*"));
+@@ -3365,6 +3370,8 @@ riscv_multi_subset_supports_ext (riscv_parse_subset_t *rps,
+       return "xsfvqmaccdod";
+     case INSN_CLASS_XSFVFNRCLIPXFQF:
+       return "xsfvfnrclipxfqf";
++    case INSN_CLASS_XSMTVDOT:
++      return "xsmtvdot";
+     default:
+       rps->error_handler
+         (_("internal: unreachable INSN_CLASS_*"));
+diff --git a/gas/config/tc-riscv.c b/gas/config/tc-riscv.c
+--- a/gas/config/tc-riscv.c
++++ b/gas/config/tc-riscv.c
+@@ -1770,6 +1770,35 @@ validate_riscv_insn (const struct riscv_opcode *opc, int length)
+ 		    goto unknown_validate_operand;
+ 		}
+ 		break;
++	    case 'p': /* Vendor-specific (SpacemiT) operands.  */
++	      switch (*++oparg)
++		{
++		case 'V':
++		  switch (*++oparg)
++		    {
++		    case 'd':
++		      USE_BITS (OP_MASK_SPACEMIT_IME_VD, OP_SH_SPACEMIT_IME_VD);
++		      break;
++		    case 's':
++		      USE_BITS (OP_MASK_SPACEMIT_IME_VS1, OP_SH_SPACEMIT_IME_VS1);
++		      break;
++		    default:
++		      goto unknown_validate_operand;
++		    }
++		  break;
++		case 'w':
++		  /* Xpw&S ... bits in S indicates whether corresponding
++		     item is permitted.  */
++		  if (*++oparg != '&')
++		    goto unknown_validate_operand;
++		  strtol (oparg + 1, (char **)&oparg, 16);
++		  oparg--;
++		  USE_BITS (OP_MASK_SPACEMIT_IME_WI, OP_SH_SPACEMIT_IME_WI);
++		  break;
++		default:
++		  goto unknown_validate_operand;
++		}
++	      break;
+ 	    default:
+ 	      goto unknown_validate_operand;
+ 	    }
+@@ -4286,6 +4315,85 @@ riscv_ip (char *str, struct riscv_cl_insn *ip, expressionS *imm_expr,
+ 		    }
+ 		  break;
+ 
++		case 'p': /* Vendor-specific (SpacemiT) operands.  */
++		  switch (*++oparg)
++		    {
++		    case 'V':
++		      switch (*++oparg)
++			{
++			case 'd':
++			  if (!reg_lookup (&asarg, RCLASS_VECR, &regno))
++			    break;
++			  if ((regno & 0x1) != 0)
++			    {
++			      error.msg = _("illegal operands (vd must be even)");
++			      break;
++			    }
++			  INSERT_OPERAND (SPACEMIT_IME_VD, *ip, regno>>1);
++			  continue;
++			case 's':
++			  if (!reg_lookup (&asarg, RCLASS_VECR, &regno))
++			    break;
++			  if ((regno & 0x1) != 0)
++			    {
++			      error.msg = _("illegal operands (vs1 must be even)");
++			      break;
++			    }
++			  INSERT_OPERAND (SPACEMIT_IME_VS1, *ip, regno>>1);
++			  continue;
++			default:
++			  goto unknown_riscv_ip_operand;
++			}
++		      break;
++		    case 'w':
++		      /* Xpw&S ... bits in S indicates whether
++			 corresponding item is permitted.  */
++		      if (*++oparg != '&')
++			goto unknown_riscv_ip_operand;
++		      size_t n = strtol (oparg + 1, (char **)&oparg, 16);
++		      oparg--;
++		      /* Optional operand: if not present, default to i8.  */
++		      if (*asarg == '\0')
++			regno = 3;
++		      else if (*asarg == ',')
++			{
++			  asarg++;
++			  if (strncmp (asarg, "i2", 2) == 0)
++			    {
++			      regno = 0;
++			      asarg += 2;
++			    }
++			  else if (strncmp (asarg, "i16", 3) == 0)
++			    {
++			      regno = 1;
++			      asarg += 3;
++			    }
++			  else if (strncmp (asarg, "i4", 2) == 0)
++			    {
++			      regno = 2;
++			      asarg += 2;
++			    }
++			  else if (strncmp (asarg, "i8", 2) == 0)
++			    {
++			      regno = 3;
++			      asarg += 2;
++			    }
++			  else
++			    break;
++			}
++		      else
++			goto unknown_riscv_ip_operand;
++		      if ((n & (1 << regno)) == 0)
++			{
++			  error.msg = _("illegal operands (invalid data type)");
++			  break;
++			}
++		      INSERT_OPERAND (SPACEMIT_IME_WI, *ip, regno);
++		      continue;
++		    default:
++		      goto unknown_riscv_ip_operand;
++		    }
++		  break;
+ 		default:
+ 		  goto unknown_riscv_ip_operand;
+ 		}
+diff --git a/include/opcode/riscv-opc.h b/include/opcode/riscv-opc.h
+--- a/include/opcode/riscv-opc.h
++++ b/include/opcode/riscv-opc.h
+@@ -3852,6 +3852,44 @@
+ #define MASK_MIPS_PAUSE  0xffffffff
+ #define MATCH_MIPS_PREF 0x0000000b
+ #define MASK_MIPS_PREF 0xe000707f
++/* SpacemiT custom instruction.  */
++/* Int Matrix Multiplicative Accumulation.  */
++#define MATCH_SMT_VMADOT   0x8200302b
++#define MASK_SMT_VMADOT    0x9e0070ff
++#define MATCH_SMT_VMADOTU  0x8200002b
++#define MASK_SMT_VMADOTU   0x9e0070ff
++#define MATCH_SMT_VMADOTSU 0x8200202b
++#define MASK_SMT_VMADOTSU  0x9e0070ff
++#define MATCH_SMT_VMADOTUS 0x8200102b
++#define MASK_SMT_VMADOTUS  0x9e0070ff
++/* Int Sliding Window Multiplicative Accumulation.  */
++/* Sliding Value = 1.  */
++#define MATCH_SMT_VMADOT1U 0x8600002b
++#define MASK_SMT_VMADOT1U  0x9e00f0ff
++#define MATCH_SMT_VMADOT1  0x8600302b
++#define MASK_SMT_VMADOT1   0x9e00f0ff
++#define MATCH_SMT_VMADOT1SU 0x8600202b
++#define MASK_SMT_VMADOT1SU 0x9e00f0ff
++#define MATCH_SMT_VMADOT1US 0x8600102b
++#define MASK_SMT_VMADOT1US 0x9e00f0ff
++/* Sliding Value = 2.  */
++#define MATCH_SMT_VMADOT2U 0x8600402b
++#define MASK_SMT_VMADOT2U 0x9e00f0ff
++#define MATCH_SMT_VMADOT2 0x8600702b
++#define MASK_SMT_VMADOT2 0x9e00f0ff
++#define MATCH_SMT_VMADOT2SU 0x8600602b
++#define MASK_SMT_VMADOT2SU 0x9e00f0ff
++#define MATCH_SMT_VMADOT2US 0x8600502b
++#define MASK_SMT_VMADOT2US 0x9e00f0ff
++/* Sliding Value = 3.  */
++#define MATCH_SMT_VMADOT3U 0x8600802b
++#define MASK_SMT_VMADOT3U 0x9e00f0ff
++#define MATCH_SMT_VMADOT3 0x8600b02b
++#define MASK_SMT_VMADOT3 0x9e00f0ff
++#define MATCH_SMT_VMADOT3SU 0x8600a02b
++#define MASK_SMT_VMADOT3SU 0x9e00f0ff
++#define MATCH_SMT_VMADOT3US 0x8600902b
++#define MASK_SMT_VMADOT3US 0x9e00f0ff
+ /* Unprivileged Counter/Timers CSR addresses.  */
+ #define CSR_CYCLE 0xc00
+ #define CSR_TIME 0xc01
+diff --git a/include/opcode/riscv.h b/include/opcode/riscv.h
+--- a/include/opcode/riscv.h
++++ b/include/opcode/riscv.h
+@@ -419,6 +419,14 @@ static inline unsigned int riscv_insn_length (insn_t insn)
+ #define OP_MASK_MIPS_SDP_OFFSET25   0x3
+ #define OP_SH_MIPS_SDP_OFFSET25     25
+ 
++/* SpacemiT fields.  */
++#define OP_MASK_SPACEMIT_IME_VD		0xf
++#define OP_SH_SPACEMIT_IME_VD		8
++#define OP_MASK_SPACEMIT_IME_VS1	0xf
++#define OP_SH_SPACEMIT_IME_VS1		16
++#define OP_MASK_SPACEMIT_IME_WI		0x3
++#define OP_SH_SPACEMIT_IME_WI		29
++
+ /* ABI names for selected x-registers.  */
+ 
+ #define X_ZERO 0
+@@ -606,6 +614,7 @@ enum riscv_insn_class
+   INSN_CLASS_XMIPSCMOV,
+   INSN_CLASS_XMIPSEXECTL,
+   INSN_CLASS_XMIPSLSP,
++  INSN_CLASS_XSMTVDOT,
+ };
+ 
+ /* This structure holds information for a particular instruction.  */
+diff --git a/opcodes/riscv-dis.c b/opcodes/riscv-dis.c
+--- a/opcodes/riscv-dis.c
++++ b/opcodes/riscv-dis.c
+@@ -917,6 +917,49 @@ print_insn_args (const char *oparg, insn_t l, bfd_vma pc, disassemble_info *info
+ 		  goto undefined_modifier;
+ 		}
+ 	      break;
++	    case 'p': /* Vendor-specific (SpacemiT) operands.  */
++	      switch (*++oparg)
++		{
++		case 'V':
++		  switch (*++oparg)
++		    {
++		    case 'd':
++		      unsigned vd = EXTRACT_OPERAND (SPACEMIT_IME_VD, l) * 2;
++		      print (info->stream, dis_style_register, "%s",
++			     riscv_vecr_names_numeric[vd]);
++		      break;
++		    case 's':
++		      unsigned vs = EXTRACT_OPERAND (SPACEMIT_IME_VS1, l) * 2;
++		      print (info->stream, dis_style_register, "%s",
++			     riscv_vecr_names_numeric[vs]);
++		      break;
++		    default:
++		      goto undefined_modifier;
++		    }
++		  break;
++		case 'w':
++		  /* Xpw&S ... bits in S indicates whether corresponding
++		     item is permitted.  */
++		  if (*++oparg != '&')
++		    goto undefined_modifier;
++		  strtol (oparg + 1, (char **)&oparg, 16);
++		  oparg--;
++		  unsigned wi = EXTRACT_OPERAND (SPACEMIT_IME_WI, l);
++		  /* Only print if not the default value (i8 = 3).  */
++		  if (wi == 3)
++		    break;
++		  print (info->stream, dis_style_text, ",");
++		  if (wi == 0)
++		    print (info->stream, dis_style_text, "i2");
++		  else if (wi == 1)
++		    print (info->stream, dis_style_text, "i16");
++		  else if (wi == 2)
++		    print (info->stream, dis_style_text, "i4");
++		  break;
++		default:
++		  goto undefined_modifier;
++		}
++	      break;
+ 	    default:
+ 	      goto undefined_modifier;
+ 	    }
+diff --git a/opcodes/riscv-opc.c b/opcodes/riscv-opc.c
+--- a/opcodes/riscv-opc.c
++++ b/opcodes/riscv-opc.c
+@@ -3579,6 +3579,29 @@ const struct riscv_opcode riscv_opcodes[] =
+ {"mips.sdp", 0, INSN_CLASS_XMIPSLSP, "t,r,Xm^(s)", MATCH_MIPS_SDP, MASK_MIPS_SDP, match_opcode, 0 },
+ {"mips.swp", 0, INSN_CLASS_XMIPSLSP, "t,r,Xm&(s)", MATCH_MIPS_SWP, MASK_MIPS_SWP, match_opcode, 0 },
+ 
++/* SpacemiT custom instructions.  */
++/* Int Matrix Multi-Accumulation.  */
++{"smt.vmadot",   0, INSN_CLASS_XSMTVDOT, "XpVd,Vs,VtXpw&8", MATCH_SMT_VMADOT, MASK_SMT_VMADOT, match_opcode, 0 },
++{"smt.vmadotu",  0, INSN_CLASS_XSMTVDOT, "XpVd,Vs,VtXpw&8", MATCH_SMT_VMADOTU, MASK_SMT_VMADOTU, match_opcode, 0 },
++{"smt.vmadotsu", 0, INSN_CLASS_XSMTVDOT, "XpVd,Vs,VtXpw&8", MATCH_SMT_VMADOTSU, MASK_SMT_VMADOTSU, match_opcode, 0 },
++{"smt.vmadotus", 0, INSN_CLASS_XSMTVDOT, "XpVd,Vs,VtXpw&8", MATCH_SMT_VMADOTUS, MASK_SMT_VMADOTUS, match_opcode, 0 },
++/* Int Sliding Window Multi-Accumulation.  */
++/* Sliding Value = 1.  */
++{"smt.vmadot1u",  0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT1U, MASK_SMT_VMADOT1U, match_opcode, 0 },
++{"smt.vmadot1",   0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT1, MASK_SMT_VMADOT1, match_opcode, 0 },
++{"smt.vmadot1su", 0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT1SU, MASK_SMT_VMADOT1SU, match_opcode, 0 },
++{"smt.vmadot1us", 0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT1US, MASK_SMT_VMADOT1US, match_opcode, 0 },
++/* Sliding Value = 2.  */
++{"smt.vmadot2u",  0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT2U, MASK_SMT_VMADOT2U, match_opcode, 0 },
++{"smt.vmadot2",   0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT2, MASK_SMT_VMADOT2, match_opcode, 0 },
++{"smt.vmadot2su", 0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT2SU, MASK_SMT_VMADOT2SU, match_opcode, 0 },
++{"smt.vmadot2us", 0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT2US, MASK_SMT_VMADOT2US, match_opcode, 0 },
++/* Sliding Value = 3.  */
++{"smt.vmadot3u",  0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT3U, MASK_SMT_VMADOT3U, match_opcode, 0 },
++{"smt.vmadot3",   0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT3, MASK_SMT_VMADOT3, match_opcode, 0 },
++{"smt.vmadot3su", 0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT3SU, MASK_SMT_VMADOT3SU, match_opcode, 0 },
++{"smt.vmadot3us", 0, INSN_CLASS_XSMTVDOT, "XpVd,XpVs,VtXpw&8", MATCH_SMT_VMADOT3US, MASK_SMT_VMADOT3US, match_opcode, 0 },
++
+ /* Terminate the list.  */
+ {0, 0, INSN_CLASS_NONE, 0, 0, 0, 0, 0}
+ };
