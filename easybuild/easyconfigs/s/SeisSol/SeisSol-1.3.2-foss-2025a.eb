@@ -1,0 +1,92 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Jonney Huang <jonney.huang@hpcnow.com>
+# License::     GPL-v3.0
+# #
+
+easyblock = 'CMakeMake'
+
+name = 'SeisSol'
+local_commit_id = '20334d02af9c539a9cf7cc4cd03c3e2622104aea'
+version = '1.3.2'
+
+homepage = 'https://www.seissol.org'
+description = """SeisSol is a software package for simulating wave propagation and dynamic rupture based on
+ the arbitrary high-order accurate derivative discontinuous Galerkin method (ADER-DG)."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+# Release tarball has empty submodule dirs. Clone the tag plus submodules.
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/SeisSol',
+        'repo_name': 'SeisSol',
+        'commit': local_commit_id,
+        'recursive': True,
+    },
+    'filename': SOURCE_TAR_XZ,
+}]
+# Injected by EasyBuild 5.3.1 from the recursive git_config archive.
+checksums = ['a0dd4f33d7d72c4a5eb6f01f0a96bc410af20c95a496e5cf1532ee8a20561612']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('pkgconf', '2.3.0'),
+]
+
+dependencies = [
+    ('ASAGI', '1.0'),
+    ('Eigen', '3.4.0'),
+    ('HDF5', '1.14.6'),
+    ('PSpaMM', '0.3.1'),
+    ('ParMETIS', '4.0.3'),
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('easi', '1.7.0'),
+    ('libxsmm', '1.17'),
+    ('lxml', '5.3.0'),
+    ('netCDF', '4.9.3'),
+    ('numactl', '2.0.19'),
+    ('yaml-cpp', '0.8.0'),
+]
+
+# HOST_ARCH, ORDER, EQUATIONS and PRECISION are upstream CMake defaults, and
+# they are also what names the installed binary: CMakeLists.txt builds it as
+# SeisSol_<build type>_<precision letter><host arch>_<order>_<equations>.
+# Keeping them in variables means the sanity checks cannot drift from the
+# configure options, and a site retargeting HOST_ARCH edits one line.
+# HOST_ARCH_OPTIONS in cmake/process_users_input.cmake lists the accepted
+# values; hsw is portable across x86-64 hardware with AVX2 or better.
+local_host_arch = 'hsw'
+local_order = 6
+local_equations = 'elastic'
+local_binary = 'SeisSol_Release_d%s_%s_%s' % (local_host_arch, local_order, local_equations)
+
+# GEMM_TOOLS_LIST is the Spack default for CPU (FindGemmTools requires each
+# named tool). TESTING maps to the SeisSol-serial-test target (doctest).
+configopts = (
+    '-DCMAKE_BUILD_TYPE=Release '
+    '-DASAGI=ON -DNETCDF=ON -DTESTING=ON '
+    '-DORDER=%s -DHOST_ARCH=%s -DEQUATIONS=%s -DPRECISION=double '
+    % (local_order, local_host_arch, local_equations) +
+    '-DGEMM_TOOLS_LIST=LIBXSMM,PSpaMM '
+    '-DGRAPH_PARTITIONING_LIBS=parmetis '
+)
+
+runtest = True
+
+sanity_check_paths = {
+    'files': [
+        'bin/%s' % local_binary,
+        'bin/%s' % local_binary.replace('SeisSol_', 'SeisSol_proxy_', 1),
+    ],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    '%s --help | grep "Show this help message"' % local_binary,
+]
+
+moduleclass = 'geo'
