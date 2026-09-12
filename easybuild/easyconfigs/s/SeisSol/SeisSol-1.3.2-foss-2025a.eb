@@ -52,14 +52,25 @@ dependencies = [
     ('yaml-cpp', '0.8.0'),
 ]
 
-# HOST_ARCH=hsw and ORDER=6 are upstream CMake defaults; they name the
-# installed binary SeisSol_Release_dhsw_6_elastic. GEMM_TOOLS_LIST is the
-# Spack default for CPU (FindGemmTools requires each named tool).
-# TESTING maps to the SeisSol-serial-test target (doctest).
+# HOST_ARCH, ORDER, EQUATIONS and PRECISION are upstream CMake defaults, and
+# they are also what names the installed binary: CMakeLists.txt builds it as
+# SeisSol_<build type>_<precision letter><host arch>_<order>_<equations>.
+# Keeping them in variables means the sanity checks cannot drift from the
+# configure options, and a site retargeting HOST_ARCH edits one line.
+# HOST_ARCH_OPTIONS in cmake/process_users_input.cmake lists the accepted
+# values; hsw is portable across x86-64 hardware with AVX2 or better.
+local_host_arch = 'hsw'
+local_order = 6
+local_equations = 'elastic'
+local_binary = 'SeisSol_Release_d%s_%s_%s' % (local_host_arch, local_order, local_equations)
+
+# GEMM_TOOLS_LIST is the Spack default for CPU (FindGemmTools requires each
+# named tool). TESTING maps to the SeisSol-serial-test target (doctest).
 configopts = (
     '-DCMAKE_BUILD_TYPE=Release '
     '-DASAGI=ON -DNETCDF=ON -DTESTING=ON '
-    '-DORDER=6 -DHOST_ARCH=hsw -DEQUATIONS=elastic -DPRECISION=double '
+    '-DORDER=%s -DHOST_ARCH=%s -DEQUATIONS=%s -DPRECISION=double '
+    % (local_order, local_host_arch, local_equations) +
     '-DGEMM_TOOLS_LIST=LIBXSMM,PSpaMM '
     '-DGRAPH_PARTITIONING_LIBS=parmetis '
 )
@@ -68,14 +79,14 @@ runtest = True
 
 sanity_check_paths = {
     'files': [
-        'bin/SeisSol_Release_dhsw_6_elastic',
-        'bin/SeisSol_proxy_Release_dhsw_6_elastic',
+        'bin/%s' % local_binary,
+        'bin/%s' % local_binary.replace('SeisSol_', 'SeisSol_proxy_', 1),
     ],
     'dirs': [],
 }
 
 sanity_check_commands = [
-    'SeisSol_Release_dhsw_6_elastic --help | grep "Show this help message"',
+    '%s --help | grep "Show this help message"' % local_binary,
 ]
 
 moduleclass = 'geo'
