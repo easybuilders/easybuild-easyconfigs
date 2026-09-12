@@ -1,0 +1,83 @@
+easyblock = 'MesonNinja'
+
+name = 'rgpot'
+version = '3.0.0'
+
+homepage = 'https://github.com/OmniPotentRPC/rgpot'
+description = """Potential frontends with Cap'n Proto RPC (NWChem/CPMD clients;
+engines are loaded at runtime via dlopen). Built fat: RPC server (potserv),
+Eigen array backend, and nanobind Python bindings."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++20'}
+
+github_account = 'OmniPotentRPC'
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['3eb667d28fc55306379c282d07b3e0fd7af692e45e713fb8ce71e034e71bb0bf']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('Meson', '1.10.2'),
+    ('Ninja', '1.13.2'),
+    ('pkgconf', '2.5.1'),
+    ('CMake', '4.2.1'),
+    ('Catch2', '3.14.0'),
+    ('nanobind', '2.13.0'),
+]
+
+# Eigen and fmt appear in the installed rgpot.pc Requires line, so they are
+# runtime dependencies rather than build-only.
+dependencies = [
+    ('CapnProto', '1.4.0'),
+    ('Eigen', '5.0.0'),
+    ('fmt', '12.2.0'),
+    ('Python', '3.14.2'),
+]
+
+# Fat build: full RPC (server + clients), Eigen backend, Python bindings,
+# unit and example tests. The metatomic and NWChem/CPMD dlopen frontends
+# always compile; their engines load at runtime.
+# Off because a GCCcore recipe cannot link them: with_xtb and with_tblite
+# need BLAS-backed packages (gfbf generation; a versionsuffix variant
+# belongs there), with_metatomic links the torch stack, with_xtensor
+# duplicates the Eigen backend, with_rust_core needs a cargo network fetch
+# at build time. with_cache installs a PotentialCache API that librgpot.so
+# does not export, which breaks the eOn link
+# (https://github.com/OmniPotentRPC/rgpot/issues/55).
+configopts = '-Dpure_lib=false -Dwith_rpc=true -Dwith_eigen=true '
+# The Fortran 2018 kernels (SW, EDIP, Lenosky, Tersoff, EAM-Al, FeHe,
+# CuH2, TIP4P-H). eOn refuses an installed rgpot built without them.
+configopts += '-Dwith_fortran_pots=enabled '
+configopts += '-Dwith_python=true '
+configopts += '-Dwith_tests=true -Dwith_examples=true '
+
+runtest = 'meson'
+testopts = 'test -C %(builddir)s/easybuild_obj'
+
+sanity_check_paths = {
+    'files': [
+        'bin/potserv',
+        'lib/librgpot.%s' % SHLIB_EXT,
+        'lib/libnwchempot.a',
+        'lib/libcpmdpot.a',
+        'lib/pkgconfig/rgpot.pc',
+    ],
+    'dirs': [
+        'include/rgpot',
+        'lib',
+        'lib/python%(pyshortver)s/site-packages/rgpot',
+    ],
+}
+
+sanity_check_commands = [
+    "pkg-config --exists rgpot",
+    "python -c 'import rgpot'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'lib'

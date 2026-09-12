@@ -1,0 +1,64 @@
+easyblock = 'MesonNinja'
+
+name = 'eOn'
+version = '2.17.10'
+
+homepage = 'https://eondocs.org/'
+description = """eOn models the evolution of atomic-scale systems over long time scales."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+github_account = 'TheochemUI'
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['1ade06d7a30afcd08f9f14194d7051478c48e7b8d11baaab8da830073e3d6f4a']
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('Meson', '1.10.2'),
+    ('Ninja', '1.13.2'),
+    ('pkgconf', '2.5.1'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+    ('PyYAML', '6.0.3'),
+    ('Eigen', '5.0.0'),
+    ('Highway', '1.4.0'),
+    ('inih', '62'),
+    ('nlohmann_json', '3.12.0'),
+    ('quill', '11.1.0'),
+    ('readcon-core', '0.13.1'),
+    ('rgpot', '3.0.0'),
+]
+
+configopts = '-Dbuildtype=release -Dwith_tests=true -Dwith_rgpot=true'
+runtest = 'meson'
+testopts = 'test -C %(builddir)s/easybuild_obj --num-processes 1'
+
+sanity_check_paths = {
+    'files': [
+        'bin/eonclient',
+        'lib/python%(pyshortver)s/site-packages/eon/__init__.py',
+    ],
+    'dirs': [
+        'bin',
+        'lib',
+        'lib/python%(pyshortver)s/site-packages/eon',
+    ],
+}
+
+sanity_check_commands = [
+    "eonclient --help",
+    "eonclient --version",
+    "python -c \"import eon; print(getattr(eon, '__version__', 'ok'))\"",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'chem'
