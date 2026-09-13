@@ -35,7 +35,7 @@ import shutil
 import stat
 import tempfile
 from collections import defaultdict
-from typing import List
+from typing import Any, Dict, List, Set, Tuple, Union
 from unittest import TestCase, TestLoader, main, mock, skip
 from urllib.request import Request, urlopen
 
@@ -66,6 +66,8 @@ from easybuild.tools.run import run_shell_cmd
 from easybuild.tools.systemtools import pick_dep_version
 from easybuild.tools.utilities import nub
 
+
+PatchSpec = Union[str, Tuple[str, Any], List[Union[str, Any]], Dict[str, str]]
 
 # indicates whether all the single tests are OK,
 # and that bigger tests (building dep graph, testing for conflicts, ...) can be run as well
@@ -1650,7 +1652,20 @@ class EasyConfigTest(TestCase):
         self.assertFalse(no_descr_patches, "No description found in patches: %s" % ', '.join(no_descr_patches))
 
 
-def verify_patch(specdir, patch_spec, checksum_idx, patch_checksums, extension_name=None):
+def get_patch_name(patch_spec: PatchSpec) -> str:
+    """Return the (file) name of the patch"""
+    if isinstance(patch_spec, str):
+        return patch_spec
+    if isinstance(patch_spec, (tuple, list)):
+        return patch_spec[0]
+    if isinstance(patch_spec, dict):
+        return patch_spec['name']
+    # Should have already been verified
+    raise RuntimeError('Patch spec is not a string, tuple, list or dict: %s\nType: %s' % (patch_spec,
+                                                                                          type(patch_spec)))
+
+
+def verify_patch(specdir: str, patch_spec: PatchSpec, checksum_idx: int, patch_checksums: list, extension_name=None):
     """Verify existance and checksum of the given patch.
 
     specdir         - Directory of the easyconfig
@@ -1661,21 +1676,13 @@ def verify_patch(specdir, patch_spec, checksum_idx, patch_checksums, extension_n
 
     Return a (possibly empty) list of failure messages
     """
+    patch_name = get_patch_name(patch_spec)
     patch_dir = specdir
-    if isinstance(patch_spec, str):
-        patch_name = patch_spec
-    elif isinstance(patch_spec, (tuple, list)):
-        patch_name = patch_spec[0]
-    elif isinstance(patch_spec, dict):
-        patch_name = patch_spec['name']
+    if isinstance(patch_spec, dict):
         alt_location = patch_spec.get('alt_location')
         if alt_location:
             basedir = os.path.dirname(os.path.dirname(specdir))
             patch_dir = os.path.join(basedir, letter_dir_for(alt_location), alt_location)
-    else:
-        # Should have already been verified
-        raise RuntimeError('Patch spec is not a string, tuple, list or dict: %s\nType: %s' % (patch_spec,
-                                                                                              type(patch_spec)))
 
     patch_path = os.path.join(patch_dir, patch_name)
     # only check actual patch files, not other files being copied via the patch functionality
@@ -1809,8 +1816,10 @@ def template_easyconfig_test(self, spec):
     failing_checks.extend("Old URL '%s' should not be used" % old_url for old_url in old_urls if old_url in ec.rawtxt)
 
     # Note the use of app.cfg which might contain sources populated by e.g. the Cargo easyblock
-    sources, patches, checksums = app.cfg.get_ref('sources'), app.cfg['patches'], app.cfg['checksums']
-    post_install_patches = app.cfg['postinstallpatches']
+    sources: list = app.cfg.get_ref('sources')
+    patches: List[PatchSpec] = app.cfg['patches']
+    checksums: List[Union[str, Dict[str, str]]] = app.cfg['checksums']
+    post_install_patches: List[PatchSpec] = app.cfg['postinstallpatches']
 
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
@@ -1865,8 +1874,13 @@ def template_easyconfig_test(self, spec):
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
 
-    for idx, patch in enumerate(patches + post_install_patches):
-        failing_checks.extend(verify_patch(specdir, patch, idx, patch_checksums))
+    seen_patches: Set[PatchSpec] = set()
+    for idx, patch_spec in enumerate(patches + post_install_patches):
+        if patch_spec in seen_patches:
+            failing_checks.append(f'Duplicate patch {get_patch_name(patch_spec)}')
+        else:
+            seen_patches.add(patch_spec)
+            failing_checks.extend(verify_patch(specdir, patch_spec, idx, patch_checksums))
 
     # make sure 'fetch' step is not being skipped, since that implies not verifying the checksum
     if checksums and ('fetch' in ec['skipsteps']):
