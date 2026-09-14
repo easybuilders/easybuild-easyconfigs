@@ -1,0 +1,56 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'ConfigureMake'
+
+name = 'TDEP'
+version = '25.03'
+_commit = 'd38f435d75f33e0e86629ce7b7059ce95fbc06c5'
+
+homepage = 'https://tdep-developers.github.io/tdep/'
+description = """Briefly summarized, the package provides all the tools you need to build accurate model Hamiltonians
+for finite temperature lattice dynamics from first principles.
+"""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+github_account = 'tdep-developers'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [VERSION_TAR_GZ]
+patches = [(f'{name}-25.03_create-important-settings.patch', 1)]
+checksums = [
+    {'25.03.tar.gz': 'af85338d618621b1b366c0557250bd74f9c53d4b97dc59fed75364984bed7674'},
+    {'TDEP-25.03_create-important-settings.patch': 'beaeddea91eae1d143066e721655cd7123257c973699b89ca5f612dde6bafbd2'},
+]
+
+dependencies = [
+    ('HDF5', '2.1.1'),
+    ('Python', '3.14.2'),
+    ('gnuplot', '6.0.5'),
+]
+
+# building is done via a custom build script
+# in future releases, it looks like Meson/Ninja will be supported (and a better option)
+skipsteps = ['configure', 'install']
+
+prebuildopts = 'export prefix="%(installdir)s" &&'
+
+# strip git parsing (since we download a release tarball)
+prebuildopts += ("sed -i -E -e 's/^gitbranch=.*/gitbranch=main/'"
+                 f" -e 's/^gitrevision=.*/gitrevision={_commit}/'"
+                 " build_things.sh &&")
+
+build_cmd = 'echo "./build_things.sh --nthreads_make %(parallel)s --install YES"'
+
+sanity_check_commands = ["anharmonic_free_energy | grep -q 'Could not open infile.ucposcar'"]
+
+_bins = [
+    'anharmonic_free_energy', 'atomic_distribution', 'canonical_configuration', 'crystal_structure_info',
+    'dump_dynamical_matrices', 'extract_forceconstants', 'generate_structure', 'lineshape', 'pack_simulation',
+    'phonon_dispersion_relations', 'refine_structure', 'samples_from_md', 'thermal_conductivity',
+    'thermal_conductivity_2023'
+]
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in _bins] + [f'lib/libolle.{SHLIB_EXT}'],
+    'dirs': [],
+}
+
+moduleclass = 'phys'
