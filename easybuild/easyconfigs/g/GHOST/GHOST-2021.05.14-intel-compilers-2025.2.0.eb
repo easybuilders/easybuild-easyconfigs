@@ -1,0 +1,57 @@
+easyblock = 'CMakeMake'
+
+name = 'GHOST'
+version = '2021.05.14'
+local_commit = 'cba30b4'
+
+homepage = 'https://github.com/ZedThree/GHOST'
+description = """GHOST 80 (also known as Ghost or GHOST80) is a Fortran 77 graphics
+library for making graphs, originally written at UKAEA in the 1980s. It provides
+plotting routines and several output device drivers (X11, HP-GL/2, PostScript, ...).
+"""
+
+toolchain = {'name': 'intel-compilers', 'version': '2025.2.0'}
+toolchainopts = {
+    'extra_cflags': ' '.join([
+        '-Wno-implicit-function-declaration',
+        '-Wno-incompatible-pointer-types',
+        '-Wno-implicit-int',
+    ]),
+}
+
+# no tagged releases upstream, so pin to the last commit on the master branch
+# (version is the date of that commit)
+source_urls = ['https://github.com/ZedThree/GHOST/archive/']
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+# use Fortran 2003 get_command_argument in the xgenie interface instead of guessing the
+# Fortran runtime's IARGC/GETARG symbol names from the C compiler (breaks with icx + ifort/ifx)
+patches = ['GHOST-2021.05.14_f2003-command-args.patch']
+checksums = [
+    {'GHOST-2021.05.14.tar.gz': '75a6c600dd4d483f55f9ae536cbdf4ee634ec1da3163d2770e9332c7cea9b9ae'},
+    {'GHOST-2021.05.14_f2003-command-args.patch': '2e54d0a6b2789397dffc2a13d865a4f40318dd502a358a340a2b2fd337f7dbed'},
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('X11', '20250608'),
+]
+
+configopts = '-DGHOST_ENABLE_DOUBLE=OFF'
+
+sanity_check_paths = {
+    'files': [
+        'bin/decode', 'bin/demosurf', 'bin/hpgl2', 'bin/postcl', 'bin/postsc',
+        'bin/trand', 'bin/trenc', 'bin/xghost', 'libexec/xgenie',
+        'lib/libghost.a', 'lib/libgrid.a', 'lib/libgrid_postcl.a', 'lib/libgrid_xghost.a',
+    ],
+    'dirs': ['lib/cmake/ghost', 'lib/fonts'],
+}
+
+moduleclass = 'vis'
