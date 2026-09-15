@@ -12,11 +12,32 @@ matrix, and to solve quadratic eigenvalue problems."""
 toolchain = {'name': 'foss', 'version': '2025b'}
 toolchainopts = {'usempi': True, 'openmp': True}
 
+local_hpddm_version = '2.3.5'
+local_hpddm_src = f'hpddm-{local_hpddm_version}.tar.gz'
+
 source_urls = ['https://slepc.upv.es/download/distrib']
-sources = [SOURCELOWER_TAR_GZ]
-checksums = ['6e2d14c98aa9138ac698a2a04a7c6a9f9569988f570b2cfbe4935d32364cb4e9']
+sources = [
+    SOURCELOWER_TAR_GZ,
+    {
+        'source_urls': ['https://github.com/hpddm/hpddm/archive/'],
+        'filename': local_hpddm_src,
+        'download_filename': f'v{local_hpddm_version}.tar.gz',
+        'extract_cmd': 'cp %s .',
+    },
+]
+
+patches = ['SLEPc-3.23.2_fix-HPDDM-install.patch']
+checksums = [
+    {'slepc-3.24.0.tar.gz': '6e2d14c98aa9138ac698a2a04a7c6a9f9569988f570b2cfbe4935d32364cb4e9'},
+    {'hpddm-2.3.5.tar.gz': '340f1051ede2a62eafd40d99b3c9e2b1be8f6231abb3e3614f2ec329f3f25650'},
+    {'SLEPc-3.23.2_fix-HPDDM-install.patch': '95fa0427908503e54555a1eeeaa89032e55ac2c75cc1e20cbaaa69d321ad117d'},
+]
 
 dependencies = [('PETSc', '3.24.0')]
+
+configopts = f'--download-hpddm=%(builddir)s/{local_hpddm_src} '
+
+postinstallcmds = ["cd %(installdir)s/lib && ln -sfn libhpddm_petsc.so.0 libhpddm_petsc.so"]
 
 petsc_arch = 'installed-arch-linux2-c-opt'
 
