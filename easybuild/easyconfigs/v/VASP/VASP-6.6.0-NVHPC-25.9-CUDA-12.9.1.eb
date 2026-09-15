@@ -16,6 +16,10 @@ This build includes HDF5 and the Wannier-90 functions."""
 
 toolchain = {'name': 'NVHPC', 'version': '25.9'}
 
+# no cuda_cc / cuda_cc_ng anywhere -- arch comes from
+# EASYBUILD_CUDA_COMPUTE_CAPABILITIES or --cuda-compute-capabilities
+# fall back on default for nvhpc-25.9 otherwise
+
 sources = [
     '%(namelower)s.%(version)s.tar.gz',
     {
@@ -35,18 +39,23 @@ checksums = [
     {'cmake.tar.gz': None},
 ]
 
+local_cuda_ver = '12.9.1'
+local_cuda_major_minor = '.'.join(local_cuda_version.split('.')[:2])
+
 dependencies = [
     ('HDF5', '1.14.5'),
     ('Wannier90', '3.1.0'),
     ('FFTW', '3.3.10'),
-    ('CUDA', '12.9.1', '', SYSTEM),
+    ('CUDA', local_cuda_ver, '', SYSTEM),
 ]
 
 preconfigopts = 'export QD_ROOT="$EBROOTNVHPC/Linux_x86_64/$EBVERSIONNVHPC/compilers/extras/qd" && '
 preconfigopts += 'mv ../cmake ../%(namelower)s.%(version)s/cmake && '
 preconfigopts += 'chmod +x ../%(namelower)s.%(version)s/cmake/setup.sh && '
 preconfigopts += '../%(namelower)s.%(version)s/cmake/setup.sh ../%(namelower)s.%(version)s && '
-configopts = '-DVASP_OPENMP=ON -DVASP_HDF5=ON'
+
+configopts = '-DVASP_CUDA=ON -DVASP_CUDA_VERSION=%s ' % local_cuda_major_minor
+configopts += '-DVASP_OPENMP=ON -DVASP_HDF5=ON'
 separate_build_dir = True
 
 # Testing, can take a long time!
