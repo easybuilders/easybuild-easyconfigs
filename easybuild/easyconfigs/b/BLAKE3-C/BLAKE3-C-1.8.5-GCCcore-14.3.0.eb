@@ -1,0 +1,38 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2025/03
+easyblock = 'CMakeMake'
+
+name = 'BLAKE3-C'
+version = '1.8.5'
+
+homepage = 'https://github.com/BLAKE3-team/BLAKE3'
+description = """BLAKE3 is a cryptographic hash function that is:
+Much faster than MD5, SHA-1, SHA-2, SHA-3, and BLAKE2.
+Secure, unlike MD5 and SHA-1. And secure against length extension, unlike SHA-2.
+Highly parallelizable across any number of threads and SIMD lanes, because it's
+a Merkle tree on the inside.
+Capable of verified streaming and incremental updates, again because it's a
+Merkle tree.
+A PRF, MAC, KDF, and XOF, as well as a regular hash."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://github.com/BLAKE3-team/BLAKE3/archive/refs/tags']
+sources = [{'download_filename': VERSION_TAR_GZ, 'filename': SOURCE_TAR_GZ}]
+checksums = ['220bd81286e2a0585beac66d41ac3f4c2c33ae8a4e339fc88cf22d5e00514fe9']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+]
+
+postinstallcmds = ['cp *.%s %%(installdir)s/lib' % SHLIB_EXT]
+start_dir = 'c'
+
+configopts = ['-DBUILD_SHARED_LIBS=OFF', '-DBUILD_SHARED_LIBS=ON']
+
+sanity_check_paths = {
+    'files': ['lib/libblake3.%s' % SHLIB_EXT, 'lib/libblake3.a'],
+    'dirs': ['include', 'lib'],
+}
+
+moduleclass = 'lib'
