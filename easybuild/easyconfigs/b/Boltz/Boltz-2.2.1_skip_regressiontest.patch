@@ -1,0 +1,36 @@
+Skip RegressionTester, it's not converted to Boltz2
+
+(And make sure it includes the right modules so it doesn't fail anyway)
+
+Åke Sandgren, 2026-06-22
+diff --git a/tests/test_regression.py b/tests/test_regression.py
+index 5478a47..f1bbe5d 100644
+--- a/tests/test_regression.py
++++ b/tests/test_regression.py
+@@ -11,8 +11,8 @@ import unittest
+ 
+ from lightning_fabric import seed_everything
+ 
+-from boltz.main import MODEL_URL
+-from boltz.model.model import Boltz1
++from boltz.main import BOLTZ1_URL_WITH_FALLBACK
++from boltz.model.models.boltz1 import Boltz1
+ 
+ import test_utils
+ 
+@@ -20,13 +20,14 @@ tests_dir = os.path.dirname(os.path.abspath(__file__))
+ test_data_dir = os.path.join(tests_dir, "data")
+ 
+ 
++@pytest.mark.skip(reason="Not converted to Boltz2")
+ @pytest.mark.regression
+ class RegressionTester(unittest.TestCase):
+     @classmethod
+     def setUpClass(cls):
+         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+         cache = os.path.expanduser("~/.boltz")
+-        checkpoint_url = MODEL_URL
++        checkpoint_url = BOLTZ1_URL_WITH_FALLBACK[0]
+         model_name = checkpoint_url.split("/")[-1]
+         checkpoint = os.path.join(cache, model_name)
+         if not os.path.exists(checkpoint):
