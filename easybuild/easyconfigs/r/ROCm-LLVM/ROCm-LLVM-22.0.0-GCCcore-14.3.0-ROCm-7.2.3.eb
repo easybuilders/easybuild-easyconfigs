@@ -12,7 +12,7 @@ homepage = 'https://github.com/ROCm/llvm-project'
 description = """ROCm-LLVM is an open source Clang/LLVM based compiler.
 It is an AMD Fork of The LLVM Compiler Infrastructure, and aims to contain all of upstream LLVM.
 It also includes several AMD-specific additions in the llvm-project/amd directory.
-This version includes Flang (Fortran compiler) support."""
+This variant includes Flang (Fortran compiler) and OpenMP offload support."""
 docurls = ['https://rocmdocs.amd.com']
 
 toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
@@ -76,8 +76,9 @@ components = [
         'bootstrap': True,
         'build_lld': True,
         'build_clang_extras': True,
+        'build_openmp': False,
         'build_openmp_offload': False,
-        'build_openmp_tools': True,
+        'build_openmp_tools': False,
         'build_runtimes': True,
         'full_llvm': False,
         'skip_all_tests': True,
@@ -102,6 +103,7 @@ components = [
             '-DLIBCXXABI_ENABLE_STATIC=OFF',
             '-DLLVM_INSTALL_UTILS=ON',
             '-DLLVM_ENABLE_LIBCXX=ON',
+            '-DCMAKE_Fortran_FLAGS=',
         ])
     }),
     ('ROCm-comgr', 'rocm-%s' % _rocm_version, {
@@ -133,11 +135,69 @@ components = [
                 '26c697fdc5259efb8601ac607addc3e7f7b7b05fb2cd53e8bc6d332b35b82ae2'},
         ],
     }),
+    ('llvm-project-openmp', '%s-rocm-%s' % (_llvm_version, _rocm_version), {
+        'easyblock': 'EB_ROCm_minus_LLVM',
+        'sources': [
+            {
+                'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
+                'filename': local_rocm_llvm_source,
+                'extract_cmd': 'tar xfz %%s && mv llvm-project-rocm-%s llvm-project-%%(version)s.src' % _rocm_version,
+            },
+            {
+                'filename': 'ROCR-Runtime-rocm-7.2.3.tar.gz',
+                'extract_cmd': 'tar xfz %s',  # Extract ROCR sources for offload runtime
+            },
+        ],
+        'checksums': [
+            {local_rocm_llvm_source:
+                '6239fa0c72b150cf0a325676264d3030a67389dec4fca7103f563a70c2b70114'},
+            {'ROCR-Runtime-rocm-7.2.3.tar.gz':
+                'fa673a8449be0853acaceb139b6b87abbc66c050b6e92745c26445722725cb05'},
+        ],
+        'start_dir': f'llvm-project-{_llvm_version}-rocm-{_rocm_version}.src',
+        'bootstrap': True,
+        'build_lld': True,
+        'build_clang_extras': False,
+        'build_openmp': True,
+        'build_openmp_offload': True,
+        'build_openmp_tools': True,
+        'build_runtimes': True,
+        'full_llvm': False,
+        'skip_all_tests': True,
+        'skip_sanitizer_tests': True,
+        'configopts': ' '.join([
+            '-DLLVM_ENABLE_PROJECTS="clang;lld;flang"',
+            '-DLLVM_ENABLE_RUNTIMES="compiler-rt;libunwind;openmp;offload"',
+            '-DLLVM_TARGETS_TO_BUILD="AMDGPU;X86"',
+            '-DCMAKE_BUILD_TYPE=Release',
+            '-DLLVM_ENABLE_ASSERTIONS=OFF',
+            '-DLLVM_ENABLE_RTTI=ON',
+            '-DLLVM_BUILD_LLVM_DYLIB=ON',
+            '-DLLVM_LINK_LLVM_DYLIB=ON',
+            '-DLLVM_ENABLE_TERMINFO=OFF',
+            '-DLIBOMPTARGET_BUILD_DEVICE_FORTRT=ON',
+            '-DFLANG_RUNTIME_F128_MATH_LIB=libquadmath',
+            '-DLIBCXX_ENABLE_SHARED=ON',
+            '-DLIBCXX_ENABLE_STATIC=OFF',
+            '-DLIBCXX_INSTALL_LIBRARY=ON',
+            '-DLIBCXX_INSTALL_HEADERS=ON',
+            '-DLIBCXXABI_ENABLE_SHARED=ON',
+            '-DLIBCXXABI_ENABLE_STATIC=OFF',
+            '-DLLVM_INSTALL_UTILS=ON',
+            '-DLLVM_ENABLE_LIBCXX=ON',
+            '-DOPENMP_ENABLE_LIBOMPTARGET=ON',
+            '-DLIBOMPTARGET_ENABLE_DEBUG=ON',
+            '-DLIBOMPTARGET_NO_SANITIZER_AMDGPU=ON',
+            '-DLLVM_RUNTIME_TARGETS="default;amdgcn-amd-amdhsa"',
+            '-DRUNTIMES_amdgcn-amd-amdhsa_LLVM_ENABLE_RUNTIMES=openmp',
+            '-DRUNTIMES_amdgcn-amd-amdhsa_LLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON',
+            '-DCMAKE_Fortran_FLAGS=',
+        ])
+    }),
 
 ]
 
-# Note: OpenMP offload files not built with build_openmp_offload: False
-# Installation is complete and functional
+sanity_check_components = ['llvm-project']
 
 modextravars = {
     'HIP_DEVICE_LIB_PATH': '%(installdir)s/amdgcn/bitcode',
