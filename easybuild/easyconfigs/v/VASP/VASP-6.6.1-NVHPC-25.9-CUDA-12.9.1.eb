@@ -3,7 +3,8 @@
 easyblock = 'CMakeMakeCp'
 
 name = 'VASP'
-version = '6.6.0'
+version = '6.6.1'
+versionsuffix = '-CUDA-%(cudaver)s'
 
 homepage = 'http://www.vasp.at'
 description = """The Vienna Ab initio Simulation Package (VASP) is a
@@ -13,7 +14,11 @@ from first principles.
 
 This build includes HDF5 and the Wannier-90 functions."""
 
-toolchain = {'name': 'foss', 'version': '2024a'}
+toolchain = {'name': 'NVHPC', 'version': '25.9'}
+
+# no cuda_cc/cuda_cc_ng here -- arch comes from EASYBUILD_CUDA_COMPUTE_CAPABILITIES
+# (build_cmd.sh) or --cuda-compute-capabilities; if neither is set the build
+# fails loudly at configure time rather than guessing an arch.
 
 sources = [
     '%(namelower)s.%(version)s.tar.gz',
@@ -28,21 +33,31 @@ sources = [
         },
     },
 ]
+sources += ['vdw_kernel.bindat.%(version)s.gz']
 
 checksums = [
-    {'vasp.6.6.0.tar.gz': '9566f59b0ae2fc60f670a91153655d09dba13fe6cc6c54e9ca6bd03bbcd86384'},
+    {'vasp.6.6.1.tar.gz': '261f9c1fd730468106191afeb185821d67cb7a58c982f6e063824dd5432106b0'},
     {'cmake.tar.gz': None},
+    {'vdw_kernel.bindat.%(version)s.gz': '650c6a194ab077676a834902ef68e2f4fe426be813ef12b3963c4198d3324f86'},
 ]
+
+local_cuda_ver = '12.9.1'
+local_cuda_major_minor = '.'.join(local_cuda_ver.split('.')[:2])
 
 dependencies = [
     ('HDF5', '1.14.5'),
     ('Wannier90', '3.1.0'),
+    ('FFTW', '3.3.10'),
+    ('CUDA', local_cuda_ver, '', SYSTEM),
 ]
 
-preconfigopts = 'mv ../cmake ../%(namelower)s.%(version)s/cmake && '
+preconfigopts = 'export QD_ROOT="$EBROOTNVHPC/Linux_x86_64/$EBVERSIONNVHPC/compilers/extras/qd" && '
+preconfigopts += 'mv ../cmake ../%(namelower)s.%(version)s/cmake && '
 preconfigopts += 'chmod +x ../%(namelower)s.%(version)s/cmake/setup.sh && '
 preconfigopts += '../%(namelower)s.%(version)s/cmake/setup.sh ../%(namelower)s.%(version)s && '
-configopts = '-DVASP_OPENMP=ON -DVASP_HDF5=ON'
+
+configopts = '-DVASP_CUDA=ON -DVASP_CUDA_VERSION=%s ' % local_cuda_major_minor
+configopts += '-DVASP_OPENMP=ON -DVASP_HDF5=ON'
 separate_build_dir = True
 
 # Testing, can take a long time!
