@@ -1,0 +1,75 @@
+From 64272ee09849688b282eb240ec2a9f87e4909245 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Andr=C3=A9=20Reuter?= <j.reuter@fz-juelich.de>
+Date: Mon, 8 Sep 2025 09:27:13 +0200
+Subject: [PATCH] Fix Python 3.13 enum incompatibility in string format
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Using a value of None for the FunctionFormat NONE causes Python 3.13 to abort
+Extra-P with the following error message:
+
+```
+[...]
+    from extrap.util.string_formats import FunctionFormats
+  File "extrap/util/string_formats.py", line 11, in <module>
+    class FunctionFormats(enum.Enum):
+    ...<2 lines>...
+        LATEX = enum.auto()
+  File "extrap/util/string_formats.py", line 13, in FunctionFormats
+    PYTHON = enum.auto()
+    ^^^^^^
+  File "python3.13/enum.py", line 441, in __setitem__
+    v.value = self._generate_next_value(
+              ~~~~~~~~~~~~~~~~~~~~~~~~~^
+            key, 1, len(self._member_names), self._last_values[:],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            )
+            ^
+  File "python3.13/enum.py", line 1267, in _generate_next_value_
+    raise TypeError('unable to increment %r' % (last_value, )) from None
+TypeError: unable to increment (None,)
+```
+
+To fix this, also treat None as `enum.auto()`, so that values can be
+properly initialized.
+
+Signed-off-by: Jan André Reuter <j.reuter@fz-juelich.de>
+---
+ AUTHORS.md                    | 5 +++--
+ extrap/util/string_formats.py | 2 +-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/AUTHORS.md b/AUTHORS.md
+index fadd927e..54563cfb 100644
+--- a/AUTHORS.md
++++ b/AUTHORS.md
+@@ -11,7 +11,7 @@ individuals who have contributed code to this repository:
+ * Jonas Klesy (jonas.klesy@googlemail.com)
+ * Christof Jugel (christof.jugel@stud.tu-darmstadt.de)
+ * Samuel Lokadjaja (samuel.lokadjaja@stud.tu-darmstadt.de)
+-* Daniel Lorenz (lorenz@cs.tu-darmstadt.de
++* Daniel Lorenz (lorenz@cs.tu-darmstadt.de)
+ * Benedikt Naumann (benedikt.naumann@gmx.de)
+ * Jannis Neus (jannis.neus@stud.tu-darmstadt.de)
+ * Nicolas Ollagnier (ncls_olg@yahoo.fr)
+@@ -21,4 +21,5 @@ individuals who have contributed code to this repository:
+ * Moritz Vanderheyden (moritz.vanderheyden@stud.tu-darmstadt.de)
+ * Johannes Wehrstein (johannes.wehrstein@gmx.de)
+ * Paul Wiedeking (p.wiedeking@grs-sim.de)
+-* Luis Dreher (luis.dreher@stud.tu-darmstadt.de)
+\ No newline at end of file
++* Luis Dreher (luis.dreher@stud.tu-darmstadt.de)
++* Jan André Reuter (j.reuter@fz-juelich.de)
+diff --git a/extrap/util/string_formats.py b/extrap/util/string_formats.py
+index 3d856c08..1f8e36c7 100644
+--- a/extrap/util/string_formats.py
++++ b/extrap/util/string_formats.py
+@@ -9,6 +9,6 @@
+ 
+ 
+ class FunctionFormats(enum.Enum):
+-    NONE = None,
++    NONE = enum.auto()
+     PYTHON = enum.auto()
+     LATEX = enum.auto()

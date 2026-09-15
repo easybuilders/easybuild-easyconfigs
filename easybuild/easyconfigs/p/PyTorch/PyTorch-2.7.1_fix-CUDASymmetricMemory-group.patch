@@ -1,0 +1,32 @@
+Fix test test/distributed/test_c10d_nccl.py CommTest.test_intra_node_comm_all_reduce failing with
+> RuntimeError: get_group_info: no group info associated with the group name 
+
+From 9108d153ce49fc31c1e8d71640e19b0dcd159dcc Mon Sep 17 00:00:00 2001
+From: eqy <eddiey@nvidia.com>
+Date: Wed, 26 Mar 2025 03:59:43 +0000
+Subject: [PATCH] [CUDA]][SymmetricMemory] Interpret empty string as
+ `std::nullopt` in `rendezvous` (#149793)
+
+this is a "temporary" fix as current internal API requires strings at some interfaces instead of `std::optional` and empty strings are presumably used in-lieu of `nullopt`.
+e.g.,
+https://github.com/pytorch/pytorch/blob/9d02b3993f7dae7fa3379d5190ac88291ecd4dce/torch/csrc/distributed/c10d/intra_node_comm.cu#L49
+
+this currently breaks `test_intra_node_comm_all_reduce`
+
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/149793
+
+diff --git a/torch/csrc/distributed/c10d/CUDASymmetricMemory.cu b/torch/csrc/distributed/c10d/CUDASymmetricMemory.cu
+index 172304479e9e..721d2c815875 100644
+--- a/torch/csrc/distributed/c10d/CUDASymmetricMemory.cu
++++ b/torch/csrc/distributed/c10d/CUDASymmetricMemory.cu
+@@ -784,7 +784,9 @@ c10::intrusive_ptr<SymmetricMemory> CUDASymmetricMemoryAllocator::rendezvous(
+   // The group_name passed to rendezvous() takes precedence over
+   // the default group_name specified during allocation.
+   std::string group_name_;
+-  if (group_name.has_value()) {
++  // Treat empty string and std::nullopt the same as empty string seems to be
++  // implicitly used that way
++  if (group_name.has_value() && group_name != "") {
+     group_name_ = *group_name;
+   } else {
+     if (!block->default_group_name.has_value()) {

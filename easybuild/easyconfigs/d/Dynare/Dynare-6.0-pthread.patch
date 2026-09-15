@@ -1,0 +1,61 @@
+Adding '-pthread' to meson for correct linking
+Author: J. Sassmannshausen (Imperial College London/UK)
+diff --git a/dynare-6.0.orig/meson.build b/dynare-6.0/meson.build
+index 247723d..c4e2e0f 100644
+--- a/dynare-6.0.orig/meson.build
++++ b/dynare-6.0/meson.build
+@@ -10,6 +10,9 @@ meson_version : '>=0.64.0'
+ 
+ add_global_arguments('-DPACKAGE_VERSION="' + meson.project_version() + '"', language : 'cpp')
+ 
++# added threads
++thread_dep = dependency('threads')
++
+ if get_option('warning_level').to_int() >= 2
+   add_global_arguments('-Wold-style-cast', language : 'cpp')
+   add_global_arguments('-Wimplicit-interface', '-Wno-compare-reals', language : 'fortran')
+@@ -480,16 +483,20 @@ k_order_test_kwargs = { 'include_directories' : mex_kwargs['include_directories'
+ 
+ k_order_sylv_test_exe = executable('k_order_sylv_test', [ 'mex/sources/libkorder/sylv/tests/MMMatrix.cc',
+                                                           'mex/sources/libkorder/sylv/tests/tests.cc'],
+-                                   kwargs : k_order_test_kwargs)
++                                   kwargs : k_order_test_kwargs,
++                                   dependencies : thread_dep)
++
+ test('k_order_sylv', k_order_sylv_test_exe, workdir : meson.current_source_dir() / 'mex/sources/libkorder/sylv/tests', timeout : 0, suite : 'k_order')
+ 
+ k_order_tl_test_exe = executable('k_order_tl_test', [ 'mex/sources/libkorder/tl/tests/factory.cc',
+                                                       'mex/sources/libkorder/tl/tests/monoms.cc',
+                                                       'mex/sources/libkorder/tl/tests/tests.cc'],
+-                                 kwargs : k_order_test_kwargs)
++                                 kwargs : k_order_test_kwargs,
++                                 dependencies : thread_dep)
++
+ test('k_order_tl', k_order_tl_test_exe, timeout : 0, suite : 'k_order')
+ 
+-k_order_kord_test_exe = executable('k_order_kord_test', 'mex/sources/libkorder/kord/tests/tests.cc', kwargs : k_order_test_kwargs)
++k_order_kord_test_exe = executable('k_order_kord_test', 'mex/sources/libkorder/kord/tests/tests.cc', kwargs : k_order_test_kwargs, dependencies : thread_dep)
+ test('k_order_kord', k_order_kord_test_exe, timeout : 0, suite : 'k_order')
+ 
+ 
+diff --git a/dynare-6.0.orig/preprocessor/src/meson.build b/dynare-6.0/preprocessor/src/meson.build
+index 4dd8716..93e0cf3 100644
+--- a/dynare-6.0.orig/preprocessor/src/meson.build
++++ b/dynare-6.0/preprocessor/src/meson.build
+@@ -59,14 +59,14 @@ preprocessor_src = [ 'ComputingTasks.cc',
+ 	             'macro/Directives.cc' ]
+ 
+ if get_option('prefer_static')
+-  preprocessor_link_args = [ '-static-libgcc', '-static-libstdc++' ]
++  preprocessor_link_args = [ '-static-libgcc', '-static-libstdc++', '-pthread' ]
+   if host_machine.system() == 'windows'
+     # See comment in rules for MEX files
+     preprocessor_link_args += [ '-Wl,-Bstatic', '-lssp', '-Wl,-Bdynamic',
+                                 '-Wl,-Bstatic,--whole-archive', '-lwinpthread', '-Wl,-Bdynamic,--no-whole-archive' ]
+   endif
+ else
+-  preprocessor_link_args = []
++  preprocessor_link_args = [ '-pthread' ]
+ endif
+ 
+ executable('dynare-preprocessor', preprocessor_src, flex_src, flexlexer_h, bison_src,

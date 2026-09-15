@@ -1,0 +1,65 @@
+easyblock = 'Bundle'
+
+name = 'ollama'
+version = '0.24.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://ollama.com/'
+description = """Get up and running with large language models.
+
+This version of ollama is patched to support OLLAMA_NUM_THREADS environment
+variable to override the default inference CPU thread count.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+builddependencies = [
+    ('Go', '1.25.0', '', SYSTEM),
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['6.0', '7.0', '7.5', '8.0', '8.9', '9.0']
+
+default_component_specs = {
+    'source_urls': ['https://github.com/ollama/ollama/archive'],
+    'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+    'start_dir': 'ollama-%(version)s',
+}
+components = [
+    ('ggml-cpu-cuda', version, {
+        # CPU and CUDA12 presets
+        'easyblock': 'CMakeMake',
+        'checksums': ['a97e4a545cb08ed0343f97dc964be49f707b8404f1c2e29ec1338ec96b556eb2'],
+        'configopts': '-DGGML_BACKEND_DIR="%(installdir)s/lib/ollama"',
+        'buildopts': 'ggml-cpu ggml-cuda',
+    }),
+    ('ollama', version, {
+        'easyblock': 'GoPackage',
+        'patches': ['ollama-0.24.0_expose-num-thread.patch'],
+        'checksums': [
+            'a97e4a545cb08ed0343f97dc964be49f707b8404f1c2e29ec1338ec96b556eb2',
+            '6df53e2f7e991a2912b1ea3ff44048f7104c5831521887a053713fcc5fcf5b91',
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ollama', f'lib/ollama/libggml-base.{SHLIB_EXT}', f'lib/ollama/libggml-cuda.{SHLIB_EXT}'],
+    'dirs': ['lib/ollama'],
+}
+
+sanity_check_commands = [
+    "ollama -v",
+]
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': ['lib/ollama', 'lib/ollama/cuda_v12'],
+}
+
+moduleclass = 'ai'

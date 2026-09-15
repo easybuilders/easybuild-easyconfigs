@@ -1,0 +1,20 @@
+When the test file is run without GPUs it will exit with a non-zero code
+which causes it to be considered a failure.
+Exit with code 0 instead when no GPUs are available.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/test_c10d_ops_nccl.py b/test/distributed/test_c10d_ops_nccl.py
+index 73bad39956c..0d8d3ba9628 100644
+--- a/test/distributed/test_c10d_ops_nccl.py
++++ b/test/distributed/test_c10d_ops_nccl.py
+@@ -982,7 +982,8 @@ class ProcessGroupNCCLOpTest(MultiProcContinousTest):
+ 
+ if __name__ == "__main__":
+     if not torch.cuda.is_available():
+-        sys.exit(TEST_SKIPS["no_cuda"].exit_code)
++        print(TEST_SKIPS["no_cuda"].message)
++        sys.exit(0)
+ 
+     rank = int(os.getenv("RANK", -1))
+     world_size = int(os.getenv("WORLD_SIZE", -1))

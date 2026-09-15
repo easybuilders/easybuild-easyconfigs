@@ -1,0 +1,47 @@
+easyblock = 'Binary'
+
+name = 'HPCViewer'
+version = '2025.2.0'
+
+homepage = 'https://hpctoolkit.org/index.html'
+description = """
+hpcviewer is a graphical user interface that interactively presents performance
+data in three complementary code-centric views (top-down, bottom-up, and flat),
+as well as a graphical view that enables one to assess performance variability
+across threads and processes. hpcviewer is designed to facilitate rapid top-down
+analysis using derived metrics that highlight scalability losses and
+inefficiency rather than focusing exclusively on program hot spots.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://gitlab.com/hpctoolkit/hpcviewer/-/releases/2025.2.0/downloads/']
+sources = ['hpcviewer-linux.gtk.%(arch)s.tar.gz']
+checksums = [{
+    'hpcviewer-linux.gtk.x86_64.tar.gz':
+    'e468637b212c03ebc121f8e2933e52885cd9133216b6b90262ab1441a9158959',
+    'hpcviewer-linux.gtk.aarch64.tar.gz':
+    '565bba471273f897c3436dd8b152720e7862a44588204171b8778a2f5b463dfc',
+}]
+
+dependencies = [
+    ('Java', '21', '', SYSTEM),
+    ('GTK3', '3.24.43'),
+]
+
+extract_sources = True
+install_cmd = "sh -c './install.sh -j $EBROOTJAVA %(installdir)s'"
+
+sanity_check_paths = {
+    'files': ['bin/hpcviewer'],
+    'dirs': [
+        'bin',
+        'libexec/hpcviewer',
+    ]
+}
+sanity_check_commands = [
+    'hpcviewer --version | grep %(version)s',
+    'hpcviewer --help',
+]
+
+moduleclass = 'tools'

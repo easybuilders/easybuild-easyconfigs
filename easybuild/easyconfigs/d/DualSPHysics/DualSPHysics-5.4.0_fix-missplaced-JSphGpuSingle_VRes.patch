@@ -1,0 +1,73 @@
+Fix misplaced inclusion of JSphGpuSingle_VRes.cpp and add missing <cstdint> headers
+Author: Cintia Willemyns (Vrije Universiteit Brussel)
+diff -Narub DualSPHysics-5.4.0.orig/src/source/CMakeLists.txt DualSPHysics-5.4.0/src/source/CMakeLists.txt
+--- DualSPHysics-5.4.0.orig/src/source/CMakeLists.txt	2025-07-15 16:13:16.000000000 +0200
++++ DualSPHysics-5.4.0/src/source/CMakeLists.txt	2025-07-17 10:59:28.000000000 +0200
+@@ -30,6 +30,7 @@
+ set(OBSPHGPU JArraysGpu.cpp JDebugSphGpu.cpp JCellDivGpu.cpp JSphGpu.cpp JDsGpuInfo.cpp)
+ set(OBSPHSINGLEGPU JCellDivGpuSingle.cpp JSphGpuSingle.cpp)
+ set(OBCUDA JCellDivGpu_ker.cu JCellDivGpuSingle_ker.cu JDsPips_ker.cu JDsGauge_ker.cu JReduSum_ker.cu JSphShifting_ker.cu JDsAccInput_ker.cu JSphGpu_ker.cu JSphGpuSimple_ker.cu JWaveOrder2_ker.cu)
++set(OBVRESGPU JSphGpuSingle_VRes.cpp)
+ 
+ # Other Objects
+ set(OBWAVERZ JMLPistonsGpu.cpp JRelaxZonesGpu.cpp)
+@@ -39,7 +40,7 @@
+ set(OBINOUT JSphCpu_InOut.cpp JSphCpuSingle_InOut.cpp JSphInOut.cpp JSphInOutZone.cpp JSphInOutGridData.cpp JSphInOutPoints.cpp JSphInOutVel.cpp JSphInOutVelAwas.cpp JSphInOutZsurf.cpp JSimpleNeigs.cpp)
+ set(OBINOUTGPU JSphGpuSingle_InOut.cpp)
+ set(OBMESH JMeshData.cpp JMeshTDatas.cpp JMeshTDatasLoad.cpp JMeshTDatasSave.cpp JMeshTDatasDsVel.cpp JMeshTDatasXml.cpp)
+-set(OBVRES JSphVRes.cpp JSphVResZone.cpp JSphCpuSingle_VRes.cpp JSphGpuSingle_VRes.cpp JSphCpu_VRes.cpp JCaseVRes.cpp JVResDataLimits.cpp JDsVresData.cpp JBoxDef.cpp)
++set(OBVRES JSphVRes.cpp JSphVResZone.cpp JSphCpuSingle_VRes.cpp JSphCpu_VRes.cpp JCaseVRes.cpp JVResDataLimits.cpp JDsVresData.cpp JBoxDef.cpp)
+ set(OBFLEXSTRUC JSphFlexStruc.cpp)
+ 
+ #------------------------------------------------------------------
+@@ -121,7 +122,7 @@
+   add_dependencies(DualSPHysics5.4CPU_linux64 MoorDynPlus)
+   install(TARGETS	DualSPHysics5.4CPU_linux64 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+   if (CUDA_FOUND)
+-    cuda_add_executable(DualSPHysics5.4_linux64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBCOMMONGPU} ${OBSPHGPU} ${OBSPHSINGLEGPU} ${OBCUDA} ${OBWAVERZ} ${OBWAVERZCUDA} ${OBCHRONO} ${OBMOORDYNPLUS} ${OBINOUT} ${OBINOUTGPU} ${OBMESH} ${OBVRES} ${OBFLEXSTRUC})
++    cuda_add_executable(DualSPHysics5.4_linux64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBCOMMONGPU} ${OBSPHGPU} ${OBSPHSINGLEGPU} ${OBCUDA} ${OBWAVERZ} ${OBWAVERZCUDA} ${OBCHRONO} ${OBMOORDYNPLUS} ${OBINOUT} ${OBINOUTGPU} ${OBMESH} ${OBVRES} ${OBVRESGPU} ${OBFLEXSTRUC})
+     add_dependencies(DualSPHysics5.4_linux64 MoorDynPlus)
+     install(TARGETS DualSPHysics5.4_linux64 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+   endif(CUDA_FOUND)
+@@ -129,7 +130,7 @@
+   add_executable(DualSPHysics5.4CPU_win64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBWAVERZ} ${OBCHRONO} ${OBMOORDYNPLUS} ${OBINOUT} ${OBMESH} ${OBVRES} ${OBFLEXSTRUC})
+   install(TARGETS	DualSPHysics5.4CPU_win64 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+   if (CUDA_FOUND)
+-    cuda_add_executable(DualSPHysics5.4_win64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBCOMMONGPU} ${OBSPHGPU} ${OBSPHSINGLEGPU} ${OBCUDA} ${OBWAVERZ} ${OBWAVERZCUDA} ${OBCHRONO} ${OBMOORDYNPLUS} ${OBINOUT} ${OBINOUTGPU} ${OBMESH} ${OBVRES} ${OBFLEXSTRUC})
++    cuda_add_executable(DualSPHysics5.4_win64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBCOMMONGPU} ${OBSPHGPU} ${OBSPHSINGLEGPU} ${OBCUDA} ${OBWAVERZ} ${OBWAVERZCUDA} ${OBCHRONO} ${OBMOORDYNPLUS} ${OBINOUT} ${OBINOUTGPU} ${OBMESH} ${OBVRES} ${OBVRESGPU} ${OBFLEXSTRUC})
+     install(TARGETS DualSPHysics5.4_win64 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+   endif(CUDA_FOUND)
+ endif()
+diff -Narub DualSPHysics-5.4.0.orig/src/source/JBinaryData.cpp DualSPHysics-5.4.0/src/source/JBinaryData.cpp
+--- DualSPHysics-5.4.0.orig/src/source/JBinaryData.cpp	2025-07-15 16:13:16.000000000 +0200
++++ DualSPHysics-5.4.0/src/source/JBinaryData.cpp	2025-07-17 11:01:17.000000000 +0200
+@@ -26,6 +26,7 @@
+ #include <cmath>
+ #include <cstring>
+ #include <cstdlib>
++#include <cstdint>
+ #include <iostream>
+ #include <sstream>
+ #include <algorithm>
+diff -Narub DualSPHysics-5.4.0.orig/src/source/JBinaryData.h DualSPHysics-5.4.0/src/source/JBinaryData.h
+--- DualSPHysics-5.4.0.orig/src/source/JBinaryData.h	2025-07-15 16:13:16.000000000 +0200
++++ DualSPHysics-5.4.0/src/source/JBinaryData.h	2025-07-17 11:01:52.000000000 +0200
+@@ -68,6 +68,7 @@
+ #include <vector>
+ #include <fstream>
+ #include <climits>
++#include <cstdint>
+ 
+ class JBinaryData;
+ 
+diff -Narub DualSPHysics-5.4.0.orig/src/source/Source_DSphMoorDynPlus/IEnvironment.cpp DualSPHysics-5.4.0/src/source/Source_DSphMoorDynPlus/IEnvironment.cpp
+--- DualSPHysics-5.4.0.orig/src/source/Source_DSphMoorDynPlus/IEnvironment.cpp	2025-07-15 16:13:16.000000000 +0200
++++ DualSPHysics-5.4.0/src/source/Source_DSphMoorDynPlus/IEnvironment.cpp	2025-07-17 11:00:29.000000000 +0200
+@@ -33,6 +33,7 @@
+ #include "IEnvironment.h"
+ #include <cmath>        
+ #include <cstdlib>
++#include <cstdint>
+ 
+ //==============================================================================
+ /// Constructor.
