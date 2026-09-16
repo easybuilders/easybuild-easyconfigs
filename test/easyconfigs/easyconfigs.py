@@ -615,9 +615,9 @@ class EasyConfigTest(TestCase):
                 # and IMAS-* and IDStools (via IMAS-Python) on 2023b
                 (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
                          r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0', r'IDStools-.*-2023b']),
-                # Java 25 is used as dep for MDSplus 7.1, IMAS-* and IDStools (via IMAS-Python) on 2025b
+                # Java 25 is used as dep for MDSplus 7.1, IMAS-* IDStools and SimDB (via IMAS-Python) on 2025b
                 (r'25', [r'MDSplus-7\.1.*-GCCcore-14\.3\.0', r'IMAS-.*-2025b', r'IMAS-.*-GCCcore-14\.3\.0',
-                         r'IDStools-.*-2025b']),
+                         r'IDStools-.*-2025b', r'SimDB-.*-2025b']),
             ],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
