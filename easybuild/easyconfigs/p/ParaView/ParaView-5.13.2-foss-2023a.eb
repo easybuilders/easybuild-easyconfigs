@@ -1,0 +1,67 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView'
+version = '5.13.2'
+
+homepage = 'https://www.paraview.org'
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+local_download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['https://www.paraview.org/paraview-downloads/%s' % local_download_suffix]
+sources = ["%(name)s-v%(version)s.tar.gz"]
+patches = ['ParaView-5.13.2-remove_glew_init_warning.patch']
+checksums = [
+    {'ParaView-v5.13.2.tar.gz': '9167c7c5d3656e36b160a22ed7a4c99b46fc96498caf5805484089856e93636f'},
+    {'ParaView-5.13.2-remove_glew_init_warning.patch':
+     '6ff48821102628c4d9368d1786fe352a92bbb0612d05e12386b993a25c2b9181'},
+]
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('Boost', '1.82.0'),
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('XZ', '5.4.2'),
+    ('HDF5', '1.14.0'),
+    ('netCDF', '4.9.2'),
+    ('libdrm', '2.4.115'),
+    ('Mesa', '23.1.4'),
+    ('Qt5', '5.15.10'),
+    ('zlib', '1.2.13'),
+    ('FFmpeg', '6.0'),
+    ('Szip', '2.1.1'),
+]
+
+_copts = [
+    # Basic configuration
+    '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON',
+    '-DPARAVIEW_BUILD_SHARED_LIBS=ON',
+    '-DPARAVIEW_USE_MPI=ON',
+    '-DPARAVIEW_ENABLE_FFMPEG=ON',
+    '-DPARAVIEW_USE_PYTHON=ON',
+    # Useful input formats
+    '-DPARAVIEW_ENABLE_XDMF2=ON',
+    '-DPARAVIEW_ENABLE_XDMF3=ON',
+    # EGL, X and Mesa
+    '-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s' % SHLIB_EXT,
+    '-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include',
+    '-DEGL_INCLUDE_DIR=$EBROOTLIBGLVND/include',
+    '-DEGL_LIBRARY=$EBROOTLIBGLVND/lib/libEGL.%s' % SHLIB_EXT,
+    '-DEGL_opengl_LIBRARY=$EBROOTLIBGLVND/libOpenGL.%s' % SHLIB_EXT,
+    '-DVTK_OPENGL_HAS_EGL=ON',
+    '-DVTK_USE_X=ON',
+    '-DVTK_OPENGL_HAS_OSMESA=OFF']
+configopts = ' '.join(_copts)
+
+sanity_check_paths = {
+    'files': ['bin/paraview', 'bin/pvserver', 'bin/pvpython'],
+    'dirs': ['include/paraview-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['python -c "import paraview"']
+
+moduleclass = 'vis'

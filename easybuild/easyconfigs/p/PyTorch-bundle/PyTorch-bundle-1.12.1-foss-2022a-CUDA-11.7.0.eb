@@ -26,14 +26,24 @@ dependencies = [
     ('tensorboard', '2.10.0'),  # for torch-tb-profiler
 ]
 
-use_pip = True
+local_preinstall_opts = ' '.join([
+    'USE_SYSTEM_LIBS=1',
+    'USE_OPENMP=1',
+    'USE_CUDA=1', 'TORCH_CUDA_ARCH_LIST="%(cuda_cc_semicolon_sep)s"',
+    'USE_CUDNN=1',
+    'CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s',
+]) + ' '
+
+exts_default_options = {
+    'preinstallopts': local_preinstall_opts,
+    'prebuildopts': local_preinstall_opts,
+}
 
 exts_list = [
     ('portalocker', '2.7.0', {
         'checksums': ['032e81d534a88ec1736d03f780ba073f047a06c478b06e2937486f334e955c51'],
     }),
     ('torchdata', '0.4.1', {
-        'preinstallopts': "USE_SYSTEM_LIBS=1 ",
         'source_urls': ['https://github.com/pytorch/data/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': ['71c0aa3aca3b04a986a2cd4cc2e0be114984ca836dc4def2c700bf1bd1ff087e'],
@@ -48,7 +58,7 @@ exts_list = [
         'checksums': [
             {'torchtext-0.13.1.tar.gz': '1f7de1fd8c6303ea13ef2aed48a6df67df5f92d1c4a6918253be7decd93753be'},
             {'torchtext-0.13.1_use-system-libs.patch':
-             '3e2f170a2870ac274f452b53862f65e5e94f6da1c3af488aeb3001e0500cb0e5'},
+             '5fa559d5a2371c28d23f9a1588f22791603cda01835378f236fed833476ff24e'},
             {'torchtext-0.13.1_cxx_17.patch': 'fd242c139baa27352d1065cece4658a3ede76f46ffec08ac04a554301e547f22'},
         ],
     }),
@@ -70,7 +80,5 @@ exts_list = [
     }),
     # torchaudio-0.12.1 needs more work before it can be added
 ]
-
-sanity_pip_check = True
 
 moduleclass = 'ai'

@@ -1,0 +1,214 @@
+Qt5-5.15.16 is incompatible with Python 3.12
+Replace `import imp`
+See also:
+* https://stackoverflow.com/questions/43964166/imp-module-is-deprecated-in-favour-of-importlib
+* https://github.com/chromium/chromium/commit/9e0c89a3b5638ba2b9b107fea34a01c774aa7805
+`six.moves` is no longer available
+See also:
+* https://lore.kernel.org/buildroot/20240715101423.B490D86C43@busybox.osuosl.org/T/
+* https://lore.kernel.org/buildroot/20240715101423.F1CA686C43@busybox.osuosl.org/T/
+Author: Lara Peeters
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/components/resources/protobufs/binary_proto_generator.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/components/resources/protobufs/binary_proto_generator.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/components/resources/protobufs/binary_proto_generator.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/components/resources/protobufs/binary_proto_generator.py	2025-03-25 15:22:27.404363000 +0100
+@@ -9,7 +9,7 @@
+ """
+ 
+ import abc
+-import imp
++from importlib import util as imp_util
+ import optparse
+ import os
+ import re
+@@ -68,7 +68,11 @@
+       raise ImportError(fullname)
+ 
+     filepath = self._fullname_to_filepath(fullname)
+-    return imp.load_source(fullname, filepath)
++    spec = imp_util.spec_from_file_location(fullname, filepath)
++    loaded = imp_util.module_from_spec(spec)
++    spec.loader.exec_module(loaded)
++
++    return loaded
+ 
+ class BinaryProtoGenerator:
+ 
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/fileutil.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/fileutil.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/fileutil.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/fileutil.py	2025-03-19 08:44:47.099555374 +0100
+@@ -3,7 +3,7 @@
+ # found in the LICENSE file.
+ 
+ import errno
+-import imp
++import importlib
+ import os.path
+ import sys
+ 
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/fileutil_unittest.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/fileutil_unittest.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/fileutil_unittest.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/fileutil_unittest.py	2025-03-19 11:11:13.494068338 +0100
+@@ -2,7 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
+-import imp
++import importlib
+ import os.path
+ import shutil
+ import sys
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/generate/generator_unittest.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/generate/generator_unittest.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/generate/generator_unittest.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/generate/generator_unittest.py	2025-03-19 11:14:16.141045568 +0100
+@@ -2,7 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
+-import imp
++import importlib
+ import os.path
+ import sys
+ import unittest
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/generate/translate_unittest.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/generate/translate_unittest.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/generate/translate_unittest.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/generate/translate_unittest.py	2025-03-19 11:15:20.949971133 +0100
+@@ -2,7 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
+-import imp
++import importlib
+ import os.path
+ import sys
+ import unittest
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/ast_unittest.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/ast_unittest.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/ast_unittest.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/ast_unittest.py	2025-03-19 11:11:35.549465000 +0100
+@@ -2,7 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
+-import imp
++import importlib
+ import os.path
+ import sys
+ import unittest
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/conditional_features_unittest.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/conditional_features_unittest.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/conditional_features_unittest.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/conditional_features_unittest.py	2025-03-19 11:12:16.979786000 +0100
+@@ -2,7 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
+-import imp
++import importlib
+ import os
+ import sys
+ import unittest
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/lexer.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/lexer.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/lexer.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/lexer.py	2025-03-19 11:12:42.320202000 +0100
+@@ -2,7 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
+-import imp
++import importlib
+ import os.path
+ import sys
+ 
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/lexer_unittest.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/lexer_unittest.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/lexer_unittest.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/lexer_unittest.py	2025-03-19 11:12:54.148419000 +0100
+@@ -2,7 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
+-import imp
++import importlib
+ import os.path
+ import sys
+ import unittest
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/parser_unittest.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/parser_unittest.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/parser_unittest.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/mojo/public/tools/mojom/mojom/parse/parser_unittest.py	2025-03-19 11:13:27.715351000 +0100
+@@ -2,7 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
+-import imp
++import importlib
+ import os.path
+ import sys
+ import unittest
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/third_party/protobuf/python/google/protobuf/internal/python_message.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/third_party/protobuf/python/google/protobuf/internal/python_message.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/third_party/protobuf/python/google/protobuf/internal/python_message.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/third_party/protobuf/python/google/protobuf/internal/python_message.py	2025-03-25 16:12:14.128721000 +0100
+@@ -55,9 +55,6 @@
+ import sys
+ import weakref
+ 
+-import six
+-from six.moves import range
+-
+ # We use "as" to avoid name collisions with variables.
+ from google.protobuf.internal import api_implementation
+ from google.protobuf.internal import containers
+@@ -467,7 +464,7 @@
+     exc = TypeError('%s for field %s.%s' % (str(exc), message_name, field_name))
+ 
+   # re-raise possibly-amended exception with original traceback:
+-  six.reraise(type(exc), exc, sys.exc_info()[2])
++  raise exc.with_traceback(sys.exc_info()[2])
+ 
+ 
+ def _AddInitMethod(message_descriptor, cls):
+@@ -480,7 +477,7 @@
+     enum_type with the same name.  If the value is not a string, it's
+     returned as-is.  (No conversion or bounds-checking is done.)
+     """
+-    if isinstance(value, six.string_types):
++    if isinstance(value, str):
+       try:
+         return enum_type.values_by_name[value].number
+       except KeyError:
+diff -ruN qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/tools/grit/grit/util.py qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/tools/grit/grit/util.py
+--- qt-everywhere-src-5.15.16.orig/qtwebengine/src/3rdparty/chromium/tools/grit/grit/util.py	2023-11-09 13:02:51.000000000 +0100
++++ qt-everywhere-src-5.15.16/qtwebengine/src/3rdparty/chromium/tools/grit/grit/util.py	2025-03-20 09:12:57.552056000 +0100
+@@ -8,6 +8,7 @@
+ from __future__ import print_function
+ 
+ import codecs
++import html.entities
+ import io
+ import os
+ import re
+@@ -17,8 +18,6 @@
+ from xml.sax import saxutils
+ 
+ import six
+-from six import StringIO
+-from six.moves import html_entities as entities
+ 
+ from grit import lazy_re
+ 
+@@ -226,7 +225,7 @@
+ def ChangeStdoutEncoding(encoding = 'utf-8'):
+   '''Changes STDOUT to print characters using the specified encoding.'''
+   # If we're unittesting, don't reconfigure.
+-  if isinstance(sys.stdout, StringIO):
++  if isinstance(sys.stdout, io.StringIO):
+     return
+ 
+   if sys.version_info.major < 3:
+@@ -280,8 +279,8 @@
+       if name == 'nbsp' and not replace_nbsp:
+         return match.group()  # Don't replace &nbsp;
+       assert name != None
+-      if name in entities.name2codepoint:
+-        return six.unichr(entities.name2codepoint[name])
++      if name in html.entities.name2codepoint:
++        return six.unichr(html.entities.name2codepoint[name])
+       else:
+         return match.group()  # Unknown HTML character entity - don't replace
+ 

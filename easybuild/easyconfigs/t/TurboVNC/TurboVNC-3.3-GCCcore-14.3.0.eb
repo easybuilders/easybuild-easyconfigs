@@ -1,0 +1,61 @@
+easyblock = 'CMakeMake'
+
+name = 'TurboVNC'
+version = '3.3'
+
+homepage = 'https://www.turbovnc.org'
+description = """TurboVNC is a derivative of VNC (Virtual Network Computing) that is tuned to provide
+ peak performance for 3D and video workloads."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://github.com/%(name)s/%(namelower)s/archive']
+sources = ['%(version)s.tar.gz']
+checksums = ['2de24f643776ebc1b283813118279a22a1671445f47f928d2e2f09ed70384b32']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('Java', '21', '', SYSTEM),
+    ('X11', '20250608'),
+    ('pixman', '0.46.4'),
+    ('libjpeg-turbo', '3.1.1'),
+    ('OpenGL', '2025.09'),
+    ('Xvfb', '21.1.18'),
+    ('OpenSSL', '3', '', SYSTEM),
+]
+
+osdependencies = [('pam-devel', 'libpam0g-dev')]
+
+configopts = " ".join([
+    "-DTVNC_BUILDJAVA=0 -DTVNC_SYSTEMX11=1",
+    f"-DX11_X11_LIB=$EBROOTX11/lib/libX11.{SHLIB_EXT}",
+    f"-DX11_Xau_LIB=$EBROOTX11/lib/libXau.{SHLIB_EXT}",
+    f"-DX11_SM_LIB=$EBROOTX11/lib/libSM.{SHLIB_EXT}",
+    f"-DX11_ICE_LIB=$EBROOTX11/lib/libICE.{SHLIB_EXT}",
+    f"-DX11_Pixman_LIB=$EBROOTPIXMAN/lib/libpixman-1.{SHLIB_EXT}.0",
+    f"-DOPENGL_glu_LIBRARY=$EBROOTOPENGL/lib/libGLU.{SHLIB_EXT}",
+    f"-DOPENGL_egl_LIBRARY=$EBROOTOPENGL/lib/libEGL.{SHLIB_EXT}",
+    f"-DOPENGL_opengl_LIBRARY=$EBROOTOPENGL/lib/libOpenGL.{SHLIB_EXT}",
+    f"-DOPENGL_glx_LIBRARY=$EBROOTOPENGL/lib/libGLX.{SHLIB_EXT}",
+])
+
+# if installdir starts with /opt, i.e. /opt/xxx, CMake will set SYSCONFDIR to /etc/opt/xxx instead of /opt/xxx/etc
+# https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html
+# the solution is to define CMAKE_INSTALL_SYSCONFDIR explicitly
+configopts += " -DCMAKE_INSTALL_SYSCONFDIR=%(installdir)s/etc "
+
+# remove etc/turbovncserver-security.conf, to avoid errors like:
+# (EE) Fatal server error:
+# (EE) ERROR: .../TurboVNC/2.2.3-GCCcore-8.2.0/etc/turbovncserver-security.conf must be owned by you or by root
+postinstallcmds = ['rm -rf %(installdir)s/etc/turbovncserver-security.conf']
+
+sanity_check_paths = {
+    'files': ['bin/vncserver', 'bin/vncpasswd', 'bin/Xvnc'],
+    'dirs': [],
+}
+
+moduleclass = 'vis'

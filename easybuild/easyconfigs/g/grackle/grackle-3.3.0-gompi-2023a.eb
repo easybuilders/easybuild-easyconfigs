@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'grackle'
+version = '3.3.0'
+
+homepage = 'https://grackle.readthedocs.io/en/latest/index.html'
+
+description = """Grackle is a chemistry and radiative cooling library for
+astrophysical simulations and models."""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+
+source_urls = ['https://github.com/grackle-project/grackle/archive/refs/tags/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['15f287f97a7d113243b3ed4f6a90cdd5f22f858fdd339731019e4404df7bd418']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('libtool', '2.4.7'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.0'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = "".join([
+    "./configure && ",
+    "cd src/clib && ",
+    "echo 'MACH_INCLUDES =' >> Make.mach.linux-gnu && ",
+    "echo 'MACH_LIBS = -lhdf5 -lz -lgfortran' >> Make.mach.linux-gnu && ",
+    "echo 'MACH_INSTALL_PREFIX = %(installdir)s' >> Make.mach.linux-gnu && ",
+    "make machine-linux-gnu && ",
+])
+
+preinstallopts = "cd src/clib && "
+
+sanity_check_paths = {
+    'files': ['include/grackle_chemistry_data.h', 'include/grackle_float.h', 'include/grackle_fortran_types.def',
+              'include/grackle_macros.h', 'include/grackle_types.h', 'include/grackle.def',
+              'include/grackle_fortran_interface.def', 'include/grackle.h', 'include/grackle_rate_functions.h',
+              f'lib/libgrackle-3.3.0.{SHLIB_EXT}', f'lib/libgrackle.{SHLIB_EXT}'],
+    'dirs': ['include', 'lib'],
+}
+
+moduleclass = 'astro'

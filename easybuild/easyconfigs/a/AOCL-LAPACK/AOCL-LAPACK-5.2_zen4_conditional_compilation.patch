@@ -1,0 +1,76 @@
+Only use blis zen4 functions if BLIS_KERNELS_ZEN4 is defined, to avoid compilations
+issues if blis does not support zen4 (e.g. compiled with "auto" on zen3)
+
+Bart Oldeman <bart.oldeman@calculquebec.ca>
+diff -ur libflame-5.2.orig/src/base/flamec/blis/2/bl1_gemv.c libflame-5.2/src/base/flamec/blis/2/bl1_gemv.c
+--- libflame-5.2.orig/src/base/flamec/blis/2/bl1_gemv.c	2026-01-04 06:34:54.000000000 +0000
++++ libflame-5.2/src/base/flamec/blis/2/bl1_gemv.c	2026-02-05 01:31:50.925123665 +0000
+@@ -442,7 +442,7 @@
+ 	             *beta,
+ 	             y, incy );
+ #else
+-#if FLA_ENABLE_AOCL_BLAS
++#if FLA_ENABLE_AOCL_BLAS && defined(BLIS_KERNELS_ZEN4)
+     /* Use direct single threaded BLIS kernel */
+ 	aocl_fla_init();
+     if ( FLA_IS_MIN_ARCH_ID( FLA_ARCH_AVX512 ) && incx > 0 && incy > 0 )
+diff -ur libflame-5.2.orig/src/map/lapack2flamec/f2c/c/dlarf.c libflame-5.2/src/map/lapack2flamec/f2c/c/dlarf.c
+--- libflame-5.2.orig/src/map/lapack2flamec/f2c/c/dlarf.c	2026-01-04 06:34:54.000000000 +0000
++++ libflame-5.2/src/map/lapack2flamec/f2c/c/dlarf.c	2026-02-05 01:32:56.753762529 +0000
+@@ -295,7 +295,7 @@
+                 {
+                     /* Process in a single call */
+                     /* w(1:lastc,1) := C(1:lastv,1:lastc)**T * v(1:lastv,1) */
+-#if FLA_ENABLE_AOCL_BLAS
++#if FLA_ENABLE_AOCL_BLAS && defined(BLIS_KERNELS_ZEN4)
+                     if(FLA_IS_MIN_ARCH_ID(FLA_ARCH_AVX512) && *incv > 0)
+                     {
+                         /* Use direct single threaded BLIS kernel */
+@@ -376,7 +376,7 @@
+             else
+             {
+                 /* w(1:lastc,1) := C(1:lastc,1:lastv) * v(1:lastv,1) */
+-#if FLA_ENABLE_AOCL_BLAS
++#if FLA_ENABLE_AOCL_BLAS && defined(BLIS_KERNELS_ZEN4)
+                 aocl_fla_init();
+                 if(FLA_IS_MIN_ARCH_ID(FLA_ARCH_AVX512) && *incv > 0)
+                 {
+diff -ur libflame-5.2.orig/src/map/lapack2flamec/f2c/c/dlarft.c libflame-5.2/src/map/lapack2flamec/f2c/c/dlarft.c
+--- libflame-5.2.orig/src/map/lapack2flamec/f2c/c/dlarft.c	2026-01-04 06:34:54.000000000 +0000
++++ libflame-5.2/src/map/lapack2flamec/f2c/c/dlarft.c	2026-02-05 01:32:31.071123136 +0000
+@@ -278,7 +278,7 @@
+                     i__2 = j - i__;
+                     i__3 = i__ - 1;
+                     d__1 = -tau[i__];
+-#if FLA_ENABLE_AOCL_BLAS
++#if FLA_ENABLE_AOCL_BLAS && defined(BLIS_KERNELS_ZEN4)
+                     if(FLA_IS_MIN_ARCH_ID(FLA_ARCH_AVX512))
+                     {
+                         bli_dgemv_t_zen4_int(BLIS_CONJUGATE, BLIS_NO_CONJUGATE, i__2, i__3, &d__1,
+@@ -315,7 +315,7 @@
+                     i__2 = i__ - 1;
+                     i__3 = j - i__;
+                     d__1 = -tau[i__];
+-#if FLA_ENABLE_AOCL_BLAS
++#if FLA_ENABLE_AOCL_BLAS && defined(BLIS_KERNELS_ZEN4)
+                     if(FLA_IS_MIN_ARCH_ID(FLA_ARCH_AVX512) && *ldv > 0)
+                     {
+                         bli_dgemv_n_zen4_int_40x2_st(BLIS_NO_TRANSPOSE, BLIS_NO_CONJUGATE, i__2,
+@@ -387,7 +387,7 @@
+                         i__1 = *n - *k + i__ - j;
+                         i__2 = *k - i__;
+                         d__1 = -tau[i__];
+-#if FLA_ENABLE_AOCL_BLAS
++#if FLA_ENABLE_AOCL_BLAS && defined(BLIS_KERNELS_ZEN4)
+                         if(FLA_IS_MIN_ARCH_ID(FLA_ARCH_AVX512))
+                         {
+                             bli_dgemv_t_zen4_int(BLIS_CONJUGATE, BLIS_NO_CONJUGATE, i__1, i__2,
+@@ -424,7 +424,7 @@
+                         i__1 = *k - i__;
+                         i__2 = *n - *k + i__ - j;
+                         d__1 = -tau[i__];
+-#if FLA_ENABLE_AOCL_BLAS
++#if FLA_ENABLE_AOCL_BLAS && defined(BLIS_KERNELS_ZEN4)
+                         if(FLA_IS_MIN_ARCH_ID(FLA_ARCH_AVX512) && *ldv > 0)
+                         {
+                             bli_dgemv_n_zen4_int_40x2_st(BLIS_NO_TRANSPOSE, BLIS_NO_CONJUGATE, i__1,

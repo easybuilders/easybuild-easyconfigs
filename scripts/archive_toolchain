@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+
+import argparse
+import glob
+import os
+import git
+
+
+parser = argparse.ArgumentParser(
+        prog='archive_old',
+        description='Archives easyconfigs based toolchain substring in easyconfig name')
+parser.add_argument('--branch', action='store_true', help='create new branch')
+parser.add_argument('--apply', action='store_true', help='apply git mv')
+parser.add_argument('--commit', action='store_true', help='automatically commit')
+parser.add_argument('--repo', type=str, required=True, help='root dir of easyconfigs repo')
+parser.add_argument('--toolchain', type=str, required=True, help='e.g. "foss-2016a"')
+
+args = parser.parse_args()
+
+repo = git.Repo(args.repo)
+
+robot_dir = os.path.join(args.repo, 'easybuild/easyconfigs')
+archive_dir = os.path.join(robot_dir, '__archive__')
+paths = glob.glob(os.path.join(robot_dir, f'?/*/*{args.toolchain}*.eb'))
+
+changes_to_commit = False
+for path in paths:
+    if args.apply:
+        archive_path = path.replace(robot_dir, archive_dir)
+        os.makedirs(archive_path.rsplit('/', maxsplit=1)[0], exist_ok=True)
+        repo.index.move([path, archive_path])
+        changes_to_commit = True
+        print(f'Archived {path}')
+    else:
+        print(f'Would have archived {path}')
+
+if changes_to_commit:
+    if args.branch:
+        new_branch_name = f'archive_{args.toolchain}'
+        repo.create_head(new_branch_name)
+        new_branch = repo.heads[new_branch_name]
+        new_branch.checkout()
+
+    commit_message = f"Archive {args.toolchain}"
+    if args.commit:
+        repo.index.commit(commit_message)
+        print(f'Committed "{commit_message}"')
+    else:
+        print('Commit the changes with:')
+        print(f'git commit -m "{commit_message}"')
+else:
+    print("No changes to commit.")

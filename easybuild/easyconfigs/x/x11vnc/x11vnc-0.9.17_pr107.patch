@@ -1,0 +1,511 @@
+From 4b64054bbc05395478cd97012ed5a004338d46ab Mon Sep 17 00:00:00 2001
+From: Floris Bos <bos@je-eigen-domein.nl>
+Date: Wed, 17 Jul 2019 16:46:40 +0200
+Subject: [PATCH 1/2] Add initial support for setdesktopsize
+
+When enabled with the -setdesktopsize option this allows
+clients like novnc and tigervnc to request a change of
+framebuffer resolution to fit that of the client window.
+
+On the server this is implemented by leaving the physical
+display resolution as-is, but setting a new framebuffer
+resolution and scaling that framebuffer to the physical
+display using RANDR calls.
+As a result the view on the physical display may look a bit
+distorted due to the scaling, but looks perfect on the remote
+client. (While that is normally the opposite case)
+
+When last client disconnects original framebuffer resolution
+is restorted.
+
+Implementation currently limited to computers with a single
+screen attached.
+
+Signed-off-by: Floris Bos <bos@je-eigen-domein.nl>
+---
+ src/connections.c |   4 +-
+ src/help.c        |   6 ++
+ src/options.c     |   1 +
+ src/options.h     |   1 +
+ src/screen.c      |  21 +++++++
+ src/x11vnc.c      |   4 ++
+ src/xrandr.c      | 154 ++++++++++++++++++++++++++++++++++++++++++++++
+ src/xrandr.h      |   2 +
+ x11vnc.1          |   8 +++
+ 9 files changed, 200 insertions(+), 1 deletion(-)
+
+diff --git a/src/connections.c b/src/connections.c
+index 10d61482..1cc64902 100644
+--- a/src/connections.c
++++ b/src/connections.c
+@@ -838,7 +838,9 @@ void client_gone(rfbClientPtr client) {
+ 		}
+ 	}
+ 
+-
++	if (enable_setdesktopsize && xrandr && client_count == 0) {
++		xrandr_reset_scaling();
++	}
+ 	if (no_autorepeat && client_count == 0) {
+ 		autorepeat(1, 0);
+ 	}
+diff --git a/src/help.c b/src/help.c
+index dacebe49..7e9d9212 100644
+--- a/src/help.c
++++ b/src/help.c
+@@ -3058,6 +3058,12 @@ void print_help(int mode) {
+ "                       prefix \"string\" with \"nc:\", e.g. \"nc:+90\",\n"
+ "                       \"nc:xy\", etc.\n"
+ "\n"
++"-setdesktopsize        Allow client to change framebuffer resolution to fit\n"
++"                       size of client window. x11vnc will use xrandr commands\n"
++"                       to change the X framebuffer size. The mode of the physical\n"
++"                       screen will not be changed, but scaling will be used to\n"
++"                       display the new framebuffer size on the physical screen.\n"
++"\n"
+ "-padgeom WxH           Whenever a new vncviewer connects, the framebuffer is\n"
+ "                       replaced with a fake, solid black one of geometry WxH.\n"
+ "                       Shortly afterwards the framebuffer is replaced with the\n"
+diff --git a/src/options.c b/src/options.c
+index 7dea8441..458a4575 100644
+--- a/src/options.c
++++ b/src/options.c
+@@ -246,6 +246,7 @@ char *xrandr_mode = NULL;
+ char *pad_geometry = NULL;
+ time_t pad_geometry_time = 0;
+ int use_snapfb = 0;
++int enable_setdesktopsize = 0;
+ 
+ int use_xrecord = 0;
+ int noxrecord = 0;
+diff --git a/src/options.h b/src/options.h
+index 609f4cea..59d6bfd7 100644
+--- a/src/options.h
++++ b/src/options.h
+@@ -211,6 +211,7 @@ extern char *xrandr_mode;
+ extern char *pad_geometry;
+ extern time_t pad_geometry_time;
+ extern int use_snapfb;
++extern int enable_setdesktopsize;
+ 
+ extern int use_xrecord;
+ extern int noxrecord;
+diff --git a/src/screen.c b/src/screen.c
+index 21e2eedd..f124625e 100644
+--- a/src/screen.c
++++ b/src/screen.c
+@@ -93,6 +93,7 @@ rfbBool vnc_reflect_send_cuttext(char *str, int len);
+ static void debug_colormap(XImage *fb);
+ static void set_visual(char *str);
+ static void nofb_hook(rfbClientPtr cl);
++static int set_desktop_size_hook(int width, int height, int numScreens, rfbExtDesktopScreen* extDesktopScreens, rfbClientPtr cl);
+ static void remove_fake_fb(void);
+ static void install_fake_fb(int w, int h, int bpp);
+ static void initialize_snap_fb(void);
+@@ -819,6 +820,23 @@ void free_old_fb(void) {
+ 	}
+ }
+ 
++static int set_desktop_size_hook(int width, int height, int numScreens, rfbExtDesktopScreen* extDesktopScreens, rfbClientPtr cl)
++{
++    int i;
++
++    rfbLog("Received SetDesktopSize message from client requesting (%dx%d) framebuffer with screen configuration:\n", width, height);
++    for (i=0; i<numScreens; i++) {
++        rfbLog("- id: %d resolution: %dx%d x offset: %d y offset: %d flags: %d\n", extDesktopScreens[i].id, extDesktopScreens[i].width,
++               extDesktopScreens[i].height, extDesktopScreens[i].x, extDesktopScreens[i].y, extDesktopScreens[i].flags);
++    }
++    if (cl->viewOnly) {
++        rfbLog("Denying setDesktopSize request as client is view-only\n");
++        return rfbExtDesktopSize_ResizeProhibited;
++    }
++
++    return xrandr_set_scale_from(width, height) ? rfbExtDesktopSize_Success : rfbExtDesktopSize_InvalidScreenLayout;
++}
++
+ static char _lcs_tmp[128];
+ static int _bytes0_size = 128, _bytes0[128];
+ 
+@@ -3651,6 +3669,9 @@ void initialize_screen(int *argc, char **argv, XImage *fb) {
+ 	screen->ptrAddEvent = pointer_event;
+ 	screen->setXCutText = xcut_receive;
+ 	screen->setTranslateFunction = set_xlate_wrapper;
++	if (enable_setdesktopsize) {
++		screen->setDesktopSizeHook = set_desktop_size_hook;
++	}
+ 
+ 	screen->kbdReleaseAllKeys = kbd_release_all_keys; 
+ 	screen->setSingleWindow = set_single_window; 
+diff --git a/src/x11vnc.c b/src/x11vnc.c
+index bff3ad2e..308eabf7 100644
+--- a/src/x11vnc.c
++++ b/src/x11vnc.c
+@@ -3888,6 +3888,10 @@ int main(int argc, char* argv[]) {
+ 			grab_buster = 0;
+ 			continue;
+ 		}
++		if (!strcmp(arg, "-setdesktopsize")) {
++			enable_setdesktopsize = 1;
++			continue;
++		}
+ 		if (!strcmp(arg, "-snapfb")) {
+ 			use_snapfb = 1;
+ 			continue;
+diff --git a/src/xrandr.c b/src/xrandr.c
+index 80d07dc8..36a8c559 100644
+--- a/src/xrandr.c
++++ b/src/xrandr.c
+@@ -304,4 +304,158 @@ int known_xrandr_mode(char *s) {
+ 	}
+ }
+ 
++/* Set framebuffer size to w x h
++ * Does not alter physical resolution but scales desired framebuffer to physical display resolution */
++rfbBool xrandr_set_scale_from(int w, int h)
++{
++#if HAVE_LIBXRANDR
++    XTransform transform;
++    XRRScreenResources *screens;
++    XRRCrtcInfo *crtcInfo;
++    XRROutputInfo *outputInfo;
++    RRCrtc xrandr_crtc;
++    RROutput xrandr_output;
++    XRRModeInfo *modeInfo = NULL;
++    int i;
++
++    double sx, sy;
++    int	major, minor, minWidth, minHeight, maxWidth, maxHeight;
++    char *filter;
++
++    if (!xrandr_present)
++        return FALSE;
++
++    X_LOCK;
++    XRRQueryVersion(dpy, &major, &minor);
++    if (major < 1 || (major == 1 && minor < 3)) {
++        rfbLog("Need at least RANDR 1.3 to support scaling, only %d.%d available\n", major, minor);
++        X_UNLOCK;
++        return FALSE;
++    }
++
++    if (w != -1 && XRRGetScreenSizeRange(dpy, rootwin, &minWidth, &minHeight, &maxWidth, &maxHeight)) {
++        if (w > maxWidth || h > maxHeight) {
++            w = nmin(w, maxWidth);
++            h = nmin(h, maxHeight);
++            rfbLog("Requested size exceeds maximum size of (%dx%d), reduced to (%dx%d)\n", maxWidth, maxHeight, w, h);
++        }
++        if (w < minWidth || h < minHeight) {
++            w = nmax(w, minWidth);
++            h = nmax(h, minHeight);
++            rfbLog("Requested size is smaller than minimum size of (%dx%d), enlarged to (%dx%d)\n", minWidth, minHeight, w, h);
++        }
++    }
++
++    screens = XRRGetScreenResourcesCurrent(dpy, rootwin);
++    if (!screens->ncrtc || !screens->noutput) {
++        rfbLog("RANDR Error: XRRGetScreenResourcesCurrent() did not return any crtcs and/or outputs\n");
++        XRRFreeScreenResources(screens);
++        X_UNLOCK;
++        return FALSE;
++    }
++
++    /* We only support using using one screen for now */
++    xrandr_output = XRRGetOutputPrimary(dpy, rootwin);
++    if (!xrandr_output)
++        xrandr_output = screens->outputs[0];
++
++    xrandr = 1;
++    outputInfo = XRRGetOutputInfo(dpy, screens, xrandr_output);
++    xrandr_crtc = outputInfo->crtc;
++
++    if (!xrandr_crtc) {
++        if (w != -1) {
++            rfbLog("RANDR: running headless without screen. Setting fb size without scaling.\n");
++            XRRSetScreenSize(dpy, rootwin, w, h, w / 2.8, h / 2.8);
++        }
++        XRRFreeOutputInfo(outputInfo);
++        XRRFreeScreenResources(screens);
++        X_UNLOCK;
++        return TRUE;
++    }
++    crtcInfo = XRRGetCrtcInfo(dpy, screens, xrandr_crtc);
++
++    for (i=0; i<screens->nmode; i++)
++    {
++        if (screens->modes[i].id == crtcInfo->mode)
++        {
++            modeInfo = &screens->modes[i];
++            break;
++        }
++    }
++
++    if (!modeInfo) {
++        rfbLog("RANDR Error: cannot find current mode\n");
++        XRRFreeCrtcInfo(crtcInfo);
++        XRRFreeOutputInfo(outputInfo);
++        XRRFreeScreenResources(screens);
++        X_UNLOCK;
++        return FALSE;
++    }
++
++    if (w == -1) {
++        w = modeInfo->width;
++        h = modeInfo->height;
++    }
++    if (!outputInfo->mm_width) {
++        /* Just assume 72 dpi, which is about 2.8 dpmm */
++        outputInfo->mm_width = modeInfo->width / 2.8;
++        outputInfo->mm_height = modeInfo->height / 2.8;
++    }
++
++    sx = (double) w / modeInfo->width;
++    sy = (double) h / modeInfo->height;
++
++    memset(&transform, 0, sizeof(transform));
++    transform.matrix[0][0] = XDoubleToFixed(sx);
++    transform.matrix[1][1] = XDoubleToFixed(sy);
++    transform.matrix[2][2] = XDoubleToFixed(1.0);
++
++    if (sx != 1 || sy != 1)
++        filter = "bilinear";
++    else
++        filter = "nearest";
++
++    XGrabServer(dpy);
++
++    /* Disable all crtc */
++    for (i=0; i<screens->ncrtc; i++)
++    {
++        XRRSetCrtcConfig(dpy, screens, screens->crtcs[i], CurrentTime,
++                          0, 0, None, RR_Rotate_0, NULL, 0);
++    }
++
++    /* Set framebuffer size */
++    XRRSetScreenSize(dpy, rootwin, w, h, outputInfo->mm_width, outputInfo->mm_height);
++    /* Set transform */
++    XRRSetCrtcTransform(dpy, xrandr_crtc, &transform, filter, NULL, 0);
++    /* Enable first crtc again */
++    XRRSetCrtcConfig(dpy, screens, xrandr_crtc, CurrentTime,
++        0, 0, crtcInfo->mode, crtcInfo->rotation, crtcInfo->outputs, crtcInfo->noutput);
++
++    XUngrabServer(dpy);
++    XRRFreeOutputInfo(outputInfo);
++    XRRFreeCrtcInfo(crtcInfo);
++    XRRFreeScreenResources(screens);
++    X_UNLOCK;
++
++    /* Leave creating the new frame buffer up to the xrandr event monitoring
++       code. (If we already create it here, we risk it is going
++       to be resized back to the old size, because multiple randr events
++       are enroute due to our changes, and the first may still mention
++       the old size.) */
++
++    return TRUE;
++#else
++    rfbLog("Cannot resize desktop. XRANDR support not compiled into x11vnc\n");
++    return FALSE;
++#endif
++}
++
++/* Restore scaling to original size */
++void xrandr_reset_scaling()
++{
++    xrandr_set_scale_from(-1, -1);
++}
++
+ 
+diff --git a/src/xrandr.h b/src/xrandr.h
+index 3f898f68..afe21605 100644
+--- a/src/xrandr.h
++++ b/src/xrandr.h
+@@ -49,6 +49,8 @@ extern Time xrandr_cfg_time;
+ extern void initialize_xrandr(void);
+ extern int check_xrandr_event(char *msg);
+ extern int known_xrandr_mode(char *s);
++extern rfbBool xrandr_set_scale_from(int w, int h);
++extern void xrandr_reset_scaling();
+ 
+ #define XRANDR_SET_TRAP_RET(x,y)  \
+ 	if (subwin || xrandr) { \
+diff --git a/x11vnc.1 b/x11vnc.1
+index cb4cb135..479b0ed0 100644
+--- a/x11vnc.1
++++ b/x11vnc.1
+@@ -3365,6 +3365,14 @@ If you do not want the cursor shape to be rotated
+ prefix \fIstring\fR with "nc:", e.g. "nc:+90",
+ "nc:xy", etc.
+ .PP
++\fB-setdesktopsize\fR
++.IP
++Allow client to change framebuffer resolution to fit
++size of client window. x11vnc will use xrandr commands
++to change the X framebuffer size. The mode of the physical
++screen will not be changed, but scaling will be used to
++display the new framebuffer size on the physical screen.
++.PP
+ \fB-padgeom\fR \fIWxH\fR
+ .IP
+ Whenever a new vncviewer connects, the framebuffer is
+
+From 2872260fff9cc786137a060e2efb5251ff3043f4 Mon Sep 17 00:00:00 2001
+From: Floris Bos <bos@je-eigen-domein.nl>
+Date: Wed, 17 Jul 2019 21:14:47 +0200
+Subject: [PATCH 2/2] setDesktopSize support: disable support if older
+ libvncserver version
+
+Signed-off-by: Floris Bos <bos@je-eigen-domein.nl>
+---
+ configure.ac      | 6 ++++++
+ src/connections.c | 2 ++
+ src/help.c        | 2 ++
+ src/screen.c      | 6 ++++++
+ src/x11vnc.c      | 2 ++
+ src/xrandr.c      | 8 ++------
+ 6 files changed, 20 insertions(+), 6 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index b17beff0..54fc74c2 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -285,6 +285,12 @@ elif test "$X_CFLAGS" != "-DX_DISPLAY_MISSING"; then
+ 			case `(uname -sr) 2>/dev/null` in
+ 			"SunOS 5"*) CPPFLAGS="$CPPFLAGS -I/usr/X11/include" ;;
+ 			esac
++
++			# support for setdesktopsize needs xrandr and libvncserver with setDesktopSizeHook
++			AC_CHECK_MEMBER([struct _rfbScreenInfo.setDesktopSizeHook],
++				[AC_DEFINE(HAVE_SETDESKTOPSIZE, 1, [libvncserver supports setDesktopSizeHook])],
++				[AC_MSG_WARN([Support for option -setdesktopsize disabled. Needs libvncserver 0.9.13])],
++				[[#include "rfb/rfb.h"]])
+ 		fi
+ 
+ 		X_LIBS="$X_LIBS $X_PRELIBS -lX11 $X_EXTRA_LIBS"
+diff --git a/src/connections.c b/src/connections.c
+index 1cc64902..0086dca4 100644
+--- a/src/connections.c
++++ b/src/connections.c
+@@ -838,9 +838,11 @@ void client_gone(rfbClientPtr client) {
+ 		}
+ 	}
+ 
++#if HAVE_SETDESKTOPSIZE
+ 	if (enable_setdesktopsize && xrandr && client_count == 0) {
+ 		xrandr_reset_scaling();
+ 	}
++#endif
+ 	if (no_autorepeat && client_count == 0) {
+ 		autorepeat(1, 0);
+ 	}
+diff --git a/src/help.c b/src/help.c
+index 7e9d9212..6328c47a 100644
+--- a/src/help.c
++++ b/src/help.c
+@@ -3058,12 +3058,14 @@ void print_help(int mode) {
+ "                       prefix \"string\" with \"nc:\", e.g. \"nc:+90\",\n"
+ "                       \"nc:xy\", etc.\n"
+ "\n"
++#if HAVE_SETDESKTOPSIZE
+ "-setdesktopsize        Allow client to change framebuffer resolution to fit\n"
+ "                       size of client window. x11vnc will use xrandr commands\n"
+ "                       to change the X framebuffer size. The mode of the physical\n"
+ "                       screen will not be changed, but scaling will be used to\n"
+ "                       display the new framebuffer size on the physical screen.\n"
+ "\n"
++#endif
+ "-padgeom WxH           Whenever a new vncviewer connects, the framebuffer is\n"
+ "                       replaced with a fake, solid black one of geometry WxH.\n"
+ "                       Shortly afterwards the framebuffer is replaced with the\n"
+diff --git a/src/screen.c b/src/screen.c
+index f124625e..df211c13 100644
+--- a/src/screen.c
++++ b/src/screen.c
+@@ -93,7 +93,9 @@ rfbBool vnc_reflect_send_cuttext(char *str, int len);
+ static void debug_colormap(XImage *fb);
+ static void set_visual(char *str);
+ static void nofb_hook(rfbClientPtr cl);
++#if HAVE_SETDESKTOPSIZE
+ static int set_desktop_size_hook(int width, int height, int numScreens, rfbExtDesktopScreen* extDesktopScreens, rfbClientPtr cl);
++#endif
+ static void remove_fake_fb(void);
+ static void install_fake_fb(int w, int h, int bpp);
+ static void initialize_snap_fb(void);
+@@ -820,6 +822,7 @@ void free_old_fb(void) {
+ 	}
+ }
+ 
++#if HAVE_SETDESKTOPSIZE
+ static int set_desktop_size_hook(int width, int height, int numScreens, rfbExtDesktopScreen* extDesktopScreens, rfbClientPtr cl)
+ {
+     int i;
+@@ -836,6 +839,7 @@ static int set_desktop_size_hook(int width, int height, int numScreens, rfbExtDe
+ 
+     return xrandr_set_scale_from(width, height) ? rfbExtDesktopSize_Success : rfbExtDesktopSize_InvalidScreenLayout;
+ }
++#endif
+ 
+ static char _lcs_tmp[128];
+ static int _bytes0_size = 128, _bytes0[128];
+@@ -3669,9 +3673,11 @@ void initialize_screen(int *argc, char **argv, XImage *fb) {
+ 	screen->ptrAddEvent = pointer_event;
+ 	screen->setXCutText = xcut_receive;
+ 	screen->setTranslateFunction = set_xlate_wrapper;
++#if HAVE_SETDESKTOPSIZE
+ 	if (enable_setdesktopsize) {
+ 		screen->setDesktopSizeHook = set_desktop_size_hook;
+ 	}
++#endif
+ 
+ 	screen->kbdReleaseAllKeys = kbd_release_all_keys; 
+ 	screen->setSingleWindow = set_single_window; 
+diff --git a/src/x11vnc.c b/src/x11vnc.c
+index 308eabf7..4c3397f8 100644
+--- a/src/x11vnc.c
++++ b/src/x11vnc.c
+@@ -3888,10 +3888,12 @@ int main(int argc, char* argv[]) {
+ 			grab_buster = 0;
+ 			continue;
+ 		}
++#if HAVE_SETDESKTOPSIZE
+ 		if (!strcmp(arg, "-setdesktopsize")) {
+ 			enable_setdesktopsize = 1;
+ 			continue;
+ 		}
++#endif
+ 		if (!strcmp(arg, "-snapfb")) {
+ 			use_snapfb = 1;
+ 			continue;
+diff --git a/src/xrandr.c b/src/xrandr.c
+index 36a8c559..9574e465 100644
+--- a/src/xrandr.c
++++ b/src/xrandr.c
+@@ -304,11 +304,11 @@ int known_xrandr_mode(char *s) {
+ 	}
+ }
+ 
++#if HAVE_SETDESKTOPSIZE
+ /* Set framebuffer size to w x h
+  * Does not alter physical resolution but scales desired framebuffer to physical display resolution */
+ rfbBool xrandr_set_scale_from(int w, int h)
+ {
+-#if HAVE_LIBXRANDR
+     XTransform transform;
+     XRRScreenResources *screens;
+     XRRCrtcInfo *crtcInfo;
+@@ -446,10 +446,6 @@ rfbBool xrandr_set_scale_from(int w, int h)
+        the old size.) */
+ 
+     return TRUE;
+-#else
+-    rfbLog("Cannot resize desktop. XRANDR support not compiled into x11vnc\n");
+-    return FALSE;
+-#endif
+ }
+ 
+ /* Restore scaling to original size */
+@@ -457,5 +453,5 @@ void xrandr_reset_scaling()
+ {
+     xrandr_set_scale_from(-1, -1);
+ }
+-
++#endif
+ 

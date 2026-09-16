@@ -1,0 +1,37 @@
+easyblock = 'PackedBinary'
+
+name = 'Schrodinger'
+version = '2023-2'
+
+homepage = 'https://www.schrodinger.com/'
+description = """ Schrodinger aims to provide integrated software solutions and services
+ that truly meet its customers needs. We want to empower researchers around the world to
+ achieve their goals of improving human health and quality of life through advanced computational
+ techniques that transform the way chemists design compounds and materials. """
+
+toolchain = SYSTEM
+
+sources = ['%(name)s_Suites_%(version)s_Linux-x86_64.tar']
+checksums = ['40f24903fa2ca8fa2928ca6e72c71a3c0733302b4bb16b039df9aaf93d5469fc']
+download_instructions = f"""{name} requires manual download from {homepage}
+Required downloads: {' '.join(sources)}"""
+
+install_cmd = 'cd %(builddir)s/%(name)s_Suites_%(version)s_Linux-x86_64 && '
+# Ignoring error code as schrodingers installer checks OS packages
+# https://raw.githubusercontent.com/schrodinger/linux_package_requirement/main/check_required_packages.sh
+# but their bundled liblzma which is put into LD_LIBRARY_PATH breaks librpmio.so
+install_cmd += './INSTALL -d . -s %(installdir)s -k /usr/tmp -t %(installdir)s/thirdparty -b * || true'
+
+# Needs libnsl.so, part of glibc on CentOS7 but a separate libnsl package on RHEL8
+
+sanity_check_paths = {
+    'files': ['desmond', 'maestro'],
+    'dirs': [],
+}
+
+modextravars = {
+    'SCHROD_LICENSE_FILE': '$HOME/.schrodinger_license',
+    'SCHRODINGER': '%(installdir)s',
+}
+
+moduleclass = 'bio'

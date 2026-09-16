@@ -1,0 +1,47 @@
+# Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ROCmComponent'
+
+name = 'rocSPARSE'
+version = '3.4.0'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/ROCm/rocSPARSE'
+description = """rocSPARSE exposes a common interface that provides Basic Linear
+Algebra Subroutines (BLAS) for sparse computation. It's implemented on top of
+AMD ROCm runtime and toolchains. rocSPARSE is created using the HIP programming
+language and optimized for AMD's latest discrete GPUs."""
+docurls = ['https://rocm.docs.amd.com/projects/rocSPARSE/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f'rocm-{_rocm_version}.tar.gz']
+patches = [
+    'rocSPARSE-3.4.0_fix-hardcoded-paths.patch',
+]
+checksums = [
+    {'rocm-6.4.1.tar.gz': 'f44db33179d5f8e18f948ff3ac8bd9b59f7bfdd67c66a7972ef1ee0eb15872de'},
+    {'rocSPARSE-3.4.0_fix-hardcoded-paths.patch': 'd34f2a6cde24b792508308155fcd62d7de77740a49624dbc8a37f5c366658d46'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+]
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocBLAS', '4.4.0'),
+    ('rocPRIM', '3.4.0'),
+]
+
+sanity_check_paths = {
+    'files': ['lib/cmake/rocsparse/rocsparse-config.cmake',
+              'include/rocsparse/rocsparse.h',
+              'include/rocsparse/rocsparse.f90'],
+    'dirs': ['lib/cmake/rocsparse',
+             'share/doc/rocsparse',
+             'include/rocsparse'],
+}
+
+moduleclass = 'lib'

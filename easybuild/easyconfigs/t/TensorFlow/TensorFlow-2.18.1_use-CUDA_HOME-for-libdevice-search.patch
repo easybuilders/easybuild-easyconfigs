@@ -1,0 +1,44 @@
+TF_CUDA_TOOLKIT_PATH is empty and not the CUDA_HOME we set during configure.
+This leads to a runtime error when TF searches for libdevice:
+
+> gpu_backend_lib.cc:579] Can't find libdevice directory ${CUDA_DIR}/nvvm/libdevice. This may result in compilation or runtime failures, if the program we try to run uses routines from libdevice.
+> Searched for CUDA in the following directories:
+>   ./cuda_sdk_lib
+>   /builddir/TensorFlow/2.18.1/foss-2024a-CUDA-12.6.0/TensorFlow-2.x_mnist-test.py.runfiles/cuda_nvcc
+>   /buildi/cuda_nvcc
+>
+>   /usr/local/cuda
+>   /software/TensorFlow/2.18.1-foss-2024a-CUDA-12.6.0/lib/python3.12/site-packages/tensorflow/python/platform/../../../nvidia/cuda_nvcc
+>   /software/TensorFlow/2.18.1-foss-2024a-CUDA-12.6.0/lib/python3.12/site-packages/tensorflow/python/platform/../../../../nvidia/cuda_nvcc
+>   /software/TensorFlow/2.18.1-foss-2024a-CUDA-12.6.0/lib/python3.12/site-packages/tensorflow/python/platform/../../cuda
+
+Fix the broken path and use $CUDA_HOME at runtime.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/third_party/xla/third_party/tsl/tsl/platform/default/cuda_libdevice_path.cc b/third_party/xla/third_party/tsl/tsl/platform/default/cuda_libdevice_path.cc
+index ac0a804b4df..b2be544df99 100644
+--- a/third_party/xla/third_party/tsl/tsl/platform/default/cuda_libdevice_path.cc
++++ b/third_party/xla/third_party/tsl/tsl/platform/default/cuda_libdevice_path.cc
+@@ -51,12 +51,16 @@ std::vector<std::string> CandidateCudaRoots() {
+   // The CUDA candidate root for python targets.
+   std::string runfiles_dir = tsl::Env::Default()->GetRunfilesDir();
+   std::size_t runfiles_ind = runfiles_dir.rfind(runfiles_suffix);
+-  cuda_nvcc_dir = io::JoinPath(
+-      runfiles_dir.substr(0, runfiles_ind + runfiles_suffix.length()),
+-      "cuda_nvcc");
+-  roots.emplace_back(cuda_nvcc_dir);
++  if (runfiles_ind != std::string::npos) {
++    cuda_nvcc_dir = io::JoinPath(
++        runfiles_dir.substr(0, runfiles_ind + runfiles_suffix.length()),
++        "cuda_nvcc");
++    roots.emplace_back(cuda_nvcc_dir);
++  }
+
+-  roots.emplace_back(TF_CUDA_TOOLKIT_PATH);
++  const char* cuda_home = getenv("CUDA_HOME");
++  if (cuda_home)
++    roots.emplace_back(cuda_home);
+   roots.emplace_back(std::string("/usr/local/cuda"));
+
+ #if defined(PLATFORM_POSIX) && !defined(__APPLE__)

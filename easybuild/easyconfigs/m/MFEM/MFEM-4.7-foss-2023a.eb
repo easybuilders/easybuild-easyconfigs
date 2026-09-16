@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'MFEM'
+version = '4.7'
+
+homepage = 'https://mfem.org/'
+description = "MFEM is a general, modular library for finite element methods."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/mfem/releases/raw/gh-pages/']
+sources = ['mfem-4.7.tgz']
+checksums = ['5e889493f5f79848f7b2d16afaae307c59880ac2a7ff2315551c60ca54717751']
+
+toolchainopts = {'usempi': True, 'openmp': True}
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('Hypre', '2.29.0'),
+    ('METIS', '5.1.0'),
+    ('SuiteSparse', '7.1.0'),
+]
+
+local_cfg = ' '.join([
+    '-DMFEM_USE_MPI=YES',
+    '-DMFEM_USE_METIS_5=YES',
+    '-DMFEM_USE_SUITESPARSE=YES',
+    '-DMFEM_USE_NETCDF=NO',
+    '-DMFEM_USE_SUPERLU=NO',
+    '-DMETIS_DIR=${EBROOTMETIS}',
+])
+
+configopts = [local_cfg + f' -DBUILD_SHARED_LIBS={shlib}' for shlib in ['ON', 'OFF']]
+
+runtest = 'tests'
+
+modextravars = {
+    'MFEM_DIR': '%(installdir)s',
+    'MFEM_BUILD_DIR': '%(installdir)s',
+}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ["include", "lib", "lib64", "share"],
+}
+
+moduleclass = 'lib'

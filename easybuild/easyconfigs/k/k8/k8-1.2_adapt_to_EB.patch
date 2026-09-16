@@ -1,0 +1,65 @@
+Adapt code and Makefile to EB install of nodejs
+
+Åke Sandgren, 2025-12-02
+diff --git a/Makefile b/Makefile
+index e82b142..8ff83c0 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,16 +1,13 @@
+-CXXFLAGS=-std=c++17 -g -O3 -Wall
++CXXFLAGS+=-std=c++17 -Wall -I$$EBROOTNODEJS/include/node
+ NODE_SRC?=..
+ EXE=k8
+-LIB_COMMON=-lv8_snapshot -lv8_libplatform -lv8_base_without_compiler -lv8_libbase -lv8_zlib -lv8_compiler -licutools -lm -ldl -lz
+-LIB_LINUX=-L$(NODE_SRC)/out/Release -L$(NODE_SRC)/out/Release/obj.target/tools/v8_gypfiles -L$(NODE_SRC)/out/Release/obj.target/tools/icu \
+-	-Wl,--no-whole-archive -Wl,--start-group $(LIB_COMMON) -Wl,--end-group
+-LIB_DARWIN=-L$(NODE_SRC)/out/Release $(LIB_COMMON)
++LIB_COMMON=-lnode -lm -ldl -lz
+ LIBS=-pthread
+ 
+ UNAME := $(shell uname)
+ 
+ ifeq ($(UNAME), Linux)
+-	LIBS+=$(LIB_LINUX)
++	LIBS+=$(LIB_COMMON)
+ endif
+ ifeq ($(UNAME), Darwin)
+ 	LIBS+=$(LIB_DARWIN)
+@@ -27,7 +24,7 @@ $(EXE):k8.o
+ 	$(CXX) -o $@ $< $(LIBS)
+ 
+ k8.o:k8.cc
+-	$(CXX) -c $(CXXFLAGS) -I$(NODE_SRC)/deps/v8 -I$(NODE_SRC)/deps/v8/include -o $@ $< 
++	$(CXX) -c $(CXXFLAGS) -o $@ $< 
+ 
+ clean:
+ 	rm -f $(EXE) *.o
+diff --git a/k8.cc b/k8.cc
+index 680b49f..636c63d 100644
+--- a/k8.cc
++++ b/k8.cc
+@@ -33,15 +33,15 @@
+ #include <ctype.h>
+ #include <zlib.h>
+ 
+-#include "include/v8-context.h"
+-#include "include/v8-exception.h"
+-#include "include/v8-initialization.h"
+-#include "include/v8-isolate.h"
+-#include "include/v8-local-handle.h"
+-#include "include/v8-script.h"
+-#include "include/v8-container.h"
+-#include "include/v8-template.h"
+-#include "include/libplatform/libplatform.h"
++#include "v8-context.h"
++#include "v8-exception.h"
++#include "v8-initialization.h"
++#include "v8-isolate.h"
++#include "v8-local-handle.h"
++#include "v8-script.h"
++#include "v8-container.h"
++#include "v8-template.h"
++#include "libplatform/libplatform.h"
+ 
+ /**************************
+  *** Global definitions ***

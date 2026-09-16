@@ -1,0 +1,44 @@
+Fixes for MKL, scotch linking, missing cstring include
+Author: Samuel Moors (Vrije Universiteit Brussel)
+diff -ur FEBio-4.6.orig/CMakeLists.txt FEBio-4.6/CMakeLists.txt
+--- FEBio-4.6.orig/CMakeLists.txt	2024-03-29 18:54:52.000000000 +0100
++++ FEBio-4.6/CMakeLists.txt	2025-05-30 22:03:32.532624823 +0200
+@@ -71,16 +71,13 @@
+ endfunction()
+ 
+ if(USE_MKL)
++    find_package(MKL CONFIG REQUIRED)
+     set(MKL_LIB_NAMES mkl_intel_lp64 mkl_core mkl_intel_thread)
+     foreach(name IN LISTS MKL_LIB_NAMES)
+         findLib(${name} MKL_LIB_DIR MKL_LIB)
+         list(APPEND MKL_LIBS ${MKL_LIB})
+-        unset(MMG_LIB)
++        unset(MKL_LIB)
+     endforeach(name)
+-    
+-    if(NOT EXISTS ${MKL_OMP_LIB})
+-        message(SEND_ERROR "Could not find MKL OMP library. Check MKL_OMP_LIB.")
+-    endif()
+ endif()
+ 
+ if(USE_HYPRE)
+@@ -381,7 +378,7 @@
+ target_link_libraries(febiomech PRIVATE fecore)
+ target_link_libraries(febiofluid PRIVATE febiomix febiomech fecore)
+ target_link_libraries(feimglib PRIVATE fecore)
+-target_link_libraries(feamr PRIVATE fecore)
++target_link_libraries(feamr PRIVATE fecore scotch scotcherr)
+ 
+ target_link_libraries(febiolib PRIVATE febioplot febiomech 
+ 		febiomix febioxml numcore febioopt febiotest febiofluid feamr xml febiorve fecore feimglib)
+diff -ur FEBio-4.6.orig/FECore/FSPath.cpp FEBio-4.6/FECore/FSPath.cpp
+--- FEBio-4.6.orig/FECore/FSPath.cpp	2024-03-29 18:54:52.000000000 +0100
++++ FEBio-4.6/FECore/FSPath.cpp	2025-05-30 14:11:01.935948161 +0200
+@@ -27,6 +27,7 @@
+ #include <regex>
+ #include <string>
+ #include "FSPath.h"
++#include <cstring>
+ 
+ 
+ bool FSPath::isAbsolute(const char* path)
