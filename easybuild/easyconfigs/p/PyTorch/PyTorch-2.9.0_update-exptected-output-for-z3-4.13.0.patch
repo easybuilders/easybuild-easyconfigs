@@ -1,0 +1,49 @@
+Revert part of https://github.com/pytorch/pytorch/pull/158905
+
+We use Z3 4.13.0 which has different output in this case compared to 4.13.1+.
+This causes failures in ExcTests.test_trigger_on_error & ExcTests.test_trigger_bisect_on_error
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/dynamo/test_exc.py b/test/dynamo/test_exc.py
+--- a/test/dynamo/test_exc.py
++++ b/test/dynamo/test_exc.py
+@@ -253,13 +253,13 @@ translation validation failed.
+ 
+ Model:
+   ==> L['shape'][0]: 0
+-  ==> L['shape'][1]: 0
+-  ==> L['shape'][2]: 0
++  ==> L['shape'][1]: 1
++  ==> L['shape'][2]: 1
+   ==> L['x'].size()[0]: 3
+   ==> L['x'].storage_offset(): 0
+   ==> L['x'].stride()[0]: 1
+-  ==> s3: 0
+-  ==> s52: 0
++  ==> s3: 1
++  ==> s52: 1
+   ==> s77: 3
+   ==> s86: 0
+ 
+@@ -317,16 +317,16 @@ Failure occurred while running node:
+     %split : [num_users=3] = call_method[target=split](args = (%l_x_, (%l_shape_0_, %l_shape_1_, %l_shape_2_)), kwargs = {})
+ 
+ Model:
+-  ==> L['shape'][0]: 0
+-  ==> L['shape'][1]: 0
++  ==> L['shape'][0]: 1
++  ==> L['shape'][1]: 1
+   ==> L['shape'][2]: 0
+   ==> L['x'].size()[0]: 3
+   ==> L['x'].storage_offset(): 0
+   ==> L['x'].stride()[0]: 1
+   ==> s3: 0
+-  ==> s52: 0
++  ==> s52: 1
+   ==> s77: 3
+-  ==> s86: 0
++  ==> s86: 1
+ 
+ Assertions:
+   ==> (== 0 L['x'].storage_offset())

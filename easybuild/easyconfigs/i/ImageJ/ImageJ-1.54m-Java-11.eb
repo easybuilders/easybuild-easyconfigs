@@ -1,0 +1,44 @@
+easyblock = 'PackedBinary'
+
+name = 'ImageJ'
+version = '1.54m'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://imagej.nih.gov/ij'
+description = "Image Processing and Analysis in Java"
+
+toolchain = SYSTEM
+
+source_urls = [
+    'https://imagej.net/ij/download/src/',
+    'https://github.com/landinig/IJ-Morphology/raw/953503d/',  # use git hash not main
+]
+sources = [
+    'ij%(version_major)s%(version_minor)s-src.zip',
+    # datestamp is determined by most recent file in zipball
+    {'download_filename': 'morphology.zip', 'filename': 'morphology-20210426.zip'},
+]
+checksums = [
+    {'ij154m-src.zip': '7fa33145b087bf3326b5ca6c2964dadea616011b9ec7dfe7773ccacc53408bce'},
+    {'morphology-20210426.zip': '157f4b55759bf58458acfe073eff9af2e6bb305add2c8658f03f0ce579b3d578'},
+]
+
+builddependencies = [
+    ('ant', '1.10.14', '-Java-%(javaver)s'),
+]
+
+dependencies = [
+    ('Java', '11'),
+]
+
+install_cmd = "cd source && ant build && cp ij.jar %(installdir)s && "
+install_cmd += "mkdir -p %(installdir)s/plugins && cp -a %(builddir)s/Morphology/* %(installdir)s/plugins/"
+
+sanity_check_paths = {
+    'files': ['ij.jar'],
+    'dirs': ['plugins'],
+}
+
+modloadmsg = "To use ImageJ, run 'java -jar $EBROOTIMAGEJ/ij.jar -ijpath $EBROOTIMAGEJ'\n"
+
+moduleclass = 'tools'

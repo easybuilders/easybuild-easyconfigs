@@ -1,0 +1,46 @@
+easyblock = 'CMakeMake'
+
+name = 'AWS-SDK'
+version = '1.11.679'
+
+homepage = 'https://github.com/aws/aws-sdk-cpp'
+description = """The AWS SDK for C++ provides a modern C++ (version C++ 11 or later) interface for
+Amazon Web Services (AWS)."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+sources = [{
+    'filename': SOURCELOWER_TAR_XZ,
+    'git_config': {
+        'url': 'https://github.com/aws/',
+        'repo_name': 'aws-sdk-cpp',
+        'tag': '%(version)s',
+        'recursive': True,
+    },
+}]
+checksums = ['8078bb4a852027f8b21495c86429dff419f3f105fb359493489a200fa5b0aa92']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('OpenSSL', '3', '', SYSTEM),
+    ('cURL', '8.14.1'),
+    ('zlib', '1.3.1'),
+]
+
+# Link problems in testing code
+configopts = '-DENABLE_TESTING=OFF -DBYO_CRYPTO=ON -DUSE_OPENSSL=ON'
+
+sanity_check_paths = {
+    'files': [
+        'include/aws/s3/s3.h',
+        f'lib/libaws-c-s3.{SHLIB_EXT}',
+        f'lib/libaws-cpp-sdk-s3.{SHLIB_EXT}'
+    ],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

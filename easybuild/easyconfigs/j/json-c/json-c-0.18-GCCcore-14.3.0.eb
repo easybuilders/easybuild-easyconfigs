@@ -1,0 +1,38 @@
+easyblock = 'CMakeMake'
+
+name = 'json-c'
+version = '0.18'
+local_suff = '-20240915'
+
+homepage = 'https://github.com/json-c/json-c'
+description = """JSON-C implements a reference counting object model that allows you to easily construct JSON objects
+ in C, output them as JSON formatted strings and parse JSON formatted strings back into the C representation of JSON
+objects."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://github.com/json-c/json-c/archive/']
+sources = ['json-c-%%(version)s%s.tar.gz' % local_suff]
+patches = ['json-c-0.18_support-cmake-4.0.patch']
+checksums = [
+    # json-c-0.18-20240915.tar.gz
+    '3112c1f25d39eca661fe3fc663431e130cc6e2f900c081738317fba49d29e298',
+    # json-c-0.18_support-cmake-4.0.patch
+    'cb1403d88661628dd615c50c14d4b8fd0657dec77512883306e85eb01c6dc411',
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+]
+
+# disable using Valgrind during the tests to avoid failures caused by using an OS Valgrind
+pretestopts = 'USE_VALGRIND=0 '
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['lib/libjson-c.a', 'lib/libjson-c.%s' % SHLIB_EXT, 'lib/pkgconfig/json-c.pc'],
+    'dirs': ['include/json-c'],
+}
+
+moduleclass = 'lib'

@@ -1,0 +1,57 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Adam Huffman
+# The Francis Crick Institute
+easyblock = 'CMakeMake'
+
+name = 'bam-readcount'
+version = '1.0.1'
+
+homepage = 'https://github.com/genome/bam-readcount'
+description = """Count DNA sequence reads in BAM files"""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'genome'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['bam-readcount-use-system-boost.patch']
+checksums = [
+    {'v1.0.1.tar.gz': '8ebf84d9efee0f2d3b43f0452dbf16b27337c960e25128f6a7173119e62588b8'},
+    {'bam-readcount-use-system-boost.patch': '0b16de22c079f3f674c07fc7e34f42ddf9ffdd845184c5d16c7a8344cc3a40b0'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+]
+
+dependencies = [
+    ('Boost', '1.88.0'),
+    ('zlib', '1.3.1'),
+    ('ncurses', '6.5'),
+]
+
+maxparallel = 1
+
+# bam-readcount uses git to insert the version during configuration with CMake
+# but in the release archives there is no git information
+# local_commit is the git commit hash of the release
+local_commit = '944c11f'
+local_versionfile = '%(start_dir)s/version/version.h.in'
+preconfigopts = "sed -i -e 's/@FULL_VERSION@/%%(version)s/' %s && " % local_versionfile
+preconfigopts += "sed -i -e 's/@COMMIT_HASH@/%s/' %s && " % (local_commit, local_versionfile)
+
+configopts = '-DUSE_SYSTEM_BOOST=ON'
+
+sanity_check_paths = {
+    'files': ["bin/%(name)s"],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    # --help exists with exit code 1, so use grep to check for expected pattern in help output
+    "%(name)s --help 2>&1 | grep 'Example: bam-readcount -f'",
+    "%(name)s --version | grep 'version: %(version)s '",
+]
+
+moduleclass = 'bio'

@@ -1,0 +1,55 @@
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# Copyright:: Copyright 2025 IT Center, RWTH Aachen University
+# Authors::   Joachim Jenke <jenke@itc.rwth-aachen.de>
+# Authors::   Marc-André Hermanns <hermanns@itc.rwth-aachen.de>
+# Authors::   Simon Schwitanski <schwitanski@itc.rwth-aachen.de>
+# Authors::   Felix Tomski <tomski@itc.rwth-aachen.de>
+# License::   New BSD
+#
+##
+easyblock = 'CMakeMake'
+
+name = "OTF-CPT"
+version = "0.9.4"
+
+
+homepage = 'https://github.com/RWTH-HPC/OTF-CPT'
+description = """The on-the-fly critical-path tool (OTF-CPT) is a performance profiling tool
+for MPI and OpenMP applications that detects the critical path through online analysis.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = ['https://github.com/RWTH-HPC/OTF-CPT/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['172a78cfe4abc55578d21466e9186cc69bd27118f5a0d0d346897d2ad6409667']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('matplotlib', '3.10.5'),
+    ('SciPy-bundle', '2025.07'),
+]
+
+pretestopts = 'export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe && '
+runtest = True
+test_cmd = 'make check'
+
+sanity_check_paths = {
+    'files': ["lib/libOTFCPT.so", "lib/libOTFCPT_static.a", "bin/CPT-plot.py"],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'CPT-plot.py -h'
+]
+
+modloadmsg = """Export 'LD_PRELOAD=$EBROOTOTFMINCPT/lib/libOTFCPT.so' for MPI programs and
+additionally 'OMP_TOOL_LIBRARIES=$EBROOTOTFMINCPT/lib/libOTFCPT.so' for programs using OpenMP.
+OpenMP analysis requires the OpenMP runtime to support OMPT.
+"""
+
+moduleclass = 'perf'

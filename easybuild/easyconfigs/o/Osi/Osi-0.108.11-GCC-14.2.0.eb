@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'Osi'
+version = '0.108.11'
+
+homepage = 'https://github.com/coin-or/Osi'
+description = """Osi (Open Solver Interface) provides an abstract base class to a generic linear
+programming (LP) solver, along with derived classes for specific solvers. Many
+applications may be able to use the Osi to insulate themselves from a specific
+LP solver. That is, programs written to the OSI standard may be linked to any
+solver with an OSI interface and should produce correct results. The OSI has
+been significantly extended compared to its first incarnation. Currently, the
+OSI supports linear programming solvers and has rudimentary support for integer
+programming."""
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+
+source_urls = ['https://github.com/coin-or/%(name)s/archive/refs/tags/releases/']
+sources = ['%(version)s.tar.gz']
+checksums = ['1063b6a057e80222e2ede3ef0c73c0c54697e0fee1d913e2bef530310c13a670']
+
+builddependencies = [
+    ('Autotools', '20240712'),
+    ('Doxygen', '1.14.0'),
+    ('pkgconf', '2.3.0'),
+]
+dependencies = [
+    ('CoinUtils', '2.11.12'),
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.3.1'),
+]
+
+# Disable GLPK because Osi requires GLPK<=4.48
+configopts = '--without-glpk '
+# Use CoinUtils from EB
+configopts += '--with-coinutils-lib="-lCoinUtils" --with-coinutils-incdir=$EBROOTCOINUTILS/include/coin '
+configopts += '--with-coinutils-datadir=$EBROOTCOINUTILS/share/coin/Data'
+
+sanity_check_paths = {
+    'files': ['lib/libOsi.%s' % SHLIB_EXT, 'lib/libOsiCommonTests.%s' % SHLIB_EXT],
+    'dirs': ['include/coin', 'lib/pkgconfig', 'share/coin']
+}
+
+# other coin-or projects expect <header.hpp> instead of <coin/header.hpp>
+modextrapaths = {MODULE_LOAD_ENV_HEADERS: 'include/coin'}
+
+moduleclass = 'math'

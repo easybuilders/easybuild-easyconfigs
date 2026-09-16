@@ -1,0 +1,53 @@
+From 8fd509399e25cb4b265dff663d3f777406001f2e Mon Sep 17 00:00:00 2001
+From: Nikita Shulga <2453524+malfet@users.noreply.github.com>
+Date: Tue, 10 Feb 2026 04:35:39 +0000
+Subject: [PATCH] Blunter GCC 14.2.0 workaround for SVE compilation (#174647)
+
+Updated preprocessor directive for GCC version check and removed BF16 condition. I.e. right now SVE256 compilation with gcc-14.2 on Debian13 for ` -march=armv8-a+sve+bf16`
+
+Without the fix, compilation fails with
+```
+In file included from /home/dev/git/pytorch/pytorch/build/aten/src/ATen/native/cpu/Unfold2d.cpp.SVE256.cpp:1:
+/home/dev/git/pytorch/pytorch/aten/src/ATen/native/cpu/Unfold2d.cpp: In function 'void at::native::{anonymous}::unfolded2d_acc_kernel(c10::ScalarType, void*, void*, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, bool)':
+/home/dev/git/pytorch/pytorch/aten/src/ATen/native/cpu/Unfold2d.cpp:225:1: error: unrecognizable insn:
+  225 | }
+      | ^
+(insn 1371 1370 1372 101 (set (reg:VNx16BI 3235)
+        (unspec:VNx16BI [
+                (reg:VNx16BI 3232)
+                (reg:VNx8BI 3234)
+                (const_vector:VNx4BI [
+                        (const_int 0 [0]) repeated x8
+                    ])
+            ] UNSPEC_TRN1_CONV)) "/home/dev/git/pytorch/pytorch/torch/headeronly/util/bit_cast.h":40:14 -1
+     (nil))
+during RTL pass: vregs
+/home/dev/git/pytorch/pytorch/aten/src/ATen/native/cpu/Unfold2d.cpp:225:1: internal compiler error: in extract_insn, at recog.cc:2812
+```
+
+Not sure what compelled me to put such a narrow restriction in https://github.com/pytorch/pytorch/pull/157867
+
+Fixes https://github.com/pytorch/pytorch/issues/172630
+
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/174647
+Approved by: https://github.com/seemethere
+---
+ aten/src/ATen/native/cpu/Unfold2d.cpp | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/aten/src/ATen/native/cpu/Unfold2d.cpp b/aten/src/ATen/native/cpu/Unfold2d.cpp
+index ed69998e99f79..9ae1391e2603e 100644
+--- a/aten/src/ATen/native/cpu/Unfold2d.cpp
++++ b/aten/src/ATen/native/cpu/Unfold2d.cpp
+@@ -169,8 +169,9 @@ void unfolded2d_acc_channels_last(
+ 
+ /* note: due to write issues, this one cannot be parallelized as well as
+  * unfolded2d_copy */
+-#if defined(__GNUC__) && __GNUC__ == 14 && defined(__ARM_FEATURE_SVE) && !defined(__ARM_FEATURE_BF16)
+-// Workaround for gcc-14.2.0 ICE during RTL pass: vregs when compiling for SVE without BF16
++#if defined(__GNUC__) && __GNUC__ == 14 && defined(__ARM_FEATURE_SVE)
++// Workaround for gcc-14.2.0 ICE during RTL pass: vregs when compiling for SVE
++// NS: With or without BF16, see https://github.com/pytorch/pytorch/issues/172630
+ __attribute__((optimize("no-tree-vectorize")))
+ #endif
+ void unfolded2d_acc_kernel(

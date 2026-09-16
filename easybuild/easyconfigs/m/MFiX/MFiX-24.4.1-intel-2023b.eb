@@ -1,0 +1,70 @@
+# Author: Ehsan Moravveji (VSC, KU Leuven)
+
+easyblock = 'CMakeMake'
+
+name = 'MFiX'
+version = '24.4.1'
+
+homepage = 'https://mfix.netl.doe.gov/products/mfix/'
+description = """
+The National Energy Technology Laboratory’s (NETL’s) computational fluid dynamics (CFD) code,
+MFiX-Multiphase Flow with Interphase eXchanges - is central to the laboratory’s multiphase flow reactor
+modeling efforts. This open-source software has over three decades of development history and more than 7,000
+registered users worldwide.  MFiX has become the standard for comparing, implementing, and evaluating multiphase
+flow constitutive models and has been applied to an extremely diverse range of multiphase flows applications.
+The successes achieved in modeling complex multiphase flow systems have led to new and improved key attributes
+such as drag, polydispersity, attrition, and agglomeration models, among other significant advances.
+"""
+
+citing = """
+The use of MFIX is to be acknowledged in any published paper based on computations using this software by
+citing the MFIX theory manual. MFIX is being developed at NETL with active collaboration from ORNL and funding
+through OIT of DOE. Some of the submodels are being developed by researchers outside of NETL. The use of such
+submodels is to be acknowledged by citing the appropriate papers of the developers of the  submodels.
+"""
+
+toolchain = {'name': 'intel', 'version': '2023b'}
+toolchainopts = {'usempi': True}
+
+# Source URLs are linked under https://mfix.netl.doe.gov/products/mfix/mfix-archive/
+# (which requires an account to access). Linked URLs found there are open.
+# source_urls = ['https://mfix.netl.doe.gov/s3/35d029c0/7e08111faa3097aa77691ac70d2770cc//source/%(namelower)s/']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+download_instructions = """
+Fetch the source %s from https://mfix.netl.doe.gov/products/mfix/mfix-archive/ after logging into %s
+""" % (sources[0], homepage)
+patches = ['MFiX-24.4.1-remove-tab.patch']
+checksums = [
+    'c603bc11c0ac07662b206b816c85e189ba2562fc05b31260ba296447a7def1af',  # mfix-24.4.1.tar.gz
+    '0ad4ab803da6ea070e2018da38fbbddcf43cef6747ae5f7da9531d51ef6161de',  # MFiX-24.4.1-remove-tab.patch
+]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('binutils', '2.40'),
+]
+
+configopts = '-DENABLE_MPI=1'
+
+separate_build_dir = False
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin',
+    'mv %(installdir)s/mfixsolver_dmp %(installdir)s/bin/mfixsolver_dmp',
+]
+
+maxparallel = 4
+
+test_cmd = ' && '.join([
+    'cd tutorials/dem/mixer_3d',
+    '%(builddir)s/%(namelower)s-%(version)s/mfixsolver_dmp -f mixer_dem_3d.mfx',
+])
+
+sanity_check_paths = {
+    'files': ['bin/mfixsolver_dmp'],
+    'dirs': [],
+}
+
+sanity_check_commands = [('mfixsolver_dmp --help')]
+
+moduleclass = 'cae'

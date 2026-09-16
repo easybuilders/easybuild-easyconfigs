@@ -1,0 +1,29 @@
+fix detection of options in config object
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- tests/ignite/conftest.py	2025-12-05 19:10:34.603932875 +0100
++++ tests/ignite/conftest.py	2025-12-05 19:11:50.199046018 +0100
+@@ -48,9 +48,10 @@
+     config.addinivalue_line("markers", "distributed: run distributed")
+     config.addinivalue_line("markers", "multinode_distributed: distributed")
+     config.addinivalue_line("markers", "tpu: run on tpu")
+-    if config.option.treat_unrun_as_failed:
+-        unrun_tracker = UnrunTracker()
+-        config.pluginmanager.register(unrun_tracker, "unrun_tracker_plugin")
++    if hasattr(config.option, "treat_unrun_as_failed"):
++        if config.option.treat_unrun_as_failed:
++            unrun_tracker = UnrunTracker()
++            config.pluginmanager.register(unrun_tracker, "unrun_tracker_plugin")
+ 
+ 
+ @pytest.fixture(scope="session", autouse=True)
+@@ -611,6 +612,7 @@
+     run finished, right before returning the exit status to the system.
+     """
+     # If requested by the user, track all unrun tests and add them to the lastfailed cache
+-    if session.config.option.treat_unrun_as_failed:
+-        unrun_tracker = session.config.pluginmanager.get_plugin("unrun_tracker_plugin")
+-        unrun_tracker.record_unrun_as_failed(session, exitstatus)
++    if hasattr(session.config.option, "treat_unrun_as_failed"):
++        if session.config.option.treat_unrun_as_failed:
++            unrun_tracker = session.config.pluginmanager.get_plugin("unrun_tracker_plugin")
++            unrun_tracker.record_unrun_as_failed(session, exitstatus)

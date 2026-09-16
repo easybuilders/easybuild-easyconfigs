@@ -1,0 +1,26 @@
+Make polars-utils compatible with Rust 1.83.0 stable.
+polars-utils is in polars/crates, builded with polars, not fetched from crates.io.
+Patch out the usage of #![feature(select_unpredictable)].
+Author: Pavel Tomanek (Inuits)
+--- crates/polars-utils/src/select.rs.orig	2025-04-22 16:54:17.641780458 +0200
++++ crates/polars-utils/src/select.rs	2025-04-22 16:54:32.700036963 +0200
+@@ -1,9 +1,3 @@
+-#[cfg(feature = "nightly")]
+-pub fn select_unpredictable<T>(cond: bool, true_val: T, false_val: T) -> T {
+-    core::hint::select_unpredictable(cond, true_val, false_val)
+-}
+-
+-#[cfg(not(feature = "nightly"))]
+ pub fn select_unpredictable<T>(cond: bool, true_val: T, false_val: T) -> T {
+     if cond { true_val } else { false_val }
+ }
+--- crates/polars-utils/src/lib.rs.orig	2025-04-22 16:56:24.097576838 +0200
++++ crates/polars-utils/src/lib.rs	2025-04-22 16:58:23.572914944 +0200
+@@ -3,7 +3,6 @@
+     feature(stdarch_aarch64_prefetch)
+ )]
+ #![cfg_attr(feature = "nightly", feature(core_intrinsics))] // For algebraic ops.
+-#![cfg_attr(feature = "nightly", feature(select_unpredictable))] // For branchless programming.
+ #![cfg_attr(feature = "nightly", allow(internal_features))]
+ #![cfg_attr(docsrs, feature(doc_auto_cfg))]
+ pub mod abs_diff;

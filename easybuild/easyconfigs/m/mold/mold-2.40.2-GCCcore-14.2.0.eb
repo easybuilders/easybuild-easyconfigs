@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'mold'
+version = '2.40.2'
+
+homepage = 'https://github.com/rui314/mold'
+description = "mold is a high-performance drop-in replacement for existing Unix linkers."
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ['https://github.com/rui314/mold/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+patches = ['mold-2.40.2_fix-arch-aarch64-long-thunk-test-failure.patch']
+checksums = [
+    {'v2.40.2.tar.gz': '28c7976c39e53ee440217b6b9f036a8cf13e3b2f93e8da83e19c66f4fc9a774c'},
+    {'mold-2.40.2_fix-arch-aarch64-long-thunk-test-failure.patch':
+     'c223626f4270973479445051531b57a31ba482b92d1b8154a1745ed37badd193'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+]
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('OpenSSL', '3', '', SYSTEM),
+]
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/mold', 'lib/mold/mold-wrapper.%s' % SHLIB_EXT],
+    'dirs': ['share/man'],
+}
+
+sanity_check_commands = [
+    "mold --help",
+    "mold --run gcc -v",
+]
+
+moduleclass = 'tools'

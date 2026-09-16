@@ -1,0 +1,52 @@
+easyblock = 'Tarball'
+
+name = 'DIA-NN'
+version = '2.3.2'
+
+homepage = 'https://github.com/vdemichev/DiaNN'
+description = """DIA-NN is a universal software for data-independent acquisition (DIA)
+ proteomics data processing."""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+source_urls = ['https://github.com/vdemichev/DiaNN/releases/download/2.0/']
+sources = ['%(name)s-%(version)s-Academia-Linux.zip']
+checksums = ['dab4a5267a39d2c3f4e36430389f6f6f893c9b9cfd05571cc94c5941aad7b446']
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('matplotlib', '3.9.2'),
+    ('polars', '1.28.1'),
+]
+
+start_dir = 'diann-%(version)s'
+
+postinstallcmds = [
+    'chmod 775 %(installdir)s/diann-linux',
+    'ln -s %(installdir)s/diann-linux %(installdir)s/diann-%(version)s',
+    """cat > %(installdir)s/diann-stats <<'EOF'
+    #!/bin/bash
+    exec python "$(dirname "$0")/diann-stats.py" "$@"
+    EOF""",
+    'chmod 755 %(installdir)s/diann-stats',
+]
+sanity_check_paths = {
+    'files': ['diann-linux', 'diann-stats'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'diann-linux',
+    'diann-%(version)s',
+    'diann-stats 2>&1 | grep "Usage:"',
+]
+
+modextrapaths = {'PATH': ''}
+
+modloadmsg = """
+DIA-NN could be run either by 'diann-linux' or 'diann-%(version)s', it is the same.
+diann-stats.py could be run by 'diann-stats' command.
+"""
+
+moduleclass = 'bio'
