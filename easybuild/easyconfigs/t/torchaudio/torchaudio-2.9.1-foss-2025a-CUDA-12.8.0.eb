@@ -1,0 +1,50 @@
+easyblock = 'PythonBundle'
+
+name = 'torchaudio'
+version = '2.9.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/pytorch/audio'
+description = """Data manipulation and transformation for audio signal
+processing, powered by PyTorch."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Ninja', '1.12.1'),
+    ('parameterized', '0.9.0'),  # tests
+    ('expecttest', '0.3.0'),  # tests
+]
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('PyTorch', version, versionsuffix),
+    ('torchcodec', '0.9.1', versionsuffix),
+]
+
+local_preinstall_opts = ' '.join([
+    'USE_OPENMP=1',
+    'USE_CUDA=1',
+    'BUILD_CUDA_CTC_DECODER=1',
+    'TORCH_CUDA_ARCH_LIST="%(cuda_cc_semicolon_sep)s"',
+    'CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s',
+])
+
+exts_list = [
+    (name, version, {
+        'preinstallopts': local_preinstall_opts,
+        'source_urls': ['https://github.com/pytorch/audio/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'patches': ['torchaudio-2.9.1_fix-TorchScript.patch'],
+        'runtest': 'CUBLAS_WORKSPACE_CONFIG=:16:8 pytest test/torchaudio_unittest/ ',
+        'testinstall': True,
+        'checksums': [
+            {'torchaudio-2.9.1.tar.gz': '590492c90552959b3df6f601eb733135064bf2d9e53c516adcf6845a4e545662'},
+            {'torchaudio-2.9.1_fix-TorchScript.patch':
+             '5b00cffd756389e9ba9fdb094aa03c055ba8a9bd67c373bb8b67504b3f962cb7'},
+        ],
+    }),
+]
+
+moduleclass = 'ai'
