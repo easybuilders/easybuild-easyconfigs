@@ -1,0 +1,56 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/11
+easyblock = 'PythonBundle'
+
+name = 'ml_dtypes'
+version = '0.5.0'
+
+homepage = 'https://github.com/jax-ml/ml_dtypes'
+description = """
+ml_dtypes is a stand-alone implementation of several NumPy dtype extensions used
+in machine learning libraries, including:
+
+bfloat16: an alternative to the standard float16 format
+float8_*: several experimental 8-bit floating point representations including:
+float8_e4m3b11fnuz
+float8_e4m3fn
+float8_e4m3fnuz
+float8_e5m2
+float8_e5m2fnuz
+"""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+builddependencies = [
+    ('poetry', '1.8.3'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+]
+
+default_easyblock = 'PythonPackage'
+
+exts_list = [
+    ('opt_einsum', '3.4.0', {
+        'checksums': ['96ca72f1b886d148241348783498194c577fa30a8faac108586b14f1ba4473ac'],
+    }),
+    ('etils', '1.10.0', {
+        'checksums': ['4eaa9d7248fd4eeb75e44d47ca29875a5ccea044cc14a17435794bf8ac116a05'],
+    }),
+    (name, version, {
+        'patches': [
+            ('ml_dtypes-0.3.2_EigenAvx512.patch', 1),
+            # The source as CRLF line endings but `patch` strips any CRs so disable with '--binary'
+            {'name': 'ml_dtypes-0.5.0_fix-Eigen-Float16-support.patch', 'opts': '--binary'},
+        ],
+        'checksums': [
+            {'ml_dtypes-0.5.0.tar.gz': '3e7d3a380fe73a63c884f06136f8baa7a5249cc8e9fdec677997dd78549f8128'},
+            {'ml_dtypes-0.3.2_EigenAvx512.patch': '197b05b0b7f611749824369f026099f6a172f9e8eab6ebb6504a16573746c892'},
+            {'ml_dtypes-0.5.0_fix-Eigen-Float16-support.patch':
+             '36261acfe8241481edfcca76a8452eb92da5f48e5ca0ea26d746f84654f2a4de'},
+        ],
+    }),
+]
+
+moduleclass = 'tools'

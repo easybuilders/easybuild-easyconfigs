@@ -1,0 +1,232 @@
+From 61e036691c8ac70facb8d3fc39c670bde56218e8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Andr=C3=A9=20Reuter?= <jan.andre.reuter@hotmail.de>
+Date: Fri, 9 Jan 2026 17:11:37 +0100
+Subject: [PATCH] gh-143460: Skip infinite recusion tests for infinite stack
+ size (#143606)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Avoid tests being killed due to OOM on Linux if a system is configured with
+'ulimit -s unlimited' by skipping tests relying on infinite recursion.
+
+While unclear if Python should support 'ulimit -s unlimited', we should at
+least try to avoid failing a PGO build running tests due to an unlimited
+stack size being set.
+
+Signed-off-by: Jan André Reuter <j.reuter@fz-juelich.de>
+---
+ Lib/test/pickletester.py                      |  1 +
+ Lib/test/support/__init__.py                  | 20 +++++++++++++++++++
+ Lib/test/test_ast/test_ast.py                 |  6 +++++-
+ Lib/test/test_functools.py                    |  2 ++
+ Lib/test/test_isinstance.py                   |  2 ++
+ Lib/test/test_json/test_recursion.py          |  3 +++
+ Lib/test/test_support.py                      |  1 +
+ Lib/test/test_tomllib/test_misc.py            |  2 ++
+ ...-01-09-13-52-10.gh-issue-143460._nW2jt.rst |  1 +
+ 9 files changed, 37 insertions(+), 1 deletion(-)
+ create mode 100644 Misc/NEWS.d/next/Tests/2026-01-09-13-52-10.gh-issue-143460._nW2jt.rst
+
+diff --git a/Lib/test/pickletester.py b/Lib/test/pickletester.py
+index 09bfb374732e86..2e362ac1b02ac9 100644
+--- a/Lib/test/pickletester.py
++++ b/Lib/test/pickletester.py
+@@ -2438,6 +2438,7 @@ def test_reduce_None(self):
+         with self.assertRaises(TypeError):
+             self.dumps(c)
+ 
++    @support.skip_if_unlimited_stack_size
+     @no_tracing
+     def test_bad_getattr(self):
+         # Issue #3514: crash when there is an infinite loop in __getattr__
+diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
+index 847d9074eb82cd..7bc2e1f3150035 100644
+--- a/Lib/test/support/__init__.py
++++ b/Lib/test/support/__init__.py
+@@ -45,6 +45,7 @@
+     "check__all__", "skip_if_buggy_ucrt_strfptime",
+     "check_disallow_instantiation", "check_sanitizer", "skip_if_sanitizer",
+     "requires_limited_api", "requires_specialization", "thread_unsafe",
++    "skip_if_unlimited_stack_size",
+     # sys
+     "MS_WINDOWS", "is_jython", "is_android", "is_emscripten", "is_wasi",
+     "is_apple_mobile", "check_impl_detail", "unix_shell", "setswitchinterval",
+@@ -1771,6 +1772,25 @@ def skip_if_pgo_task(test):
+     return test if ok else unittest.skip(msg)(test)
+ 
+ 
++def skip_if_unlimited_stack_size(test):
++    """Skip decorator for tests not run when an unlimited stack size is configured.
++
++    Tests using support.infinite_recursion([...]) may otherwise run into
++    an infinite loop, running until the memory on the system is filled and
++    crashing due to OOM.
++
++    See https://github.com/python/cpython/issues/143460.
++    """
++    if is_wasi or os.name == "nt":
++        return test
++
++    import resource
++    curlim, maxlim = resource.getrlimit(resource.RLIMIT_STACK)
++    unlimited_stack_size_cond = curlim == maxlim and curlim in (-1, 0xFFFF_FFFF_FFFF_FFFF)
++    reason = "Not run due to unlimited stack size"
++    return unittest.skipIf(unlimited_stack_size_cond, reason)(test)
++
++
+ def detect_api_mismatch(ref_api, other_api, *, ignore=()):
+     """Returns the set of items in ref_api not in other_api, except for a
+     defined list of items to be ignored in this check.
+diff --git a/Lib/test/test_ast/test_ast.py b/Lib/test/test_ast/test_ast.py
+index d2b76b46dbe2eb..3917407fb37d9e 100644
+--- a/Lib/test/test_ast/test_ast.py
++++ b/Lib/test/test_ast/test_ast.py
+@@ -25,7 +25,7 @@
+ 
+ from test import support
+ from test.support import os_helper
+-from test.support import skip_emscripten_stack_overflow, skip_wasi_stack_overflow
++from test.support import skip_emscripten_stack_overflow, skip_wasi_stack_overflow, skip_if_unlimited_stack_size
+ from test.support.ast_helper import ASTTestMixin
+ from test.support.import_helper import ensure_lazy_imports
+ from test.test_ast.utils import to_tuple
+@@ -989,6 +989,7 @@ def next(self):
+         enum._test_simple_enum(_Precedence, _ast_unparse._Precedence)
+ 
+     @support.cpython_only
++    @skip_if_unlimited_stack_size
+     @skip_wasi_stack_overflow()
+     @skip_emscripten_stack_overflow()
+     def test_ast_recursion_limit(self):
+@@ -1127,6 +1128,7 @@ def test_pickling(self):
+                     ast2 = pickle.loads(pickle.dumps(tree, protocol))
+                     self.assertEqual(to_tuple(ast2), to_tuple(tree))
+ 
++    @skip_if_unlimited_stack_size
+     def test_copy_with_parents(self):
+         # gh-120108
+         code = """
+@@ -1974,6 +1976,7 @@ def test_level_as_none(self):
+         exec(code, ns)
+         self.assertIn('sleep', ns)
+ 
++    @skip_if_unlimited_stack_size
+     @skip_emscripten_stack_overflow()
+     def test_recursion_direct(self):
+         e = ast.UnaryOp(op=ast.Not(), lineno=0, col_offset=0, operand=ast.Constant(1))
+@@ -1982,6 +1985,7 @@ def test_recursion_direct(self):
+             with support.infinite_recursion():
+                 compile(ast.Expression(e), "<test>", "eval")
+ 
++    @skip_if_unlimited_stack_size
+     @skip_emscripten_stack_overflow()
+     def test_recursion_indirect(self):
+         e = ast.UnaryOp(op=ast.Not(), lineno=0, col_offset=0, operand=ast.Constant(1))
+diff --git a/Lib/test/test_functools.py b/Lib/test/test_functools.py
+index 090926fd8d8b61..459d56f82d6820 100644
+--- a/Lib/test/test_functools.py
++++ b/Lib/test/test_functools.py
+@@ -438,6 +438,7 @@ def test_setstate_subclasses(self):
+         self.assertIs(type(r[0]), tuple)
+ 
+     @support.skip_if_sanitizer("thread sanitizer crashes in __tsan::FuncEntry", thread=True)
++    @support.skip_if_unlimited_stack_size
+     @support.skip_emscripten_stack_overflow()
+     def test_recursive_pickle(self):
+         with replaced_module('functools', self.module):
+@@ -2139,6 +2140,7 @@ def orig(a: int) -> nonexistent: ...
+     @support.skip_on_s390x
+     @unittest.skipIf(support.is_wasi, "WASI has limited C stack")
+     @support.skip_if_sanitizer("requires deep stack", ub=True, thread=True)
++    @support.skip_if_unlimited_stack_size
+     @support.skip_emscripten_stack_overflow()
+     def test_lru_recursion(self):
+ 
+diff --git a/Lib/test/test_isinstance.py b/Lib/test/test_isinstance.py
+index f440fc28ee7b7d..d97535ba46e677 100644
+--- a/Lib/test/test_isinstance.py
++++ b/Lib/test/test_isinstance.py
+@@ -317,6 +317,7 @@ def __bases__(self):
+             self.assertRaises(RecursionError, issubclass, int, X())
+             self.assertRaises(RecursionError, isinstance, 1, X())
+ 
++    @support.skip_if_unlimited_stack_size
+     @support.skip_emscripten_stack_overflow()
+     @support.skip_wasi_stack_overflow()
+     def test_infinite_recursion_via_bases_tuple(self):
+@@ -328,6 +329,7 @@ def __getattr__(self, attr):
+             with self.assertRaises(RecursionError):
+                 issubclass(Failure(), int)
+ 
++    @support.skip_if_unlimited_stack_size
+     @support.skip_emscripten_stack_overflow()
+     @support.skip_wasi_stack_overflow()
+     def test_infinite_cycle_in_bases(self):
+diff --git a/Lib/test/test_json/test_recursion.py b/Lib/test/test_json/test_recursion.py
+index 40a0baa53f0c3b..ffd3404e6f77a0 100644
+--- a/Lib/test/test_json/test_recursion.py
++++ b/Lib/test/test_json/test_recursion.py
+@@ -68,6 +68,7 @@ def default(self, o):
+             self.fail("didn't raise ValueError on default recursion")
+ 
+ 
++    @support.skip_if_unlimited_stack_size
+     @support.skip_emscripten_stack_overflow()
+     @support.skip_wasi_stack_overflow()
+     def test_highly_nested_objects_decoding(self):
+@@ -84,6 +85,7 @@ def test_highly_nested_objects_decoding(self):
+             with support.infinite_recursion():
+                 self.loads('[' * very_deep + '1' + ']' * very_deep)
+ 
++    @support.skip_if_unlimited_stack_size
+     @support.skip_wasi_stack_overflow()
+     @support.skip_emscripten_stack_overflow()
+     @support.requires_resource('cpu')
+@@ -99,6 +101,7 @@ def test_highly_nested_objects_encoding(self):
+             with support.infinite_recursion(5000):
+                 self.dumps(d)
+ 
++    @support.skip_if_unlimited_stack_size
+     @support.skip_emscripten_stack_overflow()
+     @support.skip_wasi_stack_overflow()
+     def test_endless_recursion(self):
+diff --git a/Lib/test/test_support.py b/Lib/test/test_support.py
+index 667fcc81d8e378..be7e307b4f1111 100644
+--- a/Lib/test/test_support.py
++++ b/Lib/test/test_support.py
+@@ -672,6 +672,7 @@ def test_recursive(depth, limit):
+         """)
+         script_helper.assert_python_ok("-c", code)
+ 
++    @support.skip_if_unlimited_stack_size
+     def test_recursion(self):
+         # Test infinite_recursion() and get_recursion_available() functions.
+         def recursive_function(depth):
+diff --git a/Lib/test/test_tomllib/test_misc.py b/Lib/test/test_tomllib/test_misc.py
+index 59116afa1f36ad..118fde24d88521 100644
+--- a/Lib/test/test_tomllib/test_misc.py
++++ b/Lib/test/test_tomllib/test_misc.py
+@@ -93,6 +93,7 @@ def test_deepcopy(self):
+         }
+         self.assertEqual(obj_copy, expected_obj)
+ 
++    @support.skip_if_unlimited_stack_size
+     def test_inline_array_recursion_limit(self):
+         with support.infinite_recursion(max_depth=100):
+             available = support.get_recursion_available()
+@@ -104,6 +105,7 @@ def test_inline_array_recursion_limit(self):
+                 recursive_array_toml = "arr = " + nest_count * "[" + nest_count * "]"
+                 tomllib.loads(recursive_array_toml)
+ 
++    @support.skip_if_unlimited_stack_size
+     def test_inline_table_recursion_limit(self):
+         with support.infinite_recursion(max_depth=100):
+             available = support.get_recursion_available()
+diff --git a/Misc/NEWS.d/next/Tests/2026-01-09-13-52-10.gh-issue-143460._nW2jt.rst b/Misc/NEWS.d/next/Tests/2026-01-09-13-52-10.gh-issue-143460._nW2jt.rst
+new file mode 100644
+index 00000000000000..b0df9917d62655
+--- /dev/null
++++ b/Misc/NEWS.d/next/Tests/2026-01-09-13-52-10.gh-issue-143460._nW2jt.rst
+@@ -0,0 +1 @@
++Skip tests relying on infinite recusion if stack size is unlimited.

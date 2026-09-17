@@ -1,0 +1,43 @@
+Fixes failing FusedMatMul test on certain GPU models
+--- tensorflow/core/kernels/matmul_op_test.cc.orig	2025-04-10 16:17:00.028370000 +0200
++++ tensorflow/core/kernels/matmul_op_test.cc	2025-04-10 16:19:11.926309000 +0200
+@@ -26,6 +26,7 @@
+ #include "tensorflow/core/framework/types.h"
+ #include "tensorflow/core/kernels/ops_testutil.h"
+ #include "tensorflow/core/lib/core/status_test_util.h"
++#include "tensorflow/core/platform/tensor_float_32_utils.h"
+ #include "tensorflow/core/platform/test.h"
+ #include "tensorflow/core/platform/test_benchmark.h"
+ #include "tensorflow/core/protobuf/rewriter_config.pb.h"
+@@ -335,6 +336,7 @@
+ // -------------------------------------------------------------------------- //
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul256x128x64) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   this->VerifyMatMulWithBias(256, 128, 64, false, false);
+   this->VerifyMatMulWithBias(256, 128, 64, true, false);
+   this->VerifyMatMulWithBias(256, 128, 64, false, true);
+@@ -342,6 +344,7 @@
+ }
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul1x256x256) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   this->VerifyMatMulWithBias(1, 256, 256, false, false);
+   this->VerifyMatMulWithBias(1, 256, 256, true, false);
+   this->VerifyMatMulWithBias(1, 256, 256, false, true);
+@@ -349,6 +352,7 @@
+ }
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul256x256x1) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   this->VerifyMatMulWithBias(256, 256, 1, false, false);
+   this->VerifyMatMulWithBias(256, 256, 1, true, false);
+   this->VerifyMatMulWithBias(256, 256, 1, false, true);
+@@ -372,6 +376,7 @@
+ }
+ 
+ TYPED_TEST_P(FusedMatMulWithBiasOpTest, MatMul256x128x64WithActivation) {
++  tensorflow::enable_tensor_float_32_execution(false);
+   for (const string& activation : GetActivations(this->kTValueType)) {
+     this->VerifyConv2DWithBiasAndActivation(256, 128, 64, false, false,
+                                             activation);

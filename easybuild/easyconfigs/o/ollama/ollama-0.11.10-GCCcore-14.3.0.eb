@@ -1,0 +1,47 @@
+easyblock = 'Bundle'
+
+name = 'ollama'
+version = '0.11.10'
+
+homepage = 'https://ollama.com/'
+description = "Get up and running with large language models."
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+builddependencies = [
+    ('Go', '1.25.0', '', SYSTEM),
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+]
+
+default_component_specs = {
+    'source_urls': ['https://github.com/ollama/ollama/archive'],
+    'sources': ['v%(version)s.tar.gz'],
+    'checksums': ['6efaf68abb094c6581717e36839d6406beed1c06130b2367c09f8d4264021049'],
+    'start_dir': 'ollama-%(version)s',
+}
+components = [
+    ('ggml-cpu', version, {
+        'easyblock': 'CMakeMake',
+        'configopts': '-DGGML_BACKEND_DIR="%(installdir)s/lib/ollama"',
+        'buildopts': '%(name)s',
+    }),
+    ('ollama', version, {
+        'easyblock': 'GoPackage',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ollama', f'lib/ollama/libggml-base.{SHLIB_EXT}'],
+    'dirs': ['lib/ollama'],
+}
+
+sanity_check_commands = [
+    "ollama -v",
+]
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': 'lib/ollama',
+}
+
+moduleclass = 'ai'

@@ -1,0 +1,36 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Alexander Puck Neuwirth <alexander@neuwirth-informatik.de>
+
+easyblock = 'CMakeMake'
+
+name = 'HepMC3'
+version = '3.3.0'
+
+homepage = 'http://hepmc.web.cern.ch/hepmc/'
+description = """HepMC is a standard for storing Monte Carlo event data."""
+
+toolchain = {'name': 'GCC', 'version': '13.2.0'}
+
+source_urls = ['https://hepmc.web.cern.ch/hepmc/releases/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['6f876091edcf7ee6d0c0db04e080056e89efc1a61abe62355d97ce8e735769d6']
+
+builddependencies = [('CMake', '3.27.6')]
+
+dependencies = [
+    ('Python', '3.11.5')
+]
+
+configopts = '-DHEPMC3_ENABLE_ROOTIO=OFF -Dmomentum=GEV -Dlength=MM '
+# HEPMC3_PYTHON_VERSIONS makes sure that the correct Python version is found,
+# otherwise HepMC3 may be picking up a newer Python (from the OS or a virtual environment)
+configopts += '-DHEPMC3_ENABLE_PYTHON=ON -DHEPMC3_PYTHON_VERSIONS=%(pyshortver)s '
+configopts += '-DHEPMC3_Python_SITEARCH311=%(installdir)s/lib/python%(pyshortver)s/site-packages'
+
+sanity_check_paths = {
+    'files': ['lib/libHepMC3.%s' % SHLIB_EXT],
+    'dirs': ['include/HepMC3']
+}
+sanity_check_commands = ["python -c 'import pyHepMC3'"]
+
+moduleclass = 'phys'

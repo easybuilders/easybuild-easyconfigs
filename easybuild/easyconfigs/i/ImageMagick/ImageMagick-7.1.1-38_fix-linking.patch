@@ -1,0 +1,27 @@
+The configure script sets this to a path inside the install location which is empty during build.
+However this path(s) is/are used by the compiler/linker to find libraries. `pkg-config` used during configure assumes this is the same during build as on invocation of itself and omits any path already contained in the variable.
+
+This combination causes build failures due to dependent libraries not being found in the link step unless there happens to be some other way the paths get pulled in. E.g. if HarfBuzz is built using (the deprecated) configure&make it has `*.la` files which contain the required link flags. If HarfBuzz is built using the new Meson build system those files are no longer present and the linker paths will be missing.
+
+As there doesn't seem to be a specific reason for the variable to be set to an empty directory in the Makefile just remove it.
+
+See https://github.com/ImageMagick/ImageMagick/pull/7613
+
+Author: Alexander Grund (TU Dresden)
+
+---
+ Makefile.in | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/Makefile.in b/Makefile.in
+index 47b78566f0c..3a9761cfd5b 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -3288,7 +3288,6 @@ LIBOBJS = @LIBOBJS@
+ LIBOPENJP2_CFLAGS = @LIBOPENJP2_CFLAGS@
+ LIBOPENJP2_LIBS = @LIBOPENJP2_LIBS@
+ LIBRARY_EXTRA_CPPFLAGS = @LIBRARY_EXTRA_CPPFLAGS@
+-LIBRARY_PATH = @LIBRARY_PATH@
+ LIBS = @LIBS@
+ LIBSTDCLDFLAGS = @LIBSTDCLDFLAGS@
+ LIBTOOL = @LIBTOOL@

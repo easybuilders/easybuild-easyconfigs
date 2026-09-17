@@ -1,0 +1,194 @@
+# What: sysctl.h is removed in glibc v2.32. This patch is based on the following commits 
+#       from https://github.com/choishingwan/PRSice:
+#        f285b243856b857a461d9a2b27e1f2f0ac25216e
+#        53641c11750a7e0bdd06a925fbf28c1e3978ee72
+#       Also see issue https://github.com/choishingwan/PRSice/issues/338 and PR https://github.com/choishingwan/PRSice/pull/243
+# Author: maxim-masterov (SURF)
+
+diff -Nru PRSice-2.3.5.orig/inc/misc.hpp PRSice-2.3.5/inc/misc.hpp
+--- PRSice-2.3.5.orig/inc/misc.hpp	2024-10-23 18:13:58.539539000 +0200
++++ PRSice-2.3.5/inc/misc.hpp	2024-10-23 18:14:29.383991502 +0200
+@@ -38,7 +38,6 @@
+ #include <mach/mach_init.h>
+ #include <mach/mach_types.h>
+ #include <mach/vm_statistics.h>
+-#include <sys/sysctl.h>
+ #elif defined _WIN32
+ #include <windows.h>
+ // psapi must go after windows, or will generate error
+@@ -48,7 +47,6 @@
+ #include "stdlib.h"
+ #include "string.h"
+ #include <sys/param.h>
+-#include <sys/sysctl.h>
+ #include <sys/types.h>
+ #include <unistd.h>
+ #endif
+@@ -86,9 +84,6 @@
+ #include <sys/param.h>
+ #include <sys/types.h>
+ #include <unistd.h>
+-#if defined(BSD)
+-#include <sys/sysctl.h>
+-#endif
+ 
+ #else
+ #error "Unable to define getMemorySize( ) for an unknown OS."
+@@ -170,73 +165,7 @@
+ // TODO: Delete this, doesn't seems to give robust answer
+ inline size_t current_ram_usage() { return 0; }
+ // TODO: Delete this, doesn't seems to give robust answer
+-inline size_t total_ram_available()
+-{
+-#ifdef __APPLE__
+-    int32_t mib[2];
+-    size_t sztmp;
+-#endif
+-    unsigned char* bigstack_ua = nullptr; // ua = unaligned
+-    int64_t llxx;
+-    intptr_t default_alloc_mb;
+-    intptr_t malloc_size_mb = 0;
+-#ifdef __APPLE__
+-    mib[0] = CTL_HW;
+-    mib[1] = HW_MEMSIZE;
+-    llxx = 0;
+-
+-    sztmp = sizeof(int64_t);
+-    sysctl(mib, 2, &llxx, &sztmp, nullptr, 0);
+-    llxx /= 1048576;
+-#else
+-#ifdef _WIN32
+-    MEMORYSTATUSEX memstatus;
+-    memstatus.dwLength = sizeof(memstatus);
+-    GlobalMemoryStatusEx(&memstatus);
+-    llxx = memstatus.ullTotalPhys / 1048576;
+-#else
+-    llxx = ((uint64_t) sysconf(_SC_PHYS_PAGES))
+-           * ((size_t) sysconf(_SC_PAGESIZE)) / 1048576;
+-#endif
+-#endif
+-    if (!llxx) { default_alloc_mb = BIGSTACK_DEFAULT_MB; }
+-    else if (llxx < (BIGSTACK_MIN_MB * 2))
+-    {
+-        default_alloc_mb = BIGSTACK_MIN_MB;
+-    }
+-    else
+-    {
+-        default_alloc_mb = llxx / 2;
+-    }
+-    if (!malloc_size_mb) { malloc_size_mb = default_alloc_mb; }
+-    else if (malloc_size_mb < BIGSTACK_MIN_MB)
+-    {
+-        malloc_size_mb = BIGSTACK_MIN_MB;
+-    }
+-    std::string message = "";
+-#ifndef __LP64__
+-    if (malloc_size_mb > 2047) { malloc_size_mb = 2047; }
+-#endif
+-    bigstack_ua =
+-        (unsigned char*) malloc(malloc_size_mb * 1048576 * sizeof(char));
+-    // if fail, return nullptr which will then get into the while loop
+-    while (!bigstack_ua)
+-    {
+-        malloc_size_mb = (malloc_size_mb * 3) / 4;
+-        if (malloc_size_mb < BIGSTACK_MIN_MB)
+-        { malloc_size_mb = BIGSTACK_MIN_MB; }
+-        bigstack_ua =
+-            (unsigned char*) malloc(malloc_size_mb * 1048576 * sizeof(char));
+-        if (bigstack_ua) {}
+-        else if (malloc_size_mb == BIGSTACK_MIN_MB)
+-        {
+-            throw std::runtime_error("Failed to allocate required memory");
+-        }
+-    }
+-    free(bigstack_ua);
+-    bigstack_ua = nullptr;
+-    return malloc_size_mb * 1024 * 1024;
+-}
++
+ // function from John D.Cook
+ // https://www.johndcook.com/blog/standard_deviation/
+ class RunningStat
+@@ -1398,82 +1327,5 @@
+     return (size_t) 0L; /* Unsupported. */
+ #endif
+ }
+-
+-
+-/**
+- * Returns the size of physical memory (RAM) in bytes.
+- */
+-inline size_t getMemorySize()
+-{
+-#if defined(_WIN32) && (defined(__CYGWIN__) || defined(__CYGWIN32__))
+-    /* Cygwin under Windows. ------------------------------------ */
+-    /* New 64-bit MEMORYSTATUSEX isn't available.  Use old 32.bit */
+-    MEMORYSTATUS status;
+-    status.dwLength = sizeof(status);
+-    GlobalMemoryStatus(&status);
+-    return (size_t) status.dwTotalPhys;
+-
+-#elif defined(_WIN32)
+-    /* Windows. ------------------------------------------------- */
+-    /* Use new 64-bit MEMORYSTATUSEX, not old 32-bit MEMORYSTATUS */
+-    MEMORYSTATUSEX status;
+-    status.dwLength = sizeof(status);
+-    GlobalMemoryStatusEx(&status);
+-    return (size_t) status.ullTotalPhys;
+-
+-#elif defined(__unix__) || defined(__unix) || defined(unix) \
+-    || (defined(__APPLE__) && defined(__MACH__))
+-    /* UNIX variants. ------------------------------------------- */
+-    /* Prefer sysctl() over sysconf() except sysctl() HW_REALMEM and HW_PHYSMEM
+-     */
+-
+-#if defined(CTL_HW) && (defined(HW_MEMSIZE) || defined(HW_PHYSMEM64))
+-    int mib[2];
+-    mib[0] = CTL_HW;
+-#if defined(HW_MEMSIZE)
+-    mib[1] = HW_MEMSIZE; /* OSX. --------------------- */
+-#elif defined(HW_PHYSMEM64)
+-    mib[1] = HW_PHYSMEM64; /* NetBSD, OpenBSD. --------- */
+-#endif
+-    int64_t size = 0;    /* 64-bit */
+-    size_t len = sizeof(size);
+-    if (sysctl(mib, 2, &size, &len, NULL, 0) == 0) return (size_t) size;
+-    return 0L; /* Failed? */
+-
+-#elif defined(_SC_AIX_REALMEM)
+-    /* AIX. ----------------------------------------------------- */
+-    return (size_t) sysconf(_SC_AIX_REALMEM) * (size_t) 1024L;
+-
+-#elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
+-    /* FreeBSD, Linux, OpenBSD, and Solaris. -------------------- */
+-    return (size_t) sysconf(_SC_PHYS_PAGES) * (size_t) sysconf(_SC_PAGESIZE);
+-
+-#elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGE_SIZE)
+-    /* Legacy. -------------------------------------------------- */
+-    return (size_t) sysconf(_SC_PHYS_PAGES) * (size_t) sysconf(_SC_PAGE_SIZE);
+-
+-#elif defined(CTL_HW) && (defined(HW_PHYSMEM) || defined(HW_REALMEM))
+-    /* DragonFly BSD, FreeBSD, NetBSD, OpenBSD, and OSX. -------- */
+-    int mib[2];
+-    mib[0] = CTL_HW;
+-#if defined(HW_REALMEM)
+-    mib[1] = HW_REALMEM;   /* FreeBSD. ----------------- */
+-#elif defined(HW_PYSMEM)
+-    mib[1] = HW_PHYSMEM; /* Others. ------------------ */
+-#endif
+-    unsigned int size = 0; /* 32-bit */
+-    size_t len = sizeof(size);
+-    if (sysctl(mib, 2, &size, &len, NULL, 0) == 0) return (size_t) size;
+-    return 0L; /* Failed? */
+-#endif /* sysctl and sysconf variants */
+-
+-#else
+-    return 0L;          /* Unknown OS. */
+-#endif
+ }
+ 
+-inline unsigned long long remain_memory(const double& adjFactor = 0.8)
+-{
+-    return (misc::getMemorySize() * adjFactor - getCurrentRSS());
+-}
+-}

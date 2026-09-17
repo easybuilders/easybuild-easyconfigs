@@ -1,0 +1,62 @@
+easyblock = 'PythonBundle'
+
+name = 'HADDOCK3'
+version = '2025.11.0'
+
+homepage = 'https://www.bonvinlab.org/haddock3'
+description = """HADDOCK3 is the next generation integrative modelling
+software in the long-lasting HADDOCK project. It represents a complete
+rethinking and rewriting of the HADDOCK2.X series, implementing a new
+way to interact with HADDOCK and offering new features to users who can
+now define custom workflows."""
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+builddependencies = [
+    ('poetry', '2.1.2'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('Python-bundle-PyPI', '2025.04'),
+    ('Biopython', '1.85'),
+    ('PyYAML', '6.0.2'),
+    ('plotly.py', '6.3.1'),
+]
+
+github_account = 'haddocking'
+
+_haddock_sed_cmd = 'sed -i -e "s/prodigy-prot==/prodigy-prot>=/" -e "s/plotly==6.4.0/plotly/" pyproject.toml && '
+
+exts_list = [
+    ('freesasa', '2.2.1', {
+        'checksums': ['5630e65d619cf6a062028d7c6297afe8c5b18c677c75f1c32a0938399f4f6850'],
+    }),
+    ('jsonpickle', '4.0.2', {
+        'checksums': ['3e650b9853adcdab9d9d62a88412b6d36e9a59ba423b01cacf0cd4ee80733aca'],
+    }),
+    ('pdb-tools', '2.5.0', {
+        'modulename': 'pdbtools',
+        'checksums': ['b76c4cd6304a15e545eff2737a76b71db31b881573e5ba3a93dba9a71a79653b'],
+    }),
+    ('prodigy-lig', '1.1.4', {
+        'checksums': ['bfff3296c46ee9751882c44537080ab12bd58a903735ee20fa1dfaab363882a3'],
+    }),
+    ('prodigy-prot', '2.4.0', {
+        'checksums': ['43fca93102b619f3fb17bf577b9f1a2186cc23934f296a16e5d3214eafe35aa4'],
+    }),
+    (name, version, {
+        'modulename': 'haddock',
+        'preinstallopts': _haddock_sed_cmd,
+        'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['965b861ed423147d5570783071d0dfe9c11491bdc78b3687a456d867039ebd19'],
+    }),
+]
+
+sanity_check_commands = [
+    'haddock3 --help',
+]
+
+moduleclass = 'bio'

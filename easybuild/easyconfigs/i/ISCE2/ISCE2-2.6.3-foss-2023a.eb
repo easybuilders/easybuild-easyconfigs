@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'ISCE2'
+version = '2.6.3'
+
+homepage = 'https://github.com/isce-framework/isce2'
+description = """ISCE is a framework designed for the purpose of processing Interferometric Synthetic
+ Aperture Radar (InSAR) data. The framework aspects of it have been designed as a general software
+ development framework. It may have additional utility in a general sense for building other
+ types of software packages. In its InSAR aspect ISCE supports data from many space-borne
+ satellites and one air-borne platform."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/isce-framework/isce2/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['13fd55ffcadcdd723b61053241d5e49905157b0b0ac6ed8532e4faccaa6d77f1']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('FFTW', '3.3.10'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Cython', '3.0.8'),
+    ('GDAL', '3.7.1'),
+    ('motif', '2.3.8'),
+    ('OpenCV', '4.8.1', '-contrib'),
+    ('pybind11', '2.11.1'),
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+modextrapaths = {'PYTHONPATH': 'packages'}
+
+sanity_check_paths = {
+    'files': ['bin/stripmapApp.py'],
+    'dirs': ['packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import isce'",
+    "stripmapApp.py --help 2>&1 | grep 'ISCE VERSION = %(version)s'",
+]
+
+moduleclass = 'phys'

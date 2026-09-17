@@ -1,0 +1,48 @@
+easyblock = 'Binary'
+
+name = 'mosdepth'
+version = '0.3.9'
+local_hts_nim_ver = '0.3.25'
+
+homepage = 'https://github.com/brentp/mosdepth'
+description = "Fast BAM/CRAM depth calculation for WGS, exome, or targeted sequencing"
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/brentp/hts-nim/archive/'],
+        'download_filename': 'v%s.tar.gz' % local_hts_nim_ver,
+        'filename': 'hts-nim-%s.tar.gz' % local_hts_nim_ver,
+    },
+    {
+        'source_urls': ['https://github.com/brentp/mosdepth/archive/'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+]
+checksums = [
+    {'hts-nim-0.3.25.tar.gz': 'b13b9bb5aa567a69bf17547aadbbd39e37beb4f71a28f267b83dfea9ea4d05e8'},
+    {'mosdepth-0.3.9.tar.gz': '9171ea9a6ddaccd0091db5b85fa9e6cb79516bbe005c47ffc8dcfe49c978eb69'},
+]
+
+dependencies = [
+    ('Nim', '2.2.0'),
+    ('HTSlib', '1.18'),
+    ('PCRE', '8.45'),
+]
+
+extract_sources = True
+
+install_cmd = "cd %(builddir)s/hts-nim-*/ && nimble install --nimbleDir:%(installdir)s --verbose -y && "
+install_cmd += "cd ../mosdepth-*/ && "
+install_cmd += "nimble install --nimbleDir:%(installdir)s --verbose -y"
+
+sanity_check_paths = {
+    'files': ['bin/mosdepth'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["mosdepth --help"]
+
+moduleclass = 'bio'

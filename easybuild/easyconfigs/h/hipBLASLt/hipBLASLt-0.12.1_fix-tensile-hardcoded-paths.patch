@@ -1,0 +1,47 @@
+Removes hardcoded system paths and injects EasyBuild environment variables.
+
+Author: Aayush Joglekar (aayush.joglekar@surf.nl)
+
+diff --git a/tensilelite/Tensile/Source/cmake/FindROCmSMI.cmake b/tensilelite/Tensile/Source/cmake/FindROCmSMI.cmake
+index a6fa375a8..cc9d4fb3f 100644
+--- a/tensilelite/Tensile/Source/cmake/FindROCmSMI.cmake
++++ b/tensilelite/Tensile/Source/cmake/FindROCmSMI.cmake
+@@ -24,7 +24,7 @@
+ 
+ if(NOT ROCM_ROOT)
+     if(NOT ROCM_DIR)
+-        set(ROCM_ROOT "/opt/rocm")
++        set(ROCM_ROOT "${EBROOTROCMMINLLVM}")
+     else()
+         set(ROCM_DIR "${ROCM_DIR}/../../..")
+     endif()
+diff --git a/tensilelite/Tensile/Utilities/Toolchain.py b/tensilelite/Tensile/Utilities/Toolchain.py
+index 6158bd52f..a6999277a 100644
+--- a/tensilelite/Tensile/Utilities/Toolchain.py
++++ b/tensilelite/Tensile/Utilities/Toolchain.py
+@@ -5,8 +5,8 @@ from typing import List, NamedTuple, Union
+ from warnings import warn
+ from subprocess import run, PIPE
+ 
+-ROCM_BIN_PATH = Path("/opt/rocm/bin")
+-ROCM_LLVM_BIN_PATH = Path("/opt/rocm/lib/llvm/bin")
++ROCM_BIN_PATH = Path(os.environ.get('EBROOTROCMMINLLVM')) / "bin"
++ROCM_LLVM_BIN_PATH = Path(os.environ.get('EBROOTROCMMINLLVM')) / "bin"
+ 
+ if os.name == "nt":
+     def _windowsLatestRocmBin(path: Union[Path, str]) -> Path:
+diff --git a/tensilelite/Tensile/Utilities/tensile_generator/tensile_config_generator.py b/tensilelite/Tensile/Utilities/tensile_generator/tensile_config_generator.py
+index 816a0300c..724391a7b 100644
+--- a/tensilelite/Tensile/Utilities/tensile_generator/tensile_config_generator.py
++++ b/tensilelite/Tensile/Utilities/tensile_generator/tensile_config_generator.py
+@@ -88,7 +88,9 @@ LibraryType = "GridBased"
+ 
+ CU_RE = r"Compute Unit:(?P<COMPUTE_UNIT>[\w ]+)"
+ 
+-res = subprocess.run("/opt/rocm/llvm/bin/offload-arch", stdout=subprocess.PIPE)
++rocm_path = os.environ.get('EBROOTROCMMINLLVM')
++offload_arch_bin = os.path.join(rocm_path, 'bin', 'offload-arch')
++res = subprocess.run(offload_arch_bin, stdout=subprocess.PIPE)
+ ArchitectureName = res.stdout.decode("utf-8").strip()
+ res = subprocess.run("rocminfo | grep Compute", stdout=subprocess.PIPE, shell=True, env={"ROCR_VISIBLE_DEVICES":"0"})
+ match = re.search(CU_RE, res.stdout.decode("utf-8").split('\n')[-2])

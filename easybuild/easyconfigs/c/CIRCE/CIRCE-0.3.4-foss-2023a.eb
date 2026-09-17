@@ -1,0 +1,52 @@
+easyblock = 'PythonBundle'
+
+name = 'CIRCE'
+version = '0.3.4'
+
+homepage = 'https://github.com/cantinilab/Circe'
+description = """This repo contains a python package for inferring co-accessibility networks
+ from single-cell ATAC-seq data, using skggm for the graphical lasso and scanpy for data processing."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('poetry', '1.5.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('scikit-learn', '1.3.1'),
+    ('scanpy', '1.9.8'),
+]
+
+# Some requirements are too strict.
+local_preinstallopts = """sed -i 's/pandas = "[^"]*"/pandas = "*"/g' pyproject.toml && """
+local_preinstallopts += """sed -i "s/'pandas>=[^']*'/'pandas'/g" setup.py && """
+
+# build the C components linking `flexiblas` instead of `lapack` and `blas`
+local_preinstallopts += """sed -i "s/lapack/flexiblas/g;s/, 'blas'//g" setup.py && """
+local_preinstallopts += """sed -i "s/lapack/flexiblas/g;/blas/d" pyquic_ext/pyquic.cpp && """
+
+exts_list = [
+    ('joblib', '1.4.2', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['06d478d5674cbc267e7496a410ee875abd68e4340feff4490bcb7afb88060ae6'],
+    }),
+    ('rich', '13.9.2', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['8c82a3d3f8dcfe9e734771313e606b39d8247bb6b826e196f4914b333b743cf1'],
+    }),
+    ('circe_py', version, {
+        'preinstallopts': local_preinstallopts,
+        'modulename': 'circe',
+        'checksums': ['279004948dff84816361e857ee3fb383cdb17587f376c6f10f82a66810cba16c'],
+    }),
+]
+
+# NOTE This has been tested manually using the following script:
+# https://github.com/cantinilab/Circe/blob/a70e031f9de4760739eb3c7571277678d5e80c8a/Examples/Minimal_example.ipynb
+# with a small modification:
+# https://github.com/cantinilab/Circe/issues/5#issuecomment-2419821380
+
+moduleclass = 'bio'

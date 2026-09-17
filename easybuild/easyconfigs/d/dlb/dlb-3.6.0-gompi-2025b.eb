@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'dlb'
+version = '3.6.0'
+
+description = """
+DLB is a dynamic library designed to speed up HPC hybrid applications (i.e.,
+two levels of parallelism) by improving the load balance of the outer level of
+parallelism (e.g., MPI) by dynamically redistributing the computational
+resources at the inner level of parallelism (e.g., OpenMP). at run time.
+"""
+homepage = 'https://pm.bsc.es/dlb/'
+docurls = ['https://pm.bsc.es/ftp/dlb/doc/user-guide/']
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+
+builddependencies = [
+    ('Python', '3.13.5'),  # required for version parsing
+]
+dependencies = [
+    ('hwloc', '2.12.1'),
+    ('PAPI', '7.2.0'),
+]
+
+source_urls = ['https://pm.bsc.es/ftp/dlb/releases']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['52b42be9422e5036797c93e0ab592ad336ab14b9a5f9ff7dc428506e67beca6d']
+
+configopts = ' '.join([
+    '--with-mpi=yes',
+    '--with-hwloc=$EBROOTHWLOC',
+    '--with-papi=$EBROOTPAPI',
+    '--with-cuda=no',
+    '--with-rocm=no',
+])
+
+sanity_check_paths = {
+    'files': [
+        'bin/dlb',
+        'lib/libdlb.a', 'lib/libdlb.%s' % SHLIB_EXT,
+        'lib64/libdlb.%s' % SHLIB_EXT
+    ],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'

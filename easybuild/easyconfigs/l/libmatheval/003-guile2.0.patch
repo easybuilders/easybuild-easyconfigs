@@ -1,0 +1,402 @@
+Description: Increase precision of floating point tests
+ guile-2.0 has increased the precision of the floating point maths returns,
+ so the test suite needs to allow for the correct values to be returned
+ with higher precision. Thanks to Dave Pigott <dave.pigott@linaro.org>
+ Also adapt the configure script to build against guile-2.0 - patch from
+ Hilo Bengen <bengen@debian.org>.
+ .
+ libmatheval (1.1.11+dfsg-1.1) unstable; urgency=low
+ .
+   * Non-maintainer upload.
+   * Migrate to guile-2.0 - patch from Hilo Bengen,
+     extended to support higher precision of return values
+     by guile-2.0. (Closes: #746013)
+Author: Neil Williams <codehelp@debian.org>
+Bug-Debian: https://bugs.debian.org/746013
+
+---
+
+--- libmatheval-1.1.11+dfsg.orig/configure.in
++++ libmatheval-1.1.11+dfsg/configure.in
+@@ -60,10 +60,11 @@ dnl Checks for library functions.
+ AC_CHECK_FUNCS([bzero memset], [break])
+ 
+ dnl Additional Guile feature checks.
++CFLAGS="$CFLAGS $GUILE_CFLAGS"
+ AC_CHECK_TYPE([scm_t_bits], [AC_DEFINE([HAVE_SCM_T_BITS], [1], [Define to 1 if you have the `scm_t_bits' type.])], [], [#include <libguile.h>])
+-AC_CHECK_LIB([guile], [scm_c_define_gsubr], [AC_DEFINE([HAVE_SCM_C_DEFINE_GSUBR], [1], [Define to 1 if you have the `scm_c_define_gsubr' function.])], [], [$GUILE_LDFLAGS])
+-AC_CHECK_LIB([guile], [scm_make_gsubr], [AC_DEFINE([HAVE_SCM_MAKE_GSUBR], [1], [Define to 1 if you have the `scm_make_gsubr' function.])], [], [$GUILE_LDFLAGS])
+-AC_CHECK_LIB([guile], [scm_num2dbl], [AC_DEFINE([HAVE_SCM_NUM2DBL], [1], [Define to 1 if you have the `scm_num2dbl' function.])], [], [$GUILE_LDFLAGS])
++AC_CHECK_LIB([guile-2.0], [scm_c_define_gsubr], [AC_DEFINE([HAVE_SCM_C_DEFINE_GSUBR], [1], [Define to 1 if you have the `scm_c_define_gsubr' function.])], [], [$GUILE_LDFLAGS])
++AC_CHECK_LIB([guile-2.0], [scm_make_gsubr], [AC_DEFINE([HAVE_SCM_MAKE_GSUBR], [1], [Define to 1 if you have the `scm_make_gsubr' function.])], [], [$GUILE_LDFLAGS])
++AC_CHECK_LIB([guile-2.0], [scm_num2dbl], [AC_DEFINE([HAVE_SCM_NUM2DBL], [1], [Define to 1 if you have the `scm_num2dbl' function.])], [], [$GUILE_LDFLAGS])
+ 
+ AC_CONFIG_FILES([Makefile doc/Makefile lib/Makefile])
+ AC_OUTPUT(libmatheval.pc)
+--- libmatheval-1.1.11+dfsg.orig/tests/basics.at
++++ libmatheval-1.1.11+dfsg/tests/basics.at
+@@ -62,7 +62,7 @@ AT_DATA([basics.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh basics.scm], [ignore], [10.0], [ignore])
++AT_CHECK([matheval.sh basics.scm], [ignore], [10.000000000000002], [ignore])
+ 
+ AT_DATA([basics.scm],
+ [[
+@@ -70,7 +70,7 @@ AT_DATA([basics.scm],
+ (display (evaluator-evaluate-x f 0.7))
+ ]])
+ 
+-AT_CHECK([matheval.sh basics.scm], [ignore], [0.220966666722528], [ignore])
++AT_CHECK([matheval.sh basics.scm], [ignore], [0.22096666672252796], [ignore])
+ 
+ AT_DATA([basics.scm],
+ [[
+@@ -78,7 +78,7 @@ AT_DATA([basics.scm],
+ (display (evaluator-evaluate-x-y f 0.4 -0.7))
+ ]])
+ 
+-AT_CHECK([matheval.sh basics.scm], [ignore], [-1.14962406520749], [ignore])
++AT_CHECK([matheval.sh basics.scm], [ignore], [-1.1496240652074883], [ignore])
+ 
+ AT_DATA([basics.scm],
+ [[
+@@ -86,7 +86,7 @@ AT_DATA([basics.scm],
+ (display (evaluator-evaluate-x-y-z f 11.2 0.41 -0.66))
+ ]])
+ 
+-AT_CHECK([matheval.sh basics.scm], [ignore], [3.99876152571934], [ignore])
++AT_CHECK([matheval.sh basics.scm], [ignore], [3.9987615257193383], [ignore])
+ 
+ AT_DATA([basics.scm],
+ [[
+--- libmatheval-1.1.11+dfsg.orig/tests/constants.at
++++ libmatheval-1.1.11+dfsg/tests/constants.at
+@@ -29,7 +29,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [2.71828182845905], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [2.718281828459045], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -37,7 +37,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [1.44269504088896], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [1.4426950408889634], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -45,7 +45,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [0.434294481903252], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [0.4342944819032518], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -53,7 +53,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [0.693147180559945], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [0.6931471805599453], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -61,7 +61,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [2.30258509299405], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [2.302585092994046], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -69,7 +69,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [3.14159265358979], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [3.141592653589793], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -77,7 +77,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [1.5707963267949], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [1.5707963267948966], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -85,7 +85,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [0.785398163397448], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [0.7853981633974483], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -93,7 +93,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [0.318309886183791], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [0.3183098861837907], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -101,7 +101,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [0.636619772367581], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [0.6366197723675814], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -109,7 +109,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [1.12837916709551], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [1.1283791670955126], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -117,7 +117,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [1.4142135623731], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [1.4142135623730951], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -125,7 +125,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [0.707106781186548], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [0.7071067811865476], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+@@ -133,7 +133,7 @@ AT_DATA([constant.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh constant.scm], [ignore], [10.0], [ignore])
++AT_CHECK([matheval.sh constant.scm], [ignore], [10.000000000000002], [ignore])
+ 
+ AT_DATA([constant.scm],
+ [[
+--- libmatheval-1.1.11+dfsg.orig/tests/functions.at
++++ libmatheval-1.1.11+dfsg/tests/functions.at
+@@ -29,7 +29,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [2.71828182845905], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [2.718281828459045], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -80,7 +80,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.841470984807897], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.8414709848078965], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -97,7 +97,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.54030230586814], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.5403023058681398], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -114,7 +114,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [1.5574077246549], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [1.5574077246549023], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -131,7 +131,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.642092615934331], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.6420926159343306], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -148,7 +148,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [1.85081571768093], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [1.8508157176809255], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -165,7 +165,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [1.18839510577812], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [1.1883951057781212], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -182,7 +182,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [1.5707963267949], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [1.5707963267948966], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -216,7 +216,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.785398163397448], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.7853981633974483], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -233,7 +233,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.785398163397448], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.7853981633974483], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -267,7 +267,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [1.5707963267949], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [1.5707963267948966], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -284,7 +284,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [1.1752011936438], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [1.1752011936438014], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -301,7 +301,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [1.54308063481524], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [1.5430806348152437], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -318,7 +318,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.761594155955765], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.7615941559557649], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -335,7 +335,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [1.31303528549933], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [1.3130352854993315], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -352,7 +352,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.648054273663885], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.6480542736638855], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -368,7 +368,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.850918128239322], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.8509181282393216], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -385,7 +385,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.881373587019543], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.8813735870195429], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -419,7 +419,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 0.5))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.549306144334055], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.5493061443340549], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -436,7 +436,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 2))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.549306144334055], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.5493061443340549], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+@@ -470,7 +470,7 @@ AT_DATA([function.scm],
+ (display (evaluator-evaluate-x f 1))
+ ]])
+ 
+-AT_CHECK([matheval.sh function.scm], [ignore], [0.881373587019543], [ignore])
++AT_CHECK([matheval.sh function.scm], [ignore], [0.8813735870195429], [ignore])
+ 
+ AT_DATA([function.scm],
+ [[
+--- libmatheval-1.1.11+dfsg.orig/tests/numbers.at
++++ libmatheval-1.1.11+dfsg/tests/numbers.at
+@@ -53,6 +53,6 @@ AT_DATA([number.scm],
+ (display (evaluator-evaluate-x f 0))
+ ]])
+ 
+-AT_CHECK([matheval.sh number.scm], [ignore], [0.644394014977254], [ignore])
++AT_CHECK([matheval.sh number.scm], [ignore], [0.6443940149772542], [ignore])
+ 
+ AT_CLEANUP

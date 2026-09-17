@@ -1,0 +1,25 @@
+The OpenGL library  provides 2 interfaces,
+
+* one linking with `libGL.so` (LEGACY), and
+* one linking with `libOpenGL.so` (GLVND).
+
+The gmsh is configured to build with the LEGACY interface, however, libGLU of
+the foss toolchain uses the GLNVD, and required linking with `libOpenGL.so`.
+
+This patch sets the CMake policy to use the GLVND so that gmsh builds reliably
+with the toolchain libGLU.
+
+See: cmake --help-policy CMP0072
+
+diff -ruN gmsh-4.12.2-source.orig/CMakeLists.txt gmsh-4.12.2-source/CMakeLists.txt
+--- gmsh-4.12.2-source.orig/CMakeLists.txt	2024-01-21 20:30:30.000000000 +0100
++++ gmsh-4.12.2-source/CMakeLists.txt	2025-08-17 11:51:15.070026826 +0200
+@@ -741,7 +741,7 @@
+   endif()
+ 
+   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics)
+-    set(OpenGL_GL_PREFERENCE "LEGACY")
++    set(OpenGL_GL_PREFERENCE "GLVND")
+     find_package(OpenGL REQUIRED)
+     if(OPENGL_GLU_FOUND AND OPENGL_FOUND)
+       add_subdirectory(src/graphics)

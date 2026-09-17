@@ -1,0 +1,56 @@
+# Fixes "nvcc fatal: Option '--ptx (-ptx)' is not allowed when compiling for multiple GPU architectures"
+# fatal compilation issue when building for multiple SM architectures
+# More info, see https://github.com/NVIDIA/cuda-samples/issues/289
+
+# Author: Caspar van Leeuwen
+
+diff -Nru cuda-samples-12.2.orig/Samples/3_CUDA_Features/memMapIPCDrv/Makefile cuda-samples-12.2/Samples/3_CUDA_Features/memMapIPCDrv/Makefile
+--- cuda-samples-12.2.orig/Samples/3_CUDA_Features/memMapIPCDrv/Makefile	2024-07-29 12:14:28.538848000 +0200
++++ cuda-samples-12.2/Samples/3_CUDA_Features/memMapIPCDrv/Makefile	2024-07-29 13:02:45.134261829 +0200
+@@ -313,6 +313,12 @@
+ ifneq ($(HIGHEST_SM),)
+ GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
+ endif
++
++# Generate the explicit PTX file for the lowest SM architecture in $(SMS), so it works on all SMS listed there
++LOWEST_SM := $(firstword $(sort $(SMS)))
++ifneq ($(LOWEST_SM),)
++GENCODE_FLAGS_LOWEST_SM += -gencode arch=compute_$(LOWEST_SM),code=compute_$(LOWEST_SM)
++endif
+ endif
+ 
+ ifeq ($(TARGET_OS),darwin)
+@@ -394,7 +400,7 @@
+ endif
+ 
+ $(PTX_FILE): memMapIpc_kernel.cu
+-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -ptx $<
++	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS_LOWEST_SM) -o $@ -ptx $<
+ 	$(EXEC) mkdir -p data
+ 	$(EXEC) cp -f $@ ./data
+ 	$(EXEC) mkdir -p ../../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
+diff -Nru cuda-samples-12.2.orig/Samples/3_CUDA_Features/ptxjit/Makefile cuda-samples-12.2/Samples/3_CUDA_Features/ptxjit/Makefile
+--- cuda-samples-12.2.orig/Samples/3_CUDA_Features/ptxjit/Makefile	2024-07-29 12:14:28.546771000 +0200
++++ cuda-samples-12.2/Samples/3_CUDA_Features/ptxjit/Makefile	2024-07-29 13:02:38.741961008 +0200
+@@ -307,6 +307,12 @@
+ ifneq ($(HIGHEST_SM),)
+ GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
+ endif
++
++# Generate the explicit PTX file for the lowest SM architecture in $(SMS), so it works on all SMS listed there
++LOWEST_SM := $(firstword $(sort $(SMS)))
++ifneq ($(LOWEST_SM),)
++GENCODE_FLAGS_LOWEST_SM += -gencode arch=compute_$(LOWEST_SM),code=compute_$(LOWEST_SM)
++endif
+ endif
+ 
+ ifeq ($(TARGET_OS),darwin)
+@@ -390,7 +396,7 @@
+ endif
+ 
+ $(PTX_FILE): ptxjit_kernel.cu
+-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -ptx $<
++	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS_LOWEST_SM) -o $@ -ptx $<
+ 	$(EXEC) mkdir -p data
+ 	$(EXEC) cp -f $@ ./data
+ 	$(EXEC) mkdir -p ../../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)

@@ -1,0 +1,46 @@
+easyblock = 'Tarball'
+
+name = 'PeptideShaker'
+version = '3.0.11'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://github.com/CompOmics/peptide-shaker'
+description = """PeptideShaker is a search engine independent platform for interpretation of
+proteomics identification results from multiple search and de novo engines."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://genesis.ugent.be/maven2/eu/isas/peptideshaker/%(name)s/%(version)s/']
+sources = [SOURCE_ZIP]
+checksums = ['8893de0b068b3adc0c45b1139374a08ecbd8661e1fa087e5aec950d1091e2dec']
+
+dependencies = [('Java', '11')]
+
+postinstallcmds = [
+    'mkdir %(installdir)s/bin && '
+    'cd %(installdir)s/bin && touch %(name)s && '
+    'echo "#!/bin/bash" >> %(name)s && '
+    r'echo "java -jar %(installdir)s/%(name)s-%(version)s.jar \"\$@\"" >> %(name)s && '
+    'chmod +x %(installdir)s/bin/%(name)s && '
+    'cd %(installdir)s/bin && touch PeptideShakerCLI && '
+    'echo "#!/bin/bash" >> PeptideShakerCLI && '
+    r'echo "java -cp %(installdir)s/%(name)s-%(version)s.jar eu.isas.peptideshaker.cmd.PeptideShakerCLI \"\$@\"" '
+    '>> PeptideShakerCLI && '
+    'chmod +x %(installdir)s/bin/PeptideShakerCLI'
+]
+
+sanity_check_paths = {
+    'files': ['%(name)s-%(version)s.jar', 'bin/%(name)s'],
+    'dirs': ['lib', 'resources', 'bin'],
+}
+
+sanity_check_commands = ['PeptideShakerCLI 2>&1 | grep PeptideShaker']
+
+modloadmsg = """
+You can run PeptideShaker GUI by $ PeptideShaker
+or you can use CLI as $ PeptideShakerCLI <parameters/flags>
+"""
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'

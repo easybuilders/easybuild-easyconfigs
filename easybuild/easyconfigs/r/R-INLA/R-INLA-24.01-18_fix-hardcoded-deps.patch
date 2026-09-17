@@ -1,0 +1,55 @@
+use dependencies provided by EasyBuild
+authors: Denis Kristak (INUITS), Kenneth Hoste (HPC-UGent)
+diff -ru r-inla-Version_24.01.18.orig/inlaprog/Makefile r-inla-Version_24.01.18/inlaprog/Makefile
+--- r-inla-Version_24.01.18.orig/inlaprog/Makefile	2024-01-18 20:34:05.000000000 +0100
++++ r-inla-Version_24.01.18/inlaprog/Makefile	2024-01-19 13:58:44.694060467 +0100
+@@ -9,13 +9,11 @@
+ 
+ ## *** chose either one of these; rgeneric requires the second version ***
+ ifeq ($(INLA_WITHOUT_LIBR),1)
+-  RLIB_INC = -DINLA_WITH_RMATH \
+-		-I/usr/include/R -I/usr/share/R/include
+-  RLIB_LIB = -L/usr/lib -lRmath
++  RLIB_INC = -DINLA_WITH_RMATH
++  RLIB_LIB = -lRmath
+ else
+-  RLIB_INC = -DINLA_WITH_RMATH -DINLA_LIBR \
+-		-I/usr/include/R -I/usr/share/R/include
+-  RLIB_LIB = -L/usr/lib -lRmath -L/usr/lib/R/lib -lR
++  RLIB_INC = -DINLA_WITH_RMATH -DINLA_LIBR
++  RLIB_LIB = -lRmath -lR
+ endif
+ 
+ # select compilers and optimized compiler-options, add -fopenmp or similar to use OpenMP
+@@ -32,7 +30,7 @@
+ 
+ # The external libraries to link with
+ EXTLIBS1 = -L$(PREFIX)/lib -lGMRFLib -L$(LEXTPREFIX)/lib 
+-EXTLIBS2 = -lgsl -ltaucs -lmetis -llapack -lblas -lgslcblas -lamd -lmuparser -lz -lgfortran -lcrypto
++EXTLIBS2 = -lgsl -ltaucs -lmetis -lscalapack -lflexiblas -lgslcblas -lamd -lmuparser -lz -lgfortran -lcrypto
+ EXTLIBS3 = -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -lm
+ 
+ ################################################################################
+@@ -92,8 +90,8 @@
+ 	 done; \
+ 	 install -m755 $(INLA) $(PREFIX)/bin/$(INLA);\
+ 	 install -m755 $(INLA) $(PREFIX)/bin/$(INLA)-$(VERSION);\
+-	 rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete doc/* $(PREFIX)/doc/inla; \
+-	 rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete examples/* $(PREFIX)/doc/inla/examples; 
++	#  rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete doc/* $(PREFIX)/doc/inla; \
++	#  rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete examples/* $(PREFIX)/doc/inla/examples; 
+ 
+ clean:; -$(RM) $(OBJ) $(INLA)
+ 
+diff -ru r-inla-Version_24.01.18.orig/inlaprog/src/eval.c r-inla-Version_24.01.18/inlaprog/src/eval.c
+--- r-inla-Version_24.01.18.orig/inlaprog/src/eval.c	2024-01-18 20:34:05.000000000 +0100
++++ r-inla-Version_24.01.18/inlaprog/src/eval.c	2024-01-19 13:55:57.883885401 +0100
+@@ -34,7 +34,7 @@
+ #include <string.h>
+ #include <stdio.h>
+ 
+-#include <muParser/muParserDLL.h>
++#include <muParserDLL.h>
+ 
+ #include "GMRFLib/GMRFLib.h"
+ #include "inla.h"

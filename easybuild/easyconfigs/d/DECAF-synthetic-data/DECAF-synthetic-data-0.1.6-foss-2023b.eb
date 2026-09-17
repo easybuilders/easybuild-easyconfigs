@@ -1,0 +1,44 @@
+easyblock = 'PythonBundle'
+
+name = 'DECAF-synthetic-data'
+version = '0.1.6'
+
+homepage = 'https://github.com/vanderschaarlab/DECAF'
+description = """DEbiasing CAusal Fairness -
+Generating Fair Synthetic Data Using Causally-Aware Generative Networks"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+local_pytorch_version = '2.1.2'
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('PyTorch-Lightning', '1.9.5'),
+    ('PyTorch', '2.1.2'),
+    ('XGBoost', '2.1.1'),
+    ('scikit-learn', '1.4.0'),
+    ('torchtext', '0.16.2', '-PyTorch-%s' % local_pytorch_version),
+]
+
+local_pretestopts = "export SLURM_NTASKS_PER_NODE=$SLURM_NTASKS && "
+
+exts_list = [
+    ('networkx', '2.8.8', {
+        'checksums': ['230d388117af870fce5647a3c52401fcf753e94720e6ea6b4197a5355648885e'],
+    }),
+    ('loguru', '0.7.2', {
+        'checksums': ['e671a53522515f34fd406340ee968cb9ecafbc4b36c679da03c18fd8d0bd51ac'],
+    }),
+    (name, version, {
+        'modulename': 'decaf',
+        'source_urls': ['https://github.com/vanderschaarlab/DECAF/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['8f34e99937d2ccc43bff97b310c371c450e27313c0801cdd36aa91664c8e3180'],
+        'testinstall': True,
+        'runtest': local_pretestopts + 'pytest -vsx',
+    }),
+]
+
+sanity_check_commands = ["python -c 'from decaf import DECAF, DataModule'"]
+
+moduleclass = 'bio'

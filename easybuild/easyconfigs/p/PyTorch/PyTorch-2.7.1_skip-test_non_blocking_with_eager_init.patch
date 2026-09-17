@@ -1,0 +1,30 @@
+This test seems to have issues with the used NCCL version.
+See https://github.com/pytorch/pytorch/issues/153517
+
+This causes either SIGSEGV errors or timeouts:
+> Timing out after 300 seconds and killing subprocesses.
+
+Timeout in line `new_pg.broadcast(broadcast_tensor, 0).wait()`
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/test_c10d_nccl.py b/test/distributed/test_c10d_nccl.py
+--- a/test/distributed/test_c10d_nccl.py
++++ b/test/distributed/test_c10d_nccl.py
+@@ -16,7 +16,7 @@ from contextlib import contextmanager
+ from datetime import datetime, timedelta
+ from enum import auto, Enum
+ from itertools import chain, product
+-from unittest import mock, SkipTest
++from unittest import mock, SkipTest, skip
+ 
+ import torch
+ import torch.distributed as c10d
+@@ -1116,6 +1116,7 @@ class ProcessGroupNCCLGroupTest(MultiProcessTestCase):
+         self.assertEqual(backend.comm_split_count(), 0)
+         dist.destroy_process_group()
+ 
++    @skip("Occasional Segfault or Timeout")
+     @requires_nccl_version((2, 18), "Need NCCL 2.18+ for ncclCommSplit")
+     @skip_but_pass_in_sandcastle_if(not TEST_MULTIGPU, "NCCL test requires 2+ GPUs")
+     def test_non_blocking_with_eager_init(self):

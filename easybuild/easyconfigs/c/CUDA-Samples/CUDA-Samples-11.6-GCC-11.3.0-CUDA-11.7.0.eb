@@ -11,7 +11,11 @@ toolchain = {'name': 'GCC', 'version': '11.3.0'}
 
 source_urls = ['https://github.com/NVIDIA/cuda-samples/archive/']
 sources = ['v%(version)s.tar.gz']
-checksums = ['75b858bcf9e534eaa0f129c418e661b83872d743de218df8a5278cc429f9ea98']
+patches = ['cuda-samples-11.6_multiple-sms.patch']
+checksums = [
+    {'v11.6.tar.gz': '75b858bcf9e534eaa0f129c418e661b83872d743de218df8a5278cc429f9ea98'},
+    {'cuda-samples-11.6_multiple-sms.patch': '8849e4882d797d155d6ebb71377fa1409205361776ade8da699452a4ecb94a0a'},
+]
 
 dependencies = [
     ('CUDA', '11.7.0', '', SYSTEM),
@@ -33,7 +37,7 @@ local_filters += "Samples/simpleVulkanMMAP/Makefile "
 local_filters += "Samples/streamOrderedAllocationIPC/Makefile "
 local_filters += "Samples/vulkanImageCUDA/Makefile"
 
-buildopts = "HOST_COMPILER=g++ FILTER_OUT='%s'" % local_filters
+buildopts = "HOST_COMPILER=g++ SMS='%%(cuda_cc_space_sep_no_period)s' FILTER_OUT='%s'" % local_filters
 
 files_to_copy = [
     (['bin/%s/linux/release/*' % ARCH], 'bin'),

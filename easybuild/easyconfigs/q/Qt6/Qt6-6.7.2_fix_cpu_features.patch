@@ -1,0 +1,56 @@
+# What: Comment out incorrect detection of CPU features when only AVX2 flag is set.
+#       See relevant bug reports:
+#        https://bugs.gentoo.org/908420
+#        https://bugs.gentoo.org/898644
+# Author: maxim-masterov (SURF)
+diff -Nru qt-everywhere-src-6.7.2.orig/qtbase/src/corelib/global/qsimd_p.h qt-everywhere-src-6.7.2/qtbase/src/corelib/global/qsimd_p.h
+--- qt-everywhere-src-6.7.2.orig/qtbase/src/corelib/global/qsimd_p.h	2024-09-20 12:05:26.732359000 +0200
++++ qt-everywhere-src-6.7.2/qtbase/src/corelib/global/qsimd_p.h	2024-09-23 22:31:44.861936347 +0200
+@@ -227,14 +227,14 @@
+ #  if defined(__AVX2__)
+ // List of features present with -march=x86-64-v3 and not architecturally
+ // implied by __AVX2__
+-#    define ARCH_HASWELL_MACROS     \
+-    (__AVX2__ + __BMI__ + __BMI2__ + __F16C__ + __FMA__ + __LZCNT__ + __POPCNT__)
+-#    if ARCH_HASWELL_MACROS != 7
+-#      error "Please enable all x86-64-v3 extensions; you probably want to use -march=haswell or -march=x86-64-v3 instead of -mavx2"
+-#    endif
+-static_assert(ARCH_HASWELL_MACROS, "Undeclared identifiers indicate which features are missing.");
+-#    define __haswell__       1
+-#    undef ARCH_HASWELL_MACROS
++//#    define ARCH_HASWELL_MACROS     \
++//    (__AVX2__ + __BMI__ + __BMI2__ + __F16C__ + __FMA__ + __LZCNT__ + __POPCNT__)
++//#    if ARCH_HASWELL_MACROS != 7
++//#      error "Please enable all x86-64-v3 extensions; you probably want to use -march=haswell or -march=x86-64-v3 instead of -mavx2"
++//#    endif
++//static_assert(ARCH_HASWELL_MACROS, "Undeclared identifiers indicate which features are missing.");
++//#    define __haswell__       1
++//#    undef ARCH_HASWELL_MACROS
+ #  endif
+ 
+ // x86-64 sub-architecture version 4
+@@ -244,15 +244,15 @@
+ // with AVX512 support and it includes all of these too. The GNU libc subdir for
+ // this is "glibc-hwcaps/x86-64-v4".
+ //
+-#  define ARCH_SKX_MACROS           (__AVX512F__ + __AVX512BW__ + __AVX512CD__ + __AVX512DQ__ + __AVX512VL__)
+-#  if ARCH_SKX_MACROS != 0
+-#    if ARCH_SKX_MACROS != 5
+-#      error "Please enable all x86-64-v4 extensions; you probably want to use -march=skylake-avx512 or -march=x86-64-v4 instead of -mavx512f"
+-#    endif
+-static_assert(ARCH_SKX_MACROS, "Undeclared identifiers indicate which features are missing.");
+-#    define __skylake_avx512__  1
+-#  endif
+-#  undef ARCH_SKX_MACROS
++//#  define ARCH_SKX_MACROS           (__AVX512F__ + __AVX512BW__ + __AVX512CD__ + __AVX512DQ__ + __AVX512VL__)
++//#  if ARCH_SKX_MACROS != 0
++//#    if ARCH_SKX_MACROS != 5
++//#      error "Please enable all x86-64-v4 extensions; you probably want to use -march=skylake-avx512 or -march=x86-64-v4 instead of -mavx512f"
++//#    endif
++//static_assert(ARCH_SKX_MACROS, "Undeclared identifiers indicate which features are missing.");
++//#    define __skylake_avx512__  1
++//#  endif
++//#  undef ARCH_SKX_MACROS
+ #endif  /* Q_PROCESSOR_X86 */
+ 
+ // NEON intrinsics

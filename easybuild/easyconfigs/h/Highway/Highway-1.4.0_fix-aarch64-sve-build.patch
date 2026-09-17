@@ -1,0 +1,31 @@
+From 04ef19afaf88d93e374c7c9fd7ed00cbab11c4f8 Mon Sep 17 00:00:00 2001
+From: John Platts <john_platts@hotmail.com>
+Date: Wed, 10 Jun 2026 17:57:42 -0500
+Subject: [PATCH] Fixes to compiler errors and warnings in SVE BF16 MulEvenAdd
+ and WidenMulEven
+
+---
+ hwy/ops/arm_sve-inl.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/hwy/ops/arm_sve-inl.h b/hwy/ops/arm_sve-inl.h
+index 950754ea6c..98cae6c61d 100644
+--- a/hwy/ops/arm_sve-inl.h
++++ b/hwy/ops/arm_sve-inl.h
+@@ -6450,6 +6450,7 @@ template <size_t N, int kPow2>
+ HWY_API svfloat32_t MulEvenAdd(Simd<float, N, kPow2> dw, VBF16 a, VBF16 b,
+                                const svfloat32_t c) {
+ #if HWY_SVE_HAVE_BF16_FEATURE
++  (void)dw;
+   return svbfmlalb_f32(c, a, b);
+ #else
+   return MulAdd(PromoteEvenTo(dw, a), PromoteEvenTo(dw, b), c);
+@@ -6520,7 +6521,7 @@ template <size_t N, int kPow2>
+ HWY_API svfloat32_t WidenMulEven(Simd<float, N, kPow2> dw, VBF16 a, VBF16 b) {
+ #if HWY_SVE_HAVE_BF16_FEATURE
+   (void)dw;
+-  return MulEvenAdd(dw, Zero(dw), a, b);
++  return MulEvenAdd(dw, a, b, Zero(dw));
+ #else
+   // Same as MulEvenAdd, but without generating a zero argument.
+   return Mul(PromoteEvenTo(dw, a), PromoteEvenTo(dw, b));

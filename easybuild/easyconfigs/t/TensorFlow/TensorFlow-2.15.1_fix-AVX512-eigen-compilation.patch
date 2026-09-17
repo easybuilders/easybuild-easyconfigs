@@ -1,0 +1,47 @@
+Fix a compilation error for CPUs with AVX512 features where an issue in Eigen leads to
+> invalid 'static_cast' from type 'const Eigen::internal::eigen_packet_wrapper<__vector(4) long long int, 1>' to type '__vector(16) float'
+
+See https://gitlab.com/libeigen/eigen/-/issues/2829
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/third_party/eigen3/fix-avx512.patch b/third_party/eigen3/fix-avx512.patch
+new file mode 100644
+index 00000000000..0650d52a0c9
+--- /dev/null
++++ b/third_party/eigen3/fix-avx512.patch
+@@ -0,0 +1,22 @@
++diff --git a/Eigen/src/Core/arch/AVX512/TypeCasting.h b/Eigen/src/Core/arch/AVX512/TypeCasting.h
++index 02c56282f..e253e6b49 100644
++--- a/Eigen/src/Core/arch/AVX512/TypeCasting.h
+++++ b/Eigen/src/Core/arch/AVX512/TypeCasting.h
++@@ -145,8 +145,6 @@ template<> EIGEN_STRONG_INLINE Packet8bf preinterpret<Packet8bf, Packet16bf>(con
++   return _mm256_castsi256_si128(a);
++ }
++ 
++-#ifndef EIGEN_VECTORIZE_AVX512FP16
++-
++ template<> EIGEN_STRONG_INLINE Packet16f pcast<Packet16h, Packet16f>(const Packet16h& a) {
++   return half2float(a);
++ }
++@@ -155,8 +153,6 @@ template<> EIGEN_STRONG_INLINE Packet16h pcast<Packet16f, Packet16h>(const Packe
++   return float2half(a);
++ }
++ 
++-#endif
++-
++ template<> EIGEN_STRONG_INLINE Packet16f pcast<Packet16bf, Packet16f>(const Packet16bf& a) {
++   return Bf16ToF32(a);
++ }
+diff --git a/third_party/eigen3/workspace.bzl b/third_party/eigen3/workspace.bzl
+index d1d8d4ac486..da549e37432 100644
+--- a/third_party/eigen3/workspace.bzl
++++ b/third_party/eigen3/workspace.bzl
+@@ -14,6 +14,7 @@ def repo():
+     tf_http_archive(
+         name = "eigen_archive",
+         build_file = "//third_party/eigen3:eigen_archive.BUILD",
++        patch_file = ["//third_party/eigen3:fix-avx512.patch"],
+         sha256 = EIGEN_SHA256,
+         strip_prefix = "eigen-{commit}".format(commit = EIGEN_COMMIT),
+         urls = tf_mirror_urls("https://gitlab.com/libeigen/eigen/-/archive/{commit}/eigen-{commit}.tar.gz".format(commit = EIGEN_COMMIT)),

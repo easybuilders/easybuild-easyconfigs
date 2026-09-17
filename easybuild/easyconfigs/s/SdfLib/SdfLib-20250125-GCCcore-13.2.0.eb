@@ -1,0 +1,46 @@
+easyblock = 'CMakeNinja'
+
+name = 'SdfLib'
+version = '20250125'
+local_commit = '109e9828710fa581616f7fdd6ed1c87d5cb11e2b'
+
+homepage = 'https://github.com/UPC-ViRVIG/SdfLib'
+description = """SdfLib is a library for accelerating the queries of signed distance fields from triangle meshes.
+The library has an exact method that always returns the distance to the nearest triangle
+and an approximated one that return distances with a configurable maximum error."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+github_account = 'UPC-ViRVIG'
+source_urls = [GITHUB_SOURCE]
+sources = [f'{local_commit}.tar.gz']
+checksums = ['e272acebf44c1ab13d1d2030f538cf68a208cba19816394e8bf837de0622b779']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.27.6'),
+    ('Ninja', '1.11.1'),
+]
+
+dependencies = [
+    ('assimp', '5.3.1'),
+    ('Cereal', '1.3.2'),
+    ('GLM', '1.0.1'),
+    ('spdlog', '1.12.0'),
+]
+
+configopts = ' '.join([
+    '-DSDFLIB_BUILD_APPS=OFF', '-DSDFLIB_BUILD_DEBUG_APPS=OFF',  # Optional. Requires additional dependencies
+    '-DSDFLIB_USE_SYSTEM_ASSIMP=ON',
+    '-DSDFLIB_USE_SYSTEM_CEREAL=ON',
+    '-DSDFLIB_USE_SYSTEM_GLM=ON',
+    '-DSDFLIB_USE_SYSTEM_SPDLOG=ON',
+    '-DSDFLIB_USE_ENOKI=OFF',
+])
+
+sanity_check_paths = {
+    'files': ['include/%(name)s/RealSdf.h', 'include/%(name)s/OctreeSdf.h', 'lib/libSdfLib.a'],
+    'dirs': ['share/sdflib'],
+}
+
+moduleclass = 'lib'

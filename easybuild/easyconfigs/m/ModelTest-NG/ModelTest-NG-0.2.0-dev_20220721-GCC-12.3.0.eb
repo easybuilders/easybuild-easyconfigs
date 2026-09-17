@@ -1,0 +1,60 @@
+easyblock = 'CMakeMakeCp'
+
+name = 'ModelTest-NG'
+version = '0.2.0-dev_20220721'
+_commit = '1066356'
+
+homepage = 'https://github.com/ddarriba/modeltest'
+description = """
+ModelTest-NG is a tool for selecting the best-fit model of evolution for DNA and protein alignments.
+ModelTest-NG supersedes jModelTest and ProtTest in one single tool, with graphical and command console interfaces.
+"""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+# use exact commits of pll-modules and libpll-2 as specified in CMakeLists.txt
+sources = [
+    {
+        'source_urls': ['https://github.com/ddarriba/modeltest/archive'],
+        'download_filename': '%s.tar.gz' % _commit,
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://github.com/ddarriba/pll-modules/archive'],
+        'download_filename': '182ae28.tar.gz',
+        'filename': 'pll-modules-182ae28.tar.gz',
+        'extract_cmd': "tar -xzf %s -C %(builddir)s/modeltest*/libs/pll-modules/ --strip-components 1",
+    },
+    {
+        'source_urls': ['https://github.com/xflouris/libpll-2/archive'],
+        'download_filename': 'a3146f3.tar.gz',
+        'filename': 'libpll-a3146f3.tar.gz',
+        'extract_cmd': "tar -xzf %s -C %(builddir)s/modeltest*/libs/pll-modules/libs/libpll/ --strip-components 1",
+    },
+]
+checksums = [
+    {'ModelTest-NG-0.2.0-dev_20220721.tar.gz': '1010630a9e0aff7ec125e2ab3dccd76625b935d535793b2d01b35a3a1e3021ae'},
+    {'pll-modules-182ae28.tar.gz': 'd3bd1382e7bd5ef0a8f227bc1d47596bb806342113bb5fb2ad879e536e7873dd'},
+    {'libpll-a3146f3.tar.gz': 'd4a36b30074e1f93530cab48744117f1b7e7c9c78ca7665f92624ca6a25f9b85'},
+]
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2', '', SYSTEM),
+]
+
+files_to_copy = ['bin']
+
+sanity_check_paths = {
+    'files': ["bin/modeltest-ng"],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "modeltest-ng --help",
+    "modeltest-ng -i %(builddir)s/*/example-data/dna/tiny.fas -t ml",
+]
+
+moduleclass = 'bio'

@@ -1,0 +1,31 @@
+# Fixes "nvcc fatal: Option '--ptx (-ptx)' is not allowed when compiling for multiple GPU architectures"
+# fatal compilation issue when building for multiple SM architectures
+# More info, see https://github.com/NVIDIA/cuda-samples/issues/289
+
+# Author: Caspar van Leeuwen
+
+diff -Nru cuda-samples-11.3.orig/Samples/memMapIPCDrv/Makefile cuda-samples-11.3/Samples/memMapIPCDrv/Makefile
+--- cuda-samples-11.3.orig/Samples/memMapIPCDrv/Makefile	2024-07-29 13:17:10.330743000 +0200
++++ cuda-samples-11.3/Samples/memMapIPCDrv/Makefile	2024-07-29 13:19:13.158507504 +0200
+@@ -321,6 +321,12 @@
+ ifneq ($(HIGHEST_SM),)
+ GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
+ endif
++
++# Generate the explicit PTX file for the lowest SM architecture in $(SMS), so it works on all SMS listed there
++LOWEST_SM := $(firstword $(sort $(SMS)))
++ifneq ($(LOWEST_SM),)
++GENCODE_FLAGS_LOWEST_SM += -gencode arch=compute_$(LOWEST_SM),code=compute_$(LOWEST_SM)
++endif
+ endif
+ 
+ ifeq ($(TARGET_OS),darwin)
+@@ -401,7 +407,7 @@
+ endif
+ 
+ $(PTX_FILE): memMapIpc_kernel.cu
+-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -ptx $<
++	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS_LOWEST_SM) -o $@ -ptx $<
+ 	$(EXEC) mkdir -p data
+ 	$(EXEC) cp -f $@ ./data
+ 	$(EXEC) mkdir -p ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)

@@ -1,0 +1,33 @@
+easyblock = 'CMakeMake'
+
+name = 'HeFFTe'
+version = '2.4.1'
+
+homepage = 'https://icl.utk.edu/fft'
+description = "Highly Efficient FFT for Exascale (HeFFTe) library"
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://github.com/icl-utk-edu/heffte/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['de2cf26df5d61baac7841525db3f393cb007f79612ac7534fd4757f154ba3e6c']
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+]
+
+build_shared_libs = True
+
+configopts = "-DHeffte_ENABLE_FFTW=ON -DFFTW_ROOT=$EBROOTFFTW -DHeffte_ENABLE_CUDA=OFF -DHeffte_ENABLE_MKL=OFF"
+
+# allow oversubscription of MPI ranks to cores, tests are hardcoded to use up to 12 MPI ranks
+pretestopts = "export OMPI_MCA_rmaps_base_oversubscribe=true && "
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['lib/libheffte.%s' % SHLIB_EXT],
+    'dirs': ['include', 'lib/cmake/Heffte', 'share/heffte/examples'],
+}
+
+moduleclass = 'lib'

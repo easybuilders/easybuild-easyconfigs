@@ -1,0 +1,73 @@
+easyblock = 'CMakeMake'
+
+name = 'ecCodes'
+version = '2.38.3'
+
+homepage = 'https://software.ecmwf.int/wiki/display/ECC/ecCodes+Home'
+description = """ecCodes is a package developed by ECMWF which provides an application programming interface and
+ a set of tools for decoding and encoding messages in the following formats: WMO FM-92 GRIB edition 1 and edition 2,
+ WMO FM-94 BUFR edition 3 and edition 4, WMO GTS abbreviated header (only decoding)."""
+
+toolchain = {'name': 'gompi', 'version': '2024a'}
+toolchainopts = {'usempi': False}
+
+source_urls = ['https://github.com/ecmwf/eccodes/archive/refs/tags/']
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ}]
+patches = ['%(name)s-2.35.0_soversion.patch']
+checksums = [
+    {'eccodes-2.38.3.tar.gz': '2f13adc4fbdfa3ea11f75ce4ed8937bf40a8fcedd760a519b15e4e17dedc9424'},
+    {'ecCodes-2.35.0_soversion.patch': '8f63b0cd28ba92445dacd75c3d33442b3a06fb929292971116b55bad0e4ea176'},
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('ecBuild', '3.8.5'),
+]
+dependencies = [
+    ('netCDF', '4.9.2'),
+    ('JasPer', '4.2.4'),
+    ('libjpeg-turbo', '3.0.1'),
+    ('libpng', '1.6.43'),
+    ('zlib', '1.3.1'),
+    ('libaec', '1.1.3'),
+]
+
+# Debian currently versions as 0, RHEL as 0.1
+# So lets go with 0.1 and create the libfoo.0 symlink later
+_soversion = '0.1'
+_soversion_f90 = '0.1'
+# Python bindings are provided by a separate package 'eccodes-python'
+_copts = [
+    "-DENABLE_NETCDF=ON",
+    "-DENABLE_PNG=ON",
+    "-DENABLE_PYTHON=OFF",
+    "-DENABLE_JPG=ON",
+    "-DENABLE_JPG_LIBJASPER=ON",
+    "-DENABLE_ECCODES_THREADS=ON",
+    f"-DECCODES_SOVERSION={_soversion}",
+    f"-DECCODES_SOVERSION_F90={_soversion_f90}",
+]
+configopts = " ".join(_copts)
+
+# add symlinks for libfoo.X -> libfoo.X.Y
+_post_install_cmds = [
+    'cd %(installdir)s/lib',
+    f'ln -s lib%(namelower)s.{SHLIB_EXT}.{_soversion} lib%(namelower)s.{SHLIB_EXT}.{_soversion[0]}',
+    f'ln -s lib%(namelower)s_f90.{SHLIB_EXT}.{_soversion} lib%(namelower)s_f90.{SHLIB_EXT}.{_soversion[0]}'
+]
+postinstallcmds = [' && '.join(_post_install_cmds)]
+
+_files = ['bufr_compare', 'bufr_dump', 'bufr_ls', 'codes_info', 'grib_compare', 'grib_filter', 'grib_index_build',
+          'grib_to_netcdf', 'gts_dump', 'metar_compare', 'metar_get', 'bufr_compare_dir', 'bufr_filter', 'bufr_set',
+          'codes_parser', 'grib_copy', 'grib_get', 'grib_ls', 'gts_compare', 'gts_filter', 'metar_copy', 'metar_ls',
+          'bufr_copy', 'bufr_get', 'codes_bufr_filter', 'codes_split_file', 'grib_count', 'grib_get_data', 'gts_copy',
+          'gts_get', 'metar_dump', 'bufr_count', 'bufr_index_build', 'codes_count', 'grib2ppm', 'grib_dump',
+          'grib_histogram', 'grib_set', 'gts_count', 'gts_ls', 'metar_filter']
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in _files] +
+             [f'lib/lib%(namelower)s_f90.{SHLIB_EXT}', f'lib/lib%(namelower)s.{SHLIB_EXT}'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'tools'
