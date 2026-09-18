@@ -1,0 +1,75 @@
+Add Python 3.13 support for updating sys.argv
+
+Python 3.13 no longer exposes _PyInterpreterState_GetConfigCopy and
+_PyInterpreterState_SetConfig through the public headers.
+
+For Python 3.13 and newer, update sys.argv directly through the public
+Python C API. This also preserves the existing runtime-modified sys.path,
+which is the reason Slicer used the interpreter configuration APIs here.
+
+Keep the existing PyConfig implementation for Python versions before 3.13.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- a/Base/QTCore/qSlicerCoreApplication.cxx
++++ b/Base/QTCore/qSlicerCoreApplication.cxx
+@@ -1289,6 +1289,7 @@ void qSlicerCoreApplication::handleCommandLineArguments()
+ {
+   if (this->corePythonManager())
+   {
++#if PY_VERSION_HEX < 0x030D0000
+     // Snapshot current sys.path BEFORE applying the config.
+     // Rationale: _PyInterpreterState_SetConfig replaces sys.path from the config.
+     // We capture the runtime-augmented sys.path so we can install it into the config.
+@@ -1306,6 +1307,7 @@ void qSlicerCoreApplication::handleCommandLineArguments()
+     bool ok = false;
+     QStringList savedSysPath = PythonQtConv::PyObjToStringList(sysPath, true, ok);
+     Q_UNUSED(ok);
++#endif
+ 
+     // Note that 'pythonScript' is ignored if 'extraPythonScript' is specified
+     QString pythonScript = options->pythonScript();
+@@ -1330,6 +1332,36 @@ void qSlicerCoreApplication::handleCommandLineArguments()
+       pythonArgv[i + 1] = QStringToPythonWCharPointer(scriptArgs.at(i));
+     }
+ 
++#if PY_VERSION_HEX >= 0x030D0000
++    // Python 3.13 no longer exposes the private interpreter configuration
++    // functions used below. Set sys.argv directly instead. Unlike replacing
++    // the interpreter configuration, this leaves the runtime-modified
++    // sys.path untouched.
++    PyObject* sysArgv = PyList_New(pythonArgc);
++    if (!sysArgv)
++    {
++      PyErr_Print();
++      qSlicerCoreApplication::terminate(EXIT_FAILURE);
++    }
++    for (int i = 0; i < pythonArgc; ++i)
++    {
++      PyObject* arg = PyUnicode_FromWideChar(pythonArgv[i], -1);
++      if (!arg)
++      {
++        Py_DECREF(sysArgv);
++        PyErr_Print();
++        qSlicerCoreApplication::terminate(EXIT_FAILURE);
++      }
++      PyList_SET_ITEM(sysArgv, i, arg);
++    }
++    if (PySys_SetObject("argv", sysArgv) < 0)
++    {
++      Py_DECREF(sysArgv);
++      PyErr_Print();
++      qSlicerCoreApplication::terminate(EXIT_FAILURE);
++    }
++    Py_DECREF(sysArgv);
++#else
+     PyConfig config;
+     PyConfig_InitPythonConfig(&config);
+     // Retrieve a copy of the current interpreter configuration.
+@@ -1371,6 +1403,7 @@ void qSlicerCoreApplication::handleCommandLineArguments()
+     }
+ 
+     PyConfig_Clear(&config);
++#endif
+ 
+     // Set 'sys.executable' so that Slicer can be used as a "regular" python interpreter
+     this->corePythonManager()->executeString(
