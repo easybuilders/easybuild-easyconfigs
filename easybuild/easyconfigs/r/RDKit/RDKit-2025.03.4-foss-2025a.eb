@@ -39,7 +39,12 @@ _config_opts = [
 ]
 configopts = ' '.join(_config_opts)
 
-_src_dir = f'%(builddir)s/rdkit-Release_{_version}'
+# Use process-available CPUs instead of total node CPUs in testThreads.py
+prebuildopts = (
+    "sed -i 's/import multiprocessing/import os/; "
+    "s/multiprocessing\\.cpu_count()/os.process_cpu_count()/' "
+    "%(builddir)s/%(namelower)s-*/Code/GraphMol/Wrap/testThreads.py && "
+)
 
 # merge source directory into build directory in order to run the tests
 buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./'
