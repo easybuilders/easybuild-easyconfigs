@@ -1,0 +1,119 @@
+easyblock = 'PythonBundle'
+
+name = 'Foundry'
+version = '0.2.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/RosettaCommons/foundry'
+description = """Foundry provides tooling and infrastructure for using and
+training biomolecular foundation models, including RFD3, RF3, and
+ProteinMPNN/LigandMPNN."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [('hatchling', '1.27.0')]
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('PyTorch', '2.9.1', f'{versionsuffix}-whl'),
+    ('dm-tree', '0.1.10'),
+    ('einops', '0.8.1'),
+    ('Hydra', '1.3.2', '-with-plugins'),
+    ('Lightning', '2.6.1', versionsuffix),
+    ('PyTorch-Lightning', '2.6.1', versionsuffix),
+    ('opt-einsum', '3.4.0'),
+    ('jupyter-server', '2.16.0'),  # for ipykernel
+    ('AtomWorks', '2.2.1', versionsuffix),
+    ('wandb', '0.25.1'),
+    ('pydantic', '2.11.7'),
+]
+
+local_cueq_ops_torch_tmpl_suffix = 'cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl'
+local_cueq_ops_torch_tmpl = f'cuequivariance_ops_torch_cu%(cudamajver)s-%(version)s-{local_cueq_ops_torch_tmpl_suffix}'
+
+exts_list = [
+    ('assertpy', '1.1', {
+        'checksums': ['acc64329934ad71a3221de185517a43af33e373bb44dc05b5a9b174394ef4833'],
+    }),
+    ('beartype', '0.22.9', {
+        'checksums': ['8f82b54aa723a2848a56008d18875f91c1db02c32ef6a62319a002e3e25a975f'],
+    }),
+    ('frozendict', '2.4.7', {
+        'checksums': ['e478fb2a1391a56c8a6e10cc97c4a9002b410ecd1ac28c18d780661762e271bd'],
+    }),
+    ('einx', '0.4.3', {
+        # fix configuration error: `project.license` must be valid exactly by one definition (2 matches found)
+        'preinstallopts': "sed -i '/^license/d' pyproject.toml && ",
+        'checksums': ['be7d81ea1908b9f00e4a467840998fc483c33aa32aaaaa3ada6c8386f693edf9'],
+    }),
+    ('marshmallow', '4.3.1', {
+        # fix configuration error: license field should be <class 'dict'>, not <class 'str'>
+        'preinstallopts': """sed -i 's/license = "MIT"/license = {text = "MIT"}/g' pyproject.toml &&""",
+        'checksums': ['fb6b8048af08d4ab061610d5b7d3696a7e4c95337dbda880edb9f95812cabc20'],
+    }),
+    ('environs', '11.0.0', {
+        'checksums': ['069727a8f73d8ba8d033d3cd95c0da231d44f38f1da773bf076cef168d312ee8'],
+    }),
+    ('wadler_lindig', '0.1.7', {
+        'checksums': ['81d14d3fe77d441acf3ebd7f4aefac20c74128bf460e84b512806dccf7b2cd55'],
+    }),
+    ('jaxtyping', '0.3.11', {
+        'checksums': ['b09c14acf6686feb9e0df5b0d8c6e7c5b6f8d36bf059ee54cd522a186c2ef050'],
+    }),
+    ('loralib', '0.1.2', {
+        'checksums': ['22ccff494a6254b973ddaee9f9aad4657941cab4221c75c5a04e0cac4fbd4567'],
+    }),
+    ('python-dotenv', '1.2.3', {
+        'modulename': 'dotenv',
+        'sources': ['python_dotenv-%(version)s.tar.gz'],
+        'checksums': ['a20a594dabeaa385725aa239d5244871c143ecb356add8a20fcf23773a6c3a35'],
+    }),
+    ('rootutils', '1.0.7', {
+        'checksums': ['7e2444cdbf4a73a907875fb109d55a38b4ee21313cef305bf59fadbf540440bc'],
+    }),
+    ('nvidia-ml-py', '13.595.45', {
+        'modulename': 'pynvml',
+        'checksums': ['c9f34897fe0441ff35bc8f35baf80f830a20b0f4e6ce71e0a325bc0e66acf079'],
+    }),
+    ('cuequivariance', '0.10.0', {
+        'checksums': ['8be785f84a0c25b6b3e927e551078be261f0900c583a7c8c95744bcd5fa1967d'],
+    }),
+    ('cuequivariance-ops-cu%(cudamajver)s', '0.10.0', {
+        'modulename': 'cuequivariance_ops',
+        'source_tmpl':
+            'cuequivariance_ops_cu%(cudamajver)s-%(version)s-py3-none-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl',
+        'checksums': ['ca09836949cd86dd64fe7ef224b6212531049b94b9b5b4c1d928985eff0cf0b3'],
+    }),
+    ('cuequivariance-torch', '0.10.0', {
+        'checksums': ['90af8143f3b8f6e97beeca2853a31fd67f1de9c1820a0547465f82d78b423df8'],
+    }),
+    ('cuequivariance-ops-torch-cu%(cudamajver)s', '0.10.0', {
+        'modulename': 'cuequivariance_ops_torch',
+        'source_tmpl': local_cueq_ops_torch_tmpl,
+        'checksums': ['3918d85c601d52b039b8d5599f84408bdf2e3d65c2299530d7917d349fe0226d'],
+    }),
+    ('rc-foundry', version, {
+        'installopts': '--ignore-requires-python',
+        'modulename': 'foundry',
+        'source_tmpl': 'rc_foundry-%(version)s-py3-none-any.whl',
+        'use_pip_extras': 'all',
+        'checksums': ['684efb20d0b008baf3a73d687a5d8ae104b30279ec636fb8802c2ae12f1d976c'],
+    }),
+]
+
+postinstallcmds = [
+    "sed -i 's/ipykernel>=6\\.31\\.0/ipykernel>=6.29.5/g' "
+    "%(installdir)s/lib/python3.13/site-packages/rc_foundry-0.2.0.dist-info/METADATA",
+]
+
+sanity_check_commands = [
+    'foundry --help',
+    'rfd3 --help',
+    'rf3 --help',
+    'rfd3na --help',
+    'mpnn --help',
+    'python -c "import foundry"',
+]
+
+moduleclass = 'bio'
