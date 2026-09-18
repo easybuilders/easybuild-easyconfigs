@@ -1,0 +1,60 @@
+easyblock = 'CMakeMake'
+
+name = 'Kokkos-Kernels'
+version = '5.1.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://kokkos.org/'
+description = '''
+Kokkos C++ Performance Portability Programming EcoSystem:
+Math Kernels - Provides BLAS, Sparse BLAS and Graph Kernels
+
+KokkosKernels implements local computational kernels for linear algebra and
+graph operations, using the Kokkos shared-memory parallel programming model.
+"Local" means not using MPI, or running within a single MPI process without
+knowing about MPI. "Computational kernels" are coarse-grained operations; they
+take a lot of work and make sense to parallelize inside using Kokkos.
+KokkosKernels can be the building block of a parallel linear algebra library
+like Tpetra that uses MPI and threads for parallelism, or it can be used
+stand-alone in your application.
+'''
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+github_account = 'kokkos'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['d45c30388ff4d4e80edf320f905a6674f4f323a1e2c30d959c596de4623c6644']
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+]
+
+dependencies = [
+    ('CUDA', '13.3.0', '', SYSTEM),
+    ('magma', '2.10.0', versionsuffix),
+    ('Kokkos', version, versionsuffix),
+]
+
+configopts = ' '.join([
+    '-DKokkosKernels_ENABLE_TPL_BLAS=ON',
+    '-DKokkosKernels_ENABLE_TPL_LAPACK=ON',
+    '-DKokkosKernels_ENABLE_TPL_MAGMA=ON',
+    '-DKokkosKernels_BLAS_ROOT=$EBROOTFLEXIBLAS',
+    '-DKokkosKernels_LAPACK_ROOT=$EBROOTFLEXIBLAS',
+    '-DKokkosKernels_MAGMA_ROOT=$EBROOTMAGMA',
+    '-DKokkosKernels_ENABLE_TESTS=ON',
+])
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': [
+        'include/KokkosSparse.hpp',
+        'include/KokkosBlas.hpp',
+        'lib/libkokkoskernels.a',
+        'lib/cmake/KokkosKernels/KokkosKernelsConfig.cmake'
+    ],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
