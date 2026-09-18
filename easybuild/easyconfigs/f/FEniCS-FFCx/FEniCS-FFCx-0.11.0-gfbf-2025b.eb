@@ -1,0 +1,55 @@
+easyblock = 'PythonPackage'
+
+name = 'FEniCS-FFCx'
+version = '0.11.0'
+
+homepage = 'https://github.com/FEniCS/ffcx'
+
+description = """
+FFCx is a new version of the FEniCS Form Compiler. It is being actively
+developed and is compatible with DOLFINx
+"""
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+
+source_urls = ['https://github.com/FEniCS/ffcx/archive/refs/tags/']
+sources = [f'v{version}.tar.gz']
+checksums = ['7df1c086c0398b72343a5f047c7e6aa17ea05f1ba123e3e0ca858d6a133b13bd']
+
+builddependencies = [
+    ('scikit-build-core', '0.11.5'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('FEniCS-Basix-Python', '0.11.0'),
+    ('FEniCS-UFL', '2026.1.0'),
+]
+
+_test_targets = [ 'test/%s' % test for test in
+    [
+        'test_add_mode.py',
+        'test_cache.py',
+        'test_custom_data.py',
+        'test_jit_expression.py',
+        'test_lnodes.py',
+        'test_submesh.py',
+        'test_tensor_product.py'
+    ]
+]
+_tests = ' '.join(_test_targets)
+
+testinstall = True
+runtest = (
+    'python test/poisson.py && '
+    'python -m pytest -n auto %s' % _tests
+)
+
+options = {'modulename': 'ffcx'}
+
+sanity_check_commands = [
+    fr"ffcx --version | grep -qE 'ffcx \(version {version}\)'"
+]
+
+moduleclass = 'cae'
