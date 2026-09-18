@@ -1,0 +1,28 @@
+Add software relevant environment variables
+
+The multinode runner launches processes with pdsh, if LD_LIBRARY_PATH is
+not included in these exports then the python .so file may not be found.
+Also including what seemed important and was added from loading DeepSpeed.
+(Couldn't add everything, then argument list becomes too long).
+
+See https://github.com/easybuilders/easybuild-easyconfigs/pull/21438#issuecomment-2373540098
+
+Note: Those are prefixes of variables to be included.
+
+Author: Viktor Rehnberg (Chalmers University of Technology)
+
+diff --git a/deepspeed/launcher/runner.py b/deepspeed/launcher/runner.py
+--- a/deepspeed/launcher/runner.py
++++ b/deepspeed/launcher/runner.py
+@@ -32,6 +32,11 @@ from deepspeed.accelerator import get_accelerator
+ 
+ DLTS_HOSTFILE = "/job/hostfile"
+ EXPORT_ENVS = ['MLFLOW', 'PYTHON', 'MV2', 'UCX']
++EXPORT_ENVS += [ # Extra based on what's added by module load DeepSpeed
++    'LD_LIBRARY_PATH', 'PATH', 'EB', 'TRITON', 'CUDA',  # important
++    'ACLOCAL', 'CMAKE', 'CPATH', 'LIBRARY_PATH', 'MPL', 'NCCL',
++    'PKG_CONFIG_PATH', 'XDG_DATA_DIRS',
++]
+ EXPORT_ENVS += NEBULA_EXPORT_ENVS
+ DEEPSPEED_ENVIRONMENT_NAME = os.getenv("DS_ENV_FILE", ".deepspeed_env")
+ DEEPSPEED_ENVIRONMENT_PATHS = [os.path.expanduser("~"), '.']
