@@ -1,0 +1,58 @@
+Fix dependency paths and Ipopt plugin dependencies for external libraries.
+
+FreeFEM assumes header layouts that differ from those used by several
+EasyBuild dependencies. Update the SuperLU, MMG, ParMmg, and Ipopt header
+paths to match the installed external libraries.
+
+Ipopt 3.14 installs its public headers under include/coin-or rather than
+include/coin, so update both configure-time detection and the ff-Ipopt
+plugin source.
+
+The ff-Ipopt plugin also explicitly requires FreeFEM's legacy mumps_seq
+and libseq libraries. These are not provided by the external Ipopt stack,
+where Ipopt is already built with its MUMPS dependency. Drop these
+additional plugin requirements while keeping BLAS and Fortran support.
+
+Original author: steven.vandenbrande@kuleuven.be
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+
+--- configure.ac.orig
++++ configure.ac
+@@ -2224,7 +2224,7 @@
+ 	[[mumps_ptscotch],[-lpord_ptscotch -lmumps_common_ptscotch -ldmumps_ptscotch -lzmumps_ptscotch -lpord_ptscotch],[dmumps_c.h]],
+ 	[[mumps_scotch],[-lpord_scotch -lmumps_common_scotch -ldmumps_scotch -lzmumps_scotch -lpord_scotch],[dmumps_c.h]],
+ 	[[fftw3],[-lfftw3],[${inc_usr_include}fftw3.h],[]],
+-	[[superlu],[-lsuperlu],[${inc_usr_include}superlu/superlu_enum_consts.h],[]],
++	[[superlu],[-lsuperlu],[${inc_usr_include}superlu_enum_consts.h],[]],
+         [[blacs],[ -lblacsCinit$ff_with_mpi	-lblacsF77init$ff_with_mpi	-lblacs$ff_with_mpi],[]],
+         [[scalapack],[-lscalapack$ff_with_mpi],[]],
+         [[scotch],[-lscotch -lscotcherr],[scotch.h]],
+@@ -2233,14 +2233,14 @@
+ 	[[metis],[-lmetis],[metis.h],[]],
+ 	[[parmetis],[-lparmetis -lmetis],[],[]],
+ 	[[freeyams],[-lfreeyams],[freeyamslib.h],[]],
+-	[[mmg3d],[-lmmg3d-v4],[libmmg3d.h],[]],
+-        [[mmg],[-lmmg],[libmmg.h],[]],
++	[[mmg3d],[-lmmg3d],[mmg/mmg3d/libmmg3d.h],[]],
++        [[mmg],[-lmmg],[mmg/libmmg.h],[]],
+         [[zlib],[-lz],[zlib.h],[]],
+-        [[parmmg],[-lparmmg],[libparmmg.h],[]],
++        [[parmmg],[-lparmmg],[parmmg/libparmmg.h],[]],
+ 	[[mshmet],[-lmshmet],[mshmetlib.h],[]],
+ dnl	[[gsl],[-lgsl -lgslcblas -lm],[gsl/gsl_sf.h],[]],
+ 	[[tetgen],[-ltet],[tetgen.h],[]],
+-	[[ipopt],[ -lipopt],[${inc_usr_include}coin/IpTNLP.hpp],[]],
++	[[ipopt],[ -lipopt],[${inc_usr_include}coin-or/IpTNLP.hpp],[]],
+ 	[[nlopt],[ -lnlopt],[nlopt.hpp],[]]
+     ]
+     )
+--- plugin/seq/ff-Ipopt.cpp.orig
++++ plugin/seq/ff-Ipopt.cpp
+@@ -23 +23 @@
+-//ff-c++-LIBRARY-dep: ipopt mumps_seq blas libseq fc
++//ff-c++-LIBRARY-dep: ipopt blas fc
+@@ -33,2 +33,2 @@
+-#include "coin/IpTNLP.hpp"
+-#include "coin/IpIpoptApplication.hpp"
++#include "coin-or/IpTNLP.hpp"
++#include "coin-or/IpIpoptApplication.hpp"
