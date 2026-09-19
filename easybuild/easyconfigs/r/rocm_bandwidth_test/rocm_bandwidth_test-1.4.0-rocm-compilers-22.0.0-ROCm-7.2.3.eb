@@ -1,0 +1,68 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'CMakeMake'
+
+name = 'rocm_bandwidth_test'
+version = '1.4.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/rocm_bandwidth_test'
+description = """ROCm Bandwidth Test is designed to capture the performance characteristics
+of buffer copying and kernel read and write operations. The benchmark help screen shows various
+options for initiating copy, read, and write operations. In addition to this, you can also query
+the system topology in terms of memory pools and their agents."""
+docurls = ['https://rocm.docs.amd.com/projects/rocm_bandwidth_test/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+github_account = 'ROCm'
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/%(github_account)s',
+        'repo_name': '%(name)s',
+        'tag': f'rocm-{_rocm_version}',
+        'recursive': True,
+    },
+    'filename': f'%(name)s-rocm-{_rocm_version}.tar.gz',
+}]
+patches = ['%(name)s-%(version)s_fix-install-paths.patch']
+checksums = [
+    None,  # rocm_bandwidth_test-rocm-7.2.3.tar.gz
+    # rocm_bandwidth_test-1.4.0_fix-install-paths.patch
+    'aa0b136f3755b94588acd465756f9b32f92e2d353addc5ba5973b6f430b2eb5a',
+]
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('git', '2.54.0'),
+    ('patchelf', '0.18.0'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('numactl', '2.0.19'),
+]
+
+configopts = '-DAMD_APP_STANDALONE_BUILD_PACKAGE=ON '
+configopts += '-DCPACK_GENERATOR=TGZ '
+configopts += '-DNUMA_INCLUDE_DIR=$EBROOTNUMACTL/include '
+configopts += '-DHSA_INCLUDE_DIR=$EBROOTROCMMINLLVM/include '
+
+sanity_check_paths = {
+    'files': ['bin/rocm-bandwidth-test'],
+    'dirs': ['share/doc/rocm-bandwidth-test'],
+}
+
+postinstallcmds = [
+    "patchelf --force-rpath --set-rpath '$ORIGIN/../lib:$ORIGIN/../lib64' "
+    "%(installdir)s/bin/rocm_bandwidth_test || true",
+    "patchelf --force-rpath --set-rpath '$ORIGIN' %(installdir)s/lib/libamd_tb.so.2025.06.09 || true",
+    "patchelf --force-rpath --set-rpath '$ORIGIN' "
+    "%(installdir)s/lib/libamd_work_bench.so.2025.06.09 || true",
+    "patchelf --force-rpath --set-rpath '$ORIGIN' "
+    "%(installdir)s/lib64/libamd_tb.so.2025.06.09 || true",
+    "patchelf --force-rpath --set-rpath '$ORIGIN' "
+    "%(installdir)s/lib64/libamd_work_bench.so.2025.06.09 || true",
+]
+
+moduleclass = 'tools'

@@ -1,0 +1,67 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'ROCmComponent'
+
+name = 'composable_kernel'
+version = '1.2.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/composable_kernel'
+description = """The Composable Kernel (CK) library provides a programming model for
+writing performance-critical kernels for machine learning workloads across multiple
+architectures (GPUs, CPUs, etc.). The CK library uses general purpose kernel languages, such as HIP C++."""
+docurls = ['https://rocm.docs.amd.com/projects/composable_kernel/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+github_account = 'ROCm'
+local_repo_name = 'rocm-libraries'
+source_urls = [f'https://github.com/{github_account}/{local_repo_name}/archive']
+sources = [{
+    'download_filename': f'rocm-{_rocm_version}.tar.gz',
+    'filename': f'{local_repo_name}-rocm-{_rocm_version}.tar.gz',
+}]
+checksums = ['300cc50720d40bad7c7ed1f6d67e8c5ebecaba62c07a6ea1cc5813c0ea2e41b5']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('Python', '3.13.5'),
+    ('pkgconf', '2.4.3'),
+    ('git', '2.54.0'),
+    ('half', '2.2.0'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('SQLite', '3.50.1'),
+    ('zlib', '1.3.1'),
+    ('Z3', '4.15.1'),
+]
+
+# Build from the projects/composablekernel subdirectory
+start_dir = 'projects/composablekernel'
+
+# composable_kernel 1.2.0 does not support gfx940, gfx941 (compiler test failed)
+# gfx942 support exists in compiler but gemm_instance_builder.py doesn't recognize it
+configopts = "-DGPU_TARGETS='gfx906;gfx908;gfx90a;gfx1030;gfx1100;gfx1101' "
+configopts += "-DBUILD_TESTING=OFF "
+
+# Disable Legacy/Fallback Kernels
+configopts += "-DDL_KERNELS=OFF -DDPP_KERNELS=OFF "
+
+# Disable Developer Bloat & Strict Warnings
+configopts += "-DBUILD_DEV=OFF -DCK_TIME_KERNEL=OFF -DCK_USE_CODEGEN=OFF "
+configopts += "-DUSE_BITINT_EXTENSION_INT4=OFF -DUSE_OPT_GFX11=OFF "
+
+sanity_check_paths = {
+    'dirs': [
+        'include/ck',
+        'include/ck_tile',
+    ],
+    'files': [
+        'include/ck/ck.hpp',
+        'include/ck/version.h',
+    ],
+}
+
+moduleclass = 'lib'

@@ -1,0 +1,51 @@
+# Author:   Jan André Reuter <j.reuter@fz-juelich.de>
+
+easyblock = 'ROCmComponent'
+
+name = 'rocprofiler-register'
+version = '0.4.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/rocprofiler-register'
+description = """The rocprofiler-register library is a helper library that coordinates the
+modification of the intercept API table(s) of the HSA/HIP/ROCTx runtime libraries by the
+ROCprofiler (v2) library. The purpose of this library is to provide a consistent and automated
+mechanism of enabling performance analysis in the ROCm runtimes which does not rely on
+environment variables or unique methods for each runtime library."""
+docurls = ['https://rocm.docs.amd.com/projects/rocprofiler-register/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+source_urls = ['https://github.com/ROCm/rocm-systems/archive/']
+sources = [f'rocm-{_rocm_version}.tar.gz']
+patches = ['rocprofiler-register-0.4.0-ROCm-7.2.3_disable_packaging_external.patch']
+checksums = [
+    'e90cfd8694af28a56433c8827a581ee12a4ba835f0d952436741d9e0f3f8685b',  # rocm-systems-rocm-7.2.3.tar.gz
+    # rocprofiler-register-0.4.0-ROCm-7.2.3_disable_packaging_external.patch
+    '9796203fb7c16912f13e6f775a9632a81154432dd36fd08f3bea6535fea156d7',
+]
+
+# Source is in projects/rocprofiler-register within the rocm-systems archive
+srcdir = 'projects/%(name)s'
+
+configopts = '-DROCPROFILER_REGISTER_BUILD_GLOG=OFF '
+configopts += '-DROCPROFILER_REGISTER_BUILD_FMT=OFF '
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('git', '2.50.1'),
+]
+
+dependencies = [
+    ('fmt', '11.2.0'),
+    ('glog', '0.7.1'),
+]
+
+sanity_check_paths = {
+    'files': ['lib/librocprofiler-register.so',
+              'include/rocprofiler-register/rocprofiler-register.h'],
+    'dirs': ['lib/cmake/rocprofiler-register',
+             'include/rocprofiler-register/'],
+}
+
+moduleclass = 'lib'

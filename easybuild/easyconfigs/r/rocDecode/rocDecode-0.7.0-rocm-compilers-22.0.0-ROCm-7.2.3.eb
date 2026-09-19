@@ -1,0 +1,63 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'CMakeMake'
+
+name = 'rocDecode'
+version = '0.7.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/rocDecode'
+description = """rocDecode is a high performance video decode SDK for AMD GPUs. Using the rocDecode API,
+you can access the video decoding features available on your GPU."""
+docurls = ['https://rocm.docs.amd.com/projects/rocDecode/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+source_urls = ['https://github.com/ROCm/rocDecode/archive/']
+sources = [{
+    'download_filename': f'rocm-{_rocm_version}.tar.gz',
+    'filename': f'rocDecode-rocm-{_rocm_version}.tar.gz',
+}]
+checksums = ['058ad6046a2c24e2610a87c4eefaebf62e4f94e5fcd10c42fd6d1863835fe593']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('pkgconf', '2.4.3'),
+    ('patchelf', '0.18.0'),
+]
+
+dependencies = [
+    ('libdrm', '2.4.125'),
+    ('libva', '2.24.1'),
+    ('FFmpeg', '7.1.2'),
+    ('HIP', _rocm_version),
+    ('rocprofiler-register', '0.4.0'),
+]
+
+configopts = '-DLIBVA_INCLUDE_DIR=$EBROOTLIBVA/include '
+configopts += '-DLIBVA_LIBRARY=$EBROOTLIBVA/lib/libva.so '
+configopts += '-DLIBVA_DRM_LIBRARY=$EBROOTLIBVA/lib/libva-drm.so '
+configopts += '-DLIBDRM_AMDGPU_INCLUDE_DIR=$EBROOTLIBDRM/include '
+configopts += '-DLIBDRM_AMDGPU_LIBRARY=$EBROOTLIBDRM/lib/libdrm_amdgpu.so '
+
+postinstallcmds = [
+    'patchelf --force-rpath --set-rpath '
+    '"$ORIGIN:$EBROOTLIBVA/lib:$EBROOTLIBDRM/lib:$EBROOTHIP/lib:$EBROOTROCPROFILERMINREGISTER/lib" '
+    '%(installdir)s/lib/librocdecode.so.1.7.0 || true',
+    'patchelf --force-rpath --set-rpath '
+    '"$ORIGIN:$EBROOTLIBVA/lib:$EBROOTLIBDRM/lib:$EBROOTHIP/lib:$EBROOTROCPROFILERMINREGISTER/lib:$EBROOTFFMPEG/lib" '
+    '%(installdir)s/lib/librocdecode-host.so.1.0.0 || true',
+    'patchelf --force-rpath --set-rpath '
+    '"$ORIGIN:$EBROOTLIBVA/lib:$EBROOTLIBDRM/lib:$EBROOTHIP/lib:$EBROOTROCPROFILERMINREGISTER/lib" '
+    '%(installdir)s/lib64/librocdecode.so.1.7.0 || true',
+    'patchelf --force-rpath --set-rpath '
+    '"$ORIGIN:$EBROOTLIBVA/lib:$EBROOTLIBDRM/lib:$EBROOTHIP/lib:$EBROOTROCPROFILERMINREGISTER/lib:$EBROOTFFMPEG/lib" '
+    '%(installdir)s/lib64/librocdecode-host.so.1.0.0 || true',
+]
+
+sanity_check_paths = {
+    'files': ['lib/librocdecode.so', 'include/rocdecode/rocdecode.h'],
+    'dirs': ['lib', 'include/rocdecode'],
+}
+
+moduleclass = 'lib'

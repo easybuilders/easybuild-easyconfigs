@@ -1,0 +1,62 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'ROCmComponent'
+
+name = 'MIOpen'
+version = '3.5.1'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/MIOpen'
+description = """MIOpen is AMD's library for high-performance machine learning primitives.
+It provides highly optimized implementations of standard machine learning operations, including
+convolutions, pooling, normalization, activation, and other operations commonly used in deep
+learning frameworks."""
+docurls = ['https://rocm.docs.amd.com/projects/MIOpen/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+github_account = 'ROCm'
+local_repo_name = 'rocm-libraries'
+source_urls = [f'https://github.com/{github_account}/{local_repo_name}/archive']
+sources = [{
+    'download_filename': f'rocm-{_rocm_version}.tar.gz',
+    'filename': f'{local_repo_name}-rocm-{_rocm_version}.tar.gz',
+}]
+checksums = ['300cc50720d40bad7c7ed1f6d67e8c5ebecaba62c07a6ea1cc5813c0ea2e41b5']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('Python', '3.13.5'),
+    ('rocm-cmake', '0.14.0'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocBLAS', '5.2.0'),
+    ('rocRAND', '4.2.0'),
+    ('composable_kernel', '1.2.0'),
+    ('rocMLIR', '1.0.0'),
+    ('half', '1.12.0'),
+    ('SQLite', '3.50.1'),
+    ('flatbuffers', '25.2.10'),
+    ('spdlog', '1.15.3'),
+    ('nlohmann_json', '3.12.0'),
+    ('frugally-deep', '0.15.31'),
+]
+
+# Build from the projects/miopen subdirectory
+start_dir = 'projects/miopen'
+
+configopts = '-DMIOPEN_BACKEND=HIP '
+configopts += '-DMIOPEN_USE_COMPOSABLEKERNEL=ON '
+configopts += '-DBUILD_TESTING=OFF '
+
+sanity_check_paths = {
+    'files': ['include/miopen/miopen.h',
+              f'lib/libMIOpen.{SHLIB_EXT}',
+              'lib/cmake/miopen/miopen-config.cmake'],
+    'dirs': ['share/doc/miopen-hip',
+             'include/miopen'],
+}
+
+moduleclass = 'lib'

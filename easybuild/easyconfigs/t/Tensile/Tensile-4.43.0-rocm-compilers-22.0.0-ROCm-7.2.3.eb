@@ -1,0 +1,61 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'PythonBundle'
+
+name = 'Tensile'
+version = '4.43.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/Tensile'
+description = """Tensile is a tool for creating benchmark-driven backend libraries for
+GEMMs, GEMM-like problems (such as batched GEMM), and general N-dimensional tensor
+contractions on a GPU. The Tensile library is mainly used as a backend library for rocBLAS.
+Tensile acts as the performance backbone for a wide variety of 'compute' applications
+running on AMD GPUs."""
+docurls = ['https://rocm.docs.amd.com/projects/Tensile/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+builddependencies = [
+    ('poetry', '2.1.3'),
+    ('Cython', '3.2.4')
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('PyYAML', '6.0.2'),
+    ('msgpack-cxx', '7.0.0'),
+]
+
+github_account = 'ROCm'
+exts_list = [
+    ('joblib', '1.6.0', {
+        'checksums': ['2ccc96785b12046c08fd6d55839c12857831b54a3c1673ffadd2f04bfc4eda03'],
+    }),
+    ('msgpack', '1.2.2', {
+        'buildcmd': "make ",
+        'source_urls': ['https://github.com/msgpack/msgpack-python/archive/refs/tags'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['b1d18dfb15e8eff063d4e0436d1954b5ea24620a6b000076f667110274561f94'],
+    }),
+    ('rich', '14.0.0', {
+        'checksums': ['82f1bc23a6a21ebca4ae0c45af9bdbc492ed20231dcb63f297d6d1021a9d5725'],
+    }),
+    (name, version, {
+        'modulename': 'Tensile',
+        'patches': ['%(name)s-%(version)s_fix-readonly-copy.patch'],
+        'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
+        'sources': [f'rocm-{_rocm_version}.tar.gz'],
+        'checksums': [
+            None,  # rocm-7.2.3.tar.gz
+            {'Tensile-4.43.0_fix-readonly-copy.patch':
+             'b9988b3e5463ca3b36999371c5194d63bda393c6c2d9489b15a74fce4aac1623'},
+        ],
+    }),
+]
+
+sanity_check_commands = [
+    'Tensile --version',
+]
+
+moduleclass = 'lib'

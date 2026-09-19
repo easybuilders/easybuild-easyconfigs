@@ -1,0 +1,101 @@
+# Author:   Jan André Reuter <j.reuter@fz-juelich.de>
+
+easyblock = 'Bundle'
+
+name = 'HIP'
+_rocm_version = '7.2.3'
+version = _rocm_version
+
+homepage = 'https://github.com/ROCm/HIP'
+description = """HIP is a C++ Runtime API and Kernel Language that allows
+developers to create portable applications for AMD and NVIDIA GPUs from single
+source code."""
+docurls = ['https://rocmdocs.amd.com/projects/HIP/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('CppHeaderParser', '2.7.4'),
+]
+
+dependencies = [
+    ('libglvnd', '1.7.0'),
+    ('rocm-cmake', '0.14.0'),
+    ('numactl', '2.0.19'),
+    ('Perl', '5.40.2'),
+    ('rocminfo', '1.0.0'),
+    ('rocprofiler-register', '0.4.0'),
+]
+
+default_easyblock = 'CMakeMake'
+
+components = [
+    ('HIPCC', '%s' % _rocm_version, {
+        'source_urls': ['https://github.com/ROCm/llvm-project/archive/'],
+        'sources': [{
+            'download_filename': 'rocm-%(version)s.tar.gz',
+            'filename': 'llvm-project-rocm-%(version)s.tar.gz'
+        }],
+        'patches': ['HIP-7.2.3_use_easybuild_rocminfo_path.patch'],
+        'checksums': [
+            '6239fa0c72b150cf0a325676264d3030a67389dec4fca7103f563a70c2b70114',  # llvm-project-rocm-7.2.3.tar.gz
+            # HIP-7.2.3_use_easybuild_rocminfo_path.patch
+            'c6bd84976d69b52d5f9a6208002e35da171e44897fd27addca94697473199555',
+        ],
+        # HIPCC is located in amd/hipcc within llvm-project archive
+        'start_dir': 'llvm-project-rocm-%s/amd/hipcc' % _rocm_version,
+    }),
+    ('HIP', '%s' % _rocm_version, {
+        'source_urls': ['https://github.com/ROCm/rocm-systems/archive/'],
+        'sources': [{
+            'download_filename': 'rocm-%(version)s.tar.gz',
+            'filename': 'rocm-systems-rocm-%(version)s.tar.gz',
+        }],
+        'checksums': [
+            'e90cfd8694af28a56433c8827a581ee12a4ba835f0d952436741d9e0f3f8685b',  # rocm-systems-rocm-7.2.3.tar.gz
+        ],
+        # HIP/CLR is located in projects/clr within rocm-systems archive
+        'start_dir': 'rocm-systems-rocm-%(version)s/projects/clr',
+        'configopts': '-DHIP_COMMON_DIR=%(builddir)s/rocm-systems-rocm-%(version)s/projects/hip/ ' +
+                      '-DHIP_PLATFORM=amd -DHIPCC_BIN_DIR=%(installdir)s/bin ' +
+                      '-DCLR_BUILD_HIP=ON -DCLR_BUILD_OCL=OFF'
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['hipcc', 'hipconfig']] +
+             ['bin/%s' % x for x in ['roc-obj', 'roc-obj-extract', 'roc-obj-ls']] +
+             ['include/hip/hip_common.h', 'include/hip/hip_runtime.h', 'lib/libamdhip64.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+sanity_check_commands = [
+    'hipcc --help',
+    'hipconfig --full'
+]
+
+modextravars = {
+    'HIP_COMPILER': 'amdclang',
+    'HIP_INCLUDE_PATH': '%(installdir)s/include',
+    'HIP_LIB_PATH': '%(installdir)s/lib',
+    'HIP_PATH': '%(installdir)s',
+    'HIP_RUNTIME': 'rocclr',
+    'HIPCC_PATH': '%(installdir)s',
+    'ROCM_PATH': '%(installdir)s',
+}
+
+modluafooter = """
+setenv("DEVICE_LIB_PATH", pathJoin(os.getenv("EBROOTROCMMINLLVM") or "", "amdgcn/bitcode"))
+setenv("HIP_CLANG_INCLUDE_PATH", pathJoin(os.getenv("EBROOTROCMMINLLVM") or "", "include"))
+setenv("HIP_CLANG_PATH", pathJoin(os.getenv("EBROOTROCMMINLLVM") or "", "bin"))
+setenv("HSA_PATH", os.getenv("EBROOTROCMMINLLVM") or "")
+"""
+
+modtclfooter = """
+setenv DEVICE_LIB_PATH $::env(EBROOTROCMMINLLVM)/amdgcn/bitcode
+setenv HIP_CLANG_INCLUDE_PATH $::env(EBROOTROCMMINLLVM)/include
+setenv HIP_CLANG_PATH $::env(EBROOTROCMMINLLVM)/bin
+setenv HSA_PATH $::env(EBROOTROCMMINLLVM)
+"""
+
+moduleclass = 'tools'

@@ -1,0 +1,58 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'CMakeMake'
+
+name = 'rocshmem'
+version = '1.7.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/rocSHMEM'
+description = """ROCm OpenSHMEM is a high-performance implementation of the OpenSHMEM standard,
+designed to leverage AMD GPUs for inter-process communication in HPC applications."""
+docurls = ['https://rocm.docs.amd.com/projects/rocSHMEM/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+source_urls = ['https://github.com/ROCm/rocSHMEM/archive/refs/tags/']
+sources = [{
+    'download_filename': f'rocm-{_rocm_version}.tar.gz',
+    'filename': f'rocshmem-rocm-{_rocm_version}.tar.gz',
+}]
+checksums = ['ed409d703ccc7bc07baf1e7e046c322441b2a5e83b95e4acf0ea2bd2585e71e2']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('rocm-cmake', '0.14.0'),
+    ('patchelf', '0.18.0'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocPRIM', '4.2.0'),
+    ('rocThrust', '4.2.0'),
+    ('rocm-core', '7.2.3', '-ROCm-7.2.3'),
+    ('UCX', '1.19.0'),
+    ('OpenMPI', '5.0.8', '', ('GCC', '14.3.0')),
+    ('elfutils', '0.193'),
+    ('libdrm', '2.4.125'),
+    ('numactl', '2.0.19'),
+]
+
+configopts = '-DHIP_PLATFORM=amd '
+configopts += '-DROCM_PATH=$EBROOTROCMMINCORE '
+configopts += '-DCMAKE_SKIP_INSTALL_RPATH=OFF '
+configopts += '-DCMAKE_INSTALL_RPATH_USE_LINK_PATH=TRUE '
+
+postinstallcmds = [
+    'patchelf --force-rpath --set-rpath '
+    '"$ORIGIN/../lib:$EBROOTHIP/lib:$EBROOTROCMMINLLVM/lib:$EBROOTOPENMPI/lib:'
+    '$EBROOTELFUTILS/lib:$EBROOTLIBDRM/lib:$EBROOTNUMACTL/lib" '
+    '%(installdir)s/bin/rocshmem_info || true',
+]
+
+sanity_check_paths = {
+    'files': ['lib/librocshmem.so', 'include/roc_shmem.hpp', 'bin/rocshmem_info'],
+    'dirs': ['lib', 'include', 'bin'],
+}
+
+moduleclass = 'lib'
