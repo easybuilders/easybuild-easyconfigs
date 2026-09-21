@@ -1,0 +1,46 @@
+# Updated to CMake as that is now available
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'Wannier90'
+version = '4.0.2'
+
+homepage = 'http://www.wannier.org'
+description = """A tool for obtaining maximally-localised Wannier functions"""
+
+toolchain = {'name': 'intel', 'version': '2026.1'}
+toolchainopts = {'usempi': True}
+
+github_account = 'wannier-developers'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ}]
+checksums = ['2d48b371eefa8b58a6c8088c1bdffc13fe3e761111e15c8566e2ee055d8bcdb0']
+
+builddependencies = [('CMake', '4.2.1')]
+
+# The default is to build shared libraries, i.e. -DWANNIER90_SHARED_LIBS=ON, so we build it in 3 rounds:
+# with and without MPI and with and without shared libraries. It appears that static libraries
+# and MPI does not work
+configopts = [
+    '-DWANNIER90_MPI=ON',
+    '-DWANNIER90_MPI=OFF',
+    '-DWANNIER90_SHARED_LIBS=OFF'
+]
+
+local_executables = ['wannier90.x', 'postw90.x', 'w90chk2chk.x', 'w90spn2spn.x']
+postinstallcmds = [' && '.join([
+    "cp %(builddir)s/easybuild_obj/w90chk2chk.x %(installdir)s/bin",
+    "cp %(builddir)s/easybuild_obj/w90spn2spn.x %(installdir)s/bin",
+])]
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_executables] +
+             ['lib/libwannier90.a',
+              'lib/libwannier90.%s' % SHLIB_EXT, 'lib/libwannier90_mpi.%s' % SHLIB_EXT],
+    'dirs': []
+}
+
+moduleclass = 'chem'
