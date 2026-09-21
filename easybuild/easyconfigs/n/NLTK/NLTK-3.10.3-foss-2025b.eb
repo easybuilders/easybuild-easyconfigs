@@ -1,0 +1,58 @@
+easyblock = 'PythonBundle'
+
+name = 'NLTK'
+version = '3.10.3'
+
+homepage = 'https://www.nltk.org/'
+description = "NLTK is a leading platform for building Python programs to work with human language data."
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('scikit-learn', '1.7.1'),
+    ('matplotlib', '3.10.5'),
+    ('tqdm', '4.67.1'),
+]
+
+builddependencies = [
+    ('Cython', '3.2.4'),  # needed for python-crfsuite
+]
+
+local_nltk_data_install = []
+# Install NLTK data sets (7.4 GB)
+# local_nltk_data = '/path/to/database/nltk_data'
+# local_nltk_data_install = [
+#     "mkdir -p %s && NLTK_DATA=%s python -m nltk.downloader all" % (local_nltk_data, local_nltk_data)
+# ]
+# modextravars = {'NLTK_DATA': local_nltk_data}
+
+exts_list = [
+    ('regex', '2026.9.10', {
+        # fix configuration error: `project.license` must be valid exactly by one definition (2 matches found)
+        'preinstallopts': "sed -i '/^license/d' pyproject.toml && ",
+        'checksums': ['1e321e2c84f0e52c457f5ea5944f796d6e8e09cb99738ea98dcc1bfe402a128d'],
+    }),
+    ('python-crfsuite', '0.9.12', {
+        'modulename': 'pycrfsuite',
+        'source_tmpl': 'python_crfsuite-%(version)s.tar.gz',
+        'checksums': ['db37fccc3bd8f0c49c28a7697ca79c89d67b3fd5bf119122866169240ac4c480'],
+    }),
+    ('defusedxml', '0.7.1', {
+        'checksums': ['1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69'],
+    }),
+    ('nltk', version, {
+        'use_pip_extras': 'corenlp,machine_learning,plot,tgrep',
+        'checksums': ['bb9327a461c3811c2fa4900e03840401f2126adfb30c0072827c433bd2444ea4'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+sanity_check_commands = [('%(namelower)s', '--version')]
+
+moduleclass = 'devel'
