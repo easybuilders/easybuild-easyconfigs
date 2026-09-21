@@ -614,8 +614,9 @@ class EasyConfigTest(TestCase):
                 # Java 21 is used as dep by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* on 2023b
                 (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
                          r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
-                # Java 25 is used as dep for MDSplus 7.1 and IMAS-* on 2025b
-                (r'25', [r'MDSplus-7\.1.*-GCCcore-14\.3\.0', r'IMAS-.*-2025b', r'IMAS-.*-GCCcore-14\.3\.0']),
+                # Java 25 is used as dep for MDSplus 7.1, IMAS-* and SimDB (via IMAS-Python) on 2025b
+                (r'25', [r'MDSplus-7\.1.*-GCCcore-14\.3\.0', r'IMAS-.*-2025b', r'IMAS-.*-GCCcore-14\.3\.0',
+                         r'SimDB-.*-2025b']),
             ],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
@@ -690,9 +691,11 @@ class EasyConfigTest(TestCase):
             # vLLM has pinned dependency tiktoken == 0.6.0
             'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
             # Transformers 4.57.1 needs tokenizers 0.22.1
-            'tokenizers': [('0.22.1;', ['Transformers-4.57.1-'])],
+            'tokenizers': [('0.22.1;', ['Transformers-4.57.1-', 'Geneformer-0.1.0-'])],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
+            # Geneformer needs Transformers-4.57.1
+            'Transformers': [('4.57.1;', ['Geneformer-0.1.0-'])],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
