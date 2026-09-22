@@ -1,10 +1,7 @@
-# Author: Adam McCartney (Austrian Scientific Computing)
-
 easyblock = 'CMakeMakeCp'
 
 name = 'VASP'
 version = '6.6.1'
-versionsuffix = '-CUDA-%(cudaver)s'
 
 homepage = 'http://www.vasp.at'
 description = """The Vienna Ab initio Simulation Package (VASP) is a
@@ -14,7 +11,7 @@ from first principles.
 
 This build includes HDF5 and the Wannier-90 functions."""
 
-toolchain = {'name': 'NVHPC', 'version': '25.9'}
+toolchain = {'name': 'NVHPC', 'version': '25.9-CUDA-12.9.1'}
 
 # no cuda_cc/cuda_cc_ng here -- arch comes from EASYBUILD_CUDA_COMPUTE_CAPABILITIES
 # (build_cmd.sh) or --cuda-compute-capabilities; if neither is set the build
@@ -22,16 +19,16 @@ toolchain = {'name': 'NVHPC', 'version': '25.9'}
 
 sources = [
     '%(namelower)s.%(version)s.tgz',
-    {
-        'filename': 'cmake.tar.gz',
-        'git_config': {
-            'url': 'https://github.com/vasp-dev',
-            'repo_name': 'cmake',
-            'commit': '153e94f1eacaf81b32827022afbdcf5b34d58584',
-            'recursive': True,
-            'keep_git_dir': True,
-        },
-    },
+     {
+         'filename': 'cmake.tar.gz',
+         'git_config': {
+             'url': 'https://github.com/vasp-dev',
+             'repo_name': 'cmake',
+             'commit': '9df51e44a6f2e5367bd1342c08786a71a0ef33e7',
+             'recursive': True,
+             'keep_git_dir': True,
+         },
+     },
 ]
 sources += ['vdw_kernel.bindat.%(version)s.gz']
 
@@ -45,7 +42,7 @@ local_cuda_ver = '12.9.1'
 local_cuda_major_minor = '.'.join(local_cuda_ver.split('.')[:2])
 
 dependencies = [
-    ('HDF5', '1.14.5'),
+    ('HDF5', '1.14.6'),
     ('Wannier90', '3.1.0'),
     ('FFTW', '3.3.10'),
     ('CUDA', local_cuda_ver, '', SYSTEM),
@@ -56,8 +53,7 @@ preconfigopts += 'mv ../cmake ../%(namelower)s.%(version)s/cmake && '
 preconfigopts += 'chmod +x ../%(namelower)s.%(version)s/cmake/setup.sh && '
 preconfigopts += '../%(namelower)s.%(version)s/cmake/setup.sh ../%(namelower)s.%(version)s && '
 
-configopts = '-DVASP_CUDA=ON -DVASP_CUDA_VERSION=%s ' % local_cuda_major_minor
-configopts += '-DVASP_OPENMP=ON -DVASP_HDF5=ON'
+configopts = '-DVASP_CUDA=ON -DVASP_OPENMP=ON -DVASP_HDF5=ON'
 separate_build_dir = True
 
 # Testing, can take a long time!
@@ -89,11 +85,14 @@ runtest = 'test'
 
 files_to_copy = [
     (['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin'),
+    (['../vdw_kernel.bindat.6.6.1'], '.'),
 ]
 
 sanity_check_paths = {
-    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl', 'vdw_kernel.bindat.6.6.1'],
     'dirs': [],
 }
+
+modextravars = {'VDW_KERNEL': '%(installdir)s/vdw_kernel.bindat.6.6.1'}
 
 moduleclass = 'phys'
