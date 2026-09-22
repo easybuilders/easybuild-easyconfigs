@@ -691,9 +691,11 @@ class EasyConfigTest(TestCase):
             # vLLM has pinned dependency tiktoken == 0.6.0
             'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
             # Transformers 4.57.1 needs tokenizers 0.22.1
-            'tokenizers': [('0.22.1;', ['Transformers-4.57.1-'])],
+            'tokenizers': [('0.22.1;', ['Transformers-4.57.1-', 'Geneformer-0.1.0-'])],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
+            # Geneformer needs Transformers-4.57.1
+            'Transformers': [('4.57.1;', ['Geneformer-0.1.0-'])],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
