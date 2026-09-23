@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'pdsh'
+version = '2.36'
+
+homepage = 'https://github.com/chaos/pdsh'
+description = "A high performance, parallel remote shell utility"
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ['https://github.com/chaos/pdsh/releases/download/pdsh-%(version)s/']
+sources = [SOURCE_TAR_GZ]
+patches = ['pdsh-2.36_only-check-3-levels-for-owner.patch']
+checksums = [
+    {'pdsh-2.36.tar.gz': 'a661095ce51dd5fb05e398cf5d0e1d63157123958441f6d3512bcf1a7d25c517'},
+    {'pdsh-2.36_only-check-3-levels-for-owner.patch':
+     '9a311eef296cf82efd12e8acceea76419b570aca32081b19741dc230d8972862'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('libreadline', '8.2'),
+]
+
+configopts = "--with-ssh --with-mrsh --with-readline"
+# configopts += " --with-slurm"  # Requires slurm.h
+
+sanity_check_paths = {
+    'files': ['bin/dshbak', 'bin/pdcp', 'bin/pdsh', 'bin/rpdcp'],
+    'dirs': ['lib/pdsh', 'share/man/man1'],
+}
+
+sanity_check_commands = [
+    "dshbak -h",
+    "pdcp -h 2>&1 | grep '^Usage: pdcp'",
+    "pdsh -h 2>&1 | grep '^Usage: pdsh'",
+    "rpdcp -h 2>&1 | grep '^Usage: rpdcp'",
+]
+
+moduleclass = 'tools'

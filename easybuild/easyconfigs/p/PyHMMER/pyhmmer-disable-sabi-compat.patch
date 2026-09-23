@@ -1,0 +1,20 @@
+# Avoid using Stable ABI mode, which forces a Limited API build leading to Cython compilation errors
+# 
+diff -urN pyhmmer-0.12.0/src/scripts/cmake/CythonExtension.cmake pyhmmer-0.12.0.new/src/scripts/cmake/CythonExtension.cmake
+--- pyhmmer-0.12.0/src/scripts/cmake/CythonExtension.cmake      2022-11-09 12:37:21.000000000 +0000
++++ pyhmmer-0.12.0.new/src/scripts/cmake/CythonExtension.cmake  2026-02-13 16:42:33.895972000 +0000
+@@ -1,4 +1,4 @@
+-find_package(Python COMPONENTS Interpreter Development.Module ${SKBUILD_SABI_COMPONENT} REQUIRED)
++find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+ get_property(PYTHON_EXTENSIONS_SOURCE_DIR GLOBAL PROPERTY PYTHON_EXTENSIONS_SOURCE_DIR)
+
+ # --- Detect PyInterpreterState_GetID ------------------------------------------
+@@ -112,6 +112,8 @@
+   if(EXISTS ${_name}.pxd)
+     set(EXTENSION_SOURCES ${EXTENSION_SOURCES} ${_name}.pxd)
+   endif()
++  # Disable scikit-build Stable ABI mode
++  set(SKBUILD_SABI_VERSION "")
+     if((NOT "${SKBUILD_SABI_VERSION}" STREQUAL "") AND (NOT CMAKE_BUILD_TYPE STREQUAL Debug))
+     message(STATUS "Building in Limited API mode for Python: ${SKBUILD_SABI_VERSION}")
+     python_add_library(${_target} MODULE WITH_SOABI USE_SABI "${SKBUILD_SABI_VERSION}" ${EXTENSION_SOURCES})
