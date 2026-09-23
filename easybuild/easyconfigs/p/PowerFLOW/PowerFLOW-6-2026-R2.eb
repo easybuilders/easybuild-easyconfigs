@@ -1,0 +1,50 @@
+# Author: Cintia Willemyns (Vrije Universiteit Brussel)
+
+easyblock = 'Tarball'
+name = 'PowerFLOW'
+version = '6-2026-R2'
+
+homepage = 'https://www.3ds.com/'
+description = """
+SIMULIA PowerFLOW is a software application used for simulating and visualizing fluid flows.
+"""
+toolchain = SYSTEM
+
+# This installation is for PowerFLOW using license type DSLS (Dassault Systèmes Licensing Server).
+# To set it up use environment variable:
+# DSLS_POWERFLOW_LICENSE="host1:1234,host2:2345,host3:3456;host4:4567
+
+download_instructions = 'Manually obtain tarballs from Dassault Systèmes'
+sources = [
+    'PowerFLOW_2026_Refresh2.powerflow-%(version)s-linux.1-3.tar',
+    'PowerFLOW_2026_Refresh2.powerflow-%(version)s-linux.2-3.tar',
+    'PowerFLOW_2026_Refresh2.powerflow-%(version)s-linux.3-3.tar',
+]
+checksums = [
+    {'PowerFLOW_2026_Refresh2.powerflow-6-2026-R2-linux.1-3.tar':
+     'fb3bb148866e4d3e772afce87daebf84c417ed396a30ad5972632ad5eb52c405'},
+    {'PowerFLOW_2026_Refresh2.powerflow-6-2026-R2-linux.2-3.tar':
+     'f33de6b83c85a1bd5da162e761e44810b5fc056fe1cdd1605468cda587324a08'},
+    {'PowerFLOW_2026_Refresh2.powerflow-6-2026-R2-linux.3-3.tar':
+     '7ba695838af6ca623bc6456c3483606bad566f973fb37c4121b60ce9d83c627d'},
+    {'PowerFLOW-6-2026-R2_fix-impi.patch':
+     '629b5a8f57a4e965a6556c97dbce46a27bdcd83e60bdfef6d4fc2bcc76f49242'},
+]
+
+postinstallcmds = [
+    'for f in %(builddir)s/AM_SIM_PowerFLOW.Linux64/1/unix/*.tar.gz; do tar -xzf "$f" -C %(installdir)s/; done',
+    'for f in %(builddir)s/AM_SIM_PowerFLOW.Linux64/[2-9]/*.tar.gz; do tar -xzf "$f" -C %(installdir)s/; done',
+    'rm -fr %(installdir)s/{1,2,3}',
+    'chmod u+w %(installdir)s/dist/generic/tools/queue_scripts/exarun',
+]
+
+postinstallpatches = [('%(name)s-%(version)s_fix-impi.patch', 0)]
+
+sanity_check_paths = {
+    'files': ['bin/exafile', 'dist/generic/scripts/bin_launcher', 'bin/ptherm/powertherm'],
+    'dirs': ['bin', 'dist']
+}
+
+sanity_check_commands = ["exarun  --help 2>&1 | grep -q Usage"]
+
+moduleclass = 'cae'
