@@ -1,0 +1,19 @@
+Fix call to RunModel.predict
+In the ColabFold version (https://github.com/sokrypton/alphafold.git)
+the return value from RunModel.predict now includes the number of
+iterations run. Make sure that the call to predict deals with that.
+
+Åke Sandgren, 2024-05-15
+diff --git a/run_alphafold.py b/run_alphafold.py
+index 0d89bfb..4460f44 100644
+--- a/run_alphafold.py
++++ b/run_alphafold.py
+@@ -221,7 +221,7 @@ def predict_structure(
+     timings[f'process_features_{model_name}'] = time.time() - t_0
+ 
+     t_0 = time.time()
+-    prediction_result = model_runner.predict(processed_feature_dict,
++    prediction_result, niters = model_runner.predict(processed_feature_dict,
+                                              random_seed=model_random_seed)
+     t_diff = time.time() - t_0
+     timings[f'predict_and_compile_{model_name}'] = t_diff
