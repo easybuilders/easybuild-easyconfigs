@@ -1,0 +1,34 @@
+--- src/vdw_nl.F.orig	2025-09-24 16:52:55.000000000 +0800
++++ src/vdw_nl.F	2025-09-24 17:00:30.000000000 +0800
+@@ -451,15 +451,22 @@
+     integer :: IVDW_NL,IVDW_NL_TMP,NINTG_TMP,nmesh,IOstatus
+     real(q) :: GAMMA_VDW,GAMMA_VDW_TMP,ALPHA_VDW,ALPHA_VDW_TMP
+     TYPE (grid_3d) GRIDC
+-
+-    !ok if the kernel table is here read it
+-    inquire( file='vdw_kernel.bindat', exist=lkern)
+-    IF (lkern) then
+-       open (unit=10, file='vdw_kernel.bindat', form='unformatted')
+-       read(10,IOSTAT=IOstatus) IVDW_NL_TMP,GAMMA_VDW_TMP,ALPHA_VDW_TMP,NINTG_TMP,nmesh
+-       IF (IOstatus.EQ.0) THEN
+-          lkern_new=.true.
+-       ELSE
++     character(len=255) :: vdwkernel
++ 
++     vdwkernel = 'vdw_kernel.bindat'
++     inquire(file=vdwkernel, exist=lkern)
++ 
++        IF (.NOT. lkern) THEN
++        call get_environment_variable('VDW_KERNEL', vdwkernel)
++        inquire(file=trim(vdwkernel), exist=lkern)
++        END IF
++ 
++        IF (lkern) THEN
++        open(unit=10, file=trim(vdwkernel), form='unformatted', action='READ')
++        read(10,IOSTAT=IOstatus) IVDW_NL_TMP,GAMMA_VDW_TMP,ALPHA_VDW_TMP,NINTG_TMP,nmesh
++        IF (IOstatus.EQ.0) THEN
++           lkern_new=.true.
++        ELSE
+           rewind(10)
+           read(10,IOSTAT=IOstatus) nmesh
+           IF (IOstatus.EQ.0) lkern_new=.false.
