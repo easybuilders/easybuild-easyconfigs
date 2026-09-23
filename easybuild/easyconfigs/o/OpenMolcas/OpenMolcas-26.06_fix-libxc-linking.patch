@@ -1,0 +1,18 @@
+Fix IntelLLVM builds with external Libxc.
+`-standard-semantics` makes ifx use an uppercase `_MP_` separator for
+module procedures, while Libxc exports lowercase `_mp_` symbols. Add
+`-assume nostd_mod_proc_name` to restore ABI compatibility.
+Also remove `-fltconsistency`, which conflicts with `-fp-model precise`.
+Reported upstream: https://gitlab.com/Molcas/OpenMolcas/-/work_items/535
+Author: Pavel Tomanek (Inuits/Ugent) with help of ChatGPT5.5
+--- a/cmake/compilers.cmake
++++ b/cmake/compilers.cmake
+@@ -274,7 +274,7 @@
+ set (CFLAGS_IntelLLVM_FAST "-O2")
+ # Fortran compiler
+ list (APPEND SUPPORTED_Fortran_COMPILERS "IntelLLVM")
+-set (FFLAGS_IntelLLVM_BASIC "-standard-semantics -fltconsistency")
++set (FFLAGS_IntelLLVM_BASIC "-standard-semantics -assume nostd_mod_proc_name")
+ set (FFLAGS_IntelLLVM_PREPROCESS "-fpp")
+ set (FFLAGS_IntelLLVM_OPENMP "-qopenmp")
+ set (FFLAGS_IntelLLVM_ILP64 "-i8 -heap-arrays")
