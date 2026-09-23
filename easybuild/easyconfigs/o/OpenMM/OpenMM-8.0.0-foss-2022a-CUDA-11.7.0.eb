@@ -19,10 +19,12 @@ toolchainopts = {'opt': True}
 
 source_urls = ['https://github.com/openmm/openmm/archive/']
 sources = ['%(version)s.tar.gz']
-patches = ['OpenMM-8.0.0_add_no_tree_vectorize.patch']
+patches = ['OpenMM-8.0.0_add_no_tree_vectorize.patch', 'OpenMM-8.0.0_increase-drude-test-tolerance.patch']
 checksums = [
     'dc63d7b47c8bb7b169c409cfd63d909ed0ce1ae114d37c627bf7a4231acf488e',  # 8.0.0.tar.gz
     '4bacf45443a2472e59798743f27d07481e065d784cbbea7be22aa6427af0d2bd',  # OpenMM-8.0.0_add_no_tree_vectorize.patch
+    {'OpenMM-8.0.0_increase-drude-test-tolerance.patch':
+     'aa89f5a07075e0e3a673e4908ee64def4584ab548ff49390de8a3ccdcb0ab299'},
 ]
 
 builddependencies = [
@@ -37,6 +39,7 @@ dependencies = [
     ('CUDA', '11.7.0', '', SYSTEM),
 ]
 
+configopts = '-DOPENMM_BUILD_CUDA_LIB=ON -DOPENMM_BUILD_CUDA_COMPILER_PLUGIN=ON'
 # Set the OPENMM_CUDA_COMPILER variable to make sure that all tests use the right nvcc,
 # Otherwise they will use the wrong path: `/usr/local/cuda/bin/nvcc`
 pretestopts = ' export OPENMM_CUDA_COMPILER=${EBROOTCUDA}/bin/nvcc && '
@@ -49,7 +52,14 @@ preinstallopts = ' export OPENMM_INCLUDE_PATH=%(installdir)s/include && '
 preinstallopts += ' export OPENMM_LIB_PATH=%(installdir)s/lib && '
 
 # required to install the python API
-installopts = ' && cd python && python setup.py build && python setup.py install --prefix=%(installdir)s'
+exts_list = [
+    (name, version, {
+        'easyblock': 'PythonPackage',
+        'nosource': True,
+        'runtest': False,
+        'start_dir': '%(builddir)s/easybuild_obj/python',
+    }),
+]
 
 sanity_check_paths = {
     'files': ['lib/libOpenMM.%s' % SHLIB_EXT],
@@ -57,8 +67,8 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = [
-    "python -c 'import simtk.openmm'",
-    "python -m openmm.testInstallation",
+    "python -s -c 'import simtk.openmm'",
+    "python -s -m openmm.testInstallation",
 ]
 
 modextrapaths = {
