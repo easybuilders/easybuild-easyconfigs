@@ -1,0 +1,44 @@
+easyblock = 'ConfigureMake'
+
+name = 'NAMD'
+version = '3.0.2'
+homepage = 'https://www.ks.uiuc.edu/Research/namd/'
+
+description = """NAMD,is a parallel molecular dynamics code for high-performance simulation of large molecular systems.
+Based on Charm++ parallel objects, NAMD use up to 500,000 cores for the largest simulations.
+NAMD uses the popular molecular graphics program VMD for simulation setup and trajectory analysis,
+but is also file-compatible with AMBER, CHARMM, and X-PLOR.
+NAMD is distributed free of charge with source code.
+You can build NAMD yourself or download binaries for a wide variety of platforms.
+Our tutorials show you how to use NAMD and VMD for biomolecular modeling"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'openmp': False, 'pic': True}
+
+source_urls = ['https://www.ks.uiuc.edu/Research/namd/3.0.1/download/453167/']
+sources = ['NAMD_%(version)s_Source.tar.gz']
+#checksums = ['3be0854545c45e58afb439a96708e127aef435d30113cc89adbab8f4b6888733']
+
+dependencies = [
+    ('CMake', '3.26.3'),
+    ('Tcl', '8.6.13'),
+    ('FFTW', '3.3.10'),
+    ('CHARM++', '8.0.0'),
+]
+
+configure_without_installdir = "TRUE"
+
+configure_cmd = './config Linux-x86_64-g++'
+configopts = '--charm-base ${EBROOTCHARMPLUSPLUS}/.. --charm-arch ${EBVERSIONCHARMPLUSPLUS}-foss-2023a'
+configopts += ' --with-fftw3 --fftw-prefix ${EBROOTFFTW}'
+
+build_cmd = 'cd %(builddir)s/NAMD_%(version)s_Source/Linux-x86_64-g++ ; make'
+
+install_cmd = 'cp -LR %(builddir)s/NAMD_%(version)s_Source/Linux-x86_64-g++/* %(installdir)s/.'
+
+sanity_check_paths = {
+    'files': ['namd3', 'charmrun', 'sortreplicas', 'flipbinpdb', 'flipdcd', 'psfgen'],
+    'dirs': [],
+}
+modextrapaths = {'PATH': ''}
+moduleclass = 'chem'
