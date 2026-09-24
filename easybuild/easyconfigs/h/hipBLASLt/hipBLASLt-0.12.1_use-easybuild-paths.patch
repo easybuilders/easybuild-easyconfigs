@@ -1,0 +1,181 @@
+Replace hard-coded ROCm paths with EasyBuild environment variables.
+May replace too much, but better than missing some and pickung up system dependencies.
+
+Author: Jan Andre Reuter (jan@zyten.de)
+
+diff --color -Naur hipBLASLt-rocm-6.4.1.orig/clients/CMakeLists.txt hipBLASLt-rocm-6.4.1/clients/CMakeLists.txt
+--- hipBLASLt-rocm-6.4.1.orig/clients/CMakeLists.txt	2025-04-25 19:53:57.000000000 +0200
++++ hipBLASLt-rocm-6.4.1/clients/CMakeLists.txt	2025-06-16 19:12:01.056158252 +0200
+@@ -70,7 +70,7 @@
+ set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+ 
+ if( NOT TARGET hipblaslt )
+-  find_package( hipblaslt REQUIRED CONFIG PATHS ${ROCM_PATH}/hipblaslt /opt/rocm/hipblaslt ${HIPBLASLT_LIBRARY_DIR})
++  find_package( hipblaslt REQUIRED CONFIG PATHS $ENV{EBROOTHIPBLASLT} ${ROCM_PATH}/hipblaslt /opt/rocm/hipblaslt ${HIPBLASLT_LIBRARY_DIR})
+ endif( )
+ 
+ # Hip headers required of all clients; clients use hip to allocate device memory
+diff --color -Naur hipBLASLt-rocm-6.4.1.orig/cmake/Dependencies.cmake hipBLASLt-rocm-6.4.1/cmake/Dependencies.cmake
+--- hipBLASLt-rocm-6.4.1.orig/cmake/Dependencies.cmake	2025-04-25 19:53:57.000000000 +0200
++++ hipBLASLt-rocm-6.4.1/cmake/Dependencies.cmake	2025-06-16 19:07:55.804253623 +0200
+@@ -28,10 +28,10 @@
+ 
+ # Workaround until hcc & hip cmake modules fixes symlink logic in their config files.
+ # (Thanks to rocBLAS devs for finding workaround for this problem!)
+-list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
++list(APPEND CMAKE_PREFIX_PATH $ENV{EBROOTHIP} $ENV{EBROOTROCMMINLLVM})
+ 
+ # ROCm cmake package
+-find_package(ROCM 0.11.0 CONFIG QUIET PATHS "${ROCM_PATH}") # First version with Sphinx doc gen improvement
++find_package(ROCM 0.11.0 CONFIG QUIET PATHS $ENV{EBROOTROCMINLLVM} $ENV{EBROOTROCMMINCMAKE} "${ROCM_PATH}") # First version with Sphinx doc gen improvement
+ if(NOT ROCM_FOUND)
+   set(PROJECT_EXTERN_DIR ${CMAKE_CURRENT_BINARY_DIR}/extern)
+   set(rocm_cmake_tag "master" CACHE STRING "rocm-cmake tag to download")
+diff --color -Naur hipBLASLt-rocm-6.4.1.orig/CMakeLists.txt hipBLASLt-rocm-6.4.1/CMakeLists.txt
+--- hipBLASLt-rocm-6.4.1.orig/CMakeLists.txt	2025-04-25 19:53:57.000000000 +0200
++++ hipBLASLt-rocm-6.4.1/CMakeLists.txt	2025-06-16 19:15:42.574283794 +0200
+@@ -44,22 +44,13 @@
+   set(CMAKE_INSTALL_PREFIX "/opt/rocm" CACHE PATH "Install path prefix, prepended onto install directories")
+ endif()
+ 
+-if(NOT BUILD_CUDA)
+-# Adding CMAKE_PREFIX_PATH, needed for static builds
+-list( APPEND CMAKE_PREFIX_PATH /opt/rocm/llvm /opt/rocm )
+-endif()
+-
+ if( NOT DEFINED ENV{HIP_PATH})
+-    set( HIP_PATH "/opt/rocm/hip" )
++    set( HIP_PATH $ENV{EBROOTHIP} )
+ else( )
+     set (HIP_PATH $ENV{HIP_PATH} )
+ endif( )
+ 
+-if (DEFINED ENV{ROCM_PATH})
+-  set(rocm_bin "$ENV{ROCM_PATH}/bin")
+-else()
+-  set(rocm_bin "/opt/rocm/bin")
+-endif()
++set(rocm_bin $ENV{EBROOTROCMMINLLVM}/bin)
+ 
+ if (NOT DEFINED ENV{CXX} AND NOT CMAKE_CXX_COMPILER)
+   set(CMAKE_CXX_COMPILER "${rocm_bin}/amdclang++")
+@@ -82,7 +73,7 @@
+ 
+ # Append our library helper cmake path and the cmake path for hip (for convenience)
+ # Users may override HIP path by specifying their own in CMAKE_MODULE_PATH
+-list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake  ${ROCM_PATH}/lib/cmake/hip /opt/rocm/lib/cmake/hip ${HIP_PATH}/cmake )
++list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake  ${HIP_PATH}/lib/cmake/hip /opt/rocm/lib/cmake/hip ${HIP_PATH}/cmake )
+ 
+ # Set a default build type if none was specified
+ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+@@ -185,7 +176,7 @@
+     message(STATUS "AMDGPU_TARGETS: ${AMDGPU_TARGETS}")
+ 
+     if( CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
+-        find_package( hip REQUIRED CONFIG PATHS ${HIP_DIR} ${ROCM_PATH} /opt/rocm )
++        find_package( hip REQUIRED CONFIG PATHS $ENV{EBROOTHIP} ${HIP_DIR} ${ROCM_PATH} /opt/rocm )
+     endif( )
+ 
+     option( BUILD_WITH_TENSILE "Build full functionality which requires tensile?" ON )
+@@ -264,7 +255,7 @@
+ if( LEGACY_HIPBLAS_DIRECT )
+   find_package( hipblas REQUIRED CONFIG PATHS ${HIP_DIR} ${ROCM_PATH} /opt/rocm)
+ else()
+-  find_package( hipblas-common REQUIRED CONFIG PATHS ${HIP_DIR} ${ROCM_PATH} /opt/rocm)
++  find_package( hipblas-common REQUIRED CONFIG PATHS $ENV{EBROOTHIPBLASMINCOMMON} ${HIP_DIR} ${ROCM_PATH} /opt/rocm)
+ endif()
+ 
+ if(HIPBLASLT_ENABLE_MARKER)
+diff --color -Naur hipBLASLt-rocm-6.4.1.orig/install.sh hipBLASLt-rocm-6.4.1/install.sh
+--- hipBLASLt-rocm-6.4.1.orig/install.sh	2025-04-25 19:53:57.000000000 +0200
++++ hipBLASLt-rocm-6.4.1/install.sh	2025-06-16 19:16:09.136992846 +0200
+@@ -414,10 +414,7 @@
+ logic_filter=
+ 
+ 
+-rocm_path=/opt/rocm
+-if ! [ -z ${ROCM_PATH+x} ]; then
+-    rocm_path=${ROCM_PATH}
+-fi
++rocm_path=$EBROOTROCMMINLLVM
+ 
+ # #################################################
+ # Parameter parsing
+diff --color -Naur hipBLASLt-rocm-6.4.1.orig/library/src/amd_detail/rocblaslt/src/kernels/compile_code_object.sh hipBLASLt-rocm-6.4.1/library/src/amd_detail/rocblaslt/src/kernels/compile_code_object.sh
+--- hipBLASLt-rocm-6.4.1.orig/library/src/amd_detail/rocblaslt/src/kernels/compile_code_object.sh	2025-04-25 19:53:57.000000000 +0200
++++ hipBLASLt-rocm-6.4.1/library/src/amd_detail/rocblaslt/src/kernels/compile_code_object.sh	2025-06-16 19:11:04.525874860 +0200
+@@ -33,6 +33,6 @@
+     additional_options="-O0 -g"
+ fi
+ 
+-rocm_path="${ROCM_PATH:-/opt/rocm}"
++rocm_path="${EBROOTROCMMINLLVM}"
+ clang_path="${rocm_path}/bin/amdclang++"
+-$clang_path -x hip "$sources" --offload-arch="${archs}" -c --offload-device-only -Xoffload-linker --build-id=$build_id_kind $additional_options -o "$dest"
+\ No newline at end of file
++$clang_path -x hip "$sources" --offload-arch="${archs}" -c --offload-device-only -Xoffload-linker --build-id=$build_id_kind $additional_options -o "$dest"
+diff --color -Naur hipBLASLt-rocm-6.4.1.orig/tensilelite/Makefile hipBLASLt-rocm-6.4.1/tensilelite/Makefile
+--- hipBLASLt-rocm-6.4.1.orig/tensilelite/Makefile	2025-04-25 19:53:57.000000000 +0200
++++ hipBLASLt-rocm-6.4.1/tensilelite/Makefile	2025-06-16 19:16:26.872697365 +0200
+@@ -45,7 +45,7 @@
+ # points for the assemble and link step respectively.
+ # ------------------------------------------------------------------------
+ 
+-ROCM_PATH ?= /opt/rocm
++ROCM_PATH := ${EBROOTROCMMINLLVM}
+ AS := $(ROCM_PATH)/bin/amdclang++
+ LDD := $(ROCM_PATH)/bin/amdclang++
+ WAVE ?= 64
+diff --color -Naur hipBLASLt-rocm-6.4.1.orig/tensilelite/Tensile/Ops/gen_assembly.sh hipBLASLt-rocm-6.4.1/tensilelite/Tensile/Ops/gen_assembly.sh
+--- hipBLASLt-rocm-6.4.1.orig/tensilelite/Tensile/Ops/gen_assembly.sh	2025-04-25 19:53:57.000000000 +0200
++++ hipBLASLt-rocm-6.4.1/tensilelite/Tensile/Ops/gen_assembly.sh	2025-06-16 19:09:02.279411658 +0200
+@@ -28,11 +28,7 @@
+ venv=$3
+ build_id_kind=$4
+ 
+-rocm_path=/opt/rocm
+-if ! [ -z ${ROCM_PATH+x} ]; then
+-    rocm_path=${ROCM_PATH}
+-fi
+-
++rocm_path=$EBROOTROCMMINLLVM
+ toolchain=${rocm_path}/bin/amdclang++
+ 
+ . ${venv}/bin/activate
+diff --color -Naur hipBLASLt-rocm-6.4.1.orig/tensilelite/Tensile/Source/CMakeLists.txt hipBLASLt-rocm-6.4.1/tensilelite/Tensile/Source/CMakeLists.txt
+--- hipBLASLt-rocm-6.4.1.orig/tensilelite/Tensile/Source/CMakeLists.txt	2025-04-25 19:53:57.000000000 +0200
++++ hipBLASLt-rocm-6.4.1/tensilelite/Tensile/Source/CMakeLists.txt	2025-06-16 19:10:37.947226628 +0200
+@@ -26,7 +26,7 @@
+ 
+ # Override all paths arguments as they do not work properly
+ file(TO_CMAKE_PATH "$ENV{ROCM_PATH}" ROCM_PATH_ENV_VALUE)
+-list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH_ENV_VALUE} /opt/rocm /opt/rocm/lib/llvm)
++list(APPEND CMAKE_PREFIX_PATH $ENV{EBROOTROCMMINLLVM} ${ROCM_PATH_ENV_VALUE} /opt/rocm /opt/rocm/lib/llvm)
+ 
+ project(Tensile)
+ 
+diff --color -Naur hipBLASLt-rocm-6.4.1.orig/tensilelite/Tensile/Source/FindHIP.cmake hipBLASLt-rocm-6.4.1/tensilelite/Tensile/Source/FindHIP.cmake
+--- hipBLASLt-rocm-6.4.1.orig/tensilelite/Tensile/Source/FindHIP.cmake	2025-04-25 19:53:57.000000000 +0200
++++ hipBLASLt-rocm-6.4.1/tensilelite/Tensile/Source/FindHIP.cmake	2025-06-16 19:06:27.268357705 +0200
+@@ -78,6 +78,7 @@
+       NAMES
+         hip/hip_runtime.h
+       PATHS
++        ENV EBROOTHIP
+         ENV HIP_PATH
+         /opt/rocm
+       PATH_SUFFIXES
+diff --color -Naur hipBLASLt-rocm-6.4.1.orig/tensilelite/Tensile/Tests/common/test_config.py hipBLASLt-rocm-6.4.1/tensilelite/Tensile/Tests/common/test_config.py
+--- hipBLASLt-rocm-6.4.1.orig/tensilelite/Tensile/Tests/common/test_config.py	2025-04-25 19:53:57.000000000 +0200
++++ hipBLASLt-rocm-6.4.1/tensilelite/Tensile/Tests/common/test_config.py	2025-06-16 19:09:50.707986731 +0200
+@@ -157,8 +157,8 @@
+ 
+ def findAvailableArchs():
+     availableArchs = []
+-    rocmpath = "/opt/rocm"
+-    if "ROCM_PATH" in os.environ:
++    rocmpath = os.environ.get("EBROOTROCMMINLLVM")
++    if not rocmpath and "ROCM_PATH" in os.environ:
+         rocmpath = os.environ.get("ROCM_PATH")
+     if "TENSILE_ROCM_PATH" in os.environ:
+         rocmpath = os.environ.get("TENSILE_ROCM_PATH")

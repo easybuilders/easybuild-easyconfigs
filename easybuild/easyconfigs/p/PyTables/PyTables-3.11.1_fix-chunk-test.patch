@@ -1,0 +1,42 @@
+This patch fix the failing test_write_chunk_filtermask with external Blosc dependency.
+Avoid relying on HDF5 updating filter_mask metadata when overwriting an
+existing same-size chunk.  Extend the EArray and write a missing chunk
+instead, which still verifies that a non-zero filter_mask is stored and reported correctly.
+Upstream Issue: https://github.com/PyTables/PyTables/issues/1325
+Author: Pavel Tomanek (Inuits/Ugent) with help of ChatGPT5.5
+--- tables/tests/test_direct_chunk.py.orig	2026-06-11 13:46:12.389731000 +0200
++++ tables/tests/test_direct_chunk.py	2026-06-11 13:48:28.107934000 +0200
+@@ -201,11 +201,28 @@
+         no_shuffle_mask = 0x00000004  # to turn shuffle off
+ 
+         chunk_start = (0,) * self.obj.ndim
+-        obj_slice = tuple(
+-            slice(s, s + cs) for (s, cs) in zip(chunk_start, self.chunkshape)
+-        )
+-        new_obj = self.obj.copy()
+-        new_obj[obj_slice] = self.modified(new_obj[obj_slice])
++
++        if isinstance(self.array, tb.EArray):
++            chunk_start = (
++                ((self.array.nrows + self.chunkshape[0] - 1)
++                 // self.chunkshape[0]) * self.chunkshape[0],
++                *((0,) * (self.obj.ndim - 1)),
++            )
++            self.array.truncate(chunk_start[0] + self.chunkshape[0])
++            new_obj = self.array[:]
++
++            source_slice = tuple(slice(0, cs) for cs in self.chunkshape)
++            obj_slice = tuple(
++                slice(s, s + cs) for (s, cs) in zip(chunk_start, self.chunkshape)
++            )
++            new_obj[obj_slice] = self.modified(self.obj[source_slice])
++        else:
++            obj_slice = tuple(
++                slice(s, s + cs) for (s, cs) in zip(chunk_start, self.chunkshape)
++            )
++            new_obj = self.obj.copy()
++            new_obj[obj_slice] = self.modified(new_obj[obj_slice])
++
+         obj_bytes = self.compress_chunk(
+             new_obj[obj_slice].tobytes(), shuffle=False
+         )

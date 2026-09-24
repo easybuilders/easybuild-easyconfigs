@@ -1,0 +1,26 @@
+Preserve the compiler flags supplied by the EasyBuild toolchain when
+building QUICK.
+The QUICK top-level CMake configuration resets CMAKE_Fortran_FLAGS,
+CMAKE_C_FLAGS, and CMAKE_CXX_FLAGS to empty strings. This hides the
+compiler flags inherited from the parent AmberTools configuration,
+including optimization, architecture-specific, floating-point, PIC,
+MPI include, and other toolchain options.
+Remove these resets so that QUICK inherits the compiler flags provided
+by EasyBuild. QUICK can still append its own compiler-specific and
+target-specific options through its existing CMake configuration.
+Based on a patch by Jinzhe Zeng from the conda-forge AmberTools
+feedstock, commit b9dc271.
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+diff --git a/AmberTools/src/quick/CMakeLists.txt b/AmberTools/src/quick/CMakeLists.txt
+--- a/AmberTools/src/quick/CMakeLists.txt
++++ b/AmberTools/src/quick/CMakeLists.txt
+@@ -51,9 +51,5 @@ set_property(DIRECTORY . PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:Debug>:DEBUG>)
+ 
+ option(WARNINGS "Enable warnings." FALSE)
+ 
+-set(CMAKE_Fortran_FLAGS "")
+-set(CMAKE_C_FLAGS "")
+-set(CMAKE_CXX_FLAGS "")
+-
+ set(OPT_FFLAGS "")
+ set(OPT_CFLAGS "")

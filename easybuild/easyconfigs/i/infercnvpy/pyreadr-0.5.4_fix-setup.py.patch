@@ -1,0 +1,55 @@
+Fix pyreadr/librdata.cpython-312-x86_64-linux-gnu.so: undefined symbol: libiconv
+Fix pryeadr typo.
+Author: Pavel Tomanek (Inuits/UGent)
+--- setup.py.orig	2026-02-26 13:29:25.243890000 +0100
++++ setup.py	2026-02-26 13:40:22.223952000 +0100
+@@ -8,6 +8,7 @@
+ 
+ import platform
+ import glob
++import os
+ 
+ from setuptools import setup, Extension
+ from Cython.Build import cythonize
+@@ -50,7 +51,7 @@
+ include_dirs = []
+ extra_link_args = []
+ extra_compile_args = ['-DHAVE_ZLIB', '-DHAVE_BZIP2', '-DHAVE_LZMA']
+-package_data ={'pryeadr': ["*.c", "*.pyx", "*.pxd"]}
++package_data = {'pyreadr': ["*.c", "*.pyx", "*.pxd"]}
+ exclude_package_data = {'pyreadr': ["*.dll", "*.lib"]}
+ include_package_data=True
+ 
+@@ -69,7 +70,7 @@
+     include_dirs.append('pyreadr/libs/librdata')
+     include_dirs.append('pyreadr/libs/iconv')
+     library_dirs.append('pyreadr/libs/librdata')
+-    package_data ={'pryeadr': ["*.c", "*.pyx", "*.pxd", "*.dll", "*.lib"]}
++    package_data ={'pyreadr': ["*.c", "*.pyx", "*.pxd", "*.dll", "*.lib"]}
+     exclude_package_data = {}
+     include_package_data=True
+     library_dirs.append("pyreadr")
+@@ -82,6 +83,15 @@
+     libraries.append('z')
+     libraries.append('bz2')
+     libraries.append('lzma')
++    # fix for EB:
++    libiconv_root = os.environ.get('EBROOTLIBICONV')
++    if libiconv_root:
++        inc = os.path.join(libiconv_root,'include')
++        include_dirs.append(inc)
++        libpath = os.path.join(libiconv_root, 'lib')
++        library_dirs.append(libpath)
++        extra_link_args.append(f"-Wl,-rpath,{libpath}")
++        libraries.append('iconv')
+     #extra_compile_args.append("--std=gnu99")
+     if is_ubuntu():
+         libraries.append('iconv')
+@@ -115,6 +125,7 @@
+     packages=["pyreadr"],
+     include_package_data=include_package_data,
+     exclude_package_data=exclude_package_data,
++    package_data=package_data,
+     install_requires=['pandas>=1.2.0'],
+     license="AGPL-3.0-or-later",
+     classifiers=[

@@ -1,0 +1,35 @@
+Improve detection of flang inside of MPI wrappers, such as mpifort, by
+adding additional detection in case mapping by cc_basename fails.
+For this, expand the tested verbose command to also try `$CC -v` and
+map this to compiler names seen for flang / flang-new / amdflang over the
+past few years.
+
+Applied as a postinstallpatch, since we otherwise need to bootstrap libtool
+again, which requires a significant amount of dependencies itself.
+
+Author: Jan Reuter (JSC)
+
+diff --color -Naur 2.5.4-GCCcore-14.3.0.orig/share/aclocal/libtool.m4 2.5.4-GCCcore-14.3.0/share/aclocal/libtool.m4
+--- 2.5.4-GCCcore-14.3.0.orig/share/aclocal/libtool.m4	2026-02-19 20:41:09.794540321 +0100
++++ 2.5.4-GCCcore-14.3.0/share/aclocal/libtool.m4	2026-02-19 21:09:30.739137791 +0100
+@@ -4883,7 +4883,7 @@
+ 	_LT_TAGVAR(lt_prog_compiler_static, $1)='-qstaticlink'
+ 	;;
+       *)
+-	case `$CC -V 2>&1 | $SED 5q` in
++	case `$CC -V 2>&1 | $SED 5q``$CC -v 2>&1 | $SED 5q` in
+ 	*Sun\ Ceres\ Fortran* | *Sun*Fortran*\ [[1-7]].* | *Sun*Fortran*\ 8.[[0-3]]*)
+ 	  # Sun Fortran 8.3 passes all unrecognized flags to the linker
+ 	  _LT_TAGVAR(lt_prog_compiler_pic, $1)='-KPIC'
+@@ -4911,6 +4911,11 @@
+ 	  _LT_TAGVAR(lt_prog_compiler_pic, $1)='-fpic'
+ 	  _LT_TAGVAR(lt_prog_compiler_static, $1)='-Bstatic'
+ 	  ;;
++	*clang\ version* | *flang\ version* | *flang-new\ version* | *flang-classic\ version*)
++	  _LT_TAGVAR(lt_prog_compiler_wl, $1)='-Wl,'
++	  _LT_TAGVAR(lt_prog_compiler_pic, $1)='-fPIC -DPIC'
++	  _LT_TAGVAR(lt_prog_compiler_static, $1)='-static'
++	  ;;
+ 	esac
+ 	;;
+       esac

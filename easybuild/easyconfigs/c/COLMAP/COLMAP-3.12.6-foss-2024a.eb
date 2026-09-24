@@ -1,0 +1,80 @@
+# Updated to 3.12.6, testing enabled
+# This version uses Qt6
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeNinja'
+
+name = 'COLMAP'
+version = '3.12.6'
+
+homepage = 'https://colmap.github.io'
+description = """COLMAP is a general-purpose Structure-from-Motion
+(SfM) and Multi-View Stereo (MVS) pipeline with a graphical and
+command-line interface"""
+
+citing = """
+@inproceedings{schoenberger2016sfm,
+    author={Sch\"{o}nberger, Johannes Lutz and Frahm, Jan-Michael},
+    title={Structure-from-Motion Revisited},
+    booktitle={Conference on Computer Vision and Pattern Recognition (CVPR)},
+    year={2016},
+}
+
+@inproceedings{schoenberger2016mvs,
+    author={Sch\"{o}nberger, Johannes Lutz and Zheng, Enliang and Pollefeys, Marc and Frahm, Jan-Michael},
+    title={Pixelwise View Selection for Unstructured Multi-View Stereo},
+    booktitle={European Conference on Computer Vision (ECCV)},
+    year={2016},
+}
+"""
+
+source_urls = ['https://github.com/colmap/colmap/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['f66d34be7a738fa753d1b71aec4fb7411d8c117beb58d1f2ba84ee2696c96410']
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Ninja', '1.12.1'),
+    ('Eigen', '3.4.0'),
+    ('googletest', '1.15.2'),
+    ('Xvfb', '21.1.14'),
+]
+
+dependencies = [
+    ('Boost', '1.85.0'),
+    ('Qt6', '6.7.2'),
+    ('FLANN', '1.9.2'),
+    ('FreeImage', '3.18.0'),
+    ('METIS', '5.1.0'),
+    ('glog', '0.7.1'),
+    ('SQLite', '3.45.3'),
+    ('glew', '2.2.0', '-egl'),
+    ('CGAL', '5.6.1'),
+    ('Ceres-Solver', '2.2.0'),
+    ('git', '2.45.1'),
+]
+
+configopts = "-DCMAKE_CXX_STANDARD=17 -DTESTS_ENABLED=ON "
+
+# These three testjobs are failing, regardless of which CPU architecture
+# See here: https://github.com/colmap/colmap/issues/3642
+# We might want to keep an eye on them and remove in newer releases, i.e. when they work
+# Furthermore, these two test won't work in headless mode: colmap_feature_sift_test colmap_util_opengl_utils_test
+# So we try to use the pre_test_opts command below but that does not work as expected.:
+pre_test_opts = 'export QT_QPA_PLATFORM=linuxfb; '
+# We leave that for reference
+_ignore = '"colmap_estimators_homography_matrix_test|colmap_geometry_homography_matrix_test|colmap_geometry_sim3_test|"'
+# _ignore += '"colmap_feature_sift_test|colmap_util_opengl_utils_test"'
+test_cmd = 'ctest'
+runtest = f' -E {_ignore}'
+
+sanity_check_paths = {
+    'files': ['bin/colmap', 'lib/libfaiss.a', 'lib/libcolmap_exe.a', 'lib/libcolmap_scene.a'],
+    'dirs': ['include/colmap'],
+}
+
+sanity_check_commands = ["colmap -h"]
+
+moduleclass = 'vis'
