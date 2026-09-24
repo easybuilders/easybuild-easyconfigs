@@ -1,0 +1,81 @@
+easyblock = 'PythonBundle'
+
+name = 'Vamb'
+version = '5.0.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+_rust_ver = '1.81.0'
+
+homepage = 'https://github.com/RasmussenLab/vamb'
+description = """Vamb is a metagenomic binner which feeds sequence
+composition information from a contig catalogue and co-abundance
+information from BAM files into a variational autoencoder and clusters
+the latent representation."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('maturin', '1.7.8', '-Rust-%s' % _rust_ver),
+    ('CMake', '3.26.3'),
+    ('poetry', '1.7.1'),
+]
+
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('Pysam', '0.22.0'),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('PyHMMER', '0.10.15'),
+    ('scikit-learn', '1.6.1'),
+    ('scikit-build-core', '0.9.3'),
+    ('networkx', '3.4.2'),
+]
+
+exts_list = [
+    ('setuptools', '70.1.1', {
+        'source_tmpl': 'setuptools-%(version)s.tar.gz',
+        'checksums': ['937a48c7cdb7a21eb53cd7f9b59e525503aa8abaf3584c730dc5f7a5bec3a650'],
+    }),
+    ('setuptools-scm', '8.2.0', {
+        'source_tmpl': 'setuptools_scm-%(version)s.tar.gz',
+        'checksums': ['a18396a1bc0219c974d1a74612b11f9dce0d5bd8b1dc55c65f6ac7fd609e8c28'],
+    }),
+    ('dadaptation', '3.2', {
+        'checksums': ['de8e8289d56bfdee0c8e3ca353143295d8a48363bcb02d6868a708354b47ccc0'],
+    }),
+    ('loguru', '0.7.3', {
+        'checksums': ['19480589e77d47b8d85b2c827ad95d49bf31b0dcde16593892eb51dd18706eb6'],
+    }),
+    ('pycoverm', '0.6.2', {
+        'checksums': ['e5e96e55ee2756d0cbd1db383e136cd2c1e232204f25b015ce956b7a6f4ddee2'],
+    }),
+    ('pyrodigal', '3.6.3', {
+        'source_tmpl': 'pyrodigal-%(version)s-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['e9f2f2aa99299971d52e8e097d2fe3059a6bfc1d42674cfcba2b7ec18e8df8ea'],
+    }),
+    ('archspec', '0.2.5', {
+        'checksums': ['5bec8dfc5366ff299071200466dc9572d56db4e43abca3c66bdd62bc2b731a2a'],
+    }),
+    ('vambcore', '0.1.2', {
+        'checksums': ['10f19ba46fa87f64ce4f7449e1643792f8e0208e303ff08c6deafe82204a118c'],
+    }),
+    ('vamb', version, {
+        'patches': ['Vamb-5.0.2-allow-pytorch-2.1.2.patch'],
+        'checksums': [
+            {'vamb-5.0.2.tar.gz': 'bfbc6819e7dc91d1caf6f1f3cb1e861e6d7782f632a6e87df9fa615bbd9e8f74'},
+            {'Vamb-5.0.2-allow-pytorch-2.1.2.patch':
+             'aebfc9144f7430ddbdd6d6bed3741f4e6302baad9ea847cebfbc9aa459db6f90'},
+        ],
+    }),
+]
+
+postinstallcmds = [' cp -a doc README.md src vamb test workflow_avamb %(installdir)s']
+
+sanity_check_paths = {
+    'files': ['bin/pyrodigal', 'bin/vamb'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["vamb --version"]
+
+moduleclass = 'bio'
