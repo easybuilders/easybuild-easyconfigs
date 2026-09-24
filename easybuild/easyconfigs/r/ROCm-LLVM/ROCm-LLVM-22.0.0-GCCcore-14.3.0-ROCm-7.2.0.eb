@@ -1,0 +1,150 @@
+easyblock = 'Bundle'
+
+name = 'ROCm-LLVM'
+_llvm_version = '22.0.0'
+version = _llvm_version
+_rocm_version = '7.2.0'
+versionsuffix = f'-ROCm-{_rocm_version}'
+
+homepage = 'https://github.com/ROCm/llvm-project'
+description = """ROCm-LLVM is an open source Clang/LLVM based compiler.
+It is an AMD Fork of The LLVM Compiler Infrastructure, and aims to contain all of upstream LLVM.
+It also includes several AMD-specific additions in the llvm-project/amd directory."""
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('Perl', '5.40.2'),
+    ('Python', '3.13.5'),
+    ('pkgconf', '2.4.3'),
+    ('xxd', '9.1.1775'),  # required for ROCr-Runtime
+]
+
+dependencies = [
+    ('binutils', '2.44'),
+    ('elfutils', '0.193'),
+    ('zlib', '1.3.1'),
+    ('hwloc', '2.12.1'),
+    ('GMP', '6.3.0'),
+    ('libxml2', '2.14.3'),
+    ('ncurses', '6.5'),
+    ('libffi', '3.5.1'),
+    ('libdrm', '2.4.125'),
+    ('numactl', '2.0.19'),
+    ('Z3', '4.15.1'),
+    ('rocprofiler-register', '0.6.0', f'-ROCm-{_rocm_version}'),
+]
+
+local_rocm_llvm_source = 'llvm-project-rocm-%s.tar.gz' % _rocm_version
+local_common_cmake_configopts = ' '.join([
+    '-DCMAKE_C_COMPILER=%(installdir)s/bin/clang',
+    '-DCMAKE_CXX_COMPILER=%(installdir)s/bin/clang++',
+    '-DLLVM_INSTALL_PREFIX=%(installdir)s',
+    '-DLLVM_DIR=%(installdir)s/lib/cmake/llvm',
+])
+
+default_easyblock = 'CMakeMake'
+default_component_specs = {
+    'source_urls': ['https://github.com/ROCm/%(name)s/archive/'],
+    'sources': [{
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-%(version)s.tar.gz',
+    }],
+    'srcdir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('llvm-project', '%s-rocm-%s' % (_llvm_version, _rocm_version), {
+        'easyblock': 'EB_ROCm_minus_LLVM',
+        'sources': [
+            # LLVM
+            {
+                'source_urls': ['https://github.com/ROCm/llvm-project/archive/'],
+                'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
+                'filename': local_rocm_llvm_source,
+                # rename the extracted directory to the one that the LLVM easyblock expects
+                # we need to extract the sources again so that potential source changes done by easyblocks
+                # do not cause unintended behaviour in the second build
+                'extract_cmd': 'tar xfz %%s && mv llvm-project-rocm-%s %%(name)s-%%(version)s.src' % _rocm_version,
+            },
+            # ROCr-Runtime
+            {
+                'source_urls': ['https://github.com/ROCm/ROCR-Runtime/archive/'],
+                'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
+                'filename': 'rocr-runtime-%s.tar.gz' % _rocm_version,
+            },
+            # SPIRV-LLVM-Translator
+            {
+                'source_urls': ['https://github.com/ROCm/SPIRV-LLVM-Translator/archive/'],
+                'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
+                'filename': 'spirv-llvm-translator-%s.tar.gz' % _rocm_version,
+            }
+        ],
+        'checksums': [
+            {local_rocm_llvm_source:
+                'e86138d2a63fbcbdf64668d55573b26ae944d0f0ae5a3f5bb59bf7bdb3124d3f'},
+            {'rocr-runtime-7.2.0.tar.gz':
+             '9fefc26e3ccca1b6916ff12e1546ced1e8813963f6dfe39341453e5d3c0161fc'},
+            {'spirv-llvm-translator-7.2.0.tar.gz':
+             'b003b608df470d88ad0a636581e134b05b8aee586b0332c545280e6c6366d121'},
+        ],
+        'start_dir': f'llvm-project-{_llvm_version}-rocm-{_rocm_version}.src',
+        'bootstrap': False,
+        'build_lld': True,
+        'build_clang_extras': True,
+        'build_openmp_offload': True,
+        'build_openmp_tools': True,
+        'build_runtimes': True,
+        'full_llvm': False,
+        'skip_all_tests': True,
+        'configopts': ' '.join([
+            '-DLIBOMPTARGET_BUILD_DEVICE_FORTRT=ON',
+            '-DLIBOMPTARGET_NO_SANITIZER_AMDGPU=ON',
+            '-DLIBOMPTARGET_EXTERNAL_PROJECT_HSA_PATH=$(pwd)/../ROCR-Runtime-rocm-7.2.0/',
+            '-DOFFLOAD_EXTERNAL_PROJECT_UNIFIED_ROCR=ON',
+            '-DLLVM_EXTERNAL_ROCM_DEVICE_LIBS_SOURCE_DIR=$(pwd)/../llvm-project-22.0.0-rocm-7.2.0.src/amd/device-libs/',
+            '-DLLVM_EXTERNAL_SPIRV_LLVM_TRANSLATOR_SOURCE_DIR=$(pwd)/../SPIRV-LLVM-Translator-rocm-7.2.0/',
+            '-DLLVM_EXTERNAL_PROJECTS="rocm-device-libs;spirv-llvm-translator"',
+            # ROCr-Runtime tries to find the Clang that is just built. Make it aware of the respective .cmake files.
+            '-DCMAKE_PREFIX_PATH=$(pwd)/lib/cmake',
+        ]),
+    }),
+    ('ROCR-Runtime', 'rocm-%s' % _rocm_version, {
+        # sources included in llvm-project above
+        'sources': [{'filename': 'rocr-runtime-%s.tar.gz' % _rocm_version, 'extract_cmd': 'echo %s'}],
+        'srcdir': '%(name)s-%(version)s',
+        'checksums': ['9fefc26e3ccca1b6916ff12e1546ced1e8813963f6dfe39341453e5d3c0161fc'],
+        'configopts': local_common_cmake_configopts + ' -DBUILD_SHARED_LIBS=ON',
+    }),
+    ('ROCm-comgr', 'rocm-%s' % _rocm_version, {
+        # sources are located in amd/comgr subdir of llvm-project component
+        'sources': [{'filename': local_rocm_llvm_source, 'extract_cmd': 'echo %s'}],
+        'checksums': [
+            {local_rocm_llvm_source:
+             'e86138d2a63fbcbdf64668d55573b26ae944d0f0ae5a3f5bb59bf7bdb3124d3f'},
+        ],
+        'srcdir': 'llvm-project-%s-%%(version)s.src/amd/comgr' % _llvm_version,
+        'prebuildopts': 'export ROCM_PATH=%(installdir)s && ',
+        'configopts': local_common_cmake_configopts + ' -DROCM_DIR=%(installdir)s/share/rocm/cmake'
+    }),
+    ('aomp-extras', 'rocm-%s' % _rocm_version, {
+        'configopts':
+            local_common_cmake_configopts +
+            ' -DAOMP_STANDALONE_BUILD=0 '
+            '-DAOMP_VERSION_STRING=%s ' % _rocm_version,
+        'checksums': [
+            {'aomp-extras-rocm-7.2.0.tar.gz':
+             '8b56639b4ba9f791b873da20dbc552e4678acd69f9b256177e9a1d44c8361fdd'},
+        ],
+    }),
+]
+
+sanity_check_components = ['llvm-project']
+
+modextravars = {
+    'HIP_DEVICE_LIB_PATH': '%(installdir)s/amdgcn/bitcode',
+}
+
+moduleclass = 'tools'
