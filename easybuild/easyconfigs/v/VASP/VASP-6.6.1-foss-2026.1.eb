@@ -1,5 +1,4 @@
 # This build enables both HDF5 and Wannier-90, both are optional but recommended
-# Furthermore, it sets the vdw_kernel as an external file (courtesy of Mikael Öhman)
 # Author: J. Saßmannshausen (Imperial College London/UK)
 
 easyblock = 'MakeCp'
@@ -22,17 +21,13 @@ download_instructions = """VASP is proprietary software, see https://www.vasp.at
 on how to obtain a license for the software."""
 sources = [
     '%(namelower)s.%(version)s.tgz',
-    'vdw_kernel.bindat.%(version)s.gz',
 ]
 patches = [
     'VASP-6.5.0_enable_hdf5_wannier90.patch',
-    'VASP-6.5.0_external_vdwkernel.patch',
 ]
 checksums = [
     {'vasp.6.6.1.tgz': '261f9c1fd730468106191afeb185821d67cb7a58c982f6e063824dd5432106b0'},
-    {'vdw_kernel.bindat.6.6.1.gz': '650c6a194ab077676a834902ef68e2f4fe426be813ef12b3963c4198d3324f86'},
     {'VASP-6.5.0_enable_hdf5_wannier90.patch': '3b4701f669da8b9e63e46f4fcaa31e2ec17de8045495af802181ae2f2ecd7636'},
-    {'VASP-6.5.0_external_vdwkernel.patch': '1533ab6e045e4028f9e7d0de6b026654b9079569be81353bb460991657e48f0c'},
 ]
 
 dependencies = [
@@ -75,21 +70,11 @@ runtest = 'test'
 
 files_to_copy = [
     (['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin'),
-    (['../vdw_kernel.bindat*'], '.'),
 ]
-
-postinstallcmds = ['cd %(installdir)s && [[ -f vdw_kernel.bindat.%(version)s ]] && '
-                   'ln -s vdw_kernel.bindat.%(version)s vdw_kernel.bindat']
 
 sanity_check_paths = {
     'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
     'dirs': [],
-}
-
-# This environment variable works together with the vasp-6.4.3_vdw_kernel_file-HDF5-Wannier.patch
-# so that it can be used without having to copy this file around.
-modextravars = {
-    'VDW_KERNEL': '%(installdir)s/vdw_kernel.bindat',
 }
 
 moduleclass = 'phys'
