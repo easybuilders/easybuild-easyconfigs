@@ -1,0 +1,62 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'NCrystal'
+version = '4.4.6'
+
+homepage = 'https://mctools.github.io/ncrystal'
+description = """NCrystal is a library and associated tools which enables calculations for Monte Carlo
+ simulations of thermal neutrons in crystals and other materials. It supports a range of physics
+ including Bragg diffraction in mosaic single crystals and polycrystalline powders, and inelastic
+ scattering from phonons. Both the C++/C API (libNCrystal + ncrystal-config, used e.g. by OpenMC
+ via runtime dynamic loading) and the Python API/tools (NCrystal module, nctool) are installed."""
+
+toolchain = {'name': 'intel', 'version': '2025b'}
+
+github_account = 'mctools'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ}]
+checksums = ['7b66927540aa959c296c2d48a586ad7416b19833b564215f9c6e0dd48ffb56ac']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),  # ncrystal-python requires numpy
+]
+
+# defaults already enable the standard data library (EMBED'ed into the shared library),
+# dynamic plugin loading, multithreading, and the ncrystal-config utility;
+# the CTest-based test suite is not usable for an installed build (NCRYSTAL_ENABLE_TESTING
+# forces NCRYSTAL_SKIP_INSTALL=ON), so functional testing is done via the sanity check
+# commands (nctool --test, NCrystal.test()) instead
+
+# the pure-Python NCrystal module and command-line tools (nctool, ...) are a separate
+# package that locates libNCrystal at runtime via ncrystal-config on PATH;
+# upstream pins ncrystal-python to the same version as ncrystal-core
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('ncrystal-python', version, {
+        'source_urls': [PYPI_SOURCE],
+        'source_tmpl': 'ncrystal_python-%(version)s.tar.gz',
+        'modulename': 'NCrystal',
+        'checksums': ['500c430fe2fabca0a3d0e6f2c2f8ce8464b40f10f494486836739ae78d2b53d4'],
+    }),
+]
+
+# the Python module (provided by the ncrystal-python extension) is named NCrystal, not ncrystal
+options = {'modulename': 'NCrystal'}
+
+sanity_check_paths = {
+    'files': ['bin/ncrystal-config', 'bin/nctool', 'lib/libNCrystal.%s' % SHLIB_EXT],
+    'dirs': ['include/NCrystal', 'lib/python%(pyshortver)s/site-packages/NCrystal'],
+}
+
+sanity_check_commands = [
+    'ncrystal-config --summary',
+    'nctool --test',
+    "python -s -c 'import NCrystal; NCrystal.test()'",
+]
+
+moduleclass = 'phys'
