@@ -614,9 +614,9 @@ class EasyConfigTest(TestCase):
                 # Java 21 is used as dep by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* on 2023b
                 (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
                          r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
-                # Java 25 is used as dep for MDSplus 7.1, IMAS-* and SimDB (via IMAS-Python) on 2025b
+                # Java 25 is used as dep for MDSplus 7.1, IMAS-* and SimDB/TORAX (via IMAS-Python) on 2025b
                 (r'25', [r'MDSplus-7\.1.*-GCCcore-14\.3\.0', r'IMAS-.*-2025b', r'IMAS-.*-GCCcore-14\.3\.0',
-                         r'SimDB-.*-2025b']),
+                         r'SimDB-.*-2025b', r'TORAX-.*-2025b']),
             ],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
