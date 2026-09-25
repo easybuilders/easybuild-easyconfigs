@@ -1,0 +1,47 @@
+Fix for
+> external/xla/xla/hlo/utils/hlo_sharding_util.h:356:59: error: call of overloaded 'TileAssignment(<brace-enclosed initializer list>)' is ambiguous
+
+from https://github.com/tensorflow/tensorflow/pull/110851
+Second change is similar but for
+> external/xla/xla/codegen/emitters/transforms/expand_integer_power.cc:51:66: error: conversion from '<brace-enclosed initializer list>' to 'mlir::mhlo::PowOp::Adaptor' {aka 'mlir::mhlo::PowOpAdaptor'} is ambiguous
+
+author: Alexander Grund (TU Dresden)
+
+From f2c84f1bb34fa43d6a77f1e51b838cdd2fc2effd Mon Sep 17 00:00:00 2001
+From: "William S. Moses" <wmoses@google.com>
+Date: Mon, 23 Feb 2026 10:55:56 -0800
+Subject: [PATCH] TileAssignment: Fix build with gcc
+
+PiperOrigin-RevId: 874157330
+---
+ third_party/xla/xla/hlo/utils/hlo_sharding_util.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/third_party/xla/xla/hlo/utils/hlo_sharding_util.h b/third_party/xla/xla/hlo/utils/hlo_sharding_util.h
+--- a/third_party/xla/xla/hlo/utils/hlo_sharding_util.h
++++ b/third_party/xla/xla/hlo/utils/hlo_sharding_util.h
+@@ -372,7 +372,8 @@ class DeviceGroupTileAssignment : public TileAssignment {
+  public:
+   explicit DeviceGroupTileAssignment(int64_t num_groups,
+                                      int64_t num_devices_per_group)
+-      : TileAssignment({num_groups, num_devices_per_group}) {}
++      : TileAssignment(
++            absl::Span<const int64_t>{num_groups, num_devices_per_group}) {}
+   explicit DeviceGroupTileAssignment(int64_t num_groups,
+                                      int64_t num_devices_per_group,
+                                      absl::Span<const int64_t> reshape_dims,
+
+
+diff --git a/third_party/xla/xla/codegen/emitters/transforms/expand_integer_power.cc b/third_party/xla/xla/codegen/emitters/transforms/expand_integer_power.cc
+--- a/third_party/xla/xla/codegen/emitters/transforms/expand_integer_power.cc
++++ b/third_party/xla/xla/codegen/emitters/transforms/expand_integer_power.cc
+@@ -49,7 +49,7 @@ mlir::LogicalResult ExpandIntegerPower(mlir::math::IPowIOp op,
+   llvm::SmallVector<mlir::Type> arg_types(op->getOperandTypes());
+   mlir::Value result =
+       mlir::mhlo::impl::mapMhloOpToStdScalarOp<mlir::mhlo::PowOp>(
+-          op.getLoc(), result_types, arg_types, {op->getOperands()},
++          op.getLoc(), result_types, arg_types, mlir::mhlo::PowOp::Adaptor(op->getOperands()),
+           op->getAttrs(), &rewriter);
+ 
+   rewriter.replaceOp(op, result);
+
