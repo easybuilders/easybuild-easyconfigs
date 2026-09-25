@@ -5,8 +5,6 @@
 # License::     GPL-v3.0
 # #
 
-easyblock = 'CMakeMake'
-
 name = 'SeisSol'
 local_commit_id = '20334d02af9c539a9cf7cc4cd03c3e2622104aea'
 version = '1.3.2'
@@ -53,41 +51,12 @@ dependencies = [
     ('yaml-cpp', '0.8.0'),
 ]
 
-# HOST_ARCH, ORDER, EQUATIONS and PRECISION are upstream CMake defaults, and
-# they are also what names the installed binary: CMakeLists.txt builds it as
-# SeisSol_<build type>_<precision letter><host arch>_<order>_<equations>.
-# Keeping them in variables means the sanity checks cannot drift from the
-# configure options, and a site retargeting HOST_ARCH edits one line.
-# HOST_ARCH_OPTIONS in cmake/process_users_input.cmake lists the accepted
-# values; hsw is portable across x86-64 hardware with AVX2 or better.
-local_host_arch = 'hsw'
-local_order = 6
-local_equations = 'elastic'
-local_binary = 'SeisSol_Release_d%s_%s_%s' % (local_host_arch, local_order, local_equations)
-
-# GEMM_TOOLS_LIST is the Spack default for CPU (FindGemmTools requires each
-# named tool). TESTING maps to the SeisSol-serial-test target (doctest).
-# CMakeMake defaults build_type to Release; do not pass -DCMAKE_BUILD_TYPE.
-configopts = (
-    '-DASAGI=ON -DNETCDF=ON -DTESTING=ON '
-    '-DORDER=%s -DHOST_ARCH=%s -DEQUATIONS=%s -DPRECISION=double '
-    % (local_order, local_host_arch, local_equations) +
-    '-DGEMM_TOOLS_LIST=LIBXSMM,PSpaMM '
-    '-DGRAPH_PARTITIONING_LIBS=parmetis '
-)
+# The SeisSol easyblock sets HOST_ARCH for the build host, and HOST_ARCH also
+# names the installed binary. It takes GEMM_TOOLS_LIST and
+# GRAPH_PARTITIONING_LIBS from the dependencies and derives the sanity checks
+# from the same values. TESTING builds the SeisSol-serial-test target (doctest).
+configopts = '-DASAGI=ON -DNETCDF=ON -DTESTING=ON '
 
 runtest = True
-
-sanity_check_paths = {
-    'files': [
-        'bin/%s' % local_binary,
-        'bin/%s' % local_binary.replace('SeisSol_', 'SeisSol_proxy_', 1),
-    ],
-    'dirs': [],
-}
-
-sanity_check_commands = [
-    '%s --help | grep "Show this help message"' % local_binary,
-]
 
 moduleclass = 'geo'
