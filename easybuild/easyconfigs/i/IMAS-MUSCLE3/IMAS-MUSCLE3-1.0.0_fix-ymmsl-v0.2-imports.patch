@@ -1,0 +1,22 @@
+Fix compatibility with MUSCLE3 >= 0.9 (ymmsl >= 0.16): SettingValue (and most
+other classes) were removed from the top-level ymmsl package when it was split
+into versioned subpackages (ymmsl.v0_1 / ymmsl.v0_2), so importing any
+imas_muscle3 actor fails with
+  ImportError: cannot import name 'SettingValue' from 'ymmsl'
+Import the v0.2 API explicitly instead, as done upstream on the develop branch
+in commit d695c3522c6ee80ea589f3f8780561517f622d35 (Daan van Vugt), from which
+this hunk is extracted. See also https://github.com/multiscale/muscle3/issues/362.
+Author: Simon Pinches (ITER Organization)
+--- imas_muscle3-1.0.0.orig/imas_muscle3/utils.py	2025-12-11 15:02:44.000000000 +0100
++++ imas_muscle3-1.0.0/imas_muscle3/utils.py	2026-08-23 16:15:31.661171136 +0200
+@@ -1,7 +1,9 @@
+ from typing import List, Optional, TypeVar, cast
+ 
+ from libmuscle import Instance
+-from ymmsl import Operator, SettingValue
++
++# ymmsl 0.15+ split into versioned subpackages; import the v0.2 API explicitly.
++from ymmsl.v0_2 import Operator, SettingValue
+ 
+ TSetting = TypeVar("TSetting", bound=SettingValue)
+ 
