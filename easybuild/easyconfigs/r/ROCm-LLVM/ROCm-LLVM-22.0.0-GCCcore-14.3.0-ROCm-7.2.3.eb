@@ -23,6 +23,7 @@ builddependencies = [
     ('Python', '3.13.5'),
     ('pkgconf', '2.4.3'),
     ('xxd', '9.1.1775'),  # required for ROCr-Runtime
+    ('git', '2.50.1'),  # required for rocprofiler-register
 ]
 
 dependencies = [
@@ -37,6 +38,7 @@ dependencies = [
     ('libdrm', '2.4.125'),
     ('numactl', '2.0.19'),
     ('Z3', '4.15.1'),
+    ('rocprofiler-register', '0.6.0', f'-ROCm-{_rocm_version}'),  # required for ROCR-Runtime
 ]
 
 local_rocm_llvm_source = 'llvm-project-rocm-%s.tar.gz' % _rocm_version
@@ -45,7 +47,7 @@ local_common_cmake_configopts = ' '.join([
     '-DCMAKE_CXX_COMPILER=%(installdir)s/bin/clang++',
     '-DLLVM_INSTALL_PREFIX=%(installdir)s',
     '-DLLVM_DIR=%(installdir)s/lib/cmake/llvm',
-    '-DROCM_DEVICE_LIBS_BITCODE_INSTALL_LOC=%(installdir)s/lib/clang/22/lib/amdgcn',
+    '-DROCM_DEVICE_LIBS_BITCODE_INSTALL_LOC=%(installdir)s/lib/clang/%(version_major)s/lib/amdgcn',
 ])
 
 default_easyblock = 'CMakeMake'
@@ -68,9 +70,11 @@ components = [
             # rename the extracted directory to the one that the LLVM easyblock expects
             'extract_cmd': 'tar xfz %%s && mv %%(name)s-rocm-%s %%(name)s-%%(version)s.src' % _rocm_version,
         }],
+        'patches': ['ROCm-LLVM-22.0.0-ROCm-7.2.3_fix-flang-openmp.patch'],
         'checksums': [
             {local_rocm_llvm_source:
                 '6239fa0c72b150cf0a325676264d3030a67389dec4fca7103f563a70c2b70114'},
+            '74471ee320c4d839a433c04b9d35db868f2a13c08183297d1a09ec580ca1d7e9',  # ROCm-LLVM-22.0.0-ROCm-7.2.3_fix-flang-openmp.patch
         ],
         'start_dir': f'llvm-project-{_llvm_version}-rocm-{_rocm_version}.src',
         'bootstrap': True,
@@ -200,7 +204,7 @@ sanity_check_components = ['llvm-project']
 modextravars = {
     'HIP_DEVICE_LIB_PATH': '%(installdir)s/amdgcn/bitcode',
     'ROCM_DEVICE_LIBS_INSTALL_PREFIX_PATH': '%(installdir)s',
-    'ROCM_DEVICE_LIBS_BITCODE_INSTALL_LOC': '%(installdir)s/lib/clang/22/lib/amdgcn',
+    'ROCM_DEVICE_LIBS_BITCODE_INSTALL_LOC': '%(installdir)s/lib/clang/%(version_major)s/lib/amdgcn',
 }
 
 moduleclass = 'tools'
