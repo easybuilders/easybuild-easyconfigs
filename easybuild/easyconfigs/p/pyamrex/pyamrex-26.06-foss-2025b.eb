@@ -1,0 +1,59 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'pyamrex'
+version = '26.06'
+
+homepage = 'https://github.com/AMReX-Codes/pyamrex'
+description = """
+The Python binding pyAMReX bridges the compute in AMReX block-structured codes
+and data science: it provides zero-copy application GPU data access for AI/ML,
+in situ analysis, application coupling and enables rapid, massively parallel
+prototyping. pyAMReX enhances the Block-Structured AMR Software Framework AMReX
+and its applications.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/AMReX-Codes/pyamrex/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['990526a64378066bf9a53a6268731c03cc4e12cf59804a1695447d9336e251d5']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('ccache', '4.11.3'),
+    ('pkgconf', '2.4.3'),
+    ('pybind11', '3.0.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('AMReX', '%(version)s'),
+]
+
+configopts = '-DAMReX_PRECISION=DOUBLE '
+configopts += '-DAMReX_MPI=ON -DAMReX_MPI_THREAD_MULTIPLE=ON -DAMReX_OMP=ON '
+configopts += '-DAMReX_EB=ON  '
+configopts += '-DAMReX_LINEAR_SOLVERS_EM=ON -DAMReX_PARTICLES=ON -DAMReX_FORTRAN=ON '
+configopts += '-DAMReX_PARTICLES_PRECISION=DOUBLE -DAMReX_PIC=ON '
+configopts += '-DAMReX_TINY_PROFILE=ON '
+configopts += '-DAMReX_FFT=ON '
+configopts += '-DAMReX_PETSC=ON -DAMReX_SUNDIALS=ON -DAMReX_HDF5=OFF -DAMReX_HDF5_ZFP=OFF '
+configopts += '-DAMReX_ASCENT=ON -DAMReX_CONDUIT=ON -DAMReX_CATALYST=ON '
+configopts += '-DAMReX_AMRLEVEL=ON '
+configopts += '-DAMReX_SPACEDIM="1;2;3" '
+configopts += '-DpyAMReX_amrex_internal=OFF -DpyAMReX_pybind11_internal=OFF'
+
+test_cmd = 'ctest'
+
+sanity_check_paths = {
+    'files': ['lib/amrex_1d_pybind.cpython-313-x86_64-linux-gnu.so',
+              'lib/amrex_2d_pybind.cpython-313-x86_64-linux-gnu.so',
+              'lib/amrex_3d_pybind.cpython-313-x86_64-linux-gnu.so'],
+    'dirs': [],
+}
+
+moduleclass = 'phys'
