@@ -32,6 +32,7 @@ dependencies = [
     ('GDAL', '3.11.1'),  # for sf
     ('MPFR', '4.2.2'),  # for Rmpfr
     ('PostgreSQL', '17.5'),  # for RPostgreSQL
+    ('libiconv', '1.18'),  # for haven + readxl
 ]
 
 # Some R extensions (mclust, quantreg, waveslim for example) require the math library (-lm) to avoid undefined symbols.
@@ -610,6 +611,13 @@ exts_list = [
     }),
     ('haven', '2.5.5', {
         'checksums': ['9482cd9c3760e1838acf687235317fed97fa6bf79219d3216f0ea447d4b1c9a5'],
+        # explicitly link to libiconv by adding -liconv to PKG_LIBS,
+        # to ensure that libiconv dependency is picked up;
+        # we do this via the configure script,
+        # which is used by haven to find zlib and generates src/Makevars;
+        # fixes problems like "undefined symbol: libiconv",
+        # see for example https://github.com/tidyverse/haven/issues/299
+        'preinstallopts': r"""sed -i 's/\(echo "Using PKG_LIBS\)/PKG_LIBS="$PKG_LIBS -liconv"; \1/g' configure && """,
     }),
     ('pan', '1.9', {
         'checksums': [
@@ -1213,6 +1221,11 @@ exts_list = [
     }),
     ('readxl', '1.4.5', {
         'checksums': ['09d70d7bbafbe129ce687b8743dbf6b9d0f201205b30dc515a00b35fcc1bdedf'],
+        # explicitly link to libiconv by adding -liconv to PKG_LIBS
+        # to ensure that libiconv dependency is picked up;
+        # fixes problems like "undefined symbol: libiconv",
+        # see also https://github.com/tidyverse/readxl/issues/704
+        'preinstallopts': "PKG_LIBS='-liconv' ",
     }),
     ('writexl', '1.5.4', {
         'checksums': ['d0574a29ea22bd78785f50c7cd23c6e10036f65321e26d55a694e931467660d3'],
@@ -3635,6 +3648,9 @@ exts_list = [
     }),
     ('latex2exp', '0.9.8', {
         'checksums': ['8dd641f263989515d0c327550934e4954dc582230ca2bb9f280b6b28a46510a5'],
+    }),
+    ('RcppNumerical', '0.6-0', {
+        'checksums': ['2f0715d68a975403e2aa3f087939542001921623bd1bb8d905ebaff05d82d786'],
     }),
 ]
 

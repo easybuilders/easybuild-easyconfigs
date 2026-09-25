@@ -1,0 +1,80 @@
+Update pandas conversion calls for rpy2 3.6, which removed global conversion
+activation support and the package-level __version__ attribute.
+
+Author: Emik Lin (HKUMed CPOS)
+--- a/src/flair/runDE.py
++++ b/src/flair/runDE.py
+@@ -24,7 +24,7 @@ import pandas as pd
+ import rpy2
+ from rpy2 import robjects
+ from rpy2.robjects import pandas2ri, Formula
+-pandas2ri.activate()
++from rpy2.robjects.conversion import localconverter
+ R = robjects.r
+
+ #import warnings
+@@ -127,11 +127,12 @@ def runDESeq(outdir, group1, group2, matrix, prefix, formula):
+     # make the quant DF
+     quantDF  = pd.read_csv(matrix, header=0, sep='\t', index_col=0)
+     genecount = quantDF.shape[0]
+-    df = pandas2ri.py2rpy(quantDF)
+
+     # import formula
+     formulaDF     = pd.read_csv(formula,header=0, sep="\t",index_col=0)
+-    sampleTable = pandas2ri.py2rpy(formulaDF)
++    with localconverter(robjects.default_converter + pandas2ri.converter):
++        df = robjects.conversion.py2rpy(quantDF)
++        sampleTable = robjects.conversion.py2rpy(formulaDF)
+
+     if "batch" in list(formulaDF):
+         design = Formula("~ condition + condition")
+--- a/src/flair/runDU.py
++++ b/src/flair/runDU.py
+@@ -27,9 +27,9 @@ import pandas as pd
+ import rpy2
+ from rpy2 import robjects
+ from rpy2.robjects import pandas2ri
++from rpy2.robjects.conversion import localconverter
+ from rpy2.robjects.packages import importr
+ #    import rpy2.robjects.lib.ggplot2 as ggplot2
+-pandas2ri.activate()
+ R = robjects.r
+
+ import warnings
+@@ -135,11 +135,11 @@ def runDRIMSeq(outdir, group1, group2, batch, matrix, prefix, formula, threads):
+
+     # get quant table and formula table
+     quantDF  = pd.read_csv(matrix, header=0, sep='\t', index_col=0)
+-    df       = pandas2ri.py2rpy(quantDF)
+-
+     formulaDF = pd.read_csv(formula,header=0, sep="\t")
+
+-    pydf      = pandas2ri.py2rpy(formulaDF)
++    with localconverter(robjects.default_converter + pandas2ri.converter):
++        df = robjects.conversion.py2rpy(quantDF)
++        pydf = robjects.conversion.py2rpy(formulaDF)
+
+     # Convert pandas to R data frame.
+     samples = pydf
+--- a/src/flair/runDS.py
++++ b/src/flair/runDS.py
+@@ -176,16 +176,9 @@ def runDRIMSeq(outdir, batch, counts_matrix, formula, prefix, threads):
+         quantDF[[col]] = quantDF[[col]] + 1
+
+     # Convert pandas to R data frame.
+-    rpy2_version = rpy2.__version__
+-    rpy2_version = float(rpy2_version[:rpy2_version.rfind('.')])
+-    if rpy2_version >= 3.4:
+-        with localconverter(ro.default_converter + pandas2ri.converter):
+-            samples = ro.conversion.py2rpy(formulaDF)
+-            counts = ro.conversion.py2rpy(quantDF)
+-    else:
+-        pandas2ri.activate()
+-        samples = pandas2ri.py2ri(formulaDF)
+-        counts = pandas2ri.py2ri(quantDF)
++    with localconverter(ro.default_converter + pandas2ri.converter):
++        samples = ro.conversion.py2rpy(formulaDF)
++        counts = ro.conversion.py2rpy(quantDF)
+
+     # DRIMSEQ part.
+     if "batch" in list(formulaDF): R.assign('batch', samples.rx2('batch'))
