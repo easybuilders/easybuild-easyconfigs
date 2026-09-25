@@ -1,5 +1,3 @@
-easyblock = 'MesonNinja'
-
 name = 'eOn'
 version = '2.17.10'
 
@@ -17,10 +15,17 @@ sources = [{
 }]
 # rgpot 3.0.0 moved AtomMatrix into rgpot::types; upstream fixed the wrapper in
 # eOn 3.0.0 (TheochemUI/eOn@38c38c1bd3), one using-declaration.
-patches = ['%(name)s-%(version)s_rgpot3-qualify-AtomMatrix.patch']
+# The eonclient server includes the capnp header by the path the rgpot
+# subproject exposes; an installed rgpot has it under rgpot/rpc.
+patches = [
+    '%(name)s-%(version)s_rgpot3-qualify-AtomMatrix.patch',
+    '%(name)s-%(version)s_serve-qualify-capnp-header.patch',
+]
 checksums = [
     {'eOn-2.17.10.tar.gz': '1ade06d7a30afcd08f9f14194d7051478c48e7b8d11baaab8da830073e3d6f4a'},
     {'eOn-2.17.10_rgpot3-qualify-AtomMatrix.patch': '693bdf86384285f39be94edd7142b21d75723fa9ef8cabdeea69988d3d718eb7'},
+    {'eOn-2.17.10_serve-qualify-capnp-header.patch':
+     '852e5fb24f93451ab3bf0921c1cddd7694888c0b95731187a546876c3c5ec211'},
 ]
 
 builddependencies = [
@@ -32,6 +37,7 @@ builddependencies = [
 
 dependencies = [
     ('Python', '3.14.2'),
+    ('CapnProto', '1.4.0'),
     ('SciPy-bundle', '2026.05'),
     ('PyYAML', '6.0.3'),
     ('Eigen', '5.0.0'),
@@ -43,28 +49,9 @@ dependencies = [
     ('rgpot', '3.0.0'),
 ]
 
-configopts = '-Dbuildtype=release -Dwith_tests=true -Dwith_rgpot=true'
-runtest = 'meson'
-testopts = 'test -C %(builddir)s/easybuild_obj --num-processes 1'
-
-sanity_check_paths = {
-    'files': [
-        'bin/eonclient',
-        'lib/python%(pyshortver)s/site-packages/eon/__init__.py',
-    ],
-    'dirs': [
-        'bin',
-        'lib',
-        'lib/python%(pyshortver)s/site-packages/eon',
-    ],
-}
-
-sanity_check_commands = [
-    "eonclient --help",
-    "eonclient --version",
-    "python -c \"import eon; print(getattr(eon, '__version__', 'ok'))\"",
-]
-
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+# The eOn easyblock enables each Meson option whose dependencies are listed
+# above (rgpot, and rgpot plus CapnProto for the eonclient server), and runs
+# meson test --suite eon.
+runtest = True
 
 moduleclass = 'chem'
