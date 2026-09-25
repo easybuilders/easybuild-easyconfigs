@@ -1,0 +1,57 @@
+name = 'eOn'
+version = '2.17.10'
+
+homepage = 'https://eondocs.org/'
+description = """eOn models the evolution of atomic-scale systems over long time scales."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+github_account = 'TheochemUI'
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+# rgpot 3.0.0 moved AtomMatrix into rgpot::types; upstream fixed the wrapper in
+# eOn 3.0.0 (TheochemUI/eOn@38c38c1bd3), one using-declaration.
+# The eonclient server includes the capnp header by the path the rgpot
+# subproject exposes; an installed rgpot has it under rgpot/rpc.
+patches = [
+    '%(name)s-%(version)s_rgpot3-qualify-AtomMatrix.patch',
+    '%(name)s-%(version)s_serve-qualify-capnp-header.patch',
+]
+checksums = [
+    {'eOn-2.17.10.tar.gz': '1ade06d7a30afcd08f9f14194d7051478c48e7b8d11baaab8da830073e3d6f4a'},
+    {'eOn-2.17.10_rgpot3-qualify-AtomMatrix.patch': '693bdf86384285f39be94edd7142b21d75723fa9ef8cabdeea69988d3d718eb7'},
+    {'eOn-2.17.10_serve-qualify-capnp-header.patch':
+     '852e5fb24f93451ab3bf0921c1cddd7694888c0b95731187a546876c3c5ec211'},
+]
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('Meson', '1.10.2'),
+    ('Ninja', '1.13.2'),
+    ('pkgconf', '2.5.1'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('CapnProto', '1.4.0'),
+    ('SciPy-bundle', '2026.05'),
+    ('PyYAML', '6.0.3'),
+    ('Eigen', '5.0.0'),
+    ('Highway', '1.4.0'),
+    ('inih', '62'),
+    ('nlohmann_json', '3.12.0'),
+    ('quill', '11.1.0'),
+    ('readcon-core', '0.13.1'),
+    ('rgpot', '3.0.0'),
+]
+
+# The eOn easyblock enables each Meson option whose dependencies are listed
+# above (rgpot, and rgpot plus CapnProto for the eonclient server), and runs
+# meson test --suite eon.
+runtest = True
+
+moduleclass = 'chem'
