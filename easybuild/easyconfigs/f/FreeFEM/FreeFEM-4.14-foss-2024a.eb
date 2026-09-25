@@ -1,0 +1,151 @@
+# Authors: Ehsan Moravveji (VSC, KU Leuven)
+#          Steven Vandenbrande (VSC, KU Leuven)
+# Inspired by: https://github.com/easybuilders/easybuild-easyconfigs/pull/15537
+# Update: Pavel Tomanek (UGent/Inuits)
+easyblock = 'ConfigureMake'
+
+name = 'FreeFEM'
+version = '4.14'
+
+homepage = 'https://freefem.org'
+description = """FreeFEM offers a fast interpolation algorithm and a language for the manipulation
+ of data on multiple meshes."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+local_hpddm_commit = '7113b9a6b77fceee3f52490cb27941a87b96542f'
+local_hpddm_src = f'hpddm-{local_hpddm_commit}.zip'
+
+source_urls = ['https://github.com/FreeFem/FreeFem-sources/archive/']
+sources = [
+    'v%(version)s.tar.gz',
+    # Add HPDDM source archive and stage it in FreeFEM's 3rdparty tree to avoid downloading it during the build
+    {
+        'source_urls': ['https://codeload.github.com/hpddm/hpddm/zip/'],
+        'filename': local_hpddm_src,
+        'download_filename': local_hpddm_commit,
+        'extract_cmd': (
+            "mkdir -p FreeFem-sources-%(version)s/3rdparty/{pkg,include} && "
+            "cp %s FreeFem-sources-%(version)s/3rdparty/pkg/hpddm.zip && "
+            "cd FreeFem-sources-%(version)s/3rdparty/include && "
+            "unzip -q ../pkg/hpddm.zip && "
+            "mv hpddm-* hpddm && "
+            "touch hpddm/done.tag"
+        ),
+    },
+]
+patches = [
+    'FreeFEM-4.14_fix-external-deps.patch',
+    'FreeFEM-4.14_skip-failing-tests.patch',
+    'FreeFEM-4.14_HPDDM-PETSc-3.23.patch',
+]
+checksums = [
+    {'v4.14.tar.gz': '931cbfe9ef6f6530756c300c5ae47bfdaca21c560a5407cb33325a376a3b6af8'},
+    {'hpddm-7113b9a6b77fceee3f52490cb27941a87b96542f.zip':
+     'ded06f69368bc578965e595dca9b3a191d457a4b0eef6ce43c557c1a480ffa71'},
+    {'FreeFEM-4.14_fix-external-deps.patch':
+     '12017a34fb8c108ed28d0060036c40bffcfda389599f88e2db337b6853d43696'},
+    {'FreeFEM-4.14_skip-failing-tests.patch': 'd7ea1d003f5aaf4c552b2169aa3a39f175717b8c6bd3fcaa565e5027135c00a3'},
+    {'FreeFEM-4.14_HPDDM-PETSc-3.23.patch': '141a3109b5d52e0b9d3d27eaf7fbb3942f3d87971fb01b21716282d2547fd28a'},
+]
+
+builddependencies = [
+    ('Autotools', '20231222'),
+    ('binutils', '2.42'),
+    ('pkgconf', '2.2.0'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('make', '4.4.1'),
+    ('git', '2.45.1'),
+]
+
+dependencies = [
+    ('GSL', '2.8'),
+    ('freeglut', '3.6.0'),
+    ('arpack-ng', '3.9.1'),
+    ('TetGen', '1.6.0'),
+    ('HDF5', '1.14.5'),
+    ('Mmg', '5.8.0'),
+    ('ParMmg', '1.5.0'),
+    ('SCOTCH', '7.0.6'),
+    ('SuiteSparse', '7.10.1'),
+    ('PETSc', '3.23.5'),
+    ('SLEPc', '3.23.2'),
+    ('METIS', '5.1.0'),
+    ('ParMETIS', '4.0.3'),
+    ('MUMPS', '5.7.2', '-metis'),
+    ('NLopt', '2.7.1'),
+    ('SuperLU', '6.0.1'),
+    ('Ipopt', '3.14.17'),
+]
+
+# Temporarily adjust FreeFEM flags for the 3D test configuration and regenerate the Autotools files
+preconfigopts = ' && '.join([
+    "sed -i 's|FLAGS_FFPP=-nw|FLAGS_FFPP=\"-g -O0 -nw\"|g' %(start_dir)s/examples/3d/Makefile.am",
+    "autoreconf -fiv",
+    ""
+])
+
+configopts = ' '.join([
+    '--enable-optim',
+    '--enable-summary',
+    '--with-mpi=$(which mpic++)',
+    '--with-petsc="$EBROOTPETSC/lib/petsc/conf/petscvariables"',
+    '--without-petsc_complex',
+    '--with-slepc-include="-I$EBROOTSLEPC/include"',
+    '--with-slepc-ldflags="-L$EBROOTSLEPC/lib -lslepc -lhpddm_petsc"',
+    '--without-cadna',
+    '--with-blas="$EBROOTOPENBLAS/lib"',
+    '--with-lapack="$EBROOTFLEXIBLAS/lib"',
+    '--with-arpack="-L$EBROOTARPACKMINNG/lib -larpack -L$EBROOTFLEXIBLAS/lib -lflexiblas"',
+    '--with-umfpack="-L$EBROOTSUITESPARSE/lib -lcholmod -lumfpack"',
+    '--with-gsl-prefix="$EBROOTGSL"',
+    '--with-tetgen-include="-I$EBROOTTETGEN/include"',
+    '--with-metis-include="-I$EBROOTMETIS/include"',
+    '--with-parmetis-include="-I$EBROOTPARMETIS/include"',
+    '--with-ipopt-include="-I$EBROOTIPOPT/include"',
+    '--with-scalapack-include="-I$EBROOTSCALAPACK/include"',
+    '--with-mumps-include="-I$EBROOTMUMPS/include"',
+    '--with-nlopt-include="-I$EBROOTNLOPT/include"',
+    '--with-scotch-include="-I$EBROOTSCOTCH/include"',
+    '--with-parmmg-include="-I$EBROOTPARMMG/include"',
+    '--with-parmmg-ldflags="-L$EBROOTPARMMG/lib -lparmmg"',
+    '--with-mmg-include="-I$EBROOTMMG/include"',
+    '--with-mmg3d-include="-I$EBROOTMMG/include"',
+    '--enable-download_hpddm',
+])
+
+max_parallel = 8
+
+# Restore the default FreeFEM test flags before running the test suite
+pretestopts = "find %(builddir)s -name Makefile | xargs sed -i 's/FLAGS_FFPP=\"-g -O0 -nw\"/FLAGS_FFPP=\"-nw\"/g' && "
+runtest = 'check'
+
+# Install FreeFEM's test-driver-ff helper script into the final bin directory
+postinstallcmds = ['cp %(start_dir)s/bin/test-driver-ff %(installdir)s/bin']
+
+sanity_check_paths = {
+    'files': (
+        ['bin/%s' % x for x in ['test-driver-ff', 'bamg', 'cvmsh2', 'ffglut', 'ffmedit', 'ffmaster']] +
+        ['bin/ff-%s' % x for x in ['c++', 'get-dep', 'mpirun', 'pkg-download']] +
+        ['bin/FreeFem++%s' % x for x in ['', '-mpi', '-nw']] +
+        [
+            'lib/ff++/%%(version)s/lib/%s.so' % x for x in [
+                'ff-Ipopt', 'ff-NLopt', 'gsl', 'iohdf5', 'metis', 'mmg', 'scotch', 'SuperLu',
+                'tetgen', 'UMFPACK64',
+            ]
+        ] +
+        [
+            'lib/ff++/%%(version)s/lib/mpi/%s.so' % x for x in [
+                'function-PETSc', 'hpddm', 'hpddm_substructuring', 'MUMPS_mpi', 'parmmg', 'PETSc', 'SLEPc',
+            ]
+        ]
+    ),
+    'dirs': (
+        ['share/FreeFEM/%(version)s/'] +
+        ['lib/ff++/%%(version)s/%s' % x for x in ['bin', 'etc', 'idp', 'include', 'lib']]
+    ),
+}
+
+moduleclass = 'math'
