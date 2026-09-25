@@ -1,0 +1,72 @@
+easyblock = 'CMakeMake'
+
+name = 'llama.cpp'
+version = '0.4.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://llama.app/'
+description = """llama.cpp enables LLM (and VLM) inference with minimal setup and
+state-of-the-art performance on a wide range of hardware - locally and in the
+cloud."""
+
+# This build of llama.cpp only provides a base installation without extras
+# such as models, examples or conversion scripts.
+# Conversion scripts are avoided due to their dependency on PyTorch. They are
+# standalone python scripts that don't require installation.
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+github_account = 'ggml-org'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+patches = ['llama.cpp_fix-blas-includes.patch']
+checksums = [
+    {'llama.cpp-0.4.1.tar.gz': 'ef3d5b1907a391500ae11b5e61a8e2022e0deaac9790899cad9c4e02f03bfb9a'},
+    {'llama.cpp_fix-blas-includes.patch': '4b2437dcdc4fd3f2a4ddc6010c521e42fe8e7bb1e62f399cd1dbf9c729daea8e'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('poetry', '2.1.2'),  # needed by gguf
+]
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('OpenSSL', '3', '', SYSTEM),
+    # dependencies of gguf
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('PyYAML', '6.0.2'),
+    ('tqdm', '4.67.1'),
+]
+
+# enable BLAS support
+configopts = "-DGGML_BLAS=ON -DGGML_BLAS_VENDOR=FlexiBLAS"
+# enable CUDA support
+configopts = "-DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES='%(cuda_cc_cmake)s'"
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('gguf', '0.19.0', {
+        'sources': ['llama.cpp-0.4.1.tar.gz'],
+        'checksums': ['ef3d5b1907a391500ae11b5e61a8e2022e0deaac9790899cad9c4e02f03bfb9a'],
+        'start_dir': 'gguf-py',
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/llama-cli',
+        'bin/gguf-dump',
+        'include/llama-cpp.h',
+        'lib/libllama.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/gguf'],
+}
+
+sanity_check_commands = [
+    "llama-cli --help",
+    "gguf-dump --help",
+]
+
+moduleclass = 'ai'
