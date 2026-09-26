@@ -1,0 +1,24 @@
+Use EBROOTROCMINFO environment variable to locate rocm_agent_enumerator in EasyBuild environment.
+
+In ROCm 7.2.3, the hipBin_amd.h file needs to use the EBROOTROCMINFO environment variable
+to locate rocm_agent_enumerator instead of relying on a monolithic ROCM_PATH.
+
+The HIP_CLANG_PATH is already handled via environment variables in the ROCm 7.2.3 code,
+so no additional patch is needed for clang++ location.
+
+Author: EasyBuild community
+Date: 2026-08-05
+
+diff --git a/amd/hipcc/src/hipBin_amd.h b/amd/hipcc/src/hipBin_amd.h
+index 57d0098..8a0e63f 100644
+--- a/amd/hipcc/src/hipBin_amd.h
++++ b/amd/hipcc/src/hipBin_amd.h
+@@ -782,7 +782,7 @@ void HipBinAmd::executeHipCCCmd(vector<string> argv) {
+     } else if (os != windows) {
+       // Else try using rocm_agent_enumerator
+       string ROCM_AGENT_ENUM;
+-      ROCM_AGENT_ENUM = roccmPath + "/bin/rocm_agent_enumerator";
++      ROCM_AGENT_ENUM = string(getenv("EBROOTROCMINFO")) + "/bin/rocm_agent_enumerator";
+       targetsStr = ROCM_AGENT_ENUM +" -t GPU";
+       SystemCmdOut sysOut = hipBinUtilPtr_->exec(targetsStr.c_str());
+       regex toReplace("\n+");
