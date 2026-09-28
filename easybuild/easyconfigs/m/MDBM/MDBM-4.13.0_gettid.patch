@@ -1,0 +1,260 @@
+From 84e07bdb5c5c9718c5245fb87c8d5af63859b31c Mon Sep 17 00:00:00 2001
+From: Evan Jones <evan.jones@datadoghq.com>
+Date: Sat, 25 Jul 2020 12:42:25 -0400
+Subject: [PATCH 1/2] atomic.h: Rename gettid() -> mdbm_gettid() to avoid
+ conflicts
+
+Recent versions of glibc contain a gettid syscall wrapper, starting
+with 2.30. This causes the following compile error on anything that
+includes it, such as Ubuntu LTS 20.04. Rename the function to fix it.
+This should also return a int32_t instead of uint32_t to match the
+actual kernel and glibc definitions.
+
+In file included from mdbm.c:47:
+atomic.h:102:24: error: conflicting types for 'gettid'
+  102 | static inline uint32_t gettid() {
+      |                        ^~~~~~
+In file included from /usr/include/unistd.h:1170,
+                 from mdbm.c:29:
+/usr/include/x86_64-linux-gnu/bits/unistd_ext.h:34:16: note: previous declaration of 'gettid' was here
+   34 | extern __pid_t gettid (void) __THROW;
+      |                ^~~~~~
+---
+ src/lib/atomic.h                    | 14 +++++++++-----
+ src/lib/log.c                       |  2 +-
+ src/lib/mdbm_lock.cc                | 16 ++++++++--------
+ src/lib/multi_lock.cc               |  8 ++++----
+ src/test/unit-test/test_lockbase.cc |  2 +-
+ src/test/unit-test/test_lockv3.cc   |  4 ++--
+ src/test/unit-test/test_other.cc    |  2 +-
+ 7 files changed, 26 insertions(+), 22 deletions(-)
+
+diff --git a/src/lib/atomic.h b/src/lib/atomic.h
+index b346632..14d225a 100644
+--- a/src/lib/atomic.h
++++ b/src/lib/atomic.h
+@@ -94,23 +94,27 @@ static inline void atomic_pause() {
+ }
+ 
+ 
+-/* returns (linux-specific) thread-id (for single-thread processes it's just PID) */
+-static inline uint32_t gettid() {
+-  /* AUTO_TSC("gettid()"); */
++/*
++returns (linux-specific) thread-id (for single-thread processes it's just PID).
++Renamed to not conflict with glibc 2.30's gettid wrapper.
++On Linux gettid returns pid_t which is int32_t.
++*/
++static inline int32_t mdbm_gettid() {
++  /* AUTO_TSC("mdbm_gettid()"); */
+ #ifdef __linux__
+   return syscall(SYS_gettid);
+ #else
+   /* Horrible hack, but pthread_self is not unique across processes, */
+   /* and some OS don't expose any other unique id. */
+   /* xor-fold pthread_self() pointer down to 16-bits */
+-  uint32_t tid;
++  uint32_t tid_unsigned;
+   uint64_t pself = (uint64_t)pthread_self();
+   pself = pself ^ (pself >> 32);
+   pself = pself ^ (pself >> 16);
+   /* add in PID to help unique-ify */
+   /* NOTE: tiger and later OSX have PID #s up to 10k. */
+   tid = ((pself & 0xffff) << 16) + getpid();
+-  return tid;
++  return (int32_t) tid_unsigned;
+ #endif
+ }
+ 
+diff --git a/src/lib/log.c b/src/lib/log.c
+index c4a1f41..870cfd0 100644
+--- a/src/lib/log.c
++++ b/src/lib/log.c
+@@ -157,7 +157,7 @@ int mdbm_log_vlog_at (const char* file, int line, int level, const char* format,
+ 
+     gettimeofday(&tv, NULL);
+ #ifdef __linux__
+-    pid = gettid();
++    pid = mdbm_gettid();
+ #else
+     pid = getpid();
+ #endif
+diff --git a/src/lib/mdbm_lock.cc b/src/lib/mdbm_lock.cc
+index ac6d77e..48f354d 100644
+--- a/src/lib/mdbm_lock.cc
++++ b/src/lib/mdbm_lock.cc
+@@ -473,7 +473,7 @@ do_lock_x(MDBM* db, int pageno, int nonblock, int check)
+         int do_check = 0; /* If an integrity check needs to be done. */
+         int upgraded = 0; /* If the lock was implicitly upgraded (prev EXCL owner died). */
+         int part_num = -1;
+-        //fprintf(stderr, "@@@ do_lock_x pid:%d tid:%d, excl_nest:%d part_nest:%d part_count:%d pageno:%d\n", getpid(), gettid(), exclusive_nest, part_nest, part_count, pageno); 
++        //fprintf(stderr, "@@@ do_lock_x pid:%d tid:%d, excl_nest:%d part_nest:%d part_count:%d pageno:%d\n", getpid(), mdbm_gettid(), exclusive_nest, part_nest, part_count, pageno);
+         /*fprintf(stderr, "do_lock_x, part_count:%d\n", part_count); */
+         if (part_count > 1) { /* shared/indexed locking (vs single-lock) */
+             if (pageno == MDBM_LOCK_EXCLUSIVE || pageno == MDBM_LOCK_SHARED) {
+@@ -485,11 +485,11 @@ do_lock_x(MDBM* db, int pageno, int nonblock, int check)
+ 
+             if (pageno == MDBM_LOCK_EXCLUSIVE || exclusive_nest > 0) {
+                 if (!exclusive_nest && part_nest>0) {
+-                    //fprintf(stderr, "@@@ do_lock_x-upgrade pid:%d tid:%d, \n", getpid(), gettid()); 
++                    //fprintf(stderr, "@@@ do_lock_x-upgrade pid:%d tid:%d, \n", getpid(), mdbm_gettid());
+                     /*NOTE("Upgrade(TRY)"); */
+                     TRY_OR_LOCK_TIMED_ERR(MLOCK_UPGRADE, part_num, "mlock_upgrade()");
+                 } else { /* exclusive lock already held, bump count */
+-                    //fprintf(stderr, "@@@ do_lock_x-exclusive pid:%d tid:%d\n",getpid(), gettid());
++                    //fprintf(stderr, "@@@ do_lock_x-exclusive pid:%d tid:%d\n",getpid(), mdbm_gettid());
+                     /*NOTE("Lock(ASYNC) EXCLUSIVE"); */
+                     TRY_OR_LOCK_TIMED_ERR(MLOCK_EXCLUSIVE, part_num, "mlock_lock(exclusive)");
+                     if (1 == locks->getHeldCount(MLOCK_EXCLUSIVE, true)) {
+@@ -505,27 +505,27 @@ do_lock_x(MDBM* db, int pageno, int nonblock, int check)
+                         exclusive_nest, part_nest, part_count);
+                     return -1;
+                 } else {
+-                    /*fprintf(stderr, "@@@ do_lock_x-part pid:%d tid:%d, part_num:%d\n", getpid(), gettid(), part_num); */
++                    /*fprintf(stderr, "@@@ do_lock_x-part pid:%d tid:%d, part_num:%d\n", getpid(), mdbm_gettid(), part_num); */
+                     /* don't worry about blocking... should already be held... */
+                     locks->lock(MLOCK_INDEX, MLOCK_BLOCK, part_num, do_check, upgraded);
+                 }
+             } else {
+                 if (pageno == MDBM_LOCK_SHARED) {
+                     /*NOTE("Lock(ASYNC) ANY SHARED"); */
+-                    //fprintf(stderr, "@@@ do_lock_x-shared pid:%d tid:%d, \n", getpid(), gettid()); 
++                    //fprintf(stderr, "@@@ do_lock_x-shared pid:%d tid:%d, \n", getpid(), mdbm_gettid());
+                     TRY_OR_LOCK_TIMED_ERR(MLOCK_SHARED, MLOCK_ANY, "mlock_lock(shared)");
+                 } else {
+                     /*NOTE("Lock(ASYNC) PART"); */
+                     /*lock_error(db,"Lock(ASYNC) Part (page:%d part:%d)",pageno,part_num); */
+                     /*print_trace(); */
+-                    /*fprintf(stderr, "@@@ do_lock_x-index pid:%d tid:%d part_num:%d, \n", getpid(), gettid(), part_num); */
++                    /*fprintf(stderr, "@@@ do_lock_x-index pid:%d tid:%d part_num:%d, \n", getpid(), mdbm_gettid(), part_num); */
+                     TRY_OR_LOCK_TIMED_ERR(MLOCK_INDEX, part_num, "mlock_lock(index)");
+                 }
+                 prot = 1;
+             }
+         } else { /* Single lock (not partitioned/shared) */
+             /*NOTE("Lock(ASYNC) SINGLE"); */
+-            //fprintf(stderr, "@@@ do_lock_x-single pid:%d tid:%d, \n", getpid(), gettid()); 
++            //fprintf(stderr, "@@@ do_lock_x-single pid:%d tid:%d, \n", getpid(), mdbm_gettid());
+             TRY_OR_LOCK_TIMED_ERR(MLOCK_EXCLUSIVE, part_num, "mlock_lock(single)");
+             if (locks->getHeldCount(MLOCK_EXCLUSIVE, true) == 1) {
+                 prot = 1;
+@@ -777,7 +777,7 @@ do_unlock_x(MDBM* db)
+       int exclusive_nest = locks->getHeldCount(MLOCK_EXCLUSIVE, true);
+       int part_nest = locks->getHeldCount(MLOCK_INDEX, true);
+       int share_nest = locks->getHeldCount(MLOCK_SHARED, true);
+-      //fprintf(stderr, "@@@ do_unlock_x pid:%d tid:%d, excl_nest:%d part_nest:%d share_nest:%d\n", getpid(), gettid(), exclusive_nest, part_nest, share_nest);
++      //fprintf(stderr, "@@@ do_unlock_x pid:%d tid:%d, excl_nest:%d part_nest:%d share_nest:%d\n", getpid(), mdbm_gettid(), exclusive_nest, part_nest, share_nest);
+       if (exclusive_nest > 0) {
+         /* exclusive lock is held... release it */
+         if (locks->unlock(MLOCK_EXCLUSIVE) < 0) {
+diff --git a/src/lib/multi_lock.cc b/src/lib/multi_lock.cc
+index 98cde6d..6909841 100644
+--- a/src/lib/multi_lock.cc
++++ b/src/lib/multi_lock.cc
+@@ -93,7 +93,7 @@ class TlsData {
+       TlsEntry *te = (TlsEntry*)pthread_getspecific(key_);
+       if (!te) {
+         te = new TlsEntry;
+-        te->tid = gettid();
++        te->tid = mdbm_gettid();
+         //fprintf(stderr, "TlsData tid:%llu \n", tid);
+         install_atfork();
+         pthread_setspecific(key_, (void*)te);
+@@ -301,7 +301,7 @@ inline int PMutex::Lock(bool blocking, owner_t tid) {
+ //  PRINT_LOCK_TRACE(blocking?"TRY Lock(BLOCK)":"TRY Lock(ASYNC)");
+ //#endif
+ //  CHECKPOINTV("  Lock(%s) any:%u owner:" OWNER_FMT " %p", blocking?"BLOCK":"ASYNC", rec->count, rec->owner, rec);
+-  //uint32_t tid = gettid();
++  //int32_t tid = mdbm_gettid();
+   //owner_t tid = get_thread_id();
+   int ret = -1;
+   if (tid == rec->owner) {
+@@ -357,7 +357,7 @@ inline int PMutex::Lock(bool blocking, owner_t tid) {
+ 
+ inline int PMutex::Unlock(owner_t tid) {
+   AUTO_TSC("PMutex::Unlock()");
+-  //uint32_t tid = gettid();
++  //int32_t tid = mdbm_gettid();
+   //owner_t tid = get_thread_id();
+ //#ifdef TRACE_LOCKS
+ //  PRINT_LOCK_TRACE("TRY Unlock()");
+@@ -1507,7 +1507,7 @@ void MLock::DumpLockState(FILE* file) {
+   if (!file) {
+     file = stderr;
+   }
+-  fprintf(file, "Begin Lock state (for non-zero locks) (pid:%d, tid:%d self:%llx uuid:" OWNER_FMT " ):\n", getpid(), gettid(), (long long unsigned)pthread_self(), get_thread_id());
++  fprintf(file, "Begin Lock state (for non-zero locks) (pid:%d, tid:%d self:%llx uuid:" OWNER_FMT " ):\n", getpid(), mdbm_gettid(), (long long unsigned)pthread_self(), get_thread_id());
+   fprintf(file, "  BaseLocks:%d Core:%d Shared/Partitioned:%d mode:%s (%d)\n", base, 1, parts, MLockTypeToStr(GetLockType()), GetLockType());
+   for (int i=0; i<base; ++i) {
+     local = locks.locks[i]->GetLocalCount();
+diff --git a/src/test/unit-test/test_lockbase.cc b/src/test/unit-test/test_lockbase.cc
+index b618fdc..7027140 100644
+--- a/src/test/unit-test/test_lockbase.cc
++++ b/src/test/unit-test/test_lockbase.cc
+@@ -964,7 +964,7 @@ LockBaseTestSuite::parChildLockPartitions(CommonParams &params, const string &db
+                      << " child locker got ret="<<ret<< " expected=" << params.expectedRet()
+                      << " dbName=" << dbName
+                      << " pid=" << getpid()
+-                     << " tid=" << gettid()
++                     << " tid=" << mdbm_gettid()
+                      << endl << flush;
+ 
+         if (ret == params.expectedRet()) {
+diff --git a/src/test/unit-test/test_lockv3.cc b/src/test/unit-test/test_lockv3.cc
+index 23762ef..a092407 100644
+--- a/src/test/unit-test/test_lockv3.cc
++++ b/src/test/unit-test/test_lockv3.cc
+@@ -2228,7 +2228,7 @@ void* LockV3TestSuite::LockV3TestSuite::thrdIterates(void *arg)
+ 
+     // iterate the DB - when done send an ACK to the parent
+     MDBM_ITER iter;
+-    //fprintf(stderr, "@@@ === child pid:%d tid:%d about to iterate\n", getpid(), gettid());
++    //fprintf(stderr, "@@@ === child pid:%d tid:%d about to iterate\n", getpid(), mdbm_gettid());
+     //mdbm_lock_dump(params->dbh());
+     datum     key = mdbm_firstkey_r(params->dbh(), &iter);
+     while (key.dsize != 0) {
+@@ -2281,7 +2281,7 @@ LockV3TestSuite::thrdLockAndChildIterates(CommonParams &parParams, int childOpen
+         CPPUNIT_ASSERT_MESSAGE(errMsg.insert(0, prefix), (ret == parParams.expectedRet()));
+     }
+ 
+-    //fprintf(stderr, "@@@ === parent pid:%d tid:%d about to tell child to iterate\n", getpid(), gettid());
++    //fprintf(stderr, "@@@ === parent pid:%d tid:%d about to tell child to iterate\n", getpid(), mdbm_gettid());
+     //mdbm_lock_dump(dbh);
+     // tell child to iterate
+     parSendFD.sendMsg(_Continue);
+diff --git a/src/test/unit-test/test_other.cc b/src/test/unit-test/test_other.cc
+index 88507cc..6a44a04 100644
+--- a/src/test/unit-test/test_other.cc
++++ b/src/test/unit-test/test_other.cc
+@@ -1188,7 +1188,7 @@ void MdbmUnitTestOther::testMLock() {
+   //    MDBM* db = (MDBM*)mdbm;
+   //    struct mdbm_locks *db_locks = db->db_locks;
+   //    mlock_t* locks = db_locks->db_mlocks;
+-  //    uint32_t tid = gettid();
++  //    int32_t tid = mdbm_gettid();
+ 
+       CPPUNIT_ASSERT(0 == db_part_owned(mdbm));
+       CPPUNIT_ASSERT(0 == db_multi_part_locked(mdbm));
+
+From d702627eb0e499e4cc3136c676ac4fcd2e6b8f4e Mon Sep 17 00:00:00 2001
+From: Evan Jones <ej@evanjones.ca>
+Date: Tue, 28 Jul 2020 14:09:23 -0400
+Subject: [PATCH 2/2] Add missing rename (OOPS)
+
+---
+ src/lib/mdbm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/lib/mdbm.c b/src/lib/mdbm.c
+index 6faba40..4dfc6a5 100644
+--- a/src/lib/mdbm.c
++++ b/src/lib/mdbm.c
+@@ -8267,7 +8267,7 @@ open_tmp_test_file(const char *file, uint32_t siz, char *buf)
+ {
+     int created = 0, fd = -1;
+ 
+-    snprintf(buf, MAXPATHLEN, "%s%d.map", file, gettid()); /* assuming buf is big enough */
++    snprintf(buf, MAXPATHLEN, "%s%d.map", file, mdbm_gettid()); /* assuming buf is big enough */
+ 
+     fd = open(buf, O_RDWR|O_NOATIME);
+     if (fd < 0) {

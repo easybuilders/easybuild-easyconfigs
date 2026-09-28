@@ -1,0 +1,59 @@
+# updated to version 2.0.6, based on the previous 2.0.5 version
+# J. Sassmannshausen (Imperial College London, UK)
+# Alex Domingo (Vrije Universiteit Brussel, BE)
+# Maxim Masterov (SURF, NL)
+
+easyblock = 'ConfigureMake'
+
+name = 'CDO'
+version = '2.5.3'
+
+homepage = 'https://code.zmaw.de/projects/cdo'
+description = """CDO is a collection of command line Operators to manipulate and analyse Climate and NWP model Data."""
+
+toolchain = {'name': 'lompi', 'version': '2025b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://code.mpimet.mpg.de/attachments/download/30045/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['470fee8f4d2b4eddf9ec82d0adccf1f6b4821ddf34b33bfe6b7069b6b6457b40']
+
+builddependencies = [
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('cURL', '8.14.1'),
+    ('ecCodes', '2.43.0'),
+    ('FFTW', '3.3.10'),
+    ('HDF5', '1.14.6'),
+    ('libxml2', '2.14.3'),
+    ('netCDF', '4.9.3'),
+    ('PROJ', '9.6.2'),
+    ('Szip', '2.1.1'),
+    ('UDUNITS', '2.2.28'),
+    ('util-linux', '2.41'),
+]
+
+# Build libcdi
+configopts = "--enable-cdi-lib "
+
+# Use dependencies from EasyBuild
+configopts += "--with-curl=$EBROOTCURL --with-eccodes=$EBROOTECCODES --with-fftw3 --with-hdf5=$EBROOTHDF5 "
+configopts += "--with-netcdf=$EBROOTNETCDF --with-proj=$EBROOTPROJ --with-szlib=$EBROOTSZIP "
+configopts += "--with-udunits2=$EBROOTUDUNITS --with-util-linux-uuid=$EBROOTUTILMINLINUX "
+configopts += 'CXXFLAGS="$CXXFLAGS -std=c++20" '
+
+# Make sure that right Fortran compiler is used, also on non-x86_64 architectures
+# CDO doesn't know about LLVM's flang yet, so use gfortran instead.
+# This only affects the calling conventions.
+configopts += 'CPPFLAGS="$CPPFLAGS -DgFortran" '
+
+sanity_check_paths = {
+    'files': ['bin/cdo', 'lib/libcdi.a', 'lib/libcdi.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ["cdo --version  2>&1 | grep 'Climate Data Operators version %(version)s'"]
+
+moduleclass = 'data'

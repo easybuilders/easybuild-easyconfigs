@@ -1,0 +1,51 @@
+easyblock = "MakeCp"
+
+name = 'Environ'
+version = '3.1.1'
+
+homepage = 'http://www.quantum-environ.org/'
+description = """
+Environ is a computational library aimed at introducing environment
+effects into atomistic first-principles simulations, in particular for
+applications in surface science and materials design.
+
+A hierarchical, multi-scale, strategy is at the base of the different
+methods implemented: while the atomistic and electronic details of the
+system of interest are fully preserved, the degrees of freedom of the
+surrounding environment (being it a liquid solution of a more complex
+embedding) are treated using simplified approaches. By reducing the
+number of degrees of freedom and by exploiting intrinsic or faster
+statistical averaging, the implemented methods allow the systematic
+un-expensive study of large systems.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {
+    'openmp': True,
+    'usempi': True,
+    'extra_fflags': '-fallow-argument-mismatch',
+    'extra_f90flags': '-fallow-argument-mismatch -cpp',
+}
+
+source_urls = ['https://github.com/environ-developers/environ/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['7eb5289d84bf740e55853d20b57b8ebd13cfc70c9a960cad7e85e5dd42dca86a']
+
+with_configure = True
+configure_without_installdir = True
+configure_cmd_prefix = 'BLAS_LIBS=$LIBBLAS_MT LAPACK_LIBS=$LIBLAPACK_MT '
+
+build_cmd_targets = ["compile"]
+
+files_to_copy = ["libs", (["src/*.mod"], "src")]
+sanity_check_paths = {
+    'files':  [
+        'libs/libenvfft.a',
+        'libs/libenvsrc.a',
+        'libs/libenvutil.a',
+        'src/environ_api.mod',
+    ],
+    'dirs': ['libs', 'src'],
+}
+
+moduleclass = 'chem'

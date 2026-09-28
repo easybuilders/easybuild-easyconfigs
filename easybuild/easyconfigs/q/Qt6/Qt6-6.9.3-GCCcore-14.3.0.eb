@@ -53,6 +53,9 @@ dependencies = [
     ('assimp', '6.0.2'),  # for Qt 3D
     ('FFmpeg', '7.1.2'),
     ('X11', '20250608'),
+    ('Wayland', '1.24.0'),
+    ('Vulkan', '1.4.328'),
+    # ('libinput', '1.30.1'),  # requires system-d so make it optional
     ('fontconfig', '2.17.0'),
     ('zlib', '1.3.1'),
     ('Python', '3.13.5'),
@@ -62,6 +65,8 @@ dependencies = [
     ('libevent', '2.1.12'),  # WebEngine
     ('OpenGL', '2025.09'),
     ('libjpeg-turbo', '3.1.1'),  # WebEngine
+    ('libwebp', '1.5.0'),
+    ('LibTIFF', '4.7.0'),
     ('NSS', '3.114'),  # WebEngine, required
     ('snappy', '1.2.2'),  # WebEngine
     ('OpenSSL', '3', '', SYSTEM),
@@ -69,6 +74,8 @@ dependencies = [
     ('nodejs', '22.17.1'),
     # ('gRPC', '1.52.2'),  # WebEngine needs older Abseil/gRPC/protobuf
     ('libdrm', '2.4.125'),
+    ('GTK3', '3.24.43'),
+    ('libiconv', '1.18'),
 ]
 
 preconfigopts = 'sed -i "23i set(Python3_ROOT_DIR \\$ENV{EBROOTPYTHON})" '
@@ -81,7 +88,9 @@ preconfigopts += ' export NINJAFLAGS="-j%(parallel)s" && '
 prebuildopts = ' export NINJAFLAGS="-j%(parallel)s" && '
 
 configopts = "-Wno-dev -DFEATURE_qtpdf_build=OFF -DQT_AVOID_CMAKE_ARCHIVING_API=ON "
-configopts += "-DPython3_ROOT_DIR=$EBROOTPYTHON -DBUILD_qtwayland=OFF "
+# Use the bundled libxml2, Qt6 is not ready for libxml2 2.14+ (it's namespaced anyway)
+configopts += "-DQT_FEATURE_webengine_system_libxml=OFF "
+configopts += "-DPython3_ROOT_DIR=$EBROOTPYTHON "
 
 # explicitly disable sysroot as it causes problems for some third party libraries
 # (and seems to work without it using rpath wrappers)

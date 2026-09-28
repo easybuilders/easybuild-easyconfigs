@@ -1,0 +1,23 @@
+required for recent Slurm versions (25.11+), in case $SLURM_EXPORT_ENV is set
+
+fixes problems like:
+[mpiexec@node1234.example] check_exit_codes (../../../../../src/pm/i_hydra/libhydra/demux/hydra_demux_poll.c:121): unable to run bstrap_proxy (pid 906931, exit code 256)
+[mpiexec@node1234.example] poll_for_event (../../../../../src/pm/i_hydra/libhydra/demux/hydra_demux_poll.c:159): check exit codes error
+[mpiexec@node1234.example] HYD_dmx_poll_wait_for_proxy_event (../../../../../src/pm/i_hydra/libhydra/demux/hydra_demux_poll.c:212): poll for event error
+[mpiexec@node1234.example] HYD_bstrap_setup (../../../../../src/pm/i_hydra/libhydra/bstrap/src/intel/i_hydra_bstrap.c:1065): error waiting for event
+[mpiexec@node1234.example] HYD_print_bstrap_setup_error_message (../../../../../src/pm/i_hydra/mpiexec/intel/i_mpiexec.c:1027): error setting up the bootstrap proxies
+
+author: Kenneth Hoste (HPC-UGent)
+
+--- worker-1.6.13.orig/src/tt/worker.pbs.tt	2021-12-21 14:54:33
++++ worker-1.6.13/src/tt/worker.pbs.tt	2026-05-27 13:42:07
+@@ -90,6 +90,9 @@
+ # compute verbose option
+ WORKER_VERBOSE="[%IF verbose%]-v[%END%]"
+ 
++# unset $SLURM_EXPORT_ENV, it may be set to "none", which means trouble when starting MPI
++unset SLURM_EXPORT_ENV
++
+ # start the worker
+ [%mpirun%] [%mpirun_options%] ${mpi_opt} ${ppn_opt} \
+     "${WORKER_APPL}" ${WORKER_PROLOG} ${WORKER_BATCH} ${WORKER_EPILOG} \
