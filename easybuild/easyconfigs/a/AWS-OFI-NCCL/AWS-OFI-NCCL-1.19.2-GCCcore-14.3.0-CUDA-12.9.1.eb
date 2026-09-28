@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+name = 'AWS-OFI-NCCL'
+version = '1.19.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/aws/aws-ofi-nccl'
+description = """This is a plugin which lets you use libfabric as network provider while running NCCL
+applications."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+github_account = 'aws'
+source_urls = [GITHUB_LOWER_RELEASE]
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = []
+
+builddependencies = [('binutils', '2.44')]
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('hwloc', '2.12.1'),
+    #('shs-libfabric', '13.1.0'),  # in case you're not using system libfabric
+    ('NCCL', '2.27.7', versionsuffix),
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+#cuda_compute_capabilities = ['9.0']
+
+configopts = '  --with-cuda="$CUDA_HOME"'
+#configopts += ' --with-libfabric="${EBROOTLIBFABRIC}"'
+#configopts += ' --with-mpi="${EBROOTOPENMPI}"'
+configopts += ' --with-hwloc="${EBROOTHWLOC}"'
+
+sanity_check_paths = {
+    'files': [
+        'lib/libnccl-net.so',
+        'lib/libnccl-net-ofi.so',
+    ],
+    'dirs': ['lib'],
+}
+
+modextravars = {
+    'NCCL_NET': 'AWS Libfabric',
+}
+
+moduleclass = 'lib'
