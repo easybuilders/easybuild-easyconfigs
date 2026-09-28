@@ -1,0 +1,69 @@
+MUSCLE3 looks for msgpack-cxx with pkg-config, but msgpack-cxx ships a CMake config
+package only and installs no .pc file. Detection therefore always fails, and MUSCLE3
+falls back to downloading and building its own copy of msgpack-cxx from GitHub. That
+needs network access during the build and silently ignores the msgpack-cxx that is
+already installed.
+
+Let a dependency optionally declare a header to look for below <dep>_ROOT and use that
+as a fallback when pkg-config finds nothing, and derive the msgpack include directory
+from msgpack_ROOT. msgpack_ROOT points at the locally built copy when there is one, so
+the automatic build keeps working when no msgpack-cxx is installed.
+
+Author: Simon Pinches (ITER Organization)
+--- muscle3-0.10.0/scripts/gmake/dep_detect.make.orig
++++ muscle3-0.10.0/scripts/gmake/dep_detect.make
+@@ -6,6 +6,9 @@
+ # $(dep_name)_AVAILABLE to 1, $(dep_name)_ROOT to the prefix and
+ # $(dep_name)_VERSION to the version if the dependency is found on the system
+ 
++# Optionally define $(dep_header) to detect a header-only dependency that does
++# not ship a pkg-config file by looking for $($(dep_name)_ROOT)/$(dep_header).
++
+ ifneq ($(MAKECMDGOALS),clean)
+ 
+ $(info )
+@@ -16,8 +19,13 @@
+ _pkg = '$(dep_pkgconfig_name) $(dep_version_constraint)'
+ 
+ _exists_new_enough := $(shell $(_pkg_config) --exists $(_pkg) || echo NOTFOUND)
++_header_found := $(if $(dep_header),$(wildcard $($(dep_name)_ROOT)/$(dep_header)))
+ 
+-ifneq ($(_exists_new_enough), NOTFOUND)
++ifneq ($(_header_found),)
++    $(info - $(dep_name) found at $($(dep_name)_ROOT) via $(dep_header))
++    export $(dep_name)_AVAILABLE := 1
++    export $(dep_name)_VERSION := $(dep_version)
++else ifneq ($(_exists_new_enough), NOTFOUND)
+     _modversion = $(shell $(_pkg_config) --modversion $(dep_pkgconfig_name))
+     _prefix = $(shell $(_pkg_config) --variable=prefix $(_pkg))
+     $(info - $(dep_name) $(_modversion) found at $(_prefix))
+@@ -34,5 +42,8 @@
+     endif
+ endif
+ 
++# clear, so that it does not leak into the detection of the next dependency
++dep_header :=
++
+ endif
+ 
+--- muscle3-0.10.0/libmuscle/cpp/build/Makefile.orig
++++ muscle3-0.10.0/libmuscle/cpp/build/Makefile
+@@ -31,6 +31,7 @@
+ dep_version_constraint := >= 7.0.0
+ dep_version := 7.0.0
+ dep_pkgconfig_name := msgpack-cxx
++dep_header := include/msgpack.hpp
+ dep_install := 1
+ include $(TOOLDIR)/make_available.make
+ 
+--- muscle3-0.10.0/libmuscle/cpp/build/libmuscle/Makefile.orig
++++ muscle3-0.10.0/libmuscle/cpp/build/libmuscle/Makefile
+@@ -148,7 +148,7 @@
+ 
+ # Dependencies
+ $(info pcextra: $(PKG_CONFIG_EXTRA_DIRS))
+-MSGPACK_INCLUDE_DIR = $(CURDIR)/../msgpack/msgpack/include
++MSGPACK_INCLUDE_DIR = $(msgpack_ROOT)/include
+ export MSGPACK_INCLUDE_DIR
+ CXXFLAGS += -I$(MSGPACK_INCLUDE_DIR)
+ 
