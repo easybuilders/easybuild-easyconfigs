@@ -1,0 +1,53 @@
+easyblock = 'PythonBundle'
+
+name = 'flash-attention'
+version = '3.0.0b1'
+_commit = 'ef9e6a644192eb2b90155abe0372542f6d9a27b6'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/Dao-AILab/flash-attention'
+description = """Fast and Memory-Efficient Exact Attention with IO-Awareness.
+FlashAttention-3 is optimized for Hopper GPUs (e.g. H100)."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('PyTorch-bundle', '2.9.1', versionsuffix),
+    ('CUTLASS', '4.3.5', versionsuffix),
+    ('einops', '0.8.1'),
+    ('ninja-python', '1.11.1.4'),
+]
+
+# use CUTLASS from EB
+_fa_fix_cutlass_src = "ln -s $EBROOTCUTLASS/include ../csrc/cutlass/include && "
+# avoid downloads
+_fa_build_env = "export FLASH_ATTENTION_OFFLINE_BUILD=TRUE && "
+# avoid using pre-build wheels
+_fa_build_env += "export FLASH_ATTENTION_FORCE_BUILD=TRUE && "
+# adjust parallelization
+_fa_build_env += "export NVCC_THREADS=1 MAX_JOBS=%(parallel)s && "
+
+exts_list = [
+    (name, version, {
+        'modulename': 'flash_attn_3',
+        'source_urls': ['https://github.com/Dao-AILab/flash-attention/archive/'],
+        'sources': [{'download_filename': f'{_commit}.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'patches': ['flash-attention-%(version)s_fix-cuda-linking.patch'],
+        'checksums': [
+            {'flash-attention-3.0.0b1.tar.gz':
+             'ad13a51cc6c23df4ef29c86dbe2cd91f443e81984cedda6f3addcbf9c35467f7'},
+            {'flash-attention-3.0.0b1_fix-cuda-linking.patch':
+             '88b216a88cce3d307b7cfc85e201e38b352408e1e0cd3d8b101e09013db476fc'},
+        ],
+        'start_dir': 'hopper',
+        'preinstallopts': _fa_fix_cutlass_src + _fa_build_env,
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import flash_attn_interface'",
+]
+
+moduleclass = 'ai'
