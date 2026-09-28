@@ -1,0 +1,45 @@
+easyblock = 'PythonBundle'
+
+name = 'pantheon-gpu'
+version = '1.2.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pantheongpu.com'
+description = """Pantheon is a GPU diagnostics and stress testing suite for NVIDIA and AMD GPUs.
+Each workload loads one part of the card (memory, arithmetic units, interconnect), verifies the
+results to detect silent data corruption, and reads the error counters of the card before and
+after the run."""
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+# CUDA is a runtime dependency: Pantheon compiles its workloads with nvcc for the GPUs it finds,
+# on the first run, into $PANTHEON_BUILD_CACHE_DIR (default: ~/.cache/pantheongpu/builds)
+dependencies = [
+    ('Python', '3.13.1'),
+    ('Python-bundle-PyPI', '2025.04'),  # for psutil
+    ('SciPy-bundle', '2025.06'),  # for numpy, pandas
+    ('pyNVML', '13.590.48'),
+    ('CUDA', '12.8.0', '', SYSTEM),
+]
+
+exts_list = [
+    (name, version, {
+        'modulename': 'pantheon_gpu',
+        'source_tmpl': 'pantheon_gpu-%(version)s.tar.gz',
+        'checksums': ['49e3af588a315f1d69f979a4c0217ee98af0d4de24478ca9b0618edfcad51022'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/pantheon', 'bin/pantheon-gpu'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/pantheon_gpu/kernels'],
+}
+
+# the second command runs a workload on the CPU backend, which needs no GPU on the build host
+sanity_check_commands = [
+    "pantheon --version",
+    "cd $(mktemp -d) && PANTHEON_BUILD_CACHE_DIR=$PWD/cache "
+    "pantheon --platform mock --test memory_read --duration 1",
+]
+
+moduleclass = 'tools'
