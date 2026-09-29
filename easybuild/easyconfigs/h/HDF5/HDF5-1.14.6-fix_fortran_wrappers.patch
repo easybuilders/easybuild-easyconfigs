@@ -1,0 +1,26 @@
+Author: Davide Grassano (@Crivella) - CECAM HQ
+Addresses issue from https://github.com/HDFGroup/hdf5/issues/5660 where the fortran wrappers are not passing the include
+directory due to it being stripped in `pkg-config`.
+
+diff --git a/config/cmake/libh5cc.in b/config/cmake/libh5cc.in
+index 9bdce64f7df..4ac4b2c6bcf 100644
+--- a/config/cmake/libh5cc.in
++++ b/config/cmake/libh5cc.in
+@@ -66,7 +66,7 @@ for arg in $@ ; do
+       exit $status
+       ;;
+     -show)
+-      echo @_PKG_CONFIG_COMPILER@ $@ `pkg-config $pc_args --define-variable=prefix=$dir --cflags --libs @_PKG_CONFIG_LIBNAME@`
++      echo @_PKG_CONFIG_COMPILER@ $@ `PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1 pkg-config $pc_args --define-variable=prefix=$dir --cflags --libs @_PKG_CONFIG_LIBNAME@`
+       exit $status
+       ;;
+     -help)
+@@ -78,7 +78,7 @@ for arg in $@ ; do
+       pc_args="$pc_args $arg"
+       ;;
+     *)
+-      @_PKG_CONFIG_COMPILER@ $@ `pkg-config $pc_args --define-variable=prefix=$dir --cflags --libs @_PKG_CONFIG_LIBNAME@`
++      @_PKG_CONFIG_COMPILER@ $@ `PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1 pkg-config $pc_args --define-variable=prefix=$dir --cflags --libs @_PKG_CONFIG_LIBNAME@`
+       status=$?
+       exit $status
+       ;;
