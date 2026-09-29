@@ -13,11 +13,16 @@ toolchainopts = {'pic': True, 'usempi': True}
 
 source_urls = ['https://github.com/HDFGroup/hdf5/releases/download/%(version)s/']
 sources = [SOURCELOWER_TAR_GZ]
-checksums = ['efff93b5a904d66e8f626d7da60b5eedc9faf544be27dbabbaa87967b8ad798b']
+patches = ['HDF5-2.1.1-fix_fortran_wrappers.patch']
+checksums = [
+    'efff93b5a904d66e8f626d7da60b5eedc9faf544be27dbabbaa87967b8ad798b',
+    None
+]
 
 builddependencies = [('CMake', '4.2.1')]
 
 dependencies = [
+    ('pkgconf', '2.5.1'),  # Runtime dependency required by compiler wrappers
     ('libaec', '1.1.7'),
     ('Perl', '5.42.0'),
     ('zlib', '2.3.2'),
@@ -45,6 +50,13 @@ sanity_check_paths = {
     'files': [f"bin/{x}" for x in _binaries] + [f"lib/{lib}" for lib in _libs],
     'dirs': ['include'],
 }
+
+sanity_check_commands = [
+    "h5cc --help",
+    "h5c++ --help",
+    "h5pcc --help",
+    "h5pfc -show | grep '\\-I%(installdir)s/include'",
+]
 
 modextravars = {'HDF5_DIR': '%(installdir)s'}
 
