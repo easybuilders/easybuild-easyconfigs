@@ -1,0 +1,27 @@
+Preserve the EasyBuild Python environment during the install-time pytraj
+build.
+AmberTools constructs the pytraj installation command inside a CMake
+install(CODE) block and inserts PYTHONPATH_SET_CMD immediately before
+invoking setup.py. This replaces the inherited PYTHONPATH and hides
+Python packages supplied by the EasyBuild build environment.
+Pytraj is configured to regenerate its Cython-generated extension
+sources for Python 3.14 compatibility. The install-time setup.py command
+therefore needs access to the external Cython installation. Without it,
+pytraj incorrectly reports that Cython is unavailable and is not
+installed.
+Remove PYTHONPATH_SET_CMD from the install-time command so that pytraj
+inherits the EasyBuild PYTHONPATH, including Cython and the other Python
+dependencies. The installation prefix remains controlled by the
+existing setup.py installation arguments.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- a/AmberTools/src/pytraj/CMakeLists.txt
++++ b/AmberTools/src/pytraj/CMakeLists.txt
+@@ -66,7 +66,6 @@
+     \"CXX=${CMAKE_CXX_COMPILER}\"
+     \"CC=${CMAKE_C_COMPILER}\"
+     ${RPATH_ARG}
+-    ${PYTHONPATH_SET_CMD}
+ 	${PYTHON_EXECUTABLE} ./setup.py build -b ${BUILD_DIR} ${OPENMP_ARG} ${PYTHON_COMPILER_ARG} ${WIN64_DEFINE_ARG} install -f ${PYTHON_PREFIX_ARG} --single-version-externally-managed --root /
+     WORKING_DIRECTORY \"${CMAKE_CURRENT_SOURCE_DIR}\")")
+ 
