@@ -1,0 +1,30 @@
+From f582d3e89b11139baabf46e18d5769beb4886be5 Mon Sep 17 00:00:00 2001
+From: Miguel Yermo <miguel.yermo@usc.es>
+Date: Thu, 19 Mar 2026 17:42:23 +0100
+Subject: [PATCH] fix: cast const char* from strpbrk() to char* in
+ pfmlib_common.c
+
+The strpbrk() function returns a const char* pointer, but was being assigned to a non-const char* variable without an explicit cast, causing a compiler error:
+
+-Werror=discarded-qualifiers
+
+Add explicit cast (char *) to resolve the compilation error.
+
+Fixes compilation error in libpfm4/lib/pfmlib_common.c:1891
+---
+ src/libpfm4/lib/pfmlib_common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libpfm4/lib/pfmlib_common.c b/src/libpfm4/lib/pfmlib_common.c
+index f0623c449..8dfe80eca 100644
+--- a/src/libpfm4/lib/pfmlib_common.c
++++ b/src/libpfm4/lib/pfmlib_common.c
+@@ -1888,7 +1888,7 @@ pfmlib_parse_event(const char *event, pfmlib_event_desc_t *d)
+ 	/*
+ 	 * support only one event at a time.
+ 	 */
+-	p = strpbrk(event, PFMLIB_EVENT_DELIM);
++	p = (char *)strpbrk(event, PFMLIB_EVENT_DELIM);
+ 	if (p)
+ 		return PFM_ERR_INVAL;
+ 	/*

@@ -1,0 +1,76 @@
+easyblock = 'Tarball'
+
+name = 'PoPoolation'
+version = '1.2.3'
+
+homepage = 'https://sourceforge.net/projects/popoolation/'
+description = """PoPoolation is a pipeline for analysing pooled next-generation sequencing data.
+It calculates Tajima's Pi, Watterson's Theta and Tajima's D using a sliding-window approach."""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+source_urls = ['https://downloads.sourceforge.net/project/popoolation/']
+sources = ['popoolation_%(version)s.zip']
+checksums = ['ac9b8aaca3843fda8190550f8d15bdcbbd84c0e9d4a015778c25370bfbe8fca3']
+
+dependencies = [
+    ('Perl', '5.38.2'),
+    ('R', '4.4.2'),
+]
+
+fix_perl_shebang_for = [
+    '*.pl',
+    'basic-pipeline/*.pl',
+    'syn-nonsyn/*.pl',
+]
+
+# .svn/ is Subversion working-copy metadata and has no runtime value
+# debug/ contains old development/debugging fixtures and make Perl scripts executable
+postinstallcmds = [
+    'rm -rf %(installdir)s/.svn %(installdir)s/debug',
+    "find %(installdir)s -type f -name '*.pl' -exec chmod 755 {} +",
+]
+
+sanity_check_paths = {
+    'files': [
+        'Variance-at-position.pl',
+        'Variance-for-feature.pl',
+        'Variance-sliding.pl',
+        'VarSliding2Flybase.pl',
+        'VarSliding2Wiggle.pl',
+        'Visualise-output.pl',
+        'calculate-dxy.pl',
+        'mauve-parser.pl',
+        'basic-pipeline/trim-fastq.pl',
+    ],
+    'dirs': [
+        'Modules',
+        'basic-pipeline',
+        'syn-nonsyn',
+    ],
+}
+
+sanity_check_commands = [
+    'Variance-sliding.pl --test',
+    "Variance-at-position.pl --help 2>&1 | grep -q 'SYNOPSIS'",
+    'trim-fastq.pl --test',
+    'perl -c %(installdir)s/Variance-at-position.pl',
+    'perl -c %(installdir)s/calculate-dxy.pl',
+    'perl -c %(installdir)s/mauve-parser.pl',
+]
+
+modextrapaths = {
+    'PATH': [
+        '',
+        'basic-pipeline',
+        'syn-nonsyn',
+    ],
+}
+
+modloadmsg = """
+PoPoolation Perl scripts can be run directly from the command line, for example:
+    Variance-sliding.pl --help
+    trim-fastq.pl --help
+"""
+
+moduleclass = 'bio'

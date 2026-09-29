@@ -1,0 +1,209 @@
+easyblock = 'ConfigureMake'
+
+name = 'ICON'
+version = '2026.04'
+
+local_tag = 'icon-%(version)s-public'
+
+homepage = "https://www.icon-model.org/"
+description = """
+ICON is a flexible, scalable, high-performance modelling framework for weather, climate and environmental prediction
+that provides actionable information for society and advances our understanding of the Earth's climate system.
+"""
+
+toolchain = {'name': 'intel', 'version': '2025a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+sources = [{
+    'filename': 'icon-model-%(version)s.tar.xz',
+    'git_config': {
+        'url': 'https://gitlab.dkrz.de/icon',
+        'repo_name': 'icon-model',
+        'tag': local_tag,
+        # Only pull in the ones needed
+        'recurse_submodules': [
+            'externals/mtime',
+            'externals/cdi',
+            'externals/fortran-support',
+            'externals/iconmath',
+            'externals/memman',
+            'externals/yaxt',
+            'externals/ppm',
+            'externals/yac',
+            'externals/ecrad',
+            'externals/rte-rrtmgp',
+            'externals/jsbach',
+            'externals/art',
+            'externals/tixi',
+            'externals/comin',
+        ],
+    },
+}]
+checksums = ['80d3baa7fc4bdfae0d72e27622d31ac15da1b8684ca8b029585438153d435ec0']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+]
+
+dependencies = [
+    ('libxml2', '2.13.4'),
+    ('libfyaml', '0.9'),
+    ('ecCodes', '2.43.0'),
+    ('netCDF', '4.9.3'),
+    ('netCDF-Fortran', '4.6.2'),
+]
+
+# Following config/ecmwf/atos2020.intel-2025.0
+configopts = (
+    # C/C++
+    'CFLAGS="'
+    '    $CFLAGS '
+    '    -qno-opt-dynamic-align '
+    '" '
+    'ICON_CFLAGS="-O3 -ftz" '
+    'ICON_BUNDLED_CFLAGS="-ftz" '
+    # Fortran
+    # Set lock_assert=0 instead of MPI_MODE_NOCHECK for a MPI_Win_lock()
+    'ICON_FCFLAGS="'
+    '    -O3 -ftz -fp-model=precise '
+    '    -assume realloc_lhs '
+    '    -DDO_NOT_COMBINE_PUT_AND_NOCHECK '
+    '" '
+    'ICON_BUNDLED_FCFLAGS="-ftz" '
+    'ICON_OCEAN_FCFLAGS="'
+    '    -O3 -ftz -fp-model=precise '
+    '    -assume norealloc_lhs '
+    '" '
+    'ICON_ECRAD_FCFLAGS="'
+    '    -qno-opt-dynamic-align -no-fma '
+    '" '
+    'LIBS="'
+    '    -Wl,--disable-new-dtags -Wl,--as-needed '
+    '    -lxml2 '
+    '    -lfyaml '
+    '    -leccodes_f90 -leccodes '
+    '    $LIBLAPACK '
+    '    -lnetcdff -lnetcdf '
+    '    -lstdc++ '
+    '" '
+    'MPI_LAUNCH=mpirun '
+)
+
+# Model Features:
+configopts += (
+    '--enable-atmo '         # atmosphere component [default=yes]
+    '--enable-les '          # Large-Eddy Simulation component [default=yes]
+    '--enable-upatmo '       # upper atmosphere component [default=yes]
+    '--enable-ocean '        # ocean component [default=yes]
+    '--enable-jsbach '       # land component JSBACH [default=yes]
+    '--enable-jsbach-hd '    # hydrological discharge scheme of the JSBACH land component [default=auto]
+    '--enable-waves '        # ocean surface wave component [default=no]
+    '--enable-coupling '     # coupling [default=yes]
+    '--enable-aes '          # AES physics package [default=yes]
+    '--enable-nwp '          # NWP physics package [default=yes]
+    '--enable-ecrad '        # ECMWF radiation scheme (ECRAD) [default=no]
+    '--enable-rte-rrtmgp '   # RTE+RRTMGP toolbox for radiation calculations [default=yes]
+    '--enable-art '          # aerosols and reactive trace component ART [default=no]
+    '--enable-art-gpl '      # GPL-licensed code parts of the ART component [default=no]
+    '--enable-comin '        # ICON community interfaces [default=no]
+
+    # Subject to a license agreement
+    # '--enable-acm-license '  # accepting ACM Software License Agreement [default=no]
+    # '--enable-rttov '      # radiative transfer model for TOVS [default=no]
+                             #    https://nwp-saf.eumetsat.int/site/software/rttov/download/#Software
+    # '--enable-dace '       # DACE modules for data assimilation [default=no]
+                             #    "Data Assimilation Coding Environment (DACE)"
+                             #    http://www.cosmo-model.org/content/support/software/#dace
+    # '--enable-emvorado '   # radar forward operator EMVORADO [default=no]
+                             #    "Efficient Modular VOlume scan RADar Operator (EMVORADO)"
+    # '--enable-hd=yes '     # Hydrological Discharge (HD) model [default=no]:
+                             #    05deg|yes  enable for the 0.5-degree global domain
+                             #    5min       enable for the 5min global domain
+                             #    no         disable the HD model
+)
+
+# Infrastructural Features:
+configopts += (
+    '--enable-mpi '              # MPI (parallelization) support [default=yes]
+    '--disable-mpi-checks '      # configure-time checks of MPI library [default=yes]
+    # '--enable-active-target-sync '  # MPI active target mode [default=no]
+    # '--enable-mpi-rget '       # MPI_Rget routine [default=auto] - if MPI library supports standard 3.0 or higher
+    # '--enable-mpi-gpu '        # GPU-aware MPI features [default=no]
+    '--enable-async-io-rma '     # MPI RMA for asynchronous I/O [default=yes]
+    '--enable-openmp '           # OpenMP support [default=no] - do not combine with --enable-gpu
+    # '--enable-gpu=yes '        # GPU support [default=no]: - do not combine with --enable-openmp
+                                 #    openacc+cuda  with OpenACC and CUDA
+                                 #    openacc+hip   with OpenACC and HIP
+                                 #    openacc       alias for 'openacc+cuda'
+                                 #    yes           alias for 'openacc+cuda'
+                                 #    no            disable GPU support
+    '--enable-grib2 '            # GRIB2 I/O [default=no]
+    '--enable-parallel-netcdf '  # parallel features of NetCDF [default=no]
+    '--enable-cdi-pio '          # parallel features of CDI [default=no]
+    # '--enable-sct '            # SCT timer [default=no]
+    '--enable-yaxt '             # YAXT data exchange [default=no]
+    # '--enable-explicit-fpp '   # explicit Fortran preprocessing [default=auto]
+    # '--enable-serialization '  # Serialbox2 serialization [default=no]:
+                                 #    read     enable READ mode
+                                 #    perturb  enable READ & PERTURB mode
+                                 #    create   enable CREATE mode
+                                 #    yes      alias for 'read'
+                                 #    no       disable serialization
+    # '--enable-testbed '        # ICON Testbed infrastructure [default=no]
+    # '--enable-memory-tracing ' # native dynamic memory tracing facility [default=no]:
+                                 #    mtrace  enable tracing with mtrace (glibc)
+                                 #    yes     alias for 'mtrace'
+                                 #    no      disable memory tracing
+)
+
+# Optimization Features:
+configopts += (
+    ''
+    # '--enable-loop-exchange '      # loop exchange [default=auto] - enabled if no GPU support requested
+    # '--enable-dim-swap '           # dimension swap [default=auto]
+    # '--enable-realloc-buf '        # reallocatable buffer in the communication [default=no]
+    '--enable-vectorized-lrtm '      # parallelization-invariant version of LRTM [default=no]
+    # '--enable-mixed-precision '    # mixed precision dycore [default=no]
+    # '--enable-intel-consistency '  # Intel compiler directives enforcing consistency [default=auto]
+    # '--enable-pgi-inlib '          # PGI/NVIDIA cross-file function inlining via an inline library [default=no]
+    # '--enable-nccl '               # NCCL for communication [default=no]
+    # '--enable-cuda-graphs '        # CUDA graphs [default=no]
+    # '--enable-fcgroup-<NAME> '     # Fortran compile group <NAME> for extra set of compiler flags
+    '--enable-fcgroup-OCEAN=src/hamocc:src/ocean:src/sea_ice '
+)
+
+# External Libraries:
+configopts += (
+    ''
+    # '--with-external-tixi '        # https://gitlab.dkrz.de/icon-libraries/libtixi - a modified version of TIXI
+    # '--with-external-yac '           # https://gitlab.dkrz.de/dkrz-sw/yac
+    # '--with-external-mtime '       # https://gitlab.dkrz.de/icon-libraries/libmtime
+    # '--with-external-cdi '         # https://code.mpimet.mpg.de/projects/cdi/
+    # '--with-external-ppm '         # https://gitlab.dkrz.de/jahns/ppm
+    # '--with-external-yaxt '          # https://gitlab.dkrz.de/dkrz-sw/yaxt
+    # '--with-external-sct '         # https://gitlab.dkrz.de/dkrz-sw/sct
+    # '--with-external-ecrad '       # https://confluence.ecmwf.int/display/ECRAD/ECMWF+Radiation+Scheme+Home
+    # '--with-external-rte-rrtmgp '  # https://github.com/earth-system-radiation/rte-rrtmgp
+)
+
+runtest = 'check'
+
+postinstallcmds = [
+    # Transfer required data
+    '%(builddir)s/icon-model/utils/move_to_prefix.sh ',
+    # Generate the runscripts
+    (
+        'cd %(installdir)s && '
+        './make_runscripts --all '
+    ),
+]
+
+sanity_check_paths = {
+    'files': ['bin/icon'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = ['mpirun -n 1 icon --version']
+
+moduleclass = 'tools'

@@ -3,8 +3,13 @@ with embedding information and do not break standard functionality of ColabFold.
 Improved version of upstream patches available in:
 https://github.com/microsoft/bioemu/tree/v.1.2.0/src/bioemu/colabfold_setup
 Author: Alex Domingo (Vrije Universiteit Brussel)
---- colabfold/batch.py.orig	2026-02-28 00:05:26.787888483 +0100
-+++ colabfold/batch.py	2026-02-28 00:05:34.738629675 +0100
+
+Set COLABFOLD_DISABLE_BIOEMU=1 (or "true"/"yes") in the environment to skip
+adding the extra representations_evo output, restoring vanilla ColabFold
+behavior.
+Author: Jarne Renders (Vrije Universiteit Brussel)
+--- colabfold/batch.py.orig
++++ colabfold/batch.py
 @@ -487,6 +487,9 @@
                  del plddt
                  json.dump(scores, handle)
@@ -15,14 +20,22 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
              del result, unrelaxed_protein
  
              # early stop criteria fulfilled
---- alphafold/model/modules.py.orig	2026-02-28 14:47:28.432652616 +0100
-+++ alphafold/model/modules.py	2026-02-28 14:50:22.859311986 +0100
-@@ -143,7 +143,7 @@
-       if not head_config.weight: continue
+--- alphafold/model/modules.py.orig
++++ alphafold/model/modules.py
+@@ -17,6 +17,7 @@
+ The structure generation code is in 'folding.py'.
+ """
+ import functools
++import os
+ from alphafold.common import residue_constants, confidence
+ from alphafold.model import all_atom
+ from alphafold.model import common_modules
+@@ -144,6 +145,8 @@
        heads[name] = head_factory[name](head_config, self.global_config)
      
--    ret = {'representations':representations}
-+    ret = {'representations':representations, 'representations_evo': representations}
+     ret = {'representations':representations}
++    if os.environ.get("COLABFOLD_DISABLE_BIOEMU", "0").lower() not in ("1", "true", "yes"):
++      ret['representations_evo'] = representations
      for name, head in heads.items():
        if name in ('predicted_lddt', 'predicted_aligned_error'):
          continue
