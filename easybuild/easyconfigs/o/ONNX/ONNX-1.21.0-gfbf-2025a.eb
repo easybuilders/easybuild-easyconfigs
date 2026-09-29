@@ -1,0 +1,55 @@
+easyblock = 'PythonPackage'
+
+name = 'ONNX'
+version = '1.21.0'
+
+homepage = 'https://onnx.ai'
+description = """
+Open Neural Network Exchange (ONNX) is an open ecosystem that empowers AI
+developers to choose the right tools as their project evolves. ONNX provides an
+open source format for AI models, both deep learning and traditional ML. It
+defines an extensible computation graph model, as well as definitions of
+built-in operators and standard data types. Currently we focus on the
+capabilities needed for inferencing (scoring)."""
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['4d8b67d0aaec5864c87633188b91cc520877477ec0254eda122bef8be43cd764']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Ninja', '1.12.1'),
+    ('nanobind', '2.9.2'),
+]
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('protobuf-python', '6.31.1'),
+    ('ml_dtypes', '0.5.1'),
+    ('setuptools', '80.9.0'),
+]
+
+# use protobuf-lite to prevent duplicate registration of ONNX protobuf
+# descriptors when ONNX and ONNX Runtime are loaded in the same process
+preinstallopts = 'export CMAKE_ARGS="-DONNX_USE_LITE_PROTO=ON -DONNX_USE_PROTOBUF_SHARED_LIBS=ON" && '
+preinstallopts += 'env MAX_JOBS="%(parallel)s"'
+
+# also installs the C++/CMake artifacts from .setuptools-cmake-build
+postinstallcmds = [(
+    'cmake --install %(builddir)s/onnx-%(version)s/.setuptools-cmake-build '
+    '--prefix %(installdir)s'
+)]
+
+sanity_check_paths = {
+    'files': ['bin/check-model', 'bin/check-node', 'bin/backend-test-tools'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'check-model -h',
+    'check-node -h',
+    'backend-test-tools -h',
+]
+
+moduleclass = 'devel'
