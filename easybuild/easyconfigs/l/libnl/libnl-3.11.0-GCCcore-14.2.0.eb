@@ -1,0 +1,48 @@
+# Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ConfigureMake'
+
+name = 'libnl'
+version = '3.11.0'
+
+homepage = 'https://github.com/thom311/libnl'
+description = """libnl is a collection of libraries providing APIs to the
+Netlink protocol based Linux kernel interfaces."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'pic': True}
+
+sources = [
+    {
+        'filename': SOURCE_TAR_GZ,
+        'git_config': {
+            'url': 'https://github.com/thom311',
+            'repo_name': '%(name)s',
+            'tag': 'libnl3_11_0',
+            'keep_git_dir': False,
+        },
+    },
+]
+checksums = [
+    None,  # .tgz not reproducible
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('pkgconf', '2.3.0'),
+    ('Autotools', '20240712'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+]
+
+preconfigopts = "./autogen.sh && "
+
+# libcxi links libnl as a shared lib; static archives are not needed.
+configopts = "--disable-static "
+
+sanity_check_paths = {
+    'files': ['lib/%(name)s-3.so', 'lib/%(name)s-route-3.so'],
+    'dirs': ['include/libnl3', 'lib/pkgconfig'],
+}
+
+moduleclass = 'lib'
