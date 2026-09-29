@@ -1,0 +1,53 @@
+easyblock = 'CMakeMake'
+
+name = 'PhyloCSF++'
+version = '1.2.0'
+local_bigwig_commit = 'f390fe405dede0a4f9e8e2a49808e3d1bfcd402a'
+
+homepage = 'https://github.com/cpockrandt/PhyloCSFpp'
+description = """PhyloCSF can identify protein-coding regions in the genome based on multiple-sequence alignments.
+ PhyloCSF++ is an implementation of the original methods PhyloCSF and PhyloCSF HMM. It allows you to easily create
+ browser tracks for any genome to identify coding regions, score local alignments or annotate GFF/GTF files with
+ PhyloCSF and its confidence scores."""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+sources = [
+    {
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+        'source_urls': ['https://github.com/cpockrandt/PhyloCSFpp/archive/refs/tags/'],
+    },
+    {
+        'download_filename': '%s.tar.gz' % local_bigwig_commit,
+        'filename': 'libBigWig-%s.tar.gz' % local_bigwig_commit,
+        'source_urls': ['https://github.com/cpockrandt/libBigWig/archive/'],
+    },
+]
+patches = ['%(name)s-%(version)s-use-local-libBigWig.patch']
+checksums = [
+    {'PhyloCSF++-1.2.0.tar.gz': 'b6e6be2d6801d291de4c80fdfd7ef98db210d63ea3ac32af921172a8eec88900'},
+    {'libBigWig-f390fe405dede0a4f9e8e2a49808e3d1bfcd402a.tar.gz':
+     'd124d1c9bb4f42bc6aecf719b1865e44c4aa74fdfd9034d6629684c616804c24'},
+    {'PhyloCSF++-1.2.0-use-local-libBigWig.patch':
+     '5adff36557770f2de6603ec8721560763aae645a2a94792541a9960e257b9f50'},
+]
+
+builddependencies = [('CMake', '3.31.8')]
+
+dependencies = [
+    ('GSL', '2.8'),
+    ('zlib', '1.3.1'),
+]
+
+start_dir = 'PhyloCSFpp-%(version)s'
+configopts = '-DCMAKE_BUILD_TYPE=Release'
+
+sanity_check_paths = {
+    'files': ['bin/phylocsf++'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['phylocsf++ --help']
+
+moduleclass = 'bio'
