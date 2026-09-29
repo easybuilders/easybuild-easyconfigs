@@ -1,0 +1,126 @@
+Apply upstream patches from
+- https://github.com/materialsproject/pymatgen/commit/2455a148eeb902893066ec27063d18e1f0ac57a9
+  Where the checked array is expected to be sorted
+- https://github.com/materialsproject/pymatgen/pull/4689
+  Use equality with tolerance for floating point comparisons in is_parallel
+- https://github.com/materialsproject/pymatgen/commit/221d2fd7decde413874b367f1cc8985b49b18bf3
+  Was using wrong angle
+
+diff --git a/tests/analysis/test_lobster_env.py b/tests/analysis/test_lobster_env.py
+index d73b931b1d0..d012f23be84 100644
+--- a/tests/analysis/test_lobster_env.py
++++ b/tests/analysis/test_lobster_env.py
+@@ -759,12 +759,17 @@ def test_get_structure_environments_further_tests(self):
+         assert lse.uniquely_determines_coordination_environments
+ 
+     def test_get_info_icohps_neighbors(self):
++        # Bond labels in results[3] are a set of identifiers — their iteration order is
++        # not part of the API contract and shifts between platforms / dependency versions
++        # (e.g. ASE neighbor list ordering). Compare as a sorted list.
++        expected_bond_labels = sorted(["48", "27", "64", "73", "49", "30"])
++
+         results = self.chem_env_lobster1.get_info_icohps_to_neighbors(isites=[0])
+         assert results[0] == approx(-33.87452)
+         for bond in results[1]:
+             assert bond == approx(-5.64612, abs=1e-2)
+         assert results[2] == 6
+-        assert results[3] == ["48", "27", "64", "73", "49", "30"]
++        assert sorted(results[3]) == expected_bond_labels
+ 
+         results2 = self.chem_env_lobster1.get_info_icohps_to_neighbors(isites=None)
+         assert results2[0] == approx(-33.87452)
+@@ -772,7 +777,7 @@ def test_get_info_icohps_neighbors(self):
+             assert bond == approx(-5.64455, abs=1e-2)
+         assert results2[2] == 6
+ 
+-        assert results2[3] == ["48", "27", "64", "73", "49", "30"]
++        assert sorted(results2[3]) == expected_bond_labels
+         from collections import Counter
+ 
+         assert Counter(map(tuple, results2[4])) == Counter(
+
+
+diff --git a/src/pymatgen/analysis/diffraction/tem.py b/src/pymatgen/analysis/diffraction/tem.py
+index 43ffa762a4b..76e47ecf81d 100644
+--- a/src/pymatgen/analysis/diffraction/tem.py
++++ b/src/pymatgen/analysis/diffraction/tem.py
+@@ -354,7 +354,11 @@ def is_parallel(
+             bool: True if the planes are parallel, False otherwise.
+         """
+         phi = self.get_interplanar_angle(structure, plane, other_plane)
+-        return phi in (180, 0) or np.isnan(phi)
++        return bool(
++            np.isclose(phi, 0, rtol=0, atol=1e-5)
++            or np.isclose(phi, 180, rtol=0, atol=1e-5)
++            or np.isnan(phi)
++        )
+ 
+     def get_first_point(self, structure: Structure, points: list) -> dict[tuple[int, int, int], float]:
+         """Get the first point to be plotted in the 2D DP, corresponding to maximum d/minimum R.
+
+
+diff --git a/src/pymatgen/analysis/diffraction/tem.py b/src/pymatgen/analysis/diffraction/tem.py
+index 181b9af05ff..43ffa762a4b 100644
+--- a/src/pymatgen/analysis/diffraction/tem.py
++++ b/src/pymatgen/analysis/diffraction/tem.py
+@@ -408,7 +408,7 @@ def get_interplanar_angle(structure: Structure, p1: tuple[int, int, int], p2: tu
+             + p1[2] ** 2 * c_star**2
+             + 2 * p1[0] * p1[1] * a_star * b_star * cos_gamma_star
+             + 2 * p1[0] * p1[2] * a_star * c_star * cos_beta_star
+-            + 2 * p1[1] * p1[2] * b_star * c_star * cos_gamma_star
++            + 2 * p1[1] * p1[2] * b_star * c_star * cos_alpha_star
+         )
+         r2_norm = np.sqrt(
+             p2[0] ** 2 * a_star**2
+@@ -416,14 +416,14 @@ def get_interplanar_angle(structure: Structure, p1: tuple[int, int, int], p2: tu
+             + p2[2] ** 2 * c_star**2
+             + 2 * p2[0] * p2[1] * a_star * b_star * cos_gamma_star
+             + 2 * p2[0] * p2[2] * a_star * c_star * cos_beta_star
+-            + 2 * p2[1] * p2[2] * b_star * c_star * cos_gamma_star
++            + 2 * p2[1] * p2[2] * b_star * c_star * cos_alpha_star
+         )
+         r1_dot_r2 = (
+             p1[0] * p2[0] * a_star**2
+             + p1[1] * p2[1] * b_star**2
+             + p1[2] * p2[2] * c_star**2
+             + (p1[0] * p2[1] + p2[0] * p1[1]) * a_star * b_star * cos_gamma_star
+-            + (p1[0] * p2[2] + p2[0] * p1[1]) * a_star * c_star * cos_beta_star
++            + (p1[0] * p2[2] + p2[0] * p1[2]) * a_star * c_star * cos_beta_star
+             + (p1[1] * p2[2] + p2[1] * p1[2]) * b_star * c_star * cos_alpha_star
+         )
+         phi = np.arccos(r1_dot_r2 / (r1_norm * r2_norm))
+diff --git a/tests/analysis/diffraction/test_tem.py b/tests/analysis/diffraction/test_tem.py
+index f9e50d26434..62046724f62 100644
+--- a/tests/analysis/diffraction/test_tem.py
++++ b/tests/analysis/diffraction/test_tem.py
+@@ -217,6 +217,30 @@ def test_interplanar_angle(self):
+         phi = tem_calc.get_interplanar_angle(hexagonal, (0, 0, 1), (1, 0, 6))
+         assert phi == approx(21.0517, rel=1e-4)
+ 
++    def test_interplanar_angle_triclinic(self):
++        # Regression test: get_interplanar_angle's reciprocal-lattice-vector
++        # norm and dot-product formulas had copy-paste errors (cos_gamma_star
++        # used instead of cos_alpha_star in the k*l cross term of each norm,
++        # and p1[1] used instead of p1[2] in the h*l cross term of the dot
++        # product). These only show up when alpha/beta/gamma are all
++        # different from 90 degrees and from each other, which none of the
++        # cubic/tetragonal/hexagonal cases above exercise (their cos_alpha_star
++        # / cos_beta_star terms are zero, hiding the bug). Compare against an
++        # independent calculation using the crystallographic reciprocal
++        # lattice directly.
++        tem_calc = TEMCalculator()
++        lattice = Lattice.from_parameters(4.0, 5.0, 6.0, 80, 95, 70)
++        struct = Structure(lattice, ["Si"], [[0, 0, 0]])
++        p1, p2 = (1, 1, 1), (1, 0, 2)
++
++        recip = lattice.reciprocal_lattice_crystallographic
++        v1, v2 = recip.get_cartesian_coords(p1), recip.get_cartesian_coords(p2)
++        cos_phi_expected = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
++        phi_expected = np.rad2deg(np.arccos(cos_phi_expected))
++
++        phi = tem_calc.get_interplanar_angle(struct, p1, p2)
++        assert phi == approx(phi_expected, rel=1e-6)
++
+     def test_get_plot_coeffs(self):
+         # Test if x * p1 + y * p2 yields p3.
+         tem_calc = TEMCalculator()

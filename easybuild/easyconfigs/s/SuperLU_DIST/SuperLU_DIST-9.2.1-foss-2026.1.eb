@@ -1,0 +1,47 @@
+easyblock = "EB_SuperLU"
+
+name = 'SuperLU_DIST'
+version = '9.2.1'
+
+homepage = 'https://github.com/xiaoyeli/superlu_dist'
+description = """SuperLU_DIST contains a set of subroutines to solve a sparse
+linear system A*X=B. It uses Gaussian elimination with static pivoting (GESP).
+Static pivoting is a technique that combines the numerical stability of partial
+pivoting with the scalability of Cholesky (no pivoting), to run accurately and
+efficiently on large numbers of processors.
+The full documentation and publications can be found at this web site:
+https://portal.nersc.gov/project/sparse/superlu/
+"""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+github_account = 'xiaoyeli'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ["v%(version)s.tar.gz"]
+checksums = ['c80a1c2edaaa451ee9a54e005e5f3f56dc55cabe2b0a8d7acf5a1447a648157a']
+
+builddependencies = [('CMake', '4.2.1')]
+
+dependencies = [
+    ('ParMETIS', '4.0.3'),
+]
+
+# Some tests run longer than default 1500s timeout on fairly big machine (36 cores).
+# Include only first four tests, which should be fairly small to run
+pretestopts = 'export ARGS="$ARGS --tests-regex pdtest_[21]x1_[13]_2_8_20_SP" && '
+
+# remove broken symlink to libsuperlu.a
+postinstallcmds = [
+    "if [ -f %(installdir)s/lib64/libsuperlu.a ]; then rm %(installdir)s/lib64/libsuperlu.a; fi",
+    # This second one can be removed when https://github.com/easybuilders/easybuild-framework/pull/4435 is merged
+    # (i.e. in EasyBuild 5.0)
+    "if [ -f %(installdir)s/lib/libsuperlu.a ]; then rm %(installdir)s/lib/libsuperlu.a; fi"
+]
+
+sanity_check_paths = {
+    'files': ['lib64/libsuperlu_dist.a'],
+    'dirs': ['include']
+}
+
+moduleclass = 'numlib'
