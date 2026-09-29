@@ -1,0 +1,377 @@
+This patch transforms the original nctime package written in Python-2, to Python-3.
+It also adapts the list of requirements to be more permissive.
+Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+Barcelona Supercomputing Center 2025
+diff -ruNBbw a/nctime/axis/handler.py b/nctime/axis/handler.py
+--- a/nctime/axis/handler.py	2019-05-15 12:30:03.000000000 +0200
++++ b/nctime/axis/handler.py	2025-08-27 16:16:23.931177590 +0200
+@@ -11,8 +11,8 @@
+ import numpy as np
+ from fuzzywuzzy import fuzz, process
+ 
+-from constants import *
+-from custom_exceptions import *
++from .constants import *
++from .custom_exceptions import *
+ from nctime.utils.constants import CLIM_SUFFIX, AVERAGE_CORRECTION_FREQ
+ from nctime.utils.custom_exceptions import *
+ from nctime.utils.custom_print import *
+@@ -61,7 +61,7 @@
+         # Get timestamps length from filename
+         self.timestamp_length = len(re.match(pattern, self.name).groupdict()['period_end'])
+         # Rollback to None if unknown table
+-        if self.table not in set(zip(*FREQ_INC.keys())[0]):
++        if self.table not in {key[0] for key in FREQ_INC.keys()}:
+             msg = 'Unknown MIP table "{}" -- Consider default increment for the given frequency.'.format(self.table)
+             Print.warning(msg, buffer=True)
+             self.table = 'None'
+@@ -113,7 +113,7 @@
+                 raise NoNetCDFAttribute('calendar', self.ffp, 'time')
+             self.calendar = nc.variables['time'].calendar
+             # Get boolean on instantaneous time axis
+-            variable = unicode(self.filename.split('_')[0])
++            variable = str(self.filename.split('_')[0])
+             if 'cell_methods' not in nc.variables[variable].ncattrs():
+                 raise NoNetCDFAttribute('cell_methods', self.ffp, variable)
+             self.is_instant = False
+diff -ruNBbw a/nctime/axis/main.py b/nctime/axis/main.py
+--- a/nctime/axis/main.py	2019-07-02 15:19:36.000000000 +0200
++++ b/nctime/axis/main.py	2025-08-27 16:08:21.627861726 +0200
+@@ -13,9 +13,9 @@
+ 
+ import numpy as np
+ 
+-from constants import *
+-from context import ProcessingContext
+-from handler import File
++from .constants import *
++from .context import ProcessingContext
++from .handler import File
+ from nctime.utils.custom_print import *
+ from nctime.utils.misc import ProcessContext
+ from nctime.utils.time import trunc, truncated_timestamp, str2dates
+@@ -286,7 +286,7 @@
+     """
+     assert len(keys) == len(values)
+     global pctx
+-    pctx = ProcessContext({key: values[i] for i, key in enumerate(keys)})
++    pctx = ProcessContext({key: list(values)[i] for i, key in enumerate(keys)})
+ 
+ 
+ def run(args=None):
+diff -ruNBbw a/nctime/nctcck.py b/nctime/nctcck.py
+--- a/nctime/nctcck.py	2018-12-14 14:37:02.000000000 +0100
++++ b/nctime/nctcck.py	2025-08-27 09:56:07.705821719 +0200
+@@ -12,9 +12,9 @@
+ 
+ from nctime.overlap.main import run
+ 
+-from utils.constants import *
+-from utils.help import *
+-from utils.parser import *
++from .utils.constants import *
++from .utils.help import *
++from .utils.parser import *
+ 
+ __version__ = 'from nctime v{} {}'.format(VERSION, VERSION_DATE)
+ 
+diff -ruNBbw a/nctime/nctxck.py b/nctime/nctxck.py
+--- a/nctime/nctxck.py	2018-12-14 14:37:02.000000000 +0100
++++ b/nctime/nctxck.py	2025-08-27 09:55:59.213670071 +0200
+@@ -12,9 +12,9 @@
+ 
+ from nctime.axis.main import run
+ 
+-from utils.constants import *
+-from utils.help import *
+-from utils.parser import *
++from .utils.constants import *
++from .utils.help import *
++from .utils.parser import *
+ 
+ __version__ = 'from nctime v{} {}'.format(VERSION, VERSION_DATE)
+ 
+diff -ruNBbw a/nctime/overlap/main.py b/nctime/overlap/main.py
+--- a/nctime/overlap/main.py	2019-03-13 16:48:57.000000000 +0100
++++ b/nctime/overlap/main.py	2025-08-27 16:01:58.548394670 +0200
+@@ -17,9 +17,9 @@
+ import numpy as np
+ from ESGConfigParser import ExpressionNotMatch
+ 
+-from constants import *
+-from context import ProcessingContext
+-from handler import Filename, Graph
++from .constants import *
++from .context import ProcessingContext
++from .handler import Filename, Graph
+ from nctime.utils.custom_print import *
+ from nctime.utils.misc import ProcessContext
+ from nctime.utils.time import get_next_timestep, get_last_timestep
+@@ -424,7 +424,7 @@
+     """
+     assert len(keys) == len(values)
+     global pctx
+-    pctx = ProcessContext({key: values[i] for i, key in enumerate(keys)})
++    pctx = ProcessContext({key: list(values)[i] for i, key in enumerate(keys)})
+ 
+ 
+ def run(args=None):
+@@ -458,7 +458,7 @@
+             processes = pool.imap(extract_dates, ctx.sources)
+         else:
+             initializer(cctx.keys(), cctx.values())
+-            processes = itertools.imap(extract_dates, ctx.sources)
++            processes = map(extract_dates, ctx.sources)
+         # Process supplied sources
+         handlers = [x for x in processes if x is not None]
+         # Close pool of workers if exists
+@@ -489,7 +489,7 @@
+                 pool.join()
+             else:
+                 initializer(cctx.keys(), cctx.values())
+-                for k, v in itertools.imap(get_patterns_from_filedef, yield_filedef(ctx.xml)):
++                for k, v in map(get_patterns_from_filedef, yield_filedef(ctx.xml)):
+                     if k not in patterns.keys():
+                         patterns[k] = list()
+                     patterns[k].extend(v)
+@@ -500,12 +500,12 @@
+         period_start = ctx.period_start
+         period_end = ctx.period_end
+         # Process filename handler to create nodes
+-        ctx.nbnodes = len([x for x in itertools.imap(create_nodes, handlers)])
++        ctx.nbnodes = len([x for x in map(create_nodes, handlers)])
+         # Process each directed graph to create appropriate edges
+-        ctx.nbdsets = len([x for x in itertools.imap(create_edges, graph())])
++        ctx.nbdsets = len([x for x in map(create_edges, graph())])
+         # Evaluate each graph if a shortest path exist
+         resolve = ctx.resolve
+-        for path, partial_overlaps, full_overlaps in itertools.imap(evaluate_graph, graph()):
++        for path, partial_overlaps, full_overlaps in map(evaluate_graph, graph()):
+             # Format message about path
+             msg = format_path(path, partial_overlaps, full_overlaps)
+             # If broken time series
+diff -ruNBbw a/nctime/utils/collector.py b/nctime/utils/collector.py
+--- a/nctime/utils/collector.py	2018-10-10 10:19:18.000000000 +0200
++++ b/nctime/utils/collector.py	2025-08-27 10:13:28.563859195 +0200
+@@ -12,7 +12,7 @@
+ import sys
+ from uuid import uuid4 as uuid
+ 
+-from custom_exceptions import NoFileFound
++from .custom_exceptions import NoFileFound
+ from nctime.utils.misc import match
+ 
+ 
+@@ -97,7 +97,7 @@
+         Returns the first iterator element.
+ 
+         """
+-        return self.__iter__().next()
++        return next(self.__iter__())
+ 
+ 
+ class FilterCollection(object):
+@@ -107,7 +107,7 @@
+     indicating to match (i.e., include) or non-match (i.e., exclude) the corresponding expression.
+ 
+     """
+-    FILTER_TYPES = (str, re._pattern_type)
++    FILTER_TYPES = (str, re.Pattern)
+ 
+     def __init__(self):
+         self.filters = dict()
+diff -ruNBbw a/nctime/utils/context.py b/nctime/utils/context.py
+--- a/nctime/utils/context.py	2018-12-14 14:37:02.000000000 +0100
++++ b/nctime/utils/context.py	2025-08-26 15:15:03.204859350 +0200
+@@ -11,7 +11,7 @@
+ 
+ from ESGConfigParser import SectionParser
+ 
+-from custom_exceptions import InvalidTable, InvalidFrequency
++from .custom_exceptions import InvalidTable, InvalidFrequency
+ from nctime.utils.constants import *
+ from nctime.utils.custom_print import *
+ from nctime.utils.misc import get_project
+diff -ruNBbw a/nctime/utils/custom_exceptions.py b/nctime/utils/custom_exceptions.py
+--- a/nctime/utils/custom_exceptions.py	2018-07-13 19:04:50.000000000 +0200
++++ b/nctime/utils/custom_exceptions.py	2025-08-26 15:15:12.945082603 +0200
+@@ -7,7 +7,7 @@
+ 
+ """
+ 
+-from constants import FREQ_INC, TIME_UNITS, RUN_CARD, CONF_CARD, CLIMATOLOGY_FREQ
++from .constants import FREQ_INC, TIME_UNITS, RUN_CARD, CONF_CARD, CLIMATOLOGY_FREQ
+ 
+ 
+ ###############################
+diff -ruNBbw a/nctime/utils/custom_print.py b/nctime/utils/custom_print.py
+--- a/nctime/utils/custom_print.py	2018-12-14 14:37:02.000000000 +0100
++++ b/nctime/utils/custom_print.py	2025-08-26 17:07:48.636956177 +0200
+@@ -14,7 +14,7 @@
+ from datetime import datetime as dt
+ from multiprocessing import Value
+ 
+-from constants import SHELL_COLORS
++from .constants import SHELL_COLORS
+ 
+ _colors_enabled = [sys.stdout.isatty()]
+ 
+@@ -182,7 +182,7 @@
+     DEBUG = False
+     ALL = False
+     CMD = None
+-    BUFFER = Value(c_char_p, '')
++    BUFFER = Value(c_char_p, b'')
+     LOGFILE = None
+     CARRIAGE_RETURNED = True
+ 
+diff -ruNBbw a/nctime/utils/help.py b/nctime/utils/help.py
+--- a/nctime/utils/help.py	2018-12-14 14:37:02.000000000 +0100
++++ b/nctime/utils/help.py	2025-08-26 15:15:36.501628581 +0200
+@@ -7,7 +7,7 @@
+ 
+ """
+ 
+-from custom_print import *
++from .custom_print import *
+ 
+ # Help
+ TITLE = COLOR('yellow').bold("""_________________________
+diff -ruNBbw a/nctime/utils/misc.py b/nctime/utils/misc.py
+--- a/nctime/utils/misc.py	2018-07-13 12:11:57.000000000 +0200
++++ b/nctime/utils/misc.py	2025-08-26 15:16:12.170470845 +0200
+@@ -10,8 +10,8 @@
+ from fuzzywuzzy import fuzz, process
+ from netCDF4 import Dataset
+ 
+-from custom_exceptions import *
+-from custom_print import *
++from .custom_exceptions import *
++from .custom_print import *
+ 
+ 
+ class ncopen(object):
+diff -ruNBbw a/nctime/utils/parser.py b/nctime/utils/parser.py
+--- a/nctime/utils/parser.py	2018-12-14 14:37:02.000000000 +0100
++++ b/nctime/utils/parser.py	2025-08-27 10:05:51.577384121 +0200
+@@ -15,8 +15,8 @@
+ 
+ from netcdftime import utime
+ 
+-from constants import TIME_UNITS, FREQ_INC, CALENDARS, TIME_UNITS_FORMAT
+-from custom_exceptions import InvalidUnits, InvalidFrequency, InvalidTable
++from .constants import TIME_UNITS, FREQ_INC, CALENDARS, TIME_UNITS_FORMAT
++from .custom_exceptions import InvalidUnits, InvalidFrequency, InvalidTable
+ 
+ 
+ class CustomArgumentParser(ArgumentParser):
+@@ -181,7 +181,7 @@
+         try:
+             u = utime(units)
+             return u.unit_string
+-        except ValueError, TypeError:
++        except (ValueError, TypeError):
+             msg = 'Invalid time units format - Available format is "{}"'.format(TIME_UNITS_FORMAT)
+             raise ArgumentTypeError(msg)
+ 
+diff -ruNBbw a/nctime/utils/time.py b/nctime/utils/time.py
+--- a/nctime/utils/time.py	2019-07-02 15:16:34.000000000 +0200
++++ b/nctime/utils/time.py	2025-08-27 16:28:59.269797627 +0200
+@@ -11,9 +11,9 @@
+ import numpy as np
+ from netcdftime import utime, datetime
+ 
+-from custom_exceptions import *
+-from custom_print import *
+-from misc import ncopen
++from .custom_exceptions import *
++from .custom_print import *
++from .misc import ncopen
+ 
+ 
+ class TimeInit(object):
+@@ -404,9 +404,9 @@
+     :rtype: *list*
+ 
+     """
+-    if table not in set(zip(*FREQ_INC.keys())[0]):
++    if table not in {t for t, _ in FREQ_INC.keys()}:
+         raise InvalidTable(table)
+-    if frequency not in set(zip(*FREQ_INC.keys())[1]):
++    if frequency not in {f for _, f in FREQ_INC.keys()}:
+         raise InvalidFrequency(frequency)
+     return FREQ_INC[table, frequency]
+ 
+diff -ruNBbw a/nctime.egg-info/PKG-INFO b/nctime.egg-info/PKG-INFO
+--- a/nctime.egg-info/PKG-INFO	2019-07-02 15:22:02.000000000 +0200
++++ b/nctime.egg-info/PKG-INFO	2025-08-26 12:53:13.895034582 +0200
+@@ -16,5 +16,7 @@
+ Classifier: Natural Language :: English
+ Classifier: Operating System :: Unix
+ Classifier: Programming Language :: Python :: 2.6
++Classifier: Programming Language :: Python :: 3
++Classifier: Programming Language :: Python :: 3.11
+ Classifier: Topic :: Scientific/Engineering
+ Classifier: Topic :: Software Development :: Build Tools
+diff -ruNBbw a/nctime.egg-info/requires.txt b/nctime.egg-info/requires.txt
+--- a/nctime.egg-info/requires.txt	2019-07-02 15:22:02.000000000 +0200
++++ b/nctime.egg-info/requires.txt	2025-08-27 09:50:13.739511931 +0200
+@@ -1,8 +1,8 @@
+-netCDF4==1.4.0
+-netcdftime==1.0.0a2
+-networkx==2.1
++netCDF4>=1.4.0
++netcdftime>=1.0.0a2
++networkx>=2.1
+ numpy>=1.10.0
+-nco==0.0.3
+-esgconfigparser==0.1.17
++nco>=0.0.3
++esgconfigparser>=0.1.17
+ fuzzywuzzy>=0.16.0
+-python-Levenshtein==0.12.0
++Levenshtein>=0.12.0
+diff -ruNBbw a/PKG-INFO b/PKG-INFO
+--- a/PKG-INFO	2019-07-02 15:22:02.000000000 +0200
++++ b/PKG-INFO	2025-08-26 12:53:05.674930240 +0200
+@@ -16,5 +16,7 @@
+ Classifier: Natural Language :: English
+ Classifier: Operating System :: Unix
+ Classifier: Programming Language :: Python :: 2.6
++Classifier: Programming Language :: Python :: 3
++Classifier: Programming Language :: Python :: 3.11
+ Classifier: Topic :: Scientific/Engineering
+ Classifier: Topic :: Software Development :: Build Tools
+diff -ruNBbw a/setup.py b/setup.py
+--- a/setup.py	2018-10-10 16:50:20.000000000 +0200
++++ b/setup.py	2025-08-27 09:50:45.816082579 +0200
+@@ -13,14 +13,14 @@
+       url='https://github.com/Prodiguer/nctime',
+       packages=find_packages(),
+       include_package_data=True,
+-      install_requires=['netCDF4==1.4.0',
+-                        'netcdftime==1.0.0a2',
+-                        'networkx==2.1',
++      install_requires=['netCDF4>=1.4.0',
++                        'netcdftime>=1.0.0a2',
++                        'networkx>=2.1',
+                         'numpy>=1.10.0',
+-                        'nco==0.0.3',
+-                        'esgconfigparser==0.1.17',
++                        'nco>=0.0.3',
++                        'esgconfigparser>=0.1.17',
+                         'fuzzywuzzy>=0.16.0',
+-                        'python-Levenshtein==0.12.0'],
++                        'Levenshtein>=0.12.0'],
+       entry_points={'console_scripts': ['nctcck=nctime.nctcck:main',
+                                         'nctxck=nctime.nctxck:main']
+                     },
+@@ -31,6 +31,8 @@
+                    'Natural Language :: English',
+                    'Operating System :: Unix',
+                    'Programming Language :: Python :: 2.6',
++                   'Programming Language :: Python :: 3',
++                   'Programming Language :: Python :: 3.11',
+                    'Topic :: Scientific/Engineering',
+                    'Topic :: Software Development :: Build Tools']
+       )
