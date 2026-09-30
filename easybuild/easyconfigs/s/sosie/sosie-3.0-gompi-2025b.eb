@@ -1,0 +1,61 @@
+# Author: Kim Serradell, BSC 2020
+# Updated by: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center 2026
+
+easyblock = 'MakeCp'
+
+name = 'sosie'
+version = '3.0'
+local_commit = '66487bb'
+
+homepage = 'https://brodeau.github.io/sosie/'
+description = """SOSIE is a tool that allows fast and high-quality 2D and 3D interpolation of
+ geophysical fields from a gridded domain to another."""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+
+# Better use git_config to include recent developments
+sources = [{
+    'filename': SOURCE_TAR_XZ,
+    'git_config': {
+        'url': 'https://github.com/brodeau',
+        'repo_name': name,
+        'commit': local_commit,
+        'recursive': True,
+    },
+}]
+patches = ['sosie-3.0_fix-fortran-code.patch']
+checksums = [
+    {'sosie-3.0.tar.xz':
+     'b2d9ad3d88cb6f3f394f5443991423dddcf2205b6053a6993cdfbcbadd8c92d8'},
+    {'sosie-3.0_fix-fortran-code.patch':
+     'eae6d6d653d3c0f087c89bf8bda5d5ca24a5931368f4f73dace5ece4b4a75404'},
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('make', '4.4.1'),
+]
+
+dependencies = [
+    ('netCDF-Fortran', '4.6.2'),
+    ('CDO', '2.5.3'),
+]
+
+# The macro file needs to be prepared for compilation
+prebuildopts = "cp macro/make.macro_gfortran-10_Linux make.macro && "
+prebuildopts += 'sed -i "s|FC = gfortran-10|FC = gfortran|g" make.macro && '
+prebuildopts += 'sed -i "s|NETCDF_DIR = /usr|NETCDF_DIR = ${EBROOTNETCDFMINFORTRAN}|g" make.macro && '
+prebuildopts += 'sed -i "s|/usr/lib/gcc/x86_64-linux-gnu/$(VERSION)|${EBROOTGCCCORE}|g" make.macro && '
+prebuildopts += 'sed -i "s|INSTALL_DIR = /usr/local|INSTALL_DIR = %(installdir)s|g" make.macro && '
+
+max_parallel = 1  # otherwise the compilation fails
+
+files_to_copy = ['bin', 'examples', 'README.md']
+
+sanity_check_paths = {
+    'files': ['bin/sosie3.x', 'bin/corr_vect.x'],
+    'dirs': [],
+}
+
+moduleclass = 'geo'
