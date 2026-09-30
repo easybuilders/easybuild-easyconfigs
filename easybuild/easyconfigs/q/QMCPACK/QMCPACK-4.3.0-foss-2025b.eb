@@ -1,5 +1,3 @@
-easyblock = 'CMakeNinja'
-
 name = 'QMCPACK'
 version = '4.3.0'
 
@@ -20,34 +18,6 @@ sources = [
 checksums = [
     '511d5f368db002f2f77504619e1ada8d4a3034200d25feef6773d12a6ed6d18e',
 ]
-configopts = '-DQMC_MPI=ON -DQMC_OMP=ON -DQMC_MIXED_PRECISION=OFF -DQMC_COMPLEX=OFF '
-configopts += '-DBUILD_AFQMC=OFF'
-modextrapaths = {
-    'PYTHONPATH': 'lib',
-}
-sanity_check_commands = [
-    "qmcpack --version 2>&1 | grep -q 'QMCPACK version'",
-]
-sanity_check_paths = {
-    'dirs': [
-        'lib/nexus',
-    ],
-    'files': [
-        'bin/qmcpack',
-        'bin/convert4qmc',
-        'bin/ppconvert',
-        'bin/qmcpack.settings',
-    ],
-}
-start_dir = '%(namelower)s-%(version)s'
-# Allow concurrent multi-rank mpiexec under ctest -j (netCDF/OTF-CPT pattern).
-pretestopts = 'export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe && '
-test_cmd = 'ctest'
-# Single-quoted -E pattern so shell does not treat | as a pipe.
-testopts = (
-    "-L deterministic -j %(parallel)s --output-on-failure "
-    "-E 'unit_test_message-r12|unit_test_new_drivers_mpi-r16'"
-)
 
 builddependencies = [
     ('CMake', '4.0.3'),
@@ -61,5 +31,10 @@ dependencies = [
     ('Python', '3.13.5'),
     ('libxml2', '2.14.3'),
 ]
+
+# The QMCPACK easyblock sets QMC_COMPLEX from the versionsuffix, QMC_MPI and QMC_OMP
+# from the toolchain, builds AFQMC, runs the deterministic ctest label and derives the
+# sanity check from the same values.
+runtest = True
 
 moduleclass = 'chem'
