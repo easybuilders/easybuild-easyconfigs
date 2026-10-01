@@ -1,0 +1,37 @@
+easyblock = 'PythonPackage'
+
+name = 'uv-build'
+version = '0.7.22'
+
+homepage = 'https://pypi.org/project/uv-build/'
+description = "Build backend used by Astral's Python packaging ecosystem"
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = [PYPI_SOURCE]
+sources = [f'{name.replace("-", "_")}-%(version)s.tar.gz']
+checksums = ['e7575036f987080a25a473971c0e6795c79e0b7bd04b95e5a35d5d51e19f3a6c']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Rust', '1.91.1'),
+    ('maturin', '1.8.3'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+]
+
+# Pure Python backend package: disable bin/lib ELF RPATH scanning.
+bin_lib_subdirs = []
+
+# uv-build installs a Rust helper binary that may bypass EB's RPATH wrapper.
+# The Python module is what downstream builds need at runtime.
+postinstallcmds = ['rm -f %(installdir)s/bin/uv-build']
+
+sanity_check_commands = [
+    "python -c 'import uv_build'",
+]
+
+moduleclass = 'devel'
+
