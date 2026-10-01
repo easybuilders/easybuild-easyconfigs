@@ -1,0 +1,86 @@
+This patch fixes several issues with the Fortran code, adapting it to modern Fortran versions.
+Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+Barcelona Supercomputing Center 2026
+diff -ruNBbw a/src/corr_vect.f90 b/src/corr_vect.f90
+--- a/src/corr_vect.f90	2026-09-30 15:58:34.963176950 +0200
++++ b/src/corr_vect.f90	2026-09-30 17:07:32.032188364 +0200
+@@ -403,7 +403,7 @@
+ 
+       !! North Pole fix?
+       IF(lNPfix) THEN
+-         READ(cNP_lat,'(f)') rNP_lat
++         READ(cNP_lat, *) rNP_lat
+          PRINT *, ' *** We are going to correct the North-Pole region from:',REAL(rNP_lat,4),'deg.N!'
+       END IF
+       !   !
+diff -ruNBbw a/src/create_angle_file.f90 b/src/create_angle_file.f90
+--- a/src/create_angle_file.f90	2026-09-30 15:58:34.963176950 +0200
++++ b/src/create_angle_file.f90	2026-09-30 17:21:54.806011959 +0200
+@@ -27,8 +27,7 @@
+ 
+    IMPLICIT NONE
+ 
+-   EXTERNAL iargc
+-   INTEGER  iargc
++   INTEGER :: narg
+    
+    LOGICAL, PARAMETER :: ldebug = .true.
+ 
+@@ -76,12 +75,13 @@
+    !! Getting string arguments :
+    !! --------------------------
+ 
++   narg = command_argument_count()
+    jarg = 0
+ 
+-   DO WHILE ( jarg < iargc() )
++   DO WHILE ( jarg < narg )
+       !!
+       jarg = jarg + 1
+-      CALL getarg(jarg,cr)
++      CALL get_command_argument(jarg,cr)
+       !!
+       !!
+       SELECT CASE (TRIM(cr))
+@@ -91,10 +91,10 @@
+          call usage_caf()
+          !!
+       CASE('-m')
+-         IF ( jarg + 1 > iargc() ) THEN ! checking that there is at least an other argument following
++         IF ( jarg + 1 > narg ) THEN ! checking that there is at least an other argument following
+             PRINT *,'ERROR: Missing `domain_cfg` or `mesh_mask` file name!' ; call usage_caf()
+          ELSE
+-            jarg = jarg + 1 ;  CALL getarg(jarg,cr)
++            jarg = jarg + 1 ;  CALL get_command_argument(jarg,cr)
+             IF ( ANY(clist_opt == trim(cr)) ) THEN
+                PRINT *,'ERROR: ', trim(cr), ' is definitively not the name of the mesh_mask file!'
+                call usage_caf()
+diff -ruNBbw a/src/io_ezcdf.f90 b/src/io_ezcdf.f90
+--- a/src/io_ezcdf.f90	2026-09-30 15:58:34.965176971 +0200
++++ b/src/io_ezcdf.f90	2026-09-30 16:55:03.941969458 +0200
+@@ -303,7 +303,7 @@
+                CALL sherr( NF90_GET_ATT(id_f, id_v, cname, cvalue),  crtn,cf_in,cv_in)
+                v_att_list(jatt)%val_char = TRIM(cvalue)
+             ELSEIF( iwhat == 12 ) THEN
+-               STOP' xtype is 12 => not supported by NF90! => get rid of attributes!'
++               STOP 'xtype is 12 => not supported by NF90! => get rid of attributes!'
+                ! nf90_string
+                PRINT *, 'lolo2'
+                CALL sherr( NF90_GET_ATT(id_f, id_v, cname, cval1),  crtn,cf_in,cv_in)
+diff -ruNBbw a/src/mod_bilin_2d.f90 b/src/mod_bilin_2d.f90
+--- a/src/mod_bilin_2d.f90	2026-09-30 15:58:34.965176971 +0200
++++ b/src/mod_bilin_2d.f90	2026-09-30 17:02:37.759728620 +0200
+@@ -803,11 +803,11 @@
+ 
+       !! Cooking: handling the `-epsilon` xa or xb...
+       IF(xa < 0.) THEN
+-         xa = MERGE( 0. , xa ,  xa > -1.E-4 )
++         xa = MERGE( 0.0D0 , xa ,  xa > -1.0D-4 )
+          !IF(xa < 0.) PRINT *, 'LOLO: WE have a `xa<0` => xa,xb=', xa,xb
+       ENDIF
+       IF(xb  < 0.) THEN
+-         xb = MERGE( 0. , xb ,  xb > -1.E-4 )
++         xb = MERGE( 0.0D0 , xb ,  xb > -1.0D-4 )
+          !IF(xb < 0.) PRINT *, 'LOLO: WE have a `xb<0` => xb,xa=', xb,xa
+       ENDIF
+ 
