@@ -1,0 +1,24 @@
+On platforms like RISC-V that do not support MCJIT,
+Mesa uses ORC JIT instead.
+However, it does not add it to the list of LLVM modules,
+and in turn, that causes undefined reference issues when building with a static LLVM,
+because the corresponding static libraries are not linked.
+
+See https://gitlab.freedesktop.org/mesa/mesa/-/work_items/16445
+
+Author: Bob Dröge (University of Groningen)
+
+diff -ru mesa-26.1.1.orig/meson.build mesa-26.1.1/meson.build
+--- mesa-26.1.1.orig/meson.build	2026-05-19 16:27:16.000000000 +0200
++++ mesa-26.1.1/meson.build	2026-10-01 15:25:10.613864650 +0200
+@@ -1883,6 +1883,10 @@
+ llvm_has_mcjit = host_machine.cpu_family() in ['aarch64', 'arm', 'ppc', 'ppc64', 's390x', 'x86', 'x86_64']
+ llvm_with_orcjit = get_option('llvm-orcjit') or not llvm_has_mcjit
+ 
++if llvm_with_orcjit
++  llvm_modules += ['orcjit']
++endif
++
+ if (with_amd_vk or with_gallium_radeonsi) and amd_with_llvm
+   _llvm_version = '>= 18.0.0'
+ elif with_clc or llvm_with_orcjit
