@@ -1,0 +1,260 @@
+easyblock = 'PythonBundle'
+
+name = 'PyTorch-bundle'
+version = '2.7.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pytorch.org/'
+description = """PyTorch with compatible versions of official Torch extensions."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('git', '2.45.1'),
+    ('hatchling', '1.24.2'),  # for pytorch-ignite
+    ('dill', '0.3.9'),  # for pytorch-ignite tests
+    ('scikit-learn', '1.5.2'),  # for pytorch-ignite tests
+    ('scikit-image', '0.25.0'),  # for pytorch-ignite tests
+    ('visdom', '0.2.4'),  # for pytorch-ignite tests
+    ('Java', '17', '', SYSTEM),  # needed by ANTLR runtime
+    ('pytest-mock', '3.14.1'),  # for torchvision tests
+    ('parameterized', '0.9.0'),  # for torchtext and torchaudio tests
+    ('librosa', '0.10.2.post1'),  # for torchaudio tests
+    ('NLTK', '3.9.1'),  # for torchaudio tests
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('PyTorch', version, versionsuffix),
+    ('FFmpeg', '7.0.2'),  # for torchvision and torchaudio
+    ('HF-Datasets', '4.0.0'),  # for torchtune
+    ('libjpeg-turbo', '3.0.1'),  # for torchvision
+    ('lxml', '5.3.0'),  # for torchtune
+    ('orjson', '3.10.13'),  # for torchrl
+    ('Pillow-SIMD', '10.4.0'),  # for torchvision
+    ('Safetensors', '0.6.2'),  # for torchtune
+    ('SentencePiece', '0.2.1'),  # for torchtune
+    ('SoX', '14.4.2'),  # for torchaudio
+    ('tensorboard', '2.18.0'),  # for torch-tb-profiler
+    ('tiktoken', '0.9.0'),  # for torchtune
+    ('tokenizers', '0.21.4'),  # for torchtune
+]
+
+local_preinstall_opts = ' '.join([
+    'USE_SYSTEM_LIBS=1',
+    'USE_OPENMP=1',
+    'USE_CUDA=1', 'TORCH_CUDA_ARCH_LIST="%(cuda_cc_semicolon_sep)s"',
+    'USE_CUDNN=1',
+    'USE_FFMPEG=1', 'FFMPEG_ROOT="$EBROOTFFMPEG"',
+    'CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s',
+])
+
+exts_default_options = {
+    'preinstallopts': local_preinstall_opts,
+    'prebuildopts': local_preinstall_opts,
+    # Workaround for nvrtcCompileProgram in CUDA < 12.6.2 changing the locale  potentially causing UnicodeDecodeError
+    'pretestopts': ('PYTHONUTF8=1 '
+                    'MAX_JOBS=%(parallel)s TRITON_HOME="%(builddir)s/ttHome" TRITON_CACHE_DIR="%(builddir)s/ttCache"'),
+}
+
+local_gh_source = {'download_filename': V_VERSION_TAR_GZ, 'filename': SOURCE_TAR_GZ}
+local_cutlass_path = "$EBROOTNVIDIAMINCUTLASS/lib/python%(pyshortver)s/site-packages/cutlass_library/source"
+
+exts_list = [
+    ('pynvml', '11.5.3', {
+        # needed by torch-ignite
+        # see https://github.com/pytorch/ignite/blob/adb2a557650d55db25082f9cb06ea59c7c69e562/requirements-dev.txt#L24
+        'checksums': ['183d223ae487e5f00402d8da06c68c978ef8a9295793ee75559839c6ade7b229'],
+    }),
+    ('torchvision', '0.21.0', {
+        'source_urls': ['https://github.com/pytorch/vision/archive'],
+        'sources': [local_gh_source],
+        'patches': [{'name': 'torchvision-0.17.0_quantized_tol.patch', 'alt_location': 'torchvision'}],
+        'checksums': [
+            {'torchvision-0.21.0.tar.gz': '0a4a967bbb7f9810f792cd0289a07fb98c8fb5d1303fae8b63e3a6b05d720058'},
+            {'torchvision-0.17.0_quantized_tol.patch':
+             '991b959f7d5e0fd418a163fa3ad828a2b60a64d0ce894cf579847138b13b62af'},
+        ],
+        'installopts': '-v',
+        'runtest': (
+            'pytest'
+            ' -m "not xfail"'  # don't run tests that are expected that they might fail
+            ' -k "not test_frame_reading_mem_vs_file"'  # this one hangs
+            '" and not test_antialias_default_warning"'  # flaky test which is removed in later versions
+            '" and not test_internet"'  # Online access
+            '" and not test_classification_model"'  # torch.OutOfMemoryError during tests for "small" GPUs
+            '" and not test_videoapi"'  # video support is unstable
+            '" and not avif and not heic"'  # requires torchvision-extra-decoders, libavif PyTorch support, libheic
+            '" and not test_pretrained_pos and not test_equivalent_behavior_weights"'  # tests out of date?
+        ),
+        'testinstall': True,
+    }),
+    ('torchaudio', version, {
+        'patches': [
+            'torchaudio-2.1.2_transform_test_tol.patch',
+            'torchaudio-2.3.0_remove-librosa-version-check.patch',
+            'torchaudio-2.3.0_use-external-sox.patch',
+            {'name': 'torchaudio-2.6.0_use_ffmpeg7.patch', 'alt_location': 'torchaudio'},
+            {'name': 'torchaudio-2.7.0_fix-encode-process.patch', 'alt_location': 'torchaudio'},
+            {'name': 'torchaudio-2.7.0_fix_tests_gpu.patch', 'alt_location': 'torchaudio'},
+        ],
+        'preinstallopts': ('export BUILD_VERSION="%(version)s" && '
+                           'rm -r third_party/{sox,ffmpeg/multi}; '  # Don't fail because it runs twice (testinstall)
+                           + local_preinstall_opts),
+        'source_urls': ['https://github.com/pytorch/audio/archive'],
+        'sources': [local_gh_source],
+        'checksums': [
+            {'torchaudio-2.7.1.tar.gz': 'fc8159476d1b3b5978d5e66746fc34be168170800ff4c5e356433d8c9c57cbea'},
+            {'torchaudio-2.1.2_transform_test_tol.patch':
+             '57f315c60db70ed2bd9711bcf6f7c7c24dac8c2f04e00488996eb2dc507bdfd2'},
+            {'torchaudio-2.3.0_remove-librosa-version-check.patch':
+             'a98ce800ef0f3bd551b5f7ecec00f7164c4066e1799bdc9838c3f231e2b06622'},
+            {'torchaudio-2.3.0_use-external-sox.patch':
+             'da765487aa7ec83f9ebe603b11365bfe3a70b3492982a6aa504d945b9aa91da8'},
+            {'torchaudio-2.6.0_use_ffmpeg7.patch': '1a2f7505efee9852ef393e6f4583cef209ad302db241171bf41be8d4a88920bd'},
+            {'torchaudio-2.7.0_fix-encode-process.patch':
+             'a00772c8869b4202491e043c38f2be20f6da650c105ea72b6b47001e84081999'},
+            {'torchaudio-2.7.0_fix_tests_gpu.patch':
+             '6354639636075920dfbb533631f0e22fd2e846490aabe202c5b27d63f58e0f00'},
+        ],
+        'runtest': (
+            # Make CUBLAS deterministic
+            'CUBLAS_WORKSPACE_CONFIG=:16:8 '
+            'pytest test/torchaudio_unittest/'
+            " -k 'not " + " and not ".join((
+                'TestProcessPoolExecutor',  # hang maybe related https://github.com/pytorch/audio/issues/1021
+                'FilterGraphWithCudaAccel',  # requires FFmpeg with CUDA support
+                # Large difference, caused by numba<0.62.0, torchaudio 2.9 uses mocks instead avoiding this
+                'test_phase_vocoder',
+                'kaldi_io_test',  # requires kaldi_io
+                'test_dup_hw_acel',  # requires special render device permissions
+                'test_h264_cuvid',  # requires special render device permissions
+                'test_hevc_cuvid',  # requires special render device permissions
+                'test_hevc_cuvid',  # requires special render device permissions
+                'test_requests_',   # requires internet access
+                'TestFileObjectHttp',   # requires internet access
+                '_large',   # Speed up our test runs
+            )) + "'"
+        ),
+        'testinstall': True,
+    }),
+    ('pytorch-fid', '0.3.0', {
+        'checksums': ['1c80d112c9cf5ebcbcc428a0b7ea615c302805ad6780ec29e8e2955ba31571c8'],
+    }),
+    ('pytorch-ignite', '0.5.2', {
+        'modulename': 'ignite',
+        'source_urls': ['https://github.com/pytorch/ignite/archive'],
+        'sources': [local_gh_source],
+        'patches': [
+            'torch-ignite-0.4.13_dont_destroy_python_path_in_test_launcher.patch',
+            'torch-ignite-0.5.2_fix-conftest-options.patch',
+            'torch-ignite-0.5.2_fix-pynvml-smi.patch',
+        ],
+        'checksums': [
+            {'pytorch-ignite-0.5.2.tar.gz': 'f11777f5ab9f74d72c66adfb9214ae16ad1752ca0e866d6bf6f1c0738c5e99c2'},
+            {'torch-ignite-0.4.13_dont_destroy_python_path_in_test_launcher.patch':
+             'fd5dfe99f4c8804d6c57e4d9140d9e556e0724b379f9eaae8aeaf1b7bd058686'},
+            {'torch-ignite-0.5.2_fix-conftest-options.patch':
+             '6347914a76f21a5134f920f02d3c4dc509c5e2bc52c46e46fe524824a637def0'},
+            {'torch-ignite-0.5.2_fix-pynvml-smi.patch':
+             'a5ddc55eaa2255e5a8643c5974eb1354cc4a6b4a26290bfc2c4d681aa4a5aeda'},
+        ],
+        'runtest': (
+            'pytest -m "not distributed"' +
+            ' --ignore='.join((
+                '',  # Empty for join()
+                'tests/ignite/handlers/test_checkpoint.py',  # fails by comparing tensors on different devices
+                'tests/ignite/handlers/test_clearml_logger.py',  # requires clearml
+                'tests/ignite/handlers/test_mlflow_logger.py',  # requires mlflow
+                'tests/ignite/handlers/test_neptune_logger.py',  # requires neptune
+                'tests/ignite/handlers/test_polyaxon_logger.py',  # requires polyaxon
+                'tests/ignite/handlers/test_tensorboard_logger.py',  # requires tensorboardX
+                'tests/ignite/handlers/test_visdom_logger.py',  # Spins up local server which may fail
+                'tests/ignite/handlers/test_wandb_logger.py',  # requires wandb
+                'tests/ignite/metrics/vision/test_object_detection_map.py',  # requires pycocotools
+                'tests/ignite/metrics/nlp/test_rouge.py',  # requires rouge
+            )) +
+            " -k 'not " + " and not ".join((
+                'test_setup_plx_logging',  # requires polyaxon
+                'test_setup_mlflow_logging',  # requires mlflow
+                'test_setup_clearml_logging',  # requires clearml
+                'test_setup_neptune_logging',  # requires neptune
+                'test_setup_tb_logging',  # requires tesorboardX
+                'test__setup_ddp_vars_from_slurm_env_bad_configs',  # fails sometimes
+                'test__native_dist_model_create_from_backend_bad_config',  # fails sometimes
+                'test_inception_score',  # fails sometimes due to connection problem with download.pytorch.org
+            )) + "'"
+        ),
+        'testinstall': True,
+    }),
+    ('torch-tb-profiler', '0.4.3', {
+        'modulename': 'torch.profiler',
+        'checksums': ['8b8d29b2de960b3c4423087b23cec29beaf9ac3a8c7b046c18fd25b218f726b1'],
+        'runtest': (
+            'pytest'
+            ' --ignore=test/test_tensorboard_end2end.py'  # timeouts
+            ' -k "not test_dump_gpu_metrics"'  # missing file
+            '" and not test_profiler_api_with_record_shapes_memory_stack"'  # fails
+            '" and not test_profiler_api_without_record_shapes_memory_stack"'  # fails
+            '" and not test_profiler_api_without_step"'  # fails
+            '" and not test_autograd_api"'  # fails
+        ),
+        'testinstall': True,
+    }),
+    ('tensordict', '0.7.2', {
+        'source_urls': ['https://github.com/pytorch/%(name)s/archive'],
+        'sources': [local_gh_source],
+        'checksums': ['7ae5edfd8f5b7da8bf10ca81a34b7a3013058bd7bfaa32837cd3fd97e7b755c6'],
+    }),
+    ('torchrl', '0.7.2', {
+        'source_urls': ['https://github.com/pytorch/rl/archive'],
+        'sources': [local_gh_source],
+        'checksums': ['1621b621ee8c73b51dca3e52ee9f7704019c8b3bad70a67bb10f02559f4558ac'],
+    }),
+    # requirements for torchtune
+    ('antlr4-python3-runtime', '4.9.3', {
+        'modulename': 'antlr4',
+        'checksums': ['f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b'],
+    }),
+    ('omegaconf', '2.3.0', {
+        'checksums': ['d5d4b6d29955cc50ad50c46dc269bcd92c6e00f5f90d23ab5fee7bfca4ba4cc7'],
+    }),
+    ('blobfile', '3.0.0', {
+        'checksums': ['32ec777414de7bb2a76ca812a838f0d33327ca28ae844a253503cde625cdf2f1'],
+    }),
+    ('kagglehub', '0.3.12', {
+        'checksums': ['45e75854630a30605b794eb786b3757beccbbea1acca71600642f67b60e0d7bf'],
+    }),
+    ('pycryptodomex', '3.21.0', {
+        'modulename': 'Crypto',
+        'checksums': ['222d0bd05381dd25c32dd6065c071ebf084212ab79bab4599ba9e6a3e0009e6c'],
+    }),
+    ('torchao', '0.12.0', {
+        'source_urls': ['https://github.com/pytorch/ao/archive'],
+        'sources': [local_gh_source],
+        'checksums': ['c477d78ca5268187979934d3eb38590758adc5415526b3705a9a85099e40ad21'],
+        # Need path to installed cutlass, as third_party folder is not populated
+        'preinstallopts': (
+            f'export CPATH="$CPATH:{local_cutlass_path}/include:{local_cutlass_path}/tools/util/include" && '
+            'export VERSION_SUFFIX="" && '
+            + local_preinstall_opts),
+    }),
+    ('torchdata', '0.11.0', {
+        'source_urls': ['https://github.com/pytorch/data/archive'],
+        'sources': [local_gh_source],
+        'checksums': ['945c53a8587567624aaad2d66204fbae9acb9535696554c53ffeb83320c308b9'],
+        'runtest': False,  # circular test requirements
+    }),
+    ('torchtune', '0.6.1', {
+        'source_urls': ['https://github.com/pytorch/%(name)s/archive'],
+        'sources': [local_gh_source],
+        'checksums': ['80a06ba0760741aa91f5f7bfb49ef6bb779c8044409dd7ef116f5420f122214b'],
+        'preinstallopts': ("""sed -i 's/^dynamic.*/version = "%(version)s"/' pyproject.toml && """
+                           + local_preinstall_opts),
+        'runtest': False,  # circular test requirements
+    }),
+]
+
+moduleclass = 'ai'
