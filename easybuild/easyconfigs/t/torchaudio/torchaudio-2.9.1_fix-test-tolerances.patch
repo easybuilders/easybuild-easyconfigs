@@ -1,0 +1,34 @@
+Relax numerical tolerances in torchaudio tests on some platforms.
+
+With PyTorch 2.9.1, a small number of torchaudio 2.9.1 tests show
+platform-dependent floating-point differences on some systems. The same tests
+pass on other Intel and AMD systems.
+
+Relax tolerances only for the affected librosa compatibility tests and the
+Spectrogram, InverseSpectrogram, and PitchShift batch-consistency checks. Keep
+the default strict tolerances for all other batch-consistency tests.
+
+On JSC, the batch pitch-shift difference is at most about 3.5e-6, while the
+spectrogram test differs in only one out of 49446 values by about 5.3e-8.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- a/test/torchaudio_unittest/functional/librosa_compatibility_test_impl.py
++++ b/test/torchaudio_unittest/functional/librosa_compatibility_test_impl.py
+@@ -98 +98 @@
+-        self.assertEqual(result, torch.from_numpy(expected))
++        self.assertEqual(result, torch.from_numpy(expected), atol=1e-5, rtol=1e-5)
+@@ -108 +108 @@
+-        self.assertEqual(result, torch.from_numpy(expected))
++        self.assertEqual(result, torch.from_numpy(expected), atol=1e-5, rtol=1e-5)
+--- a/test/torchaudio_unittest/transforms/batch_consistency_test.py
++++ b/test/torchaudio_unittest/transforms/batch_consistency_test.py
+@@ -24,4 +24,9 @@
+         batch_result = transform(batch_input, *args, **kwargs)
+
++        if isinstance(transform, T.Spectrogram):
++            atol = max(atol, 1e-7)
++        elif isinstance(transform, (T.InverseSpectrogram, T.PitchShift)):
++            atol = max(atol, 5e-6)
++
+         self.assertEqual(items_input, batch_input, rtol=rtol, atol=atol)
+         self.assertEqual(items_result, batch_result, rtol=rtol, atol=atol)
