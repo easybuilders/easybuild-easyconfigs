@@ -11,11 +11,7 @@ toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
 
 source_urls = ['https://github.com/oneapi-src/oneTBB/archive/refs/tags/']
 sources = ['v%(version)s.tar.gz']
-patches = ['tbb-2022.3.0_fix_flag_GCC15.patch']
-checksums = [
-    {'v%(version)s.tar.gz': '01598a46c1162c27253a0de0236f520fd8ee8166e9ebb84a4243574f88e6e50a'},
-    {'tbb-2022.3.0_fix_flag_GCC15.patch': 'f4ac3f7a828ef16d94a68d10d248e5c6c8d51b7f0045cf9669f31e22a4eef49b'},
-]
+checksums = ['v%(version)s.tar.gz': '01598a46c1162c27253a0de0236f520fd8ee8166e9ebb84a4243574f88e6e50a']
 
 builddependencies = [
     ('binutils', '2.45'),
@@ -25,6 +21,9 @@ dependencies = [
     ('hwloc', '2.13.0'),
 ]
 
+if ARCH == 'riscv64':
+    # GCC 15 gives a false-positive -Wstringop-overflow in the tests on riscv64; don't turn warnings into errors
+    configopts = '-DTBB_STRICT=OFF'
 
 sanity_check_paths = {
     'files': ['lib/libtbb.%s' % SHLIB_EXT, 'lib/libtbbmalloc.%s' % SHLIB_EXT],
