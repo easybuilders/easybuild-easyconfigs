@@ -1,0 +1,235 @@
+Do not abort on SPARSE_STATUS_INVALID_VALUE 
+
+This happens on newer versions of MKL, see https://github.com/pytorch/pytorch/pull/130382
+Backported that PR to 2.1.2 by Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/mkl/Exceptions.h b/aten/src/ATen/mkl/Exceptions.h
+--- a/aten/src/ATen/mkl/Exceptions.h
++++ b/aten/src/ATen/mkl/Exceptions.h
+@@ -59,3 +59,14 @@ static inline const char* _mklGetErrorString(sparse_status_t status) {
+         at::mkl::sparse::_mklGetErrorString(__err), \
+         " when calling `" #EXPR "`");               \
+   } while (0)
++
++#define TORCH_MKLSPARSE_CHECK_SUCCESS_OR_INVALID(status, function_name) \
++  do {                                                   \
++    sparse_status_t __status = (status);                 \
++    TORCH_CHECK(                                         \
++        __status == SPARSE_STATUS_SUCCESS ||             \
++            __status == SPARSE_STATUS_INVALID_VALUE,     \
++        "MKL error: ",                                   \
++        at::mkl::sparse::_mklGetErrorString(__status),   \
++        " when calling `" function_name "`");            \
++  } while (0)
+diff --git a/aten/src/ATen/mkl/SparseBlas.cpp b/aten/src/ATen/mkl/SparseBlas.cpp
+--- a/aten/src/ATen/mkl/SparseBlas.cpp
++++ b/aten/src/ATen/mkl/SparseBlas.cpp
+@@ -287,48 +287,60 @@ void spmmd<c10::complex<double>>(MKL_SPARSE_SPMMD_ARGTYPES(c10::complex<double>)
+ #endif
+ 
+ template <>
+-void trsv<float>(MKL_SPARSE_TRSV_ARGTYPES(float)) {
+-  TORCH_MKLSPARSE_CHECK(mkl_sparse_s_trsv(operation, alpha, A, descr, x, y));
++sparse_status_t trsv<float>(MKL_SPARSE_TRSV_ARGTYPES(float)) {
++  sparse_status_t status = mkl_sparse_s_trsv(operation, alpha, A, descr, x, y);
++  TORCH_MKLSPARSE_CHECK_SUCCESS_OR_INVALID(status, "mkl_sparse_s_trsv");
++  return status;
+ }
+ template <>
+-void trsv<double>(MKL_SPARSE_TRSV_ARGTYPES(double)) {
+-  TORCH_MKLSPARSE_CHECK(mkl_sparse_d_trsv(operation, alpha, A, descr, x, y));
++sparse_status_t trsv<double>(MKL_SPARSE_TRSV_ARGTYPES(double)) {
++  sparse_status_t status = mkl_sparse_d_trsv(operation, alpha, A, descr, x, y);
++  TORCH_MKLSPARSE_CHECK_SUCCESS_OR_INVALID(status, "mkl_sparse_d_trsv");
++  return status;
+ }
+ template <>
+-void trsv<c10::complex<float>>(MKL_SPARSE_TRSV_ARGTYPES(c10::complex<float>)) {
+-  TORCH_MKLSPARSE_CHECK(mkl_sparse_c_trsv(
++sparse_status_t trsv<c10::complex<float>>(MKL_SPARSE_TRSV_ARGTYPES(c10::complex<float>)) {
++  sparse_status_t status = mkl_sparse_c_trsv(
+       operation,
+       to_mkl_complex<float, MKL_Complex8>(alpha),
+       A,
+       descr,
+       reinterpret_cast<const MKL_Complex8*>(x),
+-      reinterpret_cast<MKL_Complex8*>(y)));
++      reinterpret_cast<MKL_Complex8*>(y));
++  TORCH_MKLSPARSE_CHECK_SUCCESS_OR_INVALID(status, "mkl_sparse_c_trsv");
++  return status;
+ }
+ template <>
+-void trsv<c10::complex<double>>(
++sparse_status_t trsv<c10::complex<double>>(
+     MKL_SPARSE_TRSV_ARGTYPES(c10::complex<double>)) {
+-  TORCH_MKLSPARSE_CHECK(mkl_sparse_z_trsv(
++  sparse_status_t status = mkl_sparse_z_trsv(
+       operation,
+       to_mkl_complex<double, MKL_Complex16>(alpha),
+       A,
+       descr,
+       reinterpret_cast<const MKL_Complex16*>(x),
+-      reinterpret_cast<MKL_Complex16*>(y)));
++      reinterpret_cast<MKL_Complex16*>(y));
++  TORCH_MKLSPARSE_CHECK_SUCCESS_OR_INVALID(status, "mkl_sparse_z_trsv");
++  return status;
+ }
+ 
+ template <>
+-void trsm<float>(MKL_SPARSE_TRSM_ARGTYPES(float)) {
+-  TORCH_MKLSPARSE_CHECK(mkl_sparse_s_trsm(
+-      operation, alpha, A, descr, layout, x, columns, ldx, y, ldy));
++sparse_status_t trsm<float>(MKL_SPARSE_TRSM_ARGTYPES(float)) {
++  sparse_status_t status = mkl_sparse_s_trsm(
++      operation, alpha, A, descr, layout, x, columns, ldx, y, ldy);
++  TORCH_MKLSPARSE_CHECK_SUCCESS_OR_INVALID(status, "mkl_sparse_s_trsm");
++  return status;
+ }
+ template <>
+-void trsm<double>(MKL_SPARSE_TRSM_ARGTYPES(double)) {
+-  TORCH_MKLSPARSE_CHECK(mkl_sparse_d_trsm(
+-      operation, alpha, A, descr, layout, x, columns, ldx, y, ldy));
++sparse_status_t trsm<double>(MKL_SPARSE_TRSM_ARGTYPES(double)) {
++  sparse_status_t status = mkl_sparse_d_trsm(
++      operation, alpha, A, descr, layout, x, columns, ldx, y, ldy);
++  TORCH_MKLSPARSE_CHECK_SUCCESS_OR_INVALID(status, "mkl_sparse_d_trsm");
++  return status;
+ }
+ template <>
+-void trsm<c10::complex<float>>(MKL_SPARSE_TRSM_ARGTYPES(c10::complex<float>)) {
+-  TORCH_MKLSPARSE_CHECK(mkl_sparse_c_trsm(
++sparse_status_t trsm<c10::complex<float>>(MKL_SPARSE_TRSM_ARGTYPES(c10::complex<float>)) {
++  sparse_status_t status = mkl_sparse_c_trsm(
+       operation,
+       to_mkl_complex<float, MKL_Complex8>(alpha),
+       A,
+@@ -338,12 +350,14 @@ void trsm<c10::complex<float>>(MKL_SPARSE_TRSM_ARGTYPES(c10::complex<float>)) {
+       columns,
+       ldx,
+       reinterpret_cast<MKL_Complex8*>(y),
+-      ldy));
++      ldy);
++  TORCH_MKLSPARSE_CHECK_SUCCESS_OR_INVALID(status, "mkl_sparse_c_trsm");
++  return status;
+ }
+ template <>
+-void trsm<c10::complex<double>>(
++sparse_status_t trsm<c10::complex<double>>(
+     MKL_SPARSE_TRSM_ARGTYPES(c10::complex<double>)) {
+-  TORCH_MKLSPARSE_CHECK(mkl_sparse_z_trsm(
++  sparse_status_t status = mkl_sparse_z_trsm(
+       operation,
+       to_mkl_complex<double, MKL_Complex16>(alpha),
+       A,
+@@ -353,7 +367,9 @@ void trsm<c10::complex<double>>(
+       columns,
+       ldx,
+       reinterpret_cast<MKL_Complex16*>(y),
+-      ldy));
++      ldy);
++  TORCH_MKLSPARSE_CHECK_SUCCESS_OR_INVALID(status, "mkl_sparse_z_trsm");
++  return status;
+ }
+ 
+ } // namespace sparse
+diff --git a/aten/src/ATen/mkl/SparseBlas.h b/aten/src/ATen/mkl/SparseBlas.h
+--- a/aten/src/ATen/mkl/SparseBlas.h
++++ b/aten/src/ATen/mkl/SparseBlas.h
+@@ -186,7 +186,7 @@ void spmmd<c10::complex<double>>(
+       const scalar_t *x, scalar_t *y
+ 
+ template <typename scalar_t>
+-inline void trsv(MKL_SPARSE_TRSV_ARGTYPES(scalar_t)) {
++inline sparse_status_t trsv(MKL_SPARSE_TRSV_ARGTYPES(scalar_t)) {
+   TORCH_INTERNAL_ASSERT(
+       false,
+       "at::mkl::sparse::trsv: not implemented for ",
+@@ -194,13 +194,13 @@ inline void trsv(MKL_SPARSE_TRSV_ARGTYPES(scalar_t)) {
+ }
+ 
+ template <>
+-void trsv<float>(MKL_SPARSE_TRSV_ARGTYPES(float));
++sparse_status_t trsv<float>(MKL_SPARSE_TRSV_ARGTYPES(float));
+ template <>
+-void trsv<double>(MKL_SPARSE_TRSV_ARGTYPES(double));
++sparse_status_t trsv<double>(MKL_SPARSE_TRSV_ARGTYPES(double));
+ template <>
+-void trsv<c10::complex<float>>(MKL_SPARSE_TRSV_ARGTYPES(c10::complex<float>));
++sparse_status_t trsv<c10::complex<float>>(MKL_SPARSE_TRSV_ARGTYPES(c10::complex<float>));
+ template <>
+-void trsv<c10::complex<double>>(MKL_SPARSE_TRSV_ARGTYPES(c10::complex<double>));
++sparse_status_t trsv<c10::complex<double>>(MKL_SPARSE_TRSV_ARGTYPES(c10::complex<double>));
+ 
+ #define MKL_SPARSE_TRSM_ARGTYPES(scalar_t)                                    \
+   const sparse_operation_t operation, const scalar_t alpha,                   \
+@@ -209,7 +209,7 @@ void trsv<c10::complex<double>>(MKL_SPARSE_TRSV_ARGTYPES(c10::complex<double>));
+       const MKL_INT ldx, scalar_t *y, const MKL_INT ldy
+ 
+ template <typename scalar_t>
+-inline void trsm(MKL_SPARSE_TRSM_ARGTYPES(scalar_t)) {
++inline sparse_status_t trsm(MKL_SPARSE_TRSM_ARGTYPES(scalar_t)) {
+   TORCH_INTERNAL_ASSERT(
+       false,
+       "at::mkl::sparse::trsm: not implemented for ",
+@@ -217,13 +217,13 @@ inline void trsm(MKL_SPARSE_TRSM_ARGTYPES(scalar_t)) {
+ }
+ 
+ template <>
+-void trsm<float>(MKL_SPARSE_TRSM_ARGTYPES(float));
++sparse_status_t trsm<float>(MKL_SPARSE_TRSM_ARGTYPES(float));
+ template <>
+-void trsm<double>(MKL_SPARSE_TRSM_ARGTYPES(double));
++sparse_status_t trsm<double>(MKL_SPARSE_TRSM_ARGTYPES(double));
+ template <>
+-void trsm<c10::complex<float>>(MKL_SPARSE_TRSM_ARGTYPES(c10::complex<float>));
++sparse_status_t trsm<c10::complex<float>>(MKL_SPARSE_TRSM_ARGTYPES(c10::complex<float>));
+ template <>
+-void trsm<c10::complex<double>>(MKL_SPARSE_TRSM_ARGTYPES(c10::complex<double>));
++sparse_status_t trsm<c10::complex<double>>(MKL_SPARSE_TRSM_ARGTYPES(c10::complex<double>));
+ 
+ } // namespace sparse
+ } // namespace mkl
+diff --git a/aten/src/ATen/native/mkl/SparseBlasImpl.cpp b/aten/src/ATen/native/mkl/SparseBlasImpl.cpp
+--- a/aten/src/ATen/native/mkl/SparseBlasImpl.cpp
++++ b/aten/src/ATen/native/mkl/SparseBlasImpl.cpp
+@@ -667,13 +667,18 @@ void triangular_solve_out_sparse_csr(
+         scalar_t alpha = 1;
+ 
+         if (B.size(-1) == 1) {
+-          at::mkl::sparse::trsv<scalar_t>(
++          sparse_status_t status = at::mkl::sparse::trsv<scalar_t>(
+               opA,
+               alpha,
+               mkl_sparse_mat.descriptor(),
+               descrA,
+               B_->data_ptr<scalar_t>(),
+               X_->data_ptr<scalar_t>());
++          // Emulate behavior of old MKL version that would set all elements of output array to -NaN
++          // in case of invalid input matrices.
++          if (status == SPARSE_STATUS_INVALID_VALUE) {
++            X_->fill_(-std::numeric_limits<scalar_t>::quiet_NaN());
++          }
+         } else {
+           IntArrayRef B_strides = B_->strides();
+           bool is_B_row_major = (B_strides[ndim - 1] == 1);
+@@ -683,7 +688,7 @@ void triangular_solve_out_sparse_csr(
+           auto nrhs = mkl_int_cast(B.size(-1), "nrhs");
+           auto ldx = is_X_row_major ? X_strides[ndim - 2] : X_strides[ndim - 1];
+           auto ldb = is_B_row_major ? B_strides[ndim - 2] : B_strides[ndim - 1];
+-          at::mkl::sparse::trsm<scalar_t>(
++          sparse_status_t status = at::mkl::sparse::trsm<scalar_t>(
+               opA,
+               alpha,
+               mkl_sparse_mat.descriptor(),
+@@ -694,6 +699,11 @@ void triangular_solve_out_sparse_csr(
+               ldb,
+               X_->data_ptr<scalar_t>(),
+               ldx);
++          // Emulate behavior of old MKL version that would set all elements of output array to -NaN
++          // in case of invalid input matrices.
++          if (status == SPARSE_STATUS_INVALID_VALUE) {
++            X_->fill_(-std::numeric_limits<scalar_t>::quiet_NaN());
++          }
+         }
+       });
+ 
