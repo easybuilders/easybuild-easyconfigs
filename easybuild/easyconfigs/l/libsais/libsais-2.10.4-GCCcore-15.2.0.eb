@@ -1,0 +1,36 @@
+easyblock = 'CMakeMake'
+
+name = 'libsais'
+version = '2.10.4'
+
+homepage = 'https://github.com/IlyaGrebnov/libsais'
+description = """The libsais library provides fast linear-time construction of suffix array (SA),
+generalized suffix array (GSA), longest common prefix (LCP) array, permuted LCP (PLCP) array,
+Burrows-Wheeler transform (BWT) and inverse BWT based on the induced sorting algorithm with
+optional OpenMP support for multi-core parallel construction."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = ['https://github.com/IlyaGrebnov/libsais/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['94aa88f9e29f8812214ecfa6b55f5dca14c7d8a427409c062f734a61ca4c6931']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('CMake', '4.2.1'),
+]
+
+dependencies = [('LLVM', '21.1.8')]
+
+preconfigopts = 'export LDFLAGS="$LDFLAGS -fuse-ld=bfd" && '
+configopts = '-DCMAKE_C_COMPILER=clang -DLIBSAIS_USE_OPENMP=ON -DLIBSAIS_BUILD_SHARED_LIB=ON'
+
+sanity_check_paths = {
+    'files': [
+        'include/libsais.h', 'include/libsais64.h',
+        'lib/libsais.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['lib/cmake/libsais'],
+}
+
+moduleclass = 'lib'
