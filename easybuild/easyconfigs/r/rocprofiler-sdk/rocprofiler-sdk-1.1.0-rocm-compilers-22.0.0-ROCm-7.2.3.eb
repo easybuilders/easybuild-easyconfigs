@@ -1,0 +1,136 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'ROCmComponent'
+
+name = 'rocprofiler-sdk'
+version = '1.1.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/rocprofiler-sdk'
+description = """ROCprofiler-SDK is AMD's tooling infrastructure, providing a hardware-specific
+low-level performance analysis interface for profiling and tracing GPU compute applications.
+It supports GPU metrics, API tracing (HIP, HSA, ROCTx, RCCL), parallelism APIs (HIP, HSA, MPI,
+Kokkos, OpenMP), and includes rocprofv3 command line tool."""
+docurls = ['https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+source_urls = ['https://github.com/ROCm/rocm-systems/archive/']
+sources = [
+    {
+        'download_filename': f'rocm-{_rocm_version}.tar.gz',
+        'filename': f'rocm-systems-rocm-{_rocm_version}.tar.gz',
+    },
+    {
+        'filename': 'otf2-3.0.3.tar.gz',
+        'source_urls': ['https://rocm-third-party-deps.s3.us-east-2.amazonaws.com/'],
+    },
+    # Bundled dependencies for airgap builds
+    {
+        'download_filename': 'rocprofiler.tar.gz',
+        'filename': 'PTL-rocprofiler.tar.gz',
+        'source_urls': ['https://github.com/jrmadsen/PTL/archive/refs/heads/'],
+    },
+    {
+        'download_filename': 'master.tar.gz',
+        'filename': 'yaml-cpp-master.tar.gz',
+        'source_urls': ['https://github.com/jbeder/yaml-cpp/archive/refs/heads/'],
+    },
+    {
+        'download_filename': 'rocprofiler.tar.gz',
+        'filename': 'cereal-rocprofiler.tar.gz',
+        'source_urls': ['https://github.com/jrmadsen/cereal/archive/refs/heads/'],
+    },
+    {
+        'download_filename': 'v44.0.tar.gz',
+        'filename': 'perfetto-v44.0.tar.gz',
+        'source_urls': ['https://github.com/google/perfetto/archive/refs/tags/'],
+    },
+    {
+        'download_filename': 'Release_3.12.tar.gz',
+        'filename': 'ELFIO-Release_3.12.tar.gz',
+        'source_urls': ['https://github.com/serge1/ELFIO/archive/refs/tags/'],
+    },
+    {
+        'download_filename': 'develop.tar.gz',
+        'filename': 'json-develop.tar.gz',
+        'source_urls': ['https://github.com/nlohmann/json/archive/refs/heads/'],
+    },
+]
+patches = [
+    'rocprofiler-sdk-1.1.0_add-cpack-component.patch',
+    'rocprofiler-sdk-1.1.0_skip-git-submodules.patch',
+    'rocprofiler-sdk-1.1.0_add-missing-headers.patch',
+]
+checksums = [
+    'e90cfd8694af28a56433c8827a581ee12a4ba835f0d952436741d9e0f3f8685b',  # rocm-systems-rocm-7.2.3.tar.gz
+    '18a3905f7917340387e3edc8e5766f31ab1af41f4ecc5665da6c769ca21c4ee8',  # otf2-3.0.3.tar.gz
+    '394345c2f9f3d5d795cbfa412386622643e6b824107cef2486e07fb030246d68',  # PTL-rocprofiler.tar.gz
+    '86037fe45e9df6439d9b246bdcb8c0effee6b5ec172f337f58aa6002e2639a61',  # yaml-cpp-master.tar.gz
+    '1fdb0890477d572c0dca698ab50836d4f8ef7e996c0c88d74de4fea05b319527',  # cereal-rocprofiler.tar.gz
+    'db4162ee6495b1fcc13ba7aca77d67f9fd1766d184743137a04af8b1e3906b9d',  # perfetto-v44.0.tar.gz
+    'e4ebc9ce3d6916461bc3e7765bb45e6210f0a9b93978bf91e59b05388c024489',  # ELFIO-Release_3.12.tar.gz
+    'ae07b806a62920e6e913b7b3a33fdf6f0a8822ea8059d21b7b3e25989ac1a472',  # json-develop.tar.gz
+    # rocprofiler-sdk-1.1.0_add-cpack-component.patch
+    '05a71386d12d7fc98a40c025dc65a804556e01f381d1101ea244f35f29edd3d8',
+    # rocprofiler-sdk-1.1.0_skip-git-submodules.patch
+    'f4cb6f27439079f895a7261bbeec5ea65abff772bf4678e7bc6d9b90162e6a18',
+    # rocprofiler-sdk-1.1.0_add-missing-headers.patch
+    '6588de5ad9fe8c2c14f2cd4ccd9280186a8c11d5cc9d142c63448fd51f6edac0',
+]
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('fmt', '10.2.1'),  # fmt@:10 constraint - version <= 10
+    ('elfutils', '0.193'),
+    ('SQLite', '3.50.1'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('pybind11', '3.0.0', '', ('GCC', '14.3.0')),  # Needs CMake config files
+    ('glog', '0.7.1'),
+    ('GOTCHA', '1.0.8'),  # Function interception library
+    ('aqlprofile', '7.2.3'),
+    ('RCCL', '2.22.3'),
+]
+
+# Build from the projects/rocprofiler-sdk subdirectory within rocm-systems archive
+start_dir = 'projects/rocprofiler-sdk'
+
+# Move already-extracted bundled dependencies into external/ directories for airgap builds
+# Remove empty placeholder dirs first, then move extracted sources
+preconfigopts = ' && '.join([
+    'rmdir %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/ptl',
+    'mv %(builddir)s/PTL-rocprofiler %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/ptl',
+    'rmdir %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/yaml-cpp',
+    'mv %(builddir)s/yaml-cpp-master %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/yaml-cpp',
+    'rmdir %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/cereal',
+    'mv %(builddir)s/cereal-rocprofiler %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/cereal',
+    'rmdir %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/perfetto',
+    'mv %(builddir)s/perfetto-44.0 %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/perfetto',
+    'rmdir %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/elfio',
+    'mv %(builddir)s/ELFIO-Release_3.12 %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/elfio',
+    'rmdir %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/json',
+    'mv %(builddir)s/json-develop %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/json',
+    'true',  # End with a command that succeeds
+]) + ' && OTF2_ROOT=%(builddir)s/otf2-3.0.3 '
+
+configopts = '-DROCPROFILER_SDK_BUILD_TESTS=OFF -DROCPROFILER_SDK_BUILD_SAMPLES=OFF '
+# Disable building external dependencies that we have as system packages
+configopts += '-DROCPROFILER_BUILD_FMT=OFF '  # Use system fmt
+configopts += '-DROCPROFILER_BUILD_GLOG=OFF '  # Use system glog
+configopts += '-DROCPROFILER_BUILD_PYBIND11=OFF '  # Use system pybind11
+configopts += '-DROCPROFILER_BUILD_GOTCHA=OFF '  # Disable gotcha
+configopts += '-DROCPROFILER_BUILD_SQLITE3=OFF '  # Use system SQLite
+configopts += '-DROCPROFILER_BUILD_GTEST=OFF '  # Disable tests
+configopts += '-DROCPROFILER_BUILD_GHC_FS=OFF '  # Disable filesystem library
+# Let PTL, CEREAL, YAML-CPP, ELFIO, JSON, PERFETTO build from bundled empty directories (will use add_subdirectory)
+
+sanity_check_paths = {
+    'files': ['bin/rocprofv3', 'lib/librocprofiler-sdk.%s' % SHLIB_EXT],
+    'dirs': ['include/rocprofiler-sdk', 'share/rocprofiler-sdk'],
+}
+
+moduleclass = 'perf'
