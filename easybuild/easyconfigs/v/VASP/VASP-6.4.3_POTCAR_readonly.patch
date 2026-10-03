@@ -1,0 +1,41 @@
+From 5d47890a612e414915034ddba52629f00428a867 Mon Sep 17 00:00:00 2001
+From: Peter Larsson <egplar@gmail.com>
+Date: Wed, 7 Jun 2023 16:02:18 +0300
+Subject: [PATCH] Open POTCAR files read-only
+
+---
+ src/pseudo.F | 4 ++--
+ src/string.F | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/pseudo.F b/src/pseudo.F
+index f7e31f0..16b3b7c 100644
+--- a/src/pseudo.F
++++ b/src/pseudo.F
+@@ -231,9 +231,9 @@ MODULE PSEUDO
+ !        END IF
+       END IF
+ #endif
+-      OPEN(UNIT=10,FILE=DIR_APP(1:DIR_LEN)//'POTCAR',STATUS='OLD',IOSTAT=IERR)
++      OPEN(UNIT=10,FILE=DIR_APP(1:DIR_LEN)//'POTCAR',ACTION='READ',STATUS='OLD',IOSTAT=IERR)
+       IF (IERR/=0) THEN
+-         OPEN(UNIT=10,FILE='POTCAR',STATUS='OLD')
++         OPEN(UNIT=10,FILE='POTCAR',ACTION='READ',STATUS='OLD')
+       ENDIF
+
+       LPAW = .FALSE.
+diff --git a/src/string.F b/src/string.F
+index 3a708f4..fd11f88 100644
+--- a/src/string.F
++++ b/src/string.F
+@@ -94,7 +94,7 @@ contains
+         integer, intent(out) :: ierr  !< error flag that will be set if accessing the file fails
+         character(len=:), allocatable :: content
+         integer file_unit
+-        open(newunit=file_unit,file=filename,status='old',form='unformatted',access='stream',iostat=ierr)
++        open(newunit=file_unit,file=filename,status='old',form='unformatted',access='stream',action='read',iostat=ierr)
+         if (ierr /= 0) then
+             content = ""
+             return
+-- 
+2.35.3
