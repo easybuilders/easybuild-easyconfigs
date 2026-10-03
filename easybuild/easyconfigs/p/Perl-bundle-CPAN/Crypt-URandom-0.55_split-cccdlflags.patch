@@ -1,0 +1,29 @@
+# Split $Config{cccdlflags} into separate arguments when compiling the LD_PRELOAD helper in t/getrandom.t.
+#
+# On EESSI (riscv64), Perl's cccdlflags is '-fPIC --sysroot=/cvmfs/software.eessi.io/versions/2026.06/compat/linux/riscv64'.
+# The test passed this whole string to system() as one list element, so gcc received it as a single argument and failed with
+# "unrecognized command-line option '-fPIC --sysroot=...'". The helper getrandom.so was then never built and t/getrandom.t failed.
+# Splitting on whitespace passes each flag separately and behaves the same as before when cccdlflags is just '-fPIC'.
+
+# Author: Julián Morillo (julian.morillo@bsc.es)
+# 
+--- t/getrandom.t.ORIG	2026-10-02 17:20:42.944071451 +0200
++++ t/getrandom.t	2026-10-02 17:21:25.867959335 +0200
+@@ -50,7 +50,7 @@
+ }
+ _OUT_
+ 			my $binary_path = './getrandom.so';
+-			my $result = system { $Config{cc} } $Config{cc}, $Config{cccdlflags}, '-shared', '-o', $binary_path, $c_path;
++			my $result = system { $Config{cc} } $Config{cc}, (split q[ ], $Config{cccdlflags}), '-shared', '-o', $binary_path, $c_path;
+ 			ok($result == 0, "Compiled a LD_PRELOAD binary at $binary_path:$?");
+ 			my $handle = FileHandle->new();
+ 
+@@ -88,7 +88,7 @@
+ 	return $failed_number_of_bytes;
+ }
+ _OUT_
+-			$result = system { $Config{cc} } $Config{cc}, $Config{cccdlflags}, '-shared', '-o', $binary_path, $c_path;
++			$result = system { $Config{cc} } $Config{cc}, (split q[ ], $Config{cccdlflags}), '-shared', '-o', $binary_path, $c_path;
+ 			ok($result == 0, "Compiled a LD_PRELOAD binary at $binary_path:$!");
+ 			$handle = FileHandle->new();
+ 
