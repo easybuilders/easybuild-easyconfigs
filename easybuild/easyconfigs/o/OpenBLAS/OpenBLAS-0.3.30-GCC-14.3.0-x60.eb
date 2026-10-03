@@ -1,0 +1,70 @@
+name = 'OpenBLAS'
+version = '0.3.30'
+versionsuffix = '-x60'
+
+homepage = 'https://www.openblas.net/'
+description = """OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version.
+This variant targets the SpaceMiT X60 (SpaceMiT K1 SoC, RVV 1.0, VLEN=256 -- e.g. Orange Pi
+RV2, Banana Pi BPI-F3, Milk-V Jupiter) by building the UPSTREAM RISCV64_ZVL256B RVV kernels
+(the 8x8 vfmacc DGEMM kernel). No X60-specific source patch is required -- ZVL256B is already
+upstream; only the build TARGET is forced, because the stock riscv64 build auto-detects the
+X60 as RISCV64_GENERIC (scalar). Requires GCC >= 14 (the SGEMM RVV kernel fails to compile on
+GCC 13.x)."""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+source_urls = [
+    # order matters, trying to download the large.tgz/timing.tgz LAPACK tarballs from GitHub causes trouble
+    'https://www.netlib.org/lapack/timing/',
+    'https://github.com/xianyi/OpenBLAS/archive/',
+]
+sources = ['v%(version)s.tar.gz']
+# NOTE: these are the STANDARD OpenBLAS build patches shipped with the stock easyconfig
+# (compiler/vectorization workarounds) -- NOT chip-specific. There is deliberately NO X60 patch.
+patches = [
+    ('large.tgz', '.'),
+    ('timing.tgz', '.'),
+    'OpenBLAS-0.3.15_workaround-gcc-miscompilation.patch',
+    'OpenBLAS-0.3.21_fix-order-vectorization.patch',
+    'OpenBLAS-0.3.30_revert-fix-out-of-bounds-access.patch',
+    # Backport of the upstream fix for the RISC-V RVV real-GEMV-N kernel. In v0.3.30,
+    # kernel/riscv64/gemv_n_vector.c zeroes its vector accumulator via `vfsub_vv` on an
+    # UNINITIALIZED vector register (VFILL_ZERO_FLOAT), so d/sgemv can emit NaN when that
+    # register holds NaN bits -> HPL fails with residual=nan (and -np 1 hangs). The kernel was
+    # rewritten upstream after v0.3.30 (clean f64m8 accumulation). REQUIRED for the RVV target:
+    # dgemv is exercised heavily by HPL's panel factorization. Verified: with this patch the
+    # eb-built 0.3.30 passes HPL (residual finite, PASSED); without it, dgemv is all-NaN.
+    'OpenBLAS-0.3.30_fix-riscv64-gemv_n-nan.patch',
+]
+checksums = [
+    {'v0.3.30.tar.gz': '27342cff518646afb4c2b976d809102e368957974c250a25ccc965e53063c95d'},
+    {'large.tgz': 'f328d88b7fa97722f271d7d0cfea1c220e0f8e5ed5ff01d8ef1eb51d6f4243a1'},
+    {'timing.tgz': '999c65f8ea8bd4eac7f1c7f3463d4946917afd20a997807300fe35d70122f3af'},
+    {'OpenBLAS-0.3.15_workaround-gcc-miscompilation.patch':
+     'e6b326fb8c4a8a6fd07741d9983c37a72c55c9ff9a4f74a80e1352ce5f975971'},
+    {'OpenBLAS-0.3.21_fix-order-vectorization.patch':
+     '08af834e5d60441fd35c128758ed9c092ba6887c829e0471ecd489079539047d'},
+    {'OpenBLAS-0.3.30_revert-fix-out-of-bounds-access.patch':
+     'c161fc0e2754c8ef073375138392a76ba9c4cb23f85d5d554051db4bc73ba6ae'},
+    {'OpenBLAS-0.3.30_fix-riscv64-gemv_n-nan.patch':
+     'e2360bb7a361391ec55ffc7682645c9932bb2c0d77c87eb6dc760a7ee86d04a6'},
+]
+
+builddependencies = [
+    ('make', '4.4.1'),
+    # required by LAPACK test suite
+    ('Python', '3.13.5'),
+]
+
+# Force the upstream RVV target for the X60/K1. Single-target (DYNAMIC_ARCH=0) => the ZVL256B
+# RVV kernels are ALWAYS used (guaranteed on the X60, no runtime detection needed).
+# Threading is left at the easyblock/toolchain default (OpenMP). It is NOT the source of any
+# HPL problem: the earlier residual=nan was the RVV gemv_n kernel bug (fixed by the patch
+# above), which is independent of OpenMP vs pthreads -- verified, the patched OpenMP build
+# passes HPL.
+buildopts = 'TARGET=RISCV64_ZVL256B DYNAMIC_ARCH=0'
+
+run_lapack_tests = True
+max_failing_lapack_tests_num_errors = 150
+
+moduleclass = 'numlib'
