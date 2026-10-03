@@ -1,0 +1,128 @@
+# EasyBuild easyconfig: PETSc with AMD-GPU (HIP) backend
+#
+# =========================================================================
+#  Derived from the UPSTREAM easyconfig shipped in the EESSI 2025.06
+#  EasyBuild index:
+#      easybuild-easyconfigs/p/PETSc/PETSc-3.23.5-foss-2025a.eb
+#  (base CPU build) plus the AMD-GPU (HIP) additions transcribed from a
+#  WORKING manual PETSc build verified on phi-v710 (AMD Radeon Pro V710,
+#  gfx1101). Everything below the base build is the HIP delta.
+# =========================================================================
+#
+#  VERIFIED ON phi-v710 against EESSI 2025.06 (2026-07-28):
+#    * EasyBuild 5.3.1 in EESSI-extend/2025.06-easybuild defines the
+#      first-class `amdgcn_capabilities` param + `--amdgcn-capabilities`.
+#    * EESSI-extend maps EESSI_ACCELERATOR_TARGET=accel/amd/gfx1101 to
+#      EASYBUILD_AMDGCN_CAPABILITIES=gfx1101 (confirmed via `eb --show-config`
+#      -> amdgcn-capabilities = gfx1101). So the arch is driven entirely by
+#      the accel install path, NOT by anything hardcoded here.
+#    * The base (CPU) easyconfig parses + resolves the full foss-2025a
+#      dependency graph via `eb <ec> -D`.
+#
+#  GPU ARCH IS SPECIFIED AT THE RIGHT LEVEL:
+#    * Declared via the framework param `amdgcn_capabilities` (AMD analog of
+#      `cuda_compute_capabilities`), NOT a literal in configopts.
+#    * Fed into PETSc configure via the framework TEMPLATE
+#      `%(amdgcn_cc_space_sep)s` — required because the EB_PETSc easyblock has
+#      ZERO GPU handling, so arch must reach raw configopts, but via the
+#      template so an EESSI/CLI override (--amdgcn-capabilities) propagates.
+#    * Arch is deliberately NOT in the versionsuffix (just `-HIP`): it lives in
+#      the EESSI accel path (/accel/amd/gfxNNN), mirroring how EESSI keeps
+#      cc/gfx out of the module version for NVIDIA too.
+#
+#  ROCm DEPENDENCIES — reconciled against what EESSI 2025.06 actually ships
+#  (host is ROCm 6.3.1 but EESSI provides ROCm 6.4.1):
+#      HIP-6.4.1-rocm-compilers-19.0.0-ROCm-6.4.1
+#      hipBLAS-2.4.0-rocm-compilers-19.0.0-ROCm-6.4.1
+#      hipSPARSE-3.2.0-rocm-compilers-19.0.0-ROCm-6.4.1
+#  NOTE: these three have easyconfigs in the index but are NOT prebuilt as
+#  modules in EESSI 2025.06 — a from-source build (eb --robot) compiles the
+#  ROCm stack, which is heavy. See README for the build plan.
+
+easyblock = 'EB_PETSc'
+
+name = 'PETSc'
+version = '3.23.5'
+# Arch (gfxNNN) intentionally NOT in the versionsuffix — it lives in the EESSI
+# accel install path (/accel/amd/gfxNNN). This suffix only marks the HIP variant.
+versionsuffix = '-HIP'
+
+homepage = 'https://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations.
+
+This variant enables the AMD-GPU (HIP) backend with hipBLAS and hipSPARSE, so GPU-accelerated
+Krylov solvers/preconditioners are available (e.g. to the petsc4Foam / OpenFOAM external-solver
+adapter). The target GPU architecture is taken from the amdgcn_capabilities parameter (default
+gfx1101, AMD Radeon Pro V710), overridable via --amdgcn-capabilities."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'openmp': True, 'usempi': True, 'pic': True}
+
+source_urls = [
+    'https://web.cels.anl.gov/projects/petsc/download/release-snapshots',
+]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['b0bb614dfbf36c286c8cad30912fe77359dccbf6b65a5edd1dde82af293f21fc']
+
+builddependencies = [('CMake', '3.31.3')]
+
+# --- GPU architecture (first-class framework param; NOT hardcoded) -------------
+# Default target is gfx1101 (V710). EESSI overrides per accel path via
+# --amdgcn-capabilities (EASYBUILD_AMDGCN_CAPABILITIES); the value flows into
+# configopts through the %(amdgcn_cc_space_sep)s template below.
+amdgcn_capabilities = ['gfx1101']
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('Boost', '1.88.0'),
+    ('METIS', '5.1.0'),
+    ('SCOTCH', '7.0.8'),
+    ('MUMPS', '5.8.1', '-metis'),
+    ('SuiteSparse', '7.10.3'),
+    ('Hypre', '2.33.0'),
+    ('ParMETIS', '4.0.3'),
+    ('SuperLU_DIST', '9.1.0'),
+    ('mpi4py', '4.1.0'),
+    # --- AMD-GPU (HIP) stack, as shipped by EESSI 2025.06 ---
+    # These are built with the rocm-compilers/19.0.0 toolchain (NOT foss), so the
+    # dep toolchain MUST be given explicitly (4-element form), otherwise EasyBuild
+    # applies PETSc's foss-2025a toolchain and looks for a non-existent module.
+    # Resulting module names: HIP/6.4.1-rocm-compilers-19.0.0-ROCm-6.4.1, etc.
+    ('HIP', '6.4.1', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+    ('hipBLAS', '2.4.0', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+    ('hipSPARSE', '3.2.0', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+    # PETSc's hip.py liblist requires libhipsolver (grouped with rocrand) whenever
+    # the HIP backend is on; without it configure fails at 'ld: cannot find -lhipsolver'.
+    ('hipSOLVER', '2.4.0', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+    # rocRAND is grouped WITH hipsolver in PETSc's liblist; it must be a direct dep so
+    # its lib dir is on LIBRARY_PATH, else configure fails at 'ld: cannot find -lrocrand'.
+    ('rocRAND', '3.3.0', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+    # rocm-core provides <rocm-core/rocm_version.h>, which PETSc's hip.py version
+    # conftest #includes to emit PETSC_PKG_HIP_VERSION_* macros. Without it on CPATH,
+    # version detection silently fails and petscdevice_hip.h errors on an undefined
+    # PETSC_PKG_HIP_VERSION_GE, falling through to a non-existent bare <hipblas.h>.
+    # NOTE: built with the GCCcore-14.2.0 subtoolchain (NOT rocm-compilers), so the
+    # 3-element form resolves rocm-core/6.4.1-GCCcore-14.2.0-ROCm-6.4.1.
+    ('rocm-core', '6.4.1', '-ROCm-6.4.1'),
+    # rocThrust provides <thrust/complex.h>, hard-required by petscsystypes.h when the
+    # HIP device backend is on (compiling src/sys/memory/hip/mhiphost for gfx1101).
+    # EESSI 2025.06 ships no rocThrust module, so we build it (header-only, deps rocPRIM).
+    ('rocThrust', '3.3.0', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+]
+
+# Base (CPU) configure knobs from upstream PETSc-3.23.5-foss-2025a.eb ...
+configopts = '--LIBS="$LIBS -lrt" --with-mpi4py=0 '
+# ... plus the AMD-GPU (HIP) delta. --with-hip-arch is fed the framework template
+# so the EESSI/CLI amdgcn override propagates (expands to "gfx1101" here). PETSc
+# locates hipcc/ROCm from the loaded HIP module (ROCM_PATH/PATH), not /opt/rocm.
+configopts += '--with-hip=1 --with-hip-arch=%(amdgcn_cc_space_sep)s '
+configopts += '--with-hipblas=1 --with-hipsparse=1 '
+
+# Match the proven -O3, no-debugging production settings from the manual build.
+buildopts = 'COPTFLAGS="-O3" CXXOPTFLAGS="-O3" HIPOPTFLAGS="-O3"'
+
+shared_libs = 1
+
+moduleclass = 'numlib'
