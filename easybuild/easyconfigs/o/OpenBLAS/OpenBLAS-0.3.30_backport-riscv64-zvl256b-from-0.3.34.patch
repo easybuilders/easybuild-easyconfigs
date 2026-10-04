@@ -1,0 +1,2882 @@
+# Backport of RISC-V ZVL256B kernel improvements from OpenBLAS 0.3.34 onto 0.3.30.
+#
+# Supersedes OpenBLAS-0.3.30_fix-riscv64-gemv_n-nan.patch (gemv_n NaN fix alone).
+# Intended for the EESSI / EasyBuild OpenBLAS 0.3.30 + TARGET=RISCV64_ZVL256B package
+# (easyconfigs#26444 / OpenBLAS-0.3.30-GCC-14.3.0-x60.eb) until EESSI can ship ≥ 0.3.34.
+#
+# Why not just bump to 0.3.31–0.3.33:
+#   Those releases still carried the ZVL256B DGEMM / SYRK PSD regression (#5811),
+#   fixed only in 0.3.34 (#5815). 0.3.30 + this backport stays on the known-good
+#   DGEMM micro-kernel while pulling in the post-0.3.30 RVV correctness/perf work.
+#
+# Included (from tag v0.3.34 / e0166008):
+#   * gemv_n_vector.c     — NaN-init fix + cache-friendly rewrite (#5408, #5476)
+#   * gemv_t_vector.c     — LMUL m2→m8 GEMV_T speedup
+#   * zgemv_n_vector.c    — matching complex GEMV_N update
+#   * trsm_kernel_{LN,LT,RN,RT}_rvv.c + KERNEL wiring
+#       — RVV TRSM (S all sides; D/C RN+RT; Z RT) replacing generic TRSM
+#   * gemm_{n,t}copy_{4,16}_rvv.c + KERNEL packing wiring for SGEMM/DGEMM
+#   * rotm_rvv.c + enable S/DROTMKERNEL on ZVL256B
+#   * omatcopy_cn_vector.c + omatcopy_ct_rvv.c
+#
+# Deliberately NOT backported (need broader tree changes or are out of scope for X60 HPL):
+#   * Full SGEMM/DGEMM micro-kernel rewrites (0.3.30 kernels remain; verified correct)
+#   * param.h L2-cache runtime P scaling (needs driver/parameter.c + common_param.h)
+#   * bf16 / hfloat16 kernels and U74 target
+#
+# Verified to `patch -p1` cleanly onto OpenBLAS v0.3.30 (993fad6a).
+# End-to-end: OpenBLAS 0.3.34 itself was verified on Orange Pi RV2 (difftest / SYRK /
+# CTRSM / DGEMM / HPL 11.04 & 10.97 GFLOP/s PASSED). Rebuild 0.3.30+this patch on
+# the board before merging to EESSI.
+#
+diff -ruN a/kernel/riscv64/KERNEL.RISCV64_ZVL256B OpenBLAS-0.3.30-bp/kernel/riscv64/KERNEL.RISCV64_ZVL256B
+--- a/kernel/riscv64/KERNEL.RISCV64_ZVL256B	2026-08-27 12:31:59
++++ b/kernel/riscv64/KERNEL.RISCV64_ZVL256B	2026-08-27 12:34:10
+@@ -66,8 +66,8 @@
+ CROTKERNEL   = zrot_vector.c
+ ZROTKERNEL   = zrot_vector.c
+ 
+-SROTMKERNEL  = ../generic/rotm.c
+-DROTMKERNEL  = ../generic/rotm.c
++SROTMKERNEL  = rotm_rvv.c
++DROTMKERNEL  = rotm_rvv.c
+ QROTMKERNEL = ../generic/rotm.c
+ 
+ SSCALKERNEL  = scal_vector.c
+@@ -96,25 +96,43 @@
+ ZTRMMKERNEL = ztrmm_kernel_$(ZGEMM_UNROLL_M)x$(ZGEMM_UNROLL_N)_zvl256b.c
+ 
+ SGEMMKERNEL    =  sgemm_kernel_$(SGEMM_UNROLL_M)x$(SGEMM_UNROLL_N)_zvl256b.c
++ifneq ($(filter $(SGEMM_UNROLL_N),4 8 16),)
++SGEMMONCOPY    =  gemm_ncopy_$(SGEMM_UNROLL_N)_rvv.c
++SGEMMOTCOPY    =  gemm_tcopy_$(SGEMM_UNROLL_N)_rvv.c
++else
+ SGEMMONCOPY    =  ../generic/gemm_ncopy_$(SGEMM_UNROLL_N).c
+ SGEMMOTCOPY    =  ../generic/gemm_tcopy_$(SGEMM_UNROLL_N).c
++endif
+ SGEMMONCOPYOBJ =  sgemm_oncopy$(TSUFFIX).$(SUFFIX)
+ SGEMMOTCOPYOBJ =  sgemm_otcopy$(TSUFFIX).$(SUFFIX)
+ ifneq ($(SGEMM_UNROLL_M), $(SGEMM_UNROLL_N))
++ifneq ($(filter $(SGEMM_UNROLL_M),4 8 16),)
++SGEMMINCOPY    =  gemm_ncopy_$(SGEMM_UNROLL_M)_rvv.c
++SGEMMITCOPY    =  gemm_tcopy_$(SGEMM_UNROLL_M)_rvv.c
++else
+ SGEMMINCOPY    =  ../generic/gemm_ncopy_$(SGEMM_UNROLL_M).c
+ SGEMMITCOPY    =  ../generic/gemm_tcopy_$(SGEMM_UNROLL_M).c
++endif
+ SGEMMINCOPYOBJ =  sgemm_incopy$(TSUFFIX).$(SUFFIX)
+ SGEMMITCOPYOBJ =  sgemm_itcopy$(TSUFFIX).$(SUFFIX)
+ endif
+ 
+ DGEMMKERNEL    =  dgemm_kernel_$(DGEMM_UNROLL_M)x$(DGEMM_UNROLL_N)_zvl256b.c
+ DGEMMONCOPY    =  ../generic/gemm_ncopy_$(DGEMM_UNROLL_N).c
++ifneq ($(filter $(DGEMM_UNROLL_N),4 8 16),)
++DGEMMOTCOPY    =  gemm_tcopy_$(DGEMM_UNROLL_N)_rvv.c
++else
+ DGEMMOTCOPY    =  ../generic/gemm_tcopy_$(DGEMM_UNROLL_N).c
++endif
+ DGEMMONCOPYOBJ =  dgemm_oncopy$(TSUFFIX).$(SUFFIX)
+ DGEMMOTCOPYOBJ =  dgemm_otcopy$(TSUFFIX).$(SUFFIX)
+ ifneq ($(DGEMM_UNROLL_M), $(DGEMM_UNROLL_N))
+ DGEMMINCOPY    =  ../generic/gemm_ncopy_$(DGEMM_UNROLL_M).c
++ifneq ($(filter $(DGEMM_UNROLL_M),4 8 16),)
++DGEMMITCOPY    =  gemm_tcopy_$(DGEMM_UNROLL_M)_rvv.c
++else
+ DGEMMITCOPY    =  ../generic/gemm_tcopy_$(DGEMM_UNROLL_M).c
++endif
+ DGEMMINCOPYOBJ =  dgemm_incopy$(TSUFFIX).$(SUFFIX)
+ DGEMMITCOPYOBJ =  dgemm_itcopy$(TSUFFIX).$(SUFFIX)
+ endif
+@@ -145,25 +163,25 @@
+ ZGEMMITCOPYOBJ =  zgemm_itcopy$(TSUFFIX).$(SUFFIX)
+ endif
+ 
+-STRSMKERNEL_LN	=  ../generic/trsm_kernel_LN.c
+-STRSMKERNEL_LT	=  ../generic/trsm_kernel_LT.c
+-STRSMKERNEL_RN	=  ../generic/trsm_kernel_RN.c
+-STRSMKERNEL_RT	=  ../generic/trsm_kernel_RT.c
++STRSMKERNEL_LN	=  trsm_kernel_LN_rvv.c
++STRSMKERNEL_LT	=  trsm_kernel_LT_rvv.c
++STRSMKERNEL_RN	=  trsm_kernel_RN_rvv.c
++STRSMKERNEL_RT	=  trsm_kernel_RT_rvv.c
+ 
+-DTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
+-DTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
+-DTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
+-DTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++DTRSMKERNEL_LN	=  ../generic/trsm_kernel_LN.c
++DTRSMKERNEL_LT	=  ../generic/trsm_kernel_LT.c
++DTRSMKERNEL_RN	=  trsm_kernel_RN_rvv.c
++DTRSMKERNEL_RT	=  trsm_kernel_RT_rvv.c
+ 
+-CTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
+-CTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
+-CTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
+-CTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++CTRSMKERNEL_LN	=  ../generic/trsm_kernel_LN.c
++CTRSMKERNEL_LT	=  ../generic/trsm_kernel_LT.c
++CTRSMKERNEL_RN	=  trsm_kernel_RN_rvv.c
++CTRSMKERNEL_RT	=  trsm_kernel_RT_rvv.c
+ 
+-ZTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
+-ZTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
+-ZTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
+-ZTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++ZTRSMKERNEL_LN	=  ../generic/trsm_kernel_LN.c
++ZTRSMKERNEL_LT	=  ../generic/trsm_kernel_LT.c
++ZTRSMKERNEL_RN	=  ../generic/trsm_kernel_RN.c
++ZTRSMKERNEL_RT	=  trsm_kernel_RT_rvv.c
+ 
+ SSYMV_U_KERNEL =  symv_U_vector.c
+ SSYMV_L_KERNEL =  symv_L_vector.c
+@@ -208,6 +226,9 @@
+ 
+ DOMATCOPY_CN = omatcopy_cn_vector.c
+ SOMATCOPY_CN = omatcopy_cn_vector.c
++
++DOMATCOPY_CT = omatcopy_ct_rvv.c
++SOMATCOPY_CT = omatcopy_ct_rvv.c
+ 
+ SAXPBYKERNEL  = axpby_vector_v2.c
+ DAXPBYKERNEL  = axpby_vector_v2.c
+diff -ruN a/kernel/riscv64/gemm_ncopy_16_rvv.c OpenBLAS-0.3.30-bp/kernel/riscv64/gemm_ncopy_16_rvv.c
+--- a/kernel/riscv64/gemm_ncopy_16_rvv.c	1970-01-01 01:00:00
++++ b/kernel/riscv64/gemm_ncopy_16_rvv.c	2026-08-27 12:34:10
+@@ -0,0 +1,325 @@
++/***************************************************************************
++Copyright (c) 2025, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++#include "common.h"
++
++#if !defined(DOUBLE)
++#define VSETVL(n)               __riscv_vsetvl_e32m1(n)
++#define FLOAT_V_T               vfloat32m1_t
++#define FLOAT_VX2_T             vfloat32m1x2_t
++#define FLOAT_VX4_T             vfloat32m1x4_t
++#define FLOAT_VX8_T             vfloat32m1x8_t
++#define VLSEG_FLOAT             __riscv_vlse32_v_f32m1
++#define VLSSEG2_FLOAT           __riscv_vlsseg2e32_v_f32m1x2
++#define VLSSEG4_FLOAT           __riscv_vlsseg4e32_v_f32m1x4
++#define VLSSEG8_FLOAT           __riscv_vlsseg8e32_v_f32m1x8
++#define VGET_VX2                __riscv_vget_v_f32m1x2_f32m1
++#define VGET_VX4                __riscv_vget_v_f32m1x4_f32m1
++#define VGET_VX8                __riscv_vget_v_f32m1x8_f32m1
++#define VSET_VX2                __riscv_vset_v_f32m1_f32m1x2
++#define VSET_VX4                __riscv_vset_v_f32m1_f32m1x4
++#define VSET_VX8                __riscv_vset_v_f32m1_f32m1x8
++#define VLEV_FLOAT              __riscv_vle32_v_f32m1
++#define VSEV_FLOAT              __riscv_vse32_v_f32m1
++#define VSSEG2_FLOAT            __riscv_vsseg2e32_v_f32m1x2
++#define VSSEG4_FLOAT            __riscv_vsseg4e32_v_f32m1x4
++#define VSSEG8_FLOAT            __riscv_vsseg8e32_v_f32m1x8
++#else
++#define VSETVL(n)               __riscv_vsetvl_e64m1(n)
++#define FLOAT_V_T               vfloat64m1_t
++#define FLOAT_VX2_T             vfloat64m1x2_t
++#define FLOAT_VX4_T             vfloat64m1x4_t
++#define FLOAT_VX8_T             vfloat64m1x8_t
++#define VLSEG_FLOAT             __riscv_vlse64_v_f64m1
++#define VLSSEG2_FLOAT           __riscv_vlsseg2e64_v_f64m1x2
++#define VLSSEG4_FLOAT           __riscv_vlsseg4e64_v_f64m1x4
++#define VLSSEG8_FLOAT           __riscv_vlsseg8e64_v_f64m1x8
++#define VGET_VX2                __riscv_vget_v_f64m1x2_f64m1
++#define VGET_VX4                __riscv_vget_v_f64m1x4_f64m1
++#define VGET_VX8                __riscv_vget_v_f64m1x8_f64m1
++#define VSET_VX2                __riscv_vset_v_f64m1_f64m1x2
++#define VSET_VX4                __riscv_vset_v_f64m1_f64m1x4
++#define VSET_VX8                __riscv_vset_v_f64m1_f64m1x8
++#define VLEV_FLOAT              __riscv_vle64_v_f64m1
++#define VSEV_FLOAT              __riscv_vse64_v_f64m1
++#define VSSEG2_FLOAT            __riscv_vsseg2e64_v_f64m1x2
++#define VSSEG4_FLOAT            __riscv_vsseg4e64_v_f64m1x4
++#define VSSEG8_FLOAT            __riscv_vsseg8e64_v_f64m1x8
++#endif
++
++// Optimizes the implementation in ../generic/gemm_ncopy_16.c
++
++int CNAME(BLASLONG m, BLASLONG n, FLOAT *a, BLASLONG lda, FLOAT *b)
++{
++    BLASLONG i, j;
++
++    FLOAT *a_offset;
++    FLOAT *a_offset1, *a_offset2, *a_offset3, *a_offset4;
++    FLOAT *a_offset5, *a_offset6, *a_offset7, *a_offset8;
++    FLOAT *b_offset;
++
++    FLOAT_V_T v1, v2, v3, v4, v5, v6, v7, v8;
++    FLOAT_V_T v9, v10, v11, v12, v13, v14, v15, v16;
++    FLOAT_VX2_T vx2, vx21;
++    FLOAT_VX4_T vx4, vx41;
++    FLOAT_VX8_T vx8, vx81;
++
++    size_t vl;
++
++    //fprintf(stderr, "gemm_ncopy_16 m=%ld n=%ld lda=%ld\n", m, n, lda);
++
++    a_offset = a;
++    b_offset = b;
++
++    j = (n >> 4);
++    if (j) {
++        vl = VSETVL(8);
++
++        do {
++            a_offset1  = a_offset;
++            a_offset2  = a_offset1  + lda * 8;
++            a_offset += 16 * lda;
++
++            i = m >> 3;
++            if (i) {
++                do {
++                    vx8 = VLSSEG8_FLOAT(a_offset1, lda * sizeof(FLOAT), vl);
++                    vx81 = VLSSEG8_FLOAT(a_offset2, lda * sizeof(FLOAT), vl);
++
++                    v1 = VGET_VX8(vx8, 0);
++                    v2 = VGET_VX8(vx8, 1);
++                    v3 = VGET_VX8(vx8, 2);
++                    v4 = VGET_VX8(vx8, 3);
++                    v5 = VGET_VX8(vx8, 4);
++                    v6 = VGET_VX8(vx8, 5);
++                    v7 = VGET_VX8(vx8, 6);
++                    v8 = VGET_VX8(vx8, 7);
++                    v9 = VGET_VX8(vx81, 0);
++                    v10 = VGET_VX8(vx81, 1);
++                    v11 = VGET_VX8(vx81, 2);
++                    v12 = VGET_VX8(vx81, 3);
++                    v13 = VGET_VX8(vx81, 4);
++                    v14 = VGET_VX8(vx81, 5);
++                    v15 = VGET_VX8(vx81, 6);
++                    v16 = VGET_VX8(vx81, 7);
++
++                    VSEV_FLOAT(b_offset, v1, vl);
++                    VSEV_FLOAT(b_offset + 8, v9, vl);
++                    VSEV_FLOAT(b_offset + 16, v2, vl);
++                    VSEV_FLOAT(b_offset + 24, v10, vl);
++                    VSEV_FLOAT(b_offset + 32, v3, vl);
++                    VSEV_FLOAT(b_offset + 40, v11, vl);
++                    VSEV_FLOAT(b_offset + 48, v4, vl);
++                    VSEV_FLOAT(b_offset + 56, v12, vl);
++                    VSEV_FLOAT(b_offset + 64, v5, vl);
++                    VSEV_FLOAT(b_offset + 72, v13, vl);
++                    VSEV_FLOAT(b_offset + 80, v6, vl);
++                    VSEV_FLOAT(b_offset + 88, v14, vl);
++                    VSEV_FLOAT(b_offset + 96, v7, vl);
++                    VSEV_FLOAT(b_offset + 104, v15, vl);
++                    VSEV_FLOAT(b_offset + 112, v8, vl);
++                    VSEV_FLOAT(b_offset + 120, v16, vl);
++
++                    a_offset1 += 8;
++                    a_offset2 += 8;
++                    b_offset += 128;
++                } while (--i);
++            }
++
++            if (m & 4) {
++                vx4 = VLSSEG4_FLOAT(a_offset1, lda * sizeof(FLOAT), vl);
++                vx41 = VLSSEG4_FLOAT(a_offset2, lda * sizeof(FLOAT), vl);
++
++                v1 = VGET_VX4(vx4, 0);
++                v2 = VGET_VX4(vx4, 1);
++                v3 = VGET_VX4(vx4, 2);
++                v4 = VGET_VX4(vx4, 3);
++                v5 = VGET_VX4(vx41, 0);
++                v6 = VGET_VX4(vx41, 1);
++                v7 = VGET_VX4(vx41, 2);
++                v8 = VGET_VX4(vx41, 3);
++
++                VSEV_FLOAT(b_offset, v1, vl);
++                VSEV_FLOAT(b_offset + 8, v5, vl);
++                VSEV_FLOAT(b_offset + 16, v2, vl);
++                VSEV_FLOAT(b_offset + 24, v6, vl);
++                VSEV_FLOAT(b_offset + 32, v3, vl);
++                VSEV_FLOAT(b_offset + 40, v7, vl);
++                VSEV_FLOAT(b_offset + 48, v4, vl);
++                VSEV_FLOAT(b_offset + 56, v8, vl);
++
++                a_offset1 += 4;
++                a_offset2 += 4;
++                b_offset += 64;
++            }
++
++            if (m & 2) {
++                vx2 = VLSSEG2_FLOAT(a_offset1, lda * sizeof(FLOAT), vl);
++                vx21 = VLSSEG2_FLOAT(a_offset2, lda * sizeof(FLOAT), vl);
++
++                v1 = VGET_VX2(vx2, 0);
++                v2 = VGET_VX2(vx2, 1);
++                v3 = VGET_VX2(vx21, 0);
++                v4 = VGET_VX2(vx21, 1);
++
++                VSEV_FLOAT(b_offset, v1, vl);
++                VSEV_FLOAT(b_offset + 8, v3, vl);
++                VSEV_FLOAT(b_offset + 16, v2, vl);
++                VSEV_FLOAT(b_offset + 24, v4, vl);
++
++                a_offset1 += 2;
++                a_offset2 += 2;
++                b_offset += 32;
++            }
++
++            if (m & 1) {
++                v1 = VLSEG_FLOAT(a_offset1, lda * sizeof(FLOAT), vl);
++                v2 = VLSEG_FLOAT(a_offset2, lda * sizeof(FLOAT), vl);
++
++                VSEV_FLOAT(b_offset, v1, vl);
++                VSEV_FLOAT(b_offset + 8, v2, vl);
++
++                b_offset += 16;
++            }
++        } while (--j);
++    }
++
++    if (n & 8) {
++        a_offset1  = a_offset;
++        a_offset2  = a_offset1 + lda;
++        a_offset3  = a_offset2 + lda;
++        a_offset4  = a_offset3 + lda;
++        a_offset5  = a_offset4 + lda;
++        a_offset6  = a_offset5 + lda;
++        a_offset7  = a_offset6 + lda;
++        a_offset8  = a_offset7 + lda;
++        a_offset += 8 * lda;
++
++        for(i = m; i > 0; i -= vl) {
++            vl = VSETVL(i);
++
++            v1 = VLEV_FLOAT(a_offset1, vl);
++            v2 = VLEV_FLOAT(a_offset2, vl);
++            v3 = VLEV_FLOAT(a_offset3, vl);
++            v4 = VLEV_FLOAT(a_offset4, vl);
++            v5 = VLEV_FLOAT(a_offset5, vl);
++            v6 = VLEV_FLOAT(a_offset6, vl);
++            v7 = VLEV_FLOAT(a_offset7, vl);
++            v8 = VLEV_FLOAT(a_offset8, vl);
++
++            vx8 = VSET_VX8(vx8, 0, v1);
++            vx8 = VSET_VX8(vx8, 1, v2);
++            vx8 = VSET_VX8(vx8, 2, v3);
++            vx8 = VSET_VX8(vx8, 3, v4);
++            vx8 = VSET_VX8(vx8, 4, v5);
++            vx8 = VSET_VX8(vx8, 5, v6);
++            vx8 = VSET_VX8(vx8, 6, v7);
++            vx8 = VSET_VX8(vx8, 7, v8);
++
++            VSSEG8_FLOAT(b_offset, vx8, vl);
++
++            a_offset1 += vl;
++            a_offset2 += vl;
++            a_offset3 += vl;
++            a_offset4 += vl;
++            a_offset5 += vl;
++            a_offset6 += vl;
++            a_offset7 += vl;
++            a_offset8 += vl;
++            b_offset += vl*8;
++        }
++    }
++
++    if (n & 4) {
++        a_offset1  = a_offset;
++        a_offset2  = a_offset1 + lda;
++        a_offset3  = a_offset2 + lda;
++        a_offset4  = a_offset3 + lda;
++        a_offset += 4 * lda;
++
++        for(i = m; i > 0; i -= vl) {
++            vl = VSETVL(i);
++
++            v1 = VLEV_FLOAT(a_offset1, vl);
++            v2 = VLEV_FLOAT(a_offset2, vl);
++            v3 = VLEV_FLOAT(a_offset3, vl);
++            v4 = VLEV_FLOAT(a_offset4, vl);
++
++            vx4 = VSET_VX4(vx4, 0, v1);
++            vx4 = VSET_VX4(vx4, 1, v2);
++            vx4 = VSET_VX4(vx4, 2, v3);
++            vx4 = VSET_VX4(vx4, 3, v4);
++
++            VSSEG4_FLOAT(b_offset, vx4, vl);
++
++            a_offset1 += vl;
++            a_offset2 += vl;
++            a_offset3 += vl;
++            a_offset4 += vl;
++            b_offset += vl*4;
++        }
++    }
++
++    if (n & 2) {
++        a_offset1  = a_offset;
++        a_offset2  = a_offset1 + lda;
++        a_offset += 2 * lda;
++
++        for(i = m; i > 0; i -= vl) {
++            vl = VSETVL(i);
++
++            v1 = VLEV_FLOAT(a_offset1, vl);
++            v2 = VLEV_FLOAT(a_offset2, vl);
++
++            vx2 = VSET_VX2(vx2, 0, v1);
++            vx2 = VSET_VX2(vx2, 1, v2);
++
++            VSSEG2_FLOAT(b_offset, vx2, vl);
++
++            a_offset1 += vl;
++            a_offset2 += vl;
++            b_offset += vl*2;
++        }
++    }
++
++    if (n & 1) {
++        a_offset1  = a_offset;
++
++        for(i = m; i > 0; i -= vl) {
++            vl = VSETVL(i);
++
++            v1 = VLEV_FLOAT(a_offset1, vl);
++
++            VSEV_FLOAT(b_offset, v1, vl);
++
++            a_offset1 += vl;
++            b_offset += vl;
++        }
++    }
++
++    return 0;
++}
+diff -ruN a/kernel/riscv64/gemm_ncopy_4_rvv.c OpenBLAS-0.3.30-bp/kernel/riscv64/gemm_ncopy_4_rvv.c
+--- a/kernel/riscv64/gemm_ncopy_4_rvv.c	1970-01-01 01:00:00
++++ b/kernel/riscv64/gemm_ncopy_4_rvv.c	2026-08-27 12:34:10
+@@ -0,0 +1,143 @@
++/***************************************************************************
++Copyright (c) 2025, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++#include "common.h"
++
++#if !defined(DOUBLE)
++#define VSETVL(n)               __riscv_vsetvl_e32m1(n)
++#define FLOAT_V_T               vfloat32m1_t
++#define FLOAT_VX2_T             vfloat32m1x2_t
++#define FLOAT_VX4_T             vfloat32m1x4_t
++#define VSET_VX2                __riscv_vset_v_f32m1_f32m1x2
++#define VSET_VX4                __riscv_vset_v_f32m1_f32m1x4
++#define VLEV_FLOAT              __riscv_vle32_v_f32m1
++#define VSEV_FLOAT              __riscv_vse32_v_f32m1
++#define VSSEG2_FLOAT            __riscv_vsseg2e32_v_f32m1x2
++#define VSSEG4_FLOAT            __riscv_vsseg4e32_v_f32m1x4
++#else
++#define VSETVL(n)               __riscv_vsetvl_e64m1(n)
++#define FLOAT_V_T               vfloat64m1_t
++#define FLOAT_VX2_T             vfloat64m1x2_t
++#define FLOAT_VX4_T             vfloat64m1x4_t
++#define VSET_VX2                __riscv_vset_v_f64m1_f64m1x2
++#define VSET_VX4                __riscv_vset_v_f64m1_f64m1x4
++#define VLEV_FLOAT              __riscv_vle64_v_f64m1
++#define VSEV_FLOAT              __riscv_vse64_v_f64m1
++#define VSSEG2_FLOAT            __riscv_vsseg2e64_v_f64m1x2
++#define VSSEG4_FLOAT            __riscv_vsseg4e64_v_f64m1x4
++#endif
++
++// Optimizes the implementation in ../generic/gemm_ncopy_4.c
++
++int CNAME(BLASLONG m, BLASLONG n, FLOAT *a, BLASLONG lda, FLOAT *b)
++{
++    BLASLONG i, j;
++
++    FLOAT *a_offset;
++    FLOAT *a_offset1, *a_offset2, *a_offset3, *a_offset4;
++    FLOAT *b_offset;
++
++    FLOAT_V_T v1, v2, v3, v4;
++    FLOAT_VX2_T vx2;
++    FLOAT_VX4_T vx4;
++
++    size_t vl;
++
++    //fprintf(stderr, "gemm_ncopy_4 m=%ld n=%ld lda=%ld\n", m, n, lda);
++
++    a_offset = a;
++    b_offset = b;
++
++    for(j = (n >> 2); j > 0; j--) {
++        a_offset1  = a_offset;
++        a_offset2  = a_offset1 + lda;
++        a_offset3  = a_offset2 + lda;
++        a_offset4  = a_offset3 + lda;
++        a_offset += 4 * lda;
++
++        for(i = m; i > 0; i -= vl) {
++            vl = VSETVL(i);
++
++            v1 = VLEV_FLOAT(a_offset1, vl);
++            v2 = VLEV_FLOAT(a_offset2, vl);
++            v3 = VLEV_FLOAT(a_offset3, vl);
++            v4 = VLEV_FLOAT(a_offset4, vl);
++
++            vx4 = VSET_VX4(vx4, 0, v1);
++            vx4 = VSET_VX4(vx4, 1, v2);
++            vx4 = VSET_VX4(vx4, 2, v3);
++            vx4 = VSET_VX4(vx4, 3, v4);
++
++            VSSEG4_FLOAT(b_offset, vx4, vl);
++
++            a_offset1 += vl;
++            a_offset2 += vl;
++            a_offset3 += vl;
++            a_offset4 += vl;
++            b_offset += vl*4;
++        }
++    }
++
++    if (n & 2) {
++        a_offset1  = a_offset;
++        a_offset2  = a_offset1 + lda;
++        a_offset += 2 * lda;
++
++        for(i = m; i > 0; i -= vl) {
++            vl = VSETVL(i);
++
++            v1 = VLEV_FLOAT(a_offset1, vl);
++            v2 = VLEV_FLOAT(a_offset2, vl);
++
++            vx2 = VSET_VX2(vx2, 0, v1);
++            vx2 = VSET_VX2(vx2, 1, v2);
++
++            VSSEG2_FLOAT(b_offset, vx2, vl);
++
++            a_offset1 += vl;
++            a_offset2 += vl;
++            b_offset += vl*2;
++        }
++    }
++
++    if (n & 1) {
++        a_offset1  = a_offset;
++
++        for(i = m; i > 0; i -= vl) {
++            vl = VSETVL(i);
++
++            v1 = VLEV_FLOAT(a_offset1, vl);
++
++            VSEV_FLOAT(b_offset, v1, vl);
++
++            a_offset1 += vl;
++            b_offset += vl;
++        }
++    }
++
++    return 0;
++}
+diff -ruN a/kernel/riscv64/gemm_tcopy_16_rvv.c OpenBLAS-0.3.30-bp/kernel/riscv64/gemm_tcopy_16_rvv.c
+--- a/kernel/riscv64/gemm_tcopy_16_rvv.c	1970-01-01 01:00:00
++++ b/kernel/riscv64/gemm_tcopy_16_rvv.c	2026-08-27 12:34:10
+@@ -0,0 +1,129 @@
++/***************************************************************************
++Copyright (c) 2025, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++#include "common.h"
++
++#if !defined(DOUBLE)
++#define FLOAT_V_T               vfloat32m4_t
++#define FLOAT_V_T_HALF          vfloat32m2_t
++#define FLOAT_V_T_QUARTER       vfloat32m1_t
++#define VLEV_FLOAT              __riscv_vle32_v_f32m4
++#define VLEV_FLOAT_HALF         __riscv_vle32_v_f32m2
++#define VLEV_FLOAT_QUARTER      __riscv_vle32_v_f32m1
++#define VSEV_FLOAT              __riscv_vse32_v_f32m4
++#define VSEV_FLOAT_HALF         __riscv_vse32_v_f32m2
++#define VSEV_FLOAT_QUARTER      __riscv_vse32_v_f32m1
++#else
++#define FLOAT_V_T               vfloat64m8_t
++#define FLOAT_V_T_HALF          vfloat64m4_t
++#define FLOAT_V_T_QUARTER       vfloat64m2_t
++#define VLEV_FLOAT              __riscv_vle64_v_f64m8
++#define VLEV_FLOAT_HALF         __riscv_vle64_v_f64m4
++#define VLEV_FLOAT_QUARTER      __riscv_vle64_v_f64m2
++#define VSEV_FLOAT              __riscv_vse64_v_f64m8
++#define VSEV_FLOAT_HALF         __riscv_vse64_v_f64m4
++#define VSEV_FLOAT_QUARTER      __riscv_vse64_v_f64m2
++#endif
++
++// Optimizes the implementation in ../generic/gemm_tcopy_16.c
++
++int CNAME(BLASLONG m, BLASLONG n, IFLOAT *a, BLASLONG lda, IFLOAT *b)
++{
++    BLASLONG i, j;
++
++    IFLOAT *aoffset;
++    IFLOAT *aoffset1;
++
++    IFLOAT *boffset, *boffset1, *boffset2, *boffset3, *boffset4, *boffset5;
++
++    FLOAT_V_T v0;
++    FLOAT_V_T_HALF v1;
++    FLOAT_V_T_QUARTER v2;
++
++    // fprintf(stderr, "gemm_tcopy_16 m=%ld n=%ld lda=%ld\n", m, n, lda);
++
++    aoffset   = a;
++    boffset   = b;
++    boffset2  = b + m  * (n & ~15);
++    boffset3  = b + m  * (n & ~7);
++    boffset4  = b + m  * (n & ~3);
++    boffset5  = b + m  * (n & ~1);
++
++    for(j = m; j > 0; j--) {
++        aoffset1  = aoffset;
++        boffset1  = boffset;
++
++        aoffset += lda;
++        boffset  += 16;
++
++        for(i = (n >> 4); i > 0; i--) {
++            size_t vl = 16;
++
++            v0 = VLEV_FLOAT(aoffset1, vl);
++            VSEV_FLOAT(boffset1, v0, vl);
++
++            aoffset1 += 16;
++            boffset1 += 16 * m;
++        }
++ 
++        if (n & 8) {
++            size_t vl = 8;
++
++            v1 = VLEV_FLOAT_HALF(aoffset1, vl);
++            VSEV_FLOAT_HALF(boffset2, v1, vl);
++
++            aoffset1 += 8;
++            boffset2 += 8;
++        }
++
++        if (n & 4) {
++            size_t vl = 4;
++
++            v2 = VLEV_FLOAT_QUARTER(aoffset1, vl);
++            VSEV_FLOAT_QUARTER(boffset3, v2, vl);
++
++            aoffset1 += 4;
++            boffset3 += 4;
++        }
++
++        if (n & 2) {
++            *(boffset4) = *(aoffset1);
++            *(boffset4 + 1) = *(aoffset1 + 1);
++
++            aoffset1 += 2;
++            boffset4 += 2;
++        }
++
++        if (n & 1) {
++            *(boffset5) = *(aoffset1);
++            aoffset1 ++;
++            boffset5 ++;
++        }
++    }
++
++    return 0;
++}
+diff -ruN a/kernel/riscv64/gemm_tcopy_4_rvv.c OpenBLAS-0.3.30-bp/kernel/riscv64/gemm_tcopy_4_rvv.c
+--- a/kernel/riscv64/gemm_tcopy_4_rvv.c	1970-01-01 01:00:00
++++ b/kernel/riscv64/gemm_tcopy_4_rvv.c	2026-08-27 12:34:10
+@@ -0,0 +1,91 @@
++/***************************************************************************
++Copyright (c) 2025, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++#include "common.h"
++
++#if !defined(DOUBLE)
++#define FLOAT_V_T               vfloat32m1_t
++#define VLEV_FLOAT              __riscv_vle32_v_f32m1
++#define VSEV_FLOAT              __riscv_vse32_v_f32m1
++#else
++#define FLOAT_V_T               vfloat64m2_t
++#define VLEV_FLOAT              __riscv_vle64_v_f64m2
++#define VSEV_FLOAT              __riscv_vse64_v_f64m2
++#endif
++
++int CNAME(BLASLONG m, BLASLONG n, IFLOAT *a, BLASLONG lda, IFLOAT *b)
++{
++    BLASLONG i, j;
++
++    IFLOAT *aoffset;
++    IFLOAT *aoffset1;
++
++    IFLOAT *boffset, *boffset1, *boffset2, *boffset3;
++
++    FLOAT_V_T v0;
++
++    // fprintf(stderr, "gemm_tcopy_4 m=%ld n=%ld lda=%ld\n", m, n, lda);
++
++    aoffset   = a;
++    boffset   = b;
++    boffset2  = b + m  * (n & ~3);
++    boffset3  = b + m  * (n & ~1);
++
++    for(j = m; j > 0; j--) {
++        aoffset1  = aoffset;
++        boffset1  = boffset;
++
++        aoffset += lda;
++        boffset  += 4;
++
++        for(i = (n >> 2); i > 0; i--) {
++            size_t vl = 4;
++
++            v0 = VLEV_FLOAT(aoffset1, vl);
++            VSEV_FLOAT(boffset1, v0, vl);
++
++            aoffset1 += 4;
++            boffset1 += 4 * m;
++        }
++
++        if (n & 2) {
++            *(boffset2) = *(aoffset1);
++            *(boffset2 + 1) = *(aoffset1 + 1);
++
++            aoffset1 += 2;
++            boffset2 += 2;
++        }
++
++        if (n & 1) {
++            *(boffset3) = *(aoffset1);
++            aoffset1 ++;
++            boffset3 ++;
++        }
++    }
++
++    return 0;
++}
+diff -ruN a/kernel/riscv64/gemv_n_vector.c OpenBLAS-0.3.30-bp/kernel/riscv64/gemv_n_vector.c
+--- a/kernel/riscv64/gemv_n_vector.c	2026-08-27 12:31:59
++++ b/kernel/riscv64/gemv_n_vector.c	2026-08-27 12:34:10
+@@ -26,229 +26,106 @@
+ *****************************************************************************/
+ 
+ #include "common.h"
++
+ #if !defined(DOUBLE)
+-#define VSETVL(n) RISCV_RVV(vsetvl_e32m8)(n)
+-#define FLOAT_V_T vfloat32m8_t
+-#define VLEV_FLOAT RISCV_RVV(vle32_v_f32m8)
+-#define VLSEV_FLOAT RISCV_RVV(vlse32_v_f32m8)
+-#define VSEV_FLOAT RISCV_RVV(vse32_v_f32m8)
+-#define VSSEV_FLOAT RISCV_RVV(vsse32_v_f32m8)
+-#define VFMACCVF_FLOAT RISCV_RVV(vfmacc_vf_f32m8)
+-#define VFMUL_VF_FLOAT RISCV_RVV(vfmul_vf_f32m8)
+-#define VFILL_ZERO_FLOAT RISCV_RVV(vfsub_vv_f32m8)
++#define VSETVL(n)               RISCV_RVV(vsetvl_e32m8)(n)
++#define FLOAT_V_T               vfloat32m8_t
++#define VLEV_FLOAT              RISCV_RVV(vle32_v_f32m8)
++#define VLSEV_FLOAT             RISCV_RVV(vlse32_v_f32m8)
++#define VSEV_FLOAT              RISCV_RVV(vse32_v_f32m8)
++#define VSSEV_FLOAT             RISCV_RVV(vsse32_v_f32m8)
++#define VFMACCVF_FLOAT          RISCV_RVV(vfmacc_vf_f32m8)
+ #else
+-#define VSETVL(n) RISCV_RVV(vsetvl_e64m4)(n)
+-#define FLOAT_V_T vfloat64m4_t
+-#define VLEV_FLOAT RISCV_RVV(vle64_v_f64m4)
+-#define VLSEV_FLOAT RISCV_RVV(vlse64_v_f64m4)
+-#define VSEV_FLOAT RISCV_RVV(vse64_v_f64m4)
+-#define VSSEV_FLOAT RISCV_RVV(vsse64_v_f64m4)
+-#define VFMACCVF_FLOAT RISCV_RVV(vfmacc_vf_f64m4)
+-#define VFMUL_VF_FLOAT RISCV_RVV(vfmul_vf_f64m4)
+-#define VFILL_ZERO_FLOAT RISCV_RVV(vfsub_vv_f64m4)
++#define VSETVL(n)               RISCV_RVV(vsetvl_e64m8)(n)
++#define FLOAT_V_T               vfloat64m8_t
++#define VLEV_FLOAT              RISCV_RVV(vle64_v_f64m8)
++#define VLSEV_FLOAT             RISCV_RVV(vlse64_v_f64m8)
++#define VSEV_FLOAT              RISCV_RVV(vse64_v_f64m8)
++#define VSSEV_FLOAT             RISCV_RVV(vsse64_v_f64m8)
++#define VFMACCVF_FLOAT          RISCV_RVV(vfmacc_vf_f64m8)
+ #endif
+ 
+ int CNAME(BLASLONG m, BLASLONG n, BLASLONG dummy1, FLOAT alpha, FLOAT *a, BLASLONG lda, FLOAT *x, BLASLONG inc_x, FLOAT *y, BLASLONG inc_y, FLOAT *buffer)
+ {
+-    BLASLONG i = 0, j = 0, k = 0;
+-    BLASLONG ix = 0, iy = 0;
++    if (n < 0) return(0);
+ 
+-    if(n < 0)  return(0);
+-    FLOAT *a_ptr = a;
+-    FLOAT temp[4];
+-    FLOAT_V_T va0, va1, vy0, vy1,vy0_temp, vy1_temp , temp_v ,va0_0 , va0_1 , va1_0 ,va1_1 ,va2_0 ,va2_1 ,va3_0 ,va3_1 ;
+-    unsigned int gvl = 0;
+-    if(inc_y == 1 && inc_x == 1){
+-        gvl = VSETVL(m);
+-        if(gvl <= m/2){
+-            for(k=0,j=0; k<m/(2*gvl); k++){
+-                a_ptr = a;
+-                ix = 0;
+-                vy0_temp = VLEV_FLOAT(&y[j], gvl);
+-                vy1_temp = VLEV_FLOAT(&y[j+gvl], gvl);
+-                vy0 = VFILL_ZERO_FLOAT(vy0 , vy0 , gvl);
+-                vy1 = VFILL_ZERO_FLOAT(vy1 , vy1 , gvl);
+-                int i;
++    FLOAT *a_ptr, *y_ptr, *a2_ptr, temp, temp2;
++    BLASLONG i, j, vl;
++    FLOAT_V_T va, vy, va2;
+ 
+-                int remainder = n % 4;
+-                for(i = 0; i < remainder; i++){
+-                    temp[0] = x[ix];
+-                    va0 = VLEV_FLOAT(&a_ptr[j], gvl);
+-                    vy0 = VFMACCVF_FLOAT(vy0, temp[0], va0, gvl);
+-
+-                    va1 = VLEV_FLOAT(&a_ptr[j+gvl], gvl);
+-                    vy1 = VFMACCVF_FLOAT(vy1, temp[0], va1, gvl);
+-                    a_ptr += lda;
+-                    ix ++;
+-                }
+-
+-                for(i = remainder; i < n; i += 4){
+-                    va0_0 = VLEV_FLOAT(&(a_ptr)[j], gvl);
+-                    va0_1 = VLEV_FLOAT(&(a_ptr)[j+gvl], gvl);
+-                    va1_0 = VLEV_FLOAT(&(a_ptr+lda * 1)[j], gvl);
+-                    va1_1 = VLEV_FLOAT(&(a_ptr+lda * 1)[j+gvl], gvl);
+-                    va2_0 = VLEV_FLOAT(&(a_ptr+lda * 2)[j], gvl);
+-                    va2_1 = VLEV_FLOAT(&(a_ptr+lda * 2)[j+gvl], gvl);
+-                    va3_0 = VLEV_FLOAT(&(a_ptr+lda * 3)[j], gvl);
+-                    va3_1 = VLEV_FLOAT(&(a_ptr+lda * 3)[j+gvl], gvl);
+-
+-                    vy0 = VFMACCVF_FLOAT(vy0, x[ix], va0_0, gvl);
+-                    vy1 = VFMACCVF_FLOAT(vy1, x[ix], va0_1, gvl);
+-
+-                    vy0 = VFMACCVF_FLOAT(vy0, x[ix+1], va1_0, gvl);
+-                    vy1 = VFMACCVF_FLOAT(vy1, x[ix+1], va1_1, gvl);
+-
+-                    vy0 = VFMACCVF_FLOAT(vy0, x[ix+2], va2_0, gvl);
+-                    vy1 = VFMACCVF_FLOAT(vy1, x[ix+2], va2_1, gvl);
+-
+-                    vy0 = VFMACCVF_FLOAT(vy0, x[ix+3], va3_0, gvl);
+-                    vy1 = VFMACCVF_FLOAT(vy1, x[ix+3], va3_1, gvl);
+-                    a_ptr += 4 * lda;
+-                    ix +=4;
+-                }
+-                vy0 = VFMACCVF_FLOAT(vy0_temp, alpha, vy0, gvl);
+-                vy1 = VFMACCVF_FLOAT(vy1_temp, alpha, vy1, gvl);
+-                VSEV_FLOAT(&y[j], vy0, gvl);
+-                VSEV_FLOAT(&y[j+gvl], vy1, gvl);
+-                j += gvl * 2;
+-            }
+-        }
+-        //tail
+-		if(gvl <= m - j ){
+-			a_ptr = a;
+-			ix = 0;
+-			vy0_temp = VLEV_FLOAT(&y[j], gvl);
+-			vy0 = VFILL_ZERO_FLOAT(vy0 , vy0 , gvl);
+-			int i;
+-
+-			int remainder = n % 4;
+-			for(i = 0; i < remainder; i++){
+-				temp[0] = x[ix];
+-				va0 = VLEV_FLOAT(&a_ptr[j], gvl);
+-				vy0 = VFMACCVF_FLOAT(vy0, temp[0], va0, gvl);
+-				a_ptr += lda;
+-				ix ++;
+-			}
+-
+-			for(i = remainder; i < n; i += 4){
+-				va0_0 = VLEV_FLOAT(&(a_ptr)[j], gvl);			
+-				va1_0 = VLEV_FLOAT(&(a_ptr+lda * 1)[j], gvl);		
+-				va2_0 = VLEV_FLOAT(&(a_ptr+lda * 2)[j], gvl);	
+-				va3_0 = VLEV_FLOAT(&(a_ptr+lda * 3)[j], gvl);
+-				vy0 = VFMACCVF_FLOAT(vy0, x[ix], va0_0, gvl);
+-				vy0 = VFMACCVF_FLOAT(vy0, x[ix+1], va1_0, gvl);
+-				vy0 = VFMACCVF_FLOAT(vy0, x[ix+2], va2_0, gvl);
+-				vy0 = VFMACCVF_FLOAT(vy0, x[ix+3], va3_0, gvl);
+-				a_ptr += 4 * lda;
+-				ix +=4;
+-			}
+-			vy0 = VFMACCVF_FLOAT(vy0_temp, alpha, vy0, gvl);
+-		
+-			VSEV_FLOAT(&y[j], vy0, gvl);
+-			
+-			j += gvl ;
+-        }
+-		
+-
+-        for(;j < m;){
+-            gvl = VSETVL(m-j);
++    if (inc_y == 1) {
++        for (j = 0; j < (n >> 1); j++) {
++            temp = alpha * x[0];
++            temp2 = alpha * x[inc_x];
++            y_ptr = y;
+             a_ptr = a;
+-            ix = 0;
+-            vy0 = VLEV_FLOAT(&y[j], gvl);
+-            for(i = 0; i < n; i++){
+-                temp[0] = alpha * x[ix];
+-                va0 = VLEV_FLOAT(&a_ptr[j], gvl);
+-                vy0 = VFMACCVF_FLOAT(vy0, temp[0], va0, gvl);
+-
+-                a_ptr += lda;
+-                ix += inc_x;
++            a2_ptr = a + lda;
++            for (i = m; i > 0; i -= vl) {
++                vl = VSETVL(i);
++                vy = VLEV_FLOAT(y_ptr, vl);
++                va = VLEV_FLOAT(a_ptr, vl);
++                va2 = VLEV_FLOAT(a2_ptr, vl);
++                vy = VFMACCVF_FLOAT(vy, temp, va, vl);
++                vy = VFMACCVF_FLOAT(vy, temp2, va2, vl);
++                VSEV_FLOAT(y_ptr, vy, vl);
++                y_ptr += vl;
++                a_ptr += vl;
++                a2_ptr += vl;
+             }
+-            VSEV_FLOAT(&y[j], vy0, gvl);
+-            j += gvl;
++            x += inc_x * 2;
++            a += lda * 2;
+         }
+-    }else if (inc_y == 1 && inc_x !=1) {
+-        gvl = VSETVL(m);
+-        if(gvl <= m/2){
+-            for(k=0,j=0; k<m/(2*gvl); k++){
+-                a_ptr = a;
+-                ix = 0;
+-                vy0 = VLEV_FLOAT(&y[j], gvl);
+-                vy1 = VLEV_FLOAT(&y[j+gvl], gvl);
+-                for(i = 0; i < n; i++){
+-                    temp[0] = alpha * x[ix];
+-                    va0 = VLEV_FLOAT(&a_ptr[j], gvl);
+-                    vy0 = VFMACCVF_FLOAT(vy0, temp[0], va0, gvl);
+-
+-                    va1 = VLEV_FLOAT(&a_ptr[j+gvl], gvl);
+-                    vy1 = VFMACCVF_FLOAT(vy1, temp[0], va1, gvl);
+-                    a_ptr += lda;
+-                    ix += inc_x;
+-                }
+-                VSEV_FLOAT(&y[j], vy0, gvl);
+-                VSEV_FLOAT(&y[j+gvl], vy1, gvl);
+-                j += gvl * 2;
+-            }
+-        }
+-        //tail
+-        for(;j < m;){
+-            gvl = VSETVL(m-j);
++        if (n & 1) {
++            temp = alpha * x[0];
++            y_ptr = y;
+             a_ptr = a;
+-            ix = 0;
+-            vy0 = VLEV_FLOAT(&y[j], gvl);
+-            for(i = 0; i < n; i++){
+-                temp[0] = alpha * x[ix];
+-                va0 = VLEV_FLOAT(&a_ptr[j], gvl);
+-                vy0 = VFMACCVF_FLOAT(vy0, temp[0], va0, gvl);
+-
+-                a_ptr += lda;
+-                ix += inc_x;
++            for (i = m; i > 0; i -= vl) {
++                vl = VSETVL(i);
++                vy = VLEV_FLOAT(y_ptr, vl);
++                va = VLEV_FLOAT(a_ptr, vl);
++                vy = VFMACCVF_FLOAT(vy, temp, va, vl);
++                VSEV_FLOAT(y_ptr, vy, vl);
++                y_ptr += vl;
++                a_ptr += vl;
+             }
+-            VSEV_FLOAT(&y[j], vy0, gvl);
+-            j += gvl;
+         }
+-    }else{
++    } else {
+         BLASLONG stride_y = inc_y * sizeof(FLOAT);
+-        gvl = VSETVL(m);
+-        if(gvl <= m/2){
+-            BLASLONG inc_yv = inc_y * gvl;
+-            for(k=0,j=0; k<m/(2*gvl); k++){
+-                a_ptr = a;
+-                ix = 0;
+-                vy0 = VLSEV_FLOAT(&y[iy], stride_y, gvl);
+-                vy1 = VLSEV_FLOAT(&y[iy+inc_yv], stride_y, gvl);
+-                for(i = 0; i < n; i++){
+-                    temp[0] = alpha * x[ix];
+-                    va0 = VLEV_FLOAT(&a_ptr[j], gvl);
+-                    vy0 = VFMACCVF_FLOAT(vy0, temp[0], va0, gvl);
+-
+-                    va1 = VLEV_FLOAT(&a_ptr[j+gvl], gvl);
+-                    vy1 = VFMACCVF_FLOAT(vy1, temp[0], va1, gvl);
+-                    a_ptr += lda;
+-                    ix += inc_x;
+-                }
+-                VSSEV_FLOAT(&y[iy], stride_y, vy0, gvl);
+-                VSSEV_FLOAT(&y[iy+inc_yv], stride_y, vy1, gvl);
+-                j += gvl * 2;
+-                iy += inc_yv * 2;
++        for (j = 0; j < (n >> 1); j++) {
++            temp = alpha * x[0];
++            temp2 = alpha * x[inc_x];
++            y_ptr = y;
++            a_ptr = a;
++            a2_ptr = a + lda;
++            for (i = m; i > 0; i -= vl) {
++                vl = VSETVL(i);
++                vy = VLSEV_FLOAT(y_ptr, stride_y, vl);
++                va = VLEV_FLOAT(a_ptr, vl);
++                va2 = VLEV_FLOAT(a2_ptr, vl);
++                vy = VFMACCVF_FLOAT(vy, temp, va, vl);
++                vy = VFMACCVF_FLOAT(vy, temp2, va2, vl);
++                VSSEV_FLOAT(y_ptr, stride_y, vy, vl);
++                y_ptr += vl * inc_y;
++                a_ptr += vl;
++                a2_ptr += vl;
+             }
++            x += inc_x * 2;
++            a += lda * 2;
+         }
+-        //tail
+-        for(;j < m;){
+-            gvl = VSETVL(m-j);
++        if (n & 1) {
++            temp = alpha * x[0];
++            y_ptr = y;
+             a_ptr = a;
+-            ix = 0;
+-            vy0 = VLSEV_FLOAT(&y[j*inc_y], stride_y, gvl);
+-            for(i = 0; i < n; i++){
+-                temp[0] = alpha * x[ix];
+-                va0 = VLEV_FLOAT(&a_ptr[j], gvl);
+-                vy0 = VFMACCVF_FLOAT(vy0, temp[0], va0, gvl);
+-
+-                a_ptr += lda;
+-                ix += inc_x;
++            for (i = m; i > 0; i -= vl) {
++                vl = VSETVL(i);
++                vy = VLSEV_FLOAT(y_ptr, stride_y, vl);
++                va = VLEV_FLOAT(a_ptr, vl);
++                vy = VFMACCVF_FLOAT(vy, temp, va, vl);
++                VSSEV_FLOAT(y_ptr, stride_y, vy, vl);
++                y_ptr += vl * inc_y;
++                a_ptr += vl;
+             }
+-            VSSEV_FLOAT(&y[j*inc_y], stride_y, vy0, gvl);
+-            j += gvl;
+         }
+     }
+     return(0);
+-}
+\ No newline at end of file
++}
+diff -ruN a/kernel/riscv64/gemv_t_vector.c OpenBLAS-0.3.30-bp/kernel/riscv64/gemv_t_vector.c
+--- a/kernel/riscv64/gemv_t_vector.c	2026-08-27 12:31:59
++++ b/kernel/riscv64/gemv_t_vector.c	2026-08-27 12:34:10
+@@ -27,110 +27,107 @@
+ 
+ #include "common.h"
+ #if !defined(DOUBLE)
+-#define VSETVL(n) RISCV_RVV(vsetvl_e32m2)(n)
+-#define FLOAT_V_T vfloat32m2_t
++#define VSETVL(n) RISCV_RVV(vsetvl_e32m8)(n)
++#define FLOAT_V_T vfloat32m8_t
+ #define FLOAT_V_T_M1 vfloat32m1_t
+-#define VLEV_FLOAT RISCV_RVV(vle32_v_f32m2)
+-#define VLSEV_FLOAT RISCV_RVV(vlse32_v_f32m2)
++#define VLEV_FLOAT RISCV_RVV(vle32_v_f32m8)
++#define VLSEV_FLOAT RISCV_RVV(vlse32_v_f32m8)
+ #ifdef RISCV_0p10_INTRINSICS
+-#define VFREDSUM_FLOAT(va, vb, gvl) vfredusum_vs_f32m2_f32m1(v_res, va, vb, gvl)
++#define VFREDSUM_FLOAT(va, vb, gvl) vfredusum_vs_f32m8_f32m1(v_res, va, vb, gvl)
+ #else
+-#define VFREDSUM_FLOAT RISCV_RVV(vfredusum_vs_f32m2_f32m1)
++#define VFREDSUM_FLOAT RISCV_RVV(vfredusum_vs_f32m8_f32m1)
+ #endif
+-#define VFMACCVV_FLOAT RISCV_RVV(vfmacc_vv_f32m2)
+-#define VFMVVF_FLOAT RISCV_RVV(vfmv_v_f_f32m2)
++#define VFMULVV_FLOAT RISCV_RVV(vfmul_vv_f32m8)
++#define VFMVVF_FLOAT RISCV_RVV(vfmv_v_f_f32m8)
+ #define VFMVVF_FLOAT_M1 RISCV_RVV(vfmv_v_f_f32m1)
+-#define VFMULVV_FLOAT RISCV_RVV(vfmul_vv_f32m2)
+ #define xint_t int
+ #else
+-#define VSETVL(n) RISCV_RVV(vsetvl_e64m2)(n)
+-#define FLOAT_V_T vfloat64m2_t
++#define VSETVL(n) RISCV_RVV(vsetvl_e64m8)(n)
++#define FLOAT_V_T vfloat64m8_t
+ #define FLOAT_V_T_M1 vfloat64m1_t
+-#define VLEV_FLOAT RISCV_RVV(vle64_v_f64m2)
+-#define VLSEV_FLOAT RISCV_RVV(vlse64_v_f64m2)
++#define VLEV_FLOAT RISCV_RVV(vle64_v_f64m8)
++#define VLSEV_FLOAT RISCV_RVV(vlse64_v_f64m8)
+ #ifdef RISCV_0p10_INTRINSICS
+-#define VFREDSUM_FLOAT(va, vb, gvl) vfredusum_vs_f64m2_f64m1(v_res, va, vb, gvl)
++#define VFREDSUM_FLOAT(va, vb, gvl) vfredusum_vs_f64m8_f64m1(v_res, va, vb, gvl)
+ #else
+-#define VFREDSUM_FLOAT RISCV_RVV(vfredusum_vs_f64m2_f64m1)
++#define VFREDSUM_FLOAT RISCV_RVV(vfredusum_vs_f64m8_f64m1)
+ #endif
+-#define VFMACCVV_FLOAT RISCV_RVV(vfmacc_vv_f64m2)
+-#define VFMVVF_FLOAT RISCV_RVV(vfmv_v_f_f64m2)
++#define VFMULVV_FLOAT RISCV_RVV(vfmul_vv_f64m8)
++#define VFMVVF_FLOAT RISCV_RVV(vfmv_v_f_f64m8)
+ #define VFMVVF_FLOAT_M1 RISCV_RVV(vfmv_v_f_f64m1)
+-#define VFMULVV_FLOAT RISCV_RVV(vfmul_vv_f64m2)
+ #define xint_t long long
+ #endif
+ 
+ int CNAME(BLASLONG m, BLASLONG n, BLASLONG dummy1, FLOAT alpha, FLOAT *a, BLASLONG lda, FLOAT *x, BLASLONG inc_x, FLOAT *y, BLASLONG inc_y, FLOAT *buffer)
+ {
+-	BLASLONG i = 0, j = 0, k = 0;
+-	BLASLONG ix = 0, iy = 0;
+-	FLOAT *a_ptr = a;
+-        FLOAT temp;
++    BLASLONG i = 0, j = 0, k = 0;
++    BLASLONG ix = 0, iy = 0;
++    FLOAT *a_ptr = a;
++    FLOAT temp;
+ 
+-        FLOAT_V_T va, vr, vx;
+-        unsigned int gvl = 0;
+-        FLOAT_V_T_M1 v_res;
++    FLOAT_V_T va, vr, vx;
++    unsigned int gvl = 0;
++    FLOAT_V_T_M1 v_res;
+ 
++    if(inc_x == 1){
+ 
+-        if(inc_x == 1){
+-                for(i = 0; i < n; i++){
+-                        v_res = VFMVVF_FLOAT_M1(0, 1);
+-                        gvl = VSETVL(m);
+-                        j = 0;
+-                        vr = VFMVVF_FLOAT(0, gvl);
+-                        for(k = 0; k < m/gvl; k++){
+-                                va = VLEV_FLOAT(&a_ptr[j], gvl);
+-                                vx = VLEV_FLOAT(&x[j], gvl);
+-                                vr = VFMULVV_FLOAT(va, vx, gvl);                // could vfmacc here and reduce outside loop
+-                                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);         // but that reordering diverges far enough from scalar path to make tests fail
+-                                j += gvl;
+-                        }
+-                        if(j < m){
+-                                gvl = VSETVL(m-j);
+-                                va = VLEV_FLOAT(&a_ptr[j], gvl);
+-                                vx = VLEV_FLOAT(&x[j], gvl);
+-                                vr = VFMULVV_FLOAT(va, vx, gvl);
+-                                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);
+-                        }
+-                        temp = (FLOAT)EXTRACT_FLOAT(v_res);
+-                        y[iy] += alpha * temp;
++        for(i = 0; i < n; i++){
++            v_res = VFMVVF_FLOAT_M1(0, 1);
++            gvl = VSETVL(m);
++            j = 0;
++            vr = VFMVVF_FLOAT(0, gvl);
++            for(k = 0; k < m/gvl; k++){
++                va = VLEV_FLOAT(&a_ptr[j], gvl);
++                vx = VLEV_FLOAT(&x[j], gvl);
++                vr = VFMULVV_FLOAT(va, vx, gvl);                // could vfmacc here and reduce outside loop
++                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);         // but that reordering diverges far enough from scalar path to make tests fail
++                j += gvl;
++            }
++            if(j < m){
++                gvl = VSETVL(m-j);
++                va = VLEV_FLOAT(&a_ptr[j], gvl);
++                vx = VLEV_FLOAT(&x[j], gvl);
++                vr = VFMULVV_FLOAT(va, vx, gvl);
++                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);
++            }
++            temp = (FLOAT)EXTRACT_FLOAT(v_res);
++            y[iy] += alpha * temp;
+ 
+ 
+-                        iy += inc_y;
+-                        a_ptr += lda;
++            iy += inc_y;
++            a_ptr += lda;
++        }
++    } else {
++        BLASLONG stride_x = inc_x * sizeof(FLOAT);
++        for(i = 0; i < n; i++){
++            v_res = VFMVVF_FLOAT_M1(0, 1);
++            gvl = VSETVL(m);
++            j = 0;
++            ix = 0;
++            vr = VFMVVF_FLOAT(0, gvl);
++            for(k = 0; k < m/gvl; k++){
++                va = VLEV_FLOAT(&a_ptr[j], gvl);
++                vx = VLSEV_FLOAT(&x[ix], stride_x, gvl);
++                vr = VFMULVV_FLOAT(va, vx, gvl);
++                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);
++                j += gvl;
++                ix += inc_x * gvl;
++            }
++            if(j < m){
++                gvl = VSETVL(m-j);
++                va = VLEV_FLOAT(&a_ptr[j], gvl);
++                vx = VLSEV_FLOAT(&x[ix], stride_x, gvl);
++                vr = VFMULVV_FLOAT(va, vx, gvl);
++                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);
+                 }
+-        }else{
+-                BLASLONG stride_x = inc_x * sizeof(FLOAT);
+-                for(i = 0; i < n; i++){
+-                        v_res = VFMVVF_FLOAT_M1(0, 1);
+-                        gvl = VSETVL(m);
+-                        j = 0;
+-                        ix = 0;
+-                        vr = VFMVVF_FLOAT(0, gvl);
+-                        for(k = 0; k < m/gvl; k++){
+-                                va = VLEV_FLOAT(&a_ptr[j], gvl);
+-                                vx = VLSEV_FLOAT(&x[ix], stride_x, gvl);
+-                                vr = VFMULVV_FLOAT(va, vx, gvl);
+-                                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);
+-                                j += gvl;
+-                                ix += inc_x * gvl;
+-                        }
+-                        if(j < m){
+-                                gvl = VSETVL(m-j);
+-                                va = VLEV_FLOAT(&a_ptr[j], gvl);
+-                                vx = VLSEV_FLOAT(&x[ix], stride_x, gvl);
+-                                vr = VFMULVV_FLOAT(va, vx, gvl);
+-                                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);
+-                        }
+-                        temp = (FLOAT)EXTRACT_FLOAT(v_res);
+-                        y[iy] += alpha * temp;
++                temp = (FLOAT)EXTRACT_FLOAT(v_res);
++                y[iy] += alpha * temp;
+ 
+ 
+-                        iy += inc_y;
+-                        a_ptr += lda;
+-                }
++                iy += inc_y;
++                a_ptr += lda;
++            }
+         }
+ 
+-
+-	return(0);
++    return (0);
+ }
+diff -ruN a/kernel/riscv64/omatcopy_cn_vector.c OpenBLAS-0.3.30-bp/kernel/riscv64/omatcopy_cn_vector.c
+--- a/kernel/riscv64/omatcopy_cn_vector.c	2026-08-27 12:31:59
++++ b/kernel/riscv64/omatcopy_cn_vector.c	2026-08-27 12:34:10
+@@ -51,7 +51,7 @@
+ 	FLOAT *aptr,*bptr;
+ 	size_t vl;
+ 
+-	FLOAT_V_T va, vb,va1,vb1;
++	FLOAT_V_T va,va1;
+ 	if ( rows <= 0 )  return(0);
+ 	if ( cols <= 0 )  return(0);
+ 
+diff -ruN a/kernel/riscv64/omatcopy_ct_rvv.c OpenBLAS-0.3.30-bp/kernel/riscv64/omatcopy_ct_rvv.c
+--- a/kernel/riscv64/omatcopy_ct_rvv.c	1970-01-01 01:00:00
++++ b/kernel/riscv64/omatcopy_ct_rvv.c	2026-08-27 12:34:10
+@@ -0,0 +1,114 @@
++/***************************************************************************
++Copyright (c) 2013, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++AREDISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++#include "common.h"
++#include <stdio.h>
++
++#if !defined(DOUBLE)
++#define VSETVL_MAX				__riscv_vsetvlmax_e32m8()
++#define VSETVL(n)               __riscv_vsetvl_e32m8(n)
++#define FLOAT_V_T               vfloat32m8_t
++#define VLEV_FLOAT              __riscv_vle32_v_f32m8
++#define VSEV_FLOAT              __riscv_vse32_v_f32m8
++#define VSSEV_FLOAT             __riscv_vsse32_v_f32m8
++#define VFMULVF_FLOAT           __riscv_vfmul_vf_f32m8
++#define VFMVVF_FLOAT            __riscv_vfmv_v_f_f32m8
++#else
++#define VSETVL_MAX				__riscv_vsetvlmax_e64m8()
++#define VSETVL(n)               __riscv_vsetvl_e64m8(n)
++#define FLOAT_V_T               vfloat64m8_t
++#define VLEV_FLOAT              __riscv_vle64_v_f64m8
++#define VSEV_FLOAT              __riscv_vse64_v_f64m8
++#define VSSEV_FLOAT             __riscv_vsse64_v_f64m8
++#define VFMULVF_FLOAT           __riscv_vfmul_vf_f64m8
++#define VFMVVF_FLOAT            __riscv_vfmv_v_f_f64m8
++#endif
++
++/*****************************************************
++ * Order ColMajor
++ * Trans with RVV optimization
++ ******************************************************/
++
++int CNAME(BLASLONG rows, BLASLONG cols, FLOAT alpha, FLOAT *a, BLASLONG lda, FLOAT *b, BLASLONG ldb)
++{
++	BLASLONG i, j;
++	FLOAT *aptr, *bptr;
++	size_t vl;
++
++	FLOAT_V_T va;
++	if (rows <= 0) return(0);
++	if (cols <= 0) return(0);
++
++	aptr = a;
++
++	if (alpha == 0.0)
++	{
++		vl = VSETVL_MAX;
++		va = VFMVVF_FLOAT(0, vl);
++		for (i = 0; i < cols; i++)
++		{
++			bptr = &b[i];
++			for (j = 0; j < rows; j += vl)
++			{
++				vl = VSETVL(rows - j);
++				VSSEV_FLOAT(bptr + j * ldb, sizeof(FLOAT) * ldb, va, vl);
++			}
++		}
++		return(0);
++	}
++
++	if (alpha == 1.0)
++	{
++		for (i = 0; i < cols; i++)
++		{
++			bptr = &b[i];
++			for (j = 0; j < rows; j += vl)
++			{
++				vl = VSETVL(rows - j);
++				va = VLEV_FLOAT(aptr + j, vl);
++				VSSEV_FLOAT(bptr + j * ldb, sizeof(FLOAT) * ldb, va, vl);
++			}
++			aptr += lda;
++		}
++		return(0);
++	}
++
++	for (i = 0; i < cols; i++)
++	{
++		bptr = &b[i];
++		for (j = 0; j < rows; j += vl)
++		{
++			vl = VSETVL(rows - j);
++			va = VLEV_FLOAT(aptr + j, vl);
++			va = VFMULVF_FLOAT(va, alpha, vl);
++			VSSEV_FLOAT(bptr + j * ldb, sizeof(FLOAT) * ldb, va, vl);
++		}
++		aptr += lda;
++	}
++
++	return(0);
++}
+\ No newline at end of file
+diff -ruN a/kernel/riscv64/rotm_rvv.c OpenBLAS-0.3.30-bp/kernel/riscv64/rotm_rvv.c
+--- a/kernel/riscv64/rotm_rvv.c	2026-08-27 12:31:59
++++ b/kernel/riscv64/rotm_rvv.c	2026-08-27 12:34:10
+@@ -62,6 +62,58 @@
+   	dflag = dparam[1];
+     if (n <= 0 || dflag == - 2.0) goto L140;
+ 
++    if (incx == 0 || incy == 0) {
++        BLASLONG i;
++        FLOAT w, z;
++
++        kx = 1;
++        ky = 1;
++        if (incx < 0) {
++            kx = (1 - n) * incx + 1;
++        }
++        if (incy < 0) {
++            ky = (1 - n) * incy + 1;
++        }
++
++        if (dflag < 0.) {
++            dh11 = dparam[2];
++            dh12 = dparam[4];
++            dh21 = dparam[3];
++            dh22 = dparam[5];
++            for (i = 0; i < n; ++i) {
++                w = dx[kx];
++                z = dy[ky];
++                dx[kx] = w * dh11 + z * dh12;
++                dy[ky] = w * dh21 + z * dh22;
++                kx += incx;
++                ky += incy;
++            }
++        } else if (dflag == 0) {
++            dh12 = dparam[4];
++            dh21 = dparam[3];
++            for (i = 0; i < n; ++i) {
++                w = dx[kx];
++                z = dy[ky];
++                dx[kx] = w + z * dh12;
++                dy[ky] = w * dh21 + z;
++                kx += incx;
++                ky += incy;
++            }
++        } else {
++            dh11 = dparam[2];
++            dh22 = dparam[5];
++            for (i = 0; i < n; ++i) {
++                w = dx[kx];
++                z = dy[ky];
++                dx[kx] = w * dh11 + z;
++                dy[ky] = -w + dh22 * z;
++                kx += incx;
++                ky += incy;
++            }
++        }
++        goto L140;
++    }
++
+     if (!(incx == incy && incx > 0)) goto L70;
+ 
+     nsteps = n * incx;
+@@ -177,14 +229,6 @@
+ L80:
+     dh12 = dparam[4];
+     dh21 = dparam[3];
+-    if(incx < 0){
+-        incx = -incx;
+-        dx -= n*incx;
+-    }
+-    if(incy < 0){
+-        incy = -incy;
+-        dy -= n*incy;
+-    }
+     stride_x = incx * sizeof(FLOAT);
+     stride_y = incy * sizeof(FLOAT);
+     for (size_t vl; n > 0; n -= vl, dx += vl*incx, dy += vl*incy) {
+@@ -203,14 +247,6 @@
+ L100:
+     dh11 = dparam[2];
+     dh22 = dparam[5];
+-    if(incx < 0){
+-        incx = -incx;
+-        dx -= n*incx;
+-    }
+-    if(incy < 0){
+-        incy = -incy;
+-        dy -= n*incy;
+-    }
+     stride_x = incx * sizeof(FLOAT);
+     stride_y = incy * sizeof(FLOAT);
+     for (size_t vl; n > 0; n -= vl, dx += vl*incx, dy += vl*incy) {
+@@ -231,14 +267,6 @@
+     dh12 = dparam[4];
+     dh21 = dparam[3];
+     dh22 = dparam[5];
+-    if(incx < 0){
+-        incx = -incx;
+-        dx -= n*incx;
+-    }
+-    if(incy < 0){
+-        incy = -incy;
+-        dy -= n*incy;
+-    }
+     stride_x = incx * sizeof(FLOAT);
+     stride_y = incy * sizeof(FLOAT);
+     for (size_t vl; n > 0; n -= vl, dx += vl*incx, dy += vl*incy) {
+diff -ruN a/kernel/riscv64/trsm_kernel_LN_rvv.c OpenBLAS-0.3.30-bp/kernel/riscv64/trsm_kernel_LN_rvv.c
+--- a/kernel/riscv64/trsm_kernel_LN_rvv.c	1970-01-01 01:00:00
++++ b/kernel/riscv64/trsm_kernel_LN_rvv.c	2026-08-27 12:34:10
+@@ -0,0 +1,333 @@
++/***************************************************************************
++Copyright (c) 2022, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++#include "common.h"
++
++#if !defined(DOUBLE)
++#define VSETVL(n)               __riscv_vsetvl_e32m2(n)
++#define FLOAT_V_T               vfloat32m2_t
++#define FLOAT_VX2_T             vfloat32m2x2_t
++#define VGET_VX2                __riscv_vget_v_f32m2x2_f32m2
++#define VSET_VX2                __riscv_vset_v_f32m2_f32m2x2
++#define VLEV_FLOAT              __riscv_vle32_v_f32m2
++#define VSEV_FLOAT              __riscv_vse32_v_f32m2
++#define VSSEG2_FLOAT            __riscv_vsseg2e32_v_f32m2x2
++#define VLSEG2_FLOAT            __riscv_vlseg2e32_v_f32m2x2
++#define VFMACCVF_FLOAT          __riscv_vfmacc_vf_f32m2
++#define VFNMSACVF_FLOAT         __riscv_vfnmsac_vf_f32m2
++#define VFMULVF_FLOAT           __riscv_vfmul_vf_f32m2
++#else
++#define VSETVL(n)               __riscv_vsetvl_e64m2(n)
++#define FLOAT_V_T               vfloat64m2_t
++#define FLOAT_VX2_T             vfloat64m2x2_t
++#define VGET_VX2                __riscv_vget_v_f64m2x2_f64m2
++#define VSET_VX2                __riscv_vset_v_f64m2_f64m2x2
++#define VLEV_FLOAT              __riscv_vle64_v_f64m2
++#define VSEV_FLOAT              __riscv_vse64_v_f64m2
++#define VSSEG2_FLOAT            __riscv_vsseg2e64_v_f64m2x2
++#define VLSEG2_FLOAT            __riscv_vlseg2e64_v_f64m2x2
++#define VFMVVF_FLOAT            __riscv_vfmv_v_f_f64m2
++#define VFMACCVF_FLOAT          __riscv_vfmacc_vf_f64m2
++#define VFNMSACVF_FLOAT         __riscv_vfnmsac_vf_f64m2
++#define VFMULVF_FLOAT           __riscv_vfmul_vf_f64m2
++#endif
++
++
++static FLOAT dm1 = -1.;
++
++#ifdef CONJ
++#define GEMM_KERNEL   GEMM_KERNEL_L
++#else
++#define GEMM_KERNEL   GEMM_KERNEL_N
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 1
++#define GEMM_UNROLL_N_SHIFT 0
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 2
++#define GEMM_UNROLL_N_SHIFT 1
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 4
++#define GEMM_UNROLL_N_SHIFT 2
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 8
++#define GEMM_UNROLL_N_SHIFT 3
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 16
++#define GEMM_UNROLL_N_SHIFT 4
++#endif
++
++// Optimizes the implementation in ../arm64/trsm_kernel_LN_sve.c
++
++#ifndef COMPLEX
++
++static inline void solve(BLASLONG m, BLASLONG n, FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc) {
++    FLOAT aa;
++    FLOAT* pc;
++
++    int i, j, k;
++
++    FLOAT_V_T va, vc;
++
++    size_t vl;
++
++    a += (m - 1) * m;
++    b += (m - 1) * n;
++
++    for (i = m - 1; i >= 0; i--) {
++
++        aa = *(a + i);
++        for (j = 0; j < n; j++) {
++            FLOAT bb;
++
++            pc = c + j * ldc;
++            bb = *(pc + i) * aa;
++            *(b + j) = bb;
++            *(pc + i) = bb;
++        }
++
++        for (k = 0; k < i; k += vl) {
++            vl = VSETVL(i - k);
++            va = VLEV_FLOAT(a + k, vl);
++            for (j = 0; j < n; j++) {
++                pc = c + j * ldc;
++                vc = VLEV_FLOAT(pc + k, vl);
++                vc = VFNMSACVF_FLOAT(vc, *(b + j), va, vl);
++                VSEV_FLOAT(pc + k, vc, vl);
++            }
++        }
++
++        a -= m;
++        b += n;
++        b -= 2 * n;
++    }
++
++}
++#else
++
++static inline void solve(BLASLONG m, BLASLONG n, FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc) {
++
++    FLOAT aa1, aa2;
++    FLOAT *pc;
++    int i, j, k;
++
++    FLOAT_VX2_T vax2, vcx2;
++    FLOAT_V_T va1, va2, vc1, vc2;
++    size_t vl;
++    BLASLONG ldc2 = ldc * 2;
++
++    a += (m - 1) * m * 2;
++    b += (m - 1) * n * 2;
++
++    for (i = m - 1; i >= 0; i--) {
++
++        aa1 = *(a + i * 2 + 0);
++        aa2 = *(a + i * 2 + 1);
++        for (j = 0; j < n; j++) {
++            FLOAT bb1, bb2, ss1, ss2;
++
++            pc = c + j * ldc2;
++            bb1 = *(pc + i * 2 + 0);
++            bb2 = *(pc + i * 2 + 1);
++#ifndef CONJ
++            ss1 = aa1 * bb1 - aa2 * bb2;
++            ss2 = aa1 * bb2 + aa2 * bb1;
++#else
++            ss1 = aa1 * bb1 + aa2 * bb2;
++            ss2 = aa1 * bb2 - aa2 * bb1;
++#endif
++            *(b + j * 2 + 0) = ss1;
++            *(b + j * 2 + 1) = ss2;
++            *(pc + i * 2 + 0) = ss1;
++            *(pc + i * 2 + 1) = ss2;
++        }
++
++        for (k = 0; k < i; k += vl) {
++            vl = VSETVL(i - k);
++            vax2 = VLSEG2_FLOAT(a + k * 2, vl);
++            va1 = VGET_VX2(vax2, 0);
++            va2 = VGET_VX2(vax2, 1);
++            for (j = 0; j < n; j++) {
++                FLOAT ss1 = *(b + j * 2 + 0);
++                FLOAT ss2 = *(b + j * 2 + 1);
++
++                pc = c + j * ldc2;
++                vcx2 = VLSEG2_FLOAT(pc + k * 2, vl);
++                vc1 = VGET_VX2(vcx2, 0);
++                vc2 = VGET_VX2(vcx2, 1);
++#ifndef CONJ
++                vc1 =  VFMACCVF_FLOAT(vc1, ss2, va2, vl);
++                vc1 = VFNMSACVF_FLOAT(vc1, ss1, va1, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, ss1, va2, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, ss2, va1, vl);
++#else
++                vc1 = VFNMSACVF_FLOAT(vc1, ss2, va2, vl);
++                vc1 = VFNMSACVF_FLOAT(vc1, ss1, va1, vl);
++                vc2 =  VFMACCVF_FLOAT(vc2, ss1, va2, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, ss2, va1, vl);
++#endif
++                vcx2 = VSET_VX2(vcx2, 0, vc1);
++                vcx2 = VSET_VX2(vcx2, 1, vc2);
++                VSSEG2_FLOAT(pc + k * 2, vcx2, vl);
++            }
++        }
++
++        a -= m * 2;
++        b += n * 2;
++        b -= 4 * n;
++    }
++}
++
++
++#endif
++
++int CNAME(BLASLONG m, BLASLONG n, BLASLONG k,  FLOAT dummy1,
++#ifdef COMPLEX
++    FLOAT dummy2,
++#endif
++    FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc, BLASLONG offset){
++
++  BLASLONG i, j;
++  FLOAT *aa, *cc;
++  BLASLONG  kk;
++
++#ifndef COMPLEX
++#define PROCESS_LN_M_BLOCK(MB, NB) do { \
++    if (k - kk > 0) { \
++      GEMM_KERNEL((MB), (NB), k - kk, dm1, \
++                  aa + (MB) * kk * COMPSIZE, \
++                  b  + (NB) * kk * COMPSIZE, \
++                  cc, ldc); \
++    } \
++    solve((MB), (NB), \
++          aa + (kk - (MB)) * (MB) * COMPSIZE, \
++          b  + (kk - (MB)) * (NB) * COMPSIZE, \
++          cc, ldc); \
++  } while (0)
++#else
++#define PROCESS_LN_M_BLOCK(MB, NB) do { \
++    if (k - kk > 0) { \
++      GEMM_KERNEL((MB), (NB), k - kk, dm1, ZERO, \
++                  aa + (MB) * kk * COMPSIZE, \
++                  b  + (NB) * kk * COMPSIZE, \
++                  cc, ldc); \
++    } \
++    solve((MB), (NB), \
++          aa + (kk - (MB)) * (MB) * COMPSIZE, \
++          b  + (kk - (MB)) * (NB) * COMPSIZE, \
++          cc, ldc); \
++  } while (0)
++#endif
++
++  j = (n >> GEMM_UNROLL_N_SHIFT);
++
++  while (j > 0) {
++
++    kk = m + offset;
++
++    if (m & (GEMM_DEFAULT_UNROLL_M - 1)) {
++      for (i = 1; i < GEMM_DEFAULT_UNROLL_M; i <<= 1) {
++        if (m & i) {
++          aa = a + ((m & ~(i - 1)) - i) * k * COMPSIZE;
++          cc = c + ((m & ~(i - 1)) - i)     * COMPSIZE;
++
++          PROCESS_LN_M_BLOCK(i, GEMM_UNROLL_N);
++          kk -= i;
++        }
++      }
++    }
++
++    i = (m & ~(GEMM_DEFAULT_UNROLL_M - 1));
++    if (i > 0) {
++      aa = a + (i - GEMM_DEFAULT_UNROLL_M) * k * COMPSIZE;
++      cc = c + (i - GEMM_DEFAULT_UNROLL_M)     * COMPSIZE;
++
++      do {
++        PROCESS_LN_M_BLOCK(GEMM_DEFAULT_UNROLL_M, GEMM_UNROLL_N);
++
++        aa -= GEMM_DEFAULT_UNROLL_M * k * COMPSIZE;
++        cc -= GEMM_DEFAULT_UNROLL_M     * COMPSIZE;
++        kk -= GEMM_DEFAULT_UNROLL_M;
++        i -= GEMM_DEFAULT_UNROLL_M;
++      } while (i > 0);
++    }
++
++    b += GEMM_UNROLL_N * k * COMPSIZE;
++    c += GEMM_UNROLL_N * ldc * COMPSIZE;
++    j --;
++  }
++
++  if (n & (GEMM_UNROLL_N - 1)) {
++
++    j = (GEMM_UNROLL_N >> 1);
++    while (j > 0) {
++      if (n & j) {
++
++        kk = m + offset;
++
++        if (m & (GEMM_DEFAULT_UNROLL_M - 1)) {
++          for (i = 1; i < GEMM_DEFAULT_UNROLL_M; i <<= 1) {
++            if (m & i) {
++              aa = a + ((m & ~(i - 1)) - i) * k * COMPSIZE;
++              cc = c + ((m & ~(i - 1)) - i)     * COMPSIZE;
++
++              PROCESS_LN_M_BLOCK(i, j);
++              kk -= i;
++            }
++          }
++        }
++
++        i = (m & ~(GEMM_DEFAULT_UNROLL_M - 1));
++        if (i > 0) {
++          aa = a + (i - GEMM_DEFAULT_UNROLL_M) * k * COMPSIZE;
++          cc = c + (i - GEMM_DEFAULT_UNROLL_M)     * COMPSIZE;
++
++          do {
++            PROCESS_LN_M_BLOCK(GEMM_DEFAULT_UNROLL_M, j);
++
++            aa -= GEMM_DEFAULT_UNROLL_M * k * COMPSIZE;
++            cc -= GEMM_DEFAULT_UNROLL_M     * COMPSIZE;
++            kk -= GEMM_DEFAULT_UNROLL_M;
++            i -= GEMM_DEFAULT_UNROLL_M;
++          } while (i > 0);
++        }
++
++        b += j * k   * COMPSIZE;
++        c += j * ldc * COMPSIZE;
++      }
++      j >>= 1;
++    }
++  }
++
++  return 0;
++
++#undef PROCESS_LN_M_BLOCK
++}
+diff -ruN a/kernel/riscv64/trsm_kernel_LT_rvv.c OpenBLAS-0.3.30-bp/kernel/riscv64/trsm_kernel_LT_rvv.c
+--- a/kernel/riscv64/trsm_kernel_LT_rvv.c	1970-01-01 01:00:00
++++ b/kernel/riscv64/trsm_kernel_LT_rvv.c	2026-08-27 12:34:10
+@@ -0,0 +1,309 @@
++/***************************************************************************
++Copyright (c) 2022, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++#include "common.h"
++
++#if !defined(DOUBLE)
++#define VSETVL(n)               __riscv_vsetvl_e32m2(n)
++#define FLOAT_V_T               vfloat32m2_t
++#define FLOAT_VX2_T             vfloat32m2x2_t
++#define VGET_VX2                __riscv_vget_v_f32m2x2_f32m2
++#define VSET_VX2                __riscv_vset_v_f32m2_f32m2x2
++#define VLEV_FLOAT              __riscv_vle32_v_f32m2
++#define VSEV_FLOAT              __riscv_vse32_v_f32m2
++#define VSSEG2_FLOAT            __riscv_vsseg2e32_v_f32m2x2
++#define VLSEG2_FLOAT            __riscv_vlseg2e32_v_f32m2x2
++#define VFMACCVF_FLOAT          __riscv_vfmacc_vf_f32m2
++#define VFNMSACVF_FLOAT         __riscv_vfnmsac_vf_f32m2
++#define VFMULVF_FLOAT           __riscv_vfmul_vf_f32m2
++#else
++#define VSETVL(n)               __riscv_vsetvl_e64m2(n)
++#define FLOAT_V_T               vfloat64m2_t
++#define FLOAT_VX2_T             vfloat64m2x2_t
++#define VGET_VX2                __riscv_vget_v_f64m2x2_f64m2
++#define VSET_VX2                __riscv_vset_v_f64m2_f64m2x2
++#define VLEV_FLOAT              __riscv_vle64_v_f64m2
++#define VSEV_FLOAT              __riscv_vse64_v_f64m2
++#define VSSEG2_FLOAT            __riscv_vsseg2e64_v_f64m2x2
++#define VLSEG2_FLOAT            __riscv_vlseg2e64_v_f64m2x2
++#define VFMVVF_FLOAT            __riscv_vfmv_v_f_f64m2
++#define VFMACCVF_FLOAT          __riscv_vfmacc_vf_f64m2
++#define VFNMSACVF_FLOAT         __riscv_vfnmsac_vf_f64m2
++#define VFMULVF_FLOAT           __riscv_vfmul_vf_f64m2
++#endif
++
++
++static FLOAT dm1 = -1.;
++
++#ifdef CONJ
++#define GEMM_KERNEL   GEMM_KERNEL_L
++#else
++#define GEMM_KERNEL   GEMM_KERNEL_N
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 1
++#define GEMM_UNROLL_N_SHIFT 0
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 2
++#define GEMM_UNROLL_N_SHIFT 1
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 4
++#define GEMM_UNROLL_N_SHIFT 2
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 8
++#define GEMM_UNROLL_N_SHIFT 3
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 16
++#define GEMM_UNROLL_N_SHIFT 4
++#endif
++
++// Optimizes the implementation in ../arm64/trsm_kernel_LT_sve.c
++
++#ifndef COMPLEX
++
++static inline void solve(BLASLONG m, BLASLONG n, FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc) {
++
++    FLOAT aa;
++    FLOAT* pc;
++
++    int i, j, k;
++
++    FLOAT_V_T va, vc;
++
++    size_t vl;
++
++    for (i = 0; i < m; i++) {
++
++        aa = *(a + i);
++        for (j = 0; j < n; j++) {
++            FLOAT bb;
++
++            pc = c + j * ldc;
++            bb = *(pc + i) * aa;
++            *(b + j) = bb;
++            *(pc + i) = bb;
++        }
++
++        for (k = i + 1; k < m; k += vl) {
++            vl = VSETVL(m - k);
++            va = VLEV_FLOAT(a + k, vl);
++            for (j = 0; j < n; j++) {
++                pc = c + j * ldc;
++                vc = VLEV_FLOAT(pc + k, vl);
++                vc = VFNMSACVF_FLOAT(vc, *(b + j), va, vl);
++                VSEV_FLOAT(pc + k, vc, vl);
++            }
++        }
++
++        b += n;
++        a += m;
++    }
++}
++
++#else
++
++static inline void solve(BLASLONG m, BLASLONG n, FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc) {
++
++    FLOAT aa1, aa2;
++    FLOAT *pc;
++    int i, j, k;
++
++    FLOAT_VX2_T vax2, vcx2;
++    FLOAT_V_T va1, va2, vc1, vc2;
++    size_t vl;
++
++    ldc *= 2;
++
++    for (i = 0; i < m; i++) {
++        aa1 = *(a + i * 2 + 0);
++        aa2 = *(a + i * 2 + 1);
++        for (j = 0; j < n; j++) {
++            FLOAT bb1, bb2, ss1, ss2;
++
++            pc = c + j * ldc;
++            bb1 = *(pc + i * 2 + 0);
++            bb2 = *(pc + i * 2 + 1);
++#ifndef CONJ
++            ss1 = aa1 * bb1 - aa2 * bb2;
++            ss2 = aa1 * bb2 + aa2 * bb1;
++#else
++            ss1 = aa1 * bb1 + aa2 * bb2;
++            ss2 = aa1 * bb2 - aa2 * bb1;
++#endif
++            *(b + j * 2 + 0) = ss1;
++            *(b + j * 2 + 1) = ss2;
++            *(pc + i * 2 + 0) = ss1;
++            *(pc + i * 2 + 1) = ss2;
++        }
++
++        for (k = i + 1; k < m; k += vl) {
++            vl = VSETVL(m - k);
++            vax2 = VLSEG2_FLOAT(a + k * 2, vl);
++            va1 = VGET_VX2(vax2, 0);
++            va2 = VGET_VX2(vax2, 1);
++            for (j = 0; j < n; j++) {
++                FLOAT ss1 = *(b + j * 2 + 0);
++                FLOAT ss2 = *(b + j * 2 + 1);
++
++                pc = c + j * ldc;
++                vcx2 = VLSEG2_FLOAT(pc + k * 2, vl);
++                vc1 = VGET_VX2(vcx2, 0);
++                vc2 = VGET_VX2(vcx2, 1);
++#ifndef CONJ
++                vc1 =  VFMACCVF_FLOAT(vc1, ss2, va2, vl);
++                vc1 = VFNMSACVF_FLOAT(vc1, ss1, va1, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, ss1, va2, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, ss2, va1, vl);
++#else
++                vc1 = VFNMSACVF_FLOAT(vc1, ss2, va2, vl);
++                vc1 = VFNMSACVF_FLOAT(vc1, ss1, va1, vl);
++                vc2 =  VFMACCVF_FLOAT(vc2, ss1, va2, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, ss2, va1, vl);
++#endif
++                vcx2 = VSET_VX2(vcx2, 0, vc1);
++                vcx2 = VSET_VX2(vcx2, 1, vc2);
++                VSSEG2_FLOAT(pc + k * 2, vcx2, vl);
++            }
++        }
++
++        b += n * 2;
++        a += m * 2;
++    }
++}
++
++#endif
++
++int CNAME(BLASLONG m, BLASLONG n, BLASLONG k, FLOAT dummy1,
++#ifdef COMPLEX
++	   FLOAT dummy2,
++#endif
++	   FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc, BLASLONG offset){
++
++  FLOAT *aa, *cc;
++  BLASLONG  kk;
++  BLASLONG i, j;
++
++#ifndef COMPLEX
++#define PROCESS_LT_M_BLOCK(MB, NB) do { \
++    if (kk > 0) { \
++      GEMM_KERNEL((MB), (NB), kk, dm1, aa, b, cc, ldc); \
++    } \
++    solve((MB), (NB), \
++          aa + kk * (MB) * COMPSIZE, \
++          b  + kk * (NB) * COMPSIZE, \
++          cc, ldc); \
++    aa += (MB) * k * COMPSIZE; \
++    cc += (MB)     * COMPSIZE; \
++    kk += (MB); \
++  } while (0)
++#else
++#define PROCESS_LT_M_BLOCK(MB, NB) do { \
++    if (kk > 0) { \
++      GEMM_KERNEL((MB), (NB), kk, dm1, ZERO, aa, b, cc, ldc); \
++    } \
++    solve((MB), (NB), \
++          aa + kk * (MB) * COMPSIZE, \
++          b  + kk * (NB) * COMPSIZE, \
++          cc, ldc); \
++    aa += (MB) * k * COMPSIZE; \
++    cc += (MB)     * COMPSIZE; \
++    kk += (MB); \
++  } while (0)
++#endif
++
++  j = (n >> GEMM_UNROLL_N_SHIFT);
++
++  while (j > 0) {
++
++    kk = offset;
++    aa = a;
++    cc = c;
++
++    i = 0;
++    while (i + GEMM_DEFAULT_UNROLL_M <= m) {
++      PROCESS_LT_M_BLOCK(GEMM_DEFAULT_UNROLL_M, GEMM_UNROLL_N);
++      i += GEMM_DEFAULT_UNROLL_M;
++    }
++
++    if (m & (GEMM_DEFAULT_UNROLL_M - 1)) {
++      BLASLONG mm = (GEMM_DEFAULT_UNROLL_M >> 1);
++      while (mm > 0) {
++        if ((m - i) & mm) {
++          PROCESS_LT_M_BLOCK(mm, GEMM_UNROLL_N);
++          i += mm;
++        }
++        mm >>= 1;
++      }
++    }
++
++    b += GEMM_UNROLL_N * k   * COMPSIZE;
++    c += GEMM_UNROLL_N * ldc * COMPSIZE;
++    j --;
++  }
++
++  if (n & (GEMM_UNROLL_N - 1)) {
++
++    j = (GEMM_UNROLL_N >> 1);
++    while (j > 0) {
++      if (n & j) {
++
++        kk = offset;
++        aa = a;
++        cc = c;
++
++        i = 0;
++        while (i + GEMM_DEFAULT_UNROLL_M <= m) {
++          PROCESS_LT_M_BLOCK(GEMM_DEFAULT_UNROLL_M, j);
++          i += GEMM_DEFAULT_UNROLL_M;
++        }
++
++        if (m & (GEMM_DEFAULT_UNROLL_M - 1)) {
++          BLASLONG mm = (GEMM_DEFAULT_UNROLL_M >> 1);
++          while (mm > 0) {
++            if ((m - i) & mm) {
++              PROCESS_LT_M_BLOCK(mm, j);
++              i += mm;
++            }
++            mm >>= 1;
++          }
++        }
++
++        b += j * k   * COMPSIZE;
++        c += j * ldc * COMPSIZE;
++      }
++      j >>= 1;
++    }
++  }
++
++  return 0;
++
++#undef PROCESS_LT_M_BLOCK
++}
+diff -ruN a/kernel/riscv64/trsm_kernel_RN_rvv.c OpenBLAS-0.3.30-bp/kernel/riscv64/trsm_kernel_RN_rvv.c
+--- a/kernel/riscv64/trsm_kernel_RN_rvv.c	1970-01-01 01:00:00
++++ b/kernel/riscv64/trsm_kernel_RN_rvv.c	2026-08-27 12:34:10
+@@ -0,0 +1,302 @@
++/***************************************************************************
++Copyright (c) 2022, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++#include "common.h"
++
++#if !defined(DOUBLE)
++#define VSETVL(n)               __riscv_vsetvl_e32m2(n)
++#define FLOAT_V_T               vfloat32m2_t
++#define FLOAT_VX2_T             vfloat32m2x2_t
++#define VGET_VX2                __riscv_vget_v_f32m2x2_f32m2
++#define VSET_VX2                __riscv_vset_v_f32m2_f32m2x2
++#define VLEV_FLOAT              __riscv_vle32_v_f32m2
++#define VSEV_FLOAT              __riscv_vse32_v_f32m2
++#define VLSEG2_FLOAT            __riscv_vlseg2e32_v_f32m2x2
++#define VSSEG2_FLOAT            __riscv_vsseg2e32_v_f32m2x2
++#define VFMACCVF_FLOAT          __riscv_vfmacc_vf_f32m2
++#define VFNMSACVF_FLOAT         __riscv_vfnmsac_vf_f32m2
++#define VFMULVF_FLOAT           __riscv_vfmul_vf_f32m2
++#else
++#define VSETVL(n)               __riscv_vsetvl_e64m2(n)
++#define FLOAT_V_T               vfloat64m2_t
++#define FLOAT_VX2_T             vfloat64m2x2_t
++#define VGET_VX2                __riscv_vget_v_f64m2x2_f64m2
++#define VSET_VX2                __riscv_vset_v_f64m2_f64m2x2
++#define VLEV_FLOAT              __riscv_vle64_v_f64m2
++#define VSEV_FLOAT              __riscv_vse64_v_f64m2
++#define VLSEG2_FLOAT            __riscv_vlseg2e64_v_f64m2x2
++#define VSSEG2_FLOAT            __riscv_vsseg2e64_v_f64m2x2
++#define VFMVVF_FLOAT            __riscv_vfmv_v_f_f64m2
++#define VFMACCVF_FLOAT          __riscv_vfmacc_vf_f64m2
++#define VFNMSACVF_FLOAT         __riscv_vfnmsac_vf_f64m2
++#define VFMULVF_FLOAT           __riscv_vfmul_vf_f64m2
++#endif
++
++static FLOAT dm1 = -1.;
++
++#ifdef CONJ
++#define GEMM_KERNEL   GEMM_KERNEL_R
++#else
++#define GEMM_KERNEL   GEMM_KERNEL_N
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 1
++#define GEMM_UNROLL_N_SHIFT 0
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 2
++#define GEMM_UNROLL_N_SHIFT 1
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 4
++#define GEMM_UNROLL_N_SHIFT 2
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 8
++#define GEMM_UNROLL_N_SHIFT 3
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 16
++#define GEMM_UNROLL_N_SHIFT 4
++#endif
++
++// Optimizes the implementation in ../arm64/trsm_kernel_RN_sve.c
++
++#ifndef COMPLEX
++
++static inline void solve(BLASLONG m, BLASLONG n, FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc) {
++
++    FLOAT bb;
++    FLOAT *pci, *pcj;
++
++    int i, j, k;
++    FLOAT_V_T va, vc;
++
++    size_t vl;
++    for (i = 0; i < n; i++) {
++
++        bb = *(b + i);
++        pci = c + i * ldc;
++        pcj = c;
++        for (j = m; j > 0; j -= vl) {
++            vl = VSETVL(j);
++            va = VLEV_FLOAT(pci, vl);
++            va = VFMULVF_FLOAT(va, bb, vl);
++            VSEV_FLOAT(a, va, vl);
++            VSEV_FLOAT(pci, va, vl);
++            a   += vl;
++            pci += vl;
++            for (k = i + 1; k < n; k ++){
++                vc = VLEV_FLOAT(pcj + k * ldc, vl);
++                vc = VFNMSACVF_FLOAT(vc, *(b + k), va, vl);
++                VSEV_FLOAT(pcj + k * ldc, vc, vl);
++            }
++            pcj += vl;
++        }
++        b += n;
++    }
++}
++
++#else
++
++static inline void solve(BLASLONG m, BLASLONG n, FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc) {
++
++    FLOAT bb1, bb2;
++
++    FLOAT *pci, *pcj;
++
++    int i, j, k;
++
++    FLOAT_VX2_T vax2, vsx2, vcx2;
++    FLOAT_V_T va1, va2, vs1, vs2, vc1, vc2;
++
++    size_t vl;
++
++    for (i = 0; i < n; i++) {
++
++        bb1 = *(b + i * 2 + 0);
++        bb2 = *(b + i * 2 + 1);
++
++        pci = c + i * ldc * 2;
++        pcj = c;
++
++        for (j = m; j > 0; j -= vl) {
++            vl = VSETVL(j);
++            vax2 = VLSEG2_FLOAT(pci, vl);
++            va1 = VGET_VX2(vax2, 0);
++            va2 = VGET_VX2(vax2, 1);
++#ifndef CONJ
++            vs1 =   VFMULVF_FLOAT(va1, bb1, vl);
++            vs1 = VFNMSACVF_FLOAT(vs1, bb2, va2, vl);
++            vs2 =   VFMULVF_FLOAT(va1, bb2, vl);
++            vs2 =  VFMACCVF_FLOAT(vs2, bb1, va2, vl);
++#else
++            vs1 =   VFMULVF_FLOAT(va1, bb1, vl);
++            vs1 =  VFMACCVF_FLOAT(vs1, bb2, va2, vl);
++            vs2 =   VFMULVF_FLOAT(va2, bb1, vl);
++            vs2 = VFNMSACVF_FLOAT(vs2, bb2, va1, vl);
++#endif
++            vsx2 = VSET_VX2(vsx2, 0, vs1);
++            vsx2 = VSET_VX2(vsx2, 1, vs2);
++            VSSEG2_FLOAT(a, vsx2, vl);
++            VSSEG2_FLOAT(pci, vsx2, vl);
++            a += vl * 2;
++            pci += vl * 2;
++
++            for (k = i + 1; k < n; k ++){
++                vcx2 = VLSEG2_FLOAT(pcj + k * ldc * 2, vl);
++                vc1 = VGET_VX2(vcx2, 0);
++                vc2 = VGET_VX2(vcx2, 1);
++#ifndef CONJ
++                vc1 =  VFMACCVF_FLOAT(vc1, *(b + k * 2 + 1), vs2, vl);
++                vc1 = VFNMSACVF_FLOAT(vc1, *(b + k * 2 + 0), vs1, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, *(b + k * 2 + 1), vs1, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, *(b + k * 2 + 0), vs2, vl);
++#else
++                vc1 = VFNMSACVF_FLOAT(vc1, *(b + k * 2 + 0), vs1, vl);
++                vc1 = VFNMSACVF_FLOAT(vc1, *(b + k * 2 + 1), vs2, vl);
++                vc2 =  VFMACCVF_FLOAT(vc2, *(b + k * 2 + 1), vs1, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, *(b + k * 2 + 0), vs2, vl);
++#endif
++                vcx2 = VSET_VX2(vcx2, 0, vc1);
++                vcx2 = VSET_VX2(vcx2, 1, vc2);
++                VSSEG2_FLOAT(pcj + k * ldc * 2, vcx2, vl);
++            }
++            pcj += vl * 2;
++        }
++        b += n * 2;
++    }
++}
++
++#endif
++
++
++int CNAME(BLASLONG m, BLASLONG n, BLASLONG k, FLOAT dummy1,
++#ifdef COMPLEX
++	   FLOAT dummy2,
++#endif
++	   FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc, BLASLONG offset){
++
++  FLOAT *aa, *cc;
++  BLASLONG  kk;
++  BLASLONG i, j;
++
++#ifndef COMPLEX
++#define PROCESS_RN_M_BLOCK(MB, NB) do { \
++    if (kk > 0) { \
++      GEMM_KERNEL((MB), (NB), kk, dm1, aa, b, cc, ldc); \
++    } \
++    solve((MB), (NB), \
++          aa + kk * (MB) * COMPSIZE, \
++          b  + kk * (NB) * COMPSIZE, \
++          cc, ldc); \
++    aa += (MB) * k * COMPSIZE; \
++    cc += (MB)     * COMPSIZE; \
++  } while (0)
++#else
++#define PROCESS_RN_M_BLOCK(MB, NB) do { \
++    if (kk > 0) { \
++      GEMM_KERNEL((MB), (NB), kk, dm1, ZERO, aa, b, cc, ldc); \
++    } \
++    solve((MB), (NB), \
++          aa + kk * (MB) * COMPSIZE, \
++          b  + kk * (NB) * COMPSIZE, \
++          cc, ldc); \
++    aa += (MB) * k * COMPSIZE; \
++    cc += (MB)     * COMPSIZE; \
++  } while (0)
++#endif
++
++  j = (n >> GEMM_UNROLL_N_SHIFT);
++  kk = -offset;
++
++  while (j > 0) {
++
++    aa = a;
++    cc = c;
++
++    i = 0;
++    while (i + GEMM_DEFAULT_UNROLL_M <= m) {
++      PROCESS_RN_M_BLOCK(GEMM_DEFAULT_UNROLL_M, GEMM_UNROLL_N);
++      i += GEMM_DEFAULT_UNROLL_M;
++    }
++
++    if (m & (GEMM_DEFAULT_UNROLL_M - 1)) {
++      BLASLONG mm = (GEMM_DEFAULT_UNROLL_M >> 1);
++      while (mm > 0) {
++        if ((m - i) & mm) {
++          PROCESS_RN_M_BLOCK(mm, GEMM_UNROLL_N);
++          i += mm;
++        }
++        mm >>= 1;
++      }
++    }
++
++    kk += GEMM_UNROLL_N;
++    b += GEMM_UNROLL_N * k   * COMPSIZE;
++    c += GEMM_UNROLL_N * ldc * COMPSIZE;
++    j --;
++  }
++
++  if (n & (GEMM_UNROLL_N - 1)) {
++
++    j = (GEMM_UNROLL_N >> 1);
++    while (j > 0) {
++      if (n & j) {
++
++	aa = a;
++	cc = c;
++
++	i = 0;
++	while (i + GEMM_DEFAULT_UNROLL_M <= m) {
++	  PROCESS_RN_M_BLOCK(GEMM_DEFAULT_UNROLL_M, j);
++	  i += GEMM_DEFAULT_UNROLL_M;
++	}
++
++	if (m & (GEMM_DEFAULT_UNROLL_M - 1)) {
++	  BLASLONG mm = (GEMM_DEFAULT_UNROLL_M >> 1);
++	  while (mm > 0) {
++	    if ((m - i) & mm) {
++	      PROCESS_RN_M_BLOCK(mm, j);
++	      i += mm;
++	    }
++	    mm >>= 1;
++	  }
++	}
++
++	b += j * k   * COMPSIZE;
++	c += j * ldc * COMPSIZE;
++	kk += j;
++      }
++      j >>= 1;
++    }
++  }
++
++  return 0;
++
++#undef PROCESS_RN_M_BLOCK
++}
+diff -ruN a/kernel/riscv64/trsm_kernel_RT_rvv.c OpenBLAS-0.3.30-bp/kernel/riscv64/trsm_kernel_RT_rvv.c
+--- a/kernel/riscv64/trsm_kernel_RT_rvv.c	1970-01-01 01:00:00
++++ b/kernel/riscv64/trsm_kernel_RT_rvv.c	2026-08-27 12:34:10
+@@ -0,0 +1,320 @@
++/***************************************************************************
++Copyright (c) 2022, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++#include "common.h"
++
++#if !defined(DOUBLE)
++#define VSETVL(n)               __riscv_vsetvl_e32m2(n)
++#define FLOAT_V_T               vfloat32m2_t
++#define FLOAT_VX2_T             vfloat32m2x2_t
++#define VGET_VX2                __riscv_vget_v_f32m2x2_f32m2
++#define VSET_VX2                __riscv_vset_v_f32m2_f32m2x2
++#define VLEV_FLOAT              __riscv_vle32_v_f32m2
++#define VSEV_FLOAT              __riscv_vse32_v_f32m2
++#define VLSEG2_FLOAT            __riscv_vlseg2e32_v_f32m2x2
++#define VSSEG2_FLOAT            __riscv_vsseg2e32_v_f32m2x2
++#define VFMACCVF_FLOAT          __riscv_vfmacc_vf_f32m2
++#define VFNMSACVF_FLOAT         __riscv_vfnmsac_vf_f32m2
++#define VFMULVF_FLOAT           __riscv_vfmul_vf_f32m2
++#else
++#define VSETVL(n)               __riscv_vsetvl_e64m2(n)
++#define FLOAT_V_T               vfloat64m2_t
++#define FLOAT_VX2_T             vfloat64m2x2_t
++#define VGET_VX2                __riscv_vget_v_f64m2x2_f64m2
++#define VSET_VX2                __riscv_vset_v_f64m2_f64m2x2
++#define VLEV_FLOAT              __riscv_vle64_v_f64m2
++#define VSEV_FLOAT              __riscv_vse64_v_f64m2
++#define VLSEG2_FLOAT            __riscv_vlseg2e64_v_f64m2x2
++#define VSSEG2_FLOAT            __riscv_vsseg2e64_v_f64m2x2
++#define VFMVVF_FLOAT            __riscv_vfmv_v_f_f64m2
++#define VFMACCVF_FLOAT          __riscv_vfmacc_vf_f64m2
++#define VFNMSACVF_FLOAT         __riscv_vfnmsac_vf_f64m2
++#define VFMULVF_FLOAT           __riscv_vfmul_vf_f64m2
++#endif
++
++
++static FLOAT dm1 = -1.;
++
++#ifdef CONJ
++#define GEMM_KERNEL   GEMM_KERNEL_R
++#else
++#define GEMM_KERNEL   GEMM_KERNEL_N
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 1
++#define GEMM_UNROLL_N_SHIFT 0
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 2
++#define GEMM_UNROLL_N_SHIFT 1
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 4
++#define GEMM_UNROLL_N_SHIFT 2
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 8
++#define GEMM_UNROLL_N_SHIFT 3
++#endif
++
++#if GEMM_DEFAULT_UNROLL_N == 16
++#define GEMM_UNROLL_N_SHIFT 4
++#endif
++
++// Optimizes the implementation in ../arm64/trsm_kernel_RT_sve.c
++
++#ifndef COMPLEX
++
++static inline void solve(BLASLONG m, BLASLONG n, FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc) {
++
++    FLOAT bb;
++    FLOAT *pci, *pcj;
++
++    int i, j, k;
++    FLOAT_V_T va, vc;
++
++    size_t vl;
++
++    a += (n - 1) * m;
++    b += (n - 1) * n;
++
++    for (i = n - 1; i >= 0; i--) {
++
++        bb = *(b + i);
++        pci = c + i * ldc;
++        pcj = c;
++        for (j = m; j > 0; j -= vl) {
++            vl = VSETVL(j);
++            va = VLEV_FLOAT(pci, vl);
++            va = VFMULVF_FLOAT(va, bb, vl);
++            VSEV_FLOAT(a, va, vl);
++            VSEV_FLOAT(pci, va, vl);
++            a   += vl;
++            pci += vl;
++            for (k = 0; k < i; k ++){
++                vc = VLEV_FLOAT(pcj + k * ldc, vl);
++                vc = VFNMSACVF_FLOAT(vc, *(b + k), va, vl);
++                VSEV_FLOAT(pcj + k * ldc, vc, vl);
++            }
++            pcj += vl;
++        }
++        b -= n;
++        a -= 2 * m;
++    }
++}
++
++#else
++
++static inline void solve(BLASLONG m, BLASLONG n, FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc) {
++
++    FLOAT bb1, bb2;
++
++    FLOAT *pci, *pcj;
++
++    int i, j, k;
++
++    FLOAT_VX2_T vax2, vsx2, vcx2;
++    FLOAT_V_T va1, va2, vs1, vs2, vc1, vc2;
++
++    size_t vl;
++
++    a += (n - 1) * m * 2;
++    b += (n - 1) * n * 2;
++
++    for (i = n - 1; i >= 0; i--) {
++
++        bb1 = *(b + i * 2 + 0);
++        bb2 = *(b + i * 2 + 1);
++
++        pci = c + i * ldc * 2;
++        pcj = c;
++        for (j = m; j > 0; j -= vl) {
++            vl = VSETVL(j);
++            vax2 = VLSEG2_FLOAT(pci, vl);
++            va1 = VGET_VX2(vax2, 0);
++            va2 = VGET_VX2(vax2, 1);
++#ifndef CONJ
++            vs1 =   VFMULVF_FLOAT(va1, bb1, vl);
++            vs1 = VFNMSACVF_FLOAT(vs1, bb2, va2, vl);
++            vs2 =   VFMULVF_FLOAT(va1, bb2, vl);
++            vs2 =  VFMACCVF_FLOAT(vs2, bb1, va2, vl);
++#else
++            vs1 =   VFMULVF_FLOAT(va1, bb1, vl);
++            vs1 =  VFMACCVF_FLOAT(vs1, bb2, va2, vl);
++            vs2 =   VFMULVF_FLOAT(va2, bb1, vl);
++            vs2 = VFNMSACVF_FLOAT(vs2, bb2, va1, vl);
++#endif
++            vsx2 = VSET_VX2(vsx2, 0, vs1);
++            vsx2 = VSET_VX2(vsx2, 1, vs2);
++            VSSEG2_FLOAT(a, vsx2, vl);
++            VSSEG2_FLOAT(pci, vsx2, vl);
++            a += vl * 2;
++            pci += vl * 2;
++
++            for (k = 0; k < i; k ++){
++                vcx2 = VLSEG2_FLOAT(pcj + k * ldc * 2, vl);
++                vc1 = VGET_VX2(vcx2, 0);
++                vc2 = VGET_VX2(vcx2, 1);
++#ifndef CONJ
++                vc1 =  VFMACCVF_FLOAT(vc1, *(b + k * 2 + 1), vs2, vl);
++                vc1 = VFNMSACVF_FLOAT(vc1, *(b + k * 2 + 0), vs1, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, *(b + k * 2 + 1), vs1, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, *(b + k * 2 + 0), vs2, vl);
++#else
++                vc1 = VFNMSACVF_FLOAT(vc1, *(b + k * 2 + 0), vs1, vl);
++                vc1 = VFNMSACVF_FLOAT(vc1, *(b + k * 2 + 1), vs2, vl);
++                vc2 =  VFMACCVF_FLOAT(vc2, *(b + k * 2 + 1), vs1, vl);
++                vc2 = VFNMSACVF_FLOAT(vc2, *(b + k * 2 + 0), vs2, vl);
++#endif
++                vcx2 = VSET_VX2(vcx2, 0, vc1);
++                vcx2 = VSET_VX2(vcx2, 1, vc2);
++                VSSEG2_FLOAT(pcj + k * ldc * 2, vcx2, vl);
++            }
++            pcj += vl * 2;
++        }
++        b -= n * 2;
++        a -= 4 * m;
++    }
++}
++
++#endif
++
++int CNAME(BLASLONG m, BLASLONG n, BLASLONG k,  FLOAT dummy1,
++#ifdef COMPLEX
++    FLOAT dummy2,
++#endif
++    FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc, BLASLONG offset){
++
++  BLASLONG i, j;
++  FLOAT *aa, *cc;
++  BLASLONG  kk;
++
++#ifndef COMPLEX
++#define PROCESS_RT_M_BLOCK(MB, NB) do { \
++    if (k - kk > 0) { \
++      GEMM_KERNEL((MB), (NB), k - kk, dm1, \
++                  aa + (MB) * kk * COMPSIZE, \
++                  b  + (NB) * kk * COMPSIZE, \
++                  cc, ldc); \
++    } \
++    solve((MB), (NB), \
++          aa + (kk - (NB)) * (MB) * COMPSIZE, \
++          b  + (kk - (NB)) * (NB) * COMPSIZE, \
++          cc, ldc); \
++    aa += (MB) * k * COMPSIZE; \
++    cc += (MB)     * COMPSIZE; \
++  } while (0)
++#else
++#define PROCESS_RT_M_BLOCK(MB, NB) do { \
++    if (k - kk > 0) { \
++      GEMM_KERNEL((MB), (NB), k - kk, dm1, ZERO, \
++                  aa + (MB) * kk * COMPSIZE, \
++                  b  + (NB) * kk * COMPSIZE, \
++                  cc, ldc); \
++    } \
++    solve((MB), (NB), \
++          aa + (kk - (NB)) * (MB) * COMPSIZE, \
++          b  + (kk - (NB)) * (NB) * COMPSIZE, \
++          cc, ldc); \
++    aa += (MB) * k * COMPSIZE; \
++    cc += (MB)     * COMPSIZE; \
++  } while (0)
++#endif
++
++  kk = n - offset;
++  c += n * ldc * COMPSIZE;
++  b += n * k   * COMPSIZE;
++
++  if (n & (GEMM_UNROLL_N - 1)) {
++
++    j = 1;
++    while (j < GEMM_UNROLL_N) {
++      if (n & j) {
++
++        aa  = a;
++        b -= j * k  * COMPSIZE;
++        c -= j * ldc* COMPSIZE;
++        cc  = c;
++
++        i = 0;
++        while (i + GEMM_DEFAULT_UNROLL_M <= m) {
++          PROCESS_RT_M_BLOCK(GEMM_DEFAULT_UNROLL_M, j);
++          i += GEMM_DEFAULT_UNROLL_M;
++        }
++
++        if (m & (GEMM_DEFAULT_UNROLL_M - 1)) {
++          BLASLONG mm = (GEMM_DEFAULT_UNROLL_M >> 1);
++          while (mm > 0) {
++            if ((m - i) & mm) {
++              PROCESS_RT_M_BLOCK(mm, j);
++              i += mm;
++            }
++            mm >>= 1;
++          }
++        }
++        kk -= j;
++      }
++      j <<= 1;
++    }
++  }
++
++  j = (n >> GEMM_UNROLL_N_SHIFT);
++
++  if (j > 0) {
++
++    do {
++      aa  = a;
++      b -= GEMM_UNROLL_N * k   * COMPSIZE;
++      c -= GEMM_UNROLL_N * ldc * COMPSIZE;
++      cc  = c;
++
++      i = 0;
++      while (i + GEMM_DEFAULT_UNROLL_M <= m) {
++        PROCESS_RT_M_BLOCK(GEMM_DEFAULT_UNROLL_M, GEMM_UNROLL_N);
++        i += GEMM_DEFAULT_UNROLL_M;
++      }
++
++      if (m & (GEMM_DEFAULT_UNROLL_M - 1)) {
++        BLASLONG mm = (GEMM_DEFAULT_UNROLL_M >> 1);
++        while (mm > 0) {
++          if ((m - i) & mm) {
++            PROCESS_RT_M_BLOCK(mm, GEMM_UNROLL_N);
++            i += mm;
++          }
++          mm >>= 1;
++        }
++      }
++
++      kk -= GEMM_UNROLL_N;
++      j --;
++    } while (j > 0);
++  }
++
++  return 0;
++
++#undef PROCESS_RT_M_BLOCK
++}
+diff -ruN a/kernel/riscv64/zgemv_n_vector.c OpenBLAS-0.3.30-bp/kernel/riscv64/zgemv_n_vector.c
+--- a/kernel/riscv64/zgemv_n_vector.c	2026-08-27 12:31:59
++++ b/kernel/riscv64/zgemv_n_vector.c	2026-08-27 12:34:10
+@@ -55,8 +55,8 @@
+         BLASLONG i = 0, j = 0, k = 0;
+         BLASLONG ix = 0, iy = 0;
+         FLOAT *a_ptr = a;
+-        FLOAT temp_r = 0.0, temp_i = 0.0, temp_r1, temp_i1, temp_r2, temp_i2, temp_r3, temp_i3, temp_rr[4], temp_ii[4];
+-        FLOAT_V_T va0, va1, vy0, vy1, vy0_new, vy1_new, va2, va3, va4, va5, va6, va7, temp_iv, temp_rv, x_v0, x_v1, temp_v1, temp_v2, temp_v3, temp_v4;
++        FLOAT temp_r = 0.0, temp_i = 0.0, temp_rr[4], temp_ii[4];
++        FLOAT_V_T va0, va1, vy0, vy1, vy0_new, vy1_new, va2, va3, va4, va5, va6, va7, temp_iv, temp_rv, x_v0, x_v1;
+         unsigned int gvl = 0;
+         BLASLONG stride_a = sizeof(FLOAT) * 2;
+         BLASLONG stride_y = inc_y * sizeof(FLOAT) * 2;
