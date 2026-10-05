@@ -21,10 +21,6 @@ sources = [
         'download_filename': f'rocm-{_rocm_version}.tar.gz',
         'filename': f'rocm-systems-rocm-{_rocm_version}.tar.gz',
     },
-    {
-        'filename': 'otf2-3.0.3.tar.gz',
-        'source_urls': ['https://rocm-third-party-deps.s3.us-east-2.amazonaws.com/'],
-    },
     # Bundled dependencies for airgap builds
     {
         'download_filename': 'rocprofiler.tar.gz',
@@ -64,7 +60,6 @@ patches = [
 ]
 checksums = [
     'e90cfd8694af28a56433c8827a581ee12a4ba835f0d952436741d9e0f3f8685b',  # rocm-systems-rocm-7.2.3.tar.gz
-    '18a3905f7917340387e3edc8e5766f31ab1af41f4ecc5665da6c769ca21c4ee8',  # otf2-3.0.3.tar.gz
     '394345c2f9f3d5d795cbfa412386622643e6b824107cef2486e07fb030246d68',  # PTL-rocprofiler.tar.gz
     '86037fe45e9df6439d9b246bdcb8c0effee6b5ec172f337f58aa6002e2639a61',  # yaml-cpp-master.tar.gz
     '1fdb0890477d572c0dca698ab50836d4f8ef7e996c0c88d74de4fea05b319527',  # cereal-rocprofiler.tar.gz
@@ -81,6 +76,8 @@ checksums = [
 
 builddependencies = [
     ('CMake', '3.31.8'),
+    ('pybind11', '3.0.0'),
+    ('OTF2', '3.1.1'),
 ]
 
 dependencies = [
@@ -89,7 +86,6 @@ dependencies = [
     ('elfutils', '0.193'),
     ('SQLite', '3.50.1'),
     ('Python-bundle-PyPI', '2025.07'),
-    ('pybind11', '3.0.0', '', ('GCC', '14.3.0')),  # Needs CMake config files
     ('glog', '0.7.1'),
     ('GOTCHA', '1.0.8'),  # Function interception library
     ('aqlprofile', '7.2.3'),
@@ -115,7 +111,7 @@ preconfigopts = ' && '.join([
     'rmdir %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/json',
     'mv %(builddir)s/json-develop %(builddir)s/rocm-systems-rocm-7.2.3/projects/rocprofiler-sdk/external/json',
     'true',  # End with a command that succeeds
-]) + ' && OTF2_ROOT=%(builddir)s/otf2-3.0.3 '
+]) + ' && OTF2_ROOT=$EBROOTOTF2 '
 
 configopts = '-DROCPROFILER_SDK_BUILD_TESTS=OFF -DROCPROFILER_SDK_BUILD_SAMPLES=OFF '
 # Disable building external dependencies that we have as system packages
