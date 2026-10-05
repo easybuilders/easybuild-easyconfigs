@@ -1,0 +1,42 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Adam Huffman, based on initial work by Jordi Blasco
+# The Francis Crick Institute
+# Updated by: Emik Lin (HKUMed CPOS)
+
+easyblock = 'Binary'
+
+name = 'VarScan'
+version = '2.4.6'
+versionsuffix = '-Java-%(javaver)s'
+
+github_account = "dkoboldt"
+homepage = 'https://github.com/%(github_account)s/%(namelower)s'
+description = """Variant calling and somatic mutation/CNV detection for next-generation sequencing data"""
+
+toolchain = SYSTEM
+
+sources = ['%(name)s.v%(version)s.jar']
+source_urls = ['https://github.com/%(github_account)s/%(namelower)s/raw/v%(version)s']
+checksums = ['e827230b47a96cab035c5c7178e5089921a1e1c8d1e4836a6b02ff88e3a4c2ab']
+
+postinstallcmds = [
+    """echo '#!/bin/sh' > %(installdir)s/varscan""",
+    """echo 'exec java -jar "$EBROOTVARSCAN/%(name)s.v%(version)s.jar" "$@"' >> %(installdir)s/varscan""",
+    "chmod +x %(installdir)s/varscan",
+]
+
+dependencies = [('Java', '11')]
+
+sanity_check_paths = {
+    'files': sources + ['varscan'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['varscan filter --help']
+
+modextrapaths = {'PATH': ['']}
+
+modloadmsg = "To execute VarScan run: varscan\n"
+modloadmsg += "Alternatively, run: java -jar $EBROOTVARSCAN/%(name)s.v%(version)s.jar"
+
+moduleclass = 'bio'
