@@ -1,0 +1,45 @@
+Fix an error during shutdown:
+
+> Exception ignored in: <function GLContext.__del__ at 0x7f816b140cc0>
+> ...
+> OpenGL.raw.EGL._errors.EGLError: <exception str() failed>
+
+See https://github.com/google-deepmind/mujoco/pull/2510
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/python/mujoco/egl/__init__.py b/python/mujoco/egl/__init__.py
+index 832c11081c..2a9a4468a2 100644
+--- a/python/mujoco/egl/__init__.py
++++ b/python/mujoco/egl/__init__.py
+@@ -65,6 +65,12 @@ def create_initialized_egl_device_display():
+ EGL_DISPLAY = None
+ 
+ 
++def _free_display():
++    global EGL_DISPLAY
++    EGL.eglTerminate(EGL_DISPLAY)
++    EGL_DISPLAY = None
++
++
+ EGL_ATTRIBUTES = (
+     EGL.EGL_RED_SIZE, 8,
+     EGL.EGL_GREEN_SIZE, 8,
+@@ -99,7 +105,7 @@ def __init__(self, max_width, max_height):
+           "driver does not support the PLATFORM_DEVICE extension, which is "
+           "required for creating a headless rendering context."
+         )
+-      atexit.register(EGL.eglTerminate, EGL_DISPLAY)
++      atexit.register(_free_display)
+     EGL.eglChooseConfig(
+         EGL_DISPLAY,
+         EGL_ATTRIBUTES,
+@@ -125,7 +131,7 @@ def make_current(self):
+   def free(self):
+     """Frees resources associated with this context."""
+     global EGL_DISPLAY
+-    if self._context:
++    if EGL_DISPLAY and self._context:
+       current_context = EGL.eglGetCurrentContext()
+       if current_context and self._context.address == current_context.address:
+         EGL.eglMakeCurrent(EGL_DISPLAY, EGL.EGL_NO_SURFACE,

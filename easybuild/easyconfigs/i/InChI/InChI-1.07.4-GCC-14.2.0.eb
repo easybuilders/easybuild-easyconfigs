@@ -1,0 +1,95 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+##
+easyblock = 'Bundle'
+
+name = 'InChI'
+version = '1.07.4'
+
+# software_license = 'LicenseMIT'
+
+homepage = 'https://www.inchi-trust.org/'
+description = """The IUPAC International Chemical Identifier (InChI TM) is a non-proprietary
+identifier for chemical substances that can be used in printed and electronic
+data sources thus enabling easier linking of diverse data compilations."""
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+
+default_component_specs = {
+    'source_urls': ['https://github.com/IUPAC-InChI/InChI/archive/refs/tags/'],
+    'sources': ['v%(version)s.tar.gz'],
+    'checksums': ['0405818c64126332a03e6fd1720f59bdccabe0c9484df71e821e1aa66234aa9d'],  # v1.07.4.tar.gz
+}
+
+# dos2unix may be another builddependency useful to "clean" some files
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('make',  '4.4.1'),
+]
+
+components = [
+    ('inchi-1', version, {
+        'easyblock': 'MakeCp',
+        'start_dir': 'InChI-%(version)s/INCHI-1-SRC/INCHI_EXE/inchi-1/src/',
+        'prebuildopts': 'cmake . && ',
+        'files_to_copy': [
+            (['bin/inchi-1'], 'bin'),
+            '../../../../LICENSE',
+            '../../../../README.md',
+        ],
+    }),
+    ('libinchi', version, {
+        'easyblock': 'MakeCp',
+        'start_dir': 'InChI-%(version)s/INCHI-1-SRC/INCHI_API/libinchi/src/',
+        'prebuildopts': 'cmake . && ',
+        'files_to_copy': [
+            (['lib/libinchi.so'], 'lib'),
+            (['../../../INCHI_BASE/src/ichisize.h',
+              '../../../INCHI_BASE/src/inchi_api.h',
+              '../../../INCHI_BASE/src/ixa.h'], 'include'),
+        ],
+    }),
+    ('inchi_main', version, {
+        'easyblock': 'MakeCp',
+        'start_dir': 'InChI-%(version)s/INCHI-1-SRC/INCHI_API/demos/inchi_main/src/',
+        'prebuildopts': 'cmake . && ',
+        'files_to_copy': [
+            (['bin/inchi_main'], 'bin'),
+        ],
+    }),
+    # NOTE Issue with undefined reference to `pthread_join' & `pthread_create' while linking bin/mol2inchi
+    # ('Mol2InChI', version, {
+    #     'easyblock': 'MakeCp',
+    #     'start_dir': 'InChI-%(version)s/INCHI-1-SRC/INCHI_API/demos/mol2inchi/src/',
+    #     'prebuildopts': 'cmake . && ',
+    #     'files_to_copy': [
+    #         (['bin/mol2inchi'], 'bin'),
+    #     ],
+    # }),
+    ('test_ixa', version, {
+        'easyblock': 'MakeCp',
+        'start_dir': 'InChI-%(version)s/INCHI-1-SRC/INCHI_API/demos/test_ixa/src/',
+        'prebuildopts': 'cmake . && ',
+        'files_to_copy': [
+            (['bin/test_ixa'], 'bin'),
+        ],
+    }),
+]
+
+# NOTE libinchi.so are not symlinks in the final build, but redundant copies!
+# NOTE `keepsymlinks = True` does not look to do it, so use this trick
+postinstallcmds = ["cd %(installdir)s/lib/ && mv libinchi.so libinchi.so.%(version)s && "
+                   "ln -s libinchi.so.1.* libinchi.so.1 && ln -s libinchi.so.1 libinchi.so"]
+
+sanity_check_paths = {
+    'files': ['bin/inchi-1', 'bin/inchi_main', 'bin/test_ixa', f'lib/libinchi.{SHLIB_EXT}', 'LICENSE', 'README.md'],
+    'dirs': ['lib', 'include']
+}
+
+sanity_check_commands = ["inchi-1"]
+# NOTE currently no real tests because they are complicated to run (not in a good format, zipped, ...)
+
+moduleclass = 'chem'

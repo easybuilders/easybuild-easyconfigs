@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = 'gmsh'
+version = '4.14.0'
+
+homepage = 'https://gmsh.info/'
+description = "Gmsh is a 3D finite element grid generator with a build-in CAD engine and post-processor."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://%(name)s.info/src/']
+sources = ['%(name)s-%(version)s-source.tgz']
+patches = ['gmsh-4.14.0-OpenGL-select-interface.patch']
+checksums = [
+    {'gmsh-4.14.0-source.tgz': 'db4d7da2062e9a4356a820832138ab99f97af6388bfeb21599a2eadfb0b76a28'},
+    {'gmsh-4.14.0-OpenGL-select-interface.patch': 'b549f4e6c9559ba25ab714c8ae3f738c6de9759e1e338f98b25e5364d8fb3c7c'},
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('SWIG', '4.2.1'),
+    ('Eigen', '3.4.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('PETSc', '3.23.5'),
+    ('SLEPc', '3.23.2'),
+    ('FLTK', '1.4.3'),
+    ('occt', '7.8.0'),
+]
+
+configopts = "-DENABLE_BUILD_SHARED=ON -DENABLE_WRAP_PYTHON=ON -DENABLE_METIS=1"
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'bin/onelab.py', 'lib/%(name)s.py', 'lib/libgmsh.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = ['%(name)s --help']
+
+modextrapaths = {'PYTHONPATH': ['lib']}
+
+moduleclass = 'math'

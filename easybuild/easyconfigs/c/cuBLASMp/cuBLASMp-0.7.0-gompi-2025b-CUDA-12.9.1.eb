@@ -1,0 +1,43 @@
+easyblock = 'Tarball'
+
+name = 'cuBLASMp'
+
+version = '0.7.0'
+local_build_ver = '125'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://docs.nvidia.com/cuda/cublasmp/'
+description = """
+NVIDIA cuBLASMp is a high-performance, multi-process, GPU-accelerated library
+for distributed basic dense linear algebra.
+
+cuBLASMp is compatible with 2D block-cyclic data layout and provides PBLAS-like
+C APIs.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+
+local_arch = 'sbsa' if ARCH == 'aarch64' else 'x86_64'
+source_urls = [f'https://developer.download.nvidia.com/compute/cublasmp/redist/libcublasmp/linux-{local_arch}/']
+sources = [f'libcublasmp-linux-{local_arch}-%(version)s.{local_build_ver}_cuda%(cudamajver)s-archive.tar.xz']
+checksums = [
+    {
+        f'libcublasmp-linux-sbsa-%(version)s.{local_build_ver}_cuda%(cudamajver)s-archive.tar.xz':
+            'edd081922e4529361c13b47a6028f0a60bb8b94f8959a13ad4919ed9b58afe96',
+        f'libcublasmp-linux-x86_64-%(version)s.{local_build_ver}_cuda%(cudamajver)s-archive.tar.xz':
+            'f0236c824227145a219614ea4276154e02d1c469ab2762fc9379c1b143be4b7b',
+    }
+]
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('NVSHMEM', '3.3.20', versionsuffix),  # libs link against libnvshmem_host.so.3
+    ('NCCL', '2.27.7', versionsuffix)
+]
+
+sanity_check_paths = {
+    'dirs': ['lib', 'include'],
+    'files': ['LICENSE', f'lib/libcublasmp.{SHLIB_EXT}', 'include/cublasmp.h']
+}
+
+moduleclass = 'math'

@@ -1,0 +1,105 @@
+easyblock = 'Bundle'
+
+name = 'Flux'
+version = '0.76.0'
+
+homepage = 'https://flux-framework.org/'
+description = """
+Flux is a flexible framework for resource management, built for your site. The
+framework consists of a suite of projects, tools, and libraries which may be
+used to build site-custom resource managers for High Performance Computing
+centers. Unlike traditional resource managers, Flux can run as a parallel job
+under most launchers that support MPI, including under Flux itself. This not
+only makes batch scripts and workflows for Flux portable to other resource
+managers (just launch Flux as a job), but it also means that batch jobs have
+all the features of a full resource manager at their disposal, as if they have
+an entire cluster to themselves.
+"""
+
+toolchain = {'name': 'GCC', 'version': '13.2.0'}
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('pkgconf', '2.0.3'),
+    ('make', '4.4.1'),
+    ('CMake', '3.27.6'),
+    ('jq', '1.7.1'),
+    ('Catch2', '3.8.1'),
+]
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Python-bundle-PyPI', '2023.10'),
+    ('cffi', '1.15.1'),
+    ('PyYAML', '6.0.1'),
+    ('PLY', '3.11'),
+    ('Lua', '5.4.6'),
+    ('luaposix', '36.3'),
+    ('ZeroMQ', '4.3.5'),
+    ('Jansson', '2.14.1'),
+    ('hwloc', '2.9.2'),
+    ('lz4', '1.9.4'),
+    ('libedit', '20240517'),
+    ('Boost', '1.83.0'),
+    ('yaml-cpp', '0.8.0'),
+    ('PMIx', '4.2.6'),
+]
+
+components = [
+    ('flux-core', '0.76.0', {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['https://github.com/flux-framework/flux-core/releases/download/v%(version)s/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'patches': [
+            {'name': 'flux-core-0.76.0_remove_some_tests.patch', 'alt_location': 'Flux'},
+            {'name': 'flux-core-0.76.0_disable_some_tests_for_nvidia_grace.patch', 'alt_location': 'Flux'},
+            {'name': 'flux-core-0.76.0_disable_rarely_failing_tests.patch', 'alt_location': 'Flux'},
+        ],
+        'checksums': [
+            'c28d271a50b4065c2399af844a51d2b0e7ab3fa262f4bbf15a4c1115cd6fe77c',
+            '3c71d6b79a41d70ffc2c3942f87609e231792e3a5bfacfda72d76fb2d28c4aea',
+            '4e23f2f38c7d64ba3f6232db246da66c69cfc843c42cdd94da359a2f5e78d525',
+            '9a2ece045cec285ae51a57872d9744ff69bd97d2a2da0acdbdca52d073939388',
+        ],
+        'start_dir': '%(namelower)s-%(version)s',
+        'runtest': 'check',
+    }),
+    ('flux-sched', '0.45.0', {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/flux-framework/flux-sched/releases/download/v%(version)s/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'patches': [
+            {'name': 'flux-sched-0.45.0_remove_troublesome_test.patch', 'alt_location': 'Flux'},
+        ],
+        'checksums': [
+            '2190858b687bf576c5e0ac409f678a67bc00c449a9f05e1f2b2284ae275a227f',
+            'e5eee22d0f03cace713193859d20c4ebecc2a6b3c07468b1bc806012c73188bd',
+        ],
+        'start_dir': '%(namelower)s-%(version)s',
+        'runtest': 'check',
+    }),
+    ('flux-pmix', '0.6.0', {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['https://github.com/flux-framework/flux-pmix/releases/download/v%(version)s/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'patches': [
+            {'name': 'flux-pmix-0.6.0_disable_ompi_detection.patch', 'alt_location': 'Flux'},
+        ],
+        'checksums': [
+            '31f9d9b99f8a75c05e2fd183a35998f104d8e80bd819c57252aca477be0d4c6e',
+            '16ae3c932f1ee43c86ff223436e6a568927b0a90c7a1fc800de418a093899429',
+        ],
+        'start_dir': '%(namelower)s-%(version)s',
+        'runtest': 'check',
+    }),
+]
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in ['flux']],
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = [
+    "flux -h",
+]
+
+moduleclass = 'devel'

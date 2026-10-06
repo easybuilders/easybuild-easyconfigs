@@ -1,0 +1,39 @@
+use https rather than http for download URLs, to fix broken tests;
+see https://github.com/mdtraj/mdtraj/issues/2126 and https://github.com/mdtraj/mdtraj/pull/2106
+diff -ru mdtraj-1.11.0.orig/tests/test_dssp.py mdtraj-1.11.0/tests/test_dssp.py
+--- mdtraj-1.11.0.orig/tests/test_dssp.py	2025-05-20 19:25:49.000000000 +0200
++++ mdtraj-1.11.0/tests/test_dssp.py	2026-01-21 08:12:36.196184875 +0100
+@@ -66,7 +66,7 @@
+ def test_3(get_fn, tmpdir, pdbid):
+     """This test checks dssp assignments on pdb files downloaded from rcsb"""
+     # 1COY gives a small error, due to a broken chain.
+-    t = md.load_pdb("http://www.rcsb.org/pdb/files/%s.pdb" % pdbid)
++    t = md.load_pdb("https://www.rcsb.org/pdb/files/%s.pdb" % pdbid)
+     t = t.atom_slice(t.top.select_atom_indices("minimal"))
+     assert_(call_dssp(get_fn, pdbid), md.compute_dssp(t, simplified=False)[0])
+ 
+diff -ru mdtraj-1.11.0.orig/tests/test_pdb.py mdtraj-1.11.0/tests/test_pdb.py
+--- mdtraj-1.11.0.orig/tests/test_pdb.py	2025-06-25 03:43:58.000000000 +0200
++++ mdtraj-1.11.0/tests/test_pdb.py	2026-01-21 08:12:36.196184875 +0100
+@@ -211,8 +211,8 @@
+ @flaky_pdb_dl
+ def test_pdb_from_url():
+     # load pdb from URL
+-    t1 = load_pdb("http://www.rcsb.org/pdb/files/4ZUO.pdb.gz")
+-    t2 = load_pdb("http://www.rcsb.org/pdb/files/4ZUO.pdb")
++    t1 = load_pdb("https://www.rcsb.org/pdb/files/4ZUO.pdb.gz")
++    t2 = load_pdb("https://www.rcsb.org/pdb/files/4ZUO.pdb")
+     eq(t1.n_frames, 1)
+     eq(t2.n_frames, 1)
+     eq(t1.n_atoms, 6200)
+@@ -258,8 +258,8 @@
+ 
+ 
+ def test_1vii_url_and_gz(get_fn):
+-    t1 = load_pdb("http://www.rcsb.org/pdb/files/1vii.pdb.gz")
+-    t2 = load_pdb("http://www.rcsb.org/pdb/files/1vii.pdb")
++    t1 = load_pdb("https://www.rcsb.org/pdb/files/1vii.pdb.gz")
++    t2 = load_pdb("https://www.rcsb.org/pdb/files/1vii.pdb")
+     t3 = load_pdb(get_fn("1vii.pdb.gz"))
+     t4 = load_pdb(get_fn("1vii.pdb"))
+     eq(t1.n_frames, 1)

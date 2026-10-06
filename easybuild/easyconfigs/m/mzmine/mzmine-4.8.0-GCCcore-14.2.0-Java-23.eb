@@ -1,0 +1,56 @@
+easyblock = 'CmdCp'
+
+name = 'mzmine'
+version = '4.8.0'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://mzio.io/mzmine-news/'
+description = """mzmine is an open-source software for mass spectrometry data processing.
+The goals of the project is to provide a user-friendly, flexible and easily extendable software
+with a complete set of modules covering the entire MS data analysis workflow.
+Support includes liquid chromatography (LC), gas chromatography (GC), ion mobility spectrometry (IMS),
+MS imaging (e.g., MALDI), and most MS instruments."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+github_account = 'mzmine'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['c63eb72cda0ab5cb1f9498058933a08b2fb3e0c8cc1736a4c1a6bb8468346934']
+
+builddependencies = [('binutils', '2.42')]
+
+# The mzmine GUI requires some X11 libraries, e.g. libXxf86vm.so.1, and also libGL.so
+dependencies = [
+    ('Java', '23', '', SYSTEM),
+    ('X11', '20250521'),
+    ('libglvnd', '1.7.0'),
+]
+
+# gradlew is used to build the project
+local_gradlew_cmd = './gradlew -p mzmine-community --info --warning-mode all -g %(builddir)s/gradle_home'
+# the version in the source tarball has already been incremented to the next release, so we override it here
+local_gradlew_cmd += ' -Dversion.semver=%(version)s'
+# only run the installDist task, to prevent Gradle from building several other packages (deb, rpm, app image)
+local_gradlew_cmd += ' -- installDist'
+
+cmds_map = [
+    ('.*', local_gradlew_cmd)]
+
+files_to_copy = [
+    (['mzmine-community/build/install/mzmine/bin/*'], 'bin'),
+    (['mzmine-community/build/install/mzmine/lib/*'], 'lib'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/mzmine'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'mzmine --help',
+]
+
+modextravars = {'MZMINE_OPTS': '--enable-preview'}
+
+moduleclass = 'bio'

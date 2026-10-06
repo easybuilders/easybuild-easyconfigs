@@ -1,0 +1,58 @@
+easyblock = 'CMakeNinja'
+
+name = 'CUTLASS'
+version = '4.1.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/NVIDIA/cutlass'
+description = """CUTLASS is a collection of CUDA C++ template
+abstractions for implementing high-performance matrix-matrix
+multiplication (GEMM) and related computations at all levels and scales
+within CUDA. It incorporates strategies for hierarchical decomposition
+and data movement similar to those used to implement cuBLAS and cuDNN.
+CUTLASS decomposes these "moving parts" into reusable, modular software
+components abstracted by C++ template classes. Primitives for different
+levels of a conceptual parallelization hierarchy can be specialized and
+tuned via custom tiling sizes, data types, and other algorithmic policy.
+The resulting flexibility simplifies their use as building blocks within
+custom kernels and applications."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+github_account = 'NVIDIA'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+patches = [
+    'CUTLASS-4.1.0_fix-version.patch',
+    'CUTLASS-4.1.0_add-arch-guards-to-tests.patch',
+]
+checksums = [
+    {'CUTLASS-4.1.0.tar.gz': '8d4675b11e9e5207e3940eaac0f46db934ada371cbb3627c9fda642d912b6230'},
+    {'CUTLASS-4.1.0_fix-version.patch': 'e2c7f66e6fd298b3af5339e17c0c75ded7d726cdf6cde003f60263e27ae46495'},
+    {'CUTLASS-4.1.0_add-arch-guards-to-tests.patch':
+     '81cd18d83bdedf3ed1f7add68bbff1635cf9d76bb9e184efbc62cd95caee4275'},
+]
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Ninja', '1.12.1'),
+    ('Python', '3.12.3'),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('cuDNN', '9.5.0.50', versionsuffix, SYSTEM),
+]
+
+configopts = ' '.join([
+    '-DCUTLASS_NVCC_ARCHS="%(cuda_cc_cmake)s"',
+    '-DCUTLASS_ENABLE_CUBLAS=1',
+    '-DCUTLASS_ENABLE_CUDNN=1',
+])
+
+sanity_check_paths = {
+    'files': ['include/cutlass/cutlass.h', 'lib/libcutlass.%s' % SHLIB_EXT],
+    'dirs': ['lib/cmake'],
+}
+
+moduleclass = 'lib'

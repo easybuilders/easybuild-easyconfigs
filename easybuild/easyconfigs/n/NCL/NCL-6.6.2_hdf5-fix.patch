@@ -1,0 +1,90 @@
+This patch updates NCL's internal HDF5 support to be compatible with HDF5 1.14 and with stricter type checking in recent Intel compilers
+Author: Pavel Tomanek (Inuits)
+--- ni/src/ncl/h5reader.c.orig	2025-12-11 17:23:51.186652000 +0100
++++ ni/src/ncl/h5reader.c	2025-12-11 17:29:41.996299000 +0100
+@@ -1,4 +1,5 @@
+ #include "h5data_struct.h"
++#include <string.h>
+ 
+ #define H5_BUFSIZE         (1024 * 1024)
+ 
+@@ -2443,11 +2444,11 @@
+  ***********************************************************************
+  */
+ 
+-herr_t _NclHDF5search_by_name(hid_t loc_id, char *path, H5L_info_t *linfo,
+-                              void *_udata)
++herr_t _NclHDF5search_by_name(hid_t loc_id, const char *path,
++                              const H5L_info_t *linfo, void *_udata)
+ {
+-    NclHDF5_ud_traverse_t *udata = (NclHDF5_ud_traverse_t *)_udata;     /* User data */
+-    char *new_name = NULL;
++    NclHDF5_ud_traverse_t *udata = (NclHDF5_ud_traverse_t *)_udata;
++    char *new_name = NULL;  /* keep this as char * */
+     char *full_name = NULL;
+     char *already_visited = NULL; /* Whether the link/object was already visited */
+ 
+@@ -3313,7 +3313,7 @@
+  *************************************************************************
+  */
+ 
+-herr_t _NclHDF5check_attr(hid_t obj_id, char *attr_name, const H5A_info_t *ainfo,
++herr_t _NclHDF5check_attr(hid_t obj_id, const char *attr_name, const H5A_info_t *ainfo,
+                           void *attr_data)
+ {
+     hid_t       attr_id, space, type, p_type;
+@@ -3985,7 +3985,7 @@
+  *************************************************************************
+  */
+ 
+-herr_t _NclHDF5search_obj(char *name, H5O_info_t *oinfo,
++herr_t _NclHDF5search_obj(const char *name, const H5O_info_t *oinfo,
+                           void *_NclHDF5group, char *already_seen)
+ {
+     NclHDF5attr_list_t  *curAttrList = NULL;
+@@ -4349,7 +4349,7 @@
+  *************************************************************************
+  */
+ 
+-herr_t _NclHDF5search_link(char *name, H5O_info_t *oinfo, void *_NclHDF5Rec)
++herr_t _NclHDF5search_link(const char *name, const H5L_info_t *linfo, void *_NclHDF5Rec)
+ {
+ #if DEBUG_NCL_HDF5
+     fprintf(stderr, "\nEntering _NclHDF5search_link, name = <%s>, at file: %s, line: %d\n", name, __FILE__, __LINE__);
+--- ni/src/ncl/h5data_struct.h.orig	2025-12-11 17:02:28.026215000 +0100
++++ ni/src/ncl/h5data_struct.h	2025-12-11 17:22:35.357057000 +0100
+@@ -263,12 +263,12 @@
+     string_list_t *tail;
+ } string_queue_t;
+ 
+-herr_t _NclHDF5search_obj(char *name, H5O_info_t *oinfo, void *_NclHDF5obj, char *already_seen);
+-herr_t _NclHDF5search_link(char *name, H5O_info_t *oinfo, void *_NclHDF5link);
++herr_t _NclHDF5search_obj(const char *name, const H5O_info_t *oinfo, void *_NclHDF5obj, char *already_seen);
++herr_t _NclHDF5search_link(const char *name, const H5L_info_t *linfo, void *_NclHDF5link);
+ 
+ /* Typedefs for serach functions */
+-typedef herr_t (*_NclHDF5search_obj_func_t) (char *path_name, H5O_info_t *oinfo, void *udata, char *already_seen);
+-typedef herr_t (*_NclHDF5search_link_func_t) (char *path_name, H5L_info_t *linfo, void *udata);
++typedef herr_t (*_NclHDF5search_obj_func_t) (const char *path_name, const H5O_info_t *oinfo, void *udata, char *already_seen);
++typedef herr_t (*_NclHDF5search_link_func_t) (const char *path_name, const H5L_info_t *linfo, void *udata);
+ 
+ typedef struct
+ {
+@@ -301,7 +301,7 @@
+ 
+ herr_t _NclHDF5dataset_info(hid_t dset, char *name, NclHDF5dataset_node_t *dataset_node);
+ herr_t _NclHDF5dataset_attr(hid_t dset, char *name, NclHDF5dataset_node_t *dataset_node);
+-herr_t _NclHDF5search_by_name(hid_t loc_id, char *path, H5L_info_t *linfo, void *_udata);
++herr_t _NclHDF5search_by_name(hid_t loc_id, const char *path, const H5L_info_t *linfo, void *_udata);
+ 
+ void _NclHDF5_addr_add(NclHDF5_addr_t *visited, haddr_t addr, char *path);
+ void setHDF5endian(hid_t type, hsize_t size, NclHDF5datatype_t *NclHDF5datatype);
+@@ -310,7 +310,7 @@
+ 
+ NclHDF5datatype_t *_NclHDF5get_typename(hid_t type, int ind);
+ 
+-herr_t _NclHDF5check_attr(hid_t obj_id, char *attr_name, const H5A_info_t *ainfo,
++herr_t _NclHDF5check_attr(hid_t obj_id, const char *attr_name, const H5A_info_t *ainfo,
+                           void *attr_data);
+ 
+ void _NclHDF5print_group(NclHDF5group_node_t *HDF5group);

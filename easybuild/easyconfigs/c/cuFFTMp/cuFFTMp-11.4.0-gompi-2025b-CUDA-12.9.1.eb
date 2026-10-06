@@ -1,0 +1,40 @@
+easyblock = 'Tarball'
+
+name = 'cuFFTMp'
+
+version = '11.4.0'
+local_build_ver = '6'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://docs.nvidia.com/cuda/cufftmp/index.html'
+description = """
+NVIDIA cuFFTMp is a high-performance, multi-node, multi-process
+implementation of cuFFT that provides the most efficient distributed
+FFT operations for any scale of GPU cluster.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+
+local_arch = 'sbsa' if ARCH == 'aarch64' else 'x86_64'
+source_urls = [f'https://developer.download.nvidia.com/compute/cufftmp/redist/libcufftmp/linux-{local_arch}/']
+sources = [f'libcufftmp-linux-{local_arch}-%(version)s.{local_build_ver}_cuda%(cudamajver)s-archive.tar.xz']
+checksums = [
+    {
+        f'libcufftmp-linux-sbsa-%(version)s.{local_build_ver}_cuda%(cudamajver)s-archive.tar.xz':
+            'c0f944fd6ef2e13ef5adfd48ef2e02660f5f573a69c515580096a9eaae13be16',
+        f'libcufftmp-linux-x86_64-%(version)s.{local_build_ver}_cuda%(cudamajver)s-archive.tar.xz':
+            '6a0597e10e698ab46ea9a607efe06f681ba6e2bf0d8eddd8a72a09c18a8f7253',
+    }
+]
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('NVSHMEM', '3.3.20', versionsuffix),  # cufftMp.so links against libnvshmem_host.so.3
+]
+
+sanity_check_paths = {
+    'dirs': ['lib', 'include'],
+    'files': ['LICENSE', f'lib/libcufftMp.{SHLIB_EXT}', 'include/cufftMp.h']
+}
+
+moduleclass = 'math'

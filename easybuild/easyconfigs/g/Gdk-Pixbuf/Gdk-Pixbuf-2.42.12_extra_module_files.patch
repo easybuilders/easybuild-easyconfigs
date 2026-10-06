@@ -1,0 +1,27 @@
+Add support for EB_GDK_PIXBUF_EXTRA_MODULES_FILES as a : seperated list of
+extra loaders.cache files for Gdk Pixbuf plugins supplied via environment modules.
+
+author: micketeer@gmail.com
+--- gdk-pixbuf/gdk-pixbuf-io.c.orig	2026-01-03 21:58:26.186571534 +0100
++++ gdk-pixbuf/gdk-pixbuf-io.c	2026-01-03 22:37:56.629229691 +0100
+@@ -671,9 +671,19 @@
+ 
+ 	gdk_pixbuf_io_init_builtin ();
+ #ifdef USE_GMODULE
++        const char *env = g_getenv ("EB_GDK_PIXBUF_EXTRA_MODULE_FILES");
++        if (env && *env) {
++                gchar **paths = g_strsplit (env, ":", -1);
++                for (gchar **p = paths; *p; p++) {
++                        if (**p)
++                                ret &= gdk_pixbuf_io_init_modules (*p, NULL);
++                }
++                g_strfreev (paths);
++        }
++
+ 	module_file = gdk_pixbuf_get_module_file ();
+ #endif
+-	ret = gdk_pixbuf_io_init_modules (module_file, NULL);
++	ret &= gdk_pixbuf_io_init_modules (module_file, NULL);
+ 	g_free (module_file);
+ 	return ret;
+ }

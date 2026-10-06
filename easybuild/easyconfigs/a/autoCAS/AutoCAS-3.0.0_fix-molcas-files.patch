@@ -1,0 +1,86 @@
+DMRG input lacked a starting orbital spec: OpenMolcas 25.06 expects LUMORB + StartOrb = INPORB for &DMRGSCF when you start from formatted SCF orbitals; without it, it didn’t load any orbitals → Molcas saw 0 active orbitals and errored (NACTEL=10 > 2*0).
+FILEORB was given as an absolute path: with LUMORB missing, Molcas tried to interpret a “StartOrbFile” (log wrapped the name), compounding the failure. Using a basename for FILEORB avoids path handling wrinkles and matches how Molcas resolves files in the run directory.
+Formatted orbitals not in the dmrg cwd: Molcas creates INPORB -> <Project>.ScfOrb in the current directory; if <Project>.ScfOrb isn’t there, you get the LUMORB warning and follow-on errors. Copying the *.ScfOrb from ../initial into the DMRG cwd fixes this.
+PR: https://github.com/qcscine/autocas/pull/15
+Issue: https://github.com/qcscine/autocas/issues/14#issuecomment-3352500729
+Author: Pavel Tomanek (Inuits)
+From a8a60aacd87cedf74c7f2e3dd6dfae92dcdc036c Mon Sep 17 00:00:00 2001
+From: Pavel Tomanek <99190809+pavelToman@users.noreply.github.com>
+Date: Tue, 30 Sep 2025 16:17:44 +0200
+Subject: [PATCH 1/2] Molcas DMRGSCF: add LUMORB/StartOrb = INPORB, write
+ FILEORB as basename, and ensure local .ScfOrb
+
+---
+ scine_autocas/interfaces/molcas/input_handler.py | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/scine_autocas/interfaces/molcas/input_handler.py b/scine_autocas/interfaces/molcas/input_handler.py
+index 3e7eb14..73c1677 100644
+--- a/scine_autocas/interfaces/molcas/input_handler.py
++++ b/scine_autocas/interfaces/molcas/input_handler.py
+@@ -10,6 +10,7 @@
+ """
+ 
+ import io
++import os
+ # rename class and corresponding file
+ from typing import Any, Optional
+ 
+@@ -73,7 +74,7 @@ def __casscf(self, settings: Any, input_file: io.IOBase, orbital_file: Optional[
+         input_file.write(f"  SPIN    = {settings.get_molecule().spin_multiplicity}\n")
+         input_file.write(f"  NACTEL  = {settings.active_electrons}\n")
+         if orbital_file:
+-            input_file.write(f"  FILEORB = {orbital_file}\n")
++            input_file.write(f"  FILEORB = {os.path.basename(orbital_file)}\n")
+             if not alter:
+                 input_file.write("  TYPEINDEX\n")
+             else:
+@@ -103,6 +104,9 @@ def __dmrg(self, settings: Any, input_file: io.IOBase, orbital_file: Optional[st
+             a string to reorder orbitals, instead of doing that in the orbital file
+         """
+         input_file.write("&DMRGSCF\n")
++        # Ensure formatted starting orbitals are used by Molcas DMRG
++        input_file.write("LUMORB\n")
++        input_file.write("StartOrb = INPORB\n")
+         if settings.fiedler:
+             input_file.write("  FIEDLER=ON\n")
+         input_file.write("ActiveSpaceOptimizer = QCMaquis\n")
+@@ -114,7 +118,7 @@ def __dmrg(self, settings: Any, input_file: io.IOBase, orbital_file: Optional[st
+         input_file.write(f"  SPIN    = {settings.get_molecule().spin_multiplicity}\n")
+         input_file.write(f"  NACTEL  = {settings.active_electrons}\n")
+         if orbital_file:
+-            input_file.write(f"  FILEORB = {orbital_file}\n")
++            input_file.write(f"  FILEORB = {os.path.basename(orbital_file)}\n")
+             if not alter:
+                 input_file.write("  TYPEINDEX\n")
+             else:
+
+From a8f27f5f4f38e82520fcd5f63f73e1852e3aa48d Mon Sep 17 00:00:00 2001
+From: Pavel Tomanek <99190809+pavelToman@users.noreply.github.com>
+Date: Tue, 30 Sep 2025 16:26:58 +0200
+Subject: [PATCH 2/2] Update molcas.py
+
+---
+ scine_autocas/interfaces/molcas/molcas.py | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/scine_autocas/interfaces/molcas/molcas.py b/scine_autocas/interfaces/molcas/molcas.py
+index 174279e..f7292c5 100644
+--- a/scine_autocas/interfaces/molcas/molcas.py
++++ b/scine_autocas/interfaces/molcas/molcas.py
+@@ -313,6 +313,15 @@ def run_molcas(self):
+         input_file = self.project_name + ".input"
+ 
+         self.input_handler.write_input(self.settings, input_file, self.orbital_file)
++        # Ensure formatted SCF orbitals exist in cwd so LUMORB/INPORB resolves
++        try:
++            scf_local = f"{self.project_name}.ScfOrb"
++            if not os.path.exists(scf_local):
++                cand = os.path.join(os.path.dirname(os.getcwd()), "initial", scf_local)
++                if os.path.exists(cand):
++                    shutil.copy(cand, scf_local)
++        except Exception:
++            pass
+         # setup environment
+         self.environment.project_name = self.project_name
+         environment = self.environment.make_environment()

@@ -1,0 +1,19 @@
+# What: This patch fiexs incompatibility issue with GPFS >= v5.2.3. For more details see
+#       https://github.com/open-mpi/ompi/issues/13313
+# Author: maxim-masterov
+
+diff -Nru openmpi-5.0.7.orig/ompi/mca/fs/gpfs/fs_gpfs_file_set_info.c openmpi-5.0.7/ompi/mca/fs/gpfs/fs_gpfs_file_set_info.c
+--- openmpi-5.0.7.orig/ompi/mca/fs/gpfs/fs_gpfs_file_set_info.c	2025-07-28 10:20:48.651341000 +0200
++++ openmpi-5.0.7/ompi/mca/fs/gpfs/fs_gpfs_file_set_info.c	2025-07-28 10:22:11.494552111 +0200
+@@ -313,7 +313,11 @@
+         gpfs_hint_SetReplication.gpfsSetReplication.maxMetadataReplicas = atoi(token);
+         gpfs_hint_SetReplication.gpfsSetReplication.dataReplicas = atoi(token);
+         gpfs_hint_SetReplication.gpfsSetReplication.maxDataReplicas = atoi(token);
++#ifdef GPFS_FCNTL_SET_REPLICATIONX /* GPFS >= 5.2.3-0, see #13313 */
++        gpfs_hint_SetReplication.gpfsSetReplication.perfReplicas = 0;
++#else
+         gpfs_hint_SetReplication.gpfsSetReplication.reserved = 0;
++#endif
+         free(info_str_dup);
+ 
+         rc = gpfs_fcntl(gpfs_file_handle, &gpfs_hint_SetReplication);

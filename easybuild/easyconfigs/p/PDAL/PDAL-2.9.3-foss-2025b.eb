@@ -1,0 +1,44 @@
+easyblock = 'CMakeNinja'
+
+name = 'PDAL'
+version = '2.9.3'
+
+homepage = 'https://pdal.io/'
+description = """
+PDAL is Point Data Abstraction Library. It is a C/C++ open source library and applications for
+translating and processing point cloud data. It is not limited to LiDAR data,
+although the focus and impetus for many of the tools in the library have their origins in LiDAR."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+github_account = 'PDAL'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['ec2090abf687522ae1993a51b3a4f14a012ecdd61165f72cf5c52f985bd2efb7']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('Ninja', '1.13.0'),
+]
+
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('zstd', '1.5.7'),
+    ('libgeotiff', '1.7.4'),
+    ('GDAL', '3.11.3'),
+]
+
+configopts = '-DWITH_ZSTD=ON -DWITH_ZLIB=ON -DWITH_TESTS=ON'
+
+# delete failing pdal_info_test(Info.stac) - https://github.com/PDAL/PDAL/issues/4389
+pretestopts = prebuildopts = preconfigopts = "sed -i '219,252d' %(start_dir)s/test/unit/apps/InfoTest.cpp && "
+test_cmd = 'ctest'
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'bin/%(namelower)s-config', 'lib/libpdalcpp.so'],
+    'dirs': ['include/%(namelower)s', 'lib'],
+}
+
+sanity_check_commands = ['pdal info 2>&1 | grep "%(name)s"']
+
+moduleclass = 'tools'

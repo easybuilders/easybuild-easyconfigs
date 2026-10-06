@@ -1,0 +1,27 @@
+workaround for:
+/usr/include/setjmp.h:54:12: error: conflicting types for '__sigsetjmp'
+
+this is a bug in glibc headers, was fixed in glibc 2.33.0,
+see https://github.com/bminor/glibc/commit/19302b27bdacfe87e861ff46fc0fbad60dd6602d,
+see also https://sourceware.org/bugzilla/show_bug.cgi?id=15404
+
+author: Kenneth Hoste (HPC-UGent), inspired by suggestions made by ChatGPT/Claude
+
+diff -ru eccodes-2.43.0.orig/src/eccodes/accessor/DataPngPacking.cc eccodes-2.43.0/src/eccodes/accessor/DataPngPacking.cc
+--- eccodes-2.43.0.orig/src/eccodes/accessor/DataPngPacking.cc	2025-07-24 16:39:10
++++ eccodes-2.43.0/src/eccodes/accessor/DataPngPacking.cc	2025-08-28 22:20:02
+@@ -45,7 +45,13 @@
+ 
+ #if HAVE_LIBPNG
+ 
+-    #include <png.h>
++    // Workaround for RHEL8 + Clang/Intel icpx conflicting __sigsetjmp,
++    // temporarily redefine __sigsetjmp when including png.h
++    #ifdef __clang__
++      #define __sigsetjmp sigsetjmp
++      #include <png.h>
++      #undef __sigsetjmp
++    #endif
+ 
+ typedef struct png_read_callback_data
+ {

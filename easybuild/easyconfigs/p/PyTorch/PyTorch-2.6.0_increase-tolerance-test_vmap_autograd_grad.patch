@@ -1,0 +1,25 @@
+TestOperatorsCPU.test_vmap_autograd_grad_nn_functional_conv2d_cpu_float32 fails with:
+> AssertionError: Tensor-likes are not close!
+>
+> Mismatched elements: 2 / 144 (1.4%)
+> Greatest absolute difference: 1.1444091796875e-05 at index (0, 4, 0, 0, 2) (up to 1e-05 allowed)
+> Greatest relative difference: 2.064850013994146e-05 at index (0, 4, 0, 0, 2) (up to 1.3e-06 allowed)
+>
+> The failure occurred for item [1]
+See https://github.com/pytorch/pytorch/issues/151113
+Increase the tolerance to the same as for CUDA.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/functorch/test_ops.py b/test/functorch/test_ops.py
+index a4269ff84d5..f46189909e5 100644
+--- a/test/functorch/test_ops.py
++++ b/test/functorch/test_ops.py
+@@ -2414,7 +2414,6 @@ class TestOperators(TestCase):
+             tol1(
+                 "nn.functional.conv2d",
+                 {torch.float32: tol(atol=5e-05, rtol=5e-05)},
+-                device_type="cuda",
+             ),
+             tol1("svd_lowrank", {torch.float32: tol(atol=5e-05, rtol=5e-05)}),
+             tol1("pca_lowrank", {torch.float32: tol(atol=5e-05, rtol=5e-05)}),

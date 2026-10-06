@@ -1,0 +1,50 @@
+easyblock = "Tarball"
+
+name = "dotNET-Core"
+version = "10.0.100"  # uses the SDK version string, runtime is 10.0
+
+homepage = "https://www.microsoft.com/net/"
+description = """.NET is a free, cross-platform, open source developer
+platform for building many different types of applications. With .NET,
+you can use multiple languages, editors, and libraries to build for web,
+mobile, desktop, gaming, and IoT.
+
+Contains the SDK and the Runtime.
+"""
+
+toolchain = SYSTEM
+
+local_variant = {'aarch64': 'linux-arm64', 'x86_64': 'linux-x64', 'arm64': 'osx-arm64'}.get(ARCH)
+source_urls = [f'https://builds.dotnet.microsoft.com/dotnet/Sdk/{version}/']
+sources = [f"dotnet-sdk-{version}-{local_variant}.tar.gz"]
+checksums = [{
+    'dotnet-sdk-10.0.100-linux-x64.tar.gz': 'a9631cc6bfad0ef167383ac654b54254bad95a6fb4b6f4309fa78f558055e637',
+    'dotnet-sdk-10.0.100-linux-arm64.tar.gz': 'b6425aeef6009a2d427bf600a2cd02f9dd6ac608e6bad021fd2f82f685914793',
+    'dotnet-sdk-10.0.100-osx-arm64.tar.gz': '71b3815ef8d83a6bbebf8627a56639600193f22d4ea6a6de2f71855c4b3e63fd',
+}]
+
+sanity_check_paths = {
+    "files": ["dotnet", "LICENSE.txt"],
+    "dirs": [
+        "shared/Microsoft.NETCore.App/",
+        "shared/Microsoft.AspNetCore.App/",
+        "sdk",
+    ],
+}
+
+sanity_check_commands = ['dotnet --help']
+
+modextrapaths = {"PATH": ""}
+
+# We are not sending usage stats to Microsoft...hopefully.
+# The .NET Core tools collect usage data in order to help us improve your experience. The data is anonymous.
+# It is collected by Microsoft and shared with the community.
+# You can opt-out of telemetry by setting the DOTNET_CLI_TELEMETRY_OPTOUT environment variable to '1' or 'true' using
+# your favorite shell.
+# Read more about .NET Core CLI Tools telemetry: https://aka.ms/dotnet-cli-telemetry
+modextravars = {
+    "DOTNET_ROOT": "%(installdir)s",
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+}
+
+moduleclass = 'lang'

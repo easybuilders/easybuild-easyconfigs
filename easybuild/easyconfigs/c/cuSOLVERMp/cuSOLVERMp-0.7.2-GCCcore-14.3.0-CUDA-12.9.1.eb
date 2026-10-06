@@ -1,0 +1,43 @@
+easyblock = 'Tarball'
+
+name = 'cuSOLVERMp'
+
+version = '0.7.2'
+local_build_ver = '888'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://docs.nvidia.com/cuda/cusolvermp/'
+description = """
+NVIDIA cuSOLVERMp is a high-performance, distributed-memory, GPU-accelerated
+library that provides tools for the solution of dense linear systems and
+eigenvalue problems.
+
+cuSOLVERMp is compatible with 2D block-cyclic data layout and provides
+ScaLAPACK-like C APIs.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+local_arch = 'sbsa' if ARCH == 'aarch64' else 'x86_64'
+source_urls = [f'https://developer.download.nvidia.com/compute/cusolvermp/redist/libcusolvermp/linux-{local_arch}/']
+sources = [f'libcusolvermp-linux-{local_arch}-%(version)s.{local_build_ver}_cuda%(cudamajver)s-archive.tar.xz']
+checksums = [
+    {
+        f'libcusolvermp-linux-sbsa-%(version)s.{local_build_ver}_cuda%(cudamajver)s-archive.tar.xz':
+            '4c1a2688ec0072dec6d9d2303b489a48ad34a419e42ba05f51af68a43221fed6',
+        f'libcusolvermp-linux-x86_64-%(version)s.{local_build_ver}_cuda%(cudamajver)s-archive.tar.xz':
+            '70243423e07861007ca5a95d35247af4ecdbcd0bf77aa09016a1abf3dcffb6a8',
+    }
+]
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('NCCL', '2.27.7', versionsuffix)
+]
+
+sanity_check_paths = {
+    'dirs': ['lib', 'include'],
+    'files': ['LICENSE', f'lib/libcusolverMp.{SHLIB_EXT}', 'include/cusolverMp.h']
+}
+
+moduleclass = 'math'

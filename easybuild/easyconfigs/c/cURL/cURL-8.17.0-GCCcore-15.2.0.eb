@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'cURL'
+version = '8.17.0'
+
+homepage = 'https://curl.haxx.se'
+
+description = """
+ libcurl is a free and easy-to-use client-side URL transfer library,
+ supporting DICT, FILE, FTP, FTPS, Gopher, HTTP, HTTPS, IMAP, IMAPS, LDAP,
+ LDAPS, POP3, POP3S, RTMP, RTSP, SCP, SFTP, SMTP, SMTPS, Telnet and TFTP.
+ libcurl supports SSL certificates, HTTP POST, HTTP PUT, FTP uploading, HTTP
+ form based upload, proxies, cookies, user+password authentication (Basic,
+ Digest, NTLM, Negotiate, Kerberos), file transfer resume, http proxy tunneling
+ and more.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = ['https://curl.haxx.se/download/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['e8e74cdeefe5fb78b3ae6e90cd542babf788fa9480029cfcee6fd9ced42b7910']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('pkgconf', '2.5.1'),
+]
+
+dependencies = [
+    ('zlib', '2.3.2'),
+    ('libpsl', '0.21.5'),
+    ('OpenSSL', '3', '', SYSTEM),
+]
+
+configopts = '--with-zlib '
+configopts += '--with-ssl=$EBROOTOPENSSL '
+configopts += '--without-libgsasl'  # Avoid picking up system libraries
+
+modextravars = {'CURL_INCLUDES': '%(installdir)s/include'}
+
+sanity_check_paths = {
+    'files': ['bin/curl', 'lib/libcurl.a', 'lib/libcurl.%s' % SHLIB_EXT],
+    'dirs': ['lib/pkgconfig', 'include/curl'],
+}
+
+moduleclass = 'tools'

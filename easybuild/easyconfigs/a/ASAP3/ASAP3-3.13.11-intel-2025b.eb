@@ -1,0 +1,41 @@
+easyblock = "PythonPackage"
+
+name = 'ASAP3'
+version = '3.13.11'
+
+homepage = 'https://wiki.fysik.dtu.dk/asap/'
+description = """ASAP is a calculator for doing large-scale classical molecular
+dynamics within the Campos Atomic Simulation Environment (ASE)."""
+
+toolchain = {'name': 'intel', 'version': '2025b'}
+toolchainopts = {
+    'pic': True,
+    'usempi': True,
+    'openmp': False,
+    'extra_cflags': '-fp-speculation=fast -fp-model fast',
+}
+
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['4f878ce3e77520e92eba9faea8ed4b1a9f4baca40c2a213339ec31284dd3a0d5']
+
+builddependencies = [
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('ASE', '3.26.0'),
+    ('kim-api', '2.4.1'),
+]
+
+testinstall = True
+runtest = 'pytest -n %(parallel)s -v -m core --pyargs asap3 && ' \
+    'PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe mpirun -np 2 pytest -m core --pyargs asap3'
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s']
+}
+
+moduleclass = 'phys'

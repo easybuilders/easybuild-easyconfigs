@@ -1,0 +1,49 @@
+easyblock = 'Binary'
+
+name = 'Nsight-Systems'
+version = '2025.4.1'
+local_version_major_minor = '2025.4'
+
+homepage = 'https://developer.nvidia.com/nsight-systems'
+description = """NVIDIA® Nsight™ Systems is a system-wide performance analysis tool designed to visualize an
+application’s algorithm, help you select the largest opportunities to optimize, and tune to scale efficiently across
+any quantity of CPUs and GPUs in your computer; from laptops to DGX servers."""
+
+toolchain = SYSTEM
+
+local_nsight_systems_arch = 'sbsa-' if ARCH == 'aarch64' else ''
+sources = [{
+    'filename': 'NsightSystems-linux-%spublic-%%(version)s.172-3634357.run' % local_nsight_systems_arch,
+    'extract_cmd': '/bin/sh %s'
+}]
+checksums = [{
+    'NsightSystems-linux-public-%(version)s.172-3634357.run':
+        '4b7f32b9093973c0f21e71debf7df3648ac10dff711b2b7b1e47575f6e063faf',
+    'NsightSystems-linux-sbsa-public-%(version)s.172-3634357.run':
+        'f41a30512b2477515e98d9088325454bc694313dc311d60142406dee7660830f',
+}]
+
+download_instructions = f"""
+{name} requires manual download from
+https://developer.nvidia.com/downloads/assets/tools/secure/nsight-systems/\
+{local_version_major_minor.replace('.', '_')}/{sources[0]['filename']}
+"""
+
+extract_sources = True
+unpack_options = '--accept --nochown --noexec --nox11 --target %(builddir)s'
+
+install_cmd = 'cp -r %(builddir)s/pkg/* %(installdir)s/ '
+
+local_target_arch_suffix = 'sbsa-armv8' if ARCH == 'aarch64' else 'x64' if ARCH == 'x86_64' else 'unknown'
+local_host_arch_suffix = 'armv8' if ARCH == 'aarch64' else 'x64' if ARCH == 'x86_64' else 'unknown'
+
+sanity_check_paths = {
+    'files': ['bin/nsys', 'bin/nsys-ui'],
+    'dirs': ['target-linux-%s' % local_target_arch_suffix, 'host-linux-%s' % local_host_arch_suffix]
+}
+
+modextravars = {
+    'NSIGHT_DOC': '%(installdir)s/documentation/nsys-exporter'
+}
+
+moduleclass = 'tools'

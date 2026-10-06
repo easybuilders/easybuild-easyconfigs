@@ -1,0 +1,41 @@
+From b2751a1c0210b2e0528ed8b2aefa9f7ffa22147b Mon Sep 17 00:00:00 2001
+From: Ralf Gommers <ralf.gommers@gmail.com>
+Date: Tue, 22 Jul 2025 15:34:34 +0200
+Subject: [PATCH] TST: linalg: small tolerance bump for
+ `test_orth_memory_efficiency`
+
+This was failing in a cross compilation CI job from x86-64 to aarch64:
+```
+>       assert_allclose(Y, Y.mean(), atol=tol)
+E       AssertionError:
+E       Not equal to tolerance rtol=1e-07, atol=2.22045e-13
+E
+E       Mismatched elements: 1 / 10000000 (1e-05%)
+E       Max absolute difference among violations: 4.29873957e-11
+E       Max relative difference among violations: 1.35938081e-07
+E        ACTUAL: array([[-0.000316],
+E              [-0.000316],
+E              [-0.000316],...
+E        DESIRED: array(-0.000316)
+```
+
+It's only a minor bump, the default rtol of 1e-7 was used before.
+
+[skip ci]
+---
+ scipy/linalg/tests/test_decomp.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scipy/linalg/tests/test_decomp.py b/scipy/linalg/tests/test_decomp.py
+index 4832357d9f84..c9420fcf21d1 100644
+--- a/scipy/linalg/tests/test_decomp.py
++++ b/scipy/linalg/tests/test_decomp.py
+@@ -2916,7 +2916,7 @@ def _check_orth(n, dtype, skip_big=False):
+ 
+     Y = orth(X)
+     assert_equal(Y.shape, (n, 1))
+-    assert_allclose(Y, Y.mean(), atol=tol)
++    assert_allclose(Y, Y.mean(), atol=tol, rtol=1.4e-7)
+ 
+     Y = orth(X.T)
+     assert_equal(Y.shape, (2, 1))

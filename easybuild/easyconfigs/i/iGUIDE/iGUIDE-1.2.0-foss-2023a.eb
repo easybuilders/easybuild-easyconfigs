@@ -1,0 +1,90 @@
+easyblock = 'PythonBundle'
+
+name = 'iGUIDE'
+version = '1.2.0'
+_commit = '7f2199cf13db364331dc8c6df935b5d177bb6418'
+
+homepage = 'https://github.com/cnobles/iGUIDE'
+description = """iGUIDE is a pipeline written in snakemake for processing and analyzing double-strand DNA break events.
+These events may be induced, such as by designer nucleases like Cas9, or spontaneous,
+as produced through DNA replication or ionizing radiation."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [('hatchling', '1.18.0')]
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('snakemake', '8.4.2'),
+    ('ruamel.yaml', '0.17.32'),
+    ('BLAT', '3.7'),
+    ('BWA', '0.7.17'),
+    ('SAMtools', '1.18'),
+    ('Pandoc', '3.1.2', '', SYSTEM),
+    ('graphviz-python', '0.20.1'),
+    ('R', '4.3.2'),
+    ('R-bundle-Bioconductor', '3.18', '-R-%(rver)s'),
+    ('R-bundle-CRAN', '2023.12'),
+]
+
+components = [
+    ('iguideSupport', version, {
+        'easyblock': 'RPackage',
+        'source_urls': ['https://github.com/cnobles/iGUIDE/archive'],
+        'sources': [{'download_filename': f'{_commit}.tar.gz', 'filename': "%(name)s-v%(version)s-7f2199c.tar.gz"}],
+        'start_dir': f'iGUIDE-{_commit}/tools/iguideSupport',
+        'checksums': ['9fb281b1a679ad5f7cf30607829cc362700caffd3935ef3ebc8dee4d5d2326c2'],
+    }),
+]
+
+_fix_version = "sed -i -e 's/commit_hash = run(/return iguide_version/' -e '9,15d' setup.py && "
+_fix_version += "sed -i -e 's/commit_hash = run(/return iguide_version/' "
+_fix_version += "-e '85,95d' iguidelib/__init__.py && "
+
+exts_list = [
+    ('semantic_version', '2.10.0', {
+        'checksums': ['bdabb6d336998cbb378d4b9db3a4b56a1e3235701dc05ea2690d9a997ed5041c'],
+    }),
+    ('plumbum', '1.8.3', {
+        'checksums': ['6092c85ab970b7a7a9d5d85c75200bc93be82b33c9bdf640ffa87d2d7c8709f0'],
+    }),
+    ('pandoc', '2.3', {
+        'checksums': ['e772c2c6d871146894579828dbaf1efd538eb64fc7e71d4a6b3a11a18baef90d'],
+    }),
+    ('iguidelib', version, {
+        'preinstallopts': f'export IGUIDE_DIR="%(builddir)s/iguidelib/iGUIDE-{_commit}" && {_fix_version}',
+        'source_urls': ['https://github.com/cnobles/iGUIDE/archive'],
+        # get commit 7f2199c from 'updates_v1.2.0' branch
+        'sources': [{'download_filename': f'{_commit}.tar.gz', 'filename': "%(name)s-v%(version)s-7f2199c.tar.gz"}],
+        'start_dir': 'tools/iguidelib',
+        'checksums': ['9fb281b1a679ad5f7cf30607829cc362700caffd3935ef3ebc8dee4d5d2326c2'],
+    }),
+]
+
+# install pipeline components
+postinstallcmds = [
+    f'cp %(builddir)s/iGUIDE-{_commit}/Snakefile %(installdir)s',
+    f'cp %(builddir)s/iguidelib/iGUIDE-{_commit}/.version %(installdir)s',
+    f'cp -r %(builddir)s/iGUIDE-{_commit}/rules %(installdir)s/rules',
+    f'cp -r %(builddir)s/iGUIDE-{_commit}/configs %(installdir)s/configs',
+    f'cp -r %(builddir)s/iGUIDE-{_commit}/analysis %(installdir)s/analysis',
+    f'cp -r %(builddir)s/iGUIDE-{_commit}/sampleInfo %(installdir)s/sampleInfo',
+    f'cp -r %(builddir)s/iGUIDE-{_commit}/tools %(installdir)s/tools',
+    f'cp -r %(builddir)s/iGUIDE-{_commit}/etc %(installdir)s/etc',
+    f'cp -r %(builddir)s/iGUIDE-{_commit}/genomes %(installdir)s/genomes',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'bin/ig', 'Snakefile', '.version'],
+    'dirs': ['rules', 'configs', 'analysis', 'sampleInfo', 'tools', 'etc', 'genomes'],
+}
+
+sanity_check_commands = ['ig --version']
+
+modextrapaths = {
+    'IGUIDE_DIR': '',
+    'R_LIBS_SITE': '',
+}
+
+moduleclass = 'bio'

@@ -18,6 +18,8 @@ builddependencies = [
 ]
 if ARCH == 'x86_64':
     builddependencies.append(('AOCL-BLAS', '5.1'))
+if ARCH == 'aarch64':
+    builddependencies.append(('NVPL', '25.5', '', SYSTEM))
 
 dependencies = [
     ('OpenBLAS', '0.3.30'),
@@ -30,6 +32,8 @@ local_backends = ['OpenBLAS', 'BLIS']
 # imkl supplies its backend via the imkl module, not as a dependency
 if ARCH == 'x86_64':
     local_backends.extend(['AOCL-BLAS', 'imkl'])
+if ARCH == 'aarch64':
+    local_backends.extend(['NVPL'])
 
 default_component_specs = {'start_dir': '%(namelower)s-%(version)s'}
 sanity_check_all_components = True
@@ -49,7 +53,7 @@ components = [
         'sources': ['v%(version)s.tar.gz'],
         'checksums': ['2ca6407a001a474d4d4d35f3a61550156050c48016d949f0da0529c0aa052422'],
         'configopts': ('-DBUILD_SHARED_LIBS=ON -DUSE_OPTIMIZED_BLAS=ON -DLAPACKE=ON '
-                       '-DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON '
+                       '-DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON -DBUILD_INDEX64_EXT_API=OFF '
                        '-DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas'),
         'sanity_check_paths': {
             'files': ['lib/liblapacke.%s' % SHLIB_EXT, 'include/flexiblas/lapacke.h'],

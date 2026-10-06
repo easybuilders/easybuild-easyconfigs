@@ -1,0 +1,381 @@
+From f098fdc1ac245b7c212c3c4b51cb20678c18651e Mon Sep 17 00:00:00 2001
+From: Joseph Huber <huberjn@outlook.com>
+Date: Mon, 21 Jul 2025 14:38:03 -0500
+Subject: [PATCH] [LLVM] Update CUDA ELF flags for their new ABI (#149534)
+
+Summary:
+We rely on these flags to do things in the runtime and print the
+contents of binaries correctly. CUDA updated their ABI encoding recently
+and we didn't handle that. it's a new ABI entirely so we just select on
+it when it shows up.
+
+Fixes: https://github.com/llvm/llvm-project/issues/148703
+
+[LLVM] Fix offload and update CUDA ABI for all SM values (#159354)
+
+Summary:
+Turns out the new CUDA ABI now applies retroactively to all the other
+SMs if you upgrade to CUDA 13.0. This patch changes the scheme, keeping
+all the SM flags consistent but using an offset.
+
+Fixes: https://github.com/llvm/llvm-project/issues/159088
+---
+ llvm/include/llvm/BinaryFormat/ELF.h          |  28 ++++-
+ llvm/include/llvm/Object/ELFObjectFile.h      |   1 +
+ llvm/lib/Object/ELFObjectFile.cpp             |  32 ++++-
+ llvm/tools/llvm-readobj/ELFDumper.cpp         | 114 +++++++++++++-----
+ .../plugins-nextgen/common/src/Utils/ELF.cpp  |  25 ++--
+ offload/plugins-nextgen/cuda/src/rtl.cpp      |   6 +-
+ 6 files changed, 158 insertions(+), 48 deletions(-)
+
+diff --git a/llvm/include/llvm/BinaryFormat/ELF.h b/llvm/include/llvm/BinaryFormat/ELF.h
+index 8853c4a88b0b..cef0b0488721 100644
+--- a/llvm/include/llvm/BinaryFormat/ELF.h
++++ b/llvm/include/llvm/BinaryFormat/ELF.h
+@@ -360,6 +360,7 @@ enum {
+   ELFOSABI_FENIXOS = 16,       // FenixOS
+   ELFOSABI_CLOUDABI = 17,      // Nuxi CloudABI
+   ELFOSABI_CUDA = 51,          // NVIDIA CUDA architecture.
++  ELFOSABI_CUDA_V2 = 41,       // NVIDIA CUDA architecture.
+   ELFOSABI_FIRST_ARCH = 64,    // First architecture-specific OS ABI
+   ELFOSABI_AMDGPU_HSA = 64,    // AMD HSA runtime
+   ELFOSABI_AMDGPU_PAL = 65,    // AMD PAL runtime
+@@ -383,6 +384,12 @@ enum {
+   ELFABIVERSION_AMDGPU_HSA_V6 = 4,
+ };
+ 
++// CUDA OS ABI Version identification.
++enum {
++  ELFABIVERSION_CUDA_V1 = 7,
++  ELFABIVERSION_CUDA_V2 = 8,
++};
++
+ #define ELF_RELOC(name, value) name = value,
+ 
+ // X86_64 relocations.
+@@ -909,9 +916,15 @@ enum {
+ 
+ // NVPTX specific e_flags.
+ enum : unsigned {
+-  // Processor selection mask for EF_CUDA_SM* values.
++  // Processor selection mask for EF_CUDA_SM* values prior to blackwell.
+   EF_CUDA_SM = 0xff,
+ 
++  // Processor selection mask for EF_CUDA_SM* values following blackwell.
++  EF_CUDA_SM_MASK = 0xff00,
++
++  // Processor selection mask for EF_CUDA_SM* values following blackwell.
++  EF_CUDA_SM_OFFSET = 8,
++
+   // SM based processor values.
+   EF_CUDA_SM20 = 0x14,
+   EF_CUDA_SM21 = 0x15,
+@@ -931,9 +944,15 @@ enum : unsigned {
+   EF_CUDA_SM80 = 0x50,
+   EF_CUDA_SM86 = 0x56,
+   EF_CUDA_SM87 = 0x57,
++  EF_CUDA_SM88 = 0x58,
+   EF_CUDA_SM89 = 0x59,
+-  // The sm_90a variant uses the same machine flag.
+   EF_CUDA_SM90 = 0x5a,
++  EF_CUDA_SM100 = 0x64,
++  EF_CUDA_SM101 = 0x65,
++  EF_CUDA_SM103 = 0x67,
++  EF_CUDA_SM110 = 0x6e,
++  EF_CUDA_SM120 = 0x78,
++  EF_CUDA_SM121 = 0x79,
+ 
+   // Unified texture binding is enabled.
+   EF_CUDA_TEXMODE_UNIFIED = 0x100,
+@@ -942,12 +961,15 @@ enum : unsigned {
+   // The target is using 64-bit addressing.
+   EF_CUDA_64BIT_ADDRESS = 0x400,
+   // Set when using the sm_90a processor.
+-  EF_CUDA_ACCELERATORS = 0x800,
++  EF_CUDA_ACCELERATORS_V1 = 0x800,
+   // Undocumented software feature.
+   EF_CUDA_SW_FLAG_V2 = 0x1000,
+ 
+   // Virtual processor selection mask for EF_CUDA_VIRTUAL_SM* values.
+   EF_CUDA_VIRTUAL_SM = 0xff0000,
++
++  // Set when using an accelerator variant like sm_100a.
++  EF_CUDA_ACCELERATORS = 0x8,
+ };
+ 
+ // ELF Relocation types for BPF
+diff --git a/llvm/include/llvm/Object/ELFObjectFile.h b/llvm/include/llvm/Object/ELFObjectFile.h
+index 60c72062a3f6..ef481bff7f59 100644
+--- a/llvm/include/llvm/Object/ELFObjectFile.h
++++ b/llvm/include/llvm/Object/ELFObjectFile.h
+@@ -1473,6 +1473,7 @@ template <class ELFT> Triple::OSType ELFObjectFile<ELFT>::getOS() const {
+   case ELF::ELFOSABI_OPENBSD:
+     return Triple::OpenBSD;
+   case ELF::ELFOSABI_CUDA:
++  case ELF::ELFOSABI_CUDA_V2:
+     return Triple::CUDA;
+   case ELF::ELFOSABI_AMDGPU_HSA:
+     return Triple::AMDHSA;
+diff --git a/llvm/lib/Object/ELFObjectFile.cpp b/llvm/lib/Object/ELFObjectFile.cpp
+index 1ddfadaf1e27..1d6e2ea2b72f 100644
+--- a/llvm/lib/Object/ELFObjectFile.cpp
++++ b/llvm/lib/Object/ELFObjectFile.cpp
+@@ -622,7 +622,10 @@ StringRef ELFObjectFileBase::getAMDGPUCPUName() const {
+ 
+ StringRef ELFObjectFileBase::getNVPTXCPUName() const {
+   assert(getEMachine() == ELF::EM_CUDA);
+-  unsigned SM = getPlatformFlags() & ELF::EF_CUDA_SM;
++  unsigned SM = getEIdentABIVersion() == ELF::ELFABIVERSION_CUDA_V1
++                    ? getPlatformFlags() & ELF::EF_CUDA_SM
++                    : (getPlatformFlags() & ELF::EF_CUDA_SM_MASK) >>
++                          ELF::EF_CUDA_SM_OFFSET;
+ 
+   switch (SM) {
+   // Fermi architecture.
+@@ -674,6 +677,8 @@ StringRef ELFObjectFileBase::getNVPTXCPUName() const {
+     return "sm_86";
+   case ELF::EF_CUDA_SM87:
+     return "sm_87";
++  case ELF::EF_CUDA_SM88:
++    return "sm_88";
+ 
+   // Ada architecture.
+   case ELF::EF_CUDA_SM89:
+@@ -681,7 +686,30 @@ StringRef ELFObjectFileBase::getNVPTXCPUName() const {
+ 
+   // Hopper architecture.
+   case ELF::EF_CUDA_SM90:
+-    return getPlatformFlags() & ELF::EF_CUDA_ACCELERATORS ? "sm_90a" : "sm_90";
++    return getPlatformFlags() & ELF::EF_CUDA_ACCELERATORS_V1 ? "sm_90a"
++                                                             : "sm_90";
++
++  // Blackwell architecture.
++  case ELF::EF_CUDA_SM100:
++    return getPlatformFlags() & ELF::EF_CUDA_ACCELERATORS ? "sm_100a"
++                                                          : "sm_100";
++  case ELF::EF_CUDA_SM101:
++    return getPlatformFlags() & ELF::EF_CUDA_ACCELERATORS ? "sm_101a"
++                                                          : "sm_101";
++  case ELF::EF_CUDA_SM103:
++    return getPlatformFlags() & ELF::EF_CUDA_ACCELERATORS ? "sm_103a"
++                                                          : "sm_103";
++  case ELF::EF_CUDA_SM110:
++    return getPlatformFlags() & ELF::EF_CUDA_ACCELERATORS ? "sm_110a"
++                                                          : "sm_110";
++
++  // Blackwell architecture.
++  case ELF::EF_CUDA_SM120:
++    return getPlatformFlags() & ELF::EF_CUDA_ACCELERATORS ? "sm_120a"
++                                                          : "sm_120";
++  case ELF::EF_CUDA_SM121:
++    return getPlatformFlags() & ELF::EF_CUDA_ACCELERATORS ? "sm_121a"
++                                                          : "sm_121";
+   default:
+     llvm_unreachable("Unknown EF_CUDA_SM value");
+   }
+diff --git a/llvm/tools/llvm-readobj/ELFDumper.cpp b/llvm/tools/llvm-readobj/ELFDumper.cpp
+index bfca65aad52b..24367ca6daa6 100644
+--- a/llvm/tools/llvm-readobj/ELFDumper.cpp
++++ b/llvm/tools/llvm-readobj/ELFDumper.cpp
+@@ -1082,26 +1082,26 @@ const EnumEntry<unsigned> ElfObjectFileType[] = {
+ };
+ 
+ const EnumEntry<unsigned> ElfOSABI[] = {
+-  {"SystemV",      "UNIX - System V",      ELF::ELFOSABI_NONE},
+-  {"HPUX",         "UNIX - HP-UX",         ELF::ELFOSABI_HPUX},
+-  {"NetBSD",       "UNIX - NetBSD",        ELF::ELFOSABI_NETBSD},
+-  {"GNU/Linux",    "UNIX - GNU",           ELF::ELFOSABI_LINUX},
+-  {"GNU/Hurd",     "GNU/Hurd",             ELF::ELFOSABI_HURD},
+-  {"Solaris",      "UNIX - Solaris",       ELF::ELFOSABI_SOLARIS},
+-  {"AIX",          "UNIX - AIX",           ELF::ELFOSABI_AIX},
+-  {"IRIX",         "UNIX - IRIX",          ELF::ELFOSABI_IRIX},
+-  {"FreeBSD",      "UNIX - FreeBSD",       ELF::ELFOSABI_FREEBSD},
+-  {"TRU64",        "UNIX - TRU64",         ELF::ELFOSABI_TRU64},
+-  {"Modesto",      "Novell - Modesto",     ELF::ELFOSABI_MODESTO},
+-  {"OpenBSD",      "UNIX - OpenBSD",       ELF::ELFOSABI_OPENBSD},
+-  {"OpenVMS",      "VMS - OpenVMS",        ELF::ELFOSABI_OPENVMS},
+-  {"NSK",          "HP - Non-Stop Kernel", ELF::ELFOSABI_NSK},
+-  {"AROS",         "AROS",                 ELF::ELFOSABI_AROS},
+-  {"FenixOS",      "FenixOS",              ELF::ELFOSABI_FENIXOS},
+-  {"CloudABI",     "CloudABI",             ELF::ELFOSABI_CLOUDABI},
+-  {"CUDA",         "NVIDIA - CUDA",        ELF::ELFOSABI_CUDA},
+-  {"Standalone",   "Standalone App",       ELF::ELFOSABI_STANDALONE}
+-};
++    {"SystemV", "UNIX - System V", ELF::ELFOSABI_NONE},
++    {"HPUX", "UNIX - HP-UX", ELF::ELFOSABI_HPUX},
++    {"NetBSD", "UNIX - NetBSD", ELF::ELFOSABI_NETBSD},
++    {"GNU/Linux", "UNIX - GNU", ELF::ELFOSABI_LINUX},
++    {"GNU/Hurd", "GNU/Hurd", ELF::ELFOSABI_HURD},
++    {"Solaris", "UNIX - Solaris", ELF::ELFOSABI_SOLARIS},
++    {"AIX", "UNIX - AIX", ELF::ELFOSABI_AIX},
++    {"IRIX", "UNIX - IRIX", ELF::ELFOSABI_IRIX},
++    {"FreeBSD", "UNIX - FreeBSD", ELF::ELFOSABI_FREEBSD},
++    {"TRU64", "UNIX - TRU64", ELF::ELFOSABI_TRU64},
++    {"Modesto", "Novell - Modesto", ELF::ELFOSABI_MODESTO},
++    {"OpenBSD", "UNIX - OpenBSD", ELF::ELFOSABI_OPENBSD},
++    {"OpenVMS", "VMS - OpenVMS", ELF::ELFOSABI_OPENVMS},
++    {"NSK", "HP - Non-Stop Kernel", ELF::ELFOSABI_NSK},
++    {"AROS", "AROS", ELF::ELFOSABI_AROS},
++    {"FenixOS", "FenixOS", ELF::ELFOSABI_FENIXOS},
++    {"CloudABI", "CloudABI", ELF::ELFOSABI_CLOUDABI},
++    {"CUDA", "NVIDIA - CUDA", ELF::ELFOSABI_CUDA},
++    {"CUDA", "NVIDIA - CUDA", ELF::ELFOSABI_CUDA_V2},
++    {"Standalone", "Standalone App", ELF::ELFOSABI_STANDALONE}};
+ 
+ const EnumEntry<unsigned> AMDGPUElfOSABI[] = {
+   {"AMDGPU_HSA",    "AMDGPU - HSA",    ELF::ELFOSABI_AMDGPU_HSA},
+@@ -1666,16 +1666,60 @@ const EnumEntry<unsigned> ElfHeaderAMDGPUFlagsABIVersion4[] = {
+ };
+ 
+ const EnumEntry<unsigned> ElfHeaderNVPTXFlags[] = {
+-    ENUM_ENT(EF_CUDA_SM20, "sm_20"), ENUM_ENT(EF_CUDA_SM21, "sm_21"),
+-    ENUM_ENT(EF_CUDA_SM30, "sm_30"), ENUM_ENT(EF_CUDA_SM32, "sm_32"),
+-    ENUM_ENT(EF_CUDA_SM35, "sm_35"), ENUM_ENT(EF_CUDA_SM37, "sm_37"),
+-    ENUM_ENT(EF_CUDA_SM50, "sm_50"), ENUM_ENT(EF_CUDA_SM52, "sm_52"),
+-    ENUM_ENT(EF_CUDA_SM53, "sm_53"), ENUM_ENT(EF_CUDA_SM60, "sm_60"),
+-    ENUM_ENT(EF_CUDA_SM61, "sm_61"), ENUM_ENT(EF_CUDA_SM62, "sm_62"),
+-    ENUM_ENT(EF_CUDA_SM70, "sm_70"), ENUM_ENT(EF_CUDA_SM72, "sm_72"),
+-    ENUM_ENT(EF_CUDA_SM75, "sm_75"), ENUM_ENT(EF_CUDA_SM80, "sm_80"),
+-    ENUM_ENT(EF_CUDA_SM86, "sm_86"), ENUM_ENT(EF_CUDA_SM87, "sm_87"),
+-    ENUM_ENT(EF_CUDA_SM89, "sm_89"), ENUM_ENT(EF_CUDA_SM90, "sm_90"),
++    ENUM_ENT(EF_CUDA_SM20, "sm_20"),
++    ENUM_ENT(EF_CUDA_SM21, "sm_21"),
++    ENUM_ENT(EF_CUDA_SM30, "sm_30"),
++    ENUM_ENT(EF_CUDA_SM32, "sm_32"),
++    ENUM_ENT(EF_CUDA_SM35, "sm_35"),
++    ENUM_ENT(EF_CUDA_SM37, "sm_37"),
++    ENUM_ENT(EF_CUDA_SM50, "sm_50"),
++    ENUM_ENT(EF_CUDA_SM52, "sm_52"),
++    ENUM_ENT(EF_CUDA_SM53, "sm_53"),
++    ENUM_ENT(EF_CUDA_SM60, "sm_60"),
++    ENUM_ENT(EF_CUDA_SM61, "sm_61"),
++    ENUM_ENT(EF_CUDA_SM62, "sm_62"),
++    ENUM_ENT(EF_CUDA_SM70, "sm_70"),
++    ENUM_ENT(EF_CUDA_SM72, "sm_72"),
++    ENUM_ENT(EF_CUDA_SM75, "sm_75"),
++    ENUM_ENT(EF_CUDA_SM80, "sm_80"),
++    ENUM_ENT(EF_CUDA_SM86, "sm_86"),
++    ENUM_ENT(EF_CUDA_SM87, "sm_87"),
++    ENUM_ENT(EF_CUDA_SM88, "sm_88"),
++    ENUM_ENT(EF_CUDA_SM89, "sm_89"),
++    ENUM_ENT(EF_CUDA_SM90, "sm_90"),
++    ENUM_ENT(EF_CUDA_SM100, "sm_100"),
++    ENUM_ENT(EF_CUDA_SM101, "sm_101"),
++    ENUM_ENT(EF_CUDA_SM103, "sm_103"),
++    ENUM_ENT(EF_CUDA_SM110, "sm_110"),
++    ENUM_ENT(EF_CUDA_SM120, "sm_120"),
++    ENUM_ENT(EF_CUDA_SM121, "sm_121"),
++    ENUM_ENT(EF_CUDA_SM20 << EF_CUDA_SM_OFFSET, "sm_20"),
++    ENUM_ENT(EF_CUDA_SM21 << EF_CUDA_SM_OFFSET, "sm_21"),
++    ENUM_ENT(EF_CUDA_SM30 << EF_CUDA_SM_OFFSET, "sm_30"),
++    ENUM_ENT(EF_CUDA_SM32 << EF_CUDA_SM_OFFSET, "sm_32"),
++    ENUM_ENT(EF_CUDA_SM35 << EF_CUDA_SM_OFFSET, "sm_35"),
++    ENUM_ENT(EF_CUDA_SM37 << EF_CUDA_SM_OFFSET, "sm_37"),
++    ENUM_ENT(EF_CUDA_SM50 << EF_CUDA_SM_OFFSET, "sm_50"),
++    ENUM_ENT(EF_CUDA_SM52 << EF_CUDA_SM_OFFSET, "sm_52"),
++    ENUM_ENT(EF_CUDA_SM53 << EF_CUDA_SM_OFFSET, "sm_53"),
++    ENUM_ENT(EF_CUDA_SM60 << EF_CUDA_SM_OFFSET, "sm_60"),
++    ENUM_ENT(EF_CUDA_SM61 << EF_CUDA_SM_OFFSET, "sm_61"),
++    ENUM_ENT(EF_CUDA_SM62 << EF_CUDA_SM_OFFSET, "sm_62"),
++    ENUM_ENT(EF_CUDA_SM70 << EF_CUDA_SM_OFFSET, "sm_70"),
++    ENUM_ENT(EF_CUDA_SM72 << EF_CUDA_SM_OFFSET, "sm_72"),
++    ENUM_ENT(EF_CUDA_SM75 << EF_CUDA_SM_OFFSET, "sm_75"),
++    ENUM_ENT(EF_CUDA_SM80 << EF_CUDA_SM_OFFSET, "sm_80"),
++    ENUM_ENT(EF_CUDA_SM86 << EF_CUDA_SM_OFFSET, "sm_86"),
++    ENUM_ENT(EF_CUDA_SM87 << EF_CUDA_SM_OFFSET, "sm_87"),
++    ENUM_ENT(EF_CUDA_SM88 << EF_CUDA_SM_OFFSET, "sm_88"),
++    ENUM_ENT(EF_CUDA_SM89 << EF_CUDA_SM_OFFSET, "sm_89"),
++    ENUM_ENT(EF_CUDA_SM90 << EF_CUDA_SM_OFFSET, "sm_90"),
++    ENUM_ENT(EF_CUDA_SM100 << EF_CUDA_SM_OFFSET, "sm_100"),
++    ENUM_ENT(EF_CUDA_SM101 << EF_CUDA_SM_OFFSET, "sm_101"),
++    ENUM_ENT(EF_CUDA_SM103 << EF_CUDA_SM_OFFSET, "sm_103"),
++    ENUM_ENT(EF_CUDA_SM110 << EF_CUDA_SM_OFFSET, "sm_110"),
++    ENUM_ENT(EF_CUDA_SM120 << EF_CUDA_SM_OFFSET, "sm_120"),
++    ENUM_ENT(EF_CUDA_SM121 << EF_CUDA_SM_OFFSET, "sm_121"),
+ };
+ 
+ const EnumEntry<unsigned> ElfHeaderRISCVFlags[] = {
+@@ -3651,10 +3695,16 @@ template <class ELFT> void GNUELFDumper<ELFT>::printFileHeaders() {
+   else if (e.e_machine == EM_XTENSA)
+     ElfFlags = printFlags(e.e_flags, ArrayRef(ElfHeaderXtensaFlags),
+                           unsigned(ELF::EF_XTENSA_MACH));
+-  else if (e.e_machine == EM_CUDA)
++  else if (e.e_machine == EM_CUDA) {
+     ElfFlags = printFlags(e.e_flags, ArrayRef(ElfHeaderNVPTXFlags),
+                           unsigned(ELF::EF_CUDA_SM));
+-  else if (e.e_machine == EM_AMDGPU) {
++    if (e.e_ident[ELF::EI_ABIVERSION] == ELF::ELFABIVERSION_CUDA_V1 &&
++        (e.e_flags & ELF::EF_CUDA_ACCELERATORS_V1))
++      ElfFlags += "a";
++    else if (e.e_ident[ELF::EI_ABIVERSION] == ELF::ELFABIVERSION_CUDA_V2 &&
++             (e.e_flags & ELF::EF_CUDA_ACCELERATORS))
++      ElfFlags += "a";
++  } else if (e.e_machine == EM_AMDGPU) {
+     switch (e.e_ident[ELF::EI_ABIVERSION]) {
+     default:
+       break;
+diff --git a/offload/plugins-nextgen/common/src/Utils/ELF.cpp b/offload/plugins-nextgen/common/src/Utils/ELF.cpp
+index 44d1c737e2ef..333dfd7f054d 100644
+--- a/offload/plugins-nextgen/common/src/Utils/ELF.cpp
++++ b/offload/plugins-nextgen/common/src/Utils/ELF.cpp
+@@ -60,25 +60,30 @@ static Expected<bool>
+ checkMachineImpl(const object::ELFObjectFile<ELFT> &ELFObj, uint16_t EMachine) {
+   const auto Header = ELFObj.getELFFile().getHeader();
+   if (Header.e_type != ET_EXEC && Header.e_type != ET_DYN)
+-    return createError("Only executable ELF files are supported");
++    return createError("only executable ELF files are supported");
+ 
+   if (Header.e_machine == EM_AMDGPU) {
+-    if (Header.e_ident[EI_OSABI] != ELFOSABI_AMDGPU_HSA)
+-      return createError("Invalid AMD OS/ABI, must be AMDGPU_HSA");
++      return createError("invalid AMD OS/ABI, must be AMDGPU_HSA");
+     if (Header.e_ident[EI_ABIVERSION] != ELFABIVERSION_AMDGPU_HSA_V4 &&
+         Header.e_ident[EI_ABIVERSION] != ELFABIVERSION_AMDGPU_HSA_V5 &&
+         Header.e_ident[EI_ABIVERSION] != ELFABIVERSION_AMDGPU_HSA_V6)
+-      return createError("Invalid AMD ABI version, must be version 4 or above");
++      return createError("invalid AMD ABI version, must be version 4 or above");
+     if ((Header.e_flags & EF_AMDGPU_MACH) < EF_AMDGPU_MACH_AMDGCN_GFX700 ||
+         (Header.e_flags & EF_AMDGPU_MACH) >
+             EF_AMDGPU_MACH_AMDGCN_GFX9_4_GENERIC)
+-      return createError("Unsupported AMDGPU architecture");
++      return createError("unsupported AMDGPU architecture");
+   } else if (Header.e_machine == EM_CUDA) {
+-    if (~Header.e_flags & EF_CUDA_64BIT_ADDRESS)
+-      return createError("Invalid CUDA addressing mode");
+-    if ((Header.e_flags & EF_CUDA_SM) < EF_CUDA_SM35 ||
+-        (Header.e_flags & EF_CUDA_SM) > EF_CUDA_SM90)
+-      return createError("Unsupported NVPTX architecture");
++    if (Header.e_ident[EI_ABIVERSION] == ELFABIVERSION_CUDA_V1) {
++      if (~Header.e_flags & EF_CUDA_64BIT_ADDRESS)
++        return createError("invalid CUDA addressing mode");
++      if ((Header.e_flags & EF_CUDA_SM) < EF_CUDA_SM35)
++        return createError("unsupported NVPTX architecture");
++    } else if (Header.e_ident[EI_ABIVERSION] == ELFABIVERSION_CUDA_V2) {
++      if ((Header.e_flags & EF_CUDA_SM_MASK) < EF_CUDA_SM100)
++        return createError("unsupported NVPTX architecture");
++    } else {
++      return createError("invalid CUDA ABI version");
++    }
+   }
+ 
+   return Header.e_machine == EMachine;
+diff --git a/offload/plugins-nextgen/cuda/src/rtl.cpp b/offload/plugins-nextgen/cuda/src/rtl.cpp
+index 52e8a100dc87..b2cec6b5d75e 100644
+--- a/offload/plugins-nextgen/cuda/src/rtl.cpp
++++ b/offload/plugins-nextgen/cuda/src/rtl.cpp
+@@ -1398,7 +1398,11 @@ struct CUDAPluginTy final : public GenericPluginTy {
+       return ElfOrErr.takeError();
+ 
+     // Get the numeric value for the image's `sm_` value.
+-    auto SM = ElfOrErr->getPlatformFlags() & ELF::EF_CUDA_SM;
++    const auto Header = ElfOrErr->getELFFile().getHeader();
++    unsigned SM =
++        Header.e_ident[ELF::EI_ABIVERSION] == ELF::ELFABIVERSION_CUDA_V1
++            ? Header.e_flags & ELF::EF_CUDA_SM
++            : (Header.e_flags & ELF::EF_CUDA_SM_MASK) >> ELF::EF_CUDA_SM_OFFSET;
+ 
+     CUdevice Device;
+     CUresult Res = cuDeviceGet(&Device, DeviceId);
+-- 
+2.51.0
+

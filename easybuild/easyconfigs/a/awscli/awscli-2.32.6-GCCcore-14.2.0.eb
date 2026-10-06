@@ -1,0 +1,48 @@
+easyblock = 'PythonBundle'
+
+name = 'awscli'
+version = '2.32.6'
+
+homepage = 'https://github.com/aws/aws-cli/'
+description = 'Universal Command Line Environment for AWS'
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),  # required for awscrt
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('PyYAML', '6.0.2'),
+    ('boto3', '1.38.27'),
+    ('ruamel.yaml', '0.18.14'),
+]
+
+exts_list = [
+    ('prompt_toolkit', '3.0.52', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['9aac639a3bbd33284347de5ad8d68ecc044b91a762dc39b7c21095fcd6a19955'],
+    }),
+    ('awscrt', '0.28.4', {
+        'preinstallopts': "export AWS_CRT_BUILD_USE_SYSTEM_LIBCRYPTO=1 && ",
+        'checksums': ['d2835094e92d0a3d1722d03afd54983115b2172d57581a664ad6a2af3d33c12c'],
+    }),
+    (name, version, {
+        # version requirements are too strict
+        'preinstallopts': """sed -i 's/>[^"]*//g' pyproject.toml && """,
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/aws/aws-cli/archive/'],
+        'checksums': ['0b58c8e15930e4d19813908493c5d5e1996758a26e1add0cd86783fc609e65cd'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/aws'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+}
+
+sanity_check_commands = ["aws help"]
+
+moduleclass = 'tools'

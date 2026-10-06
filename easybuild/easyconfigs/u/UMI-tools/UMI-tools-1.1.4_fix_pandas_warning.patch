@@ -1,0 +1,37 @@
+Backport https://github.com/CGATOxford/UMI-tools/pull/628 from UMI-tools 1.1.6
+See https://github.com/CGATOxford/UMI-tools/issues/615
+
+From d4bf10ced10e9d7b34523fd1de71c0fe8b2c09e4 Mon Sep 17 00:00:00 2001
+From: Tom Smith <tomsmith@tss38-im.local>
+Date: Mon, 4 Mar 2024 13:28:11 +0000
+Subject: [PATCH] resolves pandas aggregation warnings
+
+---
+ umi_tools/dedup.py | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/umi_tools/dedup.py b/umi_tools/dedup.py
+index a518fc6..2b8e5ee 100644
+--- a/umi_tools/dedup.py
++++ b/umi_tools/dedup.py
+@@ -167,7 +167,7 @@ def aggregateStatsDF(stats_df):
+ 
+     grouped = stats_df.groupby("UMI")
+ 
+-    agg_dict = {'counts': [np.median, len, np.sum]}
++    agg_dict = {'counts': ['median', len, 'sum']}
+     agg_df = grouped.agg(agg_dict)
+ 
+     agg_df.columns = ['median_counts', 'times_observed', 'total_counts']
+@@ -444,8 +444,10 @@ def tallyCounts(binned_cluster, max_edit_distance):
+             columns=["unique", "unique_null", options.method,
+                      "%s_null" % options.method, "edit_distance"])
+ 
++        edit_distance_df['edit_distance'] = edit_distance_df['edit_distance'].astype(str)
++
+         # TS - set lowest bin (-1) to "Single_UMI"
+-        edit_distance_df['edit_distance'][0] = "Single_UMI"
++        edit_distance_df.loc[0, 'edit_distance'] = "Single_UMI"
+ 
+         edit_distance_df.to_csv(options.stats + "_edit_distance.tsv",
+                                 index=False, sep="\t")

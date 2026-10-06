@@ -1,0 +1,57 @@
+Fix: ValueError: mutable default <class 'esm.esmfold.v1.trunk.StructureModuleConfig'> for field structure_module is not allowed: use default_factory
+From c622e3070615b150e202886f84321329ccda0e2b Mon Sep 17 00:00:00 2001
+From: asarigun <asarigun3156@gmail.com>
+Date: Mon, 29 Jul 2024 14:37:57 +0200
+Subject: [PATCH] debug esmfold
+
+---
+ esm/esmfold/v1/esmfold.py | 5 +++--
+ esm/esmfold/v1/trunk.py   | 5 +++--
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/esm/esmfold/v1/esmfold.py b/esm/esmfold/v1/esmfold.py
+index f7a27e83..b3d40451 100644
+--- a/esm/esmfold/v1/esmfold.py
++++ b/esm/esmfold/v1/esmfold.py
+@@ -3,7 +3,7 @@
+ # This source code is licensed under the MIT license found in the
+ # LICENSE file in the root directory of this source tree.
+ import typing as T
+-from dataclasses import dataclass
++from dataclasses import dataclass, field
+ 
+ import torch
+ import torch.nn as nn
+@@ -27,7 +27,8 @@
+ 
+ @dataclass
+ class ESMFoldConfig:
+-    trunk: T.Any = FoldingTrunkConfig()
++    #trunk: T.Any = FoldingTrunkConfig()
++    trunk: FoldingTrunkConfig = field(default_factory=FoldingTrunkConfig)
+     lddt_head_hid_dim: int = 128
+ 
+ 
+diff --git a/esm/esmfold/v1/trunk.py b/esm/esmfold/v1/trunk.py
+index eb8e0661..0ec6668c 100644
+--- a/esm/esmfold/v1/trunk.py
++++ b/esm/esmfold/v1/trunk.py
+@@ -4,7 +4,7 @@
+ # LICENSE file in the root directory of this source tree.
+ import typing as T
+ from contextlib import ExitStack
+-from dataclasses import dataclass
++from dataclasses import dataclass, field
+ 
+ import torch
+ import torch.nn as nn
+@@ -48,7 +48,8 @@ class FoldingTrunkConfig:
+     max_recycles: int = 4
+     chunk_size: T.Optional[int] = None
+ 
+-    structure_module: StructureModuleConfig = StructureModuleConfig()
++    #structure_module: StructureModuleConfig = StructureModuleConfig()
++    structure_module: StructureModuleConfig = field(default_factory=StructureModuleConfig)
+ 
+ 
+ def get_axial_mask(mask):

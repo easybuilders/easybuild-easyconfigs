@@ -1,0 +1,36 @@
+easyblock = 'Tarball'
+
+name = 'cuTENSOR'
+version = '2.3.0.6'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://developer.nvidia.com/cutensor'
+description = """The cuTENSOR Library is a GPU-accelerated tensor linear algebra library providing tensor contraction,
+ reduction and elementwise operations."""
+
+toolchain = SYSTEM
+
+local_cudamajver = '12'
+
+local_arch = {'arm64': 'sbsa', 'aarch64': 'sbsa'}.get(ARCH, ARCH)
+source_urls = [
+    'https://developer.download.nvidia.com/compute/cutensor/redist/libcutensor/linux-%s/' % local_arch
+]
+sources = ['libcutensor-linux-%s-%%(version)s_cuda%s-archive.tar.xz' % (local_arch, local_cudamajver)]
+checksums = [{
+    'libcutensor-linux-x86_64-2.3.0.6_cuda12-archive.tar.xz':
+    '8903ea04daa32e25dda1b4d12cbdb475aefb2bb3f2317413b16c96fcadd8fd8b',
+    'libcutensor-linux-sbsa-2.3.0.6_cuda12-archive.tar.xz':
+    'fdf5b10e6d09a30dae7e2956333cdb02c580a9b61d447154b7de8127ed7fa9d8',
+}]
+
+dependencies = [('CUDA', '12.9.1')]
+
+sanity_check_paths = {
+    'files': ['include/cutensor.h', 'include/cutensor/types.h',
+              'lib/libcutensor.%s' % SHLIB_EXT,
+              'lib/libcutensor_static.a'],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

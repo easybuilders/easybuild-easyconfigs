@@ -1,0 +1,60 @@
+Skip ~17 testcases in inductor/test_max_autotune.py which fail on H100 GPUs.
+See https://github.com/pytorch/pytorch/issues/160305
+
+> torch._inductor.exc.InductorError: TypeError: only integer tensors of a single element can be converted to an index
+OR
+> Mismatched elements: 41585 / 41664 (99.8%)
+> Greatest absolute difference: 155.375 at index (9, 206) (up to 0.01 allowed)
+> Greatest relative difference: 1913.0 at index (42, 58) (up to 0.01 allowed)
+
+Tests are generated and names look like
+> test_max_autotune_addmm_persistent_tma_a_transposed_False_b_transposed_False_dynamic_True
+> test_max_autotune_addmm_persistent_tma_a_transposed_False_b_transposed_True_dynamic_True
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_max_autotune.py b/test/inductor/test_max_autotune.py
+index 741353fdbf5..49656bd2062 100644
+--- a/test/inductor/test_max_autotune.py
++++ b/test/inductor/test_max_autotune.py
+@@ -26,7 +26,7 @@ from torch._inductor.select_algorithm import (
+     AlgorithmSelectorCache,
+     TritonTemplateCaller,
+ )
+-from torch.testing._internal.common_cuda import PLATFORM_SUPPORTS_FP8
++from torch.testing._internal.common_cuda import PLATFORM_SUPPORTS_FP8, SM90OrLater
+ from torch.testing._internal.common_utils import (
+     instantiate_parametrized_tests,
+     IS_WINDOWS,
+@@ -221,6 +221,7 @@ class TestMaxAutotune(TestCase):
+         with config.patch({"max_autotune": True, "autotune_in_subproc": True}):
+             torch.compile(mm, dynamic=dynamic)(a, b)
+ 
++    @unittest.skipIf(SM90OrLater, "Fails on H100+")
+     @unittest.skipIf(
+         not has_triton_tma_device(), "Need device-side TMA support in Triton"
+     )
+@@ -394,6 +395,7 @@ class TestMaxAutotune(TestCase):
+             Y = addmm(x, a, b)
+             torch.testing.assert_close(Y_compiled, Y, atol=1e-2, rtol=1e-2)
+ 
++    @unittest.skipIf(SM90OrLater, "Fails on H100+")
+     @unittest.skipIf(
+         not has_triton_tma_device(), "Need device-side TMA support in Triton"
+     )
+@@ -999,6 +1001,7 @@ class TestMaxAutotune(TestCase):
+         act = f(x, y)
+         torch.testing.assert_close(act, ref, atol=2e-2, rtol=1e-2)
+ 
++    @unittest.skipIf(SM90OrLater, "Fails on H100+")
+     def test_non_contiguous_input_addmm(self):
+         b = torch.randn((768), dtype=torch.bfloat16, device=GPU_TYPE)
+         x = rand_strided(
+@@ -1372,6 +1375,7 @@ class TestPrologueFusion(TestCase):
+             .run(code[0])
+         )
+ 
++    @unittest.skip("Fails in various setups, see issue 154228")
+     @unittest.skipIf(TEST_WITH_ROCM, "FP8 is not supported on ROCM")
+     @unittest.skipIf(
+         not PLATFORM_SUPPORTS_FP8,

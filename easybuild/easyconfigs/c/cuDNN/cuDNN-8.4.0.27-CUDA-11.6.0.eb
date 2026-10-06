@@ -1,8 +1,6 @@
 name = 'cuDNN'
 version = '8.4.0.27'
-local_cuda_version = '11.6.0'
-local_cuda_version_majmin = '.'.join(local_cuda_version.split('.')[:2])
-versionsuffix = '-CUDA-%s' % local_cuda_version
+versionsuffix = '-CUDA-%(cudaver)s'
 
 homepage = 'https://developer.nvidia.com/cudnn'
 description = """The NVIDIA CUDA Deep Neural Network library (cuDNN) is
@@ -10,25 +8,20 @@ a GPU-accelerated library of primitives for deep neural networks."""
 
 toolchain = SYSTEM
 
-source_urls = [
-    'https://developer.download.nvidia.com/compute/redist/cudnn/v%s/local_installers/%s/' %
-    ('.'.join(version.split('.')[:3]), local_cuda_version_majmin)
-]
-local_cudnn_cuda_version = '%%(version)s_cuda{maj_min}'.format(maj_min=local_cuda_version_majmin)
-local_tarball_tmpl = '-'.join(['%%(namelower)s', 'linux', '%s', local_cudnn_cuda_version, 'archive.tar.xz'])
-sources = [local_tarball_tmpl % '%(cudnnarch)s']
-checksums = [
-    {
-        local_tarball_tmpl % 'x86_64':
-            'd19bdafd9800c79d29e6f6fffa9f9e2c10d1132d6c2ff10b1593e057e74dd050',
-        local_tarball_tmpl % 'ppc64le':
-            '7ef72353331cf42b357f53cb4a4971fb07e2f0b2ae66e03d54933df52de411c8',
-        local_tarball_tmpl % 'sbsa':
-            '3972ab37b6f0271274931f69c5675c3b61d16f8f5a2dedd422a5efd7b0f358e5',
-    }
-]
+source_urls = ['https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-%(cudnnarch)s']
+# note: cuDNN 8.4 is not specific to CUDA 11.6,
+# see also https://docs.nvidia.com/deeplearning/cudnn/support-matrix/index.html#cudnn-cuda-hardware-versions
+sources = ['%(namelower)s-linux-%(cudnnarch)s-%(version)s_cuda11.6-archive.tar.xz']
+checksums = [{
+    '%(namelower)s-linux-x86_64-%(version)s_cuda11.6-archive.tar.xz':
+    'd19bdafd9800c79d29e6f6fffa9f9e2c10d1132d6c2ff10b1593e057e74dd050',
+    '%(namelower)s-linux-ppc64le-%(version)s_cuda11.6-archive.tar.xz':
+    '7ef72353331cf42b357f53cb4a4971fb07e2f0b2ae66e03d54933df52de411c8',
+    '%(namelower)s-linux-sbsa-%(version)s_cuda11.6-archive.tar.xz':
+    '3972ab37b6f0271274931f69c5675c3b61d16f8f5a2dedd422a5efd7b0f358e5',
+}]
 
-dependencies = [('CUDA', local_cuda_version)]
+dependencies = [('CUDA', '11.6.0')]
 
 sanity_check_paths = {
     'files': [
