@@ -1,0 +1,101 @@
+# easyblock = "CMakeNinja"
+easyblock = "CMakeMake"
+
+name = "ADIOS2"
+version = "2.10.2"
+
+homepage = 'https://github.com/ornladios/ADIOS2/'
+description = """This is ADIOS2: The Adaptable Input/Output (I/O) System.
+ADIOS2 is developed as part of the United States Department of Energy's Exascale Computing
+Project. It is a framework for scientific data I/O to publish and subscribe to data when
+and where required.
+ADIOS2 transports data as groups of self-describing variables and attributes across different
+media types (such as files, wide-area-networks, and remote direct memory access) using a
+common application programming interface for all transport modes. ADIOS2 can be used on
+supercomputers, cloud systems, and personal computers. """
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://github.com/ornladios/ADIOS2/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['14cf0bcd94772194bce0f2c0e74dba187965d1cffd12d45f801c32929158579e']
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    # ('Ninja', '1.11.1'),
+    ('pkgconf', '2.0.3'),
+    ('googletest', '1.14.0'),
+    ('SciPy-bundle', '2023.11'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.3'),
+    ('Blosc2', '2.13.2'),
+    ('Python', '3.11.5'),
+    ('mpi4py', '3.1.5'),
+    ('pybind11', '2.11.1'),
+    ('bzip2', '1.0.8'),
+    ('libpng', '1.6.40'),
+    ('ZeroMQ', '4.3.5'),
+    ('nlohmann_json', '3.11.3'),
+    ('yaml-cpp', '0.8.0'),
+    ('pugixml', '1.14'),
+    ('SQLite', '3.43.1'),
+    ('libsodium', '1.0.19'),
+]
+
+configopts = ' '.join([
+    # '-DCTEST_USE_LAUNCHERS=TRUE',  # Testing from CI
+    '-DBUILD_TESTING=ON',
+    '-DADIOS2_USE_UCX=OFF',  # Needed to avoid failing/timedout tests
+    '-DADIOS2_USE_EXTERNAL_PYBIND11=ON',
+    '-DADIOS2_USE_EXTERNAL_YAMLCPP=ON',
+    '-DADIOS2_USE_EXTERNAL_NLOHMANN_JSON=ON',
+    '-DADIOS2_USE_EXTERNAL_PUGIXML=ON',
+    '-DADIOS2_USE_EXTERNAL_GTEST=ON',
+    # MPI tests could fail depending on the system and environment configuration
+    '-DADIOS2_RUN_MPI_MPMD_TESTS=OFF',
+    '-DMPIEXEC_MAX_NUMPROCS=2'
+])
+
+# Taken from https://github.com/ornladios/ADIOS2/blob/master/scripts/ci/gh-actions/run.sh
+pretestopts = ' && '.join([
+    'export OMPI_MCA_rmaps_base_oversubscribe=true',
+    'export OMPI_MCA_hwloc_base_binding_policy=none',
+    'export ADIOS2_IP=127.0.0.1',
+    'export OMP_NUM_THREADS=1',
+    '',  # Trailing &&
+])
+
+_skip_tests = [
+    'Unit.FileTransport.FailOnEOF.Serial',  # Fails due to not throwing an expected exception
+]
+_skip_tests_str = '|'.join(_skip_tests)
+
+test_cmd = 'ctest'
+testopts = ' '.join([
+    '-VV',  # Verbose output
+    '--output-on-failure',
+    '-j %(parallel)s',
+    f'-E "{_skip_tests_str}"',
+
+    # https://github.com/ornladios/ADIOS2/blob/v2.10.2/scripts/dashboard/adios_common.cmake#L94
+    '--repeat until-pass:5',
+])
+
+sanity_check_paths = {
+    'files': [
+        'bin/adios2-config', 'include/adios2.h', 'include/adios2_c.h',
+        f'lib/libadios2_c.{SHLIB_EXT}', f'lib/libadios2_c_mpi.{SHLIB_EXT}',
+    ],
+    'dirs': ['bin', 'include', 'lib64']
+}
+
+sanity_check_commands = [
+    'adios2-config -v',
+    'bpls --help',
+]
+
+moduleclass = 'tools'
