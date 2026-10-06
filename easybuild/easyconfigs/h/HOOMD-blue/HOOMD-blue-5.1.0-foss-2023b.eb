@@ -1,0 +1,72 @@
+easyblock = 'CMakeMake'
+
+name = 'HOOMD-blue'
+version = '5.1.0'
+
+homepage = 'https://github.com/glotzerlab/hoomd-blue'
+description = """HOOMD-blue is a Python package that runs simulations of particle systems on CPUs and GPUs. It performs
+hard particle Monte Carlo simulations of a variety of shape classes and molecular dynamics simulations of particles with
+a range of pair, bond, angle, and other potentials. Many features are targeted at the soft matter research community,
+though the code is general and capable of many types of particle simulations."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+github_account = 'glotzerlab'
+source_urls = [GITHUB_LOWER_RELEASE]
+sources = ['hoomd-%(version)s.tar.gz']
+patches = [
+    'HOOMD-blue-5.1.0.patch',
+]
+checksums = [
+    {'hoomd-5.1.0.tar.gz': 'd2f307b5fcd088aee971540b644647f3c75f95bad28d82b1668608029ad1dab4'},
+    {'HOOMD-blue-5.1.0.patch': 'a46ba6c8b5401533846db5d487ad409150e92e746dca55980fff4ddc3392d05b'},
+]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('make', '4.4.1'),
+    ('pybind11', '2.11.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('Eigen', '3.4.0'),
+    ('Cereal', '1.3.2'),
+]
+
+_copts = [
+    # Configure computational backend
+    '-DENABLE_MPI=on',
+    '-DENABLE_GPU=off',
+    # Configure Tests
+    '-DBUILD_TESTING=on',
+    # Configure modules
+    '-DBUILD_HPMC=on',
+    '-DBUILD_MD=on',
+    '-DBUILD_METAL=on',
+    '-DBUILD_MPCD=on',
+]
+configopts = ' '.join(_copts)
+
+postinstallcmds = [
+    'ln -s hoomd/include %(installdir)s/include',
+]
+
+# Update for MPI 5.x: https://docs.open-mpi.org/en/v5.0.x/mca.html#converting-mapping-parameters
+pretestopts = "OMPI_MCA_rmaps_base_oversubscribe=1 "
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['hoomd/__init__.py', 'hoomd/include/hoomd/Compute.h'],
+    'dirs': ['lib/cmake'],
+}
+
+sanity_check_commands = [
+    "python -c 'import hoomd'",
+]
+
+modextrapaths = {'PYTHONPATH': ''}
+
+moduleclass = 'phys'
