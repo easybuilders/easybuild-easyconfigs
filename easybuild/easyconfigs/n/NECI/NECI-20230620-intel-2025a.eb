@@ -1,0 +1,79 @@
+easyblock = 'CMakeMakeCp'
+name = 'NECI'
+version = '20230620'
+_commit = '558e88c5ae6c30d0505a9badbc69111be0866ba1'
+
+homepage = 'https://github.com/ghb24/NECI_STABLE'
+description = """Standalone NECI codebase designed for FCIQMC and other stochastic quantum
+chemistry methods."""
+
+toolchain = {'name': 'intel', 'version': '2025a'}
+toolchainopts = {'usempi': True}
+
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/ghb24',
+        'repo_name': 'NECI_STABLE',
+        'recursive': True,
+        'commit': _commit,
+    },
+    'filename': SOURCE_TAR_XZ,
+}]
+patches = [
+    'NECI-20230620_segfault.patch',
+    'NECI-20230620_intelllvm.patch',
+]
+checksums = [
+    {'NECI-20230620.tar.xz':
+     'b6f0e9a7cc0ce483f4fe60ae17a430288f4876832f861007b67c0a2a44cbaee9'},
+    {'NECI-20230620_segfault.patch':
+     'f0b5f62e115a1e07d6b90bc66ee9957a5f5d686bef65beba9c2be4bd8f29f0e4'},
+    {'NECI-20230620_intelllvm.patch':
+     '9a6cca5f146953440d782ea7214f3b0c02084b353098be3e1e7daf5d29ba30ee'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+]
+
+# Make NECI compatible with PySCF (which loads HDF5-serial)
+configopts = "-DENABLE_HDF5=OFF"
+
+# Do "mpirun -np N ./TARGET" to avoid No such file error during tests
+preconfigopts = (
+    "sed -i 's|mpirun -np \\${_p_MPI} \\${_p_TARGET}|mpirun -np ${_p_MPI} ./${_p_TARGET}|' "
+    "../NECI_STABLE/cmake/neci_add_test.cmake && "
+)
+
+# readfp was removed in Python 3.12
+# https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.read_file
+prebuildopts = (
+    "sed -i 's/readfp/read_file/' ../NECI_STABLE/tools/*.py && "
+    # "sed -i 's/readfp/read_file/' ../NECI_STABLE/tools/f90_template.py && "
+)
+
+# Stop Intel mpi from using slurm during tests
+pretestopts = 'unset SLURM_JOBID && unset SLURM_NODELIST && unset I_MPI_PMI_LIBRARY && '
+# Fix unit tests calling MPI_Init() directly
+pretestopts += 'export I_MPI_FABRICS=shm && export I_MPI_HYDRA_BOOTSTRAP=ssh && '
+runtest = True
+test_cmd = 'ctest -j %(parallel)s'
+
+files_to_copy = ['bin', 'lib', (['modules'], 'include')]
+
+_binaries = ['dneci', 'kdneci', 'kmneci', 'kneci', 'mneci', 'neci']
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in _binaries] + [f'lib/lib{x}.a' for x in _binaries],
+    'dirs': ['include'],
+}
+
+# sanity_check_commands runs in its own shell, independent of pretestopts,
+# so it needs the same MPI_Init fixes as the unit tests.
+sanity_check_commands = [
+    'unset I_MPI_PMI_LIBRARY; export I_MPI_FABRICS=shm; '
+    '(timeout --signal=SIGTERM 5s neci | grep "Started running")'
+]
+
+moduleclass = 'chem'
