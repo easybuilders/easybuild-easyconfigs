@@ -1,0 +1,67 @@
+This patch transforms the original ESGConfigParser package written in Python-2, to Python-3.
+Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+Barcelona Supercomputing Center 2025
+diff -ruNBbw a/ESGConfigParser/__init__.py b/ESGConfigParser/__init__.py
+--- a/ESGConfigParser/__init__.py	2018-05-09 14:01:45.000000000 +0200
++++ b/ESGConfigParser/__init__.py	2025-08-27 10:54:24.872611541 +0200
+@@ -10,10 +10,16 @@
+ import os
+ import re
+ import string
+-from ConfigParser import ConfigParser, _Chainmap, DEFAULTSECT, MAX_INTERPOLATION_DEPTH
+ 
+-from custom_exceptions import *
++# Python 3 compatibility for ConfigParser imports
++import configparser as _cp
++from collections import ChainMap as _Chainmap
++ConfigParser = _cp.ConfigParser
++DEFAULTSECT = getattr(_cp, 'DEFAULTSECT', 'DEFAULT')
++# MAX_INTERPOLATION_DEPTH was added/changed across versions; default to 10 if missing
++MAX_INTERPOLATION_DEPTH = getattr(_cp, 'MAX_INTERPOLATION_DEPTH', 10)
+ 
++from .custom_exceptions import *
+ 
+ class SectionParser(ConfigParser):
+     """
+@@ -173,9 +179,9 @@
+ 
+         """
+         if default:
+-            return self._sections.keys() + ['DEFAULT']
++            return list(self._sections.keys()) + ['DEFAULT']
+         else:
+-            return self._sections.keys()
++            return list(self._sections.keys())
+ 
+     def options(self, defaults=True):
+         """
+@@ -211,22 +217,22 @@
+         # Remove underscore from latest mandatory pattern to allow optional brackets
+         pattern = re.sub(re.compile(r'%\(([^()]*)\)s\('), r'(?P<\1>[^-_]+)(', pattern)
+         # Translate all patterns matching %(digit)s
+-        pattern = re.sub(re.compile(r'%\((digit)\)s'), r'[\d]+', pattern)
++        pattern = re.sub(re.compile(r'%\((digit)\)s'), r'[0-9]+', pattern)
+         # Translate all patterns matching %(string)s
+-        pattern = re.sub(re.compile(r'%\((string)\)s'), r'[\w-]+', pattern)
++        pattern = re.sub(re.compile(r'%\((string)\)s'), r'[A-Za-z0-9_-]+', pattern)
+         # Translate %(root)s variable if exists but not required. Can include the project name.
+         if re.compile(r'%\((root)\)s').search(pattern):
+-            pattern = re.sub(re.compile(r'%\((root)\)s'), r'(?P<\1>[\w./-]+)', pattern)
++            pattern = re.sub(re.compile(r'%\((root)\)s'), r'(?P<\1>[A-Za-z0-9_./-]+)', pattern)
+         # Constraint on %(version)s number
+-        pattern = re.sub(re.compile(r'%\((version)\)s'), r'(?P<\1>v[\d]+|latest)', pattern)
++        pattern = re.sub(re.compile(r'%\((version)\)s'), r'(?P<\1>v[0-9]+|latest)', pattern)
+         # Translate all patterns matching %(name)s
+-        pattern = re.sub(re.compile(r'%\(([^()]*)\)s'), r'(?P<\1>[\w.-]+)', pattern)
++        pattern = re.sub(re.compile(r'%\(([^()]*)\)s'), r'(?P<\1>[A-Za-z0-9_.-]+)', pattern)
+         # Add ending version pattern if needed and missing
+         if add_ending_version and 'version' not in pattern:
+-            pattern = '{}{}(?P<version>v[\d]+|latest)$'.format(pattern, sep)
++            pattern = '{}{}(?P<version>v[0-9]+|latest)$'.format(pattern, sep)
+         # Add ending filename pattern if needed and missing
+         if add_ending_filename and 'filename' not in pattern:
+-            pattern = '{}{}(?P<filename>[\w.-]+)$'.format(pattern, sep)
++            pattern = '{}{}(?P<filename>[A-Za-z0-9_.-]+)$'.format(pattern, sep)
+         return pattern
+ 
+     def get_facets(self, option, ignored=None):
