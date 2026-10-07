@@ -1,0 +1,253 @@
+easyblock = 'PythonBundle'
+
+name = 'Cactus'
+version = '3.3.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/ComparativeGenomicsToolkit/cactus'
+description = """Cactus is a reference-free whole-genome alignment program,
+as well as a pangenome graph construction toolkit."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('hatchling', '1.27.0'),
+    ('CMake', '3.31.3'),
+]
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('Biopython', '1.85'),
+    ('Pysam', '0.23.3'),
+    ('matplotlib', '3.10.3'),
+    ('HDF5', '1.14.6'),
+    ('jemalloc', '5.3.0'),
+    ('dill', '0.4.0'),
+    ('ruamel.yaml', '0.18.14'),
+    ('PyYAML', '6.0.2'),
+    ('prompt-toolkit', '3.0.52'),
+    ('boto3', '1.38.27'),
+    ('cryptography', '44.0.2'),
+    ('Boost', '1.88.0'),
+    ('zlib', '1.3.1'),
+    ('Kent_tools', '487'),
+    ('SAMtools', '1.22.1'),
+    ('setuptools', '80.9.0'),
+]
+
+# commit from cactus/build-tools/KegAlign.commit
+local_kegalign_commit = 'eaf02cf8bb25161bf1338f98b6b987aa4e3d12df'
+# KegAlign requires this exact tbb version (scripts/make-conda-env.bash)
+local_tbb_version = '2020.2'
+local_mbuffer_version = '20260511'
+components = [
+    ('tbb', local_tbb_version, {
+        'easyblock': 'EB_tbb',
+        'source_urls': ['https://github.com/oneapi-src/oneTBB/archive/'],
+        'sources': [{
+            'download_filename': f'v{local_tbb_version}.tar.gz',
+            'filename': f'tbb-{local_tbb_version}.tar.gz',
+        }],
+        'start_dir': f'oneTBB-{local_tbb_version}',
+        # Fix compilation of TBB 2020.x with GCC 13 and newer.
+        'prebuildopts': (
+            "sed -i 's/task[*] next_offloaded;/tbb::task* next_offloaded;/' include/tbb/task.h && "
+        ),
+        # KegAlign requires tbb_preview, which is enabled by tbb_cpf=1.
+        # EB_tbb assumes a standalone TBB build layout, so stage the build tree,
+        # headers, and CMake helper files where its install step expects them.
+        # The trailing ':' absorbs the compiler="gcc" argument appended by EB_tbb.
+        'buildopts': (
+            'tbb_cpf=1 compiler="gcc" && '
+            'mkdir -p %(installdir)s/build %(installdir)s/include && '
+            'cp -a build/. %(installdir)s/build/ && '
+            'cp -a include/. %(installdir)s/include/ && '
+            'rm -rf %(builddir)s/cmake && '
+            'cp -a cmake %(builddir)s/ && '
+            ':'
+        ),
+        'checksums': ['4804320e1e6cbe3a5421997b52199e3c1a3829b2ecb6489641da4b8e32faf500'],
+    }),
+    ('mbuffer', local_mbuffer_version, {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['https://www.maier-komor.de/software/mbuffer/'],
+        'sources': [f'mbuffer-{local_mbuffer_version}.tgz'],
+        'start_dir': f'mbuffer-{local_mbuffer_version}',
+        # KegAlign only uses mbuffer for stream buffering; hash support is not needed.
+        'configopts': '--disable-md5',
+        'checksums': ['13bab36f39408f7a08fb368913290ad0f117c934bab602094e18fcc123ec5783'],
+    }),
+    ('KegAlign', local_kegalign_commit, {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/galaxyproject/KegAlign/archive/'],
+        'sources': [{
+            'download_filename': f'{local_kegalign_commit}.tar.gz',
+            'filename': f'KegAlign-{local_kegalign_commit}.tar.gz',
+        }],
+        'start_dir': f'KegAlign-{local_kegalign_commit}',
+        # Cactus GPU mode invokes run_kegalign rather than the KegAlign binary
+        # directly, so install both the native binary and its required wrapper
+        # and diagonal-partitioning script.
+        'install_cmd': (
+            'mkdir -p %(installdir)s/bin && '
+            'install -m 755 kegalign %(installdir)s/bin/ && '
+            'install -m 755 %(start_dir)s/scripts/run_kegalign %(installdir)s/bin/ && '
+            'install -m 755 %(start_dir)s/scripts/diagonal_partition.py %(installdir)s/bin/ && '
+            'dos2unix %(installdir)s/bin/run_kegalign %(installdir)s/bin/diagonal_partition.py && '
+            'rm -rf %(installdir)s/build'
+        ),
+        'checksums': ['28027939eea0fc566a2b00f86e3da5186cecbdf6094732372408c2127bb11de3'],
+    }),
+]
+
+exts_list = [
+    # cactus depends on old networkx API - networkx>=2,<2.8.1
+    ('networkx', '2.8', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['1a1e8fe052cc1b4e0339b998f6795099562a264a13a5af7a32cad45ab9d4e126'],
+    }),
+    ('blessed', '1.25.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['e52b9f778b9e10c30b3f17f6b5f5d2208d1e9b53b270f1d94fc61a243fc4708f'],
+    }),
+    ('prefixed', '0.9.0', {
+        'checksums': ['164403fa9ebc83280bbc4705f4b243a28837e164310b4e65c38ccab1ebafeeb3'],
+    }),
+    ('xmltodict', '0.14.2', {
+        'checksums': ['201e7c28bb210e374999d1dde6382923ab0ed1a8a5faeece48ab525b7810a553'],
+    }),
+    ('responses', '0.26.0', {
+        'checksums': ['c7f6923e6343ef3682816ba421c006626777893cb0d5e1434f674b649bac9eb4'],
+    }),
+    ('werkzeug', '3.1.3', {
+        'checksums': ['60723ce945c19328679790e3282cc758aa4a6040e4bb330f53d30fa546d44746'],
+    }),
+    ('docker', '7.2.0', {
+        'checksums': ['cebb93773d334f778e023a7ee352a8d6e13ab1bd3b863a4d4a59dec897df43ac'],
+    }),
+    ('pypubsub', '4.0.7', {
+        'modulename': 'pubsub',
+        'checksums': ['ec8b5cb147624958320e992602380cc5d0e4b36b1c59844d05e425a3003c09dc'],
+    }),
+    ('addict', '2.4.0', {
+        'checksums': ['b3b2210e0e067a281f5646c8c5db92e99b7231ea8b0eb5f74dbdf9e259d4e494'],
+    }),
+    ('enlighten', '1.14.1', {
+        'checksums': ['85c35412a9a4f3886b3337d41f813441fab9a30d9f5b5f0c015bd078a4411473'],
+    }),
+    ('configargparse', '1.7.1', {
+        'checksums': ['79c2ddae836a1e5914b71d58e4b9adbd9f7779d4e6351a637b7d2d9b6c46d3d9'],
+    }),
+    ('humanfriendly', '10.0', {
+        'checksums': ['6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc'],
+    }),
+    ('coloredlogs', '15.0.1', {
+        'checksums': ['7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0'],
+    }),
+    ('types_s3transfer', '0.16.0', {
+        'modulename': 's3transfer_stubs',
+        'postinstallcmds': [('cd %(installdir)s/lib/python%(pyshortver)s/site-packages && '
+                             'ln -s s3transfer-stubs s3transfer_stubs')],
+        'checksums': ['b4636472024c5e2b62278c5b759661efeb52a81851cde5f092f24100b1ecb443'],
+    }),
+    ('mypy-boto3-s3', '1.42.37', {
+        'checksums': ['628a4652f727870a07e1c3854d6f30dc545a7dd5a4b719a2c59c32a95d92e4c1'],
+    }),
+    ('mypy-boto3-autoscaling', '1.42.33', {
+        'checksums': ['175fba49dee4682ad996e957ceb16617744550f12644dbca781d7141e48682ae'],
+    }),
+    ('mypy-boto3-ec2', '1.42.37', {
+        'checksums': ['b0e169def4c7a983c8e1813c1b27b9afef331b8972df1b63d141e7732b6aa1bc'],
+    }),
+    ('mypy-boto3-sdb', '1.42.3', {
+        'checksums': ['0b05f31c52a7a6b6374cb414324194f4f0b7ad1fe68eb2b050df5e277d213d69'],
+    }),
+    ('mypy-boto3-sts', '1.42.3', {
+        'checksums': ['3857c5ba3f3a5c0417edc47f5ad4e45891e3babc32d56c6b27c5d4167f9f5ba7'],
+    }),
+    ('mypy-boto3-iam', '1.42.3', {
+        'checksums': ['1daef9145bf74267997ad46a5f80ad8d54efb6e4318887b9a216a8daa15827be'],
+    }),
+    ('types_awscrt', '0.31.0', {
+        'modulename': 'awscrt_stubs',
+        'postinstallcmds': [('cd %(installdir)s/lib/python%(pyshortver)s/site-packages && '
+                             'ln -s awscrt-stubs awscrt_stubs')],
+        'checksums': ['aa8b42148af0847be14e2b8ea3637a3518ffab038f8d3be7083950f3ce87d3ff'],
+    }),
+    ('botocore_stubs', '1.42.41', {
+        'postinstallcmds': [('cd %(installdir)s/lib/python%(pyshortver)s/site-packages && '
+                             'ln -s botocore-stubs botocore_stubs')],
+        'checksums': ['dbeac2f744df6b814ce83ec3f3777b299a015cbea57a2efc41c33b8c38265825'],
+    }),
+    ('boto3_stubs', '1.42.59', {
+        'modulename': 'boto3_stubs',
+        'postinstallcmds': [('cd %(installdir)s/lib/python%(pyshortver)s/site-packages && '
+                            'ln -s boto3-stubs boto3_stubs')],
+        'checksums': ['4a6fc520560ee6a2cb9e05bdfcd45d4e07d9fb91cf483dfbd3a5ab87efe6b860'],
+    }),
+    ('moto', '5.1.19', {
+        'checksums': ['a13423e402366b6affab07ed28e1df5f3fcc54ef68fc8d83dc9f824da7a4024e'],
+    }),
+    ('ec2-metadata', '3.0.0', {
+        'checksums': ['12d7e268ce0cb16bf6edc4bed5517f10fc09006aacc3c34ff3421dae90bb08ea'],
+    }),
+    ('toil', '9.5.0', {
+        'checksums': ['dae9a12b0f277355170129be38406c831da47054758e64d6693e18d7e5b45d3f'],
+    }),
+    ('%(namelower)s', version, {
+        'source_urls': ['https://github.com/ComparativeGenomicsToolkit/cactus/releases/download/v%(version)s'],
+        'sources': [{'download_filename': '%(namelower)s-v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'preinstallopts': (
+            # Build the native Cactus tools and bundled third-party components before installing the Python package
+            'make -j %(parallel)s && '
+            # Cactus overwrites PYTHONPATH in its Makefile when running the test suite, which
+            # hides Python packages provided by loaded EasyBuild dependencies (including pytest).
+            # Preserve the existing PYTHONPATH while prepending the Cactus and bundled sonLib
+            # source directories. Force local binaries to avoid Docker during the test suite,
+            # and expose test output directly rather than redirecting it to per-test log files.
+            'CACTUS_BINARIES_MODE=local CACTUS_DOCKER_MODE=0 SONLIB_TEST_LENGTH=SHORT '
+            'make PYTHONPATH="$PWD/submodules/sonLib/src:$PWD/submodules:$PWD/src:$PYTHONPATH" '
+            'test testErrOut= && '
+            # The Cactus build does not provide a conventional "make install": its Makefile
+            # assembles the native runtime executables and libraries in the source-tree bin/
+            # and lib/ directories. Copy these into the EasyBuild installation prefix.
+            'mkdir -p %(installdir)s/bin %(installdir)s/lib && '
+            'cp -a bin/. %(installdir)s/bin/ && '
+            'cp -a lib/. %(installdir)s/lib/ && '
+            # Some bundled HAL scripts are deliberately made non-writable during the build.
+            # Restore owner write permission so EasyBuild can perform its installation post-processing.
+            'chmod -R u+w %(installdir)s/bin %(installdir)s/lib && '
+            # Cactus declares sonLib as a local file dependency (submodules/sonLib). Since
+            # PythonBundle installs extensions with --no-deps, install the bundled sonLib
+            # explicitly so it is registered as a Python distribution and "pip check" can
+            # satisfy Cactus's sonlib requirement.
+            'python -m pip install --prefix=%(installdir)s --no-deps --ignore-installed '
+            '--no-build-isolation ./submodules/sonLib && '
+        ),
+        'checksums': ['b3253a324ee96721f287262070454a8ef0d23444d7a1403aece98141eea014d1'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/cactus', 'bin/cactus_consolidated', 'bin/halStats', 'bin/halValidate',
+        'bin/lastz', 'bin/kegalign', 'bin/run_kegalign', 'bin/diagonal_partition.py',
+        'bin/mbuffer',
+        'lib/libtbbmalloc.so.2', 'lib/libtbbmalloc_proxy.so.2', 'lib/libtbb_preview.so.2',
+    ],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'cactus --help',
+    'command -v cactus_consolidated',
+    'command -v halStats',
+    'command -v lastz',
+    'command -v kegalign',
+    'command -v mbuffer',
+    'command -v faToTwoBit',
+    'run_kegalign --help',
+]
+
+moduleclass = 'bio'
