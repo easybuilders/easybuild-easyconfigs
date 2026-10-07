@@ -1,0 +1,105 @@
+Test failures on ARM resolved in TestLinalgCPU.test_compile_dyn_quant_matmul_4bit
+>     assert_size_stride(buf1, (180224, ), (1, ), 'torch.ops.aten._dyn_quant_pack_4bit_weight.default')
+> AssertionError: expected size 139264==180224, stride 1==1 at dim=0
+> Error in op: torch.ops.aten._dyn_quant_pack_4bit_weight.default
+
+See https://github.com/pytorch/pytorch/pull/197518
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/cpu/Utils.cpp b/aten/src/ATen/cpu/Utils.cpp
+--- a/aten/src/ATen/cpu/Utils.cpp
++++ b/aten/src/ATen/cpu/Utils.cpp
+@@ -57,6 +57,14 @@ bool is_amx_fp16_supported() {
+ #endif
+ }
+ 
++bool is_arm_neon_dot_supported() {
++#if !defined(__s390x__) && !defined(__powerpc__)
++  return cpuinfo_initialize() && cpuinfo_has_arm_neon_dot();
++#else
++  return false;
++#endif
++}
++
+ bool init_amx() {
+   if (!is_amx_tile_supported()) {
+     return false;
+diff --git a/aten/src/ATen/cpu/Utils.h b/aten/src/ATen/cpu/Utils.h
+--- a/aten/src/ATen/cpu/Utils.h
++++ b/aten/src/ATen/cpu/Utils.h
+@@ -21,6 +21,9 @@ TORCH_API bool is_amx_tile_supported();
+ // Detect if CPU support Advanced Matrix Extension for fp16.
+ TORCH_API bool is_amx_fp16_supported();
+ 
++// Detect if CPU supports the ARM NEON dot product (dotprod) ISA.
++TORCH_API bool is_arm_neon_dot_supported();
++
+ // Enable the system to use AMX instructions.
+ TORCH_API bool init_amx();
+ 
+diff --git a/torch/_C/_cpu.pyi b/torch/_C/_cpu.pyi
+--- a/torch/_C/_cpu.pyi
++++ b/torch/_C/_cpu.pyi
+@@ -8,6 +8,7 @@ def _is_avx512_vnni_supported() -> _bool: ...
+ def _is_avx512_bf16_supported() -> _bool: ...
+ def _is_amx_tile_supported() -> _bool: ...
+ def _is_amx_fp16_supported() -> _bool: ...
++def _is_arm_neon_dot_supported() -> _bool: ...
+ def _init_amx() -> _bool: ...
+ def _L1d_cache_size() -> _int: ...
+ def _L2_cache_size() -> _int: ...
+diff --git a/torch/_meta_registrations.py b/torch/_meta_registrations.py
+--- a/torch/_meta_registrations.py
++++ b/torch/_meta_registrations.py
+@@ -3824,13 +3824,17 @@ def meta__dyn_quant_pack_4bit_weight(
+         weights.dtype is torch.uint8,
+         lambda: f"expected w to be uint8, got {weights.dtype}",
+     )
+-    if torch.backends.kleidiai.is_available() and (
+-        (block_size == in_features and scales_zeros.dtype == torch.float)
+-        or (
+-            block_size < in_features
+-            and block_size % 32 == 0
+-            and in_features % block_size == 0
+-            and scales_zeros.dtype == torch.bfloat16
++    if (
++        torch.backends.kleidiai.is_available()
++        and torch._C._cpu._is_arm_neon_dot_supported()
++        and (
++            (block_size == in_features and scales_zeros.dtype == torch.float)
++            or (
++                block_size < in_features
++                and block_size % 32 == 0
++                and in_features % block_size == 0
++                and scales_zeros.dtype == torch.bfloat16
++            )
+         )
+     ):
+         packed_weight_size = get_kai_packed_weight_size(
+diff --git a/torch/cpu/__init__.py b/torch/cpu/__init__.py
+--- a/torch/cpu/__init__.py
++++ b/torch/cpu/__init__.py
+@@ -59,6 +59,11 @@ def _is_amx_fp16_supported() -> bool:
+     return torch._C._cpu._is_amx_fp16_supported()
+ 
+ 
++def _is_arm_neon_dot_supported() -> bool:
++    r"""Returns a bool indicating if CPU supports ARM NEON dotprod."""
++    return torch._C._cpu._is_arm_neon_dot_supported()
++
++
+ def _init_amx() -> bool:
+     r"""Initializes AMX instructions."""
+     return torch._C._cpu._init_amx()
+diff --git a/torch/csrc/cpu/Module.cpp b/torch/csrc/cpu/Module.cpp
+--- a/torch/csrc/cpu/Module.cpp
++++ b/torch/csrc/cpu/Module.cpp
+@@ -14,6 +14,7 @@ void initModule(PyObject* module) {
+   cpu.def("_is_avx512_bf16_supported", at::cpu::is_avx512_bf16_supported);
+   cpu.def("_is_amx_tile_supported", at::cpu::is_amx_tile_supported);
+   cpu.def("_is_amx_fp16_supported", at::cpu::is_amx_fp16_supported);
++  cpu.def("_is_arm_neon_dot_supported", at::cpu::is_arm_neon_dot_supported);
+   cpu.def("_init_amx", at::cpu::init_amx);
+   cpu.def("_L1d_cache_size", at::cpu::L1d_cache_size);
+   cpu.def("_L2_cache_size", at::cpu::L2_cache_size);
