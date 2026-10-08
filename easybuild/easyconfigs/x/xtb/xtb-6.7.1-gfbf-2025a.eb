@@ -1,4 +1,4 @@
-easyblock = 'MesonNinja'
+easyblock = 'CMakeNinja'
 
 name = 'xtb'
 version = '6.7.1'
@@ -20,7 +20,7 @@ sources = [{
 checksums = ['8a5fde29decd562100d8a94a965abde497d36647a7593cf2e5c167c44221b997']
 
 builddependencies = [
-    ('Meson', '1.6.1'),
+    ('CMake', '3.31.3'),
     ('Ninja', '1.12.1'),
     ('pkgconf', '2.3.0'),
 ]
@@ -32,14 +32,12 @@ dependencies = [
     ('Simple-DFTD3', '1.4.0'),
 ]
 
-# Make sure Meson finds the DFT-D4 Fortran module files
-preconfigopts = 'export FFLAGS="$FFLAGS -I$EBROOTDFTMIND4/include" && '
-
-configopts = "-Dlapack='custom' -Dcustom_libraries='flexiblas' "
+# Install the shared library and Fortran module files
+configopts = '-DBUILD_SHARED_LIBS=ON -DINSTALL_MODULES=ON '
+configopts += '-DBLAS_LIBRARIES="-lflexiblas" -DLAPACK_LIBRARIES="-lflexiblas" '
 
 pretestopts = "export OMP_NUM_THREADS=2 && "
-runtest = 'meson'
-testopts = "test -C %(builddir)s/easybuild_obj -t 60"
+runtest = True
 
 sanity_check_paths = {
     'files': [
@@ -48,7 +46,7 @@ sanity_check_paths = {
         'lib/libxtb.a',
         f'lib/libxtb.{SHLIB_EXT}',
     ],
-    'dirs': ['share'],
+    'dirs': ['include', 'share'],
 }
 
 sanity_check_commands = ['xtb --help']
