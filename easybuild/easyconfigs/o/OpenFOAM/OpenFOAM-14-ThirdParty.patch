@@ -6,6 +6,7 @@
 #  Leon Kos (University of Birmingham) 
 #  Simon Branford (University of Birmingham)
 #  Maxim Masterov (SURF)
+#  Andras Horvath (TU-Wien)
 #  Pavel Tomanek (Ugent/Inuits) with help of ChatGPT5.6
 diff -Nru OpenFOAM-14-version-14.orig/applications/utilities/postProcessing/graphics/PVReaders/Allwmake OpenFOAM-14-version-14/applications/utilities/postProcessing/graphics/PVReaders/Allwmake
 --- OpenFOAM-14-version-14.orig/applications/utilities/postProcessing/graphics/PVReaders/Allwmake	2025-08-19 16:07:38.715398084 +0200
@@ -172,6 +173,306 @@ diff -Nru OpenFOAM-14-version-14.orig/etc/config.sh/mpi OpenFOAM-14-version-14/e
  *)
      export FOAM_MPI=dummy
      ;;
+diff -Nru OpenFOAM-14-version-14.orig/etc/config.sh/paraview OpenFOAM-14-version-14/etc/config.sh/paraview
+--- OpenFOAM-14-version-14.orig/etc/config.sh/paraview	2026-07-10 19:48:32.000000000 +0200
++++ OpenFOAM-14-version-14/etc/config.sh/paraview	2026-09-17 14:58:12.740709000 +0200
+@@ -38,146 +38,156 @@
+         ) \
+         && PATH="$cleaned"
+ 
+-# Detect the most recent version of cmake available and add to the PATH
+-cmakeDir=$(_foamMostRecentDir "$WM_THIRD_PARTY_DIR"/platforms/$WM_ARCH$WM_COMPILER/cmake-*)
+-if [ -n "$cmakeDir" ]
+-then
+-    export PATH=$cmakeDir/bin:$PATH
+-fi
+-unset cmakeDir
+-
+-# Set up the paraview environment
+-case "$ParaView_TYPE" in
+-none)
+-    ;;
+-
+-system)
+-
+-    # Look for a paraview installation
+-    if pvserverExe=$(which pvdataserver 2> /dev/null)
+-    then
+-        paraviewBinDir=$(dirname $pvserverExe)
+-        paraviewBinDir=$(cd $paraviewBinDir && pwd -P)
+-    fi
+-
+-    # Set the environment
+-    if [ -d "$paraviewBinDir" ]
+-    then
+-        export ParaView_DIR=$(dirname $paraviewBinDir)
+-
+-        export ParaView_VERSION=$(unset LD_LIBRARY_PATH && \
+-                                  $pvserverExe --version 2> /dev/null | \
+-                                  awk '{print $NF}')
+-        export ParaView_MAJOR=${ParaView_VERSION%.*}
+-
+-        # Set the ParaView installation
+-        export ParaView_LIB_DIR=$(unset LD_LIBRARY_PATH && ldd $pvserverExe | \
+-                                  grep -o "/[^ ]\+/libvtk.*-pv$ParaView_MAJOR\.so[^ ]*" | \
+-                                  head -n 1 | xargs dirname 2> /dev/null)
+-        export ParaView_INCLUDE_DIR=$ParaView_DIR/include/paraview-$ParaView_MAJOR
+-
+-        # Set the VTK installation, if it is not bundled inside ParaView
+-        if [ ! -f $ParaView_INCLUDE_DIR/vtkMultiBlockDataSetAlgorithm.h ]
+-        then
+-            libvtkCommonCore=$(unset LD_LIBRARY_PATH && ldd $pvserverExe | \
+-                               grep -o "/[^ \t]\+libvtkCommonCore[^ \t]\+" | \
+-                               xargs readlink -f)
+-            export VTK_LIB_DIR=$(dirname $libvtkCommonCore 2> /dev/null)
+-            export VTK_INCLUDE_DIR=$ParaView_DIR/include/vtk-${libvtkCommonCore#*.so.}
+-            unset libvtkCommonCore
+-        else
+-            export VTK_LIB_DIR=$ParaView_LIB_DIR
+-            export VTK_INCLUDE_DIR=$ParaView_INCLUDE_DIR
+-        fi
+-
+-        # Add to the library paths
+-        export LD_LIBRARY_PATH=$ParaView_LIB_DIR:$LD_LIBRARY_PATH
+-        if [ $ParaView_LIB_DIR != $VTK_LIB_DIR ]
+-        then
+-            export LD_LIBRARY_PATH=$VTK_LIB_DIR:$LD_LIBRARY_PATH
+-        fi
+-
+-        # Set the plugin directory
+-        export PV_PLUGIN_PATH=$FOAM_LIBBIN/paraview-$ParaView_MAJOR
+-        export LD_LIBRARY_PATH=$PV_PLUGIN_PATH:$LD_LIBRARY_PATH
+-    fi
+-
+-    unset pvserverExe paraviewBinDir vtkMajor vtkLibDir vtkIncludeDir
+-    ;;
+-
+-paraviewopenfoam)
+-
+-    # Look for a paraview installation. The version should be set externally.
+-    if [ -n "$ParaView_VERSION" ]
+-    then
+-        export ParaView_MAJOR=${ParaView_VERSION%.*}
+-        paraviewDir=/opt/paraviewopenfoam$(echo "$ParaView_MAJOR" | tr -d '.')
+-    fi
+-
+-    # Set the environment
+-    if [ -d "$paraviewDir" ]
+-    then
+-        export ParaView_DIR=$paraviewDir
+-        export ParaView_LIB_DIR=$(echo "$ParaView_DIR"/lib* | tr ' ' ':')
+-        export ParaView_INCLUDE_DIR=$ParaView_DIR/include/paraview-$ParaView_MAJOR
+-        export PV_PLUGIN_PATH=$FOAM_LIBBIN/paraview-$ParaView_MAJOR
+-
+-        export VTK_LIB_DIR=$ParaView_LIB_DIR
+-        export VTK_INCLUDE_DIR=$ParaView_INCLUDE_DIR
+-
+-        # Add to the path and the library path
+-        export PATH=$ParaView_DIR/bin:$PATH
+-        export LD_LIBRARY_PATH=$ParaView_LIB_DIR:$PV_PLUGIN_PATH:$LD_LIBRARY_PATH
+-    fi
+-
+-    unset paraviewDir
+-    ;;
+-
+-OpenFOAM | ThirdParty)
+-
+-    # Look for a paraview installation
+-    if [ -z "$ParaView_VERSION" ]
+-    then
+-        paraviewDir=$(_foamMostRecentDir "$WM_THIRD_PARTY_DIR"/platforms/$WM_ARCH$WM_COMPILER/ParaView-*)
+-    else
+-        paraviewDir=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/ParaView-$ParaView_VERSION
+-    fi
+-
+-    # Set the environment
+-    if [ -d "$paraviewDir" ]
+-    then
+-        export ParaView_DIR=$paraviewDir
+-        export ParaView_LIB_DIR=$(echo "$ParaView_DIR"/lib* | tr ' ' ':')
+-        export ParaView_VERSION=${paraviewDir##*ParaView-}
+-        export ParaView_MAJOR=${ParaView_VERSION%.*}
+-        export ParaView_INCLUDE_DIR=$paraviewDir/include/paraview-$ParaView_MAJOR
+-        export PV_PLUGIN_PATH=$FOAM_LIBBIN/paraview-$ParaView_MAJOR
+-
+-        export VTK_LIB_DIR=$ParaView_LIB_DIR
+-        export VTK_INCLUDE_DIR=$ParaView_INCLUDE_DIR
+-
+-        # Add to the path and the library path
+-        export PATH=$ParaView_DIR/bin:$PATH
+-        export LD_LIBRARY_PATH=$ParaView_LIB_DIR:$PV_PLUGIN_PATH:$LD_LIBRARY_PATH
+-
+-        # Add in python libraries if required
+-        paraviewPython=$ParaView_DIR/Utilities/VTKPythonWrapping
+-        if [ -r "$paraviewPython" ]
+-        then
+-            if [ "$PYTHONPATH" ]
+-            then
+-                export PYTHONPATH=$PYTHONPATH:$paraviewPython:$ParaView_LIB_DIR
+-            else
+-                export PYTHONPATH=$paraviewPython:$ParaView_LIB_DIR
+-            fi
+-        fi
+-        unset paraviewPython
+-    fi
+-
+-    unset paraviewDir
+-    ;;
+-
+-esac
++## Detect the most recent version of cmake available and add to the PATH
++#cmakeDir=$(_foamMostRecentDir "$WM_THIRD_PARTY_DIR"/platforms/$WM_ARCH$WM_COMPILER/cmake-*)
++#if [ -n "$cmakeDir" ]
++#then
++#    export PATH=$cmakeDir/bin:$PATH
++#fi
++#unset cmakeDir
++#
++## Set up the paraview environment
++#case "$ParaView_TYPE" in
++#none)
++#    ;;
++#
++#system)
++#
++#    # Look for a paraview installation
++#    if pvserverExe=$(which pvdataserver 2> /dev/null)
++#    then
++#        paraviewBinDir=$(dirname $pvserverExe)
++#        paraviewBinDir=$(cd $paraviewBinDir && pwd -P)
++#    fi
++#
++#    # Set the environment
++#    if [ -d "$paraviewBinDir" ]
++#    then
++#        export ParaView_DIR=$(dirname $paraviewBinDir)
++#
++#        export ParaView_VERSION=$(unset LD_LIBRARY_PATH && \
++#                                  $pvserverExe --version 2> /dev/null | \
++#                                  awk '{print $NF}')
++#        export ParaView_MAJOR=${ParaView_VERSION%.*}
++#
++#        # Set the ParaView installation
++#        export ParaView_LIB_DIR=$(unset LD_LIBRARY_PATH && ldd $pvserverExe | \
++#                                  grep -o "/[^ ]\+/libvtk.*-pv$ParaView_MAJOR\.so[^ ]*" | \
++#                                  head -n 1 | xargs dirname 2> /dev/null)
++#        export ParaView_INCLUDE_DIR=$ParaView_DIR/include/paraview-$ParaView_MAJOR
++#
++#        # Set the VTK installation, if it is not bundled inside ParaView
++#        if [ ! -f $ParaView_INCLUDE_DIR/vtkMultiBlockDataSetAlgorithm.h ]
++#        then
++#            libvtkCommonCore=$(unset LD_LIBRARY_PATH && ldd $pvserverExe | \
++#                               grep -o "/[^ \t]\+libvtkCommonCore[^ \t]\+" | \
++#                               xargs readlink -f)
++#            export VTK_LIB_DIR=$(dirname $libvtkCommonCore 2> /dev/null)
++#            export VTK_INCLUDE_DIR=$ParaView_DIR/include/vtk-${libvtkCommonCore#*.so.}
++#            unset libvtkCommonCore
++#        else
++#            export VTK_LIB_DIR=$ParaView_LIB_DIR
++#            export VTK_INCLUDE_DIR=$ParaView_INCLUDE_DIR
++#        fi
++#
++#        # Add to the library paths
++#        export LD_LIBRARY_PATH=$ParaView_LIB_DIR:$LD_LIBRARY_PATH
++#        if [ $ParaView_LIB_DIR != $VTK_LIB_DIR ]
++#        then
++#            export LD_LIBRARY_PATH=$VTK_LIB_DIR:$LD_LIBRARY_PATH
++#        fi
++#
++#        # Set the plugin directory
++#        export PV_PLUGIN_PATH=$FOAM_LIBBIN/paraview-$ParaView_MAJOR
++#        export LD_LIBRARY_PATH=$PV_PLUGIN_PATH:$LD_LIBRARY_PATH
++#    fi
++#
++#    unset pvserverExe paraviewBinDir vtkMajor vtkLibDir vtkIncludeDir
++#    ;;
++#
++#paraviewopenfoam)
++#
++#    # Look for a paraview installation. The version should be set externally.
++#    if [ -n "$ParaView_VERSION" ]
++#    then
++#        export ParaView_MAJOR=${ParaView_VERSION%.*}
++#        paraviewDir=/opt/paraviewopenfoam$(echo "$ParaView_MAJOR" | tr -d '.')
++#    fi
++#
++#    # Set the environment
++#    if [ -d "$paraviewDir" ]
++#    then
++#        export ParaView_DIR=$paraviewDir
++#        export ParaView_LIB_DIR=$(echo "$ParaView_DIR"/lib* | tr ' ' ':')
++#        export ParaView_INCLUDE_DIR=$ParaView_DIR/include/paraview-$ParaView_MAJOR
++#        export PV_PLUGIN_PATH=$FOAM_LIBBIN/paraview-$ParaView_MAJOR
++#
++#        export VTK_LIB_DIR=$ParaView_LIB_DIR
++#        export VTK_INCLUDE_DIR=$ParaView_INCLUDE_DIR
++#
++#        # Add to the path and the library path
++#        export PATH=$ParaView_DIR/bin:$PATH
++#        export LD_LIBRARY_PATH=$ParaView_LIB_DIR:$PV_PLUGIN_PATH:$LD_LIBRARY_PATH
++#    fi
++#
++#    unset paraviewDir
++#    ;;
++#
++#OpenFOAM | ThirdParty)
++#
++#    # Look for a paraview installation
++#    if [ -z "$ParaView_VERSION" ]
++#    then
++#        paraviewDir=$(_foamMostRecentDir "$WM_THIRD_PARTY_DIR"/platforms/$WM_ARCH$WM_COMPILER/ParaView-*)
++#    else
++#        paraviewDir=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/ParaView-$ParaView_VERSION
++#    fi
++#
++#    # Set the environment
++#    if [ -d "$paraviewDir" ]
++#    then
++#        export ParaView_DIR=$paraviewDir
++#        export ParaView_LIB_DIR=$(echo "$ParaView_DIR"/lib* | tr ' ' ':')
++#        export ParaView_VERSION=${paraviewDir##*ParaView-}
++#        export ParaView_MAJOR=${ParaView_VERSION%.*}
++#        export ParaView_INCLUDE_DIR=$paraviewDir/include/paraview-$ParaView_MAJOR
++#        export PV_PLUGIN_PATH=$FOAM_LIBBIN/paraview-$ParaView_MAJOR
++#
++#        export VTK_LIB_DIR=$ParaView_LIB_DIR
++#        export VTK_INCLUDE_DIR=$ParaView_INCLUDE_DIR
++#
++#        # Add to the path and the library path
++#        export PATH=$ParaView_DIR/bin:$PATH
++#        export LD_LIBRARY_PATH=$ParaView_LIB_DIR:$PV_PLUGIN_PATH:$LD_LIBRARY_PATH
++#
++#        # Add in python libraries if required
++#        paraviewPython=$ParaView_DIR/Utilities/VTKPythonWrapping
++#        if [ -r "$paraviewPython" ]
++#        then
++#            if [ "$PYTHONPATH" ]
++#            then
++#                export PYTHONPATH=$PYTHONPATH:$paraviewPython:$ParaView_LIB_DIR
++#            else
++#                export PYTHONPATH=$paraviewPython:$ParaView_LIB_DIR
++#            fi
++#        fi
++#        unset paraviewPython
++#    fi
++#
++#    unset paraviewDir
++#    ;;
++#
++#esac
++
++export ParaView_VERSION=$EBVERSIONPARAVIEW
++export ParaView_MAJOR=${ParaView_VERSION%.*}
++export ParaView_DIR=$EBROOTPARAVIEW
++export ParaView_LIB_DIR=$ParaView_DIR/lib
++export ParaView_INCLUDE_DIR=$ParaView_DIR/include/paraview-$ParaView_MAJOR
++export PV_PLUGIN_PATH=$FOAM_LIBBIN/paraview-$ParaView_MAJOR
++export LD_LIBRARY_PATH=$ParaView_LIB_DIR:$PV_PLUGIN_PATH:$LD_LIBRARY_PATH
++export VTK_LIB_DIR=$ParaView_LIB_DIR
++export VTK_INCLUDE_DIR=$ParaView_INCLUDE_DIR
+ 
+ # Report
+ if [ "$FOAM_VERBOSE" ] && [ "$PS1" ] && [ -d "$ParaView_DIR" ]
 
 diff -Nru OpenFOAM-14-version-14.orig/etc/config.sh/scotch OpenFOAM-14-version-14/etc/config.sh/scotch
 --- OpenFOAM-14-version-14.orig/etc/config.sh/scotch	2025-08-19 16:07:30.621073237 +0200
