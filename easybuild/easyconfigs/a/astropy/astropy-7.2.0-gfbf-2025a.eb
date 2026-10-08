@@ -1,0 +1,75 @@
+easyblock = 'PythonBundle'
+
+name = 'astropy'
+version = '7.2.0'
+
+homepage = 'https://www.astropy.org/'
+description = """The Astropy Project is a community effort to develop a common
+core package for Astronomy in Python and foster an ecosystem of interoperable
+astronomy packages.
+
+The Astropy community is committed to supporting diversity and inclusion."""
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+builddependencies = [
+    ('Cython', '3.1.1'),
+    ('hatchling', '1.27.0'),
+]
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('PyYAML', '6.0.2'),
+    ('matplotlib', '3.10.3'),
+]
+
+astropy_license_fix_preinstallopts = (
+    # Work around setuptools pyproject validation for project.license on this stack.
+    "printf 'BSD-3-Clause\\n' > LICENSE-EASYBUILD.txt && "
+    "awk 'BEGIN{skip_license=0; skip_license_files=0} "
+    "{ "
+    "if(skip_license){if($0 ~ /^[[:space:]]*}[[:space:]]*$/){skip_license=0}; next} "
+    "if(skip_license_files){if($0 ~ /\]/){skip_license_files=0}; next} "
+    "if($0 ~ /^[[:space:]]*license-files[[:space:]]*=[[:space:]]*\[/){ "
+    "if($0 !~ /\]/){skip_license_files=1}; next} "
+    "if($0 ~ /^[[:space:]]*license-files[[:space:]]*=/){next} "
+    "if($0 ~ /^[[:space:]]*license[[:space:]]*=[[:space:]]*\\{/){ "
+    "print \"license = { file = \\\"LICENSE-EASYBUILD.txt\\\" }\"; "
+    "if($0 !~ /}/){skip_license=1}; next} "
+    "if($0 ~ /^[[:space:]]*license[[:space:]]*=/){ "
+    "print \"license = { file = \\\"LICENSE-EASYBUILD.txt\\\" }\"; next} "
+    "print "
+    "}' pyproject.toml > pyproject.toml.new && mv pyproject.toml.new pyproject.toml && "
+)
+
+exts_list = [
+    ('colorlog', '6.9.0', {
+        'checksums': ['bfba54a1b93b94f54e1f4fe48395725a3d92fd2a4af702f6bd70946bdc0c6ac2'],
+    }),
+    ('pyerfa', '2.0.1.5', {
+        'modulename': 'erfa',
+        'checksums': ['17d6b24fe4846c65d5e7d8c362dcb08199dc63b30a236aedd73875cc83e1f6c0'],
+    }),
+    ('extension-helpers', '1.4.0', {
+        'modulename': 'extension_helpers',
+        'source_tmpl': 'extension_helpers-%(version)s.tar.gz',
+        'checksums': ['78d04185f196e3e0bc5fd8418ce298b014c46f7ac609f6a8c10bf70e8c978324'],
+    }),
+    ('astropy-iers-data', '0.2025.10.27.0.39.10', {
+        'source_tmpl': 'astropy_iers_data-%(version)s.tar.gz',
+        'checksums': ['2a0630f810bcba7978cc5f3f92a45910b5ea95d885302b1879b0132e920302ed'],
+    }),
+    (name, version, {
+        'checksums': [
+            {'astropy-7.2.0.tar.gz': 'ae48bc26b1feaeb603cd94bd1fa1aa39137a115fe931b7f13787ab420e8c3070'},
+        ],
+        # Fix setuptools/pyproject license validation on Python 3.13.
+        'preinstallopts': astropy_license_fix_preinstallopts,
+        # Keep build lightweight for dependency use in downstream packages.
+        'runtest': False,
+    }),
+
+]
+
+moduleclass = 'astro'
+
