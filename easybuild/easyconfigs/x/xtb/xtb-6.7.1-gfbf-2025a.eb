@@ -1,0 +1,59 @@
+easyblock = 'CMakeNinja'
+
+name = 'xtb'
+version = '6.7.1'
+# Use a post-6.7.1 snapshot for compatibility with tblite 0.6.0 and DFT-D4 4.x
+_commit = 'b31754b'
+
+homepage = 'https://xtb-docs.readthedocs.io'
+description = "xtb - An extended tight-binding semi-empirical program package."
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+github_account = 'grimme-lab'
+
+source_urls = ['https://github.com/grimme-lab/xtb/archive/']
+sources = [{
+    'download_filename': '%s.tar.gz' % _commit,
+    'filename': 'xtb-b31754b.tar.gz',
+}]
+checksums = ['8a5fde29decd562100d8a94a965abde497d36647a7593cf2e5c167c44221b997']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Ninja', '1.12.1'),
+    ('pkgconf', '2.3.0'),
+]
+
+dependencies = [
+    ('tblite', '0.6.0'),
+    ('CPCM-X', '1.1.0'),
+    ('DFT-D4', '4.2.0'),
+    ('Simple-DFTD3', '1.4.0'),
+]
+
+# Install the shared library and Fortran module files
+configopts = '-DBUILD_SHARED_LIBS=ON -DINSTALL_MODULES=ON '
+configopts += '-DBLAS_LIBRARIES="-lflexiblas" -DLAPACK_LIBRARIES="-lflexiblas" '
+
+pretestopts = "export OMP_NUM_THREADS=2 && "
+runtest = True
+
+sanity_check_paths = {
+    'files': [
+        'bin/xtb',
+        'include/xtb.h',
+        'lib/libxtb.a',
+        f'lib/libxtb.{SHLIB_EXT}',
+    ],
+    'dirs': ['include', 'share'],
+}
+
+sanity_check_commands = ['xtb --help']
+
+modextravars = {
+    'XTBHOME': '%(installdir)s',
+    'XTBPATH': '%(installdir)s',
+}
+
+moduleclass = 'chem'
