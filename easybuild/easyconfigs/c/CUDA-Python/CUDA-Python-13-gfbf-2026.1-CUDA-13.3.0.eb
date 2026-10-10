@@ -1,0 +1,74 @@
+easyblock = 'PythonBundle'
+
+name = 'CUDA-Python'
+# Warning: major and minor versions of CUDA and CUDA-Python are tied
+version = '13'
+local_real_version = '13.3.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://nvidia.github.io/cuda-python/'
+description = f"""
+Python bindings for CUDA
+
+The real version of this package is {local_real_version}.
+"""
+
+github_account = 'NVIDIA'
+
+toolchain = {'name': 'gfbf', 'version': '2026.1'}
+
+builddependencies = [
+    ('Cython', '3.2.4'),
+]
+dependencies = [
+    ('CUDA', '13.3.0', '', SYSTEM),
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+]
+
+exts_default_options = {
+    'source_urls': ['https://github.com/%(github_account)s/cuda-python/archive/refs/tags'],
+    'sources': [f'%(name)s-v{local_real_version}.tar.gz'],
+}
+exts_list = [
+    ('pyclibrary', '0.3.0', {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'checksums': ['8a3eaa9ab728c11b077644275af4e05ca24ddcad491f47eb45b75db6be52c654'],
+    }),
+    ('cuda-pathfinder', '1.8.2', {
+        'modulename': 'cuda.pathfinder',
+        'sources': ['cuda-pathfinder-v%(version)s.tar.gz'],
+        'start_dir': 'cuda_pathfinder',
+        'checksums': ['611952afb8441a2bf3a267610b477e6204a4f5dfe81e6eb9dae02f6adc93c771'],
+    }),
+    ('cuda-bindings', '13.3.1', {
+        'modulename': 'cuda.bindings',
+        'source_urls': ['https://github.com/NVIDIA/cuda-python/archive'],
+        'sources': [{
+            'download_filename': f'v{local_real_version}.tar.gz',
+            'filename': f'%(name)s-{local_real_version}.tar.gz',
+        }],
+        'start_dir': 'cuda_bindings',
+        'checksums': ['731f2bcae67f7fa7acd1720c4457239b9f1f1f279c8d4fbfd23a164220abe8e2'],
+    }),
+    ('cuda-core', '1.0.1', {
+        'modulename': 'cuda.core',
+        'sources': ['cuda-core-v%(version)s.tar.gz'],
+        'start_dir': 'cuda_core',
+        'checksums': ['248edbfcf6c4ee956a85c337b2ab9fe389ce54762946baa59fce89af5c32d6f2'],
+    }),
+    ('cuda-python', '13.3.1', {
+        'modulename': False,
+        'sources': [f'cuda_python-{local_real_version}-py3-none-any.whl'],
+        'checksums': ['280b014139ab447b6dd70a377db1596f310d6e887d9d342e6651b919ec145fb3'],
+    }),
+]
+
+# https://nvidia.github.io/cuda-python/cuda-bindings/latest/release/13.0.0-notes.html?#breaking-changes
+# Change sanity-check commands:
+sanity_check_commands = [
+    "python -sc 'from cuda.bindings import driver, runtime, nvrtc'",
+]
+
+moduleclass = 'lib'
