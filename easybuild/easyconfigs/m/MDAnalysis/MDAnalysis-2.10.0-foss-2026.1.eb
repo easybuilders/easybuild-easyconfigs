@@ -1,0 +1,77 @@
+easyblock = 'PythonBundle'
+
+name = 'MDAnalysis'
+version = '2.10.0'
+
+homepage = 'https://www.mdanalysis.org/'
+description = """MDAnalysis is an object-oriented Python library to analyze trajectories from molecular dynamics (MD)
+simulations in many popular formats."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+builddependencies = [
+    ('Cython', '3.2.4'),
+]
+dependencies = [
+    ('Python', '3.14.2'),
+    ('Python-bundle-PyPI', '2026.04'),
+    ('SciPy-bundle', '2026.05'),
+    ('matplotlib', '3.10.9'),
+    ('tqdm', '4.67.3'),
+    ('mrcfile', '1.5.4'),  # needed by GridDataFormats
+    ('Biopython', '1.87'),  # optional
+    ('networkx', '3.6.1'),  # optional
+    ('Seaborn', '0.13.2'),  # optional
+    ('scikit-learn', '1.8.0'),  # optional
+    ('hypothesis', '6.153.2'),  # mdanalysistests
+]
+
+exts_list = [
+    ('griddataformats', '1.2.0', {
+        'modulename': 'gridData',
+        'sources': [SOURCE_PY3_WHL],
+        'checksums': ['b42f0a823ce6f526c0052515047237b233748f2bdc38fc797fc37c7df81a8dd5'],
+    }),
+    ('mmtf-python', '1.1.3', {
+        'modulename': 'mmtf',
+        'checksums': ['12a02fe1b7131f0a2b8ce45b46f1e0cdd28b9818fe4499554c26884987ea0c32'],
+    }),
+    ('mda_xdrlib', '0.2.0', {
+        'checksums': ['f26f7158a83c32b96d15b530fce2cbc1190c4b7024e41faa4ab3e3db74e272af'],
+    }),
+    ('tidynamics', '1.1.2', {
+        'checksums': ['103874edd79dc64a0c7b765f51200926822e74df63703acb6c630a8167dbcfa2'],
+    }),
+    ('waterdynamics', '1.2.0', {
+        'sources': [SOURCE_PY3_WHL],
+        'checksums': ['8a9eb7e7ad44e2abf9e2542661b2d7b371d8ab6474113a301968e4bf78d4432d'],
+    }),
+    ('pathsimanalysis', '1.2.0', {
+        'sources': [SOURCE_PY3_WHL],
+        'checksums': ['0edce2fd1a55a788ef80b3666f9704455c01f06719f516fec20215fb9e16e291'],
+    }),
+    ('mdahole2', '0.5.0', {
+        'sources': [SOURCE_PY3_WHL],
+        'checksums': ['6b7a9be247cd99331e8840c9012d0ed7a86874fe110983bbaed00eb39459e7a8'],
+    }),
+    ('mdanalysistests', version, {
+        'modulename': 'MDAnalysisTests',
+        'checksums': ['286b8678e19195093a19b57b26d76b8274415d33ac23fc872355639fcb49beef'],
+    }),
+    ('mdanalysis', version, {
+        'modulename': 'MDAnalysis',
+        'checksums': ['5cef1f1eba4b25cbf9dd4045f08eeab293bb9577b970aa96132f14491312d877'],
+    }),
+]
+
+sanity_check_commands = [
+    "export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 && "
+    "pytest --disable-pytest-warnings --numprocesses %(parallel)s "
+    "--pyargs MDAnalysisTests -p no:warnings --dist=loadscope "
+    # Skip two XDR offset lock-file tests that are incompatible with newer filelock
+    # Upstream replaced these tests in PR #5237
+    "--deselect=coordinates/test_xdr.py::TestTRRReader_offsets::test_offset_lock_created "
+    "--deselect=coordinates/test_xdr.py::TestXTCReader_offsets::test_offset_lock_created"
+]
+
+moduleclass = 'bio'

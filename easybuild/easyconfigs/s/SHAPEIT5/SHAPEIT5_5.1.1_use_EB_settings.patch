@@ -1,0 +1,213 @@
+Delete setting of variables that are given with buildopts
+Hardcode commit id and date instead of fetching using git
+author: Jarne Renders (Vrije Universiteit Brussel)
+diff -ruN shapeit5.orig/ligate/makefile shapeit5/ligate/makefile
+--- shapeit5.orig/ligate/makefile	2026-03-04 11:42:53.855848000 +0100
++++ shapeit5/ligate/makefile	2026-03-04 15:14:03.778858000 +0100
+@@ -7,14 +7,10 @@
+ dummy_build_folder_obj := $(shell mkdir -p obj)
+ 
+ #COMPILER & LINKER FLAGS
+-CXXFLAG=-O3 -mavx2 -mfma
+-LDFLAG=-O3
+ 
+ #COMMIT TRACING
+-COMMIT_VERS=$(shell git rev-parse --short HEAD)
+-COMMIT_DATE=$(shell git log -1 --format=%cd --date=short)
+-CXXFLAG+= -D__COMMIT_ID__=\"$(COMMIT_VERS)\"
+-CXXFLAG+= -D__COMMIT_DATE__=\"$(COMMIT_DATE)\"
++COMMIT_INFO= -D__COMMIT_ID__=\"9753c27\"
++COMMIT_INFO+= -D__COMMIT_DATE__=\"2023-05-08\"
+ 
+ #DYNAMIC LIBRARIES
+ DYN_LIBS=-lz -lpthread -lbz2 -llzma -lcurl -lcrypto
+@@ -39,12 +35,6 @@
+ system: BOOST_LIB_SE=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
+ system: $(BFILE)
+ 
+-desktop: HTSSRC=../..
+-desktop: HTSLIB_INC=$(HTSSRC)/htslib
+-desktop: HTSLIB_LIB=$(HTSSRC)/htslib/libhts.a
+-desktop: BOOST_INC=/usr/include
+-desktop: BOOST_LIB_IO=/usr/local/lib/libboost_iostreams.a
+-desktop: BOOST_LIB_PO=/usr/local/lib/libboost_program_options.a
+ desktop: $(BFILE)
+ 
+ olivier: HTSSRC=$(HOME)/Tools
+@@ -130,7 +120,7 @@
+ 	$(CXX) $(LDFLAG) -static -static-libgcc -static-libstdc++ -pthread -o $(EXEFILE) $^ $(HTSLIB_LIB) $(BOOST_LIB_IO) $(BOOST_LIB_PO) -Wl,-Bstatic $(DYN_LIBS)
+ 
+ obj/%.o: %.cpp $(HFILE)
+-	$(CXX) $(CXXFLAG) -c $< -o $@ -Isrc -I$(HTSLIB_INC) -I$(BOOST_INC)
++	$(CXX) $(CXXFLAG) $(COMMIT_INFO) -c $< -o $@ -Isrc -I$(HTSLIB_INC) -I$(BOOST_INC)
+ 
+ clean: 
+ 	rm -f obj/*.o $(BFILE) $(EXEFILE)
+diff -ruN shapeit5.orig/phase_common/makefile shapeit5/phase_common/makefile
+--- shapeit5.orig/phase_common/makefile	2026-03-04 11:42:53.946755000 +0100
++++ shapeit5/phase_common/makefile	2026-03-04 15:11:01.344943000 +0100
+@@ -7,14 +7,10 @@
+ dummy_build_folder_obj := $(shell mkdir -p obj)
+ 
+ #COMPILER & LINKER FLAGS
+-CXXFLAG=-O3 -mavx2 -mfma
+-LDFLAG=-O3
+ 
+ #COMMIT TRACING
+-COMMIT_VERS=$(shell git rev-parse --short HEAD)
+-COMMIT_DATE=$(shell git log -1 --format=%cd --date=short)
+-CXXFLAG+= -D__COMMIT_ID__=\"$(COMMIT_VERS)\"
+-CXXFLAG+= -D__COMMIT_DATE__=\"$(COMMIT_DATE)\"
++COMMIT_INFO= -D__COMMIT_ID__=\"9753c27\"
++COMMIT_INFO+= -D__COMMIT_DATE__=\"2023-05-08\"
+ 
+ #DYNAMIC LIBRARIES
+ DYN_LIBS=-lz -lpthread -lbz2 -llzma -lcurl -lcrypto
+@@ -39,12 +35,6 @@
+ system: BOOST_LIB_SE=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
+ system: $(BFILE)
+ 
+-desktop: HTSSRC=../..
+-desktop: HTSLIB_INC=$(HTSSRC)/htslib
+-desktop: HTSLIB_LIB=$(HTSSRC)/htslib/libhts.a
+-desktop: BOOST_INC=/usr/include
+-desktop: BOOST_LIB_IO=/usr/local/lib/libboost_iostreams.a
+-desktop: BOOST_LIB_PO=/usr/local/lib/libboost_program_options.a
+ desktop: $(BFILE)
+ 
+ olivier: HTSSRC=$(HOME)/Tools
+@@ -132,7 +122,7 @@
+ 	$(CXX) $(LDFLAG) -static -static-libgcc -static-libstdc++ -pthread -o $(EXEFILE) $^ $(HTSLIB_LIB) $(BOOST_LIB_IO) $(BOOST_LIB_PO) -Wl,-Bstatic $(DYN_LIBS)
+ 
+ obj/%.o: %.cpp $(HFILE)
+-	$(CXX) $(CXXFLAG) -c $< -o $@ -Isrc -I$(HTSLIB_INC) -I$(BOOST_INC)
++	$(CXX) $(CXXFLAG) $(COMMIT_INFO) -c $< -o $@ -Isrc -I$(HTSLIB_INC) -I$(BOOST_INC)
+ 
+ clean: 
+ 	rm -f obj/*.o $(BFILE) $(EXEFILE)
+diff -ruN shapeit5.orig/phase_rare/makefile shapeit5/phase_rare/makefile
+--- shapeit5.orig/phase_rare/makefile	2026-03-04 11:42:54.016846000 +0100
++++ shapeit5/phase_rare/makefile	2026-03-04 15:11:22.625269000 +0100
+@@ -7,14 +7,10 @@
+ dummy_build_folder_obj := $(shell mkdir -p obj)
+ 
+ #COMPILER & LINKER FLAGS
+-CXXFLAG=-O3 -mavx2 -mfma
+-LDFLAG=-O3
+ 
+ #COMMIT TRACING
+-COMMIT_VERS=$(shell git rev-parse --short HEAD)
+-COMMIT_DATE=$(shell git log -1 --format=%cd --date=short)
+-CXXFLAG+= -D__COMMIT_ID__=\"$(COMMIT_VERS)\"
+-CXXFLAG+= -D__COMMIT_DATE__=\"$(COMMIT_DATE)\"
++COMMIT_INFO= -D__COMMIT_ID__=\"9753c27\"
++COMMIT_INFO+= -D__COMMIT_DATE__=\"2023-05-08\"
+ 
+ #DYNAMIC LIBRARIES
+ DYN_LIBS=-lz -lpthread -lbz2 -llzma -lcurl -lcrypto
+@@ -39,12 +35,6 @@
+ system: BOOST_LIB_SE=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
+ system: $(BFILE)
+ 
+-desktop: HTSSRC=../..
+-desktop: HTSLIB_INC=$(HTSSRC)/htslib
+-desktop: HTSLIB_LIB=$(HTSSRC)/htslib/libhts.a
+-desktop: BOOST_INC=/usr/include
+-desktop: BOOST_LIB_IO=/usr/local/lib/libboost_iostreams.a
+-desktop: BOOST_LIB_PO=/usr/local/lib/libboost_program_options.a
+ desktop: $(BFILE)
+ 
+ olivier: HTSSRC=$(HOME)/Tools
+@@ -132,7 +122,7 @@
+ 	$(CXX) $(LDFLAG) -static -static-libgcc -static-libstdc++ -pthread -o $(EXEFILE) $^ $(HTSLIB_LIB) $(BOOST_LIB_IO) $(BOOST_LIB_PO) -Wl,-Bstatic $(DYN_LIBS)
+ 
+ obj/%.o: %.cpp $(HFILE)
+-	$(CXX) $(CXXFLAG) -c $< -o $@ -Isrc -I$(HTSLIB_INC) -I$(BOOST_INC)
++	$(CXX) $(CXXFLAG) $(COMMIT_INFO) -c $< -o $@ -Isrc -I$(HTSLIB_INC) -I$(BOOST_INC)
+ 
+ clean: 
+ 	rm -f obj/*.o $(BFILE) $(EXEFILE)
+diff -ruN shapeit5.orig/simulate/makefile shapeit5/simulate/makefile
+--- shapeit5.orig/simulate/makefile	2026-03-04 11:42:54.614249000 +0100
++++ shapeit5/simulate/makefile	2026-03-04 15:17:18.300779000 +0100
+@@ -7,14 +7,10 @@
+ dummy_build_folder_obj := $(shell mkdir -p obj)
+ 
+ #COMPILER & LINKER FLAGS
+-CXXFLAG=-O3 -mavx2 -mfma
+-LDFLAG=-O3
+ 
+ #COMMIT TRACING
+-COMMIT_VERS=$(shell git rev-parse --short HEAD)
+-COMMIT_DATE=$(shell git log -1 --format=%cd --date=short)
+-CXXFLAG+= -D__COMMIT_ID__=\"$(COMMIT_VERS)\"
+-CXXFLAG+= -D__COMMIT_DATE__=\"$(COMMIT_DATE)\"
++COMMIT_INFO= -D__COMMIT_ID__=\"9753c27\"
++COMMIT_INFO+= -D__COMMIT_DATE__=\"2023-05-08\"
+ 
+ #DYNAMIC LIBRARIES
+ DYN_LIBS=-lz -lpthread -lbz2 -llzma -lcurl -lcrypto
+@@ -39,12 +35,6 @@
+ system: BOOST_LIB_SE=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
+ system: $(BFILE)
+ 
+-desktop: HTSSRC=../..
+-desktop: HTSLIB_INC=$(HTSSRC)/htslib
+-desktop: HTSLIB_LIB=$(HTSSRC)/htslib/libhts.a
+-desktop: BOOST_INC=/usr/include
+-desktop: BOOST_LIB_IO=/usr/local/lib/libboost_iostreams.a
+-desktop: BOOST_LIB_PO=/usr/local/lib/libboost_program_options.a
+ desktop: $(BFILE)
+ 
+ olivier: HTSSRC=$(HOME)/Tools
+@@ -132,7 +122,7 @@
+ 	$(CXX) $(LDFLAG) -static -static-libgcc -static-libstdc++ -pthread -o $(EXEFILE) $^ $(HTSLIB_LIB) $(BOOST_LIB_IO) $(BOOST_LIB_PO) -Wl,-Bstatic $(DYN_LIBS)
+ 
+ obj/%.o: %.cpp $(HFILE)
+-	$(CXX) $(CXXFLAG) -c $< -o $@ -Isrc -I$(HTSLIB_INC) -I$(BOOST_INC)
++	$(CXX) $(CXXFLAG) $(COMMIT_INFO) -c $< -o $@ -Isrc -I$(HTSLIB_INC) -I$(BOOST_INC)
+ 
+ clean: 
+ 	rm -f obj/*.o $(BFILE) $(EXEFILE)
+diff -ruN shapeit5.orig/switch/makefile shapeit5/switch/makefile
+--- shapeit5.orig/switch/makefile	2026-03-04 11:42:54.744825000 +0100
++++ shapeit5/switch/makefile	2026-03-04 15:16:51.766220000 +0100
+@@ -7,14 +7,10 @@
+ dummy_build_folder_obj := $(shell mkdir -p obj)
+ 
+ #COMPILER & LINKER FLAGS
+-CXXFLAG=-O3 -mavx2 -mfma
+-LDFLAG=-O3
+ 
+ #COMMIT TRACING
+-COMMIT_VERS=$(shell git rev-parse --short HEAD)
+-COMMIT_DATE=$(shell git log -1 --format=%cd --date=short)
+-CXXFLAG+= -D__COMMIT_ID__=\"$(COMMIT_VERS)\"
+-CXXFLAG+= -D__COMMIT_DATE__=\"$(COMMIT_DATE)\"
++COMMIT_INFO= -D__COMMIT_ID__=\"9753c27\"
++COMMIT_INFO+= -D__COMMIT_DATE__=\"2023-05-08\"
+ 
+ #DYNAMIC LIBRARIES
+ DYN_LIBS=-lz -lpthread -lbz2 -llzma -lcurl -lcrypto
+@@ -39,12 +35,6 @@
+ system: BOOST_LIB_SE=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
+ system: $(BFILE)
+ 
+-desktop: HTSSRC=../..
+-desktop: HTSLIB_INC=$(HTSSRC)/htslib
+-desktop: HTSLIB_LIB=$(HTSSRC)/htslib/libhts.a
+-desktop: BOOST_INC=/usr/include
+-desktop: BOOST_LIB_IO=/usr/local/lib/libboost_iostreams.a
+-desktop: BOOST_LIB_PO=/usr/local/lib/libboost_program_options.a
+ desktop: $(BFILE)
+ 
+ olivier: HTSSRC=$(HOME)/Tools
+@@ -130,7 +120,7 @@
+ 	$(CXX) $(LDFLAG) -static -static-libgcc -static-libstdc++ -pthread -o $(EXEFILE) $^ $(HTSLIB_LIB) $(BOOST_LIB_IO) $(BOOST_LIB_PO) -Wl,-Bstatic $(DYN_LIBS)
+ 
+ obj/%.o: %.cpp $(HFILE)
+-	$(CXX) $(CXXFLAG) -c $< -o $@ -Isrc -I$(HTSLIB_INC) -I$(BOOST_INC)
++	$(CXX) $(CXXFLAG) $(COMMIT_INFO) -c $< -o $@ -Isrc -I$(HTSLIB_INC) -I$(BOOST_INC)
+ 
+ clean: 
+ 	rm -f obj/*.o $(BFILE) $(EXEFILE)

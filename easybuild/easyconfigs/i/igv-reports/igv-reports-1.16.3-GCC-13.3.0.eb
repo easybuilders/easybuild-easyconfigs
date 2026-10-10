@@ -1,0 +1,37 @@
+easyblock = 'PythonBundle'
+
+name = 'igv-reports'
+version = '1.16.3'
+
+homepage = 'https://github.com/igvteam/igv-reports'
+description = """Python application to generate self-contained pages embedding IGV visualizations, with no dependency
+on original input files."""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('Pysam', '0.22.1'),
+    ('PyYAML', '6.0.2'),
+]
+
+exts_list = [
+    ('pytwobit', '0.3.1', {
+        'checksums': ['30f7ff8b50e8aa8ee933a3f49911d275299def9de43c4287fd26411c2b49d62f'],
+    }),
+    (name, version, {
+        # fix configuration error: `project.license` must be valid exactly by one definition (2 matches found)
+        'preinstallopts': "sed -i 's/license = \"MIT\"/license = {text = \"MIT\"}/' pyproject.toml && ",
+        'source_tmpl': 'igv_reports-%(version)s.tar.gz',
+        'checksums': ['55bcde7310586ff7dd01039e23d40f0273b6fe77eb8f43cf45cdea18241ee4a0'],
+        'modulename': 'igv_reports',
+    }),
+]
+
+sanity_check_commands = [
+    'create_datauri --help',
+    'create_report --help',
+]
+
+moduleclass = 'vis'

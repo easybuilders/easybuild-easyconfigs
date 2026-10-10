@@ -1,0 +1,36 @@
+From 2d1723c0d6e3ea3f10600cac310cbf6e77867596 Mon Sep 17 00:00:00 2001
+From: Marco Garten <mgarten@lbl.gov>
+Date: Mon, 23 Mar 2026 21:25:38 -0700
+Subject: [PATCH] Resolve ambiguous factory spec. with nvcc+GCC (#6011)
+
+Explicitly specify the 4th template parameter in the
+single-factory partial specialization of `factory` to
+disambiguate it from the dual-factory specialization
+when compiled with nvcc + GCC 14. Fixes #5565.
+
+Co-authored-by: Oz <oz-agent@warp.dev>
+---
+ include/pybind11/detail/init.h | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/include/pybind11/detail/init.h b/include/pybind11/detail/init.h
+index 56e0a56ab2..a1083f8457 100644
+--- a/include/pybind11/detail/init.h
++++ b/include/pybind11/detail/init.h
+@@ -367,8 +367,15 @@ template <typename CFunc,
+ struct factory;
+ 
+ // Specialization for py::init(Func)
++// Note: The 4th template parameter `void_type()` is explicitly specified to resolve a
++// template ambiguity with the dual-factory specialization below when compiled with
++// nvcc + GCC (see #5565). Without it, both specializations match equally well for the
++// single-factory case, since the 4th parameter defaults to
++// `function_signature_t<void_type(*)()>` = `void_type()`, which the dual-factory
++// specialization can also decompose as `AReturn(AArgs...)` with `AReturn=void_type`
++// and `AArgs={}`.
+ template <typename Func, typename Return, typename... Args>
+-struct factory<Func, void_type (*)(), Return(Args...)> {
++struct factory<Func, void_type (*)(), Return(Args...), void_type()> {
+     remove_reference_t<Func> class_factory;
+ 
+     // NOLINTNEXTLINE(google-explicit-constructor)
