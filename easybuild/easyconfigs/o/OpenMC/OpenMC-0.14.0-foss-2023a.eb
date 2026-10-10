@@ -1,0 +1,57 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: © Copyright 2011-2023, Massachusetts Institute of Technology, 
+# 		UChicago Argonne LLC, and OpenMC contributors
+#             HPCNow!
+# Authors::   Guillermo Piccoli <guillermo.piccoli@hpcnow.com>
+# License::   MIT
+##
+
+easyblock = 'CMakeMake'
+
+name = 'OpenMC'
+version = '0.14.0'
+
+homepage = 'https://github.com/openmc-dev/openmc'
+description = """OpenMC is an open-source Monte Carlo particle transport simulation code."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('gsl-lite', '0.41.0'),
+    ('CMake', '3.26.3'),
+    ('Catch2', '3.5.3')
+]
+
+dependencies = [
+    ('HDF5', '1.14.0'),
+    ('pugixml', '1.14'),
+    ('xtensor', '0.25.0'),
+    ('fmt', '10.1.0')
+]
+
+source_urls = ['https://github.com/openmc-dev/openmc/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['20ac92cc8d37a8c1180ae2df9f1dd1158f188cbf724ae64c9642db6199f3ee3f']
+
+preconfigopts = "touch %(builddir)s/openmc-0.14.0/vendor/pugixml/CMakeLists.txt " \
+                "%(builddir)s/openmc-0.14.0/vendor/gsl-lite/CMakeLists.txt && "
+
+configopts = "-DHDF5_PREFER_PARALLEL=on " \
+             "-DOPENMC_USE_MPI=on " \
+             "-DGIT_SUBMODULE=OFF "
+
+sanity_check_paths = {
+    'files': [
+        '%(installdir)s/bin/openmc',
+        '%(installdir)s/lib/libopenmc.so',
+    ],
+    'dirs': [
+        'bin',
+        'include/openmc',
+        'lib',
+    ]
+}
+
+moduleclass = 'tools'
