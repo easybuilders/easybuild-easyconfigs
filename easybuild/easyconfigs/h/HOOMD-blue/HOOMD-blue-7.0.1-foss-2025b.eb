@@ -1,0 +1,65 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'HOOMD-blue'
+version = "7.0.1"
+
+homepage = "https://bitbucket.org/glotzer/hoomd-blue"
+description = """HOOMD-blue is a general-purpose particle simulation
+toolkit, implementing molecular dynamics and hard particle Monte Carlo
+optimized for fast execution on both GPUs and CPUs.
+This version contains the LLVM environment.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True}
+
+github_account = 'glotzerlab'
+source_urls = [GITHUB_LOWER_RELEASE]
+sources = ['hoomd-%(version)s.tar.gz']
+checksums = ['76169262e78f299b4ae38c28e46512bd82ca6e363e7f56d4c18a840001b7ee9d']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('pybind11', '3.0.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('tbb', '2022.2.0'),
+    ('Eigen', '3.4.0'),
+    ('Cereal', '1.3.2'),
+]
+
+_copts = [
+    '-DENABLE_GPU=OFF',
+    '-DENABLE_MPI=ON',
+    '-DBUILD_MD=ON',
+    '-DBUILD_METAL=OFF',
+    '-DENABLE_TBB=ON',
+    '-DBUILD_TESTING=ON',
+]
+
+configopts = ' '.join(_copts)
+
+postinstallcmds = [
+    'ln -s hoomd/include %(installdir)s/include',
+]
+
+pretestopts = "PRTE_MCA_rmaps_default_mapping_policy=':oversubscribe' "
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['hoomd/__init__.py', 'hoomd/include/hoomd/Compute.h'],
+    'dirs': ['lib/cmake'],
+}
+
+sanity_check_commands = [
+    "python -s -c 'import hoomd'",
+]
+
+modextrapaths = {'PYTHONPATH': ''}
+
+moduleclass = 'phys'

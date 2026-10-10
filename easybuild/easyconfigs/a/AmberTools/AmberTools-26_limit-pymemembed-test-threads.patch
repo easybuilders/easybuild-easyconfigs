@@ -1,0 +1,22 @@
+Limit the pymemembed regression test to one Numba thread.
+
+The AmberTools test environment sets OMP_NUM_THREADS=1, which restricts the
+Numba thread pool to a single worker. The pymemembed test currently requests
+two threads and fails with:
+
+    ValueError: The number of threads must be between 1 and 1
+
+Run only this regression test with one thread. This leaves the default
+pymemembed behavior unchanged for normal users.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- a/AmberTools/test/packmol_memgen/Run.packmol-memgen
++++ b/AmberTools/test/packmol_memgen/Run.packmol-memgen
+@@ -35,7 +35,7 @@ PDB=2x2v
+ 
+ echo "running pymemembed"
+-$SCRIPT_PATH -n out -a 2 ${PDB}.pdb 2>&1 > pymemembed.log || echo "${0}: ${ERROR_MESSAGE}"
++$SCRIPT_PATH -n out -a 1 ${PDB}.pdb 2>&1 > pymemembed.log || echo "${0}: ${ERROR_MESSAGE}"
+ 
+ grep Convergence pymemembed.log > /dev/null
+ 
