@@ -1,0 +1,55 @@
+commit bef24fc96179b126db1e03ec66ed31d34b97bba7
+Author: Louwrens van Dellen <lthvd@protonmail.com>
+Date:   Sat Sep 14 21:03:38 2024 +0200
+
+    add PIVY_Python_SITEARCH install destination
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index efe3090..fb0aa41 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -21,6 +21,15 @@ endif()
+ 
+ find_package(Python REQUIRED COMPONENTS Interpreter Development)
+ 
++if (NOT PIVY_Python_SITEARCH)
++    SET(PIVY_Python_SITEARCH ${Python_SITEARCH})
++endif()
++
++if (Python_FOUND)
++	MESSAGE(STATUS "Python_FOUND: TRUE")
++	MESSAGE(STATUS "PIVY_Python_SITEARCH: ${PIVY_Python_SITEARCH}")
++endif()
++
+ if (Coin_FOUND)
+ 	MESSAGE(STATUS "COIN_FOUND: TRUE")
+ 	MESSAGE(STATUS "COIN_INCLUDE_DIR: ${Coin_INCLUDE_DIR}")
+@@ -54,7 +63,7 @@ add_subdirectory(interfaces)
+ 
+ install(DIRECTORY
+     ${CMAKE_BINARY_DIR}/pivy
+-    DESTINATION ${Python_SITEARCH}
++    DESTINATION ${PIVY_Python_SITEARCH}
+     FILES_MATCHING
+     PATTERN "*.py"
+     PATTERN "*.so"
+diff --git a/interfaces/CMakeLists.txt b/interfaces/CMakeLists.txt
+index 168fb2e..75bee1a 100644
+--- a/interfaces/CMakeLists.txt
++++ b/interfaces/CMakeLists.txt
+@@ -40,7 +40,7 @@ target_include_directories(coin
+     )
+ 
+ target_link_libraries(coin PUBLIC Coin::Coin)
+-install(TARGETS coin DESTINATION ${Python_SITEARCH}/pivy)
++install(TARGETS coin DESTINATION ${PIVY_Python_SITEARCH}/pivy)
+ 
+ 
+ if (SoQt_FOUND)
+@@ -79,5 +79,5 @@ if (SoQt_FOUND)
+         )
+ 
+     target_link_libraries(soqt PUBLIC SoQt::SoQt)
+-    install(TARGETS soqt DESTINATION ${Python_SITEARCH}/pivy/gui)
++    install(TARGETS soqt DESTINATION ${PIVY_Python_SITEARCH}/pivy/gui)
+ endif()
