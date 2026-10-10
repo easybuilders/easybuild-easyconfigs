@@ -1,0 +1,77 @@
+name = 'eOn'
+version = '3.6.0'
+
+homepage = 'https://eondocs.org/'
+description = """eOn models the evolution of atomic-scale systems over long time scales
+ with adaptive kinetic Monte Carlo, saddle searches (dimer, Lanczos, NEB) and
+ basin hopping. It installs the eonclient C++ program, the pyeonclient Python
+ bindings and the eon Python server."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+# eOn has no OpenMP code; openmp would only thread Eigen's products.
+toolchainopts = {'pic': True}
+
+github_account = 'TheochemUI'
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['43123acfe1c395b4f58287243871b9d4fb90b06e88ccb1ca1a9831229ddb967c']
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('Meson', '1.10.2'),
+    ('Ninja', '1.13.2'),
+    ('pkgconf', '2.5.1'),
+    ('hatchling', '1.29.0'),
+    # with_pyeonclient
+    ('nanobind', '2.13.0'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('CapnProto', '1.4.0'),
+    ('SciPy-bundle', '2026.05'),
+    ('PyYAML', '6.0.3'),
+    ('pydantic', '2.13.4'),
+    ('Eigen', '5.0.0'),
+    ('Highway', '1.4.0'),
+    ('inih', '62'),
+    ('nlohmann_json', '3.12.0'),
+    ('quill', '11.1.0'),
+    ('readcon-core', '0.16.2'),
+    ('rgpot', '3.4.0'),
+    # Python dependencies of the eon server
+    ('python-xxhash', '4.0.1'),
+    ('vesin', '0.6.2'),
+    ('readcon', '0.16.2'),
+    ('readcon-db', '0.1.8'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('eon_schema', '0.2.4', {
+        'checksums': ['70aedbf3fc514315a845c795d925f64f4767ac75602885a5394e40f167e48fee'],
+    }),
+]
+
+# The eOn easyblock enables each Meson option whose dependencies are listed
+# above (with_serve from rgpot plus CapnProto, with_pyeonclient from nanobind),
+# and runs meson test --suite eon.
+runtest = True
+
+# pyproject.toml declares the eon-server console script; the Meson install
+# does not write it, so add the same two-line entry point here.
+postinstallcmds = [
+    "printf '#!/usr/bin/env python3\\nfrom eon.server import main\\nmain()\\n' > %(installdir)s/bin/eon-server",
+    "chmod +x %(installdir)s/bin/eon-server",
+]
+
+sanity_check_commands = [
+    'eonclient --help',
+    'python -c "import pyeonclient"',
+    'eon-server --help',
+]
+
+moduleclass = 'chem'
