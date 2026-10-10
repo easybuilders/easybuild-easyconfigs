@@ -1,0 +1,111 @@
+Backported from https://github.com/quanshengwu/wannier_tools/pull/180
+
+From 35d6bd63c5de575ca92b20982b24948e752f54f6 Mon Sep 17 00:00:00 2001
+From: MuyamiYatara <1399106662@qq.com>
+Date: Mon, 9 Jun 2025 20:12:06 +0800
+Subject: [PATCH] fixed bugs in module and makefile
+
+---
+ src/Makefile.gfortran                | 2 +-
+ src/Makefile.gfortran-mpi            | 2 +-
+ src/Makefile.gfortran_travis         | 2 +-
+ src/Makefile.intel-mpi               | 4 ++--
+ src/Makefile.intel-mpi-for-developer | 4 ++--
+ src/Makefile.intel-mpi-with-ARPACK   | 4 ++--
+ src/Makefile.intel-seq               | 2 +-
+ src/module.f90                       | 6 +++---
+ 8 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/src/Makefile.gfortran-mpi b/src/Makefile.gfortran-mpi
+index 1835f8f..bead93a 100644
+--- a/src/Makefile.gfortran-mpi
++++ b/src/Makefile.gfortran-mpi
+@@ -9,7 +9,7 @@ OBJ =  module.o sparse.o wt_aux.o math_lib.o symmetry.o readHmnR.o inverse.o pro
+ 		 berry.o wanniercenter_adaptive.o \
+   		 effective_mass.o findnodes.o \
+ 		 sigma_OHE.o sigma.o Boltz_transport_anomalous.o \
+-		 2D_TSC.o optic.o\
++		 2D_TSC.o optic.o orbital_hall.o\
+ 	main.o
+ 
+ # compiler, here mpif90 should be comipled with gfortran
+diff --git a/src/Makefile.gfortran_travis b/src/Makefile.gfortran_travis
+index 1a5e5cf..a284a26 100644
+--- a/src/Makefile.gfortran_travis
++++ b/src/Makefile.gfortran_travis
+@@ -10,7 +10,7 @@ OBJ =  module.o sparse.o wt_aux.o math_lib.o mgmres.o symmetry.o \
+ 		 berry.o wanniercenter_adaptive.o \
+   		 effective_mass.o findnodes.o \
+ 		 sigma_OHE.o sigma.o Boltz_transport_anomalous.o \
+-		 2D_TSC.o optic.o\
++		 2D_TSC.o optic.o orbital_hall.o\
+ 	main.o
+ 
+ 
+diff --git a/src/Makefile.intel-mpi b/src/Makefile.intel-mpi
+index 80eab3e..bca422b 100644
+--- a/src/Makefile.intel-mpi
++++ b/src/Makefile.intel-mpi
+@@ -10,11 +10,11 @@ OBJ =  module.o sparse.o wt_aux.o math_lib.o symmetry.o \
+ 		 berry.o wanniercenter_adaptive.o \
+   		 effective_mass.o findnodes.o \
+ 		 sigma_OHE.o sigma.o Boltz_transport_anomalous.o \
+-		 2D_TSC.o optic.o\
++		 2D_TSC.o optic.o orbital_hall.o\
+ 	main.o
+ 
+ # compiler
+-F90  = mpif90 -fpp -DMPI -fpe3 -O3 -DARPACK -DINTELMKL  #  -check all -traceback -g
++F90  = mpiifort -fpp -DMPI -fpe3 -O3 -DARPACK -DINTELMKL  #  -check all -traceback -g
+ 
+ INCLUDE = -I${MKLROOT}/include
+ WFLAG = -nogen-interface
+diff --git a/src/Makefile.intel-mpi-for-developer b/src/Makefile.intel-mpi-for-developer
+index e5e1bed..74976f6 100644
+--- a/src/Makefile.intel-mpi-for-developer
++++ b/src/Makefile.intel-mpi-for-developer
+@@ -10,11 +10,11 @@ OBJ =  module.o sparse.o wt_aux.o math_lib.o symmetry.o \
+ 		 berry.o wanniercenter_adaptive.o \
+   		 effective_mass.o findnodes.o \
+ 		 sigma_OHE.o sigma.o Boltz_transport_anomalous.o \
+-		 2D_TSC.o optic.o\
++		 2D_TSC.o optic.o orbital_hall.o\
+ 	main.o
+ 
+ # compiler
+-F90  = mpif90 -fpp -DMPI -fpe3 -O3 -DARPACK #-DINTELMKL -DSUPERLU #  -check all -traceback -g
++F90  = mpiifort -fpp -DMPI -fpe3 -O3 -DARPACK #-DINTELMKL -DSUPERLU #  -check all -traceback -g
+ #F90  = ifort -fpp  -DINTELMKL -fpe3 -check all -traceback -g
+ CC = mpicc -fpp -O3 #-DINTELMKL -DSUPERLU
+ 
+diff --git a/src/Makefile.intel-mpi-with-ARPACK b/src/Makefile.intel-mpi-with-ARPACK
+index cc9974f..e3f8051 100644
+--- a/src/Makefile.intel-mpi-with-ARPACK
++++ b/src/Makefile.intel-mpi-with-ARPACK
+@@ -10,11 +10,11 @@ OBJ =  module.o sparse.o wt_aux.o math_lib.o symmetry.o \
+ 		 berry.o wanniercenter_adaptive.o \
+   		 effective_mass.o findnodes.o \
+ 		 sigma_OHE.o sigma.o Boltz_transport_anomalous.o \
+-		 2D_TSC.o optic.o\
++		 2D_TSC.o optic.o orbital_hall.o\
+ 	main.o
+ 
+ # compiler
+-F90  = mpif90 -fpp -DMPI -fpe3 -O3 -DARPACK -DINTELMKL 
++F90  = mpiifort -fpp -DMPI -fpe3 -O3 -DARPACK -DINTELMKL 
+ #F90  = ifort -fpp  -DINTELMKL -fpe3 -check all -traceback -g
+ CC = mpicc -cpp -O3 -DINTELMKL 
+ 
+diff --git a/src/Makefile.intel-seq b/src/Makefile.intel-seq
+index 74b6da1..3ccbf12 100644
+--- a/src/Makefile.intel-seq
++++ b/src/Makefile.intel-seq
+@@ -9,7 +9,7 @@ OBJ =  module.o sparse.o wt_aux.o math_lib.o symmetry.o readHmnR.o inverse.o pro
+ 		 berry.o wanniercenter_adaptive.o \
+   		 effective_mass.o findnodes.o \
+ 		 sigma_OHE.o sigma.o Boltz_transport_anomalous.o \
+-		 2D_TSC.o optic.o\
++		 2D_TSC.o optic.o orbital_hall.o\
+ 	main.o
+ 
+ # compiler
