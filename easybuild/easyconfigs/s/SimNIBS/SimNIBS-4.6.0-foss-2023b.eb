@@ -204,6 +204,16 @@ exts_list = [
             {'ml-dtypes-0.4.1.tar.gz': 'fad5f2de464fd09127e49b7fd1252b9006fb43d2edc1ff112d390c324af5ca7a'},
             {'ml_dtypes-0.3.2_EigenAvx512.patch': '197b05b0b7f611749824369f026099f6a172f9e8eab6ebb6504a16573746c892'},
         ],
+        # Prepend path to header files provided by Eigen build dependency to $CPLUS_INCLUDE_PATH,
+        # which is required to fix compiler errors like:
+        #   error: 'get_integer_by_size' in namespace 'Eigen::numext' does not name a template type
+        #
+        # This works because it effectively demotes the '-I $EBROOTEIGEN/include' compiler option
+        # as if it were using the -isystem option instead, which results in the third_party/eigen path getting
+        # (which is also specified via -I) to get preferenceas it should.
+        # This is necessary because since the Eigen vendored in the ml-dtypes source tarball is newer than
+        # the Eigen version we provide here as build dependency
+        'preinstallopts': "export CPLUS_INCLUDE_PATH=$EBROOTEIGEN/include:$CPLUS_INCLUDE_PATH && ",
     }),
     ('tqdm', '4.67.1', {
         'checksums': ['f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2'],
@@ -212,9 +222,13 @@ exts_list = [
         'checksums': ['307c3669428c5362aab27c8a1260aa8f47c4e91d3891f48be0141738d8d053e1'],
     }),
     ('sympy', '1.13.1', {
-        'source_urls': ['https://download.pytorch.org/whl'],
-        'sources': [SOURCE_PY3_WHL],
-        'checksums': ['db36cdc64bf61b9b24578b6f7bab1ecdd2452cf008f34faa33776680c26d66f8'],
+        'sources': [SOURCE_TAR_GZ],
+        'patches': [{'name': 'sympy-1.13.1_fix-support-llvmlite-0.45.patch', 'alt_location': 'sympy'}],
+        'checksums': [
+            {'sympy-1.13.1.tar.gz': '9cebf7e04ff162015ce31c9c6c9144daa34a93bd082f54fd8f12deca4f47515f'},
+            {'sympy-1.13.1_fix-support-llvmlite-0.45.patch':
+             '4049f115ab9684c4fb917046f2d07d77cd42c00779b0d544c0c9d718f9e9e52c'},
+        ],
     }),
     ('torch', '2.6.0+cpu', {
         'source_urls': ['https://download.pytorch.org/whl/cpu/'],
@@ -283,8 +297,7 @@ postinstallcmds = [
     "-e '/^Requires-Dist: tbb[ ;]/d' "
     "%(installdir)s/lib/python%(pyshortver)s/site-packages/%(namelower)s-%(version)s.dist-info/METADATA",
     # fix RPATH in libgmsh.so.4.14
-    "patchelf --force-rpath --set-rpath '$ORIGIN:$ORIGIN/../lib' "
-    "%(installdir)s/lib/libgmsh.so.4.14",
+    "patchelf --force-rpath --set-rpath '$ORIGIN:$ORIGIN/../lib' %(installdir)s/lib/libgmsh.so.4.14",
     # link executables to /bin
     'ln -s ../lib/python%(pyshortver)s/site-packages/simnibs/external/bin/linux/expr %(installdir)s/bin/expr',
     'ln -s ../lib/python%(pyshortver)s/site-packages/simnibs/external/bin/linux/meshfix %(installdir)s/bin/meshfix',
@@ -292,6 +305,11 @@ postinstallcmds = [
     'ln -s ../lib/python%(pyshortver)s/site-packages/simnibs/external/bin/linux/mmg3d_O3 %(installdir)s/bin/mmg3d_O3',
     'ln -s ../lib/python%(pyshortver)s/site-packages/simnibs/external/dwi2cond %(installdir)s/bin/dwi2cond',
 ]
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in ['dwi2cond', 'expr', 'getopt', 'meshfix', 'mmg3d_O3']],
+    'dirs': ['include', 'lib/python%(pyshortver)s/site-packages'],
+}
 
 sanity_check_commands = [
     'numba --help',
