@@ -1,0 +1,48 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'ROCmComponent'
+
+name = 'rocSOLVER'
+version = '3.32.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/rocSOLVER'
+description = """rocSOLVER exposes a common interface that provides Basic Linear
+Algebra Subroutines (BLAS) for sparse computation. It's implemented on top of
+AMD ROCm runtime and toolchains. rocSOLVER is created using the HIP programming
+language and optimized for AMD's latest discrete GPUs."""
+docurls = ['https://rocm.docs.amd.com/projects/rocSOLVER/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+github_account = 'ROCm'
+local_repo_name = 'rocm-libraries'
+source_urls = [f'https://github.com/{github_account}/{local_repo_name}/archive']
+sources = [{
+    'download_filename': f'rocm-{_rocm_version}.tar.gz',
+    'filename': f'{local_repo_name}-rocm-{_rocm_version}.tar.gz',
+}]
+checksums = ['300cc50720d40bad7c7ed1f6d67e8c5ebecaba62c07a6ea1cc5813c0ea2e41b5']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocPRIM', '4.2.0'),
+    ('rocBLAS', '5.2.0'),
+]
+
+# Build from the projects/rocsolver subdirectory
+start_dir = 'projects/rocsolver'
+
+sanity_check_paths = {
+    'files': ['lib/cmake/rocsolver/rocsolver-config.cmake',
+              'include/rocsolver/rocsolver.h'],
+    'dirs': ['lib/cmake/rocsolver',
+             'share/doc/rocsolver',
+             'include/rocsolver'],
+}
+
+moduleclass = 'lib'

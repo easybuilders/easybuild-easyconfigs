@@ -1,0 +1,47 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'ROCmComponent'
+
+name = 'hipRAND'
+version = '3.1.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/hipRAND'
+description = """hipRAND is a RAND marshalling library with multiple supported backends.
+It sits between your application and the backend RAND library, where it marshals inputs
+to the backend and results to the application. hipRAND exports an interface that doesn't
+require the client to change, regardless of the chosen backend."""
+docurls = ['https://rocm.docs.amd.com/projects/hipRAND/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+github_account = 'ROCm'
+local_repo_name = 'rocm-libraries'
+source_urls = [f'https://github.com/{github_account}/{local_repo_name}/archive']
+sources = [{
+    'download_filename': f'rocm-{_rocm_version}.tar.gz',
+    'filename': f'{local_repo_name}-rocm-{_rocm_version}.tar.gz',
+}]
+checksums = ['300cc50720d40bad7c7ed1f6d67e8c5ebecaba62c07a6ea1cc5813c0ea2e41b5']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+]
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocRAND', '4.2.0'),
+]
+
+# Build from the projects/hiprand subdirectory
+start_dir = 'projects/hiprand'
+
+sanity_check_paths = {
+    'files': [f'lib/libhiprand.{SHLIB_EXT}',
+              'lib/cmake/hiprand/hiprand-config.cmake',
+              'include/hiprand/hiprand.hpp'],
+    'dirs': ['lib/cmake/hiprand',
+             'share/doc/hiprand',
+             'include/hiprand'],
+}
+
+moduleclass = 'lib'
