@@ -1,0 +1,101 @@
+name = 'eOn'
+version = '3.6.0'
+versionsuffix = '-metatomic'
+
+homepage = 'https://eondocs.org/'
+description = """eOn models the evolution of atomic-scale systems over long time scales
+ with adaptive kinetic Monte Carlo, saddle searches (dimer, Lanczos, NEB) and
+ basin hopping. It installs the eonclient C++ program, the pyeonclient Python
+ bindings and the eon Python server. This build adds the metatomic potential
+ for machine-learning interatomic potentials exported as TorchScript."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+# eOn has no OpenMP code; openmp would only thread Eigen's products.
+toolchainopts = {'pic': True}
+
+github_account = 'TheochemUI'
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['43123acfe1c395b4f58287243871b9d4fb90b06e88ccb1ca1a9831229ddb967c']
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('Meson', '1.10.2'),
+    ('Ninja', '1.13.2'),
+    ('pkgconf', '2.5.1'),
+    ('hatchling', '1.29.0'),
+    # with_pyeonclient
+    ('nanobind', '2.13.0'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('CapnProto', '1.4.0'),
+    ('SciPy-bundle', '2026.05'),
+    ('PyYAML', '6.0.3'),
+    ('pydantic', '2.13.4'),
+    ('Eigen', '5.0.0'),
+    ('Highway', '1.4.0'),
+    ('inih', '62'),
+    ('nlohmann_json', '3.12.0'),
+    ('quill', '11.1.0'),
+    ('readcon-core', '0.16.2'),
+    # 3.5 carries the per-instance Fortran pots that test_eam_al expects;
+    # 3.5.1 installs that C++ layout as librgpot.so.4.
+    ('rgpot', '3.5.1'),
+    # Python dependencies of the eon server
+    ('python-xxhash', '4.0.1'),
+    ('vesin', '0.6.2'),
+    ('readcon', '0.16.2'),
+    ('readcon-db', '0.1.8'),
+    # with_metatomic; the easyblock points torch_path at this PyTorch
+    ('PyTorch', '2.9.1'),
+    ('metatensor', '0.2.6'),
+    ('metatensor-torch', '0.10.7'),
+    ('metatomic-torch', '0.1.19'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+exts_list = [
+    ('eon_schema', '0.2.4', {
+        'checksums': ['70aedbf3fc514315a845c795d925f64f4767ac75602885a5394e40f167e48fee'],
+    }),
+]
+
+# A release tarball has no .git, so get_version.py reports 'unknown' and
+# libeon_relax_engine gets no commit identity (test_relax_engine wants the
+# 40-hex hash). Pin the commit that the v3.6.0 tag points to.
+_commit = '2d2adada2f64c4c5a063065abc0d9a8a56d74b2c'
+preconfigopts = (
+    f"sed -i -e \"s/^git_hash = version_bits\\[2\\]$/git_hash = '{_commit[:7]}'/\" "
+    f"-e \"s/^    git_hash_full = git_hash$/    git_hash_full = '{_commit}'/\" "
+    "%(start_dir)s/client/meson.build && "
+)
+
+# The eOn easyblock enables each Meson option whose dependencies are listed
+# above (with_serve from rgpot plus CapnProto, with_pyeonclient from nanobind,
+# with_metatomic from PyTorch plus metatomic-torch),
+# and runs meson test --suite eon.
+runtest = True
+
+# pyproject.toml declares the eon-server console script; the Meson install
+# does not write it, so add the same two-line entry point here.
+postinstallcmds = [
+    "printf '#!/usr/bin/env python3\\nfrom eon.server import main\\nmain()\\n' > %(installdir)s/bin/eon-server",
+    "chmod +x %(installdir)s/bin/eon-server",
+]
+
+sanity_check_commands = [
+    'eonclient --help',
+    'python -c "import pyeonclient"',
+    # eon-server takes no options (it reads config.ini), so check the
+    # entry point without running a job.
+    'test -x %(installdir)s/bin/eon-server',
+    'python -c "from eon.server import main"',
+]
+
+moduleclass = 'chem'
