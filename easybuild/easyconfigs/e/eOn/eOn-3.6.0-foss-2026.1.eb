@@ -57,6 +57,16 @@ exts_list = [
     }),
 ]
 
+# A release tarball has no .git, so get_version.py reports 'unknown' and
+# libeon_relax_engine gets no commit identity (test_relax_engine wants the
+# 40-hex hash). Pin the commit that the v3.6.0 tag points to.
+_commit = '2d2adada2f64c4c5a063065abc0d9a8a56d74b2c'
+preconfigopts = (
+    f"sed -i -e \"s/^git_hash = version_bits\\[2\\]$/git_hash = '{_commit[:7]}'/\" "
+    f"-e \"s/^    git_hash_full = git_hash$/    git_hash_full = '{_commit}'/\" "
+    "%(start_dir)s/client/meson.build && "
+)
+
 # The eOn easyblock enables each Meson option whose dependencies are listed
 # above (with_serve from rgpot plus CapnProto, with_pyeonclient from nanobind),
 # and runs meson test --suite eon.
