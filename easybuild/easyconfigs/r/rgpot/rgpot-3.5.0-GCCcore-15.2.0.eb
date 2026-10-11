@@ -1,7 +1,7 @@
 easyblock = 'MesonNinja'
 
 name = 'rgpot'
-version = '3.4.0'
+version = '3.5.0'
 
 homepage = 'https://github.com/OmniPotentRPC/rgpot'
 description = """Potential frontends with Cap'n Proto RPC (NWChem/CPMD clients;
@@ -17,7 +17,7 @@ sources = [{
     'download_filename': 'v%(version)s.tar.gz',
     'filename': SOURCE_TAR_GZ,
 }]
-checksums = ['29ebcab04647063f51ff793bad40788556a93d6e0a8b100b4f189ac00c3e134e']
+checksums = ['095157c83c663fda3668145022528466c11cb8f84df2465754333de1736f2343']
 
 builddependencies = [
     ('binutils', '2.45'),
@@ -45,14 +45,20 @@ dependencies = [
 # need BLAS-backed packages (gfbf generation; a versionsuffix variant
 # belongs there), with_metatomic links the torch stack, with_xtensor
 # duplicates the Eigen backend, with_rust_core needs a cargo network fetch
-# at build time. with_cache installs a PotentialCache API that librgpot.so
-# does not export, which breaks the eOn link
+# at build time. with_cache stays off: in 3.4.0 its PotentialCache API was
+# not exported from librgpot.so and broke the eOn link
 # (https://github.com/OmniPotentRPC/rgpot/issues/55).
 configopts = '-Dpure_lib=false -Dwith_rpc=true -Dwith_eigen=true '
 # The Fortran 2018 kernels (SW, EDIP, Lenosky, Tersoff, EAM-Al, FeHe,
 # CuH2, TIP4P-H). eOn refuses an installed rgpot built without them.
 configopts += '-Dwith_fortran_pots=enabled '
 configopts += '-Dwith_python=true '
+# Since 3.5.0 librgpot never links MPI; the MPI side of the calculator groups
+# is a separate librgpot_mpi (plus rgpot-mpi.pc), which librgpot loads with
+# dlopen. This toolchain has no MPI, so it is off and not installed; an MPI
+# toolchain variant would set -Dwith_mpi=enabled and add lib/librgpot_mpi.so
+# and lib/pkgconfig/rgpot-mpi.pc to the sanity check.
+configopts += '-Dwith_mpi=disabled '
 configopts += '-Dwith_tests=true -Dwith_examples=true '
 # No build-time downloads: every subproject the options need is a dependency.
 configopts += '-Dwrap_mode=nodownload '
@@ -60,12 +66,17 @@ configopts += '-Dwrap_mode=nodownload '
 runtest = 'meson'
 testopts = 'test -C %(builddir)s/easybuild_obj'
 
+# 3.5.0 moved the CMake package config from lib/cmake/pot to lib/cmake/rgpot,
+# but only the CMake build installs it; this Meson build installs rgpot.pc
+# only, so neither cmake directory is checked. lib/cmake/pot must not appear.
 sanity_check_paths = {
     'files': [
         'bin/potserv',
         'lib/librgpot.%s' % SHLIB_EXT,
         'lib/libnwchempot.a',
         'lib/libcpmdpot.a',
+        # generic engine table for LJ, Morse, ZBL and the Fortran pots (new in 3.5.0)
+        'lib/libclassical_engine.%s' % SHLIB_EXT,
         'lib/pkgconfig/rgpot.pc',
     ],
     'dirs': [
@@ -77,6 +88,9 @@ sanity_check_paths = {
 
 sanity_check_commands = [
     "pkg-config --exists rgpot",
+    "! pkg-config --exists rgpot-mpi",
+    "test ! -e %(installdir)s/lib/cmake/pot",
+    "test ! -e %(installdir)s/lib/librgpot_mpi." + SHLIB_EXT,
     "python -c 'import rgpot'",
 ]
 
