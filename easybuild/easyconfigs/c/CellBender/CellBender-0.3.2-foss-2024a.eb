@@ -1,0 +1,76 @@
+easyblock = 'PythonBundle'
+
+name = 'CellBender'
+version = '0.3.2'
+
+homepage = 'http://github.com/broadinstitute/CellBender'
+description = """
+CellBender is a software package for eliminating technical artifacts from
+high-throughput single-cell RNA sequencing (scRNA-seq) data.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [('hatchling', '1.24.2')]
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('PyTorch', '2.6.0'),
+    ('pyro-ppl', '1.9.1'),
+    ('matplotlib', '3.9.2'),
+    ('IPython', '8.28.0'),
+    ('anndata', '0.11.4'),
+    ('jupyter-contrib-nbextensions', '0.7.0'),
+    ('loompy', '3.0.8'),
+    ('PyTables', '3.10.2'),
+    ('Qtconsole', '5.6.0'),
+    ('scikit-learn', '1.5.2'),
+]
+
+local_runtest = 'pytest -v ' + ' '.join(
+    f'cellbender/remove_background/tests/{x}'
+    for x in [
+        'test_dataprep.py',
+        'test_downstream.py',
+        'test_estimation.py',
+        'test_integration.py',
+        'test_io.py',
+        'test_monitor.py',
+        'test_posterior.py',
+        'test_sparse_utils.py',
+        'test_train.py',
+    ]
+)
+# missing ckpt.tar.gz for test_integration.py::test_full_run[cpu]
+local_runtest += ' --deselect cellbender/remove_background/tests/test_integration.py::test_full_run[cpu]'
+
+exts_list = [
+    ('traitlets', '5.14.3', {
+        'checksums': ['9ed0579d3502c94b4b3732ac120375cda96f923114522847de4b3bb98b96b6b7'],
+    }),
+    ('jupyter_console', '6.6.3', {
+        'checksums': ['566a4bf31c87adbfadf22cdf846e3069b59a71ed5da71d6ba4d8aaad14a53539'],
+    }),
+    ('jupyter', '1.1.1', {
+        'checksums': ['d55467bceabdea49d7e3624af7e33d59c37fff53ed3a350e1ac957bed731de7a'],
+    }),
+    ('lxml_html_clean', '0.4.3', {
+        'checksums': ['c9df91925b00f836c807beab127aac82575110eacff54d0a75187914f1bd9d8c'],
+    }),
+    ('cellbender', version, {
+        # unpin notebook and nbconvert versions
+        'preinstallopts': "sed -i 's/<7.0.0//' requirements.txt && ",
+        'runtest': local_runtest,
+        'testinstall': True,
+        'source_urls': ['https://github.com/broadinstitute/%(name)s/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['3bd4bf77c82a5817bb09ac3db236e9795e3e71c99cbe34c8baef04272a7d1717'],
+    }),
+]
+
+sanity_check_commands = [
+    "cellbender --help",
+    "cellbender remove-background --help",
+]
+
+moduleclass = 'bio'

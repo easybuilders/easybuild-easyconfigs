@@ -1,0 +1,43 @@
+Python 3.14 drops Str, Num, Bytes, NameConstant.
+There is now only Constant, which has .value throughout
+
+author: micketeer@gmail.com
+--- setup.py.orig	2026-06-24 17:08:58.666202982 +0200
++++ setup.py	2026-06-24 17:11:46.204636218 +0200
+@@ -76,7 +76,7 @@
+             print(*args, **kw1)
+ 
+ if sys.version_info >= (3, 8):
+-    from ast import Str, Num, Bytes, NameConstant  # NOQA
++    from ast import Constant  # NOQA
+ 
+ 
+ def literal_eval(node_or_string):
+@@ -98,14 +98,10 @@
+         raise TypeError('only string or AST nodes supported')
+ 
+     def _convert(node):
+-        if isinstance(node, Str):
+-            if sys.version_info < (3,) and not isinstance(node.s, unicode):
+-                return node.s.decode('utf-8')
+-            return node.s
+-        elif isinstance(node, Bytes):
+-            return node.s
+-        elif isinstance(node, Num):
+-            return node.n
++        if isinstance(node, Constant):
++            if sys.version_info < (3,) and not isinstance(node.value, unicode):
++                return node.value.decode('utf-8')
++            return node.value
+         elif isinstance(node, Tuple):
+             return tuple(map(_convert, node.elts))
+         elif isinstance(node, List):
+@@ -114,8 +110,6 @@
+             return set(map(_convert, node.elts))
+         elif isinstance(node, Dict):
+             return dict((_convert(k), _convert(v)) for k, v in zip(node.keys, node.values))
+-        elif isinstance(node, NameConstant):
+-            return node.value
+         elif sys.version_info < (3, 4) and isinstance(node, Name):
+             if node.id in _safe_names:
+                 return _safe_names[node.id]
