@@ -103,10 +103,10 @@ components = [
 ]
 
 exts_list = [
-    # cactus depends on old networkx API - networkx>=2,<2.8.1
-    ('networkx', '2.8', {
+    # cactus depends on old networkx API - networkx 2.x
+    ('networkx', '2.8.8', {
         'source_tmpl': SOURCE_PY3_WHL,
-        'checksums': ['1a1e8fe052cc1b4e0339b998f6795099562a264a13a5af7a32cad45ab9d4e126'],
+        'checksums': ['e435dfa75b1d7195c7b8378c3859f0445cd88c6b0375c181ed66823a9ceb7524'],
     }),
     ('blessed', '1.25.0', {
         'source_tmpl': SOURCE_PY3_WHL,
@@ -200,6 +200,9 @@ exts_list = [
         'source_urls': ['https://github.com/ComparativeGenomicsToolkit/cactus/releases/download/v%(version)s'],
         'sources': [{'download_filename': '%(namelower)s-v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
         'preinstallopts': (
+            # Cactus pins NetworkX to <2.8.1, although later NetworkX 2.x releases
+            # remain API-compatible for the functionality used by Cactus.
+            "sed -i 's/networkx>=2,<2.8.1/networkx>=2,<3/' setup.py && "
             # Build the native Cactus tools and bundled third-party components before installing the Python package
             'make -j %(parallel)s && '
             # Cactus overwrites PYTHONPATH in its Makefile when running the test suite, which
