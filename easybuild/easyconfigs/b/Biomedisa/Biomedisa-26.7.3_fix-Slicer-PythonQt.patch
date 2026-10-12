@@ -1,0 +1,39 @@
+Use Slicer's PythonQt bindings instead of PyQt5 in the Biomedisa Slicer extension.
+
+Slicer 5.12 is built with Qt6 and exposes Qt to Python through its `qt`
+module. The Biomedisa Slicer extension imports PyQt5 directly, which is
+not available in Slicer's embedded Python environment.
+
+Remove an unused PyQt5 QDialog import and convert ListSelectionDialog to
+use Slicer's `qt` module. Replace the PyQt5 pyqtSignal with a PythonQt
+QVariant signal because the signal may emit either a string or None.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- a/biomedisa_slicer_extension/biomedisa_extension/SegmentEditorCommon/AbstractBiomedisaSegmentEditorEffect.py
++++ b/biomedisa_slicer_extension/biomedisa_extension/SegmentEditorCommon/AbstractBiomedisaSegmentEditorEffect.py
+@@ -5,1 +5,0 @@
+-from PyQt5.QtWidgets import QDialog
+--- a/biomedisa_slicer_extension/biomedisa_extension/SegmentEditorCommon/ListSelectionDialog.py
++++ b/biomedisa_slicer_extension/biomedisa_extension/SegmentEditorCommon/ListSelectionDialog.py
+@@ -1,2 +1,1 @@
+-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPushButton, QListWidget, QHBoxLayout
+-from PyQt5.QtCore import pyqtSignal
++import qt
+@@ -4,2 +3,2 @@
+-class ListSelectionDialog(QDialog):
+-    dialogClosed = pyqtSignal(str)  # Custom signal
++class ListSelectionDialog(qt.QDialog):
++    dialogClosed = qt.Signal("QVariant")  # Custom signal
+@@ -12,1 +11,1 @@
+-        layout = QVBoxLayout()
++        layout = qt.QVBoxLayout()
+@@ -15,1 +14,1 @@
+-        self.listWidget = QListWidget()
++        self.listWidget = qt.QListWidget()
+@@ -20,3 +19,3 @@
+-        buttonLayout = QHBoxLayout()
+-        self.okButton = QPushButton("OK")
+-        self.cancelButton = QPushButton("Cancel")
++        buttonLayout = qt.QHBoxLayout()
++        self.okButton = qt.QPushButton("OK")
++        self.cancelButton = qt.QPushButton("Cancel")
