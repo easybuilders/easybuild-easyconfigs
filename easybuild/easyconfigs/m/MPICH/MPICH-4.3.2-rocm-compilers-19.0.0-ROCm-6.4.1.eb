@@ -1,0 +1,55 @@
+# Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
+
+name = 'MPICH'
+version = '4.3.2'
+_rocm_version = '6.4.1'
+# No versionsuffix -- the ROCm version is already carried by the toolchain
+# string (rocm-compilers/19.0.0-ROCm-6.4.1), and a -ROCm-6.4.1 suffix on top
+# would duplicate it in the resolved module name. The .eb filename matches
+# the resolved module name MPICH/4.3.2-rocm-compilers-19.0.0-ROCm-6.4.1.
+
+homepage = 'https://www.mpich.org/'
+description = """MPICH is a high-performance and widely portable implementation
+of the Message Passing Interface (MPI) standard (MPI-1, MPI-2 and MPI-3).
+This build links against ROCm-aware UCX and HIP for GPU-aware MPI on AMD GPUs."""
+
+toolchain = {'name': 'rocm-compilers', 'version': f'19.0.0-ROCm-{_rocm_version}'}
+
+source_urls = ['https://www.mpich.org/static/downloads/%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['MPICH-%(version)s_libtool-amdflang-fortran-wl.patch']
+checksums = [
+    {'mpich-4.3.2.tar.gz':
+        '47d774587a7156a53752218c811c852e70ac44db9c502dc3f399b4cb817e3818'},
+    {'MPICH-4.3.2_libtool-amdflang-fortran-wl.patch':
+        '0ba3ad6df0641fdc6d58ab5799e252b4c34725924db9b072d8d984839b229c54'},
+]
+
+dependencies = [
+    ('hwloc',      '2.11.2'),                    # plain hwloc; topology discovery (--with-hwloc)
+    ('hwloc-ROCm', '2.11.2'),                    # runtime RSMI plugin overlay (HWLOC_PLUGINS_PATH)
+    ('UCX-ROCm',   '1.18.0'),                    # picked up via patched EB_MPICH UCX detection
+    ('HIP',        _rocm_version),               # provides $EBROOTHIP for --with-hip
+]
+
+configopts = '--disable-option-checking '
+configopts += '--with-hip-sm=%(amdgcn_capabilities)s '
+
+# Disable the F2018 `use mpi_f08` bindings: src/binding/fortran/use_mpi_f08/mpi_f08.f90
+# uses `TYPE(*), DIMENSION(..)` assumed-rank polymorphic dummies pervasively, which
+# ROCm 6.4.1's amdflang (Classic Flang 18.0.0, PGI lineage) does not support.
+# The older `mpif.h` and `use mpi` interfaces stay enabled (no assumed-rank usage
+# there, verified against MPICH 4.3.2 source). Re-enable once ROCm ships flang-new
+# as amdflang.
+configopts += '--disable-f08 '
+
+# Also build a separate MPI ABI variant
+mpi_abi = True
+
+sanity_check_commands = [
+    "mpicc   -show | grep -q amdclang",
+    "mpifort -show | grep -q amdflang",
+    "test -e $EBROOTMPICH/lib/libmpi_abi.so",
+]
+
+moduleclass = 'mpi'
