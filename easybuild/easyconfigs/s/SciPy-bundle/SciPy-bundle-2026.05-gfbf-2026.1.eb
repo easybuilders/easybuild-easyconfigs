@@ -26,9 +26,23 @@ dependencies = [
     ('Python-bundle-PyPI', '2026.04'),
 ]
 
+# Work around a GCC RISC-V optimization issue: -ffp-int-builtin-inexact can cause floor/floorf to be 
+# lowered to floating-point comparisons and float-to-integer conversions that raise FE_INVALID for NaN
+# inputs.
+# This breaks NumPy's expected floating-point exception handling (e.g. np.floor(np.nan) under 
+# np.errstate(invalid='raise')).
+# Disable this optimization to preserve the libm floor/floorf behavior.
+if ARCH == 'riscv64':
+    local_numpy_preinstallopts = 'export CXXFLAGS="$CXXFLAGS -fno-fp-int-builtin-inexact"'
+    local_numpy_preinstallopts += ' CFLAGS="$CFLAGS -fno-fp-int-builtin-inexact"'
+    local_numpy_preinstallopts += ' FFLAGS="$FFLAGS -fno-fp-int-builtin-inexact" && '
+else:
+    local_numpy_preinstallopts = ''
+
 # order is important!
 exts_list = [
-    ('numpy', '2.5.3', {
+    ('numpy', '2.4.6', {
+        'preinstallopts': local_numpy_preinstallopts,
         'checksums': ['df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563'],
     }),
     ('ply', '3.11', {
