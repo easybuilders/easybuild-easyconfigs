@@ -655,7 +655,7 @@ class EasyConfigTest(TestCase):
             ],
             # Pydot <3 is explicitely required by cwltool
             'pydot': [(r'2\.0\.0', [r'LINC-5.0-foss-2023b',
-                                    r'toil-cwl-8.2.0-foss-2023b',
+                                    r'toil-8.2.0-foss-2023b-cwl',
                                     r'cwltool-3.1.20250110105449-foss-2023b'])],
             # bakta requires PyHMMER 0.10.15
             'PyHMMER': [(r'0\.10\.15', [r'bakta-1\.10\.1'])],
