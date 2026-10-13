@@ -22,7 +22,17 @@ source_urls = [
     'https://www.mirrorservice.org/sites/sourceware.org/pub/valgrind/',
 ]
 sources = [SOURCELOWER_TAR_BZ2]
-checksums = ['5d589152eb8071c02feab8ce6ab719e431a1fbc3e2b1700f5432632a8b9264dc']
+# glibc 2.43 (the EESSI compat libc) is newer than Valgrind 3.27.1. sourceware
+# valgrind master and VALGRIND_3_27_BRANCH have no glibc 2.43 fix after 3.27.1
+# (b50f9a09c), so Valgrind-3.27.1_glibc-2.43.patch is a local backport:
+# unversioned pthread redirects, hidden __libc_start_call_main and start_thread
+# names, the wcscat IFUNC, fdleak/XML frame filters, a pthread_detach guard.
+# madv_guard skips itself on kernels older than 6.13 (MADV_GUARD_INSTALL).
+patches = ['Valgrind-3.27.1_glibc-2.43.patch']
+checksums = [
+    '5d589152eb8071c02feab8ce6ab719e431a1fbc3e2b1700f5432632a8b9264dc',
+    '4dba19e7610e0c38183539153d4c8e092325c17ccb7347565ae8e54d0ca21e3f',
+]
 
 dependencies = [
     ('Perl', '5.42.0'),
