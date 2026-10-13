@@ -9,7 +9,13 @@ description = "Valgrind: Debugging and profiling tools"
 toolchain = {'name': 'gompi', 'version': '2026.1'}
 # -march=native compiles AVX-512 into the guest preload. VEX cannot decode it,
 # so regtest dies with SIGILL in mempcpy (vg_replace_strmem.c).
-toolchainopts = {'optarch': False}
+# -O2 -ftree-vectorize is appended after the per-test -O the .exp files assume,
+# so it deletes uninitialised-read reports and inlines Helgrind wrappers.
+# RPATH makes ld.so allocate while it walks the search path, which DHAT counts.
+toolchainopts = {'optarch': False, 'rpath': False}
+preconfigopts = 'unset CFLAGS CXXFLAGS LDFLAGS && '
+buildopts = 'CFLAGS= CXXFLAGS= LDFLAGS='
+installopts = 'CFLAGS= CXXFLAGS= LDFLAGS='
 
 source_urls = [
     'https://sourceware.org/pub/valgrind/',
