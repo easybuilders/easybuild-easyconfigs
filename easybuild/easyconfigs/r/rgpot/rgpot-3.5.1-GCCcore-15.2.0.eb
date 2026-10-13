@@ -63,6 +63,15 @@ configopts += '-Dwith_tests=true -Dwith_examples=true '
 # No build-time downloads: every subproject the options need is a dependency.
 configopts += '-Dwrap_mode=nodownload '
 
+# The Fortran pots (rgpot/fortran: EAM-Al, FeHe, CuH2, SW, EDIP, Lenosky,
+# Tersoff, TIP4P-H) are link_wholed into librgpot, so it NEEDs
+# libgfortran.so.5. Meson puts -lgfortran only in Libs.private. ld does not
+# use -L or the library RPATH to resolve that DT_NEEDED, so eOn's g++ link
+# fails. Publish -lgfortran on the Libs line.
+postinstallcmds = [
+    "sed -i -e '/^Libs:/ { /-lgfortran/! s/$/ -lgfortran/ }' -e '/^Libs.private:/ s/ -lgfortran//' %(installdir)s/lib/pkgconfig/rgpot.pc",
+]
+
 runtest = 'meson'
 testopts = 'test -C %(builddir)s/easybuild_obj'
 
@@ -90,6 +99,7 @@ sanity_check_paths = {
 
 sanity_check_commands = [
     "pkg-config --exists rgpot",
+    "pkg-config --libs rgpot | grep -q -- -lgfortran",
     "! pkg-config --exists rgpot-mpi",
     "test ! -e %(installdir)s/lib/cmake/pot",
     "test ! -e %(installdir)s/lib/librgpot_mpi." + SHLIB_EXT,
