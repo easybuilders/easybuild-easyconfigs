@@ -119,7 +119,12 @@ configopts = ' '.join([
 max_parallel = 8
 
 # Restore the default FreeFEM test flags before running the test suite
-pretestopts = "find %(builddir)s -name Makefile | xargs sed -i 's/FLAGS_FFPP=\"-g -O0 -nw\"/FLAGS_FFPP=\"-nw\"/g' && "
+# Limit OpenMP threading during tests to avoid hitting FreeFEM's 60 s CPU-time limit
+pretestopts = (
+    "export OMP_NUM_THREADS=1 && "
+    "find %(builddir)s -name Makefile | "
+    "xargs sed -i 's/FLAGS_FFPP=\"-g -O0 -nw\"/FLAGS_FFPP=\"-nw\"/g' && "
+)
 runtest = 'check'
 
 # Install FreeFEM's test-driver-ff helper script into the final bin directory
