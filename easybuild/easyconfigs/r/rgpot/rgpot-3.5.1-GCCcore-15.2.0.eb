@@ -1,7 +1,7 @@
 easyblock = 'MesonNinja'
 
 name = 'rgpot'
-version = '3.5.0'
+version = '3.5.1'
 
 homepage = 'https://github.com/OmniPotentRPC/rgpot'
 description = """Potential frontends with Cap'n Proto RPC (NWChem/CPMD clients;
@@ -17,7 +17,7 @@ sources = [{
     'download_filename': 'v%(version)s.tar.gz',
     'filename': SOURCE_TAR_GZ,
 }]
-checksums = ['095157c83c663fda3668145022528466c11cb8f84df2465754333de1736f2343']
+checksums = ['3b9cf3a1407e86fd80bde114f44c67657af2d547f3c9ab14f443d7d7eaa1c4be']
 
 builddependencies = [
     ('binutils', '2.45'),
@@ -55,9 +55,9 @@ configopts += '-Dwith_fortran_pots=enabled '
 configopts += '-Dwith_python=true '
 # Since 3.5.0 librgpot never links MPI; the MPI side of the calculator groups
 # is a separate librgpot_mpi (plus rgpot-mpi.pc), which librgpot loads with
-# dlopen. This toolchain has no MPI, so it is off and not installed; an MPI
-# toolchain variant would set -Dwith_mpi=enabled and add lib/librgpot_mpi.so
-# and lib/pkgconfig/rgpot-mpi.pc to the sanity check.
+# dlopen. librgpot_mpi stays at soversion 3. This toolchain has no MPI, so it
+# is off and not installed; an MPI toolchain variant would set -Dwith_mpi=enabled
+# and add lib/librgpot_mpi.so.3 and lib/pkgconfig/rgpot-mpi.pc to the sanity check.
 configopts += '-Dwith_mpi=disabled '
 configopts += '-Dwith_tests=true -Dwith_examples=true '
 # No build-time downloads: every subproject the options need is a dependency.
@@ -72,7 +72,9 @@ testopts = 'test -C %(builddir)s/easybuild_obj'
 sanity_check_paths = {
     'files': [
         'bin/potserv',
-        'lib/librgpot.%s' % SHLIB_EXT,
+        # 3.5.1 sets kCxxSoversion to 4 (v3.5.1 is commit 4b24f1b), so the
+        # installed SONAME is librgpot.so.4. 3.5.0 shipped this layout as .so.3.
+        'lib/librgpot.%s.4' % SHLIB_EXT,
         'lib/libnwchempot.a',
         'lib/libcpmdpot.a',
         # generic engine table for LJ, Morse, ZBL and the Fortran pots (new in 3.5.0)
