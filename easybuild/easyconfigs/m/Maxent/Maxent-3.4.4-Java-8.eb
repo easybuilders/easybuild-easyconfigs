@@ -28,11 +28,14 @@ install_cmd = 'mkdir -p %(installdir)s/bin && cp maxent.jar maxent.sh %(installd
 
 # Allow for more memory assignation when executing the .jar
 # It's controlled by the MAXENT_MEM variable
+_old_str = 'java -mx512m -jar maxent.jar'
+_new_str = '; '.join([
+    r'DIR="$(cd "$(dirname "$0")" \&\& pwd)"',
+    r'MAXENT_MEM=${MAXENT_MEM:-4g}',
+    r'exec java -Xmx${MAXENT_MEM} -jar "$DIR/maxent.jar"',
+])
 postinstallcmds = [
-    r"""sed -i 's|java -mx512m -jar maxent.jar|DIR="$(cd "$(dirname "$0")" \&\& pwd)"; """
-    r"""MAXENT_MEM=${MAXENT_MEM:-4g}; """
-    r"""exec java -Xmx${MAXENT_MEM} -jar "$DIR/maxent.jar"|' """
-    r"""%(installdir)s/bin/maxent.sh""",
+    f"sed -i 's|{_old_str}|{_new_str}|' %(installdir)s/bin/maxent.sh",
     'chmod +x %(installdir)s/bin/maxent.sh',
 ]
 
