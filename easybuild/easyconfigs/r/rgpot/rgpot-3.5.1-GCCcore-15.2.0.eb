@@ -17,7 +17,17 @@ sources = [{
     'download_filename': 'v%(version)s.tar.gz',
     'filename': SOURCE_TAR_GZ,
 }]
-checksums = ['3b9cf3a1407e86fd80bde114f44c67657af2d547f3c9ab14f443d7d7eaa1c4be']
+# PairListTest mismatches under GCC 15 with -ffp-contract=fast. 5712fc7d is
+# the tip of fix/pairlist-explicit-fma and does not apply onto the v3.5.1
+# tarball alone (it sits on the two earlier nlist commits), so this patch is
+# the nlist/simd delta from v3.5.1 through that commit.
+patches = ['rgpot-3.5.1_pairlist-explicit-fma-5712fc7d.patch']
+checksums = [
+    {'rgpot-3.5.1.tar.gz':
+     '3b9cf3a1407e86fd80bde114f44c67657af2d547f3c9ab14f443d7d7eaa1c4be'},
+    {'rgpot-3.5.1_pairlist-explicit-fma-5712fc7d.patch':
+     '0a13146e3137e120620738e6543d5be7c4c68275ee833fe7a3f31b1fedb48c9f'},
+]
 
 builddependencies = [
     ('binutils', '2.45'),
@@ -69,7 +79,8 @@ configopts += '-Dwrap_mode=nodownload '
 # use -L or the library RPATH to resolve that DT_NEEDED, so eOn's g++ link
 # fails. Publish -lgfortran on the Libs line.
 postinstallcmds = [
-    "sed -i -e '/^Libs:/ { /-lgfortran/! s/$/ -lgfortran/ }' -e '/^Libs.private:/ s/ -lgfortran//' %(installdir)s/lib/pkgconfig/rgpot.pc",
+    "sed -i -e '/^Libs:/ { /-lgfortran/! s/$/ -lgfortran/ }' "
+    "-e '/^Libs.private:/ s/ -lgfortran//' %(installdir)s/lib/pkgconfig/rgpot.pc",
 ]
 
 runtest = 'meson'
