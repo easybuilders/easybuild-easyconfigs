@@ -1,0 +1,58 @@
+easyblock = 'PythonBundle'
+
+name = 'pytest'
+version = '9.1.1'
+
+homepage = 'https://docs.pytest.org/en/latest/'
+description = """The pytest framework makes it easy to write small,
+readable tests, and can scale to support complex functional testing for
+applications and libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('hatchling', '1.29.0'),
+    ('flit', '3.12.0'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('hypothesis', '6.153.2'),
+]
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+# Note! Some of the file system related tests may fail on shared file systems.
+# Notably TestPOSIXLocalPath.test_copy_stat_file, TestPOSIXLocalPath.test_copy_stat_dir
+# and test_source_mtime_long_long are known to fail on GPFS
+# Build with buildpath and tmpdir set to a local file system to avoid this
+# or use --ignore-test-failures
+_skip_tests = [
+    'testing/io/test_terminalwriter.py',
+    'testing/test_terminal.py',
+    'testing/test_debugging.py',
+    'testing/test_config.py',
+    'testing/test_helpconfig.py',
+]
+_ignore_tests = ' --ignore='.join(_skip_tests)
+
+exts_list = [
+    ('elementpath', '5.1.4', {
+        'checksums': ['3c912a9c41311ac5244c038867670d7c0b0fec0e444813608e5b846dbb3428ac'],
+    }),
+    ('xmlschema', '4.3.2', {
+        'checksums': ['f3b33a21a2b2cdc404ddc3fb599d8bc1dee90b155d547370672e6e684746b8d6'],
+    }),
+    (name, version, {
+        'checksums': ['1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import pytest'",
+    'cd %%(builddir)s/%%(name)s/%%(name)s-%%(version)s && %%(installdir)s/bin/pytest --ignore=%s testing'
+    % _ignore_tests,
+]
+
+moduleclass = 'lib'
