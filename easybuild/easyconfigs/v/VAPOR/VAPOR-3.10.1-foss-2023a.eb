@@ -1,0 +1,76 @@
+easyblock = 'CMakeMake'
+
+name = 'VAPOR'
+version = '3.10.1'
+
+homepage = 'https://www.vapor.ucar.edu/'
+description = """VAPOR is the Visualization and Analysis Platform for Ocean, Atmosphere, and Solar Researchers.
+ VAPOR provides an interactive 3D visualization environment that can also produce animations and still frame images.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+github_account = 'NCAR'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+patches = [
+    'VAPOR-3.10.1_bundled_python.patch',
+]
+checksums = [
+    {'VAPOR-3.10.1.tar.gz': 'd4fe0ad20b0f353cb36a99b571c364414a6870b2e38611bc06d4507f6c0c7f0a'},
+    {'VAPOR-3.10.1_bundled_python.patch': 'e78d66921aa94c99ac4f83b74b8415d531ab049e571461a88d937d4bd2f34343'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('UnZip', '6.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('Doxygen', '1.9.7'),
+    ('GLM', '0.9.9.8'),
+    ('OSPRay', '3.2.0', '', SYSTEM),
+    ('UDUNITS', '2.2.28'),
+    ('Qt5', '5.15.10'),
+    ('assimp', '5.2.5'),
+    ('expat', '2.5.0'),
+    ('freetype', '2.13.0'),
+    ('libgeotiff', '1.7.1', '-PROJ-7.2.1'),  # VAPOR doesn't support PROJ > 7
+    ('netCDF', '4.9.2'),
+]
+
+# VAPOR depends on custom version of GeometryEngine that is packaged with the source code - need to extract and move
+preconfigopts = "unzip ../VAPOR-%(version)s/buildutils/GTE.zip -d ../VAPOR-%(version)s/include && "
+
+# build will use these optional site defaults which aren't generally applicable to other sites
+preconfigopts += "rm ../VAPOR-%(version)s/site_files/site.NCAR && "
+
+# make sure the python library is linked
+preconfigopts += 'export LDFLAGS="$LDFLAGS -lpython%(pyshortver)s" && '
+
+local_python_path = "$EBROOTPYTHON/lib/python%(pyshortver)s"
+local_numpy_path = "$EBROOTSCIPYMINBUNDLE/lib/python%(pyshortver)s/site-packages/numpy"
+
+configopts = "-DBUILD_OSP=OFF "  # use OSPRay dependency instead
+
+# python
+configopts += "-DBUILD_PYTHON=OFF "  # build VAPOR python package, requires https://esbuild.github.io/
+configopts += "-DPYTHONDIR=$EBROOTPYTHON -DPYTHONVERSION=%(pyshortver)s "
+configopts += "-DPYTHONPATH=%s -DNUMPY_INCLUDE_DIR=%s/_core/include " % (local_python_path, local_numpy_path)
+
+# third party
+configopts += "-DTHIRD_PARTY_DIR=%(installdir)s -DTHIRD_PARTY_LIB_DIR=%(installdir)s/lib "
+configopts += "-DTHIRD_PARTY_INC_DIR=%(installdir)s/include "
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', f'lib/libcommon.{SHLIB_EXT}'],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = [
+    "%(namelower)s -h",
+]
+
+moduleclass = 'vis'

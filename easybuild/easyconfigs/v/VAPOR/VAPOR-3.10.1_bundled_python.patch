@@ -1,0 +1,46 @@
+make FIND_BUNDLED_PYTHON use external Python instead
+author: Miguel Dias Costa (University of Coimbra, Portugal)
+--- VAPOR-3.10.1/CMakeLists.txt.orig	2026-02-02 13:44:43.124535000 +0000
++++ VAPOR-3.10.1/CMakeLists.txt	2026-02-02 14:21:30.836222000 +0000
+@@ -208,40 +208,7 @@
+ #   https://cmake.org/cmake/help/v3.12/module/FindPython.html
+ 
+ function(FIND_BUNDLED_PYTHON)
+-    # FindPython supports Python_ROOT_DIR however vapor's bundled python distribution
+-    # does not conform to its requirements so this manually configures the results
+-    message("Using bundled python")
+-    message("    PYTHONDIR ${PYTHONDIR}")
+-    message("    PYTHONPATH ${PYTHONPATH}")
+-    set(Python_VERSION "${PYTHONVERSION}")
+-    set(Python_NumPy_INCLUDE_DIRS "${NUMPY_INCLUDE_DIR}")
+-    unset(Python_LIBRARIES) # This is required for find_library to work in certain cases
+-    if (APPLE)
+-        set(PYTHON_LIB_DIR "${PYTHONDIR}/lib")
+-    else()
+-        set(PYTHON_LIB_DIR "${PYTHONPATH}")
+-    endif()
+-    message("    PYTHON_LIB_DIR ${PYTHON_LIB_DIR}")
+-    find_library(
+-        Python_LIBRARIES
+-        NAMES python${PYTHONVERSION} python${PYTHONVERSION}m
+-        PATHS ${THIRD_PARTY_LIB_DIR} ${PYTHON_LIB_DIR}
+-        NO_DEFAULT_PATH
+-    )
+-
+-    if (WIN32)
+-        set(Python_SITELIB "${PYTHONPATH}/Lib/site-packages")
+-    	set(Python_INCLUDE_DIRS "${THIRD_PARTY_DIR}/Python${PYTHONVERSION}/include")
+-    else()
+-        set(Python_SITELIB "${PYTHONPATH}/site-packages")
+-        if (NOT DEFINED Python_INCLUDE_DIRS)
+-            if (APPLE)
+-                set(Python_INCLUDE_DIRS "${PYTHONDIR}/include/python${PYTHONVERSION}")
+-            else()
+-                set(Python_INCLUDE_DIRS "${THIRD_PARTY_INC_DIR}/python${PYTHONVERSION}")
+-            endif()
+-        endif()
+-    endif()
++    find_package(Python COMPONENTS NumPy)
+ 
+     set(Python_VERSION "${Python_VERSION}" PARENT_SCOPE)
+     set(Python_LIBRARIES "${Python_LIBRARIES}" PARENT_SCOPE)
