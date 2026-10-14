@@ -79,7 +79,7 @@ git add easybuild/easyblocks/l/linuxfromscratch.py
 git commit -m "support for Linux From Scratch"
 ```
 
-If you are working on several things at the same time, try and keep things isolated in seperate branches, to keep it manageable (both for you, and for reviewing your contributions, see below).
+If you are working on several things at the same time, try and keep things isolated in separate branches, to keep it manageable (both for you, and for reviewing your contributions, see below).
 
 
 
