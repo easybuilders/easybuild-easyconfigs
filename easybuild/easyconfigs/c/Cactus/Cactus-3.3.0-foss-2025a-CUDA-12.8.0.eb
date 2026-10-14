@@ -11,7 +11,6 @@ as well as a pangenome graph construction toolkit."""
 toolchain = {'name': 'foss', 'version': '2025a'}
 
 builddependencies = [
-    ('hatchling', '1.27.0'),
     ('CMake', '3.31.3'),
     ('Autotools', '20240712'),
 ]
@@ -97,14 +96,26 @@ components = [
     }),
 ]
 
+local_cactus_source_url = f'https://github.com/ComparativeGenomicsToolkit/cactus/releases/download/v{version}'
+local_cactus_download_filename = f'cactus-v{version}.tar.gz'
+local_cactus_source = f'cactus-{version}.tar.gz'
+local_cactus_checksum = 'b3253a324ee96721f287262070454a8ef0d23444d7a1403aece98141eea014d1'
+
 exts_list = [
+    ('sonLib', '2.0', {
+        'modulename': '%(name)s',
+        'source_urls': [local_cactus_source_url],
+        'sources': [{'download_filename': local_cactus_download_filename, 'filename': local_cactus_source}],
+        'start_dir': 'submodules/%(name)s',
+        'checksums': [local_cactus_checksum],
+    }),
     ('%(namelower)s', version, {
-        'source_urls': ['https://github.com/ComparativeGenomicsToolkit/cactus/releases/download/v%(version)s'],
-        'sources': [{'download_filename': '%(namelower)s-v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'source_urls': [local_cactus_source_url],
+        'sources': [{'download_filename': local_cactus_download_filename, 'filename': local_cactus_source}],
         'preinstallopts': (
-            # unpin networkx version, v2.8.1 is not supported
-            # https://github.com/ComparativeGenomicsToolkit/cactus/issues/2041
-            "sed -i 's/networkx>=2,<2.8.1/networkx>2.8.1/' setup.py && "
+            # Cactus pins NetworkX to <2.8.1, although later NetworkX 2.x releases
+            # remain API-compatible for the functionality used by Cactus.
+            "sed -i 's/networkx>=2,<2.8.1/networkx>=2/' setup.py && "
             # Build the native Cactus tools and bundled third-party components before installing the Python package
             'make -j %(parallel)s && '
             # Cactus overwrites PYTHONPATH in its Makefile when running the test suite, which
@@ -124,14 +135,8 @@ exts_list = [
             # Some bundled HAL scripts are deliberately made non-writable during the build.
             # Restore owner write permission so EasyBuild can perform its installation post-processing.
             'chmod -R u+w %(installdir)s/bin %(installdir)s/lib && '
-            # Cactus declares sonLib as a local file dependency (submodules/sonLib). Since
-            # PythonBundle installs extensions with --no-deps, install the bundled sonLib
-            # explicitly so it is registered as a Python distribution and "pip check" can
-            # satisfy Cactus's sonlib requirement.
-            'python -m pip install --prefix=%(installdir)s --no-deps --ignore-installed '
-            '--no-build-isolation ./submodules/sonLib && '
         ),
-        'checksums': ['b3253a324ee96721f287262070454a8ef0d23444d7a1403aece98141eea014d1'],
+        'checksums': [local_cactus_checksum],
     }),
 ]
 
