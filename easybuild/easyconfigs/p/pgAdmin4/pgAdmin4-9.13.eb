@@ -1,0 +1,133 @@
+easyblock = 'Binary'
+
+name = 'pgAdmin4'
+version = '9.13'
+
+homepage = 'https://www.pgadmin.org/'
+description = "pgAdmin 4 desktop client for PostgreSQL."
+
+toolchain = {'name': 'system', 'version': ''}
+
+dependencies = [
+    ('GTK3', '3.24.43', '', ('GCCcore', '14.3.0')),
+]
+
+source_urls = ['https://ftp.postgresql.org/pub/pgadmin/pgadmin4/yum/redhat/rhel-9-x86_64/']
+sources = [
+    'pgadmin4-desktop-%(version)s-1.el9.x86_64.rpm',
+    'pgadmin4-server-%(version)s-1.el9.x86_64.rpm',
+    'libpq5-17.6-1PGDG.rhel9.x86_64.rpm',
+]
+
+checksums = [
+    'a6a3ba1d28f49a17485593e6f9cbd7c0d58ae2e00a46b7bbd70d8fafe91fd162',
+    '448b0456311fc3e1379b51e3e12f35f4612b3827a2c1e53b580c8e65a9308b05',
+    '03b4643743a5c5c55be76e148023ac7cbfff82db5df396555b0ae4174f27a8fe',
+]
+
+# Important: RPMs are not unpacked as normal tarballs by EasyBuild
+extract_sources = False
+
+install_cmd = r'''
+set -euo pipefail
+mkdir -p %(installdir)s
+
+for rpm in \
+  "%(start_dir)s/pgadmin4-desktop-%(version)s-1.el9.x86_64.rpm" \
+  "%(start_dir)s/pgadmin4-server-%(version)s-1.el9.x86_64.rpm" \
+  "%(start_dir)s/libpq5-17.6-1PGDG.rhel9.x86_64.rpm"
+do
+  if command -v rpm2cpio >/dev/null 2>&1; then
+    rpm2cpio "$rpm" | (cd %(installdir)s && cpio -idmv)
+  else
+    bsdtar -C %(installdir)s -xf "$rpm"
+  fi
+done
+'''
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin',
+
+    # pgAdmin packaging defaults to system-style writable locations.
+    # Override them for per-user HPC/module use.
+    r'''cat > %(installdir)s/usr/pgadmin4/web/config_distro.py <<'EOF'
+import os
+
+DATA_DIR = os.path.expanduser("~/.local/share/pgadmin")
+LOG_FILE = os.path.join(DATA_DIR, "pgadmin4.log")
+SQLITE_PATH = os.path.join(DATA_DIR, "pgadmin4.db")
+SESSION_DB_PATH = os.path.join(DATA_DIR, "sessions")
+STORAGE_DIR = os.path.join(DATA_DIR, "storage")
+KERBEROS_CCACHE_DIR = os.path.expanduser("~/.cache/pgadmin/krbcc")
+AZURE_CREDENTIAL_CACHE_DIR = os.path.expanduser("~/.cache/pgadmin/azure")
+EOF''',
+
+    # Main launcher
+    r'''cat > %(installdir)s/bin/pgadmin4 <<'EOF'
+#!/bin/bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+unset PYTHONHOME
+unset PYTHONPATH
+
+# Electron/X11/HPC friendliness
+unset DBUS_SYSTEM_BUS_ADDRESS
+unset DBUS_SESSION_BUS_ADDRESS
+unset DBUS_STARTER_ADDRESS
+unset DBUS_STARTER_BUS_TYPE
+
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/$USER-pgadmin4-runtime}"
+
+mkdir -p "$XDG_RUNTIME_DIR" "$XDG_DATA_HOME/pgadmin" "$XDG_CACHE_HOME/pgadmin"
+chmod 700 "$XDG_RUNTIME_DIR" || true
+
+# Optional user override file, created on first run.
+# pgAdmin reads config_local.py from the web/ directory.
+if [[ ! -f "$ROOT/usr/pgadmin4/web/config_local.py" ]]; then
+  cat > "$ROOT/usr/pgadmin4/web/config_local.py" <<'PYEOF'
+import os
+
+DATA_DIR = os.path.expanduser("~/.local/share/pgadmin")
+LOG_FILE = os.path.join(DATA_DIR, "pgadmin4.log")
+SQLITE_PATH = os.path.join(DATA_DIR, "pgadmin4.db")
+SESSION_DB_PATH = os.path.join(DATA_DIR, "sessions")
+STORAGE_DIR = os.path.join(DATA_DIR, "storage")
+KERBEROS_CCACHE_DIR = os.path.expanduser("~/.cache/pgadmin/krbcc")
+AZURE_CREDENTIAL_CACHE_DIR = os.path.expanduser("~/.cache/pgadmin/azure")
+PYEOF
+fi
+
+exec "$ROOT/usr/pgadmin4/bin/pgadmin4" \
+  --no-sandbox \
+  --password-store=basic \
+  --disable-gpu \
+  --disable-dev-shm-usage \
+  "$@"
+EOF''',
+
+    'chmod 755 %(installdir)s/bin/pgadmin4',
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/pgadmin4',
+        'usr/pgadmin4/bin/pgadmin4',
+        'usr/pgadmin4/venv/bin/python3',
+        'usr/pgadmin4/web/config_distro.py',
+    ],
+    'dirs': [
+        'usr/pgadmin4/web',
+        'usr/pgadmin4/venv',
+    ],
+}
+
+modextrapaths = {
+    'PATH': ['bin'],
+    'LD_LIBRARY_PATH': ['usr/pgsql-17/lib', 'usr/lib64'],
+}
+
+moduleclass = 'tools'
