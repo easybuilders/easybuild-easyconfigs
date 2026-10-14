@@ -1,0 +1,129 @@
+easyblock = 'Bundle'
+
+name = 'ROCm-LLVM'
+_rocm_version = '6.4.1'
+_llvm_version = '19.0.0'
+version = _rocm_version
+
+homepage = 'https://github.com/ROCm/llvm-project'
+description = """ROCm-LLVM is an open source Clang/LLVM based compiler.
+It is an AMD Fork of The LLVM Compiler Infrastructure, and aims to contain all of upstream LLVM.
+It also includes several AMD-specific additions in the llvm-project/amd directory."""
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Perl', '5.38.2'),
+    ('Python', '3.12.3'),
+    ('pkgconf', '2.2.0'),
+    ('xxd', '9.1.1275'),
+]
+
+dependencies = [
+    ('binutils', '2.42'),
+    ('elfutils', '0.191'),
+    ('zlib', '1.3.1'),
+    ('hwloc', '2.10.0'),
+    ('GMP', '6.3.0'),
+    ('libxml2', '2.12.7'),
+    ('ncurses', '6.5'),
+    ('libffi', '3.4.5'),
+    ('libdrm', '2.4.122'),
+    ('numactl', '2.0.18'),
+]
+
+local_rocm_llvm_source = 'llvm-project-rocm-%s.tar.gz' % _rocm_version
+local_common_cmake_configopts = ' '.join([
+    '-DCMAKE_C_COMPILER=%(installdir)s/bin/clang',
+    '-DCMAKE_CXX_COMPILER=%(installdir)s/bin/clang++',
+    '-DLLVM_INSTALL_PREFIX=%(installdir)s',
+    '-DLLVM_DIR=%(installdir)s/lib/cmake/llvm',
+])
+
+checksums = [{
+    'llvm-project-rocm-6.4.1.tar.gz':
+        '460ad28677092b9eb86ffdc49bcb4d01035e32b4f05161d85f90c9fa80239f50',
+    'ROCR-Runtime-rocm-6.4.1.tar.gz':
+        'f72d100a46a2dd9f4c870cef156604777f1bdb1841df039d14bf37b19814b9da',
+    'aomp-extras-rocm-6.4.1.tar.gz':
+        'cf20b02b1f99f506c198866ef03f2265dc355627760f82cda3878d5bc6486afc',
+    'ROCm-LLVM-6.4.1_llvm-project-19.0.0_fix-offload-build.patch':
+        '2ce1454aa3d2f50795bbc331c239f44be07f8ec836978cad130406af4340e30d',
+}]
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'source_urls': ['https://github.com/ROCm/%(name)s/archive/'],
+    'sources': [{
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-%(version)s.tar.gz',
+    }],
+    'srcdir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('llvm-project', '%s-rocm-%s' % (_llvm_version, _rocm_version), {
+        'easyblock': 'EB_ROCm_minus_LLVM',
+        'sources': [{
+            'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
+            'filename': local_rocm_llvm_source,
+            'extract_cmd': 'tar xfz %%s && mv %%(name)s-rocm-%s %%(name)s-%%(version)s.src' % _rocm_version,
+        }],
+        'start_dir': f'llvm-project-{_llvm_version}-rocm-{_rocm_version}.src',
+        'bootstrap': True,
+        'build_lld': True,
+        'build_clang_extras': True,
+        'build_openmp_offload': False,
+        'build_openmp_tools': False,
+        'build_runtimes': True,
+        'full_llvm': False,
+        'skip_all_tests': True,
+    }),
+    ('ROCm-comgr', 'rocm-%s' % _rocm_version, {
+        'sources': [{'filename': local_rocm_llvm_source, 'extract_cmd': 'echo %s'}],
+        'srcdir': 'llvm-project-%s-%%(version)s.src/amd/comgr' % _llvm_version,
+        'prebuildopts': 'export ROCM_PATH=%(installdir)s && ',
+        'configopts': local_common_cmake_configopts + ' -DROCM_DIR=%(installdir)s/share/rocm/cmake'
+    }),
+    ('ROCR-Runtime', 'rocm-%s' % _rocm_version, {
+        'srcdir': '%(name)s-%(version)s',
+        'configopts': local_common_cmake_configopts + ' -DBUILD_SHARED_LIBS=ON',
+    }),
+    ('llvm-project-openmp', '%s-rocm-%s' % (_llvm_version, _rocm_version), {
+        'easyblock': 'EB_ROCm_minus_LLVM',
+        'sources': [{
+            'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
+            'filename': local_rocm_llvm_source,
+            'extract_cmd': 'echo %s',
+        }],
+        'patches': [
+            'ROCm-LLVM-6.4.1_llvm-project-19.0.0_fix-offload-build.patch',
+        ],
+        'start_dir': f'llvm-project-{_llvm_version}-rocm-{_rocm_version}.src',
+        'bootstrap': True,
+        'build_lld': True,
+        'build_clang_extras': True,
+        'build_openmp_offload': True,
+        'build_openmp_tools': True,
+        'build_runtimes': True,
+        'full_llvm': False,
+        'skip_all_tests': True,
+    }),
+    ('aomp-extras', 'rocm-%s' % _rocm_version, {
+        'configopts':
+            local_common_cmake_configopts +
+            ' -DAOMP_STANDALONE_BUILD=0 '
+            '-DAOMP_VERSION_STRING=%s ' % _rocm_version
+    }),
+]
+
+sanity_check_components = ['llvm-project']
+
+modextravars = {
+    'HIP_DEVICE_LIB_PATH': '%(installdir)s/amdgcn/bitcode',
+}
+
+moduleclass = 'tools'
