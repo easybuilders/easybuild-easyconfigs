@@ -53,11 +53,22 @@ osdependencies = [
     ('pam-devel', 'libpam0g-dev')
 ]
 
+local_avoid_home_cmds = " && ".join(
+    f"export {name}='%(builddir)s/.eb-{name}'" for name in (
+        # $HOME/.npm
+        'npm_config_cache',
+        # $HOME/R
+        'R_LIBS_USER',
+        'R_USER_CACHE_DIR',
+        'R_USER_CONFIG_DIR',
+        'R_USER_DATA_DIR',
+    )
+)
+
 preconfigopts = " && ".join([
     # Install dependencies via scripts. Done in subshell to preserve PWD
     "(export RSTUDIO_TOOLS_ROOT='%(builddir)s'",
-    # Avoid using $HOME/.npm
-    "export npm_config_cache='%(builddir)s/.npm'",
+    local_avoid_home_cmds,
     "cd '%(start_dir)s/dependencies/common'",
     "./install-cef",
     "./install-dictionaries",
@@ -78,8 +89,8 @@ configopts = " ".join([
     "-DRSTUDIO_GIT_REVISION_HASH=" + local_git_rev
 ])
 
-# Avoid using $HOME/.npm
-prebuildopts = "export npm_config_cache='%(builddir)s/.npm' && "
+prebuildopts = f'{local_avoid_home_cmds} && '
+
 
 sanity_check_commands = [
     # RSession requires environment variables R_HOME and R_DOC_DIR
