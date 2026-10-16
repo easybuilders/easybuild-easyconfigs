@@ -1,0 +1,63 @@
+easyblock = 'Tarball'
+
+name = 'Spark'
+version = '4.0.1'
+versionsuffix = '-Java-%(javaver)s'
+homepage = 'https://spark.apache.org'
+description = """Spark is Hadoop MapReduce done in memory"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = [
+    'https://archive.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s/',
+    'https://downloads.apache.org/%(namelower)s/%(namelower)s-%(version)s/'
+]
+sources = ['%(namelower)s-%(version)s-bin-hadoop3.tgz']
+checksums = ['bd5315fa89db737f005971835b94e093c3d2b8581d2411737d281627d6803cc3']
+
+_grpcio_version = '1.70.0'
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Java', '21', '', SYSTEM),  # Requires Java 21/17: https://spark.apache.org/docs/4.0.1/#downloading
+    ('Arrow', '17.0.0'),
+    ('grpcio', _grpcio_version),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+exts_list = [
+    ('py4j', '0.10.9.9', {
+        'checksums': ['f694cad19efa5bd1dee4f3e5270eb406613c974394035e5bfc4ec1aba870b879'],
+    }),
+    ('grpcio-status', _grpcio_version, {
+        'modulename': 'grpc_status',
+        'source_urls': ['https://pypi.python.org/packages/source/%(name)s'],
+        'sources': ['grpcio_status-%(version)s.tar.gz'],
+        'checksums': ['0e7b42816512433b18b9d764285ff029bde059e9d41f8fe10a60631bd8348101'],
+    }),
+    ('googleapis-common-protos', '1.72.0', {
+        'modulename': 'google',
+        'source_urls': ['https://pypi.python.org/packages/source/%(name)s'],
+        'sources': ['googleapis_common_protos-%(version)s.tar.gz'],
+        'checksums': ['e55a601c1b32b52d7a3e65f43563e2aa61bcd737998ee672ac9b951cd49319f5'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/pyspark', 'bin/spark-shell'],
+    'dirs': ['python']
+}
+
+sanity_check_commands = [
+    "pyspark -h",
+    "python -s -c 'import pyspark'",
+]
+
+modextrapaths = {'PYTHONPATH': 'python'}
+
+modextravars = {'SPARK_HOME': '%(installdir)s'}
+
+moduleclass = 'devel'

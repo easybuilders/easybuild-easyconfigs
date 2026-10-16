@@ -1,0 +1,39 @@
+easyblock = 'CMakeMake'
+
+name = 'Dyninst'
+version = '13.0.0'
+
+homepage = 'https://github.com/dyninst/dyninst'
+description = 'DyninstAPI: Tools for binary instrumentation, analysis, and modification'
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+source_urls = ['https://github.com/dyninst/dyninst/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['1bc48d26478b677a6c090c25586a447507bd1b4cf88d369bd61820005ce1be39']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('Boost', '1.88.0'),
+    ('tbb', '2022.2.0'),
+    ('elfutils', '0.193'),
+]
+
+# Flags are causing problems with duplicate command line options inside quotes
+preconfigopts = 'unset CXXFLAGS && unset CFLAGS && '
+
+sanity_check_paths = {
+    'files': ['bin/parseThat'] + [f'lib/lib{x}.{SHLIB_EXT}' for x in ['common', 'dynC_API', 'dynDwarf', 'dynElf',
+                                                                      'dyninstAPI', 'dyninstAPI_RT', 'instructionAPI',
+                                                                      'parseAPI', 'patchAPI', 'pcontrol', 'stackwalk',
+                                                                      'symtabAPI']],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ['parseThat --help']
+
+moduleclass = 'tools'

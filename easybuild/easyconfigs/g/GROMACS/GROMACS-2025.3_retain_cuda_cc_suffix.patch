@@ -1,0 +1,23 @@
+Recent CUDA versions introduced compute capabilities with a suffix (e.g. 12.0f),
+but these get removed by a quite brutal regular expression in the CMake code of GROMACS.
+This patch ensures that we use the CUDA compute capability specified with $GMX_CUDA_TARGET_SM (which is set by EB)
+without cutting off the suffix, and without relying on a regular expression.
+Note that the patch is no longer required for GROMACS 2026, as this code is completely removed.
+
+Author: Bob Dröge (University of Groningen)
+diff -ru gromacs-2025.3.orig/cmake/gmxManageNvccConfig.cmake gromacs-2025.3/cmake/gmxManageNvccConfig.cmake
+--- gromacs-2025.3.orig/cmake/gmxManageNvccConfig.cmake	2026-04-23 15:25:25.473457630 +0200
++++ gromacs-2025.3/cmake/gmxManageNvccConfig.cmake	2026-04-23 16:02:11.546551000 +0200
+@@ -233,6 +233,12 @@
+ # strip gencode/arch from GMX_CUDA_NVCC_GENCODE_FLAGS only keep the arch numbers
+ string(REGEX REPLACE "([A-Za-z=_-])" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
+ string(REGEX REPLACE "([0-9]+,)" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
++# Added by EasyBuild: if GMX_CUDA_TARGET_SM is set, we simply use that, since it already provides the arch numbers.
++# The regex used above would cut off compute capability suffixes that were introduced in recent CUDA versions
++# (e.g. 120f would result in 120).
++if (GMX_CUDA_TARGET_SM)
++    set(GMX_CUDA_NVCC_GENCODE_FLAGS ${GMX_CUDA_TARGET_SM})
++endif()
+ 
+ # Set the openmp host compilation flag if it has not been set automatically.
+ # Some other compilation flags, mostly warnings are not automatically

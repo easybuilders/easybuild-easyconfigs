@@ -29,10 +29,10 @@ builddependencies = [
     ('scikit-build-core', '0.10.6'),
     ('meson-python', '0.16.0'),
     ('nanobind', '2.5.0'),
+    ('CMake', '3.29.3'),
 ]
 dependencies = [
     ('Python', '3.12.3'),
-    ('CMake', '3.29.3'),  # cmake needed to import gemmi
 ]
 
 configopts = [
@@ -40,15 +40,20 @@ configopts = [
     for x in ['OFF', 'ON']
 ]
 
-local_pipcmd = "mkdir %(builddir)s/pybuild &&"
-local_pipcmd += " python -m pip install -v %(builddir)s/%(name)s-%(version)s"
-local_pipcmd += " --no-deps --ignore-installed --prefix=%(installdir)s --no-build-isolation"
-local_pipcmd += ' --config-settings="cmake.args=-DSTANDALONE_PYTHON_MODULE=OFF"'  # use lib/libgemmi_cpp.so
-local_pipcmd += ' --config-settings="cmake.args=-DBUILD_GEMMI_PROGRAM=OFF"'
-local_pipcmd += ' --config-settings="cmake.args=-DINSTALL_DEV_FILES=OFF"'
-local_pipcmd += ' --config-settings="editable.rebuild=false"'
-local_pipcmd += ' --config-settings="build-dir=%(builddir)s/pybuild"'
-postinstallcmds = [local_pipcmd]
+_pip_opts = ' '.join([
+    '--config-settings="cmake.args=-DSTANDALONE_PYTHON_MODULE=OFF"',  # use lib/libgemmi_cpp.so
+    '--config-settings="cmake.args=-DBUILD_GEMMI_PROGRAM=OFF"',
+    '--config-settings="cmake.args=-DINSTALL_DEV_FILES=OFF"',
+    '-Cbuild-dir=%(builddir)s/pybuild'
+])
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    (name, version, {
+        'nosource': True,
+        'installopts': _pip_opts,
+    }),
+]
 
 sanity_check_paths = {
     'files': ['bin/gemmi', f'lib/libgemmi_cpp.{SHLIB_EXT}', 'lib/libgemmi_cpp.a'],

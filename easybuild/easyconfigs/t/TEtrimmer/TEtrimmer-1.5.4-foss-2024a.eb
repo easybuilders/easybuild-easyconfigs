@@ -1,0 +1,90 @@
+easyblock = 'PythonBundle'
+
+name = 'TEtrimmer'
+version = '1.5.4'
+
+homepage = 'https://github.com/qjiangzhao/TEtrimmer'
+description = """
+TEtrimmer is software designed to automate the manual curation of transposable elements (TEs).
+The input can be a TE library from de novo TE discovery tools, such as EDTA2 and
+RepeatModeler2, or a TE library from closely related species. For each input consensus
+sequence, TEtrimmer automatically performs BLAST, sequence extraction, extension, multiple
+sequence alignment (MSA), MSA clustering, MSA cleaning, TE boundary definition, and TE
+classification. TEtrimmer also provides a graphical user interface (GUI) to inspect and
+improve predicted TEs, which can assist achieving manual curation-level TE consensus libraries
+easily.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Perl', '5.38.2'),
+    ('R', '4.4.2'),
+    ('Biopython', '1.84'),
+    ('matplotlib', '3.9.2'),
+    ('multiprocess', '0.70.17'),
+    ('SciPy-bundle', '2024.05'),
+    ('scikit-learn', '1.5.2'),
+    ('Tk', '8.6.14'),
+    ('plotly.py', '5.24.1'),
+    ('BEDTools', '2.31.1'),
+    ('BLAST+', '2.16.0'),
+    ('CD-HIT', '4.8.1'),
+    ('EMBOSS', '6.6.0'),
+    ('HMMER', '3.4'),
+    ('MAFFT', '7.526', '-with-extensions'),
+    ('PfamScan', '1.6'),
+    ('RepeatMasker', '4.2.1'),
+    ('SAMtools', '1.21'),
+    ('RepeatModeler', '2.0.7'),
+    ('IQ-TREE', '2.4.0'),
+    ('Ghostscript', '10.03.1'),
+]
+
+components = [
+    (name, version, {
+        'easyblock': 'PackedBinary',
+        'source_urls': ['https://github.com/qjiangzhao/TEtrimmer/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['bf7ce57c4e8f08a68a4e64cf02d508205c5d0fce0c4f1bcb24db33ee84cc793a'],
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['tetrimmer'],
+    'PATH': ['tetrimmer'],
+}
+
+fix_python_shebang_for = ['tetrimmer/*.py']
+
+exts_list = [
+    ('pypdf2', '3.0.1', {
+        'modulename': 'PyPDF2',
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['d16e4205cfee272fbdc0568b68d82be796540b1537508cef59388f839c191928'],
+    }),
+]
+
+postinstallcmds = [
+    r"""sed -i "s|'iqtree',|'iqtree2',|" %(installdir)s/tetrimmer/MSAcluster.py""",
+    r"""sed -i "s|'iqtree',|'iqtree2',|" %(installdir)s/tetrimmer/TEtrimmer.py""",
+    "chmod +x %(installdir)s/tetrimmer/*.py",
+    # avoid changing file permissions
+    "sed -i 's/change_permission =.*/change_permission = True/' %(installdir)s/tetrimmer/TEtrimmer.py",
+    "cd %(installdir)s/tetrimmer && ln -s TEtrimmer.py TEtrimmer",
+]
+
+sanity_check_paths = {
+    'files': ['tetrimmer/TEtrimmer.py'],
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = ['TEtrimmer --help']
+
+# _pfam_db_dir = "/databases/bio/Pfam-37.4"
+# modloadmsg = """
+# Pfam database dir is located at %s
+# """ % _pfam_db_dir
+
+moduleclass = 'bio'

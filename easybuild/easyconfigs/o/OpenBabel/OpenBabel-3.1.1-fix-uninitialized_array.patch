@@ -1,0 +1,31 @@
+author: Davide Grassano (CECAM)
+
+Fixes bug described in 
+https://github.com/openbabel/openbabel/issues/2138
+https://github.com/openbabel/openbabel/issues/2417
+which was being caused by an uninitialized array leading to undefined behavior
+especially in case of compiler optimizations or different architectures.
+
+diff --git a/src/mcdlutil.cpp b/src/mcdlutil.cpp
+index d06593f16..b3b4617e3 100644
+--- a/src/mcdlutil.cpp
++++ b/src/mcdlutil.cpp
+@@ -1627,6 +1627,9 @@ namespace OpenBabel {
+     for (i=0; i<nAtoms(); i++) {
+       getAtom(i)->nb=0;
+       getAtom(i)->currvalence=0;
++      for (int j=0; j<CONNMAX; j++) {
++        getAtom(i)->ac[j]=0;
++      };
+     };
+     for (i=0; i<nBonds(); i++) {
+       n1=getBond(i)->at[0]; n2=getBond(i)->at[1];
+@@ -2297,7 +2300,7 @@ namespace OpenBabel {
+         r1=0;
+         for (i=0; i<nBonds(); i++) if (tempBondArray[i] == 0) {
+             r=this->bondLength(i);
+-            if (r < bondLengthOld) bondLengthOld=n;
++            if (r < bondLengthOld) bondLengthOld=r;
+             r1=r1+r;
+             n++;
+           };

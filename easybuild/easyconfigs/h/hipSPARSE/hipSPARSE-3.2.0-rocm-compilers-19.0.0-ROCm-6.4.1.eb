@@ -1,0 +1,51 @@
+# Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ROCmComponent'
+
+name = 'hipSPARSE'
+version = '3.2.0'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/ROCm/hipSPARSE'
+description = """hipSPARSE is a SPARSE marshalling library with multiple supported backends. It sits between
+your application and a 'worker' SPARSE library, where it marshals inputs to the backend library and marshals
+results to your application. hipSPARSE exports an interface that doesn't require the client to change,
+regardless of the chosen backend. Currently, hipSPARSE supports rocSPARSE and NVIDIA CUDA cuSPARSE backends."""
+docurls = ['https://rocm.docs.amd.com/projects/hipSPARSE/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+toolchainopts = {'pic': True}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f'rocm-{_rocm_version}.tar.gz']
+patches = [
+    'hipSPARSE-3.2.0_fix-fortran-std.patch',
+    'hipSPARSE-3.2.0_fix-hardcoded-paths.patch',
+]
+checksums = [
+    {'rocm-6.4.1.tar.gz': 'cae547776076066c0ee19a7f98516ac2e9a0cf3bb3b0809d7a4e474f9ee4cb90'},
+    {'hipSPARSE-3.2.0_fix-fortran-std.patch': 'ef7d70fea705b64ada4100be5c8262e73c3d59bab7e12cc1a496e468ea41678e'},
+    {'hipSPARSE-3.2.0_fix-hardcoded-paths.patch': '787516232c9ac53124bbf74b17d8c53412276af1b4c4e31bae7f88f627db76c1'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+    ('rocm-cmake', '0.14.0'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocSPARSE', '3.4.0')
+]
+
+sanity_check_paths = {
+    'files': ['include/hipsparse/hipsparse.h',
+              f'lib/libhipsparse.{SHLIB_EXT}',
+              'lib/cmake/hipsparse/hipsparse-config.cmake'],
+    'dirs': ['share/doc/hipsparse',
+             'include/hipsparse'],
+}
+
+moduleclass = 'lib'

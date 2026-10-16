@@ -1,0 +1,54 @@
+easyblock = 'MakeCp'
+
+name = 'STREAmS'
+version = '2.1.0'
+
+homepage = 'https://github.com/STREAmS-CFD/STREAmS-2'
+description = "High-order solver for compressible turbulent flows"
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+source_urls = ['https://github.com/STREAmS-CFD/STREAmS-2/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['ac493e666139575818bcd62d7424dc3e2aa01d5109abc92e7e9ac3f276fd03ec']
+
+# DISABLE PARALLEL COMPILATION
+# Force EasyBuild not to use the -j flag
+max_parallel = 1
+
+# 1. Preparation: enter the code directory and copy the template
+prebuildopts = "cd code && cp make-templates/makefile.inc.linux64_cpu_gnu makefile.inc && "
+
+# 2. Serial compilation in the code directory
+buildopts = "-f Makefile"
+
+# 3. Installation
+files_to_copy = [
+    (["code/streams_2.exe"], "bin"),
+    (["examples"], ".")
+]
+
+sanity_check_paths = {
+    'files': ['bin/streams_2.exe'],
+    'dirs': [],
+}
+
+# run basic test case as sanity check command
+sanity_check_commands = [' && '.join([
+    "export TMPDIR=$(mktemp -d)",
+    "cp -a %(installdir)s/examples ${TMPDIR}/",
+    "cd ${TMPDIR}/examples/subsonic_channel/",
+    "sed -i 's/nxmax.*/nxmax = 80/' singleideal.ini",
+    "sed -i 's/nymax.*/nymax = 60/' singleideal.ini",
+    "sed -i 's/nzmax.*/nzmax = 80/' singleideal.ini",
+    "sed -i 's/x_split.*/x_split = 1/' singleideal.ini",
+    "sed -i 's/z_split.*/z_split = 1/' singleideal.ini",
+    "sed -i 's/num_iter.*/num_iter = 10/' singleideal.ini",
+    "sed -i 's/rand_type.*/rand_type = 0/' singleideal.ini",
+    "sed -i 's/print_control.*/print_control = 1/' singleideal.ini",
+    "sed -i 's/io_type_r.*/io_type_r = 0/' singleideal.ini",
+    "sed -i 's/io_type_w.*/io_type_w = 0/' singleideal.ini",
+    "%(mpi_cmd_prefix)s streams_2.exe | grep 'averaged timing'",
+])]
+
+moduleclass = 'cae'

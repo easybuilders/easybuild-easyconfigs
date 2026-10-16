@@ -6,6 +6,7 @@
 #             Fotis Georgatos <fotis@cern.ch>
 # Updated by: Filip Kružík (INUITS)
 #             Jure Pečar (EMBL)
+#             Thomas Hoffmann (EMBL): seq_limit
 # License::   MIT/GPL
 # $Id$
 #
@@ -28,7 +29,8 @@ description = """HMMER is used for searching sequence databases for homologs
  HMMER aims to be significantly more accurate and more able to detect remote
  homologs because of the strength of its underlying mathematical models. In the
  past, this strength came at significant computational expense, but in the new
- HMMER3 project, HMMER is now essentially as fast as BLAST."""
+ HMMER3 project, HMMER is now essentially as fast as BLAST.
+Patched according to https://github.com/google-deepmind/alphafold3/issues/525"""
 
 toolchain = {'name': 'gompi', 'version': '2024a'}
 
@@ -37,7 +39,11 @@ source_urls = [
     'http://eddylab.org/software/hmmer%(version_major)s/%(version)s/',
 ]
 sources = [SOURCELOWER_TAR_GZ]
-checksums = ['ca70d94fd0cf271bd7063423aabb116d42de533117343a9b27a65c17ff06fbf3']
+patches = ['HMMER-3.4.0_AF3_jackhmmer_seq_limit.patch']
+checksums = [
+    {'hmmer-3.4.tar.gz': 'ca70d94fd0cf271bd7063423aabb116d42de533117343a9b27a65c17ff06fbf3'},
+    {'HMMER-3.4.0_AF3_jackhmmer_seq_limit.patch': 'd994d6eae98c7247b3fc777d7d704d48fef037eccb6d55a50d8a603d6b1b29e2'},
+]
 
 builddependencies = [
     ('Python', '3.12.3'),
@@ -74,6 +80,7 @@ sanity_check_commands = [
     "esl-construct -h",
     "hmmsearch -h",
     "nhmmer -h",
+    "jackhmmer -h | grep seq_limit",
 ]
 
 moduleclass = 'bio'

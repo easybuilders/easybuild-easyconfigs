@@ -1,0 +1,67 @@
+# Author: Jasper Grimm (UoY)
+# Update: Pavel Tomanek (Inuits/UGent)
+easyblock = 'CMakePythonPackage'
+
+name = 'Faiss'
+version = '1.13.2'
+
+homepage = 'https://github.com/facebookresearch/faiss'
+description = """
+Faiss is a library for efficient similarity search and clustering of dense
+ vectors. It contains algorithms that search in sets of vectors of any size, up
+ to ones that possibly do not fit in RAM. It also contains supporting code for
+ evaluation and parameter tuning. Faiss is written in C++ with complete
+ wrappers for Python/numpy. Some of the most useful algorithms are implemented
+ on the GPU. It is developed primarily at Meta's Fundamental AI Research group.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+github_account = 'facebookresearch'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['a2c0f71236a095e6158aa3738652b16dc3dae1db22c5dd8fb07fc1600e870694']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('SWIG', '4.3.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('PyTorch', '2.6.0'),
+    ('gflags', '2.2.2'),
+]
+
+_copts = [
+    '-DFAISS_ENABLE_GPU=OFF',
+    '-DFAISS_ENABLE_PYTHON=ON',
+    '-DFAISS_ENABLE_C_API=ON',
+    '-DBUILD_TESTING=OFF',  # ON failed on undefined references to Py* symbols
+    '-DBUILD_SHARED_LIBS=ON',
+    '-DPython_EXECUTABLE="${EBROOTPYTHON}/bin/python"',
+]
+
+configopts = ' '.join(_copts)
+
+buildopts = 'faiss swigfaiss'
+
+postinstallcmds = [
+    ' && '.join([
+        # run a pip install in the 'faiss/python' subdir
+        'cd ../easybuild_obj/%(namelower)s/python',
+        'python -s -m pip install --prefix=%(installdir)s --no-build-isolation .',
+        # for some reason, 'libfaiss_python_callbacks.so' doesn't get installed, so copy this manually
+        'cp libfaiss_python_callbacks.%s %%(installdir)s/lib/python%%(pyshortver)s/site-packages/faiss' % SHLIB_EXT
+    ])
+]
+
+modextrapaths = {'LD_LIBRARY_PATH': "lib/python%(pyshortver)s/site-packages/faiss"}
+
+sanity_check_paths = {
+    'files': ['lib/lib%%(namelower)s.%s' % SHLIB_EXT],
+    'dirs': ['include/%(namelower)s', 'lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+moduleclass = 'tools'

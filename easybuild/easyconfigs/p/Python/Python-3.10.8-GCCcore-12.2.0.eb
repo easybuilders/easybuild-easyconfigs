@@ -10,7 +10,15 @@ toolchainopts = {'pic': True}
 
 source_urls = ['https://www.python.org/ftp/%(namelower)s/%(version)s/']
 sources = [SOURCE_TGZ]
-checksums = ['f400c3fb394b8bef1292f6dc1292c5fadc3533039a5bc0c3e885f3e16738029a']
+
+# Like patches, but these will only be applied if EasyBuild is configured to filter $LD_LIBRARY_PATH
+# In that scenario, ctypes needs to be patched since it heavily relies on $LD_LIBRARY_PATH to find libraries
+patch_ctypes_ld_library_path = 'Python-3.11.5-custom-ctypes.patch'
+
+checksums = [
+    {'Python-3.10.8.tgz': 'f400c3fb394b8bef1292f6dc1292c5fadc3533039a5bc0c3e885f3e16738029a'},
+    {'Python-3.11.5-custom-ctypes.patch': 'b29c22f47587460149e05296ff09b29bf790a83e2b3b13fb2f42f5f236ad8ea7'}
+]
 
 builddependencies = [
     ('UnZip', '6.0'),
@@ -130,7 +138,7 @@ exts_list = [
     ('cryptography', '38.0.3', {
         # avoid that cargo uses $HOME/.cargo, which can lead to build failures if home directory is NFS mounted,
         # see https://github.com/rust-lang/cargo/issues/6652
-        'preinstallopts': "export CARGO_HOME=%(builddir)s/cargo && ",
+        'preinstallopts': "export CARGO_HOME=%(builddir)s/cargohome && ",
         'checksums': ['bfbe6ee19615b07a98b1d2287d6a6073f734735b49ee45b11324d85efc4d5cbd'],
     }),
     ('pyasn1', '0.4.8', {
@@ -141,6 +149,7 @@ exts_list = [
         'checksums': ['8ac7448f09ab85811607bdd21ec2464495ac8b7c66d146bf545b0f08fb9220ba'],
     }),
     ('bcrypt', '4.0.1', {
+        'preinstallopts': "export CARGO_HOME=%(builddir)s/cargohome && ",
         'checksums': ['27d375903ac8261cfe4047f6709d16f7d18d39b1ec92aaf72af989552a650ebd'],
     }),
     ('paramiko', '2.12.0', {

@@ -1,0 +1,128 @@
+Make the basic RAxML Makefiles more generic so that are more flexible for 
+EasyBuild (and respect the compilers and options that EasyBuild sets)
+
+We retain the original GCC naming so that the changes in that patch are more
+obvious.
+
+diff -rupN standard-RAxML-8.2.13/Makefile.HYBRID.gcc standard-RAxML-8.2.13_new/Makefile.HYBRID.gcc
+--- standard-RAxML-8.2.13/Makefile.HYBRID.gcc	2023-10-04 09:33:55.000000000 +0200
++++ standard-RAxML-8.2.13_new/Makefile.HYBRID.gcc	2025-10-08 11:36:17.903450904 +0200
+@@ -1,6 +1,6 @@
+ # Makefile November 2009 by Alexandros Stamatakis
+ 
+-CC = mpicc 
++CC = $(MPICC) 
+ 
+ ARCH := $(shell uname -m)
+ ifeq ($(ARCH), x86_64)
+@@ -9,10 +9,11 @@ else ifeq ($(ARCH), aarch64)
+ ARCH_CFLAGS=
+ endif
+ 
+-CFLAGS = -D_WAYNE_MPI -D_GNU_SOURCE -fomit-frame-pointer -funroll-loops -O2  -D_USE_PTHREADS $(ARCH_CFLAGS)
++# Ignore ARCH_CFLAGS and use EasyBuild CFLAGS by default (i.e. just keep things that are not commonly set)
++CFLAGS += -D_WAYNE_MPI -D_GNU_SOURCE -fomit-frame-pointer -funroll-loops  -D_USE_PTHREADS 
+ 
+ 
+-LIBRARIES = -lm -pthread
++LIBRARIES = $(LIBS)
+ 
+ RM = rm -f
+ 
+@@ -54,4 +55,4 @@ eigen.o : eigen.c $(GLOBAL_DEPS)
+ clean : 
+ 	$(RM) *.o raxmlHPC-HYBRID
+ 
+-dev : raxmlHPC-HYBRID
+\ No newline at end of file
++dev : raxmlHPC-HYBRID
+diff -rupN standard-RAxML-8.2.13/Makefile.MPI.gcc standard-RAxML-8.2.13_new/Makefile.MPI.gcc
+--- standard-RAxML-8.2.13/Makefile.MPI.gcc	2023-10-04 09:33:55.000000000 +0200
++++ standard-RAxML-8.2.13_new/Makefile.MPI.gcc	2025-10-08 11:37:10.022333194 +0200
+@@ -1,6 +1,6 @@
+ # Makefile November 2009 by Alexandros Stamatakis
+ 
+-CC = mpicc 
++CC = $(MPICC) 
+ 
+ ARCH := $(shell uname -m)
+ ifeq ($(ARCH), x86_64)
+@@ -9,7 +9,8 @@ else ifeq ($(ARCH), aarch64)
+ ARCH_CFLAGS=
+ endif
+ 
+-CFLAGS = -D_WAYNE_MPI -D_GNU_SOURCE -fomit-frame-pointer -funroll-loops -O2 $(ARCH_CFLAGS)
++# Ignore ARCH_CFLAGS and use EasyBuild CFLAGS by default (i.e. just keep things that are not commonly set)
++CFLAGS += -D_WAYNE_MPI -D_GNU_SOURCE -fomit-frame-pointer -funroll-loops
+ 
+ 
+ LIBRARIES = -lm
+@@ -54,4 +55,4 @@ eigen.o : eigen.c $(GLOBAL_DEPS)
+ clean : 
+ 	$(RM) *.o raxmlHPC-MPI
+ 
+-dev : raxmlHPC-MPI
+\ No newline at end of file
++dev : raxmlHPC-MPI
+diff -rupN standard-RAxML-8.2.13/Makefile.PTHREADS.gcc standard-RAxML-8.2.13_new/Makefile.PTHREADS.gcc
+--- standard-RAxML-8.2.13/Makefile.PTHREADS.gcc	2023-10-04 09:33:55.000000000 +0200
++++ standard-RAxML-8.2.13_new/Makefile.PTHREADS.gcc	2025-10-08 12:02:36.375386744 +0200
+@@ -1,7 +1,7 @@
+ # Makefile August 2006 by Alexandros Stamatakis
+ # Makefile cleanup October 2006, Courtesy of Peter Cordes <peter@cordes.ca>
+ 
+-CC = gcc 
++CC ?= gcc 
+ 
+ ARCH := $(shell uname -m)
+ ifeq ($(ARCH), x86_64)
+@@ -10,10 +10,11 @@ else ifeq ($(ARCH), aarch64)
+ ARCH_CFLAGS=
+ endif
+ 
+-CFLAGS = -D_GNU_SOURCE -fomit-frame-pointer -funroll-loops -O2  -D_USE_PTHREADS $(ARCH_CFLAGS) #-Wall -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused  -Wunused-function  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes  -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-function -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wundef -Wbad-function-cast
++# Ignore ARCH_CFLAGS and use EasyBuild CFLAGS by default (i.e. just keep things that are not commonly set)
++CFLAGS += -D_GNU_SOURCE -fomit-frame-pointer -funroll-loops -D_USE_PTHREADS #-Wall -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused  -Wunused-function  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes  -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-function -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wundef -Wbad-function-cast
+ 
+ 
+-LIBRARIES = -lm -pthread
++LIBRARIES = $(LIBS)
+ 
+ RM = rm -f
+ 
+@@ -55,4 +56,4 @@ eigen.o : eigen.c $(GLOBAL_DEPS)
+ clean : 
+ 	$(RM) *.o raxmlHPC-PTHREADS
+ 
+-dev : raxmlHPC-PTHREADS
+\ No newline at end of file
++dev : raxmlHPC-PTHREADS
+diff -rupN standard-RAxML-8.2.13/Makefile.gcc standard-RAxML-8.2.13_new/Makefile.gcc
+--- standard-RAxML-8.2.13/Makefile.gcc	2023-10-04 09:33:55.000000000 +0200
++++ standard-RAxML-8.2.13_new/Makefile.gcc	2025-10-08 11:31:23.218469880 +0200
+@@ -1,7 +1,7 @@
+ # Makefile August 2006 by Alexandros Stamatakis
+ # Makefile cleanup October 2006, Courtesy of Peter Cordes <peter@cordes.ca>
+ 
+-CC = gcc 
++CC ?= gcc 
+ 
+ ARCH := $(shell uname -m)
+ ifeq ($(ARCH), x86_64)
+@@ -10,7 +10,8 @@ else ifeq ($(ARCH), aarch64)
+ ARCH_CFLAGS=
+ endif
+ 
+-CFLAGS = -D_GNU_SOURCE -fomit-frame-pointer -funroll-loops -O2 $(ARCH_CFLAGS) #-Wall -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused  -Wunused-function  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-function -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wundef -Wbad-function-cast
++# Ignore ARCH_CFLAGS and use EasyBuild CFLAGS by default (i.e. just keep things that are not commonly set)
++CFLAGS += -D_GNU_SOURCE -fomit-frame-pointer -funroll-loops #-Wall -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused  -Wunused-function  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-function -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wundef -Wbad-function-cast
+ 
+ LIBRARIES = -lm
+ 
+@@ -56,4 +57,4 @@ eigen.o : eigen.c $(GLOBAL_DEPS)
+ clean : 
+ 	$(RM) *.o raxmlHPC
+ 
+-dev : raxmlHPC
+\ No newline at end of file
++dev : raxmlHPC

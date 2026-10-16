@@ -1,0 +1,44 @@
+Move live httpbin.org test to xt/ so outages can't fail installs
+
+see https://github.com/libwww-perl/LWP-Protocol-https/pull/100
+--- a/cpanfile
++++ b/cpanfile
+@@ -24,12 +24,12 @@ on 'test' => sub {
+     requires "Socket" => "0";
+     requires "Test::More" => "0.96";
+     requires "Test::Needs" => "0.002010";
+-    requires "Test::RequiresInternet" => "0";
+     requires "warnings" => "0";
+ };
+ 
+ on 'develop' => sub {
+     requires 'Capture::Tiny' => '0.48';
++    requires "Test::RequiresInternet" => "0";
+     requires 'Test::CheckManifest' => '1.29';
+     requires 'Test::CleanNamespaces';
+     requires "Test::CPAN::Changes" => "0.19";
+--- a/t/example.t
++++ b/xt/author/example.t
+@@ -8,10 +8,20 @@ use LWP::UserAgent ();
+ 
+ my $ua = LWP::UserAgent->new( ssl_opts => { verify_hostname => 0 } );
+ 
+-plan tests => 2;
+-
+ my $url = 'https://httpbin.org';
+ 
++# httpbin.org is a shared public service that intermittently returns 5xx or
++# times out. Test::RequiresInternet only proves the TCP port is reachable, so
++# an up-but-unhealthy service would otherwise fail this test even though there
++# is nothing wrong with the module. Probe once and skip if it is unhealthy.
++{
++    my $probe = $ua->simple_request( HTTP::Request->new( GET => $url ) );
++    plan skip_all => "$url unavailable: " . $probe->status_line
++        unless $probe->is_success;
++}
++
++plan tests => 2;
++
+ subtest "Request GET $url" => sub {
+     plan tests => 6;
+ 
