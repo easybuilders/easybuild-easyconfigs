@@ -69,6 +69,8 @@ osdependencies = [
 preconfigopts = " && ".join([
     # Install dependencies via scripts. Done in subshell to preserve PWD
     "(export RSTUDIO_TOOLS_ROOT='%(builddir)s'",
+    # Avoid using $HOME/.npm
+    "export npm_config_cache='%(builddir)s/.npm'",
     "cd '%(start_dir)s/dependencies/common'",
     "./install-cef",
     "./install-dictionaries",
@@ -79,11 +81,6 @@ preconfigopts = " && ".join([
     ""
 ])
 
-# Inject resolutions block into generated package.json for quarto
-# we fix them to versions compatible with nodejs 18.17.1 used as dep on this ec
-prebuildopts = r"""sed -i '/"name": "quarto"/a\  "resolutions": { "mocha": "10.1.0", "glob": "10.4.5" },' """
-prebuildopts += '%(builddir)s/{}/src/gwt/lib/quarto/package.json && '.format(local_srcdir)
-
 configopts = " ".join([
     "-DRSTUDIO_TOOLS_ROOT='%(builddir)s'",
     "-DRSTUDIO_TARGET=Server",
@@ -93,6 +90,13 @@ configopts = " ".join([
     "-DQUARTO_ENABLED=OFF",  # Not available on all archs, use pandoc fallback
     "-DRSTUDIO_GIT_REVISION_HASH=" + local_git_rev
 ])
+
+# Inject resolutions block into generated package.json for quarto
+# we fix them to versions compatible with nodejs 18.17.1 used as dep on this ec
+prebuildopts = r"""sed -i '/"name": "quarto"/a\  "resolutions": { "mocha": "10.1.0", "glob": "10.4.5" },' """
+prebuildopts += '%(builddir)s/{}/src/gwt/lib/quarto/package.json && '.format(local_srcdir)
+# Avoid using $HOME/.npm
+prebuildopts += "export npm_config_cache='%(builddir)s/.npm' && "
 
 sanity_check_commands = [
     # RSession requires environment variables R_HOME and R_DOC_DIR
