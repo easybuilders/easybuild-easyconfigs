@@ -1,0 +1,26 @@
+# Use AF3_MODEL_DIR and DB_DIR environment variables as the default paths for
+# AlphaFold3 model parameters and public databases, respectively.
+#
+# Previous versions of this patch also added LIBCIFPP_DATA_DIR handling.
+# AlphaFold3 supports LIBCIFPP_DATA_DIR upstream since v3.0.2, so that part
+# is no longer required.
+#
+# Based on the original patch by Thomas Hoffmann (EMBL Heidelberg).
+# Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+diff --git a/run_alphafold.py b/run_alphafold.py
+--- a/run_alphafold.py
++++ b/run_alphafold.py
+@@ -55,7 +55,11 @@
+ import tokamax
+ 
+ _HOME_DIR = epath.Path('~').expanduser()
+-_DEFAULT_MODEL_DIR = _HOME_DIR / 'models'
+-_DEFAULT_DB_DIR = _HOME_DIR / 'public_databases'
++_DEFAULT_MODEL_DIR = epath.Path(
++    os.environ.get('AF3_MODEL_DIR', (_HOME_DIR / 'models').as_posix())
++)
++_DEFAULT_DB_DIR = epath.Path(
++    os.environ.get('DB_DIR', (_HOME_DIR / 'public_databases').as_posix())
++)
+ 
+ @enum.unique
