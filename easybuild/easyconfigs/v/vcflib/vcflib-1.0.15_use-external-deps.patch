@@ -1,0 +1,59 @@
+# The 1.0.15 source archive does not contain the git submodules used for
+# fastahack, intervaltree, smithwaterman, fsom, or filevercmp, while the
+# upstream CMakeLists.txt still lists their bundled sources.  This patch
+# removes those sources so the EasyBuild dependencies are used.  tabixpp's
+# EasyBuild module does not provide a pkg-config file, so expose its library
+# as a CMake imported target.  Required for vcflib 1.0.15.
+--- vcflib-1.0.15.orig/CMakeLists.txt
++++ vcflib-1.0.15/CMakeLists.txt
+@@ -111,6 +111,7 @@
+ include_directories(include)
+-include_directories(contrib/fastahack)
+-include_directories(contrib/intervaltree)
+-include_directories(contrib/smithwaterman)
+-include_directories(contrib/filevercmp)
++# supplied by EasyBuild dependencies
++include_directories("$ENV{EBROOTFASTAHACK}/include")
++include_directories("$ENV{EBROOTINTERVALTREE}/include")
++include_directories("$ENV{EBROOTSMITHWATERMAN}/include")
++include_directories("$ENV{EBROOTFILEVERCMP}/include")
+ include_directories(contrib/c-progress-bar)
+@@ -127,8 +127,11 @@
+ if(NOT tabixpp_FOUND)
+-  message(STATUS "Using included tabixpp")
+-  set(tabixpp_LOCAL contrib/tabixpp)
+-  include_directories(contrib/tabixpp)
+-  set(tabixpp_SOURCE
+-    contrib/tabixpp/tabix.cpp
+-  )
++  find_path(TABIXPP_INCLUDE_DIR tabix.hpp
++            PATHS "$ENV{EBROOTTABIXPP}/include" REQUIRED)
++  find_library(TABIXPP_LIBRARY NAMES tabixpp
++               PATHS "$ENV{EBROOTTABIXPP}/lib" REQUIRED)
++  add_library(tabixpp_external UNKNOWN IMPORTED)
++  set_target_properties(tabixpp_external PROPERTIES
++    IMPORTED_LOCATION "${TABIXPP_LIBRARY}"
++    INTERFACE_INCLUDE_DIRECTORIES "${TABIXPP_INCLUDE_DIR}")
++  set(tabixpp_FOUND TRUE)
+ endif()
+@@ -146,7 +146,3 @@
+ file(GLOB INCLUDES
+   src/*.h*
+-  contrib/intervaltree/*.h*
+-  contrib/smithwaterman/*.h*
+-  contrib/fastahack/*.h*
+-  contrib/filevercmp/*.h*
+   )
+@@ -173,12 +173,4 @@
+     src/cigar.cpp
+     src/allele.cpp
+-    contrib/fastahack/Fasta.cpp
+-    contrib/smithwaterman/SmithWatermanGotoh.cpp
+-    contrib/smithwaterman/Repeats.cpp
+-    contrib/smithwaterman/IndelAllele.cpp
+-    contrib/smithwaterman/disorder.cpp
+-    contrib/smithwaterman/LeftAlign.cpp
+-    contrib/fsom/fsom.c
+-    contrib/filevercmp/filevercmp.c
+     contrib/c-progress-bar/progress.c
+ )

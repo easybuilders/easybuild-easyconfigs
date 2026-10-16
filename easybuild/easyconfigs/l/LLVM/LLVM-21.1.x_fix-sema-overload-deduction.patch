@@ -1,0 +1,66 @@
+From 8af7ce05012ca6e0047fc452196befc056eadf40 Mon Sep 17 00:00:00 2001
+From: Corentin Jabot <corentinjabot@gmail.com>
+Date: Mon, 28 Jul 2025 09:20:28 +0200
+Subject: [PATCH] [Clang] Fix a regression introduced by #147046
+
+Static functions have an implicit object argument during deduction,
+---
+ clang/lib/Sema/SemaOverload.cpp            |  4 +--
+ clang/test/SemaCXX/cxx2b-deducing-this.cpp | 32 ++++++++++++++++++++++
+ 2 files changed, 34 insertions(+), 2 deletions(-)
+
+diff --git a/clang/lib/Sema/SemaOverload.cpp b/clang/lib/Sema/SemaOverload.cpp
+index 5dd5b495480d9..76e189d536849 100644
+--- a/clang/lib/Sema/SemaOverload.cpp
++++ b/clang/lib/Sema/SemaOverload.cpp
+@@ -8042,8 +8042,8 @@ static void AddTemplateOverloadCandidateImmediately(
+ 
+     Candidate.IgnoreObjectArgument =
+         isa<CXXMethodDecl>(Candidate.Function) &&
+-        cast<CXXMethodDecl>(Candidate.Function)
+-            ->isImplicitObjectMemberFunction() &&
++        !cast<CXXMethodDecl>(Candidate.Function)
++             ->isExplicitObjectMemberFunction() &&
+         !isa<CXXConstructorDecl>(Candidate.Function);
+ 
+     Candidate.ExplicitCallArguments = Args.size();
+diff --git a/clang/test/SemaCXX/cxx2b-deducing-this.cpp b/clang/test/SemaCXX/cxx2b-deducing-this.cpp
+index 2253cbb26285e..fcbe0f62e6d4f 100644
+--- a/clang/test/SemaCXX/cxx2b-deducing-this.cpp
++++ b/clang/test/SemaCXX/cxx2b-deducing-this.cpp
+@@ -1357,3 +1357,35 @@ void Bar(this int) { // expected-note {{candidate function}}
+ }
+ 
+ }
++
++namespace GH147046_regression {
++
++template <typename z> struct ai {
++    ai(z::ah);
++};
++
++template <typename z> struct ak {
++    template <typename am> void an(am, z);
++    template <typename am> static void an(am, ai<z>);
++};
++template <typename> struct ao {};
++
++template <typename ap>
++auto ar(ao<ap> at) -> decltype(ak<ap>::an(at, 0));
++// expected-note@-1 {{candidate template ignored: substitution failure [with ap = GH147046_regression::ay]: no matching function for call to 'an'}}
++
++class aw;
++struct ax {
++    typedef int ah;
++};
++struct ay {
++    typedef aw ah;
++};
++
++ao<ay> az ;
++ai<ax> bd(0);
++void f() {
++    ar(az); // expected-error {{no matching function for call to 'ar'}}
++}
++
++}

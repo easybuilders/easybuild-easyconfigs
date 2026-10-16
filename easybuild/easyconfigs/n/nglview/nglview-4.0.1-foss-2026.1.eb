@@ -1,0 +1,44 @@
+easyblock = 'PythonBundle'
+
+name = 'nglview'
+version = '4.0.1'
+
+homepage = 'https://github.com/arose/nglview'
+description = "IPython widget to interactively view molecular structures and trajectories."
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('Python-bundle-PyPI', '2026.04'),
+    ('SciPy-bundle', '2026.05'),
+    ('JupyterLab', '4.5.8'),
+    ('JupyterNotebook', '7.5.7'),
+    ('ASE', '3.28.0'),  # optional
+    ('MDAnalysis', '2.10.0'),  # optional
+    ('MDTraj', '1.11.1'),  # optional
+]
+
+local_pytest_cmd = (
+    "pytest -v "
+    "--deselect tests/test_show.py::test_show_schrodinger "
+    "--deselect tests/test_widget.py::test_existing_js_files "
+    "--deselect tests/test_movie_maker.py::test_movie_maker "
+    "tests"
+)
+
+exts_list = [
+    (name, version, {
+        # fix the version problem with nglview-js-widgets: https://github.com/nglviewer/nglview/issues/1172
+        'preinstallopts': (
+            """sed -i "s/__frontend_version__ = '4.0'/__frontend_version__ = '3.1.5'/" nglview/_frontend.py && """
+        ),
+        'testinstall': True,
+        'runtest': local_pytest_cmd,
+        'checksums': ['1e15b819b9f8ada3e521e587d24cc3754573203cc99ee5d801cef28d992865a5'],
+    }),
+]
+
+modextrapaths = {'EB_ENV_JUPYTER_ROOT': ''}
+
+moduleclass = 'chem'
