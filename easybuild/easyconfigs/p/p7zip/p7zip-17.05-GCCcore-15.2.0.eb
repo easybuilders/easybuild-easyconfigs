@@ -17,7 +17,13 @@ builddependencies = [
     ('binutils', '2.45'),
 ]
 
-prebuildopts = "cp makefile.linux_amd64 makefile.linux &&"
+# makefile.common includes makefile.machine. makefile.linux_amd64 adds -m64, which
+# GCC rejects on non-x86_64 (including aarch64); makefile.linux_any_cpu does not.
+if ARCH == 'x86_64':
+    local_makefile = 'makefile.linux_amd64'
+else:
+    local_makefile = 'makefile.linux_any_cpu'
+prebuildopts = "cp %s makefile.linux && cp makefile.linux makefile.machine &&" % local_makefile
 buildopts = 'all3 CC="$CC" CXX="$CXX" OPTFLAGS="$CFLAGS"'
 
 github_account = '%(name)s-project'
