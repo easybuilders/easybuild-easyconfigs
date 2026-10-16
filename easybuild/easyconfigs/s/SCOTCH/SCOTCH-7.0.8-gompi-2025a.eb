@@ -1,3 +1,5 @@
+easyblock = 'CMakeMake'
+
 name = 'SCOTCH'
 version = '7.0.8'
 
@@ -10,17 +12,53 @@ toolchainopts = {'pic': True}
 
 source_urls = ['https://gitlab.inria.fr/%(namelower)s/%(namelower)s/-/archive/v%(version)s/']
 sources = ['%(namelower)s-v%(version)s.tar.gz']
-checksums = ['21f48ac85c7991a5eb5fae9232dd68584556ccc500f85e2ebd6b5b275617e11a']
+patches = [
+    'SCOTCH-%(version)s_add_missing_executables_to_install_targets.patch',
+]
+checksums = [
+    {'scotch-v7.0.8.tar.gz': '21f48ac85c7991a5eb5fae9232dd68584556ccc500f85e2ebd6b5b275617e11a'},
+    {'SCOTCH-7.0.8_add_missing_executables_to_install_targets.patch':
+     'ec8f7762cec45cfa5d25c64462cf6b1cd6e393a9076cb15862af946bf36c4c04'},
+]
 
 builddependencies = [
+    ('CMake', '3.31.3'),
     ('Bison', '3.8.2'),
     ('flex', '2.6.4'),
 ]
 
 dependencies = [
     ('zlib', '1.3.1'),
+    ('bzip2', '1.0.8'),
+    ('XZ', '5.6.3'),
 ]
 
-threadedmpi = False
+build_shared_libs = True
+
+configopts = '-DINSTALL_METIS_HEADERS=OFF'
+
+runtest = True
+
+_binaries = ['acpl', 'amk_ccc', 'amk_fft2', 'amk_grf', 'amk_hy', 'amk_m2', 'amk_p2', 'atst',
+             'dggath', 'dgmap', 'dgord', 'dgpart', 'dgscat', 'dgtst', 'gbase', 'gcv', 'gmap',
+             'gmk_hy', 'gmk_m2', 'gmk_m3', 'gmk_msh', 'gmk_ub2', 'gmtst', 'gord', 'gotst',
+             'gout', 'gpart', 'gscat', 'gtst', 'mcv', 'mmk_m2', 'mmk_m3', 'mord', 'mtst']
+_files = ['bin/%s' % x for x in _binaries]
+
+_headers = ['esmumps', 'ptscotch', 'ptscotchf', 'scotch', 'scotchf']
+_files.extend(['include/%s.h' % x for x in _headers])
+
+_libraries = ['esmumps', 'ptesmumps', 'ptscotch', 'ptscotcherr', 'ptscotcherrexit',
+              'scotch', 'scotcherr', 'scotcherrexit']
+_files.extend([f'lib/lib%s.{SHLIB_EXT}' % x for x in _libraries])
+
+sanity_check_paths = {
+    'files': _files,
+    'dirs': ['lib/cmake/scotch'],
+}
+
+sanity_check_commands = [
+    "acpl -V 2>&1 | grep 'version %s'" % version,
+]
 
 moduleclass = 'math'
