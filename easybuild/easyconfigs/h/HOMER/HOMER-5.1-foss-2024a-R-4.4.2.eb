@@ -13,8 +13,9 @@ description = """HOMER (Hypergeometric Optimization of Motif EnRichment) is a su
 
 toolchain = {'name': 'foss', 'version': '2024a'}
 
+local_configure_script = 'configureHomer-%(version)s.pl'
 source_urls = ['http://homer.ucsd.edu/homer']
-sources = ['configureHomer.pl']
+sources = [{'download_filename': 'configureHomer.pl', 'filename': local_configure_script}]
 checksums = ['ccdaa3004a0e0df0882634671d4a1acc88364761e0e6c7ea329ebbf1eb729537']
 
 builddependencies = [
@@ -30,7 +31,12 @@ dependencies = [
     ('R-bundle-Bioconductor', '3.20', versionsuffix)
 ]
 
-postinstallcmds = ["cd %(installdir)s && perl ./configureHomer.pl -install homer -version v%(version)s"]
+postinstallcmds = [
+    f"cd %(installdir)s && perl ./{local_configure_script} -install homer -version v%(version)s",
+    # install select set of additional packages, see http://homer.ucsd.edu/homer/introduction/configure.html;
+    # list of versions: http://homer.ucsd.edu/homer/update.txt
+    f"cd %(installdir)s && perl ./{local_configure_script} -install human-p -version v5.5",
+]
 
 sanity_check_paths = {
     'files': [
@@ -44,6 +50,9 @@ sanity_check_paths = {
     'dirs': ['bin', 'data', 'motifs', 'update'],
 }
 
-sanity_check_commands = ["%(namelower)s --help"]
+sanity_check_commands = [
+    "homer --help",
+    f"%(installdir)s/{local_configure_script} -list",
+]
 
 moduleclass = 'bio'

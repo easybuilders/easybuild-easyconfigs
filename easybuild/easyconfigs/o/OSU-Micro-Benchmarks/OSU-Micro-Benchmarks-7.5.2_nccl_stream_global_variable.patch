@@ -1,0 +1,110 @@
+synchronize_xccl_stream does not take an argument, so we must not pretend it does.
+Old C code faked a nonexistent argument, nccl_stream, which was actually a global variable
+New stricted GCC 15 no longer accepts this, as it's probably undefined behaviour
+
+author: micketeer@gmail.com
+diff -ru c.orig/xccl/collective/osu_xccl_allgather.c c/xccl/collective/osu_xccl_allgather.c
+--- c.orig/xccl/collective/osu_xccl_allgather.c	2026-06-03 21:00:04.821135145 +0200
++++ c/xccl/collective/osu_xccl_allgather.c	2026-06-03 21:01:04.539198981 +0200
+@@ -107,7 +107,7 @@
+             t_start = MPI_Wtime();
+             NCCL_CHECK(omb_xccl_interface->ncclAllGather(
+                 sendbuf, recvbuf, size, ncclChar, nccl_comm, nccl_stream));
+-            omb_xccl_interface->synchronize_xccl_stream(nccl_stream);
++            omb_xccl_interface->synchronize_xccl_stream();
+             t_stop = MPI_Wtime();
+ 
+             if (i >= options.skip) {
+diff -ru c.orig/xccl/collective/osu_xccl_allreduce.c c/xccl/collective/osu_xccl_allreduce.c
+--- c.orig/xccl/collective/osu_xccl_allreduce.c	2026-06-03 21:00:04.821135145 +0200
++++ c/xccl/collective/osu_xccl_allreduce.c	2026-06-03 21:01:23.747897857 +0200
+@@ -113,7 +113,7 @@
+             NCCL_CHECK(omb_xccl_interface->ncclAllReduce(
+                 sendbuf, recvbuf, size, ncclFloat, ncclSum, nccl_comm,
+                 nccl_stream));
+-            omb_xccl_interface->synchronize_xccl_stream(nccl_stream);
++            omb_xccl_interface->synchronize_xccl_stream();
+             t_stop = MPI_Wtime();
+ 
+             if (i >= options.skip) {
+diff -ru c.orig/xccl/collective/osu_xccl_alltoall.c c/xccl/collective/osu_xccl_alltoall.c
+--- c.orig/xccl/collective/osu_xccl_alltoall.c	2026-06-03 21:00:04.821135145 +0200
++++ c/xccl/collective/osu_xccl_alltoall.c	2026-06-03 21:01:13.868052740 +0200
+@@ -117,7 +117,7 @@
+             NCCL_CHECK(omb_xccl_interface->ncclAllToAll(
+                 (char *)sendbuf, (char *)recvbuf, size, ncclChar, nccl_comm,
+                 nccl_stream));
+-            omb_xccl_interface->synchronize_xccl_stream(nccl_stream);
++            omb_xccl_interface->synchronize_xccl_stream();
+             t_stop = MPI_Wtime();
+             MPI_CHECK(MPI_Barrier(MPI_COMM_WORLD));
+ 
+diff -ru c.orig/xccl/collective/osu_xccl_bcast.c c/xccl/collective/osu_xccl_bcast.c
+--- c.orig/xccl/collective/osu_xccl_bcast.c	2026-06-03 21:00:04.821135145 +0200
++++ c/xccl/collective/osu_xccl_bcast.c	2026-06-03 21:01:18.737976396 +0200
+@@ -101,7 +101,7 @@
+             t_start = MPI_Wtime();
+             NCCL_CHECK(omb_xccl_interface->ncclBroadcast(
+                 buffer, buffer, size, ncclChar, 0, nccl_comm, nccl_stream));
+-            omb_xccl_interface->synchronize_xccl_stream(nccl_stream);
++            omb_xccl_interface->synchronize_xccl_stream();
+             t_stop = MPI_Wtime();
+ 
+             if (i >= options.skip) {
+diff -ru c.orig/xccl/collective/osu_xccl_reduce.c c/xccl/collective/osu_xccl_reduce.c
+--- c.orig/xccl/collective/osu_xccl_reduce.c	2026-06-03 21:00:04.821135145 +0200
++++ c/xccl/collective/osu_xccl_reduce.c	2026-06-03 21:01:07.979145057 +0200
+@@ -115,7 +115,7 @@
+             NCCL_CHECK(omb_xccl_interface->ncclReduce(sendbuf, recvbuf, size,
+                                                       ncclFloat, ncclSum, 0,
+                                                       nccl_comm, nccl_stream));
+-            omb_xccl_interface->synchronize_xccl_stream(nccl_stream);
++            omb_xccl_interface->synchronize_xccl_stream();
+             t_stop = MPI_Wtime();
+ 
+             if (i >= options.skip) {
+diff -ru c.orig/xccl/collective/osu_xccl_reduce_scatter.c c/xccl/collective/osu_xccl_reduce_scatter.c
+--- c.orig/xccl/collective/osu_xccl_reduce_scatter.c	2026-06-03 21:00:04.821135145 +0200
++++ c/xccl/collective/osu_xccl_reduce_scatter.c	2026-06-03 21:01:32.236764781 +0200
+@@ -122,7 +122,7 @@
+             NCCL_CHECK(omb_xccl_interface->ncclReduceScatter(
+                 sendbuf, recvbuf, recvcount, ncclFloat, ncclSum, nccl_comm,
+                 nccl_stream));
+-            omb_xccl_interface->synchronize_xccl_stream(nccl_stream);
++            omb_xccl_interface->synchronize_xccl_stream();
+             t_stop = MPI_Wtime();
+ 
+             if (i >= options.skip) {
+diff -ru c.orig/xccl/pt2pt/osu_xccl_bibw.c c/xccl/pt2pt/osu_xccl_bibw.c
+--- c.orig/xccl/pt2pt/osu_xccl_bibw.c	2026-06-03 21:00:04.821135145 +0200
++++ c/xccl/pt2pt/osu_xccl_bibw.c	2026-06-03 21:00:50.402420593 +0200
+@@ -138,7 +138,7 @@
+                     r_buf, size, ncclChar, peer, nccl_comm, nccl_stream));
+             }
+             omb_xccl_interface->ncclGroupEnd();
+-            omb_xccl_interface->synchronize_xccl_stream(nccl_stream);
++            omb_xccl_interface->synchronize_xccl_stream();
+             if (i >= options.skip) {
+                 t_end = MPI_Wtime();
+                 t_total += t_end - t_start;
+diff -ru c.orig/xccl/pt2pt/osu_xccl_bw.c c/xccl/pt2pt/osu_xccl_bw.c
+--- c.orig/xccl/pt2pt/osu_xccl_bw.c	2026-06-03 21:00:04.821135145 +0200
++++ c/xccl/pt2pt/osu_xccl_bw.c	2026-06-03 21:01:00.092268693 +0200
+@@ -135,7 +135,7 @@
+                     NCCL_CHECK(omb_xccl_interface->ncclSend(
+                         s_buf, size, ncclChar, peer, nccl_comm, nccl_stream));
+                 }
+-                omb_xccl_interface->synchronize_xccl_stream(nccl_stream);
++                omb_xccl_interface->synchronize_xccl_stream();
+                 NCCL_CHECK(omb_xccl_interface->ncclRecv(
+                     r_buf, 1, ncclChar, peer, nccl_comm, nccl_stream));
+                 if (i >= options.skip) {
+@@ -155,7 +155,7 @@
+                     NCCL_CHECK(omb_xccl_interface->ncclRecv(
+                         r_buf, size, ncclChar, peer, nccl_comm, nccl_stream));
+                 }
+-                omb_xccl_interface->synchronize_xccl_stream(nccl_stream);
++                omb_xccl_interface->synchronize_xccl_stream();
+                 NCCL_CHECK(omb_xccl_interface->ncclSend(
+                     s_buf, 1, ncclChar, peer, nccl_comm, nccl_stream));
+             }

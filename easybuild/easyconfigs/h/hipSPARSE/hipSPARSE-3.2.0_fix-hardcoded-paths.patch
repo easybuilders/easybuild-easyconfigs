@@ -1,0 +1,25 @@
+Removes hardcoded system paths and injects EasyBuild environment variables.
+
+Author: Aayush Joglekar (aayush.joglekar@surf.nl)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 78bf387..af061eb 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -36,7 +36,7 @@ else()
+ endif()
+ 
+ # Pick up static and dynamic shared object files
+-list( APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/lib/cmake/hip /opt/rocm /opt/rocm/llvm /opt/rocm/hip )
++list( APPEND CMAKE_PREFIX_PATH $ENV{EBROOTROCMMINLLVM} $ENV{EBROOTHIP} )
+ 
+ # CMake modules
+ list(APPEND CMAKE_MODULE_PATH
+@@ -278,7 +278,7 @@ if(BUILD_CODE_COVERAGE)
+     COMMAND mkdir -p lcoverage
+     COMMAND echo "\\#!/bin/bash" > llvm-gcov.sh
+     COMMAND echo "\\# THIS FILE HAS BEEN GENERATED" >> llvm-gcov.sh
+-    COMMAND printf "exec /opt/rocm/llvm/bin/llvm-cov gcov $$\\@" >> llvm-gcov.sh
++    COMMAND printf "exec $ENV{EBROOTROCMMINLLVM}/bin/llvm-cov gcov $$\\@" >> llvm-gcov.sh
+     COMMAND chmod +x llvm-gcov.sh
+     )
