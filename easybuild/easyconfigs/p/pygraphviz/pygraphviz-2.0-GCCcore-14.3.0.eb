@@ -1,0 +1,36 @@
+# Update to v2: Stamen Miroslavov, BSC 2026
+
+easyblock = 'PythonBundle'
+
+name = 'pygraphviz'
+version = '2.0'
+
+homepage = 'https://pygraphviz.github.io'
+description = """PyGraphviz is a Python interface to the Graphviz graph layout and visualization package.
+With PyGraphviz you can create, edit, read, write, and draw graphs using Python to access the Graphviz
+graph data structure and layout algorithms."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+builddependencies = [
+    ('binutils', '2.44'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SWIG', '4.3.1'),
+    ('Graphviz', '13.1.2'),  # It needs to be the full build, 'minimal' is not enough
+]
+
+exts_list = [
+    (name, version, {
+        'checksums': ['7cc6cfff4bfa6c1bf389cbbf72f5995a717c69de69c18763544c04b41181f59e'],
+        # Allow 'size_t *' changes to be applied to GRAPHVIZ versions 13 as well:
+        # See https://github.com/pygraphviz/pygraphviz/pull/603
+        'preinstallopts': 'sed -i "s/>= 14/>= 13/" pygraphviz/graphviz.i && '
+        # Enforce GRAPHVIZ discovery via EB:
+                          'export GRAPHVIZ_PREFIX="$EBROOTGRAPHVIZ" && ',
+    }),
+]
+
+moduleclass = 'vis'
