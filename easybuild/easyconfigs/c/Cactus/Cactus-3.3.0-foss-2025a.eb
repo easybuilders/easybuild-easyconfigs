@@ -1,0 +1,80 @@
+easyblock = 'PythonBundle'
+
+name = 'Cactus'
+version = '3.3.0'
+
+homepage = 'https://github.com/ComparativeGenomicsToolkit/cactus'
+description = """Cactus is a reference-free whole-genome alignment program,
+as well as a pangenome graph construction toolkit."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [('Autotools', '20240712')]
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('Biopython', '1.85'),
+    ('Pysam', '0.23.3'),
+    ('matplotlib', '3.10.3'),
+    ('HDF5', '1.14.6'),
+    ('jemalloc', '5.3.0'),
+    ('networkx', '3.5'),
+    ('toil', '9.5.0', '-aws'),
+]
+
+local_cactus_source_url = f'https://github.com/ComparativeGenomicsToolkit/cactus/releases/download/v{version}'
+local_cactus_download_filename = f'cactus-v{version}.tar.gz'
+local_cactus_source = f'cactus-{version}.tar.gz'
+local_cactus_checksum = 'b3253a324ee96721f287262070454a8ef0d23444d7a1403aece98141eea014d1'
+
+exts_list = [
+    ('sonLib', '2.0', {
+        'modulename': '%(name)s',
+        'source_urls': [local_cactus_source_url],
+        'sources': [{'download_filename': local_cactus_download_filename, 'filename': local_cactus_source}],
+        'start_dir': 'submodules/%(name)s',
+        'checksums': [local_cactus_checksum],
+    }),
+    ('%(namelower)s', version, {
+        'source_urls': [local_cactus_source_url],
+        'sources': [{'download_filename': local_cactus_download_filename, 'filename': local_cactus_source}],
+        'preinstallopts': (
+            # unpin networkx version, v2.8.1 is not supported
+            "sed -i 's/networkx>=2,<2.8.1/networkx>2.8.1/' setup.py && "
+            # Build the native Cactus tools and bundled third-party components before installing the Python package
+            'make -j %(parallel)s && '
+            # Cactus overwrites PYTHONPATH in its Makefile when running the test suite, which
+            # hides Python packages provided by loaded EasyBuild dependencies (including pytest).
+            # Preserve the existing PYTHONPATH while prepending the Cactus and bundled sonLib
+            # source directories. Force local binaries to avoid Docker during the test suite,
+            # and expose test output directly rather than redirecting it to per-test log files.
+            'CACTUS_BINARIES_MODE=local CACTUS_DOCKER_MODE=0 SONLIB_TEST_LENGTH=SHORT '
+            'make PYTHONPATH="$PWD/submodules/sonLib/src:$PWD/submodules:$PWD/src:$PYTHONPATH" '
+            'test testErrOut= && '
+            # The Cactus build does not provide a conventional "make install": its Makefile
+            # assembles the native runtime executables and libraries in the source-tree bin/
+            # and lib/ directories. Copy these into the EasyBuild installation prefix.
+            'mkdir -p %(installdir)s/bin %(installdir)s/lib && '
+            'cp -a bin/. %(installdir)s/bin/ && '
+            'cp -a lib/. %(installdir)s/lib/ && '
+            # Some bundled HAL scripts are deliberately made non-writable during the build.
+            # Restore owner write permission so EasyBuild can perform its installation post-processing.
+            'chmod -R u+w %(installdir)s/bin %(installdir)s/lib && '
+        ),
+        'checksums': [local_cactus_checksum],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cactus', 'bin/cactus_consolidated', 'bin/halStats', 'bin/halValidate', 'bin/lastz'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'cactus --help',
+    'command -v cactus_consolidated',
+    'command -v halStats',
+    'command -v lastz',
+]
+
+moduleclass = 'bio'
