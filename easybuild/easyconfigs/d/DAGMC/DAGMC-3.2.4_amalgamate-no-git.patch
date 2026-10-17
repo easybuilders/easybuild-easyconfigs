@@ -1,0 +1,18 @@
+The pyne amalgamation script sets an unused 'githash' variable via `git rev-parse HEAD`,
+which fails when building from a release tarball (no .git directory). Because of `set -e`
+the script then aborts BEFORE remove_unsupported.py stubs out the unsupported
+Material::decay/Material::cram calls, leading to a compile error in pyne.cpp
+("no member named 'transmuters' in namespace 'pyne'"). Comment the line out.
+
+Author: Simon Pinches (ITER Organization)
+--- DAGMC-3.2.4.orig/src/pyne/amalgamate_pyne.sh
++++ DAGMC-3.2.4/src/pyne/amalgamate_pyne.sh
+@@ -18,7 +18,7 @@
+     src/source_sampling.*
+ cp pyne.cpp pyne.h $2
+
+-githash=`git rev-parse HEAD`
++#githash=`git rev-parse HEAD`  # unused, and fails (aborting the script via set -e) when building from a release tarball without .git
+ cd $2
+ python3 $1/remove_unsupported.py
+ mv -fv pyne.cpp.new pyne.cpp

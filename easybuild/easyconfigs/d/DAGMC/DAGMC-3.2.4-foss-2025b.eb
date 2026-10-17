@@ -1,0 +1,70 @@
+easyblock = 'CMakeMake'
+
+name = 'DAGMC'
+version = '3.2.4'
+
+homepage = 'https://svalinn.github.io/DAGMC/'
+description = """Direct Accelerated Geometry Monte Carlo (DAGMC) is a software package that allows
+users to perform Monte Carlo radiation transport directly on CAD models."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+# pyne submodule commit pinned by the v3.2.4 tag (needed for UWUW, not shipped in release tarball)
+local_pyne_commit = 'e55e52e24a5394aebec78a15e94842fba86f68c9'
+
+source_urls = ['https://github.com/svalinn/DAGMC/archive/refs/tags']
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'source_urls': ['https://github.com/pyne/pyne/archive'],
+        'download_filename': '%s.tar.gz' % local_pyne_commit,
+        'filename': 'pyne-%s.tar.gz' % local_pyne_commit,
+        'extract_cmd': "mkdir -p DAGMC-%s/src/pyne/pyne && "
+                       "tar -xzf %%s -C DAGMC-%s/src/pyne/pyne --strip-components=1" % (version, version),
+    },
+]
+patches = ['DAGMC-%(version)s_amalgamate-no-git.patch']
+checksums = [
+    'ace39cb6cc05f1de316815512a0afe9f96c771449f8f0b12d65dfed915fb9788',  # v3.2.4.tar.gz
+    '30207b34a555c62bf1d641d69a3ab320d4413097b72c502a4cf3303560df1c7e',  # pyne-e55e52e2...tar.gz
+    'd0487f6cdb641347269139acd4427b1ff7358a0b51cd8b0a00a52b04f8d527e8',  # DAGMC-3.2.4_amalgamate-no-git.patch
+]
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.6'),
+    ('Eigen', '3.4.0'),
+    ('MOAB', '5.6.0'),
+]
+
+# DAGMC build for use as OpenMC geometry backend, with UWUW enabled
+# (University of Wisconsin Unified Workflow material library, needed for OPENMC_USE_UWUW).
+# Other optional components (double-down/Embree, tally, tools, tests, MCNP plugins) disabled.
+configopts = ' '.join([
+    '-DMOAB_DIR=$EBROOTMOAB',
+    '-DBUILD_UWUW=ON',
+    '-DBUILD_TALLY=OFF',
+    '-DBUILD_BUILD_OBB=ON',
+    '-DBUILD_MAKE_WATERTIGHT=OFF',
+    '-DBUILD_OVERLAP_CHECK=OFF',
+    '-DBUILD_TESTS=OFF',
+    '-DBUILD_CI_TESTS=OFF',
+    '-DBUILD_MW_REG_TESTS=OFF',
+    '-DBUILD_RPATH=ON',
+    '-DBUILD_STATIC_EXE=OFF',
+    '-DBUILD_STATIC_LIBS=OFF',
+    '-DDOUBLE_DOWN=OFF',
+    '-DGIT_SUBMODULE=OFF',
+])
+
+sanity_check_paths = {
+    'files': ['bin/build_obb', 'bin/uwuw_preproc', 'lib/libdagmc.%s' % SHLIB_EXT,
+              'lib/libuwuw.%s' % SHLIB_EXT, 'include/DagMC.hpp'],
+    'dirs': ['include', 'lib/cmake/dagmc'],
+}
+
+moduleclass = 'phys'
