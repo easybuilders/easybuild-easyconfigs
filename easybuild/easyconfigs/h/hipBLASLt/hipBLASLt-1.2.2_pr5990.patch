@@ -1,0 +1,45 @@
+From 4fdf2bdabc38453de9b475320c1c93af047ecc3c Mon Sep 17 00:00:00 2001
+From: Afzal Patel <afzal.patel@amd.com>
+Date: Fri, 27 Mar 2026 08:38:21 -0700
+Subject: [PATCH 1/2] [hipblaslt] add option to set offload-bundler path
+
+---
+ projects/hipblaslt/device-library/CMakeLists.txt | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/projects/hipblaslt/device-library/CMakeLists.txt b/projects/hipblaslt/device-library/CMakeLists.txt
+index a9a698334ead..c101f3ddb63f 100644
+--- a/projects/hipblaslt/device-library/CMakeLists.txt
++++ b/projects/hipblaslt/device-library/CMakeLists.txt
+@@ -17,6 +17,9 @@ list(JOIN GPU_TARGETS "$<SEMICOLON>" TENSILELITE_GPU_TARGETS_SEMI_ESCAPED)
+ 
+ set(TENSILELITE_BUILD_OPTS ${TENSILELITE_BUILD_OPTS} "--architecture=${TENSILELITE_GPU_TARGETS_SEMI_ESCAPED}")
+ set(TENSILELITE_BUILD_OPTS ${TENSILELITE_BUILD_OPTS} "--cxx-compiler=${CMAKE_CXX_COMPILER}")
++if(TENSILELITE_OFFLOADBUNDLER)
++    set(TENSILELITE_BUILD_OPTS ${TENSILELITE_BUILD_OPTS} "--offload-bundler=${TENSILELITE_OFFLOADBUNDLER}")
++endif()
+ if(HIPBLASLT_ENABLE_ASAN)
+     set(TENSILELITE_BUILD_OPTS ${TENSILELITE_BUILD_OPTS} "--address-sanitizer")
+ endif()
+
+From 2c48e265d72c56bbc7c51abc60a2edc68b8b01bb Mon Sep 17 00:00:00 2001
+From: Afzal Patel <122491982+afzpatel@users.noreply.github.com>
+Date: Mon, 13 Apr 2026 11:38:26 -0400
+Subject: [PATCH 2/2] add TENSILELITE_OFFLOADBUNDLER to cache variables
+
+---
+ projects/hipblaslt/device-library/CMakeLists.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/projects/hipblaslt/device-library/CMakeLists.txt b/projects/hipblaslt/device-library/CMakeLists.txt
+index c101f3ddb63f..9843facd134c 100644
+--- a/projects/hipblaslt/device-library/CMakeLists.txt
++++ b/projects/hipblaslt/device-library/CMakeLists.txt
+@@ -8,6 +8,7 @@ set(TENSILELITE_LOGIC_FILTER "" CACHE STRING "Cutomsized logic filter, default i
+ set(TENSILELITE_NO_COMPRESS "" CACHE STRING "Do not compress device code object files.")
+ set(TENSILELITE_EXPERIMENTAL "" CACHE STRING "Process experimental logic files.")
+ set(TENSILELITE_ENABLE_ASM_COMMENTS OFF CACHE STRING "Turn on asm comments when building gemm libraries.")
++set(TENSILELITE_OFFLOADBUNDLER "" CACHE STRING "Path to clang-offload-bundler.")
+ 
+ set(HIPBLASLT_LIBLOGIC_PATH "" CACHE STRING "Path to library logic files (will use 'library' if unset).")
+ set(HIPBLASLT_TENSILE_LIBPATH "${hipblaslt_BINARY_DIR}/Tensile" CACHE STRING "Path to output the device gemm libraries.")
