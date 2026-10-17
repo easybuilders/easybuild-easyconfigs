@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'libxc'
+version = '7.1.2'
+
+homepage = 'https://libxc.gitlab.io'
+description = """Libxc is a library of exchange-correlation functionals for density-functional theory.
+ The aim is to provide a portable, well tested and reliable set of exchange and correlation functionals."""
+
+toolchain = {'name': 'GCC', 'version': '15.2.0'}
+
+source_urls = ['https://gitlab.com/%(name)s/%(name)s/-/archive/%(version)s/']
+sources = [SOURCE_TAR_BZ2]
+checksums = ['3915fac94416e4c415534223ea492ad2663f928acf27e98662c861b094a6c306']
+
+builddependencies = [
+    ('CMake', '3.31.11'),
+    ('Perl', '5.42.0'),
+    # 7.1 configures the test suite with pytest, and fails if it is missing
+    ('Python-bundle-PyPI', '2026.04'),
+]
+
+# 7.1.0 removed ENABLE_XHOST. Derivative order is MAXORDER (default 2);
+# DISABLE_KXC=OFF / DISABLE_LXC=OFF no longer keep the 3rd and 4th derivatives.
+# ABINIT needs those (see https://github.com/pyscf/pyscf/issues/1103).
+local_common_configopts = '-DENABLE_FORTRAN=ON -DMAXORDER=4 '
+
+# perform iterative build to get both static and shared libraries
+configopts = [
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
+]
+
+# make sure that built libraries (libxc*.so*) in build directory are picked when running tests
+# this is required when RPATH linking is used
+pretestopts = "export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj:$LD_LIBRARY_PATH && "
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/xc-info'] +
+             ['lib/libxc%s.%s' % (x, y) for x in ['', 'f03'] for y in ['a', SHLIB_EXT]],
+    'dirs': ['include', 'lib/pkgconfig', 'lib/cmake/Libxc'],
+}
+
+sanity_check_commands = ['xc-info 1']
+
+moduleclass = 'chem'
