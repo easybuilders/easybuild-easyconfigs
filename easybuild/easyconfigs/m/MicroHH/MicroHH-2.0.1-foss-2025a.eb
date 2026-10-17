@@ -1,0 +1,74 @@
+# Author: Bert Jorissen (Universiteit Antwerpen)
+
+easyblock = 'CMakeMake'
+
+name = 'MicroHH'
+version = '2.0.1'
+
+homepage = 'https://microhh.org/'
+description = """
+MicroHH is a computational fluid dynamics code designed to simulate turbulent flows in the atmosphere using
+Direct Numerical Simulation (DNS) and Large-Eddy Simulation (LES) techniques.
+Its capabilities span a range from highly idealized flows to realistic atmospheric boundary layers,
+incorporating all relevant processes, such as moist thermodynamics, radiation, land surface processes, and microphysics.
+The code is written in C++/CUDA and runs on both CPUs and GPUs.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+sources = [{
+    'filename': SOURCE_TAR_XZ,
+    'git_config': {
+        'url': 'https://github.com/microhh',
+        'repo_name': 'microhh',
+        'tag': '%(version)s',
+        'recursive': True,
+        'keep_git_dir': True,
+    },
+}]
+checksums = ['cda9a1e954b55132728ece4c5087272dd55cd0ede93b278fd316b2657ed30b49']
+
+builddependencies = [
+    ('Boost', '1.88.0'),
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.6'),
+    ('netCDF', '4.9.3'),
+    ('netcdf4-python', '1.7.2'),
+]
+
+preconfigopts = 'cp %(builddir)s/%(namelower)s/config/generic.cmake %(builddir)s/%(namelower)s/config/default.cmake && '
+configopts = '-DUSEMPI=TRUE'
+
+test_cmd = 'cp %(builddir)s/%(namelower)s/cases/drycblles/drycblles_input.py . && '
+test_cmd += 'cp %(builddir)s/%(namelower)s/cases/drycblles/drycblles.ini . && '
+test_cmd += 'python drycblles_input.py && '
+test_cmd += 'sed -i "/^savetime/ s/1800/300/g" drycblles.ini && '
+test_cmd += 'sed -i "/^endtime/ s/10800/300/g" drycblles.ini && '
+test_cmd += 'mpirun -np 1 microhh init drycblles && '
+test_cmd += 'mpirun -np 1 microhh run drycblles && '
+test_cmd += '[ -f drycblles.default.0000000.nc ]'
+
+install_cmd = 'mkdir -p %(installdir)s/bin && '
+install_cmd += 'cp microhh %(installdir)s/bin && '
+install_cmd += 'cp -r %(builddir)s/%(namelower)s/cases %(installdir)s/cases'
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/lib/python%(pyshortver)s',
+    'cp -r %(builddir)s/%(namelower)s/python %(installdir)s/lib/python%(pyshortver)s/site-packages',
+]
+
+sanity_check_paths = {
+    'files': ['bin/microhh'],
+    'dirs':  ['bin', 'cases', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+modextravars = {
+    "OMPI_MCA_fcoll": "two_phase",
+    "OMPI_MCA_io_ompio_bytes_per_agg": "512MB",
+}
+
+moduleclass = 'cae'
