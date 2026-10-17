@@ -1,0 +1,47 @@
+Remove the bundled LongPhase download and use an EasyBuild dependency.
+Author: Emik Lin (HKUMed CPOS)
+diff --git a/Makefile b/Makefile
+index 68c686e..fb595d8 100644
+--- a/Makefile
++++ b/Makefile
+@@ -6,2 +6,2 @@
+-all : longphase libclair3.so
+-clean : clean_longphase clean_libclair3
++all : libclair3.so
++clean : clean_libclair3
+@@ -21 +20,0 @@ ifeq ($(OS),Darwin)
+-    LPVER := 1.5
+@@ -26 +24,0 @@ else
+-    LPVER := 1.7.3
+@@ -28 +25,0 @@ else
+-    GXX ?= g++
+@@ -32,14 +28,0 @@ endif
+-longphase:
+-	if [ "$(OS)" = "Darwin" ]; then \
+-		curl -L -o v${LPVER}.tar.gz https://github.com/twolinin/longphase/archive/refs/tags/v${LPVER}.tar.gz; \
+-		tar -zxf v${LPVER}.tar.gz; \
+-		cd longphase-${LPVER} && autoreconf -i && CC=${CC_PATH} CPPFLAGS="" CFLAGS="" LDFLAGS="" ./configure && make -j; \
+-		cd .. && rm v${LPVER}.tar.gz; \
+-		cp longphase-${LPVER}/longphase $@; \
+-	else \
+-		curl -L -o longphase-${LPVER}.tar.xz https://github.com/twolinin/longphase/releases/download/v${LPVER}/longphase_linux-x64.tar.xz; \
+-		tar -xJf longphase-${LPVER}.tar.xz; \
+-		mv longphase_linux-x64 $@; \
+-		rm longphase-${LPVER}.tar.xz; \
+-	fi
+-
+@@ -59,7 +41,0 @@ fa_test: src/fa_test.o src/levenshtein.o src/medaka_bamiter.o src/medaka_common.
+-.PHONY: clean_longphase
+-clean_longphase:
+-	rm longphase
+-	if [ "$(OS)" = "Darwin" ]; then \
+-		rm -rf $(LONGPHASE_DIR); \
+-	fi
+-
+diff --git a/run_clair3.py b/run_clair3.py
+index 9950ae9..b60ef30 100755
+--- a/run_clair3.py
++++ b/run_clair3.py
+@@ -335 +335 @@ def main():
+-        longphase_bin = str(ROOT / "longphase")
++        longphase_bin = str(Path(os.environ["EBROOTLONGPHASE"]) / "bin" / "longphase")
