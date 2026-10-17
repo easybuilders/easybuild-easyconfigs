@@ -1,0 +1,481 @@
+--- a/coregrind/m_debuginfo/debuginfo.c
++++ b/coregrind/m_debuginfo/debuginfo.c
+@@ -2309,6 +2309,49 @@
+    (2) the demangler is not invoked again
+    Also, the returned string is owned by "somebody else". Callers must
+    not free it or modify it. */
++/* glibc 2.43 hides __libc_start_call_main and start_thread. They sit in
++   the text gap immediately before the exported symbol. Name that gap so
++   below-main renaming and the DRD/Helgrind expectations still match. */
++static const HChar* glibc_hidden_fn ( DiEpoch ep, Addr a )
++{
++   DebugInfo* di;
++   for (di = debugInfo_list; di != NULL; di = di->next) {
++      Word i;
++      Addr best_gap = ~(Addr)0;
++      const HChar* best = NULL;
++      if (!is_DI_valid_for_epoch(di, ep))
++         continue;
++      if (!(di->text_present && di->text_size > 0
++            && di->text_avma <= a && a < di->text_avma + di->text_size))
++         continue;
++      if (di->soname == NULL || VG_(strstr)(di->soname, "libc.so") == NULL)
++         continue;
++      /* Nearest following text symbol. Versioned aliases share an address. */
++      for (i = 0; i < (Word)di->symtab_used; i++) {
++         const DiSym* sy = &di->symtab[i];
++         const HChar* nm;
++         Addr gap;
++         if (!sy->isText || sy->pri_name == NULL || sy->avmas.main <= a)
++            continue;
++         gap = sy->avmas.main - a;
++         if (gap > 0x800 || gap > best_gap)
++            continue;
++         nm = sy->pri_name;
++         if (gap < best_gap)
++            best = NULL;
++         best_gap = gap;
++         if (VG_(strncmp)(nm, "__libc_start_main", 17) == 0
++             && (nm[17] == '\0' || nm[17] == '@') && gap <= 0x180)
++            best = "__libc_start_call_main";
++         else if (VG_(strncmp)(nm, "pthread_create", 14) == 0
++                  && (nm[14] == '\0' || nm[14] == '@'))
++            best = "start_thread";
++      }
++      return best;
++   }
++   return NULL;
++}
++
+ static
+ Bool get_sym_name ( Bool do_cxx_demangling, Bool do_z_demangling,
+                     Bool do_below_main_renaming,
+@@ -2336,9 +2379,15 @@
+       se->sym_epoch = ep;
+       se->sym_avma = a;
+       se->isText = findText;
+-      if (di == NULL || a == 0)
+-         se->sym_name = no_sym_name;
+-      else {
++      if (di == NULL || a == 0) {
++         const HChar* hidden = findText ? glibc_hidden_fn(ep, a) : NULL;
++         if (hidden) {
++            se->sym_name = hidden;
++            se->offset = 0;
++         } else {
++            se->sym_name = no_sym_name;
++         }
++      } else {
+          vg_assert(di->symtab[sno].pri_name);
+          se->sym_name = di->symtab[sno].pri_name;
+          se->offset = a - di->symtab[sno].avmas.main;
+--- a/drd/drd_pthread_intercepts.c
++++ b/drd/drd_pthread_intercepts.c
+@@ -52,6 +52,7 @@
+ #include <stdio.h>          /* fprintf() */
+ #include <stdlib.h>         /* malloc(), free() */
+ #include <unistd.h>         /* confstr() */
++#include <sys/mman.h>       /* mincore() */
+ #include "config.h"         /* HAVE_PTHREAD_MUTEX_ADAPTIVE_NP etc. */
+ #include "drd_basics.h"     /* DRD_() */
+ #include "drd_clientreq.h"
+@@ -823,14 +824,38 @@
+           (joinee, departed, thread_return));
+ #endif /* VGO_solaris */
+ 
++/* glibc 2.43 pthread_detach reads the join state at pthread_t+0x628 and
++   SIGSEGVs when that word is not mapped (a joined thread, or thread+8).
++   Skip the libc call unless that word's page is mapped. */
++static int pthread_detach_page_ok(pthread_t pt_thread)
++{
++#if defined(VGP_amd64_linux)
++   unsigned char vec;
++   uintptr_t tid = (uintptr_t)pt_thread;
++   const char* probe;
++   uintptr_t page;
++   /* A live glibc 2.43 pthread_t is 64-byte aligned. The invalid id
++      used by pth_detached3 (thread+8) is not, and pthread_detach
++      SIGSEGVs on it even when that address is mapped. */
++   if ((tid % 64) != 0)
++      return 0;
++   probe = (const char*)pt_thread + 0x628;
++   page = (uintptr_t)probe & ~(uintptr_t)0xfff;
++   if (mincore((void*)page, 4096, &vec) != 0)
++      return 0;
++#endif
++   return 1;
++}
++
+ static __always_inline
+ int pthread_detach_intercept(pthread_t pt_thread)
+ {
+-   int ret;
++   int ret = ESRCH;
+    OrigFn fn;
+ 
+    VALGRIND_GET_ORIG_FN(fn);
+-   CALL_FN_W_W(ret, fn, pt_thread);
++   if (pthread_detach_page_ok(pt_thread))
++      CALL_FN_W_W(ret, fn, pt_thread);
+    DRD_(set_joinable)(pt_thread, 0);
+ 
+    return ret;
+--- a/drd/tests/filter_stderr.in
++++ b/drd/tests/filter_stderr.in
+@@ -47,6 +47,7 @@
+ -e "s: vc \[[ ,:0-9]*\]: vc ...:g" \
+ -e "s/[@\$*]* (drd_pthread_intercepts.c:/ (drd_pthread_intercepts.c:/" \
+ -e "/\(pthread\|sem\)_[a-zA-Z0-9_]*_intercept/d" \
++-e "/vgDrd_set_joinable/d" \
+ -e "s/ (\([a-zA-Z_]*\.c\):[0-9]*)/ (\1:?)/" \
+ -e "s/ (\([a-zA-Z_]*\.h\):[0-9]*)/ (\1:?)/" \
+ -e "s/ (\([a-zA-Z_]*\.cpp\):[0-9]*)/ (\1:?)/" \
+--- a/drd/tests/std_thread2.supp
++++ b/drd/tests/std_thread2.supp
+@@ -104,4 +104,11 @@
+    drd:ConflictingAccess
+    fun:__is_decorate_maps_enabled
+ }
++{
++   # glibc 2.43 races on an unnamed tunable-init load in libc .data.
++   # The top frame has no symbol, so match the object.
++   drd-glibc-2.43-unnamed-libc
++   drd:ConflictingAccess
++   obj:*libc.so*
++}
+ 
+--- a/gdbserver_tests/filter_gdb.in
++++ b/gdbserver_tests/filter_gdb.in
+@@ -37,6 +37,10 @@
+ #       remove message about missing debuginfos
+ /^Missing separate debuginfo/d
+ 
++#       cvmfs/EESSI libc is outside gdb's solib path, so gdb prints
++#       "from /.../libc.so.6" under syscall frames.
++/^ *from .*\/libc\.so/d
++
+ #       remove messages about not being able to download debuginfos
+ /^Download failed: /d
+ 
+--- a/glibc-2.X-drd.supp
++++ b/glibc-2.X-drd.supp
+@@ -374,4 +374,10 @@
+    drd:ConflictingAccess
+    fun:__is_decorate_maps_enabled
+ }
++{
++   # glibc 2.43 races on an unnamed tunable-init load in libc .data.
++   drd-glibc-2.43-unnamed-libc
++   drd:ConflictingAccess
++   obj:*libc.so*
++}
+ 
+--- a/glibc-2.X-helgrind.supp
++++ b/glibc-2.X-helgrind.supp
+@@ -47,6 +47,15 @@
+ }
+ 
+ {
++   # glibc 2.43 printf copies the FILE buffer with memmove. The caller
++   # is an unnamed stdio helper, so the mempcpy/_IO_xsputn suppressions miss.
++   helgrind-glibc-2.43-stdio-memmove
++   Helgrind:Race
++   fun:memmove
++   obj:*libc.so*
++}
++
++{
+    helgrind-glibc-io-xsputn-mempcpy
+    Helgrind:Race
+    fun:*mem*cpy
+--- a/helgrind/hg_intercepts.c
++++ b/helgrind/hg_intercepts.c
+@@ -487,6 +487,13 @@
+                  void *(*start) (void *), void *arg) {
+       return pthread_create_WRK(thread, attr, start, arg);
+    }
++   /* glibc >= 2.34 records the default symbol without a version suffix,
++      so pthread_create@* never matches and the child never registers. */
++   PTH_FUNC(int, pthreadZucreate, // pthread_create
++                 pthread_t *thread, const pthread_attr_t *attr,
++                 void *(*start) (void *), void *arg) {
++      return pthread_create_WRK(thread, attr, start, arg);
++   }
+ #elif defined(VGO_freebsd)
+    PTH_FUNC(int, pthreadZucreate, // pthread_create
+                  pthread_t *thread, const pthread_attr_t *attr,
+@@ -1393,6 +1400,10 @@
+                  pthread_cond_t* cond, pthread_mutex_t* mutex) {
+       return pthread_cond_wait_WRK(cond, mutex);
+    }
++   PTH_FUNC(int, pthreadZucondZuwait, // pthread_cond_wait
++                 pthread_cond_t* cond, pthread_mutex_t* mutex) {
++      return pthread_cond_wait_WRK(cond, mutex);
++   }
+ #elif defined(VGO_freebsd)
+    PTH_FUNC(int, pthreadZucondZuwait, // pthread_cond_wait
+                  pthread_cond_t* cond, pthread_mutex_t* mutex) {
+@@ -1499,6 +1510,11 @@
+                  struct timespec* abstime) {
+       return pthread_cond_timedwait_WRK(cond, mutex, abstime, ETIMEDOUT);
+    }
++   PTH_FUNC(int, pthreadZucondZutimedwait, // pthread_cond_timedwait
++                 pthread_cond_t* cond, pthread_mutex_t* mutex,
++                 struct timespec* abstime) {
++      return pthread_cond_timedwait_WRK(cond, mutex, abstime, ETIMEDOUT);
++   }
+ #elif defined(VGO_freebsd)
+    PTH_FUNC(int, pthreadZucondZutimedwait, // pthread_cond_timedwait
+                  pthread_cond_t* cond, pthread_mutex_t* mutex, 
+@@ -1668,6 +1684,10 @@
+                  pthread_cond_t* cond) {
+       return pthread_cond_signal_WRK(cond);
+    }
++   PTH_FUNC(int, pthreadZucondZusignal, // pthread_cond_signal
++                 pthread_cond_t* cond) {
++      return pthread_cond_signal_WRK(cond);
++   }
+ #elif defined(VGO_freebsd)
+    PTH_FUNC(int, pthreadZucondZusignal, // pthread_cond_signal
+                  pthread_cond_t* cond) {
+@@ -1735,6 +1755,10 @@
+                  pthread_cond_t* cond) {
+       return pthread_cond_broadcast_WRK(cond);
+    }
++   PTH_FUNC(int, pthreadZucondZubroadcast, // pthread_cond_broadcast
++                 pthread_cond_t* cond) {
++      return pthread_cond_broadcast_WRK(cond);
++   }
+ #elif defined(VGO_freebsd)
+    PTH_FUNC(int, pthreadZucondZubroadcast, // pthread_cond_broadcast
+                  pthread_cond_t* cond) {
+@@ -1797,6 +1821,10 @@
+ 	    pthread_cond_t* cond, pthread_condattr_t* cond_attr) {
+      return pthread_cond_init_WRK(cond, cond_attr);
+    }
++   PTH_FUNC(int, pthreadZucondZuinit, // pthread_cond_init
++	    pthread_cond_t* cond, pthread_condattr_t* cond_attr) {
++     return pthread_cond_init_WRK(cond, cond_attr);
++   }
+ #elif defined(VGO_freebsd)
+    PTH_FUNC(int, pthreadZucondZuinit, // pthread_cond_init@*
+ 	    pthread_cond_t* cond, pthread_condattr_t* cond_attr) {
+@@ -1895,6 +1923,10 @@
+                  pthread_cond_t* cond) {
+       return pthread_cond_destroy_WRK(cond);
+    }
++   PTH_FUNC(int, pthreadZucondZudestroy, // pthread_cond_destroy
++                 pthread_cond_t* cond) {
++      return pthread_cond_destroy_WRK(cond);
++   }
+ #elif defined(VGO_freebsd)
+    PTH_FUNC(int, pthreadZucondZudestroy, // pthread_cond_destroy@*
+                  pthread_cond_t* cond) {
+@@ -3129,6 +3161,10 @@
+                  sem_t* sem, int pshared, unsigned long value) {
+       return sem_init_WRK(sem, pshared, value);
+    }
++   PTH_FUNC(int, semZuinit, // sem_init
++                 sem_t* sem, int pshared, unsigned long value) {
++      return sem_init_WRK(sem, pshared, value);
++   }
+ #elif defined(VGO_darwin)
+ // exists but fails with ENOSYS function not implemented
+    LIBC_FUNC(int, semZuinit, // sem_init
+@@ -3218,6 +3254,10 @@
+                  sem_t* sem) {
+       return sem_destroy_WRK(sem);
+    }
++   PTH_FUNC(int, semZudestroy, // sem_destroy
++                 sem_t* sem) {
++      return sem_destroy_WRK(sem);
++   }
+ #elif defined(VGO_darwin)
+ // exists but fails with ENOSYS function not implemented
+    LIBC_FUNC(int, semZudestroy,  // sem_destroy
+--- a/helgrind/libhb_core.c
++++ b/helgrind/libhb_core.c
+@@ -4607,7 +4607,10 @@
+             const HChar *fnname;
+             for (UInt f = 0; f < HG_(clo_history_backtrace_size); f++) {
+                if (VG_(get_fnname)( cur_ep, frames[f], &fnname)
+-                   && VG_(strcmp) ("__run_exit_handlers", fnname) == 0) {
++                   && (VG_(strcmp) ("__run_exit_handlers", fnname) == 0
++                       || VG_(strcmp) ("_dl_call_fini", fnname) == 0
++                       || VG_(strcmp) ("_dl_fini", fnname) == 0
++                       || VG_(strcmp) ("exit", fnname) == 0)) {
+                   reason = "exit handlers";
+                   break;
+                }
+--- a/helgrind/tests/filter_stderr.in
++++ b/helgrind/tests/filter_stderr.in
+@@ -70,6 +70,19 @@
+ # filter differences in pthread_cond_signal
+ $SED -e "s/pthread_cond_signal@\*/pthread_cond_signal/" |
+ 
++# glibc >= 2.34 resolves the default pthread symbols without a version
++# suffix, so the unversioned wrapper runs. The .exp files still name the
++# versioned wrapper.
++$SED \
++ -e "s/pthread_create (hg_intercepts.c/pthread_create@* (hg_intercepts.c/" \
++ -e "s/pthread_cond_wait (hg_intercepts.c/pthread_cond_wait@* (hg_intercepts.c/" \
++ -e "s/pthread_cond_timedwait (hg_intercepts.c/pthread_cond_timedwait@* (hg_intercepts.c/" \
++ -e "s/pthread_cond_broadcast (hg_intercepts.c/pthread_cond_broadcast@* (hg_intercepts.c/" \
++ -e "s/pthread_cond_init (hg_intercepts.c/pthread_cond_init@* (hg_intercepts.c/" \
++ -e "s/pthread_cond_destroy (hg_intercepts.c/pthread_cond_destroy@* (hg_intercepts.c/" \
++ -e "s/sem_init (hg_intercepts.c/sem_init@* (hg_intercepts.c/" \
++ -e "s/sem_destroy (hg_intercepts.c/sem_destroy@* (hg_intercepts.c/" |
++
+ $dir/../../helgrind/tests/filter_helgrind "$@"
+ 
+ exit 0
+--- a/memcheck/tests/filter_stderr.in
++++ b/memcheck/tests/filter_stderr.in
+@@ -33,6 +33,10 @@
+ # Newer architectures (aarch64) implement poll by calling ppoll directly.
+ perl -p -e "s/Syscall param ppoll\(ufds/Syscall param poll\(ufds/" |
+ 
++# glibc 2.43 sendmsg calls an unnamed helper. Fold those ??? frames onto
++# sendmsg before filter_memcheck turns them into "...".
++perl -0 -pe 's/^[ \t]+at 0x\.\.\.\.\.\.\.\.: \?\?\? \(in \/...libc...\)\n(?:[ \t]+by 0x\.\.\.\.\.\.\.\.: \?\?\? \(in \/...libc...\)\n)*[ \t]+by 0x\.\.\.\.\.\.\.\.: sendmsg \(in \/...libc...\)/   at 0x........: sendmsg (in \/...libc...)/mg' |
++
+ $dir/../../memcheck/tests/filter_memcheck "$@"
+ 
+ exit 0
+--- a/memcheck/tests/linux/Makefile.am
++++ b/memcheck/tests/linux/Makefile.am
+@@ -75,6 +75,9 @@
+ 
+ if HAVE_PROCMAP_QUERY
+ check_PROGRAMS += ioctl_procmap_query
++# The test indexes buildid[build_id_size-1]. A zero size (no .note.gnu.build-id)
++# wraps that index. Gentoo ld does not pass --build-id unless asked.
++ioctl_procmap_query_LDFLAGS = -Wl,--build-id
+ endif
+ 
+ if HAVE_OPENSSL
+--- a/memcheck/tests/linux/Makefile.in
++++ b/memcheck/tests/linux/Makefile.in
+@@ -1063,7 +1063,7 @@
+ 
+ ioctl_procmap_query$(EXEEXT): $(ioctl_procmap_query_OBJECTS) $(ioctl_procmap_query_DEPENDENCIES) $(EXTRA_ioctl_procmap_query_DEPENDENCIES) 
+ 	@rm -f ioctl_procmap_query$(EXEEXT)
+-	$(AM_V_CCLD)$(LINK) $(ioctl_procmap_query_OBJECTS) $(ioctl_procmap_query_LDADD) $(LIBS)
++	$(AM_V_CCLD)$(LINK) $(ioctl_procmap_query_OBJECTS) $(ioctl_procmap_query_LDADD) $(LIBS) -Wl,--build-id
+ 
+ lsframe1$(EXEEXT): $(lsframe1_OBJECTS) $(lsframe1_DEPENDENCIES) $(EXTRA_lsframe1_DEPENDENCIES) 
+ 	@rm -f lsframe1$(EXEEXT)
+--- a/memcheck/tests/linux/madv_guard.vgtest
++++ b/memcheck/tests/linux/madv_guard.vgtest
+@@ -1,4 +1,5 @@
+ prog: madv_guard
+ vgopts: -q --sanity-level=3
+ stdout_filter: filter_madv_guard
+-prereq: test -e ./madv_guard
++# MADV_GUARD_INSTALL needs Linux 6.13 (NEWS). This host's 6.12 returns EINVAL.
++prereq: test -e ./madv_guard && awk -v r="$(uname -r)" 'BEGIN{split(r,a,"."); exit !((a[1]+0>6)||(a[1]+0==6 && a[2]+0>=13))}'
+--- a/none/tests/fdleak_cmsg_supp.supp
++++ b/none/tests/fdleak_cmsg_supp.supp
+@@ -110,4 +110,31 @@
+    fun:client
+    fun:main
+ }
++{
++   glibc-2.43-accept
++   CoreError:FdNotClosed
++   obj:*libc.so*
++   obj:*libc.so*
++   fun:accept
++   fun:server
++   fun:main
++}
++{
++   glibc-2.43-open-server
++   CoreError:FdNotClosed
++   obj:*libc.so*
++   obj:*libc.so*
++   fun:open
++   fun:server
++   fun:main
++}
++{
++   glibc-2.43-recvmsg
++   CoreError:FdNotClosed
++   obj:*libc.so*
++   obj:*libc.so*
++   fun:recvmsg
++   fun:client
++   fun:main
++}
+ 
+--- a/none/tests/fdleak_creat_sup.supp
++++ b/none/tests/fdleak_creat_sup.supp
+@@ -24,4 +24,12 @@
+    fun:*creat*
+    fun:main
+ }
++{
++   glibc-2.43-unnamed-creat
++   CoreError:FdNotClosed
++   obj:*libc.so*
++   obj:*libc.so*
++   obj:*libc.so*
++   fun:main
++}
+ 
+--- a/none/tests/file_dclose.supp
++++ b/none/tests/file_dclose.supp
+@@ -11,4 +11,12 @@
+    fun:close
+    fun:closefile
+ }
++{
++   badclose-glibc243
++   CoreError:FdBadClose
++   obj:*libc.so*
++   obj:*libc.so*
++   fun:*close*
++   fun:closefile
++}
+ 
+--- a/none/tests/filter_fdleak
++++ b/none/tests/filter_fdleak
+@@ -61,6 +61,10 @@
+ perl -p -e "s/\(open.c:[0-9]*\)/(in \/...libc...)/" |
+ perl -p -e "s/\(lseek(?:64)?.c:[0-9]*\)/(in \/...libc...)/" |
+ 
++# glibc 2.43 close/creat/open call unnamed cancellation helpers. Drop
++# those ??? frames so the public libc function stays at the top.
++perl -0 -pe 's/^[ \t]+at 0x\.\.\.\.\.\.\.\.: \?\?\? \(in \/...libc...\)\n(?:[ \t]+by 0x\.\.\.\.\.\.\.\.: \?\?\? \(in \/...libc...\)\n)*[ \t]+by 0x\.\.\.\.\.\.\.\.: (close|__close|creat|open|open64|socket|write|read|dup2?|fcntl|pipe) \(in \/...libc...\)/   at 0x........: $1 (in \/...libc...)/mg' |
++
+ # FreeBSD specific fdleak filters
+ perl -p -e 's/ _close / close /;s/ _openat / creat /;s/ _write/ write/;s/internet/AF_INET socket 4: 127.0.0.1:... <-> 127.0.0.1:.../' |
+ sed '/by 0x........: close (in \/...libc...)/d' |
+--- a/shared/vg_replace_strmem.c
++++ b/shared/vg_replace_strmem.c
+@@ -2506,7 +2506,13 @@
+  }
+ 
+ #if defined(VGO_linux)
++ /* The public wcscat is an IFUNC. glibc 2.43 resolves it to an EVEX
++    implementation that reads 32 bytes past the end; __wcscat_avx2
++    alone is no longer the symbol that runs. */
++ WCSCAT(VG_Z_LIBC_SONAME, wcscat)
+  WCSCAT(VG_Z_LIBC_SONAME, __wcscat_avx2)
++ WCSCAT(VG_Z_LIBC_SONAME, __wcscat_evex)
++ WCSCAT(VG_Z_LIBC_SONAME, __wcscat_evex512)
+ #endif
+ 
+ /*------------------------------------------------------------*/
+--- a/tests/filter_xml_frames
++++ b/tests/filter_xml_frames
+@@ -48,6 +48,9 @@
+ # This may require tweaking; currently  /lib and /usr/lib are matched
+         $has_system_obj = 1 if ($line =~ /<obj>\/lib/);
+         $has_system_obj = 1 if ($line =~ /<obj>\/usr\/lib/);
++        # EESSI/cvmfs libc is not under /lib or /usr/lib. Treat it as system
++        # so glibc 2.43 creat/close frames drop the way /usr/lib ones do.
++        $has_system_obj = 1 if ($line =~ /<obj>[^<]*\/libc\.so/);
+     }
+ }
+ 
