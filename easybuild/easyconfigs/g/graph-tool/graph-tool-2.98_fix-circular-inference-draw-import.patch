@@ -1,0 +1,28 @@
+Fix circular import between graph_tool.inference and graph_tool.draw.
+
+base_states imports graph_tool.draw while graph_tool.inference is still being
+initialized. graph_tool.draw imports symbols back from graph_tool.inference,
+which causes a direct import of graph_tool.inference to fail with a partially
+initialized module error. Import graph_tool.draw lazily in DrawBlockState.draw(),
+where it is actually needed.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- a/src/graph_tool/inference/base_states.py
++++ b/src/graph_tool/inference/base_states.py
+@@ -30,8 +30,6 @@
+ import math
+ import numpy
+ 
+-import graph_tool.draw
+-
+ __test__ = False
+ 
+ def set_test(test):
+@@ -794,6 +792,7 @@
+     def draw(self, **kwargs):
+         r"""Convenience wrapper to :func:`~graph_tool.draw.graph_draw` that
+         draws the state of the graph as colors on the vertices and edges."""
++        import graph_tool.draw
+         gradient = self.g.new_ep("double")
+         gradient = group_vector_property([gradient])
+         b = self.g.own_property(self.b)
