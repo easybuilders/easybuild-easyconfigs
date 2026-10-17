@@ -1,0 +1,70 @@
+# author: Nicolas Rapin
+# email : nra@ngc.dk
+
+name = 'LRE-Finder'
+version = '1.0.1'
+
+homepage = 'https://bitbucket.org/genomicepidemiology/lre-finder/'
+description = """LRE-Finder: detect linezolid resistance determinants (CGE)."""
+
+easyblock = 'MakeCp'
+toolchain = {'name': 'GCC', 'version': '13.2.0'}
+
+source_urls = ['https://bitbucket.org/genomicepidemiology/lre-finder/get']
+sources = [f'{version}.tar.gz']
+checksums = ['bc3c715f7576da6e3091cc0f060a94b91e470c3baddb59693ee948ae10471cfc']
+
+builddependencies = []
+
+# Runtime deps (note: versionsuffix goes in the 3rd tuple element)
+dependencies = [
+    ('Python', '3.11.5'),
+    ('kma', '1.6.6'),
+]
+
+# MakeCp copies the whole tree; nothing extra to copy
+files_to_copy = ['*.*', '*']
+
+# Unpack DB, build KMA index, create a lightweight wrapper
+postinstallcmds = [
+    # Unpack DB if present
+    "set -e; cd %(installdir)s; "
+    "if [ -f elmDB.tar.gz ]; then tar -xvzf elmDB.tar.gz; fi",
+
+    # Index DB if needed (KMA expects a *prefix*; here it's elmDB/elm)
+    "set -e; cd %(installdir)s; "
+    "if [ -d elmDB ] && [ -f elmDB/elm.fsa ]; then "
+    "  if [ ! -f elmDB/elm.length ]; then "
+    "    kma index -i elmDB/elm.fsa -o elmDB/elm || true; "
+    "  fi; "
+    "fi",
+
+    # Small wrapper: sets DB env var then runs the upstream Python with user args
+    "mkdir -p %(installdir)s/bin",
+    "cat > %(installdir)s/bin/lre-finder <<'EOF'\n"
+    "#!/usr/bin/env bash\n"
+    "set -euo pipefail\n"
+    "ROOT=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")/..\" && pwd)\"\n"
+    "DB_PREFIX=\"${LREFINDER_DB:-$ROOT/elmDB/elm}\"\n"
+    "export LREFINDER_DB=\"$DB_PREFIX\"\n"
+    "exec $(ebrootpython 2>/dev/null || command -v python3 || echo python) "
+    "\"$ROOT/LRE-Finder.py\" -t_db \"$LREFINDER_DB\" \"$@\"\n"
+    "EOF",
+    "chmod +x %(installdir)s/bin/lre-finder",
+]
+
+# Sanity: DB index files exist
+sanity_check_paths = {
+    'files': [
+        'bin/lre-finder',
+    ],
+    'dirs': ['elmDB'],
+}
+
+# Put wrapper on PATH; users can also run python $EBROOTLREFINDER/LRE-Finder.py manually
+modextrapaths = {'PATH': ['bin']}
+
+# Make the DB prefix discoverable if users don’t use the wrapper
+modextravars = {'LREFINDER_DB': '%(installdir)s/elmDB/elm'}
+
+moduleclass = 'bio'
