@@ -1,0 +1,54 @@
+easyblock = 'CMakeNinja'
+
+name = 'med'
+version = '5.0.0'
+
+homepage = 'https://www.salome-platform.org'
+description = '''MED: interoperable format for data interchange between mesh based solvers'''
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://files.salome-platform.org/Salome/medfile/']
+sources = [SOURCELOWER_TAR_BZ2]
+patches = ['med-5.0.0-hdf5-1.14-compat.patch']
+checksums = [
+    {'med-5.0.0.tar.bz2': '267e76d0c67ec51c10e3199484ec1508baa8d5ed845c628adf660529dce7a3d4'},
+    {'med-5.0.0-hdf5-1.14-compat.patch': '91937b08316fc5acca0709031341bb2a6fea04c0bcbaab1274be554c4723b514'},
+]
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('Ninja', '1.11.1'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.3'),
+    ('Python', '3.11.5'),
+    ('SWIG', '4.1.1'),
+    ('Tk', '8.6.13'),
+]
+
+configopts = ''
+configopts += ' -DMEDFILE_BUILD_PYTHON=ON'
+configopts += ' -DMEDFILE_BUILD_TESTS=OFF'
+configopts += ' -DMEDFILE_INSTALL_DOC=OFF'
+
+sanity_check_paths = {
+    'files': [
+        'lib/libmed.%s' % SHLIB_EXT,
+        'lib/libmedC.%s' % SHLIB_EXT,
+        'lib/python%(pyshortver)s/site-packages/med/medfile.py',
+        'lib/python%%(pyshortver)s/site-packages/med/_medmesh.%s' % SHLIB_EXT,
+        'include/med.h',
+        'include/medfile.h',
+        'include/medmesh.h',
+    ],
+    'dirs': [
+        'bin',
+        'include',
+        'share/cmake/medfile-%(version)s',
+        'lib/python%(pyshortver)s/site-packages',
+    ],
+}
+
+moduleclass = 'tools'
