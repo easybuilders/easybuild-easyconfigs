@@ -1,0 +1,67 @@
+Patch to modify make.inc to work with EasyBuild
+Author: J. Sassmannshausen (Imperial College London/UK)
+diff --git a/elk-11.2.3.orig/make.inc b/elk-11.2.3/make.inc
+index 4fec681..9859881 100644
+--- a/elk-11.2.3.orig/make.inc
++++ b/elk-11.2.3/make.inc
+@@ -20,7 +20,7 @@ AR = ar
+ SRC_MKL = mkl_stub.f90
+ # To enable MKL multithreaded parallelism, uncomment the following line and link
+ # with the MKL library.
+-#SRC_MKL =
++# SRC_MKL =
+ #-------------------------------------------------------------------------------
+
+ #-------------------------------------------------------------------------------
+@@ -47,16 +47,17 @@ SRC_LIBXC = libxcifc_stub.f90
+ # To enable Libxc first download and compile version 6.x of the library. Next
+ # copy the files libxcf03.a and libxc.a to the elk/src directory and uncomment
+ # the following lines.
+-#LIB_LIBXC = libxcf03.a libxc.a
+-#SRC_LIBXC = libxcf03.f90 libxcifc.f90
++LIB_LIBXC = -lxcf03 -lxc
++SRC_LIBXC = libxcf03.f90 libxcifc.f90
+ #-------------------------------------------------------------------------------
+
+ #-------------------------------------------------------------------------------
+ SRC_W90S = w90_stub.f90
+ # To enable the Wannier90 library copy libwannier.a to the elk/src directory and
+ # uncomment the following lines.
+-#SRC_W90S =
+-#LIB_W90 = libwannier.a
++# Note: this only works with wannier-3, not wannier-4!
++# SRC_W90S =
++LIB_W90 = ${EBROOTWANNIER90}/lib/libwannier.a
+ #-------------------------------------------------------------------------------
+
+
+@@ -76,11 +77,11 @@ SRC_W90S = w90_stub.f90
+
+ #-------------------------------------------------------------------------------
+ # Intel Fortran compiler classic (ifort) version 18 and later.
+-F90 = mpiifort
+-F90_OPTS = -O3 -xHost -ipo -qopenmp -mkl=parallel -assume buffered_io
+-F90_LIB = -liomp5 -lpthread -lm -ldl
+-SRC_MKL =
+-AR = xiar
++#F90 = mpiifort
++#F90_OPTS = -O3 -xHost -ipo -qopenmp -mkl=parallel -assume buffered_io
++#F90_LIB = -liomp5 -lpthread -lm -ldl
++#SRC_MKL =
++#AR = xiar
+ #-------------------------------------------------------------------------------
+
+ #-------------------------------------------------------------------------------
+@@ -93,9 +94,11 @@ AR = xiar
+
+ #-------------------------------------------------------------------------------
+ # GNU Fortran compiler with BLIS, libflame and FFTW.
+-#F90 = mpif90
++F90 = ${MPIF90}
+ #F90_OPTS = -Ofast -march=native -mtune=native -fopenmp -ffpe-summary=none -Wno-lto-type-mismatch
+ #F90_LIB = -lblis -lflame -lfftw3 -lfftw3f
++F90_OPTS = ${F90FLAGS}
++F90_LIB = ${LIBBLAS} ${LIBFFT} -lfftw3f
+ #-------------------------------------------------------------------------------
+
+ #-------------------------------------------------------------------------------
