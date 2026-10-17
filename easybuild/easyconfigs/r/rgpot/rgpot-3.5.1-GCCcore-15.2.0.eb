@@ -1,0 +1,120 @@
+easyblock = 'MesonNinja'
+
+name = 'rgpot'
+version = '3.5.1'
+
+homepage = 'https://github.com/OmniPotentRPC/rgpot'
+description = """Potential frontends with Cap'n Proto RPC (NWChem/CPMD clients;
+engines are loaded at runtime via dlopen). Built fat: RPC server (potserv),
+Eigen array backend, and nanobind Python bindings."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++20'}
+
+github_account = 'OmniPotentRPC'
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+# PairListTest mismatches under GCC 15 with -ffp-contract=fast. 5712fc7d is
+# the tip of fix/pairlist-explicit-fma and does not apply onto the v3.5.1
+# tarball alone (it sits on the two earlier nlist commits), so this patch is
+# the nlist/simd delta from v3.5.1 through that commit.
+patches = ['rgpot-3.5.1_pairlist-explicit-fma-5712fc7d.patch']
+checksums = [
+    {'rgpot-3.5.1.tar.gz':
+     '3b9cf3a1407e86fd80bde114f44c67657af2d547f3c9ab14f443d7d7eaa1c4be'},
+    {'rgpot-3.5.1_pairlist-explicit-fma-5712fc7d.patch':
+     '0a13146e3137e120620738e6543d5be7c4c68275ee833fe7a3f31b1fedb48c9f'},
+]
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('Meson', '1.10.2'),
+    ('Ninja', '1.13.2'),
+    ('pkgconf', '2.5.1'),
+    ('CMake', '4.2.1'),
+    ('Catch2', '3.14.0'),
+    ('nanobind', '2.13.0'),
+]
+
+# Eigen and fmt appear in the installed rgpot.pc Requires line, so they are
+# runtime dependencies rather than build-only.
+dependencies = [
+    ('CapnProto', '1.4.0'),
+    ('Eigen', '5.0.0'),
+    ('fmt', '12.2.0'),
+    ('Python', '3.14.2'),
+]
+
+# Fat build: full RPC (server + clients), Eigen backend, Python bindings,
+# unit and example tests. The metatomic and NWChem/CPMD dlopen frontends
+# always compile; their engines load at runtime.
+# Off because a GCCcore recipe cannot link them: with_xtb and with_tblite
+# need BLAS-backed packages (gfbf generation; a versionsuffix variant
+# belongs there), with_metatomic links the torch stack, with_xtensor
+# duplicates the Eigen backend, with_rust_core needs a cargo network fetch
+# at build time. with_cache stays off: in 3.4.0 its PotentialCache API was
+# not exported from librgpot.so and broke the eOn link
+# (https://github.com/OmniPotentRPC/rgpot/issues/55).
+configopts = '-Dpure_lib=false -Dwith_rpc=true -Dwith_eigen=true '
+# The Fortran 2018 kernels (SW, EDIP, Lenosky, Tersoff, EAM-Al, FeHe,
+# CuH2, TIP4P-H). eOn refuses an installed rgpot built without them.
+configopts += '-Dwith_fortran_pots=enabled '
+configopts += '-Dwith_python=true '
+# Since 3.5.0 librgpot never links MPI; the MPI side of the calculator groups
+# is a separate librgpot_mpi (plus rgpot-mpi.pc), which librgpot loads with
+# dlopen. librgpot_mpi stays at soversion 3. This toolchain has no MPI, so it
+# is off and not installed; an MPI toolchain variant would set -Dwith_mpi=enabled
+# and add lib/librgpot_mpi.so.3 and lib/pkgconfig/rgpot-mpi.pc to the sanity check.
+configopts += '-Dwith_mpi=disabled '
+configopts += '-Dwith_tests=true -Dwith_examples=true '
+# No build-time downloads: every subproject the options need is a dependency.
+configopts += '-Dwrap_mode=nodownload '
+
+# The Fortran pots (rgpot/fortran: EAM-Al, FeHe, CuH2, SW, EDIP, Lenosky,
+# Tersoff, TIP4P-H) are link_wholed into librgpot, so it NEEDs
+# libgfortran.so.5. Meson puts -lgfortran only in Libs.private. ld does not
+# use -L or the library RPATH to resolve that DT_NEEDED, so eOn's g++ link
+# fails. Publish -lgfortran on the Libs line.
+postinstallcmds = [
+    "sed -i -e '/^Libs:/ { /-lgfortran/! s/$/ -lgfortran/ }' "
+    "-e '/^Libs.private:/ s/ -lgfortran//' %(installdir)s/lib/pkgconfig/rgpot.pc",
+]
+
+runtest = 'meson'
+testopts = 'test -C %(builddir)s/easybuild_obj'
+
+# 3.5.0 moved the CMake package config from lib/cmake/pot to lib/cmake/rgpot,
+# but only the CMake build installs it; this Meson build installs rgpot.pc
+# only, so neither cmake directory is checked. lib/cmake/pot must not appear.
+sanity_check_paths = {
+    'files': [
+        'bin/potserv',
+        # 3.5.1 sets kCxxSoversion to 4 (v3.5.1 is commit 4b24f1b), so the
+        # installed SONAME is librgpot.so.4. 3.5.0 shipped this layout as .so.3.
+        'lib/librgpot.%s.4' % SHLIB_EXT,
+        'lib/libnwchempot.a',
+        'lib/libcpmdpot.a',
+        # generic engine table for LJ, Morse, ZBL and the Fortran pots (new in 3.5.0)
+        'lib/libclassical_engine.%s' % SHLIB_EXT,
+        'lib/pkgconfig/rgpot.pc',
+    ],
+    'dirs': [
+        'include/rgpot',
+        'lib',
+        'lib/python%(pyshortver)s/site-packages/rgpot',
+    ],
+}
+
+sanity_check_commands = [
+    "pkg-config --exists rgpot",
+    "pkg-config --libs rgpot | grep -q -- -lgfortran",
+    "! pkg-config --exists rgpot-mpi",
+    "test ! -e %(installdir)s/lib/cmake/pot",
+    "test ! -e %(installdir)s/lib/librgpot_mpi." + SHLIB_EXT,
+    "python -c 'import rgpot'",
+]
+
+moduleclass = 'lib'
