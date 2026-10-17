@@ -1,0 +1,33 @@
+Keep the scalable-SVE lane count out of the VectorXoshiro shape initializer.
+GCC 15.2 on AArch64 (-mcpu=generic, scalable SVE targets) folds it into a
+constant vector holding the vector length and aborts in the vregs pass with
+"unrecognizable insn" in extract_insn (random-inl.h:198). Both HWY_SVE and
+HWY_SVE2 trigger it; the fixed-width SVE targets do not.
+author: Rohit Goswami (SURF)
+--- a/hwy/contrib/random/random-inl.h	2026-10-10 22:30:23.944192920 +0200
++++ b/hwy/contrib/random/random-inl.h	2026-10-10 22:30:23.981777209 +0200
+@@ -179,8 +179,7 @@
+  public:
+   explicit VectorXoshiro(const std::uint64_t seed,
+                          const std::uint64_t threadNumber = 0)
+-      : state_{{internal::Xoshiro::StateSize(),
+-                Lanes(ScalableTag<std::uint64_t>{})}},
++      : state_{{internal::Xoshiro::StateSize(), StateLanes()}},
+         streams{state_.shape().back()} {
+     internal::Xoshiro xoshiro{seed};
+ 
+@@ -197,6 +196,14 @@
+     }
+   }
+ 
++  // The lane count stays out of line: when GCC 15.2 folds it into the shape
++  // initializer above for the scalable SVE targets on AArch64, it forms a
++  // constant vector holding the vector length and aborts in the vregs pass
++  // ("unrecognizable insn" in extract_insn).
++  static HWY_NOINLINE size_t StateLanes() {
++    return Lanes(ScalableTag<std::uint64_t>{});
++  }
++
+   HWY_INLINE VU64 operator()() noexcept { return Next(); }
+ 
+   AlignedVector<std::uint64_t> operator()(const std::size_t n) {
