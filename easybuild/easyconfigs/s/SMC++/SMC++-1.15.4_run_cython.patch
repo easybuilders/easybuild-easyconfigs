@@ -1,0 +1,41 @@
+Make it run Cython to make it compatible with newer Python
+
+Åke Sandgren, 2026-01-29
+diff --git a/setup.py b/setup.py
+index 3b85005..0b55472 100644
+--- a/setup.py
++++ b/setup.py
+@@ -1,5 +1,6 @@
+ from __future__ import print_function
+ from setuptools import setup, Extension, find_packages, dist
++from Cython.Build import cythonize
+ import os
+ import os.path
+ import glob
+@@ -45,7 +46,7 @@ cpps = [
+ extensions = [
+     Extension(
+         "smcpp._smcpp",
+-        sources=["smcpp/_smcpp.cpp"] + cpps,
++        sources=["smcpp/_smcpp.pyx"] + cpps,
+         language="c++",
+         include_dirs=[np.get_include(), "include", "include/eigen3"],
+         libraries=libraries,
+@@ -54,7 +55,7 @@ extensions = [
+     ),
+     Extension(
+         "smcpp._estimation_tools",
+-        sources=["smcpp/_estimation_tools.c"],
++        sources=["smcpp/_estimation_tools.pyx"],
+         include_dirs=[np.get_include()],
+         libraries=libraries,
+     ),
+@@ -66,7 +67,7 @@ setup(
+     author="Jonathan Terhorst, Jack Kamm, Yun S. Song",
+     author_email="jonth@umich.edu",
+     url="https://github.com/popgenmethods/smc++",
+-    ext_modules=extensions,
++    ext_modules=cythonize(extensions),
+     packages=find_packages(),
+     install_requires=[
+         "tqdm",

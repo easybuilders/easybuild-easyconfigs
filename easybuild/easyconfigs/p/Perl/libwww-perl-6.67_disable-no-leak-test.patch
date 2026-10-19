@@ -1,0 +1,38 @@
+Remove test due to reported and observed failured with targeted website.
+See:
+- https://github.com/libwww-perl/libwww-perl/issues/477
+- https://github.com/libwww-perl/libwww-perl/issues/474
+
+Author: Jan André Reuter (JSC)
+Patch modified, from libwww-perl-6.79_disable-no-leak-test.patch, by Simon Branford (University of Birmingham)
+
+diff --color -Naur libwww-perl-6.79.orig/t/leak/no_leak.t libwww-perl-6.79/t/leak/no_leak.t
+--- libwww-perl-6.79.orig/t/leak/no_leak.t	2025-06-28 00:43:39.000000000 +0200
++++ libwww-perl-6.79/t/leak/no_leak.t	1970-01-01 01:00:00.000000000 +0100
+@@ -1,26 +0,0 @@
+-use strict;
+-use warnings;
+-
+-# To ensure "no leak" in real LWP code, we should test it against HTTP servers.
+-# However, HTTPS is not required here, so let's use an HTTP site neverssl.com.
+-use Test::RequiresInternet 'neverssl.com' => 80;
+-
+-use Test::More;
+-use Test::Needs 'Test::LeakTrace';
+-
+-use File::Temp ();
+-use LWP::UserAgent;
+-
+-plan skip_all => 'skip leak test in COVERAGE' if $ENV{COVERAGE};
+-
+-my ($tempfh, $tempfile) = File::Temp::tempfile(UNLINK => 0);
+-close $tempfh;
+-
+-Test::LeakTrace::no_leaks_ok(sub {
+-    my $ua = LWP::UserAgent->new;
+-    my $res = $ua->get("http://neverssl.com/", ':content_file' => $tempfile);
+-});
+-
+-unlink $tempfile;
+-
+-done_testing;

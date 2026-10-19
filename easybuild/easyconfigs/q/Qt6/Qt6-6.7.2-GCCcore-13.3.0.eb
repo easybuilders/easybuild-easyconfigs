@@ -1,0 +1,110 @@
+easyblock = 'CMakeNinja'
+
+name = 'Qt6'
+version = '6.7.2'
+
+homepage = 'https://qt.io/'
+description = "Qt is a comprehensive cross-platform C++ application framework."
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+# disabling use of -ftree-vectorize is required to avoid compilation failures on some systems (e.g. Intel Skylake X)
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    'https://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/new_archive/qt/%(version_major_minor)s/%(version)s/single/',
+]
+sources = ['qt-everywhere-src-%(version)s.tar.xz']
+patches = [
+    'Qt6-6.6.3_fix_OF-Gentoo.patch',
+    'Qt6-6.7.2_fix_cpu_features.patch',
+    'Qt6-6.5.2_fix_too_long_filenames.patch',
+    'Qt6-6.7.2-gperf_jinja_fallthrough.patch',
+]
+checksums = [
+    {'qt-everywhere-src-6.7.2.tar.xz': '0aaea247db870193c260e8453ae692ca12abc1bd841faa1a6e6c99459968ca8a'},
+    {'Qt6-6.6.3_fix_OF-Gentoo.patch': 'd4d4878ac76cb985e45eb3b6e90ba2233f65807d6bd9bbe2b71365b181347b7b'},
+    {'Qt6-6.7.2_fix_cpu_features.patch': '3f37e7a4e4ed38cc82037be9504bc644e48bf258555ffff848183142725c9dc8'},
+    {'Qt6-6.5.2_fix_too_long_filenames.patch': 'b4a2aa3c72fe01d8b9cbab6da43cdbd968bd139f5dd9daba83181eb5d6125dac'},
+    {'Qt6-6.7.2-gperf_jinja_fallthrough.patch': '1008ed744cde1992216d2edc1718f9360de4f92d55b95c1ec261bad482ec2110'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('pkgconf', '2.2.0'),
+    ('CMake', '3.29.3'),
+    ('Ninja', '1.12.1'),
+    # deps for QtWebEngine
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.1'),
+    ('re2c', '3.1'),
+    ('libglvnd', '1.7.0'),  # needed for KHR/khrplatform.h
+]
+dependencies = [
+    ('double-conversion', '3.3.0'),
+    ('GLib', '2.80.4'),
+    ('PCRE2', '10.43'),
+    ('libpng', '1.6.43'),
+    ('LibTIFF', '4.6.0'),
+    ('libwebp', '1.4.0'),
+    ('JasPer', '4.2.4'),
+    ('HarfBuzz', '9.0.0'),
+    ('SQLite', '3.45.3'),
+    ('graphite2', '1.3.14'),
+    ('assimp', '5.4.3'),  # for Qt 3D
+    ('FFmpeg', '7.0.2'),
+    ('X11', '20240607'),
+    ('fontconfig', '2.15.0'),
+    ('zlib', '1.3.1'),
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('freetype', '2.13.2'),  # WebEngine
+    ('DBus', '1.15.8'),
+    ('libevent', '2.1.12'),  # WebEngine
+    ('libGLU', '9.0.3'),
+    ('libjpeg-turbo', '3.0.1'),  # WebEngine
+    ('NSS', '3.104'),  # WebEngine, required
+    ('snappy', '1.2.1'),  # WebEngine
+    ('OpenSSL', '3', '', SYSTEM),
+    ('ICU', '75.1'),
+    ('nodejs', '20.13.1'),
+    # ('gRPC', '1.52.2'),  # WebEngine needs older Abseil/gRPC/protobuf
+]
+
+preconfigopts = 'sed -i "s/MultiMedia/Multimedia/g" ../qt-everywhere-src-%(version)s/qtcharts/CMakeLists.txt && '
+
+preconfigopts += 'sed -i "23i set(Python3_ROOT_DIR \\$ENV{EBROOTPYTHON})" '
+preconfigopts += '../qt-everywhere-src-%(version)s/qtwebengine/src/gn/CMakeLists.txt && '  # Typo
+
+# Ninja uses all visible cores by default, which can lead to lack of sufficient memory;
+# so $NINJAFLAGS is set to control number of parallel processes used by Ninja;
+# note that $NINJAFLAGS is not a generic thing for Ninja, it's very specific to the Qt6 build procedure
+preconfigopts += ' export NINJAFLAGS="-j%(parallel)s" && '
+prebuildopts = ' export NINJAFLAGS="-j%(parallel)s" && '
+
+configopts = "-Wno-dev -DFEATURE_qtpdf_build=OFF -DQT_AVOID_CMAKE_ARCHIVING_API=ON "
+configopts += "-DPython3_ROOT_DIR=$EBROOTPYTHON -DBUILD_qtwayland=OFF "
+
+# V8-Context-Snapshot needs to be disabled on aarch64
+# as it fails with "./v8_context_snapshot_generator failed with exit code -5"
+# which suggests a potential segmentation fault or memory-related issue
+if ARCH == "aarch64":
+    configopts += "-DFEATURE_webengine_v8_context_snapshot=OFF "
+
+# Removed from Qt6.0.0 but may be added back in the future
+# configopts += '-DBUILD_qtgamepad=OFF '  # Does not work on CentOS 7
+
+# explicitly disable sysroot as it causes problems for some third party libraries
+# (and seems to work without it using rpath wrappers)
+configopts += "-DCMAKE_SYSROOT='' "
+
+sanity_check_paths = {
+    'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT, 'lib/libQt6WebEngineCore.%s' % SHLIB_EXT],
+    'dirs': ['include/QtCore', 'include/QtWebEngineCore'],
+}
+
+sanity_check_commands = ['qmake6 --help']
+
+moduleclass = 'devel'

@@ -1,0 +1,91 @@
+easyblock = 'PythonBundle'
+
+name = 'TEtrimmer'
+version = '1.4.0'
+
+homepage = 'https://github.com/qjiangzhao/TEtrimmer'
+description = """
+TEtrimmer is software designed to automate the manual curation of transposable elements (TEs).
+The input can be a TE library from de novo TE discovery tools, such as EDTA2 and
+RepeatModeler2, or a TE library from closely related species. For each input consensus
+sequence, TEtrimmer automatically performs BLAST, sequence extraction, extension, multiple
+sequence alignment (MSA), MSA clustering, MSA cleaning, TE boundary definition, and TE
+classification. TEtrimmer also provides a graphical user interface (GUI) to inspect and
+improve predicted TEs, which can assist achieving manual curation-level TE consensus libraries
+easily.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    ('hatchling', '1.18.0'),  # for urllib3
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Perl', '5.36.1'),
+    ('R', '4.3.2'),
+    ('Biopython', '1.83'),
+    ('matplotlib', '3.7.2'),
+    ('multiprocess', '0.70.15'),
+    ('SciPy-bundle', '2023.07'),
+    ('scikit-learn', '1.3.1'),
+    ('Tk', '8.6.13'),
+    ('plotly.py', '5.16.0'),
+    ('BEDTools', '2.31.0'),
+    ('BLAST+', '2.14.1'),
+    ('CD-HIT', '4.8.1'),
+    ('EMBOSS', '6.6.0'),
+    ('HMMER', '3.4'),
+    ('MAFFT', '7.520', '-with-extensions'),
+    ('PfamScan', '1.6'),
+    ('RepeatMasker', '4.1.7-p1'),
+    ('SAMtools', '1.18'),
+    ('RepeatModeler', '2.0.6'),
+    ('IQ-TREE', '2.3.5'),
+    ('Ghostscript', '10.01.2'),
+]
+
+components = [
+    (name, version, {
+        'easyblock': 'PackedBinary',
+        'source_urls': ['https://github.com/qjiangzhao/TEtrimmer/archive/refs/tags/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['973eb61d3fd23677a38d14328ea0b4f8f38508b1af9a4ea52c137e460238a626'],
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['tetrimmer'],
+    'PATH': ['tetrimmer'],
+}
+
+fix_python_shebang_for = ['tetrimmer/*.py']
+
+exts_list = [
+    ('pypdf2', '3.0.1', {
+        'modulename': 'PyPDF2',
+        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
+        'checksums': ['d16e4205cfee272fbdc0568b68d82be796540b1537508cef59388f839c191928'],
+    }),
+    ('urllib3', '1.26.16', {
+        'checksums': ['8f135f6502756bde6b2a9b28989df5fbe87c9970cecaa69041edcce7f0589b14'],
+    }),
+]
+
+postinstallcmds = [
+    r"""sed -i 's|iqtree_command = \["iqtree"|iqtree_command = \["iqtree2"|' %(installdir)s/tetrimmer/MSAcluster.py""",
+    "chmod +x %(installdir)s/tetrimmer/*.py",
+    # avoid changing file permissions
+    "sed -i 's/change_permission =.*/change_permission = True/' %(installdir)s/tetrimmer/TEtrimmer.py",
+    "cd %(installdir)s/tetrimmer && ln -s TEtrimmer.py TEtrimmer",
+]
+
+sanity_check_paths = {
+    'files': ['tetrimmer/TEtrimmer.py'],
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = ['TEtrimmer --help']
+
+moduleclass = 'bio'

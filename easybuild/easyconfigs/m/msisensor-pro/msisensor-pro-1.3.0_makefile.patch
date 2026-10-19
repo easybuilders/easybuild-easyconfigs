@@ -1,0 +1,48 @@
+Use Easybuild HTSlib
+author: John Dey jfdey@fredhutch.org
+diff -ruN msisensor-pro-1.3.0.org/cpp/makefile msisensor-pro-1.3.0/cpp/makefile
+--- msisensor-pro-1.3.0.org/cpp/makefile	2024-09-27 00:13:58.000000000 -0700
++++ msisensor-pro-1.3.0/cpp/makefile	2025-01-14 16:10:12.006926000 -0800
+@@ -1,34 +1,30 @@
+ CXX=g++
+ 
+-HTSLIB=$(realpath ../vendor/htslib-1.11)
+ # HTSLIB_CPPFLAGS=-I$(realpath $(HTSLIB_ROOT))
+ # echo $(HTSLIB_CPPFLAGS)
+ # HTSLIB_LDFLAGS=-L/mnt/project/Project_Pindel/pindel_update/pindel/htslib/ -Wl,-rpath
+ CPP_ROOT=cpp
+ CXXFLAGS+=    -O2 -fopenmp
+-LDFLAGS+=    -L${HTSLIB}
+-INCLUDES+=    -I${HTSLIB}
++LDFLAGS := $(LDFLAGS)
++INCLUDES :=  $(INCLUDES)
+ LIBS+=    -lm -lz -lpthread -lhts
+-LD_LIBRARY_PATH+= -L${HTSLIB}
+-export LD_LIBRARY_PATH=${HTSLIB_ROOT}
++# LD_LIBRARY_PATH+= -L${HTSLIB}
++# export LD_LIBRARY_PATH=${HTSLIB_ROOT}
+ 
+ SOURCE = cmds scan distribution refseq polyscan param utilities homo window bamreader sample chi somatic
+ OBJS= $(patsubst %,%.o,$(SOURCE))
+ 
+ %.o:%.cpp
+-	        $(CXX) -L ${HTSLIB} -std=c++11 $(CXXFLAGS) $(INCLUDES) -c $< -o $@
++	$(CXX) -std=c++11 $(CXXFLAGS) $(LDFLAGS) $(INCLUDES) -c $< -o $@
+ 
+-all: htsfile msisensor-pro
+-#
+-htsfile:
+-	        $(MAKE) -C ${HTSLIB}
++all: msisensor-pro
+ 
+ msisensor-pro: $(OBJS)
+-	        $(CXX)  -std=c++11 $^ $(CXXFLAGS) $(LDFLAGS)  $(LIBS) -Wl,-rpath=${HTSLIB} -o $@
++	$(CXX)  -std=c++11 $^ $(CXXFLAGS) $(LDFLAGS)  $(LIBS) -o $@
+ 		# 	        $(CXX)  -std=c++11 $^ $(CXXFLAGS) $(INCLUDES)  $(LDFLAGS) $(LIBS) -o $@
+ 
+ clean:
+-	        rm -f *.o msisensor-pro
++	rm -f *.o msisensor-pro
+ 			        $(MAKE) -C ${HTSLIB}  clean
+ 
+ 

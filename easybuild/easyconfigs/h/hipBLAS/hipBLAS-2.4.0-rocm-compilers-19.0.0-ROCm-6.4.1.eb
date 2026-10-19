@@ -1,0 +1,50 @@
+# Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ROCmComponent'
+
+name = 'hipBLAS'
+version = '2.4.0'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/ROCm/hipBLAS'
+description = """hipBLAS is a Basic Linear Algebra Subprograms (BLAS) marshalling
+library with multiple supported backends. It sits between your application and a
+'worker' BLAS library, where it marshals inputs to the backend library and marshals
+results to your application. hipBLAS exports an interface that doesn't require the
+client to change, regardless of the chosen backend. Currently, hipBLAS supports
+rocBLAS and cuBLAS backends."""
+docurls = ['https://rocm.docs.amd.com/projects/hipBLAS/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f'rocm-{_rocm_version}.tar.gz']
+checksums = ['3fa0a690bf96104afb093d19a4f565012a59ab6df378df8aef5420914e82d91b']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+    ('PyYAML', '6.0.2'),
+]
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocBLAS', '4.4.0'),
+    ('rocSPARSE', '3.4.0'),
+    ('rocSOLVER', '3.28.0'),
+    ('hipBLAS-common', '1.2.0')
+]
+
+configopts = '-DHIP_DIR=$EBROOTHIP '
+# Disable building external components
+configopts += '-DBUILD_GTEST=OFF -DBUILD_LAPACK=OFF '
+
+sanity_check_paths = {
+    'files': ['lib/cmake/hipblas/hipblas-config.cmake',
+              'include/hipblas/hipblas.h'],
+    'dirs': ['lib/cmake/hipblas',
+             'share/doc/hipblas',
+             'include/hipblas'],
+}
+
+moduleclass = 'lib'

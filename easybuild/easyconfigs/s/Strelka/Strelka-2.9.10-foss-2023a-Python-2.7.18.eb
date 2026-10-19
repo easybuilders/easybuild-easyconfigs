@@ -1,0 +1,40 @@
+easyblock = 'CMakeMake'
+
+name = 'Strelka'
+version = '2.9.10'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/Illumina/strelka'
+description = """Strelka2 is a fast and accurate small variant caller optimized for analysis
+of germline variation in small cohorts and somatic variation in tumor/normal sample pairs."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/Illumina/%(name)s/releases/download/v%(version)s/']
+sources = ['%(name)s-%(version)s.release_src.tar.bz2']
+checksums = ['45e78efec6e5272697f1d0a95851c7ae0d623dc8f93846e11fe37f15da9f1e30']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('Boost', '1.82.0'),
+    ('Python', '2.7.18'),
+]
+
+# fix compatibility with GCC 12
+preconfigopts = (
+    "sed -i '/#pragma once/a #include <limits>' "
+    "../strelka-%(version)s.release_src/src/c++/lib/calibration/IndelErrorModel.hh && "
+)
+
+configopts = '-DBOOST_ROOT=$EBROOTBOOST'
+
+sanity_check_paths = {
+    'files': ['bin/configureStrelkaGermlineWorkflow.py', 'libexec/%(namelower)s%(version_major)s'],
+    'dirs': ['lib/python', 'share'],
+}
+
+moduleclass = 'bio'

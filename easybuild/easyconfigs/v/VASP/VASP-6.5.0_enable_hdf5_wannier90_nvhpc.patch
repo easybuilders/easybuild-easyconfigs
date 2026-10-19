@@ -1,0 +1,65 @@
+Use build environment from EasyBuild on NVHPC configuration
+Enable HDF5, Wannier90 and cusolvermp
+Author: J. Saßmannshausen (Imperial College London)
+Author: Alex Domingo (Vrije Universiteit Brussel)
+--- arch/makefile.include.nvhpc_acc.orig	2025-05-19 10:49:25.982420513 +0200
++++ arch/makefile.include.nvhpc_acc	2025-05-19 10:52:18.069811778 +0200
+@@ -59,16 +59,16 @@
+ 
+ # Specify your NV HPC-SDK installation (mandatory)
+ #... first try to set it automatically
+-NVROOT      =$(shell which nvfortran | awk -F /compilers/bin/nvfortran '{ print $$1 }')
++# NVROOT      =$(shell which nvfortran | awk -F /compilers/bin/nvfortran '{ print $$1 }')
+ 
+ # If the above fails, then NVROOT needs to be set manually
+-#NVHPC      ?= /opt/nvidia/hpc_sdk
+-#NVVERSION   = 21.11
+-#NVROOT      = $(NVHPC)/Linux_x86_64/$(NVVERSION)
++NVHPC      ?= $(EBROOTNVHPC)
++NVVERSION   = $(EBVERSIONNVHPC)
++NVROOT      = $(NVHPC)/Linux_x86_64/$(NVVERSION)
+ 
+ ## Improves performance when using NV HPC-SDK >=21.11 and CUDA >11.2
+-#OFLAG_IN   = -fast -Mwarperf
+-#SOURCE_IN  := nonlr.o
++OFLAG_IN   = -fast -Mwarperf
++SOURCE_IN  := nonlr.o
+ 
+ # Software emulation of quadruple precsion (mandatory)
+ QD         ?= $(NVROOT)/compilers/extras/qd
+@@ -87,25 +87,25 @@
+ LLIBS      += $(SCALAPACK) $(LAPACK) $(BLAS)
+ 
+ # FFTW (mandatory)
+-FFTW_ROOT  ?= /path/to/your/fftw/installation
++FFTW_ROOT  ?= $(EBROOTFFTW)
+ LLIBS      += -L$(FFTW_ROOT)/lib -lfftw3
+ INCS       += -I$(FFTW_ROOT)/include
+ 
+ # Use cusolvermp (optional)
+ # supported as of NVHPC-SDK 24.1 (and needs CUDA-11.8)
+-#CPP_OPTIONS+= -DCUSOLVERMP -DCUBLASMP
+-#LLIBS      += -cudalib=cusolvermp,cublasmp -lnvhpcwrapcal
++CPP_OPTIONS+= -DCUSOLVERMP -DCUBLASMP
++LLIBS      += -cudalib=cusolvermp,cublasmp -lnvhpcwrapcal
+ 
+ # HDF5-support (optional but strongly recommended, and mandatory for some features)
+-#CPP_OPTIONS+= -DVASP_HDF5
+-#HDF5_ROOT  ?= /path/to/your/hdf5/installation
+-#LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
+-#INCS       += -I$(HDF5_ROOT)/include
++CPP_OPTIONS+= -DVASP_HDF5
++HDF5_ROOT  ?= $(EBROOTHDF5)
++LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
++INCS       += -I$(HDF5_ROOT)/include
+ 
+ # For the VASP-2-Wannier90 interface (optional)
+-#CPP_OPTIONS    += -DVASP2WANNIER90
+-#WANNIER90_ROOT ?= /path/to/your/wannier90/installation
+-#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
++CPP_OPTIONS    += -DVASP2WANNIER90
++WANNIER90_ROOT ?= $(EBROOTWANNIER90)
++LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
+ 
+ # For machine learning library vaspml (experimental)
+ #CPP_OPTIONS += -Dlibvaspml

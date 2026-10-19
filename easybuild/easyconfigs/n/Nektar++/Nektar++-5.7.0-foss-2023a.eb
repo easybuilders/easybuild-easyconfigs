@@ -1,0 +1,81 @@
+easyblock = 'CMakeMake'
+
+name = 'Nektar++'
+version = '5.7.0'
+
+homepage = 'https://www.nektar.info'
+description = """Nektar++ is a tensor product based finite element package
+designed to allow one to construct efficient classical low polynomial order
+h-type solvers (where h is the size of the finite element) as well as higher
+p-order piecewise polynomial order solvers."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'openmp': True, 'pic': True}
+
+source_urls = ['https://www.nektar.info/src']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['1117e1737ae10e48db1175ac16e72f10598b03a4a31e2fdff97abd592cfc4587']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('arpack-ng', '3.9.0'),
+    ('Boost', '1.82.0'),
+    ('Boost.MPI', '1.82.0'),
+    ('Boost.Python-NumPy', '1.82.0'),
+    ('HDF5', '1.14.0'),
+    ('METIS', '5.1.0'),
+    ('occt', '7.8.0'),
+    ('PETSc', '3.20.3'),
+    ('Python', '3.11.3'),
+    ('TetGen', '1.6.0'),
+    ('TinyXML', '2.6.2'),
+    ('Triangle', '1.6'),
+    ('VTK', '9.3.0'),
+    ('zlib', '1.2.13'),
+
+]
+
+preconfigopts = "sed -i 's/OPENBLAS/FlexiBLAS/i' ../nektar-v5.7.0/cmake/ThirdPartyBlasLapack.cmake && "
+preconfigopts += "sed -i 's/OPENBLAS/FlexiBLAS/i' ../nektar-v5.7.0/cmake/FindBlasLapack.cmake && "
+preconfigopts += "export FlexiBLAS_HOME=$EBROOTFLEXIBLAS &&"
+configopts = ' '.join([
+    "-DNEKTAR_BUILD_PYTHON=ON",
+    "-DNEKTAR_USE_ARPACK=ON",
+    # "-DNEKTAR_USE_CWIPI=ON",  # disabling, as not able to get either CWIPI/1.3.0 or CWIPI/0.12.0 detected
+    "-DNEKTAR_USE_FFTW=ON",
+    "-DNEKTAR_USE_FlexiBLAS=ON",
+    "-DNEKTAR_USE_HDF5=ON",
+    "-DNEKTAR_USE_MESHGEN=ON",
+    "-DNEKTAR_USE_METIS=ON",
+    "-DNEKTAR_USE_MPI=ON",
+    "-DNEKTAR_USE_PETSC=ON",
+    "-DNEKTAR_USE_SCOTCH=ON",
+    "-DNEKTAR_USE_VTK=ON",
+])
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x
+              for x in ['AcousticSolver', 'AddModeTo2DFld', 'ADRSolver', 'Aliasing', 'APESolver', 'CardiacEPSolver',
+                        'CFLStep', 'CollectionsUnitTests', 'CollectionTiming', 'CompressibleBL',
+                        'CompressibleFlowSolver', 'Deriv3DHomo1D', 'Deriv3DHomo1D_SingleMode', 'Deriv3DHomo2D',
+                        'DiffusionSolver', 'DiffusionSolverTimeInt', 'DummySolver', 'ErrorStream',
+                        'ExtractMeanModeFromHomo1DFld', 'ExtractSurface2DCFS', 'ExtractSurface3DCFS', 'FieldConvert',
+                        'Fld2DTo2D5', 'Fld2Tecplot', 'FldAddFalknerSkanBL', 'FoundationDemo', 'HDGHelmholtz1D',
+                        'HDGHelmholtz2D', 'HDGHelmholtz3D', 'HDGHelmholtz3DHomo1D', 'Helmholtz1D', 'Helmholtz2D',
+                        'Helmholtz3D', 'Helmholtz3DHomo1D', 'Helmholtz3DHomo2D', 'IncNavierStokesSolver',
+                        'LibUtilitiesUnitTests', 'LinearAlgebraUnitTests', 'LinearElasticSolver',
+                        'LocalRegionsUnitTests', 'LocProject', 'MMFDiffusion', 'MMFSolver', 'NekMesh', 'NodalDemo',
+                        'NonLinearEnergy', 'PartitionAnalyse', 'PostProcHDG2D', 'PostProcHDG3D', 'PrePacing',
+                        'PulseWaveSolver', 'ShallowWaterSolver', 'StdEquiToCoeff2D', 'StdProject',
+                        'SteadyAdvectionDiffusionReaction2D', 'Tester', 'TimeIntegrationDemo', 'UnitTests']] +
+             ['lib/lib%s.%s' % (x, SHLIB_EXT)
+              for x in ['Collections', 'FieldUtils', 'GlobalMapping', 'LibUtilities', 'LocalRegions',
+                        'MultiRegions', 'NekMesh', 'SolverUtils', 'SpatialDomains', 'StdRegions']],
+    'dirs': ['include/nektar++', 'lib/nektar++/cmake'],
+}
+
+moduleclass = 'cae'

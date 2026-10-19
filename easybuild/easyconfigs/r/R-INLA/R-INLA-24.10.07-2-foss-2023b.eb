@@ -1,0 +1,108 @@
+# Updated to 24.10.07-2
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'Bundle'
+
+name = 'R-INLA'
+version = '24.10.07-2'
+
+homepage = 'https://www.r-inla.org'
+description = "R-INLA is a package in R that do approximate Bayesian inference for Latent Gaussian Models."
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'openmp': True}
+
+dependencies = [
+    ('R', '4.4.1'),
+    ('R-bundle-CRAN', '2024.06'),
+    ('GSL', '2.7'),
+    ('zlib', '1.2.13'),
+    ('SuiteSparse', '7.7.0'),
+    ('METIS', '5.1.0'),
+    ('muParser', '2.3.4'),
+    ('Rmath', '%(rver)s'),
+    ('X11', '20231019'),
+    ('libtool', '2.4.7'),  # provides libltdl
+]
+
+default_easyblock = 'ConfigureMake'
+# all components are installed from the same source tarball
+default_component_specs = {
+    'source_urls': ['https://github.com/hrue/r-inla/archive/'],
+    'sources': [{'download_filename': f'Version_{version}.tar.gz', 'filename': SOURCE_TAR_GZ}],
+    'skipsteps': ['configure'],
+    'checksums': ['6e3bf7fd403290928ce5f9bd89092a750f8b9faf40bb99a3b3265116143260db']
+}
+
+local_gmrflib_prebuildopts = ' cd r-inla-Version_%(version)s && ln -s gmrflib GMRFLib && cd - && '
+local_gmrflib_buildopts = ' -C r-inla-*/gmrflib PREFIX=%(installdir)s CC="$CC" FC="$FC" '
+local_gmrflib_buildopts += ' FLAGS="$CXXFLAGS -DINLA_LINK_WITH_OPENBLAS " '
+
+local_rinla_prebuildopts = "export CPATH=$EBROOTR/lib64/R/include/:$CPATH && "
+local_rinla_prebuildopts += "cp r-inla-Version_%(version)s/gmrflib/sha.h %(installdir)s/include/GMRFLib/ && "
+
+local_inla_buildopts = '-C r-inla-*/inlaprog PREFIX=%(installdir)s '
+local_inla_buildopts += ' CC="$CC" CXX="$CXX" FC="$FC" LD="$CXX -lltdl" '
+local_inla_buildopts += ' FLAGS="$CXXFLAGS -DINLA_LINK_WITH_OPENBLAS"'
+
+components = [
+    ('taucs', version, {
+        'easyblock': 'MakeCp',
+        'prebuildopts': "cd r-inla-*/extlibs && tar xvfz taucs-2.2--my-fix.tgz && cd taucs-2.2--my-fix && ",
+        'buildopts': 'CC="$CC" CFLAGS="$CFLAGS" FC="$FC" FFLAGS="$FFLAGS" LIBBLAS="$LIBBLAS" LIBLAPACK="$LIBLAPACK"',
+        'files_to_copy': [(['r-inla-*/extlibs/taucs-2.2--my-fix/lib/linux/libtaucs.a'], 'lib')],
+    }),
+    ('fmesher-R-INLA', version, {
+        'patches': ['R-INLA-24.10.07-2_fix-hardcoded-deps.patch'],
+        'checksums': default_component_specs['checksums'] + [
+            '2e81c16c06eb1a9355e50dfac5f92477c093d94137ee49ae35e78e75d67a853d',
+        ],
+        'buildopts': '-C r-inla-*/fmesher PREFIX=%(installdir)s CC="$CC" CXX="$CXX" LD="$CXX" FLAGS="$CXXFLAGS"',
+        'installopts': '-C r-inla-*/fmesher PREFIX=%(installdir)s',
+    }),
+    ('GMRFLib', version, {
+        'prebuildopts': local_gmrflib_prebuildopts,
+        'buildopts': local_gmrflib_buildopts,
+        'installopts': '-C r-inla-*/gmrflib PREFIX=%(installdir)s',
+    }),
+    ('fmesher', '0.1.7', {
+        'easyblock': 'RPackage',
+        'source_urls': [
+            'https://cran.r-project.org/src/contrib/Archive/fmesher',  # package archive
+            'https://cran.r-project.org/src/contrib/',  # current version of packages
+        ],
+        'sources': ['fmesher_%(version)s.tar.gz'],
+        'checksums': ['b59af73ac4e30e5d4287fb6ddfc0b6e21b007243bd94a652f3725ea431019ecf'],
+        'start_dir': 'fmesher',
+    }),
+    ('rinla', version, {
+        'patches': ['R-INLA-24.10.07_remove-hardcoding.patch'],
+        'checksums': default_component_specs['checksums'] + [
+            '8a1fd63611e1ad64ed8702b5ba07b5f3969afcaf0454605074c1d717590ca603',
+        ],
+        'easyblock': 'RPackage',
+        'start_dir': 'r-inla-Version_%(version)s/rinla',
+        'preinstallopts': "export R_LIBS_SITE=%(installdir)s:$R_LIBS_SITE && ",
+    }),
+    (name, version, {
+        'prebuildopts': local_rinla_prebuildopts,
+        'buildopts': local_inla_buildopts,
+        'installopts': '-C r-inla-*/inlaprog PREFIX=%(installdir)s',
+    }),
+]
+
+local_bins = ['inla', 'fmesher']
+
+postinstallcmds = ['ln -s %%(installdir)s/bin/%s %%(installdir)s/INLA/bin/linux/64bit/%s' % (x, x) for x in local_bins]
+
+sanity_check_paths = {
+    'files': ['%s/%s' % (p, x) for p in ['bin', 'INLA/bin/linux/64bit'] for x in local_bins] +
+             ['lib/libGMRFLib.a', 'lib/libtaucs.a'],
+    'dirs': ['doc', 'include/GMRFLib'],
+}
+
+sanity_check_commands = ["Rscript -e 'library(INLA)'"] + ["%s -h" % x for x in local_bins]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+moduleclass = 'math'

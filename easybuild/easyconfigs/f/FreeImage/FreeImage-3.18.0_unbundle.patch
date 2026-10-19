@@ -1,0 +1,465 @@
+The FreeImage source zip file contains (old versions of) several external dependencies.
+This patch does some unbundling by removing the dependencies, replacing the included dependencies in makefiles
+by EB-provided ones, changing include lines, and making some code compatible with newer versions of these dependencies.
+
+The patch is mostly based on similar patches used by Gentoo and Debian, see:
+https://dev.gentoo.org/~juippis/distfiles/tmp/freeimage-3.18.0-unbundling.patch
+https://github.com/gentoo/gentoo/tree/master/media-libs/freeimage/files
+http://deb.debian.org/debian/pool/main/f/freeimage/freeimage_3.18.0+ds2-10.debian.tar.xz
+
+Author: Bob Dröge (University of Groningen)
+diff -ru FreeImage.orig/genfipsrclist.sh FreeImage/genfipsrclist.sh
+--- FreeImage.orig/genfipsrclist.sh	2018-07-28 18:53:18.000000000 +0200
++++ FreeImage/genfipsrclist.sh	2024-10-04 10:21:44.343549163 +0200
+@@ -1,18 +1,13 @@
+ #!/bin/sh
+ 
+-DIRLIST=". Source Source/Metadata Source/FreeImageToolkit Source/LibJPEG Source/LibPNG Source/LibTIFF4 Source/ZLib Source/LibOpenJPEG Source/OpenEXR Source/OpenEXR/Half Source/OpenEXR/Iex Source/OpenEXR/IlmImf Source/OpenEXR/IlmThread Source/OpenEXR/Imath Source/OpenEXR/IexMath Source/LibRawLite Source/LibRawLite/dcraw Source/LibRawLite/internal Source/LibRawLite/libraw Source/LibRawLite/src Source/LibWebP Source/LibJXR Source/LibJXR/common/include Source/LibJXR/image/sys Source/LibJXR/jxrgluelib Wrapper/FreeImagePlus"
++DIRLIST=". Source Source/Metadata Source/FreeImageToolkit Wrapper/FreeImagePlus"
+ 
+ 
+ echo "VER_MAJOR = 3" > fipMakefile.srcs
+ echo "VER_MINOR = 18.0" >> fipMakefile.srcs
+ 
+ echo -n "SRCS = " >> fipMakefile.srcs
+-for DIR in $DIRLIST; do
+-	VCPRJS=`echo $DIR/*.2013.vcxproj`
+-	if [ "$VCPRJS" != "$DIR/*.2013.vcxproj" ]; then
+-		egrep 'ClCompile Include=.*\.(c|cpp)' $DIR/*.2013.vcxproj | cut -d'"' -f2 | tr '\\' '/' | awk '{print "'$DIR'/"$0}' | tr '\r\n' '  ' | tr -s ' ' >> fipMakefile.srcs
+-	fi
+-done
++find Wrapper/FreeImagePlus/src -name '*.cpp' -print | LC_ALL=C sort | xargs echo -n >> fipMakefile.srcs
+ echo >> fipMakefile.srcs
+ 
+ echo -n "INCLUDE =" >> fipMakefile.srcs
+@@ -21,3 +16,4 @@
+ done
+ echo >> fipMakefile.srcs
+ 
++echo 'INCLUDE += -I${EBROOTOPENJPEG}/include/openjpeg-2.5 -I${EBROOTOPENEXR}/include/OpenEXR -I${EBROOTIMATH}/include/Imath' >> fipMakefile.srcs
+diff -ru FreeImage.orig/gensrclist.sh FreeImage/gensrclist.sh
+--- FreeImage.orig/gensrclist.sh	2018-07-28 18:52:50.000000000 +0200
++++ FreeImage/gensrclist.sh	2024-10-04 10:21:16.670337435 +0200
+@@ -1,17 +1,12 @@
+ #!/bin/sh
+ 
+-DIRLIST=". Source Source/Metadata Source/FreeImageToolkit Source/LibJPEG Source/LibPNG Source/LibTIFF4 Source/ZLib Source/LibOpenJPEG Source/OpenEXR Source/OpenEXR/Half Source/OpenEXR/Iex Source/OpenEXR/IlmImf Source/OpenEXR/IlmThread Source/OpenEXR/Imath Source/OpenEXR/IexMath Source/LibRawLite Source/LibRawLite/dcraw Source/LibRawLite/internal Source/LibRawLite/libraw Source/LibRawLite/src Source/LibWebP Source/LibJXR Source/LibJXR/common/include Source/LibJXR/image/sys Source/LibJXR/jxrgluelib"
++DIRLIST=". Source Source/Metadata Source/FreeImageToolkit"
+ 
+ echo "VER_MAJOR = 3" > Makefile.srcs
+ echo "VER_MINOR = 18.0" >> Makefile.srcs
+ 
+ echo -n "SRCS = " >> Makefile.srcs
+-for DIR in $DIRLIST; do
+-	VCPRJS=`echo $DIR/*.2013.vcxproj`
+-	if [ "$VCPRJS" != "$DIR/*.2013.vcxproj" ]; then
+-		egrep 'ClCompile Include=.*\.(c|cpp)' $DIR/*.2013.vcxproj | cut -d'"' -f2 | tr '\\' '/' | awk '{print "'$DIR'/"$0}' | tr '\r\n' '  ' | tr -s ' ' >> Makefile.srcs
+-	fi
+-done
++find Source -name '*.c' -or -name '*.cpp' -not -name 'JPEGTransform.cpp' | LC_ALL=C sort | xargs echo -n >> Makefile.srcs
+ echo >> Makefile.srcs
+ 
+ echo -n "INCLS = " >> Makefile.srcs
+@@ -24,3 +19,4 @@
+ done
+ echo >> Makefile.srcs
+ 
++echo 'INCLUDE += -I${EBROOTOPENJPEG}/include/openjpeg-2.5 -I${EBROOTOPENEXR}/include/OpenEXR -I${EBROOTIMATH}/include/Imath' >> Makefile.srcs
+diff -ru FreeImage.orig/Makefile.fip FreeImage/Makefile.fip
+--- FreeImage.orig/Makefile.fip	2015-03-10 09:03:56.000000000 +0100
++++ FreeImage/Makefile.fip	2024-10-03 16:46:29.822006040 +0200
+@@ -11,7 +11,7 @@
+ # Converts cr/lf to just lf
+ DOS2UNIX = dos2unix
+ 
+-LIBRARIES = -lstdc++
++LIBRARIES = -lstdc++ $(LIBS) -lz -lOpenEXR -ljpeg -lturbojpeg -lopenjp2 -lpng -ltiff -lImath -lraw -lwebp -lwebpmux -ljpegxr -ljxrglue
+ 
+ MODULES = $(SRCS:.c=.o)
+ MODULES := $(MODULES:.cpp=.o)
+@@ -72,10 +72,10 @@
+ 
+ install:
+ 	install -d $(INCDIR) $(INSTALLDIR)
+-	install -m 644 -o root -g root $(HEADER) $(INCDIR)
+-	install -m 644 -o root -g root $(HEADERFIP) $(INCDIR)
+-	install -m 644 -o root -g root $(STATICLIB) $(INSTALLDIR)
+-	install -m 755 -o root -g root $(SHAREDLIB) $(INSTALLDIR)
++	install -m 644 $(HEADER) $(INCDIR)
++	install -m 644 $(HEADERFIP) $(INCDIR)
++	install -m 644 $(STATICLIB) $(INSTALLDIR)
++	install -m 755 $(SHAREDLIB) $(INSTALLDIR)
+ 	ln -sf $(SHAREDLIB) $(INSTALLDIR)/$(VERLIBNAME)
+ 	ln -sf $(VERLIBNAME) $(INSTALLDIR)/$(LIBNAME)	
+ 
+diff -ru FreeImage.orig/Makefile.gnu FreeImage/Makefile.gnu
+--- FreeImage.orig/Makefile.gnu	2015-03-10 09:04:00.000000000 +0100
++++ FreeImage/Makefile.gnu	2024-10-03 16:45:52.992861590 +0200
+@@ -11,7 +11,7 @@
+ # Converts cr/lf to just lf
+ DOS2UNIX = dos2unix
+ 
+-LIBRARIES = -lstdc++
++LIBRARIES = -lstdc++ $(LIBS) -lz -lOpenEXR -ljpeg -lturbojpeg -lopenjp2 -lpng -ltiff -lImath -lraw -lwebp -lwebpmux -ljpegxr -ljxrglue
+ 
+ MODULES = $(SRCS:.c=.o)
+ MODULES := $(MODULES:.cpp=.o)
+@@ -71,9 +71,9 @@
+ 
+ install:
+ 	install -d $(INCDIR) $(INSTALLDIR)
+-	install -m 644 -o root -g root $(HEADER) $(INCDIR)
+-	install -m 644 -o root -g root $(STATICLIB) $(INSTALLDIR)
+-	install -m 755 -o root -g root $(SHAREDLIB) $(INSTALLDIR)
++	install -m 644 $(HEADER) $(INCDIR)
++	install -m 644 $(STATICLIB) $(INSTALLDIR)
++	install -m 755 $(SHAREDLIB) $(INSTALLDIR)
+ 	ln -sf $(SHAREDLIB) $(INSTALLDIR)/$(VERLIBNAME)
+ 	ln -sf $(VERLIBNAME) $(INSTALLDIR)/$(LIBNAME)	
+ #	ldconfig
+diff -ru FreeImage.orig/Source/FreeImage/J2KHelper.cpp FreeImage/Source/FreeImage/J2KHelper.cpp
+--- FreeImage.orig/Source/FreeImage/J2KHelper.cpp	2015-03-04 00:07:08.000000000 +0100
++++ FreeImage/Source/FreeImage/J2KHelper.cpp	2024-10-03 16:55:00.870416698 +0200
+@@ -21,7 +21,7 @@
+ 
+ #include "FreeImage.h"
+ #include "Utilities.h"
+-#include "../LibOpenJPEG/openjpeg.h"
++#include <openjpeg.h>
+ #include "J2KHelper.h"
+ 
+ // --------------------------------------------------------------------------
+diff -ru FreeImage.orig/Source/FreeImage/PluginEXR.cpp FreeImage/Source/FreeImage/PluginEXR.cpp
+--- FreeImage.orig/Source/FreeImage/PluginEXR.cpp	2015-03-04 00:07:08.000000000 +0100
++++ FreeImage/Source/FreeImage/PluginEXR.cpp	2024-10-03 17:04:41.239624443 +0200
+@@ -28,16 +28,16 @@
+ #pragma warning (disable : 4800) // ImfVersion.h - 'const int' : forcing value to bool 'true' or 'false' (performance warning)
+ #endif 
+ 
+-#include "../OpenEXR/IlmImf/ImfIO.h"
+-#include "../OpenEXR/Iex/Iex.h"
+-#include "../OpenEXR/IlmImf/ImfOutputFile.h"
+-#include "../OpenEXR/IlmImf/ImfInputFile.h"
+-#include "../OpenEXR/IlmImf/ImfRgbaFile.h"
+-#include "../OpenEXR/IlmImf/ImfChannelList.h"
+-#include "../OpenEXR/IlmImf/ImfRgba.h"
+-#include "../OpenEXR/IlmImf/ImfArray.h"
+-#include "../OpenEXR/IlmImf/ImfPreviewImage.h"
+-#include "../OpenEXR/Half/half.h"
++#include <OpenEXR/ImfIO.h>
++#include <OpenEXR/Iex.h>
++#include <OpenEXR/ImfOutputFile.h>
++#include <OpenEXR/ImfInputFile.h>
++#include <OpenEXR/ImfRgbaFile.h>
++#include <OpenEXR/ImfChannelList.h>
++#include <OpenEXR/ImfRgba.h>
++#include <OpenEXR/ImfArray.h>
++#include <OpenEXR/ImfPreviewImage.h>
++#include <half.h>
+ 
+ 
+ // ==========================================================
+@@ -66,11 +66,11 @@
+ 		return ((unsigned)n != _io->read_proc(c, 1, n, _handle));
+ 	}
+ 
+-	virtual Imath::Int64 tellg() {
++	virtual uint64_t tellg() {
+ 		return _io->tell_proc(_handle);
+ 	}
+ 
+-	virtual void seekg(Imath::Int64 pos) {
++	virtual void seekg(uint64_t pos) {
+ 		_io->seek_proc(_handle, (unsigned)pos, SEEK_SET);
+ 	}
+ 
+@@ -100,11 +100,11 @@
+ 		}
+ 	}
+ 
+-	virtual Imath::Int64 tellp() {
++	virtual uint64_t tellp() {
+ 		return _io->tell_proc(_handle);
+ 	}
+ 
+-	virtual void seekp(Imath::Int64 pos) {
++	virtual void seekp(uint64_t pos) {
+ 		_io->seek_proc(_handle, (unsigned)pos, SEEK_SET);
+ 	}
+ };
+diff -ru FreeImage.orig/Source/FreeImage/PluginG3.cpp FreeImage/Source/FreeImage/PluginG3.cpp
+--- FreeImage.orig/Source/FreeImage/PluginG3.cpp	2015-03-04 00:07:08.000000000 +0100
++++ FreeImage/Source/FreeImage/PluginG3.cpp	2024-10-03 16:56:23.678854875 +0200
+@@ -20,7 +20,7 @@
+ // Use at your own risk!
+ // ==========================================================
+ 
+-#include "../LibTIFF4/tiffiop.h"
++#include "tiffiop.h"
+ 
+ #include "FreeImage.h"
+ #include "Utilities.h"
+diff -ru FreeImage.orig/Source/FreeImage/PluginJ2K.cpp FreeImage/Source/FreeImage/PluginJ2K.cpp
+--- FreeImage.orig/Source/FreeImage/PluginJ2K.cpp	2015-03-04 00:07:08.000000000 +0100
++++ FreeImage/Source/FreeImage/PluginJ2K.cpp	2024-10-03 17:01:43.395614006 +0200
+@@ -21,7 +21,7 @@
+ 
+ #include "FreeImage.h"
+ #include "Utilities.h"
+-#include "../LibOpenJPEG/openjpeg.h"
++#include <openjpeg.h>
+ #include "J2KHelper.h"
+ 
+ // ==========================================================
+diff -ru FreeImage.orig/Source/FreeImage/PluginJP2.cpp FreeImage/Source/FreeImage/PluginJP2.cpp
+--- FreeImage.orig/Source/FreeImage/PluginJP2.cpp	2015-03-04 00:07:08.000000000 +0100
++++ FreeImage/Source/FreeImage/PluginJP2.cpp	2024-10-03 17:05:20.378848931 +0200
+@@ -21,7 +21,7 @@
+ 
+ #include "FreeImage.h"
+ #include "Utilities.h"
+-#include "../LibOpenJPEG/openjpeg.h"
++#include <openjpeg.h>
+ #include "J2KHelper.h"
+ 
+ // ==========================================================
+diff -ru FreeImage.orig/Source/FreeImage/PluginJPEG.cpp FreeImage/Source/FreeImage/PluginJPEG.cpp
+--- FreeImage.orig/Source/FreeImage/PluginJPEG.cpp	2018-07-28 19:22:24.000000000 +0200
++++ FreeImage/Source/FreeImage/PluginJPEG.cpp	2024-10-03 17:08:27.791932001 +0200
+@@ -35,9 +35,11 @@
+ #undef FAR
+ #include <setjmp.h>
+ 
+-#include "../LibJPEG/jinclude.h"
+-#include "../LibJPEG/jpeglib.h"
+-#include "../LibJPEG/jerror.h"
++#include <string.h>
++#include <stdio.h>
++#include <jconfig.h>
++#include <jpeglib.h>
++#include <jerror.h>
+ }
+ 
+ #include "FreeImage.h"
+@@ -503,7 +505,7 @@
+   return FALSE.  You might want to issue an error message instead.
+ */
+ static BOOL 
+-jpeg_read_icc_profile(j_decompress_ptr cinfo, JOCTET **icc_data_ptr, unsigned *icc_data_len) {
++_jpeg_read_icc_profile(j_decompress_ptr cinfo, JOCTET **icc_data_ptr, unsigned *icc_data_len) {
+ 	jpeg_saved_marker_ptr marker;
+ 	int num_markers = 0;
+ 	int seq_no;
+@@ -745,7 +747,7 @@
+ 	BYTE *icc_profile = NULL;
+ 	unsigned icc_length = 0;
+ 
+-	if( jpeg_read_icc_profile(cinfo, &icc_profile, &icc_length) ) {
++	if( _jpeg_read_icc_profile(cinfo, &icc_profile, &icc_length) ) {
+ 		// copy ICC profile data
+ 		FreeImage_CreateICCProfile(dib, icc_profile, icc_length);
+ 		// clean up
+diff -ru FreeImage.orig/Source/FreeImage/PluginJXR.cpp FreeImage/Source/FreeImage/PluginJXR.cpp
+--- FreeImage.orig/Source/FreeImage/PluginJXR.cpp	2015-03-04 00:07:08.000000000 +0100
++++ FreeImage/Source/FreeImage/PluginJXR.cpp	2024-10-03 17:06:02.654092128 +0200
+@@ -23,7 +23,7 @@
+ #include "Utilities.h"
+ #include "../Metadata/FreeImageTag.h"
+ 
+-#include "../LibJXR/jxrgluelib/JXRGlue.h"
++#include <JXRGlue.h>
+ 
+ // ==========================================================
+ // Plugin Interface
+diff -ru FreeImage.orig/Source/FreeImage/PluginPNG.cpp FreeImage/Source/FreeImage/PluginPNG.cpp
+--- FreeImage.orig/Source/FreeImage/PluginPNG.cpp	2018-07-28 20:15:26.000000000 +0200
++++ FreeImage/Source/FreeImage/PluginPNG.cpp	2024-10-03 17:09:33.605314997 +0200
+@@ -40,8 +40,8 @@
+ 
+ // ----------------------------------------------------------
+ 
+-#include "../ZLib/zlib.h"
+-#include "../LibPNG/png.h"
++#include <zlib.h>
++#include <png.h>
+ 
+ // ----------------------------------------------------------
+ 
+diff -ru FreeImage.orig/Source/FreeImage/PluginRAW.cpp FreeImage/Source/FreeImage/PluginRAW.cpp
+--- FreeImage.orig/Source/FreeImage/PluginRAW.cpp	2015-03-10 11:12:04.000000000 +0100
++++ FreeImage/Source/FreeImage/PluginRAW.cpp	2024-10-03 17:14:53.793035820 +0200
+@@ -19,7 +19,7 @@
+ // Use at your own risk!
+ // ==========================================================
+ 
+-#include "../LibRawLite/libraw/libraw.h"
++#include <libraw/libraw.h>
+ 
+ #include "FreeImage.h"
+ #include "Utilities.h"
+@@ -59,21 +59,18 @@
+ 	}
+ 
+     int valid() { 
+-		return (_io && _handle);
++		return (_io && _handle) ? 1 : 0;
+ 	}
+ 
+     int read(void *buffer, size_t size, size_t count) { 
+-		if(substream) return substream->read(buffer, size, count);
+ 		return _io->read_proc(buffer, (unsigned)size, (unsigned)count, _handle);
+ 	}
+ 
+     int seek(INT64 offset, int origin) { 
+-        if(substream) return substream->seek(offset, origin);
+ 		return _io->seek_proc(_handle, (long)offset, origin);
+ 	}
+ 
+     INT64 tell() { 
+-		if(substream) return substream->tell();
+         return _io->tell_proc(_handle);
+     }
+ 	
+@@ -83,19 +80,21 @@
+ 
+     int get_char() { 
+ 		int c = 0;
+-		if(substream) return substream->get_char();
+-		if(!_io->read_proc(&c, 1, 1, _handle)) return -1;
++		if (!_io->read_proc(&c, 1, 1, _handle)) {
++			return -1;
++		}
+ 		return c;
+    }
+ 	
+ 	char* gets(char *buffer, int length) { 
+-		if (substream) return substream->gets(buffer, length);
+ 		memset(buffer, 0, length);
+ 		for(int i = 0; i < length; i++) {
+-			if(!_io->read_proc(&buffer[i], 1, 1, _handle))
++			if (!_io->read_proc(&buffer[i], 1, 1, _handle)) {
+ 				return NULL;
+-			if(buffer[i] == 0x0A)
++			}
++			if (buffer[i] == 0x0A) {
+ 				break;
++			}
+ 		}
+ 		return buffer;
+ 	}
+@@ -104,7 +103,6 @@
+ 		std::string buffer;
+ 		char element = 0;
+ 		bool bDone = false;
+-		if(substream) return substream->scanf_one(fmt,val);				
+ 		do {
+ 			if(_io->read_proc(&element, 1, 1, _handle) == 1) {
+ 				switch(element) {
+@@ -127,7 +125,6 @@
+ 	}
+ 
+ 	int eof() { 
+-		if(substream) return substream->eof();
+         return (_io->tell_proc(_handle) >= _eof);
+     }
+ 
+@@ -694,7 +691,11 @@
+ 		// --------------------------------------------
+ 
+ 		// (-s [0..N-1]) Select one raw image from input file
++#if LIBRAW_COMPILE_CHECK_VERSION_NOTLESS(0, 21)
++		RawProcessor->imgdata.rawparams.shot_select = 0;
++#else
+ 		RawProcessor->imgdata.params.shot_select = 0;
++#endif
+ 		// (-w) Use camera white balance, if possible (otherwise, fallback to auto_wb)
+ 		RawProcessor->imgdata.params.use_camera_wb = 1;
+ 		// (-M) Use any color matrix from the camera metadata. This option only affects Olympus, Leaf, and Phase One cameras.
+diff -ru FreeImage.orig/Source/FreeImage/PluginTIFF.cpp FreeImage/Source/FreeImage/PluginTIFF.cpp
+--- FreeImage.orig/Source/FreeImage/PluginTIFF.cpp	2018-07-29 00:24:44.000000000 +0200
++++ FreeImage/Source/FreeImage/PluginTIFF.cpp	2024-10-03 17:13:26.990311113 +0200
+@@ -37,9 +37,9 @@
+ 
+ #include "FreeImage.h"
+ #include "Utilities.h"
+-#include "../LibTIFF4/tiffiop.h"
++#include "tiffiop.h"
+ #include "../Metadata/FreeImageTag.h"
+-#include "../OpenEXR/Half/half.h"
++#include <half.h>
+ 
+ #include "FreeImageIO.h"
+ #include "PSDParser.h"
+diff -ru FreeImage.orig/Source/FreeImage/PluginWebP.cpp FreeImage/Source/FreeImage/PluginWebP.cpp
+--- FreeImage.orig/Source/FreeImage/PluginWebP.cpp	2016-06-15 15:48:12.000000000 +0200
++++ FreeImage/Source/FreeImage/PluginWebP.cpp	2024-10-03 17:15:34.537792946 +0200
+@@ -24,9 +24,9 @@
+ 
+ #include "../Metadata/FreeImageTag.h"
+ 
+-#include "../LibWebP/src/webp/decode.h"
+-#include "../LibWebP/src/webp/encode.h"
+-#include "../LibWebP/src/webp/mux.h"
++#include <webp/decode.h>
++#include <webp/encode.h>
++#include <webp/mux.h>
+ 
+ // ==========================================================
+ // Plugin Interface
+diff -ru FreeImage.orig/Source/FreeImage/ZLibInterface.cpp FreeImage/Source/FreeImage/ZLibInterface.cpp
+--- FreeImage.orig/Source/FreeImage/ZLibInterface.cpp	2015-03-04 00:07:10.000000000 +0100
++++ FreeImage/Source/FreeImage/ZLibInterface.cpp	2024-10-03 17:16:16.599543106 +0200
+@@ -19,10 +19,10 @@
+ // Use at your own risk!
+ // ==========================================================
+ 
+-#include "../ZLib/zlib.h"
++#include <zlib.h>
+ #include "FreeImage.h"
+ #include "Utilities.h"
+-#include "../ZLib/zutil.h"	/* must be the last header because of error C3163 in VS2008 (_vsnprintf defined in stdio.h) */
++#define OS_CODE 0x03 // unix
+ 
+ /**
+ Compresses a source buffer into a target buffer, using the ZLib library. 
+diff -ru FreeImage.orig/Source/FreeImage.h FreeImage/Source/FreeImage.h
+--- FreeImage.orig/Source/FreeImage.h	2018-03-25 18:42:20.000000000 +0200
++++ FreeImage/Source/FreeImage.h	2024-10-03 17:12:30.456095588 +0200
+@@ -155,8 +155,10 @@
+ typedef uint16_t WORD;
+ typedef uint32_t DWORD;
+ typedef int32_t LONG;
++#ifndef _LIBRAW_TYPES_H
+ typedef int64_t INT64;
+ typedef uint64_t UINT64;
++#endif
+ #else
+ // MS is not C99 ISO compliant
+ typedef long BOOL;
+diff -ru FreeImage.orig/Source/LibTIFF4/tiffiop.h FreeImage/Source/LibTIFF4/tiffiop.h
+--- FreeImage.orig/Source/LibTIFF4/tiffiop.h	2018-03-05 14:43:26.000000000 +0100
++++ FreeImage/Source/LibTIFF4/tiffiop.h	2024-10-03 17:00:03.522055116 +0200
+@@ -28,7 +28,10 @@
+  * ``Library-private'' definitions.
+  */
+ 
+-#include "tif_config.h"
++#include <tiffconf.h>
++#define HAVE_SEARCH_H
++#define HAVE_FCNTL_H
++#define HAVE_SNPRINTF
+ 
+ #ifdef HAVE_FCNTL_H
+ # include <fcntl.h>
+diff -ru FreeImage.orig/Source/Metadata/XTIFF.cpp FreeImage/Source/Metadata/XTIFF.cpp
+--- FreeImage.orig/Source/Metadata/XTIFF.cpp	2015-03-04 00:07:10.000000000 +0100
++++ FreeImage/Source/Metadata/XTIFF.cpp	2024-10-03 17:17:05.937385674 +0200
+@@ -29,7 +29,7 @@
+ #pragma warning (disable : 4786) // identifier was truncated to 'number' characters
+ #endif
+ 
+-#include "../LibTIFF4/tiffiop.h"
++#include "tiffiop.h"
+ 
+ #include "FreeImage.h"
+ #include "Utilities.h"

@@ -1,0 +1,67 @@
+easyblock = 'ConfigureMake'
+
+name = 'GraphicsMagick'
+version = '1.3.45'
+
+homepage = 'http://www.graphicsmagick.org/'
+description = """GraphicsMagick is the swiss army knife of image processing."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [
+    SOURCEFORGE_SOURCE,
+    'ftp://ftp.graphicsmagick.org/pub/GraphicsMagick/%(version_major_minor)s/',
+]
+sources = [SOURCE_TAR_XZ]
+patches = [
+    'GraphicsMagick-12.3.0_pkgconfig_libtiff-4.patch'
+]
+checksums = [
+    {'GraphicsMagick-1.3.45.tar.xz': 'dcea5167414f7c805557de2d7a47a9b3147bcbf617b91f5f0f4afe5e6543026b'},
+    {'GraphicsMagick-12.3.0_pkgconfig_libtiff-4.patch':
+     'f3f900bcc4797f12ff3e2df0fc9eb67c0cc4e532531e200b8d283988f298fa48'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Autotools', '20231222'),
+]
+
+dependencies = [
+    ('X11', '20240607'),
+    ('bzip2', '1.0.8'),
+    ('freetype', '2.13.2'),
+    ('libpng', '1.6.43'),
+    ('libjpeg-turbo', '3.0.1'),
+    ('LibTIFF', '4.6.0'),
+    ('libxml2', '2.12.7'),
+    ('XZ', '5.4.5'),
+    ('zlib', '1.3.1'),
+    ('Ghostscript', '10.03.1'),
+]
+
+# When building Octave, mixing rpathed shared libraries with libGraphicsMagick++.a will cause the check on the library
+# to fail due to missing symbols. The default previously was to build the static library only.
+configure_opts = '--enable-shared --enable-static'
+
+modextrapaths = {MODULE_LOAD_ENV_HEADERS: ['include/GraphicsMagick']}
+
+sanity_check_paths = {
+    'files': [
+        'bin/gm',
+        'lib/libGraphicsMagick.a',
+        'lib/libGraphicsMagick++.a',
+        'lib/libGraphicsMagickWand.a',
+        'lib/libGraphicsMagick.so',
+        'lib/libGraphicsMagick++.so',
+        'lib/libGraphicsMagickWand.so'
+    ],
+    'dirs': ['include/GraphicsMagick', 'lib/pkgconfig'],
+}
+
+sanity_check_commands = [
+    "grep 'libtiff-4' %(installdir)s/lib/pkgconfig/GraphicsMagick.pc",
+]
+
+moduleclass = 'vis'

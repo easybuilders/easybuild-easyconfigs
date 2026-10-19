@@ -1,0 +1,43 @@
+easyblock = 'MesonNinja'
+
+name = 'dtc'
+version = '1.7.2'
+
+homepage = 'https://github.com/dgibson/dtc'
+description = """The Device Tree Compiler (dtc) toolchain for working with device tree source and binary files and
+also libfdt, a utility library for reading and manipulating the binary format."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://github.com/dgibson/dtc/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['8f1486962f093f28a2f79f01c1fd82f144ef640ceabe555536d43362212ceb7c']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Meson', '1.8.2'),
+    ('Ninja', '1.13.0'),
+    ('pkgconf', '2.4.3'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SWIG', '4.3.1'),
+    ('libyaml', '0.2.5'),
+]
+
+
+# Workaround for python 3.13 no longer uses DESTDIR
+# prefix path is appended, but string must not be empty
+preinstallopts = 'DESTDIR=/ '
+
+sanity_check_commands = ['dtc -h', 'python -c "import libfdt"']
+
+sanity_check_paths = {
+    'files': ['bin/dtc', f'lib/libfdt.{SHLIB_EXT}'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+}
+
+moduleclass = 'tools'

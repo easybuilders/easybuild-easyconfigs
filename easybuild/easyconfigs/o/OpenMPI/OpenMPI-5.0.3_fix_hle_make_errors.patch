@@ -1,0 +1,25 @@
+On JUWELS, building OpenMPI 5.0.5 with NVHPC 24.9 fails with errors
+related to `__ATOMIC_HLE_ACQUIRE` and `__ATOMIC_HLE_RELEASE` not being
+defined. Add an additional macro check to let the build succeed.
+
+--- a/opal/include/opal/sys/gcc_builtin/atomic.h	2024-07-23 01:23:20.567556032 +0200
++++ a/opal/include/opal/sys/gcc_builtin/atomic.h	2024-10-02 12:19:53.130698758 +0200
+@@ -187,7 +187,7 @@
+  *
+  *********************************************************************/
+ 
+-#if defined(__HLE__)
++#if defined(__HLE__) && defined(__ATOMIC_HLE_ACQUIRE) && defined(__ATOMIC_HLE_RELEASE)
+ 
+ #    include <immintrin.h>
+ 
+@@ -225,7 +225,7 @@
+                      __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
+ }
+ 
+-#else  /* #if defined(__HLE__) */
++#else  /* #if defined(__HLE__) && defined(__ATOMIC_HLE_ACQUIRE) && defined(__ATOMIC_HLE_RELEASE) */
+ 
+ #include "opal/sys/atomic_impl_spinlock.h"
+ 
+

@@ -1,0 +1,87 @@
+easyblock = 'Bundle'
+
+name = 'LCov'
+version = '2.3.1'
+
+homepage = 'https://github.com/linux-test-project/lcov'
+description = "LCOV - the LTP GCOV extension"
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('pkgconf', '2.2.0'),  # for ExtUtils::PkgConfig
+    ('XlsxWriter', '3.2.0'),  # For LCov tests
+    ('coverage', '7.9.2'),  # For LCov tests
+]
+
+dependencies = [
+    ('Perl-bundle-CPAN', '5.38.2'),
+    ('libgd', '2.3.3'),
+]
+
+github_account = 'linux-test-project'
+default_easyblock = 'PerlModule'
+
+components = [
+    ('ExtUtils::PkgConfig', '1.16', {
+        'start_dir': 'ExtUtils-PkgConfig-%(version)s',
+        'sources': ['ExtUtils-PkgConfig-%(version)s.tar.gz'],
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC'],
+        'checksums': ['bbeaced995d7d8d10cfc51a3a5a66da41ceb2bc04fedcab50e10e6300e801c6e'],
+    }),
+    ('GD', '2.83', {
+        'start_dir': 'GD-%(version)s',
+        'sources': ['GD-%(version)s.tar.gz'],
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RU/RURBAN'],
+        'checksums': ['75ee23c67f699d94f7320eba731a3fbf97f0381a54d710e60a0abffc9c45a754'],
+        'runtest': False,  # Fails because libgd isn't built with TIFF support
+    }),
+    ('Memory::Usage', '0.201', {
+        'start_dir': 'Memory-Usage-%(version)s',
+        'sources': ['Memory-Usage-%(version)s.tar.gz'],
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DO/DONEILL/'],
+        'checksums': ['8f2afad21e40a748e81c8c0f3e40ca718c14ddb9fb2d880bfbd28ae913ce5349'],
+    }),
+    ('Devel::Cover', '1.51', {
+        'start_dir': 'Devel-Cover-%(version)s',
+        'sources': ['Devel-Cover-%(version)s.tar.gz'],
+        'source_urls': ['https://cpan.metacpan.org/authors/id/P/PJ/PJCJ'],
+        'checksums': ['bf1936977027bacd243d1713778507149a2da269e7e729cf708b1860dee8f58a']
+    }),
+    ('Memory::Process', '0.06', {
+        'start_dir': 'Memory-Process-%(version)s',
+        'sources': ['Memory-Process-%(version)s.tar.gz'],
+        'source_urls': ['https://cpan.metacpan.org/authors/id/S/SK/SKIM'],
+        'checksums': ['35814488ffd29c97621625ea3b3d700afbfa60ed055bd759d4e58d9c8fd44e4e']
+    }),
+    ('TimeDate', '2.33', {
+        'start_dir': 'TimeDate-%(version)s',
+        'sources': ['TimeDate-%(version)s.tar.gz'],
+        'source_urls': ['https://cpan.metacpan.org/authors/id/A/AT/ATOOMIC'],
+        'checksums': ['c0b69c4b039de6f501b0d9f13ec58c86b040c1f7e9b27ef249651c143d605eb2']
+    }),
+    (name, version, {
+        'easyblock': 'ConfigureMake',
+        'source_urls': [GITHUB_LOWER_SOURCE],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['035ce6271b775891ef63c325fd18738c43d559c9c160869e3f6731cfe734e6fa'],
+        'skipsteps': ['configure', 'build'],
+        'start_dir': '%(namelower)s-%(version)s',
+        'installopts': "PREFIX=%(installdir)s",
+        'pretestopts': 'PERL5LIB=%(installdir)s/lib/perl5/site_perl/5.38.2/:$PERL5LIB',
+        'runtest': 'check'
+    }),
+]
+
+sanity_check_all_components = True
+
+sanity_check_paths = {
+    'files': ['bin/lcov', 'bin/genhtml'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["lcov --help"]
+
+moduleclass = 'devel'

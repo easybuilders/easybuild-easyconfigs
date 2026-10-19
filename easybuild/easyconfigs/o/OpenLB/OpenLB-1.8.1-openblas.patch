@@ -1,0 +1,30 @@
+Allow using arbitrary lapacke.h location and other implementations of BLAS/LAPACK besides OpenBLAS.
+diff --git a/rules.mk b/rules.mk
+index 2f2ac10a..dcb74b04 100644
+--- a/rules.mk
++++ b/rules.mk
+@@ -59,8 +59,10 @@ ifneq ($(filter CPU_SIMD,$(PLATFORMS)),)
+ 	LDFLAGS += -lrt
+ endif
+ 
++BLAS_LIBS ?= -lopenblas
++
+ LDFLAGS += -lz -ltinyxml2
+-LDFLAGS += $(if $(filter $(FEATURES), OPENBLAS),-lopenblas)
++LDFLAGS += $(if $(filter $(FEATURES), OPENBLAS),$(BLAS_LIBS))
+ LDFLAGS += $(if $(filter $(FEATURES), VDB),-lopenvdb -ltbb)
+ 
+ ifneq ($(filter PROJ,$(FEATURES)),)
+diff --git a/src/utilities/anisoDiscr.h b/src/utilities/anisoDiscr.h
+index 177b08e2..8b93cdc4 100644
+--- a/src/utilities/anisoDiscr.h
++++ b/src/utilities/anisoDiscr.h
+@@ -40,7 +40,7 @@
+ #include <string>
+ #include <math.h>
+ #ifdef FEATURE_OPENBLAS
+-#include <openblas/lapacke.h>
++#include <lapacke.h>
+ #endif
+ 
+ #include "descriptor/functions.h"

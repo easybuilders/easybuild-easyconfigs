@@ -1,0 +1,40 @@
+Patch from https://gitlab.com/gromacs/gromacs/-/merge_requests/5593,
+backported to 2024.1.
+--- gromacs-v2024.1.orig/src/gromacs/trajectoryanalysis/tests/surfacearea.cpp	2024-02-28 14:31:24.000000000 +0100
++++ gromacs-v2024.1/src/gromacs/trajectoryanalysis/tests/surfacearea.cpp	2025-11-14 08:51:17.464110911 +0100
+@@ -57,6 +57,13 @@
+ #include "testutils/refdata.h"
+ #include "testutils/testasserts.h"
+ 
++// See #5440 and https://gcc.gnu.org/bugzilla/show_bug.cgi?id=115018
++#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ >= 13) && GMX_SIMD_ARM_SVE
++#    if GMX_SIMD_ARM_SVE_LENGTH_VALUE >= 256
++#        define GMX_TEST_DISABLE_TRANSLATE_POINTS_OPTIMIZATION 1
++#    endif
++#endif
++
+ namespace
+ {
+ 
+@@ -112,6 +119,11 @@
+             addSphere(x[XX], x[YY], x[ZZ], radius);
+         }
+     }
++
++#ifdef GMX_TEST_DISABLE_TRANSLATE_POINTS_OPTIMIZATION
++#    pragma GCC push_options
++#    pragma GCC optimize("O0")
++#endif
+     void translatePoints(real x, real y, real z)
+     {
+         for (size_t i = 0; i < x_.size(); ++i)
+@@ -121,6 +133,9 @@
+             x_[i][ZZ] += z;
+         }
+     }
++#ifdef GMX_TEST_DISABLE_TRANSLATE_POINTS_OPTIMIZATION
++#    pragma GCC pop_options
++#endif
+ 
+     void calculate(int ndots, int flags, bool bPBC)
+     {

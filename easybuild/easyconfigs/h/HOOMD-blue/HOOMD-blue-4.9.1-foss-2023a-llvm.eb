@@ -1,0 +1,74 @@
+# LLVM included, needs to be version 16.x as newer versions have a different API
+# See: https://github.com/easybuilders/easybuild-easyconfigs/issues/21960
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'HOOMD-blue'
+version = "4.9.1"
+versionsuffix = '-llvm'
+
+homepage = "https://bitbucket.org/glotzer/hoomd-blue"
+description = """HOOMD-blue is a general-purpose particle simulation
+toolkit, implementing molecular dynamics and hard particle Monte Carlo
+optimized for fast execution on both GPUs and CPUs.
+This version contains the LLVM environment.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+github_account = 'glotzerlab'
+source_urls = [GITHUB_LOWER_RELEASE]
+sources = ['hoomd-%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s.patch']
+checksums = [
+    {'hoomd-4.9.1.tar.gz': 'b48ff3d44fef56ddf95c64b462b5d7f670bfc7a76b47223207edd3e7438e52bd'},
+    {'HOOMD-blue-4.9.1.patch': '185584a621fb02a554fb2c383b0d7c8bbb7e1251298fc58529b22b8ce7212854'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('pybind11', '2.11.1'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('tbb', '2021.11.0'),
+    ('Eigen', '3.4.0'),
+    ('Cereal', '1.3.2', '', SYSTEM),
+    ('Clang', '16.0.6', '-shared'),
+]
+
+_copts = [
+    '-DENABLE_GPU=OFF',
+    '-DENABLE_MPI=ON',
+    '-DBUILD_MD=ON',
+    '-DBUILD_METAL=OFF',
+    '-DENABLE_TBB=ON',
+    '-DBUILD_TESTING=ON',
+    '-DENABLE_LLVM=ON',
+]
+
+configopts = ' '.join(_copts)
+
+postinstallcmds = [
+    'ln -s hoomd/include %(installdir)s/include',
+]
+
+pretestopts = "OMPI_MCA_rmaps_base_oversubscribe=1 "
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['hoomd/__init__.py', 'hoomd/include/hoomd/Compute.h'],
+    'dirs': ['lib/cmake'],
+}
+
+sanity_check_commands = [
+    "python -c 'import hoomd'",
+]
+
+modextrapaths = {'PYTHONPATH': ''}
+
+moduleclass = 'phys'

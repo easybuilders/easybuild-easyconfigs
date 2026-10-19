@@ -1,0 +1,91 @@
+easyblock = 'CMakeMake'
+
+name = 'MuJoCo'
+version = '3.3.0'
+
+homepage = 'https://mujoco.org/'
+description = """MuJoCo stands for Multi-Joint dynamics with Contact. It is a general purpose
+physics engine that aims to facilitate research and development in robotics,
+biomechanics, graphics and animation, machine learning, and other areas which
+demand fast and accurate simulation of articulated structures interacting with
+their environment."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ['https://github.com/google-deepmind/mujoco/archive/refs/tags']
+
+# Sources otherwise downloaded by CMake FetchContent
+local_extract_cmd_tmpl = "mkdir -p _deps/{0} && tar --strip-components=1 -C _deps/{0} -xf %s"
+sources = [
+    '%(version)s.tar.gz',
+    # Hashes from MUJOCO_DEP_VERSION_* in cmake/MujocoDependencies.cmake
+    {
+        'source_urls': ['https://github.com/danfis/libccd/archive'],
+        'filename': '7931e764a19ef6b21b443376c699bbc9c6d4fba8.tar.gz',
+        'extract_cmd': local_extract_cmd_tmpl.format('ccd-src'),
+    },
+    {
+        'source_urls': ['https://github.com/lvandeve/lodepng/archive'],
+        'filename': 'b4ed2cd7ecf61d29076169b49199371456d4f90b.tar.gz',
+        'extract_cmd': local_extract_cmd_tmpl.format('lodepng-src'),
+    },
+    {
+        'source_urls': ['https://github.com/aparis69/MarchingCubeCpp/archive'],
+        'filename': 'f03a1b3ec29b1d7d865691ca8aea4f1eb2c2873d.tar.gz',
+        'extract_cmd': local_extract_cmd_tmpl.format('marchingcubecpp-src'),
+    },
+]
+patches = [
+    'MuJoCo-3.3.0_use_eb_deps.patch',
+]
+checksums = [
+    {'3.3.0.tar.gz': '608cd202ac5066096fdc7e5adb322aca2fe7b4d118543a7c4b54dc183a6b3b54'},
+    {'7931e764a19ef6b21b443376c699bbc9c6d4fba8.tar.gz':
+     '479994a86d32e2effcaad64204142000ee6b6b291fd1859ac6710aee8d00a482'},
+    {'b4ed2cd7ecf61d29076169b49199371456d4f90b.tar.gz':
+     'b67e466ba659c07ac775d07dbd97af319cde449ce14abed9ae596df29d888603'},
+    {'f03a1b3ec29b1d7d865691ca8aea4f1eb2c2873d.tar.gz':
+     '227c10b2cffe886454b92a0e9ef9f0c9e8e001d00ea156cc37c8fc43055c9ca6'},
+    {'MuJoCo-3.3.0_use_eb_deps.patch': 'd60c4f78f5f59c8fc43c1e9e93580806b86bcd17507c1030e831bece17fbd710'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.27.6'),
+    ('googlebenchmark', '1.9.1'),
+    ('googletest', '1.14.0'),
+]
+dependencies = [
+    ('Abseil', '20240116.1'),
+    ('GLFW', '3.4'),
+    ('Qhull', '2020.2'),
+    ('SdfLib', '20250125'),
+    ('tinyobjloader', '2.0.0rc13'),
+    ('TinyXML-2', '11.0.0'),
+    ('X11', '20231019'),
+]
+
+build_shared_libs = True
+# Avoid test failure due to different vectorization between C/C++
+# see https://github.com/google-deepmind/mujoco/issues/2515
+preconfigopts = 'CXXFLAGS="$CXXFLAGS -ffp-contract=off" '
+
+configopts = ' '.join([
+    '-DMUJOCO_SAMPLES_USE_SYSTEM_GLFW=ON',
+    '-DMUJOCO_SIMULATE_USE_SYSTEM_GLFW=ON',
+    '-DMUJOCO_TEST_PYTHON_UTIL=OFF',
+    '-DFETCHCONTENT_FULLY_DISCONNECTED=ON',
+    '-DFETCHCONTENT_BASE_DIR=%(builddir)s/_deps',
+])
+
+runtest = True
+
+sanity_check_paths = {
+    'files': ['bin/basic', 'bin/record', 'bin/simulate',
+              'lib/libmujoco.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'include', 'share/mujoco/model'],
+}
+
+sanity_check_commands = ['basic']
+
+moduleclass = 'phys'

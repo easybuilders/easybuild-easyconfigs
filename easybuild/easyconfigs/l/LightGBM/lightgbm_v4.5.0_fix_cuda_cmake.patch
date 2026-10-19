@@ -1,0 +1,64 @@
+CUDA detection was not working correctly with LightGBM 4.5.0
+
+Extracted from https://github.com/microsoft/LightGBM/pull/6812
+
+diff -rupN lightgbm-4.5.0/CMakeLists.txt lightgbm-4.5.0.new/CMakeLists.txt
+--- lightgbm-4.5.0/CMakeLists.txt	2022-11-09 13:37:21.000000000 +0100
++++ lightgbm-4.5.0.new/CMakeLists.txt	2025-09-26 21:38:25.244103614 +0200
+@@ -222,21 +222,28 @@ if(USE_CUDA)
+     # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
+     # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
+     set(CUDA_ARCHS "60" "61" "62" "70" "75")
+-    if(CUDA_VERSION VERSION_GREATER_EQUAL "110")
++    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
+         list(APPEND CUDA_ARCHS "80")
+     endif()
+-    if(CUDA_VERSION VERSION_GREATER_EQUAL "111")
++    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.1")
+         list(APPEND CUDA_ARCHS "86")
+     endif()
+-    if(CUDA_VERSION VERSION_GREATER_EQUAL "115")
++    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.5")
+         list(APPEND CUDA_ARCHS "87")
+     endif()
+-    if(CUDA_VERSION VERSION_GREATER_EQUAL "118")
++    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.8")
+         list(APPEND CUDA_ARCHS "89")
+         list(APPEND CUDA_ARCHS "90")
+     endif()
++    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "12.8")
++        list(APPEND CUDA_ARCHS "100")
++        list(APPEND CUDA_ARCHS "120")
++    endif()
++    # Generate PTX for the most recent architecture for forwards compatibility
+     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
+-    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
++    list(TRANSFORM CUDA_ARCHS APPEND "-real")
++    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}-real" "${CUDA_LAST_SUPPORTED_ARCH}-virtual")
++    message(STATUS "CUDA_ARCHITECTURES: ${CUDA_ARCHS}")
+     if(USE_DEBUG)
+       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
+     else()
+@@ -273,7 +280,7 @@ if(USE_CUDA)
+     function(add_histogram hsize hname hadd hconst hdir)
+       add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
+       set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+-      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
++      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES "${CUDA_ARCHS}")
+       if(hadd)
+         list(APPEND histograms histo${hsize}${hname})
+         set(histograms ${histograms} PARENT_SCOPE)
+@@ -610,10 +617,10 @@ if(__INTEGRATE_OPENCL)
+ endif()
+ 
+ if(USE_CUDA)
+-  set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
+-  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
++  set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES "${CUDA_ARCHS}")
++  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES "${CUDA_ARCHS}")
+   if(BUILD_CLI)
+-    set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
++    set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES "${CUDA_ARCHS}")
+   endif()
+ 
+   set_target_properties(lightgbm_objs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

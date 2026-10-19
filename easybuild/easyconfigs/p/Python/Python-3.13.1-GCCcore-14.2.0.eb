@@ -1,0 +1,80 @@
+name = 'Python'
+version = '3.13.1'
+
+homepage = 'https://python.org/'
+description = """Python is a programming language that lets you work more quickly and integrate your systems
+ more effectively."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.python.org/ftp/%(namelower)s/%(version)s/']
+sources = [SOURCE_TGZ]
+
+patches = [
+    'Python-3.12.3_avoid-tkinter-build.patch',
+    'Python-3.13.1_runshared-ld-preload.patch',
+]
+
+# Like patches, but these will only be applied if EasyBuild is configured to filter $LD_LIBRARY_PATH
+# In that scenario, ctypes needs to be patched since it heavily relies on $LD_LIBRARY_PATH to find libraries
+patch_ctypes_ld_library_path = 'Python-3.11.5-custom-ctypes.patch'
+
+checksums = [
+    {'Python-3.13.1.tgz': '1513925a9f255ef0793dbf2f78bb4533c9f184bdd0ad19763fd7f47a400a7c55'},
+    {'Python-3.12.3_avoid-tkinter-build.patch': '34fa44ca67fc08d41c58db2e289317f12f32777a352a982dca2e63459fc089e3'},
+    {'Python-3.13.1_runshared-ld-preload.patch': 'ca9ec56c71aafa881e7ddf6fba23fbecc016be48c2d912e5ccd92962ddd38edf'},
+    {'Python-3.11.5-custom-ctypes.patch': 'b29c22f47587460149e05296ff09b29bf790a83e2b3b13fb2f42f5f236ad8ea7'},
+]
+
+builddependencies = [
+    ('UnZip', '6.0'),
+    ('pkgconf', '2.3.0'),
+]
+
+dependencies = [
+    ('binutils', '2.42'),
+    ('bzip2', '1.0.8'),  # required for bz2 package in Python stdlib
+    ('zlib', '1.3.1'),
+    ('libreadline', '8.2'),
+    ('ncurses', '6.5'),
+    ('SQLite', '3.47.2'),
+    ('XZ', '5.6.3'),
+    ('libffi', '3.4.5'),
+    ('OpenSSL', '3', '', SYSTEM),
+]
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+# order is important!
+# package versions updated 2025-01-02
+exts_list = [
+    ('flit_core', '3.10.1', {
+        'checksums': ['66e5b87874a0d6e39691f0e22f09306736b633548670ad3c09ec9db03c5662f7'],
+    }),
+    ('wheel', '0.45.1', {
+        'checksums': ['661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729'],
+    }),
+    ('tomli', '2.2.1', {
+        'checksums': ['cd45e1dc79c835ce60f7404ec8119f2eb06d38b1deba146f07ced3bbc44505ff'],
+    }),
+    ('packaging', '24.2', {
+        'checksums': ['c228a6dc5e932d346bc5739379109d49e8853dd8223571c7c5b55260edc0b97f'],
+    }),
+    ('typing_extensions', '4.12.2', {
+        'checksums': ['1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8'],
+    }),
+    ('setuptools', '75.6.0', {
+        'checksums': ['8199222558df7c86216af4f84c30e9b34a61d8ba19366cc914424cdbd28252f6'],
+    }),
+    ('setuptools_scm', '8.1.0', {
+        'checksums': ['42dea1b65771cba93b7a515d65a65d8246e560768a66b9106a592c8e7f26c8a7'],
+    }),
+    ('pip', '24.3.1', {
+        'checksums': ['ebcb60557f2aefabc2e0f918751cd24ea0d56d8ec5445fe1807f1d2109660b99'],
+    }),
+]
+
+moduleclass = 'lang'

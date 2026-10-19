@@ -53,6 +53,31 @@ _jaxlib_buildopts += '--bazel_options="--action_env=CPATH=$EBROOTPYBIND11/includ
 # Avoid warning (treated as error) in upb/table.c
 _jaxlib_buildopts += '--bazel_options="--copt=-Wno-maybe-uninitialized" '
 
+# Some tests require an isolated run:
+local_isolated_tests = [
+    'tests/host_callback_test.py::HostCallbackTapTest::test_tap_scan_custom_jvp',
+    'tests/host_callback_test.py::HostCallbackTapTest::test_tap_transforms_doc',
+    'tests/lax_scipy_special_functions_test.py::LaxScipySpcialFunctionsTest' +
+    '::testScipySpecialFun_gammainc_s_2x1x4_float32_float32',
+]
+# deliberately not testing in parallel, as that results in (additional) failing tests;
+# use XLA_PYTHON_CLIENT_ALLOCATOR=platform to allocate and deallocate GPU memory during testing,
+# see https://github.com/google/jax/issues/7323 and
+# https://github.com/google/jax/blob/main/docs/gpu_memory_allocation.rst;
+# use CUDA_VISIBLE_DEVICES=0 to avoid failing tests on systems with multiple GPUs;
+# use NVIDIA_TF32_OVERRIDE=0 to avoid loosing numerical precision by disabling TF32 Tensor Cores;
+local_test_exports = [
+    "NVIDIA_TF32_OVERRIDE=0",
+    "CUDA_VISIBLE_DEVICES=0",
+    "XLA_PYTHON_CLIENT_ALLOCATOR=platform",
+    "JAX_ENABLE_X64=true",
+]
+local_test = ''.join(['export %s;' % x for x in local_test_exports])
+# run all tests at once except for local_isolated_tests:
+local_test += "pytest -vv tests %s && " % ' '.join(['--deselect %s' % x for x in local_isolated_tests])
+# run remaining local_isolated_tests separately:
+local_test += ' && '.join(['pytest -vv %s' % x for x in local_isolated_tests])
+
 components = [
     ('jaxlib', version, {
         'sources': [
@@ -89,33 +114,6 @@ components = [
     }),
 ]
 
-# Some tests require an isolated run:
-local_isolated_tests = [
-    'tests/host_callback_test.py::HostCallbackTapTest::test_tap_scan_custom_jvp',
-    'tests/host_callback_test.py::HostCallbackTapTest::test_tap_transforms_doc',
-    'tests/lax_scipy_special_functions_test.py::LaxScipySpcialFunctionsTest' +
-    '::testScipySpecialFun_gammainc_s_2x1x4_float32_float32',
-]
-# deliberately not testing in parallel, as that results in (additional) failing tests;
-# use XLA_PYTHON_CLIENT_ALLOCATOR=platform to allocate and deallocate GPU memory during testing,
-# see https://github.com/google/jax/issues/7323 and
-# https://github.com/google/jax/blob/main/docs/gpu_memory_allocation.rst;
-# use CUDA_VISIBLE_DEVICES=0 to avoid failing tests on systems with multiple GPUs;
-# use NVIDIA_TF32_OVERRIDE=0 to avoid loosing numerical precision by disabling TF32 Tensor Cores;
-local_test_exports = [
-    "NVIDIA_TF32_OVERRIDE=0",
-    "CUDA_VISIBLE_DEVICES=0",
-    "XLA_PYTHON_CLIENT_ALLOCATOR=platform",
-    "JAX_ENABLE_X64=true",
-]
-local_test = ''.join(['export %s;' % x for x in local_test_exports])
-# run all tests at once except for local_isolated_tests:
-local_test += "pytest -vv tests %s && " % ' '.join(['--deselect %s' % x for x in local_isolated_tests])
-# run remaining local_isolated_tests separately: 
-local_test += ' && '.join(['pytest -vv %s' % x for x in local_isolated_tests])
-
-use_pip = True
-
 exts_list = [
     (name, version, {
         'source_tmpl': '%(name)s-v%(version)s.tar.gz',
@@ -129,7 +127,5 @@ exts_list = [
         'runtest': local_test,
     }),
 ]
-
-sanity_pip_check = True
 
 moduleclass = 'ai'

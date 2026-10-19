@@ -1,0 +1,58 @@
+# Template for a mixed bundle of components using different easyblocks on GCCcore 12.3.0
+easyblock = 'Bundle'
+
+name = 'SoftwareName'
+version = '0.0.0'
+
+homepage = 'https://www.domain.org'
+description = """
+Description in 80 chars long column
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('binutils', '2.40'),
+    ('make', '4.4.1'),
+]
+
+dependencies = [
+    ('DependencyName', '0.0.0'),
+]
+
+components = [
+    ('component1', '0.0.0', {
+        'easyblock': 'MakeCp',
+        'source_urls': ['https://download.sourceforge.net/%(namelower)s'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'start_dir': '%(namelower)s-%(version)s',
+        'files_to_copy': [(['comp1', 'comp1_turbo'], 'bin')],
+    }),
+    ('component2', '0.0.0', {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['http://www.domain.org/download/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'start_dir': '%(namelower)s-%(version)s',
+        'preconfigopts': "autoreconf -fi &&",
+    }),
+    ('component2_data', '0.0.0', {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://github.com/org/%(namelower)s/archive'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'start_dir': '%(namelower)s-%(version)s',
+        'install_type': 'subdir',
+    }),
+]
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in ['comp1', 'comp1_turbo', 'comp2']],
+    'dirs': ['component2_data'],
+}
+
+sanity_check_commands = [
+    "comp1 -h",
+    "comp2 -h",
+]
+
+moduleclass = 'module_class'

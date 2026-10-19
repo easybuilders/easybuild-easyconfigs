@@ -1,0 +1,46 @@
+easyblock = 'Binary'
+
+name = 'UFCG'
+version = '1.0.6'
+
+homepage = 'https://github.com/steineggerlab/ufcg/'
+description = """UFCG pipeline provides methods for a genome-wide taxonomic profiling
+and annotation of your own biological sequences of Fungi."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/steineggerlab/ufcg/archive/']
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+patches = ['%(name)s-%(version)s_fix-ping.patch']
+checksums = [
+    {'UFCG-1.0.6.tar.gz': '6641dd636c7f13f3e754163a50e3eda9e1d9b0ebad8eaa42422acaa410210bc7'},
+    {'UFCG-1.0.6_fix-ping.patch': 'd5419a8fdbf8177f39b0fb4888418cb7261b3a758f7164fdc2252e96d5aea307'},
+]
+
+builddependencies = [
+    ('Maven', '3.9.7', '', SYSTEM),
+]
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('AUGUSTUS', '3.5.0'),
+    ('MMseqs2', '14-7e284'),
+    ('MAFFT', '7.520', '-with-extensions'),
+    ('IQ-TREE', '2.3.5'),
+    ('wget', '1.24.5'),
+]
+
+extract_sources = True
+
+install_cmds = [
+    'mvn clean package appassembler:assemble',
+    'cp -r %(start_dir)s/target/* %(installdir)s',
+    '%(installdir)s/bin/ufcg download -t minimum',
+]
+
+sanity_check_paths = {
+    'files': ['%(namelower)s-%(version)s.jar', 'bin/%(namelower)s'],
+    'dirs': ['bin', 'repo', 'classes'],
+}
+sanity_check_commands = ['%(namelower)s -h']
+
+moduleclass = 'bio'

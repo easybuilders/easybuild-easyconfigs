@@ -1,0 +1,219 @@
+diff -r a4c4f60ba4f7 src/EvtGenModels/EvtCBTo3piP00.cpp
+--- a/src/EvtGenModels/EvtCBTo3piP00.cpp	2017-12-13 17:02:55.000000000 +0100
++++ b/src/EvtGenModels/EvtCBTo3piP00.cpp	2019-04-18 15:03:33.428088846 +0200
+@@ -56,6 +56,16 @@
+   checkSpinDaughter(1,EvtSpinType::SCALAR);
+   checkSpinDaughter(2,EvtSpinType::SCALAR);
+
++
++  int iset=10000;
++  double alpha = getArg(0);
++  EvtVector4R pin,p4pi1,p4Gamma11,p4Gamma12;
++  EvtVector4R p4Gamma21,p4Gamma22;
++  double realA,imgA,realbarA,imgbarA;
++  generator.Evt3piP00(alpha, iset, pin, p4Gamma11, p4Gamma12,
++                      p4Gamma21, p4Gamma22, realA, imgA, realbarA,
++                      imgbarA);
++
+ }
+
+
+@@ -83,16 +93,7 @@
+
+   EvtVector4R p4[3];
+   double alpha = getArg(0);
+-  int iset;
+-  static int first=1;
+-
+-  if (first==1) {
+-    iset=10000;
+-    first=0;
+-  }
+-  else{
+-    iset=0;
+-  }
++  int iset=0;
+
+   EvtVector4R p4pi1,p4Gamma11,p4Gamma12;
+   EvtVector4R p4Gamma21,p4Gamma22;
+diff -r a4c4f60ba4f7 src/EvtGenModels/EvtCBTo3piMPP.cpp
+--- a/src/EvtGenModels/EvtCBTo3piMPP.cpp	2017-12-13 17:02:55.000000000 +0100
++++ b/src/EvtGenModels/EvtCBTo3piMPP.cpp	2019-04-18 15:04:00.380097072 +0200
+@@ -57,6 +57,16 @@
+   checkSpinDaughter(1,EvtSpinType::SCALAR);
+   checkSpinDaughter(2,EvtSpinType::SCALAR);
+
++
++  EvtVector4R p4[3];
++  double alpha = getArg(0);
++
++  int iset=10000;
++
++  double realA,imgA,realbarA,imgbarA;
++
++  generator.Evt3piMPP(alpha, iset, p4[0], p4[1], p4[2],
++                  realA, imgA, realbarA, imgbarA);
+ }
+
+ void EvtCBTo3piMPP::initProbMax(){
+@@ -81,17 +91,7 @@
+   EvtVector4R p4[3];
+   double alpha = getArg(0);
+
+-  int iset;
+-
+-  static int first=1;
+-
+-  if (first==1) {
+-    iset=10000;
+-    first=0;
+-  }
+-  else{
+-    iset=0;
+-  }
++  int iset=0;
+
+   double realA,imgA,realbarA,imgbarA;
+
+diff -r a4c4f60ba4f7 configure
+--- a/configure Thu May 11 12:16:17 2017 +0100
++++ b/configure Thu May 11 12:47:43 2017 +0100
+@@ -158,3 +158,3 @@
+ #
+-CXX=g++
++CXX="g++"
+ CXXFLAGS_OPT="-O2 -Wall"
+@@ -163,3 +163,3 @@
+ CFLAGS_DBG=-g
+-FC=gfortran
++FC="gfortran"
+ FFLAGS_OPT="-O2 -Wuninitialized"
+@@ -179,116 +179,18 @@
+ #
+ # Find platform.
+ #
+-ARCH=`uname`
+-theGcc=`g++ --version | grep '[0-9]\.[0-9]\.[0-9]' -o | head -1 | awk -F . '{print $1}'`
+-if [ ${theGcc} = 4 ]; then
+-  ARCH=${ARCH}-gcc4
+-fi
+-if [ ${theGcc} = 5 ]; then
+-  ARCH=${ARCH}-gcc5
+-fi
+-if [ ${theGcc} = 6 ]; then
+-  ARCH=${ARCH}-gcc6
+-fi
++ARCH=`uname`-gcc4
+ echo "Platform is $ARCH"
+
+ #default platform settings:
+ FFLAGS="${FFLAGS_OPT}"
+ CFLAGS="${CFLAGS_OPT}"
+ CXXFLAGS="${CXXFLAGS_OPT}"
+-FLIBS="-lfrtbegin -lg2c"
++FLIBS="-lgfortran"
+ SOFLAGS="-soname"
+
+-if [ ${COMPMODE} = OPT ]; then
+-  FFLAGS="${FFLAGS_OPT}"
+-  CFLAGS="${CFLAGS_OPT}"
+-  CXXFLAGS="${CXXFLAGS_OPT}"
+-fi
+-if [ ${COMPMODE} = DBG ]; then
+-  FFLAGS="${FFLAGS_DBG}"
+-  CFLAGS="${CFLAGS_DBG}"
+-  CXXFLAGS="${CXXFLAGS_DBG}"
+-fi
+-if [ $ARCH = Linux ]; then
+-  FFLAGS="${FFLAGS_OPT} -Wno-globals"
+-  CFLAGS="${CFLAGS_OPT}"
+-  CXXFLAGS="${CXXFLAGS_OPT}"
+-  FLIBS="-lfrtbegin -lg2c"
+-  if [ ${COMPMODE} = OPT ]; then
+-    FFLAGS="${FFLAGS_OPT}"
+-    CFLAGS="${CFLAGS_OPT}"
+-    CXXFLAGS="${CXXFLAGS_OPT}"
+-  fi
+-  if [ ${COMPMODE} = DBG ]; then
+-    FFLAGS="${FFLAGS_DBG} -Wno-globals"
+-    CFLAGS="${CFLAGS_DBG}"
+-    CXXFLAGS="${CXXFLAGS_DBG}"
+-  fi
+-fi
+-
+-# Linux platform with gcc4: new Fortran90 compiler.
+-if [ $ARCH = Linux-gcc4 ]; then
+-  FFLAGS="${FFLAGS_OPT}"
+-  CFLAGS="${CFLAGS_OPT}"
+-  CXXFLAGS="${CXXFLAGS_OPT}"
+-  FLIBS="-lgfortran"
+-  if [ ${COMPMODE} = OPT ]; then
+-    FFLAGS="${FFLAGS_OPT}"
+-    CFLAGS="${CFLAGS_OPT}"
+-    CXXFLAGS="${CXXFLAGS_OPT}"
+-  fi
+-  if [ ${COMPMODE} = DBG ]; then
+-    FFLAGS="${FFLAGS_DBG}"
+-    CFLAGS="${CFLAGS_DBG}"
+-    CXXFLAGS="${CXXFLAGS_DBG}"
+-  fi
+-fi
+-if [ $ARCH = Linux-gcc5 ]; then
+-  FFLAGS="${FFLAGS_OPT}"
+-  CFLAGS="${CFLAGS_OPT}"
+-  CXXFLAGS="${CXXFLAGS_OPT}"
+-  FLIBS="-lgfortran"
+-  if [ ${COMPMODE} = OPT ]; then
+-    FFLAGS="${FFLAGS_OPT}"
+-    CFLAGS="${CFLAGS_OPT}"
+-    CXXFLAGS="${CXXFLAGS_OPT}"
+-  fi
+-  if [ ${COMPMODE} = DBG ]; then
+-    FFLAGS="${FFLAGS_DBG}"
+-    CFLAGS="${CFLAGS_DBG}"
+-    CXXFLAGS="${CXXFLAGS_DBG}"
+-  fi
+-fi
+-if [ $ARCH = Linux-gcc6 ]; then
+-  FFLAGS="${FFLAGS_OPT}"
+-  CFLAGS="${CFLAGS_OPT}"
+-  CXXFLAGS="${CXXFLAGS_OPT}"
+-  FLIBS="-lgfortran"
+-  if [ ${COMPMODE} = OPT ]; then
+-    FFLAGS="${FFLAGS_OPT}"
+-    CFLAGS="${CFLAGS_OPT}"
+-    CXXFLAGS="${CXXFLAGS_OPT}"
+-  fi
+-  if [ ${COMPMODE} = DBG ]; then
+-    FFLAGS="${FFLAGS_DBG}"
+-    CFLAGS="${CFLAGS_DBG}"
+-    CXXFLAGS="${CXXFLAGS_DBG}"
+-  fi
+-fi
+-
+-# Add C++11 options if required
+-theGcc2=`g++ --version | grep '[0-9]\.[0-9]\.[0-9]' -o | head -1 | awk -F . '{print $2}'`
+-gccVar=`echo $theGcc`
+-gccVar2=`echo $theGcc2`
+ # Flag to make sure c++11 is enabled for compiling certain classes, e.g. MT random engine.
+ CPP11=1
+-# Check that we have gcc version 4.7 and above
+-if [ $gccVar -le 4 ]; then
+-  if [ $gccVar2 -le 6 ]; then
+-    echo "Not enabling c++11 features"
+-    CPP11=0
+-  fi
+-fi
+
+ if [ $CPP11 = 1 ]; then
+   echo "c++11 is enabled"
+@@ -296,7 +198,7 @@
+
+ # Mac OS platform with gcc4
+ if [[ $ARCH == Darwin* ]]; then
+-  tt=`gfortran -print-search-dirs|grep libraries|cut -d'=' -f2|sed  's/:/ /g'`
++  tt=`$FC -print-search-dirs|grep libraries|cut -d'=' -f2|sed  's/:/ /g'`
+   LIBGFORTRANLOCATION=''
+   for i in $tt
+   do
+

@@ -14,8 +14,9 @@ toolchain = {'name': 'foss', 'version': '2022a'}
 dependencies = [
     ('R', '4.2.1'),
     ('Julia', local_juliaver, '-linux-%s' % ARCH, SYSTEM),
+    ('RCall', '0.13.17', versionsuffix),  # order matters! RCall must be loaded before Circuitscape (#19281)
     ('Circuitscape', '5.12.3', '-Julia-%s' % local_juliaver, SYSTEM),
-    ('RCall', '0.13.17', versionsuffix),
+    ('Suppressor', '0.2.4', '-Julia-%s' % local_juliaver, SYSTEM),
 ]
 
 exts_defaultclass = 'RPackage'
@@ -31,14 +32,6 @@ exts_default_options = {
 }
 
 exts_list = [
-    ('Suppressor', '0.2.4', {
-        'easyblock': 'JuliaPackage',
-        'exts_filter': ("julia -e 'using %(ext_name)s'", ''),
-        'preinstallopts': "export LD_LIBRARY_PATH=$EBROOTJULIA/lib/julia:$LD_LIBRARY_PATH && ",
-        'source_tmpl': 'v%(version)s.tar.gz',
-        'source_urls': ['https://github.com/JuliaIO/Suppressor.jl/archive/'],
-        'checksums': ['5075b06ed6aa0956c786e5b5fe3d77571a4dd34e6d63b45e113c312729384cf4'],
-    }),
     ('GA', '3.2.2', {
         'checksums': ['6245c634a11b8414bde7ed326b8c615512645489b19969619484c865e900bf8c'],
     }),
@@ -72,12 +65,6 @@ exts_list = [
 modextrapaths = {
     'R_LIBS_SITE': '',
 }
-
-# When loading R and Julia, there seems to be a library collision and Julia (namely Pkg module) doesn't work properly
-# This is a workaround to make Julia find the correct libraries
-modluafooter = """
-prepend_path("LD_LIBRARY_PATH", os.getenv("EBROOTJULIA") .. "/lib/julia")
-"""
 
 sanity_check_paths = {
     'files': [],

@@ -1,0 +1,55 @@
+easyblock = 'Tarball'
+
+name = 'MitoFinder'
+version = '1.4.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/RemiAllio/MitoFinder'
+description = """MitoFinder is a pipeline to assemble mitochondrial genomes and
+annotate mitochondrial genes from trimmed read sequencing data"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/RemiAllio/MitoFinder/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['2d6d3925fb014777df97f272134143cc518944ae05d000a44ada2862d46ec95a']
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('Python', '2.7.18'),
+    ('IDBA-UD', '1.1.3'),
+    ('Infernal', '1.1.5'),
+    ('tRNAscan-SE', '2.0.12'),
+    ('Automake', '1.16.5'),
+]
+
+postinstallcmds = [
+    # avoid run install.sh + link EB modules
+    "rm -rf %(installdir)s/idba/bin && cd %(installdir)s/idba && ln -s $EBROOTIDBAMINUD/bin && "
+    "cd %(installdir)s/metaspades/bin && ln -s spades.py metaspades.py && "
+    "cd %(installdir)s/trnascanSE && mkdir -p infernal-1.1.3/exec && cd infernal-1.1.3/exec && "
+    "ln -s $EBROOTINFERNAL/bin && ln -s $EBROOTINFERNAL/share && "
+    "cd %(installdir)s/trnascanSE && mkdir -p automake-1.13.4/exec && cd automake-1.13.4/exec && "
+    "ln -s $EBROOTAUTOMAKE/bin && ln -s $EBROOTAUTOMAKE/share && "
+    "cd %(installdir)s/trnascanSE && mkdir -p tRNAscan-SE-2.0/exec && cd tRNAscan-SE-2.0/exec && "
+    "ln -s $EBROOTTRNASCANMINSE/bin && ln -s $EBROOTTRNASCANMINSE/lib && ln -s $EBROOTTRNASCANMINSE/include && "
+    "cd %(installdir)s/mitfi && mkdir -p infernal-1.0.2/exec && cd infernal-1.0.2/exec && "
+    "ln -s $EBROOTINFERNAL/bin && ln -s $EBROOTINFERNAL/share && "
+    "cd %(installdir)s/mitfi/infernal-1.0.2 && ln -s $EBROOTINFERNAL/bin src && "
+    'cd %(installdir)s && touch install.sh.ok && '
+    # fix mitofinder - https://github.com/RemiAllio/MitoFinder/issues/26
+    "sed -i 's/os.devnull, \'wb\')/os.devnull, \'wb\'), shell=True/g' mitofinder"
+]
+
+fix_python_shebang_for = ['mitofinder', '*.py']
+
+sanity_check_paths = {
+    'files': ['mitofinder'],
+    'dirs': ['idba', 'megahit', 'metaspades', 'mitfi', 'trnascanSE'],
+}
+
+sanity_check_commands = ['mitofinder -h']
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'

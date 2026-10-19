@@ -1,0 +1,89 @@
+easyblock = 'PythonBundle'
+
+name = 'BoTorch'
+version = '0.17.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://botorch.org/'
+description = "BoTorch is a library for Bayesian Optimization built on PyTorch."
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+github_account = 'meta-pytorch'
+
+builddependencies = [
+    ('setuptools', '80.9.0'),
+    ('hatchling', '1.27.0'),
+    ('Cython', '3.1.1'),
+]
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('PyTorch', '2.9.1', versionsuffix),
+    ('GPyTorch', '1.15.1', versionsuffix),
+    ('Deprecated', '1.2.18'),
+    ('matplotlib', '3.10.3'),
+]
+
+exts_list = [
+    ('cffi', '1.17.1', {  # Needed for tests
+        'checksums': ['1c39c6016c32bc48dd54561950ebd6836e1670f2ae46128f67cf49e789c52824'],
+    }),
+    ('graphemeu', '0.7.2', {  # Exact version needed for alive-progress
+        'modulename': 'grapheme',
+        'checksums': ['42bbe373d7c146160f286cd5f76b1a8ad29172d7333ce10705c5cc282462a4f8'],
+    }),
+    ('about-time', '4.2.1', {  # Exact version needed for alive-progress
+        'checksums': ['6a538862d33ce67d997429d14998310e1dbfda6cb7d9bbfbf799c4709847fece'],
+    }),
+    ('mypy_extensions', '1.1.0', {  # Needed for tests
+        'preinstallopts': "sed -i '/license/d' pyproject.toml && ",
+        'checksums': ['52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558'],
+    }),
+    ('typing_inspect', '0.9.0', {  # Needed for tests
+        'checksums': ['b23fc42ff6f6ef6954e4852c1fb512cdd18dbea03134f91f856a95ccc9461f78'],
+    }),
+    ('moocore', '0.2.0', {  # Needed by pymoo
+        'checksums': ['3dc601f85f9a4743ed50ddd027dca30e3bb55c899916a092c2ece495b1b2de08'],
+    }),
+    ('cma', '4.4.4', {  # Needed by pymoo
+        'source_templ': SOURCE_PY3_WHL,
+        'checksums': ['632bd654b5dce04c0eaa3166679d3e4773ce7a79eab7934e7f363c341b9a8170'],
+    }),
+    ('autograd', '1.8.0', {  # Needed by pymoo
+        'checksums': ['107374ded5b09fc8643ac925348c0369e7b0e73bbed9565ffd61b8fd04425683'],
+    }),
+    ('alive-progress', '3.3.0', {  # Needed by pymoo
+        'checksums': ['457dd2428b48dacd49854022a46448d236a48f1b7277874071c39395307e830c'],
+    }),
+    ('multipledispatch', '1.0.0', {
+        'checksums': ['5c839915465c68206c3e9c473357908216c28383b425361e5d144594bf85a7e0'],
+    }),
+    ('pyre_extensions', '0.0.32', {
+        'checksums': ['5396715f14ea56c4d5fd0a88c57ca7e44faa468f905909edd7de4ad90ed85e55'],
+    }),
+    ('pymoo', '0.6.1.6', {
+        'source_urls': ['https://github.com/anyoptimization/pymoo/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['33ef39c916da70373a3d597be0742a1bb391b6a9138ce6b5e5ba9d462acdf529'],
+    }),
+    ('botorch', version, {
+        # Grab GitHub sources for tests
+        'source_urls': [GITHUB_LOWER_SOURCE],
+        'sources': ['v%(version)s.tar.gz'],
+        'preinstallopts': """sed -i '/write_to/s/.*/fallback_version = "0.17.0"/' pyproject.toml && """,
+        'testinstall': True,
+        'runtest': (
+            'pytest -v test_community --ignore=test_community/models/test_prior_fitted_network.py || '
+            # create all tensors on cpu only to fix:
+            # RuntimeError: Expected all tensors to be on the same device, but found at least two devices,
+            # cpu and cuda:0! (when checking argument for argument mat2 in method wrapper_CUDA_mm)
+            'CUDA_VISIBLE_DEVICES="" '
+            'pytest -v test_community --ignore=test_community/models/test_prior_fitted_network.py --last-failed'
+        ),
+        'checksums': ['1e1e1f8f4af38ddcb614a036e8ee748f33797c4bd4f7ab55703db711b92fb5ba'],
+    }),
+]
+
+moduleclass = 'ai'
