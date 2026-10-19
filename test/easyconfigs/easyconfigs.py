@@ -87,9 +87,9 @@ def get_target_branch():
     """Return the target branch of a pull request"""
     # target branch should be anything other than 'master';
     # usually is 'develop', but could also be a release branch like '3.7.x'
-    target_branch = os.environ.get('GITHUB_BASE_REF', None)
+    target_branch = os.environ.get('GITHUB_BASE_REF')
     if not target_branch:
-        target_branch = os.environ.get('TRAVIS_BRANCH', None)
+        target_branch = os.environ.get('TRAVIS_BRANCH')
     if not target_branch:
         raise RuntimeError("Did not find a target branch")
     return target_branch
@@ -457,7 +457,8 @@ class EasyConfigTest(TestCase):
             ('Perl', '-minimal'),
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             # Same for HDF5 with -serial versionsuffix which is used in HDF5 for Python (h5py)
-            (['FFTW', 'imkl', 'HDF5'], '-serial'),
+            # Also for h5py which is used in autoCAS
+            (['FFTW', 'imkl', 'HDF5', 'h5py'], '-serial'),
             # filter out BLIS and libFLAME with -amd versionsuffix
             # (AMD forks, used in gobff/*-amd toolchains)
             (['BLIS', 'libFLAME'], '-amd'),
@@ -599,12 +600,24 @@ class EasyConfigTest(TestCase):
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
             # autoCAS requires serial h5py
             'h5py': [(r'3\.9\.0; versionsuffix: -serial', [r'autoCAS'])],
+            # IMAS-Python 2.0.0 is still used by IMAS-ParaView 2.1.0
+            # (other 2023b easyconfigs use IMAS-Python 2.3.0)
+            'IMAS-Python': [(r'2\.0\.0', [r'IMAS-ParaView-2\.1\.0-foss-2023b'])],
             # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
             'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
-            # Java 21 is used as dep for Octave 9.2.0, MDSplus 7.1, JPype 1.5.0 and IMAS-* modules
-            # (other 2023b easyconfigs use Java 11)
-            'Java': [(r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
-                              r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0'])],
+            'Java': [
+                # AnnotSV 3.5.10 requires Java 17 (other 2023b easyconfigs use Java 11)
+                (r'17', [
+                    # EC's that requires Java 17 in 2023b easyconfigs, while others use Java 11
+                    r'AnnotSV-3\.5\.10-foss-2023b', r'GATK-4\.6\.0\.0-GCCcore-13\.2\.0', r'Spark-3\.5\.4-foss-2023b',
+                ]),
+                # Java 21 is used as dep by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* on 2023b
+                (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
+                         r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
+                # Java 25 is used as dep for MDSplus 7.1, IMAS-* and SimDB (via IMAS-Python) on 2025b
+                (r'25', [r'MDSplus-7\.1.*-GCCcore-14\.3\.0', r'IMAS-.*-2025b', r'IMAS-.*-GCCcore-14\.3\.0',
+                         r'SimDB-.*-2025b']),
+            ],
             # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
             'libxc': [
@@ -678,9 +691,11 @@ class EasyConfigTest(TestCase):
             # vLLM has pinned dependency tiktoken == 0.6.0
             'tiktoken': [('0.6.0;', ['vLLM-0.4.0-'])],
             # Transformers 4.57.1 needs tokenizers 0.22.1
-            'tokenizers': [('0.22.1;', ['Transformers-4.57.1-'])],
+            'tokenizers': [('0.22.1;', ['Transformers-4.57.1-', 'Geneformer-0.1.0-'])],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
+            # Geneformer needs Transformers-4.57.1
+            'Transformers': [('4.57.1;', ['Geneformer-0.1.0-'])],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
@@ -1252,8 +1267,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.4.0'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.4.0.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.4.1'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.4.1.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1369,6 +1384,7 @@ class EasyConfigTest(TestCase):
         python_default_urls = PythonPackage.extra_options()['source_urls'][0]
 
         for ec in self.changed_ecs:
+            failing_checks_ec = []
 
             with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
@@ -1388,11 +1404,10 @@ class EasyConfigTest(TestCase):
             # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
                 if download_dep_fail is None:
-                    failing_checks.append("'download_dep_fail' should be set in %s" % ec_fn)
+                    failing_checks_ec.append("'download_dep_fail' should be set")
 
                 if pure_ec.get('source_urls') == python_default_urls:
-                    failing_checks.append("'source_urls' should not be defined when using the default value "
-                                          "in %s" % ec_fn)
+                    failing_checks_ec.append("'source_urls' should not be defined when using the default value")
 
             # --no-build-isolation option for 'pip install' should be enabled
             pip_no_build_isolation = ec.get('pip_no_build_isolation', True)
@@ -1401,19 +1416,19 @@ class EasyConfigTest(TestCase):
                     ext_opts = ext[2]
                     pip_no_build_isolation &= ext_opts.get('pip_no_build_isolation', True)
             if not pip_no_build_isolation:
-                failing_checks.append(f"pip_no_build_isolation should not be disabled in {ec_fn}")
+                failing_checks_ec.append("pip_no_build_isolation should not be disabled")
 
             # use_pip should be set when using PythonPackage or PythonBundle,
             # or an easyblock that derives from it (except for whitelisted easyconfigs)
             if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
                 if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
-                    failing_checks.append("'use_pip' should be set in %s" % ec_fn)
+                    failing_checks_ec.append("'use_pip' should be set")
 
             if exts_defaultclass == 'PythonPackage':
                 # bundle of Python packages should use PythonBundle
                 if easyblock == 'Bundle':
-                    fail = "'PythonBundle' easyblock should be used for bundle of Python packages in %s" % ec_fn
-                    failing_checks.append(fail)
+                    fail = "'PythonBundle' easyblock should be used for bundle of Python packages"
+                    failing_checks_ec.append(fail)
 
             # if Python is a dependency, that should be reflected in the versionsuffix since v3.8.6
             has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
@@ -1426,22 +1441,22 @@ class EasyConfigTest(TestCase):
 
             if ec.name not in exception_python_suffix:
                 if has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
+                    msg = "'-Python-%(pyver)s' should be included in versionsuffix"
                     # This is only a failure for newly added ECs, not for existing ECS
                     # As that would probably break many ECs
                     if ec_fn in self.added_ecs_filenames:
-                        failing_checks.append(msg)
+                        failing_checks_ec.append(msg)
                     else:
-                        print('\nNote: Failed non-critical check: ' + msg)
+                        print('\nNote: Failed non-critical check for %s: %s' % (ec_fn, msg))
                 elif has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
-                    failing_checks.append(msg)
+                    msg = "'-Python-%(pyver)s' should no longer be included in versionsuffix"
+                    failing_checks_ec.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
             if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
-                    failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
+                    failing_checks_ec.append("sanity_pip_check should be enabled")
             else:
                 # Make sure the user packages in $HOME/.local/lib/python*/ are ignored when running python commands
                 # For the EasyBlocks above this is handled automatically by setting $PYTHONNOUSERSITE
@@ -1456,14 +1471,37 @@ class EasyConfigTest(TestCase):
                     # Strip comment if present to avoid flagging e.g. "sed '/.../' # Fix 'python -c foo' failure"
                     line = comment_re.sub('', line)
                     if python_re.search(line) and not ignore_user_switch_re.search(line):
-                        failing_checks.append("Python invocation in '%s' (line #%s) should use the '-s' parameter in %s"
-                                              % (line, line_nr + 1, ec_fn))
+                        failing_checks_ec.append("Python invocation in '%s' (line #%s) should use the '-s' parameter"
+                                                 % (line, line_nr + 1))
 
             # When using Rust it should use CargoPython*
             if easyblock in ('PythonBundle', 'PythonPackage'):
                 if any(dep['name'] == 'Rust' or '-Rust-' in dep['versionsuffix'] for dep in ec.dependencies()):
-                    failing_checks.append('Use Cargo%s instead of %s when Rust is used in %s'
-                                          % (easyblock, easyblock, ec_fn))
+                    failing_checks_ec.append('Use Cargo%s instead of %s when Rust is used' % (easyblock, easyblock))
+
+            # Avoid duplicated PYTHONPATH entries and checks (set by EasyBlock in framework)
+            default_dirs = [
+                'lib/python%(pyshortver)s/site-packages',
+            ]
+            with ec.allow_unresolved_templates():
+                default_dirs += [ec.resolve_template(d) for d in default_dirs]
+            extra_python_path = ec.get('modextrapaths', {}).get('PYTHONPATH') or []
+            failing_checks_ec.extend(f"modextrapaths should not contain {d} (automatically added by EasyBlock)"
+                                     for d in default_dirs if d in extra_python_path)
+            if easyblock == 'PythonBundle' or easyblock.endswith('PythonPackage'):
+                sanity_check_dirs = ec.get('sanity_check_paths', {}).get('dirs') or []
+                default_dirs = [
+                    'lib/python%(pyshortver)s/site-packages',
+                    'lib/python%(pyshortver)s/site-packages/%(name)s',
+                    'lib64/python%(pyshortver)s/site-packages',
+                    'lib64/python%(pyshortver)s/site-packages/%(name)s',
+                ]
+                with ec.allow_unresolved_templates():
+                    default_dirs += [ec.resolve_template(d) for d in default_dirs]
+                failing_checks_ec.extend(f"sanity_check_paths['dirs'] should not contain {d} "
+                                         "(automatically added by easyblock)"
+                                         for d in default_dirs if d in sanity_check_dirs)
+            failing_checks.extend(f"{ec_fn}: {fail}" for fail in failing_checks_ec)
 
         if failing_checks:
             self.fail('\n'.join(failing_checks))
@@ -1692,13 +1730,12 @@ def template_easyconfig_test(self, spec):
 
     # parse easyconfig
     ecs = process_easyconfig(spec)
-    if len(ecs) == 1:
-        ec = ecs[0]['ec']
+    if len(ecs) != 1:
+        self.fail(f"easyconfig {spec} should not contain blocks and yield only one parsed easyconfig")
 
-        # cache the parsed easyconfig, to avoid that it is parsed again
-        EasyConfigTest._parsed_easyconfigs.append(ecs[0])
-    else:
-        self.fail("easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
+    ec = ecs[0]['ec']
+    # cache the parsed easyconfig, to avoid that it is parsed again
+    EasyConfigTest._parsed_easyconfigs.append(ecs[0])
 
     # check easyconfig file name
     expected_fn = '%s-%s.eb' % (ec['name'], det_full_ec_version(ec))

@@ -1,0 +1,88 @@
+# Author: Jasper Grimm (UoY)
+# Updated: Denis Kristak (INUITS)
+# Updated: Petr Král (INUITS)
+easyblock = 'CMakeMake'
+
+name = 'vcflib'
+version = '1.0.15'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://github.com/vcflib/vcflib'
+description = """vcflib provides methods to manipulate and interpret sequence variation as it can be
+ described by VCF. The Variant Call Format (VCF) is a flat-file, tab-delimited textual format intended
+ to concisely describe reference-indexed genetic variations between individuals."""
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+toolchainopts = {'openmp': True}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'vcflib-1.0.15_use-external-deps.patch',
+    'vcflib-1.0.15_tabixpp-target.patch',
+]
+checksums = [
+    {'v1.0.15.tar.gz': '8d6c5cbcd874b85df06dd876e736874030eb2252f06d23dc86477629829b9893'},
+    {'vcflib-1.0.15_use-external-deps.patch': '70e51cbf69ff916bb2d58c49d07c736ac6df66b42b9938766c44af7d3aa594a9'},
+    {'vcflib-1.0.15_tabixpp-target.patch': '4f8297ae315a0f9a6f1553a735163c67a068a5ae0465d8d9f41d279b099fd019'},
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '3.31.8'),
+    ('pkgconf', '2.4.3'),
+    ('pybind11', '3.0.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Perl', '5.40.2'),
+    ('R', '4.5.2'),
+    ('XZ', '5.8.1'),
+    ('zlib', '1.3.1'),
+    ('bzip2', '1.0.8'),
+    ('HTSlib', '1.22.1'),
+    ('tabixpp', '1.1.2'),
+    ('ekg-intervaltree', '0.1'),
+    ('fastahack', '1.0.0'),
+    ('filevercmp', '20191210'),
+    ('fsom', '20151117'),
+    ('multichoose', '1.0.3'),
+    ('smithwaterman', '20160702'),
+    ('WFA2', '2.3.6'),
+]
+
+preconfigopts = "find %(builddir)s/%(name)s-%(version)s/src -type f "
+preconfigopts += r"-regextype egrep -regex '.*\.(h|cpp)' -exec sed -i"
+preconfigopts += " -e 's|SmithWatermanGotoh.h|smithwaterman/SmithWatermanGotoh.h|g'"
+preconfigopts += " -e 's|IntervalTree.h|intervaltree/IntervalTree.h|g'"
+preconfigopts += " -e 's|multichoose.h|multichoose/multichoose.h|g' -e 's|filevercmp.h|filevercmp/filevercmp.h|g'"
+preconfigopts += " -e 's|tabix.hpp|tabixpp/tabix.hpp|g' -e 's|Fasta.h|fastahack/Fasta.h|g'"
+preconfigopts += r" -e 's|disorder.h|smithwaterman/disorder.h|g' {} \; && "
+
+configopts = "-DZIG=OFF -DWFA_GITMODULE=OFF "
+configopts += "-DWFA_INCLUDE_DIRS=$EBROOTWFA2/include/wfa2lib "
+configopts += "-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python "
+configopts += "-DTABIXPP_INCLUDE_DIR:PATH=$EBROOTTABIXPP/include "
+configopts += "-DTABIXPP_LIBRARY:FILEPATH=$EBROOTTABIXPP/lib/libtabixpp.so"
+
+
+postinstallcmds = ["cp -r %(builddir)s/%(name)s-%(version)s/scripts %(installdir)s"]
+
+modextrapaths = {
+    'PATH': 'scripts',
+    'PYTHONPATH': 'lib',
+}
+
+sanity_check_paths = {
+    'files': ['bin/vcffilter', 'bin/vcfcombine', 'lib/libvcflib.%s' % SHLIB_EXT],
+    'dirs': ['scripts', 'include'],
+}
+
+
+sanity_check_commands = [
+    "python -s -c 'import pyvcflib'",
+    "vcfwave --help",
+]
+
+moduleclass = 'bio'
