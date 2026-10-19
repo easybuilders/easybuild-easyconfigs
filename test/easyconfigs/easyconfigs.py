@@ -1485,7 +1485,7 @@ class EasyConfigTest(TestCase):
             ]
             with ec.allow_unresolved_templates():
                 default_dirs += [ec.resolve_template(d) for d in default_dirs]
-            extra_python_path = ec.get('modextrapaths', {}).get('PYTHONPATH')
+            extra_python_path = ec.get('modextrapaths', {}).get('PYTHONPATH') or []
             failing_checks_ec.extend(f"modextrapaths should not contain {d} (automatically added by EasyBlock)"
                                      for d in default_dirs if d in extra_python_path)
             if easyblock == 'PythonBundle' or easyblock.endswith('PythonPackage'):
