@@ -1,0 +1,232 @@
+From 917ed1ac6521a98bd5debd1219149be0df5f45d3 Mon Sep 17 00:00:00 2001
+From: Kenneth Hoste <kenneth.hoste@ugent.be>
+Date: Thu, 9 Oct 2025 14:11:35 +0200
+Subject: [PATCH 1/3] pass dependencies to toolchain.prepare when setting up
+ build environment for extensions
+
+---
+ easybuild/framework/easyblock.py       | 6 ++++--
+ easybuild/tools/toolchain/toolchain.py | 6 +++---
+ 2 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/easybuild/framework/easyblock.py b/easybuild/framework/easyblock.py
+index 20d69ac066..55107be6f9 100644
+--- a/easybuild/framework/easyblock.py
++++ b/easybuild/framework/easyblock.py
+@@ -2126,7 +2126,8 @@ def install_extensions_sequential(self, install=True):
+                     self.log.debug("List of loaded modules: %s", self.modules_tool.list())
+                     # don't reload modules for toolchain, there is no need
+                     # since they will be loaded already by the fake module
+-                    ext.toolchain.prepare(onlymod=self.cfg['onlytcmod'], silent=True, loadmod=False,
++                    ext.toolchain.prepare(onlymod=self.cfg['onlytcmod'], deps=self.cfg.dependencies(),
++                                          silent=True, loadmod=False,
+                                           rpath_filter_dirs=self.rpath_filter_dirs,
+                                           rpath_include_dirs=self.rpath_include_dirs,
+                                           rpath_wrappers_dir=self.rpath_wrappers_dir)
+@@ -2288,7 +2289,8 @@ def update_exts_progress_bar_helper(running_exts, progress_size):
+                         with self.fake_module_environment(with_build_deps=True):
+                             # don't reload modules for toolchain, there is no
+                             # need since they will be loaded by the fake module
+-                            ext.toolchain.prepare(onlymod=self.cfg['onlytcmod'], silent=True, loadmod=False,
++                            ext.toolchain.prepare(onlymod=self.cfg['onlytcmod'], deps=self.cfg.dependencies(),
++                                                  silent=True, loadmod=False,
+                                                   rpath_filter_dirs=self.rpath_filter_dirs,
+                                                   rpath_include_dirs=self.rpath_include_dirs,
+                                                   rpath_wrappers_dir=self.rpath_wrappers_dir)
+diff --git a/easybuild/tools/toolchain/toolchain.py b/easybuild/tools/toolchain/toolchain.py
+index d89c10b71a..fd9d618d1f 100644
+--- a/easybuild/tools/toolchain/toolchain.py
++++ b/easybuild/tools/toolchain/toolchain.py
+@@ -535,7 +535,7 @@ def get_dependency_version(self, dependency):
+                 raise EasyBuildError("No toolchain version for dependency name %s (suffix %s) found",
+                                      dependency['name'], toolchain_suffix)
+ 
+-    def _check_dependencies(self, dependencies):
++    def _check_dependencies(self, dependencies, check_modules=True):
+         """ Verify if the given dependencies exist and return them """
+         self.log.debug("_check_dependencies: adding toolchain dependencies %s", dependencies)
+ 
+@@ -548,7 +548,7 @@ def _check_dependencies(self, dependencies):
+ 
+         # check whether modules exist
+         self.log.debug("_check_dependencies: MODULEPATH: %s", os.environ['MODULEPATH'])
+-        if self.dry_run:
++        if self.dry_run or not check_modules:
+             deps_exist = [True] * len(dep_mod_names)
+         else:
+             deps_exist = self.modules_tool.exist(dep_mod_names)
+@@ -862,7 +862,7 @@ def prepare(self, onlymod=None, deps=None, silent=False, loadmod=True,
+         # do all dependencies have a toolchain version?
+         if deps is None:
+             deps = []
+-        self.dependencies = self._check_dependencies(deps)
++        self.dependencies = self._check_dependencies(deps, check_modules=loadmod)
+         if not len(deps) == len(self.dependencies):
+             self.log.debug("dep %s (%s)" % (len(deps), deps))
+             self.log.debug("tc.dep %s (%s)" % (len(self.dependencies), self.dependencies))
+
+From e69babaefc7ed3ccb93413a474c1b1d720ce04ac Mon Sep 17 00:00:00 2001
+From: Kenneth Hoste <kenneth.hoste@ugent.be>
+Date: Wed, 22 Oct 2025 15:01:01 +0200
+Subject: [PATCH 2/3] add test to verify fix w.r.t. passing down dependencies
+ to set up build environment for extensions
+
+---
+ test/framework/easyblock.py | 67 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
+
+diff --git a/test/framework/easyblock.py b/test/framework/easyblock.py
+index 35af52cbcc..6be8873fb0 100644
+--- a/test/framework/easyblock.py
++++ b/test/framework/easyblock.py
+@@ -37,6 +37,7 @@
+ import shutil
+ import sys
+ import tempfile
++import textwrap
+ from inspect import cleandoc
+ from test.framework.github import requires_github_access
+ from test.framework.utilities import EnhancedTestCase, TestLoaderFiltered, init_config
+@@ -3670,6 +3671,9 @@ def test_create_easyblock_without_logfile(self):
+         os.remove(eb.logfile)
+ 
+     def test_report_current_step_method(self):
++        """
++        Check whether name of methods in installation steps are correctly reported
++        """
+         testdir = os.path.abspath(os.path.dirname(__file__))
+         toy_ec = os.path.join(testdir, 'easyconfigs', 'test_ecs', 't', 'toy', 'toy-0.0.eb')
+ 
+@@ -3706,6 +3710,69 @@ def custom_step(self):
+         self.assertRegex(logtxt, f'Running method {method_name} .* {step_name}')
+         self.assertIn('Ran custom', logtxt)
+ 
++    def test_exts_deps_build_env(self):
++        """
++        Test whether dependencies are loaded in build environment for extensions.
++        """
++        # to verify fix made in https://github.com/easybuilders/easybuild-framework/pull/5023
++        testdir = os.path.abspath(os.path.dirname(__file__))
++        toy_ec = os.path.join(testdir, 'easyconfigs', 'test_ecs', 't', 'toy', 'toy-0.0.eb')
++        test_ec = os.path.join(self.test_prefix, 'test.eb')
++        test_ec_txt = read_file(toy_ec)
++        test_ec_txt += textwrap.dedent("""
++            toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
++
++            dependencies = [
++                ('zlib', '1.2.13'),
++            ]
++
++            exts_list = [
++                ('bar', '0.0', {
++                    'prebuildopts': "(env | sort) && ",
++                })
++            ]
++
++            sanity_check_paths = {
++                'files': ['bin/bar', 'bin/toy'],
++                'dirs': ['bin'],
++            }
++        """)
++        write_file(test_ec, test_ec_txt)
++
++        # put dummy zlib module in place where we can control $EBROOTZLIB value
++        zlib_mod_file = os.path.join(testdir, 'modules', 'zlib', '1.2.13-GCCcore-12.3.0')
++        zlib_fn = os.path.basename(zlib_mod_file)
++
++        zlib_root = os.path.join(self.test_prefix, 'software', 'zlib', zlib_fn)
++        write_file(os.path.join(zlib_root, 'include', 'zlib.h'), '')
++
++        zlib_mod_txt = read_file(zlib_mod_file)
++        zlib_mod_txt = re.sub("set root.*", f"set root {zlib_root}", zlib_mod_txt)
++
++        test_mods = os.path.join(self.test_prefix, 'modules')
++        test_zlib_mod_file = os.path.join(test_mods, 'zlib', zlib_fn)
++        write_file(test_zlib_mod_file, zlib_mod_txt)
++        self.modtool.use(test_mods)
++
++        args = [
++            test_ec,
++            '--rebuild',
++            '--search-path-cpp-headers=include_paths',
++        ]
++        with self.mocked_stdout_stderr():
++            with self.log_to_testlogfile():
++                self.eb_main(args, raise_error=True, do_build=True, verbose=True)
++
++        log_txt = read_file(self.logfile)
++
++        # check whether $EBROOTZLIB is correctly set in build environment of 'bar' extension
++        regex = re.compile(f"^EBROOTZLIB=.*/software/zlib/{zlib_fn}$", re.M)
++        self.assertTrue(regex.search(log_txt), f"Pattern '{regex.pattern}' not found in log output")
++
++        # check whether $C_INCLUDE_PATH is correctly set in build environment of 'bar' extension
++        regex = re.compile(f"^C_INCLUDE_PATH=.*/software/zlib/{zlib_fn}/include$", re.M)
++        self.assertTrue(regex.search(log_txt), f"Pattern '{regex.pattern}' not found in log output")
++
+ 
+ def suite(loader=None):
+     """ return all the tests in this file """
+
+From f9e1af19dbc436a8a47eeb147a1c4b60044a9596 Mon Sep 17 00:00:00 2001
+From: Kenneth Hoste <kenneth.hoste@ugent.be>
+Date: Wed, 22 Oct 2025 19:29:47 +0200
+Subject: [PATCH 3/3] parameterize test_exts_deps_build_env over different
+ valid values for --search-path-cpp-headers
+
+---
+ test/framework/easyblock.py | 38 ++++++++++++++++++++++---------------
+ 1 file changed, 23 insertions(+), 15 deletions(-)
+
+diff --git a/test/framework/easyblock.py b/test/framework/easyblock.py
+index 6be8873fb0..085a6c947f 100644
+--- a/test/framework/easyblock.py
++++ b/test/framework/easyblock.py
+@@ -3754,24 +3754,32 @@ def test_exts_deps_build_env(self):
+         write_file(test_zlib_mod_file, zlib_mod_txt)
+         self.modtool.use(test_mods)
+ 
+-        args = [
+-            test_ec,
+-            '--rebuild',
+-            '--search-path-cpp-headers=include_paths',
+-        ]
+-        with self.mocked_stdout_stderr():
+-            with self.log_to_testlogfile():
+-                self.eb_main(args, raise_error=True, do_build=True, verbose=True)
++        env_vars = {
++            'cpath': ['CPATH'],
++            'flags': ['CPPFLAGS'],
++            'include_paths': ['C_INCLUDE_PATH', 'CPLUS_INCLUDE_PATH', 'OBJC_INCLUDE_PATH'],
++        }
++
++        for search_path_cpp_headers in ('cpath', 'flags', 'include_paths'):
++            args = [
++                test_ec,
++                '--rebuild',
++                f'--search-path-cpp-headers={search_path_cpp_headers}',
++            ]
++            with self.mocked_stdout_stderr():
++                with self.log_to_testlogfile():
++                    self.eb_main(args, raise_error=True, do_build=True, verbose=True)
+ 
+-        log_txt = read_file(self.logfile)
++            log_txt = read_file(self.logfile)
+ 
+-        # check whether $EBROOTZLIB is correctly set in build environment of 'bar' extension
+-        regex = re.compile(f"^EBROOTZLIB=.*/software/zlib/{zlib_fn}$", re.M)
+-        self.assertTrue(regex.search(log_txt), f"Pattern '{regex.pattern}' not found in log output")
++            # check whether $EBROOTZLIB is correctly set in build environment of 'bar' extension
++            regex = re.compile(f"^EBROOTZLIB=.*/software/zlib/{zlib_fn}$", re.M)
++            self.assertTrue(regex.search(log_txt), f"Pattern '{regex.pattern}' not found in log output")
+ 
+-        # check whether $C_INCLUDE_PATH is correctly set in build environment of 'bar' extension
+-        regex = re.compile(f"^C_INCLUDE_PATH=.*/software/zlib/{zlib_fn}/include$", re.M)
+-        self.assertTrue(regex.search(log_txt), f"Pattern '{regex.pattern}' not found in log output")
++            # check whether $C_INCLUDE_PATH is correctly set in build environment of 'bar' extension
++            for env_var in env_vars[search_path_cpp_headers]:
++                regex = re.compile(f"^{env_var}=.*/software/zlib/{zlib_fn}/include$", re.M)
++                self.assertTrue(regex.search(log_txt), f"Pattern '{regex.pattern}' not found in log output")
+ 
+ 
+ def suite(loader=None):

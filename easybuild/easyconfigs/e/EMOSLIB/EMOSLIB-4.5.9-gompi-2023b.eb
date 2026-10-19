@@ -1,0 +1,50 @@
+# Author: Stamen Miroslavov Minkov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center 2024
+
+easyblock = 'CMakeMake'
+
+name = 'EMOSLIB'
+version = '4.5.9'
+
+homepage = 'https://confluence.ecmwf.int/display/EMOS/Emoslib'
+description = """The Interpolation library (EMOSLIB) includes Interpolation software and BUFR &
+ CREX encoding/decoding routines. It is used by the ECMWF meteorological archival and retrieval
+ system (MARS) and also by the ECMWF workstation Metview."""
+
+toolchain = {'name': 'gompi', 'version': '2023b'}
+toolchainopts = {'extra_fflags': '-fallow-argument-mismatch'}
+
+source_urls = ['https://confluence.ecmwf.int/download/attachments/3473472']
+sources = ['libemos-%(version)s-Source.tar.gz']
+patches = ['EMOSLIB-4.5.9_fix-eccodes-missing-flag.patch']
+checksums = [
+    'e57e02c636dc8f5ccb862a103789b1e927bc985b1e0f2b05abf4f64e86d2f67f',  # libemos-4.5.9-Source.tar.gz
+    '9c05109d6cb2c14506b4823fcc8ba89e2420761debaaa2ad9668e93e3ffd579d',   # EMOSLIB-4.5.9_fix-eccodes-missing-flag.patch
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('pkgconf', '2.0.3'),
+    ('CMake', '3.27.6'),
+    ('ecBuild', '3.8.0', '', SYSTEM),
+]
+
+dependencies = [
+    ('ecCodes', '2.31.0'),
+    ('FFTW', '3.3.10'),
+    ('Boost', '1.83.0'),
+]
+
+preconfigopts = 'export LDFLAGS="$LDFLAGS -leccodes" && '
+configopts = '-DENABLE_ECCODES=ON'
+
+sanity_check_paths = {
+    'files': ['lib/libemos.a', 'lib/libemosR64.a'] +
+             ['bin/%s' % x for x in ['bufr_check', 'emoslib_bufr_filter', 'emos_tool',
+                                     'grib2bufr', 'libemos_version', 'tc_tracks']],
+    'dirs': ['include/libemos', 'share/libemos/tables'],
+}
+
+sanity_check_commands = ['libemos_version']
+
+moduleclass = 'lib'

@@ -1,0 +1,55 @@
+Pass the default window-summary method to the Fisher exact-test unit tests.
+
+FET::_calculatePvalue was extended with a required window-summary-method
+argument, but its unit tests were not updated. As a result, fisher-test.pl
+--test passes an undefined value and aborts with "unrecognised method".
+Use the script's default "multiply" method in all six test calls.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- a/Modules/Test/TFisher.pm
++++ b/Modules/Test/TFisher.pm
+@@ -103,7 +103,7 @@
+         my $data = [{samples=>[{A=>0,T=>25,C=>0,G=>6,N=>0,del=>0,eucov=>31},{A=>0,T=>28,C=>0,G=>2,N=>0,del=>0,eucov=>30},{A=>0,T=>24,C=>0,G=>5,N=>0,del=>0,eucov=>29},{A=>0,T=>36,C=>0,G=>7,N=>0,del=>0,eucov=>43}],ispuresnp=>1,refchar=>"T"}];
+         my $popcount=4;
+ 
+-	my $pvalue = FET::_calculatePvalue($data,$popcount);
++	my $pvalue = FET::_calculatePvalue($data,$popcount,"multiply");
+ 
+ 	is($pvalue->{"1:2"},0.59479996122477,"Fisher exact test for population1:population2 p-value is correct");
+ 	is($pvalue->{"1:3"},0.534375091868129,"Fisher exact test for population1:population2 p-value is correct");
+@@ -111,30 +111,30 @@
+ 
+ 	# 2
+ 	$data = [{samples=>[{A=>0,T=>2,C=>52,G=>0,N=>0,del=>0,eucov=>54},{A=>0,T=>0,C=>30,G=>0,N=>0,del=>0,eucov=>30},{A=>0,T=>0,C=>27,G=>0,N=>0,del=>0,eucov=>27},{A=>0,T=>1,C=>33,G=>0,N=>0,del=>0,eucov=>34}],ispuresnp=>1,refchar=>"C"}];
+-	$pvalue = FET::_calculatePvalue($data,$popcount);
++	$pvalue = FET::_calculatePvalue($data,$popcount,"multiply");
+ 	is($pvalue->{"1:2"},0,"Fisher exact test for population1:population2 p-value is correct");
+ 	
+ 	 # 3	 
+         $data = [{samples=>[{A=>38,T=>1,C=>0,G=>0,N=>0,del=>0,eucov=>39},{A=>40,T=>0,C=>0,G=>0,N=>0,del=>0,eucov=>40},{A=>16,T=>0,C=>0,G=>0,N=>0,del=>0,eucov=>16},{A=>11,T=>2,C=>0,G=>0,N=>0,del=>0,eucov=>13}],ispuresnp=>1,refchar=>"A"}];
+-	$pvalue = FET::_calculatePvalue($data,$popcount);
++	$pvalue = FET::_calculatePvalue($data,$popcount,"multiply");
+ 	is($pvalue->{"1:3"},1.24715461488113,"Fisher exact test for population1:population2 p-value is correct");
+ 	is($pvalue->{"2:3"},0.716431430886714,"Fisher exact test for population1:population2 p-value is correct");
+         
+         # 4
+         $data = [{samples=>[{A=>2,T=>0,C=>0,G=>84,N=>0,del=>0,eucov=>86},{A=>3,T=>0,C=>0,G=>53,N=>0,del=>0,eucov=>56},{A=>0,T=>0,C=>0,G=>25,N=>0,del=>0,eucov=>25},{A=>2,T=>0,C=>0,G=>30,N=>0,del=>0,eucov=>32}],ispuresnp=>1,refchar=>"G"}];
+-	$pvalue = FET::_calculatePvalue($data,$popcount);
++	$pvalue = FET::_calculatePvalue($data,$popcount,"multiply");
+ 	is($pvalue->{"1:2"},0.260619437416786,"Fisher exact test for population1:population2 p-value is correct");
+ 	is($pvalue->{"2:3"},0.302119819277042,"Fisher exact test for population1:population2 p-value is correct");
+         
+         # 5
+         $data = [{samples=>[{A=>0,T=>74,C=>0,G=>2,N=>0,del=>0,eucov=>76},{A=>0,T=>52,C=>0,G=>4,N=>0,del=>0,eucov=>56},{A=>0,T=>25,C=>0,G=>0,N=>0,del=>0,eucov=>25},{A=>0,T=>26,C=>0,G=>2,N=>0,del=>0,eucov=>28}],ispuresnp=>1,refchar=>"T"}];
+-	$pvalue = FET::_calculatePvalue($data,$popcount);
++	$pvalue = FET::_calculatePvalue($data,$popcount,"multiply");
+ 	is($pvalue->{"1:2"},0.514589572491402,"Fisher exact test for population1:population2 p-value is correct");
+ 	is($pvalue->{"2:3"},0.308019523704544,"Fisher exact test for population1:population2 p-value is correct");
+ 	
+         # 6
+         $data = [{samples=>[{A=>76,T=>0,C=>0,G=>0,N=>0,del=>0,eucov=>76},{A=>54,T=>0,C=>0,G=>0,N=>0,del=>0,eucov=>54},{A=>29,T=>0,C=>0,G=>0,N=>0,del=>0,eucov=>29},{A=>33,T=>0,C=>0,G=>2,N=>0,del=>0,eucov=>35}],ispuresnp=>1,refchar=>"A"}];
+-	$pvalue = FET::_calculatePvalue($data,$popcount);
++	$pvalue = FET::_calculatePvalue($data,$popcount,"multiply");
+ 	is($pvalue->{"1:3"},0.818325717402551,"Fisher exact test for population1:population2 p-value is correct");
+ 	is($pvalue->{"2:3"},0.304056450294169,"Fisher exact test for population1:population2 p-value is correct");
+         

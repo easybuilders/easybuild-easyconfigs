@@ -1,0 +1,26 @@
+# What: Fix incorrect pointer casting for X11 >v2023X and GCC-14
+# Author: maxim-masterov (SURF)
+diff -Nru ncview-2.1.11.orig/src/interface/dataedit.c ncview-2.1.11/src/interface/dataedit.c
+--- ncview-2.1.11.orig/src/interface/dataedit.c	2025-10-14 15:41:42.316465000 +0200
++++ ncview-2.1.11/src/interface/dataedit.c	2025-10-14 15:57:16.578030000 +0200
+@@ -209,7 +209,7 @@
+ 	index = (size_t)list->list_index;
+ 	in_change_dat( index, new_val );
+ 	strcpy( *(list_text+list->list_index), line );
+-	XawListChange( dataedit_list_widget, (_Xconst char **)list_text, 0, 0, True );
++	XawListChange( dataedit_list_widget, (String *)list_text, 0, 0, True );
+ 	XawListHighlight( dataedit_list_widget, list->list_index );
+ }
+ 
+diff -Nru ncview-2.1.11.orig/src/interface/filesel.c ncview-2.1.11/src/interface/filesel.c
+--- ncview-2.1.11.orig/src/interface/filesel.c	2025-10-14 15:41:42.316187000 +0200
++++ ncview-2.1.11/src/interface/filesel.c	2025-10-14 15:55:17.723187789 +0200
+@@ -241,7 +241,7 @@
+ 			fprintf( stderr, "Error when trying to chdir to %s\n", highlited_entry->string );
+ 		fs_get_file_dir_list( &files_and_dirs );
+ 		XawListChange( fs_list_widget, 
+-			(_Xconst char **)stringlist_to_Xawlist( files_and_dirs ),
++			(String *)stringlist_to_Xawlist( files_and_dirs ),
+ 			0, 0, False );
+ 		XtVaSetValues( fs_pathname_text_widget, 
+ 			XtNstring, fs_cwd(), NULL );

@@ -1,0 +1,50 @@
+easyblock = 'PythonBundle'
+
+name = "LightGBM"
+version = "4.6.0"
+
+homepage = "https://lightgbm.readthedocs.io"
+description = """A fast, distributed, high performance gradient boosting (GBT, GBDT, GBRT, GBM
+or MART) framework based on decision tree algorithms, used for ranking,
+classification and many other machine learning tasks."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('scikit-build-core', '0.10.6'),
+    ('wget', '1.25.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('Arrow', '17.0.0'),  # optional
+    ('dask', '2024.9.1'),  # optional
+    ('scikit-learn', '1.6.1'),  # optional
+]
+
+# example files are not distributed with the sources
+_test_repo_url = "https://raw.githubusercontent.com/microsoft/LightGBM/refs/tags/v%(version)s/examples"
+_test_cmds_pre = " && ".join([
+    "mkdir regression",
+    "wget -P regression %s/regression/regression.test" % _test_repo_url,
+    "wget -P regression %s/regression/regression.train" % _test_repo_url,
+    "mkdir test",
+    "cd test",
+    "wget %s/python-guide/simple_example.py" % _test_repo_url,
+    "",
+])
+
+exts_list = [
+    ('lightgbm', version, {
+        'checksums': ['cb1c59720eb569389c0ba74d14f52351b573af489f230032a1c9f314f8bab7fe'],
+        'installopts': "--config-settings=cmake.define.USE_MPI=ON",
+        'use_pip_extras': "arrow,dask,pandas,scikit-learn",
+        'pretestopts': _test_cmds_pre,
+        'runtest': 'python',
+        'testopts': "simple_example.py",
+        'testinstall': True,
+    }),
+]
+
+moduleclass = 'ai'

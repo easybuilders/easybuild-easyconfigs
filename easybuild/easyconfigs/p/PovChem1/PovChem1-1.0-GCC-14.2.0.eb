@@ -1,0 +1,52 @@
+easyblock = 'CmdCp'
+
+name = 'PovChem1'
+version = '1.0'
+
+homepage = 'https://www.chemicalgraphics.com/paul/Manual.html'
+description = """
+PovChem takes three-dimensional chemical information in the Protein Data Bank format, constructs a
+model, and outputs a plain-text file that contains that model in the POV-Ray format. Its interface is
+simple: it asks the user key questions on what type of model is desired, then generates all that is
+needed for a basic POV-Ray scene, including camera position, lights, texture, and colors. No
+knowledge of POV-Ray's command language is necessary, and in fact, PovChem can be configured to call
+POV-Ray automatically.
+"""
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://www.chemicalgraphics.com/paul/PC_Dist/v1.00/']
+# Hack to cope with non-compressed files
+_source_list = ['povchem.c', 'povchem.cfg', 'periodic.tab']
+sources = [{
+    'filename': x,
+    'extract_cmd': f'cp %s {x}',
+} for x in _source_list]
+checksums = [
+    {'povchem.c': '213ac535dc776d027de6b7e6fe6a6709c7bbd2492b0cd7a82ec24c0f25e22916'},
+    {'povchem.cfg': '638515696a23361ab31601394cd3dca4c51a84f75b0b30735c89edae8a4cfbcc'},
+    {'periodic.tab': 'a025d8e5dc52c98944be5e89e9b7fbbcbe9be85bb89d229bbf89a2b69d36acd2'},
+]
+
+download_instructions = """
+    Download might fail due to missing SSL intermediate certificates on server.
+    Manual download from https://www.chemicalgraphics.com/paul/Distribution.html
+    with a modern browser should work.
+"""
+
+cmds_map = [
+    (".*.c", "$CC $CFLAGS -lm -o povchem povchem.c"),
+]
+
+files_to_copy = [
+    (['povchem'], 'bin'),
+    (['povchem.cfg', 'periodic.tab'], 'share'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/povchem', 'share/povchem.cfg', 'share/periodic.tab'],
+    'dirs': []
+}
+
+moduleclass = 'tools'

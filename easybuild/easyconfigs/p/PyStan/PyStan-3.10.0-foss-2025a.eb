@@ -1,0 +1,52 @@
+easyblock = 'PythonBundle'
+
+name = 'PyStan'
+version = '3.10.0'
+
+homepage = 'https://github.com/stan-dev/pystan'
+description = """Python interface to Stan, a package for Bayesian inference
+ using the No-U-Turn sampler, a variant of Hamiltonian Monte Carlo."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [
+    ('poetry', '2.1.2'),
+    ('Cython', '3.1.1'),
+]
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('aiohttp', '3.12.13'),
+]
+
+exts_list = [
+    ('clikit', '0.6.2', {
+        # resolves crashtest version conflict
+        'preinstallopts': r"sed -i 's/\^0.3.0/>=0.3.0/' pyproject.toml && ",
+        'checksums': ['442ee5db9a14120635c5990bcdbfe7c03ada5898291f0c802f77be71569ded59'],
+    }),
+    ('marshmallow', '3.26.1', {
+        'checksums': ['e6d8affb6cb61d39d26402096dc0aee12d5a26d490a121f118d2e81dc0719dc6'],
+    }),
+    ('webargs', '8.7.0', {
+        'checksums': ['0c617dec19ed4f1ff6b247cd73855e949d87052d71900938b71f0cafd92f191b'],
+    }),
+    ('httpstan', '4.13.0', {
+        'source_urls': ['https://github.com/stan-dev/httpstan/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['6b15a07557715e79e6fd66993930003b270f8b8b0c9e65f84978afe5e6bb3047'],
+    }),
+    ('pysimdjson', '7.0.2', {
+        'modulename': 'simdjson',
+        'checksums': ['44cf276e48912a3b9c7ca362c14da8420a7ac15a9f1a16ec95becff86db3904a'],
+    }),
+    (name, version, {
+        'modulename': 'stan',
+        # unpin pysimdjson version
+        'preinstallopts': "sed -i 's/>=5.0.2,<7/>=5.0.2/' pyproject.toml && ",
+        'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
+        'checksums': ['2e6c1cdbec8b2769f134b35a19e59e6655074da0c2f807af78dc310a99a8eb79'],
+    }),
+]
+
+moduleclass = 'math'

@@ -1,0 +1,38 @@
+easyblock = 'CMakeMake'
+
+name = 'zfp'
+version = '1.0.1'
+
+homepage = 'https://zfp.io'
+description = """zfp is a compressed number format for multi-dimensional arrays.  zfp provides compressed-array
+classes (e.g., for in-memory storage) and high-speed, parallel data compression (e.g., for offline storage).
+zfp supports both lossy and lossless compression and fine-grained user control over accuracy and storage size."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/LLNL/zfp/releases/download/%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['ca0f7b4ae88044ffdda12faead30723fe83dd8f5bb0db74125df84589e60e52b']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+]
+
+local_configopts = '-DCMAKE_C_FLAGS=-lm '  # zfp forgot to link to libm
+
+configopts = [
+    '-DBUILD_SHARED_LIBS=ON ' + local_configopts,
+    '-DBUILD_SHARED_LIBS=OFF ' + local_configopts,
+]
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/zfp', 'include/zfp.h', 'lib/libzfp.a', f'lib/libzfp.{SHLIB_EXT}'],
+    'dirs': ['include/zfp'],
+}
+
+sanity_check_commands = ["zfp --help 2>&1 | grep 'Usage: zfp'"]
+
+moduleclass = 'lib'

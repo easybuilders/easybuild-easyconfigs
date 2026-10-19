@@ -1,0 +1,41 @@
+easyblock = 'MakeCp'
+
+name = 'RAxML'
+version = '8.2.13'
+
+homepage = 'https://github.com/stamatak/standard-RAxML'
+description = "RAxML search algorithm for maximum likelihood based inference of phylogenetic trees."
+
+toolchain = {'name': 'gompi', 'version': '2023b'}
+
+source_urls = ['https://github.com/stamatak/standard-RAxML/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'raxml_8.2.13_respect_eb_settings.patch',
+    'raxml-8.2.13_update_sse2neon.patch',
+]
+checksums = [
+    {'v8.2.13.tar.gz': '28e500793324bd7d330b396ef27ea49c9186fa5e1edb3d5439036dc6c33e6067'},
+    {'raxml_8.2.13_respect_eb_settings.patch': '66412303ccbb2720e3dbb5acb1179fe441a2aaa563d033c5f0292f5ba1e08c3b'},
+    {'raxml-8.2.13_update_sse2neon.patch': '077a1bf2f914eb19f54ee28b04c349a54d35965b4fce1cfa4d69066b2375d456'},
+]
+
+buildopts = '-f Makefile.gcc && rm *.o && '
+buildopts += 'make -j %(parallel)s -f  Makefile.PTHREADS.gcc && rm *.o && '
+buildopts += 'make -j %(parallel)s -f  Makefile.MPI.gcc && rm *.o && '
+buildopts += 'make -j %(parallel)s -f Makefile.HYBRID.gcc '
+
+
+files_to_copy = [
+    (["raxmlHPC", "raxmlHPC-PTHREADS", "raxmlHPC-HYBRID", "raxmlHPC-MPI"], "bin"),
+    "usefulScripts", "README.md", "manual",
+]
+
+sanity_check_paths = {
+    'files': ['bin/raxmlHPC%s' % x for x in ['', '-PTHREADS', '-HYBRID', '-MPI']],
+    'dirs': [],
+}
+
+sanity_check_commands = ["raxmlHPC -%s" % x for x in ['h', 'v']]
+
+moduleclass = 'bio'

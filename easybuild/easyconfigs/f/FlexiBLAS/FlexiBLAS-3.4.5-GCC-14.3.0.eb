@@ -1,0 +1,65 @@
+easyblock = 'Bundle'
+
+name = 'FlexiBLAS'
+version = '3.4.5'
+
+homepage = 'https://gitlab.mpi-magdeburg.mpg.de/software/flexiblas-release'
+description = """FlexiBLAS is a wrapper library that enables the exchange of the BLAS and LAPACK implementation
+used by a program without recompiling or relinking it."""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+local_extra_flags = "-fstack-protector-strong -fstack-clash-protection"
+toolchainopts = {'pic': True, 'extra_cflags': local_extra_flags, 'extra_fflags': local_extra_flags}
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('Python', '3.13.5'),  # required for running the tests
+    ('BLIS', '2.0'),
+]
+if ARCH == 'x86_64':
+    builddependencies.append(('AOCL-BLAS', '5.1'))
+if ARCH == 'aarch64':
+    builddependencies.append(('NVPL', '25.5', '', SYSTEM))
+
+dependencies = [
+    ('OpenBLAS', '0.3.30'),
+]
+
+# note: first listed backend will be used as default by FlexiBLAS,
+# unless otherwise specified via easyconfig parameter flexiblas_default
+local_backends = ['OpenBLAS', 'BLIS']
+
+# imkl supplies its backend via the imkl module, not as a dependency
+if ARCH == 'x86_64':
+    local_backends.extend(['AOCL-BLAS', 'imkl'])
+if ARCH == 'aarch64':
+    local_backends.extend(['NVPL'])
+
+default_component_specs = {'start_dir': '%(namelower)s-%(version)s'}
+sanity_check_all_components = True
+
+# Also build and install LAPACKE, which FlexiBLAS does not support yet
+components = [
+    (name, version, {
+        'source_urls':
+        ['https://gitlab.mpi-magdeburg.mpg.de/api/v4/projects/386/packages/generic/flexiblas-source/v%(version)s/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'checksums': ['e819949c614c4968919b0ea4e873ab916d95cdc6943e9d091a78d209b7d6ed07'],
+        'backends': local_backends,
+    }),
+    ('LAPACK', '3.12.1', {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/Reference-LAPACK/lapack/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['2ca6407a001a474d4d4d35f3a61550156050c48016d949f0da0529c0aa052422'],
+        'configopts': ('-DBUILD_SHARED_LIBS=ON -DUSE_OPTIMIZED_BLAS=ON -DLAPACKE=ON '
+                       '-DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON -DBUILD_INDEX64_EXT_API=OFF '
+                       '-DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas'),
+        'sanity_check_paths': {
+            'files': ['lib/liblapacke.%s' % SHLIB_EXT, 'include/flexiblas/lapacke.h'],
+            'dirs': [],
+        },
+    }),
+]
+
+moduleclass = 'lib'

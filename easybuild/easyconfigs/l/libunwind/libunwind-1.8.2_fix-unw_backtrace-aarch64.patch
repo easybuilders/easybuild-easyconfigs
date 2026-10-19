@@ -1,0 +1,29 @@
+From: https://github.com/libunwind/libunwind/pull/918
+
+From 77f209003bc7caebbb36ea91b187787d98473751 Mon Sep 17 00:00:00 2001
+From: Stephen Webb <swebb@qnx.com>
+Date: Wed, 3 Sep 2025 08:34:29 -0400
+Subject: [PATCH] Fix off-by-one in aarch64 unw_backtrace()
+
+The code was subtracting the `use_prev_instr` value twice, resulting in
+odd-numbered addresses for the IP in the returned array.
+
+(cherry picked from commit 3c4658cb973b7bf57cb40de1271965b4f5803555 on
+branch `master`)
+---
+ src/aarch64/Gtrace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/aarch64/Gtrace.c b/src/aarch64/Gtrace.c
+index 6b1d5a4a4..59d46f247 100644
+--- a/src/aarch64/Gtrace.c
++++ b/src/aarch64/Gtrace.c
+@@ -572,7 +572,7 @@ tdep_trace (unw_cursor_t *cursor, void **buffer, int *size)
+       break;
+ 
+     /* Record this address in stack trace. We skipped the first address. */
+-    buffer[depth++] = (void *) (pc - d->use_prev_instr);
++    buffer[depth++] = (void *) pc;
+   }
+ 
+ #if UNW_DEBUG

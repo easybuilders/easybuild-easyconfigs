@@ -1,0 +1,66 @@
+From: Jakob Schiotz <schiotz@fysik.dtu.dk>
+Date: Wed Aug 27 11:06:29 CEST 2025
+
+CUDA and CuPy support has been added to the EasyBuild configuration files.
+
+
+diff --git a/doc/platforms/Linux/EasyBuild/config_foss.py b/doc/platforms/Linux/EasyBuild/config_foss.py
+index 92b4b525cf..9f95186d0b 100644
+--- a/doc/platforms/Linux/EasyBuild/config_foss.py
++++ b/doc/platforms/Linux/EasyBuild/config_foss.py
+@@ -45,5 +45,25 @@ if elpa:
+     extra_link_args += [f'-Wl,-rpath={elpa}/lib']
+     include_dirs.append(os.path.join(elpa, 'include', 'elpa-'+elpaversion))
+ 
++# CuPy and CUDA:
++cupy = os.getenv('EBROOTCUPY')
++cuda = os.getenv('EBROOTCUDA')
++if cupy:
++    assert cuda
++    ccap = os.getenv('EB_CCC').split(';')
++    print('CUDA COMPUTE CAPABILITY:', ccap, file=sys.stderr)
++    gpu = True
++    gpu_target = 'cuda'
++    gpu_compiler = 'nvcc'
++    gpu_compile_args = ['-O3', '-g',]
++    for capability in ccap:
++        gpu_compile_args += [
++            '-gencode',
++            f'arch=compute_{capability},code=sm_{capability}'
++        ]
++    print("gpu_compile_args:", gpu_compile_args, file=sys.stderr)
++    libraries += ['cudart', 'cublas']
++    library_dirs += [os.path.join(cupy, 'lib'), os.path.join(cuda, 'lib')]
++
+ # Now add a EasyBuild "cover-all-bases" library_dirs
+-library_dirs = os.getenv('LD_LIBRARY_PATH').split(':')
++library_dirs += os.getenv('LD_LIBRARY_PATH').split(':')
+diff --git a/doc/platforms/Linux/EasyBuild/config_intel.py b/doc/platforms/Linux/EasyBuild/config_intel.py
+index 485603cb07..125ca3bfc3 100644
+--- a/doc/platforms/Linux/EasyBuild/config_intel.py
++++ b/doc/platforms/Linux/EasyBuild/config_intel.py
+@@ -33,5 +33,23 @@ if elpa:
+     extra_link_args += [f'-Wl,-rpath={elpa}/lib']
+     include_dirs.append(os.path.join(elpa, 'include', 'elpa-'+elpaversion))
+ 
++# CuPy and CUDA:
++cupy = os.getenv('EBROOTCUPY')
++if cupy:
++    ccap = os.getenv('EB_CCC').split(';')
++    print('CUDA COMPUTE CAPABILITY:', ccap, file=sys.stderr)
++    gpu = True
++    gpu_target = 'cuda'
++    gpu_compiler = 'nvcc'
++    gpu_compile_args = ['-O3', '-g',]
++    for capability in ccap:
++        gpu_compile_args += [
++            '-gencode',
++            f'arch=compute_{capability},code=sm_{capability}'
++        ]
++    print("gpu_compile_args:", gpu_compile_args, file=sys.stderr)
++    libraries += ['cudart', 'cublas']
++    library_dirs += [os.path.join(cupy, 'lib'), os.path.join(cuda, 'lib')]
++    
+ # Now add a EasyBuild "cover-all-bases" library_dirs
+-library_dirs = os.getenv('LD_LIBRARY_PATH').split(':')
++library_dirs += os.getenv('LD_LIBRARY_PATH').split(':')

@@ -1,0 +1,16 @@
+fix for:
+meson.build:1482:22: ERROR: Object <[ExternalLibraryHolder] holds [ExternalLibrary]: <ExternalLibrary rt: True>> of type ExternalLibrary does not support the `+` operator.
+see https://github.com/util-linux/util-linux/pull/3532
+diff --git a/meson.build b/meson.build
+index 4b2cf130311..73fc086cc84 100644
+--- a/meson.build
++++ b/meson.build
+@@ -1486,7 +1486,7 @@ has_seminfo_type = cc.has_type('struct seminfo', args : '-D_GNU_SOURCE', prefix
+ 
+ posixipc_libs = []
+ if not cc.has_function('shm_open') and conf.get('HAVE_SYS_MMAN_H').to_string() == '1'
+-  posixipc_libs = cc.find_library('rt', required : true)
++  posixipc_libs += cc.find_library('rt', required : true)
+ endif
+ 
+ if not cc.has_function('sem_close') and conf.get('HAVE_SEMAPHORE_H').to_string() == '1'

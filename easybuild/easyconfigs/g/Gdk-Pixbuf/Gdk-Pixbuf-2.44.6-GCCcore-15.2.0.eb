@@ -1,0 +1,56 @@
+easyblock = 'MesonNinja'
+
+name = 'Gdk-Pixbuf'
+version = '2.44.6'
+
+homepage = 'https://docs.gtk.org/gdk-pixbuf/'
+description = """
+ The Gdk Pixbuf is a toolkit for image loading and pixel buffer manipulation.
+ It is used by GTK+ 2 and GTK+ 3 to load and manipulate images. In the past it
+ was distributed as part of GTK+ 2 but it was split off into a separate package
+ in preparation for the change to GTK+ 3.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = [FTPGNOME_SOURCE]
+sources = [SOURCELOWER_TAR_XZ]
+patches = ['%(name)s-%(version)s_extra_module_files.patch']
+checksums = [
+    {'gdk-pixbuf-2.44.6.tar.xz': '140c2d0b899fcf853ee92b26373c9dc228dbcde0820a4246693f4328a27466fa'},
+    {'Gdk-Pixbuf-2.44.6_extra_module_files.patch': '58aae5a3a85f9cc2f4b563852800998e98edd3657e4e2b03f5d0da4471e83d27'},
+]
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('Meson', '1.10.2'),
+    ('Ninja', '1.13.2'),
+    ('pkgconf', '2.5.1'),
+    ('GObject-Introspection', '1.86.0'),
+]
+
+dependencies = [
+    ('GLib', '2.89.0'),
+    ('libjpeg-turbo', '3.1.4.1'),
+    ('libpng', '1.6.56'),
+    ('LibTIFF', '4.7.1'),
+    ('X11', '20260518'),
+]
+
+configopts = ' '.join([
+    '--default-library=both',
+    '-Dgio_sniffing=false',
+    '-Dintrospection=enabled',
+    '-Dman=false',
+    '-Dothers=enabled',  # ico, bmp, and other formats
+    '-Dglycin=disabled',  # painful to build due to meson+cargo combination, skipping for now
+])
+
+sanity_check_paths = {
+    'files': ['lib/libgdk_pixbuf-%(version_major)s.0.a', f'lib/libgdk_pixbuf-%(version_major)s.0.{SHLIB_EXT}'],
+    'dirs': ['bin', 'include/gdk-pixbuf-%(version_major)s.0', 'lib/gdk-pixbuf-%(version_major)s.0', 'share'],
+}
+
+sanity_check_commands = ["gdk-pixbuf-pixdata --help"]
+
+moduleclass = 'vis'

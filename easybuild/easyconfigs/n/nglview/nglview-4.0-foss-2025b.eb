@@ -1,0 +1,48 @@
+easyblock = 'PythonBundle'
+
+name = 'nglview'
+version = '4.0'
+
+homepage = 'https://github.com/arose/nglview'
+description = "IPython widget to interactively view molecular structures and trajectories."
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [
+    ('nodejs', '22.17.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('SciPy-bundle', '2025.07'),
+    ('JupyterLab', '4.4.9'),
+    ('JupyterNotebook', '7.4.7'),
+    ('ASE', '3.26.0'),  # optional
+    ('MDAnalysis', '2.10.0'),  # optional
+    ('MDTraj', '1.11.0'),  # optional
+]
+
+local_pytest_cmd = (
+    "pytest -v "
+    "--deselect tests/test_show.py::test_show_schrodinger "
+    "--deselect tests/test_widget.py::test_existing_js_files "
+    "--deselect tests/test_movie_maker.py::test_movie_maker "
+    "tests"
+)
+
+exts_list = [
+    (name, version, {
+        'use_pip_extras': 'ase,MDAnalysis,mdtraj',
+        # unpin numpy - pinned due to ParmEd
+        # https://github.com/ParmEd/ParmEd/issues/1406
+        'preinstallopts': "sed -i 's/numpy<2.3/numpy/' setup.py && ",
+        'testinstall': True,
+        'runtest': local_pytest_cmd,
+        'checksums': ['2c0cff2c5b1e2a0a72e3393087ce44ae0308524c5aa5f95357812d3edbc26e83'],
+    }),
+]
+
+modextrapaths = {'EB_ENV_JUPYTER_ROOT': ''}
+
+moduleclass = 'chem'

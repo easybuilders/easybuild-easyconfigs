@@ -1,0 +1,422 @@
+Use our dependencies (bshoshany-thread-pool, opentelemetry-cpp, parallel-hashmap, zstd)
+Author: Petr Král (INUITS)
+diff '--color=auto' -ru hictk-2.1.4.orig/cmake/hictkConfig.cmake.in hictk-2.1.4/cmake/hictkConfig.cmake.in
+--- hictk-2.1.4.orig/cmake/hictkConfig.cmake.in	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/cmake/hictkConfig.cmake.in	2025-09-25 14:40:07.914798638 +0200
+@@ -13,7 +13,6 @@
+     find_dependency(Arrow CONFIG QUIET REQUIRED)
+ endif()
+ 
+-find_dependency(bshoshany-thread-pool CONFIG QUIET REQUIRED)
+ find_dependency(concurrentqueue CONFIG QUIET REQUIRED)
+ 
+ if(HICTK_WITH_EIGEN)
+@@ -32,11 +31,11 @@
+ )
+ find_dependency(HighFive CONFIG QUIET REQUIRED)
+ find_dependency(libdeflate CONFIG QUIET REQUIRED)
+-find_dependency(phmap CONFIG QUIET REQUIRED)
++
+ find_dependency(readerwriterqueue CONFIG QUIET REQUIRED)
+ find_dependency(span-lite CONFIG QUIET REQUIRED)
+ find_dependency(spdlog CONFIG QUIET REQUIRED)
+-find_dependency(zstd CONFIG QUIET REQUIRED)
++find_library(zstd PATHS $ENV{EBROOTZSTD}/lib64)
+ 
+ include("${CMAKE_CURRENT_LIST_DIR}/hictkInternalTargets.cmake")
+ include("${CMAKE_CURRENT_LIST_DIR}/hictkTargets.cmake")
+diff '--color=auto' -ru hictk-2.1.4.orig/src/hictk/cli/CMakeLists.txt hictk-2.1.4/src/hictk/cli/CMakeLists.txt
+--- hictk-2.1.4.orig/src/hictk/cli/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/hictk/cli/CMakeLists.txt	2025-09-22 14:05:38.099886051 +0200
+@@ -4,7 +4,7 @@
+ 
+ find_package(CLI11 REQUIRED QUIET)
+ find_package(fmt REQUIRED QUIET)
+-find_package(phmap REQUIRED QUIET)
++
+ find_package(spdlog REQUIRED QUIET)
+ find_package(Filesystem REQUIRED QUIET)
+ find_package(Threads REQUIRED QUIET)
+@@ -27,7 +27,7 @@
+     "${CMAKE_CURRENT_SOURCE_DIR}/cli_zoomify.cpp"
+ )
+ 
+-target_include_directories(hictk_internal_tools_cli PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
++target_include_directories(hictk_internal_tools_cli PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "$ENV{EBROOTPARALLELHASHMAP}/include")
+ 
+ target_link_libraries(
+   hictk_internal_tools_cli
+@@ -52,7 +52,6 @@
+   hictk_internal_tools_cli
+   PRIVATE
+     std::filesystem
+-    phmap
+   PUBLIC
+     CLI11::CLI11
+     fmt::fmt-header-only
+diff '--color=auto' -ru hictk-2.1.4.orig/src/hictk/dump/CMakeLists.txt hictk-2.1.4/src/hictk/dump/CMakeLists.txt
+--- hictk-2.1.4.orig/src/hictk/dump/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/hictk/dump/CMakeLists.txt	2025-09-22 14:05:38.099886051 +0200
+@@ -3,7 +3,7 @@
+ # SPDX-License-Identifier: MIT
+ 
+ find_package(fmt REQUIRED QUIET)
+-find_package(phmap REQUIRED QUIET)
++
+ find_package(Filesystem REQUIRED QUIET)
+ 
+ add_library(hictk_internal_tools_dump STATIC)
+@@ -16,7 +16,7 @@
+     "${CMAKE_CURRENT_SOURCE_DIR}/common.hpp"
+ )
+ 
+-target_include_directories(hictk_internal_tools_dump PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
++target_include_directories(hictk_internal_tools_dump PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "$ENV{EBROOTPARALLELHASHMAP}/include")
+ 
+ target_link_libraries(
+   hictk_internal_tools_dump
+@@ -43,5 +43,4 @@
+   PRIVATE
+     fmt::fmt-header-only
+     std::filesystem
+-    phmap
+ )
+diff '--color=auto' -ru hictk-2.1.4.orig/src/hictk/load/CMakeLists.txt hictk-2.1.4/src/hictk/load/CMakeLists.txt
+--- hictk-2.1.4.orig/src/hictk/load/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/hictk/load/CMakeLists.txt	2025-09-25 14:42:16.438330310 +0200
+@@ -2,9 +2,8 @@
+ #
+ # SPDX-License-Identifier: MIT
+ 
+-find_package(bshoshany-thread-pool REQUIRED QUIET)
+ find_package(fmt REQUIRED QUIET)
+-find_package(phmap REQUIRED QUIET)
++
+ find_package(readerwriterqueue REQUIRED QUIET)
+ find_package(spdlog REQUIRED QUIET)
+ find_package(Filesystem REQUIRED QUIET)
+@@ -29,7 +28,7 @@
+     "${CMAKE_CURRENT_SOURCE_DIR}/pixel_parser.hpp"
+ )
+ 
+-target_include_directories(hictk_internal_tools_load PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
++target_include_directories(hictk_internal_tools_load PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "$ENV{EBROOTPARALLELHASHMAP}/include" "$ENV{EBROOTBSHOSHANYMINTHREADMINPOOL}/include")
+ 
+ target_link_libraries(
+   hictk_internal_tools_load
+@@ -55,12 +54,10 @@
+ target_link_system_libraries(
+   hictk_internal_tools_load
+   PRIVATE
+-    bshoshany-thread-pool::bshoshany-thread-pool
+     fmt::fmt-header-only
+     readerwriterqueue::readerwriterqueue
+     spdlog::spdlog_header_only
+     std::filesystem
+-    phmap
+   PUBLIC
+     Threads::Threads
+ )
+diff '--color=auto' -ru hictk-2.1.4.orig/src/hictk/metadata/CMakeLists.txt hictk-2.1.4/src/hictk/metadata/CMakeLists.txt
+--- hictk-2.1.4.orig/src/hictk/metadata/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/hictk/metadata/CMakeLists.txt	2025-09-22 14:05:38.099886051 +0200
+@@ -4,7 +4,7 @@
+ 
+ find_package(fmt REQUIRED QUIET)
+ find_package(nlohmann_json REQUIRED QUIET)
+-find_package(phmap REQUIRED QUIET)
++
+ find_package(Filesystem REQUIRED QUIET)
+ 
+ add_library(hictk_internal_tools_metadata STATIC)
+@@ -21,7 +21,7 @@
+     "${CMAKE_CURRENT_SOURCE_DIR}/metadata.hpp"
+ )
+ 
+-target_include_directories(hictk_internal_tools_metadata PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
++target_include_directories(hictk_internal_tools_metadata PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "$ENV{EBROOTPARALLELHASHMAP}/include")
+ 
+ target_link_libraries(
+   hictk_internal_tools_metadata
+@@ -44,5 +44,4 @@
+     fmt::fmt-header-only
+     nlohmann_json::nlohmann_json
+     std::filesystem
+-    phmap
+ )
+diff '--color=auto' -ru hictk-2.1.4.orig/src/hictk/rename_chromosomes/CMakeLists.txt hictk-2.1.4/src/hictk/rename_chromosomes/CMakeLists.txt
+--- hictk-2.1.4.orig/src/hictk/rename_chromosomes/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/hictk/rename_chromosomes/CMakeLists.txt	2025-09-22 14:05:38.099886051 +0200
+@@ -3,7 +3,7 @@
+ # SPDX-License-Identifier: MIT
+ 
+ find_package(fmt REQUIRED QUIET)
+-find_package(phmap REQUIRED QUIET)
++
+ find_package(spdlog REQUIRED QUIET)
+ find_package(Filesystem REQUIRED QUIET)
+ 
+@@ -11,7 +11,7 @@
+ 
+ target_sources(hictk_internal_tools_rename_chromosomes PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/rename_chromosomes.cpp")
+ 
+-target_include_directories(hictk_internal_tools_rename_chromosomes PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
++target_include_directories(hictk_internal_tools_rename_chromosomes PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "$ENV{EBROOTPARALLELHASHMAP}/include")
+ 
+ target_link_libraries(
+   hictk_internal_tools_rename_chromosomes
+@@ -31,5 +31,4 @@
+     fmt::fmt-header-only
+     spdlog::spdlog_header_only
+     std::filesystem
+-    phmap
+ )
+diff '--color=auto' -ru hictk-2.1.4.orig/src/hictk/telemetry/CMakeLists.txt hictk-2.1.4/src/hictk/telemetry/CMakeLists.txt
+--- hictk-2.1.4.orig/src/hictk/telemetry/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/hictk/telemetry/CMakeLists.txt	2025-10-02 12:49:39.474744027 +0200
+@@ -12,9 +12,8 @@
+ 
+ if(HICTK_ENABLE_TELEMETRY)
+   message(STATUS "Building CLI tools WITH telemetry support")
+-  find_package(opentelemetry-cpp REQUIRED QUIET)
++  find_package(opentelemetry-cpp CONFIG REQUIRED)
+   find_package(fmt REQUIRED QUIET)
+-  find_package(phmap REQUIRED QUIET)
+   configure_file(
+     "${CMAKE_CURRENT_SOURCE_DIR}/telemetry.hpp.in"
+     "${HICTK_TELEMETRY_INCLUDE_DIR}/hictk/tools/telemetry.hpp"
+@@ -67,24 +66,14 @@
+   hictk_internal_tools_telemetry
+   PRIVATE
+     "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:fmt::fmt-header-only>"
+-    "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:phmap>"
+   PUBLIC
+     spdlog::spdlog_header_only
+ )
+ 
+-if(TARGET opentelemetry-cpp::opentelemetry-cpp)
+-  target_link_libraries(
+-    hictk_internal_tools_telemetry
+-    PUBLIC
+-      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::opentelemetry-cpp>"
+-  )
+-else()
+-  target_link_system_libraries(
+-    hictk_internal_tools_telemetry
+-    PUBLIC
+-      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::otlp_http_exporter>"
+-      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::ostream_span_exporter>"
+-      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::sdk>"
+-      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::trace>"
+-  )
+-endif()
++target_link_libraries(
++  hictk_internal_tools_telemetry
++  PUBLIC
++    opentelemetry-cpp::trace
++    opentelemetry-cpp::ostream_span_exporter
++    opentelemetry-cpp::otlp_http_exporter
++)
+diff '--color=auto' -ru hictk-2.1.4.orig/src/libhictk/balancing/CMakeLists.txt hictk-2.1.4/src/libhictk/balancing/CMakeLists.txt
+--- hictk-2.1.4.orig/src/libhictk/balancing/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/libhictk/balancing/CMakeLists.txt	2025-09-25 14:42:52.716233808 +0200
+@@ -2,10 +2,8 @@
+ #
+ # SPDX-License-Identifier: MIT
+ 
+-find_package(bshoshany-thread-pool REQUIRED QUIET)
+-find_package(phmap REQUIRED QUIET)
+ find_package(span-lite REQUIRED QUIET)
+-find_package(zstd REQUIRED QUIET)
++find_library(zstd PATHS $ENV{EBROOTZSTD}/lib64)
+ 
+ add_library(hictk_internal_balancing INTERFACE)
+ add_library(hictk::balancing ALIAS hictk_internal_balancing)
+@@ -35,6 +33,8 @@
+   INTERFACE
+     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+     "$<INSTALL_INTERFACE:include>"
++    "$ENV{EBROOTPARALLELHASHMAP}/include"
++    "$ENV{EBROOTBSHOSHANYMINTHREADMINPOOL}/include"
+ )
+ target_link_libraries(
+   hictk_internal_balancing
+@@ -48,10 +48,8 @@
+ target_link_system_libraries(
+   hictk_internal_balancing
+   INTERFACE
+-    bshoshany-thread-pool::bshoshany-thread-pool
+     nonstd::span-lite
+-    phmap
+-    "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
++    zstd
+ )
+ 
+ target_compile_definitions(hictk_internal_balancing INTERFACE span_FEATURE_MAKE_SPAN=1)
+diff '--color=auto' -ru hictk-2.1.4.orig/src/libhictk/common/default_delete_zstd/CMakeLists.txt hictk-2.1.4/src/libhictk/common/default_delete_zstd/CMakeLists.txt
+--- hictk-2.1.4.orig/src/libhictk/common/default_delete_zstd/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/libhictk/common/default_delete_zstd/CMakeLists.txt	2025-09-22 14:05:38.099886051 +0200
+@@ -2,7 +2,7 @@
+ #
+ # SPDX-License-Identifier: MIT
+ 
+-find_package(zstd REQUIRED QUIET)
++find_library(zstd PATHS $ENV{EBROOTZSTD}/lib64)
+ 
+ add_library(hictk_internal_common_default_delete_zstd INTERFACE)
+ add_library(hictk::default_delete_zstd ALIAS hictk_internal_common_default_delete_zstd)
+@@ -25,5 +25,5 @@
+ target_link_system_libraries(
+   hictk_internal_common_default_delete_zstd
+   INTERFACE
+-    "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
++    zstd
+ )
+diff '--color=auto' -ru hictk-2.1.4.orig/src/libhictk/cooler/CMakeLists.txt hictk-2.1.4/src/libhictk/cooler/CMakeLists.txt
+--- hictk-2.1.4.orig/src/libhictk/cooler/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/libhictk/cooler/CMakeLists.txt	2025-09-22 14:05:38.099886051 +0200
+@@ -6,7 +6,7 @@
+ find_package(fmt REQUIRED QUIET)
+ find_package(HDF5 REQUIRED QUIET COMPONENTS C)
+ find_package(HighFive REQUIRED QUIET)
+-find_package(phmap REQUIRED QUIET)
++
+ find_package(spdlog REQUIRED QUIET)
+ 
+ add_library(hictk_internal_cooler INTERFACE)
+@@ -60,6 +60,7 @@
+   INTERFACE
+     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+     "$<INSTALL_INTERFACE:include>"
++    "$ENV{EBROOTPARALLELHASHMAP}/include"
+ )
+ 
+ target_link_libraries(
+@@ -88,6 +89,5 @@
+     fmt::fmt-header-only
+     HDF5::HDF5
+     HighFive
+-    phmap
+     spdlog::spdlog_header_only
+ )
+diff '--color=auto' -ru hictk-2.1.4.orig/src/libhictk/expected_values_aggregator/CMakeLists.txt hictk-2.1.4/src/libhictk/expected_values_aggregator/CMakeLists.txt
+--- hictk-2.1.4.orig/src/libhictk/expected_values_aggregator/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/libhictk/expected_values_aggregator/CMakeLists.txt	2025-09-26 13:19:24.028207657 +0200
+@@ -2,7 +2,6 @@
+ #
+ # SPDX-License-Identifier: MIT
+ 
+-find_package(phmap REQUIRED QUIET)
+ find_package(spdlog REQUIRED QUIET)
+ 
+ add_library(hictk_internal_expected_values_aggregator INTERFACE)
+@@ -23,6 +22,7 @@
+   INTERFACE
+     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+     "$<INSTALL_INTERFACE:include>"
++    "$ENV{EBROOTPARALLELHASHMAP}/include"
+ )
+ target_link_libraries(
+   hictk_internal_expected_values_aggregator
+@@ -37,6 +37,5 @@
+ target_link_system_libraries(
+   hictk_internal_expected_values_aggregator
+   INTERFACE
+-    phmap
+     spdlog::spdlog_header_only
+ )
+diff '--color=auto' -ru hictk-2.1.4.orig/src/libhictk/hic/CMakeLists.txt hictk-2.1.4/src/libhictk/hic/CMakeLists.txt
+--- hictk-2.1.4.orig/src/libhictk/hic/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/libhictk/hic/CMakeLists.txt	2025-09-25 14:43:28.362086511 +0200
+@@ -2,13 +2,12 @@
+ #
+ # SPDX-License-Identifier: MIT
+ 
+-find_package(bshoshany-thread-pool REQUIRED QUIET)
+ find_package(concurrentqueue REQUIRED QUIET)
+ find_package(fmt REQUIRED QUIET)
+ find_package(libdeflate REQUIRED QUIET)
+-find_package(phmap REQUIRED QUIET)
++
+ find_package(readerwriterqueue REQUIRED QUIET)
+-find_package(zstd REQUIRED QUIET)
++find_library(zstd PATHS $ENV{EBROOTZSTD}/lib64)
+ 
+ set(HICTK_CXX_BYTE_ORDER "${CMAKE_CXX_BYTE_ORDER}" CACHE STRING "Specify the CPU architecture endianness")
+ 
+@@ -77,6 +76,8 @@
+   INTERFACE
+     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+     "$<INSTALL_INTERFACE:include>"
++    "$ENV{EBROOTPARALLELHASHMAP}/include"
++    "$ENV{EBROOTBSHOSHANYMINTHREADMINPOOL}/include"
+ )
+ target_link_libraries(
+   hictk_internal_hic
+@@ -101,11 +102,9 @@
+ target_link_system_libraries(
+   hictk_internal_hic
+   INTERFACE
+-    bshoshany-thread-pool::bshoshany-thread-pool
+     concurrentqueue::concurrentqueue
+     fmt::fmt-header-only
+     "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
+-    phmap
+     readerwriterqueue::readerwriterqueue
+-    "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
++    zstd
+ )
+diff '--color=auto' -ru hictk-2.1.4.orig/src/libhictk/reference/CMakeLists.txt hictk-2.1.4/src/libhictk/reference/CMakeLists.txt
+--- hictk-2.1.4.orig/src/libhictk/reference/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/libhictk/reference/CMakeLists.txt	2025-09-22 14:05:38.100886065 +0200
+@@ -2,8 +2,6 @@
+ #
+ # SPDX-License-Identifier: MIT
+ 
+-find_package(phmap REQUIRED QUIET)
+-
+ add_library(hictk_internal_reference INTERFACE)
+ add_library(hictk::reference ALIAS hictk_internal_reference)
+ 
+@@ -22,6 +20,7 @@
+   INTERFACE
+     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+     "$<INSTALL_INTERFACE:include>"
++    "$ENV{EBROOTPARALLELHASHMAP}/include"
+ )
+ target_link_libraries(
+   hictk_internal_reference
+@@ -30,5 +29,3 @@
+     hictk::common
+     hictk::format
+ )
+-
+-target_link_system_libraries(hictk_internal_reference INTERFACE phmap)
+diff '--color=auto' -ru hictk-2.1.4.orig/src/libhictk/transformers/CMakeLists.txt hictk-2.1.4/src/libhictk/transformers/CMakeLists.txt
+--- hictk-2.1.4.orig/src/libhictk/transformers/CMakeLists.txt	2025-06-19 15:06:22.000000000 +0200
++++ hictk-2.1.4/src/libhictk/transformers/CMakeLists.txt	2025-09-22 14:05:38.100886065 +0200
+@@ -10,7 +10,6 @@
+   find_package(Eigen3 REQUIRED QUIET)
+ endif()
+ 
+-find_package(phmap REQUIRED QUIET)
+ find_package(spdlog REQUIRED QUIET)
+ 
+ add_library(hictk_internal_transformers INTERFACE)
+@@ -47,6 +46,7 @@
+   INTERFACE
+     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+     "$<INSTALL_INTERFACE:include>"
++    "$ENV{EBROOTPARALLELHASHMAP}/include"
+ )
+ target_link_libraries(
+   hictk_internal_transformers
+@@ -58,7 +58,7 @@
+     hictk::type_traits
+ )
+ 
+-target_link_system_libraries(hictk_internal_transformers INTERFACE "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>" spdlog::spdlog_header_only phmap)
++target_link_system_libraries(hictk_internal_transformers INTERFACE "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>" spdlog::spdlog_header_only)
+ 
+ if(HICTK_WITH_ARROW_SHARED)
+   target_link_system_libraries(hictk_internal_transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_shared>")

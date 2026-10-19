@@ -25,6 +25,12 @@ dependencies = [
 fix_perl_shebang_for = ['scripts/*.pl']
 fix_python_shebang_for = ['scripts/*.py']
 
+_snpeff_data_dir = "~/.%(namelower)s_data"
+postinstallcmds = [
+    # default location of downloaded DBs is in installation directory, change to custom writable folder per user
+    "sed -i 's|^data.dir = ./data|data.dir = %s|' %%(installdir)s/snpEff.config" % _snpeff_data_dir,
+]
+
 sanity_check_paths = {
     'files': ['%(name)s.jar', 'SnpSift.jar', 'scripts/%(name)s'],
     'dirs': [],
@@ -33,5 +39,10 @@ sanity_check_paths = {
 sanity_check_commands = ["%(name)s -version"]
 
 modextrapaths = {'PATH': 'scripts'}
+
+modloadmsg = """This installation of %%(name)s is configured to automatically download DBs into the folder: %s
+Make sure enough space is available in it. You can link this folder to any other folder with the command:
+ln -sf /path/to/data/folder %s
+""" % (_snpeff_data_dir, _snpeff_data_dir)
 
 moduleclass = 'bio'

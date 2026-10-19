@@ -26,12 +26,24 @@ dependencies = [
     ('tensorboard', '2.10.0'),  # for torch-tb-profiler
 ]
 
+local_preinstall_opts = ' '.join([
+    'USE_SYSTEM_LIBS=1',
+    'USE_OPENMP=1',
+    'USE_CUDA=1', 'TORCH_CUDA_ARCH_LIST="%(cuda_cc_semicolon_sep)s"',
+    'USE_CUDNN=1',
+    'CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s',
+]) + ' '
+
+exts_default_options = {
+    'preinstallopts': local_preinstall_opts,
+    'prebuildopts': local_preinstall_opts,
+}
+
 exts_list = [
     ('portalocker', '2.7.0', {
         'checksums': ['032e81d534a88ec1736d03f780ba073f047a06c478b06e2937486f334e955c51'],
     }),
     ('torchdata', '0.5.1', {
-        'preinstallopts': "USE_SYSTEM_LIBS=1 ",
         'source_urls': ['https://github.com/pytorch/data/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': ['69d80bd33ce8f08e7cfeeb71cefddfc29cede25a85881e33dbae47576b96ed29'],
@@ -46,7 +58,7 @@ exts_list = [
         'checksums': [
             {'torchtext-0.14.1.tar.gz': 'fd1ef3da7d9c20408c740f7dc7d02ad52a6048b46368355a1a7326d3bc4f2e63'},
             {'torchtext-0.14.1_use-system-libs.patch':
-             '1366d10c4755b6003194f7313ca11d165a80a13d325bee9d669ea2b333d82536'},
+             'a29ce29259d8c1cf3533cdc23c66e68eec660d6206ae04ced0220a7c02712b53'},
             {'torchtext-0.13.1_cxx_17.patch': 'fd242c139baa27352d1065cece4658a3ede76f46ffec08ac04a554301e547f22'},
         ],
     }),

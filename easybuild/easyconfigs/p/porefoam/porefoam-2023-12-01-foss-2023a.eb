@@ -1,0 +1,70 @@
+easyblock = 'ConfigureMake'
+
+name = 'porefoam'
+local_commit = 'bce1ff4'
+version = '2023-12-01'
+
+homepage = 'https://github.com/ImperialCollegeLondon/porefoam'
+description = "Direct pore-scale simulation of single- and two-phase flow through confined media"
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/ImperialCollegeLondon/porefoam/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = [
+    'porefoam-2021-09-21_fix-scotch-linking.patch',
+    'porefoam-2021-09-21_fix-hardcoded-mpicommand.patch',
+    'porefoam-2023-12-01_fix-case-dir-permissions.patch',
+]
+checksums = [
+    'f6eb8dcb24e1fa5de312199b50878f4621a8dee01f5c15fcec431303ffdc4c06',  # porefoam-2023-12-01.tar.gz
+    '86b7e389b62f54bbd3c931ae3dbdc363226e250faa181e7e50ed121da9959a92',  # porefoam-2021-09-21_fix-scotch-linking.patch
+    # porefoam-2021-09-21_fix-hardcoded-mpicommand.patch
+    '4cfa924c9a5d3ec38cf233312eb325ed625219644468f4b34fba8bc6ceee5ba2',
+    # porefoam-2023-12-01_fix-case-dir-permissions.patch
+    'e541b84e0d74f84a8fdfba0377d5af004516b63369e31c5930408c29d570996f',
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('SCOTCH', '7.0.3'),
+]
+
+buildininstalldir = True
+unpack_options = '--strip-components=1'
+
+skipsteps = ['configure', 'install']
+
+prebuildopts = "export WM_COMPILER=Gcc && export WM_COMPILE_OPTION=Opt && "
+# using ld.gold linker doesn't work
+prebuildopts += 'export WM_CC="$CC $CFLAGS -fuse-ld=bfd" && export WM_CXX="$CXX $CXXFLAGS -fuse-ld=bfd" && '
+
+# Source files are patched by `sed` commands so it's more resilient to changes in future versions
+# fixes `error: ‘class Foam::UList<unsigned int> Foam::UList<unsigned int>::UList’ is private within this context`
+prebuildopts += "sed -i 's/private List/public List/g' "
+prebuildopts += "pkgs/foamx4m/src/foam/containers/Lists/PackedList/PackedList.H && "
+# fixes `error: ‘unique_void_ptr’ was not declared in this scope`
+prebuildopts += "sed -i '/using unique_void_ptr/d;s/unique_void_ptr/std::unique_ptr<void, deleter_t>/g' "
+prebuildopts += "pkgs/foamx4m/src/surfMesh/surfaceFormats/vtk/VTKsurfaceFormatCore.H && "
+# fixes: `error: ‘unique_ptr’ is not a member of ‘std’`
+prebuildopts += "sed -i 's/#include <functional>/#include <functional>\\n"
+prebuildopts += "#include <memory>/g' pkgs/foamx4m/src/surfMesh/surfaceFormats/vtk/VTKsurfaceFormatCore.H && "
+# fixes `error: redefinition of default argument for ‘class First’`
+prebuildopts += "sed -i 's/typename First=uint8_t/typename First/g' src/libvoxel/voxelImage.cpp && "
+# fixes `error: reference to ‘filesystem’ is ambiguous`
+prebuildopts += "sed -i 's/filesystem::current_path/std::experimental::filesystem::current_path/g' "
+prebuildopts += "src/libvoxel/globals.h && "
+prebuildopts += "sed -i 's/filesystem::create_directories/std::experimental::filesystem::create_directories/g' "
+prebuildopts += "src/libvoxel/globals.h && "
+
+sanity_check_paths = {
+    'files': ['bin/interFaceFoam', 'bin/smoothMesh', 'bin/voxelToSurface'],
+    'dirs': ['include', 'lib'],
+}
+
+sanity_check_commands = ["voxelToFoam --help | grep 'convert micro-CT images to OpenFOAM mesh'"]
+
+moduleclass = 'cae'

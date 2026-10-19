@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'ErlangOTP'
+version = '26.2.4'
+
+homepage = 'http://www.erlang.org/'
+description = """Erlang is a general-purpose concurrent, garbage-collected programming language and runtime system."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+sources = ['otp_src_%(version)s.tar.gz']
+source_urls = ['https://github.com/erlang/otp/releases/download/OTP-%(version)s']
+
+checksums = ['b51ad69f57e2956dff4c893bcb09ad68fee23a7f8f6bba7d58449516b696de95']
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('Java', '11', '', SYSTEM),
+    ('ncurses', '6.4'),
+    ('unixODBC', '2.3.12'),
+]
+
+configopts = ' '.join([
+    "--with-odbc=$EBROOTUNIXODBC",
+    "--with-ssl=$EBROOTOPENSSL",
+])
+
+sanity_check_paths = {
+    'files': ['bin/erl'],
+    'dirs': ['lib/erlang/bin', 'lib/erlang/lib'],
+}
+
+sanity_check_commands = [
+    "erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().' -noshell | grep '%(version_major)s'"
+]
+
+moduleclass = 'lang'

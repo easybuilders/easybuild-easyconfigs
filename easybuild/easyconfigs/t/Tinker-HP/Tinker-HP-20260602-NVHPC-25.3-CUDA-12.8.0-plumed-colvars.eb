@@ -1,0 +1,90 @@
+easyblock = 'MakeCp'
+
+name = 'Tinker-HP'
+version = '20260602'
+versionsuffix = '-plumed-colvars'
+_commit = 'c4bc615'
+
+homepage = 'https://tinker-hp.org'
+description = """
+Tinker-HP: High-Performance Massively Parallel Evolution of Tinker on CPUs & GPUs"""
+
+toolchain = {'name': 'NVHPC', 'version': '25.3-CUDA-12.8.0'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+github_account = 'TinkerTools'
+
+sources = [{
+    'source_urls': [GITHUB_SOURCE],
+    'download_filename': f'{_commit}.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = [
+    ('Tinker-HP-20260602_fix-sort-external-nvhpc25.patch', 'v1.3/GPU/'),
+]
+checksums = [
+    {'Tinker-HP-20260602.tar.gz': '19742bd472f0752a9fbd151b4d464a11065e2a6017476f5cb5ea56b82e4e370e'},
+    {'Tinker-HP-20260602_fix-sort-external-nvhpc25.patch':
+     'c07cfa6974d22e3e6e9b8d9df24edbd55972fda358d460ee2d6ffcd678f605ec'},
+]
+
+builddependencies = [
+    ('Autotools', '20240712'),
+    ('make', '4.4.1'),
+    ('Python', '3.13.1'),
+]
+dependencies = [
+    ('Tcl', '8.6.16'),
+    ('GSL', '2.8'),
+]
+
+start_dir = 'v1.3/GPU/source'
+
+maxparallel = 1
+
+with_configure = True
+configure_without_installdir = True
+configure_cmd = "python -s depend.py device"
+
+preconfigopts = "sed -i 's/parameter (maxkey=5000)/parameter (maxkey=25000)/' MOD_sizes.f90 && "
+preconfigopts += "sed -i 's/,cuda\\$(cuda_version)//' config.nvidia.mk && "
+preconfigopts += "sed -i 's/ -lmpi_cxx//' config.nvidia.mk Makefile.pgi && "
+preconfigopts += "sed -i '/#include <cmath>/a #include <limits>' ../plumed2/src/lepton/Operation.h && "
+
+prebuildopts = "ln -fs Makefile.pgi Makefile && "
+prebuildopts += "mkdir -p ../bin && "
+
+buildopts = 'arch=gpu '
+buildopts += 'compute_capability=%(cuda_int_comma_sep)s '
+buildopts += 'PLUMED_SUPPORT=1 '
+buildopts += 'COLVARS_SUPPORT=1 '
+buildopts += 'TCL_SUPPORT=1 '
+buildopts += 'REL_BUILD=1 '
+
+_plm_prefix = '%(start_dir)s/../plumed2/src/lib/install/'
+_plm_libs = ['libplumed.so', 'libplumedKernel.so']
+
+files_to_copy = [
+    '../bin',
+    '../params',
+    ([f'{_plm_prefix}plumed*'], 'bin'),
+    ([f'{_plm_prefix}{x}' for x in _plm_libs], 'lib'),
+]
+
+modextrapaths = {'TINKER_PARAMS': 'params'}
+
+# suffix: _plm (PLUMED_SUPPORT=1), _clv (COLVARS_SUPPORT=1), .gpu (arch=gpu)
+_suffix = '_plm_clv.gpu'
+_bins = ['analyze_beads',  'analyze',  'bar',  'dynamic',  'minimize',  'pibar',  'pimd',  'radial']
+
+postinstallcmds = [f"cp %(installdir)s/bin/{x}{_suffix} %(installdir)s/bin/{x}" for x in _bins]
+
+sanity_check_paths = {
+    'files':
+        [f'bin/{x}' for x in _bins] +
+        [f'bin/{x}{_suffix}' for x in _bins] +
+        [f'lib/{x}' for x in _plm_libs],
+    'dirs': ['params'],
+}
+
+moduleclass = 'chem'

@@ -1,0 +1,124 @@
+Allow use of the NVIDIA CUTLASS Python package if installed.
+See https://github.com/pytorch/pytorch/pull/160180
+
+Author: Alexander Grund (TU Dresden)
+
+diff -ur a/torch/_inductor/codecache.py b/torch/_inductor/codecache.py
+--- a/torch/_inductor/codecache.py	2025-10-15 19:15:08.000000000 +0200
++++ b/torch/_inductor/codecache.py	2025-10-24 18:07:49.519431015 +0200
+@@ -3628,13 +3628,15 @@
+     return "nvcc"
+ 
+ 
+-def _cutlass_path() -> str:
++def _cutlass_path() -> Optional[str]:
+     if config.is_fbcode():
+         from libfb.py import parutil
+ 
+         return parutil.get_dir_path("cutlass-4-headers")
+     else:
+-        return config.cuda.cutlass_dir
++        from torch._inductor.codegen.cuda.cutlass_utils import try_import_cutlass
++
++        return config.cuda.cutlass_dir if try_import_cutlass() else None
+ 
+ 
+ def _cutlass_paths() -> list[str]:
+@@ -3649,6 +3651,8 @@
+ def _clone_cutlass_paths(build_root: str) -> list[str]:
+     paths = _cutlass_paths()
+     cutlass_root = _cutlass_path()
++    if cutlass_root is None:
++        return []
+     for path in _cutlass_paths():
+         old_path = os.path.join(cutlass_root, path)
+         new_path = os.path.join(build_root, path)
+@@ -3657,10 +3661,12 @@
+ 
+ 
+ def _cutlass_include_paths() -> list[str]:
+-    cutlass_path = _cutlass_path()
++    cutlass_root = _cutlass_path()
++    if cutlass_root is None:
++        return []
+     return [
+         # Use realpath to get canonical absolute paths, in order not to mess up cache keys
+-        os.path.realpath(os.path.join(cutlass_path, path))
++        os.path.realpath(os.path.join(cutlass_root, path))
+         for path in _cutlass_paths()
+     ]
+ 
+diff -ur a/torch/_inductor/codegen/cuda/cutlass_utils.py b/torch/_inductor/codegen/cuda/cutlass_utils.py
+--- a/torch/_inductor/codegen/cuda/cutlass_utils.py	2025-10-15 19:15:08.000000000 +0200
++++ b/torch/_inductor/codegen/cuda/cutlass_utils.py	2025-10-24 18:07:49.520431003 +0200
+@@ -1,6 +1,7 @@
+ # mypy: allow-untyped-defs
+ import atexit
+ import functools
++import importlib.metadata
+ import logging
+ import os
+ import shutil
+@@ -15,6 +16,7 @@
+ import torch
+ from torch._inductor.runtime.runtime_utils import dynamo_timed
+ from torch._inductor.utils import clear_on_fresh_cache
++from torch._vendor.packaging.version import Version
+ from torch.utils._ordered_set import OrderedSet
+ 
+ from ... import config
+@@ -73,7 +75,9 @@
+     """
+     We want to support three ways of passing in CUTLASS:
+     1. fbcode, handled by the internal build system.
+-    2. User specifies cutlass_dir. The default is ../third_party/cutlass/,
++    2. pip install nvidia-cutlass, which provides the cutlass_library package
++       and the header files in the cutlass_library/source directory.
++    3. User specifies cutlass_dir. The default is ../third_party/cutlass/,
+        which is the directory when developers build from source.
+     """
+     if config.is_fbcode():
+@@ -89,6 +93,34 @@
+ 
+         return True
+ 
++    try:
++        cutlass_version = Version(importlib.metadata.version("cutlass"))
++        if cutlass_version < Version("3.7"):
++            log.warning("CUTLASS version < 3.7 is not recommended.")
++
++        import cutlass_library  # type: ignore[import-not-found]  # noqa: F811
++
++        log.debug(
++            "Found cutlass_library in python search path, overriding config.cuda.cutlass_dir"
++        )
++        cutlass_library_dir = os.path.dirname(cutlass_library.__file__)
++        assert os.path.isdir(cutlass_library_dir), (
++            f"{cutlass_library_dir} is not a directory"
++        )
++        config.cuda.cutlass_dir = os.path.abspath(
++            os.path.join(
++                cutlass_library_dir,
++                "source",
++            )
++        )
++
++        return True
++    except (ModuleNotFoundError, importlib.metadata.PackageNotFoundError):
++        log.debug(
++            "cutlass_library not found in sys.path, trying to import from config.cuda.cutlass_dir",
++            exc_info=True,
++        )
++
+     # Copy CUTLASS python scripts to a temp dir and add the temp dir to Python search path.
+     # This is a temporary hack to avoid CUTLASS module naming conflicts.
+     # TODO(ipiszy): remove this hack when CUTLASS solves Python scripts packaging structure issues.
+@@ -156,7 +188,7 @@
+                 )
+ 
+         try:
+-            import cutlass  # noqa: F401, F811
++            import cutlass  # noqa: F401
+             import cutlass_library.generator  # noqa: F401
+             import cutlass_library.library  # noqa: F401
+             import cutlass_library.manifest  # noqa: F401

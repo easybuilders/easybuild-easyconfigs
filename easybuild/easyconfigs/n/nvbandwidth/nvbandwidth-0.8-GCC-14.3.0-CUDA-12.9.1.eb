@@ -1,0 +1,51 @@
+easyblock = 'CMakeMakeCp'
+
+name = 'nvbandwidth'
+version = '0.8'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/NVIDIA/nvbandwidth'
+description = '''
+A tool for bandwidth measurements on NVIDIA GPUs.
+
+Measures bandwidth for various memcpy patterns across different links using copy engine
+or kernel copy methods. nvbandwidth reports current measured bandwidth on your system.
+Additional system-specific tuning may be required to achieve maximal peak bandwidth.
+'''
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+source_urls = ['https://github.com/NVIDIA/nvbandwidth/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['b3622945eb7fce2b4e1aea7d13de04f415f4d998db602893201a904320cf2d39']
+
+builddependencies = [
+    ('Boost', '1.88.0'),
+    ('CMake', '4.0.3'),
+    ('git', '2.50.1'),  # Used to determine hash for version string
+]
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM)
+]
+
+configopts = '-DMULTINODE=0 '
+# nvbandwidth uses static libs by default, but turns them off for Fedora
+# due to them only having shared libraries. Since we always provide static ones,
+# explicitly enable using static libs.
+configopts += '-DBoost_USE_STATIC_LIBS=ON '
+
+files_to_copy = [
+    (['nvbandwidth'], 'bin'),
+]
+
+sanity_check_commands = [
+    'nvbandwidth --help'
+]
+
+sanity_check_paths = {
+    'files': ['bin/nvbandwidth'],
+    'dirs': [],
+}
+
+moduleclass = 'perf'

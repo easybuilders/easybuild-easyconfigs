@@ -1,0 +1,17 @@
+Fix Incorrect indexing with boolean arrays
+https://github.com/dask/dask/pull/11615
+Fixed in dask v2025.1.0
+
+diff --git a/dask/array/_shuffle.py b/dask/array/_shuffle.py
+index 2c926d317e9..5851a4a9962 100644
+--- a/dask/array/_shuffle.py
++++ b/dask/array/_shuffle.py
+@@ -220,7 +220,7 @@ def _shuffle(chunks, indexer, axis, in_name, out_name, token):
+ 
+     intermediates = dict()
+     merges = dict()
+-    dtype = np.min_scalar_type(max(chunks[axis]))
++    dtype = np.min_scalar_type(max(max(chunks[axis]), chunk_size_limit))
+     split_name = f"shuffle-split-{token}"
+     slices = [slice(None)] * len(chunks)
+     split_name_suffixes = count()

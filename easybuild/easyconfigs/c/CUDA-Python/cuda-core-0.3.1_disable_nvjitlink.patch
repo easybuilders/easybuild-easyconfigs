@@ -1,0 +1,21 @@
+Forces use of "driver" backend instead of nvjitlink.
+nvjitlink will refuse to run on newer OS drivers, and causes failures for anything
+that even attempts to check the nvjitlink version, failing many tests
+
+author: micketeer@gmail.com
+--- cuda_core/cuda/core/experimental/_linker.py.orig    2025-11-25 16:39:21.800595009 +0100
++++ cuda_core/cuda/core/experimental/_linker.py 2025-11-25 16:41:51.391382463 +0100
+@@ -37,6 +37,12 @@
+ 
+     _driver_ver = handle_return(driver.cuDriverGetVersion())
+     _driver_ver = (_driver_ver // 1000, (_driver_ver % 1000) // 10)
++    # Shortcut this function to always use driver, nvjitlink is to picky about OS driver versions
++    # and will refuse to run later. This is only required for older CUDA-Python as this is handled
++    # differently in newer versions
++    _driver = driver
++    return True    
++    
+     try:
+         from cuda.bindings import nvjitlink as _nvjitlink
+         from cuda.bindings._internal import nvjitlink as inner_nvjitlink
+
