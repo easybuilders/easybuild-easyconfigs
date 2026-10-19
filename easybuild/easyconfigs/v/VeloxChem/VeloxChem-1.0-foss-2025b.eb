@@ -1,0 +1,73 @@
+easyblock = 'PythonBundle'
+
+name = 'VeloxChem'
+version = '1.0'
+
+homepage = 'https://veloxchem.org/docs/intro.html'
+description = """VeloxChem [RLV+20] is a Python-based open source quantum chemistry software for
+contemporary and future hardware architectures. It features interactive program access through
+Jupyter notebooks as well as massively parallel calculations in high-performance
+computing (HPC) environments."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('Ninja', '1.13.0'),
+    ('pybind11', '3.0.0'),
+    ('pytest', '9.1.1'),
+    ('meson-python', '0.18.0'),
+    ('pkgconf', '2.4.3'),
+]
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('mpi4py', '4.1.0'),
+    ('h5py', '3.14.0'),
+    ('networkx', '3.5'),  # Required by geometric
+    ('scikit-build', '0.18.1'),
+    ('Eigen', '3.4.0'),
+    ('libxc', '7.0.0'),
+    ('Boost', '1.88.0'),
+    ('psutil', '7.0.0'),
+    ('MDAnalysis', '2.10.0'),
+    ('OpenMM', '8.5.2'),
+    ('RDKit', '2026.03.4'),
+    ('DFT-D4', '4.0.2'),
+]
+
+exts_list = [
+    ('dftd4', '4.0.2', {
+        'checksums': ['80517ebf5b1480312555158527d7690386d313d408e185b9078cbfb4ad160dd6'],
+    }),
+    ('pymbar', '4.0.3', {
+        'checksums': ['d38868e515631eb6bbf306448bfdf166bd82f7b887935eaf4b681f40628be9ff'],
+    }),
+    ('geometric', '1.1.1', {
+        'checksums': ['c712c4102bb9db4afab4c7a482289a13d04989735cc1430c89ebb73d587d1d8b'],
+    }),
+    (name, version, {
+        'modulename': 'veloxchem',
+        'source_urls': ['https://gitlab.com/veloxchem/veloxchem/-/archive/master/'],
+        'sources': ['%(name_lower)s_master.tar.gz'],
+        'checksums': ['223a307900967f868c0ba862ace5d34debd715a77d21118e746c11b20b06b73c'],
+        'preinstallopts': ' '.join([
+            'export EIGEN_INCLUDE_DIR="$EBROOTEIGEN/include/Eigen" &&',
+            'VLX_NUM_BUILD_JOBS=%(parallel)s',
+            # Only use needed entries to avoid picking up the flexiblas include path as an `-isystem`
+            'CPATH="$EBROOTLIBXC/include"',
+            'SKBUILD_CONFIGURE_OPTIONS="-DVLX_LA_VENDOR=FlexiBLAS"',
+        ])
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/vlx'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'vlx --help',
+]
+
+moduleclass = 'chem'
