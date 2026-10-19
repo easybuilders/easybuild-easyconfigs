@@ -1,0 +1,19 @@
+This patch is required for building VisIt 3.4.2 with VTK 9.3.x.
+VTK 9.3 removed vtkThreshold::ThresholdByUpper in favor of configuring
+the threshold mode explicitly with SetThresholdFunction and
+SetUpperThreshold. The change below preserves the original behavior
+while using the supported VTK 9.3 API.
+
+diff -ruN visit-3.4.2.orig/src/visit_vtk/full/vtkCSGGrid.C visit-3.4.2/src/visit_vtk/full/vtkCSGGrid.C
+--- visit-3.4.2.orig/src/visit_vtk/full/vtkCSGGrid.C	2024-12-20 23:30:42.000000000 +0000
++++ visit-3.4.2/src/visit_vtk/full/vtkCSGGrid.C	2026-04-16 00:00:00.000000000 +0000
+@@ -3016,7 +3016,8 @@
+     // Threshold out the cells for this region
+     vtkThreshold *threshold = vtkThreshold::New();
+     threshold->SetInputData(rv);
+-    threshold->ThresholdByUpper(0.5);
++    threshold->SetThresholdFunction(vtkThreshold::THRESHOLD_UPPER);
++    threshold->SetUpperThreshold(0.5);
+     threshold->Update();
+     rv = threshold->GetOutput();
+     rv->Register(0);

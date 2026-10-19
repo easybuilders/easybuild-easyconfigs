@@ -19,6 +19,7 @@ checksums = ['d244234ea2fd042488ca4a879f22103764dd3ed27cf9367a8293e50794023524']
 builddependencies = [
     ('binutils', '2.40'),
     ('Gradle', '8.6', versionsuffix, SYSTEM),
+    ('patchelf', '0.18.0'),
 ]
 
 dependencies = [
@@ -33,10 +34,20 @@ files_to_copy = [
     'build/dist/%(name)s/lib',
 ]
 
+_inject_rpath_cmd = (
+    f"if %(rpath_enabled)s; then "
+    f"  patchelf --set-rpath '$ORIGIN' --force-rpath %(installdir)s/lib/libapplauncher.{SHLIB_EXT}; "
+    f"  patchelf --set-rpath '$ORIGIN' --force-rpath %(installdir)s/bin/QuPath; "
+    f"fi"
+)
+
+# inject missing RPATH entries, if EasyBuild is configured to use it
+postinstallcmds = [_inject_rpath_cmd]
+
 modextrapaths = {'PATH': ['']}
 
 sanity_check_paths = {
-    'files': ['bin/QuPath', 'lib/libapplauncher.%s' % SHLIB_EXT],
+    'files': ['bin/QuPath', f'lib/libapplauncher.{SHLIB_EXT}'],
     'dirs': ['lib/app', 'lib/runtime'],
 }
 

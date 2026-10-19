@@ -1,0 +1,55 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'rDock'
+version = '24.03.192'
+
+homepage = 'https://rdock.github.io/'
+description = """
+rDock is a fast and versatile Open Source docking program that can be used to dock small
+molecules against proteins and nucleic acids. It is designed for High Throughput Virtual
+Screening (HTVS) campaigns and Binding Mode prediction studies.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/CBDD/rDock/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['4cb4267831a30010d2bca7daf13f74ab113df2c19a140859e9878a02038f551b']
+
+builddependencies = [
+    ('binutils', '2.42'),
+]
+dependencies = [
+    ('tcsh', '6.24.13'),
+    ('popt', '1.19'),
+]
+
+configure_without_installdir = True
+configure_cmd = ' '
+
+preinstallopts = 'export PREFIX=%(installdir)s && '
+
+runtest = 'test'
+
+postinstallcmds = [
+    'sed -i "s|/bin/csh -f|/usr/bin/env tcsh|" %(installdir)s/bin/make_grid.csh ; ',
+    'cp -ra %(builddir)s/%(name)s-%(version)s/data %(installdir)s ; ',
+]
+
+modextrapaths = {
+    'RBT_ROOT': '',
+}
+
+sanity_check_paths = {
+    'files': ['bin/rbhtfinder', 'bin/sdreport', 'bin/run_rbdock.pl', 'lib/libRbt.so'],
+    'dirs': ['include', 'data'],
+}
+
+sanity_check_commands = [
+    'rbdock --help',
+    'rbcavity --help',
+]
+
+moduleclass = 'bio'

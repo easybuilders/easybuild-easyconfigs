@@ -1,0 +1,78 @@
+# #
+# Author:    Benjamin Czaja (benjamin.czaja@surf.nl)
+# Institute: SURF(sara)
+#
+# #
+easyblock = 'CMakeNinja'
+
+name = 'HPX'
+version = '1.10.0'
+
+homepage = 'http://stellar-group.org/libraries/hpx/'
+description = """HPX (High Performance ParalleX) is a general purpose C++ runtime system
+ for parallel and distributed applications of any scale."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/STEllAR-GROUP/%(namelower)s/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['5720ed7d2460fa0b57bd8cb74fa4f70593fe8675463897678160340526ec3c19']
+
+builddependencies = [
+    ('CMake', '3.29.3'),
+    ('Ninja', '1.12.1'),
+    ('pkgconf', '2.2.0'),
+]
+dependencies = [
+    ('HDF5', '1.14.5'),
+    ('Boost', '1.85.0'),
+    ('hwloc', '2.10.0'),
+    ('gperftools', '2.16'),
+]
+
+configopts = '-DCMAKE_CXX_COMPILER=g++ '
+configopts += '-DHPX_WITH_MALLOC=tcmalloc '
+configopts += '-DHPX_WITH_HWLOC=TRUE '
+configopts += '-DHPX_WITH_GOOGLE_PERFTOOLS=TRUE '
+configopts += '-DHPX_WITH_NETWORKING=TRUE '
+configopts += '-DHPX_WITH_PARCELPORT_TCP=FALSE '
+configopts += '-DHPX_WITH_PARCELPORT_MPI=TRUE '
+configopts += '-DHPX_WITH_TESTS=FALSE '
+configopts += '-DHPX_WITH_EXAMPLES=TRUE '
+# configopts += '-DHPX_WITH_MAX_CPU_COUNT=128' #this should be handled by a hook for the system
+# configopts += '-DHPX_WITH_MAX_CPU_COUNT=' + os.cpu_count()
+configopts += '-DHPX_WITH_FETCH_ASIO=TRUE '
+
+bin_lib_subdirs = ['lib/%(namelower)s/']
+
+local_lib_names = [
+    'libhpx_accumulator.%s' % SHLIB_EXT,
+    'libhpx_cancelable_action.%s' % SHLIB_EXT,
+    'libhpx_component_storage.%s' % SHLIB_EXT,
+    'libhpx_core.%s' % SHLIB_EXT,
+    'libhpx_iostreams.%s' % SHLIB_EXT,
+    'libhpx_jacobi.%s' % SHLIB_EXT,
+    'libhpx_nqueen.%s' % SHLIB_EXT,
+    'libhpx_partitioned_vector.%s' % SHLIB_EXT,
+    'libhpx_process.%s' % SHLIB_EXT,
+    'libhpx_random_mem_access.%s' % SHLIB_EXT,
+    'libhpx_simple_central_tuplespace.%s' % SHLIB_EXT,
+    'libhpx.%s' % SHLIB_EXT,
+    'libhpx_startup_shutdown.%s' % SHLIB_EXT,
+    'libhpx_template_accumulator.%s' % SHLIB_EXT,
+    'libhpx_template_function_accumulator.%s' % SHLIB_EXT,
+    'libhpx_throttle.%s' % SHLIB_EXT,
+    'libhpx_unordered.%s' % SHLIB_EXT,
+]
+
+sanity_check_paths = {
+    'files': ['lib/%s' % lib for lib in local_lib_names] +
+             ['include/asio.hpp', 'include/hpx/hpx.hpp'] +
+             ['bin/hpxcxx', 'bin/hpxrun.py'],
+    'dirs': ['bin', 'lib'] + bin_lib_subdirs,
+}
+
+modextrapaths = {'LD_LIBRARY_PATH': bin_lib_subdirs}
+
+moduleclass = 'math'

@@ -1,0 +1,80 @@
+easyblock = 'ConfigureMake'
+
+name = 'MDSplus'
+version = '7.153.3'
+
+homepage = 'http://mdsplus.org/'
+description = """MDSplus is a set of software tools for data acquisition
+  and storage and a methodology for management of complex scientific data."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+sources = [{
+    'filename': SOURCELOWER_TAR_XZ,
+    'git_config': {
+        'url': 'https://github.com/' + name,
+        'repo_name': '%(namelower)s',
+        'commit': 'stable_release-' + version.replace('.', '-'),
+        'recursive': True,
+        # Explicitly do not keep the .git directory to avoid pulling submodules
+        # the git commands will fail during the bootstrap, but this is fine for the build
+        'keep_git_dir': False
+    },
+}]
+checksums = ['21b864211513fd8aef80c4dfaa2a541fda21d73fa9edce26ef492a5e1dad6ee0']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Autotools', '20220317'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.1'),
+    # Ensure we have git for the bootstrap that will run git commands to update submodules.
+    # We are fine with them failing as we do not have the .git directory, but avoid failing due to missing git
+    ('git', '2.42.0'),
+]
+
+dependencies = [
+    ('libxml2', '2.11.5'),
+    ('zlib', '1.2.13'),
+    ('ncurses', '6.4'),
+    ('libreadline', '8.2'),
+    ('Java', '21', '', SYSTEM),
+]
+
+preconfigopts = 'find . -type f -regex .*Makefile.* -maxdepth 12 -exec '
+preconfigopts += 'sed -i "s/JAVASOURCE = 6/JAVASOURCE = 8/g" {} + && '
+preconfigopts += 'export CFLAGS="$CFLAGS -I$EBROOTLIBXML2/include/libxml2 -std=c++14" && '
+preconfigopts += 'export FCFLAGS="$FCFLAGS -std=legacy -fallow-invalid-boz" && '
+preconfigopts += 'export MDSPLUS_DIR=$EBROOTMDSPLUS && '
+preconfigopts += 'cd %(builddir)s/mdsplus && ./bootstrap && '
+
+configopts = '--with-jdk=$JAVA_HOME --enable-java '
+configopts += '--disable-doxygen-doc --disable-valgrind '
+# hardcode version via configure script (git is unavailable)
+configopts += 'RELEASE_VERSION=%(version)s BRANCH=stable '
+
+max_parallel = 1
+
+modextravars = {
+    'MDSPLUS_DIR': '%(installdir)s',
+    'MDS_PATH': '%(installdir)s/tdi',
+}
+
+modextrapaths = {
+    'CLASSPATH': 'java/classes/*',
+    'IDL_PATH': 'idl',
+}
+
+sanity_check_paths = {
+    'files': [
+        ['lib/libMdsLib.%s' % x for x in ['a', '%s' % SHLIB_EXT]],
+        ['lib/libMdsLib_client.%s' % x for x in ['a', '%s' % SHLIB_EXT]],
+        ['include/mdslib.h', 'include/mdsobjects.h'],
+        ['bin/jTraverser', 'bin/jScope', 'bin/jServer', 'lib/libJavaMds.%s' % SHLIB_EXT]
+    ],
+    'dirs': ['bin', 'etc', 'include', 'java/classes', 'lib', 'tdi'],
+}
+
+moduleclass = 'data'

@@ -1,0 +1,27 @@
+From 12e701cf3216b573160585bfdaccef3ebbcf271a Mon Sep 17 00:00:00 2001
+From: Rui Ueyama <ruiu@cs.stanford.edu>
+Date: Mon, 14 Jul 2025 21:43:22 +0900
+Subject: [PATCH] Fix test
+
+Closes https://github.com/rui314/mold/issues/1483
+---
+ test/arch-aarch64-long-thunk.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/test/arch-aarch64-long-thunk.sh b/test/arch-aarch64-long-thunk.sh
+index 91f459f00d..d30e51fc07 100755
+--- a/test/arch-aarch64-long-thunk.sh
++++ b/test/arch-aarch64-long-thunk.sh
+@@ -42,10 +42,10 @@ $QEMU $t/exe2 | grep 'main fn1 fn3 fn2 fn4'
+ $CC -c -o $t/e.o $t/a.c -fno-PIC -mcmodel=large
+ $CC -c -o $t/f.o $t/b.c -fno-PIC -mcmodel=large
+ 
+-$CC -B. -o $t/exe3 $t/e.o $t/f.o \
++$CC -B. -o $t/exe3 $t/e.o $t/f.o -pie \
+   -Wl,--section-start=.low=0x10000000,--section-start=.high=0x400000000
+ $QEMU $t/exe3 | grep 'main fn1 fn3 fn2 fn4'
+ 
+-$CC -B. -o $t/exe4 $t/e.o $t/f.o \
++$CC -B. -o $t/exe4 $t/e.o $t/f.o -pie \
+   -Wl,--section-start=.high=0x10000000,--section-start=.low=0x400000000
+ $QEMU $t/exe4 | grep 'main fn1 fn3 fn2 fn4'

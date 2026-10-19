@@ -17,38 +17,57 @@ toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
 toolchainopts = {'cstd': 'gnu++11', 'pic': True}
 
 source_urls = ['https://github.com/llvm/llvm-project/releases/download/llvmorg-%(version)s/']
-sources = ['llvm-%(version)s.src.tar.xz']
-
-# Patches from https://github.com/numba/llvmlite/raw/v0.41.1/conda-recipes/ but
-# renamed to follow EasyBuild conventions.
+sources = ['llvm-project-%(version)s.src.tar.xz']
 patches = [
     'LLVM-14.0.6-clear-gotoffsetmap.patch',
     'LLVM-14.0.6-svml.patch',
+    'LLVM-14.0.x_fix-print-changed-dot-cfg-test.patch',
 ]
 checksums = [
-    {'llvm-14.0.6.src.tar.xz': '050922ecaaca5781fdf6631ea92bc715183f202f9d2f15147226f023414f619a'},
-    {'LLVM-14.0.6-clear-gotoffsetmap.patch': '690c96dcbd0a81e11d87f02e740c4ef34a0c578be741aaa6559cc00a5349fabf'},
-    {'LLVM-14.0.6-svml.patch': '59df18ea4af3479de42ecbc1c524d4106f4a55f23335a64c0f0d5433daaba1b7'},
+    {'llvm-project-14.0.6.src.tar.xz': '8b3cfd7bc695bd6cea0f37f53f0981f34f87496e79e2529874fd03a2f9dd3a8a'},
+    {'LLVM-14.0.6-clear-gotoffsetmap.patch': 'c048afdddcf54c7213018d06f709f61274af5b90b8dcd97a632be4fe53750a51'},
+    {'LLVM-14.0.6-svml.patch': '5776de38e7b663fe9d3ae0a218e380dd59186c565ae277cb7e50785b253640c0'},
+    {'LLVM-14.0.x_fix-print-changed-dot-cfg-test.patch':
+     'd21abda1ecc5d15f1734d529a1332eea2c5f429281fb62969b9ee88acf3516f3'},
 ]
 
+# Patches from https://github.com/numba/llvmlite/raw/v0.41.1/conda-recipes/ but
+# renamed to follow EasyBuild conventions.
 builddependencies = [
     ('binutils', '2.40'),
     ('CMake', '3.26.3'),
     ('Python', '3.11.3'),
+    ('lit', '18.1.2'),
+    ('git', '2.41.0', '-nodocs'),
 ]
 
 dependencies = [
     ('ncurses', '6.4'),
     ('zlib', '1.2.13'),
+    ('libxml2', '2.11.4'),
+    ('libffi', '3.4.4'),
 ]
 
 build_shared_libs = True
 
-sanity_check_paths = {
-    'files': ['bin/llvm-ar', 'bin/FileCheck'],
-    'dirs': ['include/llvm', 'include/llvm-c'],
-}
+minimal = True
 
-sanity_check_commands = ["llvm-ar --help"]
+bootstrap = False
+full_llvm = False
+build_clang_extras = False
+build_runtimes = False
+build_lld = False
+build_lldb = False
+build_bolt = False
+build_openmp = False
+build_openmp_offload = False
+build_openmp_tools = False
+use_polly = False
+
+python_bindings = False
+
+skip_all_tests = False
+skip_sanitizer_tests = False
+test_suite_max_failed = 0
 
 moduleclass = 'compiler'

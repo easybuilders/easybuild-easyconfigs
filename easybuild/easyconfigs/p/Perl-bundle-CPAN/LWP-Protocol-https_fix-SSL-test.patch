@@ -1,0 +1,32 @@
+workaround for failing test in LWP::Protocol::https extension due to problem with SSL certificate for example.com
+see also https://github.com/libwww-perl/LWP-Protocol-https/issues/90
+author: Kenneth Hoste (HPC-UGent)
+--- LWP-Protocol-https-6.14/t/example.t.orig	2026-02-19 10:41:14.082732809 +0100
++++ LWP-Protocol-https-6.14/t/example.t	2026-02-19 10:46:40.834320072 +0100
+@@ -2,7 +2,7 @@
+ 
+ use strict;
+ use Test::More;
+-use Test::RequiresInternet 'www.example.com' => 443;
++use Test::RequiresInternet 'www.google.com' => 443;
+ 
+ use LWP::UserAgent ();
+ 
+@@ -10,7 +10,7 @@
+ 
+ plan tests => 2;
+ 
+-my $url = 'https://www.example.com';
++my $url = 'https://www.google.com';
+ 
+ subtest "Request GET $url" => sub {
+     plan tests => 6;
+@@ -43,7 +43,7 @@
+     my $ssl_cipher = $res->header($h) || '';
+     ok($ssl_cipher =~ /\S/, "have header $h");
+ 
+-    like($res->content, qr/Example Domain/, "found expected document content");
++    like($res->content, qr/<title>Google<\/title>/, "found expected document content");
+ };
+ 
+ subtest "Check for warnings from GET $url (RT #81948)" => sub {

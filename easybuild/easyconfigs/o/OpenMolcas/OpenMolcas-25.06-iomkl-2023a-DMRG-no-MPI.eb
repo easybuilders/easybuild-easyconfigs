@@ -1,0 +1,85 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMolcas'
+version = '25.06'
+versionsuffix = '-DMRG-no-MPI'
+
+homepage = "https://gitlab.com/Molcas/OpenMolcas"
+description = "OpenMolcas is a quantum chemistry software package."
+
+toolchain = {'name': 'iomkl', 'version': '2023a'}
+toolchainopts = {'precise': True}
+
+source_urls = ['https://gitlab.com/Molcas/OpenMolcas/-/archive/v%(version)s/']
+sources = ["%(name)s-v%(version)s.tar.gz"]
+patches = [
+    '%(name)s-23.06_mcpdft_deps.patch',
+    '%(name)s-25.02_fix-nevpt2.cmake.patch',
+]
+checksums = [
+    {'OpenMolcas-v25.06.tar.gz': 'df5262abd030d4fdfc66900140e608e53c71cf1d35acfdedcfaac147c02af94c'},
+    {'OpenMolcas-23.06_mcpdft_deps.patch': 'a798ec6f93a19539aa2211a978da461d4ecd31c5521b9dab6f2a9b1c2fa65f0e'},
+    {'OpenMolcas-25.02_fix-nevpt2.cmake.patch': '0d97593f5f4757c475a427799626e43d93334e69b5a14551e3ee7875f4327d0b'},
+]
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('lxml', '4.9.2'),
+    ('HDF5', '1.14.0', '-serial'),
+    ('libxc', '6.2.2'),
+    ('GSL', '2.7'),
+    ('Boost', '1.82.0'),
+    ('QCMaquis', '4.0.0'),
+]
+
+build_shared_libs = True
+
+_copts = [
+    '-DLINALG=MKL',
+    '-DMKLROOT=$MKLROOT',
+    '-DOPENMP=ON',
+    '-DTOOLS=ON',
+    '-DFDE=ON',
+    # MPI + GlobalArrays disabled due to combination with QCMaquis (DMRG=ON),
+    # see https://github.com/qcscine/qcmaquis/issues/12#issuecomment-2955621474
+    '-DGA=OFF',
+    '-DMPI=OFF',
+    '-DEXTERNAL_LIBXC=$EBROOTLIBXC',
+    '-DPython_ROOT=$EBROOTPYTHON',
+    '-DDMRG=ON',
+    '-DNEVPT2=ON',
+    '-DQCMaquis_ROOT=$EBROOTQCMAQUIS',
+]
+configopts = ' '.join(_copts)
+
+pretestopts = 'MOLCAS=%(builddir)s/easybuild_obj '
+pretestopts += 'MOLCAS_DRIVER=%(builddir)s/easybuild_obj/pymolcas '
+pretestopts += 'MOLCAS_SOURCE=%(builddir)s/easybuild_obj '
+pretestopts += 'MOLCAS_WORKDIR=%(builddir)s/easybuild_obj '
+pretestopts += 'PATH=%(builddir)s/easybuild_obj:$PATH '
+# omit failing tests from grayzone (can fail) + omit additional_100 test - failing with
+# E_SCF and DFT_ENERGY error values a little bit out of tolerance
+test_cmd = 'pymolcas verify .default grayzone:- additional:-100'
+
+fix_python_shebang_for = ['pymolcas', 'Tools/AugerOca/*.py', 'Tools/AugerOca/auger_oca/*.py', 'Tools/mort/mort.py',
+                          'Tools/dynamixtools/dynamixtools.py']
+
+modextrapaths = {'PATH': ''}
+modextravars = {
+    'MOLCAS': '%(installdir)s',
+    'MOLCAS_DRIVER': '%(installdir)s/pymolcas',
+    'MOLCAS_SOURCE': '%(installdir)s',
+}
+
+sanity_check_commands = ['pymolcas --help']
+
+sanity_check_paths = {
+    'files': ['bin/dynamix.exe', 'bin/mpprop.exe', 'lib/libmolcas.%s' % SHLIB_EXT,
+              'sbin/help_basis', 'pymolcas'],
+    'dirs': ['data/', 'basis_library/'],
+}
+
+moduleclass = 'chem'

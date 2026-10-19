@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'git'
+version = '2.49.0'
+
+homepage = 'https://git-scm.com'
+description = """Git is a free and open source distributed version control system designed
+to handle everything from small to very large projects with speed and efficiency."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ['https://github.com/git/git/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['git-2.32.0_fix-CVE-2025-48384.patch']
+checksums = [
+    {'v2.49.0.tar.gz': '1bfeeafc78036e78c7b422219473987a6fa79bfdc1da673fcf20e4901399e09f'},
+    {'git-2.32.0_fix-CVE-2025-48384.patch': '1c95ebe46c2d5b64ade86f19ef3383c6c5659965f3e6b4fcf045daadc2655734'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Autotools', '20240712'),
+]
+
+dependencies = [
+    ('cURL', '8.11.1'),
+    ('expat', '2.6.4'),
+    ('gettext', '0.24'),
+    ('Perl', '5.40.0'),
+    ('OpenSSL', '3', '', SYSTEM),
+]
+
+preconfigopts = 'make configure && '
+
+# Work around git build system bug.  If LIBS contains -lpthread, then configure
+# will not append -lpthread to LDFLAGS, but Makefile ignores LIBS.
+configopts = "--with-perl=${EBROOTPERL}/bin/perl --enable-pthreads='-lpthread'"
+
+postinstallcmds = ['cd contrib/subtree; make install']
+
+sanity_check_paths = {
+    'files': ['bin/git'],
+    'dirs': ['libexec/git-core', 'share'],
+}
+
+moduleclass = 'tools'

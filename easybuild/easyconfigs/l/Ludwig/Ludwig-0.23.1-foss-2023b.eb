@@ -1,0 +1,60 @@
+easyblock = 'ConfigureMake'
+name = 'Ludwig'
+version = '0.23.1'
+
+
+homepage = 'https://ludwig.epcc.ed.ac.uk'
+description = """Ludwig is a parallel code for the simulation of complex fluids,
+which include mixtures, colloidal suspensions, gels, and liquid crystals.
+It takes its name from Ludwig Boltzmann, as it uses a lattice Boltzmann method as
+a basis for numerical solution of the Navier Stokes equations for hydrodynamics.
+It typically combines hydrodynamics with a coarse-grained order parameter (or order parameters)
+to represent the "complex" part in a free energy picture.
+
+The code is written in standard ANSI C, and uses the Message Passing Interface for
+distributed memory parallelism. Threaded parallelism is also available
+via a lightweight abstraction layer ("Target Data Parallel" or "TargetDP")
+which currently supports OpenMP, CUDA (NVIDIA GPUs)
+or HIP (AMD GPUs) from a single source.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+sources = [{
+    'source_urls': ['https://github.com/ludwig-cf/ludwig/archive/refs/tags/'],
+    'filename': 'ludwig-%(version)s.tar.gz',
+}]
+patches = [
+    'ludwig-0.23.1_config_via_envvars.patch',
+    'ludwig-0.23.1_looser_test_tolerance.patch',
+]
+checksums = [
+    {'ludwig-%(version)s.tar.gz': '09b5663172632d6e469e0e6e8741daa060c45417d8f6e3fb1b99b603020217f2'},
+    {'ludwig-0.23.1_config_via_envvars.patch': 'ecc26c29d83ebf5eba3ff9d68af962f8186d3200d946ed8828d7381dda03851e'},
+    {'ludwig-0.23.1_looser_test_tolerance.patch': 'e02a82cdd8e8410e5000108a7075c32f8e685e49abdea3f8e26854302c129061'},
+]
+unpack_options = '--strip-components=1'
+
+configure_cmd = "cp %(builddir)s/config/unix-mpicc-default.mk %(builddir)s/config.mk"
+configure_without_installdir = True
+
+# mpicc is used for linking, make sure to enable OpenMP
+prebuildopts = 'export LDFLAGS="-fopenmp $LDFLAGS" &&'
+
+# do the same for testing (it also does some compilation)
+pretestopts = 'export LDFLAGS="-fopenmp $LDFLAGS" &&'
+runtest = "test"
+
+# Ludwig is statically linked except for the MPI and OpenMP runtimes
+install_cmd = "mkdir -p %(installdir)s/bin && mv %(builddir)s/src/Ludwig.exe %(installdir)s/bin/"
+
+sanity_check_paths = {
+    'files': ["bin/Ludwig.exe"],
+    'dirs': [],
+}
+# Ludwig does not give an error code so we need to spoof this a bit
+# (run it and check it spits out some reasonable text)
+sanity_check_commands = ['stdbuf -oL Ludwig.exe | grep Welcome']
+
+moduleclass = 'phys'

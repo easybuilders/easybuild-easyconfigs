@@ -1,0 +1,49 @@
+easyblock = 'MakeCp'
+name = 'bwa-mem2'
+version = '2.2.1'
+
+homepage = 'https://github.com/bwa-mem2/bwa-mem2'
+
+description = """
+ bwa-mem2 is the next version of the bwa-mem algorithm in bwa. It produces
+ alignment identical to bwa and is ~1.3-3.1x faster depending on the use-case,
+ dataset and the running machine.
+ Burrows-Wheeler Aligner (BWA) is an efficient program that aligns relatively
+ short nucleotide sequences against a long reference sequence such as the human
+ genome.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'bwa-mem2'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_use_external_deps.patch',
+    '%(name)s-%(version)s-fix_legacy_code.patch',
+]
+checksums = [
+    {'v2.2.1.tar.gz': '36ddd28ce7020d5a036ddeffa00e692296fd40c80380671bd4ea5757bd28841b'},
+    {'bwa-mem2-2.2.1_use_external_deps.patch': '0a9d7f7b3289029e19cf7dbab1778448097b9e0f92fa41a74a8cf81c9e114967'},
+    {'bwa-mem2-2.2.1-fix_legacy_code.patch': 'a2efcc0cd2fcfdcd69b3e611076910131cd9d18443ada091837b00662b1acd11'},
+]
+
+builddependencies = [('binutils', '2.40')]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('safestringlib', '20241021'),
+]
+
+files_to_copy = [
+    (['bwa-mem2%s' % x for x in ['', '.avx', '.avx2', '.avx512bw', '.sse41', '.sse42']], 'bin'),
+]
+
+sanity_check_commands = ["bwa-mem2 version"]
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['bin'],
+}
+
+moduleclass = 'bio'

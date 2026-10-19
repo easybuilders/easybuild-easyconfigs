@@ -1,0 +1,74 @@
+Build shared library for OpenLB core, modify default targets to build examples and not core libs by default.
+Include example Makefile to build example codes using OpenLB.
+
+Author: Loris Ercole <loris.ercole@epfl.ch>
+
+diff --git a/Makefile b/Makefile
+index 2f25eea9..89841661 100644
+--- a/Makefile
++++ b/Makefile
+@@ -58,19 +58,23 @@ CORE_OBJ_FILES := $(CORE_CPP_FILES:.cpp=.o)
+ %.o: %.cpp
+ 	$(CXX) $(CXXFLAGS) -fPIC -Isrc/ -c $< -o $@
+ 
+-build/lib:
+-	mkdir -p build/lib
++lib:
++	mkdir -p lib
+ 
+-build/lib/libolbcore.a: build/lib $(CORE_OBJ_FILES)
++lib/libolbcore.a: lib $(CORE_OBJ_FILES)
+ 	$(AR) rc $@ $(CORE_OBJ_FILES)
+ 
+-core: build/lib/libolbcore.a
++lib/libolbcore.so: lib $(CORE_OBJ_FILES)
++	$(CC) -shared -fPIC -o $@ $(CORE_OBJ_FILES)
++
++core: lib/libolbcore.a lib/libolbcore.so
+ 
+ DEFAULT_TARGETS += core
+ 
+ clean-core:
+ 	rm -f $(CORE_OBJ_FILES)
+-	rm -f build/lib/libolbcore.a
++	rm -f lib/libolbcore.a
++	rm -f lib/libolbcore.so
+ 
+ CLEAN_TARGETS += clean-core
+ 
+diff --git a/default.single.mk b/default.single.mk
+index c4805257..7e8c7e89 100644
+--- a/default.single.mk
++++ b/default.single.mk
+@@ -1,7 +1,9 @@
+ include $(OLB_ROOT)/rules.mk
+-all: dependencies core $(EXAMPLE)
+ 
+-INCLUDE_DIRS := $(OLB_ROOT)/src
++# Default target: build the example
++.DEFAULT_GOAL := $(EXAMPLE)
++
++INCLUDE_DIRS := $(OLB_ROOT)/include
+ 
+ ifneq ($(USE_EMBEDDED_DEPENDENCIES), OFF)
+ INCLUDE_DIRS += \
+@@ -21,10 +23,16 @@ else
+ .PHONY: dependencies clean-dependencies
+ endif
+ 
+-LDFLAGS += -L$(OLB_ROOT)/build/lib
++LDFLAGS += -L$(OLB_ROOT)/lib
++
++# Depend on actual core library files instead of phony target
++CORE_LIBS := $(OLB_ROOT)/lib/libolbcore.a
++
++$(CORE_LIBS):
++	@echo "Core library not found at $@. Please run 'make' in $(OLB_ROOT) first."
++	@exit 1
+ 
+-core:
+-	$(MAKE) -C $(OLB_ROOT) core
++all: dependencies $(CORE_LIBS) $(EXAMPLE)
+ 
+ CPP_FILES := $(wildcard *.cpp)
+ OBJ_FILES := $(CPP_FILES:.cpp=.o)

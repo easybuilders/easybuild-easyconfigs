@@ -1,0 +1,17 @@
+author: Davide Grassano (CECAM)
+Fixes an issue related to the use of casting fgetc() to a char before checking for EOF causing an infinite loop on ARM
+architectures when reading binary files.
+https://bugs.webkit.org/show_bug.cgi?id=144439
+See https://github.com/EESSI/software-layer/pull/1334 for more details.
+This was also patched in AmberTools-25 the same way 
+--- AmberTools/src/mdgx/Parse.c.orig	2026-01-30 17:45:10.130443999 +0100
++++ AmberTools/src/mdgx/Parse.c	2026-01-30 17:57:15.490587902 +0100
+@@ -2908,7 +2908,7 @@
+ {
+   int isbinary;
+   long long int il, fsize;
+-  char testchar;
++  int testchar;
+   FILE *finp;
+ 
+   // Detect binary files as those having any byte whose value is outside the

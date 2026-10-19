@@ -1,0 +1,20 @@
+GCC 12 has a false positive warning when compiled for some architectures, e.g. Intel Sapphire Rapids.
+See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=112370
+
+Suppress this warning such that the build doesn't error.
+
+Author: Alexander Grund (TU Dresden)
+
+Ported to 2.3.0, Åke Sandgren
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b74bf4536f4..bb062fa843a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -573,6 +573,7 @@ if(MSVC)
+   string(APPEND CMAKE_CXX_FLAGS " /FS")
+   string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler /FS")
+ endif(MSVC)
++append_cxx_flag_if_supported("-Wno-free-nonheap-object" CMAKE_CXX_FLAGS)
+ 
+ string(APPEND CMAKE_CUDA_FLAGS " -Xfatbin -compress-all")
+ 

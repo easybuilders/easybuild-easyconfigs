@@ -1,0 +1,76 @@
+easyblock = 'PythonBundle'
+
+name = 'autoCAS'
+version = '3.0.0'
+
+homepage = 'https://github.com/qcscine/autocas'
+description = """SCINE autoCAS automates the crucial active-orbital-space selection step in multi-configurational
+calculations. Based on orbital entanglement measures derived from an approximate DMRG wave function,
+it identifies all strongly correlated orbitals to be included in the active space of a final, converged calculation.
+"""
+
+toolchain = {'name': 'iomkl', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
+    ('matplotlib', '3.7.2'),
+    ('Pillow', '10.0.0'),
+    ('PyYAML', '6.0'),
+    ('Boost', '1.82.0'),
+    ('h5py', '3.9.0', '-serial'),
+    ('OpenMolcas', '25.06', '-DMRG-no-MPI'),
+    # qcserenity deps:
+    ('GMP', '6.2.1'),
+    ('ASE', '3.22.1'),
+    ('py3Dmol', '2.1.0'),
+    ('jupyter-server', '2.7.2'),  # ipywidgets
+]
+
+exts_list = [
+    ('mypy_extensions', '1.0.0', {
+        'checksums': ['75dbf8955dc00442a438fc4d0666508a9a97b6bd41aa2f0ffe9d2f2725af0782'],
+    }),
+    ('qcserenity', '1.6.3.post2', {
+        'source_tmpl': '%(name)s-%(version)s-cp311-cp311-manylinux_2_28_x86_64.whl',
+        'checksums': ['b14a248e2a61434d9852b1c0e13ffd729687696eaa7050af04491a367ce22615'],
+    }),
+    ('scine_autocas', version, {
+        'patches': ['AutoCAS-3.0.0_fix-molcas-files.patch'],
+        # unpin dep versions in requirements
+        'preinstallopts': "sed -i 's/==.*//g' requirements.txt && ",
+        # omit input_handler tests - input_handler.py changed by patch
+        'runtest': "pytest -vvvs -k 'not (test_input_handler_1 or test_input_handler_2)' scine_autocas/tests",
+        'source_urls': ['https://github.com/qcscine/autocas/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
+        'checksums': [
+            {'scine_autocas-3.0.0.tar.gz': 'c2046b9b5da834d9baae62ee25de250501270c30b8d6694733f36c72a8731896'},
+            {'AutoCAS-3.0.0_fix-molcas-files.patch':
+             '05934ff8b72274d23592dd70bfdfa3e2c7b4d2e22d7bd07558cf65a1a1307a78'},
+        ],
+    }),
+]
+
+postinstallcmds = [
+    # unpin failing mkl dep of qcserenity
+    "sed -i '/mkl==2024.2/d' "
+    "%(installdir)s/lib/python%(pyshortver)s/site-packages/qcserenity-1.6.3.post2.dist-info/METADATA",
+    # link serenity exec to /bin
+    'ln -s %(installdir)s/lib/python%(pyshortver)s/site-packages/bin/serenity %(installdir)s/bin/serenity',
+]
+
+check_ldshared = True
+
+sanity_check_commands = [
+    "python -m scine_autocas -h",
+    "python -c 'import qcserenity.serenipy'",
+]
+
+sanity_check_paths = {
+    'files': ['bin/scine_autocas', 'bin/serenity'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'chem'

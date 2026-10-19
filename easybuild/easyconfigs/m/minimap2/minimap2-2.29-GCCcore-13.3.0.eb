@@ -1,0 +1,65 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Adam Huffman
+# DeepThought, Flinders University
+# Updated to 2.22
+# R.QIAO
+
+# Update Petr Král (INUITS)
+
+# Added ARM support Lara Peeters (UGent)
+
+easyblock = 'MakeCp'
+
+name = 'minimap2'
+version = '2.29'
+
+homepage = 'https://github.com/lh3/minimap2'
+description = """Minimap2 is a fast sequence mapping and alignment
+program that can find overlaps between long noisy reads, or map long
+reads or their assemblies to a reference genome optionally with detailed
+alignment (i.e. CIGAR). At present, it works efficiently with query
+sequences from a few kilobases to ~100 megabases in length at an error
+rate ~15%. Minimap2 outputs in the PAF or the SAM format. On limited
+test data sets, minimap2 is over 20 times faster than most other
+long-read aligners. It will replace BWA-MEM for long reads and contig
+alignment."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+source_urls = ['https://github.com/lh3/%(name)s/releases/download/v%(version)s/']
+sources = ['%(name)s-%(version)s.tar.bz2']
+checksums = ['8a231af5766b62cb9e24720290a730809633a6ea4cb7fe49ce39884438eceddb']
+
+builddependencies = [('binutils', '2.42')]
+
+dependencies = [('zlib', '1.3.1')]
+
+# Adding -DHAVE_KALLOC because this was done in the past as the
+# INCLUDES variable was used to pass the CPPFLAGS set by EasyBuild.
+# The INCLUDES variable is used for ARM support so we can no longer
+# use it to pass the CPPFLAGS set by EasyBuild.
+buildopts = 'CC="${CC}" CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS} -DHAVE_KALLOC"'
+
+if ARCH == 'aarch64':
+    buildopts += ' arm_neon=1 aarch64=1'
+
+files_to_copy = [
+    (['%(name)s'], 'bin'),
+    (['lib%(name)s.a'], 'lib'),
+    (['*.h'], 'include'),
+    'LICENSE.txt', 'NEWS.md', 'README.md',
+    (['%(name)s.1'], 'share/man/man1'),
+    (['test/MT-human.fa', 'test/MT-orang.fa'], 'test'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'lib/lib%(name)s.a'],
+    'dirs': ['include', 'test']
+}
+
+sanity_check_commands = [
+    "minimap2 --help",
+    "cd %(installdir)s && minimap2 -a test/MT-human.fa test/MT-orang.fa > test.sam",
+]
+
+moduleclass = 'bio'

@@ -1,0 +1,70 @@
+# http://www.pytables.org/usersguide/installation.html
+# updated: Denis Kristak (INUITS)
+
+easyblock = 'PythonBundle'
+
+name = 'PyTables'
+version = '3.10.2'
+
+homepage = 'https://www.pytables.org'
+description = """PyTables is a package for managing hierarchical datasets and designed to efficiently and easily cope
+ with extremely large amounts of data. PyTables is built on top of the HDF5 library, using the Python language and the
+ NumPy package. It features an object-oriented interface that, combined with C extensions for the performance-critical
+ parts of the code (generated using Cython), makes it a fast, yet extremely easy to use tool for interactively browsing,
+ processing and searching very large amounts of data. One important feature of PyTables is that it optimizes memory and
+ disk resources so that data takes much less space (specially if on-flight compression is used) than other solutions
+ such as relational or object oriented databases."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'usempi': True}
+
+builddependencies = [
+    ('pkgconf', '2.2.0'),
+    ('CMake', '3.29.3'),
+    ('Cython', '3.0.10'),
+    ('scikit-build-core', '0.10.6'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),  # provides numexpr
+    ('HDF5', '1.14.5'),
+    ('LZO', '2.10'),
+    ('Blosc', '1.21.6'),
+    ('Blosc2', '2.17.0'),
+    ('py-cpuinfo', '9.0.0'),
+]
+
+exts_list = [
+    ('ndindex', '1.9.2', {
+        'checksums': ['b8658a06e52d6c47445c2ec11d292e1d52c3af259214c8b52e3a1aab733daa72'],
+    }),
+    ('blosc2', '3.2.0', {
+        'preinstallopts': """USE_SYSTEM_BLOSC2=ON """,
+        'checksums': ['db38f2265cd7938cbdc7b029420d2d5b65fcb8f91ce00bb6d6bdac63194d62cc'],
+    }),
+    ('tables', version, {
+        'patches': [
+            'PyTables-3.8.0_fix-libs.patch',
+            'PyTables-3.9.2_fix-find-blosc2-dep.patch',
+        ],
+        'checksums': [
+            {'tables-3.10.2.tar.gz': '2544812a7186fadba831d6dd34eb49ccd788d6a83f4e4c2b431b835b6796c910'},
+            {'PyTables-3.8.0_fix-libs.patch': '7a1e6fa1f9169e52293e2b433a4302fa13c5d31e7709cd4fe0e087199b9e3f8a'},
+            {'PyTables-3.9.2_fix-find-blosc2-dep.patch':
+             'e2149f43da12d9ba26cca4c838f6e8a4694adab75c0f055b186674a017e41a55'},
+        ],
+    }),
+]
+
+local_bins = ['pt2to3', 'ptdump', 'ptrepack', 'pttree']
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+options = {'modulename': 'tables'}
+
+sanity_check_commands = ["%s --help" % x for x in local_bins]
+
+moduleclass = 'data'

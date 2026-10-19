@@ -1,0 +1,101 @@
+easyblock = 'MesonNinja'
+
+name = 'HPCToolkit'
+version = '2025.0.1'
+
+homepage = 'https://hpctoolkit.org/'
+description = """
+HPCToolkit is an integrated suite of tools for measurement and analysis of program
+performance on computers ranging from multicore desktop systems to GPU-accelerated
+supercomputers. By using statistical sampling of timers and hardware performance
+counters on CPUs, HPCToolkit collects accurate measurements of a program's CPU
+work, resource consumption, and inefficiency and attributes them to the full
+calling context in which they occur. By monitoring GPU operations, gathering
+instruction-level metrics within GPU kernels, and attributing the costs of GPU work
+to heterogeneous calling contexts. HPCToolkit provides insight into the performance
+of GPU-accelerated codes. HPCToolkit works with multilingual, fully optimized
+applications that are statically or dynamically linked. HPCToolkit is designed for
+use on large parallel systems. HPCToolkit's presentation tools enable rapid analysis
+of a program's execution costs, inefficiency, and scaling characteristics both
+within and across nodes of a parallel system. HPCToolkit supports measurement and
+analysis of serial codes, threaded codes (e.g. pthreads, OpenMP), MPI, and hybrid
+(MPI+threads) parallel codes, as well as GPU-accelerated codes that offload
+computation to AMD, Intel, or NVIDIA GPUs.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2025a'}
+
+source_urls = ['https://gitlab.com/hpctoolkit/hpctoolkit/-/archive/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['d83a90ab053001b4c76362329d6edb6d4210ae4249551e0f1bdac869264a0392']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+    ('Meson', '1.6.1'),
+    ('Ninja', '1.12.1'),
+    ('googletest', '1.17.0'),
+    ('patchelf', '0.18.0'),
+    ('pkgconf', '2.3.0'),
+    ('yaml-cpp', '0.8.0'),
+]
+
+dependencies = [
+    ('Boost', '1.88.0'),
+    ('Dyninst', '13.0.0'),
+    ('PAPI', '7.2.0'),
+    ('Xerces-C++', '3.3.0'),
+    ('elfutils', '0.193'),
+    ('libunwind', '1.8.1'),
+    ('tbb', '2022.2.0'),
+    ('xxHash', '0.8.3'),
+]
+
+if ARCH == 'x86_64':
+    dependencies.append(('intel-XED', '2025.06.08'))
+
+configopts = "-Dtests=enabled -Dmanpages=disabled -Dmanual=disabled -Dhpcprof_mpi=enabled "
+configopts += "-Dpapi=enabled -Dcuda=disabled -Dgtpin=disabled -Drocm=disabled -Dopencl=disabled "
+configopts += "-Dvalgrind_annotations=false -Dpython=disabled "
+
+# Explicitly ensure that no environment variables related to jobs are picked up, as this
+# causes the test output to change, failing the tests. Recognized variables can be found at:
+# https://gitlab.com/hpctoolkit/hpctoolkit/-/blob/9b7a563cf9bf8b1b94322cab33816b242690b78f/src/common/lean/OSUtil.c#L69
+local_env_to_unset = [
+    "PMI_LOCAL_RANK",
+    "PMI_RANK",
+    "SLURM_LOCALID",
+    "SLURM_PROCID",
+    "PALS_LOCAL_RANKID",
+    "PALS_RANKID",
+]
+pretestopts = ""
+for local_env in local_env_to_unset:
+    pretestopts += f"unset {local_env} && "
+runtest = "meson test"
+
+local_preload_libs = [
+    'gprof', 'libc_alloc', 'libc_io', 'libc_sync', 'libdl_dlmopen', 'libdl'
+]
+
+sanity_check_paths = {
+    'files':
+        ['bin/hpcrun', 'include/hpctoolkit.h'] +
+        ['lib/libhpcrun_preload_%s.%s' % (a, SHLIB_EXT) for a in local_preload_libs] +
+        [f'lib/libhpcrun.{SHLIB_EXT}', f'lib/libhpctoolkit.{SHLIB_EXT}'],
+    'dirs': [],
+}
+
+# hpcstructs version command exits with 1, so grep for the version instead
+sanity_check_commands = [
+    'hpcrun --version',
+    'hpcstruct --version | grep %(version)s',
+    'hpcprof --version',
+]
+
+# Preload libraries should not include rpaths, and HPCToolkit explicitly strips the rpath
+# via patchelf from these binaries. As we're not able to filter certain libraries only,
+# disable the rpath check entirely, as this would fail.
+# See: https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/1310
+check_readelf_rpath = False
+
+moduleclass = 'perf'

@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 # building in parallel fails
-parallel = 1
+maxparallel = 1
 
 # disable use of -Werror to work around compilation errors with newer glibc versions,
 # see also https://sourceware.org/bugzilla/show_bug.cgi?id=27476
@@ -45,6 +45,8 @@ buildopts += "cd config && make PREFIX=%(installdir)s BUILD_OPT=1 USE_64=1 && cd
 # buildopts += " && cd %(builddir)s/%(namelower)s-%(version)s/%(namelower)s/tests && BUILD_OPT=1 USE_64=1 ./all.sh "
 
 files_to_copy = ['../dist/Linux*.OBJ/*', (['../dist/public/*'], 'include')]
+# symlinks in bin/ would point to outside of installation directory, so can't keep them
+keepsymlinks = False
 
 sanity_check_paths = {
     'files': ['bin/nss-config', 'bin/multinit', 'lib/libnss.a'],
@@ -56,6 +58,6 @@ sanity_check_commands = [
     "nss-config --version",
 ]
 
-modextrapaths = {'CPATH': 'include/nss'}
+modextrapaths = {MODULE_LOAD_ENV_HEADERS: 'include/nss'}
 
 moduleclass = 'lib'

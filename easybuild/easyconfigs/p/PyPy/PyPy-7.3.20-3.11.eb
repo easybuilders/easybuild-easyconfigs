@@ -1,0 +1,37 @@
+easyblock = 'Tarball'
+
+name = 'PyPy'
+version = '7.3.20'
+_pyver = '3.11'
+versionsuffix = '-%s' % _pyver
+
+homepage = 'https://www.pypy.org'
+description = "A fast, compliant alternative implementation of Python"
+
+toolchain = SYSTEM
+
+source_urls = ['https://downloads.python.org/pypy/']
+local_archs = {'aarch64': 'aarch64', 'x86_64': 'linux64'}
+sources = ['pypy%s-v%%(version)s-%s.tar.bz2' % (_pyver, local_archs[ARCH])]
+checksums = [{
+    'pypy%s-v%%(version)s-aarch64.tar.bz2' % _pyver: '9347fe691a07fd9df17a1b186554fb9d9e6210178ffef19520a579ce1f9eb741',
+    'pypy%s-v%%(version)s-linux64.tar.bz2' % _pyver: '1410db3a7ae47603e2b7cbfd7ff6390b891b2e041c9eb4f1599f333677bccb3e',
+}
+]
+
+postinstallcmds = [
+    # remove python* commands provided by PyPy, so they don't shadow actual python commands
+    # (system Python, or provided by a Python dependency)
+    "rm %(installdir)s/bin/python*",
+]
+
+sanity_check_paths = {
+    'files': ['bin/pypy', 'bin/pypy3'],
+    'dirs': ['include/pypy%s' % _pyver, 'lib/pypy%s' % _pyver],
+}
+
+sanity_check_commands = [
+    "pypy --help",
+]
+
+moduleclass = 'lang'

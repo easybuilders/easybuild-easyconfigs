@@ -1,0 +1,37 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak (Inuits)
+# Update: Pavel Tománek (Inuits)
+easyblock = 'ConfigureMake'
+
+name = 'CFITSIO'
+version = '4.6.2'
+
+homepage = 'https://heasarc.gsfc.nasa.gov/fitsio/'
+description = """CFITSIO is a library of C and Fortran subroutines for reading and writing data files in
+FITS (Flexible Image Transport System) data format."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['66fd078cc0bea896b0d44b120d46d6805421a5361d3a5ad84d9f397b1b5de2cb']
+
+builddependencies = [
+    ('binutils', '2.42'),
+]
+# curl for HTTPs support
+dependencies = [
+    ('cURL', '8.11.1'),
+]
+
+test_cmd = './testprog > testprog.lis && diff testprog.lis testprog.out && cmp testprog.fit testprog.std'
+
+sanity_check_paths = {
+    'files': ['lib/libcfitsio.a', f'lib/libcfitsio.{SHLIB_EXT}'],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ['fitscopy --help']
+
+moduleclass = 'lib'

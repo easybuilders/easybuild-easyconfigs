@@ -1,0 +1,44 @@
+Removes hardcoded system paths and injects EasyBuild environment variables.
+
+Author: Aayush Joglekar (aayush.joglekar@surf.nl)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b03894e55..8de98a2c5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -54,7 +54,7 @@ endif()
+ # This finds the rocm-cmake project, and installs it if not found
+ # rocm-cmake contains common cmake code for rocm projects to help setup and install
+ set( PROJECT_EXTERN_DIR ${CMAKE_CURRENT_BINARY_DIR}/extern )
+-find_package( ROCM 0.7.3 CONFIG QUIET PATHS ${ROCM_PATH} /opt/rocm )
++find_package( ROCM 0.7.3 CONFIG QUIET PATHS $ENV{EBROOTROCMMINCMAKE} ${ROCM_PATH} /opt/rocm )
+ if( NOT ROCM_FOUND )
+   set( rocm_cmake_tag "master" CACHE STRING "rocm-cmake tag to download" )
+   file( DOWNLOAD https://github.com/RadeonOpenCompute/rocm-cmake/archive/${rocm_cmake_tag}.zip
+@@ -105,7 +105,7 @@ rocm_setup_version( VERSION ${VERSION_STRING} )
+ 
+ # Users may override HIP path by specifying their own in CMAKE_MODULE_PATH
+ # NOTE:  workaround until llvm & hip cmake modules fixes symlink logic in their config files; remove when fixed
+-list( APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/llvm ${ROCM_PATH} ${ROCM_PATH}/hip /opt/rocm/llvm /opt/rocm /opt/rocm/hip )
++list( APPEND CMAKE_PREFIX_PATH $ENV{EBROOTROCMMINLLVM} $ENV{EBROOTHIP} ${ROCM_PATH}/llvm ${ROCM_PATH} ${ROCM_PATH}/hip /opt/rocm/llvm /opt/rocm /opt/rocm/hip )
+ 
+ # setting target list based on ROCm version
+ if (NOT BUILD_ADDRESS_SANITIZER)
+@@ -228,7 +228,7 @@ message(STATUS "Using GPU_TARGETS: ${GPU_TARGETS}")
+ 
+ # Find HIP dependencies
+ if( CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
+-  find_package( hip REQUIRED CONFIG PATHS ${HIP_DIR} ${ROCM_PATH} /opt/rocm )
++  find_package( hip REQUIRED CONFIG PATHS $ENV{EBROOTHIP} ${HIP_DIR} ${ROCM_PATH} /opt/rocm )
+ endif( )
+ 
+ 
+@@ -416,7 +416,7 @@ if(BUILD_CODE_COVERAGE)
+     COMMAND mkdir -p lcoverage
+     COMMAND echo "\\#!/bin/bash" > llvm-gcov.sh
+     COMMAND echo "\\# THIS FILE HAS BEEN GENERATED" >> llvm-gcov.sh
+-    COMMAND printf "exec /opt/rocm/llvm/bin/llvm-cov gcov $$\\@" >> llvm-gcov.sh
++    COMMAND printf "exec $ENV{EBROOTROCMMINLLVM}/bin/llvm-cov gcov $$\\@" >> llvm-gcov.sh
+     COMMAND chmod +x llvm-gcov.sh
+     )
+ 

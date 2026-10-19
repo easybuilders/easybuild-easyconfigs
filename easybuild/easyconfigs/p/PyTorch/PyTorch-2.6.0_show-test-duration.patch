@@ -1,0 +1,26 @@
+Print duration at the end of each test to find slow tests.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/run_test.py b/test/run_test.py
+index a508d8db4d2..fe946d6a69c 100755
+--- a/test/run_test.py
++++ b/test/run_test.py
+@@ -1958,6 +1958,7 @@ class TestFailure(NamedTuple):
+ def run_test_module(
+     test: ShardedTest, test_directory: str, options
+ ) -> Optional[TestFailure]:
++    start_time = time.time()
+     try:
+         maybe_set_hip_visible_devies()
+ 
+@@ -1982,6 +1983,9 @@ def run_test_module(
+         return TestFailure(test.test, message)
+     except Exception as e:
+         return TestFailure(test.test, f"{str(test)} failed! {e}")
++    finally:
++        elapsed_time = time.time() - start_time
++        print_to_stderr(f"Finished {str(test)} in {round(elapsed_time / 60)} minutes")
+ 
+ 
+ def run_tests(

@@ -1,0 +1,138 @@
+# based on DGL-0.9.1-foss-2021a-CUDA-11.3.1 and DGL-1.1.3-foss-2022a-CUDA-11.7.0
+# GKlib-METIS added as module as third-party approach does not build
+# libxsmm set to 'off' so it is using the EasyBuild module
+# update of https://github.com/easybuilders/easybuild-easyconfigs/pull/20092
+
+easyblock = 'CMakeMake'
+
+name = 'DGL'
+version = '1.1.3'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://www.dgl.ai'
+description = """DGL is an easy-to-use, high performance and scalable Python package for deep learning on graphs.
+DGL is framework agnostic, meaning if a deep graph model is a component of an end-to-end application, the rest
+of the logics can be implemented in any major frameworks, such as PyTorch, Apache MXNet or TensorFlow."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+github_account = 'dmlc'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [
+    {
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': '%(namelower)s-%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/KarypisLab/METIS/archive'],
+        'download_filename': 'v5.2.1.tar.gz',
+        'filename': 'metis-5.2.1.tar.gz',
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/third_party/METIS --strip-components=1 -xf %s",
+    },
+    {
+        'filename': 'pcg-cpp-428802d.tar.xz',
+        'git_config': {
+            'url': 'https://github.com/imneme',
+            'repo_name': 'pcg-cpp',
+            'commit': '428802d1a5634f96bcd0705fab379ff0113bcf13',
+            'recursive': True,
+        },
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/third_party/pcg --strip-components=1 -xf %s",
+    },
+    {
+        'filename': 'tensorpipe-20230206.tar.xz',
+        'git_config': {
+            'url': 'https://github.com/pytorch',
+            'repo_name': 'tensorpipe',
+            'commit': '6042f1a4cbce8eef997f11ed0012de137b317361',
+            'recursive': True,
+        },
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/third_party/tensorpipe --strip-components=1 -xf %s",
+    },
+    {
+        'filename': 'cccl-c4eda1a.tar.xz',
+        'git_config': {
+            'url': 'https://github.com/NVIDIA',
+            'repo_name': 'cccl',
+            'commit': 'c4eda1aea304c012270dbd10235e60eaf47bd06f',
+            'recursive': True,
+        },
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/third_party/cccl --strip-components=1 -xf %s",
+    },
+    {
+        'filename': 'nanoflann-4c47ca2.tar.xz',
+        'git_config': {
+            'url': 'https://github.com/jlblancoc',
+            'repo_name': 'nanoflann',
+            'commit': '4c47ca200209550c5628c89803591f8a753c8181',
+            'recursive': True,
+        },
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/third_party/nanoflann --strip-components=1 -xf %s",
+    },
+]
+patches = [
+    '%(name)s-%(version)s_use_externals_instead_of_submodules.patch',
+]
+checksums = [
+    {'dgl-1.1.3.tar.gz': 'c45021d77ff2b1fed814a8b91260671167fb4e42b7d5fab2d37faa74ae1dc5b4'},
+    {'metis-5.2.1.tar.gz': '1a4665b2cd07edc2f734e30d7460afb19c1217c2547c2ac7bf6e1848d50aff7a'},
+    {'pcg-cpp-428802d.tar.xz': 'c4633dd4ba3d8ca8170756905dc757464e6798407ebf8bee166226446fb86e60'},
+    {'tensorpipe-20230206.tar.xz': '85203179f7970f4274a9f90452616ec534b1f54a87040fc98786d035efb429e4'},
+    {'cccl-c4eda1a.tar.xz': '406298efb6d0cb523c71b076695bddb82a4c93fec67614df582bbb13da0ca92d'},
+    {'nanoflann-4c47ca2.tar.xz': '2a23714197f5b2447d7c04df966c4e6a4010e5a649bfbbf8f2a7d0b30712660c'},
+    {'DGL-1.1.3_use_externals_instead_of_submodules.patch':
+     '89a89f8e540824ce483fbaf1750babf9d40826e40763a899d84c753d9ba18c20'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('googletest', '1.13.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('networkx', '3.1'),
+    ('tqdm', '4.66.1'),
+    ('DLPack', '0.8'),
+    ('DMLC-Core', '0.5'),
+    ('Parallel-Hashmap', '1.36'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('NCCL', '2.18.3', versionsuffix),
+    ('PyTorch', '2.1.2', versionsuffix),
+    ('libxsmm', '1.17'),
+    ('GKlib-METIS', '5.1.1'),
+]
+
+_copts = [
+    '-DBUILD_CPP_TEST=ON',
+    '-DUSE_CUDA=ON',  # Must be "ON", as opposed to "1" or so, due to bad CMake code in DGL
+    '-DUSE_LIBXSMM=OFF',
+]
+configopts = ' '.join(_copts)
+
+# Must not build shared libs, DGL uses internal versions of, among others, METIS
+# but it doesn't install these internal libraries and simply assumes that everything is
+# statically linked.
+build_shared_libs = False
+
+runtest = 'test'
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'runtest': True,
+}
+exts_list = [
+    ('dgl', version, {
+        'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
+        'start_dir': 'python',
+        'checksums': ['c45021d77ff2b1fed814a8b91260671167fb4e42b7d5fab2d37faa74ae1dc5b4'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libdgl.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'ai'

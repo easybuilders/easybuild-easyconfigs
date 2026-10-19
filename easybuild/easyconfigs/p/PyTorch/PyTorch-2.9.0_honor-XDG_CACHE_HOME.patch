@@ -1,0 +1,29 @@
+Avoid PyTorch trying to use $HOME if XDG_CACHE_HOME is set.
+See https://github.com/pytorch/pytorch/pull/168232
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/csrc/distributed/c10d/FlightRecorder.cpp b/torch/csrc/distributed/c10d/FlightRecorder.cpp
+--- a/torch/csrc/distributed/c10d/FlightRecorder.cpp
++++ b/torch/csrc/distributed/c10d/FlightRecorder.cpp
+@@ -36,8 +36,18 @@ DebugInfoWriter& DebugInfoWriter::getWriter(int rank) {
+   if (writer_ == nullptr) {
+     // Attempt to write to running user's HOME directory cache folder - if it
+     // exists.
+-    auto homeDir = getCvarString({"HOME"}, "/tmp");
+-    auto cacheDirPath = std::filesystem::path(homeDir + "/.cache/torch");
++    #ifdef _WIN32
++        const char* cacheHome = nullptr;
++    #else
++        // Uses XDG_CACHE_HOME if it's set
++        const char* cacheHome = std::getenv("XDG_CACHE_HOME");
++    #endif
++    std::string cacheRoot;
++    if (cacheHome)
++      cacheRoot = cacheHome;
++    else
++      cacheRoot = getCvarString({"HOME"}, "/tmp") + "/.cache";
++    auto cacheDirPath = std::filesystem::path(cacheRoot + "/torch");
+     // Create the .cache directory if it doesn't exist
+     std::filesystem::create_directories(cacheDirPath);
+     auto defaultLocation = cacheDirPath / "comm_lib_trace_rank_";

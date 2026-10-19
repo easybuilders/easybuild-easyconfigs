@@ -1,0 +1,42 @@
+# Updated to newer versions of MATLAB
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'PythonBundle'
+
+name = 'MATLAB-Engine'
+_matlab_version = '2024b'
+_engine_version = '24.2.2'
+version = "%s-%s" % (_matlab_version, _engine_version)
+
+homepage = 'https://www.mathworks.com/help/matlab/matlab-engine-for-python.html'
+description = """The MATLAB Engine API for Python provides a package for Python
+ to call MATLAB as a computational engine."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+builddependencies = [('binutils', '2.40')]
+
+dependencies = [
+    ('MATLAB', _matlab_version, '', SYSTEM),
+    ('Python', '3.11.5'),
+]
+
+# Required for building and installing the software as we don't set LD_LIBRARY_PATH in
+# the MATLAB module
+prebuildopts = 'LD_LIBRARY_PATH=${EBROOTMATLAB}/bin/glnxa64:$LD_LIBRARY_PATH && '
+preinstallopts = 'LD_LIBRARY_PATH=${EBROOTMATLAB}/bin/glnxa64:$LD_LIBRARY_PATH && '
+
+exts_list = [
+    ('matlabengine', '24.2.2', {
+        'modulename': 'matlab.engine',
+        'checksums': ['0565932d9e067c609831e4d6e67dc8e06ac762116580f8ec9c52b78829c2ac29'],
+    }),
+]
+
+# Test that connection with MATLAB can be established successfully
+sanity_check_commands = ["python -c 'import matlab.engine; eng = matlab.engine.start_matlab(); eng.quit()'"]
+
+# We seem to need to do this, else the test will not work
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages/matlabengine-24.2.2-py%(pyshortver)s.egg'}
+
+moduleclass = 'math'

@@ -1,0 +1,122 @@
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'Bundle'
+
+name = 'R-crumble'
+version = '0.1.2'
+version_suffix = '-R-%(rver)s'
+
+homepage = 'https://cran.r-project.org/web/packages/crumble/index.html'
+description = """
+Implements a modern, unified estimation strategy for common mediation estimands
+(natural effects, organic effects, interventional effects, and recanting twins)
+in combination with modified treatment policies as described in:
+Liu, Williams, Rudolph, and Díaz (2024) <doi:10.48550/arXiv.2408.14620>.
+Estimation makes use of recent advancements in Riesz-learning to estimate a
+set of required nuisance parameters with deep learning. The result is the
+capability to estimate mediation effects with binary, categorical, continuous,
+or multivariate exposures with high-dimensional mediators and mediator-outcome
+confounders using machine learning."""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+builddependencies = [
+    ('pkgconf', '2.0.3'),
+    ('Autotools', '20220317'),
+    ('CMake', '3.27.6'),
+]
+
+dependencies = [
+    ('R', '4.4.1'),
+    ('R-bundle-CRAN', '2024.06'),
+    ('R-INLA', '24.10.07-2'),
+    ('R-bundle-Bioconductor', '3.19', '-R-4.4.1'),
+    ('SYMPHONY', '5.7.2'),
+    ('Safetensors', '0.4.4'),
+]
+
+configopts = "--with-pic --enable-threads --enable-R-shlib"
+# some recommended packages may fail in a parallel build (e.g. Matrix), and
+# we're installing them anyway below
+configopts += " --with-recommended-packages=no"
+
+exts_defaultclass = 'RPackage'
+
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+# check whether correct version is installed in extension filter
+# (some versions in this bundle may be newer than the ones provided by R)
+local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver != '%(ext_version)s') "
+local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
+exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
+
+# !! order of packages is important !!
+exts_list = [
+    ('coro', '1.1.0', {
+        'checksums': ['6c9a498006a8ead71ce1a12c492d663481e88cb6805b52bfb1cd688248716acf'],
+    }),
+    ('safetensors', '0.1.2', {
+        'checksums': ['776e7f71f19e0f1e51964a48502528be6eb6515ffd610ca862ff9da6852f6f77'],
+    }),
+    ('schoolmath', '0.4.2', {
+        'checksums': ['67cfb937f95c680d4bd3a274a43bff847342f4b962cbe421de537a16dd8d1064'],
+    }),
+    ('lmtp', '1.4.0', {
+        'checksums': ['7619e671129d364fbe2acc6d82f723a1ecddc4037702ef0d36e36e629645fe81'],
+    }),
+    ('mlr3misc', '0.16.0', {
+        'checksums': ['1f90187c13f46f3ec5f1869e5358969ba13fe57e54ea607c6f68161ed96ca415'],
+    }),
+    ('paradox', '1.0.1', {
+        'checksums': ['72de5a87d45cfe663677faea74ec801dea3750047514006e3c3abd963ba21488'],
+    }),
+    ('palmerpenguins', '0.1.1', {
+        'checksums': ['2a40d48ba6c7978fdf2a6daf647ccb39cd17590680138931d11194d3dd1a30b4'],
+    }),
+    ('mlr3measures', '1.0.0', {
+        'checksums': ['f0918be7cddf1e309a10355659576222507bb50762b728c960f1fdbb00795a0a'],
+    }),
+    ('lgr', '0.4.4', {
+        'checksums': ['8c4011e34fa1ca42df88f64028e90c4ef9ce76c0e133eac1052c30cb0cdfa127'],
+    }),
+    ('mlr3', '0.23.0', {
+        'checksums': ['63b70348be8b25ac046652bf5bb8bf5afdf7c2310d572ef25b7416db26d962ab'],
+    }),
+    ('mlr3learners', '0.10.0', {
+        'checksums': ['1eafbf5f065d9590678c3cb0153b9d2730d6fe2e9ca00cd090da0c2c735a5e1f'],
+    }),
+    ('mlr3superlearner', version, {
+        'checksums': ['a0c53c9eccb34a348a7ba5cd7a0b99f97e5c25f3a41bd2ab3e280f2aa39b78b7'],
+    }),
+    ('Rsymphony', '0.1-33', {
+        'checksums': ['1ab18db7b5a52c284a21d7ec8d622640608ba6f7fd8d5b79cfc67e14ff6552f8'],
+    }),
+    ('S7', '0.2.0', {
+        'checksums': ['b8675a7fac7a396e524b21cd353ef0823d2acf76088b5f229d2a55a182a4d49b'],
+    }),
+    ('torch', '0.14.2', {
+        'checksums': ['cb8a94f26bdb1455f8d3d9ec8caca482ca75417b756b44fa6121c122727f1cc8'],
+    }),
+    ('ife', '0.1.12', {
+        'checksums': ['20527fc166c9166d31778054a55e8674e02130b8c39a53c9f62353fc19e9923e'],
+    }),
+    ('crumble', version, {
+        'checksums': ['bfe4997269d82e11b305a8ea4989efbc9954080cfc066eb61c30f86b4efedd42'],
+    }),
+]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['crumble'],
+}
+
+moduleclass = 'lang'

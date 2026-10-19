@@ -1,0 +1,74 @@
+easyblock = 'PythonBundle'
+
+name = 'qsimcirq'
+version = '0.22.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/quantumlib/qsim'
+description = """
+    qsim is a state-vector simulator for quantum circuits. It is highly tuned to take advantage of vector arithmetic
+    instruction sets and multithreading on computers that provide them, as well as GPUs when available.
+
+    qsim also provides a Cirq interface (qsimcirq) and can be used to simulate quantum circuits written in Cirq.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('poetry', '1.8.3'),
+]
+
+dependencies = [
+    ('cuQuantum', '25.03.0.11-CUDA-%(cudaver)s', '', SYSTEM),
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('UCX-CUDA', '1.16.0', '-CUDA-%(cudaver)s'),
+    ('Cython', '3.0.10'),
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('absl-py', '2.1.0'),
+    ('googleapis-python', '2025.03'),
+    ('matplotlib', '3.9.2'),
+    ('networkx', '3.4.2'),
+    ('pybind11', '2.12.0'),
+    ('sympy', '1.13.3'),
+    ('tqdm', '4.66.5'),
+]
+
+local_build_cmd = 'python -m pip install --prefix=%(installdir)s --no-deps --ignore-installed --no-build-isolation '
+local_cirq_modules = './cirq-core ./cirq-google ./cirq-ionq ./cirq-aqt ./cirq-pasqal ./cirq-web .'
+
+exts_list = [
+    ('duet', '0.2.9', {
+        'checksums': ['d6fa39582e6a3dce1096c47e5fbcbda648a633eed94a38943e68662afa2587f3'],
+    }),
+    ('typedunits', '0.0.1.dev20250509200845', {
+        'modulename': 'tunits',
+        'sources': [{
+            'git_config': {
+                'url': 'https://github.com/quantumlib',
+                'repo_name': 'TypedUnits',
+                'commit': '95e698b',
+            },
+            'filename': SOURCE_TAR_XZ}],
+        'checksums': ['0a4f2233afc05548ab05618c8cc78b5acaf274bc5a47e194bf79af2075ae2ac2'],
+    }),
+    ('cirq', '1.6.0', {
+        'prebuildopts': "export CUQUANTUM_ROOT=${EBROOTCUQUANTUM} && ",
+        'buildcmd': '%s %s' % (local_build_cmd, local_cirq_modules),
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/quantumlib/Cirq/archive/refs/tags/'],
+        'checksums': ['d65e80185faeb452d811cfb6d78ff23fb4d5151900db22ae38b635bf39ac21ef'],
+    }),
+    ('setuptools', '75.2.0', {
+        'checksums': ['753bb6ebf1f465a1912e19ed1d41f403a79173a9acf66a42e7e6aec45c3c16ec'],
+    }),
+    (name, version, {
+        'preinstallopts': "export CUQUANTUM_ROOT=${EBROOTCUQUANTUM} && ",
+        'checksums': ['90326abcfdfacd840cff61ca6c559ffc06ccf3bf6e631a5e44118894ff3109cb'],
+    }),
+]
+
+sanity_check_commands = ['python -c "import qsimcirq; print(qsimcirq.qsim_gpu)" | grep cuda']
+
+moduleclass = 'quantum'

@@ -1,0 +1,25 @@
+# Author: julian.morillo@bsc.es
+# Description: Avoid the use of -msse3 flag when in RISC-V
+--- iqtree2-2.3.6/CMakeLists.txt.orig	2025-02-17 14:50:38.770063068 +0100
++++ iqtree2-2.3.6/CMakeLists.txt	2025-02-17 15:25:55.831437220 +0100
+@@ -173,7 +173,10 @@
+         message("Unix/Linux ARM64 DETECTED!")
+ 	    set (__ARM_NEON "TRUE")
+ 		set (NEON 1)
+-	endif()
++    elseif(OS_NATIVE_ARCHITECTURE STREQUAL "riscv64")
++        message("Unix/Linux RISCV64 DETECTED!")
++	set (__RISCV "TRUE")
++    endif()
+ endif()
+ 
+ ##################################################################
+@@ -541,6 +544,8 @@
+ elseif (GCC OR CLANG)
+     if (__ARM_NEON)
+         set(SSE_FLAGS "${SSE_FLAGS} -march=armv8-a+fp+simd+crypto+crc")  # changed from -msse3
++elseif (__RISCV)
++        set(SSE_FLAGS "${SSE_FLAGS}")  # Don't want -msse3 option in RISCV
+     else()
+         set(SSE_FLAGS "${SSE_FLAGS} -msse3")
+     endif()

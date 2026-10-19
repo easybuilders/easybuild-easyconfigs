@@ -1,0 +1,48 @@
+test_jvp_linalg_det_singular_cpu_float32 in functorch/test_ops.py fails consistently with the error
+> Mismatched elements: 1 / 2 (50.0%)
+> Greatest absolute difference: 0.024928677827119827 at index (1,) (up to 1e-05 allowed)
+> Greatest relative difference: 1.0 at index (1,) (up to 1.3e-06 allowed)
+
+This is an already known issue on x86 MacOS, see https://github.com/pytorch/pytorch/issues/110980
+So just skip this test.
+
+Similar for test_vmapjvpall_linalg_det_singular_cpu_float32 and test_forward_mode_AD_linalg_det_singular_cpu_float64
+see https://github.com/pytorch/pytorch/issues/111583
+
+
+
+All det_singular are removed in 2.7: https://github.com/pytorch/pytorch/commit/3a3e2cf90a03fcf332a275f331fcb57e46d6c325
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/functorch/test_ops.py b/test/functorch/test_ops.py
+index a4269ff84d5..c0fad294489 100644
+--- a/test/functorch/test_ops.py
++++ b/test/functorch/test_ops.py
+@@ -589,7 +589,7 @@ class TestOperators(TestCase):
+                 decorate(
+                     "linalg.det",
+                     "singular",
+-                    decorator=expectedFailureIf(IS_MACOS and IS_X86),
++                    decorator=unittest.skip("Known failure"),
+                 ),
+             }
+         ),
+@@ -1350,7 +1350,7 @@ class TestOperators(TestCase):
+                 decorate(
+                     "linalg.det",
+                     "singular",
+-                    decorator=expectedFailureIf(IS_MACOS and IS_X86),
++                    decorator=unittest.skip("Known failure"),
+                 ),
+             }
+         ),
+--- a/torch/testing/_internal/opinfo/definitions/linalg.py
++++ b/torch/testing/_internal/opinfo/definitions/linalg.py
+@@ -1233,7 +1233,6 @@ op_db: List[OpInfo] = [
+                 "test_forward_mode_AD",
+                 device_type="cpu",
+                 dtypes=(torch.float64,),
+-                active_if=IS_MACOS,
+             ),
+             # Both Hessians are incorrect on complex inputs??
+             DecorateInfo(

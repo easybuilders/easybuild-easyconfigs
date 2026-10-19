@@ -1,0 +1,76 @@
+easyblock = 'PythonBundle'
+
+name = 'pyteomics'
+version = '4.7.5'
+
+homepage = 'https://github.com/levitsky/pyteomics'
+description = """
+Pyteomics is a collection of lightweight and handy tools for Python
+that help to handle various sorts of proteomics data.
+Pyteomics provides a growing set of modules to facilitate the most common tasks in proteomics data analysis. """
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [('Cython', '3.0.10')]
+dependencies = [
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('lxml', '5.3.0'),
+    ('SQLAlchemy', '2.0.36'),
+    ('matplotlib', '3.9.2'),
+    ('scikit-learn', '1.5.2'),
+    ('h5py', '3.12.1'),
+    ('fastobo', '0.14.1'),
+    ('py-cpuinfo', '9.0.0'),
+    ('numba', '0.60.0'),
+    ('setuptools', '80.9.0'),
+]
+
+exts_list = [
+    ('lark', '1.3.1', {
+        'checksums': ['b426a7a6d6d53189d318f2b6236ab5d6429eaf09259f1ca33eb716eed10d2905'],
+    }),
+    ('hdf5plugin', '6.0.0', {
+        'checksums': ['847ed9e96b451367a110f0ba64a3b260d38d64bbf3f25751858d3b56e094cfe0'],
+    }),
+    ('psims', '1.3.5', {
+        'checksums': ['e909c65e56612000900901273c086adf5d88a4f3dd150ca7eb7b34f04b6b01e1'],
+    }),
+    ('spectrum_utils', '0.5.0', {
+        'checksums': ['150455c8a771499f1e5e17f98be7115c6c9263ad3404e562e962d364d2ced951'],
+    }),
+    ('pynumpress', '0.0.9', {
+        'checksums': ['c0dafd7837cee64fc59eb5fc0f941a1324e631a2d5b2d6ac7e28becfd29bd86e'],
+    }),
+    (name, version, {
+        'patches': ['pyteomics-4.7.5_check-unimod-db.patch'],
+        'checksums': [
+            {'pyteomics-4.7.5.tar.gz': '382aeaa8b921bdd2a7e5b4aa9fe46c6184bb43701205a845b4b861ee3e88f46a'},
+            {'pyteomics-4.7.5_check-unimod-db.patch':
+             '848f23c95a33b6d32cb608101cedb6bee2d752c9f92acd33c3fa9af0e1a1eedd'},
+        ],
+    }),
+]
+
+# create unimod.db to not download unimod_tables.xml by user
+local_db_installation = (
+    "import os; "
+    "from pyteomics.mass.unimod import load; "
+    "out=os.path.abspath('%(installdir)s/share/pyteomics/unimod.db'); "
+    "load('%(installdir)s/share/pyteomics/unimod_tables.xml','sqlite:////'+out); "
+)
+postinstallcmds = [
+    "mkdir -p %(installdir)s/share/pyteomics",
+    "curl -L -o %(installdir)s/share/pyteomics/unimod_tables.xml https://www.unimod.org/xml/unimod_tables.xml",
+    'export PYTEOMICS_UNIMOD_DB="sqlite:///%(installdir)s/share/pyteomics/unimod.db" && '
+    f"""python -c "{local_db_installation}" """
+]
+
+sanity_check_paths = {
+    'files': ['%(installdir)s/share/pyteomics/unimod.db'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextravars = {'PYTEOMICS_UNIMOD_DB': 'sqlite:///%(installdir)s/share/pyteomics/unimod.db'}
+
+moduleclass = 'bio'

@@ -1,0 +1,35 @@
+easyblock = 'ConfigureMake'
+
+name = 'M4'
+version = '1.4.20'
+
+homepage = 'https://www.gnu.org/software/m4/m4.html'
+description = """GNU M4 is an implementation of the traditional Unix macro processor. It is mostly SVR4 compatible
+  although it has some extensions (for example, handling more than 9 positional parameters to macros).
+ GNU M4 also has built-in functions for including files, running shell commands, doing arithmetic, etc."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['M4-1.4.20_glibc-2.43.patch']
+checksums = [
+    {'m4-1.4.20.tar.gz': '6ac4fc31ce440debe63987c2ebbf9d7b6634e67a7c3279257dc7361de8bdb3ef'},
+    {'M4-1.4.20_glibc-2.43.patch': 'c6ced5bc6ac2ef4836f12f65b107b891802e9a7368b4f1340709e98bae46ac58'},
+]
+
+# use same binutils version that was used when building GCC toolchain
+builddependencies = [('binutils', '2.45', '', SYSTEM)]
+
+# '-fgnu89-inline' is required to avoid linking errors with older glibc's,
+# see https://github.com/easybuilders/easybuild-easyconfigs/issues/529
+configopts = "--enable-c++ CPPFLAGS=-fgnu89-inline "
+
+sanity_check_paths = {
+    'files': ['bin/m4'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["m4 --help"]
+
+moduleclass = 'devel'

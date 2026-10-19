@@ -1,0 +1,193 @@
+Port Python scripts back to Python 2
+Author: Petr Král (INUITS)
+diff -ru bowtie2-2.5.4/scripts/sa.py.orig bowtie2-2.4.0/scripts/sa.py
+--- bowtie2-2.5.4/scripts/sa.py.orig	2020-02-25 18:34:40.000000000 +0100
++++ bowtie2-2.5.4/scripts/sa.py	2025-02-18 07:53:13.308080759 +0100
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/env python
+ 
+ """
+ sa.py
+@@ -15,7 +15,7 @@
+ def loadBowtieSa(fh):
+ 	""" Load a .sa file from handle into an array of ints """
+ 	nsa = struct.unpack('I', fh.read(4))[0]
+-	return [ struct.unpack('I', fh.read(4))[0] for i in range(0, nsa) ]
++	return [ struct.unpack('I', fh.read(4))[0] for i in xrange(0, nsa) ]
+ 
+ def loadBowtieSaFilename(fn):
+ 	""" Load a .sa file from filename into an array of ints """
+@@ -58,7 +58,7 @@
+ 		# Suffix array is in sas; note that $ is considered greater than all
+ 		# other characters
+ 		if ref is not None:
+-			for i in range(1, len(sas)):
++			for i in xrange(1, len(sas)):
+ 				sa1, sa2 = sas[i-1], sas[i]
+ 				assert sa1 != sa2
+ 				# Sanity check that suffixes are really in order
+diff -ru bowtie2-2.5.4/scripts/test/benchmark/benchmarks.py.orig bowtie2-2.4.0/scripts/test/benchmark/benchmarks.py
+--- bowtie2-2.5.4/scripts/test/benchmark/benchmarks.py.orig	2020-02-25 18:34:40.000000000 +0100
++++ bowtie2-2.5.4/scripts/test/benchmark/benchmarks.py	2025-02-18 08:00:34.722851454 +0100
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/env python
+ """
+ A few items to deal with sets of benchmarks.
+ """
+@@ -57,7 +57,7 @@
+         self.set_idx = 0
+         return self
+ 
+-    def __next__(self):
++    def next(self):
+         if self.set_idx == len(self.values):
+             raise StopIteration
+ 
+@@ -250,7 +250,7 @@
+                     delta = [0, 1]
+                     logging.debug("%s: missed (pos:%d vs %d)" % (q_name, orig[1], rec.pos))
+                 try:
+-                    mapq_summary[rec.mapq] = list(map(sum, list(zip(delta, mapq_summary[rec.mapq]))))
++                    mapq_summary[rec.mapq] = map(sum, zip(delta, mapq_summary[rec.mapq]))
+                 except KeyError:
+                     mapq_summary[rec.mapq] = delta
+ 
+diff -ru bowtie2-2.5.4/scripts/test/benchmark/run.py.orig bowtie2-2.4.0/scripts/test/benchmark/run.py
+--- bowtie2-2.5.4/scripts/test/benchmark/run.py.orig	2020-02-25 18:34:40.000000000 +0100
++++ bowtie2-2.5.4/scripts/test/benchmark/run.py	2025-02-18 08:00:50.144982863 +0100
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/env python
+ """
+    Runs benchmark sets specified in JSON files.
+ 
+diff -ru bowtie2-2.5.4/scripts/test/benchmark/samreader.py.orig bowtie2-2.4.0/scripts/test/benchmark/samreader.py
+--- bowtie2-2.5.4/scripts/test/benchmark/samreader.py.orig	2020-02-25 18:34:40.000000000 +0100
++++ bowtie2-2.5.4/scripts/test/benchmark/samreader.py	2025-02-18 08:01:51.100556595 +0100
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/env python
+ """
+ A reader of SAM format.
+ 
+@@ -49,7 +49,7 @@
+         self.curr_idx = 0
+         return self
+ 
+-    def __next__(self):
++    def next(self):
+         if self.curr_idx == len(self.header_lines):
+             raise StopIteration
+             
+@@ -114,7 +114,7 @@
+         self._source_fh.seek(self.header.end_header_pointer)
+         return self
+ 
+-    def __next__(self):
++    def next(self):
+         line = self._source_fh.readline()
+         if not line:
+             raise StopIteration
+diff -ru bowtie2-2.5.4/scripts/test/btdata.py.orig bowtie2-2.4.0/scripts/test/btdata.py
+--- bowtie2-2.5.4/scripts/test/btdata.py.orig	2020-02-25 18:34:40.000000000 +0100
++++ bowtie2-2.5.4/scripts/test/btdata.py	2025-02-18 07:56:04.593686522 +0100
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/env python
+ """
+ Note: This would look so much better replaced by XML or at least JSON. But
+       is not worth to do it for now.
+@@ -6,7 +6,7 @@
+ 
+ import os
+ import gzip
+-import urllib.request, urllib.error, urllib.parse
++import urllib2
+ import logging
+ 
+ 
+@@ -66,14 +66,14 @@
+     def init_data(self):
+         """ Try and init the data we need.
+         """
+-        for genome,gdata in list(self.genomes.items()):
++        for genome,gdata in self.genomes.iteritems():
+             gn_path  = os.path.join(self.data_dir_path,genome)
+             gn_fasta = os.path.join(gn_path,gdata['ref_name'])
+             if not os.path.exists(gn_fasta):
+                 self._get_genome(genome)
+                 self._build_genome(genome)
+ 
+-        for genome,gdata in list(self.joint_genomes.items()):
++        for genome,gdata in self.joint_genomes.iteritems():
+             gn_path  = os.path.join(self.data_dir_path,genome)
+             gn_fasta = os.path.join(gn_path,gdata['ref_name'])
+             if not os.path.exists(gn_fasta):
+@@ -103,7 +103,7 @@
+ 
+             try:
+                 f = open(fname,'wb')
+-                u = urllib.request.urlopen(uri)
++                u = urllib2.urlopen(uri)
+                 f.write(u.read())
+             except:
+                 f.close()
+diff -ru bowtie2-2.5.4/scripts/test/bt2face.py.orig bowtie2-2.4.0/scripts/test/bt2face.py
+--- bowtie2-2.5.4/scripts/test/bt2face.py.orig	2020-02-25 18:34:40.000000000 +0100
++++ bowtie2-2.5.4/scripts/test/bt2face.py	2025-02-18 07:54:13.851016647 +0100
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/env python
+ 
+ import os
+ import logging
+diff -ru bowtie2-2.5.4/scripts/test/dataface.py.orig bowtie2-2.4.0/scripts/test/dataface.py
+--- bowtie2-2.5.4/scripts/test/dataface.py.orig	2020-02-25 18:34:40.000000000 +0100
++++ bowtie2-2.5.4/scripts/test/dataface.py	2025-02-18 07:56:20.888684225 +0100
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/env python
+ 
+ import os
+ import logging
+@@ -78,4 +78,4 @@
+ 
+     
+     
+-    
+\ No newline at end of file
++    
+diff -ru bowtie2-2.5.4/scripts/test/large_idx.py.orig bowtie2-2.4.0/scripts/test/large_idx.py
+--- bowtie2-2.5.4/scripts/test/large_idx.py.orig	2020-02-25 18:34:40.000000000 +0100
++++ bowtie2-2.5.4/scripts/test/large_idx.py	2025-02-18 07:57:03.116727717 +0100
+@@ -1,8 +1,8 @@
+-#!/usr/bin/env python3
++#!/usr/bin/env python
+ 
+ import os
+ import gzip
+-import urllib.request, urllib.error, urllib.parse
++import urllib2
+ import inspect
+ import unittest
+ import logging
+@@ -69,7 +69,7 @@
+    
+ def get_suite():
+     tests = ['test_human','test_mouse','test_large_index']
+-    return unittest.TestSuite(list(map(TestLargeIndex,tests)))
++    return unittest.TestSuite(map(TestLargeIndex,tests))
+ 
+     
+             
+diff -ru bowtie2-2.5.4/scripts/test/regressions.py.orig bowtie2-2.4.0/scripts/test/regressions.py
+--- bowtie2-2.5.4/scripts/test/regressions.py.orig	2020-02-25 18:34:40.000000000 +0100
++++ bowtie2-2.5.4/scripts/test/regressions.py	2025-02-18 07:58:04.198907430 +0100
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/env python
+ 
+ import os
+ import inspect

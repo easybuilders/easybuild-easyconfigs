@@ -1,0 +1,51 @@
+easyblock = 'PythonBundle'
+
+name = 'grpcio'
+version = '1.84.0'
+
+homepage = 'https://grpc.io/'
+description = """gRPC is a modern, open source, high-performance remote procedure call (RPC)
+framework that can run anywhere. gRPC enables client and server applications to
+communicate transparently, and simplifies the building of connected systems."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('OpenSSL', '3', '', SYSTEM),
+    ('Cython', '3.2.4'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('protobuf-python', '7.35.0'),
+    ('Abseil', '20260107.1'),
+    ('RE2', '2025-11-05'),
+]
+
+exts_list = [
+    (name, version, {
+        'modulename': 'grpc',
+        'patches': ['grpcio-1.67.1_use-ebroot.patch'],
+        'preinstallopts': (
+            # patch hardcoded /usr paths to prefix them with alternate sysroot path (if defined)
+            "sed -i 's@/usr@%(sysroot)s/usr@g' setup.py && "
+            "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && "
+            # Required to avoid building with non-default C++ standard but keep other flags,
+            # see https://github.com/grpc/grpc/issues/34256
+            'export GRPC_PYTHON_CFLAGS="-fvisibility=hidden -fno-wrapv -fno-exceptions" && '
+            "GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=True "
+            "GRPC_PYTHON_BUILD_SYSTEM_ZLIB=True "
+            "GRPC_PYTHON_BUILD_SYSTEM_RE2=True "
+            "GRPC_PYTHON_BUILD_SYSTEM_ABSL=True "
+            "GRPC_PYTHON_BUILD_WITH_CYTHON=True "
+        ),
+        'checksums': [
+            {'grpcio-1.84.0.tar.gz': '19aaf172fc2edbefccce3f6e92c5150975dbe56c45744e9e87cf72ebdf85bfbe'},
+            {'grpcio-1.67.1_use-ebroot.patch': '8606002b8689d9ffde1c7aa097f0fd430430b42f2230ea427b73525de69c568b'},
+        ],
+    }),
+]
+
+moduleclass = 'lib'

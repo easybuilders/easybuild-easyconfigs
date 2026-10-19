@@ -1,0 +1,44 @@
+easyblock = 'PythonPackage'
+
+name = 'HolisticTraceAnalysis'
+version = '0.2.0'
+
+homepage = 'https://github.com/facebookresearch/HolisticTraceAnalysis'
+description = """
+Holistic Trace Analysis (HTA), is a performance analysis tool to identify
+performance bottlenecks in distributed training workloads. HTA achieves this by
+analyzing traces collected through the PyTorch Profiler a.k.a. Kineto."""
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+
+sources = [SOURCE_TAR_GZ]
+checksums = ['fbeff9e30b9af48d542e00e7fc7c1ed846fde376378f4db3c809b7453f84b570']
+
+builddependencies = [
+    ('pytest', '7.4.2'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('JupyterLab', '4.0.5'),
+    ('networkx', '3.1'),
+    ('pydot', '2.0.0'),
+    ('plotly.py', '5.16.0'),
+]
+
+options = {'modulename': 'hta'}
+
+preconfigopts = 'sed -i "/^pytest/d" requiremets.txt'  # only used to run tests
+testinstall = True
+
+runtest = (
+    'pytest tests'
+    # tests/data is not included in PyPI release, these tests need that to run
+    ' --deselect=tests/test_trace_analysis.py'
+    ' --deselect=tests/test_trace_diff.py'
+    ' --deselect=tests/test_trace_file.py'
+    ' --deselect=tests/test_trace_parse.py'
+)
+
+moduleclass = 'perf'
