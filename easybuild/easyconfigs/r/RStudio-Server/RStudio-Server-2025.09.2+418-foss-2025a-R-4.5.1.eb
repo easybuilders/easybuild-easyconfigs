@@ -4,6 +4,8 @@ name = 'RStudio-Server'
 version = '2025.09.2+418'
 versionsuffix = '-R-%(rver)s'
 local_git_rev = '12f6d5e22720bd78dbd926bb344efe12d0dce83d'
+# commit for https://github.com/quarto-dev/quarto/tree/release/rstudio-cucumberleaf-sunflower
+local_quarto_rev = '0424deb0f3e98d997e1b337c65c511e7ee15de5a'
 
 homepage = 'https://www.rstudio.com/'
 description = """This is the RStudio Server version.
@@ -21,13 +23,26 @@ and then used with:
 toolchain = {'name': 'foss', 'version': '2025a'}
 
 source_urls = ['https://github.com/rstudio/rstudio/archive']
-sources = ['v%(version)s.tar.gz']
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'filename': f'{local_quarto_rev}.tar.gz',
+        'extract_cmd': 'mkdir -p %(start_dir)s/src/gwt/lib/quarto && '
+        'tar xzf %s --strip-components=1 -C %(start_dir)s/src/gwt/lib/quarto',
+        'source_urls': ['https://github.com/quarto-dev/quarto/archive']
+    },
+]
 patches = [
+    'rstudio-2023.09.1-494_use_quarto_sources.patch',
     'RStudio-Server-1.2.1335-fix_env.patch',
     'RStudio-Server-r_home-typo.patch',
 ]
 checksums = [
     {'v2025.09.2+418.tar.gz': '7e64e65bd3457855e981698dfb61f84e23de0d8bfcb2b1ffc28a38b5b964a769'},
+    {f'{local_quarto_rev}.tar.gz':
+     '9d041930cdf6f0d4e7283ec335b01f5bde0410d83bbc0ea9c5c9356e646c0735'},
+    {'rstudio-2023.09.1-494_use_quarto_sources.patch':
+     '09947200f1858bb6501ace4b237ecb4e8fb4a069fb8064b0cf60dba093c5df49'},
     {'RStudio-Server-1.2.1335-fix_env.patch': 'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b'},
     {'RStudio-Server-r_home-typo.patch': '642a298a9e7342fca0de8bde233f80bedc9e9524b2fc2553e859925b09c5513f'},
 ]

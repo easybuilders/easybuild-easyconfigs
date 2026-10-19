@@ -4,6 +4,8 @@ name = 'RStudio-Server'
 version = '2024.09.0+375'
 versionsuffix = '-Java-%(javaver)s-R-%(rver)s'
 local_git_rev = 'c8fc7aee6dc218d5687553f9041c6b1e5ea268ff'
+# commit for https://github.com/quarto-dev/quarto/tree/release/rstudio-cranberry-hibiscus
+local_quarto_rev = '146e31e0b7d7654e696e499b3e7d0ee5e1605c70'
 
 homepage = 'https://www.rstudio.com/'
 description = """This is the RStudio Server version.
@@ -21,13 +23,26 @@ and then used with:
 toolchain = {'name': 'foss', 'version': '2023b'}
 
 source_urls = ['https://github.com/rstudio/rstudio/archive']
-sources = ['v%(version)s.tar.gz']
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'filename': f'{local_quarto_rev}.tar.gz',
+        'extract_cmd': 'mkdir -p %(start_dir)s/src/gwt/lib/quarto && '
+        'tar xzf %s --strip-components=1 -C %(start_dir)s/src/gwt/lib/quarto',
+        'source_urls': ['https://github.com/quarto-dev/quarto/archive']
+    },
+]
 patches = [
+    'rstudio-2023.09.1-494_use_quarto_sources.patch',
     'RStudio-Server-1.2.1335-fix_env.patch',
     'RStudio-Server-r_home-typo.patch',
 ]
 checksums = [
     {'v2024.09.0+375.tar.gz': '8a29b77c53a3db8379d824a9f4a491843036003d105ed71981cd40fe39d2c8c8'},
+    {f'{local_quarto_rev}.tar.gz':
+     'c5093b9603a4be9d50d4491b4acafaf8ee87a2cc1feeecfe4c84b7d81f301478'},
+    {'rstudio-2023.09.1-494_use_quarto_sources.patch':
+     '09947200f1858bb6501ace4b237ecb4e8fb4a069fb8064b0cf60dba093c5df49'},
     {'RStudio-Server-1.2.1335-fix_env.patch': 'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b'},
     {'RStudio-Server-r_home-typo.patch': '642a298a9e7342fca0de8bde233f80bedc9e9524b2fc2553e859925b09c5513f'},
 ]

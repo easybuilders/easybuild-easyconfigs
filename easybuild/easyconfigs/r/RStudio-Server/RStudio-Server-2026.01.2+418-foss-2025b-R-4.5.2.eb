@@ -4,6 +4,8 @@ name = 'RStudio-Server'
 version = '2026.01.2+418'
 versionsuffix = '-R-%(rver)s'
 local_git_rev = '1d903d3bd61a40d82bf71aad8471a5a388cc1f73'
+# commit for https://github.com/quarto-dev/quarto/tree/release/rstudio-blue-plumbago
+local_quarto_rev = '4dd070eaef675d7b72c663afeb21eec062bcfaa2'
 
 homepage = 'https://www.rstudio.com/'
 description = """This is the RStudio Server version.
@@ -21,13 +23,26 @@ and then used with:
 toolchain = {'name': 'foss', 'version': '2025b'}
 
 source_urls = ['https://github.com/rstudio/rstudio/archive']
-sources = ['v%(version)s.tar.gz']
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'filename': f'{local_quarto_rev}.tar.gz',
+        'extract_cmd': 'mkdir -p %(start_dir)s/src/gwt/lib/quarto && '
+        'tar xzf %s --strip-components=1 -C %(start_dir)s/src/gwt/lib/quarto',
+        'source_urls': ['https://github.com/quarto-dev/quarto/archive']
+    },
+]
 patches = [
+    'rstudio-2023.09.1-494_use_quarto_sources.patch',
     'RStudio-Server-1.2.1335-fix_env.patch',
     'RStudio-Server-r_home-typo.patch',
 ]
 checksums = [
     {'v%(version)s.tar.gz': '93c46edf3ec752d90b63ac6981d2fa6ee451eca19267e3cc3cd9e857d8180a6d'},
+    {f'{local_quarto_rev}.tar.gz':
+     '2d922ac326a38bec3724d1fbb9654a77cb7e3e9ccb2715d6fb27d076f0d5536a'},
+    {'rstudio-2023.09.1-494_use_quarto_sources.patch':
+     '09947200f1858bb6501ace4b237ecb4e8fb4a069fb8064b0cf60dba093c5df49'},
     {'RStudio-Server-1.2.1335-fix_env.patch': 'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b'},
     {'RStudio-Server-r_home-typo.patch': '642a298a9e7342fca0de8bde233f80bedc9e9524b2fc2553e859925b09c5513f'},
 ]

@@ -4,6 +4,8 @@ name = 'RStudio-Server'
 version = '2024.12.0+467'
 versionsuffix = '-R-%(rver)s'
 local_git_rev = 'cf37a3e5488c937207f992226d255be71f5e3f41'
+# commit for https://github.com/quarto-dev/quarto/tree/release/rstudio-kousa-dogwood
+local_quarto_rev = '7d1582d06250216d18696145879415e473a2ae4d'
 
 homepage = 'https://www.rstudio.com/'
 description = """This is the RStudio Server version.
@@ -21,15 +23,28 @@ and then used with:
 toolchain = {'name': 'foss', 'version': '2024a'}
 
 source_urls = ['https://github.com/rstudio/rstudio/archive']
-sources = ['v%(version)s.tar.gz']
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'filename': f'{local_quarto_rev}.tar.gz',
+        'extract_cmd': 'mkdir -p %(start_dir)s/src/gwt/lib/quarto && '
+        'tar xzf %s --strip-components=1 -C %(start_dir)s/src/gwt/lib/quarto',
+        'source_urls': ['https://github.com/quarto-dev/quarto/archive']
+    },
+]
 patches = [
     'RStudio-Server-1.2.1335-fix_env.patch',
     'RStudio-Server-r_home-typo.patch',
+    'rstudio-2023.09.1-494_use_quarto_sources.patch',
 ]
 checksums = [
     {'v%(version)s.tar.gz': '4f976a3b77f1c3b6a61b8e1a1850aeba0e0a847efbfc17b03b2fcb19fce13d6a'},
+    {f'{local_quarto_rev}.tar.gz':
+     'c675b54d2685d50f26623308f5937a0c0b2222435594567596c38f5a17e547a5'},
     {'RStudio-Server-1.2.1335-fix_env.patch': 'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b'},
     {'RStudio-Server-r_home-typo.patch': '642a298a9e7342fca0de8bde233f80bedc9e9524b2fc2553e859925b09c5513f'},
+    {'rstudio-2023.09.1-494_use_quarto_sources.patch':
+     '09947200f1858bb6501ace4b237ecb4e8fb4a069fb8064b0cf60dba093c5df49'},
 ]
 
 builddependencies = [
