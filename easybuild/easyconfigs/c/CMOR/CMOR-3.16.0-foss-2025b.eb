@@ -1,0 +1,70 @@
+# Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center 2026
+
+easyblock = 'ConfigureMake'
+
+name = 'CMOR'
+version = '3.16.0'
+
+homepage = 'https://cmor.llnl.gov/'
+description = """Climate Model Output Rewriter"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'pic': True}
+
+# Include the Git submodules, which are required by the test suite.
+sources = [{
+    'filename': 'cmor-%(version)s.tar.xz',
+    'git_config': {
+        'url': 'https://github.com/PCMDI',
+        'repo_name': 'cmor',
+        'tag': '%(version)s',
+        'recursive': True,
+    },
+}]
+checksums = [None]
+
+start_dir = 'cmor'
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('util-linux', '2.41'),  # for 'libuuid'
+    ('json-c', '0.18'),
+    ('UDUNITS', '2.2.28'),
+    ('HDF5', '1.14.6'),
+    ('netCDF', '4.9.3'),
+    ('netcdf4-python', '1.7.2'),
+    ('hdf5plugin', '7.0.0'),
+    ('pyfive', '1.1.2'),
+]
+
+# Fix linking issues
+preconfigopts = """sed -i '/^srcfiles = /i libraries.append("m")' setup.py.in && """
+preconfigopts += 'export PREFIX=%(installdir)s && '
+configopts = ' '.join([
+    '--prefix=$PREFIX',
+    '--with-python',
+    '--with-uuid=$EBROOTUTILMINLINUX',
+    '--with-json-c=$EBROOTJSONMINC',
+    '--with-udunits2=$EBROOTUDUNITS',
+    '--with-netcdf=$EBROOTNETCDF',
+    '--enable-verbose-test',
+])
+
+prebuildopts = 'export LDSHARED_FLAGS="-shared -pthread" && '
+
+local_pythonpath = '$EBROOTHDF5PLUGIN/lib/python%(pyshortver)s/site-packages/hdf5plugin/plugins'
+pretestopts = f'export HDF5_PLUGIN_PATH="{local_pythonpath}" && '
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['lib/libcmor.a', 'include/cmor.h'],
+    'dirs': ['include/cdTime'],
+}
+
+sanity_check_commands = [
+    "python -s -c 'import cmor; print(cmor.__file__)'",
+]
+
+moduleclass = 'geo'
