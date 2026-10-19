@@ -1488,7 +1488,7 @@ class EasyConfigTest(TestCase):
             extra_python_path = ec.get('modextrapaths', {}).get('PYTHONPATH') or []
             failing_checks_ec.extend(f"modextrapaths should not contain {d} (automatically added by EasyBlock)"
                                      for d in default_dirs if d in extra_python_path)
-            if easyblock == 'PythonBundle' or easyblock.endswith('PythonPackage'):
+            if easyblock == 'PythonBundle' or (easyblock and easyblock.endswith('PythonPackage')):
                 sanity_check_dirs = ec.get('sanity_check_paths', {}).get('dirs') or []
                 default_dirs = [
                     'lib/python%(pyshortver)s/site-packages',
