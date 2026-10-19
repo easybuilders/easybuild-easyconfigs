@@ -1,0 +1,66 @@
+# Downgrade to PyTorch 2.1.2 (CUDA):
+#   relax requirement torch >= 2.3 to 2.1
+#   replace any occurrence torch.amp.GradScaler by conditional torch.cuda.amp / torch.cpu.amp
+diff -ru tomodrgn-1.0.0/pyproject.toml tomodrgn-1.0.0_relax_requirements/pyproject.toml
+--- tomodrgn-1.0.0/pyproject.toml	2024-11-15 21:15:46.000000000 +0100
++++ tomodrgn-1.0.0_relax_requirements/pyproject.toml	2024-12-16 15:36:11.187436498 +0100
+@@ -31,7 +31,7 @@
+     "scikit-learn",
+     "scipy>=1.3.1",
+     "seaborn",
+-    "torch>=2.3",
++    "torch>=2.1",
+     "torchinfo",
+     "typing_extensions>=3.7.4",
+     "umap-learn",
+diff -ru tomodrgn-1.0.0/tomodrgn/commands/train_nn.py tomodrgn-1.0.0_relax_requirements/tomodrgn/commands/train_nn.py
+--- tomodrgn-1.0.0/tomodrgn/commands/train_nn.py	2024-11-15 21:15:46.000000000 +0100
++++ tomodrgn-1.0.0_relax_requirements/tomodrgn/commands/train_nn.py	2024-12-17 10:58:56.367688173 +0100
+@@ -145,7 +145,7 @@
+ 
+ 
+ def train_batch(model: FTPositionalDecoder | DataParallelPassthrough,
+-                scaler: torch.amp.GradScaler,
++                scaler: torch.cuda.amp.GradScaler,
+                 optim: torch.optim.Optimizer,
+                 lat: Lattice,
+                 batch_images: torch.Tensor,
+@@ -402,7 +402,7 @@
+     # Mixed precision training with AMP
+     use_amp = not args.no_amp
+     flog(f'AMP acceleration enabled (autocast + gradscaler) : {use_amp}')
+-    scaler = torch.amp.GradScaler(device=device.type, enabled=use_amp)
++    scaler = torch.cuda.amp.GradScaler(enabled=use_amp) if device.type == 'cuda' else torch.cpu.amp.GradScaler(enabled=use_amp) 
+     if use_amp:
+         if not args.batch_size % 8 == 0:
+             flog('Warning: recommended to have batch size divisible by 8 for AMP training')
+diff -ru tomodrgn-1.0.0/tomodrgn/commands/train_vae.py tomodrgn-1.0.0_relax_requirements/tomodrgn/commands/train_vae.py
+--- tomodrgn-1.0.0/tomodrgn/commands/train_vae.py	2024-11-15 21:15:46.000000000 +0100
++++ tomodrgn-1.0.0_relax_requirements/tomodrgn/commands/train_vae.py	2024-12-17 10:59:45.399859026 +0100
+@@ -118,7 +118,7 @@
+ 
+ def train_batch(*,
+                 model: TiltSeriesHetOnlyVAE | DataParallelPassthrough,
+-                scaler: torch.amp.GradScaler,
++                scaler: torch.cuda.amp.GradScaler,
+                 optim: torch.optim.Optimizer,
+                 lat: Lattice,
+                 batch_images: torch.Tensor,
+@@ -442,7 +442,7 @@
+ 
+ def save_checkpoint(*,
+                     model: TiltSeriesHetOnlyVAE | DataParallelPassthrough,
+-                    scaler: torch.amp.GradScaler,
++                    scaler: torch.cuda.amp.GradScaler,
+                     optim: torch.optim.Optimizer,
+                     epoch: int,
+                     z_mu_train: np.ndarray,
+@@ -692,7 +692,7 @@
+     # Mixed precision training with AMP
+     use_amp = not args.no_amp
+     flog(f'AMP acceleration enabled (autocast + gradscaler) : {use_amp}')
+-    scaler = torch.amp.GradScaler(device=device.type, enabled=use_amp)
++    scaler = torch.cuda.amp.GradScaler(enabled=use_amp) if device.type == 'cuda' else torch.cpu.amp.GradScaler(enabled=use_amp) 
+     if use_amp:
+         if not args.batch_size % 8 == 0:
+             flog('Warning: recommended to have batch size divisible by 8 for AMP training')
