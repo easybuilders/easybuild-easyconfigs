@@ -1388,7 +1388,7 @@ class EasyConfigTest(TestCase):
 
             with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
-                easyblock = ec.get('easyblock')
+                easyblock = ec.get('easyblock', '')
                 exts_defaultclass = ec.get('exts_defaultclass')
                 exts_default_options = ec.get('exts_default_options', {})
 
