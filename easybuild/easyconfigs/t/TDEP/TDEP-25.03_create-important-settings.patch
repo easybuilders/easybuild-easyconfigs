@@ -1,0 +1,70 @@
+Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+Description: Create important_settings file with reasonable compiler settings
+based on example files in examples/build/
+-----------------------------------------------------------------------------
+diff -Nru tdep-25.03.orig/important_settings tdep-25.03/important_settings
+--- tdep-25.03.orig/important_settings	1970-01-01 01:00:00.000000000 +0100
++++ tdep-25.03/important_settings	2026-09-14 12:29:34.770915457 +0100
+@@ -0,0 +1,62 @@
++#!/bin/bash
++
++# the fortran compiler
++FORTRAN_COMPILER="${MPIF90}"
++# required compiler flags
++FCFLAGS="${FCFLAGS} -ffree-line-length-none -std=f2008 -cpp -fallow-argument-mismatch"
++# extra flags, for debugging and such
++FCFLAGS_EXTRA=""
++#FCFLAGS_EXTRA="-fbacktrace -fcheck=all -finit-real=nan -finit-derived -fmax-errors=10 --pedantic -Wall -Wextra -pedantic -Wcast-align -Wdisabled-optimization -Wmissing-include-dirs -Wshadow -Wunused -fdiagnostics-show-option -fcheck=all -Wstrict-overflow=0 -Wrealloc-lhs"
++
++# optimization stuff. Go all in, sometimes
++OPTIMIZATION_LEVEL="${OPTFLAGS}"
++#OPTIMIZATION_SENSITIVE="-O0"
++
++# the flag that sets the default real to a double.
++DOUBLE_FLAG="-fdefault-real-8"
++# The flag that tells the compiler where to put .o and .mod files.
++MODULE_FLAG="-J"
++
++# the header to put in python scripts.
++PYTHONHEADER="#!/usr/bin/env python"
++
++# Which gnuplot terminal to use by default.
++GNUPLOTTERMINAL="x11"  # nice on OSX, needs aquaterm installed and gnuplot compiled with support for it.
++
++# Precompiler flags. Selecting default gnuplot terminal, and make the progressbars work.
++PRECOMPILER_FLAGS="-DGP${GNUPLOTTERMINAL} -Dgfortranprogressbar"
++
++# These are the BLAS/LAPACK libraries. On OSX with gfortran, use the built-in 'framework accelerate'
++PATH_TO_BLASLAPACK_LIB="-L${BLAS_LAPACK_LIB_DIR}"
++PATH_TO_BLASLAPACK_INC="-I${BLAS_LAPACK_INC_DIR}"
++BLASLAPACK_LIBS="${LIBLAPACK}"
++
++# I use fftw for Fourier transforms.
++PATH_TO_FFTW_LIB="-L${FFT_LIB_DIR}"
++PATH_TO_FFTW_INC="-I${FFT_INC_DIR}"
++#FFTW_LIBS="-lfftw3f_mpi -lfftw3f_threads -lfftw3f -lfftw3_mpi -lfftw3_threads -lfftw3"
++FFTW_LIBS="${LIBFFT}"
++
++# Also need MPI
++PATH_TO_MPI_LIB="-L${MPI_LIB_DIR}"
++PATH_TO_MPI_INC="-I${MPI_INC_DIR}"
++MPI_LIBS="-lmpi_mpifh -lmpi"
++
++# I also use HDF5 every now and then
++PATH_TO_HDF5_LIB="-L${EBROOTHDF5}/lib"
++PATH_TO_HDF5_INC="-I${EBROOTHDF5}/include"
++HDF5_LIBS="-lhdf5 -lhdf5_fortran"
++#HDF5_LIBS="-lhdf5_hl_parallel -lhdf5_parallel -lhdf5hl_fortran_parallel -lhdf5_fortran_parallel"
++
++# We also need a C-compiler
++C_COMPILER="${MPICC}"
++C_FLAGS="${CFLAGS}"
++
++# CGAL is written in c++. I have wrapper functions in C, that I call from Fortran.
++#CPP_COMPILER="mpicxx"
++#CPP_FLAGS="--std=c++0x -frounding-math -O3"
++
++# Things below this line is strictly optional, and not really needed except for testing purposes.
++# If you want to try and use CGAL. Not recommended for people who do not like to sort out compiler errors.
++USECGAL="no"
++USEAIMS="no"
