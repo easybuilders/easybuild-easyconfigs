@@ -1,0 +1,18 @@
+Keep the bitshuffle HDF5 filter plugin loaded while OpenMP worker threads
+may still be alive. Unloading the plugin can also unload libgomp, causing
+a segmentation fault when the threads execute code from the unloaded library.
+
+--- a/setup.py
++++ b/setup.py
+@@ -193,6 +193,11 @@
+     **pkgconfig("hdf5", config=dict(include_dirs=["src/", "lz4/"]))
+ )
+
++# HDF5 may unload this plugin while libgomp still has idle worker threads.
++# Keep the plugin and its dependencies loaded until process termination.
++if sys.platform.startswith("linux"):
++    filter_plugin.extra_link_args.append("-Wl,-z,nodelete")
++
+ lzf_plugin = Extension(
+     "bitshuffle.plugin.libh5LZF",
+     sources=[
