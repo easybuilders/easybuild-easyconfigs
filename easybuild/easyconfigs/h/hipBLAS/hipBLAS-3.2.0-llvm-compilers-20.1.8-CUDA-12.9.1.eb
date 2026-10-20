@@ -1,0 +1,50 @@
+easyblock = 'ROCmComponent'
+
+name = 'hipBLAS'
+version = '3.2.0'
+_rocm_version = '7.2.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/ROCm/hipBLAS'
+description = """hipBLAS is a Basic Linear Algebra Subprograms (BLAS) marshalling
+library with multiple supported backends. It sits between your application and a
+'worker' BLAS library, where it marshals inputs to the backend library and marshals
+results to your application. hipBLAS exports an interface that doesn't require the
+client to change, regardless of the chosen backend. Currently, hipBLAS supports
+rocBLAS and cuBLAS backends."""
+docurls = ['https://rocm.docs.amd.com/projects/hipBLAS/en/latest/']
+
+toolchain = {'name': 'llvm-compilers', 'version': '20.1.8'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f'rocm-{_rocm_version}.tar.gz']
+checksums = ['c200758ae003e28e05754e45bf31677f0105c79ee96ebbeb499de28bdb4f49da']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('Python', '3.13.5'),
+    ('PyYAML', '6.0.2'),
+]
+dependencies = [
+    ('HIP', f'{_rocm_version}', versionsuffix),
+    ('hipBLAS-common', '1.4.0'),
+    ('CUDA', '12.9.1', '', SYSTEM),
+]
+
+hip_platform = 'nvidia'
+
+configopts = '-DHIP_DIR=$EBROOTHIP '
+# Disable building external components
+configopts += '-DBUILD_GTEST=OFF -DBUILD_LAPACK=OFF '
+
+sanity_check_paths = {
+    'files': ['lib/cmake/hipblas/hipblas-config.cmake',
+              'include/hipblas/hipblas.h'],
+    'dirs': ['lib/cmake/hipblas',
+             'share/doc/hipblas-alt',
+             'include/hipblas'],
+}
+
+moduleclass = 'lib'

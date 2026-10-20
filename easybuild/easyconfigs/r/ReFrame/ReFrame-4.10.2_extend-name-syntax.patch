@@ -1,0 +1,335 @@
+Extend allowed syntax for system, partition and environment names (and features):
+names may now start with a digit and may contain '.' and '+' (e.g. 'g++', 'gcc-11.2+omp').
+Also allows '=' in the value of '%key=value' specs, and validates resource/extras key names.
+Backport of https://github.com/reframe-hpc/reframe/pull/3725 (commit 7f15777) to ReFrame 4.10.2;
+rebased onto v4.10.2 (only line offsets differ from the upstream commit).
+author: Caspar van Leeuwen (SURF)
+diff --git a/docs/config_reference.rst b/docs/config_reference.rst
+index f4d88c03..219ff9c3 100644
+--- a/docs/config_reference.rst
++++ b/docs/config_reference.rst
+@@ -125,7 +125,10 @@ System Configuration
+    :required: Yes
+ 
+    The name of this system.
+-   Only alphanumeric characters, dashes (``-``) and underscores (``_``) are allowed.
++   The name may contain alphanumeric characters, underscores (``_``), dots (``.``), plus (``+``) and minus (``-``) signs, but it must not start with ``.``, ``+`` or ``-``.
++
++   .. versionchanged:: 4.11
++      Names may now start with a digit and may contain ``.`` and ``+``.
+ 
+ .. py:attribute:: systems.descr
+ 
+@@ -281,7 +284,10 @@ System Partition Configuration
+    :required: Yes
+ 
+    The name of this partition.
+-   Only alphanumeric characters, dashes (``-``) and underscores (``_``) are allowed.
++   The name may contain alphanumeric characters, underscores (``_``), dots (``.``), plus (``+``) and minus (``-``) signs, but it must not start with ``.``, ``+`` or ``-``.
++
++   .. versionchanged:: 4.11
++      Names may now start with a digit and may contain ``.`` and ``+``.
+ 
+ .. py:attribute:: systems.partitions.descr
+ 
+@@ -805,7 +811,10 @@ System Partition Configuration
+    User defined features of the partition.
+ 
+    These are accessible through the :attr:`~reframe.core.systems.SystemPartition.features` attribute of the :attr:`~reframe.core.pipeline.RegressionTest.current_partition` and can also be selected through the extended syntax of :attr:`~reframe.core.pipeline.RegressionTest.valid_systems`.
+-   The values of this list must be alphanumeric strings starting with a non-digit character and may also contain a ``-``.
++   The values of this list must be alphanumeric strings that may also contain ``-``, ``.`` and ``+``, but a feature name must not start with ``-``, ``.`` or ``+``.
++
++   .. versionchanged:: 4.11
++      Feature names may now start with a digit and may contain ``.`` and ``+``.
+ 
+    .. versionadded:: 3.11.0
+ 
+@@ -818,7 +827,8 @@ System Partition Configuration
+    User defined attributes of the partition.
+ 
+    These are accessible through the :attr:`~reframe.core.systems.SystemPartition.extras` attribute of the :attr:`~reframe.core.pipeline.RegressionTest.current_partition` and can also be selected through the extended syntax of :attr:`~reframe.core.pipeline.RegressionTest.valid_systems`.
+-   The attributes of this object must be alphanumeric strings starting with a non-digit character and their values can be of any type.
++   The keys of this object must be POSIX alphanumeric strings (i.e., starting with a non-digit character and may also contain underscores (``_``)); their values can be of any type.
++   Unlike partition :attr:`~config.systems.partitions.features`, extras keys are restricted to plain identifiers and may not contain ``.``, ``+`` or ``-``.
+ 
+    By default, the values of the :attr:`~config.systems.partitions.scheduler` and :attr:`~config.systems.partitions.launcher` of the partition are added to the partition's extras, if not already present.
+ 
+@@ -900,7 +910,12 @@ ReFrame allows you to define custom scheduler resources for each partition that
+    :required: Yes
+ 
+   The name of this resources.
++
+   This name will be used to request this resource in a regression test's :attr:`~reframe.core.pipeline.RegressionTest.extra_resources`.
++  It must be a POSIX alphanumeric string (i.e., starting with a non-digit character and may also contain underscores (``_``)).
++
++  .. versionchanged:: 4.11
++     The resource name is now validated; previously any string was accepted.
+ 
+ 
+ .. py:attribute:: systems.partitions.resources.options
+@@ -987,6 +1002,10 @@ They are associated with `system partitions <#system-partition-configuration>`__
+    :required: Yes
+ 
+    The name of this environment.
++   The name may contain alphanumeric characters, underscores (``_``), dots (``.``), plus (``+``) and minus (``-``) signs, but it must not start with ``.``, ``+`` or ``-``.
++
++   .. versionchanged:: 4.11.0
++      Names may now start with a digit and may contain ``.`` and ``+``.
+ 
+ 
+ .. py:attribute:: environments.modules
+@@ -1024,7 +1043,10 @@ They are associated with `system partitions <#system-partition-configuration>`__
+ 
+    User defined features of the environment.
+    These are accessible through the :attr:`~reframe.core.environments.Environment.features` attribute of the :attr:`~reframe.core.pipeline.RegressionTest.current_environ` and can also be selected through the extended syntax of :attr:`~reframe.core.pipeline.RegressionTest.valid_prog_environs`.
+-   The values of this list must be alphanumeric strings starting with a non-digit character and may also contain a ``-``.
++   The values of this list must be alphanumeric strings that may also contain ``-``, ``.`` and ``+``, but a feature name must not start with ``-``, ``.`` or ``+``.
++
++   .. versionchanged:: 4.11
++      Feature names may now start with a digit and may contain ``.`` and ``+``.
+ 
+    .. versionadded:: 3.11.0
+ 
+@@ -1036,7 +1058,8 @@ They are associated with `system partitions <#system-partition-configuration>`__
+ 
+    User defined attributes of the environment.
+    These are accessible through the :attr:`~reframe.coreenvironments.Environment.extras` attribute of the :attr:`~reframe.core.pipeline.RegressionTest.current_environ` and can also be selected through the extended syntax of :attr:`~reframe.core.pipeline.RegressionTest.valid_prog_environs`.
+-   The attributes of this object must be alphanumeric strings starting with a non-digit character and their values can be of any type.
++   The keys of this object must be POSIX alphanumeric strings (i.e., starting with a non-digit character and may also contain underscores (``_``)); their values can be of any type.
++   Unlike environment :attr:`~config.environments.features`, extras keys are restricted to plain identifiers and may not contain ``.``, ``+`` or ``-``.
+ 
+    .. versionadded:: 3.9.1
+ 
+diff --git a/reframe/core/pipeline.py b/reframe/core/pipeline.py
+index a5cbb542..d44d985c 100644
+--- a/reframe/core/pipeline.py
++++ b/reframe/core/pipeline.py
+@@ -83,7 +83,7 @@ XfailRef = typ.make_meta_type('XfailRef', _XFailReference)
+ 
+ 
+ # Valid systems/environments mini-language
+-_N = r'(\w[-.\w]*)'         # name
++_N = r'(\w[-.+\w]*)'        # name
+ _NW = rf'(\*|{_N})'         # name or wildcard
+ _F = rf'([+-]{_N})'         # feature
+ _OP = r'([=<>]|!=|>=|<=)'   # relational operator (unused for the moment)
+@@ -669,8 +669,12 @@ class RegressionTest(RegressionTestPlugin, jsonext.JSONSerializable):
+     #: .. versionchanged:: 3.6
+     #:    Default value changed from ``None`` to ``required``.
+     #:
+-    #: .. versionchanged:: 3.11.0
++    #: .. versionchanged:: 3.11
+     #:    Extend syntax to support features and key/value pairs.
++    #:
++    #: .. versionchanged:: 4.11
++    #:    Environment and feature names may now start with a digit and may
++    #:    contain ``.`` and ``+``.
+     valid_prog_environs = variable(typ.List[typ.Str[_VALID_ENV_SYNTAX]])
+ 
+     #: List of systems or system features or system properties required by this
+@@ -755,12 +759,16 @@ class RegressionTest(RegressionTestPlugin, jsonext.JSONSerializable):
+     #: .. versionchanged:: 3.6
+     #:    Default value changed from ``None`` to ``required``.
+     #:
+-    #:  .. versionchanged:: 3.11.0
++    #:  .. versionchanged:: 3.11
+     #:     Extend syntax to support features and key/value pairs.
+     #:
+     #:   .. versionchanged:: 4.10
+     #:      Support for combining an explicit system partition combination with
+     #:      features and extras.
++    #:
++    #:   .. versionchanged:: 4.11
++    #:      System, partition and feature names may now start with a digit and
++    #:      may contain ``.`` and ``+``.
+     valid_systems = variable(typ.List[typ.Str[_VALID_SYS_SYNTAX]])
+ 
+     #: A detailed description of the test.
+diff --git a/reframe/core/runtime.py b/reframe/core/runtime.py
+index 2154ba33..581ea8c7 100644
+--- a/reframe/core/runtime.py
++++ b/reframe/core/runtime.py
+@@ -308,7 +308,7 @@ def _is_valid_part(part, valid_systems):
+             elif subspec.startswith('-'):
+                 minus_feats.append(subspec[1:])
+             elif subspec.startswith('%'):
+-                key, val = subspec[1:].split('=')
++                key, val = subspec[1:].split('=', maxsplit=1)
+                 props[key] = val
+             else:
+                 # If there is a system:partition specified, make sure it
+@@ -367,7 +367,7 @@ def _is_valid_env(env, valid_prog_environs):
+                 elif subspec.startswith('-'):
+                     minus_feats.append(subspec[1:])
+                 elif subspec.startswith('%'):
+-                    key, val = subspec[1:].split('=')
++                    key, val = subspec[1:].split('=', maxsplit=1)
+                     props[key] = val
+ 
+             have_plus_feats = all(ft in env.features or ft in env.extras
+diff --git a/reframe/schemas/config.json b/reframe/schemas/config.json
+index e6d9e16e..2585a1c2 100644
+--- a/reframe/schemas/config.json
++++ b/reframe/schemas/config.json
+@@ -9,7 +9,7 @@
+         },
+         "alphanum_ext_string": {
+             "type": "string",
+-            "pattern": "^[a-zA-Z_](?:[a-zA-Z0-9_-])*$"
++            "pattern": "^[a-zA-Z0-9_](?:[a-zA-Z0-9_.+-])*$"
+         },
+         "system_ref": {
+             "type": "array",
+@@ -354,16 +354,14 @@
+                                 },
+                                 "extras": {
+                                     "type": "object",
+-                                    "propertyNames": {
+-                                        "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+-                                    }
++                                    "propertyNames": {"$ref": "#/defs/alphanum_string"}
+                                 },
+                                 "resources": {
+                                     "type": "array",
+                                     "items": {
+                                         "type": "object",
+                                         "properties": {
+-                                            "name": {"type": "string"},
++                                            "name": {"$ref": "#/defs/alphanum_string"},
+                                             "options": {
+                                                 "type": "array",
+                                                 "items": {"type": "string"}
+@@ -423,9 +421,7 @@
+                     },
+                     "extras": {
+                         "type": "object",
+-                        "propertyNames": {
+-                            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+-                        }
++                        "propertyNames": {"$ref": "#/defs/alphanum_string"}
+                     },
+                     "features": {
+                         "type": "array",
+@@ -433,9 +429,7 @@
+                     },
+                     "resources": {
+                         "type": "object",
+-                        "propertyNames": {
+-                            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+-                        },
++                        "propertyNames": {"$ref": "#/defs/alphanum_string"},
+                         "additionalProperties": {
+                             "type": "object",
+                             "additionalProperties": true
+diff --git a/unittests/test_config.py b/unittests/test_config.py
+index 859a5c36..b57ec675 100644
+--- a/unittests/test_config.py
++++ b/unittests/test_config.py
+@@ -158,6 +158,38 @@ def test_validate_config_invalid_syntax():
+         site_config.validate()
+ 
+ 
++def test_validate_config_extended_names():
++    # System/partition/environment names and feature names may start with a
++    # digit and may contain `.` and `+`.
++    site_config = config.load_config('reframe/core/settings.py')
++    site_config['systems'][0]['name'] = '0sys.x+y'
++    site_config['systems'][0]['partitions'][0]['name'] = 'gpu+mps'
++    site_config['systems'][0]['partitions'][0]['features'] = ['multi-gpu.v2',
++                                                              'sm+']
++    site_config['environments'][0]['name'] = 'g++'
++    site_config.validate()
++
++    for bad in ['.sys', '+sys', '-sys', 'sys:x', 'sys x']:
++        site_config['systems'][0]['name'] = bad
++        with pytest.raises(ConfigError,
++                           match=r'could not validate configuration file'):
++            site_config.validate()
++
++
++def test_validate_config_extras_keys_strict():
++    # Extras keys stay POSIX alphanumeric identifiers even though feature and
++    # name patterns are more permissive.
++    site_config = config.load_config('reframe/core/settings.py')
++    site_config['systems'][0]['partitions'][0]['extras'] = {'key_1': 1}
++    site_config.validate()
++
++    for bad in {'key-1': 1}, {'key.1': 1}, {'key+1': 1}, {'1key': 1}:
++        site_config['systems'][0]['partitions'][0]['extras'] = bad
++        with pytest.raises(ConfigError,
++                           match=r'could not validate configuration file'):
++            site_config.validate()
++
++
+ def test_select_subconfig_autodetect():
+     site_config = config.load_config('reframe/core/settings.py')
+     site_config.select_subconfig()
+diff --git a/unittests/test_pipeline.py b/unittests/test_pipeline.py
+index 8cd988ff..a8e9069d 100644
+--- a/unittests/test_pipeline.py
++++ b/unittests/test_pipeline.py
+@@ -356,12 +356,18 @@ def test_valid_systems_syntax(hellotest):
+     hellotest.valid_systems = ['sys:part']
+     hellotest.valid_systems = ['sys-0']
+     hellotest.valid_systems = ['sys:part-0']
++    hellotest.valid_systems = ['0sys:1part']
++    hellotest.valid_systems = ['sys.x:part.y']
++    hellotest.valid_systems = ['sys:gpu+mps']
+     hellotest.valid_systems = ['+x0']
+     hellotest.valid_systems = ['-y0']
+     hellotest.valid_systems = ['%z0=w0']
++    hellotest.valid_systems = ['+gpu+mps']
++    hellotest.valid_systems = ['+multi-gpu.v2']
+     hellotest.valid_systems = ['+x0 -y0 %z0=w0']
+     hellotest.valid_systems = ['-y0 +x0 %z0=w0']
+     hellotest.valid_systems = ['%z0=w0 +x0 -y0']
++    hellotest.valid_systems = ['%z0=a+b=c']
+     hellotest.valid_systems = ['sys:part +x0 +y0']
+     hellotest.valid_systems = ['sys:part +x0 +y0 %z0=w0']
+     hellotest.valid_systems = ['+x0 sys:part']
+@@ -430,11 +436,11 @@ def test_valid_systems_syntax(hellotest):
+     with pytest.raises(TypeError):
+         hellotest.valid_systems = ['+foo sys0:part0 sys0:part1']
+ 
+-    for sym in '!@#$^&()=<>':
++    for sym in '!@#$^&()=<>.':
+         with pytest.raises(TypeError):
+             hellotest.valid_systems = [f'{sym}foo']
+ 
+-    for sym in '!@#$%^&*()+=<>':
++    for sym in '!@#$%^&*()=<>':
+         with pytest.raises(TypeError):
+             hellotest.valid_systems = [f'foo{sym}']
+ 
+@@ -444,6 +450,9 @@ def test_valid_prog_environs_syntax(hellotest):
+     hellotest.valid_prog_environs = ['env']
+     hellotest.valid_prog_environs = ['env-0']
+     hellotest.valid_prog_environs = ['env.0']
++    hellotest.valid_prog_environs = ['0env']
++    hellotest.valid_prog_environs = ['g++']
++    hellotest.valid_prog_environs = ['gcc-11.2+omp']
+     hellotest.valid_prog_environs = ['+x0']
+     hellotest.valid_prog_environs = ['-y0']
+     hellotest.valid_prog_environs = ['%z0=w0']
+@@ -451,6 +460,7 @@ def test_valid_prog_environs_syntax(hellotest):
+     hellotest.valid_prog_environs = ['-y0 +x0 %z0=w0']
+     hellotest.valid_prog_environs = ['%z0=w0 +x0 -y0']
+     hellotest.valid_prog_environs = ['+foo.bar']
++    hellotest.valid_prog_environs = ['+gpu+mps']
+     hellotest.valid_prog_environs = ['%foo.bar=a$xx']
+ 
+     with pytest.raises(TypeError):
+@@ -495,11 +505,11 @@ def test_valid_prog_environs_syntax(hellotest):
+     with pytest.raises(TypeError):
+         hellotest.valid_prog_environs = ['%']
+ 
+-    for sym in '!@#$^&()=<>:':
++    for sym in '!@#$^&()=<>:.':
+         with pytest.raises(TypeError):
+             hellotest.valid_prog_environs = [f'{sym}foo']
+ 
+-    for sym in '!@#$%^&*()+=<>:':
++    for sym in '!@#$%^&*()=<>:':
+         with pytest.raises(TypeError):
+             hellotest.valid_prog_environs = [f'foo{sym}']
+ 

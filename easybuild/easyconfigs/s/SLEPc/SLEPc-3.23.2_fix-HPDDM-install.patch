@@ -1,0 +1,34 @@
+Build the downloaded HPDDM library in the SLEPc architecture directory.
+
+SLEPc builds libhpddm_petsc during the configure step directly in the
+installation prefix. EasyBuild cleans the installation prefix before the
+install step, which removes this library. Build HPDDM in the architecture
+directory instead, from where the SLEPc installer copies libraries and
+headers into the final prefix.
+
+Keep SLEPC_LIB_DIR pointing to the final installation directory since it is
+used by PCHPDDM at runtime to locate libhpddm_petsc.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+
+--- config/packages/hpddm.py.orig
++++ config/packages/hpddm.py
+@@ -35,7 +35,8 @@ class HPDDM(package.Package):
+   def DownloadAndInstall(self,slepcconf,slepcvars,slepc,petsc,archdir,prefixdir):
+     externdir = slepc.GetExternalPackagesDir(archdir)
+     builddir  = self.Download(externdir,slepc.downloaddir)
+-    incdir,libdir = slepc.CreatePrefixDirs(prefixdir)
++    incdir,libdir = slepc.CreatePrefixDirs(archdir)
++    installlibdir = os.path.join(prefixdir,'lib')
+     cont  = 'include '+os.path.join(petsc.dir,petsc.arch,'lib','petsc','conf','petscvariables')+'\n'
+     cont += 'soname:\n'
+     cont += '\t@echo $(call SONAME_FUNCTION,'+os.path.join(libdir,'libhpddm_petsc')+',0)\n'
+@@ -45,7 +46,7 @@ class HPDDM(package.Package):
+     d = os.path.join(petsc.dir,petsc.arch,'lib')
+     l = self.slflag+d+' -L'+d+' -lpetsc'
+     d = libdir
+-    cmd = petsc.cxx+' '+petsc.getCXXFlags()+' -I'+os.path.join('.','include')+' -I'+os.path.join(petsc.dir,petsc.arch,'include')+' -I'+os.path.join(slepc.dir,'include')+' -I'+os.path.join(archdir,'include')+' -I'+os.path.join(petsc.dir,'include')+' -DPETSC_HAVE_SLEPC=1 -DSLEPC_LIB_DIR="'+d+'"'
++    cmd = petsc.cxx+' '+petsc.getCXXFlags()+' -I'+os.path.join('.','include')+' -I'+os.path.join(petsc.dir,petsc.arch,'include')+' -I'+os.path.join(slepc.dir,'include')+' -I'+os.path.join(archdir,'include')+' -I'+os.path.join(petsc.dir,'include')+' -DPETSC_HAVE_SLEPC=1 -DSLEPC_LIB_DIR="'+installlibdir+'"'
+     line = 'cd '+builddir+' && '+cmd+' '
+     if self.packagename not in petsc.packages: # KSPHPDDM and PCHPDDM sources have not been compiled by PETSc which was configured without --download-hpddm, so do it here
+       line = line+os.path.join('interface','petsc','ksp','hpddm.cxx')+' -c -o '+os.path.join('interface','ksphpddm.o')+' && '+cmd+' '+os.path.join('interface','petsc','pc','pchpddm.cxx')+' -c -o '+os.path.join('interface','pchpddm.o')+' && '+cmd+' '
