@@ -1,0 +1,63 @@
+easyblock = 'PythonBundle'
+
+name = 'CUDA-Python'
+# Warning: major and minor versions of CUDA and CUDA-Python are tied
+version = '13.3.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://nvidia.github.io/cuda-python/'
+description = "Python bindings for CUDA"
+github_account = 'NVIDIA'
+
+toolchain = {'name': 'gfbf', 'version': '2026.1'}
+
+builddependencies = [
+    ('Cython', '3.2.9'),
+]
+dependencies = [
+    ('CUDA', '%(version_major)s.%(version_minor)s.0', '', SYSTEM),
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+]
+
+exts_default_options = {
+    'source_urls': ['https://github.com/%(github_account)s/cuda-python/archive/refs/tags'],
+    'sources': ['%(name)s-v%(version)s.tar.gz'],
+}
+exts_list = [
+    ('pyclibrary', '0.3.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'sources': ['%(name)s-%(version)s.tar.gz'],
+        'checksums': ['8a3eaa9ab728c11b077644275af4e05ca24ddcad491f47eb45b75db6be52c654'],
+    }),
+    ('cuda-pathfinder', '1.8.3', {
+        'modulename': 'cuda.pathfinder',
+        'start_dir': 'cuda_pathfinder',
+        'checksums': ['62c9b1e289b5ac9b962eedce368d568a25f6edf6b08100e0c117bf4e24eae1f4'],
+    }),
+    ('cuda-bindings', version, {
+        'modulename': 'cuda.bindings',
+        'source_urls': ['https://github.com/NVIDIA/cuda-python/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'start_dir': 'cuda_bindings',
+        'checksums': ['731f2bcae67f7fa7acd1720c4457239b9f1f1f279c8d4fbfd23a164220abe8e2'],
+    }),
+    ('cuda-core', '1.0.1', {
+        'modulename': 'cuda.core',
+        'start_dir': 'cuda_core',
+        'checksums': ['248edbfcf6c4ee956a85c337b2ab9fe389ce54762946baa59fce89af5c32d6f2'],
+    }),
+    ('cuda-python', version, {
+        'modulename': False,
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'sources': ['cuda_python-%(version)s-py3-none-any.whl'],
+        'checksums': ['280b014139ab447b6dd70a377db1596f310d6e887d9d342e6651b919ec145fb3'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -sc 'from cuda.core import Device'",
+    "python -sc 'from cuda.bindings import driver, nvrtc'",
+]
+
+moduleclass = 'lib'

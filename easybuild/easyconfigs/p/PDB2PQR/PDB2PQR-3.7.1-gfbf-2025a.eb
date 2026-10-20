@@ -1,0 +1,60 @@
+easyblock = 'PythonBundle'
+
+name = 'PDB2PQR'
+version = '3.7.1'
+
+homepage = 'https://www.poissonboltzmann.org/'
+description = """PDB2PQR prepares biomolecular structures for continuum electrostatics calculations by
+adding missing atoms, optimizing hydrogen bonds, and assigning charge and radius parameters."""
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+local_docutils_metadata_fix = (
+    # PDB2PQR 3.7.1 runs its imports and CLIs with the 2025a Docutils 0.21.2
+    # provider, but its metadata incorrectly rejects every version >= 0.18.
+    "sed -i 's/docutils < 0.18/docutils < 0.22/' pyproject.toml && "
+)
+
+local_mmcif_pdbx_license_fix = (
+    # mmcif-pdbx 2.1.0 declares project.license as a PEP 639 SPDX string, which
+    # this setuptools version's validator rejects as matching 2 schemas at once.
+    # Rewrite it into the {text = ...} table form it actually accepts.
+    """sed -i 's/^license = "CC0-1.0"$/license = {text = "CC0-1.0"}/' pyproject.toml && """
+)
+
+builddependencies = [
+    # pdb2pqr's pyproject.toml build-system requires hatchling; --no-build-isolation
+    # needs it importable ahead of time.
+    ('hatchling', '1.27.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('Python-bundle-PyPI', '2025.04'),
+    ('propka', '3.5.1'),
+]
+
+exts_list = [
+    ('mmcif-pdbx', '2.1.0', {
+        'sources': ['mmcif_pdbx-%(version)s.tar.gz'],
+        'modulename': 'pdbx',
+        'preinstallopts': local_mmcif_pdbx_license_fix,
+        'checksums': ['456b2f548d18306b82db6578cdc4f18c45be16960950db8ca7064d3ee66ebfc8'],
+    }),
+    (name, version, {
+        'sources': ['pdb2pqr-%(version)s.tar.gz'],
+        'modulename': 'pdb2pqr',
+        'preinstallopts': local_docutils_metadata_fix,
+        'checksums': ['05b5c464022a3ad11c9597c6fc7f70c56061c4669b1497a51958da90d959152f'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c \"from importlib.resources import files; assert files('pdb2pqr').joinpath('dat/AMBER.DAT').is_file()\"",
+    'pdb2pqr --help',
+    'dx2cube --help',
+    'inputgen --help',
+]
+
+moduleclass = 'bio'
