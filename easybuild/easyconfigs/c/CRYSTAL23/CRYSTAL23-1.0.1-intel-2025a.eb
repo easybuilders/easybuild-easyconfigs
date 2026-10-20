@@ -1,0 +1,56 @@
+easyblock = 'MakeCp'
+
+name = 'CRYSTAL23'
+version = '1.0.1'
+
+homepage = 'http://www.crystal.unito.it'
+description = """The CRYSTAL package performs ab initio calculations of the ground state energy,
+ energy gradient, electronic wave function and properties of periodic systems."""
+
+toolchain = {'name': 'intel', 'version': '2025a'}
+
+download_instructions = """
+CRYSTAL23 is licensed software, installation files must be downloaded manually,
+see https://www.crystal.unito.it/how_to_get_a_copy.html
+"""
+
+sources = [
+    'crystal23_v%s_Linux-ifort21.4_MPPdistrib.tar.gz' % '_'.join(version.split('.')),
+    'utils23.tar.gz',
+]
+checksums = [
+    # crystal23_v1_0_1_Linux-ifort21.4_MPPdistrib.tar.gz
+    '77440d3cd6b44bbe1123ee88d66cc7dd7cfaad5aad2309033616d8791cb30f68',
+    '6e45152e7a1561b89594257c5b1db126505aeaa0282e4ac09fc41e478a9db328',  # utils23.tar.gz
+]
+
+start_dir = 'build'
+
+local_common_buildopts = 'F90="$MPIF90" PLD="$MPIF90" F90FLAGS="$F90FLAGS" CC="$CC" CFLAGS="$CFLAGS -DNDEBUG" '
+local_common_buildopts += 'CXX="$CXX" CXXFLAGS="$CXXFLAGS -DNDEBUG -fno-rtti -fno-exceptions" '
+buildopts = [
+    local_common_buildopts + 'all',
+    local_common_buildopts + 'MPPLIB="$LIBSCALAPACK" MPP',
+]
+
+files_to_copy = [
+    (['bin/*/v%(version)s/*'], 'bin'),
+    'utils23',
+]
+
+postinstallcmds = [
+    "chmod ug+x %(installdir)s/utils23/*",
+    # fix XDIR values in run* scripts
+    "ls %(installdir)s/utils23/run* | xargs sed -i 's@set XDIR .*@set XDIR = $CRY23_EXEDIR/bin@g'",
+    # fix MPIDIR value in run* scripts
+    'ls %(installdir)s/utils23/run* | xargs sed -i s"@set MPIDIR .*@set MPIDIR = $EBROOTIMPI/intel64/bin@g"',
+]
+
+sanity_check_paths = {
+    'files': ['bin/crystal', 'bin/MPPcrystal', 'bin/Pcrystal', 'bin/Pproperties', 'bin/properties'],
+    'dirs': ['utils23'],
+}
+
+modextrapaths = {'PATH': 'utils23'}
+
+moduleclass = 'chem'
