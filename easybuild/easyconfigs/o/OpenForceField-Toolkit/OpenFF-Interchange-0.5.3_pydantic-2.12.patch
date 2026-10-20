@@ -1,0 +1,157 @@
+From 08a08d5e7afb770778d3b6cde4b82608abe65dd6 Mon Sep 17 00:00:00 2001
+From: Michal Krompiec <michal@cusp.ai>
+Date: Tue, 28 Apr 2026 14:08:25 +0000
+Subject: [PATCH 1/3] Fix pint.Quantity JSON serialization with pydantic >=2.12
+
+pydantic 2.12 changed serialize_as_any=True to propagate the flag to all
+nested values (pydantic/pydantic#12348). This causes model_dump_json() to
+fail with "Unable to serialize unknown type: <class 'pint.Quantity'>" because
+pydantic now bypasses the Annotated WrapSerializer on _Quantity and tries to
+serialize pint.Quantity by its runtime type, which has no pydantic schema.
+
+The fix removes serialize_as_any=True from model_dump_json(). The Annotated
+WrapSerializer(quantity_json_serializer) on _Quantity correctly handles JSON
+serialization without it. All 495 unit tests pass with pydantic 2.13.3.
+---
+ openff/interchange/pydantic.py | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/openff/interchange/pydantic.py b/openff/interchange/pydantic.py
+index d81ebf7bd..8b1a0112e 100644
+--- a/openff/interchange/pydantic.py
++++ b/openff/interchange/pydantic.py
+@@ -17,4 +17,7 @@ def model_dump(self, **kwargs) -> dict[str, Any]:
+         return super().model_dump(serialize_as_any=True, **kwargs)
+ 
+     def model_dump_json(self, **kwargs) -> str:
+-        return super().model_dump_json(serialize_as_any=True, **kwargs)
++        # serialize_as_any=True breaks pint.Quantity serialization in pydantic >=2.12
++        # (pydantic/pydantic#12348); the Annotated WrapSerializer on _Quantity handles
++        # JSON serialization correctly without it
++        return super().model_dump_json(**kwargs)
+
+From d16f3e6e142fcad5f1351f9e2b08f9fd0e0aebba Mon Sep 17 00:00:00 2001
+From: Michal Krompiec <michal@cusp.ai>
+Date: Tue, 28 Apr 2026 15:25:21 +0000
+Subject: [PATCH 2/3] Preserve Collection subclass fields in JSON serialization
+
+Without serialize_as_any=True, pydantic serializes collections using the
+declared Collection base class schema, dropping subclass-specific fields
+(scale_14, cutoff, periodic_potential, etc.) from _NonbondedCollection
+and its subclasses. This caused silent data loss on JSON roundtrip,
+producing wrong electrostatics energies after deserialization.
+
+Fix by adding a WrapSerializer to _AnnotatedCollections that calls
+model_dump_json() on each collection instance directly. Since the call
+is made on the actual instance (e.g. SMIRNOFFElectrostaticsCollection),
+pydantic uses the full subclass schema and all fields are preserved.
+---
+ openff/interchange/components/potentials.py | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/openff/interchange/components/potentials.py b/openff/interchange/components/potentials.py
+index ae961c4f8..8d177747a 100644
+--- a/openff/interchange/components/potentials.py
++++ b/openff/interchange/components/potentials.py
+@@ -448,7 +448,20 @@ def validate_collections(
+         raise ValueError(f"Validation mode {info.mode} not implemented.")
+ 
+ 
++def serialize_collections(v: Any, handler: Any, info: Any) -> dict:
++    """Serialize collections using each collection's actual type schema.
++
++    Without this, pydantic uses the declared Collection base class schema and
++    drops subclass-specific fields (e.g. scale_14, cutoff, periodic_potential).
++    """
++    if info.mode == "json":
++        return {name: json.loads(collection.model_dump_json()) for name, collection in v.items()}
++    else:
++        raise NotImplementedError(f"Serialization mode {info.mode} not implemented.")
++
++
+ _AnnotatedCollections = Annotated[
+     dict[str, Collection],
+     WrapValidator(validate_collections),
++    WrapSerializer(serialize_collections),
+ ]
+
+From 7f80e6ba0817cf7d5650be56a5c387e200deb5d6 Mon Sep 17 00:00:00 2001
+From: Michal Krompiec <michal@cusp.ai>
+Date: Tue, 28 Apr 2026 15:46:02 +0000
+Subject: [PATCH 3/3] Add CI workflow and update docs env for pydantic >=2.12
+ compatibility
+
+- Remove pydantic <2.12 ceiling from docs_env.yaml
+- Add ci-pydantic-latest.yaml workflow that upgrades pydantic to the
+  latest release after pixi install and runs the full test suite
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+---
+ .github/workflows/ci-pydantic-latest.yaml | 44 +++++++++++++++++++++++
+ devtools/conda-envs/docs_env.yaml         |  2 +-
+ 2 files changed, 45 insertions(+), 1 deletion(-)
+ create mode 100644 .github/workflows/ci-pydantic-latest.yaml
+
+diff --git a/.github/workflows/ci-pydantic-latest.yaml b/.github/workflows/ci-pydantic-latest.yaml
+new file mode 100644
+index 000000000..a26a40bbb
+--- /dev/null
++++ b/.github/workflows/ci-pydantic-latest.yaml
+@@ -0,0 +1,44 @@
++name: ci-pydantic-latest
++
++on:
++  push:
++    branches:
++      - main
++  pull_request:
++    branches:
++      - main
++  workflow_dispatch:
++
++defaults:
++  run:
++    shell: pixi run -e py312amber bash -e {0}
++
++jobs:
++  test:
++    name: Test with latest pydantic on ${{ matrix.os }}
++    runs-on: ${{ matrix.os }}
++    strategy:
++      fail-fast: false
++      matrix:
++        os:
++          - ubuntu-latest
++          - macos-latest
++
++    steps:
++    - uses: actions/checkout@v6
++
++    - name: Set up virtual environment
++      uses: prefix-dev/setup-pixi@v0.9.5
++      with:
++        pixi-version: v0.41.4
++        environments: py312amber
++        frozen: true
++
++    - name: Upgrade pydantic to latest
++      run: pip install "pydantic>=2.12"
++
++    - name: Run mypy
++      run: pixi run -e py312amber run_mypy
++
++    - name: Run tests
++      run: pixi run -e py312amber run_tests
+diff --git a/devtools/conda-envs/docs_env.yaml b/devtools/conda-envs/docs_env.yaml
+index 14304d999..5515e3f61 100644
+--- a/devtools/conda-envs/docs_env.yaml
++++ b/devtools/conda-envs/docs_env.yaml
+@@ -8,7 +8,7 @@ dependencies:
+   - setuptools !=76.0.0
+   - pip
+   - numpy =2
+-  - pydantic >=2,<2.12
++  - pydantic >=2
+   - openff-toolkit-base =0.17
+   - openmm
+   - mbuild-base =1

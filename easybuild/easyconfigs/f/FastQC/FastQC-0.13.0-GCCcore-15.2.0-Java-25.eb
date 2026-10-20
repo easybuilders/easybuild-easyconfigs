@@ -1,0 +1,49 @@
+# Updated from previous config
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PackedBinary'
+
+name = 'FastQC'
+version = '0.13.0'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://www.bioinformatics.babraham.ac.uk/projects/fastqc/'
+description = """FastQC is a quality control application for high throughput
+sequence data. It reads in sequence data in a variety of formats and can either
+provide an interactive application to review the results of several different
+QC checks, or create an HTML based report which can be integrated into a
+pipeline."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = ['https://github.com/s-andrews/%(name)s/releases/download/v%(version)s']
+sources = ['%(namelower)s_v%(version)s.zip']
+patches = ['FastQC_perl_launcher_shebang.patch']
+checksums = [
+    {'fastqc_v0.13.0.zip': 'c9504d47752e79ecfe61691e09bf367fc3f15167ac3fe83d9e33534fffbcc301'},
+    {'FastQC_perl_launcher_shebang.patch': 'b80b4879837dd621bc106405de3eb66589c03730cf4f5326eceddf6210ddb6f9'},
+]
+
+dependencies = [
+    ('Java', '25', '', SYSTEM),
+    ('Perl', '5.42.0'),
+    ('Python', '3.14.2'),
+]
+
+postinstallcmds = ["chmod +x %(installdir)s/fastqc.pl"]
+
+sanity_check_paths = {
+    'files': ['fastqc_icon.ico', 'INSTALL.md', 'README.md', 'RELEASE_NOTES.txt',
+              'LICENSE', 'LICENSE_JHDF5.txt',
+              'fastqc', 'fastqc.pl', 'run_fastqc.bat',
+              'cisd-jhdf5.jar', 'htsjdk.jar', 'commons-compress-1.28.0.jar', 'commons-io-2.22.0.jar'],
+    'dirs': ['Configuration', 'Help', 'Templates', 'uk', 'net', 'org'],
+}
+
+sanity_check_commands = [
+    ('fastqc', '-v'),
+    ('fastqc.pl', '-v'),
+]
+
+moduleclass = 'bio'
