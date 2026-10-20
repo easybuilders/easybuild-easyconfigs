@@ -1,0 +1,127 @@
+Skip some tests that segfaults with Intel + MKL
+
+Åke Sandgren, 2026-05-11
+diff --git a/scipy/cluster/tests/test_vq.py b/scipy/cluster/tests/test_vq.py
+index 10b1416b83..a5cc2af8a2 100644
+--- a/scipy/cluster/tests/test_vq.py
++++ b/scipy/cluster/tests/test_vq.py
+@@ -7,6 +7,7 @@ from numpy.testing import (
+     assert_array_equal, assert_equal, assert_, suppress_warnings
+ )
+ import pytest
++import scipy
+ from pytest import raises as assert_raises
+ 
+ from scipy.cluster.vq import (kmeans, kmeans2, py_vq, vq, whiten,
+@@ -338,6 +339,7 @@ class TestKMean:
+             kmeans2(data, k, minit='random')
+             kmeans2(data[:, 1], k, minit='random')  # special case (1-D)
+ 
++    @pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
+     @pytest.mark.skipif(sys.platform == 'win32',
+                         reason='Fails with MemoryError in Wine.')
+     def test_krandinit(self, xp):
+diff --git a/scipy/sparse/linalg/_eigen/arpack/tests/test_arpack.py b/scipy/sparse/linalg/_eigen/arpack/tests/test_arpack.py
+index 1cf73f28e2..35345310bc 100644
+--- a/scipy/sparse/linalg/_eigen/arpack/tests/test_arpack.py
++++ b/scipy/sparse/linalg/_eigen/arpack/tests/test_arpack.py
+@@ -13,6 +13,7 @@ from numpy.testing import assert_allclose, assert_equal, suppress_warnings
+ from pytest import raises as assert_raises
+ import pytest
+ 
++import scipy
+ from numpy import dot, conj, random
+ from scipy.linalg import eig, eigh
+ from scipy.sparse import csc_matrix, csr_matrix, diags, rand
+@@ -465,6 +466,7 @@ def test_real_nonsymmetric_modes():
+                                       None, sigma, mattype, OPpart)
+ 
+ 
++@pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
+ def test_complex_nonsymmetric_modes():
+     params = NonSymmetricParams()
+     k = 2
+@@ -478,6 +480,7 @@ def test_complex_nonsymmetric_modes():
+                                   None, sigma, mattype)
+ 
+ 
++@pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
+ def test_standard_nonsymmetric_starting_vector():
+     params = NonSymmetricParams()
+     sigma = None
+@@ -491,6 +494,7 @@ def test_standard_nonsymmetric_starting_vector():
+                 eval_evec(symmetric, d, typ, k, "LM", v0, sigma)
+ 
+ 
++@pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
+ def test_general_nonsymmetric_starting_vector():
+     params = NonSymmetricParams()
+     sigma = None
+@@ -504,6 +508,7 @@ def test_general_nonsymmetric_starting_vector():
+                 eval_evec(symmetric, d, typ, k, "LM", v0, sigma)
+ 
+ 
++@pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
+ def test_standard_nonsymmetric_no_convergence():
+     np.random.seed(1234)
+     m = generate_matrix(30, complex_=True)
+diff --git a/scipy/sparse/linalg/_eigen/tests/test_svds.py b/scipy/sparse/linalg/_eigen/tests/test_svds.py
+index 587d0eb6ed..6f89d1d73c 100644
+--- a/scipy/sparse/linalg/_eigen/tests/test_svds.py
++++ b/scipy/sparse/linalg/_eigen/tests/test_svds.py
+@@ -5,6 +5,7 @@ import numpy as np
+ from numpy.testing import assert_allclose, assert_equal, assert_array_equal
+ import pytest
+ 
++import scipy
+ from scipy.linalg import svd, null_space
+ from scipy.sparse import csc_matrix, issparse, spdiags, random
+ from scipy.sparse.linalg import LinearOperator, aslinearoperator
+@@ -518,6 +519,7 @@ class SVDSCommonTests:
+     A1 = [[1, 2, 3], [3, 4, 3], [1 + 1j, 0, 2], [0, 0, 1]]
+     A2 = [[1, 2, 3, 8 + 5j], [3 - 2j, 4, 3, 5], [1, 0, 2, 3], [0, 0, 1, 0]]
+ 
++    @pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
+     @pytest.mark.filterwarnings("ignore:k >= N - 1",
+                                 reason="needed to demonstrate #16725")
+     @pytest.mark.parametrize('A', (A1, A2))
+@@ -554,6 +556,7 @@ class SVDSCommonTests:
+             u, s, vh = svds(A2, k, solver=self.solver, random_state=0)
+         _check_svds(A, k, u, s, vh, atol=atol)
+ 
++    @pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
+     def test_svd_linop(self):
+         solver = self.solver
+ 
+@@ -650,6 +653,7 @@ class SVDSCommonTests:
+ 
+     SHAPES = ((100, 100), (100, 101), (101, 100))
+ 
++    @pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
+     @pytest.mark.filterwarnings("ignore:Exited at iteration")
+     @pytest.mark.filterwarnings("ignore:Exited postprocessing")
+     @pytest.mark.parametrize("shape", SHAPES)
+@@ -679,6 +683,7 @@ class SVDSCommonTests:
+     # --- Test Edge Cases ---
+     # Checks a few edge cases.
+ 
++    @pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
+     @pytest.mark.parametrize("shape", ((6, 5), (5, 5), (5, 6)))
+     @pytest.mark.parametrize("dtype", (float, complex))
+     def test_svd_LM_ones_matrix(self, shape, dtype):
+@@ -734,6 +739,7 @@ class SVDSCommonTests:
+         # Check that the singular values are zero.
+         assert_array_equal(s, 0)
+ 
++    @pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
+     @pytest.mark.parametrize("shape", ((20, 20), (20, 21), (21, 20)))
+     # ARPACK supports only dtype float, complex, or np.float32
+     @pytest.mark.parametrize("dtype", (float, complex, np.float32))
+@@ -756,6 +762,7 @@ class SVDSCommonTests:
+         # LOBPCG needs larger atol and rtol to pass
+         _check_svds_n(A, k, u, s, vh, atol=1e-3, rtol=1e0, check_svd=False)
+ 
++    @pytest.mark.skipif(scipy.show_config(mode='dicts')['Compilers']['fortran']['name'] == "intel-llvm", reason="segfaults with intel+mkl")
+     # ARPACK supports only dtype float, complex, or np.float32
+     @pytest.mark.filterwarnings("ignore:The problem size")
+     @pytest.mark.parametrize("dtype", (float, complex, np.float32))
