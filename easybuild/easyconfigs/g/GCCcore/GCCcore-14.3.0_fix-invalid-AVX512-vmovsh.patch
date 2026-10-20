@@ -1,0 +1,112 @@
+From c7de075586e658e43d1c968e2cc61ac4b6b29909 Mon Sep 17 00:00:00 2001
+From: Jakub Jelinek <jakub@redhat.com>
+Date: Fri, 16 Jan 2026 08:22:32 +0100
+Subject: [PATCH] i386: Fix up movhf_mask constraints [PR123607]
+
+As documented in the manuals and enforced by gas,
+VMOVSH two operand loads and three operands moves accept both
+masking and masking/zeroing, but VMOVSH two operand store accepts
+only masking:
+EVEX.LLIG.F3.MAP5.W0 10 /r VMOVSH xmm1{k1}{z}, m16
+EVEX.LLIG.F3.MAP5.W0 11 /r VMOVSH m16{k1}, xmm1
+EVEX.LLIG.F3.MAP5.W0 10 /r VMOVSH xmm1{k1}{z}, xmm2, xmm3
+EVEX.LLIG.F3.MAP5.W0 11 /r VMOVSH xmm1{k1}{z}, xmm2, xmm3
+But the constraints in movhf_mask define_insn were allowing 0C
+for all the alternatives.  The following patch enforces just 0
+(i.e. just non-zeroing masking) for the second alternative (i.e.
+the store).
+
+2026-01-16  Jakub Jelinek  <jakub@redhat.com>
+
+	PR target/123607
+	* config/i386/i386.md (movhf_mask): Change constraint on
+	match_operand 2's second alternative from 0C to 0.
+
+	* g++.target/i386/avx512fp16-pr123607.C: New test.
+
+(cherry picked from commit f779d064b968b594ed978a82a9d2cce4dea9a748)
+---
+ gcc/config/i386/i386.md                       |  2 +-
+ .../g++.target/i386/avx512fp16-pr123607.C     | 60 +++++++++++++++++++
+ 2 files changed, 61 insertions(+), 1 deletion(-)
+ create mode 100644 gcc/testsuite/g++.target/i386/avx512fp16-pr123607.C
+
+diff --git a/gcc/config/i386/i386.md b/gcc/config/i386/i386.md
+index 852065393159e..5148c8e9dcd30 100644
+--- a/gcc/config/i386/i386.md
++++ b/gcc/config/i386/i386.md
+@@ -24723,7 +24723,7 @@
+   [(set (match_operand:HF 0 "nonimmediate_operand" "=v,m,v")
+ 	(unspec:HF
+ 	  [(match_operand:HF 1 "nonimmediate_operand" "m,v,v")
+-	   (match_operand:HF 2 "nonimm_or_0_operand" "0C,0C,0C")
++	   (match_operand:HF 2 "nonimm_or_0_operand" "0C,0,0C")
+ 	   (match_operand:QI 3 "register_operand" "Yk,Yk,Yk")]
+ 	  UNSPEC_MOVCC_MASK))]
+   "TARGET_AVX512FP16"
+diff --git a/gcc/testsuite/g++.target/i386/avx512fp16-pr123607.C b/gcc/testsuite/g++.target/i386/avx512fp16-pr123607.C
+new file mode 100644
+index 0000000000000..6562ef266f0b0
+--- /dev/null
++++ b/gcc/testsuite/g++.target/i386/avx512fp16-pr123607.C
+@@ -0,0 +1,60 @@
++// PR target/123607
++// { dg-do assemble { target avx512fp16 } }
++// { dg-options "-std=c++23 -O2 -mavx512fp16" }
++
++namespace std::simd {
++template <int> struct basic_mask {
++  bool _M_data;
++  bool operator[](int) { return _M_data; }
++};
++template <int _Ap>
++  requires(_Ap > 1)
++struct basic_mask<_Ap> {
++  static constexpr int _N0 = _Ap / 2;
++  using _Mask1 = basic_mask<_N0>;
++  _Mask1 _M_data1;
++  static basic_mask _S_init(basic_mask<_N0>, _Mask1 __y) {
++    basic_mask __r;
++    __r._M_data1 = __y;
++    return __r;
++  }
++};
++template <int _Ap> struct basic_vec {
++  _Float16 _M_data;
++  using mask_type = basic_mask<_Ap>;
++  friend mask_type operator<(basic_vec __x, basic_vec __y) {
++    return mask_type(__x._M_data < __y._M_data);
++  }
++  friend basic_vec __select_impl(mask_type __k, basic_vec __t, basic_vec __f) {
++    return __k[0] ? __t : __f;
++  }
++};
++template <int _Ap>
++  requires(_Ap > 1)
++struct basic_vec<_Ap> {
++  static constexpr int _N0 = _Ap / 2;
++  using _DataType1 = basic_vec<_N0>;
++  _DataType1 _M_data0;
++  _DataType1 _M_data1;
++  using mask_type = basic_mask<_Ap>;
++  static basic_vec _S_init(_DataType1 __y) {
++    basic_vec __r;
++    __r._M_data1 = __y;
++    return __r;
++  }
++  friend mask_type operator<(basic_vec __x, basic_vec __y) {
++    return mask_type::_S_init(__x._M_data0 < __y._M_data0,
++                              __x._M_data1 < __y._M_data1);
++  }
++  friend basic_vec __select_impl(mask_type __k, basic_vec __t, basic_vec __f) {
++    return _S_init(__select_impl(__k._M_data1, __t._M_data1, __f._M_data1));
++  }
++};
++basic_vec<4> b;
++basic_vec<4> max(basic_vec<4> a) {
++  basic_mask __trans_tmp_1 = a < b;
++  return __select_impl(__trans_tmp_1, b, a);
++}
++}
++namespace simd = std::simd;
++simd::basic_vec test_runner___trans_tmp_2 = max(simd::basic_vec<4>());

@@ -4,6 +4,10 @@ name = 'RStudio-Server'
 version = "2023.09.1+494"
 versionsuffix = '-Java-%(javaver)s-R-%(rver)s'
 local_git_rev = 'cd7011dce393115d3a7c3db799dda4b1c7e88711'
+# commit for https://github.com/quarto-dev/quarto/tree/release/rstudio-mountain-hydrangea
+local_quarto_rev = '01345470a8f80becb1e128be24f59d2c34fb3a85'
+
+local_srcdir = 'rstudio-%s' % version.replace('+', '-')
 
 homepage = 'https://www.rstudio.com/'
 description = """This is the RStudio Server version.
@@ -20,9 +24,26 @@ and then used with:
 
 toolchain = {'name': 'foss', 'version': '2023a'}
 
-source_urls = ['https://github.com/rstudio/rstudio/archive']
-sources = ['v%(version)s.tar.gz']
-checksums = ['38526a5816e980b12aeaef7debd2151f08ef2e54fed83af2622eb7cdeeb479a2']
+source_urls = [
+    'https://github.com/rstudio/rstudio/archive',
+    'https://github.com/quarto-dev/quarto/archive',
+]
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'filename': '%s.tar.gz' % local_quarto_rev,
+        'extract_cmd': 'mkdir -p %(builddir)s/{}/src/gwt/lib/quarto && '
+        'tar xzf %s --strip-components=1 -C %(builddir)s/{}/src/gwt/lib/quarto'.format(local_srcdir, local_srcdir),
+    },
+]
+patches = ['rstudio-2023.09.1-494_use_quarto_sources.patch']
+checksums = [
+    {'v2023.09.1+494.tar.gz': '38526a5816e980b12aeaef7debd2151f08ef2e54fed83af2622eb7cdeeb479a2'},
+    {'01345470a8f80becb1e128be24f59d2c34fb3a85.tar.gz':
+     'd602c8bbbc7f58036c2e67ed2d11f6de0b9fb43eb0de1e5ba6961829f0f62363'},
+    {'rstudio-2023.09.1-494_use_quarto_sources.patch':
+     '09947200f1858bb6501ace4b237ecb4e8fb4a069fb8064b0cf60dba093c5df49'},
+]
 
 builddependencies = [
     ('ant', '1.10.14', '-Java-%(javaver)s', SYSTEM),
@@ -60,7 +81,6 @@ preconfigopts = " && ".join([
 
 # Inject resolutions block into generated package.json for quarto
 # we fix them to versions compatible with nodejs 18.17.1 used as dep on this ec
-local_srcdir = 'rstudio-%s' % version.replace('+', '-')
 prebuildopts = r"""sed -i '/"name": "quarto"/a\  "resolutions": { "mocha": "10.1.0", "glob": "10.4.5" },' """
 prebuildopts += '%(builddir)s/{}/src/gwt/lib/quarto/package.json && '.format(local_srcdir)
 
