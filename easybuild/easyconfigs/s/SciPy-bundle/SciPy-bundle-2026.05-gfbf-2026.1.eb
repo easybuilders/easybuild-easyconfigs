@@ -26,9 +26,23 @@ dependencies = [
     ('Python-bundle-PyPI', '2026.04'),
 ]
 
+# Work around a GCC RISC-V optimization issue: -ffp-int-builtin-inexact can cause floor/floorf to be
+# lowered to floating-point comparisons and float-to-integer conversions that raise FE_INVALID for NaN
+# inputs.
+# This breaks NumPy's expected floating-point exception handling (e.g. np.floor(np.nan) under
+# np.errstate(invalid='raise')).
+# Disable this optimization to preserve the libm floor/floorf behavior.
+if ARCH == 'riscv64':
+    local_numpy_preinstallopts = 'export CXXFLAGS="$CXXFLAGS -fno-fp-int-builtin-inexact"'
+    local_numpy_preinstallopts += ' CFLAGS="$CFLAGS -fno-fp-int-builtin-inexact"'
+    local_numpy_preinstallopts += ' FFLAGS="$FFLAGS -fno-fp-int-builtin-inexact" && '
+else:
+    local_numpy_preinstallopts = ''
+
 # order is important!
 exts_list = [
     ('numpy', '2.4.6', {
+        'preinstallopts': local_numpy_preinstallopts,
         'checksums': ['f3a3570c4a2a16746ac2c31a7c7c7b0c186b95ce902e33db6f28094ed7387dda'],
     }),
     ('ply', '3.11', {
@@ -58,6 +72,7 @@ exts_list = [
             'scipy-1.17.1_relax-tests-neoverse_v1.patch',
             'scipy-1.17.1_fix-tests-vector-norms.patch',
             'scipy-1.17.1_relax-tests-solve.patch',
+            'scipy-1.17.1_bary-rational-tolerance.patch',
         ],
         'checksums': [
             {'scipy-1.17.1.tar.gz': '95d8e012d8cb8816c226aef832200b1d45109ed4464303e997c5b13122b297c0'},
@@ -71,6 +86,8 @@ exts_list = [
              'fc0ec35825f4e292e6a83b2b7ac0ccbce948e1d848289e431fb15da83f5e1a8e'},
             {'scipy-1.17.1_relax-tests-solve.patch':
              '8988fe6005e2d45d0813233d0a152a24295336fa880f211c4389ff27b1182f30'},
+            {'scipy-1.17.1_bary-rational-tolerance.patch':
+             '90dff70042a3c64754802acdc971b3c4e932607959b0cb7d57e55ef6d388622c'},
         ],
     }),
     ('numexpr', '2.14.1', {
