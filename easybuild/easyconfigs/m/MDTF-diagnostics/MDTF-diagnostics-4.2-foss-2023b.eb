@@ -1,7 +1,8 @@
-# Author: Stamen Miroslavov, BSC 2025
-# Barcelona Supercomputing Center - Spain
+# Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center 2025
+# Updated: Stamen Miroslavov 2026
 
-easyblock = 'PythonPackage'
+easyblock = 'PythonBundle'
 
 name = 'MDTF-diagnostics'
 version = '4.2'
@@ -17,39 +18,56 @@ description = """The MDTF-diagnostics package is a portable framework for runnin
 
 toolchain = {'name': 'foss', 'version': '2023b'}
 
-source_urls = ['https://github.com/NOAA-GFDL/%(name)s/archive/refs/tags']
-sources = ['v%(version)s.tar.gz']
-checksums = ['6d01efaf7b430361aff43c74a6a66830aa5444117751b5be94f28d80ea76916e']
-
 dependencies = [
     ('Python', '3.11.5'),
     ('Python-bundle-PyPI', '2023.10'),
     ('SciPy-bundle', '2023.11'),
+    ('Ghostscript', '10.02.1'),
+    ('matplotlib', '3.8.2'),
+    ('zarr', '2.18.3'),
+    ('pydantic', '2.10.6'),
+    ('Pint', '0.24'),
+    ('PyYAML', '6.0.1'),
     ('xarray', '2024.5.0'),
-    ('netcdf4-python', '1.7.1.post2'),  # for cftime
+    ('dask', '2024.5.1'),
+    ('cftime', '1.6.4'),
+    ('cfunits', '3.3.7'),
+    ('cf-xarray', '0.10.4'),
+    ('netcdf4-python', '1.7.1.post2'),
 ]
 
-postinstallcmds = [
-    # Create a shim package directory so 'mdtf_diagnostics' resolves to the installed 'src' package
-    "mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages/mdtf_diagnostics && "
-    "cat > %(installdir)s/lib/python%(pyshortver)s/site-packages/mdtf_diagnostics/__init__.py <<'PY'\n"
-    "# Shim to alias 'mdtf_diagnostics' to the installed 'src' package\n"
-    "try:\n"
-    "    import importlib, sys\n"
-    "    _src = importlib.import_module('src')\n"
-    "    __path__ = _src.__path__\n"
-    "    # Ensure both casing variants point to the same module object\n"
-    "    sys.modules.setdefault('mdtf_diagnostics', _src)\n"
-    "    sys.modules.setdefault('MDTF_diagnostics', _src)\n"
-    "except Exception:\n"
-    "    # if src isn't importable at the moment, leave shim harmless\n"
-    "    pass\n"
-    "PY\n",
-    "cat > %(installdir)s/lib/python%(pyshortver)s/site-packages/mdtf_diagnostics.py <<'PY'\n"
-    "from src import *\n"
-    "PY\n"
+exts_list = [
+    ('entrypoints', '0.4', {
+        'checksums': ['b706eddaa9218a19ebcd67b56818f05bb27589b1ca9e8d797b74affad4ccacd4'],
+    }),
+    ('fastprogress', '1.0.3', {
+        'checksums': ['7a17d2b438890f838c048eefce32c4ded47197ecc8ea042cecc33d3deb8022f5'],
+    }),
+    ('intake', '0.7.0', {
+        'checksums': ['ce3b8bce87f9831823f87936c546f898dbb718985770124c7cc569061726f3b6'],
+    }),
+    ('intake-esm', '2024.2.6', {
+        'checksums': ['b2c472418cfeafb11b0a6b1ecfb6e0f36a7ece3360d960b9e8008023493a3b7d'],
+    }),
+    ('ecgtools', '2023.7.13', {
+        'checksums': ['7372a9d34e296316bd4fbd4d446e6e076c6d88850866e72efdd37b8341b0225e'],
+    }),
+    ('mdtf_diagnostics', version, {
+        'source_urls': ['https://github.com/NOAA-GFDL/MDTF-diagnostics/archive/refs/tags'],
+        'sources': 'v%(version)s.tar.gz',
+        'patches': [
+            'MDTF-diagnostics-4.2_prepare-for-pip-install.patch',
+            'MDTF-diagnostics-4.2_fix-python3.11-quotation.patch',
+        ],
+        'checksums': [
+            {'v4.2.tar.gz':
+             '6d01efaf7b430361aff43c74a6a66830aa5444117751b5be94f28d80ea76916e'},
+            {'MDTF-diagnostics-4.2_prepare-for-pip-install.patch':
+             '4cfcf8c7caa887a75a948667c3e362596cd2ec811ac5e5308b6cb25f6535de5c'},
+            {'MDTF-diagnostics-4.2_fix-python3.11-quotation.patch':
+             '3695db234d2f147c4e2fd2447466ba39ef37a3b8c1fc404676ac33ddb4878edf'},
+        ],
+    }),
 ]
-
-options = {'modulename': 'mdtf_diagnostics'}
 
 moduleclass = 'geo'
