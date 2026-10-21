@@ -1,0 +1,46 @@
+easyblock = 'MakeCp'
+
+name = 'GPUMD'
+version = '5.9.1'
+
+homepage = 'https://gpumd.org'
+description = """
+GPUMD stands for Graphics Processing Units Molecular Dynamics. It is a general-purpose molecular
+dynamics (MD) package fully implemented on graphics processing units (GPU). In addition to several
+empirical interatomic potentials, it supports neuroevolution potential (NEP) models. GPUMD also
+allows one to construct the latter type of models using the nep executable.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+github_account = 'brucefan1983'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [V_VERSION_TAR_GZ]
+checksums = ['e40d751790fb23393adef65178ef54d0b3c9112ca14baf4f42bbb5f40cb629f8']
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+]
+
+cuda_compute_capabilities = ['8.0', '9.0']
+
+buildopts = "-C src all CUDA_ARCH='%(cuda_cc_gencode)s'"
+
+files_to_copy = [
+    ([
+        ('src/gpumd', 'gpumd'),
+        ('src/nep', 'nep'),
+        ('src/gpumd_replica', 'gpumd_replica'),
+    ], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/gpumd',
+        'bin/nep',
+        'bin/gpumd_replica',
+    ],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
