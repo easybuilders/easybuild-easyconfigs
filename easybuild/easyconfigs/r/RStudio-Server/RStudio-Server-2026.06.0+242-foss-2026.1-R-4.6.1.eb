@@ -6,6 +6,8 @@ versionsuffix = '-R-%(rver)s'
 local_git_rev = 'd1dc28bb95f3e35b4c9d1d7536cb1da6de4d7aa7'
 # commit for https://github.com/quarto-dev/quarto/tree/release/rstudio-cranberry-hibiscus
 local_quarto_rev = '146e31e0b7d7654e696e499b3e7d0ee5e1605c70'
+local_quarto_dir = 'rstudio-' + version.replace('+', '-') + '/src/gwt/lib/quarto'
+
 
 homepage = 'https://www.rstudio.com/'
 description = """This is the RStudio Server version.
@@ -27,13 +29,13 @@ sources = [
     'v%(version)s.tar.gz',
     {
         'filename': f'{local_quarto_rev}.tar.gz',
-        'extract_cmd': 'mkdir -p %(start_dir)s/src/gwt/lib/quarto && '
-        'tar xzf %s --strip-components=1 -C %(start_dir)s/src/gwt/lib/quarto',
+        'extract_cmd': f"mkdir -p '{local_quarto_dir}' && "
+        f"tar xzf '%s' --strip-components=1 -C '{local_quarto_dir}'",
         'source_urls': ['https://github.com/quarto-dev/quarto/archive']
     },
 ]
 patches = [
-    'rstudio-2023.09.1-494_use_quarto_sources.patch',
+    'rstudio-2023.12.1-402_pin-yarn-version.patch',
     'RStudio-Server-1.2.1335-fix_env.patch',
     'RStudio-Server-2026.06.0+242_fix-SOCI-4.1.4.patch',
     'RStudio-Server-2026.06.0+242_fix-fmt-include-order.patch',
@@ -42,8 +44,8 @@ checksums = [
     {'v%(version)s.tar.gz': '6a3a1262da1952e60f90e842847482c9d4bed22cd5085adbe04c10eb8790f88a'},
     {f'{local_quarto_rev}.tar.gz':
      'c5093b9603a4be9d50d4491b4acafaf8ee87a2cc1feeecfe4c84b7d81f301478'},
-    {'rstudio-2023.09.1-494_use_quarto_sources.patch':
-     '09947200f1858bb6501ace4b237ecb4e8fb4a069fb8064b0cf60dba093c5df49'},
+    {'rstudio-2023.12.1-402_pin-yarn-version.patch':
+     '1eb0ad226fd440c8b0d5303ed6e0b98103fe46d09a64d818122ec3021f363385'},
     {'RStudio-Server-1.2.1335-fix_env.patch': 'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b'},
     {'RStudio-Server-2026.06.0+242_fix-SOCI-4.1.4.patch':
      '4da3b40b4af1e8838bea6b6dae7f45f95e7446358999de80b40e062559b2bcd2'},
@@ -93,7 +95,6 @@ preconfigopts = '(' + " && ".join([
     "./install-dictionaries",
     "./install-mathjax",
     "./install-quarto",  # Available for X86 and ARM
-    "./install-panmirror",
     "./install-npm-dependencies",
     "./install-copilot-language-server",
     "./install-gwt",
