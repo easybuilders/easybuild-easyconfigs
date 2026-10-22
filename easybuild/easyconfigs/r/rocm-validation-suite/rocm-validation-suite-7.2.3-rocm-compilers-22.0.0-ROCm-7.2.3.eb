@@ -1,0 +1,62 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'CMakeMake'
+
+name = 'rocm-validation-suite'
+version = '7.2.3'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/ROCmValidationSuite'
+description = """The ROCm Validation Suite (RVS) is a system validation and diagnostics tool for
+monitoring, stress testing, detecting and troubleshooting issues that affect AMD GPUs in a cluster
+environment running ROCm."""
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+source_urls = ['https://github.com/ROCm/ROCmValidationSuite/archive/refs/tags/']
+sources = [{
+    'download_filename': f'rocm-{version}.tar.gz',
+    'filename': f'ROCmValidationSuite-rocm-{version}.tar.gz',
+}]
+patches = ['rocm-validation-suite-7.2.3_fix-install-prefix.patch']
+checksums = [
+    # ROCmValidationSuite-rocm-7.2.3.tar.gz
+    '363009b394350a2ae1d8debe7092c96ab5aa2b183487aed6834580979e969c8c',
+    # rocm-validation-suite-7.2.3_fix-install-prefix.patch
+    'af6fd133f04f5dcad7ee88cd33a234e9e03d6110928d99218216fbd5a4c85241',
+]
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocm-smi', '7.6.0'),
+    ('rocminfo', '1.0.0'),
+    ('rocBLAS', '5.2.0'),
+    ('hipBLASLt', '1.2.2'),
+    ('rocRAND', '4.2.0'),
+    ('hipRAND', '3.1.0'),
+    ('amdsmi', '26.2.2', f'-ROCm-{_rocm_version}', ('GCCcore', '14.3.0')),
+    ('googletest', '1.17.0', '', ('GCCcore', '14.3.0')),
+    ('numactl', '2.0.19'),
+    ('yaml-cpp', '0.8.0'),
+    ('libdrm', '2.4.125', '', ('GCCcore', '14.3.0')),
+    ('libpci', '3.15.0', '', ('GCCcore', '14.3.0')),
+]
+
+configopts = '-DRVS_BUILD_TESTS=OFF '
+
+# Skip RPATH sanity check - libraries are found via module LD_LIBRARY_PATH
+postinstallcmds = ['true']
+
+sanity_check_paths = {
+    'files': ['bin/rvs'],
+    'dirs': ['lib/rvs', 'share'],
+}
+
+sanity_check_commands = ["rvs --version || true"]
+
+moduleclass = 'tools'

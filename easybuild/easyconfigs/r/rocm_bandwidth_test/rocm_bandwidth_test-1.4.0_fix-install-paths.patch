@@ -1,0 +1,40 @@
+Fix installation paths to use CMAKE_INSTALL_PREFIX instead of hardcoded paths
+
+When AMD_APP_STANDALONE_BUILD_PACKAGE is enabled, the installation was going
+to hardcoded paths instead of CMAKE_INSTALL_PREFIX. This patch fixes the
+DESTINATION in install() commands to use CMAKE_INSTALL_PREFIX.
+
+Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1234567..abcdefg 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -281,24 +281,24 @@ if(AMD_APP_STANDALONE_BUILD_PACKAGE OR AMD_APP_ENGINEERING_BUILD_PACKAGE)
+
+         ##  This installs $prefix/lib and $prefix/lib/plugins ($prefix/lib/<your_package_name>/plugins)
+         ##  Note: The ending '/' in the is important ${DIRECTORY} is important.
+         set(AMD_TARGET_INSTALL_PATH "${AMD_ROCM_STAGING_INSTALL_PATH}/${AMD_STANDALONE_STAGING_INSTALL_LIBDIR}")
+         install(DIRECTORY "${AMD_TARGET_INSTALL_STAGING_AREA_BASE}/${AMD_TARGET_INSTALL_PATH}/"
+-                DESTINATION "${AMD_TARGET_INSTALL_PATH}"
++                DESTINATION "${CMAKE_INSTALL_PREFIX}/${AMD_STANDALONE_STAGING_INSTALL_LIBDIR}"
+                 USE_SOURCE_PERMISSIONS
+         )
+
+         ##  This installs $prefix/bin
+         set(AMD_TARGET_INSTALL_PATH "${AMD_ROCM_STAGING_INSTALL_PATH}/${AMD_STANDALONE_STAGING_INSTALL_BINDIR}")
+         install(DIRECTORY "${AMD_TARGET_INSTALL_STAGING_AREA_BASE}/${AMD_TARGET_INSTALL_PATH}/"
+-                DESTINATION "${AMD_TARGET_INSTALL_PATH}"
++                DESTINATION "${CMAKE_INSTALL_PREFIX}/${AMD_STANDALONE_STAGING_INSTALL_BINDIR}"
+                 USE_SOURCE_PERMISSIONS
+         )
+
+         ## This install documentation
+         set(AMD_TARGET_INSTALL_PATH
+ 		"${AMD_ROCM_STAGING_INSTALL_PATH}/${AMD_STANDALONE_STAGING_INSTALL_DOCDIR}/${CPACK_PACKAGE_NAME}")
+         set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.md")
+-        install(FILES ${CPACK_RESOURCE_FILE_LICENSE} DESTINATION ${AMD_TARGET_INSTALL_PATH})
++        install(FILES ${CPACK_RESOURCE_FILE_LICENSE} DESTINATION "${CMAKE_INSTALL_PREFIX}/${AMD_STANDALONE_STAGING_INSTALL_DOCDIR}/${CPACK_PACKAGE_NAME}")
+
+         include(CPack)
+     endif()

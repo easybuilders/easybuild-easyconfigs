@@ -1,0 +1,28 @@
+Forces `hipcc` to locate `rocm_agent_enumerator` using the EasyBuild environment variable
+instead of relying on a monolithic ROCm path.
+
+Original issue: The `hipcc` C++ binary (`hipBin_amd.h`) hardcodes its search path for
+`rocm_agent_enumerator` based on a unified `$ROCM_PATH` (typically `/opt/rocm`). In an
+EasyBuild/EESSI environment, ROCm components are decoupled into separate modular directories.
+Consequently, `hipcc` fails to find `rocm_agent_enumerator` (from `rocminfo`), breaking
+downstream compilations that need GPU target detection.
+
+Note: Unlike ROCm 6.x which used Perl scripts, ROCm 7.2.3 hipcc is fully C++-based.
+The HIP_CLANG_PATH is already properly read from environment variables in hipBin_base.h,
+so only the rocm_agent_enumerator path needs to be patched.
+
+Author: Jan André Reuter <j.reuter@fz-juelich.de>
+Author: Sreenivasa Murthy Kolam <sreenivasamurthy.kolam@amd.com>
+
+--- llvm-project-rocm-7.2.3/amd/hipcc/src/hipBin_amd.h.orig	2025-02-26 22:42:00.000000000 +0530
++++ llvm-project-rocm-7.2.3/amd/hipcc/src/hipBin_amd.h	2025-08-05 12:00:00.000000000 +0530
+@@ -782,7 +782,8 @@
+     } else if (os != windows) {
+       // Else try using rocm_agent_enumerator
+       string ROCM_AGENT_ENUM;
+-      ROCM_AGENT_ENUM = roccmPath + "/bin/rocm_agent_enumerator";
++      // Use EBROOTROCMINFO environment variable set by EasyBuild's rocminfo module
++      ROCM_AGENT_ENUM = string(getenv("EBROOTROCMINFO")) + "/bin/rocm_agent_enumerator";
+       targetsStr = ROCM_AGENT_ENUM +" -t GPU";
+       SystemCmdOut sysOut = hipBinUtilPtr_->exec(targetsStr.c_str());
+       regex toReplace("\n+");

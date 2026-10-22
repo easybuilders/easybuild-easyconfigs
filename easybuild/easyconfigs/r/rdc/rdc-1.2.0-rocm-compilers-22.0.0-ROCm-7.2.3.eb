@@ -1,0 +1,51 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'ROCmComponent'
+
+name = 'rdc'
+version = '1.2.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/rdc'
+description = """ROCm Data Center Tool (RDC) simplifies administration and addresses key infrastructure
+challenges in AMD GPUs within cluster and datacenter environments. RDC offers GPU telemetry, statistics
+for jobs, and integration with third-party tools."""
+docurls = ['https://rocm.docs.amd.com/projects/rdc/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+github_account = 'ROCm'
+local_repo_name = 'rocm-systems'
+source_urls = [f'https://github.com/{github_account}/{local_repo_name}/archive']
+sources = [{
+    'download_filename': f'rocm-{_rocm_version}.tar.gz',
+    'filename': f'{local_repo_name}-rocm-{_rocm_version}.tar.gz',
+}]
+checksums = ['e90cfd8694af28a56433c8827a581ee12a4ba835f0d952436741d9e0f3f8685b']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('gRPC', '1.76.0', '', ('GCCcore', '14.3.0')),
+    ('protobuf', '31.1', '', ('GCCcore', '14.3.0')),
+    ('rocm-validation-suite', _rocm_version),
+    ('libcap', '2.25', '', ('GCCcore', '14.3.0')),
+    ('rocm-core', _rocm_version, f'-ROCm-{_rocm_version}'),
+]
+
+# Build from the projects/rdc subdirectory
+start_dir = 'projects/rdc'
+
+configopts = '-DBUILD_STANDALONE=ON '
+configopts += '-DBUILD_RUNTIME=ON '
+configopts += '-DROCM_DIR=%(installdir)s '
+
+sanity_check_paths = {
+    'files': ['bin/rdcd', 'bin/rdci', 'lib/librdc_bootstrap.%s' % SHLIB_EXT],
+    'dirs': ['include/rdc'],
+}
+
+moduleclass = 'tools'
