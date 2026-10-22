@@ -1,0 +1,17 @@
+Do not consider SM 8.9 sufficient for FP8 as e.g. NCCL requires SM 9.0, as seen in test_scaled_mm:
+>  FP8 reduction support begins with sm90 capable devices.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/common_cuda.py b/torch/testing/_internal/common_cuda.py
+--- a/torch/testing/_internal/common_cuda.py
++++ b/torch/testing/_internal/common_cuda.py
+@@ -105,7 +105,7 @@ def evaluate_platform_supports_fp8():
+                 if arch in torch.cuda.get_device_properties(0).gcnArchName:
+                     return True
+         else:
+-            return SM90OrLater or torch.cuda.get_device_capability() == (8, 9)
++            return SM90OrLater
+     return False
+ 
+ def evaluate_platform_supports_fp8_grouped_gemm():
