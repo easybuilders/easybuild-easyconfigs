@@ -6,8 +6,8 @@ versionsuffix = '-Java-%(javaver)s-R-%(rver)s'
 local_git_rev = 'cd7011dce393115d3a7c3db799dda4b1c7e88711'
 # commit for https://github.com/quarto-dev/quarto/tree/release/rstudio-mountain-hydrangea
 local_quarto_rev = '01345470a8f80becb1e128be24f59d2c34fb3a85'
+local_quarto_dir = 'rstudio-' + version.replace('+', '-') + '/src/gwt/lib/quarto'
 
-local_srcdir = 'rstudio-%s' % version.replace('+', '-')
 
 homepage = 'https://www.rstudio.com/'
 description = """This is the RStudio Server version.
@@ -24,25 +24,27 @@ and then used with:
 
 toolchain = {'name': 'foss', 'version': '2023a'}
 
-source_urls = [
-    'https://github.com/rstudio/rstudio/archive',
-    'https://github.com/quarto-dev/quarto/archive',
-]
+source_urls = ['https://github.com/rstudio/rstudio/archive']
 sources = [
     'v%(version)s.tar.gz',
     {
-        'filename': '%s.tar.gz' % local_quarto_rev,
-        'extract_cmd': 'mkdir -p %(builddir)s/{}/src/gwt/lib/quarto && '
-        'tar xzf %s --strip-components=1 -C %(builddir)s/{}/src/gwt/lib/quarto'.format(local_srcdir, local_srcdir),
+        'filename': f'{local_quarto_rev}.tar.gz',
+        'extract_cmd': f"mkdir -p '{local_quarto_dir}' && "
+        f"tar xzf '%s' --strip-components=1 -C '{local_quarto_dir}'",
+        'source_urls': ['https://github.com/quarto-dev/quarto/archive']
     },
 ]
-patches = ['rstudio-2023.09.1-494_use_quarto_sources.patch']
+patches = [
+    'rstudio-2023.12.1-402_pin-yarn-version.patch',
+    'RStudio-Server-1.2.1335-fix_env.patch',
+]
 checksums = [
     {'v2023.09.1+494.tar.gz': '38526a5816e980b12aeaef7debd2151f08ef2e54fed83af2622eb7cdeeb479a2'},
-    {'01345470a8f80becb1e128be24f59d2c34fb3a85.tar.gz':
+    {f'{local_quarto_rev}.tar.gz':
      'd602c8bbbc7f58036c2e67ed2d11f6de0b9fb43eb0de1e5ba6961829f0f62363'},
-    {'rstudio-2023.09.1-494_use_quarto_sources.patch':
-     '09947200f1858bb6501ace4b237ecb4e8fb4a069fb8064b0cf60dba093c5df49'},
+    {'rstudio-2023.12.1-402_pin-yarn-version.patch':
+     '1eb0ad226fd440c8b0d5303ed6e0b98103fe46d09a64d818122ec3021f363385'},
+    {'RStudio-Server-1.2.1335-fix_env.patch': 'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b'},
 ]
 
 builddependencies = [
@@ -66,23 +68,30 @@ osdependencies = [
     ('pam-devel', 'libpam0g-dev')
 ]
 
+local_avoid_home_cmds = " && ".join(
+    f"export {name}='%(builddir)s/.eb-{name}'" for name in (
+        # $HOME/.npm
+        'npm_config_cache',
+        # $HOME/R
+        'R_LIBS_USER',
+        'R_USER_CACHE_DIR',
+        'R_USER_CONFIG_DIR',
+        'R_USER_DATA_DIR',
+    )
+)
+
 preconfigopts = " && ".join([
     # Install dependencies via scripts. Done in subshell to preserve PWD
     "(export RSTUDIO_TOOLS_ROOT='%(builddir)s'",
+    local_avoid_home_cmds,
     "cd '%(start_dir)s/dependencies/common'",
     "./install-cef",
     "./install-dictionaries",
     "./install-mathjax",
     "./install-pandoc",
-    "./install-panmirror",
     "./install-npm-dependencies)",
     ""
 ])
-
-# Inject resolutions block into generated package.json for quarto
-# we fix them to versions compatible with nodejs 18.17.1 used as dep on this ec
-prebuildopts = r"""sed -i '/"name": "quarto"/a\  "resolutions": { "mocha": "10.1.0", "glob": "10.4.5" },' """
-prebuildopts += '%(builddir)s/{}/src/gwt/lib/quarto/package.json && '.format(local_srcdir)
 
 configopts = " ".join([
     "-DRSTUDIO_TOOLS_ROOT='%(builddir)s'",
@@ -93,6 +102,12 @@ configopts = " ".join([
     "-DQUARTO_ENABLED=OFF",  # Not available on all archs, use pandoc fallback
     "-DRSTUDIO_GIT_REVISION_HASH=" + local_git_rev
 ])
+
+# Inject resolutions block into generated package.json for quarto
+# we fix them to versions compatible with nodejs 18.17.1 used as dep on this ec
+prebuildopts = r"""sed -i '/"name": "quarto"/a\  "resolutions": { "mocha": "10.1.0", "glob": "10.4.5" },' """
+prebuildopts += f'%(builddir)s/{local_quarto_dir}/package.json && '
+prebuildopts += f'{local_avoid_home_cmds} && '
 
 sanity_check_commands = [
     # RSession requires environment variables R_HOME and R_DOC_DIR

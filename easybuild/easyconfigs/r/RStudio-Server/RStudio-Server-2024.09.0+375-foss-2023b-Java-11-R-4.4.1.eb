@@ -4,6 +4,10 @@ name = 'RStudio-Server'
 version = '2024.09.0+375'
 versionsuffix = '-Java-%(javaver)s-R-%(rver)s'
 local_git_rev = 'c8fc7aee6dc218d5687553f9041c6b1e5ea268ff'
+# commit for https://github.com/quarto-dev/quarto/tree/release/rstudio-cranberry-hibiscus
+local_quarto_rev = '146e31e0b7d7654e696e499b3e7d0ee5e1605c70'
+local_quarto_dir = 'rstudio-' + version.replace('+', '-') + '/src/gwt/lib/quarto'
+
 
 homepage = 'https://www.rstudio.com/'
 description = """This is the RStudio Server version.
@@ -21,13 +25,26 @@ and then used with:
 toolchain = {'name': 'foss', 'version': '2023b'}
 
 source_urls = ['https://github.com/rstudio/rstudio/archive']
-sources = ['v%(version)s.tar.gz']
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'filename': f'{local_quarto_rev}.tar.gz',
+        'extract_cmd': f"mkdir -p '{local_quarto_dir}' && "
+        f"tar xzf '%s' --strip-components=1 -C '{local_quarto_dir}'",
+        'source_urls': ['https://github.com/quarto-dev/quarto/archive']
+    },
+]
 patches = [
+    'rstudio-2023.12.1-402_pin-yarn-version.patch',
     'RStudio-Server-1.2.1335-fix_env.patch',
     'RStudio-Server-r_home-typo.patch',
 ]
 checksums = [
     {'v2024.09.0+375.tar.gz': '8a29b77c53a3db8379d824a9f4a491843036003d105ed71981cd40fe39d2c8c8'},
+    {f'{local_quarto_rev}.tar.gz':
+     'c5093b9603a4be9d50d4491b4acafaf8ee87a2cc1feeecfe4c84b7d81f301478'},
+    {'rstudio-2023.12.1-402_pin-yarn-version.patch':
+     '1eb0ad226fd440c8b0d5303ed6e0b98103fe46d09a64d818122ec3021f363385'},
     {'RStudio-Server-1.2.1335-fix_env.patch': 'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b'},
     {'RStudio-Server-r_home-typo.patch': '642a298a9e7342fca0de8bde233f80bedc9e9524b2fc2553e859925b09c5513f'},
 ]
@@ -53,15 +70,27 @@ osdependencies = [
     ('pam-devel', 'libpam0g-dev')
 ]
 
+local_avoid_home_cmds = " && ".join(
+    f"export {name}='%(builddir)s/.eb-{name}'" for name in (
+        # $HOME/.npm
+        'npm_config_cache',
+        # $HOME/R
+        'R_LIBS_USER',
+        'R_USER_CACHE_DIR',
+        'R_USER_CONFIG_DIR',
+        'R_USER_DATA_DIR',
+    )
+)
+
 preconfigopts = " && ".join([
     # Install dependencies via scripts. Done in subshell to preserve PWD
     "(export RSTUDIO_TOOLS_ROOT='%(builddir)s'",
+    local_avoid_home_cmds,
     "cd '%(start_dir)s/dependencies/common'",
     "./install-cef",
     "./install-dictionaries",
     "./install-mathjax",
     "./install-pandoc",
-    "./install-panmirror",
     "./install-npm-dependencies)",
     ""
 ])
@@ -75,6 +104,9 @@ configopts = " ".join([
     "-DQUARTO_ENABLED=OFF",  # Not available on all archs, use pandoc fallback
     "-DRSTUDIO_GIT_REVISION_HASH=" + local_git_rev
 ])
+
+prebuildopts = f'{local_avoid_home_cmds} && '
+
 
 sanity_check_commands = [
     # RSession requires environment variables R_HOME and R_DOC_DIR

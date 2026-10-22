@@ -4,6 +4,10 @@ name = 'RStudio-Server'
 version = '2024.12.0+467'
 versionsuffix = '-R-%(rver)s'
 local_git_rev = 'cf37a3e5488c937207f992226d255be71f5e3f41'
+# commit for https://github.com/quarto-dev/quarto/tree/release/rstudio-kousa-dogwood
+local_quarto_rev = '7d1582d06250216d18696145879415e473a2ae4d'
+local_quarto_dir = 'rstudio-' + version.replace('+', '-') + '/src/gwt/lib/quarto'
+
 
 homepage = 'https://www.rstudio.com/'
 description = """This is the RStudio Server version.
@@ -21,15 +25,28 @@ and then used with:
 toolchain = {'name': 'foss', 'version': '2024a'}
 
 source_urls = ['https://github.com/rstudio/rstudio/archive']
-sources = ['v%(version)s.tar.gz']
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'filename': f'{local_quarto_rev}.tar.gz',
+        'extract_cmd': f"mkdir -p '{local_quarto_dir}' && "
+        f"tar xzf '%s' --strip-components=1 -C '{local_quarto_dir}'",
+        'source_urls': ['https://github.com/quarto-dev/quarto/archive']
+    },
+]
 patches = [
     'RStudio-Server-1.2.1335-fix_env.patch',
     'RStudio-Server-r_home-typo.patch',
+    'rstudio-2023.12.1-402_pin-yarn-version.patch',
 ]
 checksums = [
     {'v%(version)s.tar.gz': '4f976a3b77f1c3b6a61b8e1a1850aeba0e0a847efbfc17b03b2fcb19fce13d6a'},
+    {f'{local_quarto_rev}.tar.gz':
+     '6ebf7739db234f68436969c4edcaa36d6867746ddd7a9c3fce78873645a56808'},
     {'RStudio-Server-1.2.1335-fix_env.patch': 'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b'},
     {'RStudio-Server-r_home-typo.patch': '642a298a9e7342fca0de8bde233f80bedc9e9524b2fc2553e859925b09c5513f'},
+    {'rstudio-2023.12.1-402_pin-yarn-version.patch':
+     '1eb0ad226fd440c8b0d5303ed6e0b98103fe46d09a64d818122ec3021f363385'},
 ]
 
 builddependencies = [
@@ -53,15 +70,27 @@ osdependencies = [
     ('pam-devel', 'libpam0g-dev')
 ]
 
+local_avoid_home_cmds = " && ".join(
+    f"export {name}='%(builddir)s/.eb-{name}'" for name in (
+        # $HOME/.npm
+        'npm_config_cache',
+        # $HOME/R
+        'R_LIBS_USER',
+        'R_USER_CACHE_DIR',
+        'R_USER_CONFIG_DIR',
+        'R_USER_DATA_DIR',
+    )
+)
+
 preconfigopts = " && ".join([
     # Install dependencies via scripts. Done in subshell to preserve PWD
     "(export RSTUDIO_TOOLS_ROOT='%(builddir)s'",
+    local_avoid_home_cmds,
     "cd '%(start_dir)s/dependencies/common'",
     "./install-cef",
     "./install-dictionaries",
     "./install-mathjax",
     "./install-quarto",  # Available for X86 and ARM
-    "./install-panmirror",
     "./install-npm-dependencies)",
     ""
 ])
@@ -79,6 +108,7 @@ configopts = " ".join([
 # fix for compatibility with Boost-1.85.0
 prebuildopts = "sed -i 's/return afterResponse_;/return static_cast<bool>(afterResponse_);/' "
 prebuildopts += '%(start_dir)s/src/cpp/core/json/JsonRpc.cpp && '
+prebuildopts += f'{local_avoid_home_cmds} && '
 
 sanity_check_commands = [
     # RSession requires environment variables R_HOME and R_DOC_DIR
