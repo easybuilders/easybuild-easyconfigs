@@ -1,0 +1,20 @@
+Fix for
+undefined reference to symbol 'dlclose@@GLIBC_2.2.5'
+
+.../ld: /lib64/libdl.so.2: error adding symbols: DSO missing from command line
+
+From 612cdc8f4868a405860ea5f08fb8b4e707327a1e Mon Sep 17 00:00:00 2001
+From: dolpm <34420038+dolpm@users.noreply.github.com>
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/162643
+
+diff --git a/test/cpp/nativert/CMakeLists.txt b/test/cpp/nativert/CMakeLists.txt
+--- a/test/cpp/nativert/CMakeLists.txt
++++ b/test/cpp/nativert/CMakeLists.txt
+@@ -63,6 +63,7 @@ target_compile_definitions(test_nativert PRIVATE USE_GTEST)
+ 
+ set(NATIVERT_TEST_DEPENDENCIES torch gtest_main)
+ 
++target_link_libraries(test_nativert PRIVATE ${CMAKE_DL_LIBS})
+ target_link_libraries(test_nativert PRIVATE ${NATIVERT_TEST_DEPENDENCIES})
+ target_link_libraries(test_nativert PRIVATE fmt::fmt-header-only)
+ target_include_directories(test_nativert PRIVATE ${ATen_CPU_INCLUDE})
