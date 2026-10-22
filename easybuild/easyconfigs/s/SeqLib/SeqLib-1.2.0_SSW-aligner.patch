@@ -1,0 +1,16 @@
+Recent SSW code changed API with additional masklen parameter
+Reading the old code, the behavior was to take the size of the first parameter (seq)
+Even though SSW documentation suggests using max(readlen/2, 15) i opt to use restore the old behavior.
+author: micketeer@gmail.com
+--- src/BamRecord.cpp.orig	2026-06-10 22:17:54.072190510 +0200
++++ src/BamRecord.cpp	2026-06-10 22:29:35.298592311 +0200
+@@ -148,7 +148,8 @@
+     // Declares an alignment that stores the result
+     StripedSmithWaterman::Alignment alignment;
+     // Aligns the seq to the ref
+-    aligner.Align(seq.c_str(), ref.c_str(), ref.size(), filter, &alignment);
++    int masklen = seq.size();  // old behavior in SSW did this
++    aligner.Align(seq.c_str(), seq.size(), ref.c_str(), ref.size(), filter, alignment, masklen);
+ 
+     init();
+     b->core.tid = gr->chr;
