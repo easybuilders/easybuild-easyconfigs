@@ -1,0 +1,31 @@
+The OpenMP vendor string in numba.np.ufunc.omppool is chosen at compile time
+(__clang__ -> "Intel", which icx/icpx define; otherwise "GNU" on Linux).
+When numba is built with Intel oneAPI icx/icpx on Linux, the omppool backend is
+correctly linked against Intel OpenMP (libiomp5) and reports "Intel", but the
+test hard-codes "GNU" for Linux. Accept both vendors on Linux.
+Applies unchanged to numba 0.60.0 and 0.62.0.
+Author: Simon Pinches (ITER)
+diff -ruN numba-0.60.0.orig/numba/tests/test_parallel_backend.py numba-0.60.0/numba/tests/test_parallel_backend.py
+--- numba-0.60.0.orig/numba/tests/test_parallel_backend.py	2024-06-13 10:56:33.000000000 +0200
++++ numba-0.60.0/numba/tests/test_parallel_backend.py	2026-09-06 11:33:56.538988412 +0200
+@@ -1238,15 +1238,16 @@
+         Checks the OpenMP vendor strings are correct
+         """
+         expected = dict()
+-        expected['win32'] = "MS"
+-        expected['darwin'] = "Intel"
+-        expected['linux'] = "GNU"
++        expected['win32'] = ("MS",)
++        expected['darwin'] = ("Intel",)
++        # Intel oneAPI (icx/icpx) uses Intel OpenMP (libiomp5) on Linux too
++        expected['linux'] = ("GNU", "Intel")
+ 
+         # only check OS that are supported, custom toolchains may well work as
+         # may other OS
+         for k in expected.keys():
+             if sys.platform.startswith(k):
+-                self.assertEqual(expected[k], omppool.openmp_vendor)
++                self.assertIn(omppool.openmp_vendor, expected[k])
+ 
+ 
+ if __name__ == '__main__':
