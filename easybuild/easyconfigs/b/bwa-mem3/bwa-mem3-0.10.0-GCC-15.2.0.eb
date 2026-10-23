@@ -8,6 +8,7 @@ description = """Accelerated short-read alignment, derived from bwa-mem2 — dro
 correctness fixes, performance improvements, single-binary methylation, and shared-memory index."""
 
 toolchain = {'name': 'GCC', 'version': '15.2.0'}
+toolchainopts = {'openmp': True}
 
 source_urls = ['https://github.com/fg-labs/bwa-mem3/releases/download/v%(version)s']
 sources = [{
@@ -22,13 +23,11 @@ checksums = [
 ]
 
 builddependencies = [
-    ('binutils', '2.45'),
     ('CMake', '4.2.1'),
     ('pkgconf', '2.5.1'),
 ]
 
 dependencies = [
-    ('LLVM', '21.1.8'),
     ('HTSlib', '1.23.1'),
     ('libsais', '2.10.4'),
     ('zlib', '2.3.2'),
@@ -36,8 +35,7 @@ dependencies = [
     ('libdeflate', '1.25'),
 ]
 
-prebuildopts = 'export LDFLAGS="$LDFLAGS -fuse-ld=bfd" && '
-buildopts = 'CC=clang CXX=clang++ LIBS_EXTRA=-lrt ZLIBNG_USE_VENDORED=0'
+buildopts = 'LIBS_EXTRA=-lrt ZLIBNG_USE_VENDORED=0'
 
 files_to_copy = [
     (['bwa-mem3'], 'bin'),
@@ -49,7 +47,7 @@ sanity_check_paths = {
     'dirs': ['test'],
 }
 
-_sanity_test_cmd = ' && '.join([
+local_sanity_test_cmd = ' && '.join([
     'tmpd=$(mktemp -d)',
     'cd "${tmpd}"',
     'bwa-mem3 index -p phix %(installdir)s/test/phix.fa',
@@ -59,7 +57,7 @@ _sanity_test_cmd = ' && '.join([
 
 sanity_check_commands = [
     'bwa-mem3 version',
-    _sanity_test_cmd,
+    local_sanity_test_cmd,
 ]
 
 moduleclass = 'bio'
