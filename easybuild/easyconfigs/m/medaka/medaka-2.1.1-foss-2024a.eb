@@ -1,0 +1,78 @@
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Danilo Gonzalez <danilo.gonzalez@hpcnow.com>
+# License::     GPL-v3.0
+# Updated to foss-2020b to use with artic tool
+# J. Sassmannshausen (GSTT/NHS UK)
+# Updated to 1.5.0
+# Jasper Grimm (UoY)
+# Updated: Petr Král (INUITS)
+# Updated: IArts (UAntwerp)
+
+easyblock = 'PythonBundle'
+
+name = 'medaka'
+version = '2.1.1'
+
+homepage = 'https://github.com/nanoporetech/medaka'
+description = "medaka is a tool to create a consensus sequence from nanopore sequencing data."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'pic': True}
+
+builddependencies = [('Autotools', '20231222'), ('Cython', '3.0.10')]
+
+_minimap_ver = '2.29'
+dependencies = [
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),  # includes cffi, intervaltree, packaging, requests, toml
+    ('PyTorch', '2.6.0'),  # includes numpy 1.26
+    ('h5py', '3.12.1'),
+    ('edlib', '1.3.9.post1'),
+    ('ont-fast5-api', '4.1.3'),
+    ('python-parasail', '1.3.4'),
+    ('Pysam', '0.22.1'),
+    ('pyspoa', '0.2.1'),
+    ('tqdm', '4.66.5'),
+    ('SAMtools', '1.21'),
+    ('minimap2', _minimap_ver),
+    ('HTSlib', '1.21'),  # for tabix, bgzip
+    ('BCFtools', '1.21'),
+]
+
+local_sed_commands = [
+    # ont-parasail on PyPI is just pre-built wheels for (python-)parasail
+    "sed -i 's/ont-parasail/parasail/g' requirements.txt",
+    "sed -i 's/ont-mappy/mappy/g' requirements.txt",
+    "sed -i 's/h5py~=3.10.0/h5py~=3.10/g' requirements.txt",
+]
+
+exts_list = [
+    ('mappy', _minimap_ver, {
+        'checksums': ['43dda2693c963152ddb5be9eac2b7ea0c943cba9becd79494a9f2b8804039a9a'],
+    }),
+    ('wurlitzer', '3.1.1', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['0b2749c2cde3ef640bf314a9f94b24d929fe1ca476974719a6909dfc568c3aac'],
+    }),
+    ('pyabpoa', '1.5.4', {
+        'checksums': ['42ecbb7e1a4e0cad1bdb661d161b4b2a41c5735f095cd4842536551da73c77e6'],
+    }),
+    (name, version, {
+        'checksums': ['81f048bf0c56753bdfeee84114b78fa08655bc38e6f2fcdc06214de47e07426a'],
+        # Some requirements are too strict.
+        'preinstallopts': " && ".join(local_sed_commands) + ' && export WITHDEFLATE=1 && ',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/medaka', 'bin/medaka_consensus', 'bin/medaka_version_report'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "medaka --help",
+    "medaka_version_report",
+]
+
+moduleclass = 'bio'
