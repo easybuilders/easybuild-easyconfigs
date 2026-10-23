@@ -1,0 +1,318 @@
+This patch is needed to prevent from NCL to be installed in an incorrect path, when the install
+path contains a substring that is a literal arch definition. This is caused by the ymake macros
+during configure, and in these cases the arch substring gets replaced by a "1", and the
+destination paths end up deformed.
+
+In my case I had:
+My path   = /random/path/x86_64/software/NCL/6.6.2-foss-2023b
+
+Which ended up being redefined as:
+YMAKEROOT = /random/path/1/software/NCL/6.6.2-foss-2023b
+etc.
+
+As a solution, I store the arch value in a separate variable, while the paths are being defined,
+and later I restore the original variable.
+
+Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+Barcelona Supercomputing Center 2026
+
+diff -ruNBbw a/config/Template b/config/Template
+--- a/config/Template	2019-02-28 00:44:39.000000000 +0100
++++ b/config/Template	2026-06-25 14:51:36.074738746 +0200
+@@ -58,6 +58,151 @@
+ NGCOMM Including Site - first time
+ NGCOMM
+ NGCOMM########################################################################
++
++/*
++/* 
++ * Prevent architecture CPP symbols (x86_64, aarch64, ppc64le, ...)
++ * from being expanded inside installation paths while SiteFile is
++ * processed. The symbols are restored afterwards so that normal
++ * architecture-dependent build logic continues to work.
++ *
++ * 
++ * Each arch case has to be treated separately.
++ */
++
++/*****************************************************************************/
++/* x86 */
++
++#ifdef i386
++#define _NCL_SAVE_i386
++#undef i386
++#endif
++
++#ifdef i486
++#define _NCL_SAVE_i486
++#undef i486
++#endif
++
++#ifdef i586
++#define _NCL_SAVE_i586
++#undef i586
++#endif
++
++#ifdef i686
++#define _NCL_SAVE_i686
++#undef i686
++#endif
++
++#ifdef x86_64
++#define _NCL_SAVE_x86_64
++#undef x86_64
++#endif
++
++#ifdef amd64
++#define _NCL_SAVE_amd64
++#undef amd64
++#endif
++
++/* ARM */
++
++#ifdef arm
++#define _NCL_SAVE_arm
++#undef arm
++#endif
++
++#ifdef arm64
++#define _NCL_SAVE_arm64
++#undef arm64
++#endif
++
++#ifdef aarch64
++#define _NCL_SAVE_aarch64
++#undef aarch64
++#endif
++
++/* Power */
++
++#ifdef ppc
++#define _NCL_SAVE_ppc
++#undef ppc
++#endif
++
++#ifdef ppc64
++#define _NCL_SAVE_ppc64
++#undef ppc64
++#endif
++
++#ifdef ppc64le
++#define _NCL_SAVE_ppc64le
++#undef ppc64le
++#endif
++
++/* Intel Itanium */
++
++#ifdef ia64
++#define _NCL_SAVE_ia64
++#undef ia64
++#endif
++
++/* Alpha */
++
++#ifdef alpha
++#define _NCL_SAVE_alpha
++#undef alpha
++#endif
++
++/* SPARC */
++
++#ifdef sparc
++#define _NCL_SAVE_sparc
++#undef sparc
++#endif
++
++#ifdef sparc64
++#define _NCL_SAVE_sparc64
++#undef sparc64
++#endif
++
++/* MIPS */
++
++#ifdef mips
++#define _NCL_SAVE_mips
++#undef mips
++#endif
++
++/* CRAY */
++
++#ifdef cray2
++#define _NCL_SAVE_cray2
++#undef cray2
++#endif
++
++#ifdef cray3
++#define _NCL_SAVE_cray3
++#undef cray3
++#endif
++
++#ifdef YMP
++#define _NCL_SAVE_YMP
++#undef YMP
++#endif
++
++#ifdef C90
++#define _NCL_SAVE_C90
++#undef C90
++#endif
++
++#ifdef J90
++#define _NCL_SAVE_J90
++#undef J90
++#endif
++
++#ifdef TS
++#define _NCL_SAVE_TS
++#undef TS
++#endif
++/*****************************************************************************/
++
+ #define FirstSite
+ #include SiteFile
+ #undef FirstSite
+@@ -623,6 +768,144 @@
+ LIB_SEARCH		= $(LIBSEARCH) ExtraLibSearch
+ INC_SEARCH		= $(INCSEARCH) ExtraIncSearch
+ 
++/*
++ * Restore architecture symbols exactly as they would have been
++ * defined by ymake (-D<arch>) so that subsequent architecture-
++ * dependent logic behaves unchanged.
++ */
++/*****************************************************************************/
++/* x86 */
++
++#ifdef _NCL_SAVE_i386
++#define i386 1
++#undef _NCL_SAVE_i386
++#endif
++
++#ifdef _NCL_SAVE_i486
++#define i486 1
++#undef _NCL_SAVE_i486
++#endif
++
++#ifdef _NCL_SAVE_i586
++#define i586 1
++#undef _NCL_SAVE_i586
++#endif
++
++#ifdef _NCL_SAVE_i686
++#define i686 1
++#undef _NCL_SAVE_i686
++#endif
++
++#ifdef _NCL_SAVE_x86_64
++#define x86_64 1
++#undef _NCL_SAVE_x86_64
++#endif
++
++#ifdef _NCL_SAVE_amd64
++#define amd64 1
++#undef _NCL_SAVE_amd64
++#endif
++
++/* ARM */
++
++#ifdef _NCL_SAVE_arm
++#define arm 1
++#undef _NCL_SAVE_arm
++#endif
++
++#ifdef _NCL_SAVE_arm64
++#define arm64 1
++#undef _NCL_SAVE_arm64
++#endif
++
++#ifdef _NCL_SAVE_aarch64
++#define aarch64 1
++#undef _NCL_SAVE_aarch64
++#endif
++
++/* Power */
++
++#ifdef _NCL_SAVE_ppc
++#define ppc 1
++#undef _NCL_SAVE_ppc
++#endif
++
++#ifdef _NCL_SAVE_ppc64
++#define ppc64 1
++#undef _NCL_SAVE_ppc64
++#endif
++
++#ifdef _NCL_SAVE_ppc64le
++#define ppc64le 1
++#undef _NCL_SAVE_ppc64le
++#endif
++
++/* Intel Itanium */
++
++#ifdef _NCL_SAVE_ia64
++#define ia64 1
++#undef _NCL_SAVE_ia64
++#endif
++
++/* Alpha */
++
++#ifdef _NCL_SAVE_alpha
++#define alpha 1
++#undef _NCL_SAVE_alpha
++#endif
++
++/* SPARC */
++
++#ifdef _NCL_SAVE_sparc
++#define sparc 1
++#undef _NCL_SAVE_sparc
++#endif
++
++#ifdef _NCL_SAVE_sparc64
++#define sparc64 1
++#undef _NCL_SAVE_sparc64
++#endif
++
++/* MIPS */
++
++#ifdef _NCL_SAVE_mips
++#define mips 1
++#undef _NCL_SAVE_mips
++#endif
++
++/* CRAY */
++
++#ifdef _NCL_SAVE_cray2
++#define cray2 1
++#undef _NCL_SAVE_cray2
++#endif
++
++#ifdef _NCL_SAVE_cray3
++#define cray3 1
++#undef _NCL_SAVE_cray3
++#endif
++
++#ifdef _NCL_SAVE_YMP
++#define YMP 1
++#undef _NCL_SAVE_YMP
++#endif
++
++#ifdef _NCL_SAVE_C90
++#define C90 1
++#undef _NCL_SAVE_C90
++#endif
++
++#ifdef _NCL_SAVE_J90
++#define J90 1
++#undef _NCL_SAVE_J90
++#endif
++
++#ifdef _NCL_SAVE_TS
++#define TS 1
++#undef _NCL_SAVE_TS
++#endif
++/*****************************************************************************/
++
+ TOP			= TOPDIR
+ CURRENT_DIR		= CURDIR
+ 
