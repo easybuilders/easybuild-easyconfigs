@@ -1,0 +1,88 @@
+# Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ConfigureMake'
+
+name = 'OSU-Micro-Benchmarks'
+version = '7.5'
+_rocm_version = '6.4.1'
+
+homepage = 'https://mvapich.cse.ohio-state.edu/benchmarks/'
+description = """OSU Micro-Benchmarks built on the rmpich/2025a toolchain
+(rocm-compilers + MPICH 4.3.2 mpi_abi=True). The build is designed to run
+on three stacks via the same binary (cf. thesis-benchmarks/8_osu_rmpich):
+its own rmpich MPICH (`rmpich` stack), Cray's NIC-offloaded MPI ABI runtime
+via LD_LIBRARY_PATH swap (`rmpich_abi` stack), or contrasted against Cray-
+built OSU (`native`). The two non-obvious bits below -- patchelf-strip and
+modluafooter -- exist solely to make the `rmpich_abi` swap possible while
+keeping the plain `rmpich` stack functional."""
+
+toolchain = {'name': 'rmpich', 'version': '2025a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://mvapich.cse.ohio-state.edu/download/mvapich/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['1cf84ac5419456202757a757c5f9a4f5c6ecd05c65783c7976421cfd6020b3b3']
+
+dependencies = [
+    ('HIP', _rocm_version),
+]
+
+# RCCL + XCCL are intentionally omitted; use the rompi sibling for XCCL.
+configopts = '--enable-rocm --with-rocm=$EBROOTHIP '
+
+local_benchmark_dirs = [
+    'libexec/osu-micro-benchmarks/mpi/%s' % x
+    for x in ['collective', 'one-sided', 'pt2pt', 'startup']
+]
+
+modextrapaths = {'PATH': local_benchmark_dirs}
+
+# === rmpich_abi enablement =================================================
+# Walk every installed OSU binary's DT_RPATH and drop the entry that points
+# at our self-built MPICH lib. This lets `module load cray-mpich-abi/<ver>`
+# (LUMI's official ABI-swap, which prepends Cray's lib-abi-mpich/ onto
+# LD_LIBRARY_PATH) actually win the libmpi.so.12 SONAME race at exec time.
+# Without this strip, DT_RPATH beats LD_LIBRARY_PATH and the swap is blocked.
+# `--rpath-filter` on the EB CLI does NOT catch dep-derived paths in EB 5.3,
+# so patchelf is the only tool that works. patchelf 0.18.0 is at
+# /cvmfs/software.eessi.io/.../compat/linux/x86_64/usr/bin/patchelf.
+postinstallcmds = [
+    'for f in '
+    '  %(installdir)s/libexec/osu-micro-benchmarks/mpi/pt2pt/* '
+    '  %(installdir)s/libexec/osu-micro-benchmarks/mpi/collective/* '
+    '  %(installdir)s/libexec/osu-micro-benchmarks/mpi/one-sided/* '
+    '  %(installdir)s/libexec/osu-micro-benchmarks/mpi/startup/* ; do '
+    '    [ -f "$f" ] || continue; '
+    '    rp=$(patchelf --print-rpath "$f" 2>/dev/null) || continue; '
+    '    [ -z "$rp" ] && continue; '
+    '    new=""; IFS=":"; '
+    '    for p in $rp; do '
+    '        case "$p" in *MPICH/4.3.2-rocm-compilers-19.0.0-ROCm-6.4.1/lib*) continue ;; esac; '
+    '        if [ -z "$new" ]; then new="$p"; else new="$new:$p"; fi; '
+    '    done; unset IFS; '
+    '    [ "$rp" != "$new" ] && patchelf --set-rpath "$new" "$f"; '
+    'done',
+]
+
+# The strip above means the binary no longer finds rmpich's libmpi via
+# DT_RPATH. For the plain `rmpich` stack we make up for this by adding
+# $EBROOTMPICH/lib to LD_LIBRARY_PATH via the module footer. The
+# `rmpich_abi` stack later prepends Cray's lib-abi-mpich AHEAD of this,
+# so the swap stack gets Cray's libs first; both stacks work from the
+# same binary.
+modluafooter = 'prepend_path("LD_LIBRARY_PATH", pathJoin(os.getenv("EBROOTMPICH") or "", "lib"))'
+# ===========================================================================
+
+sanity_check_paths = {
+    'files': [
+        'libexec/osu-micro-benchmarks/mpi/pt2pt/osu_bw',
+        'libexec/osu-micro-benchmarks/mpi/collective/osu_allreduce',
+    ],
+    'dirs': local_benchmark_dirs,
+}
+
+sanity_check_commands = [
+    "osu_bw --help | grep -i rocm",
+]
+
+moduleclass = 'perf'
