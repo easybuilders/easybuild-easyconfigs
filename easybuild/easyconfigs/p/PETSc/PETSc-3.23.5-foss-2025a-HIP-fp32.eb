@@ -1,0 +1,125 @@
+# EasyBuild easyconfig: PETSc with AMD-GPU (HIP) backend — SINGLE PRECISION (fp32)
+#
+# =========================================================================
+#  fp32 VARIANT of PETSc-3.23.5-foss-2025a-HIP.eb.
+#  IDENTICAL to the (default, double-precision / fp64) HIP easyconfig in
+#  every respect EXCEPT:
+#    * versionsuffix   '-HIP'  ->  '-HIP-fp32'
+#    * configopts adds  --with-precision=single
+#  See PETSc-3.23.5-foss-2025a-HIP.eb for the full rationale on the GPU-arch
+#  parameterisation and the ROCm dependency reconciliation — all of that is
+#  unchanged here. Only the scalar precision differs.
+#
+#  WHY A SEPARATE MODULE:
+#    PETSc's scalar precision (double vs single) is fixed at configure time and
+#    baked into libpetsc + the installed headers. fp32 and fp64 cannot coexist
+#    in one install, so the fp32 build gets its own module
+#    (PETSc/3.23.5-foss-2025a-HIP-fp32) and its own petsc4Foam adapter linked
+#    against it (petsc4Foam/v2506-foss-2025a-HIP-fp32).
+# =========================================================================
+
+easyblock = 'EB_PETSc'
+
+name = 'PETSc'
+version = '3.23.5'
+# fp32 single-precision HIP variant. Arch (gfxNNN) still lives in the EESSI accel
+# path, not the suffix; the suffix marks (HIP backend + single precision).
+versionsuffix = '-HIP-fp32'
+
+homepage = 'https://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations.
+
+This variant enables the AMD-GPU (HIP) backend with hipBLAS and hipSPARSE, built in SINGLE precision
+(--with-precision=single, fp32), so GPU-accelerated Krylov solvers/preconditioners run in 32-bit
+floating point (e.g. for the petsc4Foam / OpenFOAM external-solver adapter). The target GPU
+architecture is taken from the amdgcn_capabilities parameter (default gfx1101, AMD Radeon Pro V710),
+overridable via --amdgcn-capabilities."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+toolchainopts = {'openmp': True, 'usempi': True, 'pic': True}
+
+source_urls = [
+    'https://web.cels.anl.gov/projects/petsc/download/release-snapshots',
+]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['b0bb614dfbf36c286c8cad30912fe77359dccbf6b65a5edd1dde82af293f21fc']
+
+builddependencies = [('CMake', '3.31.3')]
+
+# --- GPU architecture (first-class framework param; NOT hardcoded) -------------
+# Default target is gfx1101 (V710). EESSI overrides per accel path via
+# --amdgcn-capabilities (EASYBUILD_AMDGCN_CAPABILITIES); the value flows into
+# configopts through the %(amdgcn_cc_space_sep)s template below.
+amdgcn_capabilities = ['gfx1101']
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('Boost', '1.88.0'),
+    ('METIS', '5.1.0'),
+    ('SCOTCH', '7.0.8'),
+    ('MUMPS', '5.8.1', '-metis'),
+    # NOTE (fp32-only delta): SuiteSparse (7.10.3) and Hypre (2.33.0) are DROPPED
+    # from the single-precision build because both are double-precision-only:
+    #   * SuiteSparse ships no single-precision UMFPACK/CHOLMOD/etc. PETSc aborts
+    #     configure with "Cannot use SuiteSparse with single, it is not available
+    #     in this precision".
+    #   * Hypre's HYPRE_config.h has HYPRE_SINGLE #undef (built for HYPRE_Real=double),
+    #     so PETSc single cannot link it.
+    # The EB_PETSc easyblock auto-injects each listed dependency via get_software_root()
+    # (--with-<dep>=1 --with-<dep>-dir=<root>), so the only clean, reviewable way to keep
+    # them out of an fp32 configure is to not list them here. MUMPS (libsmumps) and
+    # SuperLU_DIST (psgssvx symbols present) DO provide single precision, so they stay.
+    ('ParMETIS', '4.0.3'),
+    ('SuperLU_DIST', '9.1.0'),
+    ('mpi4py', '4.1.0'),
+    # --- AMD-GPU (HIP) stack, as shipped by EESSI 2025.06 ---
+    # These are built with the rocm-compilers/19.0.0 toolchain (NOT foss), so the
+    # dep toolchain MUST be given explicitly (4-element form), otherwise EasyBuild
+    # applies PETSc's foss-2025a toolchain and looks for a non-existent module.
+    # Resulting module names: HIP/6.4.1-rocm-compilers-19.0.0-ROCm-6.4.1, etc.
+    ('HIP', '6.4.1', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+    ('hipBLAS', '2.4.0', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+    ('hipSPARSE', '3.2.0', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+    # PETSc's hip.py liblist requires libhipsolver (grouped with rocrand) whenever
+    # the HIP backend is on; without it configure fails at 'ld: cannot find -lhipsolver'.
+    ('hipSOLVER', '2.4.0', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+    # rocRAND is grouped WITH hipsolver in PETSc's liblist; it must be a direct dep so
+    # its lib dir is on LIBRARY_PATH, else configure fails at 'ld: cannot find -lrocrand'.
+    ('rocRAND', '3.3.0', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+    # rocm-core provides <rocm-core/rocm_version.h>, which PETSc's hip.py version
+    # conftest #includes to emit PETSC_PKG_HIP_VERSION_* macros. Without it on CPATH,
+    # version detection silently fails and petscdevice_hip.h errors on an undefined
+    # PETSC_PKG_HIP_VERSION_GE, falling through to a non-existent bare <hipblas.h>.
+    # NOTE: built with the GCCcore-14.2.0 subtoolchain (NOT rocm-compilers), so the
+    # 3-element form resolves rocm-core/6.4.1-GCCcore-14.2.0-ROCm-6.4.1.
+    ('rocm-core', '6.4.1', '-ROCm-6.4.1'),
+    # rocThrust provides <thrust/complex.h>, hard-required by petscsystypes.h when the
+    # HIP device backend is on (compiling src/sys/memory/hip/mhiphost for gfx1101).
+    # EESSI 2025.06 ships no rocThrust module, so we build it (header-only, deps rocPRIM).
+    ('rocThrust', '3.3.0', '-ROCm-6.4.1', ('rocm-compilers', '19.0.0')),
+]
+
+# Base (CPU) configure knobs from upstream PETSc-3.23.5-foss-2025a.eb ...
+configopts = '--LIBS="$LIBS -lrt" --with-mpi4py=0 '
+# ... single precision (fp32): scalars are 32-bit. This is the ONLY functional
+# delta from the default (fp64) HIP easyconfig.
+configopts += '--with-precision=single '
+# PETSc/foss auto-enables FFTW from the toolchain (foss bundles FFTW), but PETSc
+# refuses to use FFTW in single precision ("Cannot use fftw with single, it is not
+# available in this precision"), which aborts configure. FFTW is not needed by the
+# petsc4Foam linear-solver path, so disable it for the fp32 build.
+configopts += '--with-fftw=0 '
+# ... plus the AMD-GPU (HIP) delta. --with-hip-arch is fed the framework template
+# so the EESSI/CLI amdgcn override propagates (expands to "gfx1101" here). PETSc
+# locates hipcc/ROCm from the loaded HIP module (ROCM_PATH/PATH), not /opt/rocm.
+configopts += '--with-hip=1 --with-hip-arch=%(amdgcn_cc_space_sep)s '
+configopts += '--with-hipblas=1 --with-hipsparse=1 '
+
+# Match the proven -O3, no-debugging production settings from the manual build.
+buildopts = 'COPTFLAGS="-O3" CXXOPTFLAGS="-O3" HIPOPTFLAGS="-O3"'
+
+shared_libs = 1
+
+moduleclass = 'numlib'
