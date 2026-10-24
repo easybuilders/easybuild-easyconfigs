@@ -1,0 +1,56 @@
+# Author: J. Saßmannshausen (Imperial College London/UK)
+# One testjob fails with MPI related problems: t_blueprint_mpi_mesh_tiled
+
+easyblock = 'CMakeMake'
+
+name = 'Ascent'
+version = '0.9.5'
+
+homepage = 'https://ascent.readthedocs.io/en/latest'
+description = """
+Ascent is a many-core capable flyweight in situ visualization and analysis
+infrastructure for multi-physics HPC simulations.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = ['https://github.com/Alpine-DAV/ascent/releases/download/v%(version)s/']
+sources = ['%(namelower)s-v%(version)s-src-with-blt.tar.gz']
+checksums = ['7824d14b89c9df12757fad673cba4f0c91d7dfc7abc0fc11fae8263890576e50']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('pkgconf', '2.4.3'),
+    ('git', '2.50.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('mpi4py', '4.1.0'),
+    ('HDF5', '1.14.6'),
+    ('h5py', '3.14.0'),
+    ('conduit', '0.9.5')
+]
+
+srcdir = 'src'
+configopts = '-DENABLE_DOCS=OFF -DENABLE_DOXYGEN=OFF -DENABLE_VALGRIND=OFF '
+configopts += '-DENABLE_MPI=ON -DENABLE_OPENMP=ON -DCONDUIT_RELAY_HDF5_ENABLED=ON -DCONDUIT_DIR=$EBROOTCONDUIT '
+
+# allow oversubscription of MPI ranks to cores
+pretestopts = "export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe && "
+test_cmd = 'ctest'
+
+sanity_check_paths = {
+    'files': ['bin/run_python_with_ascent.sh',
+              'lib/libascent_lodepng.so', 'lib/libascent_flow.so', 'lib/libascent.so'],
+    'dirs': ['include', 'examples'],
+}
+
+sanity_check_commands = [
+    'conduit_adjset_validate -help | grep "protocol name" &>/dev/null ',
+]
+
+moduleclass = 'data'

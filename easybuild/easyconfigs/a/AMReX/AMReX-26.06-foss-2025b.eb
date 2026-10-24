@@ -1,0 +1,89 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'AMReX'
+version = '26.06'
+
+homepage = 'https://amrex-codes.github.io/'
+description = """AMReX is a performance-portable framework for building massively
+parallel adaptive mesh refinement applications across CPUs, GPUs, and advanced
+HPC systems. AMReX is an open source project of the High Performance Software
+Foundation (HPSF) under the Linux Foundation.
+AMReX is available under a BSD-3-Clause license.
+"""
+
+citing = """
+@article{AMReX_JOSS,
+  doi = {10.21105/joss.01370},
+  url = {https://doi.org/10.21105/joss.01370},
+  year = {2019},
+  month = may,
+  publisher = {The Open Journal},
+  volume = {4},
+  number = {37},
+  pages = {1370},
+  author = {Weiqun Zhang and Ann Almgren and Vince Beckner and John Bell and
+  Johannes Blaschke and Cy Chan and Marcus Day and Brian Friesen and Kevin Gott
+  and Daniel Graves and Max Katz and Andrew Myers and Tan Nguyen and Andrew Nonaka
+  and Michele Rosso and Samuel Williams and Michael Zingale},
+  title = {{AMReX}: a framework for block-structured adaptive mesh refinement},
+  journal = {Journal of Open Source Software}
+}
+
+@article{AMReX_IJHPCA1,
+     author = {Zhang, W. and Myers, A. and Gott, K. and Almgren, A. and Bell, J.},
+     title = {{AMReX}: {B}lock-structured adaptive mesh refinement for multiphysics applications},
+     journal = {The International Journal of High Performance Computing Applications},
+     year = {2021},
+     volume = {35},
+     number = {6},
+     pages = {508-526},
+     doi = {10.1177/10943420211022811}
+}
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/AMReX-Codes/amrex/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['822e4d69777ababb2caafadefb88dbdd144111d056fe693a566c820ab0b9b8e6']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('ccache', '4.11.3'),
+    ('pkgconf', '2.4.3'),
+
+]
+
+dependencies = [
+    ('PETSc', '3.24.0'),
+    ('SUNDIALS', '7.6.0'),
+    ('ParaView-Catalyst', '2.0.0'),
+    ('conduit', '0.9.5'),
+    ('Ascent', '0.9.5'),
+]
+
+configopts = ' -DAMReX_BUILD_SHARED_LIBS=ON -DAMReX_PRECISION=DOUBLE '
+configopts += '-DAMReX_MPI=ON -DAMReX_MPI_THREAD_MULTIPLE=ON -DAMReX_OMP=ON '
+configopts += '-DAMReX_EB=ON -DAMReX_LINEAR_SOLVERS=ON -DAMReX_FORTRAN_INTERFACES=OFF '
+configopts += '-DAMReX_LINEAR_SOLVERS_INCFLO=ON -DAMReX_LINEAR_SOLVERS_EM=ON '
+configopts += '-DAMReX_LINEAR_SOLVERS_EM=ON -DAMReX_PARTICLES=ON -DAMReX_FORTRAN=OFF '
+configopts += '-DAMReX_PARTICLES_PRECISION=DOUBLE -DAMReX_PIC=ON '
+configopts += '-DAMReX_INLINE_LIMIT=43210 -DAMReX_TINY_PROFILE=ON '
+configopts += '-DAMReX_ENABLE_TESTS=ON -DAMReX_FFT=ON '
+configopts += '-DAMReX_PETSC=ON -DAMReX_SUNDIALS=ON -DAMReX_HDF5=OFF -DAMReX_HDF5_ZFP=OFF '
+configopts += '-DAMReX_ASCENT=ON -DAMReX_CONDUIT=ON -DAMReX_CATALYST=ON '
+configopts += '-DAMReX_AMRLEVEL=ON -DAMReX_PROBINIT=ON -DAMReX_TEST_TYPE=All '
+configopts += '-DAMREX_USE_MULTI_THREADED_FFTW=ON '
+configopts += '-DAMReX_SPACEDIM="1;2;3" '
+
+test_cmd = 'ctest'
+
+sanity_check_paths = {
+    'files': ['lib/libamrex_1d.so', 'lib/libamrex_2d.so', 'lib/libamrex_3d.so'],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'phys'
