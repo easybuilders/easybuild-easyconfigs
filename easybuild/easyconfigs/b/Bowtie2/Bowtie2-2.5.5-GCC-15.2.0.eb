@@ -1,0 +1,49 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# Modified by: Robert Schmidt <rjeschmi@gmail.com>
+# Ottawa Hospital Research Institute - Bioinformatics Team
+# Modified by: Adam Huffman <adam.huffman@crick.ac.uk>
+# The Francis Crick Institute
+# Modified by: Kurt Lust, UAntwerp
+# Modified by: Sebastien Moretti for non-x86_64 systems
+# SIB Swiss Institute of Bioinformatics
+# Update: Petr Král (INUITS)
+
+name = 'Bowtie2'
+version = '2.5.5'
+
+homepage = 'https://github.com/BenLangmead/bowtie2'
+description = """ Bowtie 2 is an ultrafast and memory-efficient tool for aligning sequencing reads
+ to long reference sequences. It is particularly good at aligning reads of about 50 up to 100s or 1,000s
+ of characters, and particularly good at aligning to relatively long (e.g. mammalian) genomes.
+ Bowtie 2 indexes the genome with an FM Index to keep its memory footprint small: for the human genome,
+ its memory footprint is typically around 3.2 GB. Bowtie 2 supports gapped, local, and paired-end alignment modes."""
+
+toolchain = {'name': 'GCC', 'version': '15.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [('https://github.com/BenLangmead/bowtie2/archive/refs/tags')]
+sources = ['v%(version)s.tar.gz']
+checksums = ['e38d1833ec235ca27fa57589d32d897c9addf87085b7cb7bc978662954662da2']
+
+# fixes compatibility with the Arm architecture
+if ARCH == 'aarch64':
+    builddependencies = [('simde', '0.8.2')]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('zlib', '2.3.2'),
+    ('Perl', '5.42.0'),
+]
+
+# to add script folder to path just uncomment this line
+# modextrapaths = {'PATH': 'scripts'}
+
+sanity_check_commands = [
+    "%(namelower)s --help",
+    "%(namelower)s-build --help",
+]
+
+moduleclass = 'bio'
