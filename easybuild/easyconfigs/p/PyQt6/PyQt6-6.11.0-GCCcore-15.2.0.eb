@@ -1,0 +1,112 @@
+easyblock = 'PythonBundle'
+
+name = 'PyQt6'
+version = '6.11.0'
+
+homepage = 'https://www.riverbankcomputing.com/software/pyqt'
+description = """PyQt6 is a comprehensive set of Python bindings for Qt v6. It is implemented as more than 35 extension
+modules and enables Python to be used as an alternative application development language to C++.
+This bundle includes PyQtWebEngine, a set of Python bindings for The Qt Company’s Qt WebEngine framework."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+toolchainopts = {'cstd': 'c++17'}
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('PyQt-builder', '1.20.0'),
+    ('SIP', '6.17.1'),
+]
+dependencies = [
+    ('Python', '3.14.2'),
+    ('Qt6', '6.11.2'),
+]
+local_sipdir = '%(installdir)s/share/sip'
+
+local_pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+
+local_setup_env = "export PATH=%(installdir)s/bin:$PATH && "
+local_setup_env += "export PYTHONPATH=%s:$PYTHONPATH && " % local_pylibdir
+
+local_qprinter_include = """sed -i 's|qprinter.h|QtPrintSupport/&|g' """
+local_qprinter_include += """ build/QtWebEngineWidgets/sipQtWebEngineWidgetsQWebEngineView.cpp &&"""
+
+local_sip_configopts_common = [
+    "--no-make",
+    "--jobs %(parallel)s",
+    "--qmake-setting 'QMAKE_CXXFLAGS+=$$(CFLAGS)'",
+    "--qmake-setting 'QMAKE_CFLAGS+=$$(CFLAGS)'",
+    "--qmake-setting 'QMAKE_LFLAGS+=$$(LDFLAGS)'",
+    "--api-dir %(installdir)s/qsci",
+    "--scripts-dir %(installdir)s/bin",
+    "--target-dir %s" % local_pylibdir,
+]
+
+local_pyqt6_configopts = [
+    "--confirm-license",
+    "--no-designer-plugin",
+    "--no-qml-plugin",
+] + local_sip_configopts_common
+
+local_pyqtwebengine_configopts = local_sip_configopts_common
+
+default_easyblock = 'PythonPackage'
+
+components = [
+    ('pyqt6_sip', '13.13.0', {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'start_dir': '%(namelower)s-%(version)s',
+        'checksums': ['2cd55f575cde208c398d6cfdecc5a13394ed2afb54226210c50e3a6df7c3a997'],
+    }),
+    (name, version, {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'easyblock': 'ConfigureMake',
+        'configure_cmd': 'sip-build',
+        'start_dir': '%(namelower)s-%(version)s',
+        'configure_without_installdir': True,
+        'preconfigopts': local_setup_env,
+        'configopts': ' '.join(local_pyqt6_configopts),
+        'prebuildopts': local_setup_env + "cd build && ",
+        'preinstallopts': "cd build && ",
+        'checksums': ['45dd60aa69976de1918b5ced6b4e7b6a25abd2a919ecef5fd5826ecc76718889'],
+    }),
+    (f'{name}_WebEngine', '6.11.0', {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'easyblock': 'ConfigureMake',
+        'configure_cmd': 'sip-build',
+        'start_dir': '%(namelower)s-%(version)s',
+        'configure_without_installdir': True,
+        'preconfigopts': local_setup_env,
+        'configopts': ' '.join(local_pyqtwebengine_configopts),
+        'prebuildopts': local_setup_env + local_qprinter_include + "cd build && ",
+        'preinstallopts': "cd build && ",
+        'checksums': ['15cf49efbbbd4c6bc87653b2c4ae80d6049f800e31620b336734ae2e37cbedae'],
+    })
+]
+
+
+postinstallcmds = [
+    'mkdir %(installdir)s/share',
+    'ln -s --relative %s/%%(name)s/bindings %s' % (local_pylibdir, local_sipdir)
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in [
+        'pyuic6', 'pylupdate6']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'qsci'],
+}
+
+sanity_check_commands = [
+    "python -c 'import %(name)s.QtCore'",
+    "python -c 'import %(name)s.QtWebEngineWidgets'",
+    "pyuic6 --help",
+    "pylupdate6 --version 2>&1 | grep '%(version)s'",
+]
+
+modextrapaths = {
+    'QT_INSTALL_DATA': 'qsci',
+}
+
+moduleclass = 'vis'
