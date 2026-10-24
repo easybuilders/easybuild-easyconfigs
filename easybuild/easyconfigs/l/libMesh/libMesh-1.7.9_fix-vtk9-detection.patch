@@ -1,0 +1,72 @@
+Fix VTK detection and build with VTK >= 9, where VTK support was silently disabled:
+* configure gates VTK support on vtkConfigure.h, which was removed in VTK 9.0;
+  check for vtkVersionMacros.h instead (present since VTK 6).
+* VTK_MAJOR_VERSION / VTK_MINOR_VERSION moved to vtkVersionQuick.h in VTK 9,
+  so also grep that header when parsing the VTK version (empty version numbers
+  broke the library names used in configure's VTK link test).
+* vtk_io.C includes vtkConfigure.h for the VTK version macros; use
+  vtkVersionMacros.h instead.
+Author: Simon Pinches (ITER Organization)
+diff -ru libmesh-1.7.9.orig/configure libmesh-1.7.9/configure
+--- libmesh-1.7.9.orig/configure	2026-02-07 00:07:18.000000000 +0100
++++ libmesh-1.7.9/configure	2026-08-25 20:42:31.005481321 +0200
+@@ -52857,7 +52857,7 @@
+         if test "$enablevtk" = "yes"; then :
+ 
+               vtkincFound=no;
+-       for ac_header in $VTK_INC/vtkConfigure.h
++       for ac_header in $VTK_INC/vtkVersionMacros.h
+ do :
+   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ ac_fn_cxx_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+@@ -52883,9 +52883,9 @@
+ 
+                               if test -r $VTK_INC/vtkVersionMacros.h; then :
+ 
+-                       vtkmajor=`grep "define VTK_MAJOR_VERSION" $VTK_INC/vtkVersionMacros.h | sed -e "s/.*#define VTK_MAJOR_VERSION[ ]*//g"`
+-                       vtkminor=`grep "define VTK_MINOR_VERSION" $VTK_INC/vtkVersionMacros.h | sed -e "s/.*#define VTK_MINOR_VERSION[ ]*//g"`
+-                       vtkbuild=`grep "define VTK_BUILD_VERSION" $VTK_INC/vtkVersionMacros.h | sed -e "s/.*#define VTK_BUILD_VERSION[ ]*//g"`
++                       vtkmajor=`grep -h "define VTK_MAJOR_VERSION" $VTK_INC/vtkVersionMacros.h $VTK_INC/vtkVersionQuick.h 2>/dev/null | head -n 1 | sed -e "s/.*#define VTK_MAJOR_VERSION[ ]*//g"`
++                       vtkminor=`grep -h "define VTK_MINOR_VERSION" $VTK_INC/vtkVersionMacros.h $VTK_INC/vtkVersionQuick.h 2>/dev/null | head -n 1 | sed -e "s/.*#define VTK_MINOR_VERSION[ ]*//g"`
++                       vtkbuild=`grep -h "define VTK_BUILD_VERSION" $VTK_INC/vtkVersionMacros.h $VTK_INC/vtkVersionQuick.h 2>/dev/null | head -n 1 | sed -e "s/.*#define VTK_BUILD_VERSION[ ]*//g"`
+ 
+ elif                      test -r $VTK_INC/vtkConfigure.h; then :
+ 
+Only in libmesh-1.7.9: include
+diff -ru libmesh-1.7.9.orig/m4/vtk.m4 libmesh-1.7.9/m4/vtk.m4
+--- libmesh-1.7.9.orig/m4/vtk.m4	2026-02-07 00:03:30.000000000 +0100
++++ libmesh-1.7.9/m4/vtk.m4	2026-08-25 20:42:31.008481376 +0200
+@@ -102,7 +102,7 @@
+           [
+        dnl Check for existence of a header file in the specified location
+        vtkincFound=no;
+-       AC_CHECK_HEADERS($VTK_INC/vtkConfigure.h, vtkincFound=yes)
++       AC_CHECK_HEADERS($VTK_INC/vtkVersionMacros.h, vtkincFound=yes)
+ 
+        AS_IF([test "$vtkincFound" = "no"],
+              [
+@@ -117,9 +117,9 @@
+                dnl If we have the vtkVersionMacros.h (VTK 6.x) find the version there
+                AS_IF([test -r $VTK_INC/vtkVersionMacros.h],
+                      [
+-                       vtkmajor=`grep "define VTK_MAJOR_VERSION" $VTK_INC/vtkVersionMacros.h | sed -e "s/.*#define VTK_MAJOR_VERSION[ ]*//g"`
+-                       vtkminor=`grep "define VTK_MINOR_VERSION" $VTK_INC/vtkVersionMacros.h | sed -e "s/.*#define VTK_MINOR_VERSION[ ]*//g"`
+-                       vtkbuild=`grep "define VTK_BUILD_VERSION" $VTK_INC/vtkVersionMacros.h | sed -e "s/.*#define VTK_BUILD_VERSION[ ]*//g"`
++                       vtkmajor=`grep -h "define VTK_MAJOR_VERSION" $VTK_INC/vtkVersionMacros.h $VTK_INC/vtkVersionQuick.h 2>/dev/null | head -n 1 | sed -e "s/.*#define VTK_MAJOR_VERSION[ ]*//g"`
++                       vtkminor=`grep -h "define VTK_MINOR_VERSION" $VTK_INC/vtkVersionMacros.h $VTK_INC/vtkVersionQuick.h 2>/dev/null | head -n 1 | sed -e "s/.*#define VTK_MINOR_VERSION[ ]*//g"`
++                       vtkbuild=`grep -h "define VTK_BUILD_VERSION" $VTK_INC/vtkVersionMacros.h $VTK_INC/vtkVersionQuick.h 2>/dev/null | head -n 1 | sed -e "s/.*#define VTK_BUILD_VERSION[ ]*//g"`
+                      ],
+                      dnl Otherwise (VTK 5.x) find the version numbers in vtkConfigure.h
+                      [test -r $VTK_INC/vtkConfigure.h],
+diff -ru libmesh-1.7.9.orig/src/mesh/vtk_io.C libmesh-1.7.9/src/mesh/vtk_io.C
+--- libmesh-1.7.9.orig/src/mesh/vtk_io.C	2026-08-25 21:24:07.711752493 +0200
++++ libmesh-1.7.9/src/mesh/vtk_io.C	2026-08-25 21:24:07.714752552 +0200
+@@ -40,7 +40,7 @@
+ #include "vtkIntArray.h"
+ #include "vtkCellArray.h"
+ #include "vtkCellData.h"
+-#include "vtkConfigure.h"
++#include "vtkVersionMacros.h"
+ #include "vtkDoubleArray.h"
+ #include "vtkGenericCell.h"
+ #include "vtkPointData.h"
