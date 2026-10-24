@@ -1,0 +1,39 @@
+easyblock = 'PythonPackage'
+
+name = 'vesin'
+version = '0.6.2'
+
+homepage = 'https://github.com/Luthaf/vesin'
+description = """vesin computes neighbor lists for atomistic systems: a C/C++ library
+ with Python bindings that returns the pairs of atoms within a cutoff, for
+ periodic and non-periodic systems."""
+
+toolchain = {'name': 'gfbf', 'version': '2026.1'}
+
+sources = [SOURCE_TAR_GZ]
+checksums = ['8fc5000d74a13131fa21cd81d5e22e50f4195b7105574b35959ebe1720a02ea1']
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+]
+
+# setup.py drives CMake and installs libvesin.so inside the Python package;
+# the sdist ships the gpu-lite source, so nothing is downloaded.
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/vesin'],
+}
+
+sanity_check_commands = [
+    "python -c 'import numpy as np; from vesin import NeighborList; "
+    "nl = NeighborList(cutoff=1.5, full_list=False); "
+    "i, j = nl.compute(np.array([[0., 0, 0], [1, 0, 0]]), np.zeros((3, 3)), False, quantities=\"ij\"); "
+    "assert len(i) == 1'",
+]
+
+moduleclass = 'chem'
