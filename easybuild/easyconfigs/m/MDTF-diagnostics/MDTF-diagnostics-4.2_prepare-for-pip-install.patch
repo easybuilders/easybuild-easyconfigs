@@ -1,0 +1,553 @@
+This patch adapts the whole MDTF-diagnostics package and makes it compatible with a
+pip installation.
+Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+Barcelona Supercomputing Center 2026
+diff -ruNBbw a/MANIFEST.in b/MANIFEST.in
+--- a/MANIFEST.in	1970-01-01 01:00:00.000000000 +0100
++++ b/MANIFEST.in	2026-10-21 13:19:14.493006423 +0200
+@@ -0,0 +1,14 @@
++include README.md
++include LICENSE.txt
++include mdtf_framework.py
++
++recursive-include diagnostics *
++recursive-include data *
++recursive-include templates *
++recursive-include shared *
++recursive-include user_scripts *
++recursive-include tools *
++
++include src/logging.jsonc
++recursive-include src/html *
++recursive-include src/conda *.yml *.sh
+diff -ruNBbw a/mdtf_framework.py b/mdtf_framework.py
+--- a/mdtf_framework.py	2025-02-03 17:34:40.000000000 +0100
++++ b/mdtf_framework.py	2026-10-21 13:06:12.115587412 +0200
+@@ -18,7 +18,7 @@
+ import os
+ import copy
+ import click
+-from src import util, cli, data_sources, pod_setup, preprocessor, translation, environment_manager, output_manager
++from . import util, cli, data_sources, pod_setup, preprocessor, translation, environment_manager, output_manager
+ import dataclasses
+ import logging
+ import datetime
+diff -ruNBbw a/setup.py b/setup.py
+--- a/setup.py	2025-02-03 17:34:40.000000000 +0100
++++ b/setup.py	2026-10-21 15:27:58.795296265 +0200
+@@ -3,6 +3,75 @@
+ from setuptools import setup, find_packages
+ from setuptools.command.develop import develop
+ from setuptools.command.install import install
++from pathlib import Path
++import shutil
++from setuptools.command.build_py import build_py as _build_py
++
++ROOT = Path(__file__).resolve().parent
++PACKAGE = 'mdtf_diagnostics'
++
++APP_RESOURCE_DIRS = (
++    'diagnostics',
++    'data',
++    'templates',
++    'shared',
++    'user_scripts',
++    'tools',
++)
++
++
++class BuildPyWithAppResources(_build_py):
++    def run(self):
++        super().run()
++
++        self._extra_outputs = []
++        package_root = Path(self.build_lib) / PACKAGE
++
++        def copy_tree(source, destination):
++            if not source.is_dir():
++                return
++
++            shutil.copytree(
++                source,
++                destination,
++                dirs_exist_ok=True,
++                ignore=shutil.ignore_patterns(
++                    '__pycache__', '*.pyc', '.DS_Store',
++                ),
++            )
++            self._extra_outputs.extend(
++                str(path) for path in destination.rglob('*')
++                if path.is_file()
++            )
++
++        # Preserve paths used by the framework at runtime.
++        for directory in APP_RESOURCE_DIRS:
++            copy_tree(ROOT / directory, package_root / directory)
++
++        # The framework driver becomes a module inside the package.
++        driver = package_root / 'mdtf_framework.py'
++        shutil.copy2(ROOT / 'mdtf_framework.py', driver)
++        self._extra_outputs.append(str(driver))
++
++        # Preserve the existing CODE_ROOT/src/... resource paths.
++        resource_root = package_root / 'src'
++        resource_root.mkdir(parents=True, exist_ok=True)
++
++        logging_config = ROOT / 'src' / 'logging.jsonc'
++        shutil.copy2(logging_config, resource_root / 'logging.jsonc')
++        self._extra_outputs.append(str(resource_root / 'logging.jsonc'))
++
++        for directory in ('html', 'conda'):
++            copy_tree(
++                ROOT / 'src' / directory,
++                resource_root / directory,
++            )
++
++    def get_outputs(self, include_bytecode=1):
++        return super().get_outputs(include_bytecode) + getattr(
++            self, '_extra_outputs', []
++        )
++
+ 
+ # Leave option to run commands post-install
+ # see https://stackoverflow.com/a/36902139
+@@ -28,7 +97,22 @@
+ 
+ with open("README.md", 'r') as f:
+     long_description = f.read()
+-packages = find_packages()
++
++package_name = 'mdtf_diagnostics'
++
++subpackages = find_packages(
++    where='src',
++    exclude=(
++        'conda', 'conda.*',
++        'tests', 'tests.*',
++        '*.tests', '*.tests.*',
++    ),
++)
++
++packages = [package_name] + [
++    f'{package_name}.{pkg}' for pkg in subpackages
++]
++
+ setup(
+     name='MDTF-diagnostics',
+     version='4.2',
+@@ -44,14 +128,24 @@
+             "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+             'Programming Language :: Python :: 3.12'
+     ],
+-    packages=find_packages(),
++    packages=packages,
++    package_dir={'mdtf_diagnostics': 'src'},
++    package_data={
++        'mdtf_diagnostics': [
++            'src/logging.jsonc',
++            'src/html/*',
++            'src/conda/*.sh',
++            'src/conda/*.yml',
++        ],
++    },
+     include_package_data=True,
+-    #entry_points={
+-    #    'console_scripts': [
+-    #        'mdtf = MDTF-diagnostics.mdtf_framework:main'
+-    #    ],
+-    #},
++    entry_points={
++        'console_scripts': [
++            'mdtf=mdtf_diagnostics.mdtf_framework:main',
++        ],
++    },
+     cmdclass={  # hook for post-install commands
++        'build_py': BuildPyWithAppResources,
+         'develop': PostDevelopCommand,
+         'install': PostInstallCommand
+     }
+diff -ruNBbw a/src/cli.py b/src/cli.py
+--- a/src/cli.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/cli.py	2026-10-21 13:00:22.352119084 +0200
+@@ -5,7 +5,7 @@
+ import pathlib
+ import yaml
+ from datetime import datetime
+-from src import util
++from . import util
+ 
+ import logging
+ 
+diff -ruNBbw a/src/cmip6.py b/src/cmip6.py
+--- a/src/cmip6.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/cmip6.py	2026-10-21 13:00:39.585756010 +0200
+@@ -16,7 +16,7 @@
+ import os
+ import re
+ import dataclasses as dc
+-from src import util
++from . import util
+ 
+ import logging
+ _log = logging.getLogger(__name__)
+diff -ruNBbw a/src/data_model.py b/src/data_model.py
+--- a/src/data_model.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/data_model.py	2026-10-21 13:03:50.146208533 +0200
+@@ -9,8 +9,8 @@
+ import itertools
+ import typing
+ import collections
+-from src import util
+-import src.units  # fully qualify name to reduce confusion with "units" attributes
++from . import util
++from . import units as _units  # fully qualify name to reduce confusion with "units" attributes
+ import logging
+ 
+ _log = logging.getLogger(__name__)
+@@ -35,7 +35,7 @@
+     @property
+     @abc.abstractmethod
+     def units(self):
+-        """Coordinate units (str, or :class:`~src.units.Units`)."""
++        """Coordinate units (str, or :class:`~_units.Units`)."""
+         pass
+ 
+     @property
+@@ -98,7 +98,7 @@
+     @property
+     @abc.abstractmethod
+     def units(self):
+-        """Variable units (str, or :class:`~src.units.Units`)."""
++        """Variable units (str, or :class:`~_units.Units`)."""
+         pass
+ 
+     @property
+@@ -163,7 +163,7 @@
+     name: str = util.MANDATORY
+ 
+     standard_name = 'bounds'
+-    units = src.units.Units('1')
++    units = _units.Units('1')
+     axis = 'BOUNDS'
+     bounds = None
+     value = None
+@@ -193,7 +193,7 @@
+     <http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#scalar-coordinate-variables>`__.
+     """
+     standard_name: str = util.MANDATORY
+-    units: src.units.Units = util.MANDATORY
++    units: _units.Units = util.MANDATORY
+     axis: str = 'OTHER'
+     bounds_var: AbstractDMCoordinateBounds = None
+     value: typing.Union[int, float, str] = None
+@@ -258,8 +258,8 @@
+     # [scalar] value: int or float
+     standard_name: str = util.MANDATORY
+     """Coordinate CF standard name."""
+-    units: src.units.Units = util.MANDATORY
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = util.MANDATORY
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'OTHER'
+     long_name: str = ''
+ 
+@@ -274,8 +274,8 @@
+     # [scalar] value: int, float, or str
+     standard_name: str = util.MANDATORY
+     """Coordinate CF standard name."""
+-    units: src.units.Units = 'degrees_east'
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = 'degrees_east'
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'X'
+     """Coordinate axis identifier. Always 'X' for this coordinate."""
+     long_name: str = ''
+@@ -291,8 +291,8 @@
+     # [scalar] value: int, float, or str
+     standard_name: str = util.MANDATORY
+     """Coordinate CF standard name."""
+-    units: src.units.Units = 'degrees_east'
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = 'degrees_east'
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'Y'
+     """Coordinate axis identifier. Always 'Y' for this coordinate."""
+     long_name: str = ''
+@@ -309,8 +309,8 @@
+     # [scalar] value: int, float, or str
+     standard_name: str = util.MANDATORY
+     """Coordinate CF standard name."""
+-    units: src.units.Units = "1"  # dimensionless vertical coords OK
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = "1"  # dimensionless vertical coords OK
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'Z'
+     """Coordinate axis identifier. Always 'Z' for this coordinate."""
+     positive: str = util.MANDATORY
+@@ -345,8 +345,8 @@
+     # [scalar] value: int or float
+     standard_name: str = 'time'
+     """Coordinate CF standard name."""
+-    units: src.units.Units = ""
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = ""
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'T'
+     """Coordinate axis identifier. Always 'T' for this coordinate."""
+     calendar: str = ""
+@@ -386,8 +386,8 @@
+     # [scalar] value: int or float
+     standard_name: str = 'time'
+     """Coordinate CF standard name."""
+-    units: src.units.Units = util.MANDATORY
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = util.MANDATORY
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'T'
+     """Coordinate axis identifier. Always 'T' for this coordinate."""
+     calendar: str = ""
+@@ -413,8 +413,8 @@
+     # [scalar] value: int or float
+     standard_name: str = ""
+     """Coordinate CF standard name."""
+-    units: src.units.Units = ""
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = ""
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = "N"
+     """Coordinate long name"""
+     long_name: str = ""
+@@ -485,8 +485,8 @@
+     object."""
+     standard_name: str = NotImplemented
+     """Coordinate CF standard name."""
+-    units: src.units.Units = NotImplemented
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = NotImplemented
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'OTHER'
+     """Coordinate axis identifier ('X', 'Y', etc.)"""
+     long_name: str = NotImplemented
+@@ -504,8 +504,8 @@
+     object."""
+     standard_name: str = NotImplemented
+     """Coordinate CF standard name."""
+-    units: src.units.Units = NotImplemented
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = NotImplemented
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'X'
+     """Coordinate axis identifier ('X', 'Y', etc.)"""
+     long_name: str = NotImplemented
+@@ -523,8 +523,8 @@
+     object."""
+     standard_name: str = NotImplemented
+     """Coordinate CF standard name."""
+-    units: src.units.Units = NotImplemented
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = NotImplemented
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'Y'
+     """Coordinate axis identifier ('X', 'Y', etc.)"""
+     long_name: str = NotImplemented
+@@ -542,8 +542,8 @@
+     object."""
+     standard_name: str = NotImplemented
+     """Coordinate CF standard name."""
+-    units: src.units.Units = NotImplemented
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = NotImplemented
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'Z'
+     """Coordinate axis identifier ('X', 'Y', etc.)"""
+     positive: str = NotImplemented
+@@ -563,8 +563,8 @@
+     object."""
+     standard_name: str = NotImplemented
+     """Coordinate CF standard name."""
+-    units: src.units.Units = NotImplemented
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = NotImplemented
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'T'
+     """Coordinate axis identifier ('X', 'Y', etc.)"""
+     calendar: str = NotImplemented
+@@ -585,8 +585,8 @@
+     object."""
+     standard_name: str = NotImplemented
+     """Coordinate CF standard name."""
+-    units: src.units.Units = NotImplemented
+-    """Coordinate units (str or :class:`~src.units.Units`)."""
++    units: _units.Units = NotImplemented
++    """Coordinate units (str or :class:`~_units.Units`)."""
+     axis: str = 'N'
+     """Coordinate long name"""
+     long_name: str = NotImplemented
+@@ -765,7 +765,7 @@
+     standard_name: str = util.MANDATORY
+     long_name: str = ""
+     realm: str = ""
+-    units: src.units.Units = ""  # not MANDATORY since may be set later from var translation
++    units: _units.Units = ""  # not MANDATORY since may be set later from var translation
+     modifier: str = ""
+     component: str = ""
+     associated_files: str = ""
+@@ -978,7 +978,7 @@
+     # name: str             # fields inherited from DMDependentVariable
+     # standard_name: str
+     # modifier: str
+-    # units: src.units.Units
++    # units: _units.Units
+     # dims: list            # fields inherited from _DMDimensionsMixin
+     # scalar_coords: list
+     pass
+diff -ruNBbw a/src/data_sources.py b/src/data_sources.py
+--- a/src/data_sources.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/data_sources.py	2026-10-22 12:48:30.267650071 +0200
+@@ -2,7 +2,7 @@
+ """
+ import io
+ import dataclasses
+-from src import util, varlist_util
++from . import util, varlist_util
+ 
+ import logging
+ 
+diff -ruNBbw a/src/environment_manager.py b/src/environment_manager.py
+--- a/src/environment_manager.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/environment_manager.py	2026-10-21 12:55:21.519363396 +0200
+@@ -10,7 +10,7 @@
+ import signal
+ import typing
+ import subprocess
+-from src import util
++from . import util
+ import yaml
+ 
+ import logging
+diff -ruNBbw a/src/mdtf_info.py b/src/mdtf_info.py
+--- a/src/mdtf_info.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/mdtf_info.py	2026-10-21 12:53:27.835146824 +0200
+@@ -4,7 +4,7 @@
+ import os
+ import collections
+ from json import JSONDecodeError
+-from src import util
++from . import util
+ 
+ import logging
+ _log = logging.getLogger(__name__)
+diff -ruNBbw a/src/output_manager.py b/src/output_manager.py
+--- a/src/output_manager.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/output_manager.py	2026-10-21 12:53:09.732187143 +0200
+@@ -8,7 +8,7 @@
+ import io
+ import shutil
+ import yaml
+-from src import util, verify_links
++from . import util, verify_links
+ 
+ import logging
+ _log = logging.getLogger(__name__)
+diff -ruNBbw a/src/pod_setup.py b/src/pod_setup.py
+--- a/src/pod_setup.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/pod_setup.py	2026-10-21 12:59:48.403705346 +0200
+@@ -6,7 +6,7 @@
+ from pathlib import Path
+ import subprocess
+ 
+-from src import cli, util
++from . import cli, util
+ import dataclasses as dc
+ from distutils.spawn import find_executable
+ 
+diff -ruNBbw a/src/preprocessor.py b/src/preprocessor.py
+--- a/src/preprocessor.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/preprocessor.py	2026-10-21 12:54:55.487448045 +0200
+@@ -8,8 +8,8 @@
+ import datetime
+ import importlib
+ import pandas as pd
+-from src import util, varlist_util, translation, xr_parser, units
+-from src.util import datelabel as dl
++from . import util, varlist_util, translation, xr_parser, units
++from .util import datelabel as dl
+ import cftime
+ import intake
+ import numpy as np
+diff -ruNBbw a/src/translation.py b/src/translation.py
+--- a/src/translation.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/translation.py	2026-10-21 12:59:29.134913476 +0200
+@@ -7,8 +7,8 @@
+ import glob
+ import typing
+ import pathlib
+-from src import util, data_model, units
+-from src.units import Units
++from . import util, data_model, units
++from .units import Units
+ 
+ import logging
+ 
+diff -ruNBbw a/src/util/catalog.py b/src/util/catalog.py
+--- a/src/util/catalog.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/util/catalog.py	2026-10-21 13:01:22.952754210 +0200
+@@ -12,7 +12,7 @@
+ from pathlib import Path
+ import itertools
+ import logging
+-from src import cli
++from .. import cli
+ from . import ClassMaker
+ 
+ _log = logging.getLogger(__name__)
+diff -ruNBbw a/src/util/datelabel.py b/src/util/datelabel.py
+--- a/src/util/datelabel.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/util/datelabel.py	2026-10-21 13:01:13.300045360 +0200
+@@ -48,7 +48,7 @@
+ 
+ import cftime
+ 
+-from src import util
++from .. import util
+ 
+ import logging
+ 
+diff -ruNBbw a/src/varlist_util.py b/src/varlist_util.py
+--- a/src/varlist_util.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/varlist_util.py	2026-10-21 12:54:14.513630036 +0200
+@@ -3,9 +3,7 @@
+ import dataclasses as dc
+ import itertools
+ import typing
+-from src import util
+-from src import data_model
+-from src import translation
++from . import util, data_model, translation
+ import os
+ import logging
+ 
+diff -ruNBbw a/src/verify_links.py b/src/verify_links.py
+--- a/src/verify_links.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/verify_links.py	2026-10-21 13:00:13.273074410 +0200
+@@ -25,7 +25,7 @@
+ import urllib.parse
+ import urllib.request
+ import urllib.error
+-from src import util
++from . import util
+ 
+ import logging
+ 
+diff -ruNBbw a/src/xr_parser.py b/src/xr_parser.py
+--- a/src/xr_parser.py	2025-02-03 17:34:40.000000000 +0100
++++ b/src/xr_parser.py	2026-10-21 12:59:56.376458876 +0200
+@@ -15,7 +15,7 @@
+ import xarray as xr
+ import numpy as np
+ 
+-from src import util, units
++from . import util, units
+ 
+ import logging
+ 
