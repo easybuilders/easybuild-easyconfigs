@@ -1,0 +1,50 @@
+easyblock = 'MakeCp'
+
+name = 'GPUMD'
+version = '5.6'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://gpumd.org'
+description = """GPUMD stands for Graphics Processing Units Molecular Dynamics. It is a general-purpose
+ molecular dynamics (MD) package fully implemented on graphics processing units (GPU). In addition
+ to several empirical interatomic potentials, it supports neuroevolution potential (NEP) models.
+ GPUMD also allows one to construct the latter type of models using the nep executable.
+ This build includes the PLUMED, NetCDF and the DP potential plugin."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+github_account = 'brucefan1983'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [V_VERSION_TAR_GZ]
+checksums = ['77e5ab7c0ccd53f4495d41cb3bd1f1b69d61894b281ff83903b607564ed8d8e1']
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('PLUMED', '2.9.4'),
+    ('netCDF', '4.9.3'),
+    ('DeePMD-kit', '3.1.3', '-CUDA-%(cudaver)s'),
+]
+
+# enable the PLUMED, NetCDF and DP (DeePMD-kit) interfaces in the bundled makefile
+# see https://gpumd.org/dev/installation.html
+prebuildopts = "sed -i -e 's|^CFLAGS = -std.*|& -DUSE_PLUMED -DUSE_NETCDF -DUSE_DEEPMD|' "
+prebuildopts += "-e 's|^INC = -I./|& -I${EBROOTPLUMED}/include -I${EBROOTNETCDF}/include "
+prebuildopts += "-I${EBROOTDEEPMDMINKIT}/include/deepmd|' "
+prebuildopts += "-e 's|^LDFLAGS = *|&-L${EBROOTPLUMED}/lib -L${EBROOTNETCDF}/lib "
+prebuildopts += "-L${EBROOTDEEPMDMINKIT}/lib|' "
+prebuildopts += "-e 's|^LIBS = -lcublas.*|& -lplumed -lplumedKernel -lnetcdf -ldeepmd_cc|' src/makefile && "
+
+# CUDA_ARCH overrides the makefile default
+# add GNEP training executable
+buildopts = "-C src all gnep CUDA_ARCH='%(cuda_cc_gencode)s'"
+
+local_binaries = ['gnep', 'gpumd', 'nep']
+
+files_to_copy = [(['src/%s' % x for x in local_binaries], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
