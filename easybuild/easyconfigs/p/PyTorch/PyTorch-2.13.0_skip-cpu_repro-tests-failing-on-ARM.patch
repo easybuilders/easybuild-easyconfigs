@@ -1,0 +1,55 @@
+Those tests fail with precision issues on ARM which seems to be known:
+https://github.com/pytorch/pytorch/pull/171095
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/inductor/test_cpu_repro.py b/test/inductor/test_cpu_repro.py
+--- a/test/inductor/test_cpu_repro.py
++++ b/test/inductor/test_cpu_repro.py
+@@ -3791,6 +3791,7 @@ class CPUReproTests(TestCase):
+                 3,
+             )
+ 
++    @unittest.skipIf(IS_ARM64, "Fails on ARM")
+     @config.patch({"fx_graph_cache": False, "fx_graph_remote_cache": False})
+     def test_two_local_buffers_in_outer_loop_fusion(self):
+         def fn(x):
+@@ -4187,6 +4188,7 @@ class CPUReproTests(TestCase):
+                     self.common(m, (x,))
+                     check_metrics_vec_kernel_count(8)
+ 
++    @unittest.skipIf(IS_ARM64, "Fails on ARM")
+     @requires_vectorization
+     @config.patch("cpp.enable_tiling_heuristics", False)
+     def test_transpose_copy(self):
+@@ -4467,6 +4469,7 @@ class CPUReproTests(TestCase):
+         self.common(fn, (x, y))
+         check_metrics_vec_kernel_count(2)
+ 
++    @unittest.skipIf(IS_ARM64, "Fails on ARM")
+     def test_transpose_mxn_16_16_bf16_fp16(self):
+         def fn(a, b):
+             c = a * b
+@@ -4540,6 +4543,7 @@ class CPUReproTests(TestCase):
+         x = torch.rand(4, 5)
+         self.common(f, (x,))
+ 
++    @unittest.skipIf(IS_ARM64, "Fails on ARM")
+     def test_broadcast_scalar_cpp_tile_2d_kernel(self):
+         # Based on detectron2_maskrcnn backbone (conv2d -> max_pool2d)
+         s0 = 12
+@@ -6083,6 +6087,7 @@ class CPUReproTests(TestCase):
+         x = torch.randn(1, 4, 2, 2)
+         self.common(fn, (x,))
+ 
++    @unittest.skipIf(IS_ARM64, "Fails on ARM")
+     @parametrize("is_inference", (True, False))
+     def test_disabled_amp(self, is_inference):
+         class M(torch.nn.Module):
+@@ -6663,6 +6668,7 @@ class CPUReproTests(TestCase):
+             code
+         )
+ 
++    @unittest.skipIf(IS_ARM64, "Fails on ARM")
+     @config.patch(freezing=True)
+     def test_add_layernorm(self):
+         """

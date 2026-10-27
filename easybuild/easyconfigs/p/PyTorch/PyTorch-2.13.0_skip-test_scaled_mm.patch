@@ -1,0 +1,21 @@
+The test fails in one of the configurations:
+> RuntimeError: Invalid scaling configuration.
+> scale_a should be (1, 1), scale_b should be (1, 128). Got scale_a.size()=(16, 4) and scale_b.size()=(4, 128)
+
+Skipped upstream: https://github.com/pytorch/pytorch/pull/190097
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/distributed/tensor/test_matrix_ops.py b/test/distributed/tensor/test_matrix_ops.py
+--- a/test/distributed/tensor/test_matrix_ops.py
++++ b/test/distributed/tensor/test_matrix_ops.py
+@@ -464,6 +464,10 @@ def test_mm_single_dim_strategy(self):
+         not PLATFORM_SUPPORTS_FP8,
+         "FP8 is only supported on H100+, SM 8.9 and MI300+ devices",
+     )
++    @unittest.skip(
++        "Disabled due to CI failures on B200; see "
++        "https://github.com/pytorch/pytorch/issues/190086"
++    )
+     def test_scaled_mm(self):
+         device_mesh = self.build_device_mesh()
+         shrd0 = Shard(0)

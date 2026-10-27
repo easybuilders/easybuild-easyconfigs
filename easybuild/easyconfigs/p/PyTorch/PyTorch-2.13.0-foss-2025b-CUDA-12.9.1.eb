@@ -1,0 +1,243 @@
+name = 'PyTorch'
+version = '2.13.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pytorch.org/'
+description = """Tensors and Dynamic neural networks in Python with strong GPU acceleration.
+PyTorch is a deep learning framework that puts Python first."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+local_six_version = '1.11.0'
+# This is specific to a (tagged) release.
+# Extract from `get_disabled_tests` in tools/stats/import_test_stats.py
+local_disabled_tests_S3_ID = 'XRBoKk5TT4f6n48PbQ9OntiMMQveSs3J'
+source_urls = [GITHUB_RELEASE]
+sources = [
+    '%(namelower)s-v%(version)s.tar.gz',
+    {
+        'filename': '%(name)s-%(version)s-disabled-tests.json',
+        'download_filename': f'disabled-tests-condensed.json?versionId={local_disabled_tests_S3_ID}',
+        'source_urls': ['https://ossci-metrics.s3.amazonaws.com'],
+        # See `DEFAULT_DISABLED_TESTS_FILE` in torch/testing/_internal/common_utils.py
+        'extract_cmd': 'cp %s %(builddir)s/pytorch-v%(version)s/test/.pytorch-disabled-tests.json',
+    },
+    {
+        # Avoid downloading this during the build, see third_party/NNPACK/cmake/DownloadSix.cmake for the version
+        'filename': f'six-{local_six_version}.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/s/six'],
+    },
+]
+patches = [
+    'PyTorch-1.7.0_disable-dev-shm-test.patch',
+    'PyTorch-1.12.1_add-hypothesis-suppression.patch',
+    'PyTorch-2.0.1_skip-tests-skipped-in-subprocess.patch',
+    'PyTorch-2.1.0_remove-test-requiring-online-access.patch',
+    'PyTorch-2.6.0_fix-server-in-test_control_plane.patch',
+    'PyTorch-2.6.0_increase-tolerance-test_vmap_autograd_grad.patch',
+    'PyTorch-2.7.0_avoid_caffe2_test_cpp_jit.patch',
+    'PyTorch-2.7.1_avoid-caffe2-sandcastle-test-lib.patch',
+    'PyTorch-2.7.1_skip-test_data_parallel_rnn.patch',
+    'PyTorch-2.7.1_skip-test_outside_linear_module_free.patch',
+    'PyTorch-2.9.0_fix-test_version_error.patch',
+    'PyTorch-2.9.0_skip-test_inductor_all_gather_into_tensor_coalesced.patch',
+    'PyTorch-2.9.0_skip-test_original_aten_preserved_pad_mm.patch',
+    'PyTorch-2.9.0_skip-test_unbacked_reduction.patch',
+    'PyTorch-2.9.1_avoid-using-wrong-libomp.patch',
+    'PyTorch-2.9.1_disable-slow-tests.patch',
+    'PyTorch-2.9.1_dont-print-test-items.patch',
+    'PyTorch-2.9.1_fix-openreg-test.patch',
+    'PyTorch-2.9.1_fix-triton-nvshmem-lib-detection.patch',
+    'PyTorch-2.9.1_ignore-warning-incompatible-pointer-types.patch',
+    'PyTorch-2.9.1_increase-tolerance-TestDecomp-matmul.patch',
+    'PyTorch-2.9.1_normalize_tree_output.patch',
+    'PyTorch-2.9.1_skip-flex-attention-test_block_mask_non_divisible.patch',
+    'PyTorch-2.9.1_skip-svd-pca-lowrank-tests-on-cpu.patch',
+    'PyTorch-2.9.1_skip-test_checkpoint_save_failure_continues_serving.patch',
+    'PyTorch-2.9.1_skip-test_dtensor_op_db_nn_functional_multi_head_attention_forward_cpu_float32.patch',
+    'PyTorch-2.9.1_skip-test_empty_batch.patch',
+    'PyTorch-2.9.1_skip-test_optree_graph_break_message.patch',
+    'PyTorch-2.9.1_skip-test_zero_redundancy_optimizer-without-gpu.patch',
+    'PyTorch-2.9.1_skip-tests-requiring-MKLDNN.patch',
+    'PyTorch-2.13.0_cleanly-skip-tests-restricted-to-device-types.patch',
+    'PyTorch-2.13.0_convert-xfail-to-skip.patch',
+    'PyTorch-2.13.0_disable-fp8-tests-on-SM-8.9.patch',
+    'PyTorch-2.13.0_dont-use-tmp-directly.patch',
+    'PyTorch-2.13.0_fix_float8_broadcast_inverted_skip.patch',
+    'PyTorch-2.13.0_fix-arm-meta-dyn_quant_pack_4bit_weight.patch',
+    'PyTorch-2.13.0_fix-corrupted-test_exceptions.patch',
+    'PyTorch-2.13.0_fix-device-init-check-on-cpu.patch',
+    'PyTorch-2.13.0_fix-failing-qconv-fp8-test.patch',
+    'PyTorch-2.13.0_fix-hypothesis-compat.patch',
+    'PyTorch-2.13.0_fix-quantized-tensor-size-check.patch',
+    'PyTorch-2.13.0_fix-skip-markers.patch',
+    'PyTorch-2.13.0_fix-softmax_backward_data_cpu_float16-test.patch',
+    'PyTorch-2.13.0_fix-test_copy_cat_fusion.patch',
+    'PyTorch-2.13.0_fix-test_dist2-decorators.patch',
+    'PyTorch-2.13.0_fix-test_honor_sm_carveout_cpu.patch',
+    'PyTorch-2.13.0_fix-test_memory_profiler-ordering.patch',
+    'PyTorch-2.13.0_fix-test_profile.patch',
+    'PyTorch-2.13.0_fix-test_scaled_mm_block_wise_numerics-typo.patch',
+    'PyTorch-2.13.0_fix-test_torchinductor_opinfo-cpu.patch',
+    'PyTorch-2.13.0_fix-test_wrap_triton_triton_interpret_eager.patch',
+    'PyTorch-2.13.0_fix-use-of-depreacted-class-in-jit.patch',
+    'PyTorch-2.13.0_handle-NCCL-2.27.patch',
+    'PyTorch-2.13.0_inc-tol_test_e2e_compile_True_model_type1.patch',
+    'PyTorch-2.13.0_increase-tolerance-linalg-lstsq-tests.patch',
+    'PyTorch-2.13.0_increase-tolerance-test_aot_autograd_householder_product.patch',
+    'PyTorch-2.13.0_output-full-FileCheck-string.patch',
+    'PyTorch-2.13.0_print-wrapped-tensors.patch',
+    'PyTorch-2.13.0_remove-localmesh-coord-caching.patch',
+    'PyTorch-2.13.0_skip-ci-only-log-test.patch',
+    'PyTorch-2.13.0_skip-cow-tests-with-ACL.patch',
+    'PyTorch-2.13.0_skip-cpu_repro-tests-failing-on-ARM.patch',
+    'PyTorch-2.13.0_skip-cpu-pdl-tests.patch',
+    'PyTorch-2.13.0_skip-distributed-test_debug-no-ipv6.patch',
+    'PyTorch-2.13.0_skip-qnnpack-qint8-tests.patch',
+    'PyTorch-2.13.0_skip-sandcastle-tests-directly.patch',
+    'PyTorch-2.13.0_skip-test_benchmark_on_non_zero_device.patch',
+    'PyTorch-2.13.0_skip-test_compile_subprocess-pin_memory.patch',
+    'PyTorch-2.13.0_skip-test_cuda-allocator_backend.patch',
+    'PyTorch-2.13.0_skip-test_cutlass_backend-sparse_semi_structured.patch',
+    'PyTorch-2.13.0_skip-test_external_template_prologue_epilogue_fusion.patch',
+    'PyTorch-2.13.0_skip-test_graph_partition_view_fallback.patch',
+    'PyTorch-2.13.0_skip-test_int8_woq_mm-with-acl.patch',
+    'PyTorch-2.13.0_skip-test_max_autotune_addmm_persistent_tma.patch',
+    'PyTorch-2.13.0_skip-test_max_min_bool_cpu.patch',
+    'PyTorch-2.13.0_skip-test_override-without-CUDA.patch',
+    'PyTorch-2.13.0_skip-test_run2run_determinism.patch',
+    'PyTorch-2.13.0_skip-test_scaled_matmul-zero-dim-compile.patch',
+    'PyTorch-2.13.0_skip-test_scaled_mm_verify_small_shapes-cpu.patch',
+    'PyTorch-2.13.0_skip-test_scaled_mm.patch',
+    'PyTorch-2.13.0_skip-test_tma_stable_reconstruct-on-Python-3.13.patch',
+    'PyTorch-2.13.0_skip-test_unary_ufuncs-mish-f16.patch',
+    'PyTorch-2.13.0_skip-test-without-enough-gpus.patch',
+    'PyTorch-2.13.0_skip-TestFullyShardSymmMem-without-nccl-2.28.patch',
+    'PyTorch-2.13.0_skip-tests-requiring-SM90.patch',
+    'PyTorch-2.13.0_skip-unexpected-success-in-test_fake_export.patch',
+    'PyTorch-2.13.0_use-reasonable-timeouts.patch',
+]
+
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('hypothesis', '6.136.6'),
+    # For tests
+    ('build', '1.3.0'),
+    ('uv', '0.10.9'),
+    ('parameterized', '0.9.0'),
+    ('pytest-flakefinder', '1.1.0'),
+    ('pytest-rerunfailures', '16.1'),
+    ('pytest-subtests', '0.15.0'),
+    ('tlparse', '0.4.3'),
+    ('optree', '0.18.0'),
+    ('unittest-xml-reporting', '3.2.0'),
+]
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('UCC-CUDA', '1.4.4', '-CUDA-%(cudaver)s'),
+    ('CUDA-Python', '12.9.2', versionsuffix),
+
+    # PyTorch is very sensitive to the NCCL & cuDNN versions. (Maybe the same for cuSPARSELt)
+    # Prefer those (listed per CUDA version) in
+    # https://github.com/pytorch/pytorch/blob/main/.github/scripts/generate_binary_build_matrix.py
+    # or https://github.com/pytorch/pytorch/blob/main/.ci/docker/common/install_cuda.sh
+    ('NCCL', '2.27.7', '-CUDA-%(cudaver)s'),
+    ('cuDNN', '9.15.0.57', '-CUDA-%(cudaver)s', SYSTEM),
+    ('magma', '2.9.0', '-CUDA-%(cudaver)s'),
+    ('cuSPARSELt', '0.8.0.4', '-CUDA-%(cudaver)s', SYSTEM),
+    # See .ci/docker/triton_version.txt
+    ('Triton', '3.7.1', '-CUDA-%(cudaver)s'),
+    # See .ci/docker/common/install_acl.sh
+    ('ArmComputeLibrary', {'arch=AArch64': '53.2.0', 'arch=*': False}),
+    # See .ci/docker/common/install_conda.sh
+    ('imkl', {'arch=x86_64': '2025.2.0', 'arch=*': False}, '', SYSTEM),
+    ('Ninja', '1.13.0'),
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('expecttest', '0.3.0'),
+    ('GMP', '6.3.0'),
+    ('MPFR', '4.2.2'),
+    ('networkx', '3.5'),
+    ('numactl', '2.0.19'),
+    ('Pillow', '11.3.0'),
+    ('protobuf-python', '6.31.1'),
+    ('protobuf', '31.1'),
+    ('pybind11', '3.0.0'),
+    ('PuLP', '3.3.0'),
+    ('PyYAML', '6.0.2'),
+    ('pyzstd', '0.19.0'),
+    ('SciPy-bundle', '2025.07'),
+    ('sympy', '1.14.0'),
+    ('tqdm', '4.67.1'),
+    ('Z3', '4.15.1'),
+]
+
+prebuildopts = (f"""sed -i '1i set(PYTHON_SIX_SOURCE_DIR "%(builddir)s/six-{local_six_version}")' """
+                "cmake/Dependencies.cmake && ")
+buildcmd = '%(python)s setup.py build'  # Run the (long) build in the build step
+
+excluded_tests = {
+    '': [
+        # This test seems to take too long on NVIDIA Ampere at least.
+        'distributed/test_distributed_spawn',
+        # no xdoctest
+        'doctests',
+        # intermittent failures on various systems
+        # See https://github.com/easybuilders/easybuild-easyconfigs/issues/17712
+        'distributed/rpc/test_tensorpipe_agent',
+        # This test is expected to fail when run in their CI, but won't in our case.
+        # It just checks for a "CI" env variable
+        'test_ci_sanity_check_fail',
+        # Requires pwlf Python package
+        'distributed/_tools/test_sac_ilp', 'distributed/_tools/test_sac_estimator',
+        # 9 failures in H100, 7 are present in PYPI package, 2 are related to GC in Python < 3.12.4
+        # 'dynamo/test_dynamic_shapes',
+        # Broken test: https://github.com/pytorch/pytorch/issues/162179
+        'distributed/_composable/fsdp/test_fully_shard_logging',
+        # Broken: https://github.com/pytorch/pytorch/issues/137027
+        'inductor/test_extension_backend',
+        # Requires optional Python packages
+        'test_public_bindings',
+        # 1 Failure and not important
+        'dynamo/test_utils',
+        # Packaging test only, not important for us
+        'test_license',
+        # Occasional segfaults on CPU
+        'inductor/test_flex_attention',
+        'inductor/test_flex_decoding',
+        # 'AssertionError: GRAPH_EXECUTOR is not set'
+        # https://github.com/pytorch/pytorch/pull/176001
+        'test_jit_profiling',
+        # failures on OmniPath systems, which don't support some optional InfiniBand features
+        # See https://github.com/pytorch/tensorpipe/issues/413
+        'distributed/rpc/test_share_memory',
+        # Requires optional 'spin' package, (seemingly) useful for PyTorch developers
+        'spincli/test_spin',
+        # Broken check, not required anyway, see https://github.com/pytorch/pytorch/pull/200295
+        'cpython/v3_13/test_builtin',
+    ]
+}
+
+runtest = ' && '.join((
+    # Disable symbol resolution in stack traces that can cause hangs and slowdowns
+    'export TORCH_DISABLE_ADDR2LINE=1',
+    "export TORCHINDUCTOR_CUTLASS_DIR='%(start_dir)s/third_party/cutlass'",
+    'export PYTEST_ADDOPTS=--full-trace',
+    'export PYTHONUNBUFFERED=1',
+    '%(python)s test/run_test.py --continue-through-error --pipe-logs --verbose %(excluded_tests)s',
+))
+
+postinstallcmds = [
+    "mkdir %(installdir)s/extra",
+    "cp -r third_party/cutlass %(installdir)s/extra/",
+]
+
+modextrapaths = {'TORCHINDUCTOR_CUTLASS_DIR': 'extra/cutlass'}
+
+tests = ['PyTorch-check-cpp-extension.py', 'PyTorch-check-cutlass.py']
+
+moduleclass = 'ai'

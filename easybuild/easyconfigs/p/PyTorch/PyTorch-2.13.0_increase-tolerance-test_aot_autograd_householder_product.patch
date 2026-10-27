@@ -1,0 +1,40 @@
+Increase tolerance for failing tests:
+TestEagerFusionOpInfoCPU.test_aot_autograd_symbolic_exhaustive_cpu_float32
+> Mismatched elements: 2 / 30 (6.7%)
+> Greatest absolute difference: 5.340576171875e-05 at index (5, 3) (up to 1e-05 allowed)
+> Greatest relative difference: 5.707081527361879e-06 at index (5, 2) (up to 1.3e-06 allowed)
+TestEagerFusionOpInfoCPU.test_aot_autograd_disable_functionalization_symbolic_exhaustive_cpu_float32
+Mismatched elements: 2 / 20 (10.0%)
+> Greatest absolute difference: 0.003326416015625 at index (4, 2) (up to 6e-05 allowed)
+> Greatest relative difference: 1.1920219549210742e-05 at index (4, 2) (up to 6e-06 allowed)
+or
+> Mismatched elements: 1 / 30 (3.3%)
+> Greatest absolute difference: 2.6702880859375e-05 at index (3, 2) (up to 1e-05 allowed)
+> Greatest relative difference: 2.311349362571491e-06 at index (3, 2) (up to 1.3e-06 allowed)
+
+See https://github.com/pytorch/pytorch/pull/190161
+
+Fails with IMKL 2025.2.0, passes with 2024.2.0, due to an ill-conditioned matrix being multiplied (with a constant matrix).
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/opinfo/definitions/linalg.py b/torch/testing/_internal/opinfo/definitions/linalg.py
+--- a/torch/testing/_internal/opinfo/definitions/linalg.py
++++ b/torch/testing/_internal/opinfo/definitions/linalg.py
+@@ -1516,6 +1516,16 @@ op_db: list[OpInfo] = [
+                 device_type="cpu",
+                 dtypes=(torch.complex128,),
+             ),
++            DecorateInfo(
++                toleranceOverride({torch.float32: tol(atol=6e-5, rtol=6e-6)}),
++                "TestEagerFusionOpInfo",
++                "test_aot_autograd_symbolic_exhaustive",
++            ),
++            DecorateInfo(
++                toleranceOverride({torch.float32: tol(atol=4e-3, rtol=2e-5)}),
++                "TestEagerFusionOpInfo",
++                "test_aot_autograd_disable_functionalization_symbolic_exhaustive",
++            ),
+             # Exception: "orgqr_cpu" not implemented for 'Half'
+             DecorateInfo(
+                 unittest.expectedFailure,

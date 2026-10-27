@@ -1,0 +1,23 @@
+Test fails because NCCL_CTA_POLICY_ZERO was introduced with NCCL 2.28 so skip that test similar to NCCLCopyEngineCollectives.
+See https://github.com/pytorch/pytorch/pull/184536
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/distributed/_composable/fsdp/test_fully_shard_comm.py b/test/distributed/_composable/fsdp/test_fully_shard_comm.py
+--- a/test/distributed/_composable/fsdp/test_fully_shard_comm.py
++++ b/test/distributed/_composable/fsdp/test_fully_shard_comm.py
+@@ -50,6 +50,7 @@ from torch.testing._internal.common_cuda import SM90OrLater, TEST_MULTIGPU
+ from torch.testing._internal.common_distributed import (
+     MultiProcContinuousTest,
+     PLATFORM_SUPPORTS_SYMM_MEM,
++    requires_nccl_version,
+     skip_if_lt_x_gpu,
+ )
+ from torch.testing._internal.common_fsdp import (
+@@ -1841,6 +1842,7 @@ class TestFullyShardAllocFromPG(FSDPTest):
+     not PLATFORM_SUPPORTS_SYMM_MEM, "SymmMem is not supported on this platform"
+ )
+ @skipCUDAIf(TEST_WITH_ROCM, "requires NVIDIA GPUs")
++@requires_nccl_version((2, 28), "Need NCCL 2.28+ for CE collectives")
+ @skipCUDAIf(not SM90OrLater, "requires sm90+")
+ class TestFullyShardSymmMem(MultiProcContinuousTest):
+     @classmethod
