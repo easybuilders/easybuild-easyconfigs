@@ -16,13 +16,16 @@ builddependencies = [
     ('binutils', '2.40'),
     ('CMake', '3.26.3'),
 ]
-# build twice, once for static, once for shared libraries
-configopts = ['', ' -DBUILD_SHARED_LIBS=ON ']
+# Build shared and static libs. As CMake config files get overwritten do the default static build last
+configopts = [' -DBUILD_SHARED_LIBS=ON ', '']
 
 sanity_check_paths = {
-    'files': ['lib/lib%s.%s' % (local_lib, local_ext) for local_lib in ['gmock', 'gmock_main', 'gtest', 'gtest_main']
+    'files': [f'lib/lib{local_lib}.{local_ext}' for local_lib in ['gmock', 'gmock_main', 'gtest', 'gtest_main']
               for local_ext in ['a', SHLIB_EXT]],
     'dirs': ['include/gmock', 'include/gtest'],
 }
+
+# Make sure the CMake target uses the static library
+sanity_check_commands = ["grep -rF 'GTest::gtest STATIC' '%(installdir)s/lib/cmake/GTest'"]
 
 moduleclass = 'tools'
