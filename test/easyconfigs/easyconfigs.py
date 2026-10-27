@@ -480,6 +480,7 @@ class EasyConfigTest(TestCase):
             ('Z3', ('-Python-3', True)),
             # allow Graphviz coexistence by ignoring the -minimal variant when both exist
             ('Graphviz', '-minimal'),
+            ('graphviz-python', '-minimal'),
         ]
         for dep_name, version_suffix in filter_variants:
             # always retain at least one dep variant
@@ -1388,7 +1389,7 @@ class EasyConfigTest(TestCase):
 
             with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
-                easyblock = ec.get('easyblock')
+                easyblock = ec.get('easyblock') or ''
                 exts_defaultclass = ec.get('exts_defaultclass')
                 exts_default_options = ec.get('exts_default_options', {})
 
@@ -1485,10 +1486,12 @@ class EasyConfigTest(TestCase):
             ]
             with ec.allow_unresolved_templates():
                 default_dirs += [ec.resolve_template(d) for d in default_dirs]
-            extra_python_path = ec.get('modextrapaths', {}).get('PYTHONPATH')
+            extra_python_path = ec.get('modextrapaths', {}).get('PYTHONPATH') or []
             failing_checks_ec.extend(f"modextrapaths should not contain {d} (automatically added by EasyBlock)"
                                      for d in default_dirs if d in extra_python_path)
-            if easyblock == 'PythonBundle' or easyblock.endswith('PythonPackage'):
+
+            files = ec.get('sanity_check_paths', {}).get('files') or []
+            if not files and easyblock == 'PythonBundle' or (easyblock and easyblock.endswith('PythonPackage')):
                 sanity_check_dirs = ec.get('sanity_check_paths', {}).get('dirs') or []
                 default_dirs = [
                     'lib/python%(pyshortver)s/site-packages',
