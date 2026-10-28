@@ -40,6 +40,25 @@ checksums = [
      '265a2b5ce0cc439ab98d5a9efb60153b722c91df9db7d18c7b49a159156cb41b'},
 ]
 
+# riscv_MLIR.patch: Disable problematic MLIR Runner tests on RISC-V.
+# Failures on RISC-V are due to missing soft-float helper symbols (like __addsf3),
+# which is a known issue when running LLVM's JIT on platforms like RISC-V.
+
+# riscv_ompt.patch: Mark as UNSUPPORTED for RISC-V some ompt tests that are known to be fragile
+# see (https://github.com/llvm/llvm-project/issues/35661#issuecomment-980993177)
+if ARCH == 'riscv64':
+    patches += [
+        'LLVM-20.1.5_riscv_MLIR.patch',
+        'LLVM-20.1.5_riscv_ompt.patch',
+    ]
+    checksums += [
+        {'LLVM-20.1.5_riscv_MLIR.patch':
+         '2348ee5db243f94d7a8877aee1a4332585e3bd58976af76c4bed01972d7793ca'},
+        {'LLVM-20.1.5_riscv_ompt.patch':
+         '9ed82093831777cee08629cb68b7e47d2cace3e0b950381b002f9bfd01bae1f6'},
+    ]
+
+
 builddependencies = [
     ('binutils', '2.45'),
     ('Python', '3.14.2'),
@@ -72,6 +91,12 @@ build_openmp = True
 build_openmp_tools = True
 build_openmp_offload = True
 use_polly = True
+
+# openmp offload is not supported for riscv64 (https://clang.llvm.org/docs/OffloadingDesign.html)
+# There is a Bug in (at least) testing phase of BOLT for RISC-V. See https://github.com/llvm/llvm-project/issues/134245
+if ARCH == 'riscv64':
+    build_bolt = False
+    build_openmp_offload = False
 
 python_bindings = True
 

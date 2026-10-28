@@ -1,0 +1,35 @@
+name = 'Java'
+version = '16.0.2'
+
+homepage = 'https://openjdk.java.net'
+description = """Java Platform, Standard Edition (Java SE) lets you develop and deploy
+ Java applications on desktops and servers."""
+
+toolchain = SYSTEM
+
+_tarball_tmpl = f'openjdk-{version}_linux-{{}}_bin.tar.gz'
+
+# see https://jdk.java.net/archive/
+source_urls = ['https://download.java.net/java/GA/jdk%(version)s/d4a915d82b4c4fbb9bde534da945d746/7/GPL']
+sources = [
+    _tarball_tmpl.format('%(jdkarch)s'),
+    {'filename': 'Java_blocked-certs-eMudhra-CVE-2026-91403.txt',
+     'extract_cmd': "cp %s %(builddir)s/"},
+]
+checksums = [
+    {
+        _tarball_tmpl.format('x64'):
+            '6c714ded7d881ca54970ec949e283f43d673a142fda1de79b646ddd619da9c0c',
+        _tarball_tmpl.format('aarch64'):
+            'b1198ffffb7d26a3fdedc0fa599f60a0d12aa60da1714b56c1defbce95d8b235',
+    },
+    {'Java_blocked-certs-eMudhra-CVE-2026-91403.txt':
+     '8a11b84b894e7986af1131c10fcff168fb38987bedb4fd7a0d8a7a120288d521'},
+]
+
+postinstallcmds = [
+    # see https://glaforge.dev/posts/2026/10/21/the-emudhra-ca-compromise-why-your-jvm-is-vulnerable-and-how-to-fix-it
+    "cat %(builddir)s/Java_blocked-certs-eMudhra-CVE-2026-91403.txt >> %(installdir)s/lib/security/blocked.certs",
+]
+
+moduleclass = 'lang'

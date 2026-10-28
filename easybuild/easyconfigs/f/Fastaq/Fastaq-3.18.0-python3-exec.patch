@@ -1,0 +1,18 @@
+# This patch fixes the Fastaq 3.18.0 command-line dispatcher for Python 3.
+# The upstream `exec` calls do not place `pyfastaq` in the function namespace,
+# so commands such as `fastaq version` fail with `NameError`. The patch makes
+# the module-global namespace explicit so the installed CLI works.
+
+--- pyfastaq-3.18.0/src/pyfastaq/app_fastaq.py.orig     2026-08-27 00:00:00.000000000 +0000
++++ pyfastaq-3.18.0/src/pyfastaq/app_fastaq.py  2026-08-27 00:00:00.000000000 +0000
+@@ -66,8 +66,8 @@
+         print_usage_and_exit()
+
+
+-    exec('import pyfastaq.runners.' + task)
+-    exec('pyfastaq.runners.' + task + '.run("' + tasks[task] + '")')
++    exec('import pyfastaq.runners.' + task, globals())
++    exec('pyfastaq.runners.' + task + '.run("' + tasks[task] + '")', globals())
+
+
+ if __name__ == "__main__":

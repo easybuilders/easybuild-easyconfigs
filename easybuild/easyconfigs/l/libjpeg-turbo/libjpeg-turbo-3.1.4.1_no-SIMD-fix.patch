@@ -1,0 +1,34 @@
+From 7cdbf9144d40d68d97c498f54dd88a68aee4e36d Mon Sep 17 00:00:00 2001
+From: DRC <information@libjpeg-turbo.org>
+Date: Sun, 5 Apr 2026 16:57:48 -0400
+Subject: [PATCH] Build: Fix build error if WITH_SIMD && no SIMD ext
+
+If WITH_SIMD is enabled (which it is by default) and there are no SIMD
+extensions available for the CPU type, simd_fail() in
+simd/CMakeLists.txt is called.  That function sets WITH_SIMD=0 in the
+parent scope, but due to an oversight in
+fa33033a7aed0c4b1726ac03a0d0eeb79625e4ef, it doesn't set WITH_SIMD=0 in
+the current scope.  Thus, the build system tries unsuccessfully to build
+simdcoverage.
+
+This issue can easily be worked around in the 3.1.4 and 3.1.4.1 releases
+by explicitly setting WITH_SIMD=0 (e.g. by passing -DWITH_SIMD=0 to
+cmake.)
+
+Fixes #881
+---
+ simd/CMakeLists.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/simd/CMakeLists.txt b/simd/CMakeLists.txt
+index 9c163adb6..f342a914d 100644
+--- a/simd/CMakeLists.txt
++++ b/simd/CMakeLists.txt
+@@ -3,6 +3,7 @@ macro(simd_fail message)
+     message(FATAL_ERROR "${message}.")
+   else()
+     message(WARNING "${message}.  Performance will suffer.")
++    set(WITH_SIMD 0)
+     set(WITH_SIMD 0 PARENT_SCOPE)
+   endif()
+ endmacro()
