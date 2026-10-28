@@ -1,0 +1,69 @@
+easyblock = 'CMakeMake'
+
+name = 'casacore'
+version = '3.8.1'
+
+homepage = 'https://github.com/casacore/casacore'
+description = "A suite of C++ libraries for radio astronomy data processing."
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+# Version 3.8.1 (not the newer 3.8.2) is what LINC 5.2 uses. Casacore 3.8.2 removed 'using std::string;' from its
+# headers (and needs C++20 for dependents), which breaks DP3, WSClean, AOFlagger, SAGECal and LofarStMan unless patched.
+# The 'add-C-style-header-for-GCC-13.1' patch of casacore 3.5.0 is no longer needed: it is fixed upstream in 3.8.1.
+sources = [
+    {
+        'filename': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/%(name)s/%(name)s/archive'],
+    },
+    {
+        # Note: when updating this easyconfig, check the latest WSRT_Measures tarball on the FTP and update to that
+        'filename': 'WSRT_Measures_20261025-160001.ztar',
+        'source_urls': ['ftp://anonymous@ftp.astron.nl/outgoing/Measures'],
+        'extract_cmd': 'tar xfvz %s --one-top-level=data',
+    },
+]
+checksums = [
+    {'v3.8.1.tar.gz': 'c8e0f9dfd52fc17c27c91548c222bed0a5874b75989fcaf002f83826db83b446'},
+    {'WSRT_Measures_20261025-160001.ztar': '000a6ab2d63598b6e7e138cee11c5972d713947ba7a51a921608bc65103d95a6'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.11'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('wget', '1.25.0'),
+]
+dependencies = [
+    ('CFITSIO', '4.6.4'),
+    ('WCSLIB', '8.10'),  # was 7.11
+    ('HDF5', '2.1.1'),
+    ('GSL', '2.8'),
+    ('Boost.Python', '1.90.0'),  # was 1.83.0; Boost.Python-NumPy is not needed (casacore uses the Python-only part)
+    ('SciPy-bundle', '2026.05'),
+    ('ncurses', '6.6'),
+    ('libreadline', '8.3'),  # new: USE_READLINE is on by default and then REQUIRES readline
+    ('libdeflate', '1.25'),  # required by the Sisco storage manager (BUILD_SISCO is on by default)
+]
+
+# '-DCXX11=ON' was dropped: it is not an option of casacore's CMake anymore (casacore sets the C++ standard itself).
+# The Dysco and Sisco compression storage managers are built by default (BUILD_DYSCO/BUILD_SISCO), so a separate
+# 'dysco' easyconfig is no longer needed
+configopts = '-DBUILD_PYTHON=NO -DBUILD_PYTHON3=YES -Wno-dev -DUSE_MPI=ON '
+configopts += '-DDATA_DIR=%(installdir)s/data -DUSE_OPENMP=ON -DUSE_HDF5=ON '
+
+postinstallcmds = ['cp -r %(builddir)s/data %(installdir)s']
+
+sanity_check_paths = {
+    'files': [
+        'lib/libcasa_casa.%s' % SHLIB_EXT,
+        'lib/libcasa_mirlib.%s' % SHLIB_EXT,
+        'lib/libcasa_ms.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['bin', 'include/%(name)s', 'data/ephemerides', 'data/geodetic'],
+}
+
+# check that the Measures data are found
+sanity_check_commands = ['measuresdata']
+
+moduleclass = 'lib'

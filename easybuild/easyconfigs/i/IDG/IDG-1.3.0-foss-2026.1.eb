@@ -1,0 +1,58 @@
+easyblock = 'CMakeMake'
+
+name = 'IDG'
+version = '1.3.0'
+
+homepage = 'https://idg.readthedocs.io/'
+description = """Image Domain Gridding (IDG) is a fast method for convolutional resampling (gridding/degridding)
+of radio astronomical data (visibilities). Direction dependent effects (DDEs) or A-tems can be applied
+in the gridding process.
+The algorithm is described in "Image Domain Gridding: a fast method for convolutional resampling of visibilities",
+Van der Tol (2018).
+The implementation is described in "Radio-astronomical imaging on graphics processors", Veenboer (2020).
+Please cite these papers in publications using IDG.
+"""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+sources = [
+    {
+        'filename': SOURCE_TAR_XZ,
+        # Repo uses git submodules, which are not included in the release tarballs.
+        # Thus, we let EasyBuild download directly from the git repository.
+        'git_config': {
+            'url': 'https://gitlab.com/astron-%(namelower)s',
+            'repo_name': '%(name)s',
+            'tag': '%(version)s',
+            'clone_into': '%(name)s',
+            'recursive': True,
+        },
+    },
+]
+# The xsimd patch of IDG 1.2.0 is dropped: IDG only uses xtensor, xtensor-python and xtensor-blas, so xsimd is never
+# fetched or used. The new patch fixes the MPI example: it includes xtensor headers without linking xtensor.
+patches = ['%(name)s-%(version)s_link-xtensor-in-mpi-example.patch']
+checksums = [
+    {SOURCE_TAR_XZ: '1a970e6922386c6c4d233f152ed89b650404cbae04eae5fe6c7f21c6c572e529'},
+    {'%(name)s-%(version)s_link-xtensor-in-mpi-example.patch':
+     '330f7868cb7f25bbd24d23e3156e8cc3b93ae636510b5f52b58935825afa9caa'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.11'),
+]
+dependencies = [
+    ('Boost', '1.90.0'),
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),  # new: NumPy, required by the idg-cal Python bindings
+]
+
+configopts = "-DBUILD_WITH_MPI=ON -DBUILD_WITH_PYTHON=ON -DBUILD_WITH_DEMOS=ON "
+
+
+sanity_check_paths = {
+    'files': ['include/%(namelower)s-api.h', 'include/%(namelower)s.h', 'lib/libidg.so', 'lib/libidg-api.so'],
+    'dirs': ['include', 'lib', 'lib64'],
+}
+
+moduleclass = 'lib'
