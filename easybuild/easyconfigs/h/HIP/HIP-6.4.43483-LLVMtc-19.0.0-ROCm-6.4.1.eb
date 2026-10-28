@@ -1,0 +1,112 @@
+easyblock = 'EB_ROCmComponent'
+
+name = 'HIP'
+version = '6.4.43483'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/ROCm/HIP'
+description = """HIP is a C++ Runtime API and Kernel Language that allows
+developers to create portable applications for AMD and NVIDIA GPUs from single
+source code."""
+docurls = ['https://rocmdocs.amd.com/projects/HIP/']
+
+toolchain = {'name': 'LLVMtc', 'version': '19.0.0-ROCm-6.4.1'}
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+    ('CppHeaderParser', '2.7.4'),
+]
+
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('libxml2', '2.12.7'),
+    ('numactl', '2.0.18'),
+    ('Perl', '5.38.2'),
+    ('libglvnd', '1.7.0'),
+    ('rocminfo', '1.5.0'),
+    ('rocm-cmake', '0.14.0'),
+    ('rocprofiler-register', '0.5.0'),
+]
+
+default_easyblock = 'CMakeMake'
+
+components = [
+    ('HIPCC', 'rocm-%s' % _rocm_version, {
+        'sources': [
+            {
+                'source_urls': ['https://github.com/ROCm/llvm-project/archive/'],
+                'download_filename': '%(version)s.tar.gz',
+                'filename': 'llvm-project-%(version)s.tar.gz',
+                'alt_location': 'ROCm-LLVM',
+                'extract_cmd': 'tar xfz %s && mv llvm-project-%(version)s llvm-project-%(version)s.src',
+            },
+        ],
+        'patches': [('HIP-6.4.43483-LLVMtc-19.0.0-ROCm-6.4.1_correct_paths_clang_and_rocm_agent_enum.patch',
+                     'llvm-project-%(version)s.src')],
+        'checksums': [
+            # llvm-project-rocm-6.4.1.tar.gz
+            '460ad28677092b9eb86ffdc49bcb4d01035e32b4f05161d85f90c9fa80239f50',
+            # HIP-6.4.43483-LLVMtc-19.0.0-ROCm-6.4.1_correct_paths_clang_and_rocm_agent_enum.patch
+            'ab58ee1bae0b5c4cec293063758da119dd6c90f944e6821141205dfe1bdbb47e',
+        ],
+        'srcdir': 'llvm-project-%(version)s.src/amd/hipcc',
+    }),
+    ('HIP', 'rocm-%s' % _rocm_version, {
+        'sources': [
+            {
+                'source_urls': ['https://github.com/ROCm/clr/archive/'],
+                'download_filename': '%(version)s.tar.gz',
+                'filename': 'clr-%(version)s.tar.gz',
+            },
+            {
+                'source_urls': ['https://github.com/ROCm/HIP/archive/'],
+                'download_filename': '%(version)s.tar.gz',
+                'filename': 'HIP-%(version)s.tar.gz',
+            },
+        ],
+        'checksums': [
+            '18ee75a04f6fc55e72f8b3fcad1e0d58eceb2ce0e0696ca76d9b3dfaf4bfd7ff', # clr-rocm-6.4.1.tar.gz
+            'f26f098b08504636c6f4e1da45b162f1df2ce6608eba85606fa7932d8fea960f', # HIP-rocm-6.4.1.tar.gz
+        ],
+        'srcdir': 'clr-rocm-%s' % _rocm_version,
+        'configopts': '-DHIP_COMMON_DIR=%(builddir)s/hip-%(version)s/ -DHIP_PLATFORM=amd ' +
+                      '-DHIPCC_BIN_DIR=%(installdir)s/bin -DCLR_BUILD_HIP=ON -DCLR_BUILD_OCL=OFF'
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['hipcc', 'hipcc.pl', 'hipconfig', 'hipconfig.pl']] +
+             ['bin/%s' % x for x in ['roc-obj', 'roc-obj-extract', 'roc-obj-ls']] +
+             ['include/hip/hip_common.h', 'include/hip/hip_runtime.h', 'lib/libamdhip64.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+sanity_check_commands = [
+    'hipcc --help',
+    'hipconfig --full'
+]
+
+modextravars = {
+    'HIP_COMPILER': 'clang',
+    'HIP_INCLUDE_PATH': '%(installdir)s/include',
+    'HIP_LIB_PATH': '%(installdir)s/lib',
+    'HIP_PATH': '%(installdir)s',
+    'HIP_RUNTIME': 'rocclr',
+    'ROCM_PATH': '%(installdir)s',
+}
+
+modluafooter = """
+setenv("DEVICE_LIB_PATH", os.getenv("EBROOTROCMMINLLVM") .. "/amdgcn/bitcode")
+setenv("HIP_CLANG_INCLUDE_PATH", os.getenv("EBROOTROCMMINLLVM") .. "/include")
+setenv("HIP_CLANG_PATH", os.getenv("EBROOTROCMMINLLVM") .. "/bin")
+setenv("HSA_PATH", os.getenv("EBROOTROCMMINLLVM"))
+"""
+
+modtclfooter = """
+setenv DEVICE_LIB_PATH $::env(EBROOTROCMMINLLVM)/amdgcn/bitcode
+setenv HIP_CLANG_INCLUDE_PATH $::env(EBROOTROCMMINLLVM)/include
+setenv HIP_CLANG_PATH $::env(EBROOTROCMMINLLVM)/bin
+setenv HSA_PATH $::env(EBROOTROCMMINLLVM)
+"""
+
+moduleclass = 'tools'
