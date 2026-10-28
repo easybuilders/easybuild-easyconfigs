@@ -5,6 +5,7 @@ See https://github.com/rstudio/rstudio/pull/19239
 Author: Alexander Grund (TU Dresden)
 
 diff --git a/src/cpp/core/CMakeLists.txt b/src/cpp/core/CMakeLists.txt
+index c2248cd3c4..c16f9a501e 100644
 --- a/src/cpp/core/CMakeLists.txt
 +++ b/src/cpp/core/CMakeLists.txt
 @@ -188,7 +188,6 @@ if (UNIX)
@@ -25,6 +26,7 @@ diff --git a/src/cpp/core/CMakeLists.txt b/src/cpp/core/CMakeLists.txt
  
     list(APPEND CORE_SYSTEM_LIBRARIES ${OPENSSL_LIBRARIES})
 diff --git a/src/cpp/ext/CMakeLists.txt b/src/cpp/ext/CMakeLists.txt
+index 8279f18a6a..3bea7dbf14 100644
 --- a/src/cpp/ext/CMakeLists.txt
 +++ b/src/cpp/ext/CMakeLists.txt
 @@ -30,12 +30,13 @@ set(CMAKE_WARN_DEPRECATED FALSE)
@@ -132,11 +134,23 @@ diff --git a/src/cpp/ext/CMakeLists.txt b/src/cpp/ext/CMakeLists.txt
                 SOURCE_SUBDIR  "${_SOURCE_SUBDIR}"
                 EXCLUDE_FROM_ALL)
 +         else()
-+            find_package("${_NAME}" "${${_PREFIX}_VERSION}" REQUIRED)
++            find_package("${_NAME}" "${${_PREFIX}_VERSION}" REQUIRED GLOBAL)
           endif()
        endif()
  
-@@ -237,16 +253,28 @@ fetch(
+@@ -224,8 +240,9 @@ function(fetch)
+          FetchContent_MakeAvailable("${_NAME}")
+          set(CMAKE_CXX_FLAGS "${_CMAKE_CXX_FLAGS}")
+          message(STATUS "Fetching dependency ${_NAME} ${${_PREFIX}_VERSION} - success")
+-         set("${_PREFIX}_SOURCE_DIR" "${CMAKE_BINARY_DIR}/_deps/${_NAME}-src" CACHE INTERNAL "")
+-         set("${_PREFIX}_BINARY_DIR" "${CMAKE_BINARY_DIR}/_deps/${_NAME}-build" CACHE INTERNAL "")
++         FetchContent_GetProperties(${_NAME} SOURCE_DIR src BINARY_DIR bin)
++         set("${_PREFIX}_SOURCE_DIR" "${src}" CACHE INTERNAL "")
++         set("${_PREFIX}_BINARY_DIR" "${bin}" CACHE INTERNAL "")
+       endif()
+ 
+    endwhile()
+@@ -237,16 +254,28 @@ fetch(
     fmt          FMT
     gsl-lite     GSL_LITE
     hunspell     HUNSPELL

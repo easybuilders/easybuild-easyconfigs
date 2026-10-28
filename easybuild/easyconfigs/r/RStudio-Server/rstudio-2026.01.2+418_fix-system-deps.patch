@@ -27,7 +27,7 @@ index 6222257677..21517d36f1 100644
     # add Apple frameworks we depend on
     if(APPLE)
 diff --git a/src/cpp/ext/CMakeLists.txt b/src/cpp/ext/CMakeLists.txt
-index f04fb451d2..0b47ada347 100644
+index f04fb451d2..3499c4cce9 100644
 --- a/src/cpp/ext/CMakeLists.txt
 +++ b/src/cpp/ext/CMakeLists.txt
 @@ -30,12 +30,13 @@ set(CMAKE_WARN_DEPRECATED FALSE)
@@ -135,11 +135,23 @@ index f04fb451d2..0b47ada347 100644
                 SOURCE_SUBDIR  "${_SOURCE_SUBDIR}"
                 EXCLUDE_FROM_ALL)
 +         else()
-+            find_package("${_NAME}" "${${_PREFIX}_VERSION}" REQUIRED)
++            find_package("${_NAME}" "${${_PREFIX}_VERSION}" REQUIRED GLOBAL)
           endif()
        endif()
  
-@@ -250,18 +266,34 @@ endfunction()
+@@ -238,8 +254,9 @@ function(fetch)
+          FetchContent_MakeAvailable("${_NAME}")
+          set(CMAKE_CXX_FLAGS "${_CMAKE_CXX_FLAGS}")
+          message(STATUS "Fetching dependency ${_NAME} ${${_PREFIX}_VERSION} - success")
+-         set("${_PREFIX}_SOURCE_DIR" "${CMAKE_BINARY_DIR}/_deps/${_NAME}-src" CACHE INTERNAL "")
+-         set("${_PREFIX}_BINARY_DIR" "${CMAKE_BINARY_DIR}/_deps/${_NAME}-build" CACHE INTERNAL "")
++         FetchContent_GetProperties(${_NAME} SOURCE_DIR src BINARY_DIR bin)
++         set("${_PREFIX}_SOURCE_DIR" "${src}" CACHE INTERNAL "")
++         set("${_PREFIX}_BINARY_DIR" "${bin}" CACHE INTERNAL "")
+       endif()
+ 
+    endwhile()
+@@ -250,18 +267,34 @@ endfunction()
  fetch(
     fmt          FMT
     gsl-lite     GSL_LITE
