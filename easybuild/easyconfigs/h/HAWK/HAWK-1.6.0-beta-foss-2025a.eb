@@ -1,0 +1,67 @@
+easyblock = 'MakeCp'
+
+name = 'HAWK'
+version = '1.6.0-beta'
+
+homepage = 'https://github.com/atifrahman/HAWK'
+description = """HAWK (Hitting Associations With K-mers) is a tool for performing
+reference-free genome-wide association studies using k-mers."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+source_urls = ['https://github.com/atifrahman/HAWK/archive/refs/tags/']
+sources = [{
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+
+checksums = ['e42875496d053794ee6d8f06726982e62a5e8691dee66472c73fed40b9d23866']
+
+dependencies = [
+    ('ABySS', '2.3.10'),
+    ('GSL', '2.8'),
+    ('FlexiBLAS', '3.4.5'),
+]
+
+files_to_copy = ['*']
+
+postinstallcmds = [
+    # Include own modified jellyfish
+    "cd supplements && tar xf jellyfish-2.2.10-HAWK.tar.gz && "
+    "cd jellyfish-2.2.10 && ./configure --prefix=%(installdir)s && "
+    "make && make install",
+    # Include own modified EIGENSTRAT
+    "cd supplements && tar xf EIG6.0.1-Hawk.tar.gz && "
+    "cd EIG6.0.1-Hawk/src && "
+    # EIGENSTRAT expects an OPENBLAS path, links through FlexiBLAS/LAPACKE
+    "make OPENBLAS=$EBROOTFLEXIBLAS "
+    "CFLAGS=\"-I../include -I$EBROOTFLEXIBLAS/include -I$EBROOTLAPACKE/include "
+    "-D_GNU_SOURCE $CFLAGS -Wno-error=implicit-function-declaration\" "
+    "LDLIBS='-lgsl -llapacke -lflexiblas -lgfortran -pthread -lm' && "
+    "mkdir -p %(installdir)s/bin && "
+    "cp eigensrc/smartpca %(installdir)s/bin/ && cp ../bin/evec2pca.perl %(installdir)s/bin/"
+]
+
+sanity_check_paths = {
+    'files': [
+        'hawk.out',
+        'preProcess.out',
+        'kmersearch.out',
+        'bin/jellyfish',
+        'bin/smartpca',
+        'bin/evec2pca.perl',
+    ],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = [
+    'hawk.out --help 2>&1 |grep "Usage"'
+    'jellyfish --version',
+    'smartpca -v',
+]
+
+modextrapaths = {
+    'PATH': '',
+}
+
+moduleclass = 'bio'
