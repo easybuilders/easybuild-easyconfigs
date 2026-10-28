@@ -1,0 +1,41 @@
+name = 'Java'
+_java_version = '11'
+_patch_version = '32.1'
+_build_version = '1'
+version = f'{_java_version}.0.{_patch_version}'
+
+homepage = 'http://openjdk.java.net'
+description = """Java Platform, Standard Edition (Java SE) lets you develop and deploy
+Java applications on desktops and servers."""
+
+toolchain = SYSTEM
+
+_tarball_tmpl = f'OpenJDK{_java_version}U-jdk_{{}}_linux_hotspot_{version}_{_build_version}.tar.gz'
+
+# Using the Adoptium Eclipse Temurin builds, recommended by https://whichjdk.com/#distributions
+source_urls = [f'https://github.com/adoptium/temurin{_java_version}-binaries/releases/download/'
+               f'jdk-{version}+{_build_version}/']
+sources = [
+    _tarball_tmpl.format('%(jdkarch)s'),
+    {'filename': 'Java_blocked-certs-eMudhra-CVE-2026-91403.txt',
+     'extract_cmd': "cp %s %(builddir)s/"},
+]
+checksums = [
+    {
+        _tarball_tmpl.format('x64'):
+            '5c3f68887c325d36d852ba534303e1f5f1f5cae7d6cc1e951d73e0d8e98a058d',
+        _tarball_tmpl.format('aarch64'):
+            'f27033e6f7523c1b0b2565a78e9c0e0abe5596a854ce00ca04ec1b06ece7a935',
+        _tarball_tmpl.format('ppc64le'):
+            'bb84dc99346d66d5acd3610c4289b5d7c944559efe0d7a0004f9921866b16c97',
+    },
+    {'Java_blocked-certs-eMudhra-CVE-2026-91403.txt':
+     '8a11b84b894e7986af1131c10fcff168fb38987bedb4fd7a0d8a7a120288d521'},
+]
+
+postinstallcmds = [
+    # see https://glaforge.dev/posts/2026/10/21/the-emudhra-ca-compromise-why-your-jvm-is-vulnerable-and-how-to-fix-it
+    "cat %(builddir)s/Java_blocked-certs-eMudhra-CVE-2026-91403.txt >> %(installdir)s/lib/security/blocked.certs",
+]
+
+moduleclass = 'lang'
