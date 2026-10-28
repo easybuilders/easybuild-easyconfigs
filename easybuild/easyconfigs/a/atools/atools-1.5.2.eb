@@ -15,9 +15,13 @@ checksums = ['734308b58956525b8c519c4a4f76e00b96400566cc87d0dd1870e299980be032']
 # to enable SLURM integration (site-specific) (options are torque, moab, sge, slurm)
 configopts = '--with-batchsystem=slurm'
 
-# Disable Python's automatic site initialization (-S) to prevent system-installed
-# vsc namespace .pth files from shadowing the bundled vsc package.
-postinstallcmds = ["sed -i 's/^${PYTHON}/${PYTHON} -S/' %(installdir)s/bin/*"]
+postinstallcmds = [
+    # Disable Python's automatic site initialization (-S) to prevent system-installed
+    # vsc namespace .pth files from shadowing the bundled vsc package.
+    "sed -i 's/^${PYTHON}/${PYTHON} -S/' %(installdir)s/bin/*",
+    # Make sure we use the original python executable path (in case EB runs in a venv)
+    """echo "export PYTHON=\"$(readlink -f $(command -v python))\"" >%(installdir)s/conf/atools_python.sh""",
+]
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ['acreate', 'aenv', 'aload', 'alog', 'arange', 'areduce']],
