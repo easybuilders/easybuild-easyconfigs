@@ -1,0 +1,54 @@
+easyblock = 'MakeCp'
+
+name = 'psmc'
+version = '0.6.5_20251117'
+_commit = '82fa2ad'
+
+homepage = 'https://github.com/lh3/psmc'
+description = """This software package infers population size history from a diploid sequence
+using the Pairwise Sequentially Markovian Coalescent (PSMC) model."""
+
+toolchain = {'name': 'GCC', 'version': '15.2.0'}
+
+source_urls = ['https://github.com/lh3/psmc/archive/']
+sources = [{
+    'source_urls': ['https://github.com/lh3/psmc/archive/'],
+    'download_filename': f'{_commit}.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['a996c8f377255451037b52b9d550fa0da0c12180d7579db0469d39cb8a8d5e52']
+
+dependencies = [('Perl', '5.42.0')]
+
+buildopts = '&& cd utils && make'
+
+local_utils = [
+    'avg.pl', 'calD', 'cntcpg', 'ctime_plot.pl', 'dec2ctime.pl', 'decode2bed.pl', 'fq2psmcfa', 'history2ms.pl',
+    'ms2psmcfa.pl', 'mutDiff', 'pcnt_bezier.lua', 'psmc2history.pl', 'psmc_plot.pl', 'psmc_trunc.pl', 'splitfa',
+]
+
+files_to_copy = [
+    (['psmc'], 'bin'),
+    ([f'utils/{x}' for x in local_utils], 'bin')
+]
+
+postinstallcmds = [
+    # recommended help, see perldoc Getopt::Std
+    "sed -i '/use Getopt::Std;/a $Getopt::Std::STANDARD_HELP_VERSION = 1;' %(installdir)s/bin/*.pl",
+]
+
+fix_perl_shebang_for = ['bin/*.pl']
+
+sanity_check_paths = {
+    'files': ['bin/psmc'] + [f'bin/{x}' for x in local_utils],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'psmc 2>&1 |grep "Usage:"',
+    'calD 2>&1 |grep "Usage:"',
+    'avg.pl --help',
+    'ctime_plot.pl --help',
+]
+
+moduleclass = 'bio'
