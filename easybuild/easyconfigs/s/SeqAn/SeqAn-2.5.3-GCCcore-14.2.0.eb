@@ -1,0 +1,46 @@
+easyblock = 'CMakeMake'
+
+name = 'SeqAn'
+version = '2.5.3'
+
+homepage = 'https://github.com/seqan/seqan'
+
+description = """
+ SeqAn is an open source C++ library of efficient algorithms and data structures
+ for the analysis of sequences with the focus on biological data.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+source_urls = ['https://github.com/seqan/seqan/archive/']
+sources = ['%(namelower)s-v%(version)s.tar.gz']
+checksums = ['b6cd1749eeb1e179cc9156f952cc60a445e0f05dcc20ff689255b102db501252']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+    ('Python', '3.13.1'),
+]
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.3.1'),
+]
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/util/cmake",
+    "cp -a %(builddir)s/seqan-*/util/cmake/seqan-config.cmake %(installdir)s/util/cmake/",
+    "cp -a %(builddir)s/seqan-*/include %(installdir)s",
+]
+
+local_binaries = ['gustaf_mate_joining', 'mason_materializer', 'mason_variator', 'rabema_prepare_sam',
+                  'razers3', 'seqan_tcoffee', 'samcat', 'splazers', 'yara_mapper']
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in local_binaries] + ['util/cmake/seqan-config.cmake'],
+    'dirs': ['include/seqan'],
+}
+
+sanity_check_commands = [f'{x} --help' for x in local_binaries]
+
+moduleclass = 'bio'

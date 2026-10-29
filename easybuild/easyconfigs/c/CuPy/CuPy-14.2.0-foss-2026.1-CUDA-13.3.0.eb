@@ -1,0 +1,64 @@
+easyblock = 'PythonBundle'
+
+name = 'CuPy'
+version = '14.2.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://cupy.dev'
+description = "CuPy is an open-source array library accelerated with NVIDIA CUDA."
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+builddependencies = [
+    ('hypothesis', '6.153.2'),
+    ('Cython', '3.2.9'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+    ('CUDA', '13.3.0', '', SYSTEM),
+    ('CUDA-Python', '13.3.1', versionsuffix),
+    ('NCCL', '2.30.4', versionsuffix),
+    ('cuTENSOR', '2.7.0.5', versionsuffix, SYSTEM),
+    ('cuSPARSELt', '0.9.1.1', versionsuffix, SYSTEM),  # docs say 0.7.0 or 0.7.1
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['7.5', '8.0', '8.6', '9.0']
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+_skip_tests = [
+    '--ignore tests/example_tests',  # examples are not included
+]
+
+# For testing with new versions of CuPy, please enable the slow testing setting below,
+# but switch to the much lighter fast testing before submitting the .eb file, so users
+# can install on GPUs with moderate RAM.
+
+# _parallel_tests, _test_type = 4, 'not slow'
+_parallel_tests, _test_type = 1, 'fast'
+
+exts_list = [
+    ('fastrlock', '0.8.3', {
+        'checksums': ['4af6734d92eaa3ab4373e6c9a1dd0d5ad1304e172b1521733c6c3b3d73c8fa5d'],
+    }),
+    ('cupy', version, {
+        'patches': ['cupy-13.0.0_eb_ccc.patch'],
+        'preinstallopts': 'CUPY_NUM_BUILD_JOBS=%(parallel)s EB_CCC="%(cuda_cc_cmake)s" ',
+        'runtest': 'export CUPY_TEST_GPU_LIMIT=1 CUPY_CACHE_DIR="%%(builddir)s" && '
+                   'pytest -n %s tests -k "%s" ' % (_parallel_tests, _test_type) + ' '.join(_skip_tests),
+        'testinstall': True,
+        'checksums': [
+            {'cupy-14.2.0.tar.gz': 'cfed725e612178cfbdbf62f4a3a598b60edecbbca718c0d4580c21a16ae4a62c'},
+            {'cupy-13.0.0_eb_ccc.patch': 'bfe8b46344759f58491f55418bd9c856d6f72d681ee5fef12820009f808d2db1'},
+        ],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import cupy'",
+]
+
+moduleclass = 'lib'

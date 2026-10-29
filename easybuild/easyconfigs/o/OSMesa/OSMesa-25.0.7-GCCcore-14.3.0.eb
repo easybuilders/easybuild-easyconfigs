@@ -1,0 +1,76 @@
+# This is just OSMesa part of Mesa.
+# It has a different API for software rendering directly to a memory buffer.
+# It was removed after https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/33836
+# But old software might require it.
+
+easyblock = 'MesonNinja'
+name = 'OSMesa'
+version = '25.0.7'  # Last release that still includes OSMesa
+
+homepage = 'https://www.mesa3d.org/'
+description = """OSMesa is a deprecated backend for software rendering using to a memory buffer.
+
+OSMesa is deprecated and software should switch to surfaceless EGL.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = [
+    'https://archive.mesa3d.org/',
+    'https://archive.mesa3d.org/older-versions/%(version_major)s.x/',
+]
+sources = ['mesa-%(version)s.tar.xz']
+checksums = ['592272df3cf01e85e7db300c449df5061092574d099da275d19e97ef0510f8a6']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('Meson', '1.8.2'),
+    ('Ninja', '1.13.0'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('pkgconf', '2.4.3'),
+    ('Mako', '1.3.10'),
+    ('PyYAML', '6.0.2'),
+    ('Rust', '1.91.1'),
+]
+
+dependencies = [
+    ('LLVM', '20.1.8'),
+]
+
+configopts = ' '.join([
+    '-Dplatforms=',
+    '-Dosmesa=true',
+    '-Dgallium-drivers=llvmpipe',
+    '-Dgallium-vdpau=disabled',
+    '-Dgallium-va=disabled',
+    '-Dgallium-xa=disabled',
+    '-Dgallium-nine=false',
+    '-Dgallium-rusticl=false',
+    '-Dvulkan-drivers=',
+    '-Dshared-glapi=enabled',
+    '-Dgles1=disabled',
+    '-Dgles2=disabled',
+    '-Dopengl=true',
+    '-Dgbm=disabled',
+    '-Dglvnd=disabled',
+    '-Dglx=disabled',
+    '-Degl=disabled',
+    '-Dllvm=enabled',
+    '-Dshared-llvm=enabled',
+    '-Dvalgrind=disabled',
+    '-Dbuild-tests=false',
+    '-Dmesa-clc=auto',
+    '-Dmicrosoft-clc=disabled',
+    '-Dxlib-lease=disabled',
+    '-Dandroid-libbacktrace=disabled',
+    '-Dlibunwind=disabled',
+    '-Dlmsensors=disabled',
+])
+
+sanity_check_paths = {
+    'files': ['include/GL/osmesa.h', f'lib/libOSMesa.{SHLIB_EXT}', 'lib/pkgconfig/osmesa.pc'],
+    'dirs': [],
+}
+
+moduleclass = 'vis'
