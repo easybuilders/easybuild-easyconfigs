@@ -1,0 +1,74 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+##
+easyblock = 'ConfigureMake'
+
+name = 'Virtuoso-opensource'
+version = '7.2.17'
+
+homepage = 'https://github.com/openlink/virtuoso-opensource'
+description = """Virtuoso is a high-performance and scalable Multi-Model RDBMS, Data
+Integration Middleware, Linked Data Deployment, and HTTP Application Server Platform."""
+software_license = 'LicenseGPLv2'
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+
+source_urls = ['https://github.com/openlink/virtuoso-opensource/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['ffef255b8ca68639affdfdcc66123cc8331d8b6753b96564c4473a58214d4e22']
+
+builddependencies = [
+    ('Autotools', '20240712'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('gperf', '3.3'),
+    ('gawk', '5.3.2'),
+]
+
+dependencies = [
+    ('OpenSSL', '3', '', SYSTEM),
+    ('libreadline', '8.2'),
+    ('XZ', '5.6.3'),
+    ('bzip2', '1.0.8'),
+]
+
+preconfigopts = './autogen.sh &&'
+_configure_opts = [
+    '--enable-shared --disable-static',
+    '--disable-imagemagick',
+    '--enable-aio',
+    '--enable-bpel-vad',
+    '--enable-conductor-vad',
+    '--disable-dbpedia-vad',
+    '--enable-demo-vad',
+    '--enable-fct-vad',
+    '--enable-isparql-vad',
+    '--enable-ods-vad',
+    '--enable-rdfmappers-vad',
+    '--enable-rdb2rdf-vad',
+    '--enable-sparqldemo-vad',
+    '--enable-syncml-vad',
+    '--enable-tutorial-vad',
+    '--with-iodbc',
+    '--with-readline',
+    '--with-pthreads',
+    '--with-port=11111',
+]
+configopts = ' '.join(_configure_opts)
+
+# NOTE Rename the "isql" executable (the virtuoso client), because there may be another package
+# unixODBC that provides an executable with the same name.
+postinstallcmds = ["cd %(installdir)s/bin/ && mv isql isqlv"]
+
+sanity_check_paths = {
+    'files': ['bin/virtuoso-t', 'bin/isqlv'],
+    'dirs': ['lib', 'var'],
+}
+
+sanity_check_commands = ["isqlv --help"]
+
+moduleclass = 'data'

@@ -1,0 +1,37 @@
+easyblock = "Bundle"
+
+name = 'root-kernel'
+version = '6.36.02'
+
+homepage = 'https://root.cern.ch'
+description = """Environment to run the jupyter kernel provided by ROOT."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+dependencies = [
+    ('ROOT', version),
+    ('jupyter-server', '2.14.2'),
+    ('metakernel', '0.30.4'),
+]
+
+_kernel_dir = '$EBROOTROOT/etc/notebook/kernels'
+postinstallcmds = [
+    'mkdir -p %(installdir)s/share/jupyter',
+    f'cp -r {_kernel_dir} %(installdir)s/share/jupyter/',
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['share/jupyter/kernels'],
+}
+
+sanity_check_commands = [
+    # Check that jupyter can find the kernel for ROOT
+    'jupyter kernelspec list 2>/dev/null | grep root; echo $?'
+]
+
+modextrapaths = {
+    'JUPYTER_PATH': 'share/jupyter/',
+}
+
+moduleclass = 'tools'

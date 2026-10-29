@@ -1,0 +1,48 @@
+commit d3d62ad44284abff4fcd0c70e245739c976bf5e1
+Author: Alexander Grund <alexander.grund@tu-dresden.de>
+Date:   Tue Nov 25 13:54:26 2025 +0100
+
+    Avoid closing random file handles in Inductor
+    
+    `CppCodeCache.load` returns a `ctypes.CDLL`.
+    That does not have a (Python class) `close` function so calling
+    `self.DLL.close()` calls whatever C function with name `close` happens
+    to exist. This is usually the glibc `close` that closes (file) handles.
+    As the argument is missing it closes whatever happens to be in the
+    register at that point.
+    
+    In some tests this seems to close "fd=1", i.e. stdout. Sebsequent
+    writes/print then fails with
+    > OSError: [Errno 9] Bad file descriptor
+    
+    Simply remove the `close` call for now.
+
+diff --git a/torch/_inductor/autotune_process.py b/torch/_inductor/autotune_process.py
+index 1d1687141fb..66b741fafe2 100644
+--- a/torch/_inductor/autotune_process.py
++++ b/torch/_inductor/autotune_process.py
+@@ -882,14 +882,6 @@ class CppBenchmarkRequest(CPUDeviceBenchmarkMixin, BenchmarkRequest):
+             *self.extra_args,
+         )
+ 
+-    def cleanup_run_fn(self) -> None:
+-        if self.DLL is not None:
+-            """
+-            Check close attr due to it crash on Windows.
+-            """
+-            if hasattr(self.DLL, "close"):
+-                self.DLL.close()
+-
+     def __str__(self) -> str:
+         return f"{self.kernel_name=}"
+ 
+@@ -939,9 +931,6 @@ class CuteDSLBenchmarkRequest(GPUDeviceBenchmarkMixin, BenchmarkRequest):
+ 
+         return run_kernel
+ 
+-    def cleanup_run_fn(self) -> None:
+-        """Clean up any resources used by the kernel."""
+-
+ 
+ @functools.cache
+ def get_tuning_process_pool() -> TuningProcessPool:

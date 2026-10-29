@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'OSU-Micro-Benchmarks'
+version = '7.5.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://mvapich.cse.ohio-state.edu/benchmarks/'
+description = """OSU Micro-Benchmarks"""
+
+toolchain = {'name': 'gompi', 'version': '2026.1'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://mvapich.cse.ohio-state.edu/download/mvapich/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-%(version)s_nccl_stream_global_variable.patch']
+checksums = [
+    {'osu-micro-benchmarks-7.5.2.tar.gz': '618de3d0b1122f73a9229177d2da1e5cd62e431190580cb915f2605849cbbbdc'},
+    {'OSU-Micro-Benchmarks-7.5.2_nccl_stream_global_variable.patch':
+     '6aeeb68e290342718990f0413d6f3488d8a82ef3851af6d7fe1e109fd52e456d'},
+]
+
+dependencies = [
+    ('CUDA', '13.3.0', '', SYSTEM),
+    ('NCCL', '2.30.4', versionsuffix),
+    ('UCX-CUDA', '1.20.0', versionsuffix),
+    ('UCC-CUDA', '1.7.0', versionsuffix),
+]
+
+configopts = ' --enable-cuda --with-cuda=$EBROOTCUDA --enable-ncclomb --with-nccl=$EBROOTNCCL'
+
+local_benchmark_dirs = [
+    f'libexec/osu-micro-benchmarks/mpi/{x}' for x in ['collective', 'one-sided', 'pt2pt', 'startup']
+] + [
+    f'libexec/osu-micro-benchmarks/xccl/{x}' for x in ['collective', 'pt2pt']
+]
+modextrapaths = {'PATH': local_benchmark_dirs}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': local_benchmark_dirs,
+}
+
+moduleclass = 'perf'

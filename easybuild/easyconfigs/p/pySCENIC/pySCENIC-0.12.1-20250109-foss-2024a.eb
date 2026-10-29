@@ -1,0 +1,88 @@
+easyblock = 'PythonBundle'
+
+name = 'pySCENIC'
+version = '0.12.1-20250109'
+local_commit = '06bafba'
+
+homepage = 'https://github.com/aertslab/pySCENIC'
+description = """pySCENIC is a lightning-fast python implementation of the SCENIC
+pipeline (Single-Cell rEgulatory Network Inference and Clustering) which enables
+biologists to infer transcription factors, gene regulatory networks and
+cell types from single-cell RNA-seq data."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+builddependencies = [
+    ('Cython', '3.0.10'),
+    ('scikit-build-core', '0.10.6'),
+    ('pybind11', '2.12.0'),
+]
+dependencies = [
+    ('Python', '3.12.3'),
+    ('PyYAML', '6.0.2'),
+    ('Arrow', '17.0.0'),
+    ('scikit-learn', '1.5.2'),
+    ('tqdm', '4.66.5'),
+    ('networkx', '3.4.2'),
+    ('dask', '2024.9.1'),
+    ('aiohttp', '3.10.10'),
+    ('dill', '0.3.9'),
+    ('loompy', '3.0.8'),
+    ('umap-learn', '0.5.7'),
+]
+
+# fix version reported by pyscenic
+local_preinstallopts = (
+    """sed -i 's/versioneer.get_version()/"%(version)s"/' setup.py && """
+    """sed -i 's/_version.get_versions()["version"]/"%(version)s"/' src/pyscenic/__init__.py && """
+)
+
+exts_list = [
+    ('diptest', '0.10.0', {
+        'checksums': ['c1384cd2ba67d97024cc964a86e5b083a33ca9e25d60f79f30ae2676460e4c3d'],
+    }),
+    ('cytoolz', '1.0.0', {
+        'checksums': ['eb453b30182152f9917a5189b7d99046b6ce90cdf8aeb0feff4b2683e600defd'],
+    }),
+    ('multiprocessing_on_dill', '3.5.0a4', {
+        'checksums': ['d6d50c300ff4bd408bb71eb78725e60231039ee9b3d0d9bb7697b9d0e15045e7'],
+    }),
+    ('frozendict', '2.4.7', {
+        'checksums': ['e478fb2a1391a56c8a6e10cc97c4a9002b410ecd1ac28c18d780661762e271bd'],
+    }),
+    ('arboreto', '0.1.6', {
+        'source_urls': ['https://github.com/aertslab/arboreto/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['f94c0bc084ca61422e8b74ecdb80585a45b168ac682f18dd3c52c9097ee29caa'],
+    }),
+    ('boltons', '25.0.0', {
+        'checksums': ['e110fbdc30b7b9868cb604e3f71d4722dd8f4dcb4a5ddd06028ba8f1ab0b5ace'],
+    }),
+    ('interlap', '0.2.7', {
+        'checksums': ['31e4f30c54b067c4939049f5d8131ae5e2fa682ec71aa56f89c0e5b900806ec9'],
+    }),
+    ('ctxcore', '0.2.0', {
+        'sources': ['%(name)s-%(version)s-py3-none-any.whl'],
+        'checksums': ['b90570377e26280c4861ebad1f4cee2fe598167c5d4bd12c1b713f03c9682627'],
+    }),
+    ('%(namelower)s', version, {
+        'preinstallopts': local_preinstallopts,
+        'source_urls': ['https://github.com/aertslab/pySCENIC/archive/'],
+        'sources': [{
+            'download_filename': f'{local_commit}.tar.gz',
+            'filename': f'%(name)s-%(version)s-{local_commit}.tar.gz'
+        }],
+        'runtest': "pytest -v tests",
+        'testinstall': True,
+        'checksums': ['54c6d1ae8fa27a6570ba4f90104691e71bc324a34529888af953bf9ad82d45bc'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["%(namelower)s --help"]
+
+moduleclass = 'bio'

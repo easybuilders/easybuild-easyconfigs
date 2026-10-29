@@ -1,0 +1,76 @@
+cmath header only brings isnan and isinf in std namespace
+author: Jarne Renders (Vrije Universiteit Brussel)
+diff -ruN shapeit5.orig/phase_common/src/models/haplotype_segment_double.h shapeit5/phase_common/src/models/haplotype_segment_double.h
+--- shapeit5.orig/phase_common/src/models/haplotype_segment_double.h	2026-03-04 11:42:53.921582000 +0100
++++ shapeit5/phase_common/src/models/haplotype_segment_double.h	2026-03-04 14:47:02.207427496 +0100
+@@ -400,7 +400,7 @@
+ 		_mm256_store_pd(&HProbs[h1*HAP_NUMBER+4], _sum1);
+ 		sumHProbs += HProbs[h1*HAP_NUMBER+0]+HProbs[h1*HAP_NUMBER+1]+HProbs[h1*HAP_NUMBER+2]+HProbs[h1*HAP_NUMBER+3]+HProbs[h1*HAP_NUMBER+4]+HProbs[h1*HAP_NUMBER+5]+HProbs[h1*HAP_NUMBER+6]+HProbs[h1*HAP_NUMBER+7];
+ 	}
+-	return (isnan(sumHProbs) || isinf(sumHProbs) || sumHProbs < std::numeric_limits<double>::min());
++	return (std::isnan(sumHProbs) || std::isinf(sumHProbs) || sumHProbs < std::numeric_limits<double>::min());
+ }
+ 
+ inline
+@@ -418,7 +418,7 @@
+ 			}
+ 		}
+ 	}
+-	return (isnan(sumDProbs) || isinf(sumDProbs) || sumDProbs < std::numeric_limits<double>::min());
++	return (std::isnan(sumDProbs) || std::isinf(sumDProbs) || sumDProbs < std::numeric_limits<double>::min());
+ }
+ 
+ inline
+@@ -436,7 +436,7 @@
+ 			}
+ 		}
+ 	}
+-	return (isnan(sumDProbs) || isinf(sumDProbs) || sumDProbs < std::numeric_limits<double>::min());
++	return (std::isnan(sumDProbs) || std::isinf(sumDProbs) || sumDProbs < std::numeric_limits<double>::min());
+ }
+ 
+ inline
+diff -ruN shapeit5.orig/phase_common/src/models/haplotype_segment_single.h shapeit5/phase_common/src/models/haplotype_segment_single.h
+--- shapeit5.orig/phase_common/src/models/haplotype_segment_single.h	2026-03-04 11:42:53.922262000 +0100
++++ shapeit5/phase_common/src/models/haplotype_segment_single.h	2026-03-04 14:45:44.838402609 +0100
+@@ -369,7 +369,7 @@
+ 		_mm256_store_ps(&HProbs[h1*HAP_NUMBER], _sum);
+ 		sumHProbs += HProbs[h1*HAP_NUMBER+0]+HProbs[h1*HAP_NUMBER+1]+HProbs[h1*HAP_NUMBER+2]+HProbs[h1*HAP_NUMBER+3]+HProbs[h1*HAP_NUMBER+4]+HProbs[h1*HAP_NUMBER+5]+HProbs[h1*HAP_NUMBER+6]+HProbs[h1*HAP_NUMBER+7];
+ 	}
+-	return (isnan(sumHProbs) || isinf(sumHProbs) || sumHProbs < std::numeric_limits<float>::min());
++	return (std::isnan(sumHProbs) || std::isinf(sumHProbs) || sumHProbs < std::numeric_limits<float>::min());
+ }
+ 
+ inline
+@@ -387,7 +387,7 @@
+ 			}
+ 		}
+ 	}
+-	return (isnan(sumDProbs) || isinf(sumDProbs) || sumDProbs < std::numeric_limits<double>::min());
++	return (std::isnan(sumDProbs) || std::isinf(sumDProbs) || sumDProbs < std::numeric_limits<double>::min());
+ }
+ 
+ inline
+@@ -405,7 +405,7 @@
+ 			}
+ 		}
+ 	}
+-	return (isnan(sumDProbs) || isinf(sumDProbs) || sumDProbs < std::numeric_limits<double>::min());
++	return (std::isnan(sumDProbs) || std::isinf(sumDProbs) || sumDProbs < std::numeric_limits<double>::min());
+ }
+ 
+ inline
+diff -ruN shapeit5.orig/phase_rare/src/containers/genotype_set/genotype_set_phasing.cpp shapeit5/phase_rare/src/containers/genotype_set/genotype_set_phasing.cpp
+--- shapeit5.orig/phase_rare/src/containers/genotype_set/genotype_set_phasing.cpp	2026-03-04 11:42:53.973116000 +0100
++++ shapeit5/phase_rare/src/containers/genotype_set/genotype_set_phasing.cpp	2026-03-04 14:45:29.551672000 +0100
+@@ -63,8 +63,8 @@
+ 			assert(GRvar_genotypes[vr][tidx].prob >= 0.0f);
+ 			if (haploids[GRvar_genotypes[vr][tidx].idx]) GRvar_genotypes[vr][tidx].impute(GRvar_genotypes[vr][tidx].prob, p[1] / (p[0] + p[1]));
+ 			else GRvar_genotypes[vr][tidx].phase(GRvar_genotypes[vr][tidx].prob, p[1] / (p[0] + p[1]));
+-			assert(!isnan(GRvar_genotypes[vr][tidx].prob));
+-			assert(!isinf(GRvar_genotypes[vr][tidx].prob));
++			assert(!std::isnan(GRvar_genotypes[vr][tidx].prob));
++			assert(!std::isinf(GRvar_genotypes[vr][tidx].prob));
+ 			if (GRvar_genotypes[vr][tidx].het && GRvar_genotypes[vr][tidx].prob < threshold) {
+ 				GRvar_genotypes[vr][tidx].prob = -1.0f;
+ 				GRvar_genotypes[vr][tidx].pha = 0;

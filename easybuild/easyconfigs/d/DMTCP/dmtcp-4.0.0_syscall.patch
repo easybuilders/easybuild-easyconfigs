@@ -1,0 +1,79 @@
+Dealing with RHEL-8 installation problems due to older kernel
+Help from Åke Sandgren and Simon Branford is appreciated
+Based on patches:
+https://github.com/dmtcp/dmtcp/pull/1210
+https://github.com/dmtcp/dmtcp/pull/1218
+Author: J. Saßmannshausen (Imperial College London/UK)
+diff --git a/dmtcp-4.0.0.orig/src/miscwrappers.cpp b/dmtcp-4.0.0/src/miscwrappers.cpp
+index 045b3e5..2c38796 100644
+--- a/dmtcp-4.0.0.orig/src/miscwrappers.cpp
++++ b/dmtcp-4.0.0/src/miscwrappers.cpp
+@@ -43,6 +43,11 @@
+ #endif  // if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22) &&
+         // __GLIBC_PREREQ(2,
+ // 8)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) && __GLIBC_PREREQ(2, 34)
++#include <linux/close_range.h>
++#endif  // if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) &&
++        // __GLIBC_PREREQ(2,
++// 34)
+ 
+ #ifdef __aarch64__
+ 
+@@ -339,12 +344,14 @@ syscall(long sys_num, ...)
+     break;
+   }
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) && __GLIBC_PREREQ(2, 34)
+   case SYS_close_range:
+   {
+     SYSCALL_GET_ARGS_3(int, fd1, int, fd2, unsigned int, flags);
+     ret = close_range(fd1, fd2, flags);
+     break;
+   }
++#endif
+ 
+   case SYS_rt_sigaction:
+   {
+diff --git a/dmtcp-4.0.0.orig/test/syscall-tester.c b/dmtcp-4.0.0/test/syscall-tester.c
+index 0646fb4..ec0e5fd 100644
+--- a/dmtcp-4.0.0.orig/test/syscall-tester.c
++++ b/dmtcp-4.0.0/test/syscall-tester.c
+@@ -72,8 +72,8 @@
+ #include <sys/vfs.h>
+ #include <linux/version.h>
+ 
+-// include the close_range.h header file only if linux kernel version is >= 5.9.0.
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
++// include the close_range.h header file only if linux kernel version is >= 5.9.0 and glibc version is >= 2.34
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) && __GLIBC_PREREQ(2, 34)
+ #include <linux/close_range.h>
+ #endif
+ 
+@@ -904,7 +904,7 @@ close_test(int fd)
+   return ret;
+ }
+ 
+-#ifdef __linux__
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) && __GLIBC_PREREQ(2, 34)
+ int close_range_test(unsigned int first_fd, unsigned int last_fd, unsigned int flags)
+ {
+   int ret, save_errno;
+@@ -3771,7 +3771,7 @@ BasicFile(void)
+ /*    printf("END Test %d\n\n", test);*/
+ /*    test++;*/
+ 
+-#ifdef __linux__
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) && __GLIBC_PREREQ(2, 34)
+ /* Test the close_range system call functionality */
+ int BasicCloseRange(void)
+ {
+@@ -5251,7 +5251,7 @@ testall()
+     char *desc;
+   } tests[] = {
+     { BasicFile, "BasicFile: simple open/close/access/unlink tests." },
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) && __GLIBC_PREREQ(2, 34)
+     { BasicCloseRange, "BasicCloseRange: Test close_range system call functionality." },
+ #endif
+     { BasicFileIO, "BasicFileIO: simple write/read/seek tests." },

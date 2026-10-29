@@ -1,0 +1,35 @@
+Update compiler commands from PGI to NVHPC to avoid build failures, due
+to EasyBuild rpath wrappers not providing wrappers for old PGI variants.
+
+Author: Jan Reuter (JSC)
+
+diff --color -Naur boost_1_88_0.orig/tools/build/src/tools/pgi.jam boost_1_88_0/tools/build/src/tools/pgi.jam
+--- boost_1_88_0.orig/tools/build/src/tools/pgi.jam	2025-04-03 13:37:31.000000000 +0200
++++ boost_1_88_0/tools/build/src/tools/pgi.jam	2025-08-28 10:01:16.225212568 +0200
+@@ -25,11 +25,11 @@
+ {
+   local condition = [ common.check-init-parameters pgi : version $(version) ] ;
+ 
+-  local l_command = [ common.get-invocation-command pgi : pgc++ : $(command) ] ;
++  local l_command = [ common.get-invocation-command pgi : nvc++ : $(command) ] ;
+ 
+   common.handle-options pgi : $(condition) : $(l_command) : $(options) ;
+ 
+-  command_c = $(command_c[1--2]) $(l_command[-1]:B=pgcc) ;
++  command_c = [ common.get-invocation-command pgi : nvc : $(command) ] ;
+ 
+   toolset.flags pgi CONFIG_C_COMMAND $(condition) : $(command_c) ;
+ 
+@@ -55,9 +55,9 @@
+ flags pgi.compile.c++ OPTIONS <cxxstd>14 : -std=c++14 ;
+ flags pgi.compile.c++ OPTIONS <cxxstd>1z : -std=c++17 ;
+ flags pgi.compile.c++ OPTIONS <cxxstd>17 : -std=c++17 ;
+-flags pgi.compile.c++ OPTIONS <cxxstd>2a : -std=c++17 ;
+-flags pgi.compile.c++ OPTIONS <cxxstd>20 : -std=c++17 ;
+-flags pgi.compile.c++ OPTIONS <cxxstd>latest : -std=c++17 ;
++flags pgi.compile.c++ OPTIONS <cxxstd>2a : -std=c++20 ;
++flags pgi.compile.c++ OPTIONS <cxxstd>20 : -std=c++20 ;
++flags pgi.compile.c++ OPTIONS <cxxstd>latest : -std=c++23 ;
+ 
+ flags pgi.compile OPTIONS <link>shared : -fpic ;
+ flags pgi.compile OPTIONS <debug-symbols>on : -gopt ;

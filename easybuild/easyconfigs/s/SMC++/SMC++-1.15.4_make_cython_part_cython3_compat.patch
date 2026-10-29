@@ -1,0 +1,45 @@
+Adapt to Cython 3
+Drop copy_memview since it is unused
+
+Åke Sandgren, 2026-01-29
+diff --git a/smcpp/_estimation_tools.pyx b/smcpp/_estimation_tools.pyx
+index 2ea21cd..0985d56 100644
+--- a/smcpp/_estimation_tools.pyx
++++ b/smcpp/_estimation_tools.pyx
+@@ -98,10 +98,10 @@ cdef bint any_pos_memview(int[:] a) nogil:
+             return True
+     return False
+ 
+-cdef void copy_memview(int[:] a, int[:] b) nogil:
+-    cdef int i
+-    for i in range(a.shape[0]):
+-        a[i] = b[i]
++#cdef void copy_memview(int[:] a, int[:] b) nogil:
++#    cdef int i
++#    for i in range(a.shape[0]):
++#        a[i] = b[i]
+ 
+ cdef int sum_memview(int[:] a) nogil:
+     cdef int ret = 0
+@@ -111,7 +111,7 @@ cdef int sum_memview(int[:] a) nogil:
+ 
+ 
+ cdef void process_bin(int[:, :] data, int[:, :] new_data, long[:] na,
+-                      int i, int j, int k, bint thin) nogil:
++                      int i, int j, int k, bint thin) noexcept nogil:
+     cdef int q, aa, bb, sample_size, max_sample_size, mq
+     max_sample_size = -2
+     cdef int K, seg
+diff --git a/smcpp/_smcpp.pyx b/smcpp/_smcpp.pyx
+index e5c7fb5..d557e71 100644
+--- a/smcpp/_smcpp.pyx
++++ b/smcpp/_smcpp.pyx
+@@ -33,7 +33,7 @@ abort = False
+ _lvl = {s: getattr(logging, s) for s in "info debug critical warning error".upper().split()}
+ _lvl['DEBUG1'] = logging.DEBUG - 1
+ _lvl['DEBUG'] = logging.DEBUG
+-cdef void logger_cb(const string name, const string level, const string message) with gil:
++cdef void logger_cb(const string name, const string level, const string message) noexcept with gil:
+     global abort
+     name_s = "smcpp._smcpp:" + name.decode("UTF-8")
+     level_s = level.decode("UTF-8")

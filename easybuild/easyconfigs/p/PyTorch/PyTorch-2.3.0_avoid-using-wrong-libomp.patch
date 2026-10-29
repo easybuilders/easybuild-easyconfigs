@@ -1,0 +1,27 @@
+When using GCC `libgomp.so` should be used which will be automatically done with `-fopenmp`.
+However the custom FindOpenMP searches for `libomp.so` first which ends up being used if found
+e.g. on the system in /lib64
+
+See https://github.com/pytorch/pytorch/pull/177126
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/cmake/Modules/FindOpenMP.cmake b/cmake/Modules/FindOpenMP.cmake
+--- a/cmake/Modules/FindOpenMP.cmake
++++ b/cmake/Modules/FindOpenMP.cmake
+@@ -254,15 +254,6 @@ function(_OPENMP_GET_FLAGS LANG FLAG_MODE OPENMP_FLAG_VAR OPENMP_LIB_NAMES_VAR)
+       set(OpenMP_libomp_LIBRARY "${MKL_OPENMP_LIBRARY}" CACHE STRING "libomp location for OpenMP")
+     endif()
+ 
+-    if (NOT OpenMP_libomp_LIBRARY)
+-      find_library(OpenMP_libomp_LIBRARY
+-        NAMES omp gomp iomp5
+-        HINTS ${CMAKE_${LANG}_IMPLICIT_LINK_DIRECTORIES}
+-        DOC "libomp location for OpenMP"
+-      )
+-      mark_as_advanced(OpenMP_libomp_LIBRARY)
+-    endif()
+-
+     if(OpenMP_libomp_LIBRARY MATCHES "iomp5")
+       set(OpenMP_libiomp5_LIBRARY "${MKL_OPENMP_LIBRARY}" CACHE STRING "libiomp5 location for OpenMP")
+       if("-fopenmp=libiomp5" IN_LIST OpenMP_${LANG}_FLAG_CANDIDATES)

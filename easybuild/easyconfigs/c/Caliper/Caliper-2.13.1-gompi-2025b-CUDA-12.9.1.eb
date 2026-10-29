@@ -1,0 +1,77 @@
+easyblock = 'CMakeMake'
+
+name = 'Caliper'
+version = '2.13.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/LLNL/Caliper'
+description = """
+Caliper is a performance instrumentation and profiling library for HPC
+(high-performance computing) programs. It provides source-code annotation
+APIs for marking regions of interest in C, C++, Fortran, and Python codes,
+as well as measurement functionality for a wide range of runtime profiling,
+event tracing, and performance monitoring use cases.
+
+Caliper can generate simple human-readable reports or files for performance
+data analysis frameworks like Hatchet and Thicket. It can also generate
+detailed event traces for timeline visualizations with Perfetto and the Google
+Chrome trace viewer.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+
+source_urls = ['https://github.com/LLNL/Caliper/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['Caliper-2.13.1_fix-nvtx3-header.patch']
+checksums = [
+    {'v2.13.1.tar.gz': '7cef0173e0e0673abb7943a2641b660adfbc3d6bc4b33941ab4f431f92a4d016'},
+    {'Caliper-2.13.1_fix-nvtx3-header.patch': '7e1a53f1408ade04bc34d5ad3a6ec5c3fee3f91a95d0c9c95818def0332d9d1e'},
+]
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('Python', '3.13.5'),  # for building Python bindings
+    ('pybind11', '3.0.0'),
+]
+
+dependencies = [
+    ('elfutils', '0.193'),
+    ('libunwind', '1.8.2'),
+    ('GOTCHA', '1.0.8'),
+    ('PAPI', '7.2.0'),
+    ('CUDA', '12.9.1', '', SYSTEM),
+]
+
+configopts = ' '.join([
+    '-DWITH_FORTRAN=ON',
+    '-DWITH_PYTHON_BINDINGS=ON',
+    '-DWITH_GOTCHA=ON',
+    '-DUSE_EXTERNAL_GOTCHA=ON',
+    '-DWITH_LIBUNWIND=ON',
+    '-DWITH_MPI=ON',
+    '-DWITH_PAPI=ON',
+    '-DWITH_NVTX=ON',
+    '-DWITH_CUPTI=ON',
+    '-DCUDA_TOOLKIT_ROOT_DIR=$EBROOTCUDA',
+    '-DPAPI_PREFIX=$EBROOTPAPI',
+    '-DWITH_SAMPLER=ON',
+    '-DWITH_TOOLS=ON',
+])
+
+
+sanity_check_paths = {
+    'files': [
+        'bin/cali-query',
+        'bin/cali-stat',
+        'lib/libcaliper.%s' % SHLIB_EXT,
+        'include/caliper/Caliper.h',
+        'include/caliper/cali.h',
+    ],
+    'dirs': ['include/caliper', 'lib', 'share'],
+}
+
+sanity_check_commands = [
+    'cali-query --help',
+]
+
+moduleclass = 'perf'

@@ -1,0 +1,41 @@
+From 94c404fd9a2d39c417f258200c15d298fd08face Mon Sep 17 00:00:00 2001
+From: evanlinde <elinde@okstate.edu>
+Date: Thu, 14 Mar 2024 16:28:48 -0500
+Subject: [PATCH] Honor configure options better
+
+Use "prefix" more in line with standard unix/linux conventions and use the value provided by ./configure.
+---
+ src/Makefile.in | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/Makefile.in b/src/Makefile.in
+index 4c165ad..bc146e9 100644
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -11,13 +11,13 @@ OPENMP := -fopenmp
+ #OPENMP := -openmp -parallel
+ 
+ LIBS := -lm $(OPENMP) -ladolc -lnlopt -L/usr/lib64:/usr/local/lib64
+-LDFLAGS := -L/usr/local/lib64 -I/usr/local/include
++LDFLAGS := @LDFLAGS@ -L/usr/local/lib64 -I/usr/local/include
+ 
+ RM := rm -rf
+ 
+ SRC_DIR = ./
+ 
+-prefix = /usr/bin/
++prefix = @prefix@
+ 
+ CPP_SRCS += \
+ ./main.cpp \
+@@ -86,8 +86,8 @@ distclean:
+ 	-$(RM) *.o *.d configure config.log config.h config.status treePL Makefile
+ 
+ install:
+-	install -m 0755 treePL $(prefix)
++	install -Dm 0755 treePL $(prefix)/bin/treePL
+ 
+ uninstall:
+-	-rm $(prefix)treePL
++	-rm $(prefix)/bin/treePL
+ 

@@ -1,0 +1,105 @@
+Update GROMACS-constant-pH code to be compatible with CUDA 12.1.1 (officialy supports up to CUDA 11.x).
+Avoid atomicAdd(float4*, …) overload collision by renaming constant-pH helper to gmxAtomicAdd and updating call sites
+Author: Pavel Tomanek (Inuits/UGent)
+--- a/gromacs-constantph/src/gromacs/gpu_utils/vectype_ops.cuh
++++ b/gromacs-constantph/src/gromacs/gpu_utils/vectype_ops.cuh
+@@ -1,3 +1,4 @@
++/* constant-pH: avoid CUDA atomicAdd(float4*, float4) overload collision in newer CUDA toolkits */
+ /*
+  * This file is part of the GROMACS molecular simulation package.
+  *
+@@ -270,7 +271,7 @@ __forceinline__ __device__ void atomicAdd(float3& a, const float3 b)
+ 
+ /* Overloaded for constant-pH bonded on GPU. Use this for pairs as we need the
+    derivative of q. */
+-__forceinline__ __device__ void atomicAdd(float4* addr, float4 val)
++__forceinline__ __device__ void gmxAtomicAdd(float4* addr, float4 val)
+ {
+     atomicAdd(&addr->x, val.x);
+     atomicAdd(&addr->y, val.y);
+@@ -282,7 +283,7 @@ __forceinline__ __device__ void atomicAdd(float4* addr, float4 val)
+ 
+ /* Overloaded for constant-pH bonded on GPU. Use this for everything other than
+    pairs to save on unused fourth-element atomicAdd call. */
+-__forceinline__ __device__ void atomicAdd(float4* addr, float3 val)
++__forceinline__ __device__ void gmxAtomicAdd(float4* addr, float3 val)
+ {
+     atomicAdd(&addr->x, val.x);
+     atomicAdd(&addr->y, val.y);
+
+--- a/gromacs-constantph/src/gromacs/listed_forces/gpubondedkernels.cu	2026-01-19 12:36:26.407571000 +0100
++++ b/gromacs-constantph/src/gromacs/listed_forces/gpubondedkernels.cu	2026-01-19 12:38:40.239178000 +0100
+@@ -129,8 +129,8 @@
+             fbond *= rsqrtf(dr2);
+ 
+             float3 fij = fbond * dx;
+-            atomicAdd(&gm_f[ai], fij);
+-            atomicAdd(&gm_f[aj], -fij);
++            gmxAtomicAdd(&gm_f[ai], fij);
++            gmxAtomicAdd(&gm_f[aj], -fij);
+             if (calcVir && ki != CENTRAL)
+             {
+                 atomicAdd(&sm_fShiftLoc[ki], fij);
+@@ -217,9 +217,9 @@
+             float3 f_k = ckk * r_kj - cik * r_ij;
+             float3 f_j = -f_i - f_k;
+ 
+-            atomicAdd(&gm_f[ai], f_i);
+-            atomicAdd(&gm_f[aj], f_j);
+-            atomicAdd(&gm_f[ak], f_k);
++            gmxAtomicAdd(&gm_f[ai], f_i);
++            gmxAtomicAdd(&gm_f[aj], f_j);
++            gmxAtomicAdd(&gm_f[ak], f_k);
+ 
+             if (calcVir)
+             {
+@@ -299,9 +299,9 @@
+             float3 f_k = ckk * r_kj - cik * r_ij;
+             float3 f_j = -f_i - f_k;
+ 
+-            atomicAdd(&gm_f[ai], f_i);
+-            atomicAdd(&gm_f[aj], f_j);
+-            atomicAdd(&gm_f[ak], f_k);
++            gmxAtomicAdd(&gm_f[ai], f_i);
++            gmxAtomicAdd(&gm_f[aj], f_j);
++            gmxAtomicAdd(&gm_f[ak], f_k);
+ 
+             if (calcVir)
+             {
+@@ -322,8 +322,8 @@
+             fbond *= rsqrtf(dr2);
+ 
+             float3 fik = fbond * r_ik;
+-            atomicAdd(&gm_f[ai], fik);
+-            atomicAdd(&gm_f[ak], -fik);
++            gmxAtomicAdd(&gm_f[ai], fik);
++            gmxAtomicAdd(&gm_f[ak], -fik);
+ 
+             if (calcVir && ki != CENTRAL)
+             {
+@@ -417,10 +417,10 @@
+         float3 f_j  = f_i - svec;
+         float3 f_k  = f_l + svec;
+ 
+-        atomicAdd(&gm_f[i], f_i);
+-        atomicAdd(&gm_f[j], -f_j);
+-        atomicAdd(&gm_f[k], -f_k);
+-        atomicAdd(&gm_f[l], f_l);
++        gmxAtomicAdd(&gm_f[i], f_i);
++        gmxAtomicAdd(&gm_f[j], -f_j);
++        gmxAtomicAdd(&gm_f[k], -f_k);
++        gmxAtomicAdd(&gm_f[l], f_l);
+ 
+         if (calcVir)
+         {
+@@ -699,8 +699,8 @@
+         float3 f     = finvr * dr;
+ 
+         /* Add the forces */
+-        atomicAdd(&gm_f[ai], f);
+-        atomicAdd(&gm_f[aj], -f);
++        gmxAtomicAdd(&gm_f[ai], f);
++        gmxAtomicAdd(&gm_f[aj], -f);
+ 
+         /* Calculate the 1-4 forces (to enable constant-pH bonded on GPU) */
+         float force_14_ai = scale_factor * gm_xq[aj].w * rinv;

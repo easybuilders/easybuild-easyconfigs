@@ -1,0 +1,77 @@
+easyblock = 'CMakeNinja'
+
+name = 'ParaView'
+version = '6.1.1'
+
+homepage = 'https://www.paraview.org'
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+local_download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['https://www.paraview.org/paraview-downloads/%s' % local_download_suffix]
+sources = ["%(name)s-v%(version)s.tar.gz"]
+checksums = ['c57141ad9fbad6f8c8d67373806e5ded9d3604e0d59209eadefa54482c702de4']
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('Ninja', '1.13.2')
+]
+
+dependencies = [
+    ('Boost', '1.90.0'),
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+    ('XZ', '5.8.2'),
+    ('HDF5', '2.1.1'),
+    ('netCDF', '4.10.0'),
+    ('libdrm', '2.4.133'),
+    ('OpenGL', '2026.05'),
+    ('Qt6', '6.11.2'),
+    ('zlib', '2.3.2'),
+    ('FFmpeg', '8.1.1'),
+    ('Szip', '2.1.1'),
+    ('matplotlib', '3.10.9'),  # For rendering of latex-format labels
+    ('libxslt', '1.1.45'),
+    ('ParaView-Catalyst', '2.1.0'),
+]
+
+if ARCH == 'x86_64':
+    # Leads to incorrect coloring when using OSPRay 3.x
+    dependencies.append(('OSPRay', '2.12.0', '', SYSTEM))
+
+_copts = [
+    # Basic configuration
+    '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON',
+    '-DPARAVIEW_BUILD_SHARED_LIBS=ON',
+    '-DPARAVIEW_USE_MPI=ON',
+    '-DPARAVIEW_ENABLE_FFMPEG=ON',
+    '-DPARAVIEW_USE_PYTHON=ON',
+    # Useful input formats
+    '-DPARAVIEW_ENABLE_XDMF2=ON',
+    '-DPARAVIEW_ENABLE_XDMF3=ON',
+    # OpenGL and X
+    '-DOPENGL_glu_LIBRARY=$EBROOTOPENGL/lib/libGLU.%s' % SHLIB_EXT,
+    '-DOPENGL_INCLUDE_DIR=$EBROOTOPENGL/include',
+    '-DVTK_OPENGL_HAS_EGL=ON',
+    '-DVTK_USE_X=ON',
+    '-DVTK_PYTHON_OPTIONAL_LINK=OFF',
+    '-DPARAVIEW_ENABLE_CATALYST=ON',
+    '-Dcatalyst_DIR=$EBROOTPARAVIEWMINUSCATALYST',
+]
+
+if ARCH == 'x86_64':
+    # requires OSPRay dependency
+    _copts.append('-DPARAVIEW_ENABLE_RAYTRACING=ON')
+configopts = ' '.join(_copts)
+
+sanity_check_paths = {
+    'files': ['bin/paraview', 'bin/pvserver', 'bin/pvpython', 'bin/pvbatch'],
+    'dirs': ['include/paraview-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['python -s -c "import paraview"']
+
+
+moduleclass = 'vis'

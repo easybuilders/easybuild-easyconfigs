@@ -1,0 +1,58 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+#
+# Author: Jonas Demeulemeester (The Francis Crick Insitute, London, UK)
+# Update to v2.71: Alex Domingo (Vrije Universiteit Brussel)
+# Update to v2.73: Sebastien Moretti (SIB Swiss Institute of Bioinformatics)
+#
+
+easyblock = 'Bundle'
+
+name = 'GD'
+version = '2.86'
+
+homepage = 'https://github.com/lstein/Perl-GD'
+description = """GD.pm - Interface to Gd Graphics Library"""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('pkgconf', '2.5.1'),
+]
+
+dependencies = [
+    ('Perl', '5.42.0'),
+    ('Perl-bundle-CPAN', '5.42.0'),  # provides File::Which
+    ('X11', '20260518'),
+    ('libgd', '2.3.3'),
+    ('libpng', '1.6.56'),
+    ('libjpeg-turbo', '3.1.4.1'),
+]
+
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+exts_list = [
+    ('ExtUtils::PkgConfig', '1.16', {
+        'source_tmpl': 'ExtUtils-PkgConfig-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC/'],
+        'checksums': ['bbeaced995d7d8d10cfc51a3a5a66da41ceb2bc04fedcab50e10e6300e801c6e'],
+    }),
+    (name, version, {
+        'source_tmpl': 'release_%(version_major)s_%(version_minor)s.tar.gz',
+        'source_urls': ['https://github.com/lstein/Perl-GD/archive/'],
+        'checksums': ['ab81ef69552cf1d769997142e71ffaf82e52e0763c9ef11afc148b2ab36bc31f'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/bdf2gdfont.pl', 'lib/perl5/site_perl/%(perlver)s/%(arch)s-linux-thread-multi/%(name)s.pm'],
+    'dirs': ['lib/perl5/site_perl/%(perlver)s/%(arch)s-linux-thread-multi/%(name)s'],
+}
+
+modextrapaths = {
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/',
+}
+
+moduleclass = 'bio'

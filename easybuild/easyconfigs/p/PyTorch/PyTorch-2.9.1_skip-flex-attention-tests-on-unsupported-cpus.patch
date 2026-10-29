@@ -1,0 +1,97 @@
+FlexAttention is only supported on AVX2 CPUs.
+However the tests are run on CPU unconditionally when CUDA devices are available leading to:
+> torch._inductor.exc.InductorError: LoweringException: NotImplementedError: torch.compile on current platform is not supported for CPU.
+
+Add a condition to possibly only add CUDA tests.
+See https://github.com/pytorch/pytorch/pull/174881
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_flex_attention.py b/test/inductor/test_flex_attention.py
+index 740faa0b375..e698939d326 100644
+--- a/test/inductor/test_flex_attention.py
++++ b/test/inductor/test_flex_attention.py
+@@ -48,6 +48,9 @@ from torch.testing._internal.common_device_type import (
+     dtypesIfXPU,
+     flex_attention_supported_platform as supported_platform,
+     instantiate_device_type_tests,
++    IS_FLEX_ATTENTION_CPU_PLATFORM_SUPPORTED as TEST_ON_CPU,
++    IS_FLEX_ATTENTION_CUDA_PLATFORM_SUPPORTED as TEST_ON_CUDA,
++    IS_FLEX_ATTENTION_XPU_PLATFORM_SUPPORTED as TEST_ON_XPU,
+     largeTensorTest,
+     skipCPUIf,
+     skipCUDAIf,
+@@ -177,25 +180,21 @@ class DeviceConfig:
+     dtypes_fast: list[torch.dtype]
+ 
+ 
+-TEST_ON_CUDA = (
+-    torch.cuda.is_available()
+-    and torch.utils._triton.has_triton()
+-    and torch.cuda.get_device_capability() >= (8, 0)
+-)
+-TEST_ON_XPU = torch.xpu.is_available() and torch.utils._triton.has_triton()
+-
+ device_configs = {}
++# Tests are skipped when no device is supported, so CPU as default is safe
++test_device = ("cpu",)
+ if HAS_GPU:
+     if TEST_ON_CUDA:
+-        test_device = (
+-            "cuda",
+-            "cpu",
+-        )
++        if TEST_ON_CPU:
++            test_device = (
++                "cuda",
++                "cpu",
++            )
++        else:
++            test_device = ("cuda",)
+     elif TEST_ON_XPU:
+         torch._C._set_onednn_allow_tf32(True)
+         test_device = ("xpu",)
+-else:
+-    test_device = ("cpu",)
+ 
+ 
+ class SubstringSet:
+diff --git a/torch/testing/_internal/common_device_type.py b/torch/testing/_internal/common_device_type.py
+index 8971eca1bb2..6b14f9db105 100644
+--- a/torch/testing/_internal/common_device_type.py
++++ b/torch/testing/_internal/common_device_type.py
+@@ -1972,23 +1972,25 @@ def get_all_device_types() -> list[str]:
+ 
+ # skip since currently flex attention requires at least `avx2` support on CPU.
+ IS_FLEX_ATTENTION_CPU_PLATFORM_SUPPORTED = (
+-    not torch.xpu.is_available()
+-    and not torch.cuda.is_available()
+-    and not IS_MACOS
++    not IS_MACOS
+     and torch.cpu._is_avx2_supported()
+     and os.getenv("ATEN_CPU_CAPABILITY") != "default"
+ )
+ IS_FLEX_ATTENTION_XPU_PLATFORM_SUPPORTED = (
+     torch.xpu.is_available() and torch.utils._triton.has_triton()
+ )
++IS_FLEX_ATTENTION_CUDA_PLATFORM_SUPPORTED = (
++    torch.cuda.is_available()
++    and torch.utils._triton.has_triton()
++    and torch.cuda.get_device_capability() >= (8, 0)
++)
+ flex_attention_supported_platform = unittest.skipUnless(
+     IS_FLEX_ATTENTION_XPU_PLATFORM_SUPPORTED
+-    or IS_FLEX_ATTENTION_CPU_PLATFORM_SUPPORTED
+-    or (
+-        torch.cuda.is_available()
+-        and torch.utils._triton.has_triton()
+-        and torch.cuda.get_device_capability() >= (8, 0)
+-    ),
++    or (IS_FLEX_ATTENTION_CPU_PLATFORM_SUPPORTED
++        and not torch.xpu.is_available()
++        and not torch.cuda.is_available()
++        )
++    or IS_FLEX_ATTENTION_CUDA_PLATFORM_SUPPORTED,
+     "Requires CUDA and Triton, Intel GPU and triton, or CPU with avx2 and later",
+ )
+ if torch.version.hip and "gfx94" in torch.cuda.get_device_properties(0).gcnArchName:

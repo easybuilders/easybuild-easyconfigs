@@ -1,0 +1,49 @@
+From 4693659e3a911360b3798a9bc50e94dad8fe7f71 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Andr=C3=A9=20Reuter?= <j.reuter@fz-juelich.de>
+Date: Thu, 27 Nov 2025 16:42:05 +0100
+Subject: [PATCH] [OMPT] Use global thread id for `codeptr_ra` in
+ `end_critical`
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When a critical construct has finished, it will trigger a critical-released
+event. If a tool is attached, and the `mutex_released` callback was
+registered, the tool with receive an event containing the `codeptr_ra`, the
+return address of the callback invocation.
+
+All the way back in 82e94a593433f36734e2d34898d353a2ecb65b8b, this
+`codeptr_ra` was implemented by calling `__ompt_load_return_address`
+with a fixed global thread id of `0`. However, this approach results in a
+race-condition, and can yield incorrect results to the tool.
+
+`__ompt_load_return_address(0)` points to the current return address of
+the thread 0 in `__kmp_threads`. This thread may already execute some
+other construct. A tool might therefore receive the return address of
+e.g. some `libomp` internals, or other parts of the user code.
+Additionally, a call to `__ompt_load_return_address` resets the
+`th.ompt_thread_info.return_address` to `NULL`, therefore also affecting
+the return address of thread 0. Another dispatched event, e.g.
+parallel-begin might therefore not transfer any `codeptr_ra`.
+
+To fix this, replace the fixed thread id by the `global_tid`, which is
+stored just before dispatching the `mutex_released` callback.
+
+Signed-off-by: Jan André Reuter <j.reuter@fz-juelich.de>
+---
+ openmp/runtime/src/kmp_csupport.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/openmp/runtime/src/kmp_csupport.cpp b/openmp/runtime/src/kmp_csupport.cpp
+index 3ca32ba583fe2..a92fc46374c27 100644
+--- a/openmp/runtime/src/kmp_csupport.cpp
++++ b/openmp/runtime/src/kmp_csupport.cpp
+@@ -1780,7 +1780,7 @@ void __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid,
+   if (ompt_enabled.ompt_callback_mutex_released) {
+     ompt_callbacks.ompt_callback(ompt_callback_mutex_released)(
+         ompt_mutex_critical, (ompt_wait_id_t)(uintptr_t)lck,
+-        OMPT_LOAD_RETURN_ADDRESS(0));
++        OMPT_LOAD_RETURN_ADDRESS(global_tid));
+   }
+ #endif
+ 
