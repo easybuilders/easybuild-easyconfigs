@@ -1,0 +1,18 @@
+Skip the CPU parametrization of test_scaled_mm_vs_emulated_block_wise_verify_small_shapes failing with
+> ValueError: Invalid scaling configuration.
+
+Shouldn't be run on CPU, see https://github.com/pytorch/pytorch/pull/176064
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_scaled_matmul_cuda.py b/test/test_scaled_matmul_cuda.py
+--- a/test/test_scaled_matmul_cuda.py
++++ b/test/test_scaled_matmul_cuda.py
+@@ -1598,6 +1598,7 @@ class TestFP8Matmul(TestCase):
+         _get_torch_cuda_version() < (12, 9),
+         "cuBLAS blockwise scaling added in CUDA 12.9",
+     )
++    @onlyCUDA
+     @parametrize("output_dtype", [torch.bfloat16, torch.float32])
+     @parametrize("lhs_block,rhs_block", [(1, 1), (128, 1), (1, 128)])
+     @parametrize("M,N,K", [(256, 128, 256), (256, 256, 128)])

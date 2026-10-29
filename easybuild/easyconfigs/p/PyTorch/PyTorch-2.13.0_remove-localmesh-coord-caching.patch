@@ -1,0 +1,41 @@
+Caching by `id` is unreliable and leads to failures in e.g.
+test/distributed/tensor/test_utils.py::TestStridedShardingWithLocalTensor::test_2d_mesh_2d_tensor_strided_sharding
+> Mismatched elements: 2 / 2 (100.0%)
+> Greatest absolute difference: 2 at index (0, 0)
+> Greatest relative difference: 1.0 at index (0, 0)
+
+See https://github.com/pytorch/pytorch/issues/184526
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/distributed/_local_tensor/__init__.py b/torch/distributed/_local_tensor/__init__.py
+--- a/torch/distributed/_local_tensor/__init__.py
++++ b/torch/distributed/_local_tensor/__init__.py
+@@ -1632,17 +1632,7 @@ class _LocalDeviceMesh:
+         if lm is None:
+             raise AssertionError("Unexpectedly not in LocalTensorMode")
+ 
+-        # Check cache first (fast path without lock)
+-        mesh_id = id(self)
+-        if mesh_id in lm._coordinate_cache:
+-            return lm._coordinate_cache[mesh_id]
+-
+-        # Acquire lock for thread safety in MPMD contexts
+-        with lm._coordinate_cache_lock:
+-            # Double-check after acquiring lock
+-            if mesh_id in lm._coordinate_cache:
+-                return lm._coordinate_cache[mesh_id]
+-
++        if True:
+             coords: list[dict[int, int]] = [{} for _ in range(self.ndim)]
+             # Clone rank_map to avoid "Cannot set version_counter for inference tensor"
+             # error when running under torch.inference_mode()
+@@ -1656,8 +1646,6 @@ class _LocalDeviceMesh:
+                     coords[d][r] = c
+ 
+             out = [torch.SymInt(LocalIntNode(c)) for c in coords]
+-            # Cache the result
+-            lm._coordinate_cache[mesh_id] = out
+             # The output contains coordinates for each of the ranks with respect to
+             # their meshes formed from root mesh and selecting the same dimensions
+             # as the current mesh.

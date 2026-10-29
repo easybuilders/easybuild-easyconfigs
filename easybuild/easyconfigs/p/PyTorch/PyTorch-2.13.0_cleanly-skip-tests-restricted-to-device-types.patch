@@ -1,0 +1,24 @@
+Some tests are marked as XFAIL but the restrictions on a device type makes them pass on "Sandcastle",
+which then yields to an unexpected success error.
+Just skip those tests normally.
+
+See https://github.com/pytorch/pytorch/issues/183265
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/common_device_type.py b/torch/testing/_internal/common_device_type.py
+--- a/torch/testing/_internal/common_device_type.py
++++ b/torch/testing/_internal/common_device_type.py
+@@ -1650,12 +1650,6 @@ class onlyOn:
+                 if getattr(slf, "bypass_device_restrictions", False):
+                     return fn(slf, *args, **kwargs)
+                 reason = f"Only runs on {self.device_type}"
+-                if IS_SANDCASTLE or IS_FBCODE:
+-                    print(
+-                        f"Skipping {fn.__name__} on sandcastle for following reason: {reason}",
+-                        file=sys.stderr,
+-                    )
+-                    return
+                 raise unittest.SkipTest(reason)
+ 
+             return fn(slf, *args, **kwargs)

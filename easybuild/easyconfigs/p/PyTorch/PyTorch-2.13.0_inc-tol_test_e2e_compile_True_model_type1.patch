@@ -1,0 +1,21 @@
+This test fails upstream with:
+> AssertionError: net2.bias has mismatched value tensor([ 4.1885e-02,  1.1387e-02, -1.0970e-01,  8.9407e-02, -6.2677e-02,
+> ...
+>        -2.5843e-01, -2.0712e-01], device='cuda:2') DTensor(local_tensor=tensor([ 0.0419,  0.0114, -0.1097,  0.0894, -0.0627, -0.2730,  0.3362, -0.3257,
+
+Use proper check, see https://github.com/pytorch/pytorch/pull/201189
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/distributed/common_state_dict.py b/torch/testing/_internal/distributed/common_state_dict.py
+--- a/torch/testing/_internal/distributed/common_state_dict.py
++++ b/torch/testing/_internal/distributed/common_state_dict.py
+@@ -28,7 +28,7 @@ class VerifyStateDictMixin:
+             orig_tensor = orig_tensor.cpu()
+             dist_tensor = dist_tensor.cpu()
+         self.assertTrue(isinstance(dist_tensor, torch.Tensor))
+-        self.assertTrue(torch.allclose(orig_tensor, dist_tensor))
++        self.assertEqual(orig_tensor, dist_tensor)
+ 
+     def _verify_msd(
+         self,
