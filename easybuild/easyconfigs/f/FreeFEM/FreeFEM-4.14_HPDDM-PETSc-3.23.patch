@@ -1,0 +1,27 @@
+Fix compatibility of the bundled HPDDM with PETSc 3.23.
+
+PetscOptionsBegin and PetscOptionsEnd perform their own error handling in
+recent PETSc releases and must not be assigned to PetscErrorCode.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+
+--- a/3rdparty/include/hpddm/include/HPDDM_coarse_operator_impl.hpp
++++ b/3rdparty/include/hpddm/include/HPDDM_coarse_operator_impl.hpp
+@@ -271,15 +271,15 @@
+     char S;
+     PetscBool flg;
+     PetscErrorCode ierr;
+-    ierr = PetscOptionsBegin(v._p.getCommunicator(), v._prefix.c_str(), "", "");CHKERRQ(ierr);
++    PetscOptionsBegin(v._p.getCommunicator(), v._prefix.c_str(), "", "");
+     ierr = PetscOptionsFList("-mat_type", "Matrix type", "MatSetType", MatList, deft, type, 256, &flg);CHKERRQ(ierr);
+     if(!flg)
+         S = 'S';
+     else {
+         ierr = PetscStrcmp(type, MATSBAIJ, &flg);CHKERRQ(ierr);
+         S = (flg ? 'S' : 'G');
+     }
+-    ierr = PetscOptionsEnd();CHKERRQ(ierr);
++    PetscOptionsEnd();
+     if(!std::is_same<PetscScalar, PetscComplex>::value && S == 'S')
+         ierr = constructionMatrix<'S', U, excluded, Operator>(v);
+     else
