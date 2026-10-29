@@ -1,0 +1,59 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Leah Han <leah.han@hpcnow.com>; María José Benitez <majo.benitez@hpcnow.com>;
+# License::     GPL-v3.0
+# #
+
+easyblock = 'ConfigureMake'
+
+name = 'SPECFEM3D'
+version = '4.1.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/SPECFEM/specfem3d'
+description = """SPECFEM3D_Cartesian simulates acoustic (fluid), elastic (solid), coupled
+ acoustic/elastic, poroelastic or seismic wave propagation in any type of conforming mesh
+ of hexahedra (structured or not)."""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'opt': True}
+
+source_urls = ['https://github.com/SPECFEM/specfem3d/archive/v%(version)s/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['cc950d76aa5f9deea72a263adbce6c4e77b6500f7c41eef5036f4dc882967e5f']
+
+builddependencies = [('Autotools', '20220317')]
+
+dependencies = [
+    ('SCOTCH', '7.0.3'),
+    ('HDF5', '1.14.0'),
+    ('CUDA', '12.2.0', '', SYSTEM),
+    ('UCX-CUDA', '1.14.1', versionsuffix),
+]
+
+skipsteps = ['install']
+
+configopts = '--with-mpi --with-cuda=cuda12 '
+configopts += '--with-hdf5 HDF5_INC=$EBROOTHDF5/include HDF5_LIBS="-L$EBROOTHDF5/lib" '
+configopts += '--with-scotch-dir=$EBROOTSCOTCH '
+
+postinstallcmds = [
+    'cp -a %(start_dir)s/bin %(installdir)s/',
+    'cp -a %(start_dir)s/run_this_example.sh %(installdir)s/',
+]
+
+sanity_check_paths = {
+    'files': ['bin/xdecompose_mesh', 'bin/xmeshfem3D', 'bin/xgenerate_databases', 'bin/xspecfem3D'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    ('xdecompose_mesh', '--version'),
+    ('xmeshfem3D', '--help'),
+    ('xgenerate_databases', '--help'),
+    ('xspecfem3D', '--help'),
+    ('./run_this_example.sh', ''),
+]
+
+moduleclass = 'tools'
