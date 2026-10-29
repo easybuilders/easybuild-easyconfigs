@@ -1,0 +1,57 @@
+easyblock = 'Bundle'
+
+name = 'infercna'
+local_commit = '84fb430d59bc33773f45d8713dd054b0061ef922'
+version = '1.0.0-20240112'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://jlaffy.github.io/infercna/'
+description = "infercna aims to provide functions for inferring CNA values from scRNA-seq data and related queries."
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+dependencies = [
+    ('R', '4.6.1'),
+    ('R-bundle-Bioconductor', '3.23', versionsuffix),
+]
+
+exts_defaultclass = 'RPackage'
+exts_default_options = {
+    'sources': ['%(name)s_%(version)s.tar.gz'],
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+}
+
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+
+exts_list = [
+    ('hrbrthemes', '0.9.3', {
+        'checksums': ['931d7f65524d090dfff3950e4dd0c850a8bf8bd6b406d65e8683d4d93742729f'],
+    }),
+    # scalop is imported by infercna's NAMESPACE, but only declared in Remotes in DESCRIPTION.
+    ('scalop', '1.1.0-20260624', {
+        'source_urls': ['https://github.com/jlaffy/scalop/archive/'],
+        'sources': [{
+            'download_filename': 'd187f6ff89484425f1b8b7be22e2896b1d4869e6.tar.gz',
+            'filename': '%(name)s-%(version)s.tar.gz',
+        }],
+        'checksums': ['8b0dbafe814d1767610cf112918c6193388497e5b98d7e0f0ea3bdb8fd8cf8cf'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/jlaffy/infercna/archive/'],
+        'sources': [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['3df1c15058a93da7c89d4ba030459d2442108cd31319c4590e1ef2a5ef29682a'],
+    }),
+]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [name],
+}
+
+moduleclass = 'bio'
