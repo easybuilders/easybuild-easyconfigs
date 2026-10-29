@@ -1,0 +1,89 @@
+easyblock = 'CMakeMake'
+
+name = 'CTranslate2'
+version = '4.5.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://opennmt.net/CTranslate2/'
+description = "Fast inference engine for Transformer models."
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'extra_cxxflags': '-D_AMXTILEINTRIN_H_INCLUDED'}
+# '-D_AMXTILEINTRIN_H_INCLUDED' flag is required to avoid the following errors,
+# likely due to an incompatibility between the GCC 13.3.0 and NVCC CUDA 12.6.0:
+#   [...]/GCCcore/13.3.0/lib/gcc/x86_64-pc-linux-gnu/13.3.0/include/amxtileintrin.h(42):
+#     error: identifier "__builtin_ia32_ldtilecfg" is undefined
+# from ec: LAMMPS-29Aug2024_update2-foss-2024a-kokkos-CUDA-12.6.0.eb
+
+source_urls = ['https://github.com/OpenNMT/CTranslate2/archive/']
+sources = [{
+    "download_filename": "v%(version)s.tar.gz",
+    "filename": SOURCE_TAR_GZ,
+}]
+patches = [
+    'CTranslate2-4.5.0_fix-third-party.patch',
+    'CTranslate2-4.5.0_fix-tests.patch',
+    'CTranslate2-4.5.0_replace-cxxopts.patch',
+]
+checksums = [
+    {'CTranslate2-4.5.0.tar.gz': 'f3040c7c3da5dde022fdc16906c279f3f936c6e79f3df8f998c908bb01a77cfe'},
+    {'CTranslate2-4.5.0_fix-third-party.patch': '45ab6d19954010dc5d515498a0827f0b13992d88b9691ab73ab27fee1114e3e3'},
+    {'CTranslate2-4.5.0_fix-tests.patch': '73123eafe612538354be5aa96c750199e1a219a5316800848c3894c1cc6ca2ad'},
+    {'CTranslate2-4.5.0_replace-cxxopts.patch': 'e378969c2968e2fd57863956a4d2f267731a49d1b890dcc45593d6a310531271'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('pybind11', '2.12.0'),
+    ('cxxopts', '3.0.0', '', SYSTEM),
+    ('spdlog', '1.15.3'),
+    ('cpu_features', '0.10.1'),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('Python', '3.12.3'),
+    ('SciPy-bundle', '2024.05'),
+    ('googletest', '1.15.2'),
+    ('PyYAML', '6.0.2'),
+    ('cuDNN', '9.5.1.17', versionsuffix, SYSTEM),
+]
+
+# make sure that CTranslate2 libraries are linked to FlexiBLAS, not OpenBLAS
+preconfigopts = "export CMAKE_INCLUDE_PATH=$EBROOTFLEXIBLAS/include/flexiblas:${CMAKE_INCLUDE_PATH} && "
+preconfigopts += "sed -i 's/openblas/flexiblas/g' %(start_dir)s/CMakeLists.txt && "
+
+configopts = '-DOPENMP_RUNTIME=COMP -DWITH_CUDA=ON -DWITH_MKL=OFF '
+configopts += '-DOPENBLAS_INCLUDE_DIR="$EBROOTFLEXIBLAS/include" -DWITH_OPENBLAS=ON '
+configopts += '-DWITH_CUDNN=ON '
+configopts += '-DENABLE_CPU_DISPATCH=OFF '
+
+prebuildopts = 'export CT2_VERBOSE=3 && '
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'installopts': '',
+    'runtest': False,
+}
+
+exts_list = [
+    ('ctranslate2', version, {
+        'sources': ['CTranslate2-%(version)s.tar.gz'],
+        'start_dir': 'python',
+        'checksums': ['f3040c7c3da5dde022fdc16906c279f3f936c6e79f3df8f998c908bb01a77cfe'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ct2-translator', 'lib/libctranslate2.%s' % SHLIB_EXT],
+    'dirs': ['include/ctranslate2', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "ct2-translator --help",
+    "python -s -c 'import ctranslate2'",
+    "python -s -m pip check",
+]
+
+moduleclass = 'ai'
