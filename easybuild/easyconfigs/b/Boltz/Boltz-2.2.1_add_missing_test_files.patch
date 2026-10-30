@@ -1,0 +1,155 @@
+Add test files missing from pypi source.
+
+Åke Sandgren, 2026-06-06-22
+diff -rNu boltz-2.2.1.orig/tests/model/layers/test_outer_product_mean.py boltz-2.2.1/tests/model/layers/test_outer_product_mean.py
+--- boltz-2.2.1.orig/tests/model/layers/test_outer_product_mean.py	1970-01-01 01:00:00.000000000 +0100
++++ boltz-2.2.1/tests/model/layers/test_outer_product_mean.py	2025-09-08 17:58:30.000000000 +0200
+@@ -0,0 +1,38 @@
++import pytorch_lightning
++import torch
++import torch.nn as nn
++
++import unittest
++
++from boltz.model.layers.outer_product_mean import OuterProductMean
++
++
++class OuterProductMeanTest(unittest.TestCase):
++    def setUp(self):
++        self.c_in = 32
++        self.c_hidden = 16
++        self.c_out = 64
++
++        torch.set_grad_enabled(False)
++        pytorch_lightning.seed_everything(1100)
++        self.layer = OuterProductMean(self.c_in, self.c_hidden, self.c_out)
++
++        # Initialize layer
++        for name, param in self.layer.named_parameters():
++            nn.init.normal_(param, mean=1.0, std=1.0)
++
++        # Set to eval mode
++        self.layer.eval()
++
++    def test_chunk(self):
++        chunk_sizes = [16, 33, 64, 83, 100]
++        B, S, N = 1, 49, 84
++        m = torch.randn(size=(B, S, N, self.c_in))
++        mask = torch.randint(low=0, high=1, size=(B, S, N))
++
++        with torch.no_grad():
++            exp_output = self.layer(m=m, mask=mask)
++            for chunk_size in chunk_sizes:
++                with self.subTest(chunk_size=chunk_size):
++                    act_output = self.layer(m=m, mask=mask, chunk_size=chunk_size)
++                    assert torch.allclose(exp_output, act_output, atol=1e-8)
+diff -rNu boltz-2.2.1.orig/tests/model/layers/test_triangle_attention.py boltz-2.2.1/tests/model/layers/test_triangle_attention.py
+--- boltz-2.2.1.orig/tests/model/layers/test_triangle_attention.py	1970-01-01 01:00:00.000000000 +0100
++++ boltz-2.2.1/tests/model/layers/test_triangle_attention.py	2025-09-08 17:58:30.000000000 +0200
+@@ -0,0 +1,35 @@
++import pytorch_lightning
++import torch
++import torch.nn as nn
++
++import unittest
++
++from boltz.model.layers.triangular_attention.attention import TriangleAttention
++
++
++class OuterProductMeanTest(unittest.TestCase):
++    def setUp(self):
++        self.c_in = 128
++        self.c_hidden = 32
++        self.no_heads = 1
++
++        torch.set_grad_enabled(False)
++        pytorch_lightning.seed_everything(1100)
++        self.layer = TriangleAttention(self.c_in, self.c_hidden, self.no_heads)
++
++        # Initialize layer
++        for name, param in self.layer.named_parameters():
++            nn.init.normal_(param, mean=1.0, std=1.0)
++
++    def test_chunk(self):
++        chunk_sizes = [16, 33, 64, 100]
++        B, N = 1, 99
++        m = torch.randn(size=(B, N, N, self.c_in))
++        mask = torch.randint(low=0, high=1, size=(B, N, N))
++
++        with torch.no_grad():
++            exp_output = self.layer(x=m, mask=mask)
++            for chunk_size in chunk_sizes:
++                with self.subTest(chunk_size=chunk_size):
++                    act_output = self.layer(x=m, mask=mask, chunk_size=chunk_size)
++                    assert torch.allclose(exp_output, act_output, atol=1e-8)
+diff -rNu boltz-2.2.1.orig/tests/profiling.py boltz-2.2.1/tests/profiling.py
+--- boltz-2.2.1.orig/tests/profiling.py	1970-01-01 01:00:00.000000000 +0100
++++ boltz-2.2.1/tests/profiling.py	2025-09-08 17:58:30.000000000 +0200
+@@ -0,0 +1,67 @@
++import torch
++import gc
++
++
++def clear_gradients(*args):
++    for arg in args:
++        if isinstance(arg, torch.Tensor) and arg.grad is not None:
++            arg.grad = None
++
++
++def clear_memory(device):
++    torch._C._cuda_clearCublasWorkspaces()
++    torch._dynamo.reset()
++    gc.collect()
++    torch.cuda.empty_cache()
++    torch.cuda.reset_peak_memory_stats(device)
++
++
++def peak_memory(f, *args, device):
++    for _ in range(3):
++        # Clean everything
++        clear_memory(device)
++        clear_gradients(*args)
++
++        # Run once
++        f(*args)
++
++        # Measure peak memory
++        torch.cuda.synchronize()
++        memory = torch.cuda.max_memory_allocated(device)
++
++    return memory
++
++
++def current_memory(device):
++    return torch.cuda.memory_allocated(device) / (1024**3)
++
++
++def memory_measure(f, device, num_iters=3):
++    # Clean everything
++    clear_memory(device)
++
++    # Run measurement
++    print("Current memory: ", current_memory(device))
++    memory = peak_memory(f, device=device)
++
++    print("Peak memory: ", memory / (1024**3))
++    return memory / (1024**3)
++
++
++def memory_measure_simple(f, device, *args, **kwargs):
++    # Clean everything
++    clear_memory(device)
++    clear_gradients(*args)
++
++    current = current_memory(device)
++
++    # Run once
++    out = f(*args, **kwargs)
++
++    # Measure peak memory
++    torch.cuda.synchronize()
++    memory = torch.cuda.max_memory_allocated(device)
++    memory = memory / (1024**3)
++    memory = memory - current
++
++    return out, memory
