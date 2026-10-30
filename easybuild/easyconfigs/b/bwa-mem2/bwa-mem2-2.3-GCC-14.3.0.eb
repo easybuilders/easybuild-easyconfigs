@@ -24,9 +24,21 @@ checksums = [
 
 dependencies = [('safestringlib', '20250325')]
 
-build_cmd_targets = 'multi'
 
 files_to_copy = [(['%(name)s*'], 'bin')]
+
+if ARCH == 'aarch64':
+    # See https://github.com/bioconda/bioconda-recipes/pull/54134
+    # Change to arch=native once SVE issues are resolved
+    buildopts = 'arch="-march=armv8-a" EXE=bwa-mem2'
+    builddependencies = [('sse2neon', '1.9.1')]
+    patches.append('bwa-mem2-2.3_sse2neon.patch')
+    checksums.append(
+        {'bwa-mem2-2.3_sse2neon.patch': 'cd150beedd855e524ac8b57c41b2ebf973e5d5f6b1e477db1c276f61bc806a6d'}
+    )
+    build_cmd_targets = 'all'
+else:
+    build_cmd_targets = 'multi'
 
 sanity_check_paths = {
     'files': ['bin/%(name)s'],
