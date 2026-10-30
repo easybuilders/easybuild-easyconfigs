@@ -1,0 +1,66 @@
+easyblock = 'Tarball'
+
+name = 'Spark'
+version = '4.2.0'
+versionsuffix = '-Java-%(javaver)s'
+homepage = 'https://spark.apache.org'
+description = """Spark is Hadoop MapReduce done in memory"""
+
+toolchain = {'name': 'gfbf', 'version': '2026.1'}
+
+source_urls = [
+    'https://downloads.apache.org/%(namelower)s/%(namelower)s-%(version)s/',
+    'https://archive.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s/',
+]
+sources = ['%(namelower)s-%(version)s-bin-hadoop3.tgz']
+checksums = ['cc1232a4a23858300ba9c887b7ac5a9128b4a1819cea2fa8ee2bc6ce98ced72b']
+
+_grpcio_version = '1.81.0'
+dependencies = [
+    ('Python', '3.14.2'),
+    ('Java', '21', '', SYSTEM),  # Requires Java 21/17: https://spark.apache.org/docs/4.2.0/#downloading
+    ('Arrow', '24.0.0'),
+    ('PyYAML', '6.0.3'),
+    ('grpcio', _grpcio_version),
+    ('zstandard', '0.25.0'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+exts_list = [
+    ('py4j', '0.10.9.9', {
+        'checksums': ['f694cad19efa5bd1dee4f3e5270eb406613c974394035e5bfc4ec1aba870b879'],
+    }),
+    ('grpcio-status', _grpcio_version, {
+        'modulename': 'grpc_status',
+        'source_urls': ['https://pypi.python.org/packages/source/%(name)s'],
+        'sources': ['grpcio_status-%(version)s.tar.gz'],
+        'checksums': ['b6fe9788cfdd1f0f63c0528a1e0bfdb41e8ff0583e920d2d8e8888598c01bb69'],
+    }),
+    ('googleapis-common-protos', '1.75.5', {
+        'modulename': 'google',
+        'source_urls': ['https://pypi.python.org/packages/source/%(name)s'],
+        'sources': ['googleapis_common_protos-%(version)s.tar.gz'],
+        'checksums': ['c7a866fc34ed29a3b10af627a4b9b1dc2433313ca6e959f0ae4feb132047ed72'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/pyspark', 'bin/spark-shell', 'bin/spark-submit', 'bin/spark-class'],
+    'dirs': ['python'],
+}
+
+sanity_check_commands = [
+    "pyspark -h",
+    "python -s -c 'import pyspark'",
+    "spark-submit --help",
+]
+
+modextrapaths = {'PYTHONPATH': 'python'}
+
+modextravars = {'SPARK_HOME': '%(installdir)s'}
+
+moduleclass = 'devel'

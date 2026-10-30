@@ -1,0 +1,67 @@
+Ported Mesa-26.1.1_add-orcjit-to-llvm-modules.patch to Mesa 25.2.2
+
+Author: Jan Reuter (JSC)
+
+diff --color -Naur mesa-25.2.2.orig/meson.build mesa-25.2.2/meson.build
+--- mesa-25.2.2.orig/meson.build	2025-09-03 13:13:56.000000000 +0200
++++ mesa-25.2.2/meson.build	2026-10-13 09:40:31.097291466 +0200
+@@ -1706,7 +1706,7 @@
+   pre_args += '-DHAVE_LIBUDEV'
+ endif
+ 
+-llvm_modules = ['bitwriter', 'engine', 'mcdisassembler', 'mcjit', 'core', 'executionengine', 'scalaropts', 'transformutils', 'instcombine']
++llvm_modules = ['bitwriter', 'engine', 'mcdisassembler', 'core', 'executionengine', 'scalaropts', 'transformutils', 'instcombine']
+ llvm_optional_modules = ['coroutines']
+ if with_amd_vk or with_gallium_radeonsi or with_gallium_r600
+   llvm_modules += ['amdgpu', 'bitreader', 'ipo']
+@@ -1734,6 +1734,12 @@
+ llvm_has_mcjit = host_machine.cpu_family() in ['aarch64', 'arm', 'ppc', 'ppc64', 's390x', 'x86', 'x86_64']
+ llvm_with_orcjit = get_option('llvm-orcjit') or not llvm_has_mcjit
+ 
++if llvm_with_orcjit
++  llvm_modules += ['orcjit']
++else
++  llvm_modules += ['mcjit']
++endif
++
+ if with_amd_vk or with_gallium_radeonsi
+   _llvm_version = '>= 18.0.0'
+ elif with_clc or llvm_with_orcjit
+diff --color -Naur mesa-25.2.2.orig/src/gallium/auxiliary/gallivm/lp_bld_init.c mesa-25.2.2/src/gallium/auxiliary/gallivm/lp_bld_init.c
+--- mesa-25.2.2.orig/src/gallium/auxiliary/gallivm/lp_bld_init.c	2025-09-03 13:13:56.000000000 +0200
++++ mesa-25.2.2/src/gallium/auxiliary/gallivm/lp_bld_init.c	2026-10-13 09:39:41.296584246 +0200
+@@ -312,12 +312,13 @@
+    if (gallivm_initialized)
+       return true;
+ 
+-
++#if !GALLIVM_USE_ORCJIT
+    /* LLVMLinkIn* are no-ops at runtime.  They just ensure the respective
+     * component is linked at buildtime, which is sufficient for its static
+     * constructors to be called at load time.
+     */
+    LLVMLinkInMCJIT();
++#endif
+ 
+    lp_init_env_options();
+ 
+diff --color -Naur mesa-25.2.2.orig/src/gallium/drivers/llvmpipe/lp_screen.c mesa-25.2.2/src/gallium/drivers/llvmpipe/lp_screen.c
+--- mesa-25.2.2.orig/src/gallium/drivers/llvmpipe/lp_screen.c	2025-09-03 13:13:56.000000000 +0200
++++ mesa-25.2.2/src/gallium/drivers/llvmpipe/lp_screen.c	2026-10-13 09:38:39.490507416 +0200
+@@ -830,10 +830,14 @@
+    char cache_id[20 * 2 + 1];
+    _mesa_sha1_init(&ctx);
+ 
+-   if (!disk_cache_get_function_identifier(lp_disk_cache_create, &ctx) ||
+-       !disk_cache_get_function_identifier(LLVMLinkInMCJIT, &ctx))
++   if (!disk_cache_get_function_identifier(lp_disk_cache_create, &ctx))
+       return;
+ 
++#if !GALLIVM_USE_ORCJIT
++   if (!disk_cache_get_function_identifier(LLVMLinkInMCJIT, &ctx))
++      return;
++#endif
++
+    _mesa_sha1_update(&ctx, &gallivm_perf, sizeof(gallivm_perf));
+    update_cache_sha1_cpu(&ctx);
+    _mesa_sha1_final(&ctx, sha1);
