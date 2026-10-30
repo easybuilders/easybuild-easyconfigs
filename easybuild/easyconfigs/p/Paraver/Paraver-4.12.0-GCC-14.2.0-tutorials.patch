@@ -1,0 +1,91 @@
+Update the interface of async IO to use Boost>=1.87
+
+Boost 1.87 deprecates the async IO interface (Boost.Asio). In this patch
+
+1. boost::asio::io_service is replaced by boost::asio::io_context, and
+2. the new interface of boost::asio::async_connect is used.
+
+See:
+
+1. https://github.com/bsc-performance-tools/wxparaver/issues/21
+2. https://www.boost.org/doc/libs/1_88_0/doc/html/boost_asio/reference/async_connect/overload1.html
+
+author: Georgios Kafanas (UL HPC, <georgios.kafanas@uni.lu>)
+author: Jorge Delgado Guerrero (UL HPC, <jorge.delgadoguerrero@uni.lu>)
+diff -ruN wxparaver-4.12.0.orig/src/wxparaver/src/tutorialsdownload.cpp wxparaver-4.12.0/src/wxparaver/src/tutorialsdownload.cpp
+--- wxparaver-4.12.0.orig/src/wxparaver/src/tutorialsdownload.cpp	2024-12-04 10:55:21.000000000 +0100
++++ wxparaver-4.12.0/src/wxparaver/src/tutorialsdownload.cpp	2026-09-14 15:00:58.335820181 +0200
+@@ -121,13 +121,13 @@
+ class client
+ {
+   public:
+-    client( boost::asio::io_service& io_service,
++    client( boost::asio::io_context& io_context,
+             boost::asio::ssl::context& context,
+             const std::string& server, const std::string& path,
+             ofstream& storeFile,
+             TutorialsProgress *progress )
+-            : resolver_( io_service ),
+-              socket_( io_service, context ),
++            : resolver_( io_context ),
++              socket_( io_context, context ),
+               store_( storeFile ),
+               progress_( progress )
+     {
+@@ -143,18 +143,17 @@
+ 
+         // Start an asynchronous resolve to translate the server and service names
+         // into a list of endpoints.
+-        tcp::resolver::query query( server, "https" );
+-        resolver_.async_resolve( query,
++        resolver_.async_resolve( server, "https",
+                                  boost::bind( &client::handle_resolve,
+                                               this,
+                                               boost::asio::placeholders::error,
+-                                              boost::asio::placeholders::iterator ) );
++                                              boost::asio::placeholders::results ) );
+     }
+ 
+   private:
+ 
+     void handle_resolve( const boost::system::error_code& err,
+-                         tcp::resolver::iterator endpoint_iterator )
++                         tcp::resolver::results_type results )
+     {
+       if ( !err )
+       {
+@@ -162,7 +161,7 @@
+         socket_.set_verify_callback( boost::bind( &client::verify_certificate, this, _1, _2 ) );
+ 
+         boost::asio::async_connect( socket_.lowest_layer(), 
+-                                    endpoint_iterator,
++                                    results,
+                                     boost::bind( &client::handle_connect, 
+                                                  this,
+                                                  boost::asio::placeholders::error ) );
+@@ -536,9 +535,9 @@
+     boost::asio::ssl::context ctx( boost::asio::ssl::context::sslv23 );
+     ctx.set_default_verify_paths();
+ 
+-    boost::asio::io_service io_service;
+-    client c( io_service, ctx, server, path, storeFile, nullptr );
+-    io_service.run();
++    boost::asio::io_context io_context;
++    client c( io_context, ctx, server, path, storeFile, nullptr );
++    io_context.run();
+ 
+     doneDownload = true;
+   }
+@@ -580,9 +579,9 @@
+     boost::asio::ssl::context ctx( boost::asio::ssl::context::sslv23 );
+     ctx.set_default_verify_paths();
+ 
+-    boost::asio::io_service io_service;
+-    client c( io_service, ctx, std::string( server.mb_str() ), std::string( path.mb_str() ), storeFile, &progress );
+-    io_service.run();
++    boost::asio::io_context io_context;
++    client c( io_context, ctx, std::string( server.mb_str() ), std::string( path.mb_str() ), storeFile, &progress );
++    io_context.run();
+   }
+   catch ( ParaverKernelException& e )
+   {

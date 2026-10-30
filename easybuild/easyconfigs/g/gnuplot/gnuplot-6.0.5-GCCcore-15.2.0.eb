@@ -1,0 +1,57 @@
+easyblock = 'ConfigureMake'
+
+name = 'gnuplot'
+version = '6.0.5'
+
+homepage = 'http://gnuplot.sourceforge.net'
+description = "Portable interactive, function plotting utility"
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = [('https://sourceforge.net/projects/%(name)s/files/%(name)s/%(version)s', 'download')]
+sources = [SOURCE_TAR_GZ]
+patches = ['%(name)s-%(version_major_minor)s.x_fix-configure-iconv.patch']
+checksums = [
+    {'gnuplot-6.0.5.tar.gz': '73237f37f03306d68bfae133a9a50d5e9341384e198d5ab37eeca9ab534deed8'},
+    {'gnuplot-6.0.x_fix-configure-iconv.patch': 'f8226bd5ad8aee7e13bc7a31c826be42c6e263eac1afe46c418ae05940728cec'},
+]
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('pkgconf', '2.5.1'),
+    ('Autotools', '20250626'),
+]
+dependencies = [
+    ('ncurses', '6.6'),
+    ('cairo', '1.18.4'),
+    ('libjpeg-turbo', '3.1.4.1'),
+    ('libpng', '1.6.56'),
+    ('libgd', '2.3.3'),
+    ('Pango', '1.57.1'),
+    ('libcerf', '3.3'),
+    ('X11', '20260518'),
+    ('Qt6', '6.11.2'),
+    ('Lua', '5.5.0'),
+    ('libiconv', '1.18'),
+]
+
+preconfigopts = 'autoreconf && '
+
+# make sure that right Lua library is used (bypassing pkg-config)
+preconfigopts += 'export LUA_CFLAGS="-I$EBROOTLUA/include" && export LUA_LIBS="$EBROOTLUA/lib/liblua.a" && '
+
+# avoid that -L options get omitted that specify correct path for libraries being linked,
+# setting $PKG_CONFIG_ALLOW_SYSTEM_LIBS is equivalent to making pkgconf use --keep-system-libs
+preconfigopts += 'export PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 && '
+
+configopts = "--without-latex --disable-wxwidgets "
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': [],
+}
+
+# make sure that pdf terminal type is available
+sanity_check_commands = ["%(name)s -e 'set terminal pdf'"]
+
+moduleclass = 'vis'

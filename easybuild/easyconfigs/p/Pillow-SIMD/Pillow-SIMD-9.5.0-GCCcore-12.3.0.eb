@@ -1,4 +1,4 @@
-easyblock = 'PythonPackage'
+easyblock = 'PythonBundle'
 
 name = 'Pillow-SIMD'
 version = '9.5.0'
@@ -8,10 +8,6 @@ description = """Pillow is the 'friendly PIL fork' by Alex Clark and Contributor
  PIL is the Python Imaging Library by Fredrik Lundh and Contributors."""
 
 toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
-
-source_urls = ['https://github.com/uploadcare/pillow-simd/archive/']
-sources = ['%(version)s.tar.gz']
-checksums = ['1a9819343b451b7faf34663156e2abca3ae69ab604f82e445478c8133422e4f0']
 
 builddependencies = [('binutils', '2.40')]
 
@@ -30,10 +26,16 @@ dependencies = [
 # patch setup.py to prefix hardcoded /usr/* and /lib paths with value of %(sysroot) template
 # (which will be empty if EasyBuild is not configured to use an alternate sysroot);
 # see also https://gitlab.com/eessi/support/-/issues/9
-preinstallopts = """sed -i 's@"/usr/@"%(sysroot)s/usr/@g' setup.py && """
-preinstallopts += """sed -i 's@"/lib@"%(sysroot)s/lib@g' setup.py && """
+_preinstallopts = """sed -i 's@"/usr/@"%(sysroot)s/usr/@g' setup.py && """
+_preinstallopts += """sed -i 's@"/lib@"%(sysroot)s/lib@g' setup.py && """
 
-options = {'modulename': 'PIL'}
+exts_list = [
+    (name, version + '.post2', {
+        'preinstallopts': _preinstallopts,
+        'modulename': 'PIL',
+        'checksums': ['39dfb027bdaa3e35597df9a1c42ea97091f32bc83f25ab9cab0845b3c4bad331'],
+    }),
+]
 
 sanity_check_paths = {
     'files': [],
