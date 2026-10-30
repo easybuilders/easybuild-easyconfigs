@@ -1,0 +1,83 @@
+Fix the build on Linux systems where the DMA-BUF test kernel headers are
+unavailable by detecting the headers and disabling the dependent tests.
+Author: Emik Lin (HKUMed CPOS)
+
+diff --git a/meson.build b/meson.build
+--- a/meson.build
++++ b/meson.build
+@@ -168,6 +168,8 @@ check_headers = [
+   'inttypes.h',
+   'linux/input.h',
+   'linux/memfd.h',
++  'linux/dma-heap.h',
++  'linux/udmabuf.h',
+   'locale.h',
+   'memory.h',
+   'stdint.h',
+diff --git a/tests/meson.build b/tests/meson.build
+--- a/tests/meson.build
++++ b/tests/meson.build
+@@ -135,7 +135,7 @@ if build_tests
+   ]
+ endif
+ 
+-if os_linux
++if os_linux and cc.has_header('linux/dma-heap.h')
+   gtk_tests += [
+     ['testdmabuf', ['testdmabuf.c', 'gtkclipper.c']],
+   ]
+diff --git a/testsuite/gdk/meson.build b/testsuite/gdk/meson.build
+--- a/testsuite/gdk/meson.build
++++ b/testsuite/gdk/meson.build
+@@ -30,7 +30,7 @@ if x11_enabled
+   ]
+ endif
+ 
+-if os_linux
++if os_linux and cc.has_header('linux/udmabuf.h')
+   tests += [
+     { 'name': 'dmabuf-support',
+       'sources': [ 'udmabuf.c' ],
+diff --git a/testsuite/gdk/udmabuf.c b/testsuite/gdk/udmabuf.c
+--- a/testsuite/gdk/udmabuf.c
++++ b/testsuite/gdk/udmabuf.c
+@@ -1,9 +1,9 @@
+ #include "config.h"
+ 
+ #include "udmabuf.h"
+ 
+-#ifdef HAVE_DMABUF
++#if defined(HAVE_DMABUF) && defined(HAVE_LINUX_UDMABUF_H)
+ 
+ #include <inttypes.h>
+ #include <fcntl.h>
+ #include <sys/mman.h>
+@@ -209,8 +209,19 @@ udmabuf_texture_new (gsize           width,
+   return texture;
+ }
+ 
+ #else
+ 
++gboolean
++udmabuf_initialize (GError **error)
++{
++  g_set_error (error,
++               G_IO_ERROR,
++               G_IO_ERROR_NOT_SUPPORTED,
++               "UDMABUF is not supported because linux/udmabuf.h is unavailable");
++
++  return FALSE;
++}
++
+ GdkTexture *
+ udmabuf_texture_new (gsize           width,
+                      gsize           height,
+@@ -223,7 +234,7 @@ udmabuf_texture_from_texture (GdkTexture  *texture,
+ 
+   switch ((int) gdk_texture_get_format (texture))
+     {
+-#ifdef HAVE_DMABUF
++#if defined(HAVE_DMABUF) && defined(HAVE_LINUX_UDMABUF_H)
+     case GDK_MEMORY_B8G8R8A8_PREMULTIPLIED:
+       fourcc = DRM_FORMAT_ARGB8888;
+       premultiplied = TRUE;
