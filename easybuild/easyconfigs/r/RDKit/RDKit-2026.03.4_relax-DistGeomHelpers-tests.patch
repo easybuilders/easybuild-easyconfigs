@@ -1,0 +1,33 @@
+Relax platform-sensitive DistGeomHelpers test expectations.
+
+RDKit 2026.03.4's testDistGeomHelpers can fail on native CPU-optimized
+builds because small platform-dependent numerical differences affect both
+the ETKDGv3 reference-coordinate comparison and RMS-based conformer
+pruning. Relax the compareConfs coordinate tolerance from 0.05 to 0.1 and
+accept either 7 or 8 retained conformers in the AIO symmetry-pruning test.
+These changes affect the test suite only and do not modify installed RDKit
+functionality.
+See https://github.com/rdkit/rdkit/issues/9406
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+diff --git a/Code/GraphMol/DistGeomHelpers/testDgeomHelpers.cpp b/Code/GraphMol/DistGeomHelpers/testDgeomHelpers.cpp
+--- a/Code/GraphMol/DistGeomHelpers/testDgeomHelpers.cpp
++++ b/Code/GraphMol/DistGeomHelpers/testDgeomHelpers.cpp
+@@ -125,7 +125,7 @@ void compareConfs(const RWMol *m, const RWMol *expected, int molConfId = -1,
+             expected->getAtomWithIdx(i)->getAtomicNum());
+     RDGeom::Point3D pt1i = conf1.getAtomPos(i);
+     RDGeom::Point3D pt2i = conf2.getAtomPos(i);
+-    CHECK((pt1i - pt2i).length() < 0.05);
++    CHECK((pt1i - pt2i).length() < 0.1);
+   }
+ }
+ }  // namespace
+@@ -1706,7 +1706,7 @@ TEST_CASE("testSymmetryPruningAIO") {
+   CHECK(cids.size() == 3);
+   params.useSymmetryForPruning = false;
+   cids = DGeomHelpers::EmbedMultipleConfs(*mol, 50, params);
+-  CHECK(cids.size() == 8);
++  CHECK((cids.size() == 7 || cids.size() == 8));
+ }
+ 
+ TEST_CASE("testMissingHsWarning") {

@@ -1,0 +1,30 @@
+name = 'Java'
+version = '15.0.2'
+
+homepage = 'http://openjdk.java.net'
+description = """Java Platform, Standard Edition (Java SE) lets you develop and deploy
+ Java applications on desktops and servers."""
+
+toolchain = SYSTEM
+
+source_urls = [
+    'https://download.java.net/java/GA/jdk%(version)s/0d1cfde4252546c6931946de8db48ee2/7/GPL/',
+]
+sources = [
+    'openjdk-%(version)s_linux-x64_bin.tar.gz',
+    {'filename': 'Java_blocked-certs-eMudhra-CVE-2026-91403.txt',
+     'extract_cmd': "cp %s %(builddir)s/"},
+]
+checksums = [
+    {'openjdk-15.0.2_linux-x64_bin.tar.gz':
+     '91ac6fc353b6bf39d995572b700e37a20e119a87034eeb939a6f24356fbcd207'},
+    {'Java_blocked-certs-eMudhra-CVE-2026-91403.txt':
+     '8a11b84b894e7986af1131c10fcff168fb38987bedb4fd7a0d8a7a120288d521'},
+]
+
+postinstallcmds = [
+    # see https://glaforge.dev/posts/2026/10/21/the-emudhra-ca-compromise-why-your-jvm-is-vulnerable-and-how-to-fix-it
+    "cat %(builddir)s/Java_blocked-certs-eMudhra-CVE-2026-91403.txt >> %(installdir)s/lib/security/blocked.certs",
+]
+
+moduleclass = 'lang'

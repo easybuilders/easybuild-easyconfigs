@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'NCO'
+version = '5.3.9'
+
+homepage = "https://github.com/nco/nco"
+description = """The NCO toolkit manipulates and analyzes data stored in netCDF-accessible formats,
+including DAP, HDF4, and HDF5."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+source_urls = ['https://github.com/nco/nco/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['705ffa98a78d468cdfaa5858f09213142265120fc26a78249a442ae2fa92ae96']
+
+builddependencies = [
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+]
+
+dependencies = [
+    ('UDUNITS', '2.2.28'),
+    ('expat', '2.7.1'),
+    ('ANTLR', '2.7.7'),
+    ('libdap', '3.21.1'),
+    ('GSL', '2.8'),
+    ('netCDF', '4.9.3'),
+    ('ESMF', '8.9.0'),  # ncremap needs ESMF_RegridWeightGen
+]
+
+configopts = "--enable-nco_cplusplus"
+
+# in.nc is used for sanity check
+postinstallcmds = ['cp %(builddir)s/%(namelower)s-%(version)s/data/in.nc %(installdir)s/share/in.nc']
+
+sanity_check_paths = {
+    'files': [f'bin/nc{x}' for x in ('ap2', 'atted', 'bo', 'diff', 'ea', 'ecat', 'es',
+                                     'flint', 'ks', 'pdq', 'ra', 'rcat', 'rename', 'wa')] +
+             ['lib/libnco.a', f'lib/libnco.{SHLIB_EXT}', 'lib/libnco_c++.a', f'lib/libnco_c++.{SHLIB_EXT}'],
+    'dirs': ['include'],
+}
+sanity_check_commands = [
+    "ncks -O -7 --cnk_dmn time,10 "
+    "%(installdir)s/share/in.nc $TMPDIR/in4.cdl"
+]
+moduleclass = 'tools'

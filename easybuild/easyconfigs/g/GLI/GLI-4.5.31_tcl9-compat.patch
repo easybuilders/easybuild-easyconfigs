@@ -1,0 +1,99 @@
+diff -ruN gli.orig/src/formdrv.c gli/src/formdrv.c
+--- gli.orig/src/formdrv.c	2010-01-27 16:43:36.000000000 +0100
++++ gli/src/formdrv.c	2026-05-10 13:09:45.359509273 +0200
+@@ -480,7 +480,7 @@
+       tt_fprintf(stderr, "formdrv: Tcl error in command \"%s\" (%s)\n", cmd,
+ 	Tcl_GetVar(interp, "errorInfo", TCL_GLOBAL_ONLY));
+     }
+-    return(interp->result);
++    return(Tcl_GetStringResult(interp));
+ }
+ 
+ 
+diff -ruN gli.orig/src/gli.c gli/src/gli.c
+--- gli.orig/src/gli.c	2023-04-24 09:54:48.000000000 +0200
++++ gli/src/gli.c	2026-05-10 13:11:53.364708727 +0200
+@@ -400,7 +400,7 @@
+ 	}
+     else
+ 	{
+-	interp->result = "wrong # of args: should be : ?arg ...?";
++	Tcl_SetObjResult(interp, Tcl_NewStringObj("wrong # of args: should be : ?arg ...?", -1));
+ 	result = TCL_ERROR;
+ 	}
+ 
+@@ -417,7 +417,7 @@
+     UINT nTimerID, UINT wMsg, DWORD dwUser, DWORD dw1, DWORD dw2)
+ {
+     while (idle)
+-	if (Tk_DoOneEvent(TK_DONT_WAIT) == 0)
++	if (Tcl_DoOneEvent(TCL_DONT_WAIT) == 0)
+ 	    break;
+ }
+ 
+@@ -443,7 +443,7 @@
+     struct itimerval value;
+ 
+     while (idle)
+-	if (Tk_DoOneEvent (TK_DONT_WAIT) == 0)
++	if (Tcl_DoOneEvent (TCL_DONT_WAIT) == 0)
+ 	    break;
+ 
+     signal (SIGALRM, (void (*)(int))timeout_rtn);
+@@ -514,9 +514,9 @@
+ 	    TCL_GLOBAL_ONLY);
+ 
+ 	if (Tcl_Init (interp) == TCL_ERROR)
+-	    tt_fprintf (stderr, "Tcl_Init failed: %s\n", interp->result);
++	    tt_fprintf (stderr, "Tcl_Init failed: %s\n", Tcl_GetStringResult(interp));
+ 	if (Tk_Init (interp) == TCL_ERROR)
+-	    tt_fprintf (stderr, "Tk_Init failed: %s\n", interp->result);
++	    tt_fprintf (stderr, "Tk_Init failed: %s\n", Tcl_GetStringResult(interp));
+ 
+ #if TK_MAJOR_VERSION>4
+ 	Tcl_StaticPackage (interp, "Tk", Tk_Init, Tk_SafeInit);
+@@ -569,11 +569,11 @@
+ 	    {
+ 	    cli_b_tcl_got_partial = FALSE;
+ 	    if (Tcl_Eval (interp, cmd) != TCL_OK)
+-		tt_fprintf (stderr, "%s\n", interp->result);
++		tt_fprintf (stderr, "%s\n", Tcl_GetStringResult(interp));
+ 
+-	    else if (interactive && *interp->result != '\0' &&
++	    else if (interactive && *Tcl_GetStringResult(interp) != '\0' &&
+ 		procedure_depth == 0)
+-		tt_printf ("%s\n", interp->result);
++		tt_printf ("%s\n", Tcl_GetStringResult(interp));
+ 
+ 	    Tcl_DStringFree (&command);
+ 	    }
+@@ -1065,7 +1065,7 @@
+ /*
+ 	create_tcl_interp ();
+ 	if (Tcl_EvalFile (interp, file) != TCL_OK)
+-	    tt_fprintf (stderr, "%s\n", interp->result);
++	    tt_fprintf (stderr, "%s\n", Tcl_GetStringResult(interp));
+  */
+ 	struct stat buf;
+ 	int fd, cc;
+@@ -1082,7 +1082,7 @@
+ 
+ 		create_tcl_interp ();
+ 		if (Tcl_Eval (interp, s) != TCL_OK)
+-		    tt_fprintf (stderr, "%s\n", interp->result);
++		    tt_fprintf (stderr, "%s\n", Tcl_GetStringResult(interp));
+ 		}
+ 	    free (s);
+ 
+diff -ruN gli.orig/src/glisight.c gli/src/glisight.c
+--- gli.orig/src/glisight.c	1999-12-21 17:07:00.000000000 +0100
++++ gli/src/glisight.c	2026-05-10 13:09:45.362509323 +0200
+@@ -297,7 +297,7 @@
+ 	{
+ 	sprintf (command, "%s \"%s\"", sight_info_cb, str);
+ 	if (Tcl_Eval (gli_tcl_interp, command) != TCL_OK)
+-	    tt_fprintf (stderr, "%s\n", gli_tcl_interp->result);
++	    tt_fprintf (stderr, "%s\n", Tcl_GetStringResult(gli_tcl_interp));
+ 	}
+     else
+ #endif

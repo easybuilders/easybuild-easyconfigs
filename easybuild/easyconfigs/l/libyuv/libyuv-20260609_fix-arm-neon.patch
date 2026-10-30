@@ -1,0 +1,217 @@
+Replace outdated __ARM_NEON__ macro by __ARM_NEON, as former is not passed by GCC anymore.
+Additionally, revert added !defined(__GNUC__) introduced in 2143edfa7a807b5ea59aff235b7d722729bcb19c
+to avoid linker errors.
+
+Author: Jan Reuter (JSC)
+
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/include/libyuv/compare_row.h libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/include/libyuv/compare_row.h
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/include/libyuv/compare_row.h	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/include/libyuv/compare_row.h	2026-08-13 15:56:36.664935409 +0200
+@@ -52,7 +52,7 @@
+ 
+ // The following are available for Neon:
+ #if !defined(LIBYUV_DISABLE_NEON) && \
+-    (defined(__ARM_NEON__) || defined(LIBYUV_NEON) || defined(__aarch64__))
++    (defined(__ARM_NEON) || defined(LIBYUV_NEON) || defined(__aarch64__))
+ #define HAS_HAMMINGDISTANCE_NEON
+ #define HAS_SUMSQUAREERROR_NEON
+ #endif
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/include/libyuv/rotate_row.h libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/include/libyuv/rotate_row.h
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/include/libyuv/rotate_row.h	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/include/libyuv/rotate_row.h	2026-08-13 15:56:36.666623948 +0200
+@@ -44,7 +44,7 @@
+ #endif
+ 
+ #if !defined(LIBYUV_DISABLE_NEON) && \
+-    (defined(__ARM_NEON__) || defined(LIBYUV_NEON) || defined(__aarch64__))
++    (defined(__ARM_NEON) || defined(LIBYUV_NEON) || defined(__aarch64__))
+ #if defined(__aarch64__)
+ #define HAS_TRANSPOSEWX16_NEON
+ #else
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/include/libyuv/row.h libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/include/libyuv/row.h
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/include/libyuv/row.h	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/include/libyuv/row.h	2026-08-13 16:02:38.768919853 +0200
+@@ -414,7 +414,7 @@
+ 
+ // The following are available on Neon platforms:
+ #if !defined(LIBYUV_DISABLE_NEON) && \
+-    (defined(__aarch64__) || defined(__ARM_NEON__) || defined(LIBYUV_NEON))
++    (defined(__aarch64__) || defined(__ARM_NEON) || defined(LIBYUV_NEON))
+ #define HAS_AB64TOARGBROW_NEON
+ #define HAS_ABGRTOUVJROW_NEON
+ #define HAS_ABGRTOUVROW_NEON
+@@ -443,13 +443,11 @@
+ #define HAS_ARGBTOUV444ROW_NEON
+ #define HAS_ARGBTOUVJ444ROW_NEON
+ #define HAS_ARGBTOUVJROW_NEON
+-#if !defined(__GNUC__) || defined(__clang__)
+ #define HAS_ARGBTOUVMATRIXROW_NEON
+ #define HAS_RGBTOUVMATRIXROW_NEON
+ #define HAS_RGB565TOUVMATRIXROW_NEON
+ #define HAS_ARGB1555TOUVMATRIXROW_NEON
+ #define HAS_ARGB4444TOUVMATRIXROW_NEON
+-#endif
+ #define HAS_ARGBTOUVROW_NEON
+ #define HAS_ARGBTOYJROW_NEON
+ #if !defined(__aarch64__)
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/include/libyuv/scale_row.h libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/include/libyuv/scale_row.h
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/include/libyuv/scale_row.h	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/include/libyuv/scale_row.h	2026-08-13 15:56:36.668863052 +0200
+@@ -93,7 +93,7 @@
+ 
+ // The following are available on Neon platforms:
+ #if !defined(LIBYUV_DISABLE_NEON) && \
+-    (defined(__ARM_NEON__) || defined(LIBYUV_NEON) || defined(__aarch64__))
++    (defined(__ARM_NEON) || defined(LIBYUV_NEON) || defined(__aarch64__))
+ #define HAS_SCALEADDROW_NEON
+ #define HAS_SCALEARGBCOLS_NEON
+ #define HAS_SCALEARGBFILTERCOLS_NEON
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/source/compare_neon.cc libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/source/compare_neon.cc
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/source/compare_neon.cc	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/source/compare_neon.cc	2026-08-13 15:56:41.815933883 +0200
+@@ -18,7 +18,7 @@
+ extern "C" {
+ #endif
+ 
+-#if !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON__) && \
++#if !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON) && \
+     !defined(__aarch64__)
+ 
+ // 256 bits at a time
+@@ -88,7 +88,7 @@
+   return sse;
+ }
+ 
+-#endif  // defined(__ARM_NEON__) && !defined(__aarch64__)
++#endif  // defined(__ARM_NEON) && !defined(__aarch64__)
+ 
+ #ifdef __cplusplus
+ }  // extern "C"
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/source/cpu_id.cc libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/source/cpu_id.cc
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/source/cpu_id.cc	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/source/cpu_id.cc	2026-08-13 15:56:41.823343465 +0200
+@@ -466,13 +466,13 @@
+   cpu_info |= kCpuHasARM;
+ #endif  // __aarch64__
+ #if defined(__arm__)
+-  // gcc -mfpu=neon defines __ARM_NEON__
+-  // __ARM_NEON__ generates code that requires Neon.  NaCL also requires Neon.
++  // gcc -mfpu=neon defines __ARM_NEON
++  // __ARM_NEON generates code that requires Neon.  NaCL also requires Neon.
+   // For Linux, /proc/cpuinfo can be tested but without that assume Neon.
+   // Linux arm parse text file for neon detect.
+ #if defined(__linux__)
+   cpu_info = ArmCpuCaps("/proc/cpuinfo");
+-#elif defined(__ARM_NEON__)
++#elif defined(__ARM_NEON)
+   cpu_info = kCpuHasNEON;
+ #else
+   cpu_info = 0;
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/source/rotate_neon.cc libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/source/rotate_neon.cc
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/source/rotate_neon.cc	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/source/rotate_neon.cc	2026-08-13 15:56:41.825126103 +0200
+@@ -18,7 +18,7 @@
+ extern "C" {
+ #endif
+ 
+-#if !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON__) && \
++#if !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON) && \
+     !defined(__aarch64__)
+ 
+ void TransposeWx8_NEON(const uint8_t* src,
+@@ -211,7 +211,7 @@
+       : "memory", "cc", "q0", "q1", "q2", "q3");
+ }
+ 
+-#endif  // defined(__ARM_NEON__) && !defined(__aarch64__)
++#endif  // defined(__ARM_NEON) && !defined(__aarch64__)
+ 
+ #ifdef __cplusplus
+ }  // extern "C"
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/source/row_neon.cc libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/source/row_neon.cc
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/source/row_neon.cc	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/source/row_neon.cc	2026-08-13 15:56:41.829891076 +0200
+@@ -17,7 +17,7 @@
+ #endif
+ 
+ // This module is for GCC Neon
+-#if !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON__) && \
++#if !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON) && \
+     !defined(__aarch64__)
+ 
+ // d8-d15, r4-r11,r14(lr) need to be preserved if used. r13(sp),r15(pc) are
+@@ -3898,7 +3898,7 @@
+       : "cc", "memory", "q0", "q1", "q2", "q3", "d8", "q5");
+ }
+ 
+-#endif  // !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON__)..
++#endif  // !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON)..
+ 
+ #ifdef __cplusplus
+ }  // extern "C"
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/source/scale_neon.cc libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/source/scale_neon.cc
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/source/scale_neon.cc	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/source/scale_neon.cc	2026-08-13 15:56:41.832858641 +0200
+@@ -17,7 +17,7 @@
+ #endif
+ 
+ // This module is for GCC Neon.
+-#if !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON__) && \
++#if !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON) && \
+     !defined(__aarch64__)
+ 
+ // NEON downscalers with interpolation.
+@@ -1441,7 +1441,7 @@
+       : "memory", "cc", "d0");
+ }
+ 
+-#endif  // defined(__ARM_NEON__) && !defined(__aarch64__)
++#endif  // defined(__ARM_NEON) && !defined(__aarch64__)
+ 
+ #ifdef __cplusplus
+ }  // extern "C"
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/unit_test/cpu_test.cc libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/unit_test/cpu_test.cc
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/unit_test/cpu_test.cc	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/unit_test/cpu_test.cc	2026-08-13 15:56:41.835233182 +0200
+@@ -334,7 +334,7 @@
+   } else {
+     printf("WARNING: unable to load \"../../unit_test/testdata/arm_v7.txt\"\n");
+   }
+-#if defined(__linux__) && defined(__ARM_NEON__) && !defined(__aarch64__)
++#if defined(__linux__) && defined(__ARM_NEON) && !defined(__aarch64__)
+   if (FileExists("/proc/cpuinfo")) {
+     if (kCpuHasNEON != ArmCpuCaps("/proc/cpuinfo")) {
+       // This can happen on Arm emulator but /proc/cpuinfo is from host.
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/unit_test/planar_test.cc libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/unit_test/planar_test.cc
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/unit_test/planar_test.cc	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/unit_test/planar_test.cc	2026-08-13 15:56:41.835442245 +0200
+@@ -4332,7 +4332,7 @@
+   GaussRow_C(&orig_pixels[0], &dst_pixels_c[0], 1280);
+   for (int i = 0; i < benchmark_pixels_div1280_; ++i) {
+ #if !defined(LIBYUV_DISABLE_NEON) && \
+-    (defined(__aarch64__) || defined(__ARM_NEON__) || defined(LIBYUV_NEON))
++    (defined(__aarch64__) || defined(__ARM_NEON) || defined(LIBYUV_NEON))
+     int has_neon = TestCpuFlag(kCpuHasNEON);
+     if (has_neon) {
+       GaussRow_NEON(&orig_pixels[0], &dst_pixels_opt[0], 1280);
+@@ -4386,7 +4386,7 @@
+              1280);
+   for (int i = 0; i < benchmark_pixels_div1280_; ++i) {
+ #if !defined(LIBYUV_DISABLE_NEON) && \
+-    (defined(__aarch64__) || defined(__ARM_NEON__) || defined(LIBYUV_NEON))
++    (defined(__aarch64__) || defined(__ARM_NEON) || defined(LIBYUV_NEON))
+     int has_neon = TestCpuFlag(kCpuHasNEON);
+     if (has_neon) {
+       GaussCol_NEON(&orig_pixels[0], &orig_pixels[1280], &orig_pixels[1280 * 2],
+diff --color -Naur libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/util/psnr.cc libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/util/psnr.cc
+--- libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57.orig/util/psnr.cc	2026-06-09 23:52:48.000000000 +0200
++++ libyuv-d23308a2a7442be8e559b1b471862fd7588d6a57/util/psnr.cc	2026-08-13 15:56:41.837357447 +0200
+@@ -35,7 +35,7 @@
+ // libyuv provides this function when linking library for jpeg support.
+ #if !defined(HAVE_JPEG)
+ 
+-#if !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON__) && \
++#if !defined(LIBYUV_DISABLE_NEON) && defined(__ARM_NEON) && \
+     !defined(__aarch64__)
+ #define HAS_SUMSQUAREERROR_NEON
+ static uint32_t SumSquareError_NEON(const uint8_t* src_a,

@@ -1,0 +1,27 @@
+Fix for a CMake issue when installing gmxapi:
+
+The link interface of target "Gromacs::libgromacs" contains:
+
+      OpenMP::OpenMP_CUDA
+
+    but the target was not found.
+
+See https://gitlab.com/gromacs/gromacs/-/work_items/5656
+
+Author: Bob Dröge (University of Groningen)
+--- gromacs-2026.2.orig/python_packaging/gmxapi/CMakeLists.txt	2026-05-05 20:54:17.000000000 +0200
++++ gromacs-2026.2/python_packaging/gmxapi/CMakeLists.txt	2026-06-16 09:28:13.092594010 +0200
+@@ -115,6 +115,13 @@
+     set(GROMACS_SUFFIX ${GMX_LIBS_SUFFIX})
+ endif()
+ 
++# Workaround for OpenMP::OpenMP_CUDA target not being found
++# See https://gitlab.com/gromacs/gromacs/-/work_items/5656
++if(CMAKE_CUDA_COMPILER)
++    enable_language(CUDA)
++    find_package(OpenMP QUIET)
++endif()
++
+ if(GMXAPI_MAIN_PROJECT)
+     find_package(gmxapi REQUIRED
+                  HINTS "$ENV{GROMACS_DIR}" ${GROMACS_ROOT}

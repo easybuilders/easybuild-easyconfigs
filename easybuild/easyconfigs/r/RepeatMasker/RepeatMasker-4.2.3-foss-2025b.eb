@@ -1,0 +1,57 @@
+easyblock = 'Tarball'
+
+name = 'RepeatMasker'
+version = '4.2.3'
+
+homepage = 'https://www.repeatmasker.org/'
+description = """RepeatMasker is a program that screens DNA sequences for interspersed repeats
+ and low complexity DNA sequences."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+source_urls = ['https://www.repeatmasker.org/%(name)s']
+sources = [
+    SOURCE_TAR_GZ,
+    # optional but recommended: RepBase RepeatMasker Edition
+    # requires subscription and academic license, download from here: https://www.girinst.org/server/RepBase/index.php
+    # {
+    #     'filename': 'RepBaseRepeatMaskerEdition-20181026.tar.gz',
+    #     'extract_cmd': "tar -xzf %s -C %(builddir)s/%(name)s/Libraries --strip-components 1",
+    # },
+]
+checksums = ['832e2b22aef6763ef7d5dd2771eef22f7dd8b9738bea0e1d81295aa511b61e6a']
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Perl', '5.40.2'),
+    ('TRF', '4.09.1'),
+    ('h5py', '3.14.0'),
+    # At least one search engine of: RMBlast, HMMER, ABBlast/WUBlast, Cross_Match
+    ('HMMER', '3.4'),
+    ('RMBlast', '2.17.1'),
+]
+
+local_default_search_engine = 'RMBlast'
+
+local_config_command = 'cd %(installdir)s &&'
+local_config_command += './configure -perlbin "$EBROOTPERL/bin/perl" -trf_prgm "$EBROOTTRF/bin/trf" '
+local_config_command += '-hmmer_dir "$EBROOTHMMER/bin" -rmblast_dir "$EBROOTRMBLAST/bin" '
+local_config_command += '-default_search_engine %s' % local_default_search_engine.lower()
+
+postinstallcmds = [local_config_command]
+
+fix_perl_shebang_for = ['RepeatMasker']
+
+sanity_check_paths = {
+    'files': ['RepeatMasker', 'RepeatMaskerConfig.pm'],
+    'dirs': ['Libraries', 'util'],
+}
+
+sanity_check_commands = ['RepeatMasker -help']
+
+modextrapaths = {
+    'PATH': '',
+    'PERL5LIB': '',
+}
+
+moduleclass = 'bio'
