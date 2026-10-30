@@ -1,0 +1,25 @@
+Add PkgConfig support for libpci and fix installation prefix
+Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+--- ROCmValidationSuite-rocm-7.2.3/CMakeLists.txt.orig	2026-10-05 12:00:00.000000000 +0000
++++ ROCmValidationSuite-rocm-7.2.3/CMakeLists.txt	2026-10-05 12:00:00.000000000 +0000
+@@ -54,6 +54,10 @@
+         "Use the api provided by rocm-core library to get ROCM_PATH" OFF)
+
+ # Prerequisite - Check if rocblas was already installed
++# Find libpci using pkg-config
++find_package(PkgConfig REQUIRED)
++pkg_check_modules(PCI_PACKAGE REQUIRED libpci)
++
+ find_package (rocblas)
+ if(rocblas_FOUND)
+   message(STATUS "rocblas found")
+@@ -149,8 +153,7 @@
+ # variables since we will pass them as cmake params appropriately, and
+ # all find_packages relevant to this build will be in ROCM path hence appending it to CMAKE_PREFIX_PATH
+ set(ROCM_PATH "/opt/rocm" CACHE PATH "ROCM install path")
+-set(CMAKE_INSTALL_PREFIX "/opt/rocm" CACHE PATH "CMAKE installation directory")
+-set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/rocm" CACHE PATH "Prefix used in built packages")
++set(CPACK_PACKAGING_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Prefix used in built packages")
+ list(APPEND CMAKE_PREFIX_PATH "${ROCM_PATH}")
+
+ add_definitions(-DROCM_PATH="${ROCM_PATH}")

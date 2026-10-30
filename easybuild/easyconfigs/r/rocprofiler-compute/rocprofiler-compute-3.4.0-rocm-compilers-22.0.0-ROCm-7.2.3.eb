@@ -1,0 +1,65 @@
+easyblock = 'ROCmComponent'
+
+name = 'rocprofiler-compute'
+version = '3.4.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/rocm-systems/tree/develop/projects/rocprofiler-compute'
+description = """
+A kernel-level profiling tool for machine learning/HPC workloads running on AMD MI GPUs.
+ROCm Compute Profiler (formerly Omniperf) is a performance analysis tool for profiling
+machine learning/HPC workloads running on AMD GPUs.
+
+Note: This package requires additional Python dependencies to be installed. See requirements.txt
+in the installation directory for the full list of required packages."""
+docurls = ['https://rocm.docs.amd.com/projects/rocprofiler-compute/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+source_urls = ['https://github.com/ROCm/rocm-systems/archive/']
+sources = [{
+    'download_filename': f'rocm-{_rocm_version}.tar.gz',
+    'filename': f'rocm-systems-rocm-{_rocm_version}.tar.gz',
+}]
+checksums = ['e90cfd8694af28a56433c8827a581ee12a4ba835f0d952436741d9e0f3f8685b']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('git', '2.54.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('PyYAML', '6.0.2'),
+]
+
+# rocprofiler-compute is located in projects/rocprofiler-compute within rocm-systems archive
+srcdir = 'projects/%(name)s'
+
+# Disable Python dependency checking as we handle it through EasyBuild
+configopts = '-DCHECK_PYTHON_DEPS=OFF '
+
+# Remove precompiled roofline binaries that depend on platform-specific ROCm libraries
+# These binaries are not portable and cause RPATH sanity check failures
+# Users who need these can build them separately with appropriate ROCm libraries
+postinstallcmds = [
+    'rm -f %(installdir)s/bin/roofline-*',
+    'echo "Python dependencies listed in %(installdir)s/libexec/rocprofiler-compute/requirements.txt"',
+    'echo "Install with: python3 -m pip install -r %(installdir)s/libexec/rocprofiler-compute/requirements.txt"',
+]
+
+sanity_check_paths = {
+    'files': ['bin/rocprof-compute', 'libexec/rocprofiler-compute/requirements.txt'],
+    'dirs': ['libexec/rocprofiler-compute',
+             'share/rocprofiler-compute'],
+}
+
+# Sanity check commands disabled as they require Python packages from requirements.txt
+# Users should install: python3 -m pip install -r
+# $EBROOTROCPROFILERMINCOMPUTE/libexec/rocprofiler-compute/requirements.txt
+# sanity_check_commands = [
+#     'rocprof-compute --help',
+# ]
+
+moduleclass = 'tools'

@@ -1,0 +1,45 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'ROCmComponent'
+
+name = 'RPP'
+version = '2.2.1'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/rpp'
+description = """ROCm Performance Primitives (RPP) library is a comprehensive
+high-performance computer vision library for AMD GPUs."""
+docurls = ['https://rocm.docs.amd.com/projects/rpp/en/latest/']
+
+toolchain = {'name': 'rocm-compilers', 'version': f'22.0.0-ROCm-{_rocm_version}'}
+
+github_account = 'ROCm'
+source_urls = [GITHUB_SOURCE]
+sources = [f"rocm-{_rocm_version}.tar.gz"]
+checksums = ['348c08e5079e5f68403570e593d4c2f72e4bdaafdd38a0e57725353a16b6a66e']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('Boost', '1.88.0'),
+    # Requested 1.72.0:1.85.0, using 1.88.0 (closest available for this toolchain)
+    ('half', '2.2.0', '', SYSTEM),
+    ('hwloc', '2.12.1'),
+    ('FFmpeg', '7.1.2'),
+    # Requested :6, using 7.1.2 (available for GCCcore-14.3.0)
+    # OpenCV 4.12.0 required but not available for rocm-compilers toolchain yet
+    # Need to create OpenCV easyconfig for this toolchain or use foss-2025a build
+    ('libjpeg-turbo', '3.1.1'),
+]
+
+configopts = "-DBACKEND=HIP "
+
+sanity_check_paths = {
+    'files': ['lib/librpp.%s' % SHLIB_EXT],
+    'dirs': ['include/rpp'],
+}
+
+moduleclass = 'lib'
