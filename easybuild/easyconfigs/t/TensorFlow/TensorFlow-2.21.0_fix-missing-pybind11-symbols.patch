@@ -1,0 +1,131 @@
+At least the tests fail with 
+> _pywrap_tf_session.so: undefined symbol: _ZN17pybind11_protobuf16GenericProtoCastEPN6google8protobuf7MessageEN8pybind1119return_value_policyENS4_6handleEb
+
+Cause is a use of a hidden symbol (from pybind11 namespace) which causes the function to be hidden too when compiling with GCC (as opposed to Clang)
+See https://github.com/tensorflow/tensorflow/issues/103033
+
+Patch the headers to explicitely set default-visibility for the affected functions.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/workspace2.bzl b/tensorflow/workspace2.bzl
+--- a/tensorflow/workspace2.bzl
++++ b/tensorflow/workspace2.bzl
+@@ -802,6 +802,7 @@ def _tf_repositories():
+         urls = tf_mirror_urls("https://github.com/pybind/pybind11_protobuf/archive/f02a2b7653bc50eb5119d125842a3870db95d251.zip"),
+         sha256 = "3cf7bf0f23954c5ce6c37f0a215f506efa3035ca06e3b390d67f4cbe684dce23",
+         strip_prefix = "pybind11_protobuf-f02a2b7653bc50eb5119d125842a3870db95d251",
++        patch_file = ["//third_party/pybind11_protobuf:default_visibility.patch"],
+     )
+ 
+     tf_http_archive(
+diff --git a/third_party/pybind11_protobuf/default_visibility.patch b/third_party/pybind11_protobuf/default_visibility.patch
+new file mode 100644
+--- /dev/null
++++ b/third_party/pybind11_protobuf/default_visibility.patch
+@@ -0,0 +1,63 @@
++--- a/pybind11_protobuf/proto_cast_util.h
+++++ b/pybind11_protobuf/proto_cast_util.h
++@@ -24,6 +24,17 @@
++ // * Compiler/linker & compiler/linker options.
++ // #define PYBIND11_PROTOBUF_ASSUME_FULL_ABI_COMPATIBILITY
++ 
+++#if defined(__GNUC__)
+++// The pybind11 namespace is declared with hidden visibility, and GCC
+++// propagates type visibility to declarations that use pybind11 types.
+++// Without this, the definitions in proto_cast_util.cc would be hidden and
+++// unavailable to other shared objects. Force default visibility.
+++#define PYBIND11_PROTOBUF_DEFAULT_VISIBILITY \
+++  __attribute__((visibility("default")))
+++#else
+++#define PYBIND11_PROTOBUF_DEFAULT_VISIBILITY
+++#endif
+++
++ namespace pybind11_protobuf {
++ 
++ // Strips ".proto" or ".protodevel" from the end of a filename.
++@@ -43,6 +54,7 @@
++ 
++ // Simple helper. Caller has to ensure that the py_bytes argument outlives the
++ // returned string_view.
+++PYBIND11_PROTOBUF_DEFAULT_VISIBILITY
++ absl::string_view PyBytesAsStringView(pybind11::bytes py_bytes);
++ 
++ // Initialize internal proto cast dependencies, which includes importing
++@@ -53,21 +65,26 @@
++ void ImportProtoDescriptorModule(const ::google::protobuf::Descriptor *);
++ 
++ // Returns a ::google::protobuf::Message* from a cpp_fast_proto, if backed by C++.
+++PYBIND11_PROTOBUF_DEFAULT_VISIBILITY
++ const ::google::protobuf::Message *PyProtoGetCppMessagePointer(pybind11::handle src);
++ 
++ // Returns the protocol buffer's py_proto.DESCRIPTOR.full_name attribute.
+++PYBIND11_PROTOBUF_DEFAULT_VISIBILITY
++ absl::optional<std::string> PyProtoDescriptorFullName(
++     pybind11::handle py_proto);
++ 
++ // Returns true if py_proto full name matches descriptor full name.
+++PYBIND11_PROTOBUF_DEFAULT_VISIBILITY
++ bool PyProtoHasMatchingFullName(pybind11::handle py_proto,
++                                 const ::google::protobuf::Descriptor *descriptor);
++ 
++ // Caller should enforce any type identity that is required.
+++PYBIND11_PROTOBUF_DEFAULT_VISIBILITY
++ pybind11::bytes PyProtoSerializePartialToString(pybind11::handle py_proto,
++                                                 bool raise_if_error);
++ 
++ // Allocates a C++ protocol buffer for a given name.
+++PYBIND11_PROTOBUF_DEFAULT_VISIBILITY
++ std::unique_ptr<::google::protobuf::Message> AllocateCProtoFromPythonSymbolDatabase(
++     pybind11::handle src, const std::string &full_name);
++ 
++@@ -85,6 +102,7 @@
++                                     pybind11::return_value_policy policy,
++                                     pybind11::handle parent, bool is_const);
++ 
+++PYBIND11_PROTOBUF_DEFAULT_VISIBILITY
++ pybind11::handle GenericProtoCast(::google::protobuf::Message *src,
++                                   pybind11::return_value_policy policy,
++                                   pybind11::handle parent, bool is_const);
+diff --git a/third_party/xla/third_party/pybind11_abseil/default_visibility.patch b/third_party/xla/third_party/pybind11_abseil/default_visibility.patch
+new file mode 100644
+--- /dev/null
++++ b/third_party/xla/third_party/pybind11_abseil/default_visibility.patch
+@@ -0,0 +1,24 @@
++--- a/pybind11_abseil/import_status_module.h
+++++ b/pybind11_abseil/import_status_module.h
++@@ -15,9 +15,21 @@
++ namespace pybind11 {
++ namespace google {
++ 
+++#if defined(__GNUC__)
+++// The pybind11 namespace is declared with hidden visibility, and GCC
+++// propagates type visibility to declarations that use pybind11 types,
+++// which would hide this symbol from other shared objects. Force default
+++// visibility.
+++#define PYBIND11_ABSEIL_DEFAULT_VISIBILITY \
+++  __attribute__((visibility("default")))
+++#else
+++#define PYBIND11_ABSEIL_DEFAULT_VISIBILITY
+++#endif
+++
++ // Imports the bindings for the status types. This is meant to only be called
++ // from a PYBIND11_MODULE definition. The Python GIL must be held when calling
++ // this function (enforced).
+++PYBIND11_ABSEIL_DEFAULT_VISIBILITY
++ module_ ImportStatusModule(bool bypass_regular_import = true);
++ 
++ }  // namespace google
+diff --git a/third_party/xla/third_party/pybind11_abseil/workspace.bzl b/third_party/xla/third_party/pybind11_abseil/workspace.bzl
+--- a/third_party/xla/third_party/pybind11_abseil/workspace.bzl
++++ b/third_party/xla/third_party/pybind11_abseil/workspace.bzl
+@@ -18,5 +18,8 @@ def repo():
+         sha256 = PA_SHA256,
+         strip_prefix = "pybind11_abseil-{commit}".format(commit = PA_COMMIT),
+         urls = tf_mirror_urls("https://github.com/pybind/pybind11_abseil/archive/{commit}.tar.gz".format(commit = PA_COMMIT)),
+-        patch_file = ["//third_party/pybind11_abseil:remove_license.patch"],
++        patch_file = [
++            "//third_party/pybind11_abseil:remove_license.patch",
++            "//third_party/pybind11_abseil:default_visibility.patch",
++        ],
+     )

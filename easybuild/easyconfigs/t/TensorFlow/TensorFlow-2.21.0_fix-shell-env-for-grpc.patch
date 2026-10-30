@@ -1,0 +1,33 @@
+Make sure protobuf tools use by grpc use the same environment they were built in to avoid picking up e.g. the (possibly too old) system libcxx.
+
+> ERROR: /dev/shm/TensorFlow/2.21.0/foss-2025b/TensorFlow/tensorflow-2.21.0/tensorflow/distribute/experimental/rpc/proto/BUILD:17:17: ProtocInvocation tensorflow/distribute/experimental/rpc/proto/tf_rpc_service_pb2_grpc.py failed: (Exit 1): protoc failed: error executing ProtocInvocation command (from target //tensorflow/distribute/experimental/rpc/proto:tf_rpc_service_proto_py_grpc_proto) 
+
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/third_party/xla/third_party/grpc/grpc.patch b/third_party/xla/third_party/grpc/grpc.patch
+--- a/third_party/xla/third_party/grpc/grpc.patch
++++ b/third_party/xla/third_party/grpc/grpc.patch
+@@ -53,3 +53,22 @@ diff --git a/src/python/grpcio/grpc/BUILD.bazel b/src/python/grpcio/grpc/BUILD.b
+      imports = ["../"],
+      deps = [
+          ":_observability",
++diff -ur a/bazel/python_rules.bzl .b/bazel/python_rules.bzl
++--- b/bazel/python_rules.bzl
+++++ a/bazel/python_rules.bzl
++@@ -84,6 +84,7 @@
++     arguments += get_proto_arguments(protos, context.genfiles_dir.path)
++ 
++     context.actions.run(
+++        use_default_shell_env = True,
++         inputs = protos + includes.to_list(),
++         tools = tools,
++         outputs = out_files,
++@@ -228,6 +229,7 @@
++     arguments.append("--proto_path={}".format(context.genfiles_dir.path))
++     arguments += get_proto_arguments(protos, context.genfiles_dir.path)
++     context.actions.run(
+++        use_default_shell_env = True,
++         inputs = protos + includes,
++         tools = tools,
++         outputs = out_files,
