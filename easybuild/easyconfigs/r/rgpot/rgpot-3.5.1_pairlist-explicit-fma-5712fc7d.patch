@@ -1,0 +1,2159 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f9fe491..9febb5d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -174,6 +174,8 @@ if(NOT RGPOT_RPC_CLIENT_ONLY)
+       CppCore/rgpot/LennardJones/LJClusterPot.cc
+       CppCore/rgpot/Morse/MorsePot.cc
+       CppCore/rgpot/ZBL/ZBLPot.cc
++      CppCore/rgpot/nlist/MinimumImage.cpp
++      CppCore/rgpot/simd/exact_fma_hw.cc
+       CppCore/rgpot/CuH2/cuh2Utils.cc
+       CppCore/rgpot/fortran/FortranPots.cc)
+ 
+@@ -199,6 +201,15 @@ if(NOT RGPOT_RPC_CLIENT_ONLY)
+     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/vesin>
+            $<INSTALL_INTERFACE:include/rgpot/vesin>)
+   target_link_libraries(rgpot_vesin PRIVATE Threads::Threads)
++  if(MSVC)
++    set_source_files_properties(
++      CppCore/rgpot/nlist/MinimumImage.cpp CppCore/rgpot/simd/exact_fma_hw.cc
++      PROPERTIES COMPILE_OPTIONS "/fp:precise")
++  else()
++    set_source_files_properties(
++      CppCore/rgpot/nlist/MinimumImage.cpp CppCore/rgpot/simd/exact_fma_hw.cc
++      PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
++  endif()
+   add_subdirectory(CppCore/rgpot/fortran)
+   add_library(rgpot ${RGPOT_SOURCES})
+   set_target_properties(rgpot PROPERTIES LINKER_LANGUAGE CXX
+@@ -423,6 +434,17 @@ if(RGPOT_BUILD_TESTS)
+ 
+     add_pot_test(LJClusterPotTest CppCore/tests/LJClusterPotTest.cc)
+     add_pot_test(PairListTest CppCore/tests/PairListTest.cc)
++    add_pot_test(MinImageIsaHash CppCore/tests/MinImageIsaHash.cc)
++    add_pot_test(FoldDegenerateTest CppCore/tests/FoldDegenerateTest.cc)
++    set_tests_properties(FoldDegenerateTest PROPERTIES TIMEOUT 60)
++    add_executable(ExactFmaEq CppCore/tests/exact_fma_eq.cc)
++    target_link_libraries(ExactFmaEq PRIVATE rgpot::rgpot)
++    target_include_directories(ExactFmaEq PRIVATE CppCore)
++    target_compile_features(ExactFmaEq PRIVATE cxx_std_20)
++    if(NOT MSVC)
++      target_compile_options(ExactFmaEq PRIVATE -ffp-contract=off)
++    endif()
++    add_test(NAME ExactFmaEq COMMAND ExactFmaEq)
+     add_pot_test(BatchEvaluatorTest CppCore/tests/BatchEvaluatorTest.cc)
+     target_link_libraries(BatchEvaluatorTest PRIVATE Threads::Threads)
+     add_pot_test(CxxLayoutTest CppCore/tests/CxxLayoutTest.cc)
+diff --git a/CppCore/meson.build b/CppCore/meson.build
+index e39c023..978bbad 100644
+--- a/CppCore/meson.build
++++ b/CppCore/meson.build
+@@ -83,6 +83,30 @@ endif
+ _rgpot_srcs += files('rgpot/PotHelpers.cc')
+ _rgpot_srcs += files('rgpot/units.cc')
+ _rgpot_srcs += files('rgpot/abi/CxxLayout.cc')
++# Product-sums in this file go through rgpot::simd::mul_add. Contraction
++# stays off so a multiply that is not written as mul_add is not fused, and
++# the folded bits match on scalar, SSE, AVX2, AVX-512 and NEON.
++# exact_fma_hw is a separate object: the ISA variants below recompile
++# MinimumImage.cpp with -mno-fma and still need this hardware definition.
++_fp_contract_off = cppc.get_supported_arguments(
++    ['-ffp-contract=off', '/fp:precise'],
++)
++rgpot_exact_fma = static_library(
++    'rgpot_exact_fma',
++    files('rgpot/simd/exact_fma_hw.cc'),
++    include_directories: _incdirs,
++    cpp_args: _args + _fp_contract_off,
++    pic: true,
++    install: false,
++)
++rgpot_minimage = static_library(
++    'rgpot_minimage',
++    files('rgpot/nlist/MinimumImage.cpp'),
++    include_directories: _incdirs,
++    cpp_args: _args + _fp_contract_off,
++    pic: true,
++    install: false,
++)
+ 
+ # Cap'n Proto schema + NWChem/CPMD frontends need libcapnp (ptlrpc). Only pull
+ # them in when RPC is on (server or client-only); lean -Dwith_rpc=false builds
+@@ -110,6 +134,7 @@ if not get_option('with_rpc_client_only')
+         dependencies: _deps,
+         cpp_args: _args,
+         include_directories: _incdirs,
++        link_whole: [rgpot_minimage, rgpot_exact_fma],
+         pic: true,
+         install: false,
+     )
+@@ -577,6 +602,12 @@ if get_option('with_tests')
+             ['EMTPotTest', 'emt_pot_test', 'EMTPotTest.cc', ''],
+             ['EAMCellPotTest', 'eam_cell_pot_test', 'EAMCellPotTest.cc', ''],
+             ['PairListTest', 'pair_list_test', 'PairListTest.cc', ''],
++            [
++                'MinImageIsaHash',
++                'minimage_isa_hash',
++                'MinImageIsaHash.cc',
++                '',
++            ],
+             [
+                 'BatchEvaluatorTest',
+                 'batch_evaluator_test',
+@@ -644,6 +675,21 @@ if get_option('with_tests')
+             ['D4test', 'd4_test', 'D4PotTest.cc', ''],
+         ]
+     endif
++    if not get_option('with_rpc_client_only')
++        test(
++            'FoldDegenerateTest',
++            executable(
++                'fold_degenerate_test',
++                sources: ['tests/FoldDegenerateTest.cc'],
++                dependencies: test_deps,
++                include_directories: _incdirs + ['.'],
++                cpp_args: test_args,
++                link_with: _linkto,
++                link_language: 'cpp',
++            ),
++            timeout: 60,
++        )
++    endif
+     if has_expr and not get_option('with_rpc_client_only')
+         test(
+             'ExprPotTest',
+@@ -1322,6 +1368,87 @@ if get_option('with_tests')
+         endif
+     endforeach
+     if not get_option('with_rpc_client_only')
++        # Same fold, compiled once per instruction set. The driver checks
++        # the CPU and prints skip when the binary cannot run here.
++        _isa_specs = [
++            [
++                'scalar',
++                [
++                    '-ffp-contract=off',
++                    '-fno-tree-vectorize',
++                    '-mno-avx',
++                    '-mno-fma',
++                ],
++            ],
++            ['sse2', ['-ffp-contract=off', '-msse2', '-mno-avx', '-mno-fma']],
++            ['avx2', ['-ffp-contract=off', '-mavx2', '-mfma']],
++            ['avx512', ['-ffp-contract=off', '-mavx512f']],
++            ['neon', ['-ffp-contract=off']],
++        ]
++        _isa_exes = []
++        foreach spec : _isa_specs
++            _isa_args = cppc.get_supported_arguments(spec[1])
++            if spec[0] == 'neon' and host_machine.cpu_family() == 'x86_64'
++                continue
++            endif
++            if spec[0] != 'neon' and host_machine.cpu_family() != 'x86_64'
++                continue
++            endif
++            if spec[0] != 'neon' and _isa_args.length() < spec[1].length()
++                continue
++            endif
++            _isa_lib = static_library(
++                'minimage_' + spec[0],
++                files('rgpot/nlist/MinimumImage.cpp'),
++                include_directories: _incdirs,
++                cpp_args: _args + _isa_args,
++                pic: true,
++                install: false,
++            )
++            _isa_exes += executable(
++                'minimage_hash_' + spec[0],
++                sources: ['tests/minimage_isa_hash_main.cc'],
++                include_directories: _incdirs + ['.'],
++                cpp_args: [
++                    '-ffp-contract=off',
++                    '-DRGPOT_MINIMAGE_ISA_' + spec[0].to_upper(),
++                ],
++                link_whole: [_isa_lib, rgpot_exact_fma],
++                install: false,
++            )
++        endforeach
++        executable(
++            'minimage_bench',
++            sources: ['tests/MinImageBench.cc'],
++            include_directories: _incdirs + ['.'],
++            cpp_args: test_args,
++            dependencies: test_deps,
++            link_with: _linkto,
++            link_language: 'cpp',
++            install: false,
++        )
++        if _isa_exes.length() > 0
++            test(
++                'MinImageIsaVariants',
++                find_program(
++                    meson.project_source_root() / 'ci/gha/check_minimage_isa.sh',
++                ),
++                args: [
++                    'd6f5cbaa04ac49e6f02ee64c10eb83d44d951756556924dcc17966453dcd8b11',
++                ] + _isa_exes,
++            )
++        endif
++        test(
++            'ExactFmaEq',
++            executable(
++                'exact_fma_eq',
++                sources: ['tests/exact_fma_eq.cc'],
++                include_directories: _incdirs,
++                cpp_args: _args + _fp_contract_off,
++                link_whole: rgpot_exact_fma,
++                install: false,
++            ),
++        )
+         layout_fixture = shared_library(
+             'rgpot_layout_fixture',
+             sources: ['tests/layout_fixture.cc'],
+diff --git a/CppCore/rgpot/nlist/MinimumImage.cpp b/CppCore/rgpot/nlist/MinimumImage.cpp
+new file mode 100644
+index 0000000..a1c32d8
+--- /dev/null
++++ b/CppCore/rgpot/nlist/MinimumImage.cpp
+@@ -0,0 +1,711 @@
++// MIT License
++// Copyright 2023--present rgpot developers
++
++#include "rgpot/nlist/MinimumImage.hpp"
++#include "rgpot/simd/exact_fma.hpp"
++
++#include <algorithm>
++#include <cmath>
++#include <limits>
++#include <stdexcept>
++
++namespace rgpot::nlist {
++namespace {
++
++using rgpot::simd::mul_add;
++
++constexpr double kTol = 1e-12;
++constexpr int kMaxIt = 10000;
++// search_bounds enumerates its box only up to this many candidates.
++constexpr double kExhaustiveCap = 4096.0;
++// Guard on the reduced-basis box. A reduced basis of at most three rows
++// keeps it far below this; reaching it means the input left double range.
++constexpr double kReducedCap = 1048576.0;
++// Guard on LLL steps for at most three rows.
++constexpr int kLllCap = 100000;
++
++// Hardware instantiations are compiled inside a target("fma") function, so
++// __builtin_fma becomes vfmadd there. That builtin and the target attribute
++// are GCC and Clang. MSVC uses std::fma in the same instantiation. The other
++// instantiation is mul_add: the same instruction when this unit was built
++// with FMA, and the Dekker TwoProduct plus TwoSum otherwise. Both match
++// std::fma.
++template <bool Hardware>
++double product_add(double a, double b, double c) {
++  if constexpr (Hardware) {
++#if defined(__GNUC__) || defined(__clang__)
++    return __builtin_fma(a, b, c);
++#else
++    return std::fma(a, b, c);
++#endif
++  } else {
++    return mul_add(a, b, c);
++  }
++}
++
++// a*b + c*d + e*f. The last product rounds on its own; each earlier
++// product is fused into the sum. Both forms match std::fma.
++template <bool Hardware>
++double fdot3(double a, double b, double c, double d, double e, double f) {
++  return product_add<Hardware>(a, b, product_add<Hardware>(c, d, e * f));
++}
++
++template <bool Hardware>
++double frac_of(double x, double y, double z, const double inv[9], int k) {
++  return fdot3<Hardware>(x, inv[k], y, inv[3 + k], z, inv[6 + k]);
++}
++
++// reduced - (i*c0 + j*c1 + k*c2), each product fused into the sum.
++template <bool Hardware>
++double sub_image(double reduced, double i, double c0, double j, double c1,
++                 double k, double c2) {
++  return product_add<Hardware>(
++      -i, c0,
++      product_add<Hardware>(-j, c1, product_add<Hardware>(-k, c2, reduced)));
++}
++
++double n2(const double v[3]) {
++  return fdot3<false>(v[0], v[0], v[1], v[1], v[2], v[2]);
++}
++
++double vdot(const double u[3], const double v[3]) {
++  return fdot3<false>(u[0], v[0], u[1], v[1], u[2], v[2]);
++}
++
++void lin3(const double c[3], const double a[3], const double b[3],
++          const double d[3], double out[3]) {
++  for (int i = 0; i < 3; ++i)
++    out[i] = fdot3<false>(c[0], a[i], c[1], b[i], c[2], d[i]);
++}
++
++void sort_by_length(double basis[3][3]) {
++  auto swap_row = [&](int i, int j) {
++    for (int c = 0; c < 3; ++c) {
++      const double t = basis[i][c];
++      basis[i][c] = basis[j][c];
++      basis[j][c] = t;
++    }
++  };
++  if (n2(basis[0]) > n2(basis[1])) {
++    swap_row(0, 1);
++  }
++  if (n2(basis[1]) > n2(basis[2])) {
++    swap_row(1, 2);
++  }
++  if (n2(basis[0]) > n2(basis[1])) {
++    swap_row(0, 1);
++  }
++}
++
++void gauss_pair(double u[3], double v[3]) {
++  for (int it = 0; it < kMaxIt; ++it) {
++    if (n2(v) + kTol < n2(u)) {
++      for (int c = 0; c < 3; ++c) {
++        const double t = u[c];
++        u[c] = v[c];
++        v[c] = t;
++      }
++    }
++    const double uu = n2(u);
++    if (uu < kTol) {
++      return;
++    }
++    const double n = std::round(vdot(u, v) / uu);
++    if (n == 0.0) {
++      return;
++    }
++    for (int c = 0; c < 3; ++c)
++      v[c] = mul_add(-n, u[c], v[c]);
++  }
++}
++
++void subtract_plane(double basis[3][3]) {
++  const double *u = basis[0];
++  const double *v = basis[1];
++  double w[3] = {basis[2][0], basis[2][1], basis[2][2]};
++  const double uu = n2(u);
++  const double vv = n2(v);
++  if (uu < kTol || vv < kTol) {
++    return;
++  }
++  const double nu = std::round(vdot(w, u) / uu);
++  double w1[3];
++  for (int c = 0; c < 3; ++c)
++    w1[c] = mul_add(-nu, u[c], w[c]);
++  const double nv = std::round(vdot(w1, v) / vv);
++  for (int c = 0; c < 3; ++c)
++    w[c] = mul_add(-nv, v[c], w1[c]);
++  double best[3] = {w[0], w[1], w[2]};
++  double best2 = n2(w);
++  for (int i = -1; i <= 1; ++i) {
++    for (int j = -1; j <= 1; ++j) {
++      if (i == 0 && j == 0) {
++        continue;
++      }
++      double t[3];
++      for (int c = 0; c < 3; ++c)
++        t[c] = mul_add(static_cast<double>(i), u[c],
++                        mul_add(static_cast<double>(j), v[c], w[c]));
++      const double t2 = n2(t);
++      if (t2 < best2) {
++        best2 = t2;
++        best[0] = t[0];
++        best[1] = t[1];
++        best[2] = t[2];
++      }
++    }
++  }
++  basis[2][0] = best[0];
++  basis[2][1] = best[1];
++  basis[2][2] = best[2];
++}
++
++bool is_minkowski_reduced(const double basis[3][3]) {
++  const double na = n2(basis[0]);
++  const double nb = n2(basis[1]);
++  const double nc = n2(basis[2]);
++  if (!(na - nb <= kTol && nb - nc <= kTol)) {
++    return false;
++  }
++  const int rhs_idx[12] = {0, 1, 1, 2, 2, 1, 2, 2, 2, 2, 2, 2};
++  const double rows[12][3] = {
++      {0, 1, 0}, {0, 0, 1}, {1, 1, 0}, {1, 0, 1}, {0, 1, 1}, {1, -1, 0},
++      {1, 0, -1}, {0, 1, -1}, {1, 1, 1}, {1, -1, 1}, {1, 1, -1}, {1, -1, -1},
++  };
++  const double norms[3] = {std::sqrt(na), std::sqrt(nb), std::sqrt(nc)};
++  for (int i = 0; i < 12; ++i) {
++    double image[3];
++    lin3(rows[i], basis[0], basis[1], basis[2], image);
++    if (std::sqrt(n2(image)) + kTol < norms[rhs_idx[i]]) {
++      return false;
++    }
++  }
++  return true;
++}
++
++void minkowski_reduce(double basis[3][3]) {
++  if (is_minkowski_reduced(basis)) {
++    return;
++  }
++  for (int it = 0; it < kMaxIt; ++it) {
++    sort_by_length(basis);
++    gauss_pair(basis[0], basis[1]);
++    subtract_plane(basis);
++    sort_by_length(basis);
++    if (is_minkowski_reduced(basis)) {
++      return;
++    }
++  }
++}
++
++double det_of(const double a[9]) {
++  const double m0 = mul_add(-a[5], a[7], a[4] * a[8]);
++  const double m1 = mul_add(-a[5], a[6], a[3] * a[8]);
++  const double m2 = mul_add(-a[4], a[6], a[3] * a[7]);
++  return fdot3<false>(a[0], m0, -a[1], m1, a[2], m2);
++}
++
++bool invert(const double a[9], double inv[9]) {
++  const double det = det_of(a);
++  if (!std::isfinite(det) || det == 0.0) {
++    return false;
++  }
++  inv[0] = mul_add(-a[5], a[7], a[4] * a[8]) / det;
++  inv[1] = mul_add(-a[1], a[8], a[2] * a[7]) / det;
++  inv[2] = mul_add(-a[2], a[4], a[1] * a[5]) / det;
++  inv[3] = mul_add(-a[3], a[8], a[5] * a[6]) / det;
++  inv[4] = mul_add(-a[2], a[6], a[0] * a[8]) / det;
++  inv[5] = mul_add(-a[0], a[5], a[2] * a[3]) / det;
++  inv[6] = mul_add(-a[4], a[6], a[3] * a[7]) / det;
++  inv[7] = mul_add(-a[0], a[7], a[1] * a[6]) / det;
++  inv[8] = mul_add(-a[1], a[3], a[0] * a[4]) / det;
++  for (int k = 0; k < 9; ++k) {
++    if (!std::isfinite(inv[k])) {
++      return false;
++    }
++  }
++  return true;
++}
++
++double inf_norm(const double m[9]) {
++  double norm = 0.0;
++  for (int row = 0; row < 3; ++row) {
++    const double a = std::abs(m[3 * row]);
++    const double b = std::abs(m[3 * row + 1]);
++    const double c = std::abs(m[3 * row + 2]);
++    const double sum = (a + b) + c;
++    norm = std::max(norm, sum);
++  }
++  return norm;
++}
++
++bool well_conditioned(const double cell[9], const double inv[9]) {
++  const double eps = std::numeric_limits<double>::epsilon();
++  const double cond = (inf_norm(cell) * inf_norm(inv)) * eps;
++  return cond <= std::sqrt(eps);
++}
++
++std::int64_t checked_index(double value) {
++  const double limit = std::ldexp(1.0, 63);
++  if (!std::isfinite(value) || value <= -limit || value >= limit) {
++    throw std::overflow_error("periodic image index is out of range");
++  }
++  return static_cast<std::int64_t>(value);
++}
++
++template <bool Hardware>
++double squared(double x, double y, double z) {
++  return fdot3<Hardware>(x, x, y, y, z, z);
++}
++
++// Periodic rows of the cell, LLL-reduced. b holds the reduced rows and
++// u the integer change of basis, b[r] = sum_j u[r][j] * cell row rows[j].
++struct ReducedRows {
++  int n = 0;
++  int rows[3] = {};
++  double b[3][3] = {};
++  double u[3][3] = {};
++};
++
++double dot3(const double x[3], const double y[3]) {
++  return fdot3<false>(x[0], y[0], x[1], y[1], x[2], y[2]);
++}
++
++// Gram-Schmidt of the first n rows: bstar and the squared norms.
++void gram_schmidt(const ReducedRows &r, double bstar[3][3], double norm2[3],
++                  double mu[3][3]) {
++  for (int i = 0; i < r.n; ++i) {
++    for (int c = 0; c < 3; ++c)
++      bstar[i][c] = r.b[i][c];
++    for (int j = 0; j < i; ++j) {
++      mu[i][j] = dot3(r.b[i], bstar[j]) / norm2[j];
++      for (int c = 0; c < 3; ++c)
++        bstar[i][c] = mul_add(-mu[i][j], bstar[j][c], bstar[i][c]);
++    }
++    norm2[i] = dot3(bstar[i], bstar[i]);
++  }
++}
++
++// LLL with delta = 0.99 on at most three rows. Each swap multiplies the
++// potential prod_i |b*_i|^(2(n-i)) by less than delta, and the potential is
++// bounded below by the lattice, so the loop terminates. kLllCap is a guard
++// on top of that argument, not a substitute: it throws instead of spinning.
++ReducedRows lll_rows(const double cell[9], const bool periodic[3]) {
++  ReducedRows r;
++  for (int k = 0; k < 3; ++k) {
++    if (!periodic[k]) {
++      continue;
++    }
++    r.rows[r.n] = k;
++    for (int c = 0; c < 3; ++c)
++      r.b[r.n][c] = cell[3 * k + c];
++    r.u[r.n][r.n] = 1.0;
++    ++r.n;
++  }
++  double bstar[3][3] = {};
++  double norm2[3] = {};
++  double mu[3][3] = {};
++  gram_schmidt(r, bstar, norm2, mu);
++  int i = 1;
++  int steps = 0;
++  while (i < r.n) {
++    if (++steps > kLllCap) {
++      throw std::overflow_error("periodic cell reduction did not converge");
++    }
++    for (int j = i - 1; j >= 0; --j) {
++      const double q = std::round(mu[i][j]);
++      if (q == 0.0) {
++        continue;
++      }
++      if (!(std::fabs(q) < 0x1p52)) {
++        throw std::overflow_error("periodic cell reduction is out of range");
++      }
++      for (int c = 0; c < 3; ++c) {
++        r.b[i][c] = mul_add(-q, r.b[j][c], r.b[i][c]);
++        r.u[i][c] = mul_add(-q, r.u[j][c], r.u[i][c]);
++      }
++      gram_schmidt(r, bstar, norm2, mu);
++    }
++    if (norm2[i] >= (0.99 - mu[i][i - 1] * mu[i][i - 1]) * norm2[i - 1]) {
++      ++i;
++      continue;
++    }
++    for (int c = 0; c < 3; ++c) {
++      std::swap(r.b[i][c], r.b[i - 1][c]);
++      std::swap(r.u[i][c], r.u[i - 1][c]);
++    }
++    gram_schmidt(r, bstar, norm2, mu);
++    i = std::max(i - 1, 1);
++  }
++  return r;
++}
++
++// Minimum image over the periodic rows through an LLL-reduced basis. A
++// lattice point v within distance R of the in-span part of the target has
++// reduced coordinates m_i = d_i . v, so |m_i - d_i . p| <= |d_i| R, where
++// d_i are the dual rows inside the span. For a reduced basis that box has
++// a small constant size. Candidates are evaluated with the same sub_image
++// and squared as search_bounds, in cell-row coordinates, and ties go to the
++// lexicographically smallest index triple, the one search_bounds keeps.
++template <bool Hardware>
++void search_reduced(const double cell[9], const bool periodic[3],
++                    const double reduced[3], double &dx, double &dy,
++                    double &dz) {
++  const ReducedRows r = lll_rows(cell, periodic);
++  const int n = r.n;
++  double g[3][3] = {};
++  for (int a = 0; a < n; ++a)
++    for (int b = 0; b < n; ++b)
++      g[a][b] = dot3(r.b[a], r.b[b]);
++  double gi[3][3] = {};
++  if (n == 1) {
++    gi[0][0] = 1.0 / g[0][0];
++  } else if (n == 2) {
++    const double det = mul_add(-g[0][1], g[1][0], g[0][0] * g[1][1]);
++    gi[0][0] = g[1][1] / det;
++    gi[1][1] = g[0][0] / det;
++    gi[0][1] = -g[0][1] / det;
++    gi[1][0] = -g[1][0] / det;
++  } else {
++    double flat[9];
++    for (int a = 0; a < 3; ++a)
++      for (int b = 0; b < 3; ++b)
++        flat[3 * a + b] = g[a][b];
++    double finv[9];
++    if (!invert(flat, finv)) {
++      throw std::invalid_argument("periodic cell must be nonsingular");
++    }
++    for (int a = 0; a < 3; ++a)
++      for (int b = 0; b < 3; ++b)
++        gi[a][b] = finv[3 * a + b];
++  }
++  double dual_rows[3][3] = {};
++  double f[3] = {};
++  for (int a = 0; a < n; ++a) {
++    for (int c = 0; c < 3; ++c) {
++      double acc = 0.0;
++      for (int b = 0; b < n; ++b)
++        acc = mul_add(gi[a][b], r.b[b][c], acc);
++      dual_rows[a][c] = acc;
++    }
++    f[a] = dot3(dual_rows[a], reduced);
++  }
++  // In-span residual of the rounded (Babai) point bounds the search radius.
++  double e[3] = {};
++  for (int c = 0; c < 3; ++c) {
++    double acc = 0.0;
++    for (int a = 0; a < n; ++a)
++      acc = mul_add(f[a] - std::round(f[a]), r.b[a][c], acc);
++    e[c] = acc;
++  }
++  const double rin = std::sqrt(dot3(e, e)) * (1.0 + 0x1p-20);
++  double lo[3] = {};
++  double hi[3] = {};
++  double box = 1.0;
++  for (int a = 0; a < n; ++a) {
++    const double ext = rin * std::sqrt(dot3(dual_rows[a], dual_rows[a]));
++    lo[a] = std::floor(f[a] - ext) - 1.0;
++    hi[a] = std::ceil(f[a] + ext) + 1.0;
++    box *= hi[a] - lo[a] + 1.0;
++  }
++  if (!(box <= kReducedCap)) {
++    throw std::overflow_error("periodic image search count is too large");
++  }
++  double best[3] = {reduced[0], reduced[1], reduced[2]};
++  double best2 = squared<Hardware>(best[0], best[1], best[2]);
++  double best_idx[3] = {0.0, 0.0, 0.0};
++  bool have = false;
++  double m[3] = {};
++  const auto visit = [&] {
++    double idx[3] = {0.0, 0.0, 0.0};
++    for (int a = 0; a < n; ++a)
++      for (int j = 0; j < n; ++j)
++        idx[r.rows[j]] = mul_add(m[a], r.u[a][j], idx[r.rows[j]]);
++    double cand[3];
++    for (int c = 0; c < 3; ++c)
++      cand[c] = sub_image<Hardware>(reduced[c], idx[0], cell[c], idx[1],
++                                    cell[3 + c], idx[2], cell[6 + c]);
++    const double r2 = squared<Hardware>(cand[0], cand[1], cand[2]);
++    const bool lex_first =
++        idx[0] < best_idx[0] ||
++        (idx[0] == best_idx[0] &&
++         (idx[1] < best_idx[1] ||
++          (idx[1] == best_idx[1] && idx[2] < best_idx[2])));
++    if (!have || r2 < best2 || (r2 == best2 && lex_first)) {
++      have = true;
++      best2 = r2;
++      for (int c = 0; c < 3; ++c) {
++        best[c] = cand[c];
++        best_idx[c] = idx[c];
++      }
++    }
++  };
++  for (m[0] = lo[0]; m[0] <= hi[0]; m[0] += 1.0) {
++    if (n == 1) {
++      visit();
++      continue;
++    }
++    for (m[1] = lo[1]; m[1] <= hi[1]; m[1] += 1.0) {
++      if (n == 2) {
++        visit();
++        continue;
++      }
++      for (m[2] = lo[2]; m[2] <= hi[2]; m[2] += 1.0)
++        visit();
++    }
++  }
++  dx = best[0];
++  dy = best[1];
++  dz = best[2];
++}
++
++template <bool Hardware>
++void search_bounds(const double cell[9], const double inv[9],
++                   const double dual[3], const bool periodic[3], double &dx,
++                   double &dy, double &dz) {
++  double reduced[3] = {dx, dy, dz};
++  double initial[3] = {};
++  for (int k = 0; k < 3; ++k) {
++    if (!periodic[k]) {
++      continue;
++    }
++    initial[k] = std::round(
++        frac_of<Hardware>(reduced[0], reduced[1], reduced[2], inv, k));
++    checked_index(initial[k]);
++  }
++  for (int c = 0; c < 3; ++c) {
++    reduced[c] = sub_image<Hardware>(reduced[c], initial[0], cell[c], initial[1],
++                                    cell[3 + c], initial[2], cell[6 + c]);
++  }
++  double best[3] = {reduced[0], reduced[1], reduced[2]};
++  double best2 = squared<Hardware>(best[0], best[1], best[2]);
++  const double radius = std::sqrt(best2);
++  std::int64_t low[3] = {};
++  std::int64_t high[3] = {};
++  double span[3][2] = {};
++  double box = 1.0;
++  for (int k = 0; k < 3; ++k) {
++    if (periodic[k]) {
++      const double f = frac_of<Hardware>(reduced[0], reduced[1], reduced[2], inv, k);
++      const double extent = radius * dual[k];
++      span[k][0] = std::floor(f - extent) - 1.0;
++      span[k][1] = std::ceil(f + extent) + 1.0;
++      box *= span[k][1] - span[k][0] + 1.0;
++    }
++  }
++  // The box comes from the dual norms of the full cell and the whole
++  // displacement length. A thin or strongly sheared cell, or a long
++  // displacement along an open direction, makes it astronomically large.
++  // Those cases go to a reduced-basis search over the periodic rows.
++  if (!(box <= kExhaustiveCap)) {
++    search_reduced<Hardware>(cell, periodic, reduced, dx, dy, dz);
++    return;
++  }
++  std::uint64_t count = 1;
++  for (int k = 0; k < 3; ++k) {
++    if (periodic[k]) {
++      low[k] = checked_index(span[k][0]);
++      high[k] = checked_index(span[k][1]);
++    }
++    const auto width = static_cast<std::uint64_t>(high[k]) -
++                       static_cast<std::uint64_t>(low[k]) + 1;
++    if (width == 0 ||
++        count > static_cast<std::uint64_t>(
++                    std::numeric_limits<std::int64_t>::max()) /
++                    width) {
++      throw std::overflow_error("periodic image search count is too large");
++    }
++    count *= width;
++  }
++  for (auto i = low[0]; i <= high[0]; ++i) {
++    for (auto j = low[1]; j <= high[1]; ++j) {
++      for (auto k = low[2]; k <= high[2]; ++k) {
++        double cand[3];
++        for (int c = 0; c < 3; ++c) {
++          cand[c] = sub_image<Hardware>(reduced[c], static_cast<double>(i), cell[c],
++                                       static_cast<double>(j), cell[3 + c],
++                                       static_cast<double>(k), cell[6 + c]);
++        }
++        const double r2 = squared<Hardware>(cand[0], cand[1], cand[2]);
++        if (r2 < best2) {
++          best[0] = cand[0];
++          best[1] = cand[1];
++          best[2] = cand[2];
++          best2 = r2;
++        }
++      }
++    }
++  }
++  dx = best[0];
++  dy = best[1];
++  dz = best[2];
++}
++
++template <bool Hardware>
++void search_narrow(const double cell[9], const double inv[9],
++                   const bool periodic[3], double &dx, double &dy,
++                   double &dz) {
++  int base[3] = {};
++  for (int k = 0; k < 3; ++k) {
++    if (!periodic[k]) {
++      continue;
++    }
++    const double f = frac_of<Hardware>(dx, dy, dz, inv, k);
++    if (!std::isfinite(f)) {
++      throw std::overflow_error("periodic image index is out of range");
++    }
++    base[k] = static_cast<int>(checked_index(std::round(f)));
++  }
++  double reduced[3] = {dx, dy, dz};
++  for (int c = 0; c < 3; ++c) {
++    reduced[c] =
++        sub_image<Hardware>(reduced[c], static_cast<double>(base[0]), cell[c],
++                            static_cast<double>(base[1]), cell[3 + c],
++                            static_cast<double>(base[2]), cell[6 + c]);
++  }
++  double best[3] = {reduced[0], reduced[1], reduced[2]};
++  double best2 = squared<Hardware>(best[0], best[1], best[2]);
++  for (int i = -1; i <= 1; ++i) {
++    if (!periodic[0] && i != 0) {
++      continue;
++    }
++    for (int j = -1; j <= 1; ++j) {
++      if (!periodic[1] && j != 0) {
++        continue;
++      }
++      for (int k = -1; k <= 1; ++k) {
++        if (!periodic[2] && k != 0) {
++          continue;
++        }
++        double cand[3];
++        for (int c = 0; c < 3; ++c) {
++          cand[c] = sub_image<Hardware>(reduced[c], static_cast<double>(i), cell[c],
++                                       static_cast<double>(j), cell[3 + c],
++                                       static_cast<double>(k), cell[6 + c]);
++        }
++        const double r2 = squared<Hardware>(cand[0], cand[1], cand[2]);
++        if (r2 < best2) {
++          best2 = r2;
++          best[0] = cand[0];
++          best[1] = cand[1];
++          best[2] = cand[2];
++        }
++      }
++    }
++  }
++  dx = best[0];
++  dy = best[1];
++  dz = best[2];
++}
++
++void dual_of(const double inv[9], double dual[3]) {
++  for (int k = 0; k < 3; ++k) {
++    dual[k] = std::hypot(inv[k], inv[3 + k], inv[6 + k]);
++    if (!std::isfinite(dual[k])) {
++      throw std::overflow_error("periodic cell inverse is not finite");
++    }
++  }
++}
++
++} // namespace
++
++MinimumImage::MinimumImage(const double *cell,
++                           const std::array<bool, 3> &periodic)
++    : periodic_(periodic) {
++  for (int k = 0; k < 9; ++k) {
++    if (!std::isfinite(cell[k])) {
++      throw std::invalid_argument("periodic cell must be finite");
++    }
++    cell_[static_cast<std::size_t>(k)] = cell[k];
++  }
++  double raw[9];
++  for (int k = 0; k < 9; ++k) {
++    raw[k] = cell_[static_cast<std::size_t>(k)];
++  }
++  double inv[9];
++  if (!invert(raw, inv)) {
++    throw std::invalid_argument("periodic cell must be nonsingular");
++  }
++  double basis[3][3] = {
++      {raw[0], raw[1], raw[2]},
++      {raw[3], raw[4], raw[5]},
++      {raw[6], raw[7], raw[8]},
++  };
++  bool narrow = !well_conditioned(raw, inv);
++  if (narrow) {
++    minkowski_reduce(basis);
++    double reduced[9];
++    for (int row = 0; row < 3; ++row) {
++      for (int col = 0; col < 3; ++col) {
++        reduced[3 * row + col] = basis[row][col];
++      }
++    }
++    double rinv[9];
++    if (!invert(reduced, rinv)) {
++      throw std::invalid_argument("periodic cell must be nonsingular");
++    }
++    for (int k = 0; k < 9; ++k) {
++      cell_[static_cast<std::size_t>(k)] = reduced[k];
++      inverse_[static_cast<std::size_t>(k)] = rinv[k];
++    }
++    narrow = !well_conditioned(reduced, rinv);
++    if (!narrow) {
++      dual_of(rinv, dual_norm_.data());
++    }
++  } else {
++    for (int k = 0; k < 9; ++k) {
++      inverse_[static_cast<std::size_t>(k)] = inv[k];
++    }
++    dual_of(inv, dual_norm_.data());
++  }
++  narrow_ = narrow;
++}
++
++namespace {
++
++template <bool Hardware>
++void fold_search(bool narrow, const double cell[9], const double inv[9],
++                 const double dual[3], const bool periodic[3], double &dx,
++                 double &dy, double &dz) {
++  if (narrow) {
++    search_narrow<Hardware>(cell, inv, periodic, dx, dy, dz);
++    return;
++  }
++  search_bounds<Hardware>(cell, inv, dual, periodic, dx, dy, dz);
++}
++
++// The attribute keeps vfmadd in this body. The caller enters it only after
++// glibc reports that the processor's FMA is usable. MSVC has no target
++// attribute; this body then calls std::fma, and the caller keeps the
++// portable path unless a runtime check selects it.
++#if defined(__GNUC__) || defined(__clang__)
++__attribute__((target("fma"), noinline, flatten))
++#endif
++void fold_hardware(bool narrow, const double cell[9], const double inv[9],
++                   const double dual[3], const bool periodic[3], double &dx,
++                   double &dy, double &dz) {
++  fold_search<true>(narrow, cell, inv, dual, periodic, dx, dy, dz);
++}
++
++} // namespace
++
++void MinimumImage::fold(double &dx, double &dy, double &dz) const {
++  if (!std::isfinite(dx) || !std::isfinite(dy) || !std::isfinite(dz)) {
++    throw std::invalid_argument("pair displacement must be finite");
++  }
++  bool periodic[3] = {periodic_[0], periodic_[1], periodic_[2]};
++  double cell[9];
++  double inv[9];
++  for (int k = 0; k < 9; ++k) {
++    cell[k] = cell_[static_cast<std::size_t>(k)];
++    inv[k] = inverse_[static_cast<std::size_t>(k)];
++  }
++  double dual[3] = {dual_norm_[0], dual_norm_[1], dual_norm_[2]};
++  if (rgpot::simd::detail::glibc_fma_active()) {
++    fold_hardware(narrow_, cell, inv, dual, periodic, dx, dy, dz);
++    return;
++  }
++  fold_search<false>(narrow_, cell, inv, dual, periodic, dx, dy, dz);
++}
++
++} // namespace rgpot::nlist
+diff --git a/CppCore/rgpot/nlist/MinimumImage.hpp b/CppCore/rgpot/nlist/MinimumImage.hpp
+index 76b107e..a4d0de9 100644
+--- a/CppCore/rgpot/nlist/MinimumImage.hpp
++++ b/CppCore/rgpot/nlist/MinimumImage.hpp
+@@ -2,137 +2,36 @@
+ // MIT License
+ // Copyright 2023--present rgpot developers
+ 
+-#include <algorithm>
+ #include <array>
+-#include <cmath>
+ #include <cstdint>
+-#include <limits>
+-#include <stdexcept>
+ 
+ namespace rgpot::nlist {
+ 
+ /// Nearest periodic image for row-major lattice vectors: d - n H.
+-/// The dual-vector bound includes every image shorter than the initial
+-/// rounded fractional image. No lattice reduction or fixed image radius
+-/// is assumed. Singular or ill-conditioned cells and unrepresentable
+-/// search bounds throw.
++///
++/// The working type is double. Each product-sum is rgpot::simd::mul_add:
++/// a hardware fused multiply-add when the processor has one, and the
++/// exactly rounded TwoProduct/TwoSum emulation otherwise. This translation
++/// unit is compiled with contraction off, so the folded bits do not depend
++/// on the instruction set. A cell whose infinity-norm
++/// condition estimate would spend more than half the double significand is
++/// Minkowski-reduced (Nguyen and Stehlé, ACM Trans. Algorithms 5, 46
++/// (2009), doi:10.1145/1597036.1597050) and the image is taken in that
++/// basis. A reduced basis that is still too ill-conditioned searches the
++/// 27 images of coefficients in {-1, 0, 1}. Singular or non-finite cells
++/// throw. An index that does not fit in an int64 throws.
+ class MinimumImage {
+ public:
+   MinimumImage() = default;
+-  MinimumImage(const double *cell, const std::array<bool, 3> &periodic)
+-      : periodic_(periodic) {
+-    for (int k = 0; k < 9; ++k) {
+-      if (!std::isfinite(cell[k]))
+-        throw std::invalid_argument("periodic cell must be finite");
+-      cell_[k] = cell[k];
+-    }
+-    const auto &a = cell_;
+-    const long double det = a[0] * (a[4] * a[8] - a[5] * a[7]) -
+-                            a[1] * (a[3] * a[8] - a[5] * a[6]) +
+-                            a[2] * (a[3] * a[7] - a[4] * a[6]);
+-    if (!std::isfinite(det) || det == 0.0L)
+-      throw std::invalid_argument("periodic cell must be nonsingular");
+-    inverse_ = {
+-        (a[4] * a[8] - a[5] * a[7]) / det, (a[2] * a[7] - a[1] * a[8]) / det,
+-        (a[1] * a[5] - a[2] * a[4]) / det, (a[5] * a[6] - a[3] * a[8]) / det,
+-        (a[0] * a[8] - a[2] * a[6]) / det, (a[2] * a[3] - a[0] * a[5]) / det,
+-        (a[3] * a[7] - a[4] * a[6]) / det, (a[1] * a[6] - a[0] * a[7]) / det,
+-        (a[0] * a[4] - a[1] * a[3]) / det};
+-    long double cell_norm = 0.0L, inverse_norm = 0.0L;
+-    for (int row = 0; row < 3; ++row) {
+-      long double cell_sum = 0.0L, inverse_sum = 0.0L;
+-      for (int col = 0; col < 3; ++col) {
+-        cell_sum += std::abs(cell_[3 * row + col]);
+-        inverse_sum += std::abs(inverse_[3 * row + col]);
+-      }
+-      cell_norm = std::max(cell_norm, cell_sum);
+-      inverse_norm = std::max(inverse_norm, inverse_sum);
+-    }
+-    const long double eps = std::numeric_limits<long double>::epsilon();
+-    // Refuse cells whose condition estimate consumes over half the
+-    // working precision; finite image bounds alone do not protect the inverse.
+-    if (!(cell_norm * inverse_norm * eps <= std::sqrt(eps)))
+-      throw std::invalid_argument(
+-          "periodic cell is too ill-conditioned for image bounds");
+-    for (int k = 0; k < 3; ++k) {
+-      dual_norm_[k] = std::hypot(inverse_[k], inverse_[3 + k], inverse_[6 + k]);
+-      if (!std::isfinite(dual_norm_[k]))
+-        throw std::overflow_error("periodic cell inverse is not finite");
+-    }
+-  }
+-
+-  void fold(double &dx, double &dy, double &dz) const {
+-    if (!std::isfinite(dx) || !std::isfinite(dy) || !std::isfinite(dz))
+-      throw std::invalid_argument("pair displacement must be finite");
+-    std::array<long double, 3> reduced{dx, dy, dz};
+-    std::array<long double, 3> initial{};
+-    for (int k = 0; k < 3; ++k) {
+-      if (periodic_[k])
+-        initial[k] =
+-            std::round(reduced[0] * inverse_[k] + reduced[1] * inverse_[3 + k] +
+-                       reduced[2] * inverse_[6 + k]);
+-      checkedIndex(initial[k]);
+-    }
+-    for (int c = 0; c < 3; ++c)
+-      for (int k = 0; k < 3; ++k)
+-        reduced[c] -= initial[k] * cell_[3 * k + c];
+-    auto best = reduced;
+-    long double best2 = squaredNorm(best);
+-    const long double radius = std::sqrt(best2);
+-    std::array<std::int64_t, 3> low{}, high{};
+-    std::uint64_t count = 1;
+-    for (int k = 0; k < 3; ++k) {
+-      if (periodic_[k]) {
+-        const long double f = reduced[0] * inverse_[k] +
+-                              reduced[1] * inverse_[3 + k] +
+-                              reduced[2] * inverse_[6 + k];
+-        const long double extent = radius * dual_norm_[k];
+-        // Outward integer rounding adds one lattice plane of numerical
+-        // margin around the real-arithmetic image bounds.
+-        low[k] = checkedIndex(std::floor(f - extent) - 1.0L);
+-        high[k] = checkedIndex(std::ceil(f + extent) + 1.0L);
+-      }
+-      const auto width = static_cast<std::uint64_t>(high[k]) -
+-                         static_cast<std::uint64_t>(low[k]) + 1;
+-      if (width == 0 || count > static_cast<std::uint64_t>(
+-                                    std::numeric_limits<std::int64_t>::max()) /
+-                                    width)
+-        throw std::overflow_error("periodic image search count is too large");
+-      count *= width;
+-    }
+-    for (auto i = low[0]; i <= high[0]; ++i)
+-      for (auto j = low[1]; j <= high[1]; ++j)
+-        for (auto k = low[2]; k <= high[2]; ++k) {
+-          std::array<long double, 3> candidate{};
+-          for (int c = 0; c < 3; ++c)
+-            candidate[c] =
+-                reduced[c] - i * cell_[c] - j * cell_[3 + c] - k * cell_[6 + c];
+-          const long double r2 = squaredNorm(candidate);
+-          if (r2 < best2) {
+-            best = candidate;
+-            best2 = r2;
+-          }
+-        }
+-    dx = static_cast<double>(best[0]);
+-    dy = static_cast<double>(best[1]);
+-    dz = static_cast<double>(best[2]);
+-  }
++  MinimumImage(const double *cell, const std::array<bool, 3> &periodic);
++  void fold(double &dx, double &dy, double &dz) const;
+ 
+ private:
+-  static long double squaredNorm(const std::array<long double, 3> &v) {
+-    return v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+-  }
+-  static std::int64_t checkedIndex(long double value) {
+-    const long double limit = std::ldexp(1.0L, 63);
+-    if (!std::isfinite(value) || value <= -limit + 1.0L ||
+-        value >= limit - 1.0L)
+-      throw std::overflow_error("periodic image index is out of range");
+-    return static_cast<std::int64_t>(value);
+-  }
+-  std::array<long double, 9> cell_{};
+-  std::array<long double, 9> inverse_{};
+-  std::array<long double, 3> dual_norm_{};
++  std::array<double, 9> cell_{};
++  std::array<double, 9> inverse_{};
++  std::array<double, 3> dual_norm_{};
+   std::array<bool, 3> periodic_{};
++  bool narrow_{false};
+ };
+ 
+ } // namespace rgpot::nlist
+diff --git a/CppCore/rgpot/nlist/PairListCache.hpp b/CppCore/rgpot/nlist/PairListCache.hpp
+index 9db8ab5..976553b 100644
+--- a/CppCore/rgpot/nlist/PairListCache.hpp
++++ b/CppCore/rgpot/nlist/PairListCache.hpp
+@@ -42,10 +42,45 @@
+ #include "rgpot/nlist/MinimumImage.hpp"
+ #include "rgpot/nlist/cell_visit.hpp"
+ #include "rgpot/nlist/vesin_visit.hpp"
++#include "rgpot/simd/exact_fma.hpp"
++
++#if defined(__GNUC__)
++#define RGPOT_PL_INLINE __attribute__((always_inline)) inline
++#else
++#define RGPOT_PL_INLINE inline
++#endif
++#if defined(__GNUC__) && defined(__x86_64__) && !defined(__FMA__)
++#define RGPOT_PL_FMA_DISPATCH 1
++// The loops must inline into the target("fma") clone to get vfmadd.
++#define RGPOT_PL_LOOP RGPOT_PL_INLINE
++#else
++#define RGPOT_PL_FMA_DISPATCH 0
++// One function per fold mode, as before: merging them costs registers.
++#define RGPOT_PL_LOOP inline
++#endif
+ 
+ namespace rgpot {
+ namespace nlist {
+ 
++/// One fused multiply-add for the pair force updates, always inlined so the
++/// loop keeps its registers. ``Hw``: the caller runs with FMA enabled (the
++/// unit's own ISA or a target("fma") clone); otherwise the exact software
++/// form, which only a CPU without FMA reaches.
++template <bool Hw>
++RGPOT_PL_INLINE double pairFma(double a, double b, double c) {
++#if defined(__GNUC__) && (defined(__FMA__) || defined(__ARM_FEATURE_FMA))
++  return __builtin_fma(a, b, c);
++#elif RGPOT_PL_FMA_DISPATCH
++  if constexpr (Hw) {
++    return __builtin_fma(a, b, c);
++  } else {
++    return simd::fma_quick(a, b, c);
++  }
++#else
++  return simd::mul_add(a, b, c);
++#endif
++}
++
+ /// One pair's contribution, as a radial kernel returns it: the energy and
+ /// ``fscale = -V'(r) / r``, so the force on atom i is ``fscale * (r_i - r_j)``.
+ struct PairTerm {
+@@ -242,20 +277,45 @@ public:
+   template <typename Kernel, typename Observer = IgnorePairContribution>
+   [[nodiscard]] double accumulate(const double *R, double *F, Kernel &&kernel,
+                                   Observer &&observe = {}) const {
++#if RGPOT_PL_FMA_DISPATCH
++    // Baseline x86-64 unit: pick the fused-update variant once per call.
++    if (simd::detail::glibc_fma_active()) {
++      return accumulateHw(R, F, kernel, observe);
++    }
++#endif
++    return accumulateFold<false>(R, F, kernel, observe);
++  }
++
++private:
++  template <bool Hw, typename Kernel, typename Observer>
++  RGPOT_PL_LOOP double accumulateFold(const double *R, double *F,
++                                      Kernel &kernel,
++                                      Observer &observe) const {
+     switch (fold_) {
+     case FoldMode::None:
+-      return accumulateImpl<FoldMode::None>(R, F, kernel, observe);
++      return accumulateImpl<FoldMode::None, Hw>(R, F, kernel, observe);
+     case FoldMode::Round:
+-      return accumulateImpl<FoldMode::Round>(R, F, kernel, observe);
++      return accumulateImpl<FoldMode::Round, Hw>(R, F, kernel, observe);
+     case FoldMode::Coded:
+-      return accumulateImpl<FoldMode::Coded>(R, F, kernel, observe);
++      return accumulateImpl<FoldMode::Coded, Hw>(R, F, kernel, observe);
+     case FoldMode::General:
+-      return accumulateImpl<FoldMode::General>(R, F, kernel, observe);
++      return accumulateImpl<FoldMode::General, Hw>(R, F, kernel, observe);
+     }
+     return 0.0;
+   }
+ 
+-private:
++#if RGPOT_PL_FMA_DISPATCH
++  // The whole loop, kernel included, is compiled for FMA here so the fused
++  // updates are single vfmadd instructions. Contraction stays off so the
++  // kernel rounds as it does on the baseline path.
++  template <typename Kernel, typename Observer>
++  __attribute__((target("fma"), optimize("-ffp-contract=off"), noinline))
++  double accumulateHw(const double *R, double *F, Kernel &kernel,
++                      Observer &observe) const {
++    return accumulateFold<true>(R, F, kernel, observe);
++  }
++#endif
++
+   template <FoldMode M, typename Fn>
+   void forEachImpl(const double *R, Fn &fn) const {
+     const double cutoff2 = opt_.cutoff * opt_.cutoff;
+@@ -277,9 +337,10 @@ private:
+     }
+   }
+ 
+-  template <FoldMode M, typename Kernel, typename Observer>
+-  [[nodiscard]] double accumulateImpl(const double *R, double *F,
+-                                      Kernel &kernel, Observer &observe) const {
++  template <FoldMode M, bool Hw, typename Kernel, typename Observer>
++  [[nodiscard]] RGPOT_PL_LOOP double
++  accumulateImpl(const double *R, double *F, Kernel &kernel,
++                 Observer &observe) const {
+     const double cutoff2 = opt_.cutoff * opt_.cutoff;
+     const Fold fold = makeFold();
+     double energy = 0.0;
+@@ -300,15 +361,15 @@ private:
+           const PairTerm t =
+               kernel(static_cast<int32_t>(i), static_cast<int32_t>(j), r2);
+           energy += t.energy;
+-          const double fx = t.fscale * dx;
+-          const double fy = t.fscale * dy;
+-          const double fz = t.fscale * dz;
+-          fxi += fx;
+-          fyi += fy;
+-          fzi += fz;
+-          F[3 * j] -= fx;
+-          F[3 * j + 1] -= fy;
+-          F[3 * j + 2] -= fz;
++          // Explicit fused updates: left to -ffp-contract, GCC 15 fuses
++          // these differently in the Round and Coded instantiations, and a
++          // cold call then differs in the last bit from a captured one.
++          fxi = pairFma<Hw>(t.fscale, dx, fxi);
++          fyi = pairFma<Hw>(t.fscale, dy, fyi);
++          fzi = pairFma<Hw>(t.fscale, dz, fzi);
++          F[3 * j] = pairFma<Hw>(-t.fscale, dx, F[3 * j]);
++          F[3 * j + 1] = pairFma<Hw>(-t.fscale, dy, F[3 * j + 1]);
++          F[3 * j + 2] = pairFma<Hw>(-t.fscale, dz, F[3 * j + 2]);
+           observe(t.fscale, dx, dy, dz);
+         }
+       }
+diff --git a/CppCore/rgpot/simd/exact_fma.hpp b/CppCore/rgpot/simd/exact_fma.hpp
+new file mode 100644
+index 0000000..91a1da4
+--- /dev/null
++++ b/CppCore/rgpot/simd/exact_fma.hpp
+@@ -0,0 +1,312 @@
++#pragma once
++// MIT License
++// Copyright 2023--present rgpot developers
++
++#include <cmath>
++#include <cstdint>
++#include <cstring>
++#include <limits>
++
++namespace rgpot::simd {
++
++#if defined(__GNUC__)
++#define RGPOT_NO_FP_CONTRACT __attribute__((optimize("-ffp-contract=off")))
++#else
++#define RGPOT_NO_FP_CONTRACT
++#endif
++
++namespace detail {
++
++// Veltkamp split at 2^27. The product of the two 26-bit halves fits in a
++// double, which is what makes TwoProd exact for finite normals.
++inline constexpr double kFmaSplit = 134217729.0;
++
++RGPOT_NO_FP_CONTRACT inline void two_sum(double a, double b, double &s, double &e) {
++  s = a + b;
++  const double z = s - a;
++  e = (a - (s - z)) + (b - z);
++}
++
++RGPOT_NO_FP_CONTRACT inline void two_prod(double a, double b, double &p, double &e) {
++  p = a * b;
++  const double ca = kFmaSplit * a;
++  const double ah = ca - (ca - a);
++  const double al = a - ah;
++  const double cb = kFmaSplit * b;
++  const double bh = cb - (cb - b);
++  const double bl = b - bh;
++  e = ((ah * bh - p) + ah * bl + al * bh) + al * bl;
++}
++
++// True when TwoProd and the following sums stay inside the normal range,
++// so the split factor cannot overflow and the product cannot underflow.
++inline bool fma_dekker_domain(double a, double b, double c) {
++  if (!std::isfinite(a) || !std::isfinite(b) || !std::isfinite(c)) {
++    return false;
++  }
++  const double aa = std::fabs(a);
++  const double bb = std::fabs(b);
++  const double cc = std::fabs(c);
++  if (aa > 0x1p480 || bb > 0x1p480 || cc > 0x1p900) {
++    return false;
++  }
++  if ((aa != 0.0 && aa < 0x1p-480) || (bb != 0.0 && bb < 0x1p-480) ||
++      (cc != 0.0 && cc < 0x1p-900)) {
++    return false;
++  }
++  return true;
++}
++
++// Next representable value from pred toward the sign of sh.
++RGPOT_NO_FP_CONTRACT inline double next_toward(double pred, double sh) {
++  std::uint64_t ub = 0;
++  std::memcpy(&ub, &pred, sizeof(ub));
++  if (std::signbit(sh) == std::signbit(pred)) {
++    ub += 1;
++  } else {
++    ub -= 1;
++  }
++  double out = 0;
++  std::memcpy(&out, &ub, sizeof(out));
++  return out;
++}
++
++// pred + (sh + sl) rounded to nearest, ties to even. pred is the high part.
++RGPOT_NO_FP_CONTRACT inline double round_residual(double pred, double sh, double sl) {
++  if (sh == 0.0 || pred == 0.0 || !std::isfinite(pred)) {
++    return pred + (sh + sl);
++  }
++  std::uint64_t ub = 0;
++  std::memcpy(&ub, &pred, sizeof(ub));
++  const int be = static_cast<int>((ub >> 52) & 0x7ff);
++  if (be == 0 || be == 0x7ff) {
++    return pred + (sh + sl);
++  }
++  const bool pow2 = (ub & 0xfffffffffffffULL) == 0;
++  const bool down = std::signbit(sh) != std::signbit(pred);
++  const int ulp_exp = be - 1023 - 52 - ((pow2 && down) ? 1 : 0);
++  const int mid_be = ulp_exp - 1 + 1023;
++  double mid = 0;
++  if (mid_be <= 0 || mid_be >= 0x7ff) {
++    mid = std::copysign(std::ldexp(1.0, ulp_exp - 1), sh);
++  } else {
++    std::uint64_t mb = static_cast<std::uint64_t>(mid_be) << 52;
++    if (std::signbit(sh)) {
++      mb |= 0x8000000000000000ULL;
++    }
++    std::memcpy(&mid, &mb, sizeof(mid));
++  }
++  const double diff = sh - mid;
++  double d2 = 0;
++  double e2 = 0;
++  two_sum(diff, sl, d2, e2);
++  if (d2 == 0.0 && e2 == 0.0) {
++    return pred + mid;
++  }
++  const bool up = (d2 > 0.0 && mid > 0.0) || (d2 < 0.0 && mid < 0.0) ||
++                  (d2 == 0.0 && ((e2 > 0.0 && mid > 0.0) || (e2 < 0.0 && mid < 0.0)));
++  if (!up) {
++    return pred;
++  }
++  return next_toward(pred, sh);
++}
++
++// Dekker TwoProd plus a TwoSum chain. The residual's sticky bit breaks
++// ties, including the tie just below a power of two. The caller rejects
++// a zero, a subnormal, or a non-finite result and uses std::fma there.
++RGPOT_NO_FP_CONTRACT inline double fma_dekker(double a, double b, double c) {
++  double p = 0;
++  double pe = 0;
++  two_prod(a, b, p, pe);
++  double s = 0;
++  double t = 0;
++  two_sum(p, c, s, t);
++  double v = 0;
++  double z = 0;
++  two_sum(t, pe, v, z);
++  double r = 0;
++  double h = 0;
++  two_sum(s, v, r, h);
++  double rem = 0;
++  double u = 0;
++  two_sum(h, z, rem, u);
++  if (u == 0.0) {
++    return r + rem;
++  }
++  double pred = 0;
++  double err = 0;
++  two_sum(r, rem, pred, err);
++  double sh = 0;
++  double sl = 0;
++  two_sum(err, u, sh, sl);
++  return round_residual(pred, sh, sl);
++}
++
++// True when rem is exactly half an ulp of pred, the case where r+rem can
++// round the tie the wrong way and the sticky bit has to decide.
++RGPOT_NO_FP_CONTRACT inline bool rem_is_half_ulp(double pred, double rem) {
++  std::uint64_t ub = 0;
++  std::memcpy(&ub, &pred, sizeof(ub));
++  const int be = static_cast<int>((ub >> 52) & 0x7ff);
++  if (be == 0 || be == 0x7ff) {
++    return true;
++  }
++  const bool pow2 = (ub & 0xfffffffffffffULL) == 0;
++  const bool down = std::signbit(rem) != std::signbit(pred);
++  const int mid_be = be - 53 - ((pow2 && down) ? 1 : 0);
++  if (mid_be <= 0 || mid_be >= 0x7ff) {
++    return true;
++  }
++  std::uint64_t mb = static_cast<std::uint64_t>(mid_be) << 52;
++  if (std::signbit(rem)) {
++    mb |= 0x8000000000000000ULL;
++  }
++  double half = 0;
++  std::memcpy(&half, &mb, sizeof(half));
++  return std::fabs(rem) == std::fabs(half);
++}
++
++// glibc's usable-FMA bit follows the hwcaps tunable. CPUID stays set when
++// that tunable masks FMA, so this is the bit that selects the software path.
++// The index is x86_cpu_FMA from <sys/platform/x86.h> (leaf 1, ECX, bit 12).
++// The reader is weak: a sysroot whose libc stub lacks GLIBC_2.33 still links,
++// and a runtime older than 2.33 leaves the symbol null.
++#if defined(__x86_64__) && defined(__GLIBC__)
++struct glibc_cpuid_leaf {
++  unsigned int cpuid_array[4];
++  unsigned int active_array[4];
++};
++extern "C" const glibc_cpuid_leaf *__x86_get_cpuid_feature_leaf(unsigned int)
++    __attribute__((weak, pure));
++#endif
++
++inline bool glibc_fma_active() {
++#if defined(__x86_64__) && defined(__GLIBC__)
++  static const bool active = [] {
++    if (__x86_get_cpuid_feature_leaf == nullptr) {
++      return false;
++    }
++    constexpr unsigned int kFma =
++        2u * 8u * static_cast<unsigned int>(sizeof(unsigned int)) + 12u;
++    constexpr unsigned int kLeafSpan =
++        8u * static_cast<unsigned int>(sizeof(unsigned int)) * 4u;
++    const glibc_cpuid_leaf *leaf = __x86_get_cpuid_feature_leaf(kFma / kLeafSpan);
++    const unsigned int reg = kFma & (kLeafSpan - 1u);
++    const unsigned int bit = reg & (8u * sizeof(unsigned int) - 1u);
++    const unsigned int word = reg / (8u * sizeof(unsigned int));
++    return (leaf->active_array[word] & (1u << bit)) != 0;
++  }();
++  return active;
++#else
++  return false;
++#endif
++}
++
++} // namespace detail
++
++#if defined(__x86_64__)
++double exact_fma_hw(double a, double b, double c);
++double r2_hw(double dx, double dy, double dz);
++void r2_hw_n(const double *dx, const double *dy, const double *dz, double *out,
++             std::size_t n);
++#endif
++
++/// a*b+c with one rounding, the same bits as a hardware fused multiply-add.
++/// Normals in range use a Dekker product and a correctly rounded sum of the
++/// three exact parts. Zeros, subnormals, overflows, and non-finite values
++/// use std::fma.
++RGPOT_NO_FP_CONTRACT inline double exact_fma(double a, double b, double c) {
++  if (!detail::fma_dekker_domain(a, b, c)) {
++    return std::fma(a, b, c);
++  }
++  const double y = detail::fma_dekker(a, b, c);
++  if (y == 0.0 || !std::isfinite(y) || std::fabs(y) < 0x1p-1022) {
++    return std::fma(a, b, c);
++  }
++  return y;
++}
++
++// r+rem. This is a hardware fma on normal inputs except an exact half-ulp
++// tie, a zero, a subnormal, or a non-finite result. Callers that need those
++// cases use fma_quick. The exp polynomial and a squared distance do not.
++RGPOT_NO_FP_CONTRACT inline double fma_trunc(double a, double b, double c) {
++  double p = 0;
++  double pe = 0;
++  detail::two_prod(a, b, p, pe);
++  double s = 0;
++  double t = 0;
++  detail::two_sum(p, c, s, t);
++  double v = 0;
++  double z = 0;
++  detail::two_sum(t, pe, v, z);
++  double r = 0;
++  double h = 0;
++  detail::two_sum(s, v, r, h);
++  double rem = 0;
++  double u = 0;
++  detail::two_sum(h, z, rem, u);
++  (void)u;
++  return r + rem;
++}
++
++// Same bits as exact_fma. The rounded sum r+rem matches a hardware fma except
++// when the residual is exactly half an ulp (a tie) or the result is zero,
++// subnormal, or non-finite. Those lanes use exact_fma.
++RGPOT_NO_FP_CONTRACT inline double fma_quick(double a, double b, double c) {
++  if (!detail::fma_dekker_domain(a, b, c)) {
++    return exact_fma(a, b, c);
++  }
++  double p = 0;
++  double pe = 0;
++  detail::two_prod(a, b, p, pe);
++  double s = 0;
++  double t = 0;
++  detail::two_sum(p, c, s, t);
++  double v = 0;
++  double z = 0;
++  detail::two_sum(t, pe, v, z);
++  double r = 0;
++  double h = 0;
++  detail::two_sum(s, v, r, h);
++  double rem = 0;
++  double u = 0;
++  detail::two_sum(h, z, rem, u);
++  (void)u;
++  const double y = r + rem;
++  if (y == 0.0 || !std::isfinite(y) || std::fabs(y) < 0x1p-1022 ||
++      detail::rem_is_half_ulp(r, rem)) {
++    return exact_fma(a, b, c);
++  }
++  return y;
++}
++
++/// a*b+c, one rounding. A hardware instruction when this translation unit
++/// has one, or when glibc reports FMA usable. Otherwise fma_quick.
++RGPOT_NO_FP_CONTRACT inline double mul_add(double a, double b, double c) {
++#if defined(__FMA__) || defined(__ARM_FEATURE_FMA)
++  // The instruction, not std::fma: a glibc ifunc follows the hwcaps tunable
++  // and would run the software path while this unit can still emit FMA.
++  return __builtin_fma(a, b, c);
++#elif defined(__x86_64__)
++  if (detail::glibc_fma_active()) {
++    return exact_fma_hw(a, b, c);
++  }
++  return fma_quick(a, b, c);
++#else
++  return fma_quick(a, b, c);
++#endif
++}
++
++/// dx^2 + dy^2 + dz^2. The first square is a multiply. The two sums fuse.
++RGPOT_NO_FP_CONTRACT inline double r2_of(double dx, double dy, double dz) {
++#if defined(__x86_64__) && !defined(__FMA__) && !defined(__ARM_FEATURE_FMA)
++  if (detail::glibc_fma_active()) {
++    return r2_hw(dx, dy, dz);
++  }
++#endif
++  return mul_add(dz, dz, mul_add(dy, dy, dx * dx));
++}
++
++#undef RGPOT_NO_FP_CONTRACT
++
++} // namespace rgpot::simd
+diff --git a/CppCore/rgpot/simd/exact_fma_hw.cc b/CppCore/rgpot/simd/exact_fma_hw.cc
+new file mode 100644
+index 0000000..88e47ea
+--- /dev/null
++++ b/CppCore/rgpot/simd/exact_fma_hw.cc
+@@ -0,0 +1,18 @@
++// MIT License
++// Copyright 2023--present rgpot developers
++
++#include "rgpot/simd/exact_fma.hpp"
++
++namespace rgpot::simd {
++
++#if defined(__x86_64__)
++// Weak so a later link with the highway dispatch object, which defines the
++// same symbol, keeps a single copy. The attribute puts vfmadd in this
++// function while the caller stays on the baseline ISA.
++__attribute__((weak, target("fma"), noinline)) double
++exact_fma_hw(double a, double b, double c) {
++  return __builtin_fma(a, b, c);
++}
++#endif
++
++} // namespace rgpot::simd
+diff --git a/CppCore/tests/FoldDegenerateTest.cc b/CppCore/tests/FoldDegenerateTest.cc
+new file mode 100644
+index 0000000..5da41c3
+--- /dev/null
++++ b/CppCore/tests/FoldDegenerateTest.cc
+@@ -0,0 +1,82 @@
++// MIT License
++// Copyright 2023--present rgpot developers
++//
++// Thin and sheared cells that pass the conditioning check. Their search box
++// from the full-cell dual norms used to reach millions of candidates, so a
++// fold under some periodic masks never returned. The build registers this
++// test with a timeout.
++
++#include <array>
++#include <chrono>
++#include <cmath>
++#include <random>
++
++#include <catch2/catch_all.hpp>
++
++#include "rgpot/nlist/MinimumImage.hpp"
++
++namespace {
++
++double brute_r2(const double cell[9], const std::array<bool, 3> &periodic,
++                const double d[3], int span) {
++  double best = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
++  const int si = periodic[0] ? span : 0;
++  const int sj = periodic[1] ? span : 0;
++  const int sk = periodic[2] ? span : 0;
++  for (int i = -si; i <= si; ++i) {
++    for (int j = -sj; j <= sj; ++j) {
++      for (int k = -sk; k <= sk; ++k) {
++        const double x = d[0] - (i * cell[0] + j * cell[3] + k * cell[6]);
++        const double y = d[1] - (i * cell[1] + j * cell[4] + k * cell[7]);
++        const double z = d[2] - (i * cell[2] + j * cell[5] + k * cell[8]);
++        best = std::min(best, x * x + y * y + z * z);
++      }
++    }
++  }
++  return best;
++}
++
++} // namespace
++
++TEST_CASE("Fold returns on thin and sheared cells under every periodic mask",
++          "[PairList][triclinic][degenerate]") {
++  const double cells[2][9] = {
++      {1.0, 0.0, 0.0, 0.999, 0.05, 0.0, 0.3, 0.7, 0.01},
++      {2.0, 0.0, 0.0, 1.99, 1e-3, 0.0, 0.0, 0.0, 2.0},
++  };
++  std::mt19937_64 rng(11);
++  std::uniform_real_distribution<double> u(-3.0, 3.0);
++  const auto t0 = std::chrono::steady_clock::now();
++  for (const auto &cell : cells) {
++    for (int mask = 1; mask < 8; ++mask) {
++      const std::array<bool, 3> periodic{(mask & 1) != 0, (mask & 2) != 0,
++                                         (mask & 4) != 0};
++      const rgpot::nlist::MinimumImage image(cell, periodic);
++      for (int t = 0; t < 24; ++t) {
++        double d[3] = {u(rng), u(rng), u(rng)};
++        if (t % 6 == 0) {
++          // A long displacement along every axis, open ones included.
++          for (double &v : d)
++            v *= 1e5;
++        }
++        double g[3] = {d[0], d[1], d[2]};
++        image.fold(g[0], g[1], g[2]);
++        const double g2 = g[0] * g[0] + g[1] * g[1] + g[2] * g[2];
++        INFO("mask=" << mask << " d=" << d[0] << "," << d[1] << "," << d[2]);
++        REQUIRE(std::isfinite(g2));
++        // The fold subtracts a rounded image and then searches from it, so
++        // returning to the input leaves a few ulps of the cell entries.
++        const double d2 = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
++        REQUIRE(g2 <= d2 * (1.0 + 1e-9) + 1e-9);
++        if (t % 6 != 0) {
++          const double b2 = brute_r2(cell, periodic, d, 20);
++          REQUIRE(g2 <= b2 * (1.0 + 1e-9) + 1e-9);
++        }
++      }
++    }
++  }
++  const double wall = std::chrono::duration<double>(
++                          std::chrono::steady_clock::now() - t0)
++                          .count();
++  REQUIRE(wall < 20.0);
++}
+diff --git a/CppCore/tests/MinImageBench.cc b/CppCore/tests/MinImageBench.cc
+new file mode 100644
+index 0000000..9ee886b
+--- /dev/null
++++ b/CppCore/tests/MinImageBench.cc
+@@ -0,0 +1,73 @@
++// MIT License
++// Copyright 2023--present rgpot developers
++//
++// Micro-benchmark ported from the long-double fold comparison: 20000
++// displacements on one triclinic cell, and one cached pair-list rebuild
++// of 180 atoms. Prints one line per repeat so a caller can take the median.
++
++#include "rgpot/nlist/MinimumImage.hpp"
++#include "rgpot/nlist/PairListCache.hpp"
++
++#include <chrono>
++#include <cstdint>
++#include <iostream>
++#include <random>
++#include <string>
++#include <vector>
++
++namespace {
++
++template <typename Fn> double seconds(Fn &&fn) {
++  const auto t0 = std::chrono::steady_clock::now();
++  fn();
++  const auto t1 = std::chrono::steady_clock::now();
++  return std::chrono::duration<double>(t1 - t0).count();
++}
++
++} // namespace
++
++int main(int argc, char **argv) {
++  const std::string label = argc > 1 ? argv[1] : "fold";
++  const double triclinic[9] = {4.0, 0.2, 0.1, 0.3, 5.0, -0.2, 0.1, -0.3, 6.0};
++  const std::array<bool, 3> periodic{true, true, true};
++  const rgpot::nlist::MinimumImage image(triclinic, periodic);
++  std::mt19937_64 rng(1);
++  std::uniform_real_distribution<double> u(-20.0, 20.0);
++  constexpr int kN = 20000;
++  std::vector<double> disp(3 * kN);
++  for (double &v : disp)
++    v = u(rng);
++
++  constexpr int kAtoms = 180;
++  std::vector<double> R(3 * kAtoms);
++  std::uniform_real_distribution<double> p(0.0, 4.0);
++  for (double &v : R)
++    v = p(rng);
++  rgpot::nlist::CachedPairList::Options opt;
++  opt.cutoff = 3.0;
++  opt.skin = 1.0;
++  opt.periodic = periodic;
++
++  if (label == "fold") {
++    const double wall = seconds([&] {
++      double sink = 0.0;
++      for (int i = 0; i < kN; ++i) {
++        double dx = disp[3 * i], dy = disp[3 * i + 1], dz = disp[3 * i + 2];
++        image.fold(dx, dy, dz);
++        sink += dx + dy + dz;
++      }
++      if (sink == 0.0)
++        std::cerr << "sink\n";
++    });
++    std::cout << "fold_s " << wall << '\n';
++    return 0;
++  }
++  const double wall = seconds([&] {
++    rgpot::nlist::CachedPairList list;
++    list.rebuild(R.data(), kAtoms, triclinic, opt);
++    if (!list.valid(R.data(), kAtoms, triclinic, opt))
++      std::cerr << "invalid\n";
++  });
++  std::cout << "rebuild_s " << wall << '\n';
++  return 0;
++}
+diff --git a/CppCore/tests/MinImageIsaHash.cc b/CppCore/tests/MinImageIsaHash.cc
+new file mode 100644
+index 0000000..11b5484
+--- /dev/null
++++ b/CppCore/tests/MinImageIsaHash.cc
+@@ -0,0 +1,29 @@
++// MIT License
++// Copyright 2023--present rgpot developers
++
++#include "minimage_hash_samples.hpp"
++
++#include <catch2/catch_all.hpp>
++#include <limits>
++
++// SHA-256 of the raw little-endian f64 bytes from folded_displacement_hash.
++// scalar, SSE2, AVX2 and AVX-512 on this host, and NEON in CI, match it.
++// Product-sums are rgpot::simd::mul_add and the file is built with
++// contraction off.
++static constexpr const char *kFoldHash =
++    "d6f5cbaa04ac49e6f02ee64c10eb83d44d951756556924dcc17966453dcd8b11";
++
++TEST_CASE("Folded displacements hash the same on every instruction set",
++          "[PairList][isa]") {
++  const std::string got = rgpot::nlist::hashcheck::folded_displacement_hash();
++  INFO(got);
++  REQUIRE(got == kFoldHash);
++
++  const double cell[9] = {4.0, 0.2, 0.1, 0.3, 5.0, -0.2, 0.1, -0.3, 6.0};
++  const std::array<bool, 3> periodic{true, true, true};
++  const rgpot::nlist::MinimumImage image(cell, periodic);
++  double x = std::numeric_limits<double>::quiet_NaN();
++  double y = 0.0;
++  double z = 0.0;
++  REQUIRE_THROWS_AS(image.fold(x, y, z), std::invalid_argument);
++}
+diff --git a/CppCore/tests/PairListTest.cc b/CppCore/tests/PairListTest.cc
+index d35186c..29e8acf 100644
+--- a/CppCore/tests/PairListTest.cc
++++ b/CppCore/tests/PairListTest.cc
+@@ -613,8 +613,14 @@ TEST_CASE("Full-cell image search rejects invalid and unrepresentable cells",
+                     std::invalid_argument);
+   const double ill_conditioned[9] = {1.0, 1.0, 0.0, 1.0, 1.0 + 1e-12,
+                                      0.0, 0.0, 0.0, 1.0};
+-  REQUIRE_THROWS_AS(rgpot::nlist::MinimumImage(ill_conditioned, periodic),
+-                    std::invalid_argument);
++  rgpot::nlist::MinimumImage ill(ill_conditioned, periodic);
++  double ix = 0.2, iy = -0.3, iz = 0.4;
++  ill.fold(ix, iy, iz);
++  REQUIRE(std::isfinite(ix));
++  REQUIRE(std::isfinite(iy));
++  REQUIRE(std::isfinite(iz));
++  REQUIRE(ix * ix + iy * iy + iz * iz <=
++          0.2 * 0.2 + 0.3 * 0.3 + 0.4 * 0.4 + 1e-9);
+   const double cell[9] = {1.0, 0.1, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+   const rgpot::nlist::MinimumImage image(cell, periodic);
+   double dx = 1e30, dy = 0.0, dz = 0.0;
+@@ -622,3 +628,106 @@ TEST_CASE("Full-cell image search rejects invalid and unrepresentable cells",
+   dx = std::numeric_limits<double>::quiet_NaN();
+   REQUIRE_THROWS_AS(image.fold(dx, dy, dz), std::invalid_argument);
+ }
++
++namespace {
++
++void brute_shortest(const double cell[9], const std::array<bool, 3> &periodic,
++                    double dx, double dy, double dz, int span, double &ox,
++                    double &oy, double &oz) {
++  double best2 = std::numeric_limits<double>::infinity();
++  double bx = dx, by = dy, bz = dz;
++  for (int i = -span; i <= span; ++i) {
++    if (!periodic[0] && i != 0) {
++      continue;
++    }
++    for (int j = -span; j <= span; ++j) {
++      if (!periodic[1] && j != 0) {
++        continue;
++      }
++      for (int k = -span; k <= span; ++k) {
++        if (!periodic[2] && k != 0) {
++          continue;
++        }
++        const double x = dx - (i * cell[0] + j * cell[3] + k * cell[6]);
++        const double y = dy - (i * cell[1] + j * cell[4] + k * cell[7]);
++        const double z = dz - (i * cell[2] + j * cell[5] + k * cell[8]);
++        const double r2 = x * x + y * y + z * z;
++        if (r2 < best2) {
++          best2 = r2;
++          bx = x;
++          by = y;
++          bz = z;
++        }
++      }
++    }
++  }
++  ox = bx;
++  oy = by;
++  oz = bz;
++}
++
++void require_matches_brute(const double cell[9],
++                           const std::array<bool, 3> &periodic, double dx,
++                           double dy, double dz, int span) {
++  rgpot::nlist::MinimumImage image(cell, periodic);
++  double gx = dx, gy = dy, gz = dz;
++  image.fold(gx, gy, gz);
++  double bx = 0, by = 0, bz = 0;
++  brute_shortest(cell, periodic, dx, dy, dz, span, bx, by, bz);
++  const double gr2 = gx * gx + gy * gy + gz * gz;
++  const double br2 = bx * bx + by * by + bz * bz;
++  INFO("dx=" << dx << " dy=" << dy << " dz=" << dz << " gr2=" << gr2
++            << " br2=" << br2);
++  INFO("dx=" << dx << " dy=" << dy << " dz=" << dz << " gr2=" << gr2
++            << " br2=" << br2);
++  REQUIRE(std::isfinite(gr2));
++  REQUIRE(gr2 <= br2 + 1e-8);
++  REQUIRE(std::abs(gr2 - br2) <= 1e-8 * std::max(1.0, br2));
++}
++
++void require_not_longer(const double cell[9],
++                        const std::array<bool, 3> &periodic, double dx,
++                        double dy, double dz, int span) {
++  rgpot::nlist::MinimumImage image(cell, periodic);
++  double gx = dx, gy = dy, gz = dz;
++  image.fold(gx, gy, gz);
++  double bx = 0, by = 0, bz = 0;
++  brute_shortest(cell, periodic, dx, dy, dz, span, bx, by, bz);
++  const double gr2 = gx * gx + gy * gy + gz * gz;
++  const double br2 = bx * bx + by * by + bz * bz;
++  // A 1e-12 cell leaves a double residual after reduction. The folded
++  // length stays next to the shortest image in the brute window.
++  REQUIRE(std::isfinite(gr2));
++  REQUIRE(gr2 <= br2 + 1e-2);
++}
++
++} // namespace
++
++TEST_CASE("Minimum image matches a brute-force search on skewed cells",
++          "[PairList][triclinic]") {
++  const std::array<bool, 3> periodic{true, true, true};
++  const double cells[][9] = {
++      {10.0, 1.0, 0.4, 0.3, 8.0, 0.5, 0.2, 0.6, 12.0},
++      {6.0, 4.5, 0.2, 0.1, 2.0, 0.3, 0.4, 0.2, 7.0},
++      {5.0, 4.8, 0.1, 0.2, 1.5, 0.05, 0.1, 0.2, 4.0},
++      {8.0, 3.0, 1.0, 0.5, 7.0, 2.5, 1.2, 0.4, 9.0},
++  };
++  const double samples[][3] = {
++      {0.2, -0.3, 0.4}, {1.5, 2.5, -1.0}, {12.0, -9.0, 4.0},
++      {-20.0, 7.5, 15.0}, {3.2, -0.4, 0.1}, {0.6, 0.04, 0.2},
++  };
++  for (const auto &cell : cells) {
++    for (const auto &sample : samples) {
++      require_matches_brute(cell, periodic, sample[0], sample[1], sample[2],
++                            24);
++    }
++  }
++  const std::array<bool, 3> open_z{true, true, false};
++  const double shear[9] = {9.0, 2.0, 0.0, 0.4, 6.0, 0.0, 1.0, 0.5, 8.0};
++  require_matches_brute(shear, open_z, 14.0, -11.0, 3.5, 24);
++  require_matches_brute(shear, open_z, 0.3, 5.5, -2.0, 24);
++
++  const double ill[9] = {1.0, 1.0, 0.0, 1.0, 1.0 + 1e-12, 0.0, 0.0, 0.0, 1.0};
++  require_not_longer(ill, periodic, 0.2, -0.3, 0.4, 8);
++  require_not_longer(ill, periodic, 1.7, -0.4, 0.8, 8);
++}
+diff --git a/CppCore/tests/exact_fma_eq.cc b/CppCore/tests/exact_fma_eq.cc
+new file mode 100644
+index 0000000..bc17a49
+--- /dev/null
++++ b/CppCore/tests/exact_fma_eq.cc
+@@ -0,0 +1,133 @@
++// MIT License
++// Copyright 2023--present rgpot developers
++//
++// exact_fma and mul_add against std::fma, including subnormals, signed
++// zero, overflow and ties.
++
++#include "rgpot/simd/exact_fma.hpp"
++
++#include <cmath>
++#include <cstdint>
++#include <cstring>
++#include <iostream>
++#include <limits>
++#include <random>
++#include <string>
++
++namespace {
++
++std::uint64_t bits_of(double x) {
++  std::uint64_t u = 0;
++  std::memcpy(&u, &x, sizeof(u));
++  return u;
++}
++
++int g_fail = 0;
++int g_checked = 0;
++
++void check_one(double a, double b, double c, const char *where) {
++  const double ref = std::fma(a, b, c);
++  const double got = rgpot::simd::exact_fma(a, b, c);
++  const double via = rgpot::simd::mul_add(a, b, c);
++  const double quick = rgpot::simd::fma_quick(a, b, c);
++  ++g_checked;
++  if (bits_of(got) == bits_of(ref) && bits_of(via) == bits_of(ref) &&
++      bits_of(quick) == bits_of(ref)) {
++    return;
++  }
++  if (g_fail < 8) {
++    std::cerr << where << " a=" << bits_of(a) << " b=" << bits_of(b)
++              << " c=" << bits_of(c) << " ref=" << bits_of(ref)
++              << " exact=" << bits_of(got) << " mul_add=" << bits_of(via)
++              << " quick=" << bits_of(quick) << '\n';
++  }
++  ++g_fail;
++}
++
++} // namespace
++
++int main() {
++  const double specials[] = {
++      0.0,
++      -0.0,
++      1.0,
++      -1.0,
++      2.0,
++      -2.0,
++      0.5,
++      -0.5,
++      std::numeric_limits<double>::min(),
++      std::numeric_limits<double>::max(),
++      std::numeric_limits<double>::denorm_min(),
++      std::numeric_limits<double>::infinity(),
++      -std::numeric_limits<double>::infinity(),
++      std::numeric_limits<double>::quiet_NaN(),
++      0x1p-1022,
++      0x1p-1074,
++      0x1.fffffffffffffp1023,
++      0x1p-500,
++      0x1p500,
++      3.141592653589793,
++      -2.718281828459045,
++      0x1.0000000000001p0,
++      0x1.fffffffffffffp0,
++  };
++  const int ns = static_cast<int>(sizeof(specials) / sizeof(specials[0]));
++  for (int i = 0; i < ns; ++i) {
++    for (int j = 0; j < ns; ++j) {
++      for (int k = 0; k < ns; ++k) {
++        check_one(specials[i], specials[j], specials[k], "edge");
++      }
++    }
++  }
++
++  std::mt19937_64 rng(1);
++  std::uniform_int_distribution<int> expd(-180, 180);
++  std::uniform_int_distribution<std::uint64_t> mant(0, (1ULL << 52) - 1);
++  std::uniform_int_distribution<int> sign(0, 1);
++  auto rnd = [&]() {
++    double x = std::ldexp(static_cast<double>(mant(rng) | (1ULL << 52)),
++                           expd(rng) - 52);
++    if (sign(rng) != 0) {
++      x = -x;
++    }
++    return x;
++  };
++  for (int i = 0; i < 20000; ++i) {
++    const double a = rnd();
++    const double b = rnd();
++    const double c = rnd();
++    check_one(a, b, c, "rand");
++    if (std::isfinite(a * b)) {
++      check_one(a, b, -a * b, "cancel");
++    }
++    const double p = a * b;
++    if (std::isfinite(p) && p != 0.0) {
++      const double ulp = std::scalbn(1.0, std::ilogb(std::fabs(p)) - 52);
++      check_one(a, b, 0.5 * ulp, "tie+");
++      check_one(a, b, -0.5 * ulp, "tie-");
++    }
++  }
++  for (int e = -60; e <= 40; e += 5) {
++    const double a = std::ldexp(1.0, e);
++    const double b = std::ldexp(0x1.0000000000001p0, -e - 30);
++    check_one(a, b, -a * b, "under");
++  }
++
++  const double tie_a = 0x1.0000000000001p0;
++  const double tie_c = 0x1.921fb54442d18p1;
++  check_one(tie_a, tie_a, tie_c, "classic-tie");
++  const double trunc = rgpot::simd::fma_trunc(tie_a, tie_a, tie_c);
++  const double ref = std::fma(tie_a, tie_a, tie_c);
++  if (bits_of(trunc) == bits_of(ref)) {
++    std::cerr << "classic-tie trunc matched std::fma\n";
++    ++g_fail;
++  }
++
++  if (g_fail != 0) {
++    std::cerr << "fail " << g_fail << " of " << g_checked << '\n';
++    return 1;
++  }
++  std::cout << "ok " << g_checked << '\n';
++  return 0;
++}
+diff --git a/CppCore/tests/minimage_hash_samples.hpp b/CppCore/tests/minimage_hash_samples.hpp
+new file mode 100644
+index 0000000..6234b62
+--- /dev/null
++++ b/CppCore/tests/minimage_hash_samples.hpp
+@@ -0,0 +1,47 @@
++#pragma once
++// MIT License
++// Copyright 2023--present rgpot developers
++
++#include "rgpot/engine/Sha256.hpp"
++#include "rgpot/nlist/MinimumImage.hpp"
++
++#include <cmath>
++#include <cstdint>
++#include <cstring>
++#include <limits>
++#include <string>
++
++namespace rgpot::nlist::hashcheck {
++
++// Triclinic cell from the fold micro-benchmark. Displacements include
++// +0, -0, a subnormal, a one-ulp shift of 3, and a half-vector tie.
++inline std::string folded_displacement_hash() {
++  const double cell[9] = {4.0, 0.2, 0.1, 0.3, 5.0, -0.2, 0.1, -0.3, 6.0};
++  const std::array<bool, 3> periodic{true, true, true};
++  const MinimumImage image(cell, periodic);
++  const double tie = std::nextafter(3.0, 4.0);
++  const double sub = std::numeric_limits<double>::denorm_min();
++  const double samples[][3] = {
++      {0.0, 0.0, 0.0},
++      {-0.0, 0.0, -0.0},
++      {sub, -sub, 0.0},
++      {tie, 1.0, -1.0},
++      {2.0, 0.1, 0.05},
++      {0.2, -0.3, 0.4},
++      {1.5, 2.5, -1.0},
++      {-20.0, 7.5, 15.0},
++      {12.0, -9.0, 4.0},
++      {4.0, 0.2, 0.1},
++  };
++  rgpot::engine::Sha256 hash;
++  for (const auto &sample : samples) {
++    double x = sample[0], y = sample[1], z = sample[2];
++    image.fold(x, y, z);
++    hash.update(&x, sizeof x);
++    hash.update(&y, sizeof y);
++    hash.update(&z, sizeof z);
++  }
++  return hash.hex_digest();
++}
++
++} // namespace rgpot::nlist::hashcheck
+diff --git a/CppCore/tests/minimage_isa_hash_main.cc b/CppCore/tests/minimage_isa_hash_main.cc
+new file mode 100644
+index 0000000..c0bd623
+--- /dev/null
++++ b/CppCore/tests/minimage_isa_hash_main.cc
+@@ -0,0 +1,32 @@
++// MIT License
++// Copyright 2023--present rgpot developers
++//
++// Prints the SHA-256 of folded displacements, or "skip" when this binary
++// was built for an instruction set the CPU cannot run.
++
++#include "minimage_hash_samples.hpp"
++
++#include <iostream>
++
++namespace {
++
++bool cpu_can_run() {
++#if defined(RGPOT_MINIMAGE_ISA_AVX512)
++  return __builtin_cpu_supports("avx512f");
++#elif defined(RGPOT_MINIMAGE_ISA_AVX2)
++  return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma");
++#else
++  return true;
++#endif
++}
++
++} // namespace
++
++int main() {
++  if (!cpu_can_run()) {
++    std::cout << "skip\n";
++    return 0;
++  }
++  std::cout << rgpot::nlist::hashcheck::folded_displacement_hash() << '\n';
++  return 0;
++}
+diff --git a/ci/gha/check_minimage_isa.sh b/ci/gha/check_minimage_isa.sh
+new file mode 100755
+index 0000000..b45b059
+--- /dev/null
++++ b/ci/gha/check_minimage_isa.sh
+@@ -0,0 +1,21 @@
++#!/bin/sh
++# Compare folded-displacement hashes from binaries built for different
++# instruction sets. A binary that prints "skip" cannot run on this CPU.
++set -eu
++golden=$1
++shift
++fail=0
++for exe in "$@"; do
++  out=$("$exe")
++  if [ "$out" = skip ]; then
++    echo "skip $exe"
++    continue
++  fi
++  if [ "$out" != "$golden" ]; then
++    echo "mismatch $exe got $out want $golden" >&2
++    fail=1
++  else
++    echo "match $exe"
++  fi
++done
++exit "$fail"
