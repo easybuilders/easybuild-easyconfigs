@@ -1,0 +1,339 @@
+# Author: Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2025/02
+# Update: Pavel Tomanek (UGent/Inuits)
+easyblock = 'PythonBundle'
+
+name = 'AlphaFold3'
+version = '3.0.4'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://deepmind.google/technologies/alphafold'
+description = """This package provides an implementation of the inference pipeline of AlphaFold3.
+See below for how to access the model parameters. You may only use AlphaFold3
+model parameters if received directly from Google. Use is subject to these
+terms of use:
+https://github.com/google-deepmind/alphafold3/blob/main/WEIGHTS_TERMS_OF_USE.md"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+github_account = 'google-deepmind'
+
+builddependencies = [
+    ('Ninja', '1.13.0'),
+    ('scikit-build-core', '0.11.5'),
+    ('pybind11', '3.0.0'),
+    ('pybind11_abseil', '202402.0'),
+    ('Bazel', '7.7.0', '-Java-21'),
+    ('hatchling', '1.27.0'),
+    ('poetry', '2.1.3'),
+]
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('PyYAML', '6.0.2'),
+    # jax deps
+    ('cuDNN', '9.15.0.57', versionsuffix, SYSTEM),
+    ('absl-py', '2.3.1'),
+    ('flatbuffers-python', '25.2.10'),
+    ('ml_dtypes', '0.5.4'),
+    ('hypothesis', '6.136.6'),
+    ('zlib', '1.3.1'),
+    ('opt-einsum', '3.4.0'),
+    # flax deps
+    ('protobuf-python', '6.31.1'),
+    ('tensorstore', '0.1.76'),
+    # tokamax deps
+    ('pydantic', '2.11.9'),
+    ('typing-extensions', '4.14.1'),
+    ('tensorboardX', '2.6.5'),
+    # AF3 deps
+    ('RDKit', '2026.03.4'),
+    ('tqdm', '4.67.1'),
+    ('dssp', '4.4.10'),
+    ('Abseil', '20250512.1'),
+    ('HMMER', '3.4'),
+    ('zstandard', '0.25.0'),
+    ('etils', '1.14.0'),
+]
+
+# downloading xla  tarball to avoid that Bazel downloads it during the build
+# note: following commits *must* be the exact same ones used upstream
+# XLA_COMMIT from jax-jaxlib: third_party/xla/revision.bzl
+# also filename in /archives has to be {_xla_commit}.tar.gz
+_xla_commit = '5a9e73cbd92530cac2ac36f4736a774b2412afe2'
+
+# Use sources downloaded by EasyBuild
+_jaxlib_buildopts = '--bazel_options="--distdir=%(builddir)s/archives" '
+
+if ARCH == 'aarch64':
+    _jaxlib_buildopts += '--bazel_options="--@compute_library//:arch=armv8.2-a+fp16" '
+
+# create wheels for jaxlib and CUDA plugins and install it
+_jaxlib_buildopts += '--wheels=jaxlib,jax-cuda-plugin,jax-cuda-pjrt '
+# JAX/XLA uses its Bazel-managed hermetic Clang toolchain for the host C/C++
+# compilation, so no separate LLVM/Clang EasyBuild dependency is required.
+# Keep the default NVCC path for CUDA compilation; do not use
+# --build_cuda_with_clang.
+# Ensure Bazel-built helper tools can find the EasyBuild GCC runtime.
+_jaxlib_buildopts += '--bazel_options="--host_linkopt=-Wl,-rpath,$EBROOTGCCCORE/lib64" '
+# fix jaxlib version
+_jaxlib_buildopts += '--bazel_options="--action_env=JAXLIB_RELEASE" '
+_jaxlib_buildopts += '--bazel_options="--repo_env=ML_WHEEL_TYPE=release" '
+_jaxlib_buildopts += '--disable_nccl '
+
+_jax_prebuildopts = 'export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1; '
+
+components = [
+    ('jaxlib', '0.10.2', {
+        'sources': [
+            {
+                'source_urls': ['https://github.com/google/jax/archive/'],
+                'filename': 'jax-v%(version)s.tar.gz',
+            },
+            {
+                'source_urls': ['https://github.com/openxla/xla/archive'],
+                'filename': f'{_xla_commit}.tar.gz',
+                'extract_cmd': 'mkdir -p %(builddir)s/archives && cp %s %(builddir)s/archives',
+            },
+        ],
+        'checksums': [
+            {'jax-v0.10.2.tar.gz':
+             'fa7214ab31ed1cd418b4305807e9c4f3f175c783eeea40c28e0f77c3f4c24bc7'},
+            {'5a9e73cbd92530cac2ac36f4736a774b2412afe2.tar.gz':
+             '08a52210a04cd68d38f6201d56273d04ac0f8b4e0da9f72677c74a48cc637422'},
+        ],
+        'start_dir': 'jax-jax-v%(version)s',
+        # fix jaxlib version - removes .dev suffix
+        'prebuildopts': ' '.join(['export JAXLIB_RELEASE=%(version)s && ', _jax_prebuildopts]),
+        'buildopts': _jaxlib_buildopts,
+    }),
+]
+
+_jax_failing_tests = [
+    # Fails on systems where non-CPU backends/plugins are visible for a CPU-only build
+    'tests/api_test.py::BackendsTest::test_no_backend_warning_on_cpu_if_platform_specified',
+    # Tests run from the source tree, so `import jax` reports the source-tree
+    # .dev version even though the installed package metadata/version is 0.10.2
+    'tests/version_test.py',
+    # Subprocess logging tests are polluted by fake path-based PJRT plugin
+    # discovery (/path/pjrt_plugin_name1.so) and by any jax_plugins packages
+    # (e.g. CUDA/ROCm) visible in the user's environment, same as in jax 0.10.1
+    'tests/logging_test.py::LoggingTest::test_subprocess_stderr_debug_logging',
+    'tests/logging_test.py::LoggingTest::test_subprocess_stderr_info_logging',
+    'tests/logging_test.py::LoggingTest::test_subprocess_toggling_logging_level',
+    # GPU collectives are unavailable because this build intentionally disables NCCL
+    'tests/pmap_test.py::PythonPmapTest::testCollectivePermuteGrad',
+    # JAX 0.10.2 returns 1 for comb(0, 0, repetition=True), while SciPy 1.16.1
+    # from SciPy-bundle/2025.07 returns 0. The JAX behaviour is intentional and
+    # is retained upstream, but this test compares directly against SciPy.
+    'tests/lax_scipy_special_functions_test.py::LaxScipySpecialFunctionsTest::testCombBoundaryValues1',
+    # The subprocess used by this test does not see the CUDA plugin from the
+    # bundled installation and emits the CUDA-to-CPU fallback warning, although
+    # CUDA is available to the main test suite and the final installation.
+    'tests/logging_test.py::LoggingTest::test_no_log_spam',
+]
+
+_jax_ignored_tests = [
+    # Requires Mosaic GPU NVSHMEM support, which is not provided by this
+    # AF3-specific single-GPU build.
+    'tests/pallas/mgpu_collective_matmul_test.py',
+]
+
+# Use at most 4 pytest-xdist workers. More workers were unstable for this
+# heavy JAX test suite, but avoid oversubscribing small jobs
+_jax_test_workers = '$(( %(parallel)s > 8 ? 4 : (%(parallel)s + 1) / 2 ))'
+_jax_test_exclude_opts = ' '.join(
+    [f'--deselect={test}' for test in _jax_failing_tests] +
+    [f'--ignore={test}' for test in _jax_ignored_tests]
+)
+_jax_runtest_cmd1 = (
+    f'pytest -n {_jax_test_workers} '
+    '-vv -ra --tb=short --durations=100 '
+    '--max-worker-restart=0 '
+    '--dist=loadscope '
+    f'{_jax_test_exclude_opts} '
+    'tests'
+)
+# retry randomly failing tests
+_jax_runtest_cmd = ' '.join([_jax_runtest_cmd1, '||', _jax_runtest_cmd1, '--last-failed'])
+
+exts_list = [
+    ('jax', '0.10.2', {
+        # avoid OOM errors with when multiple JAX processes run concurrently
+        'pretestopts': _jax_prebuildopts + 'export XLA_PYTHON_CLIENT_PREALLOCATE=false; ',
+        # JAX_RELEASE makes jax/version.py report the clean version
+        # ("0.10.2") instead of "0.10.2.dev<date>", which would otherwise
+        # fail downstream `jax>=0.10.2` pip checks. Must be in preinstallopts
+        # since PythonPackage runs `pip install .` at the install step.
+        'preinstallopts': 'export JAX_RELEASE=%(version)s && ',
+        'testinstall': True,
+        "runtest": _jax_runtest_cmd,
+        'sources': [{
+            'source_urls': ['https://github.com/google/jax/archive/'],
+            'filename': '%(name)s-v%(version)s.tar.gz',
+        }],
+        'patches': [{'name': 'jax-0.10.2_fix-pallas-packaging.patch', 'level': 1}],
+        'checksums': [
+            {'jax-v0.10.2.tar.gz': 'fa7214ab31ed1cd418b4305807e9c4f3f175c783eeea40c28e0f77c3f4c24bc7'},
+            {'jax-0.10.2_fix-pallas-packaging.patch':
+             'b263728dd7f9e394451a0efad4d59da2ace1e35bd92e4b4bc5244de0736c7102'},
+        ],
+    }),
+    ('wadler_lindig', '0.1.7', {
+        'checksums': ['81d14d3fe77d441acf3ebd7f4aefac20c74128bf460e84b512806dccf7b2cd55'],
+    }),
+    ('jaxtyping', '0.3.5', {
+        'checksums': ['8150ad5b72b62fa63f573d492a79e9e455f070abe3b260f7dc15270b3eb9bba6'],
+    }),
+    ('jmp', '0.0.4', {
+        'checksums': ['5dfeb0fd7c7a9f72a70fff0aab9d0cbfae32a809c02f4037ff3485ceb33e1730'],
+    }),
+    ('dm-haiku', '0.0.16', {
+        'modulename': 'haiku',
+        'checksums': ['1830b0ce63c5cef2fb3a63a13033c9d8f612ee7f896f2b0b25a6ba484f5fad28'],
+    }),
+    ('typeguard', '2.13.3', {
+        'checksums': ['00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4'],
+    }),
+    ('einshape', '1.0', {
+        'checksums': ['53538d75dd099f4ead4a4f786fafdcb0b729bb587e0b3afeca25ceef18c9ac14'],
+    }),
+    ('nest_asyncio', '1.6.0', {
+        'checksums': ['6f172d5449aca15afd6c646851f4e31e02c598d553a667e38cafa997cfec55fe'],
+    }),
+    ('aiofiles', '25.1.0', {
+        'checksums': ['a8d728f0a29de45dc521f18f07297428d56992a742f0cd2701ba86e44d23d5b2'],
+    }),
+    ('humanize', '4.16.0', {
+        'preinstallopts': "sed -i '/^license = /d' pyproject.toml && ",
+        'checksums': ['7dc2244a2f84a4bfb1d36c37bac80cd78e35cdc5c119206d87b018e1445f3a3f'],
+    }),
+    ('orbax_checkpoint', '0.11.24', {
+        'modulename': 'orbax.checkpoint',
+        'checksums': ['4e7afe927d1ed6d8160bacf5ed4fef56c1370320e0ebdfda213c6351a2e3c0d0'],
+    }),
+    ('treescope', '0.1.10', {
+        'checksums': ['20f74656f34ab2d8716715013e8163a0da79bdc2554c16d5023172c50d27ea95'],
+    }),
+    ('optax', '0.2.8', {
+        'checksums': ['5b225b35066fc3eebaa4d798f1b4173b4d57d1a480610908981f8343b50af0b0'],
+    }),
+    ('flax', '0.12.8', {
+        'checksums': ['1bb438775b967a3f1f42b9c3d4ddf1d2883cd6406589f9cecdc244634036bdc4'],
+    }),
+    ('qwix', '0.1.6', {
+        'checksums': ['7ccd4968be320b19eb9349cd953e689a1fd6e97bbde4ac788d8a2280f0f24acc'],
+    }),
+    ('immutabledict', '4.2.2', {
+        'checksums': ['cb6ed3090df593148f94cb407d218ca526fd2639694afdb553dc4f50ce6feeca'],
+    }),
+    ('tokamax', '0.0.12', {
+        'checksums': ['5c7f4d2f54caed15455c7be5a769e446f760f7b730d41a4a6b916dc9bb423f97'],
+    }),
+    (name, version, {
+        # unpin RDKit version
+        'preinstallopts': (
+            "sed -i 's/rdkit==2025.9.4/rdkit/g' %(start_dir)s/pyproject.toml && "
+            'export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ALPHAFOLD3=%(version)s && '
+        ),
+        'patches': [
+            '%(name)s-3.0.0_disable_fetch.patch',
+            '%(name)s-3.0.4_env-data-paths.patch',
+            '%(name)s-3.0.4_fix-RDKit-dependent-test.patch',
+        ],
+        'postinstallcmds': [
+            'cp run_alphafold.py %(installdir)s/bin',
+            "sed -i '1i#!/usr/bin/env python' %(installdir)s/bin/run_alphafold.py",
+            'cp run_alphafold_data_test.py %(installdir)s/bin',
+            'cp run_alphafold_test.py %(installdir)s/bin',
+            'cp fetch_databases.sh %(installdir)s',
+            'cp -r examples %(installdir)s/',
+            # Adapt examples path in the data-pipeline test.
+            "sed -i \"s@resources.ROOT / '../../examples'@"
+            "pathlib.Path(os.path.dirname(os.path.dirname(__file__))) / 'examples'@\" "
+            "%(installdir)s/bin/run_alphafold_data_test.py",
+            # Adapt examples path in the inference test.
+            "sed -i \"s@resources.ROOT / f'../../examples/{example_name}.json'@"
+            "os.path.join(os.path.dirname(os.path.dirname(__file__)), 'examples', f'{example_name}.json')@\" "
+            "%(installdir)s/bin/run_alphafold_test.py",
+            'chmod +x %(installdir)s/bin/run_alphafold.py',
+            'chmod +x %(installdir)s/fetch_databases.sh',
+            '%(installdir)s/bin/build_data',
+        ],
+        'source_urls': ['https://github.com/%(github_account)s/%(namelower)s/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': [
+            {'AlphaFold3-3.0.4.tar.gz': 'a12bfec74fe9670d5d6e1897450ccf968422e0b87743ffee82ff0cb4c76f1923'},
+            {'AlphaFold3-3.0.0_disable_fetch.patch':
+             '041a35a09f783405f40e3ba47566ad6d063a10cfd98f0efd2e2a04c78e2c155e'},
+            {'AlphaFold3-3.0.4_env-data-paths.patch':
+             'df94d7e094202cf938c6b794446bd0c7be5d37a0a6f47d7a3b56f9fbe684ceaf'},
+            {'AlphaFold3-3.0.4_fix-RDKit-dependent-test.patch':
+             'cc83bab64de3db20795b728a00639a50cfc6143d6802d1ad0c10a882d5997692'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/run_alphafold.py',
+        'bin/run_alphafold_data_test.py',
+        'bin/run_alphafold_test.py',
+        'fetch_databases.sh',
+    ],
+    'dirs': ['examples', 'lib'],
+}
+
+sanity_check_commands = [
+    'run_alphafold.py --help | grep "AlphaFold 3 structure prediction script"',
+]
+
+modextravars = {
+    # Work around excessive XLA compilation times, as recommended upstream.
+    'XLA_FLAGS': '--xla_gpu_enable_triton_gemm=false',
+    # Upstream defaults for A100/H100 80 GB GPUs.
+    'XLA_PYTHON_CLIENT_PREALLOCATE': 'true',
+    'XLA_CLIENT_MEM_FRACTION': '0.95',
+}
+
+modextrapaths = {'PYTHONPATH': 'bin'}  # to be able 'import run_alphafold'
+
+modloadmsg = """
+AlphaFold 3 requires model parameters obtained directly from Google and the
+AlphaFold 3 sequence databases.
+
+Model parameters:
+  export AF3_MODEL_DIR="/path/to/models"
+
+Databases:
+  export DB_DIR="/path/to/public_databases"
+  $EBROOTALPHAFOLD3/fetch_databases.sh "$DB_DIR"
+
+The database download requires substantial disk space. This installation uses
+AF3_MODEL_DIR and DB_DIR as the default model and database locations.
+
+Example prediction:
+  run_alphafold.py \\
+      --json_path="/path/to/fold_input.json" \\
+      --output_dir="/path/to/output"
+
+The locations can also be specified explicitly with:
+  --model_dir="$AF3_MODEL_DIR" --db_dir="$DB_DIR"
+
+Installation tests:
+  python "$EBROOTALPHAFOLD3/bin/run_alphafold_data_test.py"
+  python "$EBROOTALPHAFOLD3/bin/run_alphafold_test.py" --model_dir="$AF3_MODEL_DIR"
+
+For GPUs with less memory, or for inputs larger than 5120 tokens, upstream
+recommends enabling unified memory after loading this module:
+  export XLA_PYTHON_CLIENT_PREALLOCATE=false
+  export TF_FORCE_UNIFIED_MEMORY=true
+  export XLA_CLIENT_MEM_FRACTION=3.2
+
+For repeated inference runs, consider using --jax_compilation_cache_dir to
+avoid repeated JAX model compilation.
+
+Run `run_alphafold.py --help` for all available options.
+"""
+
+moduleclass = 'bio'
