@@ -1,0 +1,30 @@
+Fix BT.709 full-range color conversion with CUDA 12.
+
+TorchCodec 0.9.1 uses NPP ColorTwist offsets that produce incorrect colors
+for BT.709 full-range video with CUDA 12. Use the corrected CUDA 12 offsets
+from the upstream fix.
+
+This patch is specific to the CUDA 12.8 EasyBuild variant, so no CUDA-version
+conditional is required.
+
+Upstream issue:
+https://github.com/meta-pytorch/torchcodec/issues/1262
+
+Upstream pull request:
+https://github.com/meta-pytorch/torchcodec/pull/1265
+
+Upstream commit:
+https://github.com/meta-pytorch/torchcodec/commit/80ce23c707a323effe374df36108c8b36447c716
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+diff --git a/src/torchcodec/_core/CUDACommon.cpp b/src/torchcodec/_core/CUDACommon.cpp
+--- a/src/torchcodec/_core/CUDACommon.cpp
++++ b/src/torchcodec/_core/CUDACommon.cpp
+@@ -149,4 +149,4 @@
+ const Npp32f bt709FullRangeColorTwist[3][4] = {
+-    {1.0f, 0.0f, 1.5748f, 0.0f},
+-    {1.0f, -0.187324273f, -0.468124273f, -128.0f},
+-    {1.0f, 1.8556f, 0.0f, -128.0f}};
++    {1.0f, 0.0f, 1.5748f, -201.5744f},
++    {1.0f, -0.187324273f, -0.468124273f, 83.8974f},
++    {1.0f, 1.8556f, 0.0f, -237.5168f}};
