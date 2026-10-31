@@ -1,0 +1,31 @@
+Compile the ROCm execution-component kernels only for the arch(es) supplied via the
+$ROCM_ARCH environment variable, instead of cuda_lt.sh's hardcoded --offload-arch list
+(which included --offload-arch=native and therefore required an AMD GPU at build time).
+The easyconfig exports ROCM_ARCH (e.g. --offload-arch=gfx90a) via prebuildopts.
+
+NOTE: despite its name, cuda_lt.sh is not CUDA-specific. It is UCC's shared libtool
+helper for compiling .cu GPU-kernel sources, used by BOTH the CUDA (nvcc) and the ROCm
+(amdclang/hipcc) execution components.
+
+Author: Aayush Joglekar <aayush.joglekar@surf.nl>
+
+--- a/cuda_lt.sh
++++ b/cuda_lt.sh
+@@ -28,7 +28,7 @@
+ 
+ tmpcmd="${@:3}"
+ if [[ "$tmpcmd" == *"amdclang"* ]]; then
+-  cmd="${@:3:2} -x hip -target x86_64-unknown-linux-gnu --offload-arch=gfx908 --offload-arch=gfx90a --offload-arch=gfx940 --offload-arch=gfx941 --offload-arch=gfx942 --offload-arch=gfx1030 --offload-arch=gfx1100 --offload-arch=gfx1101 --offload-arch=gfx1102 --offload-arch=native ${@:5} -fPIC -O3 -o ${pic_filepath}"
++  cmd="${@:3:2} -x hip -target x86_64-unknown-linux-gnu ${ROCM_ARCH} ${@:5} -fPIC -O3 -o ${pic_filepath}"
+ elif [[ "$tmpcmd" == *"hipcc"* ]]; then
+   cmd="${@:3} -fPIC -o ${pic_filepath}"
+ else
+@@ -38,7 +38,7 @@
+ $cmd
+ 
+ if [[ "$tmpcmd" == *"amdclang"* ]]; then
+-  cmd="${@:3:2} -x hip -target x86_64-unknown-linux-gnu --offload-arch=gfx908 --offload-arch=gfx90a --offload-arch=gfx940 --offload-arch=gfx941 --offload-arch=gfx942 --offload-arch=gfx1030 --offload-arch=gfx1100 --offload-arch=gfx1101 --offload-arch=gfx1102 --offload-arch=native ${@:5} -O3 -o ${npic_filepath}"
++  cmd="${@:3:2} -x hip -target x86_64-unknown-linux-gnu ${ROCM_ARCH} ${@:5} -O3 -o ${npic_filepath}"
+ else
+   cmd="${@:3} -o ${npic_filepath}"
+ fi
