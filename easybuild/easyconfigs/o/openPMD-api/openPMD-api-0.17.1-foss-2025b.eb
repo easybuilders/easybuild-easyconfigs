@@ -1,0 +1,61 @@
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'openPMD-api'
+version = '0.17.1'
+
+homepage = 'https://github.com/openPMD/openPMD-api'
+description = """
+openPMD is an open meta-data schema that provides meaning and self-description
+for data sets in science and engineering.
+This library provides a reference API for openPMD data handling. Since openPMD
+is a schema (or markup) on top of portable, hierarchical file formats, this
+library implements various backends such as HDF5, ADIOS2 and JSON.
+Writing & reading through those backends and their associated files are
+supported for serial and MPI-parallel workflows.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['cd4340dc17b41e4fafd0d2893af23a1bee82d169f2b2ca40d012b79c87c564d8']
+
+github_account = 'openPMD'
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('pybind11', '3.0.0'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('Catch2', '3.11.0'),
+    ('nlohmann_json', '3.12.0'),
+    ('toml11', '4.4.0'),
+    ('HDF5', '1.14.6'),
+    ('ADIOS2', '2.10.2'),
+    ('mpi4py', '4.1.0'),
+    ('dask', '2025.9.1'),
+]
+
+configopts = '-DopenPMD_USE_PYTHON=ON -DPython_EXECUTABLE=$EBROOTPYTHON/bin/python3 '
+configopts += '-DBUILD_SHARED_LIBS=ON -DopenPMD_USE_INTERNAL_JSON=OFF '
+configopts += '-DopenPMD_USE_INTERNAL_PYBIND11=OFF -DopenPMD_USE_INTERNAL_TOML11=OFF '
+configopts += '-DopenPMD_USE_INTERNAL_CATCH=OFF '
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/openpmd-pipe', 'lib/libopenPMD.so'],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = [
+    "openpmd-convert-toml-json --help 2>&1 | grep 'JSON'",
+]
+
+moduleclass = 'tools'

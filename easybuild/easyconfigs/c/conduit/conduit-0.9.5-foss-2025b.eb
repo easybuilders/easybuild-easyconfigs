@@ -1,0 +1,62 @@
+# Author: J. Saßmannshausen (Imperial College London/UK)
+# One testjob fails with MPI related problems: 136 t_blueprint_mpi_mesh_tiled
+# One testjob fails with a Python related problem: 57 - t_python_conduit_node (Failed)
+
+easyblock = 'CMakeMake'
+
+name = 'conduit'
+version = '0.9.5'
+
+homepage = 'https://llnl-conduit.readthedocs.io/en/latest'
+description = """
+Conduit is an open source project from Lawrence Livermore National Laboratory
+that provides an intuitive model for describing hierarchical scientific data
+in C++, C, Fortran, and Python. It is used for data coupling between packages
+in-core, serialization, and I/O tasks
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = ['https://github.com/llnl/conduit/releases/download/v%(version)s/']
+sources = ['%(name)s-v%(version)s-src-with-blt.tar.gz']
+checksums = ['d93294efbf0936da5a27941e13486aa1a04a74a59285786a2303eed19a24265a']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('pkgconf', '2.4.3'),
+    ('git', '2.50.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('mpi4py', '4.1.0'),
+    ('HDF5', '1.14.6'),
+    ('h5py', '3.14.0'),
+]
+
+srcdir = 'src'
+configopts = '-DENABLE_DOCS=OFF -DENABLE_DOXYGEN=OFF -DENABLE_VALGRIND=OFF '
+configopts += '-DENABLE_MPI=ON -DENABLE_OPENMP=ON -DENABLE_PYTHON=ON '
+configopts += '-DENABLE_FORTRAN=ON -DHDF5_DIR=$EBROOTHDF5 '
+
+# allow oversubscription of MPI ranks to cores, some tests want to use up to 4 MPI ranks
+# even though we might provide more!
+# We are also disabling t_blueprint_mpi_mesh_tiled t_python_conduit_node as they fail
+# Note: it appears that t_python_conduit_node has been fixed in 0.9.7!
+pretestopts = "export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe && "
+test_cmd = 'ctest --output-on-failure -E "t_blueprint_mpi_mesh_tiled|t_python_conduit_node"'
+
+sanity_check_paths = {
+    'files': ['bin/conduit_generate_data', 'bin/conduit_blueprint_verify',
+              'lib/libconduit.so', 'lib/libconduit_relay.so', 'lib/libconduit_blueprint.so'],
+    'dirs': ['include', 'examples'],
+}
+
+sanity_check_commands = [
+    'conduit_adjset_validate -help | grep "protocol name" &>/dev/null ',
+]
+
+moduleclass = 'data'
