@@ -1,0 +1,320 @@
+Use HTSlib and libsais provided by the build environment instead of
+building the bundled submodules.
+
+Author: Emik Lin (HKUMed CPOS)
+
+--- a/Makefile
++++ b/Makefile
+@@ -295,12 +295,14 @@
+ # base version; checkouts past or dirty at the tag get an informational
+ # dev suffix appended.
+ VERSION_STRING := $(shell scripts/version.sh)
++HTSLIB_CFLAGS ?= $(shell pkg-config --cflags htslib)
++HTSLIB_LIBS ?= $(shell pkg-config --libs htslib)
++LIBSAIS_LIBS ?= -lsais
+ # One path per line so adding or removing a single -I against this list
+ # is a one-line diff that never overlaps with edits to adjacent lines
+ # (e.g. the VERSION_STRING block above).
+ INCLUDES += -Isrc
+-INCLUDES += -Iext/htslib
+-INCLUDES += -Iext/libsais/include
++INCLUDES += $(HTSLIB_CFLAGS)
+ ifeq ($(USE_MIMALLOC),1)
+     INCLUDES += -Iext/mimalloc/include
+ endif
+@@ -359,9 +361,6 @@
+ # array / BWT construction via SA-IS. Compiled with OpenMP so
+ # libsais_gsa_omp can run parallel induced-sorting. libomp is already a
+ # link dep of bwa-mem3's alignment paths; no new dep.
+-LIBSAIS_DIR    = ext/libsais
+-LIBSAIS_OBJS   = $(LIBSAIS_DIR)/src/libsais.o $(LIBSAIS_DIR)/src/libsais64.o
+-LIBSAIS_CFLAGS = -O3 -std=c99 -DLIBSAIS_OPENMP -I$(LIBSAIS_DIR)/include
+ ifeq ($(UNAME_S),Darwin)
+     # Resolve at parse time but defer the missing-libomp error until the
+     # libsais recipe actually runs, so `make clean`, `make print-mimalloc-config`,
+@@ -382,7 +381,8 @@
+ LIBS += -lm
+ LIBS += -lz
+ LIBS += -L. -lbwa
+-LIBS += -Lext/htslib -lhts
++LIBS += $(HTSLIB_LIBS)
++LIBS += $(LIBSAIS_LIBS)
+ LIBS += $(LIBSAIS_OPENMP_LIBS)
+ LIBS += $(STATIC_GCC)
+ LIBS += $(LIBS_EXTRA)
+@@ -420,9 +420,6 @@
+ # recipe further down (where HTS_LIB is in scope and the build-time
+ # concerns sit together); the `@:` recipe there is required -- a
+ # prereq-only rule does NOT trigger restart.
+--include ext/htslib/htslib_static.mk
+-LIBS    += $(HTSLIB_static_LIBS)
+-LDFLAGS += $(HTSLIB_static_LDFLAGS)
+ # Non-kernel objects: always compiled once at the baseline ISA and linked into
+ # libbwa.a on every build (arm64 and x86 alike).
+ OBJS=		src/fastmap.o src/bwtindex.o src/utils.o src/kthread.o \
+@@ -447,7 +444,6 @@
+ KERNEL_BASELINE_OBJS = src/bandedSWA.o src/kswv.o src/ksw.o src/sam_encode.o
+ OBJS += $(KERNEL_BASELINE_OBJS)
+ BWA_LIB=    libbwa.a
+-HTS_LIB=    ext/htslib/libhts.a
+ 
+ # Standalone test binaries this Makefile builds and links itself, named once so
+ # .PHONY, `test:`, `clean` and the object list below all derive from one place.
+@@ -689,7 +685,7 @@
+ # cost a full rebuild, while a command-line flag change must. Same
+ # write-only-if-changed trick as src/version.h below.
+ FLAGS_STAMP = .build-flags
+-FLAGS_SIG = CXX=$(CXX)|CC=$(CC)|CXXFLAGS=$(CXXFLAGS)|BASE_CXXFLAGS=$(BASE_CXXFLAGS)|CFLAGS=$(CFLAGS)|CPPFLAGS=$(CPPFLAGS)|INCLUDES=$(INCLUDES)|LIBSAIS_CFLAGS=$(LIBSAIS_CFLAGS)|TIERS=$(KERNEL_FLAGS_sse41),$(KERNEL_FLAGS_sse42),$(KERNEL_FLAGS_avx),$(KERNEL_FLAGS_avx2),$(KERNEL_FLAGS_avx512bw)
++FLAGS_SIG = CXX=$(CXX)|CC=$(CC)|CXXFLAGS=$(CXXFLAGS)|BASE_CXXFLAGS=$(BASE_CXXFLAGS)|CFLAGS=$(CFLAGS)|CPPFLAGS=$(CPPFLAGS)|INCLUDES=$(INCLUDES)|TIERS=$(KERNEL_FLAGS_sse41),$(KERNEL_FLAGS_sse42),$(KERNEL_FLAGS_avx),$(KERNEL_FLAGS_avx2),$(KERNEL_FLAGS_avx512bw)
+ 
+ # Passed through the ENVIRONMENT and expanded double-quoted in the recipe, not
+ # interpolated by make into single quotes. `printf '%s\n' '$(FLAGS_SIG)'` puts the
+@@ -715,7 +711,7 @@
+ 	@printf '%s\n' "$$FLAGS_SIG" > $@.tmp
+ 	@if ! cmp -s $@.tmp $@ 2>/dev/null; then mv $@.tmp $@; else rm -f $@.tmp; fi
+ 
+-$(OBJS) $(KERNEL_TIER_OBJS) $(NATIVE_KERNEL_OBJS) $(STANDALONE_TEST_OBJS) $(LIBSAIS_OBJS): $(FLAGS_STAMP)
++$(OBJS) $(KERNEL_TIER_OBJS) $(NATIVE_KERNEL_OBJS) $(STANDALONE_TEST_OBJS): $(FLAGS_STAMP)
+ 
+ all:$(EXE)
+ 
+@@ -776,8 +772,8 @@
+ # Internal: builds the single binary with the BASELINE_ARCH tier for
+ # non-kernel TUs and links all KERNEL_TIER_OBJS_LINK on top.
+ .PHONY: all-single
+-all-single: $(BWA_LIB) $(HTS_LIB) $(LIBSAIS_OBJS) $(if $(filter 1,$(ZLIBNG_USE_VENDORED)),$(ZLIBNG_LIB)) $(KERNEL_TIER_OBJS_LINK) src/main.o
+-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) src/main.o $(KERNEL_TIER_OBJS_LINK) $(BWA_LIB) $(LIBSAIS_OBJS) $(LIBS) $(MIMALLOC_LDFLAGS) -o $(EXE)
++all-single: $(BWA_LIB) $(if $(filter 1,$(ZLIBNG_USE_VENDORED)),$(ZLIBNG_LIB)) $(KERNEL_TIER_OBJS_LINK) src/main.o
++	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) src/main.o $(KERNEL_TIER_OBJS_LINK) $(BWA_LIB) $(LIBS) $(MIMALLOC_LDFLAGS) -o $(EXE)
+ 
+ # ARM64/Apple Silicon build target - single binary, no multi-binary launcher needed
+ arm64:
+@@ -786,8 +782,8 @@
+ 	ln -sf bwa-mem3.arm64 bwa-mem3
+ 
+ 
+-$(EXE):$(BWA_LIB) $(HTS_LIB) $(LIBSAIS_OBJS) $(if $(filter 1,$(USE_MIMALLOC)),$(MIMALLOC_LIB)) $(if $(filter 1,$(ZLIBNG_USE_VENDORED)),$(ZLIBNG_LIB)) src/main.o
+-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) src/main.o $(BWA_LIB) $(LIBSAIS_OBJS) $(LIBS) $(MIMALLOC_LDFLAGS) -o $@
++$(EXE):$(BWA_LIB) $(if $(filter 1,$(USE_MIMALLOC)),$(MIMALLOC_LIB)) $(if $(filter 1,$(ZLIBNG_USE_VENDORED)),$(ZLIBNG_LIB)) src/main.o
++	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) src/main.o $(BWA_LIB) $(LIBS) $(MIMALLOC_LDFLAGS) -o $@
+ 
+ # Regression test for issue 38 / upstream PR 289: exercises an all-len1==0
+ # batch that drives each SIMD kswv kernel through the nrow==0 path. Without
+@@ -805,13 +801,13 @@
+ src/kswv.native.o: src/kswv.cpp
+ 	$(CXX) -c $(BASE_CXXFLAGS) -march=native $(CPPFLAGS) $(INCLUDES) $(DEPFLAGS) $< -o $@
+ 
+-kswv_nrow_zero_test: $(BWA_LIB) $(HTS_LIB) src/kswv.native.o test/kswv_nrow_zero_test.o
++kswv_nrow_zero_test: $(BWA_LIB) src/kswv.native.o test/kswv_nrow_zero_test.o
+ 	$(CXX) $(BASE_CXXFLAGS) -march=native $(LDFLAGS) test/kswv_nrow_zero_test.o src/kswv.native.o $(BWA_LIB) $(LIBS) -o $@
+ 
+ # Issue 173 / Task 2: mat-aware make_kswv freed-cell detection. Mirrors the
+ # kswv_nrow_zero_test link line (native-tier kswv ahead of libbwa.a so the
+ # host's concrete kswv class is linked) plus the doctest include path.
+-kswv_freed_cell_test: $(BWA_LIB) $(HTS_LIB) src/kswv.native.o test/kswv_freed_cell_test.o
++kswv_freed_cell_test: $(BWA_LIB) src/kswv.native.o test/kswv_freed_cell_test.o
+ 	$(CXX) $(BASE_CXXFLAGS) -march=native $(LDFLAGS) test/kswv_freed_cell_test.o src/kswv.native.o $(BWA_LIB) $(LIBS) -o $@
+ 
+ # Native-tier copy of bandedSWA.cpp, linked ahead of libbwa.a for the same
+@@ -826,19 +822,19 @@
+ # getScores8/16 padding-lane / prefetch contract regression. Meaningful under
+ # ASan (`make ASAN=1 bandedswa_padding_test`): a tight-allocation caller that
+ # over-reads the SeqPair array aborts; the bounded prefetch runs clean.
+-bandedswa_padding_test: $(BWA_LIB) $(HTS_LIB) src/bandedSWA.native.o test/bandedswa_padding_test.o
++bandedswa_padding_test: $(BWA_LIB) src/bandedSWA.native.o test/bandedswa_padding_test.o
+ 	$(CXX) $(BASE_CXXFLAGS) -march=native $(LDFLAGS) test/bandedswa_padding_test.o src/bandedSWA.native.o $(BWA_LIB) $(LIBS) -o $@
+ 
+ # Unsigned h0-prefix seed regression: getScores8 vs scalar at zdrop > 126 with
+ # seed prefix bytes > 127 (the range the old signed seed could not represent).
+-bandedswa_highzdrop_seed_test: $(BWA_LIB) $(HTS_LIB) src/bandedSWA.native.o test/bandedswa_highzdrop_seed_test.o
++bandedswa_highzdrop_seed_test: $(BWA_LIB) src/bandedSWA.native.o test/bandedswa_highzdrop_seed_test.o
+ 	$(CXX) $(BASE_CXXFLAGS) -march=native $(LDFLAGS) test/bandedswa_highzdrop_seed_test.o src/bandedSWA.native.o $(BWA_LIB) $(LIBS) -o $@
+ 
+ # High-h0 / small-zdrop z-drop regression: getScores8 vs scalar with the seed
+ # score h0 above zdrop+1 at small zdrop (the region a relaxed 8-bit routing
+ # envelope would newly admit), where the z-drop drift's unset-best sentinel used
+ # to fire the z-drop one row early.
+-bandedswa_high_h0_zdrop_test: $(BWA_LIB) $(HTS_LIB) src/bandedSWA.native.o test/bandedswa_high_h0_zdrop_test.o
++bandedswa_high_h0_zdrop_test: $(BWA_LIB) src/bandedSWA.native.o test/bandedswa_high_h0_zdrop_test.o
+ 	$(CXX) $(BASE_CXXFLAGS) -march=native $(LDFLAGS) test/bandedswa_high_h0_zdrop_test.o src/bandedSWA.native.o $(BWA_LIB) $(LIBS) -o $@
+ 
+ # Build the test binaries with the same ARCH_FLAGS as libbwa.a so the
+@@ -852,33 +848,35 @@
+ # recipe references ../ext/htslib/libhts.a directly. Without this prereq,
+ # callers that skip the bwa-mem3 binary build (which builds it as a
+ # side-effect of $(EXE) deps) link-fail.
+-test-binaries: $(BWA_LIB) $(HTS_LIB)
++test-binaries: $(BWA_LIB)
+ 	$(MAKE) -C test framework unit integration \
+ 	    CXX="$(CXX)" \
+ 	    COVERAGE=$(COVERAGE) \
+ 	    ARCH_FLAGS_FROM_PARENT='$(ARCH_FLAGS)' \
+ 	    ARM_CPU='$(ARM_CPU)' \
+ 	    ARM_CACHE_LINE='$(or $(ARM_CACHE_LINE),128)' \
+-	    HTSLIB_static_LIBS='$(HTSLIB_static_LIBS)' \
+-	    HTSLIB_static_LDFLAGS='$(HTSLIB_static_LDFLAGS)'
++	    HTSLIB_CFLAGS='$(HTSLIB_CFLAGS)' \
++	    HTSLIB_LIBS='$(HTSLIB_LIBS)' \
++	    LIBSAIS_LIBS='$(LIBSAIS_LIBS)' \
++	    LIBS_EXTRA='$(LIBS_EXTRA)'
+ 
+-shm_section_find_test: $(BWA_LIB) $(HTS_LIB) $(LIBSAIS_OBJS) test/shm_section_find_test.o
+-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) test/shm_section_find_test.o $(BWA_LIB) $(LIBSAIS_OBJS) $(LIBS) -o $@
++shm_section_find_test: $(BWA_LIB) test/shm_section_find_test.o
++	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) test/shm_section_find_test.o $(BWA_LIB) $(LIBS) -o $@
+ 
+-shm_pack_round_trip_test: $(BWA_LIB) $(HTS_LIB) $(LIBSAIS_OBJS) test/shm_pack_round_trip_test.o
+-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) test/shm_pack_round_trip_test.o $(BWA_LIB) $(LIBSAIS_OBJS) $(LIBS) -o $@
++shm_pack_round_trip_test: $(BWA_LIB) test/shm_pack_round_trip_test.o
++	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) test/shm_pack_round_trip_test.o $(BWA_LIB) $(LIBS) -o $@
+ 
+-shm_lock_destroy_test: $(BWA_LIB) $(HTS_LIB) $(LIBSAIS_OBJS) test/shm_lock_destroy_test.o
+-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) test/shm_lock_destroy_test.o $(BWA_LIB) $(LIBSAIS_OBJS) $(LIBS) -o $@
++shm_lock_destroy_test: $(BWA_LIB) test/shm_lock_destroy_test.o
++	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) test/shm_lock_destroy_test.o $(BWA_LIB) $(LIBS) -o $@
+ 
+-kt_for_pool_test: $(BWA_LIB) $(HTS_LIB) test/kt_for_pool_test.o
++kt_for_pool_test: $(BWA_LIB) test/kt_for_pool_test.o
+ 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) test/kt_for_pool_test.o $(BWA_LIB) $(LIBS) -o $@
+ 
+ # Standalone on purpose: it defines its own calloc so a zero-size request can
+ # return NULL, and that interposition must not reach any other test. See the
+ # header comment in the source.
+-bns_zero_calloc_test: $(BWA_LIB) $(HTS_LIB) $(LIBSAIS_OBJS) test/bns_zero_calloc_test.o
+-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) test/bns_zero_calloc_test.o $(BWA_LIB) $(LIBSAIS_OBJS) $(LIBS) -o $@
++bns_zero_calloc_test: $(BWA_LIB) test/bns_zero_calloc_test.o
++	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) test/bns_zero_calloc_test.o $(BWA_LIB) $(LIBS) -o $@
+ 
+ # fast_reader is C (not C++); the implicit .c rule omits $(INCLUDES), so give
+ # these objects explicit rules carrying the project include paths (incl.
+@@ -1066,12 +1064,6 @@
+ # htslib: minimal configure (no lzma/bz2/curl/S3/GCS/plugins), zlib only.
+ # Guard on config.mk (only created by ./configure) rather than Makefile, which
+ # is checked into the htslib tree and would make the guard a no-op.
+-$(HTS_LIB):
+-	cd ext/htslib && \
+-	    ([ -f config.mk ] || (autoreconf -i && \
+-	        ./configure --disable-lzma --disable-libcurl --disable-gcs \
+-	                    --disable-s3 --disable-plugins --disable-bz2)) && \
+-	    $(MAKE) libhts.a htslib_static.mk
+ 
+ # Companion to the `-include ext/htslib/htslib_static.mk` near LIBS:
+ # declare the include file as a target with a non-empty recipe so GNU
+@@ -1084,8 +1076,6 @@
+ # the restart, leaving the include variables empty at link time.
+ # Must be placed after the default goal (myall / all) so it doesn't
+ # accidentally become the default goal of `make` with no arguments.
+-ext/htslib/htslib_static.mk: $(HTS_LIB)
+-	@:
+ 
+ # libsais: compile the two C sources we use (libsais.c + libsais64.c) as
+ # plain .o files. OpenMP enabled via LIBSAIS_OPENMP so libsais64_gsa_omp
+@@ -1100,16 +1090,6 @@
+ # bump touching only a shared header would otherwise leave one of the two SA
+ # objects compiled against the old one. The .d files land inside ext/libsais
+ # beside the .o files that are already there, and `clean` removes both.
+-$(LIBSAIS_DIR)/src/%.o: $(LIBSAIS_DIR)/src/%.c
+-	@if [ ! -f $(LIBSAIS_DIR)/include/libsais64.h ]; then \
+-	    echo "ERROR: $(LIBSAIS_DIR) is empty. Run: git submodule update --init --recursive"; \
+-	    exit 1; \
+-	fi
+-	@if [ "$(UNAME_S)" = "Darwin" ] && [ -z "$(strip $(LIBOMP_PREFIX))" ]; then \
+-	    echo "ERROR: libomp not found. Install with 'brew install libomp', or set LIBOMP_PREFIX to its install prefix."; \
+-	    exit 1; \
+-	fi
+-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(ASAN_FLAGS) $(LIBSAIS_CFLAGS) $(LIBSAIS_OPENMP_CFLAGS) $(DEPFLAGS) $< -o $@
+ 
+ # Build mimalloc via its own CMake system. Shells out to cmake once and
+ # caches the build tree under ext/mimalloc/build. This rule always builds
+@@ -1137,10 +1117,8 @@
+ 
+ clean: pgo-clean profile-clean lto-clean
+ 	rm -fr src/*.o src/*.d src/version.h test/*.o test/*.d $(FLAGS_STAMP) $(BWA_LIB) $(EXE) $(STANDALONE_TESTS) kvec_alloc_fail_test bwa-mem3.arm64
+-	rm -f $(LIBSAIS_OBJS) $(LIBSAIS_OBJS:.o=.d)
+ 	rm -f src/*.gcno src/*.gcda
+ 	$(MAKE) -C test clean
+-	-[ -f ext/htslib/config.mk ] && cd ext/htslib && $(MAKE) distclean
+ 	rm -rf $(MIMALLOC_BUILD)
+ 	rm -rf $(ZLIBNG_BUILD)
+ 
+@@ -1373,4 +1351,4 @@
+ # (src/%.avx2.o), native and standalone-test objects are all picked up.
+ # `-include` (not `include`) makes a glob that matches nothing — a clean tree —
+ # silently fine rather than a hard error.
+--include src/*.d test/*.d $(LIBSAIS_OBJS:.o=.d)
++-include src/*.d test/*.d
+--- a/test/Makefile
++++ b/test/Makefile
+@@ -25,6 +25,9 @@
+ UNAME_M := $(shell uname -m)
+ UNAME_S := $(shell uname -s)
+ IS_ARM  := $(filter $(UNAME_M),arm64 aarch64)
++HTSLIB_CFLAGS ?= $(shell pkg-config --cflags htslib)
++HTSLIB_LIBS ?= $(shell pkg-config --libs htslib)
++LIBSAIS_LIBS ?= -lsais
+ 
+ ifneq ($(IS_ARM),)
+     CXX ?= clang++
+@@ -34,15 +37,15 @@
+             $(error libomp not found: install with `brew install libomp`, or set LIBOMP_PREFIX to its install prefix)
+         endif
+         CXXFLAGS ?= -std=c++11 -O2 -Xpreprocessor -fopenmp -I$(LIBOMP_PREFIX)/include
+-        LIBS     ?= -L.. -L$(LIBOMP_PREFIX)/lib -lomp -lbwa ../ext/libsais/src/libsais.o ../ext/libsais/src/libsais64.o -lz -framework Accelerate ../ext/htslib/libhts.a -lpthread
++        LIBS     ?= -L.. -L$(LIBOMP_PREFIX)/lib -lomp -lbwa $(LIBSAIS_LIBS) -lz -framework Accelerate $(HTSLIB_LIBS) -lpthread
+     else
+         CXXFLAGS ?= -std=c++11 -O2 -fopenmp
+-        LIBS     ?= -L.. -fopenmp -lbwa ../ext/libsais/src/libsais.o ../ext/libsais/src/libsais64.o -lz ../ext/htslib/libhts.a -lpthread
++        LIBS     ?= -L.. -fopenmp -lbwa $(LIBSAIS_LIBS) -lz $(HTSLIB_LIBS) -lpthread
+     endif
+ else
+     CXX      ?= g++
+     CXXFLAGS ?= -std=c++11 -fopenmp -mtune=native -march=native
+-    LIBS     ?= -L.. -fopenmp -lbwa ../ext/libsais/src/libsais.o ../ext/libsais/src/libsais64.o -lz ../ext/htslib/libhts.a -lpthread
++    LIBS     ?= -L.. -fopenmp -lbwa $(LIBSAIS_LIBS) -lz $(HTSLIB_LIBS) -lpthread
+ endif
+ 
+ # Inherit htslib's transitive deps from the parent Makefile so libhts.a's
+@@ -53,8 +56,7 @@
+ # which case the link will fail the same way the parent's would without
+ # the parent's htslib_static.mk include block -- see the parent Makefile
+ # for the mechanism.
+-LIBS    += $(HTSLIB_static_LIBS)
+-LDFLAGS += $(HTSLIB_static_LDFLAGS)
++LIBS += $(LIBS_EXTRA)
+ 
+ ifneq ($(IS_ARM),)
+     # Keep the ARM cache-line alignment in lock-step with the top-level Makefile:
+@@ -84,10 +86,10 @@
+     ifneq ($(ARM_CPU),)
+         CPPFLAGS += -mcpu=$(ARM_CPU)
+     endif
+-    INCLUDES = -I../src -I../ext/sse2neon -I../ext -I../ext/htslib
++    INCLUDES = -I../src -I../ext/sse2neon -I../ext $(HTSLIB_CFLAGS)
+ else
+     CPPFLAGS = -DENABLE_PREFETCH
+-    INCLUDES = -I../src -I../ext -I../ext/htslib
++    INCLUDES = -I../src -I../ext $(HTSLIB_CFLAGS)
+ endif
+ 
+ FRAMEWORK_DIR   := framework
+@@ -137,7 +139,7 @@
+ # $(INTEGRATION_DIR)/<name>.o, satisfied by the explicit pattern rule
+ # further down.
+ 
+-.PHONY: all framework unit integration clean libsais-objs
++.PHONY: all framework unit integration clean
+ .SUFFIXES: .cpp .o
+ 
+ # Default: build everything.
+@@ -219,11 +221,6 @@
+ # binaries: when libbwa.a is restored from a CI cache without a fresh
+ # parent `make` (e.g. proto-neon-kswv.yml's both-caches-hit path), $(BWA_LIB)
+ # is already up-to-date so the parent never triggers libsais.o on its own.
+-libsais-objs:
+-	$(MAKE) -C .. ext/libsais/src/libsais.o ext/libsais/src/libsais64.o
+-
+-$(EXE) $(UNIT_BIN) $(INTEGRATION_BIN): | libsais-objs
+-
+ # NB: $(LDFLAGS) is threaded through every link rule below so COVERAGE=1
+ # (which appends --coverage to LDFLAGS at the top of the file) propagates
+ # uniformly. Without it, `make -C test all COVERAGE=1` would leave the
