@@ -1,0 +1,43 @@
+Fix compilation of the bundled PnMPI (MUST -> GTI -> PnMPI) on AArch64 with GCC.
+
+In MPI_Pcontrol (PnMPI's wrapper.c), inline (PNMPI_PCONTROL_VARG) arguments
+in the PnMPI Pcontrol format were accessed by casting the va_list to a pointer:
+
+    start = (TRANSTYPE *)va_alist;
+
+This assumes va_list is a plain pointer into the stack argument area. On
+AArch64 (AAPCS64) va_list is a struct, so GCC rejects the cast and the build
+fails. On x86_64 the cast compiles only because va_list is an array type, but
+points at the va_list bookkeeping structure, not at the arguments.
+
+Forwarding untyped variadic arguments cannot be done portably, so the VARG
+case now prints a warning and returns PNMPI_ERROR instead.
+
+MUST is not affected functionally: mustrun configures PnMPI with
+'globalpcontrol typed 4042 pointer' (TYPED mode), which reads its argument
+with va_arg and never reaches this code path. The INT, TYPED and PTR modes
+are unchanged.
+
+author: Felix Tomski (RWTH Aachen University)
+diff -ruN MUST-v1.11.2.orig/externals/GTI/externals/PnMPI/src/pnmpi/wrapper.c MUST-v1.11.2/externals/GTI/externals/PnMPI/src/pnmpi/wrapper.c
+--- MUST-v1.11.2.orig/externals/GTI/externals/PnMPI/src/pnmpi/wrapper.c	2026-11-01 22:30:35.101125354 +0100
++++ MUST-v1.11.2/externals/GTI/externals/PnMPI/src/pnmpi/wrapper.c	2026-11-01 22:30:35.155611798 +0100
+@@ -1043,7 +1043,17 @@
+         }
+       else
+         {
+-          start = (TRANSTYPE *)va_alist;
++          /* VARG: Forwarding the inline arguments requires va_list to be a
++           * plain pointer into the stack argument area. This does not hold on
++           * register-based ABIs like x86_64 and AArch64 (where va_list is a
++           * struct and the cast does not compile), so report an error instead.
++           * Use PNMPI_PCONTROL_PTR to pass arguments as a buffer. */
++          WARNPRINT("PNMPI_PCONTROL_VARG is not supported, use "
++                    "PNMPI_PCONTROL_PTR instead");
++          va_end(va_alist);
++          pnmpi_reset_return_address();
++          pnmpi_reset_function_address();
++          return PNMPI_ERROR;
+         }
+       leni = (size + sizeof(TRANSTYPE) - 1) / sizeof(TRANSTYPE);
+ 
