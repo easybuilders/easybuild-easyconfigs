@@ -1,0 +1,58 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'tblite'
+version = '0.6.0'
+
+homepage = 'https://github.com/tblite/tblite'
+description = """Light-weight tight-binding framework"""
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+github_account = 'tblite'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['d629fed6e5c4942eed56d87a0b32218e279e00444bf6766ec345740507c42c24']
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.31.3'),
+    ('meson-python', '0.18.0'),
+]
+
+dependencies = [
+    ('Simple-DFTD3', '1.4.0'),
+    ('DFT-D4', '4.2.0'),
+    # for tblite Python bindings
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+]
+
+build_shared_libs = True
+
+# run suite of tests with ctest, repeat once if a test fails
+test_cmd = 'ctest --parallel 1  --repeat until-pass:2'
+runtest = ''
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+}
+
+exts_list = [
+    (name, version, {
+        'checksums': ['339e6d233ea3b913f1485264408b2b30a1b4355cdcf1bc2a86c70bef44ca0a65'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/tblite',
+              'lib/libtblite.%s' % SHLIB_EXT],
+    'dirs': ['include/%(name)s', 'lib/cmake', 'lib/pkgconfig',
+             'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["mctc-convert --help"]
+
+moduleclass = 'chem'
