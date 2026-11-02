@@ -1,0 +1,48 @@
+easyblock = 'PythonBundle'
+
+name = 'PyTorch-Geometric'
+version = '2.8.0'
+
+homepage = 'https://github.com/rusty1s/pytorch_geometric'
+description = "PyTorch Geometric (PyG) is a geometric deep learning extension library for PyTorch."
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+builddependencies = [('flit-core', '3.12.0')]
+dependencies = [
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('PyTorch', '2.9.1'),
+    ('aiohttp', '3.12.13'),
+    ('python-xxhash', '3.6.0'),
+    ('tqdm', '4.67.1'),
+]
+
+exts_list = [
+    ('torch_geometric', version, {
+        'source_urls': ['https://github.com/pyg-team/pytorch_geometric/archive/refs/tags/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'patches': ['PyTorch-Geometric-2.8.0_fix-pin-memory.patch'],
+        'runtest': (
+            'pytest'
+            ' --deselect=test/data/test_feature_store.py::test_feature_store'  # Python 3.13 dataclass equality
+            ' --deselect=test/nn/test_model_summary.py::test_summary_with_to_hetero_model'  # tabulate alignment
+            # CPU sparse CSR matrix multiplication requires PyTorch built with MKL
+            ' --deselect=test/nn/models/test_graph_unet.py::test_graph_unet'
+            ' --deselect=test/nn/pool/test_asap.py::test_asap'
+            ' --deselect=test/test_edge_index.py::test_spspmm'
+            ' --deselect=test/transforms/test_add_metapaths.py::test_add_metapaths'
+            ' --deselect=test/transforms/test_add_metapaths.py::test_add_metapaths_max_sample'
+            ' --deselect=test/transforms/test_add_metapaths.py::test_add_weighted_metapaths'
+            ' --deselect=test/transforms/test_two_hop.py::test_two_hop'
+        ),
+        'testinstall': True,
+        'checksums': [
+            {'torch_geometric-2.8.0.tar.gz': '369bcbed7e5835feb3eba0f78791d90dd1790ba523face79c78bbd093ef987a3'},
+            {'PyTorch-Geometric-2.8.0_fix-pin-memory.patch':
+             '350d9686ee2886b94acb3db4800c1606c06349bd296ad0da435a67313c819c51'},
+        ],
+    }),
+]
+
+moduleclass = 'lib'

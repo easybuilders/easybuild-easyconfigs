@@ -1,0 +1,69 @@
+Fix pinned-memory dispatch for PyTorch DataLoader with CUDA.
+
+PyTorch forwards an optional device argument to aten._pin_memory, but the
+EdgeIndex, Index and HashTensor implementations accept only one argument.
+Accept the device and pass it through when pinning their backing tensors.
+
+--- a/torch_geometric/edge_index.py
++++ b/torch_geometric/edge_index.py
+@@ -1367,8 +1367,11 @@
+ 
+ 
+ @implements(aten._pin_memory.default)
+-def _pin_memory(tensor: EdgeIndex) -> EdgeIndex:
+-    out = apply_(tensor, aten._pin_memory.default)
++def _pin_memory(
++    tensor: EdgeIndex,
++    device: Optional[torch.device] = None,
++) -> EdgeIndex:
++    out = apply_(tensor, aten._pin_memory.default, device)
+     assert isinstance(out, EdgeIndex)
+     return out
+ 
+--- a/torch_geometric/index.py
++++ b/torch_geometric/index.py
+@@ -507,8 +507,11 @@
+ 
+ 
+ @implements(aten._pin_memory.default)
+-def _pin_memory(tensor: Index) -> Index:
+-    out = apply_(tensor, aten._pin_memory.default)
++def _pin_memory(
++    tensor: Index,
++    device: Optional[torch.device] = None,
++) -> Index:
++    out = apply_(tensor, aten._pin_memory.default, device)
+     assert isinstance(out, Index)
+     return out
+ 
+--- a/torch_geometric/hash_tensor.py
++++ b/torch_geometric/hash_tensor.py
+@@ -542,20 +542,23 @@
+ 
+ 
+ @implements(aten._pin_memory.default)
+-def _pin_memory(tensor: HashTensor) -> HashTensor:
++def _pin_memory(
++    tensor: HashTensor,
++    device: Optional[torch.device] = None,
++) -> HashTensor:
+     _map = tensor._map
+     if isinstance(_map, Tensor):
+-        _map = aten._pin_memory.default(_map)
++        _map = aten._pin_memory.default(_map, device)
+ 
+     value = tensor._value
+     if value is not None:
+-        value = aten._pin_memory.default(value)
++        value = aten._pin_memory.default(value, device)
+ 
+     return tensor._from_data(
+         _map,
+         value,
+-        aten._pin_memory.default(tensor._min_key),
+-        aten._pin_memory.default(tensor._max_key),
++        aten._pin_memory.default(tensor._min_key, device),
++        aten._pin_memory.default(tensor._max_key, device),
+         num_keys=tensor.size(0),
+         dtype=tensor.dtype,
+     )
