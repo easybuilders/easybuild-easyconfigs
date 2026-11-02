@@ -1,0 +1,87 @@
+Fix hidden pybind11 symbols in TensorFlow 2.20.0 CPU test builds with GCC.
+
+GCC propagates hidden visibility from pybind11 types to functions using those
+as parameters or return values. As a result, _pywrap_tf_session.so and
+_tf_stack.so can fail to import due to missing GenericProtoCast,
+PyProtoGetCppMessagePointer, and ImportStatusModule symbols.
+
+Backport upstream visibility fixes to pybind11_protobuf and pybind11_abseil,
+and register their patches in TensorFlow's Bazel repository definitions so
+fresh builds apply them automatically, rather than modifying bazel-root.
+
+Upstream: https://github.com/pybind/pybind11_protobuf/pull/239
+          https://github.com/pybind/pybind11_abseil/pull/74
+          
+Author: Pavel Tomanek (Ugent/Inuits) with help of ChatGPT6.0
+---
+diff --git a/tensorflow/workspace2.bzl b/tensorflow/workspace2.bzl
+--- a/tensorflow/workspace2.bzl
++++ b/tensorflow/workspace2.bzl
+@@ -710,6 +710,7 @@
+         urls = tf_mirror_urls("https://github.com/pybind/pybind11_protobuf/archive/f02a2b7653bc50eb5119d125842a3870db95d251.zip"),
+         sha256 = "3cf7bf0f23954c5ce6c37f0a215f506efa3035ca06e3b390d67f4cbe684dce23",
+         strip_prefix = "pybind11_protobuf-f02a2b7653bc50eb5119d125842a3870db95d251",
++        patch_file = ["//third_party/pybind11_protobuf:visibility.patch"],
+     )
+     tf_http_archive(
+         name = "coremltools",
+diff --git a/third_party/xla/third_party/pybind11_abseil/workspace.bzl b/third_party/xla/third_party/pybind11_abseil/workspace.bzl
+--- a/third_party/xla/third_party/pybind11_abseil/workspace.bzl
++++ b/third_party/xla/third_party/pybind11_abseil/workspace.bzl
+@@ -16,5 +16,8 @@
+         strip_prefix = "pybind11_abseil-{commit}".format(commit = PA_COMMIT),
+         urls = tf_mirror_urls("https://github.com/pybind/pybind11_abseil/archive/{commit}.tar.gz".format(commit = PA_COMMIT)),
+         build_file = "//third_party/pybind11_abseil:BUILD.bazel",
+-        patch_file = ["//third_party/pybind11_abseil:remove_license.patch"],
++        patch_file = [
++            "//third_party/pybind11_abseil:remove_license.patch",
++            "//third_party/pybind11_abseil:visibility.patch",
++        ],
+     )
+diff --git a/third_party/pybind11_protobuf/visibility.patch b/third_party/pybind11_protobuf/visibility.patch
+new file mode 100644
+--- /dev/null
++++ b/third_party/pybind11_protobuf/visibility.patch
+@@ -0,0 +1,32 @@
++--- a/pybind11_protobuf/proto_cast_util.h
+++++ b/pybind11_protobuf/proto_cast_util.h
++@@ -41,1 +41,2 @@
+++__attribute__((visibility("default")))
++ absl::string_view PyBytesAsStringView(pybind11::bytes py_bytes);
++@@ -50,1 +51,2 @@
+++__attribute__((visibility("default")))
++ const ::google::protobuf::Message *PyProtoGetCppMessagePointer(pybind11::handle src);
++@@ -53,1 +55,2 @@
+++__attribute__((visibility("default")))
++ absl::optional<std::string> PyProtoDescriptorFullName(
++@@ -56,1 +59,2 @@
+++__attribute__((visibility("default")))
++ bool PyProtoHasMatchingFullName(pybind11::handle py_proto,
++@@ -60,1 +64,2 @@
+++__attribute__((visibility("default")))
++ pybind11::bytes PyProtoSerializePartialToString(pybind11::handle py_proto,
++@@ -63,1 +68,2 @@
+++__attribute__((visibility("default")))
++ std::unique_ptr<::google::protobuf::Message> AllocateCProtoFromPythonSymbolDatabase(
++@@ -68,1 +74,2 @@
+++__attribute__((visibility("default")))
++ void CProtoCopyToPyProto(::google::protobuf::Message *message, pybind11::handle py_proto);
++@@ -70,1 +77,2 @@
+++__attribute__((visibility("default")))
++ pybind11::handle GenericFastCppProtoCast(::google::protobuf::Message *src,
++@@ -74,1 +82,2 @@
+++__attribute__((visibility("default")))
++ pybind11::handle GenericPyProtoCast(::google::protobuf::Message *src,
++@@ -78,1 +87,2 @@
+++__attribute__((visibility("default")))
++ pybind11::handle GenericProtoCast(::google::protobuf::Message *src,
+diff --git a/third_party/xla/third_party/pybind11_abseil/visibility.patch b/third_party/xla/third_party/pybind11_abseil/visibility.patch
+new file mode 100644
+--- /dev/null
++++ b/third_party/xla/third_party/pybind11_abseil/visibility.patch
+@@ -0,0 +1,5 @@
++--- a/pybind11_abseil/import_status_module.h
+++++ b/pybind11_abseil/import_status_module.h
++@@ -19,1 +19,2 @@
+++__attribute__((visibility("default")))
++ module_ ImportStatusModule(bool bypass_regular_import = true);
