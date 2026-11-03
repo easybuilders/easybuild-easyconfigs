@@ -1,0 +1,32 @@
+easyblock = 'Tarball'
+
+name = 'Skiff'
+version = '0.1.0'
+
+homepage = 'https://github.com/CARV-ICS-FORTH/skiff'
+description = """Skiff lets HPC users run their own private Kubernetes cluster on a Slurm cluster,
+without root privileges: a Slurm job starts K3s on its nodes, each inside a rootless Apptainer
+container, and ends the cluster with the job. This installs the launcher scripts of the release;
+the Skiff image and the programs it needs are fetched per user by 'skiff.sh download'.
+Running a cluster needs Slurm, a home directory shared by the compute nodes, and an
+installation they can see."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/CARV-ICS-FORTH/skiff/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['14bb6b296a6d500a7a6e99ded5bce00189c3a01ae0090c89c307235a86d16bbe']
+
+modextrapaths = {'PATH': 'scripts'}
+
+modloadmsg = """Skiff %(version)s: 'skiff.sh download' (on a node with Internet access) fetches what a cluster needs,
+'srun -N1 skiff.sh check' checks a compute node, and a cluster starts with
+cd $EBROOTSKIFF/scripts && sbatch --nodes=2 --output=$HOME/skiff-cluster-%j.out skiff.slurm
+"""
+
+sanity_check_paths = {
+    'files': ['LICENSE', 'README.md', 'VERSION', 'scripts/skiff.sh', 'scripts/skiff.slurm'],
+    'dirs': [],
+}
+
+moduleclass = 'tools'
