@@ -1,0 +1,21 @@
+Disable OpenReg's internal C++ unit tests when building torch_openreg.
+
+The bundled OpenReg project runs its C++ unit tests via ctest as a POST_BUILD
+step when USE_TEST is enabled. These ortests can intermittently deadlock and
+leave the PyTorch test suite hanging indefinitely. This is tracked upstream in:
+https://github.com/pytorch/pytorch/issues/174359
+
+Disable only the internal OpenReg unit tests. PyTorch's OpenReg integration
+tests still build and use torch_openreg normally.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT6
+--- a/test/cpp_extensions/open_registration_extension/torch_openreg/setup.py
++++ b/test/cpp_extensions/open_registration_extension/torch_openreg/setup.py
+@@ -38,6 +38,7 @@ def build_deps():
+         + os.path.realpath(os.path.join(BASE_DIR, "torch_openreg")),
+         "-DPYTHON_INCLUDE_DIR=" + sysconfig.get_paths().get("include"),
+         "-DPYTORCH_INSTALL_DIR=" + get_pytorch_dir(),
++        "-DUSE_TEST=OFF",
+     ]
+     subprocess.check_call(
+         ["cmake", BASE_DIR] + cmake_args, cwd=build_dir, env=os.environ

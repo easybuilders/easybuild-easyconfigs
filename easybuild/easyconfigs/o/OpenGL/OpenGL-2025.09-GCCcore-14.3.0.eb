@@ -32,10 +32,10 @@ builddependencies = [
     ('libclc', '20.1.8'),
     ('libxml2', '2.14.3'),
     ('pkgconf', '2.4.3'),
+    ('LLVM', '20.1.8'),
 ]
 
 dependencies = [
-    ('LLVM', '20.1.8'),
     ('Wayland', '1.24.0'),
     ('X11', '20250608'),
     ('elfutils', '0.193'),
@@ -51,7 +51,7 @@ local_pkg_config = 'export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%(installdir)s/lib/p
 local_pkg_config += 'export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%(installdir)s/lib64/pkgconfig && '
 
 local_mesa_configopts = "-Dplatforms=x11,wayland -Dvulkan-drivers='swrast,amd' -Dvulkan-layers='device-select' "
-local_mesa_configopts += "-Dllvm=enabled -Dshared-llvm=enabled -Dlibunwind=enabled -Degl=enabled -Dglvnd=enabled "
+local_mesa_configopts += "-Dllvm=enabled -Dshared-llvm=disabled -Dlibunwind=enabled -Degl=enabled -Dglvnd=enabled "
 local_mesa_configopts += "-Dglx=auto -Dgbm=enabled -Dgles1=enabled -Dgles2=enabled -Dgallium-drivers=llvmpipe,radeonsi "
 local_mesa_configopts += "-Dvideo-codecs=vc1dec,h264dec,h264enc,h265dec,h265enc,av1dec,av1enc,vp9dec "
 
@@ -69,11 +69,14 @@ components = [
             'https://archive.mesa3d.org/older-versions/%(version_major)s.x/',
         ],
         'sources': [SOURCELOWER_TAR_XZ],
-        'patches': [{'name': 'Mesa-25.1.3_fix-glibc-2.43-once-init.patch', 'alt_location': 'Mesa'}],
+        'patches': [{'name': 'Mesa-25.1.3_fix-glibc-2.43-once-init.patch', 'alt_location': 'Mesa'},
+                    {'name': 'Mesa-25.2.2_add-orcjit-to-llvm-modules.patch', 'alt_location': 'Mesa'}],
         'checksums': [{'mesa-25.2.2.tar.xz':
                        '43d7abcd4aa8049d8fd75538344a374104765e81e17b4a6314cee2c0160e4412'},
                       {'Mesa-25.1.3_fix-glibc-2.43-once-init.patch':
-                       '73cfb3dedafe937996b171c55082d6317cf62e4371f6c1146c2d2a902cf7060b'},],
+                       '73cfb3dedafe937996b171c55082d6317cf62e4371f6c1146c2d2a902cf7060b'},
+                      {'Mesa-25.2.2_add-orcjit-to-llvm-modules.patch':
+                       '8e09e9218c59f320d412f1e04d1221d61efb8e1e314bff632ceb6e547435d24d'}],
         'start_dir': '%(namelower)s-%(version)s',
         'preconfigopts': local_pkg_config,
         'configopts': local_mesa_configopts,
