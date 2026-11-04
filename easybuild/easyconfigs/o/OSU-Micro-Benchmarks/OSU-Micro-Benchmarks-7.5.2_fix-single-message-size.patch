@@ -1,0 +1,20 @@
+Copy -m N before strsep in set_message_size() so a single value does not read an uninitialised pointer.
+Author: Rohit Goswami
+--- a/c/util/osu_util.c
++++ b/c/util/osu_util.c
+@@ -463,6 +463,7 @@
+     /* We just have a single value, so setting max */
+     if (0 == ccount) {
+         /* check if an exponent was provided */
++        freeme = token = strdup(val_str);
+         subtoken = strsep(&token, "^");
+         if (NULL == token) {
+             retval = set_max_message_size(atoll(subtoken));
+@@ -470,6 +471,7 @@
+             retval = set_max_message_size(
+                 (long long)pow(atoi(subtoken), atoi(token)));
+         }
++        free(freeme);
+     }
+     /* We have at least one colon */
+     else {
