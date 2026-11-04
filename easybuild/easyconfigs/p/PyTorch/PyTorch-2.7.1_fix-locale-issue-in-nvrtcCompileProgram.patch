@@ -1,0 +1,91 @@
+There is a bug in CUDA 11.7, fixed in CUDA 12.6.2 which changes the current thread locale
+when calling nvrtcCompileProgram.
+See e.g. https://stackoverflow.com/questions/74044994
+This also includes the encoding used by Python by default for e.g. subsequent invocations of `subprocess` calls.
+When the user environment is now set to e.g. UTF-8 and changed by CUDA (to ASCII/ANSI_X3.4-1968) Python will fail
+to decode UTF-8 output from programs invoked.
+This happens after an (internal) nvrtcCompileProgram call when `from scipy import stats` is executed which runs `lscpu` and errors with something like
+> /software/SciPy-bundle/2023.07-gfbf-2023a/lib/python3.11/site-packages/numpy/testing/_private/utils.py", line 1253, in <module>
+>    _SUPPORTS_SVE = check_support_sve()
+> /software/SciPy-bundle/2023.07-gfbf-2023a/lib/python3.11/site-packages/numpy/testing/_private/utils.py", line 1247, in check_support_sve
+>    output = subprocess.run(cmd, capture_output=True, text=True)
+> /software/Python/3.11.3-GCCcore-12.3.0/lib/python3.11/subprocess.py", line 2113, in _communicate
+>    stdout = self._translate_newlines(stdout,
+> UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 96: ordinal not in range(128)
+
+Fix by wrapping the nvrtcCompileProgram saving and restoring the thread locale.
+
+See https://github.com/pytorch/pytorch/pull/180569
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/cuda/detail/LazyNVRTC.cpp b/aten/src/ATen/cuda/detail/LazyNVRTC.cpp
+--- a/aten/src/ATen/cuda/detail/LazyNVRTC.cpp
++++ b/aten/src/ATen/cuda/detail/LazyNVRTC.cpp
+@@ -2,6 +2,9 @@
+ 
+ #include <ATen/cuda/nvrtc_stub/ATenNVRTC.h>
+ #include <ATen/DynamicLibrary.h>
++#if defined(CUDA_VERSION) && CUDA_VERSION < 12062
++#include <locale.h>
++#endif
+ #include <stdexcept>
+ 
+ 
+@@ -143,6 +148,32 @@ nvrtcResult nvrtcCreateProgram(nvrtcProgram *prog,
+   return fn(prog, src, name, numHeaders, headers, includeNames);
+ }
+ 
++// Workaround nvrtcCompileProgram changing the locale until 12.6.2
++#if defined(CUDA_VERSION) && CUDA_VERSION < 12062
++nvrtcResult nvrtcCompileProgram_wrapped(nvrtcProgram prog,
++                                        int numOptions,
++                                        const char * const *options) {
++  // Save & restore current thread locale which can get modified by nvrtcCompileProgram
++  locale_t oldLocale = uselocale((locale_t) 0);
++  auto result = lazyNVRTC.nvrtcCompileProgram_real(prog, numOptions, options);
++  if (oldLocale != (locale_t) 0)
++    uselocale(oldLocale);
++  return result;
++}
++
++nvrtcResult nvrtcCompileProgram(nvrtcProgram prog,
++                                int numOptions,
++                                const char * const *options) {
++  auto fn = reinterpret_cast<decltype(&nvrtcCompileProgram)>(getNVRTCLibrary().sym(__func__));
++  if (!fn)
++    throw std::runtime_error("Can't get nvrtcCompileProgram");
++  lazyNVRTC.nvrtcCompileProgram_real = fn;
++  fn = &nvrtcCompileProgram_wrapped;
++  lazyNVRTC.nvrtcCompileProgram = fn;
++  return fn(prog, numOptions, options);
++}
++#endif
++
+ NVRTC_STUB1(nvrtcDestroyProgram, nvrtcProgram *)
+ NVRTC_STUB2(nvrtcGetPTXSize, nvrtcProgram, size_t *)
+ NVRTC_STUB2(nvrtcGetPTX, nvrtcProgram, char *)
+@@ -150,7 +179,9 @@ NVRTC_STUB2(nvrtcGetPTX, nvrtcProgram, char *)
+ NVRTC_STUB2(nvrtcGetCUBINSize, nvrtcProgram, size_t *)
+ NVRTC_STUB2(nvrtcGetCUBIN, nvrtcProgram, char *)
+ #endif
++#if defined(CUDA_VERSION) && CUDA_VERSION >= 12062
+ NVRTC_STUB3(nvrtcCompileProgram, nvrtcProgram, int, const char * const *)
++#endif
+ _STUB_1(NVRTC, nvrtcGetErrorString, const char *, nvrtcResult)
+ NVRTC_STUB2(nvrtcGetProgramLogSize,nvrtcProgram, size_t*)
+ NVRTC_STUB2(nvrtcGetProgramLog, nvrtcProgram, char *)
+diff --git a/aten/src/ATen/cuda/nvrtc_stub/ATenNVRTC.h b/aten/src/ATen/cuda/nvrtc_stub/ATenNVRTC.h
+--- a/aten/src/ATen/cuda/nvrtc_stub/ATenNVRTC.h
++++ b/aten/src/ATen/cuda/nvrtc_stub/ATenNVRTC.h
+@@ -129,6 +129,10 @@ extern "C" typedef struct NVRTC {
+ #define CREATE_MEMBER(name) decltype(&name) name;
+   AT_FORALL_NVRTC(CREATE_MEMBER)
+ #undef CREATE_MEMBER
++#if defined(CUDA_VERSION) && CUDA_VERSION < 12062
++  // Must be at end!
++  decltype(nvrtcCompileProgram) nvrtcCompileProgram_real;
++#endif
+ } NVRTC;
+ 
+ extern "C" TORCH_CUDA_CPP_API NVRTC* load_nvrtc();
