@@ -23,7 +23,7 @@ sources = [
 checksums = ['4caf3e9ab0b998c59061836745778e9ea65e020700750d899da66a2ece092367']
 
 builddependencies = [
-    ('CMake', '3.31.11'),
+    ('CMake', '4.4.5'),  # Needs to be CMake >=4.3 to detect Lua 5.5
 ]
 dependencies = [
     ('casacore', '3.8.1'),  # was 3.5.0
@@ -36,17 +36,8 @@ dependencies = [
     ('Lua', '5.5.0'),  # see preconfigopts below
     ('libpng', '1.6.56'),
     ('libxml2', '2.15.1'),
+    ('gtkmm4', '4.20.0'),
 ]
-
-# AOFlagger's CMakeLists.txt does find_package(Lua 5.3 REQUIRED), but CMake's FindLua only knows Lua up to 5.4 and
-# rejects the Lua 5.5 headers ("Could NOT find Lua"); passing -DLUA_INCLUDE_DIR doesn't help. So the sed below replaces
-# that line by set() calls that point LUA_INCLUDE_DIR / LUA_LIBRARIES (static liblua.a + dl libs) at the Lua module.
-preconfigopts = "sed -i 's|find_package(Lua 5.3 REQUIRED)|set(LUA_INCLUDE_DIR $ENV{EBROOTLUA}/include)\\n"
-preconfigopts += "set(LUA_LIBRARIES $ENV{EBROOTLUA}/lib/liblua.a ${CMAKE_DL_LIBS})|' "
-preconfigopts += "../aoflagger-v%(version)s/CMakeLists.txt && "
-
-# Don't build the GUI programs (rfigui, aoqplot), which would require gtkmm
-configopts = '-DENABLE_GUI=OFF '
 
 sanity_check_paths = {
     'files': ['include/%(namelower)s.h', 'bin/%(namelower)s'],
