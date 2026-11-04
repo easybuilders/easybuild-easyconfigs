@@ -11,10 +11,14 @@ toolchain = {'name': 'gfbf', 'version': '2026.1'}
 
 source_urls = ['https://gitlab.com/%(name)s/%(name)s/-/archive/%(version)s/']
 sources = [SOURCE_TAR_BZ2]
-patches = ['libxc-7.1.2_use-env-python.patch']
+patches = [
+    'libxc-7.1.2_use-env-python.patch',
+    'libxc-7.1.2_fix_python_installation_path.patch',
+]
 checksums = [
     {'libxc-7.1.2.tar.bz2': '3915fac94416e4c415534223ea492ad2663f928acf27e98662c861b094a6c306'},
     {'libxc-7.1.2_use-env-python.patch': 'c0e3e983f19f147320fdd7e94aa94a501164ab9d8a8f5649b2205a92622da92f'},
+    {'libxc-7.1.2_fix_python_installation_path.patch': '6049aaa327735b64fe5b3a1a50e5b69d3ff5ac6f64ab65c0c9bfac14d7aacb09'},
 ]
 
 builddependencies = [
@@ -23,6 +27,9 @@ builddependencies = [
     # Since 7.1 the test suite is configured with pytest & scipy, and fails if any is missing
     ('Python-bundle-PyPI', '2026.04'),
     ('SciPy-bundle', '2026.05'),
+]
+dependencies = [
+    ('Python', '3.14.2'),
 ]
 
 # Enable building of third and fourth derivatives required by software that depends on libxc (like ABINIT, which
@@ -49,6 +56,9 @@ sanity_check_paths = {
     'dirs': ['include', 'lib/pkgconfig', 'lib/cmake/Libxc'],
 }
 
-sanity_check_commands = ['xc-info 1']
+sanity_check_commands = [
+    "xc-info 1",
+    "python -c 'import pylibxc'",
+]
 
 moduleclass = 'chem'
