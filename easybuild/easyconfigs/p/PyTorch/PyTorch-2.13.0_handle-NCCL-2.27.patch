@@ -1,0 +1,147 @@
+NCCL 2.27 doesn't support all features yet, e.g. device pointers for symmetric memory.
+This leads to CUDA_ERROR_ILLEGAL_ADDRESS errors in some kernels.
+
+Let it throw an exception instead of silently returning NULL pointers, and add a test skip for this case.
+See https://github.com/pytorch/pytorch/issues/185216
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/test_nccl.py b/test/distributed/test_nccl.py
+--- a/test/distributed/test_nccl.py
++++ b/test/distributed/test_nccl.py
+@@ -36,6 +36,8 @@ from torch.testing._internal.common_utils import (
+ # sharding on sandcastle. This line silences flake warnings
+ load_tests = load_tests  # noqa: PLW0127
+ 
++requires_symmetric_memory_device_API = requires_nccl_version((2, 28), "NCCL Symmetric Memory support device API from nccl 2.28")
++
+ nGPUs = torch.cuda.device_count()
+ if not TEST_CUDA:
+     print("CUDA not available, skipping tests", file=sys.stderr)
+@@ -252,7 +254,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
+ 
+     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
+     @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+-    @requires_nccl_version((2, 27), "NCCL Symmetric Memory support from nccl 2.27")
++    @requires_symmetric_memory_device_API
+     @skip_if_lt_x_gpu(2)
+     def test_nccl_symmem_alloc(self):
+         symm_mem.set_backend("NCCL")
+@@ -277,7 +279,9 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
+ 
+     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
+     @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+-    @requires_nccl_version((2, 27), "NCCL Symmetric Memory support from nccl 2.27")
++    @requires_nccl_version(
++        (2, 28), "NCCL Symmetric Memory support device API from nccl 2.28"
++    )
+     @skip_if_lt_x_gpu(2)
+     def test_nccl_symmem_rendezvous_many_allocations(self):
+         symm_mem.set_backend("NCCL")
+@@ -308,6 +312,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
+ 
+     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
+     @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
++    @requires_symmetric_memory_device_API
+     @skip_if_lt_x_gpu(2)
+     def test_nccl_symmem_rendezvous_world(self):
+         symm_mem.set_backend("NCCL")
+@@ -328,6 +333,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
+ 
+     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
+     @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
++    @requires_symmetric_memory_device_API
+     @skip_if_lt_x_gpu(2)
+     def test_nccl_symmem_rendezvous_subgroup(self):
+         symm_mem.set_backend("NCCL")
+@@ -349,9 +355,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
+ 
+     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
+     @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+-    @requires_nccl_version(
+-        (2, 28), "NCCL Symmetric Memory support device API from nccl 2.28"
+-    )
++    @requires_symmetric_memory_device_API
+     @skip_if_lt_x_gpu(2)
+     def test_nccl_symmem_collective(self):
+         symm_mem.set_backend("NCCL")
+@@ -380,9 +384,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
+ 
+     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
+     @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+-    @requires_nccl_version(
+-        (2, 28), "NCCL Symmetric Memory support device API from nccl 2.28"
+-    )
++    @requires_symmetric_memory_device_API
+     @skip_if_lt_x_gpu(2)
+     def test_nccl_symmem_collective_cuda_graph(self):
+         symm_mem.set_backend("NCCL")
+@@ -430,9 +432,7 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
+ 
+     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
+     @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+-    @requires_nccl_version(
+-        (2, 28), "NCCL Symmetric Memory support device API from nccl 2.28"
+-    )
++    @requires_symmetric_memory_device_API
+     @skip_if_lt_x_gpu(2)
+     def test_nccl_symmem_put(self):
+         symm_mem.set_backend("NCCL")
+@@ -514,6 +514,9 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
+     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
+     @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
+     @skip_if_lt_x_gpu(2)
++    @requires_nccl_version(
++        (2, 28), "NCCL Symmetric Memory multicast support from nccl 2.28"
++    )
+     def test_nccl_symmem_get(self):
+         symm_mem.set_backend("NCCL")
+         torch.cuda.set_device(self.rank)
+@@ -721,6 +724,9 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
+ 
+     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
+     @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
++    @requires_nccl_version(
++        (2, 28), "NCCL Symmetric Memory support device API from nccl 2.28"
++    )
+     @skip_if_lt_x_gpu(2)
+     def test_mempool_tensor_factory(self):
+         symm_mem.set_backend("NCCL")
+@@ -749,6 +755,9 @@ class NCCLSymmetricMemoryTest(MultiProcContinuousTest):
+ 
+     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
+     @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
++    @requires_nccl_version(
++        (2, 28), "NCCL Symmetric Memory support device API from nccl 2.28"
++    )
+     @skip_if_lt_x_gpu(2)
+     def test_mempool_compute_ops(self):
+         symm_mem.set_backend("NCCL")
+diff --git a/torch/csrc/distributed/c10d/symm_mem/NCCLSymmetricMemory.cu b/torch/csrc/distributed/c10d/symm_mem/NCCLSymmetricMemory.cu
+--- a/torch/csrc/distributed/c10d/symm_mem/NCCLSymmetricMemory.cu
++++ b/torch/csrc/distributed/c10d/symm_mem/NCCLSymmetricMemory.cu
+@@ -3,6 +3,7 @@
+ #ifdef NCCL_HAS_SYMMEM_SUPPORT
+ 
+ #include <algorithm>
++#include <stdexcept>
+ #include <vector_types.h>
+ #include <torch/csrc/distributed/c10d/GroupRegistry.hpp>
+ #include <torch/csrc/distributed/c10d/NCCLUtils.hpp>
+@@ -355,10 +356,16 @@ std::vector<void*> NCCLSymmetricMemory::get_signal_pad_ptrs() {
+ }
+ 
+ void** NCCLSymmetricMemory::get_buffer_ptrs_dev() {
++  #ifndef NCCL_HAS_SYMMEM_DEVICE_SUPPORT
++    TORCH_CHECK(false, "Device pointers are not available in NCCL < 2.28");
++  #endif
+   return pai_->buffers_dev_;
+ }
+ 
+ void** NCCLSymmetricMemory::get_signal_pad_ptrs_dev() {
++  #ifndef NCCL_HAS_SYMMEM_DEVICE_SUPPORT
++    TORCH_CHECK(false, "Device pointers are not available in NCCL < 2.28");
++  #endif
+   return pai_->signal_pads_dev_;
+ }
+ 

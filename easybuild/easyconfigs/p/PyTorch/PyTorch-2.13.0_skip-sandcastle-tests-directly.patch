@@ -1,0 +1,63 @@
+Those decorators return from the test function directly but still start them.
+Save the time for that as e.g. distributed test setup can take long.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/common_utils.py b/torch/testing/_internal/common_utils.py
+--- a/torch/testing/_internal/common_utils.py
++++ b/torch/testing/_internal/common_utils.py
+@@ -6035,25 +6035,7 @@ def find_library_location(lib_name: str) -> Path:
+     torch_root = Path(__file__).resolve().parents[2]
+     return torch_root / 'build' / 'lib' / lib_name
+ 
+-def skip_but_pass_in_sandcastle(reason):
+-    """
+-    Similar to unittest.skip, however in the sandcastle environment it just
+-    "passes" the test instead to avoid creating tasks complaining about tests
+-    skipping continuously.
+-    """
+-    def decorator(func):
+-        if not IS_SANDCASTLE:
+-            func.__unittest_skip__ = True
+-            func.__unittest_skip_why__ = reason
+-            return func
+-
+-        @wraps(func)
+-        def wrapper(*args, **kwargs):
+-            print(f'Skipping {func.__name__} on sandcastle for following reason: {reason}', file=sys.stderr)
+-            return
+-        return wrapper
+-
+-    return decorator
++skip_but_pass_in_sandcastle = unittest.skip
+ 
+ def mock_wrapper(method):
+     """
+@@ -6149,26 +6131,7 @@ def xfail_inherited_tests(tests):
+     return deco
+ 
+ 
+-def skip_but_pass_in_sandcastle_if(condition, reason):
+-    """
+-    Similar to unittest.skipIf, however in the sandcastle environment it just
+-    "passes" the test instead to avoid creating tasks complaining about tests
+-    skipping continuously.
+-    """
+-    def decorator(func):
+-        if condition:
+-            if IS_SANDCASTLE:
+-                @wraps(func)
+-                def wrapper(*args, **kwargs):
+-                    print(f'Skipping {func.__name__} on sandcastle for following reason: {reason}', file=sys.stderr)
+-                return wrapper
+-            else:
+-                func.__unittest_skip__ = True
+-                func.__unittest_skip_why__ = reason
+-
+-        return func
+-
+-    return decorator
++skip_but_pass_in_sandcastle_if = unittest.skipIf
+ 
+ def dtype_name(dtype):
+     """ Returns the pretty name of the dtype (e.g. torch.int64 -> int64). """

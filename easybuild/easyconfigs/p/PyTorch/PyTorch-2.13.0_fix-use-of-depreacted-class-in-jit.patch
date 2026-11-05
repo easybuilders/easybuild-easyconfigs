@@ -1,0 +1,50 @@
+Fix using `torch.cuda.amp. autocast` with JIT on Python 3.13
+    
+Avoid this error in e.g. tests
+> TypeError: module, class, method, function, traceback, frame, or code object was expected, got builtin_function_or_method
+    
+See https://github.com/pytorch/pytorch/pull/183522
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/cuda/amp/autocast_mode.py b/torch/cuda/amp/autocast_mode.py
+--- a/torch/cuda/amp/autocast_mode.py
++++ b/torch/cuda/amp/autocast_mode.py
+@@ -22,23 +22,25 @@ class autocast(torch.amp.autocast_mode.autocast):
+     """
+ 
+     # TODO: remove this conditional once we stop supporting Python < 3.13
++    # and `torch.jit.script` supports classes decorated with `deprecated`.
+     # Prior to Python 3.13, inspect.signature could not retrieve the correct
+     # signature information for classes decorated with @deprecated (unless
+     # the __new__ static method was explicitly defined);
+     #
+     # However, this issue has been fixed in Python 3.13 and later versions.
+-    if sys.version_info < (3, 13):
+-
+-        def __new__(
+-            cls,
+-            enabled: bool = True,
+-            dtype: torch.dtype = torch.float16,
+-            cache_enabled: bool = True,
+-        ):
+-            return super().__new__(cls)
+-
+-        def __init_subclass__(cls):
+-            pass
++    # `torch.jit.script` fails, because with the decorator __new__ is no
++    # longer a builtin but getting the source via `inspect`fails, as that
++    # looks up the underlying method, not the wrapper, which is a builtin
++    def __new__(
++        cls,
++        enabled: bool = True,
++        dtype: torch.dtype = torch.float16,
++        cache_enabled: bool = True,
++    ):
++        return super().__new__(cls)
++
++    def __init_subclass__(cls):
++        pass
+ 
+     def __init__(
+         self,
