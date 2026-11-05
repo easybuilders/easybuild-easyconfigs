@@ -3,7 +3,7 @@
 easyblock = 'PythonBundle'
 
 name = 'AlphaFold3'
-version = '3.0.4'
+version = '3.0.5'
 versionsuffix = '-CUDA-%(cudaver)s'
 
 homepage = 'https://deepmind.google/technologies/alphafold'
@@ -188,9 +188,9 @@ exts_list = [
     ('jmp', '0.0.4', {
         'checksums': ['5dfeb0fd7c7a9f72a70fff0aab9d0cbfae32a809c02f4037ff3485ceb33e1730'],
     }),
-    ('dm-haiku', '0.0.16', {
+    ('dm-haiku', '0.0.17', {
         'modulename': 'haiku',
-        'checksums': ['1830b0ce63c5cef2fb3a63a13033c9d8f612ee7f896f2b0b25a6ba484f5fad28'],
+        'checksums': ['6daa56f3b54f43675713ef7525d1dec7327f2512b57cc2b12104f76f6d7cf581'],
     }),
     ('typeguard', '2.13.3', {
         'checksums': ['00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4'],
@@ -233,7 +233,7 @@ exts_list = [
     (name, version, {
         # unpin RDKit version
         'preinstallopts': (
-            "sed -i 's/rdkit==2025.9.4/rdkit/g' %(start_dir)s/pyproject.toml && "
+            "sed -i -E 's/rdkit==[0-9.]+/rdkit/' %(start_dir)s/pyproject.toml && "
             'export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ALPHAFOLD3=%(version)s && '
         ),
         'patches': [
@@ -248,6 +248,7 @@ exts_list = [
             'cp run_alphafold_test.py %(installdir)s/bin',
             'cp fetch_databases.sh %(installdir)s',
             'cp -r examples %(installdir)s/',
+            'cp src/alphafold3/scripts/shard_databases.sh %(installdir)s/',
             # Adapt examples path in the data-pipeline test.
             "sed -i \"s@resources.ROOT / '../../examples'@"
             "pathlib.Path(os.path.dirname(os.path.dirname(__file__))) / 'examples'@\" "
@@ -258,12 +259,13 @@ exts_list = [
             "%(installdir)s/bin/run_alphafold_test.py",
             'chmod +x %(installdir)s/bin/run_alphafold.py',
             'chmod +x %(installdir)s/fetch_databases.sh',
+            'chmod +x %(installdir)s/shard_databases.sh',
             '%(installdir)s/bin/build_data',
         ],
         'source_urls': ['https://github.com/%(github_account)s/%(namelower)s/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': [
-            {'AlphaFold3-3.0.4.tar.gz': 'a12bfec74fe9670d5d6e1897450ccf968422e0b87743ffee82ff0cb4c76f1923'},
+            {'AlphaFold3-3.0.5.tar.gz': '886434c1181355af2f8756e5bbe534dceeb4842d63e21f2f8d59862277fb11cd'},
             {'AlphaFold3-3.0.0_disable_fetch.patch':
              '041a35a09f783405f40e3ba47566ad6d063a10cfd98f0efd2e2a04c78e2c155e'},
             {'AlphaFold3-3.0.4_env-data-paths.patch':
@@ -280,6 +282,7 @@ sanity_check_paths = {
         'bin/run_alphafold_data_test.py',
         'bin/run_alphafold_test.py',
         'fetch_databases.sh',
+        'shard_databases.sh',
     ],
     'dirs': ['examples', 'lib'],
 }
