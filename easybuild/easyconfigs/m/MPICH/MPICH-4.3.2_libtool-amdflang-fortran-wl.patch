@@ -1,0 +1,57 @@
+Add 'amdflang*' to libtool's known-Fortran-compilers case statement so its FC
+tag config block sets `wl="-Wl,"` instead of empty.
+
+Without this, building the shared libmpifort.so fails because libtool, having
+no entry for amdflang, falls through to the catch-all case where the wl
+variable stays empty. Then libtool's --mode=link invocation passes raw
+--whole-archive / --no-whole-archive / -soname directly to the Fortran driver
+(amdflang) instead of wrapping them in -Wl,. amdflang -- which in ROCm 6.4.1
+is Classic Flang 18.0.0, PGI-lineage -- rejects them as unknown arguments and
+the link fails.
+
+Classic Flang DOES accept -Wl,... pass-through to the linker, so the correct
+value for the FC-tag wl variable is '-Wl,', exactly as for plain flang/f18.
+
+Mirrors the upstream-MPICH flang.patch under maint/patches/optional/confdb/
+(which adds the case for `flang*|f18*` in the same location); we just extend
+the alternation to also match ROCm's amdflang driver name.
+
+The case statement appears in three places in the shipped configure script,
+one per libtool tag (default/C, FC, F77). We patch all three. We do NOT also
+patch confdb/libtool.m4 (the m4 source of the case) -- modifying that file
+makes its timestamp newer than aclocal.m4, which causes make to try to
+regenerate aclocal.m4 mid-build via the autotools chain, which then fails
+because aclocal is not in PATH. The right place to also fix the source m4
+is upstream MPICH's maint/patches/optional/confdb/flang.patch, not here.
+
+Author: Aayush Joglekar <aayush.joglekar@surf.nl>
+
+--- a/configure
++++ b/configure
+@@ -12430,7 +12430,7 @@
+ 	lt_prog_compiler_static='-static'
+         ;;
+       # flang / f18
+-      flang* | f18*)
++      flang* | f18* | amdflang*)
+        lt_prog_compiler_wl='-Wl,'
+        lt_prog_compiler_pic='-fPIC'
+        lt_prog_compiler_static='-static'
+@@ -20711,7 +20711,7 @@
+ 	lt_prog_compiler_static_FC='-static'
+         ;;
+       # flang / f18
+-      flang* | f18*)
++      flang* | f18* | amdflang*)
+        lt_prog_compiler_wl_FC='-Wl,'
+        lt_prog_compiler_pic_FC='-fPIC'
+        lt_prog_compiler_static_FC='-static'
+@@ -23932,7 +23932,7 @@
+ 	lt_prog_compiler_static_F77='-static'
+         ;;
+       # flang / f18
+-      flang* | f18*)
++      flang* | f18* | amdflang*)
+        lt_prog_compiler_wl_F77='-Wl,'
+        lt_prog_compiler_pic_F77='-fPIC'
+        lt_prog_compiler_static_F77='-static'
