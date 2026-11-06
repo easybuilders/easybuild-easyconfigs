@@ -1,0 +1,50 @@
+From 08de54f1ea954a6da3b45d794972d3df3d72df02 Mon Sep 17 00:00:00 2001
+From: Rob Timpe <rtimpe@openteams.com>
+Date: Thu, 13 Nov 2025 02:23:06 +0000
+Subject: [PATCH] [3.14] Skip failing spherical_bessel_j0 tests (#167691)
+
+Starting with scipy 1.15, bool inputs error out.
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/167691
+Approved by: https://github.com/williamwen42
+---
+ .../_internal/opinfo/definitions/special.py   | 20 +++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/torch/testing/_internal/opinfo/definitions/special.py b/torch/testing/_internal/opinfo/definitions/special.py
+index f9dc471ca98aa..47cbcb1fb4268 100644
+--- a/torch/testing/_internal/opinfo/definitions/special.py
++++ b/torch/testing/_internal/opinfo/definitions/special.py
+@@ -648,6 +648,16 @@ def sample_inputs_erfcx(op_info, device, dtype, requires_grad, **kwargs):
+         dtypes=all_types_and(torch.bool),
+         ref=lambda x: scipy.special.spherical_jn(0, x) if TEST_SCIPY else None,
+         supports_autograd=False,
++        skips=(
++            DecorateInfo(
++                unittest.skip(
++                    "Scipy doesn't support bool inputs to spherical_bessel_j0"
++                ),
++                "TestUnaryUfuncs",
++                "test_reference_numerics_normal",
++                dtypes=(torch.bool,),
++            ),
++        ),
+     ),
+ ]
+ 
+@@ -768,6 +778,16 @@ def sample_inputs_erfcx(op_info, device, dtype, requires_grad, **kwargs):
+                 }
+             ),
+         ),
++        skips=(
++            DecorateInfo(
++                unittest.skip(
++                    "Scipy doesn't support bool inputs to spherical_bessel_j0"
++                ),
++                "TestUnaryUfuncs",
++                "test_reference_numerics_normal",
++                dtypes=(torch.bool,),
++            ),
++        ),
+     ),
+     #
+     # Elementwise Binary Special OpInfos

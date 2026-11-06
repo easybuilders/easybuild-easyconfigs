@@ -1,0 +1,29 @@
+Bad test assumes there may only be 2 implementations of snrm for float32.
+1. True norm should be 0.49.. (not actually 0.5).
+2. Test assumes that it should be close to 0.5 (OpenBLAS does this via compensated)
+3. Test then assumes, if not 0.5, then it should be the very inaccurate 0.0 (e.g. BLIS)
+4. The middle-accurate AOCL-BLAS, which ends up with ~0.48 ends up treated as a failure.
+This makes no sense, since BLIS is accepted, anything in between 0.0 and 0.5 should be accepted.
+
+author: micketeer@gmail.com
+diff -ru scipy.orig/linalg/tests/test_basic.py scipy/linalg/tests/test_basic.py
+--- scipy.orig/linalg/tests/test_basic.py	2026-07-13 21:47:36.061274336 +0200
++++ scipy/linalg/tests/test_basic.py	2026-07-13 21:49:37.316354101 +0200
+@@ -2380,15 +2380,8 @@
+     def test_stable(self):
+         # more stable than numpy's norm
+         a = array([1e4] + [1]*10000, dtype=float32)
+-        try:
+-            # snrm in double precision; we obtain the same as for float64
+-            # -- large atol needed due to varying blas implementations
+-            assert_allclose(norm(a) - 1e4, 0.5, atol=1e-2)
+-        except AssertionError:
+-            # snrm implemented in single precision, == np.linalg.norm result
+-            msg = ": Result should equal either 0.0 or 0.5 (depending on " \
+-                  "implementation of snrm2)."
+-            assert_almost_equal(norm(a) - 1e4, 0.0, err_msg=msg)
++        # -- large atol needed due to varying blas implementations
++        assert_allclose(norm(a) - 1e4, 0.25, atol=0.25)
+ 
+     def test_zero_norm(self):
+         assert_equal(norm([1, 0, 3], 0), 2)
