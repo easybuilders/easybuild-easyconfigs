@@ -1,0 +1,131 @@
+This patch fixes an issue with PIO where reading too many pieces on a PET fills the stack.
+See https://github.com/esmf-org/esmf/issues/492. This is a copy of commit:
+https://github.com/esmf-org/esmf/commit/afd3b0e96df4052c6e73f44c4e0f41770ca64dfa
+Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+Barcelona Supercomputing Center 2026
+diff -ruNBbw a/src/Infrastructure/Mesh/src/ESMCI_ESMFMesh_Util.C b/src/Infrastructure/Mesh/src/ESMCI_ESMFMesh_Util.C
+--- a/src/Infrastructure/Mesh/src/ESMCI_ESMFMesh_Util.C	2025-08-12 00:33:46.000000000 +0200
++++ b/src/Infrastructure/Mesh/src/ESMCI_ESMFMesh_Util.C	2026-10-07 08:51:45.464308656 +0200
+@@ -1,7 +1,7 @@
+ // $Id$
+ //
+ // Earth System Modeling Framework
+-// Copyright (c) 2002-2025, University Corporation for Atmospheric Research,
++// Copyright (c) 2002-2026, University Corporation for Atmospheric Research,
+ // Massachusetts Institute of Technology, Geophysical Fluid Dynamics
+ // Laboratory, University of Michigan, National Centers for Environmental
+ // Prediction, Los Alamos National Laboratory, Argonne National Laboratory,
+@@ -564,7 +564,7 @@
+   // Get rid of offsets
+   delete [] nec_offsets;
+   
+-  // Get total number of connections on this PET
++  // Get total number of valid connections on this PET
+   totNumElementConn=0;
+   for (int i=0; i<num_elems; i++) {
+     totNumElementConn += numElementConn[i];
+@@ -582,6 +581,74 @@
+                      ESMF_RC_FILE_OPEN, localrc)) throw localrc;
+   
+ 
++  // Read connection information
++#ifndef JUST_READ_VALID_CONN_06192026
++  // PIO has problems if the read is broken up into too many pieces per PET.
++  // The issue is because of the VLAs used inside PIO, so one solution is to
++  // set the stack size to ULIMITED. However, to prevent the issue from happening in
++  // the first place here we read even the invalid connection entries to prevent gaps.
++  // After reading we then compress down to just the valid parts.
++
++  // Calculate the total number of entries to read (including invalid)
++  int readTotNumElementConn=num_elems*maxNodePElement;
++
++  // Define offsets for elementConn decomp
++  PIO_Offset *ec_offsets=new PIO_Offset[readTotNumElementConn];
++  for (int i=0,pos=0; i<num_elems; i++) {
++    int elem_start_ind=(elem_ids[i]-1)*maxNodePElement+1; // +1 to make base-1
++    for (int j=0; j<maxNodePElement; j++) {
++      ec_offsets[pos] = (PIO_Offset) (elem_start_ind+j);
++      pos++;
++    }
++  }
++  
++  // Init elementConn decomp
++  int ec_iodesc;
++  int gdimlen2D[2]={(int)elementCount,(int)maxNodePElement};
++  piorc = PIOc_InitDecomp_ReadOnly(pioSystemDesc, PIO_INT, 2, gdimlen2D, readTotNumElementConn,
++                                   ec_offsets, &ec_iodesc, &rearr, NULL, NULL);
++  if (!CHECKPIOERROR(piorc, std::string("Error initializing PIO decomp for file ") + filename,
++                     ESMF_RC_FILE_OPEN, localrc)) throw localrc;;
++  
++  // Get rid of offsets
++  delete [] ec_offsets;
++
++  // Get id for elementConn variable
++  piorc = PIOc_inq_varid(pioFileDesc, "elementConn", &varid);
++  if (!CHECKPIOERROR(piorc, std::string("Error elementConn variable not in file ") + filename,
++                     ESMF_RC_FILE_OPEN, localrc)) throw localrc;;
++
++  piorc = PIOc_setframe(pioFileDesc, varid, -1);
++  if (!CHECKPIOERROR(piorc, std::string("Error setting frame for variable elementConn ") + filename,
++                     ESMF_RC_FILE_OPEN, localrc)) throw localrc;
++
++  // Read elementConn including invalid entries into readElementConn array
++  int *readElementConn= new int[readTotNumElementConn];
++  piorc = PIOc_read_darray(pioFileDesc, varid, ec_iodesc, readTotNumElementConn, readElementConn);
++  if (!CHECKPIOERROR(piorc, std::string("Error reading variable elementConn from file ") + filename,
++                     ESMF_RC_FILE_OPEN, localrc)) throw localrc;
++
++  // Get rid of elementConn decomp
++  piorc = PIOc_freedecomp(pioSystemDesc, ec_iodesc);
++  if (!CHECKPIOERROR(piorc, std::string("Error freeing elementConn decomp "),
++                     ESMF_RC_FILE_OPEN, localrc)) throw localrc;
++
++    
++  // Copy to compressed version with just valid entries
++  elementConn= new int[totNumElementConn];
++  for (int i=0,pos=0; i<num_elems; i++) {
++    int elem_start_ind=i*maxNodePElement;
++    for (int j=0; j<numElementConn[i]; j++) {
++      elementConn[pos] = readElementConn[elem_start_ind+j];      
++      pos++;
++    }
++  }
++
++  // Get rid of readElementConn
++  delete [] readElementConn;
++  
++#else
++  
+   // Define offsets for elementConn decomp
+   // (Only define offsets for valid elementConn entries)
+   PIO_Offset *ec_offsets=new PIO_Offset[totNumElementConn];
+@@ -623,7 +689,9 @@
+   // Get rid of elementConn decomp
+   piorc = PIOc_freedecomp(pioSystemDesc, ec_iodesc);
+   if (!CHECKPIOERROR(piorc, std::string("Error freeing elementConn decomp "),
+-                     ESMF_RC_FILE_OPEN, localrc)) throw localrc;;
++                     ESMF_RC_FILE_OPEN, localrc)) throw localrc;
++  
++#endif
+   
+ }
+ 
+@@ -1021,7 +1089,7 @@
+   if (piorc == PIO_NOERR) {
+     
+     // Define offsets for centerCoords decomp
+-    PIO_Offset cc_offsets[num_elems*coordDim];
++    PIO_Offset *cc_offsets = new PIO_Offset[num_elems*coordDim];
+     for (int i=0,pos=0; i<num_elems; i++) {
+       int elem_start_ind=(elem_ids[i]-1)*coordDim+1;
+       for (int j=0; j<coordDim; j++) {
+@@ -1057,6 +1125,9 @@
+     if (!CHECKPIOERROR(piorc, std::string("Error freeing centerCoords decomp "),
+                        ESMF_RC_FILE_OPEN, localrc)) throw localrc;;
+     
++    // Free cc_offsets memory
++    delete [] cc_offsets;
++    
+     // DEEBUG: output centerCoords
+     //     for(int i=0; i<num_elems; i++) {
+     // printf("%f %f\n",centerCoords[i*coordDim],centerCoords[i*coordDim+1]);
