@@ -1,0 +1,14 @@
+Disable [[clang::musttail]] in skcms when not compiling with Clang.
+
+GCC 15 reports support for the clang::musttail attribute, so skcms enables it,
+but on RISC-V (lp64d) GCC cannot always emit the required tail call and fails with
+"error: cannot tail-call: tail call production failed" in skcms_TransformBaseline.cc.
+Falling back to the non-musttail code path (SKCMS_HAS_MUSTTAIL=0) avoids the error.
+
+--- a/qtwebengine/src/3rdparty/chromium/third_party/skia/modules/skcms/src/skcms_internals.h
++++ b/qtwebengine/src/3rdparty/chromium/third_party/skia/modules/skcms/src/skcms_internals.h
+@@ -59,3 +59,3 @@
+     #elif !defined(__clang__) && !defined(SKCMS_HAS_MUSTTAIL)
+         #if __has_cpp_attribute(clang::musttail)
+-            #define SKCMS_HAS_MUSTTAIL 1
++            #define SKCMS_HAS_MUSTTAIL 0
