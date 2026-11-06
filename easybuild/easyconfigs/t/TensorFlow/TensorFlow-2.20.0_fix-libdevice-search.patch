@@ -1,0 +1,38 @@
+Fix CUDA libdevice discovery with non-standard CUDA installations.
+
+Backport the CUDA root search fixes from upstream TensorFlow commit
+9ec8d8ece3ad9e7f8379406d263330a5beb65d5b (OpenXLA PR #31886).
+Include CUDA_HOME, guard against invalid runfiles paths, and omit empty
+TF_CUDA_TOOLKIT_PATH entries.
+
+Upstream: https://github.com/tensorflow/tensorflow/commit/9ec8d8ece3ad9e7f8379406d263330a5beb65d5b
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT6.0
+---
+--- a/third_party/xla/xla/tsl/platform/default/cuda_root_path.cc
++++ b/third_party/xla/xla/tsl/platform/default/cuda_root_path.cc
+@@ -53,7 +53,9 @@
+   std::size_t runfiles_ind = runfiles_dir.rfind(runfiles_suffix);
+-  for (const std::string& cuda_dir_name : cuda_dir_names) {
+-    std::string cuda_dir = io::JoinPath(
+-        runfiles_dir.substr(0, runfiles_ind + runfiles_suffix.length()),
+-        cuda_dir_name);
+-    roots.push_back(cuda_dir);
++  if (runfiles_ind != std::string::npos) {
++    for (const std::string& cuda_dir_name : cuda_dir_names) {
++      std::string cuda_dir = io::JoinPath(
++          runfiles_dir.substr(0, runfiles_ind + runfiles_suffix.length()),
++          cuda_dir_name);
++      roots.push_back(cuda_dir);
++    }
+   }
+@@ -60,2 +62,9 @@
+-  roots.push_back(TF_CUDA_TOOLKIT_PATH);
++  const char* cuda_home = getenv("CUDA_HOME");
++  if (cuda_home) {
++    roots.emplace_back(cuda_home);
++  }
++  std::string cuda_toolkit_path = TF_CUDA_TOOLKIT_PATH;
++  if (!cuda_toolkit_path.empty()) {
++    roots.push_back(std::move(cuda_toolkit_path));
++  }
+   roots.emplace_back(std::string("/usr/local/cuda"));
