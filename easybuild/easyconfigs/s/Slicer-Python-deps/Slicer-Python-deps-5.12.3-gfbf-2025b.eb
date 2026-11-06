@@ -1,0 +1,66 @@
+easyblock = 'PythonBundle'
+
+name = 'Slicer-Python-deps'
+version = '5.12.3'
+
+homepage = 'https://www.slicer.org'
+description = "Python dependencies required by 3D Slicer that are not provided by the standard EasyBuild Python stack."
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('pydicom', '3.0.2'),
+    ('Pillow', '11.3.0'),
+    ('GitPython', '3.1.45'),
+    ('wrapt', '1.17.3'),
+    ('Deprecated', '1.3.1'),
+]
+
+# Prefer wheels for these Slicer runtime dependencies to avoid unnecessary source builds,
+# especially for packages with native extensions such as SimpleITK and pyjpegls.
+# Building SimpleITK from source would require its CMake/SuperBuild stack with ITK and SWIG,
+# while the official cp311-abi3 wheel is compatible with Python 3.13 through Python's stable ABI.
+exts_list = [
+    ('SimpleITK', '2.5.5', {
+        'modulename': 'SimpleITK',
+        'source_tmpl': 'simpleitk-%(version)s-cp311-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl',
+        'checksums': ['8ace5e392be00d5bec28c87ef1d73016f8ebe671dafffe9e9d045f20b0968033'],
+    }),
+    ('pyjpegls', '1.5.1', {
+        'modulename': 'jpeg_ls',
+        'source_tmpl': 'pyjpegls-%(version)s-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['fb56f056868561a1e49995bcbbe7ba8c38d56838d5c975ef5a0ff887d9189230'],
+    }),
+    ('retrying', '1.4.2', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['bbc004aeb542a74f3569aeddf42a2516efefcdaff90df0eb38fbfbf19f179f59'],
+    }),
+    ('dicomweb-client', '0.61.0', {
+        'modulename': 'dicomweb_client',
+        'source_tmpl': 'dicomweb_client-%(version)s-py3-none-any.whl',
+        'checksums': ['dc3385f5dbbeb167c521d04a70eac8bf219c4302c14574af05b5bc577a7e22c5'],
+    }),
+    ('highdicom', '0.27.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['90a14ef75f67b7df2c3fd83df9c0bddd787dfdfab2b08c8c68828207389aed3f'],
+    }),
+    ('CouchDB', '1.2', {
+        'modulename': 'couchdb',
+        'source_tmpl': 'CouchDB-%(version)s-py2.py3-none-any.whl',
+        'checksums': ['13a28a1159c49f8346732e8724b9a4d65cba54bec017c4a7eeb1499fe88151d1'],
+    }),
+    ('PyJWT', '2.13.0', {
+        'modulename': 'jwt',
+        'source_tmpl': 'pyjwt-%(version)s-py3-none-any.whl',
+        'checksums': ['66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728'],
+    }),
+    ('PyGithub', '2.9.1', {
+        'modulename': 'github',
+        'source_tmpl': 'pygithub-%(version)s-py3-none-any.whl',
+        'checksums': ['2ec78fca30092d51a42d76f4ddb02131b6f0c666a35dfdf364cf302cdda115b9'],
+    }),
+]
+
+moduleclass = 'vis'
