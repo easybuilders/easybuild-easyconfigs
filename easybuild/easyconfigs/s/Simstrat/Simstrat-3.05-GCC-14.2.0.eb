@@ -1,0 +1,45 @@
+easyblock = 'MakeCp'
+
+name = 'Simstrat'
+version = '3.05'
+
+homepage = 'https://github.com/Eawag-AppliedSystemAnalysis/Simstrat'
+description = """Simstrat is a one-dimensional physical lake model for
+the simulation of stratification and mixing in deep stratified lakes."""
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+
+github_account = 'Eawag-AppliedSystemAnalysis'
+source_urls = [GITHUB_SOURCE]
+sources = [V_VERSION_TAR_GZ]
+checksums = ['f71900b26986405553b39bf55d9ff7263e3554ee75f7d52804d73cefd6c396d4']
+
+builddependencies = [
+    ('FoBiS', '3.16.0'),
+]
+
+dependencies = [
+    ('forbear', '1.9.1'),
+    ('libaed2', '1.3.0'),
+]
+
+# Use external forbear and aed2
+# Use sed instead of patch since FoBiS cannot resolve env vars
+prebuildopts = r"""cd build && sed -i "
+/\[release-gnu-dynamic\]/a include = $EBROOTLIBAED2/include $EBROOTFORBEAR/include
+/\[release-gnu-dynamic\]/a ext_libs = aed2 forbear
+/aed2_bio_utils/,/include = /d
+/static-gnu((direct))/d
+" fobos && """
+
+build_cmd = 'FoBiS.py build'
+buildopts = '-mode release-gnu-dynamic '
+
+files_to_copy = [(['build/simstrat'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/simstrat'],
+    'dirs': [],
+}
+
+moduleclass = 'geo'
