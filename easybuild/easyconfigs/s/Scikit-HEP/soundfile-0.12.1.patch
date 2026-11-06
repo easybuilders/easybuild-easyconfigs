@@ -1,0 +1,35 @@
+The libsndfile.so library does not have the architecture in the name and thus would not be
+found, consequently _soundfile_data would not be build. Removing the 'architecture0' bit
+fixes that.
+The same goes for finding libsndfile, which does not have 'x84_64' in the name.
+Author: J. Sassmannshausen (Imperial College London/UK)
+diff --git a/python-soundfile-0.12.1/__pycache__/soundfile.cpython-311.pyc b/python-soundfile-0.12.1/__pycache__/soundfile.cpython-311.pyc
+new file mode 100644
+index 0000000..d7ffb3c
+Binary files /dev/null and b/python-soundfile-0.12.1/__pycache__/soundfile.cpython-311.pyc differ
+diff --git a/python-soundfile-0.12.1.orig/setup.py b/python-soundfile-0.12.1/setup.py
+index ef99bcc..8a44a82 100644
+--- a/python-soundfile-0.12.1.orig/setup.py
++++ b/python-soundfile-0.12.1/setup.py
+@@ -21,7 +21,7 @@ if platform == 'darwin':
+ elif platform == 'win32':
+     libname = 'libsndfile_' + architecture0 + '.dll'
+ elif platform == 'linux':
+-    libname = 'libsndfile_' + architecture0 + '.so'
++    libname = 'libsndfile' + '.so'
+ else:
+     libname = None
+
+diff --git a/python-soundfile-0.12.1.orig/soundfile.py b/python-soundfile-0.12.1/soundfile.py
+index cc13192..2001ff5 100644
+--- a/python-soundfile-0.12.1.orig/soundfile.py
++++ b/python-soundfile-0.12.1/soundfile.py
+@@ -154,7 +154,7 @@ try:  # packaged lib (in _soundfile_data which should be on python path)
+         _packaged_libname = 'libsndfile_' + _architecture()[0] + '.dll'
+     elif _sys.platform == 'linux':
+         from platform import machine as _machine
+-        _packaged_libname = 'libsndfile_' + _machine() + '.so'
++        _packaged_libname = 'libsndfile' + '.so'
+     else:
+         raise OSError('no packaged library for this platform')
+
