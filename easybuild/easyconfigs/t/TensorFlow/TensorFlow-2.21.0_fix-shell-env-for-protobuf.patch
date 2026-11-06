@@ -1,0 +1,31 @@
+Make sure protobuf tools use the same environment they were built in to avoid picking up e.g. the (possibly too old) system libcxx.
+
+> ERROR: /dev/shm/TensorFlow/2.21.0/foss-2025b/TensorFlow/bazel-root/38526f3dacc6677801c11293634cdb7f/external/com_google_protobuf/python/BUILD.bazel:14:14: Generating edition defaults failed: (Exit 1): protoc_minimal failed: error executing Action command (from target @@com_google_protobuf//python:python_edition_defaults)
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/third_party/xla/third_party/protobuf/protobuf.patch b/third_party/xla/third_party/protobuf/protobuf.patch
+--- a/third_party/xla/third_party/protobuf/protobuf.patch
++++ b/third_party/xla/third_party/protobuf/protobuf.patch
+@@ -199,3 +199,22 @@ diff --git a/src/google/protobuf/thread_safe_arena.h b/src/google/protobuf/threa
+    // Thread local variables cannot be exposed through MSVC DLL interface but we
+    // can wrap them in static functions.
+    static ThreadCache& thread_cache();
++diff -ur a/editions/defaults.bzl b/editions/defaults.bzl
++--- a/editions/defaults.bzl
+++++ b/editions/defaults.bzl
++@@ -30,6 +30,7 @@
++     for source in sources:
++         args.add(source)
++     ctx.actions.run(
+++        use_default_shell_env = True,
++         outputs = [out_file],
++         inputs = sources,
++         executable = ctx.executable.protoc or ctx.executable._protoc_minimal,
++@@ -72,6 +73,7 @@
++     args.add(ctx.attr.placeholder, format = "--placeholder=%s")
++ 
++     ctx.actions.run(
+++        use_default_shell_env = True,
++         executable = ctx.executable._escape,
++         arguments = [args],
++         outputs = [ctx.outputs.output],
