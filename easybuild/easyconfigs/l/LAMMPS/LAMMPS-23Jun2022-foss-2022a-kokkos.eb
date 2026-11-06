@@ -19,10 +19,20 @@ toolchainopts = {'openmp': True, 'usempi': True}
 
 # 'https://github.com/lammps/lammps/archive/'
 source_urls = [GITHUB_LOWER_SOURCE]
-sources = ['stable_%(version)s_update4.tar.gz']
+sources = [
+    'stable_%(version)s_update4.tar.gz',
+    {
+        'source_urls': ['https://github.com/google/googletest/archive/'],
+        'download_filename': 'release-1.12.1.tar.gz',
+        'filename': 'googletest-1.12.1.tar.gz',
+        # LAMMPS extracts the archive itself during configuration.
+        'extract_cmd': 'cp %s .',
+    },
+]
 patches = ['LAMMPS-23June2022_fix-timestep-balance-example.patch']
 checksums = [
     {'stable_23Jun2022_update4.tar.gz': '42541b4dbd0d339d16ddb377e76d192bc3d1d5712fdf9e2cdc838fc980d0a0cf'},
+    {'googletest-1.12.1.tar.gz': '81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2'},
     {'LAMMPS-23June2022_fix-timestep-balance-example.patch':
      '0ad6c953f08b0d539b189b7aa7cef76774aebb9d633b07d5b6001ac0fcea3081'},
 ]
@@ -72,6 +82,8 @@ if ARCH == 'x86_64':
 # 'KOKKOS' - if kokkos is enabled (by default)
 # 'INTEL'  - if builing on Intel CPU
 # 'OPENMP' - if OpenMP swithed on in 'toolchainopts'
+
+configopts = '-DGTEST_URL=file://%(builddir)s/googletest-1.12.1.tar.gz '
 
 # include the following extra packages into the build
 general_packages = [
