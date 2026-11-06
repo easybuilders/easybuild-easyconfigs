@@ -1,0 +1,21 @@
+Skip grouped quantized CPU Conv1D test when no INT8 GEMM backend is available.
+
+OpenBLAS only provides the floating-point CPU GEMM backend in CTranslate2.
+The grouped quantized Conv1D test unconditionally executes an INT8 CPU GEMM,
+which fails with "No INT8 GEMM backend for CPU" in builds without MKL,
+oneDNN, or Ruy. Skip the test when mayiuse_int8 reports that the selected
+device has no supported INT8 GEMM backend.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- a/tests/ops_test.cc
++++ b/tests/ops_test.cc
+@@ -1238,6 +1238,8 @@ TEST_P(OpDeviceFPTest, Conv1DGroupNoBiasQuantized) {
+ #endif
+     const Device device = GetParam().device;
+     if (device != Device::CPU)
+         GTEST_SKIP() << "Grouped quantized convolution is not implemented for CUDA.";
++    if (!mayiuse_int8(device))
++        GTEST_SKIP() << "INT8 GEMM is not available for this device.";
+     const DataType dtype = GetParam().dtype;
+     const float error = std::max(GetParam().error, float(3e-3));
+     const StorageView expected({2, 2, 2}, std::vector<float>{

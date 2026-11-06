@@ -1,0 +1,115 @@
+On platforms like RISC-V that do not support MCJIT,
+Mesa uses ORC JIT instead.
+However, it does not add it to the list of LLVM modules,
+and in turn, that causes undefined reference issues when building with a static LLVM,
+because the corresponding static libraries are not linked.
+
+See https://gitlab.freedesktop.org/mesa/mesa/-/work_items/16445
+
+Patch taken from https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/44521
+
+From 50ffce8eb83a4bf7dd1e529127b04fabd8106acf Mon Sep 17 00:00:00 2001
+From: Icenowy Zheng <zhengxingda@iscas.ac.cn>
+Date: Thu, 17 Sep 2026 23:25:42 +0800
+Subject: [PATCH 1/2] llvmpipe: do not call LLVMLinkInMCJIT() when using OrcJIT
+
+Obviously LLVMLinkInMCJIT() call wouldn't be needed when using OrcJIT,
+however it's mostly a no-op and currently the mcjit LLVM module is
+wrongly linked instead of orcjit.
+
+Remove the call when using OrcJIT, to remove the dependency to the mcjit
+LLVM module.
+
+Backport-to: *
+Signed-off-by: Icenowy Zheng <zhengxingda@iscas.ac.cn>
+---
+ src/gallium/auxiliary/gallivm/lp_bld_init.c | 2 ++
+ src/gallium/drivers/llvmpipe/lp_screen.c    | 8 ++++++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/src/gallium/auxiliary/gallivm/lp_bld_init.c b/src/gallium/auxiliary/gallivm/lp_bld_init.c
+index f5b6110f9120..e3c7c4336dee 100644
+--- a/src/gallium/auxiliary/gallivm/lp_bld_init.c
++++ b/src/gallium/auxiliary/gallivm/lp_bld_init.c
+@@ -311,11 +311,13 @@ lp_build_init(void)
+       return true;
+ 
+ 
++#if !GALLIVM_USE_ORCJIT
+    /* LLVMLinkIn* are no-ops at runtime.  They just ensure the respective
+     * component is linked at buildtime, which is sufficient for its static
+     * constructors to be called at load time.
+     */
+    LLVMLinkInMCJIT();
++#endif
+ 
+    lp_init_env_options();
+ 
+diff --git a/src/gallium/drivers/llvmpipe/lp_screen.c b/src/gallium/drivers/llvmpipe/lp_screen.c
+index 80f60f19c2be..34b7dac17981 100644
+--- a/src/gallium/drivers/llvmpipe/lp_screen.c
++++ b/src/gallium/drivers/llvmpipe/lp_screen.c
+@@ -897,10 +897,14 @@ lp_disk_cache_create(struct llvmpipe_screen *screen)
+    char cache_id[BLAKE3_HEX_LEN];
+    _mesa_blake3_init(&ctx);
+ 
+-   if (!disk_cache_get_function_identifier(lp_disk_cache_create, &ctx) ||
+-       !disk_cache_get_function_identifier(LLVMLinkInMCJIT, &ctx))
++   if (!disk_cache_get_function_identifier(lp_disk_cache_create, &ctx))
+       return;
+ 
++#if !GALLIVM_USE_ORCJIT
++   if (!disk_cache_get_function_identifier(LLVMLinkInMCJIT, &ctx))
++      return;
++#endif
++
+    _mesa_blake3_update(&ctx, &gallivm_perf, sizeof(gallivm_perf));
+    update_cache_blake3_cpu(&ctx);
+    _mesa_blake3_final(&ctx, blake3);
+-- 
+GitLab
+
+
+From dacbdfb6c448b765e6c4e6201bc8b8686ca7182d Mon Sep 17 00:00:00 2001
+From: Icenowy Zheng <zhengxingda@iscas.ac.cn>
+Date: Thu, 17 Sep 2026 23:28:31 +0800
+Subject: [PATCH 2/2] meson: link in orcjit instead of mcjit when using OrcJIT
+
+It's an error previously uncaught because Linux distros tend to build a
+monolithic libLLVM.
+
+Backport-to: *
+Signed-off-by: Icenowy Zheng <zhengxingda@iscas.ac.cn>
+---
+ meson.build | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index c8faee0250d3..da65fffae6a9 100644
+--- a/meson.build
++++ b/meson.build
+@@ -1972,7 +1972,7 @@ if dep_libudev.found()
+   pre_args += '-DHAVE_LIBUDEV'
+ endif
+ 
+-llvm_modules = ['bitwriter', 'engine', 'mcdisassembler', 'mcjit', 'core', 'executionengine', 'scalaropts', 'transformutils', 'instcombine']
++llvm_modules = ['bitwriter', 'engine', 'mcdisassembler', 'core', 'executionengine', 'scalaropts', 'transformutils', 'instcombine']
+ llvm_optional_modules = ['coroutines']
+ if with_amd_vk or with_gallium_radeonsi
+   llvm_modules += ['amdgpu', 'bitreader', 'ipo']
+@@ -2002,6 +2002,12 @@ endif
+ llvm_has_mcjit = host_machine.cpu_family() in ['aarch64', 'arm', 'ppc', 'ppc64', 's390x', 'x86', 'x86_64']
+ llvm_with_orcjit = get_option('llvm-orcjit') or not llvm_has_mcjit
+ 
++if llvm_with_orcjit
++  llvm_modules += ['orcjit']
++else
++  llvm_modules += ['mcjit']
++endif
++
+ if (with_amd_vk or with_gallium_radeonsi) and amd_with_llvm
+   _llvm_version = '>= 18.0.0'
+ elif with_clc or llvm_with_orcjit
+-- 
+GitLab
+
