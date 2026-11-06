@@ -1,0 +1,47 @@
+easyblock = 'PythonPackage'
+
+name = 'BPCells-python'
+version = '0.3.1'
+extension_name = 'bpcells'
+
+homepage = 'https://bnprks.github.io/BPCells'
+description = """Python bindings for BPCells, a package for high performance single cell analysis of large
+ RNA-seq and ATAC-seq datasets."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+source_urls = ['https://github.com/bnprks/BPCells/archive/refs/tags']
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': 'BPCells-%(version)s.tar.gz'}]
+patches = ['BPCells-python-%(version)s-fix-anndata-api.patch']
+checksums = [
+    {'BPCells-0.3.1.tar.gz': '76f55ec77c9784d4b4ad80e7a0fc5c8139fa8101857edd5772ece70cbd8ae584'},
+    {'BPCells-python-0.3.1-fix-anndata-api.patch': '2f5e9bad7731bef370510607f5324fd1233ce0ede0717280652d17cb3a12910b'},
+]
+
+builddependencies = [
+    ('pybind11', '3.0.4'),
+    ('Eigen', '3.4.1'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+    ('HDF5', '2.1.1'),
+    ('Highway', '1.4.0'),
+    ('zlib', '2.3.2'),
+]
+
+start_dir = 'python'
+
+# GitHub tag archives lack the Git metadata used by setuptools-scm.
+preinstallopts = 'export SETUPTOOLS_SCM_PRETEND_VERSION=%(version)s && '
+preinstallopts += 'export BPCELLS_NUM_BUILD_JOBS=%(parallel)s && '
+
+options = {'modulename': 'bpcells'}
+
+sanity_check_commands = [
+    "python -c 'import bpcells.cpp, bpcells.experimental; "
+    "import bpcells; assert bpcells.__version__ == \"%(version)s\"'",
+]
+
+moduleclass = 'bio'
