@@ -1,23 +1,48 @@
-Use a fixed ld-seed in PositionRestraintCommTest.PositionRestraintsTwoCOMs.
+Make PositionRestraintCommTest.PositionRestraintsTwoCOMs deterministic.
 
-The test uses tcoupl = v-rescale, whose stochastic term is driven by ld-seed,
-but its mdp string does not set ld-seed, so grompp picks a random seed on every
-run. The step-10 "Position Rest." energy then varies from run to run
-(sd 0.30 on a reference of 64.72, i.e. 0.47% relative) and falls outside the
-1.5e-2 relative tolerance used for double precision in ~0.5% of runs, making
-MdrunTestsOneRank/MdrunTestsTwoRanks fail at random.
-Set the same fixed seed (234262) that the test simulation database uses for
-its generated mdp files, as other mdrun tests with v-rescale already do
-(see src/programs/mdrun/tests/multisimtest.cpp).
-Test added in https://gitlab.com/gromacs/gromacs/-/commit/b68acdf40ad5be55d9fba58802b9700547011946
-tolerance raised once before in https://gitlab.com/gromacs/gromacs/-/commit/0a61941e5d0649291d8c7a0d4c7ab515b27bf0d0
---- gromacs-2026.4.orig/src/programs/mdrun/tests/boxdeformation.cpp	2026-10-21 13:56:37.244298029 +0000
-+++ gromacs-2026.4/src/programs/mdrun/tests/boxdeformation.cpp	2026-10-21 13:56:37.288297921 +0000
-@@ -195,6 +195,7 @@
+Backport of upstream GROMACS merge request 6396,
+"testing: make PositionRestraintsTwoCOMs more deterministic":
+https://gitlab.com/gromacs/gromacs/-/merge_requests/6396
+merged into main as squash commit 4c1faccef1487d79b8c0ae19acca655560d486b4
+(not in v2026.3, v2026.4 or release-2026).
+The diff below is https://gitlab.com/gromacs/gromacs/-/merge_requests/6396.diff
+unmodified: ld-seed = 4, relative tolerance 5e-4 in both precisions, and the
+matching reference data.
+Drop this patch once the GROMACS release in use contains that commit.
+
+diff --git a/src/programs/mdrun/tests/boxdeformation.cpp b/src/programs/mdrun/tests/boxdeformation.cpp
+index 684e567b1828c20f661a1ca86baf00f861029eca..01bacf8e29b92a8c471a6a6721cc77859c60913f 100644
+--- a/src/programs/mdrun/tests/boxdeformation.cpp
++++ b/src/programs/mdrun/tests/boxdeformation.cpp
+@@ -195,6 +195,7 @@ TEST_F(PositionRestraintCommTest, PositionRestraintsTwoCOMs)
              "tc-grps          = system\n"
              "ref-t            = 298\n"
              "tau-t            = 0.5\n"
-+            "ld-seed          = 234262\n"
++            "ld-seed          = 4\n"
              "deform           = 0 0 0 0 2.5 0\n"
              "deform-init-flow = yes\n";
  
+@@ -213,7 +214,7 @@ TEST_F(PositionRestraintCommTest, PositionRestraintsTwoCOMs)
+     {
+         CommandLine mdrunCaller;
+         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
+-        auto relativeTolerance = relativeToleranceAsFloatingPoint(1, GMX_DOUBLE ? 1.5e-2 : 5e-2);
++        auto                 relativeTolerance = relativeToleranceAsFloatingPoint(1, 5e-4);
+         EnergyTermsToCompare energyTermsToCompare{
+             { { interaction_function[InteractionFunction::PositionRestraints].longname, relativeTolerance } }
+         };
+diff --git a/src/programs/mdrun/tests/refdata/PositionRestraintCommTest_PositionRestraintsTwoCOMs.xml b/src/programs/mdrun/tests/refdata/PositionRestraintCommTest_PositionRestraintsTwoCOMs.xml
+index b1cc7a564a79606a772492f90cb885774b523531..3dc500428a6cc2792f89a3683a8bd6219ef62219 100644
+--- a/src/programs/mdrun/tests/refdata/PositionRestraintCommTest_PositionRestraintsTwoCOMs.xml
++++ b/src/programs/mdrun/tests/refdata/PositionRestraintCommTest_PositionRestraintsTwoCOMs.xml
+@@ -3,8 +3,8 @@
+ <ReferenceData>
+   <Simulation Name="OctaneSandwich">
+     <Energy Name="Position Rest.">
+-      <Real Name="Time 0.000000 Step 0 in frame 0">8.1844318916679975e-27</Real>
+-      <Real Name="Time 0.020000 Step 10 in frame 1">64.723105570319646</Real>
++      <Real Name="Time 0.000000 Step 0 in frame 0">1.6368863783335995e-26</Real>
++      <Real Name="Time 0.020000 Step 10 in frame 1">64.721333028111943</Real>
+     </Energy>
+   </Simulation>
+ </ReferenceData>
