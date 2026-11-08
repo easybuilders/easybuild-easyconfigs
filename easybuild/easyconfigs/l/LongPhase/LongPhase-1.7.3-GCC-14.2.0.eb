@@ -1,0 +1,42 @@
+easyblock = 'MakeCp'
+
+name = 'LongPhase'
+version = '1.7.3'
+
+homepage = 'https://github.com/twolinin/longphase'
+description = """LongPhase is an ultra-fast program for simultaneously co-phasing SNPs, small indels,
+large SVs, and (5mC) modifications for Nanopore and PacBio platforms. It can produce nearly
+chromosome-scale haplotype blocks by using Nanpore ultra-long reads without the need for additional
+trios, chromosome conformation, and strand-seq data."""
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+toolchainopts = {'openmp': True}
+
+github_account = 'twolinin'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-remove-bundled-htslib-jemalloc.patch']
+checksums = [
+    {'v1.7.3.tar.gz': '58829b55ca55d796b836743466bc7b6caf82cfe9b88c25112bff6a0cd0353345'},
+    {'LongPhase-1.7.3-remove-bundled-htslib-jemalloc.patch':
+     'db188e7118d65504e868b1ecc09dcc7dfde08a644921aa342b01914ddbb894ac'},
+]
+
+dependencies = [
+    ('HTSlib', '1.22.1'),
+    ('jemalloc', '5.3.0'),
+    ('zlib', '1.3.1'),
+]
+
+buildopts = 'CC="$CC" CXX="$CXX" CPPFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS"'
+
+files_to_copy = [(['longphase'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/longphase'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['longphase --help']
+
+moduleclass = 'bio'
