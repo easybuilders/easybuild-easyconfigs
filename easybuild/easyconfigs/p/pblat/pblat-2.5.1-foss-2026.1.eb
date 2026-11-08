@@ -9,11 +9,16 @@ description = """When the query file format is fasta, you can specify many threa
  This is useful when you blat a big query file to a huge reference like human whole genome sequence."""
 
 toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'extra_cflags': '-Wno-incompatible-pointer-types'}
 
 github_account = 'icebert'
 source_urls = [GITHUB_SOURCE]
 sources = [VERSION_TAR_GZ]
-checksums = ['e85a4d752b8e159502d529f0f9e47579851a6b466b6c2f1f4d49f598642bc615']
+patches = ['%(name)s-%(version)s_free_prototype.patch']
+checksums = [
+    {'2.5.1.tar.gz': 'e85a4d752b8e159502d529f0f9e47579851a6b466b6c2f1f4d49f598642bc615'},
+    {'pblat-2.5.1_free_prototype.patch': 'a4dd46223444376a377e35072cf84033b0dc146f2067d7552e2af482a250e9a8'},
+]
 
 dependencies = [
     ('HTSlib', '1.23.1'),
@@ -26,6 +31,8 @@ prebuildopts = "sed -i '5s/.\\/htslib/$\\{EBROOTHTSLIB\\}\\/include\\/htslib/' M
 prebuildopts += "sed -i '40s/ htslib\\/libhts.a//' Makefile && "
 prebuildopts += "sed -i '41s/htslib\\/libhts.a/-lhts -lcurl/' Makefile && "
 prebuildopts += "sed -i -e '/htslib\\/libhts.a:/,+2d' Makefile && "
+# Make it use EB cflags
+prebuildopts += "sed -i -e 's/CFLAGS=/CFLAGS ?=/' Makefile && "
 
 files_to_copy = [
     (['%(name)s'], 'bin'),
