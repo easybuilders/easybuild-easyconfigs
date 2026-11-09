@@ -1,0 +1,50 @@
+easyblock = 'PythonBundle'
+
+name = 'MDTraj'
+version = '1.11.1'
+
+homepage = 'https://mdtraj.org'
+description = "Read, write and analyze MD trajectories with only a few lines of Python code."
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'openmp': True}
+
+builddependencies = [('Cython', '3.2.4')]
+dependencies = [
+    ('zlib', '2.3.2'),
+    ('Python', '3.14.2'),
+    ('Python-bundle-PyPI', '2026.04'),
+    ('SciPy-bundle', '2026.05'),
+    ('netcdf4-python', '1.7.4'),  # optional+tests
+    ('networkx', '3.6.1'),  # optional+tests
+    ('PyTables', '3.11.1'),  # optional+tests
+]
+
+exts_list = [
+    ('gsd', '5.0.1', {
+        'checksums': ['c072d1ee934864d618039f3e7448bc79f31fe1a0f1fabfdb9cd4143a7ab2376b'],
+    }),
+    ('pytest_rerunfailures', '16.3', {
+        'checksums': ['37c9b1231c8083e9f4e724f50f7a21241822f9516c15c700ebbf218d6452355c'],
+    }),
+    ('mdtraj', version, {
+        'runtest': (
+            'cd tests && pytest -v --numprocesses %(parallel)s '
+            # Skip deprecated LH5 + pairwise tests: MDTraj's LH5 writer passes pandas StringArray
+            # objects to PyTables, which PyTables 3.11 does not accept directly
+            # https://github.com/mdtraj/mdtraj/issues/2128
+            '-k "not lh5 and not test_pairwise" '
+        ),
+        'source_urls': ['https://github.com/mdtraj/mdtraj/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'patches': ['MDTraj-1.11.1_fix-netcdf4-iterload-libnetcdf.patch'],
+        'testinstall': True,
+        'checksums': [
+            {'mdtraj-1.11.1.tar.gz': 'e21ebb832199630fc102e793a268c226b305c9e0bf434ac4d7137941e94ea048'},
+            {'MDTraj-1.11.1_fix-netcdf4-iterload-libnetcdf.patch':
+             '8c2126d10e7a3f19467885a5e2166a230b71396c750b89930aa557e6b440a1c3'},
+        ],
+    }),
+]
+
+moduleclass = 'chem'

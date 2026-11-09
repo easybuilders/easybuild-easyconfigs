@@ -1,0 +1,22 @@
+Disable 'getenv' test, as it counts the number of function calls to 'getenv',
+and compares it to an expected number, disregarding potential 'getenv' calls from the
+system.
+As this can cause spurious failures, avoid running the test entirely.
+
+Author: Jan Reuter (j.reuter@fz-juelich.de)
+
+diff --color -Naur hpctoolkit-2026.0.1.orig/tests/hpcrun/cpu/meson.build hpctoolkit-2026.0.1/tests/hpcrun/cpu/meson.build
+--- hpctoolkit-2026.0.1.orig/tests/hpcrun/cpu/meson.build	2026-05-05 02:38:23.000000000 +0200
++++ hpctoolkit-2026.0.1/tests/hpcrun/cpu/meson.build	2026-05-18 12:17:31.107471095 +0200
+@@ -9,7 +9,10 @@
+ )
+ 
+ subdir('dtv')
+-subdir('getenv')
++# getenv test is sensetive to host environment and can fail because system calls
++# are wrapped as well, with the test counting the number of calls to 'getenv'.
++# Hence, disable the test to avoid spurious failures due to a broken test.
++# subdir('getenv')
+ subdir('itimer')
+ subdir('papi')
+ subdir('perf')

@@ -1,4 +1,4 @@
-easyblock = 'PythonPackage'
+easyblock = 'PythonBundle'
 
 name = 'protobuf-python'
 version = '6.31.1'
@@ -8,10 +8,6 @@ description = "Python Protocol Buffers runtime library."
 
 toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
 
-source_urls = ['https://pypi.python.org/packages/source/p/protobuf']
-sources = ['protobuf-%(version)s.tar.gz']
-checksums = ['d8cac4c982f0b957a4dc73a80e2ea24fab08e679c0de9deb835f4a12d69aca9a']
-
 builddependencies = [('binutils', '2.44')]
 
 dependencies = [
@@ -19,7 +15,17 @@ dependencies = [
     ('protobuf', version[2:]),  # Major version is only used for the Python bindings
 ]
 
-options = {'modulename': 'google.protobuf'}
+exts_list = [
+    ('protobuf', version, {
+        'modulename': 'google.protobuf',
+        'patches': ['protobuf-python-6.31.1-remove_pkg_resources.patch'],
+        'checksums': [
+            {'protobuf-6.31.1.tar.gz': 'd8cac4c982f0b957a4dc73a80e2ea24fab08e679c0de9deb835f4a12d69aca9a'},
+            {'protobuf-python-6.31.1-remove_pkg_resources.patch':
+             '83680b44574188a1924054a91a155a14b4934a05d77c8401d953f2e9f6d6f12f'},
+        ],
+    })
+]
 
 # Make sure protobuf is installed as a regular folder or it will not be found if
 # other google packages are installed in other site-packages folders
