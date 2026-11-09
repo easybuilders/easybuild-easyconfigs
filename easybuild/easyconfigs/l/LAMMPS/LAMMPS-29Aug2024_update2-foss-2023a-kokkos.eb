@@ -19,7 +19,16 @@ toolchainopts = {'openmp': True, 'usempi': True}
 
 # 'https://github.com/lammps/lammps/archive/'
 source_urls = [GITHUB_LOWER_SOURCE]
-sources = ['stable_%(version)s.tar.gz']
+sources = [
+    'stable_%(version)s.tar.gz',
+    {
+        'source_urls': ['https://github.com/google/googletest/archive/'],
+        'download_filename': 'release-1.12.1.tar.gz',
+        'filename': 'googletest-1.12.1.tar.gz',
+        # LAMMPS extracts the archive itself during configuration.
+        'extract_cmd': 'cp %s .',
+    },
+]
 patches = [
     'LAMMPS-2Aug2023_install_lammps_python_package_in_eb_software_module.patch',
     'LAMMPS-29Aug2024_unittest_fix.patch',
@@ -28,6 +37,7 @@ patches = [
 ]
 checksums = [
     {'stable_29Aug2024_update2.tar.gz': 'f8ca3f021a819ced8658055f7750e235c51b4937ddb621cf1bd7bee08e0b6266'},
+    {'googletest-1.12.1.tar.gz': '81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2'},
     {'LAMMPS-2Aug2023_install_lammps_python_package_in_eb_software_module.patch':
      '314ab1064af74ddfcf4091dfe9f90fa32cfa4100e8d01fea7b59b019575a7c51'},
     {'LAMMPS-29Aug2024_unittest_fix.patch': '05206d961b946bfd7b92c5b3db1b3883cd8c5ae8faea6227fa391650e6fba468'},
@@ -88,6 +98,8 @@ if ARCH == 'x86_64':
 # 'KOKKOS' - if kokkos is enabled (by default)
 # 'INTEL'  - if builing on Intel CPU
 # 'OPENMP' - if OpenMP swithed on in 'toolchainopts'
+
+configopts = '-DGTEST_URL=file://%(builddir)s/googletest-1.12.1.tar.gz '
 
 # include the following extra packages into the build
 general_packages = [

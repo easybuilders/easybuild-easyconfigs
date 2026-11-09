@@ -20,7 +20,16 @@ toolchainopts = {'openmp': True, 'usempi': True}
 
 # 'https://github.com/lammps/lammps/archive/'
 source_urls = [GITHUB_LOWER_SOURCE]
-sources = ['stable_%(version)s.tar.gz']
+sources = [
+    'stable_%(version)s.tar.gz',
+    {
+        'source_urls': ['https://github.com/google/googletest/archive/'],
+        'download_filename': 'release-1.12.1.tar.gz',
+        'filename': 'googletest-1.12.1.tar.gz',
+        # LAMMPS extracts the archive itself during configuration.
+        'extract_cmd': 'cp %s .',
+    },
+]
 patches = [
     'LAMMPS-22Jul2025_install_lammps_python_package_in_eb_software_module.patch',
     'LAMMPS-2Aug2023_python_venv.patch',
@@ -28,6 +37,7 @@ patches = [
 ]
 checksums = [
     {'stable_22Jul2025_update4.tar.gz': '411088d9c03339e025f6a975e0a5741bb9e3f351cc39eda220ab22ac318fe2fb'},
+    {'googletest-1.12.1.tar.gz': '81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2'},
     {'LAMMPS-22Jul2025_install_lammps_python_package_in_eb_software_module.patch':
      '0cab0fa4dc8b2c68b45cd9df4398b9c2c37d69dcd1dc054aacb44f78698a2c84'},
     {'LAMMPS-2Aug2023_python_venv.patch': '87fd13b0c66f0886877885412ff13dfd092782e2237ba1fae157f803437828d6'},
@@ -93,6 +103,7 @@ if ARCH == 'x86_64':
 configopts = ' '.join([
     '-DCMAKE_CXX_STANDARD=17',
     '-DCMAKE_CXX_STANDARD_REQUIRED=on',
+    '-DGTEST_URL=file://%(builddir)s/googletest-1.12.1.tar.gz',
 ])
 
 # include the following extra packages into the build
