@@ -1,0 +1,29 @@
+Index: qtwebengine-everywhere-src-6.11.1/src/3rdparty/chromium/third_party/blink/renderer/platform/audio/delay.cc
+===================================================================
+--- qtwebengine-everywhere-src-6.11.1.orig/src/3rdparty/chromium/third_party/blink/renderer/platform/audio/delay.cc
++++ qtwebengine-everywhere-src-6.11.1/src/3rdparty/chromium/third_party/blink/renderer/platform/audio/delay.cc
+@@ -107,8 +107,8 @@ double Delay::DelayTime(float sample_rat
+ #if !(defined(ARCH_CPU_X86_FAMILY) || defined(CPU_ARM_NEON))
+ // Default scalar versions if simd/neon are not available.
+ std::tuple<size_t, size_t> Delay::ProcessARateVector(
+-    float* destination,
+-    uint32_t frames_to_process) const {
++    base::span<float> destination,
++    size_t frames_to_process) const {
+   // We don't have a vectorized version, so just do nothing and return the 0 to
+   // indicate no frames processed and return the current write_index_.
+   return std::make_tuple(0, write_index_);
+Index: qtwebengine-everywhere-src-6.11.1/src/3rdparty/chromium/third_party/skia/modules/skcms/src/skcms_internals.h
+===================================================================
+--- qtwebengine-everywhere-src-6.11.1.orig/src/3rdparty/chromium/third_party/skia/modules/skcms/src/skcms_internals.h
++++ qtwebengine-everywhere-src-6.11.1/src/3rdparty/chromium/third_party/skia/modules/skcms/src/skcms_internals.h
+@@ -57,7 +57,7 @@ extern "C" {
+             #define SKCMS_HAS_MUSTTAIL 1
+         #endif
+     #elif !defined(__clang__) && !defined(SKCMS_HAS_MUSTTAIL)
+-        #if __has_cpp_attribute(clang::musttail)
++        #if __has_cpp_attribute(clang::musttail) && !defined(__riscv)
+             #define SKCMS_HAS_MUSTTAIL 1
+         #else
+             #define SKCMS_HAS_MUSTTAIL 0
+
