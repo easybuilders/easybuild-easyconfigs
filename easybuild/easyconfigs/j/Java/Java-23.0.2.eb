@@ -15,7 +15,11 @@ _tarball_tmpl = f'OpenJDK{_java_version}U-jdk_{{}}_linux_hotspot_{version}_{_bui
 # Using the Adoptium Eclipse Temurin builds, recommended by https://whichjdk.com/#distributions
 source_urls = [f'https://github.com/adoptium/temurin{_java_version}-binaries/releases/download/'
                f'jdk-{version}+{_build_version}/']
-sources = [_tarball_tmpl.format('%(jdkarch)s')]
+sources = [
+    _tarball_tmpl.format('%(jdkarch)s'),
+    {'filename': 'Java_blocked-certs-eMudhra-CVE-2026-91403.txt',
+     'extract_cmd': "cp %s %(builddir)s/"},
+]
 checksums = [
     {
         _tarball_tmpl.format('x64'):
@@ -26,7 +30,14 @@ checksums = [
             '548fd82af4eb0802fe20b0b61a4664a69c7f03cd963540908f30dbf73636dafe',
         _tarball_tmpl.format('riscv64'):
             '1e102e1e6653f8810ef6c275b0d38ea7036abd4a8709f0f916b339f65e76bb56',
-    }
+    },
+    {'Java_blocked-certs-eMudhra-CVE-2026-91403.txt':
+     '8a11b84b894e7986af1131c10fcff168fb38987bedb4fd7a0d8a7a120288d521'},
+]
+
+postinstallcmds = [
+    # see https://glaforge.dev/posts/2026/10/21/the-emudhra-ca-compromise-why-your-jvm-is-vulnerable-and-how-to-fix-it
+    "cat %(builddir)s/Java_blocked-certs-eMudhra-CVE-2026-91403.txt >> %(installdir)s/lib/security/blocked.certs",
 ]
 
 moduleclass = 'lang'

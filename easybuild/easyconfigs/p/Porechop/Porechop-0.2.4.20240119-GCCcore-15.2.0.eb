@@ -1,0 +1,31 @@
+easyblock = 'PythonPackage'
+
+name = 'Porechop'
+version = '0.2.4.20240119'
+local_commit = 'd2e77c6'
+
+homepage = 'https://github.com/dehui333/Porechop'
+description = """Porechop is a tool for finding and removing adapters from Oxford Nanopore reads.
+ Adapters on the ends of reads are trimmed off, and when a read has an adapter in its middle,
+ it is treated as chimeric and chopped into separate reads. Porechop performs thorough alignments
+ to effectively find adapters, even at low sequence identity."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = ['https://github.com/dehui333/Porechop/archive/']
+sources = [{'download_filename': f'{local_commit}.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['6e5ff3a780fc2855b0101b4a6102437d9a0fc201e40ffabc44c0c67d7c9ad621']
+
+builddependencies = [('binutils', '2.45')]
+dependencies = [
+    ('Python', '3.14.2'),
+    ('SeqAn', '2.5.3'),
+]
+
+preinstallopts = 'rm -r porechop/include/seqan && '
+preinstallopts += 'sed -i "s/namespace seqan;/namespace seqan2;/" porechop/include/*.h && '
+preinstallopts += f'sed -i "s/0.2.4/{version}/" porechop/version.py && '
+
+sanity_check_commands = ['%(namelower)s -h']
+
+moduleclass = 'bio'
