@@ -1,0 +1,22 @@
+allow to set default model dir and public databases dir by environment variables AF3_MODEL_DIR and DB_DIR, respectively.
+original patch for AlphaFold 3.0.0 by Thomas Hoffmann (EMBL Heidelberg), ported to AlphaFold 3.0.4 by Kenneth Hoste (HPC-UGent)
+diff -ru alphafold3-3.0.4.orig/run_alphafold.py alphafold3-3.0.4/run_alphafold.py
+--- alphafold3-3.0.4.orig/run_alphafold.py	2026-07-28 14:57:43.000000000 +0200
++++ alphafold3-3.0.4/run_alphafold.py	2026-09-02 19:25:17.614088201 +0200
+@@ -65,8 +65,14 @@
+ import tokamax
+ 
+ _HOME_DIR = epath.Path('~').expanduser()
+-_DEFAULT_MODEL_DIR = _HOME_DIR / 'models'
+-_DEFAULT_DB_DIR = _HOME_DIR / 'public_databases'
++_DEFAULT_MODEL_DIR = os.environ.get('AF3_MODEL_DIR')
++if _DEFAULT_MODEL_DIR == None:
++  _DEFAULT_MODEL_DIR = _HOME_DIR / 'models'
++else: _DEFAULT_MODEL_DIR = pathlib.Path(_DEFAULT_MODEL_DIR)
++_DEFAULT_DB_DIR = os.environ.get('DB_DIR')
++if _DEFAULT_DB_DIR == None:
++  _DEFAULT_DB_DIR = _HOME_DIR / 'public_databases'
++else: _DEFAULT_DB_DIR = pathlib.Path(_DEFAULT_DB_DIR)
+ 
+ 
+ @enum.unique
