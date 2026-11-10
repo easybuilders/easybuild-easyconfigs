@@ -1,0 +1,37 @@
+# Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center 2026
+
+easyblock = 'PythonBundle'
+
+name = 'eccodes-python'
+version = '2.43.0'
+
+homepage = 'https://github.com/ecmwf/eccodes-python'
+description = "Python 3 interface to decode and encode GRIB and BUFR files via the ECMWF ecCodes library."
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('cffi', '1.17.1'),
+    ('ecCodes', version),
+]
+
+# From version 2.43.0 up to 2.45.0 the 'eccodeslib' requirement is fixed. This is later changed
+# in https://github.com/ecmwf/eccodes-python/commit/83cf5485a45863e8d9ecd977c4d568102c65bbc8 .
+# For these unchanged versions we need to remove the explicit call to 'eccodeslib', and instead
+# we'll still rely on the 'ecCodes' C++ module.
+_local_prebuildopts = 'sed -i "/\"eccodeslib;platform_system!=\'Windows\'\",/d" setup.py && '
+
+exts_list = [
+    ('findlibs', '0.1.2', {
+        'checksums': ['1f56d220c69686392ebdc4c65b32ee344818bca633643a8c97592957d1728122'],
+    }),
+    ('eccodes', version, {
+        'checksums': ['b99c41aaa64b20291452297a3d513e0b08cc96bcedfe364d8f58348159c48faa'],
+        'prebuildopts': _local_prebuildopts
+    }),
+]
+
+moduleclass = 'tools'
