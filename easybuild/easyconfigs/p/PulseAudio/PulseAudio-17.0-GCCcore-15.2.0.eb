@@ -1,0 +1,54 @@
+easyblock = 'MesonNinja'
+
+name = 'PulseAudio'
+version = '17.0'
+
+homepage = 'https://www.freedesktop.org/wiki/Software/PulseAudio/'
+description = 'PulseAudio is a sound server system for POSIX OSes.'
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = ['https://freedesktop.org/software/pulseaudio/releases/']
+sources = [SOURCELOWER_TAR_XZ]
+patches = ['%(name)s-%(version)s-fix-iconv-detection.patch']
+checksums = [
+    {'pulseaudio-17.0.tar.xz': '053794d6671a3e397d849e478a80b82a63cb9d8ca296bd35b73317bb5ceb87b5'},
+    {'PulseAudio-17.0-fix-iconv-detection.patch': 'e741806bd5bc5f00c69007607a11ad0f45f08a14736b2021457242e545038fe7'},
+]
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('Meson', '1.10.2'),
+    ('Ninja', '1.13.2'),
+    ('pkgconf', '2.5.1'),
+    ('gettext', '0.26'),
+]
+
+dependencies = [
+    ('DBus', '1.16.2'),
+    ('libiconv', '1.18'),
+    ('libsndfile', '1.2.2'),
+    ('libtool', '2.5.4'),
+]
+
+# Build the daemon and client for user sessions, with a virtual sink for desktop audio.
+configopts = ' '.join([
+    '-Dauto_features=disabled',
+    '-Ddbus=enabled',
+    '-Ddatabase=simple',
+    '-Ddoxygen=false',
+    '-Dman=false',
+    '-Dtests=false',
+])
+
+# pulsectl loads libpulse dynamically by soname.
+modextrapaths = {'LD_LIBRARY_PATH': 'lib'}
+
+sanity_check_paths = {
+    'files': ['bin/pactl', 'bin/pulseaudio', 'include/pulse/pulseaudio.h', f'lib/libpulse.{SHLIB_EXT}'],
+    'dirs': ['lib/pulseaudio/modules'],
+}
+
+sanity_check_commands = ['pulseaudio --version']
+
+moduleclass = 'lib'
