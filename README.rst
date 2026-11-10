@@ -1,3 +1,5 @@
+**IMPORTANT: This repository is archived. Please visit https://github.com/molgenis/take-it-easyconfigs.**
+
 .. image:: https://easybuilders.github.io/easybuild/images/easybuild_logo_small.png
    :align: center
 
