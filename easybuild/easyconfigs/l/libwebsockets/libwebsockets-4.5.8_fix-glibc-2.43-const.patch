@@ -1,0 +1,24 @@
+glibc 2.43 (commit cd748a6) makes strchr const-preserving under C23: when
+the input is const-qualified, the result is const char *. GCC 15 builds
+the minimal examples with -Werror=discarded-qualifiers.
+
+In the default build the only failure is protocol_lws_deaddrop.c, which
+casts the mutable fname[] buffer to const char * and then assigns
+strchr() to char *wp so it can write the terminator. Drop that cast.
+The earlier owner scan already stores its strchr() result in const char *.
+
+Upstream 54e67208976494a4a2235f2e0fc959d46bcb7452 fixes the same glibc
+change in other files and is already present in v4.5.8. It does not touch
+this file, and no later main commit fixes it without an unrelated rewrite.
+
+--- a/plugins/deaddrop/protocol_lws_deaddrop.c
++++ b/plugins/deaddrop/protocol_lws_deaddrop.c
+@@ -697,7 +697,7 @@
+ 	}
+ 
+ 	lws_strncpy(fname, ((const char *)in) + 8, sizeof(fname));
+-	wp = strchr((const char *)fname, '\"');
++	wp = strchr(fname, '\"');
+ 	if (wp)
+ 		*wp = '\0';
+ 

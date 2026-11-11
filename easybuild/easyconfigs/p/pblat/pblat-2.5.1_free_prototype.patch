@@ -1,0 +1,69 @@
+Fix faulty function prototypes
+author: micketeer@gmail.com
+--- inc/common.h.orig	2026-11-08 17:18:30.049428507 +0100
++++ inc/common.h	2026-11-08 17:18:40.266272615 +0100
+@@ -424,7 +424,7 @@
+  * The arguments to the compare function in real, non-void, life
+  * are pointers to pointers. */
+ 
+-void slUniqify(void *pList, CmpFunction *compare, void (*free)());
++void slUniqify(void *pList, CmpFunction *compare, void (*free)(void*));
+ /* Return sorted list with duplicates removed.
+  * Compare should be same type of function as slSort's compare (taking
+  * pointers to pointers to elements.  Free should take a simple
+@@ -433,7 +433,7 @@
+ void slSortMerge(void *pA, void *b, CmpFunction *compare);
+ // Merges and sorts a pair of singly linked lists using slSort.
+ 
+-void slSortMergeUniq(void *pA, void *b, CmpFunction *compare, void (*free)());
++void slSortMergeUniq(void *pA, void *b, CmpFunction *compare, void (*free)(void*));
+ // Merges and sorts a pair of singly linked lists leaving only unique
+ // items via slUniqufy.  duplicate itens are defined by the compare routine
+ // returning 0. If free is provided, items dropped from list can disposed of.
+@@ -654,7 +654,7 @@
+ void slPairFreeValsAndList(struct slPair **pList);
+ /* Free up all values on list and list itself */
+ 
+-void slPairFreeValsAndListExt(struct slPair **pList, void (*freeFunc)());
++void slPairFreeValsAndListExt(struct slPair **pList, void (*freeFunc)(void*));
+ /* Free up all values on list using freeFunc and list itself.  freeFunc should take a simple
+  * pointer to free an item, and can be NULL. */
+ 
+--- lib/common.c.orig	2026-11-08 17:19:26.968560019 +0100
++++ lib/common.c	2026-11-08 17:16:33.559205944 +0100
+@@ -341,7 +341,7 @@
+     }
+ }
+ 
+-void slUniqify(void *pList, int (*compare )(const void *elem1,  const void *elem2), void (*free)())
++void slUniqify(void *pList, int (*compare )(const void *elem1,  const void *elem2), void (*free)(void*))
+ /* Return sorted list with duplicates removed.
+  * Compare should be same type of function as slSort's compare (taking
+  * pointers to pointers to elements.  Free should take a simple
+@@ -371,7 +371,7 @@
+ slSort(pList,compare);
+ }
+ 
+-void slSortMergeUniq(void *pA, void *b, CmpFunction *compare, void (*free)())
++void slSortMergeUniq(void *pA, void *b, CmpFunction *compare, void (*free)(void*))
+ // Merges and sorts a pair of singly linked lists leaving only unique
+ // items via slUniqufy.  duplicate itens are defined by the compare routine
+ // returning 0. If free is provided, items dropped from list can disposed of.
+@@ -1026,7 +1026,7 @@
+ *pList = NULL;
+ }
+ 
+-void slPairFreeValsExt(struct slPair *list, void (*freeFunc)())
++void slPairFreeValsExt(struct slPair *list, void (*freeFunc)(void*))
+ /* Free up all values on list using freeFunc.
+  * freeFunc should take a simple pointer to free an item, and can be NULL. */
+ {
+@@ -1046,7 +1046,7 @@
+ slPairFreeValsExt(list, NULL);
+ }
+ 
+-void slPairFreeValsAndListExt(struct slPair **pList, void (*freeFunc)())
++void slPairFreeValsAndListExt(struct slPair **pList, void (*freeFunc)(void*))
+ /* Free up all values on list using freeFunc and list itself.
+  * freeFunc should take a simple pointer to free an item, and can be NULL. */
+ {
