@@ -1,0 +1,59 @@
+# Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ConfigureMake'
+
+name = 'libcxi'
+version = '1.0.2'
+
+homepage = 'https://github.com/HewlettPackard/shs-libcxi'
+description = """libcxi is the userspace library for the HPE Slingshot-11
+Cassini (CXI) NIC. It is the link-time dependency of libfabric's cxi provider."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+toolchainopts = {'pic': True}
+
+# git tag release/shs-12.0.2 corresponds to cray-libcxi 1.0.2
+sources = [
+    {
+        'filename': SOURCE_TAR_GZ,
+        'git_config': {
+            'url': 'https://github.com/HewlettPackard',
+            'repo_name': 'shs-%(name)s',
+            'tag': 'release/shs-12.%(version_minor_patch)s',
+            'keep_git_dir': False,
+        },
+    },
+]
+patches = ['%(name)s-%(version_major_minor)s.2_build-library-only.patch']
+checksums = [
+    None,  # .tgz not reproducible
+    {'libcxi-1.0.2_build-library-only.patch': '59bd5ab3933e7d763435f26193bdd77b33417975aaa8ce5c293e1d90d02592a9'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('pkgconf', '2.3.0'),
+    ('Autotools', '20240712'),
+]
+dependencies = [
+    ('cassini-headers', '1.1.1', '', SYSTEM),
+    ('cxi-driver-headers', '1.0.0', '', SYSTEM),
+    ('libconfig', '1.8.1'),
+    ('libuv', '1.51.0'),
+    ('libnl', '3.11.0'),
+    ('numactl', '2.0.19'),
+]
+
+preconfigopts = "./autogen.sh && "
+
+# --without-rocm does NOT disable GPU-direct over CXI. In libcxi all GPU code
+# lives in the (now-stripped) utils/ and tests/; The actual ROCm HMEM (GPU-direct)
+# backend is implemented in libfabric's cxi provider and enabled there via --with-rocr.
+configopts = "--disable-static --without-systemd --without-rocm --without-cuda --without-ze "
+
+sanity_check_paths = {
+    'files': ['lib/%(name)s.so'],
+    'dirs': ['include', 'lib/pkgconfig'],
+}
+
+moduleclass = 'lib'
