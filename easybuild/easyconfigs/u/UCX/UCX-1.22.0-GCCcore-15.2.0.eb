@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'UCX'
+version = '1.22.0'
+
+homepage = 'https://www.openucx.org/'
+description = """Unified Communication X
+An open-source production grade communication framework for data centric
+and high-performance applications
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openucx/ucx/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['258941cddd14ca60d38c0d31b9b09ec1052c901086841011a498da8b55a3cb24']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('Autotools', '20250626'),
+    ('pkgconf', '2.5.1'),
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+dependencies = [
+    ('zlib', '2.3.2'),
+    ('numactl', '2.0.19'),
+]
+
+configopts = '--enable-optimizations --enable-cma --enable-mt --with-verbs '
+configopts += '--without-java --without-go --disable-doxygen-doc '
+# include the configure options from contrib/configure-release
+configopts += '--disable-logging --disable-debug --disable-assertions --disable-params-check '
+
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': ['bin/ucx_info', 'bin/ucx_perftest', 'bin/ucx_read_profile'],
+    'dirs': ['include', 'lib', 'share']
+}
+
+sanity_check_commands = ["ucx_info -d"]
+
+moduleclass = 'lib'
