@@ -1,0 +1,43 @@
+easyblock = 'PythonBundle'
+
+name = 'Optax'
+version = '0.2.5'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/deepmind/optax'
+description = """Optax is a gradient processing and optimization library for JAX."""
+
+toolchain = {'name': 'gfbf', 'version': '2025a'}
+
+builddependencies = [
+    ('flit', '3.10.1'),
+]
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('SciPy-bundle', '2025.06'),
+    ('jax', '0.7.0', versionsuffix),
+]
+
+exts_list = [
+    ('toolz', '1.0.0', {
+        'checksums': ['2c86e3d9a04798ac556793bced838816296a2f085017664e4995cb40a1047a02'],
+    }),
+    ('chex', '0.1.90', {
+        'checksums': ['d3c375aeb6154b08f1cccd2bee4ed83659ee2198a6acf1160d2fe2e4a6c87b5c'],
+    }),
+    ('optax', version, {
+        'checksums': ['b2e38c7aea376186deae758ba7a258e6ef760c6f6131e9e11bc561c65386d594'],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_commands = [
+    "python -s -c 'import jax.numpy as jnp; import optax; "
+    "p = jnp.ones(2); opt = optax.adam(0.1); updates, state = opt.update(p, opt.init(p)); "
+    "assert updates.shape == p.shape'",
+]
+
+moduleclass = 'lib'
