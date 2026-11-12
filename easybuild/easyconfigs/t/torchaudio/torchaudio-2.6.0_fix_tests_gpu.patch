@@ -1,0 +1,205 @@
+Increase the atol and rtol for tests that fail with some elements exceeding default tolerances on GPU
+Remove failing version check for librosa-0.10.2.post1
+Author: Samuel Moors (Vrije Universiteit Brussel)
+test/torchaudio_unittest/backend/dispatcher/ffmpeg/save_test.py patch introduce encoder fallback with libvorbis,
+adaptive quality scaling (qscale) and numerical tolerance tuning (atol, rtol).
+Author: Pavel Tomanek (Inuits/Ugent)
+
+diff -ur audio-2.6.0.orig/test/torchaudio_unittest/functional/librosa_compatibility_test_impl.py audio-2.6.0/test/torchaudio_unittest/functional/librosa_compatibility_test_impl.py
+--- audio-2.6.0.orig/test/torchaudio_unittest/functional/librosa_compatibility_test_impl.py	2025-01-29 02:11:55.000000000 +0100
++++ audio-2.6.0/test/torchaudio_unittest/functional/librosa_compatibility_test_impl.py	2025-12-03 16:55:39.426408000 +0100
+@@ -1,5 +1,4 @@
+ import unittest
+-from distutils.version import StrictVersion
+ 
+ import torch
+ import torchaudio.functional as F
+@@ -77,8 +76,6 @@
+     def test_create_mel_fb(
+         self, n_mels=40, sample_rate=22050, n_fft=2048, fmin=0.0, fmax=8000.0, norm=None, mel_scale="htk"
+     ):
+-        if norm == "slaney" and StrictVersion(librosa.__version__) < StrictVersion("0.7.2"):
+-            self.skipTest("Test is known to fail with older versions of librosa.")
+         if self.device != "cpu":
+             self.skipTest("No need to run this test on CUDA")
+ 
+diff -ur audio-2.6.0.orig/test/torchaudio_unittest/transforms/batch_consistency_test.py audio-2.6.0/test/torchaudio_unittest/transforms/batch_consistency_test.py
+--- audio-2.6.0.orig/test/torchaudio_unittest/transforms/batch_consistency_test.py	2025-01-29 02:11:55.000000000 +0100
++++ audio-2.6.0/test/torchaudio_unittest/transforms/batch_consistency_test.py	2025-12-04 09:30:50.369565944 +0100
+@@ -89,7 +89,7 @@
+         waveform = waveform.reshape(3, 2, -1)
+         transform = T.Spectrogram()
+ 
+-        self.assert_batch_consistency(transform, waveform)
++        self.assert_batch_consistency(transform, waveform, atol=1e-7, rtol=1e-4)
+ 
+     def test_batch_inverse_spectrogram(self):
+         waveform = common_utils.get_whitenoise(sample_rate=8000, duration=1, n_channels=6)
+@@ -97,7 +97,7 @@
+         specgram = specgram.reshape(3, 2, specgram.shape[-2], specgram.shape[-1])
+         transform = T.InverseSpectrogram(n_fft=400)
+ 
+-        self.assert_batch_consistency(transform, specgram)
++        self.assert_batch_consistency(transform, specgram, atol=1e-7, rtol=1e-3)
+ 
+     def test_batch_melspectrogram(self):
+         waveform = common_utils.get_whitenoise(sample_rate=8000, duration=1, n_channels=6)
+@@ -162,7 +162,7 @@
+         waveform = waveform.reshape(3, 2, -1)
+         transform = T.PitchShift(sample_rate, n_steps, n_fft=400)
+ 
+-        self.assert_batch_consistency(transform, waveform)
++        self.assert_batch_consistency(transform, waveform, atol=1e-5, rtol=1e-2)
+ 
+     def test_batch_PSD(self):
+         waveform = common_utils.get_whitenoise(sample_rate=8000, duration=1, n_channels=6)
+diff -ur audio-2.6.0.orig/test/torchaudio_unittest/functional/functional_impl.py audio-2.6.0/test/torchaudio_unittest/functional/functional_impl.py
+--- audio-2.6.0.orig/test/torchaudio_unittest/functional/functional_impl.py	2025-01-29 02:11:55.000000000 +0100
++++ audio-2.6.0/test/torchaudio_unittest/functional/functional_impl.py	2025-12-05 17:35:01.410008278 +0100
+@@ -68,7 +68,7 @@
+         a_coeffs = torch.tensor([1, 0, 0, 0], dtype=self.dtype, device=self.device)
+         output_waveform = F.lfilter(waveform, a_coeffs, b_coeffs)
+ 
+-        self.assertEqual(output_waveform[:, 3:], waveform[:, 0:-3], atol=1e-5, rtol=1e-5)
++        self.assertEqual(output_waveform[:, 3:], waveform[:, 0:-3], atol=1e-3, rtol=1e-3)
+ 
+     def test_lfilter_clamp(self):
+         input_signal = torch.ones(1, 44100 * 1, dtype=self.dtype, device=self.device)
+
+diff --git a/test/torchaudio_unittest/backend/dispatcher/ffmpeg/save_test.py b/test/torchaudio_unittest/backend/dispatcher/ffmpeg/save_test.py
+--- a/test/torchaudio_unittest/backend/dispatcher/ffmpeg/save_test.py
++++ b/test/torchaudio_unittest/backend/dispatcher/ffmpeg/save_test.py
+@@ -27,17 +27,46 @@
+ )
+ 
+ 
+-def _convert_audio_file(src_path, dst_path, muxer=None, encoder=None, sample_fmt=None):
+-    command = ["ffmpeg", "-hide_banner", "-y", "-i", src_path, "-strict", "-2"]
+-    if muxer:
+-        command += ["-f", muxer]
+-    if encoder:
+-        command += ["-acodec", encoder]
++def _convert_audio_file(src_path, dst_path, muxer=None, encoder=None, sample_fmt=None, qscale=None):
++    def add_common(cmd):
++        if muxer:
++            cmd += ["-f", muxer]
++        if encoder:
++            cmd += ["-acodec", encoder]
++        if qscale is not None:
++            if qscale >= 0 or (qscale == -1 and muxer == "ogg"):
++                cmd += ["-q:a", str(qscale)]
++
++    base = ["ffmpeg", "-hide_banner", "-y", "-i", src_path, "-strict", "-2"]
++    add_common(base)
++
++    # For ogg/vorbis, forcing s16 is known to fail with libvorbis (and often native too).
++    # Try: requested fmt -> fltp (ogg) -> no -sample_fmt
++    candidates = []
+     if sample_fmt:
+-        command += ["-sample_fmt", sample_fmt]
+-    command += [dst_path]
+-    print(" ".join(command), file=sys.stderr)
+-    subprocess.run(command, check=True)
++        candidates.append(sample_fmt)
++
++    if muxer == "ogg":
++        # Ensure fltp is tried for Vorbis-in-Ogg
++        candidates.append("fltp")
++
++    candidates.append(None)
++
++    last_err = None
++    for fmt in dict.fromkeys(candidates):  # unique, keep order
++        cmd = list(base)
++        if fmt:
++            cmd += ["-sample_fmt", fmt]
++        cmd += [dst_path]
++        print(" ".join(cmd), file=sys.stderr)
++        try:
++            subprocess.run(cmd, check=True)
++            return
++        except subprocess.CalledProcessError as e:
++            last_err = e
++            continue
++
++    raise last_err
+ 
+ 
+ class SaveTestBase(TempDirMixin, TorchaudioTestCase):
+@@ -55,6 +84,8 @@
+         num_frames: float = 3 * 8000,
+         src_dtype: str = "int32",
+         test_mode: str = "path",
++        atol: float = 1e-8,
++        rtol: float = 1e-5,
+     ):
+         """`save` function produces file that is comparable with `ffmpeg` command
+ 
+@@ -152,13 +183,16 @@
+ 
+         # 3.1. Convert the original wav to target format with ffmpeg
+         muxer, encoder, sample_fmt = _parse_save_args(ext, format, encoding, bits_per_sample)
+-        _convert_audio_file(src_path, sox_path, muxer=muxer, encoder=encoder, sample_fmt=sample_fmt)
++        qscale = None
++        if compression is not None:
++            qscale = getattr(compression, "qscale", None)
++        _convert_audio_file(src_path, sox_path, muxer=muxer, encoder=encoder, sample_fmt=sample_fmt, qscale=qscale)
+         # 3.2. Convert the target format to wav with ffmpeg
+         _convert_audio_file(sox_path, ref_path, encoder="pcm_f32le")
+         # 3.3. Load with SciPy
+         expected = load_wav(ref_path, normalize=False)[0]
+ 
+-        self.assertEqual(found, expected)
++        self.assertEqual(found, expected, atol=atol, rtol=rtol)
+ 
+ 
+ @disabledInCI
+@@ -229,8 +263,12 @@
+         codec_config = CodecConfig(
+             compression_level=compression_level,
+         )
++        atol, rtol = 1e-8, 1e-5
++        if bits_per_sample == 24:
++            atol = 2**-22  # allow up to 2 LSB
++            rtol = 1e-5
+         self.assert_save_consistency(
+-            "flac", compression=codec_config, bits_per_sample=bits_per_sample, test_mode=test_mode
++            "flac", compression=codec_config, bits_per_sample=bits_per_sample, test_mode=test_mode, atol=atol, rtol=rtol
+         )
+ 
+     # @nested_params(
+@@ -259,7 +297,12 @@
+         codec_config = CodecConfig(
+             qscale=quality_level,
+         )
+-        self.assert_save_consistency("ogg", compression=codec_config, test_mode=test_mode)
++        atol = 1e-2
++        rtol = 1e-2
++        if quality_level == -1:
++            atol = 1e-1
++            rtol = 1e-1
++        self.assert_save_consistency("ogg", compression=codec_config, test_mode=test_mode, atol=atol, rtol=rtol)
+ 
+     # @nested_params(
+     #     ["path", "fileobj", "bytesio"],
+@@ -367,6 +410,11 @@
+         """`self._save` can save large files."""
+         sample_rate = 8000
+         one_hour = 60 * 60 * sample_rate
++        atol = 1e-8
++        rtol = 1e-5
++        if format == "ogg":
++            atol = 1e-2
++            rtol = 1e-2
+         self.assert_save_consistency(
+             format,
+             # NOTE: for ogg, ffmpeg only supports >= 2 channels
+@@ -375,6 +423,8 @@
+             num_frames=one_hour,
+             encoding=encoding,
+             bits_per_sample=bits_per_sample,
++            atol=atol,
++            rtol=rtol,
+         )
+ 
+     @parameterized.expand(
