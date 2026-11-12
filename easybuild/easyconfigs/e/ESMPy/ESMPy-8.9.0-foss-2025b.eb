@@ -1,0 +1,54 @@
+# Updated again as a PythonBundle easyblock, variables are now corrected.
+# 'ESMFMKFILE' is now defined in the main ESMF module.
+# The patch has been updated to reflect the latest changes on pyproject.toml.
+# Data downloads from data.earthsystemmodeling.org are working correctly.
+# Stamen Miroslavov Minkov <stamen.miroslavov@bsc.es>, BSC 2026
+
+easyblock = 'PythonBundle'
+
+name = 'ESMPy'
+version = '8.9.0'
+
+homepage = 'https://earthsystemmodeling.org/esmpy'
+description = "Earth System Modeling Framework (ESMF) Python Interface"
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [
+    ('pytest', '9.1.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('ESMF', version),
+]
+
+exts_list = [
+    ('esmpy', version, {
+        'patches': ['ESMPy-8.9.0_use-static-version.patch'],
+        'source_urls': ['https://github.com/esmf-org/esmf/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': [
+            {'v8.9.0.tar.gz':
+             '586e0101d76ff9842d9ad43567fae50317ee794d80293430d9f1847dec0eefa5'},
+            {'ESMPy-8.9.0_use-static-version.patch':
+             '31ac28afe23cc3bc2098a9bbb10defe670983fcd1b3f74859fdc1f9e7238e9c2'},
+        ],
+        'start_dir': 'src/addon/%(name)s',
+        'preinstallopts': "sed -i 's/EB_ESMPY_VERSION/%(version)s/' pyproject.toml && ",
+        'pretestopts': 'unset ESMPY_DATA_DIR && export ESMPY_DATA_NEW_DIR=/tmp && ',
+        'runtest': 'pytest',
+        'testinstall': True,
+    }),
+]
+
+# set data directory to a user-writable directory
+# default: %(installdir)s/lib/python%(pyshortver)s/site-packages/esmpy/data
+modextravars = {'ESMPY_DATA_DIR': '/tmp'}
+
+sanity_check_commands = [
+    "python -s -c 'import esmpy'",
+]
+
+moduleclass = 'geo'
