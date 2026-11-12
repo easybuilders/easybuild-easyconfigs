@@ -1,0 +1,66 @@
+easyblock = 'CMakeNinja'
+
+name = 'pti-gpu'
+version = '0.17.0'
+
+homepage = 'https://intel.github.io/pti-gpu/index.html'
+description = '''
+Intel Profiling Tools Interfaces for GPU SDK (hereafter PTI SDK) enables
+development of profiling tools for compute applications or frameworks using
+Intel oneAPI and running on Intel GPUs. PTI SDK consists of a C API library
+and the supporting modules it relies on.
+
+PTI SDK abstracts details of the runtime and driver stack and makes it easy
+to pick the desired level of profiling: for example, trace GPU device kernel
+execution, memory transfers, SYCL Runtime calls, Level-Zero calls on the host,
+and/or collect GPU hardware metrics.
+'''
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://github.com/intel/pti-gpu/archive/refs/tags/']
+sources = ['pti-%(version)s.tar.gz']
+patches = ['pti-gpu-0.17.0_force-easybuild-modules.patch']
+checksums = [
+    {'pti-0.17.0.tar.gz': '9c29c17ed4cf2da48b00df8de8a28ae3e117635e52ce6b53a0e7a7c190075ea9'},
+    {'pti-gpu-0.17.0_force-easybuild-modules.patch':
+     '2a401b60fa6e4bc954c550bb964e3d051bbe6dc6e794241c36435b3a9c6cc703'},
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('Ninja', '1.13.0'),
+    ('git', '2.50.1'),
+    ('googletest', '1.17.0'),
+    ('pkgconf', '2.4.3'),
+]
+dependencies = [
+    ('fmt', '11.2.0'),
+    ('spdlog', '1.15.3'),
+    ('ittapi', '3.28.0'),
+    ('level-zero', '1.28.0'),
+]
+
+start_dir = 'sdk'
+
+configopts = ' '.join([
+    # Most samples require some part of the oneAPI Basekit, which aren't needed
+    # for using this SDK. Avoid picking up stuff from the host system.
+    '-DPTI_BUILD_SAMPLES=OFF',
+    '-DPTI_BUILD_URGEMM=OFF',
+])
+
+# Tests require Intel GPU on built system + drivers to run Level Zero code
+runtest = False
+
+sanity_check_paths = {
+    'files': [
+        'include/pti/pti.h',
+        'lib64/cmake/pti/PtiConfig.cmake',
+        f'lib64/libpti.{SHLIB_EXT}',
+    ],
+    'dirs': ['share/doc/pti']
+}
+
+moduleclass = 'lib'

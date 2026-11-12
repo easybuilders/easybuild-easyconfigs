@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'p11-kit'
+version = '0.26.2'
+
+homepage = 'https://p11-glue.freedesktop.org/p11-kit.html'
+description = """Provides a way to load and enumerate PKCS#11 modules.
+ Provides a standard configuration setup for installing
+ PKCS#11 modules in such a way that they're discoverable.
+ Also solves problems with coordinating the use of PKCS#11
+ by different components or libraries living in the same process."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = ['https://github.com/p11-glue/p11-kit/releases/download/%(version)s/']
+sources = [SOURCE_TAR_XZ]
+checksums = ['09fd9f44da4813a3141e73d5e7cf7008e5660d0405f13d56c15e1da9dcecf828']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('pkgconf', '2.5.1'),
+]
+
+dependencies = [
+    ('libtasn1', '4.21.0'),
+    ('libffi', '3.5.2'),
+]
+
+preconfigopts = "bashcompdir=%(installdir)s/share/bash-completions "
+
+configopts = "--without-systemd"
+
+sanity_check_paths = {
+    'files': ['bin/p11-kit', 'bin/trust'] +
+             [f'lib/libp11-kit.{SHLIB_EXT}'],
+    'dirs': ['include/p11-kit-1/p11-kit'],
+}
+
+sanity_check_commands = ["p11-kit --help"]
+
+moduleclass = 'lib'

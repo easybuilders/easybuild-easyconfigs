@@ -1,0 +1,56 @@
+easyblock = "PythonBundle"
+
+name = 'jupyter-contrib-nbextensions'
+version = '0.7.0'
+
+homepage = 'https://github.com/ipython-contrib/jupyter_contrib_nbextensions'
+description = 'A collection of various notebook extensions for Jupyter'
+
+toolchain = {'name': 'GCCcore', 'version': '13.3.0'}
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('nodejs', '20.13.1'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('IPython', '8.28.0'),
+    ('PyYAML', '6.0.2'),
+    ('jupyter-server', '2.14.2'),
+    ('nbclassic', '1.3.1'),
+    ('JupyterNotebook', '7.2.3'),
+]
+
+# updates for compatibily with Notebook v7
+local_preinstallopts = "sed -i 's/notebook.services/jupyter_server.services/' "
+local_preinstallopts += "src/jupyter_contrib_nbextensions/nbconvert_support/collapsible_headings.py && "
+local_preinstallopts += "sed -i -e 's/notebook._tz/jupyter_server._tz/' -e "
+local_preinstallopts += "'s/notebook.services.contents.tz/jupyter_server._tz/' "
+local_preinstallopts += "src/jupyter_contrib_nbextensions/nbconvert_support/execute_time.py && "
+
+exts_list = [
+    ('jupyter_contrib_core', '0.4.2', {
+        'checksums': ['1887212f3ca9d4487d624c0705c20dfdf03d5a0b9ea2557d3aaeeb4c38bdcabb'],
+    }),
+    ('jupyter_highlight_selected_word', '0.2.0', {
+        'checksums': ['9fa740424859a807950ca08d2bfd28a35154cd32dd6d50ac4e0950022adc0e7b'],
+    }),
+    ('jupyter_nbextensions_configurator', '0.6.4', {
+        'source_tmpl': '%(name)s-%(version)s-py2.py3-none-any.whl',
+        'checksums': ['fe7a7b0805b5926449692fb077e0e659bab8b27563bc68cba26854532fdf99c7'],
+    }),
+    ('jupyter_contrib_nbextensions', version, {
+        'preinstallopts': local_preinstallopts,
+        'checksums': ['06e33f005885eb92f89cbe82711e921278201298d08ab0d886d1ba09e8c3e9ca'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/jupyter-contrib', 'bin/jupyter-contrib-nbextension', 'bin/jupyter-nbextensions_configurator'],
+    'dirs': ['lib64/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = ["python -sc 'import jupyter_contrib_nbextensions.nbconvert_support'"]
+
+moduleclass = 'tools'

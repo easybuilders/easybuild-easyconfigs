@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'Umpire'
+version = '2026.07.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/LLNL/Umpire'
+description = """Umpire is a resource management library that allows the discovery, provision,
+and management of memory on machines with multiple memory devices like NUMA and GPUs."""
+
+toolchain = {'name': 'gompi', 'version': '2026.1'}
+
+github_account = 'llnl'
+source_urls = [GITHUB_RELEASE]
+sources = ['%(namelower)s-v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_resource_paranthesis.patch']
+checksums = [
+    {'umpire-v2026.07.2.tar.gz': '03a2f0cbbb5583789132bc557d70b6b127db84aff1661f6e6eccb95ba77fa1a0'},
+    {'Umpire-2026.07.2_resource_paranthesis.patch': 'e45348d5659f8a7616d94588cc85de35b7d22d5417486685ce056ec76a3910fe'},
+]
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('llnl-blt', '0.7.2', '', SYSTEM),
+]
+
+dependencies = [
+    ('camp', version, versionsuffix),
+    ('fmt', '12.2.0'),
+    ('CUDA', '13.3.0', '', SYSTEM),
+]
+
+
+configopts = "-DENABLE_FORTRAN=On "
+configopts += "-DENABLE_CUDA=On "
+configopts += "-DENABLE_MPI=On "
+configopts += "-DENABLE_OPENMP=On "
+configopts += "-DUMPIRE_ENABLE_NUMA=On "
+configopts += "-DUMPIRE_ENABLE_FILE_RESOURCE=On "
+
+configopts += "-DBLT_SOURCE_DIR=${EBROOTLLNLMINBLT} "
+configopts += "-Dcamp_DIR=${EBROOTCAMP} "
+configopts += "-Dfmt_DIR=${EBROOTFMT} "
+
+sanity_check_paths = {
+    'files': ['lib/libumpire.a', 'include/umpire/Umpire.hpp', 'include/umpire/umpire_mod.mod'],
+    'dirs': ['bin', 'include'],
+}
+
+moduleclass = 'lib'

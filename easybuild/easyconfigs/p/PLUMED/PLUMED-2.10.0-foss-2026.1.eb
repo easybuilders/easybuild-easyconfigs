@@ -1,0 +1,62 @@
+easyblock = 'ConfigureMake'
+
+name = 'PLUMED'
+version = '2.10.0'
+
+homepage = 'https://www.plumed.org'
+description = """PLUMED is an open source library for free energy calculations in molecular systems which
+ works together with some of the most popular molecular dynamics engines. Free energy calculations can be
+ performed as a function of many order parameters with a particular  focus on biological problems, using
+ state of the art methods such as metadynamics, umbrella sampling and Jarzynski-equation based steered MD.
+ The software, written in C++, can be easily interfaced with both fortran and C/C++ codes.
+"""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'usempi': 'True'}
+
+source_urls = ['https://github.com/plumed/plumed2/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['PLUMED-2.10.0_fix_includes_in_wrapper.patch']
+checksums = [
+    {'v2.10.0.tar.gz': 'ca6410d47e91b4e0f953e1a8933f15b05c4681167611ab3b096ab121155f6879'},
+    {'PLUMED-2.10.0_fix_includes_in_wrapper.patch': '8001265ef383db518d87f94f8df12efe5e01fcdc7aa690bd92196676a3900f66'},
+]
+
+builddependencies = [
+    ('xxd', '9.2.0612'),
+    ('Cython', '3.2.4'),
+]
+
+dependencies = [
+    ('zlib', '2.3.2'),
+    ('GSL', '2.8'),
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+    ('Boost', '1.90.0'),
+]
+
+preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
+configopts = '--exec-prefix=%(installdir)s --enable-gsl --enable-modules=all --enable-python '
+# --enable-boost_graph fails with compilation error,
+# see: https://github.com/plumed/plumed2/issues/1294
+# configopts += '--enable-boost_graph --enable-boost_serialization '
+configopts += '--enable-boost_serialization '
+prebuildopts = 'source sourceme.sh && '
+
+# install path for PLUMED libraries must be included in $LD_LIBRARY_PATH when Python bindings get built/installed
+preinstallopts = 'LD_LIBRARY_PATH="%(installdir)s/lib:$LD_LIBRARY_PATH" '
+
+sanity_check_paths = {
+    'files': ['bin/plumed', 'lib/libplumedKernel.%s' % SHLIB_EXT, 'lib/libplumed.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = ["python -s -c 'import plumed'"]
+
+modextrapaths = {
+    'PLUMED_KERNEL': 'lib/libplumedKernel.%s' % SHLIB_EXT,
+    'PLUMED_ROOT': 'lib/plumed',
+    'PYTHONPATH': 'lib/plumed/python',
+}
+
+moduleclass = 'chem'

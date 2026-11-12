@@ -1,0 +1,31 @@
+This script adapts the QtWebKit parser for Ruby 3.x instead of 2.x, the old code assumes that
+tokens are strings, while newer Ruby is giving structured objects. The patch adds another condition
+to handle the Annotations properly.
+Without this, the build creaks with the following:
+undefined method '=~' for an instance of Annotation (NoMethodError)
+
+Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+Barcelona Supercomputing Center 2026
+diff -ruNBbw a/Source/JavaScriptCore/offlineasm/parser.rb b/Source/JavaScriptCore/offlineasm/parser.rb
+--- a/Source/JavaScriptCore/offlineasm/parser.rb	2020-03-10 03:14:41.000000000 +0100
++++ b/Source/JavaScriptCore/offlineasm/parser.rb	2026-03-25 16:11:23.767976803 +0100
+@@ -584,9 +584,7 @@
+         firstCodeOrigin = @tokens[@idx].codeOrigin
+         list = []
+         loop {
+-            if (@idx == @tokens.length and not final) or (final and @tokens[@idx] =~ final)
+-                break
+-            elsif @tokens[@idx].is_a? Annotation
++            if @tokens[@idx].is_a? Annotation
+                 # This is the only place where we can encounter a global
+                 # annotation, and hence need to be able to distinguish between
+                 # them.
+@@ -600,6 +598,8 @@
+                 list << Instruction.new(codeOrigin, annotationOpcode, [], @tokens[@idx].string)
+                 @annotation = nil
+                 @idx += 2 # Consume the newline as well.
++            elsif (@idx == @tokens.length and not final) or (final and @tokens[@idx] =~ final)
++                break
+             elsif @tokens[@idx] == "\n"
+                 # ignore
+                 @idx += 1

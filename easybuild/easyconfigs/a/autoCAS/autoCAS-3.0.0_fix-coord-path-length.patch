@@ -1,0 +1,87 @@
+OpenMolcas's &GATEWAY COORD keyword silently truncates paths beyond 180 characters 
+due to Fortran buffer length.
+When absolute path to xyz file is too long, find a relative path from molcas scrach dir.
+Error out if that is also too long.
+Made with Claude Sonnet 5.
+Author: Jarne Renders (Vrije Universiteit Brussel) 
+diff --git a/scine_autocas/interfaces/molcas/input_handler.py b/scine_autocas/interfaces/molcas/input_handler.py
+--- a/scine_autocas/interfaces/molcas/input_handler.py
++++ b/scine_autocas/interfaces/molcas/input_handler.py
+@@ -15,12 +15,15 @@
+ from typing import Any, Optional
+
+ from scine_autocas.utils.defaults import CasMethods, PostCasMethods
++from scine_autocas.utils.exceptions import InputError
++
++_COORD_PATH_LENGTH_LIMIT = 175
+
+
+ class InputHandler:
+     """Create Molcas input files."""
+
+-    def __initial_orbitals(self, settings: Any, input_file: io.IOBase):
++    def __initial_orbitals(self, settings: Any, input_file: io.IOBase, work_dir: Optional[str] = None):
+         """Create Molcas input to evaluate initial orbitals.
+
+         Parameters
+@@ -29,9 +32,21 @@
+             stores all molcas related settings
+         input_file : io.IOBase
+             The already opened input file
++        work_dir : str, optional
++            Molcas' scratch/work directory
+         """
+         input_file.write("&GATEWAY\n")
+-        input_file.write(f"  COORD = {settings.get_molecule().xyz_file}\n")
++        xyz_file = settings.get_molecule().xyz_file
++        coord_file = xyz_file
++        if len(xyz_file) > _COORD_PATH_LENGTH_LIMIT:
++            coord_file = os.path.relpath(xyz_file, start=work_dir) if work_dir else xyz_file
++            if len(coord_file) > _COORD_PATH_LENGTH_LIMIT:
++                raise InputError(
++                    f"xyz absolute file path '{xyz_file}' and relative file path "
++                    f"'{coord_file}' both exceed OpenMolcas' GATEWAY COORD length limit "
++                    f"(~180 characters)."
++                )
++        input_file.write(f"  COORD = {coord_file}\n")
+         input_file.write(f"  BASIS = {settings.basis_set}\n")
+         if settings.point_group != "":
+             input_file.write(f"  GROUP = {settings.point_group}\n")
+@@ -137,7 +152,7 @@
+
+     def write_input(
+         self, settings: Any, file_name: str,
+-        orbital_file: Optional[str] = None, alter: Optional[str] = None,
++        orbital_file: Optional[str] = None, alter: Optional[str] = None, work_dir: Optional[str] = None,
+     ):
+         """Write a basic Molcas input file, with respect of the strings in
+         self.methods.
+@@ -153,11 +168,13 @@
+            typeindex in the orbital_file.
+         alter : str
+             a string to reorder orbitals, instead of doing that in the orbital file
++        work_dir : str, optional
++            Molcas' scratch/work directory
+         """
+         print()
+         with open(file_name, "w", encoding="utf-8") as input_file:
+             if settings.initial_orbitals:
+-                self.__initial_orbitals(settings, input_file)
++                self.__initial_orbitals(settings, input_file, work_dir)
+
+             if not settings.initial_orbitals:
+                 # casscf
+diff --git a/scine_autocas/interfaces/molcas/molcas.py b/scine_autocas/interfaces/molcas/molcas.py
+--- a/scine_autocas/interfaces/molcas/molcas.py
++++ b/scine_autocas/interfaces/molcas/molcas.py
+@@ -312,7 +312,9 @@
+         # write input
+         input_file = self.project_name + ".input"
+
+-        self.input_handler.write_input(self.settings, input_file, self.orbital_file)
++        self.input_handler.write_input(
++            self.settings, input_file, self.orbital_file, work_dir=self.environment.molcas_scratch_dir
++        )
+         # Ensure formatted SCF orbitals exist in cwd so LUMORB/INPORB resolves
+         try:
+             scf_local = f"{self.project_name}.ScfOrb"

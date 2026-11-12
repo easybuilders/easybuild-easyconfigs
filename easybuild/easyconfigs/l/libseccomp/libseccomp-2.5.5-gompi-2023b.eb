@@ -1,0 +1,56 @@
+# Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center 2024
+
+easyblock = 'ConfigureMake'
+
+name = 'libseccomp'
+version = '2.5.5'
+
+homepage = 'https://github.com/seccomp/libseccomp'
+description = """
+The libseccomp library provides an easy to use, platform independent, interface to the Linux
+Kernel's syscall filtering mechanism. The libseccomp API is designed to abstract away the
+underlying BPF based syscall filter language and present a more conventional function-call based
+filtering interface that should be familiar to, and easily adopted by, application developers.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2023b'}
+
+source_urls = ['https://github.com/seccomp/%(name)s/releases/download/v%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['248a2c8a4d9b9858aa6baf52712c34afefcf9c9e94b76dce02c1c9aa25fb3375']
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('Cython', '3.0.10'),
+    ('pkgconf', '2.0.3'),
+    ('libtool', '2.4.7'),
+]
+
+dependencies = [
+    ('gperf', '3.1'),
+    ('Python', '3.11.5'),
+    ('Valgrind', '3.23.0'),
+]
+
+# Instruct setuptools to create a regular python package rather than an egg
+_old_pyinstall = 'PY_INSTALL = ${PY_DISTUTILS} install'
+_new_pyinstall = 'PY_INSTALL = ${PY_DISTUTILS} install --single-version-externally-managed'
+preconfigopts = f"sed -i 's|{_old_pyinstall}|{_new_pyinstall}|' src/python/Makefile.am && autoreconf -fi && "
+
+configopts = '--enable-python'
+
+# Avoid risk of picking up packages from $HOME/.local that can interfere with installation
+preinstallopts = 'PYTHONNOUSERSITE=1 '
+
+sanity_check_paths = {
+    'files': [f'lib/{name}.{x}' for x in ('a', SHLIB_EXT)],
+    'dirs': ['bin', 'lib/pkgconfig']
+}
+
+sanity_check_commands = [
+    "scmp_sys_resolver -h 2>&1 | grep -q '^usage:\\s'",
+    "python -s -c 'import seccomp; print(seccomp.get_api())'",
+]
+
+moduleclass = 'lib'

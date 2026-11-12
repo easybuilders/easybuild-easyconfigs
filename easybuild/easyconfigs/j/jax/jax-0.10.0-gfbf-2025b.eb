@@ -1,0 +1,135 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+# Updated by: Alex Domingo (Vrije Universiteit Brussel)
+# Updated by: Thomas Hoffmann (EMBL Heidelberg)
+# Updated by: Pavel Tománek (Ugent/INUITS)
+
+easyblock = 'PythonBundle'
+
+name = 'jax'
+version = '0.10.0'
+
+homepage = 'https://jax.readthedocs.io/'
+description = """Composable transformations of Python+NumPy programs:
+differentiate, vectorize, JIT to GPU/TPU, and more"""
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+
+builddependencies = [
+    ('Bazel', '7.7.0', '-Java-21'),
+    ('LLVM', '20.1.8'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('absl-py', '2.3.1'),
+    ('flatbuffers-python', '25.2.10'),
+    # ml_dtypes >= 0.5.4 needed for correct bfloat16 byteswap,
+    # see https://github.com/jax-ml/ml_dtypes/issues/308
+    ('ml_dtypes', '0.5.4'),
+    ('hypothesis', '6.136.6'),
+    ('zlib', '1.3.1'),
+    ('opt-einsum', '3.4.0'),
+]
+
+# downloading xla  tarball to avoid that Bazel downloads it during the build
+# note: following commits *must* be the exact same ones used upstream
+# XLA_COMMIT from jax-jaxlib: third_party/xla/revision.bzl
+# also filename in /archives has to be {_xla_commit}.tar.gz
+_xla_commit = 'b6f37ab7767f428fd6f993de5e211643d47d4deb'
+
+# Use sources downloaded by EasyBuild
+_jaxlib_buildopts = '--bazel_options="--distdir=%(builddir)s/archives" '
+
+if ARCH == 'aarch64':
+    _jaxlib_buildopts += ' --bazel_options="--@compute_library//:arch=armv8.2-a+fp16" '
+
+# create wheels for jaxlib and install it
+_jaxlib_buildopts += '--wheels=jaxlib '
+# use local Clang/LLVM for the JAX/XLA Bazel build (GCC is no longer supported upstream)
+# without local Clang/LLVM it uses hermetic one
+_jaxlib_buildopts += '--clang_path=$EBROOTLLVM/bin/clang '
+# fix jaxlib version
+_jaxlib_buildopts += '--bazel_options="--action_env=JAXLIB_RELEASE" '
+_jaxlib_buildopts += '--bazel_options="--repo_env=ML_WHEEL_TYPE=release" '
+
+_prebuildopts = 'export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1; '
+
+components = [
+    ('jaxlib', version, {
+        'sources': [
+            {
+                'source_urls': ['https://github.com/google/jax/archive/'],
+                'filename': 'jax-v%(version)s.tar.gz',
+            },
+            {
+                'source_urls': ['https://github.com/openxla/xla/archive'],
+                'filename': f'{_xla_commit}.tar.gz',
+                'extract_cmd': 'mkdir -p %(builddir)s/archives && cp %s %(builddir)s/archives',
+            },
+        ],
+        'checksums': [
+            {'jax-v0.10.0.tar.gz':
+             '12ae17617d1346e2f98cfc48c1a000adc7389784eb119e8108a22dfd57cbb8c3'},
+            {'b6f37ab7767f428fd6f993de5e211643d47d4deb.tar.gz':
+             '6a25ffe712c27468fe642c8d07f4de5601092bf31f4d1edd483eeef96b39e2d9'},
+        ],
+        'start_dir': f'jax-jax-v{version}',
+        # fix jaxlib version - removes .dev suffix
+        'prebuildopts': ' '.join(['export JAXLIB_RELEASE=%(version)s && ', _prebuildopts]),
+        'buildopts': _jaxlib_buildopts,
+    }),
+]
+
+_failing_tests = [
+    # Fails on systems where non-CPU backends/plugins are visible for a CPU-only build
+    'tests/api_test.py::BackendsTest::test_no_backend_warning_on_cpu_if_platform_specified',
+    # Tests run from the source tree, so `import jax` reports the source-tree
+    # .dev version even though the installed package metadata/version is 0.10.0
+    'tests/version_test.py',
+    # Subprocess logging tests are polluted by fake path-based PJRT plugin
+    # discovery (/path/pjrt_plugin_name1.so) and by any jax_plugins packages
+    # (e.g. CUDA/ROCm) visible in the user's environment, same as in jax 0.10.1
+    'tests/logging_test.py::LoggingTest::test_subprocess_stderr_debug_logging',
+    'tests/logging_test.py::LoggingTest::test_subprocess_stderr_info_logging',
+    'tests/logging_test.py::LoggingTest::test_subprocess_toggling_logging_level',
+]
+
+# Use at most 4 pytest-xdist workers. More workers were unstable for this
+# heavy JAX test suite, but avoid oversubscribing small jobs
+_jax_test_workers = '$(( %(parallel)s > 8 ? 4 : (%(parallel)s + 1) / 2 ))'
+
+_runtest_cmd1 = (
+    f'pytest -n {_jax_test_workers} '
+    '-vv -ra --tb=short --durations=100 '
+    '--max-worker-restart=0 '
+    '--dist=loadscope '
+    + ' '.join(f'--deselect={test}' for test in _failing_tests)
+    + ' tests'
+)
+
+# retry randomly failing tests
+_runtest_cmd = ' '.join([_runtest_cmd1, '||', _runtest_cmd1, '--last-failed'])
+
+exts_list = [
+    (name, version, {
+        'pretestopts': _prebuildopts + 'export JAX_PLATFORMS=cpu; ',
+        # JAX_RELEASE makes jax/version.py report the clean version
+        # ("0.10.0") instead of "0.10.0.dev<date>", which would otherwise
+        # fail downstream `jax>=0.10.0` pip checks. Must be in preinstallopts
+        # since PythonPackage runs `pip install .` at the install step.
+        'preinstallopts': 'export JAX_RELEASE=%(version)s && ',
+        'testinstall': True,
+        "runtest": _runtest_cmd,
+        'sources': [{
+            'source_urls': ['https://github.com/google/jax/archive/'],
+            'filename': '%(name)s-v%(version)s.tar.gz',
+        }],
+        'checksums': [
+            {'jax-v0.10.0.tar.gz': '12ae17617d1346e2f98cfc48c1a000adc7389784eb119e8108a22dfd57cbb8c3'},
+        ],
+    }),
+]
+
+moduleclass = 'ai'
