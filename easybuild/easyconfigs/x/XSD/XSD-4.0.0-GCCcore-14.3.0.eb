@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'XSD'
+version = '4.0.0'
+
+homepage = 'https://www.codesynthesis.com/products/xsd/'
+description = """CodeSynthesis XSD is a W3C XML Schema to C++ data binding compiler.
+
+Only the libxsd header-only runtime is installed. The xsd code generator binary
+is not built: Damaris, the consumer this easyconfig exists for, ships its
+pre-generated model and never invokes the generator. Building the generator
+additionally requires patches for modern Xerces-C++ and for C++17
+(std::auto_ptr removal), which Debian carries but upstream 4.0.0 does not.
+
+Damaris requires EXACTLY this version: its pre-generated model (xsd/Model.hpp)
+carries a hard compile-time check
+
+    #if (XSD_INT_VERSION != 4000000L)
+    #error XSD runtime version mismatch
+
+so no other version can be substituted."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+source_urls = ['https://www.codesynthesis.com/download/xsd/%(version_major_minor)s/']
+sources = ['xsd-%(version)s+dep.tar.bz2']
+checksums = ['eca52a9c8f52cdbe2ae4e364e4a909503493a0d51ea388fc6c9734565a859817']
+
+builddependencies = [
+    ('binutils', '2.44'),
+]
+
+# nothing is compiled: the headers are copied as they are
+skipsteps = ['build']
+
+# headers live under xsd/libxsd/xsd in the +dep tarball, NOT under libxsd/xsd
+files_to_copy = [(['xsd/libxsd/xsd'], 'include')]
+
+sanity_check_paths = {
+    'files': ['include/xsd/cxx/config.hxx', 'include/xsd/cxx/version.hxx'],
+    'dirs': ['include/xsd/cxx/tree', 'include/xsd/cxx/xml'],
+}
+
+moduleclass = 'devel'
