@@ -1,0 +1,83 @@
+From 05f11f8a868c162b393ffafc8e3c9756bf7df340 Mon Sep 17 00:00:00 2001
+From: Afzal Patel <afzal.patel@amd.com>
+Date: Wed, 15 Oct 2025 15:07:12 -0400
+Subject: [PATCH 1/3] [hipblaslt] add roctracer include dir
+
+---
+ projects/hipblaslt/CMakeLists.txt | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/projects/hipblaslt/CMakeLists.txt b/projects/hipblaslt/CMakeLists.txt
+index 22734387317c..1824a7ab2168 100644
+--- a/projects/hipblaslt/CMakeLists.txt
++++ b/projects/hipblaslt/CMakeLists.txt
+@@ -121,6 +121,7 @@ if(HIPBLASLT_ENABLE_HOST)
+     endif()
+     if(HIPBLASLT_ENABLE_MARKER)
+         find_library(rocTracer roctx64 REQUIRED)
++        find_path(ROCTRACER_INCLUDE_DIR "roctracer/roctx.h")
+     else()
+         set(rocTracer)
+     endif()
+@@ -269,6 +270,7 @@ if(HIPBLASLT_ENABLE_HOST)
+ 
+     if(HIPBLASLT_ENABLE_MARKER)
+         target_compile_definitions(hipblaslt PRIVATE HIPBLASLT_ENABLE_MARKER)
++        target_include_directories(hipblaslt PRIVATE ${ROCTRACER_INCLUDE_DIR})
+     endif()
+ 
+     target_include_directories(hipblaslt
+
+From 88e16bb1f9d2e44aba75108adaf6939459cbadaf Mon Sep 17 00:00:00 2001
+From: Afzal Patel <122491982+afzpatel@users.noreply.github.com>
+Date: Mon, 17 Nov 2025 15:12:53 -0500
+Subject: [PATCH 2/3] add REQUIRED to find_path
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+---
+ projects/hipblaslt/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/projects/hipblaslt/CMakeLists.txt b/projects/hipblaslt/CMakeLists.txt
+index 194ff3a09e80..206642ad1d26 100644
+--- a/projects/hipblaslt/CMakeLists.txt
++++ b/projects/hipblaslt/CMakeLists.txt
+@@ -116,7 +116,7 @@ if(HIPBLASLT_ENABLE_HOST)
+     endif()
+     if(HIPBLASLT_ENABLE_MARKER)
+         find_library(rocTracer roctx64 REQUIRED)
+-        find_path(ROCTRACER_INCLUDE_DIR "roctracer/roctx.h")
++        find_path(ROCTRACER_INCLUDE_DIR "roctracer/roctx.h" REQUIRED)
+     else()
+         set(rocTracer)
+     endif()
+
+From ef8c35a1b34a07e04c48e5da5b9d913ad776b9f2 Mon Sep 17 00:00:00 2001
+From: Afzal Patel <122491982+afzpatel@users.noreply.github.com>
+Date: Tue, 25 Nov 2025 14:50:37 -0500
+Subject: [PATCH 3/3] Update projects/hipblaslt/CMakeLists.txt
+
+Co-authored-by: Braden Stefanuk <121893577+bstefanuk@users.noreply.github.com>
+---
+ projects/hipblaslt/CMakeLists.txt | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/projects/hipblaslt/CMakeLists.txt b/projects/hipblaslt/CMakeLists.txt
+index 206642ad1d26..e4178cbcab6e 100644
+--- a/projects/hipblaslt/CMakeLists.txt
++++ b/projects/hipblaslt/CMakeLists.txt
+@@ -116,7 +116,13 @@ if(HIPBLASLT_ENABLE_HOST)
+     endif()
+     if(HIPBLASLT_ENABLE_MARKER)
+         find_library(rocTracer roctx64 REQUIRED)
+-        find_path(ROCTRACER_INCLUDE_DIR "roctracer/roctx.h" REQUIRED)
++        get_filename_component(ROCTRACER_LIB_DIR ${rocTracer} DIRECTORY)
++        get_filename_component(ROCTRACER_ROOT_DIR ${ROCTRACER_LIB_DIR} DIRECTORY)
++    
++        find_path(ROCTRACER_INCLUDE_DIR "roctracer/roctx.h" 
++            HINTS ${ROCTRACER_ROOT_DIR}
++            PATH_SUFFIXES include
++            REQUIRED)
+     else()
+         set(rocTracer)
+     endif()
