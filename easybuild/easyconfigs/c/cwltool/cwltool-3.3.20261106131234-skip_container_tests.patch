@@ -1,0 +1,192 @@
+Skip tests that require container and allow that a user may not have a
+fullname attached to their account.
+
+https://github.com/common-workflow-language/cwltool/pull/2387
+Patch has been merged upstream
+
+From 83a02b44c03fc4a7c9a3da021d590d413912ba60 Mon Sep 17 00:00:00 2001
+From: ocaisa <alan.ocais@cecam.org>
+Date: Tue, 10 Nov 2026 18:48:17 +0100
+Subject: [PATCH 1/3] Allowing for envars to skip tests that require container
+ runtimes
+
+---
+ tests/util.py | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/tests/util.py b/tests/util.py
+index e1fb5a1ef..48ae985ce 100644
+--- a/tests/util.py
++++ b/tests/util.py
+@@ -41,33 +41,38 @@ def get_data(filename: str) -> str:
+     return str(filepath.resolve())
+ 
+ 
++SKIP_DOCKER = bool(os.environ.get("SKIP_DOCKER_TESTS"))
+ needs_docker = pytest.mark.skipif(
+-    not bool(shutil.which("docker")),
++    SKIP_DOCKER or not bool(shutil.which("docker")),
+     reason="Requires the docker executable on the system path.",
+ )
+ 
++SKIP_SINGULARITY = bool(os.environ.get("SKIP_SINGULARITY_TESTS"))
++
+ needs_singularity = pytest.mark.skipif(
+-    not bool(shutil.which("singularity")),
++    SKIP_SINGULARITY or not bool(shutil.which("singularity")),
+     reason="Requires the singularity executable on the system path.",
+ )
+ 
+ needs_singularity_not_apptainer = pytest.mark.skipif(
+-    not (bool(shutil.which("singularity")) and "singularity" in get_version()[1]),
++    SKIP_SINGULARITY
++    or not (bool(shutil.which("singularity")) and "singularity" in get_version()[1]),
+     reason="Requires a real singularity executable (not apptainer) on the system path.",
+ )
+ 
+ needs_singularity_2_6 = pytest.mark.skipif(
+-    not bool(shutil.which("singularity") and is_version_2_6()),
++    SKIP_SINGULARITY or not bool(shutil.which("singularity") and is_version_2_6()),
+     reason="Requires that version 2.6.x of singularity executable version is on the system path.",
+ )
+ 
+ needs_singularity_3_or_newer = pytest.mark.skipif(
+-    (not bool(shutil.which("singularity"))) or (not is_version_3_or_newer()),
++    SKIP_SINGULARITY or (not bool(shutil.which("singularity"))) or (not is_version_3_or_newer()),
+     reason="Requires that version 3.x of singularity executable version is on the system path.",
+ )
+ 
++SKIP_PODMAN = bool(os.environ.get("SKIP_PODMAN_TESTS"))
+ needs_podman = pytest.mark.skipif(
+-    not bool(shutil.which("podman")),
++    SKIP_PODMAN or not bool(shutil.which("podman")),
+     reason="Requires the podman executable on the system path.",
+ )
+ 
+
+From ed338d6ef08bcdd3b813d411ce0205cfe4606065 Mon Sep 17 00:00:00 2001
+From: Alan O'Cais <alan.ocais@cecam.org>
+Date: Wed, 11 Nov 2026 12:08:43 +0100
+Subject: [PATCH 2/3] Use SKIP_* to capture the entire logic, and use that
+ elsewhere if needed
+
+---
+ tests/test_examples.py | 16 ++++++++++++----
+ tests/util.py          | 21 +++++++++++----------
+ 2 files changed, 23 insertions(+), 14 deletions(-)
+
+diff --git a/tests/test_examples.py b/tests/test_examples.py
+index 0fa081067..dd7bbb195 100644
+--- a/tests/test_examples.py
++++ b/tests/test_examples.py
+@@ -39,7 +39,15 @@
+ from cwltool.process import CWL_IANA
+ from cwltool.utils import dedup
+ 
+-from .util import get_data, get_main_output, needs_docker, working_directory
++from .util import (
++    SKIP_DOCKER,
++    SKIP_PODMAN,
++    SKIP_SINGULARITY,
++    get_data,
++    get_main_output,
++    needs_docker,
++    working_directory,
++)
+ 
+ sys.argv = [""]
+ 
+@@ -1786,11 +1794,11 @@ def test_malformed_reqs() -> None:
+ def test_arguments_self() -> None:
+     """Confirm that $(self) works in the arguments list."""
+     factory = cwltool.factory.Factory()
+-    if not shutil.which("docker"):
+-        if shutil.which("podman"):
++    if SKIP_DOCKER:
++        if not SKIP_PODMAN:
+             factory.runtime_context.podman = True
+             factory.loading_context.podman = True
+-        elif shutil.which("singularity"):
++        elif not SKIP_SINGULARITY:
+             factory.runtime_context.singularity = True
+             factory.loading_context.singularity = True
+         elif not shutil.which("jq"):
+diff --git a/tests/util.py b/tests/util.py
+index 48ae985ce..6e39ae49a 100644
+--- a/tests/util.py
++++ b/tests/util.py
+@@ -41,38 +41,39 @@ def get_data(filename: str) -> str:
+     return str(filepath.resolve())
+ 
+ 
+-SKIP_DOCKER = bool(os.environ.get("SKIP_DOCKER_TESTS"))
++SKIP_DOCKER = bool(os.environ.get("SKIP_DOCKER_TESTS")) or not bool(shutil.which("docker"))
+ needs_docker = pytest.mark.skipif(
+-    SKIP_DOCKER or not bool(shutil.which("docker")),
++    SKIP_DOCKER,
+     reason="Requires the docker executable on the system path.",
+ )
+ 
+-SKIP_SINGULARITY = bool(os.environ.get("SKIP_SINGULARITY_TESTS"))
++SKIP_SINGULARITY = bool(os.environ.get("SKIP_SINGULARITY_TESTS")) or not bool(
++    shutil.which("singularity")
++)
+ 
+ needs_singularity = pytest.mark.skipif(
+-    SKIP_SINGULARITY or not bool(shutil.which("singularity")),
++    SKIP_SINGULARITY,
+     reason="Requires the singularity executable on the system path.",
+ )
+ 
+ needs_singularity_not_apptainer = pytest.mark.skipif(
+-    SKIP_SINGULARITY
+-    or not (bool(shutil.which("singularity")) and "singularity" in get_version()[1]),
++    SKIP_SINGULARITY or not bool("singularity" in get_version()[1]),
+     reason="Requires a real singularity executable (not apptainer) on the system path.",
+ )
+ 
+ needs_singularity_2_6 = pytest.mark.skipif(
+-    SKIP_SINGULARITY or not bool(shutil.which("singularity") and is_version_2_6()),
++    SKIP_SINGULARITY or not bool(is_version_2_6()),
+     reason="Requires that version 2.6.x of singularity executable version is on the system path.",
+ )
+ 
+ needs_singularity_3_or_newer = pytest.mark.skipif(
+-    SKIP_SINGULARITY or (not bool(shutil.which("singularity"))) or (not is_version_3_or_newer()),
++    SKIP_SINGULARITY or not bool(not is_version_3_or_newer()),
+     reason="Requires that version 3.x of singularity executable version is on the system path.",
+ )
+ 
+-SKIP_PODMAN = bool(os.environ.get("SKIP_PODMAN_TESTS"))
++SKIP_PODMAN = bool(os.environ.get("SKIP_PODMAN_TESTS")) or not bool(shutil.which("podman"))
+ needs_podman = pytest.mark.skipif(
+-    SKIP_PODMAN or not bool(shutil.which("podman")),
++    SKIP_PODMAN,
+     reason="Requires the podman executable on the system path.",
+ )
+ 
+
+From 0e8a096d81cd27e71e32cdb8df9c833cefc0d174 Mon Sep 17 00:00:00 2001
+From: Alan O'Cais <alan.ocais@cecam.org>
+Date: Wed, 11 Nov 2026 12:53:40 +0100
+Subject: [PATCH 3/3] User may not have a fullname set
+
+---
+ tests/test_provenance.py | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/tests/test_provenance.py b/tests/test_provenance.py
+index b725a9cd2..c4983e776 100644
+--- a/tests/test_provenance.py
++++ b/tests/test_provenance.py
+@@ -943,7 +943,9 @@ def test_invalid_orcid(orcid: str) -> None:
+ def test_whoami() -> None:
+     username, fullname = provenance._whoami()
+     assert username and isinstance(username, str)
+-    assert fullname and isinstance(fullname, str)
++    # May not get a fullname
++    if fullname:
++        assert fullname and isinstance(fullname, str)
+ 
+ 
+ def test_research_object() -> None:
