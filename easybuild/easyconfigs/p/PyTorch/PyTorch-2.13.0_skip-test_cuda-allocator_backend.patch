@@ -1,0 +1,19 @@
+Skip TestCudaAllocator.test_allocator_backend failing with
+> subprocess.CalledProcessError: ... returned non-zero exit status 127
+The test spawns python with an empty environment (env={}); dropping e.g. LD_LIBRARY_PATH required to find e.g libpython3.13.so.1.0.
+
+See also https://github.com/pytorch/pytorch/pull/197163
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_cuda.py b/test/test_cuda.py
+--- a/test/test_cuda.py
++++ b/test/test_cuda.py
+@@ -5834,6 +5834,7 @@ class TestCudaAllocator(TestCase):
+                 "throw_on_cudamalloc_oom:False,per_process_memory_fraction:1.0"
+             )
+ 
++    @unittest.skip("Cleaned env doesn't work")
+     def test_allocator_backend(self):
+         def check_output(script: str) -> str:
+             return subprocess.check_output(

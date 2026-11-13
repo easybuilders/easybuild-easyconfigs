@@ -1,0 +1,21 @@
+Skip test (all 54 variants) that fails when OneDNN and ACL is used on ARM,
+see https://github.com/pytorch/pytorch/pull/186935
+
+Failures are like:
+>	Absolute difference: 1
+and
+>	Greatest absolute difference: 0.03125 at index (12, 0, 548) (up to 1e-05 allowed)
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_cpu_select_algorithm.py b/test/inductor/test_cpu_select_algorithm.py
+--- a/test/inductor/test_cpu_select_algorithm.py
++++ b/test/inductor/test_cpu_select_algorithm.py
+@@ -1655,6 +1655,7 @@ class TestSelectAlgorithm(BaseTestSelectAlgorithm):
+     )
+     @parametrize("in_features", (128, 144, 1024))
+     @parametrize("out_features", (64, 65, 1024))
++    @unittest.skipIf(torch.ops.mkldnn._is_mkldnn_acl_supported(), "OP fusion disabled with ACL")
+     @unittest.skipIf(
+         IS_ARM64 and not IS_CPU_EXT_SVE_SUPPORTED, "flaky on AArch64 (no SVE)"
+     )

@@ -1,0 +1,23 @@
+Skip TestUnaryUfuncsCPU.test_reference_numerics_large{,_refs}_nn_functional_mish_cpu_float16 failing with
+> Exception: Tensor-likes are not close!
+>
+> Mismatched elements: 12 / 36 (33.3%)
+> Greatest absolute difference: 1.5 at index (18,) (up to 0.01 allowed)
+> Greatest relative difference: 0.0015010833740234375 at index (18,) (up to 0.0012 allowed)
+
+Caused by numpy 2.3.2, fixed in 2.4.5, see https://github.com/pytorch/pytorch/issues/174775
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_unary_ufuncs.py b/test/test_unary_ufuncs.py
+--- a/test/test_unary_ufuncs.py
++++ b/test/test_unary_ufuncs.py
+@@ -301,6 +301,8 @@ class TestUnaryUfuncs(TestCase):
+     def test_reference_numerics_large(self, device, dtype, op):
+         if dtype in (torch.bool, torch.uint8, torch.int8):
+             raise self.skipTest("bool, uint8, and int8 dtypes have no large values")
++        if op.name == "nn.functional.mish" and dtype == torch.float16:
++            raise self.skipTest("mish f16 reference numerics mismatch on CPU for numpy 2.3.2")
+ 
+         tensors = generate_elementwise_unary_large_value_tensors(
+             op, device=device, dtype=dtype, requires_grad=False

@@ -1,0 +1,63 @@
+Some tests might hang forever and the default timeout will only be set when
+a) --enable-timeout is passed, and
+b) a `.additional_ci_files/test-times.json` exists at the root
+
+Manually set a timeout of 120min which should be enough for any single test.
+As some tests hang only when run with other tests.
+So use a smallish timeout (20min) for running the whole suite but the full timeout when retrying a single test,
+so it succeeds even when it takes much longer than "usual".
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/run_test.py b/test/run_test.py
+--- a/test/run_test.py
++++ b/test/run_test.py
+@@ -638,6 +638,7 @@ def run_test(
+         if is_cpp_test
+         else None
+     )
++    timeout = 60 * 120
+     print_to_stderr(f"Executing {command} ... [{datetime.now()}]")
+ 
+     with ExitStack() as stack:
+@@ -761,6 +762,8 @@ def run_test_retries(
+         print(s, file=output, flush=True)
+ 
+     num_failures = defaultdict(int)
++    small_timeout = min(timeout, 60 * 20)
++    current_timeout = small_timeout # Start with a low timeout
+ 
+     def read_pytest_cache(key: str) -> Any:
+         cache_file = (
+@@ -781,7 +784,7 @@ def run_test_retries(
+             stdout=output,
+             stderr=output,
+             env=env,
+-            timeout=timeout,
++            timeout=current_timeout,
+             retries=0,  # no retries here, we do it ourselves, this is because it handles timeout exceptions well
+         )
+         ret_code = 0 if ret_code == 5 else ret_code
+@@ -811,6 +814,7 @@ def run_test_retries(
+         if ret_code == 0:
+             # Rerunning the previously failing test succeeded, so now we can
+             # skip it and move on
++            current_timeout = small_timeout  # Continue with small timeout
+             sc_command = f"--scs={stepcurrent_key}"
+             print_to_file(
+                 "Test succeeded in new process, continuing with the rest of the tests"
+@@ -829,12 +833,14 @@ def run_test_retries(
+             if not continue_through_error:
+                 print_to_file("Stopping at first consistent failure")
+                 break
++            current_timeout = small_timeout  # Continue with small timeout
+             sc_command = f"--scs={stepcurrent_key}"
+             print_to_file(
+                 "Test failed consistently, "
+                 "continuing with the rest of the tests due to continue-through-error being set"
+             )
+         else:
++            current_timeout = timeout  # Do reruns with full timeout
+             env = try_set_cpp_stack_traces(env, command, set=True)
+             sc_command = f"--rs={stepcurrent_key}"
+             print_to_file("Retrying single test...")

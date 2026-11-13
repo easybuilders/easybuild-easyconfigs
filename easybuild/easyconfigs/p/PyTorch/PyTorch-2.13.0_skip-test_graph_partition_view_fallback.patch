@@ -1,0 +1,22 @@
+Skip CudaGraphTreeTests.test_graph_partition_view_fallback failing with
+> RuntimeError: Cannot copy between CPU and CUDA tensors during CUDA graph capture unless the CPU tensor is pinned.
+
+Also covers test_cudagraph_trees_expandable_segments.py, which imports the same class.
+Disabled upstream, see https://github.com/pytorch/pytorch/issues/190233
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/inductor/test_cudagraph_trees.py b/test/inductor/test_cudagraph_trees.py
+--- a/test/inductor/test_cudagraph_trees.py
++++ b/test/inductor/test_cudagraph_trees.py
+@@ -3685,6 +3685,10 @@ if HAS_CUDA_AND_TRITON:
+             # 2 graph partitions lead to 2 cudagraph
+             self.assertEqual(self.get_manager().new_graph_id().id, 2)
+ 
++        @unittest.skip(
++            "Disabled due to CI failures; see "
++            "https://github.com/pytorch/pytorch/issues/190233"
++        )
+         def test_graph_partition_view_fallback(self):
+             def f(x):
+                 y = x + 1
