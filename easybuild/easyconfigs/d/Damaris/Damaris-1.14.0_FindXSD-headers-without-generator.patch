@@ -1,0 +1,125 @@
+Damaris requires the xsd code generator at configure time and derives the path
+of the libxsd headers from it, although the generator only runs when the C++/XML
+mapping is regenerated: Model.hpp and Model.cpp ship pre-generated, and
+GENERATE_MODEL defaults to OFF. An installation providing only the header-only
+runtime therefore fails to configure, and so does any consumer of Damaris:
+
+    Could NOT find XSD (missing: XSD_EXECUTABLE XSD_INCLUDE_DIR)
+
+FindXSD.cmake now looks for the headers in their own right, preferring XSD_ROOT,
+then the directory next to the generator, then the system. The generator is
+required only when asked for with COMPONENTS executable, which CMakeLists.txt
+does exactly when lib/CMakeLists.txt will run it.
+
+Etienne Ndamlabin, 2026-11-06
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -135,7 +135,16 @@
+ #----------------------------------------------------------------------------#
+ # Set everything related to the XSD libraries
+ #----------------------------------------------------------------------------#
+-find_package(XSD REQUIRED)
++# The xsd code generator is only needed when the C++/XML mapping is
++# regenerated from the schema; see lib/CMakeLists.txt. Otherwise the
++# header-only libxsd runtime is enough. Requiring the generator
++# unconditionally makes Damaris unbuildable wherever only the runtime is
++# packaged, which is the common case.
++if(GENERATE_MODEL OR NOT EXISTS ${DAMARIS_SOURCE_DIR}/xsd/Model.hpp)
++    find_package(XSD REQUIRED COMPONENTS executable)
++else()
++    find_package(XSD REQUIRED)
++endif()
+ if(DEFINED XSD_INCLUDE_DIRS)
+     include_directories(${XSD_INCLUDE_DIRS})
+ endif(DEFINED XSD_INCLUDE_DIRS)
+--- a/cmake/Modules/FindXSD.cmake
++++ b/cmake/Modules/FindXSD.cmake
+@@ -1,7 +1,16 @@
+-# 
+-# Attempt to find the xsd application in various places. If found, the full
+-# path will be in XSD_EXECUTABLE. Look in the usual locations, as well as in
+-# the 'bin' directory in the path given in the XSD_ROOT environment variable.
++#
++# Locate the CodeSynthesis XSD data binding compiler and its header-only
++# runtime. The two are independent and are looked for separately:
++#
++#   XSD_INCLUDE_DIR  the libxsd headers, which is all that is needed to
++#                    compile a C++/XML mapping that has already been generated
++#   XSD_EXECUTABLE   the xsd code generator, needed only to regenerate that
++#                    mapping from a schema
++#
++# By default only the headers are required, because a distribution may ship
++# the runtime without the generator. Ask for the generator as well with:
++#
++#   find_package( XSD REQUIRED COMPONENTS executable )
+ #
+ FIND_PROGRAM( XSD_EXECUTABLE 
+               NAMES
+@@ -17,23 +26,40 @@
+ 			  		/usr/bin
+ 					ENV PATH )
+ 
++#
++# Look for the headers in their own right, so that an installation providing
++# only the runtime is usable. After XSD_ROOT, the directory next to the
++# generator is preferred over the system ones, so that a generator keeps
++# getting its own headers rather than whichever version the system provides.
++#
+ IF( XSD_EXECUTABLE )
+-
+-  # 
+-  # Obtain the include directory that one can use with INCLUDE_DIRECTORIES() to
+-  # access the xsd include files.
+-  #
+   GET_FILENAME_COMPONENT( XSD_BIN_DIR "${XSD_EXECUTABLE}" PATH )
+   GET_FILENAME_COMPONENT( XSD_ROOT_DIR "${XSD_BIN_DIR}" PATH )
+-  SET( XSD_INCLUDE_DIR "${XSD_ROOT_DIR}/include" )
+ ENDIF( XSD_EXECUTABLE )
+ 
++FIND_PATH( XSD_INCLUDE_DIR
++           NAMES xsd/cxx/config.hxx
++           HINTS ${RWSL_DEPS}/xsd/include $ENV{XSD_ROOT}/include
++                 ${XSD_ROOT}/include ${XSD_ROOT_DIR}/include
++           PATHS /usr/local/xsd-3.2.0-i686-macosx/include
++                 /usr/local/xsd-3.2.0-x86_64-linux-gnu/include
++                 /usr/local/include
++                 /opt/xsd-3.2.0-i686-macosx/include
++                 /opt/xsd-3.2.0-x86_64-linux-gnu/include
++                 /usr/include )
++
+ #
+ # General CMake package configuration.
+ #
+ INCLUDE( FindPackageHandleStandardArgs )
+-FIND_PACKAGE_HANDLE_STANDARD_ARGS( XSD DEFAULT_MSG XSD_EXECUTABLE
+-								   XSD_INCLUDE_DIR )
++LIST( FIND XSD_FIND_COMPONENTS "executable" XSD_EXECUTABLE_REQUESTED )
++IF( NOT XSD_EXECUTABLE_REQUESTED EQUAL -1 )
++  FIND_PACKAGE_HANDLE_STANDARD_ARGS( XSD DEFAULT_MSG XSD_INCLUDE_DIR
++                                     XSD_EXECUTABLE )
++ELSE( NOT XSD_EXECUTABLE_REQUESTED EQUAL -1 )
++  FIND_PACKAGE_HANDLE_STANDARD_ARGS( XSD DEFAULT_MSG XSD_INCLUDE_DIR )
++ENDIF( NOT XSD_EXECUTABLE_REQUESTED EQUAL -1 )
++
+ IF( XSD_FOUND )
+   SET( XSD_INCLUDE_DIRS ${XSD_INCLUDE_DIR} )
+ ELSE( XSD_FOUND )
+@@ -57,6 +83,18 @@
+ MACRO( XSD_SCHEMA NAME FILE )
+ 
+   #
++  # This macro needs the code generator, which find_package(XSD) does not
++  # require unless it was asked for. Say so plainly rather than emitting a
++  # custom command with an empty COMMAND.
++  #
++  IF( NOT XSD_EXECUTABLE )
++    MESSAGE( FATAL_ERROR
++             "XSD_SCHEMA() requires the xsd code generator, which was not "
++             "found. Use find_package( XSD REQUIRED COMPONENTS executable ) "
++             "if your build generates C++ from a schema." )
++  ENDIF( NOT XSD_EXECUTABLE )
++
++  #
+   # Make a full path from the soource directory
+   #
+   SET( xs_SRC "${FILE}" )
