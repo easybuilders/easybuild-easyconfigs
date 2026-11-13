@@ -1,0 +1,44 @@
+name = 'MATLAB'
+version = '2023b-r5'
+local_versiontuple = tuple(version.split('-r'))
+
+homepage = 'https://www.mathworks.com/products/matlab'
+description = """MATLAB is a high-level language and interactive environment
+ that enables you to perform computationally intensive tasks faster than with
+ traditional programming languages such as C, C++, and Fortran."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+sources = ['R%s_Update_%s_Linux.iso' % local_versiontuple]
+checksums = ['18a67d1b1131b8fbd3b31277de92313586dfd00a4914f1f4cd78e3908466afad']
+download_instructions = 'Download %s from mathworks.com' % sources[0]
+
+java_options = '-Xmx2048m'
+
+builddependencies = [('binutils', '2.40')]
+
+osdependencies = [('p7zip-plugins', 'p7zip-full')]  # for extracting iso-files
+
+# Use EB_MATLAB_KEY environment variable or uncomment and modify license key
+# key = '00000-00000-00000-00000-00000-00000-00000-00000-00000-00000-00000-00000'
+
+# Use EB_MATLAB_LICENSE_SERVER and EB_MATLAB_LICENSE_SERVER_PORT environment variables or
+# uncomment and modify the following variables for installation with floating license server
+# license_file = 'my-license-file'
+# license_server_port = 'XXXXX'
+# license_server = 'XXXXX'
+
+postinstallcmds = [
+    # To have MATLAB link to the same version of libstdc++ as provided by toolchain,
+    # (if it is more modern than supported by MATLAB's own libstdc++.so),
+    # remove MATLAB's own: (note: a copy remains in subdir orig/)
+    "rm -v %(installdir)s/sys/os/glnxa64/libstdc++.so.6.*.*",
+    "rm -v %(installdir)s/sys/os/glnxa64/libstdc++.so.6",
+]
+
+modextrapaths = {
+    # To fix `MatlabEngine not found` issue:
+    'LD_LIBRARY_PATH': 'extern/bin/glnxa64',
+}
+
+moduleclass = 'math'
