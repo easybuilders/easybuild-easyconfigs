@@ -1,0 +1,56 @@
+# Updated by: Pavel Grochal (INUITS)
+# Updated by: Sebastien Moretti (SIB)
+# Updated by: Thomas Eylenbosch (Gluo)
+
+easyblock = 'PythonPackage'
+
+name = 'BUSCO'
+version = '6.0.0'
+
+homepage = 'https://busco.ezlab.org/'
+description = "BUSCO: assessing genome assembly and annotation completeness with single-copy orthologs"
+
+# software_license = 'LicenseMIT'
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+source_urls = ['https://gitlab.com/ezlab/%(namelower)s/-/archive/%(version)s']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['ab7710f084d17027b66e17c3d2e69da1e8f42fc1d6d9aba4fba077d8e1594b4d']
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('R', '4.5.2'),
+    ('Biopython', '1.86'),
+    ('BLAST+', '2.17.0'),
+    ('HMMER', '3.4'),
+    ('prodigal', '2.6.3'),
+    ('AUGUSTUS', '3.5.0'),
+    ('SEPP', '4.5.5'),
+    ('MetaEuk', '6'),
+    ('BBMap', '39.81b'),
+    ('miniprot', '0.18'),
+]
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/bin %(installdir)s/doc",
+    "cp %(builddir)s/%(namelower)s-%(version)s/LICENSE %(installdir)s/doc",
+    "cp -r %(builddir)s/%(namelower)s-%(version)s/test_data %(installdir)s",
+    "cp -r %(builddir)s/%(namelower)s-%(version)s/config %(installdir)s",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['test_data', 'lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+sanity_check_commands = [
+    "%(namelower)s --help",
+    "%(namelower)s -i %(installdir)s/test_data/bacteria/genome.fna "
+    "--cpu %(parallel)s --mode geno --out test_bacteria.out",
+    "%(namelower)s -i %(installdir)s/test_data/eukaryota/genome.fna "
+    "--cpu %(parallel)s --mode geno --out test_eukaryota.out"
+]
+
+moduleclass = 'bio'
