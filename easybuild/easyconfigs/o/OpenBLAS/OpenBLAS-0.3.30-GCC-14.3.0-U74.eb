@@ -1,0 +1,54 @@
+name = 'OpenBLAS'
+version = '0.3.30'
+versionsuffix = '-U74'
+
+homepage = 'https://www.openblas.net/'
+description = """OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version.
+This variant targets the SiFive U74 (RVA20 / rv64gc) application core, e.g. the
+StarFive JH7110 (VisionFive 2), adding a hand-tuned 4x4 DGEMM microkernel. It is
+built with TARGET=U74 and DYNAMIC_ARCH=0 (dynamic dispatch is not applicable to a
+fixed in-order core). The U74 target is added by the accompanying source patch."""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+source_urls = [
+    # order matters, trying to download the large.tgz/timing.tgz LAPACK tarballs from GitHub causes trouble
+    'https://www.netlib.org/lapack/timing/',
+    'https://github.com/xianyi/OpenBLAS/archive/',
+]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    ('large.tgz', '.'),
+    ('timing.tgz', '.'),
+    'OpenBLAS-0.3.15_workaround-gcc-miscompilation.patch',
+    'OpenBLAS-0.3.21_fix-order-vectorization.patch',
+    'OpenBLAS-0.3.30_revert-fix-out-of-bounds-access.patch',
+    'OpenBLAS-0.3.30_add-sifive-u74-target.patch',
+]
+checksums = [
+    {'v0.3.30.tar.gz': '27342cff518646afb4c2b976d809102e368957974c250a25ccc965e53063c95d'},
+    {'large.tgz': 'f328d88b7fa97722f271d7d0cfea1c220e0f8e5ed5ff01d8ef1eb51d6f4243a1'},
+    {'timing.tgz': '999c65f8ea8bd4eac7f1c7f3463d4946917afd20a997807300fe35d70122f3af'},
+    {'OpenBLAS-0.3.15_workaround-gcc-miscompilation.patch':
+     'e6b326fb8c4a8a6fd07741d9983c37a72c55c9ff9a4f74a80e1352ce5f975971'},
+    {'OpenBLAS-0.3.21_fix-order-vectorization.patch':
+     '08af834e5d60441fd35c128758ed9c092ba6887c829e0471ecd489079539047d'},
+    {'OpenBLAS-0.3.30_revert-fix-out-of-bounds-access.patch':
+     'c161fc0e2754c8ef073375138392a76ba9c4cb23f85d5d554051db4bc73ba6ae'},
+    {'OpenBLAS-0.3.30_add-sifive-u74-target.patch':
+     'ea52a774b278f2407b53be20a586f4ae8e74fcb96a43fc713e09accd298de1c3'},
+]
+
+builddependencies = [
+    ('make', '4.4.1'),
+    # required by LAPACK test suite
+    ('Python', '3.13.5'),
+]
+
+# build the hand-tuned SiFive U74 target; DYNAMIC_ARCH is not applicable to a fixed core
+buildopts = 'TARGET=U74 DYNAMIC_ARCH=0'
+
+run_lapack_tests = True
+max_failing_lapack_tests_num_errors = 150
+
+moduleclass = 'numlib'
