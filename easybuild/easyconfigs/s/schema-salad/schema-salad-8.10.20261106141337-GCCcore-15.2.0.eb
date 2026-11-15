@@ -1,0 +1,63 @@
+easyblock = 'PythonBundle'
+
+name = 'schema-salad'
+version = '8.10.20261106141337'
+
+homepage = 'https://schema-salad.readthedocs.io/'
+description = """
+Salad is a schema language for describing JSON or YAML structured linked data documents. Salad schema describes rules
+for preprocessing, structural validation, and hyperlink checking for documents described by a Salad schema. Salad
+supports rich data modeling with inheritance, template specialization, object identifiers, object references,
+documentation generation, code generation, and transformation to RDF. Salad provides a bridge between document and
+record oriented data modeling and the Semantic Web.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+builddependencies = [
+    ('poetry', '2.3.4'),  # rich
+    ('maturin', '1.13.1'),  # uv-build
+    ('hatchling', '1.33.0'),
+    ('hatch-mypyc', '0.16.0'),  # build with mypyc
+]
+dependencies = [
+    ('Python', '3.14.2'),
+    ('Python-bundle-PyPI', '2026.04'),  # pathspec, CacheControl, requests, rich
+    ('black', '26.10.1'),
+    ('ruamel.yaml', '0.19.1'),
+    ('RDFlib', '7.6.0'),
+]
+
+exts_list = [
+    ('mypy_extensions', '1.2.0', {
+        'checksums': ['c6e275a07f1c2fc096b62940452d0eaa3f3af7de45d704787866240a7c6d5a51'],
+    }),
+    ('mistune', '3.4.0', {
+        'checksums': ['2eaf7952af928ca8d33b779762effc1da517b62c6ad85ec8ca957e3b07b9782a'],
+    }),
+    ('rich-argparse', '1.8.0', {
+        'checksums': ['679df3d832fa94ad6e4bdb07ded088cd7ea2dddc58ae9b2b46346a40b06cbc0c'],
+    }),
+    ('types-dataclasses', '0.6.6', {
+        'modulename': 'dataclasses',
+        'checksums': ['4b5a2fcf8e568d5a1974cd69010e320e1af8251177ec968de7b9bb49aa49f7b9'],
+    }),
+    ('setuptools', '84.2.1', {
+        'checksums': ['3ff8b3b5492a0aa66960f4419365a86b84e013070d4313e4d4a6894f5d64d6bc'],
+    }),
+    ('types-requests', '2.33.0.20261030', {  # types-requests needs >=82.0.1
+        'modulename': 'requests',
+        'checksums': ['42d75eb02ed0f8220904c8fc08d3129742e7fce42fd5cf706395c8bb4c0ad990'],
+    }),
+    (name, version, {
+        'buildcmd': "HATCH_BUILD_HOOKS_ENABLE=1 MYPYPATH=${PWD}/mypy-stubs python -m build --no-isolation --wheel .",
+        'install_src': "$(ls dist/*.whl)",
+        'modulename': 'schema_salad',
+        'runtest': 'pytest',
+        'testinstall': True,
+        'use_pip_extras': 'pycodegen',
+        'checksums': ['cf13b3dafce841c8426899f204ef033c8270148bce3d4e181c44182c35605e7c'],
+    }),
+]
+
+moduleclass = 'tools'

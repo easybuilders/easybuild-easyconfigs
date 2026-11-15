@@ -1,0 +1,57 @@
+easyblock = 'PythonBundle'
+
+name = 'pytest-xdist'
+version = '3.8.0'
+
+homepage = 'https://github.com/pytest-dev/pytest-xdist'
+description = """xdist: pytest distributed testing plugin
+
+The pytest-xdist plugin extends pytest with some unique test execution modes:
+
+    * test run parallelization: if you have multiple CPUs or hosts you
+      can use those for a combined test run. This allows to speed up
+      development or to use special resources of remote machines.
+
+    * --looponfail: run your tests repeatedly in a subprocess. After
+        each run pytest waits until a file in your project changes and
+        then re-runs the previously failing tests. This is repeated
+        until all tests pass after which again a full run is
+        performed.
+
+    * Multi-Platform coverage: you can specify different Python
+      interpreters or different platforms and run tests in parallel on
+      all of them.
+
+Before running tests remotely, pytest efficiently “rsyncs” your
+program source code to the remote place. All test results are reported
+back and displayed to your local terminal. You may specify different
+Python versions and interpreters."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('hatchling', '1.33.0'),
+]
+dependencies = [
+    ('Python', '3.14.2'),
+    ('pytest', '9.1.1'),
+]
+
+
+exts_list = [
+    ('apipkg', '3.0.2', {
+        'checksums': ['c7aa61a4f82697fdaa667e70af1505acf1f7428b1c27b891d204ba7a8a3c5e0d'],
+    }),
+    ('execnet', '2.1.1', {
+        'checksums': ['5189b52c6121c24feae288166ab41b32549c7e2348652736540b9e6e7d4e72e3'],
+    }),
+    (name, version, {
+        'modulename': 'xdist',
+        'runtest': 'pytest -k "not (test_ignore_sys_path_hook_entry or test_handlecrashitem_one or test_remote_usage_prog)"',
+        'source_tmpl': 'pytest_xdist-%(version)s.tar.gz',
+        'checksums': ['7e578125ec9bc6050861aa93f2d59f1d8d085595d6551c2c90b6f4fad8d3a9f1'],
+    }),
+]
+
+moduleclass = 'tools'
