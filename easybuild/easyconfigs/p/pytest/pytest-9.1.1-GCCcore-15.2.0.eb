@@ -1,0 +1,46 @@
+easyblock = 'PythonBundle'
+
+name = 'pytest'
+version = '9.1.1'
+
+homepage = 'https://docs.pytest.org/en/latest/'
+description = """The pytest framework makes it easy to write small,
+readable tests, and can scale to support complex functional testing for
+applications and libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('hatchling', '1.33.0'),
+    ('flit', '3.12.0'),
+]
+dependencies = [
+    ('Python', '3.14.2'),
+    ('hypothesis', '6.153.2'),
+]
+
+exts_list = [
+    ('elementpath', '5.1.4', {
+        'checksums': ['3c912a9c41311ac5244c038867670d7c0b0fec0e444813608e5b846dbb3428ac'],
+    }),
+    ('xmlschema', '4.3.2', {
+        'checksums': ['f3b33a21a2b2cdc404ddc3fb599d8bc1dee90b155d547370672e6e684746b8d6'],
+    }),
+    (name, version, {
+        'checksums': ['1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313'],
+    }),
+]
+
+# Some of the file system related tests may fail on shared file systems
+# test_source_mtime_long_long: known to fail on GPFS
+
+sanity_check_commands = [
+    "python -c 'import %(name)s'",
+    "cd %(builddir)s/%(name)s/%(name)s-%(version)s && %(installdir)s/bin/%(name)s "
+    "-k 'not (test_source_mtime_long_long)' "
+    "--ignore=testing/io/test_terminalwriter.py --ignore=testing/test_terminal.py --ignore=testing/test_debugging.py "
+    " --ignore=testing/test_config.py --ignore=testing/test_helpconfig.py testing",
+]
+
+moduleclass = 'lib'
