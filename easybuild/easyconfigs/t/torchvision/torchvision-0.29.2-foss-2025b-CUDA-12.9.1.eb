@@ -1,0 +1,50 @@
+easyblock = 'PythonBundle'
+
+name = 'torchvision'
+version = '0.29.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/pytorch/vision'
+description = " Datasets, Transforms and Models specific to Computer Vision"
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [('expecttest', '0.3.0')]  # tests
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('PyTorch', '2.9.1', versionsuffix),
+    ('libjpeg-turbo', '3.1.1'),
+    ('libpng', '1.6.50'),
+    ('libwebp', '1.5.0'),
+    ('Pillow', '11.3.0'),
+]
+
+exts_list = [
+    ('pytest-mock', '3.17.0', {
+        'checksums': ['e36576e0985e01027e999891e7a966c67822d40c89ef1b4c8b6e22737e3590b4'],
+    }),
+    (name, version, {
+        'installopts': '-v',
+        'patches': [
+            'torchvision-0.24.1_fix-CUDA-test-tolerances.patch',
+            'torchvision-0.29.2-PyTorch-2.9.1-headers.patch',
+        ],
+        'preinstallopts': "export FORCE_CUDA=1 && export CMAKE_BUILD_TYPE=Release && export NINJA_VERBOSE= && ",
+        'runtest': 'pytest -m "not xfail"',
+        'source_urls': ['https://github.com/pytorch/vision/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
+        'checksums': [
+            {'torchvision-0.29.2.tar.gz': '6239575329eb0149ff7a7f5cabfab254129f758961afdba650aab37276d8196d'},
+            {'torchvision-0.24.1_fix-CUDA-test-tolerances.patch':
+             'cca59ae3bef359f01087a502979a749a54ac0753cd82ca8762d690f88f74c24c'},
+            {'torchvision-0.29.2-PyTorch-2.9.1-headers.patch':
+             '87cdbfbdc73c7477a132f4d92433368fed81f76a9f3b7c16663119b7a1a4f3c4'},
+        ],
+    }),
+]
+
+moduleclass = 'vis'
