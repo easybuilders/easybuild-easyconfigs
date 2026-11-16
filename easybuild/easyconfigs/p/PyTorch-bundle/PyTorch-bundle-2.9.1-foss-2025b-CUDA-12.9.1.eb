@@ -13,14 +13,14 @@ builddependencies = [
     ('CMake', '3.31.8'),
     ('git', '2.50.1'),
     ('RE2', '2025-07-22'),  # for torchtext
-    ('NLTK', '3.10.3'),  # for torchtext tests
-    ('parameterized', '0.9.0'),  # for torchtext tests
+    ('NLTK', '3.10.3'),  # for pytorch-ignite tests
     ('hatchling', '1.27.0'),  # for pytorch-ignite
     ('poetry', '2.1.3'),  # for pyvers
     ('dill', '0.4.1'),  # for pytorch-ignite tests
     ('visdom', '0.3.0'),  # for pytorch-ignite tests
     ('Java', '17', '', SYSTEM),  # needed by ANTLR runtime
     ('lz4', '1.10.0'),  # for pytorch-ignite tests
+    # ('parameterized', '0.9.0'),  # for torchtext tests
 ]
 
 dependencies = [
@@ -60,8 +60,13 @@ exts_list = [
             'torchtext-0.18.0-fix-torch-load-tests.patch',
         ],
         'preinstallopts': "sed -i '92d' setup.py &&",
+        # TorchText is deprecated since v.0.18.0. We keep it for backward compatibility, and
+        # will remove it in later versions of this module.
+        # We skip the 'runtest' step because some tests hang indefinitely.
+#        'runtest': 'pytest test/torchtext_unittest -k "not test_vocab_from_raw_text_file"" and not test_get_tokenizer_moses"" and not test_get_tokenizer_spacy"" and not test_download_charngram_vectors"" and not test_builtin_pretrained_sentencepiece_processor"',
         'source_urls': ['https://github.com/pytorch/text/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': False,
         'checksums': [
             {'torchtext-0.18.0.tar.gz': 'fe4eb4b361388ef7840dcad117ae95b32252db5520c4eb2b3bead627468fbdf2'},
             {'torchtext-0.14.1_use-system-libs.patch':
@@ -97,6 +102,7 @@ exts_list = [
         'runtest': 'pytest -m "not distributed" --ignore=tests/ignite/contrib/handlers/test_clearml_logger.py --ignore=tests/ignite/contrib/handlers/test_mlflow_logger.py --ignore=tests/ignite/contrib/handlers/test_neptune_logger.py --ignore=tests/ignite/contrib/handlers/test_polyaxon_logger.py --ignore=tests/ignite/contrib/handlers/test_tensorboard_logger.py --ignore=tests/ignite/contrib/handlers/test_wandb_logger.py --ignore=tests/ignite/metrics/gan/test_fid.py --ignore=tests/ignite/metrics/nlp/test_rouge.py --ignore=tests/ignite/metrics/vision/test_object_detection_map.py --ignore=tests/ignite/handlers/test_checkpoint.py --ignore=tests/ignite/handlers/test_clearml_logger.py --ignore=tests/ignite/handlers/test_mlflow_logger.py --ignore=tests/ignite/handlers/test_neptune_logger.py --ignore=tests/ignite/handlers/test_polyaxon_logger.py --ignore=tests/ignite/handlers/test_tensorboard_logger.py --ignore=tests/ignite/handlers/test_wandb_logger.py --ignore=tests/ignite/contrib/handlers/test_tqdm_logger.py -k "not test_setup_plx_logging"" and not test_setup_mlflow_logging"" and not test_setup_clearml_logging"" and not test_setup_neptune_logging"" and not test_setup_tb_logging"" and not test__setup_ddp_vars_from_slurm_env_bad_configs"" and not test__native_dist_model_create_from_backend_bad_config"" and not test_inception_score"',
         'source_urls': ['https://github.com/pytorch/ignite/archive'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'testinstall': True,
         'checksums': [
             {'pytorch-ignite-0.5.5.tar.gz': 'a77dd70d98cf7d0e83edede4e6fa4093eec876cde4843c5a1174cc99ae3c5572'},
             {'torch-ignite-0.4.13_dont_destroy_python_path_in_test_launcher.patch':
