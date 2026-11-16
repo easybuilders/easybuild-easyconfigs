@@ -1,0 +1,83 @@
+easyblock = 'PythonBundle'
+
+name = 'cwltool'
+version = '3.1.20260108082145'
+
+homepage = 'https://cwltool.readthedocs.io/'
+description = """
+This is the reference implementation of the Common Workflow Language open
+standards. It is intended to be feature complete and provide comprehensive
+validation of CWL files as well as provide other tools related to working with
+CWL.
+"""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+builddependencies = [
+    ('hatchling', '1.29.0'),
+]
+# Based on https://github.com/common-workflow-language/cwltool/blob/3.1.20260108082145/pyproject.toml
+dependencies = [
+    ('nodejs', '24.16.0'),
+    ('Python', '3.14.2'),
+    ('Python-bundle-PyPI', '2026.04'),
+    ('ruamel.yaml', '0.19.1'),
+    ('RDFlib', '7.6.0'),
+    ('lxml', '6.1.1'),
+    ('networkx', '3.6.1'),
+    ('pydot', '4.0.1'),
+    ('typing-extensions', '4.15.0'),  # new: required by cwltool / its extensions
+]
+
+
+# cwltool itself stays at 3.1.20260108082145, the exact version that toil 9.3.0 (the newest allowed by LINC) pins.
+# Extension versions were updated where the old ones don't install on Python 3.14 or don't satisfy 'pip check':
+# mistune (schema-salad 8.10 needs >= 3.3 and < 3.4, so 3.3.4 is the newest possible), schema-salad (old one requires
+# Python < 3.14), cwl-upgrader (old one pins ruamel.yaml < 0.19), cwl-utils (0.38 requires Python < 3.14; updated to the
+# newest, 0.45; toil only requires >= 0.36).
+exts_list = [
+    ('mistune', '3.3.4', {'checksums': ['58b5c96d6fcb61190dfe5fae498d2b2065f99cf61e9649418fd54cf1ada86dfe']}),
+    ('mypy-extensions', '1.1.0', {
+        'patches': ['mypy-extensions-1.1.0_license.patch'],
+        'source_tmpl': 'mypy_extensions-%(version)s.tar.gz',
+        'checksums': [
+            {'mypy_extensions-1.1.0.tar.gz': '52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558'},
+            {'mypy-extensions-1.1.0_license.patch': 'ad6f0666755104f94fc33f5da56dbf218517312d2be5bdc2877e3bfd879d20af'},
+        ],
+    }),
+    ('schema-salad', '8.10.20260825112551', {
+        'modulename': 'schema_salad',
+        'source_tmpl': 'schema_salad-%(version)s.tar.gz',
+        'checksums': ['426af8bae86b1b8026469968bcd0802e6c61fd6c44c6b1f77d48467164a6ac74'],
+    }),
+    ('prov', '1.5.1', {'checksums': ['7a2d72b0df43cd9c6e374d815c8ce3cd5ca371d54f98f837853ac9fcc98aee4c']}),
+    ('humanfriendly', '10.0', {'checksums': ['6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc']}),
+    ('coloredlogs', '15.0.1', {'checksums': ['7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0']}),
+    ('argcomplete', '3.6.2', {'checksums': ['d0519b1bc867f5f4f4713c41ad0aba73a4a5f007449716b16f385f2166dc6adf']}),
+    ('cwl-upgrader', '1.2.15', {
+        'source_tmpl': 'cwl_upgrader-%(version)s.tar.gz',
+        'modulename': 'cwlupgrader',
+        'checksums': ['bb9e098ba6d1cc82c36dff1cbaad6779d6d9beab5324cf44a121d7faf7d58672'],
+    }),
+    ('spython', '0.3.14', {'checksums': ['8ad53ef034395cfa2d8a710cc1c3638e4475e5bbc6a2842d317db8013c2e4188']}),
+    ('rich-argparse', '1.7.1', {
+        'patches': ['rich-argparse-1.7.1_unkown_classifier.patch'],
+        'source_tmpl': 'rich_argparse-%(version)s.tar.gz',
+        'checksums': [
+            {'rich_argparse-1.7.1.tar.gz': 'd7a493cde94043e41ea68fb43a74405fa178de981bf7b800f7a3bd02ac5c27be'},
+            {'rich-argparse-1.7.1_unkown_classifier.patch':
+             '63e62dba328b2b857425798986af180b1baf228be5f8fd63e5b3cc43e546f972'},
+        ],
+    }),
+    ('cwl-utils', '0.45', {
+        'source_tmpl': 'cwl_utils-%(version)s.tar.gz',
+        'checksums': ['5883f39a0f2870a2fae550de1fdab3145286f1280fb099841f50ccbc9866e5f4'],
+    }),
+    ('cwltool', '3.1.20260108082145', {
+        # cwltool pins rdflib<7.6.0, while RDFlib 7.6.0 is used in this toolchain (and works fine): relax the pin
+        'preinstallopts': 'sed -i "s/rdflib >= 4.2.2, < 7.6.0/rdflib >= 4.2.2, < 7.7.0/" setup.py && ',
+        'checksums': ['a12124fa8c1337539b8f291690a01e92f7ab12e4259cc062d40e50f60908bec3'],
+    }),
+]
+
+moduleclass = 'tools'
