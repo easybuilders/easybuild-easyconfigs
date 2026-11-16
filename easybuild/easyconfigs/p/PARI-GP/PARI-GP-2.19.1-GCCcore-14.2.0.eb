@@ -1,0 +1,139 @@
+easyblock = 'ConfigureMake'
+
+name = 'PARI-GP'
+version = '2.19.1'
+
+homepage = 'https://pari.math.u-bordeaux.fr'
+description = """PARI/GP is a widely used computer algebra system designed for fast computations in number theory
+ (factorizations, algebraic  number theory, elliptic curves...), but also contains a large number of other useful
+ functions to compute with mathematical entities such as matrices, polynomials, power series, algebraic numbers etc.,
+ and a lot of transcendental functions. PARI is  also available as a C library to allow for faster computations.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+# The PARI/GP developers have the habit of removing tarballs for older versions. Fetch source from Git repo.
+# Optional PARI/GP packages are added for a full installation.
+sources = [
+    {
+        'filename': 'pari-%(version)s.tar.xz',
+        'git_config': {
+            'url': 'https://pari.math.u-bordeaux.fr/git',
+            'repo_name': 'pari',
+            'tag': 'pari-%(version)s',
+            'keep_git_dir': False,
+        },
+    },
+    {
+        'source_urls': ['https://pari.math.u-bordeaux.fr/pub/pari/packages'],
+        'filename': 'elldata.tgz',
+        'extract_cmd': 'tar xzfv %s -C pari/',
+    },
+    {
+        'source_urls': ['https://pari.math.u-bordeaux.fr/pub/pari/packages'],
+        'filename': 'galpol.tgz',
+        'extract_cmd': 'tar xzfv %s -C pari/',
+    },
+    {
+        'source_urls': ['https://pari.math.u-bordeaux.fr/pub/pari/packages'],
+        'filename': 'seadata.tgz',
+        'extract_cmd': 'tar xzfv %s -C pari/',
+    },
+    {
+        'source_urls': ['https://pari.math.u-bordeaux.fr/pub/pari/packages'],
+        'filename': 'nftables.tgz',
+        'extract_cmd': 'cp %s %(builddir)s',
+    },
+    {
+        'source_urls': ['https://pari.math.u-bordeaux.fr/pub/pari/packages'],
+        'filename': 'galdata.tgz',
+        'extract_cmd': 'tar xzfv %s -C pari/',
+    },
+    {
+        'source_urls': ['https://pari.math.u-bordeaux.fr/pub/pari/packages'],
+        'filename': 'nflistdata.tgz',
+        'extract_cmd': 'tar xzfv %s -C pari/',
+    },
+]
+checksums = [
+    {'pari-2.19.1.tar.xz': '55083e4b0026e88d79ab6786d952553875f4539fb944330a75cca14a69e0e4cb'},
+    {'elldata.tgz': 'dd551e64932d4ab27b3f2b2d1da871c2353672fc1a74705c52e3c0de84bd0cf6'},
+    {'galpol.tgz': '562af28316ee335ee38c1172c2d5ecccb79f55c368fb9f2c6f40fc0f416bb01b'},
+    {'seadata.tgz': 'c9282a525ea3f92c1f9c6c69e37ac5a87b48fb9ccd943cfd7c881a3851195833'},
+    {'nftables.tgz': '8dd3393ce6b3cfcf599f094f7b22bdffe17c3ba25deb912513d54676bd7cfe92'},
+    {'galdata.tgz': 'b7c1650099b24a20bdade47a85a928351c586287f0d4c73933313873e63290dd'},
+    {'nflistdata.tgz': '2c19a3e02afd3bba2af3071a7faa80924a75b00bb9713286c886b7fb460944bc'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('Bison', '3.8.2'),
+]
+
+dependencies = [
+    ('libreadline', '8.2'),
+    ('ncurses', '6.5'),
+]
+
+configure_cmd = './Configure'
+
+build_cmd_targets = 'all'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['gp', 'gp-%(version_major)s.%(version_minor)s', 'gphelp', 'tex2mail']] +
+             ['include/pari/pari.h'],
+    'dirs': ['lib/pari'],
+}
+
+postinstallcmds = [
+    'tar -xzf %(builddir)s/nftables.tgz -C %(installdir)s/share/pari'
+]
+
+sanity_check_commands = [
+    "gp --help",
+    # Sanity checks for optional PARI/GP packages
+    """
+    # Test elldata
+    gp -D recover=0 <<'GP'
+    iferr(ellinit("11a1"), E, quit(1));
+    quit();
+    GP
+    """,
+    """
+    # Test galpol
+    gp -D recover=0 <<'GP'
+    iferr(galoisgetpol(8), E, quit(1));
+    quit();
+    GP
+    """,
+    """
+    # Test seadata
+    gp -D recover=0 <<'GP'
+    iferr(ellmodulareqn(11), E, quit(1));
+    quit();
+    GP
+    """,
+    """
+    # Test nftables
+    gp -D recover=0 <<'GP'
+    iferr(readvec(Str(default(datadir), "/nftables/T71.gp")), E, quit(1));
+    quit();
+    GP
+    """,
+    """
+    # Test galdata
+    gp -D recover=0 <<'GP'
+    iferr(polgalois(x^8-2), E, quit(1));
+    quit();
+    GP
+    """,
+    """
+    # Test nflistdata
+    gp -D recover=0 <<'GP'
+    iferr(nflist("A5"), E, quit(1));
+    quit();
+    GP
+    """,
+]
+
+moduleclass = 'math'
