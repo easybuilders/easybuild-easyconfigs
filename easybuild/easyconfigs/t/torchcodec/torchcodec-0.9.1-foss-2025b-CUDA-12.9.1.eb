@@ -1,0 +1,55 @@
+easyblock = 'PythonBundle'
+
+name = 'torchcodec'
+version = '0.9.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/meta-pytorch/torchcodec'
+description = """PyTorch media decoding and encoding."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('pkgconf', '2.4.3'),
+    ('pybind11', '3.0.0'),
+]
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('Python', '3.13.5'),
+    ('PyTorch', '2.9.1', versionsuffix),
+    ('FFmpeg', '7.1.2'),
+]
+
+exts_list = [
+    (name, version, {
+        'source_urls': ['https://github.com/meta-pytorch/torchcodec/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'patches': [
+            'torchcodec-0.9.1_fix-BT709-full-range-CUDA12.patch',
+            'torchcodec-0.9.1_fix-AV1-tests-on-unsupported-NVDEC.patch'
+        ],
+        'preinstallopts': (
+            'BUILD_VERSION=%(version)s '
+            'ENABLE_CUDA=1 '
+            'I_CONFIRM_THIS_IS_NOT_A_LICENSE_VIOLATION=1 '
+            'CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s '
+        ),
+        # Because FFmpeg cannot be compiled with CUDA/12.9.1 and GCCcore/14.3.0, scale_cuda filter
+        # is missing from FFmpeg.
+        'runtest': (
+                    'pytest -v test -k '
+                    '"not test_full_and_studio_range_bt709_video and not (test_10bit_videos and cuda)"'
+        ),
+        'testinstall': True,
+        'checksums': [
+            {'torchcodec-0.9.1.tar.gz': '115e14811c01c49efe6d4a69224e73670961eddfdab7067b16122fa2352eb219'},
+            {'torchcodec-0.9.1_fix-BT709-full-range-CUDA12.patch':
+             'd050e1515b16e6ed3702a969a9b665945558b53eecc3908641ac77800d3d3932'},
+            {'torchcodec-0.9.1_fix-AV1-tests-on-unsupported-NVDEC.patch':
+             '916c2a8d1ceec3ab311030a43cbaf26cd38040910ccd54d6a254fbd23d7cef6b'},
+        ],
+    }),
+]
+
+moduleclass = 'ai'
