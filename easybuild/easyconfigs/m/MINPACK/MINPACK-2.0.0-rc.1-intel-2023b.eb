@@ -1,0 +1,35 @@
+easyblock = 'MesonNinja'
+
+name = 'MINPACK'
+version = '2.0.0-rc.1'
+
+homepage = 'https://github.com/fortran-lang/minpack'
+description = """Modernized Minpack: a Fortran 2008 library for solving systems of nonlinear
+ equations and nonlinear least squares problems, maintained by the fortran-lang
+ community. Provides the classic Minpack algorithms (hybrd, hybrj, lmder, lmdif,
+ lmstr, chkder) through a Fortran module interface and a C API."""
+
+toolchain = {'name': 'intel', 'version': '2023b'}
+toolchainopts = {'pic': True, 'oneapi_fortran': True}  # several tests fail and the C API segfaults with ifort
+
+github_account = 'fortran-lang'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ}]
+checksums = ['5dfe8182f1e85e1e93bad09a90d802982562b2eac906c28d59e18ec34751c685']
+
+builddependencies = [
+    ('Meson', '1.2.3'),
+    ('Ninja', '1.11.1'),
+]
+
+configopts = '-Dapi=true -Dpython=false'
+
+runtest = 'meson test --print-errorlogs'
+
+sanity_check_paths = {
+    'files': ['include/minpack.h', 'include/minpack/minpack_module.mod', 'include/minpack/minpack_capi.mod',
+              'lib/libminpack.a', f'lib/libminpack.{SHLIB_EXT}', 'lib/pkgconfig/minpack.pc'],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
