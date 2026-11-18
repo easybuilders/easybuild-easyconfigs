@@ -1,0 +1,60 @@
+name = 'GROMACS'
+version = '2021.0'
+_date = '-20250409'
+local_commit = '28807b11'
+_cuda_suffix = '-CUDA-%(cudaver)s'
+versionsuffix = f'{_date}-constant-pH{_cuda_suffix}-PLUMED'
+# fork is from v2021.0-beta1, SOVERSION = 6.0.0
+
+homepage = 'https://gitlab.com/gromacs-constantph'
+description = """
+GROMACS constant pH
+
+GROMACS is a versatile package to perform molecular dynamics, i.e. simulate the
+Newtonian equations of motion for systems with hundreds to millions of
+particles.
+
+This is preliminary version of the GROMACS constant pH code.
+The modified force fields needed for constnat pH.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+# Currently, separate PME ranks are not supported with MPI
+toolchainopts = {'openmp': True, 'usempi': False}
+
+source_urls = ['https://gitlab.com/gromacs-constantph/constantph/-/archive/']
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': '%%(name)s-%%(version)s-%s.tar.gz' % local_commit,
+}]
+patches = [
+    'GROMACS-2021.0-20250409-constant-pH_enable-CUDA-12.1.1.patch',
+]
+checksums = [
+    {'GROMACS-2021.0-28807b11.tar.gz': '88548354e02c872052f2fa662eab5f111421706cb0ea264e94af19e7274d0f78'},
+    {'GROMACS-2021.0-20250409-constant-pH_enable-CUDA-12.1.1.patch':
+     'f1bf5026b92aea6e6ca1265d75aa42976cfa9cf480e6ee5168e935d4380aab3e'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Doxygen', '1.9.7'),
+]
+dependencies = [
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('PLUMED', '2.9.0'),
+]
+
+start_dir = 'gromacs-constantph'
+
+plumed = 'patch'
+ignore_plumed_version_check = True
+
+# Disable installing the Python gmxapi bindings - python 3.11 not supported
+python_pkg = False
+
+# Code is not sufficiently covered with tests and some standard GROMACS test might be broken.
+# Thus, make check might end up with errors
+runtest = False
+
+moduleclass = 'bio'

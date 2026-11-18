@@ -1,0 +1,41 @@
+name = 'nvidia-compilers'
+version = '26.5'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://developer.nvidia.com/hpc-sdk/'
+description = "C, C++ and Fortran compilers included with the NVIDIA HPC SDK"
+
+toolchain = SYSTEM
+
+# By downloading, you accept the HPC SDK Software License Agreement
+# https://docs.nvidia.com/hpc-sdk/eula/index.html
+local_tarball_tmpl = 'nvhpc_2026_%%(version_major)s%%(version_minor)s_Linux_%s_cuda_multi.tar.gz'
+source_urls = ['https://developer.download.nvidia.com/hpc-sdk/%(version)s/']
+sources = [local_tarball_tmpl % '%(arch)s']
+checksums = [
+    {
+        local_tarball_tmpl % 'aarch64':
+            '470e0deed377286ecb7a9b6d213d6750834c648091e1d11f702a5c1b733687da',
+        local_tarball_tmpl % 'x86_64':
+            '2d96e4037ff8aa9fc31a3e237b95890a954e69aa99836e38687256307b876718',
+    }
+]
+
+
+local_gccver = '15.2.0'
+dependencies = [
+    ('CUDA', '13.2.0'),
+    ('GCCcore', local_gccver),
+    ('binutils', '2.45', '', ('GCCcore', local_gccver)),
+    # This is necessary to avoid cases where just libnuma.so.1 is present in the system and -lnuma fails
+    ('numactl', '2.0.19', '', ('GCCcore', local_gccver)),
+]
+
+# nvidia-compilers (NVHPC) needs CUDA to work. This easyconfig uses external CUDA from EasyBuild.
+# The default CUDA version used by nvidia-compilers (NVHPC) will be the version of loaded CUDA module.
+
+# (optional) Define default CUDA Compute Capability used by all easyconfigs in this toolchain
+# cuda_compute_capabilities = ['7.5', '8.0', '8.6', '9.0', '10.0', '12.0']
+
+# this bundle serves as a compiler-only toolchain, so it should be marked as compiler (important for HMNS)
+moduleclass = 'compiler'

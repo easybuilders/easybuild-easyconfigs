@@ -1,0 +1,132 @@
+From 4dfa2f4cbe242838ffe8045630432027cf70361b Mon Sep 17 00:00:00 2001
+From: Susi Lehtola <susi.lehtola@gmail.com>
+Date: Wed, 22 Oct 2025 11:21:06 +0300
+Subject: [PATCH 1/2] Fix patch as suggested by chillenb
+
+---
+ pyscf/pbc/scf/rsjk.py | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/pyscf/pbc/scf/rsjk.py b/pyscf/pbc/scf/rsjk.py
+index 415d2b69c8..d09bb89c90 100644
+--- a/pyscf/pbc/scf/rsjk.py
++++ b/pyscf/pbc/scf/rsjk.py
+@@ -207,8 +207,7 @@ def build(self, omega=None, intor='int2e'):
+                 log.debug('supmol_d nbas = %d cGTO = %d', supmol_d.nbas, supmol_d.nao)
+         log.timer_debug1('initializing supmol', *cpu0)
+ 
+-        self._cintopt = _vhf.make_cintopt(supmol_sr._atm, supmol_sr._bas,
+-                                          supmol_sr._env, 'int2e')
++        self._cintopt = lib.c_null_ptr()
+         nbas = supmol_sr.nbas
+         qindex = np.empty((3,nbas,nbas), dtype=np.int16)
+         ao_loc = supmol_sr.ao_loc
+
+From f90c261298ea921a2a41bbf5663a1d71b33dae40 Mon Sep 17 00:00:00 2001
+From: Qiming Sun <osirpt.sun@gmail.com>
+Date: Sat, 15 Nov 2025 16:35:03 -0800
+Subject: [PATCH 2/2] Verify cint backend
+
+---
+ pyscf/lib/pbc/cint2e.c    | 11 +++++++++++
+ pyscf/lib/pbc/nr_direct.c |  1 +
+ pyscf/pbc/df/incore.py    | 12 ++++++++++++
+ pyscf/pbc/scf/rsjk.py     |  6 ++++--
+ 4 files changed, 28 insertions(+), 2 deletions(-)
+
+diff --git a/pyscf/lib/pbc/cint2e.c b/pyscf/lib/pbc/cint2e.c
+index 6de94e8534..32056fb273 100644
+--- a/pyscf/lib/pbc/cint2e.c
++++ b/pyscf/lib/pbc/cint2e.c
+@@ -27,6 +27,12 @@
+ #include "np_helper/np_helper.h"
+ #include "pbc/pbc.h"
+ 
++#ifdef QCINT_VERSION
++int compiled_with_qcint = 1;
++#else
++int compiled_with_qcint = 0;
++#endif
++
+ void CINTinit_int2e_EnvVars(CINTEnvVars *envs, int *ng, int *shls,
+                             int *atm, int natm, int *bas, int nbas, double *env);
+ extern void CINTgout2e();
+@@ -167,7 +173,12 @@ int PBCint2e_loop(double *gctr, int *cell0_shls, int *bvk_cells, int cutoff,
+         if (envs_cint->opt == NULL) {
+                 intor_loop = &CINT2e_loop_nopt;
+         } else if (x_ctr[0] == 1 && x_ctr[1] == 1 && x_ctr[2] == 1 && x_ctr[3] == 1) {
++#ifdef QCINT_VERSION
++                // In qcint, CINT2e_1111_loop is problematic can cause seg fault.
++                intor_loop = &CINT2e_loop;
++#else
+                 intor_loop = &CINT2e_1111_loop;
++#endif
+         } else {
+                 intor_loop = &CINT2e_loop;
+         }
+diff --git a/pyscf/lib/pbc/nr_direct.c b/pyscf/lib/pbc/nr_direct.c
+index e19f1019a7..299340186d 100644
+--- a/pyscf/lib/pbc/nr_direct.c
++++ b/pyscf/lib/pbc/nr_direct.c
+@@ -568,6 +568,7 @@ static void approx_bvk_rcond0(float *rcond, int ish0, int ish1, BVKEnvs *envs_bv
+                 for (jseg = jseg0; jseg < jseg1; jseg++) {
+                         jsh0 = seg2sh[jseg];
+                         jsh1 = seg2sh[jseg+1];
++                        if (jsh0 >= jsh1) continue;
+                         aj = env[bas(PTR_EXP, jsh0) + bas(NPRIM_OF, jsh0) - 1];
+                         aij = ai + aj;
+                         ci = ai / aij;
+diff --git a/pyscf/pbc/df/incore.py b/pyscf/pbc/df/incore.py
+index adcc5912b7..f36bb3d65e 100644
+--- a/pyscf/pbc/df/incore.py
++++ b/pyscf/pbc/df/incore.py
+@@ -38,6 +38,17 @@
+ 
+ libpbc = lib.load_library('libpbc')
+ 
++def verify_cint_backend():
++    compiled_with_qcint = ctypes.c_int.in_dll(libpbc, 'compiled_with_qcint').value
++    if compiled_with_qcint:
++        if not hasattr(libpbc, 'CINTgout2e_simd1'):
++            raise RuntimeError(
++                'PySCF was compiled with qcint, but the loaded integral library is cint')
++    else:
++        if hasattr(libpbc, 'CINTgout2e_simd1'):
++            raise RuntimeError(
++                'PySCF was compiled with cint, but the loaded integral library is qcint')
++
+ def make_auxcell(cell, auxbasis=None):
+     '''
+     See pyscf.df.addons.make_auxmol
+@@ -321,6 +332,7 @@ def gen_int3c_kernel(self, intor='int3c2e', aosym='s2', comp=None,
+             reindex_k = np.asarray(reindex_k, dtype=np.int32)
+             nkpts_ij = reindex_k.size
+ 
++        verify_cint_backend()
+         drv = libpbc.PBCfill_nr3c_drv
+ 
+         # is_pbcintor controls whether to use memory efficient functions
+diff --git a/pyscf/pbc/scf/rsjk.py b/pyscf/pbc/scf/rsjk.py
+index d09bb89c90..5da3f0b526 100644
+--- a/pyscf/pbc/scf/rsjk.py
++++ b/pyscf/pbc/scf/rsjk.py
+@@ -39,7 +39,7 @@
+ from pyscf.pbc.df import ft_ao
+ from pyscf.pbc.df.df_jk import (zdotNN, zdotCN, zdotNC, _ewald_exxdiv_for_G0,
+                                 _format_dms, _format_kpts_band, _format_jks)
+-from pyscf.pbc.df.incore import libpbc, _get_cache_size, LOG_ADJUST
++from pyscf.pbc.df.incore import libpbc, _get_cache_size, LOG_ADJUST, verify_cint_backend
+ from pyscf.pbc.lib.kpts_helper import (is_zero, kk_adapted_iter,
+                                        group_by_conj_pairs, intersection)
+ from pyscf import __config__
+@@ -207,7 +207,9 @@ def build(self, omega=None, intor='int2e'):
+                 log.debug('supmol_d nbas = %d cGTO = %d', supmol_d.nbas, supmol_d.nao)
+         log.timer_debug1('initializing supmol', *cpu0)
+ 
+-        self._cintopt = lib.c_null_ptr()
++        verify_cint_backend()
++        self._cintopt = _vhf.make_cintopt(supmol_sr._atm, supmol_sr._bas,
++                                          supmol_sr._env, 'int2e')
+         nbas = supmol_sr.nbas
+         qindex = np.empty((3,nbas,nbas), dtype=np.int16)
+         ao_loc = supmol_sr.ao_loc

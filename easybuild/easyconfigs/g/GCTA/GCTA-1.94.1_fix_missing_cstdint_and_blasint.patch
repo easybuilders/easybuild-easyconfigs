@@ -1,0 +1,88 @@
+Add missing includes for cstdint and use blasint instead of int
+
+Åke Sandgren, 2026-10-29
+diff -ru gcta-1.94.1.orig/include/Marker.h gcta-1.94.1/include/Marker.h
+--- gcta-1.94.1.orig/include/Marker.h	2022-08-03 08:01:52.000000000 +0200
++++ gcta-1.94.1/include/Marker.h	2026-10-29 08:18:59.856994480 +0100
+@@ -20,6 +20,8 @@
+ #include <vector>
+ #include <map>
+ #include <utility>
++#include <cstdint>
++
+ using std::vector;
+ using std::string;
+ using std::to_string;
+diff -ru gcta-1.94.1.orig/include/Pheno.h gcta-1.94.1/include/Pheno.h
+--- gcta-1.94.1.orig/include/Pheno.h	2022-08-03 08:01:52.000000000 +0200
++++ gcta-1.94.1/include/Pheno.h	2026-10-29 08:18:45.130940468 +0100
+@@ -19,6 +19,8 @@
+ #include <vector>
+ #include <string>
+ #include <map>
++#include <cstdint>
++
+ using std::map;
+ using std::vector;
+ using std::string;
+diff -ru gcta-1.94.1.orig/include/utils.hpp gcta-1.94.1/include/utils.hpp
+--- gcta-1.94.1.orig/include/utils.hpp	2022-08-03 08:01:52.000000000 +0200
++++ gcta-1.94.1/include/utils.hpp	2026-10-29 08:16:14.926449148 +0100
+@@ -31,6 +31,7 @@
+ #include <numeric>
+ #include <algorithm>
+ #include <sstream>
++#include <cstdint>
+ 
+ std::string getHostName();
+ std::string getLocalTime();
+diff -ru gcta-1.94.1.orig/src/GRM.cpp gcta-1.94.1/src/GRM.cpp
+--- gcta-1.94.1.orig/src/GRM.cpp	2026-10-29 08:33:38.574608158 +0100
++++ gcta-1.94.1/src/GRM.cpp	2026-10-29 08:48:52.617637691 +0100
+@@ -933,10 +933,10 @@
+ void GRM::calculate_GRM_blas(uintptr_t *buf, const vector<uint32_t> &markerIndex){
+     int num_marker = markerIndex.size();
+ 
+-    static int m = part_keep_indices.second - part_keep_indices.first + 1;
+-    static int n = part_keep_indices.second + 1;
+-    static int n_sample = n;
+-    static int s_n = n - m;
++    static blasint m = part_keep_indices.second - part_keep_indices.first + 1;
++    static blasint n = part_keep_indices.second + 1;
++    static blasint n_sample = n;
++    static blasint s_n = n - m;
+     static int bytesStdGeno = sizeof(double) * n_sample;
+ 
+    // GenoBufItem items[num_marker];
+@@ -956,7 +956,7 @@
+         }
+     }
+ 
+-    int curNumValidMarkers = validIndex.size();
++    blasint curNumValidMarkers = validIndex.size();
+ 
+     for(int i = 0; i < curNumValidMarkers; i++){
+         int curIndex = validIndex[i];
+diff -ru gcta-1.94.1.orig/src/LD.cpp gcta-1.94.1/src/LD.cpp
+--- gcta-1.94.1.orig/src/LD.cpp	2026-10-29 08:33:38.574608158 +0100
++++ gcta-1.94.1/src/LD.cpp	2026-10-29 08:52:04.392062208 +0100
+@@ -57,8 +57,8 @@
+     }
+     char trans = 'T', notrans = 'N', uplo = 'L';
+     double zero = 0.0;
+-    int nr = num_indi;
+-    int nc1 = cur_buffer_offset[cacl_index_buffer] / nr;
++    blasint nr = num_indi;
++    blasint nc1 = cur_buffer_offset[cacl_index_buffer] / nr;
+     double alpha = 1.0 / (nr - 1);
+     double *ptr1 = geno_buffer[cacl_index_buffer].get();
+     double *res1 = new double[nc1 * nc1];
+@@ -70,7 +70,7 @@
+ 
+     double *res2 = nullptr;
+     // is previous buffer active?
+-    int nc2 = 0;
++    blasint nc2 = 0;
+     if(geno_buffer[!cacl_index_buffer]){
+         //TODO: reduce half calculation
+         nc2 = cur_buffer_offset[!cacl_index_buffer] / nr;

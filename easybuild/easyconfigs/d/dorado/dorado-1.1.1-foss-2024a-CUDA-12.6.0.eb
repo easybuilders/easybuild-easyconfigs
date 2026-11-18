@@ -1,0 +1,126 @@
+easyblock = 'CMakeMake'
+
+name = 'dorado'
+version = '1.1.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/nanoporetech/dorado'
+description = """Dorado is a high-performance, easy-to-use, open source basecaller for Oxford Nanopore reads."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/nanoporetech/dorado/archive/']
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/nanoporetech',
+        'repo_name': name,
+        'tag': 'v%(version)s',
+        'recursive': True,
+    },
+    'filename': SOURCE_TAR_XZ,
+}]
+patches = [
+    '%(name)s-1.0.0_dont_install_external_libraries.patch',
+]
+checksums = [
+    {'dorado-1.1.1.tar.xz': 'e3aad85ab5076bae19a679332b71215c3b10faa745e3b46b7a35fc8fdb14fed6'},
+    {'dorado-1.0.0_dont_install_external_libraries.patch':
+     '2db45a8b1d5360e743b96beb9ce61264a2b3d4a815bed10ee4978caa3fba3a3b'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('CMake', '3.29.3'),
+    ('patchelf', '0.18.0'),
+    ('git', '2.45.1'),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('OpenSSL', '3', '', SYSTEM),
+    ('PyTorch', '2.7.1', versionsuffix),
+    ('HDF5', '1.14.5'),
+    ('zstd', '1.5.6'),
+    ('HTSlib', '1.21'),
+    ('kineto', '20250715', versionsuffix),
+    ('libaec', '1.1.3'),
+]
+
+# don't link to OpenSSL static libraries
+# fix for CMake Error "missing: OPENSSL_CRYPTO_LIBRARY" (if only shared OpenSSL libraries are available)
+preconfigopts = "sed -i '/OPENSSL_USE_STATIC_LIBS TRUE/d' ../dorado/cmake/OpenSSL.cmake && "
+# link in the ssl and crypto libs, to fix:
+# undefined reference to symbol 'SSL_get_peer_certificate@@OPENSSL_1_1_0'
+preconfigopts += r"sed -i 's/OpenSSL::SSL/ssl\n    crypto/g' ../dorado/dorado/utils/CMakeLists.txt && "
+
+# don't use vendored HTSlib, use provided HTSlib dependency
+preconfigopts += "rm -r ../dorado/dorado/3rdparty/htslib/ && "
+preconfigopts += "sed -i '/add_dependencies.*htslib_project/d' ../dorado/CMakeLists.txt && "
+preconfigopts += "sed -i '/add_dependencies.*htslib_project/d' ../dorado/dorado/utils/CMakeLists.txt && "
+preconfigopts += "sed -i '/Htslib.cmake/d' ../dorado/CMakeLists.txt && "
+# rename link target 'htslib' -> 'hts' only in CMake files, excluding kadayashi's cmake dir
+preconfigopts += r"find ../dorado -type f \( -name CMakeLists.txt -o -name '*.cmake' \) "
+preconfigopts += "-not -path '../dorado/dorado/3rdparty/kadayashi/cmake/*' -print0 | "
+preconfigopts += r"xargs -0 sed -i -E 's/\<htslib\>/hts/g' && "
+# keep kadayashi's find_package on 'htslib' and make it return -lhts via its finder
+preconfigopts += r"sed -i -E 's/find_package\(\s*hts\b/find_package(htslib/' "
+preconfigopts += "../dorado/dorado/3rdparty/kadayashi/CMakeLists.txt && "
+preconfigopts += r"sed -i -E 's/\bset\(HTSLIB_LIBRARIES\s+htslib(::hts)?\)/set(HTSLIB_LIBRARIES hts)/' "
+preconfigopts += "../dorado/dorado/3rdparty/kadayashi/cmake/Findhtslib.cmake && "
+
+# disable treating warnings like errors by stripping out -Werror
+# cfr. https://github.com/nanoporetech/dorado/issues/779
+preconfigopts += "sed -i 's/-Werror//g' ../dorado/cmake/Warnings.cmake && "
+preconfigopts += "sed -i 's/enable_warnings_as_errors.*//g' ../dorado/CMakeLists.txt "
+preconfigopts += "../dorado/dorado/utils/CMakeLists.txt "
+preconfigopts += "../dorado/dorado/modbase/CMakeLists.txt "
+preconfigopts += "../dorado/dorado/torch_utils/CMakeLists.txt && "
+
+# skip including a nonexistant file
+preconfigopts += "TMPDIR=$(mktemp -d) && "
+preconfigopts += "head -442 ../dorado/cmake/Torch.cmake > $TMPDIR/cmake && "
+preconfigopts += "tail -31 ../dorado/cmake/Torch.cmake >> $TMPDIR/cmake && "
+preconfigopts += "mv $TMPDIR/cmake ../dorado/cmake/Torch.cmake && "
+
+_copts = [
+    "-DCUDA_TOOLKIT_ROOT_DIR=$EBROOTCUDA",
+    "-DCMAKE_CUDA_COMPILER=$EBROOTCUDA/bin/nvcc",
+    '-DOPENSSL_ROOT_DIR=$EBROOTOPENSSL',
+    "-DDORADO_LIBTORCH_DIR=$EBROOTPYTORCH/lib",
+    # add -pthread flag (in addition to -lpthread) to avoid linking error:
+    # in function `_GLOBAL__sub_I_mutex.cc': mutex.cc:(.text.startup+0x17): undefined reference to `pthread_atfork'
+    '-DCMAKE_C_FLAGS="$CFLAGS -pthread"',
+    '-DCMAKE_CXX_FLAGS="$CXXFLAGS -pthread"',
+    # "-DHTSLIB_INCLUDE_DIR=$EBROOTHTSLIB/include",
+    # "-DHTSLIB_LIBRARIES=$EBROOTHTSLIB/lib/libhts.so",
+    '-DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -lcublas"',
+    '-DCMAKE_SHARED_LINKER_FLAGS="$LDFLAGS -lcublas"',
+]
+
+configopts = ' '.join(_copts) + ' '
+
+# disable CMake fiddling with RPATH when EasyBuild is configured to use RPATH linking
+configopts += "$(if %(rpath_enabled)s; then "
+configopts += "echo '-DCMAKE_SKIP_INSTALL_RPATH=YES -DCMAKE_SKIP_RPATH=YES'; fi) "
+
+# CUDA libraries that are copied to installdir need to be patched to have an RPATH section
+# when EasyBuild is configured to use RPATH linking (required to pass RPATH sanity check);
+# by default, CMake sets RUNPATH to '$ORIGIN' rather than RPATH (but that's disabled above)
+postinstallcmds = [
+    "if %(rpath_enabled)s; then "
+    "  for lib in $(ls %(installdir)s/lib/lib{cu,nv}*.so*); do "
+    "    echo setting RPATH in $lib;"
+    "    patchelf --force-rpath --set-rpath '$ORIGIN' $lib;"
+    "  done;"
+    "fi",
+]
+
+sanity_check_paths = {
+    'files': ['bin/dorado'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["dorado basecaller --help"]
+
+moduleclass = 'bio'

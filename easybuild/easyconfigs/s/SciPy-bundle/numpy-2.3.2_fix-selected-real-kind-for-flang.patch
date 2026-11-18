@@ -1,0 +1,15 @@
+diff --color -Naur numpy-2.3.2.orig/numpy/f2py/crackfortran.py numpy-2.3.2/numpy/f2py/crackfortran.py
+--- numpy-2.3.2.orig/numpy/f2py/crackfortran.py	2025-07-24 20:37:48.000000000 +0200
++++ numpy-2.3.2/numpy/f2py/crackfortran.py	2025-11-22 19:00:42.180059729 +0100
+@@ -2426,6 +2426,11 @@
+ def _selected_real_kind_func(p, r=0, radix=0):
+     # XXX: This should be processor dependent
+     # This is only verified for 0 <= p <= 20, possibly good for p <= 33 and above
++    if p < 4:
++        # Fortran 2018 standard uses real(2), but non-LLVM Fortran compilers currently
++        # do not support this. Since crackfortran.py doesn't know about the compiler,
++        # always return 2 here, and only patch compilers which know about this difference.
++        return 2
+     if p < 7:
+         return 4
+     if p < 16:
