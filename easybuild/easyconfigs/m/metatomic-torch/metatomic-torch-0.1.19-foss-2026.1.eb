@@ -1,0 +1,50 @@
+easyblock = 'CMakeNinja'
+
+name = 'metatomic-torch'
+version = '0.1.19'
+
+homepage = 'https://docs.metatensor.org/metatomic/'
+description = """metatomic-torch is the libtorch interface between atomistic simulation
+ engines and machine-learning interatomic potentials exported as TorchScript."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/metatensor/metatomic/releases/download/metatomic-torch-v%(version)s/']
+sources = [
+    'metatomic-torch-cxx-%(version)s.tar.gz',
+    # CMakeLists.txt pulls this exact tarball with FetchContent; provide it offline.
+    {
+        'source_urls': ['https://github.com/nlohmann/json/releases/download/v3.11.3/'],
+        'filename': 'json.tar.xz',
+        'download_filename': 'json.tar.xz',
+        'extract_cmd': "mkdir -p %(builddir)s/nlohmann-json-src && tar xJf %s -C %(builddir)s/nlohmann-json-src",
+    },
+]
+checksums = [
+    {'metatomic-torch-cxx-0.1.19.tar.gz': 'ea951a87602ef1d300f1267c08a11812d886c2c3b8e221d97b89ab5a268991d4'},
+    {'json.tar.xz': 'd6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d'},
+]
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('Ninja', '1.13.2'),
+]
+
+dependencies = [
+    ('Python', '3.14.2'),
+    ('PyTorch', '2.9.1'),
+    ('metatensor', '0.2.6'),
+    ('metatensor-torch', '0.10.7'),
+]
+
+configopts = '-DBUILD_SHARED_LIBS=ON -DMETATOMIC_TORCH_TESTS=OFF -DFETCHCONTENT_FULLY_DISCONNECTED=ON '
+configopts += '-DFETCHCONTENT_SOURCE_DIR_NLOHMANN_JSON=%(builddir)s/nlohmann-json-src/json '
+configopts += '-DTorch_DIR=$EBROOTPYTORCH/lib/python%(pyshortver)s/site-packages/torch/share/cmake/Torch'
+
+sanity_check_paths = {
+    'files': ['include/metatomic/torch.hpp', 'lib/libmetatomic_torch.%s' % SHLIB_EXT],
+    'dirs': ['lib/cmake/metatomic_torch'],
+}
+
+moduleclass = 'lib'
