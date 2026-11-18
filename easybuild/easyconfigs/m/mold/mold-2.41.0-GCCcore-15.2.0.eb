@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'mold'
+version = '2.41.0'
+
+homepage = 'https://github.com/rui314/mold'
+description = "mold is a high-performance drop-in replacement for existing Unix linkers."
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = ['https://github.com/rui314/mold/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['0a61abac85d818437b425df856822e9d6e9982baeae5a93bcb02fe6c0060c61a']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('CMake', '4.2.1'),
+    ('GDB', '17.2'),  # used for tests
+]
+dependencies = [
+    ('zlib', '2.3.2'),
+    ('OpenSSL', '3', '', SYSTEM),
+]
+
+runtest = True
+# Tests require both GDB to be present (which we can provide via builddependency),
+# and to have ptrace_scope enabled. The latter is not always the case, especially
+# with recent security vulnerabilities
+testopts = '--exclude-regex ".*-gdb-index-.*"'
+
+sanity_check_paths = {
+    'files': ['bin/mold', 'lib/mold/mold-wrapper.%s' % SHLIB_EXT],
+    'dirs': ['share/man'],
+}
+
+sanity_check_commands = [
+    "mold --help",
+    "mold --run gcc -v",
+]
+
+moduleclass = 'tools'

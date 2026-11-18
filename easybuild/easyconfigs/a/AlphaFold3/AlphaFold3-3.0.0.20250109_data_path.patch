@@ -1,0 +1,95 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2025/01
+# - additionally search libciffpp components.cif in path definded by 
+#   environment variable LIBCIFPP_DATA_DIR
+# - allow to set default model dir and public databases dir by environment
+#   variables AF3_MODEL_DIR and DB_DIR, respectively. 
+diff -ru alphafold3-ea040346e10db1759170e723ef263316e64aa768/run_alphafold.py alphafold3-ea040346e10db1759170e723ef263316e64aa768_data_path/run_alphafold.py
+--- alphafold3-ea040346e10db1759170e723ef263316e64aa768/run_alphafold.py	2025-01-09 13:59:41.000000000 +0100
++++ alphafold3-ea040346e10db1759170e723ef263316e64aa768_data_path/run_alphafold.py	2025-01-15 18:48:19.060274236 +0100
+@@ -55,8 +55,14 @@
+ 
+ 
+ _HOME_DIR = pathlib.Path(os.environ.get('HOME'))
+-_DEFAULT_MODEL_DIR = _HOME_DIR / 'models'
+-_DEFAULT_DB_DIR = _HOME_DIR / 'public_databases'
++_DEFAULT_MODEL_DIR = os.environ.get('AF3_MODEL_DIR')
++if _DEFAULT_MODEL_DIR == None:
++  _DEFAULT_MODEL_DIR = _HOME_DIR / 'models'
++else: _DEFAULT_MODEL_DIR = pathlib.Path(_DEFAULT_MODEL_DIR)
++_DEFAULT_DB_DIR = os.environ.get('DB_DIR')
++if _DEFAULT_DB_DIR == None:
++  _DEFAULT_DB_DIR = _HOME_DIR / 'public_databases'
++else: _DEFAULT_DB_DIR = pathlib.Path(_DEFAULT_DB_DIR)
+ 
+ 
+ # Input and output paths.
+diff -ru alphafold3-ea040346e10db1759170e723ef263316e64aa768/src/alphafold3/build_data.py alphafold3-ea040346e10db1759170e723ef263316e64aa768_data_path/src/alphafold3/build_data.py
+--- alphafold3-ea040346e10db1759170e723ef263316e64aa768/src/alphafold3/build_data.py	2025-01-09 13:59:41.000000000 +0100
++++ alphafold3-ea040346e10db1759170e723ef263316e64aa768_data_path/src/alphafold3/build_data.py	2025-01-15 18:04:26.440308446 +0100
+@@ -17,16 +17,21 @@
+ import alphafold3.constants.converters
+ from alphafold3.constants.converters import ccd_pickle_gen
+ from alphafold3.constants.converters import chemical_component_sets_gen
+-
++from os import getenv
+ 
+ def build_data():
+   """Builds intermediate data."""
+-  for site_path in site.getsitepackages():
+-    path = pathlib.Path(site_path) / 'share/libcifpp/components.cif'
+-    if path.exists():
+-      cif_path = path
+-      break
++  cif_path = None
++  if getenv('LIBCIFPP_DATA_DIR'):
++    path = getenv('LIBCIFPP_DATA_DIR') + '/components.cif'
++    cif_path = path
+   else:
++    for site_path in site.getsitepackages():
++      path = pathlib.Path(site_path) / 'share/libcifpp/components.cif'
++      if path.exists():
++        cif_path = path
++        break
++  if (not cif_path):
+     raise ValueError('Could not find components.cif')
+ 
+   out_root = resources.files(alphafold3.constants.converters)
+diff -ru alphafold3-ea040346e10db1759170e723ef263316e64aa768/src/alphafold3/model/mkdssp_pybind.cc alphafold3-ea040346e10db1759170e723ef263316e64aa768_data_path/src/alphafold3/model/mkdssp_pybind.cc
+--- alphafold3-ea040346e10db1759170e723ef263316e64aa768/src/alphafold3/model/mkdssp_pybind.cc	2025-01-09 13:59:41.000000000 +0100
++++ alphafold3-ea040346e10db1759170e723ef263316e64aa768_data_path/src/alphafold3/model/mkdssp_pybind.cc	2025-01-15 14:34:35.267983665 +0100
+@@ -27,20 +27,23 @@
+ void RegisterModuleMkdssp(pybind11::module m) {
+   py::module site = py::module::import("site");
+   py::list paths = py::cast<py::list>(site.attr("getsitepackages")());
++  const char* libcifpp_data_dir_p = std::getenv("LIBCIFPP_DATA_DIR");
++  if (!libcifpp_data_dir_p) {
+   // Find the first path that contains the libcifpp components.cif file.
+-  bool found = false;
+-  for (const auto& py_path : paths) {
+-    auto path_str =
+-        std::filesystem::path(py::cast<absl::string_view>(py_path)) /
+-        "share/libcifpp/components.cif";
+-    if (std::filesystem::exists(path_str)) {
+-      setenv("LIBCIFPP_DATA_DIR", path_str.parent_path().c_str(), 0);
+-      found = true;
+-      break;
++     bool found = false;
++     for (const auto& py_path : paths) {
++       auto path_str =
++           std::filesystem::path(py::cast<absl::string_view>(py_path)) /
++           "share/libcifpp/components.cif";
++       if (std::filesystem::exists(path_str)) {
++       setenv("LIBCIFPP_DATA_DIR", path_str.parent_path().c_str(), 0);
++       found = true;
++       break;
++     }
++    }
++    if (!found) {
++      throw py::type_error("Could not find the libcifpp components.cif file.");
+     }
+-  }
+-  if (!found) {
+-    throw py::type_error("Could not find the libcifpp components.cif file.");
+   }
+   m.def(
+       "get_dssp",

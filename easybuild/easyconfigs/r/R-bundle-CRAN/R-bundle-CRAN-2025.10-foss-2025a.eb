@@ -32,6 +32,8 @@ dependencies = [
     ('GDAL', '3.11.1'),  # for sf
     ('MPFR', '4.2.2'),  # for Rmpfr
     ('PostgreSQL', '17.5'),  # for RPostgreSQL
+    ('libiconv', '1.18'),  # for haven + readxl
+    ('OpenSSL', '3', '', SYSTEM),  # for PKI
 ]
 
 # Some R extensions (mclust, quantreg, waveslim for example) require the math library (-lm) to avoid undefined symbols.
@@ -610,6 +612,13 @@ exts_list = [
     }),
     ('haven', '2.5.5', {
         'checksums': ['9482cd9c3760e1838acf687235317fed97fa6bf79219d3216f0ea447d4b1c9a5'],
+        # explicitly link to libiconv by adding -liconv to PKG_LIBS,
+        # to ensure that libiconv dependency is picked up;
+        # we do this via the configure script,
+        # which is used by haven to find zlib and generates src/Makevars;
+        # fixes problems like "undefined symbol: libiconv",
+        # see for example https://github.com/tidyverse/haven/issues/299
+        'preinstallopts': r"""sed -i 's/\(echo "Using PKG_LIBS\)/PKG_LIBS="$PKG_LIBS -liconv"; \1/g' configure && """,
     }),
     ('pan', '1.9', {
         'checksums': [
@@ -1213,6 +1222,11 @@ exts_list = [
     }),
     ('readxl', '1.4.5', {
         'checksums': ['09d70d7bbafbe129ce687b8743dbf6b9d0f201205b30dc515a00b35fcc1bdedf'],
+        # explicitly link to libiconv by adding -liconv to PKG_LIBS
+        # to ensure that libiconv dependency is picked up;
+        # fixes problems like "undefined symbol: libiconv",
+        # see also https://github.com/tidyverse/readxl/issues/704
+        'preinstallopts': "PKG_LIBS='-liconv' ",
     }),
     ('writexl', '1.5.4', {
         'checksums': ['d0574a29ea22bd78785f50c7cd23c6e10036f65321e26d55a694e931467660d3'],
@@ -1371,7 +1385,12 @@ exts_list = [
         'checksums': ['1857b831ec7da6eb651574ccdb12e1baef4c7150cbdc6380cf9fd70e60ae4552'],
     }),
     ('RCurl', '1.98-1.17', {
-        'checksums': ['c71874a6c116169e18bf12f023fdb79d63e92177aa7ae3858b30b60be5bc6030'],
+        'patches': ['RCurl-1.98-1.17_remove-emSign-root-cert.patch'],
+        'checksums': [
+            {'RCurl_1.98-1.17.tar.gz': 'c71874a6c116169e18bf12f023fdb79d63e92177aa7ae3858b30b60be5bc6030'},
+            {'RCurl-1.98-1.17_remove-emSign-root-cert.patch':
+             '7b2dea86ce0d48b09c4c96a6005fb1760812b7ae1e649c1adccf887a8ec657f0'},
+        ],
     }),
     ('bio3d', '2.4-5', {
         'checksums': ['3d27e7a64d64db103ab6c9bd25664c77d697c656a28f6e63de6bae0b6c8ad24c'],
@@ -2438,7 +2457,12 @@ exts_list = [
         'checksums': ['880d90a6dfc2638f3800a5316624b93748905002822cb45d8e45c290d4e06b08'],
     }),
     ('rsconnect', '1.5.1', {
-        'checksums': ['80833241c4f6e7d51bb1b92d0b3dfd69171bc275b1eca31354bccf8ae8598243'],
+        'patches': ['rsconnect-1.x_remove_old_Comodo_AAA_Services_cert.patch'],
+        'checksums': [
+            {'rsconnect_1.5.1.tar.gz': '80833241c4f6e7d51bb1b92d0b3dfd69171bc275b1eca31354bccf8ae8598243'},
+            {'rsconnect-1.x_remove_old_Comodo_AAA_Services_cert.patch':
+             'd413db3e26b5a5fe3bda8ed14e64b1c1ad200a1db894d0f555b755913be6fcc7'},
+        ],
     }),
     ('shinystan', '2.6.0', {
         'checksums': ['a084856a2d66d8744f2c72e3e19ca35e600a508ed7ef1f7ebed8c7fc0738d529'],
@@ -2642,7 +2666,7 @@ exts_list = [
     ('tcltk2', '1.6.1', {
         # need to run installation via xvfb-run to avoid problems on headless systems:
         # no DISPLAY variable so Tk is not available
-        'preinstallopts': "xvfb-run ",
+        'preinstallopts': "xvfb-run --auto-servernum ",
         'checksums': ['dc1cc00ce973df1ce98b830aa70998e455119d89961ce9a368e8a688e6845c6a'],
     }),
     ('minty', '0.0.5', {
@@ -2667,7 +2691,7 @@ exts_list = [
         # need to run installation via xvfb-run to avoid problems on headless systems:
         # no DISPLAY variable so Tk is not available
         # [tcl] invalid command name "font"
-        'preinstallopts': "xvfb-run ",
+        'preinstallopts': "xvfb-run --auto-servernum ",
         'checksums': ['5939ab6b0b40fa7dd55f190f8706f5b0d1d68bda411e4f90cd78004e470056ca'],
         # skip 'import' check with library(gWidgets2tcltk), since it also fails on headless systems...
         'modulename': False,
@@ -2778,10 +2802,12 @@ exts_list = [
         'checksums': ['eb2197c51c01c75654f7b0c755de1f14f8cbdda16945cb259cc2c5f60d321034'],
     }),
     ('metadat', '1.4-0', {
-        'checksums': ['2a5d6dee053cc329bc5c03fb6058ed99312f8f56c15028fabcbfa21170ef3f05'],
+        'checksums': [('e750b5f243539a3f1ec6b06a6e8c402f2732f050bb2b6c4098b43bcffaf29ad3',
+                       '2a5d6dee053cc329bc5c03fb6058ed99312f8f56c15028fabcbfa21170ef3f05')],
     }),
     ('metafor', '4.8-0', {
-        'checksums': ['2b710674b15fe3e79474b5c3e779038a614eba9e61b2249532c86dc155f00644'],
+        'checksums': [('59003bece34b2ed39f29dce61ca5a68287be07ec683f2f6c51f17bb50ca87801',
+                       '2b710674b15fe3e79474b5c3e779038a614eba9e61b2249532c86dc155f00644')],
     }),
     ('RNifti', '1.8.0', {
         'checksums': ['322b51ff2f8c93ad726bfc5bbd923fc1ceb1dd027f0cdd042b636a278f781792'],
@@ -3633,6 +3659,9 @@ exts_list = [
     }),
     ('latex2exp', '0.9.8', {
         'checksums': ['8dd641f263989515d0c327550934e4954dc582230ca2bb9f280b6b28a46510a5'],
+    }),
+    ('RcppNumerical', '0.6-0', {
+        'checksums': ['2f0715d68a975403e2aa3f087939542001921623bd1bb8d905ebaff05d82d786'],
     }),
 ]
 
