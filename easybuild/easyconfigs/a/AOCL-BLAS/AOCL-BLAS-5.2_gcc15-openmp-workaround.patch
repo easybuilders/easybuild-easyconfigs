@@ -1,0 +1,23 @@
+Workaround for https://github.com/amd/blis/issues/50 :
+GCC15 Compile Fails Due to OpenMP in C extern
+
+Bart Oldeman <bart.oldeman@calculquebec.ca>
+diff -ur blis-5.2.orig/frame/thread/bli_thrcomm_openmp.h blis-5.2/frame/thread/bli_thrcomm_openmp.h
+--- blis-5.2.orig/frame/thread/bli_thrcomm_openmp.h	2025-12-07 05:22:11.000000000 +0000
++++ blis-5.2/frame/thread/bli_thrcomm_openmp.h	2026-02-04 18:26:48.011905725 +0000
+@@ -39,7 +39,15 @@
+ // Define thrcomm_t for situations when OpenMP multithreading is enabled.
+ #ifdef BLIS_ENABLE_OPENMP
+
++// Workaround for GCC 15: https://github.com/flame/blis/pull/875 is more
++// thorough but needs to touch many files in AOCL-BLAS
++#ifdef __cplusplus
++}
++#endif
+ #include <omp.h>
++#ifdef __cplusplus
++extern "C" {
++#endif
+
+ // Define thrcomm_t for tree barriers and non-tree barriers.
+ #ifdef BLIS_TREE_BARRIER

@@ -106,6 +106,7 @@ exts_list = [
             {'aiida_core-2.5.1.tar.gz': '9a5898ca355f0494d07ec4d2f714d17abef43e2e6c0b938cc2263db0115c33b4'},
             {'aiida_core-2.5.1-psycopg.patch': '8ca8799ca053d830832ffd3f0cbc8fd9e5f67cfafdf02f53f81f4de66a3b2f25'},
         ],
+        'click_autocomplete_bins': ['verdi'],
     }),
 ]
 
@@ -114,20 +115,3 @@ sanity_check_commands = [
 ]
 
 moduleclass = 'tools'
-
-modluafooter = """
-local shell = myShellName()
-
-if (shell == "bash") or (shell == "sh") then
-    execute{cmd="eval \\"$(_VERDI_COMPLETE=bash_source verdi)\\"", modeA={"load"}}
-    execute{cmd="complete -r verdi && unset _verdi_completion_setup && unset _verdi_completion", modeA={"unload"}}
-elseif (shell == "zsh") then
-    execute{cmd="eval \\"$(_VERDI_COMPLETE=zsh_source verdi)\\"", modeA={"load"}}
-    execute{cmd="unset '_comps[verdi]' && unset -f _verdi_completion", modeA={"unload"}}
-elseif (shell == "fish") then
-    execute{cmd="eval (env _VERDI_COMPLETE=fish_source verdi)", modeA={"load"}}
-    execute{cmd="complete -e verdi && functions --erase _verdi_completion", modeA={"unload"}}
-else
-    LmodMessage("Autocompletion cannot be setup automatically for shell: " .. shell)
-end
-"""

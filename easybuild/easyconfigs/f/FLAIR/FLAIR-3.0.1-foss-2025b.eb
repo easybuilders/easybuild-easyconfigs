@@ -1,0 +1,71 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+# Updated: John Dey (Fred Hutch), Emik Lin (HKUMed CPOS)
+
+easyblock = 'PythonBundle'
+
+name = 'FLAIR'
+version = '3.0.1'
+
+homepage = 'https://github.com/BrooksLabUCSC/flair'
+description = """FLAIR (Full-Length Alternative Isoform analysis of RNA)
+for the correction, isoform definition, and alternative splicing analysis of noisy reads.
+FLAIR has primarily been used for nanopore cDNA, native RNA, and PacBio sequencing reads."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [
+    ('poetry', '2.1.3'),
+    ('Cython', '3.1.2'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('R', '4.5.2'),
+    ('SciPy-bundle', '2025.07'),  # provides numpy and scipy
+    ('SAMtools', '1.22.1'),
+    ('BEDTools', '2.31.1'),
+    ('minimap2', '2.30'),
+    ('Pysam', '0.23.3'),
+    ('R-bundle-Bioconductor', '3.22', '-R-%(rver)s'),
+    ('matplotlib', '3.10.5'),
+]
+
+exts_list = [
+    ('mappy', '2.30', {
+        'checksums': ['a25448004558a28cb0d74fb1e55b6ffe9a78aa15dd6b2763630fbbabbaa97a27'],
+    }),
+    ('pipettor', '1.2.1', {
+        'checksums': ['5d92c3868a8f4c3c2c75801b0cc797863c476ef802e077416f322361a4b72f95'],
+    }),
+    ('ncls', '0.0.70', {
+        'checksums': ['7d16634a8f57fa79659e9ae7e5cc6edd1e02d5acb0eb57128dbed03e9f4fdd9c'],
+    }),
+    ('flair-brookslab', version, {
+        'modulename': 'flair',
+        'source_urls': ['https://github.com/BrooksLabUCSC/flair/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': 'FLAIR-%(version)s.tar.gz'}],
+        'checksums': ['3af940cdd92cbc2e311c55a167ee3aced864dd2fa87f7b632fc3d485c9bd6e82'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/flair', 'bin/junctions_from_sam', 'bin/diffsplice_fishers_exact'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'flair --version',
+    'flair align --help',
+    'flair correct --help',
+    'flair transcriptome --help',
+    'flair collapse --help',
+    'flair quantify --help',
+    'flair combine --help',
+    'flair variants --help',
+    'flair fusion --help',
+    'flair diffexp --help',
+    'flair diffsplice --help',
+]
+
+moduleclass = 'bio'

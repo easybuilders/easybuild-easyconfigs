@@ -1,0 +1,79 @@
+Use EasyBuild-provided libraries instead of bundled, outdated copies.
+
+Author: Emik Lin (HKUMed CPOS)
+--- a/Makefile.common
++++ b/Makefile.common
+@@ -5,38 +5,38 @@
+-TABIX_INC = $(ROOT)/third/tabix
+-TABIX_LIB = $(ROOT)/third/tabix/libtabix.a
++TABIX_INC = $(EBROOTTABIX)/include
++TABIX_LIB = $(EBROOTTABIX)/lib64/libtabix.a
+ 
+-EIGEN_INC = $(ROOT)/third/eigen
++EIGEN_INC = $(EBROOTEIGEN)/include
+ EIGEN_LIB =  # Eigen are header files only
+ 
+-PCRE_INC = $(ROOT)/third/pcre/include
+-PCRE_LIB = $(ROOT)/third/pcre/lib/libpcreposix.a $(ROOT)/third/pcre/lib/libpcre.a
++PCRE_INC = $(EBROOTPCRE)/include
++PCRE_LIB = $(EBROOTPCRE)/lib/libpcreposix.a $(EBROOTPCRE)/lib/libpcre.a
+ 
+-GSL_INC = $(ROOT)/third/gsl/include
+-GSL_LIB = $(ROOT)/third/gsl/lib/libgsl.a
++GSL_INC = $(EBROOTGSL)/include
++GSL_LIB = $(EBROOTGSL)/lib/libgsl.a $(EBROOTGSL)/lib/libgslcblas.a
+ 
+-ZLIB_INC = $(ROOT)/third/zlib
+-ZLIB_LIB = $(ROOT)/third/zlib/libz.a
++ZLIB_INC = $(EBROOTZLIB)/include
++ZLIB_LIB = $(EBROOTZLIB)/lib/libz.a
+ 
+-BZIP2_INC = $(ROOT)/third/bzip2
+-BZIP2_LIB = $(ROOT)/third/bzip2/libbz2.a
++BZIP2_INC = $(EBROOTBZIP2)/include
++BZIP2_LIB = $(EBROOTBZIP2)/lib/libbz2.a
+ 
+-NLOPT_INC = $(ROOT)/third/nlopt/include
+-NLOPT_LIB = $(ROOT)/third/nlopt/lib/libnlopt.a
++NLOPT_INC = $(EBROOTNLOPT)/include
++NLOPT_LIB = $(EBROOTNLOPT)/lib/libnlopt.a
+ 
+ BCF_INC = $(ROOT)/third/samtools/bcftools
+ BCF_LIB = $(ROOT)/third/samtools/bcftools/libbcf.a
+ 
+ SAMTOOLS_INC = $(ROOT)/third/samtools
+ SAMTOOLS_LIB = $(ROOT)/third/samtools/libbam.a
+ 
+-RAPIDJSON_INC = $(ROOT)/third/rapidjson/include
++RAPIDJSON_INC = $(EBROOTRAPIDJSON)/include
+ RAPIDJSON_LIB = # We only use its headers
+ 
+-SQLITE_INC = $(ROOT)/third/sqlite/include
+-SQLITE_LIB = $(ROOT)/third/sqlite/lib/libsqlite3.a
++SQLITE_INC = $(EBROOTSQLITE)/include
++SQLITE_LIB = $(EBROOTSQLITE)/lib/libsqlite3.a -ldl
+ 
+-ZSTD_INC = $(ROOT)/third/zstd/lib
+-ZSTD_LIB = $(ROOT)/third/zstd/lib/libzstd.a
++ZSTD_INC = $(EBROOTZSTD)/include
++ZSTD_LIB = $(EBROOTZSTD)/lib/libzstd.a
+ 
+-CNPY_INC = $(ROOT)/third/cnpy
+-CNPY_LIB = $(ROOT)/third/cnpy/libcnpy.a
++CNPY_INC = $(EBROOTCNPY)/include
++CNPY_LIB = $(EBROOTCNPY)/lib/libcnpy.a
+--- a/third/Makefile
++++ b/third/Makefile
+@@ -35,10 +35,10 @@
+ 	ln -s -f bzip2-1.0.6 bzip2
+ 	(cd bzip2-1.0.6; make)
+ 
+-samtools: samtools-0.1.19.tar.bz2 zlib
++samtools: samtools-0.1.19.tar.bz2
+ 	tar jxf $<
+ 	ln -s -f samtools-0.1.19 samtools
+-	sed -i.bak 's:^CFLAGS=:CFLAGS=-I../zlib-1.2.8 -I../../zlib-1.2.8:;s:^LIBPATH=:LIBPATH=-L../zlib-1.2.8 -L../../zlib-1.2.8:' samtools/Makefile samtools/bcftools/Makefile
++	sed -i.bak 's:^CFLAGS=:CFLAGS=-I$(EBROOTZLIB)/include:;s:^LIBPATH=:LIBPATH=-L$(EBROOTZLIB)/lib:' samtools/Makefile samtools/bcftools/Makefile
+ 	(cd samtools; make lib-recur)
+ 
+ nlopt: nlopt-2.4.2.tar.gz
