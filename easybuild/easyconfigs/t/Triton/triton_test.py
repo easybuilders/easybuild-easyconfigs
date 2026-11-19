@@ -16,6 +16,7 @@ src = triton.compiler.ASTSource(
 )
 
 cuda_cc = sys.argv[1].split(',')[-1]
-target = GPUTarget("cuda", int(cuda_cc.replace('.', '')), 32)
+cuda_cc_digits = [d for d in cuda_cc if d.isdigit()]  # Strip dots and suffixes, e.g. from 9.0a
+target = GPUTarget("cuda", int(''.join(cuda_cc_digits)), 32)
 output = triton.compile(src, target=target)
 print(output)
