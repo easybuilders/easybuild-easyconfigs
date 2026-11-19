@@ -1,0 +1,52 @@
+# Updated by: Stamen Miroslavov, BSC 2026
+
+easyblock = 'MakeCp'
+
+name = 'HEALPix'
+version = '3.83'
+
+homepage = 'https://healpix.sourceforge.io'
+description = """Hierarchical Equal Area isoLatitude Pixelation of a sphere."""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['Healpix_%(version)s_2024Nov13.tar.gz']
+checksums = ['8876c18efc596fd706b2a004ac15f2fb60b795f2db6fbabea9d8ccf549531dda']
+
+unpack_options = '--strip-components=1'
+
+dependencies = [
+    ('CFITSIO', '4.6.2'),
+]
+
+with_configure = True
+configure_without_installdir = True
+configure_cmd_prefix = 'FITSDIR=$EBROOTCFITSIO/lib FITSINC=$EBROOTCFITSIO/include '
+configopts = '--auto=c,cxx,f90 -L'
+
+files_to_copy = ['lib', 'bin', 'data', 'doc', 'include', 'confdir']
+
+# HEALPix .px file needs to point to the right installation directory
+postinstallcmds = [
+    "sed -i 's|%(builddir)s|%(installdir)s|g' %(installdir)s/lib/pkgconfig/*.pc",
+]
+
+modextravars = {
+    'HEALPIX': '%(installdir)s',
+    'HEXE': '%(installdir)s/bin',
+}
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['lib/' + x for x in [
+        'libchealpix.a',
+        'libhealpix.a',
+        'libhealpix_cxx.a',
+        'libsharp.a',
+    ]],
+    'dirs': ['bin', 'data', 'lib', 'include', 'confdir'],
+}
+
+moduleclass = 'astro'
