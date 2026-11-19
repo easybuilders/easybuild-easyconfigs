@@ -1,0 +1,56 @@
+Use https://github.com/triton-lang/triton/pull/8762 to add a feature from Triton 3.6.0
+that is required in PyTorch 2.11 and higher.
+
+Author (backport): Alexander Grund (TU Dresden)
+diff --git a/python/test/unit/language/test_core.py b/python/test/unit/language/test_core.py
+--- a/python/test/unit/language/test_core.py
++++ b/python/test/unit/language/test_core.py
+@@ -6069,6 +6069,27 @@ def mul_add(data):
+     assert found_fma == enable_fp_fusion
+ 
+ 
++# -----------------------
++# test enable_reflect_ftz
++# -----------------------
++
++
++@pytest.mark.skipif(not is_cuda(), reason="Requires CUDA")
++@pytest.mark.parametrize("enable_reflect_ftz", [False, True])
++def test_enable_reflect_ftz(enable_reflect_ftz, device, fresh_knobs):
++
++    @triton.jit
++    def exp2(data):
++        ptrs = data + tl.arange(0, 128)
++        tl.store(ptrs, tl.math.exp2(tl.load(ptrs)))
++
++    data = torch.full((128, ), -127.0, device=device, dtype=torch.float32)
++    h = exp2.warmup(data, grid=(1, ), enable_reflect_ftz=enable_reflect_ftz)
++
++    found_ex2_ftz = re.search(r'ex2.approx.ftz.f32', h.asm["ptx"]) is not None
++    assert found_ex2_ftz == enable_reflect_ftz
++
++
+ # -----------------------
+ # test override_arch
+ # -----------------------
+diff --git a/third_party/nvidia/backend/compiler.py b/third_party/nvidia/backend/compiler.py
+--- a/third_party/nvidia/backend/compiler.py
++++ b/third_party/nvidia/backend/compiler.py
+@@ -116,6 +116,7 @@ class CUDAOptions:
+     ptx_options: str = None
+     ir_override: Optional[str] = None  # filename of a user-defined IR (*.{ttir|ttgir|llir|ptx})
+     enable_fp_fusion: bool = True
++    enable_reflect_ftz: bool = True  # ftz in libdevice
+     launch_cooperative_grid: bool = False
+     launch_pdl: bool = False
+     supported_fp8_dtypes: Tuple[str] = ("fp8e5", "fp8e4b15")
+@@ -386,7 +386,8 @@ def make_llir(self, src, metadata, options, capability):
+         triple = 'nvptx64-nvidia-cuda'
+         nvidia.set_short_ptr()
+         llvm.attach_datalayout(llvm_mod, triple, proc, features)
+-        nvidia.set_nvvm_reflect_ftz(llvm_mod)
++        if options.enable_reflect_ftz:
++            nvidia.set_nvvm_reflect_ftz(llvm_mod)
+ 
+         if options.extern_libs and nvidia.has_extern_deps(llvm_mod):
+             paths = [path for (name, path) in options.extern_libs]
