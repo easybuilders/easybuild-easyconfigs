@@ -1,0 +1,32 @@
+easyblock = 'Tarball'
+
+name = 'Julia'
+version = '1.13.3'
+
+homepage = 'https://julialang.org'
+description = "Julia is a high-level, high-performance dynamic programming language for numerical computing"
+
+toolchain = SYSTEM
+
+source_urls = ['https://julialang-s3.julialang.org/bin/linux/x64/%(version_major_minor)s/',
+               'https://julialang-s3.julialang.org/bin/linux/%(arch)s/%(version_major_minor)s/']
+sources = ['%(namelower)s-%(version)s-linux-%(arch)s.tar.gz']
+patches = [('julia.wrapper', 'bin/')]
+checksums = [
+    {
+        'julia-1.13.3-linux-x86_64.tar.gz': '5c61cb4b40332cb5a3504e7779e2f5dac093caa4a1116ded19f01413f85c63e4',
+        'julia-1.13.3-linux-aarch64.tar.gz': '9ceb053bee6dfb8189bd40afd6925de3a9b7ff8fac8d01a5fcdd84af171ddf03',
+    },
+    {'julia.wrapper': 'd10aeaff53cca9875f7b0ce9218eae3bd21870b654e26c4c52aa8bfcc9da702d'},
+]
+
+# install wrapper with linking safeguards for Julia libraries
+postinstallcmds = ["cd %(installdir)s/bin && mv julia julia.bin && mv julia.wrapper julia"]
+
+sanity_check_paths = {
+    'files': ['bin/julia', 'bin/julia.bin', 'include/julia/julia.h', 'lib/libjulia.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'etc', 'include', 'lib', 'lib/julia', 'share']
+}
+sanity_check_commands = ['julia --help']
+
+moduleclass = 'lang'
