@@ -35,7 +35,7 @@ import shutil
 import stat
 import tempfile
 from collections import defaultdict
-from typing import List
+from typing import Any, Dict, List, Optional
 from unittest import TestCase, TestLoader, main, mock, skip
 from urllib.request import Request, urlopen
 
@@ -364,7 +364,7 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(len(fails), '\n'.join(sorted(fails)))
 
-    def check_dep_vars(self, gen, dep, dep_vars):
+    def check_dep_vars(self, _gen, dep, dep_vars):
         """Check whether available variants of a particular dependency are acceptable or not."""
 
         # short-circuit in case there's only one dependency variant, or none at all
@@ -1351,7 +1351,7 @@ class EasyConfigTest(TestCase):
                             idx_match = idx
                             break
                     if idx_match:
-                        del checksums[idx]
+                        del checksums[idx_match]
                     else:
                         self.fail(f"No checksum found for {patch_ctypes_ld_library_path} in {ec_fn}")
 
@@ -1388,10 +1388,10 @@ class EasyConfigTest(TestCase):
             failing_checks_ec = []
 
             with ec.disable_templating():
-                ec_fn = os.path.basename(ec.path)
-                easyblock = ec.get('easyblock') or ''
-                exts_defaultclass = ec.get('exts_defaultclass')
-                exts_default_options = ec.get('exts_default_options', {})
+                ec_fn: str = os.path.basename(ec.path)
+                easyblock: Optional[str] = ec['easyblock']
+                exts_defaultclass: Optional[str] = ec['exts_defaultclass']
+                exts_default_options: Dict[str, Any] = ec['exts_default_options']
 
                 download_dep_fail = ec.get('download_dep_fail')
                 use_pip = ec.get('use_pip')
@@ -1618,7 +1618,7 @@ class EasyConfigTest(TestCase):
                 wrong_perms.append("readable (owner, group, other)")
             if st.st_mode & exec_perms:
                 wrong_perms.append("not executable")
-            if not (st.st_mode & stat.S_IWUSR):
+            if not (st.st_mode & stat.S_IWUSR):  # pylint: disable=superfluous-parens
                 wrong_perms.append("at least owner writable")
             if wrong_perms:
                 failing_checks.append("%s must be %s, is: %s" % (ec_fn, ", ".join(wrong_perms), oct(st.st_mode)))
@@ -1745,6 +1745,7 @@ def template_easyconfig_test(self, spec):
     msg = "Filename '%s' of parsed easyconfig matches expected filename '%s'" % (spec, expected_fn)
     self.assertEqual(os.path.basename(spec), expected_fn, msg)
 
+    # pylint: disable=unbalanced-tuple-unpacking
     name, easyblock = fetch_parameters_from_easyconfig(ec.rawtxt, ['name', 'easyblock'])
 
     # make sure easyconfig file is in expected location
