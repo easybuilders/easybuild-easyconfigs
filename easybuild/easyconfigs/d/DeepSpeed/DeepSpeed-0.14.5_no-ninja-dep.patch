@@ -1,0 +1,67 @@
+Patch away dependency on ninja python package by checking returncode of `ninja --version`.
+
+Author: Viktor Rehnberg (Chalmers University of Technology)
+Adapted by Alexander Grund (TU Dresden)
+
+diff --git a/deepspeed/env_report.py b/deepspeed/env_report.py
+--- a/deepspeed/env_report.py
++++ b/deepspeed/env_report.py
+@@ -59,11 +59,7 @@ def op_report(verbose=True):
+ 
+ 
+ def ninja_installed():
+-    try:
+-        import ninja  # noqa: F401 # type: ignore
+-    except ImportError:
+-        return False
+-    return True
++    return subprocess.run(["ninja", "--version"], check=False).returncode == 0
+ 
+ 
+ def nvcc_version():
+diff --git a/op_builder/builder.py b/op_builder/builder.py
+--- a/op_builder/builder.py
++++ b/op_builder/builder.py
+@@ -533,9 +533,7 @@ class OpBuilder(ABC):
+             raise RuntimeError(
+                 f"Unable to JIT load the {self.name} op due to it not being compatible due to hardware/software issue. {self.error_log}"
+             )
+-        try:
+-            import ninja  # noqa: F401 # type: ignore
+-        except ImportError:
++        if subprocess.run(["ninja", "--version"], check=False).returncode != 0:
+             raise RuntimeError(f"Unable to JIT load the {self.name} op due to ninja not being installed.")
+ 
+         if isinstance(self, CUDAOpBuilder) and not self.is_rocm_pytorch():
+diff --git a/op_builder/xpu/builder.py b/op_builder/xpu/builder.py
+--- a/op_builder/xpu/builder.py
++++ b/op_builder/xpu/builder.py
+@@ -6,6 +6,7 @@
+ import os
+ import time
+ import importlib
++import subprocess
+ 
+ try:
+     # is op_builder from deepspeed or a 3p version? this should only succeed if it's deepspeed
+@@ -86,9 +87,7 @@ class SYCLOpBuilder(OpBuilder):
+             raise RuntimeError(
+                 f"Unable to JIT load the {self.name} op due to it not being compatible due to hardware/software issue. {self.error_log}"
+             )
+-        try:
+-            import ninja  # noqa: F401
+-        except ImportError:
++        if subprocess.run(["ninja", "--version"], check=False).returncode != 0:
+             raise RuntimeError(f"Unable to JIT load the {self.name} op due to ninja not being installed.")
+ 
+         self.jit_mode = True
+diff --git a/requirements/requirements.txt b/requirements/requirements.txt
+index 80c9f9b3..eed77fa3 100755
+--- a/requirements/requirements.txt
++++ b/requirements/requirements.txt
+@@ -1,5 +1,4 @@
+ hjson
+-ninja
+ numpy
+ nvidia-ml-py
+ packaging>=20.0
