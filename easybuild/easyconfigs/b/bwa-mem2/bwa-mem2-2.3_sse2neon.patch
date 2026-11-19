@@ -1,0 +1,358 @@
+Taken from bioconda-recipes/recipes/bwa-mem2/sse2neon.patch
+minus submodule section.
+https://github.com/bioconda/bioconda-recipes/blob/master/recipes/bwa-mem2/sse2neon.patch
+--- a/Makefile	2026-10-30 11:47:03.514759656 +0100
++++ b/Makefile	2026-10-30 11:52:09.414060668 +0100
+@@ -39,7 +39,7 @@
+ else ifeq ($(CXX), g++)
+ 	CC=gcc
+ endif		
+-ARCH_FLAGS=	-msse -msse2 -msse3 -mssse3 -msse4.1
++ARCH_FLAGS=	-D__SSE2__=1 -D__AVX__=1 -D__SSE4_1__=1
+ MEM_FLAGS=	-DSAIS=1
+ CPPFLAGS+=	-DENABLE_PREFETCH -DV17=1 -DMATE_SORT=0 $(MEM_FLAGS) 
+ INCLUDES=   -Isrc -Iext/safestringlib/include
+diff --git a/src/FMI_search.cpp b/src/FMI_search.cpp
+index 5f0ff48..892724e 100644
+--- a/src/FMI_search.cpp
++++ b/src/FMI_search.cpp
+@@ -33,13 +33,15 @@ Authors: Sanchit Misra <sanchit.misra@intel.com>; Vasimuddin Md <vasimuddin.md@i
+ #include "memcpy_bwamem.h"
+ #include "profiling.h"
+ 
++#ifndef __arm64__
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+-#include "safe_str_lib.h"
++#include "safe_str_lib.h"  
+ #ifdef __cplusplus
+ }
+ #endif
++#endif
+ 
+ FMI_search::FMI_search(const char *fname)
+ {
+@@ -1308,12 +1310,12 @@ void FMI_search::get_sa_entries_prefetch(SMEM *smemArray, int64_t *coordArray,
+         offset[j] = 0;
+         
+         if (pos & SA_COMPX_MASK == 0) {
+-            _mm_prefetch(&sa_ms_byte[pos >> SA_COMPX], _MM_HINT_T0);
+-            _mm_prefetch(&sa_ls_word[pos >> SA_COMPX], _MM_HINT_T0);
++            _mm_prefetch((const char *)&sa_ms_byte[pos >> SA_COMPX], _MM_HINT_T0);
++            _mm_prefetch((const char *)&sa_ls_word[pos >> SA_COMPX], _MM_HINT_T0);
+         }
+         else {
+             int64_t occ_id_pp_ = pos >> CP_SHIFT;
+-            _mm_prefetch(&cp_occ[occ_id_pp_], _MM_HINT_T0);
++            _mm_prefetch((const char *)&cp_occ[occ_id_pp_], _MM_HINT_T0);
+         }
+         i++;
+         j++;
+@@ -1345,12 +1347,12 @@ void FMI_search::get_sa_entries_prefetch(SMEM *smemArray, int64_t *coordArray,
+                     offset[k] = 0;
+                     
+                     if (pos & SA_COMPX_MASK == 0) {
+-                        _mm_prefetch(&sa_ms_byte[pos >> SA_COMPX], _MM_HINT_T0);
+-                        _mm_prefetch(&sa_ls_word[pos >> SA_COMPX], _MM_HINT_T0);
++                        _mm_prefetch((const char *)&sa_ms_byte[pos >> SA_COMPX], _MM_HINT_T0);
++                        _mm_prefetch((const char *)&sa_ls_word[pos >> SA_COMPX], _MM_HINT_T0);
+                     }
+                     else {
+                         int64_t occ_id_pp_ = pos >> CP_SHIFT;
+-                        _mm_prefetch(&cp_occ[occ_id_pp_], _MM_HINT_T0);
++                        _mm_prefetch((const char *)&cp_occ[occ_id_pp_], _MM_HINT_T0);
+                     }
+                 }
+                 else
+@@ -1359,12 +1361,12 @@ void FMI_search::get_sa_entries_prefetch(SMEM *smemArray, int64_t *coordArray,
+             else {
+                 working_set[k] = sp;
+                 if (sp & SA_COMPX_MASK == 0) {
+-                    _mm_prefetch(&sa_ms_byte[sp >> SA_COMPX], _MM_HINT_T0);
+-                    _mm_prefetch(&sa_ls_word[sp >> SA_COMPX], _MM_HINT_T0);
++                    _mm_prefetch((const char *)&sa_ms_byte[sp >> SA_COMPX], _MM_HINT_T0);
++                    _mm_prefetch((const char *)&sa_ls_word[sp >> SA_COMPX], _MM_HINT_T0);
+                 }
+                 else {
+                     int64_t occ_id_pp_ = sp >> CP_SHIFT;
+-                    _mm_prefetch(&cp_occ[occ_id_pp_], _MM_HINT_T0);
++                    _mm_prefetch((const char *)&cp_occ[occ_id_pp_], _MM_HINT_T0);
+                 }                
+             }
+         }
+diff --git a/src/FMI_search.h b/src/FMI_search.h
+index 25c4d0d..cdab3e0 100644
+--- a/src/FMI_search.h
++++ b/src/FMI_search.h
+@@ -34,7 +34,13 @@ Authors: Sanchit Misra <sanchit.misra@intel.com>; Vasimuddin Md <vasimuddin.md@i
+ #include <stdlib.h>
+ #include <stdint.h>
+ #include <string.h>
++
++#if defined (__arm64__) or defined (__aarch64__)
++#include <sse2neon.h>
++#else
+ #include <immintrin.h>
++#endif
++
+ #include <limits.h>
+ #include <fstream>
+ 
+diff --git a/src/bandedSWA.h b/src/bandedSWA.h
+index c81552b..af16dbb 100644
+--- a/src/bandedSWA.h
++++ b/src/bandedSWA.h
+@@ -39,10 +39,14 @@ Authors: Vasimuddin Md <vasimuddin.md@intel.com>; Sanchit Misra <sanchit.misra@i
+ #if (__AVX512BW__ || __AVX2__)
+ #include <immintrin.h>
+ #else
++#if defined(__arm64__) or defined(__aarch64__)
++#include <sse2neon.h>
++#else
+ #include <smmintrin.h>  // for SSE4.1
+ #define __mmask8 uint8_t
+ #define __mmask16 uint16_t
+ #endif
++#endif
+ 
+ #define MAX_SEQ_LEN_REF 256
+ #define MAX_SEQ_LEN_QER 128
+diff --git a/src/bwa.cpp b/src/bwa.cpp
+index 3d25d81..b764381 100644
+--- a/src/bwa.cpp
++++ b/src/bwa.cpp
+@@ -40,6 +40,8 @@ Authors: Vasimuddin Md <vasimuddin.md@intel.com>; Sanchit Misra <sanchit.misra@i
+ #include "kvec.h"
+ #include <string>
+ 
++
++#ifndef __arm64__
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+@@ -47,6 +49,7 @@ extern "C" {
+ #ifdef __cplusplus
+ }
+ #endif
++#endif
+ 
+ int bwa_verbose = 3;
+ char bwa_rg_id[256];
+diff --git a/src/fastmap.cpp b/src/fastmap.cpp
+index 5cbb2dc..3f19614 100644
+--- a/src/fastmap.cpp
++++ b/src/fastmap.cpp
+@@ -52,10 +52,12 @@ void __cpuid(unsigned int i, unsigned int cpuid[4]) {
+ #ifdef _WIN32
+     __cpuid((int *) cpuid, (int)i);
+ 
+-#else
++#elif not defined(__aarch64__) and not defined(__arm64__)
+     asm volatile
+         ("cpuid" : "=a" (cpuid[0]), "=b" (cpuid[1]), "=c" (cpuid[2]), "=d" (cpuid[3])
+             : "0" (i), "2" (0));
++#else
++    memset((void*)cpuid, 0, sizeof(int) * 4);
+ #endif
+ }
+ 
+@@ -393,7 +395,7 @@ static int process(void *shared, gzFile gfp, gzFile gfp2, int pipe_threads)
+         numa_bitmask_free(mask);
+     }
+ #endif
+-#if AFF && (__linux__)
++#if AFF && (__linux__) && !defined(__aarch64__)
+     { // Affinity/HT stuff
+         unsigned int cpuid[4];
+         asm volatile
+diff --git a/src/kopen.cpp b/src/kopen.cpp
+index 14d5377..1536df1 100644
+--- a/src/kopen.cpp
++++ b/src/kopen.cpp
+@@ -47,8 +47,9 @@
+ #ifdef USE_MALLOC_WRAPPERS
+ #  include "malloc_wrap.h"
+ #endif
+-
++#include "utils.h"
+ #include "memcpy_bwamem.h"
++#ifndef __arm64__
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+@@ -56,6 +57,7 @@ extern "C" {
+ #ifdef __cplusplus
+ }
+ #endif
++#endif
+ 
+ #ifdef _WIN32
+ #define _KO_NO_NET
+diff --git a/src/ksort.h b/src/ksort.h
+index 69b6ac0..7499707 100644
+--- a/src/ksort.h
++++ b/src/ksort.h
+@@ -75,6 +75,10 @@ typedef struct {
+ 	int depth;
+ } ks_isort_stack_t;
+ 
++#if __cplusplus >= 201703L
++#define register
++#endif
++
+ #define KSORT_SWAP(type_t, a, b) { register type_t t=(a); (a)=(b); (b)=t; }
+ 
+ #define KSORT_INIT(name, type_t, __sort_lt)								\
+diff --git a/src/ksw.cpp b/src/ksw.cpp
+index ad9bc50..4b93b8a 100644
+--- a/src/ksw.cpp
++++ b/src/ksw.cpp
+@@ -30,7 +30,11 @@
+ #include <stdlib.h>
+ #include <stdint.h>
+ #include <assert.h>
++#if defined (__arm64__) or defined (__aarch64__)
++#include <sse2neon.h>
++#else
+ #include <emmintrin.h>
++#endif
+ #include "ksw.h"
+ #include "macro.h"
+ 
+diff --git a/src/ksw.h b/src/ksw.h
+index 54bcef8..bc5b6af 100644
+--- a/src/ksw.h
++++ b/src/ksw.h
+@@ -26,7 +26,11 @@
+ #define __AC_KSW_H
+ 
+ #include <stdint.h>
++#if defined (__arm64__) or defined (__aarch64__)
++#include <sse2neon.h>
++#else
+ #include <emmintrin.h>
++#endif
+ 
+ #define KSW_XBYTE  0x10000
+ #define KSW_XSTOP  0x20000
+diff --git a/src/memcpy_bwamem.cpp b/src/memcpy_bwamem.cpp
+index 84b5f56..cf6d44f 100644
+--- a/src/memcpy_bwamem.cpp
++++ b/src/memcpy_bwamem.cpp
+@@ -29,7 +29,9 @@ Authors: Sanchit Misra <sanchit.misra@intel.com>; Vasimuddin Md <vasimuddin.md@i
+ 
+ #include "memcpy_bwamem.h"
+ 
+-errno_t memcpy_bwamem(void *dest, rsize_t dmax, const void *src, rsize_t smax, char *file_name, int line_num)
++
++#ifndef __arm64__
++errno_t memcpy_bwamem(void *dest, rsize_t dmax, const void *src, rsize_t smax, const char *file_name, int line_num)
+ {
+     errno_t ret;
+     int64_t bytes_copied;
+@@ -47,3 +49,31 @@ errno_t memcpy_bwamem(void *dest, rsize_t dmax, const void *src, rsize_t smax, c
+     }
+     return 0;
+ }
++#else
++#include <stdio.h>
++errno_t memcpy_bwamem(void *dest, rsize_t dmax, const void *src, rsize_t smax, const char *file_name, int line_num)
++{
++    errno_t ret;
++
++    if (smax == 0) return 0;
++    // tests in memcpy_s - sizing
++    if (dest == NULL || src == NULL ||
++	smax == 0 || dmax == 0 ||
++	smax > dmax) {
++      fprintf(stderr, "[%s: %d] memcpy_bwamem constraints failure %x %x %d %d\n", file_name, line_num, src, dest, smax, dmax);
++      exit(EXIT_FAILURE);
++    }
++    // tests in memcpy_s - overlap
++    
++    if ((dest < src && ((const char*) dest) + smax >= (const char*)src)
++	|| (src < dest && ((const char*) src) + smax >= (const char*)dest)) {
++      fprintf(stderr, "[%s: %d] memcpy_bwamem regions overlap failure %x %x %d %d \n", file_name, line_num, src, dest, smax, dmax);
++      exit(EXIT_FAILURE);
++    }
++
++    memcpy(dest, src, smax);
++
++    return 0;
++}
++
++#endif
+diff --git a/src/memcpy_bwamem.h b/src/memcpy_bwamem.h
+index 0d53d93..20f5e84 100644
+--- a/src/memcpy_bwamem.h
++++ b/src/memcpy_bwamem.h
+@@ -35,11 +35,18 @@ Authors: Sanchit Misra <sanchit.misra@intel.com>; Vasimuddin Md <vasimuddin.md@i
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
++#ifndef __arm64__
+ #include "safe_mem_lib.h"
++#endif
+ #ifdef __cplusplus
+ }
+ #endif
+ 
+-errno_t memcpy_bwamem(void *dest, rsize_t dmax, const void *src, rsize_t smax, char *file_name, int line_num);
++#ifdef __arm64__
++#define RSIZE_MAX_MEM ( 256UL << 20 ) /* 256MB */
++#include <errno.h>
++#include <string.h>
++#endif
++errno_t memcpy_bwamem(void *dest, rsize_t dmax, const void *src, rsize_t smax, const char *file_name, int line_num);
+ 
+ #endif
+diff --git a/src/read_index_ele.cpp b/src/read_index_ele.cpp
+index 5bfe932..fb11481 100644
+--- a/src/read_index_ele.cpp
++++ b/src/read_index_ele.cpp
+@@ -28,6 +28,7 @@ Authors: Vasimuddin Md <vasimuddin.md@intel.com>; Sanchit Misra <sanchit.misra@i
+ *****************************************************************************************/
+ 
+ #include "read_index_ele.h"
++#ifndef __arm64__
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+@@ -36,6 +37,7 @@ extern "C" {
+ #ifdef __cplusplus
+ }
+ #endif
++#endif
+ 
+ indexEle::indexEle()
+ {
+diff --git a/src/utils.h b/src/utils.h
+index fbf8439..b864ce4 100644
+--- a/src/utils.h
++++ b/src/utils.h
+@@ -63,9 +63,13 @@ static inline unsigned long long __rdtsc(void)
+     __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+     return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
+ }
++
+ #endif
+ #endif
+ 
++#if defined (__arm64__) or defined (__aarch64__)		/* sse2neon defines this for us */
++#define __rdtsc _rdtsc
++#endif
+ typedef struct {
+ 	uint64_t x, y;
+ } pair64_t;
+@@ -128,3 +132,10 @@ static inline uint64_t hash_64(uint64_t key)
+ }
+ 
+ #endif
++
++
++#ifdef __arm64__
++#define strcpy_s(a,b,c) strlcpy((a),(c),(b))
++#define strncpy_s(a,b,c,d) strlcpy((a),(c),((d)<(b)?(d):(b)))
++#define strcat_s(a,b,c) strlcat((a),(c),(b))
++#endif
