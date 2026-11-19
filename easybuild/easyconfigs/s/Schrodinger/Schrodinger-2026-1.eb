@@ -1,0 +1,40 @@
+easyblock = 'PackedBinary'
+
+name = 'Schrodinger'
+version = '2026-1'
+
+homepage = 'https://www.schrodinger.com/'
+description = """ Schrodinger aims to provide integrated software solutions and services
+ that truly meet its customers needs. We want to empower researchers around the world to
+ achieve their goals of improving human health and quality of life through advanced computational
+ techniques that transform the way chemists design compounds and materials. """
+
+# Packed vendor binary, no compiler toolchain involved.
+toolchain = SYSTEM
+
+sources = ['%(name)s_Suites_%(version)s_Advanced_Linux-x86_64.tar']
+# Add checksums once the vendor tarball is downloaded locally.
+download_instructions = f"""{name} requires manual download from {homepage}
+Required downloads: {' '.join(sources)}"""
+
+# Based on Schrodinger's official RHEL 2026-1 package requirements:
+# https://github.com/schrodinger/linux_package_requirement/tree/main/packages
+
+install_cmd = 'cd %(builddir)s/%(name)s_Suites_%(version)s_Advanced_Linux-x86_64 && '
+
+# Ignoring error code as Schrodinger's installer checks OS packages
+# but their bundled liblzma in LD_LIBRARY_PATH can break librpmio.so.
+install_cmd += './INSTALL -d . -s %(installdir)s -k /usr/tmp -t %(installdir)s/thirdparty -b * || true'
+
+sanity_check_paths = {
+    'files': ['desmond', 'maestro'],
+    'dirs': [],
+}
+
+modextravars = {
+    'SCHROD_LICENSE_FILE': '$HOME/.schrodinger_license',
+    'SCHRODINGER': '%(installdir)s',
+}
+
+moduleclass = 'bio'
+
