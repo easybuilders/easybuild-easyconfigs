@@ -1,0 +1,32 @@
+easyblock = 'EB_Anaconda'
+
+
+name = 'CCP-EM-Doppio'
+version = '1.6.1'
+
+homepage = 'https://www.ccpem.ac.uk/'
+description = """Doppio is the second generation of the CCP-EM Software Suite. It features a web-based user
+interface for CCP-EM and RELION software for cryo-EM structure determination (particle picking, refinement,
+model building/validation jobs such as crYOLO, LocScale, ModelAngelo, Refmac Servalcat, and more)."""
+
+# Doppio ships as a conda-constructor self-extracting installer (same install mechanism as Miniconda3/
+# Anaconda3), so the EB_Anaconda easyblock (a thin wrapper around the generic Binary easyblock) is used
+# instead of a hand-rolled PackedBinary install_cmd.
+
+toolchain = SYSTEM
+
+source_urls = ['https://www.ccpem.ac.uk/downloads/doppio/']
+sources = ['doppio-linux-%(version)s-x86_64.sh']
+checksums = ['89710dab69570374a10cac179f5eab0657a165028ccf3a7021087f629130f122']
+
+
+# doppio-web runs a local web server and opens the default browser against it; it does not itself require an
+# X11/GTK stack. (The separate doppio-desktop Electron wrapper might, but is not exercised by this easyconfig.)
+
+sanity_check_paths = {'files': ['app/doppio-web', 'etc/doppio_paths.sh'], 'dirs': ['bin', 'etc', 'lib']}
+sanity_check_commands = ['bash -c "source %(installdir)s/etc/doppio_paths.sh && %(installdir)s/app/doppio-web --help"']
+
+modextrapaths = {'PATH': 'app'}
+modextravars = {'DOPPIO_ROOT': '%(installdir)s'}
+
+moduleclass = 'bio'
