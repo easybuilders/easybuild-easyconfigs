@@ -1,0 +1,71 @@
+easyblock = 'CMakeMake'
+
+name = 'FLEUR'
+version = '8.1'
+
+homepage = 'https://www.flapw.de'
+description = """FLEUR is a density functional theory package implementing the all-electron
+full-potential linearized augmented-plane-wave method. It allows for the ab initio
+calculation of properties of crystals, thin films, and surfaces, with a special
+focus on magnetism."""
+
+# The MPI compiler wrappers of gompi are used as compilers (usempi)
+toolchain = {'name': 'foss', 'version': '2025b'}
+toolchainopts = {'openmp': True, 'usempi': True, 'pic': True}
+
+source_urls = ['https://iffgit.fz-juelich.de/fleur/fleur/-/archive/MaX-R%(version)s']
+sources = ['fleur-MaX-R%(version)s.tar.gz']
+checksums = ['12c99c5fc6789820a96c8b85d9fd990c4a66293dc6dc284fe19141f5a3d1d55d']
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+]
+
+# BLAS/LAPACK (FlexiBLAS), ScaLAPACK and FFTW come from the foss toolchain
+dependencies = [
+    ('HDF5', '1.14.6'),
+    ('libxml2', '2.14.3'),
+    ('ELPA', '2025.06.001'),
+]
+
+# The Fortran module directories of HDF5 (include/ or mod/static, depending on how it was built) and
+# ELPA (OpenMP variant) and the libxml2 headers (include/libxml2) are not on the default include path.
+# The CMakeLists of MaX-R8.1 drops the FFLAGS environment variable, so the Fortran flags are passed
+# with -DCMAKE_Fortran_FLAGS below; CFLAGS from the environment is honoured.
+preconfigopts = ' && '.join([
+    'export CFLAGS="$CFLAGS -I$EBROOTLIBXML2/include/libxml2"',
+    'export FFLAGS="$FFLAGS -I$EBROOTHDF5/include -I$EBROOTHDF5/mod/static '
+    '-I$(echo $EBROOTELPA/include/elpa_openmp-*/modules)"',
+    'FLEUR_LIBS="$(echo $LIBSCALAPACK_MT $LIBFFT | tr \' \' \';\')"',
+    '',
+])
+
+# Require the external libraries explicitly: FLEUR only warns if optional ones are not found.
+# MaX-R8.1 enables its MKL FFT as soon as it finds mkl_dfti.f90 (e.g. from an imkl module in the
+# environment) without checking that MKL is linked. The empty MKL_FFT_INTERFACE_FILE disables
+# that search, so FFTW from the toolchain is used.
+configopts = ' '.join([
+    '-DCMAKE_Fortran_FLAGS="$FFLAGS"',
+    '-DFLEUR_LIBRARIES="$FLEUR_LIBS"',
+    '-DMKL_FFT_INTERFACE_FILE=',
+    '-DCLI_FLEUR_USE_MPI=TRUE',
+    '-DCLI_FLEUR_USE_HDF5=TRUE',
+    '-DCLI_FLEUR_USE_SCALAPACK=TRUE',
+    '-DCLI_FLEUR_USE_ELPA=external',
+    '-DCLI_ELPA_OPENMP=1',
+])
+
+# Stop before compiling if one of the required features was not detected.
+prebuildopts = (
+    'for f in MPI HDF5 SCALAPACK ELPA; do '
+    'grep -q "^FLEUR_USE_$f:INTERNAL=TRUE" CMakeCache.txt || { echo "FLEUR feature $f not detected"; exit 1; }; '
+    'done && '
+)
+
+sanity_check_paths = {
+    'files': ['bin/fleur_MPI', 'bin/inpgen'],
+    'dirs': [],
+}
+
+
+moduleclass = 'chem'
