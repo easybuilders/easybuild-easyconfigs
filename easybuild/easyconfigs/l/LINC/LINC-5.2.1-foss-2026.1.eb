@@ -62,7 +62,8 @@ local_pretestopts += '\"${EB_PYTHONPACKAGE_TEST_INSTALLDIR}/share/linc/skymodels
 local_pretestopts += '-e "s|\"/usr/local/share/linc/skymodels\"|'
 local_pretestopts += '\"${EB_PYTHONPACKAGE_TEST_INSTALLDIR}/share/linc/skymodels\"|" test_jobs/HBA_target.json && '
 
-# the summary step reads the versions file that is created in the LINC container, see postinstallcmds
+# LINC's summary step that's run at the end of a workflow, reads the versions file that is normally created when
+# building the LINC container. We need to put this file in place for the test step as well
 local_pretestopts += 'echo "LINC: %(version)s" > $EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc/.versions && '
 local_pretestopts += 'python -m pip freeze | sed "s/==/: /g" >> '
 local_pretestopts += '$EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc/.versions && '
@@ -93,21 +94,13 @@ exts_list = [
     }),
     ('LINC', '5.2.1', {
         'modulename': False,
-        'sources': [{
-            'filename': '%(name)s-v%(version)s.tar.xz',
-            'git_config': {
-                'url': 'https://git.astron.nl/RD/',
-                'repo_name': 'LINC',
-                'commit': 'v%(version)s',
-                'recursive': True,
-                'keep_git_dir': True,
-            },
-        }],
-        # We cannot get a reproducible checksum, because we need to do keep_git_dir for
-        # setuptools_scm to determine the version
-        'checksums': [None],
-        # LINC's summary step reads $LINC_DATA_ROOT/.versions (new in LINC 5.2): create it for the test, see also
-        # postinstallcmds
+        'source_urls': ['https://git.astron.nl/RD/LINC/-/archive/v%(version)s'],
+        'sources': ['%(name)s-v%(version)s.tar.gz'],
+        'checksums': ['14e70cd9e735ecb7a58baea7f564a234b410482b2427a6ec5884a579a0caf4f6'],
+        # LINC uses setuptools_scm to determine its version. To avoid needing to do a git clone (which pulls in
+        # way more data than needed AND prevents us from having a checksum), we simply tell setuptools_scm
+        # which version to use
+        'preinstallopts': 'export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LINC=%(version)s && ',
         'testinstall': True,
         'pretestopts': local_pretestopts,
         'runtest': 'cwltool',
@@ -122,7 +115,7 @@ environment variables from your environment (e.g. using 'for i in $(env | grep S
 """
 
 # LINC's summary step expects a file listing the used software versions in $LINC_DATA_ROOT/.versions,
-# which is created by the LINC container build (see Docker/Dockerfile-linc)
+# which is normally created by the LINC container build (see Docker/Dockerfile-linc)
 postinstallcmds = [
     'echo "LINC: %(version)s" > %(installdir)s/share/linc/.versions',
     'export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && '
