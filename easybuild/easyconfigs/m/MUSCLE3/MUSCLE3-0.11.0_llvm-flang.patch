@@ -1,0 +1,68 @@
+Detect LLVM flang (its --version says 'flang', not 'clang') as the Clang Fortran compiler, and do not
+pass -std=f2003 to it: LLVM flang only accepts -std=f2018. Also give ymmsl a Clang branch so the
+.mod files go to mod_dump like with the other compilers.
+author: Simon Pinches (ITER Organization)
+--- muscle3-0.11.0.orig/scripts/gmake/detect_fortran_type.make
++++ muscle3-0.11.0/scripts/gmake/detect_fortran_type.make
+@@ -7,7 +7,7 @@
+         MUSCLE_FC_GNU := 1
+         export MUSCLE_FC_GNU
+         $(info Fortran compiler detected as GNU)
+-    else ifeq ($(shell $(FC) --version | grep -q -i clang && echo FOUND),FOUND)
++    else ifeq ($(shell $(FC) --version | grep -q -i -E 'clang|flang' && echo FOUND),FOUND)
+         MUSCLE_FC_CLANG := 1
+         export MUSCLE_FC_CLANG
+         $(info Fortran compiler detected as Clang)
+--- muscle3-0.11.0.orig/build/fortran/ymmsl/Makefile
++++ muscle3-0.11.0/build/fortran/ymmsl/Makefile
+@@ -32,6 +32,8 @@
+ else ifdef MUSCLE_FC_GNU
+     FFLAGS += -std=f2003
+     MOD_DUMP := -Jmod_dump
++else ifdef MUSCLE_FC_CLANG
++    MOD_DUMP := -Jmod_dump
+ else ifdef MUSCLE_FC_CRAY
+     FFLAGS += -em -ef
+     MOD_DUMP := -Jmod_dump
+--- muscle3-0.11.0.orig/build/fortran/libmuscle/Makefile
++++ muscle3-0.11.0/build/fortran/libmuscle/Makefile
+@@ -54,7 +54,7 @@
+     FFLAGS += -std=f2003
+     MOD_DUMP := -Jmod_dump
+ else ifdef MUSCLE_FC_CLANG
+-    FFLAGS += -std=f2003
++    # LLVM flang only accepts -std=f2018
+     MOD_DUMP := -Jmod_dump
+ else ifdef MUSCLE_FC_CRAY
+     FFLAGS += -em -ef
+--- muscle3-0.11.0.orig/build/fortran/libmuscle/tests/Makefile
++++ muscle3-0.11.0/build/fortran/libmuscle/tests/Makefile
+@@ -41,7 +41,7 @@
+ else ifdef MUSCLE_FC_GNU
+     FFLAGS += -std=f2003
+ else ifdef MUSCLE_FC_CLANG
+-    FFLAGS += -std=f2003
++    # LLVM flang only accepts -std=f2018
+ else ifdef MUSCLE_FC_CRAY
+     FFLAGS += -em -ef
+ endif
+--- muscle3-0.11.0.orig/docs/source/examples/fortran/build/Makefile
++++ muscle3-0.11.0/docs/source/examples/fortran/build/Makefile
+@@ -9,7 +9,7 @@
+ else ifdef MUSCLE_FC_GNU
+     FFLAGS += -std=f2003
+ else ifdef MUSCLE_FC_CLANG
+-    FFLAGS += -std=f2003
++    # LLVM flang only accepts -std=f2018
+ endif
+ 
+ ifdef MUSCLE_FC_INTEL
+@@ -17,7 +17,7 @@
+ else ifdef MUSCLE_FC_GNU
+     MPI_FFLAGS += -std=f2003
+ else ifdef MUSCLE_FC_CLANG
+-    MPI_FFLAGS += -std=f2003
++    # LLVM flang only accepts -std=f2018
+ endif
+ 
+ 
