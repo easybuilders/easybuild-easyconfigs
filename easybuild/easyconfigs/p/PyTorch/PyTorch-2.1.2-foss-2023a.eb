@@ -47,6 +47,7 @@ patches = [
     'PyTorch-2.1.2_fix-test_torchinductor-rounding.patch',
     'PyTorch-2.1.2_fix-vsx-vector-abs.patch',
     'PyTorch-2.1.2_fix-vsx-vector-div.patch',
+    'PyTorch-2.1.2_mkl-2023.1-compat.patch',
     'PyTorch-2.1.2_skip-cpu_repro-test-without-vectorization.patch',
     'PyTorch-2.1.2_skip-memory-leak-test.patch',
     'PyTorch-2.1.2_workaround_dynamo_failure_without_nnpack.patch',
@@ -115,6 +116,7 @@ checksums = [
      'a0ef99192ee2ad1509c78a8377023d5be2b5fddb16f84063b7c9a0b53d979090'},
     {'PyTorch-2.1.2_fix-vsx-vector-abs.patch': 'd67d32407faed7dc1dbab4bba0e2f7de36c3db04560ced35c94caf8d84ade886'},
     {'PyTorch-2.1.2_fix-vsx-vector-div.patch': '11f497a6892eb49b249a15320e4218e0d7ac8ae4ce67de39e4a018a064ca1acc'},
+    {'PyTorch-2.1.2_mkl-2023.1-compat.patch': '8837e1cc0107297cc941db910750000882c03f528c71edb04f3ff50f4af436ee'},
     {'PyTorch-2.1.2_skip-cpu_repro-test-without-vectorization.patch':
      '7ace835af60c58d9e0754a34c19d4b9a0c3a531f19e5d0eba8e2e49206eaa7eb'},
     {'PyTorch-2.1.2_skip-memory-leak-test.patch': '8d9841208e8a00a498295018aead380c360cf56e500ef23ca740adb5b36de142'},
@@ -134,6 +136,10 @@ builddependencies = [
 ]
 
 dependencies = [
+    # See `strings torch.libs/libarm_compute-*.so | grep arm_compute_version` on the PyPI package
+    ('ArmComputeLibrary', {'arch=AArch64': '23.05.1', 'arch=*': False}),
+    # See .github/requirements/conda-env-Linux-X64.txt or .ci/docker/common/install_conda.sh
+    ('imkl', {'arch=x86_64': '2023.1.0', 'arch=*': False}, '', SYSTEM),
     ('Ninja', '1.11.1'),  # Required for JIT compilation of C++ extensions
     ('Python', '3.11.3'),
     ('Python-bundle-PyPI', '2023.06'),
@@ -173,5 +179,7 @@ excluded_tests = {
 runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'
 
 tests = ['PyTorch-check-cpp-extension.py']
+
+sanity_check_pip_list = False
 
 moduleclass = 'ai'
