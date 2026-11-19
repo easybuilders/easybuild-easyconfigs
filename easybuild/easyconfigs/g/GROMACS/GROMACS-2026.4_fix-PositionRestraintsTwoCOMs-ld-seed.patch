@@ -1,0 +1,48 @@
+Make PositionRestraintCommTest.PositionRestraintsTwoCOMs deterministic.
+
+Backport of upstream GROMACS merge request 6396,
+"testing: make PositionRestraintsTwoCOMs more deterministic":
+https://gitlab.com/gromacs/gromacs/-/merge_requests/6396
+merged into main as squash commit 4c1faccef1487d79b8c0ae19acca655560d486b4
+(not in v2026.3, v2026.4 or release-2026).
+The diff below is https://gitlab.com/gromacs/gromacs/-/merge_requests/6396.diff
+unmodified: ld-seed = 4, relative tolerance 5e-4 in both precisions, and the
+matching reference data.
+Drop this patch once the GROMACS release in use contains that commit.
+
+diff --git a/src/programs/mdrun/tests/boxdeformation.cpp b/src/programs/mdrun/tests/boxdeformation.cpp
+index 684e567b1828c20f661a1ca86baf00f861029eca..01bacf8e29b92a8c471a6a6721cc77859c60913f 100644
+--- a/src/programs/mdrun/tests/boxdeformation.cpp
++++ b/src/programs/mdrun/tests/boxdeformation.cpp
+@@ -195,6 +195,7 @@ TEST_F(PositionRestraintCommTest, PositionRestraintsTwoCOMs)
+             "tc-grps          = system\n"
+             "ref-t            = 298\n"
+             "tau-t            = 0.5\n"
++            "ld-seed          = 4\n"
+             "deform           = 0 0 0 0 2.5 0\n"
+             "deform-init-flow = yes\n";
+ 
+@@ -213,7 +214,7 @@ TEST_F(PositionRestraintCommTest, PositionRestraintsTwoCOMs)
+     {
+         CommandLine mdrunCaller;
+         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
+-        auto relativeTolerance = relativeToleranceAsFloatingPoint(1, GMX_DOUBLE ? 1.5e-2 : 5e-2);
++        auto                 relativeTolerance = relativeToleranceAsFloatingPoint(1, 5e-4);
+         EnergyTermsToCompare energyTermsToCompare{
+             { { interaction_function[InteractionFunction::PositionRestraints].longname, relativeTolerance } }
+         };
+diff --git a/src/programs/mdrun/tests/refdata/PositionRestraintCommTest_PositionRestraintsTwoCOMs.xml b/src/programs/mdrun/tests/refdata/PositionRestraintCommTest_PositionRestraintsTwoCOMs.xml
+index b1cc7a564a79606a772492f90cb885774b523531..3dc500428a6cc2792f89a3683a8bd6219ef62219 100644
+--- a/src/programs/mdrun/tests/refdata/PositionRestraintCommTest_PositionRestraintsTwoCOMs.xml
++++ b/src/programs/mdrun/tests/refdata/PositionRestraintCommTest_PositionRestraintsTwoCOMs.xml
+@@ -3,8 +3,8 @@
+ <ReferenceData>
+   <Simulation Name="OctaneSandwich">
+     <Energy Name="Position Rest.">
+-      <Real Name="Time 0.000000 Step 0 in frame 0">8.1844318916679975e-27</Real>
+-      <Real Name="Time 0.020000 Step 10 in frame 1">64.723105570319646</Real>
++      <Real Name="Time 0.000000 Step 0 in frame 0">1.6368863783335995e-26</Real>
++      <Real Name="Time 0.020000 Step 10 in frame 1">64.721333028111943</Real>
+     </Energy>
+   </Simulation>
+ </ReferenceData>
