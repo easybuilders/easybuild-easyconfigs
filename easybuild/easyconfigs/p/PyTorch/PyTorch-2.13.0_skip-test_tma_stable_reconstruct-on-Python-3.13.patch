@@ -1,0 +1,28 @@
+Test fails on Python 3.13 with
+> RuntimeError: Boolean value of Tensor with more than one value is ambiguous
+
+See https://github.com/pytorch/pytorch/pull/189712
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/dynamo/test_reconstruct.py b/test/dynamo/test_reconstruct.py
+--- a/test/dynamo/test_reconstruct.py
++++ b/test/dynamo/test_reconstruct.py
+@@ -3,6 +3,7 @@
+ import collections
+ import contextlib
+ import dis
++import sys
+ import unittest
+ 
+ import torch
+@@ -526,6 +526,10 @@ class ReconstructTest(torch._dynamo.test_case.TestCase):
+         res = torch.compile(create_tma, backend="eager")(x)
+         self.assertEqual(ref[1].desc, res[1].desc)
+ 
++    @unittest.skipIf(
++        sys.version_info >= (3, 13),
++        "Tensor in TensorDescriptor not comparable in Python 3.13+",
++    )
+     @unittest.skipIf(not HAS_GPU, "requires GPU and Triton")
+     @unittest.skipIf(
+         not has_triton_tensor_descriptor_host_tma(),

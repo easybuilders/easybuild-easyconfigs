@@ -1,0 +1,26 @@
+Multiprocess tests spawn child process and initialize the process group.
+When there are not enough/no CUDA GPUs then NCCL will fail with
+> ValueError: ProcessGroupNCCL is only supported with GPUs, no GPUs found!
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/torch/testing/_internal/common_distributed.py b/torch/testing/_internal/common_distributed.py
+--- a/torch/testing/_internal/common_distributed.py
++++ b/torch/testing/_internal/common_distributed.py
+@@ -1863,10 +1863,16 @@ class MultiProcContinuousTest(TestCase):
+         # and we expect LOCAL_RANK set by torchrun. Setting it lets init_device_mesh set the device without
+         # issuing a warning
+         os.environ["LOCAL_RANK"] = str(rank)
++        # Child-side guard: skip test if the accelerator has fewer devices than world_size
++        # to avoid errors when trying to initialize the backend
++        backend = cls.backend_str()
++        acc_type = {"nccl": "cuda", "xccl": "xpu", "hccl": "hpu"}.get(backend)
++        if acc_type is not None and torch.get_device_module(acc_type).device_count() < world_size:
++            sys.exit(TEST_SKIPS[f"multi-gpu-{world_size}"].exit_code)
+         store = c10d.FileStore(rdvz_file, world_size)
+         # create nccl processgroup with opts
+         c10d.init_process_group(
+-            backend=cls.backend_str(),
++            backend=backend,
+             world_size=world_size,
+             rank=rank,
+             store=store,

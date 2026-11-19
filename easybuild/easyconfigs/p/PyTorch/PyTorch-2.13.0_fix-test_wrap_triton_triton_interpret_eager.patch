@@ -1,0 +1,32 @@
+Backport of https://github.com/pytorch/pytorch/pull/200561 fixing this error
+> triton.runtime.errors.InterpreterError: ValueError("arange's arguments must be of type tl.constexpr")
+
+diff --git a/test/inductor/test_triton_kernels.py b/test/inductor/test_triton_kernels.py
+--- a/test/inductor/test_triton_kernels.py
++++ b/test/inductor/test_triton_kernels.py
+@@ -4559,11 +4559,11 @@ from torch.library import wrap_triton
+ def add_kernel(
+     in_ptr0,
+     in_ptr1,
+     out_ptr,
+     n_elements,
+-    BLOCK_SIZE: "tl.constexpr",
++    BLOCK_SIZE: tl.constexpr,
+ ):
+     pid = tl.program_id(axis=0)
+     block_start = pid * BLOCK_SIZE
+     offsets = block_start + tl.arange(0, BLOCK_SIZE)
+     mask = offsets < n_elements
+@@ -4578,11 +4578,11 @@ def add_kernel(
+ def autotuned_add_kernel(
+     in_ptr0,
+     in_ptr1,
+     out_ptr,
+     n_elements,
+-    BLOCK_SIZE: "tl.constexpr",
++    BLOCK_SIZE: tl.constexpr,
+ ):
+     pid = tl.program_id(axis=0)
+     block_start = pid * BLOCK_SIZE
+     offsets = block_start + tl.arange(0, BLOCK_SIZE)
+     mask = offsets < n_elements
