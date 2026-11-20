@@ -1,0 +1,25 @@
+Detect Linux aarch64 as arm64 in cmake/TargetArch.cmake
+
+On Linux aarch64, TargetArch.cmake matched __aarch64__ inside the 32-bit
+ARM block and emitted "arm" instead of "arm64". CMakeLists.txt only
+enables HPX_WITH_GENERIC_CONTEXT_COROUTINES automatically for "riscv64"
+and "arm64", leaving it OFF on Linux aarch64 and failing to compile
+libs/core/coroutines/src/swapcontext.cpp with the x86-only #error.
+
+Emit "arm64" for __arm64__ and __aarch64__ before the 32-bit ARM branch,
+matching the macOS arm64 path in the same file.
+
+Author: Rohit Goswami <rgoswami@ieee.org>
+--- hpx-1.11.0/cmake/TargetArch.cmake.orig	2025-06-29 14:43:20.000000000 +0000
++++ hpx-1.11.0/cmake/TargetArch.cmake	2026-11-19 12:15:00.000000000 +0000
+@@ -17,7 +17,9 @@
+ 
+ set(archdetect_cpp_code
+     "
+-    #if defined(__arm__) || defined(__TARGET_ARCH_ARM) || defined(__arm64__) || defined(__aarch64__)
++    #if defined(__arm64__) || defined(__aarch64__)
++        #error cmake_ARCH arm64
++    #elif defined(__arm__) || defined(__TARGET_ARCH_ARM)
+         #if defined(__ARM_ARCH_7__) \\
+             || defined(__ARM_ARCH_7A__) \\
+             || defined(__ARM_ARCH_7R__) \\
