@@ -1,0 +1,83 @@
+Allow encoder sample_fmt fallback (e.g. s16 -> fltp for libvorbis):
+get_enc_fmt() falls back to the codec's first supported sample_fmt when the requested encoder_format isn't supported.
+This fixes OGG/Vorbis saves with FFmpeg+libvorbis where only fltp is accepted and s16 (or others) causes encoder open to fail.
+A TORCH_WARN_ONCE is emitted and the filter graph performs the conversion.
+Default behavior remains: prefer src_fmt if supported, else use the codec's first supported format.
+Errors without this patch:
+[libvorbis] Specified sample format s16 is not supported by the libvorbis encoder (supported: fltp)
+Error while opening encoder / Conversion failed
+Author: Pavel Tomanek (Inuits/Ugent)
+------------------------------------------------------------------
+diff -Nru audio-2.6.0.p1/src/libtorio/ffmpeg/stream_writer/encode_process.cpp audio-2.6.0/src/libtorio/ffmpeg/stream_writer/encode_process.cpp
+--- audio-2.6.0.p1/src/libtorio/ffmpeg/stream_writer/encode_process.cpp	2026-02-13 15:55:06.105338831 +0000
++++ audio-2.6.0/src/libtorio/ffmpeg/stream_writer/encode_process.cpp	2026-02-13 15:55:29.426444845 +0000
+@@ -229,23 +229,39 @@
+     const std::optional<std::string>& encoder_format,
+     const AVCodec* codec) {
+   if (encoder_format) {
+-    auto& enc_fmt_val = encoder_format.value();
+-    auto fmt = av_get_sample_fmt(enc_fmt_val.c_str());
+-    TORCH_CHECK(
+-        fmt != AV_SAMPLE_FMT_NONE, "Unknown sample format: ", enc_fmt_val);
+-    TORCH_CHECK(
+-        supported_sample_fmt(fmt, codec->sample_fmts),
+-        codec->name,
+-        " does not support ",
+-        encoder_format.value(),
+-        " format. Supported values are; ",
+-        get_supported_formats(codec->sample_fmts));
++    const auto& enc_fmt_val = encoder_format.value();
++    AVSampleFormat fmt = av_get_sample_fmt(enc_fmt_val.c_str());
++    TORCH_CHECK(fmt != AV_SAMPLE_FMT_NONE, "Unknown sample format: ", enc_fmt_val);
++
++    if (supported_sample_fmt(fmt, codec->sample_fmts)) {
++      return fmt;
++    }
++
++    // If codec has restrictions, fall back to its first supported format
++    // and rely on filter graph conversion.
++    if (codec->sample_fmts) {
++      TORCH_WARN_ONCE(
++          codec->name,
++          " does not support requested sample format ",
++          enc_fmt_val,
++          "; falling back to ",
++          av_get_sample_fmt_name(codec->sample_fmts[0]),
++          " and converting via filter graph.");
++      return codec->sample_fmts[0];
++    }
++
++    // If codec does not advertise supported formats, just use the requested one.
+     return fmt;
+   }
+-  if (codec->sample_fmts) {
+-    return codec->sample_fmts[0];
++
++  // No explicit encoder format requested: keep the source format if possible.
++  if (!codec->sample_fmts) {
++    return src_fmt;
+   }
+-  return src_fmt;
++  if (supported_sample_fmt(src_fmt, codec->sample_fmts)) {
++    return src_fmt;
++  }
++  return codec->sample_fmts[0];
+ };
+ 
+ bool supported_sample_rate(const int sample_rate, const AVCodec* codec) {
+@@ -313,11 +329,11 @@
+   return src_sample_rate;
+ }
+ 
+-// Helper to handle the "Describe" API which now requires a buffer
+ std::string describe_layout(const AVChannelLayout& layout) {
+-    char buf[256];
+-    av_channel_layout_describe(&layout, buf, sizeof(buf));
+-    return std::string(buf);
++  char buf[256];
++  int ret = av_channel_layout_describe(&layout, buf, sizeof(buf));
++  TORCH_CHECK(ret >= 0, "Failed to describe channel layout: ", av_err2string(ret));
++  return std::string(buf);
+ }
+ 
+ std::string get_supported_channels(const AVChannelLayout* channel_layouts) { 
