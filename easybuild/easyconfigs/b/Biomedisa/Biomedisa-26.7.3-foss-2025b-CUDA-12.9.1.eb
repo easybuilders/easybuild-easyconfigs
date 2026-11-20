@@ -1,0 +1,88 @@
+easyblock = 'PythonBundle'
+
+name = 'Biomedisa'
+version = '26.7.3'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://biomedisa.info'
+description = "Biomedisa is an open-source application for segmentation of 3D volumetric images."
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('PyTorch', '2.9.1', versionsuffix),
+    ('torchvision', '0.24.1', versionsuffix),
+    ('PyCUDA', '2025.1.2', versionsuffix),
+    ('OpenCV', '4.12.0', '-CUDA-%(cudaver)s-contrib'),
+    ('h5py', '3.14.0'),
+    ('numba', '0.62.0'),
+    ('scikit-image', '0.25.0'),
+    ('Slicer-Python-deps', '5.12.3'),
+    ('absl-py', '2.3.1'),
+    ('ml_dtypes', '0.5.4'),
+    ('optree', '0.18.0'),
+]
+
+# The Slicer extension is not included in the PyPI package, so fetch the matching GitHub revision separately.
+local_biomedisa_commit = '4dbd6a1ca83a98318e0304d6671c61cd9e7b4b95'
+exts_classmap = {'Biomedisa-Slicer': 'Tarball'}
+exts_list = [
+    ('namex', '0.1.0', {
+        'checksums': ['117f03ccd302cc48e3f5c58a296838f6b89c83455ab8683a1e85f2a430aa4306'],
+    }),
+    ('keras', '3.15.1', {
+        'checksums': ['92ae7c1dd7f61041953dc2d42253181ee099086f0b58ae36fcf98147a6f08a29'],
+    }),
+    ('medpy', '0.5.2', {
+        'checksums': ['f4233c2f4adc79abe4b8ff5b683ba4778322d4545e71d51d6a328ad31275972d'],
+    }),
+    ('%(namelower)s', version, {
+        'checksums': ['e50d8bb33e05c7a690c146f30ac3b70d358bb7a54534d00557cb25e8923e39bf'],
+    }),
+    ('Biomedisa-Slicer', version, {
+        'sources': [{
+            'filename': SOURCE_TAR_XZ,
+            'git_config': {
+                'url': 'https://github.com/biomedisa',
+                'repo_name': 'biomedisa',
+                'commit': local_biomedisa_commit,
+            },
+        }],
+        'checksums': ['947963017c5332ac200c9f912e0d7bd966a4a732ea5e17e06807096190cccbe1'],
+        'install_type': 'subdir',
+        'exts_filter': None,
+    }),
+]
+
+# also install Biomedisa Slicer extension to the right path
+postinstallcmds = [
+    'mv %(installdir)s/biomedisa-slicer/biomedisa/biomedisa_slicer_extension %(installdir)s/',
+    'rm -rf %(installdir)s/biomedisa-slicer',
+]
+
+postinstallpatches = ['Biomedisa-26.7.3_fix-Slicer-PythonQt.patch']
+
+checksums = [
+    {'Biomedisa-26.7.3_fix-Slicer-PythonQt.patch': '9bc98dd7318fcd94f9d0576a81c5a3994b67cffde7bb9e324df61f873ca0fa6f'},
+]
+
+sanity_check_paths = {
+    'dirs': [
+        'biomedisa_slicer_extension/biomedisa_extension/SegmentEditorBiomedisa',
+        'biomedisa_slicer_extension/biomedisa_extension/SegmentEditorBiomedisaPrediction',
+        'biomedisa_slicer_extension/biomedisa_extension/SegmentEditorBiomedisaTraining',
+    ],
+    'files': [],
+}
+
+sanity_check_commands = [
+    'python -s -c "from biomedisa.features.biomedisa_helper import load_data, save_data"',
+    'python -s -c "import keras; assert keras.backend.backend() == \'torch\'"',
+]
+
+modextravars = {'KERAS_BACKEND': 'torch'}
+
+moduleclass = 'bio'
