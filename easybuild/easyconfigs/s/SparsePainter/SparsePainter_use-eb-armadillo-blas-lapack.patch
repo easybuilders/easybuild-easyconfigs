@@ -1,0 +1,33 @@
+# - Use Armadillo from EasyBuild instead of compiling it as part of this
+#   installation. The version does not match exactly, but it seems to work
+# - Use $(LIBBLAS) and $(LIBLAPACK) instead of -lblas and -llapack
+# Author: steven.vandenbrande@kuleuven.be
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ # Target
+ TARGET = SparsePainter
+ 
+-all: armadillo $(TARGET)
++all: $(TARGET)
+ 
+ # Compile armadillo 12.6.5
+ 
+@@ -16,7 +16,7 @@
+ 
+ # Directories and Libraries
+ current_dir = $(shell pwd)
+-ARMA_DIR = $(current_dir)/armadillo-12.6.5
++ARMA_DIR = $(EBROOTARMADILLO)
+ INCLUDE_DIR = $(ARMA_DIR)/include
+ LIB_DIR = $(ARMA_DIR)
+ 
+@@ -27,7 +27,7 @@
+ # Determine OS type and set linker flags accordingly
+ UNAME_S := $(shell uname -s)
+ ifeq ($(UNAME_S),Linux)
+-    LDLIBS = -larmadillo -lblas -llapack -lz -lpthread -Wl,-rpath=$(LIB_DIR)
++    LDLIBS = -larmadillo $(LIBBLAS) $(LIBLAPACK) -lz -lpthread -Wl,-rpath=$(LIB_DIR)
+ endif
+ ifeq ($(UNAME_S),Darwin)  # Darwin is the result for macOS
+     ## We will set CXX and LDLIBS specially

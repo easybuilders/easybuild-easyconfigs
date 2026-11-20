@@ -1,0 +1,54 @@
+easyblock = 'MakeCp'
+
+name = 'SparsePainter'
+version = '20260925'
+_commit = 'ed91149c5ecf795daba28711e08138f8abb00f68'
+
+homepage = 'https://github.com/YaolingYang/SparsePainter'
+description = """SparsePainter is an efficient tool for local ancestry inference (LAI)
+coded in C++. It extends the PBWT algorithm to find K longest matches at each
+position, and uses a Hash Map structure to implement the forward and backward
+algorithm in the Hidden Markov Model (HMM), leveraging the sparsity of
+haplotype matches."""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = ['https://github.com/YaolingYang/SparsePainter/archive']
+sources = [{
+    'download_filename': '%s.tar.gz' % _commit,
+    'filename': '%(name)s-%(version)s.tar.gz',
+}]
+patches = ['SparsePainter_use-eb-armadillo-blas-lapack.patch']
+checksums = [
+    {'SparsePainter-20260925.tar.gz': 'a014db2c9bbcfa0a432160bf9db835d8ae474a4bfe486060cdff2255f9dbeb6b'},
+    {'SparsePainter_use-eb-armadillo-blas-lapack.patch':
+     '25e8d580fe08ccd96adb309060fa2ede7334f0e3bc0368ca65cee713aa230fde'},
+]
+
+dependencies = [
+    ('Armadillo', '14.0.3'),
+]
+
+files_to_copy = [(['SparsePainter'], 'bin')]
+
+# This is not really a test where output is checked. Just run an example and
+# make sure it exits cleanly
+pretestopts = ' && '.join([
+    'cd example',
+    '../SparsePainter -reffile donor.vcf.gz -targetfile target.vcf.gz '
+    '-popfile popnames.txt -mapfile map.txt -namefile targetname.txt '
+    '-out target_vs_ref -prob -chunklength -chunkcount -aveSNP -aveind -sample',
+    'cd ..',
+]) + ' && '
+# runtest always invokes make, so make that a dummy command and run the
+# actual test using pretetsopts
+runtest = '--version'
+
+sanity_check_paths = {
+    'files': ['bin/SparsePainter'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["SparsePainter -help"]
+
+moduleclass = 'bio'
