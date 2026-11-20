@@ -1,0 +1,41 @@
+From: Sergey Poznyakoff <gray@gnu.org>
+Date: Tue, 6 May 2025 18:02:43 +0000 (+0300)
+Subject: Fix c23 conformity
+X-Git-Url: https://gitweb.git.savannah.gnu.org/gitweb/?p=cpio.git;a=commitdiff_plain;h=f42137f5ab9cf07d1e62edc05e0212688d3ebaa2;hp=1df26977ca8c96cd5dc95b6938f9b3e0b8eee5c1
+
+Fix c23 conformity
+---
+
+diff --git a/src/extern.h b/src/extern.h
+index bf3d5b3..455119b 100644
+--- a/src/extern.h
++++ b/src/extern.h
+@@ -96,8 +96,8 @@ extern char input_is_special;
+ extern char output_is_special;
+ extern char input_is_seekable;
+ extern char output_is_seekable;
+-extern int (*xstat) ();
+-extern void (*copy_function) ();
++extern int (*xstat) (const char *, struct stat *);
++extern void (*copy_function) (void);
+ extern char *change_directory_option;
+ 
+ #define STRINGIFY_BIGINT(i, b) umaxtostr (i, b)
+diff --git a/src/global.c b/src/global.c
+index 66686f2..5c6ab16 100644
+--- a/src/global.c
++++ b/src/global.c
+@@ -184,10 +184,10 @@ bool to_stdout_option = false;
+ 
+ /* A pointer to either lstat or stat, depending on whether
+    dereferencing of symlinks is done for input files.  */
+-int (*xstat) ();
++int (*xstat) (const char *, struct stat *);
+ 
+ /* Which copy operation to perform. (-i, -o, -p) */
+-void (*copy_function) () = 0;
++void (*copy_function) (void) = 0;
+ 
+ char *change_directory_option;
+ 
+
