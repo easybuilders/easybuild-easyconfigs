@@ -1,0 +1,64 @@
+easyblock = 'PythonBundle'
+
+name = 'pytest'
+version = '9.0.3'
+
+homepage = 'https://docs.pytest.org/en/latest/'
+description = """The pytest framework makes it easy to write small,
+readable tests, and can scale to support complex functional testing for
+applications and libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('hatchling', '1.27.0'),
+    ('flit', '3.10.1'),
+]
+
+dependencies = [
+    ('Python', '3.13.1'),
+    ('hypothesis', '6.133.2'),
+    ('setuptools', '80.9.0'),
+]
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+# Note! Some of the file system related tests may fail on shared file systems.
+# Notably TestPOSIXLocalPath.test_copy_stat_file, TestPOSIXLocalPath.test_copy_stat_dir
+# and test_source_mtime_long_long are known to fail on GPFS
+# Build with buildpath and tmpdir set to a local file system to avoid this
+# or use --ignore-test-failures
+_skip_tests = [
+    'testing/io/test_terminalwriter.py',
+    'testing/test_terminal.py',
+    'testing/test_debugging.py',
+    'testing/test_config.py',
+    'testing/test_helpconfig.py',
+]
+_ignore_tests = ' --ignore='.join(_skip_tests)
+
+exts_list = [
+    # pluggy-1.5.0 has known bug that results in 'RuntimeError: generator raised StopIteration'
+    #  https://github.com/pytest-dev/pluggy/issues/544
+    ('pluggy', '1.6.0', {
+        'checksums': ['7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3'],
+    }),
+    ('elementpath', '5.0.1', {
+        'checksums': ['d3e4807b7e38e190e382eefef93f35ce6f71adf63b33e3f01d0e11f22e5d5cc7'],
+    }),
+    ('xmlschema', '4.2.0', {
+        'checksums': ['b1f88c53493b2e75471977cbf218d939b872d0c7046bb63d48cc219fa7e241b9'],
+    }),
+    (name, version, {
+        'checksums': ['b86ada508af81d19edeb213c681b1d48246c1a91d304c6c81a427674c17eb91c'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import pytest'",
+    'cd %%(builddir)s/%%(name)s/%%(name)s-%%(version)s && %%(installdir)s/bin/pytest --ignore=%s testing'
+    % _ignore_tests,
+]
+
+moduleclass = 'lib'
