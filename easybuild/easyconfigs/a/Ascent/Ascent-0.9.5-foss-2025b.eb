@@ -35,9 +35,21 @@ dependencies = [
     ('conduit', '0.9.5')
 ]
 
+
+# The installation is using Python at one point. In order to make sure we are
+# # not polluting the user's ~/.local/lib/pythonX.Y, we need to do this dance,
+# # at least for now. It is probably best to set that in the config/build/install
+# # steps.
+_envvar = 'export PYTHONNOUSERSITE=1; export PIP_REQUIRE_VIRTUALENV=false;'
+_envvar += ' export PIP_DISABLE_PIP_VERSION_CHECK=true; export XDG_CACHE_HOME=%(builddir)s/xdg-cache-home &&'
+
+preconfigopts = _envvar
 srcdir = 'src'
 configopts = '-DENABLE_DOCS=OFF -DENABLE_DOXYGEN=OFF -DENABLE_VALGRIND=OFF '
 configopts += '-DENABLE_MPI=ON -DENABLE_OPENMP=ON -DCONDUIT_RELAY_HDF5_ENABLED=ON -DCONDUIT_DIR=$EBROOTCONDUIT '
+
+prebuildopts = _envvar
+preinstallopts = _envvar
 
 # allow oversubscription of MPI ranks to cores
 pretestopts = "export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe && "
