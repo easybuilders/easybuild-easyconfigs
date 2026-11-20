@@ -1,0 +1,35 @@
+easyblock = 'ConfigureMake'
+
+name = 'Paraver'
+version = '4.13.2'
+moduleclass = 'perf'
+
+homepage = 'https://tools.bsc.es/paraver'
+description = """A very powerful performance visualization and analysis tool
+based on traces that can be used to analyse any information that is expressed on
+its input trace format.  Traces for parallel MPI, OpenMP and other programs can
+be genereated with Extrae."""
+
+toolchain = {'name': 'GCC', 'version': '13.3.0'}
+
+source_urls = ['https://ftp.tools.bsc.es/wxparaver/']
+sources = ['wxparaver-%(version)s-src.tar.bz2']
+checksums = [
+    {'wxparaver-4.13.2-src.tar.bz2': 'a2043be1b9a0080a11630e81eff838e375e44e6aac3358af9c5c5ce44c21af07'},
+]
+
+builddependencies = [
+    ('zlib', '1.3.1'),
+    ('Boost', '1.85.0'),
+    ('wxWidgets', '3.2.6'),
+    ('libxml2', '2.12.7'),
+    ('OpenSSL', '3', '', SYSTEM),
+]
+
+configopts = '--with-boost=$EBROOTBOOST --with-openssl=$EBROOTOPENSSL --with-xml-prefix=$EBROOTLIBXML2 --with-wx-config=$EBROOTWXWIDGETS/bin/wx-config --enable-extended-objects --disable-static --enable-openmp '
+
+# Fails linking libcairo due to not finding pixman, used workaround in:
+# https://github.com/easybuilders/easybuild-easyconfigs/issues/24555#issuecomment-4199829145
+configopts += 'LDFLAGS="-Wl,-rpath-link=${LD_LIBRARY_PATH}" '
+
+build_cmd = 'make install'
