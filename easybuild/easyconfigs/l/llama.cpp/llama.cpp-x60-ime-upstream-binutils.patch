@@ -1,0 +1,87 @@
+diff --git a/ggml/src/ggml-cpu/CMakeLists.txt b/ggml/src/ggml-cpu/CMakeLists.txt
+index f7c557a..184d469 100644
+--- a/ggml/src/ggml-cpu/CMakeLists.txt
++++ b/ggml/src/ggml-cpu/CMakeLists.txt
+@@ -454,11 +454,16 @@ function(ggml_add_cpu_backend_variant_impl tag_name)
+                 ggml-cpu/spacemit/ime_env.cpp
+                 ggml-cpu/spacemit/ime_env.h
+                 ggml-cpu/spacemit/ime1_kernels.cpp
+-                ggml-cpu/spacemit/ime2_kernels.cpp
+                 ggml-cpu/spacemit/ime_kernels.h
+                 ggml-cpu/spacemit/rvv_kernels.cpp
+                 ggml-cpu/spacemit/rvv_kernels.h
+             )
++            # IME2 (fp16/int4/pack ops: vpack.vv, vfwmadot, vmadot.hp) needs the SpaceMiT `xsmtvdotii`
++            # superset. Upstream binutils 2.46 (`xsmtvdot` v1.0) is IME1-only, and the X60 is IME1-only
++            # (use_ime2=0) — so only compile ime2_kernels.cpp when the toolchain actually supports IME2.
++            if ("RISCV64_SPACEMIT_IME2" IN_LIST RISCV64_SPACEMIT_IME_SPEC)
++                list(APPEND GGML_CPU_SOURCES ggml-cpu/spacemit/ime2_kernels.cpp)
++            endif()
+         endif()
+         if(NOT GGML_CPU_ALL_VARIANTS)
+             set(MARCH_STR "rv64gc")
+diff --git a/ggml/src/ggml-cpu/cmake/FindSMTIME.cmake b/ggml/src/ggml-cpu/cmake/FindSMTIME.cmake
+index c8a4d4b..b9c96f0 100644
+--- a/ggml/src/ggml-cpu/cmake/FindSMTIME.cmake
++++ b/ggml/src/ggml-cpu/cmake/FindSMTIME.cmake
+@@ -8,7 +8,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(riscv)" AND GGML_CPU_RISCV64_SPACEMIT)
+     endif()
+     set(CMAKE_REQUIRED_FLAGS "${SMT_MARCH_STR}")
+ 
+-    check_c_source_compiles("int main() {__asm__ volatile(\"vmadot v2, v0, v1\");}" SPACEMIT_RISCV_COMPILER_SUPPORT_IME1)
++    check_c_source_compiles("int main() {__asm__ volatile(\".option arch,+xsmtvdot\"); __asm__ volatile(\"smt.vmadot v2, v0, v1\");}" SPACEMIT_RISCV_COMPILER_SUPPORT_IME1)
+     check_c_source_compiles("int main() {__asm__ volatile(\"vmadot v2, v0, v1, i4\");}" SPACEMIT_RISCV_COMPILER_SUPPORT_VMADOT_S4)
+     check_c_source_compiles("int main() {__asm__ volatile(\"vmadot v2, v0, v1, i8\");}" SPACEMIT_RISCV_COMPILER_SUPPORT_VMADOT_S8)
+     check_c_source_compiles("int main() {__asm__ volatile(\"vfwmadot v2, v0, v1, fp16\");}" SPACEMIT_RISCV_COMPILER_SUPPORT_VFWMADOT_FP16)
+diff --git a/ggml/src/ggml-cpu/spacemit/ime1_kernels.cpp b/ggml/src/ggml-cpu/spacemit/ime1_kernels.cpp
+index 6acc681..e793ace 100644
+--- a/ggml/src/ggml-cpu/spacemit/ime1_kernels.cpp
++++ b/ggml/src/ggml-cpu/spacemit/ime1_kernels.cpp
+@@ -302,14 +302,15 @@ void quantize_a_row_i8(size_t BlkLen, const float * A, size_t CountK, uint8_t *
+ 
+ namespace {
+ #define SQ4BIT_KERNEL_COMP_1x8x2_4X8X4          \
+-    "vmadot       v16, v14, v0            \n\t" \
+-    "vmadot       v18, v14, v1            \n\t" \
+-    "vmadot       v20, v14, v2            \n\t" \
+-    "vmadot       v22, v14, v3            \n\t" \
+-    "vmadot       v16, v15, v4            \n\t" \
+-    "vmadot       v18, v15, v5            \n\t" \
+-    "vmadot       v20, v15, v6            \n\t" \
+-    "vmadot       v22, v15, v7            \n\t"
++    ".option arch, +xsmtvdot                 \n\t" \
++    "smt.vmadot       v16, v14, v0            \n\t" \
++    "smt.vmadot       v18, v14, v1            \n\t" \
++    "smt.vmadot       v20, v14, v2            \n\t" \
++    "smt.vmadot       v22, v14, v3            \n\t" \
++    "smt.vmadot       v16, v15, v4            \n\t" \
++    "smt.vmadot       v18, v15, v5            \n\t" \
++    "smt.vmadot       v20, v15, v6            \n\t" \
++    "smt.vmadot       v22, v15, v7            \n\t"
+ 
+ #define SQ4BIT_KERNEL_ACC_1X4X4                 \
+     "vfcvt.f.x.v  v16,  v16               \n\t" \
+@@ -513,14 +514,15 @@ namespace {
+     "vmv.v.v      v31, v30                \n\t"
+ 
+ #define SQ4BIT_KERNEL_COMP_4x16x16              \
+-    "vmadot       v16, v10, v2            \n\t" \
+-    "vmadot       v18, v10, v3            \n\t" \
+-    "vmadot       v20, v10, v4            \n\t" \
+-    "vmadot       v22, v10, v5            \n\t" \
+-    "vmadot       v16, v11, v6            \n\t" \
+-    "vmadot       v18, v11, v7            \n\t" \
+-    "vmadot       v20, v11, v8            \n\t" \
+-    "vmadot       v22, v11, v9            \n\t"
++    ".option arch, +xsmtvdot                 \n\t" \
++    "smt.vmadot       v16, v10, v2            \n\t" \
++    "smt.vmadot       v18, v10, v3            \n\t" \
++    "smt.vmadot       v20, v10, v4            \n\t" \
++    "smt.vmadot       v22, v10, v5            \n\t" \
++    "smt.vmadot       v16, v11, v6            \n\t" \
++    "smt.vmadot       v18, v11, v7            \n\t" \
++    "smt.vmadot       v20, v11, v8            \n\t" \
++    "smt.vmadot       v22, v11, v9            \n\t"
+ 
+ #define SAVE_RESULT_4x16                        \
+     "addi         a1, %[C], 0             \n\t" \
