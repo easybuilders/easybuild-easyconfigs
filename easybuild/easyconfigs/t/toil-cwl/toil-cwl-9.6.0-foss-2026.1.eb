@@ -1,0 +1,103 @@
+easyblock = 'PythonBundle'
+
+name = 'toil-cwl'
+version = '9.6.0'
+
+homepage = 'https://github.com/DataBiosphere/toil'
+description = """
+A scalable, efficient, cross-platform (Linux/macOS) and easy-to-use workflow engine in pure Python.
+This installation contains toil, with the cwl extras.
+"""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+builddependencies = [
+    ('poetry', '2.3.4'),  # edit_distance, connexion
+    ('hatchling', '1.33.0'),  # docker
+    ('pytest-xdist', '3.8.0')
+]
+dependencies = [
+    ('Python', '3.14.2'),  # also provides setuptools-scm/9.2.2
+    ('cwltool', '3.3.20261106131234'),
+    ('dill', '0.4.1'),
+    ('prompt-toolkit', '3.0.52'),
+]
+
+exts_list = [
+    ('addict', '2.4.0', {
+        'checksums': ['b3b2210e0e067a281f5646c8c5db92e99b7231ea8b0eb5f74dbdf9e259d4e494'],
+    }),
+    ('wcwidth', '0.9.4', {  # for blessed
+        'checksums': ['fd8d57d3cdfe570e3265c8fab1885c24e34ef40889c0759c0c304a19e9835954'],
+    }),
+    ('jinxed', '2.1.1', {  # for blessed
+        'checksums': ['af7f67b8e5fe6055ae5ce4f24c9537f92cfa8ee5a29a683284cf558fb1d1eee8'],
+    }),
+    ('blessed', '1.53.0', {  # for enlighten
+        'checksums': ['5392712c4be84071f81cb730e2135dfb6b24404739525365a10ea7447cb09a2f'],
+    }),
+    ('prefixed', '0.9.0', {  # for enlighten
+        'checksums': ['164403fa9ebc83280bbc4705f4b243a28837e164310b4e65c38ccab1ebafeeb3'],
+    }),
+    ('enlighten', '1.14.1', {
+        'checksums': ['85c35412a9a4f3886b3337d41f813441fab9a30d9f5b5f0c015bd078a4411473'],
+    }),
+    ('docker', '7.2.0', {
+        'checksums': ['cebb93773d334f778e023a7ee352a8d6e13ab1bd3b863a4d4a59dec897df43ac'],
+    }),
+    ('pypubsub', '4.0.7', {
+        'modulename': 'pubsub',
+        'checksums': ['ec8b5cb147624958320e992602380cc5d0e4b36b1c59844d05e425a3003c09dc'],
+    }),
+    ('ConfigArgParse', '1.9.0', {
+        'source_tmpl': 'configargparse-%(version)s.tar.gz',
+        'checksums': ['48d9c22affe4ac419b4dd0691fa929d759e1f99574be41826785f2dbf3da63a5'],
+    }),
+    ('pytest-timeout', '2.4.0', {
+        'checksums': ['7e68e90b01f9eff71332b25001f85c75495fc4e3a836701876183c4bcfd0540a'],
+    }),
+    ('junit-xml', '1.9', {  # dependency for cwltest
+        'checksums': ['de16a051990d4e25a3982b2dd9e89d671067548718866416faec14d9de56db9f'],
+    }),
+    ('cwltest', '2.7.20261106145043', {
+        'checksums': ['af324f0414ff366639e6a295561575a50b694450f487ae55098806c73e3c7208'],
+    }),
+    ('edit_distance', '1.0.9', {  # for a single test
+        'checksums': ['074c29ec00c8e74ff2627759cf3d40aa2d95cd24a0cde4acc62c820df9f3af26'],
+    }),
+    ('toil', version, {
+        'modulename': 'toil',
+        'patches': [
+            'toil-cwl-9.6.0-python3.14-versions.patch',
+            'toil-cwl-9.6.0-make-tests-more-independent.patch',
+            'toil-cwl-9.6.0-cwl-mpi-test.patch',
+            'toil-cwl-9.6.0-Enable-importing-more-tests-without-requiring-option.patch',
+        ],
+        'pretestopts': 'export TOIL_SKIP_ONLINE=true TOIL_TEST_QUICK=true TOIL_SKIP_DOCKER=true TOIL_HISTORY=0 &&',
+        'runtest': 'pytest',
+        'testopts': '-n %(parallel)s --dist worksteal --durations=10 -k "not (testVirtualEnv or testBuiltIn '
+                    'or test_slurm_node_memory or test_retrieve_task_directory or TestWDL or IAMTest '
+                    'or TagGenerationTest ${slow_tests})" --pyargs src/toil/test',
+        'testinstall': True,
+        'use_pip_extras': 'cwl',
+        'checksums': [
+            {'toil-9.6.0.tar.gz': '5469d45e06e65d6ffadfc22918952460f80da4611ec5318a5de62b6192db2f16'},
+            {'toil-cwl-9.6.0-python3.14-versions.patch':
+             'a22565f358e48d10918e6a5a998f69d2a6879cacf86ef07c2c10de186a828c21'},
+            {'toil-cwl-9.6.0-make-tests-more-independent.patch':
+             '580704f83b3ec9d62ce79d09fad50ab3584dcd37d25ceecee48eda75e629826b'},
+            {'toil-cwl-9.6.0-cwl-mpi-test.patch': '3a3e334c401c5ee70de861cd755ad093f0c4630342fbccbd829bc5030195ed87'},
+            {'toil-cwl-9.6.0-Enable-importing-more-tests-without-requiring-option.patch':
+             '26ff1951de859d3c812bfdcf971fd9055e88baf1ba00ad56e85f31149bac0a87'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/toil', 'bin/%(name)s-runner'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['toil-cwl-runner --help']
+
+moduleclass = 'tools'
