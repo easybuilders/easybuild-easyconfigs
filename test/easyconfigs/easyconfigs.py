@@ -706,8 +706,6 @@ class EasyConfigTest(TestCase):
             'VTK': [('9.2.6;', ['Visit-3.4.1-'])],
             # wxPython 4.2.0 depends on wxWidgets 3.2.0
             'wxWidgets': [(r'3\.2\.0', [r'wxPython-4\.2\.0', r'GRASS-8\.2\.0', r'QGIS-3\.28\.1'])],
-            # allow hatch-* build tools to depend on whichever hatchling they wish (as they are just build deps)
-            'hatchling': [(r'.*', [r'hatch-.*'])]
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -717,6 +715,16 @@ class EasyConfigTest(TestCase):
                         # only filter if the easyconfig using this dep variants is known
                         if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
                             dep_vars.pop(key)
+
+        # hatch-* build tools may use whichever hatchling they wish, since it is only a build dependency
+        if dep == 'hatchling' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                if all(ec.startswith('hatch-') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
 
         # only single variant is always OK
         if len(dep_vars) == 1:
