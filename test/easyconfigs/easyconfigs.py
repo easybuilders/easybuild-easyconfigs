@@ -480,6 +480,7 @@ class EasyConfigTest(TestCase):
             ('Z3', ('-Python-3', True)),
             # allow Graphviz coexistence by ignoring the -minimal variant when both exist
             ('Graphviz', '-minimal'),
+            ('graphviz-python', '-minimal'),
         ]
         for dep_name, version_suffix in filter_variants:
             # always retain at least one dep variant
@@ -1267,8 +1268,8 @@ class EasyConfigTest(TestCase):
                     file_versions.append((LooseVersion(version), ec))
 
         most_recent = sorted(file_versions)[-1]
-        self.assertEqual(most_recent[0], LooseVersion('5.4.1'))
-        self.assertEqual(most_recent[1], 'EasyBuild-5.4.1.eb')
+        self.assertEqual(most_recent[0], LooseVersion('5.4.2'))
+        self.assertEqual(most_recent[1], 'EasyBuild-5.4.2.eb')
 
     def test_easyconfig_name_clashes(self):
         """Make sure there is not a name clash when all names are lowercase"""
@@ -1488,7 +1489,9 @@ class EasyConfigTest(TestCase):
             extra_python_path = ec.get('modextrapaths', {}).get('PYTHONPATH') or []
             failing_checks_ec.extend(f"modextrapaths should not contain {d} (automatically added by EasyBlock)"
                                      for d in default_dirs if d in extra_python_path)
-            if easyblock == 'PythonBundle' or (easyblock and easyblock.endswith('PythonPackage')):
+
+            files = ec.get('sanity_check_paths', {}).get('files') or []
+            if not files and easyblock == 'PythonBundle' or (easyblock and easyblock.endswith('PythonPackage')):
                 sanity_check_dirs = ec.get('sanity_check_paths', {}).get('dirs') or []
                 default_dirs = [
                     'lib/python%(pyshortver)s/site-packages',
@@ -1941,7 +1944,7 @@ def template_easyconfig_test(self, spec):
     dummy_template_values = {
         'builddir': '/dummy/builddir',
         'installdir': '/dummy/installdir',
-        'startdir': '/dummy/startdir',
+        'start_dir': '/dummy/startdir',
         'parallel': '2',
     }
     ec.template_values.update(dummy_template_values)
