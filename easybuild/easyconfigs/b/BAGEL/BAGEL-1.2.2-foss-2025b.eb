@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'BAGEL'
+version = '1.2.2'
+
+homepage = "http://www.nubakery.org"
+
+description = """
+BAGEL (Brilliantly Advanced General Electronic-structure Library)
+is a parallel electronic-structure program.
+"""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+source_urls = ['https://github.com/nubakery/bagel/archive/']
+sources = [V_VERSION_TAR_GZ]
+patches = [
+    '%(name)s-%(version)s.patch',
+    '%(name)s-%(version)s_include-limits.patch',
+    '%(name)s-%(version)s_include-xc_funs.patch',
+]
+checksums = [
+    {'v1.2.2.tar.gz': 'b9ef9ad5ad9b836b5393badb5a3e5b162d6ff32da497f69d05ef9e4d091b558a'},
+    {'BAGEL-1.2.2.patch': '47cc973e5b545b7c5540a28e7482f8efc28ff978954009e0923c04d2c88e7b0e'},
+    {'BAGEL-1.2.2_include-limits.patch': '10f0d08df1a276ec0cd1b771efbaa6cf6603c9d9b4d6a1ac410b068cd92fe00f'},
+    {'BAGEL-1.2.2_include-xc_funs.patch': 'b55c79cbbf3414534d7072ad614cfd0b135c1f56469aabd03a499bae3f3477a9'},
+]
+
+builddependencies = [
+    ('Autotools', '20250527'),
+]
+
+dependencies = [
+    ('Boost', '1.88.0'),
+    ('libxc', '7.0.0'),
+]
+
+preconfigopts = './autogen.sh && '
+preconfigopts += 'CXXFLAGS="$CXXFLAGS -DNDEBUG " '
+preconfigopts += 'CXXFLAGS="$CXXFLAGS -lflexiblas " '
+
+configopts = ' --with-boost=$BOOST_ROOT --with-libxc --with-mpi=openmpi '
+
+sanity_check_paths = {
+    'files': ['bin/BAGEL', f'lib/libbagel.{SHLIB_EXT}'],
+    'dirs': []
+}
+
+moduleclass = 'phys'

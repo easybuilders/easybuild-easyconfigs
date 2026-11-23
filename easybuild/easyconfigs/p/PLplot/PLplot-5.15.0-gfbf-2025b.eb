@@ -1,0 +1,101 @@
+easyblock = 'CMakeMake'
+
+name = 'PLplot'
+version = '5.15.0'
+
+homepage = 'http://plplot.sourceforge.net'
+description = """PLplot is a cross-platform software package for creating scientific plots whose (UTF-8) plot symbols
+ and text are limited in practice only by what Unicode-aware system fonts are installed on a user's computer."""
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+# NumPy 2.x headers reference 'numpy/_public_dtype_api_table.h', so the parent
+# of numpy.get_include() must be on the C/C++ include path in addition to PLplot's
+# own '-I.../numpy/_core/include/numpy' (which it adds to find <arrayobject.h>).
+local_numpy_inc = '-I${EBROOTSCIPYMINBUNDLE}/lib/python%(pyshortver)s/site-packages/numpy/_core/include'
+toolchainopts = {
+    'pic': True,
+    'extra_cflags': local_numpy_inc,
+    'extra_cxxflags': local_numpy_inc,
+}
+
+# Source fetched directly from upstream git mirror (master branch).
+# A specific commit is pinned for reproducibility; this is post-5.15.0 master HEAD,
+# which contains the maintenance fixes (commit edd534b) needed to build against
+# Python 3.13, NumPy 2.x, SWIG 4.3 and GCC 14+/Clang.
+local_commit = '323ccb5c8dd5d42a926fbbbaca94022767a98a2f'
+sources = [{
+    'filename': SOURCELOWER_TAR_XZ,
+    'git_config': {
+        'url': 'https://git.code.sf.net/p/plplot',
+        'repo_name': 'plplot',
+        'commit': local_commit,
+        'keep_git_dir': False,
+    },
+}]
+checksums = ['84682c3e9cc00f72c669ddf172b663d1836e85a7b8b3306ef28e3c75360de9ff']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+    ('SWIG', '4.3.1'),
+    ('libtool', '2.5.4'),
+    ('binutils', '2.44'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    ('zlib', '1.3.1'),
+    ('Java', '21', '', SYSTEM),
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+    ('Perl', '5.40.2'),
+    ('cairo', '1.18.4'),
+    ('expat', '2.7.1'),
+    ('GLib', '2.85.3'),
+    ('libjpeg-turbo', '3.1.1'),
+    ('libpng', '1.6.50'),
+    ('X11', '20250608'),
+    ('Pango', '1.57.0'),
+    ('pixman', '0.46.4'),
+    ('Qhull', '2020.2'),
+    ('freetype', '2.13.3'),
+]
+
+# Backends enabled:
+#   - C, C++, Fortran, Python, Java, cairo (PNG/PDF/PS/SVG),
+#   - X11/xwin, ps, svg, mem.
+# Disabled:
+#   - Tcl/Tk (Tcl 9 ABI changes break PLplot 5.15)
+#   - Qt (Qt5 unavailable; Qt6 not supported by PLplot 5.15)
+#   - wxWidgets, GTK3, libharu (PDF), Lua, OCaml, Octave, D
+configopts = (
+    '-DENABLE_tcl=OFF -DENABLE_tk=OFF -DENABLE_itcl=OFF -DENABLE_itk=OFF '
+    '-DENABLE_qt=OFF -DENABLE_pyqt4=OFF -DENABLE_pyqt5=OFF -DENABLE_smoke=OFF '
+    '-DPLD_qtwidget=OFF -DPLD_extqt=OFF '
+    '-DENABLE_wxwidgets=OFF -DPLD_wxwidgets=OFF '
+    '-DENABLE_lua=OFF -DENABLE_d=OFF -DENABLE_ada=OFF '
+    '-DENABLE_octave=OFF -DENABLE_ocaml=OFF '
+    '-DPLD_pdf=OFF '
+    '-DENABLE_python=ON -DENABLE_java=ON -DENABLE_fortran=ON -DENABLE_cxx=ON '
+    '-DPLD_cairo=ON -DPLD_xcairo=ON -DPLD_pngcairo=ON -DPLD_pdfcairo=ON '
+    '-DPLD_pscairo=ON -DPLD_epscairo=ON -DPLD_svgcairo=ON -DPLD_memcairo=ON '
+    '-DPLD_xwin=ON -DPLD_ps=ON -DPLD_psc=ON -DPLD_svg=ON -DPLD_mem=ON '
+)
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': [
+        'lib/libplplot.%s' % SHLIB_EXT,
+        'lib/libplplotcxx.%s' % SHLIB_EXT,
+        'lib/libplplotfortran.%s' % SHLIB_EXT,
+        'lib/pkgconfig/plplot-fortran.pc',
+        'lib/python%(pyshortver)s/site-packages/plplot.py',
+        'lib/python%%(pyshortver)s/site-packages/_plplotc.%s' % SHLIB_EXT,
+        'lib/jni/libplplotjavac_wrap.%s' % SHLIB_EXT,
+        'bin/pltek',
+    ],
+    'dirs': ['include/plplot', 'lib/fortran/modules/plplot', 'lib/pkgconfig',
+             'lib/plplot%(version)s/drivers', 'share/man/man1'],
+}
+
+moduleclass = 'vis'

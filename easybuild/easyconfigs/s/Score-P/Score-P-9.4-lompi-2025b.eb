@@ -1,0 +1,53 @@
+# Copyright 2013-2024 Juelich Supercomputing Centre, Germany
+# Copyright 2020-2024 TU Dresden, Germany
+# Authors::
+# * Bernd Mohr <b.mohr@fz-juelich.de>
+# * Markus Geimer <m.geimer@fz-juelich.de>
+# * Alexander Grund <alexander.grund@tu-dresden.de>
+# * Robert Mijakovic <robert.mijakovic@lxp.lu>
+# * Jan André Reuter <j.reuter@fz-juelich.de>
+# License::   3-clause BSD
+
+name = 'Score-P'
+version = '9.4'
+
+homepage = 'https://www.score-p.org'
+description = """
+ The Score-P measurement infrastructure is a highly scalable and easy-to-use
+ tool suite for profiling, event tracing, and online analysis of HPC
+ applications.
+"""
+
+toolchain = {'name': 'lompi', 'version': '2025b'}
+
+source_urls = ['https://perftools.pages.jsc.fz-juelich.de/cicd/scorep/tags/scorep-%(version)s']
+sources = ['scorep-%(version)s.tar.gz']
+checksums = ['bea58d8c47a7512eca0a5858179377f3f0861f30eafb342a29aa97c05de8f623']
+
+dependencies = [
+    ('binutils', '2.44'),
+    ('CubeLib', '4.9.1'),
+    ('CubeWriter', '4.9.1'),
+    ('OPARI2', '2.0.9'),
+    ('OTF2', '3.1.1'),
+    ('GOTCHA', '1.0.8'),
+    ('libunwind', '1.8.2'),
+    # Hardware counter support (optional):
+    ('PAPI', '7.2.0'),
+]
+
+local_adapters = [
+    'compiler_event', 'compiler_mgmt', 'mpi_event', 'mpi_mgmt', 'opari2_user_mgmt', 'opari2_openmp_mgmt',
+]
+sanity_check_paths = {
+    'files':
+        ['bin/scorep', 'include/scorep/SCOREP_User.h'] +
+        ['lib/libscorep_adapter_%s.%s' % (a, SHLIB_EXT) for a in local_adapters],
+    'dirs': [],
+}
+sanity_check_commands = ['scorep-config --help']
+
+# Ensure that local metric documentation is found by CubeGUI
+modextrapaths = {'CUBE_DOCPATH': 'share/doc/scorep/profile'}
+
+moduleclass = 'perf'

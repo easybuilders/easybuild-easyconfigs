@@ -1,0 +1,75 @@
+easyblock = 'MakeCp'
+
+name = 'AICD'
+version = '3.0.4'
+
+homepage = 'http://www.otto-diels-institut.de/herges/pages_en/projects_acid.html'
+
+description = """
+The "density of delocalized electrons" is a concept that is intuitively used to
+explain the electronic structure of conjugated systems. Unfortunately, however,
+there is no rigorous way to separate the total electron density in a density of
+localized and delocalized electrons. Like aromaticity, bond order, point charge,
+and other important concepts of chemistry, a definition for the density of
+delocalized electrons has to be derived from more fundamental quantum
+theoretical parameters.
+
+As observables, magnetic properties are a suitable starting point for a general
+description of of delocalization and conjugation. In analogy to the anisotropy
+of the magnetic susceptibility, which is a powerful measure of aromaticity, we
+investigate the anisotropy of the current (induced) density (ACID). Similar to
+the square of the wavefunction which defines the total electron density, the
+ACID scalar field defines the density of delocalized electrons.
+
+The ACID method proved to be an extremely versatile and descriptive tool to
+analyze delocalization in ground-state molecules, excited states, transition
+states, organometallics, hyperconjugation and other through-bond and
+through-space interactions.
+"""
+
+toolchain = {'name': 'GCC', 'version': '14.2.0'}
+
+sources = [SOURCE_TAR_GZ]
+patches = ['AICD-3.0.4_fix_BaseDir.patch']
+checksums = [
+    {'AICD-3.0.4.tar.gz': 'f0b4c4765ad0166396b90ca4e4ac676c2054cba7f8f797c5f59ebfca76214446'},
+    {'AICD-3.0.4_fix_BaseDir.patch': 'ade5166948d12d80f7fc313c7ba1ce0656ccb03059e3e5bdb6181423de23cd22'},
+]
+
+download_instructions = """
+    To obtain the sources, contact the author via email (rherges [at] oc.uni-kiel.de).
+"""
+
+dependencies = [
+    ('Perl', '5.40.0'),
+    ('POV-Ray', '3.7.0.10'),
+    ('PovChem1', '1.0'),
+]
+
+local_bins = [
+    'AICD', 'AICD-cube', 'AICD-extract', 'AICD-extract.pl', 'AICD-opt_remap', 'AICD-remap',
+    'AICD-rotate_mol', 'AICD-smooth_isosurface', 'ModifyPov.pl'
+]
+
+local_extras = [
+    'povchem', 'povray-AICD-templates', 'tutorial-data', 'TUTORIAL.TXT', 'VERSION', 'AICD-version.inc',
+]
+
+files_to_copy = [
+    (local_bins, 'bin'),
+    (local_extras, 'share'),
+]
+
+postinstallcmds = [
+    # Fix execute permissions of scripts
+    "chmod 755 %(installdir)s/bin/{AICD,*.pl}",
+    # Copy povchem config and periodic table file over
+    "cp $EBROOTPOVCHEM1/share/* %(installdir)s/share/povchem",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins] + ['share/AICD-version.inc'],
+    'dirs': ['share/povchem', 'share/povray-AICD-templates', 'share/tutorial-data'],
+}
+
+moduleclass = 'chem'

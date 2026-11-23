@@ -1,0 +1,87 @@
+easyblock = 'PythonBundle'
+
+name = 'python-mujoco'
+version = '3.3.5'
+
+homepage = 'https://www.mujoco.org'
+description = """
+This package is the canonical Python bindings for the MuJoCo physics engine.
+The mujoco package provides direct access to raw MuJoCo C API functions, structs,
+constants, and enumerations. Structs are provided as Python classes, with
+Pythonic initialization and deletion semantics.
+"""
+
+toolchain = {'name': 'gfbf', 'version': '2024a'}
+
+builddependencies = [
+    ('Eigen', '3.4.0'),
+    ('pybind11', '2.12.0'),
+    ('CMake', '3.29.3'),
+    ('setuptools', '80.9.0'),
+    ('Abseil', '20240722.0'),
+]
+
+dependencies = [
+    ('Python', '3.12.3'),
+    ('absl-py', '2.1.0'),
+    ('etils', '1.14.0'),
+    ('python-glfw', '2.10.2'),
+    ('MuJoCo', '3.3.5'),
+    ('PyOpenGL', '3.1.9'),
+    ('SciPy-bundle', '2024.05'),
+]
+
+local_extract_cmd_tmpl = "mkdir -p %(builddir)s/_deps/{0} && tar --strip-components=1 -C %(builddir)s/_deps/{0} -xf %s"
+
+# Hash from MUJOCO_DEP_VERSION_lodepng in mujoco/simulate/CMakeLists.txt
+components = [
+    ('lodepng', 'b4ed2cd7ecf61d29076169b49199371456d4f90b', {
+        'easyblock': 'Binary',
+        'source_urls': ['https://github.com/lvandeve/lodepng/archive'],
+        'sources': [{
+            'filename': 'b4ed2cd7ecf61d29076169b49199371456d4f90b.tar.gz',
+            'extract_cmd': local_extract_cmd_tmpl.format('lodepng-src'),
+        }],
+        'checksums': [
+            {'b4ed2cd7ecf61d29076169b49199371456d4f90b.tar.gz':
+             'b67e466ba659c07ac775d07dbd97af319cde449ce14abed9ae596df29d888603'},
+        ],
+        'install_cmd': '#',
+    }),
+]
+
+local_cmake_opts = ' '.join([
+    '-DFETCHCONTENT_FULLY_DISCONNECTED=ON',
+    '-DFETCHCONTENT_BASE_DIR=%(builddir)s/_deps',
+    '-DMUJOCO_PYTHON_USE_SYSTEM_PYBIND11=ON',
+    '-DMUJOCO_SIMULATE_USE_SYSTEM_MUJOCO=ON',
+    '-DMUJOCO_SIMULATE_USE_SYSTEM_GLFW=ON',
+])
+
+exts_list = [
+    ('mujoco', version, {
+        'source_urls': ['https://pypi.python.org/packages/source/m/mujoco'],
+        'sources': ['mujoco-%(version)s.tar.gz'],
+        'patches': [
+            'python-mujoco-3.3.0_fix-ogl-use-after-free.patch',
+            'python-mujoco-3.3.0_use_eb_deps.patch',
+            'python-mujoco-3.3.5_disable-lld.patch',
+        ],
+        'checksums': [
+            {'mujoco-3.3.5.tar.gz': 'f9fc6550fc9ed9768223db2d7b3cc32b5a02eb9e887282b40e451c266af16a46'},
+            {'python-mujoco-3.3.0_fix-ogl-use-after-free.patch':
+             'a0098aa9633ec3849ded3d886c957c5802a872f74970bdc5456020cd6ccc86d9'},
+            {'python-mujoco-3.3.0_use_eb_deps.patch':
+             'bed192acb9aab3d9dbd674c0faafc981a92791385dac300cca5ca80d7ca04991'},
+            {'python-mujoco-3.3.5_disable-lld.patch':
+             '9389c76aca0708a57c75168fb48975c8783d20d3ea94947a484ec67060afb69a'},
+        ],
+        'preinstallopts': (
+            "sed -i '/^license = /d' pyproject.toml && "
+            'MUJOCO_PATH="$EBROOTMUJOCO" MUJOCO_PLUGIN_PATH="$EBROOTMUJOCO/bin/mujoco_plugin" '
+            f'MUJOCO_CMAKE_ARGS="{local_cmake_opts}"'
+        ),
+    }),
+]
+
+moduleclass = 'lib'

@@ -1,0 +1,22 @@
+# Fix dm-tree 0.1.10 / Abseil API mismatch, retain Abseil 20250512.1
+# Author: Emik Lin (HKUMed CPOS)
+--- a/tree/tree.cc	2026-03-31 22:56:46.000000000 +0800
++++ b/tree/tree.cc	2026-07-21 15:23:43.373291000 +0800
+@@ -115,7 +115,7 @@
+     auto* type = Py_TYPE(o);
+ 
+     {
+-      absl::MutexLock lock(mutex_);
++      absl::MutexLock lock(&mutex_);
+       auto it = type_to_sequence_map_.find(type);
+       if (it != type_to_sequence_map_.end()) {
+         return it->second;
+@@ -135,7 +135,7 @@
+     // that are eligible for decref. As a precaution, we limit the size of the
+     // map to 1024.
+     {
+-      absl::MutexLock lock(mutex_);
++      absl::MutexLock lock(&mutex_);
+       if (type_to_sequence_map_.size() < kMaxItemsInCache) {
+         Py_INCREF(type);
+         type_to_sequence_map_.insert({type, check_result});

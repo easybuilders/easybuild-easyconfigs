@@ -1,0 +1,33 @@
+This test fails during creation of the tests at startup:
+>    File "/var/lib/jenkins/workspace/test/test_overrides.py", line 683, in _simple_type_parser
+>     return torch.Stream()
+> RuntimeError: CUDA error: CUDA driver version is insufficient for CUDA runtime version
+
+See https://github.com/pytorch/pytorch/pull/166625
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_overrides.py b/test/test_overrides.py
+--- a/test/test_overrides.py
++++ b/test/test_overrides.py
+@@ -10,9 +10,8 @@ import pickle
+ import collections
+ import unittest
+ import contextlib
+-import os
+ 
+-from torch.testing._internal.common_utils import TestCase, run_tests, TEST_WITH_CROSSREF, TEST_WITH_TORCHDYNAMO
++from torch.testing._internal.common_utils import TestCase, run_tests, TEST_CUDA, TEST_WITH_CROSSREF, TEST_WITH_TORCHDYNAMO
+ from torch.overrides import (
+     handle_torch_function,
+     has_torch_function,
+@@ -31,8 +30,7 @@ from torch.utils._pytree import tree_map
+ 
+ Tensor = torch.Tensor
+ 
+-if os.getenv("ATEN_CPU_CAPABILITY") in ("default", "avx2"):
+-    # This test is not supported on ARM
++if not TEST_CUDA:
+     print(
+         "Skipping due to failing when cuda build runs on non cuda machine, "
+         + "see https://github.com/pytorch/pytorch/pull/150059 for example"
