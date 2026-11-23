@@ -400,9 +400,12 @@ exts_list = [
         'buildcmd': "MYPY_USE_MYPYC=1 MYPYC_OPT_LEVEL=3 MYPYC_DEBUG_LEVEL=0 python -m build --no-isolation --wheel .",
         'install_src': "$(ls dist/*.whl)",
         'patches': ['mypy-2.4.1-long-timeout.patch'],
-        'runtest': "pytest -n %(parallel)s -k 'not (testTypedNamespaceSubpackage or testPep561TestIncremental or "
-                   "test_sentinel_object_like_marker or test_generator_environment_excludes_helper_arguments)' "
-                   "&& python3 -m mypy --config-file mypy_self_check.ini -p mypy -p mypyc",
+        'pretestopts': 'export EBPYTHONPREFIXES="$EB_PYTHONPACKAGE_TEST_INSTALLDIR:%(installdir)s:$EBPYTHONPREFIXES" '
+                       '&& ',
+        'runtest': 'pytest',
+        'testopts': " -n %(parallel)s -k 'not (testTypedNamespaceSubpackage or testPep561TestIncremental or "
+                    "test_sentinel_object_like_marker or test_generator_environment_excludes_helper_arguments)' "
+                    "&& python3 -m mypy --config-file mypy_self_check.ini -p mypy -p mypyc",
         # test_sentinel_object_like_marker: needs newer typing-extensions
         'testinstall': True,
         'use_pip_extras': 'mypyc,faster-cache,dmypy',
