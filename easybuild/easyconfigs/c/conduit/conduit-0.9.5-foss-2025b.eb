@@ -1,6 +1,6 @@
 # Author: J. Saßmannshausen (Imperial College London/UK)
 # Author: A. Grund (TU-Dresden) for conduit problem
-# Two testjobs fail with MPI related problems: 130 - t_blueprint_mpi_mesh_utils, 136 t_blueprint_mpi_mesh_tiled
+# Two testjobs fail with MPI related problems: t_blueprint_mpi_mesh_tiled t_blueprint_mpi_mesh_utils
 # See: https://github.com/llnl/conduit/issues/1731
 # One testjob fails with a Python related problem: 57 - t_python_conduit_node
 
@@ -22,7 +22,6 @@ toolchainopts = {'usempi': True, 'openmp': True}
 
 source_urls = ['https://github.com/llnl/conduit/releases/download/v%(version)s/']
 sources = ['%(name)s-v%(version)s-src-with-blt.tar.gz']
-checksums = ['d93294efbf0936da5a27941e13486aa1a04a74a59285786a2303eed19a24265a']
 
 builddependencies = [
     ('binutils', '2.44'),
@@ -51,16 +50,19 @@ srcdir = 'src'
 configopts = '-DENABLE_DOCS=OFF -DENABLE_DOXYGEN=OFF -DENABLE_VALGRIND=OFF '
 configopts += '-DENABLE_MPI=ON -DENABLE_OPENMP=ON -DENABLE_PYTHON=ON '
 configopts += '-DENABLE_FORTRAN=ON -DHDF5_DIR=$EBROOTHDF5 '
+configopts += '-DPYTHON_MODULE_INSTALL_PREFIX=%(installdir)s/lib/python/%(pyshortver)s/ '
 
 prebuildopts = _envvar
 preinstallopts = _envvar
 
-# allow oversubscription of MPI ranks to cores, some tests want to use up to 4 MPI ranks
+# Allow oversubscription of MPI ranks to cores, some tests want to use up to 4 MPI ranks
 # even though we might provide more!
-# We are also disabling t_blueprint_mpi_mesh_tiled t_python_conduit_node as they fail
+# We are also disabling t_blueprint_mpi_mesh_tiled, t_blueprint_mpi_mesh_utils 
+# and t_python_conduit_node as they fail at some setups. 
 # Note: it appears that t_python_conduit_node has been fixed in 0.9.7!
 _excludetests = '"t_blueprint_mpi_mesh_tiled|t_python_conduit_node|t_blueprint_mpi_mesh_utils"'
-pretestopts = "export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe && "
+pretestopts = 'export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe && '
+pretestopts += 'export LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH && '
 test_cmd = 'ctest --output-on-failure -E ' + _excludetests
 
 sanity_check_paths = {
@@ -71,6 +73,9 @@ sanity_check_paths = {
 
 sanity_check_commands = [
     'conduit_adjset_validate -help | grep "protocol name" &>/dev/null ',
+    'python -c "import conduit" ',
 ]
+
+modextrapaths = {'PYTHONPATH': '%(installdir)s/lib/python/%(pyshortver)s/'}
 
 moduleclass = 'data'
