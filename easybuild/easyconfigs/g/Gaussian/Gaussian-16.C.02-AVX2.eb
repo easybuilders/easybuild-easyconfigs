@@ -1,0 +1,60 @@
+easyblock = 'Tarball'
+
+# IMPORTANT!!
+# Needs to be installed with --umask=007
+
+name = 'Gaussian'
+version = '16.C.02'
+versionsuffix = '-AVX2'
+_serial = 'E6B-432X'
+
+homepage = 'http://gaussian.com/'
+description = """
+Gaussian provides state-of-the-art capabilities for electronic structure
+modeling. Gaussian 16 is licensed for a wide variety of computer
+systems. All versions of Gaussian 16 contain every scientific/modeling
+feature, and none imposes any artificial limitations on calculations
+other than your computing resources and patience.
+"""
+
+toolchain = SYSTEM
+
+sources = [{
+    'filename': f'{_serial}.tbJ',
+    'extract_cmd': 'tar xvfJ %s',
+}]
+checksums = ['df1e4e9c5429637e13c88659ae3ccb1c9cfdc344045ff26c3ab86a1077bf93c8']
+
+download_instructions = """Gaussian is licensed software.
+You need to pick the tar file of your choice from the DVD and put it in your sources tree with a proper name.
+This should be a tree that ordinary users can't read due to license restrictions.
+You may neeed to update the sources and checksums in the easyconfig for the file you have."""
+
+start_dir = '..'
+
+postinstallcmds = [
+    'mkdir %(installdir)s/bin',
+    'ln -s ../g%(version_major)s/g%(version_major)s ../g%(version_major)s/ghelp %(installdir)s/bin',
+    'chmod -R o-rwx %(installdir)s/g%(version_major)s',
+]
+
+sanity_check_paths = {
+    'files': ['g%(version_major)s/g%(version_major)s'],
+    'dirs': ['g%%(version_major)s/%s' % x for x in ['bsd', 'tests', 'basis', 'doc']],
+}
+
+modextravars = {
+    'GAUSSIAN_HOME': '%(installdir)s',
+    'g%(version_major)sroot': '%(installdir)s',
+    'G%(version_major)sBASIS': '%(installdir)s/g%(version_major)s/basis',
+    '_DSM_BARRIER': 'SHM',
+    'PGI_TERM': 'trace,abort',
+}
+
+modextrapaths = {
+    'GAUSS_EXEDIR': ['g%(version_major)s', 'g%(version_major)s/bsd'],
+    'PATH': ['g%(version_major)s/bsd', 'g%(version_major)s'],
+    'LD_LIBRARY_PATH': 'g%(version_major)s',
+}
+
+moduleclass = 'chem'

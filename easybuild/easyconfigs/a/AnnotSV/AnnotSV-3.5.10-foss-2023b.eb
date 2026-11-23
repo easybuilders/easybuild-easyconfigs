@@ -1,0 +1,57 @@
+# Author: Emik Lin (HKUMed CPOS)
+easyblock = 'ConfigureMake'
+
+name = 'AnnotSV'
+version = '3.5.10'
+
+homepage = 'https://lbgi.fr/AnnotSV/'
+description = "An integrated tool for structural variations annotation and ranking"
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://github.com/lgmgeo/AnnotSV/archive/refs/tags/']
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}]
+patches = ['AnnotSV-3.5.10_remove-pip-install.patch']
+checksums = [
+    '3cf870cf5a5f3b495b4f23eed8fee1e06ab9a6575b1324a20244db62c1e4a015',  # AnnotSV-3.5.10.tar.gz
+    '8f73e5e5766ec978597e5fe8a5932d087bf95bfa5f26bd0159167c6463a7bb8d',  # AnnotSV-3.5.10_remove-pip-install.patch
+]
+
+dependencies = [
+    ('Tcl', '8.6.13'),
+    ('BEDTools', '2.31.1'),
+    ('BCFtools', '1.19'),
+    ('Java', '17', '', SYSTEM),
+    ('Python', '3.11.5'),
+    ('variantconvert', '2.0.1'),
+]
+
+build_info_msg = """Annotation datasets are intentionally not installed by this easyconfig.
+Users can download them with:
+  INSTALL_annotations.sh 3.5 2406
+and then pass the directory via AnnotSV -annotationsDir.
+"""
+
+skipsteps = ['configure', 'build']
+# Set PREFIX in Makefile to install to the correct directory
+preinstallopts = "sed -i 's|^PREFIX[[:space:]]*?=.*$|PREFIX ?= %(installdir)s|' Makefile && "
+postinstallcmds = [
+    "cp -a %(start_dir)s/bin/INSTALL_annotations.sh %(installdir)s/bin/INSTALL_annotations.sh",
+    "cp -a %(start_dir)s/Makefile %(installdir)s/Makefile",
+    "chmod a+x %(installdir)s/bin/INSTALL_annotations.sh",
+]
+
+modextravars = {
+    'ANNOTSV': '%(installdir)s',
+}
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'bin/INSTALL_annotations.sh'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = [
+    '%(name)s -help',
+]
+
+moduleclass = 'bio'

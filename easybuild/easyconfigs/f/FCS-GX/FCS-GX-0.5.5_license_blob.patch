@@ -1,0 +1,46 @@
+Properly links in LICENSE file without extra relative paths
+which makes it possible to use any build dir.
+author: micketeer@gmail.com
+diff -ru src.orig/CMakeLists.txt src/CMakeLists.txt
+--- src.orig/CMakeLists.txt	2026-09-30 19:48:34.232923284 +0200
++++ src/CMakeLists.txt	2026-09-30 19:51:24.488375127 +0200
+@@ -70,9 +70,24 @@
+ #############################################################################
+ 
+ # link the LICENSE blob
+-set(LINK_LICENSE "-Wl,--format=binary -Wl,../../LICENSE -Wl,--format=default")
++set(LICENSE_OBJ ${CMAKE_CURRENT_BINARY_DIR}/license.o)
++add_custom_command(
++    OUTPUT ${LICENSE_OBJ}
++    COMMAND ${CMAKE_COMMAND} -E copy
++            ${CMAKE_SOURCE_DIR}/LICENSE
++            ${CMAKE_CURRENT_BINARY_DIR}/LICENSE
++    COMMAND ${CMAKE_LINKER}
++            -r
++            -b binary
++            -o ${LICENSE_OBJ}
++            LICENSE
++    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
++    DEPENDS ${CMAKE_SOURCE_DIR}/LICENSE
++)
++add_custom_target(embedded_license DEPENDS ${LICENSE_OBJ})
++add_dependencies(gx embedded_license)
+ 
+ # NB: for statically linking in Galaxy/bioconda, may need to link rt and pthread as follows:
+ #-Wl,--whole-archive -lrt -lpthread -Wl,--no-whole-archive
+-target_link_libraries(gx PRIVATE sqlite3 -flto -lrt -lpthread ${LINK_LICENSE})
++target_link_libraries(gx PRIVATE sqlite3 -flto -lrt -lpthread ${LICENSE_OBJ})
+ 
+diff -ru src.orig/main.cpp src/main.cpp
+--- src.orig/main.cpp	2026-09-30 19:48:34.233923270 +0200
++++ src/main.cpp	2026-09-30 19:52:07.183736112 +0200
+@@ -404,8 +404,7 @@
+         GetFastaStats(istr, ostr); 
+ 
+     } else if (command == "show-license") {
+-        std::cout << GET_EMBEDDED_BLOB(______LICENSE);
+-        //   underscores correspond to ../../LICENSE in linker command in CMakeLists.txt
++        std::cout << GET_EMBEDDED_BLOB(LICENSE);
+     } else  {
+         VERIFY(false);
+         return -1;

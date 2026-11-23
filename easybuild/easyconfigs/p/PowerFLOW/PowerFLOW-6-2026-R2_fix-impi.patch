@@ -1,0 +1,32 @@
+# Patch to make powerflow work with an external impi
+# Author: Cintia Willemyns (Vrije Universiteit Brussel)
+--- dist/generic/tools/queue_scripts/exarun.orig        2026-01-23 11:13:32.000000000 +0100
++++ dist/generic/tools/queue_scripts/exarun     2026-01-23 11:26:19.000000000 +0100
+@@ -3562,14 +3562,14 @@
+           I_MPI_ROOT=${EXA_SERVER_DIR}/impi
+       fi
+       export I_MPI_ROOT
+-      PATH="${I_MPI_ROOT}/bin:$PATH"
++      PATH="${I_MPI_ROOT}/bin:${I_MPI_ROOT}/bin64:$PATH"
+       export PATH
+       mpirun_path=${I_MPI_ROOT}/bin/mpiexec.hydra
+       if [ ! -x "$mpirun_path" ] ; then
+         echo "Error: The MPI utility \"$mpirun_path\" is not executable."
+         exit 1
+       fi
+-      LD_LIBRARY_PATH="${I_MPI_ROOT}/libfabric/lib:${I_MPI_ROOT}/libfabric/lib/prov:${I_MPI_ROOT}/lib:${LD_LIBRARY_PATH}"
++      LD_LIBRARY_PATH="${I_MPI_ROOT}/libfabric:${I_MPI_ROOT}/libfabric/lib:${I_MPI_ROOT}/libfabric/lib/prov:${I_MPI_ROOT}/lib/release:${I_MPI_ROOT}/lib/release_mt:${I_MPI_ROOT}/lib:${LD_LIBRARY_PATH}"
+       export LD_LIBRARY_PATH
+
+             # I_MPIJOB_ABORT_SIGNAL defaults to 9 (SIGKILL). We set
+@@ -5357,6 +5357,10 @@
+ if [ "$Debug" = "yes" ] ; then
+   #echo My PID is $$. Executing: $cmd `expandCmdLineOpts "${cmdArgs[@]}"`
+   echo My PID is $$. Executing: $cmd ${cmdArgs[@]}
++  # unset conflicting variables with Intel MPI
++  unset HYDRA_LAUNCHER_EXTRA_ARGS
++  unset I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS
++  unset I_MPI_FABRICS
+   echo "Environment:"
+   env
+   echo "LD_LIBRARY_PATH is $LD_LIBRARY_PATH"

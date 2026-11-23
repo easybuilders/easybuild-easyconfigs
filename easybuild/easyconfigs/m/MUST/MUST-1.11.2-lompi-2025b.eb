@@ -1,0 +1,51 @@
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# Authors::   Robert Mijakovic <robert.mijakovic@lxp.lu>
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+# Authors::   Damian Alvarez <d.alvarez@fz-juelich.de>
+# Authors::   Benedikt Steinbusch <b.steinbusch@fz-juelich.de>
+# License::   New BSD
+#
+##
+easyblock = 'CMakeMake'
+
+name = 'MUST'
+version = '1.11.2'
+
+homepage = 'https://hpc.rwth-aachen.de/must'
+description = """MUST detects usage errors of the Message Passing Interface (MPI) and reports them
+to the user. As MPI calls are complex and usage errors common, this functionality is extremely helpful
+for application developers that want to develop correct MPI applications. This includes errors that
+already manifest --segmentation faults or incorrect results -- as well as many errors that are not
+visible to the application developer or do not manifest on a certain system or MPI implementation.
+"""
+
+toolchain = {'name': 'lompi', 'version': '2025b'}
+
+source_urls = ['https://hpc.rwth-aachen.de/must/files/']
+sources = ['%(name)s-v%(version)s.tar.gz']
+checksums = [
+    {'MUST-v1.11.2.tar.gz': '934d41dcf379df65c68853646344736a85d58ecc93e8fc4fe9c4077b2eca9ccb'},
+]
+
+builddependencies = [
+    ('help2man', '1.49.3'),
+    ('git', '2.50.1'),
+]
+
+dependencies = [
+    ('CMake', '4.0.3'),
+    ('Graphviz', '13.1.2'),
+    ('libxml2', '2.14.3'),
+    ('Python', '3.13.5'),
+    ('elfutils', '0.193'),
+]
+
+preconfigopts = "rm -rf %(installdir)s/* && "
+installopts = "install-prebuilds"
+
+sanity_check_paths = {
+    'files': ['bin/mustrun', 'bin/wrap.py', 'include/mustConfig.h', 'lib/libpnmpif.so', f'lib/libpnmpi.{SHLIB_EXT}'],
+    'dirs': ['include/pnmpi', 'lib64/pnmpi-modules', 'modules', 'share', 'specifications', 'src'],
+}
+
+moduleclass = 'perf'

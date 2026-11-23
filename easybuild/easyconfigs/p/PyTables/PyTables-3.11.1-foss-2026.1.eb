@@ -1,0 +1,78 @@
+easyblock = 'PythonBundle'
+
+name = 'PyTables'
+version = '3.11.1'
+
+homepage = 'https://www.pytables.org'
+description = """PyTables is a package for managing hierarchical datasets and designed to efficiently and easily cope
+ with extremely large amounts of data. PyTables is built on top of the HDF5 library, using the Python language and the
+ NumPy package. It features an object-oriented interface that, combined with C extensions for the performance-critical
+ parts of the code (generated using Cython), makes it a fast, yet extremely easy to use tool for interactively browsing,
+ processing and searching very large amounts of data. One important feature of PyTables is that it optimizes memory and
+ disk resources so that data takes much less space (specially if on-flight compression is used) than other solutions
+ such as relational or object oriented databases."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'usempi': True}
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('pkgconf', '2.5.1'),
+    ('Cython', '3.2.4'),
+    ('scikit-build-core', '0.12.2'),
+]
+dependencies = [
+    ('Python', '3.14.2'),
+    ('Python-bundle-PyPI', '2026.04'),
+    ('SciPy-bundle', '2026.05'),
+    ('HDF5', '2.1.1'),
+    ('LZO', '2.10'),
+    ('Blosc', '1.21.6'),
+    ('Blosc2', '3.1.2'),
+    ('py-cpuinfo', '9.0.0'),
+    ('bzip2', '1.0.8'),
+    ('zlib', '2.3.2'),
+]
+
+exts_list = [
+    ('ndindex', '1.10.1', {
+        'checksums': ['0f6113c1f031248f8818cbee1aa92aa3c9472b7701debcce9fddebcd2f610f11'],
+    }),
+    ('blosc2', '4.0.0', {
+        'preinstallopts': "USE_SYSTEM_BLOSC2=ON ",
+        'runtest': "pytest -v",
+        'testinstall': True,
+        'checksums': ['aa28272fab4ba23b82396759bd05b6f99ac51a37388abef290e901cb071caf1c'],
+    }),
+    ('tables', version, {
+        'patches': [
+            'PyTables-3.8.0_fix-libs.patch',
+            'PyTables-3.9.2_fix-find-blosc2-dep.patch',
+            'PyTables-3.11.1_fix-chunk-test.patch',
+        ],
+        # Fix compatibility with Blosc2 3.x, where BLOSC2_MAX_DIM was replaced by B2ND_MAX_DIM
+        'preinstallopts': "sed -i 's/BLOSC2_MAX_DIM/B2ND_MAX_DIM/g' hdf5-blosc2/src/blosc2_filter.c && ",
+        'runtest': "cd .. && python -m tables.tests.test_all",
+        'testinstall': True,
+        'checksums': [
+            {'tables-3.11.1.tar.gz': '78abcf413091bc7c1e4e8c10fbbb438d1ac0b5a87436c5b972c3e8253871b6fb'},
+            {'PyTables-3.8.0_fix-libs.patch': '7a1e6fa1f9169e52293e2b433a4302fa13c5d31e7709cd4fe0e087199b9e3f8a'},
+            {'PyTables-3.9.2_fix-find-blosc2-dep.patch':
+             'e2149f43da12d9ba26cca4c838f6e8a4694adab75c0f055b186674a017e41a55'},
+            {'PyTables-3.11.1_fix-chunk-test.patch':
+             '018c0f749d3564b229ab4310510717dd97e53cc1861767428aa6ad8fc3bcbaee'},
+        ],
+    }),
+]
+
+local_bins = ['pt2to3', 'ptdump', 'ptrepack', 'pttree']
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+options = {'modulename': 'tables'}
+
+sanity_check_commands = ["%s --help" % x for x in local_bins]
+
+moduleclass = 'data'
