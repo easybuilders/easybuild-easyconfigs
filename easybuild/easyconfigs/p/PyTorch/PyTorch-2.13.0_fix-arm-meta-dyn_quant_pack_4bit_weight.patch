@@ -1,0 +1,21 @@
+Test failures on ARM resolved in TestLinalgCPU.test_compile_dyn_quant_matmul_4bit
+>     assert_size_stride(buf1, (180224, ), (1, ), 'torch.ops.aten._dyn_quant_pack_4bit_weight.default')
+> AssertionError: expected size 139264==180224, stride 1==1 at dim=0
+> Error in op: torch.ops.aten._dyn_quant_pack_4bit_weight.default
+
+See https://github.com/pytorch/pytorch/pull/197518
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/_meta_registrations.py b/torch/_meta_registrations.py
+--- a/torch/_meta_registrations.py
++++ b/torch/_meta_registrations.py
+@@ -4267,7 +4267,7 @@ def meta__dyn_quant_pack_4bit_weight(
+         weights.dtype is torch.uint8,
+         lambda: f"expected w to be uint8, got {weights.dtype}",
+     )
+-    if torch.backends.kleidiai.is_available() and (
++    if torch.backends.kleidiai.is_available() and torch.cpu.get_capabilities().get("dot", False) and (
+         (block_size == in_features and scales_zeros.dtype == torch.float)
+         or (
+             block_size < in_features

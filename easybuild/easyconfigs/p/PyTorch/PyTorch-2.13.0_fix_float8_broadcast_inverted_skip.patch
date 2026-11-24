@@ -1,0 +1,18 @@
+Condition is inverted.
+See https://github.com/pytorch/pytorch/pull/199513
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/distributed/test_c10d_nccl.py b/test/distributed/test_c10d_nccl.py
+--- a/test/distributed/test_c10d_nccl.py
++++ b/test/distributed/test_c10d_nccl.py
+@@ -5540,8 +5540,8 @@ class LargeCommTest(test_c10d_common.AbstractLargeCommTest, MultiProcessTestCase
+     @parametrize("float8_dtype", [torch.float8_e4m3fn, torch.float8_e5m2])
+     def test_broadcast_float8(self, float8_dtype):
+         device = torch.device(f"cuda:{self.rank}")
+-        if sm_is_or_higher_than(device, 9, 0):
+-            self.skipTest("FP8 broadcast natively supported on sm90+")
++        if not sm_is_or_higher_than(device, 9, 0):
++            self.skipTest("FP8 broadcast requires sm90 capable devices")
+         store = dist.FileStore(self.file_name, self.world_size)
+         dist.init_process_group(
+             "nccl",

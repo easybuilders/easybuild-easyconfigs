@@ -1,0 +1,132 @@
+Fix wrong check in code leading to e.g.
+> TestQuantizeEagerPTQStatic::test_quantized_embedding_bag - RuntimeError: Tensor: sizes 10 12, strides 12 1, storage offset 0 and itemsize 1 require a storage of at least 120 bytes, but storage only has 60 bytes
+
+See https://github.com/pytorch/pytorch/pull/199497
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/EmptyTensor.h b/aten/src/ATen/EmptyTensor.h
+--- a/aten/src/ATen/EmptyTensor.h
++++ b/aten/src/ATen/EmptyTensor.h
+@@ -25,6 +25,24 @@ inline void check_size_nonnegative(ArrayRef<c10::SymInt> size) {
+   }
+ }
+ 
++// Sub-byte quantized dtypes (QUInt4x2, QUInt2x4) pack multiple logical
++// elements per storage byte. Itemsize is still 1, so the standard
++// element*itemsize formula over-counts; divide by this packing factor.
++inline int64_t subByteElementPerByte(const c10::ScalarType data_type) {
++  switch (data_type) {
++    case c10::ScalarType::QUInt4x2:
++      return 2;
++    case c10::ScalarType::QUInt2x4:
++      return 4;
++    default:
++      return 1;
++  }
++}
++
++inline int64_t subByteElementPerByte(const caffe2::TypeMeta& data_type) {
++  return subByteElementPerByte(c10::typeMetaToScalarType(data_type));
++}
++
+ TORCH_API size_t computeStorageNbytesContiguous(
+     IntArrayRef sizes,
+     size_t itemsize,
+diff --git a/aten/src/ATen/native/Resize.h b/aten/src/ATen/native/Resize.h
+--- a/aten/src/ATen/native/Resize.h
++++ b/aten/src/ATen/native/Resize.h
+@@ -79,17 +79,6 @@ inline c10::SymInt maybe_convert_symint(c10::SymInt x) { return x; }
+ template <>
+ inline int64_t maybe_convert_symint(c10::SymInt x) { return x.guard_int(__FILE__, __LINE__); }
+ 
+-// Sub-byte quantized dtypes (QUInt4x2, QUInt2x4) pack multiple logical
+-// elements per storage byte. Itemsize is still 1, so the standard
+-// element*itemsize formula over-counts; divide by this packing factor.
+-inline int64_t subByteElementPerByte(const caffe2::TypeMeta& data_type) {
+-  switch (c10::typeMetaToScalarType(data_type)) {
+-    case c10::ScalarType::QUInt4x2: return 2;
+-    case c10::ScalarType::QUInt2x4: return 4;
+-    default: return 1;
+-  }
+-}
+-
+ template <typename T>
+ inline void checkInBoundsForStorage(
+     ArrayRef<T> size,
+@@ -109,7 +98,7 @@ inline void checkInBoundsForStorage(
+     storage_size_plus_offset_bytes = at::detail::computeStorageNbytesContiguous(
+         size, data_type.itemsize(), storage_offset);
+   }
+-  const int64_t element_per_byte = subByteElementPerByte(data_type);
++  const int64_t element_per_byte = at::detail::subByteElementPerByte(data_type);
+   if (element_per_byte > 1) {
+     storage_size_bytes =
+         (storage_size_bytes + element_per_byte - 1) / element_per_byte;
+diff --git a/aten/src/ATen/quantized/Quantizer.cpp b/aten/src/ATen/quantized/Quantizer.cpp
+--- a/aten/src/ATen/quantized/Quantizer.cpp
++++ b/aten/src/ATen/quantized/Quantizer.cpp
+@@ -82,17 +82,7 @@ QTensorImpl* get_qtensorimpl(const TensorBase& self) {
+ }
+ 
+ static int64_t get_sub_byte_tensor_size(IntArrayRef sizes, size_t dtype_itemsize, at::ScalarType t) {
+-  int64_t element_per_byte = 1;
+-  switch(t) {
+-    case at::ScalarType::QUInt4x2:
+-      element_per_byte = 2;
+-      break;
+-    case at::ScalarType::QUInt2x4:
+-      element_per_byte = 4;
+-      break;
+-    default:
+-      element_per_byte = 1;
+-  }
++  const int64_t element_per_byte = at::detail::subByteElementPerByte(t);
+   // zero dim tensor
+   if (sizes.empty()) {
+     return c10::multiply_integers(sizes) * dtype_itemsize;
+diff --git a/torch/csrc/jit/serialization/unpickler.cpp b/torch/csrc/jit/serialization/unpickler.cpp
+--- a/torch/csrc/jit/serialization/unpickler.cpp
++++ b/torch/csrc/jit/serialization/unpickler.cpp
+@@ -1,5 +1,6 @@
+ #include <ATen/ATen.h>
+ #include <ATen/EmptyTensor.h>
++#include <ATen/ceil_div.h>
+ #include <ATen/core/Dict.h>
+ #ifdef USE_RPC
+ #include <torch/csrc/distributed/rpc/rref_context.h>
+@@ -1006,15 +1007,22 @@ void Unpickler::rebuildTensor(bool quantized) {
+     }
+     const size_t itemsize = storage_tensor.dtype().itemsize();
+     const size_t storage_nbytes = storage_tensor.storage().nbytes();
++    const size_t element_per_byte = at::detail::subByteElementPerByte(storage_tensor.dtype());
+     // Bound storage_offset independently: computeStorageNbytes returns 0 when
+     // any dim is 0, so without this check a zero-numel tensor with a huge
+     // offset would slip past the combined check and later operations
+     // (reshape/resize_) could dereference out-of-bounds memory.
+     size_t offset_nbytes = 0;
++    const bool offset_overflow = c10::mul_overflows(
++        static_cast<size_t>(storage_offset), itemsize, &offset_nbytes);
++    size_t required_nbytes = at::detail::computeStorageNbytes(
++        size, stride, itemsize, static_cast<size_t>(storage_offset));
++    if (element_per_byte > 1) {
++      offset_nbytes = ceil_div(offset_nbytes, element_per_byte);
++      required_nbytes = ceil_div(required_nbytes, element_per_byte);
++    }
+     TORCH_CHECK(
+-        !c10::mul_overflows(
+-            static_cast<size_t>(storage_offset), itemsize, &offset_nbytes) &&
+-            offset_nbytes <= storage_nbytes,
++        !offset_overflow && offset_nbytes <= storage_nbytes,
+         "Tensor: storage offset ",
+         storage_offset,
+         " is out of bounds for storage of size ",
+@@ -1022,8 +1030,6 @@ void Unpickler::rebuildTensor(bool quantized) {
+         " bytes (itemsize ",
+         itemsize,
+         ")");
+-    const size_t required_nbytes = at::detail::computeStorageNbytes(
+-        size, stride, itemsize, static_cast<size_t>(storage_offset));
+     TORCH_CHECK(
+         required_nbytes == 0 || required_nbytes <= storage_nbytes,
+         "Tensor: sizes ",
