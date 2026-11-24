@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'squashfuse'
+version = '0.6.5'
+
+homepage = 'https://github.com/vasi/squashfuse'
+description = """Squashfuse lets you mount SquashFS archives in user-space. It supports almost
+all features of the SquashFS format, yet is still fast and memory-efficient.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+github_account = 'vasi'
+source_urls = ['https://github.com/%(github_account)s/%(namelower)s/releases/download/%(version)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['9ec44b8ee6309e09bdcdeba422edc745e876db16136acacb74ecc7e7131e5763']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('make', '4.4.1'),
+    ('pkgconf', '2.4.3'),
+]
+
+dependencies = [
+    # For non-privileged mounting you either need to:
+    # 1. use a fusermount >= v2.5 with root setuid
+    # 2. use mount namespaces (e.g. unshare)
+    ('FUSE', '3.17.4'),  # for option 2
+    # At least one of these compression libraries are needed
+    ('zlib', '1.3.1'),
+    ('LZO', '2.10'),
+    ('XZ', '5.8.1'),
+    ('lz4', '1.10.0'),
+    ('zstd', '1.5.7'),
+    ('attr', '2.5.2'),  # optional
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/squashfuse',
+        'bin/squashfuse_ll',
+        'lib/libsquashfuse.so',
+        'lib/libsquashfuse_ll.so',
+    ],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = [
+    # Squashfuse doesn't have proper version/help flags
+    "squashfuse -V 2>&1 | grep 'squashfuse 0.6.5'",
+    "squashfuse_ll -V 2>&1 | grep 'squashfuse 0.6.5'",
+]
+
+moduleclass = 'tools'

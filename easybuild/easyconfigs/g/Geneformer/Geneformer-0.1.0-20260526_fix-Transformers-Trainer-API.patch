@@ -1,0 +1,54 @@
+Update GeneformerPretrainer for the Trainer sampler API used by recent Transformers releases.
+
+Transformers 4.57 passes the training dataset to _get_train_sampler, while Geneformer still
+implements the older no-argument interface. Accept the dataset argument and use it consistently
+when constructing the sampler. Also replace the deprecated Trainer.tokenizer access with
+Trainer.processing_class.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT5.6
+--- a/geneformer/pretrainer.py
++++ b/geneformer/pretrainer.py
+@@ -555,8 +555,11 @@ class GeneformerPretrainer(Trainer):
+             )
+         super().__init__(*args, **kwargs)
+     # updated to not use distributed sampler since Trainer now distributes with accelerate
+-    def _get_train_sampler(self) -> Optional[torch.utils.data.sampler.Sampler]:
+-        if not isinstance(self.train_dataset, collections.abc.Sized):
++    def _get_train_sampler(self, train_dataset=None) -> Optional[torch.utils.data.sampler.Sampler]:
++        if train_dataset is None:
++            train_dataset = self.train_dataset
++
++        if not isinstance(train_dataset, collections.abc.Sized):
+             return None
+         generator = None
+         if self.args.world_size <= 1 and _is_torch_generator_available:
+@@ -566,17 +569,17 @@ class GeneformerPretrainer(Trainer):
+             )
+         # Build the sampler.
+         if self.args.group_by_length:
+-            if is_datasets_available() and isinstance(self.train_dataset, Dataset):
++            if is_datasets_available() and isinstance(train_dataset, Dataset):
+                 lengths = self.example_lengths
+             else:
+                 lengths = None
+             model_input_name = (
+-                self.tokenizer.model_input_names[0]
+-                if self.tokenizer is not None
++                self.processing_class.model_input_names[0]
++                if self.processing_class is not None
+                 else None
+             )
+             return LengthGroupedSampler(
+-                    dataset=self.train_dataset,
++                    dataset=train_dataset,
+                     batch_size=self.args.train_batch_size,
+                     lengths=lengths,
+                     model_input_name=model_input_name,
+@@ -584,5 +587,5 @@ class GeneformerPretrainer(Trainer):
+             )
+         else:
+             if _is_torch_generator_available:
+-                return RandomSampler(self.train_dataset, generator=generator)
+-            return RandomSampler(self.train_dataset)
++                return RandomSampler(train_dataset, generator=generator)
++            return RandomSampler(train_dataset)

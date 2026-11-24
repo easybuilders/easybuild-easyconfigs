@@ -1,0 +1,59 @@
+name = 'OCaml'
+version = '5.5.1'
+
+homepage = 'https://ocaml.org/'
+description = """OCaml is a general purpose industrial-strength programming language
+ with an emphasis on expressiveness and safety. Developed for more than 20 years at Inria
+ it benefits from one of the most advanced type systems and supports functional,
+ imperative and object-oriented styles of programming."""
+
+toolchain = {'name': 'GCC', 'version': '15.2.0'}
+
+local_opam_ver = '2.6.0'
+source_urls = [
+    'https://github.com/ocaml/ocaml/archive',
+    'https://github.com/ocaml/opam/releases/download/%s' % local_opam_ver,
+]
+sources = [
+    '%s.tar.gz' % version,
+    'opam-full-%s.tar.gz' % local_opam_ver,
+]
+checksums = [
+    {'5.5.1.tar.gz': 'ae47728d0a876665ccc7b745e3a8d8c9ca5ba63c4f7a11d4db6cdbd1dbeef4bb'},
+    {'opam-full-2.6.0.tar.gz': 'eba7360253fd791eb9edaabe4848ea0c59b35da5f5f5dbaaff5eb68bf618ca08'},
+]
+
+builddependencies = [
+    ('Autotools', '20250626'),
+    ('pkgconf', '2.5.1'),
+]
+
+dependencies = [
+    ('ncurses', '6.6'),
+    ('libreadline', '8.3'),
+    ('zstd', '1.5.7'),
+]
+
+# EasyBuild's LIBS already contains -lm, so configure would omit it from OCaml's runtime link flags.
+# Clear LIBS and let configure detect libm and pthreads; do not add linker libraries to CFLAGS.
+preconfigopts = 'unset LIBS && '
+# Retain the GNU assembler selection used by the older OCaml recipes.
+preconfigopts += 'export AS=as && '
+
+# parallel build tends to break
+maxparallel = 1
+
+# handled by OPAM, order matters!
+# see https://opam.ocaml.org/packages
+exts_list = [
+    # Released ocamlfind versions exclude OCaml 5.5; OPAM pins this preview to a fixed commit.
+    ('ocamlfind', '1.9.9~preview'),
+    ('batteries', '3.11.0'),
+    ('conf-pkg-config', '5'),
+    ('dune-configurator', '3.24.2'),
+    ('dune', '3.24.2'),
+    ('base', 'v0.17.3'),
+    ('stdio', 'v0.17.0'),
+]
+
+moduleclass = 'lang'

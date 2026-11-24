@@ -1,0 +1,46 @@
+name = 'Java'
+_java_version = '25'
+_patch_version = '5'
+_build_version = '8'
+version = f'{_java_version}.0.{_patch_version}'
+
+homepage = 'https://openjdk.org'
+description = """Java Platform, Standard Edition (Java SE) lets you develop and deploy
+Java applications on desktops and servers."""
+
+toolchain = SYSTEM
+
+_tarball_tmpl = f'OpenJDK{_java_version}U-jdk_{{}}_linux_hotspot_{version}_{_build_version}.tar.gz'
+
+# Using the Adoptium Eclipse Temurin builds, recommended by https://whichjdk.com/#distributions
+source_urls = [f'https://github.com/adoptium/temurin{_java_version}-binaries/releases/download/'
+               f'jdk-{version}+{_build_version}/']
+
+sources = [
+    _tarball_tmpl.format('%(jdkarch)s'),
+    {'filename': 'Java_blocked-certs-eMudhra-CVE-2026-91403.txt',
+     'extract_cmd': "cp %s %(builddir)s/"},
+]
+
+checksums = [
+    {
+        _tarball_tmpl.format('x64'):
+            '68982529869257d0ee6b824ec5aa270ff8b118bb438670da0b97ebdab178d7fb',
+        _tarball_tmpl.format('aarch64'):
+            'bb5b2ded252f21c6090cf780b0a408ad0d83bbb557e702955643557f13231880',
+        _tarball_tmpl.format('ppc64le'):
+            '47825886fd72e86c94e6fd1687a13bebb4ae729e24d2788be0d294589bf07297',
+        # no tar.gz yet for riscv64 at https://github.com/adoptium/temurin25-binaries/releases/tag/jdk-25.0.5%2B8
+        # _tarball_tmpl.format('riscv64'):
+        #    '???',
+    },
+    {'Java_blocked-certs-eMudhra-CVE-2026-91403.txt':
+     '8a11b84b894e7986af1131c10fcff168fb38987bedb4fd7a0d8a7a120288d521'},
+]
+
+postinstallcmds = [
+    # see https://glaforge.dev/posts/2026/10/21/the-emudhra-ca-compromise-why-your-jvm-is-vulnerable-and-how-to-fix-it
+    "cat %(builddir)s/Java_blocked-certs-eMudhra-CVE-2026-91403.txt >> %(installdir)s/lib/security/blocked.certs",
+]
+
+moduleclass = 'lang'

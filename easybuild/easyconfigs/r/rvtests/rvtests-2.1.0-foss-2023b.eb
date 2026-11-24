@@ -1,0 +1,59 @@
+easyblock = 'MakeCp'
+
+name = 'rvtests'
+version = '2.1.0'
+
+homepage = 'https://zhanxw.github.io/rvtests/'
+description = ("Rvtests, which stands for Rare Variant tests, is a flexible software package for genetic association "
+               "analysis for sequence datasets.")
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+source_urls = ['https://github.com/zhanxw/rvtests/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_external-libraries.patch']
+checksums = [
+    'bc05cd1ab1cbeda62bd79fd3ba0f46b8e304a1bc1bea556316baa2c38ef1fcf3',  # v2.1.0.tar.gz
+    '12900df765580033d75a7410a6e7ac0b47204229ca161acf3c1b1e1e2bad62f6',  # rvtests-2.1.0_external-libraries.patch
+]
+
+dependencies = [
+    ('tabix', '0.2.6'),
+    ('Eigen', '3.4.0'),
+    ('PCRE', '8.45'),
+    ('GSL', '2.7'),
+    ('zlib', '1.2.13'),
+    ('bzip2', '1.0.8'),
+    ('NLopt', '2.7.1'),
+    ('RapidJSON', '1.1.0-20240409'),
+    ('SQLite', '3.43.1'),
+    ('zstd', '1.5.5'),
+    ('cnpy', '20180601'),
+]
+
+# The upstream dependency rules are not safe for parallel builds.
+maxparallel = 1
+prebuildopts = "ln -s $EBROOTTABIX/include third/tabix && "
+prebuildopts += "ln -s $EBROOTCNPY/include third/cnpy && "
+prebuildopts += "ln -s $EBROOTEIGEN/include third/eigen && "
+prebuildopts += "ln -s $EBROOTZLIB/include third/zlib && "
+prebuildopts += "ln -s $EBROOTBZIP2/include third/bzip2 && "
+prebuildopts += "mkdir -p third/gsl third/pcre third/nlopt third/rapidjson third/sqlite third/zstd && "
+prebuildopts += "ln -s $EBROOTGSL/include third/gsl/include && "
+prebuildopts += "ln -s $EBROOTPCRE/include third/pcre/include && "
+prebuildopts += "ln -s $EBROOTNLOPT/include third/nlopt/include && "
+prebuildopts += "ln -s $EBROOTRAPIDJSON/include third/rapidjson/include && "
+prebuildopts += "ln -s $EBROOTSQLITE/include third/sqlite/include && "
+prebuildopts += "ln -s $EBROOTZSTD/include third/zstd/lib && "
+buildopts = 'STATIC_FLAG='
+
+files_to_copy = [(['executable/*'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/rvtest', 'bin/vcf2kinship', 'bin/vcf2plink', 'bin/bgen2vcf'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['rvtest --help']
+
+moduleclass = 'bio'

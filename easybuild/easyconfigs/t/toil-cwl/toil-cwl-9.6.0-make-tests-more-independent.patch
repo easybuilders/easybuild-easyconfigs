@@ -1,0 +1,144 @@
+From e5ba39878e300e6eb25469ae82d1619909e78c06 Mon Sep 17 00:00:00 2001
+From: "Michael R. Crusoe" <1330696+mr-c@users.noreply.github.com>
+Date: Mon, 9 Nov 2026 16:56:38 +0000
+Subject: [PATCH] Make tests more independent (#5678)
+
+---
+ MANIFEST.in                                          | 3 +++
+ src/toil/test/cwl/cwlTest.py                         | 2 +-
+ src/toil/test/cwl/mpi_simple.cwl                     | 2 +-
+ src/toil/test/jobStores/jobStoreTest.py              | 2 +-
+ src/toil/test/lib/aws/test_s3.py                     | 2 +-
+ src/toil/test/provisioners/aws/awsProvisionerTest.py | 3 ++-
+ src/toil/test/src/resourceTest.py                    | 2 --
+ src/toil/test/utils/toilKillTest.py                  | 1 +
+ 8 files changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/MANIFEST.in b/MANIFEST.in
+index 35b3a05c3a..8ec0900c0b 100644
+--- a/MANIFEST.in
++++ b/MANIFEST.in
+@@ -3,8 +3,11 @@ include src/toil/server/api_spec/workflow_execution_service.swagger.yaml
+ include src/toil/test/cwl/colon_test_output_job.yaml
+ include src/toil/test/cwl/conditional_wf.yaml
+ include src/toil/test/cwl/mock_mpi/fake_mpi.yml
++include src/toil/test/cwl/mock_mpi/fake_mpi_run.py
+ include src/toil/test/docs/scripts/*
+ include src/toil/test/utils/ABCWorkflowDebug/sleep.yaml
+ include src/toil/test/utils/ABCWorkflowDebug/*
+ recursive-include src/toil/test/ *.cwl
+ recursive-include src/toil/test/ *.txt
++recursive-include src/toil/test/ *.json
++recursive-include src/toil/test/ *.ms
+diff --git a/src/toil/test/cwl/cwlTest.py b/src/toil/test/cwl/cwlTest.py
+index 90299fe51d..0b771f111f 100644
+--- a/src/toil/test/cwl/cwlTest.py
++++ b/src/toil/test/cwl/cwlTest.py
+@@ -2048,7 +2048,7 @@ def test_filename_conflict_resolution(tmp_path: Path) -> None:
+                 str(msin),
+             ]
+             p = subprocess.run(cmd, capture_output=True, text=True)
+-            assert "Finished toil run successfully" in p.stderr
++            assert "Finished toil run successfully" in p.stderr, p
+             assert p.returncode == 0
+ 
+ 
+diff --git a/src/toil/test/cwl/mpi_simple.cwl b/src/toil/test/cwl/mpi_simple.cwl
+index c3d8ef56b1..6fe8367485 100644
+--- a/src/toil/test/cwl/mpi_simple.cwl
++++ b/src/toil/test/cwl/mpi_simple.cwl
+@@ -10,7 +10,7 @@ doc: |
+   processes. Requires Python (but you have cwltool running, right?)
+   and an MPI implementation.
+ 
+-baseCommand: python
++baseCommand: python3
+ requirements:
+   cwltool:MPIRequirement:
+     processes: 2
+diff --git a/src/toil/test/jobStores/jobStoreTest.py b/src/toil/test/jobStores/jobStoreTest.py
+index 5cdefa1f5c..4a015ae0c8 100644
+--- a/src/toil/test/jobStores/jobStoreTest.py
++++ b/src/toil/test/jobStores/jobStoreTest.py
+@@ -1879,7 +1879,7 @@ def test_includes_decoration_without_local_suggestion(self):
+         assert "wdl" in result
+ 
+ 
+-# @needs_aws_s3
++@needs_aws_s3
+ class InvalidAWSJobStoreTest(ToilTest):
+     def testInvalidJobStoreName(self):
+         from toil.jobStores.aws.jobStore import AWSJobStore
+diff --git a/src/toil/test/lib/aws/test_s3.py b/src/toil/test/lib/aws/test_s3.py
+index b316f7cd24..de8d844137 100644
+--- a/src/toil/test/lib/aws/test_s3.py
++++ b/src/toil/test/lib/aws/test_s3.py
+@@ -17,7 +17,6 @@
+ from typing import TYPE_CHECKING, Optional
+ 
+ from toil.lib.aws.session import establish_boto3_session
+-from toil.lib.aws.s3 import create_s3_bucket, delete_s3_bucket
+ from toil.lib.aws.utils import get_bucket_region
+ from toil.test import ToilTest, needs_aws_s3
+ 
+@@ -43,6 +42,7 @@ def setUpClass(cls) -> None:
+ 
+     def test_create_bucket(self) -> None:
+         """Test bucket creation for us-east-1."""
++        from toil.lib.aws.s3 import create_s3_bucket, delete_s3_bucket
+         bucket_name = f"toil-s3test-{uuid.uuid4()}"
+         assert self.s3_resource
+         bucket: Optional["Bucket"] = None
+diff --git a/src/toil/test/provisioners/aws/awsProvisionerTest.py b/src/toil/test/provisioners/aws/awsProvisionerTest.py
+index 7991416b98..c96d67a4c1 100644
+--- a/src/toil/test/provisioners/aws/awsProvisionerTest.py
++++ b/src/toil/test/provisioners/aws/awsProvisionerTest.py
+@@ -32,7 +32,6 @@
+     get_aws_zone_from_spot_market,
+     get_best_aws_zone,
+ )
+-from toil.provisioners.aws.awsProvisioner import AWSProvisioner
+ from toil.test import (
+     get_data,
+     integrative,
+@@ -95,6 +94,7 @@ def ec2_client(self, aws_region):
+ 
+     # Needs to talk to EC2 for image discovery
+     def test_AMI_finding(self):
++        from toil.provisioners.aws.awsProvisioner import AWSProvisioner
+         for zone in ["us-west-2a", "eu-central-1a", "sa-east-1b"]:
+             provisioner = AWSProvisioner(
+                 "fakename", "mesos", zone, 10000, None, None, enable_fuse=False
+@@ -109,6 +109,7 @@ def test_read_write_global_files(self, aws_zone):
+         Make sure the `_write_file_to_cloud()` and `_read_file_from_cloud()`
+         functions of the AWS provisioner work as intended.
+         """
++        from toil.provisioners.aws.awsProvisioner import AWSProvisioner
+         provisioner = AWSProvisioner(
+             f"aws-provisioner-test-{uuid4()}",
+             "mesos",
+diff --git a/src/toil/test/src/resourceTest.py b/src/toil/test/src/resourceTest.py
+index 160a3a4ed3..ce9acc943d 100644
+--- a/src/toil/test/src/resourceTest.py
++++ b/src/toil/test/src/resourceTest.py
+@@ -155,8 +155,6 @@ def _test(
+         # Assert basic attributes and properties
+         assert module.belongsToToil == shouldBelongToToil
+         assert module.name == module_name
+-        if shouldBelongToToil:
+-            assert module.dirPath.endswith("/src")
+ 
+         # Before the module is saved as a resource, localize() and globalize() are identity
+         # methods. This should log.warnings.
+diff --git a/src/toil/test/utils/toilKillTest.py b/src/toil/test/utils/toilKillTest.py
+index 0e6cc8f24b..b6b55d5038 100644
+--- a/src/toil/test/utils/toilKillTest.py
++++ b/src/toil/test/utils/toilKillTest.py
+@@ -87,6 +87,7 @@ class TestToilKill(_ToilKillTest):
+     """A set of test cases for "toil kill"."""
+ 
+     @needs_cwl
++    @needs_aws_s3
+     def test_cwl_toil_kill(self, tmp_path: Path) -> None:
+         """Test "toil kill" on a CWL workflow with a 100 second sleep."""
+         self._test_cwl_toil_kill(str(tmp_path / "job_store"))
