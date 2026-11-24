@@ -1,0 +1,96 @@
+From: "Michael R. Crusoe" <michael.crusoe@fu-berlin.de>
+Date: Mon, 23 Nov 2026 19:15:54 +0100
+Subject: tests: prepend to PYTHONPATH, don't overwrite it
+Origin: upstream, https://github.com/python/mypy/pull/22543
+Applied-Upstream: https://github.com/python/mypy/commit/d3eb16b08af1ec6a45253a54ec6ad464589c0724
+
+Without this, on systems that rely on PYTHONPATH manipulation like
+EasyBuild / environment modules, then test can fail to find librt:
+
+> ModuleNotFoundError: No module named 'librt'
+
+See https://github.com/easybuilders/easybuild-easyconfigs/pull/27501#issuecomment-7105000936
+
+diff -ruN mypy-2.4.1.orig/mypy/test/test_diff_cache.py mypy-2.4.1/mypy/test/test_diff_cache.py
+--- mypy-2.4.1.orig/mypy/test/test_diff_cache.py	2026-10-28 17:29:07.376572000 +0100
++++ mypy-2.4.1/mypy/test/test_diff_cache.py	2026-11-24 19:27:14.877247433 +0100
+@@ -29,7 +29,8 @@
+         src_dir = tempfile.mkdtemp()
+         output_file = os.path.join(tempfile.mkdtemp(), "diff.json")
+         env = os.environ.copy()
+-        env["PYTHONPATH"] = PREFIX
++        existing = env.get("PYTHONPATH")
++        env["PYTHONPATH"] = PREFIX + (os.pathsep + existing if existing else "")
+         try:
+             cache1 = os.path.join(src_dir, "cache1")
+             cache2 = os.path.join(src_dir, "cache2")
+diff -ruN mypy-2.4.1.orig/mypy/test/testcheck.py mypy-2.4.1/mypy/test/testcheck.py
+--- mypy-2.4.1.orig/mypy/test/testcheck.py	2026-10-28 17:29:07.376572000 +0100
++++ mypy-2.4.1/mypy/test/testcheck.py	2026-11-24 19:24:54.651142006 +0100
+@@ -189,7 +189,11 @@
+             # Make sure we are running tests with current worktree files, *not* with
+             # an installed version of mypy.
+             root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+-            worker_env["PYTHONPATH"] = os.pathsep.join([root_dir, plugin_dir])
++            new_python_path = os.pathsep.join([root_dir, plugin_dir])
++            existing = worker_env.get("PYTHONPATH")
++            worker_env["PYTHONPATH"] = new_python_path + (
++                os.pathsep + existing if existing else ""
++            )
+             worker_env["MYPY_TEST_PREFIX"] = root_dir
+             worker_env["MYPY_ALT_LIB_PATH"] = test_temp_dir
+ 
+diff -ruN mypy-2.4.1.orig/mypy/test/testcmdline.py mypy-2.4.1/mypy/test/testcmdline.py
+--- mypy-2.4.1.orig/mypy/test/testcmdline.py	2026-10-28 17:29:07.599329200 +0100
++++ mypy-2.4.1/mypy/test/testcmdline.py	2026-11-24 19:26:01.164068465 +0100
+@@ -72,9 +72,12 @@
+     env = os.environ.copy()
+     env.pop("COLUMNS", None)
+     extra_path = os.path.join(os.path.abspath(test_temp_dir), "pypath")
++    existing = env.get("PYTHONPATH")
+     env["PYTHONPATH"] = PREFIX
+     if os.path.isdir(extra_path):
+         env["PYTHONPATH"] += os.pathsep + extra_path
++    if existing:
++        env["PYTHONPATH"] += os.pathsep + existing
+     cwd = os.path.join(test_temp_dir, custom_cwd or "")
+     args = [arg.replace("$CWD", os.path.abspath(cwd)) for arg in args]
+     process = subprocess.Popen(
+diff -ruN mypy-2.4.1.orig/mypy/test/testdaemon.py mypy-2.4.1/mypy/test/testdaemon.py
+--- mypy-2.4.1.orig/mypy/test/testdaemon.py	2026-10-28 17:29:07.376572000 +0100
++++ mypy-2.4.1/mypy/test/testdaemon.py	2026-11-24 19:26:34.629418723 +0100
+@@ -84,7 +84,8 @@
+     if input.startswith("mypy "):
+         input = sys.executable + " -m" + input
+     env = os.environ.copy()
+-    env["PYTHONPATH"] = PREFIX
++    existing = env.get("PYTHONPATH")
++    env["PYTHONPATH"] = PREFIX + (os.pathsep + existing if existing else "")
+     try:
+         output = subprocess.check_output(
+             input, shell=True, stderr=subprocess.STDOUT, text=True, cwd=test_temp_dir, env=env
+diff -ruN mypy-2.4.1.orig/mypyc/test/librt_cache.py mypy-2.4.1/mypyc/test/librt_cache.py
+--- mypy-2.4.1.orig/mypyc/test/librt_cache.py	2026-10-28 17:29:07.620329100 +0100
++++ mypy-2.4.1/mypyc/test/librt_cache.py	2026-11-24 19:27:45.159959538 +0100
+@@ -235,7 +235,7 @@
+     librt_path = get_librt_path(experimental, opt_level=opt_level)
+     # Prepend librt path to PYTHONPATH
+     env = os.environ.copy()
+-    existing = env.get("PYTHONPATH", "")
++    existing = env.get("PYTHONPATH")
+     env["PYTHONPATH"] = librt_path + (os.pathsep + existing if existing else "")
+ 
+     return subprocess.run(
+diff -ruN mypy-2.4.1.orig/mypyc/test/test_commandline.py mypy-2.4.1/mypyc/test/test_commandline.py
+--- mypy-2.4.1.orig/mypyc/test/test_commandline.py	2026-10-28 17:29:07.461194800 +0100
++++ mypy-2.4.1/mypyc/test/test_commandline.py	2026-11-24 19:28:26.782427842 +0100
+@@ -44,7 +44,8 @@
+             f.write(text)
+ 
+         env = os.environ.copy()
+-        env["PYTHONPATH"] = base_path
++        existing = env.get("PYTHONPATH")
++        env["PYTHONPATH"] = base_path + (os.pathsep + existing if existing else "")
+ 
+         out = b""
+         try:
