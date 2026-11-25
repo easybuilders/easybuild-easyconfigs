@@ -1,0 +1,32 @@
+Replace internally compiled sqlite and qhull with external libraries
+author: micketeer@gmail.com
+--- src/CMakeLists.txt.orig	2026-08-26 17:19:42.031973955 +0200
++++ src/CMakeLists.txt	2026-08-26 17:22:18.607601698 +0200
+@@ -320,18 +320,19 @@
+ target_link_libraries(aflow PUBLIC modules)
+ 
+ # set up and link packaged external libraries
+-add_subdirectory(extern/SQLITE)
+-target_link_libraries(aflow PUBLIC sqlite)
+ add_subdirectory(extern/SYMBOLICCPLUSPLUS)
+ target_link_libraries(aflow PUBLIC symbolic)
+ 
+-#Setup and link QHULL libraries
+-add_subdirectory(extern/QHULL/libqhullcpp)
+-add_subdirectory(extern/QHULL/libqhull_r)
++#Setup and link SQLite3 and  QHULL libraries
++find_package(SQLite3 REQUIRED)
++find_package(Qhull REQUIRED)
+ 
+-target_link_libraries(libqhullcpp libqhull_r)
+-target_link_libraries(aflow PUBLIC libqhullcpp)
+-target_link_libraries(aflow PUBLIC libqhull_r)
++target_link_libraries(aflow
++    PUBLIC
++        SQLite::SQLite3
++        Qhull::qhullcpp
++        Qhull::qhull_r
++)
+ 
+ # set up and link internal tests
+ add_subdirectory(test)

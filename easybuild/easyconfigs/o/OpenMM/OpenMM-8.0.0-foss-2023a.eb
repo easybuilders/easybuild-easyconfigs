@@ -18,7 +18,12 @@ toolchainopts = {'opt': True}
 
 source_urls = ['https://github.com/openmm/openmm/archive/']
 sources = ['%(version)s.tar.gz']
-checksums = ['dc63d7b47c8bb7b169c409cfd63d909ed0ce1ae114d37c627bf7a4231acf488e']
+patches = ['OpenMM-8.0.0_increase-drude-test-tolerance.patch']
+checksums = [
+    'dc63d7b47c8bb7b169c409cfd63d909ed0ce1ae114d37c627bf7a4231acf488e',
+    {'OpenMM-8.0.0_increase-drude-test-tolerance.patch':
+     'aa89f5a07075e0e3a673e4908ee64def4584ab548ff49390de8a3ccdcb0ab299'},
+]
 
 builddependencies = [
     ('CMake', '3.26.3'),
@@ -31,6 +36,7 @@ dependencies = [
     ('SWIG', '4.1.1'),
 ]
 
+configopts = '-DOPENMM_BUILD_CUDA_LIB=OFF -DOPENMM_BUILD_CUDA_COMPILER_PLUGIN=OFF'
 pretestopts = " CTEST_OUTPUT_ON_FAILURE=1"
 local_ignore_pattern = "(Integrator)|(Thermostat)|(Barostat)|(Rpmd)|(Amoeba)"
 runtest = """test -e ARGS="-E \'%s\'" """ % local_ignore_pattern
@@ -39,7 +45,14 @@ preinstallopts = ' export OPENMM_INCLUDE_PATH=%(installdir)s/include && '
 preinstallopts += ' export OPENMM_LIB_PATH=%(installdir)s/lib && '
 
 # required to install the python API
-installopts = ' && cd python && python setup.py build && python setup.py install --prefix=%(installdir)s'
+exts_list = [
+    (name, version, {
+        'easyblock': 'PythonPackage',
+        'nosource': True,
+        'runtest': False,
+        'start_dir': '%(builddir)s/easybuild_obj/python',
+    }),
+]
 
 sanity_check_paths = {
     'files': ['lib/libOpenMM.%s' % SHLIB_EXT],
@@ -47,8 +60,8 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = [
-    "python -c 'import simtk.openmm'",
-    "python -m openmm.testInstallation",
+    "python -s -c 'import simtk.openmm'",
+    "python -s -m openmm.testInstallation",
 ]
 
 modextrapaths = {
