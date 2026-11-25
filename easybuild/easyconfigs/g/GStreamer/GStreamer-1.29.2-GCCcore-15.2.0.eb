@@ -13,10 +13,15 @@ toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
 
 source_urls = ['https://%(namelower)s.freedesktop.org/src/%(namelower)s']
 sources = [SOURCELOWER_TAR_XZ]
-patches = ['%(name)s-1.24_fix_bad_suid.patch']
+patches = [
+    '%(name)s-1.24_fix_bad_suid.patch',
+    '%(name)s-1.29_increase_netclientclock_sync_timeout.patch',
+]
 checksums = [
     {'gstreamer-1.29.2.tar.xz': 'e4e1dccc92cb4be7c34dc513216f0ffc3610fe071d87e28ceecf784b43d6ccf3'},
     {'GStreamer-1.24_fix_bad_suid.patch': 'e40c8b195cc9d44f2d9b92e57608e097ef8dac6fa761c5610fcb836f88610cb1'},
+    {'GStreamer-1.29_increase_netclientclock_sync_timeout.patch':
+     '936e5acbd8347edfab4b6bed6084befa7d2c69f4700e50cf687a4b13eded6723'},
 ]
 
 builddependencies = [
@@ -39,7 +44,9 @@ dependencies = [
     ('elfutils', '0.195'),
 ]
 
-runtest = 'ninja test'
+# GST_CHECKS_IGNORE skips a very specific gst_gstdevice test which fails if there's contention (likely: race condition)
+# See https://github.com/easybuilders/easybuild-easyconfigs/pull/27499#issuecomment-7132501439
+runtest = 'GST_CHECKS_IGNORE=test_device_monitor ninja test'
 
 sanity_check_paths = {
     'files': [],
