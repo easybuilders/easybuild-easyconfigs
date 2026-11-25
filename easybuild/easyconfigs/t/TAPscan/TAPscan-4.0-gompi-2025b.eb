@@ -1,0 +1,38 @@
+easyblock = 'Tarball'
+
+name = 'TAPscan'
+version = '4.0'
+local_scan_version = '4.76'
+
+homepage = 'https://tapscan.plantcode.cup.uni-freiburg.de/about'
+description = 'TAPscan (perl) script to detect TAPs (Transcription Associated Proteins) in your sequence data.'
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+
+source_urls = ['https://github.com/Rensing-Lab/TAPscan-classify/archive/refs/tags/']
+sources = [V_VERSION_TAR_GZ]
+checksums = ['e1d6b6b8e4154cc4aee440db29070c50e32df5aa15726bd253861315018d2c22']
+
+dependencies = [
+    ('Perl', '5.40.2'),
+    ('Python', '3.13.5'),
+    ('HMMER', '3.4'),
+]
+
+local_classify = f'tapscan_classify_v{local_scan_version}.pl'
+
+fix_perl_shebang_for = [local_classify]
+
+# Script missing shebang, add new first line:
+postinstallcmds = ['sed -i "1i #/usr/bin/env python3" %(installdir)s/split_isoform_dot.py']
+
+sanity_check_paths = {
+    'files': [local_classify, 'tapscan_run.sh', 'split_isoform_dot.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = [f'{local_classify} -h']
+
+modextrapaths = {'PATH': '.'}
+
+moduleclass = 'bio'
