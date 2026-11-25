@@ -1,14 +1,38 @@
-Allow MUSCLE3 0.11.x: waveform-editor 0.4.0 pins muscle3==0.10 (upstream PR #252), but the
-MUSCLE3 actor only uses the Instance/receive/send API, which is unchanged in 0.11.0
-author: Simon Pinches (ITER Organization)
---- a/pyproject.toml	2026-11-16 18:05:39.804376121 +0100
-+++ b/pyproject.toml	2026-11-16 18:05:39.812805494 +0100
-@@ -28,7 +28,7 @@
+Add support for MUSCLE3 0.11.x
+approach suggested by Maarten Sebregts (@maarten-ic) in
+https://github.com/iterorganization/Waveform-Editor/pull/267
+implemented by Sebbe Blokhuizen (@SBlokhuizen) in
+https://github.com/iterorganization/Waveform-Editor/pull/280
+backported to 0.4.0 by Simon Pinches (ITER Organization)
+diff --git a/pyproject.toml b/pyproject.toml
+index 05cec619..2211f83c 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -28,7 +28,7 @@ dependencies = [
      "ruamel.yaml",
      "kaleido", # required for exporting PNG to disk
      "asteval",
 -    "muscle3==0.10",
-+    "muscle3>=0.10,<0.12",
++    "muscle3>=0.10",
  ]
  dynamic = ["version"]
  
+diff --git a/waveform_editor/shape_editor/nice_integration.py b/waveform_editor/shape_editor/nice_integration.py
+index a6d10f43..c33c57b1 100644
+--- a/waveform_editor/shape_editor/nice_integration.py
++++ b/waveform_editor/shape_editor/nice_integration.py
+@@ -135,6 +135,14 @@ def run_muscle_manager(
+         _muscle3_dir_configuration if is_direct_mode else _muscle3_inv_configuration
+     )
+     config = ymmsl.load(config_str.format(xml_path=xml_path))
++    try:
++        from ymmsl.v0_2 import resolve_timelines
++    except ImportError:
++        pass  # MUSCLE3 0.10 has no timelines
++    else:
++        # The manager of MUSCLE3 0.11 needs them, which muscle_manager resolves
++        for model in config.models.values():
++            resolve_timelines(model)
+     manager = Manager(config)
+     server_location = manager.get_server_location()
+     pipe.send(server_location)
