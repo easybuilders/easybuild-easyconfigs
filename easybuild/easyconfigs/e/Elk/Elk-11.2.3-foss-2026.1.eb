@@ -1,0 +1,67 @@
+# Updated to version 11.2.3
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'MakeCp'
+
+name = 'Elk'
+version = '11.2.3'
+
+homepage = 'http://elk.sourceforge.net/'
+description = """An all-electron full-potential linearised
+augmented-plane wave (FP-LAPW) code with many advanced features. Written
+originally at Karl-Franzens-Universität Graz as a milestone of the
+EXCITING EU Research and Training Network, the code is designed to be as
+simple as possible so that new developments in the field of density
+functional theory (DFT) can be added quickly and reliably.
+"""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'usempi': True, 'openmp': True, 'opt': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = [SOURCELOWER_TGZ]
+patches = [
+    'elk-11.2.3_make.inc.patch',
+    'elk-11.2.3_tests.patch'
+]
+checksums = [
+    {'elk-11.2.3.tgz': '7bd2c32d59ac6b2e6a1d605e6800f45fe0c505e3263e1f90fa2463c7c972421b'},
+    {'elk-11.2.3_make.inc.patch': '1e24844a5b9036e642ad8be128a5caf0c5702b9b05f5ed43baf1ea285f5fcd3c'},
+    {'elk-11.2.3_tests.patch': '0a8c73eca07f4ae3104c8db56e4fe460692d7bd514908f8de8a2865811266f97'},
+]
+
+dependencies = [
+    ('libxc', '7.0.0'),
+    ('Wannier90', '3.1.0'),
+]
+
+buildopts = 'all'
+
+# There is no point in using a higher number, the make process will simply tip over
+maxparallel = 1
+
+# We are controlling the number of threads here.
+# For the serial test, we are using the 2 threads below;
+# the parallel test is using 2 MPI sessions with 2 threads, also comming
+# from below. Change if you want to use more
+pre_test_opts = 'export OMP_NUM_THREADS=2; '
+runtest = 'test-all'
+
+
+files_to_copy = [(
+    [
+        'src/elk', 'src/spacegroup/spacegroup', 'src/eos/eos',
+        'utilities/elk-bands/elk-bands', 'utilities/elk-optics/elk-optics.py',
+        'utilities/wien2k-elk/se.pl'
+    ], 'bin'
+)]
+
+sanity_check_paths = {
+    'files': ['bin/elk', 'bin/spacegroup', 'bin/eos'],
+    'dirs': []
+}
+
+# We test only major+minor versions
+sanity_check_commands = ["elk | grep 'Elk code version %(version_major)s.%(version_minor)s'"]
+
+moduleclass = 'phys'

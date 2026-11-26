@@ -1,6 +1,9 @@
 Patch to make sure that gfortran can be used, also includes EasyBuild specific environment variables
 Some of it is based on the Debian patches
 Author: J. Sassmannshausen (ICL/UK)
+Modified: the compilers and compiler flags in sys_linux/g77_gcc.conf are taken from the environment (CC, CFLAGS, F77,
+FFLAGS, as set by EasyBuild, so that the optarch and e.g. the C standard of the toolchain are used), with the previously
+hardcoded values as defaults
 diff --git a/pgplot.orig/drivers/pndriv.c b/pgplot/drivers/pndriv.c
 index 2b2f87d..63fa246 100644
 --- a/pgplot.orig/drivers/pndriv.c
@@ -182,7 +185,6 @@ index e48455e..93b9985 100755
  	$(CCOMPL) $(CFLAGD) -c -I. $(SRC)/cpg/cpgdemo.c
  	$(FCOMPL) -o cpgdemo cpgdemo.o $(CPGPLOT_LIB) $(LIBS)
 diff --git a/pgplot.orig/sys_linux/g77_gcc.conf b/pgplot/sys_linux/g77_gcc.conf
-index d6b73e6..b3905b0 100644
 --- a/pgplot.orig/sys_linux/g77_gcc.conf
 +++ b/pgplot/sys_linux/g77_gcc.conf
 @@ -1,11 +1,11 @@
@@ -204,29 +206,35 @@ index d6b73e6..b3905b0 100644
  # The FORTRAN compiler to use.
   
 -   FCOMPL="g77"
-+   FCOMPL="gfortran"
++   FCOMPL="${F77:-gfortran}"
  
  # Mandatory.
  # The FORTRAN compiler flags to use when compiling the pgplot library.
  # (NB. makemake prepends -c to $FFLAGC where needed)
   
 -   FFLAGC="-u -Wall -fPIC -O"
-+   FFLAGC="-u -Wall -fPIC -O3 -std=legacy "
++   FFLAGC="${FFLAGS:--O3} -u -Wall -fPIC -std=legacy"
  
  # Mandatory.
  # The FORTRAN compiler flags to use when compiling fortran demo programs.
-@@ -57,12 +57,12 @@
+@@ -52,17 +52,17 @@
+ # Mandatory.
+ # The C compiler to use.
+  
+-   CCOMPL="gcc"
++   CCOMPL="${CC:-gcc}"
+ 
  # Mandatory.
  # The C compiler flags to use when compiling the pgplot library.
   
 -   CFLAGC="-Wall -fPIC -DPG_PPU -O"
-+   CFLAGC="-Wall -fPIC -DPG_PPU -O3"
++   CFLAGC="${CFLAGS:--O3} -Wall -fPIC -DPG_PPU"
  
  # Mandatory.
  # The C compiler flags to use when compiling C demo programs.
   
 -   CFLAGD="-Wall -O"
-+   CFLAGD="-Wall -O3"
++   CFLAGD="${CFLAGS:--O3} -Wall"
  
  # Optional: Only needed if the cpgplot library is to be compiled.
  # The flags to use when running pgbind to create the C pgplot wrapper
@@ -248,7 +256,7 @@ index d6b73e6..b3905b0 100644
 +
 +   SHARED_LD_CPGPLOT_OPTS="-o libcpgplot.so.5.2.2 -Wl,-soname,libcpgplot.so.5.2.2"
 +
-+   SHARED_LD="gfortran -shared"
++   SHARED_LD="${F77:-gfortran} -shared"
  
  # Optional:
  # On systems such as Solaris 2.x, that allow specification of the
