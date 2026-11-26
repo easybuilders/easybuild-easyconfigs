@@ -1,0 +1,133 @@
+easyblock = 'CMakeMake'
+
+name = 'Parallax'
+version = '20261105'
+
+homepage = 'https://github.com/CARV-ICS-FORTH/parallax'
+description = """Parallax is a persistent key-value store designed for fast storage devices
+and RDMA/InfiniBand networking."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+
+local_parallax_commit = 'e616be26447b800251645b2e6aa546f76eb36eba'
+local_log_commit = '08db659266a606b9c36d3141ed925612395cb431'
+local_yaml_commit = '1ebd83d894d4fc476a23977e85a2164c28aadf6b'
+local_uthash_commit = 'a49bed0b4abb7dff16c73906dcdc8a9718d582d2'
+local_cmake_scripts_commit = 'c012a75c255e57523c9e2faacd86356439318542'
+local_libbloom_commit = '0c16c9de3c5088681a02e78f9b260ca35fc76984'
+local_minos_commit = 'b020dd343bb822ac5628dc7385681174bc95fd59'
+local_sim_uc_commit = 'f544a39e8b0c18ed2fae6d24eebd0c367966a715'
+
+sources = [
+    {
+        'source_urls': ['https://github.com/CARV-ICS-FORTH/parallax/archive/'],
+        'download_filename': '%s.tar.gz' % local_parallax_commit,
+        'filename': '%%(namelower)s-%s.tar.gz' % local_parallax_commit[:7],
+    },
+    {
+        'source_urls': ['https://github.com/innerout/log.c/archive/'],
+        'download_filename': '%s.tar.gz' % local_log_commit,
+        'filename': 'log.c-%s.tar.gz' % local_log_commit[:7],
+    },
+    {
+        'source_urls': ['https://github.com/yaml/libyaml/archive/'],
+        'download_filename': '%s.tar.gz' % local_yaml_commit,
+        'filename': 'libyaml-%s.tar.gz' % local_yaml_commit[:7],
+    },
+    {
+        'source_urls': ['https://github.com/troydhanson/uthash/archive/'],
+        'download_filename': '%s.tar.gz' % local_uthash_commit,
+        'filename': 'uthash-%s.tar.gz' % local_uthash_commit[:7],
+    },
+    {
+        'source_urls': ['https://github.com/StableCoder/cmake-scripts/archive/'],
+        'download_filename': '%s.tar.gz' % local_cmake_scripts_commit,
+        'filename': 'cmake-scripts-%s.tar.gz' % local_cmake_scripts_commit[:7],
+    },
+    {
+        'source_urls': ['https://github.com/gesalous/libbloom/archive/'],
+        'download_filename': '%s.tar.gz' % local_libbloom_commit,
+        'filename': 'libbloom-%s.tar.gz' % local_libbloom_commit[:7],
+    },
+    {
+        'source_urls': ['https://github.com/CARV-ICS-FORTH/minos/archive/'],
+        'download_filename': '%s.tar.gz' % local_minos_commit,
+        'filename': 'minos-%s.tar.gz' % local_minos_commit[:7],
+    },
+    {
+        'source_urls': ['https://github.com/gesalous/sim-universal-construction/archive/'],
+        'download_filename': '%s.tar.gz' % local_sim_uc_commit,
+        'filename': 'sim-universal-construction-%s.tar.gz' % local_sim_uc_commit[:7],
+    },
+]
+
+patches = [
+    '%(name)s-%(version)s_fix-rdma.patch',
+]
+
+checksums = [
+    {'parallax-e616be2.tar.gz': '09c976f15605d03d65d039bb77684919c6c711efaba1fea2d6ae90f828da2604'},
+    {'log.c-08db659.tar.gz': '89da5a783766a74e06bdbbbd8a0289f41c8f8ae8b6f12130d5bcec095849002c'},
+    {'libyaml-1ebd83d.tar.gz': 'b4c0a1a531d7adeca6f66bfe595a8ac1117233ad1fe1df43f5b3db01a9749f79'},
+    {'uthash-a49bed0.tar.gz': 'ccad12f52903071c60b18eca8aee322a1cb1d9efdb55fb94a686d05efa4ca306'},
+    {'cmake-scripts-c012a75.tar.gz': 'f4a85372d80ce740a0aa082dbb556f9d08a4f4179c6aa7c169bb0f39a95fdcad'},
+    {'libbloom-0c16c9d.tar.gz': 'cede4cc94fc8c2e4ab2410aab2f1127b9511cfc939fac26c10c7669551fa343d'},
+    {'minos-b020dd3.tar.gz': '9d39966fc1ab615f5daf318eb63c44c9b219142b8d530cd4e980db95e8a8a48a'},
+    {'sim-universal-construction-f544a39.tar.gz': 'cb71d9845996674bd2440d76ffb32ab8068a7fcf281f3e8f995ff939cd958827'},
+    {'Parallax-20261105_fix-rdma.patch': 'ccb81ccaa97c1973afee6fa742623f409fa0fe373e4c4e70cf352856919fa13c'},
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '3.31.8'),
+]
+
+dependencies = [
+    ('numactl', '2.0.19'),
+]
+
+osdependencies = [
+    OS_PKG_IBVERBS_DEV,
+    ('librdmacm-dev', 'librdmacm-devel', 'rdma-core-devel'),
+]
+
+configopts = ' '.join([
+    '-DCMAKE_BUILD_TYPE=Release',
+    '-DCMAKE_INSTALL_LIBDIR=lib',
+    '-DNET=INFINIBAND',
+    '-DPARALLAX_BUILD_TESTING=OFF',
+    '-DDISABLE_LOGGING=ON',
+    '-DENABLE_FLTO=ON',
+    '-DCMAKE_AR=$EBROOTGCCCORE/bin/gcc-ar',
+    '-DCMAKE_RANLIB=$EBROOTGCCCORE/bin/gcc-ranlib',
+    '-DCMAKE_NM=$EBROOTGCCCORE/bin/gcc-nm',
+    '-DFETCHCONTENT_FULLY_DISCONNECTED=ON',
+    '-DFETCHCONTENT_SOURCE_DIR_LOG=%%(builddir)s/log.c-%s' % local_log_commit,
+    '-DFETCHCONTENT_SOURCE_DIR_YAML=%%(builddir)s/libyaml-%s' % local_yaml_commit,
+    '-DFETCHCONTENT_SOURCE_DIR_UTHASH=%%(builddir)s/uthash-%s' % local_uthash_commit,
+    '-DFETCHCONTENT_SOURCE_DIR_CMAKE-SCRIPTS=%%(builddir)s/cmake-scripts-%s' % local_cmake_scripts_commit,
+    '-DFETCHCONTENT_SOURCE_DIR_LIBBLOOM=%%(builddir)s/libbloom-%s' % local_libbloom_commit,
+    '-DFETCHCONTENT_SOURCE_DIR_MINOS=%%(builddir)s/minos-%s' % local_minos_commit,
+    '-DFETCHCONTENT_SOURCE_DIR_SIM_UNIVERSAL_CONSTRUCTION='
+    '%%(builddir)s/sim-universal-construction-%s' % local_sim_uc_commit,
+])
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/share/parallax && cp %(start_dir)s/options.yml %(installdir)s/share/parallax/',
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/infiniband_parallax_server',
+        'bin/kv_format.parallax',
+        'bin/parallax_server',
+        'lib/libparallax.a',
+        'lib/libparallax_net_lib.%s' % SHLIB_EXT,
+        'include/parallax.h',
+        'include/structures.h',
+        'share/parallax/options.yml',
+    ],
+    'dirs': ['bin', 'lib', 'include'],
+}
+
+moduleclass = 'data'
