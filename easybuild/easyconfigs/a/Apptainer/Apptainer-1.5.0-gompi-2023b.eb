@@ -1,0 +1,51 @@
+# Author: Pradeep Jasal <pradeep.jasal@bsc.es>
+# Reviewed by: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+# Barcelona Supercomputing Center, 2026
+
+easyblock = 'ConfigureMake'
+
+name = 'Apptainer'
+version = '1.5.0'
+
+homepage = 'https://apptainer.org/'
+description = """Apptainer (formerly Singularity) is an open source container platform
+ designed to be simple, fast, and secure."""
+
+toolchain = {'name': 'gompi', 'version': '2023b'}
+
+source_urls = ['https://github.com/apptainer/apptainer/releases/download/v%(version)s/']
+sources = ['apptainer-%(version)s.tar.gz']
+checksums = ['36d67d57ef959397fa4f59169cf7deb92220537160e761e0c1cff84624ad81e3']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('pkgconf', '2.0.3'),
+    ('Go', '1.25.7', '', SYSTEM),
+]
+
+dependencies = [
+    ('libseccomp', '2.5.5'),
+]
+
+osdependencies = [('cryptsetup', 'fuse2fs', 'mksquashfs', 'unsquashfs')]
+
+# configure to build without root
+configure_cmd = './mconfig'
+configopts = '--without-suid'
+
+# Pass GOFLAGS on make command line so it overrides Makefile defaults.
+buildopts = 'GOFLAGS="-mod=readonly -trimpath -buildvcs=false" -C builddir'
+installopts = '-C builddir'
+
+sanity_check_paths = {
+    'files': ['bin/apptainer'],
+    'dirs': ['etc/apptainer', 'libexec/apptainer'],
+}
+
+sanity_check_commands = [
+    'apptainer --version',
+    'apptainer exec docker://hello-world /hello',
+    'apptainer build alpine.sif docker://alpine',
+]
+
+moduleclass = 'tools'
