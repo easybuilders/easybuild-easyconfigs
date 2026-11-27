@@ -1,0 +1,74 @@
+easyblock = 'CMakeMake'
+
+name = 'GOTM'
+version = '5.4.0'
+_date = '-20231221'
+versionsuffix = f'{_date}-WaterITech'  # WaterITech's fork
+
+homepage = 'https://gitlab.com/wateritech-public/waterecosystemstool/gotm'
+description = """GOTM - the General Ocean Turbulence Model is an ambitious name for a
+one-dimensional water column model for marine and limnological applications. It is coupled
+to a choice of traditional as well as state-of-the-art parameterisations for vertical
+turbulent mixing. The package consists of the FORTRAN source code, a number of idealised
+and realistic test cases, and a scientific documentation, all published under the GNU
+public license.
+This is WaterITech's fork (not upstream gotm-model/code), extended with hypsographic
+representation of the physical domain, relevant for lakes, reservoirs and lagoons."""
+
+toolchain = {'name': 'gompi', 'version': '2025a'}
+
+sources = [
+    {
+        'filename': 'GOTM-%(version)s%(versionsuffix)s.tar.xz',
+        'git_config': {
+            'url': 'https://gitlab.com/wateritech-public/waterecosystemstool',
+            'repo_name': 'gotm',
+            'clone_into': 'GOTM',
+            'commit': '2b107b1fddd3ba4a17746cc2b4f31e431f8d35fd',
+            'recursive': True,  # pulls in fabm, flexout and stim
+        },
+    },
+    {
+        'filename': 'wet-v2.3.tar.gz',
+        'source_urls': ['https://gitlab.com/wateritech-public/waterecosystemstool/wet/-/archive/v2.3/'],
+    },
+]
+patches = ['GOTM-5.4.0_namelist-declaration-order.patch']
+checksums = [
+    {'GOTM-5.4.0-20231221-WaterITech.tar.xz': '2a42026b91c8d58abcce82d29cb62caeaa3178cf700317d1a5bcfc96c5b2d8e5'},
+    {'wet-v2.3.tar.gz': '2307f2c0cb2f5265ff8f9c6ac84b4cef701724fd52936805ade0ef87772f2116'},
+    {'GOTM-5.4.0_namelist-declaration-order.patch': 'd687f189b442971ee201f235ef7dc5286e7880c8b93e3e361c305b9d7baf751c'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+]
+
+dependencies = [
+    ('netCDF-Fortran', '4.6.2'),
+]
+
+# Fix issue #2 in Gitlab issue board on incorrect macro
+# Fix invalid INTEGER comparison
+# Add wet straight into FABM's own DEFAULT_INSTITUTES list
+preconfigopts = (
+    "sed -i "
+    "-e 's/_FABM_HORIZONTAL_LOOP_BEGIN_/_HORIZONTAL_LOOP_BEGIN_/' "
+    "-e 's/\\.eq\\. 1 \\.OR\\. 3/.eq. 1 .OR. self%qStage .eq. 3/' "
+    "../wet-v2.3/src/fish.F90 && "
+    "sed -i '/^set(DEFAULT_INSTITUTES$/a\\    wet' "
+    "../GOTM/extern/fabm/src/CMakeLists.txt && "
+)
+
+configopts = ' '.join([
+    '-DGOTM_USE_FABM=ON',
+    '-DFABM_WET_BASE=%(builddir)s/wet-v2.3',
+    '-DGOTM_USE_STIM=ON',
+])
+
+sanity_check_paths = {
+    'files': ['bin/gotm'],
+    'dirs': [],
+}
+
+moduleclass = 'geo'
