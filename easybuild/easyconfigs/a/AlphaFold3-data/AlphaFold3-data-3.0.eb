@@ -1,0 +1,74 @@
+easyblock = 'Dataset'
+
+name = 'AlphaFold3-data'
+version = '3.0'
+
+homepage = 'https://image-net.or://github.com/google-deepmind/alphafold3/tree/main'
+description = """A bundle of the genetic databases needed to run AlphaFold3."""
+
+toolchain = SYSTEM
+
+builddependencies = [
+    # Any zstd would do
+    ('GCCcore', '14.3.0'),
+    ('zstd', '1.5.7', '', ('GCCcore', '14.3.0')),
+]
+
+source_urls = ['https://storage.googleapis.com/alphafold-databases/v%(version)s']
+data_sources = [
+    {
+        'filename': 'pdb_2022_09_28_mmcif_files.tar.zst',
+        'extract_cmd': 'tar --no-same-owner --no-same-permissions --zstd -xf %s',
+    },
+] + [
+    {
+        'filename': _filename,
+        'extract_cmd': f'unzstd %s -o {_filename[:-4]}',
+    } for _filename in [
+        'mgy_clusters_2022_05.fa.zst',
+        'bfd-first_non_consensus_sequences.fasta.zst',
+        'uniref90_2022_05.fa.zst',
+        'uniprot_all_2021_04.fa.zst',
+        'pdb_seqres_2022_09_28.fasta.zst',
+        'rnacentral_active_seq_id_90_cov_80_linclust.fasta.zst',
+        'nt_rna_2023_02_23_clust_seq_id_90_cov_80_rep_seq.fasta.zst',
+        'rfam_14_9_clust_seq_id_90_cov_80_rep_seq.fasta.zst',
+    ]
+]
+checksums = [
+    {'pdb_2022_09_28_mmcif_files.tar.zst': '4706ec0d948ed7a005b30eea21f5a7f9362b067e48d8bea2605671a49bd43c24'},
+    {'mgy_clusters_2022_05.fa.zst': '584b0918d0d31a7284e38127f46e4a98544efa40c5ef8a609c7e17a547dc76ed'},
+    {'bfd-first_non_consensus_sequences.fasta.zst': '04389850d9b217d7c9a2143960b3f42c2aa38ac297c7bf7634de6fca28331e9f'},
+    {'uniref90_2022_05.fa.zst': '4c780bbc8b47248dceee5faf956f445be2923f15f58be7eb47b07ef1f2618e6d'},
+    {'uniprot_all_2021_04.fa.zst': 'af53fd1e48c797ec9de4133e1e30f5dea807cf8867a9a1d648e870e85b23c34a'},
+    {'pdb_seqres_2022_09_28.fasta.zst': '2d8ea914059e43a10be0d5abe538a61b768a6ab2fbb39b26651602907f1c2c77'},
+    {'rnacentral_active_seq_id_90_cov_80_linclust.fasta.zst':
+     '52eec2f751406e9d39a14d5b4ecc38138a00a26169f7ca0a45cfd650518d8878'},
+    {'nt_rna_2023_02_23_clust_seq_id_90_cov_80_rep_seq.fasta.zst':
+     'a8a2d56b0035d8b64193aa5f6d7b04f38cb3ccb8ac406309b1c9e8936328f271'},
+    {'rfam_14_9_clust_seq_id_90_cov_80_rep_seq.fasta.zst':
+     '681632ea6d5fb9e01fad23c35f71b14228f4c0730cdf63a65eff8b428d273112'},
+]
+
+# This directory has 200000 files, the deduplication isn't worth the performance hit
+object_storage_ignore_dirs = ['mmcif_files']
+
+sanity_check_paths = {
+    'files': [
+        'mgy_clusters_2022_05.fa',
+        'bfd-first_non_consensus_sequences.fasta',
+        'uniref90_2022_05.fa',
+        'uniprot_all_2021_04.fa',
+        'pdb_seqres_2022_09_28.fasta',
+        'rnacentral_active_seq_id_90_cov_80_linclust.fasta',
+        'nt_rna_2023_02_23_clust_seq_id_90_cov_80_rep_seq.fasta',
+        'rfam_14_9_clust_seq_id_90_cov_80_rep_seq.fasta',
+    ],
+    'dirs': ['mmcif_files'],
+}
+
+modextravars = {
+    'ALPHAFOLD3_DATA_DIR': '%(installdir)s',
+}
+
+moduleclass = 'dataset'
