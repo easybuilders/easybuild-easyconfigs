@@ -1,0 +1,84 @@
+easyblock = 'MakeCp'
+
+name = 'Clair3'
+version = '2.0.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/HKU-BAL/Clair3'
+description = """Clair3 is a germline small variant caller for long-reads.
+Clair3 makes the best of two major method categories: pileup calling handles
+most variant candidates with speed, and full-alignment tackles complicated candidates
+to maximize precision and recall. Clair3 runs fast and has superior performance,
+especially at lower coverage. Clair3 is simple and modular for easy deployment and
+integration."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+github_account = 'HKU-BAL'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s-remove-bundled-htslib.patch',
+    '%(name)s-%(version)s-add-longphase-dependency.patch',
+]
+checksums = [
+    {'v2.0.2.tar.gz': '144afb25e96c984c1d2aeb7dcf4f09412e47fc479922023ce20c5f9b0d473c66'},
+    {'Clair3-2.0.2-remove-bundled-htslib.patch':
+     'ad90ec88494ab88559ae22508da0853c26cd9f96954a5dbeb582603466eade8a'},
+    {'Clair3-2.0.2-add-longphase-dependency.patch':
+     'b7b694db04dfb221b3f462e15e78a467af3722187a41624c240a50aff0b1572c'},
+]
+
+dependencies = [
+    ('CUDA', '12.8.0', '', SYSTEM),
+    ('Python', '3.13.1'),
+    ('PyTorch', '2.9.1', '-CUDA-%(cudaver)s-whl'),
+    ('h5py', '3.14.0'),
+    ('Boost', '1.88.0'),
+    ('pigz', '2.8'),
+    ('cffi', '1.17.1'),
+    ('parallel', '20250722'),
+    ('SAMtools', '1.22.1'),
+    ('WhatsHap', '2.6'),
+    ('zlib', '1.3.1'),
+    ('bzip2', '1.0.8'),
+    ('cURL', '8.11.1'),
+    ('zstd', '1.5.6'),
+    ('XZ', '5.6.3'),
+    ('HTSlib', '1.22.1'),
+    ('libdeflate', '1.24'),
+    ('PyPy', '7.3.20', '-3.11', SYSTEM),
+    ('LongPhase', '1.7.3'),
+]
+
+prebuildopts = 'cd preprocess/realign && '
+prebuildopts += '$CXX $CXXFLAGS -std=c++14 -O1 -shared -fPIC -o realigner ssw_cpp.cpp ssw.c realigner.cpp && '
+prebuildopts += '$CXX $CXXFLAGS -std=c++11 -O3 -shared -fPIC -o debruijn_graph debruijn_graph.cpp && '
+prebuildopts += 'cd ../.. && '
+buildopts = 'PREFIX="$EBROOTHTSLIB" PYTHON=python'
+
+files_to_copy = [
+    ([
+        '%(namelower)s', '%(namelower)s.py', 'postprocess', 'preprocess', 'run_clair3.py',
+        'run_clair3.sh', 'scripts', 'shared',
+    ], 'bin'),
+    (['libclair3.*'], 'lib'),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/run_clair3.sh', 'bin/run_clair3.py', 'bin/%(namelower)s.py',
+        'bin/preprocess/realign/realigner', 'bin/preprocess/realign/debruijn_graph',
+        'lib/libclair3.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['bin/%(namelower)s', 'bin/postprocess', 'bin/preprocess', 'bin/scripts', 'bin/shared'],
+}
+
+sanity_check_commands = [
+    'run_clair3.sh --help',
+    "python -s -c 'import h5py, libclair3, torch; assert torch.version.cuda == \"12.8\"'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib'}
+
+moduleclass = 'bio'

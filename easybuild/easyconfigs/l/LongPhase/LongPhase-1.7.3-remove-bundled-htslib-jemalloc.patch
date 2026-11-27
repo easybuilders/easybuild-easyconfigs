@@ -1,0 +1,25 @@
+Remove bundled HTSlib and jemalloc builds and use EasyBuild dependencies.
+Author: Emik Lin (HKUMed CPOS)
+diff --git a/Makefile b/Makefile
+index 8d265fe..6777b1c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -14 +14 @@ PROGRAMS = longphase
+-all: subprojects
++all: $(PROGRAMS)
+@@ -16,7 +16,2 @@ all: subprojects
+-subprojects:
+-	$(MAKE)	-C	./jemalloc
+-	$(MAKE)	-C	./htslib
+-	$(MAKE)	$(PROGRAMS)
+-
+-ALL_CPPFLAGS = -I. $(CPPFLAGS) -Ihtslib -Ijemalloc
+-ALL_LDFLAGS  = $(LDFLAGS) -Lhtslib/htslib -Ljemalloc/lib
++ALL_CPPFLAGS = -I. $(CPPFLAGS) -I$(EBROOTHTSLIB)/include -I$(EBROOTJEMALLOC)/include -I$(EBROOTZLIB)/include
++ALL_LDFLAGS  = $(LDFLAGS) -L$(EBROOTHTSLIB)/lib -L$(EBROOTJEMALLOC)/lib -L$(EBROOTZLIB)/lib
+@@ -35,3 +30,2 @@ config.h:
+-include config.mk
+-JEMDIR = jemalloc
+-JEMLIB = $(JEMDIR)/lib/libjemalloc.a -ldl
++HTSLIB_LIB = -lhts -lz
++JEMLIB = -ljemalloc -ldl
