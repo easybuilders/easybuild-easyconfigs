@@ -1,0 +1,30 @@
+--- a/lib/CMakeLists.txt
++++ b/lib/CMakeLists.txt
+@@ -265,21 +265,17 @@
+   find_library(RDMA_LIB
+     NAMES rdmacm rdma_cm
+     PATHS /usr/lib /usr/lib64 /usr/local/lib /usr/lib/x86_64-linux-gnu
+-    REQUIRED
+-    NO_DEFAULT_PATH)
++    REQUIRED)
+ 
+   find_library(IBVERBS_LIB
+     NAMES ibverbs
+     PATHS /usr/lib /usr/lib64 /usr/local/lib /usr/lib/x86_64-linux-gnu
+-    REQUIRED
+-    NO_DEFAULT_PATH)
++    REQUIRED)
+ 
+-  if(EXISTS "/usr/include/rdma/rdma_cma.h" AND EXISTS "/usr/include/infiniband/verbs.h")
+-    message(STATUS "Found RDMA headers")
+-    include_directories(/usr/include /usr/include/infiniband)
+-  else()
+-    message(FATAL_ERROR "RDMA headers not found")
+-  endif()
++  find_path(RDMA_INCLUDE_DIR rdma/rdma_cma.h REQUIRED)
++  find_path(IBVERBS_INCLUDE_DIR infiniband/verbs.h REQUIRED)
++  message(STATUS "Found RDMA headers: ${RDMA_INCLUDE_DIR}, ${IBVERBS_INCLUDE_DIR}")
++  include_directories(${RDMA_INCLUDE_DIR} ${IBVERBS_INCLUDE_DIR}/infiniband)
+ 
+   set(IB_LIB "infiniband_${PROJECT_NAME}_server")
+ 
