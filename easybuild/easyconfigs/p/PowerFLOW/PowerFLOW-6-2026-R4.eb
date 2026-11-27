@@ -1,0 +1,51 @@
+# Author: Cintia Willemyns (Vrije Universiteit Brussel)
+
+easyblock = 'Tarball'
+name = 'PowerFLOW'
+version = '6-2026-R4'
+
+homepage = 'https://www.3ds.com/'
+description = """
+SIMULIA PowerFLOW is a software application used for simulating and visualizing fluid flows.
+"""
+toolchain = SYSTEM
+
+# This installation is for PowerFLOW using license type DSLS (Dassault Systèmes Licensing Server).
+# To set it up use environment variable:
+# DSLS_POWERFLOW_LICENSE="host1:1234,host2:2345,host3:3456;host4:4567
+
+download_instructions = 'Manually obtain tarballs from Dassault Systèmes'
+sources = [
+    'PowerFLOW_2026_Refresh4.powerflow-%(version)s-linux.1-3.tar',
+    'PowerFLOW_2026_Refresh4.powerflow-%(version)s-linux.2-3.tar',
+    'PowerFLOW_2026_Refresh4.powerflow-%(version)s-linux.3-3.tar',
+]
+
+checksums = [
+    {'PowerFLOW_2026_Refresh4.powerflow-6-2026-R4-linux.1-3.tar':
+     '316fcb0866b2d8707d901f1228c53bd92e61a7b20870d4feff21b9dd5ab21170'},
+    {'PowerFLOW_2026_Refresh4.powerflow-6-2026-R4-linux.2-3.tar':
+     'b550b110a2c27cb5d0f5c1f70e9ce914ee05fb169a5104cc8a9da5357a74c608'},
+    {'PowerFLOW_2026_Refresh4.powerflow-6-2026-R4-linux.3-3.tar':
+     '0fdde6de35031af2a1044b0d2d334167241143c701420fa3b6fa3074a2a77dfa'},
+    {'PowerFLOW-6-2026-R2_fix-impi.patch':
+     '629b5a8f57a4e965a6556c97dbce46a27bdcd83e60bdfef6d4fc2bcc76f49242'},
+]
+
+postinstallcmds = [
+    'for f in %(builddir)s/AM_SIM_PowerFLOW.Linux64/1/unix/*.tar.gz; do tar -xzf "$f" -C %(installdir)s/; done',
+    'for f in %(builddir)s/AM_SIM_PowerFLOW.Linux64/[2-9]/*.tar.gz; do tar -xzf "$f" -C %(installdir)s/; done',
+    'rm -fr %(installdir)s/{1,2,3}',
+    'chmod u+w %(installdir)s/dist/generic/tools/queue_scripts/exarun',
+]
+
+postinstallpatches = [('PowerFLOW-6-2026-R2_fix-impi.patch', 0)]
+
+sanity_check_paths = {
+    'files': ['bin/exafile', 'dist/generic/scripts/bin_launcher', 'bin/ptherm/powertherm'],
+    'dirs': ['bin', 'dist']
+}
+
+sanity_check_commands = ["exarun  --help 2>&1 | grep -q Usage"]
+
+moduleclass = 'cae'

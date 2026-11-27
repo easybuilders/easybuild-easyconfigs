@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'PSPLINE'
+version = '2.5.0'
+
+github_account = 'PrincetonUniversity'
+homepage = 'https://github.com/PrincetonUniversity/pspline'
+description = """Princeton Spline and Hermite Cubic Interpolation Routines"""
+
+toolchain = {'name': 'gompi', 'version': '2023b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ}]
+checksums = [
+    {'pspline-2.5.0.tar.gz': '409f59d49d6f67ddbee335385ae10a53a378ac2ed9e254327bcbc59d3d0ca8c0'},
+]
+
+dependencies = [('netCDF-Fortran', '4.6.1')]
+
+skipsteps = ['configure']
+
+maxparallel = 1
+
+prebuildopts = 'CC=gcc '
+prebuildopts += 'LDFLAGS="$LDFLAGS -Wl,-soname=libpspline.%s" ' % SHLIB_EXT
+
+buildopts = 'shared all'
+
+installopts = 'PREFIX=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['lib/libpspline.a', 'lib/libpspline.%s' % SHLIB_EXT] +
+             ['include/%s.mod' % x for x in ['czspline1d', 'czspline2d', 'czspline3d', 'ezspline',
+                                             'ezspline_obj', 'ezspline_type', 'psp_precision_mod']] +
+             ['include/czspline_capi.h'] +
+             ['test/%s' % x for x in ['czspline_test', 'czspline_test.output', 'ezspline_test',
+                                      'ezspline_test.ref', 'lookup_test', 'lookup_test.output',
+                                      'pspltest', 'pspltest.output', 'qk_pspline', 'qk_pspline.output']],
+    'dirs': [],
+}
+
+moduleclass = 'data'

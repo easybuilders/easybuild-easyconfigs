@@ -1,0 +1,123 @@
+easyblock = 'PythonBundle'
+
+name = 'LINC'
+version = '5.2.1'
+
+homepage = "https://linc.readthedocs.io/en/latest/"
+
+description = """
+LINC is a pipeline to correct for various instrumental and ionospheric effects in both LOFAR HBA and LOFAR LBA
+observations.
+"""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+
+builddependencies = [
+    ('wget', '1.25.0'),  # Needed for the test step
+    ('Cython', '3.2.4'),  # Build requirement of the pyregion sdist
+]
+
+# Based on https://git.astron.nl/RD/LINC/-/tree/v5.2.1#software-requirements and the dependencies in pyproject.toml
+dependencies = [
+    ('PyBDSF', '1.14.1'),
+    ('DP3', '6.6'),
+    ('LoSoTo', '2.7.1'),
+    ('LSMTool', '1.9.0'),
+    ('EveryBeam', '0.8.5'),
+    ('SAGECal', '0.8.9'),
+    ('spinifex', '1.4.1'),
+    ('AOFlagger', '3.5.1'),
+    ('WSClean', '3.7'),
+    ('IDG', '1.3.0'),
+    ('LofarStMan', '1.0.1'),
+    ('mocpy', '0.20.0'),
+    ('Python', '3.14.2'),
+    ('Python-bundle-PyPI', '2026.04'),  # joblib, pyparsing
+    ('SciPy-bundle', '2026.05'),
+    ('matplotlib', '3.10.9'),
+    ('casacore', '3.8.1'),
+    ('python-casacore', '3.8.1'),
+    ('astropy', '8.0.1'),
+    ('h5py', '3.16.0'),
+    ('cwltool', '3.3.20261106131234'),
+    # There was a version pin for toil < 9.4 in LINC-5.2.1, but an upstream MR confirmed this is no longer needed.
+    # See https://git.astron.nl/RD/LINC/-/merge_requests/343 and https://git.astron.nl/RD/LINC/-/work_items/103
+    ('toil', '9.6.0', '-cwl'),
+]
+
+# Get data needed to run the test
+local_pretestopts = 'mkdir -p data && '
+local_pretestopts += 'wget -nv https://support.astron.nl/software/ci_data/linc/test_data.tar.gz '
+local_pretestopts += '-O test_data.tar.gz && '
+local_pretestopts += 'wget -nv https://support.astron.nl/software/ci_data/linc/results_calibrator.tar.gz '
+local_pretestopts += '-O results_calibrator.tar.gz && tar xfz test_data.tar.gz -C data && '
+local_pretestopts += 'tar xfz results_calibrator.tar.gz -C data && '
+
+# Patch the workflow file so that it looks for the skymodels within the LINC (temporary) install dir
+local_pretestopts += 'sed -i -e "s|\"/usr/local/share/linc/skymodels/A-Team_Midres.skymodel\"|'
+local_pretestopts += '\"${EB_PYTHONPACKAGE_TEST_INSTALLDIR}/share/linc/skymodels/A-Team_Midres.skymodel\"|" '
+local_pretestopts += '-e "s|\"/usr/local/share/linc/skymodels\"|'
+local_pretestopts += '\"${EB_PYTHONPACKAGE_TEST_INSTALLDIR}/share/linc/skymodels\"|" test_jobs/HBA_target.json && '
+
+# LINC's summary step that's run at the end of a workflow, reads the versions file that is normally created when
+# building the LINC container. We need to put this file in place for the test step as well
+local_pretestopts += 'echo "LINC: %(version)s" > $EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc/.versions && '
+local_pretestopts += 'python -m pip freeze | sed "s/==/: /g" >> '
+local_pretestopts += '$EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc/.versions && '
+
+# Ensure SLURM env vars are emptied, otherwise OpenMPI may complain that OMPI wasn't build with SLURMs PMI support
+local_pretestopts += 'for i in $(env | grep SLURM); do unset "${i%=*}"; done && '
+
+# Disable OpenMP parallelism, to avoid BLAS error with DP3 and hang in clocktek
+# LINC uses its own threading, which seems to clash with a multithreaded BLAS
+local_pretestopts += 'export OMP_NUM_THREADS=1 && export OPENBLAS_NUM_THREADS=1 && '
+
+# Set the LINC_DATA_ROOT and make sure to include the python scripts (which are in /bin for some reason)
+# to the PYTHONPATH
+local_pretestopts += 'export LINC_DATA_ROOT=$EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc && '
+local_pretestopts += 'export PYTHONPATH=$PYTHONPATH:$EB_PYTHONPACKAGE_TEST_INSTALLDIR/bin && '
+local_testopts = '--no-container --preserve-entire-environment --outdir results --leave-tmpdir '
+local_testopts += '--tmpdir-prefix run_hba_calibrator '
+local_testopts += '$EB_PYTHONPACKAGE_TEST_INSTALLDIR/share/linc/workflows/HBA_target.cwl '
+local_testopts += 'test_jobs/HBA_target.json'
+
+exts_list = [
+    ('pyregion', '2.3.0', {
+        'checksums': ['e8498711421173239689de523bb465245f5551a18a181cb4956d87f9c7464925'],
+    }),
+    ('scikit-fuzzy', '0.5.0', {
+        'modulename': 'skfuzzy',
+        'source_tmpl': 'scikit_fuzzy-%(version)s.tar.gz',
+        'checksums': ['2ee5340523aa7635ca568b9d8029c7738d05f9ea550fc89d4054b4cb50f34e7f'],
+    }),
+    (name, version, {
+        'modulename': False,
+        'source_urls': ['https://git.astron.nl/RD/LINC/-/archive/v%(version)s'],
+        'sources': ['%(name)s-v%(version)s.tar.gz'],
+        'checksums': ['14e70cd9e735ecb7a58baea7f564a234b410482b2427a6ec5884a579a0caf4f6'],
+        # LINC uses setuptools_scm to determine its version. To avoid needing to do a git clone (which pulls in
+        # way more data than needed AND prevents us from having a checksum), we simply tell setuptools_scm
+        # which version to use
+        'preinstallopts': 'export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LINC=%(version)s && ',
+        'testinstall': True,
+        'pretestopts': local_pretestopts,
+        'runtest': 'cwltool',
+        'testopts': local_testopts,
+    }),
+]
+
+modloadmsg = """
+Certain components of LINC (e.g. DP3) do not support a multithreaded BLAS. You may need to set OMP_NUM_THREADS=1 and
+OPENBLAS_NUM_THREADS=1. If you're running the pipeline within a SLURM environment, you may need to clear all SLURM
+environment variables from your environment (e.g. using 'for i in $(env | grep SLURM); do unset "${i%=*}"; done').
+"""
+
+# LINC's summary step expects a file listing the used software versions in $LINC_DATA_ROOT/.versions,
+# which is normally created by the LINC container build (see Docker/Dockerfile-linc)
+postinstallcmds = [
+    'echo "LINC: %(version)s" > %(installdir)s/share/linc/.versions',
+    'export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && '
+    'python -m pip freeze | sed "s/==/: /g" >> %(installdir)s/share/linc/.versions',
+]
+
+moduleclass = 'astro'

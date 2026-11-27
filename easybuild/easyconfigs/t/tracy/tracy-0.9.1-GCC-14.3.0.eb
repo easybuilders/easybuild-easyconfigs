@@ -1,0 +1,56 @@
+easyblock = 'MakeCp'
+
+name = 'tracy'
+version = '0.9.1'
+
+homepage = 'https://github.com/gear-genomics/tracy'
+description = """Tracy is a command-line application for basecalling, alignment,
+ assembly and deconvolution of Sanger chromatogram trace files."""
+
+toolchain = {'name': 'GCC', 'version': '14.3.0'}
+toolchainopts = {'pic': True}
+
+# tracy requires the header-only xxsds fork of sdsl-lite
+local_sdsl_commit = '9a0d5676fd09fb8b52af214eca2d5809c9a32dbe'
+
+sources = [
+    {
+        'source_urls': ['https://github.com/gear-genomics/%(name)s/archive/'],
+        'download_filename': V_VERSION_TAR_GZ,
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://github.com/xxsds/sdsl-lite/archive/'],
+        'download_filename': f'{local_sdsl_commit}.tar.gz',
+        'filename': f'sdsl-lite-{local_sdsl_commit}.tar.gz',
+    },
+]
+checksums = [
+    {'tracy-0.9.1.tar.gz': 'b4a69e148fed9e69cee251a8c0e1b6964eb1747b6870d207f67d09a8825605b2'},
+    {'sdsl-lite-9a0d5676fd09fb8b52af214eca2d5809c9a32dbe.tar.gz':
+     'fc8e8dd6cb8ec99e26515bc449008f7a483f28e11de34b1924e6ac41930350d0'},
+]
+
+dependencies = [
+    ('Boost', '1.88.0'),
+    ('bzip2', '1.0.8'),
+    ('HTSlib', '1.22.1'),
+    ('XZ', '5.8.1'),
+    ('zlib', '1.3.1'),
+]
+
+start_dir = '%(name)s-%(version)s'
+
+build_cmd = 'make HTSLIBINCDIR=$EBROOTHTSLIB/include HTSLIBLIBDIR=$EBROOTHTSLIB/lib '
+build_cmd += f'SDSL_ROOT=%(builddir)s/sdsl-lite-{local_sdsl_commit} -B src/%(name)s'
+
+files_to_copy = [(['src/%(name)s'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['%(name)s --version']
+
+moduleclass = 'bio'

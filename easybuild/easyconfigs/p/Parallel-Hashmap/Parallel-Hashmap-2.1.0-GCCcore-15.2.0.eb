@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'Parallel-Hashmap'
+version = '2.1.0'
+
+homepage = 'https://github.com/greg7mdp/parallel-hashmap'
+description = """Parallel Hashmap is built on a modified version of
+Abseil's flat_hash_map. Parallel Hashmap has lower space requirements,
+is nearly as fast as the underlying flat_hash_map, and can be used from
+multiple threads with high levels of concurrency."""
+
+# There is no actual library built, so it can be at GCCcore level despite being a C++ "library"
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+github_account = 'greg7mdp'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [V_VERSION_TAR_GZ]
+checksums = ['d2c94659a5301c94cd5bbd6cf4b01c1dd635bba15c76cc188cdd82b928136838']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('CMake', '4.2.1'),
+    ('googletest', '1.17.0'),
+]
+
+configopts = ' '.join([
+    '-DPHMAP_BUILD_TESTS=ON',
+    '-DPHMAP_GTEST_LIBS="-lgmock_main -lgmock -lgtest -lpthread"',
+    '-DPHMAP_BUILD_EXAMPLES=OFF',
+])
+
+runtest = True
+
+sanity_check_paths = {
+    'files': [f'include/parallel_hashmap/phmap{x}.h' for x in [
+        '', '_base', '_bits', '_config', '_dump', '_fwd_decl', '_utils'
+    ]],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

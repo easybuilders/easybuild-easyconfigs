@@ -1,0 +1,15 @@
+Increase the timeout for starting parallel build workers from 3s (10s on Windows/riscv64) to 30s.
+The 3s default is too short when there are few cores (e.g. a single-CPU Slurm job) or Python starts
+slowly (e.g. cold CVMFS cache). This made testCodeModeInParallelMode and
+testCheckingStubPackagesWorksInParallelMode fail with "Cannot connect to build worker(s)".
+--- a/mypy/defaults.py
++++ b/mypy/defaults.py
+@@ -57,7 +57,7 @@
+ slow_fs = sys.platform == "win32" or platform.machine() == "riscv64"
+ 
+ WORKER_START_INTERVAL: Final = 0.03 if slow_fs else 0.01
+-WORKER_START_TIMEOUT: Final = 10 if slow_fs else 3
++WORKER_START_TIMEOUT: Final = 30
+ WORKER_SHUTDOWN_TIMEOUT: Final = 3 if sys.platform != "win32" else 10
+ 
+ # On macOS some (binary) mypy plugins can take a lot of time to import
