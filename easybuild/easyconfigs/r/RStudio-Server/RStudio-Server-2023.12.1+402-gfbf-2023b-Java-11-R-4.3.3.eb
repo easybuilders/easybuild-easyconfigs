@@ -21,15 +21,33 @@ and then used with:
 toolchain = {'name': 'gfbf', 'version': '2023b'}
 
 source_urls = ['https://github.com/rstudio/rstudio/archive']
-sources = ['v%(version)s.tar.gz']
-checksums = ['196d31094d580a74737fbf689d2d0b302da5fec13694aa1d63f8875d3e45e4dd']
+local_extract_cmd_tmpl = "mkdir -p '{0}' && tar --strip-components=1 -C '{0}' -xf %s"
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'source_urls': ['https://github.com/quarto-dev/quarto/archive'],
+        # commit for main HEAD from 2024-01-18, shortly before release of this RStudio on Jan 25, 2024
+        'filename': '0d28983647880818e065c3647aae016749c3c105.tar.gz',
+        'extract_cmd': local_extract_cmd_tmpl.format(f"rstudio-{version.replace('+', '-')}/src/gwt/lib/quarto"),
+    },
+]
+patches = [
+    'rstudio-2023.12.1+402_pin-yarn-version.patch',
+    'RStudio-Server-1.2.1335-fix_env.patch',
+]
+checksums = [
+    '196d31094d580a74737fbf689d2d0b302da5fec13694aa1d63f8875d3e45e4dd',
+    'c675b54d2685d50f26623308f5937a0c0b2222435594567596c38f5a17e547a5',  # quarto
+    {'rstudio-2023.12.1+402_pin-yarn-version.patch':
+     '1eb0ad226fd440c8b0d5303ed6e0b98103fe46d09a64d818122ec3021f363385'},
+    {'RStudio-Server-1.2.1335-fix_env.patch': 'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b'},
+]
 
 builddependencies = [
     ('ant', '1.10.14', '-Java-%(javaver)s', SYSTEM),
     ('CMake', '3.27.6'),
     ('Ninja', '1.11.1'),
     ('pkgconf', '2.0.3'),
-    ('nodejs', '20.9.0'),
 ]
 
 dependencies = [
@@ -38,22 +56,35 @@ dependencies = [
     ('R', '4.3.3'),
     ('SOCI', '4.0.3'),
     ('yaml-cpp', '0.8.0'),
+    ('zlib', '1.2.13'),
 ]
 
 osdependencies = [
     ('pam-devel', 'libpam0g-dev')
 ]
 
+local_avoid_home_cmds = " && ".join(
+    f"export {name}='%(builddir)s/.eb-{name}'" for name in (
+        # $HOME/.npm
+        'npm_config_cache',
+        # $HOME/R
+        'R_LIBS_USER',
+        'R_USER_CACHE_DIR',
+        'R_USER_CONFIG_DIR',
+        'R_USER_DATA_DIR',
+    )
+)
+
 preconfigopts = " && ".join([
     # Install dependencies via scripts. Done in subshell to preserve PWD
     "(export RSTUDIO_TOOLS_ROOT='%(builddir)s'",
+    local_avoid_home_cmds,
     "cd '%(start_dir)s/dependencies/common'",
     "./install-cef",
     "./install-dictionaries",
     "./install-mathjax",
     "./install-pandoc",
     "./install-packages",
-    "./install-panmirror",
     "./install-npm-dependencies)",
     ""
 ])
@@ -61,6 +92,7 @@ preconfigopts = " && ".join([
 configopts = " ".join([
     "-DRSTUDIO_TOOLS_ROOT='%(builddir)s'",
     "-DRSTUDIO_TARGET=Server",
+    "-DRSTUDIO_UNIT_TESTS_DISABLED=ON",
     "-DRSTUDIO_USE_SYSTEM_BOOST=ON",
     "-DRSTUDIO_USE_SYSTEM_SOCI=ON",
     "-DRSTUDIO_USE_SYSTEM_YAML_CPP=ON",
@@ -68,11 +100,21 @@ configopts = " ".join([
     "-DRSTUDIO_GIT_REVISION_HASH=" + local_git_rev
 ])
 
+prebuildopts = " && ".join([
+    local_avoid_home_cmds,
+    # Use Node downloaded by install-npm-dependencies
+    """NODE_VERSION=$(bash -c "source '%(start_dir)s/dependencies/tools/rstudio-tools.sh'"""
+    '&& echo \\$RSTUDIO_NODE_VERSION")',
+    """export PATH="$PATH:"'%(start_dir)s'"/dependencies/common/node/$NODE_VERSION/bin" """,
+    "",
+])
+
+
 sanity_check_commands = [
     # RSession requires environment variables R_HOME and R_DOC_DIR
     'R_HOME="$EBROOTR/lib64/R" R_DOC_DIR="$R_HOME/doc" rsession --verify-installation=1',
     # RServer requires a db conf (this may also be needed for live use)
-    # Also create and set a soem dirs so it doesn't try to use $HOME
+    # Also create and set some dirs so it doesn't try to use $HOME
     ' '.join([
         'MYTMP=`mktemp -d`',
         '&& export RSTUDIO_CONFIG_DIR="$MYTMP"',
