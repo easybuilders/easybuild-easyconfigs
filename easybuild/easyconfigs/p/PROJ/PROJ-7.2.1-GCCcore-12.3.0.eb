@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'PROJ'
+version = '7.2.1'
+
+homepage = 'https://proj.org'
+description = """Program proj is a standard Unix filter function which converts
+geographic longitude and latitude coordinates into cartesian coordinates"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++14'}
+
+source_urls = ['https://download.osgeo.org/proj/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['b384f42e5fb9c6d01fe5fa4d31da2e91329668863a684f97be5d4760dbbf0a14']
+
+builddependencies = [
+    ('pkgconf', '1.9.5'),
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('SQLite', '3.42.0'),
+    ('LibTIFF', '4.5.0'),
+    ('cURL', '8.0.1'),
+    ('XZ', '5.4.2'),
+    ('nlohmann_json', '3.11.2'),
+]
+
+# build twice, once for static, once for shared libraries
+# disable testing, requires too old googletest
+configopts = ['-DBUILD_TESTING=OFF', '-DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF']
+
+sanity_check_paths = {
+    'files': ['bin/cct', 'bin/cs2cs', 'bin/geod', 'bin/gie', 'bin/proj', 'bin/projinfo',
+              'lib/libproj.a', 'lib/libproj.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'
