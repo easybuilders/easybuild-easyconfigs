@@ -1,0 +1,33 @@
+easyblock = 'Binary'
+
+name = 'DeepSeek-Harness'
+version = '0.2.1-rc.5'
+
+homepage = 'https://github.com/deepseek-ai/deepseek-harness'
+description = "DeepSeek Harness (dsh) is an open-source agent harness developed by DeepSeek AI."
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = ['https://registry.npmjs.org/@deepseek-ai/dsh/-/']
+sources = ['dsh-%(version)s.tgz']
+checksums = ['60987566f19e0ded1f7918c00a65c19c56ea25f5977ee0bfd5697c5c113ec4e1']
+
+builddependencies = [('binutils', '2.45')]
+dependencies = [('nodejs', '24.16.0')]
+
+# npm downloads transitive dependencies from the registry during installation.
+install_cmd = 'npm install --no-package-lock --no-audit --no-fund --cache %(builddir)s/npm-cache '
+install_cmd += '-g --prefix %(installdir)s dsh-%(version)s.tgz'
+
+sanity_check_paths = {
+    'files': ['bin/dsh'],
+    'dirs': ['lib/node_modules/@deepseek-ai/dsh'],
+}
+
+sanity_check_commands = [
+    'dsh --version',
+    'dsh --help',
+    'DSH_HOME=%(builddir)s/sanity-home dsh web --help',
+]
+
+moduleclass = 'ai'
