@@ -1,0 +1,51 @@
+name = 'NAMD'
+version = '3.0.2'
+
+homepage = 'https://www.ks.uiuc.edu/Research/namd/'
+description = """NAMD is a parallel molecular dynamics code designed for high-performance simulation of
+ large biomolecular systems."""
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+toolchainopts = {'openmp': False, 'pic': True}
+
+sources = [{
+    'filename': 'NAMD_%(version)s_Source.tar.gz',
+    'extract_cmd': ('tar xzf %s && '
+    		    'sed "s/--offload-arch=.* /--offload-arch=%(amdgcn_capabilities)s /"'
+                    ' NAMD_%(version)s_Source/arch/Linux-x86_64.hip')
+}]
+
+# Unfortunately there are two NAMD 3.0.2 releases, one from 2025-08-27 and one from 2025-12-04
+checksums = [
+    ('4809360bdbe4f67aebd56847210537a24f6c785c381e501341260a7812879da4',
+     '0916700dec3342165b7ba2c3b5f99dcff767879d2a4931b5028dba47acd68bd5',),
+]
+
+download_instructions = f'Manually obtain {sources[0]} at'
+download_instructions += ' https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=NAMD'
+
+dependencies = [
+    ('Tcl', '8.6.16'),
+    ('HIP', '6.4.1'),
+    ('hipCUB', '3.3.0'),
+    ('hipFFT', '1.0.18', '-nompi'),
+    ('rocPRIM', '3.4.0'),
+    ('rocTracer', '4.1.0'),
+    ('FFTW', '3.3.10'),
+]
+
+builddependencies = [
+    ('tcsh', '6.24.16'),
+]
+
+charm_arch = "multicore-linux-%(arch)s"
+charm_extra_cxxflags = '-fpermissive'
+
+namd_cfg_opts = "--with-single-node-hip --rocm-prefix $EBROOTHIP --hipcub-prefix $EBROOTHIPCUB --rocprim-prefix $EBROOTROCPRIM"
+
+# needed for MI300+ (e.g. gfx942)
+if 'gfx942' in '%(amdgcn_capabilities)s':
+    prebuildopts = 'echo "CXXOPTS+=-DUSE_TABLE_ARRAYS" >> Make.config && '
+    prebuildopts += 'echo "CUDAFLAGS+=-DUSE_TABLE_ARRAYS" >> Make.config && '
+
+moduleclass = 'chem'
