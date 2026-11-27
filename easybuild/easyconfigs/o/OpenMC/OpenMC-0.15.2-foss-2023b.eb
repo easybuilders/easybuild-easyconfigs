@@ -1,0 +1,73 @@
+# Template for a mixed bundle of components using different easyblocks on GCCcore 12.3.0
+easyblock = 'CMakeMake'
+
+name = 'OpenMC'
+version = '0.15.2'
+
+homepage = 'https://openmc.org'
+description = """
+OpenMC is a community-developed Monte Carlo neutron and photon transport simulation code.
+"""
+
+toolchain = {'name': 'foss', 'version': '2023b'}
+
+sources = [{
+    'filename': 'v%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/openmc-dev',
+        'repo_name': 'openmc',
+        'tag': 'v%(version)s',
+        'clone_into': 'openmc_v%(version)s',
+    },
+}]
+
+configopts = " ".join([
+    "-DOPENMC_USE_DAGMC=ON",
+    "-DOPENMC_USE_OPENMP=ON",
+    "-DOPENMC_USE_MPI=ON",
+    "-DHDF5_PREFER_PARALLEL=OFF",
+    "-DOPENMC_USE_MCPL=ON",
+    "-DOPENMC_USE_UWUW=OFF",
+    "-DGIT_SUBMODULE=ON",
+    "-DOPENMC_BUILD_TESTS=OFF",
+])
+        
+postinstallcmds = ['pip install ../openmc_v%(version)s/']
+
+builddependencies = [
+    ('CMake', '3.27.6'),
+    ('make', '4.4.1'),
+    ('git', '2.42.0'),
+]
+
+dependencies = [
+    ('DAGMC', '3.2.4'),
+    ('Python', '3.11.5'),
+    ('HDF5', '1.14.3'),
+    ('h5py', '3.11.0'),
+    ('SciPy-bundle', '2023.11'),
+    ('matplotlib', '3.8.2'),
+    ('lxml', '4.9.3'),
+    ('Catch2', '2.13.9'),
+    ('pugixml', '1.14'),
+    ('Cython', '3.0.10'),
+    ('Eigen', '3.4.0'),
+    ('netCDF', '4.9.2'),
+    ('Embree', '4.4.0', '', SYSTEM),
+    ('tbb', '2021.13.0'),
+    ('fmt', '10.2.0'),
+    ('mcpl', '2.2.0'),
+    ('xtensor', '0.25.0'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/openmc', 'lib/libopenmc.so'],
+    'dirs': ['bin', 'lib', 'include/openmc'],
+}
+
+sanity_check_commands = [
+    "openmc -v",
+    "python -c'import openmc'",
+]
+
+moduleclass = 'phys'
