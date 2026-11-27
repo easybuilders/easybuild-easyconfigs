@@ -1,0 +1,47 @@
+easyblock = 'CMakeMake'
+
+name = 'gau2grid'
+version = '2.0.9'
+
+homepage = 'https://github.com/psi4/gau2grid'
+description = 'Fast computation of a gaussian and its derivative on a grid.'
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+
+source_urls = ['https://github.com/psi4/gau2grid/archive/refs/tags/']
+sources = [{'download_filename': V_VERSION_TAR_GZ, 'filename': SOURCE_TAR_GZ}]
+checksums = ['7879bdddf3a52cd2a051086215977822bbe8d1af927fcf5b4fb0256a38b8a76c']
+
+builddependencies = [
+    ('CMake', '4.0.3'),
+]
+
+dependencies = [
+    ('Python', '3.13.5'),
+    ('SciPy-bundle', '2025.07'),
+]
+
+_fix_versioneer = 'sed -i "s/SafeConfigParser/ConfigParser/" versioneer.py && '
+_fix_versioneer += 'sed -i "s/parser.readfp/parser.read_file/" versioneer.py && '
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    (name, version, {
+        'preinstallopts': 'sed -i "s/SafeConfigParser/ConfigParser/" versioneer.py && sed -i "s/parser.readfp/parser.read_file/" versioneer.py && ',
+        'source_urls': ['https://github.com/psi4/gau2grid/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['7879bdddf3a52cd2a051086215977822bbe8d1af927fcf5b4fb0256a38b8a76c'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [f'lib/libgg.{SHLIB_EXT}', 'include/gau2grid/gau2grid.h'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/gau2grid/'],
+}
+
+sanity_check_commands = [
+    "python -s -c 'import gau2grid'",
+]
+
+
+moduleclass = 'math'

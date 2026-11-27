@@ -1,0 +1,65 @@
+easyblock = 'CMakeMake'
+
+name = 'GauXC'
+version = '1.1'
+
+homepage = 'https://github.com/wavefunction91/GauXC'
+description = """GauXC is a modern, modular C++ library for the evaluation of quantities related to the
+exchange-correlation (XC) energy (e.g. potential, etc) in the Gaussian basis set discretization of Kohn-Sham density
+function theory (KS-DFT) on heterogenous architectures."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+source_urls = ['https://github.com/wavefunction91/GauXC/archive/refs/tags/']
+sources = [
+    V_VERSION_TAR_GZ,
+    {
+        'filename': 'https://github.com/highfive-devs/highfive/archive/805f0e1.tar.gz',
+        'extract_cmd': 'mkdir -p highfive-src && tar xf %s --strip-components=1 -C highfive-src',
+    },
+]
+patches = [
+    'GauXC-%(version)s_external_cereal.patch',
+    'GauXC-%(version)s_linalg_cmake.patch',
+    'GauXC-%(version)s_cereal.patch',
+]
+checksums = [
+    {'v1.1.tar.gz': '17de077fb23e44d03b0ed14dcd8117c01e5b3431fbefa2352d751639ada7f91c'},
+    {'805f0e1.tar.gz': '9cafafeac7b4aaf659ee65c796fadfa652af7138fa5bd60c797456647a409844'},
+    {'GauXC-1.1_external_cereal.patch': 'aa1ec38af3b1227b9fcda5e54cf33cb83c540ca02d7284c86fc27c8170fcbffa'},
+    {'GauXC-1.1_linalg_cmake.patch': '7387913ff05676160355632b015f6aa0f216bc3bcfc004afe80c60c9fcd3c9cb'},
+    {'GauXC-1.1_cereal.patch': '66c233ec6db4a4a62bf03db20798f423d7159bdf7d94d977bd6be0cd7827c61a'},
+]
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('pkgconf', '2.4.3'),
+    ('ExchCXX', '1.0.0'),  # Only static libraries
+    ('IntegratorXX', '1.0.0'),  # Only static libraries
+    ('Catch2', '2.13.10'),
+    ('Cereal', '1.3.2'),
+    ('Eigen', '3.4.0'),
+    ('gau2grid', '2.0.9'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.6'),
+    ('libxc', '7.0.0'),
+]
+
+configopts = ' '.join([
+    '-DFETCHCONTENT_FULLY_DISCONNECTED=ON',  # ensure we don't download deps
+    '-DFETCHCONTENT_BASE_DIR=%(builddir)s',
+    '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',  # for old highfive
+    '-DBLAS_LIBRARIES=-lflexiblas',
+])
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': [f'lib/libgauxc.a'],
+    'dirs': ['include/gauxc'],
+}
+
+moduleclass = 'chem'
