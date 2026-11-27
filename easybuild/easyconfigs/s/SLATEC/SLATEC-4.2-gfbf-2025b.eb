@@ -1,0 +1,53 @@
+easyblock = 'CMakeMake'
+
+name = 'SLATEC'
+version = '4.2'
+
+local_commit = '43ff98105b4598c1f90136e3fffb3ca307a71eec'
+
+homepage = 'https://github.com/MehdiChinoune/SLATEC'
+description = """SLATEC Common Mathematical Library, a comprehensive software library containing
+    over 1400 general purpose mathematical and statistical routines written in Fortran.
+
+    This is a modernised, CMake-based fork (Mehdi Chinoune, version 4.2) of the original
+    netlib SLATEC 4.1 distribution. BLAS and LAPACK are provided by the toolchain instead
+    of being bundled in the library."""
+
+toolchain = {'name': 'gfbf', 'version': '2025b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/MehdiChinoune/SLATEC/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': '%(name)s-%(version)s.tar.gz'}]
+patches = ['%(name)s-%(version)s_cmake-install-fixes.patch']
+checksums = [
+    '2fc4f13abfcc058177b0ad71d8b565f78c7aa1af30903588652d8028a523909b',  # SLATEC-4.2.tar.gz
+    'f68774f06ee33d0a900cac0fc60a925075e65b541fc170604d12683272e2f24a',  # SLATEC-4.2_cmake-install-fixes.patch
+]
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+]
+
+# The component libraries that the patch installs alongside libslatec (whose DT_NEEDED
+# entries require them) and lists in the pkg-config files; also used in the sanity checks.
+local_subdirs = [
+    'approximation', 'data_handling', 'diff_integ', 'diff_integ_eq', 'integ_trans',
+    'interpolation', 'linear', 'nonlin_eq', 'optimization', 'service', 'special_functions',
+]
+
+# Pin CMake's FindBLAS to FlexiBLAS so it cannot fall back to a stray system
+# /usr/lib64/libblas instead of the toolchain BLAS/LAPACK.
+# Two-iteration build: static libraries first, then shared, so the shared build
+# determines the final state of any files common to both (Fortran .mod files).
+configopts = ['-DBLA_VENDOR=FlexiBLAS -DBUILD_SHARED_LIBS=%s ' % local_shared for local_shared in ('OFF', 'ON')]
+
+# Check the component libraries and pkg-config files too, to catch the patch
+# silently failing to take effect.
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s' % (local_lib, local_ext)
+              for local_lib in ['slatec'] + local_subdirs for local_ext in ('a', SHLIB_EXT)] +
+             ['lib/pkgconfig/slatec.pc', 'lib/pkgconfig/slatec-static.pc'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'
