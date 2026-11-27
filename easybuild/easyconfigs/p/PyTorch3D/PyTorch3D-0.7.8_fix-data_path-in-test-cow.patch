@@ -1,0 +1,35 @@
+From 13d4d579c23d2c7b9b858b7ea60f1bc0df2629a5 Mon Sep 17 00:00:00 2001
+From: Viktor Rehnberg <viktor.rehnberg@gmail.com>
+Date: Thu, 7 Nov 2024 15:59:34 +0000
+Subject: [PATCH] Fix path to cow.obj in test
+
+---
+ tests/implicitron/test_data_cow.py | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/tests/implicitron/test_data_cow.py b/tests/implicitron/test_data_cow.py
+index 801863e..6471cf0 100644
+--- a/tests/implicitron/test_data_cow.py
++++ b/tests/implicitron/test_data_cow.py
+@@ -14,7 +14,7 @@ from pytorch3d.implicitron.dataset.rendered_mesh_dataset_map_provider import (
+ )
+ from pytorch3d.implicitron.tools.config import expand_args_fields
+ from pytorch3d.renderer import FoVPerspectiveCameras
+-from tests.common_testing import TestCaseMixin
++from tests.common_testing import get_pytorch3d_dir, TestCaseMixin
+ 
+ 
+ inside_re_worker = os.environ.get("INSIDE_RE_WORKER", False)
+@@ -29,7 +29,8 @@ class TestDataCow(TestCaseMixin, unittest.TestCase):
+         self._runtest(use_point_light=False, num_views=4)
+ 
+     def _runtest(self, **kwargs):
+-        provider = RenderedMeshDatasetMapProvider(**kwargs)
++        data_file = get_pytorch3d_dir() / "docs" / "tutorials" / "data" / "cow_mesh" / "cow.obj"
++        provider = RenderedMeshDatasetMapProvider(data_file=data_file, **kwargs)
+         dataset_map = provider.get_dataset_map()
+         known_matrix = torch.zeros(1, 4, 4)
+         known_matrix[0, 0, 0] = 1.7321
+-- 
+2.39.3
+
