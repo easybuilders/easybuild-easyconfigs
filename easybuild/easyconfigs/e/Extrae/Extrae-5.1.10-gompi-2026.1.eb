@@ -1,0 +1,56 @@
+name = 'Extrae'
+version = '5.1.10'
+
+homepage = 'https://www.bsc.es/computer-sciences/performance-tools'
+
+description = """Extrae is the core instrumentation package developed by the
+Performance Tools group at BSC. Extrae is capable of instrumenting applications
+based on MPI, OpenMP, pthreads, CUDA, OpenCL, and StarSs using different
+instrumentation approaches. The information gathered by Extrae typically
+includes timestamped events of runtime calls, performance counters and source
+code references. Besides, Extrae provides its own API to allow the user to
+manually instrument his or her application."""
+
+toolchain = {'name': 'gompi', 'version': '2026.1'}
+
+source_urls = ['https://ftp.tools.bsc.es/%(namelower)s']
+sources = ['%(namelower)s-%(version)s-src.tar.bz2']
+checksums = [('c91dcfefdd2b73d0f52fb2c692b33068f89d241a0fd0456ba1af65b8397a4048')]
+
+builddependencies = [
+    ('Autotools', '20250626'),
+]
+
+dependencies = [
+    ('PAPI', '7.2.0'),
+    ('zlib', '2.3.2')
+]
+
+preconfigopts = 'autoreconf -vif && '
+
+configopts = (
+    '--enable-posix-clock '
+    '--enable-openmp '
+    '--enable-sampling '
+    '--disable-pebs-sampling '
+    '--disable-instrument-io '
+    '--disable-instrument-dynamic-memory '
+    '--disable-instrument-syscall '
+)
+
+configopts += '--without-dyninst '
+
+buildopts = 'CFLAGS="$CFLAGS -Wno-error=incompatible-pointer-types" '
+
+
+# Extrae expects `make install` before running the checks, yet, DESTDIR is broken.
+# Therefore, tests cannot be executed in a sensible manner. Even if it would,
+# tests for PAPI could still fail depending on the platform, since it is not checked
+# if checked metrics even work without Extrae.
+runtest = False
+
+modextravars = {
+    'EXTRAE_HOME': '%(installdir)s',
+}
+
+moduleclass = 'perf'
