@@ -1,0 +1,57 @@
+easyblock = 'CMakeNinja'
+
+name = 'CUTLASS'
+version = '4.8.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/NVIDIA/cutlass'
+description = """CUTLASS is a collection of CUDA C++ template
+abstractions for implementing high-performance matrix-matrix
+multiplication (GEMM) and related computations at all levels and scales
+within CUDA. It incorporates strategies for hierarchical decomposition
+and data movement similar to those used to implement cuBLAS and cuDNN.
+CUTLASS decomposes these "moving parts" into reusable, modular software
+components abstracted by C++ template classes. Primitives for different
+levels of a conceptual parallelization hierarchy can be specialized and
+tuned via custom tiling sizes, data types, and other algorithmic policy.
+The resulting flexibility simplifies their use as building blocks within
+custom kernels and applications."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.3.0'}
+toolchainopts = {'cstd': 'c++20'}
+
+github_account = 'NVIDIA'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': V_VERSION_TAR_GZ, 'filename': SOURCE_TAR_GZ}]
+checksums = ['71fc2892e8bcd929398b5aa72e3393af1bad0cae9814cd75661ca88e688c2159']
+
+builddependencies = [
+    ('binutils', '2.44'),
+    ('CMake', '4.0.3'),
+    ('Ninja', '1.13.0'),
+    ('Python', '3.13.5'),
+]
+
+dependencies = [
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('cuDNN', '9.15.0.57', versionsuffix, SYSTEM),
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['6.0', '7.0', '7.5', '8.0', '8.6', '9.0']
+
+# fix C++ standard for nvcc
+preconfigopts = "sed -i 's/CUDA_STANDARD 17/CUDA_STANDARD 20/' ../%(namelower)s-%(version)s/CMakeLists.txt && "
+
+configopts = ' '.join([
+    '-DCUTLASS_NVCC_ARCHS="%(cuda_cc_cmake)s"',
+    '-DCUTLASS_ENABLE_CUBLAS=1',
+    '-DCUTLASS_ENABLE_CUDNN=1',
+])
+
+sanity_check_paths = {
+    'files': ['include/cutlass/cutlass.h', f'lib/libcutlass.{SHLIB_EXT}'],
+    'dirs': ['lib/cmake'],
+}
+
+moduleclass = 'lib'

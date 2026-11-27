@@ -1,0 +1,38 @@
+easyblock = 'PythonBundle'
+
+name = 'PyBDSF'
+version = '1.14.1'
+
+homepage = 'https://pybdsf.readthedocs.io/'
+description = "PyBDSF (Blob Detector and Source Finder) decomposes radio interferometry images into sources."
+
+toolchain = {'name': 'gfbf', 'version': '2026.1'}
+
+# New easyconfig: PyBDSF was installed as an extension (bdsf) in the previous LINC easyconfig; LSMTool 1.9 now needs it
+# as a dependency, so it is a separate module (LINC depends on it via LSMTool). Old LINC passed -DF2PY_EXECUTABLE too.
+builddependencies = [
+    ('CMake', '3.31.11'),
+    ('scikit-build', '0.19.0'),
+    ('Meson', '1.10.2'),  # numpy's f2py compiles the Fortran extensions with meson (needs >= 1.1)
+    ('Ninja', '1.13.2'),
+]
+dependencies = [
+    ('Python', '3.14.2'),
+    ('SciPy-bundle', '2026.05'),
+    ('astropy', '8.0.1'),
+    ('Boost.Python-NumPy', '1.90.0'),
+]
+
+exts_list = [
+    ('backports.shutil_get_terminal_size', '1.0.0', {
+        'checksums': ['713e7a8228ae80341c70586d1cc0a8caa5207346927e23d09dcbcaf18eadec80'],
+    }),
+    ('bdsf', version, {
+        'preinstallopts': 'export CMAKE_ARGS="-DF2PY_EXECUTABLE=$EBROOTSCIPYMINBUNDLE/bin/f2py" && ',
+        'checksums': ['8d5113fecca19bb9f02a1a3e17aeb8f2d22c712cac9504e44271c4071f5434d2'],
+    }),
+]
+
+sanity_check_commands = ["python -c 'import bdsf'"]
+
+moduleclass = 'astro'
