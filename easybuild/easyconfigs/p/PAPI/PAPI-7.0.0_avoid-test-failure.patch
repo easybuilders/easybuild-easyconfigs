@@ -1,0 +1,35 @@
+On some CPUs (e.g AMD EPCYC 7xxx) the PAPI_TOT_INS in the test are sometimes off by a factor of ~16.
+This leads to test failures happening randomly.
+Account for this by using the smaller difference of the raw value and the "adjusted" value (divided by 16).
+See https://github.com/icl-utk-edu/papi/issues/160
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/src/ctests/zero.c b/src/ctests/zero.c
+index d31d03cf1..5314f26a6 100644
+--- a/src/ctests/zero.c
++++ b/src/ctests/zero.c
+@@ -25,7 +25,7 @@ int main( int argc, char **argv ) {
+ 	int retval, tmp, result, i;
+ 	int EventSet1 = PAPI_NULL;
+ 	long long values[NUM_EVENTS];
+-	long long elapsed_us, elapsed_cyc, elapsed_virt_us, elapsed_virt_cyc;
++	long long elapsed_us, elapsed_cyc, elapsed_virt_us, elapsed_virt_cyc, ins_diff;
+ 	double ipc;
+ 	int quiet=0;
+ 
+@@ -156,8 +156,12 @@ int main( int argc, char **argv ) {
+ 	}
+ 
+ 	/* Check that TOT_INS is reasonable */
+-	if (llabs(values[1] - (1000000*NUM_LOOPS)) > (1000000*NUM_LOOPS)) {
+-		printf("%s Error of %.2f%%\n", "PAPI_TOT_INS", (100.0 * (double)(values[1] - (1000000*NUM_LOOPS)))/(1000000*NUM_LOOPS));
++	#define NUM_LOOP_INS (NUM_LOOPS * 1000000)
++	#define MIN(x, y) (((x) > (y)) ? (y) : (x))
++
++	ins_diff = MIN(llabs(values[1] - NUM_LOOP_INS), llabs(values[1] / 16 - NUM_LOOP_INS));
++	if (ins_diff > NUM_LOOP_INS) {
++		printf("%s Error of %.2f%%\n", "PAPI_TOT_INS", (100.0 * (double)(ins_diff))/NUM_LOOP_INS);
+ 		test_fail( __FILE__, __LINE__, "Instruction validation", 0 );
+ 	}
+ 
