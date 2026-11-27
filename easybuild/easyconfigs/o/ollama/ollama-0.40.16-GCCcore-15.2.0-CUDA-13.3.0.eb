@@ -1,0 +1,81 @@
+easyblock = 'CMakeMake'
+
+name = 'ollama'
+version = '0.40.16'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://ollama.com/'
+description = """Get up and running with large language models.
+
+This version of ollama is patched to support OLLAMA_NUM_THREADS environment
+variable to override the default inference CPU thread count.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+# Pulls in llama cpp as well. For exact version, check
+# https://github.com/ollama/ollama/blob/v0.40.16/LLAMA_CPP_VERSION
+local_llamacpp_tag = 'b12177'
+
+source_urls = ['https://github.com/ollama/ollama/archive']
+sources = [
+    {'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ},
+    {
+        'git_config': {
+            'url': 'https://github.com/ggml-org',
+            'repo_name': 'llama.cpp',
+            'tag': local_llamacpp_tag,
+        },
+        'filename': f'llama.cpp-{local_llamacpp_tag}.tar.xz',
+    },
+]
+
+patches = ['ollama-0.40.16_expose-num-thread.patch']
+checksums = [
+    {'ollama-0.40.16.tar.gz': '296dc8dd88a617335d9132412179f11926d266941d53a4727917fd18ac675053'},
+    {f'llama.cpp-{local_llamacpp_tag}.tar.xz': '2d928b2a9964d7ea6b7d3b7b0657892a243d97be3de9149c40d705a7686b74bb'},
+    {'ollama-0.40.16_expose-num-thread.patch': 'f0b1d3f06739d7bca1089d3b7d745d39fb3addfa52709a41aa48c5a297e694e2'},
+]
+
+builddependencies = [
+    ('Go', '1.26.10', '', SYSTEM),
+    ('binutils', '2.45'),
+    ('CMake', '4.2.1'),
+]
+
+dependencies = [
+    ('CUDA', '13.3.0', '', SYSTEM),
+]
+
+# Need to apply patch manually since we prefetch llama_cpp
+preconfigopts = (
+    'patch -d %(builddir)s/llama.cpp -p1 -i %(builddir)s/ollama-%(version)s/llama/compat/001-llama-cpp-hooks.patch && '
+)
+
+configopts = ' '.join([
+    '-DOLLAMA_VERSION=%(version)s',
+    '-DOLLAMA_LLAMA_BACKENDS=cuda_v13',
+    '-DFETCHCONTENT_SOURCE_DIR_LLAMA_CPP=%(builddir)s/llama.cpp',
+])
+
+# Move Go's cache to builddir (since we use CMakeMake and not GoPackage)
+prebuildopts = 'export GOPATH=%(builddir)s/go && '
+
+sanity_check_paths = {
+    'files': [
+        'bin/ollama',
+        f'lib/ollama/libggml-base.{SHLIB_EXT}',
+        f'lib/ollama/cuda_v13/libggml-cuda.{SHLIB_EXT}',
+    ],
+    'dirs': ['lib/ollama', 'lib/ollama/cuda_v13'],
+}
+
+sanity_check_commands = [
+    "ollama -v",
+]
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': ['lib/ollama', 'lib/ollama/cuda_v13'],
+}
+
+moduleclass = 'ai'
