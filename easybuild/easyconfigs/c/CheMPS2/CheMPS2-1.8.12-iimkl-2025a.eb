@@ -1,0 +1,37 @@
+easyblock = 'CMakeMake'
+
+name = 'CheMPS2'
+version = '1.8.12'
+
+homepage = 'https://github.com/SebWouters/CheMPS2'
+description = """CheMPS2 is a scientific library which contains a spin-adapted implementation of the
+density matrix renormalization group (DMRG) for ab initio quantum chemistry."""
+
+toolchain = {'name': 'iimkl', 'version': '2025a'}
+
+source_urls = ['https://github.com/SebWouters/CheMPS2/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['eef1b92d74ac07fde58c043f64e8cac02b5400c209c44dcbb51641f86e0c7c83']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+]
+
+# CheMPS2 has WITH_MPI OFF by default
+dependencies = [
+    ('HDF5', '1.14.6', '-serial'),
+]
+
+# -xHost should be inherited from optarch, not appended
+# afterwards
+configopts = '-DENABLE_XHOST=OFF'
+
+pretestopts = 'export OMP_NUM_THREADS=1 && '
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/chemps2', f'lib64/libchemps2.{SHLIB_EXT}', 'lib64/libchemps2.a'],
+    'dirs': ['include/chemps2']
+}
+
+moduleclass = 'chem'
