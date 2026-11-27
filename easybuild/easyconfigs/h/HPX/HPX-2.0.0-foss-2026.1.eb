@@ -1,0 +1,111 @@
+# #
+# Author:    Hartmut Kaiser (hartmut.kaiser@gmail.com)
+# Institute: TheHPXProject
+#
+# #
+easyblock = 'CMakeNinja'
+
+name = 'HPX'
+version = '2.0.0'
+local_stdexec_commit = '04de75de5807e73a229acf047c6976575e313359'
+local_asio_tag = 'asio-1-30-2'
+
+homepage = 'https://hpx.dev/'
+description = """HPX is a general purpose C++ runtime system
+ for parallel and distributed applications of any scale."""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'pic': True}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/TheHPXProject/hpx/archive/'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        # HPX 2.0.0 is tested against this stdexec commit, it is normally
+        # fetched at configure time
+        'source_urls': ['https://github.com/NVIDIA/stdexec/archive/'],
+        'download_filename': '%s.tar.gz' % local_stdexec_commit,
+        'filename': 'stdexec-%s.tar.gz' % local_stdexec_commit,
+    },
+    {
+        'source_urls': ['https://github.com/chriskohlhoff/asio/archive/'],
+        'download_filename': '%s.tar.gz' % local_asio_tag,
+        'filename': '%s.tar.gz' % local_asio_tag,
+    },
+]
+checksums = [
+    {'HPX-2.0.0.tar.gz': 'c755ab893e9fdcbc896c6eb735ad411cc78b9314e916d87119c3cd5304928211'},
+    {'stdexec-04de75de5807e73a229acf047c6976575e313359.tar.gz':
+     '99228c650c893ba814daa18aae4b577f72b8add9bcb2debd452a5ed317028039'},
+    {'asio-1-30-2.tar.gz': '755bd7f85a4b269c67ae0ea254907c078d408cce8e1a352ad2ed664d233780e8'},
+]
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('Ninja', '1.13.2'),
+    ('pkgconf', '2.5.1'),
+]
+dependencies = [
+    # HPXConfig.cmake looks for Boost, so it is needed by HPX users as well
+    ('Boost', '1.90.0'),
+    ('hwloc', '2.13.0'),
+    ('gperftools', '2.18.1'),
+    # bin/hpxrun.py
+    ('Python', '3.14.2'),
+]
+
+# stdexec and Asio are used from the extra sources above (they are installed
+# alongside HPX), nothing is downloaded at configure time
+configopts = '-DFETCHCONTENT_FULLY_DISCONNECTED=ON '
+configopts += '-DHPX_WITH_FETCH_STDEXEC=ON '
+configopts += '-DFETCHCONTENT_SOURCE_DIR_STDEXEC=%%(builddir)s/stdexec-%s ' % local_stdexec_commit
+configopts += '-DHPX_WITH_FETCH_ASIO=ON '
+configopts += '-DFETCHCONTENT_SOURCE_DIR_ASIO=%%(builddir)s/asio-%s ' % local_asio_tag
+configopts += '-DHPX_WITH_MALLOC=tcmalloc '
+configopts += '-DHPX_WITH_HWLOC=ON '
+configopts += '-DHPX_WITH_NETWORKING=ON '
+configopts += '-DHPX_WITH_PARCELPORT_MPI=ON '
+configopts += '-DHPX_WITH_PARCELPORT_TCP=ON '
+configopts += '-DHPX_WITH_TESTS=OFF '
+configopts += '-DHPX_WITH_EXAMPLES=ON '
+
+local_plugin_dir = 'lib/%(namelower)s'
+
+local_lib_names = [
+    'libhpx',
+    'libhpx_accumulator',
+    'libhpx_cancelable_action',
+    'libhpx_component_storage',
+    'libhpx_core',
+    'libhpx_iostreams',
+    'libhpx_jacobi',
+    'libhpx_nqueen',
+    'libhpx_partitioned_vector',
+    'libhpx_process',
+    'libhpx_random_mem_access',
+    'libhpx_simple_central_tuplespace',
+    'libhpx_startup_shutdown',
+    'libhpx_template_accumulator',
+    'libhpx_template_function_accumulator',
+    'libhpx_throttle',
+    'libhpx_unordered',
+]
+
+sanity_check_paths = {
+    'files': ['lib/%s.%s' % (x, SHLIB_EXT) for x in local_lib_names] +
+             ['include/hpx/hpx.hpp', 'include/asio.hpp', 'include/stdexec/execution.hpp',
+              'lib/cmake/HPX/HPXConfig.cmake', 'bin/hpxcxx', 'bin/hpxrun.py'],
+    'dirs': [local_plugin_dir],
+}
+
+sanity_check_commands = [
+    'hpxrun.py --help',
+    'hello_world_distributed --hpx:threads=2',
+]
+
+modextrapaths = {'LD_LIBRARY_PATH': local_plugin_dir}
+
+moduleclass = 'math'
