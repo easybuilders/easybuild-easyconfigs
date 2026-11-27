@@ -1,0 +1,58 @@
+easyblock = 'CMakeMake'
+
+name = 'GOTM'
+version = '6.0.8'
+
+homepage = 'https://github.com/gotm-model/code'
+description = """GOTM - the General Ocean Turbulence Model is an ambitious name for a
+one-dimensional water column model for marine and limnological applications. It is coupled
+to a choice of traditional as well as state-of-the-art parameterisations for vertical
+turbulent mixing. The package consists of the FORTRAN source code, a number of idealised
+and realistic test cases, and a scientific documentation, all published under the GNU
+public license.
+This build also includes Selmaprotbas model."""
+
+toolchain = {'name': 'gompi', 'version': '2025a'}
+
+github_account = 'gotm-model'
+sources = [
+    {
+        'filename': 'GOTM-%(version)s.tar.xz',
+        'git_config': {
+            'url': 'https://github.com/%(github_account)s',
+            'repo_name': 'code',
+            'clone_into': 'GOTM',
+            'tag': 'v%(version)s',
+            'recursive': True,  # pulls in fabm, flexout, stim and CVMix-src
+        },
+    },
+    {
+        'filename': 'v1.2.2.tar.gz',
+        'source_urls': ['https://github.com/jorritmesman/selmaprotbas/archive/'],
+    },
+]
+checksums = [
+    {'GOTM-6.0.8.tar.xz': '70a88d14a26ff4fefbc522df8f08dbc4fed526bf92729ed558a5400aa95fd950'},
+    {'v1.2.2.tar.gz': '61cc0923156ad7a0315ae15b7c8b3f5b1dbbc2c5526aff90925ebd002ba49d23'},
+]
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+]
+
+dependencies = [
+    ('netCDF-Fortran', '4.6.2'),
+]
+
+configopts = ' '.join([
+    '-DGOTM_USE_FABM=ON',
+    '-DFABM_SELMAPROTBAS_BASE=%(builddir)s/selmaprotbas-1.2.2',
+    '-DGOTM_USE_STIM=ON',
+])
+
+sanity_check_paths = {
+    'files': ['bin/gotm'],
+    'dirs': [],
+}
+
+moduleclass = 'geo'
