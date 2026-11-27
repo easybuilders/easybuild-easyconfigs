@@ -1,0 +1,125 @@
+easyblock = 'Binary'
+
+name = 'IBEX'
+version = '0.3.0'
+
+homepage = 'https://github.com/iterorganization/IBEX'
+description = """IBEX (IMAS variaBles EXplorer) is a general purpose graphical tool for exploring
+the content of IMAS structured data (IDS). It displays quantities as 1D or 2D plots - including
+slicing through higher-dimensionality datasets - and lets you interactively inspect, compare and
+manipulate signals from one or more data entries.
+It consists of an Electron/React desktop frontend and a FastAPI backend service
+(run_ibex_service) that reads the data through IMAS-Python."""
+
+toolchain = {'name': 'intel', 'version': '2023b'}
+
+github_account = 'iterorganization'
+source_urls = [GITHUB_SOURCE]
+# the release tarball carries the Electron frontend; the backend Python package is installed
+# from its PyPI sdist below (only that sdist ships the setuptools_scm-generated ibex/_version.py)
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['652b13afe0d394ee22e212f903e24330601c4c7837664cbda93dd02a16713dfe']
+
+builddependencies = [
+    ('nodejs', '20.9.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.5'),
+    ('Python-bundle-PyPI', '2023.10'),  # click, idna, Jinja2, Sphinx
+    ('SciPy-bundle', '2023.11'),        # numpy, scipy
+    ('IMAS-Python', '2.3.0'),
+    ('IDStools', '2.5.0'),              # imas-idstools, packaging, rich
+    ('pydantic', '2.7.4'),
+]
+
+extract_sources = True
+
+# --- Frontend: Electron app built with electron-forge -----------------------
+install_cmd = ' && '.join([
+    "cd frontend",
+    "export npm_config_cache=%(builddir)s/npm-cache",
+    "export TMPDIR=%(builddir)s/npm-tmp",
+    "mkdir -p $npm_config_cache $TMPDIR",
+    "npm ci",
+    """sed -i 's/"version": "dev"/"version": "%(version)s"/' package.json""",
+    "npm run package",
+    "mkdir -p %(installdir)s/bin",
+    "cp -r out/ibex-linux-x64 %(installdir)s/bin",
+])
+
+modextrapaths = {'PATH': 'bin/ibex-linux-x64'}
+
+postinstallcmds = ["chmod -R go+rX %(installdir)s/bin/ibex-linux-x64"]
+
+# --- Backend: Python package + the PyPI dependencies not covered by the modules above ------
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'source_tmpl': SOURCE_PY3_WHL,
+}
+
+exts_list = [
+    ('h11', '0.16.0', {
+        'checksums': ['63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86'],
+    }),
+    ('uvicorn', '0.53.0', {
+        'checksums': ['e8dca71ec86dce5f04e333f0d56cdedf942446e6643b9cea1af0d6d3a02cb03e'],
+    }),
+    ('sniffio', '1.3.1', {
+        'checksums': ['2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2'],
+    }),
+    # anyio >= 4.15 requires typing_extensions >= 4.16, newer than the Python module provides
+    ('anyio', '4.14.2', {
+        'checksums': ['9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494'],
+    }),
+    # starlette is pinned < 0.47 by fastapi 0.115.14
+    ('starlette', '0.46.2', {
+        'checksums': ['595633ce89f8ffa71a015caed34a5b2dc1c0cdb3f0f1fbd1e69339cf2abeec35'],
+    }),
+    ('python-dotenv', '1.2.3', {
+        'modulename': 'dotenv',
+        'source_tmpl': 'python_dotenv-%(version)s-py3-none-any.whl',
+        'checksums': ['904552145e8bfed22162c09dab1c2b9b54fefa7b23ba780f4f26ca0316b0f0d9'],
+    }),
+    # pydantic-settings >= 2.9 requires typing-inspection, which in turn needs a newer
+    # typing_extensions than this toolchain generation provides
+    ('pydantic-settings', '2.8.1', {
+        'source_tmpl': 'pydantic_settings-%(version)s-py3-none-any.whl',
+        'checksums': ['81942d5ac3d905f7f3ee1a70df5dfb62d5569c12f51a5a647defc1c3d9ee2e9c'],
+    }),
+    # fastapi is pinned to == 0.115.14 by the imas-ibex requirements
+    ('fastapi', '0.115.14', {
+        'checksums': ['6c0c8bf9420bd58f565e585036d971872472b4f7d3f6c73b698e10cffdefb3ca'],
+    }),
+    # Rust-based, no sdist build chain available: install the manylinux wheels
+    ('tsdownsample', '0.1.5.1', {
+        'source_tmpl': '%(name)s-%(version)s-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['193bcc7c16f828786549488e54b007eec39a1c1212184b1878e8ac4da94132d9'],
+    }),
+    ('orjson', '3.12.0', {
+        'source_tmpl': '%(name)s-%(version)s-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['9caf3d09f47c3c70c4451ada20ef9bc4a4cdffa26f49862cf0a253b329aae2d5'],
+    }),
+    ('autodoc_pydantic', '2.2.0', {
+        'modulename': 'sphinxcontrib.autodoc_pydantic',
+        'checksums': ['8c6a36fbf6ed2700ea9c6d21ea76ad541b621fbdf16b5a80ee04673548af4d95'],
+    }),
+    ('imas_ibex', version, {
+        'modulename': 'ibex',
+        'source_tmpl': SOURCE_TAR_GZ,
+        'checksums': ['9a335191d644dfba692c72a46c72cea82d14e259f4ccfc8b4e085ea40ab915db'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/run_ibex_service', 'bin/ibex-linux-x64/ibex'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/ibex'],
+}
+
+sanity_check_commands = [
+    "run_ibex_service --help",
+    "python -s -c 'import ibex; assert ibex.__version__.startswith(\"%(version)s\"), ibex.__version__'",
+]
+
+moduleclass = 'vis'
