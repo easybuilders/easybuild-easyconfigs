@@ -1,0 +1,74 @@
+easyblock = 'MakeCp'
+
+name = 'CRYSTAL'
+version = '23.1.0.1'
+_ver = version.split('.')
+
+homepage = 'https://www.crystal.unito.it/'
+description = """The CRYSTAL package performs ab initio calculations of the ground state energy,
+ energy gradient, electronic wave function and properties of periodic systems."""
+
+toolchain = {'name': 'intel', 'version': '2025a'}
+
+sources = [
+    f'%(namelower)s{_ver[0]}_v{"_".join(_ver[1:])}_Linux-ifort21.4_MPPdistrib.tar.gz',
+    f'utils{_ver[0]}.tar.gz',
+]
+patches = ['%(name)s-%(version)s_fix_run_scripts.patch']
+checksums = [
+    {'crystal23_v1_0_1_Linux-ifort21.4_MPPdistrib.tar.gz':
+     '77440d3cd6b44bbe1123ee88d66cc7dd7cfaad5aad2309033616d8791cb30f68'},
+    {'utils23.tar.gz': '6e45152e7a1561b89594257c5b1db126505aeaa0282e4ac09fc41e478a9db328'},
+    {'CRYSTAL-23.1.0.1_fix_run_scripts.patch': 'b2cae06e19c2cdec6eeb6b86d401ff0fd8c07180c48c8b18094262b3308ea21a'},
+]
+
+download_instructions = f"""
+{name} is licensed software, requires manual download from https://www.crystal.unito.it/"
+See https://www.crystal.unito.it/how_to_get_a_copy.html
+Required downloads: {' '.join(sources[:2])}
+"""
+
+dependencies = [
+    ('tcsh', '6.24.16'),
+]
+
+start_dir = 'build'
+
+local_common_buildopts = 'F90="$MPIF90" PLD="$MPIF90" F90FLAGS="$F90FLAGS" CC="$CC" CFLAGS="$CFLAGS -DNDEBUG" '
+local_common_buildopts += 'CXX="$CXX" CXXFLAGS="$CXXFLAGS -DNDEBUG -fno-rtti -fno-exceptions" '
+buildopts = [
+    local_common_buildopts + 'all',
+    local_common_buildopts + 'MPPLIB="$LIBSCALAPACK" MPP',
+]
+
+files_to_copy = [
+    ([f'bin/*/v{".".join(_ver[1:])}/*'], 'bin'),
+    (['utils23/*'], 'bin'),
+]
+
+postinstallcmds = [
+    "chmod ug+x %(installdir)s/bin/*",
+    # fix shebang in run* scripts
+    "xargs sed -i 's@/bin/csh@/usr/bin/env -S csh@g' %(installdir)s/bin/run*",
+    'echo localhost >%(installdir)s/bin/nodes.par',
+]
+
+_bins = ['crystal', 'Pcrystal', 'MPPcrystal', 'Pproperties', 'properties']
+
+_runscripts = [
+    f'runcry{_ver[0]}', f'runMPPcry{_ver[0]}', f'runPcry{_ver[0]}', f'runPprop{_ver[0]}', f'runprop{_ver[0]}',
+]
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in _bins + _runscripts],
+    'dirs': [],
+}
+
+sanity_check_commands = _runscripts
+
+modextravars = {
+    'CRY23_UTILS': '%(installdir)s/bin',
+    'CRY23_EXEDIR': '%(installdir)s/bin',
+}
+
+moduleclass = 'chem'
