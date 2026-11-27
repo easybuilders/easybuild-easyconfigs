@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'forbear'
+version = '1.9.1'
+
+homepage = 'https://github.com/szaghi/forbear'
+description = """Progress bars, spinners, ETA and messages for long-running Fortran programs, in
+pure Fortran 2008: one object, three calls - initialize, start, update."""
+
+toolchain = {'name': 'GCCcore', 'version': '14.2.0'}
+
+github_account = 'szaghi'
+source_urls = [GITHUB_RELEASE]
+sources = ['%(name)s-v%(version)s.tar.gz']
+checksums = [
+    {'forbear-v1.9.1.tar.gz': 'c956f41c380ca0ad351a06750af0fbafe9894a5f2a359573fc98f42682357fde'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('FoBiS', '3.16.0'),
+]
+
+dependencies = [
+    ('FACE', '1.1.17'),
+]
+
+# Use external FACE
+prebuildopts = (
+    'sed -i "/template-shared-gnu/a include = $EBROOTFACE/include" fobos && '
+    'sed -i "/template-shared-gnu/a ext_libs = face" fobos && '
+)
+
+build_cmd = 'FoBiS.py build'
+buildopts = '-mode shared-gnu'
+
+files_to_copy = [(['shared/mod/*.mod'], 'include'), ([f'shared/libforbear.{SHLIB_EXT}'], 'lib')]
+
+sanity_check_paths = {
+    'files': ['include/forbear.mod', f'lib/libforbear.{SHLIB_EXT}'],
+    'dirs': [],
+}
+
+moduleclass = 'tools'
