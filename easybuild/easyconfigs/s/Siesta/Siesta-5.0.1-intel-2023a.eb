@@ -1,0 +1,42 @@
+easyblock = 'CMakeMake'
+
+name = 'Siesta'
+version = '5.0.1'
+
+homepage = 'http://departments.icmab.es/leem/siesta'
+description = """SIESTA is both a method and its computer program implementation, to perform efficient electronic
+ structure calculations and ab initio molecular dynamics simulations of molecules and solids."""
+
+toolchain = {'name': 'intel', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'precise': True}
+
+source_urls = ['https://gitlab.com/siesta-project/siesta/-/releases/%(version)s/downloads']
+sources = ['siesta-5.0.1.tar.gz']
+checksums = [
+    {'siesta-5.0.1.tar.gz': '1933cde879d921577a5e854c459531951d0afc9fd193f086a04457e9022ba9a0'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('netCDF-Fortran', '4.6.1'),
+    ('HDF5', '1.14.0'),
+    ('ELPA', '2023.05.001'),
+    ('libxc', '6.2.2'),
+]
+
+configopts = '-DSIESTA_WITH_MPI=ON -DLAPACK_LIBRARY="-lmkl_intel_lp64 -lmkl_sequential -lmkl_core" '
+configopts += '-DSCALAPACK_LIBRARY="-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 -lmkl_intel_lp64 '
+configopts += ' -lmkl_sequential -lmkl_core" -DSIESTA_WITH_FFTW=ON'
+
+sanity_check_paths = {
+    'files': ["bin/siesta", "bin/mpi_driver", "bin/tbtrans", "bin/s-dftd3", "lib64/libsiesta.a"],
+    'dirs': [],
+}
+
+runtest = True
+
+moduleclass = 'phys'
