@@ -1,0 +1,47 @@
+easyblock = 'PythonBundle'
+
+name = 'torchcodec'
+version = '0.9.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/meta-pytorch/torchcodec'
+description = """PyTorch media decoding and encoding."""
+
+toolchain = {'name': 'foss', 'version': '2025b'}
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('pkgconf', '2.4.3'),
+    ('pybind11', '3.0.0'),
+]
+dependencies = [
+    ('Python', '3.13.5'),
+    ('CUDA', '12.9.1', '', SYSTEM),
+    ('PyTorch', '2.9.1', versionsuffix),
+    ('FFmpeg', '7.1.2', versionsuffix),
+]
+
+exts_list = [
+    (name, version, {
+        'source_urls': ['https://github.com/meta-pytorch/torchcodec/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'patches': [
+            'torchcodec-0.9.1_fix-AV1-tests-on-unsupported-NVDEC.patch',
+        ],
+        'preinstallopts': (
+            'BUILD_VERSION=%(version)s '
+            'ENABLE_CUDA=1 '
+            'I_CONFIRM_THIS_IS_NOT_A_LICENSE_VIOLATION=1 '
+            'CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s '
+        ),
+        'runtest': 'pytest -v test',
+        'testinstall': True,
+        'checksums': [
+            {'torchcodec-0.9.1.tar.gz': '115e14811c01c49efe6d4a69224e73670961eddfdab7067b16122fa2352eb219'},
+            {'torchcodec-0.9.1_fix-AV1-tests-on-unsupported-NVDEC.patch':
+             '916c2a8d1ceec3ab311030a43cbaf26cd38040910ccd54d6a254fbd23d7cef6b'},
+        ],
+    }),
+]
+
+moduleclass = 'ai'
