@@ -1,0 +1,85 @@
+# Updated to version 6.4.3
+# This version is without Wannier-90 support. 
+# Consequently, of the all test suite the testjobs requiring either will fail.
+# All others passed on the L40s which were used.
+# Author: J. Sassmannshausen (Imperial College London, UK)
+
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.4.3'
+versionsuffix = '-hdf5'
+
+homepage = 'https://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'nvofbf', 'version': '2024.9'}
+toolchainopts = {'openmp': True}
+
+download_instructions = """Vasp is proprietary software, see http://www.vasp.at/index.php/faqs
+ on how to get access to the code."""
+
+sources = ['%(namelower)s.%(version)s.tgz']
+patches = [
+    # This patch replaces -Mscalapack with -lscalapack and adds the NVROOT path via ${EBROOTNVHPC}
+    # It also sets the GPU version (hardcoded, needs to be changed!)
+    # This is a bit WIP, see below
+    '%(namelower)s-%(version)s_nv-flags.patch',
+    # adding hdf5 support
+    '%(namelower)s-%(version)s_hdf5.patch',
+]
+checksums = [
+    {'vasp.6.4.3.tgz': 'fe30e773f2a3e909b5e0baa9654032dfbdeff7ec157bc348cee7681a7b6c24f4'},
+    {'vasp-6.4.3_nv-flags.patch': '0b21ed2e7fbafa03859cc0edca7d4673c08fe64ab930adb62c57ba2cd36123cd'},
+    {'vasp-6.4.3_hdf5.patch': '9c5667eec45ea5ec6c37d7e7f5ce498f29c125d535feb78a2c38119ec3068122'},
+]
+
+dependencies = [
+    ('HDF5', '1.14.5', '-serial'),
+]
+
+prebuildopts = 'cp arch/makefile.include.nvhpc_omp_acc ./makefile.include && '
+
+# Makefile uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+local_targets = ['std', 'gam', 'ncl']
+
+buildopts = '%s ' % ' '.join(local_targets)
+buildopts += 'FFTW_ROOT="${EBROOTFFTW}" '
+buildopts += 'DEPS=1 '  # required for VASP parallel builds
+
+# https://www.vasp.at/wiki/index.php/Validation_tests
+
+# it is recommended to run the testsuite with 4 MPI processes,
+# but it's also recommended to use only 1 MPI process per GPU,
+# so running the test on GPUs requires 4 GPUs?
+local_test_mpiprocs = 4
+
+pretestopts = 'export MPIRUN="mpirun -np %s -x OMP_NUM_THREADS=4 -x OMP_STACKSIZE=512m" && ' % local_test_mpiprocs
+pretestopts += 'export LD_LIBRARY_PATH="${EBROOTNVHPC}/Linux_x86_64/${EBVERSIONNVHPC}/compilers/extras/qd/lib:$LD_LIBRARY_PATH" '
+pretestopts += 'export VASP_TESTSUITE_EXE_STD="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_std" && '
+pretestopts += 'export VASP_TESTSUITE_EXE_NCL="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_ncl" && '
+pretestopts += 'export VASP_TESTSUITE_EXE_GAM="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_gam" && '
+
+# skip tests that are too long
+local_test_skip = 'HEG_333_LW '
+
+pretestopts += 'export VASP_TESTSUITE_SKIP_TESTS="%s" && ' % local_test_skip
+runtest = 'test'
+# Full test suite. Run this only when you got a day to spare or so!
+# runtest = 'test_all'
+
+files_to_copy = [(['bin/vasp_' + x for x in local_targets], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_' + x for x in local_targets],
+    'dirs': []
+}
+
+# This is needed as else libqdmod and libqd might not be found 
+modextrapaths = {'LD_LIBRARY_PATH': ':${EBROOTNVHPC}/Linux_x86_64/${EBVERSIONNVHPC}/compilers/extras/qd/lib'}
+
+moduleclass = 'phys'
