@@ -1,0 +1,18 @@
+Restrict target("fma") to x86_64. GCC rejects that ISA name on aarch64, where FMA is baseline.
+Author: Rohit Goswami (HaoZeke)
+--- a/CppCore/rgpot/nlist/MinimumImage.cpp
++++ b/CppCore/rgpot/nlist/MinimumImage.cpp
+@@ -678,8 +678,12 @@
+ // glibc reports that the processor's FMA is usable. MSVC has no target
+ // attribute; this body then calls std::fma, and the caller keeps the
+ // portable path unless a runtime check selects it.
+-#if defined(__GNUC__) || defined(__clang__)
++#if (defined(__GNUC__) || defined(__clang__)) && defined(__x86_64__)
++// target("fma") names the x86 FMA ISA. GCC rejects it on aarch64, where
++// FMA is baseline and __builtin_fma needs no extra target attribute.
+ __attribute__((target("fma"), noinline, flatten))
++#elif defined(__GNUC__) || defined(__clang__)
++__attribute__((noinline, flatten))
+ #endif
+ void fold_hardware(bool narrow, const double cell[9], const double inv[9],
+                    const double dual[3], const bool periodic[3], double &dx,
