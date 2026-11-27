@@ -1,0 +1,88 @@
+# Author: J. Saßmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'fluidity'
+version = '4.1.20'
+
+homepage = 'https://fluidityproject.github.io/'
+description = """
+Fluidity is an open source, general purpose, multiphase computational fluid
+dynamics code capable of numerically solving the Navier-Stokes equation and
+accompanying field equations on arbitrary unstructured finite element meshes
+in one, two and three dimensions. It is parallelised using MPI and is capable
+of scaling to many thousands of processors. Other innovative and novel features
+include the use of anisotropic adaptive mesh technology, and a user-friendly
+GUI and a Python interface which can be used to calculate diagnostic fields,
+set prescribed fields or set user-defined boundary conditions.
+"""
+
+toolchain = {'name': 'foss', 'version': '2024a'}
+
+source_urls = ['https://github.com/FluidityProject/fluidity/archive']
+sources = [f'{version}.tar.gz']
+patches = [
+    'fluidity-4.1.20_compatibility.patch',
+    'fluidity-4.1.20_zoltan.patch',
+]
+checksums = [
+    {'4.1.20.tar.gz': '8b2879be548fab97b94de1ccebf1f3bfa966c06ed8364e457f5ab3e8b3b99792'},
+    {'fluidity-4.1.20_compatibility.patch': '27112f37af8272d9e9d4c57b0b517606c0ccba631f2f53790c4fe485ebeee613'},
+    {'fluidity-4.1.20_zoltan.patch': 'd4f9b6b6d9f2af119fd9886cb1f53769c2f21debb4a2ce959dc2982c9c69dc46'},
+]
+
+builddependencies = [
+    ('binutils', '2.42'),
+    ('make', '4.4.1'),
+    ('Autotools', '20231222'),
+    ('Eigen', '3.4.0'),
+]
+
+dependencies = [
+    ('Trilinos', '16.1.0', '-zoltan'),
+    ('gmsh', '4.14.0'),
+    ('libsupermesh', '2025.4'),
+    ('Judy', '1.0.5'),
+    ('VTK', '9.3.1'),
+    ('PETSc', '3.23.5'),
+    ('METIS', '5.1.0'),
+    ('Python', '3.12.3'),
+    ('Python-bundle-PyPI', '2024.06'),
+    ('pybind11', '2.12.0'),
+    ('SciPy-bundle', '2024.05'),
+    ('Boost', '1.85.0'),
+    ('HDF5', '1.14.5'),
+    ('netCDF-Fortran', '4.6.1'),
+    ('netCDF', '4.9.2'),
+    ('Rtree', '1.4.0'),
+]
+
+# We need to expand some environment variables:
+_local_fcflags = '-I$EBROOTPETSC/include -I$EBROOTVTK/include/vtk-9.3 '
+_local_fcflags += '-I$EBROOTNETCDFMINFORTRAN/include -I$EBROOTLIBSUPERMESH/include -I$EBROOTTRILINOS/include'
+_local_ldflags = '-L$EBROOTFFTW/lib -L$EBROOTSCALAPACK/lib -L$EBROOTSCALAPACK/lib '
+_local_ldflags += '-L$EBROOTGCCCORE/lib64 -L$EBROOTGCCCORE/lib'
+pre_configure_opts = 'LIBS="-lm -lpthread -lpetsc -lflexiblas -lmpi_mpifh -lzoltan" '
+pre_configure_opts += f'FCFLAGS="$FCFLAGS {_local_fcflags}" '
+pre_configure_opts += f'LDFLAGS="{_local_ldflags}" '
+
+configure_opts = '--with-blas=flexiblas --with-lapack=flexiblas --enable-shared '
+configure_opts += '--with-judy=Judy --enable-2d-adaptivity --enable-libsupermesh '
+configure_opts += '-enable-mba3d --with-spatialindex-root=$EBROOTLIBSPATIALINDEX '
+
+# This should take around 1.5 hours on 16 cores
+pretestopts = 'PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe '
+runtest = 'serialtest '
+
+post_install_cmds = ['cp -r tests/ %(installdir)s/ && cp -r tools/ %(installdir)s/ ']
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = [
+    "%(namelower)s -V",
+]
+
+moduleclass = 'geo'
