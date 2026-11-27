@@ -1,0 +1,186 @@
+name = 'LAMMPS'
+version = '30Sep2026'
+versionsuffix = '-kokkos'
+
+homepage = 'https://www.lammps.org'
+description = """LAMMPS is a classical molecular dynamics code, and an acronym
+for Large-scale Atomic/Molecular Massively Parallel Simulator. LAMMPS has
+potentials for solid-state materials (metals, semiconductors) and soft matter
+(biomolecules, polymers) and coarse-grained or mesoscopic systems. It can be
+used to model atoms or, more generically, as a parallel particle simulator at
+the atomic, meso, or continuum scale. LAMMPS runs on single processors or in
+parallel using message-passing techniques and a spatial-decomposition of the
+simulation domain. The code is designed to be easy to modify or extend with new
+functionality.
+"""
+
+toolchain = {'name': 'foss', 'version': '2026.1'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+# 'https://github.com/lammps/lammps/archive/'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['stable_%(version)s.tar.gz']
+patches = [
+    'LAMMPS-22Jul2025_install_lammps_python_package_in_eb_software_module.patch',
+    'LAMMPS-2Aug2023_python_venv.patch',
+    'LAMMPS-30Sep2026_fix_time_step.patch',
+]
+checksums = [
+    {'stable_30Sep2026.tar.gz': '56e6670161cc0e4c5a4816a95edc80c00c9507a98445d0756b9ad8b5eb29748e'},
+    {'LAMMPS-22Jul2025_install_lammps_python_package_in_eb_software_module.patch':
+     '0cab0fa4dc8b2c68b45cd9df4398b9c2c37d69dcd1dc054aacb44f78698a2c84'},
+    {'LAMMPS-2Aug2023_python_venv.patch': '87fd13b0c66f0886877885412ff13dfd092782e2237ba1fae157f803437828d6'},
+    {'LAMMPS-30Sep2026_fix_time_step.patch': 'e1797660780f895f2bded109c55f3051f7968d52ba975cef2517c3dcf567f3d8'},
+]
+
+builddependencies = [
+    ('CMake', '4.2.1'),
+    ('pkgconf', '2.5.1'),
+    ('archspec', '0.2.6'),
+    ('PyYAML', '6.0.3'),  # needed for tests
+]
+dependencies = [
+    ('Python', '3.14.2'),
+    ('libpng', '1.6.56'),
+    ('libjpeg-turbo', '3.1.4.1'),
+    ('netCDF', '4.10.0'),
+    ('PnetCDF', '1.14.1'),
+    ('GSL', '2.8'),
+    ('zlib', '2.3.2'),
+    ('gzip', '1.14'),
+    ('cURL', '8.17.0'),
+    ('HDF5', '2.1.1'),
+    ('PCRE', '8.45'),
+    ('libxml2', '2.15.1'),
+    ('FFmpeg', '8.1.1'),
+    ('Voro++', '0.4.6'),
+    ('kim-api', '2.4.2'),
+    ('Eigen', '3.4.1'),
+    ('PLUMED', '2.10.0'),
+    ('SciPy-bundle', '2026.05'),
+    # We use a custom build of MDI
+    ('MDI', '1.4.40'),
+    ('mpi4py', '4.1.2'),
+    ('tbb', '2022.3.0'),
+]
+
+# To use additional custom configuration options, use the 'configopts' easyconfig parameter
+# See docs and lammps easyblock for more information.
+# https://github.com/lammps/lammps/blob/master/cmake/README.md#lammps-configuration-options
+
+# OpenMP-Kokkos build is default in the current easyblock. One can switch to serial backend of Kokkos,
+# which is claimed to be faster in pure MPI calculations
+# configopts  = "-DKokkos_ENABLE_SERIAL=yes "
+
+
+# packages auto-enabled by easyblock
+# 'GPU'    - if cuda package is present and kokkos is disabled
+# 'KOKKOS' - if kokkos is enabled (by default)
+# 'INTEL'  - if builing on Intel CPU
+# 'OPENMP' - if OpenMP swithed on in 'toolchainopts'
+
+configopts = ' '.join([
+    '-DCMAKE_CXX_STANDARD=17',
+    '-DCMAKE_CXX_STANDARD_REQUIRED=on',
+])
+
+# include the following extra packages into the build
+general_packages = [
+    'AMOEBA',
+    'APIP',
+    'ASPHERE',
+    'BOCS',
+    'BODY',
+    'BPM',
+    'BROWNIAN',
+    'CG-DNA',
+    'CG-SPICA',
+    'CLASS2',
+    'COLLOID',
+    'COLVARS',
+    'COMPRESS',
+    'CORESHELL',
+    'DIELECTRIC',
+    'DIFFRACTION',
+    'DIPOLE',
+    'DPD-BASIC',
+    'DPD-MESO',
+    'DPD-REACT',
+    'DPD-SMOOTH',
+    'DRUDE',
+    'EFF',
+    'ELECTRODE',
+    'EXTRA-COMMAND',
+    'EXTRA-COMPUTE',
+    'EXTRA-DUMP',
+    'EXTRA-FIX',
+    'EXTRA-MOLECULE',
+    'EXTRA-PAIR',
+    'FEP',
+    'GRANSURF',
+    'GRANULAR',
+    'GRAPHICS',
+    'H5MD',
+    'INTERLAYER',
+    'KIM',
+    'KSPACE',
+    'LATBOLTZ',
+    'LEPTON',
+    'MACHDYN',
+    'MANIFOLD',
+    'MANYBODY',
+    'MC',
+    'MDI',
+    'MEAM',
+    'MGPT',
+    'MISC',
+    'ML-IAP',
+    # ML-PACE is dowloading during the configure step
+    # See https://github.com/easybuilders/easybuild-easyconfigs/issues/27103
+    'ML-PACE',
+    'ML-POD',
+    'ML-RUNNER',
+    'ML-SNAP',
+    'ML-UF3',
+    'MOFFF',
+    'MOLECULE',
+    'MOLFILE',
+    'NETCDF',
+    'OPT',
+    'ORIENT',
+    'PERI',
+    'PHONON',
+    'PLUGIN',
+    'PLUMED',
+    'PTM',
+    'PYTHON',
+    'QEQ',
+    'QTB',
+    'REACTION',
+    'REAXFF',
+    'REPLICA',
+    'RHEO',
+    'RIGID',
+    'SHOCK',
+    'SMTBQ',
+    'SPH',
+    'SPIN',
+    'SRD',
+    'TALLY',
+    'UEF',
+    'VORONOI',
+    'YAFF',
+]
+
+# Excluded packages due to requiring additional (non-trivial) deps
+# - ADIOS
+# - FENIX (New package that need some extra configure options)
+# - MBX (requires MBX)
+# - MESONT (requires very large files downloaded during build)
+# - ML-HDNNP (requires N2P2)
+# - ML-QUIP
+# - QMMM (setup seems complex)
+# - QMMM-XTB
+# - SCAFACOS (issues compiling with latest toolchain)
+
+moduleclass = 'chem'
