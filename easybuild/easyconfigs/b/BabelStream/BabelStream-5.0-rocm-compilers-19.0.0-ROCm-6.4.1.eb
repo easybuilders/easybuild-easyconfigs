@@ -1,0 +1,34 @@
+# Author:   Aayush Joglekar <aayush.joglekar@surf.nl>
+
+easyblock = 'ROCmComponent'
+
+name = 'BabelStream'
+version = '5.0'
+_rocm_version = '6.4.1'
+
+homepage = 'https://github.com/uob-hpc/BabelStream'
+description = "BabelStream memory bandwidth benchmark natively built with AMD HIP."
+
+toolchain = {'name': 'rocm-compilers', 'version': '19.0.0-ROCm-6.4.1'}
+
+source_urls = ['https://github.com/uob-hpc/BabelStream/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+
+builddependencies = [
+    ('CMake', '3.31.3'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+]
+
+preconfigopts = 'LD_LIBRARY_PATH=$EBROOTGCCCORE/lib64:$LD_LIBRARY_PATH '
+
+configopts = '-DMODEL=hip '
+configopts += '-DCMAKE_HIP_ARCHITECTURES="%(amdgcn_cc_semicolon_sep)s" '
+configopts += '-DCMAKE_CXX_FLAGS="-D__HIP_PLATFORM_AMD__ -x hip --offload-arch=%(amdgcn_cc_semicolon_sep)s" '
+
+sanity_check_paths = {
+    'dirs': ['bin'],
+    'files': ['bin/hip-stream'],
+}
