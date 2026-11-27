@@ -1,0 +1,123 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+# Updated by: Alex Domingo (Vrije Universiteit Brussel)
+# Updated by: Thomas Hoffmann (EMBL Heidelberg)
+# Updated by: Pavel Tománek (INUITS)
+easyblock = 'PythonBundle'
+
+name = 'jax'
+version = '0.6.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://jax.readthedocs.io/'
+description = """Composable transformations of Python+NumPy programs:
+differentiate, vectorize, JIT to GPU/TPU, and more"""
+
+toolchain = {'name': 'gfbf', 'version': '2023b'}
+
+builddependencies = [
+    ('Bazel', '7.4.1', '-Java-21'),
+    # CUDA device code is compiled with Clang; Clang 17 (the GCCcore/13.2.0 default)
+    # fails on GCC 13's <bits/std_abs.h> with '__float128 is not supported on this target'
+    ('Clang', '18.1.8', versionsuffix),
+]
+
+dependencies = [
+    ('CUDA', '12.6.0', '', SYSTEM),
+    ('cuDNN', '9.5.1.17', versionsuffix, SYSTEM),
+    ('NCCL', '2.26.2', versionsuffix),
+    ('Python', '3.11.5'),
+    ('SciPy-bundle', '2023.11'),
+    ('absl-py', '2.1.0'),
+    ('flatbuffers-python', '24.3.25'),
+    ('ml_dtypes', '0.5.0'),
+    ('hypothesis', '6.90.0'),
+    ('zlib', '1.2.13'),
+]
+
+# downloading xla  tarball to avoid that Bazel downloads it during the build
+# note: following commits *must* be the exact same onces used upstream
+# XLA_COMMIT from jax-jaxlib: third_party/xla/workspace.bzl
+_xla_commit = '47a47140b5f7a33d86901316d9c569de179bae08'
+
+# Use sources downloaded by EasyBuild
+_jaxlib_buildopts = '--bazel_options="--distdir=%(builddir)s/archives" '
+# create wheels for jaxlib and install it
+_jaxlib_buildopts += '--wheels=jaxlib,jax-cuda-plugin,jax-cuda-pjrt '
+# compile CUDA device code with Clang
+_jaxlib_buildopts += '--build_cuda_with_clang '
+# fix jaxlib version
+_jaxlib_buildopts += '--bazel_options="--action_env=JAXLIB_RELEASE" '
+# Workaround warning-turned-error in boringSSL, with -O3:
+# https://boringssl.googlesource.com/boringssl/+/5555991d3729d4231671214f0b9ba4858a5a8a81
+_jaxlib_buildopts += '--bazel_options="--copt=-Wno-dangling-pointer" '
+# False positive in boringSSL writing to a buffer
+_jaxlib_buildopts += '--bazel_options="--copt=-Wno-stringop-overflow" '
+
+components = [
+    ('jaxlib', version, {
+        'sources': [
+            {
+                'source_urls': ['https://github.com/google/jax/archive/'],
+                'filename': 'jax-v%(version)s.tar.gz',
+            },
+            {
+                'source_urls': ['https://github.com/openxla/xla/archive'],
+                # bazel's --distdir matches on the URL basename, so this must
+                # keep the upstream {commit}.tar.gz name or it is re-downloaded
+                'filename': f'{_xla_commit}.tar.gz',
+                'extract_cmd': 'mkdir -p %(builddir)s/archives && cp %s %(builddir)s/archives',
+            },
+        ],
+        'checksums': [
+            {'jax-v0.6.1.tar.gz':
+             'af179a4047d473059beebc4b9d09763e80d8f7dcf4ae75670bc3dd912c92d6f5'},
+            {'47a47140b5f7a33d86901316d9c569de179bae08.tar.gz':
+             'c6c55e0e426b2f4a78f1b5459baab29a61d2435c089628e83db92ef8f890a02f'},
+        ],
+        'start_dir': f'jax-jax-v{version}',
+        # fix jaxlib version - removes .dev suffix
+        'prebuildopts': 'export JAXLIB_RELEASE=%(version)s && ',
+        'buildopts': _jaxlib_buildopts,
+    }),
+]
+
+# avoid OOM errors when several JAX test processes run concurrently on one GPU,
+# see https://docs.jax.dev/en/latest/gpu_memory_allocation.html
+_pretestopts = 'export XLA_PYTHON_CLIENT_PREALLOCATE=false; '
+# avoid error: "XlaRuntimeError: INTERNAL: libdevice not found at ./libdevice.10.bc"
+_pretestopts += 'export XLA_FLAGS="--xla_gpu_cuda_data_dir=$CUDA_HOME"; '
+
+# BackendsTest is failing on systems with GPU detected when cpu version is built
+_failing_backend_test = 'tests/api_test.py::BackendsTest::test_no_backend_warning_on_cpu_if_platform_specified'
+# Failing after fix jaxlib version by JAXLIB_RELEASE
+_failing_version_tests = 'tests/version_test.py'
+# Cap pytest-xdist workers: every worker holds its own CUDA context, so one
+# worker per core would exhaust GPU memory on a single device
+_jax_test_workers = '$(( %(parallel)s > 8 ? 4 : (%(parallel)s + 1) / 2 ))'
+_runtest_cmd1 = (f"pytest -n {_jax_test_workers} tests "
+                 f"--deselect={_failing_backend_test} --deselect={_failing_version_tests}")
+# retry randomly failing tests
+_runtest_cmd = ' '.join([_runtest_cmd1, '||', _runtest_cmd1, '--last-failed'])
+
+exts_list = [
+    (name, version, {
+        "patches": [
+            'jax-0.6.2_jax-version-fix.patch',
+            'jax-0.6.2_fix-slurm-vars.patch',
+        ],
+        'pretestopts': _pretestopts,
+        "testinstall": True,
+        "runtest": _runtest_cmd,
+        "sources": [
+            {"source_urls": ["https://github.com/google/jax/archive/"], "filename": "%(name)s-v%(version)s.tar.gz"}
+        ],
+        "checksums": [
+            {"jax-v0.6.1.tar.gz": "af179a4047d473059beebc4b9d09763e80d8f7dcf4ae75670bc3dd912c92d6f5"},
+            {"jax-0.6.2_jax-version-fix.patch": "e15615fd9f4e1698f7c5fd384f146d7b2dbfde3d4657b69bd2d044d75c9fb1d4"},
+            {'jax-0.6.2_fix-slurm-vars.patch': 'a551deb1723c091ad9c29ada7b9e52dcfaaff4098e03d4e1c7a3d1e75f129f42'},
+        ],
+    }),
+]
+
+moduleclass = 'ai'
