@@ -585,6 +585,9 @@ class EasyConfigTest(TestCase):
                                         r'WSClean-3\.[5-9]',
                                         r'LSMTool-1.7.0-foss-2023b',
                                         r'LINC-5.0-foss-2023b'])],
+            # jax 0.6.1 requires flatbuffers >= 24.x
+            # (other 2023b easyconfigs, e.g. TensorFlow 2.15.1, use flatbuffers-python 23.5.26)
+            'flatbuffers-python': [(r'24\.3\.25', [r'jax-0\.6\.1'])],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
@@ -612,9 +615,10 @@ class EasyConfigTest(TestCase):
                     # EC's that requires Java 17 in 2023b easyconfigs, while others use Java 11
                     r'AnnotSV-3\.5\.10-foss-2023b', r'GATK-4\.6\.0\.0-GCCcore-13\.2\.0', r'Spark-3\.5\.4-foss-2023b',
                 ]),
-                # Java 21 is used as dep by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, and IMAS-* on 2023b
+                # Java 21 is used as dep by Octave 9.2.0, MDSplus 7.1, JPype 1.5.0, Bazel 7.4.1,
+                # and IMAS-* on 2023b
                 (r'21', [r'Octave-9\.2\.0', r'MDSplus-7\.1', r'JPype-1\.5\.0',
-                         r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0']),
+                         r'IMAS-.*-2023b', r'IMAS-.*-GCCcore-13\.2\.0', r'Bazel-7\.4\.1']),
                 # Java 25 is used as dep for MDSplus 7.1, IMAS-* and SimDB (via IMAS-Python) on 2025b
                 (r'25', [r'MDSplus-7\.1.*-GCCcore-14\.3\.0', r'IMAS-.*-2025b', r'IMAS-.*-GCCcore-14\.3\.0',
                          r'SimDB-.*-2025b']),
@@ -625,6 +629,9 @@ class EasyConfigTest(TestCase):
                 (r'4\.', [r'libGridXC-']),
                 (r'5\.', [r'Elk-']),
             ],
+            # jax 0.6.1 requires ml_dtypes >= 0.5.0
+            # (other 2023b easyconfigs, e.g. TensorFlow 2.15.1, use ml_dtypes 0.4.0)
+            'ml_dtypes': [(r'0\.5\.0', [r'jax-0\.6\.1'])],
             # OpenQP requires mpi4py>=4.0.0
             'mpi4py': [(r'4\.0\.1', [r'OpenQP-1\.0', r'SimNIBS-4\.6\.0'])],
             # FDMNES requires sequential variant of MUMPS
