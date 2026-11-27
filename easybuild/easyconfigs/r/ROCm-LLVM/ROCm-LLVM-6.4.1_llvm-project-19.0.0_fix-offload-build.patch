@@ -1,0 +1,209 @@
+This patch contains two parts:
+1. Update how the ROCm .bc libraries are found. Older ROCm versions are very sensetive when it comes
+   to LIBRARY_PATH being set, easily causing errors because the .bc files weren't found.
+   The changes implemented in e3ea278 [a] improve the situation, by allowing searching in additional paths.
+   Expanded the patch to ensure that this detection also works when .bc files are within its own target directory.
+2. Fix missing braces in OmptTracing, which could cause compilation failures due to the macro expanded being
+   longer than a single line.
+
+[a] https://github.com/ROCm/llvm-project/commit/e3ea27822c6bf53554a93ac777de4fb430227f29
+
+Author: Jan Andre Reuter (jan@zyten.de)
+
+diff --color -Naur llvm-project-rocm-6.4.1.orig/clang/lib/Driver/ToolChains/AMDGPUOpenMP.cpp llvm-project-rocm-6.4.1/clang/lib/Driver/ToolChains/AMDGPUOpenMP.cpp
+--- llvm-project-rocm-6.4.1.orig/clang/lib/Driver/ToolChains/AMDGPUOpenMP.cpp	2025-05-08 21:07:38.000000000 +0200
++++ llvm-project-rocm-6.4.1/clang/lib/Driver/ToolChains/AMDGPUOpenMP.cpp	2025-06-30 19:59:40.693751999 +0200
+@@ -232,12 +232,6 @@
+       LibSuffix.append("/asan");
+   }
+ 
+-  // If device debugging turned on, add specially built bc files
+-  StringRef libpath = Args.MakeArgString(C.getDriver().Dir + "/../" + LibSuffix);
+-  std::string lib_debug_perf_path = FindDebugPerfInLibraryPath(LibSuffix);
+-  if (!lib_debug_perf_path.empty())
+-    libpath = lib_debug_perf_path;
+-
+   llvm::SmallVector<std::string, 12> BCLibs;
+ 
+   std::string AsanRTL;
+@@ -260,27 +254,33 @@
+   // not the installed compiler.
+   std::string LibDeviceName = "/libomptarget-amdgpu-" + GPUArch.str() + ".bc";
+ 
+-  SmallString<128> Path(Args.MakeArgString(libpath + LibDeviceName));
+-  if (LibSuffix != "lib" || llvm::sys::fs::exists(Path)) {
+-    BCLibs.push_back(Args.MakeArgString(Path));
+-  } else {
+-    // Check if the device library can be found in
+-    // one of the LIBRARY_PATH directories.
+-    bool EnvOmpLibDeviceFound = false;
+-    for (auto &EnvLibraryPath : EnvironmentLibraryPaths) {
+-      std::string EnvOmpLibDevice = EnvLibraryPath + LibDeviceName;
+-      if (llvm::sys::fs::exists(EnvOmpLibDevice)) {
+-        EnvOmpLibDeviceFound = true;
+-        BCLibs.push_back(EnvOmpLibDevice);
+-        break;
+-      }
+-    }
+-    // If LIBRARY_PATH doesn't point to the device library,
+-    // then use the default one.
+-    if (!EnvOmpLibDeviceFound) {
+-      std::string RtDir = "/../runtimes/runtimes-bins/offload";
+-      BCLibs.push_back(Args.MakeArgString(libpath + RtDir + LibDeviceName));
+-    }
++  // Check if libomptarget device bitcode can be found in a LIBRARY_PATH dir
++  bool EnvOmpLibDeviceFound = false;
++  for (auto &EnvLibraryPath : EnvironmentLibraryPaths) {
++    std::string EnvOmpLibDevice = EnvLibraryPath + LibDeviceName;
++    if (llvm::sys::fs::exists(EnvOmpLibDevice)) {
++      EnvOmpLibDeviceFound = true;
++      BCLibs.push_back(EnvOmpLibDevice);
++      break;
++     }
++   }
++ 
++  // If not found in LIBRARY_PATH, use default for the correct LibSuffix.
++  if (!EnvOmpLibDeviceFound) {
++    StringRef bc_file_suf = Args.MakeArgString(C.getDriver().Dir + "/../" +
++                                               LibSuffix + LibDeviceName);
++    StringRef bc_file_lib =
++        Args.MakeArgString(C.getDriver().Dir + "/../lib" + LibDeviceName);
++    StringRef bc_file_target_suf =
++        Args.MakeArgString(C.getDriver().Dir + "/../lib/" + 
++          LLVM_DEFAULT_TARGET_TRIPLE + "/" + LibDeviceName);
++    if (llvm::sys::fs::exists(bc_file_suf))
++      BCLibs.push_back(Args.MakeArgString(bc_file_suf));
++    else if (llvm::sys::fs::exists(bc_file_lib))
++      // In case a LibSuffix version not found, use suffix "lib"
++      BCLibs.push_back(Args.MakeArgString(bc_file_lib));
++    else if (llvm::sys::fs::exists(bc_file_target_suf))
++      BCLibs.push_back(Args.MakeArgString(bc_file_target_suf));
+   }
+ 
+   if (!AsanRTL.empty()) {
+diff --color -Naur llvm-project-rocm-6.4.1.orig/clang/lib/Driver/ToolChains/CommonArgs.cpp llvm-project-rocm-6.4.1/clang/lib/Driver/ToolChains/CommonArgs.cpp
+--- llvm-project-rocm-6.4.1.orig/clang/lib/Driver/ToolChains/CommonArgs.cpp	2025-05-08 21:07:38.000000000 +0200
++++ llvm-project-rocm-6.4.1/clang/lib/Driver/ToolChains/CommonArgs.cpp	2025-06-30 20:17:20.183880125 +0200
+@@ -1162,29 +1162,6 @@
+   }
+ }
+ 
+-std::string tools::FindDebugPerfInLibraryPath(const std::string &RLib) {
+-  const char *DirList = ::getenv("LIBRARY_PATH");
+-  if (!DirList)
+-    return "";
+-  StringRef Dirs(DirList);
+-  if (Dirs.empty()) // Empty string should not add '.'.
+-    return "";
+-
+-  StringRef::size_type Delim;
+-  while ((Delim = Dirs.find(llvm::sys::EnvPathSeparator)) != StringRef::npos) {
+-    if (Delim != 0) { // Leading colon.
+-      if (Dirs.substr(0, Delim).ends_with(RLib))
+-        return Dirs.substr(0, Delim).str();
+-    }
+-    Dirs = Dirs.substr(Delim + 1);
+-  }
+-  if (!Dirs.empty()) {
+-    if (Dirs.ends_with(RLib))
+-      return Dirs.str();
+-  }
+-  return "";
+-}
+-
+ void tools::addOpenMPRuntimeSpecificRPath(const ToolChain &TC,
+                                           const ArgList &Args,
+                                           ArgStringList &CmdArgs) {
+@@ -1200,9 +1177,16 @@
+     if (TC.getSanitizerArgs(Args).needsAsanRt())
+       LibSuffix.append("/asan");
+   }
+-  std::string CandidateRPath = FindDebugPerfInLibraryPath(LibSuffix);
+-  if (CandidateRPath.empty())
+-    CandidateRPath = D.Dir + "/../" + LibSuffix;
++  // Check if the device library cna be found in
++  // one of the LIBRARY_PATH directories.
++  ArgStringList EnvLibraryPaths;
++  addDirectoryList(Args, EnvLibraryPaths, "", "LIBRARY_PATH");
++  for (auto &EnvLibraryPath : EnvLibraryPaths) {
++    if(llvm::sys::fs::exists(EnvLibraryPath)) {
++      CmdArgs.push_back("-rpath");
++      CmdArgs.push_back(Args.MakeArgString(EnvLibraryPath));
++    }
++  }
+ 
+   if (Args.hasFlag(options::OPT_fopenmp_implicit_rpath,
+                    options::OPT_fno_openmp_implicit_rpath, true)) {
+@@ -1215,8 +1199,41 @@
+       CmdArgs.push_back("-rpath");
+       CmdArgs.push_back(Args.MakeArgString(TC.getCompilerRTPath()));
+     }
++
++    // In case LibSuffix was not built, try lib
++    std::string CandidateRPath_suf = D.Dir + "/../" + LibSuffix;
+     CmdArgs.push_back("-rpath");
+-    CmdArgs.push_back(Args.MakeArgString(CandidateRPath.c_str()));
++    CmdArgs.push_back(Args.MakeArgString(CandidateRPath_suf.c_str()));
++
++    // Add lib directory in case LibSuffix does not exist
++    std::string CandidateRPath_lib = D.Dir + "/../lib";
++    if ((!llvm::sys::fs::exists(CandidateRPath_suf)) &&
++        (llvm::sys::fs::exists(CandidateRPath_lib))) {
++      CmdArgs.push_back("-rpath");
++      CmdArgs.push_back(Args.MakeArgString(CandidateRPath_lib.c_str()));
++    }
++
++    std::string rocmPath =
++      Args.getLastArgValue(clang::driver::options::OPT_rocm_path_EQ).str();
++    if(rocmPath.size() != 0) {
++      std::string rocmPath_lib = rocmPath + "/lib";
++      std::string rocmPath_suf = rocmPath + "/" + LibSuffix;
++      std::string rocmPath_target_lib = 
++        rocmPath + "/lib/" + LLVM_DEFAULT_TARGET_TRIPLE;
++      if(llvm::sys::fs::exists(rocmPath_suf)) {
++        CmdArgs.push_back("-rpath");
++        CmdArgs.push_back(Args.MakeArgString(rocmPath_suf.c_str()));
++      }
++      if(llvm::sys::fs::exists(rocmPath_lib)) {
++        CmdArgs.push_back("-rpath");
++        CmdArgs.push_back(Args.MakeArgString(rocmPath_lib.c_str()));
++      }
++      if(llvm::sys::fs::exists(rocmPath_target_lib)) {
++        CmdArgs.push_back("-rpath");
++        CmdArgs.push_back(Args.MakeArgString(rocmPath_target_lib.c_str()));
++      }
++    }
++
+     if (llvm::find_if(CmdArgs, [](StringRef str) {
+           return !str.compare("--enable-new-dtags");
+         }) == CmdArgs.end())
+diff --color -Naur llvm-project-rocm-6.4.1.orig/clang/lib/Driver/ToolChains/CommonArgs.h llvm-project-rocm-6.4.1/clang/lib/Driver/ToolChains/CommonArgs.h
+--- llvm-project-rocm-6.4.1.orig/clang/lib/Driver/ToolChains/CommonArgs.h	2025-05-08 21:07:38.000000000 +0200
++++ llvm-project-rocm-6.4.1/clang/lib/Driver/ToolChains/CommonArgs.h	2025-06-30 19:52:52.947564571 +0200
+@@ -119,8 +119,6 @@
+                       const llvm::opt::ArgList &Args,
+                       llvm::opt::ArgStringList &CmdArgs);
+ 
+-std::string FindDebugPerfInLibraryPath(const std::string &RLib);
+-
+ void addOpenMPRuntimeSpecificRPath(const ToolChain &TC,
+                                    const llvm::opt::ArgList &Args,
+                                    llvm::opt::ArgStringList &CmdArgs);
+diff --color -Naur llvm-project-rocm-6.4.1.orig/offload/plugins-nextgen/common/OMPT/OmptTracing.cpp llvm-project-rocm-6.4.1/offload/plugins-nextgen/common/OMPT/OmptTracing.cpp
+--- llvm-project-rocm-6.4.1.orig/offload/plugins-nextgen/common/OMPT/OmptTracing.cpp	2025-05-08 21:07:38.000000000 +0200
++++ llvm-project-rocm-6.4.1/offload/plugins-nextgen/common/OMPT/OmptTracing.cpp	2025-06-28 00:28:33.718073512 +0200
+@@ -95,11 +95,12 @@
+   auto DeviceIterator = Devices.find(Device);
+   if (DeviceIterator != Devices.end()) {
+     auto CurrentDeviceId = DeviceIterator->second;
+-    if (DeviceId == CurrentDeviceId)
++    if (DeviceId == CurrentDeviceId) {
+       REPORT("Tried to duplicate OMPT Device=%p (ID=%d)\n", Device, DeviceId);
+-    else
++    } else {
+       REPORT("Tried to overwrite OMPT Device=%p (ID=%d with new ID=%d)\n",
+              Device, CurrentDeviceId, DeviceId);
++    }
+     return;
+   }
+   Devices.emplace(Device, DeviceId);
