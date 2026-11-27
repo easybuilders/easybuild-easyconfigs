@@ -1,7 +1,7 @@
 easyblock = 'CMakePythonPackage'
 
 name = 'OpenMC'
-version = '0.15.3'
+version = '0.16.0'
 
 homepage = 'https://openmc.org'
 description = """OpenMC is a community-developed Monte Carlo neutron and photon transport simulation code.
@@ -12,44 +12,15 @@ description = """OpenMC is a community-developed Monte Carlo neutron and photon 
 toolchain = {'name': 'foss', 'version': '2025b'}
 toolchainopts = {'usempi': True}
 
-local_xtl_version = '0.7.7'
-local_xtensor_version = '0.25.0'
-
-source_urls = ['https://github.com/openmc-dev/openmc/archive/refs/tags']
-sources = [
-    {
-        'download_filename': 'v%(version)s.tar.gz',
-        'filename': SOURCE_TAR_GZ,
-    },
-    # xtl and xtensor vendored headers (no 2025b easyconfigs available);
-    # versions match the vendor/xtl and vendor/xtensor submodule pins of this OpenMC release;
-    # the release tarball ships empty vendor/ directories, so these are unpacked there and
-    # picked up via add_subdirectory (CMake reports "Did not find xtensor, will use submodule instead")
-    {
-        'source_urls': ['https://github.com/xtensor-stack/xtl/archive/refs/tags'],
-        'download_filename': '%s.tar.gz' % local_xtl_version,
-        'filename': 'xtl-%s.tar.gz' % local_xtl_version,
-        'extract_cmd': "mkdir -p openmc-%s/vendor/xtl && "
-                       "tar -xzf %%s -C openmc-%s/vendor/xtl --strip-components=1" % (version, version),
-    },
-    {
-        'source_urls': ['https://github.com/xtensor-stack/xtensor/archive/refs/tags'],
-        'download_filename': '%s.tar.gz' % local_xtensor_version,
-        'filename': 'xtensor-%s.tar.gz' % local_xtensor_version,
-        'extract_cmd': "mkdir -p openmc-%s/vendor/xtensor && "
-                       "tar -xzf %%s -C openmc-%s/vendor/xtensor --strip-components=1" % (version, version),
-    },
-]
-checksums = [
-    '7019d3325cf59b1d1d3176ac85a247e75a1b9efa6ed40bdf0e7178ed4d03b83a',  # OpenMC-0.15.3.tar.gz
-    '44fb99fbf5e56af5c43619fc8c29aa58e5fad18f3ba6e7d9c55c111b62df1fbb',  # xtl-0.7.7.tar.gz
-    '32d5d9fd23998c57e746c375a544edf544b74f0a18ad6bc3c38cbba968d5e6c7',  # xtensor-0.25.0.tar.gz
-]
+github_account = 'openmc-dev'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['cfdf10f8dc66e652668dbc94501d5ed99b3dfecabc11cf91989a29ba7984654f']
 
 builddependencies = [
     ('CMake', '4.0.3'),
     ('pkgconf', '2.4.3'),
-    ('pybind11', '3.0.0'),
+    ('pybind11', '3.0.0'),  # needed to build the endf extension
     ('Catch2', '3.11.0'),  # only needed to build the C++ unit tests
 ]
 
@@ -66,17 +37,29 @@ dependencies = [
     ('libpng', '1.6.50'),
     ('fmt', '11.2.0'),
     ('pugixml', '1.15'),
+    # CAD geometry support and unstructured mesh tallies
+    ('DAGMC', '3.2.4'),
+    ('libMesh', '1.7.9'),
     # optional runtime dependency, loaded via dlopen (also exercised by the test_mcpl_stat_sum unit test)
     ('mcpl', '2.2.8'),
+    # optional runtime dependency for thermal neutron scattering in crystals,
+    # located via ncrystal-config on PATH and loaded via dlopen
+    ('NCrystal', '4.4.6'),
 ]
 
 # Create dummy vendor/pugixml/CMakeLists.txt to pass submodule existence check
-# (pugixml is provided as an external dependency via find_package)
+# (pugixml, fmt and Catch2 are all provided as external dependencies via find_package)
 preconfigopts = 'mkdir -p %(builddir)s/openmc-%(version)s/vendor/pugixml && '
 preconfigopts += 'touch %(builddir)s/openmc-%(version)s/vendor/pugixml/CMakeLists.txt && '
 
+# all optional capabilities enabled; NCrystal support is a pure runtime feature
+# (dlopen via ncrystal-config on PATH) and needs no build-time configuration;
+# OPENMC_USE_UWUW requires DAGMC built with BUILD_UWUW=ON
 configopts = '-DOPENMC_USE_MPI=ON '
 configopts += '-DOPENMC_USE_OPENMP=ON '
+configopts += '-DOPENMC_USE_DAGMC=ON '
+configopts += '-DOPENMC_USE_UWUW=ON '
+configopts += '-DOPENMC_USE_LIBMESH=ON '
 configopts += '-DHDF5_PREFER_PARALLEL=ON '
 configopts += '-DOPENMC_BUILD_TESTS=ON '
 
@@ -86,7 +69,6 @@ runtest = True
 exts_defaultclass = 'PythonPackage'
 exts_list = [
     ('endf', '0.1.12', {
-        'source_urls': [PYPI_SOURCE],
         'checksums': ['97ca1b7a248fcc26c58a9f6a825e48b6643c8a6e111733440ada0ae425d45a68'],
     }),
     ('openmc', version, {
@@ -102,6 +84,7 @@ sanity_check_paths = {
 
 sanity_check_commands = [
     'openmc --version',
+    "python -s -c 'import openmc'",
 ]
 
 moduleclass = 'phys'
