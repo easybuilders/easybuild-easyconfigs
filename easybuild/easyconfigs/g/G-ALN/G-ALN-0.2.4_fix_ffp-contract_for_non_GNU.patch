@@ -1,0 +1,31 @@
+Only add -ffp-contract=off when compiler is GNU
+
+Åke Sandgren, 2026-11-12
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index dbf0ca8..8615662 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -20,7 +20,12 @@ find_package(OpenMP REQUIRED COMPONENTS C)
+ find_package(Threads REQUIRED)
+ 
+ # bwa_cal_maxdiff must round exactly like upstream: no FMA contraction (aarch64 GCC contracts by default)
+-set_source_files_properties(src/aln_host.c PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
++if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
++    set(FFP_CONTRACT_OFF "-ffp-contract=off")
++else()
++    set(FFP_CONTRACT_OFF "")
++endif()
++set_source_files_properties(src/aln_host.c PROPERTIES COMPILE_OPTIONS "${FFP_CONTRACT_OFF}")
+ 
+ include(CheckLanguage)
+ check_language(CUDA)
+@@ -48,7 +53,8 @@ set_source_files_properties(third_party/libsais/src/libsais.c third_party/libsai
+ set(GALN_SAMSE_SRC src/samse/galn_samse.c src/samse/galn_sampe.c src/samse/sam_common.c src/samse/bam_out.c src/samse/bwa_shim.c
+     src/samse/bwa_upstream/bwase.c src/samse/bwa_upstream/bwaseqio.c src/samse/bwa_upstream/bwt.c
+     src/samse/bwa_upstream/ksw.c src/samse/bwa_upstream/bamlite.c src/samse/bwa_upstream/kstring.c)
+-set_source_files_properties(${GALN_SAMSE_SRC} PROPERTIES COMPILE_OPTIONS "-ffp-contract=off"
++
++set_source_files_properties(${GALN_SAMSE_SRC} PROPERTIES COMPILE_OPTIONS "${FFP_CONTRACT_OFF}"
+     INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/src/samse/bwa_upstream;${CMAKE_CURRENT_SOURCE_DIR}/src/index/bwa_upstream")
+ 
+ add_executable(galn src/galn.cu src/host_io.c src/aln_host.c src/aln_il.c ${GALN_INDEX_SRC} ${GALN_SAMSE_SRC})
