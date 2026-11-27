@@ -17,16 +17,24 @@ toolchainopts = {'pic': True}
 
 source_urls = ['https://github.com/ofiwg/libfabric/releases/download/v%(version)s']
 sources = [SOURCE_TAR_BZ2]
+patches = ['%(name)s-%(version)s_dlopen_cuda.patch']
 checksums = ['276019edca708dc0569cf3064a412e395ba7b1883299781caed120594f850995']
 
 builddependencies = [
     ('binutils', '2.45'),
     ('pkgconf', '2.5.1'),
     ('Autotools', '20250626'),
+    # Pick (any) CUDA and GDRCopy for headers. Libraries can be dlopened at runtime.
+    # ('CUDA', '13.3.0', '', SYSTEM),
+    # ('GDRCopy', '2.5.2'),
 ]
 
 dependencies = [
     ('numactl', '2.0.19'),
+    ('XPMEM', '2.7.4'),
+    #('shs-libcxi', '14.0.1'),  # optional
+    #('cURL', '8.17.0'),  # maybe required for cxi
+    #('json-c', '0.18'),  # maybe required for cxi
     # PSM2 dependency for libfabric should be used on Omnipath systems,
     # but that PSM2 has CUDA as dependency so it's commented out by default;
     # PSM2 only compiles on x86_64
@@ -46,16 +54,26 @@ configopts = "--disable-sockets "
 # osdependencies.append(('libnl3-devel', 'libnl3-dev'))
 configopts += "--disable-usnic "
 
-# Disable XPMEM to avoid a system library being picked up
+# Be explicit about XPMEM to avoid a system library being picked up
 # This leads to rpaths to e.g. /lib64 being added binaries linked against libfabric
 # potentially picking up system libraries instead of EasyBuild provided ones at runtime
-configopts += "--disable-xpmem "
+if 'XPMEM' in [x[0] for x in dependencies]:
+    configopts += "--enable-xpmem "
+else:
+    configopts += "--disable-xpmem "
+
+# For CUDA support
+if 'CUDA' in [x[0] for x in builddependencies]:
+    configopts += "--enable-cuda --enable-dlopen-cuda --enable-gdrcopy-dlopen "
+
+# For AMD GPUs
+# configopts += "--enable-rocr-dlopen"
 
 buildopts = "V=1"
 
 sanity_check_paths = {
     'files': ['bin/fi_info', 'bin/fi_pingpong', 'bin/fi_strerror'] +
-             ['lib/libfabric.%s' % x for x in ['a', SHLIB_EXT]],
+             [f'lib/libfabric.{x}' for x in ['a', SHLIB_EXT]],
     'dirs': ['include/rdma', 'lib/pkgconfig', 'share']
 }
 

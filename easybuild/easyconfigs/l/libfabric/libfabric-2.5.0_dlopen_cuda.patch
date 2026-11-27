@@ -1,0 +1,62 @@
+dlopen libraries from EasyBuild on systems where LD_LIBRARY_PATH is filtered
+
+author: micketeer@gmail.com
+diff -ru src.orig/hmem_cuda.c src/hmem_cuda.c
+--- src.orig/hmem_cuda.c	2026-09-18 14:39:07.949288535 +0200
++++ src/hmem_cuda.c	2026-09-18 14:48:53.999278362 +0200
+@@ -47,6 +47,9 @@
+ 
+ #if ENABLE_CUDA_DLOPEN
+ #include <dlfcn.h>
++#include <stdlib.h>
++#include <stdio.h>
++#include <limits.h>
+ #endif
+ 
+ /*
+@@ -482,7 +485,14 @@
+ 	/* Assume failure to dlopen CUDA runtime is caused by the library not
+ 	 * being found. Thus, CUDA is not supported.
+ 	 */
+-	cuda_attr.runtime_handle = dlopen("libcudart.so", RTLD_NOW);
++	const char *eb_root_cuda = getenv("EBROOTCUDA");
++	if (eb_root_cuda) {
++		char path[PATH_MAX];
++		snprintf(path, sizeof(path), "%s/lib/libcudart.so", eb_root_cuda);
++		cuda_attr.runtime_handle = dlopen(path, RTLD_NOW);
++	} else {
++		cuda_attr.runtime_handle = dlopen("libcudart.so", RTLD_NOW);
++	}
+ 	if (!cuda_attr.runtime_handle) {
+ 		FI_INFO(&core_prov, FI_LOG_CORE,
+ 			"Failed to dlopen libcudart.so\n");
+diff -ru src.orig/hmem_cuda_gdrcopy.c src/hmem_cuda_gdrcopy.c
+--- src.orig/hmem_cuda_gdrcopy.c	2026-09-18 14:39:07.949288535 +0200
++++ src/hmem_cuda_gdrcopy.c	2026-09-18 14:49:45.722483214 +0200
+@@ -43,6 +43,9 @@
+ 
+ #include <pthread.h>
+ #include <gdrapi.h>
++#include <stdlib.h>
++#include <stdio.h>
++#include <limits.h>
+ 
+ struct gdrcopy_handle {
+ 	gdr_mh_t mh; /* memory handler */
+@@ -103,7 +106,15 @@
+ 
+ 	for (int i = 0; lib_paths[i]; i++) {
+ 		FI_INFO(&core_prov, FI_LOG_CORE, "Trying to load: %s\n", lib_paths[i]);
+-		void *handle = dlopen(lib_paths[i], RTLD_NOW);
++		const char *eb_root_gdrcopy = getenv("EBROOTGDRCOPY");
++		void *handle;
++		if (eb_root_gdrcopy) {
++			char path[PATH_MAX];
++			snprintf(path, sizeof(path), "%s/lib/%s", eb_root_gdrcopy, lib_paths[i]);
++			handle = dlopen(path, RTLD_NOW);
++		} else {
++			handle = dlopen(lib_paths[i], RTLD_NOW);
++		}
+ 		if (!handle) continue;
+ 		
+ 		gdrapi_handle = handle;
