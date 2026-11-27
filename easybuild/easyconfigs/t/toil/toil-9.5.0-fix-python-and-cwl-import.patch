@@ -1,0 +1,45 @@
+Fix Python version metadata baked into the PyPI sdist (built with Python 3.10)
+for the EasyBuild Python 3.13 environment. Defer the CWL-only import so AWS
+and Cactus test modules can be collected without CWL extras.
+
+Author: Pavel Tomanek (Inuits/UGent) with help from ChatGPT6
+diff --git a/src/toil/version.py b/src/toil/version.py
+--- a/src/toil/version.py
++++ b/src/toil/version.py
+@@ -1,11 +1,11 @@
+ baseVersion = '9.5.0'
+ cgcloudVersion = '1.6.0a1.dev393'
+ version = '9.5.0-855577413b6e3ceb33a90b3ec415e7a3fc0badba'
+-cacheTag = 'cache-local-py3.10'
+-mainCacheTag = 'cache-master-py3.10'
++cacheTag = 'cache-local-py3.13'
++mainCacheTag = 'cache-master-py3.13'
+ distVersion = '9.5.0'
+-exactPython = 'python3.10'
+-python = 'python3.10'
+-dockerTag = '9.5.0-855577413b6e3ceb33a90b3ec415e7a3fc0badba-py3.10'
++exactPython = 'python3.13'
++python = 'python3.13'
++dockerTag = '9.5.0-855577413b6e3ceb33a90b3ec415e7a3fc0badba-py3.13'
+ currentCommit = '855577413b6e3ceb33a90b3ec415e7a3fc0badba'
+ dockerRegistry = 'quay.io/ucsc_cgl'
+ 
+diff --git a/src/toil/test/provisioners/clusterTest.py b/src/toil/test/provisioners/clusterTest.py
+--- a/src/toil/test/provisioners/clusterTest.py
++++ b/src/toil/test/provisioners/clusterTest.py
+@@ -27,7 +27,6 @@ from toil.test import (
+     needs_fetchable_appliance,
+     slow,
+ )
+-from toil.test.cwl.cwlTest import TestCWLv12Conformance
+ 
+ log = logging.getLogger(__name__)
+ 
+@@ -219,7 +218,8 @@ class CWLOnARMTest(AbstractClusterTest):
+     @needs_env_var("CI_COMMIT_SHA", "a git commit sha")
+     def test_cwl_on_arm(self) -> None:
+         # Import the test we want to run remotely, so we know right away if it exists.
++        from toil.test.cwl.cwlTest import TestCWLv12Conformance
+         test_class = TestCWLv12Conformance
+         test_method = test_class.test_run_conformance
+         # Work out how to describe it as a pytest test spec.

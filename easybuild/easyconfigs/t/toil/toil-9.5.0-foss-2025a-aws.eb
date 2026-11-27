@@ -21,6 +21,7 @@ dependencies = [
     ('boto3', '1.38.27'),
     ('cryptography', '44.0.2'),
     ('setuptools', '80.9.0'),
+    ('pytest', '9.0.3'),
 ]
 
 exts_list = [
@@ -115,8 +116,26 @@ exts_list = [
     (name, version, {
         'use_pip_extras': 'aws',
         'testinstall': True,
-        'runtest': 'TOIL_TEST_QUICK=True pytest -v src/toil/test/sort/sortTest.py::SortTest::testSort',
-        'checksums': ['dae9a12b0f277355170129be38406c831da47054758e64d6693e18d7e5b45d3f'],
+        'patches': ['toil-9.5.0-fix-python-and-cwl-import.patch'],
+        'runtest': (
+            'TOIL_AWS_ZONE=us-west-2a '  # Required for AWS test collection, even when cloud tests are skipped
+            'TOIL_SKIP_ONLINE=true '  # Skip tests requiring network access or cloud services
+            'TOIL_TEST_QUICK=true '  # Skip slow and resource-intensive tests
+            'TOIL_SKIP_DOCKER=true '  # Skip tests requiring Docker
+            'TOIL_HISTORY=0 '  # Disable Toil execution history during testing
+            'pytest -v --durations=10 '  # Verbose output and report the 10 slowest tests
+            '-k "not (testVirtualEnv or testMultiplejobs)" '  # Exclude virtualenv-specific and flaky log-order tests
+            '--ignore=src/toil/test/cwl '  # CWL extras are not installed
+            '--ignore=src/toil/test/wdl '  # WDL extras are not installed
+            '--ignore=src/toil/test/jobStores/jobStoreTest.py '  # Requires additional dependencies (stubserver, ..)
+            '--ignore=src/toil/test/lib/test_url.py '  # Requires pytest-httpserver
+            'src/toil/test'  # Run all remaining Toil tests, including Cactus and AWS tests
+        ),
+        'checksums': [
+            {'toil-9.5.0.tar.gz': 'dae9a12b0f277355170129be38406c831da47054758e64d6693e18d7e5b45d3f'},
+            {'toil-9.5.0-fix-python-and-cwl-import.patch':
+             '7f9ab4509e93eec85931429333c448cc6a3537b8d691dc0eeb6ef7adddcd2adb'},
+        ],
     }),
 ]
 
