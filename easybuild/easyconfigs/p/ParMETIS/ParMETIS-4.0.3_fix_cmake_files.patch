@@ -1,0 +1,173 @@
+Fix the CMake files to follow the standard for specifying paths and shared vs static libraries
+Also update cmake_min version to avoid complaint from cmake
+
+Åke Sandgren, 20260311
+diff -ru parmetis-4.0.3.orig/CMakeLists.txt parmetis-4.0.3/CMakeLists.txt
+--- parmetis-4.0.3.orig/CMakeLists.txt	2013-03-30 17:24:50.000000000 +0100
++++ parmetis-4.0.3/CMakeLists.txt	2026-03-11 11:09:34.144898019 +0100
+@@ -1,13 +1,6 @@
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 3.5)
+ project(ParMETIS)
+ 
+-set(GKLIB_PATH METIS/GKlib CACHE PATH "path to GKlib")
+-set(METIS_PATH METIS CACHE PATH "path to METIS")
+-
+-# Symlink ./metis to wherever metis is. This allows files to be
+-# included from metis/libmetis/.
+-execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${METIS_PATH} metis)
+-
+ # Search for MPI.
+ # GK commented this out as it seems to be creating problems
+ # include(FindMPI)
+@@ -16,25 +9,23 @@
+ # endif()
+ # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MPI_COMPILE_FLAGS}")
+ 
+-# Prepare libraries.
+-if(SHARED)
+-  set(ParMETIS_LIBRARY_TYPE SHARED)
+-else()
+-  set(ParMETIS_LIBRARY_TYPE STATIC)
+-endif()
++option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
++
++set(GKLIB_PATH ${CMAKE_CURRENT_SOURCE_DIR}/metis/GKlib)
++
++include(GNUInstallDirs)
+ 
+ include(${GKLIB_PATH}/GKlibSystem.cmake)
+ 
+ # List of paths that the compiler will search for header files.
+ # i.e., the -I equivalent
+ include_directories(include)
+-include_directories(${MPI_INCLUDE_PATH})
++
+ include_directories(${GKLIB_PATH})
+-include_directories(${METIS_PATH}/include)
++include_directories(metis/include)
+ 
+ # List of directories that cmake will look for CMakeLists.txt
+-add_subdirectory(${METIS_PATH}/libmetis ${CMAKE_BINARY_DIR}/libmetis)
+-add_subdirectory(include)
++add_subdirectory(metis)
+ add_subdirectory(libparmetis)
+ add_subdirectory(programs)
+ 
+diff -ru parmetis-4.0.3.orig/libparmetis/CMakeLists.txt parmetis-4.0.3/libparmetis/CMakeLists.txt
+--- parmetis-4.0.3.orig/libparmetis/CMakeLists.txt	2013-03-30 17:24:50.000000000 +0100
++++ parmetis-4.0.3/libparmetis/CMakeLists.txt	2026-03-11 11:12:06.285533845 +0100
+@@ -3,12 +3,9 @@
+ # Find sources.
+ file(GLOB parmetis_sources *.c)
+ # Create libparmetis
+-add_library(parmetis ${ParMETIS_LIBRARY_TYPE} ${parmetis_sources})
+-# Link with metis and MPI libraries.
+-target_link_libraries(parmetis metis ${MPI_LIBRARIES})
+-set_target_properties(parmetis PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS}")
++add_library(parmetis ${parmetis_sources})
++# Link with metis
++target_link_libraries(parmetis metis)
++set_target_properties(parmetis PROPERTIES PUBLIC_HEADER ../include/parmetis.h)
+ 
+-install(TARGETS parmetis
+-  LIBRARY DESTINATION lib
+-  RUNTIME DESTINATION lib
+-  ARCHIVE DESTINATION lib)
++install(TARGETS parmetis)
+diff -ru parmetis-4.0.3.orig/metis/CMakeLists.txt parmetis-4.0.3/metis/CMakeLists.txt
+--- parmetis-4.0.3.orig/metis/CMakeLists.txt	2013-03-30 17:24:50.000000000 +0100
++++ parmetis-4.0.3/metis/CMakeLists.txt	2026-03-11 11:09:45.256945820 +0100
+@@ -1,8 +1,7 @@
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 3.5)
+ project(METIS)
+ 
+-set(GKLIB_PATH "GKlib" CACHE PATH "path to GKlib")
+-set(SHARED FALSE CACHE BOOL "build a shared library")
++set(GKLIB_PATH "${CMAKE_CURRENT_SOURCE_DIR}/GKlib")
+ 
+ if(MSVC)
+   set(METIS_INSTALL FALSE)
+@@ -10,18 +9,10 @@
+   set(METIS_INSTALL TRUE)
+ endif()
+ 
+-# Configure libmetis library.
+-if(SHARED)
+-  set(METIS_LIBRARY_TYPE SHARED)
+-else()
+-  set(METIS_LIBRARY_TYPE STATIC)
+-endif(SHARED)
+-
+ include(${GKLIB_PATH}/GKlibSystem.cmake)
+ # Add include directories.
+ include_directories(${GKLIB_PATH})
+ include_directories(include)
+ # Recursively look for CMakeLists.txt in subdirs.
+-add_subdirectory("include")
+ add_subdirectory("libmetis")
+ add_subdirectory("programs")
+diff -ru parmetis-4.0.3.orig/metis/GKlib/CMakeLists.txt parmetis-4.0.3/metis/GKlib/CMakeLists.txt
+--- parmetis-4.0.3.orig/metis/GKlib/CMakeLists.txt	2013-03-30 17:24:50.000000000 +0100
++++ parmetis-4.0.3/metis/GKlib/CMakeLists.txt	2026-03-11 09:18:13.471126329 +0100
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 3.5)
+ project(GKlib)
+ 
+ get_filename_component(abs "." ABSOLUTE)
+diff -ru parmetis-4.0.3.orig/metis/libmetis/CMakeLists.txt parmetis-4.0.3/metis/libmetis/CMakeLists.txt
+--- parmetis-4.0.3.orig/metis/libmetis/CMakeLists.txt	2013-03-30 17:24:50.000000000 +0100
++++ parmetis-4.0.3/metis/libmetis/CMakeLists.txt	2026-03-11 11:10:25.501117964 +0100
+@@ -3,14 +3,10 @@
+ # Find sources.
+ file(GLOB metis_sources *.c)
+ # Build libmetis.
+-add_library(metis ${METIS_LIBRARY_TYPE} ${GKlib_sources} ${metis_sources})
++add_library(metis ${GKlib_sources} ${metis_sources})
+ if(UNIX)
+   target_link_libraries(metis m)
+ endif()
+ 
+-if(METIS_INSTALL)
+-  install(TARGETS metis
+-    LIBRARY DESTINATION lib
+-    RUNTIME DESTINATION lib
+-    ARCHIVE DESTINATION lib)
+-endif()
++set_target_properties(metis PROPERTIES PUBLIC_HEADER ../include/metis.h)
++install(TARGETS metis)
+diff -ru parmetis-4.0.3.orig/metis/programs/CMakeLists.txt parmetis-4.0.3/metis/programs/CMakeLists.txt
+--- parmetis-4.0.3.orig/metis/programs/CMakeLists.txt	2013-03-30 17:24:50.000000000 +0100
++++ parmetis-4.0.3/metis/programs/CMakeLists.txt	2026-03-11 10:33:07.270372215 +0100
+@@ -1,6 +1,6 @@
+ # These programs use internal metis data structures.
+ include_directories(../libmetis)
+-link_directories(/home/karypis/local/lib)
++
+ # Build program.
+ add_executable(gpmetis gpmetis.c cmdline_gpmetis.c io.c stat.c)
+ add_executable(ndmetis ndmetis.c cmdline_ndmetis.c io.c smbfactor.c)
+@@ -13,10 +13,7 @@
+ #  target_link_libraries(${prog} metis profiler)
+ endforeach(prog)
+ 
+-if(METIS_INSTALL)
+-  install(TARGETS gpmetis ndmetis mpmetis m2gmetis graphchk cmpfillin
+-    RUNTIME DESTINATION bin)
+-endif()
++install(TARGETS gpmetis ndmetis mpmetis m2gmetis graphchk cmpfillin)
+ 
+ # Try to find subversion revision.
+ set(SVNREV "")
+diff -ru parmetis-4.0.3.orig/programs/CMakeLists.txt parmetis-4.0.3/programs/CMakeLists.txt
+--- parmetis-4.0.3.orig/programs/CMakeLists.txt	2013-03-30 17:24:50.000000000 +0100
++++ parmetis-4.0.3/programs/CMakeLists.txt	2026-03-11 10:33:00.602360119 +0100
+@@ -10,5 +10,4 @@
+   target_link_libraries(${prog} parmetis)
+ endforeach(prog)
+ 
+-install(TARGETS ptest mtest parmetis_prog pometis
+-  RUNTIME DESTINATION bin)
++install(TARGETS ptest mtest parmetis_prog pometis)
