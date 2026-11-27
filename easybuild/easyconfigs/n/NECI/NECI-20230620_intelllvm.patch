@@ -1,0 +1,59 @@
+Apply ifort workarounds also for new Intel compilers
+Author: Jarne Renders (VUB) with Claude Sonnet 5
+diff -ruN NECI_STABLE.orig/src/aliasSampling.F90 NECI_STABLE/src/aliasSampling.F90
+--- NECI_STABLE.orig/src/aliasSampling.F90	2026-10-06 09:39:47.735413000 +0200
++++ NECI_STABLE/src/aliasSampling.F90	2026-10-06 09:42:37.026207213 +0200
+@@ -9,7 +9,7 @@
+     use sets_mod, only: is_set, subset, operator(.in.)
+     use parallel_neci, only: iProcIndex_intra, Node, MPIBarrier, &
+         mpi_comm_intra, MPIBCast, MPI_INTEGER8, MPI_LOGICAL
+-#ifndef IFORT_
++#if !defined(IFORT_) && !defined(INTELLLVM_)
+     use parallel_neci, only: MPI_BCast
+ #endif
+     use dSFMT_interface, only: genrand_real2_dSFMT
+diff -ruN NECI_STABLE.orig/src/excitation_types.fpp NECI_STABLE/src/excitation_types.fpp
+--- NECI_STABLE.orig/src/excitation_types.fpp	2026-10-06 09:39:47.773376000 +0200
++++ NECI_STABLE/src/excitation_types.fpp	2026-10-06 09:41:56.488072489 +0200
+@@ -93,7 +93,7 @@
+ 
+ ! workaround for pesky intel compiler errors
+ ! this should be removed if IFORT_ works properly at some pointer in the future
+-#ifdef IFORT_
++#if defined(IFORT_) || defined(INTELLLVM_)
+     interface Excite_0_t
+         module procedure Excite_0_t_ctor
+     end interface
+@@ -211,7 +211,7 @@
+ 
+ ! workaround for pesky intel compiler errors
+ ! this should be removed if IFORT_ works properly at some pointer in the future
+-#ifdef IFORT_
++#if defined(IFORT_) || defined(INTELLLVM_)
+     type(Excite_0_t) function Excite_0_t_ctor() result(this)
+         integer :: tmpval(2, 0)
+         tmpval = UNKNOWN
+diff -ruN NECI_STABLE.orig/src/semi_stoch_procs.F90 NECI_STABLE/src/semi_stoch_procs.F90
+--- NECI_STABLE.orig/src/semi_stoch_procs.F90	2026-10-06 09:39:48.148810507 +0200
++++ NECI_STABLE/src/semi_stoch_procs.F90	2026-10-06 09:42:53.879827795 +0200
+@@ -57,7 +57,7 @@
+     use Parallel_neci, only: MPIScatterV
+ 
+     use MPI_wrapper, only: root
+-#ifndef IFORT_
++#if !defined(IFORT_) && !defined(INTELLLVM_)
+     use MPI_wrapper, only: MPI_IN_PLACE, MPI_INTEGER, MPI_INTEGER8, &
+         MPI_COMM_SIZE, MPI_Win_Sync, MPI_Barrier, MPI_2DOUBLE_PRECISION, &
+         MPI_MAXLOC
+diff -ruN NECI_STABLE.orig/unit_tests/MPI_and_shared_array/test_shared_array.F90 NECI_STABLE/unit_tests/MPI_and_shared_array/test_shared_array.F90
+--- NECI_STABLE.orig/unit_tests/MPI_and_shared_array/test_shared_array.F90	2026-10-06 09:39:53.112124838 +0200
++++ NECI_STABLE/unit_tests/MPI_and_shared_array/test_shared_array.F90	2026-10-06 09:43:22.898705319 +0200
+@@ -4,7 +4,7 @@
+     use util_mod, only: stop_all
+     use Parallel_neci, only: mpi_comm_intra, iProcIndex_intra, MPI_LOGICAL, MPI_LAND, &
+         mpi_comm_size
+-#ifndef IFORT_
++#if !defined(IFORT_) && !defined(INTELLLVM_)
+     use MPI_Wrapper, only: MPI_Allreduce
+ #endif
+     use fruit, only: assert_true
