@@ -1,0 +1,81 @@
+easyblock = 'MakeCp'
+
+name = 'GLM-AED'
+version = '4.0rc-20260908'
+
+homepage = 'https://github.com/AquaticEcoDynamics/glm-aed'
+description = """The General Lake Model (GLM) is a water balance and one-dimensional vertical
+stratification hydrodynamic model, which is dynamically coupled with the AED water quality
+modelling library. This repository houses the coupled model code libraries, example
+applications, and binaries (ready-to-run executable files).
+
+GLM-AED is suitable for simulating conditions in a wide range of natural and engineered
+lakes, including shallow (well-mixed) and deep (stratified) systems. The model has been
+successfully applied to systems from the scale of individual ponds and wetlands, to actively
+operated reservoirs, upto the scale of the Great Lakes."""
+
+toolchain = {'name': 'gompi', 'version': '2025a'}
+
+github_account = 'AquaticEcoDynamics'
+
+# Pull in submodules separately to not pull in glm-aed's pre-built binaries
+local_commit_glm = 'ade47de3e98daf31a3055b490396a6871280a925'
+local_commit_libutil = 'c8fe70efac4197f0ac5e1771536e6a0da257373b'
+local_commit_libaed_water = '86b892e30c81b297ed40fb59f41d57badaf07b6f'
+local_commit_libaed_benthic = 'c6d4b0ea79f6015a06fa85c32568099b7843a798'
+local_commit_libaed_demo = 'd35b05e0ee3ad9bf677dc16f43082c28a4c91593'
+local_commit_libaed_api = 'd62ed0d9c2442b0f9eb9af634a7ea48a7f35a60c'
+
+local_glm_aed_repos = [
+    ('GLM', local_commit_glm),
+    ('libutil', local_commit_libutil),
+    ('libaed-water', local_commit_libaed_water),
+    ('libaed-benthic', local_commit_libaed_benthic),
+    ('libaed-demo', local_commit_libaed_demo),
+    ('libaed-api', local_commit_libaed_api),
+]
+
+sources = [
+    {
+        'filename': f'{repo}-%(version)s.tar.xz',
+        'git_config': {
+            'url': 'https://github.com/%(github_account)s',
+            'repo_name': repo,
+            'commit': commit,
+        },
+    }
+    for repo, commit in local_glm_aed_repos
+]
+
+checksums = [
+    {'GLM-4.0rc-20260908.tar.xz': 'ad8f002333e20b8ef3fa189a87be2ec77061af87d20dafaeabda72cf8cfe9e8e'},
+    {'libutil-4.0rc-20260908.tar.xz': '7a4c2c70884f17fe1d2b42fe70b3f1faaaad8c4cb5584668e3ae4d5147fbebcb'},
+    {'libaed-water-4.0rc-20260908.tar.xz': 'eed0d2da82af2765d355000f271413f6d2bdc1adcf529880e32d83c16c40ab57'},
+    {'libaed-benthic-4.0rc-20260908.tar.xz': '576c76846207ffb884f6e08312bafa01098a394cb9ae912d8a895f03083d1dc8'},
+    {'libaed-demo-4.0rc-20260908.tar.xz': '5f260925fd65082671910e9415d8e7bbf320c97657b4f85ba612e856cf5cf270'},
+    {'libaed-api-4.0rc-20260908.tar.xz': '2d9ece0a8c3bda619bcf2a69ebe2dd1dc70859e7cbd0a0ace6261e223385757f'},
+]
+
+dependencies = [('netCDF', '4.9.3')]
+
+# Build the aed libs. libutil only needed for GLM.
+# Benthic and demo depend on water, api depends on libaed libraries
+local_prebuild_dirs = ['libutil', 'libaed-water', 'libaed-benthic', 'libaed-demo', 'libaed-api']
+prebuildopts = ''.join(f'(cd ../{d} && make) && ' for d in local_prebuild_dirs)
+
+build_cmd_targets = ['glm', f'libglm.{SHLIB_EXT}']
+buildopts = (
+    'WITH_AED=true WITH_API=true WITH_PLOTS=false WITH_XPLOTS=false '
+    'AEDBENDIR=../libaed-benthic AEDDMODIR=../libaed-demo'
+)
+
+files_to_copy = [(['glm'], 'bin'), ([f'libglm.{SHLIB_EXT}'], 'lib')]
+
+sanity_check_paths = {
+    'files': ['bin/glm', f'lib/libglm.{SHLIB_EXT}'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['glm -h']
+
+moduleclass = 'geo'
