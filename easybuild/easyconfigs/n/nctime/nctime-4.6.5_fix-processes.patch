@@ -1,0 +1,15 @@
+Fix handling of unlimited maximum processes when max_processes is None.
+Author: Stamen Miroslavov <stamen.miroslavov@bsc.es>
+Barcelona Supercomputing Center 2026
+diff -ruNBbw a/nctime/utils/context.py b/nctime/utils/context.py
+--- a/nctime/utils/context.py	2018-12-14 14:37:02.000000000 +0100
++++ b/nctime/utils/context.py	2026-11-25 11:02:25.778432383 +0100
+@@ -37,7 +37,7 @@
+         # Get project and related configuration
+         self.project = args.project
+         self.config_dir = args.i
+-        self.processes = args.max_processes if args.max_processes <= cpu_count() else cpu_count()
++        self.processes = cpu_count() if args.max_processes is None else min(args.max_processes, cpu_count())
+         self.use_pool = (self.processes != 1)
+         self.lock = Lock()
+         self.nbfiles = 0
