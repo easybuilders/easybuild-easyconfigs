@@ -1,0 +1,84 @@
+Fix scripts to use PATH and predefine Juicebox jar file
+
+Åke Sandgren, 2026-01-27
+diff -ru STARE-1.0.5.orig/Code/Juicebox_KR_normalization.sh STARE-1.0.5/Code/Juicebox_KR_normalization.sh
+--- STARE-1.0.5.orig/Code/Juicebox_KR_normalization.sh	2025-03-31 16:21:03.000000000 +0200
++++ STARE-1.0.5/Code/Juicebox_KR_normalization.sh	2026-01-27 11:44:30.000000000 +0100
+@@ -15,7 +15,7 @@
+ # ------------------------------------------------------------------------------------------------------
+ hic_file=""
+ out_folder=""
+-jar_file=""
++jar_file="$EBROOTJUICEBOX/Juicebox.jar"
+ chromosomes="1-22"
+ bin_size=5000
+ 
+diff -ru STARE-1.0.5.orig/Code/Juicebox_normalization.sh STARE-1.0.5/Code/Juicebox_normalization.sh
+--- STARE-1.0.5.orig/Code/Juicebox_normalization.sh	2025-03-31 16:21:03.000000000 +0200
++++ STARE-1.0.5/Code/Juicebox_normalization.sh	2026-01-27 11:44:07.000000000 +0100
+@@ -16,7 +16,7 @@
+ # ------------------------------------------------------------------------------------------------------
+ hic_file=""
+ out_folder=""
+-jar_file=""
++jar_file="$EBROOTJUICEBOX/Juicebox.jar"
+ chromosomes="1-22"
+ bin_size=5000
+ normalization="KR"
+diff -ru STARE-1.0.5.orig/Code/STARE.sh STARE-1.0.5/Code/STARE.sh
+--- STARE-1.0.5.orig/Code/STARE.sh	2025-03-31 16:21:03.000000000 +0200
++++ STARE-1.0.5/Code/STARE.sh	2026-01-27 11:30:59.000000000 +0100
+@@ -319,7 +319,7 @@
+ 
+ if [ -z "$regions" ] ;
+ then
+-  "${working_dir}"/Promoter_Windows -a "${annotation}" -w "${window}" -u "${genes}" -o ${prefixP}"/"${base_prefix}
++  Promoter_Windows -a "${annotation}" -w "${window}" -u "${genes}" -o ${prefixP}"/"${base_prefix}
+   regions=${prefixP}"/"${base_prefix}"_STARE_PromoterWindows.bed"
+ fi
+ 
+@@ -358,7 +358,7 @@
+ fi
+ 
+ # Replace invalid characters in the fasta file with 'N', but skip the id rows (">...").
+-"${working_dir}"/ReplaceInvalidChars -i "$openRegionSequences" -o "${prefix_path}"_FilteredSequences.fa -d "${prefix_path}"_SeqMeta.txt
++ReplaceInvalidChars -i "$openRegionSequences" -o "${prefix_path}"_FilteredSequences.fa -d "${prefix_path}"_SeqMeta.txt
+ rm "$openRegionSequences"
+ 
+ # Transform PSCM to PSEM, if necessary.
+@@ -370,7 +370,7 @@
+     pscm_cg=`sed -n '2p' "${prefix_path}"_SeqMeta.txt`
+   fi
+   psems=${prefix_path}_$(basename "$pscms").PSEM
+-  "${working_dir}"/PSCM_to_PSEM "${pscms}" "${pscm_cg}" > "${psems}"
++  PSCM_to_PSEM "${pscms}" "${pscm_cg}" > "${psems}"
+ fi
+ 
+ 
+@@ -382,7 +382,7 @@
+ #affinity="/projects/triangulate/work/STARE/Hocker_scHeart/Hocker_Affinities.txt"
+ affinity=${prefix_path}_Affinity.txt
+ echo "Starting TRAP"
+-"${working_dir}"/TRAPmulti "$psems" "${prefix_path}"_FilteredSequences.fa "${prefix_path}"_SeqMeta.txt "$cores" > "${affinity}"
++TRAPmulti "$psems" "${prefix_path}"_FilteredSequences.fa "${prefix_path}"_SeqMeta.txt "$cores" > "${affinity}"
+ rm "${prefix_path}"_FilteredSequences.fa
+ rm "${prefix_path}"_SeqMeta.txt
+ 
+@@ -398,7 +398,7 @@
+   echo "ABC-scoring region-gene interactions"
+   mkdir "${prefixP}""/ABC_output"
+   abc_prefix_path=${prefixP}"/ABC_output/"${base_prefix}
+-  "${working_dir}"/STARE_ABCpp -b "${filteredRegions}"_sorted.bed -n "${column}" -a "${annotation}" -w "${window}" -f "${hic_contactfolder}" -k "${hic_binsize}" -t "${abc_cutoff}" -o "${abc_prefix_path}" -d "${pseudocount}" -q "${adjustedABC}" -m "${enhancer_window}" -c "${cores}" -u "${genes}" -i "${tss_mode}"
++  STARE_ABCpp -b "${filteredRegions}"_sorted.bed -n "${column}" -a "${annotation}" -w "${window}" -f "${hic_contactfolder}" -k "${hic_binsize}" -t "${abc_cutoff}" -o "${abc_prefix_path}" -d "${pseudocount}" -q "${adjustedABC}" -m "${enhancer_window}" -c "${cores}" -u "${genes}" -i "${tss_mode}"
+   existing_abc=${abc_prefix_path}"_ABCpp_scoredInteractions.txt.gz"
+ fi
+ 
+@@ -409,7 +409,7 @@
+ startg=`date +%s`
+ echo "Generating TF-Gene scores"
+ mkdir "${prefixP}""/Gene_TF_matrices"
+-"${working_dir}"/TF_Gene_Scorer_Reshape -a "${annotation}" -b "${filteredRegions}"_sorted.bed -n "${column}" -i "${affinity}" -o "${prefixP}"/Gene_TF_matrices/"${base_prefix}" -p "${psems}" -w ${window} -e "${decay}" -c "${cores}" -abc "${existing_abc}" -z "${reshaping}" -u "${genes}"
++TF_Gene_Scorer_Reshape -a "${annotation}" -b "${filteredRegions}"_sorted.bed -n "${column}" -i "${affinity}" -o "${prefixP}"/Gene_TF_matrices/"${base_prefix}" -p "${psems}" -w ${window} -e "${decay}" -c "${cores}" -abc "${existing_abc}" -z "${reshaping}" -u "${genes}"
+ 
+ endg=`date +%s`
+ echo $((endg-startg))"s TF-Gene Scores"
