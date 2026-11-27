@@ -1,0 +1,22 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2024/01
+# replace hardcoded CUDA compute capabilitites in machines/rhlinux. 
+# Allow to be set by env $CUDACC
+diff -ru IMOD/machines/rhlinux IMOD_cudacc/machines/rhlinux
+--- IMOD/machines/rhlinux	2024-01-29 12:33:58.000000000 +0100
++++ IMOD_cudacc/machines/rhlinux	2024-01-31 12:47:19.481617766 +0100
+@@ -604,10 +604,11 @@
+ if ($?CUDA_DIR) then
+     set cudavers = `nvcc --version | sed -n -e '/[,.]/s// /g' -e '/^.*release/s///p'`
+     @ cudamajor = $cudavers[1]
+-    if ($cudamajor >= 4) set cuda_arch_opts = '-arch sm_20'
+-    if ($cudamajor >= 9) set cuda_arch_opts = '-arch sm_30'
+-    if ($cudamajor >= 11) set cuda_arch_opts = '-arch sm_35'
+-    if ($cudamajor >= 12) set cuda_arch_opts = '-arch sm_50'
++    #if ($cudamajor >= 4) set cuda_arch_opts = '-arch sm_20'
++    #if ($cudamajor >= 9) set cuda_arch_opts = '-arch sm_30'
++    #if ($cudamajor >= 11) set cuda_arch_opts = '-arch sm_35'
++    #if ($cudamajor >= 12) set cuda_arch_opts = '-arch sm_50'
++    set cuda_arch_opts = `echo "$CUDACC" | awk -F ';' '{for (i=1;i<=NF;i++) printf "-gencode=arch=compute_%s,code=sm_%s " , $i, $i}'`
+     set cudalibdir = "$CUDA_DIR/lib"
+     if ($cudamajor > 2 && $m64bit == true) set cudalibdir = "$CUDA_DIR/lib64"
+     set nvcc_flags = "$cuda_arch_opts $nvcc_flags -DUNIX -Xcompiler -fno-strict-aliasing"
