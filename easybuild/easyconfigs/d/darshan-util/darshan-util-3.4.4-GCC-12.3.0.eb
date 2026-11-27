@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'darshan-util'
+version = '3.4.4'
+
+homepage = 'https://www.mcs.anl.gov/research/projects/darshan/'
+description = """Darshan, a scalable HPC I/O characterization tool. Darshan is 
+designed to capture an accurate picture of application I/O behavior, including 
+properties such as patterns of access within files, with minimum overhead.  
+The name is taken from a Sanskrit word for 'sight' or 'vision'. darshan-util
+can analyze log files produced by darshan-runtime"""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://web.cels.anl.gov/projects/darshan/releases']
+sources = ['darshan-%(version)s.tar.gz']
+checksums = ['d9c9df5aca94dc5ca3d56fd763bec2f74771d35126d61cb897373d2166ccd867']
+
+start_dir = 'darshan-util'
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('Perl-bundle-CPAN', '5.36.1'),
+    # Some scripts such as darshan-job-summary.pl require pdflatex, but since the
+    # texlive dependency is not trivial it is commented out. In order to use
+    # those scripts, you need to provide pdflatex at runtime. Alternatively, you
+    # can consider using the more modern PyDarshan tool instead of darshan-util
+    # https://www.mcs.anl.gov/research/projects/darshan/docs/pydarshan/index.html
+    # ('texlive', '20230313'),
+    ('gnuplot', '5.4.8'),
+]
+
+preconfigopts = [
+    "../prepare.sh && ",
+]
+
+sanity_check_paths = {
+    'files': ['bin/darshan-parser', 'lib/libdarshan-util.' + SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'tools'
