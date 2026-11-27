@@ -1,0 +1,65 @@
+Backport of OpenBLAS-0.3.30_better-support-llvm-flang.patch
+
+Author: Aayush Joglekar (aayush.joglekar@surf.nl)
+
+diff --git a/Makefile.system b/Makefile.system
+index ac278bab1..8bff4ffdb 100644
+--- a/Makefile.system
++++ b/Makefile.system
+@@ -576,7 +576,7 @@ ifeq ($(CORE), generic)
+ endif
+ 
+ ifndef NO_EXPRECISION
+-ifeq ($(F_COMPILER), GFORTRAN)
++ifeq ($(F_COMPILER), $(filter $(F_COMPILER),GFORTRAN FLANGNEW))
+ # ifeq logical or. GCC or LSB
+ ifeq ($(C_COMPILER), $(filter $(C_COMPILER),GCC LSB))
+ EXPRECISION	= 1
+@@ -874,7 +874,7 @@ NO_BINARY_MODE  = 1
+ BINARY_DEFINED  = 1
+ ifdef INTERFACE64
+ ifneq ($(INTERFACE64), 0)
+-ifeq ($(F_COMPILER), GFORTRAN)
++ifeq ($(F_COMPILER), $(filter $(F_COMPILER),GFORTRAN FLANGNEW))
+ FCOMMON_OPT +=  -fdefault-integer-8
+ endif
+ ifeq ($(F_COMPILER), FLANG)
+@@ -889,7 +889,7 @@ NO_BINARY_MODE  = 1
+ BINARY_DEFINED  = 1
+ ifdef INTERFACE64
+ ifneq ($(INTERFACE64), 0)
+-ifeq ($(F_COMPILER), GFORTRAN)
++ifeq ($(F_COMPILER), $(filter $(F_COMPILER),GFORTRAN FLANGNEW))
+ FCOMMON_OPT +=  -fdefault-integer-8
+ endif
+ ifeq ($(F_COMPILER), FLANG)
+@@ -904,7 +904,7 @@ NO_BINARY_MODE  = 1
+ BINARY_DEFINED  = 1
+ ifdef INTERFACE64
+ ifneq ($(INTERFACE64), 0)
+-ifeq ($(F_COMPILER), GFORTRAN)
++ifeq ($(F_COMPILER), $(filter $(F_COMPILER),GFORTRAN FLANGNEW))
+ FCOMMON_OPT +=  -fdefault-integer-8
+ endif
+ ifeq ($(F_COMPILER), FLANG)
+diff --git a/f_check b/f_check
+index 93c5962de..2fe625b4c 100755
+--- a/f_check
++++ b/f_check
+@@ -97,11 +97,15 @@ else
+ 
+                 major="${v%%.*}"
+ 
+-                if [ "$major" -ge 4 ]; then
++                if [ "${major:-0}" -ge 4 ] 2>/dev/null; then
+                     vendor=GFORTRAN
+                     openmp='-fopenmp'
+                 else
+                     case "$compiler" in
++                        *amdflang*|*flang-new*)
++                            vendor=FLANGNEW
++                            openmp='-fopenmp'
++                        ;;
+                         *flang*)
+                             vendor=FLANG
+                             openmp='-fopenmp'
