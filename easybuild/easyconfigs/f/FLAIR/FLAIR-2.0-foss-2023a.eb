@@ -1,0 +1,64 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+# updated John Dey (Fred Hutch)
+
+easyblock = 'PythonBundle'
+
+name = 'FLAIR'
+version = '2.0'
+local_commit = '1f45ac4'
+
+homepage = 'https://github.com/BrooksLabUCSC/flair'
+description = """FLAIR (Full-Length Alternative Isoform analysis of RNA)
+for the correction, isoform definition, and alternative splicing analysis of noisy reads.
+FLAIR has primarily been used for nanopore cDNA, native RNA, and PacBio sequencing reads."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('R', '4.3.2'),  # provides ggplot2, qqman
+    ('SciPy-bundle', '2023.07'),  # provides numpy, pandas
+    ('Cython', '3.0.8'),
+    ('rpy2', '3.5.15'),
+    ('tqdm', '4.66.1'),
+    ('SAMtools', '1.18'),
+    ('BEDTools', '2.31.0'),
+    ('pybedtools', '0.9.1'),
+    ('minimap2', '2.26'),
+    ('Pysam', '0.22.0'),
+    ('R-bundle-Bioconductor', '3.18', '-R-%(rver)s'),  # provides DESeq2, DRIMSeq, stageR
+    ('matplotlib', '3.7.2'),
+    ('Seaborn', '0.13.2'),
+    ('Kent_tools', '468'),  # required for bedPartition command
+]
+
+exts_list = [
+    ('mappy', '2.24', {
+        'checksums': ['35a2fb73ef14173283d5abb31e7a318429e0330c3be95851df38dd83d4ff9af9'],
+    }),
+    ('pipettor', '1.0.0', {
+        'checksums': ['637113cae20c9b295277929d4bd0e4832d74564eb393e90a0beeb7c8ad3b0a84'],
+    }),
+    ('ncls', '0.0.68', {
+        'checksums': ['81aaa5abb123bb21797ed2f8ef921e20222db14a3ecbc61ccf447532f2b7ba93'],
+    }),
+    (name, version, {
+        'modulename': 'flair',
+        'source_urls': ['https://github.com/BrooksLabUCSC/flair/archive/'],
+        'sources': [{'download_filename': "%s.tar.gz" % local_commit, 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['25804d558c77315d5d6c4e9549cf1749c75213fc4bf53680113fa4c2389043ec'],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages/%(namelower)s']}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+local_subcommands = ['align', 'correct', 'collapse', 'quantify']
+sanity_check_commands = ["%%(namelower)s %s --help" % c for c in local_subcommands] + ["%(namelower)s --version"]
+
+moduleclass = 'bio'
