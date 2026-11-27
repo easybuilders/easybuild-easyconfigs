@@ -1,0 +1,77 @@
+easyblock = 'CMakeMake'
+
+name = 'Damaris'
+version = '1.14.0'
+
+homepage = 'https://gitlab.inria.fr/Damaris/damaris'
+description = """Damaris is a middleware for asynchronous I/O and in situ
+analytics, targeting large-scale MPI simulations. It dedicates cores or nodes to
+data management, so that simulation ranks hand their data off through shared
+memory and return to computing immediately.
+
+The HDF5 storage backend is enabled, so <store> elements of type HDF5Store work
+in both FilePerCore and Collective file modes."""
+
+toolchain = {'name': 'gompi', 'version': '2025b'}
+# usempi makes EasyBuild set $CC and $CXX to the MPI wrappers, which CMakeMake
+# then passes as CMAKE_C_COMPILER / CMAKE_CXX_COMPILER. Damaris needs this:
+# it calls find_package(MPI) but never uses the result, so mpi.h has to come
+# from the compiler driver. pic because the library is built shared.
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://gitlab.inria.fr/Damaris/damaris/-/archive/v%(version)s/']
+sources = ['damaris-v%(version)s.tar.gz']
+patches = [
+    'Damaris-%(version)s_respect-CMAKE_CXX_FLAGS.patch',
+    'Damaris-%(version)s_FindXSD-headers-without-generator.patch',
+]
+checksums = [
+    {'damaris-v1.14.0.tar.gz': '2495309a0552830af53218e7a6042181c8fb59280b50af0bf6d3866f94dd346d'},
+    {'Damaris-1.14.0_respect-CMAKE_CXX_FLAGS.patch':
+     'c09418e998d85b3a50a0ff329194a6fd22ebbd9be6e929a18144b8d0dc5c7244'},
+    {'Damaris-1.14.0_FindXSD-headers-without-generator.patch':
+     'faf818d3ae6ca230aa6ff92be5861a9335b2c6ac5ba7328bef8759d92c64011d'},
+]
+
+# Damaris does  set(CMAKE_CXX_FLAGS "-Wno-unused-variable ... -rdynamic")  with no
+# ${CMAKE_CXX_FLAGS} inside, so it DISCARDS every flag from the cmake command line
+# or the environment -- including EasyBuild's own optarch. The patch appends
+# instead of replacing. Drop it once merged upstream.
+
+# The second patch lets FindXSD.cmake find the headers without the xsd generator,
+# which Damaris never runs. Drop it once merged upstream.
+
+# CMake 3.31.8 rather than the 4.0.3 used elsewhere in 2025b. Damaris declares
+# cmake_minimum_required(VERSION 3.12), which CMake 4 still accepts, but CMake 4
+# removes the OLD behaviour of old policies and Damaris does
+# cmake_policy(SET CMP0028 OLD) inside its ENABLE_CATALYST branch. That branch is
+# OFF here, so CMake 4 would work today and would break the day Catalyst is on.
+builddependencies = [
+    ('CMake', '3.31.8'),
+]
+
+dependencies = [
+    ('Boost', '1.88.0'),
+    ('Xerces-C++', '3.3.0'),
+    ('XSD', '4.0.0'),
+    ('HDF5', '1.14.6'),
+]
+
+configopts = '-DBUILD_SHARED_LIBS=ON '
+configopts += '-DBOOST_ROOT=$EBROOTBOOST '
+# EasyBuild maps '-'->'min' and '+'->'plus' when building $EBROOT* names,
+# so Xerces-C++ becomes XERCESMINCPLUSPLUS
+configopts += '-DXercesC_ROOT=$EBROOTXERCESMINCPLUSPLUS '
+# XSD_ROOT locates the headers, here and, through DamarisConfig.cmake, in consumers
+configopts += '-DXSD_ROOT=$EBROOTXSD '
+configopts += '-DENABLE_HDF5=ON -DHDF5_ROOT=$EBROOTHDF5 '
+configopts += '-DENABLE_PYTHON=OFF -DENABLE_FORTRAN=OFF '
+configopts += '-DENABLE_VISIT=OFF -DENABLE_CATALYST=OFF '
+configopts += '-DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF '
+
+sanity_check_paths = {
+    'files': ['lib/libdamaris.so', 'include/Damaris.h', 'lib/pkgconfig/damaris.pc'],
+    'dirs': ['include/damaris', 'share/cmake/damaris'],
+}
+
+moduleclass = 'data'
