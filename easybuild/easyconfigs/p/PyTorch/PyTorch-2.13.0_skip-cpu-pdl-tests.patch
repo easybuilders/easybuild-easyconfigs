@@ -1,0 +1,26 @@
+test_pdl_mutation and test_pdl_template_and_delay are run on CPU too (but with device tensors)
+and expect PDL to be used. On e.g. A100 PDL is not supported as indicated by the skip markers.
+However they only skipped the GPU tests, not the (duplicated) CPU tests.
+
+See https://github.com/pytorch/pytorch/pull/190532
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/inductor/test_torchinductor.py b/test/inductor/test_torchinductor.py
+--- a/test/inductor/test_torchinductor.py
++++ b/test/inductor/test_torchinductor.py
+@@ -18035,6 +18035,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
+         self.assertEqual(eager_result5, compiled_result5)
+ 
+     @requires_cuda_and_triton
++    @skip_if_cpu
+     @skipCUDAIf(not SM90OrLater or TEST_WITH_ROCM, "PDL requires NVIDIA sm90+")
+     @config.patch({"triton.enable_pdl": True})
+     def test_pdl_mutation(self):
+@@ -18066,6 +18067,7 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
+         ).run(code)
+ 
+     @requires_cuda_and_triton
++    @skip_if_cpu
+     @skipCUDAIf(not SM90OrLater or TEST_WITH_ROCM, "PDL requires NVIDIA sm90+")
+     @config.patch(
+         {

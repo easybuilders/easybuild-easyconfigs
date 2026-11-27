@@ -1,0 +1,399 @@
+The decorators skipping tests based on accelerator count skip too late:
+The test setup initializes process groups which fails especially when there are no GPUs.
+
+See https://github.com/pytorch/pytorch/pull/199116
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/test_functional_api.py b/test/distributed/test_functional_api.py
+--- a/test/distributed/test_functional_api.py
++++ b/test/distributed/test_functional_api.py
+@@ -13,6 +13,7 @@ from functorch import make_fx
+ from torch.distributed._local_tensor import LocalTensorMode
+ from torch.testing import FileCheck
+ from torch.testing._internal.common_device_type import instantiate_device_type_tests
++from torch.testing._internal.common_distributed import exit_if_lt_x_accelerators
+ from torch.testing._internal.inductor_utils import HAS_GPU
+ 
+ 
+@@ -23,8 +24,8 @@ if not dist.is_available():
+ from torch.testing._internal.common_distributed import (
+     DistributedTestBase,
+     MultiThreadedTestCase,
++    require_accelerator_for_each_rank,
+     requires_accelerator_dist_backend,
+-    TEST_SKIPS,
+ )
+ from torch.testing._internal.common_utils import (
+     instantiate_parametrized_tests,
+@@ -522,25 +523,14 @@ elif TEST_XPU:
+     BACKEND = dist.Backend.XCCL
+ 
+ 
+-# allows you to check for multiple accelerator irrespective of device type
+-# to add new device types to this check simply follow the same format
+-# and append an elif with the conditional and appropriate device count function for your new device
+-def exit_if_lt_x_accelerators(x):
+-    if torch.accelerator.is_available():
+-        if torch.accelerator.device_count() < x:
+-            sys.exit(TEST_SKIPS[f"multi-gpu-{x}"].exit_code)
+-
+-
+ def with_comms(func=None):
+     if func is None:
+         return partial(with_comms)
+ 
+     @wraps(func)
+     def wrapper(self, *args, **kwargs):
+-        if (
+-            BACKEND == dist.Backend.NCCL or BACKEND == dist.Backend.XCCL
+-        ) and torch.accelerator.device_count() < self.world_size:
+-            sys.exit(TEST_SKIPS[f"multi-gpu-{self.world_size}"].exit_code)
++        if BACKEND in (dist.Backend.NCCL, dist.Backend.XCCL):
++            exit_if_lt_x_accelerators(self.world_size)
+ 
+         kwargs["device"] = DEVICE
+         self.pg = self.create_pg(device=DEVICE)
+@@ -553,9 +543,9 @@ def with_comms(func=None):
+ 
+ 
+ class TestCollectivesWithDistributedBackend(DistributedTestBase):
++    @require_accelerator_for_each_rank
+     @with_comms()
+     def test_all_gather_into_tensor_coalesced(self, device):
+-        exit_if_lt_x_accelerators(self.world_size)
+         tensors = [
+             torch.ones([4], device=device),
+             torch.ones([4], device=device) + 1,
+@@ -627,9 +617,8 @@ class TestCollectivesWithDistributedBackend(DistributedTestBase):
+         compiled_allreduce(torch.randn(8, device=device), self.pg)
+ 
+     @unittest.skipIf(not HAS_GPU, "Inductor+gpu needs triton and recent GPU arch")
++    @require_accelerator_for_each_rank
+     def test_tracing_with_fakepg(self, device=DEVICE):
+-        exit_if_lt_x_accelerators(self.world_size)
+-
+         def allreduce(t, pg):
+             return ft_c.all_reduce(t, "sum", pg)
+ 
+@@ -670,9 +659,9 @@ class TestDistributedBackendCollectivesWithWorldSize4(
+     def world_size(self):
+         return 4
+ 
++    @require_accelerator_for_each_rank
+     @with_comms()
+     def test_permute_tensor_with_sub_group(self, device):
+-        exit_if_lt_x_accelerators(self.world_size)
+         mesh_dim_names = ["dp", "tp"]
+ 
+         mesh_2d = dt.init_device_mesh(
+diff --git a/test/test_cuda_multigpu.py b/test/test_cuda_multigpu.py
+--- a/test/test_cuda_multigpu.py
++++ b/test/test_cuda_multigpu.py
+@@ -1,5 +1,6 @@
+ # Owner(s): ["module: cuda"]
+ 
++
+ import collections
+ import contextlib
+ import ctypes
+diff --git a/torch/testing/_internal/common_distributed.py b/torch/testing/_internal/common_distributed.py
+--- a/torch/testing/_internal/common_distributed.py
++++ b/torch/testing/_internal/common_distributed.py
+@@ -206,10 +206,38 @@ class DistTestCases:
+         backend_feature["xpu"] = {"xccl"}
+ 
+ 
+-def requires_ddp_rank(device):
++def requires_ddp_rank(device) -> bool:
+     return device in DDP_RANK_DEVICES
+ 
+ 
++def exit_if_lt_x_cuda_devs(x: int):
++    """Exit process unless at least the given number of CUDA devices are available"""
++    if torch.cuda.device_count() < x:
++        sys.exit(TEST_SKIPS[f"multi-gpu-{x}"].exit_code)
++
++
++# allows you to check for multiple accelerator irrespective of device type
++# to add new device types to this check simply follow the same format
++# and append an elif with the conditional and appropriate device count function for your new device
++def exit_if_lt_x_accelerators(x: int):
++    if torch.accelerator.device_count() < x:
++        sys.exit(TEST_SKIPS[f"multi-gpu-{x}"].exit_code)
++
++
++def require_accelerator_for_each_rank(func):
++    """Check that at least `self.world_size` accelerators are available.
++    Skip early if none are available."""
++
++    @wraps(func)
++    def wrapper(self, *args, **kwargs):
++        exit_if_lt_x_accelerators(self.world_size)
++        return func(self, *args, **kwargs)
++
++    return unittest.skipUnless(
++        torch.accelerator.current_accelerator() is not None, TEST_SKIPS["no_cuda"].message
++    )(wrapper)
++
++
+ def skip_if_no_gpu(func):
+     """Skips if the world size exceeds the number of GPUs, ensuring that if the
+     test is run, each rank has its own GPU via ``torch.cuda.device(rank)``."""
+@@ -259,37 +287,16 @@ def skip_if_odd_worldsize(func):
+     return wrapper
+ 
+ 
+-def require_n_gpus_for_nccl_backend(n, backend):
+-    def decorator(func):
+-        @wraps(func)
+-        def wrapper(*args, **kwargs):
+-            if backend == "nccl" and torch.cuda.device_count() < n:
+-                sys.exit(TEST_SKIPS[f"multi-gpu-{n}"].exit_code)
+-            else:
+-                return func(*args, **kwargs)
+-
+-        return wrapper
+-
+-    return decorator
+-
+-
+ def import_transformers_or_skip():
+-    def decorator(func):
+-        @wraps(func)
+-        def wrapper(*args, **kwargs):
+-            try:
+-                from transformers import AutoModelForMaskedLM, BertConfig  # noqa: F401
+-
+-                return func(*args, **kwargs)
+-            except ImportError:
+-                sys.exit(TEST_SKIPS["importerror"].exit_code)
+-
+-        return wrapper
++    try:
++        from transformers import AutoModelForMaskedLM, BertConfig  # noqa: F401
+ 
+-    return decorator
++        return unittest.skipIf(False, "Dummy")
++    except ImportError:
++        return unittest.skip(TEST_SKIPS["importerror"].message)
+ 
+ 
+-def at_least_x_gpu(x):
++def at_least_x_gpu(x: int) -> bool:
+     if TEST_CUDA and torch.cuda.device_count() >= x:
+         return True
+     if TEST_HPU and torch.hpu.device_count() >= x:
+@@ -307,32 +314,17 @@ def _maybe_handle_skip_if_lt_x_gpu(args, msg) -> bool:
+     return True
+ 
+ 
+-def skip_if_lt_x_gpu(x, *, allow_cpu=False):
++def skip_if_lt_x_gpu(x: int, *, allow_cpu=False):
+     """Skip if fewer than x accelerators available.
+ 
+     Args:
+         x: Minimum number of accelerators required.
+         allow_cpu: If True, run the test on CPU-only machines (no accelerators).
+     """
+-
+-    def decorator(func):
+-        @wraps(func)
+-        def wrapper(*args, **kwargs):
+-            if torch.cuda.is_available() and torch.cuda.device_count() >= x:
+-                return func(*args, **kwargs)
+-            if TEST_HPU and torch.hpu.device_count() >= x:
+-                return func(*args, **kwargs)
+-            if TEST_XPU and torch.xpu.device_count() >= x:
+-                return func(*args, **kwargs)
+-            if allow_cpu and not (torch.cuda.is_available() or TEST_HPU or TEST_XPU):
+-                return func(*args, **kwargs)
+-            test_skip = TEST_SKIPS[f"multi-gpu-{x}"]
+-            if not _maybe_handle_skip_if_lt_x_gpu(args, test_skip.message):
+-                sys.exit(test_skip.exit_code)
+-
+-        return wrapper
+-
+-    return decorator
++    return unittest.skipUnless(
++        at_least_x_gpu(x) or (allow_cpu and not (TEST_CUDA or TEST_HPU or TEST_XPU)),
++        TEST_SKIPS[f"multi-gpu-{x}"].message,
++    )
+ 
+ 
+ def requires_world_size(n: int):
+@@ -377,21 +369,16 @@ def get_required_world_size(obj: Any, default: int) -> int:
+ 
+ 
+ # This decorator helps avoiding initializing cuda while testing other backends
+-def nccl_skip_if_lt_x_gpu(backend, x):
+-    def decorator(func):
+-        @wraps(func)
+-        def wrapper(*args, **kwargs):
+-            if backend != "nccl":
+-                return func(*args, **kwargs)
+-            if torch.cuda.is_available() and torch.cuda.device_count() >= x:
+-                return func(*args, **kwargs)
+-            test_skip = TEST_SKIPS[f"multi-gpu-{x}"]
+-            if not _maybe_handle_skip_if_lt_x_gpu(args, test_skip.message):
+-                sys.exit(test_skip.exit_code)
++def require_n_gpus_for_nccl_backend(n: int, backend: str):
++    """Skip the test for the NCCL backend if there are not enough CUDA devices"""
++    return unittest.skipIf(
++        backend == "nccl" and torch.cuda.device_count() < n,
++        TEST_SKIPS[f"multi-gpu-{n}"].message,
++    )
+ 
+-        return wrapper
+ 
+-    return decorator
++def nccl_skip_if_lt_x_gpu(backend: str, x: int):
++    return require_n_gpus_for_nccl_backend(x, backend)
+ 
+ 
+ def verify_ddp_error_logged(model_DDP, err_substr):
+diff --git a/torch/testing/_internal/distributed/_shard/sharded_tensor/__init__.py b/torch/testing/_internal/distributed/_shard/sharded_tensor/__init__.py
+--- a/torch/testing/_internal/distributed/_shard/sharded_tensor/__init__.py
++++ b/torch/testing/_internal/distributed/_shard/sharded_tensor/__init__.py
+@@ -7,7 +7,9 @@ import torch
+ import torch.distributed as dist
+ from torch.distributed import rpc
+ from torch.testing._internal.common_distributed import (
++    exit_if_lt_x_cuda_devs,
+     MultiProcessTestCase,
++    require_n_gpus_for_nccl_backend,
+     TEST_SKIPS,
+     tp_transports,
+ )
+diff --git a/torch/testing/_internal/distributed/_tensor/common_dtensor.py b/torch/testing/_internal/distributed/_tensor/common_dtensor.py
+--- a/torch/testing/_internal/distributed/_tensor/common_dtensor.py
++++ b/torch/testing/_internal/distributed/_tensor/common_dtensor.py
+@@ -6,7 +6,6 @@ import contextlib
+ import copy
+ import functools
+ import itertools
+-import sys
+ import threading
+ import types
+ import unittest
+@@ -53,12 +52,12 @@ from torch.distributed.tensor.parallel import (
+ )
+ from torch.testing._internal.common_distributed import (
+     ACCELERATOR_DIST_BACKENDS,
++    exit_if_lt_x_accelerators,
+     MultiProcContinuousTest,
+     MultiProcessTestCase,
+     MultiThreadedTestCase,
+     run_subtests,
+     skip_if_lt_x_gpu,
+-    TEST_SKIPS,
+ )
+ from torch.testing._internal.common_utils import (
+     TEST_CUDA,
+@@ -706,10 +705,8 @@ class DTensorContinuousTestBase(DTensorTestMixin, MultiProcContinuousTest):
+         # each rank is bound to the correct GPU. However, if world_size > device_count,
+         # we skip the test.
+         if torch.accelerator.is_available():
+-            if world_size > torch.accelerator.device_count():
+-                sys.exit(TEST_SKIPS[f"multi-gpu-{world_size}"].exit_code)
+-            else:
+-                torch.accelerator.set_device_index(rank)
++            exit_if_lt_x_accelerators(world_size)
++            torch.accelerator.set_device_index(rank)
+ 
+         # Call parent's _init_pg to do the actual process group initialization
+         super()._init_pg(rank, world_size, rdvz_file)
+@@ -801,8 +798,8 @@ class DTensorTestBase(DTensorTestMixin, MultiProcessTestCase):
+         requires_gpu = any(
+             gpu_backend in backend for gpu_backend in ACCELERATOR_DIST_BACKENDS
+         )
+-        if requires_gpu and torch.accelerator.device_count() < self.world_size:
+-            sys.exit(TEST_SKIPS[f"multi-gpu-{self.world_size}"].exit_code)
++        if requires_gpu:
++            exit_if_lt_x_accelerators(self.world_size)
+ 
+         curr_backend = dist.get_default_backend_for_device(self.device_type)
+ 
+@@ -1166,9 +1163,6 @@ class LocalDTensorTestBase(DTensorTestBase):
+     def is_local_tensor_enabled(self) -> bool:
+         return True
+ 
+-    def _handle_test_skip(self, msg: str) -> None:
+-        self.skipTest(msg)
+-
+     def _get_local_tensor_mode(self):
+         return LocalTensorMode(frozenset(range(self.world_size)))
+ 
+diff --git a/torch/testing/_internal/distributed/distributed_test.py b/torch/testing/_internal/distributed/distributed_test.py
+--- a/torch/testing/_internal/distributed/distributed_test.py
++++ b/torch/testing/_internal/distributed/distributed_test.py
+@@ -67,10 +67,10 @@ from torch.testing._internal.common_distributed import (
+     captured_output,
+     cleanup_temp_dir,
+     DistTestCases,
++    exit_if_lt_x_cuda_devs,
+     init_multigpu_helper,
+     initialize_temp_directories,
+     MultiProcessTestCase,
+-    nccl_skip_if_lt_x_gpu,
+     require_n_gpus_for_nccl_backend,
+     requires_nccl_version,
+     simple_sparse_reduce_tests,
+@@ -601,10 +601,8 @@ class TestDistBackend(MultiProcessTestCase):
+         self.rank = rank
+         self.file_name = file_name
+ 
+-        if torch.cuda.is_available() and torch.cuda.device_count() < int(
+-            self.world_size
+-        ):
+-            sys.exit(TEST_SKIPS[f"multi-gpu-{self.world_size}"].exit_code)
++        if torch.cuda.is_available():
++            exit_if_lt_x_cuda_devs(int(self.world_size))
+         try:
+             pg_timeout_seconds = CUSTOM_PG_TIMEOUT.get(test_name, default_pg_timeout)
+             timeout = timedelta(seconds=pg_timeout_seconds)
+@@ -5379,7 +5377,7 @@ class DistributedTest:
+             BACKEND != "mpi" and BACKEND != "nccl" and BACKEND != "gloo",
+             "get_future is only supported on mpi, nccl and gloo",
+         )
+-        @nccl_skip_if_lt_x_gpu(BACKEND, 2)
++        @require_n_gpus_for_nccl_backend(2, BACKEND)
+         def test_accumulate_gradients_no_sync(self):
+             """
+             Runs _test_accumulate_gradients_no_sync using default inputs
+@@ -5390,7 +5388,7 @@ class DistributedTest:
+             BACKEND != "mpi" and BACKEND != "nccl" and BACKEND != "gloo",
+             "get_future is only supported on mpi, nccl and gloo",
+         )
+-        @nccl_skip_if_lt_x_gpu(BACKEND, 2)
++        @require_n_gpus_for_nccl_backend(2, BACKEND)
+         def test_accumulate_gradients_no_sync_grad_is_view(self):
+             """
+             Runs _test_accumulate_gradients_no_sync using default inputs
+@@ -5401,7 +5399,7 @@ class DistributedTest:
+             BACKEND != "mpi" and BACKEND != "nccl" and BACKEND != "gloo",
+             "get_future is only supported on mpi, nccl and gloo",
+         )
+-        @nccl_skip_if_lt_x_gpu(BACKEND, 2)
++        @require_n_gpus_for_nccl_backend(2, BACKEND)
+         def test_accumulate_gradients_no_sync_allreduce_hook(self):
+             """
+             Runs multiple iterations on _test_accumulate_gradients_no_sync
+@@ -5429,7 +5427,7 @@ class DistributedTest:
+             BACKEND != "mpi" and BACKEND != "nccl" and BACKEND != "gloo",
+             "get_future is only supported on mpi, nccl and gloo",
+         )
+-        @nccl_skip_if_lt_x_gpu(BACKEND, 2)
++        @require_n_gpus_for_nccl_backend(2, BACKEND)
+         def test_accumulate_gradients_no_sync_allreduce_with_then_hook(self):
+             """
+             Runs multiple iterations on _test_accumulate_gradients_no_sync using allreduce
+@@ -5463,7 +5461,7 @@ class DistributedTest:
+             BACKEND != "mpi" and BACKEND != "nccl" and BACKEND != "gloo",
+             "get_future is only supported on mpi, nccl and gloo",
+         )
+-        @nccl_skip_if_lt_x_gpu(BACKEND, 2)
++        @require_n_gpus_for_nccl_backend(2, BACKEND)
+         def test_get_future(self):
+             def mult(fut):
+                 return [t * 3 for t in fut.wait()]
