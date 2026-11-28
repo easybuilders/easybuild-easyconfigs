@@ -1,0 +1,76 @@
+# Author: sreenivasamurthy kolam <sreenivasamurthy.kolam@amd.com>
+
+easyblock = 'ROCmComponent'
+
+name = 'rocprofiler'
+version = '2.0.0'
+_rocm_version = '7.2.3'
+
+homepage = 'https://github.com/ROCm/rocprofiler'
+description = """ROCProfiler is AMD's tooling infrastructure that provides a
+hardware specific low level performance analysis interface for profiling and
+tracing GPU compute applications. ROCProfiler v1/v2 is deprecated - consider
+using rocprofiler-sdk (v3) instead."""
+docurls = ['https://rocm.docs.amd.com/projects/rocprofiler/en/latest/']
+
+toolchain = {
+    'name': 'rocm-compilers',
+    'version': '22.0.0-ROCm-%s' % _rocm_version,
+}
+
+source_urls = ['https://github.com/ROCm/rocm-systems/archive/']
+sources = ['rocm-%s.tar.gz' % _rocm_version]
+patches = ['rocprofiler-2.0.0_respect-build-options.patch']
+checksums = [
+    # rocm-7.2.3.tar.gz
+    'e90cfd8694af28a56433c8827a581ee12a4ba835f0d952436741d9e0f3f8685b',
+    # rocprofiler-2.0.0_respect-build-options.patch
+    'da3d54cafa11b8ebef9e266e038bdc4475f732cb8fd4f294ef1b75cf1705070c',
+]
+
+builddependencies = [
+    ('CMake', '3.31.8'),
+    ('lxml', '6.0.0'),
+    ('CppHeaderParser', '2.7.4'),
+    ('googletest', '1.17.0'),
+]
+
+dependencies = [
+    ('HIP', _rocm_version),
+    ('rocTracer', '4.1.0'),
+    ('rocm-smi', '7.6.0'),
+    ('rocminfo', '1.0.0'),
+    ('aqlprofile', _rocm_version),
+    ('Python', '3.13.5'),
+    ('Python-bundle-PyPI', '2025.07'),
+    ('PyYAML', '6.0.2'),
+    ('elfutils', '0.193'),
+]
+
+# rocprofiler is located in projects/rocprofiler within rocm-systems archive
+srcdir = 'projects/rocprofiler'
+
+# Ensure full path of compilers is picked up for correct rpath wrapper usage
+abs_path_compilers = True
+
+configopts = '-DPROF_API_HEADER_PATH=$EBROOTROCTRACER/include/roctracer '
+configopts += '-DROCM_ROOT_DIR=$EBROOTHIP '
+configopts += '-DROCPROFILER_BUILD_PLUGIN_PERFETTO=OFF '
+configopts += '-DROCPROFILER_BUILD_PLUGIN_CTF=OFF '
+configopts += '-DROCPROFILER_BUILD_TESTS:BOOL=OFF '
+configopts += '-DROCPROFILER_BUILD_SAMPLES:BOOL=OFF '
+
+# Create symlink to rocm_agent_enumerator so rocprof can find it
+postinstallcmds = [
+    'ln -s $EBROOTROCMINFO/bin/rocm_agent_enumerator '
+    '%(installdir)s/bin/rocm_agent_enumerator',
+]
+
+sanity_check_paths = {
+    'files': ['bin/rocprof', 'bin/rocprofv2',
+              'lib/librocprofiler64.%s' % SHLIB_EXT,
+              'lib/librocprofiler64v2.%s' % SHLIB_EXT],
+    'dirs': ['include/rocprofiler', 'lib/rocprofiler'],
+}
+
+moduleclass = 'perf'
