@@ -1,0 +1,60 @@
+easyblock = 'ConfigureMake'
+
+name = 'erofs-utils'
+version = '1.9.4'
+
+homepage = 'https://github.com/erofs/erofs-utils'
+description = """Userspace tools for the EROFS filesystem, currently including:
+
+  mkfs.erofs    Filesystem formatter
+  mount.erofs   Mount helper for EROFS
+  erofsfuse     FUSE daemon alternative
+  dump.erofs    Filesystem analyzer
+  fsck.erofs    Filesystem compatibility and consistency checker,
+                also capable of extracting filesystem contents
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '15.2.0'}
+
+source_urls = ['https://github.com/erofs/erofs-utils/archive/refs/tags/']
+sources = [V_VERSION_TAR_GZ]
+checksums = ['7d135aa2550326a5acf20f53c518aea5a8900015ce50700044e40f818c31dd80']
+
+builddependencies = [
+    ('binutils', '2.45'),
+    ('Autotools', '20250626'),
+    ('pkgconf', '2.5.1'),
+]
+
+dependencies = [
+    ('FUSE', '3.18.2'),
+    ('util-linux', '2.42'),
+    ('lz4', '1.10.0'),
+    ('XZ', '5.8.2'),
+    ('zstd', '1.5.7'),
+    ('zlib', '2.3.2'),
+    ('xxHash', '0.8.3'),
+    # For s3/oci support:
+    ('cURL', '8.17.0'),
+    ('json-c', '0.18'),
+    ('libxml2', '2.15.1'),
+    ('OpenSSL', '3', '', SYSTEM),
+]
+
+preconfigopts = './autogen.sh &&'
+
+configopts = ' '.join([
+    '--enable-fuse',
+    '--enable-s3',
+    '--enable-oci',
+    # '--enable-fanotify',  # Requires very new kernel
+])
+
+sanity_check_paths = {
+    'files': [f'bin/{x}' for x in ['mkfs.erofs', 'erofsfuse', 'dump.erofs', 'fsck.erofs']],
+    'dirs': [],
+}
+
+sanity_check_commands = ['mkfs.erofs -h']
+
+moduleclass = 'tools'
