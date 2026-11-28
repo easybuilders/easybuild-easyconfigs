@@ -1,0 +1,52 @@
+Replace dynamic versioning with a plain static version string. Tarballs of
+ESMPy downloaded from github lack git repository data required by
+setuptools-git-versioning.
+author: Alex Domingo (Vrije Universiteit Brussel)
+update: Stamen Miroslavov, BSC 2026
+diff -ruNBbw a/src/addon/esmpy/pyproject.toml b/src/addon/esmpy/pyproject.toml
+--- a/src/addon/esmpy/pyproject.toml	2025-08-12 00:33:46.000000000 +0200
++++ b/src/addon/esmpy/pyproject.toml	2026-10-06 12:48:56.342503581 +0200
+@@ -1,5 +1,5 @@
+ [build-system]
+-requires = [ "setuptools>=41", "wheel", "setuptools-git-versioning" ]
++requires = [ "setuptools>=41", "wheel" ]
+ # __legacy__ is required to have access to package during build step
+ # (this is suggested in the setuptools-git-versioning documentation when using a callback
+ # function)
+@@ -38,15 +38,8 @@
+     # compatibility:
+     "numpy >= 1.19, < 3",
+     'importlib-metadata; python_version < "3.8"',
+-    # setuptools-git-versioning shouldn't be needed here, but is
+-    # included as a workaround for problems with the build-time
+-    # installation of this package with python 3.10 (given by the
+-    # build-system section above). By including it here, we at least
+-    # ensure that this package will be available for a second or
+-    # subsequent pip install of esmpy.
+-    'setuptools-git-versioning; python_version >= "3.10"',
+ ]
+-dynamic = [ "version" ]
++version = "EB_ESMPY_VERSION"
+ 
+ [project.optional-dependencies]
+ testing = [
+@@ -60,18 +53,12 @@
+ sourcecode = "https://github.com/esmf-org/esmf/tree/develop/src/addon/esmpy"
+ releasenotes = "https://earthsystemmodeling.org/static/releases.html"
+ 
+-[tool.setuptools-git-versioning]
+-enabled = true
+-version_callback = "build_utils.version:get_source_esmf_version"
+-
+-[tool.dynamic]
+-version = "placeholder" # this is a placeholder for the version pulled with git-versioning
+-
+ [tool.setuptools.packages.find]
+ where = [ "src" ]
+ exclude = [ "doc*" ]
+ 
+ [tool.pytest.ini_options]
++pythonpath = ["."]
+ testpaths = [
+     "src/esmpy/test/test_build_utils",
+     "src/esmpy/test/test_interface",
