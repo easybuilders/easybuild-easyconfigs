@@ -1,0 +1,128 @@
+From 97301a5390f841241e5ed88e26c218882e018cc4 Mon Sep 17 00:00:00 2001
+From: Akash Banerjee <akash.banerjee@amd.com>
+Date: Wed, 14 Jan 2026 20:23:03 +0000
+Subject: [PATCH] Land missing changes from upstream commit 1fd1d63 (#1094)
+
+This PR lands the flang/include/flang/Support/OpenMP-utils.h and
+flang/lib/Optimizer/OpenMP/MapsForPrivatizedSymbols.cpp changes missing
+from the final upstream commit
+https://github.com/llvm/llvm-project/commit/1fd1d634630754cc9b9c4b5526961d5856f64ff9
+(PR https://github.com/llvm/llvm-project/pull/153048).
+---
+ flang/include/flang/Support/OpenMP-utils.h    | 34 ------------------
+ .../OpenMP/MapsForPrivatizedSymbols.cpp       | 35 +++++++++++++++++--
+ 2 files changed, 33 insertions(+), 36 deletions(-)
+
+diff --git a/flang/include/flang/Support/OpenMP-utils.h b/flang/include/flang/Support/OpenMP-utils.h
+index dc938db88e17d6caa9d96abad5ed7dfc1dc87ca8..6d9db2b682c500af78cc9bfb1a7374269d1cb056 100644
+--- a/flang/include/flang/Support/OpenMP-utils.h
++++ b/flang/include/flang/Support/OpenMP-utils.h
+@@ -9,13 +9,8 @@
+ #ifndef FORTRAN_SUPPORT_OPENMP_UTILS_H_
+ #define FORTRAN_SUPPORT_OPENMP_UTILS_H_
+ 
+-#include "flang/Optimizer/Builder/DirectivesCommon.h"
+-#include "flang/Optimizer/Builder/FIRBuilder.h"
+-#include "flang/Optimizer/Builder/HLFIRTools.h"
+-#include "flang/Optimizer/Dialect/FIRType.h"
+ #include "flang/Semantics/symbol.h"
+ 
+-#include "mlir/Dialect/OpenMP/OpenMPDialect.h"
+ #include "mlir/IR/Builders.h"
+ #include "mlir/IR/Value.h"
+ 
+@@ -77,35 +72,6 @@ struct EntryBlockArgs {
+ /// \param [in]  region - Empty region in which to create the entry block.
+ mlir::Block *genEntryBlock(
+     mlir::OpBuilder &builder, const EntryBlockArgs &args, mlir::Region &region);
+-
+-// Returns true if the variable has a dynamic size and therefore requires
+-// bounds operations to describe its extents.
+-inline bool needsBoundsOps(mlir::Value var) {
+-  assert(mlir::isa<mlir::omp::PointerLikeType>(var.getType()) &&
+-      "only pointer like types expected");
+-  mlir::Type t = fir::unwrapRefType(var.getType());
+-  if (mlir::Type inner = fir::dyn_cast_ptrOrBoxEleTy(t))
+-    return fir::hasDynamicSize(inner);
+-  return fir::hasDynamicSize(t);
+-}
+-
+-// Generate MapBoundsOp operations for the variable if required.
+-inline void genBoundsOps(fir::FirOpBuilder &builder, mlir::Value var,
+-    llvm::SmallVectorImpl<mlir::Value> &boundsOps) {
+-  mlir::Location loc = var.getLoc();
+-  fir::factory::AddrAndBoundsInfo info =
+-      fir::factory::getDataOperandBaseAddr(builder, var,
+-          /*isOptional=*/false, loc);
+-  fir::ExtendedValue exv =
+-      hlfir::translateToExtendedValue(loc, builder, hlfir::Entity{info.addr},
+-          /*contiguousHint=*/true)
+-          .first;
+-  llvm::SmallVector<mlir::Value> tmp =
+-      fir::factory::genImplicitBoundsOps<mlir::omp::MapBoundsOp,
+-          mlir::omp::MapBoundsType>(
+-          builder, info, exv, /*dataExvIsAssumedSize=*/false, loc);
+-  llvm::append_range(boundsOps, tmp);
+-}
+ } // namespace Fortran::common::openmp
+ 
+ #endif // FORTRAN_SUPPORT_OPENMP_UTILS_H_
+diff --git a/flang/lib/Optimizer/OpenMP/MapsForPrivatizedSymbols.cpp b/flang/lib/Optimizer/OpenMP/MapsForPrivatizedSymbols.cpp
+index 1d10c5b8dec410d4947fa52572fb80fbac95fb45..6404e1892ca5d8553056a9ba169fe9bec24a0265 100644
+--- a/flang/lib/Optimizer/OpenMP/MapsForPrivatizedSymbols.cpp
++++ b/flang/lib/Optimizer/OpenMP/MapsForPrivatizedSymbols.cpp
+@@ -29,7 +29,6 @@
+ #include "flang/Optimizer/Dialect/Support/KindMapping.h"
+ #include "flang/Optimizer/HLFIR/HLFIROps.h"
+ #include "flang/Optimizer/OpenMP/Passes.h"
+-#include "flang/Support/OpenMP-utils.h"
+ 
+ #include "mlir/Dialect/Func/IR/FuncOps.h"
+ #include "mlir/Dialect/OpenMP/OpenMPDialect.h"
+@@ -47,7 +46,6 @@ namespace flangomp {
+ } // namespace flangomp
+ 
+ using namespace mlir;
+-using namespace Fortran::common::openmp;
+ 
+ namespace {
+ class MapsForPrivatizedSymbolsPass
+@@ -201,5 +199,38 @@ class MapsForPrivatizedSymbolsPass
+       }
+     }
+   }
++  // As the name suggests, this function examines var to determine if
++  // it has dynamic size. If true, this pass'll have to extract these
++  // bounds from descriptor of var and add the bounds to the resultant
++  // MapInfoOp.
++  bool needsBoundsOps(mlir::Value var) {
++    assert(mlir::isa<omp::PointerLikeType>(var.getType()) &&
++           "needsBoundsOps can deal only with pointer types");
++    mlir::Type t = fir::unwrapRefType(var.getType());
++    // t could be a box, so look inside the box
++    auto innerType = fir::dyn_cast_ptrOrBoxEleTy(t);
++    if (innerType)
++      return fir::hasDynamicSize(innerType);
++    return fir::hasDynamicSize(t);
++  }
++
++  void genBoundsOps(fir::FirOpBuilder &builder, mlir::Value var,
++                    llvm::SmallVector<mlir::Value> &boundsOps) {
++    mlir::Location loc = var.getLoc();
++    fir::factory::AddrAndBoundsInfo info =
++        fir::factory::getDataOperandBaseAddr(builder, var,
++                                             /*isOptional=*/false, loc);
++    fir::ExtendedValue extendedValue =
++        hlfir::translateToExtendedValue(loc, builder, hlfir::Entity{info.addr},
++                                        /*continguousHint=*/true)
++            .first;
++    llvm::SmallVector<mlir::Value> boundsOpsVec =
++        fir::factory::genImplicitBoundsOps<mlir::omp::MapBoundsOp,
++                                           mlir::omp::MapBoundsType>(
++            builder, info, extendedValue,
++            /*dataExvIsAssumedSize=*/false, loc);
++    for (auto bounds : boundsOpsVec)
++      boundsOps.push_back(bounds);
++  }
+ };
+ } // namespace
