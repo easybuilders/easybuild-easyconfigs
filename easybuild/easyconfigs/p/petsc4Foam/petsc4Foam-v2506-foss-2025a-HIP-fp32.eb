@@ -1,0 +1,97 @@
+# EasyBuild easyconfig: petsc4Foam — OpenFOAM external-solver (PETSc) adapter, HIP, fp32
+#
+# =========================================================================
+#  fp32 VARIANT of petsc4Foam-v2506-foss-2025a-HIP.eb.
+#  IDENTICAL to the (double-precision / fp64) HIP adapter easyconfig EXCEPT:
+#    * versionsuffix        '-HIP'  ->  '-HIP-fp32'
+#    * PETSc dependency      '-HIP' ->  '-HIP-fp32'
+#  The adapter compiles no GPU code itself — it only links -lpetsc — so the
+#  precision is inherited entirely from the PETSc it links against. Linking the
+#  fp32 PETSc (built --with-precision=single) yields a single-precision adapter.
+#  See petsc4Foam-v2506-foss-2025a-HIP.eb for the full rationale (unchanged).
+# =========================================================================
+
+easyblock = 'Bundle'
+
+name = 'petsc4Foam'
+version = 'v2506'
+# fp32 single-precision variant. Arch (gfxNNN) still lives in the accel path + the
+# PETSc-HIP-fp32 dep; the suffix marks (HIP backend + single precision).
+versionsuffix = '-HIP-fp32'
+
+homepage = 'https://develop.openfoam.com/modules/external-solver'
+description = """petsc4Foam is the OpenFOAM 'external-solver' module (ESI), providing a
+PETSc linear-solver adapter (libpetscFoam) that lets OpenFOAM offload its linear systems
+to PETSc — here to a PETSc built with the AMD-GPU HIP backend (hipBLAS/hipSPARSE) in SINGLE
+precision (fp32), by default for AMD Radeon Pro V710 (gfx1101). Built via OpenFOAM's wmake
+against OpenFOAM-v2506 and a GPU-enabled, single-precision PETSc 3.23.5. Grounded in a working
+manual build verified on host ROCm 6.3.1."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+
+dependencies = [
+    ('OpenFOAM', 'v2506', '-SP'),                # single-precision OpenFOAM (fp32 adapter requires solveScalar==float)
+    ('PETSc', '3.23.5', '-HIP-fp32'),            # this repo's single-precision PETSc-HIP easyconfig
+]
+
+# The adapter ships inside the ESI external-solver module, versioned to the OpenFOAM
+# release. Pin the real snapshot + checksum before contributing.
+#
+# --- Build: OpenFOAM wmake (mirrors ~/external-solver-esi/Allwmake) -------------
+# We drive the build as a Bundle with a single component using the external-solver
+# source. Because OpenFOAM builds via wmake (not configure/make/cmake), the actual
+# compile is the Allwmake script, which honours FOAM_MODULE_LIBBIN.
+#
+# Required environment at build time (set by the OpenFOAM + PETSc-HIP modules,
+# asserted here for clarity):
+#   - OpenFOAM bashrc sourced (WM_PROJECT_DIR, wmake on PATH, WM_MPLIB=SYSTEMOPENMPI)
+#   - PETSC_ARCH_PATH  -> the PETSc-HIP-fp32 install (EBROOTPETSC). Make/options reads
+#                         PETSC_INC_DIR / PETSC_LIB_DIR from it and links -lpetsc.
+#   - FOAM_MODULE_LIBBIN -> point at %(installdir)s/lib so libpetscFoam.so lands
+#                           in the module (default falls back to FOAM_USER_LIBBIN).
+
+# Upstream external-solver has NO 'v2506' tag (latest real tag is v2412; default
+# branch 'main' is byte-for-byte identical to v2412 in content). The adapter is
+# OpenFOAM-version-agnostic (compiles against loaded OpenFOAM $LIB_SRC, links
+# -lpetsc), so v2412 sources build correctly against the OpenFOAM/v2506 dep. Keep
+# the module identity at v2506 but source the real, checksummed v2412 snapshot.
+local_es_source_ver = 'v2412'
+
+components = [
+    (name, version, {
+        'easyblock': 'MakeCp',
+        'source_urls': ['https://develop.openfoam.com/modules/external-solver/-/archive/%s/' % local_es_source_ver],
+        'sources': ['external-solver-%s.tar.gz' % local_es_source_ver],
+        'checksums': ['db6a161c68a2a0d3095c67bc82a9f3c84bd55dd72dcd2c57f6b847098b880ff6'],
+        'start_dir': 'external-solver-%s' % local_es_source_ver,
+        # Export PETSC_ARCH_PATH (ASSUMPTION 2) and target the module libdir,
+        # then run the upstream Allwmake. wmake libso produces libpetscFoam.so.
+        'prebuildopts': (
+            # Allwmake requires the full OpenFOAM shell environment (WM_PROJECT_DIR,
+            # wmake, $LIB_SRC, ...). The OpenFOAM module exports $FOAM_BASH (path to
+            # OpenFOAM/etc/bashrc); source it to populate that environment.
+            'source $FOAM_BASH && '
+            'export PETSC_ARCH_PATH=$EBROOTPETSC && '
+            'export FOAM_MODULE_LIBBIN=%(installdir)s/lib && '
+            'mkdir -p %(installdir)s/lib && '
+        ),
+        'build_cmd': './Allwmake',
+        'buildopts': '-j %(parallel)s',
+        # Allwmake already installs into FOAM_MODULE_LIBBIN; nothing extra to copy.
+        'files_to_copy': [],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libpetscFoam.so'],
+    'dirs': [],
+}
+
+# petsc4Foam is loaded by OpenFOAM at runtime via libs ("libpetscFoam.so"); make
+# the module's lib dir discoverable.
+modextrapaths = {
+    'LD_LIBRARY_PATH': ['lib'],
+    'FOAM_MODULE_LIBBIN': ['lib'],
+}
+
+moduleclass = 'cae'

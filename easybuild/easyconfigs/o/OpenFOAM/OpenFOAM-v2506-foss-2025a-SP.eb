@@ -1,0 +1,87 @@
+name = 'OpenFOAM'
+version = 'v2506'
+versionsuffix = '-SP'
+
+homepage = 'https://www.openfoam.com/'
+description = """OpenFOAM is a free, open source CFD software package.
+ OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+ involving chemical reactions, turbulence and heat transfer,
+ to solid dynamics and electromagnetics.
+ This is a single-precision (WM_PRECISION_OPTION=SP) build, required by the fp32
+ petsc4Foam adapter (PetscScalar == Foam::solveScalar == float)."""
+
+toolchain = {'name': 'foss', 'version': '2025a'}
+# Users have found that vectorizion caused OpenFOAM to produce some very incorrect results.
+# Disabling vectorize was confirmed to fix the the known issues.
+# With no test suite, sticking to known working toolchain options until proven otherwise.
+toolchainopts = {'cstd': 'c++17', 'vectorize': False}
+
+# Single-precision build. Handled by the OpenFOAM easyblock 'precision' parameter (patched
+# in this repo's easyblocks/openfoam.py, deployed via --include-easyblocks). etc/bashrc sets
+# WM_PRECISION_OPTION=DP unconditionally, so the easyblock writes etc/prefs.sh (the sanctioned
+# override, sourced after the DP default and before WM_OPTIONS is computed) => linux64GccSPInt32Opt.
+precision = 'SP'
+
+source_urls = ['https://sourceforge.net/projects/openfoam/files/%(version)s/']
+sources = [
+    SOURCE_TGZ,
+    {
+        'filename': '%(name)s-plugins-%(version)s.tgz',
+        'extract_cmd': 'tar --strip-components=1 -C %(installdir)s/%(name)s-%(version)s/ -xzf %s'
+    }
+]
+patches = [
+    ('OpenFOAM-v2406-cleanup.patch', 1),
+    ('OpenFOAM-v2212-wmake-OpenMPI.patch', 1),
+]
+checksums = [
+    {'OpenFOAM-v2506.tgz': '63d26f48ae7ee9a7806a0ceb339ef8a0ba485a4714d54fbfb31e78e1a4849965'},
+    {'OpenFOAM-plugins-v2506.tgz': '79309a0e2e798bd533dc60384542fdfd916b3f5c131600c5a7696b51d4120845'},
+    {'OpenFOAM-v2406-cleanup.patch': '3abff48a517fb63719ad57fa32af746bc379a1e80c72d3e5852aa17cd13cf03e'},
+    {'OpenFOAM-v2212-wmake-OpenMPI.patch': '241dc4898c22aab0cbd10c1ea931a07a786508ee03462d45dbc1c202fee3ebe8'},
+]
+
+builddependencies = [
+    ('Bison', '3.8.2'),
+    ('CMake', '3.31.3'),
+    ('flex', '2.6.4'),
+]
+
+dependencies = [
+    ('libreadline', '8.2'),
+    ('ncurses', '6.5'),
+    # OpenFOAM requires 64 bit METIS using 32 bit indexes (array indexes)
+    ('METIS', '5.1.0'),
+    ('SCOTCH', '7.0.8'),
+    ('KaHIP', '3.19'),
+    ('CGAL', '6.0.1'),
+    ('GMP', '6.3.0'),
+    ('MPFR', '4.2.2'),
+    ('ParaView', '6.0.1'),
+    ('gnuplot', '6.0.3'),
+]
+
+# --- EESSI-local fix: disable OpenFOAM readline auto-detection ---
+# On EESSI, OpenFOAM's wmake have_readline script defaulted READLINE_ARCH_PATH to /usr,
+# injecting `-DHAVE_LIBREADLINE -I/usr/include` into the setSet.C compile. On this system
+# /usr/include resolves to the EESSI compat layer
+# (/cvmfs/software.eessi.io/.../compat/linux/x86_64/usr/include/stdlib.h), whose __COLD
+# attribute breaks the GCCcore-14.2.0 libstdc++ <cstdlib> (error: expected initializer
+# before '__COLD'; 'abort' has not been declared). That aborts the mesh utilities build
+# (make Error 2), leaving 10 solvers unbuilt and failing the EasyBuild sanity check.
+# readline only provides interactive line-editing in setSet, which is irrelevant to the
+# solvers and to petsc4Foam. Disable it cleanly: overwrite the config.sh/readline snippet
+# with READLINE_ARCH_PATH=none (have_readline treats 'none' as "not found", so it emits no
+# -DHAVE_LIBREADLINE / -I/usr/include at all) and belt-and-suspenders export it in the env.
+# NOTE: prebuildopts must contain NO '%' characters. The OpenFOAM easyblock inlines
+# prebuildopts into the build command and then runs `cmd_tmpl % cmd` (a second %-format
+# pass), so a literal %s here raises "not enough arguments for format string". Use echo,
+# not printf, to write the config snippet.
+prebuildopts = (
+    'mkdir -p "$WM_PROJECT_DIR/etc/easybuild/config.sh" && '
+    'echo "export READLINE_ARCH_PATH=none" > "$WM_PROJECT_DIR/etc/easybuild/config.sh/readline" && '
+    'export FOAM_CONFIG_ETC=etc/easybuild && '
+    'export READLINE_ARCH_PATH=none && '
+)
+
+moduleclass = 'cae'
